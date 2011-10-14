@@ -1,0 +1,197 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{19465545-42EE-42FA-9CC8-F8975F8F1CC7}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>newcoin</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0501;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>c:\code\OpenSSL\include;C:\code\boost_1_47_0;C:\code\protobuf-2.4.1\src\</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>C:\code\OpenSSL\lib\VC;C:\code\boost_1_47_0\stage\lib;C:\code\protobuf-2.4.1\vsprojects\Debug</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libeay32MTd.lib;libprotobuf.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
+    <CustomBuild>
+      <Command>c:/code/protoc-2.4.1-win32/protoc -I=C:\code\newcoin --cpp_out=C:\code\newcoin C:\code\newcoin/newcoin.proto</Command>
+    </CustomBuild>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0501;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>C:\code\boost_1_47_0;C:\code\protobuf-2.4.1\src\google</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalLibraryDirectories>C:\code\OpenSSL\lib\VC;C:\code\boost_1_47_0\stage\lib;</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="Application.cpp" />
+    <ClCompile Include="BitcoinUtil.cpp" />
+    <ClCompile Include="CallRPC.cpp" />
+    <ClCompile Include="Config.cpp" />
+    <ClCompile Include="ConnectionPool.cpp" />
+    <ClCompile Include="cryptopp\cpu.cpp" />
+    <ClCompile Include="cryptopp\sha.cpp" />
+    <ClCompile Include="HttpReply.cpp" />
+    <ClCompile Include="json\json_spirit_reader.cpp" />
+    <ClCompile Include="json\json_spirit_value.cpp" />
+    <ClCompile Include="json\json_spirit_writer.cpp" />
+    <ClCompile Include="keystore.cpp" />
+    <ClCompile Include="KnownNodeList.cpp" />
+    <ClCompile Include="Ledger.cpp" />
+    <ClCompile Include="LedgerHistory.cpp" />
+    <ClCompile Include="LedgerMaster.cpp" />
+    <ClCompile Include="newcoin.pb.cc" />
+    <ClCompile Include="NewcoinAddress.cpp" />
+    <ClCompile Include="PackedMessage.cpp" />
+    <ClCompile Include="PeerDoor.cpp" />
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="Peer.cpp" />
+    <ClCompile Include="RequestParser.cpp" />
+    <ClCompile Include="rpc.cpp" />
+    <ClCompile Include="RPCServer.cpp" />
+    <ClCompile Include="RPCCommands.cpp" />
+    <ClCompile Include="RPCDoor.cpp" />
+    <ClCompile Include="TimingService.cpp" />
+    <ClCompile Include="TransactionBundle.cpp" />
+    <ClCompile Include="UniqueNodeList.cpp" />
+    <ClCompile Include="util\pugixml.cpp" />
+    <ClCompile Include="ValidationCollection.cpp" />
+    <ClCompile Include="Wallet.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Application.h" />
+    <ClInclude Include="base58.h" />
+    <ClInclude Include="bignum.h" />
+    <ClInclude Include="bitcoinUtil.h" />
+    <ClInclude Include="CallRPC.h" />
+    <ClInclude Include="Config.h" />
+    <ClInclude Include="ConnectionPool.h" />
+    <ClInclude Include="cryptopp\config.h" />
+    <ClInclude Include="cryptopp\cpu.h" />
+    <ClInclude Include="cryptopp\cryptlib.h" />
+    <ClInclude Include="cryptopp\iterhash.h" />
+    <ClInclude Include="cryptopp\misc.h" />
+    <ClInclude Include="cryptopp\pch.h" />
+    <ClInclude Include="cryptopp\secblock.h" />
+    <ClInclude Include="cryptopp\sha.h" />
+    <ClInclude Include="cryptopp\simple.h" />
+    <ClInclude Include="cryptopp\smartptr.h" />
+    <ClInclude Include="cryptopp\stdcpp.h" />
+    <ClInclude Include="HttpReply.h" />
+    <ClInclude Include="HttpRequest.h" />
+    <ClInclude Include="json\json_spirit.h" />
+    <ClInclude Include="json\json_spirit_error_position.h" />
+    <ClInclude Include="json\json_spirit_reader.h" />
+    <ClInclude Include="json\json_spirit_reader_template.h" />
+    <ClInclude Include="json\json_spirit_stream_reader.h" />
+    <ClInclude Include="json\json_spirit_utils.h" />
+    <ClInclude Include="json\json_spirit_value.h" />
+    <ClInclude Include="json\json_spirit_writer.h" />
+    <ClInclude Include="json\json_spirit_writer_template.h" />
+    <ClInclude Include="key.h" />
+    <ClInclude Include="KnownNodeList.h" />
+    <ClInclude Include="Ledger.h" />
+    <ClInclude Include="LedgerHistory.h" />
+    <ClInclude Include="LedgerMaster.h" />
+    <ClInclude Include="newcoin.pb.h" />
+    <ClInclude Include="NewcoinAddress.h" />
+    <ClInclude Include="PackedMessage.h" />
+    <ClInclude Include="PeerDoor.h" />
+    <ClInclude Include="NetworkThread.h" />
+    <ClInclude Include="Peer.h" />
+    <ClInclude Include="RequestParser.h" />
+    <ClInclude Include="RPC.h" />
+    <ClInclude Include="RPCServer.h" />
+    <ClInclude Include="RPCCommands.h" />
+    <ClInclude Include="RPCDoor.h" />
+    <ClInclude Include="script.h" />
+    <ClInclude Include="SecureAllocator.h" />
+    <ClInclude Include="TimingService.h" />
+    <ClInclude Include="Transaction.h" />
+    <ClInclude Include="TransactionBundle.h" />
+    <ClInclude Include="types.h" />
+    <ClInclude Include="UniqueNodeList.h" />
+    <ClInclude Include="util\pugiconfig.hpp" />
+    <ClInclude Include="util\pugixml.hpp" />
+    <ClInclude Include="ValidationCollection.h" />
+    <ClInclude Include="Wallet.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="config.xml" />
+    <CustomBuild Include="newcoin.proto">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">c:/code/protoc-2.4.1-win32/protoc -I=C:\code\newcoin --cpp_out=C:\code\newcoin  C:\code\newcoin\newcoin.proto</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">newcoin.pb.h</Outputs>
+    </CustomBuild>
+    <None Include="html\newcoin.html">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="nodes.xml" />
+    <None Include="notes.txt" />
+    <None Include="unl.xml" />
+    <None Include="wallet.xml" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

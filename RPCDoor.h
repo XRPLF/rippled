@@ -1,0 +1,18 @@
+#include "RPCServer.h"
+#include <boost/asio.hpp>
+
+/*
+Handles incoming connections from people making RPC Requests
+*/
+
+class RPCDoor
+{
+	boost::asio::ip::tcp::acceptor mAcceptor;
+	void startListening();
+	void handleConnect(RPCServer::pointer new_connection,
+		const boost::system::error_code& error);
+
+	bool isClientAllowed(std::string ip);
+public:
+	RPCDoor(boost::asio::io_service& io_service);
+};

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<config>
+  <PEER_PORT>5000</PEER_PORT>
+  <RPC_PORT>5001</RPC_PORT>
+  <NUMBER_CONNECTIONS>30</NUMBER_CONNECTIONS>
+</config>

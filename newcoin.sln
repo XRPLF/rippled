@@ -1,0 +1,59 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "newcoin", "newcoin.vcxproj", "{19465545-42EE-42FA-9CC8-F8975F8F1CC7}"
+	ProjectSection(ProjectDependencies) = postProject
+		{3E283F37-A4ED-41B7-A3E6-A2D89D131A30} = {3E283F37-A4ED-41B7-A3E6-A2D89D131A30}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "application", "..\kc\mm2\application\application.vcxproj", "{A3B4F294-D8FB-4A6A-8FF6-3919B8C6D928}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "utillib", "..\kc\utillib\utillib.vcxproj", "{6E621803-BD7C-4322-A24B-021AC361F923}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libprotobuf", "..\protobuf-2.4.1\vsprojects\libprotobuf.vcxproj", "{3E283F37-A4ED-41B7-A3E6-A2D89D131A30}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		FlashDebug|Win32 = FlashDebug|Win32
+		Release|Win32 = Release|Win32
+		ReleaseD|Win32 = ReleaseD|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{19465545-42EE-42FA-9CC8-F8975F8F1CC7}.Debug|Win32.ActiveCfg = Debug|Win32
+		{19465545-42EE-42FA-9CC8-F8975F8F1CC7}.Debug|Win32.Build.0 = Debug|Win32
+		{19465545-42EE-42FA-9CC8-F8975F8F1CC7}.FlashDebug|Win32.ActiveCfg = Debug|Win32
+		{19465545-42EE-42FA-9CC8-F8975F8F1CC7}.FlashDebug|Win32.Build.0 = Debug|Win32
+		{19465545-42EE-42FA-9CC8-F8975F8F1CC7}.Release|Win32.ActiveCfg = Release|Win32
+		{19465545-42EE-42FA-9CC8-F8975F8F1CC7}.Release|Win32.Build.0 = Release|Win32
+		{19465545-42EE-42FA-9CC8-F8975F8F1CC7}.ReleaseD|Win32.ActiveCfg = Release|Win32
+		{19465545-42EE-42FA-9CC8-F8975F8F1CC7}.ReleaseD|Win32.Build.0 = Release|Win32
+		{A3B4F294-D8FB-4A6A-8FF6-3919B8C6D928}.Debug|Win32.ActiveCfg = Debug|Win32
+		{A3B4F294-D8FB-4A6A-8FF6-3919B8C6D928}.Debug|Win32.Build.0 = Debug|Win32
+		{A3B4F294-D8FB-4A6A-8FF6-3919B8C6D928}.FlashDebug|Win32.ActiveCfg = Debug|Win32
+		{A3B4F294-D8FB-4A6A-8FF6-3919B8C6D928}.FlashDebug|Win32.Build.0 = Debug|Win32
+		{A3B4F294-D8FB-4A6A-8FF6-3919B8C6D928}.Release|Win32.ActiveCfg = Release|Win32
+		{A3B4F294-D8FB-4A6A-8FF6-3919B8C6D928}.Release|Win32.Build.0 = Release|Win32
+		{A3B4F294-D8FB-4A6A-8FF6-3919B8C6D928}.ReleaseD|Win32.ActiveCfg = ReleaseD|Win32
+		{A3B4F294-D8FB-4A6A-8FF6-3919B8C6D928}.ReleaseD|Win32.Build.0 = ReleaseD|Win32
+		{6E621803-BD7C-4322-A24B-021AC361F923}.Debug|Win32.ActiveCfg = Debug|Win32
+		{6E621803-BD7C-4322-A24B-021AC361F923}.Debug|Win32.Build.0 = Debug|Win32
+		{6E621803-BD7C-4322-A24B-021AC361F923}.FlashDebug|Win32.ActiveCfg = FlashDebug|Win32
+		{6E621803-BD7C-4322-A24B-021AC361F923}.FlashDebug|Win32.Build.0 = FlashDebug|Win32
+		{6E621803-BD7C-4322-A24B-021AC361F923}.Release|Win32.ActiveCfg = Release|Win32
+		{6E621803-BD7C-4322-A24B-021AC361F923}.Release|Win32.Build.0 = Release|Win32
+		{6E621803-BD7C-4322-A24B-021AC361F923}.ReleaseD|Win32.ActiveCfg = ReleaseD|Win32
+		{6E621803-BD7C-4322-A24B-021AC361F923}.ReleaseD|Win32.Build.0 = ReleaseD|Win32
+		{3E283F37-A4ED-41B7-A3E6-A2D89D131A30}.Debug|Win32.ActiveCfg = Debug|Win32
+		{3E283F37-A4ED-41B7-A3E6-A2D89D131A30}.Debug|Win32.Build.0 = Debug|Win32
+		{3E283F37-A4ED-41B7-A3E6-A2D89D131A30}.FlashDebug|Win32.ActiveCfg = Debug|Win32
+		{3E283F37-A4ED-41B7-A3E6-A2D89D131A30}.FlashDebug|Win32.Build.0 = Debug|Win32
+		{3E283F37-A4ED-41B7-A3E6-A2D89D131A30}.Release|Win32.ActiveCfg = Release|Win32
+		{3E283F37-A4ED-41B7-A3E6-A2D89D131A30}.Release|Win32.Build.0 = Release|Win32
+		{3E283F37-A4ED-41B7-A3E6-A2D89D131A30}.ReleaseD|Win32.ActiveCfg = Release|Win32
+		{3E283F37-A4ED-41B7-A3E6-A2D89D131A30}.ReleaseD|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

@@ -1,0 +1,60 @@
+
+Dependencies:
+	Boost 1_47
+	boost log http://boost-log.sourceforge.net/libs/log/doc/html/log/installation.html
+	protocol buffers
+	openssl
+
+Using:
+	pugixml version 1.0 download new versions at http://pugixml.org/
+			This is in the repo. you don't need to get it
+
+
+code from:
+// Copyright (c) 2003-2011 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+//
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+----
+// Copyright (c) 2009-2010 Satoshi Nakamoto
+// Copyright (c) 2011 The Bitcoin developers
+// Distributed under the MIT/X11 software license, see the accompanying
+// file license.txt or http://www.opensource.org/licenses/mit-license.php.
+----
+
+
+
+
+message Packet {
+	enum Type { HELLO = 1; TRANSACTION = 2; VALIDATION = 3; }
+
+	// Identifies which field is filled in.
+	required Type type	= 1;
+
+	// One of the following will be filled in.
+	optional Hello hello=2;
+	optional Transaction transaction=3;
+	optional Validation validation=4;
+
+}
+
+Threads
+----
+Main thread
+	Does all the work. Tasks are given to it through the messageQ
+Door thread
+	Just accepts connections and then hands them off
+There is a thread for each peer?
+
+
+Peers are causing:
+	updates to the current transaction list
+	updates to the validated list
+	you to relay messages to other peers
+	update your known node list
+	check if a transaction is valid
+
+
+Actualy I think this can all be in one thread. Commands to the app must be done by RPC.
+
+
