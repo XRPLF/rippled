@@ -35,10 +35,6 @@ int64 LedgerMaster::getAmountHeld(std::string& addr)
 	return(mCurrentLedger->getAmountHeld(NewcoinAddress::humanToInternal(addr)));
 }
 
-Ledger::pointer LedgerMaster::getLedger(uint32 index)
-{
-	return(mLedgerHistory.getLedger(index));
-}
 
 
 bool LedgerMaster::isTransactionOnFutureList(TransactionPtr needle)
@@ -85,13 +81,16 @@ bool LedgerMaster::addTransaction(TransactionPtr trans)
 			// TODO: since maybe we are adding a whole bunch at once. we should send at the end of the batch
 			// TODO: do we ever really need to re-propose?
 			//if(mAfterProposed) sendProposal();
+			theApp->getWallet().transactionChanged(trans);
 			return(true);
 		}else return(false);
 	}else if(trans->ledgerindex()==mCurrentLedger->getIndex())
 	{
 		if(mCurrentLedger->hasTransaction(trans)) return(false);
 		if(!isValidTransaction(trans)) return(false);
-		return( mCurrentLedger->addTransaction(trans,false) );
+		if(!mCurrentLedger->addTransaction(trans,false)) return(false);
+		theApp->getWallet().transactionChanged(trans);
+		return( true );
 	}else if(trans->ledgerindex()>mCurrentLedger->getIndex())
 	{ // in the future
 		
@@ -110,51 +109,68 @@ bool LedgerMaster::addTransaction(TransactionPtr trans)
 		uint32 checkIndex=trans->ledgerindex();
 		while(checkIndex <= mCurrentLedger->getIndex())
 		{
-			Ledger::pointer ledger=mLedgerHistory.getLedger(checkIndex);
+			Ledger::pointer ledger=mLedgerHistory.getAcceptedLedger(checkIndex);
 			if(ledger)
 			{
 				if(ledger->hasTransaction(trans)) return(false);
 			}
 			checkIndex++;
 		}
-
-		return( mCurrentLedger->addTransaction(trans,false) );
+		if(!mCurrentLedger->addTransaction(trans,false)) return(false);
+		theApp->getWallet().transactionChanged(trans);
+		return(true);
 	}
 }
 
 
-void LedgerMaster::gotFullLedger(newcoin::FullLedger& ledger)
+
+void LedgerMaster::addFullLedger(newcoin::FullLedger& ledger)
 {
-	// TODO:
-	// if this is a historical ledger we don't have we can add it to the history?
-	// if this is the same index as the finalized ledger we should go through and look for transactions we missed
-	// if this is a historical ledger but it has more consensus than the one you have use it.
+	// check if we already have this ledger
+	// check that the hash is correct
+	uint256 inHash=Transaction::protobufToInternalHash(ledger.hash());
+	Ledger::pointer existingLedger=mLedgerHistory.getLedger( inHash );
+	if(existingLedger) return;
+
+	Ledger::pointer newLedger=Ledger::pointer(new Ledger(ledger));
+	if(newLedger->getHash()==inHash)
+	{
+		mLedgerHistory.addLedger(newLedger);
+
+		// add all these in case we are missing some
+		BOOST_FOREACH(TransactionPtr trans, newLedger->getTransactions())
+		{
+			addTransaction(trans);
+		}
+
+	}else cout << "We were sent a bad ledger hash" << endl;
+
+}
+
+
+void LedgerMaster::startFinalization()
+{
+	mFinalizingLedger=mCurrentLedger;
+	mCurrentLedger=Ledger::pointer(new Ledger(mCurrentLedger->getIndex()+1));
+
+	applyFutureProposals( mFinalizingLedger->getIndex() );
+	applyFutureTransactions( mCurrentLedger->getIndex() );
 }
 
 void LedgerMaster::sendProposal()
 {
-	//mAfterProposed=true;
 	PackedMessage::pointer packet=Peer::createLedgerProposal(mFinalizingLedger);
 	theApp->getConnectionPool().relayMessage(NULL,packet);
 }
 
-void LedgerMaster::nextLedger()
+
+void LedgerMaster::endFinalization()
 {
-	// publish past ledger
-	// finalize current ledger
-	// start a new ledger
+	mFinalizingLedger->publishValidation();
+	mLedgerHistory.addAcceptedLedger(mFinalizingLedger);
+	mLedgerHistory.addLedger(mFinalizingLedger);
 
-	//mAfterProposed=false;
-	Ledger::pointer closedLedger=mFinalizingLedger;
-	mFinalizingLedger=mCurrentLedger;
-	mCurrentLedger=Ledger::pointer(new Ledger(mCurrentLedger->getIndex()+1));
-
-	mFinalizingLedger->finalize();
-	closedLedger->publish();
-	mLedgerHistory.addLedger(closedLedger);
-
-	applyFutureProposals( mFinalizingLedger->getIndex() );
-	applyFutureTransactions( mCurrentLedger->getIndex() );
+	mFinalizingLedger=Ledger::pointer();
 }
 
 void LedgerMaster::addFutureProposal(Peer::pointer peer,newcoin::ProposeLedger& otherLedger)
@@ -195,10 +211,10 @@ void LedgerMaster::checkLedgerProposal(Peer::pointer peer, newcoin::ProposeLedge
 	
 	if(otherLedger.ledgerindex()<mFinalizingLedger->getIndex())
 	{ // you have already closed this ledger
-		Ledger::pointer oldLedger=mLedgerHistory.getLedger(otherLedger.ledgerindex());
+		Ledger::pointer oldLedger=mLedgerHistory.getAcceptedLedger(otherLedger.ledgerindex());
 		if(oldLedger)
 		{
-			if( (oldLedger->getHash()!=otherLedger.hash()) &&
+			if( (oldLedger->getHash()!=Transaction::protobufToInternalHash(otherLedger.hash())) &&
 				(oldLedger->getNumTransactions()>=otherLedger.numtransactions()))
 			{
 				peer->sendLedgerProposal(oldLedger);
@@ -209,7 +225,7 @@ void LedgerMaster::checkLedgerProposal(Peer::pointer peer, newcoin::ProposeLedge
 		addFutureProposal(peer,otherLedger);
 	}else
 	{ // you guys are on the same page
-		if(mFinalizingLedger->getHash()!=otherLedger.hash())
+		if(mFinalizingLedger->getHash()!= Transaction::protobufToInternalHash(otherLedger.hash()))
 		{
 			if( mFinalizingLedger->getNumTransactions()>=otherLedger.numtransactions())
 			{

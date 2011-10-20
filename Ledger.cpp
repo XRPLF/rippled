@@ -17,6 +17,12 @@ Ledger::Ledger(uint32 index)
 	mIndex=index;
 	mValidSig=false;
 	mValidHash=false;
+	mValidationSeqNum=0;
+}
+
+Ledger::Ledger(newcoin::FullLedger& ledger)
+{
+	setTo(ledger);
 }
 
 // TODO: we should probably make a shared pointer type for each of these PB types
@@ -25,7 +31,7 @@ newcoin::FullLedger* Ledger::createFullLedger()
 	// TODO: do we need to hash and create accounts map first?
 	newcoin::FullLedger* ledger=new newcoin::FullLedger();
 	ledger->set_index(mIndex);
-	ledger->set_hash(mHash);
+	ledger->set_hash(mHash.begin(),mHash.GetSerializeSize());
 	
 	pair<uint160, pair<uint64,uint32> >& account=pair<uint160, pair<uint64,uint32> >();
 	BOOST_FOREACH(account,mAccounts)
@@ -48,12 +54,14 @@ void Ledger::setTo(newcoin::FullLedger& ledger)
 	mAccounts.clear();
 	mValidSig=false;
 	mValidHash=false;
-	
+
+	mParentHash=Transaction::protobufToInternalHash(ledger.parenthash());	
+
 	int numAccounts=ledger.accounts_size();
 	for(int n=0; n<numAccounts; n++)
 	{
 		const newcoin::Account& account=ledger.accounts(n);
-		mAccounts[ NewcoinAddress::protobufToInternal(account.address()) ] = pair<uint64,uint32>(account.amount(),account.seqnum());
+		mAccounts[ NewcoinAddress::protobufToInternal(account.address()) ] = Account(account.amount(),account.seqnum());
 	}
 
 	int numTrans=ledger.transactions_size();
@@ -62,6 +70,15 @@ void Ledger::setTo(newcoin::FullLedger& ledger)
 		const newcoin::Transaction& trans=ledger.transactions(n);
 		mTransactions.push_back(TransactionPtr(new newcoin::Transaction(trans)));
 	}
+}
+
+Ledger::pointer Ledger::getParent()
+{
+	if(!mParent)
+	{
+		mParent=theApp->getLedgerMaster().getLedger(mParentHash);
+	}
+	return(mParent);
 }
 
 bool Ledger::load(std::string dir)
@@ -114,27 +131,22 @@ Ledger::Account* Ledger::getAccount(uint160& address)
 	return(NULL);
 }
 
-string& Ledger::getHash()
+uint256& Ledger::getHash()
 {
 	if(!mValidHash) hash();
 	return(mHash); 
 }
 
-string& Ledger::getSignature()
+uint256& Ledger::getSignature()
 {
 	if(!mValidSig) sign();
 	return(mSignature); 
 }
 
-void Ledger::publish()
+void Ledger::publishValidation()
 {
 	PackedMessage::pointer packet=Peer::createValidation(shared_from_this());
 	theApp->getConnectionPool().relayMessage(NULL,packet);
-}
-
-void Ledger::finalize()
-{
-	
 }
 
 void Ledger::sign()
@@ -142,26 +154,9 @@ void Ledger::sign()
 	// TODO:
 }
 
-void Ledger::calcMoneyMap()
-{
-/*
-	// start with map from the previous ledger
-	// go through every transaction
-	Ledger::pointer parent=theApp->getLedgerMaster().getLedger(mIndex-1);
-	if(parent)
-	{
-		mMoneyMap.clear();
-		mMoneyMap=parent->getMoneyMap();
-
-		mBundle.updateMap(mMoneyMap);
-		// TODO: strip the 0 ones
-	} */
-}
 
 void Ledger::hash()
 {
-	calcMoneyMap();
-
 	// TODO:
 }
 

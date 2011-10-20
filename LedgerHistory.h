@@ -23,9 +23,10 @@ public:
 	void load();
 	
 	void addLedger(Ledger::pointer ledger);
+	void addAcceptedLedger(Ledger::pointer ledger);
 
-	Ledger::pointer getLedger(uint32 index);
-	Ledger::pointer getLedger(uint256 hash);
+	Ledger::pointer getAcceptedLedger(uint32 index);
+	Ledger::pointer getLedger(uint256& hash);
 };
 
 #endif

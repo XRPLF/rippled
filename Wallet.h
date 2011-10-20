@@ -50,7 +50,7 @@ public:
 	std::string sendMoneyToAddress(uint160& destAddress, int64 amount);
 
 	// you may need to update your balances
-	void transactionAdded(TransactionPtr trans);
+	void transactionChanged(TransactionPtr trans);
 
 	
 };

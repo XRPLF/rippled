@@ -107,9 +107,10 @@ PackedMessage::pointer Peer::createFullLedger(Ledger::pointer ledger)
 
 PackedMessage::pointer Peer::createLedgerProposal(Ledger::pointer ledger)
 {
+	uint256& hash=ledger->getHash();
 	newcoin::ProposeLedger* prop=new newcoin::ProposeLedger();
 	prop->set_ledgerindex(ledger->getIndex());
-	prop->set_hash(ledger->getHash());
+	prop->set_hash(hash.begin(),hash.GetSerializeSize());
 	prop->set_numtransactions(ledger->getNumTransactions());
 
 	PackedMessage::pointer packet(new PackedMessage(PackedMessage::MessagePointer(prop),newcoin::PROPOSE_LEDGER));
@@ -118,10 +119,14 @@ PackedMessage::pointer Peer::createLedgerProposal(Ledger::pointer ledger)
 
 PackedMessage::pointer Peer::createValidation(Ledger::pointer ledger)
 {
+	uint256 hash=ledger->getHash();
+	uint256 sig=ledger->getSignature();
+
 	newcoin::Validation* valid=new newcoin::Validation();
 	valid->set_ledgerindex(ledger->getIndex());
-	valid->set_hash(ledger->getHash());
-	valid->set_sig(ledger->getSignature());
+	valid->set_hash(hash.begin(),hash.GetSerializeSize());
+	valid->set_seqnum(ledger->getValidSeqNum());
+	valid->set_sig(sig.begin(),sig.GetSerializeSize());
 	valid->set_hanko(theConfig.HANKO);
 	
 
@@ -268,7 +273,7 @@ void Peer::receiveHello(newcoin::Hello& packet)
 
 void Peer::receiveGetFullLedger(newcoin::GetFullLedger& gfl)
 {
-	sendFullLedger(theApp->getLedgerMaster().getLedger(gfl.ledgerindex()));
+	sendFullLedger(theApp->getLedgerMaster().getLedger(Transaction::protobufToInternalHash(gfl.hash())));
 }
 
 void Peer::receiveValidation(newcoin::Validation& validation)
@@ -294,9 +299,6 @@ void Peer::receiveTransaction(TransactionPtr trans)
 	// add to the correct transaction bundle and relay if we need to
 	if(theApp->getLedgerMaster().addTransaction(trans))
 	{
-		// tell the wallet in case it was to us
-		theApp->getWallet().transactionAdded(trans);
-
 		// broadcast it to other Peers
 		ConnectionPool& pool=theApp->getConnectionPool();
 		PackedMessage::pointer packet(new PackedMessage(PackedMessage::MessagePointer(new newcoin::Transaction(*(trans.get()))),newcoin::TRANSACTION));
@@ -315,7 +317,7 @@ void Peer::receiveProposeLedger(newcoin::ProposeLedger& packet)
 
 void Peer::receiveFullLedger(newcoin::FullLedger& packet)
 {
-	theApp->getLedgerMaster().gotFullLedger(packet);
+	theApp->getLedgerMaster().addFullLedger(packet);
 }
 
 void Peer::connectTo(KnownNode& node)

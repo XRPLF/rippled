@@ -24,7 +24,7 @@ bool LedgerHistory::loadLedger(uint32 index)
 // this will see if the ledger is in memory
 // if not it will check disk and load it
 // if not it will return NULL
-Ledger::pointer LedgerHistory::getLedger(uint32 index)
+Ledger::pointer LedgerHistory::getAcceptedLedger(uint32 index)
 {
 	if(mAcceptedLedgers.count(index))
 		return(mAcceptedLedgers[index]);

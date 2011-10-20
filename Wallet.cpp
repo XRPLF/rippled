@@ -50,9 +50,26 @@ void Wallet::refreshAccounts()
 	}
 }
 
-void Wallet::transactionAdded(TransactionPtr trans)
-{ // TODO: optimize
-	refreshAccounts();
+void Wallet::transactionChanged(TransactionPtr trans)
+{ 
+
+	BOOST_FOREACH(Account& account, mYourAccounts)
+	{
+		if( account.mAddress == NewcoinAddress::protobufToInternal(trans->from()) ||
+			account.mAddress == NewcoinAddress::protobufToInternal(trans->dest()) )
+		{
+			Ledger::Account* ledgerAccount=theApp->getLedgerMaster().getAccount(account.mAddress);
+			if(ledgerAccount)
+			{
+				account.mAmount= ledgerAccount->first;
+				account.mSeqNum= ledgerAccount->second;
+			}else
+			{
+				account.mAmount=0;
+				account.mSeqNum=0;
+			}
+		}
+	}
 }
 
 Wallet::Account* Wallet::consolidateAccountOfSize(int64 amount)
@@ -139,10 +156,6 @@ bool Wallet::Account::signTransaction(TransactionPtr trans)
 }
 
 
-
-
-
-// Call after CreateTransaction unless you want to abort
 bool Wallet::commitTransaction(TransactionPtr trans)
 {
 	if(trans)

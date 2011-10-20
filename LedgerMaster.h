@@ -41,17 +41,20 @@ public:
 	void save();
 
 	uint32 getCurrentLedgerIndex();
-	//int getCurrentLedgerSeconds();
-	Ledger::pointer getLedger(uint32 index);
+
+	Ledger::pointer getAcceptedLedger(uint32 index){ return(mLedgerHistory.getAcceptedLedger(index)); }
+	Ledger::pointer getLedger(uint256& hash){ return(mLedgerHistory.getLedger(hash)); }
+
 	int64 getAmountHeld(std::string& addr);
 	int64 getAmountHeld(uint160& addr);
 	Ledger::Account* getAccount(uint160& addr){ return(mCurrentLedger->getAccount(addr)); }
 
 	bool addTransaction(TransactionPtr trans);
-	void gotFullLedger(newcoin::FullLedger& ledger);
+	void addFullLedger(newcoin::FullLedger& ledger);
 
-	void nextLedger();
+	void startFinalization();
 	void sendProposal();
+	void endFinalization();
 	void checkLedgerProposal(Peer::pointer peer,newcoin::ProposeLedger& packet);
 };
 

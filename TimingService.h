@@ -11,9 +11,11 @@ class TimingService
 {
 	boost::asio::deadline_timer* mLedgerTimer;
 	boost::asio::deadline_timer* mPropTimer;
+	boost::asio::deadline_timer* mValidTimer;
 
 	void handleLedger();
 	void handleProp();
+	void handleValid();
 public:
 	TimingService();
 	void start(boost::asio::io_service& ioService);

@@ -31,7 +31,7 @@ void TimingService::start(boost::asio::io_service& ioService)
 void TimingService::handleLedger()
 {
 	cout << "publish ledger" << endl;
-	theApp->getLedgerMaster().nextLedger();
+	theApp->getLedgerMaster().startFinalization();
 	mLedgerTimer->expires_at(mLedgerTimer->expires_at() + boost::posix_time::seconds(theConfig.LEDGER_SECONDS));
 	mLedgerTimer->async_wait(boost::bind(&TimingService::handleLedger, this));
 
@@ -42,5 +42,10 @@ void TimingService::handleLedger()
 void TimingService::handleProp()
 {
 	theApp->getLedgerMaster().sendProposal();
+}
+
+void TimingService::handleValid()
+{
+	theApp->getLedgerMaster().endFinalization();
 }
 

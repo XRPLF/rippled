@@ -17,6 +17,8 @@ public:
 	static bool isSigValid(TransactionPtr trans);
 	static bool isEqual(TransactionPtr t1, TransactionPtr t2);
 	static uint256 calcHash(TransactionPtr trans);
+
+	static uint256 protobufToInternalHash(const std::string& hash);
 };
 
 

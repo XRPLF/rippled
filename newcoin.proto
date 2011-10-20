@@ -41,6 +41,7 @@ message Transaction {
 
 // Sequence number is incremented if you must change the ledger that you are validating
 // You will only need to change validation in cases of incompatible ledgers 
+// hanko is 160 bits. We store the full public key in the UNL
 message Validation {
 	required uint32 ledgerIndex		= 1;
 	required bytes hash				= 2;
