@@ -15,8 +15,8 @@ Config::Config()
 	RPC_PORT=5001;
 	NUMBER_CONNECTIONS=30;
 	
-	// a new ledger every 5 min
-	LEDGER_SECONDS=(60*5); 
+	// a new ledger every 30 min
+	LEDGER_SECONDS=(60*30); 
 
 	// length of delay between start finalization and sending your first proposal
 	// This delay allows us to collect a few extra transactions from people who's clock is different than ours
@@ -26,11 +26,14 @@ Config::Config()
 	// How long to wait between proposal send and ledger close. 
 	// at which point you publish your validation
 	// You are only waiting to get extra transactions from your peers 
-	LEDGER_FINALIZATION_SECONDS=30; 
+	LEDGER_FINALIZATION_SECONDS=(60*5); 
 	RPC_USER="admin";
 	RPC_PASSWORD="pass";
 
 	HISTORY_DIR="history/";
+
+	TRANSACTION_FEE=1000;
+	ACCOUNT_FEE=1000;
 }
 
 void Config::load()

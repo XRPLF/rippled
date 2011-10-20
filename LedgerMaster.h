@@ -5,6 +5,7 @@
 #include "LedgerHistory.h"
 #include "Peer.h"
 #include "types.h"
+#include "Transaction.h"
 
 /*
 Handles:
@@ -12,6 +13,9 @@ Handles:
 	finalizing the ledger
 	validating the past ledger
 	keeping the ledger history
+
+	There is one ledger we are working on. 
+
 */
 class LedgerMaster
 {
@@ -19,28 +23,31 @@ class LedgerMaster
 	Ledger::pointer mFinalizingLedger;
 
 	LedgerHistory mLedgerHistory;
-	std::list<newcoin::Transaction> mFutureTransactions;
+	std::list<TransactionPtr> mFutureTransactions;
 	std::list< std::pair<Peer::pointer,newcoin::ProposeLedger> > mFutureProposals;
 
-	bool mAfterProposed;
+	//bool mAfterProposed;
 
 
 	void addFutureProposal(Peer::pointer peer,newcoin::ProposeLedger& packet);
-	void applyFutureProposals();
-	void applyFutureTransactions();
-	bool isValidTransactionSig(newcoin::Transaction& trans);
+	void applyFutureProposals(uint32 ledgerIndex);
+	void applyFutureTransactions(uint32 ledgerIndex);
+	bool isValidTransaction(TransactionPtr trans);
+	bool isTransactionOnFutureList(TransactionPtr trans);
 public:
 	LedgerMaster();
 
 	void load();
 	void save();
 
-	uint64 getCurrentLedgerIndex();
-	int getCurrentLedgerSeconds();
-	Ledger::pointer getLedger(uint64 index);
-	uint64 getAmountHeld(std::string& addr);
+	uint32 getCurrentLedgerIndex();
+	//int getCurrentLedgerSeconds();
+	Ledger::pointer getLedger(uint32 index);
+	int64 getAmountHeld(std::string& addr);
+	int64 getAmountHeld(uint160& addr);
+	Ledger::Account* getAccount(uint160& addr){ return(mCurrentLedger->getAccount(addr)); }
 
-	bool addTransaction(newcoin::Transaction& trans);
+	bool addTransaction(TransactionPtr trans);
 	void gotFullLedger(newcoin::FullLedger& ledger);
 
 	void nextLedger();

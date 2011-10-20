@@ -12,7 +12,7 @@ using namespace boost;
 using namespace std;
 
 
-Ledger::Ledger(uint64 index)
+Ledger::Ledger(uint32 index)
 {
 	mIndex=index;
 	mValidSig=false;
@@ -22,19 +22,20 @@ Ledger::Ledger(uint64 index)
 // TODO: we should probably make a shared pointer type for each of these PB types
 newcoin::FullLedger* Ledger::createFullLedger()
 {
-	// TODO: do we need to hash and create mone map first?
+	// TODO: do we need to hash and create accounts map first?
 	newcoin::FullLedger* ledger=new newcoin::FullLedger();
 	ledger->set_index(mIndex);
 	ledger->set_hash(mHash);
 	
-	pair<string,uint64>& account=pair<string,uint64>();
-	BOOST_FOREACH(account,mMoneyMap)
+	pair<uint160, pair<uint64,uint32> >& account=pair<uint160, pair<uint64,uint32> >();
+	BOOST_FOREACH(account,mAccounts)
 	{
 		newcoin::Account* saveAccount=ledger->add_accounts();
-		saveAccount->set_address(account.first);
-		saveAccount->set_amount(account.second);
+		saveAccount->set_address(account.first.begin(),account.first.GetSerializeSize());
+		saveAccount->set_amount(account.second.first);
+		saveAccount->set_seqnum(account.second.second);
 	}
-	mBundle.addTransactionsToPB(ledger);
+	//mBundle.addTransactionsToPB(ledger);
 	
 	return(ledger);
 }
@@ -42,8 +43,9 @@ newcoin::FullLedger* Ledger::createFullLedger()
 void Ledger::setTo(newcoin::FullLedger& ledger)
 {
 	mIndex=ledger.index();
-	mBundle.clear();
-	mMoneyMap.clear();
+	mTransactions.clear();
+	mDiscardedTransactions.clear();
+	mAccounts.clear();
 	mValidSig=false;
 	mValidHash=false;
 	
@@ -51,14 +53,14 @@ void Ledger::setTo(newcoin::FullLedger& ledger)
 	for(int n=0; n<numAccounts; n++)
 	{
 		const newcoin::Account& account=ledger.accounts(n);
-		mMoneyMap[account.address()] = account.amount();
+		mAccounts[ NewcoinAddress::protobufToInternal(account.address()) ] = pair<uint64,uint32>(account.amount(),account.seqnum());
 	}
 
 	int numTrans=ledger.transactions_size();
 	for(int n=0; n<numTrans; n++)
 	{
 		const newcoin::Transaction& trans=ledger.transactions(n);
-		mBundle.addTransaction(trans);
+		mTransactions.push_back(TransactionPtr(new newcoin::Transaction(trans)));
 	}
 }
 
@@ -94,6 +96,24 @@ void Ledger::save(string dir)
 	delete(ledger);
 }
 
+int64 Ledger::getAmountHeld(uint160& address)
+{
+	if(mAccounts.count(address))
+	{
+		return(mAccounts[address].first);
+	}
+	return(0);
+}
+
+Ledger::Account* Ledger::getAccount(uint160& address)
+{
+	if(mAccounts.count(address))
+	{
+		return(&(mAccounts[address]));
+	}
+	return(NULL);
+}
+
 string& Ledger::getHash()
 {
 	if(!mValidHash) hash();
@@ -109,7 +129,7 @@ string& Ledger::getSignature()
 void Ledger::publish()
 {
 	PackedMessage::pointer packet=Peer::createValidation(shared_from_this());
-	theApp->getConnectionPool().relayMessage(NULL,packet,mIndex);
+	theApp->getConnectionPool().relayMessage(NULL,packet);
 }
 
 void Ledger::finalize()
@@ -121,8 +141,10 @@ void Ledger::sign()
 {
 	// TODO:
 }
+
 void Ledger::calcMoneyMap()
 {
+/*
 	// start with map from the previous ledger
 	// go through every transaction
 	Ledger::pointer parent=theApp->getLedgerMaster().getLedger(mIndex-1);
@@ -133,7 +155,7 @@ void Ledger::calcMoneyMap()
 
 		mBundle.updateMap(mMoneyMap);
 		// TODO: strip the 0 ones
-	}
+	} */
 }
 
 void Ledger::hash()
@@ -143,62 +165,265 @@ void Ledger::hash()
 	// TODO:
 }
 
+/*
 uint64 Ledger::getAmount(std::string address)
 {
-	return(mMoneyMap[address]);
-}
+	return(mAccounts[NewcoinAddress:: address].first);
+}*/
 
-// returns true if the transaction was valid
-bool Ledger::addTransaction(newcoin::Transaction& trans)
+// returns true if the from account has enough for the transaction and seq num is correct
+bool Ledger::addTransaction(TransactionPtr trans,bool checkDuplicate)
 {
-	if(mBundle.hasTransaction(trans)) return(false);
+	if(checkDuplicate && hasTransaction(trans)) return(false);
 
-	Ledger::pointer parent=theApp->getLedgerMaster().getLedger(mIndex-1);
-	if(parent)
+	if(mParent)
 	{ // check the lineage of the from addresses
-		vector<uint64> cacheInputLeftOverAmount;
-		int numInputs=trans.inputs_size();
-		cacheInputLeftOverAmount.resize(numInputs);
-		for(int n=0; n<numInputs; n++)
+		uint160 address=NewcoinAddress::protobufToInternal(trans->from());
+		if(mAccounts.count(address))
 		{
-			const newcoin::TransInput& input=trans.inputs(n);
-
-			uint64 amountHeld=parent->getAmount(input.from());
-			// TODO: checkValid could invalidate mValidSig and mValidHash
-			amountHeld = mBundle.checkValid(input.from(),amountHeld,0,trans.seconds());
-			if(amountHeld<input.amount())
+			pair<uint64,uint32> account=mAccounts[address];
+			if( (account.first<trans->amount()) &&
+				(trans->seqnum()==account.second) )
 			{
-				mBundle.addDiscardedTransaction(trans);
-				cout << "Not enough money" << endl;
-				return(false);
-			}
-			cacheInputLeftOverAmount[n]=amountHeld-input.amount();
-		}
+				account.first -= trans->amount();
+				account.second++;
+				mAccounts[address]=account;
 
-		for(int n=0; n<numInputs; n++)
+
+				uint160 destAddress=NewcoinAddress::protobufToInternal(trans->dest());
+
+				Account destAccount=mAccounts[destAddress];
+				destAccount.first += trans->amount();
+				mAccounts[destAddress]=destAccount;
+
+
+				mValidSig=false;
+				mValidHash=false;
+				mTransactions.push_back(trans);
+				if(mChild)
+				{
+					mChild->parentAddedTransaction(trans);
+				}
+				return(true);
+			}else
+			{
+				mDiscardedTransactions.push_back(trans);
+				return false;
+			}
+		}else 
 		{
-			const newcoin::TransInput& input=trans.inputs(n);
-			mBundle.checkValid(input.from(),cacheInputLeftOverAmount[n],trans.seconds(),theConfig.LEDGER_SECONDS);
+			mDiscardedTransactions.push_back(trans);
+			return false;
 		}
-		
-		mValidSig=false;
-		mValidHash=false;
-		mBundle.addTransaction(trans);
-		
 		
 	}else
-	{ // we have no way to know so just accept it
+	{ // we have no way to know so just hold on to it but don't add to the accounts
 		mValidSig=false;
 		mValidHash=false;
-		mBundle.addTransaction(trans);
+		mDiscardedTransactions.push_back(trans);
 		return(true);
 	}
-
-
-	return(false);
 }
 
-void Ledger::recheck(Ledger::pointer parent,newcoin::Transaction& cause)
+// Don't check the amounts. We will do this at the end.
+void Ledger::addTransactionRecalculate(TransactionPtr trans)
 {
-	// TODO: 
+	uint160 fromAddress=NewcoinAddress::protobufToInternal(trans->from());
+
+	if(mAccounts.count(fromAddress))
+	{
+		Account fromAccount=mAccounts[fromAddress];
+		if(trans->seqnum()==fromAccount.second) 
+		{
+			fromAccount.first -= trans->amount();
+			fromAccount.second++;
+			mAccounts[fromAddress]=fromAccount;
+			
+			uint160 destAddress=NewcoinAddress::protobufToInternal(trans->dest());
+
+			Account destAccount=mAccounts[destAddress];
+			destAccount.first += trans->amount();
+			mAccounts[destAddress]=destAccount;
+
+			mTransactions.push_back(trans);
+	
+		}else
+		{  // invalid seqnum
+			mDiscardedTransactions.push_back(trans);
+		}
+	}else
+	{
+		if(trans->seqnum()==0)
+		{
+			
+			mAccounts[fromAddress]=Account(-((int64)trans->amount()),1);
+
+			uint160 destAddress=NewcoinAddress::protobufToInternal(trans->dest());
+
+			Account destAccount=mAccounts[destAddress];
+			destAccount.first += trans->amount();
+			mAccounts[destAddress]=destAccount;
+
+			mTransactions.push_back(trans);
+
+		}else
+		{
+			mDiscardedTransactions.push_back(trans);
+		}
+	}
+}
+
+// Must look for transactions to discard to make this account positive
+// When we chuck transactions it might cause other accounts to need correcting
+void Ledger::correctAccount(uint160& address)
+{
+	list<uint160> effected;
+
+	// do this in reverse so we take of the higher seqnum first
+	for( list<TransactionPtr>::reverse_iterator iter=mTransactions.rbegin(); iter != mTransactions.rend(); )
+	{
+		TransactionPtr trans= *iter;
+		if(NewcoinAddress::protobufToInternal(trans->from()) == address)
+		{
+			Account fromAccount=mAccounts[address];
+			assert(fromAccount.second==trans->seqnum()+1);
+			if(fromAccount.first<0)
+			{
+				fromAccount.first += trans->amount();
+				fromAccount.second --;
+
+				mAccounts[address]=fromAccount;
+
+				uint160 destAddress=NewcoinAddress::protobufToInternal(trans->dest());
+				Account destAccount=mAccounts[destAddress];
+				destAccount.first -= trans->amount();
+				mAccounts[destAddress]=destAccount;
+				if(destAccount.first<0) effected.push_back(destAddress);
+
+				list<TransactionPtr>::iterator temp=mTransactions.erase( --iter.base() );
+				if(fromAccount.first>=0) break; 
+				
+				iter=list<TransactionPtr>::reverse_iterator(temp);
+			}else break;	
+		}else iter--;
+	}
+
+	BOOST_FOREACH(uint160& address,effected)
+	{
+		correctAccount(address);
+	}
+	
+}
+
+// start from your parent and go through every transaction
+// calls this on its child if recursive is set
+void Ledger::recalculate(bool recursive)
+{
+	if(mParent)
+	{
+		mValidSig=false;
+		mValidHash=false;
+
+		mAccounts.clear();
+		mAccounts=mParent->getAccounts();
+		list<TransactionPtr> firstTransactions=mTransactions;
+		list<TransactionPtr> secondTransactions=mDiscardedTransactions;
+
+		mTransactions.clear();
+		mDiscardedTransactions.clear();
+
+		firstTransactions.sort(gTransactionSorter);
+		secondTransactions.sort(gTransactionSorter);
+
+		// don't check balances until the end
+		BOOST_FOREACH(TransactionPtr trans,firstTransactions)
+		{
+			addTransactionRecalculate(trans);
+		}
+
+		BOOST_FOREACH(TransactionPtr trans,secondTransactions)
+		{
+			addTransactionRecalculate(trans);
+		}
+
+		pair<uint160, Account >& fullAccount=pair<uint160, Account >();
+		BOOST_FOREACH(fullAccount,mAccounts)
+		{
+			if(fullAccount.second.first <0 )
+			{
+				correctAccount(fullAccount.first);
+			}
+		}
+
+
+		if(mChild && recursive) mChild->recalculate();
+	}else
+	{
+		cout << "Can't recalculate if there is no parent" << endl;
+	}
+}
+
+
+
+void Ledger::parentAddedTransaction(TransactionPtr cause)
+{
+	// TODO: we can make this more efficient at some point. For now just redo everything
+
+	recalculate();
+
+	/* 
+	// IMPORTANT: these changes can't change the sequence number. This means we only need to check the dest account
+	// If there was a seqnum change we have to re-do all the transactions again
+
+	// There was a change to the balances of the parent ledger
+	// This could cause:
+	//		an account to now be negative so we have to discard one
+	//		a discarded transaction to be pulled back in
+	//		seqnum invalidation
+	uint160 fromAddress=NewcoinAddress::protobufToInternal(cause->from());
+	uint160 destAddress=NewcoinAddress::protobufToInternal(cause->dest());
+	
+	Account* fromAccount=getAccount(fromAddress);
+	Account* destAccount=getAccount(destAddress);
+
+	if(fromAccount)
+	{
+		if(fromAccount->first<cause->amount())
+		{
+			fromAccount->first -= cause->amount();
+			fromAccount->second = cause->seqnum()+1;
+			mAccounts[fromAddress] = *fromAccount;
+		}else cout << "This shouldn't happen2" << endl;
+	}else
+	{
+		cout << "This shouldn't happen" << endl;
+	}
+
+	if(destAccount)
+	{
+		destAccount->first += cause->amount();
+		mAccounts[destAddress]= *destAccount;
+	}else
+	{
+		mAccounts[destAddress]=pair<uint64,uint32>(cause->amount(),cause->seqnum());
+	}
+	
+	// look for discarded transactions
+	BOOST_FOREACH(TransactionPtr trans,)
+	*/
+}
+
+bool Ledger::hasTransaction(TransactionPtr needle)
+{
+	BOOST_FOREACH(TransactionPtr trans,mTransactions)
+	{
+		if( Transaction::isEqual(needle,trans) ) return(true);
+	}
+
+	BOOST_FOREACH(TransactionPtr disTrans,mDiscardedTransactions)
+	{
+		if( Transaction::isEqual(needle,disTrans) ) return(true);
+	}
+
+	return(false);
 }

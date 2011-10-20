@@ -364,7 +364,7 @@ public:
     }
 
 
-    unsigned int GetSerializeSize(int nType=0, int nVersion=VERSION) const
+    unsigned int GetSerializeSize(int nType=0) const
     {
         return sizeof(pn);
     }

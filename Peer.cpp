@@ -145,7 +145,7 @@ void Peer::sendFullLedger(Ledger::pointer ledger)
 	}
 }
 
-void Peer::sendGetFullLedger(uint64 index)
+void Peer::sendGetFullLedger(uint32 index)
 {
 	newcoin::GetFullLedger* gfl=new newcoin::GetFullLedger();
 	gfl->set_ledgerindex(index);
@@ -207,8 +207,8 @@ void Peer::processReadBuffer()
 		break;
 	case newcoin::TRANSACTION:
 		{
-			newcoin::Transaction trans;
-			if(trans.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
+			TransactionPtr trans(new newcoin::Transaction());
+			if(trans->ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 				receiveTransaction(trans);
 			else cout  << "parse error: " << type << endl; //else BOOST_LOG_TRIVIAL(info) << "Error: " << error;
 
@@ -289,25 +289,22 @@ void Peer::receiveGetValidations(newcoin::GetValidations& request)
 	}
 }
 
-void Peer::receiveTransaction(newcoin::Transaction& trans)
+void Peer::receiveTransaction(TransactionPtr trans)
 {
-	ConnectionPool& pool=theApp->getConnectionPool();
-	PackedMessage::pointer packet(new PackedMessage(PackedMessage::MessagePointer(new newcoin::Transaction(trans)),newcoin::TRANSACTION));
-
-	// check if this transaction is already known
-	if(pool.isMessageKnown(packet)) return;
-	
-	// check if this transaction is valid
-	// add to the correct transaction bundle
-	if(!theApp->getLedgerMaster().addTransaction(trans))
+	// add to the correct transaction bundle and relay if we need to
+	if(theApp->getLedgerMaster().addTransaction(trans))
 	{
-		cout << "Invalid transaction: " << trans.transid() << endl;
-		return;
+		// tell the wallet in case it was to us
+		theApp->getWallet().transactionAdded(trans);
+
+		// broadcast it to other Peers
+		ConnectionPool& pool=theApp->getConnectionPool();
+		PackedMessage::pointer packet(new PackedMessage(PackedMessage::MessagePointer(new newcoin::Transaction(*(trans.get()))),newcoin::TRANSACTION));
+		pool.relayMessage(this,packet);
+	}else 
+	{
+		cout << "Invalid transaction: " << trans->from() << endl;
 	}
-
-	// broadcast it to other Peers
-	pool.relayMessage(this,packet,trans.ledgerindex());
-
 }
 
 void Peer::receiveProposeLedger(newcoin::ProposeLedger& packet)

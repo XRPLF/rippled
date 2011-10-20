@@ -3,9 +3,17 @@
 
 using namespace std;
 
+/*
+// do we need to make sure this preserves the order you received the transactions? Otherwise when we run through it we can see invalid transactions that get funded later.
+// No we can just allow this. We just check when a transaction comes in and at ledger close.
+// There needs to be a predictable order or the hashes will all be different.
+//
 bool gTransactionSorter(const newcoin::Transaction& lhs, const newcoin::Transaction& rhs)
 {
-	return lhs.seconds() < rhs.seconds();
+	if(lhs.from() == rhs.from())
+	{
+		return(lhs.seqnum() < rhs.seqnum() );
+	}else return lhs.from() < rhs.from();
 }
 
 
@@ -14,23 +22,17 @@ TransactionBundle::TransactionBundle()
 
 }
 
-bool TransactionBundle::isEqual(newcoin::Transaction& t1,newcoin::Transaction& t2)
-{
-	return(t1.transid()==t2.transid());
-}
 
-bool TransactionBundle::hasTransaction(newcoin::Transaction& t)
+bool TransactionBundle::hasTransaction(TransactionPtr needle)
 {
-	BOOST_FOREACH(newcoin::Transaction& trans,mTransactions)
+	BOOST_FOREACH(TransactionPtr trans,mTransactions)
 	{
-		if( t.transid()==trans.transid())
-			return(true);
+		if( Transaction::isEqual(needle,trans) ) return(true);
 	}
 
-	BOOST_FOREACH(newcoin::Transaction& trans,mDisacrdedTransactions)
+	BOOST_FOREACH(TransactionPtr trans,mDisacrdedTransactions)
 	{
-		if( t.transid()==trans.transid())
-			return(true);
+		if( Transaction::isEqual(needle,trans) ) return(true);
 	}
 
 	return(false);
@@ -38,35 +40,25 @@ bool TransactionBundle::hasTransaction(newcoin::Transaction& t)
 
 void TransactionBundle::addTransactionsToPB(newcoin::FullLedger* ledger)
 {
-	BOOST_FOREACH(newcoin::Transaction& trans,mTransactions)
+	BOOST_FOREACH(TransactionPtr trans,mTransactions)
 	{
-		newcoin::Transaction* newTrans=ledger->add_transactions();
+		TransactionPtr newTrans=ledger->add_transactions();
 		newTrans->operator=(trans);
 	}
 }
 
-void TransactionBundle::addDiscardedTransaction(newcoin::Transaction& trans)
+void TransactionBundle::addDiscardedTransaction(TransactionPtr trans)
 {
 	mDisacrdedTransactions.push_back(trans);
-	mDisacrdedTransactions.sort(gTransactionSorter);
+	//mDisacrdedTransactions.sort(gTransactionSorter);
 }
 
-void TransactionBundle::addTransaction(const newcoin::Transaction& trans)
+void TransactionBundle::addTransaction(const TransactionPtr trans)
 {
 	mTransactions.push_back(trans);
-	mTransactions.sort(gTransactionSorter);
+	//mTransactions.sort(gTransactionSorter);
 }
 
-uint64 TransactionBundle::getTotalTransAmount(newcoin::Transaction& trans)
-{
-	uint64 total=0;
-	int numInputs=trans.inputs_size();
-	for(int n=0; n<numInputs; n++)
-	{
-		total += trans.inputs(n).amount();
-	}
-	return(total);
-}
 
 // determine if all the transactions until end time from this address are valid
 // return the amount left in this account
@@ -137,3 +129,5 @@ void TransactionBundle::updateMap(std::map<std::string,uint64>& moneyMap)
 		moneyMap[trans.dest()] += total;
 	}
 }
+
+*/

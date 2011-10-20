@@ -27,7 +27,7 @@ void ConnectionPool::connectToNetwork(KnownNodeList& nodeList,boost::asio::io_se
 		
 	}
 }
-
+/*
 bool ConnectionPool::isMessageKnown(PackedMessage::pointer msg)
 {
 	for(unsigned int n=0; n<mBroadcastMessages.size(); n++)
@@ -36,9 +36,10 @@ bool ConnectionPool::isMessageKnown(PackedMessage::pointer msg)
 	}
 	return(false);
 }
+*/
 
 
-void ConnectionPool::relayMessage(Peer* fromPeer,PackedMessage::pointer msg,uint64 ledgerID)
+void ConnectionPool::relayMessage(Peer* fromPeer,PackedMessage::pointer msg)
 {
 	BOOST_FOREACH(Peer::pointer peer, mPeers)
 	{

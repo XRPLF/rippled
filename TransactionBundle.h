@@ -4,11 +4,14 @@
 #include <list>
 #include "newcoin.pb.h"
 #include "types.h"
+#include "Transaction.h"
+
 
 class TransactionBundle
 {
-	std::list<newcoin::Transaction> mTransactions;
-	std::list<newcoin::Transaction> mDisacrdedTransactions;
+	// we have to order this before we hash so the hash will be consistent 
+	std::list<TransactionPtr> mTransactions;
+	std::list<TransactionPtr> mDisacrdedTransactions;
 	//std::list<newcoin::Transaction> mAllTransactions;
 public:
 	TransactionBundle();
@@ -19,7 +22,8 @@ public:
 
 	void addTransactionsToPB(newcoin::FullLedger* ledger);
 
-	bool hasTransaction(newcoin::Transaction& trans);
+	bool hasTransaction(TransactionPtr trans);
+
 	// returns the amount of money this address holds at the end time
 	// it will discard any transactions till endTime that bring amount held under 0
 	uint64 checkValid(std::string address, uint64 startAmount,
@@ -29,13 +33,13 @@ public:
 
 	// will check if all transactions after this are valid
 	//void checkTransactions();
-	void addTransaction(const newcoin::Transaction& trans);
+	void addTransaction(TransactionPtr trans);
 
 	// transaction is valid and signed except the guy didn't have the money
-	void addDiscardedTransaction(newcoin::Transaction& trans);
+	void addDiscardedTransaction(TransactionPtr trans);
 
-	static bool isEqual(newcoin::Transaction& t1,newcoin::Transaction& t2);
-	static uint64 getTotalTransAmount(newcoin::Transaction& trans);
+	
+	//static uint64 getTotalTransAmount(TransactionPtr trans);
 };
 
 #endif

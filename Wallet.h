@@ -3,6 +3,7 @@
 
 #include "keystore.h"
 #include "newcoin.pb.h"
+#include "Transaction.h"
 #include <list>
 #include <vector>
 
@@ -17,28 +18,41 @@ class Wallet : public CBasicKeyStore
 	{
 	public:
 		//CKey mKey;
-		std::string mAddress;
-		//std::vector<unsigned char> mPublicKey;
-		//std::vector<unsigned char> mPrivateKey;
-		uint64 mAmount;
-		uint64 mAge;
+		//std::string mHumanAddress;
+		uint160 mAddress;
+		std::vector<unsigned char> mPublicKey;
+		std::vector<unsigned char> mPrivateKey;
+		int64 mAmount;
+		uint64 mAge; // do we need this
+		uint32 mSeqNum;
+
+
 		Account(){}
+		bool signTransaction(TransactionPtr input);
 	};
 	std::list<Account> mYourAccounts;
 
-	bool signTransInput(uint256 hash, newcoin::TransInput& input,std::vector<unsigned char>& retSig);
-	uint256 calcTransactionHash(newcoin::Transaction& trans);
+	
 
-	bool createTransaction(NewcoinAddress& destAddress, uint64 amount,newcoin::Transaction& trans);
-	bool commitTransaction(newcoin::Transaction& trans);
+	TransactionPtr createTransaction(Account& fromAccount, uint160& destAddr, int64 amount);
+	bool commitTransaction(TransactionPtr trans);
+
+	Account* consolidateAccountOfSize(int64 amount);
+
 public:
 	Wallet();
+	void refreshAccounts();
 	void load();
 
-	uint64 getBalance();
+	int64 getBalance();
 
 	// returns some human error str?
-	std::string sendMoneyToAddress(NewcoinAddress& destAddress, uint64 amount);
+	std::string sendMoneyToAddress(uint160& destAddress, int64 amount);
+
+	// you may need to update your balances
+	void transactionAdded(TransactionPtr trans);
+
+	
 };
 
 #endif

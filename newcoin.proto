@@ -20,20 +20,20 @@ message Hello {
 	required int32 port				= 3;
 }
 
-message TransInput {
-	required string from			= 1;
-	required uint64 amount			= 2;
-	required bytes sig				= 3;
-}
 
-// TODO: do we need a transID?
+/*
+A transaction can have only one input and one output.
+If you want to send an amount that is greater than any single address of yours
+you must first combine coins from one address to another.
+*/
+// TODO: do we need a transID? I don't think we do
 // ledgerIndex should increase the ledger coherence
 message Transaction {
 	required bytes transID			= 1;
-	repeated bytes from				= 2;
+	required bytes from				= 2;
 	required bytes dest				= 3;
 	required uint64 amount			= 4;
-	required uint64 ledgerIndex		= 5;
+	required uint32 ledgerIndex		= 5;
 	required int32 seqNum			= 6;
 	required bytes pubKey			= 7;
 	required bytes sig				= 8;
@@ -42,13 +42,14 @@ message Transaction {
 // Sequence number is incremented if you must change the ledger that you are validating
 // You will only need to change validation in cases of incompatible ledgers 
 message Validation {
-	required uint64 ledgerIndex		= 1;
-	required string hash			= 2;
-	required string hanko			= 3;
+	required uint32 ledgerIndex		= 1;
+	required bytes hash				= 2;
+	required bytes hanko			= 3;
 	required int32 seqNum			= 4;
 	required bytes sig				= 5;
 }
 
+// seqnum should == last transaction seqnum+1
 message Account {
 	required bytes address			= 1;
 	required uint64 amount			= 2;
@@ -58,7 +59,7 @@ message Account {
 // The ledger hash includes:
 // index,accounts,feeHeld,transactions?
 message FullLedger {
-	required uint64 index				= 1;
+	required uint32 index				= 1;
 	required bytes hash					= 2;
 	required bytes parentHash			= 3;
 	required uint64 feeHeld				= 4;
@@ -68,12 +69,12 @@ message FullLedger {
 
 
 message GetFullLedger {
-	required uint64 ledgerIndex		= 1;
+	required uint32 ledgerIndex		= 1;
 	optional bytes hash				= 2;
 }
 
 message GetValidations {
-	required uint64 ledgerIndex		= 1;
+	required uint32 ledgerIndex		= 1;
 }
 
 message Contact {
@@ -87,7 +88,7 @@ message Contact {
 // but I think the times this will happen are very rare so it's probably not worth it
 // but it might be worth also sending a hash of the accounts since if these match you don't care that the transactions don't
 message ProposeLedger {
-	required uint64 ledgerIndex		= 1;
+	required uint32 ledgerIndex		= 1;
 	required bytes hash				= 2;
 	optional uint64 numTransactions	= 3;
 }

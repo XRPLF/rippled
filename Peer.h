@@ -7,6 +7,7 @@
 #include "newcoin.pb.h"
 #include "PackedMessage.h"
 #include "Ledger.h"
+#include "Transaction.h"
 #include "list"
 
 class KnownNode;
@@ -48,7 +49,7 @@ class Peer : public boost::enable_shared_from_this<Peer>
 	void sendTransaction();
 	void sendValidation();
 	void receiveHello(newcoin::Hello& packet);
-	void receiveTransaction(newcoin::Transaction& packet);
+	void receiveTransaction(TransactionPtr trans);
 	void receiveValidation(newcoin::Validation& packet);
 	void receiveFullLedger(newcoin::FullLedger& packet);
 	void receiveProposeLedger(newcoin::ProposeLedger& packet);
@@ -78,7 +79,7 @@ public:
 	void sendPacket(PackedMessage::pointer packet);
 	void sendLedgerProposal(Ledger::pointer ledger);
 	void sendFullLedger(Ledger::pointer ledger);
-	void sendGetFullLedger(uint64 index);
+	void sendGetFullLedger(uint32 index);
 
 	//static PackedMessage::pointer createFullLedger(Ledger::pointer ledger);
 	static PackedMessage::pointer createLedgerProposal(Ledger::pointer ledger);

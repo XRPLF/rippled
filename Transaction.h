@@ -1,17 +1,25 @@
-#include "string"
+#ifndef __TRANSACTION__
+#define __TRANSACTION__
+
+#include "newcoin.pb.h"
+#include "uint256.h"
+#include <boost/shared_ptr.hpp>
 
 /*
-A transaction can have only one input and one output.
-If you want to send an amount that is greater than any single address of yours
-you must first combine coins from one address to another.
+We could have made something that inherited from the protobuf transaction but this seemed simpler
 */
+
+typedef boost::shared_ptr<newcoin::Transaction> TransactionPtr;
 
 class Transaction
 {
-	std::string mSource;
-	std::string mSig;
-	std::string mDest;
-	unsigned int mAmount;
 public:
-	Transaction();
+	static bool isSigValid(TransactionPtr trans);
+	static bool isEqual(TransactionPtr t1, TransactionPtr t2);
+	static uint256 calcHash(TransactionPtr trans);
 };
+
+
+extern bool gTransactionSorter(const TransactionPtr& lhs, const TransactionPtr& rhs);
+
+#endif

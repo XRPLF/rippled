@@ -17,9 +17,9 @@ void Wallet::load()
 
 }
 
-uint64 Wallet::getBalance()
+int64 Wallet::getBalance()
 {
-	uint64 total = 0;
+	int64 total = 0;
 
 	LedgerMaster& ledgerMaster=theApp->getLedgerMaster();
 
@@ -31,79 +31,99 @@ uint64 Wallet::getBalance()
 	return total;
 }
 
-string Wallet::sendMoneyToAddress(NewcoinAddress& destAddress, uint64 amount)
+void Wallet::refreshAccounts()
 {
-	// Check amount
-	if(amount > getBalance())
-		return("Insufficient funds");
+	LedgerMaster& ledgerMaster=theApp->getLedgerMaster();
 
-	newcoin::Transaction trans;
-	if(!createTransaction(destAddress, amount, trans))
+	BOOST_FOREACH(Account& account, mYourAccounts)
 	{
-		return "Error: Transaction creation failed  ";
+		Ledger::Account* ledgerAccount=ledgerMaster.getAccount(account.mAddress);
+		if(ledgerAccount)
+		{
+			account.mAmount= ledgerAccount->first;
+			account.mSeqNum= ledgerAccount->second;
+		}else
+		{
+			account.mAmount=0;
+			account.mSeqNum=0;
+		}
+	}
+}
+
+void Wallet::transactionAdded(TransactionPtr trans)
+{ // TODO: optimize
+	refreshAccounts();
+}
+
+Wallet::Account* Wallet::consolidateAccountOfSize(int64 amount)
+{
+	int64 total=0;
+	BOOST_FOREACH(Account& account, mYourAccounts)
+	{
+		if(account.mAmount>=amount) return(&account);
+		total += account.mAmount;
+	}
+	if(total<amount) return(NULL);
+
+	Account* firstAccount=NULL;
+	uint160* firstAddr=NULL;
+	total=0;
+	BOOST_FOREACH(Account& account, mYourAccounts)
+	{
+		total += account.mAmount;
+		if(firstAccount) 
+		{
+			TransactionPtr trans=createTransaction(account,firstAccount->mAddress,account.mAmount);
+			commitTransaction(trans);
+		}else firstAccount=&account;
+
+		if(total>=amount) return(firstAccount);
 	}
 
-	if(!commitTransaction(trans))
-		return("Error: The transaction was rejected.  This might happen if some of the coins in your wallet were already spent, such as if you used a copy of wallet.dat and coins were spent in the copy but not marked as spent here.");
+	assert(0);
+	return(NULL);
+}
 
+string Wallet::sendMoneyToAddress(uint160& destAddress, int64 amount)
+{
+	// we may have to bundle up money in order to send this amount
+	Account* fromAccount=consolidateAccountOfSize(amount);
+	if(fromAccount)
+	{
+		TransactionPtr trans=createTransaction(*fromAccount,destAddress,amount);
+		if(trans)
+		{
+			if(!commitTransaction(trans))
+				return("Error: The transaction was rejected.  This might happen if some of the coins in your wallet were already spent, such as if you used a copy of wallet.dat and coins were spent in the copy but not marked as spent here.");
+
+		}
+	}else return("Insufficient funds");
 
 	return "";
 }
 
-
-bool Wallet::createTransaction(NewcoinAddress& destAddress, uint64 amount,newcoin::Transaction& trans)
+TransactionPtr Wallet::createTransaction(Account& fromAccount, uint160& destAddr, int64 amount)
 {
-	// find accounts to send from
-	// sign each account that is sending
+	TransactionPtr trans(new newcoin::Transaction());
+	trans->set_amount(amount);
+	trans->set_seqnum(fromAccount.mSeqNum);
+	trans->set_from(fromAccount.mAddress.begin(), fromAccount.mAddress.GetSerializeSize());
+	trans->set_dest(destAddr.begin(),destAddr.GetSerializeSize());
+	trans->set_ledgerindex(theApp->getLedgerMaster().getCurrentLedgerIndex());
+	// TODO: trans->set_pubkey(fromAccount.mPublicKey);
+	fromAccount.signTransaction(trans);
 
-	
-	trans.set_ledgerindex(theApp->getLedgerMaster().getCurrentLedgerIndex());
-	trans.set_seconds(theApp->getLedgerMaster().getCurrentLedgerSeconds());
-	trans.set_dest(destAddress.ToString());
-
-	list<newcoin::TransInput*> inputs;
-	BOOST_FOREACH(Account& account, mYourAccounts)
-	{
-		newcoin::TransInput* input=trans.add_inputs();
-		inputs.push_back(input);
-		input->set_from(account.mAddress);
-
-		if(account.mAmount < amount)
-		{	// this account can only fill a portion of the amount
-			input->set_amount(account.mAmount);
-			amount -= account.mAmount;
-			
-		}else
-		{	// this account can fill the whole thing
-			input->set_amount(amount);
-			
-			break;
-		}
-	}
-	
-	uint256 hash = calcTransactionHash(trans);
-	BOOST_FOREACH(newcoin::TransInput* input,inputs)
-	{
-		vector<unsigned char> sig;
-		if(signTransInput(hash,*input,sig))
-			input->set_sig(&(sig[0]),sig.size());
-		else return(false);
-	}
-	trans.set_transid(hash.ToString());
-	return(true);
-}
-
-uint256 Wallet::calcTransactionHash(newcoin::Transaction& trans)
-{
-	vector<unsigned char> buffer;
-	buffer.resize(trans.ByteSize());
-	trans.SerializeToArray(&(buffer[0]),buffer.size());
-	return Hash(buffer.begin(), buffer.end());
+	return(trans);
 }
 
 
-bool Wallet::signTransInput(uint256 hash, newcoin::TransInput& input,vector<unsigned char>& retSig)
+
+
+bool Wallet::Account::signTransaction(TransactionPtr trans)
 {
+	/* TODO:
+	uint256 hash = Transaction::calcHash(trans);
+
 	CKey key;
 	if(!GetKey(input.from(), key))
 		return false;
@@ -114,6 +134,7 @@ bool Wallet::signTransInput(uint256 hash, newcoin::TransInput& input,vector<unsi
 		if(!key.Sign(hash, retSig))
 			return false;
 	}
+	*/
 	return(true);
 }
 
@@ -122,12 +143,17 @@ bool Wallet::signTransInput(uint256 hash, newcoin::TransInput& input,vector<unsi
 
 
 // Call after CreateTransaction unless you want to abort
-bool Wallet::commitTransaction(newcoin::Transaction& trans)
+bool Wallet::commitTransaction(TransactionPtr trans)
 {
-	// TODO: Q up the message if it can't be relayed properly. or we don't see it added.
-	PackedMessage::pointer msg(new PackedMessage(PackedMessage::MessagePointer(new newcoin::Transaction(trans)),newcoin::TRANSACTION));
-	theApp->getConnectionPool().relayMessage(NULL,msg,trans.ledgerindex());
-	theApp->getLedgerMaster().addTransaction(trans);
+	if(trans)
+	{
+		if(theApp->getLedgerMaster().addTransaction(trans))
+		{
+			ConnectionPool& pool=theApp->getConnectionPool();
+			PackedMessage::pointer packet(new PackedMessage(PackedMessage::MessagePointer(new newcoin::Transaction(*(trans.get()))),newcoin::TRANSACTION));
+			pool.relayMessage(NULL,packet);
 
-	return true;
+		}else cout << "Problem adding the transaction to your local ledger" << endl;
+	}
+	return(false);
 }

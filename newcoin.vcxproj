@@ -49,12 +49,12 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0501;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>c:\code\OpenSSL\include;C:\code\boost_1_47_0;C:\code\protobuf-2.4.1\src\</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\OpenSSL\include;..\boost_1_47_0;..\protobuf-2.4.1\src\</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\code\OpenSSL\lib\VC;C:\code\boost_1_47_0\stage\lib;C:\code\protobuf-2.4.1\vsprojects\Debug</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\OpenSSL\lib\VC;..\boost_1_47_0\stage\lib;..\protobuf-2.4.1\vsprojects\Debug</AdditionalLibraryDirectories>
       <AdditionalDependencies>libeay32MTd.lib;libprotobuf.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PreBuildEvent>
@@ -112,6 +112,7 @@
     <ClCompile Include="RPCCommands.cpp" />
     <ClCompile Include="RPCDoor.cpp" />
     <ClCompile Include="TimingService.cpp" />
+    <ClCompile Include="Transaction.cpp" />
     <ClCompile Include="TransactionBundle.cpp" />
     <ClCompile Include="UniqueNodeList.cpp" />
     <ClCompile Include="util\pugixml.cpp" />
@@ -119,6 +120,7 @@
     <ClCompile Include="Wallet.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Account.h" />
     <ClInclude Include="Application.h" />
     <ClInclude Include="base58.h" />
     <ClInclude Include="bignum.h" />
@@ -167,6 +169,7 @@
     <ClInclude Include="script.h" />
     <ClInclude Include="SecureAllocator.h" />
     <ClInclude Include="TimingService.h" />
+    <ClInclude Include="ExtendedTransaction.h" />
     <ClInclude Include="Transaction.h" />
     <ClInclude Include="TransactionBundle.h" />
     <ClInclude Include="types.h" />
@@ -180,7 +183,7 @@
     <None Include="config.xml" />
     <CustomBuild Include="newcoin.proto">
       <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">c:/code/protoc-2.4.1-win32/protoc -I=C:\code\newcoin --cpp_out=C:\code\newcoin  C:\code\newcoin\newcoin.proto</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\protoc-2.4.1-win32\protoc -I=..\newcoin --cpp_out=..\newcoin  ..\newcoin\newcoin.proto</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">newcoin.pb.h</Outputs>
     </CustomBuild>
     <None Include="html\newcoin.html">

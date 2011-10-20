@@ -2,7 +2,7 @@
 Dependencies:
 	Boost 1_47
 	boost log http://boost-log.sourceforge.net/libs/log/doc/html/log/installation.html
-	protocol buffers
+	protocol buffers: expects ..\protobuf-2.4.1 and ..\protoc-2.4.1-win32
 	openssl
 
 Using:
@@ -25,18 +25,9 @@ code from:
 
 
 
-message Packet {
-	enum Type { HELLO = 1; TRANSACTION = 2; VALIDATION = 3; }
 
-	// Identifies which field is filled in.
-	required Type type	= 1;
 
-	// One of the following will be filled in.
-	optional Hello hello=2;
-	optional Transaction transaction=3;
-	optional Validation validation=4;
 
-}
 
 Threads
 ----

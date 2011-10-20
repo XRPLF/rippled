@@ -20,6 +20,10 @@ public:
 	bool IsValid();
 
 	uint160 GetHash160();
+
+	static uint160 protobufToInternal(const std::string& buf);
+	static uint160 humanToInternal(const std::string& buf);
+
 	
 };
 

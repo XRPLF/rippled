@@ -36,7 +36,7 @@ public:
 	LedgerMaster& getLedgerMaster(){ return(mLedgerMaster); }
 	UniqueNodeList& getUNL(){ return(mUNL); }
 	ValidationCollection& getValidationCollection(){  return(mValidations); }
-
+	Wallet& getWallet(){  return(mWallet); }
 	
 
 	void run();

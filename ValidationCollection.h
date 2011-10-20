@@ -1,6 +1,8 @@
+#ifndef __VALIDATION_COLLECTION__
+#define __VALIDATION_COLLECTION__
 
 #include "newcoin.pb.h"
-#include "types.h"
+#include "uint256.h"
 
 class ValidationCollection
 {
@@ -15,3 +17,5 @@ public:
 
 	std::vector<newcoin::Validation>* getValidations(uint64 ledgerIndex);
 };
+
+#endif

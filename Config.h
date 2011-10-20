@@ -7,6 +7,8 @@ public:
 	std::string VERSION_STR;
 	bool TEST_NET;
 
+	int TRANSACTION_FEE;
+	int ACCOUNT_FEE;
 	int PEER_PORT;
 	int RPC_PORT;
 	int NUMBER_CONNECTIONS;

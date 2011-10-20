@@ -1,11 +1,13 @@
 #include "LedgerMaster.h"
 #include "Application.h"
+#include "NewcoinAddress.h"
+#include <boost/foreach.hpp>
 
 using namespace std;
 
 LedgerMaster::LedgerMaster()
 {
-	mAfterProposed=false;
+	//mAfterProposed=false;
 }
 
 void LedgerMaster::load()
@@ -18,69 +20,106 @@ void LedgerMaster::save()
 	
 }
 
-uint64 LedgerMaster::getCurrentLedgerIndex()
+uint32 LedgerMaster::getCurrentLedgerIndex()
 {
 	return(mCurrentLedger->getIndex());
 }
 
-int LedgerMaster::getCurrentLedgerSeconds()
+int64 LedgerMaster::getAmountHeld(uint160& addr)
 {
-	// TODO:
-	return(1);
+	return(mCurrentLedger->getAmountHeld(addr));
 }
 
-uint64 LedgerMaster::getAmountHeld(std::string& addr)
+int64 LedgerMaster::getAmountHeld(std::string& addr)
 {
-	return(mCurrentLedger->getAmount(addr));
+	return(mCurrentLedger->getAmountHeld(NewcoinAddress::humanToInternal(addr)));
 }
 
-Ledger::pointer LedgerMaster::getLedger(uint64 index)
+Ledger::pointer LedgerMaster::getLedger(uint32 index)
 {
 	return(mLedgerHistory.getLedger(index));
 }
 
 
-// TODO: make sure the signature is valid
-// TODO: make sure the transactionID is valid
-// TODO: make sure no from address = dest address
-// TODO: make sure no 0 amounts
-// TODO: make sure no duplicate from addresses
-bool LedgerMaster::isValidTransactionSig(newcoin::Transaction& trans)
+bool LedgerMaster::isTransactionOnFutureList(TransactionPtr needle)
 {
+	BOOST_FOREACH(TransactionPtr straw,mFutureTransactions)
+	{
+		if(Transaction::isEqual(straw,needle))
+		{
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
+// make sure the signature is valid
+// make sure from address != dest address
+// make sure not 0 amount unless null dest (this is just a way to make sure your seqnum is incremented)
+// make sure the sequence number is good (but the ones with a bad seqnum we need to save still?)
+bool LedgerMaster::isValidTransaction(TransactionPtr trans)
+{
+	if(trans->from()==trans->dest()) return(false);
+	if(trans->amount()==0) return(false);
+	if(!Transaction::isSigValid(trans)) return(false);
+	Ledger::Account* account=mCurrentLedger->getAccount( NewcoinAddress::protobufToInternal(trans->from()) );
+	if(!account) return(false);
+	if(trans->seqnum() != (account->second+1) ) return(false); // TODO: do we need to save these?
+
 	return(true);
 }
 
-// returns true if we should broadcast it
-bool LedgerMaster::addTransaction(newcoin::Transaction& trans)
-{
-	if(! isValidTransactionSig(trans)) return(false);
 
-	if(trans.ledgerindex()==mFinalizingLedger->getIndex())
+// returns true if we should relay it
+bool LedgerMaster::addTransaction(TransactionPtr trans)
+{
+	if(mFinalizingLedger && (trans->ledgerindex()==mFinalizingLedger->getIndex()))
 	{
-		if(mFinalizingLedger->addTransaction(trans))
+		if(mFinalizingLedger->hasTransaction(trans)) return(false);
+		if(!isValidTransaction(trans)) return(false);
+
+		if(mFinalizingLedger->addTransaction(trans,false))
 		{
 			// TODO: we shouldn't really sendProposal right here
 			// TODO: since maybe we are adding a whole bunch at once. we should send at the end of the batch
-			if(mAfterProposed) sendProposal();
-			mCurrentLedger->recheck(mFinalizingLedger,trans);
+			// TODO: do we ever really need to re-propose?
+			//if(mAfterProposed) sendProposal();
 			return(true);
-		}
-	}else if(trans.ledgerindex()==mCurrentLedger->getIndex())
+		}else return(false);
+	}else if(trans->ledgerindex()==mCurrentLedger->getIndex())
 	{
-		return( mCurrentLedger->addTransaction(trans) );
-	}else if(trans.ledgerindex()>mCurrentLedger->getIndex())
+		if(mCurrentLedger->hasTransaction(trans)) return(false);
+		if(!isValidTransaction(trans)) return(false);
+		return( mCurrentLedger->addTransaction(trans,false) );
+	}else if(trans->ledgerindex()>mCurrentLedger->getIndex())
 	{ // in the future
-		// TODO: should we broadcast this?
-		// TODO: if NO then we might be slowing down transmission because our clock is off
-		// TODO: if YES then we could be contributing to not following the protocol
-		// TODO: Probably just broadcast once we get to that ledger.
-		mFutureTransactions.push_back(trans);
+		
+		if(isTransactionOnFutureList(trans)) return(false);
+		if(!isValidTransaction(trans)) return(false);
+		mFutureTransactions.push_back(trans); // broadcast once we get to that ledger.
+		return(false);
 	}else
-	{  // transaction is too old. ditch it
+	{  // transaction is old but we don't have it. Add it to the current ledger
 		cout << "Old Transaction" << endl;
+		
+		// distant past
+		// This is odd make sure the transaction is valid before proceeding since checking all the past is expensive
+		if(! isValidTransaction(trans)) return(false);
+
+		uint32 checkIndex=trans->ledgerindex();
+		while(checkIndex <= mCurrentLedger->getIndex())
+		{
+			Ledger::pointer ledger=mLedgerHistory.getLedger(checkIndex);
+			if(ledger)
+			{
+				if(ledger->hasTransaction(trans)) return(false);
+			}
+			checkIndex++;
+		}
+
+		return( mCurrentLedger->addTransaction(trans,false) );
 	}
-	
-	return(false);
 }
 
 
@@ -94,9 +133,9 @@ void LedgerMaster::gotFullLedger(newcoin::FullLedger& ledger)
 
 void LedgerMaster::sendProposal()
 {
-	mAfterProposed=true;
+	//mAfterProposed=true;
 	PackedMessage::pointer packet=Peer::createLedgerProposal(mFinalizingLedger);
-	theApp->getConnectionPool().relayMessage(NULL,packet,mFinalizingLedger->getIndex());
+	theApp->getConnectionPool().relayMessage(NULL,packet);
 }
 
 void LedgerMaster::nextLedger()
@@ -105,7 +144,7 @@ void LedgerMaster::nextLedger()
 	// finalize current ledger
 	// start a new ledger
 
-	mAfterProposed=false;
+	//mAfterProposed=false;
 	Ledger::pointer closedLedger=mFinalizingLedger;
 	mFinalizingLedger=mCurrentLedger;
 	mCurrentLedger=Ledger::pointer(new Ledger(mCurrentLedger->getIndex()+1));
@@ -114,8 +153,8 @@ void LedgerMaster::nextLedger()
 	closedLedger->publish();
 	mLedgerHistory.addLedger(closedLedger);
 
-	applyFutureProposals();
-	applyFutureTransactions();
+	applyFutureProposals( mFinalizingLedger->getIndex() );
+	applyFutureTransactions( mCurrentLedger->getIndex() );
 }
 
 void LedgerMaster::addFutureProposal(Peer::pointer peer,newcoin::ProposeLedger& otherLedger)
@@ -123,11 +162,11 @@ void LedgerMaster::addFutureProposal(Peer::pointer peer,newcoin::ProposeLedger& 
 	mFutureProposals.push_front(pair<Peer::pointer,newcoin::ProposeLedger>(peer,otherLedger));
 }
 
-void LedgerMaster::applyFutureProposals()
+void LedgerMaster::applyFutureProposals(uint32 ledgerIndex)
 {
 	for(list< pair<Peer::pointer,newcoin::ProposeLedger> >::iterator iter=mFutureProposals.begin(); iter !=mFutureProposals.end(); )
 	{
-		if( (*iter).second.ledgerindex() == mFinalizingLedger->getIndex())
+		if( (*iter).second.ledgerindex() == ledgerIndex)
 		{
 			checkLedgerProposal((*iter).first,(*iter).second);
 			mFutureProposals.erase(iter);
@@ -135,11 +174,11 @@ void LedgerMaster::applyFutureProposals()
 	}
 }
 
-void LedgerMaster::applyFutureTransactions()
+void LedgerMaster::applyFutureTransactions(uint32 ledgerIndex)
 {
-	for(list<newcoin::Transaction>::iterator iter=mFutureTransactions.begin(); iter !=mFutureTransactions.end(); )
+	for(list<TransactionPtr>::iterator iter=mFutureTransactions.begin(); iter !=mFutureTransactions.end(); )
 	{
-		if( (*iter).ledgerindex() == mCurrentLedger->getIndex() )
+		if( (*iter)->ledgerindex() == ledgerIndex)
 		{
 			addTransaction(*iter);
 			mFutureTransactions.erase(iter);
