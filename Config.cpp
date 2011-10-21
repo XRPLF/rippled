@@ -34,6 +34,7 @@ Config::Config()
 
 	TRANSACTION_FEE=1000;
 	ACCOUNT_FEE=1000;
+	MIN_VOTES_FOR_CONSENSUS=1;
 }
 
 void Config::load()

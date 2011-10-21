@@ -221,7 +221,7 @@ bool Ledger::addTransaction(TransactionPtr trans,bool checkDuplicate)
 }
 
 // Don't check the amounts. We will do this at the end.
-void Ledger::addTransactionRecalculate(TransactionPtr trans)
+void Ledger::addTransactionAllowNeg(TransactionPtr trans)
 {
 	uint160 fromAddress=NewcoinAddress::protobufToInternal(trans->from());
 
@@ -268,47 +268,7 @@ void Ledger::addTransactionRecalculate(TransactionPtr trans)
 	}
 }
 
-// Must look for transactions to discard to make this account positive
-// When we chuck transactions it might cause other accounts to need correcting
-void Ledger::correctAccount(uint160& address)
-{
-	list<uint160> effected;
 
-	// do this in reverse so we take of the higher seqnum first
-	for( list<TransactionPtr>::reverse_iterator iter=mTransactions.rbegin(); iter != mTransactions.rend(); )
-	{
-		TransactionPtr trans= *iter;
-		if(NewcoinAddress::protobufToInternal(trans->from()) == address)
-		{
-			Account fromAccount=mAccounts[address];
-			assert(fromAccount.second==trans->seqnum()+1);
-			if(fromAccount.first<0)
-			{
-				fromAccount.first += trans->amount();
-				fromAccount.second --;
-
-				mAccounts[address]=fromAccount;
-
-				uint160 destAddress=NewcoinAddress::protobufToInternal(trans->dest());
-				Account destAccount=mAccounts[destAddress];
-				destAccount.first -= trans->amount();
-				mAccounts[destAddress]=destAccount;
-				if(destAccount.first<0) effected.push_back(destAddress);
-
-				list<TransactionPtr>::iterator temp=mTransactions.erase( --iter.base() );
-				if(fromAccount.first>=0) break; 
-				
-				iter=list<TransactionPtr>::reverse_iterator(temp);
-			}else break;	
-		}else iter--;
-	}
-
-	BOOST_FOREACH(uint160& address,effected)
-	{
-		correctAccount(address);
-	}
-	
-}
 
 // start from your parent and go through every transaction
 // calls this on its child if recursive is set
@@ -333,22 +293,15 @@ void Ledger::recalculate(bool recursive)
 		// don't check balances until the end
 		BOOST_FOREACH(TransactionPtr trans,firstTransactions)
 		{
-			addTransactionRecalculate(trans);
+			addTransactionAllowNeg(trans);
 		}
 
 		BOOST_FOREACH(TransactionPtr trans,secondTransactions)
 		{
-			addTransactionRecalculate(trans);
+			addTransactionAllowNeg(trans);
 		}
-
-		pair<uint160, Account >& fullAccount=pair<uint160, Account >();
-		BOOST_FOREACH(fullAccount,mAccounts)
-		{
-			if(fullAccount.second.first <0 )
-			{
-				correctAccount(fullAccount.first);
-			}
-		}
+		correctAccounts();
+		
 
 
 		if(mChild && recursive) mChild->recalculate();
@@ -421,4 +374,85 @@ bool Ledger::hasTransaction(TransactionPtr needle)
 	}
 
 	return(false);
+}
+
+// Ledgers are compatible if both sets of transactions merged together would lead to the same ending balance
+bool Ledger::isCompatible(Ledger::pointer other)
+{
+	Ledger::pointer l1=Ledger::pointer(new Ledger(*this));
+	Ledger::pointer l2=Ledger::pointer(new Ledger(*other));
+
+	l1->mergeIn(l2);
+	l2->mergeIn(l1);
+
+	map<uint160, Account > a1=l1->getAccounts();
+	map<uint160, Account > a2=l2->getAccounts();
+
+	return(a1==a2);
+
+}
+
+void Ledger::mergeIn(Ledger::pointer other)
+{
+	list<TransactionPtr>& otherTransactions=other->getTransactions();
+	BOOST_FOREACH(TransactionPtr trans,otherTransactions)
+	{
+		addTransactionAllowNeg(trans);
+	}
+
+	correctAccounts();
+}
+
+void Ledger::correctAccounts()
+{
+	pair<uint160, Account >& fullAccount=pair<uint160, Account >();
+	BOOST_FOREACH(fullAccount,mAccounts)
+	{
+		if(fullAccount.second.first <0 )
+		{
+			correctAccount(fullAccount.first);
+		}
+	}
+}
+
+// Must look for transactions to discard to make this account positive
+// When we chuck transactions it might cause other accounts to need correcting
+void Ledger::correctAccount(uint160& address)
+{
+	list<uint160> effected;
+
+	// do this in reverse so we take of the higher seqnum first
+	for( list<TransactionPtr>::reverse_iterator iter=mTransactions.rbegin(); iter != mTransactions.rend(); )
+	{
+		TransactionPtr trans= *iter;
+		if(NewcoinAddress::protobufToInternal(trans->from()) == address)
+		{
+			Account fromAccount=mAccounts[address];
+			assert(fromAccount.second==trans->seqnum()+1);
+			if(fromAccount.first<0)
+			{
+				fromAccount.first += trans->amount();
+				fromAccount.second --;
+
+				mAccounts[address]=fromAccount;
+
+				uint160 destAddress=NewcoinAddress::protobufToInternal(trans->dest());
+				Account destAccount=mAccounts[destAddress];
+				destAccount.first -= trans->amount();
+				mAccounts[destAddress]=destAccount;
+				if(destAccount.first<0) effected.push_back(destAddress);
+
+				list<TransactionPtr>::iterator temp=mTransactions.erase( --iter.base() );
+				if(fromAccount.first>=0) break; 
+
+				iter=list<TransactionPtr>::reverse_iterator(temp);
+			}else break;	
+		}else iter--;
+	}
+
+	BOOST_FOREACH(uint160& address,effected)
+	{
+		correctAccount(address);
+	}
+
 }

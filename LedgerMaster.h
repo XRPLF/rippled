@@ -56,6 +56,7 @@ public:
 	void sendProposal();
 	void endFinalization();
 	void checkLedgerProposal(Peer::pointer peer,newcoin::ProposeLedger& packet);
+	void checkConsensus(uint32 ledgerIndex);
 };
 
 #endif

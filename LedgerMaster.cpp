@@ -239,3 +239,39 @@ void LedgerMaster::checkLedgerProposal(Peer::pointer peer, newcoin::ProposeLedge
 
 
 }
+
+
+// TODO: optimize. this is expensive so limit the amount it is run
+void LedgerMaster::checkConsensus(uint32 ledgerIndex)
+{
+	Ledger::pointer ourAcceptedLedger=mLedgerHistory.getAcceptedLedger(ledgerIndex);
+	if(ourAcceptedLedger)
+	{
+		uint256* consensusHash=theApp->getValidationCollection().getConsensusLedgerHash(ledgerIndex);
+		if( consensusHash && 
+			(ourAcceptedLedger->getHash()!= *consensusHash))
+		{
+			Ledger::pointer consensusLedger=mLedgerHistory.getLedger(*consensusHash);
+			if(consensusLedger)
+			{ // see if these are compatible
+				if(ourAcceptedLedger->isCompatible(consensusLedger))
+				{	// try to merge any transactions from the consensus one into ours
+					ourAcceptedLedger->mergeIn(consensusLedger);
+					// Ledger::pointer child=ourAcceptedLedger->getChild();
+					Ledger::pointer child=mLedgerHistory.getAcceptedLedger(ledgerIndex+1);
+					if(child) child->recalculate();
+				}else
+				{ // switch to this ledger. Re-validate
+					mLedgerHistory.addAcceptedLedger(consensusLedger);
+					consensusLedger->publishValidation();
+				}
+
+			}else
+			{	// we don't know the consensus one. Ask peers for it
+				PackedMessage::pointer msg=Peer::createGetFullLedger(*consensusHash);
+				theApp->getConnectionPool().relayMessage(NULL,msg);
+			}
+		}
+	}
+}
+

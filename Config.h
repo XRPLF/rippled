@@ -24,6 +24,8 @@ public:
 
 	std::string HISTORY_DIR;
 
+	int MIN_VOTES_FOR_CONSENSUS;
+
 
 
 	Config();

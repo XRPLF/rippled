@@ -44,7 +44,8 @@ private:
 	
 	void sign();
 	void hash();
-	void addTransactionRecalculate(TransactionPtr trans);
+	void addTransactionAllowNeg(TransactionPtr trans);
+	void correctAccounts();
 	void correctAccount(uint160& address);
 public:
 	typedef boost::shared_ptr<Ledger> pointer;
@@ -52,6 +53,7 @@ public:
 	Ledger(newcoin::FullLedger& ledger);
 
 	void setTo(newcoin::FullLedger& ledger);
+	void mergeIn(Ledger::pointer other);
 
 	void save(std::string dir);
 	bool load(std::string dir);
@@ -74,11 +76,13 @@ public:
 	uint256& getSignature();
 	uint32 getValidSeqNum(){ return(mValidationSeqNum); }
 	unsigned int getNumTransactions(){ return(mTransactions.size()); }
-	std::map<uint160, std::pair<int64,uint32> >& getAccounts(){ return(mAccounts); }
+	std::map<uint160, Account >& getAccounts(){ return(mAccounts); }
 	Account* getAccount(uint160& address);
 	newcoin::FullLedger* createFullLedger();
 
 	Ledger::pointer getParent();
+	Ledger::pointer getChild();
+	bool isCompatible(Ledger::pointer other);
 
 
 };
