@@ -247,31 +247,48 @@ void LedgerMaster::checkConsensus(uint32 ledgerIndex)
 	Ledger::pointer ourAcceptedLedger=mLedgerHistory.getAcceptedLedger(ledgerIndex);
 	if(ourAcceptedLedger)
 	{
-		uint256* consensusHash=theApp->getValidationCollection().getConsensusLedgerHash(ledgerIndex);
-		if( consensusHash && 
-			(ourAcceptedLedger->getHash()!= *consensusHash))
-		{
-			Ledger::pointer consensusLedger=mLedgerHistory.getLedger(*consensusHash);
-			if(consensusLedger)
-			{ // see if these are compatible
-				if(ourAcceptedLedger->isCompatible(consensusLedger))
-				{	// try to merge any transactions from the consensus one into ours
-					ourAcceptedLedger->mergeIn(consensusLedger);
-					// Ledger::pointer child=ourAcceptedLedger->getChild();
-					Ledger::pointer child=mLedgerHistory.getAcceptedLedger(ledgerIndex+1);
-					if(child) child->recalculate();
-				}else
-				{ // switch to this ledger. Re-validate
-					mLedgerHistory.addAcceptedLedger(consensusLedger);
-					consensusLedger->publishValidation();
-				}
+		Ledger::pointer consensusLedger;
+		uint256 consensusHash;
 
+		if( theApp->getValidationCollection().getConsensusLedger(ledgerIndex,ourAcceptedLedger->getHash(), consensusLedger, consensusHash) )
+		{ // our accepted ledger isn't compatible with the consensus
+			if(consensusLedger)
+			{	// switch to this ledger. Re-validate
+				mLedgerHistory.addAcceptedLedger(consensusLedger);
+				consensusLedger->publishValidation();
 			}else
 			{	// we don't know the consensus one. Ask peers for it
-				PackedMessage::pointer msg=Peer::createGetFullLedger(*consensusHash);
+				// TODO: make sure this isn't sent many times before we have a chance to get a reply
+				PackedMessage::pointer msg=Peer::createGetFullLedger(consensusHash);
 				theApp->getConnectionPool().relayMessage(NULL,msg);
 			}
 		}
 	}
 }
+/*
+if( consensusHash && 
+(ourAcceptedLedger->getHash()!= *consensusHash))
+{
+Ledger::pointer consensusLedger=mLedgerHistory.getLedger(*consensusHash);
+if(consensusLedger)
+{ // see if these are compatible
+if(ourAcceptedLedger->isCompatible(consensusLedger))
+{	// try to merge any transactions from the consensus one into ours
+ourAcceptedLedger->mergeIn(consensusLedger);
+// Ledger::pointer child=ourAcceptedLedger->getChild();
+Ledger::pointer child=mLedgerHistory.getAcceptedLedger(ledgerIndex+1);
+if(child) child->recalculate();
+}else
+{ // switch to this ledger. Re-validate
+mLedgerHistory.addAcceptedLedger(consensusLedger);
+consensusLedger->publishValidation();
+}
+
+}else
+{	// we don't know the consensus one. Ask peers for it
+PackedMessage::pointer msg=Peer::createGetFullLedger(*consensusHash);
+theApp->getConnectionPool().relayMessage(NULL,msg);
+}
+}
+*/
 

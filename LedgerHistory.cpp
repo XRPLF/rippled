@@ -4,6 +4,9 @@
 /*
 Soon we should support saving the ledger in a real DB
 For now save them all in 
+
+For all the various ledgers we can save just the delta from the combined ledger for that index.
+
 */
 
 void LedgerHistory::load()

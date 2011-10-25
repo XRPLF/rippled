@@ -51,6 +51,7 @@ public:
 	typedef boost::shared_ptr<Ledger> pointer;
 	Ledger(uint32 index);
 	Ledger(newcoin::FullLedger& ledger);
+	Ledger(Ledger::pointer other);
 
 	void setTo(newcoin::FullLedger& ledger);
 	void mergeIn(Ledger::pointer other);
