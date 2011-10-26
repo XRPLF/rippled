@@ -4,11 +4,17 @@
 
 class UniqueNodeList
 {
+	// hanko to public key
+	//std::map<uint160,uint512> mUNL;
 public:
-	void load();
-	void save();
+	//void load();
+	//void save();
 
-	bool findHanko(const std::string& hanko);
+	void addNode(uint160& hanko,uint1024& publicKey);
+	void removeNode(uint160& hanko);
+
+	// 0- we don't care, 1- we care and is valid, 2-invalid signature
+	int checkValid(newcoin::Validation& valid);
 
 	
 };

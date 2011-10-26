@@ -33,3 +33,16 @@ uint256 Transaction::calcHash(TransactionPtr trans)
 	trans->SerializeToArray(&(buffer[0]),buffer.size());
 	return Hash(buffer.begin(), buffer.end());
 }
+
+uint256 Transaction::protobufToInternalHash(const std::string& hash)
+{
+	uint256 ret;
+	// TODO:
+	return(ret);
+}
+
+bool Transaction::isSigValid(TransactionPtr trans)
+{
+	// TODO:
+	return(true);
+}

@@ -5,6 +5,9 @@
 #include "TimingService.h"
 #include "ValidationCollection.h"
 #include "Wallet.h"
+#include "Serializer.h"
+#include "database/database.h"
+
 #include <boost/asio.hpp>
 
 class RPCDoor;
@@ -18,12 +21,14 @@ class Application
 	KnownNodeList mKnownNodes;
 	Wallet mWallet;
 	ValidationCollection mValidations;
+	Database* mDatabase;
 
 	LedgerMaster mLedgerMaster;
 
 	ConnectionPool mConnectionPool;
 	PeerDoor* mPeerDoor;
 	RPCDoor* mRPCDoor;
+	Serializer* mSerializer;
 
 	boost::asio::io_service mIOService;
 
@@ -37,6 +42,12 @@ public:
 	UniqueNodeList& getUNL(){ return(mUNL); }
 	ValidationCollection& getValidationCollection(){  return(mValidations); }
 	Wallet& getWallet(){  return(mWallet); }
+	Database* getDB(){ return(mDatabase); }
+
+	void setDatabase(Database* db){ mDatabase=db; }
+
+	Serializer* getSerializer(){ return(mSerializer); }
+	void setSerializer(Serializer* ser){ mSerializer=ser; }
 	
 
 	void run();

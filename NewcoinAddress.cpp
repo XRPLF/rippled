@@ -3,6 +3,22 @@
 #include "BitcoinUtil.h"
 #include <assert.h>
 
+
+
+uint160 NewcoinAddress::protobufToInternal(const std::string& buf)
+{
+	uint160 ret;
+	// TODO:
+	return(ret);
+}
+
+uint160 NewcoinAddress::humanToInternal(const std::string& buf)
+{
+	uint160 ret;
+	// TODO:
+	return(ret);
+}
+
 bool NewcoinAddress::SetHash160(const uint160& hash160)
 {
 	SetData(theConfig.TEST_NET ? 112 : 1, &hash160, 20);

@@ -134,6 +134,15 @@ PackedMessage::pointer Peer::createValidation(Ledger::pointer ledger)
 	return(packet);
 }
 
+PackedMessage::pointer Peer::createGetFullLedger(uint256& hash)
+{
+	newcoin::GetFullLedger* gfl=new newcoin::GetFullLedger();
+	gfl->set_hash(hash.begin(),hash.GetSerializeSize());
+
+	PackedMessage::pointer packet(new PackedMessage(PackedMessage::MessagePointer(gfl),newcoin::GET_FULL_LEDGER));
+	return(packet);
+}
+
 void Peer::sendLedgerProposal(Ledger::pointer ledger)
 {
 	PackedMessage::pointer packet=Peer::createLedgerProposal(ledger);
@@ -150,12 +159,9 @@ void Peer::sendFullLedger(Ledger::pointer ledger)
 	}
 }
 
-void Peer::sendGetFullLedger(uint32 index)
+void Peer::sendGetFullLedger(uint256& hash)
 {
-	newcoin::GetFullLedger* gfl=new newcoin::GetFullLedger();
-	gfl->set_ledgerindex(index);
-
-	PackedMessage::pointer packet(new PackedMessage(PackedMessage::MessagePointer(gfl),newcoin::GET_FULL_LEDGER));
+	PackedMessage::pointer packet=createGetFullLedger(hash);
 	sendPacket(packet);
 }
 

@@ -20,7 +20,6 @@ public:
 private:
 	bool mValidSig;
 	bool mValidHash;
-	bool mFaith; //TODO: if you will bother to validate this ledger or not. You have to accept the first ledger on Faith 
 
 	uint32 mIndex;
 	uint256 mHash;
@@ -49,6 +48,7 @@ private:
 	void correctAccount(uint160& address);
 public:
 	typedef boost::shared_ptr<Ledger> pointer;
+	Ledger();
 	Ledger(uint32 index);
 	Ledger(newcoin::FullLedger& ledger);
 	Ledger(Ledger::pointer other);
@@ -56,8 +56,8 @@ public:
 	void setTo(newcoin::FullLedger& ledger);
 	void mergeIn(Ledger::pointer other);
 
-	void save(std::string dir);
-	bool load(std::string dir);
+	void save(uint256& hash);
+	bool load(uint256& hash);
 
 	void recalculate(bool recursive=true);
 

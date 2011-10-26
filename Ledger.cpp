@@ -11,6 +11,13 @@
 using namespace boost;
 using namespace std;
 
+Ledger::Ledger()
+{
+	mIndex=0;
+	mValidSig=false;
+	mValidHash=false;
+	mValidationSeqNum=0;
+}
 
 Ledger::Ledger(uint32 index)
 {
@@ -20,6 +27,15 @@ Ledger::Ledger(uint32 index)
 	mValidationSeqNum=0;
 }
 
+Ledger::Ledger(Ledger::pointer other)
+{
+	mValidSig=false;
+	mValidHash=false;
+	mValidationSeqNum=0;
+	mIndex=other->getIndex();
+	mergeIn(other);
+}
+
 Ledger::Ledger(newcoin::FullLedger& ledger)
 {
 	setTo(ledger);
@@ -27,11 +43,11 @@ Ledger::Ledger(newcoin::FullLedger& ledger)
 
 // TODO: we should probably make a shared pointer type for each of these PB types
 newcoin::FullLedger* Ledger::createFullLedger()
-{
-	// TODO: do we need to hash and create accounts map first?
+{	
 	newcoin::FullLedger* ledger=new newcoin::FullLedger();
 	ledger->set_index(mIndex);
-	ledger->set_hash(mHash.begin(),mHash.GetSerializeSize());
+	ledger->set_hash(getHash().begin(),getHash().GetSerializeSize());
+	ledger->set_parenthash(mParentHash.begin(),mParentHash.GetSerializeSize());
 	
 	pair<uint160, pair<uint64,uint32> >& account=pair<uint160, pair<uint64,uint32> >();
 	BOOST_FOREACH(account,mAccounts)
@@ -41,7 +57,6 @@ newcoin::FullLedger* Ledger::createFullLedger()
 		saveAccount->set_amount(account.second.first);
 		saveAccount->set_seqnum(account.second.second);
 	}
-	//mBundle.addTransactionsToPB(ledger);
 	
 	return(ledger);
 }
@@ -81,8 +96,27 @@ Ledger::pointer Ledger::getParent()
 	return(mParent);
 }
 
+bool Ledger::load(uint256& hash)
+{
+	Database* db=theApp->getDB();
+
+	string sql="SELECT * from Ledgers where hash=";
+	string hashStr;
+	db->escape(hash.begin(),hash.GetSerializeSize(),hashStr);
+	sql.append(hashStr);
+
+	if(db->executeSQL(sql.c_str()))
+	{
+		db->getNextRow();
+		sql="SELECT * from Transactions where "
+	}
+	return(false);
+}
+
+/* 
 bool Ledger::load(std::string dir)
 {
+
 	string filename=strprintf("%s%u.ledger",dir,mIndex);
 	
 	ifstream loadfile(filename, ios::in | ios::binary);
@@ -112,6 +146,7 @@ void Ledger::save(string dir)
 	}
 	delete(ledger);
 }
+*/
 
 int64 Ledger::getAmountHeld(uint160& address)
 {
@@ -151,13 +186,13 @@ void Ledger::publishValidation()
 
 void Ledger::sign()
 {
-	// TODO:
+	// TODO: Ledger::sign()
 }
 
 
 void Ledger::hash()
 {
-	// TODO:
+	// TODO: Ledger::hash()
 }
 
 /*

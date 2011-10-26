@@ -13,7 +13,19 @@ Then we just have to check this ledger to see if a new ledger is compatible
 This is also the ledger we hand back when we ask for the consensus ledger
 
 */
+ValidationCollection::ValidationCollection()
+{
 
+}
+
+void ValidationCollection::save()
+{
+
+}
+void ValidationCollection::load()
+{
+
+}
 
 bool ValidationCollection::hasValidation(uint256& ledgerHash,uint160& hanko,uint32 seqnum)
 {
@@ -51,16 +63,20 @@ void ValidationCollection::addValidation(newcoin::Validation& valid)
 	if(hasValidation(hash,hanko,valid.seqnum())) return;
 
 	// check if we care about this hanko
-	if( theApp->getUNL().findHanko(valid.hanko()) )
+	int validity=theApp->getUNL().checkValid(valid);
+	if( validity==1 )
 	{
 		mValidations[hash].push_back(valid);
 		mIndexValidations[valid.ledgerindex()].push_back(valid);
 		addToGroup(valid);
 		
 		theApp->getLedgerMaster().checkConsensus(valid.ledgerindex());
-	}else
+	}else if(validity==0)
 	{
 		mIgnoredValidations[hash].push_back(valid);
+	}else
+	{ // the signature wasn't valid
+		cout << "Invalid Validation" << endl;
 	}
 }
 

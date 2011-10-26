@@ -225,14 +225,15 @@ void LedgerMaster::checkLedgerProposal(Peer::pointer peer, newcoin::ProposeLedge
 		addFutureProposal(peer,otherLedger);
 	}else
 	{ // you guys are on the same page
-		if(mFinalizingLedger->getHash()!= Transaction::protobufToInternalHash(otherLedger.hash()))
+		uint256 otherHash=Transaction::protobufToInternalHash(otherLedger.hash());
+		if(mFinalizingLedger->getHash()!= otherHash)
 		{
 			if( mFinalizingLedger->getNumTransactions()>=otherLedger.numtransactions())
 			{
 				peer->sendLedgerProposal(mFinalizingLedger);
 			}else
 			{
-				peer->sendGetFullLedger(otherLedger.ledgerindex());
+				peer->sendGetFullLedger(otherHash);
 			}
 		}
 	}

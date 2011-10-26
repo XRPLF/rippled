@@ -132,6 +132,21 @@
     <ClCompile Include="Transaction.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="MySqlSerializer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="DiskSerializer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="database\database.cpp">
+      <Filter>Header Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="database\win\windatabase.cpp">
+      <Filter>Header Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="database\SqliteDatabase.cpp">
+      <Filter>Header Files\util</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application.h">
@@ -308,6 +323,18 @@
     <ClInclude Include="Account.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Serializer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="database\database.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="database\SqliteDatabase.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="uint256.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="nodes.xml" />
@@ -318,6 +345,7 @@
     <None Include="html\newcoin.html">
       <Filter>html</Filter>
     </None>
+    <None Include="db layout.txt" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="newcoin.proto" />

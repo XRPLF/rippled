@@ -70,8 +70,7 @@ message FullLedger {
 
 
 message GetFullLedger {
-	required uint32 ledgerIndex		= 1;
-	optional bytes hash				= 2;
+	required bytes hash				= 1;
 }
 
 message GetValidations {

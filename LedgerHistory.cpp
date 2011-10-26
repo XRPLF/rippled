@@ -1,6 +1,7 @@
 #include "LedgerHistory.h"
 #include "Config.h"
-
+#include "Application.h"
+#include <string>
 /*
 Soon we should support saving the ledger in a real DB
 For now save them all in 
@@ -14,14 +15,31 @@ void LedgerHistory::load()
 
 }
 
-bool LedgerHistory::loadLedger(uint32 index)
+bool LedgerHistory::loadLedger(uint256& hash)
 {
-	Ledger::pointer ledger(new Ledger(index));
-	if(ledger->load(theConfig.HISTORY_DIR))
+	Ledger::pointer ledger=Ledger::pointer(new Ledger());
+	if(ledger->load(hash))
 	{
-		mAcceptedLedgers[index]=ledger;
+		mAllLedgers[hash]=ledger;
+		return(true);
 	}
 	return(false);
+}
+
+bool LedgerHistory::loadAcceptedLedger(uint32 index)
+{
+	Ledger::pointer ledger=theApp->getSerializer()->loadAcceptedLedger(index);
+	if(ledger)
+	{
+		mAcceptedLedgers[index]=ledger;
+		return(true);
+	}
+	return(false);
+}
+
+void LedgerHistory::addAcceptedLedger(Ledger::pointer ledger)
+{
+	mAcceptedLedgers[ledger->getIndex()]=ledger;
 }
 
 // this will see if the ledger is in memory
@@ -31,7 +49,7 @@ Ledger::pointer LedgerHistory::getAcceptedLedger(uint32 index)
 {
 	if(mAcceptedLedgers.count(index))
 		return(mAcceptedLedgers[index]);
-	if(loadLedger(index)) return(mAcceptedLedgers[index]);
+	if(loadAcceptedLedger(index)) return(mAcceptedLedgers[index]);
 	return(Ledger::pointer());
 }
 
@@ -39,4 +57,12 @@ void LedgerHistory::addLedger(Ledger::pointer ledger)
 {
 	mAcceptedLedgers[ledger->getIndex()]=ledger;
 	ledger->save(theConfig.HISTORY_DIR);
+}
+
+Ledger::pointer LedgerHistory::getLedger(uint256& hash)
+{
+	if(mAllLedgers.count(hash))
+		return(mAllLedgers[hash]);
+	if(loadLedger(hash)) return(mAllLedgers[hash]);
+	return(Ledger::pointer());
 }

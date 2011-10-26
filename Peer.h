@@ -79,7 +79,7 @@ public:
 	void sendPacket(PackedMessage::pointer packet);
 	void sendLedgerProposal(Ledger::pointer ledger);
 	void sendFullLedger(Ledger::pointer ledger);
-	void sendGetFullLedger(uint32 index);
+	void sendGetFullLedger(uint256& hash);
 
 	//static PackedMessage::pointer createFullLedger(Ledger::pointer ledger);
 	static PackedMessage::pointer createLedgerProposal(Ledger::pointer ledger);

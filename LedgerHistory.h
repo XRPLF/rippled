@@ -18,7 +18,8 @@ class LedgerHistory
 	std::map<uint32, Ledger::pointer> mAcceptedLedgers;
 	std::map<uint256, Ledger::pointer> mAllLedgers;
 
-	bool loadLedger(uint32 index);
+	bool loadAcceptedLedger(uint32 index);
+	bool loadLedger(uint256& hash);
 public:
 	void load();
 	

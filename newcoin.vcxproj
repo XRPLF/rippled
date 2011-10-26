@@ -91,6 +91,10 @@
     <ClCompile Include="ConnectionPool.cpp" />
     <ClCompile Include="cryptopp\cpu.cpp" />
     <ClCompile Include="cryptopp\sha.cpp" />
+    <ClCompile Include="database\database.cpp" />
+    <ClCompile Include="database\SqliteDatabase.cpp" />
+    <ClCompile Include="database\win\windatabase.cpp" />
+    <ClCompile Include="DiskSerializer.cpp" />
     <ClCompile Include="HttpReply.cpp" />
     <ClCompile Include="json\json_spirit_reader.cpp" />
     <ClCompile Include="json\json_spirit_value.cpp" />
@@ -100,6 +104,7 @@
     <ClCompile Include="Ledger.cpp" />
     <ClCompile Include="LedgerHistory.cpp" />
     <ClCompile Include="LedgerMaster.cpp" />
+    <ClCompile Include="MySqlSerializer.cpp" />
     <ClCompile Include="newcoin.pb.cc" />
     <ClCompile Include="NewcoinAddress.cpp" />
     <ClCompile Include="PackedMessage.cpp" />
@@ -139,6 +144,8 @@
     <ClInclude Include="cryptopp\simple.h" />
     <ClInclude Include="cryptopp\smartptr.h" />
     <ClInclude Include="cryptopp\stdcpp.h" />
+    <ClInclude Include="database\database.h" />
+    <ClInclude Include="database\SqliteDatabase.h" />
     <ClInclude Include="HttpReply.h" />
     <ClInclude Include="HttpRequest.h" />
     <ClInclude Include="json\json_spirit.h" />
@@ -168,11 +175,13 @@
     <ClInclude Include="RPCDoor.h" />
     <ClInclude Include="script.h" />
     <ClInclude Include="SecureAllocator.h" />
+    <ClInclude Include="Serializer.h" />
     <ClInclude Include="TimingService.h" />
     <ClInclude Include="ExtendedTransaction.h" />
     <ClInclude Include="Transaction.h" />
     <ClInclude Include="TransactionBundle.h" />
     <ClInclude Include="types.h" />
+    <ClInclude Include="uint256.h" />
     <ClInclude Include="UniqueNodeList.h" />
     <ClInclude Include="util\pugiconfig.hpp" />
     <ClInclude Include="util\pugixml.hpp" />
@@ -186,6 +195,7 @@
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\protoc-2.4.1-win32\protoc -I=..\newcoin --cpp_out=..\newcoin  ..\newcoin\newcoin.proto</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">newcoin.pb.h</Outputs>
     </CustomBuild>
+    <None Include="db layout.txt" />
     <None Include="html\newcoin.html">
       <SubType>Designer</SubType>
     </None>
