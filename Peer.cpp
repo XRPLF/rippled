@@ -6,6 +6,7 @@
 //#include <boost/log/trivial.hpp>
 #include <boost/bind.hpp>
 #include <iostream>
+#include "Convertion.h"
 
 using namespace std;
 using namespace boost;
@@ -279,7 +280,7 @@ void Peer::receiveHello(newcoin::Hello& packet)
 
 void Peer::receiveGetFullLedger(newcoin::GetFullLedger& gfl)
 {
-	sendFullLedger(theApp->getLedgerMaster().getLedger(Transaction::protobufToInternalHash(gfl.hash())));
+	sendFullLedger(theApp->getLedgerMaster().getLedger(protobufTo256(gfl.hash())));
 }
 
 void Peer::receiveValidation(newcoin::Validation& validation)

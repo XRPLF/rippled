@@ -70,6 +70,7 @@ int SqliteDatabase::getLastInsertID()
 // returns false if there are no results
 bool SqliteDatabase::startIterRows()
 {
+	needs to fill out the column table
 	return(mMoreRows);
 }
 
@@ -120,14 +121,15 @@ bool SqliteDatabase::getBool(int colIndex)
 	return(sqlite3_column_int(mCurrentStmt, colIndex));
 }
 
-bool SqliteDatabase::getBinary(int colIndex,unsigned char* buf,int maxSize)
+int SqliteDatabase::getBinary(int colIndex,unsigned char* buf,int maxSize)
 {
 	const void* blob=sqlite3_column_blob(mCurrentStmt, colIndex);
 	int size=sqlite3_column_bytes(mCurrentStmt, colIndex);
 	if(maxSize<size) size=maxSize;
 	memcpy(buf,blob,size);
-	return(true);
+	return(size);
 }
+
 uint64 SqliteDatabase::getBigInt(int colIndex)
 {
 	return(sqlite3_column_int64(mCurrentStmt, colIndex));
@@ -146,7 +148,13 @@ void SqliteDatabase::escape(unsigned char* start,int size,std::string& retStr)
 	retStr.append("X'");
 	for(int n=0; n<size; n++)
 	{
-		retStr.append( itoa(*start,buf,16) );
+		itoa(start[n],buf,16);
+		if(buf[1]==0)
+		{
+			retStr.append("0");
+			retStr.append(buf);
+		}else retStr.append(buf);
+
 	}
 	retStr.push_back('\'');
 }

@@ -58,7 +58,7 @@ bool Database::getBool(const char* colName)
 	return(0);
 }
 
-bool Database::getBinary(const char* colName,unsigned char* buf,int maxSize)
+int Database::getBinary(const char* colName,unsigned char* buf,int maxSize)
 {
 	int index;
 	if(getColNumber(colName,&index))

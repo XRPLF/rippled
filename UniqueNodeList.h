@@ -17,6 +17,8 @@ public:
 	// 0- we don't care, 1- we care and is valid, 2-invalid signature
 	int checkValid(newcoin::Validation& valid);
 
+	void dumpUNL(std::string& retStr);
+
 	
 };
 

@@ -35,6 +35,7 @@ Application::Application()
 void Application::run()
 {
 	theApp->setDB(new SqliteDatabase("data.db"));
+	mDatabase->connect();
 
 	if(theConfig.PEER_PORT)
 	{

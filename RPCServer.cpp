@@ -4,12 +4,12 @@
 #include "HttpReply.h"
 #include <boost/bind.hpp>
 //#include <boost/log/trivial.hpp>
-
+#include "Application.h"
 #include <iostream>
 #include "json/json_spirit_reader_template.h"
 #include "json/json_spirit_writer_template.h"
 #include "RPC.h"
-
+#include "Convertion.h"
 
 using namespace std;
 using namespace json_spirit;
@@ -118,6 +118,23 @@ Value RPCServer::doCommand(std::string& command, Array& params)
 	if(command=="send")
 	{
 
+	}
+	if(command== "addUNL")
+	{
+		if(params.size()==2)
+		{
+			uint160 hanko=humanTo160(params[0].get_str());
+			vector<unsigned char> pubKey;
+			humanToPK(params[1].get_str(),pubKey);
+			theApp->getUNL().addNode(hanko,pubKey);
+			return "adding node";
+		}else return "invalid params";
+	}
+	if(command=="getUNL")
+	{
+		string str;
+		theApp->getUNL().dumpUNL(str);
+		return(str.c_str());
 	}
 
 	return "unknown command";

@@ -2,7 +2,7 @@
 #include "Application.h"
 #include "NewcoinAddress.h"
 #include "Config.h"
-
+#include "Convertion.h"
 #include <boost/foreach.hpp>
 using namespace std;
 
@@ -34,7 +34,7 @@ bool ValidationCollection::hasValidation(uint256& ledgerHash,uint160& hanko,uint
 		BOOST_FOREACH(newcoin::Validation& valid,mValidations[ledgerHash])
 		{
 			if( valid.seqnum()==seqnum &&
-				NewcoinAddress::protobufToInternal(valid.hanko()) == hanko) return(true);
+				protobufTo160(valid.hanko()) == hanko) return(true);
 		}
 	}
 
@@ -43,7 +43,7 @@ bool ValidationCollection::hasValidation(uint256& ledgerHash,uint160& hanko,uint
 		BOOST_FOREACH(newcoin::Validation& valid,mIgnoredValidations[ledgerHash])
 		{
 			if( valid.seqnum()==seqnum &&
-				NewcoinAddress::protobufToInternal(valid.hanko()) == hanko) return(true);
+				protobufTo160(valid.hanko()) == hanko) return(true);
 		}
 	}
 	return(false);
@@ -56,8 +56,8 @@ void ValidationCollection::addValidation(newcoin::Validation& valid)
 {
 	// TODO: make sure the validation is valid
 
-	uint256 hash=Transaction::protobufToInternalHash(valid.hash());
-	uint160 hanko=NewcoinAddress::protobufToInternal(valid.hanko());
+	uint256 hash=protobufTo256(valid.hash());
+	uint160 hanko=protobufTo160(valid.hanko());
 	
 	// make sure we don't already have this validation
 	if(hasValidation(hash,hanko,valid.seqnum())) return;
@@ -121,7 +121,7 @@ void ValidationCollection::addToGroup(newcoin::Validation& newValid)
 		if(canReturn) return;
 		// this is a validation of a new ledger hash
 
-		uint256 newHash=Transaction::protobufToInternalHash(newValid.hash());
+		uint256 newHash=protobufTo256(newValid.hash());
 		Ledger::pointer newLedger=theApp->getLedgerMaster().getLedger(newHash);
 		if(newLedger)
 		{ // see if this ledger is compatible with any groups
@@ -141,7 +141,7 @@ void ValidationCollection::addToGroup(newcoin::Validation& newValid)
 
 				BOOST_FOREACH(newcoin::Validation& valid,mIndexValidations[newValid.ledgerindex()])
 				{
-					uint256 hash=Transaction::protobufToInternalHash(valid.hash());
+					uint256 hash=protobufTo256(valid.hash());
 					Ledger::pointer ledger=theApp->getLedgerMaster().getLedger(hash);
 					newGroup.addIfCompatible(ledger,valid);
 				}
@@ -155,7 +155,7 @@ void ValidationCollection::addToGroup(newcoin::Validation& newValid)
 		}
 	}else
 	{ // this is the first validation of this ledgerindex
-		uint256 newHash=Transaction::protobufToInternalHash(newValid.hash());
+		uint256 newHash=protobufTo256(newValid.hash());
 		mIndexGroups[newValid.ledgerindex()][0].mValidations.push_back(newValid);
 		mIndexGroups[newValid.ledgerindex()][0].mSuperLedger=theApp->getLedgerMaster().getLedger(newHash);
 	}
@@ -191,7 +191,7 @@ bool ValidationCollection::getConsensusLedger(uint32 ledgerIndex, uint256& ourHa
 				maxVotes=group.mValidations.size();
 				retLedger=group.mSuperLedger;
 				maxGroup=group;
-				if(!retLedger) retHash=Transaction::protobufToInternalHash(group.mValidations[0].hash());
+				if(!retLedger) retHash=protobufTo256(group.mValidations[0].hash());
 				ret=true;
 			}
 		}
@@ -200,7 +200,7 @@ bool ValidationCollection::getConsensusLedger(uint32 ledgerIndex, uint256& ourHa
 			// should also return false if we are in the consensus
 			BOOST_FOREACH(newcoin::Validation& valid, maxGroup.mValidations)
 			{
-				if(Transaction::protobufToInternalHash(valid.hash()) == ourHash) return(false);
+				if(protobufTo256(valid.hash()) == ourHash) return(false);
 			}
 		}
 	}

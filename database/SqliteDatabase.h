@@ -33,7 +33,8 @@ public:
 	int32 getInt(int colIndex);
 	float getFloat(int colIndex);
 	bool getBool(int colIndex);
-	bool getBinary(int colIndex,unsigned char* buf,int maxSize);
+	// returns amount stored in buf
+	int getBinary(int colIndex,unsigned char* buf,int maxSize);
 	uint64 getBigInt(int colIndex);
 
 	void escape(unsigned char* start,int size,std::string& retStr);

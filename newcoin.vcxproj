@@ -89,6 +89,7 @@
     <ClCompile Include="CallRPC.cpp" />
     <ClCompile Include="Config.cpp" />
     <ClCompile Include="ConnectionPool.cpp" />
+    <ClCompile Include="Convertion.cpp" />
     <ClCompile Include="cryptopp\cpu.cpp" />
     <ClCompile Include="cryptopp\sha.cpp" />
     <ClCompile Include="database\database.cpp" />
@@ -133,6 +134,7 @@
     <ClInclude Include="CallRPC.h" />
     <ClInclude Include="Config.h" />
     <ClInclude Include="ConnectionPool.h" />
+    <ClInclude Include="Convertion.h" />
     <ClInclude Include="cryptopp\config.h" />
     <ClInclude Include="cryptopp\cpu.h" />
     <ClInclude Include="cryptopp\cryptlib.h" />

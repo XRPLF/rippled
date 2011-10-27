@@ -375,7 +375,7 @@ public:
     }
 
     template<typename Stream>
-    void Unserialize(Stream& s, int nType=0, int nVersion=VERSION)
+    void Unserialize(Stream& s, int nType=0)
     {
         s.read((char*)pn, sizeof(pn));
     }

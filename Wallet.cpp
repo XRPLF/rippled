@@ -1,8 +1,8 @@
 #include "Wallet.h"
 #include "NewcoinAddress.h"
+#include "Convertion.h"
 #include "Application.h"
 #include "LedgerMaster.h"
-//#include "script.h"
 #include <string>
 #include <boost/foreach.hpp>
 using namespace std;
@@ -55,8 +55,8 @@ void Wallet::transactionChanged(TransactionPtr trans)
 
 	BOOST_FOREACH(Account& account, mYourAccounts)
 	{
-		if( account.mAddress == NewcoinAddress::protobufToInternal(trans->from()) ||
-			account.mAddress == NewcoinAddress::protobufToInternal(trans->dest()) )
+		if( account.mAddress == protobufTo160(trans->from()) ||
+			account.mAddress == protobufTo160(trans->dest()) )
 		{
 			Ledger::Account* ledgerAccount=theApp->getLedgerMaster().getAccount(account.mAddress);
 			if(ledgerAccount)

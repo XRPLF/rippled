@@ -50,14 +50,15 @@ public:
 	int32 getInt(const char* colName);
 	float getFloat(const char* colName);
 	bool getBool(const char* colName);
-	bool getBinary(const char* colName,unsigned char* buf,int maxSize);
+	// returns amount stored in buf
+	int getBinary(const char* colName,unsigned char* buf,int maxSize);
 	uint64 getBigInt(const char* colName);
 
 	virtual char* getStr(int colIndex,std::string& retStr)=0;
 	virtual int32 getInt(int colIndex)=0;
 	virtual float getFloat(int colIndex)=0;
 	virtual bool getBool(int colIndex)=0;
-	virtual bool getBinary(int colIndex,unsigned char* buf,int maxSize)=0;
+	virtual int getBinary(int colIndex,unsigned char* buf,int maxSize)=0;
 	virtual uint64 getBigInt(int colIndex)=0;
 
 	int getSingleDBValueInt(const char* sql);

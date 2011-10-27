@@ -1,6 +1,7 @@
 #include "LedgerMaster.h"
 #include "Application.h"
 #include "NewcoinAddress.h"
+#include "Convertion.h"
 #include <boost/foreach.hpp>
 
 using namespace std;
@@ -32,7 +33,7 @@ int64 LedgerMaster::getAmountHeld(uint160& addr)
 
 int64 LedgerMaster::getAmountHeld(std::string& addr)
 {
-	return(mCurrentLedger->getAmountHeld(NewcoinAddress::humanToInternal(addr)));
+	return(mCurrentLedger->getAmountHeld(humanTo160(addr)));
 }
 
 
@@ -59,7 +60,7 @@ bool LedgerMaster::isValidTransaction(TransactionPtr trans)
 	if(trans->from()==trans->dest()) return(false);
 	if(trans->amount()==0) return(false);
 	if(!Transaction::isSigValid(trans)) return(false);
-	Ledger::Account* account=mCurrentLedger->getAccount( NewcoinAddress::protobufToInternal(trans->from()) );
+	Ledger::Account* account=mCurrentLedger->getAccount( protobufTo160(trans->from()) );
 	if(!account) return(false);
 	if(trans->seqnum() != (account->second+1) ) return(false); // TODO: do we need to save these?
 
@@ -128,7 +129,7 @@ void LedgerMaster::addFullLedger(newcoin::FullLedger& ledger)
 {
 	// check if we already have this ledger
 	// check that the hash is correct
-	uint256 inHash=Transaction::protobufToInternalHash(ledger.hash());
+	uint256 inHash=protobufTo256(ledger.hash());
 	Ledger::pointer existingLedger=mLedgerHistory.getLedger( inHash );
 	if(existingLedger) return;
 
@@ -214,7 +215,7 @@ void LedgerMaster::checkLedgerProposal(Peer::pointer peer, newcoin::ProposeLedge
 		Ledger::pointer oldLedger=mLedgerHistory.getAcceptedLedger(otherLedger.ledgerindex());
 		if(oldLedger)
 		{
-			if( (oldLedger->getHash()!=Transaction::protobufToInternalHash(otherLedger.hash())) &&
+			if( (oldLedger->getHash()!=protobufTo256(otherLedger.hash())) &&
 				(oldLedger->getNumTransactions()>=otherLedger.numtransactions()))
 			{
 				peer->sendLedgerProposal(oldLedger);
@@ -225,7 +226,7 @@ void LedgerMaster::checkLedgerProposal(Peer::pointer peer, newcoin::ProposeLedge
 		addFutureProposal(peer,otherLedger);
 	}else
 	{ // you guys are on the same page
-		uint256 otherHash=Transaction::protobufToInternalHash(otherLedger.hash());
+		uint256 otherHash=protobufTo256(otherLedger.hash());
 		if(mFinalizingLedger->getHash()!= otherHash)
 		{
 			if( mFinalizingLedger->getNumTransactions()>=otherLedger.numtransactions())

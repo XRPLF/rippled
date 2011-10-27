@@ -3,6 +3,7 @@
 #include "PackedMessage.h"
 #include "Application.h"
 #include "Config.h"
+#include "Convertion.h"
 #include "BitcoinUtil.h"
 #include <boost/foreach.hpp>
 #include <iostream>
@@ -70,13 +71,13 @@ void Ledger::setTo(newcoin::FullLedger& ledger)
 	mValidSig=false;
 	mValidHash=false;
 
-	mParentHash=Transaction::protobufToInternalHash(ledger.parenthash());	
+	mParentHash=protobufTo256(ledger.parenthash());	
 
 	int numAccounts=ledger.accounts_size();
 	for(int n=0; n<numAccounts; n++)
 	{
 		const newcoin::Account& account=ledger.accounts(n);
-		mAccounts[ NewcoinAddress::protobufToInternal(account.address()) ] = Account(account.amount(),account.seqnum());
+		mAccounts[ protobufTo160(account.address()) ] = Account(account.amount(),account.seqnum());
 	}
 
 	int numTrans=ledger.transactions_size();
@@ -297,7 +298,7 @@ bool Ledger::addTransaction(TransactionPtr trans,bool checkDuplicate)
 
 	if(mParent)
 	{ // check the lineage of the from addresses
-		uint160 address=NewcoinAddress::protobufToInternal(trans->from());
+		uint160 address=protobufTo160(trans->from());
 		if(mAccounts.count(address))
 		{
 			pair<uint64,uint32> account=mAccounts[address];
@@ -309,7 +310,7 @@ bool Ledger::addTransaction(TransactionPtr trans,bool checkDuplicate)
 				mAccounts[address]=account;
 
 
-				uint160 destAddress=NewcoinAddress::protobufToInternal(trans->dest());
+				uint160 destAddress=protobufTo160(trans->dest());
 
 				Account destAccount=mAccounts[destAddress];
 				destAccount.first += trans->amount();
@@ -347,7 +348,7 @@ bool Ledger::addTransaction(TransactionPtr trans,bool checkDuplicate)
 // Don't check the amounts. We will do this at the end.
 void Ledger::addTransactionAllowNeg(TransactionPtr trans)
 {
-	uint160 fromAddress=NewcoinAddress::protobufToInternal(trans->from());
+	uint160 fromAddress=protobufTo160(trans->from());
 
 	if(mAccounts.count(fromAddress))
 	{
@@ -358,7 +359,7 @@ void Ledger::addTransactionAllowNeg(TransactionPtr trans)
 			fromAccount.second++;
 			mAccounts[fromAddress]=fromAccount;
 			
-			uint160 destAddress=NewcoinAddress::protobufToInternal(trans->dest());
+			uint160 destAddress=protobufTo160(trans->dest());
 
 			Account destAccount=mAccounts[destAddress];
 			destAccount.first += trans->amount();
@@ -377,7 +378,7 @@ void Ledger::addTransactionAllowNeg(TransactionPtr trans)
 			
 			mAccounts[fromAddress]=Account(-((int64)trans->amount()),1);
 
-			uint160 destAddress=NewcoinAddress::protobufToInternal(trans->dest());
+			uint160 destAddress=protobufTo160(trans->dest());
 
 			Account destAccount=mAccounts[destAddress];
 			destAccount.first += trans->amount();
@@ -452,8 +453,8 @@ void Ledger::parentAddedTransaction(TransactionPtr cause)
 	//		an account to now be negative so we have to discard one
 	//		a discarded transaction to be pulled back in
 	//		seqnum invalidation
-	uint160 fromAddress=NewcoinAddress::protobufToInternal(cause->from());
-	uint160 destAddress=NewcoinAddress::protobufToInternal(cause->dest());
+	uint160 fromAddress=protobufTo160(cause->from());
+	uint160 destAddress=protobufTo160(cause->dest());
 	
 	Account* fromAccount=getAccount(fromAddress);
 	Account* destAccount=getAccount(destAddress);
@@ -549,7 +550,7 @@ void Ledger::correctAccount(uint160& address)
 	for( list<TransactionPtr>::reverse_iterator iter=mTransactions.rbegin(); iter != mTransactions.rend(); )
 	{
 		TransactionPtr trans= *iter;
-		if(NewcoinAddress::protobufToInternal(trans->from()) == address)
+		if(protobufTo160(trans->from()) == address)
 		{
 			Account fromAccount=mAccounts[address];
 			assert(fromAccount.second==trans->seqnum()+1);
@@ -560,7 +561,7 @@ void Ledger::correctAccount(uint160& address)
 
 				mAccounts[address]=fromAccount;
 
-				uint160 destAddress=NewcoinAddress::protobufToInternal(trans->dest());
+				uint160 destAddress=protobufTo160(trans->dest());
 				Account destAccount=mAccounts[destAddress];
 				destAccount.first -= trans->amount();
 				mAccounts[destAddress]=destAccount;

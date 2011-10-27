@@ -1,5 +1,7 @@
 #include "UniqueNodeList.h"
 #include "Application.h"
+#include "Convertion.h"
+
 using namespace std;
 
 void UniqueNodeList::addNode(uint160& hanko, vector<unsigned char>& publicKey)
@@ -52,5 +54,27 @@ int UniqueNodeList::checkValid(newcoin::Validation& valid)
 		}
 	}
 	return(0); // not on our list
+}
+
+
+void UniqueNodeList::dumpUNL(std::string& retStr)
+{
+	Database* db=theApp->getDB();
+	string sql="SELECT * FROM UNL";
+	if( db->executeSQL(sql.c_str()) )
+	{
+		db->startIterRows();
+		while(db->getNextRow())
+		{
+			uint160 hanko;
+			int size=db->getBinary("Hanko",hanko.begin(),hanko.GetSerializeSize());
+			string tstr;
+			u160ToHuman(hanko,tstr);
+
+			retStr.append(tstr);
+			retStr.append("\n");
+		}
+		db->endIterRows();
+	}
 }
 
