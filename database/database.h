@@ -2,6 +2,7 @@
 #define __DATABASE__
 
 #include <string>
+#include "../types.h"
 
 /*
 	this maintains the connection to the database
@@ -10,10 +11,10 @@ class Database
 {
 protected:
 	int mNumCol;
-	std:string mUser;
-	std:string mHost;
-	std:string mDBPass;
-	std:string* mColNameTable;
+	std::string mUser;
+	std::string mHost;
+	std::string mDBPass;
+	std::string* mColNameTable;
 
 	bool getColNumber(const char* colName, int* retIndex);
 
@@ -48,23 +49,19 @@ public:
 	int32 getInt(const char* colName);
 	float getFloat(const char* colName);
 	bool getBool(const char* colName);
-	bool getBinary(const char* colName,char* buf,int maxSize);
+	bool getBinary(const char* colName,unsigned char* buf,int maxSize);
+	uint64 getBigInt(const char* colName);
 
 	virtual char* getStr(int colIndex,std::string& retStr)=0;
 	virtual int32 getInt(int colIndex)=0;
 	virtual float getFloat(int colIndex)=0;
 	virtual bool getBool(int colIndex)=0;
-	virtual bool getBinary(int colIndex,char* buf,int maxSize)=0;
+	virtual bool getBinary(int colIndex,unsigned char* buf,int maxSize)=0;
+	virtual uint64 getBigInt(int colIndex)=0;
 
 	int getSingleDBValueInt(const char* sql);
 	float getSingleDBValueFloat(const char* sql);
 	char* getSingleDBValueStr(const char* sql, std::string& retStr);
-
-};
-
-
-class MsqlDatabase
-{
 
 };
 

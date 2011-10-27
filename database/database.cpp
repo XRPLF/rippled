@@ -1,6 +1,4 @@
 #include "database.h"
-#include "../utillib/reportingmechanism.h"
-#include "string/i4string.h"
 #include <stdlib.h>
 
 
@@ -26,7 +24,7 @@ char* Database::getStr(const char* colName,std::string& retStr)
 	return(NULL);
 }
 
-w32 Database::getInt(const char* colName)
+int32 Database::getInt(const char* colName)
 {
 	int index;
 	if(getColNumber(colName,&index))
@@ -56,6 +54,26 @@ bool Database::getBool(const char* colName)
 	return(0);
 }
 
+bool Database::getBinary(const char* colName,unsigned char* buf,int maxSize)
+{
+	int index;
+	if(getColNumber(colName,&index))
+	{
+		return(getBinary(index,buf,maxSize));
+	}
+	return(0);
+}
+
+uint64 Database::getBigInt(const char* colName)
+{
+	int index;
+	if(getColNumber(colName,&index))
+	{
+		return(getBigInt(index));
+	}
+	return(0);
+}
+
 
 
 // returns false if can't find col
@@ -63,7 +81,7 @@ bool Database::getColNumber(const char* colName,int* retIndex)
 {
 	for(int n=0; n<mNumCol; n++)
 	{
-		if(i4_stricmp(colName,mColNameTable[n])==0)
+		if(stricmp(colName,mColNameTable[n].c_str())==0)
 		{
 			*retIndex=n;
 			return(true);

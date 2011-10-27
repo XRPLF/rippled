@@ -10,7 +10,7 @@ public:
 	//void load();
 	//void save();
 
-	void addNode(uint160& hanko,uint1024& publicKey);
+	void addNode(uint160& hanko,std::vector<unsigned char>& publicKey);
 	void removeNode(uint160& hanko);
 
 	// 0- we don't care, 1- we care and is valid, 2-invalid signature

@@ -96,6 +96,8 @@ Ledger::pointer Ledger::getParent()
 	return(mParent);
 }
 
+// TODO: we can optimize so the ledgers only hold the delta from the accepted ledger
+// TODO: check to make sure the ledger is consistent after we load it
 bool Ledger::load(uint256& hash)
 {
 	Database* db=theApp->getDB();
@@ -107,8 +109,60 @@ bool Ledger::load(uint256& hash)
 
 	if(db->executeSQL(sql.c_str()))
 	{
-		db->getNextRow();
-		sql="SELECT * from Transactions where "
+		if(db->getNextRow())
+		{
+			mIndex=db->getInt("LedgerIndex");
+			mHash=hash;
+			mValidSig=false;
+			mAccounts.clear();
+			mTransactions.clear();
+			mDiscardedTransactions.clear();
+
+			db->getBinary("ParentHash",mParentHash.begin(),mParentHash.GetSerializeSize());
+			mFeeHeld=db->getBigInt("FeeHeld");
+
+
+			char buf[100];
+			sql="SELECT Transactions.* from Transactions,LedgerTransactionMap where Transactions.TransactionID=LedgerTransactionMap.TransactionID and LedgerTransactionMap.LedgerID=";
+			sql.append(itoa( db->getInt(0),buf,10) );
+			if(db->executeSQL(sql.c_str()))
+			{
+				unsigned char tbuf[1000];
+				while(db->getNextRow())
+				{
+					TransactionPtr trans=TransactionPtr(new newcoin::Transaction());
+					trans->set_amount( db->getBigInt("Amount"));
+					trans->set_seqnum( db->getInt("seqnum"));
+					trans->set_ledgerindex( db->getInt("ledgerIndex"));
+					db->getBinary("from",tbuf,1000);
+					trans->set_from(tbuf,20);
+					db->getBinary("dest",tbuf,1000);
+					trans->set_dest(tbuf,20);
+					db->getBinary("pubkey",tbuf,1000);
+					trans->set_pubkey(tbuf,128);
+					db->getBinary("sig",tbuf,1000);
+					trans->set_sig(tbuf,32);
+
+					mTransactions.push_back(trans);
+				}
+			}
+
+			sql="SELECT Accounts.* from Acconts,LedgerAcountMap where Accounts.AccountID=LedgerAccountMap.AccountID and LedgerAccountMap.LedgerID=";
+			sql.append(buf);
+			if(db->executeSQL(sql.c_str()))
+			{
+				while(db->getNextRow())
+				{
+					uint160 address;
+					db->getBinary("Address",address.begin(),address.GetSerializeSize());
+
+					mAccounts[address].first=db->getBigInt("Amount");
+					mAccounts[address].second=db->getInt("SeqNum");
+
+				}
+			}
+			return(true);
+		}
 	}
 	return(false);
 }

@@ -26,8 +26,7 @@ private:
 	uint256 mSignature;
 	uint256 mParentHash;
 	uint32 mValidationSeqNum;
-
-
+	uint64 mFeeHeld;
 
 	std::map<uint160, Account > mAccounts;
 	std::list<TransactionPtr> mTransactions;
