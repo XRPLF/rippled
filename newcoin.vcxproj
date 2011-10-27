@@ -92,8 +92,8 @@
     <ClCompile Include="cryptopp\cpu.cpp" />
     <ClCompile Include="cryptopp\sha.cpp" />
     <ClCompile Include="database\database.cpp" />
+    <ClCompile Include="database\sqlite3.c" />
     <ClCompile Include="database\SqliteDatabase.cpp" />
-    <ClCompile Include="database\win\windatabase.cpp" />
     <ClCompile Include="DiskSerializer.cpp" />
     <ClCompile Include="HttpReply.cpp" />
     <ClCompile Include="json\json_spirit_reader.cpp" />
@@ -145,6 +145,8 @@
     <ClInclude Include="cryptopp\smartptr.h" />
     <ClInclude Include="cryptopp\stdcpp.h" />
     <ClInclude Include="database\database.h" />
+    <ClInclude Include="database\sqlite3.h" />
+    <ClInclude Include="database\sqlite3ext.h" />
     <ClInclude Include="database\SqliteDatabase.h" />
     <ClInclude Include="HttpReply.h" />
     <ClInclude Include="HttpRequest.h" />

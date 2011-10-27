@@ -35,6 +35,7 @@ public:
 
 	// tells you how many rows were changed by an update or insert
 	virtual int getNumRowsAffected()=0;
+	virtual int getLastInsertID()=0;
 
 	// returns false if there are no results
 	virtual bool startIterRows()=0;

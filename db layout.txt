@@ -1,5 +1,18 @@
 // need to make this compatible with at least SQLite and Mysql
 
+// SQLite
+CREATE TABLE UNL (Hanko BLOB PRIMARY KEY, PubKey BLOB);
+CREATE TABLE Transactions (TransactionID INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, From BLOB, Dest BLOB, Amount BIGINT UNSIGNED, LedgerIndex INT UNSIGNED, SeqNum INT, PubKey BLOB, Sig BLOB);
+CREATE TABLE Ledgers (LedgerID INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, LedgerIndex INT UNSIGNED, Hash BLOB, ParentHash BLOB,FeeHeld BIGINT UNSIGNED);  
+CREATE TABLE Validations(LedgerIndex INT UNSIGNED, Hash BLOB, Hanko BLOB, SeqNum INT UNSIGNED, Sig BLOB, WeCare TINYINT);
+CREATE TABLE LedgerTransactionMap (LedgerID INT UNSIGNED, TransactionID INT UNSIGNED, Include TINYINT);
+CREATE TABLE LedgerAccountMap(LedgerID INT UNSIGNED,AccountID INT UNSIGNED);
+CREATE TABLE Accounts (AccountID INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, Address BLOB, Amount BIGINT UNSIGNED, SeqNum INT); 
+CREATE TABLE AcceptedLedgers (LedgerIndex INT UNSIGNED PRIMARY KEY, LedgerID INT UNSIGNED);
+
+
+
+// MYSQL
 drop database if exists newcoin;
 CREATE DATABASE newcoin;
 use newcoin;

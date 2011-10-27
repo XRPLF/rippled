@@ -30,7 +30,7 @@ void WinDatabase::connect()
 	rc = SQLAllocHandle(SQL_HANDLE_DBC,henv, &hdbc);   
 	myenv(henv, rc);
 
-	rc = SQLConnect(hdbc, (unsigned char*)(char*) mHost, SQL_NTS, (unsigned char*)(char*) mUser, SQL_NTS, (unsigned char*)(char*) mDBPass, SQL_NTS);
+	rc = SQLConnect(hdbc, (unsigned char*)(char*) mHost.c_str(), SQL_NTS, (unsigned char*)(char*) mUser.c_str(), SQL_NTS, (unsigned char*)(char*) mDBPass.c_str(), SQL_NTS);
 	mycon(hdbc, rc);
 
 	rc = SQLSetConnectAttr(hdbc,SQL_ATTR_AUTOCOMMIT,(SQLPOINTER)SQL_AUTOCOMMIT_ON,0);
@@ -42,7 +42,7 @@ void WinDatabase::connect()
 	//rc = SQLGetInfo(hdbc,SQL_DBMS_NAME,&server_name,40,NULL);
 	//mycon(hdbc, rc);
 
-	theUI->statusMsg("Connection Established to DB");
+	//theUI->statusMsg("Connection Established to DB");
 }
 
 void WinDatabase::disconnect()
@@ -76,7 +76,7 @@ bool WinDatabase::executeSQL(const char* sql)
 	SQLRETURN rc = SQLExecDirect(hstmt,(unsigned char*) sql,SQL_NTS);
 	if(rc==SQL_ERROR)
 	{
-		theUI->errorMsg("Trying to recover from DB error");
+		//theUI->errorMsg("Trying to recover from DB error");
 		rc = SQLExecDirect(hstmt,(unsigned char*) sql,SQL_NTS);
 		if(rc==SQL_ERROR)
 		{
@@ -88,7 +88,7 @@ bool WinDatabase::executeSQL(const char* sql)
 			i = 1;
 			while ((rc2 = SQLGetDiagRec(SQL_HANDLE_STMT, hstmt, i, SqlState, &NativeError, Msg, sizeof(Msg), &MsgLen)) != SQL_NO_DATA) 
 			{
-				theUI->errorMsg("DB ERROR: %s,%d,%s",SqlState,NativeError,Msg);
+				//theUI->errorMsg("DB ERROR: %s,%d,%s",SqlState,NativeError,Msg);
 				i++;
 			}
 				
@@ -146,7 +146,7 @@ bool WinDatabase::getNextRow()
 
 
 
-char* WinDatabase::getStr(int colIndex,i4_str* retStr)
+char* WinDatabase::getStr(int colIndex,string& retStr)
 {
 	colIndex++;
 	(*retStr)="";
@@ -169,7 +169,7 @@ char* WinDatabase::getStr(int colIndex,i4_str* retStr)
 	return(*retStr);
 }
 
-w32 WinDatabase::getInt(int colIndex)
+int32 WinDatabase::getInt(int colIndex)
 {
 	colIndex++;
 	int ret=0;

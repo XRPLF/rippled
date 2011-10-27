@@ -55,7 +55,7 @@ public:
 	void setTo(newcoin::FullLedger& ledger);
 	void mergeIn(Ledger::pointer other);
 
-	void save(uint256& hash);
+	void save();
 	bool load(uint256& hash);
 
 	void recalculate(bool recursive=true);

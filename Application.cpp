@@ -2,6 +2,7 @@
 #include "Config.h"
 #include "PeerDoor.h"
 #include "RPCDoor.h"
+#include "database/SqliteDatabase.h"
 //#include <boost/log/trivial.hpp>
 #include <iostream>
 using namespace std;
@@ -23,7 +24,7 @@ Application::Application()
 {
 	theConfig.load();
 	mKnownNodes.load();
-	mUNL.load();
+	//mUNL.load();
 	mWallet.load();
 	mLedgerMaster.load();
 	mPeerDoor=NULL;
@@ -33,6 +34,8 @@ Application::Application()
 
 void Application::run()
 {
+	theApp->setDB(new SqliteDatabase("data.db"));
+
 	if(theConfig.PEER_PORT)
 	{
 		mPeerDoor=new PeerDoor(mIOService);

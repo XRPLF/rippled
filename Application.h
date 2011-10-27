@@ -44,7 +44,7 @@ public:
 	Wallet& getWallet(){  return(mWallet); }
 	Database* getDB(){ return(mDatabase); }
 
-	void setDatabase(Database* db){ mDatabase=db; }
+	void setDB(Database* db){ mDatabase=db; }
 
 	Serializer* getSerializer(){ return(mSerializer); }
 	void setSerializer(Serializer* ser){ mSerializer=ser; }

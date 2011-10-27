@@ -2,8 +2,12 @@
 #include <stdlib.h>
 
 
-Database::Database(const char* host,const char* user,const char* pass) : mDBPass(pass), mHost(host) ,mUser(user), mNumCol(0)
+Database::Database(const char* host,const char* user,const char* pass) : mNumCol(0)
 {
+	mDBPass=pass;
+	mHost=host;
+	mUser=user;
+
 	mColNameTable=NULL;
 }
 

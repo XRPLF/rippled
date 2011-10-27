@@ -1,9 +1,15 @@
 #include "database.h"
 
+struct sqlite3;
+struct sqlite3_stmt;
+
 class SqliteDatabase : public Database
 {
+	sqlite3* mConnection;
+	sqlite3_stmt* mCurrentStmt;
+	bool mMoreRows;
 public:
-	SqliteDatabase();
+	SqliteDatabase(const char* host);
 
 	void connect();
 	void disconnect();
@@ -13,6 +19,7 @@ public:
 
 	// tells you how many rows were changed by an update or insert
 	int getNumRowsAffected();
+	int getLastInsertID();
 
 	// returns false if there are no results
 	bool startIterRows();

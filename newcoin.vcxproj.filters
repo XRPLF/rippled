@@ -141,10 +141,10 @@
     <ClCompile Include="database\database.cpp">
       <Filter>Header Files\util</Filter>
     </ClCompile>
-    <ClCompile Include="database\win\windatabase.cpp">
+    <ClCompile Include="database\SqliteDatabase.cpp">
       <Filter>Header Files\util</Filter>
     </ClCompile>
-    <ClCompile Include="database\SqliteDatabase.cpp">
+    <ClCompile Include="database\sqlite3.c">
       <Filter>Header Files\util</Filter>
     </ClCompile>
   </ItemGroup>
@@ -334,6 +334,12 @@
     </ClInclude>
     <ClInclude Include="uint256.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="database\sqlite3.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="database\sqlite3ext.h">
+      <Filter>Header Files\util</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

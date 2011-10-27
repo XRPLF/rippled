@@ -167,6 +167,41 @@ bool Ledger::load(uint256& hash)
 	return(false);
 }
 
+void Ledger::save()
+{
+	Database* db=theApp->getDB();
+
+	string sql="SELECT ledgerID from Ledgers where hash=";
+	string hashStr;
+	db->escape(mHash.begin(),mHash.GetSerializeSize(),hashStr);
+	sql.append(hashStr);
+
+	if(db->executeSQL(sql.c_str()))
+	{
+		db->startIterRows();
+
+		if(db->getNextRow())
+		{	// this Ledger is already in the DB. We don't need to do anything since the hashes are the same
+			db->endIterRows();	
+		}else
+		{	// this ledger isn't in the DB
+			char buf[100];
+			sql="INSERT INTO Ledgers (LedgerIndex,Hash,ParentHash,FeeHeld) values (";
+			sql.append(itoa(mIndex,buf,10));
+			sql.append(",");
+			sql.append(itoa(mIndex,buf,10));
+			sql.append(",");
+			sql.append(itoa(mIndex,buf,10));
+			sql.append(",");
+			sql.append(itoa(mFeeHeld,buf,10));
+			sql.append(")");
+
+			sql="SELECT LAST_INSERT_ID()";
+
+		}
+	}
+}
+
 /* 
 bool Ledger::load(std::string dir)
 {

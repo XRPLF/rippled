@@ -1,7 +1,6 @@
 #include "Config.h"
 #include "util/pugixml.hpp"
 #include "Application.h"
-#include "database/SqliteDatabase.h"
 
 #include <boost/lexical_cast.hpp>
 
@@ -60,7 +59,5 @@ void Config::load()
 		if( stricmp(node.child_value(),"mysql")==0 ) theApp->setDB(Database::newMysqlDatabase("host","user","pass"));
 		else theApp->setSerializer(new DiskSerializer());
 	}else */
-	theApp->setDB(new SqliteDatabase());
-
 
 }

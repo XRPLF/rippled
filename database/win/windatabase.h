@@ -10,7 +10,6 @@
 #include "sql.h"
 #endif 
 
-#include "string/i4string.h"
 
 /*
 	this maintains the connection to the database
@@ -28,12 +27,13 @@ public:
 	void connect();
 	void disconnect();
 
-	char* getPass(){ return(mDBPass); }
+	//char* getPass(){ return((char*)mDBPass.c_str()); }
 	
 	// returns true if the query went ok
 	bool executeSQL(const char* sql);
 
 	int getNumRowsAffected();
+	int getLastInsertID();
 
 	// returns false if there are no results
 	bool startIterRows();
@@ -44,10 +44,14 @@ public:
 	bool getNextRow();
 
 	// get Data from the current row
-	char* getStr(int colIndex,i4_str* retStr);
-	w32 getInt(int colIndex);
+	char* getStr(int colIndex,std::string& retStr);
+	int32 getInt(int colIndex);
 	float getFloat(int colIndex);
 	bool getBool(int colIndex);
+	uint64 getBigInt(int colIndex);
+	bool getBinary(int colIndex,unsigned char* buf,int maxSize);
+
+	void escape(unsigned char* start,int size,std::string& retStr);
 };
 
 

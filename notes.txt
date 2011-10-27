@@ -4,7 +4,8 @@ Dependencies:
 	boost log http://boost-log.sourceforge.net/libs/log/doc/html/log/installation.html  // this didn't work immediatly so I stopped messing with it but we should probably use it
 	protocol buffers: expects ..\protobuf-2.4.1 and ..\protoc-2.4.1-win32
 	openssl
-	sqlite
+	sqlite (files are in git. )
+	mysql (we don't need this quite yet...)
 
 Using:
 	pugixml version 1.0 download new versions at http://pugixml.org/
@@ -23,6 +24,8 @@ code from:
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 ----
 
+
+libeay32.dll
 
 
 

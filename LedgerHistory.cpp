@@ -56,7 +56,7 @@ Ledger::pointer LedgerHistory::getAcceptedLedger(uint32 index)
 void LedgerHistory::addLedger(Ledger::pointer ledger)
 {
 	mAcceptedLedgers[ledger->getIndex()]=ledger;
-	ledger->save(theConfig.HISTORY_DIR);
+	ledger->save();
 }
 
 Ledger::pointer LedgerHistory::getLedger(uint256& hash)
