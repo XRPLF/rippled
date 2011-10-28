@@ -5,11 +5,11 @@ enum Type {
 	TRANSACTION=		2; 
 	FULL_LEDGER=		3;
 	VALIDATION=			4; 
-	GET_FULL_LEDGER=	5;
-	GET_VALIDATIONS=	6;
-	GET_CONTACTS=		7;
-	CONTACT=			8;
-	PROPOSE_LEDGER=		9;
+	PROPOSE_LEDGER=		5;
+	GET_FULL_LEDGER=	6;
+	GET_VALIDATIONS=	7;
+	GET_CONTACTS=		8;
+	CONTACT=			9;
 	ERROR_MSG=			10;
 }
 
@@ -29,14 +29,13 @@ you must first combine coins from one address to another.
 // TODO: do we need a transID? I don't think we do
 // ledgerIndex should increase the ledger coherence
 message Transaction {
-	required bytes transID			= 1;
-	required bytes from				= 2;
-	required bytes dest				= 3;
-	required uint64 amount			= 4;
-	required uint32 ledgerIndex		= 5;
-	required int32 seqNum			= 6;
-	required bytes pubKey			= 7;
-	required bytes sig				= 8;
+	required bytes from				= 1;
+	required bytes dest				= 2;
+	required uint64 amount			= 3;
+	required uint32 ledgerIndex		= 4;
+	required int32 seqNum			= 5;
+	required bytes pubKey			= 6;
+	required bytes sig				= 7;
 }
 
 // Sequence number is incremented if you must change the ledger that you are validating

@@ -2,7 +2,8 @@
 #include "Application.h"
 #include "NewcoinAddress.h"
 #include "Config.h"
-#include "Convertion.h"
+#include "Conversion.h"
+#include "Application.h"
 #include <boost/foreach.hpp>
 using namespace std;
 
@@ -24,6 +25,12 @@ void ValidationCollection::save()
 }
 void ValidationCollection::load()
 {
+
+}
+
+void ValidationCollection::addToDB(newcoin::Validation& valid,bool weCare)
+{
+	Database* db=theApp->getDB();
 
 }
 
@@ -69,11 +76,12 @@ void ValidationCollection::addValidation(newcoin::Validation& valid)
 		mValidations[hash].push_back(valid);
 		mIndexValidations[valid.ledgerindex()].push_back(valid);
 		addToGroup(valid);
-		
+		addToDB(valid,true);
 		theApp->getLedgerMaster().checkConsensus(valid.ledgerindex());
 	}else if(validity==0)
 	{
 		mIgnoredValidations[hash].push_back(valid);
+		addToDB(valid,false);
 	}else
 	{ // the signature wasn't valid
 		cout << "Invalid Validation" << endl;

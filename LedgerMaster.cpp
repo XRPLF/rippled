@@ -1,14 +1,16 @@
 #include "LedgerMaster.h"
 #include "Application.h"
 #include "NewcoinAddress.h"
-#include "Convertion.h"
+#include "TimingService.h"
+#include "Conversion.h"
 #include <boost/foreach.hpp>
 
 using namespace std;
 
 LedgerMaster::LedgerMaster()
 {
-	//mAfterProposed=false;
+	mFinalizingLedger=Ledger::pointer();
+	mCurrentLedger=Ledger::pointer(new Ledger(TimingService::getCurrentLedgerIndex()));
 }
 
 void LedgerMaster::load()
@@ -128,11 +130,11 @@ bool LedgerMaster::addTransaction(TransactionPtr trans)
 void LedgerMaster::addFullLedger(newcoin::FullLedger& ledger)
 {
 	// check if we already have this ledger
-	// check that the hash is correct
 	uint256 inHash=protobufTo256(ledger.hash());
 	Ledger::pointer existingLedger=mLedgerHistory.getLedger( inHash );
 	if(existingLedger) return;
 
+	// check that the hash is correct
 	Ledger::pointer newLedger=Ledger::pointer(new Ledger(ledger));
 	if(newLedger->getHash()==inHash)
 	{
@@ -210,36 +212,39 @@ void LedgerMaster::checkLedgerProposal(Peer::pointer peer, newcoin::ProposeLedge
 	// if doesn't match and you have <= transactions ask for the complete ledger
 	// if doesn't match and you have > transactions send your complete ledger
 	
-	if(otherLedger.ledgerindex()<mFinalizingLedger->getIndex())
-	{ // you have already closed this ledger
-		Ledger::pointer oldLedger=mLedgerHistory.getAcceptedLedger(otherLedger.ledgerindex());
-		if(oldLedger)
-		{
-			if( (oldLedger->getHash()!=protobufTo256(otherLedger.hash())) &&
-				(oldLedger->getNumTransactions()>=otherLedger.numtransactions()))
+
+	if(otherLedger.ledgerindex()<mCurrentLedger->getIndex())
+	{
+		if( (!mFinalizingLedger) || 
+			otherLedger.ledgerindex()<mFinalizingLedger->getIndex())
+		{ // you have already closed this ledger
+			Ledger::pointer oldLedger=mLedgerHistory.getAcceptedLedger(otherLedger.ledgerindex());
+			if(oldLedger)
 			{
-				peer->sendLedgerProposal(oldLedger);
+				if( (oldLedger->getHash()!=protobufTo256(otherLedger.hash())) &&
+					(oldLedger->getNumTransactions()>=otherLedger.numtransactions()))
+				{
+					peer->sendLedgerProposal(oldLedger);
+				}
+			}
+		}else
+		{ // you guys are on the same page
+			uint256 otherHash=protobufTo256(otherLedger.hash());
+			if(mFinalizingLedger->getHash()!= otherHash)
+			{
+				if( mFinalizingLedger->getNumTransactions()>=otherLedger.numtransactions())
+				{
+					peer->sendLedgerProposal(mFinalizingLedger);
+				}else
+				{
+					peer->sendGetFullLedger(otherHash);
+				}
 			}
 		}
-	}else if(otherLedger.ledgerindex()>mFinalizingLedger->getIndex())
-	{	// you haven't started finalizing this one yet save it for when you do
-		addFutureProposal(peer,otherLedger);
 	}else
-	{ // you guys are on the same page
-		uint256 otherHash=protobufTo256(otherLedger.hash());
-		if(mFinalizingLedger->getHash()!= otherHash)
-		{
-			if( mFinalizingLedger->getNumTransactions()>=otherLedger.numtransactions())
-			{
-				peer->sendLedgerProposal(mFinalizingLedger);
-			}else
-			{
-				peer->sendGetFullLedger(otherHash);
-			}
-		}
+	{ // you haven't started finalizing this one yet save it for when you do
+		addFutureProposal(peer,otherLedger);
 	}
-
-
 }
 
 

@@ -70,7 +70,13 @@ int SqliteDatabase::getLastInsertID()
 // returns false if there are no results
 bool SqliteDatabase::startIterRows()
 {
-	needs to fill out the column table
+	mColNameTable.clear();
+	mColNameTable.resize(sqlite3_column_count(mCurrentStmt));
+	for(unsigned n=0; n<mColNameTable.size(); n++)
+	{
+		mColNameTable[n]=sqlite3_column_name(mCurrentStmt,n);
+	}
+
 	return(mMoreRows);
 }
 

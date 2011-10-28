@@ -3,7 +3,7 @@
 #include "PackedMessage.h"
 #include "Application.h"
 #include "Config.h"
-#include "Convertion.h"
+#include "Conversion.h"
 #include "BitcoinUtil.h"
 #include <boost/foreach.hpp>
 #include <iostream>
@@ -202,41 +202,6 @@ void Ledger::save()
 		}
 	}
 }
-
-/* 
-bool Ledger::load(std::string dir)
-{
-
-	string filename=strprintf("%s%u.ledger",dir,mIndex);
-	
-	ifstream loadfile(filename, ios::in | ios::binary);
-	if(loadfile.is_open()) // TODO: does this fail correctly?
-	{
-		newcoin::FullLedger ledger;
-		ledger.ParseFromIstream(&loadfile);
-		loadfile.close();
-		setTo(ledger);
-		return(true);
-	}
-
-	return(false);
-}
-
-
-void Ledger::save(string dir)
-{ 
-	string filename=strprintf("%s%u.ledger",dir,mIndex);
-
-	newcoin::FullLedger* ledger=createFullLedger();
-	ofstream savefile(filename, ios::out | ios::trunc | ios::binary);
-	if(savefile.is_open()) 
-	{
-		ledger->SerializeToOstream(&savefile);
-		savefile.close();
-	}
-	delete(ledger);
-}
-*/
 
 int64 Ledger::getAmountHeld(uint160& address)
 {
@@ -440,7 +405,7 @@ void Ledger::recalculate(bool recursive)
 
 void Ledger::parentAddedTransaction(TransactionPtr cause)
 {
-	// TODO: we can make this more efficient at some point. For now just redo everything
+	// TODO: optimize we can make this more efficient at some point. For now just redo everything
 
 	recalculate();
 

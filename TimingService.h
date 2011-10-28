@@ -20,7 +20,7 @@ public:
 	TimingService();
 	void start(boost::asio::io_service& ioService);
 
-	
+	static int getCurrentLedgerIndex();
 
 };
 #endif

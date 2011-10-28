@@ -3,6 +3,7 @@
 #include "Application.h"
 
 #include <iostream>
+#include <ctime>
 #include <boost/bind.hpp>
 
 using namespace std;
@@ -47,5 +48,10 @@ void TimingService::handleProp()
 void TimingService::handleValid()
 {
 	theApp->getLedgerMaster().endFinalization();
+}
+
+int TimingService::getCurrentLedgerIndex()
+{
+	return( (time(NULL)-theConfig.NETWORK_START_TIME)/theConfig.LEDGER_SECONDS );
 }
 

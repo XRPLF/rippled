@@ -9,7 +9,7 @@
 #include "json/json_spirit_reader_template.h"
 #include "json/json_spirit_writer_template.h"
 #include "RPC.h"
-#include "Convertion.h"
+#include "Conversion.h"
 
 using namespace std;
 using namespace json_spirit;

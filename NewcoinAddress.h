@@ -4,6 +4,9 @@
 #include "base58.h"
 
 
+// TODO: https://en.bitcoin.it/wiki/Address
+// TODO: Why do we need steps 5 and 6? why not just use a checksum function to get the checksum?
+
 class NewcoinAddress : public CBase58Data
 {
 public:

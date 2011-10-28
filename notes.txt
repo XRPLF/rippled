@@ -25,7 +25,12 @@ code from:
 ----
 
 
-libeay32.dll
+How much do we want to depend on the DB? Right now we are pulling a lot of stuff out f the DB and storing it in various data structures. but is that necessary? 
+Can't we keep everything in the DB? 
+	LedgerMaster for example. mFutureTransactions should be in the DB
+	ValidationCollection
+There is some trade off since reconstructing a whole ledger from the DB is a bit intense. So it might be good to cache these in memory.
+
 
 
 

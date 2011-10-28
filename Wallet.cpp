@@ -1,6 +1,6 @@
 #include "Wallet.h"
 #include "NewcoinAddress.h"
-#include "Convertion.h"
+#include "Conversion.h"
 #include "Application.h"
 #include "LedgerMaster.h"
 #include <string>

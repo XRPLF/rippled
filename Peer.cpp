@@ -6,7 +6,7 @@
 //#include <boost/log/trivial.hpp>
 #include <boost/bind.hpp>
 #include <iostream>
-#include "Convertion.h"
+#include "Conversion.h"
 
 using namespace std;
 using namespace boost;
@@ -226,14 +226,6 @@ void Peer::processReadBuffer()
 
 		}
 		break;
-	case newcoin::VALIDATION:
-		{
-			newcoin::Validation validation;
-			if(validation.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
-				receiveValidation(validation);
-			else cout  << "parse error: " << type << endl; //else BOOST_LOG_TRIVIAL(info) << "Error: " << error;
-		}
-		break;
 	case newcoin::FULL_LEDGER:
 		{
 			newcoin::FullLedger ledger;
@@ -243,6 +235,23 @@ void Peer::processReadBuffer()
 
 		}
 		break;
+	case newcoin::VALIDATION:
+		{
+			newcoin::Validation validation;
+			if(validation.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
+				receiveValidation(validation);
+			else cout  << "parse error: " << type << endl; //else BOOST_LOG_TRIVIAL(info) << "Error: " << error;
+		}
+		break;
+	case newcoin::PROPOSE_LEDGER:
+		{
+			newcoin::ProposeLedger prop;
+			if(prop.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
+				receiveProposeLedger(prop);
+			else cout  << "parse error: " << type << endl; //else BOOST_LOG_TRIVIAL(info) << "Error: " << error;
+		}
+		break;
+	
 	case newcoin::GET_FULL_LEDGER:
 		{
 			newcoin::GetFullLedger getFullLedger;
@@ -259,14 +268,6 @@ void Peer::processReadBuffer()
 			else cout  << "parse error: " << type << endl; //else BOOST_LOG_TRIVIAL(info) << "Error: " << error;
 
 		}
-	case newcoin::PROPOSE_LEDGER:
-		{
-			newcoin::ProposeLedger prop;
-			if(prop.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
-				receiveProposeLedger(prop);
-			else cout  << "parse error: " << type << endl; //else BOOST_LOG_TRIVIAL(info) << "Error: " << error;
-		}
-		break;
 	default:
 		cout  << "Unknown Msg: " << type << endl; //else BOOST_LOG_TRIVIAL(info) << "Error: " << error;
 	}

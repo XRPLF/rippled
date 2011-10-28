@@ -37,6 +37,6 @@ uint256 Transaction::calcHash(TransactionPtr trans)
 
 bool Transaction::isSigValid(TransactionPtr trans)
 {
-	// TODO:
+	// TODO: Transaction::isSigValid
 	return(true);
 }

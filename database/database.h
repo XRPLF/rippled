@@ -2,6 +2,7 @@
 #define __DATABASE__
 
 #include <string>
+#include <vector>
 #include "../types.h"
 
 /*
@@ -14,7 +15,7 @@ protected:
 	std::string mUser;
 	std::string mHost;
 	std::string mDBPass;
-	std::string* mColNameTable;
+	std::vector<std::string> mColNameTable;
 
 	bool getColNumber(const char* colName, int* retIndex);
 

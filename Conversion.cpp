@@ -1,4 +1,4 @@
-#include "Convertion.h"
+#include "Conversion.h"
 #include "base58.h"
 using namespace std;
 
@@ -21,11 +21,8 @@ uint160 humanTo160(const std::string& buf)
 	vector<unsigned char> retVec;
 	DecodeBase58(buf,retVec);
 	uint160 ret;
-	for(unsigned int n=0; n<retVec.size(); n++)
-	{
-		if(n>=ret.GetSerializeSize()) break;
-		ret.begin()[n]=retVec[n];
-	}
+	memcpy((unsigned char*)&ret,&retVec[0],ret.GetSerializeSize());
+
 
 	return(ret);
 }

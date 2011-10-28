@@ -7,14 +7,10 @@ Database::Database(const char* host,const char* user,const char* pass) : mNumCol
 	mDBPass=pass;
 	mHost=host;
 	mUser=user;
-
-	mColNameTable=NULL;
 }
 
 Database::~Database()
 {
-	delete[] mColNameTable;
-	
 }
 
 
@@ -83,7 +79,7 @@ uint64 Database::getBigInt(const char* colName)
 // returns false if can't find col
 bool Database::getColNumber(const char* colName,int* retIndex)
 {
-	for(int n=0; n<mNumCol; n++)
+	for(unsigned int n=0; n<mColNameTable.size(); n++)
 	{
 		if(stricmp(colName,mColNameTable[n].c_str())==0)
 		{

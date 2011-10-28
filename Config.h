@@ -6,6 +6,7 @@ public:
 	int VERSION;
 	std::string VERSION_STR;
 	bool TEST_NET;
+	int NETWORK_START_TIME;  // The Unix time we start ledger 0
 
 	int TRANSACTION_FEE;
 	int ACCOUNT_FEE;
@@ -22,7 +23,7 @@ public:
 	std::string RPC_PASSWORD;
 	std::string HANKO;
 
-	std::string HISTORY_DIR;
+	std::string DATA_DIR;
 
 	int MIN_VOTES_FOR_CONSENSUS;
 

@@ -24,7 +24,7 @@ typedef unsigned long long  uint64;
 
 inline int Testuint256AdHoc(std::vector<std::string> vArg);
 
-
+// TODO: Do we need these things? Why not just use vector<unsigned char> ?
 
 // We have to keep a separate base class without constructors
 // so the compiler will let us use it in a union

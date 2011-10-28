@@ -89,7 +89,7 @@
     <ClCompile Include="CallRPC.cpp" />
     <ClCompile Include="Config.cpp" />
     <ClCompile Include="ConnectionPool.cpp" />
-    <ClCompile Include="Convertion.cpp" />
+    <ClCompile Include="Conversion.cpp" />
     <ClCompile Include="cryptopp\cpu.cpp" />
     <ClCompile Include="cryptopp\sha.cpp" />
     <ClCompile Include="database\database.cpp" />
@@ -117,6 +117,7 @@
     <ClCompile Include="RPCServer.cpp" />
     <ClCompile Include="RPCCommands.cpp" />
     <ClCompile Include="RPCDoor.cpp" />
+    <ClCompile Include="tests.cpp" />
     <ClCompile Include="TimingService.cpp" />
     <ClCompile Include="Transaction.cpp" />
     <ClCompile Include="TransactionBundle.cpp" />
@@ -134,7 +135,7 @@
     <ClInclude Include="CallRPC.h" />
     <ClInclude Include="Config.h" />
     <ClInclude Include="ConnectionPool.h" />
-    <ClInclude Include="Convertion.h" />
+    <ClInclude Include="Conversion.h" />
     <ClInclude Include="cryptopp\config.h" />
     <ClInclude Include="cryptopp\cpu.h" />
     <ClInclude Include="cryptopp\cryptlib.h" />
@@ -205,6 +206,7 @@
     </None>
     <None Include="nodes.xml" />
     <None Include="notes.txt" />
+    <None Include="todo.txt" />
     <None Include="unl.xml" />
     <None Include="wallet.xml" />
   </ItemGroup>

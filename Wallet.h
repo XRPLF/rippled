@@ -23,7 +23,6 @@ class Wallet : public CBasicKeyStore
 		std::vector<unsigned char> mPublicKey;
 		std::vector<unsigned char> mPrivateKey;
 		int64 mAmount;
-		uint64 mAge; // do we need this
 		uint32 mSeqNum;
 
 

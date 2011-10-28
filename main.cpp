@@ -2,6 +2,7 @@
 #include <iostream>
 #include "CallRPC.h"
 
+extern void runTests();
 using namespace std;
 using namespace boost;
 
@@ -44,6 +45,8 @@ int parseCommandline(int argc, char* argv[])
 
 int main(int argc, char* argv[])
 {
+	runTests();
+
 	return(parseCommandline(argc,argv));
 }
 

@@ -34,7 +34,8 @@ Application::Application()
 
 void Application::run()
 {
-	theApp->setDB(new SqliteDatabase("data.db"));
+	string filename=strprintf("%sdata.db",theConfig.DATA_DIR);
+	theApp->setDB(new SqliteDatabase(filename.c_str()));
 	mDatabase->connect();
 
 	if(theConfig.PEER_PORT)

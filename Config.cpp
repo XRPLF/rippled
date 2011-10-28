@@ -13,6 +13,9 @@ Config::Config()
 	VERSION=1;
 	TEST_NET=false;
 
+	NETWORK_START_TIME=1319844908;
+
+
 	PEER_PORT=6561;
 	RPC_PORT=5001;
 	NUMBER_CONNECTIONS=30;
@@ -32,7 +35,7 @@ Config::Config()
 	RPC_USER="admin";
 	RPC_PASSWORD="pass";
 
-	HISTORY_DIR="history/";
+	DATA_DIR="";
 
 	TRANSACTION_FEE=1000;
 	ACCOUNT_FEE=1000;
