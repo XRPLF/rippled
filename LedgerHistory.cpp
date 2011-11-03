@@ -28,12 +28,14 @@ bool LedgerHistory::loadLedger(uint256& hash)
 
 bool LedgerHistory::loadAcceptedLedger(uint32 index)
 {
+	// TODO: LedgerHistory::loadAcceptedLedger(uint32 index)
+	/*
 	Ledger::pointer ledger=theApp->getSerializer()->loadAcceptedLedger(index);
 	if(ledger)
 	{
 		mAcceptedLedgers[index]=ledger;
 		return(true);
-	}
+	}*/
 	return(false);
 }
 

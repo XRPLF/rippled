@@ -95,7 +95,6 @@
     <ClCompile Include="database\database.cpp" />
     <ClCompile Include="database\sqlite3.c" />
     <ClCompile Include="database\SqliteDatabase.cpp" />
-    <ClCompile Include="DiskSerializer.cpp" />
     <ClCompile Include="HttpReply.cpp" />
     <ClCompile Include="json\json_spirit_reader.cpp" />
     <ClCompile Include="json\json_spirit_value.cpp" />
@@ -105,7 +104,6 @@
     <ClCompile Include="Ledger.cpp" />
     <ClCompile Include="LedgerHistory.cpp" />
     <ClCompile Include="LedgerMaster.cpp" />
-    <ClCompile Include="MySqlSerializer.cpp" />
     <ClCompile Include="newcoin.pb.cc" />
     <ClCompile Include="NewcoinAddress.cpp" />
     <ClCompile Include="PackedMessage.cpp" />

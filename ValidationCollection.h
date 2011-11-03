@@ -29,9 +29,9 @@ class ValidationCollection
 	std::map<uint32, std::vector< Group > > mIndexGroups; // all the groups at each index
 	//std::map<uint32, std::vector< newcoin::Validation > > mIndexValidations; // all the validations at each index
 
-	bool hasValidation(uint256& ledgerHash,uint160& hanko,uint32 seqnum);
+	bool hasValidation(uint32 ledgerIndex,uint160& hanko,uint32 seqnum);
 	void addToGroup(newcoin::Validation& valid);
-	void addToDB(newcoin::Validation& valid,bool weCare);
+	void addToDB(newcoin::Validation& valid,int weCare);
 public:
 	ValidationCollection();
 
@@ -40,7 +40,7 @@ public:
 
 	void addValidation(newcoin::Validation& valid);
 
-	std::vector<newcoin::Validation>* getValidations(uint32 ledgerIndex);
+	void getValidations(uint32 ledgerIndex,std::vector<newcoin::Validation>& retVec);
 
 
 	// It can miss some compatible ledgers of course if you don't know them

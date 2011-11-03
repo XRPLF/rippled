@@ -291,10 +291,11 @@ void Peer::receiveValidation(newcoin::Validation& validation)
 
 void Peer::receiveGetValidations(newcoin::GetValidations& request)
 {
-	vector<newcoin::Validation>* validations=theApp->getValidationCollection().getValidations(request.ledgerindex());
-	if(validations)
+	vector<newcoin::Validation> validations;
+	theApp->getValidationCollection().getValidations(request.ledgerindex(),validations);
+	if(validations.size())
 	{
-		BOOST_FOREACH(newcoin::Validation& valid, *validations)
+		BOOST_FOREACH(newcoin::Validation& valid, validations)
 		{
 			PackedMessage::pointer packet(new PackedMessage(PackedMessage::MessagePointer(new newcoin::Validation(valid)),newcoin::VALIDATION));
 			sendPacket(packet);

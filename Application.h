@@ -1,3 +1,6 @@
+#ifndef __APPLICATION__
+#define __APPLICATION__
+
 #include "UniqueNodeList.h"
 #include "ConnectionPool.h"
 #include "KnownNodeList.h"
@@ -5,7 +8,6 @@
 #include "TimingService.h"
 #include "ValidationCollection.h"
 #include "Wallet.h"
-#include "Serializer.h"
 #include "database/database.h"
 
 #include <boost/asio.hpp>
@@ -28,7 +30,7 @@ class Application
 	ConnectionPool mConnectionPool;
 	PeerDoor* mPeerDoor;
 	RPCDoor* mRPCDoor;
-	Serializer* mSerializer;
+	//Serializer* mSerializer;
 
 	boost::asio::io_service mIOService;
 
@@ -46,8 +48,8 @@ public:
 
 	void setDB(Database* db){ mDatabase=db; }
 
-	Serializer* getSerializer(){ return(mSerializer); }
-	void setSerializer(Serializer* ser){ mSerializer=ser; }
+	//Serializer* getSerializer(){ return(mSerializer); }
+	//void setSerializer(Serializer* ser){ mSerializer=ser; }
 	
 
 	void run();
@@ -56,3 +58,5 @@ public:
 };
 
 extern Application* theApp;
+
+#endif

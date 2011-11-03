@@ -1,3 +1,6 @@
+#ifndef __CONNECTION_POOL__
+#define __CONNECTION_POOL__
+
 #include "Peer.h"
 #include "PackedMessage.h"
 #include "types.h"
@@ -20,3 +23,5 @@ public:
 
 	
 };
+
+#endif

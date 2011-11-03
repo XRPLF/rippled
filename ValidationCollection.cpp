@@ -28,29 +28,45 @@ void ValidationCollection::load()
 
 }
 
-void ValidationCollection::addToDB(newcoin::Validation& valid,bool weCare)
+void ValidationCollection::addToDB(newcoin::Validation& valid,int weCare)
 {
 	Database* db=theApp->getDB();
+	uint256 hash=protobufTo256(valid.hash());
+	uint160 hanko=protobufTo160(valid.hanko());
+	uint256 sig=protobufTo256(valid.sig());
+
+	string hashStr,hankoStr,sigStr;
+	db->escape(hash.begin(),hash.GetSerializeSize(),hashStr);
+	db->escape(hanko.begin(),hanko.GetSerializeSize(),hankoStr);
+	db->escape(sig.begin(),sig.GetSerializeSize(),sigStr);
+	string sql=strprintf("INSERT INTO Validations (LedgerIndex,Hash,Hanko,SeqNum,Sig,WeCare) values (%d,%s,%s,%d,%s,%d)",valid.ledgerindex(),hashStr.c_str(),hankoStr.c_str(),valid.seqnum(),sigStr.c_str(),weCare);
+	db->executeSQL(sql.c_str());
 
 }
 
-bool ValidationCollection::hasValidation(uint256& ledgerHash,uint160& hanko,uint32 seqnum)
+bool ValidationCollection::hasValidation(uint32 ledgerIndex,uint160& hanko,uint32 seqnum)
 {
-	if(mValidations.count(ledgerHash))
+	string hankoStr;
+	Database* db=theApp->getDB();
+	db->escape(hanko.begin(),hanko.GetSerializeSize(),hankoStr);
+	string sql=strprintf("SELECT ValidationID,seqnum from Validations where LedgerIndex=%d and hanko=%s",ledgerIndex,hankoStr);
+	if(db->executeSQL(sql.c_str()))
 	{
-		BOOST_FOREACH(newcoin::Validation& valid,mValidations[ledgerHash])
+		if(db->startIterRows())
 		{
-			if( valid.seqnum()==seqnum &&
-				protobufTo160(valid.hanko()) == hanko) return(true);
-		}
-	}
-
-	if(mIgnoredValidations.count(ledgerHash))
-	{
-		BOOST_FOREACH(newcoin::Validation& valid,mIgnoredValidations[ledgerHash])
-		{
-			if( valid.seqnum()==seqnum &&
-				protobufTo160(valid.hanko()) == hanko) return(true);
+			if(db->getNextRow())
+			{
+				uint32 currentSeqNum=db->getInt(1);
+				if(currentSeqNum>=seqnum) 
+				{
+					db->endIterRows();
+					return(true);
+				}
+				// delete the old validation we were storing
+				sql=strprintf("DELETE FROM Validations where ValidationID=%d",db->getInt(0));
+				db->endIterRows();
+				db->executeSQL(sql.c_str());
+			}
 		}
 	}
 	return(false);
@@ -67,20 +83,17 @@ void ValidationCollection::addValidation(newcoin::Validation& valid)
 	uint160 hanko=protobufTo160(valid.hanko());
 	
 	// make sure we don't already have this validation
-	if(hasValidation(hash,hanko,valid.seqnum())) return;
+	if(hasValidation(valid.ledgerindex(),hanko,valid.seqnum())) return;
 
 	// check if we care about this hanko
 	int validity=theApp->getUNL().checkValid(valid);
 	if( validity==1 )
 	{
-		mValidations[hash].push_back(valid);
-		mIndexValidations[valid.ledgerindex()].push_back(valid);
-		addToGroup(valid);
 		addToDB(valid,true);
+		addToGroup(valid);
 		theApp->getLedgerMaster().checkConsensus(valid.ledgerindex());
 	}else if(validity==0)
 	{
-		mIgnoredValidations[hash].push_back(valid);
 		addToDB(valid,false);
 	}else
 	{ // the signature wasn't valid
@@ -147,7 +160,11 @@ void ValidationCollection::addToGroup(newcoin::Validation& newValid)
 				newGroup.mValidations.push_back(newValid);
 				newGroup.mSuperLedger=Ledger::pointer(new Ledger(newLedger));  // since this super ledger gets modified and we don't want to screw the original
 
-				BOOST_FOREACH(newcoin::Validation& valid,mIndexValidations[newValid.ledgerindex()])
+				vector<newcoin::Validation> retVec;
+				getValidations(newValid.ledgerindex(),retVec);
+
+
+				BOOST_FOREACH(newcoin::Validation& valid,retVec)
 				{
 					uint256 hash=protobufTo256(valid.hash());
 					Ledger::pointer ledger=theApp->getLedgerMaster().getLedger(hash);
@@ -169,13 +186,12 @@ void ValidationCollection::addToGroup(newcoin::Validation& newValid)
 	}
 }
 
-vector<newcoin::Validation>* ValidationCollection::getValidations(uint32 ledgerIndex)
+void ValidationCollection::getValidations(uint32 ledgerIndex,vector<newcoin::Validation>& retVec)
 {
-	if(mIndexValidations.count(ledgerIndex))
-	{
-		return(&(mIndexValidations[ledgerIndex]));
-	}
-	return(NULL);
+	string sql=strprintf("SELECT * From Validations where LedgerIndex=%d and wecare=1",ledgerIndex);
+
+	// TODO: ValidationCollection::getValidations(uint32 ledgerIndex)
+	
 }
 
 
