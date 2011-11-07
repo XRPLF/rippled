@@ -1,5 +1,7 @@
 #include "SqliteDatabase.h"
 #include "sqlite3.h"
+#include <string.h>
+#include <stdio.h>
 #include <iostream>
 using namespace std;
 
@@ -154,7 +156,7 @@ void SqliteDatabase::escape(const unsigned char* start,int size,std::string& ret
 	retStr.append("X'");
 	for(int n=0; n<size; n++)
 	{
-		itoa(start[n],buf,16);
+		sprintf(buf, "%x", start[n]);
 		if(buf[1]==0)
 		{
 			retStr.append("0");

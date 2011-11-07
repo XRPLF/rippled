@@ -1,5 +1,6 @@
 #include "database.h"
 #include <stdlib.h>
+#include <strings.h>
 
 
 Database::Database(const char* host,const char* user,const char* pass) : mNumCol(0)
@@ -81,7 +82,7 @@ bool Database::getColNumber(const char* colName,int* retIndex)
 {
 	for(unsigned int n=0; n<mColNameTable.size(); n++)
 	{
-		if(stricmp(colName,mColNameTable[n].c_str())==0)
+		if(strcasecmp(colName,mColNameTable[n].c_str())==0)
 		{
 			*retIndex=n;
 			return(true);
