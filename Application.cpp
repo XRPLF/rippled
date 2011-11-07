@@ -34,7 +34,7 @@ Application::Application()
 
 void Application::run()
 {
-	string filename=strprintf("%sdata.db",theConfig.DATA_DIR);
+	string filename=strprintf("%sdata.db",theConfig.DATA_DIR.c_str());
 	theApp->setDB(new SqliteDatabase(filename.c_str()));
 	mDatabase->connect();
 

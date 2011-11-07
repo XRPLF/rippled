@@ -9,7 +9,7 @@
 #include <vector>
 #include <openssl/bn.h>
 
-#include "bitcoinUtil.h"
+#include "BitcoinUtil.h"
 
 class bignum_error : public std::runtime_error
 {

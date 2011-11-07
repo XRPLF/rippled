@@ -16,8 +16,11 @@ void RandAddSeedPerfmon();
 static const unsigned int MAX_SIZE = 0x02000000;
 
 #define loop                for (;;)
+#define PAIR(t1, t2)        pair<t1, t2>
 
-
+#if !defined(WIN32) && !defined(WIN64)
+#define _vsnprintf(a,b,c,d) vsnprintf(a,b,c,d)
+#endif
 
 
 template<typename T1>

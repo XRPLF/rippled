@@ -1,8 +1,13 @@
 #include "BitcoinUtil.h"
 #include <stdarg.h>
-#include <windows.h>
 #include <openssl/rand.h>
 #include <time.h>
+
+#if defined(WIN32) || defined(WIN64)
+#include <windows.h>
+#else
+#include <sys/time.h>
+#endif
 
 using namespace std;
 
@@ -45,7 +50,7 @@ string strprintf(const char* format, ...)
 inline int64 GetPerformanceCounter()
 {
 	int64 nCounter = 0;
-#ifdef WIN32
+#if defined(WIN32) || defined(WIN64)
 	QueryPerformanceCounter((LARGE_INTEGER*)&nCounter);
 #else
 	timeval t;

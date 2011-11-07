@@ -15,7 +15,7 @@ void LedgerHistory::load()
 
 }
 
-bool LedgerHistory::loadLedger(uint256& hash)
+bool LedgerHistory::loadLedger(const uint256& hash)
 {
 	Ledger::pointer ledger=Ledger::pointer(new Ledger());
 	if(ledger->load(hash))
@@ -61,7 +61,7 @@ void LedgerHistory::addLedger(Ledger::pointer ledger)
 	ledger->save();
 }
 
-Ledger::pointer LedgerHistory::getLedger(uint256& hash)
+Ledger::pointer LedgerHistory::getLedger(const uint256& hash)
 {
 	if(mAllLedgers.count(hash))
 		return(mAllLedgers[hash]);

@@ -43,7 +43,7 @@ public:
 	uint32 getCurrentLedgerIndex();
 
 	Ledger::pointer getAcceptedLedger(uint32 index){ return(mLedgerHistory.getAcceptedLedger(index)); }
-	Ledger::pointer getLedger(uint256& hash){ return(mLedgerHistory.getLedger(hash)); }
+	Ledger::pointer getLedger(const uint256& hash){ return(mLedgerHistory.getLedger(hash)); }
 
 	int64 getAmountHeld(std::string& addr);
 	int64 getAmountHeld(uint160& addr);

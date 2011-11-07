@@ -9,6 +9,8 @@
 #include <limits.h>
 #include <string>
 #include <vector>
+#include <stdio.h>
+#include <string.h>
 
 #if defined(_MSC_VER) || defined(__BORLANDC__)
 typedef __int64  int64;
@@ -357,6 +359,16 @@ public:
         return (unsigned char*)&pn[WIDTH];
     }
 
+    const unsigned char* begin() const
+    {
+        return (const unsigned char*)&pn[0];
+    }
+
+    const unsigned char* end() const
+    {
+        return (unsigned char*)&pn[WIDTH];
+    }
+
     unsigned int size()
     {
         return sizeof(pn);
@@ -369,7 +381,7 @@ public:
     }
 
     template<typename Stream>
-    void Serialize(Stream& s, int nType=0, int nVersion=VERSION) const
+    void Serialize(Stream& s, int nType=0, int nVersion=4000) const /* DJS: version default? */
     {
         s.write((char*)pn, sizeof(pn));
     }

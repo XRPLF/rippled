@@ -29,7 +29,7 @@ public:
 
 	std::string& getPass(){ return(mDBPass); }
 
-	virtual void escape(unsigned char* start,int size,std::string& retStr)=0;
+	virtual void escape(const unsigned char* start,int size,std::string& retStr)=0;
 	
 	// returns true if the query went ok
 	virtual bool executeSQL(const char* sql)=0;

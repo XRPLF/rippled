@@ -37,6 +37,6 @@ public:
 	int getBinary(int colIndex,unsigned char* buf,int maxSize);
 	uint64 getBigInt(int colIndex);
 
-	void escape(unsigned char* start,int size,std::string& retStr);
+	void escape(const unsigned char* start,int size,std::string& retStr);
 
 };

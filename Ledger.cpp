@@ -49,9 +49,8 @@ newcoin::FullLedger* Ledger::createFullLedger()
 	ledger->set_index(mIndex);
 	ledger->set_hash(getHash().begin(),getHash().GetSerializeSize());
 	ledger->set_parenthash(mParentHash.begin(),mParentHash.GetSerializeSize());
-	
-	pair<uint160, pair<uint64,uint32> >& account=pair<uint160, pair<uint64,uint32> >();
-	BOOST_FOREACH(account,mAccounts)
+
+	BOOST_FOREACH(PAIR(const uint160, Account)& account, mAccounts)
 	{
 		newcoin::Account* saveAccount=ledger->add_accounts();
 		saveAccount->set_address(account.first.begin(),account.first.GetSerializeSize());
@@ -99,7 +98,7 @@ Ledger::pointer Ledger::getParent()
 
 // TODO: we can optimize so the ledgers only hold the delta from the accepted ledger
 // TODO: check to make sure the ledger is consistent after we load it
-bool Ledger::load(uint256& hash)
+bool Ledger::load(const uint256& hash)
 {
 	Database* db=theApp->getDB();
 
@@ -125,7 +124,8 @@ bool Ledger::load(uint256& hash)
 
 			char buf[100];
 			sql="SELECT Transactions.* from Transactions,LedgerTransactionMap where Transactions.TransactionID=LedgerTransactionMap.TransactionID and LedgerTransactionMap.LedgerID=";
-			sql.append(itoa( db->getInt(0),buf,10) );
+			sprintf(buf, "%d", db->getInt(0));
+			sql.append(buf);
 			if(db->executeSQL(sql.c_str()))
 			{
 				unsigned char tbuf[1000];
@@ -188,13 +188,15 @@ void Ledger::save()
 		{	// this ledger isn't in the DB
 			char buf[100];
 			sql="INSERT INTO Ledgers (LedgerIndex,Hash,ParentHash,FeeHeld) values (";
-			sql.append(itoa(mIndex,buf,10));
+			sprintf(buf, "%d", mIndex);
+			sql.append(buf);
 			sql.append(",");
-			sql.append(itoa(mIndex,buf,10));
+			sql.append(buf);
 			sql.append(",");
-			sql.append(itoa(mIndex,buf,10));
+			sql.append(buf);
 			sql.append(",");
-			sql.append(itoa(mFeeHeld,buf,10));
+			sprintf(buf, "%llu", mFeeHeld);
+			sql.append(buf);
 			sql.append(")");
 
 			sql="SELECT LAST_INSERT_ID()";
@@ -203,7 +205,7 @@ void Ledger::save()
 	}
 }
 
-int64 Ledger::getAmountHeld(uint160& address)
+int64 Ledger::getAmountHeld(const uint160& address)
 {
 	if(mAccounts.count(address))
 	{
@@ -212,7 +214,7 @@ int64 Ledger::getAmountHeld(uint160& address)
 	return(0);
 }
 
-Ledger::Account* Ledger::getAccount(uint160& address)
+Ledger::Account* Ledger::getAccount(const uint160& address)
 {
 	if(mAccounts.count(address))
 	{
@@ -495,8 +497,7 @@ void Ledger::mergeIn(Ledger::pointer other)
 
 void Ledger::correctAccounts()
 {
-	pair<uint160, Account >& fullAccount=pair<uint160, Account >();
-	BOOST_FOREACH(fullAccount,mAccounts)
+	BOOST_FOREACH(PAIR(const uint160, Account)& fullAccount, mAccounts)
 	{
 		if(fullAccount.second.first <0 )
 		{
@@ -507,7 +508,7 @@ void Ledger::correctAccounts()
 
 // Must look for transactions to discard to make this account positive
 // When we chuck transactions it might cause other accounts to need correcting
-void Ledger::correctAccount(uint160& address)
+void Ledger::correctAccount(const uint160& address)
 {
 	list<uint160> effected;
 

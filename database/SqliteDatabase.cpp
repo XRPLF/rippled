@@ -146,7 +146,7 @@ uint64 SqliteDatabase::getBigInt(int colIndex)
 BLOB literals are string literals containing hexadecimal data and preceded by a single "x" or "X" character. For example:
 X'53514C697465'
 */
-void SqliteDatabase::escape(unsigned char* start,int size,std::string& retStr)
+void SqliteDatabase::escape(const unsigned char* start,int size,std::string& retStr)
 {
 	retStr.clear();
 

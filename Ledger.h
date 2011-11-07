@@ -44,9 +44,8 @@ private:
 	void hash();
 	void addTransactionAllowNeg(TransactionPtr trans);
 	void correctAccounts();
-	void correctAccount(uint160& address);
+	void correctAccount(const uint160& address);
 public:
-	typedef boost::shared_ptr<Ledger> pointer;
 	Ledger();
 	Ledger(uint32 index);
 	Ledger(newcoin::FullLedger& ledger);
@@ -56,7 +55,7 @@ public:
 	void mergeIn(Ledger::pointer other);
 
 	void save();
-	bool load(uint256& hash);
+	bool load(const uint256& hash);
 
 	void recalculate(bool recursive=true);
 
@@ -65,7 +64,7 @@ public:
 	std::list<TransactionPtr>& getTransactions(){ return(mTransactions); }
 
 	bool hasTransaction(TransactionPtr trans);
-	int64 getAmountHeld(uint160& address);
+	int64 getAmountHeld(const uint160& address);
 	void parentAddedTransaction(TransactionPtr cause);
 	bool addTransaction(TransactionPtr trans,bool checkDuplicate=true);
 	void addValidation(newcoin::Validation& valid);
@@ -77,7 +76,7 @@ public:
 	uint32 getValidSeqNum(){ return(mValidationSeqNum); }
 	unsigned int getNumTransactions(){ return(mTransactions.size()); }
 	std::map<uint160, Account >& getAccounts(){ return(mAccounts); }
-	Account* getAccount(uint160& address);
+	Account* getAccount(const uint160& address);
 	newcoin::FullLedger* createFullLedger();
 
 	Ledger::pointer getParent();

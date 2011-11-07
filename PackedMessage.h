@@ -33,7 +33,7 @@ class PackedMessage : public boost::enable_shared_from_this<PackedMessage>
 
 	std::vector<uint8_t> mBuffer;
 public:
-    typedef boost::shared_ptr<::google::protobuf::Message> MessagePointer;
+    typedef boost::shared_ptr< ::google::protobuf::Message > MessagePointer;
 	typedef boost::shared_ptr<PackedMessage> pointer;
 
 	MessagePointer mMsg;

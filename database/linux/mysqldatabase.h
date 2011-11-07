@@ -3,7 +3,7 @@
 
 #include "../database.h"
 #include "string/i4string.h"
-#include "mysql.h"
+#include "mysql/mysql.h"
 
 /*
 this maintains the connection to the database

@@ -4,10 +4,6 @@
 
 CXX=g++ -I/packages/openssl-1.0.0/include
 
-WXINCLUDEPATHS=$(shell wx-config --cxxflags)
-
-WXLIBS=$(shell wx-config --libs)
-
 #USE_UPNP:=0
 
 DEFS=-DNOPCH -DUSE_SSL
@@ -18,11 +14,11 @@ LIBS= \
    -l boost_filesystem-mt \
    -l boost_program_options-mt \
    -l boost_thread-mt \
+   -l protobuf \
    /packages/openssl-1.0.0/libssl.a /packages/openssl-1.0.0/libcrypto.a
 
 ifdef USE_UPNP
-	LIBS += -l miniupnpc
-	DEFS += -DUSE_UPNP=$(USE_UPNP)
+	LIBS += -l miniupnpc DEFS += -DUSE_UPNP=$(USE_UPNP)
 endif
 
 LIBS+= \
@@ -78,8 +74,8 @@ SRCS= \
  CallRPC.cpp         KnownNodeList.cpp  PackedMessage.cpp   RPCDoor.cpp            ValidationCollection.cpp \
  Config.cpp          Ledger.cpp         Peer.cpp            RPCServer.cpp          Wallet.cpp \
  ConnectionPool.cpp  LedgerHistory.cpp  PeerDoor.cpp        TimingService.cpp \
- Conversion.cpp      LedgerMaster.cpp   RequestParser.cpp   TransactionBundle.cpp
-
+ Conversion.cpp      LedgerMaster.cpp   RequestParser.cpp   TransactionBundle.cpp  util/pugixml.o
+# database/linux/mysqldatabase.cpp database/database.cpp database/SqliteDatabase.cpp
 
 OBJS= $(SRCS:%.cpp=obj/%.o) cryptopp/obj/sha.o cryptopp/obj/cpu.o
 
@@ -97,7 +93,10 @@ obj/%.o: %.cpp $(HEADERS)
 newcoin.pb.h:	newcoin.proto
 	protoc --cpp_out=. newcoin.proto
 
-newcoind: newcoin.pb.h $(OBJS)
+newcoin.pb.o:	newcoin.pb.h
+	$(CXX) -c $(CXXFLAGS) -o $@ newcoin.pb.cc
+
+newcoind: newcoin.pb.o $(OBJS)
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
 
 clean:

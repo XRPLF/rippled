@@ -2,6 +2,7 @@
 #define __KNOWNNODELIST__
 
 #include "vector"
+#include <string>
 
 class KnownNode
 {
