@@ -196,14 +196,6 @@ void ValidationCollection::getValidations(uint32 ledgerIndex,vector<newcoin::Val
 }
 
 
-#if 0
-In member function
- ‘bool ValidationCollection::getConsensusLedger(uint32, uint256&, Ledger::pointer&, uint256&)’:
-invalid initialization of non-const reference of type ‘std::vector<newcoin::Validation>&’ from
- an rvalue of type ‘std::vector<newcoin::Validation>’
-invalid initialization of non-const reference of type ‘ValidationCollection::Group&’ from
- an rvalue of type ‘ValidationCollection::Group’
-
 // look through all the validated hashes at that index
 // put the ledgers into compatible groups
 // Pick the group with the most votes
@@ -214,10 +206,10 @@ bool ValidationCollection::getConsensusLedger(uint32 ledgerIndex, uint256& ourHa
 	{
 		
 		unsigned int maxVotes=theConfig.MIN_VOTES_FOR_CONSENSUS;
-		vector<newcoin::Validation>& mostValid=vector<newcoin::Validation>(); // DJS ERROR HERE
 		vector< Group >& groups=mIndexGroups[ledgerIndex];
-		Group& maxGroup=Group(); // DJS ERROR HERE
-		BOOST_FOREACH(Group& group,groups)
+		Group empty;
+		Group& maxGroup=empty;
+		BOOST_FOREACH(Group& group, groups)
 		{
 			if(group.mValidations.size()>maxVotes)
 			{
@@ -240,4 +232,3 @@ bool ValidationCollection::getConsensusLedger(uint32 ledgerIndex, uint256& ourHa
 	
 	return(ret);
 }
-#endif
