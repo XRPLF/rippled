@@ -17,11 +17,8 @@ enum Type {
 // Sent on connect
 message Hello {
 	required int32 version			= 1;
-	required bytes nodeID			= 2;
-	required bytes pubKey			= 3;
-	required int32 port			= 4;
-	optional int32 yourIP			= 5; // client may not know own IP
-	optional int64 netTime			= 6;
+	optional int64 netTime			= 2;
+	optional bytes nodeID			= 3; // node may opt to remain anonymous
 }
 
 
@@ -99,11 +96,12 @@ message Contact {
 
 	message NodeInfo { // optional node identifying information
 		enum infoType {
-			ORG_NAME	= 0;
-			NODE_NAME	= 1;
-			URL		= 2;
-			ADMIN_EMAIL	= 3;
-			NODE_POLICY	= 4;
+			HANKO_DOMAIN	= 0;
+			ORG_NAME	= 1;
+			NODE_NAME	= 2;
+			URL		= 3;
+			ADMIN_EMAIL	= 4;
+			NODE_POLICY	= 5;
 		}
 		required infoType NItype = 1;
 		required string NIvalue = 2;
@@ -112,8 +110,7 @@ message Contact {
 	message ContactInfo { // this is the signed portion
 		required string nodeID			= 1;
 		required bytes pubKey			= 2;
-		required string nodeIP			= 3;
-		repeated string additionalIPs		= 4; // support both IPv4 and IPv6
+		repeated string nodeIPs			= 4; // optional. support both IPv4 and IPv6
 		required int32 port				= 5;
 		required int32 protoVersion			= 6;
 		required int32 nodeFlags			= 7;
