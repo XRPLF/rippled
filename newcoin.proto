@@ -1,6 +1,6 @@
 package newcoin;
 
-enum Type { 
+enum Type {
 	HELLO=				1; 
 	TRANSACTION=		2; 
 	FULL_LEDGER=		3;
@@ -10,14 +10,18 @@ enum Type {
 	GET_VALIDATIONS=	7;
 	GET_CONTACTS=		8;
 	CONTACT=			9;
-	ERROR_MSG=			10;
+	PING=				10;
+	ERROR_MSG=			11;
 }
 
 // Sent on connect
 message Hello {
 	required int32 version			= 1;
 	required bytes nodeID			= 2;
-	required int32 port				= 3;
+	required bytes pubKey			= 3;
+	required int32 port			= 4;
+	optional int32 yourIP			= 5; // client may not know own IP
+	optional int64 netTime			= 6;
 }
 
 
@@ -28,14 +32,28 @@ you must first combine coins from one address to another.
 */
 // TODO: do we need a transID? I don't think we do
 // ledgerIndex should increase the ledger coherence
+
+enum TransactionStatus {
+	ACCEPTED=		1;
+	INVALID=		2; // signature or format error
+	INSUFFICIENT_FUNDS=	3;
+	INSUFFICIENT_FEE=	4;
+	CONFLICTED=		5; // send account is past the index
+	HELD=			6; // ledger or index in the future
+}
+	
+
 message Transaction {
 	required bytes from				= 1;
 	required bytes dest				= 2;
 	required uint64 amount			= 3;
-	required uint32 ledgerIndex		= 4;
-	required int32 seqNum			= 5;
-	required bytes pubKey			= 6;
-	required bytes sig				= 7;
+	required uint32 sourceLedgerIndex	= 4;
+	required uint32 seqNum			= 5;
+	required uint32 ident			= 6;
+	required bytes pubKey			= 7;
+	required bytes sig				= 8;
+	optional TransactionStatus status		= 9;
+	optional uint32 ledgerIndex			= 10;
 }
 
 // Sequence number is incremented if you must change the ledger that you are validating
@@ -76,10 +94,42 @@ message GetValidations {
 	required uint32 ledgerIndex		= 1;
 }
 
+
 message Contact {
-	required string nodeID			= 1;
-	required string nodeIP			= 2;
-	required int32 port				= 3;
+
+	message NodeInfo { // optional node identifying information
+		enum infoType {
+			ORG_NAME	= 0;
+			NODE_NAME	= 1;
+			URL		= 2;
+			ADMIN_EMAIL	= 3;
+			NODE_POLICY	= 4;
+		}
+		required infoType NItype = 1;
+		required string NIvalue = 2;
+	}
+
+	message ContactInfo { // this is the signed portion
+		required string nodeID			= 1;
+		required bytes pubKey			= 2;
+		required string nodeIP			= 3;
+		repeated string additionalIPs		= 4; // support both IPv4 and IPv6
+		required int32 port				= 5;
+		required int32 protoVersion			= 6;
+		required int32 nodeFlags			= 7;
+		repeated NodeInfo nodeInfo			= 8;
+		optional uint64 timestamp			= 9;
+	}
+
+	required ContactInfo nodeInfo			= 1;
+	required bytes signature			= 2;
+	required int32 distance				= 3; // hops to this node
+}
+
+// request node information
+message GetContacts {
+	repeated bytes nodeIDs			=1; // specific nodes we want
+	optional int32 nodeCount		=2; // get some random nodes
 }
 
 // I thought about adding a hash of the transactions here so you know if the difference is 
@@ -88,11 +138,25 @@ message Contact {
 // but it might be worth also sending a hash of the accounts since if these match you don't care that the transactions don't
 message ProposeLedger {
 	required uint32 ledgerIndex		= 1;
-	required bytes hash				= 2;
-	optional uint64 numTransactions	= 3;
+	required bytes hash			= 2;
+	optional uint64 numTransactions		= 3;
 }
+
+
+message Ping {
+	enum pingType {
+		PING = 0; // we want a reply
+		PONG = 1; // this is a reply
+	}
+	required pingType type		= 1;
+	optional int32 pingVal		= 2; // detect stale replies, ensure other side is reading
+	optional uint64 pingTime	= 3; // know when we think we sent the ping
+	optional uint64 netTime		= 4;
+}
+
 
 message ErrorMsg {
 	optional int32 errorCode		= 1;
 	optional string message			= 2;
 }
+	
