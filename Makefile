@@ -4,11 +4,10 @@
 
 CXX=g++ -I/packages/openssl-1.0.0/include
 
-#USE_UPNP:=0
-
-DEFS=-DNOPCH -DUSE_SSL
+DEFS=
 
 LIBS= \
+   -pthread \
  -Wl,-Bstatic \
    -l boost_system-mt \
    -l boost_filesystem-mt \
@@ -25,10 +24,9 @@ LIBS+= \
  -Wl,-Bdynamic \
    -l z \
    -l dl \
-   -l pthread
+   -l sqlite3
 
-
-DEBUGFLAGS=-g -D__WXDEBUG__
+DEBUGFLAGS=-g
 CXXFLAGS=-O2 -Wno-invalid-offsetof -Wformat $(DEBUGFLAGS) $(DEFS)
 HEADERS = \
     Application.h \
@@ -74,7 +72,8 @@ SRCS= \
  CallRPC.cpp         KnownNodeList.cpp  PackedMessage.cpp   RPCDoor.cpp            ValidationCollection.cpp \
  Config.cpp          Ledger.cpp         Peer.cpp            RPCServer.cpp          Wallet.cpp \
  ConnectionPool.cpp  LedgerHistory.cpp  PeerDoor.cpp        TimingService.cpp \
- Conversion.cpp      LedgerMaster.cpp   RequestParser.cpp   TransactionBundle.cpp  util/pugixml.o
+ Conversion.cpp      LedgerMaster.cpp   RequestParser.cpp   TransactionBundle.cpp  util/pugixml.o \
+ database/SqliteDatabase.cpp database/database.cpp
 # database/linux/mysqldatabase.cpp database/database.cpp database/SqliteDatabase.cpp
 
 OBJS= $(SRCS:%.cpp=obj/%.o) cryptopp/obj/sha.o cryptopp/obj/cpu.o
