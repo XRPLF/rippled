@@ -1,13 +1,14 @@
 
 
 CREATE TABLE Transactions (  -- trans in all state
-	Hanko		BLOB PRIMARY KEY,
+	TransactionID	BLOB PRIMARY KEY,
 	NodeHash	BLOB,
-	Source		BLOB,
-	FromSeq		BIGINT UNSIGNED,
-	Dest		BLOB,
+	FromName	BLOB,			-- 20 byte hash of pub key
+	FromPubKey	BLOB,
+	FromSeq	BIGINT UNSIGNED,		-- account seq
+	DestName	BLOB,			-- 20 byte hash of pub key
 	Ident		BIGINT,
-	SourceLedger	BIGINT UNSIGNED,
+	SourceLedger	BIGINT UNSIGNED,	-- ledger source expected
 	Signature	BLOB,
 	LedgerCommited	BIGINT UNSIGNED,	-- 0 if none
 	Status		VARCHAR(12) NOT NULL
@@ -24,36 +25,35 @@ CREATE TABLE PubKeys ( -- holds pub keys for nodes and accounts
 
 
 CREATE TABLE AccountStatus ( -- holds balances and sequence numbers
-	Row		INTEGER PRIMARY KEY,
-	Hanko		BLOB,
+	AccountName	BLOB,			-- 20 byte hash
 	Balance		BIGINT UNSIGNED,
-	Sequence	BIGINT UNSIGNED,
+	Seq		BIGINT UNSIGNED,
 	FirstLedger	BIGINT UNSIGNED,
 	LastLedger	BIGINT UNSIGNED		-- 2^60 if still valid
 );
 
 CREATE TABLE Ledgers ( -- closed ledgers
-	Hash		BLOB PRIMARY KEY,
+	LedgerHash	BLOB PRIMARY KEY,
 	LedgerSeq	BIGINT UNSIGNED,
-	FeeHeld		BIGINT UNSIGNED,
 	PrevHash	BLOB,
-	AccountHash	BLOB,
-	TrasactionHash	BLOB,
-	FullyStored	VARCHAR(1),
+	FeeHeld		BIGINT UNSIGNED,
+	AccountSetHash	BLOB,
+	TransSetHash	BLOB,
+	FullyStored	VARCHAR(1),		-- all data in our db
 	Status		VARCHAR(1)
 );
 
 
-CREATE TABLE LedgerHashNodes (
+CREATE TABLE AccountSetHashNodes (	
 	NodeID		BLOB,
 	LedgerSeq	BIGINT UNSIGNED,
-	Hashes		BLOB
+	Hashes		BLOB			-- 32 hashes, each 20 bytes
 );
 
-CREATE TABLE TransactionHashNodes (
+CREATE TABLE TransactionSetHashNodes (
 	NodeID		BLOB,
 	LedgerSeq	BIGINT UNSIGNED,
-	Hashes		BLOB
+	Hashes		BLOB			-- 32 hashes, each 20 bytes
 );
 
 
@@ -66,15 +66,14 @@ CREATE TABLE LedgerConfirmations (
 
 CREATE TABLE TrustedNodes (
 	Hanko		BLOB PRIMARY KEY,
-	Trust		SMALLINT.
+	TrustLevel	SMALLINT,
 	Comment		TEXT
 );
 
 CREATE TABLE KnownNodes (
 	Hanko		BLOB PRIMARY KEY,
 	LastSeen	TEXT,			-- YYYY-MM-DD HH:MM:SS.SSS
-	LastSigned	TEXT,
-	LastIP		BLOB,
+	LastIP		BLOB,			-- IPv4 or IPv6
 	LastPort	BIGINT UNSIGNED,
 	ContactObject	BLOB
 );
@@ -86,10 +85,10 @@ CREATE TABLE ByHash (				-- used to synch nodes
 	Object		BLOB
 );
 
-CREATE TABLE LocalAccounts (
+CREATE TABLE LocalAccounts (			-- wallet
 	Hash		BLOB PRIMARY KEY,
 	CurrentBalance	BIGINT UNSIGNED,
-	KeyFormat	TEXT,
+	KeyFormat	TEXT,			-- can be encrypted
 	PrivateKey	BLOB
+	Comment		TEXT
 );
-
