@@ -1,33 +1,46 @@
 package newcoin;
 
-enum Type {
-// abnormal
+enum MessageType {
+// core
+	HELLO=			0; 
 	ERROR_MSG=		1;
+	PING=			2;
 
-// session management
-	HELLO=			10; 
-	PING=			11;
+// network presence detection
+	GET_CONTACTS=		10;
+	CONTACT=		11;
 
-// transaction processing
-	TRANSACTION=		20;
 
-// ledger closing
-	PROPOSE_LEDGER=		30;
-	CLOSE_LEDGER=		31;
+// operations for 'small' nodes
+	SEARCH_TRANSACTION=	20;
+	GET_ACCOUNT=		21;
+	ACCOUNT=		22;
+
+// transaction and ledger processing
+	TRANSACTION=		30;
+	GET_LEDGER=		31;
+	LEDGER=			32;
+	PROPOSE_LEDGER=		33;
+	CLOSE_LEDGER=		34;
 
 // data replication and synchronization
 	GET_VALIDATIONS=	40;
 	VALIDATION=		41;
-	GET_CONTACTS=		42;
-	CONTACT=		43;
-	GET_OBJECT=		44;
-	OBJECT=			45;
+	GET_OBJECT=		42;
+	OBJECT=			43;
+}
 
+
+message TMBaseMessage {
+	required MessageType type		= 1;
+	optional uint32 seq			= 2;
+	optional uint32 querySeq		= 3; // if this is a reply
+	required bytes innerMessage		= 4;
 }
 
 
 // Sent on connect
-message Hello {
+message TMHello {
 	required uint32 version			= 1;
 	optional uint32 ledgerIndex		= 2;
 	optional uint64 netTime			= 3;
@@ -41,7 +54,7 @@ If you want to send an amount that is greater than any single address of yours
 you must first combine coins from one address to another.
 */
 
-message Transaction {
+message TMTransaction {
 	required bytes from			= 1;
 	required bytes dest			= 2;
 	required uint64 amount			= 3;
@@ -55,7 +68,7 @@ message Transaction {
 
 
 // Used to propose/validate during ledger close
-message Validation {
+message TMValidation {
 	required uint32 ledgerIndex		= 1;
 	required bytes ledgerHash		= 2;
 	optional uint64 timestamp		= 3; // only in proposed ledgers
@@ -66,7 +79,7 @@ message Validation {
 
 
 
-message GetValidations {
+message TMGetValidations {
 	required uint32 ledgerIndex		= 1;
 	repeated bytes hanko			= 2;
 	optional uint32 count			= 3; // get random validations
@@ -74,7 +87,7 @@ message GetValidations {
 
 
 
-message Contact {
+message TMContact {
 	required bytes pubKey			= 1;
 	required uint32 softwareVersion		= 2;
 	required uint32 protoVersion		= 3;
@@ -85,14 +98,14 @@ message Contact {
 }
 
 // request node information
-message GetContacts {
+message TMGetContacts {
 	repeated bytes nodeIDs			=1; // specific nodes we want
 	optional uint32 nodeCount		=2; // get some random nodes
 }
 
 
 
-message IndexedObject
+message TMIndexedObject
 {
 	enum ObjectType {
 		TRANSACTION		= 1;
@@ -110,23 +123,23 @@ message IndexedObject
 
 
 
-message GetObjectByHash
+message TMGetObjectByHash
 {
-	required IndexedObject object	= 1;
+	required TMIndexedObject object	= 1;
 }
 
 
 
-message ObjectByHash
+message TMObjectByHash
 {
-	required IndexedObject object	= 1;
+	required TMIndexedObject object	= 1;
 	required bytes data		= 2;
 }
 
 
 
 
-message Ping {
+message TMPing {
 	enum pingType {
 		PING = 0; // we want a reply
 		PONG = 1; // this is a reply
@@ -138,7 +151,7 @@ message Ping {
 }
 
 
-message ErrorMsg {
+message TMErrorMsg {
 	optional int32 errorCode		= 1;
 	optional string message			= 2;
 }

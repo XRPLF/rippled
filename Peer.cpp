@@ -209,7 +209,7 @@ void Peer::processReadBuffer()
 	int type=PackedMessage::getType(mReadbuf);
 	switch(type)
 	{
-		case newcoin::HELLO:
+	case newcoin::HELLO:
 		{
 			newcoin::Hello hello;
 			if(hello.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))

@@ -67,7 +67,8 @@ HEADERS = \
     Wallet.h
 
 SRCS= \
- Application.cpp     HttpReply.cpp      main.cpp            RPCCommands.cpp        Transaction.cpp \
+ Hanko.cpp Transaction.cpp \
+ Application.cpp     HttpReply.cpp      main.cpp            RPCCommands.cpp        \
  BitcoinUtil.cpp     keystore.cpp       NewcoinAddress.cpp  rpc.cpp                UniqueNodeList.cpp \
  CallRPC.cpp         KnownNodeList.cpp  PackedMessage.cpp   RPCDoor.cpp            ValidationCollection.cpp \
  Config.cpp          Ledger.cpp         Peer.cpp            RPCServer.cpp          Wallet.cpp \

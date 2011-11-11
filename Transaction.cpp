@@ -1,42 +1,67 @@
 #include "Transaction.h"
+#include "Wallet.h"
+#include "Account.h"
 #include "BitcoinUtil.h"
 
 using namespace std;
 
-
-// sort by from address and then seqnum
-bool gTransactionSorter(const TransactionPtr& lhs, const TransactionPtr& rhs)
+Transaction::Transaction() : mTransactionID(0), mAccountFrom(0), mAccountTo(0),
+	mAmount(0), mFromAccountSeq(0), mSourceLedger(0), mIdent(0),
+	mInLedger(0), mStatus(INVALID)
 {
-	if(lhs->from() == rhs->from())
-	{
-		return(lhs->seqnum() < rhs->seqnum() );
-	}else return lhs->from() < rhs->from();
 }
 
-// I don't think we need to bother checking the sig or public key
-bool Transaction::isEqual(TransactionPtr t1,TransactionPtr t2)
+Transaction::Transaction(TransStatus status, LocalAccount &fromLocalAccount, const Account &fromAccount,
+        uint32 fromSeq,	const uint160 &toAccount, uint64 amount, uint32 ident, uint32 ledger) :
+	    mAccountTo(toAccount), mAmount(amount), mFromAccountSeq(fromSeq), mSourceLedger(ledger),
+	    mIdent(ident), mInLedger(0), mStatus(NEW)
 {
-	if(t1->amount() != t2->amount()) return(false);
-	if(t1->seqnum() != t2->seqnum()) return(false);
-	if(t1->ledgerindex() != t2->ledgerindex()) return(false);
-	if(t1->from() != t2->from()) return(false);
-	if(t1->dest() != t2->dest()) return(false);
+    assert(fromAccount.GetAddress()==fromLocalAccount.mAddress);
+    assert(fromLocalAccount.mAmount>=amount);
+    assert((fromSeq+1)==fromLocalAccount.mSeqNum);
 
-	return(true);
+    mAccountFrom=fromAccount.GetAddress();
+    Sign(fromLocalAccount, fromAccount);
 }
 
-
-uint256 Transaction::calcHash(TransactionPtr trans)
+bool Transaction::Sign(LocalAccount &fromLocalAccount, const Account &fromAccount)
 {
-	vector<unsigned char> buffer;
-	buffer.resize(trans->ByteSize());
-	trans->SerializeToArray(&(buffer[0]),buffer.size());
-	return Hash(buffer.begin(), buffer.end());
+    if( (mAmount==0) || (mSourceLedger==0) || (mAccountTo==0) )
+        return false;
+    if((mAccountFrom!=fromLocalAccount.mAddress)||(mAccountFrom!=fromAccount.GetAddress()))
+        return false;
+    
+    UpdateHash();
+
+    std::vector<unsigned char> toSign, Signature;
+    if(!GetRawUnsigned(toSign, fromAccount)) return false;
+    if(!fromLocalAccount.SignRaw(toSign, Signature)) return false;
+    mSignature=Signature;
+    return true;
 }
 
-
-bool Transaction::isSigValid(TransactionPtr trans)
+bool Transaction::CheckSign(const Account &fromAccount) const
 {
-	// TODO: Transaction::isSigValid
-	return(true);
+    if(mAccountFrom!=fromAccount.GetAddress()) return false;
+
+    std::vector<unsigned char> toSign;
+    if(!GetRawUnsigned(toSign, fromAccount)) return false;
+
+    return fromAccount.CheckSignRaw(toSign, mSignature);
 }
+
+bool Transaction::GetRawUnsigned(std::vector<unsigned char> &raw, const Account &fromAccount) const
+{
+    raw.clear();
+        
+}
+
+#if 0
+void Transaction::UpdateHash()
+{ // FIXME
+    vector<unsigned char> buffer;
+    buffer.resize(trans->ByteSize());
+    trans->SerializeToArray(&(buffer[0]),buffer.size());
+    return Hash(buffer.begin(), buffer.end());
+}
+#endif

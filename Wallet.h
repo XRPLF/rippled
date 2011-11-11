@@ -12,31 +12,30 @@ class NewcoinAddress;
 /*
 Keeps track of all the public/private keys you have created
 */
+class LocalAccount
+{
+public:
+	//CKey mKey;
+	//std::string mHumanAddress;
+	uint160 mAddress;
+	CKey mPublicKey, mPrivateKey;
+	int64 mAmount;
+	uint32 mSeqNum;
+
+	bool SignRaw(const std::vector<unsigned char> &toSign, std::vector<unsigned char> &signature);
+	bool CheckSignRaw(const std::vector<unsigned char> &toSign, const std::vector<unsigned char> &signature);
+};
+
 class Wallet : public CBasicKeyStore
 {
-	class Account
-	{
-	public:
-		//CKey mKey;
-		//std::string mHumanAddress;
-		uint160 mAddress;
-		std::vector<unsigned char> mPublicKey;
-		std::vector<unsigned char> mPrivateKey;
-		int64 mAmount;
-		uint32 mSeqNum;
-
-
-		Account(){}
-		bool signTransaction(TransactionPtr input);
-	};
-	std::list<Account> mYourAccounts;
+	std::list<LocalAccount> mYourAccounts;
 
 	
 
-	TransactionPtr createTransaction(Account& fromAccount, uint160& destAddr, int64 amount);
+	TransactionPtr createTransaction(LocalAccount& fromAccount, uint160& destAddr, int64 amount);
 	bool commitTransaction(TransactionPtr trans);
 
-	Account* consolidateAccountOfSize(int64 amount);
+	LocalAccount* consolidateAccountOfSize(int64 amount);
 
 public:
 	Wallet();
@@ -51,7 +50,6 @@ public:
 	// you may need to update your balances
 	void transactionChanged(TransactionPtr trans);
 
-	
 };
 
 #endif

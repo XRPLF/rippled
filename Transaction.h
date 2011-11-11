@@ -3,7 +3,10 @@
 
 #include "uint256.h"
 #include "newcoin.pb.h"
+#include "Hanko.h"
 #include <boost/shared_ptr.hpp>
+#include <boost/enable_shared_from_this.hpp>
+#include <boost/cstdint.hpp>
 
 /*
 We could have made something that inherited from the protobuf transaction but this seemed simpler
@@ -11,6 +14,7 @@ We could have made something that inherited from the protobuf transaction but th
 
 enum TransStatus
 {
+	NEW,		// just received / generated
 	INVALID,	// no valid signature, insufficient funds
 	INCLUDED,	// added to the current ledger
 	CONFLICTED,	// losing to a conflicting transaction
@@ -18,11 +22,13 @@ enum TransStatus
 	HELD,		// not valid now, maybe later
 };
 
+class Account;
+class LocalAccount;
 
-class Transaction
+class Transaction : public boost::enable_shared_from_this<Transaction>
 {
 public:
-	typedef boost::shared_ptr<Transaction> pointer;
+	static const uint32 TransSignMagic=0x54584E00; // "TXN"
 
 private:
 	uint256		mTransactionID;
@@ -34,17 +40,20 @@ private:
 	uint32		mInLedger;
 	TransStatus	mStatus;
 
+	void UpdateHash(void);
+
 public:
 	Transaction();
-	Transaction(const uint256 &id);
 	Transaction(const std::vector<unsigned char> rawTransaction);
 	Transaction(const std::string sqlReply);
-	
-	Transaction(Account &from, Account &to, uint64 amount, uint32 ident, uint32 ledger);
-	bool Sign(const std::vector<unsigned char>& privKey);
+	Transaction(TransStatus Status, LocalAccount &fromLocal, const Account &from,
+		uint32 fromSeq, const uint160 &to, uint64 amount, uint32 ident, uint32 ledger);
 
-	const std::string getSQL() const;
-	bool checkSignature(void) const;
+	bool Sign(LocalAccount &fromLocalAccount, const Account &fromAccount);
+	bool CheckSign(const Account &fromAccount) const;
+
+	bool GetRawUnsigned(std::vector<unsigned char> &raw, const Account &from) const;
+	bool GetRawSigned(std::vector<unsigned char> &raw, const Account &from) const;
 
 	const uint256& GetID() const { return mTransactionID; }
 	const uint160& GetFromAccount() const { return mAccountFrom; }
@@ -58,6 +67,7 @@ public:
 	TransStatus GetStatus() const { return mStatus; }
 
 	void SetStatus(TransStatus st);	
+	void SetLedger(uint32 Ledger);
 
 	bool operator<(const Transaction &) const;
 	bool operator>(const Transaction &) const;
@@ -66,5 +76,7 @@ public:
 	bool operator<=(const Transaction &) const;
 	bool operator>=(const Transaction &) const;
 };
+
+typedef boost::shared_ptr<Transaction> TransactionPtr;
 
 #endif

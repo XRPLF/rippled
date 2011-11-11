@@ -4,6 +4,7 @@
 #include "Transaction.h"
 #include "types.h"
 #include "BitcoinUtil.h"
+#include "Hanko.h"
 
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
@@ -18,39 +19,20 @@ public:
 	typedef boost::shared_ptr<Ledger> pointer;
 	typedef std::pair<int64,uint32> Account;
 private:
-	bool mValidSig;
-	bool mValidHash;
-
-	uint32 mIndex;
+	bool mValidHash, mValidLedger, mOpen;
 	uint256 mHash;
-	uint256 mSignature;
-	uint256 mParentHash;
-	uint32 mValidationSeqNum;
-	uint64 mFeeHeld;
 
-	std::map<uint160, Account > mAccounts;
-	std::list<TransactionPtr> mTransactions;
-	std::list<TransactionPtr> mDiscardedTransactions;
+	uint256 mParentHash, mTransHash, mAccountHash;
+	uint64 mFeeHeld, mTimeStamp;
+	uint32 mLedgerSeq;
 
-	//TransactionBundle mBundle;
-
-	// these can be NULL
-	// we need to keep track in case there are changes in this ledger that effect either the parent or child.
-	Ledger::pointer mParent;
-	Ledger::pointer mChild;
-	
-	
-	void sign();
-	void hash();
-	void addTransactionAllowNeg(TransactionPtr trans);
-	void correctAccounts();
-	void correctAccount(const uint160& address);
 public:
 	Ledger();
 	Ledger(uint32 index);
-	Ledger(newcoin::FullLedger& ledger);
-	Ledger(Ledger::pointer other);
 
+	std::vector<unsigned char> Sign(uint64 timestamp, LocalHanko &Hanko);
+
+#if 0
 	void setTo(newcoin::FullLedger& ledger);
 	void mergeIn(Ledger::pointer other);
 
@@ -60,8 +42,6 @@ public:
 	void recalculate(bool recursive=true);
 
 	void publishValidation();
-
-	std::list<TransactionPtr>& getTransactions(){ return(mTransactions); }
 
 	bool hasTransaction(TransactionPtr trans);
 	int64 getAmountHeld(const uint160& address);
@@ -82,7 +62,7 @@ public:
 	Ledger::pointer getParent();
 	Ledger::pointer getChild();
 	bool isCompatible(Ledger::pointer other);
-
+#endif
 
 };
 

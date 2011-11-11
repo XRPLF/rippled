@@ -18,15 +18,11 @@ public:
 
 	bool SetHash160(const uint160& hash160);
 	bool SetPubKey(const std::vector<unsigned char>& vchPubKey);
-	
 
 	bool IsValid();
 
 	uint160 GetHash160();
-
-	
-
-	
+	std::string GetString();
 };
 
 #endif
