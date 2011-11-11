@@ -1,11 +1,11 @@
 
 
 CREATE TABLE Transactions (  -- trans in all state
-	TransactionID	BLOB PRIMARY KEY,
+	TransID		BLOB PRIMARY KEY,
 	NodeHash	BLOB,
 	FromName	BLOB,			-- 20 byte hash of pub key
 	FromPubKey	BLOB,
-	FromSeq	BIGINT UNSIGNED,		-- account seq
+	FromSeq		BIGINT UNSIGNED,	-- account seq
 	DestName	BLOB,			-- 20 byte hash of pub key
 	Ident		BIGINT,
 	SourceLedger	BIGINT UNSIGNED,	-- ledger source expected
@@ -14,8 +14,8 @@ CREATE TABLE Transactions (  -- trans in all state
 	Status		VARCHAR(12) NOT NULL
 );
 
-CREATE INDEX TransactionHashSet -- needed to fetch hash groups
-ON Transactions(LedgerCommited, NodeHash);
+CREATE INDEX TransHashSet ON Transactions(LedgerCommited, NodeHash);
+
 
 
 CREATE TABLE PubKeys ( -- holds pub keys for nodes and accounts
@@ -32,6 +32,9 @@ CREATE TABLE AccountStatus ( -- holds balances and sequence numbers
 	LastLedger	BIGINT UNSIGNED		-- 2^60 if still valid
 );
 
+CREATE UNIQUE INDEX CurrentStatus ON AccountStatus(AccountName, LastLedger);
+
+
 CREATE TABLE Ledgers ( -- closed ledgers
 	LedgerHash	BLOB PRIMARY KEY,
 	LedgerSeq	BIGINT UNSIGNED,
@@ -43,18 +46,25 @@ CREATE TABLE Ledgers ( -- closed ledgers
 	Status		VARCHAR(1)
 );
 
+CREATE INDEX SeqLedger ON Ledgers(LedgerSeq);
+
 
 CREATE TABLE AccountSetHashNodes (	
-	NodeID		BLOB,
 	LedgerSeq	BIGINT UNSIGNED,
+	NodeID		BLOB,
 	Hashes		BLOB			-- 32 hashes, each 20 bytes
 );
 
-CREATE TABLE TransactionSetHashNodes (
-	NodeID		BLOB,
+CREATE UNIQUE INDEX FindAccountHashNodes  ON AccountSetHashNodes(LedgerSeq, NodeID);
+
+
+CREATE TABLE TransSetHashNodes (
 	LedgerSeq	BIGINT UNSIGNED,
+	NodeID		BLOB,
 	Hashes		BLOB			-- 32 hashes, each 20 bytes
 );
+
+CREATE UNIQUE INDEX FindTransHashNodes ON TransSetHashNodes(LedgerSeq, NodeID);
 
 
 CREATE TABLE LedgerConfirmations (
@@ -63,6 +73,9 @@ CREATE TABLE LedgerConfirmations (
 	Hanko		BLOB,
 	Signature	BLOB
 );
+
+CREATE INDEX SeqLedgerConf ON LedgerConfirmations(LedgerSeq);
+
 
 CREATE TABLE TrustedNodes (
 	Hanko		BLOB PRIMARY KEY,
@@ -80,7 +93,7 @@ CREATE TABLE KnownNodes (
 
 CREATE TABLE ByHash (				-- used to synch nodes
 	Hash		BLOB PRIMARY KEY,
-	Type		VARCHAR(12) NOT NULL,
+	ObjType		CHAR(1) NOT NULL,
 	LedgerIndex	BIGINT UNSIGNED,	-- 2^60 if valid now, 0 if none
 	Object		BLOB
 );
@@ -92,3 +105,4 @@ CREATE TABLE LocalAccounts (			-- wallet
 	PrivateKey	BLOB
 	Comment		TEXT
 );
+

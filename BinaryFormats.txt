@@ -15,6 +15,13 @@ validating hashes or signatures.
 Sadly, Google's protocol buffers are not suitable for the inner portions of
 signed or hashed objects.
 
+For signatures, the object is always prefixed with a 4-byte object type.
+This prevents a malicious entity from presenting a signed object of one type
+as an object of another type, for which the signature would be valid.
+
+Note: Signed blocks that exceed the length in this specification should be
+accepted and the extraneous information ignored. Nodes may opt to ignore
+objects they consider abusively long (a 1KB transaction, for example).
 
 1) Account ID
 
@@ -37,18 +44,17 @@ Fields:
 4) 4-byte source account sequence number, unsigned BE integer
 5) 4-byte source ledger index, unsigned BE integer
 6) 4-byte arbitrary source tag, unsigned BE integer
-7) Signature of the 104-byte contents of fields 1-6
+7) Prefix 0x54584E00 signature of 104-byte contents of fields 1-6 
 
 
 3) Transaction (ledger format)
 
 Fields:
 1) Transaction in signed format
-2) 16-byte fees held, unsigned BE integer
+2) 8-byte fees held, unsigned BE integer
 
 
-
-4) Ledger (signed format)
+5) Ledger (signed format)
 
 Fields:
 1) 4-byte ledger index, unsigned BE integer
@@ -56,12 +62,15 @@ Fields:
 3) 32-byte hash of previous ledger
 4) 32-byte hash of root of the transaction tree for this ledger
 5) 32-byte hash of root of the account tree for this ledger
+6) 8-byte timestamp
 [remaining fields only in proposed ledger
-6) 8-byte timestamp when ledger is proposed
 7) 4-byte confidence, unsigned BE integer x/255
+8) Signature:
+ Accepted: Prefix (0x4C475200) of 116 byte fields 1-6
+ Proposed: Prefix (0x4C475000) of 120 byte fields 1-8
 
 
-5) Account status (ledger format)
+6) Account status (ledger format)
 
 Fields:
 1) 20-byte Account ID
@@ -70,7 +79,7 @@ Fields:
 
 
 
-6) Non-Leaf Tree Node
+7) Non-Leaf Tree Node
 
 Contains 32 hashes, each 20-bytes. They correspond to hashes of the nodes
 for the 32 possible values of the *first* 5 bits of the *next* byte of the
@@ -78,7 +87,7 @@ RIPEMD160 hash. By convention, an empty node has a hash of zero.
 
 
 
-7) Leaf Node
+8) Leaf Node
 
 Contains every item in this node, sorted in order of increasing raw binary
 order. (Elements that start with a zero byte come first.) In practice, this
@@ -101,7 +110,7 @@ Fields:
 4) 8-byte node flags (to be defined)
 5) 8-byte timestamp (seconds since 1/1/70)
 6) Node Info Block
-7) Signature of fields 1-6 above.
+7) Prefixed (0x4E4F4400) signature of fields 1-6 above.
 
 The node info block consists of one or more node info elements. Each element
 consists of a 1-byte element type, a 3-byte element length, and the element
@@ -110,9 +119,9 @@ element types are defined:
 
 0 = IPv4 Contact Information (4-byte address, 2-byte port)
 1 = IPv6 Contact Information (16-byte address, 2-byte port)
-2 = Hanko URL
-3 = Node Name
-4 = Organization Name
+2 = Node Name
+3 = Organization Name
+4 = Node Certificate
 5 = URL
 6 = Admin Email
 7 = Node Policy URL
