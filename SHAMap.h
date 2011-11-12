@@ -1,7 +1,12 @@
 #ifndef __SHAMAP__
 #define __SHAMAP__
 
+#include <list>
+
+#include <boost/shared_ptr.hpp>
+
 #include "uint256.h"
+#include "ScopedLock.h"
 
 class SHAMapNodeID
 {
@@ -9,16 +14,19 @@ public:
 	int	mDepth;
 	uint256	mNodeID;
 	
-        bool operator<(const Transaction &) const;
-        bool operator>(const Transaction &) const;
-        bool operator==(const Transaction &) const;
-        bool operator!=(const Transaction &) const;
-        bool operator<=(const Transaction &) const;
-        bool operator>=(const Transaction &) const;
+        bool operator<(const SHAMapNodeID &) const;
+        bool operator>(const SHAMapNodeID &) const;
+        bool operator==(const SHAMapNodeID &) const;
+        bool operator!=(const SHAMapNodeID &) const;
+        bool operator<=(const SHAMapNodeID &) const;
+        bool operator>=(const SHAMapNodeID &) const;
 };
 
 class SHAMapLeafNode
 {
+public:
+	typedef boost::shared_ptr<SHAMapLeafNode> pointer;
+
 private:
 	uint256			mNodeID;
 	std::list<uint256>	mHashes;
@@ -36,15 +44,16 @@ public:
 	bool DelHash(const uint256& Hash);
 };
 
-typedef boost::shared_ptr<SHAMapLeafNode> pointer;
-
 class SHAMapInnerNode
 {
+public:
+	typedef boost::shared_ptr<SHAMapInnerNode> pointer;
+
 private:
 	int		mDepth;
 	uint256		mNodeID;
 	uint256		mHash;
-	uint256[32]	mHashes;
+	uint256		mHashes[32];
 
 public:
 	SHAMapInnerNode(int Depth, const uint256 &NodeID);
@@ -63,20 +72,23 @@ public:
 	void SetChildHash(const SHAMapLeafNode &mLeaf);
 };
 
-typedef boost::shared_ptr<SHAMapInnerNode> pointer;
-
 // Not all nodes need to be resident in memory, the class can hold subsets
 // This class does not handle any inter-node logic because that requires reads/writes
 
 class SHAMap
 {
+public:
+	typedef boost::shared_ptr<SHAMap> pointer;
+
 private:
-	boost::mutex mLock;
-	std::map<SHAMapNodeID, SHAMapLeafNode> mLeaves
+	mutable boost::mutex mLock;
+	std::map<SHAMapNodeID, SHAMapLeafNode> mLeaves;
 	std::multimap<SHAMapNodeID, SHAMapInnerNode> mInnerNodes;
 
 public:
 	SHAMap();
+
+	ScopedLock Lock() const { return ScopedLock(mLock); }
 
 	bool HasInnerNode(int m, const uint160 &nodeID);
 	bool GiveInnerNode(SHAMapInnerNode::pointer);
@@ -86,3 +98,5 @@ public:
 	bool GiveLeafNode(SHAMapLeafNode::pointer);
 	SHAMapLeafNode::pointer GetLeafNode(int m, const uint160 &nodeID);
 };
+
+#endif
