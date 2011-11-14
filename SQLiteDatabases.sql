@@ -1,70 +1,36 @@
 
 
-CREATE TABLE Transactions (  -- trans in all state
+CREATE TABLE Transactions (			-- transactions in all states
 	TransID		BLOB PRIMARY KEY,
-	NodeHash	BLOB,
-	FromName	BLOB,			-- 20 byte hash of pub key
-	FromPubKey	BLOB,
+	FromID		BLOB,				-- 20 byte hash of pub key
 	FromSeq		BIGINT UNSIGNED,	-- account seq
-	DestName	BLOB,			-- 20 byte hash of pub key
-	Ident		BIGINT,
-	SourceLedger	BIGINT UNSIGNED,	-- ledger source expected
-	Signature	BLOB,
-	LedgerCommited	BIGINT UNSIGNED,	-- 0 if none
-	Status		VARCHAR(12) NOT NULL
+	FromLedger	BIGINT UNSIGNED,
+	ToID		BLOB,				-- 20 byte hash of pub key
+	FirstSeen	TEXT,				-- time first seen
+	CommitSeq	BIGINT UNSIGNED,	-- ledger commited to, 0 if none
+	Status		VARCHAR(1)			-- (N)ew, (A)ctive, (C)onflicted, (D)one, (H)eld
 );
-
-CREATE INDEX TransHashSet ON Transactions(LedgerCommited, NodeHash);
-
 
 
 CREATE TABLE PubKeys ( -- holds pub keys for nodes and accounts
-	Hash		BLOB PRIMARY KEY,
+	ID			BLOB PRIMARY KEY,
 	PubKey		BLOB NOT NULL
 );
 
 
-CREATE TABLE AccountStatus ( -- holds balances and sequence numbers
-	AccountName	BLOB,			-- 20 byte hash
-	Balance		BIGINT UNSIGNED,
-	Seq		BIGINT UNSIGNED,
-	FirstLedger	BIGINT UNSIGNED,
-	LastLedger	BIGINT UNSIGNED		-- 2^60 if still valid
-);
-
-CREATE UNIQUE INDEX CurrentStatus ON AccountStatus(AccountName, LastLedger);
-
-
 CREATE TABLE Ledgers ( -- closed ledgers
-	LedgerHash	BLOB PRIMARY KEY,
-	LedgerSeq	BIGINT UNSIGNED,
-	PrevHash	BLOB,
-	FeeHeld		BIGINT UNSIGNED,
+	LedgerHash		BLOB PRIMARY KEY,
+	LedgerSeq		BIGINT UNSIGNED,
+	PrevHash		BLOB,
+	FeeHeld			BIGINT UNSIGNED,
 	AccountSetHash	BLOB,
 	TransSetHash	BLOB,
-	FullyStored	VARCHAR(1),		-- all data in our db
-	Status		VARCHAR(1)
+	FullyStored		VARCHAR(1),		-- all data is in our db
+	Status			VARCHAR(1)		-- (A)ccepted, (C)ompatible, (I)ncompatible
 );
 
 CREATE INDEX SeqLedger ON Ledgers(LedgerSeq);
 
-
-CREATE TABLE AccountSetHashNodes (	
-	LedgerSeq	BIGINT UNSIGNED,
-	NodeID		BLOB,
-	Hashes		BLOB			-- 32 hashes, each 20 bytes
-);
-
-CREATE UNIQUE INDEX FindAccountHashNodes  ON AccountSetHashNodes(LedgerSeq, NodeID);
-
-
-CREATE TABLE TransSetHashNodes (
-	LedgerSeq	BIGINT UNSIGNED,
-	NodeID		BLOB,
-	Hashes		BLOB			-- 32 hashes, each 20 bytes
-);
-
-CREATE UNIQUE INDEX FindTransHashNodes ON TransSetHashNodes(LedgerSeq, NodeID);
 
 
 CREATE TABLE LedgerConfirmations (
@@ -74,7 +40,7 @@ CREATE TABLE LedgerConfirmations (
 	Signature	BLOB
 );
 
-CREATE INDEX SeqLedgerConf ON LedgerConfirmations(LedgerSeq);
+CREATE INDEX LedgerConfByHash ON LedgerConfirmations(LedgerHash);
 
 
 CREATE TABLE TrustedNodes (
@@ -84,25 +50,29 @@ CREATE TABLE TrustedNodes (
 );
 
 CREATE TABLE KnownNodes (
-	Hanko		BLOB PRIMARY KEY,
-	LastSeen	TEXT,			-- YYYY-MM-DD HH:MM:SS.SSS
-	LastIP		BLOB,			-- IPv4 or IPv6
-	LastPort	BIGINT UNSIGNED,
+	Hanko			BLOB PRIMARY KEY,
+	LastSeen		TEXT,			-- YYYY-MM-DD HH:MM:SS.SSS
+	HaveContactInfo	VARCHAR(1),
 	ContactObject	BLOB
 );
 
-CREATE TABLE ByHash (				-- used to synch nodes
+
+CREATE TABLE CommittedObjects (			-- used to synch nodes
 	Hash		BLOB PRIMARY KEY,
-	ObjType		CHAR(1) NOT NULL,
-	LedgerIndex	BIGINT UNSIGNED,	-- 2^60 if valid now, 0 if none
+	ObjType		CHAR(1) NOT NULL,		-- (L)edger, (T)ransaction, (A)ccount node, transaction (N)ode
+	LedgerIndex	BIGINT UNSIGNED,		-- 0 if none
 	Object		BLOB
 );
 
+CREATE INDEX ObjectLocate ON CommittedObjects(LedgerIndex, ObjType);
+
 CREATE TABLE LocalAccounts (			-- wallet
-	Hash		BLOB PRIMARY KEY,
-	CurrentBalance	BIGINT UNSIGNED,
-	KeyFormat	TEXT,			-- can be encrypted
-	PrivateKey	BLOB
+	ID			BLOB PRIMARY KEY,
+	Hash		BLOB,
+	Seq			BIGINT UNSIGNED,	-- last transaction seen/issued
+	Balance		BIGINT UNSIGNED,
+	LedgerSeq	BIGINT UNSIGNED,	-- ledger this balance is from
+	KeyFormat	TEXT,				-- can be encrypted
+	PrivateKey	BLOB,
 	Comment		TEXT
 );
-
