@@ -54,6 +54,17 @@ If you want to send an amount that is greater than any single address of yours
 you must first combine coins from one address to another.
 */
 
+enum TransactionStatus {
+	NEW		= 1;	// origin node did/could not validate
+	CURRENT		= 2;	// scheduled to go in this ledger
+	COMMITED	= 3;	// in a closed ledger
+	REJECT_CONFLICT	= 4;
+	REJECT_INVALID	= 5;
+	REJECT_FUNDS	= 6;
+	HELD_SEQ	= 7;
+	HELD_LEDGER	= 8;	// held for future ledger
+}
+
 message TMTransaction {
 	required bytes from			= 1;
 	required bytes dest			= 2;
@@ -63,7 +74,11 @@ message TMTransaction {
 	required uint32 ident			= 6;
 	required bytes pubKey			= 7;
 	required bytes sig			= 8;
-	optional uint32 ledgerIndex		= 10; // the node may not know
+	required TransactionStatus status	= 9;
+	optional uint64 receiveTimestamp	= 10;
+	optional uint32 ledgerIndexPossible	= 11; // the node may not know
+	optional uint32 ledgerIndexFinal	= 12;
+	optional bytes conflictingTransaction	= 13;
 }
 
 
