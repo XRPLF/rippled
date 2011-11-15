@@ -4,6 +4,7 @@
 #include <list>
 
 #include <boost/shared_ptr.hpp>
+#include <boost/bimap.hpp>
 
 #include "uint256.h"
 #include "ScopedLock.h"
@@ -18,10 +19,10 @@ class SHAMap;
 class SHAMapNode
 { // Identified a node in a SHA256 hash
 private:
-	static uint256	smMasks[11]; // AND with hash to get node id
+	static uint256 smMasks[11]; // AND with hash to get node id
 
-	int	mDepth;
 	uint256	mNodeID;
+	int	mDepth;
 
 public:
 
@@ -33,25 +34,24 @@ public:
 	int getDepth() { return mDepth; }
 	const uint256 &getNodeID();
 
-	bool isRoot() const { return mDepth==0; }
-	bool isLeaf() const { return mDepth==leafDepth; }
-	bool isInner() const { return !isRoot() && !isLeaf(); }
+	bool isRoot() const			{ return mDepth==0; }
+	bool isLeaf() const			{ return mDepth==leafDepth; }
+	bool isInner() const 		{ return !isRoot() && !isLeaf(); }
 	virtual bool IsPopulated(void) const { return false; }
-	SHAMapNode getParentNodeID() { return SHAMapNode(mDepth-1, mNodeID); }
+	SHAMapNode getParentNodeID()	{ return SHAMapNode(mDepth-1, mNodeID); }
 	SHAMapNode getChildNodeID(int m);
 
 	int selectBranch(const uint256 &hash);
-
-	static uint256 getNodeID(int depth, const uint256 &hash);
 	
-        bool operator<(const SHAMapNode &) const;
-        bool operator>(const SHAMapNode &) const;
-        bool operator==(const SHAMapNode &) const;
-        bool operator!=(const SHAMapNode &) const;
-        bool operator<=(const SHAMapNode &) const;
-        bool operator>=(const SHAMapNode &) const;
+	bool operator<(const SHAMapNode &) const;
+	bool operator>(const SHAMapNode &) const;
+	bool operator==(const SHAMapNode &) const;
+	bool operator!=(const SHAMapNode &) const;
+	bool operator<=(const SHAMapNode &) const;
+	bool operator>=(const SHAMapNode &) const;
 
-        static void ClassInit();
+	static void ClassInit();
+	static uint256 getNodeID(int depth, const uint256 &hash);
 };
 
 
@@ -77,13 +77,13 @@ public:
 
 	virtual bool IsPopulated(void) const { return true; }
 
-	const uint256& GetNodeHash() const { return mHash; }
-	bool isEmpty() const { return mHashes.empty(); }
-	int getHashCount() const { return mHashes.size(); }
+	const uint256& GetNodeHash() const	{ return mHash; }
+	bool isEmpty() const			{ return mHashes.empty(); }
+	int getHashCount() const		{ return mHashes.size(); }
 	const uint256& GetHash(int m) const;
 	bool hasHash(const uint256 &hash) const;
-
 };
+
 
 class SHAMapInnerNode : public SHAMapNode
 {
@@ -99,15 +99,15 @@ private:
 	void updateHash();
 
 protected:
-	void SetChildHash(int m, const uint256 &hash);
+	void setChildHash(int m, const uint256 &hash);
 
 public:
 	SHAMapInnerNode(int Depth, const uint256 &NodeID);
 
 
-	virtual bool IsPopulated(void) const { return true; }
-	const uint256& GetNodeHash() const  { return mHash; }
-	const uint256& GetChildHash(int m) const;
+	virtual bool isPopulated(void) const { return true; }
+	const uint256& getNodeHash() const  { return mHash; }
+	const uint256& getChildHash(int m) const;
 	bool isEmpty() const;
 };
 
@@ -122,7 +122,7 @@ private:
 	mutable boost::mutex mLock;
 	std::map<SHAMapNode, SHAMapLeafNode> mLeafByID;
 	std::map<SHAMapNode, SHAMapInnerNode> mInnerNodeByID;
-	std::map<uint256, SHAMapNode> mNodeByHash; // includes nodes not present
+	boost::bimap<uint256, SHAMapNode> NodeHash;
 
 public:
 	SHAMap();
@@ -130,14 +130,14 @@ public:
 	ScopedLock Lock() const { return ScopedLock(mLock); }
 
 	// inner node access functions
-	bool HasInnerNode(const SHAMapNode &id);
-	bool GiveInnerNode(SHAMapInnerNode::pointer);
-	SHAMapInnerNode::pointer GetInnerNode(const SHAMapNode &);
+	bool hasInnerNode(const SHAMapNode &id);
+	bool giveInnerNode(SHAMapInnerNode::pointer);
+	SHAMapInnerNode::pointer getInnerNode(const SHAMapNode &);
 
 	// leaf node access functions
-	bool HasLeafNode(const SHAMapNode &id);
-	bool GiveLeafNode(SHAMapLeafNode::pointer);
-	SHAMapLeafNode::pointer GetLeafNode(const SHAMapNode &);
+	bool hasLeafNode(const SHAMapNode &id);
+	bool giveLeafNode(SHAMapLeafNode::pointer);
+	SHAMapLeafNode::pointer getLeafNode(const SHAMapNode &);
 
 	// generic node functions
 	std::vector<unsigned char> getRawNode(const SHAMapNode &id);
@@ -152,9 +152,15 @@ public:
 	bool nextHash(uint256 &hash);
 	bool prevHash(uint256 &hash);
 
+	// direct mapping
+	bool nodeToHash(const SHAMapNode &node, uint256 &hash);
+	bool hashToNode(const uint256& hash, SHAMapNode &node);
+
 	// comparison/sync functions
 	void getMissingNodes(std::vector<SHAMapNode> &nodeHashes, int max);
 	void getMissingObjects(std::vector<uint256> &objectHashes, int max);
+	bool getNodeFat(const SHAMapNode &node, std::vector<uint256> &nodeHashes, int max);
+	bool getNodeFat(const uint256 &hash, std::vector<uint256> &nodeHashes, int max);
 	bool addKnownNode(const std::vector<unsigned char>& rawNode);
 
 	// overloads for backed maps
