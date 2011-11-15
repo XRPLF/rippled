@@ -5,6 +5,8 @@
 #include "types.h"
 #include "BitcoinUtil.h"
 #include "Hanko.h"
+#include "AccountState.h"
+#include "SHAMap.h"
 
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
@@ -17,53 +19,66 @@ class Ledger : public boost::enable_shared_from_this<Ledger>
 {
 public:
 	typedef boost::shared_ptr<Ledger> pointer;
-	typedef std::pair<int64,uint32> Account;
+
 private:
-	bool mValidHash, mValidLedger, mOpen;
 	uint256 mHash;
 
 	uint256 mParentHash, mTransHash, mAccountHash;
 	uint64 mFeeHeld, mTimeStamp;
 	uint32 mLedgerSeq;
 
+protected:
+	void updateHash(void);
+
 public:
-	Ledger();
 	Ledger(uint32 index);
+	Ledger(const std::vector<unsigned char> rawLedger);
 
-	std::vector<unsigned char> Sign(uint64 timestamp, LocalHanko &Hanko);
+	// ledger signature operations
+	std::vector<unsigned char> getRaw();
+	std::vector<unsigned char> getSigned(uint64 timestamp, LocalHanko &Hanko);
+	bool checkSignature(const std::vector<unsigned char> signature, LocalHanko &Hanko);
 
-#if 0
-	void setTo(newcoin::FullLedger& ledger);
-	void mergeIn(Ledger::pointer other);
+	virtual uint256 getHash() const;
+	const uint256& getParentHash() const { return mParentHash; }
+	const uint256& getTransHash() const { return mTransHash; }
+	const uint256& getAccountHash() const { return mAccountHash; }
+	uint64 getFeeHeld() const { return mFeeHeld; }
+	uint64 getTimeStamp() const { return mTimeStamp; }
+	uint32 getLedgerSeq() const { return mLedgerSeq; }
 
-	void save();
-	bool load(const uint256& hash);
+	virtual bool hasTransaction(TransactionPtr trans);
+	virtual bool hasTransaction(const uint256 &transID);
+	virtual AccountState::pointer getAccountState(const uint160 &account);
+};
 
-	void recalculate(bool recursive=true);
 
-	void publishValidation();
+class OpenLedger : public Ledger
+{
+public:
+	typedef boost::shared_ptr<OpenLedger> pointer;
 
-	bool hasTransaction(TransactionPtr trans);
-	int64 getAmountHeld(const uint160& address);
-	void parentAddedTransaction(TransactionPtr cause);
-	bool addTransaction(TransactionPtr trans,bool checkDuplicate=true);
-	void addValidation(newcoin::Validation& valid);
-	void addIgnoredValidation(newcoin::Validation& valid);
+private:
+	std::map<uint256, TransactionPtr> TransIDs;
+	std::map<std::pair<uint160, uint32>, TransactionPtr> TransAccts;
+	std::map<uint160, AccountState::pointer> AccountStates;
 
-	uint32 getIndex(){ return(mIndex); }
-	uint256& getHash();
-	uint256& getSignature();
-	uint32 getValidSeqNum(){ return(mValidationSeqNum); }
-	unsigned int getNumTransactions(){ return(mTransactions.size()); }
-	std::map<uint160, Account >& getAccounts(){ return(mAccounts); }
-	Account* getAccount(const uint160& address);
-	newcoin::FullLedger* createFullLedger();
+	std::map<uint160, SHAMapLeafNode::pointer> leaves;
+	std::map<uint160, SHAMapInnerNode::pointer> innerNodes;
 
-	Ledger::pointer getParent();
-	Ledger::pointer getChild();
+public:
+	OpenLedger(std::vector<unsigned char> rawLedger);
+	OpenLedger(const Ledger &prevLedger);
+
+	bool applyTransaction(TransactionPtr &trans);
+	bool removeTransaction(TransactionPtr &trans);
+
+	virtual bool hasTransaction(TransactionPtr trans);
+	virtual bool hasTransaction(const uint256 &transID);
+	virtual AccountState::pointer getAccountState(const uint160 &account);
+
 	bool isCompatible(Ledger::pointer other);
-#endif
-
+	bool commit(void);
 };
 
 #endif
