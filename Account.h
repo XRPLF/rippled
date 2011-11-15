@@ -1,6 +1,8 @@
 #ifndef __ACCOUNT__
 #define __ACCOUNT__
 
+#include "uint256.h"
+
 class Account
 {
 private:
