@@ -91,41 +91,49 @@ SHAMapLeafNode::SHAMapLeafNode(const SHAMapNode& nodeID) : SHAMapNode(nodeID), m
  ;
 }
 
-void SHAMapLeafNode::updateHash(void)
+bool SHAMapLeafNode::hasItem(const uint256& item) const
 {
-}
-
-bool SHAMapLeafNode::hasHash(const uint256& hash) const
-{
-	BOOST_FOREACH(const uint256& entry, mHashes)
-		if(entry==hash) return true;
+	BOOST_FOREACH(const SHAMapItem& nodeItem, mItems)
+		if(nodeItem==item) return true;
 	return false;
 }
 
-bool SHAMapLeafNode::addHash(const uint256& hash)
-{ // The node will almost never have more than one hash in it
-	std::list<uint256>::iterator it;
-	for(it=mHashes.begin(); it!=mHashes.end(); it++)
+bool SHAMapLeafNode::addUpdateItem(const SHAMapItem& item)
+{ // The node will almost never have more than one item in it
+	std::list<SHAMapItem>::iterator it;
+	for(it=mItems.begin(); it!=mItems.end(); it++)
 	{
-		if(*it==hash) return false;
-		if(*it>hash) break;
+		if(*it==item)
+		{
+		    if(it->peekData()==item.peekData())
+		        return false; // no change
+            it->updateData(item.peekData());
+            updateHash();
+            return true;
+		}
+		if(*it>item) break;
 	}
-	mHashes.insert(it, hash);
+	mItems.insert(it, item);
 	updateHash();
 	return true;
 }	
 
-bool SHAMapLeafNode::delHash(const uint256& hash)
+bool SHAMapLeafNode::delItem(const uint256& tag)
 {
-	std::list<uint256>::iterator it;
-	for(it=mHashes.begin(); it!=mHashes.end(); it++)
+	std::list<SHAMapItem>::iterator it;
+	for(it=mItems.begin(); it!=mItems.end(); it++)
 	{
-		if(*it==hash)
+		if(*it==tag)
 		{
-			mHashes.erase(it);
+			mItems.erase(it);
 			updateHash();
 			return true;
 		}
 	}
 	return false;
 }
+
+void SHAMapLeafNode::updateHash(void)
+{
+}
+

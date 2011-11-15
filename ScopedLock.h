@@ -1,7 +1,7 @@
 #ifndef __SCOPEDLOCKHOLDER__
 #define __SCOPEDLOCKHOLDER__
 
-#include "boost/thread/mutex.hpp"
+#include "boost/thread/recursive_mutex.hpp"
 
 // This is a returnable lock holder.
 // I don't know why Boost doesn't provide a good way to do this.
@@ -9,13 +9,13 @@
 class ScopedLock
 {
 private:
-    boost::mutex *mMutex;	// parent object has greater scope, so guaranteed valid
+    boost::recursive_mutex *mMutex;	// parent object has greater scope, so guaranteed valid
     mutable bool mValid;
 
     ScopedLock();		// no implementation
     
 public:
-    ScopedLock(boost::mutex &mutex) : mMutex(&mutex), mValid(true)
+    ScopedLock(boost::recursive_mutex &mutex) : mMutex(&mutex), mValid(true)
     {
         mMutex->lock();
     }
