@@ -64,10 +64,11 @@ HEADERS = \
     uint256.h \
     UniqueNodeList.h \
     ValidationCollection.h \
-    Wallet.h
+    Wallet.h \
+    newcoin.pb.h
 
 SRCS= \
- Hanko.cpp Transaction.cpp \
+ test.cpp Hanko.cpp Transaction.cpp SHAMap.cpp \
  Application.cpp     HttpReply.cpp      main.cpp            RPCCommands.cpp        \
  BitcoinUtil.cpp     keystore.cpp       NewcoinAddress.cpp  rpc.cpp                UniqueNodeList.cpp \
  CallRPC.cpp         KnownNodeList.cpp  PackedMessage.cpp   RPCDoor.cpp            ValidationCollection.cpp \
@@ -77,7 +78,7 @@ SRCS= \
  database/SqliteDatabase.cpp database/database.cpp
 # database/linux/mysqldatabase.cpp database/database.cpp database/SqliteDatabase.cpp
 
-OBJS= $(SRCS:%.cpp=obj/%.o) cryptopp/obj/sha.o cryptopp/obj/cpu.o
+OBJS= $(SRCS:%.cpp=obj/%.o) obj/newcoin.pb.o cryptopp/obj/sha.o cryptopp/obj/cpu.o
 
 all: newcoind
 
@@ -87,16 +88,13 @@ obj/%.o: %.cpp $(HEADERS)
 cryptopp/obj/%.o: cryptopp/%.cpp
 	$(CXX) -c $(CXXFLAGS) -O3 -o $@ $<
 
-obj/%.o: %.cpp $(HEADERS)
-	$(CXX) -c $(CXXFLAGS) -o $@ $<
-
 newcoin.pb.h:	newcoin.proto
 	protoc --cpp_out=. newcoin.proto
 
-newcoin.pb.o:	newcoin.pb.h
+obj/newcoin.pb.o:	newcoin.pb.h
 	$(CXX) -c $(CXXFLAGS) -o $@ newcoin.pb.cc
 
-newcoind: newcoin.pb.o $(OBJS)
+newcoind: $(OBJS)
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
 
 clean:
@@ -105,3 +103,5 @@ clean:
 	-rm -f obj/test/*.o
 	-rm -f cryptopp/obj/*.o
 	-rm -f headers.h.gch
+	-rm -f newcoin.pb.*
+
