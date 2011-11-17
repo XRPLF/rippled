@@ -2,6 +2,8 @@
 #define __SHAMAP__
 
 #include <list>
+#include <set>
+#include <map>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/bimap.hpp>
@@ -37,8 +39,9 @@ public:
 
 	bool isRoot() const			{ return mDepth==0; }
 	bool isLeaf() const			{ return mDepth==leafDepth; }
+	bool isChildLeaf() const	{ return mDepth<(leafDepth-1); }
 	bool isInner() const 		{ return !isRoot() && !isLeaf(); }
-	virtual bool IsPopulated(void) const { return false; }
+	virtual bool isPopulated(void) const { return false; }
 
 	SHAMapNode getParentNodeID()	{ return SHAMapNode(mDepth-1, mNodeID); }
 	SHAMapNode getChildNodeID(int m);
@@ -50,6 +53,8 @@ public:
 	bool operator!=(const SHAMapNode &) const;
 	bool operator<=(const SHAMapNode &) const;
 	bool operator>=(const SHAMapNode &) const;
+
+	virtual void dump(void);
 
 	static void ClassInit();
 	static uint256 getNodeID(int depth, const uint256 &hash);
@@ -66,6 +71,7 @@ private:
 	std::vector<unsigned char> mData;
 
 public:
+	SHAMapItem(const uint256 &tag); // tag is data
 	SHAMapItem(const uint256 &tag, const std::vector<unsigned char>& data);
 	SHAMapItem(const std::vector<unsigned char>& data); // tag by hash
 
@@ -87,6 +93,7 @@ public:
 	bool operator!=(const uint256& i) const			{ return mTag!=i; }
 	bool operator<=(const uint256& i) const			{ return mTag<=i; }
 	bool operator>=(const uint256& i) const			{ return mTag>=i; }
+	virtual void dump(void);
 };
 
 
@@ -101,7 +108,7 @@ private:
 	uint256	mHash;
 	std::list<SHAMapItem> mItems;
 
-	void updateHash();
+	bool updateHash();
 
 protected:
 	bool addUpdateItem(const SHAMapItem&);
@@ -111,15 +118,19 @@ protected:
 public:
 	SHAMapLeafNode(const SHAMapNode& nodeID);
 
-	virtual bool IsPopulated(void) const { return true; }
+	virtual bool isPopulated(void) const { return true; }
 
 	const uint256& GetNodeHash() const	{ return mHash; }
 	bool isEmpty() const			{ return mItems.empty(); }
 	int getItemCount() const		{ return mItems.size(); }
-	const uint256& getHash(int m) const;
 
 	bool hasItem(const uint256 &item) const;
 	SHAMapItem::pointer findItem(const uint256 &tag);
+	SHAMapItem::pointer firstItem();
+	SHAMapItem::pointer lastItem();
+	SHAMapItem::pointer nextItem(SHAMapItem::pointer);
+
+	virtual void dump(void);
 };
 
 
@@ -134,20 +145,24 @@ private:
 	uint256		mHash;
 	uint256		mHashes[32];
 
-	void updateHash();
+	bool updateHash();
 
 protected:
-	void setChildHash(int m, const uint256 &hash);
+	bool setChildHash(int m, const uint256 &hash);
 
 public:
 	SHAMapInnerNode(int Depth, const uint256 &NodeID);
+	SHAMapInnerNode(const SHAMapNode &id, const std::vector<unsigned char> &contents);
 
 	virtual bool isPopulated(void) const { return true; }
+
+	bool isEmptyBranch(int m) const		{ return mHashes[m]==0; }
 	const uint256& getNodeHash() const  { return mHash; }
 	const uint256& getChildHash(int m) const;
 	bool isEmpty() const;
-};
 
+	virtual void dump(void);
+};
 
 
 class SHAMap
@@ -156,13 +171,31 @@ public:
 	typedef boost::shared_ptr<SHAMap> pointer;
 
 private:
+	int mLeafDataSize;
 	mutable boost::recursive_mutex mLock;
-	std::map<SHAMapNode, SHAMapLeafNode> mLeafByID;
-	std::map<SHAMapNode, SHAMapInnerNode> mInnerNodeByID;
-	boost::bimap<uint256, SHAMapNode> NodeHash;
+	std::map<SHAMapNode, SHAMapLeafNode::pointer> mLeafByID;
+	std::map<SHAMapNode, SHAMapInnerNode::pointer> mInnerNodeByID;
+	std::map<SHAMapNode, SHAMapLeafNode::pointer> mDirtyLeafNodes;
+	std::map<SHAMapNode, SHAMapInnerNode::pointer> mDirtyInnerNodes;
 
+	SHAMapInnerNode::pointer root;
+
+protected:
+	void dirtyUp(const uint256& id, const std::vector<SHAMapInnerNode::pointer>& path);
+
+	SHAMapLeafNode::pointer createLeaf(const SHAMapInnerNode& lowestParent, const uint256 &id);
+	SHAMapLeafNode::pointer checkCacheLeaf(const SHAMapNode &);
+	SHAMapLeafNode::pointer walkToLeaf(const uint256& id, bool create,
+		std::vector<SHAMapInnerNode::pointer>& path);
+
+	SHAMapLeafNode::pointer getLeaf(const SHAMapNode &id, const uint256& hash);
+	SHAMapInnerNode::pointer getInner(const SHAMapNode &id, const uint256& hash);
+
+	SHAMapItem::pointer firstBelow(SHAMapInnerNode::pointer);
+	SHAMapItem::pointer lastBelow(SHAMapInnerNode::pointer);
+	
 public:
-	SHAMap();
+	SHAMap(int leafDataSize);
 
 	// hold the map stable across operations
 	ScopedLock Lock() const { return ScopedLock(mLock); }
@@ -182,17 +215,16 @@ public:
 	bool addRawNode(const SHAMapNode& nodeID, std::vector<unsigned char> rawNode);
 
 	// normal hash access functions
-	bool hasHash(const uint256 &hash);
-	bool addHash(const uint256 &hash);
-	bool delHash(const uint256 &hash);
-	bool firstHash(uint256 &hash);
-	bool lastHash(uint256 &hash);
-	bool nextHash(uint256 &hash);
-	bool prevHash(uint256 &hash);
+	bool hasItem(const uint256& id);
+	bool delItem(const uint256& id);
+	bool addItem(const SHAMapItem& item);
+	SHAMapItem::pointer getItem(const uint256 &id);
 
-	// direct mapping
-	bool nodeToHash(const SHAMapNode &node, uint256 &hash);
-	bool hashToNode(const uint256& hash, SHAMapNode &node);
+	// traverse functions
+	SHAMapItem::pointer firstItem();
+	SHAMapItem::pointer lastItem();
+	SHAMapItem::pointer nextItem(const SHAMapItem &);
+	SHAMapItem::pointer prevItem(const SHAMapItem &);
 
 	// comparison/sync functions
 	void getMissingNodes(std::vector<SHAMapNode> &nodeHashes, int max);
@@ -201,12 +233,15 @@ public:
 	bool getNodeFat(const uint256 &hash, std::vector<uint256> &nodeHashes, int max);
 	bool addKnownNode(const std::vector<unsigned char>& rawNode);
 
+	int flushDirty(int maxNodes);
+
 	// overloads for backed maps
-	virtual bool fetchNode(const uint256 &hash, std::vector<unsigned char>& rawNode);
-	virtual bool writeNode(const uint256 &hash, const std::vector<unsigned char>& rawNode);
-	virtual bool haveObject(const uint256 &hash);
+	virtual bool fetchNode(const uint256 &hash, const SHAMapNode &id, std::vector<unsigned char>& rawNode);
+	virtual bool writeNode(const uint256 &hash, const SHAMapNode &id, const std::vector<unsigned char>& rawNode);
+	virtual void badNode(const uint256 &hash, const SHAMapNode &id);
 
 	static bool TestSHAMap();
+	virtual void dump(void);
 };
 
 #endif
