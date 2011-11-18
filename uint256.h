@@ -381,7 +381,7 @@ public:
     }
 
     template<typename Stream>
-    void Serialize(Stream& s, int nType=0, int nVersion=4000) const /* DJS: version default? */
+    void Serialize(Stream& s, int nType=0) const
     {
         s.write((char*)pn, sizeof(pn));
     }
