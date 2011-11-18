@@ -14,6 +14,7 @@ public:
   bool CheckSignRaw(const std::vector<unsigned char> &toSign,
     const std::vector<unsigned char> &signature) const;
   const uint160& GetAddress(void) const { return mAddress; }
+  CKey& peekPubKey() { return pubKey; }
 };
 
 #endif

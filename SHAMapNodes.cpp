@@ -67,7 +67,7 @@ uint256 SHAMapNode::getNodeID(int depth, const uint256& hash)
 
 SHAMapNode::SHAMapNode(int depth, const uint256 &hash)
 { // canonicalize the hash to a node ID for this depth
-	assert(depth>=0 && depth<leafDepth);
+	assert(depth>=0 && depth<=leafDepth);
 	mDepth = depth;
 	mNodeID = getNodeID(depth, hash);
 }
@@ -103,7 +103,7 @@ void SHAMapNode::dump()
 
 SHAMapLeafNode::SHAMapLeafNode(const SHAMapNode& nodeID) : SHAMapNode(nodeID), mHash(0)
 {
- ;
+	assert(nodeID.getDepth()==SHAMapNode::leafDepth);
 }
 
 bool SHAMapLeafNode::hasItem(const uint256& item) const
@@ -185,9 +185,15 @@ bool SHAMapLeafNode::updateHash(void)
 	return true;
 }
 
+void SHAMapLeafNode::dump()
+{
+	std::cerr << "SHAMapLeafNode(" << getNodeID().GetHex() << ")" << std::endl;
+	std::cerr << "  " << mItems.size() << " items" << std::endl;
+}
+
 SHAMapInnerNode::SHAMapInnerNode(const SHAMapNode& id) : SHAMapNode(id)
 {
-	;
+	assert(id.getDepth()<SHAMapNode::leafDepth);
 }
 
 SHAMapInnerNode::SHAMapInnerNode(const SHAMapNode& id, const std::vector<unsigned char>& contents)
@@ -230,3 +236,13 @@ bool SHAMapInnerNode::updateHash()
 	return true;
 }
 
+void SHAMapInnerNode::dump()
+{
+	std::cerr << "SHAMapInnerNode(" << getDepth() << ", " << getNodeID().GetHex() << ")" << std::endl;
+
+	int children=0;
+	for(int i=0; i<32; i++)
+		if(!!mHashes[i]) children++;
+
+	std::cerr << "  " << children << " children" << std::endl;
+}

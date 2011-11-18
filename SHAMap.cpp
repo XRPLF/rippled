@@ -91,7 +91,7 @@ SHAMapLeafNode::pointer SHAMap::getLeaf(const SHAMapNode &id, const uint256& has
 	if(leaf != SHAMapLeafNode::pointer()) return leaf;
 
 	std::vector<unsigned char> rawNode;					// is it in backing store
-	if(!fetchNode(hash, id, rawNode)) return leaf;
+	if(!fetchNode(hash, id, rawNode)) return SHAMapLeafNode::pointer();
 
 	Serializer s(rawNode);	
 	leaf=SHAMapLeafNode::pointer(new SHAMapLeafNode(id));
@@ -120,7 +120,7 @@ SHAMapInnerNode::pointer SHAMap::getInner(const SHAMapNode &id, const uint256& h
 	if(node != SHAMapInnerNode::pointer()) return node;
 	
 	std::vector<unsigned char> rawNode;
-	if(!fetchNode(hash, id, rawNode)) return node;
+	if(!fetchNode(hash, id, rawNode)) return SHAMapInnerNode::pointer();
 
 	node=SHAMapInnerNode::pointer(new SHAMapInnerNode(id, rawNode));
 	if(node->getNodeHash()!=hash)
@@ -279,6 +279,23 @@ void SHAMapItem::dump()
 	std::cerr << "SHAMapItem(" << mTag.GetHex() << ") " << mData.size() << "bytes" << std::endl;
 }
 
+// overloads for backed maps
+bool SHAMap::fetchNode(const uint256 &, const SHAMapNode &, std::vector<unsigned char> &)
+{
+	return false;
+}
+
+bool SHAMap::writeNode(const uint256 &, const SHAMapNode &, const std::vector<unsigned char> &)
+{
+	return true;
+}
+
+void SHAMap::badNode(const uint256 &, const SHAMapNode &)
+{
+	return;
+}
+    
+
 void SHAMap::dump()
 {
 }
@@ -297,3 +314,4 @@ void TestSHAMap()
  
  sMap.dump();
 }
+

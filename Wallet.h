@@ -4,6 +4,7 @@
 #include "keystore.h"
 #include "newcoin.pb.h"
 #include "Transaction.h"
+#include "Serializer.h"
 #include <list>
 #include <vector>
 
@@ -22,8 +23,10 @@ public:
 	int64 mAmount;
 	uint32 mSeqNum;
 
-	bool SignRaw(const std::vector<unsigned char> &toSign, std::vector<unsigned char> &signature);
-	bool CheckSignRaw(const std::vector<unsigned char> &toSign, const std::vector<unsigned char> &signature);
+	bool signRaw(Serializer::pointer);
+	bool signRaw(Serializer::pointer, std::vector<unsigned char>& signature);
+	bool checkSignRaw(Serializer::pointer, int signaturePosition=-1, int signedData=-1);
+	CKey& peekPrivKey() { return mPrivateKey; }
 };
 
 class Wallet : public CBasicKeyStore

@@ -41,20 +41,19 @@ private:
 	uint32		mInLedger;
 	TransStatus	mStatus;
 
-	void UpdateHash(void);
-
 public:
 	Transaction();
 	Transaction(const std::vector<unsigned char> rawTransaction);
 	Transaction(const std::string sqlReply);
-	Transaction(TransStatus Status, LocalAccount& fromLocal, const Account& from,
+	Transaction(TransStatus Status, LocalAccount& fromLocal, Account& from,
 		uint32 fromSeq, const uint160& to, uint64 amount, uint32 ident, uint32 ledger);
 
-	bool sign(LocalAccount& fromLocalAccount, const Account& fromAccount);
-	bool checkSign(const Account& fromAccount) const;
+	bool sign(LocalAccount& fromLocalAccount, Account& fromAccount);
+	bool checkSign(Account& fromAccount) const;
+	void updateID(Account& fromAccount);
 
-	Serializer::pointer getRawUnsigned(const Account& from) const;
-	Serializer::pointer getRawSigned(const Account& from) const;
+	Serializer::pointer getRawUnsigned(Account& from) const;
+	Serializer::pointer getRawSigned(Account& from) const;
 
 	const uint256& getID() const { return mTransactionID; }
 	const uint160& getFromAccount() const { return mAccountFrom; }
