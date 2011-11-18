@@ -21,36 +21,36 @@ Transaction::Transaction(TransStatus status, LocalAccount &fromLocalAccount, con
     assert((fromSeq+1)==fromLocalAccount.mSeqNum);
 
     mAccountFrom=fromAccount.GetAddress();
-    Sign(fromLocalAccount, fromAccount);
+    sign(fromLocalAccount, fromAccount);
 }
 
-bool Transaction::Sign(LocalAccount &fromLocalAccount, const Account &fromAccount)
+bool Transaction::sign(LocalAccount &fromLocalAccount, const Account &fromAccount)
 {
     if( (mAmount==0) || (mSourceLedger==0) || (mAccountTo==0) )
         return false;
     if((mAccountFrom!=fromLocalAccount.mAddress)||(mAccountFrom!=fromAccount.GetAddress()))
         return false;
     
-    UpdateHash();
+    updateHash();
 
     std::vector<unsigned char> toSign, Signature;
-    if(!GetRawUnsigned(toSign, fromAccount)) return false;
+    if(!getRawUnsigned(toSign, fromAccount)) return false;
     if(!fromLocalAccount.SignRaw(toSign, Signature)) return false;
     mSignature=Signature;
     return true;
 }
 
-bool Transaction::CheckSign(const Account &fromAccount) const
+bool Transaction::checkSign(const Account &fromAccount) const
 {
     if(mAccountFrom!=fromAccount.GetAddress()) return false;
 
     std::vector<unsigned char> toSign;
-    if(!GetRawUnsigned(toSign, fromAccount)) return false;
+    if(!getRawUnsigned(toSign, fromAccount)) return false;
 
     return fromAccount.CheckSignRaw(toSign, mSignature);
 }
 
-bool Transaction::GetRawUnsigned(std::vector<unsigned char> &raw, const Account &fromAccount) const
+bool Transaction::getRawUnsigned(std::vector<unsigned char> &raw, const Account &fromAccount) const
 {
     raw.clear();
         

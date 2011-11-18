@@ -4,6 +4,7 @@
 #include "uint256.h"
 #include "newcoin.pb.h"
 #include "Hanko.h"
+#include "Serializer.h"
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/cstdint.hpp>
@@ -46,28 +47,28 @@ public:
 	Transaction();
 	Transaction(const std::vector<unsigned char> rawTransaction);
 	Transaction(const std::string sqlReply);
-	Transaction(TransStatus Status, LocalAccount &fromLocal, const Account &from,
-		uint32 fromSeq, const uint160 &to, uint64 amount, uint32 ident, uint32 ledger);
+	Transaction(TransStatus Status, LocalAccount& fromLocal, const Account& from,
+		uint32 fromSeq, const uint160& to, uint64 amount, uint32 ident, uint32 ledger);
 
-	bool Sign(LocalAccount &fromLocalAccount, const Account &fromAccount);
-	bool CheckSign(const Account &fromAccount) const;
+	bool sign(LocalAccount& fromLocalAccount, const Account& fromAccount);
+	bool checkSign(const Account& fromAccount) const;
 
-	bool GetRawUnsigned(std::vector<unsigned char> &raw, const Account &from) const;
-	bool GetRawSigned(std::vector<unsigned char> &raw, const Account &from) const;
+	Serializer::pointer getRawUnsigned(const Account& from) const;
+	Serializer::pointer getRawSigned(const Account& from) const;
 
-	const uint256& GetID() const { return mTransactionID; }
-	const uint160& GetFromAccount() const { return mAccountFrom; }
-	const uint160& GetToAccount() const { return mAccountTo; }
-	uint64 GetAmount() const { return mAmount; }
-	uint32 GetFromAccountSeq() const { return mFromAccountSeq; }
-	uint32 GetSourceLedger() const { return mSourceLedger; }
-	uint32 GetIdent() const { return mIdent; }
-	const std::vector<unsigned char>& GetSignature() const { return mSignature; }
-	uint32 GetLedger() const { return mInLedger; }
-	TransStatus GetStatus() const { return mStatus; }
+	const uint256& getID() const { return mTransactionID; }
+	const uint160& getFromAccount() const { return mAccountFrom; }
+	const uint160& getToAccount() const { return mAccountTo; }
+	uint64 getAmount() const { return mAmount; }
+	uint32 getFromAccountSeq() const { return mFromAccountSeq; }
+	uint32 getSourceLedger() const { return mSourceLedger; }
+	uint32 getIdent() const { return mIdent; }
+	const std::vector<unsigned char>& getSignature() const { return mSignature; }
+	uint32 getLedger() const { return mInLedger; }
+	TransStatus getStatus() const { return mStatus; }
 
-	void SetStatus(TransStatus st);	
-	void SetLedger(uint32 Ledger);
+	void setStatus(TransStatus st);	
+	void setLedger(uint32 Ledger);
 
 	bool operator<(const Transaction &) const;
 	bool operator>(const Transaction &) const;
