@@ -34,8 +34,8 @@ public:
 	static const int leafDepth=10;
 
 	SHAMapNode(int depth, const uint256 &hash);
-	int getDepth() { return mDepth; }
-	const uint256 &getNodeID() { return mNodeID; }
+	int getDepth() const		{ return mDepth; }
+	const uint256 &getNodeID()	{ return mNodeID; }
 
 	bool isRoot() const			{ return mDepth==0; }
 	bool isLeaf() const			{ return mDepth==leafDepth; }
@@ -148,11 +148,11 @@ private:
 	bool updateHash();
 
 protected:
-	bool setChildHash(int m, const uint256 &hash);
+	bool setChildHash(int m, const uint256& hash);
 
 public:
-	SHAMapInnerNode(int Depth, const uint256 &NodeID);
-	SHAMapInnerNode(const SHAMapNode &id, const std::vector<unsigned char> &contents);
+	SHAMapInnerNode(const SHAMapNode& id);
+	SHAMapInnerNode(const SHAMapNode& id, const std::vector<unsigned char> &contents);
 
 	virtual bool isPopulated(void) const { return true; }
 
@@ -183,7 +183,8 @@ private:
 protected:
 	void dirtyUp(const uint256& id, const std::vector<SHAMapInnerNode::pointer>& path);
 
-	SHAMapLeafNode::pointer createLeaf(const SHAMapInnerNode& lowestParent, const uint256 &id);
+	SHAMapLeafNode::pointer createLeaf(const SHAMapInnerNode& lowestParent, const uint256& id,
+		std::vector<SHAMapInnerNode::pointer>& path);
 	SHAMapLeafNode::pointer checkCacheLeaf(const SHAMapNode &);
 	SHAMapLeafNode::pointer walkToLeaf(const uint256& id, bool create,
 		std::vector<SHAMapInnerNode::pointer>& path);
@@ -217,7 +218,7 @@ public:
 	// normal hash access functions
 	bool hasItem(const uint256& id);
 	bool delItem(const uint256& id);
-	bool addItem(const SHAMapItem& item);
+	bool addItem(SHAMapItem::pointer item);
 	SHAMapItem::pointer getItem(const uint256 &id);
 
 	// traverse functions

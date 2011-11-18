@@ -150,6 +150,13 @@ bool SHAMapLeafNode::delItem(const uint256& tag)
 	return false;
 }
 
+SHAMapItem::pointer SHAMapLeafNode::findItem(const uint256& tag)
+{
+	BOOST_FOREACH(SHAMapItem::pointer& it, mItems)
+		if(it->getTag() == tag) return it;
+	return SHAMapItem::pointer();
+}
+
 SHAMapItem::pointer SHAMapLeafNode::firstItem(void)
 {
 	if(mItems.size()==0) return SHAMapItem::pointer();
@@ -176,6 +183,19 @@ bool SHAMapLeafNode::updateHash(void)
 	if(nh==mHash) return false;
 	mHash=nh;
 	return true;
+}
+
+SHAMapInnerNode::SHAMapInnerNode(const SHAMapNode& id) : SHAMapNode(id)
+{
+	;
+}
+
+SHAMapInnerNode::SHAMapInnerNode(const SHAMapNode& id, const std::vector<unsigned char>& contents)
+	: SHAMapNode(id)
+{
+	Serializer s(contents);
+	for(int i=0; i<32; i++)
+			mHashes[i]=s.get256(i*32);
 }
 
 bool SHAMapInnerNode::setChildHash(int m, const uint256 &hash)

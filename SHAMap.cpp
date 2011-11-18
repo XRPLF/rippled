@@ -4,11 +4,6 @@
 
 #include <boost/foreach.hpp>
 
-SHAMapItem::SHAMapItem(const uint256 &tag) : mTag(tag)
-{
-	mData.insert(mData.end(), tag.begin(), tag.end());
-}
-
 SHAMap::SHAMap(int leafDataSize, int leafDataOffset) : mLeafDataSize(leafDataSize), mLeafDataOffset(leafDataOffset)
 {
  ;
@@ -67,7 +62,7 @@ SHAMapLeafNode::pointer SHAMap::walkToLeaf(const uint256& id, bool create,
 		if(inNode->isEmptyBranch(branch))
 		{ // no nodes below this one
 			if(!create) return SHAMapLeafNode::pointer();
-			return createLeaf(*inNode, id);
+			return createLeaf(*inNode, id, path);
 		}
 		if(i!=(SHAMapNode::leafDepth)-1)
 		{ // child is another inner node
@@ -81,7 +76,7 @@ SHAMapLeafNode::pointer SHAMap::walkToLeaf(const uint256& id, bool create,
 			if(ln==NULL)
 			{
 				if(!create) return SHAMapLeafNode::pointer();
-				return createLeaf(*inNode, id);
+				return createLeaf(*inNode, id, path);
 			}
 		}
 	}
@@ -111,9 +106,10 @@ SHAMapLeafNode::pointer SHAMap::getLeaf(const SHAMapNode &id, const uint256& has
 			tag=inner.getSHA512Half();
 		}
 		else tag=s.get256(i+mLeafDataOffset);
-		leaf->addUpdateItem(SHAMapItem(tag, s.getRaw(i, mLeafDataSize)));
+		leaf->addUpdateItem(SHAMapItem::pointer(new SHAMapItem(tag, s.getRaw(i, mLeafDataSize))));
 	}
 	leaf->updateHash();
+	mLeafByID[*leaf]=leaf;
 	assert(leaf->getNodeHash()==hash);
 	return leaf;
 }
@@ -132,10 +128,17 @@ SHAMapInnerNode::pointer SHAMap::getInner(const SHAMapNode &id, const uint256& h
 		badNode(hash, id);
 		return SHAMapInnerNode::pointer();
 	}
-
 	mInnerNodeByID[id]=node;
 	return node;
 }
+
+SHAMapItem::SHAMapItem(const uint256& tag) : mTag(tag)
+{
+	mData.insert(mData.end(), tag.begin(), tag.end());
+}
+
+SHAMapItem::SHAMapItem(const uint256& tag, const std::vector<unsigned char>& data) : mTag(tag), mData(data)
+{ ; }
 
 SHAMapItem::pointer SHAMap::firstItem()
 {
@@ -225,6 +228,22 @@ SHAMapItem::pointer SHAMap::prevItem(const SHAMapItem &)
 	// WRITEME
 }
 
+SHAMapLeafNode::pointer SHAMap::createLeaf(const SHAMapInnerNode& lowestParent, const uint256& id,
+	std::vector<SHAMapInnerNode::pointer>& path)
+{
+	int depth=lowestParent.getDepth();
+	for(int depth=lowestParent.getDepth(); depth<SHAMapNode::leafDepth; depth++)
+	{
+		SHAMapInnerNode::pointer newNode(new SHAMapInnerNode(SHAMapNode(++depth, id)));
+		mInnerNodeByID[*newNode]=newNode;
+		path.push_back(newNode);
+	}
+	
+	SHAMapLeafNode::pointer newLeaf(new SHAMapLeafNode(SHAMapNode(SHAMapNode::leafDepth, id)));
+	mLeafByID[*newLeaf]=newLeaf;
+	return newLeaf;
+}
+
 bool SHAMap::hasItem(const uint256& id)
 { // does the tree have an item with this ID
 	ScopedLock sl(mLock);
@@ -245,14 +264,23 @@ bool SHAMap::delItem(const uint256& id)
 	dirtyUp(id, path);
 }
 
-bool SHAMap::addItem(const SHAMapItem& item)
+bool SHAMap::addItem(SHAMapItem::pointer item)
 { // add the specified item
 	ScopedLock sl(mLock);
 	std::vector<SHAMapInnerNode::pointer> path;
-	SHAMapLeafNode::pointer leaf=walkToLeaf(item.getTag(), true, path);
+	SHAMapLeafNode::pointer leaf=walkToLeaf(item->getTag(), true, path);
 	if(leaf == SHAMapLeafNode::pointer()) return false;
 	if(!leaf->addUpdateItem(item)) return false;
-	dirtyUp(item.getTag(), path);
+	dirtyUp(item->getTag(), path);
+}
+
+void SHAMapItem::dump()
+{
+	std::cerr << "SHAMapItem(" << mTag.GetHex() << ") " << mData.size() << "bytes" << std::endl;
+}
+
+void SHAMap::dump()
+{
 }
 
 void TestSHAMap()
