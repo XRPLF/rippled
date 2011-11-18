@@ -25,7 +25,8 @@ objects they consider abusively long (a 1KB transaction, for example).
 
 1) Account ID
 
-An account starts as an ECDSA public key (X,Y)
+An account starts as an ECDSA public key (X,Y), SECP256K1. Private keys are
+279 bytes, public keys are 65 bytes, signatures are 72 bytes.
 
 Form a 65-byte quantity consisting of a single byte with the value 4, the
 32-byte X of the public key followed by the 32-byte Y of the public key.
@@ -83,19 +84,21 @@ Fields:
 
 Contains 32 hashes, each 20-bytes. They correspond to hashes of the nodes
 for the 32 possible values of the *first* 5 bits of the *next* byte of the
-RIPEMD160 hash. By convention, an empty node has a hash of zero.
+hash. By convention, an empty node has a hash of zero.
 
 
 
 8) Leaf Node
 
-Contains every item in this node, sorted in order of increasing raw binary
-order. (Elements that start with a zero byte come first.) In practice, this
+Contains every item in this node, sorted in order of increasing tags
+(Elements that start with a zero byte come first.) In practice, this
 will be exactly one item. You'd need a quadrillion entries before two
 wound up in the same leaf.
 
 By convention, an empty leaf node has a hash of all zero bytes.
 
+For a transaction, the tag is the transaction ID (hash of the transaction
+data). For an account state, the tag is the 20-byte account ID.
 
 
 8) Contact block
