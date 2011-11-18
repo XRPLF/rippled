@@ -26,7 +26,9 @@ class Serializer
  bool get64(uint64&, int offset) const;
  bool get160(uint160&, int offset) const;
  bool get256(uint256&, int offset) const;
+ uint256 get256(int offset) const;
  bool getRaw(std::vector<unsigned char>&, int offset, int length) const;
+ std::vector<unsigned char> getRaw(int offset, int length) const;
  
  // hash functions
  uint160 getRIPEMD160(int size=0) const;
@@ -44,7 +46,7 @@ class Serializer
  bool makeSignature(std::vector<unsigned char> &signature, CKey& rkey) const;
  bool addSignature(CKey& rkey);
 
- static void UnitTest(void);
+ static void TestSerializer(void);
 };
 
 #endif

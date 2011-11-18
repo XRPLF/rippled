@@ -96,6 +96,11 @@ int SHAMapNode::selectBranch(const uint256 &hash)
 	return branch;
 }
 
+void SHAMapNode::dump()
+{
+	std::cerr << "MapNode(" << mNodeID.GetHex() << ", " << mDepth << ")" << std::endl;
+}
+
 SHAMapLeafNode::SHAMapLeafNode(const SHAMapNode& nodeID) : SHAMapNode(nodeID), mHash(0)
 {
  ;
@@ -103,26 +108,28 @@ SHAMapLeafNode::SHAMapLeafNode(const SHAMapNode& nodeID) : SHAMapNode(nodeID), m
 
 bool SHAMapLeafNode::hasItem(const uint256& item) const
 {
-	BOOST_FOREACH(const SHAMapItem& nodeItem, mItems)
-		if(nodeItem==item) return true;
+	BOOST_FOREACH(SHAMapItem::pointer nodeItem, mItems)
+		if(nodeItem->getTag()==item) return true;
 	return false;
 }
 
-bool SHAMapLeafNode::addUpdateItem(const SHAMapItem& item)
+bool SHAMapLeafNode::addUpdateItem(SHAMapItem::pointer item)
 { // The node will almost never have more than one item in it
-	std::list<SHAMapItem>::iterator it;
+	std::list<SHAMapItem::pointer>::iterator it;
 	for(it=mItems.begin(); it!=mItems.end(); it++)
 	{
-		if(*it==item)
+		SHAMapItem &nodeItem=**it;
+		if(nodeItem.getTag()==item->getTag())
 		{
-		    if(it->peekData()==item.peekData())
+		    if(nodeItem.peekData()==item->peekData())
 		        return false; // no change
-            it->updateData(item.peekData());
+            nodeItem.updateData(item->peekData());
             return updateHash();
 		}
-		if((*it)>item)
+		if(nodeItem.getTag()>item->getTag())
 		{
 			mItems.insert(it, item);
+			return updateHash();
 		}
 	}
 	mItems.push_back(item);
@@ -131,10 +138,10 @@ bool SHAMapLeafNode::addUpdateItem(const SHAMapItem& item)
 
 bool SHAMapLeafNode::delItem(const uint256& tag)
 {
-	std::list<SHAMapItem>::iterator it;
+	std::list<SHAMapItem::pointer>::iterator it;
 	for(it=mItems.begin(); it!=mItems.end(); it++)
 	{
-		if(*it==tag)
+		if((*it)->getTag()==tag)
 		{
 			mItems.erase(it);
 			return updateHash();
@@ -143,14 +150,27 @@ bool SHAMapLeafNode::delItem(const uint256& tag)
 	return false;
 }
 
+SHAMapItem::pointer SHAMapLeafNode::firstItem(void)
+{
+	if(mItems.size()==0) return SHAMapItem::pointer();
+	return *(mItems.begin());
+}
+
+SHAMapItem::pointer SHAMapLeafNode::lastItem(void)
+{
+	if(mItems.size()==0) return SHAMapItem::pointer();
+	return *(mItems.rbegin());
+}
+
+
 bool SHAMapLeafNode::updateHash(void)
 {
 	uint256 nh;
 	if(mItems.size()!=0) nh=0;
 	{
 		Serializer s;
-		BOOST_FOREACH(const SHAMapItem &mi, mItems)
-			s.addRaw(mi.peekData());
+		BOOST_FOREACH(const SHAMapItem::pointer &mi, mItems)
+			s.addRaw(mi->peekData());
 		nh=s.getSHA512Half();
 	}
 	if(nh==mHash) return false;

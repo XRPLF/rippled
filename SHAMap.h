@@ -106,13 +106,13 @@ public:
 
 private:
 	uint256	mHash;
-	std::list<SHAMapItem> mItems;
+	std::list<SHAMapItem::pointer> mItems;
 
 	bool updateHash();
 
 protected:
-	bool addUpdateItem(const SHAMapItem&);
-	bool delItem(const SHAMapItem& i) { delItem(i.getTag()); }
+	bool addUpdateItem(SHAMapItem::pointer);
+	bool delItem(const SHAMapItem::pointer i) { delItem(i->getTag()); }
 	bool delItem(const uint256 &tag);
 
 public:
@@ -120,7 +120,7 @@ public:
 
 	virtual bool isPopulated(void) const { return true; }
 
-	const uint256& GetNodeHash() const	{ return mHash; }
+	const uint256& getNodeHash() const	{ return mHash; }
 	bool isEmpty() const			{ return mItems.empty(); }
 	int getItemCount() const		{ return mItems.size(); }
 
@@ -171,7 +171,7 @@ public:
 	typedef boost::shared_ptr<SHAMap> pointer;
 
 private:
-	int mLeafDataSize;
+	int mLeafDataSize, mLeafDataOffset;
 	mutable boost::recursive_mutex mLock;
 	std::map<SHAMapNode, SHAMapLeafNode::pointer> mLeafByID;
 	std::map<SHAMapNode, SHAMapInnerNode::pointer> mInnerNodeByID;
@@ -195,7 +195,7 @@ protected:
 	SHAMapItem::pointer lastBelow(SHAMapInnerNode::pointer);
 	
 public:
-	SHAMap(int leafDataSize);
+	SHAMap(int leafDataSize=32, int leafDataOffset=-1);
 
 	// hold the map stable across operations
 	ScopedLock Lock() const { return ScopedLock(mLock); }

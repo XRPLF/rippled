@@ -4,7 +4,12 @@
 
 #include <boost/foreach.hpp>
 
-SHAMap::SHAMap(int leafDataSize) : mLeafDataSize(leafDataSize)
+SHAMapItem::SHAMapItem(const uint256 &tag) : mTag(tag)
+{
+	mData.insert(mData.end(), tag.begin(), tag.end());
+}
+
+SHAMap::SHAMap(int leafDataSize, int leafDataOffset) : mLeafDataSize(leafDataSize), mLeafDataOffset(leafDataOffset)
 {
  ;
 }
@@ -86,14 +91,30 @@ SHAMapLeafNode::pointer SHAMap::walkToLeaf(const uint256& id, bool create,
 
 SHAMapLeafNode::pointer SHAMap::getLeaf(const SHAMapNode &id, const uint256& hash)
 { // retrieve a leaf whose node hash is known
-	SHAMapLeafNode::pointer leaf=mLeafByID[id];
+	assert(!!hash);
+	SHAMapLeafNode::pointer leaf=mLeafByID[id];			// is the leaf in memory
 	if(leaf != SHAMapLeafNode::pointer()) return leaf;
 
-	std::vector<unsigned char> rawNode;
+	std::vector<unsigned char> rawNode;					// is it in backing store
 	if(!fetchNode(hash, id, rawNode)) return leaf;
-	
+
+	Serializer s(rawNode);	
 	leaf=SHAMapLeafNode::pointer(new SHAMapLeafNode(id));
-	// construct leaf WRITEME
+
+	for(int i=0; i<s.getLength(); i+=mLeafDataSize)
+	{
+		uint256 tag;
+		if(mLeafDataOffset<0)
+		{
+			Serializer inner;
+			inner.addRaw(s.getRaw(i, mLeafDataSize));
+			tag=inner.getSHA512Half();
+		}
+		else tag=s.get256(i+mLeafDataOffset);
+		leaf->addUpdateItem(SHAMapItem(tag, s.getRaw(i, mLeafDataSize)));
+	}
+	leaf->updateHash();
+	assert(leaf->getNodeHash()==hash);
 	return leaf;
 }
 

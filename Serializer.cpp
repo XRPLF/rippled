@@ -83,11 +83,27 @@ bool Serializer::get256(uint256& o, int offset) const
 	return true;
 }
 
+uint256 Serializer::get256(int offset) const
+{
+	uint256 ret;
+	if((offset+sizeof(ret))>mData.size()) return ret;
+	memcpy(&ret, &(mData.front())+offset, sizeof(ret));
+	return ret;
+}
+
 bool Serializer::getRaw(std::vector<unsigned char>& o, int offset, int length) const
 {
 	if((offset+length)>mData.size()) return false;
 	o.assign(mData.begin()+offset, mData.begin()+offset+length);
 	return true;
+}
+
+std::vector<unsigned char> Serializer::getRaw(int offset, int length) const
+{
+	std::vector<unsigned char> o;
+	if((offset+length)>mData.size()) return o;
+	o.assign(mData.begin()+offset, mData.begin()+offset+length);
+	return o;
 }
 
 uint160 Serializer::getRIPEMD160(int size) const
@@ -140,4 +156,9 @@ bool Serializer::addSignature(CKey& key)
 	assert(signature.size()==72);
 	addRaw(signature);
 	return true;
+}
+
+void Serializer::TestSerializer(void)
+{
+	Serializer s(64);
 }
