@@ -1,13 +1,15 @@
 #ifndef __TRANSACTION__
 #define __TRANSACTION__
 
+#include <boost/shared_ptr.hpp>
+#include <boost/enable_shared_from_this.hpp>
+#include <boost/cstdint.hpp>
+
 #include "uint256.h"
 #include "newcoin.pb.h"
 #include "Hanko.h"
 #include "Serializer.h"
-#include <boost/shared_ptr.hpp>
-#include <boost/enable_shared_from_this.hpp>
-#include <boost/cstdint.hpp>
+#include "Account.h"
 
 /*
 We could have made something that inherited from the protobuf transaction but this seemed simpler
@@ -41,6 +43,8 @@ private:
 	uint32		mInLedger;
 	TransStatus	mStatus;
 
+	Account::pointer 	mpAccountFrom;
+
 public:
 	Transaction();
 	Transaction(const std::vector<unsigned char> rawTransaction);
@@ -48,12 +52,14 @@ public:
 	Transaction(TransStatus Status, LocalAccount& fromLocal, Account& from,
 		uint32 fromSeq, const uint160& to, uint64 amount, uint32 ident, uint32 ledger);
 
-	bool sign(LocalAccount& fromLocalAccount, Account& fromAccount);
-	bool checkSign(Account& fromAccount) const;
-	void updateID(Account& fromAccount);
+	void setFromAccountPointer(Account::pointer af) { mpAccountFrom=af; }
 
-	Serializer::pointer getRawUnsigned(Account& from) const;
-	Serializer::pointer getRawSigned(Account& from) const;
+	bool sign(LocalAccount& fromLocalAccount);
+	bool checkSign() const;
+	void updateID();
+
+	Serializer::pointer getRawUnsigned() const;
+	Serializer::pointer getRawSigned() const;
 
 	const uint256& getID() const { return mTransactionID; }
 	const uint160& getFromAccount() const { return mAccountFrom; }
