@@ -69,9 +69,13 @@ private:
 	std::vector<unsigned char> mData;
 
 public:
-	SHAMapItem(const uint256& tag); // tag is data
+
+	// for transactions
 	SHAMapItem(const uint256& tag, const std::vector<unsigned char>& data);
 	SHAMapItem(const std::vector<unsigned char>& data); // tag by hash
+
+	// for account balances
+	SHAMapItem(const uint160& tag, const std::vector<unsigned char>& data);
 
 	const uint256& getTag(void) const { return mTag; }
 	std::vector<unsigned char> getData(void) const { return mData; }
@@ -169,12 +173,12 @@ public:
 	typedef boost::shared_ptr<SHAMap> pointer;
 
 private:
-	int mLeafDataSize, mLeafDataOffset;
+	int mLeafDataSize, mLeafDataOffset, mSeq;
 	mutable boost::recursive_mutex mLock;
 	std::map<SHAMapNode, SHAMapLeafNode::pointer> mLeafByID;
 	std::map<SHAMapNode, SHAMapInnerNode::pointer> mInnerNodeByID;
-	std::map<SHAMapNode, SHAMapLeafNode::pointer> mDirtyLeafNodes;
-	std::map<SHAMapNode, SHAMapInnerNode::pointer> mDirtyInnerNodes;
+	boost::shared_ptr<std::map<SHAMapNode, SHAMapLeafNode::pointer> > mDirtyLeafNodes;
+	boost::shared_ptr<std::map<SHAMapNode, SHAMapInnerNode::pointer> > mDirtyInnerNodes;
 
 	SHAMapInnerNode::pointer root;
 

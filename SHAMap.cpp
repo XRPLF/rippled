@@ -12,12 +12,14 @@ SHAMap::SHAMap(int leafDataSize, int leafDataOffset) : mLeafDataSize(leafDataSiz
 void SHAMap::dirtyUp(const uint256& id, const std::vector<SHAMapInnerNode::pointer>& path)
 { // walk the tree up from through the inner nodes to the root
   // update linking hashes and add nodes to dirty list
+	if(mDirtyInnerNodes==NULL) return;
+
 	std::vector<SHAMapInnerNode::pointer>::const_reverse_iterator it;
 
 	it = path.rbegin();
 	if(it == path.rend()) return;
 	
-	mDirtyInnerNodes[**it]=*it;
+	(*mDirtyInnerNodes)[**it]=*it;
 	uint256 hVal=(*it)->getNodeHash();
 	if(hVal==0)
 		mInnerNodeByID.erase(**it);
@@ -26,7 +28,7 @@ void SHAMap::dirtyUp(const uint256& id, const std::vector<SHAMapInnerNode::point
 	{
 		if(!(*it)->setChildHash((*it)->selectBranch(id), hVal))
 			return;
-		mDirtyInnerNodes[**it]=*it;
+		(*mDirtyInnerNodes)[**it]=*it;
 		hVal = (*it)->getNodeHash();
 		if(hVal == 0) mInnerNodeByID.erase(**it);
 	}
@@ -130,11 +132,6 @@ SHAMapInnerNode::pointer SHAMap::getInner(const SHAMapNode &id, const uint256& h
 	}
 	mInnerNodeByID[id]=node;
 	return node;
-}
-
-SHAMapItem::SHAMapItem(const uint256& tag) : mTag(tag)
-{
-	mData.insert(mData.end(), tag.begin(), tag.end());
 }
 
 SHAMapItem::SHAMapItem(const uint256& tag, const std::vector<unsigned char>& data) : mTag(tag), mData(data)
@@ -300,7 +297,7 @@ void SHAMap::dump()
 {
 }
 
-void TestSHAMap()
+bool SHAMap::TestSHAMap()
 {
  uint256 h1, h2, h3, h4, h5;
  h1.SetHex("436ccbac3347baa1f1e53baeef1f43334da88f1f6d70d963b833afd6dfa289fe");
@@ -310,7 +307,7 @@ void TestSHAMap()
  h5.SetHex("092891fe4ef6cee585fdc6fda0e09eb4d386363158ec3321b8123e5a772c6ca7");
 
  SHAMap sMap(32);
- SHAMapItem i1(h1), i2(h2), i3(h3), i4(h4), i5(h5);
+// SHAMapItem i1(h1), i2(h2), i3(h3), i4(h4), i5(h5);
  
  sMap.dump();
 }
