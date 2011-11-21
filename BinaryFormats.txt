@@ -26,27 +26,33 @@ objects they consider abusively long (a 1KB transaction, for example).
 1) Account ID
 
 An account starts as an ECDSA public key (X,Y), SECP256K1. Private keys are
-279 bytes, public keys are 65 bytes, signatures are 72 bytes.
+279 bytes, public keys are normally 65 bytes, signatures are 72 bytes. We
+use public keys in compressed form using
+EC_KEY_set_conv_form(POINT_CONVERSION_COMPRESS) -- so our public keys are
+actually 33 bytes.
 
-Form a 65-byte quantity consisting of a single byte with the value 4, the
-32-byte X of the public key followed by the 32-byte Y of the public key.
-Apply SHA256 to this 65-byte quantity. Apply RIPEMD160 to the result.
+Account IDs are based on the uncompressed public key. Form a 65-byte
+quantity consisting of a single byte with the value 4, the 32-byte X of the
+public key followed by the 32-byte Y of the public key. Apply SHA256 to this
+65-byte quantity. Apply RIPEMD160 to the result.
 
 The resulting 20-byte value is the account ID.
 
 
-
-2) Transaction (source/signed format)
+2) Transaction (source/signed format) 148-bytes
 
 Fields:
-1) 64-byte source public key
-2) 20-byte destination account
-3) 8-byte amount, unsigned BE integer
-4) 4-byte source account sequence number, unsigned BE integer
-5) 4-byte source ledger index, unsigned BE integer
-6) 4-byte arbitrary source tag, unsigned BE integer
-7) Prefix 0x54584E00 signature of 104-byte contents of fields 1-6 
+1) 20-byte destination account
+2) 8-byte amount, unsigned BE integer
+3) 4-byte source account sequence number, unsigned BE integer
+4) 4-byte source ledger index, unsigned BE integer
+5) 4-byte arbitrary source tag, unsigned BE integer
+6) 33-byte source public key
+7) 3-byte padding (must be zero on send, ignore on receive)
+8) 72-byte prefix 0x54584E00 signature of 76-byte contents of fields 1-6 
 
+The transaction ID is the first 256-bits of the SHA512 hash of the 148 byte
+signed transaction.
 
 3) Transaction (ledger format)
 
@@ -64,10 +70,9 @@ Fields:
 4) 32-byte hash of root of the transaction tree for this ledger
 5) 32-byte hash of root of the account tree for this ledger
 6) 8-byte timestamp
-[remaining fields only in proposed ledger
-7) 4-byte confidence, unsigned BE integer x/255
+7) 4-byte confidence, unsigned BE integer (0 = closed/accepted)
 8) Signature:
- Accepted: Prefix (0x4C475200) of 116 byte fields 1-6
+ Accepted: Prefix (0x4C475200) of 120 byte fields 1-6
  Proposed: Prefix (0x4C475000) of 120 byte fields 1-8
 
 
