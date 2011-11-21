@@ -16,28 +16,36 @@
 
 
 class Ledger : public boost::enable_shared_from_this<Ledger>
-{
+{ // The basic Ledger structure, can be opened, closed, or synching
+	enum TransResult
+	{
+		TR_ERROR	=-1,
+		TR_SUCCESS	=0,
+		TR_NOTFOUND	=1,
+		TR_ALREADY	=2
+	};
+
 public:
 	typedef boost::shared_ptr<Ledger> pointer;
 
 private:
-	uint256 mHash;
-
-	uint256 mParentHash, mTransHash, mAccountHash;
+	uint256 mHash, mParentHash, mTransHash, mAccountHash;
 	uint64 mFeeHeld, mTimeStamp;
 	uint32 mLedgerSeq;
-
+	
+	SHAMap::pointer mTransactionMap, mAccountStateMap;
+	
 protected:
-	void updateHash(void);
+	void updateHash();
 
 public:
-	Ledger(uint32 index);
-	Ledger(const std::vector<unsigned char> rawLedger);
+	Ledger(uint32 index); // used for the starting bootstrap ledger
+	Ledger(const Ledger &ledger);
+	Ledger(const uint256 &parentHash, const uint256 &transHash, const uint256 &accountHash,
+	 uint64 feeHeld, uint64 timeStamp, uint32 ledgerSeq); // used for received ledgers
 
 	// ledger signature operations
-	std::vector<unsigned char> getRaw();
-	std::vector<unsigned char> getSigned(uint64 timestamp, LocalHanko &Hanko);
-	bool checkSignature(const std::vector<unsigned char> signature, LocalHanko &Hanko);
+	void addRaw(Serializer &s);
 
 	virtual uint256 getHash() const;
 	const uint256& getParentHash() const { return mParentHash; }
@@ -47,38 +55,16 @@ public:
 	uint64 getTimeStamp() const { return mTimeStamp; }
 	uint32 getLedgerSeq() const { return mLedgerSeq; }
 
-	virtual bool hasTransaction(TransactionPtr trans);
-	virtual bool hasTransaction(const uint256 &transID);
-	virtual AccountState::pointer getAccountState(const uint160 &account);
-};
+	SHAMap::pointer getTransactionMap() { return mTransactionMap; }
+	SHAMap::pointer getAccountStateMap() { return mAccountStateMap; }
 
-
-class OpenLedger : public Ledger
-{
-public:
-	typedef boost::shared_ptr<OpenLedger> pointer;
-
-private:
-	std::map<uint256, TransactionPtr> TransIDs;
-	std::map<std::pair<uint160, uint32>, TransactionPtr> TransAccts;
-	std::map<uint160, AccountState::pointer> AccountStates;
-
-	std::map<uint160, SHAMapLeafNode::pointer> leaves;
-	std::map<uint160, SHAMapInnerNode::pointer> innerNodes;
-
-public:
-	OpenLedger(std::vector<unsigned char> rawLedger);
-	OpenLedger(const Ledger &prevLedger);
-
-	bool applyTransaction(TransactionPtr &trans);
-	bool removeTransaction(TransactionPtr &trans);
-
-	virtual bool hasTransaction(TransactionPtr trans);
-	virtual bool hasTransaction(const uint256 &transID);
-	virtual AccountState::pointer getAccountState(const uint160 &account);
-
+	TransResult applyTransaction(TransactionPtr& trans);
+	TransResult removeTransaction(TransactionPtr& trans);
+	TransResult hasTransaction(TransactionPtr& trans);
+	
+	bool closeLedger();
 	bool isCompatible(Ledger::pointer other);
-	bool commit(void);
+	bool signLedger(std::vector<unsigned char> &signature, const LocalHanko &hanko, int32 confidence);
 };
 
 #endif

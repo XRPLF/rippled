@@ -1,7 +1,6 @@
 #include "Ledger.h"
 #include "newcoin.pb.h"
 #include "PackedMessage.h"
-#include "Application.h"
 #include "Config.h"
 #include "Conversion.h"
 #include "BitcoinUtil.h"
@@ -12,36 +11,40 @@
 using namespace boost;
 using namespace std;
 
-Ledger::Ledger()
+Ledger::Ledger(uint32 index) : mFeeHeld(0), mTimeStamp(0), mLedgerSeq(index)
 {
-	mIndex=0;
-	mValidSig=false;
-	mValidHash=false;
-	mValidationSeqNum=0;
 }
 
-Ledger::Ledger(uint32 index)
+Ledger::Ledger(const uint256 &parentHash, const uint256 &transHash, const uint256 &accountHash,
+	uint64 feeHeld, uint64 timeStamp, uint32 ledgerSeq)
+		: mParentHash(parentHash), mTransHash(transHash), mAccountHash(accountHash),
+		mFeeHeld(feeHeld), mTimeStamp(timeStamp), mLedgerSeq(ledgerSeq)
 {
-	mIndex=index;
-	mValidSig=false;
-	mValidHash=false;
-	mValidationSeqNum=0;
+	updateHash();
 }
 
-Ledger::Ledger(Ledger::pointer other)
+void Ledger::updateHash()
 {
-	mValidSig=false;
-	mValidHash=false;
-	mValidationSeqNum=0;
-	mIndex=other->getIndex();
-	mergeIn(other);
+	Serializer s(116);
+	addRaw(s);
+	mHash=s.getSHA512Half();
 }
 
-Ledger::Ledger(newcoin::FullLedger& ledger)
+void Ledger::addRaw(Serializer &s)
 {
-	setTo(ledger);
+	s.add32(mLedgerSeq);
+	s.add64(mFeeHeld);
+	s.add256(mParentHash);
+	s.add256(mTransHash);
+	s.add256(mAccountHash);
+	s.add64(mTimeStamp);
 }
 
+Ledger::TransResult Ledger::applyTransaction(TransactionPtr &trans)
+{
+}
+
+#if 0
 // TODO: we should probably make a shared pointer type for each of these PB types
 newcoin::FullLedger* Ledger::createFullLedger()
 {	
@@ -547,3 +550,5 @@ void Ledger::correctAccount(const uint160& address)
 	}
 
 }
+
+#endif
