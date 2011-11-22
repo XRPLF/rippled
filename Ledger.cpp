@@ -11,14 +11,14 @@
 using namespace boost;
 using namespace std;
 
-Ledger::Ledger(uint32 index) : mFeeHeld(0), mTimeStamp(0), mLedgerSeq(index)
+Ledger::Ledger(uint32 index) : mFeeHeld(0), mTimeStamp(0), mLedgerSeq(index), mCurrent(true)
 {
 }
 
 Ledger::Ledger(const uint256 &parentHash, const uint256 &transHash, const uint256 &accountHash,
 	uint64 feeHeld, uint64 timeStamp, uint32 ledgerSeq)
 		: mParentHash(parentHash), mTransHash(transHash), mAccountHash(accountHash),
-		mFeeHeld(feeHeld), mTimeStamp(timeStamp), mLedgerSeq(ledgerSeq)
+		mFeeHeld(feeHeld), mTimeStamp(timeStamp), mLedgerSeq(ledgerSeq), mCurrent(false)
 {
 	updateHash();
 }
@@ -40,8 +40,83 @@ void Ledger::addRaw(Serializer &s)
 	s.add64(mTimeStamp);
 }
 
-Ledger::TransResult Ledger::applyTransaction(TransactionPtr &trans)
+AccountState::pointer Ledger::getAccountState(const uint160& accountID)
 {
+	ScopedLock l(mTransactionMap->Lock());
+	SHAMapItem::pointer item=mTransactionMap->getItem(uint160to256(accountID));
+	if(item==NULL) return AccountState::pointer();
+	return AccountState::pointer(new AccountState(item->getData()));
+}
+
+Transaction::pointer Ledger::getTransaction(const uint256& transID)
+{
+	ScopedLock l(mTransactionMap->Lock());
+	SHAMapItem::pointer item=mTransactionMap->getItem(transID);
+	if(item==NULL) return Transaction::pointer();
+	Transaction *t=new Transaction(item->getData(), true);
+	if(t->getStatus()==NEW) t->setStatus(mCurrent ? INCLUDED : COMMITTED, mLedgerSeq);
+	return Transaction::pointer(t);
+}
+
+Ledger::TransResult Ledger::applyTransaction(Transaction::pointer trans)
+{
+	ScopedLock l(mLock);
+	if(trans->getSourceLedger()<mLedgerSeq) return TR_BADLSEQ;
+	if(trans->getAmount()<trans->getFee()) return TR_TOOSMALL;
+	if((mTransactionMap==NULL) || (mAccountStateMap==NULL)) return TR_ERROR;
+	try
+	{
+		// already applied?
+		Transaction::pointer dupTrans=getTransaction(trans->getID());
+		if(dupTrans!=NULL) return TR_ALREADY;
+
+		// accounts exist?
+		AccountState::pointer fromAccount=getAccountState(trans->getFromAccount());
+		AccountState::pointer toAccount=getAccountState(trans->getToAccount());
+		if((fromAccount==NULL)||(toAccount==NULL)) return TR_BADACCT;
+
+		// pass sanity checks?
+		if(fromAccount->getBalance()<trans->getAmount()) return TR_INSUFF;
+		if(fromAccount->getSeq()>trans->getFromAccountSeq()) return TR_PASTASEQ;
+		if(fromAccount->getSeq()<trans->getFromAccountSeq()) return TR_PREASEQ;
+
+		// apply
+		fromAccount->charge(trans->getAmount());
+		fromAccount->incSeq();
+		toAccount->credit(trans->getAmount()-trans->getFee());
+		mFeeHeld+=trans->getFee();
+		trans->setStatus(INCLUDED, mLedgerSeq);
+
+		updateAccountState(fromAccount);
+		updateAccountState(toAccount);
+		addTransaction(trans);
+
+		return TR_SUCCESS;
+	}
+	catch (SHAMapException)
+	{
+		return TR_ERROR;
+	}
+}
+
+Ledger::TransResult Ledger::removeTransaction(Transaction::pointer trans)
+{
+}
+
+Ledger::TransResult Ledger::hasTransaction(Transaction::pointer trans)
+{
+	ScopedLock l(mLock);
+	if(mTransactionMap==NULL) return TR_ERROR;
+	try
+	{
+		Transaction::pointer t=getTransaction(trans->getID());
+		if(t==NULL) return TR_NOTFOUND;
+		return TR_SUCCESS;
+	}
+	catch (SHAMapException)
+	{
+		return TR_ERROR;
+	}
 }
 
 #if 0
@@ -86,7 +161,7 @@ void Ledger::setTo(newcoin::FullLedger& ledger)
 	for(int n=0; n<numTrans; n++)
 	{
 		const newcoin::Transaction& trans=ledger.transactions(n);
-		mTransactions.push_back(TransactionPtr(new newcoin::Transaction(trans)));
+		mTransactions.push_back(Transaction::pointer(new newcoin::Transaction(trans)));
 	}
 }
 
@@ -134,7 +209,7 @@ bool Ledger::load(const uint256& hash)
 				unsigned char tbuf[1000];
 				while(db->getNextRow())
 				{
-					TransactionPtr trans=TransactionPtr(new newcoin::Transaction());
+					Transaction::pointer trans=Transaction::pointer(new newcoin::Transaction());
 					trans->set_amount( db->getBigInt("Amount"));
 					trans->set_seqnum( db->getInt("seqnum"));
 					trans->set_ledgerindex( db->getInt("ledgerIndex"));
@@ -262,7 +337,7 @@ uint64 Ledger::getAmount(std::string address)
 }*/
 
 // returns true if the from account has enough for the transaction and seq num is correct
-bool Ledger::addTransaction(TransactionPtr trans,bool checkDuplicate)
+bool Ledger::addTransaction(Transaction::pointer trans,bool checkDuplicate)
 {
 	if(checkDuplicate && hasTransaction(trans)) return(false);
 
@@ -316,7 +391,7 @@ bool Ledger::addTransaction(TransactionPtr trans,bool checkDuplicate)
 }
 
 // Don't check the amounts. We will do this at the end.
-void Ledger::addTransactionAllowNeg(TransactionPtr trans)
+void Ledger::addTransactionAllowNeg(Transaction::pointer trans)
 {
 	uint160 fromAddress=protobufTo160(trans->from());
 
@@ -376,8 +451,8 @@ void Ledger::recalculate(bool recursive)
 
 		mAccounts.clear();
 		mAccounts=mParent->getAccounts();
-		list<TransactionPtr> firstTransactions=mTransactions;
-		list<TransactionPtr> secondTransactions=mDiscardedTransactions;
+		list<Transaction::pointer> firstTransactions=mTransactions;
+		list<Transaction::pointer> secondTransactions=mDiscardedTransactions;
 
 		mTransactions.clear();
 		mDiscardedTransactions.clear();
@@ -386,12 +461,12 @@ void Ledger::recalculate(bool recursive)
 		secondTransactions.sort(gTransactionSorter);
 
 		// don't check balances until the end
-		BOOST_FOREACH(TransactionPtr trans,firstTransactions)
+		BOOST_FOREACH(Transaction::pointer trans,firstTransactions)
 		{
 			addTransactionAllowNeg(trans);
 		}
 
-		BOOST_FOREACH(TransactionPtr trans,secondTransactions)
+		BOOST_FOREACH(Transaction::pointer trans,secondTransactions)
 		{
 			addTransactionAllowNeg(trans);
 		}
@@ -408,7 +483,7 @@ void Ledger::recalculate(bool recursive)
 
 
 
-void Ledger::parentAddedTransaction(TransactionPtr cause)
+void Ledger::parentAddedTransaction(Transaction::pointer cause)
 {
 	// TODO: optimize we can make this more efficient at some point. For now just redo everything
 
@@ -452,18 +527,18 @@ void Ledger::parentAddedTransaction(TransactionPtr cause)
 	}
 	
 	// look for discarded transactions
-	BOOST_FOREACH(TransactionPtr trans,)
+	BOOST_FOREACH(Transaction::pointer trans,)
 	*/
 }
 
-bool Ledger::hasTransaction(TransactionPtr needle)
+bool Ledger::hasTransaction(Transaction::pointer needle)
 {
-	BOOST_FOREACH(TransactionPtr trans,mTransactions)
+	BOOST_FOREACH(Transaction::pointer trans,mTransactions)
 	{
 		if( Transaction::isEqual(needle,trans) ) return(true);
 	}
 
-	BOOST_FOREACH(TransactionPtr disTrans,mDiscardedTransactions)
+	BOOST_FOREACH(Transaction::pointer disTrans,mDiscardedTransactions)
 	{
 		if( Transaction::isEqual(needle,disTrans) ) return(true);
 	}
@@ -489,8 +564,8 @@ bool Ledger::isCompatible(Ledger::pointer other)
 
 void Ledger::mergeIn(Ledger::pointer other)
 {
-	list<TransactionPtr>& otherTransactions=other->getTransactions();
-	BOOST_FOREACH(TransactionPtr trans,otherTransactions)
+	list<Transaction::pointer>& otherTransactions=other->getTransactions();
+	BOOST_FOREACH(Transaction::pointer trans,otherTransactions)
 	{
 		addTransactionAllowNeg(trans);
 	}
@@ -516,9 +591,9 @@ void Ledger::correctAccount(const uint160& address)
 	list<uint160> effected;
 
 	// do this in reverse so we take of the higher seqnum first
-	for( list<TransactionPtr>::reverse_iterator iter=mTransactions.rbegin(); iter != mTransactions.rend(); )
+	for( list<Transaction::pointer>::reverse_iterator iter=mTransactions.rbegin(); iter != mTransactions.rend(); )
 	{
-		TransactionPtr trans= *iter;
+		Transaction::pointer trans= *iter;
 		if(protobufTo160(trans->from()) == address)
 		{
 			Account fromAccount=mAccounts[address];
@@ -536,10 +611,10 @@ void Ledger::correctAccount(const uint160& address)
 				mAccounts[destAddress]=destAccount;
 				if(destAccount.first<0) effected.push_back(destAddress);
 
-				list<TransactionPtr>::iterator temp=mTransactions.erase( --iter.base() );
+				list<Transaction::pointer>::iterator temp=mTransactions.erase( --iter.base() );
 				if(fromAccount.first>=0) break; 
 
-				iter=list<TransactionPtr>::reverse_iterator(temp);
+				iter=list<Transaction::pointer>::reverse_iterator(temp);
 			}else break;	
 		}else iter--;
 	}

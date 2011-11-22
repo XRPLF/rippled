@@ -17,24 +17,10 @@
 #include "uint256.h"
 #include "base58.h"
 
-// secp160k1
-// const unsigned int PRIVATE_KEY_SIZE = 192;
-// const unsigned int PUBLIC_KEY_SIZE  = 41;
-// const unsigned int SIGNATURE_SIZE   = 48;
-//
-// secp192k1
-// const unsigned int PRIVATE_KEY_SIZE = 222;
-// const unsigned int PUBLIC_KEY_SIZE  = 49;
-// const unsigned int SIGNATURE_SIZE   = 57;
-//
-// secp224k1
-// const unsigned int PRIVATE_KEY_SIZE = 250;
-// const unsigned int PUBLIC_KEY_SIZE  = 57;
-// const unsigned int SIGNATURE_SIZE   = 66;
-//
 // secp256k1:
 // const unsigned int PRIVATE_KEY_SIZE = 279;
-// const unsigned int PUBLIC_KEY_SIZE  = 65;
+// const unsigned int PUBLIC_KEY_SIZE  = 65; // but we don't use full keys
+// const unsigned int COMPUB_KEY_SIZE  = 33;
 // const unsigned int SIGNATURE_SIZE   = 72;
 //
 // see www.keylength.com
@@ -61,6 +47,7 @@ int static inline EC_KEY_regenerate_key(EC_KEY *eckey, BIGNUM *priv_key)
     if (!EC_POINT_mul(group, pub_key, priv_key, NULL, NULL, ctx))
         goto err;
 
+	EC_KEY_set_conv_form(eckey,POINT_CONVERSION_COMPRESSED);
     EC_KEY_set_private_key(eckey,priv_key);
     EC_KEY_set_public_key(eckey,pub_key);
 
@@ -100,6 +87,7 @@ public:
     CKey()
     {
         pkey = EC_KEY_new_by_curve_name(NID_secp256k1);
+		EC_KEY_set_conv_form(pkey,POINT_CONVERSION_COMPRESSED);
         if (pkey == NULL)
             throw key_error("CKey::CKey() : EC_KEY_new_by_curve_name failed");
         fSet = false;
@@ -108,6 +96,7 @@ public:
     CKey(const CKey& b)
     {
         pkey = EC_KEY_dup(b.pkey);
+		EC_KEY_set_conv_form(pkey,POINT_CONVERSION_COMPRESSED);
         if (pkey == NULL)
             throw key_error("CKey::CKey(const CKey&) : EC_KEY_dup failed");
         fSet = b.fSet;
@@ -135,6 +124,7 @@ public:
     {
         if (!EC_KEY_generate_key(pkey))
             throw key_error("CKey::MakeNewKey() : EC_KEY_generate_key failed");
+		EC_KEY_set_conv_form(pkey,POINT_CONVERSION_COMPRESSED);
         fSet = true;
     }
 
@@ -143,6 +133,7 @@ public:
         const unsigned char* pbegin = &vchPrivKey[0];
         if (!d2i_ECPrivateKey(&pkey, &pbegin, vchPrivKey.size()))
             return false;
+		EC_KEY_set_conv_form(pkey,POINT_CONVERSION_COMPRESSED);
         fSet = true;
         return true;
     }
@@ -161,6 +152,7 @@ public:
         if (!EC_KEY_regenerate_key(pkey,bn))
             throw key_error("CKey::SetSecret() : EC_KEY_regenerate_key failed");
         BN_clear_free(bn);
+		EC_KEY_set_conv_form(pkey,POINT_CONVERSION_COMPRESSED);
         fSet = true;
         return true;
     }
@@ -196,6 +188,7 @@ public:
         const unsigned char* pbegin = &vchPubKey[0];
         if (!o2i_ECPublicKey(&pkey, &pbegin, vchPubKey.size()))
             return false;
+		EC_KEY_set_conv_form(pkey,POINT_CONVERSION_COMPRESSED);
         fSet = true;
         return true;
     }
@@ -224,7 +217,7 @@ public:
         return true;
     }
 
-    bool Verify(uint256 hash, const std::vector<unsigned char>& vchSig)
+    bool Verify(uint256 hash, const std::vector<unsigned char>& vchSig) const
     {
         // -1 = error, 0 = bad sig, 1 = good
         if (ECDSA_verify(0, (unsigned char*)&hash, sizeof(hash), &vchSig[0], vchSig.size(), pkey) != 1)

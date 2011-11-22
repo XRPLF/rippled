@@ -31,15 +31,13 @@ use public keys in compressed form using
 EC_KEY_set_conv_form(POINT_CONVERSION_COMPRESS) -- so our public keys are
 actually 33 bytes.
 
-Account IDs are based on the uncompressed public key. Form a 65-byte
-quantity consisting of a single byte with the value 4, the 32-byte X of the
-public key followed by the 32-byte Y of the public key. Apply SHA256 to this
-65-byte quantity. Apply RIPEMD160 to the result.
+Account IDs are based on the compressed public key. Apply SHA512 to the
+33-byte public key. Apply RIPEMD160 to the first 256 bits of the result.
 
 The resulting 20-byte value is the account ID.
 
 
-2) Transaction (source/signed format) 148-bytes
+2) Transaction (source/signed format) 145-bytes
 
 Fields:
 1) 20-byte destination account
@@ -48,10 +46,9 @@ Fields:
 4) 4-byte source ledger index, unsigned BE integer
 5) 4-byte arbitrary source tag, unsigned BE integer
 6) 33-byte source public key
-7) 3-byte padding (must be zero on send, ignore on receive)
-8) 72-byte prefix 0x54584E00 signature of 76-byte contents of fields 1-6 
+8) 72-byte prefix 0x54584E00 signature of 73-byte contents of fields 1-6 
 
-The transaction ID is the first 256-bits of the SHA512 hash of the 148 byte
+The transaction ID is the first 256-bits of the SHA512 hash of the 145 byte
 signed transaction.
 
 3) Transaction (ledger format)

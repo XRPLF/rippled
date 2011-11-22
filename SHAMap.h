@@ -19,6 +19,10 @@ class SHAMap;
 
 class SHAMapNode
 { // Identifies a node in a SHA256 hash
+public:
+	typedef boost::shared_ptr<SHAMapNode> pointer;
+
+
 private:
 	static uint256 smMasks[11]; // AND with hash to get node id
 
@@ -59,7 +63,7 @@ public:
 };
 
 
-class SHAMapItem : public boost::enable_shared_from_this<SHAMapItem>
+class SHAMapItem
 { // an item stored in a SHAMap
 public:
 	typedef boost::shared_ptr<SHAMapItem> pointer;
@@ -97,7 +101,6 @@ public:
 	bool operator>=(const uint256& i) const			{ return mTag>=i; }
 	virtual void dump(void);
 };
-
 
 class SHAMapLeafNode : public SHAMapNode
 {
@@ -164,6 +167,12 @@ public:
 	bool isEmpty() const;
 
 	virtual void dump(void);
+};
+
+enum SHAMapException
+{
+	MissingNode=1,
+	InvalidNode=2
 };
 
 

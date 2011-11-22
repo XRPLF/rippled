@@ -2,8 +2,8 @@
 // Copyright (c) 2011 The Bitcoin developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
-#ifndef BITCOIN_UINT256_H
-#define BITCOIN_UINT256_H
+#ifndef NEWCOIN_UINT256_H
+#define NEWCOIN_UINT256_H
 
 
 #include <limits.h>
@@ -584,6 +584,7 @@ public:
     }
 };
 
+
 inline bool operator==(const uint256& a, uint64 b)                           { return (base_uint256)a == b; }
 inline bool operator!=(const uint256& a, uint64 b)                           { return (base_uint256)a != b; }
 inline const uint256 operator<<(const base_uint256& a, unsigned int shift)   { return uint256(a) <<= shift; }
@@ -633,6 +634,19 @@ inline const uint256 operator|(const uint256& a, const uint256& b)      { return
 inline const uint256 operator+(const uint256& a, const uint256& b)      { return (base_uint256)a +  (base_uint256)b; }
 inline const uint256 operator-(const uint256& a, const uint256& b)      { return (base_uint256)a -  (base_uint256)b; }
 
+static uint256 uint160to256(const uint160& u)
+{
+ uint256 m;
+ memcpy(((char *) &m)+(sizeof(m)-sizeof(u)), &u, sizeof(u));
+ return m;
+}
+
+static uint160 uint256to160(const uint256& u)
+{
+ uint160 m;
+ memcpy((char *) &m, &u, sizeof(m));
+ return m;
+}
 
 
 

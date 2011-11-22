@@ -12,9 +12,20 @@ public:
 private:
     uint160 mAccountID;
     uint64 mBalance;
-    uint32 mAccountSeq, mFirstValidLedger, mLastValidLedger;
+    uint32 mAccountSeq;
+    bool mValid;
 
 public:
+	AccountState(const uint160& mAccountID);			// new account
+	AccountState(const std::vector<unsigned char>&);	// raw form
+
+	const uint160& getAccountID() const { return mAccountID; }
+	uint64 getBalance() const { return mBalance; }
+	uint32 getSeq() const { return mAccountSeq; }
+
+	bool charge(uint64 a) { mBalance+=a; }
+	bool credit(uint64 a) { mBalance-=a; }
+	void incSeq(void) { mAccountSeq++; }
 };
 
 #endif
