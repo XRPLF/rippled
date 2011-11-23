@@ -56,11 +56,8 @@ SHAMapLeafNode::pointer SHAMap::walkToLeaf(const uint256& id, bool create,
 	for(int i=1; i<SHAMapNode::leafDepth; i++)
 	{
 		int branch=inNode->selectBranch(id);
-		if(branch<0)
-		{ // somehow we got on the wrong branch
-			assert(false);
-			return SHAMapLeafNode::pointer();
-		}
+		if(branch<0) // somehow we got on the wrong branch
+			throw SHAMapException(InvalidNode);
 		if(inNode->isEmptyBranch(branch))
 		{ // no nodes below this one
 			if(!create) return SHAMapLeafNode::pointer();
@@ -69,7 +66,7 @@ SHAMapLeafNode::pointer SHAMap::walkToLeaf(const uint256& id, bool create,
 		if(i!=(SHAMapNode::leafDepth)-1)
 		{ // child is another inner node
 			inNode=getInner(inNode->getChildNodeID(branch), inNode->getChildHash(branch));
-			if(inNode==NULL) return SHAMapLeafNode::pointer(); // we don't have the node
+			if(inNode==NULL) throw SHAMapException(InvalidNode);
 			path.push_back(inNode);
 		}
 		else // child is leaf node
@@ -142,13 +139,13 @@ SHAMapItem::SHAMapItem(const uint160& tag, const std::vector<unsigned char>& dat
 	: mTag(uint160to256(tag)), mData(data)
 { ; }
 
-SHAMapItem::pointer SHAMap::firstItem()
+SHAMapItem::pointer SHAMap::peekFirstItem()
 {
 	ScopedLock sl(mLock);
 	return firstBelow(root);
 }
 
-SHAMapItem::pointer SHAMap::lastItem()
+SHAMapItem::pointer SHAMap::peekLastItem()
 {
 	ScopedLock sl(mLock);
 	return lastBelow(root);
@@ -220,12 +217,50 @@ SHAMapItem::pointer SHAMap::lastBelow(SHAMapInnerNode::pointer Node)
 	}
 }
 
-SHAMapItem::pointer SHAMap::nextItem(const SHAMapItem &)
-{
-	// WRITEME
+SHAMapItem::pointer SHAMap::peekNextItem(const uint256& id)
+{ // Get a pointer to the next item in the tree after a given item - item must be in tree
+	ScopedLock sl(mLock);
+
+	std::vector<SHAMapInnerNode::pointer> path;
+	SHAMapLeafNode::pointer leaf=walkToLeaf(id, false, path);
+	if(!leaf) return SHAMapItem::pointer();
+
+	// is there another item in this leaf? (there almost never will be)
+	SHAMapItem::pointer next=leaf->nextItem(id);
+	if(next) return next;
+
+	for(std::vector<SHAMapInnerNode::pointer>::reverse_iterator rit=path.rbegin(); rit<path.rend(); ++rit)
+	{ // walk up the tree until we find a node with a subsequent child
+        SHAMapInnerNode::pointer& node=*rit;
+        for(int i=node->selectBranch(id)+1; i<32; i++)
+            if(!!node->getChildHash(i))
+            { // node has a subsequent child
+            	SHAMapNode nextNode=node->getChildNodeID(i);
+            	uint256 nextHash=node->getChildHash(i);
+            	
+            	if(nextNode.isLeaf())
+            	{ // this is a terminal inner node
+            		leaf=getLeaf(nextNode, nextHash);
+            		if(!leaf) throw SHAMapException(MissingNode);
+            		next=leaf->firstItem();
+            		if(!next) throw SHAMapException(InvalidNode);
+            		return next;
+            	}
+
+            	// the next item is the first item below this node
+            	SHAMapInnerNode::pointer inner=getInner(nextNode, nextHash);
+            	if(!inner) throw SHAMapException(MissingNode);
+				next=firstBelow(inner);
+				if(!next) throw SHAMapException(InvalidNode);
+				return next;
+            }
+	}
+
+	// must be last item
+	return SHAMapItem::pointer();
 }
 
-SHAMapItem::pointer SHAMap::prevItem(const SHAMapItem &)
+SHAMapItem::pointer SHAMap::peekPrevItem(const uint256& id)
 {
 	// WRITEME
 }
@@ -257,7 +292,7 @@ SHAMapItem::pointer SHAMap::peekItem(const uint256& id)
 
 bool SHAMap::hasItem(const uint256& id)
 { // does the tree have an item with this ID
-	ScopedLock sl(mLock);
+	ScopedLock sl(mLock);  
 	std::vector<SHAMapInnerNode::pointer> path;
 	SHAMapLeafNode::pointer leaf=walkToLeaf(id, false, path);
 	if(!leaf) return false;

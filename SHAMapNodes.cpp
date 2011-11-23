@@ -163,6 +163,17 @@ SHAMapItem::pointer SHAMapLeafNode::firstItem(void)
 	return *(mItems.begin());
 }
 
+SHAMapItem::pointer SHAMapLeafNode::nextItem(const uint256& tag)
+{
+	bool found=false;
+	BOOST_FOREACH(SHAMapItem::pointer& it, mItems)
+	{
+		if(found) return it;
+		if(it->getTag() == tag) found=true;
+	}
+	return SHAMapItem::pointer();
+}
+
 SHAMapItem::pointer SHAMapLeafNode::lastItem(void)
 {
 	if(mItems.size()==0) return SHAMapItem::pointer();

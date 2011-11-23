@@ -17,7 +17,7 @@ class SHAMap;
 // The trees are designed for rapid synchronization and compression of differences
 
 
-class SHAMapNode
+ class SHAMapNode
 { // Identifies a node in a SHA256 hash
 public:
 	typedef boost::shared_ptr<SHAMapNode> pointer;
@@ -133,7 +133,8 @@ public:
 	SHAMapItem::pointer findItem(const uint256& tag);
 	SHAMapItem::pointer firstItem();
 	SHAMapItem::pointer lastItem();
-	SHAMapItem::pointer nextItem(SHAMapItem::pointer);
+	SHAMapItem::pointer nextItem(const uint256& tag);
+	SHAMapItem::pointer prevItem(const uint256& tag);
 
 	virtual void dump(void);
 };
@@ -241,10 +242,13 @@ public:
 	SHAMapItem::pointer peekItem(const uint256& id);
 
 	// traverse functions
-	SHAMapItem::pointer firstItem();
-	SHAMapItem::pointer lastItem();
-	SHAMapItem::pointer nextItem(const SHAMapItem &);
-	SHAMapItem::pointer prevItem(const SHAMapItem &);
+	SHAMapItem::pointer peekFirstItem();
+	SHAMapItem::pointer peekLastItem();
+	SHAMapItem::pointer peekNextItem(const uint256&);
+	SHAMapItem::pointer peekPrevItem(const uint256&);
+
+	SHAMapItem::pointer peekPrevItem(const uint160& u) { return peekPrevItem(uint160to256(u)); }
+	SHAMapItem::pointer peekNextItem(const uint160& u) { return peekNextItem(uint160to256(u)); }
 
 	// comparison/sync functions
 	void getMissingNodes(std::vector<SHAMapNode>& nodeHashes, int max);
