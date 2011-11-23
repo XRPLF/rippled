@@ -47,7 +47,7 @@ SHAMapLeafNode::pointer SHAMap::walkToLeaf(const uint256& id, bool create,
 { // walk down to the leaf that would contain this ID
 	// is leaf node in cache
 	SHAMapLeafNode::pointer ln=checkCacheLeaf(SHAMapNode(SHAMapNode::leafDepth, id));
-	if(ln != SHAMapLeafNode::pointer()) return ln;
+	if(ln) return ln;
 
 	// walk tree to leaf
 	SHAMapInnerNode::pointer inNode=root;
@@ -90,7 +90,7 @@ SHAMapLeafNode::pointer SHAMap::getLeaf(const SHAMapNode &id, const uint256& has
 { // retrieve a leaf whose node hash is known
 	assert(!!hash);
 	SHAMapLeafNode::pointer leaf=mLeafByID[id];			// is the leaf in memory
-	if(leaf != SHAMapLeafNode::pointer()) return leaf;
+	if(leaf) return leaf;
 
 	std::vector<unsigned char> rawNode;					// is it in backing store
 	if(!fetchNode(hash, id, rawNode)) return SHAMapLeafNode::pointer();
@@ -119,7 +119,7 @@ SHAMapLeafNode::pointer SHAMap::getLeaf(const SHAMapNode &id, const uint256& has
 SHAMapInnerNode::pointer SHAMap::getInner(const SHAMapNode &id, const uint256& hash)
 { // retrieve an inner node whose node hash is known
 	SHAMapInnerNode::pointer node=mInnerNodeByID[id];
-	if(node != SHAMapInnerNode::pointer()) return node;
+	if(node) return node;
 	
 	std::vector<unsigned char> rawNode;
 	if(!fetchNode(hash, id, rawNode)) return SHAMapInnerNode::pointer();
@@ -134,7 +134,12 @@ SHAMapInnerNode::pointer SHAMap::getInner(const SHAMapNode &id, const uint256& h
 	return node;
 }
 
-SHAMapItem::SHAMapItem(const uint256& tag, const std::vector<unsigned char>& data) : mTag(tag), mData(data)
+SHAMapItem::SHAMapItem(const uint256& tag, const std::vector<unsigned char>& data)
+	: mTag(tag), mData(data)
+{ ; }
+
+SHAMapItem::SHAMapItem(const uint160& tag, const std::vector<unsigned char>& data)
+	: mTag(uint160to256(tag)), mData(data)
 { ; }
 
 SHAMapItem::pointer SHAMap::firstItem()
@@ -162,7 +167,7 @@ SHAMapItem::pointer SHAMap::firstBelow(SHAMapInnerNode::pointer Node)
 			if(cHash!=zero)
 			{
 				Node=getInner(Node->getChildNodeID(i), cHash);
-				if(Node==SHAMapInnerNode::pointer()) return SHAMapItem::pointer();
+				if(!Node) return SHAMapItem::pointer();
 				break;
 			}
 		}
@@ -175,7 +180,7 @@ SHAMapItem::pointer SHAMap::firstBelow(SHAMapInnerNode::pointer Node)
 		if(cHash!=zero)
 		{
 			SHAMapLeafNode::pointer mLeaf=getLeaf(Node->getChildNodeID(i), cHash);
-			if(mLeaf==SHAMapLeafNode::pointer()) return SHAMapItem::pointer();
+			if(!mLeaf) return SHAMapItem::pointer();
 			return mLeaf->firstItem();
 		}
 	}
@@ -197,7 +202,7 @@ SHAMapItem::pointer SHAMap::lastBelow(SHAMapInnerNode::pointer Node)
 			if(cHash!=0)
 			{
 				Node=getInner(Node->getChildNodeID(i), cHash);
-				if(Node==SHAMapInnerNode::pointer()) return SHAMapItem::pointer();
+				if(!Node) return SHAMapItem::pointer();
 				break;
 			}
 		}
@@ -209,7 +214,7 @@ SHAMapItem::pointer SHAMap::lastBelow(SHAMapInnerNode::pointer Node)
 		if(cHash!=zero)
 		{
 			SHAMapLeafNode::pointer mLeaf=getLeaf(Node->getChildNodeID(i), cHash);
-			if(mLeaf==SHAMapLeafNode::pointer()) return SHAMapItem::pointer();
+			if(!mLeaf) return SHAMapItem::pointer();
 			return mLeaf->lastItem();
 		}
 	}
@@ -241,14 +246,23 @@ SHAMapLeafNode::pointer SHAMap::createLeaf(const SHAMapInnerNode& lowestParent, 
 	return newLeaf;
 }
 
+SHAMapItem::pointer SHAMap::peekItem(const uint256& id)
+{
+	ScopedLock sl(mLock);
+	std::vector<SHAMapInnerNode::pointer> path;
+	SHAMapLeafNode::pointer leaf=walkToLeaf(id, false, path);
+	if(!leaf) return SHAMapItem::pointer();
+	return leaf->findItem(id);
+}
+
 bool SHAMap::hasItem(const uint256& id)
 { // does the tree have an item with this ID
 	ScopedLock sl(mLock);
 	std::vector<SHAMapInnerNode::pointer> path;
 	SHAMapLeafNode::pointer leaf=walkToLeaf(id, false, path);
-	if(leaf == SHAMapLeafNode::pointer()) return false;
+	if(!leaf) return false;
 	SHAMapItem::pointer item=leaf->findItem(id);
-	return item == SHAMapItem::pointer();
+	return (bool) item;
 }
 
 bool SHAMap::delItem(const uint256& id)
@@ -256,19 +270,33 @@ bool SHAMap::delItem(const uint256& id)
 	ScopedLock sl(mLock);
 	std::vector<SHAMapInnerNode::pointer> path;
 	SHAMapLeafNode::pointer leaf=walkToLeaf(id, false, path);
-	if(leaf == SHAMapLeafNode::pointer()) return false;
+	if(!leaf) return false;
 	if(!leaf->delItem(id)) return false;
 	dirtyUp(id, path);
+	return true;
 }
 
-bool SHAMap::addItem(SHAMapItem::pointer item)
+bool SHAMap::addGiveItem(const SHAMapItem::pointer item)
 { // add the specified item
 	ScopedLock sl(mLock);
 	std::vector<SHAMapInnerNode::pointer> path;
 	SHAMapLeafNode::pointer leaf=walkToLeaf(item->getTag(), true, path);
-	if(leaf == SHAMapLeafNode::pointer()) return false;
+	if(!leaf) return false;
+	if(leaf->hasItem(item->getTag())) return false;
 	if(!leaf->addUpdateItem(item)) return false;
 	dirtyUp(item->getTag(), path);
+	return true;
+}
+
+bool SHAMap::updateGiveItem(SHAMapItem::pointer item)
+{
+	ScopedLock sl(mLock);
+	std::vector<SHAMapInnerNode::pointer> path;
+	SHAMapLeafNode::pointer leaf=walkToLeaf(item->getTag(), true, path);
+	if(!leaf) return false;
+	if(!leaf->addUpdateItem(item)) return false;
+	dirtyUp(item->getTag(), path);
+	return true;
 }
 
 void SHAMapItem::dump()

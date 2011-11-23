@@ -229,8 +229,16 @@ public:
 	// normal hash access functions
 	bool hasItem(const uint256& id);
 	bool delItem(const uint256& id);
-	bool addItem(SHAMapItem::pointer item);
-	SHAMapItem::pointer getItem(const uint256& id);
+	bool addItem(const SHAMapItem& i);
+	bool updateItem(const SHAMapItem& i);
+	SHAMapItem getItem(const uint256& id);
+
+	// save a copy if you have a temporary anyway
+	bool updateGiveItem(SHAMapItem::pointer);
+	bool addGiveItem(SHAMapItem::pointer);
+
+	// save a copy if you only need a temporary
+	SHAMapItem::pointer peekItem(const uint256& id);
 
 	// traverse functions
 	SHAMapItem::pointer firstItem();
