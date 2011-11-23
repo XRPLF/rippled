@@ -2,6 +2,12 @@
 #define __ACCOUNTSTATE__
 
 // An account's state in one or more accepted ledgers
+
+#include <vector>
+
+#include "boost/shared_ptr.hpp"
+
+#include "types.h"
 #include "uint256.h"
 
 class AccountState
@@ -26,6 +32,8 @@ public:
 	bool charge(uint64 a) { mBalance+=a; }
 	bool credit(uint64 a) { mBalance-=a; }
 	void incSeq(void) { mAccountSeq++; }
+	
+	std::vector<unsigned char> getRaw() const;
 };
 
 #endif
