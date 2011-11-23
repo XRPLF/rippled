@@ -91,3 +91,9 @@ void Transaction::updateID()
 {
 	mTransactionID=getSigned()->getSHA512Half();
 }
+
+void Transaction::setStatus(TransStatus ts, uint32 lseq)
+{
+	mStatus=ts;
+	mInLedger=lseq;
+}
