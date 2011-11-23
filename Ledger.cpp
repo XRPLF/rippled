@@ -43,15 +43,27 @@ void Ledger::addRaw(Serializer &s)
 AccountState::pointer Ledger::getAccountState(const uint160& accountID)
 {
 	ScopedLock l(mTransactionMap->Lock());
-	SHAMapItem::pointer item=mTransactionMap->getItem(uint160to256(accountID));
+	SHAMapItem::pointer item=mTransactionMap->peekItem(uint160to256(accountID));
 	if(item==NULL) return AccountState::pointer();
 	return AccountState::pointer(new AccountState(item->getData()));
+}
+
+bool Ledger::updateAccountState(AccountState::pointer state)
+{
+	SHAMapItem::pointer item(new SHAMapItem(state->getAccountID(), state->getRaw()));
+	return mAccountStateMap->updateGiveItem(item);
+}
+
+bool Ledger::addTransaction(Transaction::pointer trans)
+{ // low-level - just add to table
+	SHAMapItem::pointer item(new SHAMapItem(trans->getID(), trans->getSigned()->getData()));
+	return mTransactionMap->addGiveItem(item);
 }
 
 Transaction::pointer Ledger::getTransaction(const uint256& transID)
 {
 	ScopedLock l(mTransactionMap->Lock());
-	SHAMapItem::pointer item=mTransactionMap->getItem(transID);
+	SHAMapItem::pointer item=mTransactionMap->peekItem(transID);
 	if(item==NULL) return Transaction::pointer();
 	Transaction *t=new Transaction(item->getData(), true);
 	if(t->getStatus()==NEW) t->setStatus(mCurrent ? INCLUDED : COMMITTED, mLedgerSeq);
@@ -100,7 +112,7 @@ Ledger::TransResult Ledger::applyTransaction(Transaction::pointer trans)
 }
 
 Ledger::TransResult Ledger::removeTransaction(Transaction::pointer trans)
-{
+{ // high-level - reverse application of transaction
 }
 
 Ledger::TransResult Ledger::hasTransaction(Transaction::pointer trans)
