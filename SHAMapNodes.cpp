@@ -121,10 +121,10 @@ bool SHAMapLeafNode::addUpdateItem(SHAMapItem::pointer item)
 		SHAMapItem &nodeItem=**it;
 		if(nodeItem.getTag()==item->getTag())
 		{
-		    if(nodeItem.peekData()==item->peekData())
-		        return false; // no change
-            nodeItem.updateData(item->peekData());
-            return updateHash();
+			if(nodeItem.peekData()==item->peekData())
+				return false; // no change
+			nodeItem.updateData(item->peekData());
+			return updateHash();
 		}
 		if(nodeItem.getTag()>item->getTag())
 		{
@@ -184,7 +184,7 @@ SHAMapItem::pointer SHAMapLeafNode::lastItem(void)
 bool SHAMapLeafNode::updateHash(void)
 {
 	uint256 nh;
-	if(mItems.size()!=0) nh=0;
+	if(mItems.size()!=0)
 	{
 		Serializer s;
 		BOOST_FOREACH(const SHAMapItem::pointer &mi, mItems)

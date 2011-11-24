@@ -188,18 +188,16 @@ private:
 	std::map<SHAMapNode, SHAMapLeafNode::pointer> mLeafByID;
 	std::map<SHAMapNode, SHAMapInnerNode::pointer> mInnerNodeByID;
 	boost::shared_ptr<std::map<SHAMapNode, SHAMapLeafNode::pointer> > mDirtyLeafNodes;
-	boost::shared_ptr<std::map<SHAMapNode, SHAMapInnerNode::pointer> > mDirtyInnerNodes;
+ 	boost::shared_ptr<std::map<SHAMapNode, SHAMapInnerNode::pointer> > mDirtyInnerNodes;
 
 	SHAMapInnerNode::pointer root;
 
 protected:
-	void dirtyUp(const uint256& id, const std::vector<SHAMapInnerNode::pointer>& path);
+	void dirtyUp(const uint256 &id);
 
-	SHAMapLeafNode::pointer createLeaf(const SHAMapInnerNode& lowestParent, const uint256& id,
-		std::vector<SHAMapInnerNode::pointer>& path);
+	SHAMapLeafNode::pointer createLeaf(const SHAMapInnerNode& lowestParent, const uint256& id);
 	SHAMapLeafNode::pointer checkCacheLeaf(const SHAMapNode &);
-	SHAMapLeafNode::pointer walkToLeaf(const uint256& id, bool create,
-		std::vector<SHAMapInnerNode::pointer>& path);
+	SHAMapLeafNode::pointer walkToLeaf(const uint256& id, bool create);
 
 	SHAMapLeafNode::pointer getLeaf(const SHAMapNode& id, const uint256& hash);
 	SHAMapInnerNode::pointer getInner(const SHAMapNode& id, const uint256& hash);
@@ -208,7 +206,7 @@ protected:
 	SHAMapItem::pointer lastBelow(SHAMapInnerNode::pointer);
 	
 public:
-	SHAMap(int leafDataSize=32, int leafDataOffset=-1);
+	SHAMap();
 
 	// hold the map stable across operations
 	ScopedLock Lock() const { return ScopedLock(mLock); }
@@ -260,9 +258,10 @@ public:
 	int flushDirty(int maxNodes);
 
 	// overloads for backed maps
-	virtual bool fetchNode(const uint256& hash, const SHAMapNode& id, std::vector<unsigned char>& rawNode);
-	virtual bool writeNode(const uint256& hash, const SHAMapNode& id, const std::vector<unsigned char>& rawNode);
-	virtual void badNode(const uint256& hash, const SHAMapNode& id);
+	virtual bool fetchInnerNode(const uint256& hash, const SHAMapNode& id, std::vector<unsigned char>& rawNode);
+	virtual bool fetchLeafNode(const uint256& hash, const SHAMapNode& id, std::vector<SHAMapItem::pointer>& nodeData);
+	virtual bool writeInnerNode(const uint256& hash, const SHAMapNode& id, const std::vector<unsigned char>& rawNode);
+	virtual bool writeLeafNode(const uint256& hash, const SHAMapNode& id, const std::vector<unsigned char>& rawNode);
 
 	static bool TestSHAMap();
 	virtual void dump(void);
