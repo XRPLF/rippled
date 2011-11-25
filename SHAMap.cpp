@@ -7,6 +7,7 @@
 SHAMap::SHAMap() : mSeq(0)
 {
 	root=SHAMapInnerNode::pointer(new SHAMapInnerNode(SHAMapNode(SHAMapNode::rootDepth, uint256()), mSeq));
+	mInnerNodeByID[*root]=root;
 }
 
 void SHAMap::dirtyUp(const uint256& id)
