@@ -13,7 +13,7 @@
 class SHAMap;
 
 // A tree-like map of SHA256 hashes
-// 10 levels, consisting of a root, 9 interior node levels, and leaves
+// 21 levels, consisting of a root, 19 interior node levels, and leaves
 // The trees are designed for rapid synchronization and compression of differences
 
 
@@ -23,16 +23,16 @@ public:
 	typedef boost::shared_ptr<SHAMapNode> pointer;
 
 private:
-	static uint256 smMasks[11]; // AND with hash to get node id
+	static uint256 smMasks[21]; // AND with hash to get node id
 
 	uint256	mNodeID;
 	int	mDepth;
 
 public:
 
-	// 0 is root, 10 is leaf
+	// 0 is root, 20 is leaf
 	static const int rootDepth=0;
-	static const int leafDepth=10;
+	static const int leafDepth=20;
 
 	SHAMapNode(int depth, const uint256& hash);
 	int getDepth() const		{ return mDepth; }
