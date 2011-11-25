@@ -15,7 +15,7 @@ std::string SHAMapNode::getString() const
 	return ret;
 }
 
-uint256 SHAMapNode::smMasks[11];
+uint256 SHAMapNode::smMasks[21];
 
 bool SHAMapNode::operator<(const SHAMapNode &s) const
 {
@@ -57,16 +57,11 @@ bool SHAMapNode::operator!=(const SHAMapNode &s) const
 
 void SHAMapNode::ClassInit()
 { // set up the depth masks
-	int i;
-	char HexBuf[65];
-
-	for(i=0; i<64; i++) HexBuf[i]='0';
-		HexBuf[64]=0;
-	for(i=0; i<=leafDepth; i++)
+	uint256 selector;
+	for(int i=0; i<=leafDepth; i++)
 	{
-		smMasks[i].SetHex(HexBuf);
-		HexBuf[2*i]='1';
-		HexBuf[2*i+1]='F';
+		smMasks[i]=selector;
+		*(selector.begin()+i)=0x1f;
 	}
 }
 
@@ -88,7 +83,11 @@ SHAMapNode SHAMapNode::getChildNodeID(int m)
 	assert(!isLeaf());
 
 	uint256 branch=m;
-	branch>>=(mDepth*8);
+	branch<<=248-(mDepth*8);
+
+#ifdef DEBUG
+	std::cerr << "m=" << m << ", branch=" << branch.GetHex() << std::endl;
+#endif
 
 	return SHAMapNode(mDepth+1, mNodeID | branch);
 }
