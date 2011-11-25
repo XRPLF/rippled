@@ -36,6 +36,8 @@ Account IDs are based on the compressed public key. Apply SHA512 to the
 
 The resulting 20-byte value is the account ID.
 
+Keeping with the Bitcoin tradition, unsigned 160-bit and 256-bit integers
+(hashes, transaction IDs, account IDs) are sent in little-endian format.
 
 2) Transaction (source/signed format) 145-bytes
 
