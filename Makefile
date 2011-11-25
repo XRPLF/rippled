@@ -26,7 +26,7 @@ LIBS+= \
    -l dl \
    -l sqlite3
 
-DEBUGFLAGS=-g
+DEBUGFLAGS=-g -DDEBUG
 CXXFLAGS=-O2 -Wno-invalid-offsetof -Wformat $(DEBUGFLAGS) $(DEFS)
 HEADERS = \
     Application.h \
@@ -68,17 +68,21 @@ HEADERS = \
     newcoin.pb.h
 
 SRCS= \
- test.cpp Hanko.cpp Transaction.cpp SHAMap.cpp \
- Application.cpp     HttpReply.cpp      main.cpp            RPCCommands.cpp        \
- BitcoinUtil.cpp     keystore.cpp       NewcoinAddress.cpp  rpc.cpp                UniqueNodeList.cpp \
- CallRPC.cpp         KnownNodeList.cpp  PackedMessage.cpp   RPCDoor.cpp            ValidationCollection.cpp \
- Config.cpp          Ledger.cpp         Peer.cpp            RPCServer.cpp          Wallet.cpp \
- ConnectionPool.cpp  LedgerHistory.cpp  PeerDoor.cpp        TimingService.cpp \
- Conversion.cpp      LedgerMaster.cpp   RequestParser.cpp   TransactionBundle.cpp  util/pugixml.o \
- database/SqliteDatabase.cpp database/database.cpp
+ test.cpp Hanko.cpp Transaction.cpp SHAMap.cpp SHAMapNodes.cpp Serializer.cpp Ledger.cpp \
+ AccountState.cpp
+
+
+# Application.cpp     HttpReply.cpp      main.cpp            RPCCommands.cpp        \
+# BitcoinUtil.cpp     keystore.cpp       NewcoinAddress.cpp  rpc.cpp                UniqueNodeList.cpp \
+# CallRPC.cpp         KnownNodeList.cpp  PackedMessage.cpp   RPCDoor.cpp            ValidationCollection.cpp \
+# Config.cpp          Ledger.cpp         Peer.cpp            RPCServer.cpp          Wallet.cpp \
+#ConnectionPool.cpp  LedgerHistory.cpp  PeerDoor.cpp        TimingService.cpp \
+# Conversion.cpp      LedgerMaster.cpp   RequestParser.cpp   TransactionBundle.cpp  util/pugixml.o \
+# database/SqliteDatabase.cpp database/database.cpp
 # database/linux/mysqldatabase.cpp database/database.cpp database/SqliteDatabase.cpp
 
-OBJS= $(SRCS:%.cpp=obj/%.o) obj/newcoin.pb.o cryptopp/obj/sha.o cryptopp/obj/cpu.o
+OBJS= $(SRCS:%.cpp=obj/%.o) obj/newcoin.pb.o
+#cryptopp/obj/sha.o cryptopp/obj/cpu.o
 
 all: newcoind
 
@@ -97,11 +101,17 @@ obj/newcoin.pb.o:	newcoin.pb.h
 newcoind: $(OBJS)
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
 
+.dep:
+	$(CXX) -M $(SRCS) $(CXXFLAGS) > .dep
+
 clean:
 	-rm -f newcoind
 	-rm -f obj/*.o
 	-rm -f obj/test/*.o
+	-rm -f obj/database/*.o
+	-rm -f util/*.o
 	-rm -f cryptopp/obj/*.o
 	-rm -f headers.h.gch
 	-rm -f newcoin.pb.*
 
+include .dep
