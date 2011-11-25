@@ -3,6 +3,17 @@
 #include "SHAMap.h"
 
 #include <boost/foreach.hpp>
+#include <boost/lexical_cast.hpp>
+
+std::string SHAMapNode::getString() const
+{
+	std::string ret="NodeID(";
+	ret+=boost::lexical_cast<std::string>(mDepth);
+	ret+=",";
+	ret+=mNodeID.GetHex();
+	ret+=")";
+	return ret;
+}
 
 uint256 SHAMapNode::smMasks[11];
 
@@ -51,7 +62,7 @@ void SHAMapNode::ClassInit()
 
 	for(i=0; i<64; i++) HexBuf[i]='0';
 		HexBuf[64]=0;
-	for(i=0; i<leafDepth; i++)
+	for(i=0; i<=leafDepth; i++)
 	{
 		smMasks[i].SetHex(HexBuf);
 		HexBuf[2*i]='1';
@@ -98,12 +109,18 @@ int SHAMapNode::selectBranch(const uint256 &hash)
 
 void SHAMapNode::dump()
 {
-	std::cerr << "MapNode(" << mNodeID.GetHex() << ", " << mDepth << ")" << std::endl;
+	std::cerr << getString() << std::endl;
 }
 
-SHAMapLeafNode::SHAMapLeafNode(const SHAMapNode& nodeID) : SHAMapNode(nodeID), mHash(0)
+SHAMapLeafNode::SHAMapLeafNode(const SHAMapNode& nodeID, uint32 seq) : SHAMapNode(nodeID), mHash(0), mSeq(seq)
 {
-	assert(nodeID.getDepth()==SHAMapNode::leafDepth);
+	assert(nodeID.isLeaf());
+}
+
+SHAMapLeafNode::SHAMapLeafNode(const SHAMapLeafNode& node, uint32 seq) : SHAMapNode(node),
+		mHash(node.mHash), mItems(node.mItems), mSeq(seq)
+{
+	assert(node.isLeaf());
 }
 
 bool SHAMapLeafNode::hasItem(const uint256& item) const
@@ -202,17 +219,25 @@ void SHAMapLeafNode::dump()
 	std::cerr << "  " << mItems.size() << " items" << std::endl;
 }
 
-SHAMapInnerNode::SHAMapInnerNode(const SHAMapNode& id) : SHAMapNode(id)
-{
+SHAMapInnerNode::SHAMapInnerNode(const SHAMapNode& id, uint32 seq) : SHAMapNode(id), mSeq(seq)
+{ // can be root
 	assert(id.getDepth()<SHAMapNode::leafDepth);
 }
 
-SHAMapInnerNode::SHAMapInnerNode(const SHAMapNode& id, const std::vector<unsigned char>& contents)
-	: SHAMapNode(id)
+SHAMapInnerNode::SHAMapInnerNode(const SHAMapNode& id, const std::vector<unsigned char>& contents, uint32 seq)
+	: SHAMapNode(id), mSeq(seq)
 {
+	assert(!id.isLeaf());
 	Serializer s(contents);
 	for(int i=0; i<32; i++)
-			mHashes[i]=s.get256(i*32);
+		mHashes[i]=s.get256(i*32);
+}
+
+SHAMapInnerNode::SHAMapInnerNode(const SHAMapInnerNode& node, uint32 seq) : SHAMapNode(node), mHash(node.mHash),
+		mSeq(seq)
+{
+	assert(!node.isLeaf());
+	memcpy(mHashes, node.mHashes, sizeof(mHashes));
 }
 
 bool SHAMapInnerNode::setChildHash(int m, const uint256 &hash)

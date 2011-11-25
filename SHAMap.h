@@ -17,11 +17,10 @@ class SHAMap;
 // The trees are designed for rapid synchronization and compression of differences
 
 
- class SHAMapNode
+class SHAMapNode
 { // Identifies a node in a SHA256 hash
 public:
 	typedef boost::shared_ptr<SHAMapNode> pointer;
-
 
 private:
 	static uint256 smMasks[11]; // AND with hash to get node id
@@ -56,7 +55,8 @@ public:
 	bool operator<=(const SHAMapNode&) const;
 	bool operator>=(const SHAMapNode&) const;
 
-	virtual void dump(void);
+	virtual std::string getString(void) const;
+	void dump(void);
 
 	static void ClassInit();
 	static uint256 getNodeID(int depth, const uint256& hash);
@@ -112,8 +112,12 @@ public:
 private:
 	uint256	mHash;
 	std::list<SHAMapItem::pointer> mItems;
+	uint32 mSeq;
 
 	bool updateHash();
+
+	SHAMapLeafNode(const SHAMapLeafNode&); // no implementation
+	SHAMapLeafNode& operator=(const SHAMapLeafNode&); // no implementation
 
 protected:
 	bool addUpdateItem(SHAMapItem::pointer);
@@ -121,9 +125,13 @@ protected:
 	bool delItem(const uint256& tag);
 
 public:
-	SHAMapLeafNode(const SHAMapNode& nodeID);
+	SHAMapLeafNode(const SHAMapNode& nodeID, uint32 seq);
+	SHAMapLeafNode(const SHAMapLeafNode& node, uint32 seq);
 
 	virtual bool isPopulated(void) const { return true; }
+
+	uint32 getSeq(void) const { return mSeq; }
+	void setSeq(uint32 s) { mSeq=s; }
 
 	const uint256& getNodeHash() const	{ return mHash; }
 	bool isEmpty() const			{ return mItems.empty(); }
@@ -150,15 +158,23 @@ public:
 private:
 	uint256		mHash;
 	uint256		mHashes[32];
+	uint32		mSeq;
 
 	bool updateHash();
+
+	SHAMapInnerNode(const SHAMapInnerNode&); // no implementation
+	SHAMapInnerNode& operator=(const SHAMapInnerNode&); // no implementation
 
 protected:
 	bool setChildHash(int m, const uint256& hash);
 
 public:
-	SHAMapInnerNode(const SHAMapNode& id);
-	SHAMapInnerNode(const SHAMapNode& id, const std::vector<unsigned char>& contents);
+	SHAMapInnerNode(const SHAMapNode& id, uint32 seq);
+	SHAMapInnerNode(const SHAMapInnerNode& node, uint32 seq);
+	SHAMapInnerNode(const SHAMapNode& id, const std::vector<unsigned char>& contents, uint32 seq);
+
+	uint32 getSeq(void) const { return mSeq; }
+	void setSeq(uint32 s) { mSeq=s; }
 
 	virtual bool isPopulated(void) const { return true; }
 
@@ -183,7 +199,7 @@ public:
 	typedef boost::shared_ptr<SHAMap> pointer;
 
 private:
-	int mLeafDataSize, mLeafDataOffset, mSeq;
+	uint32 mSeq;
 	mutable boost::recursive_mutex mLock;
 	std::map<SHAMapNode, SHAMapLeafNode::pointer> mLeafByID;
 	std::map<SHAMapNode, SHAMapInnerNode::pointer> mInnerNodeByID;
@@ -197,15 +213,19 @@ protected:
 
 	SHAMapLeafNode::pointer createLeaf(const SHAMapInnerNode& lowestParent, const uint256& id);
 	SHAMapLeafNode::pointer checkCacheLeaf(const SHAMapNode &);
-	SHAMapLeafNode::pointer walkToLeaf(const uint256& id, bool create);
+	SHAMapLeafNode::pointer walkToLeaf(const uint256& id, bool create, bool modify);
 
-	SHAMapLeafNode::pointer getLeaf(const SHAMapNode& id, const uint256& hash);
-	SHAMapInnerNode::pointer getInner(const SHAMapNode& id, const uint256& hash);
+	SHAMapLeafNode::pointer getLeaf(const SHAMapNode& id, const uint256& hash, bool modify);
+	SHAMapLeafNode::pointer returnLeaf(SHAMapLeafNode::pointer leaf, bool modify);
+	SHAMapInnerNode::pointer getInner(const SHAMapNode& id, const uint256& hash, bool modify);
+	SHAMapInnerNode::pointer returnNode(SHAMapInnerNode::pointer node, bool modify);
 
 	SHAMapItem::pointer firstBelow(SHAMapInnerNode::pointer);
 	SHAMapItem::pointer lastBelow(SHAMapInnerNode::pointer);
 	
 public:
+
+	// build new map
 	SHAMap();
 
 	// hold the map stable across operations
