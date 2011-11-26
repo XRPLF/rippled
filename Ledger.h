@@ -56,7 +56,7 @@ protected:
 	bool delTransaction(const uint256& id);
 
 public:
-	Ledger(uint32 index); // used for the starting bootstrap ledger
+	Ledger(const uint160& masterID, uint64 startAmount); // used for the starting bootstrap ledger
 	Ledger(const Ledger &ledger);
 	Ledger(const uint256 &parentHash, const uint256 &transHash, const uint256 &accountHash,
 	 uint64 feeHeld, uint64 timeStamp, uint32 ledgerSeq); // used for received ledgers

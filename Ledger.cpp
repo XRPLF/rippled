@@ -11,8 +11,15 @@
 using namespace boost;
 using namespace std;
 
-Ledger::Ledger(uint32 index) : mFeeHeld(0), mTimeStamp(0), mLedgerSeq(index), mCurrent(true)
+Ledger::Ledger(const uint160& masterID, uint64 startAmount) :
+	mFeeHeld(0), mTimeStamp(0), mLedgerSeq(0), mCurrent(true)
 {
+	mTransactionMap=SHAMap::pointer(new SHAMap());
+	mAccountStateMap=SHAMap::pointer(new SHAMap());
+	
+	AccountState::pointer startAccount=AccountState::pointer(new AccountState(masterID));
+	startAccount->credit(startAmount);
+	addAccountState(startAccount);
 }
 
 Ledger::Ledger(const uint256 &parentHash, const uint256 &transHash, const uint256 &accountHash,
@@ -54,6 +61,12 @@ bool Ledger::updateAccountState(AccountState::pointer state)
 	return mAccountStateMap->updateGiveItem(item);
 }
 
+bool Ledger::addAccountState(AccountState::pointer state)
+{
+	SHAMapItem::pointer item(new SHAMapItem(state->getAccountID(), state->getRaw()));
+	return mAccountStateMap->addGiveItem(item);
+}
+
 bool Ledger::addTransaction(Transaction::pointer trans)
 { // low-level - just add to table
 	SHAMapItem::pointer item(new SHAMapItem(trans->getID(), trans->getSigned()->getData()));
@@ -62,7 +75,7 @@ bool Ledger::addTransaction(Transaction::pointer trans)
 
 bool Ledger::delTransaction(const uint256& transID)
 {
-	return mTransactionMap->delItem(transID);
+	return mTransactionMap->delItem(transID); 
 }
 
 Transaction::pointer Ledger::getTransaction(const uint256& transID)
@@ -90,6 +103,14 @@ Ledger::TransResult Ledger::applyTransaction(Transaction::pointer trans)
 		// accounts exist?
 		AccountState::pointer fromAccount=getAccountState(trans->getFromAccount());
 		AccountState::pointer toAccount=getAccountState(trans->getToAccount());
+
+		// temporary code -- if toAccount doesn't exist but fromAccount does, create it
+		if(!!fromAccount && !toAccount)
+		{
+			toAccount=AccountState::pointer(new AccountState(trans->getToAccount()));
+			updateAccountState(toAccount);
+		}
+
 		if(!fromAccount || !toAccount) return TR_BADACCT;
 
 		// pass sanity checks?
