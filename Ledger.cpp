@@ -44,7 +44,7 @@ AccountState::pointer Ledger::getAccountState(const uint160& accountID)
 {
 	ScopedLock l(mTransactionMap->Lock());
 	SHAMapItem::pointer item=mTransactionMap->peekItem(uint160to256(accountID));
-	if(item==NULL) return AccountState::pointer();
+	if(!item) return AccountState::pointer();
 	return AccountState::pointer(new AccountState(item->getData()));
 }
 
@@ -60,11 +60,16 @@ bool Ledger::addTransaction(Transaction::pointer trans)
 	return mTransactionMap->addGiveItem(item);
 }
 
+bool Ledger::delTransaction(const uint256& transID)
+{
+	return mTransactionMap->delItem(transID);
+}
+
 Transaction::pointer Ledger::getTransaction(const uint256& transID)
 {
 	ScopedLock l(mTransactionMap->Lock());
 	SHAMapItem::pointer item=mTransactionMap->peekItem(transID);
-	if(item==NULL) return Transaction::pointer();
+	if(!item) return Transaction::pointer();
 	Transaction *t=new Transaction(item->getData(), true);
 	if(t->getStatus()==NEW) t->setStatus(mCurrent ? INCLUDED : COMMITTED, mLedgerSeq);
 	return Transaction::pointer(t);
@@ -75,17 +80,17 @@ Ledger::TransResult Ledger::applyTransaction(Transaction::pointer trans)
 	ScopedLock l(mLock);
 	if(trans->getSourceLedger()<mLedgerSeq) return TR_BADLSEQ;
 	if(trans->getAmount()<trans->getFee()) return TR_TOOSMALL;
-	if((mTransactionMap==NULL) || (mAccountStateMap==NULL)) return TR_ERROR;
+	if(!mTransactionMap || !mAccountStateMap) return TR_ERROR;
 	try
 	{
 		// already applied?
 		Transaction::pointer dupTrans=getTransaction(trans->getID());
-		if(dupTrans!=NULL) return TR_ALREADY;
+		if(dupTrans) return TR_ALREADY;
 
 		// accounts exist?
 		AccountState::pointer fromAccount=getAccountState(trans->getFromAccount());
 		AccountState::pointer toAccount=getAccountState(trans->getToAccount());
-		if((fromAccount==NULL)||(toAccount==NULL)) return TR_BADACCT;
+		if(!fromAccount || !toAccount) return TR_BADACCT;
 
 		// pass sanity checks?
 		if(fromAccount->getBalance()<trans->getAmount()) return TR_INSUFF;
@@ -113,6 +118,41 @@ Ledger::TransResult Ledger::applyTransaction(Transaction::pointer trans)
 
 Ledger::TransResult Ledger::removeTransaction(Transaction::pointer trans)
 { // high-level - reverse application of transaction
+	ScopedLock l(mLock);
+	if(!mTransactionMap || !mAccountStateMap) return TR_ERROR;
+	try
+	{
+		Transaction::pointer ourTrans=getTransaction(trans->getID());
+		if(!ourTrans) return TR_NOTFOUND;
+
+		// accounts exist
+		AccountState::pointer fromAccount=getAccountState(trans->getFromAccount());
+		AccountState::pointer toAccount=getAccountState(trans->getToAccount());
+		if(!fromAccount || !toAccount) return TR_BADACCT;
+
+		// pass sanity checks?
+		if(toAccount->getBalance()<trans->getAmount()) return TR_INSUFF;
+		if(fromAccount->getSeq()!=(trans->getFromAccountSeq()+1)) return TR_PASTASEQ;
+		
+		// reverse
+		fromAccount->credit(trans->getAmount());
+		fromAccount->decSeq();
+		toAccount->charge(trans->getAmount()-trans->getFee());
+		mFeeHeld-=trans->getFee();
+		trans->setStatus(REMOVED, mLedgerSeq);
+		
+		if(!delTransaction(trans->getID()))
+		{
+			assert(false);
+			return TR_ERROR;
+		}
+		updateAccountState(fromAccount);
+		updateAccountState(toAccount);
+	}
+	catch (SHAMapException)
+	{
+		return TR_ERROR;
+	}
 }
 
 Ledger::TransResult Ledger::hasTransaction(Transaction::pointer trans)
