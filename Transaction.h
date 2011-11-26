@@ -24,6 +24,7 @@ enum TransStatus
 	CONFLICTED,	// losing to a conflicting transaction
 	COMMITTED,	// known to be in a ledger
 	HELD,		// not valid now, maybe later
+	REMOVED		// taken out of a ledger
 };
 
 class Account;
