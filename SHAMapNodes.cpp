@@ -177,11 +177,30 @@ SHAMapItem::pointer SHAMapLeafNode::firstItem(void)
 
 SHAMapItem::pointer SHAMapLeafNode::nextItem(const uint256& tag)
 {
-	bool found=false;
-	BOOST_FOREACH(SHAMapItem::pointer& it, mItems)
+	std::list<SHAMapItem::pointer>::iterator it;
+	for(it=mItems.begin(); it!=mItems.end(); ++it)
 	{
-		if(found) return it;
-		if(it->getTag() == tag) found=true;
+		if((*it)->getTag()==tag)
+		{
+			++it;
+			if(it==mItems.end()) return SHAMapItem::pointer();
+			return *it;
+		}
+	}
+	return SHAMapItem::pointer();
+}
+
+SHAMapItem::pointer SHAMapLeafNode::prevItem(const uint256& tag)
+{
+	std::list<SHAMapItem::pointer>::reverse_iterator it;
+	for(it=mItems.rbegin(); it!=mItems.rend(); ++it)
+	{
+		if((*it)->getTag()==tag)
+		{
+			++it;
+			if(it==mItems.rend()) return SHAMapItem::pointer();
+			return *it;
+		}
 	}
 	return SHAMapItem::pointer();
 }

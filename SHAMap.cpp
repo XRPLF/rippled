@@ -287,7 +287,51 @@ SHAMapItem::pointer SHAMap::peekNextItem(const uint256& id)
 
 SHAMapItem::pointer SHAMap::peekPrevItem(const uint256& id)
 {
-	// WRITEME
+	ScopedLock sl(mLock);
+
+	SHAMapLeafNode::pointer leaf=walkToLeaf(id, false, false);
+	if(!leaf) return SHAMapItem::pointer();
+
+	// is there another item in this leaf? (there almost never will be)
+	SHAMapItem::pointer prev=leaf->prevItem(id);
+	if(prev) return prev;
+
+	for(int depth=SHAMapNode::leafDepth-1; depth>=0; depth--)
+	{ // walk up the tree until we find a node with a previous child
+		SHAMapInnerNode::pointer node=mInnerNodeByID[SHAMapNode(depth, id)];
+		if(!node)
+		{
+#ifdef DEBUG
+			std::cerr << "InnerNode missing: " << SHAMapNode(depth,id).getString() << std::endl;
+#endif
+			throw SHAMapException(MissingNode);
+		}
+		for(int i=node->selectBranch(id)-1; i>=0; i--)
+			if(!!node->getChildHash(i))
+			{ // node has a subsequent child
+				SHAMapNode prevNode(node->getChildNodeID(i));
+				const uint256& prevHash(node->getChildHash(i));
+				
+				if(prevNode.isLeaf())
+				{ // this is a terminal inner node
+					leaf=getLeaf(prevNode, prevHash, false);
+					if(!leaf) throw SHAMapException(MissingNode);
+					prev=leaf->firstItem();
+					if(!prev) throw SHAMapException(InvalidNode);
+					return prev;
+				}
+
+				// the next item is the first item below this node
+				SHAMapInnerNode::pointer inner=getInner(prevNode, prevHash, false);
+				if(!inner) throw SHAMapException(MissingNode);
+				prev=lastBelow(inner);
+				if(!prev) throw SHAMapException(InvalidNode);
+				return prev;
+			}
+	}
+
+	// must be last item
+	return SHAMapItem::pointer();
 }
 
 SHAMapLeafNode::pointer SHAMap::createLeaf(const SHAMapInnerNode& lowestParent, const uint256& id)
