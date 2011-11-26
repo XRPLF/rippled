@@ -29,7 +29,7 @@ public:
 		TR_ALREADY	=2,
 		TR_BADTRANS =3,	// the transaction itself is corrupt
 		TR_BADACCT	=4,	// one of the accounts is invalid
-		TR_INSUFF	=5,	// the sending account is broke
+		TR_INSUFF	=5,	// the sending(apply)/receiving(remove) account is broke
 		TR_PASTASEQ	=6,	// account is past this transaction
 		TR_PREASEQ	=7,	// account is missing transactions before this
 		TR_BADLSEQ	=8,	// ledger too early
