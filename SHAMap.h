@@ -40,7 +40,7 @@ public:
 
 	bool isRoot() const			{ return mDepth==0; }
 	bool isLeaf() const			{ return mDepth==leafDepth; }
-	bool isChildLeaf() const	{ return mDepth<(leafDepth-1); }
+	bool isChildLeaf() const	{ return mDepth==(leafDepth-1); }
 	bool isInner() const 		{ return !isRoot() && !isLeaf(); }
 	virtual bool isPopulated(void) const { return false; }
 

@@ -68,13 +68,13 @@ void SHAMapNode::ClassInit()
 uint256 SHAMapNode::getNodeID(int depth, const uint256& hash)
 {
 	assert(depth>=0 && depth<=leafDepth);
-	return hash & smMasks[depth];
+	uint256 ret = hash & smMasks[depth];
+	return ret;
 }
 
-SHAMapNode::SHAMapNode(int depth, const uint256 &hash)
+SHAMapNode::SHAMapNode(int depth, const uint256 &hash) : mDepth(depth)
 { // canonicalize the hash to a node ID for this depth
 	assert(depth>=0 && depth<=leafDepth);
-	mDepth = depth;
 	mNodeID = getNodeID(depth, hash);
 }
 
@@ -83,13 +83,10 @@ SHAMapNode SHAMapNode::getChildNodeID(int m)
 	assert(!isLeaf());
 
 	uint256 branch=m;
-	branch<<=248-(mDepth*8);
+	branch<<=mDepth*8;
 
-#ifdef DEBUG
-	std::cerr << "m=" << m << ", branch=" << branch.GetHex() << std::endl;
-#endif
-
-	return SHAMapNode(mDepth+1, mNodeID | branch);
+	SHAMapNode ret(mDepth+1, mNodeID | branch);
+	return ret;
 }
 
 int SHAMapNode::selectBranch(const uint256 &hash)
@@ -101,7 +98,6 @@ int SHAMapNode::selectBranch(const uint256 &hash)
 
 	uint256 selector=hash&smMasks[mDepth+1];
 	int branch=*(selector.begin()+mDepth);
-
 	assert(branch>=0 && branch<32);
 	return branch;
 }
