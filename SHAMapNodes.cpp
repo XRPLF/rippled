@@ -118,9 +118,38 @@ SHAMapLeafNode::SHAMapLeafNode(const SHAMapLeafNode& node, uint32 seq) : SHAMapN
 	assert(node.isLeaf());
 }
 
+SHAMapLeafNode::SHAMapLeafNode(const SHAMapNode& id, const std::vector<unsigned char>& rawLeaf, uint32 seq)
+	: SHAMapNode(id), mSeq(seq)
+{
+	Serializer s(rawLeaf);
+	int pos=0;
+	while(pos<s.getLength())
+	{
+		uint256 id=s.get256(pos);
+		pos+=32;
+		uint16 len;
+		if(!s.get16(len, pos)) throw SHAMapException(InvalidNode);
+		pos+=2;
+		if(!id || !len || ((pos+len)>s.getLength())) throw SHAMapException(InvalidNode);
+		addUpdateItem(SHAMapItem::pointer(new SHAMapItem(id, s.getRaw(pos, len))));
+		pos+=len;
+	}
+	updateHash();
+}
+
+void SHAMapLeafNode::addRaw(Serializer &s)
+{
+	BOOST_FOREACH(SHAMapItem::pointer& nodeItem, mItems)
+	{
+		s.add256(nodeItem->getTag());
+		s.add16(nodeItem->peekData().size());
+		s.addRaw(nodeItem->peekData());
+	}
+}
+
 bool SHAMapLeafNode::hasItem(const uint256& item) const
 {
-	BOOST_FOREACH(SHAMapItem::pointer nodeItem, mItems)
+	BOOST_FOREACH(const SHAMapItem::pointer& nodeItem, mItems)
 		if(nodeItem->getTag()==item) return true;
 	return false;
 }
@@ -254,6 +283,11 @@ SHAMapInnerNode::SHAMapInnerNode(const SHAMapInnerNode& node, uint32 seq) : SHAM
 	memcpy(mHashes, node.mHashes, sizeof(mHashes));
 }
 
+void SHAMapInnerNode::addRaw(Serializer &s)
+{
+	for(int i=0; i<32; i++)
+		s.add256(mHashes[i]);
+}
 bool SHAMapInnerNode::setChildHash(int m, const uint256 &hash)
 {
 	assert( (m>=0) && (m<32) );

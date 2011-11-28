@@ -21,6 +21,7 @@ class Serializer
 	Serializer(const std::vector<unsigned char> &data) : mData(data) { ; }
 
 	// assemble functions
+	int add16(uint16);
 	int add32(uint32);				// ledger indexes, account sequence
 	int add64(uint64);				// timestamps, amounts
 	int add160(const uint160&);	// account names, hankos
@@ -28,6 +29,7 @@ class Serializer
 	int addRaw(const std::vector<unsigned char> &vector);
 
 	// disassemble functions
+	bool get16(uint16&, int offset) const;
 	bool get32(uint32&, int offset) const;
 	bool get64(uint64&, int offset) const;
 	bool get160(uint160&, int offset) const;

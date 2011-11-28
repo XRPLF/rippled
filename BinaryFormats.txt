@@ -53,14 +53,9 @@ Fields:
 The transaction ID is the first 256-bits of the SHA512 hash of the 145 byte
 signed transaction.
 
-3) Transaction (ledger format)
-
-Fields:
-1) Transaction in signed format
-2) 8-byte fees held, unsigned BE integer
 
 
-5) Ledger (signed format)
+3) Ledger (signed format)
 
 Fields:
 1) 4-byte ledger index, unsigned BE integer
@@ -75,7 +70,7 @@ Fields:
  Proposed: Prefix (0x4C475000) of 120 byte fields 1-8
 
 
-6) Account status (ledger format)
+4) Account status (ledger format)
 
 Fields:
 1) 20-byte Account ID
@@ -84,7 +79,7 @@ Fields:
 
 
 
-7) Non-Leaf Tree Node
+5) Non-Leaf Tree Node
 
 Contains 32 hashes, each 20-bytes. They correspond to hashes of the nodes
 for the 32 possible values of the *first* 5 bits of the *next* byte of the
@@ -92,7 +87,7 @@ hash. By convention, an empty node has a hash of zero.
 
 
 
-8) Leaf Node
+6) Leaf Node
 
 Contains every item in this node, sorted in order of increasing tags
 (Elements that start with a zero byte come first.) In practice, this
@@ -104,8 +99,18 @@ By convention, an empty leaf node has a hash of all zero bytes.
 For a transaction, the tag is the transaction ID (hash of the transaction
 data). For an account state, the tag is the 20-byte account ID.
 
+Transaction Leaf Node Fields:
+1) 32-byte Transaction ID (LE)
+2) 2-byte Length, 153 (145+8)
+3) 145-byte Transaction in signed format
+4) 8-byte fees held, unsigned BE integer
 
-8) Contact block
+Account State Leaf Node Fields:
+1) 32-byte Account ID (20-byte ID zero-extended, in LE format)
+2) 2-byte length (32)
+3) 32-byte account status in ledger format
+
+7) Contact block
 
 These are used to pass node contact information around the network and are
 signed so nodes can prove they are operational.

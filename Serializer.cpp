@@ -4,6 +4,17 @@
 #include <openssl/ripemd.h>
 #include <openssl/sha.h>
 
+int Serializer::add16(uint16 i)
+{
+	int ret=mData.size();
+	for(int j=0; j<sizeof(i); j++)
+	{
+		mData.push_back((unsigned char) (i&0xff));
+		i>>=8;
+	}
+	return ret;
+}
+
 int Serializer::add32(uint32 i)
 {
 	int ret=mData.size();
@@ -47,8 +58,21 @@ int Serializer::addRaw(const std::vector<unsigned char> &vector)
 	return ret;
 }
 
+bool Serializer::get16(uint16& o, int offset) const
+{
+	o=0;
+	if((offset+sizeof(o))>mData.size()) return false;
+	for(int i=0, o=0; i<sizeof(o); i++)
+	{
+		o<<=8;
+		o|=mData.at(offset++);
+	}
+	return true;
+}
+
 bool Serializer::get32(uint32& o, int offset) const
 {
+	o=0;
 	if((offset+sizeof(o))>mData.size()) return false;
 	for(int i=0, o=0; i<sizeof(o); i++)
 	{
@@ -60,6 +84,7 @@ bool Serializer::get32(uint32& o, int offset) const
 
 bool Serializer::get64(uint64& o, int offset) const
 {
+	o=0;
 	if((offset+sizeof(o))>mData.size()) return false;
 	for(int i=0, o=0; i<sizeof(o); i++)
 	{

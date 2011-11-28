@@ -88,7 +88,7 @@ SHAMapLeafNode::pointer SHAMap::walkToLeaf(const uint256& id, bool create, bool 
 	return returnLeaf(ln, modify);
 }
 
-SHAMapLeafNode::pointer SHAMap::getLeaf(const SHAMapNode &id, const uint256& hash, bool modify)
+SHAMapLeafNode::pointer SHAMap::getLeaf(const SHAMapNode& id, const uint256& hash, bool modify)
 { // retrieve a leaf whose node hash is known
 	assert(!!hash);
 	if(!id.isLeaf()) return SHAMapLeafNode::pointer();
@@ -96,27 +96,22 @@ SHAMapLeafNode::pointer SHAMap::getLeaf(const SHAMapNode &id, const uint256& has
 	SHAMapLeafNode::pointer leaf=mLeafByID[id];			// is the leaf in memory
 	if(leaf) return returnLeaf(leaf, modify);
 
-	std::vector<SHAMapItem::pointer> leafData;			// is it in backing store
-	if(!fetchLeafNode(hash, id, leafData))
- 		throw SHAMapException(MissingNode);
-
-	leaf=SHAMapLeafNode::pointer(new SHAMapLeafNode(id, mSeq));
-	BOOST_FOREACH(SHAMapItem::pointer& item, leafData)
-		leaf->addUpdateItem(item);
-	leaf->updateHash();
+	std::vector<unsigned char> leafData;
+	if(!fetchLeafNode(hash, id, leafData)) throw SHAMapException(MissingNode);
+	leaf=SHAMapLeafNode::pointer(new SHAMapLeafNode(id, leafData, mSeq));
 	if(leaf->getNodeHash()!=hash) throw SHAMapException(InvalidNode);
+
 	mLeafByID[id]=leaf;
 	return leaf;
 }
 
-SHAMapInnerNode::pointer SHAMap::getInner(const SHAMapNode &id, const uint256& hash, bool modify)
+SHAMapInnerNode::pointer SHAMap::getInner(const SHAMapNode& id, const uint256& hash, bool modify)
 { // retrieve an inner node whose node hash is known
 	SHAMapInnerNode::pointer node=mInnerNodeByID[id];
 	if(node) return returnNode(node, modify);
 	
 	std::vector<unsigned char> rawNode;
 	if(!fetchInnerNode(hash, id, rawNode)) throw SHAMapException(MissingNode);
-
 	node=SHAMapInnerNode::pointer(new SHAMapInnerNode(id, rawNode, mSeq));
 	if(node->getNodeHash()!=hash) throw SHAMapException(InvalidNode);
 
@@ -421,7 +416,7 @@ bool SHAMap::fetchInnerNode(const uint256&, const SHAMapNode&, std::vector<unsig
 	return false;
 }
 
-bool SHAMap::fetchLeafNode(const uint256&, const SHAMapNode&, std::vector<SHAMapItem::pointer>&)
+bool SHAMap::fetchLeafNode(const uint256&, const SHAMapNode&, std::vector<unsigned char>&)
 {
 	return false;
 }
