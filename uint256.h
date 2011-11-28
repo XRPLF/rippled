@@ -637,18 +637,16 @@ inline const uint256 operator-(const uint256& a, const uint256& b)      { return
 static uint256 uint160to256(const uint160& u)
 {
  uint256 m;
- memcpy(((char *) &m)+(sizeof(m)-sizeof(u)), &u, sizeof(u));
+ memcpy(&m, &u, sizeof(u));
  return m;
 }
 
 static uint160 uint256to160(const uint256& u)
 {
  uint160 m;
- memcpy((char *) &m, &u, sizeof(m));
+ memcpy(&m, &u, sizeof(m));
  return m;
 }
-
-
 
 
 
