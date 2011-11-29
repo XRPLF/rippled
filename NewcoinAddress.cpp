@@ -59,7 +59,7 @@ NewcoinAddress::NewcoinAddress(const char* pszAddress)
 	SetString(pszAddress);
 }
 
-uint160 NewcoinAddress::GetHash160() 
+uint160 NewcoinAddress::GetHash160()  const
 {
 	assert(vchData.size() == 20);
 	uint160 hash160;

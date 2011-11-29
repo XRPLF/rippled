@@ -1,11 +1,16 @@
 #include "Wallet.h"
 #include "NewcoinAddress.h"
-#include "Conversion.h"
-#include "Application.h"
-#include "LedgerMaster.h"
 #include <string>
 #include <boost/foreach.hpp>
-using namespace std;
+
+LocalAccount::LocalAccount(bool)
+{
+	mPrivateKey.MakeNewKey();
+	mPublicKey.SetPubKey(mPrivateKey.GetPubKey());
+	mAddress.SetPubKey(mPublicKey.GetPubKey());
+}
+
+#if 0
 
 Wallet::Wallet()
 {
@@ -170,3 +175,6 @@ bool Wallet::commitTransaction(TransactionPtr trans)
 	}
 	return(false);
 }
+
+#endif
+

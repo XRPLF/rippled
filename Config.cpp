@@ -1,6 +1,5 @@
 #include "Config.h"
 #include "util/pugixml.hpp"
-#include "Application.h"
 
 #include <boost/lexical_cast.hpp>
 

@@ -69,7 +69,7 @@ HEADERS = \
 
 SRCS= \
  test.cpp Hanko.cpp Transaction.cpp SHAMap.cpp SHAMapNodes.cpp Serializer.cpp Ledger.cpp \
- AccountState.cpp
+ AccountState.cpp Wallet.cpp NewcoinAddress.cpp Config.cpp util/pugixml.o
 
 
 # Application.cpp     HttpReply.cpp      main.cpp            RPCCommands.cpp        \

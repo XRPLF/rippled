@@ -2,9 +2,8 @@
 #define __WALLET__
 
 #include "keystore.h"
-#include "newcoin.pb.h"
-#include "Transaction.h"
 #include "Serializer.h"
+#include "Transaction.h"
 #include <list>
 #include <vector>
 
@@ -18,18 +17,19 @@ class LocalAccount
 public:
 	//CKey mKey;
 	//std::string mHumanAddress;
-	uint160 mAddress;
+	NewcoinAddress mAddress;
 	CKey mPublicKey, mPrivateKey;
 	int64 mAmount;
 	uint32 mSeqNum;
 
+	LocalAccount(bool);	// create a new local acount
 	bool signRaw(Serializer::pointer);
 	bool signRaw(Serializer::pointer, std::vector<unsigned char>& signature);
 	bool checkSignRaw(Serializer::pointer, int signaturePosition=-1, int signedData=-1);
 	CKey& peekPrivKey() { return mPrivateKey; }
 	CKey& peekPubKey() { return mPublicKey; }
 
-	const uint160& getAddress(void) const { return mAddress; }
+	uint160 getAddress(void) const { return mAddress.GetHash160(); }
 };
 
 class Wallet : public CBasicKeyStore

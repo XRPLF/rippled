@@ -48,7 +48,7 @@ bool Transaction::sign(LocalAccount& fromLocalAccount)
 {
 	if( (mAmount==0) || (mSourceLedger==0) || (mAccountTo==0) )
 		return false;
-	if(mAccountFrom!=fromLocalAccount.mAddress)
+	if(mAccountFrom!=fromLocalAccount.mAddress.GetHash160())
 		return false;
 	Serializer::pointer signBuf=getRaw(true);
 	if(!signBuf->makeSignature(mSignature, fromLocalAccount.peekPrivKey()))
