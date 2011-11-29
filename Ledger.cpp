@@ -12,7 +12,7 @@ using namespace boost;
 using namespace std;
 
 Ledger::Ledger(const uint160& masterID, uint64 startAmount) :
-	mFeeHeld(0), mTimeStamp(0), mLedgerSeq(0), mCurrent(true)
+	mFeeHeld(0), mTimeStamp(0), mLedgerSeq(0), mClosed(false)
 {
 	mTransactionMap=SHAMap::pointer(new SHAMap());
 	mAccountStateMap=SHAMap::pointer(new SHAMap());
@@ -25,9 +25,16 @@ Ledger::Ledger(const uint160& masterID, uint64 startAmount) :
 Ledger::Ledger(const uint256 &parentHash, const uint256 &transHash, const uint256 &accountHash,
 	uint64 feeHeld, uint64 timeStamp, uint32 ledgerSeq)
 		: mParentHash(parentHash), mTransHash(transHash), mAccountHash(accountHash),
-		mFeeHeld(feeHeld), mTimeStamp(timeStamp), mLedgerSeq(ledgerSeq), mCurrent(false)
+		mFeeHeld(feeHeld), mTimeStamp(timeStamp), mLedgerSeq(ledgerSeq), mClosed(false)
 {
 	updateHash();
+}
+
+Ledger::Ledger(Ledger &prevLedger, uint64 ts) : mTimeStamp(ts), mClosed(false)
+{
+	prevLedger.updateHash();
+	mParentHash=prevLedger.mHash;
+	mLedgerSeq=prevLedger.mLedgerSeq+1;
 }
 
 void Ledger::updateHash()
@@ -84,7 +91,7 @@ Transaction::pointer Ledger::getTransaction(const uint256& transID)
 	SHAMapItem::pointer item=mTransactionMap->peekItem(transID);
 	if(!item) return Transaction::pointer();
 	Transaction *t=new Transaction(item->getData(), true);
-	if(t->getStatus()==NEW) t->setStatus(mCurrent ? INCLUDED : COMMITTED, mLedgerSeq);
+	if(t->getStatus()==NEW) t->setStatus(mClosed ? COMMITTED : INCLUDED, mLedgerSeq);
 	return Transaction::pointer(t);
 }
 
@@ -190,6 +197,13 @@ Ledger::TransResult Ledger::hasTransaction(Transaction::pointer trans)
 	{
 		return TR_ERROR;
 	}
+}
+
+Ledger::pointer Ledger::closeLedger(uint64 timeStamp)
+{ // close this ledger, return a pointer to the next ledger
+  // CAUTION: New ledger needs its SHAMap's connected to storage
+	setClosed();
+	return Ledger::pointer(new Ledger(*this, timeStamp));
 }
 
 #if 0

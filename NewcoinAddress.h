@@ -20,9 +20,8 @@ public:
 	bool SetPubKey(const std::vector<unsigned char>& vchPubKey);
 
 	bool IsValid();
-
-	uint160 GetHash160();
-	std::string GetString();
+	uint160 GetHash160() const;
+	std::string GetString() const;
 };
 
 #endif

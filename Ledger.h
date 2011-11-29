@@ -41,13 +41,17 @@ private:
 	uint256 mHash, mParentHash, mTransHash, mAccountHash;
 	uint64 mFeeHeld, mTimeStamp;
 	uint32 mLedgerSeq;
-	bool mCurrent;
+	bool mClosed;
 	
 	SHAMap::pointer mTransactionMap, mAccountStateMap;
 
 	mutable boost::recursive_mutex mLock;
 	
+	Ledger(const Ledger&);				// no implementation
+	Ledger& operator=(const Ledger&);	// no implementation
+
 protected:
+	Ledger(Ledger&, uint64 timestamp);	// ledger after this one
 	void updateHash();
 
 	bool addAccountState(AccountState::pointer);
@@ -57,13 +61,11 @@ protected:
 
 public:
 	Ledger(const uint160& masterID, uint64 startAmount); // used for the starting bootstrap ledger
-	Ledger(const Ledger &ledger);
 	Ledger(const uint256 &parentHash, const uint256 &transHash, const uint256 &accountHash,
 	 uint64 feeHeld, uint64 timeStamp, uint32 ledgerSeq); // used for received ledgers
 
-	void setCurrent(void) { mCurrent=true; }
-	void clearCurrent(void) { mCurrent=false; }
-	bool isCurrent(void) { return mCurrent; }
+	void setClosed(void) { mClosed=true; }
+	bool isClosed(void) { return mClosed; }
 
 	// ledger signature operations
 	void addRaw(Serializer &s);
@@ -89,7 +91,7 @@ public:
 	TransResult removeTransaction(Transaction::pointer trans);
 	TransResult hasTransaction(Transaction::pointer trans);
 
-	bool closeLedger();
+	Ledger::pointer closeLedger(uint64 timestamp);
 	bool isCompatible(boost::shared_ptr<Ledger> other);
 	bool signLedger(std::vector<unsigned char> &signature, const LocalHanko &hanko, int32 confidence);
 };
