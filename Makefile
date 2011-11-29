@@ -69,7 +69,7 @@ HEADERS = \
 
 SRCS= \
  test.cpp Hanko.cpp Transaction.cpp SHAMap.cpp SHAMapNodes.cpp Serializer.cpp Ledger.cpp \
- AccountState.cpp Wallet.cpp NewcoinAddress.cpp Config.cpp util/pugixml.o
+ AccountState.cpp Wallet.cpp NewcoinAddress.cpp Config.cpp util/pugixml.cpp
 
 
 # Application.cpp     HttpReply.cpp      main.cpp            RPCCommands.cpp        \
@@ -101,7 +101,7 @@ obj/newcoin.pb.o:	newcoin.pb.h
 newcoind: $(OBJS)
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
 
-.dep:
+.dep:	$(SRCS)
 	$(CXX) -M $(SRCS) $(CXXFLAGS) > .dep
 
 clean:
@@ -109,7 +109,7 @@ clean:
 	-rm -f obj/*.o
 	-rm -f obj/test/*.o
 	-rm -f obj/database/*.o
-	-rm -f util/*.o
+	-rm -f obj/util/*.o
 	-rm -f cryptopp/obj/*.o
 	-rm -f headers.h.gch
 	-rm -f newcoin.pb.*
