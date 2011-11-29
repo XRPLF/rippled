@@ -3,6 +3,7 @@
 
 #include <list>
 #include <map>
+#include <deque>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
@@ -35,13 +36,13 @@ public:
 	static const int leafDepth=20;
 
 	SHAMapNode(int depth, const uint256& hash);
-	int getDepth() const		{ return mDepth; }
-	const uint256& getNodeID()	{ return mNodeID; }
+	int getDepth() const				{ return mDepth; }
+	const uint256& getNodeID()	const	{ return mNodeID; }
 
-	bool isRoot() const			{ return mDepth==0; }
-	bool isLeaf() const			{ return mDepth==leafDepth; }
-	bool isChildLeaf() const	{ return mDepth==(leafDepth-1); }
-	bool isInner() const 		{ return !isRoot() && !isLeaf(); }
+	bool isRoot() const				{ return mDepth==0; }
+	bool isLeaf() const				{ return mDepth==leafDepth; }
+	bool isChildLeaf() const		{ return mDepth==(leafDepth-1); }
+	bool isInner() const 			{ return !isRoot() && !isLeaf(); }
 	virtual bool isPopulated(void) const { return false; }
 
 	SHAMapNode getParentNodeID()	{ return SHAMapNode(mDepth-1, mNodeID); }
@@ -183,12 +184,13 @@ public:
 
 	virtual bool isPopulated(void) const { return true; }
 
-	bool isEmptyBranch(int m) const		{ return mHashes[m]==0; }
+	bool isEmptyBranch(int m) const		{ return !mHashes[m]; }
 	const uint256& getNodeHash() const  { return mHash; }
 	const uint256& getChildHash(int m) const;
 	bool isEmpty() const;
 
 	virtual void dump(void);
+	virtual std::string getString(void) const;
 };
 
 enum SHAMapException
@@ -202,6 +204,7 @@ class SHAMap
 {
 public:
 	typedef boost::shared_ptr<SHAMap> pointer;
+	typedef std::map<uint256, std::pair<SHAMapItem::pointer, SHAMapItem::pointer> > SHAMapDiff;
 
 private:
 	uint32 mSeq;
@@ -279,6 +282,7 @@ public:
 	bool getNodeFat(const SHAMapNode& node, std::vector<uint256>& nodeHashes, int max);
 	bool getNodeFat(const uint256& hash, std::vector<uint256>& nodeHashes, int max);
 	bool addKnownNode(const std::vector<unsigned char>& rawNode);
+	void compare(SHAMap::pointer otherMap, SHAMapDiff& difference, int maxCount);
 
 	int flushDirty(int maxNodes);
 

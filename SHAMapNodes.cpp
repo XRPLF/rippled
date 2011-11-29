@@ -81,6 +81,7 @@ SHAMapNode::SHAMapNode(int depth, const uint256 &hash) : mDepth(depth)
 SHAMapNode SHAMapNode::getChildNodeID(int m)
 {
 	assert(!isLeaf());
+	assert((m>=0) && (m<32));
 
 	uint256 branch=m;
 	branch<<=mDepth*8;
@@ -92,9 +93,15 @@ SHAMapNode SHAMapNode::getChildNodeID(int m)
 int SHAMapNode::selectBranch(const uint256 &hash)
 {
 	if(isLeaf())	// no nodes under this node
+	{
+		assert(false);
 		return -1;
+	}
 	if((hash&smMasks[mDepth])!=mNodeID)
+	{
+		assert(false);
 		return -1;	// does not go under this node
+	}
 
 	uint256 selector=hash&smMasks[mDepth+1];
 	int branch=*(selector.begin()+mDepth);
@@ -120,7 +127,7 @@ SHAMapLeafNode::SHAMapLeafNode(const SHAMapLeafNode& node, uint32 seq) : SHAMapN
 
 SHAMapLeafNode::SHAMapLeafNode(const SHAMapNode& id, const std::vector<unsigned char>& rawLeaf, uint32 seq)
 	: SHAMapNode(id), mSeq(seq)
-{
+{ // OPTIMIZEME:: addUpdateItem updates the hash
 	Serializer s(rawLeaf);
 	int pos=0;
 	while(pos<s.getLength())
@@ -156,6 +163,10 @@ bool SHAMapLeafNode::hasItem(const uint256& item) const
 
 bool SHAMapLeafNode::addUpdateItem(SHAMapItem::pointer item)
 { // The node will almost never have more than one item in it
+#ifdef DEBUG
+	std::cerr << "Leaf(" << getString() << ")" << std::endl;
+	std::cerr << "  addi(" << item->getTag().GetHex() << std::endl;
+#endif
 	std::list<SHAMapItem::pointer>::iterator it;
 	for(it=mItems.begin(); it!=mItems.end(); it++)
 	{
@@ -206,16 +217,23 @@ SHAMapItem::pointer SHAMapLeafNode::firstItem(void)
 
 SHAMapItem::pointer SHAMapLeafNode::nextItem(const uint256& tag)
 {
+#ifdef ST_DEBUG
+	std::cerr << "LeafNode::nextItem(" << tag.GetHex() << std::endl;
+	BOOST_FOREACH(SHAMapItem::pointer& it, mItems)
+		std::cerr << "  item(" << it->getTag().GetHex() << std::endl;
+#endif
 	std::list<SHAMapItem::pointer>::iterator it;
 	for(it=mItems.begin(); it!=mItems.end(); ++it)
 	{
 		if((*it)->getTag()==tag)
 		{
-			++it;
-			if(it==mItems.end()) return SHAMapItem::pointer();
+			if(++it==mItems.end()) return SHAMapItem::pointer();
 			return *it;
 		}
 	}
+#ifdef DEBUG
+	std::cerr << "nextItem(!found)" << std::endl;
+#endif
 	return SHAMapItem::pointer();
 }
 
@@ -281,6 +299,22 @@ SHAMapInnerNode::SHAMapInnerNode(const SHAMapInnerNode& node, uint32 seq) : SHAM
 {
 	assert(!node.isLeaf());
 	memcpy(mHashes, node.mHashes, sizeof(mHashes));
+}
+
+std::string SHAMapInnerNode::getString() const
+{
+	std::string ret="NodeID(";
+	ret+=boost::lexical_cast<std::string>(getDepth());
+	ret+=",";
+	ret+=getNodeID().GetHex();
+	ret+=")";
+	for(int i=0; i<32; i++)
+		if(!isEmptyBranch(i))
+		{
+			ret+=",b";
+			ret+=boost::lexical_cast<std::string>(i);
+		}
+	return ret;
 }
 
 void SHAMapInnerNode::addRaw(Serializer &s)

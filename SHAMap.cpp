@@ -3,6 +3,7 @@
 #include "SHAMap.h"
 
 #include <boost/foreach.hpp>
+#include <boost/lexical_cast.hpp>
 
 SHAMap::SHAMap() : mSeq(0)
 {
@@ -21,16 +22,38 @@ void SHAMap::dirtyUp(const uint256& id)
 
 	uint256 hVal=leaf->getNodeHash();
 	if(mDirtyLeafNodes) (*mDirtyLeafNodes)[*leaf]=leaf;
-	if(!hVal) mLeafByID.erase(*leaf);
+	if(!hVal)
+	{
+#ifdef ST_DEBUG
+		std::cerr << "  erasingL " << leaf->getString() << std::endl;
+#endif
+		mLeafByID.erase(*leaf);
+	}
 
 	for(int depth=SHAMapNode::leafDepth-1; depth>=0; depth--)
 	{ // walk up the tree to the root updating nodes
 		SHAMapInnerNode::pointer node=mInnerNodeByID[SHAMapNode(depth, leaf->getNodeID())];
 		if(!node) throw SHAMapException(MissingNode);
-		if(!node->setChildHash(node->selectBranch(id), hVal)) return;
+		if(depth==19)
+			std::cerr << "BEFOR:" << node->getString() << std::endl;
+		if(!node->setChildHash(node->selectBranch(id), hVal))
+		{
+#ifdef ST_DEBUG
+			std::cerr << "  no change@ " << node->getString() << std::endl;
+#endif
+			return;
+		}
+		if(depth==19)
+			std::cerr << "AFTER:" << node->getString() << std::endl;
 		if(mDirtyInnerNodes) (*mDirtyInnerNodes)[*node]=node;
 		hVal=node->getNodeHash();
-		if(!hVal) mInnerNodeByID.erase(*node);
+		if(!hVal)
+		{
+#ifdef ST_DEBUG
+			std::cerr << "  erasingN " << node->getString() << std::endl;
+#endif
+			mInnerNodeByID.erase(*node);
+		}
 	}
 }
 
@@ -56,7 +79,7 @@ SHAMapLeafNode::pointer SHAMap::walkToLeaf(const uint256& id, bool create, bool 
 	// walk tree to leaf
 	SHAMapInnerNode::pointer inNode=root;
 
-	for(int i=1; i<SHAMapNode::leafDepth; i++)
+	for(int i=0; i<SHAMapNode::leafDepth; i++)
 	{
 		int branch=inNode->selectBranch(id);
 		if(branch<0) // somehow we got on the wrong branch
@@ -69,13 +92,8 @@ SHAMapLeafNode::pointer SHAMap::walkToLeaf(const uint256& id, bool create, bool 
 			if(!create) return SHAMapLeafNode::pointer();
 			return createLeaf(*inNode, id);
 		}
-		if(i!=(SHAMapNode::leafDepth)-1)
-		{ // child is another inner node
-			inNode=getInner(inNode->getChildNodeID(branch), inNode->getChildHash(branch), modify);
-			if(inNode==NULL) throw SHAMapException(InvalidNode);
-		}
-		else // child is leaf node
-		{
+		if(inNode->isChildLeaf())
+		{ // child is leaf node
 			ln=getLeaf(inNode->getChildNodeID(branch), inNode->getChildHash(branch), modify);
 			if(ln==NULL)
 			{
@@ -83,8 +101,14 @@ SHAMapLeafNode::pointer SHAMap::walkToLeaf(const uint256& id, bool create, bool 
 				return createLeaf(*inNode, id);
 			}
 		}
+		else
+		{ // child is another inner node
+			inNode=getInner(inNode->getChildNodeID(branch), inNode->getChildHash(branch), modify);
+			if(inNode==NULL) throw SHAMapException(InvalidNode);
+		}
 	}
-	
+
+	assert(ln || !create);
 	return returnLeaf(ln, modify);
 }
 
@@ -134,6 +158,9 @@ SHAMapInnerNode::pointer SHAMap::returnNode(SHAMapInnerNode::pointer node, bool 
 { // make sure the node is suitable for the intended operation (copy on write)
 	if(node && modify && (node->getSeq()!=mSeq))
 	{
+#ifdef ST_DEBUG
+		std::cerr << "Node(" << node->getString() << ") bumpseq" << std::endl;
+#endif
 		node=SHAMapInnerNode::pointer(new SHAMapInnerNode(*node, mSeq));
 		mInnerNodeByID[*node]=node;
 		if(mDirtyInnerNodes) (*mDirtyInnerNodes)[*node]=node;
@@ -168,33 +195,39 @@ SHAMapItem::pointer SHAMap::firstBelow(SHAMapInnerNode::pointer node)
 #endif
 
 	int i;
-
 	while(!node->isChildLeaf())
 	{
 		for(i=0; i<32; i++)
-		{
-			uint256 cHash(node->getChildHash(i));
-			if(!!cHash)
+			if(!node->isEmptyBranch(i))
 			{
-				node=getInner(node->getChildNodeID(i), cHash, false);
+				node=getInner(node->getChildNodeID(i), node->getChildHash(i), false);
 				if(!node) throw SHAMapException(MissingNode);
 				break;
 			}
-		}
-		if(i==32) return SHAMapItem::pointer();
-	}
-	assert(node->isChildLeaf());
-	
-	for(int i=0; i<32; i++)
-	{
-		uint256 cHash=node->getChildHash(i);
-		if(!!cHash)
+
+		if(i==32)
 		{
-			SHAMapLeafNode::pointer mLeaf=getLeaf(node->getChildNodeID(i), cHash, false);
-			if(!mLeaf) throw SHAMapException(MissingNode);
-			return mLeaf->firstItem();
+#ifdef ST_DEBUG
+			std::cerr << "  node:" << node->getString() << " has no children" << std::endl;
+#endif
+			return SHAMapItem::pointer();
 		}
 	}
+
+	assert(node->isChildLeaf());
+	for(int i=0; i<32; i++)
+		if(!node->isEmptyBranch(i))
+		{
+			SHAMapLeafNode::pointer mLeaf=getLeaf(node->getChildNodeID(i), node->getChildHash(i), false);
+			if(!mLeaf) throw SHAMapException(MissingNode);
+			SHAMapItem::pointer item=mLeaf->firstItem();
+			if(!item) throw SHAMapException(InvalidNode);
+			return item;
+		}
+
+#ifdef ST_DEBUG
+	std::cerr << "  node:" << node->getString() << " has no children" << std::endl;
+#endif
 	return SHAMapItem::pointer();
 }
 
@@ -236,7 +269,13 @@ SHAMapItem::pointer SHAMap::peekNextItem(const uint256& id)
 	ScopedLock sl(mLock);
 
 	SHAMapLeafNode::pointer leaf=walkToLeaf(id, false, false);
-	if(!leaf) return SHAMapItem::pointer();
+	if(!leaf)
+	{
+#ifdef DEBUG
+		std::cerr << "peekNextItem: current not found" << std::endl;
+#endif
+		return SHAMapItem::pointer();
+	}
 
 	// is there another item in this leaf? (there almost never will be)
 	SHAMapItem::pointer next=leaf->nextItem(id);
@@ -252,6 +291,9 @@ SHAMapItem::pointer SHAMap::peekNextItem(const uint256& id)
 #endif
 			throw SHAMapException(MissingNode);
 		}
+#ifdef ST_DEBUG
+		std::cerr << "  UpTo " << node->getString() << std::endl;
+#endif
 		for(int i=node->selectBranch(id)+1; i<32; i++)
 			if(!!node->getChildHash(i))
 			{ // node has a subsequent child
@@ -275,7 +317,9 @@ SHAMapItem::pointer SHAMap::peekNextItem(const uint256& id)
 				return next;
 			}
 	}
-
+#ifdef ST_DEBUG
+	std::cerr << "   peekNext off end" << std::endl;
+#endif
 	// must be last item
 	return SHAMapItem::pointer();
 }
@@ -330,7 +374,7 @@ SHAMapItem::pointer SHAMap::peekPrevItem(const uint256& id)
 }
 
 SHAMapLeafNode::pointer SHAMap::createLeaf(const SHAMapInnerNode& lowestParent, const uint256& id)
-{
+{ // caller must call dirtyUp if they populate the leaf
 #ifdef DEBUG
 	std::cerr << "createLeaf(" << lowestParent.getString() << std::endl;
 	std::cerr << "  for " << id.GetHex() << ")" << std::endl;
@@ -380,12 +424,26 @@ bool SHAMap::delItem(const uint256& id)
 }
 
 bool SHAMap::addGiveItem(const SHAMapItem::pointer item)
-{ // add the specified item
+{ // add the specified item, does not update
 	ScopedLock sl(mLock);
 	SHAMapLeafNode::pointer leaf=walkToLeaf(item->getTag(), true, true);
-	if(!leaf) return false;
-	if(leaf->hasItem(item->getTag())) return false;
-	if(!leaf->addUpdateItem(item)) return false;
+	if(!leaf)
+	{
+		assert(false);
+		return false;
+	}
+	if(leaf->hasItem(item->getTag()))
+	{
+#ifdef ST_DEBUG
+		std::cerr << "leaf has item we're adding" << std::endl;
+#endif
+		return false;
+	}
+	if(!leaf->addUpdateItem(item))
+	{
+		assert(false);
+		return false;
+	}
 	dirtyUp(item->getTag());
 	return true;
 }
@@ -451,19 +509,40 @@ static std::vector<unsigned char>IntToVUC(int i)
 }
 
 bool SHAMap::TestSHAMap()
-{
+{ // h3 and h4 differ only in the leaf, same terminal node (level 19)
  uint256 h1, h2, h3, h4, h5;
  h1.SetHex("092891fe4ef6cee585fdc6fda0e09eb4d386363158ec3321b8123e5a772c6ca7");
  h2.SetHex("436ccbac3347baa1f1e53baeef1f43334da88f1f6d70d963b833afd6dfa289fe");
- h3.SetHex("b92891fe4ef6cee585fdc6fda0e09eb4d386363158ec3321b8123e5a772c6ca7");
- h4.SetHex("b92891fe4ef6cee585fdc6fda0e09eb4d386363158ec3321b8123e5a772c6ca8");
+ h3.SetHex("b92891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8");
+ h4.SetHex("b92891fe4ef6cee585fdc6fda2e09eb4d386363158ec3321b8123e5a772c6ca8");
  h5.SetHex("a92891fe4ef6cee585fdc6fda0e09eb4d386363158ec3321b8123e5a772c6ca7");
 
  SHAMap sMap;
  SHAMapItem i1(h1, IntToVUC(1)), i2(h2, IntToVUC(2)), i3(h3, IntToVUC(3)), i4(h4, IntToVUC(4)), i5(h5, IntToVUC(5));
 
- sMap.addItem(i1);
  sMap.addItem(i2);
- sMap.dump();
+ sMap.addItem(i1);
+
+ SHAMapItem::pointer i=sMap.peekFirstItem();
+ assert(!!i && (*i==i1));
+ i=sMap.peekNextItem(i->getTag());
+ assert(!!i && (*i==i2));
+ i=sMap.peekNextItem(i->getTag());
+ assert(!i);
+
+ sMap.addItem(i4);
+ sMap.delItem(i2.getTag());
+ sMap.addItem(i3);
+ 
+ i=sMap.peekFirstItem();
+ assert(!!i && (*i==i1));
+ i=sMap.peekNextItem(i->getTag());
+ assert(!!i && (*i==i3));
+ i=sMap.peekNextItem(i->getTag());
+ assert(!!i && (*i==i4));
+ i=sMap.peekNextItem(i->getTag());
+ assert(!i);
+
+ return true;
 }
 
