@@ -34,8 +34,6 @@ void SHAMap::dirtyUp(const uint256& id)
 	{ // walk up the tree to the root updating nodes
 		SHAMapInnerNode::pointer node=mInnerNodeByID[SHAMapNode(depth, leaf->getNodeID())];
 		if(!node) throw SHAMapException(MissingNode);
-		if(depth==19)
-			std::cerr << "BEFOR:" << node->getString() << std::endl;
 		if(!node->setChildHash(node->selectBranch(id), hVal))
 		{
 #ifdef ST_DEBUG
@@ -43,8 +41,6 @@ void SHAMap::dirtyUp(const uint256& id)
 #endif
 			return;
 		}
-		if(depth==19)
-			std::cerr << "AFTER:" << node->getString() << std::endl;
 		if(mDirtyInnerNodes) (*mDirtyInnerNodes)[*node]=node;
 		hVal=node->getNodeHash();
 		if(!hVal)
