@@ -29,8 +29,8 @@ public:
 	uint64 getBalance() const { return mBalance; }
 	uint32 getSeq() const { return mAccountSeq; }
 
-	bool charge(uint64 a) { mBalance+=a; }
-	bool credit(uint64 a) { assert(mBalance>=a); mBalance-=a; }
+	bool credit(uint64 a) { mBalance+=a; }
+	bool charge(uint64 a) { assert(mBalance>=a); mBalance-=a; }
 	void incSeq(void) { mAccountSeq++; }
 	void decSeq(void) { assert(mAccountSeq!=0); mAccountSeq--; }
 	

@@ -22,4 +22,3 @@ std::vector<unsigned char> AccountState::getRaw() const
 	s.add32(mAccountSeq);
 	return s.getData();
 }
-
