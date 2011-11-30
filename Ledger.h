@@ -94,6 +94,8 @@ public:
 	Ledger::pointer closeLedger(uint64 timestamp);
 	bool isCompatible(boost::shared_ptr<Ledger> other);
 	bool signLedger(std::vector<unsigned char> &signature, const LocalHanko &hanko, int32 confidence);
+
+	static bool unitTest(void);
 };
 
 #endif

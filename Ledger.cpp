@@ -4,6 +4,7 @@
 #include "Config.h"
 #include "Conversion.h"
 #include "BitcoinUtil.h"
+#include "Wallet.h"
 #include <boost/foreach.hpp>
 #include <iostream>
 #include <fstream>
@@ -19,7 +20,8 @@ Ledger::Ledger(const uint160& masterID, uint64 startAmount) :
 	
 	AccountState::pointer startAccount=AccountState::pointer(new AccountState(masterID));
 	startAccount->credit(startAmount);
-	addAccountState(startAccount);
+	if(!addAccountState(startAccount))
+		assert(false);
 }
 
 Ledger::Ledger(const uint256 &parentHash, const uint256 &transHash, const uint256 &accountHash,
@@ -56,9 +58,18 @@ void Ledger::addRaw(Serializer &s)
 
 AccountState::pointer Ledger::getAccountState(const uint160& accountID)
 {
+#ifdef DEBUG
+	std::cerr << "Ledger:getAccountState(" << accountID.GetHex() << ")" << std::endl;
+#endif
 	ScopedLock l(mTransactionMap->Lock());
-	SHAMapItem::pointer item=mTransactionMap->peekItem(uint160to256(accountID));
-	if(!item) return AccountState::pointer();
+	SHAMapItem::pointer item=mAccountStateMap->peekItem(uint160to256(accountID));
+	if(!item)
+	{
+#ifdef DEBUG
+		std::cerr << "   notfound" << std::endl;
+#endif
+		return AccountState::pointer();
+	}
 	return AccountState::pointer(new AccountState(item->getData()));
 }
 
@@ -205,6 +216,26 @@ Ledger::pointer Ledger::closeLedger(uint64 timeStamp)
 	setClosed();
 	return Ledger::pointer(new Ledger(*this, timeStamp));
 }
+
+bool Ledger::unitTest(void)
+{
+    LocalAccount l1(true), l2(true);
+    uint160 la1(l1.getAddress()), la2(l2.getAddress());
+#ifdef DEBUG
+    std::cerr << "Account1: " << la1.GetHex() << std::endl;
+    std::cerr << "Account2: " << la2.GetHex() << std::endl;
+#endif
+
+    Ledger newLedger(la1, 10000);
+
+    AccountState::pointer as=newLedger.getAccountState(la1);
+    assert(as);
+    as=newLedger.getAccountState(la2);
+    assert(!as); 
+
+    return true;
+}
+
 
 #if 0
 // TODO: we should probably make a shared pointer type for each of these PB types
