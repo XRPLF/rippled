@@ -18,13 +18,13 @@ We could have made something that inherited from the protobuf transaction but th
 
 enum TransStatus
 {
-	NEW,		// just received / generated
-	INVALID,	// no valid signature, insufficient funds
-	INCLUDED,	// added to the current ledger
-	CONFLICTED,	// losing to a conflicting transaction
-	COMMITTED,	// known to be in a ledger
-	HELD,		// not valid now, maybe later
-	REMOVED		// taken out of a ledger
+	NEW			=0,	// just received / generated
+	INVALID		=1,	// no valid signature, insufficient funds
+	INCLUDED	=2,	// added to the current ledger
+	CONFLICTED	=3,	// losing to a conflicting transaction
+	COMMITTED	=4,	// known to be in a ledger
+	HELD		=5,	// not valid now, maybe later
+	REMOVED		=6	// taken out of a ledger
 };
 
 class Account;

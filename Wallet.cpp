@@ -3,7 +3,7 @@
 #include <string>
 #include <boost/foreach.hpp>
 
-LocalAccount::LocalAccount(bool)
+LocalAccount::LocalAccount(bool) : mAmount(0), mSeqNum(0)
 {
 	mPrivateKey.MakeNewKey();
 	mPublicKey.SetPubKey(mPrivateKey.GetPubKey());

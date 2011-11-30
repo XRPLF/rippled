@@ -26,20 +26,20 @@ Transaction::Transaction(TransStatus status, LocalAccount& fromLocalAccount, uin
 Transaction::Transaction(const std::vector<unsigned char> &t, bool validate) : mStatus(INVALID)
 {
 	Serializer s(t);
-	if(s.getLength()<145) return;
-	if(!s.get160(mAccountTo, 0)) return;
-	if(!s.get64(mAmount, 20)) return;
-	if(!s.get32(mFromAccountSeq, 28)) return;
-	if(!s.get32(mSourceLedger, 32)) return;
-	if(!s.get32(mIdent, 36)) return;
-	if(!s.getRaw(mSignature, 69, 72)) return;
+	if(s.getLength()<145) { assert(false); return; }
+	if(!s.get160(mAccountTo, 0)) { assert(false); return; }
+	if(!s.get64(mAmount, 20)) { assert(false); return; }
+	if(!s.get32(mFromAccountSeq, 28)) { assert(false); return; }
+	if(!s.get32(mSourceLedger, 32)) { assert(false); return; }
+	if(!s.get32(mIdent, 36)) { assert(false); return; }
+	if(!s.getRaw(mSignature, 69, 72)) { assert(false); return; }
 
 	std::vector<unsigned char> pubKey;
-	if(!s.getRaw(pubKey, 40, 33)) return;
-	if(!mFromPubKey.SetPubKey(pubKey)) return;
+	if(!s.getRaw(pubKey, 40, 33)) { assert(false); return; }
+	if(!mFromPubKey.SetPubKey(pubKey)) { assert(false); return; }
 	updateID();
 
-	if(validate && !checkSign()) return;
+	if(validate && !checkSign()) { assert(false); return; }
 
 	mStatus=NEW;
 }
@@ -47,12 +47,23 @@ Transaction::Transaction(const std::vector<unsigned char> &t, bool validate) : m
 bool Transaction::sign(LocalAccount& fromLocalAccount)
 {
 	if( (mAmount==0) || (mSourceLedger==0) || (mAccountTo==0) )
+	{
+		assert(false);
 		return false;
+	}
 	if(mAccountFrom!=fromLocalAccount.mAddress.GetHash160())
+	{
+		assert(false);
 		return false;
+	}
 	Serializer::pointer signBuf=getRaw(true);
+	assert(signBuf->getLength()==73+4);
 	if(!signBuf->makeSignature(mSignature, fromLocalAccount.peekPrivKey()))
+	{
+		assert(false);
 	    return false;
+	}
+	assert(mSignature.size()==72);
 	updateID();
 	return true;
 }
@@ -71,6 +82,7 @@ Serializer::pointer Transaction::getRaw(bool prefix) const
 {
 	Serializer::pointer ret(new Serializer(77));
 	if(prefix) ret->add32(0x54584e00u);
+	ret->add160(mAccountTo);
 	ret->addRaw(mFromPubKey.GetPubKey());
 	ret->add64(mAmount);
 	ret->add32(mFromAccountSeq);

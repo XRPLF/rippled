@@ -7,6 +7,7 @@
 
 #include <stdexcept>
 #include <vector>
+#include <cassert>
 
 #include <openssl/ec.h>
 #include <openssl/ecdsa.h>
@@ -176,10 +177,13 @@ public:
         unsigned int nSize = i2d_ECPrivateKey(pkey, NULL);
         if (!nSize)
             throw key_error("CKey::GetPrivKey() : i2d_ECPrivateKey failed");
-        CPrivKey vchPrivKey(nSize, 0);
+		assert(nSize<=279);
+        CPrivKey vchPrivKey(279, 0);
         unsigned char* pbegin = &vchPrivKey[0];
         if (i2d_ECPrivateKey(pkey, &pbegin) != nSize)
             throw key_error("CKey::GetPrivKey() : i2d_ECPrivateKey returned unexpected size");
+		assert(vchPrivKey.size()<=279);
+		while(vchPrivKey.size()<279) vchPrivKey.push_back((unsigned char)0);
         return vchPrivKey;
     }
 
@@ -196,12 +200,15 @@ public:
     std::vector<unsigned char> GetPubKey() const
     {
         unsigned int nSize = i2o_ECPublicKey(pkey, NULL);
+        assert(nSize<=33);
         if (!nSize)
             throw key_error("CKey::GetPubKey() : i2o_ECPublicKey failed");
-        std::vector<unsigned char> vchPubKey(nSize, 0);
+        std::vector<unsigned char> vchPubKey(33, 0);
         unsigned char* pbegin = &vchPubKey[0];
         if (i2o_ECPublicKey(pkey, &pbegin) != nSize)
             throw key_error("CKey::GetPubKey() : i2o_ECPublicKey returned unexpected size");
+		assert(vchPubKey.size()<=33);
+		while(vchPubKey.size()<33) vchPubKey.push_back((unsigned char)0);
         return vchPubKey;
     }
 
@@ -212,6 +219,12 @@ public:
         unsigned int nSize = 0;
         if (!ECDSA_sign(0, (unsigned char*)&hash, sizeof(hash), pchSig, &nSize, pkey))
             return false;
+		while(nSize<72)
+		{ // enlarge to 72 bytes
+			pchSig[nSize]=0;
+			nSize++;
+		}
+		assert(nSize==72);
         vchSig.resize(nSize);
         memcpy(&vchSig[0], pchSig, nSize);
         return true;

@@ -32,7 +32,8 @@ Ledger::Ledger(const uint256 &parentHash, const uint256 &transHash, const uint25
 	updateHash();
 }
 
-Ledger::Ledger(Ledger &prevLedger, uint64 ts) : mTimeStamp(ts), mClosed(false)
+Ledger::Ledger(Ledger &prevLedger, uint64 ts) : mTimeStamp(ts), mClosed(false),
+ mTransactionMap(new SHAMap()), mAccountStateMap(prevLedger.mAccountStateMap)
 {
 	prevLedger.updateHash();
 	mParentHash=prevLedger.mHash;
@@ -87,6 +88,7 @@ bool Ledger::addAccountState(AccountState::pointer state)
 
 bool Ledger::addTransaction(Transaction::pointer trans)
 { // low-level - just add to table
+	assert(!!trans->getID());
 	SHAMapItem::pointer item(new SHAMapItem(trans->getID(), trans->getSigned()->getData()));
 	return mTransactionMap->addGiveItem(item);
 }
@@ -109,8 +111,17 @@ Transaction::pointer Ledger::getTransaction(const uint256& transID)
 Ledger::TransResult Ledger::applyTransaction(Transaction::pointer trans)
 {
 	ScopedLock l(mLock);
-	if(trans->getSourceLedger()<mLedgerSeq) return TR_BADLSEQ;
-	if(trans->getAmount()<trans->getFee()) return TR_TOOSMALL;
+	if(trans->getSourceLedger()>mLedgerSeq) return TR_BADLSEQ;
+
+	if(trans->getAmount()<trans->getFee())
+	{
+#ifdef DEBUG
+			std::cerr << "Transaction for " << trans->getAmount() << ", but fee is " <<
+					trans->getFee() << std::endl;
+#endif
+		return TR_TOOSMALL;
+	}
+
 	if(!mTransactionMap || !mAccountStateMap) return TR_ERROR;
 	try
 	{
@@ -132,7 +143,18 @@ Ledger::TransResult Ledger::applyTransaction(Transaction::pointer trans)
 		if(!fromAccount || !toAccount) return TR_BADACCT;
 
 		// pass sanity checks?
-		if(fromAccount->getBalance()<trans->getAmount()) return TR_INSUFF;
+		if(fromAccount->getBalance()<trans->getAmount())
+		{
+#ifdef DEBUG
+			std::cerr << "Transaction for " << trans->getAmount() << ", but account has " <<
+					fromAccount->getBalance() << std::endl;
+#endif
+			return TR_INSUFF;
+		}
+#ifdef DEBUG
+		if(fromAccount->getSeq()!=trans->getFromAccountSeq())
+			std::cerr << "aSeq=" << fromAccount->getSeq() << ", tSeq=" << trans->getFromAccountSeq() << std::endl;
+#endif
 		if(fromAccount->getSeq()>trans->getFromAccountSeq()) return TR_PASTASEQ;
 		if(fromAccount->getSeq()<trans->getFromAccountSeq()) return TR_PREASEQ;
 
@@ -226,12 +248,26 @@ bool Ledger::unitTest(void)
     std::cerr << "Account2: " << la2.GetHex() << std::endl;
 #endif
 
-    Ledger newLedger(la1, 10000);
+    Ledger::pointer ledger(new Ledger(la1, 100000));
+    l1.mAmount=100000;
+    
+    ledger=Ledger::pointer(new Ledger(*ledger, 0));
 
-    AccountState::pointer as=newLedger.getAccountState(la1);
+    AccountState::pointer as=ledger->getAccountState(la1);
     assert(as);
-    as=newLedger.getAccountState(la2);
+    assert(as->getBalance()==100000);
+    assert(as->getSeq()==0);
+    as=ledger->getAccountState(la2);
     assert(!as); 
+
+	Transaction::pointer t(new Transaction(NEW, l1, l1.mSeqNum, l2.getAddress(), 2500, 0, 1));
+	assert(!!t->getID());
+
+	Ledger::TransResult tr=ledger->applyTransaction(t);
+#ifdef DEBUG
+	std::cerr << "Transaction: " << tr << std::endl;
+#endif
+	assert(tr==TR_SUCCESS);
 
     return true;
 }

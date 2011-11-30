@@ -7,33 +7,32 @@
 int Serializer::add16(uint16 i)
 {
 	int ret=mData.size();
-	for(int j=0; j<sizeof(i); j++)
-	{
-		mData.push_back((unsigned char) (i&0xff));
-		i>>=8;
-	}
+	mData.push_back((unsigned char)(i>>8));
+	mData.push_back((unsigned char)(i&0xff));
 	return ret;
 }
 
 int Serializer::add32(uint32 i)
 {
 	int ret=mData.size();
-	for(int j=0; j<sizeof(i); j++)
-	{
-		mData.push_back((unsigned char) (i&0xff));
-		i>>=8;
-	}
+	mData.push_back((unsigned char)(i>>24));
+	mData.push_back((unsigned char)((i>>16)&0xff));
+	mData.push_back((unsigned char)((i>>8)&0xff));
+	mData.push_back((unsigned char)(i&0xff));
 	return ret;
 }
 
 int Serializer::add64(uint64 i)
 {
 	int ret=mData.size();
-	for(int j=0; j<sizeof(i); j++)
-	{
-		mData.push_back((unsigned char) (i&0xff));
-		i>>=8;
-	}
+	mData.push_back((unsigned char)(i>>56));
+	mData.push_back((unsigned char)((i>>48)&0xff));
+	mData.push_back((unsigned char)((i>>40)&0xff));
+	mData.push_back((unsigned char)((i>>32)&0xff));
+	mData.push_back((unsigned char)((i>>24)&0xff));
+	mData.push_back((unsigned char)((i>>16)&0xff));
+	mData.push_back((unsigned char)((i>>8)&0xff));
+	mData.push_back((unsigned char)(i&0xff));
 	return ret;
 }
 
@@ -60,59 +59,51 @@ int Serializer::addRaw(const std::vector<unsigned char> &vector)
 
 bool Serializer::get16(uint16& o, int offset) const
 {
-	o=0;
-	if((offset+sizeof(o))>mData.size()) return false;
-	for(int i=0, o=0; i<sizeof(o); i++)
-	{
-		o<<=8;
-		o|=mData.at(offset++);
-	}
+	if((offset+2)>mData.size()) return false;
+	o=mData.at(offset++);
+	o<<=8; o|=mData.at(offset);
 	return true;
 }
 
 bool Serializer::get32(uint32& o, int offset) const
 {
-	o=0;
-	if((offset+sizeof(o))>mData.size()) return false;
-	for(int i=0, o=0; i<sizeof(o); i++)
-	{
-		o<<=8;
-		o|=mData.at(offset++);
-	}
+	if((offset+4)>mData.size()) return false;
+	o=mData.at(offset++);
+	o<<=8; o|=mData.at(offset++); o<<=8; o|=mData.at(offset++);
+	o<<=8; o|=mData.at(offset);
 	return true;
 }
 
 bool Serializer::get64(uint64& o, int offset) const
 {
-	o=0;
-	if((offset+sizeof(o))>mData.size()) return false;
-	for(int i=0, o=0; i<sizeof(o); i++)
-	{
-		o<<=8;
-		o|=mData.at(offset++);
-	}
+	if((offset+8)>mData.size()) return false;
+	o=mData.at(offset++);
+	o<<=8; o|=mData.at(offset++); o<<=8; o|=mData.at(offset++);
+	o<<=8; o|=mData.at(offset++); o<<=8; o|=mData.at(offset++);
+	o<<=8; o|=mData.at(offset++); o<<=8; o|=mData.at(offset++);
+	o<<=8; o|=mData.at(offset);
 	return true;
 }
 
 bool Serializer::get160(uint160& o, int offset) const
 {
-	if((offset+sizeof(o))>mData.size()) return false;
-	memcpy(&o, &(mData.front())+offset, sizeof(o));
+	if((offset+20)>mData.size()) return false;
+	memcpy(&o, &(mData.front())+offset, 20);
 	return true;
 }
 
 bool Serializer::get256(uint256& o, int offset) const
 {
-	if((offset+sizeof(o))>mData.size()) return false;
-	memcpy(&o, &(mData.front())+offset, sizeof(o));
+	if((offset+32)>mData.size()) return false;
+	memcpy(&o, &(mData.front())+offset, 32);
 	return true;
 }
 
 uint256 Serializer::get256(int offset) const
 {
 	uint256 ret;
-	if((offset+sizeof(ret))>mData.size()) return ret;
-	memcpy(&ret, &(mData.front())+offset, sizeof(ret));
+	if((offset+32)>mData.size()) return ret;
+	memcpy(&ret, &(mData.front())+offset, 32);
 	return ret;
 }
 
