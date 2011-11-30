@@ -15,7 +15,6 @@ using namespace boost::asio::ip;
 Peer::Peer(boost::asio::io_service& io_service)
 	: mSocket(io_service)
 {
-	mSendingPacket=PackedMessage::pointer();
 }
 
 /*

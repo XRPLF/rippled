@@ -27,18 +27,17 @@ bool PackedMessage::operator == (const PackedMessage& other)
 	return(mBuffer==other.mBuffer);
 }
 
-// TODO: this is nonsense
 unsigned PackedMessage::getLength(std::vector<uint8_t>& buf)
 {
 	if(buf.size() < HEADER_SIZE) return 0;
 
 	int ret=buf[0];
-	ret= ret << 8;
-	ret= ret | buf[1];
-	ret= ret << 8;
-	ret= ret | buf[2];
-	ret= ret << 8;
-	ret= ret | buf[3];
+	ret<<=8;
+	ret|=buf[1];
+	ret<<=8;
+	ret|=buf[2];
+	ret<<=8;
+	ret|=buf[3];
 
 	return(ret);
 }
@@ -48,8 +47,8 @@ int PackedMessage::getType(std::vector<uint8_t>& buf)
 	if(buf.size() < HEADER_SIZE) return 0;
 
 	int ret=buf[4];
-	ret= ret << 8;
-	ret= ret | buf[5];
+	ret<<=8;
+	ret|=buf[5];
 	return(ret);
 }
 
