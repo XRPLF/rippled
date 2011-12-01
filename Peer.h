@@ -30,7 +30,6 @@ class Peer : public boost::enable_shared_from_this<Peer>
 	std::list<PackedMessage::pointer> mSendQ;
 	PackedMessage::pointer mSendingPacket;
 
-
 	Peer(boost::asio::io_service& io_service);
 
 	void handle_write(const boost::system::error_code& error, size_t bytes_transferred);
@@ -44,17 +43,26 @@ class Peer : public boost::enable_shared_from_this<Peer>
 	
 	void sendPacketForce(PackedMessage::pointer packet);
 
-
 	void sendHello();
-	void sendTransaction();
+	void sendTransaction(newcoin::TMTransaction& packet);
 	void sendValidation();
-	void receiveHello(newcoin::Hello& packet);
-	void receiveTransaction(TransactionPtr trans);
-	void receiveValidation(newcoin::Validation& packet);
-	void receiveFullLedger(newcoin::FullLedger& packet);
-	void receiveProposeLedger(newcoin::ProposeLedger& packet);
-	void receiveGetFullLedger(newcoin::GetFullLedger& packet);
-	void receiveGetValidations(newcoin::GetValidations& packet);
+
+	void recvHello(newcoin::TMHello& packet);
+	void recvTransaction(newcoin::TMTransaction& packet);
+	void recvValidation(newcoin::TMValidation& packet);
+	void recvGetValidation(newcoin::TMGetValidations& packet);
+	void recvContact(newcoin::TMContact& packet);
+	void recvGetContacts(newcoin::TMGetContacts& packet);
+	void recvIndexedObject(newcoin::TMIndexedObject& packet);
+	void recvGetObjectByHash(newcoin::TMGetObjectByHash& packet);
+	void recvObjectByHash(newcoin::TMObjectByHash& packet);
+	void recvPing(newcoin::TMPing& packet);
+	void recvErrorMessage(newcoin::TMErrorMsg& packet);
+	void recvSearchTransaction(newcoin::TMSearchTransaction& packet);
+	void recvGetAccount(newcoin::TMGetAccount& packet);
+	void recvAccount(newcoin::TMAccount& packet);
+	void recvGetLedger(newcoin::TMGetLedger& packet);
+	void recvLedger(newcoin::TMLedger& packet);
 
 public:
 	typedef boost::shared_ptr<Peer> pointer;

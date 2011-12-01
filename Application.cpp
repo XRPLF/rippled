@@ -2,6 +2,7 @@
 #include "Config.h"
 #include "PeerDoor.h"
 #include "RPCDoor.h"
+#include "BitcoinUtil.h"
 #include "database/SqliteDatabase.h"
 //#include <boost/log/trivial.hpp>
 #include <iostream>
@@ -26,7 +27,6 @@ Application::Application()
 	mKnownNodes.load();
 	//mUNL.load();
 	mWallet.load();
-	mLedgerMaster.load();
 	mPeerDoor=NULL;
 	mRPCDoor=NULL;
 }

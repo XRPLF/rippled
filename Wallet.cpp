@@ -10,17 +10,18 @@ LocalAccount::LocalAccount(bool) : mAmount(0), mSeqNum(0)
 	mAddress.SetPubKey(mPublicKey.GetPubKey());
 }
 
-#if 0
-
 Wallet::Wallet()
 {
 
 }
 
+
 void Wallet::load()
 {
-
+ // WRITEME
 }
+
+#if 0
 
 int64 Wallet::getBalance()
 {

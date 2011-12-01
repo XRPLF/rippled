@@ -82,6 +82,199 @@ void Peer::sendPacket(PackedMessage::pointer packet)
 	}
 }
 
+void Peer::start_read_header()
+{
+	mReadbuf.resize(HEADER_SIZE);
+	asio::async_read(mSocket, asio::buffer(mReadbuf),
+		boost::bind(&Peer::handle_read_header, shared_from_this(),
+		asio::placeholders::error));
+}
+void Peer::start_read_body(unsigned msg_len)
+{
+	// m_readbuf already contains the header in its first HEADER_SIZE
+	// bytes. Expand it to fit in the body as well, and start async
+	// read into the body.
+	//
+	mReadbuf.resize(HEADER_SIZE + msg_len);
+	asio::mutable_buffers_1 buf = asio::buffer(&mReadbuf[HEADER_SIZE], msg_len);
+	asio::async_read(mSocket, buf,
+		boost::bind(&Peer::handle_read_body, shared_from_this(),
+		asio::placeholders::error));
+}
+
+void Peer::handle_read_header(const boost::system::error_code& error)
+{
+	if(!error) 
+	{
+		unsigned msg_len = PackedMessage::getLength(mReadbuf);
+		start_read_body(msg_len);
+	}else cout  << "Peer::connected Error: " << error << endl; //else BOOST_LOG_TRIVIAL(info) << "Error: " << error;
+}
+
+void Peer::handle_read_body(const boost::system::error_code& error)
+{
+	if(!error) 
+	{
+		processReadBuffer();
+		start_read_header();
+	}else cout  << "Peer::connected Error: " << error << endl; //else BOOST_LOG_TRIVIAL(info) << "Error: " << error;
+}
+
+
+void Peer::processReadBuffer()
+{
+	int type=PackedMessage::getType(mReadbuf);
+	switch(type)
+	{
+	case newcoin::HELLO:
+		{
+			newcoin::TMHello msg;
+			if(msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
+				recvHello(msg);
+			else cout  << "parse error: " << type << endl; //else BOOST_LOG_TRIVIAL(info) << "Error: " << error;
+		}
+		break;
+
+	case newcoin::ERROR_MSG:
+		{
+			newcoin::TMErrorMsg msg;
+			if(msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
+				recvErrorMessage(msg);
+			else cout << "pars error: " << type << endl;
+		}
+
+	case newcoin::PING:
+		{
+			newcoin::TMPing msg;
+			if(msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
+				recvPing(msg);
+			else cout << "pars error: " << type << endl;
+		}
+
+	case newcoin::GET_CONTACTS:
+		{
+			newcoin::TMGetContacts msg;
+			if(msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
+				recvGetContacts(msg);
+			else cout << "pars error: " << type << endl;
+		}
+
+	case newcoin::CONTACT:
+		{
+			newcoin::TMContact msg;
+			if(msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
+				recvContact(msg);
+			else cout << "pars error: " << type << endl;
+		}
+
+	case newcoin::SEARCH_TRANSACTION:
+		{
+			newcoin::TMSearchTransaction msg;
+			if(msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
+				recvSearchTransaction(msg);
+			else cout << "pars error: " << type << endl;
+		}
+
+	case newcoin::GET_ACCOUNT:
+		{
+			newcoin::TMGetAccount msg;
+			if(msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
+				recvGetAccount(msg);
+			else cout << "pars error: " << type << endl;
+		}
+
+	case newcoin::ACCOUNT:
+		{
+			newcoin::TMAccount msg;
+			if(msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
+				recvAccount(msg);
+			else cout << "pars error: " << type << endl;
+		}
+
+	case newcoin::TRANSACTION:
+		{
+			newcoin::TMTransaction msg;
+			if(msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
+				recvTransaction(msg);
+			else cout << "pars error: " << type << endl;
+		}
+
+	case newcoin::GET_LEDGER:
+		{
+			newcoin::TMGetLedger msg;
+			if(msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
+				recvGetLedger(msg);
+			else cout << "pars error: " << type << endl;
+		}
+
+	case newcoin::LEDGER:
+		{
+			newcoin::TMLedger msg;
+			if(msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
+				recvLedger(msg);
+			else cout << "pars error: " << type << endl;
+		}
+
+#if 0
+	case newcoin::PROPOSE_LEDGER:
+		{
+			newcoin::TM msg;
+			if(msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
+				recv(msg);
+			else cout << "pars error: " << type << endl;
+		}
+
+	case newcoin::CLOSE_LEDGER:
+		{
+			newcoin::TM msg;
+			if(msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
+				recv(msg);
+			else cout << "pars error: " << type << endl;
+		}
+
+	case newcoin::GET_VALIDATION:
+		{
+			newcoin::TM msg;
+			if(msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
+				recv(msg);
+			else cout << "pars error: " << type << endl;
+		}
+
+	case newcoin::VALIDATION:
+		{
+			newcoin::TM msg;
+			if(msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
+				recv(msg);
+			else cout << "pars error: " << type << endl;
+		}
+
+#endif
+
+	case newcoin::GET_OBJECT:
+		{
+			newcoin::TMGetObjectByHash msg;
+			if(msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
+				recvGetObjectByHash(msg);
+			else cout << "pars error: " << type << endl;
+		}
+
+	case newcoin::OBJECT:
+		{
+			newcoin::TMObjectByHash msg;
+			if(msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
+				recvObjectByHash(msg);
+			else cout << "pars error: " << type << endl;
+		}
+
+	default:
+		cout  << "Unknown Msg: " << type << endl; //else BOOST_LOG_TRIVIAL(info) << "Error: " << error;
+	}
+}
+
+
+
+#if 0
+
 void Peer::sendHello()
 {
 	newcoin::Hello* hello=new newcoin::Hello();
@@ -165,114 +358,6 @@ void Peer::sendGetFullLedger(uint256& hash)
 	sendPacket(packet);
 }
 
-void Peer::start_read_header()
-{
-	mReadbuf.resize(HEADER_SIZE);
-	asio::async_read(mSocket, asio::buffer(mReadbuf),
-		boost::bind(&Peer::handle_read_header, shared_from_this(),
-		asio::placeholders::error));
-}
-void Peer::start_read_body(unsigned msg_len)
-{
-	// m_readbuf already contains the header in its first HEADER_SIZE
-	// bytes. Expand it to fit in the body as well, and start async
-	// read into the body.
-	//
-	mReadbuf.resize(HEADER_SIZE + msg_len);
-	asio::mutable_buffers_1 buf = asio::buffer(&mReadbuf[HEADER_SIZE], msg_len);
-	asio::async_read(mSocket, buf,
-		boost::bind(&Peer::handle_read_body, shared_from_this(),
-		asio::placeholders::error));
-}
-
-void Peer::handle_read_header(const boost::system::error_code& error)
-{
-	if(!error) 
-	{
-		unsigned msg_len = PackedMessage::getLength(mReadbuf);
-		start_read_body(msg_len);
-	}else cout  << "Peer::connected Error: " << error << endl; //else BOOST_LOG_TRIVIAL(info) << "Error: " << error;
-}
-
-void Peer::handle_read_body(const boost::system::error_code& error)
-{
-	if(!error) 
-	{
-		processReadBuffer();
-		start_read_header();
-	}else cout  << "Peer::connected Error: " << error << endl; //else BOOST_LOG_TRIVIAL(info) << "Error: " << error;
-}
-
-void Peer::processReadBuffer()
-{
-	int type=PackedMessage::getType(mReadbuf);
-	switch(type)
-	{
-	case newcoin::HELLO:
-		{
-			newcoin::Hello hello;
-			if(hello.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
-				receiveHello(hello);
-			else cout  << "parse error: " << type << endl; //else BOOST_LOG_TRIVIAL(info) << "Error: " << error;
-		}
-		break;
-	case newcoin::TRANSACTION:
-		{
-			TransactionPtr trans(new newcoin::Transaction());
-			if(trans->ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
-				receiveTransaction(trans);
-			else cout  << "parse error: " << type << endl; //else BOOST_LOG_TRIVIAL(info) << "Error: " << error;
-
-		}
-		break;
-	case newcoin::FULL_LEDGER:
-		{
-			newcoin::FullLedger ledger;
-			if(ledger.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
-				receiveFullLedger(ledger);
-			else cout  << "parse error: " << type << endl; //else BOOST_LOG_TRIVIAL(info) << "Error: " << error;
-
-		}
-		break;
-	case newcoin::VALIDATION:
-		{
-			newcoin::Validation validation;
-			if(validation.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
-				receiveValidation(validation);
-			else cout  << "parse error: " << type << endl; //else BOOST_LOG_TRIVIAL(info) << "Error: " << error;
-		}
-		break;
-	case newcoin::PROPOSE_LEDGER:
-		{
-			newcoin::ProposeLedger prop;
-			if(prop.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
-				receiveProposeLedger(prop);
-			else cout  << "parse error: " << type << endl; //else BOOST_LOG_TRIVIAL(info) << "Error: " << error;
-		}
-		break;
-	
-	case newcoin::GET_FULL_LEDGER:
-		{
-			newcoin::GetFullLedger getFullLedger;
-			if(getFullLedger.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
-				receiveGetFullLedger(getFullLedger);
-			else cout  << "parse error: " << type << endl; //else BOOST_LOG_TRIVIAL(info) << "Error: " << error;
-
-		}
-	case newcoin::GET_VALIDATIONS:
-		{
-			newcoin::GetValidations getValid;
-			if(getValid.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
-				receiveGetValidations(getValid);
-			else cout  << "parse error: " << type << endl; //else BOOST_LOG_TRIVIAL(info) << "Error: " << error;
-
-		}
-	default:
-		cout  << "Unknown Msg: " << type << endl; //else BOOST_LOG_TRIVIAL(info) << "Error: " << error;
-	}
-}
-
-
 void Peer::receiveHello(newcoin::Hello& packet)
 {
 	// TODO:6 add this guy to your KNL
@@ -328,6 +413,8 @@ void Peer::receiveFullLedger(newcoin::FullLedger& packet)
 	theApp->getLedgerMaster().addFullLedger(packet);
 }
 
+#endif
+
 void Peer::connectTo(KnownNode& node)
 {
 	tcp::endpoint endpoint( address::from_string(node.mIP), node.mPort);
@@ -335,3 +422,4 @@ void Peer::connectTo(KnownNode& node)
 		boost::bind(&Peer::connected, this, asio::placeholders::error) );
 	
 }
+

@@ -7,35 +7,27 @@ enum MessageType {
 	PING=			2;
 
 // network presence detection
-	GET_CONTACTS=		10;
+	GET_CONTACTS=	10;
 	CONTACT=		11;
 
 
 // operations for 'small' nodes
 	SEARCH_TRANSACTION=	20;
 	GET_ACCOUNT=		21;
-	ACCOUNT=		22;
+	ACCOUNT=			22;
 
 // transaction and ledger processing
 	TRANSACTION=		30;
-	GET_LEDGER=		31;
-	LEDGER=			32;
+	GET_LEDGER=			31;
+	LEDGER=				32;
 	PROPOSE_LEDGER=		33;
 	CLOSE_LEDGER=		34;
 
 // data replication and synchronization
 	GET_VALIDATIONS=	40;
-	VALIDATION=		41;
-	GET_OBJECT=		42;
-	OBJECT=			43;
-}
-
-
-message TMBaseMessage {
-	required MessageType type		= 1;
-	optional uint32 seq			= 2;
-	optional uint32 querySeq		= 3; // if this is a reply
-	required bytes innerMessage		= 4;
+	VALIDATION=			41;
+	GET_OBJECT=			42;
+	OBJECT=				43;
 }
 
 
@@ -55,25 +47,25 @@ you must first combine coins from one address to another.
 */
 
 enum TransactionStatus {
-	NEW		= 1;	// origin node did/could not validate
-	CURRENT		= 2;	// scheduled to go in this ledger
-	COMMITED	= 3;	// in a closed ledger
+	NEW				= 1;	// origin node did/could not validate
+	CURRENT			= 2;	// scheduled to go in this ledger
+	COMMITED		= 3;	// in a closed ledger
 	REJECT_CONFLICT	= 4;
 	REJECT_INVALID	= 5;
 	REJECT_FUNDS	= 6;
-	HELD_SEQ	= 7;
-	HELD_LEDGER	= 8;	// held for future ledger
+	HELD_SEQ		= 7;
+	HELD_LEDGER		= 8;	// held for future ledger
 }
 
 message TMTransaction {
-	required bytes from			= 1;
-	required bytes dest			= 2;
-	required uint64 amount			= 3;
+	required bytes from					= 1;
+	required bytes dest					= 2;
+	required uint64 amount				= 3;
 	required uint32 sourceLedgerIndex	= 4;
-	required uint32 seqNum			= 5;
-	required uint32 ident			= 6;
-	required bytes pubKey			= 7;
-	required bytes sig			= 8;
+	required uint32 seqNum				= 5;
+	required uint32 ident				= 6;
+	required bytes pubKey				= 7;
+	required bytes sig					= 8;
 	required TransactionStatus status	= 9;
 	optional uint64 receiveTimestamp	= 10;
 	optional uint32 ledgerIndexPossible	= 11; // the node may not know
@@ -89,7 +81,7 @@ message TMValidation {
 	optional uint64 timestamp		= 3; // only in proposed ledgers
 	optional uint32 confidence		= 4; // only in proposed ledgers
 	required bytes hanko			= 5;
-	required bytes sig			= 6;
+	required bytes sig				= 6;
 }
 
 
@@ -103,13 +95,13 @@ message TMGetValidations {
 
 
 message TMContact {
-	required bytes pubKey			= 1;
+	required bytes pubKey				= 1;
 	required uint32 softwareVersion		= 2;
 	required uint32 protoVersion		= 3;
-	required uint64 nodeFlags		= 4;
-	required uint64 timestamp		= 5;
-	repeated bytes nodeInfo			= 6;
-	required bytes signature		= 7;
+	required uint64 nodeFlags			= 4;
+	required uint64 timestamp			= 5;
+	repeated bytes nodeInfo				= 6;
+	required bytes signature			= 7;
 }
 
 // request node information
@@ -119,20 +111,43 @@ message TMGetContacts {
 }
 
 
+message TMSearchTransaction {
+	required uint32 maxTrans	=1;
+	optional bytes toAccount	=2;
+	optional bytes fromAccount	=3;
+	optional uint32	minLedger	=4;
+	optional bytes fromAcctSeq	=5;
+	repeated bytes transID		=6;
+}
+
+message TMGetAccount {
+	repeated bytes acctID		=1;
+}
+
+message Account {
+	required bytes accountID	=1;
+	required uint64 balance		=2;
+	required uint32 accountSeq	=3;
+	required uint32 ledgerSeq	=4;
+}
+
+message TMAccount{
+	repeated Account accounts	=1;
+}
 
 message TMIndexedObject
 {
 	enum ObjectType {
-		TRANSACTION		= 1;
+		TRANSACTION			= 1;
 		TRANSACTION_NODE	= 2; // a node in a transaction tree
 		TRANSACTION_LEAF	= 3; // a leaf in a transaction tree
-		ACCOUNT			= 4; // a single account state (with balance/sequence)
+		ACCOUNT				= 4; // a single account state (with balance/sequence)
 		ACCOUNT_NODE		= 5; // a node in an account state tree
 		ACCOUNT_LEAF		= 6; // a leaf in an account state tree
-		LEDGER			= 7;
+		LEDGER				= 7;
 	}
 
-	required bytes hash		= 1;
+	required bytes hash			= 1;
 	required ObjectType type	= 2;
 }
 
@@ -148,10 +163,24 @@ message TMGetObjectByHash
 message TMObjectByHash
 {
 	required TMIndexedObject object	= 1;
-	required bytes data		= 2;
+	required bytes data				= 2;
 }
 
+message LedgerNodes {
+	required bytes nodeid			= 1;
+	required bytes nodedata			= 2;
+}
 
+message TMGetLedger {
+	optional bytes hash				= 1;
+	optional uint32 seq				= 2;
+	repeated LedgerNodes nodes		= 3;
+}
+
+message TMLedger {
+	required bytes hash				= 1;
+	repeated LedgerNodes nodes		= 2;
+}
 
 
 message TMPing {
@@ -167,6 +196,6 @@ message TMPing {
 
 
 message TMErrorMsg {
-	optional int32 errorCode		= 1;
-	optional string message			= 2;
+	optional int32 errorCode	= 1;
+	optional string message		= 2;
 }

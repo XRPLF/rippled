@@ -4,9 +4,7 @@
 #include "UniqueNodeList.h"
 #include "ConnectionPool.h"
 #include "KnownNodeList.h"
-#include "LedgerMaster.h"
 #include "TimingService.h"
-#include "ValidationCollection.h"
 #include "Wallet.h"
 #include "database/database.h"
 
@@ -22,10 +20,8 @@ class Application
 	UniqueNodeList mUNL;
 	KnownNodeList mKnownNodes;
 	Wallet mWallet;
-	ValidationCollection mValidations;
 	Database* mDatabase;
 
-	LedgerMaster mLedgerMaster;
 
 	ConnectionPool mConnectionPool;
 	PeerDoor* mPeerDoor;
@@ -40,9 +36,7 @@ public:
 	Application();
 
 	ConnectionPool& getConnectionPool(){ return(mConnectionPool); }
-	LedgerMaster& getLedgerMaster(){ return(mLedgerMaster); }
 	UniqueNodeList& getUNL(){ return(mUNL); }
-	ValidationCollection& getValidationCollection(){  return(mValidations); }
 	Wallet& getWallet(){  return(mWallet); }
 	Database* getDB(){ return(mDatabase); }
 
