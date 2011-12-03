@@ -5,6 +5,7 @@
 #include "ConnectionPool.h"
 #include "KnownNodeList.h"
 #include "TimingService.h"
+#include "ScopedLock.h"
 #include "Wallet.h"
 #include "database/database.h"
 
@@ -29,7 +30,7 @@ class Application
 	//Serializer* mSerializer;
 
 	boost::asio::io_service mIOService;
-
+	boost::recursive_mutex dbLock;
 	
 
 public:
@@ -39,6 +40,7 @@ public:
 	UniqueNodeList& getUNL(){ return(mUNL); }
 	Wallet& getWallet(){  return(mWallet); }
 	Database* getDB(){ return(mDatabase); }
+	ScopedLock getDBLock() { return ScopedLock(dbLock); }
 
 	void setDB(Database* db){ mDatabase=db; }
 
