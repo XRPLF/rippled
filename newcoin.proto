@@ -122,6 +122,7 @@ message TMSearchTransaction {
 
 message TMGetAccount {
 	repeated bytes acctID		=1;
+	optional uint32 seq			=2;
 }
 
 message Account {
@@ -133,6 +134,7 @@ message Account {
 
 message TMAccount{
 	repeated Account accounts	=1;
+	optional uint32 seq			=2;
 }
 
 message TMIndexedObject
@@ -156,14 +158,14 @@ message TMIndexedObject
 message TMGetObjectByHash
 {
 	required TMIndexedObject object	= 1;
+	optional uint32 seq				= 2;	// used to match replies to queries
 }
-
-
 
 message TMObjectByHash
 {
-	required TMIndexedObject object	= 1;
-	required bytes data				= 2;
+	optional TMIndexedObject object	= 1;	// present unless no object found
+	optional bytes data				= 2;	// present unless no object found
+	optional uint32 seq				= 3;	// matches seq from query
 }
 
 message LedgerNodes {
@@ -173,13 +175,15 @@ message LedgerNodes {
 
 message TMGetLedger {
 	optional bytes hash				= 1;
-	optional uint32 seq				= 2;
+	optional uint32 ledgerSeq		= 2;
 	repeated LedgerNodes nodes		= 3;
+	optional uint32 seq				= 4;	// used to match replies to queries
 }
 
 message TMLedger {
 	required bytes hash				= 1;
 	repeated LedgerNodes nodes		= 2;
+	optional uint32 seq				= 3;	// matches seq from query
 }
 
 
@@ -189,7 +193,7 @@ message TMPing {
 		PONG = 1; // this is a reply
 	}
 	required pingType type		= 1;
-	optional uint32 pingVal		= 2; // detect stale replies, ensure other side is reading
+	optional uint32 seq			= 2; // detect stale replies, ensure other side is reading
 	optional uint64 pingTime	= 3; // know when we think we sent the ping
 	optional uint64 netTime		= 4;
 }
