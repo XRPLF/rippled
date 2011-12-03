@@ -125,22 +125,27 @@ std::vector<unsigned char> Serializer::getRaw(int offset, int length) const
 uint160 Serializer::getRIPEMD160(int size) const
 {
 	uint160 ret;
-	if((size==0)||(size>mData.size())) size=mData.size();
+	if((size<0)||(size>mData.size())) size=mData.size();
 	RIPEMD160(&(mData.front()), size, (unsigned char *) &ret);
 }
 
 uint256 Serializer::getSHA256(int size) const
 {
 	uint256 ret;
-	if((size==0)||(size>mData.size())) size=mData.size();
+	if((size<0)||(size>mData.size())) size=mData.size();
 	SHA256(&(mData.front()), size, (unsigned char *) &ret);
 }
 
 uint256 Serializer::getSHA512Half(int size) const
 {
+	return getSHA512Half(mData, size);
+}
+
+uint256 Serializer::getSHA512Half(const std::vector<unsigned char>& data, int size)
+{
 	char buf[64];
-	if((size==0)||(size>mData.size())) size=mData.size();
-	SHA512(&(mData.front()), size, (unsigned char *) buf);
+	if((size<0)||(size>data.size())) size=data.size();
+	SHA512(&(data.front()), size, (unsigned char *) buf);
 	return * (uint256 *) buf;
 }
 

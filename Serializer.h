@@ -39,9 +39,10 @@ class Serializer
 	std::vector<unsigned char> getRaw(int offset, int length) const;
 	
 	// hash functions
-	uint160 getRIPEMD160(int size=0) const;
-	uint256 getSHA256(int size=0) const;
-	uint256 getSHA512Half(int size=0) const;
+	uint160 getRIPEMD160(int size=-1) const;
+	uint256 getSHA256(int size=-1) const;
+	uint256 getSHA512Half(int size=-1) const;
+	static uint256 getSHA512Half(const std::vector<unsigned char>& data, int size=-1);
 
 	// totality functions
 	int getLength() const { return mData.size(); }
