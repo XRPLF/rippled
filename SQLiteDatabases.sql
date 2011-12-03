@@ -1,32 +1,32 @@
 
 
 CREATE TABLE Transactions (			-- transactions in all states
-	TransID		BLOB PRIMARY KEY,
-	FromID		BLOB,				-- 20 byte hash of pub key
+	TransID		CHARACTER(64) PRIMARY KEY,	-- in hex
+	FromID		CHARACTER(40),		-- 20 byte hash of pub key in hex
 	FromSeq		BIGINT UNSIGNED,	-- account seq
 	FromLedger	BIGINT UNSIGNED,
-	ToID		BLOB,				-- 20 byte hash of pub key
+	ToID		CHARACTER(40),		-- 20 byte hash of pub key
 	FirstSeen	TEXT,				-- time first seen
 	CommitSeq	BIGINT UNSIGNED,	-- ledger commited to, 0 if none
-	Status		VARCHAR(1)			-- (N)ew, (A)ctive, (C)onflicted, (D)one, (H)eld
+	Status		CHARACTER(1)		-- (N)ew, (A)ctive, (C)onflicted, (D)one, (H)eld
 );
 
 
 CREATE TABLE PubKeys ( -- holds pub keys for nodes and accounts
-	ID			BLOB PRIMARY KEY,
-	PubKey		BLOB NOT NULL
+ 	ID			CHARACTER(40) PRIMARY KEY,
+	PubKey		CHARCTER(66) NOT NULL
 );
 
 
 CREATE TABLE Ledgers ( -- closed ledgers
-	LedgerHash		BLOB PRIMARY KEY,
+	LedgerHash		CHARACTER(64) PRIMARY KEY,
 	LedgerSeq		BIGINT UNSIGNED,
-	PrevHash		BLOB,
+	PrevHash		CHARACTER(64),
 	FeeHeld			BIGINT UNSIGNED,
-	AccountSetHash	BLOB,
-	TransSetHash	BLOB,
-	FullyStored		VARCHAR(1),		-- all data is in our db
-	Status			VARCHAR(1)		-- (A)ccepted, (C)ompatible, (I)ncompatible
+	AccountSetHash	CHARACTER(64),
+	TransSetHash	CHARACTER(64),
+	FullyStored		CHARACTER(1),		-- all data is in our db
+	Status			CHARACTER(1)		-- (A)ccepted, (C)ompatible, (I)ncompatible
 );
 
 CREATE INDEX SeqLedger ON Ledgers(LedgerSeq);
@@ -35,8 +35,8 @@ CREATE INDEX SeqLedger ON Ledgers(LedgerSeq);
 
 CREATE TABLE LedgerConfirmations (
 	LedgerSeq	BIGINT UNSIGNED,
-	LedgerHash	BLOB,
-	Hanko		BLOB,
+	LedgerHash	CHARACTER(64),
+	Hanko		CHARACTER(40),
 	Signature	BLOB
 );
 
@@ -44,21 +44,21 @@ CREATE INDEX LedgerConfByHash ON LedgerConfirmations(LedgerHash);
 
 
 CREATE TABLE TrustedNodes (
-	Hanko		BLOB PRIMARY KEY,
+	Hanko		CHARACTER(40) PRIMARY KEY,
 	TrustLevel	SMALLINT,
 	Comment		TEXT
 );
 
 CREATE TABLE KnownNodes (
-	Hanko			BLOB PRIMARY KEY,
+	Hanko			CHARACTER(40) PRIMARY KEY,
 	LastSeen		TEXT,			-- YYYY-MM-DD HH:MM:SS.SSS
-	HaveContactInfo	VARCHAR(1),
+	HaveContactInfo	CHARACTER(1),
 	ContactObject	BLOB
 );
 
 
 CREATE TABLE CommittedObjects (			-- used to synch nodes
-	Hash		BLOB PRIMARY KEY,
+	Hash		CHARACTER(64) PRIMARY KEY,
 	ObjType		CHAR(1) NOT NULL,		-- (L)edger, (T)ransaction, (A)ccount node, transaction (N)ode
 	LedgerIndex	BIGINT UNSIGNED,		-- 0 if none
 	Object		BLOB
@@ -67,12 +67,11 @@ CREATE TABLE CommittedObjects (			-- used to synch nodes
 CREATE INDEX ObjectLocate ON CommittedObjects(LedgerIndex, ObjType);
 
 CREATE TABLE LocalAccounts (			-- wallet
-	ID			BLOB PRIMARY KEY,
-	Hash		BLOB,
+	ID			CHARACTER(40) PRIMARY KEY,
 	Seq			BIGINT UNSIGNED,	-- last transaction seen/issued
 	Balance		BIGINT UNSIGNED,
 	LedgerSeq	BIGINT UNSIGNED,	-- ledger this balance is from
-	KeyFormat	TEXT,				-- can be encrypted
+	KeyFormat	CHARACTER(1),			-- can be encrypted
 	PrivateKey	BLOB,
 	Comment		TEXT
 );
