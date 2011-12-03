@@ -133,8 +133,8 @@ int SqliteDatabase::getBinary(int colIndex,unsigned char* buf,int maxSize)
 {
 	const void* blob=sqlite3_column_blob(mCurrentStmt, colIndex);
 	int size=sqlite3_column_bytes(mCurrentStmt, colIndex);
-	if(maxSize<size) size=maxSize;
-	memcpy(buf,blob,size);
+	if(size<maxSize) maxSize=size;
+	memcpy(buf,blob,maxSize);
 	return(size);
 }
 
