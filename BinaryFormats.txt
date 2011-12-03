@@ -5,8 +5,9 @@ formats or the forms used for efficient storage or human display. However,
 it must always be possible to precisely re-create, byte for byte, any signed
 or hashed object. Otherwise, the signatures or hashes cannot be validated.
 
-All 32-byte hashes are the first 32-bytes of a SHA512 hash. This is chosen
-because SHA512 is 33% faster than SHA256 on modern hardware.
+All 32-byte hashes are the first 32-bytes of a SHA512 hash (in little-endian
+format). This is chosen because SHA512 is 33% faster than SHA256 on modern
+hardware.
 
 Note that it is not required the objects be stored or transmitted in these
 formats. They are only required to be put in these formats when computing or
