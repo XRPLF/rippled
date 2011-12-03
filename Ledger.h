@@ -79,8 +79,8 @@ public:
 	uint32 getLedgerSeq() const { return mLedgerSeq; }
 
 	// low level functions
-	SHAMap::pointer getTransactionMap() { return mTransactionMap; }
-	SHAMap::pointer getAccountStateMap() { return mAccountStateMap; }
+	SHAMap::pointer peekTransactionMap() { return mTransactionMap; }
+	SHAMap::pointer peekAccountStateMap() { return mAccountStateMap; }
 
 	// mid level functions
 	AccountState::pointer getAccountState(const uint160& acctID);
