@@ -1,7 +1,7 @@
 #include "PackedMessage.h"
 
 
-void PackedMessage::encodeHeader(unsigned size,int type) 
+void PackedMessage::encodeHeader(unsigned size, int type) 
 {
 	assert(mBuffer.size() >= HEADER_SIZE);
 	mBuffer[0] = static_cast<boost::uint8_t>((size >> 24) & 0xFF);
@@ -13,7 +13,7 @@ void PackedMessage::encodeHeader(unsigned size,int type)
 }
 
 
-PackedMessage::PackedMessage(MessagePointer msg,int type)
+PackedMessage::PackedMessage(MessagePointer msg, int type)
 	: mMsg(msg)
 {
 	unsigned msg_size = mMsg->ByteSize();
@@ -51,5 +51,3 @@ int PackedMessage::getType(std::vector<uint8_t>& buf)
 	ret|=buf[5];
 	return(ret);
 }
-
-
