@@ -48,15 +48,11 @@ void Application::run()
 		mRPCDoor=new RPCDoor(mIOService);
 	}//else BOOST_LOG_TRIVIAL(info) << "No RPC Port set. Not listening for commands.";
 
-	mConnectionPool.connectToNetwork(mKnownNodes,mIOService); 
+	mConnectionPool.connectToNetwork(mKnownNodes, mIOService); 
 	mTimingService.start(mIOService);
 	cout << "Before Run." << endl;
-	mIOService.run();// This blocks
+	mIOService.run(); // This blocks
 
 	//BOOST_LOG_TRIVIAL(info) << "Done.";
 	cout << "Done." << endl;
 }
-
-
-
-
