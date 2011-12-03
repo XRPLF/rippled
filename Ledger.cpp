@@ -103,9 +103,9 @@ Transaction::pointer Ledger::getTransaction(const uint256& transID)
 	ScopedLock l(mTransactionMap->Lock());
 	SHAMapItem::pointer item=mTransactionMap->peekItem(transID);
 	if(!item) return Transaction::pointer();
-	Transaction *t=new Transaction(item->getData(), true);
-	if(t->getStatus()==NEW) t->setStatus(mClosed ? COMMITTED : INCLUDED, mLedgerSeq);
-	return Transaction::pointer(t);
+	Transaction::pointer trans(new Transaction(item->getData(), true));
+	if(trans->getStatus()==NEW) trans->setStatus(mClosed ? COMMITTED : INCLUDED, mLedgerSeq);
+	return trans;
 }
 
 Ledger::TransResult Ledger::applyTransaction(Transaction::pointer trans)
