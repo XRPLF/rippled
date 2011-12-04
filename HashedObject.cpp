@@ -42,22 +42,23 @@ bool HashedObject::store() const
 #ifdef DEBUG
 	assert(checkHash());
 #endif
-	std::string sql="INSERT INTO CommitedObjects (Hash,ObjType,LedgerIndex,Object) values (";
+	std::string sql="INSERT INTO CommitedObjects (Hash,ObjType,LedgerIndex,Object) values ('";
 	sql.append(mHash.GetHex());
 	switch(mType)
 	{
-		case LEDGER: sql.append(",L,"); break;
-		case TRANSACTION: sql.append(",T,"); break;
-		case ACCOUNT_NODE: sql.append(",A,"); break;
-		case TRANSACTION_NODE: sql.append(",N,"); break;
-		default: sql.append(",U,"); break;
+		case LEDGER: sql.append("','L','"); break;
+		case TRANSACTION: sql.append("','T','"); break;
+		case ACCOUNT_NODE: sql.append("','A','"); break;
+		case TRANSACTION_NODE: sql.append("','N','"); break;
+		default: sql.append("','U','"); break;
 	}
 	sql.append(boost::lexical_cast<std::string>(mLedgerIndex));
-	sql.append(",");
+	sql.append("',");
 
 	std::string obj;
 	theApp->getDB()->escape(&(mData.front()), mData.size(), obj);
 	sql.append(obj);
+	sql.append(");");
 
 	ScopedLock sl(theApp->getDBLock());
 	Database* db=theApp->getDB();
@@ -66,8 +67,9 @@ bool HashedObject::store() const
 
 HashedObject::pointer retrieve(const uint256& hash)
 {
-	std::string sql="SELECT * from CommitedOjects where Hash=";
+	std::string sql="SELECT * from CommitedObjects where Hash='";
 	sql.append(hash.GetHex());
+	sql.append("';");
 
 	std::string type;
 	uint32 index;
