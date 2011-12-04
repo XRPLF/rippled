@@ -42,7 +42,7 @@ bool HashedObject::store() const
 #ifdef DEBUG
 	assert(checkHash());
 #endif
-	std::string sql="INSERT INTO CommitedObjects (Hash,ObjType,LedgerIndex,Object) values ('";
+	std::string sql="INSERT INTO CommitedObjects (Hash,ObjType,LedgerIndex,Object) VALUES ('";
 	sql.append(mHash.GetHex());
 	switch(mType)
 	{
@@ -67,7 +67,7 @@ bool HashedObject::store() const
 
 HashedObject::pointer retrieve(const uint256& hash)
 {
-	std::string sql="SELECT * from CommitedObjects where Hash='";
+	std::string sql="SELECT * from CommitedObjects WHERE Hash='";
 	sql.append(hash.GetHex());
 	sql.append("';");
 
