@@ -2,10 +2,13 @@
 
 CREATE TABLE Transactions (			-- transactions in all states
 	TransID		CHARACTER(64) PRIMARY KEY,	-- in hex
-	FromID		CHARACTER(40),		-- 20 byte hash of pub key in hex
+	FromAcct	CHARACTER(40),		-- 20 byte hash of pub key in hex
 	FromSeq		BIGINT UNSIGNED,	-- account seq
 	FromLedger	BIGINT UNSIGNED,
-	ToID		CHARACTER(40),		-- 20 byte hash of pub key
+	Identifier	BIGINT UNSIGNED,
+	ToAcct		CHARACTER(40),		-- 20 byte hash of pub key
+	Amount		BIGINT UNSIGNED,
+	Fee			BIGINT UNSIGNED,
 	FirstSeen	TEXT,				-- time first seen
 	CommitSeq	BIGINT UNSIGNED,	-- ledger commited to, 0 if none
 	Status		CHARACTER(1)		-- (N)ew, (A)ctive, (C)onflicted, (D)one, (H)eld
