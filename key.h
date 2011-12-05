@@ -13,6 +13,8 @@
 #include <openssl/ecdsa.h>
 #include <openssl/obj_mac.h>
 
+#include <boost/shared_ptr.hpp>
+
 #include "SecureAllocator.h"
 #include "NewcoinAddress.h"
 #include "uint256.h"
@@ -85,6 +87,8 @@ protected:
     bool fSet;
 
 public:
+	typedef boost::shared_ptr<CKey> pointer;
+
     CKey()
     {
         pkey = EC_KEY_new_by_curve_name(NID_secp256k1);
