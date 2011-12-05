@@ -24,7 +24,7 @@ static const unsigned int MAX_SIZE = 0x02000000;
 
 
 template<typename T1>
-inline uint256 Hash(const T1 pbegin, const T1 pend)
+inline uint256 SHA256Hash(const T1 pbegin, const T1 pend)
 {
 	static unsigned char pblank[1];
 	uint256 hash1;
@@ -35,7 +35,7 @@ inline uint256 Hash(const T1 pbegin, const T1 pend)
 }
 
 template<typename T1, typename T2>
-inline uint256 Hash(const T1 p1begin, const T1 p1end,
+inline uint256 SHA256Hash(const T1 p1begin, const T1 p1end,
 	const T2 p2begin, const T2 p2end)
 {
 	static unsigned char pblank[1];
@@ -51,7 +51,7 @@ inline uint256 Hash(const T1 p1begin, const T1 p1end,
 }
 
 template<typename T1, typename T2, typename T3>
-inline uint256 Hash(const T1 p1begin, const T1 p1end,
+inline uint256 SHA256Hash(const T1 p1begin, const T1 p1end,
 	const T2 p2begin, const T2 p2end,
 	const T3 p3begin, const T3 p3end)
 {
