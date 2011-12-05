@@ -5,6 +5,7 @@
 #include "ConnectionPool.h"
 #include "KnownNodeList.h"
 #include "TimingService.h"
+#include "PubKeyCache.h"
 #include "ScopedLock.h"
 #include "Wallet.h"
 #include "database/database.h"
@@ -21,6 +22,7 @@ class Application
 	UniqueNodeList mUNL;
 	KnownNodeList mKnownNodes;
 	Wallet mWallet;
+	PubKeyCache mPKCache;
 	Database* mDatabase;
 
 
@@ -36,13 +38,14 @@ class Application
 public:
 	Application();
 
-	ConnectionPool& getConnectionPool(){ return(mConnectionPool); }
-	UniqueNodeList& getUNL(){ return(mUNL); }
-	Wallet& getWallet(){  return(mWallet); }
-	Database* getDB(){ return(mDatabase); }
+	ConnectionPool& getConnectionPool() { return(mConnectionPool); }
+	UniqueNodeList& getUNL() { return(mUNL); }
+	Wallet& getWallet() { return(mWallet); }
+	PubKeyCache& getPubKeyCache() { return mPKCache; }
+	Database* getDB() { return(mDatabase); }
 	ScopedLock getDBLock() { return ScopedLock(dbLock); }
 
-	void setDB(Database* db){ mDatabase=db; }
+	void setDB(Database* db) { mDatabase=db; }
 
 	//Serializer* getSerializer(){ return(mSerializer); }
 	//void setSerializer(Serializer* ser){ mSerializer=ser; }

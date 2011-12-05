@@ -43,12 +43,13 @@ CKey::pointer PubKeyCache::locate(const uint160& id)
 	return ckp;
 }
 
-void PubKeyCache::store(const uint160& id, CKey::pointer key)
-{
+CKey::pointer PubKeyCache::store(const uint160& id, CKey::pointer key)
+{ // stored if needed, returns cached copy (possibly the original)
 	if(1)
 	{
 		boost::mutex::scoped_lock sl(mLock);
-		if(mCache[id]) return;
+		CKey::pointer cached(mCache[id]);
+		if(cached) return cached;
 		mCache[id]=key;
 	}
 	std::string sql="INSERT INTO PubKeys (ID, PubKey) VALUES ('";
@@ -62,6 +63,7 @@ void PubKeyCache::store(const uint160& id, CKey::pointer key)
 	sql.append(";");
 	ScopedLock sl(theApp->getDBLock());
 	theApp->getDB()->executeSQL(sql.c_str());
+	return key;
 }
 
 void PubKeyCache::clear()
