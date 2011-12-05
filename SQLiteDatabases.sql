@@ -11,13 +11,14 @@ CREATE TABLE Transactions (			-- transactions in all states
 	Fee			BIGINT UNSIGNED,
 	FirstSeen	TEXT,				-- time first seen
 	CommitSeq	BIGINT UNSIGNED,	-- ledger commited to, 0 if none
-	Status		CHARACTER(1)		-- (N)ew, (A)ctive, (C)onflicted, (D)one, (H)eld
+	Status		CHARACTER(1),		-- (N)ew, (A)ctive, (C)onflicted, (D)one, (H)eld
+	Signature	BLOB
 );
 
 
 CREATE TABLE PubKeys ( -- holds pub keys for nodes and accounts
  	ID			CHARACTER(40) PRIMARY KEY,
-	PubKey		CHARCTER(66) NOT NULL
+	PubKey		BLOB
 );
 
 
