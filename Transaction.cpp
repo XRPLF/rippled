@@ -194,7 +194,7 @@ Transaction::pointer Transaction::transactionFromSQL(const std::string& sql)
 	frID.SetHex(fromID);
 	tID.SetHex(toID);	
 
-	CKey::pointer pubkey=theApp->getPubKeyCache().locate(tID);
+	CKey::pointer pubkey=theApp->getPubKeyCache().locate(frID);
 	if(!pubkey) return Transaction::pointer();
 	
 	TransStatus st(INVALID);
