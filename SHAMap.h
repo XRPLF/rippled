@@ -8,8 +8,10 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
 
+#include "types.h"
 #include "uint256.h"
 #include "ScopedLock.h"
+#include "Serializer.h"
 
 class SHAMap;
 
@@ -35,6 +37,7 @@ public:
 	static const int rootDepth=0;
 	static const int leafDepth=20;
 
+	SHAMapNode() : mDepth(0)			{ ; }
 	SHAMapNode(int depth, const uint256& hash);
 	int getDepth() const				{ return mDepth; }
 	const uint256& getNodeID()	const	{ return mNodeID; }
@@ -259,6 +262,7 @@ public:
 	bool addItem(const SHAMapItem& i);
 	bool updateItem(const SHAMapItem& i);
 	SHAMapItem getItem(const uint256& id);
+	uint256 getHash() { return root->getNodeHash(); }
 
 	// save a copy if you have a temporary anyway
 	bool updateGiveItem(SHAMapItem::pointer);
@@ -282,7 +286,10 @@ public:
 	bool getNodeFat(const SHAMapNode& node, std::vector<uint256>& nodeHashes, int max);
 	bool getNodeFat(const uint256& hash, std::vector<uint256>& nodeHashes, int max);
 	bool addKnownNode(const std::vector<unsigned char>& rawNode);
-	void compare(SHAMap::pointer otherMap, SHAMapDiff& difference, int maxCount);
+
+	// caution: otherMap must be accessed only by this function
+	// return value: true=successfully completed, false=too different
+	bool compare(SHAMap::pointer otherMap, SHAMapDiff& differences, int maxCount);
 
 	int flushDirty(int maxNodes);
 
