@@ -18,7 +18,9 @@ public:
 	//CKey mKey;
 	//std::string mHumanAddress;
 	NewcoinAddress mAddress;
-	CKey mPublicKey, mPrivateKey;
+	CKey::pointer mPublicKey;
+	CKey mPrivateKey;
+	uint160 acctID;
 	int64 mAmount;
 	uint32 mSeqNum;
 
@@ -27,7 +29,7 @@ public:
 	bool signRaw(Serializer::pointer, std::vector<unsigned char>& signature);
 	bool checkSignRaw(Serializer::pointer, int signaturePosition=-1, int signedData=-1);
 	CKey& peekPrivKey() { return mPrivateKey; }
-	CKey& peekPubKey() { return mPublicKey; }
+	CKey::pointer peekPubKey() { return mPublicKey; }
 
 	uint160 getAddress(void) const { return mAddress.GetHash160(); }
 };
