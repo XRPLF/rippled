@@ -1,3 +1,6 @@
+#include "boost/lexical_cast.hpp"
+
+#include "Application.h"
 #include "Transaction.h"
 #include "Wallet.h"
 #include "Account.h"
@@ -18,8 +21,8 @@ Transaction::Transaction(TransStatus status, LocalAccount& fromLocalAccount, uin
 {
 	assert(fromLocalAccount.mAmount>=amount);
 	mAccountFrom=fromLocalAccount.getAddress();
+	mFromPubKey=fromLocalAccount.peekPubKey();
 	updateFee();
-	mFromPubKey.SetPubKey(fromLocalAccount.peekPubKey().GetPubKey());
 	sign(fromLocalAccount);
 }
 
@@ -36,12 +39,15 @@ Transaction::Transaction(const std::vector<unsigned char> &t, bool validate) : m
 
 	std::vector<unsigned char> pubKey;
 	if(!s.getRaw(pubKey, 40, 33)) { assert(false); return; }
-	if(!mFromPubKey.SetPubKey(pubKey)) { assert(false); return; }
+	mFromPubKey=CKey::pointer(new CKey());
+	if(!mFromPubKey->SetPubKey(pubKey)) return;
+	mAccountFrom=Hash160(pubKey);
+	mFromPubKey=theApp->getPubKeyCache().store(mAccountFrom, mFromPubKey);
+
 	updateID();
 
-	if(validate && !checkSign()) { assert(false); return; }
-
-	mStatus=NEW;
+	if(!validate || checkSign())
+		mStatus=NEW;
 }
 
 bool Transaction::sign(LocalAccount& fromLocalAccount)
@@ -75,7 +81,8 @@ void Transaction::updateFee()
 
 bool Transaction::checkSign() const
 {
-	return mFromPubKey.Verify(getRaw(true)->getSHA512Half(), mSignature);
+	assert(mFromPubKey);
+	return mFromPubKey->Verify(getRaw(true)->getSHA512Half(), mSignature);
 }
 
 Serializer::pointer Transaction::getRaw(bool prefix) const
@@ -83,7 +90,7 @@ Serializer::pointer Transaction::getRaw(bool prefix) const
 	Serializer::pointer ret(new Serializer(77));
 	if(prefix) ret->add32(0x54584e00u);
 	ret->add160(mAccountTo);
-	ret->addRaw(mFromPubKey.GetPubKey());
+	ret->addRaw(mFromPubKey->GetPubKey());
 	ret->add64(mAmount);
 	ret->add32(mFromAccountSeq);
 	ret->add32(mInLedger);
@@ -109,3 +116,117 @@ void Transaction::setStatus(TransStatus ts, uint32 lseq)
 	mStatus=ts;
 	mInLedger=lseq;
 }
+
+bool Transaction::save() const
+{
+	if((mStatus==INVALID)||(mStatus==REMOVED)) return false;
+
+	std::string sql="INSERT INTO Transactions "
+		"(TransID,FromAcct,FromSeq,FromLedger,Identifier,ToAcct,Amount,Fee,FirstSeen,CommitSeq,Status, Signature)"
+		" VALUES ('";
+	sql.append(mTransactionID.GetHex());
+	sql.append("','");
+	sql.append(mAccountFrom.GetHex());
+	sql.append("','");
+	sql.append(boost::lexical_cast<std::string>(mFromAccountSeq));
+	sql.append("','");
+	sql.append(boost::lexical_cast<std::string>(mSourceLedger));
+	sql.append("','");
+	sql.append(boost::lexical_cast<std::string>(mIdent));
+	sql.append("','");
+	sql.append(mAccountTo.GetHex());
+	sql.append("','");
+	sql.append(boost::lexical_cast<std::string>(mAmount));
+	sql.append("','");
+	sql.append(boost::lexical_cast<std::string>(mFee));
+	sql.append("',now(),'");
+	sql.append(boost::lexical_cast<std::string>(mInLedger)); switch(mStatus)
+	{
+	 case NEW: sql.append("','N',"); break;
+	 case INCLUDED: sql.append("','A',"); break;
+	 case CONFLICTED: sql.append("','C',"); break;
+	 case COMMITTED: sql.append("','D',"); break;
+	 case HELD: sql.append("','H',"); break;
+	 default: sql.append("','U',"); break;
+	}
+	std::string signature;
+	theApp->getDB()->escape(&(mSignature.front()), mSignature.size(), signature);
+	sql.append(signature);
+	sql.append(";");
+	
+	ScopedLock sl(theApp->getDBLock());
+	Database* db=theApp->getDB();
+	return db->executeSQL(sql.c_str());
+}
+
+Transaction::pointer Transaction::transactionFromSQL(const std::string& sql)
+{
+	std::string transID, fromID, toID, status;
+	uint64 amount, fee;
+	uint32 ledgerSeq, fromSeq, fromLedger, ident;
+	std::vector<unsigned char> signature;
+	signature.reserve(78);
+	if(1)
+	{
+		ScopedLock sl(theApp->getDBLock());
+		Database* db=theApp->getDB();
+
+		if(!db->executeSQL(sql.c_str())) return Transaction::pointer();
+		if(!db->getNextRow()) return Transaction::pointer();
+		
+		db->getStr("TransID", transID);
+		db->getStr("FromID", fromID);
+		fromSeq=db->getBigInt("FromSeq");
+		fromLedger=db->getBigInt("FromLedger");
+		db->getStr("ToID", toID);
+		amount=db->getBigInt("Amount");
+		fee=db->getBigInt("Fee");
+		ledgerSeq=db->getBigInt("CommitSeq");
+		ident=db->getBigInt("Identifier");
+		db->getStr("Status", status);
+		int sigSize=db->getBinary("Signature", &(signature.front()), signature.size());
+		signature.resize(sigSize);
+	}
+
+	uint256 trID;
+	uint160 frID, tID;
+	trID.SetHex(transID);
+	frID.SetHex(fromID);
+	tID.SetHex(toID);	
+
+	CKey::pointer pubkey=theApp->getPubKeyCache().locate(tID);
+	if(!pubkey) return Transaction::pointer();
+	
+	TransStatus st(INVALID);
+	switch(status[0])
+	{
+		case 'N': st=NEW; break;
+		case 'A': st=INCLUDED; break;
+		case 'C': st=CONFLICTED; break;
+		case 'D': st=COMMITTED; break;
+		case 'H': st=HELD; break;
+	}
+	
+	return Transaction::pointer(new Transaction(trID, frID, tID, pubkey, amount, fee, fromSeq, fromLedger,
+		ident, signature, ledgerSeq, st));
+
+}
+
+Transaction::pointer Transaction::load(const uint256& id)
+{
+	std::string sql="SELECT * FROM Transactions WHERE Hash='";
+	sql.append(id.GetHex());
+	sql.append("';");
+	return transactionFromSQL(sql);
+}
+
+Transaction::pointer Transaction::findFrom(const uint160& fromID, uint32 seq)
+{
+	std::string sql="SELECT * FROM Transactions WHERE FromID='";
+	sql.append(fromID.GetHex());
+	sql.append("' AND FromSeq='");
+	sql.append(boost::lexical_cast<std::string>(seq));
+	sql.append("';");
+	return transactionFromSQL(sql);
+}
+

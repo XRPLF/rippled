@@ -39,16 +39,15 @@ public:
 	static const uint32 TransSignMagic=0x54584E00; // "TXN"
 
 private:
-	uint256		mTransactionID;
-	uint160		mAccountFrom, mAccountTo;
-	uint64		mAmount, mFee;
-	uint32		mFromAccountSeq, mSourceLedger, mIdent;
-	CKey		mFromPubKey;
+	uint256			mTransactionID;
+	uint160			mAccountFrom, mAccountTo;
+	uint64			mAmount, mFee;
+	uint32			mFromAccountSeq, mSourceLedger, mIdent;
+	CKey::pointer	mFromPubKey;
 	std::vector<unsigned char> mSignature;
 
 	uint32		mInLedger;
 	TransStatus	mStatus;
-
 
 public:
 	Transaction();
@@ -78,12 +77,28 @@ public:
 
 	void setStatus(TransStatus status, uint32 ledgerSeq);
 
+	// database functions
+	bool save() const;
+	static Transaction::pointer load(const uint256& id);
+	static Transaction::pointer findFrom(const uint160& fromID, uint32 seq);
+
 	bool operator<(const Transaction &) const;
 	bool operator>(const Transaction &) const;
 	bool operator==(const Transaction &) const;
 	bool operator!=(const Transaction &) const;
 	bool operator<=(const Transaction &) const;
 	bool operator>=(const Transaction &) const;
+
+protected:
+	static Transaction::pointer transactionFromSQL(const std::string& statement);
+	Transaction(const uint256& transactionID, const uint160& accountFrom, const uint160& accountTo,
+		 CKey::pointer key, uint64 amount, uint64 fee, uint32 fromAccountSeq, uint32 sourceLedger,
+		 uint32 ident, const std::vector<unsigned char>& signature, uint32 inLedger, TransStatus status) :
+		 	mTransactionID(transactionID), mAccountFrom(accountFrom), mAccountTo(accountTo),
+		 	mAmount(amount), mFee(fee), mFromAccountSeq(fromAccountSeq), mSourceLedger(sourceLedger),
+			mIdent(ident), mFromPubKey(key), mSignature(signature), mInLedger(inLedger), mStatus(status)
+	{ ; }
+
 };
 
 #endif
