@@ -1,13 +1,17 @@
 #include "Wallet.h"
 #include "NewcoinAddress.h"
+#include "Application.h"
 #include <string>
 #include <boost/foreach.hpp>
 
 LocalAccount::LocalAccount(bool) : mAmount(0), mSeqNum(0)
 {
 	mPrivateKey.MakeNewKey();
-	mPublicKey.SetPubKey(mPrivateKey.GetPubKey());
-	mAddress.SetPubKey(mPublicKey.GetPubKey());
+	CKey::pointer mPublicKey(new CKey());
+	mPublicKey->SetPubKey(mPrivateKey.GetPubKey());
+	acctID=Hash160(mPublicKey->GetPubKey());
+	mPublicKey=theApp->getPubKeyCache().store(acctID, mPublicKey);
+	mAddress.SetHash160(acctID);
 }
 
 Wallet::Wallet()
