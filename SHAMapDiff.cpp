@@ -59,14 +59,14 @@ bool SHAMap::compare(SHAMap::pointer otherMap, SHAMapDiff& differences, int maxC
 			 		{
 			 			if(!otherItem)
 			 			{ // we have items, other tree does not
-			 				differences[otherItem->getTag()]=
+			 				differences[ourItem->getTag()]=
 			 					std::pair<SHAMapItem::pointer, SHAMapItem::pointer>(ourItem, otherItem);
 							if((--maxCount)<=0) return false;
 							otherItem=otherNode->nextItem(otherItem->getTag());
 			 			}
 			 			else if(!ourItem)
 			 			{ // we have no items, other tree does
-			 				differences[ourItem->getTag()]=
+			 				differences[otherItem->getTag()]=
 			 					std::pair<SHAMapItem::pointer, SHAMapItem::pointer>(ourItem, otherItem);
 							if((--maxCount)<=0) return false;
 							ourItem=thisNode->nextItem(ourItem->getTag());
