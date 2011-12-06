@@ -11,6 +11,7 @@
 #include "Hanko.h"
 #include "Serializer.h"
 #include "Account.h"
+#include "SHAMap.h"
 
 /*
 We could have made something that inherited from the protobuf transaction but this seemed simpler
@@ -81,6 +82,12 @@ public:
 	bool save() const;
 	static Transaction::pointer load(const uint256& id);
 	static Transaction::pointer findFrom(const uint160& fromID, uint32 seq);
+
+	// conversion function
+	static bool convertToTransactions(uint32 ourLedgerSeq, uint32 otherLedgerSeq,
+		bool checkFirstTransactions, bool checkSecondTransactions,
+		const std::map<uint256, std::pair<SHAMapItem::pointer,SHAMapItem::pointer> >& inMap,
+		std::map<uint256, std::pair<Transaction::pointer, Transaction::pointer> >& outMap);
 
 	bool operator<(const Transaction &) const;
 	bool operator>(const Transaction &) const;

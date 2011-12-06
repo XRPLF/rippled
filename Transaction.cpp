@@ -230,3 +230,47 @@ Transaction::pointer Transaction::findFrom(const uint160& fromID, uint32 seq)
 	return transactionFromSQL(sql);
 }
 
+bool Transaction::convertToTransactions(uint32 firstLedgerSeq, uint32 secondLedgerSeq,
+	bool checkFirstTransactions, bool checkSecondTransactions,
+	const std::map<uint256, std::pair<SHAMapItem::pointer, SHAMapItem::pointer> >& inMap,
+	std::map<uint256, std::pair<Transaction::pointer, Transaction::pointer> >& outMap)
+{ // convert a straight SHAMap payload difference to a transaction difference table
+  // return value: true=ledgers are valid, false=a ledger is invalid
+  	bool ret=true;
+	std::map<uint256, std::pair<SHAMapItem::pointer, SHAMapItem::pointer> >::const_iterator it;
+	for(it=inMap.begin(); it!=inMap.end(); ++it)
+	{
+		const uint256& id=it->first;
+		const SHAMapItem::pointer& first=it->second.first;
+		const SHAMapItem::pointer& second=it->second.second;
+	
+		Transaction::pointer firstTrans, secondTrans;	
+		if(!!first)
+		{ // transaction in our table
+			firstTrans=Transaction::pointer(new Transaction(first->getData(), checkFirstTransactions));
+			if( (firstTrans->getStatus()==INVALID) || (firstTrans->getID()!=id) )
+			{
+				firstTrans->setStatus(INVALID, firstLedgerSeq);
+				ret=false;
+			}
+			else firstTrans->setStatus(INCLUDED, firstLedgerSeq);
+		}
+
+		if(!!second)
+		{ // transaction in other table
+			secondTrans=Transaction::pointer(new Transaction(second->getData(), checkSecondTransactions));
+			if( (secondTrans->getStatus()==INVALID) || (secondTrans->getID()!=id) )
+			{
+				secondTrans->setStatus(INVALID, secondLedgerSeq);
+				ret=false;
+			}
+			else secondTrans->setStatus(INCLUDED, secondLedgerSeq);
+		}
+		assert(firstTrans || secondTrans);
+		if(firstTrans && secondTrans && (firstTrans->getStatus()!=INVALID) && (secondTrans->getStatus()!=INVALID))
+			ret=false;	// one or the other SHAMap is structurally invalid or a miracle has happened
+
+		outMap[id]=std::pair<Transaction::pointer, Transaction::pointer>(firstTrans, secondTrans);
+	}
+	return ret;
+}
