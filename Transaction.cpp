@@ -5,6 +5,7 @@
 #include "Wallet.h"
 #include "Account.h"
 #include "BitcoinUtil.h"
+#include "BinaryFormats.h"
 
 using namespace std;
 
@@ -29,16 +30,16 @@ Transaction::Transaction(TransStatus status, LocalAccount& fromLocalAccount, uin
 Transaction::Transaction(const std::vector<unsigned char> &t, bool validate) : mStatus(INVALID)
 {
 	Serializer s(t);
-	if(s.getLength()<145) { assert(false); return; }
-	if(!s.get160(mAccountTo, 0)) { assert(false); return; }
-	if(!s.get64(mAmount, 20)) { assert(false); return; }
-	if(!s.get32(mFromAccountSeq, 28)) { assert(false); return; }
-	if(!s.get32(mSourceLedger, 32)) { assert(false); return; }
-	if(!s.get32(mIdent, 36)) { assert(false); return; }
-	if(!s.getRaw(mSignature, 69, 72)) { assert(false); return; }
+	if(s.getLength()<BTxSize) { assert(false); return; }
+	if(!s.get160(mAccountTo, BTxPDestAcct)) { assert(false); return; }
+	if(!s.get64(mAmount, BTxPAmount)) { assert(false); return; }
+	if(!s.get32(mFromAccountSeq, BTxPSASeq)) { assert(false); return; }
+	if(!s.get32(mSourceLedger, BTxPSLIdx)) { assert(false); return; }
+	if(!s.get32(mIdent, BTxPSTag)) { assert(false); return; }
+	if(!s.getRaw(mSignature, BTxPSig, BTxLSig)) { assert(false); return; }
 
 	std::vector<unsigned char> pubKey;
-	if(!s.getRaw(pubKey, 40, 33)) { assert(false); return; }
+	if(!s.getRaw(pubKey, BTxPSPubK, BTxLSPubK)) { assert(false); return; }
 	mFromPubKey=CKey::pointer(new CKey());
 	if(!mFromPubKey->SetPubKey(pubKey)) return;
 	mAccountFrom=Hash160(pubKey);
@@ -103,6 +104,7 @@ Serializer::pointer Transaction::getSigned() const
 {
 	Serializer::pointer ret(getRaw(false));
 	ret->addRaw(mSignature);
+	assert(ret->getLength()==BTxSize);
 	return ret;
 }
 

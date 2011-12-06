@@ -56,7 +56,7 @@ signed transaction.
 
 
 
-3) Ledger (signed format)
+3) Ledger (signed format) - 192 bytes
 
 Fields:
 1) 4-byte ledger index, unsigned BE integer
@@ -64,7 +64,7 @@ Fields:
 3) 32-byte hash of previous ledger
 4) 32-byte hash of root of the transaction tree for this ledger
 5) 32-byte hash of root of the account tree for this ledger
-6) 8-byte timestamp
+6) 8-byte closing timestamp
 7) 4-byte confidence, unsigned BE integer (0 = closed/accepted)
 8) Signature:
  Accepted: Prefix (0x4C475200) of 120 byte fields 1-6
