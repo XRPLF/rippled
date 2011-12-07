@@ -21,7 +21,7 @@ enum MessageType {
 	GET_LEDGER=			31;
 	LEDGER=				32;
 	PROPOSE_LEDGER=		33;
-	CLOSE_LEDGER=		34;
+	CLOSE_LEDGER=		35;
 
 // data replication and synchronization
 	GET_VALIDATIONS=	40;
@@ -73,6 +73,16 @@ message TMTransaction {
 	optional bytes conflictingTransaction	= 13;
 }
 
+message TMProposeLedger {
+	required uint32 closingSeq			= 1;
+	required uint32 secondsSinceClose	= 2;
+	required bytes previousLedgerHash	= 3;	// 0 if first proposal
+	required bytes currentLedgerHash	= 4;
+	required bytes hanko				= 5;
+	repeated bytes addedTransactions	= 6;
+	repeated bytes removedTransactions	= 7;
+	required bytes signature			= 8;
+}
 
 // Used to propose/validate during ledger close
 message TMValidation {

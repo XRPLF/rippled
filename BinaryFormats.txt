@@ -65,10 +65,7 @@ Fields:
 4) 32-byte hash of root of the transaction tree for this ledger
 5) 32-byte hash of root of the account tree for this ledger
 6) 8-byte closing timestamp
-7) 4-byte confidence, unsigned BE integer (0 = closed/accepted)
-8) Signature:
- Accepted: Prefix (0x4C475200) of 120 byte fields 1-6
- Proposed: Prefix (0x4C475000) of 120 byte fields 1-8
+7) Signature: Prefix (0x4C475000) of 116 byte fields 1-6
 
 
 4) Account status (ledger format)
@@ -111,7 +108,19 @@ Account State Leaf Node Fields:
 2) 2-byte length (32)
 3) 32-byte account status in ledger format
 
-7) Contact block
+7) Propose ledger:
+
+1) 4-byte closing ledger sequence number
+2) 4-byte seconds since ledger close time
+3) 32-byte previous ledger hash
+4) 32-byte current ledger hash
+5) Zero or more transaction change objects (optional) each:
+ 32-byte transaction ID
+ 1-byte operation (0=removed, 1=added)
+6) 20-byte hanko of signing node
+7) 72-byte prefix 0x41564C00 signature of above
+
+8) Contact block
 
 These are used to pass node contact information around the network and are
 signed so nodes can prove they are operational.
