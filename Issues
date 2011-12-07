@@ -1,0 +1,8 @@
+
+Issues we know about but have not resolved yet:
+
+Generate/send session key , sign TCP parameters. This will prevent a
+filtering proxy and prevent us from making many connections to the same
+node.
+
+We need a maximum message size.
