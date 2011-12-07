@@ -89,12 +89,12 @@ public:
 		const std::map<uint256, std::pair<SHAMapItem::pointer,SHAMapItem::pointer> >& inMap,
 		std::map<uint256, std::pair<Transaction::pointer, Transaction::pointer> >& outMap);
 
-	bool operator<(const Transaction &) const;
-	bool operator>(const Transaction &) const;
-	bool operator==(const Transaction &) const;
-	bool operator!=(const Transaction &) const;
-	bool operator<=(const Transaction &) const;
-	bool operator>=(const Transaction &) const;
+	bool operator<(const Transaction&) const;
+	bool operator>(const Transaction&) const;
+	bool operator==(const Transaction&) const;
+	bool operator!=(const Transaction&) const;
+	bool operator<=(const Transaction&) const;
+	bool operator>=(const Transaction&) const;
 
 protected:
 	static Transaction::pointer transactionFromSQL(const std::string& statement);
