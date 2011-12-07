@@ -27,7 +27,7 @@ LIBS+= \
    -l sqlite3
 
 DEBUGFLAGS=-g -DDEBUG
-CXXFLAGS=-O2 -Wno-invalid-offsetof -Wformat $(DEBUGFLAGS) $(DEFS)
+CXXFLAGS=-O0 -Wno-invalid-offsetof -Wformat $(DEBUGFLAGS) $(DEFS)
 HEADERS = \
     Application.h \
     base58.h \
@@ -67,9 +67,12 @@ HEADERS = \
     Wallet.h \
     newcoin.pb.h
 
-SRCS= \
+SRCS= keystore.cpp BitcoinUtil.cpp database/SqliteDatabase.cpp database/database.cpp \
  test.cpp Hanko.cpp Transaction.cpp SHAMap.cpp SHAMapNodes.cpp Serializer.cpp Ledger.cpp \
- AccountState.cpp Wallet.cpp NewcoinAddress.cpp Config.cpp util/pugixml.cpp
+ AccountState.cpp Wallet.cpp NewcoinAddress.cpp Config.cpp util/pugixml.cpp PackedMessage.cpp \
+ Application.cpp TimingService.cpp KnownNodeList.cpp ConnectionPool.cpp Peer.cpp \
+ PeerDoor.cpp RPCDoor.cpp RPCServer.cpp rpc.cpp Conversion.cpp RequestParser.cpp HashedObject.cpp \
+ UniqueNodeList.cpp PubKeyCache.cpp SHAMapDiff.cpp
 
 
 # Application.cpp     HttpReply.cpp      main.cpp            RPCCommands.cpp        \
@@ -101,7 +104,7 @@ obj/newcoin.pb.o:	newcoin.pb.h
 newcoind: $(OBJS)
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
 
-.dep:	$(SRCS)
+.dep:
 	$(CXX) -M $(SRCS) $(CXXFLAGS) > .dep
 
 clean:
