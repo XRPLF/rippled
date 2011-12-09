@@ -3,7 +3,6 @@
 #include "Application.h"
 #include "Transaction.h"
 #include "Wallet.h"
-#include "Account.h"
 #include "BitcoinUtil.h"
 #include "BinaryFormats.h"
 

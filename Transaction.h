@@ -10,7 +10,6 @@
 #include "newcoin.pb.h"
 #include "Hanko.h"
 #include "Serializer.h"
-#include "Account.h"
 #include "SHAMap.h"
 
 /*
@@ -25,7 +24,9 @@ enum TransStatus
 	CONFLICTED	=3,	// losing to a conflicting transaction
 	COMMITTED	=4,	// known to be in a ledger
 	HELD		=5,	// not valid now, maybe later
-	REMOVED		=6	// taken out of a ledger
+	REMOVED		=6,	// taken out of a ledger
+	OBSOLETE	=7, // a compatible transaction has taken precedence
+	INCOMPLETE	=8  // needs more signatures
 };
 
 class Account;
