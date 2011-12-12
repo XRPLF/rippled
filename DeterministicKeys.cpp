@@ -10,7 +10,7 @@
 DetKeySet::DetKeySet(const std::string& phrase)
 {
 	Serializer s;
-	s.addRaw(phrase);
+	s.addRaw((const void *) phrase.c_str(), phrase.length());
 	mBase=s.getSHA512Half();
 	s.secureErase();
 }

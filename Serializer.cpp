@@ -57,6 +57,11 @@ int Serializer::addRaw(const std::vector<unsigned char> &vector)
 	return ret;
 }
 
+int Serializer::addRaw(const void *ptr, int len)
+{
+	mData.insert(mData.end(), (const char *) ptr, ((const char *)ptr)+len);
+}
+
 bool Serializer::get16(uint16& o, int offset) const
 {
 	if((offset+2)>mData.size()) return false;

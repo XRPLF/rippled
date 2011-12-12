@@ -27,6 +27,7 @@ class Serializer
 	int add160(const uint160&);	// account names, hankos
 	int add256(const uint256&);	// transaction and ledger hashes
 	int addRaw(const std::vector<unsigned char> &vector);
+	int addRaw(const void *ptr, int len);
 
 	// disassemble functions
 	bool get16(uint16&, int offset) const;
