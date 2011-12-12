@@ -64,16 +64,18 @@ HEADERS = \
     uint256.h \
     UniqueNodeList.h \
     ValidationCollection.h \
-    Wallet.h \
-    newcoin.pb.h
+    Wallet.h
 
-SRCS= keystore.cpp BitcoinUtil.cpp database/SqliteDatabase.cpp database/database.cpp \
+SRCS= keystore.cpp BitcoinUtil.cpp \
  test.cpp Hanko.cpp Transaction.cpp SHAMap.cpp SHAMapNodes.cpp Serializer.cpp Ledger.cpp \
- AccountState.cpp Wallet.cpp NewcoinAddress.cpp Config.cpp util/pugixml.cpp PackedMessage.cpp \
+ AccountState.cpp Wallet.cpp NewcoinAddress.cpp Config.cpp PackedMessage.cpp \
  Application.cpp TimingService.cpp KnownNodeList.cpp ConnectionPool.cpp Peer.cpp \
  PeerDoor.cpp RPCDoor.cpp RPCServer.cpp rpc.cpp Conversion.cpp RequestParser.cpp HashedObject.cpp \
- UniqueNodeList.cpp PubKeyCache.cpp SHAMapDiff.cpp
+ UniqueNodeList.cpp PubKeyCache.cpp SHAMapDiff.cpp DeterministicKeys.cpp
 
+DBSRCS=	SqliteDatabase.cpp database.cpp
+
+UTILSRCS= pugixml.cpp
 
 # Application.cpp     HttpReply.cpp      main.cpp            RPCCommands.cpp        \
 # BitcoinUtil.cpp     keystore.cpp       NewcoinAddress.cpp  rpc.cpp                UniqueNodeList.cpp \
@@ -84,36 +86,27 @@ SRCS= keystore.cpp BitcoinUtil.cpp database/SqliteDatabase.cpp database/database
 # database/SqliteDatabase.cpp database/database.cpp
 # database/linux/mysqldatabase.cpp database/database.cpp database/SqliteDatabase.cpp
 
-OBJS= $(SRCS:%.cpp=obj/%.o) obj/newcoin.pb.o
+OBJS= $(SRCS:%.cpp=%.o) $(DBSRCS:%.cpp=database/%.o) $(UTILSRCS:%.cpp=util/%.o) newcoin.pb.o
 #cryptopp/obj/sha.o cryptopp/obj/cpu.o
 
 all: newcoind
 
-obj/%.o: %.cpp $(HEADERS)
-	$(CXX) -c $(CXXFLAGS) -o $@ $<
-
-cryptopp/obj/%.o: cryptopp/%.cpp
-	$(CXX) -c $(CXXFLAGS) -O3 -o $@ $<
-
 newcoin.pb.h:	newcoin.proto
 	protoc --cpp_out=. newcoin.proto
 
-obj/newcoin.pb.o:	newcoin.pb.h
-	$(CXX) -c $(CXXFLAGS) -o $@ newcoin.pb.cc
+%.o:	%.cpp newcoin.pb.h $(HEADERS)
+	$(CXX) -c $(CXXFLAGS) -o $@ $<
 
-newcoind: $(OBJS)
+
+newcoind:	$(OBJS)
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
 
-.dep:
+.dep:	newcoin.pb.h
 	$(CXX) -M $(SRCS) $(CXXFLAGS) > .dep
 
 clean:
 	-rm -f newcoind
-	-rm -f obj/*.o
-	-rm -f obj/test/*.o
-	-rm -f obj/database/*.o
-	-rm -f obj/util/*.o
-	-rm -f cryptopp/obj/*.o
+	-rm -f *.o
 	-rm -f headers.h.gch
 	-rm -f newcoin.pb.*
 
