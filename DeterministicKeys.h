@@ -18,8 +18,12 @@ public:
 	{
 		memset(&mBase, 0, sizeof(mBase));
 	}
+	
+	void reBase(const uint256& newBase) { mBase=newBase; }
+	uint256 getKeySetName();
 
-	bool getRandom(uint256&);
+	static bool getRandom(uint256&);
+	static void getPhrase(const std::string& phrase, uint256& base);
 
 	CKey::pointer getPubKey(uint32 n);
 	CKey::pointer getPrivKey(uint32 n);

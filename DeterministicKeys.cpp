@@ -8,16 +8,27 @@
 #include "Serializer.h"
 
 DetKeySet::DetKeySet(const std::string& phrase)
+{ // create a deterministic key set based on a phrase
+	getPhrase(phrase, mBase);
+}
+
+uint256 DetKeySet::getKeySetName()
+{ // get the name of a deterministic key set
+	Serializer s;
+	s.add256(mBase);
+	return s.getSHA512Half();
+}
+
+void DetKeySet::getPhrase(const std::string& phrase, uint256& base)
 {
 	Serializer s;
 	s.addRaw((const void *) phrase.c_str(), phrase.length());
-	mBase=s.getSHA512Half();
+	base=s.getSHA512Half();
 	s.secureErase();
 }
 
 static EC_KEY* GenerateDeterministicKey(const uint256& base, int n)
 {
-
 	BN_CTX* ctx=BN_CTX_new();
 	if(!ctx) return NULL;
 
@@ -30,7 +41,6 @@ static EC_KEY* GenerateDeterministicKey(const uint256& base, int n)
 		EC_KEY_free(pkey);
 		return NULL;
 	}
-
 	if(!EC_GROUP_get_order(EC_KEY_get0_group(pkey), order, ctx))
 	{
 		BN_free(order);
@@ -51,12 +61,12 @@ static EC_KEY* GenerateDeterministicKey(const uint256& base, int n)
 		uint256 root=s.getSHA512Half();
 		privKey=BN_bin2bn((const unsigned char *) &root, sizeof(root), NULL);
 		memset(&root, 0, sizeof(root));
-	} while(BN_is_zero(privKey) || (BN_cmp(privKey, order)>0));
+	} while(BN_is_zero(privKey) || (BN_cmp(privKey, order)>=0));
 
 	BN_free(order);
 
 	if(!EC_KEY_set_private_key(pkey, privKey))
-	{
+	{ // set the random point as the private key
 		BN_free(privKey);
 		BN_CTX_free(ctx);
 		return NULL;
@@ -64,7 +74,7 @@ static EC_KEY* GenerateDeterministicKey(const uint256& base, int n)
 
 	EC_POINT *pubKey=EC_POINT_new(EC_KEY_get0_group(pkey));
 	if(!EC_POINT_mul(EC_KEY_get0_group(pkey), pubKey, privKey, NULL, NULL, ctx))
-	{
+	{ // compute the corresponding public key point
 		BN_free(privKey);
 		EC_POINT_free(pubKey);
 		BN_CTX_free(ctx);
@@ -82,7 +92,6 @@ static EC_KEY* GenerateDeterministicKey(const uint256& base, int n)
 	BN_CTX_free(ctx);
 
 	assert(EC_KEY_check_key(pkey)==1);
-
 	return pkey;
 }
 
