@@ -2,19 +2,8 @@
 #include "Config.h"
 #include "Application.h"
 #include <string>
-/*
-Soon we should support saving the ledger in a real DB
-For now save them all in 
 
-For all the various ledgers we can save just the delta from the combined ledger for that index.
-
-*/
-
-void LedgerHistory::load()
-{
-
-}
-
+#if 0
 bool LedgerHistory::loadLedger(const uint256& hash)
 {
 	Ledger::pointer ledger=Ledger::pointer(new Ledger());
@@ -68,3 +57,4 @@ Ledger::pointer LedgerHistory::getLedger(const uint256& hash)
 	if(loadLedger(hash)) return(mAllLedgers[hash]);
 	return(Ledger::pointer());
 }
+#endif

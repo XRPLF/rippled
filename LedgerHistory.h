@@ -3,31 +3,22 @@
 
 #include "Ledger.h"
 
-/*
-This is a collection of all the ledgers you know about.
-One thread of them is the thread you validate. 
-But you keep others that you have heard about.
-
-Why do you need to keep them all? 
-	In case people ask.
-	To make sure that there isn't a conflict between the validated ledgers
-*/
-
 class LedgerHistory
 {
-	std::map<uint32, Ledger::pointer> mAcceptedLedgers;
-	std::map<uint256, Ledger::pointer> mAllLedgers;
+	std::map<uint32, Ledger::pointer> mLedgersByIndex;
+	std::map<uint256, Ledger::pointer> mLedgersByHash;
 
-	bool loadAcceptedLedger(uint32 index);
+	bool loadClosedLedger(uint32 index);
 	bool loadLedger(const uint256& hash);
+
 public:
-	void load();
+	LedgerHistory() { ; }
 	
 	void addLedger(Ledger::pointer ledger);
 	void addAcceptedLedger(Ledger::pointer ledger);
 
-	Ledger::pointer getAcceptedLedger(uint32 index);
-	Ledger::pointer getLedger(const uint256& hash);
+	Ledger::pointer getLedgerBySeq(uint32 index);
+	Ledger::pointer getLedgerByHash(const uint256& hash);
 };
 
 #endif

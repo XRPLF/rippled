@@ -7,56 +7,57 @@
 #include "types.h"
 #include "Transaction.h"
 
-/*
-Handles:
-	collecting the current ledger
-	finalizing the ledger
-	validating the past ledger
-	keeping the ledger history
+// Tracks the current ledger and any ledgers in the process of closing
+// Tracks ledger history
+// Tracks held transactions
 
-	There is one ledger we are working on. 
-
-*/
 class LedgerMaster
 {
+	bool mIsSynced;
+
 	Ledger::pointer mCurrentLedger;
 	Ledger::pointer mFinalizingLedger;
 
 	LedgerHistory mLedgerHistory;
-	std::list<TransactionPtr> mFutureTransactions;
-	std::list< std::pair<Peer::pointer,newcoin::ProposeLedger> > mFutureProposals;
 
-	//bool mAfterProposed;
+	std::map<uint256, Transaction::pointer> mHeldTransactionsByID;
+	std::map<uint32, Transaction::pointer> mHeldTransactionsByLedger;
 
-
-	void addFutureProposal(Peer::pointer peer,newcoin::ProposeLedger& packet);
-	void applyFutureProposals(uint32 ledgerIndex);
 	void applyFutureTransactions(uint32 ledgerIndex);
-	bool isValidTransaction(TransactionPtr trans);
-	bool isTransactionOnFutureList(TransactionPtr trans);
+	bool isValidTransaction(Transaction::pointer trans);
+	bool isTransactionOnFutureList(Transaction::pointer trans);
+
 public:
+
 	LedgerMaster();
 
-	void load();
-	void save();
-
 	uint32 getCurrentLedgerIndex();
+	bool IsSynced(void) { return mIsSynced; }
+	void SetSynced(void) { mIsSynced=true; }
 
-	Ledger::pointer getAcceptedLedger(uint32 index){ return(mLedgerHistory.getAcceptedLedger(index)); }
-	Ledger::pointer getLedger(const uint256& hash){ return(mLedgerHistory.getLedger(hash)); }
+	Ledger::pointer getCurrentLedger() { return mCurrentLedger; }
+	Ledger::pointer getClosingLedger() { return mFinalizingLedger; }
 
-	int64 getAmountHeld(std::string& addr);
-	int64 getAmountHeld(uint160& addr);
-	Ledger::Account* getAccount(uint160& addr){ return(mCurrentLedger->getAccount(addr)); }
+	Ledger::pointer getLedgerBySeq(uint32 index)
+	{
+		if(mCurrentLedger && (mCurrentLedger->getLedgerSeq()==index)) return mCurrentLedger;
+		if(mFinalizingLedger && (mFinalizingLedger->getLedgerSeq()==index)) return mFinalizingLedger;
+		return mLedgerHistory.getLedgerBySeq(index); 
+	}
 
-	bool addTransaction(TransactionPtr trans);
-	void addFullLedger(newcoin::FullLedger& ledger);
+	Ledger::pointer getLedgerByHash(const uint256& hash)
+	{
+		if(mCurrentLedger && (mCurrentLedger->getHash()==hash)) return mCurrentLedger;
+		if(mFinalizingLedger && (mFinalizingLedger->getHash()==hash)) return mFinalizingLedger;
+		return mLedgerHistory.getLedgerByHash(hash);
+	}
 
-	void startFinalization();
-	void sendProposal();
-	void endFinalization();
-	void checkLedgerProposal(Peer::pointer peer,newcoin::ProposeLedger& packet);
-	void checkConsensus(uint32 ledgerIndex);
+	uint64 getBalance(std::string& addr);
+	uint64 getBalance(const uint160& addr);
+	AccountState::pointer getAccountState(const uint160& addr)
+	{ return mCurrentLedger->getAccountState(addr); }
+
+	bool addTransaction(Transaction::pointer trans);
 };
 
 #endif

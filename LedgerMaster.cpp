@@ -5,44 +5,31 @@
 #include "Conversion.h"
 #include <boost/foreach.hpp>
 
-using namespace std;
-
-LedgerMaster::LedgerMaster()
+LedgerMaster::LedgerMaster() : mIsSynced(false)
 {
-	mFinalizingLedger=Ledger::pointer();
-	mCurrentLedger=Ledger::pointer(new Ledger(TimingService::getCurrentLedgerIndex()));
-}
-
-void LedgerMaster::load()
-{
-	mLedgerHistory.load();
-}
-
-void LedgerMaster::save()
-{
-	
 }
 
 uint32 LedgerMaster::getCurrentLedgerIndex()
 {
-	return(mCurrentLedger->getIndex());
+	return mCurrentLedger->getLedgerSeq();
 }
 
-int64 LedgerMaster::getAmountHeld(uint160& addr)
+uint64 LedgerMaster::getBalance(const uint160& addr)
 {
-	return(mCurrentLedger->getAmountHeld(addr));
+	return mCurrentLedger->getBalance(addr);
 }
 
-int64 LedgerMaster::getAmountHeld(std::string& addr)
+uint64 LedgerMaster::getBalance(std::string& addr)
 {
-	return(mCurrentLedger->getAmountHeld(humanTo160(addr)));
+	return mCurrentLedger->getBalance(humanTo160(addr));
 }
 
 
+#if 0
 
-bool LedgerMaster::isTransactionOnFutureList(TransactionPtr needle)
+bool LedgerMaster::isTransactionOnFutureList(Transaction::pointer needle)
 {
-	BOOST_FOREACH(TransactionPtr straw,mFutureTransactions)
+	BOOST_FOREACH(Transaction::pointer straw,mFutureTransactions)
 	{
 		if(Transaction::isEqual(straw,needle))
 		{
@@ -57,7 +44,7 @@ bool LedgerMaster::isTransactionOnFutureList(TransactionPtr needle)
 // make sure from address != dest address
 // make sure not 0 amount unless null dest (this is just a way to make sure your seqnum is incremented)
 // make sure the sequence number is good (but the ones with a bad seqnum we need to save still?)
-bool LedgerMaster::isValidTransaction(TransactionPtr trans)
+bool LedgerMaster::isValidTransaction(Transaction::pointer trans)
 {
 	if(trans->from()==trans->dest()) return(false);
 	if(trans->amount()==0) return(false);
@@ -71,7 +58,7 @@ bool LedgerMaster::isValidTransaction(TransactionPtr trans)
 
 
 // returns true if we should relay it
-bool LedgerMaster::addTransaction(TransactionPtr trans)
+bool LedgerMaster::addTransaction(Transaction::pointer trans)
 {
 	if(mFinalizingLedger && (trans->ledgerindex()==mFinalizingLedger->getIndex()))
 	{
@@ -125,30 +112,6 @@ bool LedgerMaster::addTransaction(TransactionPtr trans)
 	}
 }
 
-
-
-void LedgerMaster::addFullLedger(newcoin::FullLedger& ledger)
-{
-	// check if we already have this ledger
-	uint256 inHash=protobufTo256(ledger.hash());
-	Ledger::pointer existingLedger=mLedgerHistory.getLedger( inHash );
-	if(existingLedger) return;
-
-	// check that the hash is correct
-	Ledger::pointer newLedger=Ledger::pointer(new Ledger(ledger));
-	if(newLedger->getHash()==inHash)
-	{
-		mLedgerHistory.addLedger(newLedger);
-
-		// add all these in case we are missing some
-		BOOST_FOREACH(TransactionPtr trans, newLedger->getTransactions())
-		{
-			addTransaction(trans);
-		}
-
-	}else cout << "We were sent a bad ledger hash" << endl;
-
-}
 
 
 void LedgerMaster::startFinalization()
@@ -299,3 +262,4 @@ theApp->getConnectionPool().relayMessage(NULL,msg);
 }
 */
 
+#endif
