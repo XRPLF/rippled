@@ -85,6 +85,7 @@ public:
 	// mid level functions
 	AccountState::pointer getAccountState(const uint160& acctID);
 	Transaction::pointer getTransaction(const uint256& transID);
+	uint64 getBalance(const uint160& acctID);
 
 	// high level functions
 	TransResult applyTransaction(Transaction::pointer trans);

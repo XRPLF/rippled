@@ -74,6 +74,14 @@ AccountState::pointer Ledger::getAccountState(const uint160& accountID)
 	return AccountState::pointer(new AccountState(item->getData()));
 }
 
+uint64 Ledger::getBalance(const uint160& accountID)
+{
+	ScopedLock l(mTransactionMap->Lock());
+	SHAMapItem::pointer item=mAccountStateMap->peekItem(uint160to256(accountID));
+	if(!item) return 0;
+	return AccountState(item->getData()).getBalance();
+}
+
 bool Ledger::updateAccountState(AccountState::pointer state)
 {
 	SHAMapItem::pointer item(new SHAMapItem(state->getAccountID(), state->getRaw()));
@@ -242,6 +250,8 @@ Ledger::pointer Ledger::closeLedger(uint64 timeStamp)
 bool Ledger::unitTest(void)
 {
     LocalAccount l1(true), l2(true);
+    assert(l1.peekPubKey());
+
     uint160 la1(l1.getAddress()), la2(l2.getAddress());
 #ifdef DEBUG
     std::cerr << "Account1: " << la1.GetHex() << std::endl;
@@ -274,50 +284,6 @@ bool Ledger::unitTest(void)
 
 
 #if 0
-// TODO: we should probably make a shared pointer type for each of these PB types
-newcoin::FullLedger* Ledger::createFullLedger()
-{	
-	newcoin::FullLedger* ledger=new newcoin::FullLedger();
-	ledger->set_index(mIndex);
-	ledger->set_hash(getHash().begin(),getHash().GetSerializeSize());
-	ledger->set_parenthash(mParentHash.begin(),mParentHash.GetSerializeSize());
-
-	BOOST_FOREACH(PAIR(const uint160, Account)& account, mAccounts)
-	{
-		newcoin::Account* saveAccount=ledger->add_accounts();
-		saveAccount->set_address(account.first.begin(),account.first.GetSerializeSize());
-		saveAccount->set_amount(account.second.first);
-		saveAccount->set_seqnum(account.second.second);
-	}
-	
-	return(ledger);
-}
-
-void Ledger::setTo(newcoin::FullLedger& ledger)
-{
-	mIndex=ledger.index();
-	mTransactions.clear();
-	mDiscardedTransactions.clear();
-	mAccounts.clear();
-	mValidSig=false;
-	mValidHash=false;
-
-	mParentHash=protobufTo256(ledger.parenthash());	
-
-	int numAccounts=ledger.accounts_size();
-	for(int n=0; n<numAccounts; n++)
-	{
-		const newcoin::Account& account=ledger.accounts(n);
-		mAccounts[ protobufTo160(account.address()) ] = Account(account.amount(),account.seqnum());
-	}
-
-	int numTrans=ledger.transactions_size();
-	for(int n=0; n<numTrans; n++)
-	{
-		const newcoin::Transaction& trans=ledger.transactions(n);
-		mTransactions.push_back(Transaction::pointer(new newcoin::Transaction(trans)));
-	}
-}
 
 Ledger::pointer Ledger::getParent()
 {
