@@ -58,14 +58,7 @@ enum TransactionStatus {
 }
 
 message TMTransaction {
-	required bytes from					= 1;
-	required bytes dest					= 2;
-	required uint64 amount				= 3;
-	required uint32 sourceLedgerIndex	= 4;
-	required uint32 seqNum				= 5;
-	required uint32 ident				= 6;
-	required bytes pubKey				= 7;
-	required bytes sig					= 8;
+	required bytes rawTransaction		= 1;
 	required TransactionStatus status	= 9;
 	optional uint64 receiveTimestamp	= 10;
 	optional uint32 ledgerIndexPossible	= 11; // the node may not know
@@ -76,8 +69,8 @@ message TMTransaction {
 message TMProposeLedger {
 	required uint32 closingSeq			= 1;
 	required uint32 secondsSinceClose	= 2;
-	required bytes previousLedgerHash	= 3;	// 0 if first proposal
-	required bytes currentLedgerHash	= 4;
+	required bytes previousLedgerHash	= 3;	// 0 if first proposal, hash we no longer propose
+	required bytes currentLedgerHash	= 4;	// the hash of the ledger we are proposing
 	required bytes hanko				= 5;
 	repeated bytes addedTransactions	= 6;
 	repeated bytes removedTransactions	= 7;
