@@ -4,13 +4,13 @@
 #include <string>
 #include <boost/foreach.hpp>
 
-LocalAccount::LocalAccount(bool) : mAmount(0), mSeqNum(0)
+LocalAccount::LocalAccount(bool) : mAmount(0), mSeqNum(0), mPublicKey(new CKey())
 {
 	mPrivateKey.MakeNewKey();
-	CKey::pointer mPublicKey(new CKey());
 	mPublicKey->SetPubKey(mPrivateKey.GetPubKey());
 	acctID=Hash160(mPublicKey->GetPubKey());
 	mPublicKey=theApp->getPubKeyCache().store(acctID, mPublicKey);
+	assert(mPublicKey);
 	mAddress.SetHash160(acctID);
 }
 
