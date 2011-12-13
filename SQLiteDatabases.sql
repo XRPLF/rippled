@@ -75,7 +75,7 @@ CREATE TABLE LocalAccounts (			-- wallet
 	Seq			BIGINT UNSIGNED,	-- last transaction seen/issued
 	Balance		BIGINT UNSIGNED,
 	LedgerSeq	BIGINT UNSIGNED,	-- ledger this balance is from
-	KeyFormat	CHARACTER(1),			-- can be encrypted
+	KeyFormat	CHARACTER(1),		-- can be encrypted
 	PrivateKey	BLOB,
 	Comment		TEXT
 );
