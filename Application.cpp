@@ -38,6 +38,8 @@ void Application::run()
 	theApp->setDB(new SqliteDatabase(filename.c_str()));
 	mDatabase->connect();
 
+	return; // TEMPORARY
+
 	if(theConfig.PEER_PORT)
 	{
 		mPeerDoor=new PeerDoor(mIOService);
