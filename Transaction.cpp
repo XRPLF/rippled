@@ -22,6 +22,7 @@ Transaction::Transaction(TransStatus status, LocalAccount& fromLocalAccount, uin
 	assert(fromLocalAccount.mAmount>=amount);
 	mAccountFrom=fromLocalAccount.getAddress();
 	mFromPubKey=fromLocalAccount.peekPubKey();
+	assert(mFromPubKey);
 	updateFee();
 	sign(fromLocalAccount);
 }
