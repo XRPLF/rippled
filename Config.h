@@ -3,33 +3,40 @@
 class Config
 {
 public:
+
+	// core software parameters
 	int VERSION;
 	std::string VERSION_STR;
-	bool TEST_NET;
-	int NETWORK_START_TIME;  // The Unix time we start ledger 0
 
-	int TRANSACTION_FEE;
-	int ACCOUNT_FEE;
-	int PEER_PORT;
-	int RPC_PORT;
-	int NUMBER_CONNECTIONS;
+	// network parameters
+	std::string NETWORK_ID;
+	std::string NETWORK_DNS_SEEDS;
+	int NETWORK_START_TIME;  // The Unix time we start ledger 0
+	int TRANSACTION_FEE_BASE;
 	int LEDGER_SECONDS;
 	int LEDGER_PROPOSAL_DELAY_SECONDS;
-	int LEDGER_FINALIZATION_SECONDS;
-	std::string RECEIVE_ACTION;
+	int LEDGER_AVALANCHE_SECONDS;
 	int BELIEF_QUORUM;
 	float BELIEF_PERCENT;
+
+	// node networking parameters
+	int PEER_PORT;
+	int NUMBER_CONNECTIONS;
+	bool NODE_INBOUND;		// we accept inbound connections
+	bool NODE_DATABASE;		// we offer historical data services
+	bool NODE_PUBLIC;		// we do not attempt to hide our identity
+	bool NODE_DUMB;			// we are a 'dumb' client
+	bool NODE_SMART;		// we offer services to 'dumb' clients
+
+	std::string HANKO_PRIVATE;
+
+	// RPC parameters
+	int RPC_PORT;
 	std::string RPC_USER;
 	std::string RPC_PASSWORD;
-	std::string HANKO;
 
+	// configuration parameters
 	std::string DATA_DIR;
-
-	int MIN_VOTES_FOR_CONSENSUS;
-
-
-
-
 
 	Config();
 

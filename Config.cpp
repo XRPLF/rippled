@@ -10,7 +10,6 @@ Config theConfig;
 Config::Config()
 {
 	VERSION=1;
-	TEST_NET=false;
 
 	NETWORK_START_TIME=1319844908;
 
@@ -22,23 +21,12 @@ Config::Config()
 	// a new ledger every 30 min
 	LEDGER_SECONDS=(60*30); 
 
-	// length of delay between start finalization and sending your first proposal
-	// This delay allows us to collect a few extra transactions from people who's clock is different than ours
-	// It should increase the chance that the ledgers will all hash the same
-	LEDGER_PROPOSAL_DELAY_SECONDS=30; 
-
-	// How long to wait between proposal send and ledger close. 
-	// at which point you publish your validation
-	// You are only waiting to get extra transactions from your peers 
-	LEDGER_FINALIZATION_SECONDS=(60*5); 
 	RPC_USER="admin";
 	RPC_PASSWORD="pass";
 
 	DATA_DIR="";
 
-	TRANSACTION_FEE=1000;
-	ACCOUNT_FEE=1000;
-	MIN_VOTES_FOR_CONSENSUS=1;
+	TRANSACTION_FEE_BASE=1000;
 }
 
 void Config::load()
