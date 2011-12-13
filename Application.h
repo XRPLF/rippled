@@ -7,14 +7,15 @@
 #include "TimingService.h"
 #include "PubKeyCache.h"
 #include "ScopedLock.h"
+#include "LedgerMaster.h"
 #include "Wallet.h"
+#include "Peer.h"
 #include "database/database.h"
 
 #include <boost/asio.hpp>
 
 class RPCDoor;
 class PeerDoor;
-
 
 class Application
 {
@@ -23,13 +24,16 @@ class Application
 	KnownNodeList mKnownNodes;
 	Wallet mWallet;
 	PubKeyCache mPKCache;
+	LedgerMaster mMasterLedger;
 	Database* mDatabase;
-
 
 	ConnectionPool mConnectionPool;
 	PeerDoor* mPeerDoor;
 	RPCDoor* mRPCDoor;
 	//Serializer* mSerializer;
+
+	std::map<std::string, Peer::pointer> mPeerMap;
+	boost::recursive_mutex mPeerMapLock;
 
 	boost::asio::io_service mIOService;
 	boost::recursive_mutex dbLock;
@@ -43,6 +47,7 @@ public:
 	Wallet& getWallet() { return(mWallet); }
 	PubKeyCache& getPubKeyCache() { return mPKCache; }
 	Database* getDB() { return(mDatabase); }
+	LedgerMaster& getMasterLedger() { return mMasterLedger; }
 	ScopedLock getDBLock() { return ScopedLock(dbLock); }
 
 	void setDB(Database* db) { mDatabase=db; }
