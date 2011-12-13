@@ -183,13 +183,13 @@ SHAMapItem::SHAMapItem(const uint160& tag, const std::vector<unsigned char>& dat
 
 SHAMapItem::pointer SHAMap::peekFirstItem()
 {
-	ScopedLock sl(mLock);
+	boost::recursive_mutex::scoped_lock sl(mLock);
 	return firstBelow(root);
 }
 
 SHAMapItem::pointer SHAMap::peekLastItem()
 {
-	ScopedLock sl(mLock);
+	boost::recursive_mutex::scoped_lock sl(mLock);
 	return lastBelow(root);
 }
 
@@ -238,7 +238,7 @@ SHAMapItem::pointer SHAMap::firstBelow(SHAMapInnerNode::pointer node)
 
 SHAMapItem::pointer SHAMap::lastBelow(SHAMapInnerNode::pointer node)
 {
-	ScopedLock sl(mLock);
+	boost::recursive_mutex::scoped_lock sl(mLock);
 
 	const uint256 zero;
 	int i;
@@ -271,7 +271,7 @@ SHAMapItem::pointer SHAMap::lastBelow(SHAMapInnerNode::pointer node)
 
 SHAMapItem::pointer SHAMap::peekNextItem(const uint256& id)
 { // Get a pointer to the next item in the tree after a given item - item must be in tree
-	ScopedLock sl(mLock);
+	boost::recursive_mutex::scoped_lock sl(mLock);
 
 	SHAMapLeafNode::pointer leaf=walkToLeaf(id, false, false);
 	if(!leaf)
@@ -331,7 +331,7 @@ SHAMapItem::pointer SHAMap::peekNextItem(const uint256& id)
 
 SHAMapItem::pointer SHAMap::peekPrevItem(const uint256& id)
 {
-	ScopedLock sl(mLock);
+	boost::recursive_mutex::scoped_lock sl(mLock);
 
 	SHAMapLeafNode::pointer leaf=walkToLeaf(id, false, false);
 	if(!leaf) return SHAMapItem::pointer();
@@ -403,7 +403,7 @@ SHAMapLeafNode::pointer SHAMap::createLeaf(const SHAMapInnerNode& lowestParent, 
 
 SHAMapItem::pointer SHAMap::peekItem(const uint256& id)
 {
-	ScopedLock sl(mLock);
+	boost::recursive_mutex::scoped_lock sl(mLock);
 	SHAMapLeafNode::pointer leaf=walkToLeaf(id, false, false);
 	if(!leaf) return SHAMapItem::pointer();
 	return leaf->findItem(id);
@@ -411,7 +411,7 @@ SHAMapItem::pointer SHAMap::peekItem(const uint256& id)
 
 bool SHAMap::hasItem(const uint256& id)
 { // does the tree have an item with this ID
-	ScopedLock sl(mLock);  
+	boost::recursive_mutex::scoped_lock sl(mLock);  
 	SHAMapLeafNode::pointer leaf=walkToLeaf(id, false, false);
 	if(!leaf) return false;
 	SHAMapItem::pointer item=leaf->findItem(id);
@@ -420,7 +420,7 @@ bool SHAMap::hasItem(const uint256& id)
 
 bool SHAMap::delItem(const uint256& id)
 { // delete the item with this ID
-	ScopedLock sl(mLock);
+	boost::recursive_mutex::scoped_lock sl(mLock);
 	SHAMapLeafNode::pointer leaf=walkToLeaf(id, false, false);
 	if(!leaf) return false;
 	if(!leaf->delItem(id)) return false;
@@ -430,7 +430,7 @@ bool SHAMap::delItem(const uint256& id)
 
 bool SHAMap::addGiveItem(const SHAMapItem::pointer item)
 { // add the specified item, does not update
-	ScopedLock sl(mLock);
+	boost::recursive_mutex::scoped_lock sl(mLock);
 	SHAMapLeafNode::pointer leaf=walkToLeaf(item->getTag(), true, true);
 	if(!leaf)
 	{
@@ -460,7 +460,7 @@ bool SHAMap::addItem(const SHAMapItem& i)
 
 bool SHAMap::updateGiveItem(SHAMapItem::pointer item)
 {
-	ScopedLock sl(mLock);
+	boost::recursive_mutex::scoped_lock sl(mLock);
 	SHAMapLeafNode::pointer leaf=walkToLeaf(item->getTag(), true, true);
 	if(!leaf) return false;
 	if(!leaf->addUpdateItem(item)) return false;

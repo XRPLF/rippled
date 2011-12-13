@@ -118,7 +118,7 @@ Transaction::pointer Ledger::getTransaction(const uint256& transID)
 
 Ledger::TransResult Ledger::applyTransaction(Transaction::pointer trans)
 {
-	ScopedLock l(mLock);
+	boost::recursive_mutex::scoped_lock sl(mLock);
 	if(trans->getSourceLedger()>mLedgerSeq) return TR_BADLSEQ;
 
 	if(trans->getAmount()<trans->getFee())
@@ -187,7 +187,7 @@ Ledger::TransResult Ledger::applyTransaction(Transaction::pointer trans)
 
 Ledger::TransResult Ledger::removeTransaction(Transaction::pointer trans)
 { // high-level - reverse application of transaction
-	ScopedLock l(mLock);
+	boost::recursive_mutex::scoped_lock sl(mLock);
 	if(!mTransactionMap || !mAccountStateMap) return TR_ERROR;
 	try
 	{
@@ -226,7 +226,7 @@ Ledger::TransResult Ledger::removeTransaction(Transaction::pointer trans)
 
 Ledger::TransResult Ledger::hasTransaction(Transaction::pointer trans)
 {
-	ScopedLock l(mLock);
+	boost::recursive_mutex::scoped_lock sl(mLock);
 	if(mTransactionMap==NULL) return TR_ERROR;
 	try
 	{
