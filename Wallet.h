@@ -15,6 +15,8 @@ Keeps track of all the public/private keys you have created
 class LocalAccount
 {
 public:
+	typedef boost::shared_ptr<LocalAccount> pointer;
+
 	//CKey mKey;
 	//std::string mHumanAddress;
 	NewcoinAddress mAddress;
@@ -25,6 +27,7 @@ public:
 	uint32 mSeqNum;
 
 	LocalAccount(bool);	// create a new local acount
+
 	bool signRaw(Serializer::pointer);
 	bool signRaw(Serializer::pointer, std::vector<unsigned char>& signature);
 	bool checkSignRaw(Serializer::pointer, int signaturePosition=-1, int signedData=-1);
@@ -36,11 +39,9 @@ public:
 
 class Wallet : public CBasicKeyStore
 {
-	std::list<LocalAccount> mYourAccounts;
+	std::map<uint160, LocalAccount::pointer> mYourAccounts;
 
-	
-
-	Transaction::pointer createTransaction(LocalAccount& fromAccount, uint160& destAddr, int64 amount);
+	Transaction::pointer createTransaction(LocalAccount& fromAccount, const uint160& destAddr, uint64 amount);
 	bool commitTransaction(Transaction::pointer trans);
 
 	LocalAccount* consolidateAccountOfSize(int64 amount);
@@ -50,10 +51,10 @@ public:
 	void refreshAccounts();
 	void load();
 
-	int64 getBalance();
+	uint64 getBalance();
 
 	// returns some human error str?
-	std::string sendMoneyToAddress(uint160& destAddress, int64 amount);
+	std::string sendMoneyToAddress(const uint160& destAddress, uint64 amount);
 
 	// you may need to update your balances
 	void transactionChanged(Transaction::pointer trans);
