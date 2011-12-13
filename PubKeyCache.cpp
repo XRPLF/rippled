@@ -10,7 +10,13 @@ CKey::pointer PubKeyCache::locate(const uint160& id)
 	{ // is it in cache
 		boost::mutex::scoped_lock sl(mLock);
 		CKey::pointer ret=mCache[id];
-		if(ret) return ret;
+		if(ret)
+		{
+#ifdef DEBUG
+			std::cerr << "PubKey found in cache (locate)" << std::endl;
+#endif
+			return ret;
+		}
 	}
 
 	std::string sql="SELECT * from PubKeys WHERE ID='";
@@ -49,7 +55,13 @@ CKey::pointer PubKeyCache::store(const uint160& id, CKey::pointer key)
 	{
 		boost::mutex::scoped_lock sl(mLock);
 		CKey::pointer cached(mCache[id]);
-		if(cached) return cached;
+		if(cached)
+		{
+#ifdef DEBUG
+			std::cerr << "PubKey found in cache (store)" << std::endl;
+#endif
+			return cached;
+		}
 		mCache[id]=key;
 	}
 	std::string sql="INSERT INTO PubKeys (ID, PubKey) VALUES ('";

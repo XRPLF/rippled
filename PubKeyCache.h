@@ -12,7 +12,7 @@ class PubKeyCache
 {
 private:
 	boost::mutex mLock;
-	std::map<uint160,CKey::pointer> mCache;
+	std::map<uint160, CKey::pointer> mCache;
 
 public:
 	PubKeyCache() { ; }
