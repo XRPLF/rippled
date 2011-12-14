@@ -58,6 +58,8 @@ protected:
 	bool updateAccountState(AccountState::pointer);
 	bool addTransaction(Transaction::pointer);
 	bool delTransaction(const uint256& id);
+	
+	static Ledger::pointer getSQL(const std::string& sqlStatement);
 
 public:
 	Ledger(const uint160& masterID, uint64 startAmount); // used for the starting bootstrap ledger

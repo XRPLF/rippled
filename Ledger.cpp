@@ -322,12 +322,56 @@ void Ledger::saveAcceptedLedger(Ledger::pointer ledger)
 	theApp->getDB()->executeSQL(sql.c_str());
 }
 
+Ledger::pointer Ledger::getSQL(const std::string& sql)
+{
+	uint256 ledgerHash, prevHash, accountHash, transHash;
+	uint64 feeHeld, closingTime;
+	uint32 ledgerSeq;
+	std::string hash;
+
+	if(1)
+	{
+		ScopedLock sl(theApp->getDBLock());
+		Database *db=theApp->getDB();
+		if(!db->executeSQL(sql.c_str()) || !db->getNextRow())
+			 return Ledger::pointer();
+
+		db->getStr("LedgerHash", hash);
+		ledgerHash.SetHex(hash);
+		db->getStr("PrevHash", hash);
+		prevHash.SetHex(hash);
+		db->getStr("AccountSetHash", hash);
+		accountHash.SetHex(hash);
+		db->getStr("TransSetHash", hash);
+		transHash.SetHex(hash);
+		feeHeld=db->getBigInt("FeeHeld");
+		closingTime=db->getBigInt("ClosingTime");
+		ledgerSeq=db->getBigInt("LedgerSeq");
+	}
+	
+	Ledger::pointer ret(new Ledger(prevHash, transHash, accountHash, feeHeld, closingTime, ledgerSeq));
+	if(ret->getHash()!=ledgerHash)
+	{
+		assert(false);
+		return Ledger::pointer();
+	}
+	return ret;
+}
+
 Ledger::pointer Ledger::loadByIndex(uint32 ledgerIndex)
 {
+	std::string sql="SELECT * from Ledgers WHERE LedgerSeq='";
+	sql.append(boost::lexical_cast<std::string>(ledgerIndex));
+	sql.append("';");
+	return getSQL(sql);
 }
 
 Ledger::pointer Ledger::loadByHash(const uint256& ledgerHash)
 {
+	std::string sql="SELECT * from Ledgers WHERE LedgerHash='";
+	sql.append(ledgerHash.GetHex());
+	sql.append("';");
+	return getSQL(sql);
 }
 
 #if 0
