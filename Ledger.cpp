@@ -1,3 +1,10 @@
+
+#include <iostream>
+#include <fstream>
+
+#include <boost/lexical_cast.hpp>
+
+#include "Application.h"
 #include "Ledger.h"
 #include "newcoin.pb.h"
 #include "PackedMessage.h"
@@ -5,15 +12,10 @@
 #include "Conversion.h"
 #include "BitcoinUtil.h"
 #include "Wallet.h"
-#include <boost/foreach.hpp>
-#include <iostream>
-#include <fstream>
-
-using namespace boost;
-using namespace std;
 
 Ledger::Ledger(const uint160& masterID, uint64 startAmount) :
-	mFeeHeld(0), mTimeStamp(0), mLedgerSeq(0), mClosed(false)
+	mFeeHeld(0), mTimeStamp(0), mLedgerSeq(0),
+	mClosed(false), mValidHash(false), mAccepted(false)
 {
 	mTransactionMap=SHAMap::pointer(new SHAMap());
 	mAccountStateMap=SHAMap::pointer(new SHAMap());
@@ -27,16 +29,17 @@ Ledger::Ledger(const uint160& masterID, uint64 startAmount) :
 Ledger::Ledger(const uint256 &parentHash, const uint256 &transHash, const uint256 &accountHash,
 	uint64 feeHeld, uint64 timeStamp, uint32 ledgerSeq)
 		: mParentHash(parentHash), mTransHash(transHash), mAccountHash(accountHash),
-		mFeeHeld(feeHeld), mTimeStamp(timeStamp), mLedgerSeq(ledgerSeq), mClosed(false)
+		mFeeHeld(feeHeld), mTimeStamp(timeStamp), mLedgerSeq(ledgerSeq),
+		mClosed(false), mValidHash(false), mAccepted(false)
 {
 	updateHash();
 }
 
-Ledger::Ledger(Ledger &prevLedger, uint64 ts) : mTimeStamp(ts), mClosed(false),
- mTransactionMap(new SHAMap()), mAccountStateMap(prevLedger.mAccountStateMap)
+Ledger::Ledger(Ledger &prevLedger, uint64 ts) : mTimeStamp(ts), 
+	mTransactionMap(new SHAMap()), mAccountStateMap(prevLedger.mAccountStateMap),
+	mClosed(false), mValidHash(false), mAccepted(false)
 {
-	prevLedger.updateHash();
-	mParentHash=prevLedger.mHash;
+	mParentHash=prevLedger.getHash();
 	mLedgerSeq=prevLedger.mLedgerSeq+1;
 }
 
@@ -45,6 +48,7 @@ void Ledger::updateHash()
 	Serializer s(116);
 	addRaw(s);
 	mHash=s.getSHA512Half();
+	mValidHash=true;
 }
 
 void Ledger::addRaw(Serializer &s)
@@ -84,18 +88,21 @@ uint64 Ledger::getBalance(const uint160& accountID)
 
 bool Ledger::updateAccountState(AccountState::pointer state)
 {
+	assert(!mAccepted);
 	SHAMapItem::pointer item(new SHAMapItem(state->getAccountID(), state->getRaw()));
 	return mAccountStateMap->updateGiveItem(item);
 }
 
 bool Ledger::addAccountState(AccountState::pointer state)
 {
+	assert(!mAccepted);
 	SHAMapItem::pointer item(new SHAMapItem(state->getAccountID(), state->getRaw()));
 	return mAccountStateMap->addGiveItem(item);
 }
 
 bool Ledger::addTransaction(Transaction::pointer trans)
 { // low-level - just add to table
+	assert(!mAccepted);
 	assert(!!trans->getID());
 	SHAMapItem::pointer item(new SHAMapItem(trans->getID(), trans->getSigned()->getData()));
 	return mTransactionMap->addGiveItem(item);
@@ -103,6 +110,7 @@ bool Ledger::addTransaction(Transaction::pointer trans)
 
 bool Ledger::delTransaction(const uint256& transID)
 {
+	assert(!mAccepted);
 	return mTransactionMap->delItem(transID); 
 }
 
@@ -118,6 +126,7 @@ Transaction::pointer Ledger::getTransaction(const uint256& transID)
 
 Ledger::TransResult Ledger::applyTransaction(Transaction::pointer trans)
 {
+	assert(!mAccepted);
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	if(trans->getSourceLedger()>mLedgerSeq) return TR_BADLSEQ;
 
@@ -187,6 +196,7 @@ Ledger::TransResult Ledger::applyTransaction(Transaction::pointer trans)
 
 Ledger::TransResult Ledger::removeTransaction(Transaction::pointer trans)
 { // high-level - reverse application of transaction
+	assert(!mAccepted);
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	if(!mTransactionMap || !mAccountStateMap) return TR_ERROR;
 	try
@@ -247,7 +257,7 @@ Ledger::pointer Ledger::closeLedger(uint64 timeStamp)
 	return Ledger::pointer(new Ledger(*this, timeStamp));
 }
 
-bool Ledger::unitTest(void)
+bool Ledger::unitTest()
 {
     LocalAccount l1(true), l2(true);
     assert(l1.peekPubKey());
@@ -282,6 +292,43 @@ bool Ledger::unitTest(void)
     return true;
 }
 
+
+uint256 Ledger::getHash()
+{
+	if(!mValidHash) updateHash();
+	return(mHash); 
+}
+
+void Ledger::saveAcceptedLedger(Ledger::pointer ledger)
+{
+	std::string sql="INSERT INTO Ledgers "
+		"(LedgerHash,LedgerSeq,PrevHash,FeeHeld,ClosingTime,AccountSetHash,TransSetHash) VALUES ('";
+	sql.append(ledger->getHash().GetHex());
+	sql.append("','");
+	sql.append(boost::lexical_cast<std::string>(ledger->mLedgerSeq));
+	sql.append("','");
+	sql.append(ledger->mParentHash.GetHex());
+	sql.append("','");
+	sql.append(boost::lexical_cast<std::string>(ledger->mFeeHeld));
+	sql.append("','");
+	sql.append(boost::lexical_cast<std::string>(ledger->mTimeStamp));
+	sql.append("','");
+	sql.append(ledger->mAccountHash.GetHex());
+	sql.append("','");
+	sql.append(ledger->mTransHash.GetHex());
+	sql.append("');");
+
+	ScopedLock sl(theApp->getDBLock());
+	theApp->getDB()->executeSQL(sql.c_str());
+}
+
+Ledger::pointer Ledger::loadByIndex(uint32 ledgerIndex)
+{
+}
+
+Ledger::pointer Ledger::loadByHash(const uint256& ledgerHash)
+{
+}
 
 #if 0
 
@@ -419,12 +466,6 @@ Ledger::Account* Ledger::getAccount(const uint160& address)
 		return(&(mAccounts[address]));
 	}
 	return(NULL);
-}
-
-uint256& Ledger::getHash()
-{
-	if(!mValidHash) hash();
-	return(mHash); 
 }
 
 uint256& Ledger::getSignature()

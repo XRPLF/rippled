@@ -24,6 +24,23 @@ uint64 LedgerMaster::getBalance(std::string& addr)
 	return mCurrentLedger->getBalance(humanTo160(addr));
 }
 
+bool LedgerMaster::addTransaction(Transaction::pointer transaction)
+{
+	return mCurrentLedger->applyTransaction(transaction)==Ledger::TR_SUCCESS;
+}
+
+void LedgerMaster::pushLedger(Ledger::pointer newLedger)
+{
+	ScopedLock sl(mLock);
+	if(!!mFinalizingLedger)
+	{
+		mFinalizingLedger->setClosed();
+		mFinalizingLedger->setAccepted();
+		mLedgerHistory.addAcceptedLedger(mFinalizingLedger);
+	}
+	mFinalizingLedger=mCurrentLedger;
+	mCurrentLedger=newLedger;
+}
 
 #if 0
 

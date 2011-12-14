@@ -41,7 +41,7 @@ private:
 	uint256 mHash, mParentHash, mTransHash, mAccountHash;
 	uint64 mFeeHeld, mTimeStamp;
 	uint32 mLedgerSeq;
-	bool mClosed;
+	bool mClosed, mValidHash, mAccepted;
 	
 	SHAMap::pointer mTransactionMap, mAccountStateMap;
 
@@ -64,13 +64,15 @@ public:
 	Ledger(const uint256 &parentHash, const uint256 &transHash, const uint256 &accountHash,
 	 uint64 feeHeld, uint64 timeStamp, uint32 ledgerSeq); // used for received ledgers
 
-	void setClosed(void) { mClosed=true; }
-	bool isClosed(void) { return mClosed; }
+	void setClosed() { mClosed=true; }
+	void setAccepted() { mAccepted=true; }
+	bool isClosed() { return mClosed; }
+	bool isAccepted() { mAccepted=true; }
 
 	// ledger signature operations
 	void addRaw(Serializer &s);
 
-	uint256 getHash() const;
+	uint256 getHash();
 	const uint256& getParentHash() const { return mParentHash; }
 	const uint256& getTransHash() const { return mTransHash; }
 	const uint256& getAccountHash() const { return mAccountHash; }
@@ -92,11 +94,16 @@ public:
 	TransResult removeTransaction(Transaction::pointer trans);
 	TransResult hasTransaction(Transaction::pointer trans);
 
+	// database functions
+	static void saveAcceptedLedger(Ledger::pointer);
+	static Ledger::pointer loadByIndex(uint32 ledgerIndex);
+	static Ledger::pointer loadByHash(const uint256& ledgerHash);
+
 	Ledger::pointer closeLedger(uint64 timestamp);
 	bool isCompatible(boost::shared_ptr<Ledger> other);
 	bool signLedger(std::vector<unsigned char> &signature, const LocalHanko &hanko);
 
-	static bool unitTest(void);
+	static bool unitTest();
 };
 
 #endif

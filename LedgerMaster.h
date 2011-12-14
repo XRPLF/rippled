@@ -13,6 +13,7 @@
 
 class LedgerMaster
 {
+	boost::recursive_mutex mLock;
 	bool mIsSynced;
 
 	Ledger::pointer mCurrentLedger;
@@ -32,11 +33,13 @@ public:
 	LedgerMaster();
 
 	uint32 getCurrentLedgerIndex();
-	bool IsSynced(void) { return mIsSynced; }
-	void SetSynced(void) { mIsSynced=true; }
+	bool IsSynced() { return mIsSynced; }
+	void SetSynced() { mIsSynced=true; }
 
 	Ledger::pointer getCurrentLedger() { return mCurrentLedger; }
 	Ledger::pointer getClosingLedger() { return mFinalizingLedger; }
+	
+	void pushLedger(Ledger::pointer newLedger);
 
 	Ledger::pointer getLedgerBySeq(uint32 index)
 	{

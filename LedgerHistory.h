@@ -5,11 +5,10 @@
 
 class LedgerHistory
 {
+	boost::recursive_mutex mLock;
+
 	std::map<uint32, Ledger::pointer> mLedgersByIndex;
 	std::map<uint256, Ledger::pointer> mLedgersByHash;
-
-	bool loadClosedLedger(uint32 index);
-	bool loadLedger(const uint256& hash);
 
 public:
 	LedgerHistory() { ; }
@@ -19,6 +18,7 @@ public:
 
 	Ledger::pointer getLedgerBySeq(uint32 index);
 	Ledger::pointer getLedgerByHash(const uint256& hash);
+	Ledger::pointer canonicalizeLedger(Ledger::pointer, bool cache);
 };
 
 #endif
