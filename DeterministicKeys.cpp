@@ -133,6 +133,11 @@ CKey::pointer DetKeySet::getPrivKey(uint32 n)
 	return ret;
 }
 
+uint160 DetKeySet::getAccountID(uint32 n)
+{
+	return getPubKey(n)->GetAddress().GetHash160();
+}
+    
 void DetKeySet::getPubKeys(uint32 first, uint32 count, std::list<CKey::pointer>& keys)
 {
  while(count-->0)

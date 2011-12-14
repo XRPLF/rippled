@@ -71,7 +71,8 @@ SRCS= keystore.cpp BitcoinUtil.cpp \
  AccountState.cpp Wallet.cpp NewcoinAddress.cpp Config.cpp PackedMessage.cpp \
  Application.cpp TimingService.cpp KnownNodeList.cpp ConnectionPool.cpp Peer.cpp \
  PeerDoor.cpp RPCDoor.cpp RPCServer.cpp rpc.cpp Conversion.cpp RequestParser.cpp HashedObject.cpp \
- UniqueNodeList.cpp PubKeyCache.cpp SHAMapDiff.cpp DeterministicKeys.cpp
+ UniqueNodeList.cpp PubKeyCache.cpp SHAMapDiff.cpp DeterministicKeys.cpp LedgerMaster.cpp \
+ LedgerHistory.cpp
 
 DBSRCS=	SqliteDatabase.cpp database.cpp
 
@@ -94,7 +95,7 @@ all: newcoind
 newcoin.pb.h:	newcoin.proto
 	protoc --cpp_out=. newcoin.proto
 
-%.o:	%.cpp newcoin.pb.h $(HEADERS)
+%.o:	%.cpp
 	$(CXX) -c $(CXXFLAGS) -o $@ $<
 
 

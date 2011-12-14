@@ -33,8 +33,8 @@ public:
 	LedgerMaster();
 
 	uint32 getCurrentLedgerIndex();
-	bool IsSynced() { return mIsSynced; }
-	void SetSynced() { mIsSynced=true; }
+	bool isSynced() { return mIsSynced; }
+	void setSynced() { mIsSynced=true; }
 
 	Ledger::pointer getCurrentLedger() { return mCurrentLedger; }
 	Ledger::pointer getClosingLedger() { return mFinalizingLedger; }

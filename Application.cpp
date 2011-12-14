@@ -3,6 +3,7 @@
 #include "PeerDoor.h"
 #include "RPCDoor.h"
 #include "BitcoinUtil.h"
+#include "DeterministicKeys.h"
 #include "database/SqliteDatabase.h"
 //#include <boost/log/trivial.hpp>
 #include <iostream>
@@ -29,6 +30,17 @@ Application::Application()
 	mWallet.load();
 	mPeerDoor=NULL;
 	mRPCDoor=NULL;
+
+	DetKeySet ks("This is a test payphrase.");
+	
+	Ledger::pointer firstLedger(new Ledger(ks.getAccountID(0), 1000000));
+	firstLedger->setClosed();
+	firstLedger->setAccepted();
+	mMasterLedger.pushLedger(firstLedger);
+	
+	Ledger::pointer secondLedger=firstLedger->closeLedger(time(NULL));
+	mMasterLedger.pushLedger(secondLedger);
+	mMasterLedger.setSynced();
 }
 
 

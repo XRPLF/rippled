@@ -27,6 +27,7 @@ public:
 
 	CKey::pointer getPubKey(uint32 n);
 	CKey::pointer getPrivKey(uint32 n);
+	uint160 getAccountID(uint32 n);
 	
 	void getPubKeys(uint32 first, uint32 count, std::list<CKey::pointer>& keys);
 	void getPrivKeys(uint32 first, uint32 count, std::list<CKey::pointer>& keys);
