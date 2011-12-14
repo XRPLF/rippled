@@ -34,7 +34,12 @@ public:
 	bool checkFixHash();
 	void setHash();
 
+	const std::vector<unsigned char>& getData() { return mData; }
+
 	bool store() const;
+	static bool store(HashedObjectType type, uint32 index, const std::vector<unsigned char>& data,
+		const uint256& hash);
+
 	static HashedObject::pointer retrieve(const uint256& hash);
 };
 

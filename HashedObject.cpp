@@ -36,15 +36,16 @@ CREATE TABLE CommittedObjects (					-- used to synch nodes
 CREATE INDEX ObjectLocate ON CommittedObjects(LedgerIndex, ObjType);
 */
 
-
-bool HashedObject::store() const
+bool HashedObject::store(HashedObjectType type, uint32 index, const std::vector<unsigned char>& data,
+	const uint256& hash)
 {
 #ifdef DEBUG
-	assert(checkHash());
+	Serializer s(data);
+	assert(hash==s.getSHA512Half());
 #endif
 	std::string sql="INSERT INTO CommitedObjects (Hash,ObjType,LedgerIndex,Object) VALUES ('";
-	sql.append(mHash.GetHex());
-	switch(mType)
+	sql.append(hash.GetHex());
+	switch(type)
 	{
 		case LEDGER: sql.append("','L','"); break;
 		case TRANSACTION: sql.append("','T','"); break;
@@ -52,17 +53,25 @@ bool HashedObject::store() const
 		case TRANSACTION_NODE: sql.append("','N','"); break;
 		default: sql.append("','U','"); break;
 	}
-	sql.append(boost::lexical_cast<std::string>(mLedgerIndex));
+	sql.append(boost::lexical_cast<std::string>(index));
 	sql.append("',");
 
 	std::string obj;
-	theApp->getDB()->escape(&(mData.front()), mData.size(), obj);
+	theApp->getDB()->escape(&(data.front()), data.size(), obj);
 	sql.append(obj);
 	sql.append(");");
 
 	ScopedLock sl(theApp->getDBLock());
 	Database* db=theApp->getDB();
 	return db->executeSQL(sql.c_str());
+}
+
+bool HashedObject::store() const
+{
+#ifdef DEBUG
+	assert(checkHash());
+#endif
+	return store(mType, mLedgerIndex, mData, mHash);
 }
 
 HashedObject::pointer retrieve(const uint256& hash)
