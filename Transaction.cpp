@@ -154,7 +154,7 @@ bool Transaction::save() const
 	std::string signature;
 	theApp->getDB()->escape(&(mSignature.front()), mSignature.size(), signature);
 	sql.append(signature);
-	sql.append(";");
+	sql.append(");");
 	
 	ScopedLock sl(theApp->getDBLock());
 	Database* db=theApp->getDB();

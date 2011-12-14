@@ -49,7 +49,7 @@ class Serializer
 	int getLength() const { return mData.size(); }
 	const std::vector<unsigned char>& peekData() const { return mData; }
 	std::vector<unsigned char> getData() const { return mData; }
-	void secureErase(void) { memset(&(mData.front()), 0, mData.size()); }
+	void secureErase() { memset(&(mData.front()), 0, mData.size()); }
 	
 	// signature functions
 	bool checkSignature(int pubkeyOffset, int signatureOffset) const;
@@ -57,7 +57,7 @@ class Serializer
 	bool makeSignature(std::vector<unsigned char> &signature, CKey& rkey) const;
 	bool addSignature(CKey& rkey);
 
-	static void TestSerializer(void);
+	static void TestSerializer();
 };
 
 #endif

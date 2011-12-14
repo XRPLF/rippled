@@ -14,9 +14,10 @@ struct NetworkStatus
  static const int nsbFastSynching=2;	// catching up, skipping transactions
  static const int nsbSlowSynching=3;	// catching up, txn by txn
  static const int nsbSynched=4;			// in synch with the network
- static const int nsbAnonymous=5;		// hiding our identity
+ static const int nsbIdentifiable=5;	// not hiding our identity
  static const int nsbLedgerSync=6;		// participating in ledger sync
  static const int nsbStuck=7;			// unable to sync
+ static const int nsbShuttingDown=8;	// node is shutting down
 
  static const int nnbCount=32;
  std::bitset<nnbCount> nsbValues;

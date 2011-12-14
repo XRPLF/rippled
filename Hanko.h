@@ -35,8 +35,8 @@ public:
 	std::string GetHankoString(HankoFormat format) const;
         std::vector<unsigned char> GetHankoBinary(HankoFormat format) const;
 
-        const std::vector<unsigned char>& GetContactBlock(void) const { return mContactBlock; }
-        const CKey& GetPublicKey(void) const { return mPubKey; }
+        const std::vector<unsigned char>& GetContactBlock() const { return mContactBlock; }
+        const CKey& GetPublicKey() const { return mPubKey; }
 
         int UpdateContact(std::vector<unsigned char>& Contact);
         

@@ -30,7 +30,6 @@ class Application
 	ConnectionPool mConnectionPool;
 	PeerDoor* mPeerDoor;
 	RPCDoor* mRPCDoor;
-	//Serializer* mSerializer;
 
 	std::map<std::string, Peer::pointer> mPeerMap;
 	boost::recursive_mutex mPeerMapLock;
@@ -43,14 +42,20 @@ public:
 	Application();
 
 	ConnectionPool& getConnectionPool() { return(mConnectionPool); }
-	UniqueNodeList& getUNL() { return(mUNL); }
-	Wallet& getWallet() { return(mWallet); }
-	PubKeyCache& getPubKeyCache() { return mPKCache; }
-	Database* getDB() { return(mDatabase); }
-	LedgerMaster& getMasterLedger() { return mMasterLedger; }
-	ScopedLock getDBLock() { return ScopedLock(dbLock); }
 
+	UniqueNodeList& getUNL() { return(mUNL); }
+
+	Wallet& getWallet() { return(mWallet); }
+
+	PubKeyCache& getPubKeyCache() { return mPKCache; }
+
+	boost::asio::io_service& getIOService() { return mIOService; }
+
+	LedgerMaster& getMasterLedger() { return mMasterLedger; }
+	
+	ScopedLock getDBLock() { return ScopedLock(dbLock); }
 	void setDB(Database* db) { mDatabase=db; }
+	Database* getDB() { return(mDatabase); }
 
 	//Serializer* getSerializer(){ return(mSerializer); }
 	//void setSerializer(Serializer* ser){ mSerializer=ser; }

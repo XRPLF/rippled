@@ -34,7 +34,7 @@ public:
 	CKey& peekPrivKey() { return mPrivateKey; }
 	CKey::pointer peekPubKey() { return mPublicKey; }
 
-	uint160 getAddress(void) const { return mAddress.GetHash160(); }
+	uint160 getAddress() const { return mAddress.GetHash160(); }
 };
 
 class Wallet : public CBasicKeyStore

@@ -72,7 +72,7 @@ CKey::pointer PubKeyCache::store(const uint160& id, CKey::pointer key)
 	std::string encodedPK;
 	theApp->getDB()->escape(&(pk.front()), pk.size(), encodedPK);
 	sql+=encodedPK;
-	sql.append(";");
+	sql.append(");");
 	ScopedLock sl(theApp->getDBLock());
 	theApp->getDB()->executeSQL(sql.c_str());
 	return key;

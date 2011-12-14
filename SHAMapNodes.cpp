@@ -209,7 +209,7 @@ SHAMapItem::pointer SHAMapLeafNode::findItem(const uint256& tag)
 	return SHAMapItem::pointer();
 }
 
-SHAMapItem::pointer SHAMapLeafNode::firstItem(void)
+SHAMapItem::pointer SHAMapLeafNode::firstItem()
 {
 	if(mItems.size()==0) return SHAMapItem::pointer();
 	return *(mItems.begin());
@@ -252,14 +252,14 @@ SHAMapItem::pointer SHAMapLeafNode::prevItem(const uint256& tag)
 	return SHAMapItem::pointer();
 }
 
-SHAMapItem::pointer SHAMapLeafNode::lastItem(void)
+SHAMapItem::pointer SHAMapLeafNode::lastItem()
 {
 	if(mItems.size()==0) return SHAMapItem::pointer();
 	return *(mItems.rbegin());
 }
 
 
-bool SHAMapLeafNode::updateHash(void)
+bool SHAMapLeafNode::updateHash()
 {
 	uint256 nh;
 	if(mItems.size()!=0)

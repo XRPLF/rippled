@@ -19,7 +19,7 @@ public:
 
 	CKey::pointer locate(const uint160& id);
 	CKey::pointer store(const uint160& id, CKey::pointer key);
-	void clear(void);
+	void clear();
 };
 
 #endif

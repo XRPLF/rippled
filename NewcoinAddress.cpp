@@ -7,7 +7,7 @@
 
 bool NewcoinAddress::SetHash160(const uint160& hash160)
 {
-	SetData(theConfig.TEST_NET ? 112 : 1, &hash160, 20);
+	SetData(51, &hash160, 20);
 	return true;
 }
 
@@ -18,21 +18,7 @@ bool NewcoinAddress::SetPubKey(const std::vector<unsigned char>& vchPubKey)
 
 bool NewcoinAddress::IsValid() 
 {
-	int nExpectedSize = 20;
-	bool fExpectTestNet = false;
-	switch(nVersion)
-	{
-	case 1:
-		break;
-
-	case 112:
-		fExpectTestNet = true;
-		break;
-
-	default:
-		return false;
-	}
-	return fExpectTestNet == theConfig.TEST_NET && vchData.size() == nExpectedSize;
+	return nVersion == 51 && vchData.size() == 20;
 }
 
 NewcoinAddress::NewcoinAddress()

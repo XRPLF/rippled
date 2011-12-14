@@ -9,13 +9,14 @@ void UniqueNodeList::addNode(uint160& hanko, vector<unsigned char>& publicKey)
 	Database* db=theApp->getDB();
 	string sql="INSERT INTO UNL (Hanko,PubKey) values (";
 	string hashStr;
-	db->escape(hanko.begin(),hanko.GetSerializeSize(),hashStr);
+	db->escape(hanko.begin(), hanko.GetSerializeSize(), hashStr);
 	sql.append(hashStr);
 	sql.append(",");
-	db->escape(&(publicKey[0]),publicKey.size(),hashStr);
+	db->escape(&(publicKey[0]), publicKey.size(), hashStr);
 	sql.append(hashStr);
 	sql.append(")");
 
+	ScopedLock sl(theApp->getDBLock());
 	db->executeSQL(sql.c_str());
 }
 
@@ -24,12 +25,15 @@ void UniqueNodeList::removeNode(uint160& hanko)
 	Database* db=theApp->getDB();
 	string sql="DELETE FROM UNL where hanko=";
 	string hashStr;
-	db->escape(hanko.begin(),hanko.GetSerializeSize(),hashStr);
+	db->escape(hanko.begin(), hanko.GetSerializeSize(), hashStr);
 	sql.append(hashStr);
+
+	ScopedLock sl(theApp->getDBLock());
 	db->executeSQL(sql.c_str());
 }
 
 // 0- we don't care, 1- we care and is valid, 2-invalid signature
+#if 0
 int UniqueNodeList::checkValid(newcoin::Validation& valid)
 {
 	Database* db=theApp->getDB();
@@ -38,6 +42,7 @@ int UniqueNodeList::checkValid(newcoin::Validation& valid)
 	db->escape((unsigned char*) &(valid.hanko()[0]),valid.hanko().size(),hashStr);
 	sql.append(hashStr);
 
+	ScopedLock sl(theApp->getDBLock());
 	if( db->executeSQL(sql.c_str()) )
 	{
 		if(db->startIterRows() && db->getNextRow())
@@ -55,21 +60,23 @@ int UniqueNodeList::checkValid(newcoin::Validation& valid)
 	}
 	return(0); // not on our list
 }
-
+#endif
 
 void UniqueNodeList::dumpUNL(std::string& retStr)
 {
 	Database* db=theApp->getDB();
 	string sql="SELECT * FROM UNL";
+
+	ScopedLock sl(theApp->getDBLock());
 	if( db->executeSQL(sql.c_str()) )
 	{
 		db->startIterRows();
 		while(db->getNextRow())
 		{
 			uint160 hanko;
-			int size=db->getBinary("Hanko",hanko.begin(),hanko.GetSerializeSize());
+			int size=db->getBinary("Hanko", hanko.begin(), hanko.GetSerializeSize());
 			string tstr;
-			u160ToHuman(hanko,tstr);
+			u160ToHuman(hanko, tstr);
 
 			retStr.append(tstr);
 			retStr.append("\n");

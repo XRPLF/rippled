@@ -31,8 +31,8 @@ public:
 
 	bool credit(uint64 a) { mBalance+=a; }
 	bool charge(uint64 a) { assert(mBalance>=a); mBalance-=a; }
-	void incSeq(void) { mAccountSeq++; }
-	void decSeq(void) { assert(mAccountSeq!=0); mAccountSeq--; }
+	void incSeq() { mAccountSeq++; }
+	void decSeq() { assert(mAccountSeq!=0); mAccountSeq--; }
 	
 	std::vector<unsigned char> getRaw() const;
 };

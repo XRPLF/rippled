@@ -184,7 +184,7 @@ bool Serializer::addSignature(CKey& key)
 	return true;
 }
 
-void Serializer::TestSerializer(void)
+void Serializer::TestSerializer()
 {
 	Serializer s(64);
 }

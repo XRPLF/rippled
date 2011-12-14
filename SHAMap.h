@@ -46,7 +46,7 @@ public:
 	bool isLeaf() const				{ return mDepth==leafDepth; }
 	bool isChildLeaf() const		{ return mDepth==(leafDepth-1); }
 	bool isInner() const 			{ return !isRoot() && !isLeaf(); }
-	virtual bool isPopulated(void) const { return false; }
+	virtual bool isPopulated() const { return false; }
 
 	SHAMapNode getParentNodeID()	{ return SHAMapNode(mDepth-1, mNodeID); }
 	SHAMapNode getChildNodeID(int m);
@@ -59,8 +59,8 @@ public:
 	bool operator<=(const SHAMapNode&) const;
 	bool operator>=(const SHAMapNode&) const;
 
-	virtual std::string getString(void) const;
-	void dump(void);
+	virtual std::string getString() const;
+	void dump();
 
 	static void ClassInit();
 	static uint256 getNodeID(int depth, const uint256& hash);
@@ -85,9 +85,9 @@ public:
 	// for account balances
 	SHAMapItem(const uint160& tag, const std::vector<unsigned char>& data);
 
-	const uint256& getTag(void) const { return mTag; }
-	std::vector<unsigned char> getData(void) const { return mData; }
-	const std::vector<unsigned char>& peekData(void) const { return mData; }
+	const uint256& getTag() const { return mTag; }
+	std::vector<unsigned char> getData() const { return mData; }
+	const std::vector<unsigned char>& peekData() const { return mData; }
 
 	void updateData(const std::vector<unsigned char>& data) { mData=data; }
 
@@ -103,7 +103,7 @@ public:
 	bool operator!=(const uint256& i) const			{ return mTag!=i; }
 	bool operator<=(const uint256& i) const			{ return mTag<=i; }
 	bool operator>=(const uint256& i) const			{ return mTag>=i; }
-	virtual void dump(void);
+	virtual void dump();
 };
 
 class SHAMapLeafNode : public SHAMapNode
@@ -135,9 +135,9 @@ public:
 
 	void addRaw(Serializer &);
 
-	virtual bool isPopulated(void) const { return true; }
+	virtual bool isPopulated() const { return true; }
 
-	uint32 getSeq(void) const { return mSeq; }
+	uint32 getSeq() const { return mSeq; }
 	void setSeq(uint32 s) { mSeq=s; }
 
 	const uint256& getNodeHash() const	{ return mHash; }
@@ -151,7 +151,7 @@ public:
 	SHAMapItem::pointer nextItem(const uint256& tag);
 	SHAMapItem::pointer prevItem(const uint256& tag);
 
-	virtual void dump(void);
+	virtual void dump();
 };
 
 
@@ -182,18 +182,18 @@ public:
 
 	void addRaw(Serializer&);
 
-	uint32 getSeq(void) const { return mSeq; }
+	uint32 getSeq() const { return mSeq; }
 	void setSeq(uint32 s) { mSeq=s; }
 
-	virtual bool isPopulated(void) const { return true; }
+	virtual bool isPopulated() const { return true; }
 
 	bool isEmptyBranch(int m) const		{ return !mHashes[m]; }
 	const uint256& getNodeHash() const  { return mHash; }
 	const uint256& getChildHash(int m) const;
 	bool isEmpty() const;
 
-	virtual void dump(void);
-	virtual std::string getString(void) const;
+	virtual void dump();
+	virtual std::string getString() const;
 };
 
 enum SHAMapException
@@ -300,7 +300,7 @@ public:
 	virtual bool writeLeafNode(const uint256& hash, const SHAMapNode& id, const std::vector<unsigned char>& rawNode);
 
 	static bool TestSHAMap();
-	virtual void dump(void);
+	virtual void dump();
 };
 
 #endif

@@ -22,15 +22,14 @@ CREATE TABLE PubKeys ( -- holds pub keys for nodes and accounts
 );
 
 
-CREATE TABLE Ledgers ( -- closed ledgers
+CREATE TABLE Ledgers ( -- closed/accepted ledgers
 	LedgerHash		CHARACTER(64) PRIMARY KEY,
 	LedgerSeq		BIGINT UNSIGNED,
 	PrevHash		CHARACTER(64),
 	FeeHeld			BIGINT UNSIGNED,
+	ClosingTime		BIGINT UNSINGED,
 	AccountSetHash	CHARACTER(64),
 	TransSetHash	CHARACTER(64),
-	FullyStored		CHARACTER(1),		-- all data is in our db
-	Status			CHARACTER(1)		-- (A)ccepted, (C)ompatible, (I)ncompatible
 );
 
 CREATE INDEX SeqLedger ON Ledgers(LedgerSeq);
