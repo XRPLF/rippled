@@ -320,6 +320,13 @@ void Ledger::saveAcceptedLedger(Ledger::pointer ledger)
 
 	ScopedLock sl(theApp->getDBLock());
 	theApp->getDB()->executeSQL(sql.c_str());
+
+	// write out dirty nodes
+	while(ledger->mTransactionMap->flushDirty(64, TRANSACTION_NODE, ledger->mLedgerSeq))
+	{ ; }
+	while(ledger->mAccountStateMap->flushDirty(64, ACCOUNT_NODE, ledger->mLedgerSeq))
+	{ ; }
+
 }
 
 Ledger::pointer Ledger::getSQL(const std::string& sql)
@@ -457,61 +464,6 @@ bool Ledger::load(const uint256& hash)
 	return(false);
 }
 
-void Ledger::save()
-{
-	Database* db=theApp->getDB();
-
-	string sql="SELECT ledgerID from Ledgers where hash=";
-	string hashStr;
-	db->escape(mHash.begin(),mHash.GetSerializeSize(),hashStr);
-	sql.append(hashStr);
-
-	if(db->executeSQL(sql.c_str()))
-	{
-		db->startIterRows();
-
-		if(db->getNextRow())
-		{	// this Ledger is already in the DB. We don't need to do anything since the hashes are the same
-			db->endIterRows();	
-		}else
-		{	// this ledger isn't in the DB
-			char buf[100];
-			sql="INSERT INTO Ledgers (LedgerIndex,Hash,ParentHash,FeeHeld) values (";
-			sprintf(buf, "%d", mIndex);
-			sql.append(buf);
-			sql.append(",");
-			sql.append(buf);
-			sql.append(",");
-			sql.append(buf);
-			sql.append(",");
-			sprintf(buf, "%llu", mFeeHeld);
-			sql.append(buf);
-			sql.append(")");
-
-			sql="SELECT LAST_INSERT_ID()";
-
-		}
-	}
-}
-
-int64 Ledger::getAmountHeld(const uint160& address)
-{
-	if(mAccounts.count(address))
-	{
-		return(mAccounts[address].first);
-	}
-	return(0);
-}
-
-Ledger::Account* Ledger::getAccount(const uint160& address)
-{
-	if(mAccounts.count(address))
-	{
-		return(&(mAccounts[address]));
-	}
-	return(NULL);
-}
-
 uint256& Ledger::getSignature()
 {
 	if(!mValidSig) sign();
@@ -522,17 +474,6 @@ void Ledger::publishValidation()
 {
 	PackedMessage::pointer packet=Peer::createValidation(shared_from_this());
 	theApp->getConnectionPool().relayMessage(NULL,packet);
-}
-
-void Ledger::sign()
-{
-	// TODO: Ledger::sign()
-}
-
-
-void Ledger::hash()
-{
-	// TODO: Ledger::hash()
 }
 
 /*

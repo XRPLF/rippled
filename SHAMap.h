@@ -12,6 +12,7 @@
 #include "uint256.h"
 #include "ScopedLock.h"
 #include "Serializer.h"
+#include "HashedObject.h"
 
 class SHAMap;
 
@@ -291,13 +292,10 @@ public:
 	// return value: true=successfully completed, false=too different
 	bool compare(SHAMap::pointer otherMap, SHAMapDiff& differences, int maxCount);
 
-	int flushDirty(int maxNodes);
+	int flushDirty(int maxNodes, HashedObjectType t, uint32 seq);
 
 	// overloads for backed maps
-	virtual bool fetchInnerNode(const uint256& hash, const SHAMapNode& id, std::vector<unsigned char>& rawNode);
-	virtual bool fetchLeafNode(const uint256& hash, const SHAMapNode& id, std::vector<unsigned char>& rawNode);
-	virtual bool writeInnerNode(const uint256& hash, const SHAMapNode& id, const std::vector<unsigned char>& rawNode);
-	virtual bool writeLeafNode(const uint256& hash, const SHAMapNode& id, const std::vector<unsigned char>& rawNode);
+	bool fetchNode(const uint256& hash, std::vector<unsigned char>& rawNode);
 
 	static bool TestSHAMap();
 	virtual void dump();

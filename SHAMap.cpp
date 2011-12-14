@@ -126,7 +126,7 @@ SHAMapLeafNode::pointer SHAMap::getLeaf(const SHAMapNode& id, const uint256& has
 	if(leaf) return returnLeaf(leaf, modify);
 
 	std::vector<unsigned char> leafData;
-	if(!fetchLeafNode(hash, id, leafData)) throw SHAMapException(MissingNode);
+	if(!fetchNode(hash, leafData)) throw SHAMapException(MissingNode);
 	leaf=SHAMapLeafNode::pointer(new SHAMapLeafNode(id, leafData, mSeq));
 	if(leaf->getNodeHash()!=hash) throw SHAMapException(InvalidNode);
 	mLeafByID[id]=leaf;
@@ -139,7 +139,7 @@ SHAMapInnerNode::pointer SHAMap::getInner(const SHAMapNode& id, const uint256& h
 	if(node) return returnNode(node, modify);
 	
 	std::vector<unsigned char> rawNode;
-	if(!fetchInnerNode(hash, id, rawNode)) throw SHAMapException(MissingNode);
+	if(!fetchNode(hash, rawNode)) throw SHAMapException(MissingNode);
 	node=SHAMapInnerNode::pointer(new SHAMapInnerNode(id, rawNode, mSeq));
 	if(node->getNodeHash()!=hash) throw SHAMapException(InvalidNode);
 
@@ -473,25 +473,45 @@ void SHAMapItem::dump()
 	std::cerr << "SHAMapItem(" << mTag.GetHex() << ") " << mData.size() << "bytes" << std::endl;
 }
 
-// overloads for backed maps
-bool SHAMap::fetchInnerNode(const uint256&, const SHAMapNode&, std::vector<unsigned char>&)
+bool SHAMap::fetchNode(const uint256& hash, std::vector<unsigned char>& data)
 {
-	return false;
+	HashedObject::pointer obj(HashedObject::retrieve(hash));
+	if(!obj) return false;
+	data=obj->getData();
 }
 
-bool SHAMap::fetchLeafNode(const uint256&, const SHAMapNode&, std::vector<unsigned char>&)
+int SHAMap::flushDirty(int maxNodes, HashedObjectType t, uint32 seq)
 {
-	return false;
-}
+	int flushed=0;
+	Serializer s;
 
-bool SHAMap::writeInnerNode(const uint256&, const SHAMapNode&, const std::vector<unsigned char>&)
-{
-	return true;
-}
+	if(mDirtyLeafNodes)
+	{
+		while(!mDirtyLeafNodes->empty())
+		{
+			SHAMapLeafNode::pointer& dln=mDirtyLeafNodes->begin()->second;
+			s.erase();
+			dln->addRaw(s);
+			HashedObject::store(t, seq, s.peekData(), s.getSHA512Half());
+			mDirtyLeafNodes->erase(mDirtyLeafNodes->begin());
+			if(flushed++>=maxNodes) return flushed;
+		}
+	}	
 
-bool SHAMap::writeLeafNode(const uint256&, const SHAMapNode&, const std::vector<unsigned char>&)
-{
-	return true;
+	if(mDirtyInnerNodes)
+	{
+		while(!mDirtyInnerNodes->empty())
+		{
+			SHAMapInnerNode::pointer& din=mDirtyInnerNodes->begin()->second;
+			s.erase();
+			din->addRaw(s);
+			HashedObject::store(t, seq, s.peekData(), s.getSHA512Half());
+			mDirtyInnerNodes->erase(mDirtyInnerNodes->begin());
+			if(flushed++>=maxNodes) return flushed;
+		}
+	}
+
+	return flushed;
 }
 
 void SHAMap::dump()
