@@ -134,6 +134,7 @@ uint160 Serializer::getRIPEMD160(int size) const
 	uint160 ret;
 	if((size<0)||(size>mData.size())) size=mData.size();
 	RIPEMD160(&(mData.front()), size, (unsigned char *) &ret);
+	return ret;
 }
 
 uint256 Serializer::getSHA256(int size) const
@@ -141,6 +142,7 @@ uint256 Serializer::getSHA256(int size) const
 	uint256 ret;
 	if((size<0)||(size>mData.size())) size=mData.size();
 	SHA256(&(mData.front()), size, (unsigned char *) &ret);
+	return ret;
 }
 
 uint256 Serializer::getSHA512Half(int size) const

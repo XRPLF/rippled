@@ -93,6 +93,7 @@ int NetworkOPs::findTransactionsByDestination(std::list<Transaction::pointer>& t
 	const uint160& destinationAccount, uint32 startLedgerSeq, uint32 endLedgerSeq, int maxTransactions)
 {
 	// WRITEME
+	return 0;
 }
 
 AccountState::pointer NetworkOPs::getAccountState(const uint160& accountID)

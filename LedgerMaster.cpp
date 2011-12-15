@@ -28,7 +28,11 @@ bool LedgerMaster::addHeldTransaction(Transaction::pointer transaction)
 {
 	boost::recursive_mutex::scoped_lock ml(mLock);
 	if(!mHeldTransactionsByID[transaction->getID()])
+	{
 		mHeldTransactionsByID[transaction->getID()]=transaction;
+		return true;
+	}
+	return false;
 }
 
 void LedgerMaster::pushLedger(Ledger::pointer newLedger)
