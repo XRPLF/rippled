@@ -30,9 +30,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Application.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -87,34 +84,19 @@
     <ClCompile Include="json\json_spirit_writer.cpp">
       <Filter>Source Files\json</Filter>
     </ClCompile>
-    <ClCompile Include="CallRPC.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="BitcoinUtil.cpp">
       <Filter>Header Files\util</Filter>
     </ClCompile>
     <ClCompile Include="RequestParser.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="HttpReply.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RPCCommands.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="RPCServer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="TransactionBundle.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="TimingService.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="LedgerMaster.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="keystore.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="NewcoinAddress.cpp">
@@ -126,12 +108,6 @@
     <ClCompile Include="cryptopp\sha.cpp">
       <Filter>Source Files\cryptopp</Filter>
     </ClCompile>
-    <ClCompile Include="ValidationCollection.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Transaction.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="database\database.cpp">
       <Filter>Header Files\util</Filter>
     </ClCompile>
@@ -141,10 +117,25 @@
     <ClCompile Include="database\sqlite3.c">
       <Filter>Header Files\util</Filter>
     </ClCompile>
-    <ClCompile Include="tests.cpp">
+    <ClCompile Include="Conversion.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Conversion.cpp">
+    <ClCompile Include="AccountState.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="DeterministicKeys.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SHAMap.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SHAMapDiff.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SHAMapNodes.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="test.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -269,9 +260,6 @@
     <ClInclude Include="key.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SecureAllocator.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="cryptopp\config.h">
       <Filter>Source Files\cryptopp</Filter>
     </ClInclude>
@@ -344,6 +332,9 @@
     <ClInclude Include="Conversion.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="SecureAllocator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="nodes.xml" />
@@ -356,6 +347,7 @@
     </None>
     <None Include="db layout.txt" />
     <None Include="todo.txt" />
+    <None Include="Makefile" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="newcoin.proto" />
