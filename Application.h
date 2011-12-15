@@ -10,6 +10,7 @@
 #include "LedgerMaster.h"
 #include "Wallet.h"
 #include "Peer.h"
+#include "NetworkOPs.h"
 #include "database/database.h"
 
 #include <boost/asio.hpp>
@@ -19,10 +20,12 @@ class PeerDoor;
 
 class Application
 {
+	NetworkOPs mNetOps;
+	Wallet mWallet;
+
 	TimingService mTimingService;
 	UniqueNodeList mUNL;
 	KnownNodeList mKnownNodes;
-	Wallet mWallet;
 	PubKeyCache mPKCache;
 	LedgerMaster mMasterLedger;
 	Database* mDatabase;
@@ -41,11 +44,12 @@ class Application
 public:
 	Application();
 
-	ConnectionPool& getConnectionPool() { return(mConnectionPool); }
+	ConnectionPool& getConnectionPool() { return mConnectionPool; }
 
-	UniqueNodeList& getUNL() { return(mUNL); }
+	UniqueNodeList& getUNL() { return mUNL; }
 
-	Wallet& getWallet() { return(mWallet); }
+	Wallet& getWallet() { return mWallet ; }
+	NetworkOPs& getOPs() { return mNetOps; }
 
 	PubKeyCache& getPubKeyCache() { return mPKCache; }
 

@@ -24,9 +24,11 @@ uint64 LedgerMaster::getBalance(std::string& addr)
 	return mCurrentLedger->getBalance(humanTo160(addr));
 }
 
-bool LedgerMaster::addTransaction(Transaction::pointer transaction)
+bool LedgerMaster::addHeldTransaction(Transaction::pointer transaction)
 {
-	return mCurrentLedger->applyTransaction(transaction)==Ledger::TR_SUCCESS;
+	boost::recursive_mutex::scoped_lock ml(mLock);
+	if(!mHeldTransactionsByID[transaction->getID()])
+		mHeldTransactionsByID[transaction->getID()]=transaction;
 }
 
 void LedgerMaster::pushLedger(Ledger::pointer newLedger)

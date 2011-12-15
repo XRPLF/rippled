@@ -22,7 +22,6 @@ class LedgerMaster
 	LedgerHistory mLedgerHistory;
 
 	std::map<uint256, Transaction::pointer> mHeldTransactionsByID;
-	std::map<uint32, Transaction::pointer> mHeldTransactionsByLedger;
 
 	void applyFutureTransactions(uint32 ledgerIndex);
 	bool isValidTransaction(Transaction::pointer trans);
@@ -60,7 +59,7 @@ public:
 	AccountState::pointer getAccountState(const uint160& addr)
 	{ return mCurrentLedger->getAccountState(addr); }
 
-	bool addTransaction(Transaction::pointer trans);
+	bool addHeldTransaction(Transaction::pointer trans);
 };
 
 #endif
