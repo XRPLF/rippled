@@ -267,6 +267,7 @@ SHAMapItem::pointer SHAMap::lastBelow(SHAMapInnerNode::pointer node)
 			return mLeaf->lastItem();
 		}
 	}
+	return SHAMapItem::pointer();
 }
 
 SHAMapItem::pointer SHAMap::peekNextItem(const uint256& id)
@@ -478,6 +479,7 @@ bool SHAMap::fetchNode(const uint256& hash, std::vector<unsigned char>& data)
 	HashedObject::pointer obj(HashedObject::retrieve(hash));
 	if(!obj) return false;
 	data=obj->getData();
+	return true;
 }
 
 int SHAMap::flushDirty(int maxNodes, HashedObjectType t, uint32 seq)

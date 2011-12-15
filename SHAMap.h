@@ -126,7 +126,7 @@ private:
 
 protected:
 	bool addUpdateItem(SHAMapItem::pointer);
-	bool delItem(const SHAMapItem::pointer i) { delItem(i->getTag()); }
+	bool delItem(const SHAMapItem::pointer i) { return delItem(i->getTag()); }
 	bool delItem(const uint256& tag);
 
 public:

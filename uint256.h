@@ -204,7 +204,7 @@ public:
 	base_uint& operator--()
 	{
 		// prefix operator
-		int i = 0;
+		unsigned i = 0;
 		while (--pn[i] == -1 && i < WIDTH-1)
 			i++;
 		return *this;

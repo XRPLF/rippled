@@ -45,6 +45,7 @@ public:
             mValid=true;
             sl.mValid=false;
         }
+        return *this;
     }
 };
 

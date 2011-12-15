@@ -36,8 +36,8 @@ Ledger::Ledger(const uint256 &parentHash, const uint256 &transHash, const uint25
 }
 
 Ledger::Ledger(Ledger &prevLedger, uint64 ts) : mTimeStamp(ts), 
-	mTransactionMap(new SHAMap()), mAccountStateMap(prevLedger.mAccountStateMap),
-	mClosed(false), mValidHash(false), mAccepted(false)
+	mClosed(false), mValidHash(false), mAccepted(false),
+	mTransactionMap(new SHAMap()), mAccountStateMap(prevLedger.mAccountStateMap)
 {
 	mParentHash=prevLedger.getHash();
 	mLedgerSeq=prevLedger.mLedgerSeq+1;
@@ -227,6 +227,7 @@ Ledger::TransResult Ledger::removeTransaction(Transaction::pointer trans)
 		}
 		updateAccountState(fromAccount);
 		updateAccountState(toAccount);
+		return TR_SUCCESS;
 	}
 	catch (SHAMapException)
 	{

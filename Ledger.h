@@ -69,7 +69,7 @@ public:
 	void setClosed() { mClosed=true; }
 	void setAccepted() { mAccepted=true; }
 	bool isClosed() { return mClosed; }
-	bool isAccepted() { mAccepted=true; }
+	bool isAccepted() { return mAccepted; }
 
 	// ledger signature operations
 	void addRaw(Serializer &s);
