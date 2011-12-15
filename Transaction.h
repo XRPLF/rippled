@@ -78,6 +78,7 @@ public:
 	TransStatus getStatus() const { return mStatus; }
 
 	void setStatus(TransStatus status, uint32 ledgerSeq);
+	void setStatus(TransStatus status) { mStatus=status; }
 
 	// database functions
 	bool save() const;
