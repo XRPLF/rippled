@@ -468,6 +468,8 @@ public:
 		else
 			*this = 0;
 	}
+	
+	uint256 to256() const;
 };
 
 inline bool operator==(const uint160& a, uint64 b)						   { return (base_uint160)a == b; }
@@ -582,6 +584,8 @@ public:
 		else
 			*this = 0;
 	}
+	
+	uint160 to160() const;
 };
 
 
@@ -633,27 +637,6 @@ inline const uint256 operator&(const uint256& a, const uint256& b)	  { return (b
 inline const uint256 operator|(const uint256& a, const uint256& b)	  { return (base_uint256)a |  (base_uint256)b; }
 inline const uint256 operator+(const uint256& a, const uint256& b)	  { return (base_uint256)a +  (base_uint256)b; }
 inline const uint256 operator-(const uint256& a, const uint256& b)	  { return (base_uint256)a -  (base_uint256)b; }
-
-static uint256 uint160to256(const uint160& u)
-{
- uint256 m;
- memcpy(&m, &u, sizeof(u));
- return m;
-}
-
-static uint160 uint256to160(const uint256& u)
-{
- uint160 m;
- memcpy(&m, &u, sizeof(m));
- return m;
-}
-
-
-
-
-
-
-
 
 
 inline int Testuint256AdHoc(std::vector<std::string> vArg)

@@ -278,8 +278,8 @@ public:
 	SHAMapItem::pointer peekNextItem(const uint256&);
 	SHAMapItem::pointer peekPrevItem(const uint256&);
 
-	SHAMapItem::pointer peekPrevItem(const uint160& u) { return peekPrevItem(uint160to256(u)); }
-	SHAMapItem::pointer peekNextItem(const uint160& u) { return peekNextItem(uint160to256(u)); }
+	SHAMapItem::pointer peekPrevItem(const uint160& u) { return peekPrevItem(u.to256()); }
+	SHAMapItem::pointer peekNextItem(const uint160& u) { return peekNextItem(u.to256()); }
 
 	// comparison/sync functions
 	void getMissingNodes(std::vector<SHAMapNode>& nodeHashes, int max);

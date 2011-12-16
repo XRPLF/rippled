@@ -67,7 +67,7 @@ AccountState::pointer Ledger::getAccountState(const uint160& accountID)
 	std::cerr << "Ledger:getAccountState(" << accountID.GetHex() << ")" << std::endl;
 #endif
 	ScopedLock l(mTransactionMap->Lock());
-	SHAMapItem::pointer item=mAccountStateMap->peekItem(uint160to256(accountID));
+	SHAMapItem::pointer item=mAccountStateMap->peekItem(accountID.to256());
 	if(!item)
 	{
 #ifdef DEBUG
@@ -81,7 +81,7 @@ AccountState::pointer Ledger::getAccountState(const uint160& accountID)
 uint64 Ledger::getBalance(const uint160& accountID)
 {
 	ScopedLock l(mTransactionMap->Lock());
-	SHAMapItem::pointer item=mAccountStateMap->peekItem(uint160to256(accountID));
+	SHAMapItem::pointer item=mAccountStateMap->peekItem(accountID.to256());
 	if(!item) return 0;
 	return AccountState(item->getData()).getBalance();
 }

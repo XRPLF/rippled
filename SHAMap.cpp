@@ -178,7 +178,7 @@ SHAMapItem::SHAMapItem(const uint256& tag, const std::vector<unsigned char>& dat
 { ; }
 
 SHAMapItem::SHAMapItem(const uint160& tag, const std::vector<unsigned char>& data)
-	: mTag(uint160to256(tag)), mData(data)
+	: mTag(tag.to256()), mData(data)
 { ; }
 
 SHAMapItem::pointer SHAMap::peekFirstItem()
