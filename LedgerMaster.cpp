@@ -27,9 +27,9 @@ uint64 LedgerMaster::getBalance(std::string& addr)
 bool LedgerMaster::addHeldTransaction(Transaction::pointer transaction)
 {
 	boost::recursive_mutex::scoped_lock ml(mLock);
-	if(!mHeldTransactionsByID[transaction->getID()])
+	if(mHeldTransactionsByID.count(transaction->getID())==0)
 	{
-		mHeldTransactionsByID[transaction->getID()]=transaction;
+		mHeldTransactionsByID.insert(std::make_pair(transaction->getID(), transaction));
 		return true;
 	}
 	return false;

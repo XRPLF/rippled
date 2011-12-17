@@ -21,7 +21,7 @@ void SHAMap::dirtyUp(const uint256& id)
 	if(!leaf) throw SHAMapException(MissingNode);
 
 	uint256 hVal=leaf->getNodeHash();
-	if(mDirtyLeafNodes) (*mDirtyLeafNodes)[*leaf]=leaf;
+	if(mDirtyLeafNodes) mDirtyLeafNodes->insert(std::make_pair(SHAMapNode(*leaf), leaf));
 	if(!hVal)
 	{
 #ifdef ST_DEBUG
@@ -44,7 +44,7 @@ void SHAMap::dirtyUp(const uint256& id)
 #ifdef ST_DEBUG
 		std::cerr << "Dirty " << node->getString() << std::endl;
 #endif
-		if(mDirtyInnerNodes) (*mDirtyInnerNodes)[*node]=node;
+		if(mDirtyInnerNodes) mDirtyInnerNodes->insert(std::make_pair(SHAMapNode(*node), node));
 		hVal=node->getNodeHash();
 		if(!hVal)
 		{
@@ -143,7 +143,7 @@ SHAMapInnerNode::pointer SHAMap::getInner(const SHAMapNode& id, const uint256& h
 	node=SHAMapInnerNode::pointer(new SHAMapInnerNode(id, rawNode, mSeq));
 	if(node->getNodeHash()!=hash) throw SHAMapException(InvalidNode);
 
-	mInnerNodeByID[id]=node;
+	mInnerNodeByID.insert(std::make_pair(id, node));
 	if(id.getDepth()==0) root=node;
 	return node;
 }
@@ -154,7 +154,7 @@ SHAMapLeafNode::pointer SHAMap::returnLeaf(SHAMapLeafNode::pointer leaf, bool mo
 	{
 		leaf=SHAMapLeafNode::pointer(new SHAMapLeafNode(*leaf, mSeq));
 		mLeafByID[*leaf]=leaf;
-		if(mDirtyLeafNodes) (*mDirtyLeafNodes)[*leaf]=leaf;
+		if(mDirtyLeafNodes) mDirtyLeafNodes->insert(std::make_pair(SHAMapNode(*leaf), leaf));
 	}
 	return leaf;
 }
@@ -167,8 +167,8 @@ SHAMapInnerNode::pointer SHAMap::returnNode(SHAMapInnerNode::pointer node, bool 
 		std::cerr << "Node(" << node->getString() << ") bumpseq" << std::endl;
 #endif
 		node=SHAMapInnerNode::pointer(new SHAMapInnerNode(*node, mSeq));
-		mInnerNodeByID[*node]=node;
-		if(mDirtyInnerNodes) (*mDirtyInnerNodes)[*node]=node;
+		mInnerNodeByID.insert(std::make_pair(SHAMapNode(*node), node));
+		if(mDirtyInnerNodes) mDirtyInnerNodes->insert(std::make_pair(SHAMapNode(*node), node));
 	}
 	return node;
 }

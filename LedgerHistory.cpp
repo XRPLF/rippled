@@ -11,7 +11,7 @@ void LedgerHistory::addLedger(Ledger::pointer ledger)
 {
 	uint256 h(ledger->getHash());
 	boost::recursive_mutex::scoped_lock sl(mLock);
-	if(!mLedgersByHash[h]) mLedgersByHash[h]=ledger;
+	if(!mLedgersByHash.count(h)) mLedgersByHash.insert(std::make_pair(h, ledger));
 }
 
 void LedgerHistory::addAcceptedLedger(Ledger::pointer ledger)
@@ -19,44 +19,40 @@ void LedgerHistory::addAcceptedLedger(Ledger::pointer ledger)
 	assert(ledger && ledger->isAccepted());
 	uint256 h(ledger->getHash());
 	boost::recursive_mutex::scoped_lock sl(mLock);
-	if(!!mLedgersByHash[h]) return;
-	mLedgersByHash[h]=ledger;
-	mLedgersByIndex[ledger->getLedgerSeq()]=ledger;
-
+	mLedgersByIndex.insert(std::make_pair(ledger->getLedgerSeq(), ledger));
+	mLedgersByHash.insert(std::make_pair(h, ledger));
 	theApp->getIOService().post(boost::bind(&Ledger::saveAcceptedLedger, ledger));
 }
 
 Ledger::pointer LedgerHistory::getLedgerBySeq(uint32 index)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
-	Ledger::pointer ret(mLedgersByIndex[index]);
-	if(ret) return ret;
+	if(mLedgersByIndex.count(index)) return mLedgersByIndex[index];
 	sl.unlock();
-	ret=Ledger::loadByIndex(index);
+	Ledger::pointer ret(Ledger::loadByIndex(index));
 	if(!ret) return ret;
 
 	assert(ret->getLedgerSeq()==index);
 	uint256 h=ret->getHash();
 	sl.lock();
-	mLedgersByIndex[index]=ret;
-	mLedgersByHash[h]=ret;
+	mLedgersByIndex.insert(std::make_pair(index, ret));
+	mLedgersByHash.insert(std::make_pair(h, ret));
 	return ret;
 }
 
 Ledger::pointer LedgerHistory::getLedgerByHash(const uint256& hash)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
-	Ledger::pointer ret(mLedgersByHash[hash]);
-	if(ret) return ret;
+	if(mLedgersByHash.count(hash)!=0) return mLedgersByHash[hash];
 
 	sl.unlock();
-	ret=Ledger::loadByHash(hash);
+	Ledger::pointer ret=Ledger::loadByHash(hash);
 	if(!ret) return ret;
 
 	assert(ret->getHash()==hash);
 	sl.lock();
-	mLedgersByHash[hash]=ret;
-	if(ret->isAccepted()) mLedgersByIndex[ret->getLedgerSeq()]=ret;
+	mLedgersByHash.insert(std::make_pair(hash, ret));
+	if(ret->isAccepted()) mLedgersByIndex.insert(std::make_pair(ret->getLedgerSeq(), ret));
 	return ret;
 }
 
@@ -65,12 +61,12 @@ Ledger::pointer LedgerHistory::canonicalizeLedger(Ledger::pointer ledger, bool s
 	uint256 h(ledger->getHash());
 
 	boost::recursive_mutex::scoped_lock sl(mLock);
-	Ledger::pointer ret(mLedgersByHash[h]);
-	if(ret) return ret;
+	if(mLedgersByHash.count(h)!=0) return mLedgersByHash[h];
 	if(!save) return ledger;
-	assert(ret->getHash()==h);
-	mLedgersByHash[h]=ledger;
-	if(ret->isAccepted()) mLedgersByIndex[ret->getLedgerSeq()]=ledger;
+
+	assert(ledger->getHash()==h);
+	mLedgersByHash.insert(std::make_pair(h, ledger));
+	if(ledger->isAccepted()) mLedgersByIndex.insert(std::make_pair(ledger->getLedgerSeq(), ledger));
 	return ledger;
 }
 

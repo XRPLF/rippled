@@ -34,8 +34,8 @@ bool SHAMap::compare(SHAMap::pointer otherMap, SHAMapDiff& differences, int maxC
 			 		SHAMapLeafNode::pointer thisNode=getLeaf(node.mNodeID, node.mOurHash, false);
 			 		for(SHAMapItem::pointer item=thisNode->firstItem(); item; item=thisNode->nextItem(item->getTag()))
 			 		{ // items in leaf only in our tree
-			 			differences[item->getTag()]=
-			 				std::pair<SHAMapItem::pointer, SHAMapItem::pointer>(item, SHAMapItem::pointer());
+			 			differences.insert(std::make_pair(item->getTag(),
+			 				std::make_pair(item, SHAMapItem::pointer())));
 						if((--maxCount)<=0) return false;
 			 		}
 		 		}
@@ -44,8 +44,8 @@ bool SHAMap::compare(SHAMap::pointer otherMap, SHAMapDiff& differences, int maxC
 			 		SHAMapLeafNode::pointer otherNode=otherMap->getLeaf(node.mNodeID, node.mOtherHash, false);
 			 		for(SHAMapItem::pointer item=otherNode->firstItem(); item; item=otherNode->nextItem(item->getTag()))
 			 		{ // items in leaf only in our tree
-			 			differences[item->getTag()]=
-			 				std::pair<SHAMapItem::pointer, SHAMapItem::pointer>(SHAMapItem::pointer(), item);
+			 			differences.insert(std::make_pair(item->getTag(),
+			 				std::make_pair(SHAMapItem::pointer(), item)));
 						if((--maxCount)<=0) return false;
 			 		}
 		 		}
@@ -59,24 +59,24 @@ bool SHAMap::compare(SHAMap::pointer otherMap, SHAMapDiff& differences, int maxC
 			 		{
 			 			if(!otherItem)
 			 			{ // we have items, other tree does not
-			 				differences[ourItem->getTag()]=
-			 					std::pair<SHAMapItem::pointer, SHAMapItem::pointer>(ourItem, otherItem);
+			 				differences.insert(std::make_pair(ourItem->getTag(),
+			 					std::make_pair(ourItem, otherItem)));
 							if((--maxCount)<=0) return false;
 							otherItem=otherNode->nextItem(otherItem->getTag());
 			 			}
 			 			else if(!ourItem)
 			 			{ // we have no items, other tree does
-			 				differences[otherItem->getTag()]=
-			 					std::pair<SHAMapItem::pointer, SHAMapItem::pointer>(ourItem, otherItem);
+			 				differences.insert(std::make_pair(otherItem->getTag(),
+			 					std::make_pair(ourItem, otherItem)));
 							if((--maxCount)<=0) return false;
-							ourItem=thisNode->nextItem(ourItem->getTag());
+							otherItem=thisNode->nextItem(otherItem->getTag());
 			 			}
 			 			else if(ourItem->getTag()==otherItem->getTag())
 			 			{ // we have items with the same tag
 			 				if(ourItem->getData()!=otherItem->getData())
 			 				{ // different data
-				 				differences[ourItem->getTag()]=
-				 					std::pair<SHAMapItem::pointer, SHAMapItem::pointer>(ourItem, otherItem);
+			 					differences.insert(std::make_pair(ourItem->getTag(),
+			 						std::make_pair(ourItem, otherItem)));
 								if((--maxCount)<=0) return false;
 			 				}
 							ourItem=thisNode->nextItem(ourItem->getTag());
@@ -84,15 +84,15 @@ bool SHAMap::compare(SHAMap::pointer otherMap, SHAMapDiff& differences, int maxC
 			 			}
 			 			else if(ourItem->getTag()<otherItem->getTag())
 			 			{ // our item comes first
-			 				differences[ourItem->getTag()]=
-			 					std::pair<SHAMapItem::pointer, SHAMapItem::pointer>(ourItem, SHAMapItem::pointer());
+			 				differences.insert(std::make_pair(ourItem->getTag(),
+			 					std::make_pair(ourItem, SHAMapItem::pointer())));
 							if((--maxCount)<=0) return false;
 							ourItem=thisNode->nextItem(ourItem->getTag());
 			 			}
 			 			else
 			 			{ // other item comes first
-			 				differences[otherItem->getTag()]=
-			 					std::pair<SHAMapItem::pointer, SHAMapItem::pointer>(SHAMapItem::pointer(), otherItem);
+			 				differences.insert(std::make_pair(otherItem->getTag(),
+			 					std::make_pair(SHAMapItem::pointer(), otherItem)));
 							if((--maxCount)<=0) return false;
 							otherItem=otherNode->nextItem(otherItem->getTag());
 			 			}
