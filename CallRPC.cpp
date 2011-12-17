@@ -4,10 +4,6 @@
 #include "Config.h"
 #include "BitcoinUtil.h"
 
-#include "json/json_spirit_utils.h"
-#include "json/json_spirit_writer_template.h"
-#include "json/json_spirit_reader_template.h"
-
 #include <boost/asio.hpp>
 #include <boost/iostreams/concepts.hpp>
 #include <boost/iostreams/stream.hpp>
@@ -54,7 +50,7 @@ string EncodeBase64(string s)
 	return result;
 }
 
-
+#if 0 
 int commandLineRPC(int argc, char *argv[])
 {
 	string strPrint;
@@ -171,4 +167,5 @@ json_spirit::Object callRPC(const string& strMethod, const json_spirit::Array& p
 
 	return reply;
 }
+#endif
 

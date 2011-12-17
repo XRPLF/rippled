@@ -4,7 +4,6 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/asio.hpp>
-#include "json/json_spirit_utils.h"
 
 class RPCServer  : public boost::enable_shared_from_this<RPCServer>
 {
@@ -25,7 +24,7 @@ class RPCServer  : public boost::enable_shared_from_this<RPCServer>
 	std::string handleRequest(std::string& requestStr);
 	void sendReply();
 
-	json_spirit::Value doCommand(std::string& command,json_spirit::Array& params);
+//	json_spirit::Value doCommand(std::string& command,json_spirit::Array& params);
 	
 public:
 	typedef boost::shared_ptr<RPCServer> pointer;

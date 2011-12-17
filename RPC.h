@@ -1,4 +1,3 @@
-#include "json/json_spirit_value.h"
 
 enum http_status_type
 {
@@ -20,9 +19,11 @@ enum http_status_type
 	service_unavailable = 503
 };
 
+#if 0 
 extern std::string JSONRPCRequest(const std::string& strMethod, const json_spirit::Array& params, const json_spirit::Value& id);
 extern std::string createHTTPPost(const std::string& strMsg, const std::map<std::string,std::string>& mapRequestHeaders);
 extern int ReadHTTP(std::basic_istream<char>& stream, std::map<std::string, std::string>& mapHeadersRet, std::string& strMessageRet);
 extern std::string HTTPReply(int nStatus, const std::string& strMsg);
 extern std::string JSONRPCReply(const json_spirit::Value& result, const json_spirit::Value& error, const json_spirit::Value& id);
 extern json_spirit::Object JSONRPCError(int code, const std::string& message);
+#endif

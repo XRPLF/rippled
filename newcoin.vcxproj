@@ -96,9 +96,6 @@
     <ClCompile Include="database\sqlite3.c" />
     <ClCompile Include="database\SqliteDatabase.cpp" />
     <ClCompile Include="DeterministicKeys.cpp" />
-    <ClCompile Include="json\json_spirit_reader.cpp" />
-    <ClCompile Include="json\json_spirit_value.cpp" />
-    <ClCompile Include="json\json_spirit_writer.cpp" />
     <ClCompile Include="KnownNodeList.cpp" />
     <ClCompile Include="Ledger.cpp" />
     <ClCompile Include="LedgerHistory.cpp" />
@@ -148,15 +145,6 @@
     <ClInclude Include="database\SqliteDatabase.h" />
     <ClInclude Include="HttpReply.h" />
     <ClInclude Include="HttpRequest.h" />
-    <ClInclude Include="json\json_spirit.h" />
-    <ClInclude Include="json\json_spirit_error_position.h" />
-    <ClInclude Include="json\json_spirit_reader.h" />
-    <ClInclude Include="json\json_spirit_reader_template.h" />
-    <ClInclude Include="json\json_spirit_stream_reader.h" />
-    <ClInclude Include="json\json_spirit_utils.h" />
-    <ClInclude Include="json\json_spirit_value.h" />
-    <ClInclude Include="json\json_spirit_writer.h" />
-    <ClInclude Include="json\json_spirit_writer_template.h" />
     <ClInclude Include="key.h" />
     <ClInclude Include="KnownNodeList.h" />
     <ClInclude Include="Ledger.h" />

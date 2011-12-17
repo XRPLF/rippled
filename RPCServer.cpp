@@ -6,13 +6,10 @@
 //#include <boost/log/trivial.hpp>
 #include "Application.h"
 #include <iostream>
-#include "json/json_spirit_reader_template.h"
-#include "json/json_spirit_writer_template.h"
 #include "RPC.h"
 #include "Conversion.h"
 
 using namespace std;
-using namespace json_spirit;
 
 /*
 Just read from wire until the entire request is in.
@@ -45,7 +42,7 @@ void RPCServer::handle_read(const boost::system::error_code& e,
 
 		if(result)
 		{
-			mReplyStr=handleRequest(mIncomingRequest.mBody);
+//			mReplyStr=handleRequest(mIncomingRequest.mBody);
 			sendReply();
 		}else if(!result)
 		{ // bad request
@@ -65,6 +62,7 @@ void RPCServer::handle_read(const boost::system::error_code& e,
 
 
 
+#if 0
 std::string RPCServer::handleRequest(std::string& requestStr)
 {
 	cout << "handleRequest " << requestStr << endl;
@@ -139,6 +137,7 @@ Value RPCServer::doCommand(std::string& command, Array& params)
 
 	return "unknown command";
 }
+#endif
 
 void RPCServer::sendReply()
 {

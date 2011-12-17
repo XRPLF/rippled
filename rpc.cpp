@@ -8,22 +8,18 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/foreach.hpp>
 
-#include "json/json_spirit_reader_template.h"
-#include "json/json_spirit_writer_template.h"
-#include "json/json_spirit_utils.h"
 #include <openssl/buffer.h>
 #include <openssl/evp.h>
 
 using namespace std;
 using namespace boost;
 using namespace boost::asio;
-using namespace json_spirit;
 
 
 
 
 
-
+#if 0
 Object JSONRPCError(int code, const string& message)
 {
     Object error;
@@ -31,7 +27,6 @@ Object JSONRPCError(int code, const string& message)
     error.push_back(Pair("message", message));
     return error;
 }
-
 
 
 //
@@ -45,7 +40,7 @@ string createHTTPPost(const string& strMsg, const map<string,string>& mapRequest
 {
     ostringstream s;
     s << "POST / HTTP/1.1\r\n"
-      << "User-Agent: bitcoin-json-rpc/" << FormatFullVersion() << "\r\n"
+      << "User-Agent: coin-json-rpc/" << FormatFullVersion() << "\r\n"
       << "Host: 127.0.0.1\r\n"
       << "Content-Type: application/json\r\n"
       << "Content-Length: " << strMsg.size() << "\r\n"
@@ -278,3 +273,4 @@ void ConvertTo(Value& value)
 
 
 
+#endif
