@@ -25,14 +25,9 @@ uint64 LedgerMaster::getBalance(std::string& addr)
 }
 
 bool LedgerMaster::addHeldTransaction(Transaction::pointer transaction)
-{
+{ // returns true if transaction was added
 	boost::recursive_mutex::scoped_lock ml(mLock);
-	if(mHeldTransactionsByID.count(transaction->getID())==0)
-	{
-		mHeldTransactionsByID.insert(std::make_pair(transaction->getID(), transaction));
-		return true;
-	}
-	return false;
+	return mHeldTransactionsByID.insert(std::make_pair(transaction->getID(), transaction)).second;
 }
 
 void LedgerMaster::pushLedger(Ledger::pointer newLedger)
@@ -49,93 +44,6 @@ void LedgerMaster::pushLedger(Ledger::pointer newLedger)
 }
 
 #if 0
-
-bool LedgerMaster::isTransactionOnFutureList(Transaction::pointer needle)
-{
-	BOOST_FOREACH(Transaction::pointer straw,mFutureTransactions)
-	{
-		if(Transaction::isEqual(straw,needle))
-		{
-			return(true);
-		}
-	}
-	return(false);
-}
-
-
-// make sure the signature is valid
-// make sure from address != dest address
-// make sure not 0 amount unless null dest (this is just a way to make sure your seqnum is incremented)
-// make sure the sequence number is good (but the ones with a bad seqnum we need to save still?)
-bool LedgerMaster::isValidTransaction(Transaction::pointer trans)
-{
-	if(trans->from()==trans->dest()) return(false);
-	if(trans->amount()==0) return(false);
-	if(!Transaction::isSigValid(trans)) return(false);
-	Ledger::Account* account=mCurrentLedger->getAccount( protobufTo160(trans->from()) );
-	if(!account) return(false);
-	if(trans->seqnum() != (account->second+1) ) return(false); // TODO: do we need to save these?
-
-	return(true);
-}
-
-
-// returns true if we should relay it
-bool LedgerMaster::addTransaction(Transaction::pointer trans)
-{
-	if(mFinalizingLedger && (trans->ledgerindex()==mFinalizingLedger->getIndex()))
-	{
-		if(mFinalizingLedger->hasTransaction(trans)) return(false);
-		if(!isValidTransaction(trans)) return(false);
-
-		if(mFinalizingLedger->addTransaction(trans,false))
-		{
-			// TODO: we shouldn't really sendProposal right here
-			// TODO: since maybe we are adding a whole bunch at once. we should send at the end of the batch
-			// TODO: do we ever really need to re-propose?
-			//if(mAfterProposed) sendProposal();
-			theApp->getWallet().transactionChanged(trans);
-			return(true);
-		}else return(false);
-	}else if(trans->ledgerindex()==mCurrentLedger->getIndex())
-	{
-		if(mCurrentLedger->hasTransaction(trans)) return(false);
-		if(!isValidTransaction(trans)) return(false);
-		if(!mCurrentLedger->addTransaction(trans,false)) return(false);
-		theApp->getWallet().transactionChanged(trans);
-		return( true );
-	}else if(trans->ledgerindex()>mCurrentLedger->getIndex())
-	{ // in the future
-		
-		if(isTransactionOnFutureList(trans)) return(false);
-		if(!isValidTransaction(trans)) return(false);
-		mFutureTransactions.push_back(trans); // broadcast once we get to that ledger.
-		return(false);
-	}else
-	{  // transaction is old but we don't have it. Add it to the current ledger
-		cout << "Old Transaction" << endl;
-		
-		// distant past
-		// This is odd make sure the transaction is valid before proceeding since checking all the past is expensive
-		if(! isValidTransaction(trans)) return(false);
-
-		uint32 checkIndex=trans->ledgerindex();
-		while(checkIndex <= mCurrentLedger->getIndex())
-		{
-			Ledger::pointer ledger=mLedgerHistory.getAcceptedLedger(checkIndex);
-			if(ledger)
-			{
-				if(ledger->hasTransaction(trans)) return(false);
-			}
-			checkIndex++;
-		}
-		if(!mCurrentLedger->addTransaction(trans,false)) return(false);
-		theApp->getWallet().transactionChanged(trans);
-		return(true);
-	}
-}
-
-
 
 void LedgerMaster::startFinalization()
 {
