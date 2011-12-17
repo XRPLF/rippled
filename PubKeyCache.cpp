@@ -9,14 +9,8 @@ CKey::pointer PubKeyCache::locate(const uint160& id)
 	if(1)
 	{ // is it in cache
 		boost::mutex::scoped_lock sl(mLock);
-		CKey::pointer ret=mCache[id];
-		if(ret)
-		{
-#ifdef DEBUG
-			std::cerr << "PubKey found in cache (locate)" << std::endl;
-#endif
-			return ret;
-		}
+		std::map<uint160, CKey::pointer>::iterator it(mCache.find(id));
+		if(it!=mCache.end()) return it->second;
 	}
 
 	std::string sql="SELECT * from PubKeys WHERE ID='";
@@ -44,7 +38,7 @@ CKey::pointer PubKeyCache::locate(const uint160& id)
 	if(1)
 	{ // put it in cache (okay if we race with another retriever)
 		boost::mutex::scoped_lock sl(mLock);
-		mCache[id]=ckp;
+		mCache.insert(std::make_pair(id, ckp));
 	}
 	return ckp;
 }
@@ -54,15 +48,9 @@ CKey::pointer PubKeyCache::store(const uint160& id, CKey::pointer key)
 	if(1)
 	{
 		boost::mutex::scoped_lock sl(mLock);
-		CKey::pointer cached(mCache[id]);
-		if(cached)
-		{
-#ifdef DEBUG
-			std::cerr << "PubKey found in cache (store)" << std::endl;
-#endif
-			return cached;
-		}
-		mCache[id]=key;
+		std::pair<std::map<uint160,CKey::pointer>::iterator, bool> pit(mCache.insert(std::make_pair(id, key)));
+		if(!pit.second) // there was an existing key
+			return pit.first->second;
 	}
 	std::string sql="INSERT INTO PubKeys (ID, PubKey) VALUES ('";
 	sql+=id.GetHex();
@@ -73,7 +61,7 @@ CKey::pointer PubKeyCache::store(const uint160& id, CKey::pointer key)
 	theApp->getDB()->escape(&(pk.front()), pk.size(), encodedPK);
 	sql+=encodedPK;
 	sql.append(");");
-	ScopedLock sl(theApp->getDBLock());
+	ScopedLock dbl(theApp->getDBLock());
 	theApp->getDB()->executeSQL(sql.c_str());
 	return key;
 }

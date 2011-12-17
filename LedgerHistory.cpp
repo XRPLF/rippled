@@ -27,8 +27,10 @@ void LedgerHistory::addAcceptedLedger(Ledger::pointer ledger)
 Ledger::pointer LedgerHistory::getLedgerBySeq(uint32 index)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
-	if(mLedgersByIndex.count(index)) return mLedgersByIndex[index];
+	std::map<uint32, Ledger::pointer>::iterator it(mLedgersByIndex.find(index));
+	if(it!=mLedgersByIndex.end()) return it->second;
 	sl.unlock();
+
 	Ledger::pointer ret(Ledger::loadByIndex(index));
 	if(!ret) return ret;
 
@@ -43,9 +45,10 @@ Ledger::pointer LedgerHistory::getLedgerBySeq(uint32 index)
 Ledger::pointer LedgerHistory::getLedgerByHash(const uint256& hash)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
-	if(mLedgersByHash.count(hash)!=0) return mLedgersByHash[hash];
-
+	std::map<uint256, Ledger::pointer>::iterator it(mLedgersByHash.find(hash));
+	if(it!=mLedgersByHash.end()) return it->second;
 	sl.unlock();
+
 	Ledger::pointer ret=Ledger::loadByHash(hash);
 	if(!ret) return ret;
 
@@ -61,11 +64,19 @@ Ledger::pointer LedgerHistory::canonicalizeLedger(Ledger::pointer ledger, bool s
 	uint256 h(ledger->getHash());
 
 	boost::recursive_mutex::scoped_lock sl(mLock);
-	if(mLedgersByHash.count(h)!=0) return mLedgersByHash[h];
-	if(!save) return ledger;
-
-	assert(ledger->getHash()==h);
-	mLedgersByHash.insert(std::make_pair(h, ledger));
-	if(ledger->isAccepted()) mLedgersByIndex.insert(std::make_pair(ledger->getLedgerSeq(), ledger));
+	if(!save)
+	{ // return input ledger if not in map, otherwise, return corresponding map ledger
+		std::map<uint256, Ledger::pointer>::iterator it(mLedgersByHash.find(h));
+		if(it!=mLedgersByHash.end()) return it->second;
+	}
+	else
+	{ // save input ledger in map if not in map, otherwise return corresponding map ledger
+		std::pair<std::map<uint256,
+			Ledger::pointer>::iterator, bool> sp(mLedgersByHash.insert(std::make_pair(h, ledger)));
+		if(!sp.second) // ledger was not inserted
+			return sp.first->second;
+		if(ledger->isAccepted())
+			mLedgersByIndex.insert(std::make_pair(ledger->getLedgerSeq(), ledger));
+	}
 	return ledger;
 }
