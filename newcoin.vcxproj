@@ -84,9 +84,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="AccountState.cpp" />
     <ClCompile Include="Application.cpp" />
     <ClCompile Include="BitcoinUtil.cpp" />
-    <ClCompile Include="CallRPC.cpp" />
     <ClCompile Include="Config.cpp" />
     <ClCompile Include="ConnectionPool.cpp" />
     <ClCompile Include="Conversion.cpp" />
@@ -95,11 +95,10 @@
     <ClCompile Include="database\database.cpp" />
     <ClCompile Include="database\sqlite3.c" />
     <ClCompile Include="database\SqliteDatabase.cpp" />
-    <ClCompile Include="HttpReply.cpp" />
+    <ClCompile Include="DeterministicKeys.cpp" />
     <ClCompile Include="json\json_spirit_reader.cpp" />
     <ClCompile Include="json\json_spirit_value.cpp" />
     <ClCompile Include="json\json_spirit_writer.cpp" />
-    <ClCompile Include="keystore.cpp" />
     <ClCompile Include="KnownNodeList.cpp" />
     <ClCompile Include="Ledger.cpp" />
     <ClCompile Include="LedgerHistory.cpp" />
@@ -108,20 +107,18 @@
     <ClCompile Include="NewcoinAddress.cpp" />
     <ClCompile Include="PackedMessage.cpp" />
     <ClCompile Include="PeerDoor.cpp" />
-    <ClCompile Include="main.cpp" />
     <ClCompile Include="Peer.cpp" />
     <ClCompile Include="RequestParser.cpp" />
     <ClCompile Include="rpc.cpp" />
     <ClCompile Include="RPCServer.cpp" />
-    <ClCompile Include="RPCCommands.cpp" />
     <ClCompile Include="RPCDoor.cpp" />
-    <ClCompile Include="tests.cpp" />
+    <ClCompile Include="SHAMap.cpp" />
+    <ClCompile Include="SHAMapDiff.cpp" />
+    <ClCompile Include="SHAMapNodes.cpp" />
+    <ClCompile Include="test.cpp" />
     <ClCompile Include="TimingService.cpp" />
-    <ClCompile Include="Transaction.cpp" />
-    <ClCompile Include="TransactionBundle.cpp" />
     <ClCompile Include="UniqueNodeList.cpp" />
     <ClCompile Include="util\pugixml.cpp" />
-    <ClCompile Include="ValidationCollection.cpp" />
     <ClCompile Include="Wallet.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -202,6 +199,7 @@
     <None Include="html\newcoin.html">
       <SubType>Designer</SubType>
     </None>
+    <None Include="Makefile" />
     <None Include="nodes.xml" />
     <None Include="notes.txt" />
     <None Include="todo.txt" />
