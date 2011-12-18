@@ -4,30 +4,20 @@
 #include <openssl/pem.h>
 #include <openssl/rand.h>
 
-#include "DeterministicKeys.h"
+// Functions to add CKey support for deterministic EC keys
+
 #include "Serializer.h"
 
-DetKeySet::DetKeySet(const std::string& phrase)
-{ // create a deterministic key set based on a phrase
-	getPhrase(phrase, mBase);
-}
-
-uint256 DetKeySet::getKeySetName()
-{ // get the name of a deterministic key set
-	Serializer s;
-	s.add256(mBase);
-	return s.getSHA512Half();
-}
-
-void DetKeySet::getPhrase(const std::string& phrase, uint256& base)
+uint256 CKey::GetBaseFromString(const std::string& phrase)
 {
 	Serializer s;
 	s.addRaw((const void *) phrase.c_str(), phrase.length());
-	base=s.getSHA512Half();
+	uint256 base(s.getSHA512Half());
 	s.secureErase();
+	return base;
 }
 
-static EC_KEY* GenerateDeterministicKey(const uint256& base, int n)
+EC_KEY* CKey::GenerateDeterministicKey(const uint256& base, uint32 n, bool private_key)
 {
 	BN_CTX* ctx=BN_CTX_new();
 	if(!ctx) return NULL;
@@ -43,6 +33,7 @@ static EC_KEY* GenerateDeterministicKey(const uint256& base, int n)
 	}
 	if(!EC_GROUP_get_order(EC_KEY_get0_group(pkey), order, ctx))
 	{
+		assert(false);
 		BN_free(order);
 		EC_KEY_free(pkey);
 		BN_CTX_free(ctx);
@@ -65,8 +56,9 @@ static EC_KEY* GenerateDeterministicKey(const uint256& base, int n)
 
 	BN_free(order);
 
-	if(!EC_KEY_set_private_key(pkey, privKey))
+	if(private_key && !EC_KEY_set_private_key(pkey, privKey))
 	{ // set the random point as the private key
+		assert(false);
 		BN_free(privKey);
 		BN_CTX_free(ctx);
 		return NULL;
@@ -75,6 +67,7 @@ static EC_KEY* GenerateDeterministicKey(const uint256& base, int n)
 	EC_POINT *pubKey=EC_POINT_new(EC_KEY_get0_group(pkey));
 	if(!EC_POINT_mul(EC_KEY_get0_group(pkey), pubKey, privKey, NULL, NULL, ctx))
 	{ // compute the corresponding public key point
+		assert(false);
 		BN_free(privKey);
 		EC_POINT_free(pubKey);
 		BN_CTX_free(ctx);
@@ -83,6 +76,7 @@ static EC_KEY* GenerateDeterministicKey(const uint256& base, int n)
 	BN_free(privKey);
 	if(!EC_KEY_set_public_key(pkey, pubKey))
 	{
+		assert(false);
 		EC_POINT_free(pubKey);
 		BN_CTX_free(ctx);
 		return NULL;
@@ -95,67 +89,8 @@ static EC_KEY* GenerateDeterministicKey(const uint256& base, int n)
 	return pkey;
 }
 
-bool DetKeySet::getRandom(uint256& r)
+uint256 CKey::GetRandomBase(void)
 {
-	return RAND_bytes((unsigned char *) &r, sizeof(uint256)) == 1;
-}
-
-CKey::pointer DetKeySet::getPubKey(uint32 n)
-{
-	EC_KEY *k=GenerateDeterministicKey(mBase, n);
-	if(k==NULL) return CKey::pointer();
-
-	unsigned int size=i2o_ECPublicKey(k, NULL);
-	std::vector<unsigned char> pubKey(size, 0);
-	unsigned char* begin=&pubKey[0];
-	i2o_ECPublicKey(k, &begin);
-	EC_KEY_free(k);
-
-	CKey::pointer ret(new CKey());
-	ret->SetPubKey(pubKey);
-	return ret;
-}
-
-CKey::pointer DetKeySet::getPrivKey(uint32 n)
-{
-	EC_KEY *k=GenerateDeterministicKey(mBase, n);
-	if(k==NULL) return CKey::pointer();
-
-	unsigned int size=i2d_ECPrivateKey(k, NULL);
-	std::vector<unsigned char> privKey(size, 0);
-	unsigned char* begin=&privKey[0];
-	i2d_ECPrivateKey(k, &begin);
-	EC_KEY_free(k);
-
-	CKey::pointer ret(new CKey());
-	ret->SetPrivKey(privKey);
-	memset(&privKey[0], 0, privKey.size());
-	return ret;
-}
-
-uint160 DetKeySet::getAccountID(uint32 n)
-{
-	return getPubKey(n)->GetAddress().GetHash160();
-}
-    
-void DetKeySet::getPubKeys(uint32 first, uint32 count, std::list<CKey::pointer>& keys)
-{
- while(count-->0)
-  keys.push_back(getPubKey(first++));
-}
-
-void DetKeySet::getPrivKeys(uint32 first, uint32 count, std::list<CKey::pointer>& keys)
-{
- while(count-->0)
-  keys.push_back(getPrivKey(first++));
-}
-
-void DetKeySet::unitTest()
-{
-	uint256 u;
-	GenerateDeterministicKey(u, 0);
-	GenerateDeterministicKey(u, 1);
-	u++;
-	GenerateDeterministicKey(u, 0);
-	GenerateDeterministicKey(u, 1);
+	uint256 r;
+	return (RAND_bytes((unsigned char *) &r, sizeof(uint256)) == 1) ? r : 0;
 }

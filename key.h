@@ -86,6 +86,8 @@ protected:
 	EC_KEY* pkey;
 	bool fSet;
 
+	static EC_KEY* GenerateDeterministicKey(const uint256& base, uint32 n, bool private_key);
+
 public:
 	typedef boost::shared_ptr<CKey> pointer;
 
@@ -115,10 +117,19 @@ public:
 		return (*this);
 	}
 
+
 	~CKey()
 	{
 		EC_KEY_free(pkey);
 	}
+
+	CKey(const uint256& base, uint32 seq, bool private_key) : fSet(true)
+	{
+		pkey=GenerateDeterministicKey(base, seq, private_key);
+	}
+
+	static uint256 GetBaseFromString(const std::string& base);
+	static uint256 GetRandomBase(void);
 
 	bool IsNull() const
 	{
