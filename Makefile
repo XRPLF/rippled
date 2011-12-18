@@ -2,7 +2,7 @@
 # Distributed under the MIT/X11 software license, see the accompanying
 # file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
-CXX=g++ -I/packages/openssl-1.0.0/include
+CXX=g++ -I/packages/openssl-1.0.0/include -Wall -Wno-sign-compare -Wno-char-subscripts
 
 DEFS=
 
@@ -72,11 +72,13 @@ SRCS= keystore.cpp BitcoinUtil.cpp \
  Application.cpp TimingService.cpp KnownNodeList.cpp ConnectionPool.cpp Peer.cpp \
  PeerDoor.cpp RPCDoor.cpp RPCServer.cpp rpc.cpp Conversion.cpp RequestParser.cpp HashedObject.cpp \
  UniqueNodeList.cpp PubKeyCache.cpp SHAMapDiff.cpp DeterministicKeys.cpp LedgerMaster.cpp \
- LedgerHistory.cpp NetworkOPs.cpp
+ LedgerHistory.cpp NetworkOPs.cpp CallRPC.cpp
 
 DBSRCS=	SqliteDatabase.cpp database.cpp
 
 UTILSRCS= pugixml.cpp
+
+JSONSRCS= json_reader.cpp json_value.cpp json_writer.cpp
 
 # Application.cpp     HttpReply.cpp      main.cpp            RPCCommands.cpp        \
 # BitcoinUtil.cpp     keystore.cpp       NewcoinAddress.cpp  rpc.cpp                UniqueNodeList.cpp \
@@ -88,6 +90,7 @@ UTILSRCS= pugixml.cpp
 # database/linux/mysqldatabase.cpp database/database.cpp database/SqliteDatabase.cpp
 
 OBJS= $(SRCS:%.cpp=%.o) $(DBSRCS:%.cpp=database/%.o) $(UTILSRCS:%.cpp=util/%.o) newcoin.pb.o
+OBJS+= $(JSONSRCS:%.cpp=json/%.o)
 #cryptopp/obj/sha.o cryptopp/obj/cpu.o
 
 all: newcoind
@@ -107,8 +110,9 @@ newcoind:	$(OBJS)
 
 clean:
 	-rm -f newcoind
-	-rm -f *.o
+	-rm -f *.o database/*.o util/*.o
 	-rm -f headers.h.gch
 	-rm -f newcoin.pb.*
+	-rm -f .dep
 
 include .dep

@@ -1,25 +1,22 @@
-#include "CallRPC.h"
-#include "RPC.h"
 
-#include "Config.h"
-#include "BitcoinUtil.h"
 
+#include <iostream>
+#include <stdlib.h>
 #include <boost/asio.hpp>
 #include <boost/iostreams/concepts.hpp>
 #include <boost/iostreams/stream.hpp>
 #include <boost/algorithm/string.hpp>
-#include <iostream>
-#include "string.h"
-#include <stdlib.h>
-
 #include <openssl/buffer.h>
-//#include <openssl/ecdsa.h>
 #include <openssl/evp.h>
-//#include <openssl/rand.h>
-//#include <openssl/sha.h>
-//#include <openssl/ripemd.h>
 
-using namespace std;
+#include "json/value.h"
+#include "json/reader.h"
+
+#include "CallRPC.h"
+#include "RPC.h"
+#include "Config.h"
+#include "BitcoinUtil.h"
+
 using namespace boost::asio;
 
 inline bool isSwitchChar(char c)
@@ -31,8 +28,8 @@ inline bool isSwitchChar(char c)
 #endif
 }
 
-string EncodeBase64(string s)
-{
+std::string EncodeBase64(std::string s)
+{ // FIXME: This performs terribly
 	BIO *b64, *bmem;
 	BUF_MEM *bptr;
 
@@ -44,16 +41,15 @@ string EncodeBase64(string s)
 	BIO_flush(b64);
 	BIO_get_mem_ptr(b64, &bptr);
 
-	string result(bptr->data, bptr->length);
+	std::string result(bptr->data, bptr->length);
 	BIO_free_all(b64);
 
 	return result;
 }
 
-#if 0 
 int commandLineRPC(int argc, char *argv[])
 {
-	string strPrint;
+	std::string strPrint;
 	int nRet = 0;
 	try
 	{
@@ -66,106 +62,106 @@ int commandLineRPC(int argc, char *argv[])
 
 		if(argc < 2) return(0);
 
-		string strMethod = argv[1];
+		std::string strMethod = argv[1];
 
 		// Parameters default to strings
-		json_spirit::Array params;
+		Json::Value params(Json::arrayValue);
 		for (int i = 2; i < argc; i++)
-			params.push_back(argv[i]);
+			params.append(argv[i]);
 
 		// Execute
-		json_spirit::Object reply = callRPC(strMethod, params);
+		Json::Value reply = callRPC(strMethod, params);
 
 		// Parse reply
-		const json_spirit::Value& result = find_value(reply, "result");
-		const json_spirit::Value& error  = find_value(reply, "error");
+		Json::Value result=reply.get("result", Json::Value());
+		Json::Value error=reply.get("error", Json::Value());
 
-		if(error.type() != json_spirit::null_type)
+		if(!error.isNull())
 		{
 			// Error
-			strPrint = "error: " + write_string(error, false);
-			int code = find_value(error.get_obj(), "code").get_int();
+			strPrint = "error: " + error.toStyledString();
+			int code = error["code"].asInt();
 			nRet = abs(code);
-		}else
+		}
+		else
 		{
 			// Result
-			if (result.type() == json_spirit::null_type)
+			if (result.isNull())
 				strPrint = "";
-			else if (result.type() == json_spirit::str_type)
-				strPrint = result.get_str();
+			else if (result.isString())
+				strPrint = result.asString();
 			else
-				strPrint = write_string(result, true);
+				strPrint = result.toStyledString();
 		}
 	}
 	catch (std::exception& e)
 	{
-		strPrint = string("error: ") + e.what();
+		strPrint = std::string("error: ") + e.what();
 		nRet = 87;
 	}
 	catch (...)
 	{
-		cout << "Exception CommandLineRPC()" << endl;
+		std::cout << "Exception CommandLineRPC()" << std::endl;
 	}
 
 	if(strPrint != "")
 	{
-		cout << strPrint << endl;
+		std::cout << strPrint << std::endl;
 	}
 	return nRet;
 }
 
 
-json_spirit::Object callRPC(const string& strMethod, const json_spirit::Array& params)
+Json::Value callRPC(const std::string& strMethod, const Json::Value& params)
 {
 	if(theConfig.RPC_USER == "" && theConfig.RPC_PASSWORD == "")
-		throw runtime_error("You must set rpcpassword=<password> in the configuration file"
+		throw std::runtime_error("You must set rpcpassword=<password> in the configuration file"
 		"If the file does not exist, create it with owner-readable-only file permissions.");
 
 	// Connect to localhost
 
-	cout << "Connecting to port:" << theConfig.RPC_PORT << endl;
+	std::cout << "Connecting to port:" << theConfig.RPC_PORT << std::endl;
 	ip::tcp::endpoint endpoint( ip::address::from_string("127.0.0.1"), theConfig.RPC_PORT);
 	ip::tcp::iostream stream;
 	stream.connect(endpoint);
 	if(stream.fail())
-		throw runtime_error("couldn't connect to server");
+		throw std::runtime_error("couldn't connect to server");
 
 
 
 	// HTTP basic authentication
-	string strUserPass64 = EncodeBase64(theConfig.RPC_USER + ":" + theConfig.RPC_PASSWORD);
-	map<string, string> mapRequestHeaders;
-	mapRequestHeaders["Authorization"] = string("Basic ") + strUserPass64;
+	std::string strUserPass64 = EncodeBase64(theConfig.RPC_USER + ":" + theConfig.RPC_PASSWORD);
+	std::map<std::string, std::string> mapRequestHeaders;
+	mapRequestHeaders["Authorization"] = std::string("Basic ") + strUserPass64;
 
 
 	// Send request
-	string strRequest = JSONRPCRequest(strMethod, params, 1);
-	cout << "send request " << strMethod << " : " << strRequest << endl; 
-	string strPost = createHTTPPost(strRequest, mapRequestHeaders);
+	std::string strRequest = JSONRPCRequest(strMethod, params, Json::Value(1));
+	std::cout << "send request " << strMethod << " : " << strRequest << std::endl; 
+	std::string strPost = createHTTPPost(strRequest, mapRequestHeaders);
 	stream << strPost << std::flush;
 
-	cout << "post  " << strPost << endl; 
+	std::cout << "post  " << strPost << std::endl; 
 
 	// Receive reply
-	map<string, string> mapHeaders;
-	string strReply;
+	std::map<std::string, std::string> mapHeaders;
+	std::string strReply;
 	int nStatus = ReadHTTP(stream, mapHeaders, strReply);
 	if (nStatus == 401)
-		throw runtime_error("incorrect rpcuser or rpcpassword (authorization failed)");
+		throw std::runtime_error("incorrect rpcuser or rpcpassword (authorization failed)");
 	else if (nStatus >= 400 && nStatus != 400 && nStatus != 404 && nStatus != 500)
-		throw runtime_error(strprintf("server returned HTTP error %d", nStatus));
+		throw std::runtime_error(strprintf("server returned HTTP error %d", nStatus));
 	else if (strReply.empty())
-		throw runtime_error("no response from server");
+		throw std::runtime_error("no response from server");
 
 	// Parse reply
-	json_spirit::Value valReply;
-	if (!json_spirit::read_string(strReply, valReply))
-		throw runtime_error("couldn't parse reply from server");
-	const json_spirit::Object& reply = valReply.get_obj();
-	if (reply.empty())
-		throw runtime_error("expected reply to have result, error and id properties");
+	Json::Reader reader;
+	Json::Value valReply;
+	if (!reader.parse(strReply, valReply))
+		throw std::runtime_error("couldn't parse reply from server");
+	if (valReply.isNull())
+		throw std::runtime_error("expected reply to have result, error and id properties");
 
-	return reply;
+	return valReply;
 }
-#endif
 
