@@ -374,6 +374,10 @@ public:
 		return sizeof(pn);
 	}
 
+	void zero(void)
+	{
+		memset(&pn[0], 0, sizeof(pn));
+	}
 
 	unsigned int GetSerializeSize(int nType=0) const
 	{
