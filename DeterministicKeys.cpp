@@ -44,14 +44,20 @@ EC_KEY* CKey::GenerateDeterministicKey(const uint256& base, uint32 n, bool priva
 	int seq=0;
 	do
 	{ // private key must be non-zero and less than the curve's order
-		if(privKey!=NULL) BN_free(privKey);
 		Serializer s;
 		s.add32(n);
 		s.add256(base);
 		s.add32(seq++);
 		uint256 root=s.getSHA512Half();
-		privKey=BN_bin2bn((const unsigned char *) &root, sizeof(root), NULL);
-		memset(&root, 0, sizeof(root));
+		s.secureErase();
+		privKey=BN_bin2bn((const unsigned char *) &root, sizeof(root), privKey);
+		if(privKey==NULL)
+		{
+			EC_KEY_free(pkey);
+			BN_free(order);
+			BN_CTX_free(ctx);
+		}
+		root.zero();
 	} while(BN_is_zero(privKey) || (BN_cmp(privKey, order)>=0));
 
 	BN_free(order);
@@ -59,6 +65,7 @@ EC_KEY* CKey::GenerateDeterministicKey(const uint256& base, uint32 n, bool priva
 	if(private_key && !EC_KEY_set_private_key(pkey, privKey))
 	{ // set the random point as the private key
 		assert(false);
+		EC_KEY_free(pkey);
 		BN_free(privKey);
 		BN_CTX_free(ctx);
 		return NULL;
@@ -70,6 +77,7 @@ EC_KEY* CKey::GenerateDeterministicKey(const uint256& base, uint32 n, bool priva
 		assert(false);
 		BN_free(privKey);
 		EC_POINT_free(pubKey);
+		EC_KEY_free(pkey);
 		BN_CTX_free(ctx);
 		return NULL;
 	}
@@ -78,6 +86,7 @@ EC_KEY* CKey::GenerateDeterministicKey(const uint256& base, uint32 n, bool priva
 	{
 		assert(false);
 		EC_POINT_free(pubKey);
+		EC_KEY_free(pkey);
 		BN_CTX_free(ctx);
 		return NULL;
 	}
