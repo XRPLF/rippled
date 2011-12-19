@@ -1,9 +1,12 @@
-#include "HttpRequest.h"
-#include "RequestParser.h"
 #include <boost/array.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/asio.hpp>
+
+#include "json/value.h"
+
+#include "HttpRequest.h"
+#include "RequestParser.h"
 
 class RPCServer  : public boost::enable_shared_from_this<RPCServer>
 {
@@ -21,10 +24,10 @@ class RPCServer  : public boost::enable_shared_from_this<RPCServer>
 	void handle_read(const boost::system::error_code& e, std::size_t bytes_transferred);
 
 	
-	std::string handleRequest(std::string& requestStr);
+	std::string handleRequest(const std::string& requestStr);
 	void sendReply();
 
-//	json_spirit::Value doCommand(std::string& command,json_spirit::Array& params);
+	Json::Value doCommand(const std::string& command, Json::Value& params);
 	
 public:
 	typedef boost::shared_ptr<RPCServer> pointer;
