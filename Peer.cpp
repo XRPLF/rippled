@@ -28,7 +28,7 @@ void Peer::handle_write(const boost::system::error_code& error , size_t bytes_tr
 	cout  << "Peer::handle_write Error: " << error << " bytes: "<< bytes_transferred << endl;
 
 	mSendingPacket=PackedMessage::pointer();
-	if(mSendQ.size())
+	if(!mSendQ.empty())
 	{
 		PackedMessage::pointer packet=mSendQ.front();
 
@@ -126,7 +126,7 @@ void Peer::processReadBuffer()
 	int type=PackedMessage::getType(mReadbuf);
 	switch(type)
 	{
-	case newcoin::HELLO:
+	case newcoin::mtHELLO:
 		{
 			newcoin::TMHello msg;
 			if(msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
@@ -135,7 +135,7 @@ void Peer::processReadBuffer()
 		}
 		break;
 
-	case newcoin::ERROR_MSG:
+	case newcoin::mtERROR_MSG:
 		{
 			newcoin::TMErrorMsg msg;
 			if(msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
@@ -143,7 +143,7 @@ void Peer::processReadBuffer()
 			else cout << "pars error: " << type << endl;
 		}
 
-	case newcoin::PING:
+	case newcoin::mtPING:
 		{
 			newcoin::TMPing msg;
 			if(msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
@@ -151,7 +151,7 @@ void Peer::processReadBuffer()
 			else cout << "pars error: " << type << endl;
 		}
 
-	case newcoin::GET_CONTACTS:
+	case newcoin::mtGET_CONTACTS:
 		{
 			newcoin::TMGetContacts msg;
 			if(msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
@@ -159,7 +159,7 @@ void Peer::processReadBuffer()
 			else cout << "pars error: " << type << endl;
 		}
 
-	case newcoin::CONTACT:
+	case newcoin::mtCONTACT:
 		{
 			newcoin::TMContact msg;
 			if(msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
@@ -167,7 +167,7 @@ void Peer::processReadBuffer()
 			else cout << "pars error: " << type << endl;
 		}
 
-	case newcoin::SEARCH_TRANSACTION:
+	case newcoin::mtSEARCH_TRANSACTION:
 		{
 			newcoin::TMSearchTransaction msg;
 			if(msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
@@ -175,7 +175,7 @@ void Peer::processReadBuffer()
 			else cout << "pars error: " << type << endl;
 		}
 
-	case newcoin::GET_ACCOUNT:
+	case newcoin::mtGET_ACCOUNT:
 		{
 			newcoin::TMGetAccount msg;
 			if(msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
@@ -183,7 +183,7 @@ void Peer::processReadBuffer()
 			else cout << "pars error: " << type << endl;
 		}
 
-	case newcoin::ACCOUNT:
+	case newcoin::mtACCOUNT:
 		{
 			newcoin::TMAccount msg;
 			if(msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
@@ -191,7 +191,7 @@ void Peer::processReadBuffer()
 			else cout << "pars error: " << type << endl;
 		}
 
-	case newcoin::TRANSACTION:
+	case newcoin::mtTRANSACTION:
 		{
 			newcoin::TMTransaction msg;
 			if(msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
@@ -199,7 +199,7 @@ void Peer::processReadBuffer()
 			else cout << "pars error: " << type << endl;
 		}
 
-	case newcoin::GET_LEDGER:
+	case newcoin::mtGET_LEDGER:
 		{
 			newcoin::TMGetLedger msg;
 			if(msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
@@ -207,7 +207,7 @@ void Peer::processReadBuffer()
 			else cout << "pars error: " << type << endl;
 		}
 
-	case newcoin::LEDGER:
+	case newcoin::mtLEDGER:
 		{
 			newcoin::TMLedger msg;
 			if(msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
@@ -216,7 +216,7 @@ void Peer::processReadBuffer()
 		}
 
 #if 0
-	case newcoin::PROPOSE_LEDGER:
+	case newcoin::mtPROPOSE_LEDGER:
 		{
 			newcoin::TM msg;
 			if(msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
@@ -224,7 +224,7 @@ void Peer::processReadBuffer()
 			else cout << "pars error: " << type << endl;
 		}
 
-	case newcoin::CLOSE_LEDGER:
+	case newcoin::mtCLOSE_LEDGER:
 		{
 			newcoin::TM msg;
 			if(msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
@@ -232,7 +232,7 @@ void Peer::processReadBuffer()
 			else cout << "pars error: " << type << endl;
 		}
 
-	case newcoin::GET_VALIDATION:
+	case newcoin::mtGET_VALIDATION:
 		{
 			newcoin::TM msg;
 			if(msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
@@ -240,7 +240,7 @@ void Peer::processReadBuffer()
 			else cout << "pars error: " << type << endl;
 		}
 
-	case newcoin::VALIDATION:
+	case newcoin::mtVALIDATION:
 		{
 			newcoin::TM msg;
 			if(msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
@@ -250,7 +250,7 @@ void Peer::processReadBuffer()
 
 #endif
 
-	case newcoin::GET_OBJECT:
+	case newcoin::mtGET_OBJECT:
 		{
 			newcoin::TMGetObjectByHash msg;
 			if(msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
@@ -258,7 +258,7 @@ void Peer::processReadBuffer()
 			else cout << "pars error: " << type << endl;
 		}
 
-	case newcoin::OBJECT:
+	case newcoin::mtOBJECT:
 		{
 			newcoin::TMObjectByHash msg;
 			if(msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
@@ -272,6 +272,78 @@ void Peer::processReadBuffer()
 }
 
 
+void Peer::recvHello(newcoin::TMHello& packet)
+{
+}
+
+void Peer::recvTransaction(newcoin::TMTransaction& packet)
+{
+}
+
+void Peer::recvValidation(newcoin::TMValidation& packet)
+{
+}
+
+void Peer::recvGetValidation(newcoin::TMGetValidations& packet)
+{
+}
+
+void Peer::recvContact(newcoin::TMContact& packet)
+{
+}
+
+void Peer::recvGetContacts(newcoin::TMGetContacts& packet)
+{
+}
+
+void Peer::recvIndexedObject(newcoin::TMIndexedObject& packet)
+{
+}
+
+void Peer::recvGetObjectByHash(newcoin::TMGetObjectByHash& packet)
+{
+}
+
+void Peer::recvObjectByHash(newcoin::TMObjectByHash& packet)
+{
+}
+
+void Peer::recvPing(newcoin::TMPing& packet)
+{
+}
+
+void Peer::recvErrorMessage(newcoin::TMErrorMsg& packet)
+{
+}
+
+void Peer::recvSearchTransaction(newcoin::TMSearchTransaction& packet)
+{
+}
+
+void Peer::recvGetAccount(newcoin::TMGetAccount& packet)
+{
+}
+
+void Peer::recvAccount(newcoin::TMAccount& packet)
+{
+}
+
+void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
+{
+}
+
+void Peer::recvLedger(newcoin::TMLedger& packet)
+{
+}
+
+void Peer::sendHello()
+{
+	newcoin::TMHello* h=new newcoin::TMHello();
+	// set up parameters
+	PackedMessage::pointer packet(new PackedMessage(PackedMessage::MessagePointer(h), newcoin::mtHELLO));
+	sendPacket(packet);
+}
+
 
 #if 0
 
@@ -282,7 +354,7 @@ void Peer::sendHello()
 	hello->set_port(theConfig.PEER_PORT);
 	hello->set_version(theConfig.VERSION);
 
-	PackedMessage::pointer packet(new PackedMessage(PackedMessage::MessagePointer(hello),newcoin::HELLO));
+	PackedMessage::pointer packet(new PackedMessage(PackedMessage::MessagePointer(hello),newcoin::mtHELLO));
 	sendPacket(packet);
 }
 /*
@@ -413,8 +485,6 @@ void Peer::receiveFullLedger(newcoin::FullLedger& packet)
 	theApp->getLedgerMaster().addFullLedger(packet);
 }
 
-#endif
-
 void Peer::connectTo(KnownNode& node)
 {
 	tcp::endpoint endpoint( address::from_string(node.mIP), node.mPort);
@@ -423,3 +493,4 @@ void Peer::connectTo(KnownNode& node)
 	
 }
 
+#endif

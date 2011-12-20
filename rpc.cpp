@@ -215,7 +215,6 @@ bool HTTPAuthorized(map<std::string, std::string>& mapHeaders)
 //
 // 1.0 spec: http://json-rpc.org/wiki/specification
 // 1.2 spec: http://groups.google.com/group/json-rpc/web/json-rpc-over-http
-// http://www.codeproject.com/KB/recipes/JSON_Spirit.aspx
 //
 
 std::string JSONRPCRequest(const std::string& strMethod, const Json::Value& params, const Json::Value& id)

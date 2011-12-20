@@ -29,7 +29,7 @@ bool SHAMap::compare(SHAMap::pointer otherMap, SHAMapDiff& differences, int maxC
 	nodeStack.push(SHAMapDiffNode(SHAMapNode(), getHash(), otherMap->getHash()));
 
 	ScopedLock sl(Lock());
- 	while(nodeStack.size())
+ 	while(!nodeStack.empty())
  	{
  		SHAMapDiffNode node(nodeStack.top());
  		nodeStack.pop();

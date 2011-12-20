@@ -1,6 +1,7 @@
 #ifndef __PEER__
 #define __PEER__
 
+#include <bitset>
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/asio.hpp>
@@ -10,27 +11,21 @@
 #include "Transaction.h"
 #include "list"
 
-class KnownNode;
-
-/*
-This is one other node you are connected to.
-When you connect you:
-	Send Hello
-	Send Your latest ledger
-
-*/
-
 class Peer : public boost::enable_shared_from_this<Peer>
 {
-	// Must keep track of the messages you have already sent to or received from this peer
-	// Well actually we can just keep track of if we have broadcast each message
+public:
+	static const int psbGotHello=0, psbSentHello=1, psbInMap=2, psbTrusted=3;
+	static const int psbNoLedgers=4, psbNoTransactions=5, psbDownLevel=6;
 
+protected:
 	boost::asio::ip::tcp::socket mSocket;
 	std::vector<uint8_t> mReadbuf;
 	std::list<PackedMessage::pointer> mSendQ;
 	PackedMessage::pointer mSendingPacket;
+	std::bitset<32> mPeerBits;
 
 	Peer(boost::asio::io_service& io_service);
+
 
 	void handle_write(const boost::system::error_code& error, size_t bytes_transferred);
 	//void handle_read(const boost::system::error_code& error, size_t bytes_transferred);
@@ -81,9 +76,6 @@ public:
 
 	void connected(const boost::system::error_code& error);
 
-	// try to connect to this Peer
-	void connectTo(KnownNode& node);
-
 	void sendPacket(PackedMessage::pointer packet);
 	void sendLedgerProposal(Ledger::pointer ledger);
 	void sendFullLedger(Ledger::pointer ledger);
@@ -93,8 +85,6 @@ public:
 	static PackedMessage::pointer createLedgerProposal(Ledger::pointer ledger);
 	static PackedMessage::pointer createValidation(Ledger::pointer ledger);
 	static PackedMessage::pointer createGetFullLedger(uint256& hash);
-
-	
 };
 
 #endif

@@ -168,7 +168,7 @@ bool SHAMapLeafNode::addUpdateItem(SHAMapItem::pointer item)
 	std::cerr << "  addi(" << item->getTag().GetHex() << std::endl;
 #endif
 	std::list<SHAMapItem::pointer>::iterator it;
-	for(it=mItems.begin(); it!=mItems.end(); it++)
+	for(it=mItems.begin(); it!=mItems.end(); ++it)
 	{
 		SHAMapItem &nodeItem=**it;
 		if(nodeItem.getTag()==item->getTag())
@@ -191,7 +191,7 @@ bool SHAMapLeafNode::addUpdateItem(SHAMapItem::pointer item)
 bool SHAMapLeafNode::delItem(const uint256& tag)
 {
 	std::list<SHAMapItem::pointer>::iterator it;
-	for(it=mItems.begin(); it!=mItems.end(); it++)
+	for(it=mItems.begin(); it!=mItems.end(); ++it)
 	{
 		if((*it)->getTag()==tag)
 		{
@@ -211,7 +211,7 @@ SHAMapItem::pointer SHAMapLeafNode::findItem(const uint256& tag)
 
 SHAMapItem::pointer SHAMapLeafNode::firstItem()
 {
-	if(mItems.size()==0) return SHAMapItem::pointer();
+	if(mItems.empty()) return SHAMapItem::pointer();
 	return *(mItems.begin());
 }
 
@@ -254,7 +254,7 @@ SHAMapItem::pointer SHAMapLeafNode::prevItem(const uint256& tag)
 
 SHAMapItem::pointer SHAMapLeafNode::lastItem()
 {
-	if(mItems.size()==0) return SHAMapItem::pointer();
+	if(mItems.empty()) return SHAMapItem::pointer();
 	return *(mItems.rbegin());
 }
 
@@ -262,7 +262,7 @@ SHAMapItem::pointer SHAMapLeafNode::lastItem()
 bool SHAMapLeafNode::updateHash()
 {
 	uint256 nh;
-	if(mItems.size()!=0)
+	if(!mItems.empty())
 	{
 		Serializer s;
 		BOOST_FOREACH(const SHAMapItem::pointer &mi, mItems)

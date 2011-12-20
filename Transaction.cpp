@@ -9,7 +9,7 @@
 using namespace std;
 
 Transaction::Transaction() : mTransactionID(0), mAccountFrom(0), mAccountTo(0),
-	mAmount(0), mFromAccountSeq(0), mSourceLedger(0), mIdent(0),
+	mAmount(0), mFee(0), mFromAccountSeq(0), mSourceLedger(0), mIdent(0),
 	mInLedger(0), mStatus(INVALID)
 {
 }

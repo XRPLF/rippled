@@ -30,6 +30,7 @@ Application::Application()
 	mWallet.load();
 	mPeerDoor=NULL;
 	mRPCDoor=NULL;
+	mDatabase=NULL;
 
 	CKey::pointer account_key(new CKey(CKey::GetBaseFromString("This is my payphrase."), 0, false));
 

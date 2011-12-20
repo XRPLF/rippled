@@ -12,13 +12,8 @@
 #include <stdio.h>
 #include <string.h>
 
-#if defined(_MSC_VER) || defined(__BORLANDC__)
-typedef __int64  int64;
-typedef unsigned __int64  uint64;
-#else
-typedef long long  int64;
-typedef unsigned long long  uint64;
-#endif
+#include "types.h"
+
 #if defined(_MSC_VER) && _MSC_VER < 1300
 #define for  if (false) ; else for
 #endif
@@ -59,7 +54,7 @@ public:
 		base_uint ret;
 		for (int i = 0; i < WIDTH; i++)
 			ret.pn[i] = ~pn[i];
-		ret++;
+		++ret;
 		return ret;
 	}
 
@@ -649,17 +644,17 @@ inline int Testuint256AdHoc(std::vector<std::string> vArg)
 
 
 	printf("%s\n", g.ToString().c_str());
-	g--;  printf("g--\n");
+	--g;  printf("--g\n");
 	printf("%s\n", g.ToString().c_str());
 	g--;  printf("g--\n");
 	printf("%s\n", g.ToString().c_str());
 	g++;  printf("g++\n");
 	printf("%s\n", g.ToString().c_str());
-	g++;  printf("g++\n");
+	++g;  printf("++g\n");
 	printf("%s\n", g.ToString().c_str());
 	g++;  printf("g++\n");
 	printf("%s\n", g.ToString().c_str());
-	g++;  printf("g++\n");
+	++g;  printf("++g\n");
 	printf("%s\n", g.ToString().c_str());
 
 
