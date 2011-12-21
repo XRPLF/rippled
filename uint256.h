@@ -91,21 +91,21 @@ public:
 
 	base_uint& operator^=(uint64 b)
 	{
-		pn[0] ^= (unsigned int)b;
+		pn[0] ^= (unsigned int)(b & 0xffffffffu);
 		pn[1] ^= (unsigned int)(b >> 32);
 		return *this;
 	}
 
 	base_uint& operator&=(uint64 b)
 	{
-		pn[0] &= (unsigned int)b;
+		pn[0] &= (unsigned int)(b & 0xffffffffu);
 		pn[1] &= (unsigned int)(b >> 32);
 		return *this;
 	}
 
 	base_uint& operator|=(uint64 b)
 	{
-		pn[0] |= (unsigned int)b;
+		pn[0] |= (unsigned int)(b & 0xffffffffu);
 		pn[1] |= (unsigned int)(b >> 32);
 		return *this;
 	}
@@ -164,16 +164,14 @@ public:
 
 	base_uint& operator+=(uint64 b64)
 	{
-		base_uint b;
-		b = b64;
+		base_uint b(b64);
 		*this += b;
 		return *this;
 	}
 
 	base_uint& operator-=(uint64 b64)
 	{
-		base_uint b;
-		b = b64;
+		base_uint b(b64);
 		*this += -b;
 		return *this;
 	}
@@ -272,7 +270,7 @@ public:
 
 	friend inline bool operator==(const base_uint& a, uint64 b)
 	{
-		if (a.pn[0] != (unsigned int)b)
+		if (a.pn[0] != (unsigned int)(b & 0xffffffffu))
 			return false;
 		if (a.pn[1] != (unsigned int)(b >> 32))
 			return false;
@@ -440,7 +438,7 @@ public:
 
 	uint160(uint64 b)
 	{
-		pn[0] = (unsigned int)b;
+		pn[0] = (unsigned int)(b & 0xffffffffu);
 		pn[1] = (unsigned int)(b >> 32);
 		for (int i = 2; i < WIDTH; i++)
 			pn[i] = 0;
@@ -448,7 +446,7 @@ public:
 
 	uint160& operator=(uint64 b)
 	{
-		pn[0] = (unsigned int)b;
+		pn[0] = (unsigned int)(b & 0xffffffffu);
 		pn[1] = (unsigned int)(b >> 32);
 		for (int i = 2; i < WIDTH; i++)
 			pn[i] = 0;
@@ -556,7 +554,7 @@ public:
 
 	uint256(uint64 b)
 	{
-		pn[0] = (unsigned int)b;
+		pn[0] = (unsigned int)(b & 0xffffffff);
 		pn[1] = (unsigned int)(b >> 32);
 		for (int i = 2; i < WIDTH; i++)
 			pn[i] = 0;
@@ -564,7 +562,7 @@ public:
 
 	uint256& operator=(uint64 b)
 	{
-		pn[0] = (unsigned int)b;
+		pn[0] = (unsigned int)(b & 0xffffffff);
 		pn[1] = (unsigned int)(b >> 32);
 		for (int i = 2; i < WIDTH; i++)
 			pn[i] = 0;
