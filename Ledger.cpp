@@ -260,26 +260,26 @@ Ledger::pointer Ledger::closeLedger(uint64 timeStamp)
 
 bool Ledger::unitTest()
 {
-    LocalAccount l1(true), l2(true);
-    assert(l1.peekPubKey());
+	LocalAccount l1(true), l2(true);
+	assert(l1.peekPubKey());
 
-    uint160 la1(l1.getAddress()), la2(l2.getAddress());
+	uint160 la1(l1.getAddress()), la2(l2.getAddress());
 #ifdef DEBUG
-    std::cerr << "Account1: " << la1.GetHex() << std::endl;
-    std::cerr << "Account2: " << la2.GetHex() << std::endl;
+	std::cerr << "Account1: " << la1.GetHex() << std::endl;
+	std::cerr << "Account2: " << la2.GetHex() << std::endl;
 #endif
 
-    Ledger::pointer ledger(new Ledger(la1, 100000));
-    l1.mAmount=100000;
-    
-    ledger=Ledger::pointer(new Ledger(*ledger, 0));
+	Ledger::pointer ledger(new Ledger(la1, 100000));
+	l1.mAmount=100000;
+	
+	ledger=Ledger::pointer(new Ledger(*ledger, 0));
 
-    AccountState::pointer as=ledger->getAccountState(la1);
-    assert(as);
-    assert(as->getBalance()==100000);
-    assert(as->getSeq()==0);
-    as=ledger->getAccountState(la2);
-    assert(!as); 
+	AccountState::pointer as=ledger->getAccountState(la1);
+	assert(as);
+	assert(as->getBalance()==100000);
+	assert(as->getSeq()==0);
+	as=ledger->getAccountState(la2);
+	assert(!as); 
 
 	Transaction::pointer t(new Transaction(NEW, l1, l1.mSeqNum, l2.getAddress(), 2500, 0, 1));
 	assert(!!t->getID());
@@ -290,9 +290,8 @@ bool Ledger::unitTest()
 #endif
 	assert(tr==TR_SUCCESS);
 
-    return true;
+	return true;
 }
-
 
 uint256 Ledger::getHash()
 {
@@ -383,106 +382,6 @@ Ledger::pointer Ledger::loadByHash(const uint256& ledgerHash)
 }
 
 #if 0
-
-Ledger::pointer Ledger::getParent()
-{
-	if(!mParent)
-	{
-		mParent=theApp->getLedgerMaster().getLedger(mParentHash);
-	}
-	return(mParent);
-}
-
-// TODO: we can optimize so the ledgers only hold the delta from the accepted ledger
-// TODO: check to make sure the ledger is consistent after we load it
-bool Ledger::load(const uint256& hash)
-{
-	Database* db=theApp->getDB();
-
-	string sql="SELECT * from Ledgers where hash=";
-	string hashStr;
-	db->escape(hash.begin(),hash.GetSerializeSize(),hashStr);
-	sql.append(hashStr);
-
-	if(db->executeSQL(sql.c_str()))
-	{
-		if(db->getNextRow())
-		{
-			mIndex=db->getInt("LedgerIndex");
-			mHash=hash;
-			mValidSig=false;
-			mAccounts.clear();
-			mTransactions.clear();
-			mDiscardedTransactions.clear();
-
-			db->getBinary("ParentHash",mParentHash.begin(),mParentHash.GetSerializeSize());
-			mFeeHeld=db->getBigInt("FeeHeld");
-
-
-			char buf[100];
-			sql="SELECT Transactions.* from Transactions,LedgerTransactionMap where Transactions.TransactionID=LedgerTransactionMap.TransactionID and LedgerTransactionMap.LedgerID=";
-			sprintf(buf, "%d", db->getInt(0));
-			sql.append(buf);
-			if(db->executeSQL(sql.c_str()))
-			{
-				unsigned char tbuf[1000];
-				while(db->getNextRow())
-				{
-					Transaction::pointer trans=Transaction::pointer(new newcoin::Transaction());
-					trans->set_amount( db->getBigInt("Amount"));
-					trans->set_seqnum( db->getInt("seqnum"));
-					trans->set_ledgerindex( db->getInt("ledgerIndex"));
-					db->getBinary("from",tbuf,1000);
-					trans->set_from(tbuf,20);
-					db->getBinary("dest",tbuf,1000);
-					trans->set_dest(tbuf,20);
-					db->getBinary("pubkey",tbuf,1000);
-					trans->set_pubkey(tbuf,128);
-					db->getBinary("sig",tbuf,1000);
-					trans->set_sig(tbuf,32);
-
-					mTransactions.push_back(trans);
-				}
-			}
-
-			sql="SELECT Accounts.* from Acconts,LedgerAcountMap where Accounts.AccountID=LedgerAccountMap.AccountID and LedgerAccountMap.LedgerID=";
-			sql.append(buf);
-			if(db->executeSQL(sql.c_str()))
-			{
-				while(db->getNextRow())
-				{
-					uint160 address;
-					db->getBinary("Address",address.begin(),address.GetSerializeSize());
-
-					mAccounts[address].first=db->getBigInt("Amount");
-					mAccounts[address].second=db->getInt("SeqNum");
-
-				}
-			}
-			return(true);
-		}
-	}
-	return(false);
-}
-
-uint256& Ledger::getSignature()
-{
-	if(!mValidSig) sign();
-	return(mSignature); 
-}
-
-void Ledger::publishValidation()
-{
-	PackedMessage::pointer packet=Peer::createValidation(shared_from_this());
-	theApp->getConnectionPool().relayMessage(NULL,packet);
-}
-
-/*
-uint64 Ledger::getAmount(std::string address)
-{
-	return(mAccounts[NewcoinAddress:: address].first);
-}*/
-
 // returns true if the from account has enough for the transaction and seq num is correct
 bool Ledger::addTransaction(Transaction::pointer trans,bool checkDuplicate)
 {
@@ -586,150 +485,6 @@ void Ledger::addTransactionAllowNeg(Transaction::pointer trans)
 }
 
 
-
-// start from your parent and go through every transaction
-// calls this on its child if recursive is set
-void Ledger::recalculate(bool recursive)
-{
-	if(mParent)
-	{
-		mValidSig=false;
-		mValidHash=false;
-
-		mAccounts.clear();
-		mAccounts=mParent->getAccounts();
-		list<Transaction::pointer> firstTransactions=mTransactions;
-		list<Transaction::pointer> secondTransactions=mDiscardedTransactions;
-
-		mTransactions.clear();
-		mDiscardedTransactions.clear();
-
-		firstTransactions.sort(gTransactionSorter);
-		secondTransactions.sort(gTransactionSorter);
-
-		// don't check balances until the end
-		BOOST_FOREACH(Transaction::pointer trans,firstTransactions)
-		{
-			addTransactionAllowNeg(trans);
-		}
-
-		BOOST_FOREACH(Transaction::pointer trans,secondTransactions)
-		{
-			addTransactionAllowNeg(trans);
-		}
-		correctAccounts();
-		
-
-
-		if(mChild && recursive) mChild->recalculate();
-	}else
-	{
-		cout << "Can't recalculate if there is no parent" << endl;
-	}
-}
-
-
-
-void Ledger::parentAddedTransaction(Transaction::pointer cause)
-{
-	// TODO: optimize we can make this more efficient at some point. For now just redo everything
-
-	recalculate();
-
-	/* 
-	// IMPORTANT: these changes can't change the sequence number. This means we only need to check the dest account
-	// If there was a seqnum change we have to re-do all the transactions again
-
-	// There was a change to the balances of the parent ledger
-	// This could cause:
-	//		an account to now be negative so we have to discard one
-	//		a discarded transaction to be pulled back in
-	//		seqnum invalidation
-	uint160 fromAddress=protobufTo160(cause->from());
-	uint160 destAddress=protobufTo160(cause->dest());
-	
-	Account* fromAccount=getAccount(fromAddress);
-	Account* destAccount=getAccount(destAddress);
-
-	if(fromAccount)
-	{
-		if(fromAccount->first<cause->amount())
-		{
-			fromAccount->first -= cause->amount();
-			fromAccount->second = cause->seqnum()+1;
-			mAccounts[fromAddress] = *fromAccount;
-		}else cout << "This shouldn't happen2" << endl;
-	}else
-	{
-		cout << "This shouldn't happen" << endl;
-	}
-
-	if(destAccount)
-	{
-		destAccount->first += cause->amount();
-		mAccounts[destAddress]= *destAccount;
-	}else
-	{
-		mAccounts[destAddress]=pair<uint64,uint32>(cause->amount(),cause->seqnum());
-	}
-	
-	// look for discarded transactions
-	BOOST_FOREACH(Transaction::pointer trans,)
-	*/
-}
-
-bool Ledger::hasTransaction(Transaction::pointer needle)
-{
-	BOOST_FOREACH(Transaction::pointer trans,mTransactions)
-	{
-		if( Transaction::isEqual(needle,trans) ) return(true);
-	}
-
-	BOOST_FOREACH(Transaction::pointer disTrans,mDiscardedTransactions)
-	{
-		if( Transaction::isEqual(needle,disTrans) ) return(true);
-	}
-
-	return(false);
-}
-
-// Ledgers are compatible if both sets of transactions merged together would lead to the same ending balance
-bool Ledger::isCompatible(Ledger::pointer other)
-{
-	Ledger::pointer l1=Ledger::pointer(new Ledger(*this));
-	Ledger::pointer l2=Ledger::pointer(new Ledger(*other));
-
-	l1->mergeIn(l2);
-	l2->mergeIn(l1);
-
-	map<uint160, Account > a1=l1->getAccounts();
-	map<uint160, Account > a2=l2->getAccounts();
-
-	return(a1==a2);
-
-}
-
-void Ledger::mergeIn(Ledger::pointer other)
-{
-	list<Transaction::pointer>& otherTransactions=other->getTransactions();
-	BOOST_FOREACH(Transaction::pointer trans,otherTransactions)
-	{
-		addTransactionAllowNeg(trans);
-	}
-
-	correctAccounts();
-}
-
-void Ledger::correctAccounts()
-{
-	BOOST_FOREACH(PAIR(const uint160, Account)& fullAccount, mAccounts)
-	{
-		if(fullAccount.second.first <0 )
-		{
-			correctAccount(fullAccount.first);
-		}
-	}
-}
 
 // Must look for transactions to discard to make this account positive
 // When we chuck transactions it might cause other accounts to need correcting

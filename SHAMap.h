@@ -125,7 +125,7 @@ private:
 	SHAMapLeafNode& operator=(const SHAMapLeafNode&); // no implementation
 
 protected:
-	bool addUpdateItem(SHAMapItem::pointer);
+	bool addUpdateItem(SHAMapItem::pointer, bool doHash);
 	bool delItem(const SHAMapItem::pointer i) { return delItem(i->getTag()); }
 	bool delItem(const uint256& tag);
 

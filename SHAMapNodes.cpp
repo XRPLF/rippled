@@ -61,15 +61,14 @@ void SHAMapNode::ClassInit()
 	for(int i=0; i<=leafDepth; i++)
 	{
 		smMasks[i]=selector;
-		*(selector.begin()+i)=0x1f;
+		*(selector.begin()+i)=0x1F;
 	}
 }
 
 uint256 SHAMapNode::getNodeID(int depth, const uint256& hash)
 {
 	assert(depth>=0 && depth<=leafDepth);
-	uint256 ret = hash & smMasks[depth];
-	return ret;
+	return hash & smMasks[depth];
 }
 
 SHAMapNode::SHAMapNode(int depth, const uint256 &hash) : mDepth(depth)
@@ -103,7 +102,7 @@ int SHAMapNode::selectBranch(const uint256 &hash)
 		return -1;	// does not go under this node
 	}
 
-	uint256 selector=hash&smMasks[mDepth+1];
+	uint256 selector(hash & smMasks[mDepth+1]);
 	int branch=*(selector.begin()+mDepth);
 	assert(branch>=0 && branch<32);
 	return branch;
@@ -127,7 +126,7 @@ SHAMapLeafNode::SHAMapLeafNode(const SHAMapLeafNode& node, uint32 seq) : SHAMapN
 
 SHAMapLeafNode::SHAMapLeafNode(const SHAMapNode& id, const std::vector<unsigned char>& rawLeaf, uint32 seq)
 	: SHAMapNode(id), mSeq(seq)
-{ // OPTIMIZEME:: addUpdateItem updates the hash
+{
 	Serializer s(rawLeaf);
 	int pos=0;
 	while(pos<s.getLength())
@@ -138,7 +137,7 @@ SHAMapLeafNode::SHAMapLeafNode(const SHAMapNode& id, const std::vector<unsigned 
 		if(!s.get16(len, pos)) throw SHAMapException(InvalidNode);
 		pos+=2;
 		if(!id || !len || ((pos+len)>s.getLength())) throw SHAMapException(InvalidNode);
-		addUpdateItem(SHAMapItem::pointer(new SHAMapItem(id, s.getRaw(pos, len))));
+		addUpdateItem(SHAMapItem::pointer(new SHAMapItem(id, s.getRaw(pos, len))), false);
 		pos+=len;
 	}
 	updateHash();
@@ -161,7 +160,7 @@ bool SHAMapLeafNode::hasItem(const uint256& item) const
 	return false;
 }
 
-bool SHAMapLeafNode::addUpdateItem(SHAMapItem::pointer item)
+bool SHAMapLeafNode::addUpdateItem(SHAMapItem::pointer item, bool doHash)
 { // The node will almost never have more than one item in it
 #ifdef DEBUG
 	std::cerr << "Leaf(" << getString() << ")" << std::endl;
@@ -176,16 +175,20 @@ bool SHAMapLeafNode::addUpdateItem(SHAMapItem::pointer item)
 			if(nodeItem.peekData()==item->peekData())
 				return false; // no change
 			nodeItem.updateData(item->peekData());
-			return updateHash();
+			if(doHash) return updateHash();
+			return true;
 		}
 		if(nodeItem.getTag()>item->getTag())
 		{
 			mItems.insert(it, item);
-			return updateHash();
+			if(doHash) return updateHash();
+			return true;
 		}
 	}
 	mItems.push_back(item);
-	return updateHash();
+
+	if(doHash) return updateHash();
+	return true;
 }	
 
 bool SHAMapLeafNode::delItem(const uint256& tag)
@@ -258,7 +261,6 @@ SHAMapItem::pointer SHAMapLeafNode::lastItem()
 	return *(mItems.rbegin());
 }
 
-
 bool SHAMapLeafNode::updateHash()
 {
 	uint256 nh;
@@ -289,6 +291,7 @@ SHAMapInnerNode::SHAMapInnerNode(const SHAMapNode& id, const std::vector<unsigne
 	: SHAMapNode(id), mSeq(seq)
 {
 	assert(!id.isLeaf());
+	assert(contents.size()==32*256/8);
 	Serializer s(contents);
 	for(int i=0; i<32; i++)
 		mHashes[i]=s.get256(i*32);
@@ -340,7 +343,7 @@ const uint256& SHAMapInnerNode::getChildHash(int m) const
 bool SHAMapInnerNode::updateHash()
 {
 	int nc=0;
-	Serializer s;
+	Serializer s(1024);
 	for(int i=0; i<32; i++)
 	{
 		if(mHashes[i]!=0) nc++;

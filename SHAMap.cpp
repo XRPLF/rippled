@@ -445,7 +445,7 @@ bool SHAMap::addGiveItem(const SHAMapItem::pointer item)
 #endif
 		return false;
 	}
-	if(!leaf->addUpdateItem(item))
+	if(!leaf->addUpdateItem(item, true))
 	{
 		assert(false);
 		return false;
@@ -464,7 +464,7 @@ bool SHAMap::updateGiveItem(SHAMapItem::pointer item)
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	SHAMapLeafNode::pointer leaf=walkToLeaf(item->getTag(), true, true);
 	if(!leaf) return false;
-	if(!leaf->addUpdateItem(item)) return false;
+	if(!leaf->addUpdateItem(item, true)) return false;
 	dirtyUp(item->getTag());
 	return true;
 }
