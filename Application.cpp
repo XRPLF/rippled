@@ -1,13 +1,16 @@
+
+#include <iostream>
+
+//#include <boost/log/trivial.hpp>
+
+#include "database/SqliteDatabase.h"
+
 #include "Application.h"
 #include "Config.h"
 #include "PeerDoor.h"
 #include "RPCDoor.h"
 #include "BitcoinUtil.h"
 #include "key.h"
-#include "database/SqliteDatabase.h"
-//#include <boost/log/trivial.hpp>
-#include <iostream>
-using namespace std;
 
 Application* theApp=NULL;
 
@@ -25,9 +28,7 @@ What needs to happen:
 Application::Application()
 {
 	theConfig.load();
-	mKnownNodes.load();
 	//mUNL.load();
-	mWallet.load();
 	mPeerDoor=NULL;
 	mRPCDoor=NULL;
 	mDatabase=NULL;
@@ -52,7 +53,7 @@ Application::Application()
 
 void Application::run()
 {
-	string filename=strprintf("%sdata.db",theConfig.DATA_DIR.c_str());
+	std::string filename=strprintf("%sdata.db",theConfig.DATA_DIR.c_str());
 	theApp->setDB(new SqliteDatabase(filename.c_str()));
 	mDatabase->connect();
 
@@ -70,9 +71,11 @@ void Application::run()
 
 	mConnectionPool.connectToNetwork(mKnownNodes, mIOService); 
 	mTimingService.start(mIOService);
-	cout << "Before Run." << endl;
+	std::cout << "Before Run." << std::endl;
 	mIOService.run(); // This blocks
 
+	mWallet.load();
+
 	//BOOST_LOG_TRIVIAL(info) << "Done.";
-	cout << "Done." << endl;
+	std::cout << "Done." << std::endl;
 }

@@ -23,6 +23,12 @@ EC_KEY* CKey::GenerateRootDeterministicKey(const uint256& key)
 	if(!ctx) return NULL;
 
 	EC_KEY* pkey=EC_KEY_new_by_curve_name(NID_secp256k1);
+	if(!pkey)
+	{
+		BN_CTX_free(ctx);
+		return NULL;
+	}
+	EC_KEY_set_conv_form(pkey, POINT_CONVERSION_COMPRESSED);
 
 	BIGNUM* order=BN_new();
 	if(!order)
@@ -118,6 +124,7 @@ EC_KEY* CKey::GeneratePublicDeterministicKey(const uint160& family, EC_POINT* ro
 		BN_CTX_free(ctx);
 		return NULL;
 	}
+	EC_KEY_set_conv_form(pkey, POINT_CONVERSION_COMPRESSED);
 
 	EC_POINT *newPoint=EC_POINT_new(EC_KEY_get0_group(pkey));
 	if(newPoint==NULL)
@@ -159,6 +166,7 @@ EC_KEY* CKey::GeneratePrivateDeterministicKey(const uint160& family, BIGNUM* roo
 		BN_CTX_free(ctx);
 		return NULL;
 	}
+	EC_KEY_set_conv_form(pkey, POINT_CONVERSION_COMPRESSED);
 	
 	BIGNUM* order=BN_new();
 	if(order==NULL)

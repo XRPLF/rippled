@@ -71,7 +71,7 @@ CREATE INDEX ObjectLocate ON CommittedObjects(LedgerIndex, ObjType);
 CREATE TABLE LocalAcctFamilies (		-- a family of accounts that share a payphrase
 	FamilyName	CHARACTER(40) PRIMARY KEY,
 	RootPubKey	CHARACTER(66),
-	Seq			BIGINT UNSIGNED,	-- last one issued
+	Seq			BIGINT UNSIGNED,		-- next one to issue
 	Name		TEXT,
 	Comment		TEXT
 )

@@ -67,9 +67,12 @@ protected:
 	std::map<int, LocalAccountEntry::pointer> mAccounts;
 
 	uint160		mFamily;		// the name for this account family
-	EC_POINT*	rootPubKey;
+	EC_POINT*	mRootPubKey;
 
-	BIGNUM*		rootPrivateKey;
+	uint32 mLastSeq;
+	std::string mName, mComment;
+
+	BIGNUM*		mRootPrivateKey;
 
 public:
 
@@ -77,17 +80,22 @@ public:
 	~LocalAccountFamily();
 
 	const uint160& getFamily() { return mFamily; }
-	bool isLocked() const { return rootPrivateKey==NULL; }
+	bool isLocked() const { return mRootPrivateKey==NULL; }
 	void unlock(BIGNUM* privateKey);
 	void lock();
 
-	const EC_POINT* peekPubKey() const { return rootPubKey; }
+	void setSeq(uint32 s) { mLastSeq=s; }
+	void setName(const std::string& n) { mName=n; }
+	void setComment(const std::string& c) { mComment=c; }
 
 	LocalAccountEntry::pointer get(int seq);
 	uint160 getAccount(int seq);
 
-	std::string getPubName() const;		// The text name of the public key
+	std::string getPubKeyHex() const;	// The text name of the public key
 	std::string getShortName() const;	// The text name for the family
+
+	static std::string getSQLFields();
+	std::string getSQL() const;
 };
 
 class LocalAccount
@@ -125,6 +133,11 @@ protected:
 
 	uint160 doPrivate(const uint256& passPhrase, bool create, bool unlock);
 
+	LocalAccountFamily::pointer getFamily(const uint160& family, const std::string& pubKey);
+
+	void addFamily(const uint160& family, const std::string& pubKey, int seq,
+		const std::string& name, const std::string& comment);
+
 public:
 	Wallet() { ; }
 
@@ -140,7 +153,9 @@ public:
 
 	LocalAccount::pointer getLocalAccount(const uint160& famBase, int seq);
 	LocalAccount::pointer getLocalAccount(const uint160& acctID);
-	std::string getPubKey(const uint160& famBase);
+	std::string getPubKeyHex(const uint160& famBase);
+
+	static bool unitTest();
 };
 
 #endif

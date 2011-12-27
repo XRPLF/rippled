@@ -14,7 +14,7 @@ LocalAccountEntry::LocalAccountEntry(const uint160& accountFamily, int accountSe
  mBalance(0), mLedgerSeq(0), mTxnSeq(0)
 {
 	mAcctID=mPublicKey->GetAddress().GetHash160();
-	mPublicKey=theApp->getPubKeyCache().store(mAcctID, mPublicKey);
+	if(theApp!=NULL) mPublicKey=theApp->getPubKeyCache().store(mAcctID, mPublicKey);
 }
 
 void LocalAccountEntry::unlock(BIGNUM* rootPrivKey)
@@ -34,13 +34,13 @@ std::string LocalAccountEntry::getLocalAccountName() const
 }
 
 LocalAccountFamily::LocalAccountFamily(const uint160& family, EC_POINT* pubKey) :
-	mFamily(family), rootPubKey(pubKey), rootPrivateKey(NULL)
+	mFamily(family), mRootPubKey(pubKey), mLastSeq(0), mRootPrivateKey(NULL)
 { ; }
 
 LocalAccountFamily::~LocalAccountFamily()
 {
 	lock();
-	if(rootPubKey!=NULL) EC_POINT_free(rootPubKey);
+	if(mRootPubKey!=NULL) EC_POINT_free(mRootPubKey);
 }
 
 uint160 LocalAccountFamily::getAccount(int seq)
@@ -48,7 +48,7 @@ uint160 LocalAccountFamily::getAccount(int seq)
 	std::map<int, LocalAccountEntry::pointer>::iterator ait=mAccounts.find(seq);
 	if(ait!=mAccounts.end()) return ait->second->getAccountID();
 
-	LocalAccountEntry::pointer lae(new LocalAccountEntry(mFamily, seq, rootPubKey));
+	LocalAccountEntry::pointer lae(new LocalAccountEntry(mFamily, seq, mRootPubKey));
 	mAccounts.insert(std::make_pair(seq, lae));
 
 	return lae->getAccountID();
@@ -56,19 +56,64 @@ uint160 LocalAccountFamily::getAccount(int seq)
 
 void LocalAccountFamily::unlock(BIGNUM* privateKey)
 {
-	if(rootPrivateKey!=NULL) BN_free(rootPrivateKey);
-	rootPrivateKey=privateKey;
+	if(mRootPrivateKey!=NULL) BN_free(mRootPrivateKey);
+	mRootPrivateKey=privateKey;
 }
 
 void LocalAccountFamily::lock()
 {
-	if(rootPrivateKey!=NULL)
+	if(mRootPrivateKey!=NULL)
 	{
- 		BN_free(rootPrivateKey);
-		rootPrivateKey=NULL;
+ 		BN_free(mRootPrivateKey);
+		mRootPrivateKey=NULL;
 		for(std::map<int, LocalAccountEntry::pointer>::iterator it=mAccounts.begin(); it!=mAccounts.end(); ++it)
 			it->second->lock();
 	}
+}
+
+
+std::string LocalAccountFamily::getPubKeyHex() const
+{
+	EC_GROUP *grp=EC_GROUP_new_by_curve_name(NID_secp256k1);
+	if(!grp) return "";
+
+	BIGNUM* pubBase=EC_POINT_point2bn(grp, mRootPubKey, POINT_CONVERSION_COMPRESSED, NULL, NULL);
+	EC_GROUP_free(grp);
+
+	if(!pubBase) return "";
+	char *hex=BN_bn2hex(pubBase);
+	BN_free(pubBase);
+	if(!hex) return "";
+	std::string ret(hex);
+	OPENSSL_free(hex);
+
+	return ret;
+}
+
+std::string LocalAccountFamily::getSQLFields()
+{
+	return "(FamilyName,RootPubKey,Seq,Name,Comment)";
+}
+
+std::string LocalAccountFamily::getSQL() const
+{ // familyname(40), pubkey(66), seq, name, comment
+	std::string ret("('");
+	ret.append(mFamily.GetHex());
+	ret+="','";
+	ret.append(getPubKeyHex());
+	ret.append("','");
+	ret.append(boost::lexical_cast<std::string>(mLastSeq));
+	ret.append("',");
+	
+	std::string esc;
+	theApp->getDB()->escape((const unsigned char *) mName.c_str(), mName.size(), esc);
+	ret.append(esc);
+	ret.append(",");
+	theApp->getDB()->escape((const unsigned char *) mComment.c_str(), mComment.size(), esc);
+	ret.append(esc);
+
+	ret.append(")");
+	return ret;
 }
 
 LocalAccountEntry::pointer LocalAccountFamily::get(int seq)
@@ -76,7 +121,7 @@ LocalAccountEntry::pointer LocalAccountFamily::get(int seq)
 	std::map<int, LocalAccountEntry::pointer>::iterator act=mAccounts.find(seq);
 	if(act!=mAccounts.end()) return act->second;
 
-	LocalAccountEntry::pointer ret(new LocalAccountEntry(mFamily, seq, rootPubKey));
+	LocalAccountEntry::pointer ret(new LocalAccountEntry(mFamily, seq, mRootPubKey));
 	mAccounts.insert(std::make_pair(seq, ret));
 	return ret;
 }
@@ -86,54 +131,39 @@ uint160 Wallet::addFamily(const std::string& payPhrase, bool lock)
 	return doPrivate(CKey::PassPhraseToKey(payPhrase), true, !lock);
 }
 
-bool Wallet::addFamily(const uint160& familyName, const std::string& pubKey)
+LocalAccountFamily::pointer Wallet::getFamily(const uint160& family, const std::string& pubKey)
 {
-	std::map<uint160, LocalAccountFamily::pointer>::iterator fit=families.find(familyName);
+	std::map<uint160, LocalAccountFamily::pointer>::iterator fit=families.find(family);
 	if(fit!=families.end()) // already added
-		return true;
+		return fit->second;
 
 	EC_GROUP *grp=EC_GROUP_new_by_curve_name(NID_secp256k1);
-	if(!grp) return false;
+	if(!grp) return LocalAccountFamily::pointer();
 
 	BIGNUM* pbn=NULL;
 	BN_hex2bn(&pbn, pubKey.c_str());
 	if(!pbn)
 	{
 		EC_GROUP_free(grp);
-		return false;
+		return LocalAccountFamily::pointer();
 	}
-	
 	EC_POINT* rootPub=EC_POINT_bn2point(grp, pbn, NULL, NULL);
 	EC_GROUP_free(grp);
 	BN_free(pbn);
 	if(!rootPub)
 	{
 		assert(false);
-		return false;
+		return LocalAccountFamily::pointer();
 	}
 	
-	LocalAccountFamily::pointer fam(new LocalAccountFamily(familyName, rootPub));
-	families.insert(std::make_pair(familyName, fam));
-	return true;
+	LocalAccountFamily::pointer fam(new LocalAccountFamily(family, rootPub));
+	families.insert(std::make_pair(family, fam));
+	return fam;
 }
 
-std::string Wallet::getPubKey(const uint160& famBase)
+bool Wallet::addFamily(const uint160& familyName, const std::string& pubKey)
 {
-	std::map<uint160, LocalAccountFamily::pointer>::iterator fit=families.find(famBase);
-	if(fit==families.end()) return "";
-
-	EC_GROUP *grp=EC_GROUP_new_by_curve_name(NID_secp256k1);
-	if(!grp) return "";
-
-	BIGNUM* pubBase=EC_POINT_point2bn(grp, fit->second->peekPubKey(), POINT_CONVERSION_COMPRESSED, NULL, NULL);
-	EC_GROUP_free(grp);
-	if(!pubBase) return "";
-	char *hex=BN_bn2hex(pubBase);
-	BN_free(pubBase);
-	if(!hex) return "";
-	std::string ret(hex);
-	OPENSSL_free(hex);
-	return ret;
+	return !!getFamily(familyName, pubKey);
 }
 
 uint160 LocalAccount::getAddress() const
@@ -173,6 +203,40 @@ CKey::pointer LocalAccount::getPrivateKey()
 
 void Wallet::load()
 {
+	std::string sql("SELECT * FROM LocalAcctFamilies");
+	
+	ScopedLock sl(theApp->getDBLock());
+	Database *db=theApp->getDB();
+	if(!db->executeSQL(sql.c_str())) return;
+
+	while(db->getNextRow())
+	{
+		std::string family, rootpub, name, comment;
+		db->getStr("FamilyName", family);
+		db->getStr("RootPubKey", rootpub);
+		db->getStr("Name", name);
+		db->getStr("Comment", comment);
+		int seq=db->getBigInt("Seq");
+		
+		uint160 fb;
+		fb.SetHex(family);
+
+		LocalAccountFamily::pointer f(getFamily(fb, rootpub));
+		if(f)
+		{
+			f->setSeq(seq);
+			f->setName(name);
+			f->setComment(comment);
+		}
+		else assert(false);
+	}
+}
+
+std::string Wallet::getPubKeyHex(const uint160& famBase)
+{
+	std::map<uint160, LocalAccountFamily::pointer>::iterator fit=families.find(famBase);
+	if(fit==families.end()) return "";
+	return fit->second->getPubKeyHex();
 }
 
 LocalAccount::pointer Wallet::getLocalAccount(const uint160& family, int seq)
@@ -221,4 +285,55 @@ uint160 Wallet::doPrivate(const uint256& passPhrase, bool create, bool unlock)
 	
 	EC_KEY_free(base);
 	return family;
+}
+
+bool Wallet::unitTest()
+{ // Create 100 keys for each of 1,000 families Ensure all keys match
+	Wallet pub, priv;
+	
+	uint256 privBase;
+	privBase.SetHex("102031459e");
+	
+	for(int i=0; i<1000; i++, privBase++)
+	{
+		uint160 fam=priv.addFamily(privBase, false);
+
+#ifdef DEBUG
+		std::cerr << "Priv: " << privBase.GetHex() << " Fam: " << fam.GetHex() << std::endl;
+#endif
+		
+		std::string pubkey=priv.getPubKeyHex(fam);
+#ifdef DEBUG
+		std::cerr << "Pub: " << pubkey << std::endl;
+#endif
+		
+		if(!pub.addFamily(fam, pubkey))
+		{
+			assert(false);
+			return false;
+		}
+
+		for(int j=0; j<100; j++)
+		{
+			LocalAccount::pointer lpub=pub.getLocalAccount(fam, j);
+			LocalAccount::pointer lpriv=priv.getLocalAccount(fam, j);
+			if(!lpub || !lpriv)
+			{
+				assert(false);
+				return false;
+			}
+			uint160 lpuba=lpub->getAddress();
+			uint160 lpriva=lpriv->getAddress();
+#ifdef DEBUG
+			std::cerr << "pubA(" << j << "): " << lpuba.GetHex() << std::endl;
+			std::cerr << "prvA(" << j << "): " << lpriva.GetHex() << std::endl;
+#endif
+			if(!lpuba || (lpuba!=lpriva))
+			{
+				assert(false);
+				return false;
+			}
+		}
+	}
+	return true;
 }
