@@ -4,7 +4,6 @@
 #include <assert.h>
 
 
-
 bool NewcoinAddress::SetHash160(const uint160& hash160)
 {
 	SetData(51, &hash160, 20);
@@ -25,7 +24,7 @@ NewcoinAddress::NewcoinAddress()
 {
 }
 
-NewcoinAddress::NewcoinAddress(uint160& hash160In)
+NewcoinAddress::NewcoinAddress(const uint160& hash160In)
 {
 	SetHash160(hash160In);
 }
@@ -53,3 +52,7 @@ uint160 NewcoinAddress::GetHash160()  const
 	return hash160;
 }
 
+std::string NewcoinAddress::GetString() const
+{
+	return ToString();
+}

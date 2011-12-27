@@ -14,14 +14,13 @@ Transaction::Transaction() : mTransactionID(0), mAccountFrom(0), mAccountTo(0),
 {
 }
 
-Transaction::Transaction(TransStatus status, LocalAccount& fromLocalAccount, uint32 fromSeq,
+Transaction::Transaction(TransStatus status, LocalAccount::pointer fromLocalAccount, uint32 fromSeq,
 		const uint160& toAccount, uint64 amount, uint32 ident, uint32 ledger) :
 			mAccountTo(toAccount), mAmount(amount), mFromAccountSeq(fromSeq), mSourceLedger(ledger),
 			mIdent(ident), mInLedger(0), mStatus(NEW)
 {
-	assert(fromLocalAccount.mAmount>=amount);
-	mAccountFrom=fromLocalAccount.getAddress();
-	mFromPubKey=fromLocalAccount.peekPubKey();
+	mAccountFrom=fromLocalAccount->getAddress();
+	mFromPubKey=fromLocalAccount->getPublicKey();
 	assert(mFromPubKey);
 	updateFee();
 	sign(fromLocalAccount);
@@ -51,24 +50,27 @@ Transaction::Transaction(const std::vector<unsigned char> &t, bool validate) : m
 		mStatus=NEW;
 }
 
-bool Transaction::sign(LocalAccount& fromLocalAccount)
+bool Transaction::sign(LocalAccount::pointer fromLocalAccount)
 {
+	CKey::pointer privateKey=fromLocalAccount->getPrivateKey();
+	if(!privateKey) return false;
+
 	if( (mAmount==0) || (mSourceLedger==0) || (mAccountTo==0) )
 	{
 		assert(false);
 		return false;
 	}
-	if(mAccountFrom!=fromLocalAccount.mAddress.GetHash160())
+	if(mAccountFrom!=fromLocalAccount->getAddress())
 	{
 		assert(false);
 		return false;
 	}
 	Serializer::pointer signBuf=getRaw(true);
 	assert(signBuf->getLength()==73+4);
-	if(!signBuf->makeSignature(mSignature, fromLocalAccount.peekPrivKey()))
+	if(!signBuf->makeSignature(mSignature, *privateKey))
 	{
 		assert(false);
-	    return false;
+		return false;
 	}
 	assert(mSignature.size()==72);
 	updateID();

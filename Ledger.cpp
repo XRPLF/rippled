@@ -260,17 +260,20 @@ Ledger::pointer Ledger::closeLedger(uint64 timeStamp)
 
 bool Ledger::unitTest()
 {
-	LocalAccount l1(true), l2(true);
-	assert(l1.peekPubKey());
+	uint160 la1=theApp->getWallet().addFamily(CKey::PassPhraseToKey("This is my payphrase!"), false);
+	uint160 la2=theApp->getWallet().addFamily(CKey::PassPhraseToKey("Another payphrase"), false);
 
-	uint160 la1(l1.getAddress()), la2(l2.getAddress());
+	LocalAccount::pointer l1=theApp->getWallet().getLocalAccount(la1, 0);
+	LocalAccount::pointer l2=theApp->getWallet().getLocalAccount(la2, 0);
+
+	assert(l1->getAddress()==la1);
+
 #ifdef DEBUG
 	std::cerr << "Account1: " << la1.GetHex() << std::endl;
 	std::cerr << "Account2: " << la2.GetHex() << std::endl;
 #endif
 
 	Ledger::pointer ledger(new Ledger(la1, 100000));
-	l1.mAmount=100000;
 	
 	ledger=Ledger::pointer(new Ledger(*ledger, 0));
 
@@ -281,7 +284,7 @@ bool Ledger::unitTest()
 	as=ledger->getAccountState(la2);
 	assert(!as); 
 
-	Transaction::pointer t(new Transaction(NEW, l1, l1.mSeqNum, l2.getAddress(), 2500, 0, 1));
+	Transaction::pointer t(new Transaction(NEW, l1, l1->getAcctSeq(), l2->getAddress(), 2500, 0, 1));
 	assert(!!t->getID());
 
 	Ledger::TransResult tr=ledger->applyTransaction(t);

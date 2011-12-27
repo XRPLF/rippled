@@ -86,7 +86,6 @@ protected:
 	EC_KEY* pkey;
 	bool fSet;
 
-	static EC_KEY* GenerateDeterministicKey(const uint256& base, uint32 n, bool private_key);
 
 public:
 	typedef boost::shared_ptr<CKey> pointer;
@@ -123,13 +122,26 @@ public:
 		EC_KEY_free(pkey);
 	}
 
-	CKey(const uint256& base, uint32 seq, bool private_key) : fSet(true)
+
+	static uint256 PassPhraseToKey(const std::string& passPhrase);
+	static EC_KEY* GenerateRootDeterministicKey(const uint256& passPhrase);
+	static EC_KEY* GeneratePublicDeterministicKey(const uint160& family, EC_POINT* rootPub, int n);
+	static EC_KEY* GeneratePrivateDeterministicKey(const uint160& family, BIGNUM* rootPriv, int n);
+
+	CKey(const uint256& passPhrase) : fSet(true)
 	{
-		pkey=GenerateDeterministicKey(base, seq, private_key);
+		pkey = GenerateRootDeterministicKey(passPhrase);
 	}
 
-	static uint256 GetBaseFromString(const std::string& base);
-	static uint256 GetRandomBase(void);
+	CKey(const uint160& base, EC_POINT* rootPubKey, int n) : fSet(true)
+	{ // public deterministic key
+		pkey = GeneratePublicDeterministicKey(base, rootPubKey, n);
+	}
+
+	CKey(const uint160& base, BIGNUM* rootPrivKey, int n) : fSet(true)
+	{ // private deterministic key
+		pkey = GeneratePrivateDeterministicKey(base, rootPrivKey, n);
+	}
 
 	bool IsNull() const
 	{
@@ -184,7 +196,7 @@ public:
 		int n=BN_bn2bin(bn,&vchRet[32 - nBytes]);
 		if (n != nBytes) 
 			throw key_error("CKey::GetSecret(): BN_bn2bin failed");
-		return vchRet;
+ 		return vchRet;
 	}
 
 	CPrivKey GetPrivKey() const

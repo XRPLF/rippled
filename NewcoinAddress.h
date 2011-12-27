@@ -11,7 +11,7 @@ class NewcoinAddress : public CBase58Data
 {
 public:
 	NewcoinAddress();
-	NewcoinAddress(uint160& hash160In);
+	NewcoinAddress(const uint160& hash160In);
 	NewcoinAddress(const std::vector<unsigned char>& vchPubKey);
 	NewcoinAddress(const std::string& strAddress);
 	NewcoinAddress(const char* pszAddress);

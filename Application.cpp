@@ -32,9 +32,14 @@ Application::Application()
 	mRPCDoor=NULL;
 	mDatabase=NULL;
 
-	CKey::pointer account_key(new CKey(CKey::GetBaseFromString("This is my payphrase."), 0, false));
 
-	Ledger::pointer firstLedger(new Ledger(account_key->GetAddress().GetHash160(), 1000000));
+	uint160 rootFamily=mWallet.addFamily("This is my payphrase.", true);
+	LocalAccount::pointer rootAccount=mWallet.getLocalAccount(rootFamily, 0);
+	assert(!!rootAccount);
+	uint160 rootAddress=rootAccount->getAddress();
+	assert(!!rootAddress);
+
+	Ledger::pointer firstLedger(new Ledger(rootAddress, 1000000));
 	firstLedger->setClosed();
 	firstLedger->setAccepted();
 	mMasterLedger.pushLedger(firstLedger);

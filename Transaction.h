@@ -10,6 +10,7 @@
 #include "newcoin.pb.h"
 #include "Hanko.h"
 #include "Serializer.h"
+#include "Wallet.h"
 #include "SHAMap.h"
 
 /*
@@ -28,9 +29,6 @@ enum TransStatus
 	OBSOLETE	=7, // a compatible transaction has taken precedence
 	INCOMPLETE	=8  // needs more signatures
 };
-
-class Account;
-class LocalAccount;
 
 class Transaction : public boost::enable_shared_from_this<Transaction>
 {
@@ -54,10 +52,10 @@ private:
 public:
 	Transaction();
 	Transaction(const std::vector<unsigned char>& rawTransaction, bool validate);
-	Transaction(TransStatus Status, LocalAccount& fromLocal, uint32 fromSeq, const uint160& to, uint64 amount,
+	Transaction(TransStatus Status, LocalAccount::pointer fromLocal, uint32 fromSeq, const uint160& to, uint64 amount,
 		uint32 ident, uint32 ledger);
 
-	bool sign(LocalAccount& fromLocalAccount);
+	bool sign(LocalAccount::pointer fromLocalAccount);
 	bool checkSign() const;
 	void updateID();
 	void updateFee();

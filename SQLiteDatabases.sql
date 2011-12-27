@@ -35,7 +35,6 @@ CREATE TABLE Ledgers ( -- closed/accepted ledgers
 CREATE INDEX SeqLedger ON Ledgers(LedgerSeq);
 
 
-
 CREATE TABLE LedgerConfirmations (
 	LedgerSeq	BIGINT UNSIGNED,
 	LedgerHash	CHARACTER(64),
@@ -69,12 +68,22 @@ CREATE TABLE CommittedObjects (			-- used to synch nodes
 
 CREATE INDEX ObjectLocate ON CommittedObjects(LedgerIndex, ObjType);
 
-CREATE TABLE LocalAccounts (			-- wallet
+CREATE TABLE LocalAcctFamilies (		-- a family of accounts that share a payphrase
+	FamilyName	CHARACTER(40) PRIMARY KEY,
+	RootPubKey	CHARACTER(66),
+	Seq			BIGINT UNSIGNED,	-- last one issued
+	Name		TEXT,
+	Comment		TEXT
+)
+
+CREATE TABLE LocalAccounts (			-- an individual account
 	ID			CHARACTER(40) PRIMARY KEY,
+	DKID		CHARACTER(40),		-- root determinstic key
+	DKSeq		BIGINT UNSIGNED,	-- sequence number
 	Seq			BIGINT UNSIGNED,	-- last transaction seen/issued
 	Balance		BIGINT UNSIGNED,
 	LedgerSeq	BIGINT UNSIGNED,	-- ledger this balance is from
-	KeyFormat	CHARACTER(1),		-- can be encrypted
-	PrivateKey	BLOB,
 	Comment		TEXT
 );
+
+CREATE UNIQUE INDEX AccountLocate ON LocalAccounts(DKID, DKSeq);
