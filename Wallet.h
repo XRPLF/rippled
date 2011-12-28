@@ -35,11 +35,11 @@ protected:
 public:
 	LocalAccountEntry(const uint160& accountFamily, int accountSeq, EC_POINT* rootPubKey);
 
-	void unlock(BIGNUM* rootPrivKey);
+	void unlock(const BIGNUM* rootPrivKey);
 	void lock() { mPrivateKey=CKey::pointer(); }
 
-	void write();
-	void read();
+	bool write(bool create);
+	bool read();
 
 	const uint160& getAccountID() const { return mAcctID; }
 	int getAccountSeq() const { return mAccountSeq; }
@@ -81,13 +81,14 @@ public:
 
 	const uint160& getFamily() { return mFamily; }
 	bool isLocked() const { return mRootPrivateKey==NULL; }
-	void unlock(BIGNUM* privateKey);
+	void unlock(const BIGNUM* privateKey);
 	void lock();
 
 	void setSeq(uint32 s) { mLastSeq=s; }
 	void setName(const std::string& n) { mName=n; }
 	void setComment(const std::string& c) { mComment=c; }
 
+	std::map<int, LocalAccountEntry::pointer>& getAcctMap() { return mAccounts; }
 	LocalAccountEntry::pointer get(int seq);
 	uint160 getAccount(int seq);
 
@@ -99,14 +100,15 @@ public:
 };
 
 class LocalAccount
-{ // tracks a single local account
+{ // tracks a single local account in a form that can be passed to other code.
+  // We can't hand other code a LocalAccountEntry because an orphaned entry
+  // could hold a private key we can't lock.
 public:
 	typedef boost::shared_ptr<LocalAccount> pointer;
 
 protected:
 	LocalAccountFamily::pointer mFamily;
 	int mSeq;
-
 
 public:
 	LocalAccount(LocalAccountFamily::pointer fam, int seq) : mFamily(fam), mSeq(seq) { ; }
@@ -131,9 +133,8 @@ protected:
 	std::map<uint160, LocalAccountFamily::pointer> families;
 	std::map<uint160, LocalAccount::pointer> accounts;
 
-	uint160 doPrivate(const uint256& passPhrase, bool create, bool unlock);
-
-	LocalAccountFamily::pointer getFamily(const uint160& family, const std::string& pubKey);
+	LocalAccountFamily::pointer doPrivate(const uint256& passPhrase, bool do_create, bool do_unlock);
+	LocalAccountFamily::pointer doPublic(const std::string& pubKey);
 
 	void addFamily(const uint160& family, const std::string& pubKey, int seq,
 		const std::string& name, const std::string& comment);
@@ -142,11 +143,12 @@ public:
 	Wallet() { ; }
 
 	uint160 addFamily(const std::string& passPhrase, bool lock);
-	uint160 addFamily(const uint256& passPhrase, bool lock) { return doPrivate(passPhrase, true, !lock); }
-	bool addFamily(const uint160& familyName, const std::string& pubKey);
+	uint160 addFamily(const uint256& passPhrase, bool lock);
+	uint160 addFamily(const std::string& pubKey);
 
-	uint160 unlock(const uint256& passPhrase) { return doPrivate(passPhrase, false, true); }
+	void delFamily(const uint160& familyName);
 
+	uint160 unlock(const uint256& passPhrase);
 	bool lock(const uint160& familyName);
 
 	void load(void);

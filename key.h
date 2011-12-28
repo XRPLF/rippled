@@ -125,20 +125,21 @@ public:
 
 	static uint256 PassPhraseToKey(const std::string& passPhrase);
 	static EC_KEY* GenerateRootDeterministicKey(const uint256& passPhrase);
-	static EC_KEY* GeneratePublicDeterministicKey(const uint160& family, EC_POINT* rootPub, int n);
-	static EC_KEY* GeneratePrivateDeterministicKey(const uint160& family, BIGNUM* rootPriv, int n);
+	static EC_KEY* GenerateRootPubKey(const std::string& pubHex);
+	static EC_KEY* GeneratePublicDeterministicKey(const uint160& family, const EC_POINT* rootPub, int n);
+	static EC_KEY* GeneratePrivateDeterministicKey(const uint160& family, const BIGNUM* rootPriv, int n);
 
 	CKey(const uint256& passPhrase) : fSet(true)
 	{
 		pkey = GenerateRootDeterministicKey(passPhrase);
 	}
 
-	CKey(const uint160& base, EC_POINT* rootPubKey, int n) : fSet(true)
+	CKey(const uint160& base, const EC_POINT* rootPubKey, int n) : fSet(true)
 	{ // public deterministic key
 		pkey = GeneratePublicDeterministicKey(base, rootPubKey, n);
 	}
 
-	CKey(const uint160& base, BIGNUM* rootPrivKey, int n) : fSet(true)
+	CKey(const uint160& base, const BIGNUM* rootPrivKey, int n) : fSet(true)
 	{ // private deterministic key
 		pkey = GeneratePrivateDeterministicKey(base, rootPrivKey, n);
 	}

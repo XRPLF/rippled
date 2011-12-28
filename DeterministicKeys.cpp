@@ -103,6 +103,38 @@ EC_KEY* CKey::GenerateRootDeterministicKey(const uint256& key)
 	return pkey;
 }
 
+EC_KEY* CKey::GenerateRootPubKey(const std::string& pubHex)
+{
+	BIGNUM* bn=NULL;
+	BN_hex2bn(&bn, pubHex.c_str());
+	if(bn==NULL) return NULL;
+
+	EC_KEY* pkey=EC_KEY_new_by_curve_name(NID_secp256k1);
+	if(!pkey)
+	{
+		BN_free(bn);
+		return NULL;
+	}
+	EC_KEY_set_conv_form(pkey, POINT_CONVERSION_COMPRESSED);
+
+	EC_POINT* pubPoint=EC_POINT_bn2point(EC_KEY_get0_group(pkey), bn, NULL, NULL);
+	BN_free(bn);
+	if(!pubPoint)
+	{
+		EC_KEY_free(pkey);
+		return NULL;
+	}
+	
+	if(!EC_KEY_set_public_key(pkey, pubPoint))
+	{
+		EC_POINT_free(pubPoint);
+		EC_KEY_free(pkey);
+		return NULL;
+	}
+	
+	return pkey;
+}
+
 static BIGNUM* makeHash(const uint160& family, int seq)
 {
 	Serializer s;
@@ -113,7 +145,7 @@ static BIGNUM* makeHash(const uint160& family, int seq)
 	return BN_bin2bn((const unsigned char *) &root, sizeof(root), NULL);
 }
 
-EC_KEY* CKey::GeneratePublicDeterministicKey(const uint160& family, EC_POINT* rootPubKey, int seq)
+EC_KEY* CKey::GeneratePublicDeterministicKey(const uint160& family, const EC_POINT* rootPubKey, int seq)
 { // publicKey(n) = rootPublicKey EC_POINT_+ Hash(pubHash|seq)*point
 	BN_CTX* ctx=BN_CTX_new();
 	if(ctx==NULL) return NULL;
@@ -154,8 +186,8 @@ EC_KEY* CKey::GeneratePublicDeterministicKey(const uint160& family, EC_POINT* ro
 
 	return pkey;
 }
-
-EC_KEY* CKey::GeneratePrivateDeterministicKey(const uint160& family, BIGNUM* rootPrivKey, int seq)
+ 
+EC_KEY* CKey::GeneratePrivateDeterministicKey(const uint160& family, const BIGNUM* rootPrivKey, int seq)
 { // privateKey(n) = (rootPrivateKey + Hash(pubHash|seq)) % order
 	BN_CTX* ctx=BN_CTX_new();
 	if(ctx==NULL) return NULL;
