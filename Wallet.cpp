@@ -33,9 +33,10 @@ std::string LocalAccountEntry::getLocalAccountName() const
  return NewcoinAddress(mAccountFamily).GetString() + ":" +  boost::lexical_cast<std::string>(mAccountSeq);
 }
 
-LocalAccountFamily::LocalAccountFamily(const uint160& family, EC_POINT* pubKey) :
-	mFamily(family), mRootPubKey(pubKey), mLastSeq(0), mRootPrivateKey(NULL)
+LocalAccountFamily::LocalAccountFamily(const uint160& family, const EC_GROUP* group, const EC_POINT* pubKey) :
+	mFamily(family), mLastSeq(0), mRootPrivateKey(NULL)
 {
+	mRootPubKey=EC_POINT_dup(pubKey, group);
 #ifdef DEBUG
 	std::cerr << "LocalAccountFamily::LocalAccountFamily(" << family.GetHex() << "," << std::endl;
 	EC_GROUP *grp=EC_GROUP_new_by_curve_name(NID_secp256k1);
@@ -274,15 +275,9 @@ LocalAccountFamily::pointer Wallet::doPublic(const std::string& pubKey)
 		return fit->second;
 	}
 
-	EC_POINT* rootPub=EC_POINT_dup(EC_KEY_get0_public_key(pkey), EC_KEY_get0_group(pkey));
+	LocalAccountFamily::pointer fam(new LocalAccountFamily(family,
+		EC_KEY_get0_group(pkey), EC_KEY_get0_public_key(pkey)));
 	EC_KEY_free(pkey);
-	if(!rootPub)
-	{
-		assert(false);
-		return LocalAccountFamily::pointer();
-	}
-	
-	LocalAccountFamily::pointer fam(new LocalAccountFamily(family, rootPub));
 	families.insert(std::make_pair(family, fam));
 	return fam;
 }
@@ -308,13 +303,8 @@ LocalAccountFamily::pointer Wallet::doPrivate(const uint256& passPhrase, bool do
 			EC_KEY_free(base);
 			return LocalAccountFamily::pointer();
 		}
-		EC_POINT *pubKey=EC_POINT_dup(EC_KEY_get0_public_key(base), EC_KEY_get0_group(base));
-		if(!pubKey)
-		{
-			EC_KEY_free(base);
-			return LocalAccountFamily::pointer();
-		}
-		fam=LocalAccountFamily::pointer(new LocalAccountFamily(family, pubKey));
+		fam=LocalAccountFamily::pointer(new LocalAccountFamily(family,
+			EC_KEY_get0_group(base), EC_KEY_get0_public_key(base)));
 		families.insert(std::make_pair(family, fam));
 	}
 	else fam=it->second;

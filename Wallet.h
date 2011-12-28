@@ -76,7 +76,7 @@ protected:
 
 public:
 
-	LocalAccountFamily(const uint160& family, EC_POINT* pubKey);
+	LocalAccountFamily(const uint160& family, const EC_GROUP* group, const EC_POINT* pubKey);
 	~LocalAccountFamily();
 
 	const uint160& getFamily() { return mFamily; }
