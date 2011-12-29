@@ -12,7 +12,7 @@ class RPCDoor
 	void handleConnect(RPCServer::pointer new_connection,
 		const boost::system::error_code& error);
 
-	bool isClientAllowed(std::string ip);
+	bool isClientAllowed(const std::string& ip);
 public:
 	RPCDoor(boost::asio::io_service& io_service);
 };

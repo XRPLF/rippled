@@ -8,7 +8,7 @@ using namespace std;
 using namespace boost::asio::ip;
 
 RPCDoor::RPCDoor(boost::asio::io_service& io_service) : 
-mAcceptor(io_service, tcp::endpoint(boost::asio::ip::address_v4::loopback(), theConfig.RPC_PORT))
+	mAcceptor(io_service, tcp::endpoint(boost::asio::ip::address_v4::loopback(), theConfig.RPC_PORT))
 {
 	
 	startListening();
@@ -24,7 +24,7 @@ void RPCDoor::startListening()
 		boost::asio::placeholders::error));
 }
 
-bool RPCDoor::isClientAllowed(std::string ip)
+bool RPCDoor::isClientAllowed(const std::string& ip)
 {
 	if(ip=="127.0.0.1") return(true);
 	return(false);

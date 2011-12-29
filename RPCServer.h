@@ -28,6 +28,13 @@ class RPCServer  : public boost::enable_shared_from_this<RPCServer>
 	void sendReply();
 
 	Json::Value doCommand(const std::string& command, Json::Value& params);
+
+	Json::Value doCreateFamily(Json::Value& params);
+	Json::Value doGetAccount(Json::Value& params);
+	Json::Value doGetNewAccount(Json::Value& params);
+	Json::Value doLock(Json::Value& params);
+	Json::Value doUnlock(Json::Value& params);
+	Json::Value doInfo(Json::Value& params);
 	
 public:
 	typedef boost::shared_ptr<RPCServer> pointer;

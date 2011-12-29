@@ -11,6 +11,7 @@
 #include "HttpReply.h"
 #include "Application.h"
 #include "RPC.h"
+#include "Wallet.h"
 #include "Conversion.h"
 
 /*
@@ -44,7 +45,7 @@ void RPCServer::handle_read(const boost::system::error_code& e,
 
 		if(result)
 		{
-//			mReplyStr=handleRequest(mIncomingRequest.mBody);
+			mReplyStr=handleRequest(mIncomingRequest.mBody);
 			sendReply();
 		}
 		else if(!result)
@@ -103,17 +104,76 @@ std::string RPCServer::handleRequest(const std::string& requestStr)
 	return( HTTPReply(200, strReply) );
 }
 
+Json::Value RPCServer::doCreateFamily(Json::Value& params)
+{
+// createfamily <hexPrivateKey>
+// createfamily <hexPublicKey>
+// createfamily "<pass phrase>"
+// createfamily
+
+	std::string query;
+	uint160 family;
+	
+	if(params.isConvertibleTo(Json::stringValue)) query=params.asString();
+	
+	Json::Value ret(Json::objectValue);
+
+	if(query.empty())
+	{
+		uint256 privKey;
+		family=theApp->getWallet().addFamily(privKey);
+		ret["PrivateGenerator"]=privKey.GetHex();
+	}
+	else if(LocalAccountFamily::isHexPrivateKey(query))
+	{
+		uint256 pk;
+		pk.SetHex(query);
+		family=theApp->getWallet().addFamily(pk, false);
+	}
+	else if(LocalAccountFamily::isHexPublicKey(query))
+		family=theApp->getWallet().addFamily(query);
+	else
+		family=theApp->getWallet().addFamily(query, false);
+	if(!family)
+		JSONRPCError(500, "Invalid family specifier");
+	
+	ret["FamilyIdentifier"]=family.GetHex();
+	ret["ShortName"]=theApp->getWallet().getShortName(family);
+	ret["PublicGenerator"]=theApp->getWallet().getPubKeyHex(family);
+	return ret;
+}
+
+Json::Value RPCServer::doGetAccount(Json::Value &params)
+{ // getaccount <family> <number>
+}
+
+Json::Value RPCServer::doGetNewAccount(Json::Value &params)
+{ // getnewaccount <family>
+}
+
+Json::Value RPCServer::doLock(Json::Value &params)
+{ // lock <family>
+  // lock
+}
+
+Json::Value RPCServer::doUnlock(Json::Value &params)
+{ // unlock <hexPrivateKey>
+  // unlock "<pass phrase>"
+}
+
+Json::Value RPCServer::doInfo(Json::Value &params)
+{ // info <family>
+  // info <family> <number>
+  // info
+}
+
 Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params)
 {
+	std::cerr << "RPC:" << command << std::endl;
 	if(command== "stop")
 	{
 		mSocket.get_io_service().stop();
-
 		return "newcoin server stopping";
-	}
-	if(command=="send")
-	{
-
 	}
 	if(command== "addUNL")
 	{
@@ -132,6 +192,12 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 		theApp->getUNL().dumpUNL(str);
 		return(str.c_str());
 	}
+	if(command=="createfamily") return doCreateFamily(params);
+	if(command=="getaccount") return doGetAccount(params);
+	if(command=="getnewaccount") return doGetNewAccount(params);
+	if(command=="lock") return doLock(params);
+	if(command=="unlock") return doUnlock(params);
+	if(command=="info") return doInfo(params);
 
 	return "unknown command";
 }

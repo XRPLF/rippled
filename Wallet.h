@@ -93,10 +93,13 @@ public:
 	uint160 getAccount(int seq);
 
 	std::string getPubKeyHex() const;	// The text name of the public key
-	std::string getShortName() const;	// The text name for the family
+	std::string getShortName() const { return mName; }
 
 	static std::string getSQLFields();
 	std::string getSQL() const;
+
+	static bool isHexPrivateKey(const std::string&);
+	static bool isHexPublicKey(const std::string&);
 };
 
 class LocalAccount
@@ -145,6 +148,7 @@ public:
 	uint160 addFamily(const std::string& passPhrase, bool lock);
 	uint160 addFamily(const uint256& passPhrase, bool lock);
 	uint160 addFamily(const std::string& pubKey);
+	uint160 addFamily(uint256& privKey);
 
 	void delFamily(const uint160& familyName);
 
@@ -156,6 +160,7 @@ public:
 	LocalAccount::pointer getLocalAccount(const uint160& famBase, int seq);
 	LocalAccount::pointer getLocalAccount(const uint160& acctID);
 	std::string getPubKeyHex(const uint160& famBase);
+	std::string getShortName(const uint160& famBase);
 
 	static bool unitTest();
 };

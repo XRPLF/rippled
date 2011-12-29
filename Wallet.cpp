@@ -1,6 +1,9 @@
 
 #include <string>
 
+#include "openssl/rand.h"
+#include "openssl/ec.h"
+
 #include "boost/lexical_cast.hpp"
 
 #include "Wallet.h"
@@ -37,14 +40,7 @@ LocalAccountFamily::LocalAccountFamily(const uint160& family, const EC_GROUP* gr
 	mFamily(family), mLastSeq(0), mRootPrivateKey(NULL)
 {
 	mRootPubKey=EC_POINT_dup(pubKey, group);
-#ifdef DEBUG
-	std::cerr << "LocalAccountFamily::LocalAccountFamily(" << family.GetHex() << "," << std::endl;
-	EC_GROUP *grp=EC_GROUP_new_by_curve_name(NID_secp256k1);
-	char *p2h=EC_POINT_point2hex(grp, pubKey, POINT_CONVERSION_COMPRESSED, NULL);
-	EC_GROUP_free(grp);
-	std::cerr << "   " << p2h << ")" << std::endl;
-	OPENSSL_free(p2h);
-#endif
+	mName=family.GetHex().substr(0, 4);
 }
 
 LocalAccountFamily::~LocalAccountFamily()
@@ -80,7 +76,6 @@ void LocalAccountFamily::lock()
 	}
 }
 
-
 std::string LocalAccountFamily::getPubKeyHex() const
 {
 	EC_GROUP *grp=EC_GROUP_new_by_curve_name(NID_secp256k1);
@@ -98,6 +93,32 @@ std::string LocalAccountFamily::getPubKeyHex() const
 	OPENSSL_free(hex);
 
 	return ret;
+}
+
+static bool isHex(char j)
+{
+	if((j>='0') && (j<='9')) return true;
+	if((j>='A') && (j<='F')) return true;
+	if((j>='a') && (j<='f')) return true;
+	return false;
+}
+
+bool LocalAccountFamily::isHexPrivateKey(const std::string& s)
+{ // 64 characters, all legal hex
+	if(s.size()!=64) return false;
+	for(int i=0; i<64; i++)
+		if(!isHex(s[i])) return false;
+	return true;
+}
+
+bool LocalAccountFamily::isHexPublicKey(const std::string& s)
+{ // 66 characters, all legal hex, starts with '02' or '03'
+	if(s.size()!=66) return false;
+	if(s[0]!='0') return false;
+	if((s[1]!='2') && (s[2]!='3')) return false;
+	for(int i=3; i<66; i++)
+		if(!isHex(s[i])) return false;
+	return true;
 }
 
 std::string LocalAccountFamily::getSQLFields()
@@ -141,6 +162,12 @@ uint160 Wallet::addFamily(const uint256& key, bool lock)
 	LocalAccountFamily::pointer fam(doPrivate(key, true, !lock));
 	if(!fam) return uint160();
 	return fam->getFamily();
+}
+
+uint160 Wallet::addFamily(uint256& key)
+{
+	RAND_bytes((unsigned char *) &key, sizeof(key));
+	return addFamily(key, false);
 }
 
 uint160 Wallet::addFamily(const std::string& payPhrase, bool lock)
@@ -228,6 +255,14 @@ std::string Wallet::getPubKeyHex(const uint160& famBase)
 	if(fit==families.end()) return "";
 	assert(fit->second->getFamily()==famBase);
 	return fit->second->getPubKeyHex();
+}
+
+std::string Wallet::getShortName(const uint160& famBase)
+{
+	std::map<uint160, LocalAccountFamily::pointer>::iterator fit=families.find(famBase);
+	if(fit==families.end()) return "";
+	assert(fit->second->getFamily()==famBase);
+	return fit->second->getShortName();
 }
 
 LocalAccount::pointer Wallet::getLocalAccount(const uint160& family, int seq)

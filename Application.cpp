@@ -57,8 +57,6 @@ void Application::run()
 	theApp->setDB(new SqliteDatabase(filename.c_str()));
 	mDatabase->connect();
 
-	return; // TEMPORARY
-
 	if(theConfig.PEER_PORT)
 	{
 		mPeerDoor=new PeerDoor(mIOService);
@@ -74,6 +72,8 @@ void Application::run()
 	std::cout << "Before Run." << std::endl;
 	mIOService.run(); // This blocks
 
+	// temporary
+	return;
 	mWallet.load();
 
 	//BOOST_LOG_TRIVIAL(info) << "Done.";

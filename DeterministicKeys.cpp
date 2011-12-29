@@ -2,7 +2,6 @@
 #include <openssl/bn.h>
 #include <openssl/ecdsa.h>
 #include <openssl/pem.h>
-#include <openssl/rand.h>
 
 // Functions to add CKey support for deterministic EC keys
 
