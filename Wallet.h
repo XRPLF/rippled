@@ -97,6 +97,8 @@ public:
 
 	static std::string getSQLFields();
 	std::string getSQL() const;
+	static LocalAccountFamily::pointer readFamily(const uint160& family);
+	void write(bool is_new);
 
 	static bool isHexPrivateKey(const std::string&);
 	static bool isHexPublicKey(const std::string&);

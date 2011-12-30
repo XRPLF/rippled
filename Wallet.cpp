@@ -103,6 +103,83 @@ static bool isHex(char j)
 	return false;
 }
 
+LocalAccountFamily::pointer LocalAccountFamily::readFamily(const uint160& family)
+{
+	std::string sql="SELECT * from LocalAcctFamilies WHERE FamilyName='";
+	sql.append(family.GetHex());
+	sql.append("';");
+
+	std::string rootPubKey, name, comment;
+	uint32 seq;
+
+	if(1)
+	{
+		ScopedLock sl(theApp->getWalletDB()->getDBLock());
+		Database *db=theApp->getWalletDB()->getDB();
+
+		if(!db->executeSQL(sql.c_str()) || !db->getNextRow())
+			return LocalAccountFamily::pointer();
+
+		db->getStr("RootPubKey", rootPubKey);
+		db->getStr("Name", name);
+		db->getStr("Comment", comment);
+		seq=db->getBigInt("Seq");
+
+		db->endIterRows();
+	}
+
+	EC_GROUP *grp=EC_GROUP_new_by_curve_name(NID_secp256k1);
+	if(!grp) return LocalAccountFamily::pointer();
+
+	EC_POINT *pubKey=EC_POINT_hex2point(grp, rootPubKey.c_str(), NULL, NULL);
+	if(!pubKey)
+	{
+		EC_GROUP_free(grp);
+		assert(false);
+		return LocalAccountFamily::pointer();
+	}
+
+	LocalAccountFamily::pointer fam(new LocalAccountFamily(family, grp, pubKey));
+	EC_GROUP_free(grp);
+	EC_POINT_free(pubKey);
+
+	fam->setName(name);
+	fam->setComment(comment);
+	fam->setSeq(seq);
+	return fam;
+}
+
+void LocalAccountFamily::write(bool is_new)
+{
+	std::string sql="INSERT INTO LocalAcctFamilies (FamilyName,RootPubKey,Seq,Name,Comment) VALUES ('";
+	sql.append(mFamily.GetHex());
+	sql.append("','");
+	
+	EC_GROUP* grp=EC_GROUP_new_by_curve_name(NID_secp256k1);
+	if(!grp) return;
+	char *rpk=EC_POINT_point2hex(grp, mRootPubKey, POINT_CONVERSION_COMPRESSED, NULL);
+	EC_GROUP_free(grp);
+	if(!rpk) return;
+	sql.append(rpk);
+	OPENSSL_free(rpk);
+
+	sql.append("','");
+	sql.append(boost::lexical_cast<std::string>(mLastSeq));
+	sql.append("',");
+	
+	std::string f;
+	theApp->getWalletDB()->getDB()->escape((const unsigned char *) mName.c_str(), mName.size(), f);
+	sql.append(f);
+	sql.append(",");
+	theApp->getWalletDB()->getDB()->escape((const unsigned char *) mComment.c_str(), mComment.size(), f);
+	sql.append(f);
+	
+	sql.append(");");
+	
+	ScopedLock sl(theApp->getWalletDB()->getDBLock());
+	theApp->getWalletDB()->getDB()->executeSQL(sql.c_str());
+}
+
 bool LocalAccountFamily::isHexPrivateKey(const std::string& s)
 { // 64 characters, all legal hex
 	if(s.size()!=64) return false;
@@ -311,10 +388,16 @@ LocalAccountFamily::pointer Wallet::doPublic(const std::string& pubKey)
 		return fit->second;
 	}
 
-	LocalAccountFamily::pointer fam(new LocalAccountFamily(family,
-		EC_KEY_get0_group(pkey), EC_KEY_get0_public_key(pkey)));
+	LocalAccountFamily::pointer fam=LocalAccountFamily::readFamily(family);
+	if(!fam)
+	{
+		fam=LocalAccountFamily::pointer(new LocalAccountFamily(family,
+			EC_KEY_get0_group(pkey), EC_KEY_get0_public_key(pkey)));
+		families.insert(std::make_pair(family, fam));
+		fam->write(true);
+	}
 	EC_KEY_free(pkey);
-	families.insert(std::make_pair(family, fam));
+
 	return fam;
 }
 
@@ -334,14 +417,19 @@ LocalAccountFamily::pointer Wallet::doPrivate(const uint256& passPhrase, bool do
 	std::map<uint160, LocalAccountFamily::pointer>::iterator it=families.find(family);
 	if(it==families.end())
 	{ // family not found
-		if(!do_create)
+		fam=LocalAccountFamily::readFamily(family);
+		if(!fam)
 		{
-			EC_KEY_free(base);
-			return LocalAccountFamily::pointer();
+			if(!do_create)
+			{
+				EC_KEY_free(base);
+				return LocalAccountFamily::pointer();
+			}
+			fam=LocalAccountFamily::pointer(new LocalAccountFamily(family,
+				EC_KEY_get0_group(base), EC_KEY_get0_public_key(base)));
+			families.insert(std::make_pair(family, fam));
+			fam->write(true);
 		}
-		fam=LocalAccountFamily::pointer(new LocalAccountFamily(family,
-			EC_KEY_get0_group(base), EC_KEY_get0_public_key(base)));
-		families.insert(std::make_pair(family, fam));
 	}
 	else fam=it->second;
 
