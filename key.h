@@ -50,9 +50,9 @@ int static inline EC_KEY_regenerate_key(EC_KEY *eckey, BIGNUM *priv_key)
 	if (!EC_POINT_mul(group, pub_key, priv_key, NULL, NULL, ctx))
 		goto err;
 
-	EC_KEY_set_conv_form(eckey,POINT_CONVERSION_COMPRESSED);
-	EC_KEY_set_private_key(eckey,priv_key);
-	EC_KEY_set_public_key(eckey,pub_key);
+	EC_KEY_set_conv_form(eckey, POINT_CONVERSION_COMPRESSED);
+	EC_KEY_set_private_key(eckey, priv_key);
+	EC_KEY_set_public_key(eckey, pub_key);
 
 	ok = 1;
 
@@ -93,7 +93,7 @@ public:
 	CKey()
 	{
 		pkey = EC_KEY_new_by_curve_name(NID_secp256k1);
-		EC_KEY_set_conv_form(pkey,POINT_CONVERSION_COMPRESSED);
+		EC_KEY_set_conv_form(pkey, POINT_CONVERSION_COMPRESSED);
 		if (pkey == NULL)
 			throw key_error("CKey::CKey() : EC_KEY_new_by_curve_name failed");
 		fSet = false;
@@ -102,7 +102,7 @@ public:
 	CKey(const CKey& b)
 	{
 		pkey = EC_KEY_dup(b.pkey);
-		EC_KEY_set_conv_form(pkey,POINT_CONVERSION_COMPRESSED);
+		EC_KEY_set_conv_form(pkey, POINT_CONVERSION_COMPRESSED);
 		if (pkey == NULL)
 			throw key_error("CKey::CKey(const CKey&) : EC_KEY_dup failed");
 		fSet = b.fSet;
@@ -153,7 +153,7 @@ public:
 	{
 		if (!EC_KEY_generate_key(pkey))
 			throw key_error("CKey::MakeNewKey() : EC_KEY_generate_key failed");
-		EC_KEY_set_conv_form(pkey,POINT_CONVERSION_COMPRESSED);
+		EC_KEY_set_conv_form(pkey, POINT_CONVERSION_COMPRESSED);
 		fSet = true;
 	}
 
@@ -162,7 +162,7 @@ public:
 		const unsigned char* pbegin = &vchPrivKey[0];
 		if (!d2i_ECPrivateKey(&pkey, &pbegin, vchPrivKey.size()))
 			return false;
-		EC_KEY_set_conv_form(pkey,POINT_CONVERSION_COMPRESSED);
+		EC_KEY_set_conv_form(pkey, POINT_CONVERSION_COMPRESSED);
 		fSet = true;
 		return true;
 	}
@@ -175,13 +175,12 @@ public:
 			throw key_error("CKey::SetSecret() : EC_KEY_new_by_curve_name failed");
 		if (vchSecret.size() != 32)
 			throw key_error("CKey::SetSecret() : secret must be 32 bytes");
-		BIGNUM *bn = BN_bin2bn(&vchSecret[0],32,BN_new());
+		BIGNUM *bn = BN_bin2bn(&vchSecret[0], 32, BN_new());
 		if (bn == NULL) 
 			throw key_error("CKey::SetSecret() : BN_bin2bn failed");
-		if (!EC_KEY_regenerate_key(pkey,bn))
+		if (!EC_KEY_regenerate_key(pkey, bn))
 			throw key_error("CKey::SetSecret() : EC_KEY_regenerate_key failed");
 		BN_clear_free(bn);
-		EC_KEY_set_conv_form(pkey,POINT_CONVERSION_COMPRESSED);
 		fSet = true;
 		return true;
 	}
@@ -194,7 +193,7 @@ public:
 		int nBytes = BN_num_bytes(bn);
 		if (bn == NULL)
 			throw key_error("CKey::GetSecret() : EC_KEY_get0_private_key failed");
-		int n=BN_bn2bin(bn,&vchRet[32 - nBytes]);
+		int n=BN_bn2bin(bn, &vchRet[32 - nBytes]);
 		if (n != nBytes) 
 			throw key_error("CKey::GetSecret(): BN_bn2bin failed");
  		return vchRet;
@@ -220,7 +219,7 @@ public:
 		const unsigned char* pbegin = &vchPubKey[0];
 		if (!o2i_ECPublicKey(&pkey, &pbegin, vchPubKey.size()))
 			return false;
-		EC_KEY_set_conv_form(pkey,POINT_CONVERSION_COMPRESSED);
+		EC_KEY_set_conv_form(pkey, POINT_CONVERSION_COMPRESSED);
 		fSet = true;
 		return true;
 	}
