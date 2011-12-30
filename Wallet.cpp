@@ -137,10 +137,10 @@ std::string LocalAccountFamily::getSQL() const
 	ret.append("',");
 	
 	std::string esc;
-	theApp->getDB()->escape((const unsigned char *) mName.c_str(), mName.size(), esc);
+	theApp->getWalletDB()->getDB()->escape((const unsigned char *) mName.c_str(), mName.size(), esc);
 	ret.append(esc);
 	ret.append(",");
-	theApp->getDB()->escape((const unsigned char *) mComment.c_str(), mComment.size(), esc);
+	theApp->getWalletDB()->getDB()->escape((const unsigned char *) mComment.c_str(), mComment.size(), esc);
 	ret.append(esc);
 
 	ret.append(")");
@@ -221,8 +221,8 @@ void Wallet::load()
 {
 	std::string sql("SELECT * FROM LocalAcctFamilies");
 	
-	ScopedLock sl(theApp->getDBLock());
-	Database *db=theApp->getDB();
+	ScopedLock sl(theApp->getWalletDB()->getDBLock());
+	Database *db=theApp->getWalletDB()->getDB();
 	if(!db->executeSQL(sql.c_str())) return;
 
 	while(db->getNextRow())
@@ -247,6 +247,7 @@ void Wallet::load()
 		}
 		else assert(false);
 	}
+	db->endIterRows();
 }
 
 std::string Wallet::getPubKeyHex(const uint160& famBase)

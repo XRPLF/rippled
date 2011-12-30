@@ -21,11 +21,12 @@ CKey::pointer PubKeyCache::locate(const uint160& id)
 	int pkSize;
 	if(1)
 	{ // is it in the database
-		ScopedLock sl(theApp->getDBLock());
-		Database* db=theApp->getDB();
+		ScopedLock sl(theApp->getTxnDB()->getDBLock());
+		Database* db=theApp->getTxnDB()->getDB();
 		if(!db->executeSQL(sql.c_str())) return CKey::pointer();
 		if(!db->getNextRow()) return CKey::pointer();	
 		pkSize=db->getBinary("PubKey", &(data.front()), data.size());
+		db->endIterRows();
 	}
 	data.resize(pkSize);
 	CKey::pointer ckp(new CKey());
@@ -58,11 +59,11 @@ CKey::pointer PubKeyCache::store(const uint160& id, CKey::pointer key)
 
 	std::vector<unsigned char> pk=key->GetPubKey();
 	std::string encodedPK;
-	theApp->getDB()->escape(&(pk.front()), pk.size(), encodedPK);
+	theApp->getTxnDB()->getDB()->escape(&(pk.front()), pk.size(), encodedPK);
 	sql+=encodedPK;
 	sql.append(");");
-	ScopedLock dbl(theApp->getDBLock());
-	theApp->getDB()->executeSQL(sql.c_str());
+	ScopedLock dbl(theApp->getTxnDB()->getDBLock());
+	theApp->getTxnDB()->getDB()->executeSQL(sql.c_str());
 	return key;
 }
 

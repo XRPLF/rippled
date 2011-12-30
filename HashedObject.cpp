@@ -57,12 +57,12 @@ bool HashedObject::store(HashedObjectType type, uint32 index, const std::vector<
 	sql.append("',");
 
 	std::string obj;
-	theApp->getDB()->escape(&(data.front()), data.size(), obj);
+	theApp->getHashNodeDB()->getDB()->escape(&(data.front()), data.size(), obj);
 	sql.append(obj);
 	sql.append(");");
 
-	ScopedLock sl(theApp->getDBLock());
-	Database* db=theApp->getDB();
+	ScopedLock sl(theApp->getHashNodeDB()->getDBLock());
+	Database* db=theApp->getHashNodeDB()->getDB();
 	return db->executeSQL(sql.c_str());
 }
 
@@ -86,8 +86,8 @@ HashedObject::pointer HashedObject::retrieve(const uint256& hash)
 	data.reserve(8192);
 	if(1)
 	{
-		ScopedLock sl(theApp->getDBLock());
-		Database* db=theApp->getDB();
+		ScopedLock sl(theApp->getHashNodeDB()->getDBLock());
+		Database* db=theApp->getHashNodeDB()->getDB();
 
 		if(!db->executeSQL(sql.c_str())) return HashedObject::pointer();
 		if(!db->getNextRow()) return HashedObject::pointer();
@@ -101,6 +101,7 @@ HashedObject::pointer HashedObject::retrieve(const uint256& hash)
 		int size=db->getBinary("Object", NULL, 0);
 		data.resize(size);
 		db->getBinary("Object", &(data.front()), size);
+		db->endIterRows();
 	}
 	
 	HashedObjectType htype=UNKNOWN;

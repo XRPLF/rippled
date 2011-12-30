@@ -18,6 +18,19 @@
 class RPCDoor;
 class PeerDoor;
 
+class DatabaseCon
+{
+protected:
+	Database *mDatabase;
+	boost::recursive_mutex mLock;
+	
+public:
+	DatabaseCon(const std::string& name);
+	~DatabaseCon();
+	Database* getDB() { return mDatabase; }
+	ScopedLock getDBLock() { return ScopedLock(mLock); }
+};
+
 class Application
 {
 	NetworkOPs mNetOps;
@@ -28,7 +41,8 @@ class Application
 	KnownNodeList mKnownNodes;
 	PubKeyCache mPKCache;
 	LedgerMaster mMasterLedger;
-	Database* mDatabase;
+
+	DatabaseCon *mTxnDB, *mLedgerDB, *mWalletDB, *mHashNodeDB, *mNetNodeDB;
 
 	ConnectionPool mConnectionPool;
 	PeerDoor* mPeerDoor;
@@ -38,7 +52,6 @@ class Application
 	boost::recursive_mutex mPeerMapLock;
 
 	boost::asio::io_service mIOService;
-	boost::recursive_mutex dbLock;
 	
 
 public:
@@ -57,9 +70,11 @@ public:
 
 	LedgerMaster& getMasterLedger() { return mMasterLedger; }
 	
-	ScopedLock getDBLock() { return ScopedLock(dbLock); }
-	void setDB(Database* db) { mDatabase=db; }
-	Database* getDB() { return(mDatabase); }
+	DatabaseCon* getTxnDB() { return mTxnDB; }
+	DatabaseCon* getLedgerDB() { return mLedgerDB; }
+	DatabaseCon* getWalletDB() { return mWalletDB; }
+	DatabaseCon* getHashNodeDB() { return mHashNodeDB; }
+	DatabaseCon* getNetNodeDB() { return mNetNodeDB; }
 
 	//Serializer* getSerializer(){ return(mSerializer); }
 	//void setSerializer(Serializer* ser){ mSerializer=ser; }

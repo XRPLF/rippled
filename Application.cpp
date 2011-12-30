@@ -25,14 +25,24 @@ What needs to happen:
 
 */
 
-Application::Application()
+DatabaseCon::DatabaseCon(const std::string& name)
+{
+	std::string path=strprintf("%s%s", theConfig.DATA_DIR.c_str(), name.c_str());
+	mDatabase=new SqliteDatabase(path.c_str());
+	mDatabase->connect();
+}
+
+DatabaseCon::~DatabaseCon()
+{
+	mDatabase->disconnect();
+	delete mDatabase;
+}
+
+Application::Application() :
+	mTxnDB(NULL), mLedgerDB(NULL), mWalletDB(NULL), mHashNodeDB(NULL), mNetNodeDB(NULL),
+	mPeerDoor(NULL), mRPCDoor(NULL)
 {
 	theConfig.load();
-	//mUNL.load();
-	mPeerDoor=NULL;
-	mRPCDoor=NULL;
-	mDatabase=NULL;
-
 
 	uint160 rootFamily=mWallet.addFamily("This is my payphrase.", true);
 	LocalAccount::pointer rootAccount=mWallet.getLocalAccount(rootFamily, 0);
@@ -53,9 +63,11 @@ Application::Application()
 
 void Application::run()
 {
-	std::string filename=strprintf("%sdata.db",theConfig.DATA_DIR.c_str());
-	theApp->setDB(new SqliteDatabase(filename.c_str()));
-	mDatabase->connect();
+	mTxnDB=new DatabaseCon("transaction.db");
+	mLedgerDB=new DatabaseCon("ledger.db");
+	mWalletDB=new DatabaseCon("wallet.db");
+	mHashNodeDB=new DatabaseCon("hashnode.db");
+	mNetNodeDB=new DatabaseCon("netnode.db");
 
 	if(theConfig.PEER_PORT)
 	{

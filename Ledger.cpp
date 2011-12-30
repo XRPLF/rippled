@@ -321,8 +321,8 @@ void Ledger::saveAcceptedLedger(Ledger::pointer ledger)
 	sql.append(ledger->mTransHash.GetHex());
 	sql.append("');");
 
-	ScopedLock sl(theApp->getDBLock());
-	theApp->getDB()->executeSQL(sql.c_str());
+	ScopedLock sl(theApp->getLedgerDB()->getDBLock());
+	theApp->getLedgerDB()->getDB()->executeSQL(sql.c_str());
 
 	// write out dirty nodes
 	while(ledger->mTransactionMap->flushDirty(64, TRANSACTION_NODE, ledger->mLedgerSeq))
@@ -341,8 +341,8 @@ Ledger::pointer Ledger::getSQL(const std::string& sql)
 
 	if(1)
 	{
-		ScopedLock sl(theApp->getDBLock());
-		Database *db=theApp->getDB();
+		ScopedLock sl(theApp->getLedgerDB()->getDBLock());
+		Database *db=theApp->getLedgerDB()->getDB();
 		if(!db->executeSQL(sql.c_str()) || !db->getNextRow())
 			 return Ledger::pointer();
 
@@ -357,6 +357,7 @@ Ledger::pointer Ledger::getSQL(const std::string& sql)
 		feeHeld=db->getBigInt("FeeHeld");
 		closingTime=db->getBigInt("ClosingTime");
 		ledgerSeq=db->getBigInt("LedgerSeq");
+		db->endIterRows();
 	}
 	
 	Ledger::pointer ret(new Ledger(prevHash, transHash, accountHash, feeHeld, closingTime, ledgerSeq));

@@ -154,12 +154,12 @@ bool Transaction::save() const
 	 default: sql.append("','U',"); break;
 	}
 	std::string signature;
-	theApp->getDB()->escape(&(mSignature.front()), mSignature.size(), signature);
+	theApp->getTxnDB()->getDB()->escape(&(mSignature.front()), mSignature.size(), signature);
 	sql.append(signature);
 	sql.append(");");
 	
-	ScopedLock sl(theApp->getDBLock());
-	Database* db=theApp->getDB();
+	ScopedLock sl(theApp->getTxnDB()->getDBLock());
+	Database* db=theApp->getTxnDB()->getDB();
 	return db->executeSQL(sql.c_str());
 }
 
@@ -172,8 +172,8 @@ Transaction::pointer Transaction::transactionFromSQL(const std::string& sql)
 	signature.reserve(78);
 	if(1)
 	{
-		ScopedLock sl(theApp->getDBLock());
-		Database* db=theApp->getDB();
+		ScopedLock sl(theApp->getTxnDB()->getDBLock());
+		Database* db=theApp->getTxnDB()->getDB();
 
 		if(!db->executeSQL(sql.c_str())) return Transaction::pointer();
 		if(!db->getNextRow()) return Transaction::pointer();
@@ -190,6 +190,7 @@ Transaction::pointer Transaction::transactionFromSQL(const std::string& sql)
 		db->getStr("Status", status);
 		int sigSize=db->getBinary("Signature", &(signature.front()), signature.size());
 		signature.resize(sigSize);
+		db->endIterRows();
 	}
 
 	uint256 trID;

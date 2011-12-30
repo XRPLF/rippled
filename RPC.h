@@ -27,7 +27,7 @@ extern std::string JSONRPCRequest(const std::string& strMethod, const Json::Valu
 	const Json::Value& id);
 
 extern std::string createHTTPPost(const std::string& strMsg,
-	const std::map<std::string,std::string>& mapRequestHeaders);
+	const std::map<std::string, std::string>& mapRequestHeaders);
 
 extern int ReadHTTP(std::basic_istream<char>& stream,
 	std::map<std::string, std::string>& mapHeadersRet, std::string& strMessageRet);
