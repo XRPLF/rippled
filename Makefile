@@ -23,8 +23,7 @@ endif
 LIBS+= \
  -Wl,-Bdynamic \
    -l z \
-   -l dl \
-   -l sqlite3
+   -l dl
 
 DEBUGFLAGS=-g -DDEBUG
 CXXFLAGS=-O0 -Wno-invalid-offsetof -Wformat $(DEBUGFLAGS) $(DEFS)
@@ -75,6 +74,7 @@ SRCS= keystore.cpp BitcoinUtil.cpp \
  LedgerHistory.cpp NetworkOPs.cpp CallRPC.cpp
 
 DBSRCS=	SqliteDatabase.cpp database.cpp
+DBSRCC=sqlite3.c
 
 UTILSRCS= pugixml.cpp
 
@@ -89,7 +89,8 @@ JSONSRCS= json_reader.cpp json_value.cpp json_writer.cpp
 # database/SqliteDatabase.cpp database/database.cpp
 # database/linux/mysqldatabase.cpp database/database.cpp database/SqliteDatabase.cpp
 
-OBJS= $(SRCS:%.cpp=%.o) $(DBSRCS:%.cpp=database/%.o) $(UTILSRCS:%.cpp=util/%.o) newcoin.pb.o
+OBJS= $(SRCS:%.cpp=%.o) $(DBSRCS:%.cpp=database/%.o) $(DBSRCC:%.c=database/%.o)
+OBJS+= $(UTILSRCS:%.cpp=util/%.o) newcoin.pb.o
 OBJS+= $(JSONSRCS:%.cpp=json/%.o)
 #cryptopp/obj/sha.o cryptopp/obj/cpu.o
 
