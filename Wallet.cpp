@@ -117,7 +117,7 @@ LocalAccountFamily::pointer LocalAccountFamily::readFamily(const uint160& family
 		ScopedLock sl(theApp->getWalletDB()->getDBLock());
 		Database *db=theApp->getWalletDB()->getDB();
 
-		if(!db->executeSQL(sql.c_str()) || !db->getNextRow())
+		if(!db->executeSQL(sql.c_str()) || !db->startIterRows() || !db->getNextRow())
 			return LocalAccountFamily::pointer();
 
 		db->getStr("RootPubKey", rootPubKey);
@@ -192,7 +192,7 @@ bool LocalAccountFamily::isHexPublicKey(const std::string& s)
 { // 66 characters, all legal hex, starts with '02' or '03'
 	if(s.size()!=66) return false;
 	if(s[0]!='0') return false;
-	if((s[1]!='2') && (s[2]!='3')) return false;
+	if((s[1]!='2') && (s[1]!='3')) return false;
 	for(int i=3; i<66; i++)
 		if(!isHex(s[i])) return false;
 	return true;
@@ -300,7 +300,8 @@ void Wallet::load()
 	
 	ScopedLock sl(theApp->getWalletDB()->getDBLock());
 	Database *db=theApp->getWalletDB()->getDB();
-	if(!db->executeSQL(sql.c_str())) return;
+	if(!db->executeSQL(sql.c_str()) || !db->startIterRows())
+		return;
 
 	while(db->getNextRow())
 	{
