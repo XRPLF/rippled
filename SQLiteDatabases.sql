@@ -1,5 +1,4 @@
 
-
 CREATE TABLE Transactions (			-- transactions in all states
 	TransID		CHARACTER(64) PRIMARY KEY,	-- in hex
 	FromAcct	CHARACTER(40),		-- 20 byte hash of pub key in hex
@@ -15,11 +14,12 @@ CREATE TABLE Transactions (			-- transactions in all states
 	Signature	BLOB
 );
 
-
 CREATE TABLE PubKeys ( -- holds pub keys for nodes and accounts
  	ID			CHARACTER(40) PRIMARY KEY,
 	PubKey		BLOB
 );
+
+
 
 
 CREATE TABLE Ledgers ( -- closed/accepted ledgers
@@ -29,11 +29,10 @@ CREATE TABLE Ledgers ( -- closed/accepted ledgers
 	FeeHeld			BIGINT UNSIGNED,
 	ClosingTime		BIGINT UNSINGED,
 	AccountSetHash	CHARACTER(64),
-	TransSetHash	CHARACTER(64),
+	TransSetHash	CHARACTER(64)
 );
 
 CREATE INDEX SeqLedger ON Ledgers(LedgerSeq);
-
 
 CREATE TABLE LedgerConfirmations (
 	LedgerSeq	BIGINT UNSIGNED,
@@ -43,6 +42,8 @@ CREATE TABLE LedgerConfirmations (
 );
 
 CREATE INDEX LedgerConfByHash ON LedgerConfirmations(LedgerHash);
+
+
 
 
 CREATE TABLE TrustedNodes (
@@ -74,7 +75,7 @@ CREATE TABLE LocalAcctFamilies (		-- a family of accounts that share a payphrase
 	Seq			BIGINT UNSIGNED,		-- next one to issue
 	Name		TEXT,
 	Comment		TEXT
-)
+);
 
 CREATE TABLE LocalAccounts (			-- an individual account
 	ID			CHARACTER(40) PRIMARY KEY,
@@ -85,5 +86,3 @@ CREATE TABLE LocalAccounts (			-- an individual account
 	LedgerSeq	BIGINT UNSIGNED,	-- ledger this balance is from
 	Comment		TEXT
 );
-
-CREATE UNIQUE INDEX AccountLocate ON LocalAccounts(DKID, DKSeq);

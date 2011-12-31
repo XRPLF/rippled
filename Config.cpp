@@ -24,7 +24,7 @@ Config::Config()
 	RPC_USER="admin";
 	RPC_PASSWORD="pass";
 
-	DATA_DIR="";
+	DATA_DIR="db/";
 
 	TRANSACTION_FEE_BASE=1000;
 }

@@ -44,30 +44,26 @@ Application::Application() :
 {
 	theConfig.load();
 
-	uint160 rootFamily=mWallet.addFamily("This is my payphrase.", true);
-	LocalAccount::pointer rootAccount=mWallet.getLocalAccount(rootFamily, 0);
-	assert(!!rootAccount);
-	uint160 rootAddress=rootAccount->getAddress();
-	assert(!!rootAddress);
-
-	Ledger::pointer firstLedger(new Ledger(rootAddress, 1000000));
-	firstLedger->setClosed();
-	firstLedger->setAccepted();
-	mMasterLedger.pushLedger(firstLedger);
-	
-	Ledger::pointer secondLedger=firstLedger->closeLedger(time(NULL));
-	mMasterLedger.pushLedger(secondLedger);
-	mMasterLedger.setSynced();
 }
 
+extern std::string TxnDBInit, LedgerDBInit, WalletDBInit, HashNodeDBInit, NetNodeDBInit;
 
 void Application::run()
 {
 	mTxnDB=new DatabaseCon("transaction.db");
+	mTxnDB->getDB()->executeSQL(TxnDBInit.c_str());
+
 	mLedgerDB=new DatabaseCon("ledger.db");
+	mLedgerDB->getDB()->executeSQL(LedgerDBInit.c_str());
+
 	mWalletDB=new DatabaseCon("wallet.db");
+	mWalletDB->getDB()->executeSQL(WalletDBInit.c_str());
+
 	mHashNodeDB=new DatabaseCon("hashnode.db");
+	mHashNodeDB->getDB()->executeSQL(HashNodeDBInit.c_str());
+
 	mNetNodeDB=new DatabaseCon("netnode.db");
+	mNetNodeDB->getDB()->executeSQL(NetNodeDBInit.c_str());
 
 	if(theConfig.PEER_PORT)
 	{
@@ -84,6 +80,19 @@ void Application::run()
 	std::cout << "Before Run." << std::endl;
 	mIOService.run(); // This blocks
 
+	// TEMPORARY CODE
+	uint160 rootFamily=mWallet.addFamily("This is my payphrase.", true);
+	LocalAccount::pointer rootAccount=mWallet.getLocalAccount(rootFamily, 0);
+	assert(!!rootAccount);
+	uint160 rootAddress=rootAccount->getAddress();
+	assert(!!rootAddress);
+	Ledger::pointer firstLedger(new Ledger(rootAddress, 1000000));
+	firstLedger->setClosed();
+	firstLedger->setAccepted();
+	mMasterLedger.pushLedger(firstLedger);
+	Ledger::pointer secondLedger=firstLedger->closeLedger(time(NULL));
+	mMasterLedger.pushLedger(secondLedger);
+	mMasterLedger.setSynced();
 	// temporary
 	return;
 	mWallet.load();
