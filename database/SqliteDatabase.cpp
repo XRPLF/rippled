@@ -37,7 +37,7 @@ bool SqliteDatabase::executeSQL(const char* sql)
 	int rc=sqlite3_prepare_v2(mConnection,sql,-1,&mCurrentStmt,NULL);
 	if( rc!=SQLITE_OK )
 	{
-		cout << "SQL error:" << rc << endl;
+		cout << "SQL Perror:" << rc << endl;
 		return(false);
 	}
 	rc=sqlite3_step(mCurrentStmt);
@@ -50,7 +50,7 @@ bool SqliteDatabase::executeSQL(const char* sql)
 	}else
 	{
 		mMoreRows=false;
-		cout << "SQL error:" << rc << endl;
+		cout << "SQL Serror:" << rc << endl;
 		return(false);
 	}
 
@@ -103,7 +103,7 @@ bool SqliteDatabase::getNextRow()
 		return(false);
 	}else
 	{
-		cout << "SQL error:" << rc << endl;
+		cout << "SQL Rerror:" << rc << endl;
 		return(false);
 	}
 }
