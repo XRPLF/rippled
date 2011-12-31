@@ -14,8 +14,7 @@ SqliteDatabase::SqliteDatabase(const char* host) : Database(host,"","")
 void SqliteDatabase::connect()
 {
 	
-	char *zErrMsg = 0;
-	int rc = sqlite3_open(mHost.c_str(), &mConnection);
+;	int rc = sqlite3_open(mHost.c_str(), &mConnection);
 	if( rc )
 	{
 		cout << "Can't open database: " << mHost << " " << rc << endl;
@@ -33,7 +32,6 @@ void SqliteDatabase::disconnect()
 bool SqliteDatabase::executeSQL(const char* sql)
 {
 	sqlite3_finalize(mCurrentStmt);
-	char *zErrMsg = 0;
 	int rc=sqlite3_prepare_v2(mConnection,sql,-1,&mCurrentStmt,NULL);
 	if( rc!=SQLITE_OK )
 	{
