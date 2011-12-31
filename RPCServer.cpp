@@ -5,6 +5,7 @@
 
 #include "json/value.h"
 #include "json/reader.h"
+#include "json/writer.h"
 
 #include "RPCServer.h"
 #include "RequestParser.h"
@@ -99,7 +100,17 @@ std::string RPCServer::handleRequest(const std::string& requestStr)
 	else if(!valParams.isArray())
 		return(HTTPReply(400, ""));
 
+#ifdef DEBUG
+	Json::StyledStreamWriter w;
+	w.write(std::cerr, valParams);
+#endif
+
 	Json::Value result=doCommand(strMethod, valParams);
+
+#ifdef DEBUG
+	w.write(std::cerr, result);
+#endif
+
 	std::string strReply = JSONRPCReply(result, Json::Value(), id);
 	return( HTTPReply(200, strReply) );
 }
@@ -114,26 +125,35 @@ Json::Value RPCServer::doCreateFamily(Json::Value& params)
 	std::string query;
 	uint160 family;
 	
+	if(params.isArray()) params=params[0u];
 	if(params.isConvertibleTo(Json::stringValue)) query=params.asString();
 	
 	Json::Value ret(Json::objectValue);
 
 	if(query.empty())
 	{
+		std::cerr << "empty" << std::endl;
 		uint256 privKey;
 		family=theApp->getWallet().addFamily(privKey);
 		ret["PrivateGenerator"]=privKey.GetHex();
 	}
 	else if(LocalAccountFamily::isHexPrivateKey(query))
 	{
+		std::cerr << "hprivk" << std::endl;
 		uint256 pk;
 		pk.SetHex(query);
 		family=theApp->getWallet().addFamily(pk, false);
 	}
 	else if(LocalAccountFamily::isHexPublicKey(query))
+	{
+		std::cerr << "hpubk" << std::endl;
 		family=theApp->getWallet().addFamily(query);
+	}
 	else
+	{
+		std::cerr << "PassPhrase(" << query << ")" << std::endl;
 		family=theApp->getWallet().addFamily(query, false);
+	}
 	if(!family)
 		JSONRPCError(500, "Invalid family specifier");
 	
@@ -145,6 +165,7 @@ Json::Value RPCServer::doCreateFamily(Json::Value& params)
 
 Json::Value RPCServer::doGetAccount(Json::Value &params)
 { // getaccount <family> <number>
+
 }
 
 Json::Value RPCServer::doGetNewAccount(Json::Value &params)
