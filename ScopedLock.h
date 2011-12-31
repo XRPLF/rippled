@@ -2,68 +2,25 @@
 #define __SCOPEDLOCKHOLDER__
 
 #include "boost/thread/recursive_mutex.hpp"
-
-// This is a returnable lock holder.
-// I don't know why Boost doesn't provide a good way to do this.
+#include "boost/interprocess/sync/scoped_lock.hpp"
+#include "boost/shared_ptr.hpp"
 
 class ScopedLock
 {
-private:
-	boost::recursive_mutex *mMutex;	// parent object has greater scope, so guaranteed valid
-	mutable bool mValid;
-
-	ScopedLock();		// no implementation
+protected:
+	mutable boost::shared_ptr<boost::interprocess::scoped_lock<boost::recursive_mutex> > mHolder;
 
 public:
-	ScopedLock(boost::recursive_mutex &mutex) : mMutex(&mutex), mValid(true)
+	ScopedLock(boost::recursive_mutex &mutex) :
+		mHolder(new boost::interprocess::scoped_lock<boost::recursive_mutex>(mutex))
+	{ ; }
+	void lock(void) const
 	{
-		mMutex->lock();
+		mHolder->lock();
 	}
-
-	~ScopedLock()
+	void unlock(void) const
 	{
-		if(mValid) mMutex->unlock();
-	}
-
-	ScopedLock(const ScopedLock &sl)
-	{
-		mMutex=sl.mMutex;
-		if(sl.mValid)
-		{
-				mValid=true;
-				sl.mValid=false;
-		}
-		else mValid=false;
-	}
-
-	ScopedLock &operator=(const ScopedLock &sl)
-	{ // we inherit any lock the other class member had
-		if(mMutex!=sl.mMutex)
-		{
-			if(mValid) mMutex->unlock();
-			mMutex=sl.mMutex;
-			mMutex->lock();
-			mValid=true;
-		}
-		return *this;
-	}
-
-	void unlock(void)
-	{
-		if(mValid)
-		{
-			mMutex->unlock();
-			mValid=false;
-		}
-	}
-
-	void lock(void)
-	{
-		if(mValid)
-		{
-			mMutex->lock();
-			mValid=true;
-		}
+		mHolder->unlock();
 	}
 };
 
