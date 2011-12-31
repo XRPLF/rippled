@@ -343,7 +343,7 @@ Ledger::pointer Ledger::getSQL(const std::string& sql)
 	{
 		ScopedLock sl(theApp->getLedgerDB()->getDBLock());
 		Database *db=theApp->getLedgerDB()->getDB();
-		if(!db->executeSQL(sql.c_str()) || !db->getNextRow())
+		if(!db->executeSQL(sql.c_str()) || !db->startIterRows() || !db->getNextRow())
 			 return Ledger::pointer();
 
 		db->getStr("LedgerHash", hash);

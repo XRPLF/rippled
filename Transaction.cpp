@@ -175,8 +175,8 @@ Transaction::pointer Transaction::transactionFromSQL(const std::string& sql)
 		ScopedLock sl(theApp->getTxnDB()->getDBLock());
 		Database* db=theApp->getTxnDB()->getDB();
 
-		if(!db->executeSQL(sql.c_str())) return Transaction::pointer();
-		if(!db->getNextRow()) return Transaction::pointer();
+		if(!db->executeSQL(sql.c_str()) || !db->startIterRows() || !db->getNextRow())
+			return Transaction::pointer();
 		
 		db->getStr("TransID", transID);
 		db->getStr("FromID", fromID);

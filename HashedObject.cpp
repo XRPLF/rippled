@@ -89,8 +89,8 @@ HashedObject::pointer HashedObject::retrieve(const uint256& hash)
 		ScopedLock sl(theApp->getHashNodeDB()->getDBLock());
 		Database* db=theApp->getHashNodeDB()->getDB();
 
-		if(!db->executeSQL(sql.c_str())) return HashedObject::pointer();
-		if(!db->getNextRow()) return HashedObject::pointer();
+		if(!db->executeSQL(sql.c_str()) || !db->startIterRows() || !db->getNextRow())
+			return HashedObject::pointer();
 
 		std::string type;
 		db->getStr("ObjType", type);	

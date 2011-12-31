@@ -23,8 +23,8 @@ CKey::pointer PubKeyCache::locate(const uint160& id)
 	{ // is it in the database
 		ScopedLock sl(theApp->getTxnDB()->getDBLock());
 		Database* db=theApp->getTxnDB()->getDB();
-		if(!db->executeSQL(sql.c_str())) return CKey::pointer();
-		if(!db->getNextRow()) return CKey::pointer();	
+		if(!db->executeSQL(sql.c_str()) || !db->startIterRows() || !db->getNextRow())
+			return CKey::pointer();
 		pkSize=db->getBinary("PubKey", &(data.front()), data.size());
 		db->endIterRows();
 	}
