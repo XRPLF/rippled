@@ -28,12 +28,12 @@ void LocalAccountEntry::unlock(const BIGNUM* rootPrivKey)
 
 std::string LocalAccountEntry::getAccountName() const
 {
- return mPublicKey->GetAddress().GetString();
+	return mPublicKey->GetAddress().GetString();
 }
 
 std::string LocalAccountEntry::getLocalAccountName() const
 {
- return NewcoinAddress(mAccountFamily).GetString() + ":" +  boost::lexical_cast<std::string>(mAccountSeq);
+	return NewcoinAddress(mAccountFamily).GetString() + ":" +  boost::lexical_cast<std::string>(mAccountSeq);
 }
 
 LocalAccountFamily::LocalAccountFamily(const uint160& family, const EC_GROUP* group, const EC_POINT* pubKey) :
@@ -49,7 +49,7 @@ LocalAccountFamily::~LocalAccountFamily()
 	if(mRootPubKey!=NULL) EC_POINT_free(mRootPubKey);
 }
 
-uint160 LocalAccountFamily::getAccount(int seq)
+uint160 LocalAccountFamily::getAccount(int seq, bool keep)
 {
 	std::map<int, LocalAccountEntry::pointer>::iterator ait=mAccounts.find(seq);
 	if(ait!=mAccounts.end()) return ait->second->getAccountID();
@@ -425,7 +425,7 @@ LocalAccount::pointer Wallet::getLocalAccount(const uint160& family, int seq)
 {
 	std::map<uint160, LocalAccountFamily::pointer>::iterator fit=families.find(family);
 	if(fit==families.end()) return LocalAccount::pointer();
-	uint160 acct=fit->second->getAccount(seq);
+	uint160 acct=fit->second->getAccount(seq, true);
 	
 	std::map<uint160, LocalAccount::pointer>::iterator ait=accounts.find(acct);
 	if(ait!=accounts.end()) return ait->second;
@@ -433,6 +433,13 @@ LocalAccount::pointer Wallet::getLocalAccount(const uint160& family, int seq)
 	LocalAccount::pointer lac(new LocalAccount(fit->second, seq));
 	accounts.insert(std::make_pair(acct, lac));
 	return lac;
+}
+
+uint160 Wallet::peekKey(const uint160& family, int seq)
+{
+	std::map<uint160, LocalAccountFamily::pointer>::iterator fit=families.find(family);
+	if(fit==families.end()) return uint160();
+	return fit->second->getAccount(seq, false);
 }
 
 void Wallet::delFamily(const uint160& familyName)

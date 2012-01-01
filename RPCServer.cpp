@@ -3,6 +3,7 @@
 
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
+#include <boost/lexical_cast.hpp>
 
 #include "json/value.h"
 #include "json/reader.h"
@@ -230,34 +231,48 @@ Json::Value RPCServer::doInfo(Json::Value &params)
 		}
 		return ret;
 	}
-	else if(paramCount==1)
-	{
-		uint160 family;
-		if(Wallet::isHexFamily(fParam))
-			family.SetHex(fParam);
-		else if(Wallet::isHexPublicKey(fParam))
-			family=theApp->getWallet().findFamilyPK(fParam);
-		else
-			family=theApp->getWallet().findFamilySN(fParam);
-		if(!family) return JSONRPCError(500, "No such family");
+
+	if(paramCount>2) return JSONRPCError(500, "Invalid parameters");
+
+	uint160 family;
+	if(Wallet::isHexFamily(fParam))
+		family.SetHex(fParam);
+	else if(Wallet::isHexPublicKey(fParam))
+		family=theApp->getWallet().findFamilyPK(fParam);
+	else
+		family=theApp->getWallet().findFamilySN(fParam);
+	if(!family) return JSONRPCError(500, "No such family");
 		
-		std::string name, comment, pubKey;
-		bool isLocked;
-		if(!theApp->getWallet().getFullFamilyInfo(family, name, comment, pubKey, isLocked))
-			return JSONRPCError(500, "Family not found");
-		Json::Value obj(Json::objectValue);
-		obj["FamilyIdentifier"]=family.GetHex();
-		obj["ShortName"]=name;
-		if(!comment.empty())
-			obj["Comment"]=comment;
-		obj["PublicGenerator"]=pubKey;
-		obj["Locked"]=isLocked ? "true" : "false";
-		return obj;
-	}
-	else if(paramCount==2)
+	std::string name, comment, pubKey;
+	bool isLocked;
+	if(!theApp->getWallet().getFullFamilyInfo(family, name, comment, pubKey, isLocked))
+		return JSONRPCError(500, "Family not found");
+	Json::Value obj(Json::objectValue);
+	obj["FamilyIdentifier"]=family.GetHex();
+	obj["ShortName"]=name;
+	if(!comment.empty())
+		obj["Comment"]=comment;
+	obj["PublicGenerator"]=pubKey;
+	obj["Locked"]=isLocked ? "true" : "false";
+
+	if(paramCount==2)
 	{
+		Json::Value keyNum=params[1u];
+		if(keyNum.isString()) keyNum=Json::Value(boost::lexical_cast<int>(keyNum.asString()));
+		if(keyNum.isConvertibleTo(Json::intValue))
+		{
+			uint160 k=theApp->getWallet().peekKey(family, keyNum.asInt());
+			if(!!k)
+			{
+				Json::Value key(Json::objectValue);
+				key["Number"]=keyNum.asInt();
+				key["Address"]=NewcoinAddress(k).GetString();
+				obj["Account"]=key;
+			}
+		}
 	}
-	else return JSONRPCError(500, "Invalid parameters");
+
+	return obj;
 }
 
 Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params)

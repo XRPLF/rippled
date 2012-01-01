@@ -90,7 +90,7 @@ public:
 
 	std::map<int, LocalAccountEntry::pointer>& getAcctMap() { return mAccounts; }
 	LocalAccountEntry::pointer get(int seq);
-	uint160 getAccount(int seq);
+	uint160 getAccount(int seq, bool keep);
 
 	std::string getPubKeyHex() const;	// The text name of the public key
 	std::string getShortName() const { return mName; }
@@ -165,6 +165,7 @@ public:
 
 	LocalAccount::pointer getLocalAccount(const uint160& famBase, int seq);
 	LocalAccount::pointer getLocalAccount(const uint160& acctID);
+	uint160 peekKey(const uint160& family, int seq);
 	std::string getPubKeyHex(const uint160& famBase);
 	std::string getShortName(const uint160& famBase);
 	bool getFamilyInfo(const uint160& family, std::string& name, std::string& comment);
