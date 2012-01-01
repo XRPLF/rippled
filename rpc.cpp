@@ -24,7 +24,7 @@ using namespace boost::asio;
 
 Json::Value JSONRPCError(int code, const std::string& message)
 {
-	Json::Value error(Json::arrayValue);
+	Json::Value error(Json::objectValue);
 	error["code"]=Json::Value(code);
 	error["message"]=Json::Value(message);
 	return error;
