@@ -50,6 +50,8 @@ extern std::string TxnDBInit, LedgerDBInit, WalletDBInit, HashNodeDBInit, NetNod
 
 void Application::run()
 {
+	assert(mTxnDB==NULL);
+
 	mTxnDB=new DatabaseCon("transaction.db");
 	mTxnDB->getDB()->executeSQL(TxnDBInit.c_str());
 
@@ -99,4 +101,13 @@ void Application::run()
 
 	//BOOST_LOG_TRIVIAL(info) << "Done.";
 	std::cout << "Done." << std::endl;
+}
+
+Application::~Application()
+{
+	delete mTxnDB;;
+	delete mLedgerDB;
+	delete mWalletDB;
+	delete mHashNodeDB;
+	delete mNetNodeDB;
 }

@@ -56,6 +56,7 @@ class Application
 
 public:
 	Application();
+	~Application();
 
 	ConnectionPool& getConnectionPool() { return mConnectionPool; }
 
