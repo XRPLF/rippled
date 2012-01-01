@@ -80,7 +80,6 @@ void Application::run()
 	mConnectionPool.connectToNetwork(mKnownNodes, mIOService); 
 	mTimingService.start(mIOService);
 	std::cout << "Before Run." << std::endl;
-	mIOService.run(); // This blocks
 
 	// TEMPORARY CODE
 	uint160 rootFamily=mWallet.addFamily("This is my payphrase.", true);
@@ -96,8 +95,12 @@ void Application::run()
 	mMasterLedger.pushLedger(secondLedger);
 	mMasterLedger.setSynced();
 	// temporary
-	return;
+
 	mWallet.load();
+
+	// temporary
+	mIOService.run(); // This blocks
+	return;
 
 	//BOOST_LOG_TRIVIAL(info) << "Done.";
 	std::cout << "Done." << std::endl;
