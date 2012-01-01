@@ -1,3 +1,6 @@
+
+#include <string>
+
 #include "json/value.h"
 
 extern int commandLineRPC(int argc, char *argv[]);

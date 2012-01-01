@@ -2,10 +2,12 @@
 
 #include <iostream>
 #include <stdlib.h>
+
 #include <boost/asio.hpp>
 #include <boost/iostreams/concepts.hpp>
 #include <boost/iostreams/stream.hpp>
 #include <boost/algorithm/string.hpp>
+
 #include <openssl/buffer.h>
 #include <openssl/evp.h>
 
@@ -28,7 +30,7 @@ inline bool isSwitchChar(char c)
 #endif
 }
 
-std::string EncodeBase64(std::string s)
+std::string EncodeBase64(const std::string& s)
 { // FIXME: This performs terribly
 	BIO *b64, *bmem;
 	BUF_MEM *bptr;
@@ -38,7 +40,7 @@ std::string EncodeBase64(std::string s)
 	bmem = BIO_new(BIO_s_mem());
 	b64 = BIO_push(b64, bmem);
 	BIO_write(b64, s.c_str(), s.size());
-	BIO_flush(b64);
+	(void) BIO_flush(b64);
 	BIO_get_mem_ptr(b64, &bptr);
 
 	std::string result(bptr->data, bptr->length);
