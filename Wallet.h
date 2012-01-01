@@ -94,6 +94,7 @@ public:
 
 	std::string getPubKeyHex() const;	// The text name of the public key
 	std::string getShortName() const { return mName; }
+	std::string getComment() const { return mComment; }
 
 	static std::string getSQLFields();
 	std::string getSQL() const;
@@ -154,6 +155,8 @@ public:
 
 	void delFamily(const uint160& familyName);
 
+	void getFamilies(std::vector<uint160>& familyIDs);
+
 	uint160 unlock(const uint256& passPhrase);
 	bool lock(const uint160& familyName);
 
@@ -163,6 +166,7 @@ public:
 	LocalAccount::pointer getLocalAccount(const uint160& acctID);
 	std::string getPubKeyHex(const uint160& famBase);
 	std::string getShortName(const uint160& famBase);
+	bool getFamilyInfo(const uint160& family, std::string& name, std::string& comment);
 
 	static bool unitTest();
 };

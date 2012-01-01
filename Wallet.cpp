@@ -294,6 +294,23 @@ CKey::pointer LocalAccount::getPrivateKey()
 	return la->getPrivKey();
 }
 
+void Wallet::getFamilies(std::vector<uint160>& familyIDs)
+{
+	familyIDs.reserve(families.size());
+	for(std::map<uint160, LocalAccountFamily::pointer>::iterator fit=families.begin(); fit!=families.end(); ++fit)
+		familyIDs.push_back(fit->first);
+}
+
+bool Wallet::getFamilyInfo(const uint160& family, std::string& name, std::string& comment)
+{
+	std::map<uint160, LocalAccountFamily::pointer>::iterator fit=families.find(family);
+	if(fit==families.end()) return false;
+	assert(fit->second->getFamily()==family);
+	name=fit->second->getShortName();
+	comment=fit->second->getComment();
+	return true;
+}
+
 void Wallet::load()
 {
 	std::string sql("SELECT * FROM LocalAcctFamilies");
