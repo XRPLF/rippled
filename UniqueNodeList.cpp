@@ -60,7 +60,7 @@ int UniqueNodeList::checkValid(newcoin::Validation& valid)
 void UniqueNodeList::dumpUNL(std::string& retStr)
 {
 	Database* db=theApp->getNetNodeDB()->getDB();
-	std::string sql="SELECT * FROM UNL";
+	std::string sql="SELECT * FROM UNL;";
 
 	ScopedLock sl(theApp->getNetNodeDB()->getDBLock());
 	if( db->executeSQL(sql.c_str()) )
