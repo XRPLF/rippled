@@ -25,7 +25,7 @@ protected:
 	boost::recursive_mutex mLock;
 	
 public:
-	DatabaseCon(const std::string& name);
+	DatabaseCon(const std::string& name, const char *initString[], int countInit);
 	~DatabaseCon();
 	Database* getDB() { return mDatabase; }
 	ScopedLock getDBLock() { return ScopedLock(mLock); }

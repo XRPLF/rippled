@@ -15,7 +15,7 @@ public:
 	void disconnect();
 
 	// returns true if the query went ok
-	bool executeSQL(const char* sql);
+	bool executeSQL(const char* sql, bool fail_okay);
 
 	// tells you how many rows were changed by an update or insert
 	int getNumRowsAffected();

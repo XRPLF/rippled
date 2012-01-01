@@ -53,7 +53,7 @@ CKey::pointer PubKeyCache::store(const uint160& id, CKey::pointer key)
 		if(!pit.second) // there was an existing key
 			return pit.first->second;
 	}
-	std::string sql="INSERT INTO PubKeys (ID, PubKey) VALUES ('";
+	std::string sql="INSERT INTO PubKeys (ID,PubKey) VALUES ('";
 	sql+=id.GetHex();
 	sql+="',";
 
@@ -63,7 +63,7 @@ CKey::pointer PubKeyCache::store(const uint160& id, CKey::pointer key)
 	sql+=encodedPK;
 	sql.append(");");
 	ScopedLock dbl(theApp->getTxnDB()->getDBLock());
-	theApp->getTxnDB()->getDB()->executeSQL(sql.c_str());
+	theApp->getTxnDB()->getDB()->executeSQL(sql.c_str(), true);
 	return key;
 }
 

@@ -29,13 +29,20 @@ void SqliteDatabase::disconnect()
 }
 
 // returns true if the query went ok
-bool SqliteDatabase::executeSQL(const char* sql)
+bool SqliteDatabase::executeSQL(const char* sql, bool fail_ok)
 {
 	sqlite3_finalize(mCurrentStmt);
 	int rc=sqlite3_prepare_v2(mConnection,sql,-1,&mCurrentStmt,NULL);
 	if( rc!=SQLITE_OK )
 	{
-		cout << "SQL Perror:" << rc << endl;
+		if(!fail_ok)
+		{
+			cout << "SQL Perror:" << rc << endl;
+#ifdef DEBUG
+			cout << "Statement: " << sql << endl;
+			cout << "Error: " << sqlite3_errmsg(mConnection) << endl;
+#endif
+		}
 		return(false);
 	}
 	rc=sqlite3_step(mCurrentStmt);
@@ -48,7 +55,14 @@ bool SqliteDatabase::executeSQL(const char* sql)
 	}else
 	{
 		mMoreRows=false;
-		cout << "SQL Serror:" << rc << endl;
+		if(!fail_ok)
+		{
+			cout << "SQL Serror:" << rc << endl;
+#ifdef DEBUG
+			cout << "Statement: " << sql << endl;
+			cout << "Error: " << sqlite3_errmsg(mConnection) << endl;
+#endif
+		}
 		return(false);
 	}
 
@@ -146,20 +160,15 @@ uint64 SqliteDatabase::getBigInt(int colIndex)
 BLOB literals are string literals containing hexadecimal data and preceded by a single "x" or "X" character. For example:
 X'53514C697465'
 */
-void SqliteDatabase::escape(const unsigned char* start,int size,std::string& retStr)
+void SqliteDatabase::escape(const unsigned char* start, int size, std::string& retStr)
 {
-	retStr.clear();
+	retStr="X'";
 
 	char buf[3];
-	retStr.append("X'");
 	for(int n=0; n<size; n++)
 	{
-		sprintf(buf, "%x", start[n]);
-		if(buf[1]==0)
-		{
-			retStr.append("0");
-			retStr.append(buf);
-		}else retStr.append(buf);
+		sprintf(buf, "%02X", start[n]);
+		retStr.append(buf);
 
 	}
 	retStr.push_back('\'');

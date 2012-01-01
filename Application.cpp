@@ -25,11 +25,13 @@ What needs to happen:
 
 */
 
-DatabaseCon::DatabaseCon(const std::string& name)
+DatabaseCon::DatabaseCon(const std::string& name, const char *initStrings[], int initCount)
 {
 	std::string path=strprintf("%s%s", theConfig.DATA_DIR.c_str(), name.c_str());
 	mDatabase=new SqliteDatabase(path.c_str());
 	mDatabase->connect();
+	for(int i=0; i<initCount; i++)
+		mDatabase->executeSQL(initStrings[i], true);
 }
 
 DatabaseCon::~DatabaseCon()
@@ -46,26 +48,18 @@ Application::Application() :
 
 }
 
-extern std::string TxnDBInit, LedgerDBInit, WalletDBInit, HashNodeDBInit, NetNodeDBInit;
+extern const char *TxnDBInit[], *LedgerDBInit[], *WalletDBInit[], *HashNodeDBInit[], *NetNodeDBInit[];
+extern int TxnDBCount, LedgerDBCount, WalletDBCount, HashNodeDBCount, NetNodeDBCount;
 
 void Application::run()
 {
 	assert(mTxnDB==NULL);
 
-	mTxnDB=new DatabaseCon("transaction.db");
-	mTxnDB->getDB()->executeSQL(TxnDBInit.c_str());
-
-	mLedgerDB=new DatabaseCon("ledger.db");
-	mLedgerDB->getDB()->executeSQL(LedgerDBInit.c_str());
-
-	mWalletDB=new DatabaseCon("wallet.db");
-	mWalletDB->getDB()->executeSQL(WalletDBInit.c_str());
-
-	mHashNodeDB=new DatabaseCon("hashnode.db");
-	mHashNodeDB->getDB()->executeSQL(HashNodeDBInit.c_str());
-
-	mNetNodeDB=new DatabaseCon("netnode.db");
-	mNetNodeDB->getDB()->executeSQL(NetNodeDBInit.c_str());
+	mTxnDB=new DatabaseCon("transaction.db", TxnDBInit, TxnDBCount);
+	mLedgerDB=new DatabaseCon("ledger.db", LedgerDBInit, LedgerDBCount);
+	mWalletDB=new DatabaseCon("wallet.db", WalletDBInit, WalletDBCount);
+	mHashNodeDB=new DatabaseCon("hashnode.db", HashNodeDBInit, HashNodeDBCount);
+	mNetNodeDB=new DatabaseCon("netnode.db", NetNodeDBInit, NetNodeDBCount);
 
 	if(theConfig.PEER_PORT)
 	{

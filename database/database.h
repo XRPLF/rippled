@@ -32,7 +32,7 @@ public:
 	virtual void escape(const unsigned char* start,int size,std::string& retStr)=0;
 	
 	// returns true if the query went ok
-	virtual bool executeSQL(const char* sql)=0;
+	virtual bool executeSQL(const char* sql, bool fail_okay=false)=0;
 
 	// tells you how many rows were changed by an update or insert
 	virtual int getNumRowsAffected()=0;
