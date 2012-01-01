@@ -101,8 +101,6 @@ public:
 	static LocalAccountFamily::pointer readFamily(const uint160& family);
 	void write(bool is_new);
 
-	static bool isHexPrivateKey(const std::string&);
-	static bool isHexPublicKey(const std::string&);
 };
 
 class LocalAccount
@@ -140,7 +138,7 @@ protected:
 	std::map<uint160, LocalAccount::pointer> accounts;
 
 	LocalAccountFamily::pointer doPrivate(const uint256& passPhrase, bool do_create, bool do_unlock);
-	LocalAccountFamily::pointer doPublic(const std::string& pubKey);
+	LocalAccountFamily::pointer doPublic(const std::string& pubKey, bool do_create, bool do_db);
 
 	void addFamily(const uint160& family, const std::string& pubKey, int seq,
 		const std::string& name, const std::string& comment);
@@ -151,7 +149,10 @@ public:
 	uint160 addFamily(const std::string& passPhrase, bool lock);
 	uint160 addFamily(const uint256& passPhrase, bool lock);
 	uint160 addFamily(const std::string& pubKey);
-	uint160 addFamily(uint256& privKey);
+	uint160 addRandomFamily(uint256& privKey);
+
+	uint160 findFamilySN(const std::string& shortName);
+	uint160 findFamilyPK(const std::string& pubKey);
 
 	void delFamily(const uint160& familyName);
 
@@ -167,6 +168,14 @@ public:
 	std::string getPubKeyHex(const uint160& famBase);
 	std::string getShortName(const uint160& famBase);
 	bool getFamilyInfo(const uint160& family, std::string& name, std::string& comment);
+	bool getFullFamilyInfo(const uint160& family, std::string& name, std::string& comment,
+		std::string& pubKey, bool& isLocked);
+
+	static bool isHexPrivateKey(const std::string&);
+	static bool isHexPublicKey(const std::string&);
+	static bool isHexFamily(const std::string&);
+	static std::string privKeyToText(const uint256& privKey);
+	static uint256 textToPrivKey(const std::string&);
 
 	static bool unitTest();
 };

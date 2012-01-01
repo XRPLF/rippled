@@ -175,20 +175,21 @@ void LocalAccountFamily::write(bool is_new)
 	sql.append(f);
 	
 	sql.append(");");
-	
+
 	ScopedLock sl(theApp->getWalletDB()->getDBLock());
 	theApp->getWalletDB()->getDB()->executeSQL(sql.c_str());
 }
 
-bool LocalAccountFamily::isHexPrivateKey(const std::string& s)
-{ // 64 characters, all legal hex
-	if(s.size()!=64) return false;
-	for(int i=0; i<64; i++)
+bool Wallet::isHexPrivateKey(const std::string& s)
+{ // 65 characters, first is 'P', rest are all legal hex
+	if(s.size()!=65) return false;
+	if(s[0]!='P') return false;
+	for(int i=1; i<65; i++)
 		if(!isHex(s[i])) return false;
 	return true;
 }
 
-bool LocalAccountFamily::isHexPublicKey(const std::string& s)
+bool Wallet::isHexPublicKey(const std::string& s)
 { // 66 characters, all legal hex, starts with '02' or '03'
 	if(s.size()!=66) return false;
 	if(s[0]!='0') return false;
@@ -196,6 +197,29 @@ bool LocalAccountFamily::isHexPublicKey(const std::string& s)
 	for(int i=3; i<66; i++)
 		if(!isHex(s[i])) return false;
 	return true;
+}
+
+bool Wallet::isHexFamily(const std::string& s)
+{ // 64 characters, all legal hex
+	if(s.size()!=64) return false;
+	for(int i=0; i<64; i++)
+		if(!isHex(s[i])) return false;
+	return true;
+}
+
+std::string Wallet::privKeyToText(const uint256& privKey)
+{
+	std::string ret("P");
+	ret.append(privKey.GetHex());
+	return ret;
+}
+
+uint256 Wallet::textToPrivKey(const std::string& privKey)
+{
+	uint256 ret;
+	if((privKey.length()==65) && (privKey[0]=='P'))
+		ret.SetHex(privKey.c_str()+1);
+	return ret;
 }
 
 std::string LocalAccountFamily::getSQLFields()
@@ -234,6 +258,17 @@ LocalAccountEntry::pointer LocalAccountFamily::get(int seq)
 	return ret;
 }
 
+uint160 Wallet::findFamilySN(const std::string& shortName)
+{ // OPTIMIZEME
+	for(std::map<uint160, LocalAccountFamily::pointer>::iterator it=families.begin();
+		it!=families.end(); ++it)
+	{
+		if(it->second->getShortName()==shortName)
+			return it->first;
+	}
+	return 0;
+}
+
 uint160 Wallet::addFamily(const uint256& key, bool lock)
 {
 	LocalAccountFamily::pointer fam(doPrivate(key, true, !lock));
@@ -241,7 +276,7 @@ uint160 Wallet::addFamily(const uint256& key, bool lock)
 	return fam->getFamily();
 }
 
-uint160 Wallet::addFamily(uint256& key)
+uint160 Wallet::addRandomFamily(uint256& key)
 {
 	RAND_bytes((unsigned char *) &key, sizeof(key));
 	return addFamily(key, false);
@@ -254,7 +289,14 @@ uint160 Wallet::addFamily(const std::string& payPhrase, bool lock)
 
 uint160 Wallet::addFamily(const std::string& pubKey)
 {
-	LocalAccountFamily::pointer fam(doPublic(pubKey));
+	LocalAccountFamily::pointer fam(doPublic(pubKey, true, true));
+	if(!fam) return uint160();
+	return fam->getFamily();
+}
+
+uint160 Wallet::findFamilyPK(const std::string& pubKey)
+{
+	LocalAccountFamily::pointer fam(doPublic(pubKey, false, true));
 	if(!fam) return uint160();
 	return fam->getFamily();
 }
@@ -311,14 +353,32 @@ bool Wallet::getFamilyInfo(const uint160& family, std::string& name, std::string
 	return true;
 }
 
+bool Wallet::getFullFamilyInfo(const uint160& family, std::string& name, std::string& comment,
+	std::string& pubKey, bool& isLocked)
+{
+	std::map<uint160, LocalAccountFamily::pointer>::iterator fit=families.find(family);
+	if(fit==families.end()) return false;
+	assert(fit->second->getFamily()==family);
+	name=fit->second->getShortName();
+	comment=fit->second->getComment();
+	pubKey=fit->second->getPubKeyHex();
+	isLocked=fit->second->isLocked();
+	return true;
+}
+
 void Wallet::load()
 {
-	std::string sql("SELECT * FROM LocalAcctFamilies");
+	std::string sql("SELECT * FROM LocalAcctFamilies;");
 	
 	ScopedLock sl(theApp->getWalletDB()->getDBLock());
 	Database *db=theApp->getWalletDB()->getDB();
 	if(!db->executeSQL(sql.c_str()) || !db->startIterRows())
+	{
+#ifdef DEBUG
+		std::cerr << "Unable to load wallet" << std::endl;
+#endif
 		return;
+	}
 
 	while(db->getNextRow())
 	{
@@ -332,7 +392,7 @@ void Wallet::load()
 		uint160 fb;
 		fb.SetHex(family);
 
-		LocalAccountFamily::pointer f(doPublic(rootpub));
+		LocalAccountFamily::pointer f(doPublic(rootpub, true, false));
 		if(f)
 		{
 			assert(f->getFamily()==fb);
@@ -387,7 +447,7 @@ void Wallet::delFamily(const uint160& familyName)
 	families.erase(familyName);
 }
 
-LocalAccountFamily::pointer Wallet::doPublic(const std::string& pubKey)
+LocalAccountFamily::pointer Wallet::doPublic(const std::string& pubKey, bool do_create, bool do_db)
 {
 // Generate root key
 	EC_KEY *pkey=CKey::GenerateRootPubKey(pubKey);
@@ -405,14 +465,24 @@ LocalAccountFamily::pointer Wallet::doPublic(const std::string& pubKey)
 		EC_KEY_free(pkey);
 		return fit->second;
 	}
+	if(!do_create)
+	{
+		EC_KEY_free(pkey);
+		return LocalAccountFamily::pointer();
+	}
 
-	LocalAccountFamily::pointer fam=LocalAccountFamily::readFamily(family);
-	if(!fam)
+	LocalAccountFamily::pointer fam;
+	if(do_db)
+	{
+		fam=LocalAccountFamily::readFamily(family);
+		if(fam) do_create=false;
+	}
+	if(do_create)
 	{
 		fam=LocalAccountFamily::pointer(new LocalAccountFamily(family,
 			EC_KEY_get0_group(pkey), EC_KEY_get0_public_key(pkey)));
 		families.insert(std::make_pair(family, fam));
-		fam->write(true);
+		if(do_db) fam->write(true);
 	}
 	EC_KEY_free(pkey);
 
