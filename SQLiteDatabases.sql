@@ -77,12 +77,13 @@ CREATE TABLE LocalAcctFamilies (		-- a family of accounts that share a payphrase
 	Comment		TEXT
 );
 
-CREATE TABLE LocalAccounts (			-- an individual account
+CREATE TABLE LocalAccounts (		-- an individual account
 	ID			CHARACTER(40) PRIMARY KEY,
-	DKID		CHARACTER(40),		-- root determinstic key
-	DKSeq		BIGINT UNSIGNED,	-- sequence number
+	KeyType		CHARACTER(1)		-- F=family
+ 	PrivateKey	TEXT,				-- For F, FamilyName:Seq
 	Seq			BIGINT UNSIGNED,	-- last transaction seen/issued
 	Balance		BIGINT UNSIGNED,
 	LedgerSeq	BIGINT UNSIGNED,	-- ledger this balance is from
+	Name		TEXT,
 	Comment		TEXT
 );

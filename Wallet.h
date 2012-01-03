@@ -18,14 +18,14 @@ public:
 	typedef boost::shared_ptr<LocalAccountEntry> pointer;
 
 protected:
-	// family informaiton
-	uint160 mAccountFamily;
-	int mAccountSeq;
-
 	// core account information
 	CKey::pointer mPublicKey;
-	CKey::pointer mPrivateKey;
 	uint160 mAcctID;
+	std::string mName, mComment;
+
+	// family information
+	uint160 mAccountFamily;
+	int mAccountSeq;
 
 	// local usage tracking
 	uint64 mBalance;		// The balance, last we checked/updated
@@ -35,11 +35,11 @@ protected:
 public:
 	LocalAccountEntry(const uint160& accountFamily, int accountSeq, EC_POINT* rootPubKey);
 
-	void unlock(const BIGNUM* rootPrivKey);
-	void lock() { mPrivateKey=CKey::pointer(); }
-
-	bool write(bool create);
-	bool read();
+	// Database operations
+	bool read();			// reads any existing data
+	bool write();			// creates the record in the first place
+	bool updateName();		// writes changed name/comment
+	bool updateBalance();	// writes changed balance/seq
 
 	const uint160& getAccountID() const { return mAcctID; }
 	int getAccountSeq() const { return mAccountSeq; }
@@ -47,7 +47,6 @@ public:
 	std::string getAccountName() const;					// The normal account name used to send to this account
 
 	CKey::pointer getPubKey() { return mPublicKey; }
-	CKey::pointer getPrivKey() { return mPrivateKey; }
 
 	void update(uint64 balance, uint32 seq);
 	uint32 getTxnSeq() const { return  mTxnSeq; }
@@ -80,9 +79,10 @@ public:
 	~LocalAccountFamily();
 
 	const uint160& getFamily() { return mFamily; }
-	bool isLocked() const { return mRootPrivateKey==NULL; }
+
 	void unlock(const BIGNUM* privateKey);
 	void lock();
+	bool isLocked() const { return mRootPrivateKey==NULL; }
 
 	void setSeq(uint32 s) { mLastSeq=s; }
 	void setName(const std::string& n) { mName=n; }
@@ -91,8 +91,9 @@ public:
 	std::map<int, LocalAccountEntry::pointer>& getAcctMap() { return mAccounts; }
 	LocalAccountEntry::pointer get(int seq);
 	uint160 getAccount(int seq, bool keep);
+	CKey::pointer getPrivateKey(int seq);
 
-	std::string getPubKeyHex() const;	// The text name of the public key
+	std::string getPubGenHex() const;	// The text name of the public key
 	std::string getShortName() const { return mName; }
 	std::string getComment() const { return mComment; }
 
@@ -100,13 +101,10 @@ public:
 	std::string getSQL() const;
 	static LocalAccountFamily::pointer readFamily(const uint160& family);
 	void write(bool is_new);
-
 };
 
 class LocalAccount
 { // tracks a single local account in a form that can be passed to other code.
-  // We can't hand other code a LocalAccountEntry because an orphaned entry
-  // could hold a private key we can't lock.
 public:
 	typedef boost::shared_ptr<LocalAccount> pointer;
 
@@ -166,11 +164,11 @@ public:
 	LocalAccount::pointer getLocalAccount(const uint160& famBase, int seq);
 	LocalAccount::pointer getLocalAccount(const uint160& acctID);
 	uint160 peekKey(const uint160& family, int seq);
-	std::string getPubKeyHex(const uint160& famBase);
+	std::string getPubGenHex(const uint160& famBase);
 	std::string getShortName(const uint160& famBase);
 	bool getFamilyInfo(const uint160& family, std::string& name, std::string& comment);
 	bool getFullFamilyInfo(const uint160& family, std::string& name, std::string& comment,
-		std::string& pubKey, bool& isLocked);
+		std::string& pubGen, bool& isLocked);
 
 	static bool isHexPrivateKey(const std::string&);
 	static bool isHexPublicKey(const std::string&);

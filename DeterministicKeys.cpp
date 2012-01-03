@@ -134,14 +134,22 @@ EC_KEY* CKey::GenerateRootPubKey(const std::string& pubHex)
 	return pkey;
 }
 
-static BIGNUM* makeHash(const uint160& family, int seq)
+static BIGNUM* makeHash(const uint160& family, int seq, BIGNUM* order)
 {
-	Serializer s;
-	s.add160(family);
-	s.add32(seq);
-	uint256 root=s.getSHA512Half();
-	s.secureErase();
-	return BN_bin2bn((const unsigned char *) &root, sizeof(root), NULL);
+	int subSeq=0;
+	BIGNUM* ret=NULL;
+	do
+	{
+		Serializer s(28);
+		s.add160(family);
+		s.add32(seq);
+		s.add32(subSeq++);
+		uint256 root=s.getSHA512Half();
+		s.secureErase();
+		ret=BN_bin2bn((const unsigned char *) &root, sizeof(root), ret);
+		if(!ret) return NULL;
+	} while (BN_is_zero(ret) || (BN_cmp(ret, order)>=0));
+	return ret;
 }
 
 EC_KEY* CKey::GeneratePublicDeterministicKey(const uint160& family, const EC_POINT* rootPubKey, int seq)
@@ -164,8 +172,19 @@ EC_KEY* CKey::GeneratePublicDeterministicKey(const uint160& family, const EC_POI
 		BN_CTX_free(ctx);
 		return NULL;
 	}
-	
-	BIGNUM* hash=makeHash(family, seq);
+
+	BIGNUM* order=BN_new();
+	if(!order || !EC_GROUP_get_order(EC_KEY_get0_group(pkey), order, ctx))
+	{
+		if(order) BN_free(order);
+		EC_KEY_free(pkey);
+		BN_CTX_free(ctx);
+		return NULL;
+	}
+
+	// calculate the private additional key
+	BIGNUM* hash=makeHash(family, seq, order);
+	BN_free(order);
 	if(hash==NULL)
 	{
 		EC_POINT_free(newPoint);
@@ -174,15 +193,16 @@ EC_KEY* CKey::GeneratePublicDeterministicKey(const uint160& family, const EC_POI
 		return NULL;
 	}
 	
+	// calculate the corresponding public key
 	EC_POINT_mul(EC_KEY_get0_group(pkey), newPoint, hash, NULL, NULL, ctx);
 	BN_free(hash);
 
+	// add the master public key and set
 	EC_POINT_add(EC_KEY_get0_group(pkey), newPoint, newPoint, rootPubKey, ctx);
 	EC_KEY_set_public_key(pkey, newPoint);
 
 	EC_POINT_free(newPoint);
 	BN_CTX_free(ctx);
-
 	return pkey;
 }
  
@@ -204,23 +224,52 @@ EC_KEY* CKey::GeneratePrivateDeterministicKey(const uint160& family, const BIGNU
 	{
 		BN_CTX_free(ctx);
 		EC_KEY_free(pkey);
+		return NULL;
 	}
 	
-	EC_GROUP_get_order(EC_KEY_get0_group(pkey), order, ctx);
-	
-	BIGNUM* privKey=makeHash(family, seq);
+	if(!EC_GROUP_get_order(EC_KEY_get0_group(pkey), order, ctx))
+	{
+		BN_free(order);
+		BN_CTX_free(ctx);
+		EC_KEY_free(pkey);
+		return NULL;
+	}
+
+	// calculate the private additional key
+	BIGNUM* privKey=makeHash(family, seq, order);
+	if(privKey==NULL)
+	{
+		BN_free(order);
+		BN_CTX_free(ctx);
+		EC_KEY_free(pkey);
+		return NULL;
+	}
+
+	// calculate the final private key
 	BN_mod_add(privKey, privKey, rootPrivKey, order, ctx);
 	BN_free(order);
-	
 	EC_KEY_set_private_key(pkey, privKey);
-	
+
+	// compute the corresponding public key
 	EC_POINT* pubKey=EC_POINT_new(EC_KEY_get0_group(pkey));
-	EC_POINT_mul(EC_KEY_get0_group(pkey), pubKey, privKey, NULL, NULL, ctx);
+	if(!pubKey)
+	{
+		BN_free(privKey);
+		BN_CTX_free(ctx);
+		EC_KEY_free(pkey);
+		return NULL;
+	}
+	if(EC_POINT_mul(EC_KEY_get0_group(pkey), pubKey, privKey, NULL, NULL, ctx)==0)
+	{
+		BN_free(privKey);
+		BN_CTX_free(ctx);
+		EC_KEY_free(pkey);
+		return NULL;
+	}
 	BN_free(privKey);
 	EC_KEY_set_public_key(pkey, pubKey);
 
 	EC_POINT_free(pubKey);
 	BN_CTX_free(ctx);
-
 	return pkey;	
 }
