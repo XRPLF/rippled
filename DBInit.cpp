@@ -57,11 +57,12 @@ const char *WalletDBInit[] = {
 	);",
 	"CREATE TABLE LocalAccounts (					\
 		ID			CHARACTER(40) PRIMARY KEY,		\
-		DKID		CHARACTER(40),					\
-		DKSeq		BIGINT UNSIGNED,				\
+		KeyType		CHARACTER(1),					\
+		PrivateKey	TEXT							\
 		Seq			BIGINT UNSIGNED,				\
 		Balance		BIGINT UNSIGNED,				\
 		LedgerSeq	BIGINT UNSIGNED,				\
+		Name		TEXT,							\
 		Comment		TEXT							\
 	);",
 	"CREATE TABLE TrustedNodes (				`	\
