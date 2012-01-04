@@ -93,8 +93,6 @@ std::string RPCServer::handleRequest(const std::string& requestStr)
 		return(HTTPReply(400, ""));
 	std::string strMethod = valMethod.asString();
 
-	
-
 	// Parse params
 	Json::Value valParams = valRequest["params"];
 	if (valParams.isNull())
@@ -165,13 +163,26 @@ Json::Value RPCServer::doCreateFamily(Json::Value& params)
 	return ret;
 }
 
-Json::Value RPCServer::doGetAccount(Json::Value &params)
-{ // getaccount <family> <number>
+Json::Value RPCServer::doAccountInfo(Json::Value &params)
+{ // accountinfo <family>:<number>
+	if(params.isArray()) params=params[0u];
+	if(!params.isConvertibleTo(Json::stringValue))
+		return JSONRPCError(500, "Invalid account identifier");
 
+	LocalAccount::pointer account=theApp->getWallet().parseAccount(params.asString());
+	if(!account)
+		return JSONRPCError(500, "Account not found");
+	
+	Json::Value ret(Json::objectValue);
+	ret["ShortName"]=account->getShortName();
+	ret["FullName"]=account->getFullName();
+	ret["AccountID"]=NewcoinAddress(account->getAddress()).GetString();
+	ret["Issued"]=Json::Value(account->isIssued());
+	return ret;
 }
  
-Json::Value RPCServer::doGetNewAccount(Json::Value &params)
-{ // getnewaccount <family>
+Json::Value RPCServer::doNewAccount(Json::Value &params)
+{ // newaccount <family>
 }
 
 Json::Value RPCServer::doLock(Json::Value &params)
@@ -184,11 +195,11 @@ Json::Value RPCServer::doUnlock(Json::Value &params)
   // unlock "<pass phrase>"
 }
 
-Json::Value RPCServer::doInfo(Json::Value &params)
+Json::Value RPCServer::doFamilyInfo(Json::Value &params)
 {
-	// info <family>
-	// info <family> <number>
-	// info
+	// familyinfo <family>
+	// familyinfo <family> <number>
+	// familyinfo
 	int paramCount=0;
 	std::string fParam;
 
@@ -253,7 +264,7 @@ Json::Value RPCServer::doInfo(Json::Value &params)
 	if(!comment.empty())
 		obj["Comment"]=comment;
 	obj["PublicGenerator"]=pubGen;
-	obj["Locked"]=isLocked ? "true" : "false";
+	obj["Locked"]=Json::Value(isLocked);
 
 	if(paramCount==2)
 	{
@@ -273,6 +284,12 @@ Json::Value RPCServer::doInfo(Json::Value &params)
 	}
 
 	return obj;
+}
+
+Json::Value RPCServer::doSendTo(Json::Value& params)
+{ // Implement simple sending without gathering
+	// sendto <destination> <amount>
+	// sendto <destination> <amount> <tag>
 }
 
 Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params)
@@ -301,11 +318,12 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 		return(str.c_str());
 	}
 	if(command=="createfamily") return doCreateFamily(params);
-	if(command=="getaccount") return doGetAccount(params);
-	if(command=="getnewaccount") return doGetNewAccount(params);
+	if(command=="familyinfo") return doFamilyInfo(params);
+	if(command=="accountinfo") return doAccountInfo(params);
+	if(command=="newaccount") return doNewAccount(params);
 	if(command=="lock") return doLock(params);
 	if(command=="unlock") return doUnlock(params);
-	if(command=="info") return doInfo(params);
+	if(command=="sendto") return doSendTo(params);
 
 	return "unknown command";
 }
