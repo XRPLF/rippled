@@ -85,6 +85,7 @@ public:
 	bool isLocked() const { return mRootPrivateKey==NULL; }
 
 	void setSeq(uint32 s) { mLastSeq=s; }
+	uint32 getSeq(void) { return mLastSeq; }
 	void setName(const std::string& n) { mName=n; }
 	void setComment(const std::string& c) { mComment=c; }
 
@@ -116,6 +117,10 @@ public:
 	LocalAccount(LocalAccountFamily::pointer fam, int seq) : mFamily(fam), mSeq(seq) { ; }
 	uint160 getAddress() const;
 	bool isLocked() const;
+
+	std::string getShortName() const;
+	std::string getFullName() const;
+	bool isIssued() const;
 
 	bool signRaw(Serializer::pointer);
 	bool signRaw(Serializer::pointer, std::vector<unsigned char>& signature);
@@ -161,6 +166,7 @@ public:
 
 	void load(void);
 
+	LocalAccount::pointer parseAccount(const std::string& accountSpecifier);
 	LocalAccount::pointer getLocalAccount(const uint160& famBase, int seq);
 	LocalAccount::pointer getLocalAccount(const uint160& acctID);
 	uint160 peekKey(const uint160& family, int seq);

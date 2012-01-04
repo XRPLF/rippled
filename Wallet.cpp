@@ -333,6 +333,27 @@ uint160 LocalAccount::getAddress() const
 	return la->getAccountID();
 }
 
+std::string LocalAccount::getShortName() const
+{
+	std::string ret(mFamily->getShortName());
+	ret.append(":");
+	ret.append(boost::lexical_cast<std::string>(mSeq));
+	return ret;
+}
+
+std::string LocalAccount::getFullName() const
+{
+	std::string ret(mFamily->getFamily().GetHex());
+	ret.append(":");
+	ret.append(boost::lexical_cast<std::string>(mSeq));
+	return ret;
+}
+
+bool LocalAccount::isIssued() const
+{
+	return mSeq < mFamily->getSeq();
+}
+
 uint32 LocalAccount::getAcctSeq() const
 {
 	LocalAccountEntry::pointer la(mFamily->get(mSeq));
@@ -456,6 +477,46 @@ LocalAccount::pointer Wallet::getLocalAccount(const uint160& family, int seq)
 	LocalAccount::pointer lac(new LocalAccount(fit->second, seq));
 	accounts.insert(std::make_pair(acct, lac));
 	return lac;
+}
+
+LocalAccount::pointer Wallet::getLocalAccount(const uint160& acctID)
+{
+	std::map<uint160, LocalAccount::pointer>::iterator ait=accounts.find(acctID);
+	if(ait==accounts.end()) return LocalAccount::pointer();
+	return ait->second;
+}
+
+LocalAccount::pointer Wallet::parseAccount(const std::string& specifier)
+{ // <family>:<seq> or <acct_id>
+
+	std::cerr << "Parse(" << specifier << ")" << std::endl;
+
+	size_t colon=specifier.find(':');
+	if(colon == std::string::npos)
+	{
+		std::cerr << "nocolon" << std::endl;
+		NewcoinAddress na(specifier);
+		if(!na.IsValid()) return LocalAccount::pointer();
+		return getLocalAccount(na.GetHash160());
+	}
+	
+	if (colon==0) return LocalAccount::pointer();
+	
+	std::string family=specifier.substr(0, colon);
+	std::string seq=specifier.substr(colon+1);
+	if(seq.empty()) return LocalAccount::pointer();
+
+	std::cerr << "family(" << family << "), seq(" << seq << ")" << std::endl;
+
+	uint160 f;
+	if(isHexFamily(family))
+		f.SetHex(family);
+	else if(isHexPublicKey(family))
+		f=findFamilyPK(family);
+	else
+		f=findFamilySN(family);
+	if(!f) return LocalAccount::pointer();
+	return getLocalAccount(f, boost::lexical_cast<int>(seq));
 }
 
 uint160 Wallet::peekKey(const uint160& family, int seq)
