@@ -285,8 +285,9 @@ LocalAccountEntry::pointer LocalAccountFamily::get(int seq)
 
 uint160 Wallet::findFamilySN(const std::string& shortName)
 { // OPTIMIZEME
-	for(std::map<uint160, LocalAccountFamily::pointer>::iterator it=families.begin();
-		it!=families.end(); ++it)
+	boost::recursive_mutex::scoped_lock sl(mLock);
+	for(std::map<uint160, LocalAccountFamily::pointer>::iterator it=mFamilies.begin();
+		it!=mFamilies.end(); ++it)
 	{
 		if(it->second->getShortName()==shortName)
 			return it->first;
@@ -382,15 +383,17 @@ CKey::pointer LocalAccount::getPrivateKey()
 
 void Wallet::getFamilies(std::vector<uint160>& familyIDs)
 {
-	familyIDs.reserve(families.size());
-	for(std::map<uint160, LocalAccountFamily::pointer>::iterator fit=families.begin(); fit!=families.end(); ++fit)
+	boost::recursive_mutex::scoped_lock sl(mLock);
+	familyIDs.reserve(mFamilies.size());
+	for(std::map<uint160, LocalAccountFamily::pointer>::iterator fit=mFamilies.begin(); fit!=mFamilies.end(); ++fit)
 		familyIDs.push_back(fit->first);
 }
 
 bool Wallet::getFamilyInfo(const uint160& family, std::string& name, std::string& comment)
 {
-	std::map<uint160, LocalAccountFamily::pointer>::iterator fit=families.find(family);
-	if(fit==families.end()) return false;
+	boost::recursive_mutex::scoped_lock sl(mLock);
+	std::map<uint160, LocalAccountFamily::pointer>::iterator fit=mFamilies.find(family);
+	if(fit==mFamilies.end()) return false;
 	assert(fit->second->getFamily()==family);
 	name=fit->second->getShortName();
 	comment=fit->second->getComment();
@@ -400,8 +403,9 @@ bool Wallet::getFamilyInfo(const uint160& family, std::string& name, std::string
 bool Wallet::getFullFamilyInfo(const uint160& family, std::string& name, std::string& comment,
 	std::string& pubGen, bool& isLocked)
 {
-	std::map<uint160, LocalAccountFamily::pointer>::iterator fit=families.find(family);
-	if(fit==families.end()) return false;
+	boost::recursive_mutex::scoped_lock sl(mLock);
+	std::map<uint160, LocalAccountFamily::pointer>::iterator fit=mFamilies.find(family);
+	if(fit==mFamilies.end()) return false;
 	assert(fit->second->getFamily()==family);
 	name=fit->second->getShortName();
 	comment=fit->second->getComment();
@@ -451,38 +455,42 @@ void Wallet::load()
 
 std::string Wallet::getPubGenHex(const uint160& famBase)
 {
-	std::map<uint160, LocalAccountFamily::pointer>::iterator fit=families.find(famBase);
-	if(fit==families.end()) return "";
+	boost::recursive_mutex::scoped_lock sl(mLock);
+	std::map<uint160, LocalAccountFamily::pointer>::iterator fit=mFamilies.find(famBase);
+	if(fit==mFamilies.end()) return "";
 	assert(fit->second->getFamily()==famBase);
 	return fit->second->getPubGenHex();
 }
 
 std::string Wallet::getShortName(const uint160& famBase)
 {
-	std::map<uint160, LocalAccountFamily::pointer>::iterator fit=families.find(famBase);
-	if(fit==families.end()) return "";
+	boost::recursive_mutex::scoped_lock sl(mLock);
+	std::map<uint160, LocalAccountFamily::pointer>::iterator fit=mFamilies.find(famBase);
+	if(fit==mFamilies.end()) return "";
 	assert(fit->second->getFamily()==famBase);
 	return fit->second->getShortName();
 }
 
 LocalAccount::pointer Wallet::getLocalAccount(const uint160& family, int seq)
 {
-	std::map<uint160, LocalAccountFamily::pointer>::iterator fit=families.find(family);
-	if(fit==families.end()) return LocalAccount::pointer();
+	boost::recursive_mutex::scoped_lock sl(mLock);
+	std::map<uint160, LocalAccountFamily::pointer>::iterator fit=mFamilies.find(family);
+	if(fit==mFamilies.end()) return LocalAccount::pointer();
 	uint160 acct=fit->second->getAccount(seq, true);
 	
-	std::map<uint160, LocalAccount::pointer>::iterator ait=accounts.find(acct);
-	if(ait!=accounts.end()) return ait->second;
+	std::map<uint160, LocalAccount::pointer>::iterator ait=mAccounts.find(acct);
+	if(ait!=mAccounts.end()) return ait->second;
 	
 	LocalAccount::pointer lac(new LocalAccount(fit->second, seq));
-	accounts.insert(std::make_pair(acct, lac));
+	mAccounts.insert(std::make_pair(acct, lac));
 	return lac;
 }
 
 LocalAccount::pointer Wallet::getLocalAccount(const uint160& acctID)
 {
-	std::map<uint160, LocalAccount::pointer>::iterator ait=accounts.find(acctID);
-	if(ait==accounts.end()) return LocalAccount::pointer();
+	boost::recursive_mutex::scoped_lock sl(mLock);
+	std::map<uint160, LocalAccount::pointer>::iterator ait=mAccounts.find(acctID);
+	if(ait==mAccounts.end()) return LocalAccount::pointer();
 	return ait->second;
 }
 
@@ -521,21 +529,23 @@ LocalAccount::pointer Wallet::parseAccount(const std::string& specifier)
 
 uint160 Wallet::peekKey(const uint160& family, int seq)
 {
-	std::map<uint160, LocalAccountFamily::pointer>::iterator fit=families.find(family);
-	if(fit==families.end()) return uint160();
+	boost::recursive_mutex::scoped_lock sl(mLock);
+	std::map<uint160, LocalAccountFamily::pointer>::iterator fit=mFamilies.find(family);
+	if(fit==mFamilies.end()) return uint160();
 	return fit->second->getAccount(seq, false);
 }
 
 void Wallet::delFamily(const uint160& familyName)
 {
-	std::map<uint160, LocalAccountFamily::pointer>::iterator fit=families.find(familyName);
-	if(fit==families.end()) return;
+	boost::recursive_mutex::scoped_lock sl(mLock);
+	std::map<uint160, LocalAccountFamily::pointer>::iterator fit=mFamilies.find(familyName);
+	if(fit==mFamilies.end()) return;
 
 	std::map<int, LocalAccountEntry::pointer>& acctMap=fit->second->getAcctMap();
 	for(std::map<int, LocalAccountEntry::pointer>::iterator it=acctMap.begin(); it!=acctMap.end(); ++it)
-		accounts.erase(it->second->getAccountID());
+		mAccounts.erase(it->second->getAccountID());
 	
-	families.erase(familyName);
+	mFamilies.erase(familyName);
 }
 
 LocalAccountFamily::pointer Wallet::doPublic(const std::string& pubKey, bool do_create, bool do_db)
@@ -550,8 +560,9 @@ LocalAccountFamily::pointer Wallet::doPublic(const std::string& pubKey, bool do_
     while(rootPubKey.size()<33) rootPubKey.push_back((unsigned char)0);
     uint160 family=NewcoinAddress(rootPubKey).GetHash160();
 
-	std::map<uint160, LocalAccountFamily::pointer>::iterator fit=families.find(family);
-	if(fit!=families.end()) // already added
+	boost::recursive_mutex::scoped_lock sl(mLock);
+	std::map<uint160, LocalAccountFamily::pointer>::iterator fit=mFamilies.find(family);
+	if(fit!=mFamilies.end()) // already added
 	{
 		EC_KEY_free(pkey);
 		return fit->second;
@@ -572,11 +583,12 @@ LocalAccountFamily::pointer Wallet::doPublic(const std::string& pubKey, bool do_
 	{
 		fam=LocalAccountFamily::pointer(new LocalAccountFamily(family,
 			EC_KEY_get0_group(pkey), EC_KEY_get0_public_key(pkey)));
-		families.insert(std::make_pair(family, fam));
+		mFamilies.insert(std::make_pair(family, fam));
 		if(do_db) fam->write(true);
 	}
+	sl.unlock();
+	
 	EC_KEY_free(pkey);
-
 	return fam;
 }
 
@@ -592,9 +604,10 @@ LocalAccountFamily::pointer Wallet::doPrivate(const uint256& passPhrase, bool do
 	while(rootPubKey.size()<33) rootPubKey.push_back((unsigned char)0);
 	uint160 family=NewcoinAddress(rootPubKey).GetHash160();
 	
+	boost::recursive_mutex::scoped_lock sl(mLock);
 	LocalAccountFamily::pointer fam;
-	std::map<uint160, LocalAccountFamily::pointer>::iterator it=families.find(family);
-	if(it==families.end())
+	std::map<uint160, LocalAccountFamily::pointer>::iterator it=mFamilies.find(family);
+	if(it==mFamilies.end())
 	{ // family not found
 		fam=LocalAccountFamily::readFamily(family);
 		if(!fam)
@@ -606,7 +619,7 @@ LocalAccountFamily::pointer Wallet::doPrivate(const uint256& passPhrase, bool do
 			}
 			fam=LocalAccountFamily::pointer(new LocalAccountFamily(family,
 				EC_KEY_get0_group(base), EC_KEY_get0_public_key(base)));
-			families.insert(std::make_pair(family, fam));
+			mFamilies.insert(std::make_pair(family, fam));
 			fam->write(true);
 		}
 	}
@@ -615,12 +628,13 @@ LocalAccountFamily::pointer Wallet::doPrivate(const uint256& passPhrase, bool do
 	if(do_unlock && fam->isLocked())
 		fam->unlock(EC_KEY_get0_private_key(base));
 	
+	sl.unlock();
 	EC_KEY_free(base);
 	return fam;
 }
 
 bool Wallet::unitTest()
-{ // Create 100 keys for each of 1,000 families Ensure all keys match
+{ // Create 100 keys for each of 1,000 families and ensure all keys match
 	Wallet pub, priv;
 	
 	uint256 privBase(time(NULL)^(getpid()<<16));

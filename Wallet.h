@@ -5,6 +5,7 @@
 #include <map>
 #include <string>
 
+#include <boost/thread/recursive_mutex.hpp>
 #include <boost/shared_ptr.hpp>
 
 #include "openssl/ec.h"
@@ -137,8 +138,9 @@ public:
 class Wallet
 {
 protected:
-	std::map<uint160, LocalAccountFamily::pointer> families;
-	std::map<uint160, LocalAccount::pointer> accounts;
+	boost::recursive_mutex mLock;
+	std::map<uint160, LocalAccountFamily::pointer> mFamilies;
+	std::map<uint160, LocalAccount::pointer> mAccounts;
 
 	LocalAccountFamily::pointer doPrivate(const uint256& passPhrase, bool do_create, bool do_unlock);
 	LocalAccountFamily::pointer doPublic(const std::string& pubKey, bool do_create, bool do_db);
