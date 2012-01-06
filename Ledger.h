@@ -1,18 +1,18 @@
 #ifndef __LEDGER__
 #define __LEDGER__
 
+#include <map>
+#include <list>
+
+#include <boost/shared_ptr.hpp>
+#include <boost/enable_shared_from_this.hpp>
+
 #include "Transaction.h"
 #include "types.h"
 #include "BitcoinUtil.h"
 #include "Hanko.h"
 #include "AccountState.h"
 #include "SHAMap.h"
-
-#include <boost/shared_ptr.hpp>
-#include <boost/enable_shared_from_this.hpp>
-#include <map>
-#include <list>
-
 
 
 class Ledger : public boost::enable_shared_from_this<Ledger>

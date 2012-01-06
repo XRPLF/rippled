@@ -229,11 +229,8 @@ std::string JSONRPCRequest(const std::string& strMethod, const Json::Value& para
 
 std::string JSONRPCReply(const Json::Value& result, const Json::Value& error, const Json::Value& id)
 {
-	Json::Value reply;
-	if (!error.isNull())
-		reply["result"]=Json::Value();
-	else
-		reply["result"]=result;
+	Json::Value reply(Json::objectValue);
+	reply["result"]=result;
 	reply["error"]=error;
 	reply["id"]=id;
 	Json::FastWriter writer;

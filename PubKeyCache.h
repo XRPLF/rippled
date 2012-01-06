@@ -3,7 +3,7 @@
 
 #include <map>
 
-#include "boost/thread/mutex.hpp"
+#include <boost/thread/mutex.hpp>
 
 #include "uint256.h"
 #include "key.h"

@@ -22,7 +22,7 @@ void ConnectionPool::connectToNetwork(KnownNodeList& nodeList,boost::asio::io_se
 		if(!node) return;
 		
 		Peer::pointer peer=Peer::create(io_service);
-		peer->connectTo(*node);
+//		peer->connectTo(*node); // FIXME
 		mPeers.push_back(peer);
 		
 	}

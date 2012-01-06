@@ -36,7 +36,7 @@ class RPCServer  : public boost::enable_shared_from_this<RPCServer>
 	Json::Value doLock(Json::Value& params);
 	Json::Value doUnlock(Json::Value& params);
 	Json::Value doSendTo(Json::Value& params);
-	
+
 public:
 	typedef boost::shared_ptr<RPCServer> pointer;
 

@@ -183,16 +183,19 @@ Json::Value RPCServer::doAccountInfo(Json::Value &params)
  
 Json::Value RPCServer::doNewAccount(Json::Value &params)
 { // newaccount <family>
+	return "Not yet";
 }
 
 Json::Value RPCServer::doLock(Json::Value &params)
 { // lock <family>
   // lock
+	return "Not yet";
 }
 
 Json::Value RPCServer::doUnlock(Json::Value &params)
 { // unlock <hexPrivateKey>
   // unlock "<pass phrase>"
+	return "Not yet";
 }
 
 Json::Value RPCServer::doFamilyInfo(Json::Value &params)
@@ -290,6 +293,7 @@ Json::Value RPCServer::doSendTo(Json::Value& params)
 { // Implement simple sending without gathering
 	// sendto <destination> <amount>
 	// sendto <destination> <amount> <tag>
+	return "Not yet";
 }
 
 Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params)

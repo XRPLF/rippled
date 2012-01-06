@@ -69,7 +69,7 @@ void UniqueNodeList::dumpUNL(std::string& retStr)
 		while(db->getNextRow())
 		{
 			uint160 hanko;
-			int size=db->getBinary("Hanko", hanko.begin(), hanko.GetSerializeSize());
+			db->getBinary("Hanko", hanko.begin(), hanko.GetSerializeSize());
 			std::string tstr;
 			u160ToHuman(hanko, tstr);
 
