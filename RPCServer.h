@@ -31,6 +31,8 @@ class RPCServer  : public boost::enable_shared_from_this<RPCServer>
 	int getParamCount(const Json::Value& params);
 	bool extractString(std::string& param, const Json::Value& params, int index);
 
+	uint160 parseFamily(const std::string& family);
+
 	Json::Value doCreateFamily(Json::Value& params);
 	Json::Value doFamilyInfo(Json::Value& params);
 	Json::Value doAccountInfo(Json::Value& params);

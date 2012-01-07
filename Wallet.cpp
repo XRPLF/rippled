@@ -350,6 +350,11 @@ std::string LocalAccount::getFullName() const
 	return ret;
 }
 
+std::string LocalAccount::getFamilyName() const
+{
+	return mFamily->getShortName();
+}
+
 bool LocalAccount::isIssued() const
 {
 	return mSeq < mFamily->getSeq();
@@ -469,6 +474,24 @@ std::string Wallet::getShortName(const uint160& famBase)
 	if(fit==mFamilies.end()) return "";
 	assert(fit->second->getFamily()==famBase);
 	return fit->second->getShortName();
+}
+
+LocalAccount::pointer Wallet::getNewLocalAccount(const uint160& family)
+{
+	boost::recursive_mutex::scoped_lock sl(mLock);
+	std::map<uint160, LocalAccountFamily::pointer>::iterator fit=mFamilies.find(family);
+	if(fit==mFamilies.end()) return LocalAccount::pointer();
+
+	uint32 seq=fit->second->getSeq();
+	uint160 acct=fit->second->getAccount(seq, true);
+	fit->second->setSeq(seq+1); // FIXME: writeout new seq
+	
+	std::map<uint160, LocalAccount::pointer>::iterator ait=mAccounts.find(acct);
+	if(ait!=mAccounts.end()) return ait->second;
+	
+	LocalAccount::pointer lac(new LocalAccount(fit->second, seq));
+	mAccounts.insert(std::make_pair(acct, lac));
+	return lac;
 }
 
 LocalAccount::pointer Wallet::getLocalAccount(const uint160& family, int seq)

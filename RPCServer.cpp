@@ -151,6 +151,18 @@ bool RPCServer::extractString(std::string& param, const Json::Value& params, int
 	return true;
 }
 
+uint160 RPCServer::parseFamily(const std::string& fParam)
+{
+	uint160 family;
+	if(Wallet::isHexFamily(fParam))
+		family.SetHex(fParam);
+	else if(Wallet::isHexPublicKey(fParam))
+		family=theApp->getWallet().findFamilyPK(fParam);
+	else
+		family=theApp->getWallet().findFamilySN(fParam);
+	return family;
+}
+
 Json::Value RPCServer::doCreateFamily(Json::Value& params)
 {
 // createfamily <hexPrivateKey>
@@ -206,6 +218,7 @@ Json::Value RPCServer::doAccountInfo(Json::Value &params)
 		return JSONRPCError(500, "Account not found");
 	
 	Json::Value ret(Json::objectValue);
+	ret["Family"]=account->getFamilyName();
 	ret["ShortName"]=account->getShortName();
 	ret["FullName"]=account->getFullName();
 	ret["AccountID"]=NewcoinAddress(account->getAddress()).GetString();
@@ -214,8 +227,25 @@ Json::Value RPCServer::doAccountInfo(Json::Value &params)
 }
  
 Json::Value RPCServer::doNewAccount(Json::Value &params)
-{ // newaccount <family>
-	return "Not yet";
+{ // newaccount <family> [<name>]
+	std::string fParam;
+	if(!extractString(fParam, params, 0))
+		return JSONRPCError(500, "Family required");
+	
+	uint160 family = parseFamily(fParam);
+	if(!family) return JSONRPCError(500, "No such family");
+
+	LocalAccount::pointer account(theApp->getWallet().getNewLocalAccount(family));
+	if(!account)
+		return JSONRPCError(500, "Family not found");
+
+	Json::Value ret(Json::objectValue);
+	ret["Family"]=account->getFamilyName();
+	ret["ShortName"]=account->getShortName();
+	ret["FullName"]=account->getFullName();
+	ret["AccountID"]=NewcoinAddress(account->getAddress()).GetString();
+	ret["Issued"]=Json::Value(account->isIssued());
+	return ret;
 }
 
 Json::Value RPCServer::doLock(Json::Value &params)
@@ -263,13 +293,7 @@ Json::Value RPCServer::doFamilyInfo(Json::Value &params)
 	std::string fParam;
 	extractString(fParam, params, 0);
 
-	uint160 family;
-	if(Wallet::isHexFamily(fParam))
-		family.SetHex(fParam);
-	else if(Wallet::isHexPublicKey(fParam))
-		family=theApp->getWallet().findFamilyPK(fParam);
-	else
-		family=theApp->getWallet().findFamilySN(fParam);
+	uint160 family=parseFamily(fParam);
 	if(!family) return JSONRPCError(500, "No such family");
 		
 	std::string name, comment, pubGen;

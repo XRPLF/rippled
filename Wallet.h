@@ -121,6 +121,7 @@ public:
 
 	std::string getShortName() const;
 	std::string getFullName() const;
+	std::string getFamilyName() const;
 	bool isIssued() const;
 
 	bool signRaw(Serializer::pointer);
@@ -173,6 +174,7 @@ public:
 
 	LocalAccount::pointer getLocalAccount(const uint160& famBase, int seq);
 	LocalAccount::pointer getLocalAccount(const uint160& acctID);
+	LocalAccount::pointer getNewLocalAccount(const uint160& family);
 	uint160 peekKey(const uint160& family, int seq);
 	std::string getPubGenHex(const uint160& famBase);
 	std::string getShortName(const uint160& famBase);
