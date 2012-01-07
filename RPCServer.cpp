@@ -165,50 +165,38 @@ uint160 RPCServer::parseFamily(const std::string& fParam)
 
 Json::Value RPCServer::doCreateFamily(Json::Value& params)
 {
-// createfamily <hexPrivateKey>
-// createfamily <hexPublicKey>
-// createfamily "<pass phrase>"
-// createfamily
+	// createfamily <hexPrivateKey>
+	// createfamily <hexPublicKey>
+	// createfamily "<pass phrase>"
+	// createfamily
 
 	std::string query;
 	uint160 family;
-	Json::Value ret(Json::objectValue);
 	
+	uint256 privKey;
 	if(!extractString(query, params, 0))
-	{
-		std::cerr << "empty" << std::endl;
-		uint256 privKey;
 		family=theApp->getWallet().addRandomFamily(privKey);
-		ret["PrivateGenerator"]=Wallet::privKeyToText(privKey);
-	}
 	else if(Wallet::isHexPrivateKey(query))
-	{
-		std::cerr << "hprivk" << std::endl;
-		uint256 pk;
-		pk.SetHex(query);
-		family=theApp->getWallet().addFamily(pk, false);
-	}
+		family=theApp->getWallet().addFamily(Wallet::textToPrivKey(query), false);
 	else if(Wallet::isHexPublicKey(query))
-	{
-		std::cerr << "hpubk" << std::endl;
 		family=theApp->getWallet().addFamily(query);
-	}
 	else
-	{
-		std::cerr << "PassPhrase(" << query << ")" << std::endl;
 		family=theApp->getWallet().addFamily(query, false);
-	}
 	if(!family)
 		return JSONRPCError(500, "Invalid family specifier");
 	
-	ret["FamilyIdentifier"]=family.GetHex();
-	ret["ShortName"]=theApp->getWallet().getShortName(family);
-	ret["PublicGenerator"]=theApp->getWallet().getPubGenHex(family);
+	Json::Value ret(theApp->getWallet().getFamilyJson(family));
+	if(ret.isNull()) return JSONRPCError(500, "Invalid family");
+	if(!!privKey)
+	{
+		ret["PrivateGenerator"]=Wallet::privKeyToText(privKey);
+		privKey.zero();
+	}
 	return ret;
 }
 
 Json::Value RPCServer::doAccountInfo(Json::Value &params)
-{ // accountinfo <family>:<number>
+{   // accountinfo <family>:<number>
 	std::string acct;
 	if(!extractString(acct, params, 0))
 		return JSONRPCError(500, "Invalid account identifier");
@@ -227,7 +215,7 @@ Json::Value RPCServer::doAccountInfo(Json::Value &params)
 }
  
 Json::Value RPCServer::doNewAccount(Json::Value &params)
-{ // newaccount <family> [<name>]
+{   // newaccount <family> [<name>]
 	std::string fParam;
 	if(!extractString(fParam, params, 0))
 		return JSONRPCError(500, "Family required");
@@ -249,15 +237,42 @@ Json::Value RPCServer::doNewAccount(Json::Value &params)
 }
 
 Json::Value RPCServer::doLock(Json::Value &params)
-{ // lock <family>
-  // lock
-	return "Not yet";
+{   // lock <family>
+	// lock
+	std::string fParam;
+	if(extractString(fParam, params, 0))
+	{ // local <family>
+		uint160 family = parseFamily(fParam);
+		if(!family) return JSONRPCError(500, "Family not found");
+		theApp->getWallet().lock(family);
+		return "locked";
+	}
+	else
+	{
+		theApp->getWallet().lock();
+		return "locked";
+	}
 }
 
 Json::Value RPCServer::doUnlock(Json::Value &params)
-{ // unlock <hexPrivateKey>
-  // unlock "<pass phrase>"
-	return "Not yet";
+{   // unlock <hexPrivateKey>
+    // unlock "<pass phrase>"
+	std::string param;
+	if(!extractString(param, params, 0) || Wallet::isHexPublicKey(param))
+		return JSONRPCError(500, "Private key required");
+
+	uint160 family;
+	if(Wallet::isHexPrivateKey(param))
+		family=theApp->getWallet().addFamily(Wallet::textToPrivKey(param), false);
+	else
+		family=theApp->getWallet().addFamily(param);
+
+	if(!family)
+		return JSONRPCError(500, "Bad family");
+
+	Json::Value ret(theApp->getWallet().getFamilyJson(family));
+	if(ret.isNull()) return JSONRPCError(500, "Invalid family");
+	return ret;
 }
 
 Json::Value RPCServer::doFamilyInfo(Json::Value &params)
@@ -275,16 +290,8 @@ Json::Value RPCServer::doFamilyInfo(Json::Value &params)
 		Json::Value ret(Json::arrayValue);
 		BOOST_FOREACH(const uint160& fid, familyIDs)
 		{
-			Json::Value obj(Json::objectValue);
-			std::string name, comment;
-			if(theApp->getWallet().getFamilyInfo(fid, name, comment))
-			{
-				obj["FamilyIdentifier"]=fid.GetHex();
-				obj["ShortName"]=name;
-				if(!comment.empty())
-					obj["Comment"]=comment;
-				ret.append(obj);
-			}
+			Json::Value obj(theApp->getWallet().getFamilyJson(fid));
+			if(!obj.isNull()) ret.append(obj);
 		}
 		return ret;
 	}
@@ -295,18 +302,9 @@ Json::Value RPCServer::doFamilyInfo(Json::Value &params)
 
 	uint160 family=parseFamily(fParam);
 	if(!family) return JSONRPCError(500, "No such family");
-		
-	std::string name, comment, pubGen;
-	bool isLocked;
-	if(!theApp->getWallet().getFullFamilyInfo(family, name, comment, pubGen, isLocked))
+	Json::Value obj(theApp->getWallet().getFamilyJson(family));
+	if(obj.isNull())
 		return JSONRPCError(500, "Family not found");
-	Json::Value obj(Json::objectValue);
-	obj["FamilyIdentifier"]=family.GetHex();
-	obj["ShortName"]=name;
-	if(!comment.empty())
-		obj["Comment"]=comment;
-	obj["PublicGenerator"]=pubGen;
-	obj["Locked"]=Json::Value(isLocked);
 
 	if(paramCount==2)
 	{

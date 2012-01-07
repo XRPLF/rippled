@@ -10,6 +10,8 @@
 
 #include "openssl/ec.h"
 
+#include "json/value.h"
+
 #include "uint256.h"
 #include "Serializer.h"
 
@@ -79,14 +81,14 @@ public:
 	LocalAccountFamily(const uint160& family, const EC_GROUP* group, const EC_POINT* pubKey);
 	~LocalAccountFamily();
 
-	const uint160& getFamily() { return mFamily; }
+	const uint160& getFamily() const { return mFamily; }
 
 	void unlock(const BIGNUM* privateKey);
 	void lock();
 	bool isLocked() const { return mRootPrivateKey==NULL; }
 
 	void setSeq(uint32 s) { mLastSeq=s; }
-	uint32 getSeq(void) { return mLastSeq; }
+	uint32 getSeq() { return mLastSeq; }
 	void setName(const std::string& n) { mName=n; }
 	void setComment(const std::string& c) { mComment=c; }
 
@@ -98,6 +100,7 @@ public:
 	std::string getPubGenHex() const;	// The text name of the public key
 	std::string getShortName() const { return mName; }
 	std::string getComment() const { return mComment; }
+	Json::Value getJson() const;
 
 	static std::string getSQLFields();
 	std::string getSQL() const;
@@ -134,6 +137,8 @@ public:
 
 	CKey::pointer getPublicKey();
 	CKey::pointer getPrivateKey();
+
+	Json::Value getJson();
 };
 
 class Wallet
@@ -166,8 +171,9 @@ public:
 
 	uint160 unlock(const uint256& passPhrase);
 	bool lock(const uint160& familyName);
+	void lock();
 
-	void load(void);
+	void load();
 
 	// must be a known local account
 	LocalAccount::pointer parseAccount(const std::string& accountSpecifier);
@@ -178,9 +184,11 @@ public:
 	uint160 peekKey(const uint160& family, int seq);
 	std::string getPubGenHex(const uint160& famBase);
 	std::string getShortName(const uint160& famBase);
+
 	bool getFamilyInfo(const uint160& family, std::string& name, std::string& comment);
 	bool getFullFamilyInfo(const uint160& family, std::string& name, std::string& comment,
 		std::string& pubGen, bool& isLocked);
+	Json::Value getFamilyJson(const uint160& family);
 
 	static bool isHexPrivateKey(const std::string&);
 	static bool isHexPublicKey(const std::string&);

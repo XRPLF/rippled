@@ -128,6 +128,17 @@ static bool isHex(char j)
 	return false;
 }
 
+Json::Value LocalAccountFamily::getJson() const
+{
+	Json::Value ret(Json::objectValue);
+	ret["ShortName"]=getShortName();
+	ret["FullName"]=getFamily().GetHex();
+	ret["PublicGenerator"]=getPubGenHex();
+	ret["IsLocked"]=isLocked();
+	if(!getComment().empty()) ret["Comment"]=getComment();
+	return ret;
+}
+
 LocalAccountFamily::pointer LocalAccountFamily::readFamily(const uint160& family)
 {
 	std::string sql="SELECT * from LocalAcctFamilies WHERE FamilyName='";
@@ -419,6 +430,15 @@ bool Wallet::getFullFamilyInfo(const uint160& family, std::string& name, std::st
 	return true;
 }
 
+Json::Value Wallet::getFamilyJson(const uint160& family)
+{
+	boost::recursive_mutex::scoped_lock sl(mLock);
+	std::map<uint160, LocalAccountFamily::pointer>::iterator fit=mFamilies.find(family);
+	if(fit==mFamilies.end()) return Json::Value(Json::nullValue);
+	assert(fit->second->getFamily()==family);
+	return fit->second->getJson();
+}
+
 void Wallet::load()
 {
 	std::string sql("SELECT * FROM LocalAcctFamilies;");
@@ -654,6 +674,23 @@ LocalAccountFamily::pointer Wallet::doPrivate(const uint256& passPhrase, bool do
 	sl.unlock();
 	EC_KEY_free(base);
 	return fam;
+}
+
+bool Wallet::lock(const uint160& family)
+{
+	boost::recursive_mutex::scoped_lock sl(mLock);
+	std::map<uint160, LocalAccountFamily::pointer>::iterator fit=mFamilies.find(family);
+	if(fit==mFamilies.end()) return false;
+    fit->second->lock();
+    return true;
+}
+
+void Wallet::lock()
+{
+	boost::recursive_mutex::scoped_lock sl(mLock);
+	for(std::map<uint160, LocalAccountFamily::pointer>::iterator fit=mFamilies.begin();
+			fit!=mFamilies.end(); ++fit)
+		fit->second->lock();
 }
 
 bool Wallet::unitTest()
