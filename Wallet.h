@@ -168,7 +168,9 @@ public:
 
 	void load(void);
 
+	// must be a known local account
 	LocalAccount::pointer parseAccount(const std::string& accountSpecifier);
+
 	LocalAccount::pointer getLocalAccount(const uint160& famBase, int seq);
 	LocalAccount::pointer getLocalAccount(const uint160& acctID);
 	uint160 peekKey(const uint160& family, int seq);
