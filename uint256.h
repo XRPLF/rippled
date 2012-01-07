@@ -371,7 +371,7 @@ public:
 		return sizeof(pn);
 	}
 
-	void zero(void)
+	void zero()
 	{
 		memset(&pn[0], 0, sizeof(pn));
 	}

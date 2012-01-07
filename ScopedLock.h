@@ -14,11 +14,11 @@ public:
 	ScopedLock(boost::recursive_mutex &mutex) :
 		mHolder(new boost::interprocess::scoped_lock<boost::recursive_mutex>(mutex))
 	{ ; }
-	void lock(void) const
+	void lock() const
 	{
 		mHolder->lock();
 	}
-	void unlock(void) const
+	void unlock() const
 	{
 		mHolder->unlock();
 	}
