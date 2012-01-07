@@ -366,6 +366,18 @@ std::string LocalAccount::getFamilyName() const
 	return mFamily->getShortName();
 }
 
+Json::Value LocalAccount::getJson() const
+{
+	Json::Value ret(Json::objectValue);
+	ret["Family"]=getFamilyName();
+	ret["AccountID"]=NewcoinAddress(getAddress()).GetString();
+	ret["ShortName"]=getShortName();
+	ret["FullName"]=getFullName();
+	ret["Issued"]=Json::Value(isIssued());
+	ret["IsLocked"]=mFamily->isLocked();
+	return ret;
+}
+
 bool LocalAccount::isIssued() const
 {
 	return mSeq < mFamily->getSeq();

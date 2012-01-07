@@ -138,7 +138,7 @@ public:
 	CKey::pointer getPublicKey();
 	CKey::pointer getPrivateKey();
 
-	Json::Value getJson();
+	Json::Value getJson() const;
 };
 
 class Wallet

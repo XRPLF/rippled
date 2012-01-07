@@ -204,14 +204,8 @@ Json::Value RPCServer::doAccountInfo(Json::Value &params)
 	LocalAccount::pointer account=theApp->getWallet().parseAccount(acct);
 	if(!account)
 		return JSONRPCError(500, "Account not found");
-	
-	Json::Value ret(Json::objectValue);
-	ret["Family"]=account->getFamilyName();
-	ret["ShortName"]=account->getShortName();
-	ret["FullName"]=account->getFullName();
-	ret["AccountID"]=NewcoinAddress(account->getAddress()).GetString();
-	ret["Issued"]=Json::Value(account->isIssued());
-	return ret;
+
+	return account->getJson();
 }
  
 Json::Value RPCServer::doNewAccount(Json::Value &params)
@@ -226,14 +220,7 @@ Json::Value RPCServer::doNewAccount(Json::Value &params)
 	LocalAccount::pointer account(theApp->getWallet().getNewLocalAccount(family));
 	if(!account)
 		return JSONRPCError(500, "Family not found");
-
-	Json::Value ret(Json::objectValue);
-	ret["Family"]=account->getFamilyName();
-	ret["ShortName"]=account->getShortName();
-	ret["FullName"]=account->getFullName();
-	ret["AccountID"]=NewcoinAddress(account->getAddress()).GetString();
-	ret["Issued"]=Json::Value(account->isIssued());
-	return ret;
+	return account->getJson();
 }
 
 Json::Value RPCServer::doLock(Json::Value &params)
