@@ -7,6 +7,7 @@
 
 #include "HttpRequest.h"
 #include "RequestParser.h"
+#include "uint256.h"
 
 class RPCServer  : public boost::enable_shared_from_this<RPCServer>
 {
@@ -23,11 +24,12 @@ class RPCServer  : public boost::enable_shared_from_this<RPCServer>
 
 	void handle_read(const boost::system::error_code& e, std::size_t bytes_transferred);
 
-	
 	std::string handleRequest(const std::string& requestStr);
 	void sendReply();
 
 	Json::Value doCommand(const std::string& command, Json::Value& params);
+	int getParamCount(const Json::Value& params);
+	bool extractString(std::string& param, const Json::Value& params, int index);
 
 	Json::Value doCreateFamily(Json::Value& params);
 	Json::Value doFamilyInfo(Json::Value& params);
@@ -36,6 +38,10 @@ class RPCServer  : public boost::enable_shared_from_this<RPCServer>
 	Json::Value doLock(Json::Value& params);
 	Json::Value doUnlock(Json::Value& params);
 	Json::Value doSendTo(Json::Value& params);
+
+	// parses a string account name into a uint160
+	// can be local or remote
+	uint160 parseAccount(const std::string& account);
 
 public:
 	typedef boost::shared_ptr<RPCServer> pointer;
@@ -51,5 +57,4 @@ public:
 	}
 
 	void connected();
-
 };

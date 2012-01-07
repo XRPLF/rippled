@@ -69,8 +69,6 @@ void RPCServer::handle_read(const boost::system::error_code& e,
 	}
 }
 
-
-
 std::string RPCServer::handleRequest(const std::string& requestStr)
 {
 	std::cout << "handleRequest " << requestStr << std::endl;
@@ -115,6 +113,44 @@ std::string RPCServer::handleRequest(const std::string& requestStr)
 	return( HTTPReply(200, strReply) );
 }
 
+int RPCServer::getParamCount(const Json::Value& params)
+{ // If non-array, only counts strings
+	if(params.isNull()) return 0;
+	if(params.isArray()) return params.size();
+	if(!params.isConvertibleTo(Json::stringValue))
+		return 0;
+	return 1;
+}
+
+bool RPCServer::extractString(std::string& param, const Json::Value& params, int index)
+{
+	if(params.isNull()) return false;
+
+	if(index!=0)
+	{
+		if(!params.isArray() || !params.isValidIndex(index))
+			return false;
+		Json::Value p(params.get(index, Json::nullValue));
+		if(p.isNull() || !p.isConvertibleTo(Json::stringValue))
+			return false;
+		param = p.asString();
+		return true;
+	}
+
+	if(params.isArray())
+	{
+		if( (!params.isValidIndex(0)) || (!params[0u].isConvertibleTo(Json::stringValue)) )
+			return false;
+		param = params[0u].asString();
+		return true;
+	}
+
+	if(!params.isConvertibleTo(Json::stringValue))
+		return false;
+	param = params.asString();
+	return true;
+}
+
 Json::Value RPCServer::doCreateFamily(Json::Value& params)
 {
 // createfamily <hexPrivateKey>
@@ -124,13 +160,9 @@ Json::Value RPCServer::doCreateFamily(Json::Value& params)
 
 	std::string query;
 	uint160 family;
-	
-	if(params.isArray()) params=params[0u];
-	if(params.isConvertibleTo(Json::stringValue)) query=params.asString();
-	
 	Json::Value ret(Json::objectValue);
-
-	if(query.empty())
+	
+	if(!extractString(query, params, 0))
 	{
 		std::cerr << "empty" << std::endl;
 		uint256 privKey;
@@ -165,11 +197,11 @@ Json::Value RPCServer::doCreateFamily(Json::Value& params)
 
 Json::Value RPCServer::doAccountInfo(Json::Value &params)
 { // accountinfo <family>:<number>
-	if(params.isArray()) params=params[0u];
-	if(!params.isConvertibleTo(Json::stringValue))
+	std::string acct;
+	if(!extractString(acct, params, 0))
 		return JSONRPCError(500, "Invalid account identifier");
 
-	LocalAccount::pointer account=theApp->getWallet().parseAccount(params.asString());
+	LocalAccount::pointer account=theApp->getWallet().parseAccount(acct);
 	if(!account)
 		return JSONRPCError(500, "Account not found");
 	
@@ -203,26 +235,7 @@ Json::Value RPCServer::doFamilyInfo(Json::Value &params)
 	// familyinfo <family>
 	// familyinfo <family> <number>
 	// familyinfo
-	int paramCount=0;
-	std::string fParam;
-
-	if(!params.isArray())
-	{
-		if(params.isConvertibleTo(Json::stringValue))
-		{
-			fParam=params.asString();
-			if(!fParam.empty())
-				paramCount=1;
-		}
-	}
-	else if(params.size()>0)
-	{
-		if(params[0u].isConvertibleTo(Json::stringValue))
-		{
-			fParam=params[0u].asString();
-			paramCount=params.size();
-		}
-	}
+	int paramCount=getParamCount(params);
 
 	if(paramCount==0)
 	{
@@ -247,6 +260,8 @@ Json::Value RPCServer::doFamilyInfo(Json::Value &params)
 	}
 
 	if(paramCount>2) return JSONRPCError(500, "Invalid parameters");
+	std::string fParam;
+	extractString(fParam, params, 0);
 
 	uint160 family;
 	if(Wallet::isHexFamily(fParam))
@@ -271,18 +286,16 @@ Json::Value RPCServer::doFamilyInfo(Json::Value &params)
 
 	if(paramCount==2)
 	{
-		Json::Value keyNum=params[1u];
-		if(keyNum.isString()) keyNum=Json::Value(boost::lexical_cast<int>(keyNum.asString()));
-		if(keyNum.isConvertibleTo(Json::intValue))
+		std::string keyNum;
+		extractString(keyNum, params, 1);
+		int kn=boost::lexical_cast<int>(keyNum);
+		uint160 k=theApp->getWallet().peekKey(family, kn);
+		if(!!k)
 		{
-			uint160 k=theApp->getWallet().peekKey(family, keyNum.asInt());
-			if(!!k)
-			{
-				Json::Value key(Json::objectValue);
-				key["Number"]=keyNum.asInt();
-				key["Address"]=NewcoinAddress(k).GetString();
-				obj["Account"]=key;
-			}
+			Json::Value key(Json::objectValue);
+			key["Number"]=kn;
+			key["Address"]=NewcoinAddress(k).GetString();
+			obj["Account"]=key;
 		}
 	}
 
@@ -290,9 +303,12 @@ Json::Value RPCServer::doFamilyInfo(Json::Value &params)
 }
 
 Json::Value RPCServer::doSendTo(Json::Value& params)
-{ // Implement simple sending without gathering
+{   // Implement simple sending without gathering
 	// sendto <destination> <amount>
 	// sendto <destination> <amount> <tag>
+	if(!params.isArray() || (params.size()<2))
+		return JSONRPCError(500, "Invalid parameters");
+	
 	return "Not yet";
 }
 
@@ -345,4 +361,18 @@ void RPCServer::sendReply()
 void RPCServer::handle_write(const boost::system::error_code& /*error*/)
 {
 	
+}
+
+uint160 RPCServer::parseAccount(const std::string& account)
+{ // FIXME: Support local wallet key names
+	if(account.find(':')!=std::string::npos)
+	{ // local account in family:seq form
+		LocalAccount::pointer lac(theApp->getWallet().parseAccount(account));
+		if(!lac) return uint160();
+		return lac->getAddress();
+	}
+	
+	NewcoinAddress nac(account);
+	if(!nac.IsValid()) return uint160();
+	return nac.GetHash160();
 }
