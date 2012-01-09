@@ -14,8 +14,8 @@
 #include "newcoin.pb.h"
 #include "Hanko.h"
 #include "Serializer.h"
-#include "Wallet.h"
 #include "SHAMap.h"
+#include "LocalAccount.h"
 
 /*
 We could have made something that inherited from the protobuf transaction but this seemed simpler

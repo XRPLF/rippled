@@ -18,7 +18,6 @@
 class Ledger : public boost::enable_shared_from_this<Ledger>
 { // The basic Ledger structure, can be opened, closed, or synching
 public:
-
 	typedef boost::shared_ptr<Ledger> pointer;
 
 	enum TransResult

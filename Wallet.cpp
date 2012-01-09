@@ -6,6 +6,7 @@
 
 #include "boost/foreach.hpp"
 #include "boost/lexical_cast.hpp"
+#include "boost/interprocess/sync/scoped_lock.hpp"
 
 #include "Wallet.h"
 #include "NewcoinAddress.h"
@@ -19,7 +20,7 @@
 LocalAccountEntry::LocalAccountEntry(const uint160& accountFamily, int accountSeq, EC_POINT* rootPubKey) :
  mPublicKey(new CKey(accountFamily, rootPubKey, accountSeq)),
  mAccountFamily(accountFamily), mAccountSeq(accountSeq),
- mBalance(0), mLedgerSeq(0), mTxnSeq(0)
+ mBalance(0), mBalanceLT(0), mTxnSeq(0)
 {
 	mAcctID=mPublicKey->GetAddress().GetHash160();
 	if(theApp!=NULL) mPublicKey=theApp->getPubKeyCache().store(mAcctID, mPublicKey);
@@ -787,4 +788,24 @@ bool Wallet::unitTest()
 		
 	}
 	return true;
+}
+
+void Wallet::syncToLedger(bool force, Ledger* ledger)
+{
+	boost::recursive_mutex::scoped_lock sl(mLock);
+	if(!force && (mLedger>=ledger->getLedgerSeq())) return;
+	for(std::map<uint160, LocalAccount::pointer>::iterator it=mAccounts.begin(); it!=mAccounts.end(); ++it)
+	{
+		LocalAccount::pointer& lac=it->second;
+		AccountState::pointer acs=ledger->getAccountState(it->first);
+		if(!acs)
+		{ // account is not in the ledger
+			// WRITEME
+		}
+		else
+		{ // account is in the ledger
+			// WRITEME
+		}
+	}
+	if(mLedger<ledger->getLedgerSeq()) mLedger=ledger->getLedgerSeq();
 }
