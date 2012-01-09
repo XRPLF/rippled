@@ -154,6 +154,7 @@ Ledger::TransResult Ledger::applyTransaction(Transaction::pointer trans)
 		if(!!fromAccount && !toAccount)
 		{
 			toAccount=AccountState::pointer(new AccountState(trans->getToAccount()));
+			toAccount->incSeq(); // an account in a ledger has a sequence of 1
 			updateAccountState(toAccount);
 		}
 
