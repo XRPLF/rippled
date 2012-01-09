@@ -285,7 +285,7 @@ bool Ledger::unitTest()
 	as=ledger->getAccountState(la2);
 	assert(!as); 
 
-	Transaction::pointer t(new Transaction(NEW, l1, l1->getAcctSeq(), l2->getAddress(), 2500, 0, 1));
+	Transaction::pointer t(new Transaction(l1, l2->getAddress(), 2500, 0, 1));
 	assert(!!t->getID());
 
 	Ledger::TransResult tr=ledger->applyTransaction(t);

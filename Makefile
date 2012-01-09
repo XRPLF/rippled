@@ -71,10 +71,10 @@ SRCS= keystore.cpp BitcoinUtil.cpp \
  Application.cpp TimingService.cpp KnownNodeList.cpp ConnectionPool.cpp Peer.cpp \
  PeerDoor.cpp RPCDoor.cpp RPCServer.cpp rpc.cpp Conversion.cpp RequestParser.cpp HashedObject.cpp \
  UniqueNodeList.cpp PubKeyCache.cpp SHAMapDiff.cpp DeterministicKeys.cpp LedgerMaster.cpp \
- LedgerHistory.cpp NetworkOPs.cpp CallRPC.cpp DBInit.cpp
+ LedgerHistory.cpp NetworkOPs.cpp CallRPC.cpp DBInit.cpp LocalTransaction.cpp
 
 DBSRCS=	SqliteDatabase.cpp database.cpp
-DBSRCC=sqlite3.c
+DBSRCC= sqlite3.c
 
 UTILSRCS= pugixml.cpp
 

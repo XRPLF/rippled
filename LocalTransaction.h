@@ -37,7 +37,7 @@ public:
 	const std::string& getComment() const { return mComment; }
 	Transaction::pointer getTransaction() { return mTransaction; }
 
-	bool makeTransaction(void);
+	bool makeTransaction();
 };
 
 #endif

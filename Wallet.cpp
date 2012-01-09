@@ -4,6 +4,7 @@
 #include "openssl/rand.h"
 #include "openssl/ec.h"
 
+#include "boost/foreach.hpp"
 #include "boost/lexical_cast.hpp"
 
 #include "Wallet.h"
@@ -361,6 +362,11 @@ std::string LocalAccount::getFullName() const
 	return ret;
 }
 
+bool LocalAccount::isLocked() const
+{
+	return mFamily->isLocked();
+}
+
 std::string LocalAccount::getFamilyName() const
 {
 	return mFamily->getShortName();
@@ -547,6 +553,15 @@ LocalAccount::pointer Wallet::getLocalAccount(const uint160& acctID)
 	std::map<uint160, LocalAccount::pointer>::iterator ait=mAccounts.find(acctID);
 	if(ait==mAccounts.end()) return LocalAccount::pointer();
 	return ait->second;
+}
+
+LocalAccount::pointer Wallet::findAccountForTransaction(uint64 amount)
+{
+	boost::recursive_mutex::scoped_lock sl(mLock);
+	for(std::map<uint160, LocalAccount::pointer>::iterator it=mAccounts.begin(); it!=mAccounts.end(); ++it)
+		if(!it->second->isLocked() && (it->second->getBalance()>=amount) )
+			return it->second;
+	return LocalAccount::pointer();
 }
 
 LocalAccount::pointer Wallet::parseAccount(const std::string& specifier)

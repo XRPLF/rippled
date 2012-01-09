@@ -14,16 +14,17 @@ Transaction::Transaction() : mTransactionID(0), mAccountFrom(0), mAccountTo(0),
 {
 }
 
-Transaction::Transaction(TransStatus status, LocalAccount::pointer fromLocalAccount, uint32 fromSeq,
-		const uint160& toAccount, uint64 amount, uint32 ident, uint32 ledger) :
-			mAccountTo(toAccount), mAmount(amount), mFromAccountSeq(fromSeq), mSourceLedger(ledger),
-			mIdent(ident), mInLedger(0), mStatus(NEW)
+Transaction::Transaction(LocalAccount::pointer fromLocalAccount, const uint160& toAccount, uint64 amount,
+	uint32 ident, uint32 ledger) :
+			mAccountTo(toAccount), mAmount(amount), mSourceLedger(ledger), mIdent(ident), mInLedger(0), mStatus(NEW)
 {
 	mAccountFrom=fromLocalAccount->getAddress();
 	mFromPubKey=fromLocalAccount->getPublicKey();
+	mFromAccountSeq=fromLocalAccount->getAcctSeq();
+	if(!mFromAccountSeq) mStatus=INCOMPLETE;
 	assert(mFromPubKey);
 	updateFee();
-	sign(fromLocalAccount);
+	if(!sign(fromLocalAccount)) mStatus=INCOMPLETE;
 }
 
 Transaction::Transaction(const std::vector<unsigned char> &t, bool validate) : mStatus(INVALID)
@@ -277,5 +278,48 @@ bool Transaction::convertToTransactions(uint32 firstLedgerSeq, uint32 secondLedg
 
 		outMap[id]=std::pair<Transaction::pointer, Transaction::pointer>(firstTrans, secondTrans);
 	}
+	return ret;
+}
+
+Json::Value Transaction::getJson(bool decorate) const
+{
+	Json::Value ret(Json::objectValue);
+	ret["TransactionID"]=mTransactionID.GetHex();
+	ret["Amount"]=boost::lexical_cast<std::string>(mAmount);
+	ret["Fee"]=boost::lexical_cast<std::string>(mFee);
+	if(mInLedger) ret["InLedger"]=mInLedger;
+
+	switch(mStatus)
+	{
+		case NEW: ret["Status"]="new"; break;
+		case INVALID: ret["Status"]="invalid"; break;
+		case INCLUDED: ret["Status"]="included"; break;
+		case CONFLICTED: ret["Status"]="conflicted"; break;
+		case COMMITTED: ret["Status"]="committed"; break;
+		case HELD: ret["Status"]="held"; break;
+		case REMOVED: ret["Status"]="removed"; break;
+		case OBSOLETE: ret["Status"]="obsolete"; break;
+		case INCOMPLETE: ret["Status"]="incomplete"; break;
+		default: ret["Status"]="unknown";
+	}
+
+	Json::Value source(Json::objectValue);
+	source["AccountID"]=NewcoinAddress(mAccountFrom).GetString();
+	source["AccountSeq"]=mFromAccountSeq;
+	source["Ledger"]=mSourceLedger;
+	if(!!mIdent) source["Identifier"]=mIdent;
+
+	Json::Value destination(Json::objectValue);
+	destination["AccountID"]=NewcoinAddress(mAccountTo).GetString();
+
+	if(decorate)
+	{
+		LocalAccount::pointer lac=theApp->getWallet().getLocalAccount(mAccountFrom);
+		if(!!lac) source=lac->getJson();
+		lac=theApp->getWallet().getLocalAccount(mAccountTo);
+		if(!!lac) destination=lac->getJson();
+	}
+	ret["Source"]=source;
+	ret["Destination"]=destination;
 	return ret;
 }

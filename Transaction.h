@@ -1,9 +1,13 @@
 #ifndef __TRANSACTION__
 #define __TRANSACTION__
 
+#include <vector>
+
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/cstdint.hpp>
+
+#include "json/value.h"
 
 #include "key.h"
 #include "uint256.h"
@@ -52,8 +56,7 @@ private:
 public:
 	Transaction();
 	Transaction(const std::vector<unsigned char>& rawTransaction, bool validate);
-	Transaction(TransStatus Status, LocalAccount::pointer fromLocal, uint32 fromSeq, const uint160& to, uint64 amount,
-		uint32 ident, uint32 ledger);
+	Transaction(LocalAccount::pointer fromLocal, const uint160& to, uint64 amount, uint32 ident, uint32 ledger);
 
 	bool sign(LocalAccount::pointer fromLocalAccount);
 	bool checkSign() const;
@@ -95,6 +98,8 @@ public:
 	bool operator!=(const Transaction&) const;
 	bool operator<=(const Transaction&) const;
 	bool operator>=(const Transaction&) const;
+
+	Json::Value getJson(bool decorate) const;
 
 protected:
 	static Transaction::pointer transactionFromSQL(const std::string& statement);

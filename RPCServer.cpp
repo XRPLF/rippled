@@ -16,6 +16,7 @@
 #include "RPC.h"
 #include "Wallet.h"
 #include "Conversion.h"
+#include "LocalTransaction.h"
 
 /*
 Just read from wire until the entire request is in.
@@ -103,7 +104,7 @@ std::string RPCServer::handleRequest(const std::string& requestStr)
 	w.write(std::cerr, valParams);
 #endif
 
-	Json::Value result=doCommand(strMethod, valParams);
+	Json::Value result(doCommand(strMethod, valParams));
 
 #ifdef DEBUG
 	w.write(std::cerr, result);
@@ -317,8 +318,57 @@ Json::Value RPCServer::doSendTo(Json::Value& params)
 	// sendto <destination> <amount> <tag>
 	if(!params.isArray() || (params.size()<2))
 		return JSONRPCError(500, "Invalid parameters");
+
+	int paramCount=getParamCount(params);
+	if((paramCount<2)||(paramCount>3))
+		return JSONRPCError(500, "Invalid parameters");
 	
-	return "Not yet";
+	std::string sDest, sAmount;
+	if(!extractString(sDest, params, 0) || !extractString(sAmount, params, 1))
+		return JSONRPCError(500, "Invalid parameters");
+
+	uint160 destAccount=parseAccount(sDest);
+	if(!destAccount)
+		return JSONRPCError(500, "Unable to parse destination account");
+
+	uint64 iAmount;
+	try
+	{
+		iAmount=boost::lexical_cast<uint64>(sAmount);
+		if(iAmount<=0) return JSONRPCError(500, "Invalid amount");
+	}
+	catch (...)
+	{
+		return JSONRPCError(500, "Invalid amount");
+	}
+
+	uint32 iTag(0);
+	try
+	{
+		if(paramCount>2)
+		{
+			std::string sTag;
+			extractString(sTag, params, 2);
+			iTag=boost::lexical_cast<uint32>(sTag);
+		}
+	}
+	catch (...)
+	{
+		return JSONRPCError(500, "Invalid tag");
+	}
+
+#ifdef DEBUG
+	std::cerr << "SendTo(" << destAccount.GetHex() << ") amount=" << iAmount <<
+		", tag=" << iTag << std::endl;
+#endif
+
+	LocalTransaction::pointer lt(new LocalTransaction(destAccount, iAmount, iTag));
+	if(!lt->makeTransaction())
+		return JSONRPCError(500, "Insufficient funds in unlocked accounts");
+
+	// WRITEME - process transaction
+
+	return lt->getTransaction()->getJson(true);
 }
 
 Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params)
