@@ -237,14 +237,25 @@ Ledger::TransResult Ledger::removeTransaction(Transaction::pointer trans)
 }
 
 Ledger::TransResult Ledger::hasTransaction(Transaction::pointer trans)
-{
+{ // Is this transaction in this ledger? If not, could it go in it?
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	if(mTransactionMap==NULL) return TR_ERROR;
 	try
 	{
 		Transaction::pointer t=getTransaction(trans->getID());
-		if(t==NULL) return TR_NOTFOUND;
-		return TR_SUCCESS;
+		if(!!t) return TR_ALREADY;
+		
+		if(trans->getSourceLedger()>mLedgerSeq) return TR_BADLSEQ;
+
+		AccountState::pointer fromAccount=getAccountState(trans->getFromAccount());
+		if(!fromAccount) return TR_BADACCT; // cannot send from non-existent account
+
+		// may be in a previous ledger
+		if(fromAccount->getSeq()>trans->getFromAccountSeq()) return TR_PASTASEQ;
+
+		if(fromAccount->getSeq()<trans->getFromAccountSeq()) return TR_PREASEQ;
+		if(fromAccount->getBalance()<trans->getAmount()) return TR_INSUFF;
+		return TR_NOTFOUND;
 	}
 	catch (SHAMapException)
 	{
@@ -385,152 +396,3 @@ Ledger::pointer Ledger::loadByHash(const uint256& ledgerHash)
 	sql.append("';");
 	return getSQL(sql);
 }
-
-#if 0
-// returns true if the from account has enough for the transaction and seq num is correct
-bool Ledger::addTransaction(Transaction::pointer trans,bool checkDuplicate)
-{
-	if(checkDuplicate && hasTransaction(trans)) return(false);
-
-	if(mParent)
-	{ // check the lineage of the from addresses
-		uint160 address=protobufTo160(trans->from());
-		if(mAccounts.count(address))
-		{
-			pair<uint64,uint32> account=mAccounts[address];
-			if( (account.first<trans->amount()) &&
-				(trans->seqnum()==account.second) )
-			{
-				account.first -= trans->amount();
-				account.second++;
-				mAccounts[address]=account;
-
-
-				uint160 destAddress=protobufTo160(trans->dest());
-
-				Account destAccount=mAccounts[destAddress];
-				destAccount.first += trans->amount();
-				mAccounts[destAddress]=destAccount;
-
-
-				mValidSig=false;
-				mValidHash=false;
-				mTransactions.push_back(trans);
-				if(mChild)
-				{
-					mChild->parentAddedTransaction(trans);
-				}
-				return(true);
-			}else
-			{
-				mDiscardedTransactions.push_back(trans);
-				return false;
-			}
-		}else 
-		{
-			mDiscardedTransactions.push_back(trans);
-			return false;
-		}
-		
-	}else
-	{ // we have no way to know so just hold on to it but don't add to the accounts
-		mValidSig=false;
-		mValidHash=false;
-		mDiscardedTransactions.push_back(trans);
-		return(true);
-	}
-}
-
-// Don't check the amounts. We will do this at the end.
-void Ledger::addTransactionAllowNeg(Transaction::pointer trans)
-{
-	uint160 fromAddress=protobufTo160(trans->from());
-
-	if(mAccounts.count(fromAddress))
-	{
-		Account fromAccount=mAccounts[fromAddress];
-		if(trans->seqnum()==fromAccount.second) 
-		{
-			fromAccount.first -= trans->amount();
-			fromAccount.second++;
-			mAccounts[fromAddress]=fromAccount;
-			
-			uint160 destAddress=protobufTo160(trans->dest());
-
-			Account destAccount=mAccounts[destAddress];
-			destAccount.first += trans->amount();
-			mAccounts[destAddress]=destAccount;
-
-			mTransactions.push_back(trans);
-	
-		}else
-		{  // invalid seqnum
-			mDiscardedTransactions.push_back(trans);
-		}
-	}else
-	{
-		if(trans->seqnum()==0)
-		{
-			
-			mAccounts[fromAddress]=Account(-((int64)trans->amount()),1);
-
-			uint160 destAddress=protobufTo160(trans->dest());
-
-			Account destAccount=mAccounts[destAddress];
-			destAccount.first += trans->amount();
-			mAccounts[destAddress]=destAccount;
-
-			mTransactions.push_back(trans);
-
-		}else
-		{
-			mDiscardedTransactions.push_back(trans);
-		}
-	}
-}
-
-
-
-// Must look for transactions to discard to make this account positive
-// When we chuck transactions it might cause other accounts to need correcting
-void Ledger::correctAccount(const uint160& address)
-{
-	list<uint160> effected;
-
-	// do this in reverse so we take of the higher seqnum first
-	for( list<Transaction::pointer>::reverse_iterator iter=mTransactions.rbegin(); iter != mTransactions.rend(); )
-	{
-		Transaction::pointer trans= *iter;
-		if(protobufTo160(trans->from()) == address)
-		{
-			Account fromAccount=mAccounts[address];
-			assert(fromAccount.second==trans->seqnum()+1);
-			if(fromAccount.first<0)
-			{
-				fromAccount.first += trans->amount();
-				fromAccount.second --;
-
-				mAccounts[address]=fromAccount;
-
-				uint160 destAddress=protobufTo160(trans->dest());
-				Account destAccount=mAccounts[destAddress];
-				destAccount.first -= trans->amount();
-				mAccounts[destAddress]=destAccount;
-				if(destAccount.first<0) effected.push_back(destAddress);
-
-				list<Transaction::pointer>::iterator temp=mTransactions.erase( --iter.base() );
-				if(fromAccount.first>=0) break; 
-
-				iter=list<Transaction::pointer>::reverse_iterator(temp);
-			}else break;	
-		}else iter--;
-	}
-
-	BOOST_FOREACH(uint160& address,effected)
-	{
-		correctAccount(address);
-	}
-
-}
-
-#endif

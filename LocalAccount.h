@@ -17,8 +17,8 @@ protected:
 	int mAccountSeq;
 
 	// local usage tracking
-	uint64 mBalance;		// The balance, from the last ledger
-	uint64 mBalanceLT;		// The balance, after all local transactions
+	uint64 mLgrBalance;		// The balance, from the last ledger
+	int64 mTxnDelta;		// The balance changes from local/pending transactions
 	uint32 mTxnSeq;			// The sequence number of the next transaction
 
 public:
@@ -41,9 +41,10 @@ public:
 	uint32 getTxnSeq() const { return  mTxnSeq; }
 	uint32 incTxnSeq() { return mTxnSeq++; }
 
-	uint64 getBalance() const { return mBalance; }
-	void credit(uint64 amount) { mBalance+=amount; }
-	void debit(uint64 amount) { assert(mBalance>=amount); mBalance-=amount; }
+	int64 getEffectiveBalance() const { return static_cast<int64_t>(mLgrBalance)+mTxnDelta; }
+	void credit(uint64 amount) { mTxnDelta+=amount; }
+	void debit(uint64 amount) { mTxnDelta-=amount; }
+	void setLedgerBalance(uint64_t lb) { mLgrBalance=lb; }
 };
 
 class LocalAccountFamily
@@ -119,6 +120,7 @@ public:
 
 	uint32 getAcctSeq() const;
 	uint64 getBalance() const;
+	void setLedgerBalance(uint64_t ledgerBalance);
 	void incAcctSeq(uint32 transAcctSeq);
 
 	CKey::pointer getPublicKey();

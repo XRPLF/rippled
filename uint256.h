@@ -320,7 +320,7 @@ public:
 		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0xa,0xb,0xc,0xd,0xe,0xf,0,0,0,0,0,0,0,0,0 };
 
 		const char* pbegin = psz;
-		while (phexdigit[*psz] || *psz == '0')
+		while (phexdigit[(int) *psz] || *psz == '0')
 			psz++;
 		psz--;
 		unsigned char* p1 = (unsigned char*)pn;
@@ -470,7 +470,7 @@ public:
 			*this = 0;
 	}
 	
-	uint256 to256() const;
+	base_uint256 to256() const;
 };
 
 inline bool operator==(const uint160& a, uint64 b)						   { return (base_uint160)a == b; }
@@ -586,7 +586,7 @@ public:
 			*this = 0;
 	}
 	
-	uint160 to160() const;
+	base_uint160 to160() const;
 };
 
 

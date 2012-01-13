@@ -9,6 +9,7 @@
 #include "boost/interprocess/sync/scoped_lock.hpp"
 
 #include "Wallet.h"
+#include "Ledger.h"
 #include "NewcoinAddress.h"
 #include "Application.h"
 
@@ -20,7 +21,7 @@
 LocalAccountEntry::LocalAccountEntry(const uint160& accountFamily, int accountSeq, EC_POINT* rootPubKey) :
  mPublicKey(new CKey(accountFamily, rootPubKey, accountSeq)),
  mAccountFamily(accountFamily), mAccountSeq(accountSeq),
- mBalance(0), mBalanceLT(0), mTxnSeq(0)
+ mLgrBalance(0), mTxnDelta(0), mTxnSeq(0)
 {
 	mAcctID=mPublicKey->GetAddress().GetHash160();
 	if(theApp!=NULL) mPublicKey=theApp->getPubKeyCache().store(mAcctID, mPublicKey);
@@ -401,7 +402,14 @@ uint64 LocalAccount::getBalance() const
 {
 	LocalAccountEntry::pointer la(mFamily->get(mSeq));
 	if(!la) return 0;
-	return la->getBalance();
+	return la->getEffectiveBalance();
+}
+
+void LocalAccount::setLedgerBalance(uint64_t lb)
+{
+	LocalAccountEntry::pointer la(mFamily->get(mSeq));
+	if(!la) return ;
+	la->setLedgerBalance(lb);
 }
 
 CKey::pointer LocalAccount::getPublicKey()
@@ -794,18 +802,17 @@ void Wallet::syncToLedger(bool force, Ledger* ledger)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	if(!force && (mLedger>=ledger->getLedgerSeq())) return;
-	for(std::map<uint160, LocalAccount::pointer>::iterator it=mAccounts.begin(); it!=mAccounts.end(); ++it)
-	{
-		LocalAccount::pointer& lac=it->second;
-		AccountState::pointer acs=ledger->getAccountState(it->first);
-		if(!acs)
-		{ // account is not in the ledger
-			// WRITEME
-		}
-		else
-		{ // account is in the ledger
-			// WRITEME
-		}
+	for(std::map<uint256, LocalTransaction::pointer>::iterator xit=mTransactions.begin();
+			xit!=mTransactions.end(); ++xit)
+	{ // check each transaction, see if it's in the ledger or allowed in the ledger
+		// WRITEME
+	}	
+	for(std::map<uint160, LocalAccount::pointer>::iterator ait=mAccounts.begin(); ait!=mAccounts.end(); ++ait)
+	{ // check each account, see if our ledger balance matches
+		LocalAccount::pointer& lac=ait->second;
+		AccountState::pointer acs=ledger->getAccountState(ait->first);
+		if(!acs) lac->setLedgerBalance(0);
+		else lac->setLedgerBalance(acs->getBalance());
 	}
 	if(mLedger<ledger->getLedgerSeq()) mLedger=ledger->getLedgerSeq();
 }

@@ -300,7 +300,7 @@ public:
         while (isxdigit(*psz))
         {
             *this <<= 4;
-            int n = phexdigit[*psz++];
+            int n = phexdigit[(int) *psz++];
             *this += n;
         }
         if (fNegative)
