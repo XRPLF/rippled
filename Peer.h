@@ -23,9 +23,9 @@ protected:
 	std::list<PackedMessage::pointer> mSendQ;
 	PackedMessage::pointer mSendingPacket;
 	std::bitset<32> mPeerBits;
+	uint160 hanko;
 
 	Peer(boost::asio::io_service& io_service);
-
 
 	void handle_write(const boost::system::error_code& error, size_t bytes_transferred);
 	//void handle_read(const boost::system::error_code& error, size_t bytes_transferred);

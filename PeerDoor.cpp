@@ -28,7 +28,43 @@ void PeerDoor::handleConnect(Peer::pointer new_connection,
 	if(!error)
 	{
 		new_connection->connected(error);
-	}else cout << "Error: " << error; // BOOST_LOG_TRIVIAL(info) << "Error: " << error;
+	}
+	else cout << "Error: " << error; // BOOST_LOG_TRIVIAL(info) << "Error: " << error;
 
 	startListening();
+}
+
+bool PeerDoor::addToMap(const uint160& hanko, Peer::pointer peer)
+{
+	boost::mutex::scoped_lock sl(peerLock);
+	return peerMap.insert(std::make_pair(hanko, peer)).second;
+}
+
+bool PeerDoor::delFromMap(const uint160& hanko, Peer::pointer peer)
+{
+	boost::mutex::scoped_lock sl(peerLock);
+	std::map<uint160, Peer::pointer>::iterator it=peerMap.find(hanko);
+	if((it==peerMap.end()) || (it->first!=hanko)) return false;
+	peerMap.erase(it);
+	return true;
+}
+
+Peer::pointer PeerDoor::findInMap(const uint160& hanko)
+{
+	boost::mutex::scoped_lock sl(peerLock);
+	std::map<uint160, Peer::pointer>::iterator it=peerMap.find(hanko);
+	if(it==peerMap.end()) return Peer::pointer();
+	return it->second;
+}
+
+bool PeerDoor::inMap(const uint160& hanko)
+{
+	boost::mutex::scoped_lock sl(peerLock);
+	return peerMap.find(hanko) != peerMap.end();
+}
+
+std::map<uint160, Peer::pointer> PeerDoor::getAllConnected()
+{
+	boost::mutex::scoped_lock sl(peerLock);
+	return peerMap;
 }
