@@ -22,7 +22,8 @@ Transaction::Transaction(LocalAccount::pointer fromLocalAccount, const uint160& 
 {
 	mAccountFrom=fromLocalAccount->getAddress();
 	mFromPubKey=fromLocalAccount->getPublicKey();
-	mFromAccountSeq=fromLocalAccount->getAcctSeq();
+	assert(mFromPubKey);
+	mFromAccountSeq=fromLocalAccount->getTxnSeq();
 
 #ifdef DEBUG
 		std::cerr << "Construct local Txn" << std::endl;
@@ -99,9 +100,7 @@ bool Transaction::sign(LocalAccount::pointer fromLocalAccount)
 		assert(false);
 		return false;
 	}
-	Serializer::pointer signBuf=getRaw(true);
-	assert(signBuf->getLength()==73+4);
-	if(!signBuf->makeSignature(mSignature, *privateKey))
+	if(!getRaw(true)->makeSignature(mSignature, *privateKey))
 	{
 #ifdef DEBUG
 		std::cerr << "Failed to make signature" << std::endl;
@@ -122,7 +121,8 @@ void Transaction::updateFee()
 bool Transaction::checkSign() const
 {
 	assert(mFromPubKey);
-	return mFromPubKey->Verify(getRaw(true)->getSHA512Half(), mSignature);
+	Serializer::pointer signBuf=getRaw(true);
+	return getRaw(true)->checkSignature(mSignature, *mFromPubKey);
 }
 
 Serializer::pointer Transaction::getRaw(bool prefix) const
@@ -133,7 +133,7 @@ Serializer::pointer Transaction::getRaw(bool prefix) const
 	ret->addRaw(mFromPubKey->GetPubKey());
 	ret->add64(mAmount);
 	ret->add32(mFromAccountSeq);
-	ret->add32(mInLedger);
+	ret->add32(mSourceLedger);
 	ret->add32(mIdent);
 	assert( (prefix&&(ret->getLength()==77)) || (!prefix&&(ret->getLength()==73)) );
 	return ret;
@@ -212,7 +212,7 @@ Transaction::pointer Transaction::transactionFromSQL(const std::string& sql)
 		ScopedLock sl(theApp->getTxnDB()->getDBLock());
 		Database* db=theApp->getTxnDB()->getDB();
 
-		if(!db->executeSQL(sql.c_str()) || !db->startIterRows() || !db->getNextRow())
+		if(!db->executeSQL(sql.c_str(), true) || !db->startIterRows() || !db->getNextRow())
 			return Transaction::pointer();
 		
 		db->getStr("TransID", transID);
@@ -256,7 +256,7 @@ Transaction::pointer Transaction::transactionFromSQL(const std::string& sql)
 
 Transaction::pointer Transaction::load(const uint256& id)
 {
-	std::string sql="SELECT * FROM Transactions WHERE Hash='";
+	std::string sql="SELECT * FROM Transactions WHERE TransID='";
 	sql.append(id.GetHex());
 	sql.append("';");
 	return transactionFromSQL(sql);
