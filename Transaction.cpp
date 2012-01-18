@@ -23,10 +23,17 @@ Transaction::Transaction(LocalAccount::pointer fromLocalAccount, const uint160& 
 	mAccountFrom=fromLocalAccount->getAddress();
 	mFromPubKey=fromLocalAccount->getPublicKey();
 	mFromAccountSeq=fromLocalAccount->getAcctSeq();
+
+#ifdef DEBUG
+		std::cerr << "Construct local Txn" << std::endl;
+		std::cerr << "ledger(" << ledger << "), fromseq(" << mFromAccountSeq << ")" << std::endl;
+#endif
+
 	if(!mFromAccountSeq)
 	{
 #ifdef DEBUG
 		std::cerr << "Bad source account sequence" << std::endl;
+		assert(false);
 #endif
 		mStatus=INCOMPLETE;
 	}
