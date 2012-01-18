@@ -80,6 +80,7 @@ public:
 	static uint256 textToPrivKey(const std::string&);
 
 	void syncToLedger(bool force, Ledger* ledger);
+	void applyTransaction(Transaction::pointer);
 
 	static bool unitTest();
 };

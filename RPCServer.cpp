@@ -365,7 +365,7 @@ Json::Value RPCServer::doSendTo(Json::Value& params)
 	LocalTransaction::pointer lt(new LocalTransaction(destAccount, iAmount, iTag));
 	if(!lt->makeTransaction())
 		return JSONRPCError(500, "Insufficient funds in unlocked accounts");
-	lt->applyTransaction();
+	lt->performTransaction();
 	return lt->getTransaction()->getJson(true);
 }
 

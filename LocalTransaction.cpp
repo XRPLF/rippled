@@ -32,7 +32,7 @@ bool LocalTransaction::makeTransaction()
 	return true;
 }
 
-void LocalTransaction::applyTransaction()
+void LocalTransaction::performTransaction()
 {
 	mTransaction=theApp->getOPs().processTransaction(mTransaction);
 }

@@ -56,8 +56,9 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans)
 
 	if(r==Ledger::TR_SUCCESS)
 	{
-		// WRITEME: send to others
 		trans->setStatus(INCLUDED);
+		// WRITEME: send to others
+		theApp->getWallet().applyTransaction(trans);
 		return trans;
 	}
 
