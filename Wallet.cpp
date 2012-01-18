@@ -100,7 +100,13 @@ void LocalAccountFamily::lock()
 
 CKey::pointer LocalAccountFamily::getPrivateKey(int seq)
 {
-	if(!mRootPrivateKey) return CKey::pointer();
+	if(!mRootPrivateKey)
+	{
+#ifdef DEBUG
+		std::cerr << "Cannot get private key from loced family" << std::endl;
+#endif
+		return CKey::pointer();
+	}
 	return CKey::pointer(new CKey(mFamily, mRootPrivateKey, seq));
 }
 
@@ -383,6 +389,13 @@ Json::Value LocalAccount::getJson() const
 	ret["FullName"]=getFullName();
 	ret["Issued"]=Json::Value(isIssued());
 	ret["IsLocked"]=mFamily->isLocked();
+
+	uint64 eb=getBalance();
+	if(eb!=0) ret["Balance"]=boost::lexical_cast<std::string>(eb);
+
+	uint32 sq=getAcctSeq();
+	if(sq!=0) ret["TxnSeq"]=boost::lexical_cast<std::string>(sq);
+
 	return ret;
 }
 

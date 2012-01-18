@@ -1,3 +1,5 @@
+#include <cassert>
+
 #include "boost/lexical_cast.hpp"
 
 #include "Application.h"
@@ -16,15 +18,27 @@ Transaction::Transaction() : mTransactionID(0), mAccountFrom(0), mAccountTo(0),
 
 Transaction::Transaction(LocalAccount::pointer fromLocalAccount, const uint160& toAccount, uint64 amount,
 	uint32 ident, uint32 ledger) :
-			mAccountTo(toAccount), mAmount(amount), mSourceLedger(ledger), mIdent(ident), mInLedger(0), mStatus(NEW)
+		mAccountTo(toAccount), mAmount(amount), mSourceLedger(ledger), mIdent(ident), mInLedger(0), mStatus(NEW)
 {
 	mAccountFrom=fromLocalAccount->getAddress();
 	mFromPubKey=fromLocalAccount->getPublicKey();
 	mFromAccountSeq=fromLocalAccount->getAcctSeq();
-	if(!mFromAccountSeq) mStatus=INCOMPLETE;
+	if(!mFromAccountSeq)
+	{
+#ifdef DEBUG
+		std::cerr << "Bad source account sequence" << std::endl;
+#endif
+		mStatus=INCOMPLETE;
+	}
 	assert(mFromPubKey);
 	updateFee();
-	if(!sign(fromLocalAccount)) mStatus=INCOMPLETE;
+	if(!sign(fromLocalAccount))
+	{
+#ifdef DEBUG
+		std::cerr << "Unable to sign transaction" << std::endl;
+#endif
+		mStatus=INCOMPLETE;
+	}
 }
 
 Transaction::Transaction(const std::vector<unsigned char> &t, bool validate) : mStatus(INVALID)
@@ -54,15 +68,27 @@ Transaction::Transaction(const std::vector<unsigned char> &t, bool validate) : m
 bool Transaction::sign(LocalAccount::pointer fromLocalAccount)
 {
 	CKey::pointer privateKey=fromLocalAccount->getPrivateKey();
-	if(!privateKey) return false;
+	if(!privateKey)
+	{
+#ifdef DEBUG
+		std::cerr << "No private key for signing" << std::endl;
+#endif
+		return false;
+	}
 
 	if( (mAmount==0) || (mSourceLedger==0) || (mAccountTo==0) )
 	{
+#ifdef DEBUG
+		std::cerr << "Bad amount, source ledger, or destination" << std::endl;
+#endif
 		assert(false);
 		return false;
 	}
 	if(mAccountFrom!=fromLocalAccount->getAddress())
 	{
+#ifdef DEBUG
+		std::cerr << "Source mismatch" << std::endl;
+#endif
 		assert(false);
 		return false;
 	}
@@ -70,6 +96,9 @@ bool Transaction::sign(LocalAccount::pointer fromLocalAccount)
 	assert(signBuf->getLength()==73+4);
 	if(!signBuf->makeSignature(mSignature, *privateKey))
 	{
+#ifdef DEBUG
+		std::cerr << "Failed to make signature" << std::endl;
+#endif
 		assert(false);
 		return false;
 	}
