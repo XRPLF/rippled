@@ -1,10 +1,15 @@
 #ifndef __LOCALACCOUNT__
 #define __LOCALACCOUNT__
 
-class LocalAccountEntry
+#include "boost/enable_shared_from_this.hpp"
+#include "boost/shared_ptr.hpp"
+
+class LocalAccountFamily;
+
+class LocalAccount
 { // tracks keys for local accounts
 public:
-	typedef boost::shared_ptr<LocalAccountEntry> pointer;
+	typedef boost::shared_ptr<LocalAccount> pointer;
 
 protected:
 	// core account information
@@ -13,7 +18,7 @@ protected:
 	std::string mName, mComment;
 
 	// family information
-	uint160 mAccountFamily;
+	boost::shared_ptr<LocalAccountFamily> mFamily;
 	int mAccountSeq;
 
 	// local usage tracking
@@ -22,7 +27,7 @@ protected:
 	uint32 mTxnSeq;			// The sequence number of the next transaction
 
 public:
-	LocalAccountEntry(const uint160& accountFamily, int accountSeq, EC_POINT* rootPubKey);
+	LocalAccount(boost::shared_ptr<LocalAccountFamily> family, int accountSeq);
 
 	// Database operations
 	bool read();			// reads any existing data
@@ -30,12 +35,21 @@ public:
 	bool updateName();		// writes changed name/comment
 	bool updateBalance();	// writes changed balance/seq
 
-	const uint160& getAccountID() const { return mAcctID; }
-	int getAccountSeq() const { return mAccountSeq; }
+	const uint160& getAddress() const { return mAcctID; }
+	int getAcctSeq() const { return mAccountSeq; }
+
 	std::string getLocalAccountName() const;			// The name used locally to identify this account
 	std::string getAccountName() const;					// The normal account name used to send to this account
+	std::string getFullName() const;
+	std::string getShortName() const;
+	std::string getFamilyName() const;
 
-	CKey::pointer getPubKey() { return mPublicKey; }
+	bool isLocked() const;
+	bool isIssued() const;
+
+	CKey::pointer getPublicKey() { return mPublicKey; }
+	CKey::pointer getPrivateKey();
+	Json::Value getJson() const;
 
 	void update(uint64 balance, uint32 seq);
 	uint32 getTxnSeq() const { return  mTxnSeq; }
@@ -45,20 +59,17 @@ public:
 	void credit(uint64 amount) { mTxnDelta+=amount; }
 	void debit(uint64 amount) { mTxnDelta-=amount; }
 	void setLedgerBalance(uint64_t lb) { mLgrBalance=lb; if(mTxnSeq==0) mTxnSeq=1; }
-	void syncLedger(uint64_t lb, uint32 sq)
-	{
-		mLgrBalance=lb;
-		if(mTxnSeq<sq) mTxnSeq=sq;
-	}
+
+	void syncLedger();
 };
 
-class LocalAccountFamily
+class LocalAccountFamily : public boost::enable_shared_from_this<LocalAccountFamily>
 { // tracks families of local accounts
 public:
 	typedef boost::shared_ptr<LocalAccountFamily> pointer;
 
 protected:
-	std::map<int, LocalAccountEntry::pointer> mAccounts;
+	std::map<int, LocalAccount::pointer> mAccounts;
 
 	uint160		mFamily;		// the name for this account family
 	EC_POINT*	mRootPubKey;
@@ -84,10 +95,11 @@ public:
 	void setName(const std::string& n) { mName=n; }
 	void setComment(const std::string& c) { mComment=c; }
 
-	std::map<int, LocalAccountEntry::pointer>& getAcctMap() { return mAccounts; }
-	LocalAccountEntry::pointer get(int seq);
+	std::map<int, LocalAccount::pointer>& getAcctMap() { return mAccounts; }
+	LocalAccount::pointer get(int seq);
 	uint160 getAccount(int seq, bool keep);
 	CKey::pointer getPrivateKey(int seq);
+	CKey::pointer getPublicKey(int seq);
 
 	std::string getPubGenHex() const;	// The text name of the public key
 	std::string getShortName() const { return mName; }
@@ -98,42 +110,6 @@ public:
 	std::string getSQL() const;
 	static LocalAccountFamily::pointer readFamily(const uint160& family);
 	void write(bool is_new);
-};
-
-class LocalAccount
-{ // tracks a single local account in a form that can be passed to other code.
-public:
-	typedef boost::shared_ptr<LocalAccount> pointer;
-
-protected:
-	LocalAccountFamily::pointer mFamily;
-	int mSeq;
-
-public:
-	LocalAccount(LocalAccountFamily::pointer fam, int seq) : mFamily(fam), mSeq(seq) { ; }
-	uint160 getAddress() const;
-	bool isLocked() const;
-
-	std::string getShortName() const;
-	std::string getFullName() const;
-	std::string getFamilyName() const;
-	bool isIssued() const;
-
-	bool signRaw(Serializer::pointer);
-	bool signRaw(Serializer::pointer, std::vector<unsigned char>& signature);
-	bool checkSignRaw(Serializer::pointer data, std::vector<unsigned char>& signature);
-
-	uint32 getAcctSeq() const;
-	uint64 getBalance() const;
-	void setLedgerBalance(uint64_t ledgerBalance);
-	void syncLedger(uint64_t ledgerBalance, uint32_t ledgerSeq);
-	void incAcctSeq(uint32 transAcctSeq);
-	void syncLedger(const uint160& acctID);
-
-	CKey::pointer getPublicKey();
-	CKey::pointer getPrivateKey();
-
-	Json::Value getJson() const;
 };
 
 #endif

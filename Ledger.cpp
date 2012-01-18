@@ -95,6 +95,7 @@ bool Ledger::updateAccountState(AccountState::pointer state)
 bool Ledger::addAccountState(AccountState::pointer state)
 {
 	assert(!mAccepted);
+	assert( (state->getBalance()==0) || (state->getSeq()>0) );
 	SHAMapItem::pointer item(new SHAMapItem(state->getAccountID(), state->getRaw()));
 	return mAccountStateMap->addGiveItem(item);
 }
@@ -269,11 +270,16 @@ Ledger::pointer Ledger::closeLedger(uint64 timeStamp)
 	return Ledger::pointer(new Ledger(*this, timeStamp));
 }
 
-void LocalAccount::syncLedger(const uint160& acctID)
+void LocalAccount::syncLedger()
 {
-	AccountState::pointer as=theApp->getMasterLedger().getAccountState(acctID);
-	if(!as)	setLedgerBalance(0);
-	else syncLedger(as->getBalance(), as->getSeq());
+	AccountState::pointer as=theApp->getMasterLedger().getAccountState(getAddress());
+	if(!as)	mLgrBalance=0;
+	else
+	{
+		mLgrBalance=as->getBalance();
+		if( (mLgrBalance!=0) && (mAccountSeq==0) ) mAccountSeq=1;
+		if(mAccountSeq<as->getSeq()) mAccountSeq=as->getSeq();
+	}
 }
 
 bool Ledger::unitTest()
