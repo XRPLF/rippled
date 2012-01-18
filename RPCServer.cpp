@@ -253,7 +253,7 @@ Json::Value RPCServer::doUnlock(Json::Value &params)
 	if(Wallet::isHexPrivateKey(param))
 		family=theApp->getWallet().addFamily(Wallet::textToPrivKey(param), false);
 	else
-		family=theApp->getWallet().addFamily(param);
+		family=theApp->getWallet().addFamily(param, false);
 
 	if(!family)
 		return JSONRPCError(500, "Bad family");
