@@ -39,7 +39,7 @@ public:
 	MessagePointer mMsg;
     PackedMessage(MessagePointer msg,int type);
 
-	std::vector<uint8_t>& getBuffer(){ return(mBuffer); }
+	std::vector<uint8_t>& getBuffer() { return(mBuffer); }
 
 	static unsigned getLength(std::vector<uint8_t>& buf);
 	static int getType(std::vector<uint8_t>& buf);
