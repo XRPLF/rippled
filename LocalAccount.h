@@ -44,7 +44,12 @@ public:
 	int64 getEffectiveBalance() const { return static_cast<int64_t>(mLgrBalance)+mTxnDelta; }
 	void credit(uint64 amount) { mTxnDelta+=amount; }
 	void debit(uint64 amount) { mTxnDelta-=amount; }
-	void setLedgerBalance(uint64_t lb) { mLgrBalance=lb; }
+	void setLedgerBalance(uint64_t lb) { mLgrBalance=lb; if(mTxnSeq==0) mTxnSeq=1; }
+	void syncLedger(uint64_t lb, uint32 sq)
+	{
+		mLgrBalance=lb;
+		if(mTxnSeq<sq) mTxnSeq=sq;
+	}
 };
 
 class LocalAccountFamily
@@ -121,6 +126,7 @@ public:
 	uint32 getAcctSeq() const;
 	uint64 getBalance() const;
 	void setLedgerBalance(uint64_t ledgerBalance);
+	void syncLedger(uint64_t ledgerBalance, uint32_t ledgerSeq);
 	void incAcctSeq(uint32 transAcctSeq);
 	void syncLedger(const uint160& acctID);
 

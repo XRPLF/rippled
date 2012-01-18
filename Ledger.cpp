@@ -271,7 +271,9 @@ Ledger::pointer Ledger::closeLedger(uint64 timeStamp)
 
 void LocalAccount::syncLedger(const uint160& acctID)
 {
-	setLedgerBalance(theApp->getMasterLedger().getBalance(acctID));
+	AccountState::pointer as=theApp->getMasterLedger().getAccountState(acctID);
+	if(!as)	setLedgerBalance(0);
+	else syncLedger(as->getBalance(), as->getSeq());
 }
 
 bool Ledger::unitTest()

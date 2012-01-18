@@ -418,6 +418,13 @@ uint64 LocalAccount::getBalance() const
 	return la->getEffectiveBalance();
 }
 
+void LocalAccount::syncLedger(uint64_t lb, uint32_t ls)
+{
+	LocalAccountEntry::pointer la(mFamily->get(mSeq));
+	if(!la) return ;
+	la->syncLedger(lb, ls);
+}
+
 void LocalAccount::setLedgerBalance(uint64_t lb)
 {
 	LocalAccountEntry::pointer la(mFamily->get(mSeq));
@@ -650,6 +657,14 @@ LocalAccountFamily::pointer Wallet::doPublic(const std::string& pubKey, bool do_
 {
 // Generate root key
 	EC_KEY *pkey=CKey::GenerateRootPubKey(pubKey);
+	if(!pkey)
+	{
+#ifdef DEBUG
+		std::cerr << "Unable to generate root public key" << std::endl;
+		assert(false);
+#endif
+		return LocalAccountFamily::pointer();
+	}
 
 // Extract family name
     std::vector<unsigned char> rootPubKey(33, 0);
