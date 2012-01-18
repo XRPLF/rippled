@@ -29,10 +29,25 @@ public:
 	uint64 getBalance() const { return mBalance; }
 	uint32 getSeq() const { return mAccountSeq; }
 
-	void credit(const uint64& a) { mBalance+=a; }
-	void charge(const uint64& a) { assert(mBalance>=a); mBalance-=a; }
-	void incSeq() { mAccountSeq++; }
-	void decSeq() { assert(mAccountSeq!=0); mAccountSeq--; }
+	void credit(const uint64& a)
+	{
+		mBalance+=a;
+		if(!mAccountSeq) mAccountSeq=1; // an account with non-0 balance cannot have 0 sequence
+	}
+	void charge(const uint64& a)
+	{
+		assert(mBalance>=a);
+		mBalance-=a;
+	}
+	void incSeq()
+	{
+		mAccountSeq++;
+	}
+	void decSeq()
+	{
+		assert(mAccountSeq!=0);
+		mAccountSeq--;
+	}
 	
 	std::vector<unsigned char> getRaw() const;
 };
