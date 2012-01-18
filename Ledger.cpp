@@ -277,8 +277,8 @@ void LocalAccount::syncLedger()
 	else
 	{
 		mLgrBalance=as->getBalance();
-		if( (mLgrBalance!=0) && (mAccountSeq==0) ) mAccountSeq=1;
-		if(mAccountSeq<as->getSeq()) mAccountSeq=as->getSeq();
+		if( (mLgrBalance!=0) && (mTxnSeq==0) ) mTxnSeq=1;
+		if(mTxnSeq<as->getSeq()) mTxnSeq=as->getSeq();
 	}
 }
 

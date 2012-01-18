@@ -31,3 +31,8 @@ bool LocalTransaction::makeTransaction()
 	}
 	return true;
 }
+
+void LocalTransaction::applyTransaction()
+{
+	mTransaction=theApp->getOPs().processTransaction(mTransaction);
+}

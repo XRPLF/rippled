@@ -19,7 +19,7 @@ protected:
 
 	// family information
 	boost::shared_ptr<LocalAccountFamily> mFamily;
-	int mAccountSeq;
+	int mAccountFSeq;
 
 	// local usage tracking
 	uint64 mLgrBalance;		// The balance, from the last ledger
@@ -36,7 +36,7 @@ public:
 	bool updateBalance();	// writes changed balance/seq
 
 	const uint160& getAddress() const { return mAcctID; }
-	int getAcctSeq() const { return mAccountSeq; }
+	int getAcctFSeq() const { return mAccountFSeq; }
 
 	std::string getLocalAccountName() const;			// The name used locally to identify this account
 	std::string getAccountName() const;					// The normal account name used to send to this account
