@@ -54,8 +54,8 @@ class Serializer
 	
 	// signature functions
 	bool checkSignature(int pubkeyOffset, int signatureOffset) const;
-	bool checkSignature(const std::vector<unsigned char> &signature, CKey& rkey) const;
-	bool makeSignature(std::vector<unsigned char> &signature, CKey& rkey) const;
+	bool checkSignature(const std::vector<unsigned char>& signature, CKey& rkey) const;
+	bool makeSignature(std::vector<unsigned char>& signature, CKey& rkey) const;
 	bool addSignature(CKey& rkey);
 
 	static void TestSerializer();
