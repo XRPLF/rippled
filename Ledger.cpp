@@ -14,8 +14,7 @@
 #include "Wallet.h"
 
 Ledger::Ledger(const uint160& masterID, uint64 startAmount) :
-	mFeeHeld(0), mTimeStamp(0), mLedgerSeq(0),
-	mClosed(false), mValidHash(false), mAccepted(false)
+	mFeeHeld(0), mTimeStamp(0), mLedgerSeq(0), mClosed(false), mValidHash(false), mAccepted(false)
 {
 	mTransactionMap=SHAMap::pointer(new SHAMap());
 	mAccountStateMap=SHAMap::pointer(new SHAMap());
