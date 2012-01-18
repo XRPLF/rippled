@@ -36,6 +36,7 @@ public:
 	uint32 getTag() const { return mTag; }
 	const std::string& getComment() const { return mComment; }
 	Transaction::pointer getTransaction() { return mTransaction; }
+	void applyTransaction();
 
 	bool makeTransaction();
 };
