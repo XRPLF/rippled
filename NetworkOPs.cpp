@@ -31,6 +31,9 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans)
 
 	if(!trans->checkSign())
 	{
+#ifdef DEBUG
+		std::cerr << "Transaction has bad signature" << std::endl;
+#endif
 		trans->setStatus(INVALID);
 		return trans;
 	}
@@ -57,6 +60,10 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans)
 		trans->setStatus(INCLUDED);
 		return trans;
 	}
+
+#ifdef DEBUG
+	std::cerr << "Status other than success " << r << std::endl;
+#endif
 	
 	trans->setStatus(INVALID);
 	return trans;
