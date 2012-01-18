@@ -18,9 +18,9 @@
 #define CHECK_NEW_FAMILIES 500
 #endif
 
-LocalAccount::LocalAccount(boost::shared_ptr<LocalAccountFamily> family, int accountSeq) :
- mPublicKey(family->getPublicKey(accountSeq)), mFamily(family), mAccountSeq(accountSeq),
- mLgrBalance(0), mTxnDelta(0), mTxnSeq(0)
+LocalAccount::LocalAccount(boost::shared_ptr<LocalAccountFamily> family, int familySeq) :
+	mPublicKey(family->getPublicKey(familySeq)), mFamily(family), mAccountFSeq(familySeq),
+	mLgrBalance(0), mTxnDelta(0), mTxnSeq(0)
 {
 	mAcctID=mPublicKey->GetAddress().GetHash160();
 	if(theApp!=NULL) mPublicKey=theApp->getPubKeyCache().store(mAcctID, mPublicKey);
@@ -33,7 +33,7 @@ std::string LocalAccount::getAccountName() const
 
 std::string LocalAccount::getLocalAccountName() const
 {
-	return NewcoinAddress(mFamily->getFamily()).GetString() + ":" +  boost::lexical_cast<std::string>(mAccountSeq);
+	return NewcoinAddress(mFamily->getFamily()).GetString() + ":" +  boost::lexical_cast<std::string>(mAccountFSeq);
 }
 
 LocalAccountFamily::LocalAccountFamily(const uint160& family, const EC_GROUP* group, const EC_POINT* pubKey) :
@@ -104,13 +104,8 @@ CKey::pointer LocalAccountFamily::getPublicKey(int seq)
 
 CKey::pointer LocalAccountFamily::getPrivateKey(int seq)
 {
-	if(!mRootPrivateKey)
-	{
-#ifdef DEBUG
-		std::cerr << "Cannot get private key from loced family" << std::endl;
-#endif
-		return CKey::pointer();
-	}
+	if(!mRootPrivateKey) return CKey::pointer();
+	std::cerr << "PrivKey(" << mFamily.GetHex() << "," << seq << ")" << std::endl;
 	return CKey::pointer(new CKey(mFamily, mRootPrivateKey, seq));
 }
 
@@ -359,7 +354,7 @@ std::string LocalAccount::getShortName() const
 		ret=mFamily->getFamily().GetHex();
 	ret.append(":");
 	if(mName.empty())
-		ret.append(boost::lexical_cast<std::string>(mAccountSeq));
+		ret.append(boost::lexical_cast<std::string>(mAccountFSeq));
 	else ret.append(mName);
 	return ret;
 }
@@ -368,7 +363,7 @@ std::string LocalAccount::getFullName() const
 {
 	std::string ret(mFamily->getFamily().GetHex());
 	ret.append(":");
-	ret.append(boost::lexical_cast<std::string>(mAccountSeq));
+	ret.append(boost::lexical_cast<std::string>(mAccountFSeq));
 	return ret;
 }
 
@@ -395,7 +390,7 @@ Json::Value LocalAccount::getJson() const
 	uint64 eb=getEffectiveBalance();
 	if(eb!=0) ret["Balance"]=boost::lexical_cast<std::string>(eb);
 
-	uint32 sq=getAcctSeq();
+	uint32 sq=getTxnSeq();
 	if(sq!=0) ret["TxnSeq"]=boost::lexical_cast<std::string>(sq);
 
 	return ret;
@@ -403,12 +398,12 @@ Json::Value LocalAccount::getJson() const
 
 bool LocalAccount::isIssued() const
 {
-	return mAccountSeq < mFamily->getSeq();
+	return mAccountFSeq < mFamily->getSeq();
 }
 
 CKey::pointer LocalAccount::getPrivateKey()
 {
-	return mFamily->getPrivateKey(mAccountSeq);
+	return mFamily->getPrivateKey(mAccountFSeq);
 }
 
 void Wallet::getFamilies(std::vector<uint160>& familyIDs)
