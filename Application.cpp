@@ -75,12 +75,9 @@ void Application::run()
 	mTimingService.start(mIOService);
 	std::cout << "Before Run." << std::endl;
 
-	// TEMPORARY CODE
-	uint160 rootFamily=mWallet.addFamily("This is my payphrase.", true);
-	LocalAccount::pointer rootAccount=mWallet.getLocalAccount(rootFamily, 0);
-	assert(!!rootAccount);
-	uint160 rootAddress=rootAccount->getAddress();
-	assert(!!rootAddress);
+	// Temporary root account will be ["This is my payphrase."]:0
+	uint160 rootAddress=NewcoinAddress("MoXdEKxkG1FEwyuMia6Mbrja1SohefRvro").GetHash160();
+
 	Ledger::pointer firstLedger(new Ledger(rootAddress, 1000000));
 	firstLedger->setClosed();
 	firstLedger->setAccepted();
