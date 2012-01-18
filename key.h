@@ -132,16 +132,19 @@ public:
 	CKey(const uint256& passPhrase) : fSet(true)
 	{
 		pkey = GenerateRootDeterministicKey(passPhrase);
+		assert(pkey);
 	}
 
 	CKey(const uint160& base, const EC_POINT* rootPubKey, int n) : fSet(true)
 	{ // public deterministic key
 		pkey = GeneratePublicDeterministicKey(base, rootPubKey, n);
+		assert(pkey);
 	}
 
 	CKey(const uint160& base, const BIGNUM* rootPrivKey, int n) : fSet(true)
 	{ // private deterministic key
 		pkey = GeneratePrivateDeterministicKey(base, rootPrivKey, n);
+		assert(pkey);
 	}
 
 	bool IsNull() const
@@ -239,13 +242,14 @@ public:
 		return vchPubKey;
 	}
 
-	bool Sign(uint256 hash, std::vector<unsigned char>& vchSig)
+	bool Sign(const uint256& hash, std::vector<unsigned char>& vchSig)
 	{
 		vchSig.clear();
 		unsigned char pchSig[10000];
 		unsigned int nSize = 0;
 		if (!ECDSA_sign(0, (unsigned char*)&hash, sizeof(hash), pchSig, &nSize, pkey))
 			return false;
+
 		while(nSize<72)
 		{ // enlarge to 72 bytes
 			pchSig[nSize]=0;
@@ -257,7 +261,7 @@ public:
 		return true;
 	}
 
-	bool Verify(uint256 hash, const std::vector<unsigned char>& vchSig) const
+	bool Verify(const uint256& hash, const std::vector<unsigned char>& vchSig) const
 	{
 		// -1 = error, 0 = bad sig, 1 = good
 		if (ECDSA_verify(0, (unsigned char*)&hash, sizeof(hash), &vchSig[0], vchSig.size(), pkey) != 1)
