@@ -122,6 +122,7 @@ public:
 	uint64 getBalance() const;
 	void setLedgerBalance(uint64_t ledgerBalance);
 	void incAcctSeq(uint32 transAcctSeq);
+	void syncLedger(const uint160& acctID);
 
 	CKey::pointer getPublicKey();
 	CKey::pointer getPrivateKey();

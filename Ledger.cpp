@@ -270,6 +270,11 @@ Ledger::pointer Ledger::closeLedger(uint64 timeStamp)
 	return Ledger::pointer(new Ledger(*this, timeStamp));
 }
 
+void LocalAccount::syncLedger(const uint160& acctID)
+{
+	setLedgerBalance(theApp->getMasterLedger().getBalance(acctID));
+}
+
 bool Ledger::unitTest()
 {
 	uint160 la1=theApp->getWallet().addFamily(CKey::PassPhraseToKey("This is my payphrase!"), false);

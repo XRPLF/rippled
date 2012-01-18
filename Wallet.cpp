@@ -538,6 +538,9 @@ LocalAccount::pointer Wallet::getNewLocalAccount(const uint160& family)
 	
 	LocalAccount::pointer lac(new LocalAccount(fit->second, seq));
 	mAccounts.insert(std::make_pair(acct, lac));
+	
+	sl.unlock();
+	lac->syncLedger(acct);
 	return lac;
 }
 
@@ -553,6 +556,9 @@ LocalAccount::pointer Wallet::getLocalAccount(const uint160& family, int seq)
 	
 	LocalAccount::pointer lac(new LocalAccount(fit->second, seq));
 	mAccounts.insert(std::make_pair(acct, lac));
+
+	sl.unlock();
+	lac->syncLedger(acct);
 	return lac;
 }
 
