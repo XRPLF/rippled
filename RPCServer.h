@@ -40,6 +40,7 @@ class RPCServer  : public boost::enable_shared_from_this<RPCServer>
 	Json::Value doLock(Json::Value& params);
 	Json::Value doUnlock(Json::Value& params);
 	Json::Value doSendTo(Json::Value& params);
+	Json::Value doConnect(Json::Value& params);
 
 	// parses a string account name into a uint160
 	// can be local or remote

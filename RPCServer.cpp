@@ -312,6 +312,19 @@ Json::Value RPCServer::doFamilyInfo(Json::Value &params)
 	return obj;
 }
 
+Json::Value RPCServer::doConnect(Json::Value& params)
+{
+	// connect <ip> [port]
+	std::string host, port;
+
+	if(!extractString(host, params, 0))
+		return JSONRPCError(500, "Host required");
+	if(!extractString(port, params, 1))
+		port="6561";
+	theApp->getConnectionPool().connectTo(host, port);
+	return "connecting";
+}
+
 Json::Value RPCServer::doSendTo(Json::Value& params)
 {   // Implement simple sending without gathering
 	// sendto <destination> <amount>
@@ -401,6 +414,7 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 	if(command=="lock") return doLock(params);
 	if(command=="unlock") return doUnlock(params);
 	if(command=="sendto") return doSendTo(params);
+	if(command=="connect") return doConnect(params);
 
 	return "unknown command";
 }
