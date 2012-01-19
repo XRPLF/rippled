@@ -456,14 +456,14 @@ void Wallet::load()
 	
 	ScopedLock sl(theApp->getWalletDB()->getDBLock());
 	Database *db=theApp->getWalletDB()->getDB();
-	if(!db->executeSQL(sql.c_str()) || !db->startIterRows())
+	if(!db->executeSQL(sql.c_str()))
 	{
 #ifdef DEBUG
 		std::cerr << "Unable to load wallet" << std::endl;
 #endif
 		return;
 	}
-
+	if(!db->startIterRows()) return;
 	while(db->getNextRow())
 	{
 		std::string family, rootpub, name, comment;
