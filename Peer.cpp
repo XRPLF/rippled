@@ -19,7 +19,12 @@ Peer::Peer(boost::asio::io_service& io_service)
 
 void Peer::handle_write(const boost::system::error_code& error, size_t bytes_transferred)
 {
-	cout  << "Peer::handle_write Error: " << error << " bytes: "<< bytes_transferred << endl;
+#ifdef DEBUG
+	if(error)
+		cout  << "Peer::handle_write Error: " << error << " bytes: "<< bytes_transferred << endl;
+	else
+		cout  << "Peer::handle_write bytes: "<< bytes_transferred << endl;
+#endif
 
 	mSendingPacket=PackedMessage::pointer();
 	if(!mSendQ.empty())
@@ -267,6 +272,9 @@ void Peer::processReadBuffer()
 
 void Peer::recvHello(newcoin::TMHello& packet)
 {
+#ifdef DEBUG
+	std::cerr << "Recv(Hello) v=" << packet.version() << ", index=" << packet.ledgerindex() << std::endl;
+#endif
 }
 
 void Peer::recvTransaction(newcoin::TMTransaction& packet)
@@ -334,6 +342,9 @@ void Peer::sendHello()
 	newcoin::TMHello* h=new newcoin::TMHello();
 	// set up parameters
 	h->set_version(theConfig.VERSION);
+	h->set_ledgerindex(theApp->getOPs().getCurrentLedgerID());
+	h->set_nettime(theApp->getOPs().getNetworkTime());
+	h->set_ipv4port(theConfig.PEER_PORT);
 	PackedMessage::pointer packet(new PackedMessage(PackedMessage::MessagePointer(h), newcoin::mtHELLO));
 	sendPacket(packet);
 }
@@ -341,16 +352,6 @@ void Peer::sendHello()
 
 #if 0
 
-void Peer::sendHello()
-{
-	newcoin::Hello* hello=new newcoin::Hello();
-	hello->set_nodeid("0");
-	hello->set_port(theConfig.PEER_PORT);
-	hello->set_version(theConfig.VERSION);
-
-	PackedMessage::pointer packet(new PackedMessage(PackedMessage::MessagePointer(hello),newcoin::mtHELLO));
-	sendPacket(packet);
-}
 /*
 PackedMessage::pointer Peer::createFullLedger(Ledger::pointer ledger)
 {
