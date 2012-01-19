@@ -1,11 +1,14 @@
+
+#include <iostream>
+
+#include <boost/foreach.hpp>
+//#include <boost/log/trivial.hpp>
+#include <boost/bind.hpp>
+
 #include "Peer.h"
 #include "KnownNodeList.h"
 #include "Config.h"
 #include "Application.h"
-#include <boost/foreach.hpp>
-//#include <boost/log/trivial.hpp>
-#include <boost/bind.hpp>
-#include <iostream>
 #include "Conversion.h"
 
 using namespace std;
@@ -279,6 +282,31 @@ void Peer::recvHello(newcoin::TMHello& packet)
 
 void Peer::recvTransaction(newcoin::TMTransaction& packet)
 {
+#ifdef DEBUG
+	std::cerr << "Got transaction from peer" << std::endl;
+#endif
+
+	std::string rawTx=packet.rawtransaction();
+	std::vector<unsigned char> rTx(rawTx.size());
+	memcpy(&rTx.front(), rawTx.data(), rawTx.size());
+	Transaction::pointer tx(new Transaction(rTx, true));
+
+	if(tx->getStatus()==INVALID)
+	{ // transaction fails basic validity tests
+#ifdef DEBUG
+		std::cerr << "Transaction from peer fails validity tests" << std::endl;
+#endif
+		return;
+	}
+	
+	tx=theApp->getOPs().processTransaction(tx, this);
+
+	if(tx->getStatus()!=INCLUDED)
+	{ // transaction wasn't accepted into ledger
+#ifdef DEBUG
+		std::cerr << "Transaction from peer won't go in ledger" << std::endl;
+#endif
+	}
 }
 
 void Peer::recvValidation(newcoin::TMValidation& packet)

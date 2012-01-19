@@ -5,11 +5,12 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/asio.hpp>
+
 #include "newcoin.pb.h"
 #include "PackedMessage.h"
 #include "Ledger.h"
 #include "Transaction.h"
-#include "list"
+#include "NetworkOPs.h"
 
 class Peer : public boost::enable_shared_from_this<Peer>
 {

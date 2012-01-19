@@ -38,7 +38,7 @@ bool ConnectionPool::isMessageKnown(PackedMessage::pointer msg)
 */
 
 
-void ConnectionPool::relayMessage(Peer* fromPeer,PackedMessage::pointer msg)
+void ConnectionPool::relayMessage(Peer* fromPeer, PackedMessage::pointer msg)
 {
 	BOOST_FOREACH(Peer::pointer peer, mPeers)
 	{

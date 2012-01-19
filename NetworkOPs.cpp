@@ -24,7 +24,7 @@ uint32 NetworkOPs::getCurrentLedgerID()
 	return theApp->getMasterLedger().getCurrentLedger()->getLedgerSeq();
 }
 
-Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans)
+Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, Peer* source)
 {
 	Transaction::pointer dbtx=Transaction::load(trans->getID());
 	if(dbtx) return dbtx;
@@ -57,8 +57,19 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans)
 	if(r==Ledger::TR_SUCCESS)
 	{
 		trans->setStatus(INCLUDED);
-		// WRITEME: send to others
 		theApp->getWallet().applyTransaction(trans);
+
+		newcoin::TMTransaction *tx=new newcoin::TMTransaction();
+
+		Serializer::pointer s(trans->getSigned());
+		tx->set_rawtransaction(&s->getData().front(), s->getLength());
+		tx->set_status(newcoin::tsCURRENT);
+		tx->set_receivetimestamp(getNetworkTime());
+		tx->set_ledgerindexpossible(trans->getLedger());
+
+		PackedMessage::pointer packet(new PackedMessage(PackedMessage::MessagePointer(tx), newcoin::mtTRANSACTION));
+		theApp->getConnectionPool().relayMessage(source, packet);
+
 		return trans;
 	}
 
