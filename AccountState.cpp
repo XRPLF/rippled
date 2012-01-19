@@ -8,10 +8,6 @@ AccountState::AccountState(const std::vector<unsigned char>& v)
 	if(!s.get160(mAccountID, 0)) { assert(false); return; }
 	if(!s.get64(mBalance, 20)) { assert(false); return; }
 	if(!s.get32(mAccountSeq, 28)) { assert(false); return; }
-#ifdef DEBUG
-	std::cerr << "SerializeAccount >> " << mAccountID.GetHex() << ", " << mBalance << ", " << mAccountSeq <<
-		std::endl;
-#endif
 	mValid=true;
 }
 
@@ -24,12 +20,5 @@ std::vector<unsigned char> AccountState::getRaw() const
 	s.add160(mAccountID);
 	s.add64(mBalance);
 	s.add32(mAccountSeq);
-#ifdef DEBUG
-	std::cerr << "SerializeAccount << " << mAccountID.GetHex() << ", " << mBalance << ", " << mAccountSeq <<
-		std::endl;
-	uint64 test;
-	assert(s.get64(test, 20));
-	assert(test==mBalance);
-#endif
 	return s.getData();
 }
