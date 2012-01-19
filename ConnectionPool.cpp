@@ -98,5 +98,6 @@ bool ConnectionPool::connectTo(const std::string& host, const std::string& port)
 	if(error) return false;
 	boost::mutex::scoped_lock sl(peerLock);
 	mPeers.push_back(peer);
+	peer->connected(boost::system::error_code());
 	return true;
 }
