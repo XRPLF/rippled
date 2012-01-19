@@ -24,10 +24,15 @@ void printHelp()
 	cout << "options: " << endl;
 	cout << "     -" << endl;
 	cout << "commands: " << endl;
+	cout << "     createfamily [<key>]" << endl;
+	cout << "     accountinfo <family>:<key>" << endl;
+	cout << "     newaccount <family> [<name>]" << endl;
+	cout << "     lock <family>" << endl;
+	cout << "     unlock <passphrase>" << endl;
+	cout << "     familyinfo" << endl;
+	cout << "     connect <ip> [<port>]" << endl;
+	cout << "     sendto <destination> <amount> [<tag>]" << endl;
 	cout << "     stop" << endl;
-	cout << "     send <address> <amount>" << endl;
-	cout << "     getinfo" << endl;
-	cout << "     getbalance" << endl;
 
 }
 
@@ -37,15 +42,17 @@ int parseCommandline(int argc, char* argv[])
 	if(argc>1)
 	{
 		ret=commandLineRPC(argc, argv);
-		if(!ret) printHelp();
-	}else startApp();
-	return(ret);
+		if(ret)
+			printHelp();
+	}
+	else startApp();
+	return ret;
 }
 
 
 int main(int argc, char* argv[])
 {
-	runTests();
+//	runTests();
 
 	return(parseCommandline(argc,argv));
 }
