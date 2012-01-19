@@ -17,13 +17,7 @@ Peer::Peer(boost::asio::io_service& io_service)
 {
 }
 
-/*
-bool Peer::operator == (const Peer& other)
-{
-	return(false);
-}*/
-
-void Peer::handle_write(const boost::system::error_code& error , size_t bytes_transferred)
+void Peer::handle_write(const boost::system::error_code& error, size_t bytes_transferred)
 {
 	cout  << "Peer::handle_write Error: " << error << " bytes: "<< bytes_transferred << endl;
 
@@ -31,7 +25,6 @@ void Peer::handle_write(const boost::system::error_code& error , size_t bytes_tr
 	if(!mSendQ.empty())
 	{
 		PackedMessage::pointer packet=mSendQ.front();
-
 		if(packet) 
 		{
 			sendPacketForce(packet);
@@ -39,11 +32,6 @@ void Peer::handle_write(const boost::system::error_code& error , size_t bytes_tr
 		}
 	}
 }
-/*
-void Peer::handle_read(const boost::system::error_code& error , size_t bytes_transferred)
-{
-	cout  << "Peer::handle_read Error: " << error << " bytes: "<< bytes_transferred << endl;
-}*/
 
 void Peer::connected(const boost::system::error_code& error)
 {
@@ -53,9 +41,8 @@ void Peer::connected(const boost::system::error_code& error)
 
 		sendHello();
 		start_read_header();
-
-		
-	}else cout  << "Peer::connected Error: " << error << endl; //else BOOST_LOG_TRIVIAL(info) << "Error: " << error;
+	}
+	else cout  << "Peer::connected Error: " << error << endl; //else BOOST_LOG_TRIVIAL(info) << "Error: " << error;
 	
 }
 
@@ -75,7 +62,8 @@ void Peer::sendPacket(PackedMessage::pointer packet)
 		if(mSendingPacket)
 		{
 			mSendQ.push_back(packet);
-		}else
+		}
+		else
 		{
 			sendPacketForce(packet);
 		}
@@ -85,10 +73,10 @@ void Peer::sendPacket(PackedMessage::pointer packet)
 void Peer::start_read_header()
 {
 	mReadbuf.resize(HEADER_SIZE);
-	asio::async_read(mSocket, asio::buffer(mReadbuf),
-		boost::bind(&Peer::handle_read_header, shared_from_this(),
-		asio::placeholders::error));
+	asio::async_read(mSocket, asio::buffer(mReadbuf, HEADER_SIZE),
+		boost::bind(&Peer::handle_read_header, shared_from_this(), asio::placeholders::error));
 }
+
 void Peer::start_read_body(unsigned msg_len)
 {
 	// m_readbuf already contains the header in its first HEADER_SIZE
@@ -98,17 +86,18 @@ void Peer::start_read_body(unsigned msg_len)
 	mReadbuf.resize(HEADER_SIZE + msg_len);
 	asio::mutable_buffers_1 buf = asio::buffer(&mReadbuf[HEADER_SIZE], msg_len);
 	asio::async_read(mSocket, buf,
-		boost::bind(&Peer::handle_read_body, shared_from_this(),
-		asio::placeholders::error));
+		boost::bind(&Peer::handle_read_body, shared_from_this(), asio::placeholders::error));
 }
 
 void Peer::handle_read_header(const boost::system::error_code& error)
 {
-	if(!error) 
-	{
+	if(!error)
+	{ // FIXME: This assumes we have read the entire header
+	  // start_read_header has no completion condition, so this is a broken assumption
 		unsigned msg_len = PackedMessage::getLength(mReadbuf);
 		start_read_body(msg_len);
-	}else cout  << "Peer::connected Error: " << error << endl; //else BOOST_LOG_TRIVIAL(info) << "Error: " << error;
+	}
+	else cout  << "Peer::connected Error: " << error << endl; //else BOOST_LOG_TRIVIAL(info) << "Error: " << error;
 }
 
 void Peer::handle_read_body(const boost::system::error_code& error)
@@ -117,13 +106,17 @@ void Peer::handle_read_body(const boost::system::error_code& error)
 	{
 		processReadBuffer();
 		start_read_header();
-	}else cout  << "Peer::connected Error: " << error << endl; //else BOOST_LOG_TRIVIAL(info) << "Error: " << error;
+	}
+	else cout  << "Peer::connected Error: " << error << endl; //else BOOST_LOG_TRIVIAL(info) << "Error: " << error;
 }
 
 
 void Peer::processReadBuffer()
 {
 	int type=PackedMessage::getType(mReadbuf);
+#ifdef DEBUG
+	std::cerr << "PRB(" << type << ")" << std::endl;
+#endif
 	switch(type)
 	{
 	case newcoin::mtHELLO:
