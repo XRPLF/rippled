@@ -1,3 +1,4 @@
+#define WIN32_LEAN_AND_MEAN 
 
 #include <string>
 
@@ -7,6 +8,7 @@
 #include "boost/foreach.hpp"
 #include "boost/lexical_cast.hpp"
 #include "boost/interprocess/sync/scoped_lock.hpp"
+
 
 #include "Wallet.h"
 #include "Ledger.h"
