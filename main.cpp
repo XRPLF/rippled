@@ -1,6 +1,7 @@
 #include "Application.h"
 #include <iostream>
 #include "CallRPC.h"
+#include "Config.h"
 
 extern void runTests();
 using namespace std;
@@ -41,6 +42,7 @@ int parseCommandline(int argc, char* argv[])
 	int ret=0;
 	if(argc>1)
 	{
+		theConfig.load();
 		ret=commandLineRPC(argc, argv);
 		if(ret)
 			printHelp();

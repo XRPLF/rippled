@@ -340,6 +340,7 @@ void Peer::sendHello()
 {
 	newcoin::TMHello* h=new newcoin::TMHello();
 	// set up parameters
+	h->set_version(theConfig.VERSION);
 	PackedMessage::pointer packet(new PackedMessage(PackedMessage::MessagePointer(h), newcoin::mtHELLO));
 	sendPacket(packet);
 }

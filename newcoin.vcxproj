@@ -87,6 +87,7 @@
     <ClCompile Include="AccountState.cpp" />
     <ClCompile Include="Application.cpp" />
     <ClCompile Include="BitcoinUtil.cpp" />
+    <ClCompile Include="CallRPC.cpp" />
     <ClCompile Include="Config.cpp" />
     <ClCompile Include="ConnectionPool.cpp" />
     <ClCompile Include="Conversion.cpp" />
@@ -106,6 +107,7 @@
     <ClCompile Include="LedgerHistory.cpp" />
     <ClCompile Include="LedgerMaster.cpp" />
     <ClCompile Include="LocalTransaction.cpp" />
+    <ClCompile Include="main.cpp" />
     <ClCompile Include="NetworkOPs.cpp" />
     <ClCompile Include="newcoin.pb.cc" />
     <ClCompile Include="NewcoinAddress.cpp" />
@@ -121,7 +123,6 @@
     <ClCompile Include="SHAMap.cpp" />
     <ClCompile Include="SHAMapDiff.cpp" />
     <ClCompile Include="SHAMapNodes.cpp" />
-    <ClCompile Include="test.cpp" />
     <ClCompile Include="TimingService.cpp" />
     <ClCompile Include="Transaction.cpp" />
     <ClCompile Include="UniqueNodeList.cpp" />
@@ -200,6 +201,7 @@
     <None Include="Makefile" />
     <None Include="nodes.xml" />
     <None Include="notes.txt" />
+    <None Include="tests\client2\config.xml" />
     <None Include="todo.txt" />
     <None Include="unl.xml" />
     <None Include="wallet.xml" />

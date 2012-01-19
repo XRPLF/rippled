@@ -17,9 +17,10 @@ PackedMessage::PackedMessage(MessagePointer msg, int type)
 	: mMsg(msg)
 {
 	unsigned msg_size = mMsg->ByteSize();
+	assert(msg_size);
 	mBuffer.resize(HEADER_SIZE + msg_size);
 	encodeHeader(msg_size,type);
-	mMsg->SerializeToArray(&mBuffer[HEADER_SIZE], msg_size);
+	if(msg_size) mMsg->SerializeToArray(&mBuffer[HEADER_SIZE], msg_size);
 }
 
 bool PackedMessage::operator == (const PackedMessage& other)

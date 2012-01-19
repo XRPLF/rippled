@@ -28,6 +28,15 @@
     <Filter Include="Source Files\cryptopp">
       <UniqueIdentifier>{c3412b4c-4150-48d7-a5f2-24bdb1a39c5b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="tests">
+      <UniqueIdentifier>{209ce0bd-b197-4cb2-ad50-f8f43bcd1e03}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="tests\client1">
+      <UniqueIdentifier>{46b84833-f245-4c3d-94b8-472efdb3a040}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="tests\client2">
+      <UniqueIdentifier>{b27b04b8-1c6e-4b20-9364-f18d4682dc00}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Application.cpp">
@@ -156,7 +165,10 @@
     <ClCompile Include="DBInit.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="test.cpp">
+    <ClCompile Include="main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CallRPC.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -342,6 +354,9 @@
     <None Include="db layout.txt" />
     <None Include="todo.txt" />
     <None Include="Makefile" />
+    <None Include="tests\client2\config.xml">
+      <Filter>tests\client2</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="newcoin.proto" />

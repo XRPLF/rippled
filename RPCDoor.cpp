@@ -10,7 +10,7 @@ using namespace boost::asio::ip;
 RPCDoor::RPCDoor(boost::asio::io_service& io_service) : 
 	mAcceptor(io_service, tcp::endpoint(boost::asio::ip::address_v4::loopback(), theConfig.RPC_PORT))
 {
-	
+	cout << "Opening rpc door on port: " << theConfig.RPC_PORT << endl;
 	startListening();
 }
 
