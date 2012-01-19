@@ -75,15 +75,6 @@
     <ClCompile Include="rpc.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="json\json_spirit_reader.cpp">
-      <Filter>Source Files\json</Filter>
-    </ClCompile>
-    <ClCompile Include="json\json_spirit_value.cpp">
-      <Filter>Source Files\json</Filter>
-    </ClCompile>
-    <ClCompile Include="json\json_spirit_writer.cpp">
-      <Filter>Source Files\json</Filter>
-    </ClCompile>
     <ClCompile Include="BitcoinUtil.cpp">
       <Filter>Header Files\util</Filter>
     </ClCompile>
@@ -135,6 +126,36 @@
     <ClCompile Include="SHAMapNodes.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Serializer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Transaction.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="json\json_reader.cpp">
+      <Filter>Source Files\json</Filter>
+    </ClCompile>
+    <ClCompile Include="json\json_value.cpp">
+      <Filter>Source Files\json</Filter>
+    </ClCompile>
+    <ClCompile Include="json\json_writer.cpp">
+      <Filter>Source Files\json</Filter>
+    </ClCompile>
+    <ClCompile Include="LocalTransaction.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PubKeyCache.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="HashedObject.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="NetworkOPs.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="DBInit.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="test.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -181,33 +202,6 @@
     </ClInclude>
     <ClInclude Include="PeerDoor.h">
       <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="json\json_spirit.h">
-      <Filter>Header Files\json</Filter>
-    </ClInclude>
-    <ClInclude Include="json\json_spirit_error_position.h">
-      <Filter>Header Files\json</Filter>
-    </ClInclude>
-    <ClInclude Include="json\json_spirit_reader.h">
-      <Filter>Header Files\json</Filter>
-    </ClInclude>
-    <ClInclude Include="json\json_spirit_reader_template.h">
-      <Filter>Header Files\json</Filter>
-    </ClInclude>
-    <ClInclude Include="json\json_spirit_stream_reader.h">
-      <Filter>Header Files\json</Filter>
-    </ClInclude>
-    <ClInclude Include="json\json_spirit_utils.h">
-      <Filter>Header Files\json</Filter>
-    </ClInclude>
-    <ClInclude Include="json\json_spirit_value.h">
-      <Filter>Header Files\json</Filter>
-    </ClInclude>
-    <ClInclude Include="json\json_spirit_writer.h">
-      <Filter>Header Files\json</Filter>
-    </ClInclude>
-    <ClInclude Include="json\json_spirit_writer_template.h">
-      <Filter>Header Files\json</Filter>
     </ClInclude>
     <ClInclude Include="CallRPC.h">
       <Filter>Header Files</Filter>

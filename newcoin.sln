@@ -6,8 +6,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "newcoin", "newcoin.vcxproj"
 		{3E283F37-A4ED-41B7-A3E6-A2D89D131A30} = {3E283F37-A4ED-41B7-A3E6-A2D89D131A30}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "application", "..\kc\mm2\application\application.vcxproj", "{A3B4F294-D8FB-4A6A-8FF6-3919B8C6D928}"
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libprotobuf", "..\protobuf-2.4.1\vsprojects\libprotobuf.vcxproj", "{3E283F37-A4ED-41B7-A3E6-A2D89D131A30}"
 EndProject
 Global
@@ -26,14 +24,6 @@ Global
 		{19465545-42EE-42FA-9CC8-F8975F8F1CC7}.Release|Win32.Build.0 = Release|Win32
 		{19465545-42EE-42FA-9CC8-F8975F8F1CC7}.ReleaseD|Win32.ActiveCfg = Release|Win32
 		{19465545-42EE-42FA-9CC8-F8975F8F1CC7}.ReleaseD|Win32.Build.0 = Release|Win32
-		{A3B4F294-D8FB-4A6A-8FF6-3919B8C6D928}.Debug|Win32.ActiveCfg = Debug|Win32
-		{A3B4F294-D8FB-4A6A-8FF6-3919B8C6D928}.Debug|Win32.Build.0 = Debug|Win32
-		{A3B4F294-D8FB-4A6A-8FF6-3919B8C6D928}.FlashDebug|Win32.ActiveCfg = Debug|Win32
-		{A3B4F294-D8FB-4A6A-8FF6-3919B8C6D928}.FlashDebug|Win32.Build.0 = Debug|Win32
-		{A3B4F294-D8FB-4A6A-8FF6-3919B8C6D928}.Release|Win32.ActiveCfg = Release|Win32
-		{A3B4F294-D8FB-4A6A-8FF6-3919B8C6D928}.Release|Win32.Build.0 = Release|Win32
-		{A3B4F294-D8FB-4A6A-8FF6-3919B8C6D928}.ReleaseD|Win32.ActiveCfg = ReleaseD|Win32
-		{A3B4F294-D8FB-4A6A-8FF6-3919B8C6D928}.ReleaseD|Win32.Build.0 = ReleaseD|Win32
 		{3E283F37-A4ED-41B7-A3E6-A2D89D131A30}.Debug|Win32.ActiveCfg = Debug|Win32
 		{3E283F37-A4ED-41B7-A3E6-A2D89D131A30}.Debug|Win32.Build.0 = Debug|Win32
 		{3E283F37-A4ED-41B7-A3E6-A2D89D131A30}.FlashDebug|Win32.ActiveCfg = Debug|Win32
