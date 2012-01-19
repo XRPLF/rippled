@@ -2,9 +2,9 @@ package newcoin;
 
 enum MessageType {
 // core
-	mtHELLO=			0; 
-	mtERROR_MSG=		1;
-	mtPING=				2;
+	mtHELLO=			1;
+	mtERROR_MSG=		2;
+	mtPING=				3;
 
 // network presence detection
 	mtGET_CONTACTS=		10;
