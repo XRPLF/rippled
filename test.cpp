@@ -6,10 +6,16 @@
 #include "Ledger.h"
 #include "SHAMap.h"
 
+extern void DKunitTest();
+
 int main()
 {
+
+//	Wallet::unitTest();
+
 	theApp = new Application();
 	theApp->run();
+
 
     Serializer::TestSerializer();
     SHAMapNode::ClassInit();
