@@ -66,7 +66,7 @@ HEADERS = \
     Wallet.h
 
 SRCS= keystore.cpp BitcoinUtil.cpp \
- test.cpp Hanko.cpp Transaction.cpp SHAMap.cpp SHAMapNodes.cpp Serializer.cpp Ledger.cpp \
+ main.cpp Hanko.cpp Transaction.cpp SHAMap.cpp SHAMapNodes.cpp Serializer.cpp Ledger.cpp \
  AccountState.cpp Wallet.cpp NewcoinAddress.cpp Config.cpp PackedMessage.cpp \
  Application.cpp TimingService.cpp KnownNodeList.cpp ConnectionPool.cpp Peer.cpp \
  PeerDoor.cpp RPCDoor.cpp RPCServer.cpp rpc.cpp Conversion.cpp RequestParser.cpp HashedObject.cpp \
