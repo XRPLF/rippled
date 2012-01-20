@@ -321,7 +321,8 @@ Json::Value RPCServer::doConnect(Json::Value& params)
 		return JSONRPCError(500, "Host required");
 	if(!extractString(port, params, 1))
 		port="6561";
-	theApp->getConnectionPool().connectTo(host, port);
+	if(!theApp->getConnectionPool().connectTo(host, port))
+		return JSONRPCError(500, "Unable to connect");
 	return "connecting";
 }
 
