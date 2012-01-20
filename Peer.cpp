@@ -32,6 +32,13 @@ void Peer::handle_write(const boost::system::error_code& error, size_t bytes_tra
 #endif
 
 	mSendingPacket=PackedMessage::pointer();
+
+	if(error)
+	{
+		detach();
+		return;
+	}
+
 	if(!mSendQ.empty())
 	{
 		PackedMessage::pointer packet=mSendQ.front();
@@ -45,6 +52,7 @@ void Peer::handle_write(const boost::system::error_code& error, size_t bytes_tra
 
 void Peer::detach()
 {
+	mSendQ.erase();
 	mSocket.close();
 	if(!!mHanko) theApp->getConnectionPool().delFromMap(mHanko);
 }
