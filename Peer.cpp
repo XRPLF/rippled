@@ -100,6 +100,10 @@ void Peer::sendPacket(PackedMessage::pointer packet)
 
 void Peer::start_read_header()
 {
+#ifdef DEBUG
+	std::cerr << "SRH" << std::endl;
+#endif
+	mReadbuf.clear();
 	mReadbuf.resize(HEADER_SIZE);
 	asio::async_read(mSocket, asio::buffer(mReadbuf),
 		boost::bind(&Peer::handle_read_header, shared_from_this(), asio::placeholders::error));
@@ -175,6 +179,7 @@ void Peer::processReadBuffer()
 				recvErrorMessage(msg);
 			else cout << "pars error: " << type << endl;
 		}
+		break;
 
 	case newcoin::mtPING:
 		{
@@ -183,6 +188,7 @@ void Peer::processReadBuffer()
 				recvPing(msg);
 			else cout << "pars error: " << type << endl;
 		}
+		break;
 
 	case newcoin::mtGET_CONTACTS:
 		{
@@ -191,6 +197,7 @@ void Peer::processReadBuffer()
 				recvGetContacts(msg);
 			else cout << "pars error: " << type << endl;
 		}
+		break;
 
 	case newcoin::mtCONTACT:
 		{
@@ -199,6 +206,7 @@ void Peer::processReadBuffer()
 				recvContact(msg);
 			else cout << "pars error: " << type << endl;
 		}
+		break;
 
 	case newcoin::mtSEARCH_TRANSACTION:
 		{
@@ -207,6 +215,7 @@ void Peer::processReadBuffer()
 				recvSearchTransaction(msg);
 			else cout << "pars error: " << type << endl;
 		}
+		break;
 
 	case newcoin::mtGET_ACCOUNT:
 		{
@@ -215,6 +224,7 @@ void Peer::processReadBuffer()
 				recvGetAccount(msg);
 			else cout << "pars error: " << type << endl;
 		}
+		break;
 
 	case newcoin::mtACCOUNT:
 		{
@@ -223,6 +233,7 @@ void Peer::processReadBuffer()
 				recvAccount(msg);
 			else cout << "pars error: " << type << endl;
 		}
+		break;
 
 	case newcoin::mtTRANSACTION:
 		{
@@ -231,6 +242,7 @@ void Peer::processReadBuffer()
 				recvTransaction(msg);
 			else cout << "pars error: " << type << endl;
 		}
+		break;
 
 	case newcoin::mtGET_LEDGER:
 		{
@@ -239,6 +251,7 @@ void Peer::processReadBuffer()
 				recvGetLedger(msg);
 			else cout << "pars error: " << type << endl;
 		}
+		break;
 
 	case newcoin::mtLEDGER:
 		{
@@ -247,6 +260,7 @@ void Peer::processReadBuffer()
 				recvLedger(msg);
 			else cout << "pars error: " << type << endl;
 		}
+		break;
 
 #if 0
 	case newcoin::mtPROPOSE_LEDGER:
@@ -256,6 +270,7 @@ void Peer::processReadBuffer()
 				recv(msg);
 			else cout << "pars error: " << type << endl;
 		}
+		break;
 
 	case newcoin::mtCLOSE_LEDGER:
 		{
@@ -264,6 +279,7 @@ void Peer::processReadBuffer()
 				recv(msg);
 			else cout << "pars error: " << type << endl;
 		}
+		break;
 
 	case newcoin::mtGET_VALIDATION:
 		{
@@ -272,6 +288,7 @@ void Peer::processReadBuffer()
 				recv(msg);
 			else cout << "pars error: " << type << endl;
 		}
+		break;
 
 	case newcoin::mtVALIDATION:
 		{
@@ -280,6 +297,7 @@ void Peer::processReadBuffer()
 				recv(msg);
 			else cout << "pars error: " << type << endl;
 		}
+		break;
 
 #endif
 
@@ -290,6 +308,7 @@ void Peer::processReadBuffer()
 				recvGetObjectByHash(msg);
 			else cout << "pars error: " << type << endl;
 		}
+		break;
 
 	case newcoin::mtOBJECT:
 		{
@@ -298,6 +317,7 @@ void Peer::processReadBuffer()
 				recvObjectByHash(msg);
 			else cout << "pars error: " << type << endl;
 		}
+		break;
 
 	default:
 		cout  << "Unknown Msg: " << type << endl; //else BOOST_LOG_TRIVIAL(info) << "Error: " << error;
