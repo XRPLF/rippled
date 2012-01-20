@@ -1,9 +1,9 @@
 #ifndef __SCOPEDLOCKHOLDER__
 #define __SCOPEDLOCKHOLDER__
 
-#include "boost/thread/recursive_mutex.hpp"
-#include "boost/interprocess/sync/scoped_lock.hpp"
-#include "boost/shared_ptr.hpp"
+#include <boost/thread/recursive_mutex.hpp>
+#include <boost/interprocess/sync/scoped_lock.hpp>
+#include <boost/shared_ptr.hpp>
 
 class ScopedLock
 {

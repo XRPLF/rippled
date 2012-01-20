@@ -9,9 +9,11 @@
 #include <cassert>
 #include <vector>
 #include <cstdio>
+
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/cstdint.hpp>
+
 #include "newcoin.pb.h"
 
 // The header size for packed messages
