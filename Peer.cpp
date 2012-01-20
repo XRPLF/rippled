@@ -83,7 +83,7 @@ void Peer::sendPacket(PackedMessage::pointer packet)
 void Peer::start_read_header()
 {
 	mReadbuf.resize(HEADER_SIZE);
-	asio::async_read(mSocket, asio::buffer(mReadbuf, HEADER_SIZE),
+	asio::async_read(mSocket, asio::buffer(mReadbuf),
 		boost::bind(&Peer::handle_read_header, shared_from_this(), asio::placeholders::error));
 }
 
@@ -94,16 +94,14 @@ void Peer::start_read_body(unsigned msg_len)
 	// read into the body.
 	//
 	mReadbuf.resize(HEADER_SIZE + msg_len);
-	asio::mutable_buffers_1 buf = asio::buffer(&mReadbuf[HEADER_SIZE], msg_len);
-	asio::async_read(mSocket, buf,
+	asio::async_read(mSocket, asio::buffer(&mReadbuf[HEADER_SIZE], msg_len),
 		boost::bind(&Peer::handle_read_body, shared_from_this(), asio::placeholders::error));
 }
 
 void Peer::handle_read_header(const boost::system::error_code& error)
 {
 	if(!error)
-	{ // FIXME: This assumes we have read the entire header
-	  // start_read_header has no completion condition, so this is a broken assumption
+	{
 		unsigned msg_len = PackedMessage::getLength(mReadbuf);
 		start_read_body(msg_len);
 	}
