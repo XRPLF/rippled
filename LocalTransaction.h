@@ -22,14 +22,14 @@ protected:
 	uint64 mAmount;
 	uint32 mTag;
 	std::string mComment;
-	bool mPaid;
+	bool mPaid, mCredited;
 
 	Transaction::pointer mTransaction;
 
 public:
 
 	LocalTransaction(const uint160 &dest, uint64 amount, uint32 tag) :
-		mDestAcctID(dest), mAmount(amount), mTag(tag), mPaid(false) { ; }
+		mDestAcctID(dest), mAmount(amount), mTag(tag), mPaid(false), mCredited(false) { ; }
 	void setComment(const std::string& comment) { mComment=comment; }
 
 	const uint160& getDestinationAccount() const { return mDestAcctID; }
@@ -43,6 +43,9 @@ public:
 	bool isPaid() const { return mPaid; }
 	void setPaid() { mPaid=true; }
 	void setUnpaid() { mPaid=false; }
+	bool isCredited() const { return mCredited; }
+	void setCredited() { mCredited=true; }
+	void setUncredited() { mCredited=false; }
 
 	void performTransaction();	// perform this transaction as if we received it from the network
 	bool makeTransaction();		// create a transaction object according to these rules

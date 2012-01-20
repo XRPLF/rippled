@@ -43,6 +43,9 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 
 	if((r==Ledger::TR_PREASEQ) || (r==Ledger::TR_BADLSEQ))
 	{ // transaction should be held
+#ifdef DEBUG
+		std::cerr << "Transaction should be held" << std::endl;
+#endif
 		trans->setStatus(HELD);
 		trans->save();
 		theApp->getMasterLedger().addHeldTransaction(trans);
@@ -50,12 +53,18 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 	}
 	if( (r==Ledger::TR_PASTASEQ) || (r==Ledger::TR_ALREADY) )
 	{ // duplicate or conflict
+#ifdef DEBUG
+		std::cerr << "Transaction is obsolete" << std::endl;
+#endif
 		trans->setStatus(OBSOLETE);
 		return trans;
 	}
 
 	if(r==Ledger::TR_SUCCESS)
 	{
+#ifdef DEBUG
+		std::cerr << "Transaction is now included, synching to wallet" << std::endl;
+#endif
 		trans->setStatus(INCLUDED);
 		theApp->getWallet().applyTransaction(trans);
 

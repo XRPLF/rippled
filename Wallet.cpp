@@ -819,48 +819,66 @@ void Wallet::applyTransaction(Transaction::pointer txn)
 {
 	TransStatus st=txn->getStatus();
 	bool shouldBePaid=(st==INCLUDED) || (st==HELD) || (st==NEW);
-	
+
+	LocalTransaction::pointer ltx;
+
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
-	std::map<uint160, LocalAccount::pointer>::iterator lac=mAccounts.find(txn->getFromAccount());
+	std::map<uint256, LocalTransaction::pointer>::iterator lti=mTransactions.find(txn->getID());
+	if(lti!=mTransactions.end()) ltx=lti->second;
+
+	std::map<uint160, LocalAccount::pointer>::iterator lac=mAccounts.find(txn->getToAccount());
+	if(lac!=mAccounts.end())
+	{ // this is to a local account
+		if(!ltx)
+		{ // this is to a local account, and we don't have a local transaction for it
+			ltx=LocalTransaction::pointer(new
+				LocalTransaction(txn->getToAccount(), txn->getAmount(), txn->getIdent()));
+			ltx->setTransaction(txn);
+			mTransactions.insert(std::make_pair<uint256, LocalTransaction::pointer>(txn->getID(), ltx));
+			ltx->setCredited();
+			lac->second->credit(txn->getAmount()-txn->getFee());
+		}
+	}
+	
+	lac=mAccounts.find(txn->getFromAccount());
 	if(lac==mAccounts.end()) return;
 	
 	if ( (st!=INVALID) && (lac->second->getTxnSeq()==txn->getFromAccountSeq()) )
 		lac->second->incTxnSeq();
 
-	std::map<uint256, LocalTransaction::pointer>::iterator ltx=mTransactions.find(txn->getID());
-	if(ltx==mTransactions.end())
+	if(!ltx)
 	{ // we don't have this transactions
 		if(shouldBePaid)
 		{ // we need it
-			LocalTransaction::pointer nlt(new
+			ltx=LocalTransaction::pointer(new
 				LocalTransaction(txn->getToAccount(), txn->getAmount(), txn->getIdent()));
-			nlt->setTransaction(txn);
-			mTransactions.insert(std::make_pair<uint256, LocalTransaction::pointer>(txn->getID(), nlt));
+			ltx->setTransaction(txn);
+			mTransactions.insert(std::make_pair<uint256, LocalTransaction::pointer>(txn->getID(), ltx));
 			lac->second->debit(txn->getAmount());
-			ltx->second->setPaid();
+			ltx->setPaid();
 		}
 	}
 	else
 	{ // we have this transaction in some form (ltx->second)
 		if( (st==COMMITTED) || (st==INVALID) )
 		{ // we need to remove it
-			if(ltx->second->isPaid())
+			if(ltx->isPaid())
 			{
 				lac->second->credit(txn->getAmount());
-				ltx->second->setUnpaid();
+				ltx->setUnpaid();
 			}
 			mTransactions.erase(txn->getID());
 		}
-		else if(ltx->second->isPaid() && !shouldBePaid)
+		else if(ltx->isPaid() && !shouldBePaid)
 		{ // we paid for this transaction and it didn't happen
 			lac->second->credit(txn->getAmount());
-			ltx->second->setUnpaid();
+			ltx->setUnpaid();
 		}
-		else if(!ltx->second->isPaid() && shouldBePaid)
+		else if(!ltx->isPaid() && shouldBePaid)
 		{ // this transaction happened, and we haven't paid locally
 			lac->second->debit(txn->getAmount());
-			ltx->second->setPaid();
+			ltx->setPaid();
 		}
 	}
 }
