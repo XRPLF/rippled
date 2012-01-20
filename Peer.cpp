@@ -52,7 +52,7 @@ void Peer::handle_write(const boost::system::error_code& error, size_t bytes_tra
 
 void Peer::detach()
 {
-	mSendQ.erase();
+	mSendQ.clear();
 	mSocket.close();
 	if(!!mHanko) theApp->getConnectionPool().delFromMap(mHanko);
 }
