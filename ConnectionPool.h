@@ -29,7 +29,7 @@ public:
 	// hanko->peer mapping functions
 	bool inMap(const uint160& hanko);
 	bool addToMap(const uint160& hanko, Peer::pointer peer);
-	bool delFromMap(const uint160& hanko, Peer::pointer peer);
+	bool delFromMap(const uint160& hanko);
 	Peer::pointer findInMap(const uint160& hanko);
 	std::map<uint160, Peer::pointer> getAllConnected();
 

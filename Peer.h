@@ -24,7 +24,7 @@ protected:
 	std::list<PackedMessage::pointer> mSendQ;
 	PackedMessage::pointer mSendingPacket;
 	std::bitset<32> mPeerBits;
-	uint160 hanko;
+	uint160 mHanko;
 
 	Peer(boost::asio::io_service& io_service);
 
@@ -76,6 +76,7 @@ public:
 	}
 
 	void connected(const boost::system::error_code& error);
+	void detach();
 
 	void sendPacket(PackedMessage::pointer packet);
 	void sendLedgerProposal(Ledger::pointer ledger);

@@ -43,6 +43,12 @@ void Peer::handle_write(const boost::system::error_code& error, size_t bytes_tra
 	}
 }
 
+void Peer::detach()
+{
+	mSocket.close();
+	if(!!mHanko) theApp->getConnectionPool().delFromMap(mHanko);
+}
+
 void Peer::connected(const boost::system::error_code& error)
 {
 	if(!error)
@@ -52,7 +58,11 @@ void Peer::connected(const boost::system::error_code& error)
 		sendHello();
 		start_read_header();
 	}
-	else cout  << "Peer::connected Error: " << error << endl; //else BOOST_LOG_TRIVIAL(info) << "Error: " << error;
+	else
+	{
+		detach();
+		cout  << "Peer::connected Error: " << error << endl; //else BOOST_LOG_TRIVIAL(info) << "Error: " << error;
+	}
 	
 }
 
@@ -103,9 +113,19 @@ void Peer::handle_read_header(const boost::system::error_code& error)
 	if(!error)
 	{
 		unsigned msg_len = PackedMessage::getLength(mReadbuf);
+		// WRITEME: Compare to maximum message length, abort if too large
+		if(msg_len>(32*1024*1024))
+		{
+			detach();
+			return;
+		}
 		start_read_body(msg_len);
 	}
-	else cout  << "Peer::connected Error: " << error << endl; //else BOOST_LOG_TRIVIAL(info) << "Error: " << error;
+	else
+	{
+		detach();
+		cout  << "Peer::connected Error: " << error << endl; //else BOOST_LOG_TRIVIAL(info) << "Error: " << error;
+	}
 }
 
 void Peer::handle_read_body(const boost::system::error_code& error)
@@ -115,7 +135,11 @@ void Peer::handle_read_body(const boost::system::error_code& error)
 		processReadBuffer();
 		start_read_header();
 	}
-	else cout  << "Peer::connected Error: " << error << endl; //else BOOST_LOG_TRIVIAL(info) << "Error: " << error;
+	else
+	{
+		detach();
+		cout  << "Peer::connected Error: " << error << endl; //else BOOST_LOG_TRIVIAL(info) << "Error: " << error;
+	}
 }
 
 
