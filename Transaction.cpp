@@ -68,6 +68,7 @@ Transaction::Transaction(const std::vector<unsigned char> &t, bool validate) : m
 	mFromPubKey=theApp->getPubKeyCache().store(mAccountFrom, mFromPubKey);
 
 	updateID();
+	updateFee();
 
 	if(!validate || checkSign())
 		mStatus=NEW;
@@ -130,11 +131,11 @@ Serializer::pointer Transaction::getRaw(bool prefix) const
 	Serializer::pointer ret(new Serializer(77));
 	if(prefix) ret->add32(0x54584e00u);
 	ret->add160(mAccountTo);
-	ret->addRaw(mFromPubKey->GetPubKey());
 	ret->add64(mAmount);
 	ret->add32(mFromAccountSeq);
 	ret->add32(mSourceLedger);
 	ret->add32(mIdent);
+	ret->addRaw(mFromPubKey->GetPubKey());
 	assert( (prefix&&(ret->getLength()==77)) || (!prefix&&(ret->getLength()==73)) );
 	return ret;
 }

@@ -5,6 +5,8 @@
 //#include <boost/log/trivial.hpp>
 #include <boost/bind.hpp>
 
+#include "json/writer.h"
+
 #include "Peer.h"
 #include "KnownNodeList.h"
 #include "Config.h"
@@ -123,7 +125,7 @@ void Peer::processReadBuffer()
 {
 	int type=PackedMessage::getType(mReadbuf);
 #ifdef DEBUG
-	std::cerr << "PRB(" << type << ")" << std::endl;
+	std::cerr << "PRB(" << type << "), len=" << (mReadbuf.size()-HEADER_SIZE) << std::endl;
 #endif
 	switch(type)
 	{
@@ -295,6 +297,8 @@ void Peer::recvTransaction(newcoin::TMTransaction& packet)
 	{ // transaction fails basic validity tests
 #ifdef DEBUG
 		std::cerr << "Transaction from peer fails validity tests" << std::endl;
+		Json::StyledStreamWriter w;
+		w.write(std::cerr, tx->getJson(true));
 #endif
 		return;
 	}

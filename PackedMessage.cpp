@@ -20,7 +20,13 @@ PackedMessage::PackedMessage(MessagePointer msg, int type)
 	assert(msg_size);
 	mBuffer.resize(HEADER_SIZE + msg_size);
 	encodeHeader(msg_size,type);
-	if(msg_size) mMsg->SerializeToArray(&mBuffer[HEADER_SIZE], msg_size);
+	if(msg_size)
+	{
+		mMsg->SerializeToArray(&mBuffer[HEADER_SIZE], msg_size);
+#ifdef DEBUG
+		std::cerr << "PackedMessage: type=" << type << ", datalen=" << msg_size << std::endl;
+#endif
+	}
 }
 
 bool PackedMessage::operator == (const PackedMessage& other)

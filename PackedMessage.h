@@ -26,12 +26,13 @@ const unsigned HEADER_SIZE = 6;
 
 class PackedMessage : public boost::enable_shared_from_this<PackedMessage>
 {
+
+	std::vector<uint8_t> mBuffer;
+
 	// Encodes the size and type into a header at the beginning of buf
 	//
 	void encodeHeader(unsigned size, int type);
 
-
-	std::vector<uint8_t> mBuffer;
 public:
     typedef boost::shared_ptr< ::google::protobuf::Message > MessagePointer;
 	typedef boost::shared_ptr<PackedMessage> pointer;
