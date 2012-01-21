@@ -393,6 +393,9 @@ Json::Value RPCServer::doTx(Json::Value& params)
 	std::string param1, param2;
 	if(!extractString(param1, params, 0))
 	{ // all local transactions
+		Json::Value ret(Json::objectValue);
+		theApp->getWallet().addLocalTransactions(ret);
+		return ret;
 	}
 
 	if(Transaction::isHexTxID(param1))
