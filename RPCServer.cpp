@@ -400,6 +400,16 @@ Json::Value RPCServer::doTx(Json::Value& params)
 
 	if(Transaction::isHexTxID(param1))
 	{ // transaction by ID
+		Json::Value ret;
+		uint256 txid(param1);
+		if(theApp->getWallet().getTxJson(txid, ret))
+			return ret;
+
+		Transaction::pointer txn=theApp->getMasterLedger().getCurrentLedger()->getTransaction(txid);
+		if(!txn) txn=theApp->getMasterLedger().getClosingLedger()->getTransaction(txid);
+		if(!txn) txn=Transaction::load(txid);
+		if(!txn) return JSONRPCError(500, "Transaction not found");
+		return txn->getJson(true);
 	}
 	
 	if(extractString(param2, params, 1))

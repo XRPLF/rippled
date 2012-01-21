@@ -890,3 +890,12 @@ void Wallet::addLocalTransactions(Json::Value& ret)
 			it!=mTransactions.end(); ++it)
 		ret[it->first.GetHex()]=it->second->getJson();	
 }
+
+bool Wallet::getTxJson(const uint256& txn, Json::Value& ret)
+{
+	boost::recursive_mutex::scoped_lock sl(mLock);
+	std::map<uint256, LocalTransaction::pointer>::iterator it=mTransactions.find(txn);
+	if(it==mTransactions.end()) return false;
+	ret=it->second->getJson();
+	return true;
+}

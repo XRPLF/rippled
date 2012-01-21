@@ -71,7 +71,9 @@ public:
 	bool getFamilyInfo(const uint160& family, std::string& name, std::string& comment);
 	bool getFullFamilyInfo(const uint160& family, std::string& name, std::string& comment,
 		std::string& pubGen, bool& isLocked);
+
 	Json::Value getFamilyJson(const uint160& family);
+	bool getTxJson(const uint256& txid, Json::Value& value);
 	void addLocalTransactions(Json::Value&);
 
 	static bool isHexPrivateKey(const std::string&);
