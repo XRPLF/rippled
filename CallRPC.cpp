@@ -78,6 +78,9 @@ int commandLineRPC(int argc, char *argv[])
 		Json::Value result=reply.get("result", Json::Value());
 		Json::Value error=reply.get("error", Json::Value());
 
+		if(result.isString() && result.asString()=="unknown command")
+			nRet=1;
+
 		if(!error.isNull())
 		{
 			// Error
