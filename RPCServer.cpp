@@ -383,6 +383,31 @@ Json::Value RPCServer::doSendTo(Json::Value& params)
 	return lt->getTransaction()->getJson(true);
 }
 
+Json::Value RPCServer::doTx(Json::Value& params)
+{
+	// tx
+	// tx <txID>
+	// tx <family> <seq>
+	// tx <account>
+
+	std::string param1, param2;
+	if(!extractString(param1, params, 0))
+	{ // all local transactions
+	}
+
+	if(Transaction::isHexTxID(param1))
+	{ // transaction by ID
+	}
+	
+	if(extractString(param2, params, 1))
+	{ // family seq
+	}
+	
+	// account
+
+	return "not implemented";	
+}
+
 Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params)
 {
 	std::cerr << "RPC:" << command << std::endl;
@@ -416,6 +441,7 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 	if(command=="unlock") return doUnlock(params);
 	if(command=="sendto") return doSendTo(params);
 	if(command=="connect") return doConnect(params);
+	if(command=="tx") return doTx(params);
 
 	return "unknown command";
 }

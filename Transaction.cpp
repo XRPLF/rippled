@@ -318,7 +318,23 @@ bool Transaction::convertToTransactions(uint32 firstLedgerSeq, uint32 secondLedg
 	return ret;
 }
 
-Json::Value Transaction::getJson(bool decorate) const
+static bool isHex(char j)
+{
+	if((j>='0') && (j<='9')) return true;
+	if((j>='A') && (j<='F')) return true;
+	if((j>='a') && (j<='f')) return true;
+	return false;
+}
+						
+bool Transaction::isHexTxID(const std::string& txid)
+{
+	if(txid.size()!=64) return false;
+	for(int i=0; i<64; i++)
+		if(!isHex(txid[i])) return false;
+	return true;
+}
+
+Json::Value Transaction::getJson(bool decorate, bool paid, bool credited) const
 {
 	Json::Value ret(Json::objectValue);
 	ret["TransactionID"]=mTransactionID.GetHex();
@@ -356,7 +372,10 @@ Json::Value Transaction::getJson(bool decorate) const
 		lac=theApp->getWallet().getLocalAccount(mAccountTo);
 		if(!!lac) destination=lac->getJson();
 	}
+	if(paid) source["Paid"]=true;
+	if(credited) destination["Credited"]=true;
 	ret["Source"]=source;
 	ret["Destination"]=destination;
 	return ret;
 }
+

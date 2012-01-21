@@ -1,4 +1,6 @@
 
+#include <boost/lexical_cast.hpp>
+
 #include "json/writer.h"
 
 #include "LocalTransaction.h"
@@ -35,4 +37,20 @@ bool LocalTransaction::makeTransaction()
 void LocalTransaction::performTransaction()
 {
 	mTransaction=theApp->getOPs().processTransaction(mTransaction);
+}
+
+Json::Value LocalTransaction::getJson() const
+{
+	if(!mTransaction)
+	{ // has no corresponding transaction
+		Json::Value ret(Json::objectValue);
+		ret["Status"]="unfunded";
+		ret["Amount"]=boost::lexical_cast<std::string>(mAmount);
+		Json::Value destination(Json::objectValue);
+        destination["AccountID"]=NewcoinAddress(mDestAcctID).GetString();
+        ret["Destination"]=destination;
+        return ret;		
+	}
+
+	return mTransaction->getJson(true, isPaid(), isCredited());
 }

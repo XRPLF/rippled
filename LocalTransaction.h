@@ -7,6 +7,8 @@
 
 #include <boost/shared_ptr.hpp>
 
+#include "json/value.h"
+
 #include "uint256.h"
 #include "Transaction.h"
 
@@ -49,6 +51,8 @@ public:
 
 	void performTransaction();	// perform this transaction as if we received it from the network
 	bool makeTransaction();		// create a transaction object according to these rules
+
+	Json::Value getJson() const;
 };
 
 #endif
