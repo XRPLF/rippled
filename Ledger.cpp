@@ -44,6 +44,11 @@ Ledger::Ledger(Ledger &prevLedger, uint64 ts) : mTimeStamp(ts),
 
 void Ledger::updateHash()
 {
+	if(mTransactionMap) mTransHash=mTransactionMap->getHash();
+	else mTransHash=0;
+	if(mAccountStateMap) mAccountHash=mAccountStateMap->getHash();
+	else mAccountHash=0;
+
 	Serializer s(116);
 	addRaw(s);
 	mHash=s.getSHA512Half();
@@ -265,7 +270,8 @@ Ledger::TransResult Ledger::hasTransaction(Transaction::pointer trans)
 
 Ledger::pointer Ledger::closeLedger(uint64 timeStamp)
 { // close this ledger, return a pointer to the next ledger
-  // CAUTION: New ledger needs its SHAMap's connected to storage
+	// CAUTION: New ledger needs its SHAMap's connected to storage
+	updateHash();
 	setClosed();
 	return Ledger::pointer(new Ledger(*this, timeStamp));
 }
@@ -407,4 +413,23 @@ Ledger::pointer Ledger::loadByHash(const uint256& ledgerHash)
 	sql.append(ledgerHash.GetHex());
 	sql.append("';");
 	return getSQL(sql);
+}
+
+void Ledger::addJson(Json::Value& ret)
+{
+	Json::Value ledger(Json::objectValue);
+
+	boost::recursive_mutex::scoped_lock sl(mLock);
+	ledger["ParentHash"]=mParentHash.GetHex();
+
+	if(mClosed)
+	{
+		ledger["Hash"]=mHash.GetHex();
+		ledger["TransactionHash"]=mTransHash.GetHex();
+		ledger["AccountHash"]=mAccountHash.GetHex();
+		ledger["Closed"]=true;
+		ledger["Accepted"]=mAccepted;
+	}
+	else ledger["Closed"]=false;
+	ret[boost::lexical_cast<std::string>(mLedgerSeq)]=ledger;
 }

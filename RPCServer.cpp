@@ -430,6 +430,25 @@ Json::Value RPCServer::doTx(Json::Value& params)
 	return "not implemented";	
 }
 
+Json::Value RPCServer::doLedger(Json::Value& params)
+{
+	// ledger
+	// ledger <seq>
+	// ledger <account>
+
+	int paramCount=getParamCount(params);
+
+	if(paramCount==0);
+	{
+		Json::Value ret(Json::objectValue);
+		theApp->getMasterLedger().getCurrentLedger()->addJson(ret);
+		theApp->getMasterLedger().getClosingLedger()->addJson(ret);
+		return ret;
+	}
+
+	return "not implemented";
+}
+
 Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params)
 {
 	std::cerr << "RPC:" << command << std::endl;
@@ -447,7 +466,8 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 			humanToPK(params[1u].asString(),pubKey);
 			theApp->getUNL().addNode(hanko,pubKey);
 			return "adding node";
-		}else return "invalid params";
+		}
+		else return "invalid params";
 	}
 	if(command=="getUNL")
 	{
@@ -464,6 +484,7 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 	if(command=="sendto") return doSendTo(params);
 	if(command=="connect") return doConnect(params);
 	if(command=="tx") return doTx(params);
+	if(command=="ledger") return doLedger(params);
 
 	return "unknown command";
 }

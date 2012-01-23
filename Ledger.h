@@ -7,6 +7,8 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
 
+#include "json/value.h"
+
 #include "Transaction.h"
 #include "types.h"
 #include "BitcoinUtil.h"
@@ -103,6 +105,8 @@ public:
 	Ledger::pointer closeLedger(uint64 timestamp);
 	bool isCompatible(boost::shared_ptr<Ledger> other);
 	bool signLedger(std::vector<unsigned char> &signature, const LocalHanko &hanko);
+
+	void addJson(Json::Value&);
 
 	static bool unitTest();
 };
