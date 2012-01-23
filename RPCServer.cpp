@@ -414,9 +414,18 @@ Json::Value RPCServer::doTx(Json::Value& params)
 	
 	if(extractString(param2, params, 1))
 	{ // family seq
+		LocalAccount::pointer account=theApp->getWallet().parseAccount(param1+":"+param2);
+		if(!account)
+			return JSONRPCError(500, "Account not found");
+		Json::Value ret;
+		if(!theApp->getWallet().getTxsJson(account->getAddress(), ret))
+			return JSONRPCError(500, "Unable to get wallet transactions");
+		return ret;
 	}
-	
-	// account
+	else
+	{
+		// account
+	}
 
 	return "not implemented";	
 }

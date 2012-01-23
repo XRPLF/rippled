@@ -74,6 +74,7 @@ public:
 
 	Json::Value getFamilyJson(const uint160& family);
 	bool getTxJson(const uint256& txid, Json::Value& value);
+	bool getTxsJson(const uint160& acctid, Json::Value& value);
 	void addLocalTransactions(Json::Value&);
 
 	static bool isHexPrivateKey(const std::string&);

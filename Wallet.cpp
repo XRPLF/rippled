@@ -899,3 +899,16 @@ bool Wallet::getTxJson(const uint256& txn, Json::Value& ret)
 	ret=it->second->getJson();
 	return true;
 }
+
+bool Wallet::getTxsJson(const uint160& account, Json::Value& ret)
+{
+	boost::recursive_mutex::scoped_lock sl(mLock);
+	for(std::map<uint256, LocalTransaction::pointer>::iterator it=mTransactions.begin();
+			it!=mTransactions.end(); ++it)
+	{
+		Transaction::pointer txn=it->second->getTransaction();
+		if(txn && ((account==txn->getFromAccount())||(account==txn->getToAccount())) )
+			ret[it->first.GetHex()]=it->second->getJson();	
+	}
+	return true;
+}
