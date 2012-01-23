@@ -33,6 +33,8 @@ void printHelp()
 	cout << "     familyinfo" << endl;
 	cout << "     connect <ip> [<port>]" << endl;
 	cout << "     sendto <destination> <amount> [<tag>]" << endl;
+	cout << "     tx" << endl;
+	cout << "     ledger" << endl;
 	cout << "     stop" << endl;
 
 }
