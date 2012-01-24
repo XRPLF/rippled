@@ -17,6 +17,8 @@
 #include "Wallet.h"
 #include "Conversion.h"
 #include "LocalTransaction.h"
+#include "NewcoinAddress.h"
+#include "AccountState.h"
 
 /*
 Just read from wire until the entire request is in.
@@ -198,15 +200,36 @@ Json::Value RPCServer::doCreateFamily(Json::Value& params)
 
 Json::Value RPCServer::doAccountInfo(Json::Value &params)
 {   // accountinfo <family>:<number>
+	// accountinfo <account>
 	std::string acct;
 	if(!extractString(acct, params, 0))
 		return JSONRPCError(500, "Invalid account identifier");
 
 	LocalAccount::pointer account=theApp->getWallet().parseAccount(acct);
-	if(!account)
-		return JSONRPCError(500, "Account not found");
+	if(account) return account->getJson();
 
-	return account->getJson();
+	uint160 acctid;
+	if(AccountState::isHexAccountID(acct)) acctid.SetHex(acct);
+	else
+	{
+		NewcoinAddress ad(acct);
+		if(ad.IsValid()) acctid=ad.GetHash160();
+	}
+	if(!acctid) return JSONRPCError(500, "Unable to parse account");
+
+	LocalAccount::pointer lac(theApp->getWallet().getLocalAccount(acctid));
+	if(!!lac) return lac->getJson();
+
+	AccountState::pointer as=theApp->getMasterLedger().getCurrentLedger()->getAccountState(acctid);
+	Json::Value ret(Json::objectValue);
+	if(as)
+		as->addJson(ret);
+	else
+	{
+		NewcoinAddress ad(acctid);
+		ret[ad.GetString()]="NotFound";
+	}
+	return ret;
 }
  
 Json::Value RPCServer::doNewAccount(Json::Value &params)

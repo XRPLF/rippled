@@ -7,6 +7,8 @@
 
 #include <boost/shared_ptr.hpp>
 
+#include "json/value.h"
+
 #include "types.h"
 #include "uint256.h"
 
@@ -48,8 +50,10 @@ public:
 		assert(mAccountSeq!=0);
 		mAccountSeq--;
 	}
+	static bool isHexAccountID(const std::string& acct);
 	
 	std::vector<unsigned char> getRaw() const;
+	void addJson(Json::Value& value);
 };
 
 #endif
