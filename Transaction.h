@@ -88,8 +88,7 @@ public:
 
 	// conversion function
 	static bool convertToTransactions(uint32 ourLedgerSeq, uint32 otherLedgerSeq,
-		bool checkFirstTransactions, bool checkSecondTransactions,
-		const std::map<uint256, std::pair<SHAMapItem::pointer,SHAMapItem::pointer> >& inMap,
+		bool checkFirstTransactions, bool checkSecondTransactions, const SHAMap::SHAMapDiff& inMap,
 		std::map<uint256, std::pair<Transaction::pointer, Transaction::pointer> >& outMap);
 
 	bool operator<(const Transaction&) const;

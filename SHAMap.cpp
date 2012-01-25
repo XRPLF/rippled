@@ -389,9 +389,6 @@ SHAMapLeafNode::pointer SHAMap::createLeaf(const SHAMapInnerNode& lowestParent, 
 	for(int depth=lowestParent.getDepth()+1; depth<SHAMapNode::leafDepth; depth++)
 	{
 		SHAMapInnerNode::pointer newNode(new SHAMapInnerNode(SHAMapNode(depth, id), mSeq));
-#ifdef DEBUG
-		std::cerr << "create node " << newNode->getString() << std::endl;
-#endif
 		mInnerNodeByID[*newNode]=newNode;
 	}
 	SHAMapLeafNode::pointer newLeaf(new SHAMapLeafNode(SHAMapNode(SHAMapNode::leafDepth, id), mSeq));

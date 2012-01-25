@@ -433,3 +433,73 @@ void Ledger::addJson(Json::Value& ret)
 	else ledger["Closed"]=false;
 	ret[boost::lexical_cast<std::string>(mLedgerSeq)]=ledger;
 }
+
+Ledger::pointer Ledger::switchPreviousLedger(Ledger::pointer oldPrevious, Ledger::pointer newPrevious, int limit)
+{
+	// Build a new ledger that can replace this ledger as the active ledger,
+	// with a different previous ledger. We assume our ledger is trusted, as is its
+	// previous ledger. We make no assumptions about the new previous ledger.
+
+	int count;
+
+	// 1) Validate sequences and make sure the specified ledger is a valid prior ledger
+	if(newPrevious->getLedgerSeq()!=oldPrevious->getLedgerSeq()) return Ledger::pointer();
+
+	// 2) Begin building a new ledger with the specified ledger as previous.
+	Ledger* newLedger=new Ledger(*newPrevious, mTimeStamp);
+
+	// 3) For any transactions in our previous ledger but not in the new previous ledger, add them to the set
+	SHAMap::SHAMapDiff mapDifferences;
+	std::map<uint256, std::pair<Transaction::pointer, Transaction::pointer> > TxnDiff;
+	if(!newPrevious->mTransactionMap->compare(oldPrevious->mTransactionMap, mapDifferences, limit))
+		return Ledger::pointer();
+	if(!Transaction::convertToTransactions(oldPrevious->getLedgerSeq(), newPrevious->getLedgerSeq(),
+			false, true, mapDifferences, TxnDiff))
+		return Ledger::pointer(); // new previous ledger contains invalid transactions
+
+	// 4) Try to add those transactions to the new ledger.
+	do
+	{
+		count=0;
+		std::map<uint256, std::pair<Transaction::pointer, Transaction::pointer> >::iterator it=TxnDiff.begin();
+		while(it!=TxnDiff.end())
+		{
+			Transaction::pointer& tx=it->second.second;
+			if(!tx || newLedger->addTransaction(tx))
+			{
+				count++;
+				TxnDiff.erase(++it);
+			}
+			else ++it;
+		}
+	} while(count!=0);
+
+	// WRITEME: Handle rejected transactions left in TxnDiff
+
+	// 5) Try to add transactions from this ledger to the new ledger.
+	// OPTIMIZME: This should use the transaction canonicalizer, rather than creating transactions
+	std::map<uint256, Transaction::pointer> txnMap;
+	for(SHAMapItem::pointer mit=peekTransactionMap()->peekFirstItem();
+			!!mit;
+			mit=peekTransactionMap()->peekNextItem(mit->getTag()))
+		txnMap.insert(std::make_pair(mit->getTag(), Transaction::pointer(new Transaction(mit->peekData(), false))));
+	do
+	{
+		count=0;
+		std::map<uint256, Transaction::pointer>::iterator it=txnMap.begin();
+		while(it!=txnMap.end())
+		{
+			if(newLedger->addTransaction(it->second))
+			{
+				count++;
+				txnMap.erase(++it);
+			}
+			else ++it;
+		}
+	} while(count!=0);
+
+
+	// WRITEME: Handle rejected transactions left in txnMap
+
+	return Ledger::pointer(newLedger);
+}

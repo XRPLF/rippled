@@ -96,6 +96,7 @@ public:
 	TransResult applyTransaction(Transaction::pointer trans);
 	TransResult removeTransaction(Transaction::pointer trans);
 	TransResult hasTransaction(Transaction::pointer trans);
+	Ledger::pointer switchPreviousLedger(Ledger::pointer oldPrevious, Ledger::pointer newPrevious,  int limit);
 
 	// database functions
 	static void saveAcceptedLedger(Ledger::pointer);
