@@ -47,6 +47,8 @@ class Serializer
 
 	// totality functions
 	int getLength() const { return mData.size(); }
+	const void* getDataPtr() const { return &mData.front(); }
+	void* getDataPtr() { return &mData.front(); }
 	const std::vector<unsigned char>& peekData() const { return mData; }
 	std::vector<unsigned char> getData() const { return mData; }
 	void secureErase() { memset(&(mData.front()), 0, mData.size()); erase(); }

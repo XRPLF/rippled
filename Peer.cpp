@@ -255,7 +255,7 @@ void Peer::processReadBuffer()
 
 	case newcoin::mtLEDGER:
 		{
-			newcoin::TMLedger msg;
+			newcoin::TMLedgerData msg;
 			if(msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 				recvLedger(msg);
 			else cout << "pars error: " << type << endl;
@@ -415,7 +415,7 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 {
 }
 
-void Peer::recvLedger(newcoin::TMLedger& packet)
+void Peer::recvLedger(newcoin::TMLedgerData& packet)
 {
 }
 
@@ -427,6 +427,15 @@ void Peer::sendHello()
 	h->set_ledgerindex(theApp->getOPs().getCurrentLedgerID());
 	h->set_nettime(theApp->getOPs().getNetworkTime());
 	h->set_ipv4port(theConfig.PEER_PORT);
+
+	Ledger::pointer closingLedger=theApp->getMasterLedger().getClosingLedger();
+	if(closingLedger->isClosed())
+	{
+		Serializer s(128);
+		closingLedger->addRaw(s);
+		h->set_closedledger(s.getDataPtr(), s.getLength());
+	}
+
 	PackedMessage::pointer packet(new PackedMessage(PackedMessage::MessagePointer(h), newcoin::mtHELLO));
 	sendPacket(packet);
 }

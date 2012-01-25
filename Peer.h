@@ -58,7 +58,7 @@ protected:
 	void recvGetAccount(newcoin::TMGetAccount& packet);
 	void recvAccount(newcoin::TMAccount& packet);
 	void recvGetLedger(newcoin::TMGetLedger& packet);
-	void recvLedger(newcoin::TMLedger& packet);
+	void recvLedger(newcoin::TMLedgerData& packet);
 
 public:
 	typedef boost::shared_ptr<Peer> pointer;
