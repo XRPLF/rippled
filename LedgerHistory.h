@@ -1,17 +1,16 @@
 #ifndef __LEDGERHISTORY__
 #define __LEDGERHISTORY__
 
+#include "TaggedCache.h"
 #include "Ledger.h"
 
 class LedgerHistory
 {
-	boost::recursive_mutex mLock;
-
-	std::map<uint32, Ledger::pointer> mLedgersByIndex;
-	std::map<uint256, Ledger::pointer> mLedgersByHash;
+	TaggedCache<uint256, Ledger> mLedgersByHash;
+	std::map<uint32, Ledger::pointer> mLedgersByIndex; // accepted ledgers
 
 public:
-	LedgerHistory() { ; }
+	LedgerHistory();
 	
 	void addLedger(Ledger::pointer ledger);
 	void addAcceptedLedger(Ledger::pointer ledger);
