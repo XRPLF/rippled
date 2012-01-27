@@ -412,8 +412,7 @@ bool SHAMap::hasItem(const uint256& id)
 	boost::recursive_mutex::scoped_lock sl(mLock);  
 	SHAMapLeafNode::pointer leaf=walkToLeaf(id, false, false);
 	if(!leaf) return false;
-	SHAMapItem::pointer item=leaf->findItem(id);
-	return (bool) item;
+	return leaf->hasItem(id);
 }
 
 bool SHAMap::delItem(const uint256& id)
