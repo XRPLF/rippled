@@ -428,9 +428,7 @@ Json::Value RPCServer::doTx(Json::Value& params)
 		if(theApp->getWallet().getTxJson(txid, ret))
 			return ret;
 
-		Transaction::pointer txn=theApp->getMasterLedger().getCurrentLedger()->getTransaction(txid);
-		if(!txn) txn=theApp->getMasterLedger().getClosingLedger()->getTransaction(txid);
-		if(!txn) txn=Transaction::load(txid);
+		Transaction::pointer txn=theApp->getMasterTransaction().fetch(txid, true);
 		if(!txn) return JSONRPCError(500, "Transaction not found");
 		return txn->getJson(true);
 	}

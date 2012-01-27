@@ -26,7 +26,7 @@ uint32 NetworkOPs::getCurrentLedgerID()
 
 Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, Peer* source)
 {
-	Transaction::pointer dbtx=Transaction::load(trans->getID());
+	Transaction::pointer dbtx=theApp->getMasterTransaction().fetch(trans->getID(), true);
 	if(dbtx) return dbtx;
 
 	if(!trans->checkSign())
@@ -47,7 +47,7 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 		std::cerr << "Transaction should be held" << std::endl;
 #endif
 		trans->setStatus(HELD);
-		trans->save();
+		theApp->getMasterTransaction().canonicalize(trans, true);
 		theApp->getMasterLedger().addHeldTransaction(trans);
 		return trans;
 	}
@@ -66,6 +66,7 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 		std::cerr << "Transaction is now included, synching to wallet" << std::endl;
 #endif
 		trans->setStatus(INCLUDED);
+		theApp->getMasterTransaction().canonicalize(trans, true);
 		theApp->getWallet().applyTransaction(trans);
 
 		newcoin::TMTransaction *tx=new newcoin::TMTransaction();
