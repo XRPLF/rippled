@@ -31,7 +31,7 @@ protected:
 	std::map<key_type, weak_data_ptr> mMap;		// Track stored objects
 
 public:
-	TaggedCache(int size, int age) : mTargetSize(size), mTargetAge(age), mLastSweep(0) { ; }
+	TaggedCache(int size, int age) : mTargetSize(size), mTargetAge(age), mLastSweep(time(NULL)) { ; }
 	int getTargetSize() const;
 	int getTargetAge() const;
 

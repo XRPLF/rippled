@@ -159,6 +159,11 @@ void Transaction::setStatus(TransStatus ts, uint32 lseq)
 	mInLedger=lseq;
 }
 
+void Transaction::saveTransaction(Transaction::pointer txn)
+{
+	txn->save();
+}
+
 bool Transaction::save() const
 {
 	if((mStatus==INVALID)||(mStatus==REMOVED)) return false;

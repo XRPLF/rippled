@@ -82,6 +82,7 @@ public:
 	void setStatus(TransStatus status) { mStatus=status; }
 
 	// database functions
+	static void saveTransaction(Transaction::pointer);
 	bool save() const;
 	static Transaction::pointer load(const uint256& id);
 	static Transaction::pointer findFrom(const uint160& fromID, uint32 seq);

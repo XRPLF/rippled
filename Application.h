@@ -8,6 +8,7 @@
 #include "PubKeyCache.h"
 #include "ScopedLock.h"
 #include "LedgerMaster.h"
+#include "TransactionMaster.h"
 #include "Wallet.h"
 #include "Peer.h"
 #include "NetworkOPs.h"
@@ -41,6 +42,7 @@ class Application
 	KnownNodeList mKnownNodes;
 	PubKeyCache mPKCache;
 	LedgerMaster mMasterLedger;
+	TransactionMaster mMasterTransaction;
 
 	DatabaseCon *mTxnDB, *mLedgerDB, *mWalletDB, *mHashNodeDB, *mNetNodeDB;
 
@@ -70,6 +72,7 @@ public:
 	boost::asio::io_service& getIOService() { return mIOService; }
 
 	LedgerMaster& getMasterLedger() { return mMasterLedger; }
+	TransactionMaster& getMasterTransaction() { return mMasterTransaction; }
 	
 	DatabaseCon* getTxnDB() { return mTxnDB; }
 	DatabaseCon* getLedgerDB() { return mLedgerDB; }
