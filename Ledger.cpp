@@ -82,7 +82,7 @@ AccountState::pointer Ledger::getAccountState(const uint160& accountID)
 	return AccountState::pointer(new AccountState(item->getData()));
 }
 
-uint64 Ledger::getBalance(const uint160& accountID)
+uint64 Ledger::getBalance(const uint160& accountID) const
 {
 	ScopedLock l(mTransactionMap->Lock());
 	SHAMapItem::pointer item=mAccountStateMap->peekItem(accountID.to256());
@@ -119,14 +119,24 @@ bool Ledger::delTransaction(const uint256& transID)
 	return mTransactionMap->delItem(transID); 
 }
 
-Transaction::pointer Ledger::getTransaction(const uint256& transID)
+bool Ledger::hasTransaction(const uint256& transID) const
 {
-	ScopedLock l(mTransactionMap->Lock());
+	return mTransactionMap->hasItem(transID);
+}
+
+Transaction::pointer Ledger::getTransaction(const uint256& transID) const
+{
 	SHAMapItem::pointer item=mTransactionMap->peekItem(transID);
 	if(!item) return Transaction::pointer();
-	Transaction::pointer trans(new Transaction(item->getData(), true));
-	if(trans->getStatus()==NEW) trans->setStatus(mClosed ? COMMITTED : INCLUDED, mLedgerSeq);
-	return trans;
+
+	Transaction::pointer txn=theApp->getMasterTransaction().fetch(transID, false);
+	if(txn) return txn;
+
+	txn=Transaction::pointer(new Transaction(item->getData(), true));
+	if(txn->getStatus()==NEW) txn->setStatus(mClosed ? COMMITTED : INCLUDED, mLedgerSeq);
+
+	theApp->getMasterTransaction().canonicalize(txn, false);
+	return txn;
 }
 
 Ledger::TransResult Ledger::applyTransaction(Transaction::pointer trans)
@@ -479,12 +489,17 @@ Ledger::pointer Ledger::switchPreviousLedger(Ledger::pointer oldPrevious, Ledger
 	// WRITEME: Handle rejected transactions left in TxnDiff
 
 	// 5) Try to add transactions from this ledger to the new ledger.
-	// OPTIMIZME: This should use the transaction canonicalizer, rather than creating transactions
 	std::map<uint256, Transaction::pointer> txnMap;
 	for(SHAMapItem::pointer mit=peekTransactionMap()->peekFirstItem();
 			!!mit;
 			mit=peekTransactionMap()->peekNextItem(mit->getTag()))
-		txnMap.insert(std::make_pair(mit->getTag(), Transaction::pointer(new Transaction(mit->peekData(), false))));
+	{
+		uint256 txnID=mit->getTag();
+		Transaction::pointer tx=theApp->getMasterTransaction().fetch(txnID, false);
+		if(!tx) tx=Transaction::pointer(new Transaction(mit->peekData(), false));
+		txnMap.insert(std::make_pair(txnID, tx));
+	}
+
 	do
 	{
 		count=0;

@@ -88,9 +88,10 @@ public:
 	SHAMap::pointer peekAccountStateMap() { return mAccountStateMap; }
 
 	// mid level functions
+	bool hasTransaction(const uint256& TransID) const;
 	AccountState::pointer getAccountState(const uint160& acctID);
-	Transaction::pointer getTransaction(const uint256& transID);
-	uint64 getBalance(const uint160& acctID);
+	Transaction::pointer getTransaction(const uint256& transID) const;
+	uint64 getBalance(const uint160& acctID) const;
 
 	// high level functions
 	TransResult applyTransaction(Transaction::pointer trans);
