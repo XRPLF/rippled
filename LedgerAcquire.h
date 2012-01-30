@@ -2,13 +2,15 @@
 #define __LEDGERACQUIRE__
 
 #include <vector>
+#include <map>
 
+#include "boost/enable_shared_from_this.hpp"
 #include "boost/function.hpp"
 
 #include "Ledger.h"
 #include "Peer.h"
 
-class LedgerAcquire
+class LedgerAcquire : public boost::enable_shared_from_this<LedgerAcquire>
 { // A ledger we are trying to acquire
 public:
 	typedef boost::shared_ptr<LedgerAcquire> pointer;
@@ -18,12 +20,14 @@ protected:
 	Ledger::pointer mLedger;
 	uint256 mHash;
 	bool mComplete, mFailed, mHaveBase, mHaveState, mHaveTransactions;
-	std::vector< boost::function<LedgerAcquire::pointer> > mOnComplete;
+	std::vector< boost::function<void (LedgerAcquire::pointer)> > mOnComplete;
 
 	std::list<boost::weak_ptr<Peer> > mPeers; // peers known to have this ledger
 
-	void done(void);
-	void timerEntry(void);
+	void done();
+	void trigger(bool timer);
+
+	static void timerEntry(boost::weak_ptr<LedgerAcquire>);
 
 public:
 	LedgerAcquire(const uint256& hash);
@@ -36,13 +40,14 @@ public:
 	bool isTransComplete() const 		{ return mHaveTransactions; }
 	Ledger::pointer getLedger()			{ return mLedger; }		
 
-	void addTrigger(boost::function<LedgerAcquire::pointer>);
+	void addOnComplete(boost::function<void (LedgerAcquire::pointer)>);
 
-	void peerHash(Peer::pointer);
-	void takeBase(std::vector<unsigned char> data);
-	void takeTxNode(std::list<uint256> hashes, std::list<std::vector<unsigned char> > data);
-	void takeAsNode(std::list<uint160> hashes, std::list<std::vector<unsigned char> > data);
-	void takeTx(std::list<uint256> hashes, std::list<std::vector<unsigned char> > data);
+	void peerHas(Peer::pointer);
+	void badPeer(Peer::pointer);
+	bool takeBase(std::vector<unsigned char> data);
+	bool takeTxNode(std::list<uint256> hashes, std::list<std::vector<unsigned char> > data);
+	bool takeAsNode(std::list<uint160> hashes, std::list<std::vector<unsigned char> > data);
+	bool takeTx(std::list<uint256> hashes, std::list<std::vector<unsigned char> > data);
 };
 
 class LedgerAcquireMaster
