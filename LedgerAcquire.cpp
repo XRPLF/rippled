@@ -51,7 +51,7 @@ void LedgerAcquire::peerHas(Peer::pointer ptr)
 			it=mPeers.erase(it);
 		else
 		{
-			if(pr==ptr) return;	// we already have this peer
+			if(pr->samePeer(ptr)) return;	// we already have this peer
 			++it;
 		}
 	}
@@ -69,7 +69,7 @@ void LedgerAcquire::badPeer(Peer::pointer ptr)
 			it=mPeers.erase(it);
 		else
 		{
-			if(pr==ptr)
+			if(ptr->samePeer(pr))
 			{ // We found a pointer to the bad peer
 				mPeers.erase(it);
 				return;

@@ -35,7 +35,6 @@ protected:
 	void processReadBuffer();
 	void start_read_header();
 	void start_read_body(unsigned msg_len);
-
 	
 	void sendPacketForce(PackedMessage::pointer packet);
 
@@ -77,6 +76,8 @@ public:
 
 	void connected(const boost::system::error_code& error);
 	void detach();
+	bool samePeer(Peer::pointer p) { return samePeer(*p); }
+	bool samePeer(const Peer& p) { return this == &p; }
 
 	void sendPacket(PackedMessage::pointer packet);
 	void sendLedgerProposal(Ledger::pointer ledger);
