@@ -5,7 +5,7 @@
 #include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
 
-SHAMap::SHAMap() : mSeq(0)
+SHAMap::SHAMap(uint32 seq) : mSeq(seq)
 {
 	root=SHAMapInnerNode::pointer(new SHAMapInnerNode(SHAMapNode(SHAMapNode::rootDepth, uint256()), mSeq));
 	mInnerNodeByID[*root]=root;

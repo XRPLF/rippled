@@ -42,7 +42,7 @@ private:
 	uint256 mHash, mParentHash, mTransHash, mAccountHash;
 	uint64 mFeeHeld, mTimeStamp;
 	uint32 mLedgerSeq;
-	bool mClosed, mValidHash, mAccepted;
+	bool mClosed, mValidHash, mAccepted, mImmutable;
 	
 	SHAMap::pointer mTransactionMap, mAccountStateMap;
 
@@ -66,6 +66,7 @@ public:
 	Ledger(const uint160& masterID, uint64 startAmount); // used for the starting bootstrap ledger
 	Ledger(const uint256 &parentHash, const uint256 &transHash, const uint256 &accountHash,
 	 uint64 feeHeld, uint64 timeStamp, uint32 ledgerSeq); // used for received ledgers
+	Ledger(const std::vector<unsigned char>& rawLedger);
 
 	void setClosed() { mClosed=true; }
 	void setAccepted() { mAccepted=true; }

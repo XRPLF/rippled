@@ -238,7 +238,7 @@ protected:
 public:
 
 	// build new map
-	SHAMap();
+	SHAMap(uint32 seq=0);
 
 	// hold the map stable across operations
 	ScopedLock Lock() const { return ScopedLock(mLock); }
@@ -293,6 +293,9 @@ public:
 	bool compare(SHAMap::pointer otherMap, SHAMapDiff& differences, int maxCount);
 
 	int flushDirty(int maxNodes, HashedObjectType t, uint32 seq);
+
+	void setSeq(uint32 seq) { mSeq=seq; }
+	uint32 getSeq() { return mSeq; }
 
 	// overloads for backed maps
 	bool fetchNode(const uint256& hash, std::vector<unsigned char>& rawNode);

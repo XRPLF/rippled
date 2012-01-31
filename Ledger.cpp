@@ -12,12 +12,14 @@
 #include "Conversion.h"
 #include "BitcoinUtil.h"
 #include "Wallet.h"
+#include "BinaryFormats.h"
 
 Ledger::Ledger(const uint160& masterID, uint64 startAmount) :
-	mFeeHeld(0), mTimeStamp(0), mLedgerSeq(0), mClosed(false), mValidHash(false), mAccepted(false)
+	mFeeHeld(0), mTimeStamp(0), mLedgerSeq(0),
+	mClosed(false), mValidHash(false), mAccepted(false), mImmutable(false)
 {
 	mTransactionMap=SHAMap::pointer(new SHAMap());
-	mAccountStateMap=SHAMap::pointer(new SHAMap());
+	mAccountStateMap=SHAMap::pointer(new SHAMap(0));
 	
 	AccountState::pointer startAccount=AccountState::pointer(new AccountState(masterID));
 	startAccount->credit(startAmount);
@@ -29,25 +31,48 @@ Ledger::Ledger(const uint256 &parentHash, const uint256 &transHash, const uint25
 	uint64 feeHeld, uint64 timeStamp, uint32 ledgerSeq)
 		: mParentHash(parentHash), mTransHash(transHash), mAccountHash(accountHash),
 		mFeeHeld(feeHeld), mTimeStamp(timeStamp), mLedgerSeq(ledgerSeq),
-		mClosed(false), mValidHash(false), mAccepted(false)
+		mClosed(false), mValidHash(false), mAccepted(false), mImmutable(false)
 {
 	updateHash();
 }
 
 Ledger::Ledger(Ledger &prevLedger, uint64 ts) : mTimeStamp(ts), 
-	mClosed(false), mValidHash(false), mAccepted(false),
+	mClosed(false), mValidHash(false), mAccepted(false), mImmutable(false),
 	mTransactionMap(new SHAMap()), mAccountStateMap(prevLedger.mAccountStateMap)
 {
 	mParentHash=prevLedger.getHash();
 	mLedgerSeq=prevLedger.mLedgerSeq+1;
+	mAccountStateMap->setSeq(mLedgerSeq);
+}
+
+Ledger::Ledger(const std::vector<unsigned char>& rawLedger) : mFeeHeld(0), mTimeStamp(0),
+	mLedgerSeq(0), mClosed(false), mValidHash(false), mAccepted(false), mImmutable(true)
+{
+	Serializer s(rawLedger);
+	// 32seq, 64fee, 256phash, 256thash, 256ahash, 64ts
+	if(!s.get32(mLedgerSeq, BLgPIndex)) return;
+	if(!s.get64(mFeeHeld, BLgPFeeHeld)) return;
+	if(!s.get256(mParentHash, BLgPPrevLg)) return;
+	if(!s.get256(mTransHash, BLgPTxT)) return;
+	if(!s.get256(mAccountHash, BLgPAcT)) return;
+	if(!s.get64(mTimeStamp, BLgPClTs)) return;
+	updateHash();
+	if(mValidHash)
+	{
+		mTransactionMap=SHAMap::pointer(new SHAMap());
+		mAccountStateMap=SHAMap::pointer(new SHAMap(mLedgerSeq));
+	}
 }
 
 void Ledger::updateHash()
 {
-	if(mTransactionMap) mTransHash=mTransactionMap->getHash();
-	else mTransHash=0;
-	if(mAccountStateMap) mAccountHash=mAccountStateMap->getHash();
-	else mAccountHash=0;
+	if(!mImmutable)
+	{
+		if(mTransactionMap) mTransHash=mTransactionMap->getHash();
+		else mTransHash=0;
+		if(mAccountStateMap) mAccountHash=mAccountStateMap->getHash();
+		else mAccountHash=0;
+	}
 
 	Serializer s(116);
 	addRaw(s);
