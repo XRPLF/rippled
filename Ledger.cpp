@@ -478,9 +478,7 @@ Ledger::pointer Ledger::switchPreviousLedger(Ledger::pointer oldPrevious, Ledger
 			if(!tx || newLedger->addTransaction(tx))
 			{
 				count++;
-				std::map<uint256, std::pair<Transaction::pointer, Transaction::pointer> >::iterator it2=it;
-				++it;
-				TxnDiff.erase(it2);
+				TxnDiff.erase(it++);
 			}
 			else ++it;
 		}
@@ -509,9 +507,7 @@ Ledger::pointer Ledger::switchPreviousLedger(Ledger::pointer oldPrevious, Ledger
 			if(newLedger->addTransaction(it->second))
 			{
 				count++;
-				std::map<uint256, Transaction::pointer>::iterator it2=it;
-				++it;
-				txnMap.erase(it2);
+				txnMap.erase(it++);
 			}
 			else ++it;
 		}
