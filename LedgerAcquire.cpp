@@ -81,8 +81,16 @@ void LedgerAcquire::badPeer(Peer::pointer ptr)
 
 bool LedgerAcquire::takeBase(const std::vector<unsigned char>& data)
 { // Return value: true=normal, false=bad data
+	boost::recursive_mutex::scoped_lock sl(mLock);
 	if(mHaveBase) return true;
-	// WRITEME
+	Ledger* ledger=new Ledger(data);
+	if(ledger->getHash()!=mHash)
+	{
+		delete ledger;
+		return false;
+	}
+	mLedger=Ledger::pointer(ledger);
+	mHaveBase=true;
 	return true;
 }
 
