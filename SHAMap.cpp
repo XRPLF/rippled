@@ -1,9 +1,10 @@
-#include "Serializer.h"
-#include "BitcoinUtil.h"
-#include "SHAMap.h"
 
 #include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
+
+#include "Serializer.h"
+#include "BitcoinUtil.h"
+#include "SHAMap.h"
 
 SHAMap::SHAMap(uint32 seq) : mSeq(seq)
 {
@@ -510,6 +511,41 @@ int SHAMap::flushDirty(int maxNodes, HashedObjectType t, uint32 seq)
 	}
 
 	return flushed;
+}
+
+SHAMapInnerNode::pointer SHAMap::getInnerNode(const SHAMapNode& node)
+{
+	boost::recursive_mutex::scoped_lock sl(mLock);
+	SHAMapInnerNode::pointer inNode=root;
+	for(int i=0; i<SHAMapNode::leafDepth; i++)
+	{
+		int branch=inNode->selectBranch(node.getNodeID());
+		if( (branch<0) || (inNode->isEmptyBranch(branch)) ) return SHAMapInnerNode::pointer();
+		inNode=getInner(inNode->getChildNodeID(branch), inNode->getChildHash(branch), false);
+		if(!inNode) return inNode;
+		if(inNode->getDepth()==node.getDepth())
+		{
+			if((*inNode)!=node) return SHAMapInnerNode::pointer();
+			return inNode;
+		}
+	}
+	return SHAMapInnerNode::pointer();
+}
+
+SHAMapLeafNode::pointer SHAMap::getLeafNode(const SHAMapNode& leaf)
+{
+	boost::recursive_mutex::scoped_lock sl(mLock);
+	SHAMapInnerNode::pointer inNode=root;
+	for(int i=0; inNode->getDepth()<SHAMapNode::leafDepth; i++)
+	{
+		int branch=inNode->selectBranch(leaf.getNodeID());
+		if( (branch<0) || (inNode->isEmptyBranch(branch)) ) return SHAMapLeafNode::pointer();
+		inNode=getInner(inNode->getChildNodeID(branch), inNode->getChildHash(branch), false);
+		if(!inNode) return SHAMapLeafNode::pointer();
+	}
+	int branch=inNode->selectBranch(leaf.getNodeID());
+	if( (branch<0) || (inNode->isEmptyBranch(branch)) ) return SHAMapLeafNode::pointer();
+	return getLeaf(inNode->getChildNodeID(branch), inNode->getChildHash(branch), false);
 }
 
 void SHAMap::dump()

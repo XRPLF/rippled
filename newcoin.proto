@@ -190,7 +190,7 @@ enum TMLedgerInfoType {
 message TMGetLedger {
 	required bytes ledgerHash		= 1;
 	required TMLedgerInfoType type	= 2;
-	repeated LedgerNodes nodes		= 3;
+	repeated bytes nodes			= 3;
 }
 
 message TMLedgerData {

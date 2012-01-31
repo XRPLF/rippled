@@ -282,13 +282,13 @@ void SHAMapLeafNode::dump()
 	std::cerr << "  " << mItems.size() << " items" << std::endl;
 }
 
-SHAMapInnerNode::SHAMapInnerNode(const SHAMapNode& id, uint32 seq) : SHAMapNode(id), mSeq(seq)
+SHAMapInnerNode::SHAMapInnerNode(const SHAMapNode& id, uint32 seq) : SHAMapNode(id), mSeq(seq), mFullBelow(false)
 { // can be root
 	assert(id.getDepth()<SHAMapNode::leafDepth);
 }
 
 SHAMapInnerNode::SHAMapInnerNode(const SHAMapNode& id, const std::vector<unsigned char>& contents, uint32 seq)
-	: SHAMapNode(id), mSeq(seq)
+	: SHAMapNode(id), mSeq(seq), mFullBelow(false)
 {
 	assert(!id.isLeaf());
 	assert(contents.size()==32*256/8);
@@ -298,7 +298,7 @@ SHAMapInnerNode::SHAMapInnerNode(const SHAMapNode& id, const std::vector<unsigne
 }
 
 SHAMapInnerNode::SHAMapInnerNode(const SHAMapInnerNode& node, uint32 seq) : SHAMapNode(node), mHash(node.mHash),
-		mSeq(seq)
+		mSeq(seq), mFullBelow(false)
 {
 	assert(!node.isLeaf());
 	memcpy(mHashes, node.mHashes, sizeof(mHashes));

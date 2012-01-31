@@ -67,8 +67,8 @@ HEADERS = \
 
 SRCS= keystore.cpp BitcoinUtil.cpp \
  main.cpp Hanko.cpp Transaction.cpp SHAMap.cpp SHAMapNodes.cpp Serializer.cpp Ledger.cpp \
- AccountState.cpp Wallet.cpp NewcoinAddress.cpp Config.cpp PackedMessage.cpp \
- Application.cpp TimingService.cpp KnownNodeList.cpp ConnectionPool.cpp Peer.cpp \
+ AccountState.cpp Wallet.cpp NewcoinAddress.cpp Config.cpp PackedMessage.cpp SHAMapSync.cpp \
+ Application.cpp TimingService.cpp KnownNodeList.cpp ConnectionPool.cpp Peer.cpp LedgerAcquire.cpp \
  PeerDoor.cpp RPCDoor.cpp RPCServer.cpp rpc.cpp Conversion.cpp RequestParser.cpp HashedObject.cpp \
  UniqueNodeList.cpp PubKeyCache.cpp SHAMapDiff.cpp DeterministicKeys.cpp LedgerMaster.cpp \
  LedgerHistory.cpp NetworkOPs.cpp CallRPC.cpp DBInit.cpp LocalTransaction.cpp TransactionMaster.cpp

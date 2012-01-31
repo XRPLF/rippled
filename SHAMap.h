@@ -167,6 +167,7 @@ private:
 	uint256		mHash;
 	uint256		mHashes[32];
 	uint32		mSeq;
+	bool		mFullBelow;	// we have all nodes below this node
 
 	bool updateHash();
 
@@ -188,6 +189,8 @@ public:
 
 	virtual bool isPopulated() const { return true; }
 
+	bool isFullBelow(void) const		{ return mFullBelow; }
+	void setFullBelow(void)				{ mFullBelow=true; }
 	bool isEmptyBranch(int m) const		{ return !mHashes[m]; }
 	const uint256& getNodeHash() const  { return mHash; }
 	const uint256& getChildHash(int m) const;
@@ -282,11 +285,10 @@ public:
 	SHAMapItem::pointer peekNextItem(const uint160& u) { return peekNextItem(u.to256()); }
 
 	// comparison/sync functions
-	void getMissingNodes(std::vector<SHAMapNode>& nodeHashes, int max);
-	void getMissingObjects(std::vector<uint256>& objectHashes, int max);
-	bool getNodeFat(const SHAMapNode& node, std::vector<uint256>& nodeHashes, int max);
-	bool getNodeFat(const uint256& hash, std::vector<uint256>& nodeHashes, int max);
-	bool addKnownNode(const std::vector<unsigned char>& rawNode);
+	void getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint256>& hashes, int max);
+	bool getNodeFat(const SHAMapNode& node, std::vector<SHAMapNode>& nodeIDs,
+	 std::list<std::vector<unsigned char> >& rawNode);
+	bool addKnownNode(const SHAMapNode& nodeID, const std::vector<unsigned char>& rawNode);
 
 	// caution: otherMap must be accessed only by this function
 	// return value: true=successfully completed, false=too different
