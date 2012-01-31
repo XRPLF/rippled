@@ -180,17 +180,23 @@ message LedgerNodes {
 	required bytes nodedata			= 2;
 }
 
+enum TMLedgerInfoType {
+	BASE	= 0;	// basic ledger info
+	TX_NODE = 1;	// transaction node
+	AS_NODE = 2;	// account state node
+	TX = 3;			// transaction
+}
+
 message TMGetLedger {
-	optional bytes hash				= 1;
-	optional uint32 ledgerSeq		= 2;
+	required bytes ledgerHash		= 1;
+	required TMLedgerInfoType type	= 2;
 	repeated LedgerNodes nodes		= 3;
-	optional uint32 seq				= 4;	// used to match replies to queries
 }
 
 message TMLedgerData {
-	required bytes hash				= 1;
-	repeated LedgerNodes nodes		= 2;
-	optional uint32 seq				= 3;	// matches seq from query
+	required bytes ledgerHash		= 1;
+	required TMLedgerInfoType type	= 2;
+	repeated LedgerNodes nodes		= 3;
 }
 
 
