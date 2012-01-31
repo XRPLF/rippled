@@ -234,6 +234,7 @@ protected:
 	SHAMapLeafNode::pointer returnLeaf(SHAMapLeafNode::pointer leaf, bool modify);
 	SHAMapInnerNode::pointer getInner(const SHAMapNode& id, const uint256& hash, bool modify);
 	SHAMapInnerNode::pointer returnNode(SHAMapInnerNode::pointer node, bool modify);
+	SHAMapInnerNode::pointer walkTo(const SHAMapNode& id);
 
 	SHAMapItem::pointer firstBelow(SHAMapInnerNode::pointer);
 	SHAMapItem::pointer lastBelow(SHAMapInnerNode::pointer);
@@ -289,6 +290,7 @@ public:
 	void getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint256>& hashes, int max);
 	bool getNodeFat(const SHAMapNode& node, std::vector<SHAMapNode>& nodeIDs,
 	 std::list<std::vector<unsigned char> >& rawNode);
+	bool addRootNode(const uint256& hash, const std::vector<unsigned char>& rootNode);
 	bool addKnownNode(const SHAMapNode& nodeID, const std::vector<unsigned char>& rawNode);
 
 	// caution: otherMap must be accessed only by this function

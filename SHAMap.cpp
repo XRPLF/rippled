@@ -118,6 +118,29 @@ SHAMapLeafNode::pointer SHAMap::walkToLeaf(const uint256& id, bool create, bool 
 	return returnLeaf(ln, modify);
 }
 
+SHAMapInnerNode::pointer SHAMap::walkTo(const SHAMapNode& id)
+{ // walk down to this ID, as far as possible
+	SHAMapInnerNode::pointer inNode=root;
+	int i=0;
+	do
+	{
+		int branch=inNode->selectBranch(id.getNodeID());
+		if(branch<0) // somehow we got on the wrong branch
+			throw SHAMapException(InvalidNode);
+		if (inNode->isEmptyBranch(branch)) // we know no branches below this one
+			return inNode;
+		if(!inNode->isChildLeaf()) // this is the last inner node
+			return inNode;
+
+		SHAMapInnerNode::pointer next=getInner(inNode->getChildNodeID(branch), inNode->getChildHash(branch), false);
+		if(!next) // we don't have the next node
+			return inNode;
+		assert(next->getDepth() == (inNode->getDepth()+1));
+		inNode=next;
+		assert(i++ < SHAMapNode::leafDepth);
+	} while(1);
+}
+
 SHAMapLeafNode::pointer SHAMap::getLeaf(const SHAMapNode& id, const uint256& hash, bool modify)
 { // retrieve a leaf whose node hash is known
 	assert(!!hash);
