@@ -266,6 +266,7 @@ public:
 	bool addItem(const SHAMapItem& i);
 	bool updateItem(const SHAMapItem& i);
 	SHAMapItem getItem(const uint256& id);
+	uint256 getHash() const { return root->getNodeHash(); }
 	uint256 getHash() { return root->getNodeHash(); }
 
 	// save a copy if you have a temporary anyway
@@ -302,7 +303,10 @@ public:
 	// overloads for backed maps
 	bool fetchNode(const uint256& hash, std::vector<unsigned char>& rawNode);
 
+	bool operator==(const SHAMap& s) { return getHash()==s.getHash(); }
+
 	static bool TestSHAMap();
+	bool deepCompare(SHAMap& other);
 	virtual void dump();
 };
 
