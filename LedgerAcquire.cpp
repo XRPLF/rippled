@@ -40,35 +40,65 @@ void LedgerAcquire::trigger(bool timer)
 	// WRITEME
 }
 
-void LedgerAcquire::peerHas(Peer::pointer)
+void LedgerAcquire::peerHas(Peer::pointer ptr)
 {
-	// WRITEME
+	boost::recursive_mutex::scoped_lock sl(mLock);
+	std::list<boost::weak_ptr<Peer> >::iterator it=mPeers.begin();
+	while(it!=mPeers.end())
+	{
+		Peer::pointer pr=it->lock();
+		if(!pr) // we have a dead entry, remove it
+			it=mPeers.erase(it);
+		else
+		{
+			if(pr==ptr) return;	// we already have this peer
+			++it;
+		}
+	}
+	mPeers.push_back(ptr);
 }
 
-void LedgerAcquire::badPeer(Peer::pointer)
+void LedgerAcquire::badPeer(Peer::pointer ptr)
 {
-	// WRITEME
+	boost::recursive_mutex::scoped_lock sl(mLock);
+	std::list<boost::weak_ptr<Peer> >::iterator it=mPeers.begin();
+	while(it!=mPeers.end())
+	{
+		Peer::pointer pr=it->lock();
+		if(!pr) // we have a dead entry, remove it
+			it=mPeers.erase(it);
+		else
+		{
+			if(pr==ptr)
+			{ // We found a pointer to the bad peer
+				mPeers.erase(it);
+				return;
+			}
+			++it;
+		}
+	}
 }
 
-bool LedgerAcquire::takeBase(std::vector<unsigned char> data)
+bool LedgerAcquire::takeBase(const std::vector<unsigned char>& data)
+{ // Return value: true=normal, false=bad data
+	if(mHaveBase) return true;
+	// WRITEME
+	return true;
+}
+
+bool LedgerAcquire::takeTxNode(const std::list<uint256>& hashes, const std::list<std::vector<unsigned char> >& data)
 {
 	// WRITEME
 	return true;
 }
 
-bool LedgerAcquire::takeTxNode(std::list<uint256> hashes, std::list<std::vector<unsigned char> > data)
+bool LedgerAcquire::takeAsNode(const std::list<uint160>& hashes, const std::list<std::vector<unsigned char> >& data)
 {
 	// WRITEME
 	return true;
 }
 
-bool LedgerAcquire::takeAsNode(std::list<uint160> hashes, std::list<std::vector<unsigned char> > data)
-{
-	// WRITEME
-	return true;
-}
-
-bool LedgerAcquire::takeTx(std::list<uint256> hashes, std::list<std::vector<unsigned char> > data)
+bool LedgerAcquire::takeTx(const std::list<uint256>& hashes, const std::list<std::vector<unsigned char> >& data)
 {
 	// WRITEME
 	return true;

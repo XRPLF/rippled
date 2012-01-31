@@ -44,10 +44,10 @@ public:
 
 	void peerHas(Peer::pointer);
 	void badPeer(Peer::pointer);
-	bool takeBase(std::vector<unsigned char> data);
-	bool takeTxNode(std::list<uint256> hashes, std::list<std::vector<unsigned char> > data);
-	bool takeAsNode(std::list<uint160> hashes, std::list<std::vector<unsigned char> > data);
-	bool takeTx(std::list<uint256> hashes, std::list<std::vector<unsigned char> > data);
+	bool takeBase(const std::vector<unsigned char>& data);
+	bool takeTxNode(const std::list<uint256>& hashes, const std::list<std::vector<unsigned char> >& data);
+	bool takeAsNode(const std::list<uint160>& hashes, const std::list<std::vector<unsigned char> >& data);
+	bool takeTx(const std::list<uint256>& hashes, const std::list<std::vector<unsigned char> >& data);
 };
 
 class LedgerAcquireMaster
