@@ -229,9 +229,10 @@ protected:
 	SHAMapLeafNode::pointer createLeaf(const SHAMapInnerNode& lowestParent, const uint256& id);
 	SHAMapLeafNode::pointer checkCacheLeaf(const SHAMapNode&);
 	SHAMapLeafNode::pointer walkToLeaf(const uint256& id, bool create, bool modify);
-
 	SHAMapLeafNode::pointer getLeaf(const SHAMapNode& id, const uint256& hash, bool modify);
 	SHAMapLeafNode::pointer returnLeaf(SHAMapLeafNode::pointer leaf, bool modify);
+
+	SHAMapInnerNode::pointer checkCacheNode(const SHAMapNode&);
 	SHAMapInnerNode::pointer getInner(const SHAMapNode& id, const uint256& hash, bool modify);
 	SHAMapInnerNode::pointer returnNode(SHAMapInnerNode::pointer node, bool modify);
 	SHAMapInnerNode::pointer walkTo(const SHAMapNode& id);

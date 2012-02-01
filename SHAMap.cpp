@@ -18,7 +18,7 @@ void SHAMap::dirtyUp(const uint256& id)
 #ifdef DEBUG
 	std::cerr << "dirtyUp(" << id.GetHex() << ")" << std::endl;
 #endif
-	SHAMapLeafNode::pointer leaf=mLeafByID[SHAMapNode(SHAMapNode::leafDepth, id)];
+	SHAMapLeafNode::pointer leaf=checkCacheLeaf(SHAMapNode(SHAMapNode::leafDepth, id));
 	if(!leaf) throw SHAMapException(MissingNode);
 
 	uint256 hVal=leaf->getNodeHash();
@@ -33,7 +33,7 @@ void SHAMap::dirtyUp(const uint256& id)
 
 	for(int depth=SHAMapNode::leafDepth-1; depth>=0; depth--)
 	{ // walk up the tree to the root updating nodes
-		SHAMapInnerNode::pointer node=mInnerNodeByID[SHAMapNode(depth, leaf->getNodeID())];
+		SHAMapInnerNode::pointer node=checkCacheNode(SHAMapNode(depth, leaf->getNodeID()));
 		if(!node) throw SHAMapException(MissingNode);
 		if(!node->setChildHash(node->selectBranch(id), hVal))
 		{
@@ -60,12 +60,17 @@ void SHAMap::dirtyUp(const uint256& id)
 SHAMapLeafNode::pointer SHAMap::checkCacheLeaf(const SHAMapNode& iNode)
 {
 	assert(iNode.isLeaf());
-	SHAMapLeafNode::pointer leaf=mLeafByID[iNode];
-#ifdef ST_DEBUG
-	if(!leaf) std::cerr << "Leaf(" << iNode.getString() << ") not in cache" << std::endl;
-	else std::cerr << "Leaf(" << iNode.getString() << ") found in cache" << std::endl;
-#endif
-	return leaf;
+	std::map<SHAMapNode, SHAMapLeafNode::pointer>::iterator it=mLeafByID.find(iNode);
+	if(it==mLeafByID.end()) return SHAMapLeafNode::pointer();
+	return it->second;
+}
+
+SHAMapInnerNode::pointer SHAMap::checkCacheNode(const SHAMapNode& iNode)
+{
+	assert(!iNode.isLeaf());
+	std::map<SHAMapNode, SHAMapInnerNode::pointer>::iterator it=mInnerNodeByID.find(iNode);
+	if(it==mInnerNodeByID.end()) return SHAMapInnerNode::pointer();
+	return it->second;
 }
 
 
@@ -146,20 +151,20 @@ SHAMapLeafNode::pointer SHAMap::getLeaf(const SHAMapNode& id, const uint256& has
 	assert(!!hash);
 	if(!id.isLeaf()) return SHAMapLeafNode::pointer();
 
-	SHAMapLeafNode::pointer leaf=mLeafByID[id];			// is the leaf in memory
+	SHAMapLeafNode::pointer leaf=checkCacheLeaf(id);
 	if(leaf) return returnLeaf(leaf, modify);
 
 	std::vector<unsigned char> leafData;
 	if(!fetchNode(hash, leafData)) throw SHAMapException(MissingNode);
 	leaf=SHAMapLeafNode::pointer(new SHAMapLeafNode(id, leafData, mSeq));
 	if(leaf->getNodeHash()!=hash) throw SHAMapException(InvalidNode);
-	mLeafByID[id]=leaf;
+	mLeafByID.insert(std::make_pair(id, leaf));
 	return leaf;
 }
 
 SHAMapInnerNode::pointer SHAMap::getInner(const SHAMapNode& id, const uint256& hash, bool modify)
 { // retrieve an inner node whose node hash is known
-	SHAMapInnerNode::pointer node=mInnerNodeByID[id];
+	SHAMapInnerNode::pointer node=checkCacheNode(id);
 	if(node) return returnNode(node, modify);
 	
 	std::vector<unsigned char> rawNode;
@@ -313,7 +318,7 @@ SHAMapItem::pointer SHAMap::peekNextItem(const uint256& id)
 
 	for(int depth=SHAMapNode::leafDepth-1; depth>=0; depth--)
 	{ // walk up the tree until we find a node with a subsequent child
-		SHAMapInnerNode::pointer node=mInnerNodeByID[SHAMapNode(depth, id)];
+		SHAMapInnerNode::pointer node=checkCacheNode(SHAMapNode(depth, id));
 		if(!node)
 		{
 #ifdef DEBUG
@@ -367,7 +372,7 @@ SHAMapItem::pointer SHAMap::peekPrevItem(const uint256& id)
 
 	for(int depth=SHAMapNode::leafDepth-1; depth>=0; depth--)
 	{ // walk up the tree until we find a node with a previous child
-		SHAMapInnerNode::pointer node=mInnerNodeByID[SHAMapNode(depth, id)];
+		SHAMapInnerNode::pointer node=checkCacheNode(SHAMapNode(depth, id));
 		if(!node)
 		{
 #ifdef DEBUG
