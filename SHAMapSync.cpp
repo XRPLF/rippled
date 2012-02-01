@@ -105,15 +105,109 @@ bool SHAMap::getNodeFat(const SHAMapNode& wanted, std::vector<SHAMapNode>& nodeI
 	return ret;
 }
 
-bool SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigned char>& rawNode)
+bool SHAMap::addRootNode(const uint256& hash, const std::vector<unsigned char>& rootNode)
 {
-	// WRITEME
+	boost::recursive_mutex::scoped_lock sl(mLock);
+
+	// we already have a root node
+	if(root->getNodeHash()!=0)
+	{
+#ifdef DEBUG
+		std::cerr << "got root node, already have one" << std::endl;
+#endif
+		assert(root->getNodeHash()==hash);
+		return true;
+	}
+
+	SHAMapInnerNode::pointer node=SHAMapInnerNode::pointer(new SHAMapInnerNode(SHAMapNode(), rootNode, 0));
+	if(!node) return false;
+	if(node->getNodeHash()!=hash) return false;
+
+	root=node;
+	mInnerNodeByID[*node]=node;
+	if(mDirtyInnerNodes) (*mDirtyInnerNodes)[*node]=node;
+	return true;
+}
+
+bool SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigned char>& rawNode)
+{ // return value: true=okay, false=error
+	assert(!node.isRoot());
+
+	boost::recursive_mutex::scoped_lock sl(mLock);
+
+	if(node.isLeaf())
+	{
+		if(checkCacheLeaf(node)) return true;
+	}
+	else
+	{
+		if(checkCacheNode(node)) return true;
+	}
+
+	SHAMapInnerNode::pointer iNode=walkTo(node);
+	if(!iNode)
+	{	// we should always have a root
+		assert(false);
+		return true;
+	}
+
+	if(iNode->getDepth()==node.getDepth())
+	{
+#ifdef DEBUG
+		std::cerr << "got inner node, already had it (late)" << std::endl;
+#endif
+		return true;
+	}
+
+	if(iNode->getDepth()!=(node.getDepth()-1))
+	{ // Either this node is broken or we didn't request it
+#ifdef DEBUG
+		std::cerr << "got inner node, unable to hook it" << std::endl;
+#endif
+		return false;
+	}
+
+	int branch=iNode->selectBranch(node.getNodeID());
+	if(branch<0)
+	{
+		assert(false);
+		return false;
+	}
+	uint256 hash=iNode->getChildHash(branch);
+	if(!hash) return false;
+
+	if(node.isLeaf())
+	{ // leaf node
+		SHAMapLeafNode::pointer leaf=SHAMapLeafNode::pointer(new SHAMapLeafNode(node, rawNode, mSeq));
+		if( (leaf->getNodeHash()!=hash) || (node!=(*leaf)) )
+		{
+#ifdef DEBUG
+			std::cerr << "leaf fails consistency check" << std::endl;
+#endif
+			return false;
+		}
+		mLeafByID[node]=leaf;
+		if(mDirtyLeafNodes) (*mDirtyLeafNodes)[node]=leaf;
+		return true;
+	}
+	
+	SHAMapInnerNode::pointer newNode=SHAMapInnerNode::pointer(new SHAMapInnerNode(node, rawNode, mSeq));
+	if( (newNode->getNodeHash()!=hash) || (node!=newNode->getNodeID()) )
+	{
+#ifdef DEBUG
+			std::cerr << "inner node fails consistency check" << std::endl;
+#endif
+		return false;
+	}
+	mInnerNodeByID[node]=newNode;
+	if(mDirtyInnerNodes) (*mDirtyInnerNodes)[node]=newNode;
 	return true;
 }
 
 bool SHAMap::deepCompare(SHAMap& other)
 { // Intended for debug/test only
 	std::stack<SHAMapInnerNode::pointer> stack;
+	boost::recursive_mutex::scoped_lock sl(mLock);
 	SHAMapInnerNode::pointer node=root;
 
 	while(node)

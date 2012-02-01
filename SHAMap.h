@@ -56,7 +56,9 @@ public:
 	bool operator<(const SHAMapNode&) const;
 	bool operator>(const SHAMapNode&) const;
 	bool operator==(const SHAMapNode&) const;
+	bool operator==(const uint256&) const;
 	bool operator!=(const SHAMapNode&) const;
+	bool operator!=(const uint256&) const;
 	bool operator<=(const SHAMapNode&) const;
 	bool operator>=(const SHAMapNode&) const;
 

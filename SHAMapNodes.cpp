@@ -55,6 +55,16 @@ bool SHAMapNode::operator!=(const SHAMapNode &s) const
 	return (s.mDepth!=mDepth) || (s.mNodeID!=mNodeID);
 }
 
+bool SHAMapNode::operator==(const uint256 &s) const
+{
+	return s==mNodeID;
+}
+
+bool SHAMapNode::operator!=(const uint256 &s) const
+{
+	return s!=mNodeID;
+}
+
 void SHAMapNode::ClassInit()
 { // set up the depth masks
 	uint256 selector;
