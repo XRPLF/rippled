@@ -225,6 +225,8 @@ private:
 
 	SHAMapInnerNode::pointer root;
 
+	bool mImmutable, mSynching;
+
 protected:
 	void dirtyUp(const uint256& id);
 
@@ -294,7 +296,14 @@ public:
 	bool getNodeFat(const SHAMapNode& node, std::vector<SHAMapNode>& nodeIDs,
 	 std::list<std::vector<unsigned char> >& rawNode);
 	bool addRootNode(const uint256& hash, const std::vector<unsigned char>& rootNode);
+	bool addRootNode(const std::vector<unsigned char>& rootNode);
 	bool addKnownNode(const SHAMapNode& nodeID, const std::vector<unsigned char>& rawNode);
+
+	// status functions
+	void setImmutable(void) { mImmutable=true; }
+	void clearImmutable(void) { mImmutable=false; }
+	void setSynching(void) { mSynching=true; }
+	void clearSynching(void) { mSynching=false; }
 
 	// caution: otherMap must be accessed only by this function
 	// return value: true=successfully completed, false=too different
@@ -311,6 +320,7 @@ public:
 	bool operator==(const SHAMap& s) { return getHash()==s.getHash(); }
 
 	static bool TestSHAMap();
+	static bool syncTest();
 	bool deepCompare(SHAMap& other);
 	virtual void dump();
 };

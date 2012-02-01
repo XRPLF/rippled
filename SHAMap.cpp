@@ -6,7 +6,7 @@
 #include "BitcoinUtil.h"
 #include "SHAMap.h"
 
-SHAMap::SHAMap(uint32 seq) : mSeq(seq)
+SHAMap::SHAMap(uint32 seq) : mSeq(seq), mImmutable(false), mSynching(false)
 {
 	root=SHAMapInnerNode::pointer(new SHAMapInnerNode(SHAMapNode(SHAMapNode::rootDepth, uint256()), mSeq));
 	mInnerNodeByID[*root]=root;
@@ -15,9 +15,11 @@ SHAMap::SHAMap(uint32 seq) : mSeq(seq)
 void SHAMap::dirtyUp(const uint256& id)
 { // walk the tree up from through the inner nodes to the root
   // update linking hashes and add nodes to dirty list
+
 #ifdef DEBUG
 	std::cerr << "dirtyUp(" << id.GetHex() << ")" << std::endl;
 #endif
+	assert(!mImmutable && !mSynching);
 	SHAMapLeafNode::pointer leaf=checkCacheLeaf(SHAMapNode(SHAMapNode::leafDepth, id));
 	if(!leaf) throw SHAMapException(MissingNode);
 
@@ -547,15 +549,20 @@ SHAMapInnerNode::pointer SHAMap::getInnerNode(const SHAMapNode& node)
 	SHAMapInnerNode::pointer inNode=root;
 	for(int i=0; i<SHAMapNode::leafDepth; i++)
 	{
-		int branch=inNode->selectBranch(node.getNodeID());
-		if( (branch<0) || (inNode->isEmptyBranch(branch)) ) return SHAMapInnerNode::pointer();
-		inNode=getInner(inNode->getChildNodeID(branch), inNode->getChildHash(branch), false);
-		if(!inNode) return inNode;
 		if(inNode->getDepth()==node.getDepth())
 		{
 			if((*inNode)!=node) return SHAMapInnerNode::pointer();
 			return inNode;
 		}
+		int branch=inNode->selectBranch(node.getNodeID());
+		if( (branch<0) || (inNode->isEmptyBranch(branch)) ) return SHAMapInnerNode::pointer();
+		inNode=getInner(inNode->getChildNodeID(branch), inNode->getChildHash(branch), false);
+		if(!inNode) return inNode;
+	}
+	if(inNode->getDepth()==node.getDepth())
+	{
+		if((*inNode)!=node) return SHAMapInnerNode::pointer();
+		return inNode;
 	}
 	return SHAMapInnerNode::pointer();
 }
@@ -597,39 +604,42 @@ static std::vector<unsigned char>IntToVUC(int i)
 
 bool SHAMap::TestSHAMap()
 { // h3 and h4 differ only in the leaf, same terminal node (level 19)
- uint256 h1, h2, h3, h4, h5;
- h1.SetHex("092891fe4ef6cee585fdc6fda0e09eb4d386363158ec3321b8123e5a772c6ca7");
- h2.SetHex("436ccbac3347baa1f1e53baeef1f43334da88f1f6d70d963b833afd6dfa289fe");
- h3.SetHex("b92891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8");
- h4.SetHex("b92891fe4ef6cee585fdc6fda2e09eb4d386363158ec3321b8123e5a772c6ca8");
- h5.SetHex("a92891fe4ef6cee585fdc6fda0e09eb4d386363158ec3321b8123e5a772c6ca7");
+	uint256 h1, h2, h3, h4, h5;
+	h1.SetHex("092891fe4ef6cee585fdc6fda0e09eb4d386363158ec3321b8123e5a772c6ca7");
+	h2.SetHex("436ccbac3347baa1f1e53baeef1f43334da88f1f6d70d963b833afd6dfa289fe");
+	h3.SetHex("b92891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8");
+	h4.SetHex("b92891fe4ef6cee585fdc6fda2e09eb4d386363158ec3321b8123e5a772c6ca8");
+	h5.SetHex("a92891fe4ef6cee585fdc6fda0e09eb4d386363158ec3321b8123e5a772c6ca7");
 
- SHAMap sMap;
- SHAMapItem i1(h1, IntToVUC(1)), i2(h2, IntToVUC(2)), i3(h3, IntToVUC(3)), i4(h4, IntToVUC(4)), i5(h5, IntToVUC(5));
+	SHAMap sMap;
+	SHAMapItem i1(h1, IntToVUC(1)), i2(h2, IntToVUC(2)), i3(h3, IntToVUC(3)), i4(h4, IntToVUC(4)), i5(h5, IntToVUC(5));
 
- sMap.addItem(i2);
- sMap.addItem(i1);
+	sMap.addItem(i2);
+	sMap.addItem(i1);
 
- SHAMapItem::pointer i=sMap.peekFirstItem();
- assert(!!i && (*i==i1));
- i=sMap.peekNextItem(i->getTag());
- assert(!!i && (*i==i2));
- i=sMap.peekNextItem(i->getTag());
- assert(!i);
+	SHAMapItem::pointer i=sMap.peekFirstItem();
+	assert(!!i && (*i==i1));
+	i=sMap.peekNextItem(i->getTag());
+	assert(!!i && (*i==i2));
+	i=sMap.peekNextItem(i->getTag());
+	assert(!i);
 
- sMap.addItem(i4);
- sMap.delItem(i2.getTag());
- sMap.addItem(i3);
- 
- i=sMap.peekFirstItem();
- assert(!!i && (*i==i1));
- i=sMap.peekNextItem(i->getTag());
- assert(!!i && (*i==i3));
- i=sMap.peekNextItem(i->getTag());
- assert(!!i && (*i==i4));
- i=sMap.peekNextItem(i->getTag());
- assert(!i);
+	sMap.addItem(i4);
+	sMap.delItem(i2.getTag());
+	sMap.addItem(i3);
 
- return true;
+	i=sMap.peekFirstItem();
+	assert(!!i && (*i==i1));
+	i=sMap.peekNextItem(i->getTag());
+	assert(!!i && (*i==i3));
+	i=sMap.peekNextItem(i->getTag());
+	assert(!!i && (*i==i4));
+	i=sMap.peekNextItem(i->getTag());
+	assert(!i);
+
+	if(!syncTest());
+		 return false;
+
+	return true;
 }
 
