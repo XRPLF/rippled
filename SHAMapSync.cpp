@@ -1,6 +1,8 @@
 
 #include <stack>
 
+#include <openssl/rand.h>
+
 #include "SHAMap.h"
 
 void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint256>& hashes, int max)
@@ -9,7 +11,7 @@ void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint2
 	
 	if(root->isFullBelow())
 	{
-#ifdef DEBUG
+#ifdef GMN_DEBUG
 		std::cerr << "getMissingNodes: root is full below" << std::endl;
 #endif
 		return;
@@ -23,7 +25,7 @@ void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint2
 		SHAMapInnerNode::pointer node=stack.top();
 		stack.pop();
 
-#ifdef DEBUG
+#ifdef GMN_DEBUG
 		std::cerr << "gMN: popped " << node->getString() << std::endl;
 #endif
 
@@ -31,35 +33,29 @@ void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint2
 		{
 			if(!node->isEmptyBranch(i))
 			{
-#ifdef DEBUG
+#ifdef GNMN_DEBUG
 				std::cerr << "gMN: " << node->getString() << " has non-empty branch " << i << std::endl;
 #endif
-				try
-				{
-					if(node->isChildLeaf())
-					{ // do we have this leaf node?
-						SHAMapLeafNode::pointer leaf=getLeaf(node->getChildNodeID(i), node->getChildHash(i), false);
-						assert(leaf);
-					}
-					else
-					{
-						SHAMapInnerNode::pointer desc=getInner(node->getChildNodeID(i), node->getChildHash(i), false);
-						assert(desc);
-						if(!desc->isFullBelow())
-							stack.push(desc);
-					}
+				bool missing=false;
+				SHAMapNode childNID=node->getChildNodeID(i);
+				if(node->isChildLeaf())
+				{ // do we have this leaf node?
+					if(!getLeaf(childNID, node->getChildHash(i), false)) missing=true;
 				}
-				catch(const SHAMapException &x)
+				else
 				{
-					if(x!=SHAMapException(MissingNode)) throw(x);
-					if(max-->0)
-					{
-#ifdef DEBUG
-						std::cerr << "gMN: need leaf " << node->getChildNodeID(i).getString() << std::endl;
+					SHAMapInnerNode::pointer desc=getInner(childNID, node->getChildHash(i), false);
+					if(!desc)
+						missing=true;
+					else if(!desc->isFullBelow())
+						stack.push(desc);
+				}
+				if(missing && max-->0)
+				{
+#ifdef GMN_DEBUG
+					std::cerr << "gMN: need " << node->getChildNodeID(i).getString() << std::endl;
 #endif
-						nodeIDs.push_back(node->getChildNodeID(i));
-						hashes.push_back(node->getChildHash(i));
-					}
+					nodeIDs.push_back(childNID);
 				}
 			}
 		}
@@ -253,7 +249,32 @@ bool SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigned cha
 		mLeafByID[node]=leaf;
 		if(mDirtyLeafNodes) (*mDirtyLeafNodes)[node]=leaf;
 
-		// WRITEME: See if our parent(s) are full below
+		// FIXME: This should check all sources
+		SHAMapInnerNode::pointer pNode=checkCacheNode(node.getParentNodeID());
+		if(!pNode)
+		{
+			assert(false);
+			return false;
+		}
+		
+		for(int i=0; i<32; i++)
+			if(!checkCacheLeaf(pNode->getChildNodeID(i)))
+				return true;
+		pNode->setFullBelow();
+
+		while(!pNode->isRoot())
+		{
+			pNode=checkCacheNode(pNode->getParentNodeID());
+			if(!pNode)
+			{
+				assert(false);
+				return false;
+			}
+			for(int i=0; i<32; i++)
+				if(!checkCacheNode(pNode->getChildNodeID(i)))
+					return true;
+			pNode->setFullBelow();
+		}
 
 		return true;
 	}
@@ -270,7 +291,7 @@ bool SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigned cha
 	}
 	mInnerNodeByID[node]=newNode;
 	if(mDirtyInnerNodes) (*mDirtyInnerNodes)[node]=newNode;
-#ifdef DEBUG
+#ifdef ST_DEBUG
 	std::cerr << "Hooked: " << node.getString() << std::endl;
 #endif
 	return true;
@@ -302,7 +323,7 @@ bool SHAMap::deepCompare(SHAMap& other)
 			return false;
 		}
 
-#ifdef DEBUG
+#ifdef DC_DEBUG
 		std::cerr << "Comparing inner nodes " << node->getString() << std::endl;
 #endif
 
@@ -353,10 +374,14 @@ bool SHAMap::deepCompare(SHAMap& other)
 
 bool SHAMap::syncTest()
 {
+	unsigned int seed;
+	RAND_pseudo_bytes(reinterpret_cast<unsigned char *>(&seed), sizeof(seed));
+	srand(seed);
+
 	SHAMap source, destination;
 
 	// add random data to the source map
-	int items=3; // 10+rand()%400;
+	int items=10+rand()%4000;
 	for(int i=0; i<items; i++)
 	{
 		Serializer s;
@@ -365,7 +390,7 @@ bool SHAMap::syncTest()
 			s.add32(rand());
 		uint256 id=s.getSHA512Half();
 		source.addItem(SHAMapItem(id, s.peekData()));
-#ifdef DEBUG
+#ifdef ST_DEBUG
 		std::cerr << "Item: " << id.GetHex() << std::endl;
 #endif
 	}
@@ -418,7 +443,7 @@ bool SHAMap::syncTest()
 		hashes.clear();
 
 		// get the list of nodes we know we need
-		destination.getMissingNodes(nodeIDs, hashes, 128);
+		destination.getMissingNodes(nodeIDs, hashes, 512);
 		if(!nodeIDs.size()) break;
 
 #ifdef DEBUG

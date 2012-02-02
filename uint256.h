@@ -290,7 +290,10 @@ public:
 		return (!(a == b));
 	}
 
-
+	unsigned int PeekAt(int j) const
+	{
+		return pn[j];
+	}
 
 	std::string GetHex() const
 	{

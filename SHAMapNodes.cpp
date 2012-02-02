@@ -81,13 +81,24 @@ uint256 SHAMapNode::getNodeID(int depth, const uint256& hash)
 	return hash & smMasks[depth];
 }
 
+std::size_t SHAMapNode::getHash() const
+{
+	std::size_t ret=mDepth;
+	for(int i=0; i<5; i++)
+	{
+		ret*=2654435761U;
+		ret^=mNodeID.PeekAt(i);
+	}
+	return ret;
+}
+
 SHAMapNode::SHAMapNode(int depth, const uint256 &hash) : mDepth(depth)
 { // canonicalize the hash to a node ID for this depth
 	assert(depth>=0 && depth<=leafDepth);
 	mNodeID = getNodeID(depth, hash);
 }
 
-SHAMapNode SHAMapNode::getChildNodeID(int m)
+SHAMapNode SHAMapNode::getChildNodeID(int m) const
 {
 	assert(!isLeaf());
 	assert((m>=0) && (m<32));
@@ -99,7 +110,7 @@ SHAMapNode SHAMapNode::getChildNodeID(int m)
 	return ret;
 }
 
-int SHAMapNode::selectBranch(const uint256 &hash)
+int SHAMapNode::selectBranch(const uint256 &hash) const
 {
 	if(isLeaf())	// no nodes under this node
 	{
@@ -118,7 +129,7 @@ int SHAMapNode::selectBranch(const uint256 &hash)
 	return branch;
 }
 
-void SHAMapNode::dump()
+void SHAMapNode::dump() const
 {
 	std::cerr << getString() << std::endl;
 }
@@ -172,7 +183,7 @@ bool SHAMapLeafNode::hasItem(const uint256& item) const
 
 bool SHAMapLeafNode::addUpdateItem(SHAMapItem::pointer item, bool doHash)
 { // The node will almost never have more than one item in it
-#ifdef DEBUG
+#ifdef ST_DEBUG
 	std::cerr << "Leaf(" << getString() << ")" << std::endl;
 	std::cerr << "  addi(" << item->getTag().GetHex() << std::endl;
 #endif

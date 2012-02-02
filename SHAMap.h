@@ -7,6 +7,7 @@
 
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
+#include <boost/unordered/unordered_map.hpp>
 
 #include "types.h"
 #include "uint256.h"
@@ -49,9 +50,9 @@ public:
 	bool isInner() const 			{ return !isRoot() && !isLeaf(); }
 	virtual bool isPopulated() const { return false; }
 
-	SHAMapNode getParentNodeID()	{ return SHAMapNode(mDepth-1, mNodeID); }
-	SHAMapNode getChildNodeID(int m);
-	int selectBranch(const uint256& hash);
+	SHAMapNode getParentNodeID()	const	{ return SHAMapNode(mDepth-1, mNodeID); }
+	SHAMapNode getChildNodeID(int m) const;
+	int selectBranch(const uint256& hash) const;
 
 	bool operator<(const SHAMapNode&) const;
 	bool operator>(const SHAMapNode&) const;
@@ -62,8 +63,10 @@ public:
 	bool operator<=(const SHAMapNode&) const;
 	bool operator>=(const SHAMapNode&) const;
 
+	std::size_t getHash() const;
+
 	virtual std::string getString() const;
-	void dump();
+	void dump() const;
 
 	static void ClassInit();
 	static uint256 getNodeID(int depth, const uint256& hash);
@@ -164,7 +167,6 @@ class SHAMapInnerNode : public SHAMapNode
 
 public:
 	typedef boost::shared_ptr<SHAMapInnerNode> pointer;
-
 private:
 	uint256		mHash;
 	uint256		mHashes[32];
@@ -208,6 +210,14 @@ enum SHAMapException
 	InvalidNode=2
 };
 
+class hash_SMN : std::unary_function<SHAMapNode, std::size_t>
+{
+public:
+	std::size_t operator() (const SHAMapNode& mn) const
+	{
+		return mn.getHash();
+	}
+};
 
 class SHAMap
 {
@@ -219,7 +229,9 @@ private:
 	uint32 mSeq;
 	mutable boost::recursive_mutex mLock;
 	std::map<SHAMapNode, SHAMapLeafNode::pointer> mLeafByID;
-	std::map<SHAMapNode, SHAMapInnerNode::pointer> mInnerNodeByID;
+
+	boost::unordered_map<SHAMapNode, SHAMapInnerNode::pointer, hash_SMN> mInnerNodeByID;
+
 	boost::shared_ptr<std::map<SHAMapNode, SHAMapLeafNode::pointer> > mDirtyLeafNodes;
  	boost::shared_ptr<std::map<SHAMapNode, SHAMapInnerNode::pointer> > mDirtyInnerNodes;
 
