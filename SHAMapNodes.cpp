@@ -305,6 +305,7 @@ SHAMapInnerNode::SHAMapInnerNode(const SHAMapNode& id, const std::vector<unsigne
 	Serializer s(contents);
 	for(int i=0; i<32; i++)
 		mHashes[i]=s.get256(i*32);
+	updateHash();
 }
 
 SHAMapInnerNode::SHAMapInnerNode(const SHAMapInnerNode& node, uint32 seq) : SHAMapNode(node), mHash(node.mHash),
@@ -312,6 +313,7 @@ SHAMapInnerNode::SHAMapInnerNode(const SHAMapInnerNode& node, uint32 seq) : SHAM
 {
 	assert(!node.isLeaf());
 	memcpy(mHashes, node.mHashes, sizeof(mHashes));
+	updateHash();
 }
 
 std::string SHAMapInnerNode::getString() const
@@ -375,5 +377,5 @@ void SHAMapInnerNode::dump()
 	for(int i=0; i<32; i++)
 		if(!!mHashes[i]) children++;
 
-	std::cerr << "  " << children << " children" << std::endl;
+	std::cerr << "  " << children << " child(ren)" << std::endl;
 }
