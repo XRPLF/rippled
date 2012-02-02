@@ -39,6 +39,7 @@ CREATE INDEX ObjectLocate ON CommittedObjects(LedgerIndex, ObjType);
 bool HashedObject::store(HashedObjectType type, uint32 index, const std::vector<unsigned char>& data,
 	const uint256& hash)
 {
+	if(!theApp->getHashNodeDB()) return true;
 #ifdef DEBUG
 	Serializer s(data);
 	assert(hash==s.getSHA512Half());
@@ -76,6 +77,7 @@ bool HashedObject::store() const
 
 HashedObject::pointer HashedObject::retrieve(const uint256& hash)
 {
+	if(!theApp->getHashNodeDB()) return HashedObject::pointer();
 	std::string sql="SELECT * from CommitedObjects WHERE Hash='";
 	sql.append(hash.GetHex());
 	sql.append("';");

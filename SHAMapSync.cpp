@@ -27,7 +27,6 @@ void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint2
 		std::cerr << "gMN: popped " << node->getString() << std::endl;
 #endif
 
-		bool all_leaves=true;
 		for(int i=0; i<32; i++)
 		{
 			if(!node->isEmptyBranch(i))
@@ -44,11 +43,11 @@ void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint2
 					}
 					else
 					{
-					}
 						SHAMapInnerNode::pointer desc=getInner(node->getChildNodeID(i), node->getChildHash(i), false);
 						assert(desc);
 						if(!desc->isFullBelow())
 							stack.push(desc);
+					}
 				}
 				catch(const SHAMapException &x)
 				{
@@ -56,16 +55,14 @@ void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint2
 					if(max-->0)
 					{
 #ifdef DEBUG
-						std::cerr << "gMN: need leaf " << i << std::endl;
+						std::cerr << "gMN: need leaf " << node->getChildNodeID(i).getString() << std::endl;
 #endif
 						nodeIDs.push_back(node->getChildNodeID(i));
 						hashes.push_back(node->getChildHash(i));
 					}
-					all_leaves=false;
 				}
 			}
 		}
-		if(all_leaves) node->setFullBelow();
 	}
 }
 
@@ -164,6 +161,7 @@ bool SHAMap::addRootNode(const std::vector<unsigned char>& rootNode)
 	root=node;
 	mInnerNodeByID[*node]=node;
 	if(mDirtyInnerNodes) (*mDirtyInnerNodes)[*node]=node;
+	if(!root->getNodeHash()) root->setFullBelow();
 	return true;
 }
 
@@ -188,12 +186,14 @@ bool SHAMap::addRootNode(const uint256& hash, const std::vector<unsigned char>& 
 	root=node;
 	mInnerNodeByID[*node]=node;
 	if(mDirtyInnerNodes) (*mDirtyInnerNodes)[*node]=node;
+	if(!root->getNodeHash()) root->setFullBelow();
 	return true;
 }
 
 bool SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigned char>& rawNode)
 { // return value: true=okay, false=error
 	assert(!node.isRoot());
+	assert(mSynching);
 
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
@@ -224,7 +224,8 @@ bool SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigned cha
 	if(iNode->getDepth()!=(node.getDepth()-1))
 	{ // Either this node is broken or we didn't request it
 #ifdef DEBUG
-		std::cerr << "got inner node, unable to hook it" << std::endl;
+		std::cerr << "unable to hook node " << node.getString() << std::endl;
+		std::cerr << " stuck at " << iNode->getString() << std::endl;
 		std::cerr << "got depth=" << node.getDepth() << ", walked to= " << iNode->getDepth() << std::endl;
 #endif
 		return false;
@@ -251,6 +252,9 @@ bool SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigned cha
 		}
 		mLeafByID[node]=leaf;
 		if(mDirtyLeafNodes) (*mDirtyLeafNodes)[node]=leaf;
+
+		// WRITEME: See if our parent(s) are full below
+
 		return true;
 	}
 	
@@ -259,11 +263,16 @@ bool SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigned cha
 	{
 #ifdef DEBUG
 			std::cerr << "inner node fails consistency check" << std::endl;
+			std::cerr << "   Built: " << newNode->getString() << " h=" << newNode->getNodeHash().GetHex() << std::endl;
+			std::cerr << "Expected: " << node.getString() << " h=" << hash.GetHex() << std::endl;
 #endif
 		return false;
 	}
 	mInnerNodeByID[node]=newNode;
 	if(mDirtyInnerNodes) (*mDirtyInnerNodes)[node]=newNode;
+#ifdef DEBUG
+	std::cerr << "Hooked: " << node.getString() << std::endl;
+#endif
 	return true;
 }
 
@@ -424,6 +433,7 @@ bool SHAMap::syncTest()
 				assert(false);
 				return false;
 			}
+		assert(gotNodeIDs.size() == gotNodes.size());
 		nodeIDs.clear();
 		hashes.clear();
 
@@ -445,7 +455,7 @@ bool SHAMap::syncTest()
 				return false;
 			}
 		}
-		nodeIDs.clear();
+		gotNodeIDs.clear();
 		gotNodes.clear();
 
 

@@ -16,9 +16,6 @@ void SHAMap::dirtyUp(const uint256& id)
 { // walk the tree up from through the inner nodes to the root
   // update linking hashes and add nodes to dirty list
 
-#ifdef DEBUG
-	std::cerr << "dirtyUp(" << id.GetHex() << ")" << std::endl;
-#endif
 	assert(!mImmutable && !mSynching);
 	SHAMapLeafNode::pointer leaf=checkCacheLeaf(SHAMapNode(SHAMapNode::leafDepth, id));
 	if(!leaf) throw SHAMapException(MissingNode);
@@ -79,12 +76,6 @@ SHAMapInnerNode::pointer SHAMap::checkCacheNode(const SHAMapNode& iNode)
 SHAMapLeafNode::pointer SHAMap::walkToLeaf(const uint256& id, bool create, bool modify)
 { // walk down to the leaf that would contain this ID
 	// is leaf node in cache
-#ifdef DEBUG
-	std::cerr << "walkToLeaf(" << id.GetHex() << ")";
-	if(create) std::cerr << " create";
-	if(modify) std::cerr << " modify";
-	std::cerr << std::endl;
-#endif
 	SHAMapLeafNode::pointer ln=checkCacheLeaf(SHAMapNode(SHAMapNode::leafDepth, id));
 	if(ln) return returnLeaf(ln, modify);
 
@@ -135,15 +126,33 @@ SHAMapInnerNode::pointer SHAMap::walkTo(const SHAMapNode& id)
 		if(branch<0) // somehow we got on the wrong branch
 			throw SHAMapException(InvalidNode);
 		if (inNode->isEmptyBranch(branch)) // we know no branches below this one
+		{
+#ifdef DEBUG
+			std::cerr << "Walk down empty branch" << std::endl;
+#endif
 			return inNode;
-		if(!inNode->isChildLeaf()) // this is the last inner node
+		}
+		if(inNode->isChildLeaf()) // this is the last inner node
 			return inNode;
 
-		SHAMapInnerNode::pointer next=getInner(inNode->getChildNodeID(branch), inNode->getChildHash(branch), false);
-		if(!next) // we don't have the next node
+		try
+		{
+			SHAMapInnerNode::pointer next=getInner(inNode->getChildNodeID(branch), inNode->getChildHash(branch), false);
+			if(!next) // we don't have the next node
+			{
+#ifdef DEBUG
+				std::cerr << "Unable to find node " << inNode->getChildNodeID(branch).getString() << std::endl;
+#endif
+				return inNode;
+			}
+			assert(next->getDepth() == (inNode->getDepth()+1));
+			inNode=next;
+		}
+		catch (const SHAMapException& x)
+		{
+			if(x!=SHAMapException(MissingNode)) throw(x);
 			return inNode;
-		assert(next->getDepth() == (inNode->getDepth()+1));
-		inNode=next;
+		}
 		assert(i++ < SHAMapNode::leafDepth);
 	} while(1);
 }
