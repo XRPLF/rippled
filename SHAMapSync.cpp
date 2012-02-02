@@ -17,10 +17,16 @@ void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint2
 
 	std::stack<SHAMapInnerNode::pointer> stack;
 	stack.push(root);
+
 	while( (max>0) && (!stack.empty()) )
 	{
 		SHAMapInnerNode::pointer node=stack.top();
 		stack.pop();
+
+#ifdef DEBUG
+		std::cerr << "gMN: popped " << node->getString() << std::endl;
+#endif
+
 		bool all_leaves=true;
 		for(int i=0; i<32; i++)
 		{
@@ -29,41 +35,33 @@ void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint2
 #ifdef DEBUG
 				std::cerr << "gMN: " << node->getString() << " has non-empty branch " << i << std::endl;
 #endif
-				if(node->isChildLeaf())
-				{ // do we have this leaf node?
-					SHAMapLeafNode::pointer leaf=getLeaf(node->getChildNodeID(i), node->getChildHash(i), false);
-					if(!leaf)
-					{
-						if(max-->0)
-						{
-#ifdef DEBUG
-							std::cerr << "gMN: need leaf " << i << std::endl;
-#endif
-							nodeIDs.push_back(node->getChildNodeID(i));
-							hashes.push_back(node->getChildHash(i));
-						}
-						all_leaves=false;
+				try
+				{
+					if(node->isChildLeaf())
+					{ // do we have this leaf node?
+						SHAMapLeafNode::pointer leaf=getLeaf(node->getChildNodeID(i), node->getChildHash(i), false);
+						assert(leaf);
 					}
+					else
+					{
+					}
+						SHAMapInnerNode::pointer desc=getInner(node->getChildNodeID(i), node->getChildHash(i), false);
+						assert(desc);
+						if(!desc->isFullBelow())
+							stack.push(desc);
 				}
-				else
-				{ // do we have this inner node?
-					SHAMapInnerNode::pointer desc=getInner(node->getChildNodeID(i), node->getChildHash(i), false);
-					if(!desc)
-					{
-						if(max-->0)
-						{
-							nodeIDs.push_back(node->getChildNodeID(i));
-							hashes.push_back(node->getChildHash(i));
-						}
-						all_leaves=false;
-					}
-					else if(!desc->isFullBelow())
+				catch(const SHAMapException &x)
+				{
+					if(x!=SHAMapException(MissingNode)) throw(x);
+					if(max-->0)
 					{
 #ifdef DEBUG
-						std::cerr << "gMN: iterate " << desc->getString() << std::endl;
+						std::cerr << "gMN: need leaf " << i << std::endl;
 #endif
-						stack.push(desc);
+						nodeIDs.push_back(node->getChildNodeID(i));
+						hashes.push_back(node->getChildHash(i));
 					}
+					all_leaves=false;
 				}
 			}
 		}
@@ -87,7 +85,19 @@ bool SHAMap::getNodeFat(const SHAMapNode& wanted, std::vector<SHAMapNode>& nodeI
 	}
 
 	SHAMapInnerNode::pointer node=getInnerNode(wanted);
-	if(!node) return false;
+	if(!node)
+	{
+		assert(false);
+		return false;
+	}
+
+	nodeIDs.push_back(*node);
+	Serializer s;
+	node->addRaw(s);
+	rawNodes.push_back(s.peekData());
+
+	if(wanted.isRoot()) // don't get a fat root
+		return true;
 
 	bool ret=true;
 	for(int i=0; i<32; i++)
@@ -97,7 +107,11 @@ bool SHAMap::getNodeFat(const SHAMapNode& wanted, std::vector<SHAMapNode>& nodeI
 		 	if(node->isChildLeaf())
 		 	{
 		 		SHAMapLeafNode::pointer leaf=getLeaf(node->getChildNodeID(i), node->getChildHash(i), false);
-		 		if(!leaf) ret=false;
+				if(!leaf)
+				{
+					assert(false);
+					ret=false;
+				}
 		 		else
 		 		{
 		 			nodeIDs.push_back(*leaf);
@@ -109,8 +123,12 @@ bool SHAMap::getNodeFat(const SHAMapNode& wanted, std::vector<SHAMapNode>& nodeI
 		 	else
 		 	{
 		 		SHAMapInnerNode::pointer ino=getInner(node->getChildNodeID(i), node->getChildHash(i), false);
-		 		if(!ino) ret=false;
-		 		else
+				if(!ino)
+				{
+					assert(false);
+					ret=false;
+				}
+				else
 		 		{
 		 			nodeIDs.push_back(*ino);
 		 			Serializer s;
@@ -138,6 +156,10 @@ bool SHAMap::addRootNode(const std::vector<unsigned char>& rootNode)
 
 	SHAMapInnerNode::pointer node=SHAMapInnerNode::pointer(new SHAMapInnerNode(SHAMapNode(), rootNode, 0));
 	if(!node) return false;
+
+#ifdef DEBUG
+	node->dump();
+#endif
 
 	root=node;
 	mInnerNodeByID[*node]=node;
@@ -203,6 +225,7 @@ bool SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigned cha
 	{ // Either this node is broken or we didn't request it
 #ifdef DEBUG
 		std::cerr << "got inner node, unable to hook it" << std::endl;
+		std::cerr << "got depth=" << node.getDepth() << ", walked to= " << iNode->getDepth() << std::endl;
 #endif
 		return false;
 	}
@@ -324,16 +347,24 @@ bool SHAMap::syncTest()
 	SHAMap source, destination;
 
 	// add random data to the source map
-	int items=10+rand()%400;
+	int items=3; // 10+rand()%400;
 	for(int i=0; i<items; i++)
 	{
 		Serializer s;
 		int dlen=rand()%30+4;
 		for(int d=0; d<dlen; d++)
 			s.add32(rand());
-		source.addItem(SHAMapItem(s.getSHA512Half(), s.peekData()));		
+		uint256 id=s.getSHA512Half();
+		source.addItem(SHAMapItem(id, s.peekData()));
+#ifdef DEBUG
+		std::cerr << "Item: " << id.GetHex() << std::endl;
+#endif
 	}
 	source.setImmutable();
+
+#ifdef DEBUG
+	std::cerr << "SOURCE COMPLETE, SYNCHING" << std::endl;
+#endif
 
 	std::vector<SHAMapNode> nodeIDs, gotNodeIDs;
 	std::list<std::vector<unsigned char> > gotNodes;
@@ -355,7 +386,7 @@ bool SHAMap::syncTest()
 	}
 	if(gotNodes.size()!=1)
 	{
-		std::cerr << "Didn't get root node" << std::endl;
+		std::cerr << "Didn't get root node " << gotNodes.size() << std::endl;
 		assert(false);
 		return false;
 	}
@@ -368,18 +399,26 @@ bool SHAMap::syncTest()
 	nodeIDs.clear();
 	gotNodes.clear();
 
+#ifdef DEBUG
+	std::cerr << "ROOT COMPLETE, INNER SYNCHING" << std::endl;
+#endif
+
 	do
 	{
 		passes++;
 		hashes.clear();
 
 		// get the list of nodes we know we need
-		source.getMissingNodes(nodeIDs, hashes, 128);
+		destination.getMissingNodes(nodeIDs, hashes, 128);
 		if(!nodeIDs.size()) break;
+
+#ifdef DEBUG
+		std::cerr << nodeIDs.size() << " needed nodes" << std::endl;
+#endif
 		
 		// get as many nodes as possible based on this information
 		for(nodeIDIterator=nodeIDs.begin(); nodeIDIterator!=nodeIDs.end(); ++nodeIDIterator)
-			if(!source.getNodeFat(*nodeIDIterator, nodeIDs, gotNodes))
+			if(!source.getNodeFat(*nodeIDIterator, gotNodeIDs, gotNodes))
 			{
 				std::cerr << "GetNodeFat fails" << std::endl;
 				assert(false);
@@ -412,6 +451,10 @@ bool SHAMap::syncTest()
 
 	} while(1);
 	destination.clearSynching();
+
+#ifdef DEBUG
+	std::cerr << "SYNCHING COMPLETE" << std::endl;
+#endif
 
 	if(!source.deepCompare(destination))
 	{
