@@ -5,6 +5,8 @@
 #include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
 
+#include <openssl/sha.h>
+
 std::string SHAMapNode::getString() const
 {
 	std::string ret="NodeID(";
@@ -363,20 +365,20 @@ const uint256& SHAMapInnerNode::getChildHash(int m) const
 	return mHashes[m];
 }
 
+bool SHAMapInnerNode::isEmpty() const
+{
+	for(int i=0; i<32; i++)
+		if(mHashes[i]!=0) return false;
+	return true;
+}
+
 bool SHAMapInnerNode::updateHash()
 {
-	int nc=0;
-	Serializer s(1024);
-	for(int i=0; i<32; i++)
-	{
-		if(mHashes[i]!=0) nc++;
-		s.add256(mHashes[i]);
-	}
-	uint256 nh=0;
-	if(nc!=0)
-		nh=s.getSHA512Half();
-	if(mHash==nh) return false;
-	mHash=nh;
+	uint256 j[2];
+	if(!isEmpty())
+		SHA512(reinterpret_cast<unsigned char *>(mHashes), sizeof(mHashes), (unsigned char *) j);
+	if(mHash==j[0]) return false;
+	mHash=j[0];
 	return true;
 }
 
