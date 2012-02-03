@@ -59,7 +59,7 @@ void SHAMap::dirtyUp(const uint256& id)
 SHAMapLeafNode::pointer SHAMap::checkCacheLeaf(const SHAMapNode& iNode)
 {
 	assert(iNode.isLeaf());
-	std::map<SHAMapNode, SHAMapLeafNode::pointer>::iterator it=mLeafByID.find(iNode);
+	boost::unordered_map<SHAMapNode, SHAMapLeafNode::pointer>::iterator it=mLeafByID.find(iNode);
 	if(it==mLeafByID.end()) return SHAMapLeafNode::pointer();
 	return it->second;
 }
