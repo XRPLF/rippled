@@ -1,12 +1,14 @@
-#include "Serializer.h"
-#include "BitcoinUtil.h"
-#include "SHAMap.h"
+
+#include <cstring>
 
 #include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
 
 #include <openssl/sha.h>
 
+#include "Serializer.h"
+#include "BitcoinUtil.h"
+#include "SHAMap.h"
 std::string SHAMapNode::getString() const
 {
 	std::string ret="NodeID(";
@@ -83,17 +85,6 @@ uint256 SHAMapNode::getNodeID(int depth, const uint256& hash)
 	return hash & smMasks[depth];
 }
 
-std::size_t SHAMapNode::getHash() const
-{
-	std::size_t ret=mDepth;
-	for(int i=0; i<5; i++)
-	{
-		ret*=2654435761U;
-		ret^=mNodeID.PeekAt(i);
-	}
-	return ret;
-}
-
 SHAMapNode::SHAMapNode(int depth, const uint256 &hash) : mDepth(depth)
 { // canonicalize the hash to a node ID for this depth
 	assert(depth>=0 && depth<=leafDepth);
@@ -101,15 +92,14 @@ SHAMapNode::SHAMapNode(int depth, const uint256 &hash) : mDepth(depth)
 }
 
 SHAMapNode SHAMapNode::getChildNodeID(int m) const
-{
+{ // This can be optimized to avoid the << if needed
 	assert(!isLeaf());
 	assert((m>=0) && (m<32));
 
 	uint256 branch=m;
 	branch<<=mDepth*8;
 
-	SHAMapNode ret(mDepth+1, mNodeID | branch);
-	return ret;
+	return SHAMapNode(mDepth+1, mNodeID | branch);
 }
 
 int SHAMapNode::selectBranch(const uint256 &hash) const

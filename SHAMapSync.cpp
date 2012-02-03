@@ -443,7 +443,7 @@ bool SHAMap::syncTest()
 		hashes.clear();
 
 		// get the list of nodes we know we need
-		destination.getMissingNodes(nodeIDs, hashes, 512);
+		destination.getMissingNodes(nodeIDs, hashes, 1024);
 		if(!nodeIDs.size()) break;
 
 #ifdef DEBUG
@@ -469,6 +469,9 @@ bool SHAMap::syncTest()
 			return false;
 		}
 
+#ifdef DEBUG
+		std::cerr << gotNodeIDs.size() << " found nodes" << std::endl;
+#endif
 		for(nodeIDIterator=gotNodeIDs.begin(), rawNodeIterator=gotNodes.begin();
 				nodeIDIterator!=gotNodeIDs.end(); ++nodeIDIterator, ++rawNodeIterator)
 		{

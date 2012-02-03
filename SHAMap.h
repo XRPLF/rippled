@@ -63,8 +63,6 @@ public:
 	bool operator<=(const SHAMapNode&) const;
 	bool operator>=(const SHAMapNode&) const;
 
-	std::size_t getHash() const;
-
 	virtual std::string getString() const;
 	void dump() const;
 
@@ -72,6 +70,14 @@ public:
 	static uint256 getNodeID(int depth, const uint256& hash);
 };
 
+class hash_SMN
+{ // These must be randomized for release
+public:
+	std::size_t operator() (const SHAMapNode& mn) const
+	{ return mn.getDepth() ^ static_cast<std::size_t>(mn.getNodeID().PeekAt(0)); }
+	std::size_t operator() (const uint256& u) const
+	{ return static_cast<std::size_t>(u.PeekAt(0)); }
+};
 
 class SHAMapItem
 { // an item stored in a SHAMap
@@ -210,15 +216,6 @@ enum SHAMapException
 	InvalidNode=2
 };
 
-class hash_SMN : std::unary_function<SHAMapNode, std::size_t>
-{
-public:
-	std::size_t operator() (const SHAMapNode& mn) const
-	{
-		return mn.getHash();
-	}
-};
-
 class SHAMap
 {
 public:
@@ -228,8 +225,7 @@ public:
 private:
 	uint32 mSeq;
 	mutable boost::recursive_mutex mLock;
-	std::map<SHAMapNode, SHAMapLeafNode::pointer> mLeafByID;
-
+	boost::unordered_map<SHAMapNode, SHAMapLeafNode::pointer, hash_SMN> mLeafByID;
 	boost::unordered_map<SHAMapNode, SHAMapInnerNode::pointer, hash_SMN> mInnerNodeByID;
 
 	boost::shared_ptr<std::map<SHAMapNode, SHAMapLeafNode::pointer> > mDirtyLeafNodes;
