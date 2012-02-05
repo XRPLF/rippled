@@ -1,6 +1,7 @@
 #include <cassert>
 
 #include "boost/lexical_cast.hpp"
+#include "boost/make_shared.hpp"
 
 #include "Application.h"
 #include "Transaction.h"
@@ -62,7 +63,7 @@ Transaction::Transaction(const std::vector<unsigned char> &t, bool validate) : m
 
 	std::vector<unsigned char> pubKey;
 	if(!s.getRaw(pubKey, BTxPSPubK, BTxLSPubK)) { assert(false); return; }
-	mFromPubKey=CKey::pointer(new CKey());
+	mFromPubKey=boost::make_shared<CKey>();
 	if(!mFromPubKey->SetPubKey(pubKey)) return;
 	mAccountFrom=Hash160(pubKey);
 	mFromPubKey=theApp->getPubKeyCache().store(mAccountFrom, mFromPubKey);
@@ -128,7 +129,7 @@ bool Transaction::checkSign() const
 
 Serializer::pointer Transaction::getRaw(bool prefix) const
 {
-	Serializer::pointer ret(new Serializer(77));
+	Serializer::pointer ret=boost::make_shared<Serializer>(77);
 	if(prefix) ret->add32(0x54584e00u);
 	ret->add160(mAccountTo);
 	ret->add64(mAmount);
@@ -293,7 +294,7 @@ bool Transaction::convertToTransactions(uint32 firstLedgerSeq, uint32 secondLedg
 		Transaction::pointer firstTrans, secondTrans;	
 		if(!!first)
 		{ // transaction in our table
-			firstTrans=Transaction::pointer(new Transaction(first->getData(), checkFirstTransactions));
+			firstTrans=boost::make_shared<Transaction>(first->getData(), checkFirstTransactions);
 			if( (firstTrans->getStatus()==INVALID) || (firstTrans->getID()!=id) )
 			{
 				firstTrans->setStatus(INVALID, firstLedgerSeq);
@@ -304,7 +305,7 @@ bool Transaction::convertToTransactions(uint32 firstLedgerSeq, uint32 secondLedg
 
 		if(!!second)
 		{ // transaction in other table
-			secondTrans=Transaction::pointer(new Transaction(second->getData(), checkSecondTransactions));
+			secondTrans=boost::make_shared<Transaction>(second->getData(), checkSecondTransactions);
 			if( (secondTrans->getStatus()==INVALID) || (secondTrans->getID()!=id) )
 			{
 				secondTrans->setStatus(INVALID, secondLedgerSeq);
