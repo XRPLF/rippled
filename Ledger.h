@@ -52,7 +52,7 @@ private:
 	Ledger& operator=(const Ledger&);	// no implementation
 
 protected:
-	Ledger(Ledger&, uint64 timestamp);	// ledger after this one
+	Ledger(Ledger& previous, uint64 timestamp);	// ledger after this one
 	void updateHash();
 
 	bool addAccountState(AccountState::pointer);

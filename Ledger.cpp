@@ -3,6 +3,7 @@
 #include <fstream>
 
 #include <boost/lexical_cast.hpp>
+#include <boost/make_shared.hpp>
 
 #include "Application.h"
 #include "Ledger.h"
@@ -18,10 +19,10 @@ Ledger::Ledger(const uint160& masterID, uint64 startAmount) :
 	mFeeHeld(0), mTimeStamp(0), mLedgerSeq(0),
 	mClosed(false), mValidHash(false), mAccepted(false), mImmutable(false)
 {
-	mTransactionMap=SHAMap::pointer(new SHAMap());
-	mAccountStateMap=SHAMap::pointer(new SHAMap(0));
+	mTransactionMap=boost::make_shared<SHAMap>();
+	mAccountStateMap=boost::make_shared<SHAMap>();
 	
-	AccountState::pointer startAccount=AccountState::pointer(new AccountState(masterID));
+	AccountState::pointer startAccount=boost::make_shared<AccountState>(masterID);
 	startAccount->credit(startAmount);
 	if(!addAccountState(startAccount))
 		assert(false);
@@ -59,8 +60,8 @@ Ledger::Ledger(const std::vector<unsigned char>& rawLedger) : mFeeHeld(0), mTime
 	updateHash();
 	if(mValidHash)
 	{
-		mTransactionMap=SHAMap::pointer(new SHAMap());
-		mAccountStateMap=SHAMap::pointer(new SHAMap(mLedgerSeq));
+		mTransactionMap=boost::make_shared<SHAMap>();
+		mAccountStateMap=boost::make_shared<SHAMap>();
 	}
 }
 
@@ -69,9 +70,9 @@ void Ledger::updateHash()
 	if(!mImmutable)
 	{
 		if(mTransactionMap) mTransHash=mTransactionMap->getHash();
-		else mTransHash=0;
+		else mTransHash.zero();
 		if(mAccountStateMap) mAccountHash=mAccountStateMap->getHash();
-		else mAccountHash=0;
+		else mAccountHash.zero();
 	}
 
 	Serializer s(116);
@@ -104,7 +105,7 @@ AccountState::pointer Ledger::getAccountState(const uint160& accountID)
 #endif
 		return AccountState::pointer();
 	}
-	return AccountState::pointer(new AccountState(item->getData()));
+	return boost::make_shared<AccountState>(item->getData());
 }
 
 uint64 Ledger::getBalance(const uint160& accountID) const
@@ -118,24 +119,24 @@ uint64 Ledger::getBalance(const uint160& accountID) const
 bool Ledger::updateAccountState(AccountState::pointer state)
 {
 	assert(!mAccepted);
-	SHAMapItem::pointer item(new SHAMapItem(state->getAccountID(), state->getRaw()));
-	return mAccountStateMap->updateGiveItem(item);
+	SHAMapItem::pointer item=boost::make_shared<SHAMapItem>(state->getAccountID(), state->getRaw());
+	return mAccountStateMap->updateGiveItem(item, false);
 }
 
 bool Ledger::addAccountState(AccountState::pointer state)
 {
 	assert(!mAccepted);
 	assert( (state->getBalance()==0) || (state->getSeq()>0) );
-	SHAMapItem::pointer item(new SHAMapItem(state->getAccountID(), state->getRaw()));
-	return mAccountStateMap->addGiveItem(item);
+	SHAMapItem::pointer item=boost::make_shared<SHAMapItem>(state->getAccountID(), state->getRaw());
+	return mAccountStateMap->addGiveItem(item, false);
 }
 
 bool Ledger::addTransaction(Transaction::pointer trans)
 { // low-level - just add to table
 	assert(!mAccepted);
 	assert(!!trans->getID());
-	SHAMapItem::pointer item(new SHAMapItem(trans->getID(), trans->getSigned()->getData()));
-	return mTransactionMap->addGiveItem(item);
+	SHAMapItem::pointer item=boost::make_shared<SHAMapItem>(trans->getID(), trans->getSigned()->getData());
+	return mTransactionMap->addGiveItem(item, true);
 }
 
 bool Ledger::delTransaction(const uint256& transID)
@@ -157,7 +158,7 @@ Transaction::pointer Ledger::getTransaction(const uint256& transID) const
 	Transaction::pointer txn=theApp->getMasterTransaction().fetch(transID, false);
 	if(txn) return txn;
 
-	txn=Transaction::pointer(new Transaction(item->getData(), true));
+	txn=boost::make_shared<Transaction>(item->getData(), true);
 	if(txn->getStatus()==NEW) txn->setStatus(mClosed ? COMMITTED : INCLUDED, mLedgerSeq);
 
 	theApp->getMasterTransaction().canonicalize(txn, false);
@@ -193,7 +194,7 @@ Ledger::TransResult Ledger::applyTransaction(Transaction::pointer trans)
 		// temporary code -- if toAccount doesn't exist but fromAccount does, create it
 		if(!!fromAccount && !toAccount)
 		{
-			toAccount=AccountState::pointer(new AccountState(trans->getToAccount()));
+			toAccount=boost::make_shared<AccountState>(trans->getToAccount());
 			toAccount->incSeq(); // an account in a ledger has a sequence of 1
 			updateAccountState(toAccount);
 		}
@@ -308,7 +309,7 @@ Ledger::pointer Ledger::closeLedger(uint64 timeStamp)
 	// CAUTION: New ledger needs its SHAMap's connected to storage
 	updateHash();
 	setClosed();
-	return Ledger::pointer(new Ledger(*this, timeStamp));
+	return Ledger::pointer(new Ledger(*this, timeStamp)); // can't use make_shared
 }
 
 void LocalAccount::syncLedger()
@@ -338,9 +339,9 @@ bool Ledger::unitTest()
 	std::cerr << "Account2: " << la2.GetHex() << std::endl;
 #endif
 
-	Ledger::pointer ledger(new Ledger(la1, 100000));
+	Ledger::pointer ledger=boost::make_shared<Ledger>(la1, 100000);
 	
-	ledger=Ledger::pointer(new Ledger(*ledger, 0));
+	ledger=Ledger::pointer(new Ledger(*ledger, 0)); // can't use make_shared
 
 	AccountState::pointer as=ledger->getAccountState(la1);
 	assert(as);
@@ -349,7 +350,7 @@ bool Ledger::unitTest()
 	as=ledger->getAccountState(la2);
 	assert(!as); 
 
-	Transaction::pointer t(new Transaction(l1, l2->getAddress(), 2500, 0, 1));
+	Transaction::pointer t=boost::make_shared<Transaction>(l1, l2->getAddress(), 2500, 0, 1);
 	assert(!!t->getID());
 
 	Ledger::TransResult tr=ledger->applyTransaction(t);
@@ -425,7 +426,7 @@ Ledger::pointer Ledger::getSQL(const std::string& sql)
 		db->endIterRows();
 	}
 	
-	Ledger::pointer ret(new Ledger(prevHash, transHash, accountHash, feeHeld, closingTime, ledgerSeq));
+	Ledger::pointer ret=boost::make_shared<Ledger>(prevHash, transHash, accountHash, feeHeld, closingTime, ledgerSeq);
 	if(ret->getHash()!=ledgerHash)
 	{
 		assert(false);
@@ -519,7 +520,7 @@ Ledger::pointer Ledger::switchPreviousLedger(Ledger::pointer oldPrevious, Ledger
 	{
 		uint256 txnID=mit->getTag();
 		Transaction::pointer tx=theApp->getMasterTransaction().fetch(txnID, false);
-		if(!tx) tx=Transaction::pointer(new Transaction(mit->peekData(), false));
+		if(!tx) tx=boost::make_shared<Transaction>(mit->peekData(), false);
 		txnMap.insert(std::make_pair(txnID, tx));
 	}
 
