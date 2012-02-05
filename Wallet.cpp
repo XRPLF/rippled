@@ -8,6 +8,7 @@
 #include "boost/foreach.hpp"
 #include "boost/lexical_cast.hpp"
 #include "boost/interprocess/sync/scoped_lock.hpp"
+#include "boost/make_shared.hpp"
 
 
 #include "Wallet.h"
@@ -56,7 +57,7 @@ uint160 LocalAccountFamily::getAccount(int seq, bool keep)
 	std::map<int, LocalAccount::pointer>::iterator ait=mAccounts.find(seq);
 	if(ait!=mAccounts.end()) return ait->second->getAddress();
 
-	LocalAccount::pointer lae(new LocalAccount(shared_from_this(), seq));
+	LocalAccount::pointer lae=boost::make_shared<LocalAccount>(shared_from_this(), seq);
 	mAccounts.insert(std::make_pair(seq, lae));
 
 	return lae->getAddress();
@@ -101,14 +102,14 @@ void LocalAccountFamily::lock()
 
 CKey::pointer LocalAccountFamily::getPublicKey(int seq)
 {
-	return CKey::pointer(new CKey(mFamily, mRootPubKey, seq));
+	return boost::make_shared<CKey>(mFamily, mRootPubKey, seq);
 }
 
 CKey::pointer LocalAccountFamily::getPrivateKey(int seq)
 {
 	if(!mRootPrivateKey) return CKey::pointer();
 	std::cerr << "PrivKey(" << mFamily.GetHex() << "," << seq << ")" << std::endl;
-	return CKey::pointer(new CKey(mFamily, mRootPrivateKey, seq));
+	return boost::make_shared<CKey>(mFamily, mRootPrivateKey, seq);
 }
 
 std::string LocalAccountFamily::getPubGenHex() const
@@ -185,7 +186,7 @@ LocalAccountFamily::pointer LocalAccountFamily::readFamily(const uint160& family
 		return LocalAccountFamily::pointer();
 	}
 
-	LocalAccountFamily::pointer fam(new LocalAccountFamily(family, grp, pubKey));
+	LocalAccountFamily::pointer fam=boost::make_shared<LocalAccountFamily>(family, grp, pubKey);
 	EC_GROUP_free(grp);
 	EC_POINT_free(pubKey);
 
@@ -299,7 +300,7 @@ LocalAccount::pointer LocalAccountFamily::get(int seq)
 	std::map<int, LocalAccount::pointer>::iterator act=mAccounts.find(seq);
 	if(act!=mAccounts.end()) return act->second;
 
-	LocalAccount::pointer ret(new LocalAccount(shared_from_this(), seq));
+	LocalAccount::pointer ret=boost::make_shared<LocalAccount>(shared_from_this(), seq);
 	mAccounts.insert(std::make_pair(seq, ret));
 	return ret;
 }
@@ -520,7 +521,7 @@ LocalAccount::pointer Wallet::getNewLocalAccount(const uint160& family)
 	std::map<uint160, LocalAccount::pointer>::iterator ait=mAccounts.find(acct);
 	if(ait!=mAccounts.end()) return ait->second;
 	
-	LocalAccount::pointer lac(new LocalAccount(fit->second, seq));
+	LocalAccount::pointer lac=boost::make_shared<LocalAccount>(fit->second, seq);
 	mAccounts.insert(std::make_pair(acct, lac));
 	
 	sl.unlock();
@@ -538,7 +539,7 @@ LocalAccount::pointer Wallet::getLocalAccount(const uint160& family, int seq)
 	std::map<uint160, LocalAccount::pointer>::iterator ait=mAccounts.find(acct);
 	if(ait!=mAccounts.end()) return ait->second;
 	
-	LocalAccount::pointer lac(new LocalAccount(fit->second, seq));
+	LocalAccount::pointer lac=boost::make_shared<LocalAccount>(fit->second, seq);
 	mAccounts.insert(std::make_pair(acct, lac));
 
 	sl.unlock();
@@ -658,8 +659,7 @@ LocalAccountFamily::pointer Wallet::doPublic(const std::string& pubKey, bool do_
 	}
 	if(do_create)
 	{
-		fam=LocalAccountFamily::pointer(new LocalAccountFamily(family,
-			EC_KEY_get0_group(pkey), EC_KEY_get0_public_key(pkey)));
+		fam=boost::make_shared<LocalAccountFamily>(family, EC_KEY_get0_group(pkey), EC_KEY_get0_public_key(pkey));
 		mFamilies.insert(std::make_pair(family, fam));
 		if(do_db) fam->write(true);
 	}
@@ -694,8 +694,8 @@ LocalAccountFamily::pointer Wallet::doPrivate(const uint256& passPhrase, bool do
 				EC_KEY_free(base);
 				return LocalAccountFamily::pointer();
 			}
-			fam=LocalAccountFamily::pointer(new LocalAccountFamily(family,
-				EC_KEY_get0_group(base), EC_KEY_get0_public_key(base)));
+			fam=boost::make_shared<LocalAccountFamily>(family,
+				EC_KEY_get0_group(base), EC_KEY_get0_public_key(base));
 			mFamilies.insert(std::make_pair(family, fam));
 			fam->write(true);
 		}
@@ -832,8 +832,8 @@ void Wallet::applyTransaction(Transaction::pointer txn)
 	{ // this is to a local account
 		if(!ltx)
 		{ // this is to a local account, and we don't have a local transaction for it
-			ltx=LocalTransaction::pointer(new
-				LocalTransaction(txn->getToAccount(), txn->getAmount(), txn->getIdent()));
+			ltx=boost::make_shared<LocalTransaction>
+				(txn->getToAccount(), txn->getAmount(), txn->getIdent());
 			ltx->setTransaction(txn);
 			mTransactions.insert(std::make_pair<uint256, LocalTransaction::pointer>(txn->getID(), ltx));
 			ltx->setCredited();
@@ -851,8 +851,8 @@ void Wallet::applyTransaction(Transaction::pointer txn)
 	{ // we don't have this transactions
 		if(shouldBePaid)
 		{ // we need it
-			ltx=LocalTransaction::pointer(new
-				LocalTransaction(txn->getToAccount(), txn->getAmount(), txn->getIdent()));
+			ltx=boost::make_shared<LocalTransaction>
+				(txn->getToAccount(), txn->getAmount(), txn->getIdent());
 			ltx->setTransaction(txn);
 			mTransactions.insert(std::make_pair<uint256, LocalTransaction::pointer>(txn->getID(), ltx));
 			lac->second->debit(txn->getAmount());
