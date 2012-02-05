@@ -3,12 +3,14 @@
 
 #include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/smart_ptr/make_shared.hpp>
 
 #include <openssl/sha.h>
 
 #include "Serializer.h"
 #include "BitcoinUtil.h"
 #include "SHAMap.h"
+
 std::string SHAMapNode::getString() const
 {
 	std::string ret="NodeID(";
@@ -19,7 +21,7 @@ std::string SHAMapNode::getString() const
 	return ret;
 }
 
-uint256 SHAMapNode::smMasks[21];
+uint256 SHAMapNode::smMasks[64];
 
 bool SHAMapNode::operator<(const SHAMapNode &s) const
 {
@@ -72,52 +74,57 @@ bool SHAMapNode::operator!=(const uint256 &s) const
 void SHAMapNode::ClassInit()
 { // set up the depth masks
 	uint256 selector;
-	for(int i=0; i<=leafDepth; i++)
+	for(int i=0; i<64; i+=2)
 	{
 		smMasks[i]=selector;
-		*(selector.begin()+i)=0x1F;
+		*(selector.begin()+(i/2))=0x0F;
+		smMasks[i+1]=selector;
+		*(selector.begin()+(i/2))=0xFF;
 	}
 }
 
 uint256 SHAMapNode::getNodeID(int depth, const uint256& hash)
 {
-	assert(depth>=0 && depth<=leafDepth);
+	assert(depth>=0 && depth<64);
 	return hash & smMasks[depth];
 }
 
 SHAMapNode::SHAMapNode(int depth, const uint256 &hash) : mDepth(depth)
 { // canonicalize the hash to a node ID for this depth
-	assert(depth>=0 && depth<=leafDepth);
+	assert(depth>=0 && depth<64);
 	mNodeID = getNodeID(depth, hash);
 }
 
 SHAMapNode SHAMapNode::getChildNodeID(int m) const
 { // This can be optimized to avoid the << if needed
-	assert(!isLeaf());
-	assert((m>=0) && (m<32));
+	assert((m>=0) && (m<16));
 
 	uint256 branch=m;
-	branch<<=mDepth*8;
+	branch<<=mDepth*4;
 
 	return SHAMapNode(mDepth+1, mNodeID | branch);
 }
 
-int SHAMapNode::selectBranch(const uint256 &hash) const
-{
-	if(isLeaf())	// no nodes under this node
+int SHAMapNode::selectBranch(const uint256& hash) const
+{ // Which branch would contain the specified hash
+	if(mDepth==63)
 	{
 		assert(false);
 		return -1;
 	}
 	if((hash&smMasks[mDepth])!=mNodeID)
 	{
+		std::cerr << "selectBranch(" << getString() << std::endl;
+		std::cerr << "  " << hash.GetHex() << " off branch" << std::endl;
 		assert(false);
 		return -1;	// does not go under this node
 	}
 
-	uint256 selector(hash & smMasks[mDepth+1]);
-	int branch=*(selector.begin()+mDepth);
-	assert(branch>=0 && branch<32);
+	int branch=*(hash.begin()+(mDepth/2));
+	if(mDepth%2) branch>>=4;
+	else branch&=0xf;
+
+	assert(branch>=0 && branch<16);
 	return branch;
 }
 
@@ -126,259 +133,211 @@ void SHAMapNode::dump() const
 	std::cerr << getString() << std::endl;
 }
 
-SHAMapLeafNode::SHAMapLeafNode(const SHAMapNode& nodeID, uint32 seq) : SHAMapNode(nodeID), mHash(0), mSeq(seq)
+SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& nodeID, uint32 seq) : SHAMapNode(nodeID), mHash(0), mSeq(seq),
+	mType(ERROR), mFullBelow(false)
 {
-	assert(nodeID.isLeaf());
 }
 
-SHAMapLeafNode::SHAMapLeafNode(const SHAMapLeafNode& node, uint32 seq) : SHAMapNode(node),
-		mHash(node.mHash), mItems(node.mItems), mSeq(seq)
+SHAMapTreeNode::SHAMapTreeNode(const SHAMapTreeNode& node, uint32 seq) : SHAMapNode(node),
+		mHash(node.mHash), mItem(node.mItem), mSeq(seq), mType(node.mType), mFullBelow(false)
 {
-	assert(node.isLeaf());
+	if(node.mItem)
+		mItem=boost::make_shared<SHAMapItem>(*node.mItem);
+	else
+		memcpy(mHashes, node.mHashes, sizeof(mHashes));
 }
 
-SHAMapLeafNode::SHAMapLeafNode(const SHAMapNode& id, const std::vector<unsigned char>& rawLeaf, uint32 seq)
-	: SHAMapNode(id), mSeq(seq)
+SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& node, SHAMapItem::pointer item, TNType type, uint32 seq) :
+	SHAMapNode(node), mItem(item), mSeq(seq), mType(type), mFullBelow(true)
 {
-	Serializer s(rawLeaf);
-	int pos=0;
-	while(pos<s.getLength())
-	{
-		uint256 id=s.get256(pos);
-		pos+=32;
-		uint16 len;
-		if(!s.get16(len, pos)) throw SHAMapException(InvalidNode);
-		pos+=2;
-		if(!id || !len || ((pos+len)>s.getLength())) throw SHAMapException(InvalidNode);
-		addUpdateItem(SHAMapItem::pointer(new SHAMapItem(id, s.getRaw(pos, len))), false);
-		pos+=len;
-	}
+	assert(item->peekData().size()>=32);
 	updateHash();
 }
 
-void SHAMapLeafNode::addRaw(Serializer &s)
+SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned char>& rawNode, uint32 seq)
+	: SHAMapNode(id), mSeq(seq), mType(ERROR), mFullBelow(false)
 {
-	BOOST_FOREACH(SHAMapItem::pointer& nodeItem, mItems)
-	{
-		s.add256(nodeItem->getTag());
-		s.add16(nodeItem->peekData().size());
-		s.addRaw(nodeItem->peekData());
+	Serializer s(rawNode);
+
+	int type=s.removeLastByte();
+	int len=s.getLength();
+	if( (type<0) || (type>3) || (len<33) ) throw SHAMapException(InvalidNode);
+
+	if(type==0)
+	{ // transaction
+		mItem=boost::make_shared<SHAMapItem>(s.getSHA512Half(), s.peekData());
+		mType=TRANSACTION;
 	}
-}
-
-bool SHAMapLeafNode::hasItem(const uint256& item) const
-{
-	BOOST_FOREACH(const SHAMapItem::pointer& nodeItem, mItems)
-		if(nodeItem->getTag()==item) return true;
-	return false;
-}
-
-bool SHAMapLeafNode::addUpdateItem(SHAMapItem::pointer item, bool doHash)
-{ // The node will almost never have more than one item in it
-#ifdef ST_DEBUG
-	std::cerr << "Leaf(" << getString() << ")" << std::endl;
-	std::cerr << "  addi(" << item->getTag().GetHex() << std::endl;
-#endif
-	std::list<SHAMapItem::pointer>::iterator it;
-	for(it=mItems.begin(); it!=mItems.end(); ++it)
-	{
-		SHAMapItem &nodeItem=**it;
-		if(nodeItem.getTag()==item->getTag())
-		{
-			if(nodeItem.peekData()==item->peekData())
-				return false; // no change
-			nodeItem.updateData(item->peekData());
-			if(doHash) return updateHash();
-			return true;
-		}
-		if(nodeItem.getTag()>item->getTag())
-		{
-			mItems.insert(it, item);
-			if(doHash) return updateHash();
-			return true;
-		}
+	else if(type==1)
+	{ // account state
+		uint160 u;
+		s.get160(u, len-20);
+		s.chop(20);
+		if(!u) throw SHAMapException(InvalidNode);
+		mItem=boost::make_shared<SHAMapItem>(u, s.peekData());
+		mType=ACCOUNT_STATE;
 	}
-	mItems.push_back(item);
-
-	if(doHash) return updateHash();
-	return true;
-}	
-
-bool SHAMapLeafNode::delItem(const uint256& tag)
-{
-	std::list<SHAMapItem::pointer>::iterator it;
-	for(it=mItems.begin(); it!=mItems.end(); ++it)
-	{
-		if((*it)->getTag()==tag)
-		{
-			mItems.erase(it);
-			return updateHash();
-		}
+	else if(type==2)
+	{ // full inner
+		if(len!=512) throw SHAMapException(InvalidNode);
+		for(int i=0; i<16; i++)
+			s.get256(mHashes[i], i*32);
+		mType=INNER;
 	}
-	return false;
-}
-
-SHAMapItem::pointer SHAMapLeafNode::findItem(const uint256& tag)
-{
-	BOOST_FOREACH(SHAMapItem::pointer& it, mItems)
-		if(it->getTag() == tag) return it;
-	return SHAMapItem::pointer();
-}
-
-SHAMapItem::pointer SHAMapLeafNode::firstItem()
-{
-	if(mItems.empty()) return SHAMapItem::pointer();
-	return *(mItems.begin());
-}
-
-SHAMapItem::pointer SHAMapLeafNode::nextItem(const uint256& tag)
-{
-#ifdef ST_DEBUG
-	std::cerr << "LeafNode::nextItem(" << tag.GetHex() << std::endl;
-	BOOST_FOREACH(SHAMapItem::pointer& it, mItems)
-		std::cerr << "  item(" << it->getTag().GetHex() << std::endl;
-#endif
-	std::list<SHAMapItem::pointer>::iterator it;
-	for(it=mItems.begin(); it!=mItems.end(); ++it)
-	{
-		if((*it)->getTag()==tag)
+	else if(type==3)
+	{ // compressed inner
+		for(int i=0; i<(len/33); i++)
 		{
-			if(++it==mItems.end()) return SHAMapItem::pointer();
-			return *it;
+			int pos;
+			s.get1(pos, 32+(i*33));
+			if( (pos<0) || (pos>=16)) throw SHAMapException(InvalidNode);
+			s.get256(mHashes[pos], i*33);
 		}
+		mType=INNER;
 	}
-#ifdef DEBUG
-	std::cerr << "nextItem(!found)" << std::endl;
-#endif
-	return SHAMapItem::pointer();
+
+	updateHash();
 }
 
-SHAMapItem::pointer SHAMapLeafNode::prevItem(const uint256& tag)
+void SHAMapTreeNode::addRaw(Serializer &s)
 {
-	std::list<SHAMapItem::pointer>::reverse_iterator it;
-	for(it=mItems.rbegin(); it!=mItems.rend(); ++it)
+	if(mType==ERROR) throw SHAMapException(InvalidNode);
+
+	if(mType==TRANSACTION)
 	{
-		if((*it)->getTag()==tag)
-		{
-			++it;
-			if(it==mItems.rend()) return SHAMapItem::pointer();
-			return *it;
-		}
+		mItem->addRaw(s);
+		s.add1(0);
+		assert(s.getLength()>32);
+		return;
 	}
-	return SHAMapItem::pointer();
+
+	if(mType==ACCOUNT_STATE)
+	{
+		mItem->addRaw(s);
+		assert(s.getLength()>20);
+		s.add160(mItem->getTag().to160());
+		s.add1(1);
+		return;
+	}
+
+	if(getBranchCount()<5)
+	{ // compressed node
+		for(int i=0; i<16; i++)
+			if(!!mHashes[i])
+			{
+				s.add256(mHashes[i]);
+				s.add1(i);
+			}
+		s.add1(3);
+		return;
+	}
+
+	for(int i=0; i<16; i++)
+		s.add256(mHashes[i]);
+	s.add1(2);
 }
 
-SHAMapItem::pointer SHAMapLeafNode::lastItem()
-{
-	if(mItems.empty()) return SHAMapItem::pointer();
-	return *(mItems.rbegin());
-}
-
-bool SHAMapLeafNode::updateHash()
+bool SHAMapTreeNode::updateHash()
 {
 	uint256 nh;
-	if(!mItems.empty())
+
+	if(mType==INNER)
+	{
+		bool empty=true;
+		for(int i=0; i<16; i++)
+			if(!!mHashes[i])
+			{
+				empty=false;
+				break;
+			}
+		if(!empty)
+		{
+			uint256 j[2];
+			SHA512(reinterpret_cast<unsigned char *>(mHashes), sizeof(mHashes), (unsigned char *) j);
+			nh=j[0];
+			assert(!!nh);
+		}
+	}
+	else if(mType==ACCOUNT_STATE)
 	{
 		Serializer s;
-		BOOST_FOREACH(const SHAMapItem::pointer &mi, mItems)
-			s.addRaw(mi->peekData());
+		mItem->addRaw(s);
+		s.add160(mItem->getTag().to160());
 		nh=s.getSHA512Half();
 	}
+	else if(mType==TRANSACTION)
+		nh=mItem->getTag();
+	else assert(false);
+
 	if(nh==mHash) return false;
 	mHash=nh;
 	return true;
 }
 
-void SHAMapLeafNode::dump()
+bool SHAMapTreeNode::setItem(SHAMapItem::pointer& i, TNType type)
 {
-	std::cerr << "SHAMapLeafNode(" << getNodeID().GetHex() << ")" << std::endl;
-	std::cerr << "  " << mItems.size() << " items" << std::endl;
+	uint256 hash=getNodeHash();
+	mType=type;
+	mItem=i;
+	return getNodeHash()==hash;
 }
 
-SHAMapInnerNode::SHAMapInnerNode(const SHAMapNode& id, uint32 seq) : SHAMapNode(id), mSeq(seq), mFullBelow(false)
-{ // can be root
-	assert(id.getDepth()<SHAMapNode::leafDepth);
-}
-
-SHAMapInnerNode::SHAMapInnerNode(const SHAMapNode& id, const std::vector<unsigned char>& contents, uint32 seq)
-	: SHAMapNode(id), mSeq(seq), mFullBelow(false)
+int SHAMapTreeNode::getBranchCount() const
 {
-	assert(!id.isLeaf());
-	assert(contents.size()==32*256/8);
-	Serializer s(contents);
-	for(int i=0; i<32; i++)
-		mHashes[i]=s.get256(i*32);
-	updateHash();
+	int ret=0;
+	for(int i=0; i<16; i++)
+		if(!mHashes[i]) ret++;
+	return ret;
 }
 
-SHAMapInnerNode::SHAMapInnerNode(const SHAMapInnerNode& node, uint32 seq) : SHAMapNode(node), mHash(node.mHash),
-		mSeq(seq), mFullBelow(false)
+void SHAMapTreeNode::makeInner()
 {
-	assert(!node.isLeaf());
-	memcpy(mHashes, node.mHashes, sizeof(mHashes));
-	updateHash();
+	mItem=SHAMapItem::pointer();
+	memset(mHashes, 0, sizeof(mHashes));
+	mType=INNER;
+	mHash.zero();
 }
 
-std::string SHAMapInnerNode::getString() const
+void SHAMapTreeNode::dump()
+{
+	std::cerr << "SHAMapTreeNode(" << getNodeID().GetHex() << ")" << std::endl;
+}
+
+std::string SHAMapTreeNode::getString() const
 {
 	std::string ret="NodeID(";
 	ret+=boost::lexical_cast<std::string>(getDepth());
 	ret+=",";
 	ret+=getNodeID().GetHex();
 	ret+=")";
-	for(int i=0; i<32; i++)
-		if(!isEmptyBranch(i))
-		{
-			ret+=",b";
-			ret+=boost::lexical_cast<std::string>(i);
-		}
+	if(isInner())
+	{
+		for(int i=0; i<16; i++)
+			if(!isEmptyBranch(i))
+			{
+				ret+=",b";
+				ret+=boost::lexical_cast<std::string>(i);
+			}
+	}
+	if(isLeaf())
+	{
+		ret+=",leaf";
+	}
 	return ret;
 }
 
-void SHAMapInnerNode::addRaw(Serializer &s)
+bool SHAMapTreeNode::setChildHash(int m, const uint256 &hash)
 {
-	for(int i=0; i<32; i++)
-		s.add256(mHashes[i]);
-}
-bool SHAMapInnerNode::setChildHash(int m, const uint256 &hash)
-{
-	assert( (m>=0) && (m<32) );
+	assert( (m>=0) && (m<16) );
+	assert(mType==INNER);
 	if(mHashes[m]==hash)
 		return false;
 	mHashes[m]=hash;
 	return updateHash();
 }
 
-const uint256& SHAMapInnerNode::getChildHash(int m) const
+const uint256& SHAMapTreeNode::getChildHash(int m) const
 {
-	assert( (m>=0) && (m<32) );
+	assert( (m>=0) && (m<16) && (mType==INNER) );
 	return mHashes[m];
-}
-
-bool SHAMapInnerNode::isEmpty() const
-{
-	for(int i=0; i<32; i++)
-		if(mHashes[i]!=0) return false;
-	return true;
-}
-
-bool SHAMapInnerNode::updateHash()
-{
-	uint256 j[2];
-	if(!isEmpty())
-		SHA512(reinterpret_cast<unsigned char *>(mHashes), sizeof(mHashes), (unsigned char *) j);
-	if(mHash==j[0]) return false;
-	mHash=j[0];
-	return true;
-}
-
-void SHAMapInnerNode::dump()
-{
-	std::cerr << "SHAMapInnerNode(" << getDepth() << ", " << getNodeID().GetHex() << ")" << std::endl;
-
-	int children=0;
-	for(int i=0; i<32; i++)
-		if(!!mHashes[i]) children++;
-
-	std::cerr << "  " << children << " child(ren)" << std::endl;
 }

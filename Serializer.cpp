@@ -114,6 +114,40 @@ uint256 Serializer::get256(int offset) const
 	return ret;
 }
 
+int Serializer::add1(unsigned char byte)
+{
+	int ret=mData.size();
+	mData.push_back(byte);
+	return ret;
+}
+
+bool Serializer::get1(int& byte, int offset) const
+{
+	if(offset>=mData.size()) return false;
+	byte=mData[offset];
+	return true;
+}
+
+bool Serializer::chop(int bytes)
+{
+	if(bytes>mData.size()) return false;
+	mData.resize(mData.size()-bytes);
+	return true;
+}
+
+int Serializer::removeLastByte()
+{
+	int size=mData.size()-1;
+	if(size<0)
+	{
+		assert(false);
+		return -1;
+	}
+	int ret=mData[size];
+	mData.resize(size);
+	return ret;
+}
+
 bool Serializer::getRaw(std::vector<unsigned char>& o, int offset, int length) const
 {
 	if((offset+length)>mData.size()) return false;

@@ -20,10 +20,14 @@ class SHAMapDiffNode
 		mNodeID(id), mOurHash(ourHash), mOtherHash(otherHash) { ; }
 };
 
+
 bool SHAMap::compare(SHAMap::pointer otherMap, SHAMapDiff& differences, int maxCount)
 { // compare two hash trees, add up to maxCount differences to the difference table
   // return value: true=complete table of differences given, false=too many differences
   // throws on corrupt tables or missing nodes
+
+#if 0
+// FIXME: Temporarily disabled
 
 	std::stack<SHAMapDiffNode> nodeStack; // track nodes we've pushed
 	nodeStack.push(SHAMapDiffNode(SHAMapNode(), getHash(), otherMap->getHash()));
@@ -143,5 +147,8 @@ bool SHAMap::compare(SHAMap::pointer otherMap, SHAMapDiff& differences, int maxC
 			}
 		}
 	}
+
+#endif
+
 	return true;
 }

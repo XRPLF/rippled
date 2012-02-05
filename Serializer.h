@@ -21,6 +21,7 @@ class Serializer
 	Serializer(const std::vector<unsigned char> &data) : mData(data) { ; }
 
 	// assemble functions
+	int add1(unsigned char byte);
 	int add16(uint16);
 	int add32(uint32);				// ledger indexes, account sequence
 	int add64(uint64);				// timestamps, amounts
@@ -30,6 +31,8 @@ class Serializer
 	int addRaw(const void *ptr, int len);
 
 	// disassemble functions
+	bool get1(int&, int offset) const;
+	bool get1(unsigned char&, int offset) const;
 	bool get16(uint16&, int offset) const;
 	bool get32(uint32&, int offset) const;
 	bool get64(uint64&, int offset) const;
@@ -53,6 +56,8 @@ class Serializer
 	std::vector<unsigned char> getData() const { return mData; }
 	void secureErase() { memset(&(mData.front()), 0, mData.size()); erase(); }
 	void erase() { mData.clear(); }
+	int removeLastByte();
+	bool chop(int num);
 	
 	// signature functions
 	bool checkSignature(int pubkeyOffset, int signatureOffset) const;
