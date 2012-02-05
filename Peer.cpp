@@ -4,6 +4,7 @@
 #include <boost/foreach.hpp>
 //#include <boost/log/trivial.hpp>
 #include <boost/bind.hpp>
+#include <boost/make_shared.hpp>
 
 #include "json/writer.h"
 
@@ -341,7 +342,7 @@ void Peer::recvTransaction(newcoin::TMTransaction& packet)
 	std::string rawTx=packet.rawtransaction();
 	std::vector<unsigned char> rTx(rawTx.size());
 	memcpy(&rTx.front(), rawTx.data(), rawTx.size());
-	Transaction::pointer tx(new Transaction(rTx, true));
+	Transaction::pointer tx=boost::make_shared<Transaction>(rTx, true);
 
 	if(tx->getStatus()==INVALID)
 	{ // transaction fails basic validity tests
@@ -436,7 +437,8 @@ void Peer::sendHello()
 		h->set_closedledger(s.getDataPtr(), s.getLength());
 	}
 
-	PackedMessage::pointer packet(new PackedMessage(PackedMessage::MessagePointer(h), newcoin::mtHELLO));
+	PackedMessage::pointer packet=boost::make_shared<PackedMessage>
+		(PackedMessage::MessagePointer(h), newcoin::mtHELLO);
 	sendPacket(packet);
 }
 
@@ -464,7 +466,8 @@ PackedMessage::pointer Peer::createLedgerProposal(Ledger::pointer ledger)
 	prop->set_hash(hash.begin(),hash.GetSerializeSize());
 	prop->set_numtransactions(ledger->getNumTransactions());
 
-	PackedMessage::pointer packet(new PackedMessage(PackedMessage::MessagePointer(prop),newcoin::PROPOSE_LEDGER));
+	PackedMessage::pointer packet=boost::make_shared<PackedMessage>
+		(PackedMessage::MessagePointer(prop),newcoin::PROPOSE_LEDGER);
 	return(packet);
 }
 
@@ -481,7 +484,8 @@ PackedMessage::pointer Peer::createValidation(Ledger::pointer ledger)
 	valid->set_hanko(theConfig.HANKO);
 	
 
-	PackedMessage::pointer packet(new PackedMessage(PackedMessage::MessagePointer(valid),newcoin::VALIDATION));
+	PackedMessage::pointer packet=boost::make_shared<PackedMessage>
+		(PackedMessage::MessagePointer(valid),newcoin::VALIDATION);
 	return(packet);
 }
 
@@ -490,7 +494,8 @@ PackedMessage::pointer Peer::createGetFullLedger(uint256& hash)
 	newcoin::GetFullLedger* gfl=new newcoin::GetFullLedger();
 	gfl->set_hash(hash.begin(),hash.GetSerializeSize());
 
-	PackedMessage::pointer packet(new PackedMessage(PackedMessage::MessagePointer(gfl),newcoin::GET_FULL_LEDGER));
+	PackedMessage::pointer packet=boost::make_shared<PackedMessage>
+		(PackedMessage::MessagePointer(gfl),newcoin::GET_FULL_LEDGER);
 	return(packet);
 }
 
@@ -539,7 +544,8 @@ void Peer::receiveGetValidations(newcoin::GetValidations& request)
 	{
 		BOOST_FOREACH(newcoin::Validation& valid, validations)
 		{
-			PackedMessage::pointer packet(new PackedMessage(PackedMessage::MessagePointer(new newcoin::Validation(valid)),newcoin::VALIDATION));
+			PackedMessage::pointer packet=boost::make_shared<PackedMessage>
+				(PackedMessage::MessagePointer(new newcoin::Validation(valid)),newcoin::VALIDATION));
 			sendPacket(packet);
 		}
 	}
@@ -552,7 +558,8 @@ void Peer::receiveTransaction(TransactionPtr trans)
 	{
 		// broadcast it to other Peers
 		ConnectionPool& pool=theApp->getConnectionPool();
-		PackedMessage::pointer packet(new PackedMessage(PackedMessage::MessagePointer(new newcoin::Transaction(*(trans.get()))),newcoin::TRANSACTION));
+		PackedMessage::pointer packet=boost::make_shread<PackedMessage>
+			(PackedMessage::MessagePointer(new newcoin::Transaction(*(trans.get()))),newcoin::TRANSACTION);
 		pool.relayMessage(this,packet);
 	}else 
 	{
