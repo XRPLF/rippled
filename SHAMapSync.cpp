@@ -303,7 +303,7 @@ bool SHAMap::syncTest()
 	SHAMap source, destination;
 
 	// add random data to the source map
-	int items=10+rand()%4000;
+	int items=rand()%20000;
 	for(int i=0; i<items; i++)
 	{
 		Serializer s;

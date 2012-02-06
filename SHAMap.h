@@ -181,7 +181,11 @@ public:
 	// item node function
 	bool hasItem() const { return !!mItem; }
 	SHAMapItem::pointer peekItem() { return mItem; }
+	SHAMapItem::pointer getItem() const;
 	bool setItem(SHAMapItem::pointer& i, TNType type);
+	const uint256& getTag() const { return mItem->getTag(); }
+	const std::vector<unsigned char>& peekData() { return mItem->peekData(); }
+	std::vector<unsigned char> getData() const { return mItem->getData(); }
 
 	// sync functions
 	bool isFullBelow(void) const		{ return mFullBelow; }
@@ -227,6 +231,9 @@ protected:
 
 	SHAMapItem::pointer firstBelow(SHAMapTreeNode::pointer);
 	SHAMapItem::pointer lastBelow(SHAMapTreeNode::pointer);
+
+	bool walkBranch(SHAMapTreeNode::pointer node, SHAMapItem::pointer otherMapItem, bool isFirstMap,
+	    SHAMapDiff& differences, int& maxCount);
 	
 public:
 

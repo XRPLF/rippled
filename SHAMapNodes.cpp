@@ -282,6 +282,11 @@ bool SHAMapTreeNode::setItem(SHAMapItem::pointer& i, TNType type)
 	return getNodeHash()==hash;
 }
 
+SHAMapItem::pointer SHAMapTreeNode::getItem() const
+{
+	return boost::make_shared<SHAMapItem>(*mItem);
+}
+
 int SHAMapTreeNode::getBranchCount() const
 {
 	int ret=0;
