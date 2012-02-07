@@ -47,6 +47,7 @@ class Serializer
 	uint256 getSHA256(int size=-1) const;
 	uint256 getSHA512Half(int size=-1) const;
 	static uint256 getSHA512Half(const std::vector<unsigned char>& data, int size=-1);
+	static uint256 getSHA512Half(const unsigned char *data, int len);
 
 	// totality functions
 	int getLength() const { return mData.size(); }

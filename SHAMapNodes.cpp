@@ -251,12 +251,7 @@ bool SHAMapTreeNode::updateHash()
 				break;
 			}
 		if(!empty)
-		{
-			uint256 j[2];
-			SHA512(reinterpret_cast<unsigned char *>(mHashes), sizeof(mHashes), (unsigned char *) j);
-			nh=j[0];
-			assert(!!nh);
-		}
+			nh=Serializer::getSHA512Half(reinterpret_cast<unsigned char *>(mHashes), sizeof(mHashes));
 	}
 	else if(mType==ACCOUNT_STATE)
 	{

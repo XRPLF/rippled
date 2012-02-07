@@ -192,6 +192,13 @@ uint256 Serializer::getSHA512Half(const std::vector<unsigned char>& data, int si
 	return j[0];
 }
 
+uint256 Serializer::getSHA512Half(const unsigned char *data, int len)
+{
+	uint256 j[2];
+	SHA512(data, len, (unsigned char *) j);
+	return j[0];
+}
+
 bool Serializer::checkSignature(int pubkeyOffset, int signatureOffset) const
 {
 	std::vector<unsigned char> pubkey, signature;
