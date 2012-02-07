@@ -198,7 +198,7 @@ SHAMapItem::pointer SHAMap::lastBelow(SHAMapTreeNode::pointer node)
 		if(node->hasItem()) return node->peekItem();
 
 		bool foundNode=false;
-		for(int i=16; i>=0; i++)
+		for(int i=15; i>=0; i++)
 			if(!node->isEmptyBranch(i))
 			{
 				node=getNode(node->getChildNodeID(i), node->getChildHash(i), false);
