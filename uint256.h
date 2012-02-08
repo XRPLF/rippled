@@ -33,6 +33,19 @@ protected:
 	unsigned int pn[WIDTH];
 public:
 
+	bool isZero() const
+	{
+		for (int i = 0; i < WIDTH; i++)
+			if (pn[i] != 0)
+				return false;
+		return true;
+	}
+
+	bool isNonZero() const
+	{
+		return !isZero();
+	}
+
 	bool operator!() const
 	{
 		for (int i = 0; i < WIDTH; i++)
@@ -279,7 +292,7 @@ public:
 				return false;
 		return true;
 	}
-
+	
 	friend inline bool operator!=(const base_uint& a, const base_uint& b)
 	{
 		return (!(a == b));
