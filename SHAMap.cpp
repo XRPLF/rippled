@@ -31,7 +31,7 @@ std::stack<SHAMapTreeNode::pointer> SHAMap::getStack(const uint256& id, bool inc
 		assert(branch>=0);
 
 		uint256 hash=node->getChildHash(branch);
-		if(!hash) return stack;
+		if(hash.isZero()) return stack;
 
 		node=getNode(node->getChildNodeID(branch), hash, false);
 		if(!node)
@@ -74,7 +74,7 @@ void SHAMap::dirtyUp(std::stack<SHAMapTreeNode::pointer>& stack, const uint256& 
 		std::cerr << "dirtyUp sets branch " << branch << " to " << prevHash.GetHex() << std::endl;
 #endif
 		prevHash=node->getNodeHash();
-		assert(!!prevHash);
+		assert(prevHash.isNonZero());
 	}
 }
 
@@ -95,7 +95,7 @@ SHAMapTreeNode::pointer SHAMap::walkTo(const uint256& id, bool modify)
 		int branch=inNode->selectBranch(id);
 		if(inNode->isEmptyBranch(branch)) return inNode;
 		uint256 childHash=inNode->getChildHash(branch);
-		if(!childHash) return inNode;
+		if(childHash.isZero()) return inNode;
 
 		SHAMapTreeNode::pointer nextNode=getNode(inNode->getChildNodeID(branch), childHash, false);
 		if(!nextNode) throw SHAMapException(MissingNode);
@@ -408,12 +408,12 @@ bool SHAMap::delItem(const uint256& id)
 					node->setItem(item, type);
 				}
 				prevHash=node->getNodeHash();
-				assert(!!prevHash);
+				assert(prevHash.isNonZero());
 			}
 			else
 			{
 				prevHash=node->getNodeHash();
-				assert(!!prevHash);
+				assert(prevHash.isNonZero());
 			}
 		}
 		else assert(stack.empty());
@@ -507,7 +507,7 @@ bool SHAMap::addGiveItem(SHAMapItem::pointer item, bool isTransaction)
 	}
 
 	prevHash=node->getNodeHash();
-	assert(!!prevHash);
+	assert(prevHash.isNonZero());
 	dirtyUp(stack, tag, prevHash);
 	return true;
 }
@@ -595,7 +595,7 @@ SHAMapTreeNode::pointer SHAMap::getNode(const SHAMapNode& nodeID)
 	return node;
 }
 
-void SHAMap::dump()
+void SHAMap::dump(bool hash)
 {
 #if 0
 	std::cerr << "SHAMap::dump" << std::endl;
@@ -614,6 +614,7 @@ void SHAMap::dump()
 			it!=mTNByID.end(); ++it)
 	{
 		std::cerr << it->second->getString() << std::endl;
+		if(hash) std::cerr << "   " << it->second->getNodeHash().GetHex() << std::endl;
 	}
 
 }
