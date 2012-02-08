@@ -33,7 +33,7 @@ std::stack<SHAMapTreeNode::pointer> SHAMap::getStack(const uint256& id, bool inc
 		uint256 hash=node->getChildHash(branch);
 		if(!hash) return stack;
 
-		node=getNode(node->getChildNodeID(branch), node->getChildHash(branch), false);
+		node=getNode(node->getChildNodeID(branch), hash, false);
 		if(!node)
 		{
 			if(mSynching) return stack;
@@ -210,6 +210,60 @@ SHAMapItem::pointer SHAMap::lastBelow(SHAMapTreeNode::pointer node)
 	} while(1);
 }
 
+SHAMapItem::pointer SHAMap::onlyBelow(SHAMapTreeNode::pointer node)
+{
+	// If there is only one item below this node, return it
+	bool found;
+	while(!node->isLeaf())
+	{
+		found=false;
+		SHAMapTreeNode::pointer nextNode;
+
+		for(int i=0; i<15; i++)
+			if(!node->isEmptyBranch(i))
+			{
+				if(found) return SHAMapItem::pointer(); // two leaves below
+				nextNode=getNode(node->getChildNodeID(i), node->getChildHash(i), false);
+				if(!nextNode) throw SHAMapException(MissingNode);
+				found=true;
+			}
+
+		if(!found)
+		{
+			assert(false);
+			return SHAMapItem::pointer();
+		}
+		node=nextNode;
+	}
+	assert(node->hasItem());
+	return node->peekItem();
+}
+
+void SHAMap::eraseChildren(SHAMapTreeNode::pointer node)
+{ // this node has only one item below it, erase its children
+	bool erase=false;
+	while(!node->isLeaf())
+	{
+		for(int i=0; i<16; i++)
+			if(!node->isEmptyBranch(i))
+			{
+				SHAMapTreeNode::pointer nextNode=getNode(node->getChildNodeID(i), node->getChildHash(i), false);
+				if(erase)
+				{
+					returnNode(node, true);
+					if(mTNByID.erase(*node))
+					assert(false);
+				}
+				erase=true;
+				node=nextNode;
+			}
+	}
+	returnNode(node, true);
+	if(mTNByID.erase(*node)==0)
+		assert(false);
+	return;
+}
+
 SHAMapItem::pointer SHAMap::peekFirstItem()
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
@@ -302,16 +356,18 @@ bool SHAMap::delItem(const uint256& id)
 { // delete the item with this ID
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
-	std::stack<SHAMapTreeNode::pointer> stack=getStack(id, false);
+	std::stack<SHAMapTreeNode::pointer> stack=getStack(id, true);
 	if(stack.empty()) throw SHAMapException(MissingNode);
 
 	SHAMapTreeNode::pointer leaf=stack.top();
 	stack.pop();
 	if( !leaf || !leaf->hasItem() || (leaf->peekItem()->getTag()!=id) )
 		return false;
+
 	SHAMapTreeNode::TNType type=leaf->getType();
 	returnNode(leaf, true);
-	mTNByID.erase(*leaf);
+	if(mTNByID.erase(*leaf)==0)
+		assert(false);
 
 	uint256 prevHash;
 	while(!stack.empty())
@@ -319,25 +375,46 @@ bool SHAMap::delItem(const uint256& id)
 		SHAMapTreeNode::pointer node=stack.top();
 		stack.pop();
 		returnNode(node, true);
+		assert(node->isInner());
+
 		if(!node->setChildHash(node->selectBranch(id), prevHash))
+		{
+			assert(false);
 			return true;
-		if(!prevHash && !node->isRoot())
+		}
+		if(!node->isRoot())
 		{ // we may have made this a node with 1 or 0 children
 			int bc=node->getBranchCount();
 			if(bc==0)
 			{
+#ifdef DEBUG
+				std::cerr << "delItem makes empty node" << std::endl;
+#endif
 				prevHash=uint256();
-				mTNByID.erase(*node);
+				if(!mTNByID.erase(*node))
+					assert(false);
 			}
 			else if(bc==1)
 			{ // pull up on the thread
-				SHAMapItem::pointer item=firstBelow(node);
-				assert(item);
-				node->setItem(item, type);
+				SHAMapItem::pointer item=onlyBelow(node);
+				if(item)
+				{
+					eraseChildren(node);
+#ifdef ST_DEBUG
+					std::cerr << "Making item node " << node->getString() << std::endl;
+#endif
+					node->setItem(item, type);
+				}
 				prevHash=node->getNodeHash();
+				assert(!!prevHash);
+			}
+			else
+			{
+				prevHash=node->getNodeHash();
+				assert(!!prevHash);
 			}
 		}
-		else prevHash=node->getNodeHash();
+		else assert(stack.empty());
 	}
 	return true;
 }

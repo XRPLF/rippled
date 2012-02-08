@@ -294,6 +294,55 @@ bool SHAMap::deepCompare(SHAMap& other)
 	return true;
 }
 
+#ifdef DEBUG
+#define SMS_DEBUG
+#endif
+
+static SHAMapItem::pointer makeRandomAS()
+{
+		Serializer s;
+		for(int d=0; d<8; d++)
+			s.add32(rand());
+		return boost::make_shared<SHAMapItem>(s.getRIPEMD160(), s.peekData());
+}
+
+static bool confuseMap(SHAMap &map, int count)
+{
+	// add a bunch of random states to a map, then remove them
+	// map should be the same
+	uint256 beforeHash=map.getHash();
+
+	std::list<uint256> items;
+
+	for(int i=0; i<count; i++)
+	{
+		SHAMapItem::pointer item=makeRandomAS();
+		items.push_back(item->getTag());
+		if(!map.addItem(*item, false))
+		{
+			std::cerr << "Unable to add item to map" << std::endl;
+			return false;
+		}
+	}
+
+	for(std::list<uint256>::iterator it=items.begin(); it!=items.end(); ++it)
+	{
+		if(!map.delItem(*it))
+		{
+			std::cerr << "Unable to remove item from map" << std::endl;
+			return false;
+		}
+	}
+
+	if(beforeHash!=map.getHash())
+	{
+		std::cerr << "Hashes do not match" << std::endl;
+		return false;
+	}
+
+	return true;
+}
+
 bool SHAMap::syncTest()
 {
 	unsigned int seed;
@@ -302,20 +351,14 @@ bool SHAMap::syncTest()
 
 	SHAMap source, destination;
 
+
 	// add random data to the source map
-	int items=rand()%20000;
+	int items=10000;
 	for(int i=0; i<items; i++)
-	{
-		Serializer s;
-		int dlen=rand()%30+10;
-		for(int d=0; d<dlen; d++)
-			s.add32(rand());
-		uint160 id=s.getRIPEMD160();
-		source.addItem(SHAMapItem(id, s.peekData()), false);
-#ifdef ST_DEBUG
-		std::cerr << "Item: " << id.GetHex() << std::endl;
-#endif
-	}
+		source.addItem(*makeRandomAS(), false);
+
+	if(!confuseMap(source, 350))
+		return false;
 
 	source.setImmutable();
 
@@ -366,10 +409,10 @@ bool SHAMap::syncTest()
 		hashes.clear();
 
 		// get the list of nodes we know we need
-		destination.getMissingNodes(nodeIDs, hashes, 512);
+		destination.getMissingNodes(nodeIDs, hashes, 2048);
 		if(!nodeIDs.size()) break;
 
-#ifdef DEBUG
+#ifdef SMS_DEBUG
 		std::cerr << nodeIDs.size() << " needed nodes" << std::endl;
 #endif
 		
@@ -392,7 +435,7 @@ bool SHAMap::syncTest()
 			return false;
 		}
 
-#ifdef DEBUG
+#ifdef SMS_DEBUG
 		std::cerr << gotNodeIDs.size() << " found nodes" << std::endl;
 #endif
 		for(nodeIDIterator=gotNodeIDs.begin(), rawNodeIterator=gotNodes.begin();
@@ -413,7 +456,7 @@ bool SHAMap::syncTest()
 	} while(1);
 	destination.clearSynching();
 
-#ifdef DEBUG
+#ifdef SMS_DEBUG
 	std::cerr << "SYNCHING COMPLETE " << items << " items, " << nodes << " nodes" << std::endl;
 #endif
 
@@ -424,7 +467,7 @@ bool SHAMap::syncTest()
 		return false;
 	}
 
-#ifdef DEBUG
+#ifdef SMS_DEBUG
 	std::cerr << "SHAMapSync test passed: " << items << " items, " <<
 		passes << " passes, " << nodes << " nodes" << std::endl;
 #endif

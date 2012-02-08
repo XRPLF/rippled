@@ -279,14 +279,16 @@ bool SHAMapTreeNode::setItem(SHAMapItem::pointer& i, TNType type)
 
 SHAMapItem::pointer SHAMapTreeNode::getItem() const
 {
+	assert(isLeaf());
 	return boost::make_shared<SHAMapItem>(*mItem);
 }
 
 int SHAMapTreeNode::getBranchCount() const
 {
+	assert(isInner());
 	int ret=0;
-	for(int i=0; i<16; i++)
-		if(!mHashes[i]) ret++;
+	for(int i=0; i<16; ++i)
+		if(!!mHashes[i]) ++ret;
 	return ret;
 }
 
