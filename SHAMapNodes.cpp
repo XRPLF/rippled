@@ -173,7 +173,7 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned 
 		uint160 u;
 		s.get160(u, len-20);
 		s.chop(20);
-		if(!u) throw SHAMapException(InvalidNode);
+		if(u.isZero()) throw SHAMapException(InvalidNode);
 		mItem=boost::make_shared<SHAMapItem>(u, s.peekData());
 		mType=ACCOUNT_STATE;
 	}
@@ -223,7 +223,7 @@ void SHAMapTreeNode::addRaw(Serializer &s)
 	if(getBranchCount()<5)
 	{ // compressed node
 		for(int i=0; i<16; i++)
-			if(!!mHashes[i])
+			if(mHashes[i].isNonZero())
 			{
 				s.add256(mHashes[i]);
 				s.add1(i);
@@ -245,7 +245,7 @@ bool SHAMapTreeNode::updateHash()
 	{
 		bool empty=true;
 		for(int i=0; i<16; i++)
-			if(!!mHashes[i])
+			if(mHashes[i].isNonZero())
 			{
 				empty=false;
 				break;
@@ -274,6 +274,8 @@ bool SHAMapTreeNode::setItem(SHAMapItem::pointer& i, TNType type)
 	uint256 hash=getNodeHash();
 	mType=type;
 	mItem=i;
+	assert(isLeaf());
+	updateHash();
 	return getNodeHash()==hash;
 }
 
@@ -288,7 +290,7 @@ int SHAMapTreeNode::getBranchCount() const
 	assert(isInner());
 	int ret=0;
 	for(int i=0; i<16; ++i)
-		if(!!mHashes[i]) ++ret;
+		if(mHashes[i].isNonZero()) ++ret;
 	return ret;
 }
 
