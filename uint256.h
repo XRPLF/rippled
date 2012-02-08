@@ -303,7 +303,12 @@ public:
 		return (!(a == b));
 	}
 
-	unsigned int PeekAt(int j) const
+	unsigned int GetAt(int j) const
+	{
+		return pn[j];
+	}
+
+	unsigned int& PeekAt(int j)
 	{
 		return pn[j];
 	}

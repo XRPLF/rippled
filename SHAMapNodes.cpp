@@ -99,10 +99,9 @@ SHAMapNode SHAMapNode::getChildNodeID(int m) const
 { // This can be optimized to avoid the << if needed
 	assert((m>=0) && (m<16));
 
-	uint256 branch=m;
-	branch<<=mDepth*4;
-
-	return SHAMapNode(mDepth+1, mNodeID | branch);
+	uint256 child(mNodeID);
+	child.PeekAt(mDepth/8) |= m << (4*(mDepth%8));
+	return SHAMapNode(mDepth+1, child);
 }
 
 int SHAMapNode::selectBranch(const uint256& hash) const
