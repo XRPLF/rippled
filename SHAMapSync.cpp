@@ -79,7 +79,7 @@ bool SHAMap::getNodeFat(const SHAMapNode& wanted, std::vector<SHAMapNode>& nodeI
 	node->addRaw(s);
 	rawNodes.push_back(s.peekData());
 
-	if(wanted.isRoot()) // don't get a fat root
+	if(node->isRoot() || node->isLeaf()) // don't get a fat root, can't get a fat leaf
 		return true;
 
 	for(int i=0; i<16; i++)
@@ -104,7 +104,7 @@ bool SHAMap::addRootNode(const std::vector<unsigned char>& rootNode)
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
 	// we already have a root node
-	if(!!root->getNodeHash())
+	if(root->getNodeHash().isNonZero())
 	{
 #ifdef DEBUG
 		std::cerr << "got root node, already have one" << std::endl;
@@ -133,7 +133,7 @@ bool SHAMap::addRootNode(const uint256& hash, const std::vector<unsigned char>& 
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
 	// we already have a root node
-	if(!!root->getNodeHash())
+	if(root->getNodeHash().isNonZero())
 	{
 #ifdef DEBUG
 		std::cerr << "got root node, already have one" << std::endl;
@@ -314,6 +314,8 @@ static bool confuseMap(SHAMap &map, int count)
 
 	std::list<uint256> items;
 
+	map.dump(true);
+
 	for(int i=0; i<count; i++)
 	{
 		SHAMapItem::pointer item=makeRandomAS();
@@ -337,6 +339,7 @@ static bool confuseMap(SHAMap &map, int count)
 	if(beforeHash!=map.getHash())
 	{
 		std::cerr << "Hashes do not match" << std::endl;
+		map.dump(true);
 		return false;
 	}
 
@@ -345,19 +348,22 @@ static bool confuseMap(SHAMap &map, int count)
 
 bool SHAMap::syncTest()
 {
+#if 0
 	unsigned int seed;
 	RAND_pseudo_bytes(reinterpret_cast<unsigned char *>(&seed), sizeof(seed));
 	srand(seed);
+#endif
+	srand(2);
 
 	SHAMap source, destination;
 
 
 	// add random data to the source map
-	int items=10000;
+	int items=8;
 	for(int i=0; i<items; i++)
 		source.addItem(*makeRandomAS(), false);
 
-	if(!confuseMap(source, 350))
+	if(!confuseMap(source, 3))
 		return false;
 
 	source.setImmutable();
