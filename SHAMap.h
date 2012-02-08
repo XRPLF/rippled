@@ -164,7 +164,7 @@ public:
 	TNType getType() const { return mType; }
 
 	// type functions
-	bool isLeaf() const { return mType==TRANSACTION || mType==ACCOUNT_STATE; }
+	bool isLeaf() const { return (mType==TRANSACTION) || (mType==ACCOUNT_STATE); }
 	bool isInner() const { return mType==INNER; }
 	bool isValid() const { return mType!=ERROR; }
 	bool isTransaction() const { return mType!=TRANSACTION; }
