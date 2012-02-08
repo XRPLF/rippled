@@ -303,7 +303,7 @@ public:
 	static bool TestSHAMap();
 	static bool syncTest();
 	bool deepCompare(SHAMap& other);
-	virtual void dump();
+	virtual void dump(bool withHashes=false);
 };
 
 #endif
