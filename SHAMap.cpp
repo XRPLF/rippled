@@ -219,7 +219,7 @@ SHAMapItem::pointer SHAMap::onlyBelow(SHAMapTreeNode::pointer node)
 		found=false;
 		SHAMapTreeNode::pointer nextNode;
 
-		for(int i=0; i<15; i++)
+		for(int i=0; i<16; i++)
 			if(!node->isEmptyBranch(i))
 			{
 				if(found) return SHAMapItem::pointer(); // two leaves below
@@ -230,6 +230,7 @@ SHAMapItem::pointer SHAMap::onlyBelow(SHAMapTreeNode::pointer node)
 
 		if(!found)
 		{
+			std::cerr << node->getString() << std::endl;
 			assert(false);
 			return SHAMapItem::pointer();
 		}
@@ -242,7 +243,7 @@ SHAMapItem::pointer SHAMap::onlyBelow(SHAMapTreeNode::pointer node)
 void SHAMap::eraseChildren(SHAMapTreeNode::pointer node)
 { // this node has only one item below it, erase its children
 	bool erase=false;
-	while(!node->isLeaf())
+	while(node->isInner())
 	{
 		for(int i=0; i<16; i++)
 			if(!node->isEmptyBranch(i))
@@ -256,6 +257,7 @@ void SHAMap::eraseChildren(SHAMapTreeNode::pointer node)
 				}
 				erase=true;
 				node=nextNode;
+				break;
 			}
 	}
 	returnNode(node, true);
