@@ -149,7 +149,7 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapTreeNode& node, uint32 seq) : SHAMapN
 SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& node, SHAMapItem::pointer item, TNType type, uint32 seq) :
 	SHAMapNode(node), mItem(item), mSeq(seq), mType(type), mFullBelow(true)
 {
-	assert(item->peekData().size()>=32);
+	assert(item->peekData().size()>=12);
 	updateHash();
 }
 
@@ -160,7 +160,7 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned 
 
 	int type=s.removeLastByte();
 	int len=s.getLength();
-	if( (type<0) || (type>3) || (len<33) ) throw SHAMapException(InvalidNode);
+	if( (type<0) || (type>3) || (len<32) ) throw SHAMapException(InvalidNode);
 
 	if(type==0)
 	{ // transaction
@@ -213,13 +213,12 @@ void SHAMapTreeNode::addRaw(Serializer &s)
 	if(mType==ACCOUNT_STATE)
 	{
 		mItem->addRaw(s);
-		assert(s.getLength()>20);
 		s.add160(mItem->getTag().to160());
 		s.add1(1);
 		return;
 	}
 
-	if(getBranchCount()<5)
+	if(getBranchCount()<12)
 	{ // compressed node
 		for(int i=0; i<16; i++)
 			if(mHashes[i].isNonZero())
@@ -260,7 +259,9 @@ bool SHAMapTreeNode::updateHash()
 		nh=s.getSHA512Half();
 	}
 	else if(mType==TRANSACTION)
-		nh=mItem->getTag();
+	{
+		nh=Serializer::getSHA512Half(mItem->peekData());
+	}
 	else assert(false);
 
 	if(nh==mHash) return false;
