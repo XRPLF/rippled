@@ -1,6 +1,6 @@
 #include "Serializer.h"
 #include "key.h"
-#include <assert.h>
+#include <cassert>
 #include <openssl/ripemd.h>
 #include <openssl/sha.h>
 

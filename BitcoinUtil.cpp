@@ -1,7 +1,7 @@
 #include "BitcoinUtil.h"
-#include <stdarg.h>
+#include <cstdarg>
 #include <openssl/rand.h>
-#include <time.h>
+#include <ctime>
 
 #if defined(WIN32) || defined(WIN64)
 #include <windows.h>

@@ -6,11 +6,11 @@
 #define NEWCOIN_UINT256_H
 
 
-#include <limits.h>
+#include <climits>
 #include <string>
 #include <vector>
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 
 #include "types.h"
 

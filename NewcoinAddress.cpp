@@ -1,7 +1,7 @@
 #include "NewcoinAddress.h"
 #include "Config.h"
 #include "BitcoinUtil.h"
-#include <assert.h>
+#include <cassert>
 
 
 bool NewcoinAddress::SetHash160(const uint160& hash160)

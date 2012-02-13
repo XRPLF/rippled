@@ -1,7 +1,7 @@
 
 
 #include <iostream>
-#include <stdlib.h>
+#include <cstdlib>
 
 #include <boost/asio.hpp>
 #include <boost/iostreams/concepts.hpp>
