@@ -40,6 +40,7 @@ public:
 	SHAMapNode(int depth, const uint256& hash);
 	int getDepth() const				{ return mDepth; }
 	const uint256& getNodeID()	const	{ return mNodeID; }
+	bool isValid() const { return (mDepth>=0) && (mDepth<64); }
 
 	virtual bool isPopulated() const { return false; }
 
@@ -66,6 +67,11 @@ public:
 
 	static void ClassInit();
 	static uint256 getNodeID(int depth, const uint256& hash);
+
+	// Convert to/from wire format (256-bit nodeID, 1-byte depth)
+	void addIDRaw(Serializer &s) const;
+	static int getRawIDLength(void) { return 33; }
+	SHAMapNode(const void *ptr, int len);
 };
 
 class hash_SMN

@@ -95,6 +95,22 @@ SHAMapNode::SHAMapNode(int depth, const uint256 &hash) : mDepth(depth)
 	mNodeID = getNodeID(depth, hash);
 }
 
+SHAMapNode::SHAMapNode(const void *ptr, int len)
+{
+	if(len<33) mDepth=-1;
+	else
+	{
+		memcpy(&mNodeID, ptr, 32);
+		mDepth=*(reinterpret_cast<const unsigned char *>(ptr) + 32);
+	}
+}
+
+void SHAMapNode::addIDRaw(Serializer &s) const
+{
+	s.add256(mNodeID);
+	s.add1(mDepth);
+}
+
 SHAMapNode SHAMapNode::getChildNodeID(int m) const
 { // This can be optimized to avoid the << if needed
 	assert((m>=0) && (m<16));

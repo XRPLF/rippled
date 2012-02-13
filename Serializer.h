@@ -19,6 +19,7 @@ class Serializer
 	public:
 	Serializer(int n=256) { mData.reserve(n); }
 	Serializer(const std::vector<unsigned char> &data) : mData(data) { ; }
+	Serializer(const std::string& data) : mData(data.data(), (data.data()) + data.size()) { ; }
 
 	// assemble functions
 	int add1(unsigned char byte);

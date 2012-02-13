@@ -12,6 +12,12 @@
 #include "Transaction.h"
 #include "NetworkOPs.h"
 
+enum PeerPunish
+{
+	PP_INVALID_REQUEST=1,	// The peer sent a request that makes no sense
+	PP_UNKNOWN_REQUEST=2,	// The peer sent a request that might be garbage
+};
+
 class Peer : public boost::enable_shared_from_this<Peer>
 {
 public:
@@ -83,6 +89,8 @@ public:
 	void sendLedgerProposal(Ledger::pointer ledger);
 	void sendFullLedger(Ledger::pointer ledger);
 	void sendGetFullLedger(uint256& hash);
+
+	void punishPeer(PeerPunish pp);
 
 	//static PackedMessage::pointer createFullLedger(Ledger::pointer ledger);
 	static PackedMessage::pointer createLedgerProposal(Ledger::pointer ledger);
