@@ -108,7 +108,7 @@ SHAMapNode::SHAMapNode(const void *ptr, int len)
 void SHAMapNode::addIDRaw(Serializer &s) const
 {
 	s.add256(mNodeID);
-	s.add1(mDepth);
+	s.add8(mDepth);
 }
 
 SHAMapNode SHAMapNode::getChildNodeID(int m) const
@@ -204,7 +204,7 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned 
 		for(int i=0; i<(len/33); i++)
 		{
 			int pos;
-			s.get1(pos, 32+(i*33));
+			s.get8(pos, 32+(i*33));
 			if( (pos<0) || (pos>=16)) throw SHAMapException(InvalidNode);
 			s.get256(mHashes[pos], i*33);
 		}
@@ -221,7 +221,7 @@ void SHAMapTreeNode::addRaw(Serializer &s)
 	if(mType==TRANSACTION)
 	{
 		mItem->addRaw(s);
-		s.add1(0);
+		s.add8(0);
 		assert(s.getLength()>32);
 		return;
 	}
@@ -230,7 +230,7 @@ void SHAMapTreeNode::addRaw(Serializer &s)
 	{
 		mItem->addRaw(s);
 		s.add160(mItem->getTag().to160());
-		s.add1(1);
+		s.add8(1);
 		return;
 	}
 
@@ -240,15 +240,15 @@ void SHAMapTreeNode::addRaw(Serializer &s)
 			if(mHashes[i].isNonZero())
 			{
 				s.add256(mHashes[i]);
-				s.add1(i);
+				s.add8(i);
 			}
-		s.add1(3);
+		s.add8(3);
 		return;
 	}
 
 	for(int i=0; i<16; i++)
 		s.add256(mHashes[i]);
-	s.add1(2);
+	s.add8(2);
 }
 
 bool SHAMapTreeNode::updateHash()

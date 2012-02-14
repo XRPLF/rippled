@@ -114,14 +114,14 @@ uint256 Serializer::get256(int offset) const
 	return ret;
 }
 
-int Serializer::add1(unsigned char byte)
+int Serializer::add8(unsigned char byte)
 {
 	int ret=mData.size();
 	mData.push_back(byte);
 	return ret;
 }
 
-bool Serializer::get1(int& byte, int offset) const
+bool Serializer::get8(int& byte, int offset) const
 {
 	if(offset>=mData.size()) return false;
 	byte=mData[offset];
