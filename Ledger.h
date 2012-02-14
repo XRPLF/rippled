@@ -88,6 +88,12 @@ public:
 	SHAMap::pointer peekTransactionMap() { return mTransactionMap; }
 	SHAMap::pointer peekAccountStateMap() { return mAccountStateMap; }
 
+	// ledger sync functions
+	void setAcquiring(void);
+	bool isAcquiring(void);
+	bool isAcquiringTx(void);
+	bool isAcquiringAS(void);
+
 	// mid level functions
 	bool hasTransaction(const uint256& TransID) const;
 	AccountState::pointer getAccountState(const uint160& acctID);

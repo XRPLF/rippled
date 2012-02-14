@@ -204,7 +204,8 @@ public:
 enum SHAMapException
 {
 	MissingNode=1,
-	InvalidNode=2
+	InvalidNode=2,
+	InvalidMap=3,
 };
 
 class SHAMap
@@ -289,6 +290,7 @@ public:
 	// status functions
 	void setImmutable(void) { mImmutable=true; }
 	void clearImmutable(void) { mImmutable=false; }
+	bool isSynching(void) const { return mSynching; }
 	void setSynching(void) { mSynching=true; }
 	void clearSynching(void) { mSynching=false; }
 

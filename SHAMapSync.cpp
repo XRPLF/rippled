@@ -18,6 +18,7 @@ void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint2
 #ifdef GMN_DEBUG
 		std::cerr << "getMissingNodes: root is full below" << std::endl;
 #endif
+		clearSynching();
 		return;
 	}
 
@@ -123,7 +124,11 @@ bool SHAMap::addRootNode(const std::vector<unsigned char>& rootNode)
 
 	root=node;
 	mTNByID[*root]=root;
-	if(!root->getNodeHash()) root->setFullBelow();
+	if(!root->getNodeHash())
+	{
+		root->setFullBelow();
+		clearSynching();
+	}
 
 	return true;
 }
@@ -149,7 +154,11 @@ bool SHAMap::addRootNode(const uint256& hash, const std::vector<unsigned char>& 
 	returnNode(root, true);
 	root=node;
 	mTNByID[*root]=root;
-	if(!root->getNodeHash()) root->setFullBelow();
+	if(!root->getNodeHash())
+	{
+		root->setFullBelow();
+		clearSynching();
+	}
 
 	return true;
 }
@@ -223,6 +232,7 @@ bool SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigned cha
 			}
 		iNode->setFullBelow();
 	} while(!stack.empty());
+	if(root->isFullBelow()) clearSynching();
 	return true;
 }
 
@@ -301,7 +311,7 @@ bool SHAMap::deepCompare(SHAMap& other)
 static SHAMapItem::pointer makeRandomAS()
 {
 		Serializer s;
-		for(int d=0; d<8; d++)
+		for(int d=0; d<3; d++)
 			s.add32(rand());
 		return boost::make_shared<SHAMapItem>(s.getRIPEMD160(), s.peekData());
 }
@@ -313,8 +323,6 @@ static bool confuseMap(SHAMap &map, int count)
 	uint256 beforeHash=map.getHash();
 
 	std::list<uint256> items;
-
-	map.dump(true);
 
 	for(int i=0; i<count; i++)
 	{
@@ -339,7 +347,6 @@ static bool confuseMap(SHAMap &map, int count)
 	if(beforeHash!=map.getHash())
 	{
 		std::cerr << "Hashes do not match" << std::endl;
-		map.dump(true);
 		return false;
 	}
 
@@ -348,23 +355,25 @@ static bool confuseMap(SHAMap &map, int count)
 
 bool SHAMap::syncTest()
 {
-#if 0
 	unsigned int seed;
 	RAND_pseudo_bytes(reinterpret_cast<unsigned char *>(&seed), sizeof(seed));
 	srand(seed);
-#endif
-	srand(2);
 
 	SHAMap source, destination;
 
 
 	// add random data to the source map
-	int items=8;
+	int items=1000000;
 	for(int i=0; i<items; i++)
 		source.addItem(*makeRandomAS(), false);
 
-	if(!confuseMap(source, 3))
+#ifdef DO_CONFUSE
+#ifdef DEBUG
+	std::cerr << "Adding items, then removing them" << std::endl;
+#endif
+	if(!confuseMap(source, 12000))
 		return false;
+#endif
 
 	source.setImmutable();
 
@@ -408,6 +417,7 @@ bool SHAMap::syncTest()
 #ifdef DEBUG
 	std::cerr << "ROOT COMPLETE, INNER SYNCHING" << std::endl;
 #endif
+	int bytes=0;
 
 	do
 	{
@@ -448,6 +458,7 @@ bool SHAMap::syncTest()
 				nodeIDIterator!=gotNodeIDs.end(); ++nodeIDIterator, ++rawNodeIterator)
 		{
 			nodes++;
+			bytes+=rawNodeIterator->size();
 			if(!destination.addKnownNode(*nodeIDIterator, *rawNodeIterator))
 			{
 				std::cerr << "AddKnownNode fails" << std::endl;
@@ -463,7 +474,8 @@ bool SHAMap::syncTest()
 	destination.clearSynching();
 
 #ifdef SMS_DEBUG
-	std::cerr << "SYNCHING COMPLETE " << items << " items, " << nodes << " nodes" << std::endl;
+	std::cerr << "SYNCHING COMPLETE " << items << " items, " << nodes << " nodes, " <<
+		bytes/1024 << " KB" << std::endl;
 #endif
 
 	if(!source.deepCompare(destination))

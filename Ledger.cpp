@@ -544,3 +544,25 @@ Ledger::pointer Ledger::switchPreviousLedger(Ledger::pointer oldPrevious, Ledger
 
 	return Ledger::pointer(newLedger);
 }
+
+void Ledger::setAcquiring(void)
+{
+	if(!mTransactionMap || !mAccountStateMap) throw SHAMapException(InvalidMap);
+	mTransactionMap->setSynching();
+	mAccountStateMap->setSynching();
+}
+
+bool Ledger::isAcquiring(void)
+{
+	return isAcquiringTx() || isAcquiringAS();
+}
+
+bool Ledger::isAcquiringTx(void)
+{
+	return mTransactionMap->isSynching();
+}
+
+bool Ledger::isAcquiringAS(void)
+{
+	return mAccountStateMap->isSynching();
+}

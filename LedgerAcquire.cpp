@@ -90,23 +90,19 @@ bool LedgerAcquire::takeBase(const std::vector<unsigned char>& data)
 		return false;
 	}
 	mLedger=Ledger::pointer(ledger);
+	mLedger->setAcquiring();
 	mHaveBase=true;
 	return true;
 }
 
-bool LedgerAcquire::takeTxNode(const std::list<uint256>& hashes, const std::list<std::vector<unsigned char> >& data)
+bool LedgerAcquire::takeTxNode(const std::list<SHAMapNode>& nodeIDs, const std::list<std::vector<unsigned char> >& data)
 {
+	if(!mHaveBase) return false;
 	// WRITEME
 	return true;
 }
 
-bool LedgerAcquire::takeAsNode(const std::list<uint160>& hashes, const std::list<std::vector<unsigned char> >& data)
-{
-	// WRITEME
-	return true;
-}
-
-bool LedgerAcquire::takeTx(const std::list<uint256>& hashes, const std::list<std::vector<unsigned char> >& data)
+bool LedgerAcquire::takeAsNode(const std::list<SHAMapNode>& hashes, const std::list<std::vector<unsigned char> >& data)
 {
 	// WRITEME
 	return true;
