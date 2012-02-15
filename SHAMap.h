@@ -208,6 +208,15 @@ enum SHAMapException
 	InvalidMap=3,
 };
 
+enum SHAMapState
+{
+	Modifying=0,	// Objects can be added and removed (like an open ledger)
+	Immutable=1,	// Map cannot be changed (like a closed ledger)
+	Synching=2,		// Map's hash is locked in, valid nodes can be added (like a peer's closing ledger)
+	Floating=3,		// Map is free to change hash (like a synching open ledger)
+	Invalid=4,		// Map is known not to be valid (usually synching a corrupt ledger)
+};
+
 class SHAMap
 {
 public:
@@ -223,7 +232,7 @@ private:
 
 	SHAMapTreeNode::pointer root;
 
-	bool mImmutable, mSynching;
+	SHAMapState mState;
 
 protected:
 
@@ -288,11 +297,13 @@ public:
 	bool addKnownNode(const SHAMapNode& nodeID, const std::vector<unsigned char>& rawNode);
 
 	// status functions
-	void setImmutable(void) { mImmutable=true; }
-	void clearImmutable(void) { mImmutable=false; }
-	bool isSynching(void) const { return mSynching; }
-	void setSynching(void) { mSynching=true; }
-	void clearSynching(void) { mSynching=false; }
+	void setImmutable(void) { assert(mState!=Invalid); mState=Immutable; }
+	void clearImmutable(void) { mState=Modifying; }
+	bool isSynching(void) const { return mState==Floating || mState==Synching; }
+	void setSynching(void) { mState=Synching; }
+	void setFloating(void) { mState=Floating; }
+	void clearSynching(void) { mState=Modifying; }
+	bool isValid(void) { return mState!=Invalid; }
 
 	// caution: otherMap must be accessed only by this function
 	// return value: true=successfully completed, false=too different

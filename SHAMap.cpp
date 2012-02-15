@@ -9,7 +9,7 @@
 #include "BitcoinUtil.h"
 #include "SHAMap.h"
 
-SHAMap::SHAMap(uint32 seq) : mSeq(seq), mImmutable(false), mSynching(false)
+SHAMap::SHAMap(uint32 seq) : mSeq(seq), mState(Modifying)
 {
 	root=boost::make_shared<SHAMapTreeNode>(SHAMapNode(0, uint256()), mSeq);
 	root->makeInner();
@@ -36,7 +36,7 @@ std::stack<SHAMapTreeNode::pointer> SHAMap::getStack(const uint256& id, bool inc
 		node=getNode(node->getChildNodeID(branch), hash, false);
 		if(!node)
 		{
-			if(mSynching) return stack;
+			if(isSynching()) return stack;
 			throw SHAMapException(MissingNode);
 		}
 	}
@@ -51,7 +51,7 @@ void SHAMap::dirtyUp(std::stack<SHAMapTreeNode::pointer>& stack, const uint256& 
 { // walk the tree up from through the inner nodes to the root
   // update linking hashes and add nodes to dirty list
 
-	assert(!mImmutable && !mSynching);
+	assert(mState!=Synching && mState!=Immutable);
 
 	while(!stack.empty())
 	{

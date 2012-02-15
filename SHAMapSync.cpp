@@ -166,7 +166,7 @@ bool SHAMap::addRootNode(const uint256& hash, const std::vector<unsigned char>& 
 bool SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigned char>& rawNode)
 { // return value: true=okay, false=error
 	assert(!node.isRoot());
-	assert(mSynching);
+	if(!isSynching()) return false;
 
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
@@ -363,17 +363,15 @@ bool SHAMap::syncTest()
 
 
 	// add random data to the source map
-	int items=1000000;
+	int items=10000;
 	for(int i=0; i<items; i++)
 		source.addItem(*makeRandomAS(), false);
 
-#ifdef DO_CONFUSE
 #ifdef DEBUG
 	std::cerr << "Adding items, then removing them" << std::endl;
 #endif
-	if(!confuseMap(source, 12000))
+	if(!confuseMap(source, 500))
 		return false;
-#endif
 
 	source.setImmutable();
 
