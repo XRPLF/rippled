@@ -1,5 +1,6 @@
 
 #include "boost/foreach.hpp"
+#include "boost/make_shared.hpp"
 
 #include "Application.h"
 #include "LedgerAcquire.h"
@@ -7,6 +8,7 @@
 LedgerAcquire::LedgerAcquire(const uint256& hash) : mHash(hash),
 	mComplete(false), mFailed(false), mHaveBase(false), mHaveState(false), mHaveTransactions(false)
 {
+	;
 }
 
 void LedgerAcquire::done()
@@ -37,7 +39,50 @@ void LedgerAcquire::addOnComplete(boost::function<void (LedgerAcquire::pointer)>
 
 void LedgerAcquire::trigger(bool timer)
 {
-	// WRITEME
+	if(mComplete || mFailed) return;
+
+	if(!mHaveBase)
+	{
+		boost::shared_ptr<newcoin::TMGetLedger> tmGL=boost::make_shared<newcoin::TMGetLedger>();
+		tmGL->set_ledgerhash(mHash.begin(), mHash.size());
+		tmGL->set_itype(newcoin::liBASE);
+		sendRequest(tmGL);
+	}
+
+	if(mHaveBase && !mHaveTransactions)
+	{
+		// WRITEME
+	}
+
+	if(mHaveBase && !mHaveState)
+	{
+		// WRITEME
+	}
+
+	if(timer)
+	{
+		// WRITEME
+	}
+}
+
+void LedgerAcquire::sendRequest(boost::shared_ptr<newcoin::TMGetLedger> tmGL)
+{
+	if(!mPeers.size()) return;
+
+	PackedMessage::pointer packet=boost::make_shared<PackedMessage>(tmGL, newcoin::mtGET_LEDGER);
+
+	std::list<boost::weak_ptr<Peer> >::iterator it=mPeers.begin();
+	while(it!=mPeers.end())
+	{
+		if(it->expired())
+			mPeers.erase(it++);
+		else
+		{ // FIXME: Possible race if peer has error
+			// FIXME: Track last peer sent to and time sent
+			it->lock()->sendPacket(packet);
+			return;
+		}
+	}
 }
 
 void LedgerAcquire::peerHas(Peer::pointer ptr)

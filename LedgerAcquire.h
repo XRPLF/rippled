@@ -9,6 +9,7 @@
 
 #include "Ledger.h"
 #include "Peer.h"
+#include "newcoin.pb.h"
 
 class LedgerAcquire : public boost::enable_shared_from_this<LedgerAcquire>
 { // A ledger we are trying to acquire
@@ -28,6 +29,7 @@ protected:
 	void trigger(bool timer);
 
 	static void timerEntry(boost::weak_ptr<LedgerAcquire>);
+	void sendRequest(boost::shared_ptr<newcoin::TMGetLedger> message);
 
 public:
 	LedgerAcquire(const uint256& hash);
