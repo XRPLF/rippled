@@ -108,7 +108,7 @@ bool LedgerAcquire::takeTxNode(const std::list<SHAMapNode>& nodeIDs,
 		++nodeIDit;
 		++nodeDatait;
 	}
-	if(!peekTransactionMap()->isSynching()) mHaveTransactions=true;
+	if(!mLedger->peekTransactionMap()->isSynching()) mHaveTransactions=true;
 	return true;
 }
 
@@ -125,7 +125,7 @@ bool LedgerAcquire::takeAsNode(const std::list<SHAMapNode>& nodeIDs,
 		++nodeIDit;
 		++nodeDatait;
 	}
-	if(!peekAccountStateMap()->isSynching()) mHaveState=true;
+	if(!mLedger->peekAccountStateMap()->isSynching()) mHaveState=true;
 	return true;
 }
 
