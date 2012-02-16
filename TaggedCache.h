@@ -89,11 +89,7 @@ template<typename c_Key, typename c_Data> void TaggedCache<c_Key, c_Data>::sweep
 	while(cit!=mCache.end())
 	{
 		if(cit->second->second.first<target)
-		{
-			typename std::map<key_type, cache_entry>::iterator cit2=cit;
-			++cit;
-			mCache.erase(cit2);
-		}
+			mCache.erase(cit++);
 		else ++cit;
 	}
 
@@ -102,11 +98,7 @@ template<typename c_Key, typename c_Data> void TaggedCache<c_Key, c_Data>::sweep
 	while(mit!=mMap.end())
 	{
 		if(mit->second->expired())
-		{
-			typename std::map<key_type, weak_data_ptr>::iterator mit2=mit;
-			++mit;
-			mMap.erase(mit2);
-		}
+			mMap.erase(mit++);
 		else ++mit;
 	}
 }
