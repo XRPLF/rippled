@@ -111,6 +111,13 @@ void SHAMapNode::addIDRaw(Serializer &s) const
 	s.add8(mDepth);
 }
 
+std::string SHAMapNode::getRawString() const
+{
+	Serializer s(33);
+	addIDRaw(s);
+	return s.getString();
+}
+
 SHAMapNode SHAMapNode::getChildNodeID(int m) const
 { // This can be optimized to avoid the << if needed
 	assert((m>=0) && (m<16));

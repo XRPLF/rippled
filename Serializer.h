@@ -56,6 +56,7 @@ class Serializer
 	void* getDataPtr() { return &mData.front(); }
 	const std::vector<unsigned char>& peekData() const { return mData; }
 	std::vector<unsigned char> getData() const { return mData; }
+	std::string getString() const { return std::string(reinterpret_cast<const char *>(getDataPtr()), getLength());  }
 	void secureErase() { memset(&(mData.front()), 0, mData.size()); erase(); }
 	void erase() { mData.clear(); }
 	int removeLastByte();

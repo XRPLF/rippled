@@ -70,6 +70,7 @@ public:
 
 	// Convert to/from wire format (256-bit nodeID, 1-byte depth)
 	void addIDRaw(Serializer &s) const;
+	std::string getRawString() const;
 	static int getRawIDLength(void) { return 33; }
 	SHAMapNode(const void *ptr, int len);
 };
