@@ -40,7 +40,7 @@ public:
 	typedef boost::shared_ptr<PackedMessage> pointer;
 
 	MessagePointer mMsg;
-    PackedMessage(MessagePointer msg,int type);
+    PackedMessage(MessagePointer msg, int type);
 
 	std::vector<uint8_t>& getBuffer() { return(mBuffer); }
 
@@ -50,7 +50,7 @@ public:
 	bool operator == (const PackedMessage& other);
 
 	/*
-    void setMsg(MessagePointer msg,int type);
+    void setMsg(MessagePointer msg, int type);
 
     MessagePointer getMsg();
 
