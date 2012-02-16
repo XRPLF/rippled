@@ -95,16 +95,37 @@ bool LedgerAcquire::takeBase(const std::vector<unsigned char>& data)
 	return true;
 }
 
-bool LedgerAcquire::takeTxNode(const std::list<SHAMapNode>& nodeIDs, const std::list<std::vector<unsigned char> >& data)
+bool LedgerAcquire::takeTxNode(const std::list<SHAMapNode>& nodeIDs,
+	const std::list<std::vector<unsigned char> >& data)
 {
 	if(!mHaveBase) return false;
-	// WRITEME
+	std::list<SHAMapNode>::const_iterator nodeIDit=nodeIDs.begin();
+	std::list<std::vector<unsigned char> >::const_iterator nodeDatait=data.begin();
+	while(nodeIDit!=nodeIDs.end())
+	{
+		if(!mLedger->peekTransactionMap()->addKnownNode(*nodeIDit, *nodeDatait))
+			return false;
+		++nodeIDit;
+		++nodeDatait;
+	}
+	if(!peekTransactionMap()->isSynching()) mHaveTransactions=true;
 	return true;
 }
 
-bool LedgerAcquire::takeAsNode(const std::list<SHAMapNode>& hashes, const std::list<std::vector<unsigned char> >& data)
+bool LedgerAcquire::takeAsNode(const std::list<SHAMapNode>& nodeIDs,
+	const std::list<std::vector<unsigned char> >& data)
 {
-	// WRITEME
+	if(!mHaveBase) return false;
+	std::list<SHAMapNode>::const_iterator nodeIDit=nodeIDs.begin();
+	std::list<std::vector<unsigned char> >::const_iterator nodeDatait=data.begin();
+	while(nodeIDit!=nodeIDs.end())
+	{
+		if(!mLedger->peekAccountStateMap()->addKnownNode(*nodeIDit, *nodeDatait))
+			return false;
+		++nodeIDit;
+		++nodeDatait;
+	}
+	if(!peekAccountStateMap()->isSynching()) mHaveState=true;
 	return true;
 }
 
