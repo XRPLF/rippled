@@ -30,6 +30,7 @@ protected:
 
 	static void timerEntry(boost::weak_ptr<LedgerAcquire>);
 	void sendRequest(boost::shared_ptr<newcoin::TMGetLedger> message);
+	void setTimer();
 
 public:
 	LedgerAcquire(const uint256& hash);

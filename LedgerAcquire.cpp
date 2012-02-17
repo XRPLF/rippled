@@ -17,12 +17,17 @@ void LedgerAcquire::done()
 
 	mLock.lock();
 	triggers=mOnComplete;
+	mOnComplete.empty();
 	mLock.unlock();
 
 	for(int i=0; i<triggers.size(); i++)
 		triggers[i](shared_from_this());
 }
 
+void LedgerAcquire::setTimer()
+{
+	// WRITEME
+}
 
 void LedgerAcquire::timerEntry(boost::weak_ptr<LedgerAcquire> wptr)
 {
@@ -43,6 +48,7 @@ void LedgerAcquire::trigger(bool timer)
 
 	if(!mHaveBase)
 	{
+		// WRITEME: Do we need to search for peers?
 		boost::shared_ptr<newcoin::TMGetLedger> tmGL=boost::make_shared<newcoin::TMGetLedger>();
 		tmGL->set_ledgerhash(mHash.begin(), mHash.size());
 		tmGL->set_itype(newcoin::liBASE);
@@ -51,18 +57,86 @@ void LedgerAcquire::trigger(bool timer)
 
 	if(mHaveBase && !mHaveTransactions)
 	{
-		// WRITEME
+		assert(mLedger);
+		if(mLedger->peekTransactionMap()->getHash().isZero())
+		{ // we need the root node
+			boost::shared_ptr<newcoin::TMGetLedger> tmGL=boost::make_shared<newcoin::TMGetLedger>();
+			tmGL->set_ledgerhash(mHash.begin(), mHash.size());
+			tmGL->set_ledgerseq(mLedger->getLedgerSeq());
+			tmGL->set_itype(newcoin::liTX_NODE);
+			*(tmGL->add_nodeids())=SHAMapNode().getRawString();
+			sendRequest(tmGL);
+		}
+		else
+		{
+			std::vector<SHAMapNode> nodeIDs;
+			std::vector<uint256> nodeHashes;
+			mLedger->peekTransactionMap()->getMissingNodes(nodeIDs, nodeHashes, 128);
+			if(!nodeIDs.size())
+			{
+				if(!mLedger->peekTransactionMap()->isValid()) mFailed=true;
+				else
+				{
+					mHaveTransactions=true;
+					if(mHaveState) mComplete=true;
+				}
+			}
+			else
+			{
+				boost::shared_ptr<newcoin::TMGetLedger> tmGL=boost::make_shared<newcoin::TMGetLedger>();
+				tmGL->set_ledgerhash(mHash.begin(), mHash.size());
+				tmGL->set_ledgerseq(mLedger->getLedgerSeq());
+				tmGL->set_itype(newcoin::liTX_NODE);
+				for(std::vector<SHAMapNode>::iterator it=nodeIDs.begin(); it!=nodeIDs.end(); ++it)
+					*(tmGL->add_nodeids())=it->getRawString();
+				sendRequest(tmGL);
+			}
+		}
 	}
 
 	if(mHaveBase && !mHaveState)
 	{
-		// WRITEME
+		assert(mLedger);
+		if(mLedger->peekAccountStateMap()->getHash().isZero())
+		{ // we need the root node
+			boost::shared_ptr<newcoin::TMGetLedger> tmGL=boost::make_shared<newcoin::TMGetLedger>();
+			tmGL->set_ledgerhash(mHash.begin(), mHash.size());
+			tmGL->set_ledgerseq(mLedger->getLedgerSeq());
+			tmGL->set_itype(newcoin::liAS_NODE);
+			*(tmGL->add_nodeids())=SHAMapNode().getRawString();
+			sendRequest(tmGL);
+		}
+		else
+		{
+			std::vector<SHAMapNode> nodeIDs;
+			std::vector<uint256> nodeHashes;
+			mLedger->peekAccountStateMap()->getMissingNodes(nodeIDs, nodeHashes, 128);
+			if(!nodeIDs.size())
+			{
+ 				if(!mLedger->peekAccountStateMap()->isValid()) mFailed=true;
+				else
+				{
+					mHaveState=true;
+					if(mHaveTransactions) mComplete=true;
+				}
+			}
+			else
+			{
+				boost::shared_ptr<newcoin::TMGetLedger> tmGL=boost::make_shared<newcoin::TMGetLedger>();
+				tmGL->set_ledgerhash(mHash.begin(), mHash.size());
+				tmGL->set_ledgerseq(mLedger->getLedgerSeq());
+				tmGL->set_itype(newcoin::liAS_NODE);
+				for(std::vector<SHAMapNode>::iterator it=nodeIDs.begin(); it!=nodeIDs.end(); ++it)
+					*(tmGL->add_nodeids())=it->getRawString();
+				sendRequest(tmGL);
+			}
+		}
 	}
 
-	if(timer)
-	{
-		// WRITEME
-	}
+	if(mComplete || mFailed)
+		done();
+	else if(timer)
+		setTimer();
 }
 
 void LedgerAcquire::sendRequest(boost::shared_ptr<newcoin::TMGetLedger> tmGL)
