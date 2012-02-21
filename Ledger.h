@@ -67,6 +67,7 @@ public:
 	Ledger(const uint256 &parentHash, const uint256 &transHash, const uint256 &accountHash,
 	 uint64 feeHeld, uint64 timeStamp, uint32 ledgerSeq); // used for received ledgers
 	Ledger(const std::vector<unsigned char>& rawLedger);
+	Ledger(const std::string& rawLedger);
 
 	void setClosed() { mClosed=true; }
 	void setAccepted() { mAccepted=true; }

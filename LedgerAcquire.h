@@ -47,7 +47,7 @@ public:
 
 	void peerHas(Peer::pointer);
 	void badPeer(Peer::pointer);
-	bool takeBase(const std::vector<unsigned char>& data);
+	bool takeBase(const std::string& data);
 	bool takeTxNode(const std::list<SHAMapNode>& IDs, const std::list<std::vector<unsigned char> >& data);
 	bool takeAsNode(const std::list<SHAMapNode>& IDs, const std::list<std::vector<unsigned char> >& data);
 };
@@ -64,6 +64,7 @@ public:
 	LedgerAcquire::pointer findCreate(const uint256& hash);
 	LedgerAcquire::pointer find(const uint256& hash);
 	bool hasLedger(const uint256& ledgerHash);
+	bool gotLedgerData(newcoin::TMLedgerData& packet);
 };
 
 #endif

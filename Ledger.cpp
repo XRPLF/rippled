@@ -65,6 +65,25 @@ Ledger::Ledger(const std::vector<unsigned char>& rawLedger) : mFeeHeld(0), mTime
 	}
 }
 
+Ledger::Ledger(const std::string& rawLedger) : mFeeHeld(0), mTimeStamp(0),
+	mLedgerSeq(0), mClosed(false), mValidHash(false), mAccepted(false), mImmutable(true)
+{
+	Serializer s(rawLedger);
+	// 32seq, 64fee, 256phash, 256thash, 256ahash, 64ts
+	if(!s.get32(mLedgerSeq, BLgPIndex)) return;
+	if(!s.get64(mFeeHeld, BLgPFeeHeld)) return;
+	if(!s.get256(mParentHash, BLgPPrevLg)) return;
+	if(!s.get256(mTransHash, BLgPTxT)) return;
+	if(!s.get256(mAccountHash, BLgPAcT)) return;
+	if(!s.get64(mTimeStamp, BLgPClTs)) return;
+	updateHash();
+	if(mValidHash)
+	{
+		mTransactionMap=boost::make_shared<SHAMap>();
+		mAccountStateMap=boost::make_shared<SHAMap>();
+	}
+}
+
 void Ledger::updateHash()
 {
 	if(!mImmutable)

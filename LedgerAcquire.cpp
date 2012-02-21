@@ -199,7 +199,7 @@ void LedgerAcquire::badPeer(Peer::pointer ptr)
 	}
 }
 
-bool LedgerAcquire::takeBase(const std::vector<unsigned char>& data)
+bool LedgerAcquire::takeBase(const std::string& data)
 { // Return value: true=normal, false=bad data
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	if(mHaveBase) return true;
@@ -269,4 +269,43 @@ bool LedgerAcquireMaster::hasLedger(const uint256& hash)
 {
 	boost::mutex::scoped_lock sl(mLock);
 	return mLedgers.find(hash)!=mLedgers.end();
+}
+
+bool LedgerAcquireMaster::gotLedgerData(newcoin::TMLedgerData& packet)
+{
+	uint256 hash;
+	if(packet.ledgerhash().size()!=32) return false;
+	memcpy(&hash, packet.ledgerhash().data(), 32);
+
+	LedgerAcquire::pointer ledger=find(hash);
+	if(!ledger) return false;
+
+	if(packet.type()==newcoin::liBASE)
+	{
+		if(packet.nodes_size()!=1) return false;
+		const newcoin::TMLedgerNode& node=packet.nodes(0);
+		if(!node.has_nodedata()) return false;
+		return ledger->takeBase(node.nodedata());
+	}
+	else if( (packet.type()==newcoin::liTX_NODE) || (packet.type()==newcoin::liAS_NODE) )
+	{
+		std::list<SHAMapNode> nodeIDs;
+		std::list<std::vector<unsigned char> > nodeData;
+
+		if(packet.nodes().size()<=0) return false;
+		for(int i=0; i<packet.nodes().size(); i++)
+		{
+			const newcoin::TMLedgerNode& node=packet.nodes(i);
+			if(!node.has_nodeid() || !node.has_nodedata()) return false;
+
+			nodeIDs.push_back(SHAMapNode(node.nodeid().data(), node.nodeid().size()));
+
+			std::vector<unsigned char> rawNode(node.nodedata().size());
+			memcpy(&rawNode.front(), node.nodedata().data(), node.nodedata().size());
+			nodeData.push_back(rawNode);
+		}
+		if(packet.type()==newcoin::liTX_NODE) return ledger->takeTxNode(nodeIDs, nodeData);
+		else return ledger->takeAsNode(nodeIDs, nodeData);
+	}
+	else return false;
 }
