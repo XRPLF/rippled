@@ -156,7 +156,7 @@ void SHAMapNode::dump() const
 }
 
 SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& nodeID, uint32 seq) : SHAMapNode(nodeID), mHash(0), mSeq(seq),
-	mType(ERROR), mFullBelow(false)
+	mType(tnERROR), mFullBelow(false)
 {
 }
 
@@ -177,7 +177,7 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& node, SHAMapItem::pointer item,
 }
 
 SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned char>& rawNode, uint32 seq)
-	: SHAMapNode(id), mSeq(seq), mType(ERROR), mFullBelow(false)
+	: SHAMapNode(id), mSeq(seq), mType(tnERROR), mFullBelow(false)
 {
 	Serializer s(rawNode);
 
@@ -188,7 +188,7 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned 
 	if(type==0)
 	{ // transaction
 		mItem=boost::make_shared<SHAMapItem>(s.getSHA512Half(), s.peekData());
-		mType=TRANSACTION;
+		mType=tnTRANSACTION;
 	}
 	else if(type==1)
 	{ // account state
@@ -197,14 +197,14 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned 
 		s.chop(20);
 		if(u.isZero()) throw SHAMapException(InvalidNode);
 		mItem=boost::make_shared<SHAMapItem>(u, s.peekData());
-		mType=ACCOUNT_STATE;
+		mType=tnACCOUNT_STATE;
 	}
 	else if(type==2)
 	{ // full inner
 		if(len!=512) throw SHAMapException(InvalidNode);
 		for(int i=0; i<16; i++)
 			s.get256(mHashes[i], i*32);
-		mType=INNER;
+		mType=tnINNER;
 	}
 	else if(type==3)
 	{ // compressed inner
@@ -215,7 +215,7 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned 
 			if( (pos<0) || (pos>=16)) throw SHAMapException(InvalidNode);
 			s.get256(mHashes[pos], i*33);
 		}
-		mType=INNER;
+		mType=tnINNER;
 	}
 
 	updateHash();
@@ -223,9 +223,9 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned 
 
 void SHAMapTreeNode::addRaw(Serializer &s)
 {
-	if(mType==ERROR) throw SHAMapException(InvalidNode);
+	if(mType==tnERROR) throw SHAMapException(InvalidNode);
 
-	if(mType==TRANSACTION)
+	if(mType==tnTRANSACTION)
 	{
 		mItem->addRaw(s);
 		s.add8(0);
@@ -233,7 +233,7 @@ void SHAMapTreeNode::addRaw(Serializer &s)
 		return;
 	}
 
-	if(mType==ACCOUNT_STATE)
+	if(mType==tnACCOUNT_STATE)
 	{
 		mItem->addRaw(s);
 		s.add160(mItem->getTag().to160());
@@ -262,7 +262,7 @@ bool SHAMapTreeNode::updateHash()
 {
 	uint256 nh;
 
-	if(mType==INNER)
+	if(mType==tnINNER)
 	{
 		bool empty=true;
 		for(int i=0; i<16; i++)
@@ -274,14 +274,14 @@ bool SHAMapTreeNode::updateHash()
 		if(!empty)
 			nh=Serializer::getSHA512Half(reinterpret_cast<unsigned char *>(mHashes), sizeof(mHashes));
 	}
-	else if(mType==ACCOUNT_STATE)
+	else if(mType==tnACCOUNT_STATE)
 	{
 		Serializer s;
 		mItem->addRaw(s);
 		s.add160(mItem->getTag().to160());
 		nh=s.getSHA512Half();
 	}
-	else if(mType==TRANSACTION)
+	else if(mType==tnTRANSACTION)
 	{
 		nh=Serializer::getSHA512Half(mItem->peekData());
 	}
@@ -321,7 +321,7 @@ void SHAMapTreeNode::makeInner()
 {
 	mItem=SHAMapItem::pointer();
 	memset(mHashes, 0, sizeof(mHashes));
-	mType=INNER;
+	mType=tnINNER;
 	mHash.zero();
 }
 
@@ -356,7 +356,7 @@ std::string SHAMapTreeNode::getString() const
 bool SHAMapTreeNode::setChildHash(int m, const uint256 &hash)
 {
 	assert( (m>=0) && (m<16) );
-	assert(mType==INNER);
+	assert(mType==tnINNER);
 	if(mHashes[m]==hash)
 		return false;
 	mHashes[m]=hash;
@@ -365,6 +365,6 @@ bool SHAMapTreeNode::setChildHash(int m, const uint256 &hash)
 
 const uint256& SHAMapTreeNode::getChildHash(int m) const
 {
-	assert( (m>=0) && (m<16) && (mType==INNER) );
+	assert( (m>=0) && (m<16) && (mType==tnINNER) );
 	return mHashes[m];
 }

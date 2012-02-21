@@ -13,10 +13,8 @@ using namespace boost;
 Only needs to start once we determine the network time
 */
 
-TimingService::TimingService()
+TimingService::TimingService() : mLedgerTimer(NULL), mPropTimer(NULL), mValidTimer(NULL)
 {
-	mLedgerTimer=NULL;
-	mPropTimer=NULL;
 }
 
 void TimingService::start(boost::asio::io_service& ioService)

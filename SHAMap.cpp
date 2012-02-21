@@ -428,7 +428,7 @@ bool SHAMap::addGiveItem(SHAMapItem::pointer item, bool isTransaction)
 #endif
 
 	uint256 tag=item->getTag();
-	SHAMapTreeNode::TNType type=isTransaction ? SHAMapTreeNode::TRANSACTION : SHAMapTreeNode::ACCOUNT_STATE;
+	SHAMapTreeNode::TNType type=isTransaction ? SHAMapTreeNode::tnTRANSACTION : SHAMapTreeNode::tnACCOUNT_STATE;
 
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
@@ -533,7 +533,7 @@ bool SHAMap::updateGiveItem(SHAMapItem::pointer item, bool isTransaction)
 		return false;
 
 	returnNode(node, true);
-	if(!node->setItem(item, isTransaction ? SHAMapTreeNode::TRANSACTION : SHAMapTreeNode::ACCOUNT_STATE))
+	if(!node->setItem(item, isTransaction ? SHAMapTreeNode::tnTRANSACTION : SHAMapTreeNode::tnACCOUNT_STATE))
 		return true;
 
 	dirtyUp(stack, tag, node->getNodeHash());

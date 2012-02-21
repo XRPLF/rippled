@@ -415,7 +415,9 @@ bool SHAMap::syncTest()
 #ifdef DEBUG
 	std::cerr << "ROOT COMPLETE, INNER SYNCHING" << std::endl;
 #endif
+#ifdef SMS_DEBUG
 	int bytes=0;
+#endif
 
 	do
 	{
@@ -424,7 +426,7 @@ bool SHAMap::syncTest()
 
 		// get the list of nodes we know we need
 		destination.getMissingNodes(nodeIDs, hashes, 2048);
-		if(!nodeIDs.size()) break;
+		if(nodeIDs.empty()) break;
 
 #ifdef SMS_DEBUG
 		std::cerr << nodeIDs.size() << " needed nodes" << std::endl;
@@ -442,7 +444,7 @@ bool SHAMap::syncTest()
 		nodeIDs.clear();
 		hashes.clear();
 
-		if(!gotNodeIDs.size())
+		if(gotNodeIDs.empty())
 		{
 			std::cerr << "No nodes gotten" << std::endl;
 			assert(false);
@@ -456,7 +458,9 @@ bool SHAMap::syncTest()
 				nodeIDIterator!=gotNodeIDs.end(); ++nodeIDIterator, ++rawNodeIterator)
 		{
 			nodes++;
+#ifdef SMS_DEBUG
 			bytes+=rawNodeIterator->size();
+#endif
 			if(!destination.addKnownNode(*nodeIDIterator, *rawNodeIterator))
 			{
 				std::cerr << "AddKnownNode fails" << std::endl;

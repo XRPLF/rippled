@@ -134,10 +134,10 @@ public:
 
 	enum TNType
 	{
-		ERROR			=0,
-		INNER			=1,
-		TRANSACTION		=2,
-		ACCOUNT_STATE	=3
+		tnERROR			=0,
+		tnINNER			=1,
+		tnTRANSACTION	=2,
+		tnACCOUNT_STATE	=3
 	};
 
 private:
@@ -171,11 +171,11 @@ public:
 	TNType getType() const { return mType; }
 
 	// type functions
-	bool isLeaf() const { return (mType==TRANSACTION) || (mType==ACCOUNT_STATE); }
-	bool isInner() const { return mType==INNER; }
-	bool isValid() const { return mType!=ERROR; }
-	bool isTransaction() const { return mType!=TRANSACTION; }
-	bool isAccountState() const { return mType!=ACCOUNT_STATE; }
+	bool isLeaf() const { return (mType==tnTRANSACTION) || (mType==tnACCOUNT_STATE); }
+	bool isInner() const { return mType==tnINNER; }
+	bool isValid() const { return mType!=tnERROR; }
+	bool isTransaction() const { return mType!=tnTRANSACTION; }
+	bool isAccountState() const { return mType!=tnACCOUNT_STATE; }
 
 	// inner node functions
 	bool isInnerNode() const { return !mItem; }

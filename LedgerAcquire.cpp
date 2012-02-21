@@ -72,7 +72,7 @@ void LedgerAcquire::trigger(bool timer)
 			std::vector<SHAMapNode> nodeIDs;
 			std::vector<uint256> nodeHashes;
 			mLedger->peekTransactionMap()->getMissingNodes(nodeIDs, nodeHashes, 128);
-			if(!nodeIDs.size())
+			if(nodeIDs.empty())
 			{
 				if(!mLedger->peekTransactionMap()->isValid()) mFailed=true;
 				else
@@ -111,7 +111,7 @@ void LedgerAcquire::trigger(bool timer)
 			std::vector<SHAMapNode> nodeIDs;
 			std::vector<uint256> nodeHashes;
 			mLedger->peekAccountStateMap()->getMissingNodes(nodeIDs, nodeHashes, 128);
-			if(!nodeIDs.size())
+			if(nodeIDs.empty())
 			{
  				if(!mLedger->peekAccountStateMap()->isValid()) mFailed=true;
 				else
@@ -141,7 +141,8 @@ void LedgerAcquire::trigger(bool timer)
 
 void LedgerAcquire::sendRequest(boost::shared_ptr<newcoin::TMGetLedger> tmGL)
 {
-	if(!mPeers.size()) return;
+	boost::recursive_mutex::scoped_lock sl(mLock);
+	if(mPeers.empty()) return;
 
 	PackedMessage::pointer packet=boost::make_shared<PackedMessage>(tmGL, newcoin::mtGET_LEDGER);
 
@@ -151,7 +152,7 @@ void LedgerAcquire::sendRequest(boost::shared_ptr<newcoin::TMGetLedger> tmGL)
 		if(it->expired())
 			mPeers.erase(it++);
 		else
-		{ // FIXME: Possible race if peer has error
+		{
 			// FIXME: Track last peer sent to and time sent
 			it->lock()->sendPacket(packet);
 			return;
@@ -252,17 +253,16 @@ LedgerAcquire::pointer LedgerAcquireMaster::findCreate(const uint256& hash)
 {
 	boost::mutex::scoped_lock sl(mLock);
 	LedgerAcquire::pointer& ptr=mLedgers[hash];
-	if(!ptr) ptr=LedgerAcquire::pointer(new LedgerAcquire(hash));
-	return ptr;
+	if(ptr) return ptr;
+	return boost::make_shared<LedgerAcquire>(hash);
 }
 
 LedgerAcquire::pointer LedgerAcquireMaster::find(const uint256& hash)
 {
-	LedgerAcquire::pointer ret;
 	boost::mutex::scoped_lock sl(mLock);
 	std::map<uint256, LedgerAcquire::pointer>::iterator it=mLedgers.find(hash);
-	if(it!=mLedgers.end()) ret=it->second;
-	return ret;
+	if(it!=mLedgers.end()) return it->second;
+	return LedgerAcquire::pointer();
 }
 
 bool LedgerAcquireMaster::hasLedger(const uint256& hash)
