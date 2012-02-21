@@ -101,7 +101,7 @@ SHAMapNode::SHAMapNode(const void *ptr, int len)
 	else
 	{
 		memcpy(&mNodeID, ptr, 32);
-		mDepth=*(reinterpret_cast<const unsigned char *>(ptr) + 32);
+		mDepth=*(static_cast<const unsigned char *>(ptr) + 32);
 	}
 }
 

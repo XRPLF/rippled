@@ -299,10 +299,7 @@ bool LedgerAcquireMaster::gotLedgerData(newcoin::TMLedgerData& packet)
 			if(!node.has_nodeid() || !node.has_nodedata()) return false;
 
 			nodeIDs.push_back(SHAMapNode(node.nodeid().data(), node.nodeid().size()));
-
-			std::vector<unsigned char> rawNode(node.nodedata().size());
-			memcpy(&rawNode.front(), node.nodedata().data(), node.nodedata().size());
-			nodeData.push_back(rawNode);
+			nodeData.push_back(std::vector<unsigned char>(node.nodedata().begin(), node.nodedata().end()));
 		}
 		if(packet.type()==newcoin::liTX_NODE) return ledger->takeTxNode(nodeIDs, nodeData);
 		else return ledger->takeAsNode(nodeIDs, nodeData);

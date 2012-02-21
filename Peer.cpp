@@ -336,8 +336,7 @@ void Peer::recvTransaction(newcoin::TMTransaction& packet)
 #endif
 
 	std::string rawTx=packet.rawtransaction();
-	std::vector<unsigned char> rTx(rawTx.size());
-	memcpy(&rTx.front(), rawTx.data(), rawTx.size());
+	std::vector<unsigned char> rTx(rawTx.begin(), rawTx.end());
 	Transaction::pointer tx=boost::make_shared<Transaction>(rTx, true);
 
 	if(tx->getStatus()==INVALID)
@@ -559,11 +558,11 @@ PackedMessage::pointer Peer::createLedgerProposal(Ledger::pointer ledger)
 	uint256& hash=ledger->getHash();
 	newcoin::ProposeLedger* prop=new newcoin::ProposeLedger();
 	prop->set_ledgerindex(ledger->getIndex());
-	prop->set_hash(hash.begin(),hash.GetSerializeSize());
+	prop->set_hash(hash.begin(), hash.GetSerializeSize());
 	prop->set_numtransactions(ledger->getNumTransactions());
 
 	PackedMessage::pointer packet=boost::make_shared<PackedMessage>
-		(PackedMessage::MessagePointer(prop),newcoin::PROPOSE_LEDGER);
+		(PackedMessage::MessagePointer(prop), newcoin::PROPOSE_LEDGER);
 	return(packet);
 }
 
@@ -574,24 +573,24 @@ PackedMessage::pointer Peer::createValidation(Ledger::pointer ledger)
 
 	newcoin::Validation* valid=new newcoin::Validation();
 	valid->set_ledgerindex(ledger->getIndex());
-	valid->set_hash(hash.begin(),hash.GetSerializeSize());
+	valid->set_hash(hash.begin(), hash.GetSerializeSize());
 	valid->set_seqnum(ledger->getValidSeqNum());
-	valid->set_sig(sig.begin(),sig.GetSerializeSize());
+	valid->set_sig(sig.begin(), sig.GetSerializeSize());
 	valid->set_hanko(theConfig.HANKO);
 	
 
 	PackedMessage::pointer packet=boost::make_shared<PackedMessage>
-		(PackedMessage::MessagePointer(valid),newcoin::VALIDATION);
+		(PackedMessage::MessagePointer(valid), newcoin::VALIDATION);
 	return(packet);
 }
 
 PackedMessage::pointer Peer::createGetFullLedger(uint256& hash)
 {
 	newcoin::GetFullLedger* gfl=new newcoin::GetFullLedger();
-	gfl->set_hash(hash.begin(),hash.GetSerializeSize());
+	gfl->set_hash(hash.begin(), hash.GetSerializeSize());
 
 	PackedMessage::pointer packet=boost::make_shared<PackedMessage>
-		(PackedMessage::MessagePointer(gfl),newcoin::GET_FULL_LEDGER);
+		(PackedMessage::MessagePointer(gfl), newcoin::GET_FULL_LEDGER);
 	return(packet);
 }
 
@@ -606,7 +605,7 @@ void Peer::sendFullLedger(Ledger::pointer ledger)
 	if(ledger)
 	{
 		PackedMessage::pointer packet(
-			new PackedMessage(PackedMessage::MessagePointer(ledger->createFullLedger()),newcoin::FULL_LEDGER));
+			new PackedMessage(PackedMessage::MessagePointer(ledger->createFullLedger()), newcoin::FULL_LEDGER));
 		sendPacket(packet);	
 	}
 }
@@ -635,13 +634,13 @@ void Peer::receiveValidation(newcoin::Validation& validation)
 void Peer::receiveGetValidations(newcoin::GetValidations& request)
 {
 	vector<newcoin::Validation> validations;
-	theApp->getValidationCollection().getValidations(request.ledgerindex(),validations);
+	theApp->getValidationCollection().getValidations(request.ledgerindex(), validations);
 	if(validations.size())
 	{
 		BOOST_FOREACH(newcoin::Validation& valid, validations)
 		{
 			PackedMessage::pointer packet=boost::make_shared<PackedMessage>
-				(PackedMessage::MessagePointer(new newcoin::Validation(valid)),newcoin::VALIDATION));
+				(PackedMessage::MessagePointer(new newcoin::Validation(valid)), newcoin::VALIDATION));
 			sendPacket(packet);
 		}
 	}
@@ -655,8 +654,8 @@ void Peer::receiveTransaction(TransactionPtr trans)
 		// broadcast it to other Peers
 		ConnectionPool& pool=theApp->getConnectionPool();
 		PackedMessage::pointer packet=boost::make_shread<PackedMessage>
-			(PackedMessage::MessagePointer(new newcoin::Transaction(*(trans.get()))),newcoin::TRANSACTION);
-		pool.relayMessage(this,packet);
+			(PackedMessage::MessagePointer(new newcoin::Transaction(*(trans.get()))), newcoin::TRANSACTION);
+		pool.relayMessage(this, packet);
 	}
 	else 
 	{
@@ -667,7 +666,7 @@ void Peer::receiveTransaction(TransactionPtr trans)
 void Peer::receiveProposeLedger(newcoin::ProposeLedger& packet)
 {
 	
-	theApp->getLedgerMaster().checkLedgerProposal(shared_from_this(),packet);
+	theApp->getLedgerMaster().checkLedgerProposal(shared_from_this(), packet);
 }
 
 void Peer::receiveFullLedger(newcoin::FullLedger& packet)
