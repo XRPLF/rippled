@@ -1,7 +1,7 @@
 #ifndef __VALIDATION_COLLECTION__
 #define __VALIDATION_COLLECTION__
 
-#include "newcoin.pb.h"
+#include "../obj/src/newcoin.pb.h"
 #include "uint256.h"
 #include "types.h"
 #include "Ledger.h"

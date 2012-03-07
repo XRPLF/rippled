@@ -9,7 +9,7 @@
 
 #include "Ledger.h"
 #include "Peer.h"
-#include "newcoin.pb.h"
+#include "../obj/src/newcoin.pb.h"
 
 class LedgerAcquire : public boost::enable_shared_from_this<LedgerAcquire>
 { // A ledger we are trying to acquire

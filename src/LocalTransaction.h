@@ -7,7 +7,7 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include "json/value.h"
+#include "../json/value.h"
 
 #include "uint256.h"
 #include "Transaction.h"

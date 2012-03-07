@@ -8,8 +8,8 @@
 #include <openssl/buffer.h>
 #include <openssl/evp.h>
 
-#include "json/value.h"
-#include "json/writer.h"
+#include "../json/value.h"
+#include "../json/writer.h"
 
 #include "RPC.h"
 #include "BitcoinUtil.h"

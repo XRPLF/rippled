@@ -1,7 +1,7 @@
 
 #include <boost/lexical_cast.hpp>
 
-#include "json/writer.h"
+#include "../json/writer.h"
 
 #include "LocalTransaction.h"
 #include "Application.h"

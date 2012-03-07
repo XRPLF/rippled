@@ -6,7 +6,7 @@
 #include <boost/bind.hpp>
 #include <boost/make_shared.hpp>
 
-#include "json/writer.h"
+#include "../json/writer.h"
 
 #include "Peer.h"
 #include "KnownNodeList.h"

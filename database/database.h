@@ -3,7 +3,7 @@
 
 #include <string>
 #include <vector>
-#include "../types.h"
+#include "../src/types.h"
 
 /*
 	this maintains the connection to the database

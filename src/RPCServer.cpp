@@ -5,9 +5,9 @@
 #include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
 
-#include "json/value.h"
-#include "json/reader.h"
-#include "json/writer.h"
+#include "../json/value.h"
+#include "../json/reader.h"
+#include "../json/writer.h"
 
 #include "RPCServer.h"
 #include "RequestParser.h"
