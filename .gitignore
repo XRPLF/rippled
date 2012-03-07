@@ -9,7 +9,7 @@
 # Ignore python compiled files.
 *.pyc
 
-# Ignore object fiels.
+# Ignore object files.
 *.o
 obj/*
 
