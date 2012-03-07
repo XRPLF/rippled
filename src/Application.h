@@ -12,7 +12,7 @@
 #include "Wallet.h"
 #include "Peer.h"
 #include "NetworkOPs.h"
-#include "database/database.h"
+#include "../database/database.h"
 
 #include <boost/asio.hpp>
 

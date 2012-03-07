@@ -7,11 +7,11 @@
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/cstdint.hpp>
 
-#include "json/value.h"
+#include "../json/value.h"
 
 #include "key.h"
 #include "uint256.h"
-#include "newcoin.pb.h"
+#include "../obj/src/newcoin.pb.h"
 #include "Hanko.h"
 #include "Serializer.h"
 #include "SHAMap.h"

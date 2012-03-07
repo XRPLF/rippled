@@ -10,7 +10,7 @@
 
 #include "openssl/ec.h"
 
-#include "json/value.h"
+#include "../json/value.h"
 
 #include "uint256.h"
 #include "Serializer.h"

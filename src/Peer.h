@@ -6,7 +6,7 @@
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/asio.hpp>
 
-#include "newcoin.pb.h"
+#include "../obj/src/newcoin.pb.h"
 #include "PackedMessage.h"
 #include "Ledger.h"
 #include "Transaction.h"

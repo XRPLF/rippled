@@ -7,7 +7,7 @@
 
 #include "Application.h"
 #include "Ledger.h"
-#include "newcoin.pb.h"
+#include "../obj/src/newcoin.pb.h"
 #include "PackedMessage.h"
 #include "Config.h"
 #include "Conversion.h"

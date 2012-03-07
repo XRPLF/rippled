@@ -1,7 +1,7 @@
 #ifndef __CONFIRMATION__
 #define __CONFIRMATION__
 
-#include "newcoin.pb.h"
+#include "../obj/src/newcoin.pb.h"
 #include "uint256.h"
 #include <boost/shared_ptr.hpp>
 

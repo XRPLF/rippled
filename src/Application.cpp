@@ -3,7 +3,7 @@
 
 //#include <boost/log/trivial.hpp>
 
-#include "database/SqliteDatabase.h"
+#include "../database/SqliteDatabase.h"
 
 #include "Application.h"
 #include "Config.h"

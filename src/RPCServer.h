@@ -3,7 +3,7 @@
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/asio.hpp>
 
-#include "json/value.h"
+#include "../json/value.h"
 
 #include "HttpRequest.h"
 #include "RequestParser.h"

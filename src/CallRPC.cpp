@@ -11,8 +11,8 @@
 #include <openssl/buffer.h>
 #include <openssl/evp.h>
 
-#include "json/value.h"
-#include "json/reader.h"
+#include "../json/value.h"
+#include "../json/reader.h"
 
 #include "CallRPC.h"
 #include "RPC.h"

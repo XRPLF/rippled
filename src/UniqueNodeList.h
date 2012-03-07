@@ -1,6 +1,6 @@
 #ifndef __UNIQUE_NODE_LIST__
 #define __UNIQUE_NODE_LIST__
-#include "newcoin.pb.h"
+#include "../obj/src/newcoin.pb.h"
 #include "uint256.h"
 
 class UniqueNodeList
