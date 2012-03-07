@@ -1,0 +1,17 @@
+# .gitignore
+
+# Ignore vim swap files.
+*.swp
+
+# Ignore SCons support files.
+.sconsign.dblite
+
+# Ignore python compiled files.
+*.pyc
+
+# Ignore object fiels.
+*.o
+obj/*
+
+newcoind
+
