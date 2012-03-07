@@ -3,7 +3,6 @@
 #
 
 import glob
-import re
 
 # Put objects files in their own directory.
 for dir in ['src', 'database', 'json', 'util']:
