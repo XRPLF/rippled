@@ -54,7 +54,11 @@ def ProtocEmitter(target, source, env):
         target.append(env['PROTOCFDSOUT'])
     except KeyError:
         pass
-        
+
+    # XXX KLUDGE: Force things to be right.
+    env['PROTOCOUTDIR']	    = 'obj/src'
+    env['PROTOCPROTOPATH']  = ['src']
+
     #~ print "PROTOC SOURCE:", [str(s) for s in source]
     #~ print "PROTOC TARGET:", [str(s) for s in target]
 
