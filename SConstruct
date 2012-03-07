@@ -27,7 +27,7 @@ env.Append(LINKFLAGS = ['-rdynamic', '-pthread'])
 env.Append(CCFLAGS = ['-pthread', '-Wall', '-Wno-sign-compare', '-Wno-char-subscripts'])
 env.Append(CXXFLAGS = ['-O0', '-pthread', '-Wno-invalid-offsetof', '-Wformat']+DEBUGFLAGS)
 
-DB_SRCS		= glob.glob('database/*.c*')
+DB_SRCS		= glob.glob('database/*.c') + glob.glob('database/*.cpp')
 JSON_SRCS	= glob.glob('json/*.cpp')
 NEWCOIN_SRCS	= glob.glob('*.cpp')
 PROTO_SRCS	= env.Protoc([], 'newcoin.proto', PROTOCPYTHONOUTDIR=None)
