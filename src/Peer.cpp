@@ -542,6 +542,7 @@ Json::Value Peer::getJson() {
     Json::Value ret(Json::objectValue);
 
     ret["ip"]	    = mSocket.remote_endpoint().address().to_string();
+    ret["port"]	    = mSocket.remote_endpoint().port();
     ret["hanko"]    = mHanko.ToString();
 
     return ret;
