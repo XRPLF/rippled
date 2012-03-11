@@ -92,6 +92,8 @@ public:
 
 	void punishPeer(PeerPunish pp);
 
+	Json::Value getJson();
+
 	//static PackedMessage::pointer createFullLedger(Ledger::pointer ledger);
 	static PackedMessage::pointer createLedgerProposal(Ledger::pointer ledger);
 	static PackedMessage::pointer createValidation(Ledger::pointer ledger);

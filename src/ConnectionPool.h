@@ -34,6 +34,8 @@ public:
 	std::map<uint160, Peer::pointer> getAllConnected();
 
 	bool connectTo(const std::string& host, const std::string& port);
+
+	Json::Value getPeersJson();
 };
 
 #endif

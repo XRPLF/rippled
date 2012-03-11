@@ -349,6 +349,12 @@ Json::Value RPCServer::doConnect(Json::Value& params)
 	return "connecting";
 }
 
+Json::Value RPCServer::doPeers(Json::Value& params)
+{
+	// peers
+	return theApp->getConnectionPool().getPeersJson();
+}
+
 Json::Value RPCServer::doSendTo(Json::Value& params)
 {   // Implement simple sending without gathering
 	// sendto <destination> <amount>
@@ -504,6 +510,7 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 	if(command=="unlock") return doUnlock(params);
 	if(command=="sendto") return doSendTo(params);
 	if(command=="connect") return doConnect(params);
+	if(command=="peers") return doPeers(params);
 	if(command=="tx") return doTx(params);
 	if(command=="ledger") return doLedger(params);
 
