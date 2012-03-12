@@ -108,3 +108,16 @@ bool ConnectionPool::connectTo(const std::string& host, const std::string& port)
 	}
 	return true;
 }
+
+Json::Value ConnectionPool::getPeersJson()
+{
+    Json::Value ret(Json::arrayValue);
+
+    BOOST_FOREACH(Peer::pointer peer, mPeers)
+    {
+	ret.append(peer->getJson());
+    }
+
+    return ret;
+}
+

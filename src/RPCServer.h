@@ -41,6 +41,7 @@ class RPCServer  : public boost::enable_shared_from_this<RPCServer>
 	Json::Value doUnlock(Json::Value& params);
 	Json::Value doSendTo(Json::Value& params);
 	Json::Value doConnect(Json::Value& params);
+	Json::Value doPeers(Json::Value& params);
 	Json::Value doTx(Json::Value& params);
 	Json::Value doLedger(Json::Value& params);
 	Json::Value doAccount(Json::Value& params);
