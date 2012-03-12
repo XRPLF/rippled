@@ -322,9 +322,10 @@ bool Serializer::getVLLength(int& length, int offset) const
 	return true;
 }
 
-bool Serializer::getTaggedList(std::list<TaggedListItem>& list, int offset) const
+bool Serializer::getTaggedList(std::list<TaggedListItem>& list, int offset, int& length) const
 {
 	list.clear();
+	int startOffset=offset;
 	int numElem;
 	if(!get8(numElem, offset++)) return false;
 	for(int i=0; i<numElem; i++)
@@ -336,6 +337,7 @@ bool Serializer::getTaggedList(std::list<TaggedListItem>& list, int offset) cons
 		offset+=len;
 		list.push_back(std::make_pair(tag, data));
 	}
+	length=offset-startOffset;
 	return true;
 }
 
@@ -407,4 +409,75 @@ int Serializer::decodeVLLength(int b1, int b2, int b3) throw()
 void Serializer::TestSerializer()
 {
 	Serializer s(64);
+}
+
+int SerializerIterator::getBytesLeft()
+{
+	return mSerializer.getLength()-mPos;
+}
+
+unsigned char SerializerIterator::get8() throw()
+{
+	int val;
+	if(!mSerializer.get8(val, mPos)) throw(0);
+	mPos++;
+	return val;
+}
+
+uint16 SerializerIterator::get16() throw()
+{
+	uint16 val;
+	if(!mSerializer.get16(val, mPos)) throw(0);
+	mPos+=16/8;
+	return val;
+}
+
+uint32 SerializerIterator::get32() throw()
+{
+	uint32 val;
+	if(!mSerializer.get32(val, mPos)) throw(0);
+	mPos+=32/8;
+	return val;
+}
+
+uint64 SerializerIterator::get64() throw()
+{
+	uint64 val;
+	if(!mSerializer.get64(val, mPos)) throw(0);
+	mPos+=64/8;
+	return val;
+}
+
+uint160 SerializerIterator::get160() throw()
+{
+	uint160 val;
+	if(!mSerializer.get160(val, mPos)) throw(0);
+	mPos+=160/8;
+	return val;
+}
+
+uint256 SerializerIterator::get256() throw()
+{
+	uint256 val;
+	if(!mSerializer.get256(val, mPos)) throw(0);
+	mPos+=256/8;
+	return val;
+}
+
+std::vector<unsigned char> SerializerIterator::getVL() throw()
+{
+	int length;
+	std::vector<unsigned char> vl;
+	if(!mSerializer.getVL(vl, mPos, length)) throw(0);
+	mPos+=length;
+	return vl;
+}
+
+std::list<TaggedListItem> SerializerIterator::getTaggedList() throw()
+{
+	int length;
+	std::list<TaggedListItem> tl;
+	if(!mSerializer.getTaggedList(tl, mPos, length)) throw(0);
+	mPos+=length;
+	return tl;
 }

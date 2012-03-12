@@ -53,7 +53,7 @@ class Serializer
 
 	bool getVL(std::vector<unsigned char>& objectVL, int offset, int& length) const;
 	bool getVLLength(int& length, int offset) const;
-	bool getTaggedList(std::list<TaggedListItem>&, int offset) const;
+	bool getTaggedList(std::list<TaggedListItem>&, int offset, int& legnth) const;
 
 
 	// hash functions
