@@ -48,10 +48,13 @@ class Serializer
 	bool get160(uint160&, int offset) const;
 	bool get256(uint256&, int offset) const;
 	uint256 get256(int offset) const;
-	bool getVLLength(int& length, int offset) const;
-	bool getTaggedList(std::list<TaggedListItem>&, int offset) const;
 	bool getRaw(std::vector<unsigned char>&, int offset, int length) const;
 	std::vector<unsigned char> getRaw(int offset, int length) const;
+
+	bool getVL(std::vector<unsigned char>& objectVL, int offset, int& length) const;
+	bool getVLLength(int& length, int offset) const;
+	bool getTaggedList(std::list<TaggedListItem>&, int offset) const;
+
 
 	// hash functions
 	uint160 getRIPEMD160(int size=-1) const;
@@ -78,10 +81,13 @@ class Serializer
 	bool makeSignature(std::vector<unsigned char>& signature, CKey& rkey) const;
 	bool addSignature(CKey& rkey);
 
-	// VL length encode/decode functions
+	// low-level VL length encode/decode functions
 	static std::vector<unsigned char> encodeVL(int length) throw();
-	static int getVLLength(int b1) throw();
-	static int decodeVLLength(const std::vector<unsigned char>&, int offset=0);
+	static int encodeLengthLength(int length) throw();
+	static int decodeLengthLength(int b1) throw();
+	static int decodeVLLength(int b1) throw();
+	static int decodeVLLength(int b1, int b2) throw();
+	static int decodeVLLength(int b1, int b2, int b3) throw();
 
 	static void TestSerializer();
 };
@@ -108,6 +114,7 @@ public:
 	uint64 get64() throw();
 	uint160 get160() throw();
 	uint256 get256() throw();
+
 	std::vector<unsigned char> getVL() throw();
 	std::list<TaggedListItem> getTaggedList() throw();
 };
