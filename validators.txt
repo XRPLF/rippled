@@ -1,0 +1,14 @@
+#
+# Newcoin - validators.txt
+#
+# A list of domains to bootstrap a nodes UNLs.
+#
+# This file should be utf-8.
+# Blank lines and lines starting with a '#' are ignored.
+# All other lines should be domain names.
+#
+# To acquire an UNL, newcoind will probe for https web servers at the domains
+# listed below in the following order: newcoin.foo.com, www.foo.com, foo.com
+#
+
+redstem.com
