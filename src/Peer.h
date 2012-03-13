@@ -16,6 +16,7 @@ enum PeerPunish
 {
 	PP_INVALID_REQUEST=1,	// The peer sent a request that makes no sense
 	PP_UNKNOWN_REQUEST=2,	// The peer sent a request that might be garbage
+	PP_UNWANTED_DATA=3,		// The peer sent us data we didn't want/need
 };
 
 class Peer : public boost::enable_shared_from_this<Peer>

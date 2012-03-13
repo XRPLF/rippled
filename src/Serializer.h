@@ -3,11 +3,14 @@
 
 #include <vector>
 #include <string>
+#include <list>
 
 #include <boost/shared_ptr.hpp>
 
 #include "key.h"
 #include "uint256.h"
+
+typedef std::pair<int, std::vector<unsigned char> > TaggedListItem;
 
 class Serializer
 {
@@ -32,6 +35,10 @@ class Serializer
 	int addRaw(const std::vector<unsigned char> &vector);
 	int addRaw(const void *ptr, int len);
 
+	int addVL(const std::vector<unsigned char> &vector);
+	int addVL(const void *ptr, int len);
+	int addTaggedList(const std::list<TaggedListItem>&);
+
 	// disassemble functions
 	bool get8(int&, int offset) const;
 	bool get8(unsigned char&, int offset) const;
@@ -43,7 +50,12 @@ class Serializer
 	uint256 get256(int offset) const;
 	bool getRaw(std::vector<unsigned char>&, int offset, int length) const;
 	std::vector<unsigned char> getRaw(int offset, int length) const;
-	
+
+	bool getVL(std::vector<unsigned char>& objectVL, int offset, int& length) const;
+	bool getVLLength(int& length, int offset) const;
+	bool getTaggedList(std::list<TaggedListItem>&, int offset, int& legnth) const;
+
+
 	// hash functions
 	uint160 getRIPEMD160(int size=-1) const;
 	uint256 getSHA256(int size=-1) const;
@@ -69,7 +81,42 @@ class Serializer
 	bool makeSignature(std::vector<unsigned char>& signature, CKey& rkey) const;
 	bool addSignature(CKey& rkey);
 
+	// low-level VL length encode/decode functions
+	static std::vector<unsigned char> encodeVL(int length) throw();
+	static int encodeLengthLength(int length) throw();
+	static int decodeLengthLength(int b1) throw();
+	static int decodeVLLength(int b1) throw();
+	static int decodeVLLength(int b1, int b2) throw();
+	static int decodeVLLength(int b1, int b2, int b3) throw();
+
 	static void TestSerializer();
+};
+
+class SerializerIterator
+{
+protected:
+	const Serializer& mSerializer;
+	int mPos;
+
+public:
+	SerializerIterator(const Serializer& s) : mSerializer(s), mPos(0) { ; }
+
+	void reset(void) { mPos=0; }
+	void setPos(int p) { mPos = p; }
+	const Serializer& operator*(void) { return mSerializer; }
+
+	int getPos(void) { return mPos; }
+	int getBytesLeft();
+	
+	unsigned char get8() throw();
+	uint16 get16() throw();
+	uint32 get32() throw();
+	uint64 get64() throw();
+	uint160 get160() throw();
+	uint256 get256() throw();
+
+	std::vector<unsigned char> getVL() throw();
+	std::list<TaggedListItem> getTaggedList() throw();
 };
 
 #endif
