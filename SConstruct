@@ -4,13 +4,28 @@
 
 import glob
 
-# Put objects files in their own directory.
-for dir in ['src', 'database', 'json', 'util']:
-    VariantDir('obj/'+dir, dir, duplicate=0)
+CTAGS = '/usr/bin/exuberant-ctags'
+
+#
+# scons tools
+#
 
 env = Environment(
     tools = ['default', 'protoc']    
     )
+
+#
+# Builder for CTags
+#
+ctags = Builder(action = '$CTAGS $CTAGSOPTIONS -f $TARGET $SOURCES')
+env.Append(BUILDERS = { 'CTags' : ctags })
+env.Replace(CTAGS = CTAGS, CTAGSOPTIONS = '--tag-relative')
+
+#
+# Put objects files in their own directory.
+#
+for dir in ['src', 'database', 'json', 'util']:
+    VariantDir('obj/'+dir, dir, duplicate=0)
 
 # Use openssl
 env.ParseConfig('pkg-config --cflags --libs openssl')
@@ -55,5 +70,8 @@ for file in NEWCOIN_SRCS:
 
 NEWCOIN_OBJS	+= PROTO_SRCS
 
-env.Program('newcoind', NEWCOIN_OBJS)
+newcoind    = env.Program('newcoind', NEWCOIN_OBJS)
 
+tags	    = env.CTags('obj/tags', NEWCOIN_SRCS)
+
+Default(newcoind, tags)
