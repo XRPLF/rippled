@@ -1,6 +1,8 @@
 #ifndef __SERIALIZEDOBJECT__
 #define __SERIALIZEDOBJECT__
 
+#include <boost/ptr_container/ptr_vector.hpp>
+
 #include "SerializedTypes.h"
 
 struct SOElement
@@ -22,7 +24,7 @@ class STUObject : public SerializedType
 {
 protected:
 	SOType *type;
-	std::list<SerializedType*> data;
+	boost::ptr_vector<SerializedType> data;
 
 public:
 	STUObject() { ; }
@@ -41,8 +43,8 @@ public:
 
 	void addObject(const SerializedType& t) { data.push_back(t.duplicate()); }
 	void giveObject(SerializedType* t) { data.push_back(t); }
-	const std::list<SerializedType*>& peekData() const { return data; }
-	std::list<SerializedType*>& peekData() { return data; }
+	const boost::ptr_vector<SerializedType>& peekData() const { return data; }
+	boost::ptr_vector<SerializedType>& peekData() { return data; }
 };
 
 

@@ -7,32 +7,32 @@
 int Serializer::add16(uint16 i)
 {
 	int ret=mData.size();
-	mData.push_back((unsigned char)(i>>8));
-	mData.push_back((unsigned char)(i&0xff));
+	mData.push_back(static_cast<unsigned char>(i>>8));
+	mData.push_back(static_cast<unsigned char>(i&0xff));
 	return ret;
 }
 
 int Serializer::add32(uint32 i)
 {
 	int ret=mData.size();
-	mData.push_back((unsigned char)(i>>24));
-	mData.push_back((unsigned char)((i>>16)&0xff));
-	mData.push_back((unsigned char)((i>>8)&0xff));
-	mData.push_back((unsigned char)(i&0xff));
+	mData.push_back(static_cast<unsigned char>(i>>24));
+	mData.push_back(static_cast<unsigned char>((i>>16)&0xff));
+	mData.push_back(static_cast<unsigned char>((i>>8)&0xff));
+	mData.push_back(static_cast<unsigned char>(i&0xff));
 	return ret;
 }
 
 int Serializer::add64(uint64 i)
 {
 	int ret=mData.size();
-	mData.push_back((unsigned char)(i>>56));
-	mData.push_back((unsigned char)((i>>48)&0xff));
-	mData.push_back((unsigned char)((i>>40)&0xff));
-	mData.push_back((unsigned char)((i>>32)&0xff));
-	mData.push_back((unsigned char)((i>>24)&0xff));
-	mData.push_back((unsigned char)((i>>16)&0xff));
-	mData.push_back((unsigned char)((i>>8)&0xff));
-	mData.push_back((unsigned char)(i&0xff));
+	mData.push_back(static_cast<unsigned char>(i>>56));
+	mData.push_back(static_cast<unsigned char>((i>>48)&0xff));
+	mData.push_back(static_cast<unsigned char>((i>>40)&0xff));
+	mData.push_back(static_cast<unsigned char>((i>>32)&0xff));
+	mData.push_back(static_cast<unsigned char>((i>>24)&0xff));
+	mData.push_back(static_cast<unsigned char>((i>>16)&0xff));
+	mData.push_back(static_cast<unsigned char>((i>>8)&0xff));
+	mData.push_back(static_cast<unsigned char>(i&0xff));
 	return ret;
 }
 

@@ -9,8 +9,8 @@
 
 enum SerializedTypeID
 {
-	STI_OBJECT=0,
-	STI_UINT8=1, STI_UINT16=2, STI_UINT32=4, STI_UINT64=5,
+	STI_NOTPRESENT=0, STI_OBJECT=1,
+	STI_UINT8=2, STI_UINT16=3, STI_UINT32=4, STI_UINT64=5,
 	STI_HASH160=6, STI_HASH256=7, STI_VL=8, STI_TL=8
 };
 
@@ -21,15 +21,18 @@ public:
 	SerializedType() { ; }
 	virtual ~SerializedType() { ; }
 
-	virtual int getLength() const=0;
-	virtual SerializedTypeID getType() const=0;
-	virtual SerializedType* duplicate() const=0;
+	virtual int getLength() const { return 0; }
+	virtual SerializedTypeID getType() const { return STI_NOTPRESENT; }
+	virtual SerializedType* duplicate() const { return new SerializedType(); }
 
-	virtual std::string getText() const=0;
-	virtual std::string getSQL() const=0;
+	virtual std::string getText() const { return std::string(); }
+	virtual std::string getSQL() const { return std::string(); }
 
-	virtual std::vector<unsigned char> serialize() const=0;
-	virtual int add(std::vector<unsigned char>& j) const;
+	virtual std::vector<unsigned char> serialize() const;
+	virtual int add(std::vector<unsigned char>&) const { return 0; }
+
+	SerializedType* new_clone(const SerializedType& s) { return s.duplicate(); }
+	void delete_clone(const SerializedType* s) { boost::checked_delete(s); }
 };
 
 class STUInt8 : public SerializedType
@@ -47,7 +50,7 @@ public:
 	STUInt8 *duplicate() const { return new STUInt8(value); }
 	std::string getText() const;
 	std::string getSQL() const;
-	std::vector<unsigned char> serialize() const;
+	virtual int add(std::vector<unsigned char>&) const;
 
 	unsigned char getValue() const { return value; }
 	void setValue(unsigned char v) { value=v; }
@@ -71,7 +74,7 @@ public:
 	STUInt16 *duplicate() const { return new STUInt16(value); }
 	std::string getText() const;
 	std::string getSQL() const;
-	std::vector<unsigned char> serialize() const;
+	virtual int add(std::vector<unsigned char>&) const;
 
 	uint16 getValue() const { return value; }
 	void setValue(uint16 v) { value=v; }
@@ -95,7 +98,7 @@ public:
 	STUInt32 *duplicate() const { return new STUInt32(value); }
 	std::string getText() const;
 	std::string getSQL() const;
-	std::vector<unsigned char> serialize() const;
+	virtual int add(std::vector<unsigned char>&) const;
 
 	uint32 getValue() const { return value; }
 	void setValue(uint32 v) { value=v; }
@@ -119,7 +122,7 @@ public:
 	STUInt64 *duplicate() const { return new STUInt64(value); }
 	std::string getText() const;
 	std::string getSQL() const;
-	std::vector<unsigned char> serialize() const;
+	virtual int add(std::vector<unsigned char>&) const;
 
 	uint64 getValue() const { return value; }
 	void setValue(uint64 v) { value=v; }
@@ -144,7 +147,7 @@ public:
 	STUHash160 *duplicate() const { return new STUHash160(value); }
 	std::string getText() const;
 	std::string getSQL() const;
-	std::vector<unsigned char> serialize() const;
+	virtual int add(std::vector<unsigned char>&) const;
 
 	const uint160& getValue() const { return value; }
 	void setValue(const uint160& v) { value=v; }
@@ -169,7 +172,7 @@ public:
 	STUHash256 *duplicate() const { return new STUHash256(value); }
 	std::string getText() const;
 	std::string getSQL() const;
-	std::vector<unsigned char> serialize() const;
+	virtual int add(std::vector<unsigned char>&) const;
 
 	const uint256& getValue() const { return value; }
 	void setValue(const uint256& v) { value=v; }
@@ -194,7 +197,7 @@ public:
 	STUVariableLength *duplicate() const { return new STUVariableLength(value); }
 	std::string getText() const;
 	std::string getSQL() const;
-	std::vector<unsigned char> serialize() const;
+	virtual int add(std::vector<unsigned char>&) const;
 
 	const std::vector<unsigned char>& peekValue() const { return value; }
 	std::vector<unsigned char>& peekValue() { return value; }
@@ -221,7 +224,7 @@ public:
 	STUTaggedList *duplicate() const { return new STUTaggedList(value); }
 	std::string getText() const;
 	std::string getSQL() const;
-	std::vector<unsigned char> serialize() const;
+	virtual int add(std::vector<unsigned char>&) const;
 
 	const std::list<TaggedListItem>& peekValue() const { return value; }
 	std::list<TaggedListItem>& peekValue() { return value; }
