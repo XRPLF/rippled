@@ -21,7 +21,8 @@
 #include "bignum.h"
 #include "BitcoinUtil.h"
 
-static const char* pszBase58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+//         Bitcoin's encoding: "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+static const char* pszBase58 = "sa3A5h7n9NBfDFEGHJKLM4PQRSTUVWXYZ2bcdeCg6ijkm8opqr1tuvwxyz";
 
 
 inline std::string EncodeBase58(const unsigned char* pbegin, const unsigned char* pend)
