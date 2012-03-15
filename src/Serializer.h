@@ -38,6 +38,7 @@ class Serializer
 	int addVL(const std::vector<unsigned char> &vector);
 	int addVL(const void *ptr, int len);
 	int addTaggedList(const std::list<TaggedListItem>&);
+	int addTaggedList(const std::vector<TaggedListItem>&);
 
 	// disassemble functions
 	bool get8(int&, int offset) const;

@@ -257,6 +257,20 @@ int Serializer::addTaggedList(const std::list<TaggedListItem>& list)
 	return ret;
 }
 
+int Serializer::addTaggedList(const std::vector<TaggedListItem>& list)
+{
+	int size=list.size();
+	if(size>255) return -1;
+	int ret=add8(size);
+	if(size!=0)
+		for(std::vector<TaggedListItem>::const_iterator it=list.begin(); it!=list.end(); ++it)
+		{
+			add8(it->first);
+			addVL(it->second);
+		}
+	return ret;
+}
+
 bool Serializer::getVL(std::vector<unsigned char>& objectVL, int offset, int& length) const
 {
 	int b1;
