@@ -202,11 +202,11 @@ public:
 class STUTaggedList
 {
 protected:
-	std::list<TaggedListItem> value;
+	std::vector<TaggedListItem> value;
 
 public:
 
-	STUTaggedList(const std::list<TaggedListItem>& v) : value(v) { ; }
+	STUTaggedList(const std::vector<TaggedListItem>& v) : value(v) { ; }
 	STUTaggedList() { ; }
 	static STUTaggedList* construct(SerializerIterator&);
 
@@ -214,13 +214,13 @@ public:
 	SerializedTypeID getType() const { return STI_TL; }
 	STUTaggedList *duplicate() const { return new STUTaggedList(value); }
 	std::string getText() const;
-	virtual void add(Serializer& s) const { s.addTaggedList(value); }
+	virtual void add(Serializer& s) const { if(s.addTaggedList(value)<0) throw(0); }
 
-	const std::list<TaggedListItem>& peekValue() const { return value; }
-	std::list<TaggedListItem>& peekValue() { return value; }
-	std::list<TaggedListItem> getValue() const { return value; }
+	const std::vector<TaggedListItem>& peekValue() const { return value; }
+	std::vector<TaggedListItem>& peekValue() { return value; }
+	std::vector<TaggedListItem> getValue() const { return value; }
 
-	void setValue(std::list<TaggedListItem>& v) { value=v; }
+	void setValue(std::vector<TaggedListItem>& v) { value=v; }
 
 	int getItemCount() const { return value.size(); }
 	bool isEmpty() const { return value.empty(); }
@@ -228,8 +228,8 @@ public:
 	void clear() { value.erase(value.begin(), value.end()); }
 	void addItem(const TaggedListItem& v) { value.push_back(v); }
 
-	operator std::list<TaggedListItem>() const { return value; }
-	STUTaggedList& operator=(const std::list<TaggedListItem>& v) { value=v; return *this; }
+	operator std::vector<TaggedListItem>() const { return value; }
+	STUTaggedList& operator=(const std::vector<TaggedListItem>& v) { value=v; return *this; }
 };
 
 #endif

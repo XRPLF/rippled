@@ -37,9 +37,9 @@ public:
 	SerializedTypeID getType() const { return STI_OBJECT; }
 	STUObject* duplicate() const { return new STUObject(*this); }
 
-	std::vector<unsigned char> serialize() const;
+	void add(Serializer& s) const;
 	std::string getText() const;
-	std::string getSQL() const;
+
 
 	void addObject(const SerializedType& t) { data.push_back(t.duplicate()); }
 	void giveObject(SerializedType* t) { data.push_back(t); }

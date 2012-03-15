@@ -83,10 +83,15 @@ STUVariableLength* STUVariableLength::construct(SerializerIterator& u)
 	return new STUVariableLength(u.getVL());
 }
 
+int STUVariableLength::getLength() const
+{
+	return Serializer::encodeLengthLength(value.size()) + value.size();
+}
+
 std::string STUTaggedList::getText() const
 {
 	std::string ret;
-	for(std::list<TaggedListItem>::const_iterator it=value.begin(); it!=value.end(); ++it)
+	for(std::vector<TaggedListItem>::const_iterator it=value.begin(); it!=value.end(); ++it)
 	{
 		ret+=boost::lexical_cast<std::string>(it->first);
 		ret+=",";
@@ -98,4 +103,11 @@ std::string STUTaggedList::getText() const
 STUTaggedList* STUTaggedList::construct(SerializerIterator& u)
 {
 	return new STUTaggedList(u.getTaggedList());
+}
+
+int STUTaggedList::getLength() const
+{
+	int ret=Serializer::getTaggedListLength(value);
+	if(ret<0) throw(0);
+	return ret;
 }
