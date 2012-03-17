@@ -27,19 +27,18 @@ protected:
 	boost::ptr_vector<SerializedType> data;
 
 public:
-	STUObject() { ; }
-	virtual ~STUObject();
-
-	STUObject(const STUObject&);
-	STUObject& operator=(const STUObject&);
+	STUObject() : type(NULL) { ; }
+	STUObject(SOType *t) : type(t) { ; }
+	STUObject(SOType *t, SerializerIterator& u);
+	virtual ~STUObject() { ; }
 
 	int getLength() const;
 	SerializedTypeID getType() const { return STI_OBJECT; }
 	STUObject* duplicate() const { return new STUObject(*this); }
 
 	void add(Serializer& s) const;
+	std::string getFullText() const;
 	std::string getText() const;
-
 
 	void addObject(const SerializedType& t) { data.push_back(t.duplicate()); }
 	void giveObject(SerializedType* t) { data.push_back(t); }

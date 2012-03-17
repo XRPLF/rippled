@@ -16,16 +16,25 @@ enum SerializedTypeID
 
 class SerializedType
 {
+protected:
+	const char *name;
+
 public:
 
-	SerializedType() { ; }
+	SerializedType() : name(NULL) { ; }
+	SerializedType(const char *n) : name(n) { ; }
 	virtual ~SerializedType() { ; }
+
+	void setName(const char *n) { name=n; }
+	const char *getName() { return name; }
 
 	virtual int getLength() const { return 0; }
 	virtual SerializedTypeID getType() const { return STI_NOTPRESENT; }
 	virtual SerializedType* duplicate() const { return new SerializedType(); }
 
-	virtual std::string getText() const { return std::string(); }
+	virtual std::string getFullText() const;
+	virtual std::string getText() const // just the value
+	{ return std::string(); }
 
 	virtual void add(Serializer& s) const { return; }
 

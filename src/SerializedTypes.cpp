@@ -4,6 +4,21 @@
 #include "SerializedTypes.h"
 #include "SerializedObject.h"
 
+std::string SerializedType::getFullText() const
+{
+	std::string ret;
+	if(getType()!=STI_NOTPRESENT)
+	{
+		if(name!=NULL)
+		{
+			ret=name;
+			ret+=" = ";
+		}
+		ret+=getText();
+	}
+	return ret;
+}
+
 STUInt8* STUInt8::construct(SerializerIterator& u)
 {
 	return new STUInt8(u.get8());
@@ -109,5 +124,51 @@ int STUTaggedList::getLength() const
 {
 	int ret=Serializer::getTaggedListLength(value);
 	if(ret<0) throw(0);
+	return ret;
+}
+
+std::string STUObject::getFullText() const
+{
+	std::string ret;
+	if(name!=NULL)
+	{
+		ret=name;
+		ret+=" = {";
+	}
+	else ret="{";
+	for(boost::ptr_vector<SerializedType>::const_iterator it=data.begin(), end=data.end(); it!=end; ++it)
+		ret+=it->getFullText();
+	ret+="}";
+	return ret;
+}
+
+int STUObject::getLength() const
+{
+	int ret=0;
+	for(boost::ptr_vector<SerializedType>::const_iterator it=data.begin(), end=data.end(); it!=end; ++it)
+		ret+=it->getLength();
+	return ret;
+}
+
+void STUObject::add(Serializer& s) const
+{
+	for(boost::ptr_vector<SerializedType>::const_iterator it=data.begin(), end=data.end(); it!=end; ++it)
+		it->add(s);
+}
+
+std::string STUObject::getText() const
+{
+	std::string ret="{";
+	bool first=false;
+	for(boost::ptr_vector<SerializedType>::const_iterator it=data.begin(), end=data.end(); it!=end; ++it)
+	{
+		if(!first)
+		{
+			ret+=", ";
+			first=false;
+		}
+		ret+=it->getText();
+	}
+	ret+="}";
 	return ret;
 }
