@@ -14,14 +14,18 @@ uint32 LedgerMaster::getCurrentLedgerIndex()
 	return mCurrentLedger->getLedgerSeq();
 }
 
-uint64 LedgerMaster::getBalance(const uint160& addr)
+uint64 LedgerMaster::getBalance(const NewcoinAddress& acctID)
 {
-	return mCurrentLedger->getBalance(addr);
+	return mCurrentLedger->getBalance(acctID);
 }
 
-uint64 LedgerMaster::getBalance(std::string& addr)
+uint64 LedgerMaster::getBalance(std::string& strAcctID)
 {
-	return mCurrentLedger->getBalance(humanTo160(addr));
+	NewcoinAddress	acctID;
+
+	acctID.setAccountID(strAcctID);
+
+	return mCurrentLedger->getBalance(acctID);
 }
 
 bool LedgerMaster::addHeldTransaction(Transaction::pointer transaction)
@@ -194,3 +198,4 @@ theApp->getConnectionPool().relayMessage(NULL,msg);
 */
 
 #endif
+// vim:ts=4

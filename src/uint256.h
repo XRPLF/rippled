@@ -14,6 +14,8 @@
 
 #include "types.h"
 
+#include <openssl/bn.h>
+
 #if defined(_MSC_VER) && _MSC_VER < 1300
 #define for  if (false) ; else for
 #endif
@@ -32,6 +34,19 @@ protected:
 	enum { WIDTH=BITS/32 };
 	unsigned int pn[WIDTH];
 public:
+
+	BIGNUM *toBN() const
+	{
+	    // Convert to big-endian
+	    unsigned char *be[WIDTH];
+	    unsigned char *bep;
+	    unsigned int *pnp	= &pn[WIDTH];
+
+	    for (int i=WIDTH; i--;)
+		*bep++ =  *--pnp;
+
+	    return BN_bin2bn(be, WIDTH, NULL);
+	}
 
 	bool isZero() const
 	{
@@ -292,7 +307,7 @@ public:
 				return false;
 		return true;
 	}
-	
+
 	friend inline bool operator!=(const base_uint& a, const base_uint& b)
 	{
 		return (!(a == b));
@@ -415,22 +430,64 @@ public:
 	}
 
 
+	friend class uint128;
 	friend class uint160;
 	friend class uint256;
 	friend inline int Testuint256AdHoc(std::vector<std::string> vArg);
 };
 
+typedef base_uint<128> base_uint128;
 typedef base_uint<160> base_uint160;
 typedef base_uint<256> base_uint256;
 
-
-
 //
-// uint160 and uint256 could be implemented as templates, but to keep
+// uint128, uint160, & uint256 could be implemented as templates, but to keep
 // compile errors and debugging cleaner, they're copy and pasted.
 //
 
+//////////////////////////////////////////////////////////////////////////////
+//
+// uint128
+//
 
+class uint128 : public base_uint128
+{
+public:
+	typedef base_uint128 basetype;
+
+	uint128()
+	{
+		for (int i = 0; i < WIDTH; i++)
+			pn[i] = 0;
+	}
+
+	uint128(const basetype& b)
+	{
+		for (int i = 0; i < WIDTH; i++)
+			pn[i] = b.pn[i];
+	}
+
+	uint128& operator=(const basetype& b)
+	{
+		for (int i = 0; i < WIDTH; i++)
+			pn[i] = b.pn[i];
+		return *this;
+	}
+
+	explicit uint128(const base_uint256 b) {
+		for (int i = 0; i < WIDTH; i++)
+			pn[i] = b.pn[i];
+	}
+
+	explicit uint128(const std::vector<unsigned char>& vch)
+	{
+		if (vch.size() == sizeof(pn))
+			memcpy(pn, &vch[0], sizeof(pn));
+		else
+			memset(pn, 0, sizeof(pn));
+	}
+
+};
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -490,7 +547,7 @@ public:
 		else
 			*this = 0;
 	}
-	
+
 	base_uint256 to256() const;
 };
 
@@ -542,11 +599,6 @@ inline const uint160 operator&(const uint160& a, const uint160& b)	  { return (b
 inline const uint160 operator|(const uint160& a, const uint160& b)	  { return (base_uint160)a |  (base_uint160)b; }
 inline const uint160 operator+(const uint160& a, const uint160& b)	  { return (base_uint160)a +  (base_uint160)b; }
 inline const uint160 operator-(const uint160& a, const uint160& b)	  { return (base_uint160)a -  (base_uint160)b; }
-
-
-
-
-
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -606,7 +658,7 @@ public:
 		else
 			*this = 0;
 	}
-	
+
 	base_uint160 to160() const;
 };
 
@@ -792,3 +844,4 @@ inline int Testuint256AdHoc(std::vector<std::string> vArg)
 }
 
 #endif
+// vim:ts=4

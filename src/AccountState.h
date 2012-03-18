@@ -11,6 +11,7 @@
 
 #include "types.h"
 #include "uint256.h"
+#include "NewcoinAddress.h"
 
 class AccountState
 {
@@ -18,16 +19,16 @@ public:
     typedef boost::shared_ptr<AccountState> pointer;
 
 private:
-    uint160 mAccountID;
+    NewcoinAddress mAccountID;
     uint64 mBalance;
     uint32 mAccountSeq;
     bool mValid;
 
 public:
-	AccountState(const uint160& mAccountID);			// new account
+	AccountState(const NewcoinAddress& mAccountID);			// new account
 	AccountState(const std::vector<unsigned char>&);	// raw form
 
-	const uint160& getAccountID() const { return mAccountID; }
+	const NewcoinAddress& getAccountID() const { return mAccountID; }
 	uint64 getBalance() const { return mBalance; }
 	uint32 getSeq() const { return mAccountSeq; }
 
@@ -57,3 +58,4 @@ public:
 };
 
 #endif
+// vim:ts=4

@@ -4,17 +4,17 @@
 #include "boost/interprocess/sync/scoped_lock.hpp"
 
 
-CKey::pointer PubKeyCache::locate(const uint160& id)
+CKey::pointer PubKeyCache::locate(const NewcoinAddress& id)
 {
 	if(1)
 	{ // is it in cache
 		boost::mutex::scoped_lock sl(mLock);
-		std::map<uint160, CKey::pointer>::iterator it(mCache.find(id));
+		std::map<NewcoinAddress, CKey::pointer>::iterator it(mCache.find(id));
 		if(it!=mCache.end()) return it->second;
 	}
 
 	std::string sql="SELECT * from PubKeys WHERE ID='";
-	sql.append(id.GetHex());
+	sql.append(id.humanAccountID());
 	sql.append("';'");
 	std::vector<unsigned char> data;
 	data.reserve(65); // our public keys are actually 33 bytes
@@ -44,17 +44,17 @@ CKey::pointer PubKeyCache::locate(const uint160& id)
 	return ckp;
 }
 
-CKey::pointer PubKeyCache::store(const uint160& id, CKey::pointer key)
+CKey::pointer PubKeyCache::store(const NewcoinAddress& id, CKey::pointer key)
 { // stored if needed, returns cached copy (possibly the original)
 	if(1)
 	{
 		boost::mutex::scoped_lock sl(mLock);
-		std::pair<std::map<uint160,CKey::pointer>::iterator, bool> pit(mCache.insert(std::make_pair(id, key)));
+		std::pair<std::map<NewcoinAddress,CKey::pointer>::iterator, bool> pit(mCache.insert(std::make_pair(id, key)));
 		if(!pit.second) // there was an existing key
 			return pit.first->second;
 	}
 	std::string sql="INSERT INTO PubKeys (ID,PubKey) VALUES ('";
-	sql+=id.GetHex();
+	sql+=id.humanAccountID();
 	sql+="',";
 
 	std::vector<unsigned char> pk=key->GetPubKey();

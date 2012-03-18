@@ -5,20 +5,20 @@
 
 #include <boost/thread/mutex.hpp>
 
-#include "uint256.h"
+#include "NewcoinAddress.h"
 #include "key.h"
 
 class PubKeyCache
 {
 private:
 	boost::mutex mLock;
-	std::map<uint160, CKey::pointer> mCache;
+	std::map<NewcoinAddress, CKey::pointer> mCache;
 
 public:
 	PubKeyCache() { ; }
 
-	CKey::pointer locate(const uint160& id);
-	CKey::pointer store(const uint160& id, CKey::pointer key);
+	CKey::pointer locate(const NewcoinAddress& id);
+	CKey::pointer store(const NewcoinAddress& id, CKey::pointer key);
 	void clear();
 };
 

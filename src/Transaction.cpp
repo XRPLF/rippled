@@ -11,13 +11,13 @@
 
 using namespace std;
 
-Transaction::Transaction() : mTransactionID(0), mAccountFrom(0), mAccountTo(0),
+Transaction::Transaction() : mTransactionID(0), mAccountFrom(), mAccountTo(),
 	mAmount(0), mFee(0), mFromAccountSeq(0), mSourceLedger(0), mIdent(0),
 	mInLedger(0), mStatus(INVALID)
 {
 }
 
-Transaction::Transaction(LocalAccount::pointer fromLocalAccount, const uint160& toAccount, uint64 amount,
+Transaction::Transaction(LocalAccount::pointer fromLocalAccount, const NewcoinAddress& toAccount, uint64 amount,
 	uint32 ident, uint32 ledger) :
 		mAccountTo(toAccount), mAmount(amount), mSourceLedger(ledger), mIdent(ident), mInLedger(0), mStatus(NEW)
 {
@@ -52,9 +52,12 @@ Transaction::Transaction(LocalAccount::pointer fromLocalAccount, const uint160& 
 
 Transaction::Transaction(const std::vector<unsigned char> &t, bool validate) : mStatus(INVALID)
 {
+	uint160	toAccountID;
+	uint160	fromAccountID;
+
 	Serializer s(t);
 	if(s.getLength()<BTxSize) { assert(false); return; }
-	if(!s.get160(mAccountTo, BTxPDestAcct)) { assert(false); return; }
+	if(!s.get160(toAccountID, BTxPDestAcct)) { assert(false); return; }
 	if(!s.get64(mAmount, BTxPAmount)) { assert(false); return; }
 	if(!s.get32(mFromAccountSeq, BTxPSASeq)) { assert(false); return; }
 	if(!s.get32(mSourceLedger, BTxPSLIdx)) { assert(false); return; }
@@ -63,9 +66,13 @@ Transaction::Transaction(const std::vector<unsigned char> &t, bool validate) : m
 
 	std::vector<unsigned char> pubKey;
 	if(!s.getRaw(pubKey, BTxPSPubK, BTxLSPubK)) { assert(false); return; }
+
+	mAccountTo.setAccountID(toAccountID);
+	mAccountFrom.setAccountID(fromAccountID);
+
 	mFromPubKey=boost::make_shared<CKey>();
 	if(!mFromPubKey->SetPubKey(pubKey)) return;
-	mAccountFrom=Hash160(pubKey);
+	mAccountFrom.setAccountPublic(pubKey);
 	mFromPubKey=theApp->getPubKeyCache().store(mAccountFrom, mFromPubKey);
 
 	updateID();
@@ -86,7 +93,7 @@ bool Transaction::sign(LocalAccount::pointer fromLocalAccount)
 		return false;
 	}
 
-	if( (mAmount==0) || (mSourceLedger==0) || (mAccountTo==0) )
+	if( (mAmount==0) || (mSourceLedger==0) || !mAccountTo.IsValid() )
 	{
 #ifdef DEBUG
 		std::cerr << "Bad amount, source ledger, or destination" << std::endl;
@@ -94,7 +101,8 @@ bool Transaction::sign(LocalAccount::pointer fromLocalAccount)
 		assert(false);
 		return false;
 	}
-	if(mAccountFrom!=fromLocalAccount->getAddress())
+
+	if(mAccountFrom.getAccountID()!=fromLocalAccount->getAddress().getAccountID())
 	{
 #ifdef DEBUG
 		std::cerr << "Source mismatch" << std::endl;
@@ -129,9 +137,11 @@ bool Transaction::checkSign() const
 
 Serializer::pointer Transaction::getRaw(bool prefix) const
 {
+	uint160	toAccountID	= mAccountTo.getAccountID();
+
 	Serializer::pointer ret=boost::make_shared<Serializer>(77);
 	if(prefix) ret->add32(0x54584e00u);
-	ret->add160(mAccountTo);
+	ret->add160(toAccountID);
 	ret->add64(mAmount);
 	ret->add32(mFromAccountSeq);
 	ret->add32(mSourceLedger);
@@ -174,7 +184,7 @@ bool Transaction::save() const
 		" VALUES ('";
 	sql.append(mTransactionID.GetHex());
 	sql.append("','");
-	sql.append(mAccountFrom.GetHex());
+	sql.append(mAccountFrom.humanAccountID());
 	sql.append("','");
 	sql.append(boost::lexical_cast<std::string>(mFromAccountSeq));
 	sql.append("','");
@@ -182,7 +192,7 @@ bool Transaction::save() const
 	sql.append("','");
 	sql.append(boost::lexical_cast<std::string>(mIdent));
 	sql.append("','");
-	sql.append(mAccountTo.GetHex());
+	sql.append(mAccountTo.humanAccountID());
 	sql.append("','");
 	sql.append(boost::lexical_cast<std::string>(mAmount));
 	sql.append("','");
@@ -221,7 +231,7 @@ Transaction::pointer Transaction::transactionFromSQL(const std::string& sql)
 
 		if(!db->executeSQL(sql.c_str(), true) || !db->startIterRows() || !db->getNextRow())
 			return Transaction::pointer();
-		
+
 		db->getStr("TransID", transID);
 		db->getStr("FromID", fromID);
 		fromSeq=db->getBigInt("FromSeq");
@@ -238,14 +248,14 @@ Transaction::pointer Transaction::transactionFromSQL(const std::string& sql)
 	}
 
 	uint256 trID;
-	uint160 frID, tID;
+	NewcoinAddress frID, tID;
 	trID.SetHex(transID);
-	frID.SetHex(fromID);
-	tID.SetHex(toID);	
+	frID.setAccountID(fromID);
+	tID.setAccountID(toID);
 
 	CKey::pointer pubkey=theApp->getPubKeyCache().locate(frID);
 	if(!pubkey) return Transaction::pointer();
-	
+
 	TransStatus st(INVALID);
 	switch(status[0])
 	{
@@ -269,10 +279,10 @@ Transaction::pointer Transaction::load(const uint256& id)
 	return transactionFromSQL(sql);
 }
 
-Transaction::pointer Transaction::findFrom(const uint160& fromID, uint32 seq)
+Transaction::pointer Transaction::findFrom(const NewcoinAddress& fromID, uint32 seq)
 {
 	std::string sql="SELECT * FROM Transactions WHERE FromID='";
-	sql.append(fromID.GetHex());
+	sql.append(fromID.humanAccountID());
 	sql.append("' AND FromSeq='");
 	sql.append(boost::lexical_cast<std::string>(seq));
 	sql.append("';");
@@ -361,13 +371,14 @@ Json::Value Transaction::getJson(bool decorate, bool paid, bool credited) const
 	}
 
 	Json::Value source(Json::objectValue);
-	source["AccountID"]=NewcoinAddress(mAccountFrom).GetString();
+
+	source["AccountID"]=mAccountFrom.humanAccountID();
 	source["AccountSeq"]=mFromAccountSeq;
 	source["Ledger"]=mSourceLedger;
 	if(!!mIdent) source["Identifier"]=mIdent;
 
 	Json::Value destination(Json::objectValue);
-	destination["AccountID"]=NewcoinAddress(mAccountTo).GetString();
+	destination["AccountID"]=mAccountTo.humanAccountID();
 
 	if(decorate)
 	{

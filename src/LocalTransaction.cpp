@@ -27,8 +27,7 @@ bool LocalTransaction::makeTransaction()
 		Json::Value t=mTransaction->getJson(true);
         Json::StyledStreamWriter w;
         w.write(std::cerr, t);
-		                
-#endif		
+#endif
 		return false;
 	}
 	return true;
@@ -46,11 +45,16 @@ Json::Value LocalTransaction::getJson() const
 		Json::Value ret(Json::objectValue);
 		ret["Status"]="unfunded";
 		ret["Amount"]=boost::lexical_cast<std::string>(mAmount);
+
 		Json::Value destination(Json::objectValue);
-        destination["AccountID"]=NewcoinAddress(mDestAcctID).GetString();
+        destination["AccountID"]=mDestAcctID.humanAccountID();
+
         ret["Destination"]=destination;
-        return ret;		
+
+        return ret;
 	}
 
 	return mTransaction->getJson(true, isPaid(), isCredited());
 }
+
+// vim:ts=4

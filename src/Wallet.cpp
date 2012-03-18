@@ -21,38 +21,34 @@
 #define CHECK_NEW_FAMILIES 500
 #endif
 
+//
+// LocalAccount - an account
+//
+
 LocalAccount::LocalAccount(boost::shared_ptr<LocalAccountFamily> family, int familySeq) :
 	mPublicKey(family->getPublicKey(familySeq)), mFamily(family), mAccountFSeq(familySeq),
 	mLgrBalance(0), mTxnDelta(0), mTxnSeq(0)
 {
-	mAcctID=mPublicKey->GetAddress().GetHash160();
+	mAcctID=mPublicKey->GetAddress();
+
 	if(theApp!=NULL) mPublicKey=theApp->getPubKeyCache().store(mAcctID, mPublicKey);
 }
 
-std::string LocalAccount::getAccountName() const
-{
-	return mPublicKey->GetAddress().GetString();
-}
+//
+// LocalAccountFamily - a sequences of accounts
+//
 
-std::string LocalAccount::getLocalAccountName() const
-{
-	return NewcoinAddress(mFamily->getFamily()).GetString() + ":" +  boost::lexical_cast<std::string>(mAccountFSeq);
-}
-
-LocalAccountFamily::LocalAccountFamily(const uint160& family, const EC_GROUP* group, const EC_POINT* pubKey) :
+LocalAccountFamily::LocalAccountFamily(const NewcoinAddress& family) :
 	mFamily(family), mLastSeq(0), mRootPrivateKey(NULL)
 {
-	mRootPubKey=EC_POINT_dup(pubKey, group);
-	mName=family.GetHex().substr(0, 4);
 }
 
 LocalAccountFamily::~LocalAccountFamily()
 {
 	lock();
-	if(mRootPubKey!=NULL) EC_POINT_free(mRootPubKey);
 }
 
-uint160 LocalAccountFamily::getAccount(int seq, bool keep)
+NewcoinAddress LocalAccountFamily::getAccount(int seq, bool keep)
 {
 	std::map<int, LocalAccount::pointer>::iterator ait=mAccounts.find(seq);
 	if(ait!=mAccounts.end()) return ait->second->getAddress();
@@ -63,15 +59,15 @@ uint160 LocalAccountFamily::getAccount(int seq, bool keep)
 	return lae->getAddress();
 }
 
-void LocalAccountFamily::unlock(const BIGNUM* privateKey)
+void LocalAccountFamily::unlock(BIGNUM* privateKey)
 {
-	if(mRootPrivateKey==NULL) mRootPrivateKey=BN_dup(privateKey);
+	if(mRootPrivateKey==NULL) mRootPrivateKey=privateKey;
 
 #ifdef CHECK_NEW_FAMILIES
 	std::cerr << "CheckingFamily" << std::endl;
 	for(int i=0; i<CHECK_NEW_FAMILIES; i++)
 	{
-		EC_KEY *pubkey=CKey::GeneratePublicDeterministicKey(mFamily, mRootPubKey, i);
+		EC_KEY *pubkey=CKey::GeneratePublicDeterministicKey(mFamily, i);
 		EC_KEY *privkey=CKey::GeneratePrivateDeterministicKey(mFamily, mRootPrivateKey, i);
 
 		int cmp=EC_POINT_cmp(EC_KEY_get0_group(pubkey), EC_KEY_get0_public_key(pubkey),
@@ -79,7 +75,7 @@ void LocalAccountFamily::unlock(const BIGNUM* privateKey)
 		if(cmp!=0)
 		{
 			std::cerr << BN_bn2hex(mRootPrivateKey) << std::endl;
-			std::cerr << "family=" << mFamily.GetHex() << std::endl;
+			std::cerr << "family=" << mFamily.humanFamilyGenerator() << std::endl;
 			std::cerr << "i=" << i << std::endl;
 			std::cerr << "Key mismatch" << std::endl;
 			assert(false);
@@ -95,68 +91,39 @@ void LocalAccountFamily::lock()
 {
 	if(mRootPrivateKey!=NULL)
 	{
- 		BN_free(mRootPrivateKey);
+		BN_free(mRootPrivateKey);
 		mRootPrivateKey=NULL;
 	}
 }
 
 CKey::pointer LocalAccountFamily::getPublicKey(int seq)
 {
-	return boost::make_shared<CKey>(mFamily, mRootPubKey, seq);
+	return boost::make_shared<CKey>(mFamily, seq);
 }
 
 CKey::pointer LocalAccountFamily::getPrivateKey(int seq)
 {
 	if(!mRootPrivateKey) return CKey::pointer();
-	std::cerr << "PrivKey(" << mFamily.GetHex() << "," << seq << ")" << std::endl;
+	std::cerr << "PrivKey(" << mFamily.humanFamilyGenerator() << "," << seq << ")" << std::endl;
 	return boost::make_shared<CKey>(mFamily, mRootPrivateKey, seq);
-}
-
-std::string LocalAccountFamily::getPubGenHex() const
-{
-	EC_GROUP *grp=EC_GROUP_new_by_curve_name(NID_secp256k1);
-	if(!grp) return "";
-
-	BIGNUM* pubBase=EC_POINT_point2bn(grp, mRootPubKey, POINT_CONVERSION_COMPRESSED, NULL, NULL);
-	EC_GROUP_free(grp);
-
-	if(!pubBase) return "";
-	char *hex=BN_bn2hex(pubBase);
-	BN_free(pubBase);
-
-	if(!hex) return "";
-	std::string ret(hex);
-	OPENSSL_free(hex);
-
-	return ret;
-}
-
-static bool isHex(char j)
-{
-	if((j>='0') && (j<='9')) return true;
-	if((j>='A') && (j<='F')) return true;
-	if((j>='a') && (j<='f')) return true;
-	return false;
 }
 
 Json::Value LocalAccountFamily::getJson() const
 {
 	Json::Value ret(Json::objectValue);
-	ret["ShortName"]=getShortName();
-	ret["FullName"]=getFamily().GetHex();
-	ret["PublicGenerator"]=getPubGenHex();
+	ret["FullName"]=getFamily().humanFamilyGenerator();
 	ret["IsLocked"]=isLocked();
 	if(!getComment().empty()) ret["Comment"]=getComment();
 	return ret;
 }
 
-LocalAccountFamily::pointer LocalAccountFamily::readFamily(const uint160& family)
+LocalAccountFamily::pointer LocalAccountFamily::readFamily(const NewcoinAddress& family)
 {
-	std::string sql="SELECT * from LocalAcctFamilies WHERE FamilyName='";
-	sql.append(family.GetHex());
+	std::string sql="SELECT * from LocalAcctFamilies WHERE FamilyGenerator='";
+	sql.append(family.humanFamilyGenerator());
 	sql.append("';");
 
-	std::string rootPubKey, name, comment;
+	std::string comment;
 	uint32 seq;
 
 	if(1)
@@ -167,127 +134,62 @@ LocalAccountFamily::pointer LocalAccountFamily::readFamily(const uint160& family
 		if(!db->executeSQL(sql.c_str()) || !db->startIterRows() || !db->getNextRow())
 			return LocalAccountFamily::pointer();
 
-		db->getStr("RootPubKey", rootPubKey);
-		db->getStr("Name", name);
 		db->getStr("Comment", comment);
 		seq=db->getBigInt("Seq");
 
 		db->endIterRows();
 	}
 
-	EC_GROUP *grp=EC_GROUP_new_by_curve_name(NID_secp256k1);
-	if(!grp) return LocalAccountFamily::pointer();
+	LocalAccountFamily::pointer fam=boost::make_shared<LocalAccountFamily>(family);
 
-	EC_POINT *pubKey=EC_POINT_hex2point(grp, rootPubKey.c_str(), NULL, NULL);
-	if(!pubKey)
-	{
-		EC_GROUP_free(grp);
-		assert(false);
-		return LocalAccountFamily::pointer();
-	}
-
-	LocalAccountFamily::pointer fam=boost::make_shared<LocalAccountFamily>(family, grp, pubKey);
-	EC_GROUP_free(grp);
-	EC_POINT_free(pubKey);
-
-	fam->setName(name);
 	fam->setComment(comment);
 	fam->setSeq(seq);
+
 	return fam;
 }
 
 void LocalAccountFamily::write(bool is_new)
 {
-	std::string sql="INSERT INTO LocalAcctFamilies (FamilyName,RootPubKey,Seq,Name,Comment) VALUES ('";
-	sql.append(mFamily.GetHex());
+	std::string sql="INSERT INTO LocalAcctFamilies (FamilyGenerator,Seq,Comment) VALUES ('";
+	sql.append(mFamily.humanFamilyGenerator());
 	sql.append("','");
-	
-	EC_GROUP* grp=EC_GROUP_new_by_curve_name(NID_secp256k1);
-	if(!grp) return;
-	char *rpk=EC_POINT_point2hex(grp, mRootPubKey, POINT_CONVERSION_COMPRESSED, NULL);
-	EC_GROUP_free(grp);
-	if(!rpk) return;
-	sql.append(rpk);
-	OPENSSL_free(rpk);
 
-	sql.append("','");
+	// EC_GROUP* grp=EC_GROUP_new_by_curve_name(NID_secp256k1);
+	// if(!grp) return;
+	// char *rpk=EC_POINT_point2hex(grp, mRootPubKey, POINT_CONVERSION_COMPRESSED, NULL);
+	// EC_GROUP_free(grp);
+	// if(!rpk) return;
+	// sql.append(rpk);
+	// OPENSSL_free(rpk);
+	// sql.append("','");
+
 	sql.append(boost::lexical_cast<std::string>(mLastSeq));
 	sql.append("',");
-	
+
 	std::string f;
-	theApp->getWalletDB()->getDB()->escape((const unsigned char *) mName.c_str(), mName.size(), f);
-	sql.append(f);
-	sql.append(",");
 	theApp->getWalletDB()->getDB()->escape((const unsigned char *) mComment.c_str(), mComment.size(), f);
 	sql.append(f);
-	
+
 	sql.append(");");
 
 	ScopedLock sl(theApp->getWalletDB()->getDBLock());
 	theApp->getWalletDB()->getDB()->executeSQL(sql.c_str());
 }
 
-bool Wallet::isHexPrivateKey(const std::string& s)
-{ // 65 characters, first is 'P', rest are all legal hex
-	if(s.size()!=65) return false;
-	if(s[0]!='P') return false;
-	for(int i=1; i<65; i++)
-		if(!isHex(s[i])) return false;
-	return true;
-}
-
-bool Wallet::isHexPublicKey(const std::string& s)
-{ // 66 characters, all legal hex, starts with '02' or '03'
-	if(s.size()!=66) return false;
-	if(s[0]!='0') return false;
-	if((s[1]!='2') && (s[1]!='3')) return false;
-	for(int i=3; i<66; i++)
-		if(!isHex(s[i])) return false;
-	return true;
-}
-
-bool Wallet::isHexFamily(const std::string& s)
-{ // 64 characters, all legal hex
-	if(s.size()!=64) return false;
-	for(int i=0; i<64; i++)
-		if(!isHex(s[i])) return false;
-	return true;
-}
-
-std::string Wallet::privKeyToText(const uint256& privKey)
-{
-	std::string ret("P");
-	ret.append(privKey.GetHex());
-	return ret;
-}
-
-uint256 Wallet::textToPrivKey(const std::string& privKey)
-{
-	uint256 ret;
-	if((privKey.length()==65) && (privKey[0]=='P'))
-		ret.SetHex(privKey.c_str()+1);
-	return ret;
-}
-
 std::string LocalAccountFamily::getSQLFields()
 {
-	return "(FamilyName,RootPubKey,Seq,Name,Comment)";
+	return "(FamilyGenerator,Seq,Comment)";
 }
 
 std::string LocalAccountFamily::getSQL() const
-{ // familyname(40), pubkey(66), seq, name, comment
+{ // familyname(40), seq, comment
 	std::string ret("('");
-	ret.append(mFamily.GetHex());
-	ret+="','";
-	ret.append(getPubGenHex());
+	ret.append(mFamily.humanFamilyGenerator());
 	ret.append("','");
 	ret.append(boost::lexical_cast<std::string>(mLastSeq));
 	ret.append("',");
-	
+
 	std::string esc;
-	theApp->getWalletDB()->getDB()->escape((const unsigned char *) mName.c_str(), mName.size(), esc);
-	ret.append(esc);
-	ret.append(",");
 	theApp->getWalletDB()->getDB()->escape((const unsigned char *) mComment.c_str(), mComment.size(), esc);
 	ret.append(esc);
 
@@ -302,71 +204,58 @@ LocalAccount::pointer LocalAccountFamily::get(int seq)
 
 	LocalAccount::pointer ret=boost::make_shared<LocalAccount>(shared_from_this(), seq);
 	mAccounts.insert(std::make_pair(seq, ret));
+
 	return ret;
 }
 
-uint160 Wallet::findFamilySN(const std::string& shortName)
-{ // OPTIMIZEME
-	boost::recursive_mutex::scoped_lock sl(mLock);
-	for(std::map<uint160, LocalAccountFamily::pointer>::iterator it=mFamilies.begin();
-		it!=mFamilies.end(); ++it)
-	{
-		if(it->second->getShortName()==shortName)
-			return it->first;
-	}
-	return 0;
+NewcoinAddress Wallet::addFamily(const NewcoinAddress& familySeed, bool lock)
+{
+	LocalAccountFamily::pointer fam(doPrivate(familySeed, true, !lock));
+
+	return fam ? fam->getFamily() : NewcoinAddress();
 }
 
-uint160 Wallet::addFamily(const uint256& key, bool lock)
+// Create a family.  Return the family public generator and the seed.
+NewcoinAddress Wallet::addRandomFamily(NewcoinAddress& familySeed)
 {
-	LocalAccountFamily::pointer fam(doPrivate(key, true, !lock));
-	if(!fam) return uint160();
-	return fam->getFamily();
-}
+	uint128 key;
 
-uint160 Wallet::addRandomFamily(uint256& key)
-{
 	RAND_bytes((unsigned char *) &key, sizeof(key));
-	return addFamily(key, false);
+
+	familySeed.setFamilySeed(key);
+
+	return addFamily(familySeed, false);
 }
 
-uint160 Wallet::addFamily(const std::string& payPhrase, bool lock)
+NewcoinAddress Wallet::addFamily(const std::string& payPhrase, bool lock)
 {
-	return addFamily(CKey::PassPhraseToKey(payPhrase), lock);
+	NewcoinAddress familySeed;
+
+	familySeed.setFamilySeed(CKey::PassPhraseToKey(payPhrase));
+
+	return addFamily(familySeed, lock);
 }
 
-uint160 Wallet::addFamily(const std::string& pubKey)
+NewcoinAddress Wallet::addFamily(const NewcoinAddress& familyGenerator)
 {
-	LocalAccountFamily::pointer fam(doPublic(pubKey, true, true));
-	if(!fam) return uint160();
-	return fam->getFamily();
+	LocalAccountFamily::pointer fam(doPublic(familyGenerator, true, true));
+
+	return fam ? fam->getFamily() : NewcoinAddress();
 }
 
-uint160 Wallet::findFamilyPK(const std::string& pubKey)
+NewcoinAddress Wallet::findFamilyPK(const NewcoinAddress& familyGenerator)
 {
-	LocalAccountFamily::pointer fam(doPublic(pubKey, false, true));
-	if(!fam) return uint160();
-	return fam->getFamily();
-}
+	LocalAccountFamily::pointer fam(doPublic(familyGenerator, false, true));
 
-std::string LocalAccount::getShortName() const
-{
-	std::string ret, cmt;
-
-	if(!theApp->getWallet().getFamilyInfo(mFamily->getFamily(), ret, cmt))
-		ret=mFamily->getFamily().GetHex();
-	ret.append(":");
-	if(mName.empty())
-		ret.append(boost::lexical_cast<std::string>(mAccountFSeq));
-	else ret.append(mName);
-	return ret;
+	return fam ? fam->getFamily() : NewcoinAddress();
 }
 
 std::string LocalAccount::getFullName() const
 {
-	std::string ret(mFamily->getFamily().GetHex());
+	std::string ret(mFamily->getFamily().humanFamilyGenerator());
 	ret.append(":");
 	ret.append(boost::lexical_cast<std::string>(mAccountFSeq));
+
 	return ret;
 }
 
@@ -377,15 +266,14 @@ bool LocalAccount::isLocked() const
 
 std::string LocalAccount::getFamilyName() const
 {
-	return mFamily->getShortName();
+	return mFamily->getFamily().humanFamilyGenerator();
 }
 
 Json::Value LocalAccount::getJson() const
 {
 	Json::Value ret(Json::objectValue);
 	ret["Family"]=getFamilyName();
-	ret["AccountID"]=NewcoinAddress(getAddress()).GetString();
-	ret["ShortName"]=getShortName();
+	ret["AccountID"]=getAddress().humanAccountID();
 	ret["FullName"]=getFullName();
 	ret["Issued"]=Json::Value(isIssued());
 	ret["IsLocked"]=mFamily->isLocked();
@@ -409,43 +297,49 @@ CKey::pointer LocalAccount::getPrivateKey()
 	return mFamily->getPrivateKey(mAccountFSeq);
 }
 
-void Wallet::getFamilies(std::vector<uint160>& familyIDs)
+void Wallet::getFamilies(std::vector<NewcoinAddress>& familyIDs)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	familyIDs.reserve(mFamilies.size());
-	for(std::map<uint160, LocalAccountFamily::pointer>::iterator fit=mFamilies.begin(); fit!=mFamilies.end(); ++fit)
+	for(std::map<NewcoinAddress, LocalAccountFamily::pointer>::iterator fit=mFamilies.begin(); fit!=mFamilies.end(); ++fit)
 		familyIDs.push_back(fit->first);
 }
 
-bool Wallet::getFamilyInfo(const uint160& family, std::string& name, std::string& comment)
+// Look up a family in the wallet.
+bool Wallet::getFamilyInfo(const NewcoinAddress& family, std::string& comment)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
-	std::map<uint160, LocalAccountFamily::pointer>::iterator fit=mFamilies.find(family);
-	if(fit==mFamilies.end()) return false;
+
+	std::map<NewcoinAddress, LocalAccountFamily::pointer>::iterator fit=mFamilies.find(family);
+	if(fit==mFamilies.end())
+	    return false;
+
 	assert(fit->second->getFamily()==family);
-	name=fit->second->getShortName();
+
 	comment=fit->second->getComment();
+
 	return true;
 }
 
-bool Wallet::getFullFamilyInfo(const uint160& family, std::string& name, std::string& comment,
+#if 0
+bool Wallet::getFullFamilyInfo(const NewcoinAddress& family, std::string& comment,
 	std::string& pubGen, bool& isLocked)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
-	std::map<uint160, LocalAccountFamily::pointer>::iterator fit=mFamilies.find(family);
+	std::map<NewcoinAddress, LocalAccountFamily::pointer>::iterator fit=mFamilies.find(family);
 	if(fit==mFamilies.end()) return false;
 	assert(fit->second->getFamily()==family);
-	name=fit->second->getShortName();
 	comment=fit->second->getComment();
 	pubGen=fit->second->getPubGenHex();
 	isLocked=fit->second->isLocked();
 	return true;
 }
+#endif
 
-Json::Value Wallet::getFamilyJson(const uint160& family)
+Json::Value Wallet::getFamilyJson(const NewcoinAddress& family)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
-	std::map<uint160, LocalAccountFamily::pointer>::iterator fit=mFamilies.find(family);
+	std::map<NewcoinAddress, LocalAccountFamily::pointer>::iterator fit=mFamilies.find(family);
 	if(fit==mFamilies.end()) return Json::Value(Json::nullValue);
 	assert(fit->second->getFamily()==family);
 	return fit->second->getJson();
@@ -454,7 +348,7 @@ Json::Value Wallet::getFamilyJson(const uint160& family)
 void Wallet::load()
 {
 	std::string sql("SELECT * FROM LocalAcctFamilies;");
-	
+
 	ScopedLock sl(theApp->getWalletDB()->getDBLock());
 	Database *db=theApp->getWalletDB()->getDB();
 	if(!db->executeSQL(sql.c_str()))
@@ -467,22 +361,21 @@ void Wallet::load()
 	if(!db->startIterRows()) return;
 	while(db->getNextRow())
 	{
-		std::string family, rootpub, name, comment;
-		db->getStr("FamilyName", family);
-		db->getStr("RootPubKey", rootpub);
-		db->getStr("Name", name);
+		std::string familyGenerator, comment;
+		db->getStr("FamilyGenerator", familyGenerator);
 		db->getStr("Comment", comment);
 		int seq=db->getBigInt("Seq");
-		
-		uint160 fb;
-		fb.SetHex(family);
 
-		LocalAccountFamily::pointer f(doPublic(rootpub, true, false));
+		NewcoinAddress	family;
+
+		family.setFamilyGenerator(familyGenerator);
+
+		LocalAccountFamily::pointer f(doPublic(family, true, false));
 		if(f)
 		{
-			assert(f->getFamily()==fb);
+			// XXX Compare could be better.
+			assert(f->getFamily().getFamilyGenerator()==family.getFamilyGenerator());
 			f->setSeq(seq);
-			f->setName(name);
 			f->setComment(comment);
 		}
 		else assert(false);
@@ -490,67 +383,53 @@ void Wallet::load()
 	db->endIterRows();
 }
 
-std::string Wallet::getPubGenHex(const uint160& famBase)
+// YYY Perhaps this should take a comment.
+LocalAccount::pointer Wallet::getNewLocalAccount(const NewcoinAddress& family)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
-	std::map<uint160, LocalAccountFamily::pointer>::iterator fit=mFamilies.find(famBase);
-	if(fit==mFamilies.end()) return "";
-	assert(fit->second->getFamily()==famBase);
-	return fit->second->getPubGenHex();
-}
-
-std::string Wallet::getShortName(const uint160& famBase)
-{
-	boost::recursive_mutex::scoped_lock sl(mLock);
-	std::map<uint160, LocalAccountFamily::pointer>::iterator fit=mFamilies.find(famBase);
-	if(fit==mFamilies.end()) return "";
-	assert(fit->second->getFamily()==famBase);
-	return fit->second->getShortName();
-}
-
-LocalAccount::pointer Wallet::getNewLocalAccount(const uint160& family)
-{
-	boost::recursive_mutex::scoped_lock sl(mLock);
-	std::map<uint160, LocalAccountFamily::pointer>::iterator fit=mFamilies.find(family);
+	std::map<NewcoinAddress, LocalAccountFamily::pointer>::iterator fit=mFamilies.find(family);
 	if(fit==mFamilies.end()) return LocalAccount::pointer();
 
 	uint32 seq=fit->second->getSeq();
-	uint160 acct=fit->second->getAccount(seq, true);
+	NewcoinAddress acct=fit->second->getAccount(seq, true);
 	fit->second->setSeq(seq+1); // FIXME: writeout new seq
-	
-	std::map<uint160, LocalAccount::pointer>::iterator ait=mAccounts.find(acct);
+
+	std::map<NewcoinAddress, LocalAccount::pointer>::iterator ait=mAccounts.find(acct);
 	if(ait!=mAccounts.end()) return ait->second;
-	
+
 	LocalAccount::pointer lac=boost::make_shared<LocalAccount>(fit->second, seq);
 	mAccounts.insert(std::make_pair(acct, lac));
-	
+
 	sl.unlock();
 	lac->syncLedger();
+
 	return lac;
 }
 
-LocalAccount::pointer Wallet::getLocalAccount(const uint160& family, int seq)
+LocalAccount::pointer Wallet::getLocalAccount(const NewcoinAddress& family, int seq)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
-	std::map<uint160, LocalAccountFamily::pointer>::iterator fit=mFamilies.find(family);
+	std::map<NewcoinAddress, LocalAccountFamily::pointer>::iterator fit=mFamilies.find(family);
 	if(fit==mFamilies.end()) return LocalAccount::pointer();
-	uint160 acct=fit->second->getAccount(seq, true);
-	
-	std::map<uint160, LocalAccount::pointer>::iterator ait=mAccounts.find(acct);
+
+	NewcoinAddress acct=fit->second->getAccount(seq, true);
+
+	std::map<NewcoinAddress, LocalAccount::pointer>::iterator ait=mAccounts.find(acct);
 	if(ait!=mAccounts.end()) return ait->second;
-	
+
 	LocalAccount::pointer lac=boost::make_shared<LocalAccount>(fit->second, seq);
 	mAccounts.insert(std::make_pair(acct, lac));
 
 	sl.unlock();
 	lac->syncLedger();
+
 	return lac;
 }
 
-LocalAccount::pointer Wallet::getLocalAccount(const uint160& acctID)
+LocalAccount::pointer Wallet::getLocalAccount(const NewcoinAddress& acctID)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
-	std::map<uint160, LocalAccount::pointer>::iterator ait=mAccounts.find(acctID);
+	std::map<NewcoinAddress, LocalAccount::pointer>::iterator ait=mAccounts.find(acctID);
 	if(ait==mAccounts.end()) return LocalAccount::pointer();
 	return ait->second;
 }
@@ -558,7 +437,7 @@ LocalAccount::pointer Wallet::getLocalAccount(const uint160& acctID)
 LocalAccount::pointer Wallet::findAccountForTransaction(uint64 amount)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
-	for(std::map<uint160, LocalAccount::pointer>::iterator it=mAccounts.begin(); it!=mAccounts.end(); ++it)
+	for(std::map<NewcoinAddress, LocalAccount::pointer>::iterator it=mAccounts.begin(); it!=mAccounts.end(); ++it)
 		if(!it->second->isLocked() && (it->second->getEffectiveBalance()>=amount) )
 			return it->second;
 	return LocalAccount::pointer();
@@ -566,62 +445,80 @@ LocalAccount::pointer Wallet::findAccountForTransaction(uint64 amount)
 
 LocalAccount::pointer Wallet::parseAccount(const std::string& specifier)
 { // <family>:<seq> or <acct_id>
-
 	std::cerr << "Parse(" << specifier << ")" << std::endl;
 
 	size_t colon=specifier.find(':');
 	if(colon == std::string::npos)
 	{
 		std::cerr << "nocolon" << std::endl;
-		NewcoinAddress na(specifier);
-		if(!na.IsValid()) return LocalAccount::pointer();
-		return getLocalAccount(na.GetHash160());
+		NewcoinAddress na;
+
+		if (na.setAccountID(specifier))
+		{
+		    return getLocalAccount(na);
+		}
+		else
+		{
+		    return LocalAccount::pointer();
+		}
 	}
-	
+
 	if (colon==0) return LocalAccount::pointer();
-	
+
 	std::string family=specifier.substr(0, colon);
 	std::string seq=specifier.substr(colon+1);
+
 	if(seq.empty()) return LocalAccount::pointer();
 
 	std::cerr << "family(" << family << "), seq(" << seq << ")" << std::endl;
 
-	uint160 f;
-	if(isHexFamily(family))
-		f.SetHex(family);
-	else if(isHexPublicKey(family))
-		f=findFamilyPK(family);
-	else
-		f=findFamilySN(family);
-	if(!f) return LocalAccount::pointer();
-	return getLocalAccount(f, boost::lexical_cast<int>(seq));
+	NewcoinAddress	familyParsed;
+	NewcoinAddress	familyFound;
+
+	if (familyParsed.setFamilyGenerator(family))
+	{
+		familyFound	= findFamilyPK(familyParsed);
+	}
+	if (familyParsed.setFamilySeed(family))
+	{
+		// XXX Was private generator, should derive public generator.
+		;	// nothing
+	}
+
+	return familyFound.IsValid()
+		? getLocalAccount(familyFound, boost::lexical_cast<int>(seq))
+		: LocalAccount::pointer();
 }
 
-uint160 Wallet::peekKey(const uint160& family, int seq)
+NewcoinAddress Wallet::peekKey(const NewcoinAddress& family, int seq)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
-	std::map<uint160, LocalAccountFamily::pointer>::iterator fit=mFamilies.find(family);
-	if(fit==mFamilies.end()) return uint160();
+	std::map<NewcoinAddress, LocalAccountFamily::pointer>::iterator fit=mFamilies.find(family);
+	if(fit==mFamilies.end()) return NewcoinAddress();
+
 	return fit->second->getAccount(seq, false);
 }
 
-void Wallet::delFamily(const uint160& familyName)
+void Wallet::delFamily(const NewcoinAddress& familyName)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
-	std::map<uint160, LocalAccountFamily::pointer>::iterator fit=mFamilies.find(familyName);
+	std::map<NewcoinAddress, LocalAccountFamily::pointer>::iterator fit=mFamilies.find(familyName);
 	if(fit==mFamilies.end()) return;
 
 	std::map<int, LocalAccount::pointer>& acctMap=fit->second->getAcctMap();
 	for(std::map<int, LocalAccount::pointer>::iterator it=acctMap.begin(); it!=acctMap.end(); ++it)
 		mAccounts.erase(it->second->getAddress());
-	
+
 	mFamilies.erase(familyName);
 }
 
-LocalAccountFamily::pointer Wallet::doPublic(const std::string& pubKey, bool do_create, bool do_db)
+// --> pubKey: hex
+// --> do_create: Add to mFamilies
+// --> do_db: write out db
+LocalAccountFamily::pointer Wallet::doPublic(const NewcoinAddress& pubKey, bool do_create, bool do_db)
 {
 // Generate root key
-	EC_KEY *pkey=CKey::GenerateRootPubKey(pubKey);
+	EC_KEY *pkey=CKey::GenerateRootPubKey(pubKey.getFamilyGeneratorBN());
 	if(!pkey)
 	{
 #ifdef DEBUG
@@ -636,10 +533,12 @@ LocalAccountFamily::pointer Wallet::doPublic(const std::string& pubKey, bool do_
     unsigned char *begin=&rootPubKey[0];
     i2o_ECPublicKey(pkey, &begin);
     while(rootPubKey.size()<33) rootPubKey.push_back((unsigned char)0);
-    uint160 family=NewcoinAddress(rootPubKey).GetHash160();
+
+    NewcoinAddress family;
+	family.setFamilyGenerator(rootPubKey);
 
 	boost::recursive_mutex::scoped_lock sl(mLock);
-	std::map<uint160, LocalAccountFamily::pointer>::iterator fit=mFamilies.find(family);
+	std::map<NewcoinAddress, LocalAccountFamily::pointer>::iterator fit=mFamilies.find(family);
 	if(fit!=mFamilies.end()) // already added
 	{
 		EC_KEY_free(pkey);
@@ -657,33 +556,27 @@ LocalAccountFamily::pointer Wallet::doPublic(const std::string& pubKey, bool do_
 		fam=LocalAccountFamily::readFamily(family);
 		if(fam) do_create=false;
 	}
+
 	if(do_create)
 	{
-		fam=boost::make_shared<LocalAccountFamily>(family, EC_KEY_get0_group(pkey), EC_KEY_get0_public_key(pkey));
+		fam=boost::make_shared<LocalAccountFamily>(family);
 		mFamilies.insert(std::make_pair(family, fam));
 		if(do_db) fam->write(true);
 	}
 	sl.unlock();
-	
+
 	EC_KEY_free(pkey);
 	return fam;
 }
 
-LocalAccountFamily::pointer Wallet::doPrivate(const uint256& passPhrase, bool do_create, bool do_unlock)
+LocalAccountFamily::pointer Wallet::doPrivate(const NewcoinAddress& familySeed, bool do_create, bool do_unlock)
 {
-// Generate root key
-	EC_KEY *base=CKey::GenerateRootDeterministicKey(passPhrase);
+	NewcoinAddress family;
+	family.setFamilyGenerator(familySeed);
 
-// Extract family name
-	std::vector<unsigned char> rootPubKey(33, 0);
-	unsigned char *begin=&rootPubKey[0];
-	i2o_ECPublicKey(base, &begin);
-	while(rootPubKey.size()<33) rootPubKey.push_back((unsigned char)0);
-	uint160 family=NewcoinAddress(rootPubKey).GetHash160();
-	
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	LocalAccountFamily::pointer fam;
-	std::map<uint160, LocalAccountFamily::pointer>::iterator it=mFamilies.find(family);
+	std::map<NewcoinAddress, LocalAccountFamily::pointer>::iterator it=mFamilies.find(family);
 	if(it==mFamilies.end())
 	{ // family not found
 		fam=LocalAccountFamily::readFamily(family);
@@ -691,11 +584,9 @@ LocalAccountFamily::pointer Wallet::doPrivate(const uint256& passPhrase, bool do
 		{
 			if(!do_create)
 			{
-				EC_KEY_free(base);
 				return LocalAccountFamily::pointer();
 			}
-			fam=boost::make_shared<LocalAccountFamily>(family,
-				EC_KEY_get0_group(base), EC_KEY_get0_public_key(base));
+			fam=boost::make_shared<LocalAccountFamily>(family);
 			mFamilies.insert(std::make_pair(family, fam));
 			fam->write(true);
 		}
@@ -703,17 +594,17 @@ LocalAccountFamily::pointer Wallet::doPrivate(const uint256& passPhrase, bool do
 	else fam=it->second;
 
 	if(do_unlock && fam->isLocked())
-		fam->unlock(EC_KEY_get0_private_key(base));
-	
+		fam->unlock(familySeed.getFamilyPrivateKey());
+
 	sl.unlock();
-	EC_KEY_free(base);
+
 	return fam;
 }
 
-bool Wallet::lock(const uint160& family)
+bool Wallet::lock(const NewcoinAddress& family)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
-	std::map<uint160, LocalAccountFamily::pointer>::iterator fit=mFamilies.find(family);
+	std::map<NewcoinAddress, LocalAccountFamily::pointer>::iterator fit=mFamilies.find(family);
 	if(fit==mFamilies.end()) return false;
     fit->second->lock();
     return true;
@@ -722,31 +613,33 @@ bool Wallet::lock(const uint160& family)
 void Wallet::lock()
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
-	for(std::map<uint160, LocalAccountFamily::pointer>::iterator fit=mFamilies.begin();
+	for(std::map<NewcoinAddress, LocalAccountFamily::pointer>::iterator fit=mFamilies.begin();
 			fit!=mFamilies.end(); ++fit)
 		fit->second->lock();
 }
 
 bool Wallet::unitTest()
 { // Create 100 keys for each of 1,000 families and ensure all keys match
+#if 0
 	Wallet pub, priv;
-	
+
 	uint256 privBase(time(NULL)^(getpid()<<16));
 //	privBase.SetHex("102031459e");
-	
+
 	for(int i=0; i<1000; i++, privBase++)
 	{
-		uint160 fam=priv.addFamily(privBase, false);
+		NewcoinAddress fam=priv.addFamily(privBase, false);
 
 #ifdef DEBUG
 		std::cerr << "Priv: " << privBase.GetHex() << " Fam: " << fam.GetHex() << std::endl;
 #endif
-		
+
+#if 0
 		std::string pubGen=priv.getPubGenHex(fam);
 #ifdef DEBUG
 		std::cerr << "Pub: " << pubGen << std::endl;
 #endif
-		
+
 		if(pub.addFamily(pubGen)!=fam)
 		{
 			assert(false);
@@ -764,7 +657,7 @@ bool Wallet::unitTest()
 			assert(false);
 			return false;
 		}
-
+#endif
 		for(int j=0; j<100; j++)
 		{
 			LocalAccount::pointer lpub=pub.getLocalAccount(fam, j);
@@ -774,8 +667,8 @@ bool Wallet::unitTest()
 				assert(false);
 				return false;
 			}
-			uint160 lpuba=lpub->getAddress();
-			uint160 lpriva=lpriv->getAddress();
+			NewcoinAddress lpuba=lpub->getAddress();
+			NewcoinAddress lpriva=lpriv->getAddress();
 #ifdef DEBUG
 //			std::cerr << "pubA(" << j << "): " << lpuba.GetHex() << std::endl;
 //			std::cerr << "prvA(" << j << "): " << lpriva.GetHex() << std::endl;
@@ -788,11 +681,12 @@ bool Wallet::unitTest()
 			}
 		}
 		std::cerr << std::endl;
-		
+
 		pub.delFamily(fam);
 		priv.delFamily(fam);
-		
+
 	}
+#endif
 	return true;
 }
 
@@ -805,7 +699,7 @@ void Wallet::syncToLedger(bool force, Ledger* ledger)
 	{ // check each transaction, see if it's in the ledger or allowed in the ledger
 		// WRITEME
 	}	
-	for(std::map<uint160, LocalAccount::pointer>::iterator ait=mAccounts.begin(); ait!=mAccounts.end(); ++ait)
+	for(std::map<NewcoinAddress, LocalAccount::pointer>::iterator ait=mAccounts.begin(); ait!=mAccounts.end(); ++ait)
 	{ // check each account, see if our ledger balance matches
 		LocalAccount::pointer& lac=ait->second;
 		AccountState::pointer acs=ledger->getAccountState(ait->first);
@@ -827,7 +721,7 @@ void Wallet::applyTransaction(Transaction::pointer txn)
 	std::map<uint256, LocalTransaction::pointer>::iterator lti=mTransactions.find(txn->getID());
 	if(lti!=mTransactions.end()) ltx=lti->second;
 
-	std::map<uint160, LocalAccount::pointer>::iterator lac=mAccounts.find(txn->getToAccount());
+	std::map<NewcoinAddress, LocalAccount::pointer>::iterator lac=mAccounts.find(txn->getToAccount());
 	if(lac!=mAccounts.end())
 	{ // this is to a local account
 		if(!ltx)
@@ -840,10 +734,10 @@ void Wallet::applyTransaction(Transaction::pointer txn)
 			lac->second->credit(txn->getAmount()-txn->getFee());
 		}
 	}
-	
+
 	lac=mAccounts.find(txn->getFromAccount());
 	if(lac==mAccounts.end()) return;
-	
+
 	if ( (st!=INVALID) && (lac->second->getTxnSeq()==txn->getFromAccountSeq()) )
 		lac->second->incTxnSeq();
 
@@ -888,7 +782,7 @@ void Wallet::addLocalTransactions(Json::Value& ret)
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	for(std::map<uint256, LocalTransaction::pointer>::iterator it=mTransactions.begin();
 			it!=mTransactions.end(); ++it)
-		ret[it->first.GetHex()]=it->second->getJson();	
+		ret[it->first.GetHex()]=it->second->getJson();
 }
 
 bool Wallet::getTxJson(const uint256& txn, Json::Value& ret)
@@ -897,10 +791,11 @@ bool Wallet::getTxJson(const uint256& txn, Json::Value& ret)
 	std::map<uint256, LocalTransaction::pointer>::iterator it=mTransactions.find(txn);
 	if(it==mTransactions.end()) return false;
 	ret=it->second->getJson();
+
 	return true;
 }
 
-bool Wallet::getTxsJson(const uint160& account, Json::Value& ret)
+bool Wallet::getTxsJson(const NewcoinAddress& account, Json::Value& ret)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	for(std::map<uint256, LocalTransaction::pointer>::iterator it=mTransactions.begin();
@@ -908,7 +803,9 @@ bool Wallet::getTxsJson(const uint160& account, Json::Value& ret)
 	{
 		Transaction::pointer txn=it->second->getTransaction();
 		if(txn && ((account==txn->getFromAccount())||(account==txn->getToAccount())) )
-			ret[it->first.GetHex()]=it->second->getJson();	
+			ret[it->first.GetHex()]=it->second->getJson();
 	}
+
 	return true;
 }
+// vim:ts=4

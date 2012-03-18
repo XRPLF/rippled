@@ -14,8 +14,8 @@ public:
 protected:
 	// core account information
 	CKey::pointer mPublicKey;
-	uint160 mAcctID;
-	std::string mName, mComment;
+	NewcoinAddress mAcctID;
+	std::string mComment;
 
 	// family information
 	boost::shared_ptr<LocalAccountFamily> mFamily;
@@ -35,13 +35,10 @@ public:
 	bool updateName();		// writes changed name/comment
 	bool updateBalance();	// writes changed balance/seq
 
-	const uint160& getAddress() const { return mAcctID; }
+	const NewcoinAddress& getAddress() const { return mAcctID; }
 	int getAcctFSeq() const { return mAccountFSeq; }
 
-	std::string getLocalAccountName() const;			// The name used locally to identify this account
-	std::string getAccountName() const;					// The normal account name used to send to this account
 	std::string getFullName() const;
-	std::string getShortName() const;
 	std::string getFamilyName() const;
 
 	bool isLocked() const;
@@ -71,44 +68,40 @@ public:
 protected:
 	std::map<int, LocalAccount::pointer> mAccounts;
 
-	uint160		mFamily;		// the name for this account family
-	EC_POINT*	mRootPubKey;
+	NewcoinAddress	mFamily;		// Family generator
 
 	uint32 mLastSeq;
-	std::string mName, mComment;
+	std::string mComment;
 
 	BIGNUM*		mRootPrivateKey;
 
 public:
 
-	LocalAccountFamily(const uint160& family, const EC_GROUP* group, const EC_POINT* pubKey);
+	LocalAccountFamily(const NewcoinAddress& family);
 	~LocalAccountFamily();
 
-	const uint160& getFamily() const { return mFamily; }
+	const NewcoinAddress& getFamily() const { return mFamily; }
 
-	void unlock(const BIGNUM* privateKey);
+	void unlock(BIGNUM* privateKey);
 	void lock();
 	bool isLocked() const { return mRootPrivateKey==NULL; }
 
 	void setSeq(uint32 s) { mLastSeq=s; }
 	uint32 getSeq() { return mLastSeq; }
-	void setName(const std::string& n) { mName=n; }
 	void setComment(const std::string& c) { mComment=c; }
 
 	std::map<int, LocalAccount::pointer>& getAcctMap() { return mAccounts; }
 	LocalAccount::pointer get(int seq);
-	uint160 getAccount(int seq, bool keep);
+	NewcoinAddress getAccount(int seq, bool keep);
 	CKey::pointer getPrivateKey(int seq);
 	CKey::pointer getPublicKey(int seq);
 
-	std::string getPubGenHex() const;	// The text name of the public key
-	std::string getShortName() const { return mName; }
 	std::string getComment() const { return mComment; }
 	Json::Value getJson() const;
 
 	static std::string getSQLFields();
 	std::string getSQL() const;
-	static LocalAccountFamily::pointer readFamily(const uint160& family);
+	static LocalAccountFamily::pointer readFamily(const NewcoinAddress& family);
 	void write(bool is_new);
 };
 

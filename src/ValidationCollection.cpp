@@ -1,6 +1,5 @@
 #include "ValidationCollection.h"
 #include "Application.h"
-#include "NewcoinAddress.h"
 #include "Config.h"
 #include "Conversion.h"
 #include "Application.h"

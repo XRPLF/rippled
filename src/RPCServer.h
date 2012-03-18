@@ -7,14 +7,14 @@
 
 #include "HttpRequest.h"
 #include "RequestParser.h"
-#include "uint256.h"
+#include "NewcoinAddress.h"
 
 class RPCServer  : public boost::enable_shared_from_this<RPCServer>
 {
 	boost::asio::ip::tcp::socket mSocket;
 	boost::array<char, 8192> mReadBuffer;
 	std::string mReplyStr;
-	
+
 	HttpRequest mIncomingRequest;
 	HttpRequestParser mRequestParser;
 
@@ -31,7 +31,7 @@ class RPCServer  : public boost::enable_shared_from_this<RPCServer>
 	int getParamCount(const Json::Value& params);
 	bool extractString(std::string& param, const Json::Value& params, int index);
 
-	uint160 parseFamily(const std::string& family);
+	NewcoinAddress parseFamily(const std::string& family);
 
 	Json::Value doCreateFamily(Json::Value& params);
 	Json::Value doFamilyInfo(Json::Value& params);
@@ -45,10 +45,11 @@ class RPCServer  : public boost::enable_shared_from_this<RPCServer>
 	Json::Value doTx(Json::Value& params);
 	Json::Value doLedger(Json::Value& params);
 	Json::Value doAccount(Json::Value& params);
+	Json::Value doAddUnl(Json::Value& params);
+	Json::Value doGetUnl(Json::Value& params);
 
-	// parses a string account name into a uint160
-	// can be local or remote
-	uint160 parseAccount(const std::string& account);
+	// Parses a string account name into a local or remote NewcoinAddress.
+	NewcoinAddress parseAccount(const std::string& account);
 
 public:
 	typedef boost::shared_ptr<RPCServer> pointer;

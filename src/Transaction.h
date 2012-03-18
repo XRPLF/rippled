@@ -44,7 +44,7 @@ public:
 
 private:
 	uint256			mTransactionID;
-	uint160			mAccountFrom, mAccountTo;
+	NewcoinAddress		mAccountFrom, mAccountTo;
 	uint64			mAmount, mFee;
 	uint32			mFromAccountSeq, mSourceLedger, mIdent;
 	CKey::pointer	mFromPubKey;
@@ -56,7 +56,7 @@ private:
 public:
 	Transaction();
 	Transaction(const std::vector<unsigned char>& rawTransaction, bool validate);
-	Transaction(LocalAccount::pointer fromLocal, const uint160& to, uint64 amount, uint32 ident, uint32 ledger);
+	Transaction(LocalAccount::pointer fromLocal, const NewcoinAddress& to, uint64 amount, uint32 ident, uint32 ledger);
 
 	bool sign(LocalAccount::pointer fromLocalAccount);
 	bool checkSign() const;
@@ -67,8 +67,8 @@ public:
 	Serializer::pointer getSigned() const;
 
 	const uint256& getID() const { return mTransactionID; }
-	const uint160& getFromAccount() const { return mAccountFrom; }
-	const uint160& getToAccount() const { return mAccountTo; }
+	const NewcoinAddress& getFromAccount() const { return mAccountFrom; }
+	const NewcoinAddress& getToAccount() const { return mAccountTo; }
 	uint64 getAmount() const { return mAmount; }
 	uint64 getFee() const { return mFee; }
 	uint32 getFromAccountSeq() const { return mFromAccountSeq; }
@@ -85,7 +85,7 @@ public:
 	static void saveTransaction(Transaction::pointer);
 	bool save() const;
 	static Transaction::pointer load(const uint256& id);
-	static Transaction::pointer findFrom(const uint160& fromID, uint32 seq);
+	static Transaction::pointer findFrom(const NewcoinAddress& fromID, uint32 seq);
 
 	// conversion function
 	static bool convertToTransactions(uint32 ourLedgerSeq, uint32 otherLedgerSeq,
@@ -105,7 +105,7 @@ public:
 
 protected:
 	static Transaction::pointer transactionFromSQL(const std::string& statement);
-	Transaction(const uint256& transactionID, const uint160& accountFrom, const uint160& accountTo,
+	Transaction(const uint256& transactionID, const NewcoinAddress& accountFrom, const NewcoinAddress& accountTo,
 		 CKey::pointer key, uint64 amount, uint64 fee, uint32 fromAccountSeq, uint32 sourceLedger,
 		 uint32 ident, const std::vector<unsigned char>& signature, uint32 inLedger, TransStatus status) :
 		 	mTransactionID(transactionID), mAccountFrom(accountFrom), mAccountTo(accountTo),
@@ -116,3 +116,4 @@ protected:
 };
 
 #endif
+// vim:ts=4

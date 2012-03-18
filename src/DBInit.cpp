@@ -49,11 +49,9 @@ int LedgerDBCount=sizeof(LedgerDBInit)/sizeof(const char *);
 // Wallet database holds local accounts and trusted nodes
 const char *WalletDBInit[] = {
 	"CREATE TABLE LocalAcctFamilies (				\
-		FamilyName	CHARACTER(40) PRIMARY KEY,		\
-		RootPubKey	CHARACTER(66),					\
-		Seq			BIGINT UNSIGNED,				\
-		Name		TEXT,							\
-		Comment		TEXT							\
+		FamilyGenerator	CHARACTER(53) PRIMARY KEY,	\
+		Seq				BIGINT UNSIGNED,			\
+		Comment			TEXT						\
 	);",
 	"CREATE TABLE LocalAccounts (					\
 		ID			CHARACTER(40) PRIMARY KEY,		\
@@ -62,14 +60,15 @@ const char *WalletDBInit[] = {
 		Seq			BIGINT UNSIGNED,				\
 		Balance		BIGINT UNSIGNED,				\
 		LedgerSeq	BIGINT UNSIGNED,				\
-		Name		TEXT,							\
 		Comment		TEXT							\
 	);",
-	"CREATE TABLE TrustedNodes (				`	\
+	"CREATE TABLE TrustedNodes (					\
 		Hanko		CHARACTER(40) PRIMARY KEY,		\
-		TrustLevel	SMALLINT,						\
+		PubKey		CHARACTER(66),					\
 		Comment		TEXT							\
 	);" };
+
+//		TrustLevel	SMALLINT,
 
 int WalletDBCount=sizeof(WalletDBInit)/sizeof(const char *);
 
@@ -89,7 +88,7 @@ int HashNodeDBCount=sizeof(HashNodeDBInit)/sizeof(const char *);
 
 // Net node database holds nodes seen on the network
 const char *NetNodeDBInit[] = {
-	"CREATE TABLE KnownNodes	(						\
+	"CREATE TABLE KnownNodes	(					\
 		Hanko			CHARACTER(40) PRIMARY KEY,	\
 		LastSeen		TEXT,						\
 		HaveContactInfo	CHARACTER(1),				\
@@ -98,3 +97,5 @@ const char *NetNodeDBInit[] = {
 
 
 int NetNodeDBCount=sizeof(NetNodeDBInit)/sizeof(const char *);
+
+// vim:ts=4

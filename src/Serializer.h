@@ -19,7 +19,7 @@ class Serializer
 
 	protected:
 	std::vector<unsigned char> mData;
-	
+
 	public:
 	Serializer(int n=256) { mData.reserve(n); }
 	Serializer(const std::vector<unsigned char> &data) : mData(data) { ; }
@@ -30,8 +30,9 @@ class Serializer
 	int add16(uint16);
 	int add32(uint32);				// ledger indexes, account sequence
 	int add64(uint64);				// timestamps, amounts
-	int add160(const uint160&);	// account names, hankos
-	int add256(const uint256&);	// transaction and ledger hashes
+	int add128(const uint128&);		// private key generators
+	int add160(const uint160&);		// account names, hankos
+	int add256(const uint256&);		// transaction and ledger hashes
 	int addRaw(const std::vector<unsigned char> &vector);
 	int addRaw(const void *ptr, int len);
 
@@ -107,7 +108,7 @@ public:
 
 	int getPos(void) { return mPos; }
 	int getBytesLeft();
-	
+
 	unsigned char get8() throw();
 	uint16 get16() throw();
 	uint32 get32() throw();
@@ -120,3 +121,4 @@ public:
 };
 
 #endif
+// vim:ts=4

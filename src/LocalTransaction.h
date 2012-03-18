@@ -20,7 +20,7 @@ public:
 protected:
 
 	// core specifications
-	uint160 mDestAcctID;
+	NewcoinAddress mDestAcctID;
 	uint64 mAmount;
 	uint32 mTag;
 	std::string mComment;
@@ -30,11 +30,11 @@ protected:
 
 public:
 
-	LocalTransaction(const uint160 &dest, uint64 amount, uint32 tag) :
+	LocalTransaction(const NewcoinAddress &dest, uint64 amount, uint32 tag) :
 		mDestAcctID(dest), mAmount(amount), mTag(tag), mPaid(false), mCredited(false) { ; }
 	void setComment(const std::string& comment) { mComment=comment; }
 
-	const uint160& getDestinationAccount() const { return mDestAcctID; }
+	const NewcoinAddress& getDestinationAccount() const { return mDestAcctID; }
 	uint64 getAmount() const { return mAmount; }
 	uint32 getTag() const { return mTag; }
 	const std::string& getComment() const { return mComment; }

@@ -63,7 +63,7 @@ protected:
 	static Ledger::pointer getSQL(const std::string& sqlStatement);
 
 public:
-	Ledger(const uint160& masterID, uint64 startAmount); // used for the starting bootstrap ledger
+	Ledger(const NewcoinAddress& masterID, uint64 startAmount); // used for the starting bootstrap ledger
 	Ledger(const uint256 &parentHash, const uint256 &transHash, const uint256 &accountHash,
 	 uint64 feeHeld, uint64 timeStamp, uint32 ledgerSeq); // used for received ledgers
 	Ledger(const std::vector<unsigned char>& rawLedger);
@@ -97,9 +97,9 @@ public:
 
 	// mid level functions
 	bool hasTransaction(const uint256& TransID) const;
-	AccountState::pointer getAccountState(const uint160& acctID);
+	AccountState::pointer getAccountState(const NewcoinAddress& acctID);
 	Transaction::pointer getTransaction(const uint256& transID) const;
-	uint64 getBalance(const uint160& acctID) const;
+	uint64 getBalance(const NewcoinAddress& acctID) const;
 
 	// high level functions
 	TransResult applyTransaction(Transaction::pointer trans);

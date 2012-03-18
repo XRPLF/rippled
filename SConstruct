@@ -43,7 +43,7 @@ env.Append(LIBS = [
 DEBUGFLAGS  = ['-g', '-DDEBUG']
 
 env.Append(LINKFLAGS = ['-rdynamic', '-pthread'])
-env.Append(CCFLAGS = ['-pthread', '-Wall', '-Wno-sign-compare', '-Wno-char-subscripts'])
+env.Append(CCFLAGS = ['-pthread', '-Wall', '-Wno-sign-compare', '-Wno-char-subscripts', '-DSQLITE_THREADSAFE'])
 env.Append(CXXFLAGS = ['-O0', '-pthread', '-Wno-invalid-offsetof', '-Wformat']+DEBUGFLAGS)
 
 DB_SRCS		= glob.glob('database/*.c') + glob.glob('database/*.cpp')

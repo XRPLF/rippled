@@ -37,7 +37,7 @@ public:
 
 	Ledger::pointer getCurrentLedger() { return mCurrentLedger; }
 	Ledger::pointer getClosingLedger() { return mFinalizingLedger; }
-	
+
 	void pushLedger(Ledger::pointer newLedger);
 
 	Ledger::pointer getLedgerBySeq(uint32 index)
@@ -54,9 +54,9 @@ public:
 		return mLedgerHistory.getLedgerByHash(hash);
 	}
 
-	uint64 getBalance(std::string& addr);
-	uint64 getBalance(const uint160& addr);
-	AccountState::pointer getAccountState(const uint160& addr)
+	uint64 getBalance(std::string& strAcctID);
+	uint64 getBalance(const NewcoinAddress& acctID);
+	AccountState::pointer getAccountState(const NewcoinAddress& addr)
 	{ return mCurrentLedger->getAccountState(addr); }
 
 	bool addHeldTransaction(Transaction::pointer trans);

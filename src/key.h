@@ -123,25 +123,25 @@ public:
 	}
 
 
-	static uint256 PassPhraseToKey(const std::string& passPhrase);
-	static EC_KEY* GenerateRootDeterministicKey(const uint256& passPhrase);
-	static EC_KEY* GenerateRootPubKey(const std::string& pubHex);
-	static EC_KEY* GeneratePublicDeterministicKey(const uint160& family, const EC_POINT* rootPub, int n);
-	static EC_KEY* GeneratePrivateDeterministicKey(const uint160& family, const BIGNUM* rootPriv, int n);
+	static uint128 PassPhraseToKey(const std::string& passPhrase);
+	static EC_KEY* GenerateRootDeterministicKey(const uint128& passPhrase);
+	static EC_KEY* GenerateRootPubKey(BIGNUM* pubGenerator);
+	static EC_KEY* GeneratePublicDeterministicKey(const NewcoinAddress& family, int n);
+	static EC_KEY* GeneratePrivateDeterministicKey(const NewcoinAddress& family, const BIGNUM* rootPriv, int n);
 
-	CKey(const uint256& passPhrase) : fSet(true)
+	CKey(const uint128& passPhrase) : fSet(true)
 	{
 		pkey = GenerateRootDeterministicKey(passPhrase);
 		assert(pkey);
 	}
 
-	CKey(const uint160& base, const EC_POINT* rootPubKey, int n) : fSet(true)
+	CKey(const NewcoinAddress& base, int n) : fSet(true)
 	{ // public deterministic key
-		pkey = GeneratePublicDeterministicKey(base, rootPubKey, n);
+		pkey = GeneratePublicDeterministicKey(base, n);
 		assert(pkey);
 	}
 
-	CKey(const uint160& base, const BIGNUM* rootPrivKey, int n) : fSet(true)
+	CKey(const NewcoinAddress& base, const BIGNUM* rootPrivKey, int n) : fSet(true)
 	{ // private deterministic key
 		pkey = GeneratePrivateDeterministicKey(base, rootPrivKey, n);
 		assert(pkey);
@@ -271,8 +271,13 @@ public:
 
 	NewcoinAddress GetAddress() const
 	{
-		return NewcoinAddress(GetPubKey());
+		NewcoinAddress*	ret = new NewcoinAddress();
+
+		ret->setAccountPublic(GetPubKey());
+
+		return *ret;
 	}
 };
 
 #endif
+// vim:ts=4

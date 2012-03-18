@@ -36,13 +36,13 @@ public:
 	// transaction operations
 	Transaction::pointer processTransaction(Transaction::pointer transaction, Peer* source=NULL);
 	Transaction::pointer findTransactionByID(const uint256& transactionID);
-	int findTransactionsBySource(std::list<Transaction::pointer>&, const uint160& sourceAccount,
+	int findTransactionsBySource(std::list<Transaction::pointer>&, const NewcoinAddress& sourceAccount,
 		uint32 minSeq, uint32 maxSeq);
-	int findTransactionsByDestination(std::list<Transaction::pointer>&, const uint160& destinationAccount,
+	int findTransactionsByDestination(std::list<Transaction::pointer>&, const NewcoinAddress& destinationAccount,
 		uint32 startLedgerSeq, uint32 endLedgerSeq, int maxTransactions);
 
 	// account operations
-	AccountState::pointer getAccountState(const uint160& accountID);
+	AccountState::pointer getAccountState(const NewcoinAddress& accountID);
 
 	// contact block operations
 

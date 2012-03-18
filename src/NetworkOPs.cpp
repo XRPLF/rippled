@@ -97,7 +97,7 @@ Transaction::pointer NetworkOPs::findTransactionByID(const uint256& transactionI
 }
 
 int NetworkOPs::findTransactionsBySource(std::list<Transaction::pointer>& txns,
-	const uint160& sourceAccount, uint32 minSeq, uint32 maxSeq)
+	const NewcoinAddress& sourceAccount, uint32 minSeq, uint32 maxSeq)
 {
 	AccountState::pointer state=getAccountState(sourceAccount);
 	if(!state) return 0;
@@ -119,13 +119,13 @@ int NetworkOPs::findTransactionsBySource(std::list<Transaction::pointer>& txns,
 }
 
 int NetworkOPs::findTransactionsByDestination(std::list<Transaction::pointer>& txns,
-	const uint160& destinationAccount, uint32 startLedgerSeq, uint32 endLedgerSeq, int maxTransactions)
+	const NewcoinAddress& destinationAccount, uint32 startLedgerSeq, uint32 endLedgerSeq, int maxTransactions)
 {
 	// WRITEME
 	return 0;
 }
 
-AccountState::pointer NetworkOPs::getAccountState(const uint160& accountID)
+AccountState::pointer NetworkOPs::getAccountState(const NewcoinAddress& accountID)
 {
 	return theApp->getMasterLedger().getCurrentLedger()->getAccountState(accountID);
 }

@@ -36,6 +36,13 @@ int Serializer::add64(uint64 i)
 	return ret;
 }
 
+int Serializer::add128(const uint128& i)
+{
+	int ret=mData.size();
+	mData.insert(mData.end(), i.begin(), i.end());
+	return ret;
+}
+
 int Serializer::add160(const uint160& i)
 {
 	int ret=mData.size();

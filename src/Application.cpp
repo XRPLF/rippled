@@ -76,7 +76,14 @@ void Application::run()
 	std::cout << "Before Run." << std::endl;
 
 	// Temporary root account will be ["This is my payphrase."]:0
-	uint160 rootAddress=NewcoinAddress("MoXdEKxkG1FEwyuMia6Mbrja1SohefRvro").GetHash160();
+	NewcoinAddress rootFamilySeed;
+	rootFamilySeed.setFamilySeed(CKey::PassPhraseToKey("This is my payphrase"));
+
+	NewcoinAddress rootFamilyGenerator;
+	rootFamilyGenerator.setFamilyGenerator(rootFamilySeed);
+
+	NewcoinAddress rootAddress;
+	rootAddress.setAccountPublic(rootFamilyGenerator, 0);
 
 	Ledger::pointer firstLedger(new Ledger(rootAddress, 100000000));
 	firstLedger->setClosed();

@@ -37,8 +37,7 @@ inline std::string EncodeBase58(const unsigned char* pbegin, const unsigned char
     std::reverse_copy(pbegin, pend, vchTmp.begin());
 
     // Convert little endian data to bignum
-    CBigNum bn;
-    bn.setvch(vchTmp);
+    CBigNum bn(vchTmp);
 
     // Convert bignum to std::string
     std::string str;
@@ -181,6 +180,12 @@ protected:
             memset(&vchData[0], 0, vchData.size());
     }
 
+    void SetData(int nVersionIn, std::vector<unsigned char> vchDataIn)
+    {
+        nVersion    = nVersionIn;
+	vchData	    = vchDataIn;
+    }
+
     void SetData(int nVersionIn, const void* pdata, size_t nSize)
     {
         nVersion = nVersionIn;
@@ -195,14 +200,14 @@ protected:
     }
 
 public:
-    bool SetString(const char* psz)
+    bool SetString(const char* psz, unsigned char version)
     {
         std::vector<unsigned char> vchTemp;
         DecodeBase58Check(psz, vchTemp);
-        if (vchTemp.empty())
+        if (vchTemp.empty() || vchTemp[0] != version)
         {
             vchData.clear();
-            nVersion = 0;
+            nVersion = 1;
             return false;
         }
         nVersion = vchTemp[0];
@@ -213,9 +218,9 @@ public:
         return true;
     }
 
-    bool SetString(const std::string& str)
+    bool SetString(const std::string& str, unsigned char version)
     {
-        return SetString(str.c_str());
+        return SetString(str.c_str(), version);
     }
 
     std::string ToString() const

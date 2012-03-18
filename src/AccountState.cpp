@@ -8,19 +8,21 @@ AccountState::AccountState(const std::vector<unsigned char>& v)
 {
 	Serializer s(v);
 	mValid=false;
-	if(!s.get160(mAccountID, 0)) { assert(false); return; }
+	uint160	acct160	= mAccountID.getAccountID();
+
+	if(!s.get160(acct160, 0)) { assert(false); return; }
 	if(!s.get64(mBalance, 20)) { assert(false); return; }
 	if(!s.get32(mAccountSeq, 28)) { assert(false); return; }
 	mValid=true;
 }
 
-AccountState::AccountState(const uint160& id) : mAccountID(id), mBalance(0), mAccountSeq(0), mValid(true)
+AccountState::AccountState(const NewcoinAddress& id) : mAccountID(id), mBalance(0), mAccountSeq(0), mValid(true)
 { ; }
 
 std::vector<unsigned char> AccountState::getRaw() const
 { // 20-byte acct ID, 8-byte balance, 4-byte sequence
 	Serializer s(32);
-	s.add160(mAccountID);
+	s.add160(mAccountID.getAccountID());
 	s.add64(mBalance);
 	s.add32(mAccountSeq);
 	return s.getData();
@@ -45,10 +47,13 @@ bool AccountState::isHexAccountID(const std::string& acct)
 void AccountState::addJson(Json::Value& val)
 {
 	Json::Value as(Json::objectValue);
-	as["Account"]=mAccountID.GetHex();
+
+	// XXX Might want account public here, if available.
+	as["Account"]=mAccountID.humanAccountID();
 	as["Balance"]=boost::lexical_cast<std::string>(mBalance);
 	as["SendSequence"]=mAccountSeq;
 	if(!mValid) as["Invalid"]=true;
-	NewcoinAddress nad(mAccountID);
-	val[nad.GetString()]=as;
+
+	val[mAccountID.humanAccountID()]=as;
 }
+// vim:ts=4

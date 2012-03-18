@@ -24,35 +24,32 @@ class Wallet
 protected:
 	boost::recursive_mutex mLock;
 
-	std::map<uint160, LocalAccountFamily::pointer> mFamilies;
-	std::map<uint160, LocalAccount::pointer> mAccounts;
+	std::map<NewcoinAddress, LocalAccountFamily::pointer> mFamilies;
+	std::map<NewcoinAddress, LocalAccount::pointer> mAccounts;
 	std::map<uint256, LocalTransaction::pointer> mTransactions;
 
 	uint32 mLedger; // ledger we last synched to
 
-	LocalAccountFamily::pointer doPrivate(const uint256& passPhrase, bool do_create, bool do_unlock);
-	LocalAccountFamily::pointer doPublic(const std::string& pubKey, bool do_create, bool do_db);
+	LocalAccountFamily::pointer doPrivate(const NewcoinAddress& familySeed, bool do_create, bool do_unlock);
+	LocalAccountFamily::pointer doPublic(const NewcoinAddress& pubKey, bool do_create, bool do_db);
 
-	void addFamily(const uint160& family, const std::string& pubKey, int seq,
-		const std::string& name, const std::string& comment);
+	// void addFamily(const NewcoinAddress& family, const std::string& pubKey, int seq, const std::string& name, const std::string& comment);
 
 public:
 	Wallet() : mLedger(0) { ; }
 
-	uint160 addFamily(const std::string& passPhrase, bool lock);
-	uint160 addFamily(const uint256& passPhrase, bool lock);
-	uint160 addFamily(const std::string& pubKey);
-	uint160 addRandomFamily(uint256& privKey);
+	NewcoinAddress addFamily(const std::string& passPhrase, bool lock);
+	NewcoinAddress addFamily(const NewcoinAddress& familySeed, bool lock);
+	NewcoinAddress addFamily(const NewcoinAddress& familyGenerator);
+	NewcoinAddress addRandomFamily(NewcoinAddress& familySeed);
 
-	uint160 findFamilySN(const std::string& shortName);
-	uint160 findFamilyPK(const std::string& pubKey);
+	NewcoinAddress findFamilyPK(const NewcoinAddress& familyGenerator);
 
-	void delFamily(const uint160& familyName);
+	void delFamily(const NewcoinAddress& familyName);
 
-	void getFamilies(std::vector<uint160>& familyIDs);
+	void getFamilies(std::vector<NewcoinAddress>& familyIDs);
 
-	uint160 unlock(const uint256& passPhrase);
-	bool lock(const uint160& familyName);
+	bool lock(const NewcoinAddress& familyName);
 	void lock();
 
 	void load();
@@ -60,28 +57,19 @@ public:
 	// must be a known local account
 	LocalAccount::pointer parseAccount(const std::string& accountSpecifier);
 
-	LocalAccount::pointer getLocalAccount(const uint160& famBase, int seq);
-	LocalAccount::pointer getLocalAccount(const uint160& acctID);
-	LocalAccount::pointer getNewLocalAccount(const uint160& family);
+	LocalAccount::pointer getLocalAccount(const NewcoinAddress& famBase, int seq);
+	LocalAccount::pointer getLocalAccount(const NewcoinAddress& acctID);
+	LocalAccount::pointer getNewLocalAccount(const NewcoinAddress& family);
 	LocalAccount::pointer findAccountForTransaction(uint64 amount);
-	uint160 peekKey(const uint160& family, int seq);
-	std::string getPubGenHex(const uint160& famBase);
-	std::string getShortName(const uint160& famBase);
+	NewcoinAddress peekKey(const NewcoinAddress& family, int seq);
 
-	bool getFamilyInfo(const uint160& family, std::string& name, std::string& comment);
-	bool getFullFamilyInfo(const uint160& family, std::string& name, std::string& comment,
-		std::string& pubGen, bool& isLocked);
+	bool getFamilyInfo(const NewcoinAddress& family, std::string& comment);
+	// bool getFullFamilyInfo(const NewcoinAddress& family, std::string& comment, std::string& pubGen, bool& isLocked);
 
-	Json::Value getFamilyJson(const uint160& family);
+	Json::Value getFamilyJson(const NewcoinAddress& family);
 	bool getTxJson(const uint256& txid, Json::Value& value);
-	bool getTxsJson(const uint160& acctid, Json::Value& value);
+	bool getTxsJson(const NewcoinAddress& acctid, Json::Value& value);
 	void addLocalTransactions(Json::Value&);
-
-	static bool isHexPrivateKey(const std::string&);
-	static bool isHexPublicKey(const std::string&);
-	static bool isHexFamily(const std::string&);
-	static std::string privKeyToText(const uint256& privKey);
-	static uint256 textToPrivKey(const std::string&);
 
 	void syncToLedger(bool force, Ledger* ledger);
 	void applyTransaction(Transaction::pointer);
