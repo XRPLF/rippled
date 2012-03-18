@@ -5,13 +5,17 @@
 
 #include "SerializedTypes.h"
 
+enum SOE_Type
+{
+	SOE_NEVER=-1, SOE_REQUIRED=0, SOE_FLAGS, SOE_IFFLAG=1, SOE_IFNFLAG=2
+};
+
 struct SOElement
 { // An element in the description of a serialized object
 	const char *e_name;
-	int e_flag;
 	SerializedTypeID e_id;
-
-	SOElement(const char *n, int f, SerializedTypeID i) : e_name(n), e_flag(f), e_id(i) { ; }
+	SOE_Type e_type;
+	int e_flags;
 };
 
 struct SOType
