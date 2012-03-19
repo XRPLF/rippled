@@ -154,15 +154,6 @@ void LocalAccountFamily::write(bool is_new)
 	sql.append(mFamily.humanFamilyGenerator());
 	sql.append("','");
 
-	// EC_GROUP* grp=EC_GROUP_new_by_curve_name(NID_secp256k1);
-	// if(!grp) return;
-	// char *rpk=EC_POINT_point2hex(grp, mRootPubKey, POINT_CONVERSION_COMPRESSED, NULL);
-	// EC_GROUP_free(grp);
-	// if(!rpk) return;
-	// sql.append(rpk);
-	// OPENSSL_free(rpk);
-	// sql.append("','");
-
 	sql.append(boost::lexical_cast<std::string>(mLastSeq));
 	sql.append("',");
 
@@ -374,7 +365,6 @@ void Wallet::load()
 		LocalAccountFamily::pointer f(doPublic(familyGenerator, true, false));
 		if(f)
 		{
-			// XXX Compare could be better.
 			assert(f->getFamily().getFamilyGenerator()==familyGenerator.getFamilyGenerator());
 			f->setSeq(seq);
 			f->setComment(comment);

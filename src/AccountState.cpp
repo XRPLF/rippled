@@ -32,8 +32,7 @@ void AccountState::addJson(Json::Value& val)
 {
 	Json::Value as(Json::objectValue);
 
-	// XXX Might want account public here, if available.
-	as["Account"]=mAccountID.humanAccountID();
+	as["AccountID"]=mAccountID.humanAccountID();
 	as["Balance"]=boost::lexical_cast<std::string>(mBalance);
 	as["SendSequence"]=mAccountSeq;
 	if(!mValid) as["Invalid"]=true;

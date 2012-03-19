@@ -4,11 +4,11 @@
 const char *TxnDBInit[] = {
 	"CREATE TABLE Transactions (				\
 		TransID		CHARACTER(64) PRIMARY KEY,	\
-		FromAcct	CHARACTER(40),				\
+		FromAcct	CHARACTER(35),				\
 		FromSeq		BIGINT UNSIGNED,			\
 		FromLedger	BIGINT UNSIGNED,			\
 		Identifier	BIGINT UNSIGNED,			\
-		ToAcct		CHARACTER(40),				\
+		ToAcct		CHARACTER(35),				\
 		Amount		BIGINT UNSIGNED,			\
 		Fee			BIGINT UNSIGNED,			\
 		FirstSeen	TEXT,						\
@@ -17,7 +17,7 @@ const char *TxnDBInit[] = {
 		Signature	BLOB						\
 	);",
 	"CREATE TABLE PubKeys (						\
-		ID			CHARACTER(40) PRIMARY KEY,	\
+		ID			CHARACTER(35) PRIMARY KEY,	\
 		PubKey		BLOB						\
 	);" };
 
@@ -35,14 +35,17 @@ const char *LedgerDBInit[] = {
 		TransSetHash	CHARACTER(64)				\
 	);",
 	"CREATE INDEX SeqLedger ON Ledgers(LedgerSeq);",
+#if 0
 	"CREATE TABLE LedgerConfirmations	(			\
 		LedgerSeq	BIGINT UNSIGNED,				\
 		LedgerHash	CHARACTER(64),					\
-		Hanko		CHARACTER(40),					\
+		Hanko		CHARACTER(35),					\
 		Signature	BLOB							\
 	);",
 	"CREATE INDEX LedgerConfByHash ON				\
-		LedgerConfirmations(LedgerHash)l" };
+		LedgerConfirmations(LedgerHash)"
+#endif
+	};
 
 int LedgerDBCount=sizeof(LedgerDBInit)/sizeof(const char *);
 
@@ -53,22 +56,22 @@ const char *WalletDBInit[] = {
 		Seq				BIGINT UNSIGNED,			\
 		Comment			TEXT						\
 	);",
+	"CREATE TABLE TrustedNodes (					\
+		Hanko		CHARACTER(35) PRIMARY KEY,		\
+		PubKey		CHARACTER(53),					\
+		Comment		TEXT							\
+	);" };
+
+#if 0
 	"CREATE TABLE LocalAccounts (					\
-		ID			CHARACTER(40) PRIMARY KEY,		\
-		KeyType		CHARACTER(1),					\
+		ID			CHARACTER(35) PRIMARY KEY,		\
 		PrivateKey	TEXT							\
 		Seq			BIGINT UNSIGNED,				\
 		Balance		BIGINT UNSIGNED,				\
 		LedgerSeq	BIGINT UNSIGNED,				\
 		Comment		TEXT							\
 	);",
-	"CREATE TABLE TrustedNodes (					\
-		Hanko		CHARACTER(40) PRIMARY KEY,		\
-		PubKey		CHARACTER(66),					\
-		Comment		TEXT							\
-	);" };
-
-//		TrustLevel	SMALLINT,
+#endif
 
 int WalletDBCount=sizeof(WalletDBInit)/sizeof(const char *);
 
@@ -89,11 +92,12 @@ int HashNodeDBCount=sizeof(HashNodeDBInit)/sizeof(const char *);
 // Net node database holds nodes seen on the network
 const char *NetNodeDBInit[] = {
 	"CREATE TABLE KnownNodes	(					\
-		Hanko			CHARACTER(40) PRIMARY KEY,	\
+		Hanko			CHARACTER(35) PRIMARY KEY,	\
 		LastSeen		TEXT,						\
 		HaveContactInfo	CHARACTER(1),				\
 		ContactObject	BLOB						\
-		);" };
+		);"
+	};
 
 
 int NetNodeDBCount=sizeof(NetNodeDBInit)/sizeof(const char *);
