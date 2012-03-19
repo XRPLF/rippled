@@ -14,4 +14,11 @@ struct TransactionFormat
 
 extern TransactionFormat InnerTxnFormats[];
 
+enum TransactionType
+{
+	ttMAKE_PAYMENT=0,
+	ttNTX_INVOICE=1,
+	ttEXCHANGE_OFFER=2
+};
+
 #endif

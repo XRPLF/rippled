@@ -3,6 +3,7 @@
 
 #include "SerializedTypes.h"
 #include "SerializedObject.h"
+#include "TransactionFormats.h"
 
 std::string SerializedType::getFullText() const
 {

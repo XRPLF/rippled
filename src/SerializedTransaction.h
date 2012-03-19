@@ -10,13 +10,14 @@
 class SerializedTransaction : public STUObject
 {
 protected:
+	TransactionType type;
 	STUVariableLength mSignature;
 	STUObject mMiddleTxn, mInnerTxn;
 	TransactionFormat* mFormat;
 
 public:
 	SerializedTransaction(SerializerIterator&, int length);
-	SerializedTransaction(int type);
+	SerializedTransaction(TransactionType type);
 
 	// STUObject functions
 	int getLength() const;
