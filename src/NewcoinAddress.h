@@ -12,17 +12,15 @@ class NewcoinAddress : public CBase58Data
 private:
 	typedef enum {
 	    VER_NONE		    = 1,
-	    VER_HANKO		    = 13,
-	    VER_NODE_PUBLIC	    = 18,
-	    VER_NODE_PRIVATE	    = 23,
+	    VER_HANKO		    = 8,
+	    VER_NODE_PUBLIC	    = 28,
+	    VER_NODE_PRIVATE	    = 32,
 	    VER_ACCOUNT_ID	    = 0,
-	    VER_ACCOUNT_PUBLIC	    = 3,
-	    VER_ACCOUNT_PRIVATE	    = 8,
-	    VER_FAMILY_GENERATOR    = 28,
+	    VER_ACCOUNT_PUBLIC	    = 35,
+	    VER_ACCOUNT_PRIVATE	    = 34,
+	    VER_FAMILY_GENERATOR    = 41,
 	    VER_FAMILY_SEED	    = 33,
 	} VersionEncoding;
-
-	VersionEncoding	version;
 
 	void seedInfo(NewcoinAddress* dstGenerator, BIGNUM** dstPrivateKey) const;
 
@@ -32,42 +30,62 @@ public:
 	bool IsValid();
 
 	//
-	// Nodes
+	// hanko
 	//
 	uint160 getHanko() const;
-	const std::vector<unsigned char>& getNodePublic() const;
-	uint256 getNodePrivate() const;
 
 	std::string humanHanko() const;
-	std::string humanNodePublic() const;
-	std::string humanNodePrivate() const;
 
 	bool setHanko(const std::string& strHanko);
 	void setHanko(const uint160& hash160);
 
+	//
+	// Node Public
+	//
+	const std::vector<unsigned char>& getNodePublic() const;
+
+	std::string humanNodePublic() const;
+
 	bool setNodePublic(const std::string& strPublic);
 	void setNodePublic(const std::vector<unsigned char>& vPublic);
+
+	//
+	// Node Private
+	//
+	uint256 getNodePrivate() const;
+
+	std::string humanNodePrivate() const;
 
 	bool setNodePrivate(const std::string& strPrivate);
 	void setNodePrivate(uint256 hash256);
 
 	//
-	// Accounts
+	// Accounts IDs
 	//
 	uint160 getAccountID() const;
-	const std::vector<unsigned char>& getAccountPublic() const;
-	uint256 getAccountPrivate() const;
 
 	std::string humanAccountID() const;
-	std::string humanAccountPublic() const;
-	std::string humanAccountPrivate() const;
 
 	bool setAccountID(const std::string& strAccountID);
 	void setAccountID(const uint160& hash160In);
 
+	//
+	// Accounts Public
+	//
+	const std::vector<unsigned char>& getAccountPublic() const;
+
+	std::string humanAccountPublic() const;
+
 	bool setAccountPublic(const std::string& strPublic);
 	void setAccountPublic(const std::vector<unsigned char>& vPublic);
 	void setAccountPublic(const NewcoinAddress& generator, int seq);
+
+	//
+	// Accounts Private
+	//
+	uint256 getAccountPrivate() const;
+
+	std::string humanAccountPrivate() const;
 
 	bool setAccountPrivate(const std::string& strPrivate);
 	void setAccountPrivate(uint256 hash256);
@@ -89,7 +107,9 @@ public:
 	//
 	uint128 getFamilySeed() const;
 	BIGNUM*	getFamilyPrivateKey() const;
+
 	std::string humanFamilySeed() const;
+
 	bool setFamilySeed(const std::string& strSeed);
 	void setFamilySeed(uint128 hash128);
 };

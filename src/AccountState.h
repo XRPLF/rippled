@@ -51,8 +51,7 @@ public:
 		assert(mAccountSeq!=0);
 		mAccountSeq--;
 	}
-	static bool isHexAccountID(const std::string& acct);
-	
+
 	std::vector<unsigned char> getRaw() const;
 	void addJson(Json::Value& value);
 };

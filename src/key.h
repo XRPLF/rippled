@@ -126,7 +126,7 @@ public:
 	static uint128 PassPhraseToKey(const std::string& passPhrase);
 	static EC_KEY* GenerateRootDeterministicKey(const uint128& passPhrase);
 	static EC_KEY* GenerateRootPubKey(BIGNUM* pubGenerator);
-	static EC_KEY* GeneratePublicDeterministicKey(const NewcoinAddress& family, int n);
+	static EC_KEY* GeneratePublicDeterministicKey(const NewcoinAddress& generator, int n);
 	static EC_KEY* GeneratePrivateDeterministicKey(const NewcoinAddress& family, const BIGNUM* rootPriv, int n);
 
 	CKey(const uint128& passPhrase) : fSet(true)
@@ -135,9 +135,9 @@ public:
 		assert(pkey);
 	}
 
-	CKey(const NewcoinAddress& base, int n) : fSet(true)
+	CKey(const NewcoinAddress& generator, int n) : fSet(true)
 	{ // public deterministic key
-		pkey = GeneratePublicDeterministicKey(base, n);
+		pkey = GeneratePublicDeterministicKey(generator, n);
 		assert(pkey);
 	}
 
@@ -199,7 +199,12 @@ public:
 		int n=BN_bn2bin(bn, &vchRet[32 - nBytes]);
 		if (n != nBytes) 
 			throw key_error("CKey::GetSecret(): BN_bn2bin failed");
- 		return vchRet;
+		return vchRet;
+	}
+
+	BIGNUM* GetSecretBN() const
+	{
+		return BN_dup(EC_KEY_get0_private_key(pkey));
 	}
 
 	CPrivKey GetPrivKey() const

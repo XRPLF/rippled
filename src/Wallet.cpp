@@ -361,20 +361,20 @@ void Wallet::load()
 	if(!db->startIterRows()) return;
 	while(db->getNextRow())
 	{
-		std::string familyGenerator, comment;
-		db->getStr("FamilyGenerator", familyGenerator);
+		std::string generator, comment;
+		db->getStr("FamilyGenerator", generator);
 		db->getStr("Comment", comment);
 		int seq=db->getBigInt("Seq");
 
-		NewcoinAddress	family;
+		NewcoinAddress	familyGenerator;
 
-		family.setFamilyGenerator(familyGenerator);
+		familyGenerator.setFamilyGenerator(generator);
 
-		LocalAccountFamily::pointer f(doPublic(family, true, false));
+		LocalAccountFamily::pointer f(doPublic(familyGenerator, true, false));
 		if(f)
 		{
 			// XXX Compare could be better.
-			assert(f->getFamily().getFamilyGenerator()==family.getFamilyGenerator());
+			assert(f->getFamily().getFamilyGenerator()==familyGenerator.getFamilyGenerator());
 			f->setSeq(seq);
 			f->setComment(comment);
 		}
@@ -515,57 +515,34 @@ void Wallet::delFamily(const NewcoinAddress& familyName)
 // --> pubKey: hex
 // --> do_create: Add to mFamilies
 // --> do_db: write out db
-LocalAccountFamily::pointer Wallet::doPublic(const NewcoinAddress& pubKey, bool do_create, bool do_db)
+LocalAccountFamily::pointer Wallet::doPublic(const NewcoinAddress& familyGenerator, bool do_create, bool do_db)
 {
-// Generate root key
-	EC_KEY *pkey=CKey::GenerateRootPubKey(pubKey.getFamilyGeneratorBN());
-	if(!pkey)
-	{
-#ifdef DEBUG
-		std::cerr << "Unable to generate root public key" << std::endl;
-		assert(false);
-#endif
-		return LocalAccountFamily::pointer();
-	}
-
-// Extract family name
-    std::vector<unsigned char> rootPubKey(33, 0);
-    unsigned char *begin=&rootPubKey[0];
-    i2o_ECPublicKey(pkey, &begin);
-    while(rootPubKey.size()<33) rootPubKey.push_back((unsigned char)0);
-
-    NewcoinAddress family;
-	family.setFamilyGenerator(rootPubKey);
-
 	boost::recursive_mutex::scoped_lock sl(mLock);
-	std::map<NewcoinAddress, LocalAccountFamily::pointer>::iterator fit=mFamilies.find(family);
+	std::map<NewcoinAddress, LocalAccountFamily::pointer>::iterator fit=mFamilies.find(familyGenerator);
 	if(fit!=mFamilies.end()) // already added
 	{
-		EC_KEY_free(pkey);
 		return fit->second;
 	}
 	if(!do_create)
 	{
-		EC_KEY_free(pkey);
 		return LocalAccountFamily::pointer();
 	}
 
 	LocalAccountFamily::pointer fam;
 	if(do_db)
 	{
-		fam=LocalAccountFamily::readFamily(family);
+		fam=LocalAccountFamily::readFamily(familyGenerator);
 		if(fam) do_create=false;
 	}
 
 	if(do_create)
 	{
-		fam=boost::make_shared<LocalAccountFamily>(family);
-		mFamilies.insert(std::make_pair(family, fam));
+		fam=boost::make_shared<LocalAccountFamily>(familyGenerator);
+		mFamilies.insert(std::make_pair(familyGenerator, fam));
 		if(do_db) fam->write(true);
 	}
 	sl.unlock();
 
-	EC_KEY_free(pkey);
 	return fam;
 }
 

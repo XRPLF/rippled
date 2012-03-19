@@ -18,12 +18,11 @@
 #include <string>
 #include <algorithm>
 #include <vector>
+
 #include "bignum.h"
 #include "BitcoinUtil.h"
 
-//         Bitcoin's encoding: "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
-static const char* pszBase58 = "sa3A5h7n9NBfDFEGHJKLM4PQRSTUVWXYZ2bcdeCg6ijkm8opqr1tuvwxyz";
-
+static const char* pszBase58 = "ipshnaf39wBUDNEGHJKLM4PQRST7VWXYZ2bcdeCg65jkm8oFqr1tuvAxyz";
 
 inline std::string EncodeBase58(const unsigned char* pbegin, const unsigned char* pend)
 {
@@ -158,10 +157,6 @@ inline bool DecodeBase58Check(const std::string& str, std::vector<unsigned char>
 }
 
 
-
-
-
-
 class CBase58Data
 {
 protected:
@@ -226,7 +221,9 @@ public:
     std::string ToString() const
     {
         std::vector<unsigned char> vch(1, nVersion);
-        vch.insert(vch.end(), vchData.begin(), vchData.end());
+
+	vch.insert(vch.end(), vchData.begin(), vchData.end());
+
         return EncodeBase58Check(vch);
     }
 
@@ -245,7 +242,5 @@ public:
     bool operator< (const CBase58Data& b58) const { return CompareTo(b58) <  0; }
     bool operator> (const CBase58Data& b58) const { return CompareTo(b58) >  0; }
 };
-
-
 
 #endif

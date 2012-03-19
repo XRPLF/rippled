@@ -5,7 +5,7 @@
 #ifndef NEWCOIN_UINT256_H
 #define NEWCOIN_UINT256_H
 
-
+#include <algorithm>
 #include <climits>
 #include <string>
 #include <vector>
@@ -39,11 +39,8 @@ public:
 	{
 	    // Convert to big-endian
 	    unsigned char *be[WIDTH];
-	    unsigned char *bep;
-	    unsigned int *pnp	= &pn[WIDTH];
 
-	    for (int i=WIDTH; i--;)
-		*bep++ =  *--pnp;
+		std::reverse_copy(begin(), end(), be);
 
 	    return BN_bin2bn(be, WIDTH, NULL);
 	}

@@ -31,7 +31,7 @@ protected:
 	uint32 mLedger; // ledger we last synched to
 
 	LocalAccountFamily::pointer doPrivate(const NewcoinAddress& familySeed, bool do_create, bool do_unlock);
-	LocalAccountFamily::pointer doPublic(const NewcoinAddress& pubKey, bool do_create, bool do_db);
+	LocalAccountFamily::pointer doPublic(const NewcoinAddress& familyGenerator, bool do_create, bool do_db);
 
 	// void addFamily(const NewcoinAddress& family, const std::string& pubKey, int seq, const std::string& name, const std::string& comment);
 

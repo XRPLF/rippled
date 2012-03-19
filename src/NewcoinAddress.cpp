@@ -5,10 +5,12 @@
 #include "openssl/ec.h"
 
 #include <cassert>
+#include <algorithm>
+#include <iostream>
 
 NewcoinAddress::NewcoinAddress()
 {
-    version = VER_NONE;
+    nVersion = VER_NONE;
 }
 
 bool NewcoinAddress::IsValid()
@@ -22,34 +24,30 @@ bool NewcoinAddress::IsValid()
 
 uint160 NewcoinAddress::getHanko() const
 {
-    switch (version) {
+    switch (nVersion) {
     case VER_NONE:
-	std::runtime_error("unset source");
-	break;
+		throw std::runtime_error("unset source");
 
     case VER_HANKO:
-	return uint160(vchData);
+		return uint160(vchData);
 
     case VER_NODE_PUBLIC:
-	// Note, we are encoding the left or right.
-	return Hash160(vchData);
+		// Note, we are encoding the left or right.
+		return Hash160(vchData);
 
     default:
-	std::runtime_error("bad source");
+		throw std::runtime_error("bad source");
     }
-
-    return 0;
 }
 
 std::string NewcoinAddress::humanHanko() const
 {
-    switch (version) {
+    switch (nVersion) {
     case VER_NONE:
-	std::runtime_error("unset source");
-	break;
+		throw std::runtime_error("unset source");
 
     case VER_HANKO:
-	return ToString();
+		return ToString();
 
     case VER_NODE_PUBLIC:
 	{
@@ -61,10 +59,8 @@ std::string NewcoinAddress::humanHanko() const
 	}
 
     default:
-	std::runtime_error("bad source");
+		throw std::runtime_error("bad source");
     }
-
-    return 0;
 }
 
 bool NewcoinAddress::setHanko(const std::string& strHanko)
@@ -83,45 +79,36 @@ void NewcoinAddress::setHanko(const uint160& hash160)
 
 const std::vector<unsigned char>& NewcoinAddress::getNodePublic() const
 {
-    switch (version) {
+    switch (nVersion) {
     case VER_NONE:
-	std::runtime_error("unset source");
-	break;
+		throw std::runtime_error("unset source");
 
     case VER_HANKO:
-	std::runtime_error("public not available from hanko");
-	break;
+		throw std::runtime_error("public not available from hanko");
 
     case VER_NODE_PUBLIC:
-	// Do nothing.
-	break;
+		return vchData;
 
     default:
-	std::runtime_error("bad source");
+		throw std::runtime_error("bad source");
     }
-
-    return vchData;
 }
 
 std::string NewcoinAddress::humanNodePublic() const
 {
-    switch (version) {
+    switch (nVersion) {
     case VER_NONE:
-	std::runtime_error("unset source");
-	break;
+		throw std::runtime_error("unset source");
 
     case VER_HANKO:
-	std::runtime_error("public not available from hanko");
-	break;
+		throw std::runtime_error("public not available from hanko");
 
     case VER_NODE_PUBLIC:
-	return ToString();
+		return ToString();
 
     default:
-	std::runtime_error("bad source");
+		throw std::runtime_error("bad source");
     }
-
-    return 0;
 }
 
 bool NewcoinAddress::setNodePublic(const std::string& strPublic)
@@ -140,37 +127,30 @@ void NewcoinAddress::setNodePublic(const std::vector<unsigned char>& vPublic)
 
 uint256 NewcoinAddress::getNodePrivate() const
 {
-    switch (version) {
+    switch (nVersion) {
     case VER_NONE:
-	std::runtime_error("unset source");
-	break;
+		throw std::runtime_error("unset source");
 
     case VER_NODE_PRIVATE:
-	// Nothing
-	break;
+		return uint256(vchData);
 
     default:
-	std::runtime_error("bad source");
+		throw std::runtime_error("bad source");
     }
-
-    return uint256(vchData);
 }
 
 std::string NewcoinAddress::humanNodePrivate() const
 {
-    switch (version) {
+    switch (nVersion) {
     case VER_NONE:
-		std::runtime_error("unset source");
-		break;
+		throw std::runtime_error("unset source");
 
     case VER_NODE_PRIVATE:
 		return ToString();
 
     default:
-		std::runtime_error("bad source");
+		throw std::runtime_error("bad source");
     }
-
-    return 0;
 }
 
 bool NewcoinAddress::setNodePrivate(const std::string& strPrivate)
@@ -189,10 +169,9 @@ void NewcoinAddress::setNodePrivate(uint256 hash256)
 
 uint160 NewcoinAddress::getAccountID() const
 {
-    switch (version) {
+    switch (nVersion) {
     case VER_NONE:
-		std::runtime_error("unset source");
-		break;
+		throw std::runtime_error("unset source");
 
     case VER_ACCOUNT_ID:
 		return uint160(vchData);
@@ -202,18 +181,15 @@ uint160 NewcoinAddress::getAccountID() const
 		return Hash160(vchData);
 
     default:
-		std::runtime_error("bad source");
+		throw std::runtime_error("bad source");
     }
-
-    return 0;
 }
 
 std::string NewcoinAddress::humanAccountID() const
 {
-    switch (version) {
+    switch (nVersion) {
     case VER_NONE:
-		std::runtime_error("unset source");
-		break;
+		throw std::runtime_error("unset source");
 
     case VER_ACCOUNT_ID:
 		return ToString();
@@ -222,16 +198,14 @@ std::string NewcoinAddress::humanAccountID() const
 	{
 	    NewcoinAddress	accountID;
 
-	    (void) accountID.setHanko(getAccountID());
+	    (void) accountID.setAccountID(getAccountID());
 
 	    return accountID.ToString();
 	}
 
     default:
-	std::runtime_error("bad source");
+		throw std::runtime_error("bad source");
     }
-
-    return 0;
 }
 
 bool NewcoinAddress::setAccountID(const std::string& strAccountID)
@@ -250,45 +224,37 @@ void NewcoinAddress::setAccountID(const uint160& hash160)
 
 const std::vector<unsigned char>& NewcoinAddress::getAccountPublic() const
 {
-    switch (version) {
+    switch (nVersion) {
     case VER_NONE:
-		std::runtime_error("unset source");
-		break;
+		throw std::runtime_error("unset source");
 
     case VER_ACCOUNT_ID:
-		std::runtime_error("public not available from account id");
+		throw std::runtime_error("public not available from account id");
 		break;
 
     case VER_ACCOUNT_PUBLIC:
-		// Do nothing.
-		break;
+		return vchData;
 
     default:
-	std::runtime_error("bad source");
+		throw std::runtime_error("bad source");
     }
-
-    return vchData;
 }
 
 std::string NewcoinAddress::humanAccountPublic() const
 {
-    switch (version) {
+    switch (nVersion) {
     case VER_NONE:
-		std::runtime_error("unset source");
-		break;
+		throw std::runtime_error("unset source");
 
     case VER_ACCOUNT_ID:
-		std::runtime_error("public not available from account id");
-		break;
+		throw std::runtime_error("public not available from account id");
 
     case VER_ACCOUNT_PUBLIC:
 		return ToString();
 
     default:
-		std::runtime_error("bad source");
+		throw std::runtime_error("bad source");
     }
-
-    return 0;
 }
 
 bool NewcoinAddress::setAccountPublic(const std::string& strPublic)
@@ -314,37 +280,30 @@ void NewcoinAddress::setAccountPublic(const NewcoinAddress& generator, int seq)
 
 uint256 NewcoinAddress::getAccountPrivate() const
 {
-    switch (version) {
+    switch (nVersion) {
     case VER_NONE:
-	std::runtime_error("unset source");
-	break;
+		throw std::runtime_error("unset source");
 
     case VER_ACCOUNT_PRIVATE:
-	// Do nothing.
-	break;
+		return uint256(vchData);
 
     default:
-	std::runtime_error("bad source");
+		throw std::runtime_error("bad source");
     }
-
-    return uint256(vchData);
 }
 
 std::string NewcoinAddress::humanAccountPrivate() const
 {
-    switch (version) {
+    switch (nVersion) {
     case VER_NONE:
-		std::runtime_error("unset source");
-		break;
+		throw std::runtime_error("unset source");
 
     case VER_ACCOUNT_PRIVATE:
 		return ToString();
 
     default:
-		std::runtime_error("bad source");
+		throw std::runtime_error("bad source");
     }
-
-    return 0;
 }
 
 bool NewcoinAddress::setAccountPrivate(const std::string& strPrivate)
@@ -363,63 +322,53 @@ void NewcoinAddress::setAccountPrivate(uint256 hash256)
 
 BIGNUM* NewcoinAddress::getFamilyGeneratorBN() const
 {
-    switch (version) {
+    switch (nVersion) {
     case VER_NONE:
-		std::runtime_error("unset source");
-		break;
+		throw std::runtime_error("unset source");
 
     case VER_FAMILY_GENERATOR:
 		// Do nothing.
 		break;
 
     default:
-		std::runtime_error("bad source");
+		throw std::runtime_error("bad source");
     }
 
-    // Convert to big-endian
-    unsigned char be[vchData.size()];
+    BIGNUM*	ret	= BN_bin2bn(&vchData[0], vchData.size(), NULL);
+	assert(ret);
 
-    std::reverse_copy(vchData.begin(), vchData.end(), &be[0]);
-
-    return BN_bin2bn(be, vchData.size(), NULL);
+    return ret;
 }
 
 const std::vector<unsigned char>& NewcoinAddress::getFamilyGenerator() const
 {
-    switch (version) {
+    switch (nVersion) {
     case VER_NONE:
-		std::runtime_error("unset source");
-		break;
+		throw std::runtime_error("unset source");
 
     case VER_FAMILY_GENERATOR:
 		// Do nothing.
-		break;
+		return vchData;
 
     default:
-		std::runtime_error("bad source");
+		throw std::runtime_error("bad source");
     }
-
-    return vchData;
 }
 
 std::string NewcoinAddress::humanFamilyGenerator() const
 {
-    switch (version) {
+    switch (nVersion) {
     case VER_NONE:
-	std::runtime_error("unset source");
-	break;
+		throw std::runtime_error("unset source");
 
     case VER_FAMILY_GENERATOR:
-	return ToString();
+		return ToString();
 
     default:
-	std::runtime_error("bad source");
+		throw std::runtime_error("bad source");
     }
-
-    return 0;
 }
 
-// YYY Would be nice if you could pass a family seed and derive the generator.
 bool NewcoinAddress::setFamilyGenerator(const std::string& strGenerator)
 {
     return SetString(strGenerator.c_str(), VER_FAMILY_GENERATOR);
@@ -439,42 +388,31 @@ void NewcoinAddress::setFamilyGenerator(const NewcoinAddress& seed)
 // Family Seed
 //
 
+// --> dstGenerator: Set the public generator from our seed.
 void NewcoinAddress::seedInfo(NewcoinAddress* dstGenerator, BIGNUM** dstPrivateKey) const
 {
-	// Generate root key
-	EC_KEY *base=CKey::GenerateRootDeterministicKey(getFamilySeed());
+	CKey	pubkey	= CKey(getFamilySeed());
 
-	// Extract family name
-	std::vector<unsigned char> rootPubKey(33, 0);
-	unsigned char *begin=&rootPubKey[0];
-	i2o_ECPublicKey(base, &begin);
-	while(rootPubKey.size()<33) rootPubKey.push_back((unsigned char)0);
-
-    if (dstGenerator)
-		dstGenerator->setFamilyGenerator(rootPubKey);
+    if (dstGenerator) {
+		dstGenerator->setFamilyGenerator(pubkey.GetPubKey());
+	}
 
 	if (dstPrivateKey)
-		*dstPrivateKey	= BN_dup(EC_KEY_get0_private_key(base));
-
-	EC_KEY_free(base);
+		*dstPrivateKey	= pubkey.GetSecretBN();
 }
 
 uint128 NewcoinAddress::getFamilySeed() const
 {
-    switch (version) {
+    switch (nVersion) {
     case VER_NONE:
-		std::runtime_error("unset source");
-		break;
+		throw std::runtime_error("unset source");
 
     case VER_FAMILY_SEED:
-		// Do nothing.
-		break;
+		return uint128(vchData);
 
     default:
-		std::runtime_error("bad source");
+		throw std::runtime_error("bad source");
     }
-
-    return uint128(vchData);
 }
 
 BIGNUM*	NewcoinAddress::getFamilyPrivateKey() const
@@ -488,19 +426,16 @@ BIGNUM*	NewcoinAddress::getFamilyPrivateKey() const
 
 std::string NewcoinAddress::humanFamilySeed() const
 {
-    switch (version) {
+    switch (nVersion) {
     case VER_NONE:
-		std::runtime_error("unset source");
-		break;
+		throw std::runtime_error("unset source");
 
     case VER_FAMILY_SEED:
 		return ToString();
 
     default:
-		std::runtime_error("bad source");
+		throw std::runtime_error("bad source");
     }
-
-    return 0;
 }
 
 bool NewcoinAddress::setFamilySeed(const std::string& strSeed)

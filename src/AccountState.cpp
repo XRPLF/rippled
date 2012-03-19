@@ -36,14 +36,6 @@ static bool isHex(char j)
 	return false;
 }
 
-bool AccountState::isHexAccountID(const std::string& acct)
-{
-	if(acct.size()!=40) return false;
-	for(int i=1; i<40; i++)
-		if(!isHex(acct[i])) return false;
-	 return true;
-}
-
 void AccountState::addJson(Json::Value& val)
 {
 	Json::Value as(Json::objectValue);

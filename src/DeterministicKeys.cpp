@@ -143,14 +143,14 @@ EC_KEY* CKey::GenerateRootPubKey(BIGNUM* pubGenerator)
 }
 
 // --> public generator
-static BIGNUM* makeHash(const NewcoinAddress& family, int seq, BIGNUM* order)
+static BIGNUM* makeHash(const NewcoinAddress& generator, int seq, BIGNUM* order)
 {
 	int subSeq=0;
 	BIGNUM* ret=NULL;
 	do
 	{
-		Serializer s((128+32+32)/8);
-		s.add128(family.getFamilySeed());
+		Serializer s((33*8+32+32)/8);
+		s.addRaw(generator.getFamilyGenerator());
 		s.add32(seq);
 		s.add32(subSeq++);
 		uint256 root=s.getSHA512Half();
@@ -163,9 +163,9 @@ static BIGNUM* makeHash(const NewcoinAddress& family, int seq, BIGNUM* order)
 }
 
 // --> public generator
-EC_KEY* CKey::GeneratePublicDeterministicKey(const NewcoinAddress& family, int seq)
+EC_KEY* CKey::GeneratePublicDeterministicKey(const NewcoinAddress& generator, int seq)
 { // publicKey(n) = rootPublicKey EC_POINT_+ Hash(pubHash|seq)*point
-	EC_KEY*			rootKey		= CKey::GenerateRootPubKey(family.getFamilyGeneratorBN());
+	EC_KEY*			rootKey		= CKey::GenerateRootPubKey(generator.getFamilyGeneratorBN());
 	const EC_POINT*	rootPubKey	= EC_KEY_get0_public_key(rootKey);
 	BN_CTX*			ctx			= BN_CTX_new();
 	EC_KEY*			pkey		= EC_KEY_new_by_curve_name(NID_secp256k1);
@@ -193,7 +193,7 @@ EC_KEY* CKey::GeneratePublicDeterministicKey(const NewcoinAddress& family, int s
 
 	// Calculate the private additional key.
 	if (success) {
-		hash		= makeHash(family, seq, order);
+		hash		= makeHash(generator, seq, order);
 		if(!hash)	success	= false;
 	}
 

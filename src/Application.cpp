@@ -71,18 +71,17 @@ void Application::run()
 		mRPCDoor=new RPCDoor(mIOService);
 	}//else BOOST_LOG_TRIVIAL(info) << "No RPC Port set. Not listening for commands.";
 
-	mConnectionPool.connectToNetwork(mKnownNodes, mIOService); 
+	mConnectionPool.connectToNetwork(mKnownNodes, mIOService);
 	mTimingService.start(mIOService);
 	std::cout << "Before Run." << std::endl;
 
 	// Temporary root account will be ["This is my payphrase."]:0
-	NewcoinAddress rootFamilySeed;
-	rootFamilySeed.setFamilySeed(CKey::PassPhraseToKey("This is my payphrase"));
-
-	NewcoinAddress rootFamilyGenerator;
-	rootFamilyGenerator.setFamilyGenerator(rootFamilySeed);
-
+	NewcoinAddress rootFamilySeed;		// Hold the 128 password.
+	NewcoinAddress rootFamilyGenerator;	// Hold the generator.
 	NewcoinAddress rootAddress;
+
+	rootFamilySeed.setFamilySeed(CKey::PassPhraseToKey("This is my payphrase"));
+	rootFamilyGenerator.setFamilyGenerator(rootFamilySeed);
 	rootAddress.setAccountPublic(rootFamilyGenerator, 0);
 
 	Ledger::pointer firstLedger(new Ledger(rootAddress, 100000000));
