@@ -274,6 +274,7 @@ Json::Value LocalAccount::getJson() const
 	Json::Value ret(Json::objectValue);
 	ret["Family"]=getFamilyName();
 	ret["AccountID"]=getAddress().humanAccountID();
+	ret["AccountPublic"]=getAddress().humanAccountPublic();
 	ret["FullName"]=getFullName();
 	ret["Issued"]=Json::Value(isIssued());
 	ret["IsLocked"]=mFamily->isLocked();

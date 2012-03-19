@@ -278,7 +278,7 @@ Json::Value RPCServer::doLock(Json::Value &params)
 }
 
 Json::Value RPCServer::doUnlock(Json::Value &params)
-{   // unlock FXXXX
+{   // unlock sXXXX
     // unlock "<pass phrase>"
 
 	std::string param;
@@ -291,7 +291,7 @@ Json::Value RPCServer::doUnlock(Json::Value &params)
 	NewcoinAddress familySeed;
 
 	if(familySeed.setFamilySeed(param))
-		// FXXX
+		// sXXX
 		family=theApp->getWallet().addFamily(familySeed, false);
 	else
 		// pass phrase
