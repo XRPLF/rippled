@@ -48,6 +48,10 @@ public:
 	void giveObject(SerializedType* t) { data.push_back(t); }
 	const boost::ptr_vector<SerializedType>& peekData() const { return data; }
 	boost::ptr_vector<SerializedType>& peekData() { return data; }
+
+	int getCount() const { return data.size(); }
+	const SerializedType& peekAt(int offset) const { return data[offset]; }
+	SerializedType& getAt(int offset) { return data[offset]; }
 };
 
 
