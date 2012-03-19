@@ -39,6 +39,9 @@ class Serializer
 	int addVL(const std::vector<unsigned char> &vector);
 	int addVL(const void *ptr, int len);
 	int addTaggedList(const std::list<TaggedListItem>&);
+	int addTaggedList(const std::vector<TaggedListItem>&);
+	static int getTaggedListLength(const std::list<TaggedListItem>&);
+	static int getTaggedListLength(const std::vector<TaggedListItem>&);
 
 	// disassemble functions
 	bool get8(int&, int offset) const;
@@ -54,7 +57,8 @@ class Serializer
 
 	bool getVL(std::vector<unsigned char>& objectVL, int offset, int& length) const;
 	bool getVLLength(int& length, int offset) const;
-	bool getTaggedList(std::list<TaggedListItem>&, int offset, int& legnth) const;
+	bool getTaggedList(std::list<TaggedListItem>&, int offset, int& length) const;
+	bool getTaggedList(std::vector<TaggedListItem>&, int offset, int& length) const;
 
 
 	// hash functions
@@ -84,7 +88,7 @@ class Serializer
 
 	// low-level VL length encode/decode functions
 	static std::vector<unsigned char> encodeVL(int length) throw();
-	static int encodeLengthLength(int length) throw();
+	static int encodeLengthLength(int length) throw(); // length to encode length
 	static int decodeLengthLength(int b1) throw();
 	static int decodeVLLength(int b1) throw();
 	static int decodeVLLength(int b1, int b2) throw();
@@ -117,7 +121,7 @@ public:
 	uint256 get256() throw();
 
 	std::vector<unsigned char> getVL() throw();
-	std::list<TaggedListItem> getTaggedList() throw();
+	std::vector<TaggedListItem> getTaggedList() throw();
 };
 
 #endif

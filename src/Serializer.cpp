@@ -264,6 +264,42 @@ int Serializer::addTaggedList(const std::list<TaggedListItem>& list)
 	return ret;
 }
 
+int Serializer::addTaggedList(const std::vector<TaggedListItem>& list)
+{
+	int size=list.size();
+	if(size>255) return -1;
+	int ret=add8(size);
+	if(size!=0)
+		for(std::vector<TaggedListItem>::const_iterator it=list.begin(); it!=list.end(); ++it)
+		{
+			add8(it->first);
+			addVL(it->second);
+		}
+	return ret;
+}
+
+int Serializer::getTaggedListLength(const std::list<TaggedListItem>& list)
+{
+	int size=list.size();
+	if(size>255) return -1;
+	int ret=1;
+	if(size!=0)
+		for(std::list<TaggedListItem>::const_iterator it=list.begin(); it!=list.end(); ++it)
+			ret+=1 + it->second.size() + Serializer::encodeLengthLength(it->second.size());
+	return ret;
+}
+
+int Serializer::getTaggedListLength(const std::vector<TaggedListItem>& list)
+{
+	int size=list.size();
+	if(size>255) return -1;
+	int ret=1;
+	if(size!=0)
+		for(std::vector<TaggedListItem>::const_iterator it=list.begin(); it!=list.end(); ++it)
+			ret+=1 + it->second.size() + Serializer::encodeLengthLength(it->second.size());
+	return ret;
+}
+
 bool Serializer::getVL(std::vector<unsigned char>& objectVL, int offset, int& length) const
 {
 	int b1;
@@ -348,6 +384,25 @@ bool Serializer::getTaggedList(std::list<TaggedListItem>& list, int offset, int&
 	return true;
 }
 
+bool Serializer::getTaggedList(std::vector<TaggedListItem>& list, int offset, int& length) const
+{
+	list.clear();
+	int startOffset=offset;
+	int numElem;
+	if(!get8(numElem, offset++)) return false;
+	for(int i=0; i<numElem; i++)
+	{
+		int tag, len;
+		std::vector<unsigned char> data;
+		if(!get8(tag, offset++)) return false;
+		if(!getVL(data, offset, len)) return false;
+		offset+=len;
+		list.push_back(std::make_pair(tag, data));
+	}
+	length=offset-startOffset;
+	return true;
+}
+
 std::vector<unsigned char> Serializer::encodeVL(int length) throw()
 {
 	unsigned char lenBytes[4];
@@ -374,7 +429,7 @@ std::vector<unsigned char> Serializer::encodeVL(int length) throw()
 	else throw(std::overflow_error("lenlen"));
 }
 
-int encodeLengthLength(int length) throw()
+int Serializer::encodeLengthLength(int length) throw()
 {
 	if(length<0) throw(std::overflow_error("len<0"));
 	if(length<=192) return 1;
@@ -480,10 +535,10 @@ std::vector<unsigned char> SerializerIterator::getVL() throw()
 	return vl;
 }
 
-std::list<TaggedListItem> SerializerIterator::getTaggedList() throw()
+std::vector<TaggedListItem> SerializerIterator::getTaggedList() throw()
 {
 	int length;
-	std::list<TaggedListItem> tl;
+	std::vector<TaggedListItem> tl;
 	if(!mSerializer.getTaggedList(tl, mPos, length)) throw(0);
 	mPos+=length;
 	return tl;

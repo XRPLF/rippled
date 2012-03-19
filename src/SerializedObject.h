@@ -5,13 +5,17 @@
 
 #include "SerializedTypes.h"
 
+enum SOE_Type
+{
+	SOE_NEVER=-1, SOE_REQUIRED=0, SOE_FLAGS, SOE_IFFLAG=1, SOE_IFNFLAG=2
+};
+
 struct SOElement
 { // An element in the description of a serialized object
 	const char *e_name;
-	int e_flag;
 	SerializedTypeID e_id;
-
-	SOElement(const char *n, int f, SerializedTypeID i) : e_name(n), e_flag(f), e_id(i) { ; }
+	SOE_Type e_type;
+	int e_flags;
 };
 
 struct SOType
@@ -27,19 +31,18 @@ protected:
 	boost::ptr_vector<SerializedType> data;
 
 public:
-	STUObject() { ; }
-	virtual ~STUObject();
-
-	STUObject(const STUObject&);
-	STUObject& operator=(const STUObject&);
+	STUObject() : type(NULL) { ; }
+	STUObject(SOType *t) : type(t) { ; }
+	STUObject(SOType *t, SerializerIterator& u);
+	virtual ~STUObject() { ; }
 
 	int getLength() const;
 	SerializedTypeID getType() const { return STI_OBJECT; }
 	STUObject* duplicate() const { return new STUObject(*this); }
 
-	std::vector<unsigned char> serialize() const;
+	void add(Serializer& s) const;
+	std::string getFullText() const;
 	std::string getText() const;
-	std::string getSQL() const;
 
 	void addObject(const SerializedType& t) { data.push_back(t.duplicate()); }
 	void giveObject(SerializedType* t) { data.push_back(t); }
