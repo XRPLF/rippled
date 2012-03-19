@@ -177,8 +177,8 @@ protected:
 
     void SetData(int nVersionIn, std::vector<unsigned char> vchDataIn)
     {
-        nVersion    = nVersionIn;
-	vchData	    = vchDataIn;
+		nVersion    = nVersionIn;
+		vchData	    = vchDataIn;
     }
 
     void SetData(int nVersionIn, const void* pdata, size_t nSize)
@@ -222,7 +222,7 @@ public:
     {
         std::vector<unsigned char> vch(1, nVersion);
 
-	vch.insert(vch.end(), vchData.begin(), vchData.end());
+		vch.insert(vch.end(), vchData.begin(), vchData.end());
 
         return EncodeBase58Check(vch);
     }
@@ -244,3 +244,4 @@ public:
 };
 
 #endif
+// vim:ts=4

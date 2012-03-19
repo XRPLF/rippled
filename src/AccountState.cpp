@@ -28,14 +28,6 @@ std::vector<unsigned char> AccountState::getRaw() const
 	return s.getData();
 }
 
-static bool isHex(char j)
-{
-	if((j>='0') && (j<='9')) return true;
-	if((j>='A') && (j<='F')) return true;
-	if((j>='a') && (j<='f')) return true;
-	return false;
-}
-
 void AccountState::addJson(Json::Value& val)
 {
 	Json::Value as(Json::objectValue);
