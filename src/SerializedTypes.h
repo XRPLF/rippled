@@ -9,9 +9,15 @@
 
 enum SerializedTypeID
 {
+	// special types
 	STI_DONE=-1, STI_NOTPRESENT=0,
+
+	// standard types
 	STI_OBJECT=1, STI_UINT8=2, STI_UINT16=3, STI_UINT32=4, STI_UINT64=5,
 	STI_HASH160=6, STI_HASH256=7, STI_VL=8, STI_TL=8,
+
+	// high level types
+	STI_TRANSACTION=9
 };
 
 class SerializedType
