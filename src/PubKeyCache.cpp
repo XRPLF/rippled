@@ -35,7 +35,7 @@ CKey::pointer PubKeyCache::locate(const NewcoinAddress& id)
 		assert(false); // bad data in DB
 		return CKey::pointer();
 	}
-	
+
 	if(1)
 	{ // put it in cache (okay if we race with another retriever)
 		boost::mutex::scoped_lock sl(mLock);
@@ -53,15 +53,17 @@ CKey::pointer PubKeyCache::store(const NewcoinAddress& id, CKey::pointer key)
 		if(!pit.second) // there was an existing key
 			return pit.first->second;
 	}
-	std::string sql="INSERT INTO PubKeys (ID,PubKey) VALUES ('";
-	sql+=id.humanAccountID();
-	sql+="',";
 
 	std::vector<unsigned char> pk=key->GetPubKey();
 	std::string encodedPK;
 	theApp->getTxnDB()->getDB()->escape(&(pk.front()), pk.size(), encodedPK);
+
+	std::string sql="INSERT INTO PubKeys (ID,PubKey) VALUES ('";
+	sql+=id.humanAccountID();
+	sql+="',";
 	sql+=encodedPK;
 	sql.append(");");
+
 	ScopedLock dbl(theApp->getTxnDB()->getDBLock());
 	theApp->getTxnDB()->getDB()->executeSQL(sql.c_str(), true);
 	return key;
