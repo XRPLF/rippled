@@ -11,7 +11,7 @@ class SerializedTransaction : public STUObject
 {
 protected:
 	TransactionType type;
-	STUVariableLength mSignature;
+	STVariableLength mSignature;
 	STUObject mMiddleTxn, mInnerTxn;
 	TransactionFormat* mFormat;
 
