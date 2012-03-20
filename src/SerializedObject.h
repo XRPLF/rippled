@@ -31,7 +31,7 @@ protected:
 	boost::ptr_vector<SerializedType> data;
 
 public:
-	STUObject() : type(NULL) { ; }
+	STUObject(const char *n=NULL) : SerializedType(n), type(NULL) { ; }
 	STUObject(SOType *t) : type(t) { ; }
 	STUObject(SOType *t, SerializerIterator& u);
 	virtual ~STUObject() { ; }
