@@ -89,22 +89,22 @@ static std::string hex(const std::vector<unsigned char>& value)
 	return std::string(psz, psz + value.size()*2);
 }
 
-std::string STUVariableLength::getText() const
+std::string STVariableLength::getText() const
 {
 	return hex(value);
 }
 
-STUVariableLength* STUVariableLength::construct(SerializerIterator& u)
+STVariableLength* STVariableLength::construct(SerializerIterator& u)
 {
-	return new STUVariableLength(u.getVL());
+	return new STVariableLength(u.getVL());
 }
 
-int STUVariableLength::getLength() const
+int STVariableLength::getLength() const
 {
 	return Serializer::encodeLengthLength(value.size()) + value.size();
 }
 
-std::string STUTaggedList::getText() const
+std::string STTaggedList::getText() const
 {
 	std::string ret;
 	for(std::vector<TaggedListItem>::const_iterator it=value.begin(); it!=value.end(); ++it)
@@ -116,12 +116,12 @@ std::string STUTaggedList::getText() const
 	return ret;
 }
 
-STUTaggedList* STUTaggedList::construct(SerializerIterator& u)
+STTaggedList* STTaggedList::construct(SerializerIterator& u)
 {
-	return new STUTaggedList(u.getTaggedList());
+	return new STTaggedList(u.getTaggedList());
 }
 
-int STUTaggedList::getLength() const
+int STTaggedList::getLength() const
 {
 	int ret=Serializer::getTaggedListLength(value);
 	if(ret<0) throw(0);
