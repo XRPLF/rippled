@@ -2,7 +2,8 @@
 #include "key.h"
 #include "Config.h"
 #include "BitcoinUtil.h"
-#include "openssl/ec.h"
+
+#include "openssl/rand.h"
 
 #include <cassert>
 #include <algorithm>
@@ -71,6 +72,10 @@ bool NewcoinAddress::setHanko(const std::string& strHanko)
 void NewcoinAddress::setHanko(const uint160& hash160)
 {
     SetData(VER_HANKO, hash160.begin(), 20);
+}
+
+void NewcoinAddress::setHanko(const NewcoinAddress& nodePublic) {
+	setHanko(nodePublic.getHanko());
 }
 
 //
@@ -156,6 +161,10 @@ std::string NewcoinAddress::humanNodePrivate() const
 bool NewcoinAddress::setNodePrivate(const std::string& strPrivate)
 {
     return SetString(strPrivate.c_str(), VER_NODE_PRIVATE);
+}
+
+void NewcoinAddress::setNodePrivate(const std::vector<unsigned char>& vPrivate) {
+    SetData(VER_NODE_PRIVATE, vPrivate);
 }
 
 void NewcoinAddress::setNodePrivate(uint256 hash256)
@@ -311,6 +320,11 @@ bool NewcoinAddress::setAccountPrivate(const std::string& strPrivate)
     return SetString(strPrivate.c_str(), VER_ACCOUNT_PRIVATE);
 }
 
+void NewcoinAddress::setAccountPrivate(const std::vector<unsigned char>& vPrivate)
+{
+    SetData(VER_ACCOUNT_PRIVATE, vPrivate);
+}
+
 void NewcoinAddress::setAccountPrivate(uint256 hash256)
 {
     SetData(VER_ACCOUNT_PRIVATE, hash256.begin(), 32);
@@ -445,5 +459,14 @@ bool NewcoinAddress::setFamilySeed(const std::string& strSeed)
 
 void NewcoinAddress::setFamilySeed(uint128 hash128) {
     SetData(VER_FAMILY_SEED, hash128.begin(), 16);
+}
+
+void NewcoinAddress::setFamilySeedRandom()
+{
+	uint128 key;
+
+	RAND_bytes((unsigned char *) &key, sizeof(key));
+
+	NewcoinAddress::setFamilySeed(key);
 }
 // vim:ts=4

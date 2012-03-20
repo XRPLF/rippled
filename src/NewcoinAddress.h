@@ -38,6 +38,7 @@ public:
 
 	bool setHanko(const std::string& strHanko);
 	void setHanko(const uint160& hash160);
+	void setHanko(const NewcoinAddress& nodePublic);
 
 	//
 	// Node Public
@@ -57,6 +58,7 @@ public:
 	std::string humanNodePrivate() const;
 
 	bool setNodePrivate(const std::string& strPrivate);
+	void setNodePrivate(const std::vector<unsigned char>& vPrivate);
 	void setNodePrivate(uint256 hash256);
 
 	//
@@ -88,6 +90,7 @@ public:
 	std::string humanAccountPrivate() const;
 
 	bool setAccountPrivate(const std::string& strPrivate);
+	void setAccountPrivate(const std::vector<unsigned char>& vPrivate);
 	void setAccountPrivate(uint256 hash256);
 
 	//
@@ -112,6 +115,7 @@ public:
 
 	bool setFamilySeed(const std::string& strSeed);
 	void setFamilySeed(uint128 hash128);
+	void setFamilySeedRandom();
 };
 
 #endif

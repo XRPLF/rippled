@@ -45,8 +45,13 @@ class RPCServer  : public boost::enable_shared_from_this<RPCServer>
 	Json::Value doTx(Json::Value& params);
 	Json::Value doLedger(Json::Value& params);
 	Json::Value doAccount(Json::Value& params);
-	Json::Value doAddUnl(Json::Value& params);
-	Json::Value doGetUnl(Json::Value& params);
+
+	Json::Value doUnlAdd(Json::Value& params);
+	Json::Value doUnlDefault(Json::Value& params);
+	Json::Value doUnlDelete(Json::Value& params);
+	Json::Value doUnlFetch(Json::Value& params);
+	Json::Value doUnlList(Json::Value& params);
+	Json::Value doUnlReset(Json::Value& params);
 
 	// Parses a string account name into a local or remote NewcoinAddress.
 	NewcoinAddress parseAccount(const std::string& account);

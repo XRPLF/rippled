@@ -5,7 +5,6 @@
 #include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
 
-#include "../json/value.h"
 #include "../json/reader.h"
 #include "../json/writer.h"
 
@@ -498,9 +497,9 @@ Json::Value RPCServer::doLedger(Json::Value& params)
 	return "not implemented";
 }
 
-Json::Value RPCServer::doAddUnl(Json::Value& params) {
-	// addUNL <node_public>
-	// addUNL <node_public> <comment>
+Json::Value RPCServer::doUnlAdd(Json::Value& params) {
+	// unl_add <node_public>
+	// unl_add <node_public> <comment>
 	if(params.size()==1 || params.size()==2)
 	{
 		std::string	pubKey=params[0u].asString();
@@ -524,23 +523,43 @@ Json::Value RPCServer::doAddUnl(Json::Value& params) {
 	else return "invalid params";
 }
 
-Json::Value RPCServer::doGetUnl(Json::Value& params) {
-	std::string str;
-	theApp->getUNL().dumpUNL(str);
+Json::Value RPCServer::doUnlDefault(Json::Value& params) {
+	return "not implemented";
+}
 
-	return str.c_str();
+Json::Value RPCServer::doUnlDelete(Json::Value& params) {
+	return "not implemented";
+}
+
+Json::Value RPCServer::doUnlFetch(Json::Value& params) {
+	return "not implemented";
+}
+
+Json::Value RPCServer::doUnlList(Json::Value& params) {
+	return theApp->getUNL().getUnlJson();
+}
+
+Json::Value RPCServer::doUnlReset(Json::Value& params) {
+	return "not implemented";
 }
 
 Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params)
 {
 	std::cerr << "RPC:" << command << std::endl;
+
 	if(command== "stop")
 	{
 		mSocket.get_io_service().stop();
 		return "newcoin server stopping";
 	}
-	if(command=="addUNL") return doAddUnl(params);
-	if(command=="getUNL") return doGetUnl(params);
+
+	if(command=="unl_add") return doUnlAdd(params);
+	if(command=="unl_default") return doUnlDefault(params);
+	if(command=="unl_delete") return doUnlDelete(params);
+	if(command=="unl_fetch") return doUnlFetch(params);
+	if(command=="unl_list") return doUnlList(params);
+	if(command=="unl_reset") return doUnlReset(params);
+
 	if(command=="createfamily") return doCreateFamily(params);
 	if(command=="familyinfo") return doFamilyInfo(params);
 	if(command=="accountinfo") return doAccountInfo(params);

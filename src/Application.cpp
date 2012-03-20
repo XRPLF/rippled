@@ -111,3 +111,4 @@ Application::~Application()
 	delete mHashNodeDB;
 	delete mNetNodeDB;
 }
+// vim:ts=4

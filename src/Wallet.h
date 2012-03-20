@@ -21,8 +21,16 @@ class Ledger;
 
 class Wallet
 {
+private:
+	bool	nodeIdentityLoad();
+	bool	nodeIdentityCreate();
+
 protected:
 	boost::recursive_mutex mLock;
+
+	NewcoinAddress	mNodeHanko;
+	NewcoinAddress	mNodePublicKey;
+	NewcoinAddress	mNodePrivateKey;
 
 	std::map<NewcoinAddress, LocalAccountFamily::pointer> mFamilies;
 	std::map<NewcoinAddress, LocalAccount::pointer> mAccounts;

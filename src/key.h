@@ -273,15 +273,6 @@ public:
 			return false;
 		return true;
 	}
-
-	NewcoinAddress GetAddress() const
-	{
-		NewcoinAddress*	ret = new NewcoinAddress();
-
-		ret->setAccountPublic(GetPubKey());
-
-		return *ret;
-	}
 };
 
 #endif

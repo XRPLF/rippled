@@ -19,7 +19,8 @@ const char *TxnDBInit[] = {
 	"CREATE TABLE PubKeys (						\
 		ID			CHARACTER(35) PRIMARY KEY,	\
 		PubKey		BLOB						\
-	);" };
+	);"
+};
 
 int TxnDBCount=sizeof(TxnDBInit)/sizeof(const char *);
 
@@ -45,7 +46,7 @@ const char *LedgerDBInit[] = {
 	"CREATE INDEX LedgerConfByHash ON				\
 		LedgerConfirmations(LedgerHash)"
 #endif
-	};
+};
 
 int LedgerDBCount=sizeof(LedgerDBInit)/sizeof(const char *);
 
@@ -56,11 +57,16 @@ const char *WalletDBInit[] = {
 		Seq				BIGINT UNSIGNED,			\
 		Comment			TEXT						\
 	);",
+	"CREATE TABLE NodeIdentity (					\
+		PublicKey		CHARACTER(53),				\
+		PrivateKey		CHARACTER(52)				\
+	);"
 	"CREATE TABLE TrustedNodes (					\
-		Hanko		CHARACTER(35) PRIMARY KEY,		\
-		PubKey		CHARACTER(53),					\
-		Comment		TEXT							\
-	);" };
+		Hanko			CHARACTER(35) PRIMARY KEY,	\
+		PublicKey		CHARACTER(53),				\
+		Comment			TEXT						\
+	);"
+};
 
 #if 0
 	"CREATE TABLE LocalAccounts (					\
@@ -97,7 +103,7 @@ const char *NetNodeDBInit[] = {
 		HaveContactInfo	CHARACTER(1),				\
 		ContactObject	BLOB						\
 		);"
-	};
+};
 
 
 int NetNodeDBCount=sizeof(NetNodeDBInit)/sizeof(const char *);

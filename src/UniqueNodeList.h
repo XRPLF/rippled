@@ -1,6 +1,8 @@
 #ifndef __UNIQUE_NODE_LIST__
 #define __UNIQUE_NODE_LIST__
-#include "../obj/src/newcoin.pb.h"
+
+#include "../json/value.h"
+
 #include "uint256.h"
 #include "NewcoinAddress.h"
 
@@ -12,13 +14,13 @@ public:
 	//void load();
 	//void save();
 
-	void addNode(NewcoinAddress address,std::string comment);
-	void removeNode(uint160& hanko);
+	void addNode(NewcoinAddress nodePublic, std::string strComment);
+	void removeNode(NewcoinAddress hanko);
 
 	// 0- we don't care, 1- we care and is valid, 2-invalid signature
 //	int checkValid(newcoin::Validation& valid);
 
-	void dumpUNL(std::string& retStr);
+	Json::Value getUnlJson();
 };
 
 #endif

@@ -2,14 +2,12 @@
 
 #include <string>
 
-#include "openssl/rand.h"
 #include "openssl/ec.h"
 
 #include "boost/foreach.hpp"
 #include "boost/lexical_cast.hpp"
 #include "boost/interprocess/sync/scoped_lock.hpp"
 #include "boost/make_shared.hpp"
-
 
 #include "Wallet.h"
 #include "Ledger.h"
@@ -29,17 +27,64 @@ LocalAccount::LocalAccount(boost::shared_ptr<LocalAccountFamily> family, int fam
 	mPublicKey(family->getPublicKey(familySeq)), mFamily(family), mAccountFSeq(familySeq),
 	mLgrBalance(0), mTxnDelta(0), mTxnSeq(0)
 {
-	mAcctID=mPublicKey->GetAddress();
+	mAcctID.setAccountPublic(mPublicKey->GetPubKey());
 
 	if(theApp!=NULL) mPublicKey=theApp->getPubKeyCache().store(mAcctID, mPublicKey);
 }
 
+std::string LocalAccount::getFullName() const
+{
+	std::string ret(mFamily->getFamily().humanFamilyGenerator());
+	ret.append(":");
+	ret.append(boost::lexical_cast<std::string>(mAccountFSeq));
+
+	return ret;
+}
+
+bool LocalAccount::isLocked() const
+{
+	return mFamily->isLocked();
+}
+
+std::string LocalAccount::getFamilyName() const
+{
+	return mFamily->getFamily().humanFamilyGenerator();
+}
+
+Json::Value LocalAccount::getJson() const
+{
+	Json::Value ret(Json::objectValue);
+	ret["Family"]=getFamilyName();
+	ret["AccountID"]=getAddress().humanAccountID();
+	ret["AccountPublic"]=getAddress().humanAccountPublic();
+	ret["FullName"]=getFullName();
+	ret["Issued"]=Json::Value(isIssued());
+	ret["IsLocked"]=mFamily->isLocked();
+
+	uint64 eb=getEffectiveBalance();
+	if(eb!=0) ret["Balance"]=boost::lexical_cast<std::string>(eb);
+
+	uint32 sq=getTxnSeq();
+	if(sq!=0) ret["TxnSeq"]=boost::lexical_cast<std::string>(sq);
+
+	return ret;
+}
+
+bool LocalAccount::isIssued() const
+{
+	return mAccountFSeq < mFamily->getSeq();
+}
+
+CKey::pointer LocalAccount::getPrivateKey()
+{
+	return mFamily->getPrivateKey(mAccountFSeq);
+}
 //
 // LocalAccountFamily - a sequences of accounts
 //
 
-LocalAccountFamily::LocalAccountFamily(const NewcoinAddress& family) :
-	mFamily(family), mLastSeq(0), mRootPrivateKey(NULL)
+LocalAccountFamily::LocalAccountFamily(const NewcoinAddress& familyGenerator) :
+	mFamily(familyGenerator), mLastSeq(0), mRootPrivateKey(NULL)
 {
 }
 
@@ -209,11 +254,7 @@ NewcoinAddress Wallet::addFamily(const NewcoinAddress& familySeed, bool lock)
 // Create a family.  Return the family public generator and the seed.
 NewcoinAddress Wallet::addRandomFamily(NewcoinAddress& familySeed)
 {
-	uint128 key;
-
-	RAND_bytes((unsigned char *) &key, sizeof(key));
-
-	familySeed.setFamilySeed(key);
+	familySeed.setFamilySeedRandom();
 
 	return addFamily(familySeed, false);
 }
@@ -239,54 +280,6 @@ NewcoinAddress Wallet::findFamilyPK(const NewcoinAddress& familyGenerator)
 	LocalAccountFamily::pointer fam(doPublic(familyGenerator, false, true));
 
 	return fam ? fam->getFamily() : NewcoinAddress();
-}
-
-std::string LocalAccount::getFullName() const
-{
-	std::string ret(mFamily->getFamily().humanFamilyGenerator());
-	ret.append(":");
-	ret.append(boost::lexical_cast<std::string>(mAccountFSeq));
-
-	return ret;
-}
-
-bool LocalAccount::isLocked() const
-{
-	return mFamily->isLocked();
-}
-
-std::string LocalAccount::getFamilyName() const
-{
-	return mFamily->getFamily().humanFamilyGenerator();
-}
-
-Json::Value LocalAccount::getJson() const
-{
-	Json::Value ret(Json::objectValue);
-	ret["Family"]=getFamilyName();
-	ret["AccountID"]=getAddress().humanAccountID();
-	ret["AccountPublic"]=getAddress().humanAccountPublic();
-	ret["FullName"]=getFullName();
-	ret["Issued"]=Json::Value(isIssued());
-	ret["IsLocked"]=mFamily->isLocked();
-
-	uint64 eb=getEffectiveBalance();
-	if(eb!=0) ret["Balance"]=boost::lexical_cast<std::string>(eb);
-
-	uint32 sq=getTxnSeq();
-	if(sq!=0) ret["TxnSeq"]=boost::lexical_cast<std::string>(sq);
-
-	return ret;
-}
-
-bool LocalAccount::isIssued() const
-{
-	return mAccountFSeq < mFamily->getSeq();
-}
-
-CKey::pointer LocalAccount::getPrivateKey()
-{
-	return mFamily->getPrivateKey(mAccountFSeq);
 }
 
 void Wallet::getFamilies(std::vector<NewcoinAddress>& familyIDs)
@@ -337,8 +330,89 @@ Json::Value Wallet::getFamilyJson(const NewcoinAddress& family)
 	return fit->second->getJson();
 }
 
+bool Wallet::nodeIdentityLoad()
+{
+	std::string strSql("SELECT * FROM NodeIdentity;");
+
+	ScopedLock sl(theApp->getWalletDB()->getDBLock());
+	Database *db=theApp->getWalletDB()->getDB();
+
+	if(!db->executeSQL(strSql.c_str())) return false;
+	if(!db->startIterRows()) return false;
+
+	std::string strPublicKey, strPrivateKey;
+
+	db->getStr("PublicKey", strPublicKey);
+	db->getStr("PrivateKey", strPrivateKey);
+
+	mNodePublicKey.setNodePublic(strPublicKey);
+	mNodePrivateKey.setNodePrivate(strPrivateKey);
+
+	db->endIterRows();
+
+	// Derive hanko from public key.
+	mNodeHanko.setHanko(mNodePublicKey);
+
+	return true;
+}
+
+bool Wallet::nodeIdentityCreate() {
+	//
+	// Generate the public and private key
+	//
+	NewcoinAddress	familySeed;
+	NewcoinAddress	familyGenerator;
+	NewcoinAddress	nodePublicKey;
+	NewcoinAddress	nodePrivateKey;
+
+	familySeed.setFamilySeedRandom();					// Get a random seed.
+	familyGenerator.setFamilyGenerator(familySeed);		// Derive generator from seed.
+
+	// The node public and private is 0th of the sequence.
+	nodePublicKey.setNodePublic(CKey(familyGenerator, 0).GetPubKey());
+	nodePrivateKey.setNodePrivate(CKey(familyGenerator, familySeed.getFamilyPrivateKey(), 0).GetSecret());
+
+	std::cerr << "New NodeIdentity:" << std::endl;
+	fprintf(stderr, "public: %s\n", nodePublicKey.humanNodePublic().c_str());
+	fprintf(stderr, "private: %s\n", nodePrivateKey.humanNodePrivate().c_str());
+
+	//
+	// Store the node information
+	//
+	Database* db	= theApp->getWalletDB()->getDB();
+
+	std::string strTmp;
+
+	std::string strPublicKey	= nodePublicKey.humanNodePublic();
+	std::string strPrivateKey	= nodePrivateKey.humanNodePrivate();
+
+	std::string strSql	= "INSERT INTO NodeIdentity (PublicKey,PrivateKey) VALUES (";
+	db->escape(reinterpret_cast<const unsigned char*>(strPublicKey.c_str()), strPublicKey.size(), strTmp);
+	strSql.append(strTmp);
+	strSql.append(",");
+	db->escape(reinterpret_cast<const unsigned char*>(strPrivateKey.c_str()), strPrivateKey.size(), strTmp);
+	strSql.append(strTmp);
+	strSql.append(");");
+
+	ScopedLock sl(theApp->getWalletDB()->getDBLock());
+	db->executeSQL(strSql.c_str());
+
+	return true;
+}
+
 void Wallet::load()
 {
+	if (!nodeIdentityLoad()) {
+		nodeIdentityCreate();
+		if (!nodeIdentityLoad())
+			throw std::runtime_error("unable to retrieve new node identity.");
+	}
+
+	std::cerr << "NodeIdentity:" << std::endl;
+	fprintf(stderr, "hanko: %s\n", mNodeHanko.humanHanko().c_str());
+	fprintf(stderr, "public: %s\n", mNodePublicKey.humanNodePublic().c_str());
+	fprintf(stderr, "private: %s\n", mNodePrivateKey.humanNodePrivate().c_str());
+
 	std::string sql("SELECT * FROM LocalAcctFamilies;");
 
 	ScopedLock sl(theApp->getWalletDB()->getDBLock());
@@ -350,24 +424,27 @@ void Wallet::load()
 #endif
 		return;
 	}
+
 	if(!db->startIterRows()) return;
+
 	while(db->getNextRow())
 	{
-		std::string generator, comment;
-		db->getStr("FamilyGenerator", generator);
-		db->getStr("Comment", comment);
+		std::string strGenerator, strComment;
+
+		db->getStr("FamilyGenerator", strGenerator);
+		db->getStr("Comment", strComment);
 		int seq=db->getBigInt("Seq");
 
 		NewcoinAddress	familyGenerator;
 
-		familyGenerator.setFamilyGenerator(generator);
+		familyGenerator.setFamilyGenerator(strGenerator);
 
 		LocalAccountFamily::pointer f(doPublic(familyGenerator, true, false));
 		if(f)
 		{
 			assert(f->getFamily().getFamilyGenerator()==familyGenerator.getFamilyGenerator());
 			f->setSeq(seq);
-			f->setComment(comment);
+			f->setComment(strComment);
 		}
 		else assert(false);
 	}
@@ -503,6 +580,7 @@ void Wallet::delFamily(const NewcoinAddress& familyName)
 	mFamilies.erase(familyName);
 }
 
+// Look for and possible create a family based on its generator.
 // --> pubKey: hex
 // --> do_create: Add to mFamilies
 // --> do_db: write out db
@@ -537,25 +615,26 @@ LocalAccountFamily::pointer Wallet::doPublic(const NewcoinAddress& familyGenerat
 	return fam;
 }
 
+// Look for and possible create a family based on its seed.
 LocalAccountFamily::pointer Wallet::doPrivate(const NewcoinAddress& familySeed, bool do_create, bool do_unlock)
 {
-	NewcoinAddress family;
-	family.setFamilyGenerator(familySeed);
+	NewcoinAddress familyGenerator;
+	familyGenerator.setFamilyGenerator(familySeed);
 
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	LocalAccountFamily::pointer fam;
-	std::map<NewcoinAddress, LocalAccountFamily::pointer>::iterator it=mFamilies.find(family);
+	std::map<NewcoinAddress, LocalAccountFamily::pointer>::iterator it=mFamilies.find(familyGenerator);
 	if(it==mFamilies.end())
 	{ // family not found
-		fam=LocalAccountFamily::readFamily(family);
+		fam=LocalAccountFamily::readFamily(familyGenerator);
 		if(!fam)
 		{
 			if(!do_create)
 			{
 				return LocalAccountFamily::pointer();
 			}
-			fam=boost::make_shared<LocalAccountFamily>(family);
-			mFamilies.insert(std::make_pair(family, fam));
+			fam=boost::make_shared<LocalAccountFamily>(familyGenerator);
+			mFamilies.insert(std::make_pair(familyGenerator, fam));
 			fam->write(true);
 		}
 	}

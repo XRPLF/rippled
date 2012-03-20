@@ -77,7 +77,7 @@ protected:
 
 public:
 
-	LocalAccountFamily(const NewcoinAddress& family);
+	LocalAccountFamily(const NewcoinAddress& familyGenerator);
 	~LocalAccountFamily();
 
 	const NewcoinAddress& getFamily() const { return mFamily; }
@@ -106,3 +106,4 @@ public:
 };
 
 #endif
+// vim:ts=4
