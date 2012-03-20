@@ -3,7 +3,7 @@
 
 TransactionFormat InnerTxnFormats[]=
 {
-	{ "MakePayment", 0, {
+	{ "MakePayment", ttMAKE_PAYMENT, {
 		{ "Flags",        STI_UINT16,  SOE_FLAGS,    0 },
 		{ "Sequence", 	  STI_UINT32,  SOE_REQUIRED, 0 },
 		{ "Destination",  STI_ACCOUNT, SOE_REQUIRED, 0 },
@@ -15,7 +15,7 @@ TransactionFormat InnerTxnFormats[]=
 		{ "Extensions",   STI_TL,      SOE_IFFLAG,   32768 },
 		{ NULL,           STI_DONE,    SOE_NEVER,    -1 } }
 	},
-	{ "Invoice", 1, {
+	{ "Invoice", ttINVOICE, {
 		{ "Flags",        STI_UINT16,  SOE_FLAGS,    0 },
 		{ "Sequence",     STI_UINT32,  SOE_REQUIRED, 0 },
 		{ "Target",       STI_ACCOUNT, SOE_REQUIRED, 0 },
@@ -28,7 +28,7 @@ TransactionFormat InnerTxnFormats[]=
 		{ "Extensions",   STI_TL,      SOE_IFFLAG,   32768 },
 		{ NULL,           STI_DONE,    SOE_NEVER,    -1 } }
 	},
-	{ "Offer", 2, {
+	{ "Offer", ttEXCHANGE_OFFER, {
 		{ "Flags",        STI_UINT16,  SOE_FLAGS,    0 },
 		{ "Sequence",     STI_UINT32,  SOE_REQUIRED, 0 },
 		{ "AmountIn",     STI_UINT64,  SOE_REQUIRED, 0 },
@@ -42,5 +42,17 @@ TransactionFormat InnerTxnFormats[]=
 		{ "Identifier",   STI_VL,      SOE_IFFLAG,   128 },
 		{ "Extensions",   STI_TL,      SOE_IFFLAG,   32768 },
 		{ NULL,           STI_DONE,    SOE_NEVER,    -1 } }
-	}
+	},
+	{ NULL, ttINVALID  }
 };
+
+TransactionFormat* getFormat(TransactionType t)
+{
+	TransactionFormat* f=InnerTxnFormats;
+	while(f->t_name!=NULL)
+	{
+		if(f->t_type==t) return f;
+		f++;
+	}
+	return NULL;
+}

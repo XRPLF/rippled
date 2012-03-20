@@ -5,20 +5,25 @@
 
 #define STI_ACCOUNT STI_HASH160
 
-struct TransactionFormat
-{
-	const char *t_name;
-	int t_id;
-	SOElement elements[16];
-};
-
-extern TransactionFormat InnerTxnFormats[];
-
 enum TransactionType
 {
+	ttINVALID=-1,
 	ttMAKE_PAYMENT=0,
-	ttNTX_INVOICE=1,
+	ttINVOICE=1,
 	ttEXCHANGE_OFFER=2
 };
 
+struct TransactionFormat
+{
+	const char *t_name;
+	TransactionType t_type;
+	SOElement elements[16];
+};
+
+const int32 TransactionMagic=0x54583000;
+const int TransactionMinLen=32;
+const int TransactionMaxLen=1048576;
+
+extern TransactionFormat InnerTxnFormats[];
+extern TransactionFormat* getFormat(TransactionType t);
 #endif
