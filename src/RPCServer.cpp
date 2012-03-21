@@ -67,7 +67,7 @@ void RPCServer::handle_read(const boost::system::error_code& e,
 	}
 	else if(e != boost::asio::error::operation_aborted)
 	{
-		
+
 	}
 }
 
@@ -75,7 +75,7 @@ std::string RPCServer::handleRequest(const std::string& requestStr)
 {
 	std::cout << "handleRequest " << requestStr << std::endl;
 	Json::Value id;
-	
+
 	// Parse request
 	Json::Value valRequest;
 	Json::Reader reader;
@@ -497,21 +497,21 @@ Json::Value RPCServer::doLedger(Json::Value& params)
 	return "not implemented";
 }
 
+// unl_add <node_public>
+// unl_add <node_public> <comment>
 Json::Value RPCServer::doUnlAdd(Json::Value& params) {
-	// unl_add <node_public>
-	// unl_add <node_public> <comment>
 	if(params.size()==1 || params.size()==2)
 	{
-		std::string	pubKey=params[0u].asString();
-		std::string comment=params.size() == 2
+		std::string	strNodePublic=params[0u].asString();
+		std::string strComment=params.size() == 2
 			? ""
 			: params[1u].asString();
 
 		NewcoinAddress	nodePublic;
 
-		if(nodePublic.setNodePublic(pubKey))
+		if(nodePublic.setNodePublic(strNodePublic))
 		{
-			theApp->getUNL().addNode(nodePublic, comment);
+			theApp->getUNL().addNode(nodePublic, strComment);
 
 			return "adding node";
 		}
@@ -527,8 +527,26 @@ Json::Value RPCServer::doUnlDefault(Json::Value& params) {
 	return "not implemented";
 }
 
+// unl_delete <hanko>
 Json::Value RPCServer::doUnlDelete(Json::Value& params) {
-	return "not implemented";
+	if(params.size()==1)
+	{
+		std::string	strHanko=params[0u].asString();
+
+		NewcoinAddress	hanko;
+
+		if(hanko.setHanko(strHanko))
+		{
+			theApp->getUNL().removeNode(hanko);
+
+			return "removing node";
+		}
+		else
+		{
+			return "invalid hanko";
+		}
+	}
+	else return "invalid params";
 }
 
 Json::Value RPCServer::doUnlFetch(Json::Value& params) {
