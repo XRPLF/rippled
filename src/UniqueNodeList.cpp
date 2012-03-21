@@ -40,6 +40,15 @@ void UniqueNodeList::removeNode(NewcoinAddress hanko)
 	db->executeSQL(strSql.c_str());
 }
 
+void UniqueNodeList::reset()
+{
+	Database* db=theApp->getWalletDB()->getDB();
+
+	std::string strSql		= "DELETE FROM TrustedNodes";
+	ScopedLock sl(theApp->getWalletDB()->getDBLock());
+	db->executeSQL(strSql.c_str());
+}
+
 // 0- we don't care, 1- we care and is valid, 2-invalid signature
 #if 0
 int UniqueNodeList::checkValid(newcoin::Validation& valid)

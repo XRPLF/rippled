@@ -557,8 +557,14 @@ Json::Value RPCServer::doUnlList(Json::Value& params) {
 	return theApp->getUNL().getUnlJson();
 }
 
+// unl_reset
 Json::Value RPCServer::doUnlReset(Json::Value& params) {
-	return "not implemented";
+	if(!params.size())
+	{
+		theApp->getUNL().reset();
+		return "removing nodes";
+	}
+	else return "invalid params";
 }
 
 Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params)
