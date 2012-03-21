@@ -1,6 +1,8 @@
 #ifndef __SERIALIZEDOBJECT__
 #define __SERIALIZEDOBJECT__
 
+#include <vector>
+
 #include <boost/ptr_container/ptr_vector.hpp>
 
 #include "SerializedTypes.h"
@@ -18,22 +20,16 @@ struct SOElement
 	int e_flags;
 };
 
-struct SOType
-{ // A type of serialized object
-	const char *name;
-	std::list<SOElement> elements;
-};
-
 class STUObject : public SerializedType
 {
 protected:
-	SOType *type;
 	boost::ptr_vector<SerializedType> data;
+	std::vector<SOElement*> type;
 
 public:
-	STUObject(const char *n=NULL) : SerializedType(n), type(NULL) { ; }
-	STUObject(SOType *t) : type(t) { ; }
-	STUObject(SOType *t, SerializerIterator& u);
+	STUObject(const char *n=NULL) : SerializedType(n) { ; }
+	STUObject(SOElement *t, const char *n=NULL);
+	STUObject(SOElement *t, SerializerIterator& u, const char *n=NULL);
 	virtual ~STUObject() { ; }
 
 	int getLength() const;
