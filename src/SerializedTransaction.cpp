@@ -10,38 +10,7 @@ SerializedTransaction::SerializedTransaction(TransactionType type)
 	mMiddleTxn.giveObject(new STVariableLength("Signature")); // signature
 	mMiddleTxn.giveObject(new STUInt8("Type", static_cast<unsigned char>(type)));
 
-	SOElement* elem=mFormat->elements;
-	while(elem->e_id!=STI_DONE)
-	{
-		if( (elem->e_type==SOE_IFFLAG) || (elem->e_type==SOE_IFNFLAG) )
-			mInnerTxn.giveObject(new STUObject(elem->e_name));
-		else switch(elem->e_id)
-		{
-			case STI_UINT16:
-				mInnerTxn.giveObject(new STUInt16(elem->e_name));
-				break;
-			case STI_UINT32:
-				mInnerTxn.giveObject(new STUInt32(elem->e_name));
-				break;
-			case STI_UINT64:
-				mInnerTxn.giveObject(new STUInt64(elem->e_name));
-			case STI_HASH160:
-			case STI_HASH256:
-			case STI_VL:
-				mInnerTxn.giveObject(new STVariableLength(elem->e_name));
-				break;
-			case STI_TL:
-				mInnerTxn.giveObject(new STTaggedList(elem->e_name));
-				break;
-#if 0
-			case STI_ACCOUNT: // CHECKME: Should an account be variable length?
-				mInnerTxn.giveObject(new STVariableLength(elem->e_name));
-				break;
-#endif
-			default: throw(std::runtime_error("invalid transaction element"));
-		}
-		elem++;
-	}
+	mInnerTxn=STUObject(mFormat->elements, "InnerTransaction");
 }
 
 SerializedTransaction::SerializedTransaction(SerializerIterator& sit, int length)
@@ -57,9 +26,13 @@ SerializedTransaction::SerializedTransaction(SerializerIterator& sit, int length
 
 	mMiddleTxn.giveObject(new STUInt32("Magic", TransactionMagic));
 	mMiddleTxn.giveObject(new STVariableLength("Signature", sit.getVL()));
-	mMiddleTxn.giveObject(new STUInt32("Type", sit.get32()));
 
-	// WRITEME
+	int type=sit.get32();
+	mMiddleTxn.giveObject(new STUInt32("Type", type));
+	mFormat=getFormat(static_cast<TransactionType>(type));
+	if(!mFormat) throw(std::runtime_error("Transaction has invalid type"));
+
+	mInnerTxn=STUObject(mFormat->elements, sit, "InnerTransaction");
 }
 
 int SerializedTransaction::getLength() const
