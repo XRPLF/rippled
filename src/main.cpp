@@ -25,19 +25,22 @@ void printHelp()
 	cout << "options: " << endl;
 	cout << "     -" << endl;
 	cout << "commands: " << endl;
-	cout << "     createfamily [<key>]" << endl;
 	cout << "     accountinfo <family>:<key>" << endl;
-	cout << "     newaccount <family> [<name>]" << endl;
-	cout << "     lock <family>" << endl;
-	cout << "     unlock <passphrase>" << endl;
-	cout << "     familyinfo" << endl;
 	cout << "     connect <ip> [<port>]" << endl;
+	cout << "     createfamily [<key>]" << endl;
+	cout << "     familyinfo" << endl;
+	cout << "     ledger" << endl;
+	cout << "     lock <family>" << endl;
+	cout << "     newaccount <family> [<name>]" << endl;
 	cout << "     peers" << endl;
 	cout << "     sendto <destination> <amount> [<tag>]" << endl;
-	cout << "     tx" << endl;
-	cout << "     ledger" << endl;
 	cout << "     stop" << endl;
-
+	cout << "     tx" << endl;
+	cout << "     unl_add <public> [<comment>]" << endl;
+	cout << "     unl_delete <hanko>" << endl;
+	cout << "     unl_list" << endl;
+	cout << "     unl_reset" << endl;
+	cout << "     unlock <passphrase>" << endl;
 }
 
 int parseCommandline(int argc, char* argv[])
