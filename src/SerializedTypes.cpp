@@ -20,9 +20,9 @@ std::string SerializedType::getFullText() const
 	return ret;
 }
 
-STUInt8* STUInt8::construct(SerializerIterator& u)
+STUInt8* STUInt8::construct(SerializerIterator& u, const char *name)
 {
-	return new STUInt8(u.get8());
+	return new STUInt8(name, u.get8());
 }
 
 std::string STUInt8::getText() const
@@ -30,9 +30,9 @@ std::string STUInt8::getText() const
 	return boost::lexical_cast<std::string>(value);
 }
 
-STUInt16* STUInt16::construct(SerializerIterator& u)
+STUInt16* STUInt16::construct(SerializerIterator& u, const char *name)
 {
-	return new STUInt16(u.get16());
+	return new STUInt16(name, u.get16());
 }
 
 std::string STUInt16::getText() const
@@ -40,9 +40,9 @@ std::string STUInt16::getText() const
 	return boost::lexical_cast<std::string>(value);
 }
 
-STUInt32* STUInt32::construct(SerializerIterator& u)
+STUInt32* STUInt32::construct(SerializerIterator& u, const char *name)
 {
-	return new STUInt32(u.get32());
+	return new STUInt32(name, u.get32());
 }
 
 std::string STUInt32::getText() const
@@ -50,9 +50,9 @@ std::string STUInt32::getText() const
 	return boost::lexical_cast<std::string>(value);
 }
 
-STUInt64* STUInt64::construct(SerializerIterator& u)
+STUInt64* STUInt64::construct(SerializerIterator& u, const char *name)
 {
-	return new STUInt64(u.get64());
+	return new STUInt64(name, u.get64());
 }
 
 std::string STUInt64::getText() const
@@ -60,22 +60,22 @@ std::string STUInt64::getText() const
 	return boost::lexical_cast<std::string>(value);
 }
 
-STUHash160* STUHash160::construct(SerializerIterator& u)
+STHash160* STHash160::construct(SerializerIterator& u, const char *name)
 {
-	return new STUHash160(u.get160());
+	return new STHash160(name, u.get160());
 }
 
-std::string STUHash160::getText() const
+std::string STHash160::getText() const
 {
 	return value.GetHex();
 }
 
-STUHash256* STUHash256::construct(SerializerIterator& u)
+STHash256* STHash256::construct(SerializerIterator& u, const char *name)
 {
-	return new STUHash256(u.get256());
+	return new STHash256(name, u.get256());
 }
 
-std::string STUHash256::getText() const
+std::string STHash256::getText() const
 {
 	return value.GetHex();
 }
@@ -94,7 +94,7 @@ std::string STVariableLength::getText() const
 	return hex(value);
 }
 
-STVariableLength* STVariableLength::construct(SerializerIterator& u)
+STVariableLength* STVariableLength::construct(SerializerIterator& u, const char *name)
 {
 	return new STVariableLength(u.getVL());
 }
@@ -116,60 +116,15 @@ std::string STTaggedList::getText() const
 	return ret;
 }
 
-STTaggedList* STTaggedList::construct(SerializerIterator& u)
+STTaggedList* STTaggedList::construct(SerializerIterator& u, const char *name)
 {
-	return new STTaggedList(u.getTaggedList());
+	return new STTaggedList(name, u.getTaggedList());
 }
 
 int STTaggedList::getLength() const
 {
 	int ret=Serializer::getTaggedListLength(value);
-	if(ret<0) throw(0);
+	if(ret<0) throw(std::overflow_error("bad TL length"));
 	return ret;
 }
 
-std::string STUObject::getFullText() const
-{
-	std::string ret;
-	if(name!=NULL)
-	{
-		ret=name;
-		ret+=" = {";
-	}
-	else ret="{";
-	for(boost::ptr_vector<SerializedType>::const_iterator it=data.begin(), end=data.end(); it!=end; ++it)
-		ret+=it->getFullText();
-	ret+="}";
-	return ret;
-}
-
-int STUObject::getLength() const
-{
-	int ret=0;
-	for(boost::ptr_vector<SerializedType>::const_iterator it=data.begin(), end=data.end(); it!=end; ++it)
-		ret+=it->getLength();
-	return ret;
-}
-
-void STUObject::add(Serializer& s) const
-{
-	for(boost::ptr_vector<SerializedType>::const_iterator it=data.begin(), end=data.end(); it!=end; ++it)
-		it->add(s);
-}
-
-std::string STUObject::getText() const
-{
-	std::string ret="{";
-	bool first=false;
-	for(boost::ptr_vector<SerializedType>::const_iterator it=data.begin(), end=data.end(); it!=end; ++it)
-	{
-		if(!first)
-		{
-			ret+=", ";
-			first=false;
-		}
-		ret+=it->getText();
-	}
-	ret+="}";
-	return ret;
-}
