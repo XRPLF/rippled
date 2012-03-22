@@ -20,7 +20,7 @@ struct TransactionFormat
 	SOElement elements[16];
 };
 
-const int32 TransactionMagic=0x54583000;
+const int32 TransactionMagic=0x54584E00;
 const int TransactionMinLen=32;
 const int TransactionMaxLen=1048576;
 
