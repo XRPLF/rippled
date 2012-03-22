@@ -10,7 +10,7 @@ SerializedTransaction::SerializedTransaction(TransactionType type)
 	mMiddleTxn.giveObject(new STVariableLength("Signature")); // signature
 	mMiddleTxn.giveObject(new STUInt8("Type", static_cast<unsigned char>(type)));
 
-	mInnerTxn=STUObject(mFormat->elements, "InnerTransaction");
+	mInnerTxn=STObject(mFormat->elements, "InnerTransaction");
 }
 
 SerializedTransaction::SerializedTransaction(SerializerIterator& sit, int length)
@@ -32,7 +32,7 @@ SerializedTransaction::SerializedTransaction(SerializerIterator& sit, int length
 	mFormat=getFormat(static_cast<TransactionType>(type));
 	if(!mFormat) throw(std::runtime_error("Transaction has invalid type"));
 
-	mInnerTxn=STUObject(mFormat->elements, sit, "InnerTransaction");
+	mInnerTxn=STObject(mFormat->elements, sit, "InnerTransaction");
 }
 
 int SerializedTransaction::getLength() const
@@ -41,8 +41,10 @@ int SerializedTransaction::getLength() const
 }
 
 std::string SerializedTransaction::getFullText() const
-{ // WRITEME: Add transaction ID
-	std::string ret="{";
+{
+	std::string ret="\"";
+	ret+=getTransactionID().GetHex();
+	ret+="\" = {";
 	ret+=mSignature.getFullText();
 	ret+=mMiddleTxn.getFullText();
 	ret+=mInnerTxn.getFullText();
@@ -56,9 +58,57 @@ std::string SerializedTransaction::getText() const
 	ret+=mSignature.getText();
 	ret+=mMiddleTxn.getText();
 	ret+=mInnerTxn.getText();
+	ret+="}";
 	return ret;
 }
 
-void SerializedTransaction::add(Serializer& s) const
+int SerializedTransaction::getTransaction(Serializer& s, bool include_length) const
 {
+	int l=getLength();
+	if(include_length) s.add32(l);
+	mSignature.add(s);
+	mMiddleTxn.add(s);
+	mInnerTxn.add(s);
+	return l;
+}
+
+uint256 SerializedTransaction::getSigningHash() const
+{
+	Serializer s;
+	mMiddleTxn.add(s);
+	mInnerTxn.add(s);
+	return s.getSHA512Half();
+}
+
+uint256 SerializedTransaction::getTransactionID() const
+{ // perhaps we should cache this
+	Serializer s;
+	mSignature.add(s);
+	mMiddleTxn.add(s);
+	mInnerTxn.add(s);
+	return s.getSHA512Half();
+}
+
+std::vector<unsigned char> SerializedTransaction::getSignature() const
+{
+	return mSignature.getValue();
+}
+
+void SerializedTransaction::setSignature(const std::vector<unsigned char>& sig)
+{
+	mSignature.setValue(sig);
+}
+
+uint32 SerializedTransaction::getVersion() const
+{
+	const STUInt32* v=dynamic_cast<const STUInt32*>(mMiddleTxn.peekAtP(0));
+	if(!v) throw(std::runtime_error("corrupt transaction"));
+	return v->getValue();
+}
+
+void SerializedTransaction::setVersion(uint32 ver)
+{
+	STUInt32* v=dynamic_cast<STUInt32*>(mMiddleTxn.getAtP(0));
+	if(!v) throw(std::runtime_error("corrupt transaction"));
+	v->setValue(ver);
 }
