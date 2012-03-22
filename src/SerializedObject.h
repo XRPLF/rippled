@@ -20,21 +20,21 @@ struct SOElement
 	int e_flags;
 };
 
-class STUObject : public SerializedType
+class STObject : public SerializedType
 {
 protected:
 	boost::ptr_vector<SerializedType> data;
 	std::vector<SOElement*> type;
 
 public:
-	STUObject(const char *n=NULL) : SerializedType(n) { ; }
-	STUObject(SOElement *t, const char *n=NULL);
-	STUObject(SOElement *t, SerializerIterator& u, const char *n=NULL);
-	virtual ~STUObject() { ; }
+	STObject(const char *n=NULL) : SerializedType(n) { ; }
+	STObject(SOElement *t, const char *n=NULL);
+	STObject(SOElement *t, SerializerIterator& u, const char *n=NULL);
+	virtual ~STObject() { ; }
 
 	int getLength() const;
 	SerializedTypeID getType() const { return STI_OBJECT; }
-	STUObject* duplicate() const { return new STUObject(*this); }
+	STObject* duplicate() const { return new STObject(*this); }
 
 	void add(Serializer& s) const;
 	std::string getFullText() const;
@@ -48,6 +48,8 @@ public:
 	int getCount() const { return data.size(); }
 	const SerializedType& peekAt(int offset) const { return data[offset]; }
 	SerializedType& getAt(int offset) { return data[offset]; }
+	const SerializedType* peekAtP(int offset) const { return &(data[offset]); }
+	SerializedType* getAtP(int offset) { return &(data[offset]); }
 };
 
 

@@ -1,13 +1,13 @@
 
 #include "SerializedObject.h"
 
-STUObject::STUObject(SOElement* elem, const char *name) : SerializedType(name)
+STObject::STObject(SOElement* elem, const char *name) : SerializedType(name)
 {
 	while(elem->e_id!=STI_DONE)
 	{
 		type.push_back(elem);
 		if( (elem->e_type==SOE_IFFLAG) || (elem->e_type==SOE_IFNFLAG) )
-			giveObject(new STUObject(elem->e_name));
+			giveObject(new STObject(elem->e_name));
 		else switch(elem->e_id)
 		{
 			case STI_UINT16:
@@ -42,7 +42,7 @@ STUObject::STUObject(SOElement* elem, const char *name) : SerializedType(name)
 	}
 }
 
-STUObject::STUObject(SOElement* elem, SerializerIterator& sit, const char *name) : SerializedType(name)
+STObject::STObject(SOElement* elem, SerializerIterator& sit, const char *name) : SerializedType(name)
 {
 	int flags=-1;
 	while(elem->e_id!=STI_DONE)
@@ -103,7 +103,7 @@ STUObject::STUObject(SOElement* elem, SerializerIterator& sit, const char *name)
 	}
 }
 
-std::string STUObject::getFullText() const
+std::string STObject::getFullText() const
 {
 	std::string ret;
 	if(name!=NULL)
@@ -118,7 +118,7 @@ std::string STUObject::getFullText() const
 	return ret;
 }
 
-int STUObject::getLength() const
+int STObject::getLength() const
 {
 	int ret=0;
 	for(boost::ptr_vector<SerializedType>::const_iterator it=data.begin(), end=data.end(); it!=end; ++it)
@@ -126,13 +126,13 @@ int STUObject::getLength() const
 	return ret;
 }
 
-void STUObject::add(Serializer& s) const
+void STObject::add(Serializer& s) const
 {
 	for(boost::ptr_vector<SerializedType>::const_iterator it=data.begin(), end=data.end(); it!=end; ++it)
 		it->add(s);
 }
 
-std::string STUObject::getText() const
+std::string STObject::getText() const
 {
 	std::string ret="{";
 	bool first=false;

@@ -7,25 +7,25 @@
 #include "SerializedObject.h"
 #include "TransactionFormats.h"
 
-class SerializedTransaction : public STUObject
+class SerializedTransaction : public STObject
 {
 protected:
 	TransactionType type;
 	STVariableLength mSignature;
-	STUObject mMiddleTxn, mInnerTxn;
+	STObject mMiddleTxn, mInnerTxn;
 	TransactionFormat* mFormat;
 
 public:
 	SerializedTransaction(SerializerIterator&, int length);
 	SerializedTransaction(TransactionType type);
 
-	// STUObject functions
+	// STObject functions
 	int getLength() const;
 	SerializedTypeID getType() const { return STI_TRANSACTION; }
 	SerializedTransaction* duplicate() const { return new SerializedTransaction(*this); }
 	std::string getFullText() const;
 	std::string getText() const;
-	void add(Serializer& s) const;
+	void add(Serializer& s) const { getTransaction(s, true); }
 
 	// outer transaction functions / signature functions
 	std::vector<unsigned char> getSignature() const;
@@ -57,7 +57,8 @@ public:
 	void makeITFieldPresent(int index);
 
 	// whole transaction functions
-	int getTransaction(Serializer& s, bool include_length);
+	int getTransaction(Serializer& s, bool include_length) const;
+	uint256 getTransactionID() const;
 };
 
 #endif
