@@ -35,7 +35,7 @@ public:
 	// middle transaction functions
 	uint32 getVersion() const;
 	void setVersion(uint32);
-	int getTransactionType() const;
+	TransactionType getTxnType() const { return type; }
 	uint64 getTransactionFee() const;
 	void setTransactionFee(uint64);
 

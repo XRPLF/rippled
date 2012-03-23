@@ -7,8 +7,9 @@ SerializedTransaction::SerializedTransaction(TransactionType type)
 	if(mFormat==NULL) throw(std::runtime_error("invalid transaction type"));
 
 	mMiddleTxn.giveObject(new STUInt32("Magic", TransactionMagic));
-	mMiddleTxn.giveObject(new STVariableLength("Signature")); // signature
+	mMiddleTxn.giveObject(new STVariableLength("SigningAccount"));
 	mMiddleTxn.giveObject(new STUInt8("Type", static_cast<unsigned char>(type)));
+	mMiddleTxn.giveObject(new STUInt64("Fee"));
 
 	mInnerTxn=STObject(mFormat->elements, "InnerTransaction");
 }
@@ -25,12 +26,13 @@ SerializedTransaction::SerializedTransaction(SerializerIterator& sit, int length
 		throw(std::runtime_error("Transaction has invalid magic"));
 
 	mMiddleTxn.giveObject(new STUInt32("Magic", TransactionMagic));
-	mMiddleTxn.giveObject(new STVariableLength("Signature", sit.getVL()));
+	mMiddleTxn.giveObject(new STVariableLength("SigningAccount", sit.getVL()));
 
 	int type=sit.get32();
 	mMiddleTxn.giveObject(new STUInt32("Type", type));
 	mFormat=getFormat(static_cast<TransactionType>(type));
 	if(!mFormat) throw(std::runtime_error("Transaction has invalid type"));
+	mMiddleTxn.giveObject(new STUInt64("Fee", sit.get64()));
 
 	mInnerTxn=STObject(mFormat->elements, sit, "InnerTransaction");
 }
@@ -111,4 +113,18 @@ void SerializedTransaction::setVersion(uint32 ver)
 	STUInt32* v=dynamic_cast<STUInt32*>(mMiddleTxn.getAtP(0));
 	if(!v) throw(std::runtime_error("corrupt transaction"));
 	v->setValue(ver);
+}
+
+uint64 SerializedTransaction::getTransactionFee() const
+{
+	const STUInt64* v=dynamic_cast<const STUInt64*>(mMiddleTxn.peekAtP(3));
+	if(!v) throw(std::runtime_error("corrupt transaction"));
+	return v->getValue();
+}
+
+void SerializedTransaction::setTransactionFee(uint64 fee)
+{
+	STUInt64* v=dynamic_cast<STUInt64*>(mMiddleTxn.getAtP(3));
+	if(!v) throw(std::runtime_error("corrupt transaction"));
+	v->setValue(fee);
 }
