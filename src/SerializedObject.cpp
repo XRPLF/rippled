@@ -1,53 +1,100 @@
 
 #include "SerializedObject.h"
 
-STObject::STObject(SOElement* elem, const char *name) : SerializedType(name)
+SerializedType* STObject::makeDefaultObject(SerializedTypeID id, const char *name)
+{
+	switch(id)
+	{
+		case STI_UINT16:
+			return new STUInt16(name);
+
+		case STI_UINT32:
+			return new STUInt32(name);
+
+		case STI_UINT64:
+			return new STUInt64(name);
+
+		case STI_HASH160:
+			return new STHash160(name);
+
+		case STI_HASH256:
+			return new STHash256(name);
+
+		case STI_VL:
+			return new STVariableLength(name);
+
+		case STI_TL:
+			return new STTaggedList(name);
+
+	#if 0
+		case STI_ACCOUNT: // CHECKME: Should an account be variable length?
+			return new STVariableLength(name);
+	#endif
+
+		default:
+			return NULL;
+	}
+}
+
+SerializedType* STObject::makeDeserializedObject(SerializedTypeID id, const char *name, SerializerIterator& sit)
+{
+	switch(id)
+	{
+		case STI_UINT16:
+			return STUInt16::construct(sit, name);
+
+		case STI_UINT32:
+			return STUInt32::construct(sit, name);
+
+		case STI_UINT64:
+			return STUInt64::construct(sit, name);
+
+		case STI_HASH160:
+			return STHash160::construct(sit, name);
+
+		case STI_HASH256:
+			return STHash256::construct(sit, name);
+
+		case STI_VL:
+			return STVariableLength::construct(sit, name);
+
+		case STI_TL:
+			return STTaggedList::construct(sit, name);
+
+#if 0
+		case STI_ACCOUNT: // CHECKME: Should an account be variable length?
+			return STVariableLength::construct(sit, name);
+
+#endif
+		default:
+			return NULL;
+	}
+}
+
+STObject::STObject(SOElement* elem, const char *name) : SerializedType(name), mFlagIdx(-1)
 {
 	while(elem->e_id!=STI_DONE)
 	{
-		type.push_back(elem);
+		if(elem->e_type==SOE_FLAGS) mFlagIdx=mType.size();
+		mType.push_back(elem);
 		if( (elem->e_type==SOE_IFFLAG) || (elem->e_type==SOE_IFNFLAG) )
 			giveObject(new STObject(elem->e_name));
-		else switch(elem->e_id)
+		else
 		{
-			case STI_UINT16:
-				giveObject(new STUInt16(elem->e_name));
-				break;
-			case STI_UINT32:
-				giveObject(new STUInt32(elem->e_name));
-				break;
-			case STI_UINT64:
-				giveObject(new STUInt64(elem->e_name));
-				break;
-			case STI_HASH160:
-				giveObject(new STHash160(elem->e_name));
-				break;
-			case STI_HASH256:
-				giveObject(new STHash256(elem->e_name));
-				break;
-			case STI_VL:
-				giveObject(new STVariableLength(elem->e_name));
-				break;
-			case STI_TL:
-				giveObject(new STTaggedList(elem->e_name));
-				break;
-#if 0
-			case STI_ACCOUNT: // CHECKME: Should an account be variable length?
-				giveObject(new STVariableLength(elem->e_name));
-				break;
-#endif
-			default: throw(std::runtime_error("invalid transaction element"));
+			SerializedType* t=makeDefaultObject(elem->e_id, elem->e_name);
+			if(!t) throw(std::runtime_error("invalid transaction element"));
+			giveObject(t);
 		}
 		elem++;
 	}
 }
 
-STObject::STObject(SOElement* elem, SerializerIterator& sit, const char *name) : SerializedType(name)
+STObject::STObject(SOElement* elem, SerializerIterator& sit, const char *name) : SerializedType(name), mFlagIdx(-1)
 {
 	int flags=-1;
 	while(elem->e_id!=STI_DONE)
 	{
-		type.push_back(elem);
+		mType.push_back(elem);
 		bool done=false;
 		if(elem->e_type==SOE_IFFLAG)
 		{
@@ -63,41 +110,14 @@ STObject::STObject(SOElement* elem, SerializerIterator& sit, const char *name) :
 		{
 			assert(elem->e_id==STI_UINT16);
 			flags=sit.get16();
-			giveObject(new STUInt16(elem->e_name, flags));
+			mFlagIdx=giveObject(new STUInt16(elem->e_name, flags));
 			done=true;
 		}
 		if(!done)
 		{
-			switch(elem->e_id)
-			{
-				case STI_UINT16:
-					giveObject(STUInt16::construct(sit, elem->e_name));
-					break;
-				case STI_UINT32:
-					giveObject(STUInt32::construct(sit, elem->e_name));
-					break;
-				case STI_UINT64:
-					giveObject(STUInt64::construct(sit, elem->e_name));
-					break;
-				case STI_HASH160:
-					giveObject(STHash160::construct(sit, elem->e_name));
-					break;
-				case STI_HASH256:
-					giveObject(STHash256::construct(sit, elem->e_name));
-					break;
-				case STI_VL:
-					giveObject(STVariableLength::construct(sit, elem->e_name));
-					break;
-				case STI_TL:
-					giveObject(STTaggedList::construct(sit, elem->e_name));
-					break;
-	#if 0
-				case STI_ACCOUNT: // CHECKME: Should an account be variable length?
-					giveObject(STVariableLength::construct(sit, elem->e_name));
-					break;
-	#endif
-				default: throw(std::runtime_error("invalid transaction element"));
-			}
+			SerializedType* t=makeDeserializedObject(elem->e_id, elem->e_name, sit);
+			if(!t) throw(std::runtime_error("invalid transaction element"));
+			giveObject(t);
 		}
 		elem++;
 	}
@@ -112,7 +132,7 @@ std::string STObject::getFullText() const
 		ret+=" = {";
 	}
 	else ret="{";
-	for(boost::ptr_vector<SerializedType>::const_iterator it=data.begin(), end=data.end(); it!=end; ++it)
+	for(boost::ptr_vector<SerializedType>::const_iterator it=mData.begin(), end=mData.end(); it!=end; ++it)
 		ret+=it->getFullText();
 	ret+="}";
 	return ret;
@@ -121,14 +141,14 @@ std::string STObject::getFullText() const
 int STObject::getLength() const
 {
 	int ret=0;
-	for(boost::ptr_vector<SerializedType>::const_iterator it=data.begin(), end=data.end(); it!=end; ++it)
+	for(boost::ptr_vector<SerializedType>::const_iterator it=mData.begin(), end=mData.end(); it!=end; ++it)
 		ret+=it->getLength();
 	return ret;
 }
 
 void STObject::add(Serializer& s) const
 {
-	for(boost::ptr_vector<SerializedType>::const_iterator it=data.begin(), end=data.end(); it!=end; ++it)
+	for(boost::ptr_vector<SerializedType>::const_iterator it=mData.begin(), end=mData.end(); it!=end; ++it)
 		it->add(s);
 }
 
@@ -136,7 +156,7 @@ std::string STObject::getText() const
 {
 	std::string ret="{";
 	bool first=false;
-	for(boost::ptr_vector<SerializedType>::const_iterator it=data.begin(), end=data.end(); it!=end; ++it)
+	for(boost::ptr_vector<SerializedType>::const_iterator it=mData.begin(), end=mData.end(); it!=end; ++it)
 	{
 		if(!first)
 		{
@@ -147,4 +167,91 @@ std::string STObject::getText() const
 	}
 	ret+="}";
 	return ret;
+}
+
+int STObject::getFieldIndex(SOE_Field field) const
+{
+	int i=0;
+	for(std::vector<SOElement*>::const_iterator it=mType.begin(), end=mType.end(); it!=end; ++it, ++i)
+		if((*it)->e_field==field) return i;
+	return -1;
+}
+
+const SerializedType& STObject::peekAtField(SOE_Field field) const
+{
+	int index=getFieldIndex(field);
+	if(index==-1) throw std::runtime_error("Field not found");
+	return peekAtIndex(index);
+}
+
+SerializedType& STObject::getField(SOE_Field field)
+{
+	int index=getFieldIndex(field);
+	if(index==-1) throw std::runtime_error("Field not found");
+	return getIndex(index);
+}
+
+const SerializedType* STObject::peekAtPField(SOE_Field field)
+{
+	int index=getFieldIndex(field);
+	if(index==-1) return NULL;
+	return peekAtPIndex(index);
+}
+
+SerializedType* STObject::getPField(SOE_Field field)
+{
+	int index=getFieldIndex(field);
+	if(index==-1) return NULL;
+	return getPIndex(index);
+}
+
+bool STObject::isFieldPresent(SOE_Field field) const
+{
+	int index=getFieldIndex(field);
+	if(index==-1) return false;
+	return peekAtIndex(field).getType()==STI_OBJECT;
+}
+
+bool STObject::setFlag(int f)
+{
+	if(mFlagIdx<0) return false;
+	STUInt16* t=dynamic_cast<STUInt16*>(getPIndex(mFlagIdx));
+	assert(t);
+	t->setValue(t->getValue() | f);
+	return true;
+}
+
+bool STObject::clearFlag(int f)
+{
+	if(mFlagIdx<0) return false;
+	STUInt16* t=dynamic_cast<STUInt16*>(getPIndex(mFlagIdx));
+	assert(t);
+	t->setValue(t->getValue() & ~f);
+	return true;
+}
+
+int STObject::getFlag(void) const
+{
+	if(mFlagIdx<0) return 0;
+	const STUInt16* t=dynamic_cast<const STUInt16*>(peekAtPIndex(mFlagIdx));
+	assert(t);
+	return t->getValue();
+}
+
+void STObject::makeFieldPresent(SOE_Field field)
+{
+	int index=getFieldIndex(field);
+	if(index==-1) throw std::runtime_error("Field not found");
+	if(peekAtIndex(field).getType()!=STI_OBJECT) return;
+	mData.replace(index, makeDefaultObject(mType[index]->e_id, mType[index]->e_name));
+	setFlag(mType[index]->e_flags);
+}
+
+void STObject::makeFieldAbsent(SOE_Field field)
+{
+	int index=getFieldIndex(field);
+	if(index==-1) throw std::runtime_error("Field not found");
+	if(peekAtIndex(field).getType()==STI_OBJECT) return;
+	mData.replace(index, new STObject(mType[index]->e_name));
+	clearFlag(mType[index]->e_flags);
 }

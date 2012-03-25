@@ -103,28 +103,64 @@ void SerializedTransaction::setSignature(const std::vector<unsigned char>& sig)
 
 uint32 SerializedTransaction::getVersion() const
 {
-	const STUInt32* v=dynamic_cast<const STUInt32*>(mMiddleTxn.peekAtP(0));
+	const STUInt32* v=dynamic_cast<const STUInt32*>(mMiddleTxn.peekAtPIndex(0));
 	if(!v) throw(std::runtime_error("corrupt transaction"));
 	return v->getValue();
 }
 
 void SerializedTransaction::setVersion(uint32 ver)
 {
-	STUInt32* v=dynamic_cast<STUInt32*>(mMiddleTxn.getAtP(0));
+	STUInt32* v=dynamic_cast<STUInt32*>(mMiddleTxn.getPIndex(0));
 	if(!v) throw(std::runtime_error("corrupt transaction"));
 	v->setValue(ver);
 }
 
 uint64 SerializedTransaction::getTransactionFee() const
 {
-	const STUInt64* v=dynamic_cast<const STUInt64*>(mMiddleTxn.peekAtP(3));
+	const STUInt64* v=dynamic_cast<const STUInt64*>(mMiddleTxn.peekAtPIndex(3));
 	if(!v) throw(std::runtime_error("corrupt transaction"));
 	return v->getValue();
 }
 
 void SerializedTransaction::setTransactionFee(uint64 fee)
 {
-	STUInt64* v=dynamic_cast<STUInt64*>(mMiddleTxn.getAtP(3));
+	STUInt64* v=dynamic_cast<STUInt64*>(mMiddleTxn.getPIndex(3));
 	if(!v) throw(std::runtime_error("corrupt transaction"));
 	v->setValue(fee);
 }
+
+int SerializedTransaction::getITFieldIndex(SOE_Field field) const
+{
+	return mInnerTxn.getFieldIndex(field);
+}
+
+int SerializedTransaction::getITFieldCount() const
+{
+	return mInnerTxn.getCount();
+}
+
+bool SerializedTransaction::getITFieldPresent(SOE_Field field) const
+{
+	return mInnerTxn.isFieldPresent(field);
+}
+
+const SerializedType& SerializedTransaction::peekITField(SOE_Field field)
+{
+	return mInnerTxn.peekAtField(field);
+}
+
+SerializedType& SerializedTransaction::getITField(SOE_Field field)
+{
+	return mInnerTxn.getField(field);
+}
+
+void SerializedTransaction::makeITFieldPresent(SOE_Field field)
+{
+	return mInnerTxn.makeFieldPresent(field);
+}
+
+void SerializedTransaction::makeITFieldAbsent(SOE_Field field)
+{
+	return mInnerTxn.makeFieldAbsent(field);
+}
+ 

@@ -49,12 +49,15 @@ public:
 	void setSequence(uint32);
 
 	// inner transaction field functions
-	int getITFieldIndex(const char *) const;
+	int getITFieldIndex(SOE_Field field) const;
 	int getITFieldCount() const;
-	bool getITFieldPresent(int index) const;
-	const SerializedType& peekITField(int index);
-	SerializedType& getITField(int index);
-	void makeITFieldPresent(int index);
+	const SerializedType& peekITField(SOE_Field field);
+	SerializedType& getITField(SOE_Field field);
+
+	// optional field functions
+	bool getITFieldPresent(SOE_Field field) const;
+	void makeITFieldPresent(SOE_Field field);
+	void makeITFieldAbsent(SOE_Field field);
 
 	// whole transaction functions
 	int getTransaction(Serializer& s, bool include_length) const;
