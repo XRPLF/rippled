@@ -78,9 +78,20 @@ public:
 
 	const SerializedType& peekAtField(SOE_Field field) const;
 	SerializedType& getField(SOE_Field field);
-	const SerializedType* peekAtPField(SOE_Field field);
+	const SerializedType* peekAtPField(SOE_Field field) const;
 	SerializedType* getPField(SOE_Field field);
 	const SOElement* getFieldType(SOE_Field field) const;
+
+	// these throw if the field type doesn't match, or return default values if the
+	// field is optional but not present
+	unsigned char getValueFieldU8(SOE_Field field) const;
+	uint16 getValueFieldU16(SOE_Field field) const;
+	uint32 getValueFieldU32(SOE_Field field) const;
+	uint64 getValueFieldU64(SOE_Field field) const;
+	uint160 getValueFieldH160(SOE_Field field) const;
+	uint256 getValueFieldH256(SOE_Field field) const;
+	std::vector<unsigned char> getValueFieldVL(SOE_Field field) const;
+	std::vector<TaggedListItem> getValueFieldTL(SOE_Field field) const;
 
 	bool isFieldPresent(SOE_Field field) const;
 	void makeFieldPresent(SOE_Field field);

@@ -191,7 +191,7 @@ SerializedType& STObject::getField(SOE_Field field)
 	return getIndex(index);
 }
 
-const SerializedType* STObject::peekAtPField(SOE_Field field)
+const SerializedType* STObject::peekAtPField(SOE_Field field) const
 {
 	int index=getFieldIndex(field);
 	if(index==-1) return NULL;
@@ -254,4 +254,92 @@ void STObject::makeFieldAbsent(SOE_Field field)
 	if(peekAtIndex(field).getType()==STI_OBJECT) return;
 	mData.replace(index, new STObject(mType[index]->e_name));
 	clearFlag(mType[index]->e_flags);
+}
+
+unsigned char STObject::getValueFieldU8(SOE_Field field) const
+{
+	const SerializedType* rf=peekAtPField(field);
+	if(!rf) throw std::runtime_error("Field not found");
+	SerializedTypeID id=rf->getType();
+	if(id==STI_OBJECT) return 0; // optional field not present
+	const STUInt8 *cf=dynamic_cast<const STUInt8 *>(rf);
+	if(!cf) throw std::runtime_error("Wrong field type");
+	return cf->getValue();
+}
+
+uint16 STObject::getValueFieldU16(SOE_Field field) const
+{
+	const SerializedType* rf=peekAtPField(field);
+	if(!rf) throw std::runtime_error("Field not found");
+	SerializedTypeID id=rf->getType();
+	if(id==STI_OBJECT) return 0; // optional field not present
+	const STUInt16 *cf=dynamic_cast<const STUInt16 *>(rf);
+	if(!cf) throw std::runtime_error("Wrong field type");
+	return cf->getValue();
+}
+
+uint32 STObject::getValueFieldU32(SOE_Field field) const
+{
+	const SerializedType* rf=peekAtPField(field);
+	if(!rf) throw std::runtime_error("Field not found");
+	SerializedTypeID id=rf->getType();
+	if(id==STI_OBJECT) return 0; // optional field not present
+	const STUInt32 *cf=dynamic_cast<const STUInt32 *>(rf);
+	if(!cf) throw std::runtime_error("Wrong field type");
+	return cf->getValue();
+}
+
+uint64 STObject::getValueFieldU64(SOE_Field field) const
+{
+	const SerializedType* rf=peekAtPField(field);
+	if(!rf) throw std::runtime_error("Field not found");
+	SerializedTypeID id=rf->getType();
+	if(id==STI_OBJECT) return 0; // optional field not present
+	const STUInt64 *cf=dynamic_cast<const STUInt64 *>(rf);
+	if(!cf) throw std::runtime_error("Wrong field type");
+	return cf->getValue();
+}
+
+uint160 STObject::getValueFieldH160(SOE_Field field) const
+{
+	const SerializedType* rf=peekAtPField(field);
+	if(!rf) throw std::runtime_error("Field not found");
+	SerializedTypeID id=rf->getType();
+	if(id==STI_OBJECT) return uint160(); // optional field not present
+	const STHash160 *cf=dynamic_cast<const STHash160 *>(rf);
+	if(!cf) throw std::runtime_error("Wrong field type");
+	return cf->getValue();
+}
+
+uint256 STObject::getValueFieldH256(SOE_Field field) const
+{
+	const SerializedType* rf=peekAtPField(field);
+	if(!rf) throw std::runtime_error("Field not found");
+	SerializedTypeID id=rf->getType();
+	if(id==STI_OBJECT) return uint256(); // optional field not present
+	const STHash256 *cf=dynamic_cast<const STHash256 *>(rf);
+	if(!cf) throw std::runtime_error("Wrong field type");
+	return cf->getValue();
+}
+
+std::vector<unsigned char> STObject::getValueFieldVL(SOE_Field field) const
+{
+	const SerializedType* rf=peekAtPField(field);
+	if(!rf) throw std::runtime_error("Field not found");
+	SerializedTypeID id=rf->getType();
+	if(id==STI_OBJECT) return std::vector<unsigned char>(); // optional field not present
+	const STVariableLength *cf=dynamic_cast<const STVariableLength *>(rf);
+	if(!cf) throw std::runtime_error("Wrong field type");
+	return cf->getValue();
+}
+
+std::vector<TaggedListItem> STObject::getValueFieldTL(SOE_Field field) const
+{
+	const SerializedType* rf=peekAtPField(field);
+	if(!rf) throw std::runtime_error("Field not found");
+	SerializedTypeID id=rf->getType();
+	if(id==STI_OBJECT) return std::vector<TaggedListItem>(); // optional field not present
+	const STTaggedList *cf=dynamic_cast<const STTaggedList *>(rf);
+	if(!cf) throw std::runtime_error("Wrong field type");
+	return cf->getValue();
 }
