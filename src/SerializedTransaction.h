@@ -38,6 +38,8 @@ public:
 	TransactionType getTxnType() const { return type; }
 	uint64 getTransactionFee() const;
 	void setTransactionFee(uint64);
+	std::vector<unsigned char> getSigningAccount() const;
+	void setSigningAccount(const std::vector<unsigned char>& s);
 
 	// inner transaction functions
 	uint16 getFlags() const;
@@ -53,6 +55,17 @@ public:
 	int getITFieldCount() const;
 	const SerializedType& peekITField(SOE_Field field);
 	SerializedType& getITField(SOE_Field field);
+
+	// inner transaction field value functions
+	unsigned char getITFieldU8(SOE_Field field) const { return mInnerTxn.getValueFieldU8(field); }
+	uint16 getITFieldU16(SOE_Field field) const { return mInnerTxn.getValueFieldU16(field); }
+	uint32 getITFieldU32(SOE_Field field) const { return mInnerTxn.getValueFieldU32(field); }
+	uint64 getITFieldU64(SOE_Field field) const { return mInnerTxn.getValueFieldU64(field); }
+	uint160 getITFieldH160(SOE_Field field) const { return mInnerTxn.getValueFieldH160(field); }
+	uint256 getITFieldH256(SOE_Field field) const { return mInnerTxn.getValueFieldH256(field); }
+	std::vector<unsigned char> getITFieldVL(SOE_Field field) const { return mInnerTxn.getValueFieldVL(field); }
+	std::vector<TaggedListItem> getITFieldTL(SOE_Field field) const { return mInnerTxn.getValueFieldTL(field); }
+
 
 	// optional field functions
 	bool getITFieldPresent(SOE_Field field) const;
