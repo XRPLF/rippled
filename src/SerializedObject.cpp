@@ -343,3 +343,115 @@ std::vector<TaggedListItem> STObject::getValueFieldTL(SOE_Field field) const
 	if(!cf) throw std::runtime_error("Wrong field type");
 	return cf->getValue();
 }
+
+void STObject::setValueFieldU8(SOE_Field field, unsigned char v)
+{
+	SerializedType* rf=getPField(field);
+	if(!rf) throw std::runtime_error("Field not found");
+	SerializedTypeID id=rf->getType();
+	if(id==STI_OBJECT)
+	{
+		makeFieldPresent(field);
+		rf=getPField(field);
+		id=rf->getType();
+	}
+	STUInt8* cf=dynamic_cast<STUInt8*>(rf);
+	if(!cf) throw(std::runtime_error("Wrong field type"));
+	cf->setValue(v);
+}
+
+void STObject::setValueFieldU16(SOE_Field field, uint16 v)
+{
+	SerializedType* rf=getPField(field);
+	if(!rf) throw std::runtime_error("Field not found");
+	SerializedTypeID id=rf->getType();
+	if(id==STI_OBJECT)
+	{
+		makeFieldPresent(field);
+		rf=getPField(field);
+		id=rf->getType();
+	}
+	STUInt16* cf=dynamic_cast<STUInt16*>(rf);
+	if(!cf) throw(std::runtime_error("Wrong field type"));
+	cf->setValue(v);
+}
+
+void STObject::setValueFieldU32(SOE_Field field, uint32 v)
+{
+	SerializedType* rf=getPField(field);
+	if(!rf) throw std::runtime_error("Field not found");
+	SerializedTypeID id=rf->getType();
+	if(id==STI_OBJECT)
+	{
+		makeFieldPresent(field);
+		rf=getPField(field);
+		id=rf->getType();
+	}
+	STUInt32* cf=dynamic_cast<STUInt32*>(rf);
+	if(!cf) throw(std::runtime_error("Wrong field type"));
+	cf->setValue(v);
+}
+
+void STObject::setValueFieldU64(SOE_Field field, uint64 v)
+{
+	SerializedType* rf=getPField(field);
+	if(!rf) throw std::runtime_error("Field not found");
+	SerializedTypeID id=rf->getType();
+	if(id==STI_OBJECT)
+	{
+		makeFieldPresent(field);
+		rf=getPField(field);
+		id=rf->getType();
+	}
+	STUInt64* cf=dynamic_cast<STUInt64*>(rf);
+	if(!cf) throw(std::runtime_error("Wrong field type"));
+	cf->setValue(v);
+}
+
+void STObject::setValueFieldH160(SOE_Field field, const uint160& v)
+{
+	SerializedType* rf=getPField(field);
+	if(!rf) throw std::runtime_error("Field not found");
+	SerializedTypeID id=rf->getType();
+	if(id==STI_OBJECT)
+	{
+		makeFieldPresent(field);
+		rf=getPField(field);
+		id=rf->getType();
+	}
+	STHash160* cf=dynamic_cast<STHash160*>(rf);
+	if(!cf) throw(std::runtime_error("Wrong field type"));
+	cf->setValue(v);
+}
+
+void STObject::setValueFieldVL(SOE_Field field, const std::vector<unsigned char>& v)
+{
+	SerializedType* rf=getPField(field);
+	if(!rf) throw std::runtime_error("Field not found");
+	SerializedTypeID id=rf->getType();
+	if(id==STI_OBJECT)
+	{
+		makeFieldPresent(field);
+		rf=getPField(field);
+		id=rf->getType();
+	}
+	STVariableLength* cf=dynamic_cast<STVariableLength*>(rf);
+	if(!cf) throw(std::runtime_error("Wrong field type"));
+	cf->setValue(v);
+}
+
+void STObject::setValueFieldTL(SOE_Field field, const std::vector<TaggedListItem>& v)
+{
+	SerializedType* rf=getPField(field);
+	if(!rf) throw std::runtime_error("Field not found");
+	SerializedTypeID id=rf->getType();
+	if(id==STI_OBJECT)
+	{
+		makeFieldPresent(field);
+		rf=getPField(field);
+		id=rf->getType();
+	}
+	STTaggedList* cf=dynamic_cast<STTaggedList*>(rf);
+	if(!cf) throw(std::runtime_error("Wrong field type"));
+	cf->setValue(v);
+}

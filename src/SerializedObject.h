@@ -93,6 +93,15 @@ public:
 	std::vector<unsigned char> getValueFieldVL(SOE_Field field) const;
 	std::vector<TaggedListItem> getValueFieldTL(SOE_Field field) const;
 
+	void setValueFieldU8(SOE_Field field, unsigned char);
+	void setValueFieldU16(SOE_Field field, uint16);
+	void setValueFieldU32(SOE_Field field, uint32);
+	void setValueFieldU64(SOE_Field field, uint64);
+	void setValueFieldH160(SOE_Field field, const uint160&);
+	void setValueFieldH256(SOE_Field field, const uint256&);
+	void setValueFieldVL(SOE_Field field, const std::vector<unsigned char>&);
+	void setValueFieldTL(SOE_Field field, const std::vector<TaggedListItem>&);
+
 	bool isFieldPresent(SOE_Field field) const;
 	void makeFieldPresent(SOE_Field field);
 	void makeFieldAbsent(SOE_Field field);

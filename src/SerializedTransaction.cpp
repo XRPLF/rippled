@@ -16,7 +16,8 @@ SerializedTransaction::SerializedTransaction(TransactionType type)
 
 SerializedTransaction::SerializedTransaction(SerializerIterator& sit, int length)
 {
-	if(length==0) length=sit.get32();
+	if(length==-1) length=sit.getBytesLeft();
+	else if(length==0) length=sit.get32();
 	if( (length<TransactionMinLen) || (length>TransactionMaxLen) )
 		throw(std::runtime_error("Transaction length invalid"));
 
