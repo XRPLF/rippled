@@ -8,6 +8,7 @@ SerializedTransaction::SerializedTransaction(TransactionType type)
 
 	mMiddleTxn.giveObject(new STUInt32("Magic", TransactionMagic));
 	mMiddleTxn.giveObject(new STVariableLength("SigningAccount"));
+	mMiddleTxn.giveObject(new STUInt32("Sequence"));
 	mMiddleTxn.giveObject(new STUInt8("Type", static_cast<unsigned char>(type)));
 	mMiddleTxn.giveObject(new STUInt64("Fee"));
 
@@ -28,6 +29,7 @@ SerializedTransaction::SerializedTransaction(SerializerIterator& sit, int length
 
 	mMiddleTxn.giveObject(new STUInt32("Magic", TransactionMagic));
 	mMiddleTxn.giveObject(new STVariableLength("SigningAccount", sit.getVL()));
+	mMiddleTxn.giveObject(new STUInt32("Sequence", sit.get32()));
 
 	int type=sit.get32();
 	mMiddleTxn.giveObject(new STUInt32("Type", type));
@@ -104,30 +106,44 @@ void SerializedTransaction::setSignature(const std::vector<unsigned char>& sig)
 
 uint32 SerializedTransaction::getVersion() const
 {
-	const STUInt32* v=dynamic_cast<const STUInt32*>(mMiddleTxn.peekAtPIndex(0));
+	const STUInt32* v=dynamic_cast<const STUInt32*>(mMiddleTxn.peekAtPIndex(TransactionIVersion));
 	if(!v) throw(std::runtime_error("corrupt transaction"));
 	return v->getValue();
 }
 
 void SerializedTransaction::setVersion(uint32 ver)
 {
-	STUInt32* v=dynamic_cast<STUInt32*>(mMiddleTxn.getPIndex(0));
+	STUInt32* v=dynamic_cast<STUInt32*>(mMiddleTxn.getPIndex(TransactionIVersion));
 	if(!v) throw(std::runtime_error("corrupt transaction"));
 	v->setValue(ver);
 }
 
 uint64 SerializedTransaction::getTransactionFee() const
 {
-	const STUInt64* v=dynamic_cast<const STUInt64*>(mMiddleTxn.peekAtPIndex(3));
+	const STUInt64* v=dynamic_cast<const STUInt64*>(mMiddleTxn.peekAtPIndex(TransactionIFee));
 	if(!v) throw(std::runtime_error("corrupt transaction"));
 	return v->getValue();
 }
 
 void SerializedTransaction::setTransactionFee(uint64 fee)
 {
-	STUInt64* v=dynamic_cast<STUInt64*>(mMiddleTxn.getPIndex(3));
+	STUInt64* v=dynamic_cast<STUInt64*>(mMiddleTxn.getPIndex(TransactionIFee));
 	if(!v) throw(std::runtime_error("corrupt transaction"));
 	v->setValue(fee);
+}
+
+uint32 SerializedTransaction::getSequence() const
+{
+	const STUInt32* v=dynamic_cast<const STUInt32*>(mMiddleTxn.peekAtPIndex(TransactionISequence));
+	if(!v) throw(std::runtime_error("corrupt transaction"));
+	return v->getValue();
+}
+
+void SerializedTransaction::setSequence(uint32 seq)
+{
+	STUInt32* v=dynamic_cast<STUInt32*>(mMiddleTxn.getPIndex(TransactionISequence));
+	if(!v) throw(std::runtime_error("corrupt transaction"));
+	v->setValue(seq);
 }
 
 int SerializedTransaction::getITFieldIndex(SOE_Field field) const

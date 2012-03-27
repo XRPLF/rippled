@@ -70,15 +70,15 @@ public:
 	uint256 getITFieldH256(SOE_Field field) const { return mInnerTxn.getValueFieldH256(field); }
 	std::vector<unsigned char> getITFieldVL(SOE_Field field) const { return mInnerTxn.getValueFieldVL(field); }
 	std::vector<TaggedListItem> getITFieldTL(SOE_Field field) const { return mInnerTxn.getValueFieldTL(field); }
-	void SetITFieldU8(SOE_Field field, unsigned char v) { return mInnerTxn.setValueFieldU8(field, v); }
-	void SetITFieldU16(SOE_Field field, uint16 v) { return mInnerTxn.setValueFieldU16(field, v); }
-	void SetITFieldU32(SOE_Field field, uint32 v) { return mInnerTxn.setValueFieldU32(field, v); }
-	void SetITFieldU64(SOE_Field field, uint32 v) { return mInnerTxn.setValueFieldU64(field, v); }
-	void SetITFieldH160(SOE_Field field, const uint160& v) { return mInnerTxn.setValueFieldH160(field, v); }
-	void SetITFieldH256(SOE_Field field, const uint256& v) { return mInnerTxn.setValueFieldH256(field, v); }
-	void SetITFieldVL(SOE_Field field, const std::vector<unsigned char>& v)
+	void setITFieldU8(SOE_Field field, unsigned char v) { return mInnerTxn.setValueFieldU8(field, v); }
+	void setITFieldU16(SOE_Field field, uint16 v) { return mInnerTxn.setValueFieldU16(field, v); }
+	void setITFieldU32(SOE_Field field, uint32 v) { return mInnerTxn.setValueFieldU32(field, v); }
+	void setITFieldU64(SOE_Field field, uint32 v) { return mInnerTxn.setValueFieldU64(field, v); }
+	void setITFieldH160(SOE_Field field, const uint160& v) { return mInnerTxn.setValueFieldH160(field, v); }
+	void setITFieldH256(SOE_Field field, const uint256& v) { return mInnerTxn.setValueFieldH256(field, v); }
+	void setITFieldVL(SOE_Field field, const std::vector<unsigned char>& v)
 		{ return mInnerTxn.setValueFieldVL(field, v); }
-	void SetITFieldTL(SOE_Field field, const std::vector<TaggedListItem>& v)
+	void setITFieldTL(SOE_Field field, const std::vector<TaggedListItem>& v)
 		{ return mInnerTxn.setValueFieldTL(field, v); }
 
 	// optional field functions

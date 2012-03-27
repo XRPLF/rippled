@@ -18,7 +18,7 @@ enum SOE_Field
 	sfGeneric=0,
 
 	// common fields
-	sfFlags, sfSequence, sfExtensions, sfTargetLedger, sfSourceTag, sfIdentifier,
+	sfFlags, sfExtensions, sfTargetLedger, sfSourceTag, sfIdentifier,
 	sfDestination, sfTarget, sfAmount, sfCurrency,
 	sfAmountIn, sfAmountOut, sfCurrencyIn, sfCurrencyOut,
 	sfInvoiceID,

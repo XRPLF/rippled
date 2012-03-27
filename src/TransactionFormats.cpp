@@ -7,7 +7,6 @@ TransactionFormat InnerTxnFormats[]=
 {
 	{ "MakePayment", ttMAKE_PAYMENT, {
 		{ S_FIELD(Flags),        STI_UINT16,  SOE_FLAGS,    0 },
-		{ S_FIELD(Sequence),     STI_UINT32,  SOE_REQUIRED, 0 },
 		{ S_FIELD(Destination),  STI_ACCOUNT, SOE_REQUIRED, 0 },
 		{ S_FIELD(Amount),       STI_UINT64,  SOE_REQUIRED, 0 },
 		{ S_FIELD(Currency),     STI_HASH160, SOE_IFFLAG,   1 },
@@ -19,7 +18,6 @@ TransactionFormat InnerTxnFormats[]=
 	},
 	{ "Invoice", ttINVOICE, {
 		{ S_FIELD(Flags),        STI_UINT16,  SOE_FLAGS,    0 },
-		{ S_FIELD(Sequence),     STI_UINT32,  SOE_REQUIRED, 0 },
 		{ S_FIELD(Target),       STI_ACCOUNT, SOE_REQUIRED, 0 },
 		{ S_FIELD(Amount),       STI_UINT64,  SOE_REQUIRED, 0 },
 		{ S_FIELD(Currency),     STI_HASH160, SOE_IFFLAG,   1 },
@@ -32,7 +30,6 @@ TransactionFormat InnerTxnFormats[]=
 	},
 	{ "Offer", ttEXCHANGE_OFFER, {
 		{ S_FIELD(Flags),        STI_UINT16,  SOE_FLAGS,    0 },
-		{ S_FIELD(Sequence),     STI_UINT32,  SOE_REQUIRED, 0 },
 		{ S_FIELD(AmountIn),     STI_UINT64,  SOE_REQUIRED, 0 },
 		{ S_FIELD(CurrencyIn),   STI_HASH160, SOE_IFFLAG,   2 },
 		{ S_FIELD(AmountOut),    STI_UINT64,  SOE_REQUIRED, 0 },
