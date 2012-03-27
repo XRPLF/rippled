@@ -102,14 +102,14 @@ bool Serializer::get64(uint64& o, int offset) const
 bool Serializer::get160(uint160& o, int offset) const
 {
 	if((offset+20)>mData.size()) return false;
-	memcpy(&o, &(mData.front())+offset, 20);
+	memcpy(o.begin(), &(mData.front())+offset, 20);
 	return true;
 }
 
 bool Serializer::get256(uint256& o, int offset) const
 {
 	if((offset+32)>mData.size()) return false;
-	memcpy(&o, &(mData.front())+offset, 32);
+	memcpy(o.begin(), &(mData.front())+offset, 32);
 	return true;
 }
 
