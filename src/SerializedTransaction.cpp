@@ -99,6 +99,16 @@ std::vector<unsigned char> SerializedTransaction::getSignature() const
 	return mSignature.getValue();
 }
 
+bool SerializedTransaction::sign(CKey& key)
+{
+	return key.Sign(getSigningHash(), mSignature.peekValue());
+}
+
+bool SerializedTransaction::checkSign(const CKey& key) const
+{
+	return key.Verify(getSigningHash(), mSignature.getValue());
+}
+
 void SerializedTransaction::setSignature(const std::vector<unsigned char>& sig)
 {
 	mSignature.setValue(sig);
@@ -180,4 +190,14 @@ void SerializedTransaction::makeITFieldAbsent(SOE_Field field)
 {
 	return mInnerTxn.makeFieldAbsent(field);
 }
- 
+
+Json::Value SerializedTransaction::getJson(int options) const
+{
+	Json::Value ret(Json::objectValue);
+	ret["Type"]=mFormat->t_name;
+	ret["ID"]=getTransactionID().GetHex();
+	ret["Signature"]=mSignature.getText();
+	ret["Middle"]=mMiddleTxn.getJson(options);
+	ret["Inner"]=mInnerTxn.getJson(options);
+	return ret;
+}

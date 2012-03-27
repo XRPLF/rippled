@@ -89,6 +89,11 @@ public:
 	// whole transaction functions
 	int getTransaction(Serializer& s, bool include_length) const;
 	uint256 getTransactionID() const;
+
+	virtual Json::Value getJson(int options) const;
+
+	bool sign(CKey& key);
+	bool checkSign(const CKey& key) const;
 };
 
 #endif

@@ -5,6 +5,8 @@
 
 #include <boost/ptr_container/ptr_vector.hpp>
 
+#include "../json/value.h"
+
 #include "SerializedTypes.h"
 
 enum SOE_Type
@@ -57,6 +59,7 @@ public:
 	void add(Serializer& s) const;
 	std::string getFullText() const;
 	std::string getText() const;
+	virtual Json::Value getJson(int options) const;
 
 	int addObject(const SerializedType& t) { mData.push_back(t.duplicate()); return mData.size()-1; }
 	int giveObject(SerializedType* t) { mData.push_back(t); return mData.size()-1; }

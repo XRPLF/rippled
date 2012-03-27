@@ -1,6 +1,8 @@
 
 #include "SerializedObject.h"
 
+#include "boost/lexical_cast.hpp"
+
 SerializedType* STObject::makeDefaultObject(SerializedTypeID id, const char *name)
 {
 	switch(id)
@@ -454,4 +456,20 @@ void STObject::setValueFieldTL(SOE_Field field, const std::vector<TaggedListItem
 	STTaggedList* cf=dynamic_cast<STTaggedList*>(rf);
 	if(!cf) throw(std::runtime_error("Wrong field type"));
 	cf->setValue(v);
+}
+
+Json::Value STObject::getJson(int options) const
+{
+	Json::Value ret(Json::objectValue);
+	int index=1;
+	for(boost::ptr_vector<SerializedType>::const_iterator it=mData.begin(), end=mData.end(); it!=end; ++it, ++index)
+	{
+		if(it->getType()!=STI_NOTPRESENT)
+		{
+			if(it->getName()==NULL)
+				ret[boost::lexical_cast<std::string>(index)]=it->getText();
+			else ret[it->getName()]=it->getText();
+		}
+	}
+	return ret;
 }

@@ -32,7 +32,7 @@ public:
 	virtual ~SerializedType() { ; }
 
 	void setName(const char *n) { name=n; }
-	const char *getName() { return name; }
+	const char *getName() const { return name; }
 
 	virtual int getLength() const { return 0; }
 	virtual SerializedTypeID getType() const { return STI_NOTPRESENT; }
@@ -63,7 +63,7 @@ public:
 	SerializedTypeID getType() const { return STI_UINT8; }
 	STUInt8 *duplicate() const { return new STUInt8(name, value); }
 	std::string getText() const;
-	virtual void add(Serializer& s) const { s.add8(value); }
+	void add(Serializer& s) const { s.add8(value); }
 
 	unsigned char getValue() const { return value; }
 	void setValue(unsigned char v) { value=v; }
@@ -87,7 +87,7 @@ public:
 	SerializedTypeID getType() const { return STI_UINT16; }
 	STUInt16 *duplicate() const { return new STUInt16(name, value); }
 	std::string getText() const;
-	virtual void add(Serializer& s) const { s.add16(value); }
+	void add(Serializer& s) const { s.add16(value); }
 
 	uint16 getValue() const { return value; }
 	void setValue(uint16 v) { value=v; }
@@ -111,7 +111,7 @@ public:
 	SerializedTypeID getType() const { return STI_UINT32; }
 	STUInt32 *duplicate() const { return new STUInt32(name, value); }
 	std::string getText() const;
-	virtual void add(Serializer& s) const { s.add32(value); }
+	void add(Serializer& s) const { s.add32(value); }
 
 	uint32 getValue() const { return value; }
 	void setValue(uint32 v) { value=v; }
@@ -135,7 +135,7 @@ public:
 	SerializedTypeID getType() const { return STI_UINT64; }
 	STUInt64 *duplicate() const { return new STUInt64(name, value); }
 	std::string getText() const;
-	virtual void add(Serializer& s) const { s.add64(value); }
+	void add(Serializer& s) const { s.add64(value); }
 
 	uint64 getValue() const { return value; }
 	void setValue(uint64 v) { value=v; }
@@ -160,7 +160,7 @@ public:
 	SerializedTypeID getType() const { return STI_HASH160; }
 	STHash160 *duplicate() const { return new STHash160(name, value); }
 	std::string getText() const;
-	virtual void add(Serializer& s) const { s.add160(value); }
+	void add(Serializer& s) const { s.add160(value); }
 
 	const uint160& getValue() const { return value; }
 	void setValue(const uint160& v) { value=v; }
@@ -185,7 +185,7 @@ public:
 	SerializedTypeID getType() const { return STI_HASH256; }
 	STHash256 *duplicate() const { return new STHash256(name, value); }
 	std::string getText() const;
-	virtual void add(Serializer& s) const { s.add256(value); }
+	void add(Serializer& s) const { s.add256(value); }
 
 	const uint256& getValue() const { return value; }
 	void setValue(const uint256& v) { value=v; }
@@ -211,7 +211,7 @@ public:
 	SerializedTypeID getType() const { return STI_VL; }
 	STVariableLength *duplicate() const { return new STVariableLength(name, value); }
 	std::string getText() const;
-	virtual void add(Serializer& s) const { s.addVL(value); }
+	void add(Serializer& s) const { s.addVL(value); }
 
 	const std::vector<unsigned char>& peekValue() const { return value; }
 	std::vector<unsigned char>& peekValue() { return value; }
@@ -239,7 +239,7 @@ public:
 	SerializedTypeID getType() const { return STI_TL; }
 	STTaggedList *duplicate() const { return new STTaggedList(name, value); }
 	std::string getText() const;
-	virtual void add(Serializer& s) const { if(s.addTaggedList(value)<0) throw(0); }
+	void add(Serializer& s) const { if(s.addTaggedList(value)<0) throw(0); }
 
 	const std::vector<TaggedListItem>& peekValue() const { return value; }
 	std::vector<TaggedListItem>& peekValue() { return value; }
