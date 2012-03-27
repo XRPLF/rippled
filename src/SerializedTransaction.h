@@ -34,6 +34,7 @@ public:
 
 	// outer transaction functions / signature functions
 	std::vector<unsigned char> getSignature() const;
+	const std::vector<unsigned char>& peekSignature() const;
 	void setSignature(const std::vector<unsigned char>& s);
 	uint256 getSigningHash() const;
 		
@@ -44,6 +45,8 @@ public:
 	uint64 getTransactionFee() const;
 	void setTransactionFee(uint64);
 	std::vector<unsigned char> getSigningAccount() const;
+	const std::vector<unsigned char>& peekSigningAccount() const;
+	std::vector<unsigned char>& peekSigningAccount();
 	void setSigningAccount(const std::vector<unsigned char>& s);
 
 	// inner transaction functions

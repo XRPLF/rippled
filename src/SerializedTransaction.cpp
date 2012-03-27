@@ -99,6 +99,11 @@ std::vector<unsigned char> SerializedTransaction::getSignature() const
 	return mSignature.getValue();
 }
 
+const std::vector<unsigned char>& SerializedTransaction::peekSignature() const
+{
+	return mSignature.peekValue();
+}
+
 bool SerializedTransaction::sign(CKey& key)
 {
 	return key.Sign(getSigningHash(), mSignature.peekValue());
@@ -154,6 +159,36 @@ void SerializedTransaction::setSequence(uint32 seq)
 	STUInt32* v=dynamic_cast<STUInt32*>(mMiddleTxn.getPIndex(TransactionISequence));
 	if(!v) throw(std::runtime_error("corrupt transaction"));
 	v->setValue(seq);
+}
+
+std::vector<unsigned char> SerializedTransaction::getSigningAccount() const
+{
+	const STVariableLength* v=
+		dynamic_cast<const STVariableLength*>(mMiddleTxn.peekAtPIndex(TransactionISigningAccount));
+	if(!v) throw(std::runtime_error("corrupt transaction"));
+	return v->getValue();
+}
+
+const std::vector<unsigned char>& SerializedTransaction::peekSigningAccount() const
+{
+	const STVariableLength* v=
+		dynamic_cast<const STVariableLength*>(mMiddleTxn.peekAtPIndex(TransactionISigningAccount));
+	if(!v) throw(std::runtime_error("corrupt transaction"));
+	return v->peekValue();
+}
+
+std::vector<unsigned char>& SerializedTransaction::peekSigningAccount()
+{
+	STVariableLength* v=dynamic_cast<STVariableLength*>(mMiddleTxn.getPIndex(TransactionISigningAccount));
+	if(!v) throw(std::runtime_error("corrupt transaction"));
+	return v->peekValue();
+}
+
+void SerializedTransaction::setSigningAccount(const std::vector<unsigned char>& s)
+{
+	STVariableLength* v=dynamic_cast<STVariableLength*>(mMiddleTxn.getPIndex(TransactionISigningAccount));
+	if(!v) throw(std::runtime_error("corrupt transaction"));
+	v->setValue(s);
 }
 
 int SerializedTransaction::getITFieldIndex(SOE_Field field) const

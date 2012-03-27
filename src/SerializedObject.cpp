@@ -28,10 +28,8 @@ SerializedType* STObject::makeDefaultObject(SerializedTypeID id, const char *nam
 		case STI_TL:
 			return new STTaggedList(name);
 
-	#if 0
-		case STI_ACCOUNT: // CHECKME: Should an account be variable length?
-			return new STVariableLength(name);
-	#endif
+		case STI_ACCOUNT:
+			return new STAccount(name);
 
 		default:
 			return NULL;
@@ -63,11 +61,9 @@ SerializedType* STObject::makeDeserializedObject(SerializedTypeID id, const char
 		case STI_TL:
 			return STTaggedList::construct(sit, name);
 
-#if 0
-		case STI_ACCOUNT: // CHECKME: Should an account be variable length?
-			return STVariableLength::construct(sit, name);
+		case STI_ACCOUNT:
+			return STAccount::construct(sit, name);
 
-#endif
 		default:
 			return NULL;
 	}
