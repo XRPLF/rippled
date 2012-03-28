@@ -3,8 +3,6 @@
 
 #include "SerializedObject.h"
 
-#define STI_ACCOUNT STI_HASH160
-
 enum TransactionType
 {
 	ttINVALID=-1,
