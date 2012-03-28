@@ -16,10 +16,7 @@
 #include "Serializer.h"
 #include "SHAMap.h"
 #include "LocalAccount.h"
-
-/*
-We could have made something that inherited from the protobuf transaction but this seemed simpler
-*/
+#include "SerializedTransaction.h"
 
 enum TransStatus
 {
@@ -40,41 +37,42 @@ public:
 
 	typedef boost::shared_ptr<Transaction> pointer;
 
-	static const uint32 TransSignMagic=0x54584E00; // "TXN"
-
 private:
 	uint256			mTransactionID;
-	NewcoinAddress		mAccountFrom, mAccountTo;
-	uint64			mAmount, mFee;
-	uint32			mFromAccountSeq, mSourceLedger, mIdent;
+	NewcoinAddress	mAccountFrom, mAccountTo;
 	CKey::pointer	mFromPubKey;
-	std::vector<unsigned char> mSignature;
 
 	uint32		mInLedger;
 	TransStatus	mStatus;
 
+	SerializedTransaction::pointer mTransaction;
+
 public:
-	Transaction();
-	Transaction(const std::vector<unsigned char>& rawTransaction, bool validate);
-	Transaction(LocalAccount::pointer fromLocal, const NewcoinAddress& to, uint64 amount, uint32 ident, uint32 ledger);
+	Transaction(const std::vector<unsigned char>&, bool validate);
+	Transaction(SerializedTransaction::pointer st, bool validate);
+
+	Transaction(LocalAccount::pointer fromLocal, const NewcoinAddress& to, uint64 amount,
+		uint32 ident, uint32 ledger);
+
+	Transaction(const NewcoinAddress& fromID, const NewcoinAddress& toID,
+		CKey::pointer pubKey, uint64 amount, uint64 fee, uint32 fromSeq, uint32 fromLedger,
+		uint32 ident, const std::vector<unsigned char>& signature, uint32 ledgerSeq, TransStatus st);
 
 	bool sign(LocalAccount::pointer fromLocalAccount);
 	bool checkSign() const;
-	void updateID();
-	void updateFee();
+	void updateID() { mTransactionID=mTransaction->getTransactionID(); }
 
-	Serializer::pointer getRaw(bool prefix) const;
-	Serializer::pointer getSigned() const;
+	SerializedTransaction::pointer getSTransaction() { return mTransaction; }
 
 	const uint256& getID() const { return mTransactionID; }
 	const NewcoinAddress& getFromAccount() const { return mAccountFrom; }
 	const NewcoinAddress& getToAccount() const { return mAccountTo; }
-	uint64 getAmount() const { return mAmount; }
-	uint64 getFee() const { return mFee; }
-	uint32 getFromAccountSeq() const { return mFromAccountSeq; }
-	uint32 getSourceLedger() const { return mSourceLedger; }
-	uint32 getIdent() const { return mIdent; }
-	const std::vector<unsigned char>& getSignature() const { return mSignature; }
+	uint64 getAmount() const { return mTransaction->getITFieldU64(sfAmount); }
+	uint64 getFee() const { return mTransaction->getTransactionFee(); }
+	uint32 getFromAccountSeq() const { return mTransaction->getSequence(); }
+	uint32 getSourceLedger() const { return mTransaction->getITFieldU32(sfTargetLedger); }
+	uint32 getIdent() const { return mTransaction->getITFieldU32(sfSourceTag); }
+	std::vector<unsigned char> getSignature() const { return mTransaction->getSignature(); }
 	uint32 getLedger() const { return mInLedger; }
 	TransStatus getStatus() const { return mStatus; }
 
@@ -107,12 +105,7 @@ protected:
 	static Transaction::pointer transactionFromSQL(const std::string& statement);
 	Transaction(const uint256& transactionID, const NewcoinAddress& accountFrom, const NewcoinAddress& accountTo,
 		 CKey::pointer key, uint64 amount, uint64 fee, uint32 fromAccountSeq, uint32 sourceLedger,
-		 uint32 ident, const std::vector<unsigned char>& signature, uint32 inLedger, TransStatus status) :
-		 	mTransactionID(transactionID), mAccountFrom(accountFrom), mAccountTo(accountTo),
-		 	mAmount(amount), mFee(fee), mFromAccountSeq(fromAccountSeq), mSourceLedger(sourceLedger),
-			mIdent(ident), mFromPubKey(key), mSignature(signature), mInLedger(inLedger), mStatus(status)
-	{ ; }
-
+		 uint32 ident, const std::vector<unsigned char>& signature, uint32 inLedger, TransStatus status);
 };
 
 #endif

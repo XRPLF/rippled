@@ -2,45 +2,45 @@
 
 #include "boost/lexical_cast.hpp"
 #include "boost/make_shared.hpp"
+#include "boost/ref.hpp"
 
 #include "Application.h"
 #include "Transaction.h"
 #include "Wallet.h"
 #include "BitcoinUtil.h"
-#include "BinaryFormats.h"
-
-using namespace std;
-
-Transaction::Transaction() : mTransactionID(0), mAccountFrom(), mAccountTo(),
-	mAmount(0), mFee(0), mFromAccountSeq(0), mSourceLedger(0), mIdent(0),
-	mInLedger(0), mStatus(INVALID)
-{
-}
+#include "Serializer.h"
+#include "SerializedTransaction.h"
 
 Transaction::Transaction(LocalAccount::pointer fromLocalAccount, const NewcoinAddress& toAccount, uint64 amount,
-	uint32 ident, uint32 ledger) :
-		mAccountTo(toAccount), mAmount(amount), mSourceLedger(ledger), mIdent(ident), mInLedger(0), mStatus(NEW)
+	uint32 ident, uint32 ledger) : mInLedger(0), mStatus(NEW)
 {
 	mAccountFrom=fromLocalAccount->getAddress();
+	mAccountTo=toAccount;
+
+	mTransaction=boost::make_shared<SerializedTransaction>(ttMAKE_PAYMENT);
+
 	mFromPubKey=fromLocalAccount->getPublicKey();
 	assert(mFromPubKey);
-	mFromAccountSeq=fromLocalAccount->getTxnSeq();
+	mTransaction->setSigningAccount(mFromPubKey->GetPubKey());
 
-#ifdef DEBUG
-		std::cerr << "Construct local Txn" << std::endl;
-		std::cerr << "ledger(" << ledger << "), fromseq(" << mFromAccountSeq << ")" << std::endl;
-#endif
+	mTransaction->setSequence(fromLocalAccount->getTxnSeq());
+	assert(mTransaction->getSequence()!=0);
+	mTransaction->setTransactionFee(100); // for now
 
-	if(!mFromAccountSeq)
+	mTransaction->setITFieldVL(sfDestination, toAccount.getAccountPublic());
+	mTransaction->setITFieldU64(sfAmount, amount);
+	if(ledger!=0)
 	{
-#ifdef DEBUG
-		std::cerr << "Bad source account sequence" << std::endl;
-		assert(false);
-#endif
-		mStatus=INCOMPLETE;
+		mTransaction->makeITFieldPresent(sfTargetLedger);
+		mTransaction->setITFieldU32(sfTargetLedger, ledger);
 	}
+	if(ident!=0)
+	{
+		mTransaction->makeITFieldPresent(sfSourceTag);
+		mTransaction->setITFieldU32(sfSourceTag, ident);
+	}
+
 	assert(mFromPubKey);
-	updateFee();
 	if(!sign(fromLocalAccount))
 	{
 #ifdef DEBUG
@@ -50,22 +50,22 @@ Transaction::Transaction(LocalAccount::pointer fromLocalAccount, const NewcoinAd
 	}
 }
 
-Transaction::Transaction(const std::vector<unsigned char> &t, bool validate) : mStatus(INVALID)
+Transaction::Transaction(SerializedTransaction::pointer sit, bool validate) : mStatus(INVALID), mTransaction(sit)
 {
 	uint160	toAccountID;
 	uint160	fromAccountID;
-
-	Serializer s(t);
-	if(s.getLength()<BTxSize) { assert(false); return; }
-	if(!s.get160(toAccountID, BTxPDestAcct)) { assert(false); return; }
-	if(!s.get64(mAmount, BTxPAmount)) { assert(false); return; }
-	if(!s.get32(mFromAccountSeq, BTxPSASeq)) { assert(false); return; }
-	if(!s.get32(mSourceLedger, BTxPSLIdx)) { assert(false); return; }
-	if(!s.get32(mIdent, BTxPSTag)) { assert(false); return; }
-	if(!s.getRaw(mSignature, BTxPSig, BTxLSig)) { assert(false); return; }
-
 	std::vector<unsigned char> pubKey;
-	if(!s.getRaw(pubKey, BTxPSPubK, BTxLSPubK)) { assert(false); return; }
+
+	try
+	{
+		toAccountID=mTransaction->getITFieldH160(sfDestination);
+		pubKey=mTransaction->getSigningAccount();
+		mTransactionID=mTransaction->getTransactionID();
+	}
+	catch(...)
+	{
+		return;
+	}
 
 	mAccountTo.setAccountID(toAccountID);
 	mAccountFrom.setAccountID(fromAccountID);
@@ -75,12 +75,62 @@ Transaction::Transaction(const std::vector<unsigned char> &t, bool validate) : m
 	mAccountFrom.setAccountPublic(pubKey);
 	mFromPubKey=theApp->getPubKeyCache().store(mAccountFrom, mFromPubKey);
 
-	updateID();
-	updateFee();
-
 	if(!validate || checkSign())
 		mStatus=NEW;
 }
+
+Transaction::Transaction(const std::vector<unsigned char>& raw, bool validate) : mStatus(INVALID)
+{
+	uint160	toAccountID;
+	uint160	fromAccountID;
+	std::vector<unsigned char> pubKey;
+
+	try
+	{
+		Serializer s(raw);
+		SerializerIterator sit(s);
+		mTransaction=boost::make_shared<SerializedTransaction>(boost::ref(sit), -1);
+
+		mFromPubKey=boost::make_shared<CKey>();
+		if(!mFromPubKey->SetPubKey(pubKey)) return;
+		mAccountFrom.setAccountPublic(pubKey);
+		mFromPubKey=theApp->getPubKeyCache().store(mAccountFrom, mFromPubKey);
+		if(!mFromPubKey->SetPubKey(pubKey)) return;
+		mAccountFrom.setAccountPublic(pubKey);
+		mFromPubKey=theApp->getPubKeyCache().store(mAccountFrom, mFromPubKey);
+	}
+	catch(...)
+	{
+		return;
+	}
+	if(!validate || checkSign())
+		mStatus=NEW;
+}
+
+Transaction::Transaction(const NewcoinAddress& fromID, const NewcoinAddress& toID,
+	CKey::pointer pubKey, uint64 amount, uint64 fee, uint32 fromSeq, uint32 fromLedger,
+	uint32 ident, const std::vector<unsigned char>& signature, uint32 ledgerSeq, TransStatus st) :
+	mAccountFrom(fromID), mAccountTo(toID), mFromPubKey(pubKey), mInLedger(ledgerSeq), mStatus(st)
+{
+	mTransaction=boost::make_shared<SerializedTransaction>(ttMAKE_PAYMENT);
+	mTransaction->setSignature(signature);
+	mTransaction->setTransactionFee(fee);
+	mTransaction->setSigningAccount(pubKey->GetPubKey());
+	mTransaction->setSequence(fromSeq);
+	if(fromLedger!=0)
+	{
+		mTransaction->makeITFieldPresent(sfTargetLedger);
+		mTransaction->setITFieldU32(sfTargetLedger, fromLedger);
+	}
+	if(ident!=0)
+	{
+		mTransaction->makeITFieldPresent(sfSourceTag);
+		mTransaction->setITFieldU32(sfSourceTag, ident);
+	}
+	mTransaction->setValueFieldU64(sfAmount, amount);
+	updateID();
+}
+                
 
 bool Transaction::sign(LocalAccount::pointer fromLocalAccount)
 {
@@ -93,10 +143,10 @@ bool Transaction::sign(LocalAccount::pointer fromLocalAccount)
 		return false;
 	}
 
-	if( (mAmount==0) || (mSourceLedger==0) || !mAccountTo.IsValid() )
+	if( (mTransaction->getITFieldU64(sfAmount)==0) || !mAccountTo.IsValid() )
 	{
 #ifdef DEBUG
-		std::cerr << "Bad amount, source ledger, or destination" << std::endl;
+		std::cerr << "Bad amount or destination" << std::endl;
 #endif
 		assert(false);
 		return false;
@@ -110,7 +160,8 @@ bool Transaction::sign(LocalAccount::pointer fromLocalAccount)
 		assert(false);
 		return false;
 	}
-	if(!getRaw(true)->makeSignature(mSignature, *privateKey))
+
+	if(!getSTransaction()->sign(*privateKey))
 	{
 #ifdef DEBUG
 		std::cerr << "Failed to make signature" << std::endl;
@@ -118,50 +169,14 @@ bool Transaction::sign(LocalAccount::pointer fromLocalAccount)
 		assert(false);
 		return false;
 	}
-	assert(mSignature.size()==72);
 	updateID();
 	return true;
-}
-
-void Transaction::updateFee()
-{ // for now, all transactions have a 1,000 unit fee
-	mFee=1000;
 }
 
 bool Transaction::checkSign() const
 {
 	assert(mFromPubKey);
-	Serializer::pointer signBuf=getRaw(true);
-	return getRaw(true)->checkSignature(mSignature, *mFromPubKey);
-}
-
-Serializer::pointer Transaction::getRaw(bool prefix) const
-{
-	uint160	toAccountID	= mAccountTo.getAccountID();
-
-	Serializer::pointer ret=boost::make_shared<Serializer>(77);
-	if(prefix) ret->add32(0x54584e00u);
-	ret->add160(toAccountID);
-	ret->add64(mAmount);
-	ret->add32(mFromAccountSeq);
-	ret->add32(mSourceLedger);
-	ret->add32(mIdent);
-	ret->addRaw(mFromPubKey->GetPubKey());
-	assert( (prefix&&(ret->getLength()==77)) || (!prefix&&(ret->getLength()==73)) );
-	return ret;
-}
-
-Serializer::pointer Transaction::getSigned() const
-{
-	Serializer::pointer ret(getRaw(false));
-	ret->addRaw(mSignature);
-	assert(ret->getLength()==BTxSize);
-	return ret;
-}
-
-void Transaction::updateID()
-{
-	mTransactionID=getSigned()->getSHA512Half();
+	return mTransaction->checkSign(*mFromPubKey);
 }
 
 void Transaction::setStatus(TransStatus ts, uint32 lseq)
@@ -176,29 +191,26 @@ void Transaction::saveTransaction(Transaction::pointer txn)
 }
 
 bool Transaction::save() const
-{
+{ // This code needs to be fixed to support new-style transactions - FIXME
 	if((mStatus==INVALID)||(mStatus==REMOVED)) return false;
 
 	std::string sql="INSERT INTO Transactions "
-		"(TransID,FromAcct,FromSeq,FromLedger,Identifier,ToAcct,Amount,Fee,FirstSeen,CommitSeq,Status, Signature)"
+		"(TransID,TransType,FromAcct,FromSeq,OtherAcct,Amount,FirstSeen,CommitSeq,Status,RawTxn)"
 		" VALUES ('";
 	sql.append(mTransactionID.GetHex());
 	sql.append("','");
+	sql.append(mTransaction->getTransactionType());
+	sql.append("','");
 	sql.append(mAccountFrom.humanAccountID());
 	sql.append("','");
-	sql.append(boost::lexical_cast<std::string>(mFromAccountSeq));
+	sql.append(boost::lexical_cast<std::string>(mTransaction->getSequence()));
 	sql.append("','");
-	sql.append(boost::lexical_cast<std::string>(mSourceLedger));
+	sql.append(mTransaction->getITFieldString(sfDestination));
 	sql.append("','");
-	sql.append(boost::lexical_cast<std::string>(mIdent));
-	sql.append("','");
-	sql.append(mAccountTo.humanAccountID());
-	sql.append("','");
-	sql.append(boost::lexical_cast<std::string>(mAmount));
-	sql.append("','");
-	sql.append(boost::lexical_cast<std::string>(mFee));
+	sql.append(mTransaction->getITFieldString(sfAmount));
 	sql.append("',now(),'");
-	sql.append(boost::lexical_cast<std::string>(mInLedger)); switch(mStatus)
+	sql.append(boost::lexical_cast<std::string>(mInLedger));
+	switch(mStatus)
 	{
 	 case NEW: sql.append("','N',"); break;
 	 case INCLUDED: sql.append("','A',"); break;
@@ -207,9 +219,13 @@ bool Transaction::save() const
 	 case HELD: sql.append("','H',"); break;
 	 default: sql.append("','U',"); break;
 	}
-	std::string signature;
-	theApp->getTxnDB()->getDB()->escape(&(mSignature.front()), mSignature.size(), signature);
-	sql.append(signature);
+
+	Serializer s;
+	mTransaction->getTransaction(s, false);
+
+	std::string rawTxn;
+	theApp->getTxnDB()->getDB()->escape(static_cast<const unsigned char *>(s.getDataPtr()), s.getLength(), rawTxn);
+	sql.append(rawTxn);
 	sql.append(");");
 	
 	ScopedLock sl(theApp->getTxnDB()->getDBLock());
@@ -218,12 +234,11 @@ bool Transaction::save() const
 }
 
 Transaction::pointer Transaction::transactionFromSQL(const std::string& sql)
-{
-	std::string transID, fromID, toID, status;
-	uint64 amount, fee;
-	uint32 ledgerSeq, fromSeq, fromLedger, ident;
-	std::vector<unsigned char> signature;
-	signature.reserve(78);
+{ // This code needs to be fixed to support new-style transactions - FIXME
+	std::vector<unsigned char> rawTxn;
+	std::string status;
+
+	rawTxn.reserve(2048);
 	if(1)
 	{
 		ScopedLock sl(theApp->getTxnDB()->getDBLock());
@@ -232,29 +247,17 @@ Transaction::pointer Transaction::transactionFromSQL(const std::string& sql)
 		if(!db->executeSQL(sql.c_str(), true) || !db->startIterRows() || !db->getNextRow())
 			return Transaction::pointer();
 
-		db->getStr("TransID", transID);
-		db->getStr("FromID", fromID);
-		fromSeq=db->getBigInt("FromSeq");
-		fromLedger=db->getBigInt("FromLedger");
-		db->getStr("ToID", toID);
-		amount=db->getBigInt("Amount");
-		fee=db->getBigInt("Fee");
-		ledgerSeq=db->getBigInt("CommitSeq");
-		ident=db->getBigInt("Identifier");
 		db->getStr("Status", status);
-		int sigSize=db->getBinary("Signature", &(signature.front()), signature.size());
-		signature.resize(sigSize);
+		int txSize=db->getBinary("RawTxn", &(rawTxn.front()), rawTxn.size());
+		rawTxn.resize(txSize);
+		if(txSize>rawTxn.size()) db->getBinary("RawTxn", &(rawTxn.front()), rawTxn.size());
 		db->endIterRows();
 	}
 
-	uint256 trID;
-	NewcoinAddress frID, tID;
-	trID.SetHex(transID);
-	frID.setAccountID(fromID);
-	tID.setAccountID(toID);
-
-	CKey::pointer pubkey=theApp->getPubKeyCache().locate(frID);
-	if(!pubkey) return Transaction::pointer();
+	Serializer s(rawTxn);
+	SerializerIterator it(s);
+	SerializedTransaction::pointer txn=boost::make_shared<SerializedTransaction>(boost::ref(it), -1);
+	Transaction::pointer tr=boost::make_shared<Transaction>(txn, true);
 
 	TransStatus st(INVALID);
 	switch(status[0])
@@ -265,15 +268,15 @@ Transaction::pointer Transaction::transactionFromSQL(const std::string& sql)
 		case 'D': st=COMMITTED; break;
 		case 'H': st=HELD; break;
 	}
-	
-	return Transaction::pointer(new Transaction(trID, frID, tID, pubkey, amount, fee, fromSeq, fromLedger,
-		ident, signature, ledgerSeq, st));
+	tr->setStatus(st);
+
+	return tr;
 
 }
 
 Transaction::pointer Transaction::load(const uint256& id)
 {
-	std::string sql="SELECT * FROM Transactions WHERE TransID='";
+	std::string sql="SELECT Status,RawTxn FROM Transactions WHERE TransID='";
 	sql.append(id.GetHex());
 	sql.append("';");
 	return transactionFromSQL(sql);
@@ -281,7 +284,7 @@ Transaction::pointer Transaction::load(const uint256& id)
 
 Transaction::pointer Transaction::findFrom(const NewcoinAddress& fromID, uint32 seq)
 {
-	std::string sql="SELECT * FROM Transactions WHERE FromID='";
+	std::string sql="SELECT Status,RawTxn FROM Transactions WHERE FromID='";
 	sql.append(fromID.humanAccountID());
 	sql.append("' AND FromSeq='");
 	sql.append(boost::lexical_cast<std::string>(seq));
@@ -304,6 +307,8 @@ bool Transaction::convertToTransactions(uint32 firstLedgerSeq, uint32 secondLedg
 		Transaction::pointer firstTrans, secondTrans;	
 		if(!!first)
 		{ // transaction in our table
+			Serializer s(first->getData());
+			SerializerIterator sit(s);
 			firstTrans=boost::make_shared<Transaction>(first->getData(), checkFirstTransactions);
 			if( (firstTrans->getStatus()==INVALID) || (firstTrans->getID()!=id) )
 			{
@@ -350,10 +355,7 @@ bool Transaction::isHexTxID(const std::string& txid)
 
 Json::Value Transaction::getJson(bool decorate, bool paid, bool credited) const
 {
-	Json::Value ret(Json::objectValue);
-	ret["TransactionID"]=mTransactionID.GetHex();
-	ret["Amount"]=boost::lexical_cast<std::string>(mAmount);
-	ret["Fee"]=boost::lexical_cast<std::string>(mFee);
+	Json::Value ret(mTransaction->getJson(0));
 	if(mInLedger) ret["InLedger"]=mInLedger;
 
 	switch(mStatus)
@@ -371,11 +373,7 @@ Json::Value Transaction::getJson(bool decorate, bool paid, bool credited) const
 	}
 
 	Json::Value source(Json::objectValue);
-
 	source["AccountID"]=mAccountFrom.humanAccountID();
-	source["AccountSeq"]=mFromAccountSeq;
-	source["Ledger"]=mSourceLedger;
-	if(!!mIdent) source["Identifier"]=mIdent;
 
 	Json::Value destination(Json::objectValue);
 	destination["AccountID"]=mAccountTo.humanAccountID();
@@ -393,4 +391,3 @@ Json::Value Transaction::getJson(bool decorate, bool paid, bool credited) const
 	ret["Destination"]=destination;
 	return ret;
 }
-

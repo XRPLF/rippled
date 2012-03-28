@@ -4,17 +4,15 @@
 const char *TxnDBInit[] = {
 	"CREATE TABLE Transactions (				\
 		TransID		CHARACTER(64) PRIMARY KEY,	\
+		TransType	CHARACTER(24)				\
 		FromAcct	CHARACTER(35),				\
 		FromSeq		BIGINT UNSIGNED,			\
-		FromLedger	BIGINT UNSIGNED,			\
-		Identifier	BIGINT UNSIGNED,			\
-		ToAcct		CHARACTER(35),				\
+		OtherAcct	CHARACTER(40),				\
 		Amount		BIGINT UNSIGNED,			\
-		Fee			BIGINT UNSIGNED,			\
 		FirstSeen	TEXT,						\
 		CommitSeq	BIGINT UNSIGNED,			\
 		Status		CHARACTER(1),				\
-		Signature	BLOB						\
+		RawTxn		BLOB						\
 	);",
 	"CREATE TABLE PubKeys (						\
 		ID			CHARACTER(35) PRIMARY KEY,	\
