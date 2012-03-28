@@ -254,6 +254,13 @@ void STObject::makeFieldAbsent(SOE_Field field)
 	clearFlag(mType[index]->e_flags);
 }
 
+std::string STObject::getFieldString(SOE_Field field) const
+{
+	const SerializedType* rf=peekAtPField(field);
+	if(!rf) throw std::runtime_error("Field not found");
+	return rf->getText();
+}
+
 unsigned char STObject::getValueFieldU8(SOE_Field field) const
 {
 	const SerializedType* rf=peekAtPField(field);

@@ -48,6 +48,7 @@ public:
 	const std::vector<unsigned char>& peekSigningAccount() const;
 	std::vector<unsigned char>& peekSigningAccount();
 	void setSigningAccount(const std::vector<unsigned char>& s);
+	std::string getTransactionType() const { return mFormat->t_name; }
 
 	// inner transaction functions
 	uint16 getFlags() const;
@@ -65,6 +66,7 @@ public:
 	SerializedType& getITField(SOE_Field field);
 
 	// inner transaction field value functions
+	std::string getITFieldString(SOE_Field field) const { return mInnerTxn.getFieldString(field); }
 	unsigned char getITFieldU8(SOE_Field field) const { return mInnerTxn.getValueFieldU8(field); }
 	uint16 getITFieldU16(SOE_Field field) const { return mInnerTxn.getValueFieldU16(field); }
 	uint32 getITFieldU32(SOE_Field field) const { return mInnerTxn.getValueFieldU32(field); }

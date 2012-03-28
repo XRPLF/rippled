@@ -87,6 +87,7 @@ public:
 
 	// these throw if the field type doesn't match, or return default values if the
 	// field is optional but not present
+	std::string getFieldString(SOE_Field field) const;
 	unsigned char getValueFieldU8(SOE_Field field) const;
 	uint16 getValueFieldU16(SOE_Field field) const;
 	uint32 getValueFieldU32(SOE_Field field) const;
