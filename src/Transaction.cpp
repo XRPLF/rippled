@@ -130,7 +130,6 @@ Transaction::Transaction(const NewcoinAddress& fromID, const NewcoinAddress& toI
 	mTransaction->setValueFieldU64(sfAmount, amount);
 	updateID();
 }
-                
 
 bool Transaction::sign(LocalAccount::pointer fromLocalAccount)
 {
