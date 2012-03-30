@@ -31,9 +31,10 @@ for dir in ['src', 'database', 'json', 'util']:
 env.ParseConfig('pkg-config --cflags --libs openssl')
 
 env.Append(LIBS = [
-    'boost_system-mt',
     'boost_filesystem-mt',
     'boost_program_options-mt',
+    'boost_regex-mt',
+    'boost_system-mt',
     'boost_thread-mt',
     'protobuf',
     'dl',			# dynamic linking
