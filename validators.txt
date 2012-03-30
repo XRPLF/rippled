@@ -1,9 +1,9 @@
 #
-# Newcoin - validators.txt
+# Default validators.txt
 #
 # A list of domains to bootstrap a nodes UNLs.
 #
-# This file should be utf-8.
+# This file is UTF-8 with Dos, UNIX, or Mac style end of lines.
 # Blank lines and lines starting with a '#' are ignored.
 # All other lines should be domain names.
 #
@@ -12,3 +12,5 @@
 #
 
 redstem.com
+alpha.redstem.com
+bravo.redstem.com
