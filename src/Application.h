@@ -53,10 +53,9 @@ class Application
 	RPCDoor* mRPCDoor;
 
 	std::map<std::string, Peer::pointer> mPeerMap;
-	boost::recursive_mutex mPeerMapLock;
+	boost::recursive_mutex	mPeerMapLock;
 
 	boost::asio::io_service mIOService;
-	
 
 public:
 	Application();
@@ -76,7 +75,7 @@ public:
 	LedgerMaster& getMasterLedger() { return mMasterLedger; }
 	LedgerAcquireMaster& getMasterLedgerAcquire() { return mMasterLedgerAcquire; }
 	TransactionMaster& getMasterTransaction() { return mMasterTransaction; }
-	
+
 	DatabaseCon* getTxnDB() { return mTxnDB; }
 	DatabaseCon* getLedgerDB() { return mLedgerDB; }
 	DatabaseCon* getWalletDB() { return mWalletDB; }
@@ -85,13 +84,12 @@ public:
 
 	//Serializer* getSerializer(){ return(mSerializer); }
 	//void setSerializer(Serializer* ser){ mSerializer=ser; }
-	
 
 	void run();
-
-	
+	void stop();
 };
 
 extern Application* theApp;
 
 #endif
+// vim:ts=4

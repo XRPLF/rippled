@@ -45,11 +45,17 @@ Application::Application() :
 	mPeerDoor(NULL), mRPCDoor(NULL)
 {
 	theConfig.load();
-
 }
 
 extern const char *TxnDBInit[], *LedgerDBInit[], *WalletDBInit[], *HashNodeDBInit[], *NetNodeDBInit[];
 extern int TxnDBCount, LedgerDBCount, WalletDBCount, HashNodeDBCount, NetNodeDBCount;
+
+void Application::stop()
+{
+	mIOService.stop();
+
+    std::cerr << "Stopped: " << mIOService.stopped() << std::endl;
+}
 
 void Application::run()
 {

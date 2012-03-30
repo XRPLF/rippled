@@ -550,7 +550,15 @@ Json::Value RPCServer::doUnlDelete(Json::Value& params) {
 }
 
 Json::Value RPCServer::doUnlFetch(Json::Value& params) {
-	return "not implemented";
+	if(params.size() == 1)
+	{
+		std::string	strDomain=params[0u].asString();
+
+		theApp->getUNL().fetchNode(strDomain);
+
+		return "fetching domain";
+	}
+	else return "invalid params";
 }
 
 Json::Value RPCServer::doUnlList(Json::Value& params) {
@@ -562,6 +570,7 @@ Json::Value RPCServer::doUnlReset(Json::Value& params) {
 	if(!params.size())
 	{
 		theApp->getUNL().reset();
+
 		return "removing nodes";
 	}
 	else return "invalid params";
@@ -573,7 +582,8 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 
 	if(command== "stop")
 	{
-		mSocket.get_io_service().stop();
+		theApp->stop();
+
 		return "newcoin server stopping";
 	}
 

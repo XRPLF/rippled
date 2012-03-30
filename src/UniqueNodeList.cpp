@@ -1,13 +1,94 @@
 #include "UniqueNodeList.h"
 #include "Application.h"
 #include "Conversion.h"
+#include "HttpsClient.h"
 
-void UniqueNodeList::addNode(NewcoinAddress nodePublic, std::string strComment)
+#include <boost/asio.hpp>
+#include <boost/bind.hpp>
+#include <boost/mem_fn.hpp>
+
+UniqueNodeList::UniqueNodeList() : mFetchActive(0)
+{
+}
+
+void UniqueNodeList::fetchResponse(const boost::system::error_code& err, std::string strResponse)
+{
+	std::cerr << "Fetch complete." << std::endl;
+	std::cerr << "Error: " << err.message() << std::endl;
+
+    // std::cerr << &response << std::endl;
+	// HTTP/1.1 200 OK
+
+	{
+		boost::mutex::scoped_lock sl(mFetchLock);
+		mFetchActive--;
+	}
+
+	std::cerr << "Fetch active: " << mFetchActive << std::endl;
+	fetchNext();
+}
+
+// Get the newcoin.txt and process it.
+void UniqueNodeList::fetchProcess(std::string strDomain)
+{
+	std::cerr << "Fetching '" NODE_FILE_NAME "' from '" << strDomain << "'." << std::endl;
+
+	{
+		boost::mutex::scoped_lock sl(mFetchLock);
+		mFetchActive++;
+	}
+
+    boost::shared_ptr<HttpsClient> client(new HttpsClient(
+		theApp->getIOService(),
+		strDomain,
+		NODE_FILE_PATH,
+		443,
+		NODE_FILE_BYTES_MAX
+		));
+
+	client->httpsGet(
+		boost::posix_time::seconds(NODE_FETCH_SECONDS),
+		boost::bind(&UniqueNodeList::fetchResponse, this, _1, _2));
+}
+
+// Try to process the next fetch.
+void UniqueNodeList::fetchNext()
+{
+	bool		work;
+	std::string	strDomain;
+	{
+		boost::mutex::scoped_lock sl(mFetchLock);
+		work	= mFetchActive != NODE_FETCH_JOBS && !mFetchPending.empty();
+		if (work) {
+			strDomain	= mFetchPending.front();
+			mFetchPending.pop_front();
+		}
+	}
+
+	if (!strDomain.empty())
+	{
+		fetchProcess(strDomain);
+	}
+}
+
+// Get newcoin.txt from a domain's web server.
+void UniqueNodeList::fetchNode(std::string strDomain)
+{
+	{
+		boost::mutex::scoped_lock sl(mFetchLock);
+
+		mFetchPending.push_back(strDomain);
+	}
+
+	fetchNext();
+}
+
+void UniqueNodeList::addNode(NewcoinAddress naNodePublic, std::string strComment)
 {
 	Database* db=theApp->getWalletDB()->getDB();
 
-	std::string strHanko	    = nodePublic.humanHanko();
-	std::string strPublicKey   = nodePublic.humanNodePublic();
+	std::string strHanko		= naNodePublic.humanHanko();
+	std::string strPublicKey	= naNodePublic.humanNodePublic();
 	std::string strTmp;
 
 	std::string strSql="INSERT INTO TrustedNodes (Hanko,PublicKey,Comment) values (";
@@ -25,11 +106,11 @@ void UniqueNodeList::addNode(NewcoinAddress nodePublic, std::string strComment)
 	db->executeSQL(strSql.c_str());
 }
 
-void UniqueNodeList::removeNode(NewcoinAddress hanko)
+void UniqueNodeList::removeNode(NewcoinAddress naHanko)
 {
 	Database* db=theApp->getWalletDB()->getDB();
 
-	std::string strHanko	= hanko.humanHanko();
+	std::string strHanko	= naHanko.humanHanko();
 	std::string strTmp;
 
 	std::string strSql		= "DELETE FROM TrustedNodes where Hanko=";
