@@ -1,0 +1,75 @@
+#
+# Sample newcoin.txt
+#
+# Publishing this file allows a site to declare in a trustworthy manor that
+# their node_public_key is the authorized signature for the domain. This does
+# not imply that a node serving the Newcoin protocol is avilable at the web
+# host providing the file.
+#
+# This file is stored on the web server for a domain.  This file is searched
+# for in the following order:
+# - https://newcoin.DOMAIN/newcoin.txt
+# - https://www.DOMAIN/newcoin.txt
+# - https://DOMAIN/newcoin.txt
+#
+# This file is UTF-8 with Dos, UNIX, or Mac style end of lines.
+# Blank lines and lines beginning with '#' are ignored.
+# Undefined sections are reserved.
+# No escapes are currently defined.
+#
+# [node_public_key]:
+#   Mandatory in "newcoin.txt".
+#   Only valid in "newcoin.txt".
+#
+#   Example: n9MZTnHe5D5Q2cgE8oV2usFwRqhUvEA8MwP5Mu1XVD6TxmssPRev
+#
+# [domain]:
+#   Mandatory in "newcoin.txt".
+#   Only valid in "newcoin.txt".
+#   Must match location of file.
+#
+#   Example: google.com
+#
+# [ips]:
+#   Only valid in "newcoin.txt" and the referered [ips_url].
+#   List of ips where the Newcoin protocol is avialable.
+#   One ipv4 or ipv6 address per line.
+#   A port may optionally be specified after adding a space to the address.
+#
+#   Examples:
+#    192.168.0.1
+#    192.168.0.1 3939
+#    2001:0db8:0100:f101:0210:a4ff:fee3:9566
+#
+# [validators]:
+#   Only valid in "newcoin.txt" and the referered [validators_url].
+#   List of Newcoin validators this node recommends.
+#
+#   Examples:
+#    amazon.com
+#    newegg.com
+#
+# [ips_url]:
+#   Only valid in "newcoin.txt".
+#   https URL to a similarily formatted file containing [ips].
+#
+#   Example: https://google.com/newcoin_ips.txt
+#
+# [validators_url]:
+#   Only valid in "newcoin.txt".
+#   https URL to a similarily formatted file containing [validators].
+#
+#   Example: https://google.com/newcoin_validators.txt
+#
+
+[node_public_key]
+n9MZTnHe5D5Q2cgE8oV2usFwRqhUvEA8MwP5Mu1XVD6TxmssPRev
+
+[domain]
+loss
+
+[ips]
+192.168.0.5
+
+[validators]
+redstem.com
