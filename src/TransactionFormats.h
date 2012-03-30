@@ -3,8 +3,6 @@
 
 #include "SerializedObject.h"
 
-#define STI_ACCOUNT STI_HASH160
-
 enum TransactionType
 {
 	ttINVALID=-1,
@@ -20,7 +18,11 @@ struct TransactionFormat
 	SOElement elements[16];
 };
 
-const int32 TransactionMagic=0x54583000;
+const int32 TransactionMagic=0x54584E00;
+
+const int TransactionIVersion=0, TransactionISigningAccount=1, TransactionISequence=2;
+const int TransactionIType=3, TransactionIFee=4;
+
 const int TransactionMinLen=32;
 const int TransactionMaxLen=1048576;
 

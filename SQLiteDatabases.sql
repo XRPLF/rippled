@@ -1,17 +1,15 @@
 
 CREATE TABLE Transactions (			-- transactions in all states
 	TransID		CHARACTER(64) PRIMARY KEY,	-- in hex
+	TransType	CHARACTER(24),
 	FromAcct	CHARACTER(40),		-- 20 byte hash of pub key in hex
 	FromSeq		BIGINT UNSIGNED,	-- account seq
-	FromLedger	BIGINT UNSIGNED,
-	Identifier	BIGINT UNSIGNED,
-	ToAcct		CHARACTER(40),		-- 20 byte hash of pub key
-	Amount		BIGINT UNSIGNED,
-	Fee			BIGINT UNSIGNED,
+	OtherAcct	CHARACTER(40),		-- 20 byte hash of pub key
+	Amount		BIGINT UNSINGED<	-- if newcoin transfer
 	FirstSeen	TEXT,				-- time first seen
 	CommitSeq	BIGINT UNSIGNED,	-- ledger commited to, 0 if none
 	Status		CHARACTER(1),		-- (N)ew, (A)ctive, (C)onflicted, (D)one, (H)eld
-	Signature	BLOB
+	RawTxn		BLOB
 );
 
 CREATE TABLE PubKeys ( -- holds pub keys for nodes and accounts

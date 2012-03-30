@@ -5,6 +5,7 @@
 //#include <boost/log/trivial.hpp>
 #include <boost/bind.hpp>
 #include <boost/make_shared.hpp>
+#include <boost/ref.hpp>
 
 #include "../json/writer.h"
 
@@ -13,6 +14,7 @@
 #include "Config.h"
 #include "Application.h"
 #include "Conversion.h"
+#include "SerializedTransaction.h"
 
 Peer::Peer(boost::asio::io_service& io_service)
 	: mSocket(io_service)
@@ -335,12 +337,20 @@ void Peer::recvTransaction(newcoin::TMTransaction& packet)
 	std::cerr << "Got transaction from peer" << std::endl;
 #endif
 
-	std::string rawTx=packet.rawtransaction();
-	std::vector<unsigned char> rTx(rawTx.begin(), rawTx.end());
-	Transaction::pointer tx=boost::make_shared<Transaction>(rTx, true);
+	Transaction::pointer tx;
+	try
+	{
+		std::string rawTx=packet.rawtransaction();
+		Serializer s(std::vector<unsigned char>(rawTx.begin(), rawTx.end()));
+		SerializerIterator sit(s);
+		SerializedTransaction::pointer stx=boost::make_shared<SerializedTransaction>(boost::ref(sit), -1);
 
-	if(tx->getStatus()==INVALID)
-	{ // transaction fails basic validity tests
+		if(stx->getTxnType()!=ttMAKE_PAYMENT) throw(0); // FIXME to support other transaction
+		tx=boost::make_shared<Transaction>(stx, true);
+		if(tx->getStatus()==INVALID) throw(0);
+	}
+	catch (...)
+	{
 #ifdef DEBUG
 		std::cerr << "Transaction from peer fails validity tests" << std::endl;
 		Json::StyledStreamWriter w;

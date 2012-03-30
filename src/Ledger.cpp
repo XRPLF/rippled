@@ -154,7 +154,9 @@ bool Ledger::addTransaction(Transaction::pointer trans)
 { // low-level - just add to table
 	assert(!mAccepted);
 	assert(!!trans->getID());
-	SHAMapItem::pointer item=boost::make_shared<SHAMapItem>(trans->getID(), trans->getSigned()->getData());
+	Serializer s;
+	trans->getSTransaction()->getTransaction(s, false);
+	SHAMapItem::pointer item=boost::make_shared<SHAMapItem>(trans->getID(), s.peekData());
 	return mTransactionMap->addGiveItem(item, true);
 }
 
