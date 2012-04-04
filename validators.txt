@@ -1,7 +1,8 @@
 #
 # Default validators.txt
 #
-# A list of domains to bootstrap a nodes UNLs.
+# A list of domains to bootstrap a nodes UNLs or for clients to indirectly
+# locate IPs to contact the Newcoin network.
 #
 # This file is UTF-8 with Dos, UNIX, or Mac style end of lines.
 # Blank lines and lines starting with a '#' are ignored.
