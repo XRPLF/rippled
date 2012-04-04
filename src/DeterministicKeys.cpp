@@ -1,3 +1,4 @@
+
 #include <openssl/ec.h>
 #include <openssl/bn.h>
 #include <openssl/ecdsa.h>
@@ -284,40 +285,6 @@ EC_KEY* CKey::GeneratePrivateDeterministicKey(const NewcoinAddress& family, cons
 	BN_CTX_free(ctx);
 
 	return pkey;
-}
-
-static void* ecies_key_derivation(const void *input, size_t ilen, void *output, size_t *olen)
-{ // This function must not be changed as it must be what ECDH_compute_key expects
-	if (*olen < SHA512_DIGEST_LENGTH)
-		return NULL;
-	*olen = SHA512_DIGEST_LENGTH;
-	return SHA512(static_cast<const unsigned char *>(input), ilen, static_cast<unsigned char *>(output));
-}
-
-
-std::vector<unsigned char> CKey::getECIESSecret(CKey& otherKey)
-{ // Retrieve a secret generated from an EC key pair. At least one private key must be known.
-	if(!pkey || !otherKey.pkey)
-		throw std::runtime_error("missing key");
-
-	EC_KEY *pubkey, *privkey;
-	if(EC_KEY_get0_private_key(pkey))
-	{
-		privkey=pkey;
-		pubkey=otherKey.pkey;
-	}
-	else if(EC_KEY_get0_private_key(otherKey.pkey))
-	{
-		privkey=otherKey.pkey;
-		pubkey=pkey;
-	}
-	else throw std::runtime_error("no private key");
-
-	std::vector<unsigned char> ret(SHA512_DIGEST_LENGTH);
-	if (ECDH_compute_key(&(ret.front()), SHA512_DIGEST_LENGTH, EC_KEY_get0_public_key(pubkey),
-			privkey, ecies_key_derivation) != SHA512_DIGEST_LENGTH)
-		throw std::runtime_error("ecdh key failed");
-	return ret;
 }
 
 // vim:ts=4
