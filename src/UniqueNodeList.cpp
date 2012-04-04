@@ -194,4 +194,11 @@ Json::Value UniqueNodeList::getUnlJson()
 
 	return ret;
 }
+
+void UniqueNodeList::nodeDefault(std::string strValidators) {
+	std::cerr << "Validators>" << std::endl;
+	std::cerr << strValidators;
+	std::cerr << "Validators<" << std::endl;
+
+}
 // vim:ts=4

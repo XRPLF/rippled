@@ -1,4 +1,5 @@
 
+#include <fstream>
 #include <iostream>
 
 #include <boost/bind.hpp>
@@ -11,6 +12,7 @@
 #include "RPCServer.h"
 #include "RequestParser.h"
 #include "HttpReply.h"
+#include "HttpsClient.h"
 #include "Application.h"
 #include "RPC.h"
 #include "Wallet.h"
@@ -18,6 +20,12 @@
 #include "LocalTransaction.h"
 #include "NewcoinAddress.h"
 #include "AccountState.h"
+
+#define VALIDATORS_FETCH_SECONDS	30
+#define VALIDATORS_FILE_NAME		"validators.txt"
+#define VALIDATORS_FILE_PATH		"/" VALIDATORS_FILE_NAME
+#define VALIDATORS_FILE_BYTES_MAX	(50 << 10)
+#define VALIDATORS_SITE				"redstem.com"
 
 /*
 Just read from wire until the entire request is in.
@@ -523,8 +531,68 @@ Json::Value RPCServer::doUnlAdd(Json::Value& params) {
 	else return "invalid params";
 }
 
+void RPCServer::validatorsResponse(const boost::system::error_code& err, std::string strResponse)
+{
+	std::cerr << "Fetch '" VALIDATORS_FILE_NAME "' complete." << std::endl;
+
+	if(!err)
+	{
+		theApp->getUNL().nodeDefault(strResponse);
+	}
+	else
+	{
+		std::cerr << "Error: " << err.message() << std::endl;
+	}
+}
+
 Json::Value RPCServer::doUnlDefault(Json::Value& params) {
-	return "not implemented";
+	// Populate the UNL from a validators.txt file.
+	if(!params.size() || (1==params.size() && !params[0u].compare("network")))
+	{
+		bool			bNetwork	= 1 == params.size();
+		std::string		strValidators;
+
+		if (!bNetwork)
+		{
+			std::ifstream	ifsDefault(VALIDATORS_FILE_NAME, std::ios::in);
+
+			if (!ifsDefault)
+			{
+				std::cerr << "Failed to read '" VALIDATORS_FILE_NAME "'." << std::endl;
+
+				bNetwork	= true;
+			}
+			else
+			{
+				strValidators.assign((std::istreambuf_iterator<char>(ifsDefault)),
+					std::istreambuf_iterator<char>());
+			}
+		}
+
+		if (bNetwork)
+		{
+			boost::shared_ptr<HttpsClient> client(new HttpsClient(
+				theApp->getIOService(),
+				VALIDATORS_SITE,
+				VALIDATORS_FILE_PATH,
+				443,
+				VALIDATORS_FILE_BYTES_MAX
+				));
+
+			client->httpsGet(
+				boost::posix_time::seconds(VALIDATORS_FETCH_SECONDS),
+				boost::bind(&RPCServer::validatorsResponse, this, _1, _2));
+
+			return "fetching " VALIDATORS_FILE_NAME;
+		}
+		else
+		{
+			theApp->getUNL().nodeDefault(strValidators);
+
+			return "processing " VALIDATORS_FILE_NAME;
+		}
+	}
+	else return "invalid params";
 }
 
 // unl_delete <hanko>

@@ -39,6 +39,7 @@ public:
 	void fetchNode(std::string strDomain);
 	void removeNode(NewcoinAddress naHanko);
 	void reset();
+	void nodeDefault(std::string strValidators);
 
 	// 2- we don't care, 1- we care and is valid, 2-invalid signature
 //	int checkValid(newcoin::Validation& valid);
