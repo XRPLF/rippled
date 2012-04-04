@@ -7,10 +7,9 @@
 #include <iostream>
 #include <boost/bind.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/regex.hpp>
 #include <boost/smart_ptr/shared_ptr.hpp>
 #include <boost/system/error_code.hpp>
-
-#include <boost/regex.hpp>
 
 using namespace boost::system;
 using namespace boost::asio;
@@ -283,27 +282,30 @@ void HttpsClient::invokeComplete(const boost::system::error_code& ecResult, std:
 
 void HttpsClient::parseData()
 {
-	// AHB How does this work?
-	// http://stackoverflow.com/questions/877652/copy-a-streambufs-contents-to-a-string
 	std::string		strData((std::istreambuf_iterator<char>(&mResponse)), std::istreambuf_iterator<char>());
 
-	// Match status code on a line.
-	boost::regex	reStatus("\\`HTTP/1\\S+ (\\d{3}) .*\\'");		// HTTP/1.1 200 OK
-
-	// Match body.
-	boost::regex	reBody("\\`(?:.*\\r\\n\\r\\n){1,1}(.*)\\'");
+	static boost::regex	reStatus("\\`HTTP/1\\S+ (\\d{3}) .*\\'");			// HTTP/1.1 200 OK
+	static boost::regex	reBody("\\`(?:.*?\\r\\n\\r\\n){1}(.*)\\'");
 
 	boost::smatch	smMatch;
 
-	bool	bMatch	= boost::regex_match(strData, smMatch, reStatus)
+	bool	bMatch	= boost::regex_match(strData, smMatch, reStatus)		// Match status code.
 						&& !smMatch[1].compare("200")
-						&& boost::regex_match(strData, smMatch, reBody);
+						&& boost::regex_match(strData, smMatch, reBody);	// Match body.
 
 	std::cerr << "Match: " << bMatch << std::endl;
 	std::cerr << "Body:" << smMatch[1] << std::endl;
 
-	boost::system::error_code	noErr;
+	if (bMatch)
+	{
+		boost::system::error_code	noErr;
 
-	invokeComplete(noErr, smMatch[1]);
+		invokeComplete(noErr, smMatch[1]);
+	}
+	else
+	{
+		// XXX Use our own error code.
+		invokeComplete(boost::system::error_code(errc::bad_address, system_category()));
+	}
 }
 // vim:ts=4
