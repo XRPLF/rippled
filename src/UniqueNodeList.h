@@ -35,11 +35,11 @@ private:
 public:
 	UniqueNodeList();
 
-	void addNode(NewcoinAddress naNodePublic, std::string strComment);
-	void fetchNode(std::string strDomain);
-	void removeNode(NewcoinAddress naHanko);
-	void reset();
+	void nodeAdd(NewcoinAddress naNodePublic, std::string strComment);
+	void nodeFetch(std::string strDomain);
+	void nodeRemove(NewcoinAddress naHanko);
 	void nodeDefault(std::string strValidators);
+	void nodeReset();
 
 	// 2- we don't care, 1- we care and is valid, 2-invalid signature
 //	int checkValid(newcoin::Validation& valid);

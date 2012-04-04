@@ -1,7 +1,8 @@
-#include "UniqueNodeList.h"
 #include "Application.h"
 #include "Conversion.h"
 #include "HttpsClient.h"
+#include "ParseSection.h"
+#include "UniqueNodeList.h"
 
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
@@ -72,7 +73,7 @@ void UniqueNodeList::fetchNext()
 }
 
 // Get newcoin.txt from a domain's web server.
-void UniqueNodeList::fetchNode(std::string strDomain)
+void UniqueNodeList::nodeFetch(std::string strDomain)
 {
 	{
 		boost::mutex::scoped_lock sl(mFetchLock);
@@ -83,7 +84,7 @@ void UniqueNodeList::fetchNode(std::string strDomain)
 	fetchNext();
 }
 
-void UniqueNodeList::addNode(NewcoinAddress naNodePublic, std::string strComment)
+void UniqueNodeList::nodeAdd(NewcoinAddress naNodePublic, std::string strComment)
 {
 	Database* db=theApp->getWalletDB()->getDB();
 
@@ -106,7 +107,7 @@ void UniqueNodeList::addNode(NewcoinAddress naNodePublic, std::string strComment
 	db->executeSQL(strSql.c_str());
 }
 
-void UniqueNodeList::removeNode(NewcoinAddress naHanko)
+void UniqueNodeList::nodeRemove(NewcoinAddress naHanko)
 {
 	Database* db=theApp->getWalletDB()->getDB();
 
@@ -121,7 +122,7 @@ void UniqueNodeList::removeNode(NewcoinAddress naHanko)
 	db->executeSQL(strSql.c_str());
 }
 
-void UniqueNodeList::reset()
+void UniqueNodeList::nodeReset()
 {
 	Database* db=theApp->getWalletDB()->getDB();
 
@@ -200,5 +201,8 @@ void UniqueNodeList::nodeDefault(std::string strValidators) {
 	std::cerr << strValidators;
 	std::cerr << "Validators<" << std::endl;
 
+	section secValidators	= ParseSection(strValidators, true);
+
+	PrintSection(secValidators);
 }
 // vim:ts=4

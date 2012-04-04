@@ -519,7 +519,7 @@ Json::Value RPCServer::doUnlAdd(Json::Value& params) {
 
 		if(nodePublic.setNodePublic(strNodePublic))
 		{
-			theApp->getUNL().addNode(nodePublic, strComment);
+			theApp->getUNL().nodeAdd(nodePublic, strComment);
 
 			return "adding node";
 		}
@@ -605,7 +605,7 @@ Json::Value RPCServer::doUnlDelete(Json::Value& params) {
 
 		if(hanko.setHanko(strHanko))
 		{
-			theApp->getUNL().removeNode(hanko);
+			theApp->getUNL().nodeRemove(hanko);
 
 			return "removing node";
 		}
@@ -622,7 +622,7 @@ Json::Value RPCServer::doUnlFetch(Json::Value& params) {
 	{
 		std::string	strDomain=params[0u].asString();
 
-		theApp->getUNL().fetchNode(strDomain);
+		theApp->getUNL().nodeFetch(strDomain);
 
 		return "fetching domain";
 	}
@@ -637,7 +637,7 @@ Json::Value RPCServer::doUnlList(Json::Value& params) {
 Json::Value RPCServer::doUnlReset(Json::Value& params) {
 	if(!params.size())
 	{
-		theApp->getUNL().reset();
+		theApp->getUNL().nodeReset();
 
 		return "removing nodes";
 	}
