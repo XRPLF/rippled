@@ -6,20 +6,103 @@
 
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
+#include <boost/foreach.hpp>
 #include <boost/mem_fn.hpp>
+
+// Gather string constants.
+#define SECTION_CURRENCIES		"currencies"
+#define SECTION_DOMAIN			"domain"
+#define SECTION_IPS				"ips"
+#define SECTION_IPS_URL			"ips_url"
+#define SECTION_PUBLIC_KEY		"node_public_key"
+#define SECTION_VALIDATORS		"validators"
+#define SECTION_VALIDATORS_URL	"validators_url"
 
 UniqueNodeList::UniqueNodeList() : mFetchActive(0)
 {
 }
 
-void UniqueNodeList::fetchResponse(const boost::system::error_code& err, std::string strResponse)
+void UniqueNodeList::processIps(section::mapped_type& vecStrIps) {
+	std::cerr << "Processing ips." << std::endl;
+
+	// XXX Do something with ips.
+}
+
+void UniqueNodeList::processValidators(section::mapped_type& vecStrValidators)
 {
-	std::cerr << "Fetch complete." << std::endl;
-	std::cerr << "Error: " << err.message() << std::endl;
+	std::cerr << "Processing validators." << std::endl;
 
-    // std::cerr << &response << std::endl;
-	// HTTP/1.1 200 OK
+	// XXX Do something with validators.
+}
 
+void UniqueNodeList::responseIps(const boost::system::error_code& err, const std::string strIpsFile)
+{
+	section					secFile		= ParseSection(strIpsFile, true);
+	section::mapped_type*	pmtEntries	= sectionEntries(secFile, SECTION_IPS);
+
+	if (pmtEntries)
+		processIps(*pmtEntries);
+
+	getValidatorsUrl();
+}
+
+void UniqueNodeList::responseValidators(const boost::system::error_code& err, const std::string strValidatorsFile)
+{
+	section					secFile		= ParseSection(strValidatorsFile, true);
+	section::mapped_type*	pmtEntries	= sectionEntries(secFile, SECTION_VALIDATORS);
+
+	if (pmtEntries)
+		processValidators(*pmtEntries);
+
+	getFinish();
+}
+
+void UniqueNodeList::getIpsUrl()
+{
+	std::string	strDomain;
+	std::string	strPath;
+
+	if (!mStrIpsUrl.empty() && HttpsClient::httpsParseUrl(mStrIpsUrl, strDomain, strPath))
+	{
+		HttpsClient::httpsGet(
+			theApp->getIOService(),
+			strDomain,
+			443,
+			strPath,
+			NODE_FILE_BYTES_MAX,
+			boost::posix_time::seconds(NODE_FETCH_SECONDS),
+			boost::bind(&UniqueNodeList::responseIps, this, _1, _2));
+	}
+	else
+	{
+		getValidatorsUrl();
+	}
+}
+
+void UniqueNodeList::getValidatorsUrl()
+{
+	std::string	strDomain;
+	std::string	strPath;
+
+	if (!mStrValidatorsUrl.empty() && HttpsClient::httpsParseUrl(mStrValidatorsUrl, strDomain, strPath))
+	{
+		HttpsClient::httpsGet(
+			theApp->getIOService(),
+			strDomain,
+			443,
+			strPath,
+			NODE_FILE_BYTES_MAX,
+			boost::posix_time::seconds(NODE_FETCH_SECONDS),
+			boost::bind(&UniqueNodeList::responseValidators, this, _1, _2));
+	}
+	else
+	{
+		getFinish();
+	}
+}
+
+void UniqueNodeList::getFinish()
+{
 	{
 		boost::mutex::scoped_lock sl(mFetchLock);
 		mFetchActive--;
@@ -27,6 +110,101 @@ void UniqueNodeList::fetchResponse(const boost::system::error_code& err, std::st
 
 	std::cerr << "Fetch active: " << mFetchActive << std::endl;
 	fetchNext();
+}
+
+void UniqueNodeList::responseFetch(const std::string strDomain, const boost::system::error_code& err, const std::string strSiteFile)
+{
+	std::cerr << "Fetch complete." << std::endl;
+	std::cerr << "Error: " << err.message() << std::endl;
+
+	section				secSite	= ParseSection(strSiteFile, true);
+	section::iterator	it;
+	bool				bGood	= !err;
+
+	//
+	// Verify file domain
+	//
+	std::string	strSite;
+
+	if (bGood)
+	{
+		bGood	= sectionSingleB(secSite, SECTION_DOMAIN, strSite);
+		if (strSite != strDomain)
+		{
+			bGood	= false;
+
+			std::cerr << "Warning: Site '" << strDomain << "' provides '" NODE_FILE_NAME "' for '" << strSite << "', ignoring." << std::endl;
+		}
+		else
+		{
+			std::cerr << "Processing: Site '" << strDomain << "' '" NODE_FILE_NAME "'" << std::endl;
+		}
+	}
+
+	//
+	// Process public key
+	//
+	std::string				strNodePublicKey;
+
+	if (bGood && (bGood = sectionSingleB(secSite, SECTION_PUBLIC_KEY, strNodePublicKey)))
+	{
+		NewcoinAddress	naNodePublic;
+
+		if (naNodePublic.setNodePublic(strNodePublicKey))
+		{
+			std::cerr << strDomain << ": " << strNodePublicKey << std::endl;
+
+			nodeAdd(naNodePublic, strDomain);
+		}
+	}
+
+	//
+	// Process ips
+	//
+	section::mapped_type*	pvIps;
+
+	if (bGood && (pvIps = sectionEntries(secSite, SECTION_IPS)) && pvIps->size())
+	{
+		std::cerr << "Ips: " << pvIps->size() << std::endl;
+
+		processIps(*pvIps);
+	}
+
+	//
+	// Process ips_url
+	//
+	if (bGood)
+		(void) sectionSingleB(secSite, SECTION_IPS_URL, mStrIpsUrl);
+
+	//
+	// Process Validators
+	//
+	section::mapped_type*	pvValidators;
+
+	if (bGood && (pvValidators = sectionEntries(secSite, SECTION_VALIDATORS)) && pvValidators->size())
+	{
+		processValidators(*pvValidators);
+	}
+
+	//
+	// Process validators_url
+	//
+
+	if (bGood)
+		(void) sectionSingleB(secSite, SECTION_VALIDATORS_URL, mStrValidatorsUrl);
+
+	//
+	// Process currencies
+	//
+	section::mapped_type*	pvCurrencies;
+
+	if (bGood && (pvCurrencies = sectionEntries(secSite, SECTION_CURRENCIES)) && pvCurrencies->size())
+	{
+		// XXX Process currencies.
+		std::cerr << "Ignoring currencies: not implemented." << std::endl;
+	}
+
+	getIpsUrl();
 }
 
 // Get the newcoin.txt and process it.
@@ -39,17 +217,26 @@ void UniqueNodeList::fetchProcess(std::string strDomain)
 		mFetchActive++;
 	}
 
-    boost::shared_ptr<HttpsClient> client(new HttpsClient(
-		theApp->getIOService(),
-		strDomain,
-		NODE_FILE_PATH,
-		443,
-		NODE_FILE_BYTES_MAX
-		));
+	std::deque<std::string>	deqSites;
 
-	client->httpsGet(
+	std::ostringstream	ossNewcoin;
+	std::ostringstream	ossWeb;
+
+	ossNewcoin << SYSTEM_NAME "." << strDomain;
+	ossWeb << "www." << strDomain;
+
+	deqSites.push_back(ossNewcoin.str());
+	deqSites.push_back(ossWeb.str());
+	deqSites.push_back(strDomain);
+
+	HttpsClient::httpsGet(
+		theApp->getIOService(),
+		deqSites,
+		443,
+		NODE_FILE_PATH,
+		NODE_FILE_BYTES_MAX,
 		boost::posix_time::seconds(NODE_FETCH_SECONDS),
-		boost::bind(&UniqueNodeList::fetchResponse, this, _1, _2));
+		boost::bind(&UniqueNodeList::responseFetch, this, strDomain, _1, _2));
 }
 
 // Try to process the next fetch.
@@ -84,6 +271,7 @@ void UniqueNodeList::nodeFetch(std::string strDomain)
 	fetchNext();
 }
 
+// XXX allow update of comment.
 void UniqueNodeList::nodeAdd(NewcoinAddress naNodePublic, std::string strComment)
 {
 	Database* db=theApp->getWalletDB()->getDB();
@@ -197,12 +385,16 @@ Json::Value UniqueNodeList::getUnlJson()
 }
 
 void UniqueNodeList::nodeDefault(std::string strValidators) {
-	std::cerr << "Validators>" << std::endl;
-	std::cerr << strValidators;
-	std::cerr << "Validators<" << std::endl;
-
 	section secValidators	= ParseSection(strValidators, true);
 
-	PrintSection(secValidators);
+	section::mapped_type*	pmtEntries	= sectionEntries(secValidators, SECTION_VALIDATORS);
+	if (pmtEntries)
+	{
+		BOOST_FOREACH(std::string strValidator, *pmtEntries)
+		{
+			nodeFetch(strValidator);
+		}
+	}
 }
+
 // vim:ts=4

@@ -545,8 +545,8 @@ void RPCServer::validatorsResponse(const boost::system::error_code& err, std::st
 	}
 }
 
+// Populate the UNL from a validators.txt file.
 Json::Value RPCServer::doUnlDefault(Json::Value& params) {
-	// Populate the UNL from a validators.txt file.
 	if(!params.size() || (1==params.size() && !params[0u].compare("network")))
 	{
 		bool			bNetwork	= 1 == params.size();
@@ -571,15 +571,12 @@ Json::Value RPCServer::doUnlDefault(Json::Value& params) {
 
 		if (bNetwork)
 		{
-			boost::shared_ptr<HttpsClient> client(new HttpsClient(
+			HttpsClient::httpsGet(
 				theApp->getIOService(),
 				VALIDATORS_SITE,
-				VALIDATORS_FILE_PATH,
 				443,
-				VALIDATORS_FILE_BYTES_MAX
-				));
-
-			client->httpsGet(
+				VALIDATORS_FILE_PATH,
+				VALIDATORS_FILE_BYTES_MAX,
 				boost::posix_time::seconds(VALIDATORS_FETCH_SECONDS),
 				boost::bind(&RPCServer::validatorsResponse, this, _1, _2));
 
