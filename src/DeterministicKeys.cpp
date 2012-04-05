@@ -1,3 +1,4 @@
+
 #include <openssl/ec.h>
 #include <openssl/bn.h>
 #include <openssl/ecdsa.h>
@@ -285,4 +286,5 @@ EC_KEY* CKey::GeneratePrivateDeterministicKey(const NewcoinAddress& family, cons
 
 	return pkey;
 }
+
 // vim:ts=4

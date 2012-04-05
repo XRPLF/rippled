@@ -273,6 +273,16 @@ public:
 			return false;
 		return true;
 	}
+
+	// ECIES functions. These throw on failure
+
+	// returns a 64-byte secret unique to these two keys. At least one private key must be known.
+	std::vector<unsigned char> getECIESSecret(CKey& otherKey);
+
+	// encrypt/decrypt functions with integrity checking.
+	// Note that the other side must somehow know what keys to use
+	std::vector<unsigned char> encryptECIES(CKey& otherKey, const std::vector<unsigned char>& plaintext);
+	std::vector<unsigned char> decryptECIES(CKey& otherKey, const std::vector<unsigned char>& ciphertext);
 };
 
 #endif

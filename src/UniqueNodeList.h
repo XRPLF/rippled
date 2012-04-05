@@ -1,6 +1,8 @@
 #ifndef __UNIQUE_NODE_LIST__
 #define __UNIQUE_NODE_LIST__
 
+#include <deque>
+
 #include "../json/value.h"
 
 #include "NewcoinAddress.h"
@@ -9,7 +11,6 @@
 #include "ParseSection.h"
 
 #include <boost/thread/mutex.hpp>
-#include <boost/container/deque.hpp>
 
 #define SYSTEM_NAME	"newcoin"
 
@@ -27,7 +28,7 @@ private:
 
 	boost::mutex							mFetchLock;
 	int										mFetchActive;	// count of active fetches
-	boost::container::deque<std::string>	mFetchPending;
+	std::deque<std::string>					mFetchPending;
 
 	std::string								mStrIpsUrl;
 	std::string								mStrValidatorsUrl;
