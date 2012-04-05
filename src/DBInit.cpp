@@ -60,8 +60,7 @@ const char *WalletDBInit[] = {
 		PrivateKey		CHARACTER(52)				\
 	);",
 	"CREATE TABLE TrustedNodes (					\
-		Hanko			CHARACTER(35) PRIMARY KEY,	\
-		PublicKey		CHARACTER(53),				\
+		PublicKey		CHARACTER(53) PRIMARY KEY,  \
 		Comment			TEXT						\
 	);"
 };

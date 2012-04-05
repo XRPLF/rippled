@@ -276,14 +276,10 @@ void UniqueNodeList::nodeAdd(NewcoinAddress naNodePublic, std::string strComment
 {
 	Database* db=theApp->getWalletDB()->getDB();
 
-	std::string strHanko		= naNodePublic.humanHanko();
 	std::string strPublicKey	= naNodePublic.humanNodePublic();
 	std::string strTmp;
 
-	std::string strSql="INSERT INTO TrustedNodes (Hanko,PublicKey,Comment) values (";
-	db->escape(reinterpret_cast<const unsigned char*>(strHanko.c_str()), strHanko.size(), strTmp);
-	strSql.append(strTmp);
-	strSql.append(",");
+	std::string strSql="INSERT INTO TrustedNodes (PublicKey,Comment) values (";
 	db->escape(reinterpret_cast<const unsigned char*>(strPublicKey.c_str()), strPublicKey.size(), strTmp);
 	strSql.append(strTmp);
 	strSql.append(",");
@@ -295,15 +291,15 @@ void UniqueNodeList::nodeAdd(NewcoinAddress naNodePublic, std::string strComment
 	db->executeSQL(strSql.c_str());
 }
 
-void UniqueNodeList::nodeRemove(NewcoinAddress naHanko)
+void UniqueNodeList::nodeRemove(NewcoinAddress naNodePublic)
 {
 	Database* db=theApp->getWalletDB()->getDB();
 
-	std::string strHanko	= naHanko.humanHanko();
+	std::string strPublic	= naNodePublic.humanNodePublic();
 	std::string strTmp;
 
-	std::string strSql		= "DELETE FROM TrustedNodes where Hanko=";
-	db->escape(reinterpret_cast<const unsigned char*>(strHanko.c_str()), strHanko.size(), strTmp);
+	std::string strSql		= "DELETE FROM TrustedNodes where PublicKey=";
+	db->escape(reinterpret_cast<const unsigned char*>(strPublic.c_str()), strPublic.size(), strTmp);
 	strSql.append(strTmp);
 
 	ScopedLock sl(theApp->getWalletDB()->getDBLock());
@@ -359,17 +355,14 @@ Json::Value UniqueNodeList::getUnlJson()
 		bool	more	= db->startIterRows();
 		while (more)
 		{
-			std::string	strHanko;
 			std::string	strPublicKey;
 			std::string	strComment;
 
-			db->getStr("Hanko", strHanko);
 			db->getStr("PublicKey", strPublicKey);
 			db->getStr("Comment", strComment);
 
 			Json::Value node(Json::objectValue);
 
-			node["Hanko"]		= strHanko;
 			node["PublicKey"]	= strPublicKey;
 			node["Comment"]		= strComment;
 

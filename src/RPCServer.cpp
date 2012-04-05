@@ -592,23 +592,23 @@ Json::Value RPCServer::doUnlDefault(Json::Value& params) {
 	else return "invalid params";
 }
 
-// unl_delete <hanko>
+// unl_delete <public_key>
 Json::Value RPCServer::doUnlDelete(Json::Value& params) {
 	if(params.size()==1)
 	{
-		std::string	strHanko=params[0u].asString();
+		std::string	strNodePublic=params[0u].asString();
 
-		NewcoinAddress	hanko;
+		NewcoinAddress	naNodePublic;
 
-		if(hanko.setHanko(strHanko))
+		if(naNodePublic.setNodePublic(strNodePublic))
 		{
-			theApp->getUNL().nodeRemove(hanko);
+			theApp->getUNL().nodeRemove(naNodePublic);
 
 			return "removing node";
 		}
 		else
 		{
-			return "invalid hanko";
+			return "invalid public key";
 		}
 	}
 	else return "invalid params";

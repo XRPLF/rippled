@@ -350,9 +350,6 @@ bool Wallet::nodeIdentityLoad()
 
 	db->endIterRows();
 
-	// Derive hanko from public key.
-	mNodeHanko.setHanko(mNodePublicKey);
-
 	return true;
 }
 
@@ -409,7 +406,6 @@ void Wallet::load()
 	}
 
 	std::cerr << "NodeIdentity:" << std::endl;
-	fprintf(stderr, "hanko: %s\n", mNodeHanko.humanHanko().c_str());
 	fprintf(stderr, "public: %s\n", mNodePublicKey.humanNodePublic().c_str());
 	fprintf(stderr, "private: %s\n", mNodePrivateKey.humanNodePrivate().c_str());
 

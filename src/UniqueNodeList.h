@@ -50,7 +50,7 @@ public:
 
 	void nodeAdd(NewcoinAddress naNodePublic, std::string strComment);
 	void nodeFetch(std::string strDomain);
-	void nodeRemove(NewcoinAddress naHanko);
+	void nodeRemove(NewcoinAddress naNodePublic);
 	void nodeDefault(std::string strValidators);
 	void nodeReset();
 

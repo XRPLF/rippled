@@ -28,7 +28,6 @@ private:
 protected:
 	boost::recursive_mutex mLock;
 
-	NewcoinAddress	mNodeHanko;
 	NewcoinAddress	mNodePublicKey;
 	NewcoinAddress	mNodePrivateKey;
 
