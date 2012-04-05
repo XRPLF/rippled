@@ -4,6 +4,7 @@
 #include <openssl/ecdsa.h>
 #include <openssl/pem.h>
 #include <openssl/hmac.h>
+#include <openssl/rand.h>
 
 #include <vector>
 #include <cassert>
@@ -43,10 +44,9 @@ std::vector<unsigned char> CKey::getECIESSecret(CKey& otherKey)
 	return ret;
 }
 
-// Our ciphertext is all encrypted. The encrypted data decodes as follows:
+// Our ciphertext is all encrypted except the IV. The encrypted data decodes as follows:
 // 1) 256-bits of SHA-512 HMAC of original plaintext
-// 2) 128-bit IV
-// 3) Original plaintext
+// 2) Original plaintext
 
 static uint256 makeHMAC(const std::vector<unsigned char>& secret, const std::vector<unsigned char> data)
 {
@@ -80,8 +80,6 @@ static uint256 makeHMAC(const std::vector<unsigned char>& secret, const std::vec
 	return ret;
 }
 
-#if 0
-
 std::vector<unsigned char> CKey::encryptECIES(CKey& otherKey, const std::vector<unsigned char>& plaintext)
 {
 	std::vector<unsigned char> secret=getECIESSecret(otherKey);
@@ -89,26 +87,61 @@ std::vector<unsigned char> CKey::encryptECIES(CKey& otherKey, const std::vector<
 	uint256 hmac=makeHMAC(secret, plaintext);
 
 	uint128 iv;
-	if(RAND_bytes((unsigned char *) iv.begin(), 128/8) != 1)
+	if(RAND_bytes(static_cast<unsigned char *>(iv.begin()), 128/8) != 1)
 		throw std::runtime_error("insufficient entropy");
 
-	ECP_CIPHER_CTX ctx;
+	EVP_CIPHER_CTX ctx;
 	EVP_CIPHER_CTX_init(&ctx);
 
-	if (EVP_EncryptInit_ex(&ctx, EVP_AES_128_cbc(), NULL, key, iv) != 1)
+	if (EVP_EncryptInit_ex(&ctx, EVP_aes_128_cbc(), NULL,
+		&(secret.front()), static_cast<unsigned char *>(iv.begin())) != 1)
 	{
 		EVP_CIPHER_CTX_cleanup(&ctx);
 		throw std::runtime_error("init cipher ctx");
 	}
 
-	EVP_EncryptUpdate
-	EVP_EncryptUpdate
-	EVP_EncryptUpdate
-	
-	ECP_EncryptFinal_ex
+	std::vector<unsigned char> out(plaintext.size() + (256/8) + (512/8) + 48, 0);
+	int len=0, bytesWritten;
+
+	// output 256-bit IV
+	memcpy(&(out.front()), iv.begin(), 32);
+	len=32;
+
+	// Encrypt/output 512-bit HMAC
+	bytesWritten=out.capacity()-len;
+	assert(bytesWritten>0);
+	if(EVP_EncryptUpdate(&ctx, &(out.front())+len, &bytesWritten, hmac.begin(), 64) < 0)
+	{
+		EVP_CIPHER_CTX_cleanup(&ctx);
+		throw std::runtime_error("");
+	}
+	len+=bytesWritten;
+
+	// encrypt/output plaintext
+	bytesWritten=out.capacity()-len;
+	assert(bytesWritten>0);
+	if(EVP_EncryptUpdate(&ctx, &(out.front())+len, &bytesWritten, &(plaintext.front()), plaintext.size()) < 0)
+	{
+		EVP_CIPHER_CTX_cleanup(&ctx);
+		throw std::runtime_error("");
+	}
+	len+=bytesWritten;
+
+	// finalize
+	bytesWritten=out.capacity()-len;
+	if(EVP_EncryptFinal_ex(&ctx, &(out.front())+len, &bytesWritten) < 0)
+	{
+		EVP_CIPHER_CTX_cleanup(&ctx);
+		throw std::runtime_error("");
+	}
+	len+=bytesWritten;
+
+	out.resize(len);
+	EVP_CIPHER_CTX_cleanup(&ctx);
+	return out;
 }
 
-std::vector<unsigned char> CKey::decryptECIES(CKey& otherKey, const std::Vector<unsigned char>& ciphertext)
+std::vector<unsigned char> CKey::decryptECIES(CKey& otherKey, const std::vector<unsigned char>& ciphertext)
 {
 	std::vector<unsigned char> secret=getECIESSecret(otherKey);
 
@@ -121,7 +154,5 @@ std::vector<unsigned char> CKey::decryptECIES(CKey& otherKey, const std::Vector<
 	// 4) Verify
 
 }
-
-#endif
 
 // vim:ts=4
