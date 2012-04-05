@@ -68,3 +68,46 @@ void PrintSection(section secInput)
     }
     std::cerr << "PrintSection<" << std::endl;
 }
+
+section::mapped_type* sectionEntries(section& secSource, std::string strSection)
+{
+	section::iterator		it;
+	section::mapped_type*	smtResult;
+
+	it	= secSource.find(strSection);
+    if (it == secSource.end())
+    {
+		smtResult	= 0;
+	}
+	else
+	{
+	    //section::mapped_type&	vecEntries	= it->second;
+
+		smtResult	= &(it->second);
+	}
+
+	return smtResult;
+}
+
+int sectionCount(section& secSource, std::string strSection)
+{
+	section::mapped_type* pmtEntries	= sectionEntries(secSource, strSection);
+
+	return pmtEntries ? -1 : pmtEntries->size();
+}
+
+bool sectionSingleB(section& secSource, std::string strSection, std::string& strValue)
+{
+	section::mapped_type*	pmtEntries	= sectionEntries(secSource, strSection);
+	bool					bSingle		= pmtEntries && 1 == pmtEntries->size();
+
+	if (bSingle)
+	{
+		strValue	= (*pmtEntries)[0];
+    }
+
+	return bSingle;
+}
+
+
+// vim:ts=4
