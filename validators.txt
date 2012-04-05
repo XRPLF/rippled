@@ -8,10 +8,15 @@
 # Blank lines and lines starting with a '#' are ignored.
 # All other lines should be domain names.
 #
-# To acquire an UNL, newcoind will probe for https web servers at the domains
-# listed below in the following order: newcoin.foo.com, www.foo.com, foo.com
+# [validators]:
+#   To acquire a UNL, newcoind will probe for https web servers at the domains
+#   listed below in the following order: newcoin.DOMAIN, www.DOMAIN, DOMAIN
 #
 
+[validators]
 redstem.com
 alpha.redstem.com
 bravo.redstem.com
+charlie.redstem.com
+delta.redstem.com
+echo.redstem.com
