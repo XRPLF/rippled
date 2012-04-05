@@ -16,34 +16,38 @@ using namespace boost::asio;
 
 HttpsClient::HttpsClient(
     boost::asio::io_service& io_service,
-    const std::string strDomain,
+	const unsigned short port,
     const std::string strPath,
-    unsigned short port,
     std::size_t responseMax
     ) :
 		mCtx(boost::asio::ssl::context::sslv23),
 		mResolver(io_service),
-		mQuery(strDomain, boost::lexical_cast<std::string>(port),
-			ip::resolver_query_base::numeric_service|ip::resolver_query_base::numeric_service),
 		mSocketSsl(io_service, mCtx),
 		mResponse(responseMax),
-		mStrDomain(strDomain),
+		mStrPath(strPath),
+		mPort(port),
 		mDeadline(io_service)
 {
-    std::ostream		osRequest(&mRequest);
-
-    osRequest <<
-		"GET " << strPath << " HTTP/1.0\r\n"
-		"Host: " << mStrDomain << "\r\n"
-		"Accept: */*\r\n"						// YYY Do we need this line?
-		"Connection: close\r\n\r\n";
 }
 
 void HttpsClient::httpsGet(
+	std::deque<std::string> deqSites,
 	boost::posix_time::time_duration timeout,
 	boost::function<void(const boost::system::error_code& ecResult, std::string& strData)> complete) {
 
+	mDeqSites	= deqSites;
 	mComplete	= complete;
+	mTimeout	= timeout;
+
+	httpsNext();
+}
+
+void HttpsClient::httpsNext()
+{
+	std::cerr << "Fetch: " << mDeqSites[0] << std::endl;
+    boost::shared_ptr<boost::asio::ip::tcp::resolver::query>	query(new boost::asio::ip::tcp::resolver::query(mDeqSites[0], boost::lexical_cast<std::string>(mPort),
+			ip::resolver_query_base::numeric_service|ip::resolver_query_base::numeric_service));
+	mQuery	= query;
 
 	mCtx.set_default_verify_paths(mShutdown);
 	if (!mShutdown)
@@ -53,7 +57,7 @@ void HttpsClient::httpsGet(
 
 	if (!mShutdown)
 	{
-		mDeadline.expires_from_now(timeout, mShutdown);
+		mDeadline.expires_from_now(mTimeout, mShutdown);
 
 		std::cerr << "expires_from_now: " << mShutdown.message() << std::endl;
 	}
@@ -69,9 +73,9 @@ void HttpsClient::httpsGet(
 
     if (!mShutdown)
     {
-		std::cerr << "Resolving: " << mStrDomain << std::endl;
+		std::cerr << "Resolving: " << mDeqSites[0] << std::endl;
 
-		mResolver.async_resolve(mQuery,
+		mResolver.async_resolve(*mQuery,
 			boost::bind(
 				&HttpsClient::handleResolve,
 				shared_from_this(),
@@ -90,11 +94,11 @@ void HttpsClient::handleDeadline(const boost::system::error_code& ecResult)
 		// Timer canceled because deadline no longer needed.
 		std::cerr << "Deadline cancelled." << std::endl;
 
-		// Do nothing.
+		// Do nothing.  Aborter is done.
 	}
 	else if (ecResult)
     {
-		std::cerr << "Deadline error: " << mStrDomain << ": " << ecResult.message() << std::endl;
+		std::cerr << "Deadline error: " << mDeqSites[0] << ": " << ecResult.message() << std::endl;
 
 		// Can't do anything sound.
 		abort();
@@ -117,7 +121,7 @@ void HttpsClient::handleDeadline(const boost::system::error_code& ecResult)
 
 		if (ec_shutdown)
 		{
-			std::cerr << "Shutdown error: " << mStrDomain << ": " << ec_shutdown.message() << std::endl;
+			std::cerr << "Shutdown error: " << mDeqSites[0] << ": " << ec_shutdown.message() << std::endl;
 		}
     }
 }
@@ -132,7 +136,7 @@ void HttpsClient::handleResolve(
 
     if (mShutdown)
     {
-		std::cerr << "Resolve error: " << mStrDomain << ": " << mShutdown.message() << std::endl;
+		std::cerr << "Resolve error: " << mDeqSites[0] << ": " << mShutdown.message() << std::endl;
 
 		invokeComplete(mShutdown);
     }
@@ -168,11 +172,11 @@ void HttpsClient::handleConnect(const boost::system::error_code& ecResult)
 	    mSocketSsl.set_verify_mode(boost::asio::ssl::verify_peer);
 
 		// XXX Verify semantics of RFC 2818 are what we want.
-	    mSocketSsl.set_verify_callback(boost::asio::ssl::rfc2818_verification(mStrDomain), mShutdown);
+	    mSocketSsl.set_verify_callback(boost::asio::ssl::rfc2818_verification(mDeqSites[0]), mShutdown);
 
 	    if (mShutdown)
 		{
-			std::cerr << "set_verify_callback: " << mStrDomain << ": " << mShutdown.message() << std::endl;
+			std::cerr << "set_verify_callback: " << mDeqSites[0] << ": " << mShutdown.message() << std::endl;
 		}
 	}
 
@@ -203,6 +207,14 @@ void HttpsClient::handleRequest(const boost::system::error_code& ecResult)
 	else
 	{
 		std::cerr << "SSL session started." << std::endl;
+
+		std::ostream			osRequest(&mRequest);
+
+		osRequest <<
+			"GET " << mStrPath << " HTTP/1.0\r\n"
+			"Host: " << mDeqSites[0] << "\r\n"
+			"Accept: */*\r\n"						// YYY Do we need this line?
+			"Connection: close\r\n\r\n";
 
 		boost::asio::async_write(
 			mSocketSsl,
@@ -277,7 +289,16 @@ void HttpsClient::invokeComplete(const boost::system::error_code& ecResult, std:
 		std::cerr << "Deadline cancel error: " << ecCancel.message() << std::endl;
 	}
 
-	mComplete(ecResult ? ecResult : ecCancel, strData);
+	mDeqSites.pop_front();
+
+	if (mDeqSites.empty())
+	{
+		mComplete(ecResult ? ecResult : ecCancel, strData);
+	}
+	else
+	{
+		httpsNext();
+	}
 }
 
 void HttpsClient::parseData()
@@ -293,8 +314,9 @@ void HttpsClient::parseData()
 						&& !smMatch[1].compare("200")
 						&& boost::regex_match(strData, smMatch, reBody);	// Match body.
 
-	std::cerr << "Match: " << bMatch << std::endl;
-	std::cerr << "Body:" << smMatch[1] << std::endl;
+	// std::cerr << "Data:" << strData << std::endl;
+	// std::cerr << "Match: " << bMatch << std::endl;
+	// std::cerr << "Body:" << smMatch[1] << std::endl;
 
 	if (bMatch)
 	{
@@ -308,4 +330,52 @@ void HttpsClient::parseData()
 		invokeComplete(boost::system::error_code(errc::bad_address, system_category()));
 	}
 }
+
+void HttpsClient::httpsGet(
+	boost::asio::io_service& io_service,
+	std::deque<std::string> deqSites,
+	const unsigned short port,
+	const std::string strPath,
+	std::size_t responseMax,
+	boost::posix_time::time_duration timeout,
+	boost::function<void(const boost::system::error_code& ecResult, std::string& strData)> complete) {
+
+    boost::shared_ptr<HttpsClient> client(new HttpsClient(io_service, port, strPath, responseMax));
+
+	client->httpsGet(deqSites, timeout, complete);
+}
+
+void HttpsClient::httpsGet(
+	boost::asio::io_service& io_service,
+	std::string strSite,
+	const unsigned short port,
+	const std::string strPath,
+	std::size_t responseMax,
+	boost::posix_time::time_duration timeout,
+	boost::function<void(const boost::system::error_code& ecResult, std::string& strData)> complete) {
+
+	std::deque<std::string> deqSites(1, strSite);
+
+    boost::shared_ptr<HttpsClient> client(new HttpsClient(io_service, port, strPath, responseMax));
+
+	client->httpsGet(deqSites, timeout, complete);
+}
+
+bool HttpsClient::httpsParseUrl(const std::string strUrl, std::string& strDomain, std::string& strPath)
+{
+	static boost::regex	reUrl("(?i)\\`https://([^/]+)(/.*)\\'");			// https://DOMAINPATH
+
+	boost::smatch	smMatch;
+
+	bool	bMatch	= boost::regex_match(strUrl, smMatch, reUrl);		// Match status code.
+
+	if (bMatch)
+	{
+		strDomain	= smMatch[0];
+		strDomain	= smMatch[1];
+	}
+
+	return bMatch;
+}
+
 // vim:ts=4

@@ -1,6 +1,7 @@
 #ifndef _HTTPS_CLIENT_
 #define _HTTPS_CLIENT_
 
+#include <deque>
 #include <string>
 
 #include <boost/asio.hpp>
@@ -18,19 +19,23 @@
 class HttpsClient : public boost::enable_shared_from_this<HttpsClient>
 {
 private:
-    boost::asio::ssl::context								mCtx;
-    boost::asio::ip::tcp::resolver							mResolver;
-    boost::asio::ip::tcp::resolver::query					mQuery;
-    boost::asio::ssl::stream<boost::asio::ip::tcp::socket>	mSocketSsl;
-    boost::asio::streambuf									mRequest;
-    boost::asio::streambuf									mResponse;
-    std::string												mStrDomain;
+    boost::asio::ssl::context									mCtx;
+    boost::asio::ip::tcp::resolver								mResolver;
+	boost::shared_ptr<boost::asio::ip::tcp::resolver::query>	mQuery;
+    boost::asio::ssl::stream<boost::asio::ip::tcp::socket>		mSocketSsl;
+	boost::asio::streambuf										mRequest;
+    boost::asio::streambuf										mResponse;
+	const std::string											mStrPath;
+	const unsigned short										mPort;
     boost::function<void(const boost::system::error_code& ecResult, std::string& strData)> mComplete;
 
-	boost::asio::deadline_timer								mDeadline;
+	boost::asio::deadline_timer									mDeadline;
 
 	// If not success, we are shutting down.
-	boost::system::error_code								mShutdown;
+	boost::system::error_code									mShutdown;
+
+	std::deque<std::string>										mDeqSites;
+	boost::posix_time::time_duration							mTimeout;
 
 	void handleDeadline(const boost::system::error_code& ecResult);
 
@@ -44,23 +49,44 @@ private:
     void handleWrite(const boost::system::error_code& ecResult);
     void handleData(const boost::system::error_code& ecResult);
 
-	void invokeComplete(const boost::system::error_code& ecResult, std::string strData = "");
-
 	void parseData();
+	void httpsNext();
+
+	void invokeComplete(const boost::system::error_code& ecResult, std::string strData = "");
 
 public:
 
     HttpsClient(
 		boost::asio::io_service& io_service,
-		const std::string strDomain,
+		const unsigned short port,
 		const std::string strPath,
-		unsigned short port,
 		std::size_t responseMax
 		);
 
 	void httpsGet(
+		std::deque<std::string> deqSites,
 		boost::posix_time::time_duration timeout,
 		boost::function<void(const boost::system::error_code& ecResult, std::string& strData)> complete);
+
+	static void httpsGet(
+		boost::asio::io_service& io_service,
+		std::deque<std::string> deqSites,
+		const unsigned short port,
+		const std::string strPath,
+		std::size_t responseMax,
+		boost::posix_time::time_duration timeout,
+		boost::function<void(const boost::system::error_code& ecResult, std::string& strData)> complete);
+
+	static void httpsGet(
+		boost::asio::io_service& io_service,
+		std::string strSite,
+		const unsigned short port,
+		const std::string strPath,
+		std::size_t responseMax,
+		boost::posix_time::time_duration timeout,
+		boost::function<void(const boost::system::error_code& ecResult, std::string& strData)> complete);
+
+	static bool httpsParseUrl(const std::string strUrl, std::string& strDomain, std::string& strPath);
 };
 #endif
 // vim:ts=4
