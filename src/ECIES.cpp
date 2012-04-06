@@ -60,8 +60,8 @@ ECIES_KEY_TYPE CKey::getECIESSecret(CKey& otherKey)
 }
 
 // Our ciphertext is all encrypted except the IV. The encrypted data decodes as follows:
-// 1) 256-bit IV (unencrypted)
-// 2) Encrypted: 256-bits HMAC of original plaintext
+// 1) IV (unencrypted)
+// 2) Encrypted: HMAC of original plaintext
 // 3) Encrypted: Original plaintext
 // 4) Encrypted: Rest of block/padding
 
