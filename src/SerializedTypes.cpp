@@ -61,6 +61,16 @@ std::string STUInt64::getText() const
 	return boost::lexical_cast<std::string>(value);
 }
 
+STHash128* STHash128::construct(SerializerIterator& u, const char *name)
+{
+	return new STHash128(name, u.get128());
+}
+
+std::string STHash128::getText() const
+{
+	return value.GetHex();
+}
+
 STHash160* STHash160::construct(SerializerIterator& u, const char *name)
 {
 	return new STHash160(name, u.get160());

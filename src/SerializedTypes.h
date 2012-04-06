@@ -14,10 +14,10 @@ enum SerializedTypeID
 
 	// standard types
 	STI_OBJECT=1, STI_UINT8=2, STI_UINT16=3, STI_UINT32=4, STI_UINT64=5,
-	STI_HASH160=6, STI_HASH256=7, STI_VL=8, STI_TL=9,
+	STI_HASH128=6, STI_HASH160=7, STI_HASH256=8, STI_VL=9, STI_TL=10,
 
 	// high level types
-	STI_ACCOUNT=10, STI_TRANSACTION=10
+	STI_ACCOUNT=100, STI_TRANSACTION=101
 };
 
 class SerializedType
@@ -142,6 +142,31 @@ public:
 
 	operator uint64() const { return value; }
 	STUInt64& operator=(uint64 v) { value=v; return *this; }
+};
+
+class STHash128 : public SerializedType
+{
+protected:
+	uint128 value;
+
+public:
+
+	STHash128(const uint128& v=uint128()) : value(v) { ; }
+	STHash128(const char *n, const uint128& v=uint128()) : SerializedType(n), value(v) { ; }
+	STHash128() { ; }
+	static STHash128* construct(SerializerIterator&, const char *name=NULL);
+
+	int getLength() const { return 20; }
+	SerializedTypeID getType() const { return STI_HASH128; }
+	STHash128* duplicate() const { return new STHash128(name, value); }
+	virtual std::string getText() const;
+	void add(Serializer& s) const { s.add128(value); }
+
+	const uint128& getValue() const { return value; }
+	void setValue(const uint128& v) { value=v; }
+
+	operator uint128() const { return value; }
+	STHash128& operator=(const uint128& v) { value=v; return *this; }
 };
 
 class STHash160 : public SerializedType

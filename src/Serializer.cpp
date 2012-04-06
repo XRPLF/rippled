@@ -99,25 +99,32 @@ bool Serializer::get64(uint64& o, int offset) const
 	return true;
 }
 
+bool Serializer::get128(uint128& o, int offset) const
+{
+	if((offset+(128/8))>mData.size()) return false;
+	memcpy(o.begin(), &(mData.front())+offset, (128/8));
+	return true;
+}
+
 bool Serializer::get160(uint160& o, int offset) const
 {
-	if((offset+20)>mData.size()) return false;
-	memcpy(o.begin(), &(mData.front())+offset, 20);
+	if((offset+(160/8))>mData.size()) return false;
+	memcpy(o.begin(), &(mData.front())+offset, (160/8));
 	return true;
 }
 
 bool Serializer::get256(uint256& o, int offset) const
 {
-	if((offset+32)>mData.size()) return false;
-	memcpy(o.begin(), &(mData.front())+offset, 32);
+	if((offset+(256/8))>mData.size()) return false;
+	memcpy(o.begin(), &(mData.front())+offset, (256/8));
 	return true;
 }
 
 uint256 Serializer::get256(int offset) const
 {
 	uint256 ret;
-	if((offset+32)>mData.size()) return ret;
-	memcpy(&ret, &(mData.front())+offset, 32);
+	if((offset+(256/8))>mData.size()) return ret;
+	memcpy(&ret, &(mData.front())+offset, (256/8));
 	return ret;
 }
 
@@ -403,7 +410,7 @@ bool Serializer::getTaggedList(std::vector<TaggedListItem>& list, int offset, in
 	return true;
 }
 
-std::vector<unsigned char> Serializer::encodeVL(int length) throw()
+std::vector<unsigned char> Serializer::encodeVL(int length)
 {
 	unsigned char lenBytes[4];
 	if(length<=192)
@@ -429,7 +436,7 @@ std::vector<unsigned char> Serializer::encodeVL(int length) throw()
 	else throw(std::overflow_error("lenlen"));
 }
 
-int Serializer::encodeLengthLength(int length) throw()
+int Serializer::encodeLengthLength(int length)
 {
 	if(length<0) throw(std::overflow_error("len<0"));
 	if(length<=192) return 1;
@@ -438,7 +445,7 @@ int Serializer::encodeLengthLength(int length) throw()
 	throw(std::overflow_error("len>918644"));
 }
 
-int Serializer::decodeLengthLength(int b1) throw()
+int Serializer::decodeLengthLength(int b1)
 {
 	if(b1<0) throw(std::overflow_error("b1<0"));
 	if(b1<=192) return 1;
@@ -447,21 +454,21 @@ int Serializer::decodeLengthLength(int b1) throw()
 	throw(std::overflow_error("b1>254"));
 }
 
-int Serializer::decodeVLLength(int b1) throw()
+int Serializer::decodeVLLength(int b1)
 {
 	if(b1<0) throw(std::overflow_error("b1<0"));
 	if(b1>254) throw(std::overflow_error("b1>254"));
 	return b1;
 }
 
-int Serializer::decodeVLLength(int b1, int b2) throw()
+int Serializer::decodeVLLength(int b1, int b2)
 {
 	if(b1<193) throw(std::overflow_error("b1<193"));
 	if(b1>240) throw(std::overflow_error("b1>240"));
 	return 193+(b1-193)*256+b2;
 }
 
-int Serializer::decodeVLLength(int b1, int b2, int b3) throw()
+int Serializer::decodeVLLength(int b1, int b2, int b3)
 {
 	if(b1<241) throw(std::overflow_error("b1<241"));
 	if(b1>254) throw(std::overflow_error("b1>254"));
@@ -478,7 +485,7 @@ int SerializerIterator::getBytesLeft()
 	return mSerializer.getLength()-mPos;
 }
 
-unsigned char SerializerIterator::get8() throw()
+unsigned char SerializerIterator::get8()
 {
 	int val;
 	if(!mSerializer.get8(val, mPos)) throw(0);
@@ -486,7 +493,7 @@ unsigned char SerializerIterator::get8() throw()
 	return val;
 }
 
-uint16 SerializerIterator::get16() throw()
+uint16 SerializerIterator::get16()
 {
 	uint16 val;
 	if(!mSerializer.get16(val, mPos)) throw(0);
@@ -494,7 +501,7 @@ uint16 SerializerIterator::get16() throw()
 	return val;
 }
 
-uint32 SerializerIterator::get32() throw()
+uint32 SerializerIterator::get32()
 {
 	uint32 val;
 	if(!mSerializer.get32(val, mPos)) throw(0);
@@ -502,7 +509,7 @@ uint32 SerializerIterator::get32() throw()
 	return val;
 }
 
-uint64 SerializerIterator::get64() throw()
+uint64 SerializerIterator::get64()
 {
 	uint64 val;
 	if(!mSerializer.get64(val, mPos)) throw(0);
@@ -510,7 +517,15 @@ uint64 SerializerIterator::get64() throw()
 	return val;
 }
 
-uint160 SerializerIterator::get160() throw()
+uint128 SerializerIterator::get128()
+{
+	uint128 val;
+	if(!mSerializer.get128(val, mPos)) throw(0);
+	mPos+=128/8;
+	return val;
+}
+
+uint160 SerializerIterator::get160()
 {
 	uint160 val;
 	if(!mSerializer.get160(val, mPos)) throw(0);
@@ -518,7 +533,7 @@ uint160 SerializerIterator::get160() throw()
 	return val;
 }
 
-uint256 SerializerIterator::get256() throw()
+uint256 SerializerIterator::get256()
 {
 	uint256 val;
 	if(!mSerializer.get256(val, mPos)) throw(0);
@@ -526,7 +541,7 @@ uint256 SerializerIterator::get256() throw()
 	return val;
 }
 
-std::vector<unsigned char> SerializerIterator::getVL() throw()
+std::vector<unsigned char> SerializerIterator::getVL()
 {
 	int length;
 	std::vector<unsigned char> vl;
@@ -535,7 +550,7 @@ std::vector<unsigned char> SerializerIterator::getVL() throw()
 	return vl;
 }
 
-std::vector<TaggedListItem> SerializerIterator::getTaggedList() throw()
+std::vector<TaggedListItem> SerializerIterator::getTaggedList()
 {
 	int length;
 	std::vector<TaggedListItem> tl;

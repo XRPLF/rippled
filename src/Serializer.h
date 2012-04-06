@@ -49,6 +49,7 @@ class Serializer
 	bool get16(uint16&, int offset) const;
 	bool get32(uint32&, int offset) const;
 	bool get64(uint64&, int offset) const;
+	bool get128(uint128&, int offset) const;
 	bool get160(uint160&, int offset) const;
 	bool get256(uint256&, int offset) const;
 	uint256 get256(int offset) const;
@@ -87,12 +88,12 @@ class Serializer
 	bool addSignature(CKey& rkey);
 
 	// low-level VL length encode/decode functions
-	static std::vector<unsigned char> encodeVL(int length) throw();
-	static int encodeLengthLength(int length) throw(); // length to encode length
-	static int decodeLengthLength(int b1) throw();
-	static int decodeVLLength(int b1) throw();
-	static int decodeVLLength(int b1, int b2) throw();
-	static int decodeVLLength(int b1, int b2, int b3) throw();
+	static std::vector<unsigned char> encodeVL(int length);
+	static int encodeLengthLength(int length); // length to encode length
+	static int decodeLengthLength(int b1);
+	static int decodeVLLength(int b1);
+	static int decodeVLLength(int b1, int b2);
+	static int decodeVLLength(int b1, int b2, int b3);
 
 	static void TestSerializer();
 };
@@ -113,15 +114,17 @@ public:
 	int getPos(void) { return mPos; }
 	int getBytesLeft();
 
-	unsigned char get8() throw();
-	uint16 get16() throw();
-	uint32 get32() throw();
-	uint64 get64() throw();
-	uint160 get160() throw();
-	uint256 get256() throw();
+	// get functions throw on error
+	unsigned char get8();
+	uint16 get16();
+	uint32 get32();
+	uint64 get64();
+	uint128 get128();
+	uint160 get160();
+	uint256 get256();
 
-	std::vector<unsigned char> getVL() throw();
-	std::vector<TaggedListItem> getTaggedList() throw();
+	std::vector<unsigned char> getVL();
+	std::vector<TaggedListItem> getTaggedList();
 };
 
 #endif
