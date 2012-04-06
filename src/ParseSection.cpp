@@ -29,27 +29,27 @@ section ParseSection(const std::string strInput, const bool bTrim)
     // Parse each line.
     BOOST_FOREACH(std::string& strValue, vLines)
     {
-	if (strValue.empty() || strValue[0] == '#')
-	{
-	    // Blank line or comment, do nothing.
-	}
-	else if (strValue[0] == '[' && strValue[strValue.length()-1] == ']') {
-	    // New section.
+		if (strValue.empty() || strValue[0] == '#')
+		{
+			// Blank line or comment, do nothing.
+		}
+		else if (strValue[0] == '[' && strValue[strValue.length()-1] == ']') {
+			// New section.
 
-	    strSection		    = strValue.substr(1, strValue.length()-2);
-	    secResult[strSection]   = section::mapped_type();
-	}
-	else
-	{
-	    // Another line in a section.
-	    if (bTrim)
-	    {
-		boost::algorithm::trim_right_if(strValue, boost::algorithm::is_space());
-		boost::algorithm::trim_left_if(strValue, boost::algorithm::is_space());
-	    }
+			strSection				= strValue.substr(1, strValue.length()-2);
+			secResult[strSection]   = section::mapped_type();
+		}
+		else
+		{
+			// Another line in a section.
+			if (bTrim)
+			{
+				boost::algorithm::trim_right_if(strValue, boost::algorithm::is_space());
+				boost::algorithm::trim_left_if(strValue, boost::algorithm::is_space());
+			}
 
-	    secResult[strSection].push_back(strValue);
-	}
+			secResult[strSection].push_back(strValue);
+		}
     }
 
     return secResult;
@@ -60,11 +60,11 @@ void PrintSection(section secInput)
     std::cerr << "PrintSection>" << std::endl;
     BOOST_FOREACH(section::value_type& pairSection, secInput)
     {
-	std::cerr << "[" << pairSection.first << "]" << std::endl;
-	BOOST_FOREACH(std::string& value, pairSection.second)
-	{
-	    std::cerr << value << std::endl;
-	}
+		std::cerr << "[" << pairSection.first << "]" << std::endl;
+		BOOST_FOREACH(std::string& value, pairSection.second)
+		{
+			std::cerr << value << std::endl;
+		}
     }
     std::cerr << "PrintSection<" << std::endl;
 }
@@ -108,6 +108,5 @@ bool sectionSingleB(section& secSource, std::string strSection, std::string& str
 
 	return bSingle;
 }
-
 
 // vim:ts=4
