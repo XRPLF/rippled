@@ -23,8 +23,11 @@ enum SOE_Field
 	sfFlags, sfExtensions, sfTargetLedger, sfSourceTag, sfIdentifier,
 	sfDestination, sfTarget, sfAmount, sfCurrency,
 	sfAmountIn, sfAmountOut, sfCurrencyIn, sfCurrencyOut,
-	sfInvoiceID,
-	sfExpireLedger
+	sfInvoiceID, sfExpireLedger, sfMessageKey, sfCurrentRate, sfRateLock,
+	sfAccount, sfSequence, sfBalance, sfWalletLocator, sfEmailHash,
+	sfBorrower, sfLendfer, sfLimit, sfOfferCurrency,
+	sfLastReceive, sfLastTxn, sfLender, sfNextRate, sfNextRateLgr, sfNextRateExp,
+	sfNickname, sfMinimumOffer
 };
 
 struct SOElement
