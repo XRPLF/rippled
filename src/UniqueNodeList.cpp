@@ -118,7 +118,6 @@ void UniqueNodeList::responseFetch(const std::string strDomain, const boost::sys
 	std::cerr << "Error: " << err.message() << std::endl;
 
 	section				secSite	= ParseSection(strSiteFile, true);
-	section::iterator	it;
 	bool				bGood	= !err;
 
 	//

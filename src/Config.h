@@ -20,6 +20,7 @@ public:
 	float BELIEF_PERCENT;
 
 	// node networking parameters
+	std::string PEER_IP;
 	int PEER_PORT;
 	int NUMBER_CONNECTIONS;
 	bool NODE_INBOUND;		// we accept inbound connections
@@ -31,9 +32,13 @@ public:
 	std::string HANKO_PRIVATE;
 
 	// RPC parameters
+	std::string RPC_IP;
 	int RPC_PORT;
 	std::string RPC_USER;
 	std::string RPC_PASSWORD;
+
+	std::string VALIDATION_PASSWORD;
+	std::string VALIDATION_KEY;
 
 	// configuration parameters
 	std::string DATA_DIR;

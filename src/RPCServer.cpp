@@ -558,7 +558,7 @@ Json::Value RPCServer::doUnlDefault(Json::Value& params) {
 
 			if (!ifsDefault)
 			{
-				std::cerr << "Failed to read '" VALIDATORS_FILE_NAME "'." << std::endl;
+				std::cerr << "Failed to open '" VALIDATORS_FILE_NAME "'." << std::endl;
 
 				bNetwork	= true;
 			}
@@ -566,6 +566,13 @@ Json::Value RPCServer::doUnlDefault(Json::Value& params) {
 			{
 				strValidators.assign((std::istreambuf_iterator<char>(ifsDefault)),
 					std::istreambuf_iterator<char>());
+
+				if (ifsDefault.bad())
+				{
+					std::cerr << "Failed to read '" VALIDATORS_FILE_NAME "'." << std::endl;
+
+					bNetwork	= true;
+				}
 			}
 		}
 

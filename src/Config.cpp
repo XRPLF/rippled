@@ -1,9 +1,17 @@
 #include "Config.h"
-#include "../util/pugixml.hpp"
 
+#include "ParseSection.h"
+
+#include <fstream>
 #include <boost/lexical_cast.hpp>
 
-using namespace pugi;
+#define CONFIG_FILE_NAME			"newcoind.cfg"
+#define SECTION_PEER_IP				"peer_ip"
+#define SECTION_PEER_PORT			"peer_port"
+#define SECTION_RPC_IP				"rpc_ip"
+#define SECTION_RPC_PORT			"rpc_port"
+#define SECTION_VALIDATION_PASSWORD "validation_password"
+#define SECTION_VALIDATION_KEY	    "validation_key"
 
 Config theConfig;
 
@@ -17,7 +25,7 @@ Config::Config()
 	PEER_PORT=6561;
 	RPC_PORT=5001;
 	NUMBER_CONNECTIONS=30;
-	
+
 	// a new ledger every 30 min
 	LEDGER_SECONDS=(60*30); 
 
@@ -31,16 +39,42 @@ Config::Config()
 
 void Config::load()
 {
-	
-	xml_document doc;
-	xml_parse_result result = doc.load_file("config.xml");
-	xml_node root=doc.child("config");
+	std::ifstream	ifsConfig(CONFIG_FILE_NAME, std::ios::in);
 
-	xml_node node= root.child("PEER_PORT");
-	if(!node.empty()) PEER_PORT=boost::lexical_cast<int>(node.child_value());
+	if (!ifsConfig)
+	{
+		std::cerr << "Failed to open '" CONFIG_FILE_NAME "'." << std::endl;
+	}
+	else
+	{
+		std::string	strConfigFile;
 
-	node= root.child("RPC_PORT");
-	if(!node.empty()) RPC_PORT=boost::lexical_cast<int>(node.child_value());
+		strConfigFile.assign((std::istreambuf_iterator<char>(ifsConfig)),
+			std::istreambuf_iterator<char>());
+
+		if (ifsConfig.bad())
+		{
+			std::cerr << "Failed to read '" CONFIG_FILE_NAME "'." << std::endl;
+		}
+		else
+		{
+			section		secConfig	= ParseSection(strConfigFile, true);
+			std::string	strTemp;
+
+			(void) sectionSingleB(secConfig, SECTION_PEER_IP, PEER_IP);
+
+			if (sectionSingleB(secConfig, SECTION_PEER_PORT, strTemp))
+				PEER_PORT=boost::lexical_cast<int>(strTemp);
+
+			(void) sectionSingleB(secConfig, SECTION_RPC_IP, RPC_IP);
+
+			if (sectionSingleB(secConfig, SECTION_RPC_PORT, strTemp))
+				RPC_PORT=boost::lexical_cast<int>(strTemp);
+
+			(void) sectionSingleB(secConfig, SECTION_VALIDATION_PASSWORD, VALIDATION_PASSWORD);
+			(void) sectionSingleB(secConfig, SECTION_VALIDATION_KEY, VALIDATION_KEY);
+		}
+	}
 
 	/*
 	node=root.child("DB_TYPE");
@@ -51,3 +85,5 @@ void Config::load()
 	}else */
 
 }
+
+// vim:ts=4

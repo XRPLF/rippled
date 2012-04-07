@@ -6,8 +6,8 @@
 using namespace std;
 using namespace boost::asio::ip;
 
-PeerDoor::PeerDoor(boost::asio::io_service& io_service) : 
-	mAcceptor(io_service, tcp::endpoint(tcp::v4(), theConfig.PEER_PORT))
+PeerDoor::PeerDoor(boost::asio::io_service& io_service) :
+	mAcceptor(io_service, tcp::endpoint(address().from_string(theConfig.PEER_IP), theConfig.PEER_PORT))
 {
 	cout << "Opening peer door on port: " << theConfig.PEER_PORT << endl;
 	startListening();

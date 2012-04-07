@@ -126,7 +126,7 @@ Json::Value callRPC(const std::string& strMethod, const Json::Value& params)
 	// Connect to localhost
 
 	std::cout << "Connecting to port:" << theConfig.RPC_PORT << std::endl;
-	ip::tcp::endpoint endpoint( ip::address::from_string("127.0.0.1"), theConfig.RPC_PORT);
+	ip::tcp::endpoint endpoint(ip::address::from_string(theConfig.RPC_IP), theConfig.RPC_PORT);
 	ip::tcp::iostream stream;
 	stream.connect(endpoint);
 	if(stream.fail())
@@ -142,11 +142,11 @@ Json::Value callRPC(const std::string& strMethod, const Json::Value& params)
 
 	// Send request
 	std::string strRequest = JSONRPCRequest(strMethod, params, Json::Value(1));
-	std::cout << "send request " << strMethod << " : " << strRequest << std::endl; 
+	std::cout << "send request " << strMethod << " : " << strRequest << std::endl;
 	std::string strPost = createHTTPPost(strRequest, mapRequestHeaders);
 	stream << strPost << std::flush;
 
-	std::cout << "post  " << strPost << std::endl; 
+	std::cout << "post  " << strPost << std::endl;
 
 	// Receive reply
 	std::map<std::string, std::string> mapHeaders;
