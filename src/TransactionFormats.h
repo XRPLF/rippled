@@ -27,5 +27,5 @@ const int TransactionMinLen=32;
 const int TransactionMaxLen=1048576;
 
 extern TransactionFormat InnerTxnFormats[];
-extern TransactionFormat* getFormat(TransactionType t);
+extern TransactionFormat* getTxnFormat(TransactionType t);
 #endif

@@ -3,7 +3,7 @@
 
 SerializedTransaction::SerializedTransaction(TransactionType type)
 {
-	mFormat=getFormat(type);
+	mFormat=getTxnFormat(type);
 	if(mFormat==NULL) throw(std::runtime_error("invalid transaction type"));
 
 	mMiddleTxn.giveObject(new STUInt32("Magic", TransactionMagic));
@@ -33,7 +33,7 @@ SerializedTransaction::SerializedTransaction(SerializerIterator& sit, int length
 
 	int type=sit.get32();
 	mMiddleTxn.giveObject(new STUInt32("Type", type));
-	mFormat=getFormat(static_cast<TransactionType>(type));
+	mFormat=getTxnFormat(static_cast<TransactionType>(type));
 	if(!mFormat) throw(std::runtime_error("Transaction has invalid type"));
 	mMiddleTxn.giveObject(new STUInt64("Fee", sit.get64()));
 
