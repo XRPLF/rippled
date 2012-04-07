@@ -371,8 +371,8 @@ bool HttpsClient::httpsParseUrl(const std::string strUrl, std::string& strDomain
 
 	if (bMatch)
 	{
-		strDomain	= smMatch[0];
 		strDomain	= smMatch[1];
+		strDomain	= smMatch[2];
 	}
 
 	return bMatch;
