@@ -45,7 +45,7 @@ TransactionFormat InnerTxnFormats[]=
 	{ NULL, ttINVALID }
 };
 
-TransactionFormat* getFormat(TransactionType t)
+TransactionFormat* getTxnFormat(TransactionType t)
 {
 	TransactionFormat* f=InnerTxnFormats;
 	while(f->t_name!=NULL)
