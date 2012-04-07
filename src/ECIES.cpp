@@ -258,19 +258,25 @@ std::vector<unsigned char> CKey::decryptECIES(CKey& otherKey, const std::vector<
 bool checkECIES(void)
 {
 	CKey senderPriv, recipientPriv, senderPub, recipientPub;
-	senderPriv.MakeNewKey();
-	recipientPriv.MakeNewKey();
-
-	if(!senderPub.SetPubKey(senderPriv.GetPubKey()))
-		throw std::runtime_error("key error");
-	if(!recipientPub.SetPubKey(recipientPriv.GetPubKey()))
-		throw std::runtime_error("key error");
 
 	for(int i=0; i<30000; i++)
 	{
+		if((i%100)==0)
+		{ // generate new keys every 100 times
+//			std::cerr << "new keys" << std::endl;
+			senderPriv.MakeNewKey();
+			recipientPriv.MakeNewKey();
+
+			if(!senderPub.SetPubKey(senderPriv.GetPubKey()))
+				throw std::runtime_error("key error");
+			if(!recipientPub.SetPubKey(recipientPriv.GetPubKey()))
+				throw std::runtime_error("key error");
+		}
+
 		// generate message
 		std::vector<unsigned char> message(4096);
 		int msglen=i%3000;
+
 		if(RAND_bytes(static_cast<unsigned char *>(&message.front()), msglen) != 1)
 			throw std::runtime_error("insufficient entropy");
 		message.resize(msglen);
@@ -281,7 +287,11 @@ bool checkECIES(void)
 		// decrypt message with recipient's private key and sender's public key
 		std::vector<unsigned char> decrypt=recipientPriv.decryptECIES(senderPub, ciphertext);
 
-		if(decrypt != message) return false;
+		if(decrypt != message)
+		{
+			assert(false);
+			return false;
+		}
 //		std::cerr << "Msg(" << msglen << ") ok " << ciphertext.size() << std::endl;
 	}
 	return true;
