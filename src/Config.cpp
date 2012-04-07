@@ -2,6 +2,7 @@
 
 #include "ParseSection.h"
 
+#include <iostream>
 #include <fstream>
 #include <boost/lexical_cast.hpp>
 
