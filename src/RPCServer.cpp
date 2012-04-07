@@ -531,6 +531,61 @@ Json::Value RPCServer::doUnlAdd(Json::Value& params) {
 	else return "invalid params";
 }
 
+// validation_create
+// validation_create <pass_phrase>
+// validation_create <seed>
+// validation_create <seed_key>
+Json::Value RPCServer::doValidatorCreate(Json::Value& params) {
+	NewcoinAddress	familySeed;
+	NewcoinAddress	familyGenerator;
+	NewcoinAddress	nodePublicKey;
+	NewcoinAddress	nodePrivateKey;
+
+
+	if(params.empty())
+	{
+		std::cerr << "Creating random validation seed." << std::endl;
+
+		familySeed.setFamilySeedRandom();					// Get a random seed.
+	}
+	else if (1 == params.size())
+	{
+		if (familySeed.setFamilySeed(params[0u].asString()))
+		{
+			std::cerr << "Recognized validation seed." << std::endl;
+		}
+		else if (1 == familySeed.setFamilySeed1751(params[0u].asString()))
+		{
+			std::cerr << "Recognized 1751 validation seed." << std::endl;
+		}
+		else
+		{
+			std::cerr << "Creating validation seed from pass phrase." << std::endl;
+
+			familySeed.setFamilySeed(CKey::PassPhraseToKey(params[0u].asString()));
+		}
+	}
+	else return "invalid params";
+
+	// Derive generator from seed.
+	familyGenerator.setFamilyGenerator(familySeed);
+
+	// The node public and private is 0th of the sequence.
+	nodePublicKey.setNodePublic(CKey(familyGenerator, 0).GetPubKey());
+	nodePrivateKey.setNodePrivate(CKey(familyGenerator, familySeed.getFamilyPrivateKey(), 0).GetSecret());
+
+	// Paranoia
+	assert(1 == familySeed.setFamilySeed1751(familySeed.humanFamilySeed1751()));
+
+	Json::Value obj(Json::objectValue);
+
+	obj["validation_public_key"]	= nodePublicKey.humanNodePublic().c_str();
+	obj["validation_seed"]			= familySeed.humanFamilySeed().c_str();
+	obj["validation_key"]			= familySeed.humanFamilySeed1751().c_str();
+
+	return obj;
+}
+
 void RPCServer::validatorsResponse(const boost::system::error_code& err, std::string strResponse)
 {
 	std::cerr << "Fetch '" VALIDATORS_FILE_NAME "' complete." << std::endl;
@@ -665,6 +720,8 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 	if(command=="unl_fetch") return doUnlFetch(params);
 	if(command=="unl_list") return doUnlList(params);
 	if(command=="unl_reset") return doUnlReset(params);
+
+	if(command=="validation_create") return doValidatorCreate(params);
 
 	if(command=="createfamily") return doCreateFamily(params);
 	if(command=="familyinfo") return doFamilyInfo(params);

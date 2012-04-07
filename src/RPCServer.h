@@ -53,6 +53,8 @@ class RPCServer  : public boost::enable_shared_from_this<RPCServer>
 	Json::Value doUnlList(Json::Value& params);
 	Json::Value doUnlReset(Json::Value& params);
 
+	Json::Value doValidatorCreate(Json::Value& params);
+
 	// Parses a string account name into a local or remote NewcoinAddress.
 	NewcoinAddress parseAccount(const std::string& account);
 	void validatorsResponse(const boost::system::error_code& err, std::string strResponse);
