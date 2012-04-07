@@ -112,8 +112,10 @@ public:
 	BIGNUM*	getFamilyPrivateKey() const;
 
 	std::string humanFamilySeed() const;
+	std::string humanFamilySeed1751() const;
 
 	bool setFamilySeed(const std::string& strSeed);
+	int setFamilySeed1751(const std::string& strHuman1751);
 	void setFamilySeed(uint128 hash128);
 	void setFamilySeedRandom();
 };

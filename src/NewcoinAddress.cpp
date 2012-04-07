@@ -2,6 +2,7 @@
 #include "key.h"
 #include "Config.h"
 #include "BitcoinUtil.h"
+#include "rfc1751.h"
 
 #include "openssl/rand.h"
 
@@ -438,6 +439,30 @@ BIGNUM*	NewcoinAddress::getFamilyPrivateKey() const
 	return ret;
 }
 
+std::string NewcoinAddress::humanFamilySeed1751() const
+{
+    switch (nVersion) {
+    case VER_NONE:
+		throw std::runtime_error("unset source");
+
+    case VER_FAMILY_SEED:
+		{
+			std::string strHuman;
+			std::string strKey;
+			uint128 uSeed	= getFamilySeed();
+
+			strKey.assign(uSeed.begin(), uSeed.end());
+
+			key2eng(strHuman, strKey);
+
+			return strHuman;
+		}
+
+    default:
+		throw std::runtime_error("bad source");
+    }
+}
+
 std::string NewcoinAddress::humanFamilySeed() const
 {
     switch (nVersion) {
@@ -450,6 +475,22 @@ std::string NewcoinAddress::humanFamilySeed() const
     default:
 		throw std::runtime_error("bad source");
     }
+}
+
+int NewcoinAddress::setFamilySeed1751(const std::string& strHuman1751)
+{
+	std::string strKey;
+	int			iResult	= eng2key(strKey, strHuman1751);
+
+	if (1 == iResult)
+	{
+		std::vector<unsigned char>	vch(strKey.begin(), strKey.end());
+		uint128		uSeed(vch);
+
+		setFamilySeed(uSeed);
+	}
+
+	return iResult;
 }
 
 bool NewcoinAddress::setFamilySeed(const std::string& strSeed)
