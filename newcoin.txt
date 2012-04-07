@@ -17,7 +17,7 @@
 # Undefined sections are reserved.
 # No escapes are currently defined.
 #
-# [node_public_key]:
+# [validation_public_key]:
 #   Mandatory in "newcoin.txt".
 #   Only valid in "newcoin.txt".
 #
@@ -66,7 +66,7 @@
 #   This section allows a site to declare currencies it currently issues.
 #
 
-[node_public_key]
+[validation_public_key]
 n9MZTnHe5D5Q2cgE8oV2usFwRqhUvEA8MwP5Mu1XVD6TxmssPRev
 
 [domain]
