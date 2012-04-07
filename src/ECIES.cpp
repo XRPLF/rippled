@@ -282,7 +282,7 @@ bool checkECIES(void)
 		std::vector<unsigned char> decrypt=recipientPriv.decryptECIES(senderPub, ciphertext);
 
 		if(decrypt != message) return false;
-		std::cerr << "Msg(" << msglen << ") ok " << ciphertext.size() << std::endl;
+//		std::cerr << "Msg(" << msglen << ") ok " << ciphertext.size() << std::endl;
 	}
 	return true;
 }
