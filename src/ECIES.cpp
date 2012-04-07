@@ -19,12 +19,12 @@
 // Anonymous messages can be sent by generating an ephemeral public/private
 // key pair, using that private key with the recipient's public key to
 // encrypt and publishing the ephemeral public key. Non-anonymous messages
-// can be sent by using your own private key with the recipeint's public key.
+// can be sent by using your own private key with the recipient's public key.
 
 // A random IV is used to encrypt the message and an HMAC is used to ensure
 // message integrity. If you need timestamps or need to tell the recipient
 // which key to use (his, yours, or ephemeral) you must add that data.
-// (Obviously, it can't go in the encrypted portion anyway.)
+// (Obviously, key information can't go in the encrypted portion anyway.)
 
 // Our ciphertext is all encrypted except the IV. The encrypted data decodes as follows:
 // 1) IV (unencrypted)
@@ -33,29 +33,21 @@
 // 4) Encrypted: Rest of block/padding
 
 // Algorithmic choices:
-#define ECIES_KEY_HASH		SHA256				// Hash used to generate shared secret
-#define ECIES_KEY_LENGTH	(256/8)				// Size of shared secret
-#define ECIES_KEY_TYPE		uint256				// Type used to hold shared secret
+#define ECIES_KEY_HASH		SHA512				// Hash used to expand shared secret
+#define ECIES_KEY_LENGTH	(512/8)				// Size of expanded shared secret
+#define ECIES_MIN_SEC       (128/8)				// The minimum equivalent security
 #define ECIES_ENC_ALGO		EVP_aes_256_cbc()	// Encryption algorithm
+#define ECIES_ENC_KEY_TYPE	uint256				// Type used to hold shared secret
 #define ECIES_ENC_KEY_SIZE 	(256/8)				// Encryption key size
 #define ECIES_ENC_BLK_SIZE	(128/8)				// Encryption block size
 #define ECIES_ENC_IV_TYPE	uint128				// Type used to hold IV
 #define ECIES_HMAC_ALGO		EVP_sha256()		// HMAC algorithm
-#define ECIES_HMAC_SIZE		(256/8)				// Size of HMAC
-#define ECIES_HMAC_TYPE		uint256				// Type used to hold HMAC
+#define ECIES_HMAC_KEY_TYPE	uint256				// Type used to hold HMAC key
+#define ECIES_HMAC_KEY_SIZE (256/8)				// Size of HMAC key
+#define ECIES_HMAC_TYPE     uint256				// Type used to hold HMAC value
+#define ECIES_HMAC_SIZE		(256/8)				// Size of HMAC value
 
-static void* ecies_key_derivation(const void *input, size_t ilen, void *output, size_t *olen)
-{ // This function must not be changed as it must be what ECDH_compute_key expects
-	if (*olen < ECIES_KEY_LENGTH)
-	{
-		assert(false);
-		return NULL;
-	}
-	*olen = ECIES_KEY_LENGTH;
-	return ECIES_KEY_HASH(static_cast<const unsigned char *>(input), ilen, static_cast<unsigned char *>(output));
-}
-
-ECIES_KEY_TYPE CKey::getECIESSecret(CKey& otherKey)
+void CKey::getECIESSecret(CKey& otherKey, ECIES_ENC_KEY_TYPE& enc_key, ECIES_HMAC_KEY_TYPE& hmac_key)
 { // Retrieve a secret generated from an EC key pair. At least one private key must be known.
 	if(!pkey || !otherKey.pkey)
 		throw std::runtime_error("missing key");
@@ -73,19 +65,27 @@ ECIES_KEY_TYPE CKey::getECIESSecret(CKey& otherKey)
 	}
 	else throw std::runtime_error("no private key");
 
-	ECIES_KEY_TYPE key;
-	if (ECDH_compute_key(key.begin(), ECIES_KEY_LENGTH, EC_KEY_get0_public_key(pubkey),
-			privkey, ecies_key_derivation) != ECIES_KEY_LENGTH)
+	unsigned char rawbuf[512];
+	int buflen=ECDH_compute_key(rawbuf, 512, EC_KEY_get0_public_key(pubkey), privkey, NULL);
+	if(buflen < ECIES_MIN_SEC)
 		throw std::runtime_error("ecdh key failed");
-	return key;
+
+	unsigned char hbuf[ECIES_KEY_LENGTH];
+	ECIES_KEY_HASH(rawbuf, buflen, hbuf);
+	memset(rawbuf, 0, ECIES_HMAC_KEY_SIZE);
+
+	assert((ECIES_ENC_KEY_SIZE + ECIES_HMAC_KEY_SIZE) >= ECIES_KEY_LENGTH);
+	memcpy(enc_key.begin(), hbuf, ECIES_ENC_KEY_SIZE);
+	memcpy(hmac_key.begin(), hbuf + ECIES_ENC_KEY_SIZE, ECIES_HMAC_KEY_SIZE);
+	memset(hbuf, 0, ECIES_KEY_LENGTH);
 }
 
-static ECIES_HMAC_TYPE makeHMAC(const ECIES_KEY_TYPE& secret, const std::vector<unsigned char> data)
+static ECIES_HMAC_TYPE makeHMAC(const ECIES_HMAC_KEY_TYPE& secret, const std::vector<unsigned char> data)
 {
 	HMAC_CTX ctx;
 	HMAC_CTX_init(&ctx);
 	
-	if(HMAC_Init_ex(&ctx, secret.begin(), ECIES_KEY_LENGTH, ECIES_HMAC_ALGO, NULL) != 1)
+	if(HMAC_Init_ex(&ctx, secret.begin(), ECIES_HMAC_KEY_SIZE, ECIES_HMAC_ALGO, NULL) != 1)
 	{
 		HMAC_CTX_cleanup(&ctx);
 		throw std::runtime_error("init hmac");
@@ -117,8 +117,11 @@ std::vector<unsigned char> CKey::encryptECIES(CKey& otherKey, const std::vector<
 	if(RAND_bytes(static_cast<unsigned char *>(iv.begin()), ECIES_ENC_BLK_SIZE) != 1)
 		throw std::runtime_error("insufficient entropy");
 
-	ECIES_KEY_TYPE secret=getECIESSecret(otherKey);
-	ECIES_HMAC_TYPE hmac=makeHMAC(secret, plaintext);
+	ECIES_ENC_KEY_TYPE secret;
+	ECIES_HMAC_KEY_TYPE hmacKey;
+	getECIESSecret(otherKey, secret, hmacKey);
+	ECIES_HMAC_TYPE hmac=makeHMAC(hmacKey, plaintext);
+	hmacKey.zero();
 
 	EVP_CIPHER_CTX ctx;
 	EVP_CIPHER_CTX_init(&ctx);
@@ -189,10 +192,14 @@ std::vector<unsigned char> CKey::decryptECIES(CKey& otherKey, const std::vector<
 	// begin decrypting
 	EVP_CIPHER_CTX ctx;
 	EVP_CIPHER_CTX_init(&ctx);
-	ECIES_KEY_TYPE secret=getECIESSecret(otherKey);
+	ECIES_ENC_KEY_TYPE secret;
+	ECIES_HMAC_KEY_TYPE hmacKey;
+	getECIESSecret(otherKey, secret, hmacKey);
+
 	if(EVP_DecryptInit_ex(&ctx, ECIES_ENC_ALGO, NULL, secret.begin(), iv.begin()) != 1)
 	{
 		secret.zero();
+		hmacKey.zero();
 		EVP_CIPHER_CTX_cleanup(&ctx);
 		throw std::runtime_error("unable to init cipher");
 	}
@@ -204,6 +211,7 @@ std::vector<unsigned char> CKey::decryptECIES(CKey& otherKey, const std::vector<
 		&(ciphertext.front()) + ECIES_ENC_BLK_SIZE,	ECIES_HMAC_SIZE + 1) != 1) || (outlen != ECIES_HMAC_SIZE) )
 	{
 		secret.zero();
+		hmacKey.zero();
 		EVP_CIPHER_CTX_cleanup(&ctx);
 		throw std::runtime_error("unable to extract hmac");
 	}
@@ -216,6 +224,7 @@ std::vector<unsigned char> CKey::decryptECIES(CKey& otherKey, const std::vector<
 		ciphertext.size() - ECIES_ENC_BLK_SIZE - ECIES_HMAC_SIZE - 1) != 1)
 	{
 		secret.zero();
+		hmacKey.zero();
 		EVP_CIPHER_CTX_cleanup(&ctx);
 		throw std::runtime_error("unable to extract plaintext");
 	}
@@ -225,19 +234,22 @@ std::vector<unsigned char> CKey::decryptECIES(CKey& otherKey, const std::vector<
 	if(EVP_DecryptFinal(&ctx, &(plaintext.front()) + outlen, &flen) != 1)
 	{
 		secret.zero();
+		hmacKey.zero();
 		EVP_CIPHER_CTX_cleanup(&ctx);
 		throw std::runtime_error("plaintext had bad padding");
 	}
 	plaintext.resize(flen + outlen);
 
 	// verify integrity
-	if(hmac != makeHMAC(secret, plaintext))
+	if(hmac != makeHMAC(hmacKey, plaintext))
 	{
 		secret.zero();
+		hmacKey.zero();
 		EVP_CIPHER_CTX_cleanup(&ctx);
 		throw std::runtime_error("plaintext had bad hmac");
 	}
 	secret.zero();
+	hmacKey.zero();
 
 	EVP_CIPHER_CTX_cleanup(&ctx);
 	return plaintext;
@@ -270,7 +282,7 @@ bool checkECIES(void)
 		std::vector<unsigned char> decrypt=recipientPriv.decryptECIES(senderPub, ciphertext);
 
 		if(decrypt != message) return false;
-//		std::cerr << "Msg(" << msglen << ") ok " << ciphertext.size() << std::endl;
+		std::cerr << "Msg(" << msglen << ") ok " << ciphertext.size() << std::endl;
 	}
 	return true;
 }

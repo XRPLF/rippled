@@ -277,7 +277,7 @@ public:
 	// ECIES functions. These throw on failure
 
 	// returns a 32-byte secret unique to these two keys. At least one private key must be known.
-	uint256 getECIESSecret(CKey& otherKey);
+	void getECIESSecret(CKey& otherKey, uint256& enc_key, uint256& hmac_key);
 
 	// encrypt/decrypt functions with integrity checking.
 	// Note that the other side must somehow know what keys to use
