@@ -431,8 +431,6 @@ static int etob(std::string& strData, std::vector<std::string> vsHuman)
 //  -2 if words are okay but parity is wrong.
 int eng2key(std::string& strKey, const std::string strHuman)
 {
-	using namespace boost::adaptors;
-
     std::vector<std::string> vWords;
 	std::string	strFirst, strSecond;
 	int	rc=0;

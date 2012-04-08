@@ -41,6 +41,7 @@ void printHelp()
 	cout << "     unl_list" << endl;
 	cout << "     unl_reset" << endl;
 	cout << "     unlock <passphrase>" << endl;
+	cout << "     validation_create [<seed>|<pass_phrase>|<key>]" << endl;
 }
 
 int parseCommandline(int argc, char* argv[])
