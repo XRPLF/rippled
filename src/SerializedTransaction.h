@@ -31,6 +31,7 @@ public:
 	std::string getFullText() const;
 	std::string getText() const;
 	void add(Serializer& s) const { getTransaction(s, true); }
+	virtual bool isEquivalent(const SerializedType& t) const;
 
 	// outer transaction functions / signature functions
 	std::vector<unsigned char> getSignature() const;

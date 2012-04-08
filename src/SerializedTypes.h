@@ -46,6 +46,13 @@ public:
 
 	SerializedType* new_clone(const SerializedType& s) { return s.duplicate(); }
 	void delete_clone(const SerializedType* s) { boost::checked_delete(s); }
+
+	virtual bool isEquivalent(const SerializedType& t) const { return true; }
+
+	bool operator==(const SerializedType& t) const
+	{ return (getType()==t.getType()) && isEquivalent(t); }
+	bool operator!=(const SerializedType& t) const
+	{ return (getType()!=t.getType()) || !isEquivalent(t); }
 };
 
 class STUInt8 : public SerializedType
@@ -70,6 +77,7 @@ public:
 
 	operator unsigned char() const { return value; }
 	STUInt8& operator=(unsigned char v) { value=v; return *this; }
+	virtual bool isEquivalent(const SerializedType& t) const;
 };
 
 class STUInt16 : public SerializedType
@@ -94,6 +102,7 @@ public:
 
 	operator uint16() const { return value; }
 	STUInt16& operator=(uint16 v) { value=v; return *this; }
+	virtual bool isEquivalent(const SerializedType& t) const;
 };
 
 class STUInt32 : public SerializedType
@@ -118,6 +127,7 @@ public:
 
 	operator uint32() const { return value; }
 	STUInt32& operator=(uint32 v) { value=v; return *this; }
+	virtual bool isEquivalent(const SerializedType& t) const;
 };
 
 class STUInt64 : public SerializedType
@@ -142,6 +152,7 @@ public:
 
 	operator uint64() const { return value; }
 	STUInt64& operator=(uint64 v) { value=v; return *this; }
+	virtual bool isEquivalent(const SerializedType& t) const;
 };
 
 class STHash128 : public SerializedType
@@ -167,6 +178,7 @@ public:
 
 	operator uint128() const { return value; }
 	STHash128& operator=(const uint128& v) { value=v; return *this; }
+	virtual bool isEquivalent(const SerializedType& t) const;
 };
 
 class STHash160 : public SerializedType
@@ -192,6 +204,7 @@ public:
 
 	operator uint160() const { return value; }
 	STHash160& operator=(const uint160& v) { value=v; return *this; }
+	virtual bool isEquivalent(const SerializedType& t) const;
 };
 
 class STHash256 : public SerializedType
@@ -217,6 +230,7 @@ public:
 
 	operator uint256() const { return value; }
 	STHash256& operator=(const uint256& v) { value=v; return *this; }
+	virtual bool isEquivalent(const SerializedType& t) const;
 };
 
 class STVariableLength : public SerializedType
@@ -245,6 +259,7 @@ public:
 
 	operator std::vector<unsigned char>() const { return value; }
 	STVariableLength& operator=(const std::vector<unsigned char>& v) { value=v; return *this; }
+	virtual bool isEquivalent(const SerializedType& t) const;
 };
 
 class STAccount : public STVariableLength
@@ -299,6 +314,7 @@ public:
 
 	operator std::vector<TaggedListItem>() const { return value; }
 	STTaggedList& operator=(const std::vector<TaggedListItem>& v) { value=v; return *this; }
+	virtual bool isEquivalent(const SerializedType& t) const;
 };
 
 #endif

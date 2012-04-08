@@ -167,6 +167,22 @@ std::string STObject::getText() const
 	return ret;
 }
 
+bool STObject::isEquivalent(const SerializedType& t) const
+{
+	const STObject* v=dynamic_cast<const STObject*>(&t);
+	if(!v) return false;
+	boost::ptr_vector<SerializedType>::const_iterator it1=mData.begin(), end1=mData.end();
+	boost::ptr_vector<SerializedType>::const_iterator it2=v->mData.begin(), end2=v->mData.end();
+	while((it1!=end1) && (it2!=end2))
+	{
+		if(it1->getType() != it2->getType()) return false;
+		if(!it1->isEquivalent(*it2)) return false;
+		++it1;
+		++it2;
+	}
+	return (it1==end1) && (it2==end2);
+}
+
 int STObject::getFieldIndex(SOE_Field field) const
 {
 	int i=0;
