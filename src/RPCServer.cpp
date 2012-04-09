@@ -541,7 +541,6 @@ Json::Value RPCServer::doValidatorCreate(Json::Value& params) {
 	NewcoinAddress	nodePublicKey;
 	NewcoinAddress	nodePrivateKey;
 
-
 	if(params.empty())
 	{
 		std::cerr << "Creating random validation seed." << std::endl;

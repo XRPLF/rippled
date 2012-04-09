@@ -9,10 +9,9 @@
 #include <boost/foreach.hpp>
 #include <boost/range/adaptor/copied.hpp>
 #include <string>
-#include <sstream>
 #include <vector>
 
-static const char* dictPA[2048] = {
+static const char* pcDict[2048] = {
 	"A", "ABE", "ACE", "ACT", "AD", "ADA", "ADD",
 	"AGO", "AID", "AIM", "AIR", "ALL", "ALP", "AM", "AMY", "AN", "ANA",
 	"AND", "ANN", "ANT", "ANY", "APE", "APS", "APT", "ARC", "ARE", "ARK",
@@ -277,17 +276,13 @@ static void btoe(std::string& strHuman, const std::string& strData)
 
 	caBuffer[8] = char(p) << 6;
 
-    std::ostringstream  ossHuman;
-
-	ossHuman
-		<< dictPA[extract(caBuffer, 0, 11)] << " "
-		<< dictPA[extract(caBuffer, 11, 11)] << " "
-		<< dictPA[extract(caBuffer, 22, 11)] << " "
-		<< dictPA[extract(caBuffer, 33, 11)] << " "
-		<< dictPA[extract(caBuffer, 44, 11)] << " "
-		<< dictPA[extract(caBuffer, 55, 11)];
-
-	strHuman	= ossHuman.str();
+	strHuman	= std::string()
+		+ pcDict[extract(caBuffer, 0, 11)] + " "
+		+ pcDict[extract(caBuffer, 11, 11)] + " "
+		+ pcDict[extract(caBuffer, 22, 11)] + " "
+		+ pcDict[extract(caBuffer, 33, 11)] + " "
+		+ pcDict[extract(caBuffer, 44, 11)] + " "
+		+ pcDict[extract(caBuffer, 55, 11)];
 }
 
 static void insert(char *s, int x, int start, int length)
@@ -356,7 +351,7 @@ static int wsrch(const std::string& strWord, int iMin, int iMax)
 	{
 		// Have a range to search.
 		int	iMid	= iMin+(iMax-iMin)/2;
-		int iDir	= strWord.compare(dictPA[iMid]);
+		int iDir	= strWord.compare(pcDict[iMid]);
 
 		if (!iDir)
 		{
@@ -423,7 +418,7 @@ static int etob(std::string& strData, std::vector<std::string> vsHuman)
 	return 1;
 }
 
-// eng2key() assumes words must be separated by spaces only.
+// eng2key() convert words seperated by spaces into a 128 bit key in big-endian format.
 // eng2key() returns
 //   1 if succeeded
 //   0 if word not in dictionary
@@ -456,9 +451,7 @@ int eng2key(std::string& strKey, const std::string strHuman)
 	return rc;
 }
 
-// key2eng() assumes string referenced by engout has at least 60 characters
-// (4*12 + 11 spaces + '\0') of space.
-// key2eng() returns pointer to engout.
+// key2eng() given a 128 bit key in big-endian format, convert to human.
 void key2eng(std::string& strHuman, const std::string strKey)
 {
 	std::string	strFirst, strSecond;
