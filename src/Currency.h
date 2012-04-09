@@ -18,6 +18,9 @@ protected:
 	uint160 mValue;
 	CurrencyType mType;
 
+	static uint160 sNatMask; // bits that indicate national currency ISO code and version
+	static uint160 sNatZero; // bits that must be zero on a national currency
+
 public:
 	Currency() : mType(ctNATIVE) { ; }
 	Currency(const uint160& v);
@@ -30,6 +33,7 @@ public:
 
 	const uint160& getCurrency() { return mValue; }
 	unsigned char getScale() const;
+	void setScale(unsigned char c);
 
 	// These are only valid for national currencies
 	std::string getISO() const;
@@ -38,13 +42,19 @@ public:
 
 class Amount
 {
+	// CAUTION: Currency operations throw on overflows, underflos, or
+	// incommensurate currency opeations (like adding USD to Euros)
 protected:
 	Currency mCurrency;
 	uint64 mQuantity;
 
+	void canonicalize();
+
+	static uint64 sMaxCanon; // Max native currency value before shift
+
 public:
 
-	Amount(const Currency& c, const uint64& q) : mCurrency(c), mQuantity(q) { ; }
+	Amount(const Currency& c, const uint64& q) : mCurrency(c), mQuantity(q) { canonicalize(); }
 
 	const Currency& getCurrency() const { return mCurrency; }
 	uint64 getQuantity() const { return mQuantity; }
@@ -58,13 +68,13 @@ public:
 	bool operator<=(const Amount&) const;
 	bool operator>(const Amount&) const;
 	bool operator<(const Amount&) const;
-	Amount operator+(const Amount&) const;
-	Amount operator-(const Amount&) const;
-	Amount& operator+=(const Amount&);
-	Amount& operator-=(const Amount&);
+	Amount& operator+=(const Amount& a) { return *this = *this + a; }
+	Amount& operator-=(const Amount& a) { return *this = *this - a; }
 
 	// This is used to score offers and works with incommensurate currencies
 	friend void divide(const Amount& offering, const Amount& taking, uint16& exponent, uint64& mantissa);
+	friend Amount& operator+(const Amount&, const Amount&);
+	friend Amount& operator-(const Amount&, const Amount&);
 };
 
 #endif
