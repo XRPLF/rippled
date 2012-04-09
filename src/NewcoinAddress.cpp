@@ -448,12 +448,15 @@ std::string NewcoinAddress::humanFamilySeed1751() const
     case VER_FAMILY_SEED:
 		{
 			std::string strHuman;
-			std::string strKey;
+			std::string strLittle;
+			std::string strBig;
 			uint128 uSeed	= getFamilySeed();
 
-			strKey.assign(uSeed.begin(), uSeed.end());
+			strLittle.assign(uSeed.begin(), uSeed.end());
 
-			key2eng(strHuman, strKey);
+			strBig.assign(strLittle.rbegin(), strLittle.rend());
+
+			key2eng(strHuman, strBig);
 
 			return strHuman;
 		}
@@ -484,8 +487,8 @@ int NewcoinAddress::setFamilySeed1751(const std::string& strHuman1751)
 
 	if (1 == iResult)
 	{
-		std::vector<unsigned char>	vch(strKey.begin(), strKey.end());
-		uint128		uSeed(vch);
+		std::vector<unsigned char>	vchLittle(strKey.rbegin(), strKey.rend());
+		uint128		uSeed(vchLittle);
 
 		setFamilySeed(uSeed);
 	}
