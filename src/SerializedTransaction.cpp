@@ -216,7 +216,7 @@ bool SerializedTransaction::getITFieldPresent(SOE_Field field) const
 	return mInnerTxn.isFieldPresent(field);
 }
 
-const SerializedType& SerializedTransaction::peekITField(SOE_Field field)
+const SerializedType& SerializedTransaction::peekITField(SOE_Field field) const
 {
 	return mInnerTxn.peekAtField(field);
 }
