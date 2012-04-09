@@ -9,7 +9,7 @@
 std::string SerializedType::getFullText() const
 {
 	std::string ret;
-	if(getType()!=STI_NOTPRESENT)
+	if(getSType()!=STI_NOTPRESENT)
 	{
 		if(name!=NULL)
 		{

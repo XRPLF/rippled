@@ -56,7 +56,7 @@ public:
 	virtual ~STObject() { ; }
 
 	int getLength() const;
-	SerializedTypeID getType() const { return STI_OBJECT; }
+	SerializedTypeID getSType() const { return STI_OBJECT; }
 	STObject* duplicate() const { return new STObject(*this); }
 	virtual bool isEquivalent(const SerializedType& t) const;
 

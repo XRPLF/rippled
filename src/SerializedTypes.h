@@ -35,7 +35,7 @@ public:
 	const char *getName() const { return name; }
 
 	virtual int getLength() const { return 0; }
-	virtual SerializedTypeID getType() const { return STI_NOTPRESENT; }
+	virtual SerializedTypeID getSType() const { return STI_NOTPRESENT; }
 	virtual SerializedType* duplicate() const { return new SerializedType(name); }
 
 	virtual std::string getFullText() const;
@@ -50,9 +50,9 @@ public:
 	virtual bool isEquivalent(const SerializedType& t) const { return true; }
 
 	bool operator==(const SerializedType& t) const
-	{ return (getType()==t.getType()) && isEquivalent(t); }
+	{ return (getSType()==t.getSType()) && isEquivalent(t); }
 	bool operator!=(const SerializedType& t) const
-	{ return (getType()!=t.getType()) || !isEquivalent(t); }
+	{ return (getSType()!=t.getSType()) || !isEquivalent(t); }
 };
 
 class STUInt8 : public SerializedType
@@ -67,7 +67,7 @@ public:
 	static STUInt8* construct(SerializerIterator&, const char *name=NULL);
 
 	int getLength() const { return 1; }
-	SerializedTypeID getType() const { return STI_UINT8; }
+	SerializedTypeID getSType() const { return STI_UINT8; }
 	STUInt8* duplicate() const { return new STUInt8(name, value); }
 	std::string getText() const;
 	void add(Serializer& s) const { s.add8(value); }
@@ -92,7 +92,7 @@ public:
 	static STUInt16* construct(SerializerIterator&, const char *name=NULL);
 
 	int getLength() const { return 2; }
-	SerializedTypeID getType() const { return STI_UINT16; }
+	SerializedTypeID getSType() const { return STI_UINT16; }
 	STUInt16* duplicate() const { return new STUInt16(name, value); }
 	std::string getText() const;
 	void add(Serializer& s) const { s.add16(value); }
@@ -117,7 +117,7 @@ public:
 	static STUInt32* construct(SerializerIterator&, const char *name=NULL);
 
 	int getLength() const { return 4; }
-	SerializedTypeID getType() const { return STI_UINT32; }
+	SerializedTypeID getSType() const { return STI_UINT32; }
 	STUInt32* duplicate() const { return new STUInt32(name, value); }
 	std::string getText() const;
 	void add(Serializer& s) const { s.add32(value); }
@@ -142,7 +142,7 @@ public:
 	static STUInt64* construct(SerializerIterator&, const char *name=NULL);
 
 	int getLength() const { return 8; }
-	SerializedTypeID getType() const { return STI_UINT64; }
+	SerializedTypeID getSType() const { return STI_UINT64; }
 	STUInt64* duplicate() const { return new STUInt64(name, value); }
 	std::string getText() const;
 	void add(Serializer& s) const { s.add64(value); }
@@ -168,7 +168,7 @@ public:
 	static STHash128* construct(SerializerIterator&, const char *name=NULL);
 
 	int getLength() const { return 20; }
-	SerializedTypeID getType() const { return STI_HASH128; }
+	SerializedTypeID getSType() const { return STI_HASH128; }
 	STHash128* duplicate() const { return new STHash128(name, value); }
 	virtual std::string getText() const;
 	void add(Serializer& s) const { s.add128(value); }
@@ -194,7 +194,7 @@ public:
 	static STHash160* construct(SerializerIterator&, const char *name=NULL);
 
 	int getLength() const { return 20; }
-	SerializedTypeID getType() const { return STI_HASH160; }
+	SerializedTypeID getSType() const { return STI_HASH160; }
 	STHash160* duplicate() const { return new STHash160(name, value); }
 	virtual std::string getText() const;
 	void add(Serializer& s) const { s.add160(value); }
@@ -220,7 +220,7 @@ public:
 	static STHash256* construct(SerializerIterator&, const char *name=NULL);
 
 	int getLength() const { return 32; }
-	SerializedTypeID getType() const { return STI_HASH256; }
+	SerializedTypeID getSType() const { return STI_HASH256; }
 	STHash256* duplicate() const { return new STHash256(name, value); }
 	std::string getText() const;
 	void add(Serializer& s) const { s.add256(value); }
@@ -247,7 +247,7 @@ public:
 	static STVariableLength* construct(SerializerIterator&, const char *name=NULL);
 
 	int getLength() const;
-	virtual SerializedTypeID getType() const { return STI_VL; }
+	virtual SerializedTypeID getSType() const { return STI_VL; }
 	virtual STVariableLength* duplicate() const { return new STVariableLength(name, value); }
 	virtual std::string getText() const;
 	void add(Serializer& s) const { s.addVL(value); }
@@ -272,7 +272,7 @@ public:
 	STAccount() { ; }
 	static STAccount* construct(SerializerIterator&, const char *name=NULL);
 
-	SerializedTypeID getType() const { return STI_ACCOUNT; }
+	SerializedTypeID getSType() const { return STI_ACCOUNT; }
 	virtual STAccount* duplicate() const { return new STAccount(name, value); }
 	std::string getText() const;
 
@@ -295,7 +295,7 @@ public:
 	static STTaggedList* construct(SerializerIterator&, const char *name=NULL);
 
 	int getLength() const;
-	SerializedTypeID getType() const { return STI_TL; }
+	SerializedTypeID getSType() const { return STI_TL; }
 	STTaggedList* duplicate() const { return new STTaggedList(name, value); }
 	std::string getText() const;
 	void add(Serializer& s) const { if(s.addTaggedList(value)<0) throw(0); }
