@@ -234,6 +234,8 @@ STAmount operator*(const STAmount &v1, const STAmount &v2)
 
 STAmount getRate(const STAmount& offerOut, const STAmount& offerIn)
 {
+	// offerOut = how much comes out of the offer, from the offeror to the taker
+	// offerIn = how much goes into the offer, from the taker to the offeror
 	return offerOut / offerIn;
 }
 
@@ -270,4 +272,12 @@ STAmount getClaimed(STAmount& offerOut, STAmount& offerIn, STAmount& paid)
 		offerOut.zero();
 	}
 	return ret;
+}
+
+STAmount getNeeded(const STAmount& offerOut, const STAmount& offerIn, const STAmount& needed)
+{ // Someone wants to get (needed) out of the offer, how much should they pay in?
+	if(offerOut.isZero()) return STAmount();
+	if(needed >= offerOut) return needed;
+	STAmount ret = needed * (offerIn / offerOut);
+	return (ret > offerIn) ? offerIn : ret;
 }
