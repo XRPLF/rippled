@@ -1,0 +1,5 @@
+#!/bin/sh -x
+echo "Building and restarting."
+
+network-build
+network-restart

@@ -1,0 +1,5 @@
+#!/bin/sh -x
+
+network-stop
+sleep 1
+network-start
