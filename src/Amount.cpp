@@ -68,7 +68,7 @@ void STAmount::add(Serializer& s) const
 	if (value==0)
 		s.add64(0);
 	else
-		s.add64(value + (static_cast<uint64>(offset+142) << (64-8))));
+		s.add64(value + (static_cast<uint64>(offset+142) << (64-8)));
 }
 
 bool STAmount::isEquivalent(const SerializedType& t) const
