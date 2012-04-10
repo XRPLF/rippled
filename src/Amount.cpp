@@ -1,5 +1,6 @@
 
 #include <cmath>
+#include <iomanip>
 
 #include <boost/lexical_cast.hpp>
 
@@ -49,7 +50,9 @@ STAmount* STAmount::construct(SerializerIterator& sit, const char *name)
 
 std::string STAmount::getText() const
 {
-	return boost::lexical_cast<std::string>(static_cast<double>(*this));
+	std::ostringstream str;
+	str << std::setprecision(16) << static_cast<double>(*this);
+	return str.str();
 }
 
 void STAmount::add(Serializer& s) const
@@ -138,6 +141,12 @@ STAmount& STAmount::operator-=(uint64 v)
 	return *this-=STAmount(v);
 }
 
+STAmount::operator double() const
+{
+	if(!value) return 0.0;
+	return (static_cast<double>(value)) * pow(10.0, offset);
+}
+
 STAmount operator+(STAmount v1, STAmount v2)
 { // We can check for precision loss here (value%10)!=0
 	while(v1.offset < v2.offset)
@@ -170,8 +179,26 @@ STAmount operator-(STAmount v1, STAmount v2)
 	return STAmount(v1.name, v1.value - v2.value, v1.offset);
 }
 
-STAmount::operator double() const
+STAmount getRate(const STAmount& offerIn, const STAmount& offerOut)
 {
-	if(!value) return 0.0;
-	return static_cast<double>(value) * pow(10.0, offset);
+	CBigNum numerator, denominator, quotient;
+
+	if(offerOut.value==0) throw std::runtime_error("illegal offer");
+	if(offerIn.value==0) return STAmount();
+
+	if(	(BN_zero(&numerator)!=1) || (BN_zero(&denominator)!=1) ||
+		(BN_add_word(&numerator, offerIn.value)!=1) ||
+		(BN_add_word(&denominator, offerOut.value)!=1) ||
+		(BN_mul_word(&numerator, 1000000000000000ull)!=1) ||
+		(BN_div(&quotient, NULL, &numerator, &denominator, CAutoBN_CTX())!=1) )
+		throw std::runtime_error("internal bn error");
+
+	int offset=offerIn.offset - offerOut.offset - 15;
+
+	while(BN_num_bits(&quotient)>60)
+	{
+		offset+=3;
+		BN_div_word(&quotient, 1000);
+	}
+	return STAmount(quotient.getulong(), offset);
 }
