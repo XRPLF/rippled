@@ -223,7 +223,7 @@ public:
 	// Someone is offering X for Y, I pay Z, how much do I get?
 	friend STAmount getClaimed(const STAmount& offerIn, const STAmount& offerOut, const STAmount& paid);
 
-	// Someone is offering X for Y, I need Z, how much fo I pay
+	// Someone is offering X for Y, I need Z, how much do I pay
 	friend STAmount getNeeded(const STAmount& offerIn, const STAmount& offerOut, const STAmount& needed);
 };
 
