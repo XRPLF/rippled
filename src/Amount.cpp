@@ -33,7 +33,6 @@ STAmount* STAmount::construct(SerializerIterator& sit, const char *name)
 {
 	uint64 value = sit.get64();
 	int offset = static_cast<int>(value>>(64-8));
-	offset-=142;
 	value&=~(255ull<<(64-8));
 	if(value==0)
 	{
@@ -42,6 +41,7 @@ STAmount* STAmount::construct(SerializerIterator& sit, const char *name)
 	}
 	else
 	{
+		offset-=142;
 		if( (value<cMinValue) || (value>cMaxValue) || (offset<cMinOffset) || (offset>cMaxOffset) )
 			throw std::runtime_error("invalid currency value");
 	}
@@ -58,7 +58,7 @@ std::string STAmount::getText() const
 void STAmount::add(Serializer& s) const
 {
 	uint64 v=value;
-	v+=(static_cast<uint64>(offset+142) << (64-8));
+	if(v!=0) v+=(static_cast<uint64>(offset+142) << (64-8));
 	s.add64(v);
 }
 
