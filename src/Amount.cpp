@@ -62,12 +62,12 @@ std::string STAmount::getText() const
 	if( (offset<-25) || (offset>-5) )
 		return boost::lexical_cast<std::string>(value) + "e" + boost::lexical_cast<std::string>(offset);
 
-	std::string val="00000000000000000";
+	std::string val="000000000000000000000000000";
 	val+=boost::lexical_cast<std::string>(value);
-	val+="0000000000000000";
+	val+="00000000000000000000000";
 
-	std::string pre=val.substr(0, offset+33);
-	std::string post=val.substr(offset+33);
+	std::string pre=val.substr(0, offset+43);
+	std::string post=val.substr(offset+43);
 
 	size_t s_pre=pre.find_first_not_of('0');
 	if(s_pre==std::string::npos) pre="0";
@@ -77,7 +77,7 @@ std::string STAmount::getText() const
 	if(s_post==std::string::npos)
 		return pre;
 	else
-		return pre + "." + post.substr(0, s_post);
+		return pre + "." + post.substr(0, s_post+1);
 }
 
 void STAmount::add(Serializer& s) const
