@@ -12,6 +12,7 @@
 # Ignore object files.
 *.o
 obj/*
+bin/newcoind
 
 newcoind
 
