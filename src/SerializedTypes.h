@@ -15,6 +15,7 @@ enum SerializedTypeID
 	// standard types
 	STI_OBJECT=1, STI_UINT8=2, STI_UINT16=3, STI_UINT32=4, STI_UINT64=5,
 	STI_HASH128=6, STI_HASH160=7, STI_HASH256=8, STI_VL=9, STI_TL=10,
+	STI_AMOUNT=11,
 
 	// high level types
 	STI_ACCOUNT=100, STI_TRANSACTION=101, STI_LEDGERENTRY=102
@@ -153,6 +154,67 @@ public:
 	operator uint64() const { return value; }
 	STUInt64& operator=(uint64 v) { value=v; return *this; }
 	virtual bool isEquivalent(const SerializedType& t) const;
+};
+
+class STAmount : public SerializedType
+{
+	// Internal form:
+	// 1: If amount is zero, then offset and value are both zero.
+	// 2: Otherwise:
+	//   legal offset range is -96 to +80 inclusive
+	//   value range is 10^15 to (10^16 - 1) inclusive
+	//  amount = value * [10 ^ offset]
+
+	// Wire form:
+	// High 8 bits are (offset+142), legal range is, 80 to 22 inclusive
+	// Low 56 bits are value, legal range is 10^15 to (10^16 - 1) inclusive
+
+protected:
+	int offset; // These variables *always* hold canonical values
+	uint64 value;
+
+	void canonicalize();
+
+	static const int cMinOffset=-96, cMaxOffset=80;
+	static const uint64 cMinValue=1000000000000000ull, cMaxValue=9999999999999999ull;
+
+public:
+	STAmount(uint64 v=0, int off=0) : offset(off), value(v)
+	{  canonicalize(); } // (1,0)=$1 (1,-2)=$.01 (100,0)=(10000,-2)=$.01
+	STAmount(const char *n, uint64 v=0, int off=1) : SerializedType(n), offset(off), value(v)
+	{ canonicalize(); }
+	static STAmount* construct(SerializerIterator&, const char *name=NULL);
+
+	int getLength() const { return 8; }
+	SerializedTypeID getSType() const { return STI_AMOUNT; }
+	STAmount* duplicate() const { return new STAmount(name, offset, value); }
+	std::string getText() const;
+	void add(Serializer& s) const;
+
+	int getOffset() const { return offset; }
+	uint64 getValue() const { return value; }
+
+	virtual bool isEquivalent(const SerializedType& t) const;
+
+	bool operator==(const STAmount&) const;
+	bool operator!=(const STAmount&) const;
+	bool operator<(const STAmount&) const;
+	bool operator>(const STAmount&) const;
+	bool operator<=(const STAmount&) const;
+	bool operator>=(const STAmount&) const;
+
+	STAmount& operator+=(const STAmount&);
+	STAmount& operator-=(const STAmount&);
+	STAmount& operator=(const STAmount&);
+	STAmount& operator+=(uint64);
+	STAmount& operator-=(uint64);
+	STAmount& operator=(uint64);
+
+	operator double() const;
+
+	friend STAmount operator+(const STAmount& v1, const STAmount& v2);
+	friend STAmount operator-(const STAmount& v1, const STAmount& v2);
+	friend STAmount operator/(const STAmount& v1, const STAmount& v2);
 };
 
 class STHash128 : public SerializedType

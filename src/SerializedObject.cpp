@@ -16,6 +16,9 @@ SerializedType* STObject::makeDefaultObject(SerializedTypeID id, const char *nam
 		case STI_UINT64:
 			return new STUInt64(name);
 
+		case STI_AMOUNT:
+			return new STAmount(name);
+
 		case STI_HASH160:
 			return new STHash160(name);
 
@@ -48,6 +51,9 @@ SerializedType* STObject::makeDeserializedObject(SerializedTypeID id, const char
 
 		case STI_UINT64:
 			return STUInt64::construct(sit, name);
+
+		case STI_AMOUNT:
+			return STAmount::construct(sit, name);
 
 		case STI_HASH160:
 			return STHash160::construct(sit, name);
