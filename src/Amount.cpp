@@ -14,11 +14,13 @@ void STAmount::canonicalize()
 	}
 	while(value<cMinValue)
 	{
+		if(offset<=cMinOffset) throw std::runtime_error("value overflow");
 		value*=10;
 		offset-=1;
 	}
 	while(value>cMaxValue)
 	{ // Here we can make it throw on precision loss if we wish: ((value%10)!=0)
+		if(offset>=cMaxOffset) throw std::runtime_error("value underflow");
 		value/=10;
 		offset+=1;
 	}
@@ -62,6 +64,110 @@ bool STAmount::isEquivalent(const SerializedType& t) const
 	const STAmount* v=dynamic_cast<const STAmount*>(&t);
 	if(!v) return false;
 	return (value==v->value) && (offset==v->offset);
+}
+
+bool STAmount::operator==(const STAmount& a) const
+{
+	return (offset==a.offset) && (value==a.value);
+}
+
+bool STAmount::operator!=(const STAmount& a) const
+{
+	return (offset!=a.offset) || (value!=a.value);
+}
+
+bool STAmount::operator<(const STAmount& a) const
+{
+	if(offset<a.offset) return true;
+	if(a.offset<offset) return false;
+	return value < a.value;
+}
+
+bool STAmount::operator>(const STAmount& a) const
+{
+	if(offset>a.offset) return true;
+	if(a.offset>offset) return false;
+	return value > a.value;
+}
+
+bool STAmount::operator<=(const STAmount& a) const
+{
+	if(offset<a.offset) return true;
+	if(a.offset<offset) return false;
+	return value <= a.value;
+}
+
+bool STAmount::operator>=(const STAmount& a) const
+{
+	if(offset>a.offset) return true;
+	if(a.offset>offset) return false;
+	return value >= a.value;
+}
+
+STAmount& STAmount::operator+=(const STAmount& a)
+{
+	*this = *this + a;
+	return *this;
+}
+
+STAmount& STAmount::operator-=(const STAmount& a)
+{
+	*this = *this - a;
+	return *this;
+}
+
+STAmount& STAmount::operator=(const STAmount& a)
+{
+	value=a.value;
+	offset=a.offset;
+	return *this;
+}
+
+STAmount& STAmount::operator=(uint64 v)
+{
+	return *this=STAmount(v, 0);
+}
+
+STAmount& STAmount::operator+=(uint64 v)
+{
+	return *this+=STAmount(v);
+}
+
+STAmount& STAmount::operator-=(uint64 v)
+{
+	return *this-=STAmount(v);
+}
+
+STAmount operator+(STAmount v1, STAmount v2)
+{ // We can check for precision loss here (value%10)!=0
+	while(v1.offset < v2.offset)
+	{
+		v1.value/=10;
+		v1.offset+=1;
+	}
+	while(v2.offset < v1.offset)
+	{
+		v2.value/=10;
+		v2.offset+=1;
+	}
+	// this addition cannot overflow
+	return STAmount(v1.name, v1.value + v2.value, v1.offset);
+}
+
+STAmount operator-(STAmount v1, STAmount v2)
+{ // We can check for precision loss here (value%10)!=0
+	while(v1.offset < v2.offset)
+	{
+		v1.value/=10;
+		v1.offset+=1;
+	}
+	while(v2.offset < v1.offset)
+	{
+		v2.value/=10;
+		v2.offset+=1;
+	}
+	if(v1.value < v2.value) throw std::runtime_error("value overflow");
+	return STAmount(v1.name, v1.value - v2.value, v1.offset);
 }
 
 STAmount::operator double() const

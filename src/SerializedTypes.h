@@ -30,6 +30,7 @@ public:
 
 	SerializedType() : name(NULL) { ; }
 	SerializedType(const char *n) : name(n) { ; }
+	SerializedType(const SerializedType& n) : name(n.name) { ; }
 	virtual ~SerializedType() { ; }
 
 	void setName(const char *n) { name=n; }
@@ -170,7 +171,7 @@ class STAmount : public SerializedType
 	// Low 56 bits are value, legal range is 10^15 to (10^16 - 1) inclusive
 
 protected:
-	int offset; // These variables *always* hold canonical values
+	int offset; // These variables *always* hold canonical values on entry/exit
 	uint64 value;
 
 	void canonicalize();
@@ -183,6 +184,7 @@ public:
 	{  canonicalize(); } // (1,0)=$1 (1,-2)=$.01 (100,0)=(10000,-2)=$.01
 	STAmount(const char *n, uint64 v=0, int off=1) : SerializedType(n), offset(off), value(v)
 	{ canonicalize(); }
+	STAmount(const STAmount& a) : SerializedType(a), offset(a.offset), value(a.value) { ; }
 	static STAmount* construct(SerializerIterator&, const char *name=NULL);
 
 	int getLength() const { return 8; }
@@ -212,9 +214,17 @@ public:
 
 	operator double() const;
 
-	friend STAmount operator+(const STAmount& v1, const STAmount& v2);
-	friend STAmount operator-(const STAmount& v1, const STAmount& v2);
-	friend STAmount operator/(const STAmount& v1, const STAmount& v2);
+	friend STAmount operator+(STAmount v1, STAmount v2);
+	friend STAmount operator-(STAmount v1, STAmount v2);
+
+	// Someone is offering X for Y, what is the rate?
+	friend STAmount getRate(const STAmount& offerIn, const STAmount& offerOut);
+
+	// Someone is offering X for Y, I pay Z, how much do I get?
+	friend STAmount getClaimed(const STAmount& offerIn, const STAmount& offerOut, const STAmount& paid);
+
+	// Someone is offering X for Y, I need Z, how much fo I pay
+	friend STAmount getNeeded(const STAmount& offerIn, const STAmount& offerOut, const STAmount& needed);
 };
 
 class STHash128 : public SerializedType
