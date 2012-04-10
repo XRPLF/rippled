@@ -58,6 +58,7 @@ STAmount* STAmount::construct(SerializerIterator& sit, const char *name)
 
 std::string STAmount::getText() const
 {
+	if(value==0) return "0";
 	if( (offset<-25) || (offset>-5) )
 		return boost::lexical_cast<std::string>(value) + "e" + boost::lexical_cast<std::string>(offset);
 
