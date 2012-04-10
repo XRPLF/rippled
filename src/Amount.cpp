@@ -57,10 +57,26 @@ STAmount* STAmount::construct(SerializerIterator& sit, const char *name)
 }
 
 std::string STAmount::getText() const
-{ // This should be re-implemented to put a '.' in the string form of the integer value
-	std::ostringstream str;
-	str << std::setprecision(14) << static_cast<double>(*this);
-	return str.str();
+{
+	if( (offset<-25) || (offset>-5) )
+		return boost::lexical_cast<std::string>(value) + "e" + boost::lexical_cast<std::string>(offset);
+
+	std::string val="00000000000000000";
+	val+=boost::lexical_cast<std::string>(value);
+	val+="0000000000000000";
+
+	std::string pre=val.substr(0, offset+33);
+	std::string post=val.substr(offset+33);
+
+	size_t s_pre=pre.find_first_not_of('0');
+	if(s_pre==std::string::npos) pre="0";
+	else pre=pre.substr(s_pre);
+
+	size_t s_post=post.find_last_not_of('0');
+	if(s_post==std::string::npos)
+		return pre;
+	else
+		return pre + "." + post.substr(0, s_post);
 }
 
 void STAmount::add(Serializer& s) const
