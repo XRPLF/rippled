@@ -26,11 +26,12 @@ public:
 
 	// STObject functions
 	int getLength() const;
-	SerializedTypeID getType() const { return STI_TRANSACTION; }
+	SerializedTypeID getSType() const { return STI_TRANSACTION; }
 	SerializedTransaction* duplicate() const { return new SerializedTransaction(*this); }
 	std::string getFullText() const;
 	std::string getText() const;
 	void add(Serializer& s) const { getTransaction(s, true); }
+	virtual bool isEquivalent(const SerializedType& t) const;
 
 	// outer transaction functions / signature functions
 	std::vector<unsigned char> getSignature() const;
@@ -62,7 +63,7 @@ public:
 	// inner transaction field functions
 	int getITFieldIndex(SOE_Field field) const;
 	int getITFieldCount() const;
-	const SerializedType& peekITField(SOE_Field field);
+	const SerializedType& peekITField(SOE_Field field) const;
 	SerializedType& getITField(SOE_Field field);
 
 	// inner transaction field value functions

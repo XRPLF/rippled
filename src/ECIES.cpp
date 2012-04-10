@@ -32,6 +32,9 @@
 // 3) Encrypted: Original plaintext
 // 4) Encrypted: Rest of block/padding
 
+// ECIES operations throw on any error such as a corrupt message or incorrect
+// key. They *must* be called in try/catch blocks.
+
 // Algorithmic choices:
 #define ECIES_KEY_HASH		SHA512				// Hash used to expand shared secret
 #define ECIES_KEY_LENGTH	(512/8)				// Size of expanded shared secret

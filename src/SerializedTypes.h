@@ -15,6 +15,7 @@ enum SerializedTypeID
 	// standard types
 	STI_OBJECT=1, STI_UINT8=2, STI_UINT16=3, STI_UINT32=4, STI_UINT64=5,
 	STI_HASH128=6, STI_HASH160=7, STI_HASH256=8, STI_VL=9, STI_TL=10,
+	STI_AMOUNT=11,
 
 	// high level types
 	STI_ACCOUNT=100, STI_TRANSACTION=101, STI_LEDGERENTRY=102
@@ -29,13 +30,14 @@ public:
 
 	SerializedType() : name(NULL) { ; }
 	SerializedType(const char *n) : name(n) { ; }
+	SerializedType(const SerializedType& n) : name(n.name) { ; }
 	virtual ~SerializedType() { ; }
 
 	void setName(const char *n) { name=n; }
 	const char *getName() const { return name; }
 
 	virtual int getLength() const { return 0; }
-	virtual SerializedTypeID getType() const { return STI_NOTPRESENT; }
+	virtual SerializedTypeID getSType() const { return STI_NOTPRESENT; }
 	virtual SerializedType* duplicate() const { return new SerializedType(name); }
 
 	virtual std::string getFullText() const;
@@ -46,6 +48,13 @@ public:
 
 	SerializedType* new_clone(const SerializedType& s) { return s.duplicate(); }
 	void delete_clone(const SerializedType* s) { boost::checked_delete(s); }
+
+	virtual bool isEquivalent(const SerializedType& t) const { return true; }
+
+	bool operator==(const SerializedType& t) const
+	{ return (getSType()==t.getSType()) && isEquivalent(t); }
+	bool operator!=(const SerializedType& t) const
+	{ return (getSType()!=t.getSType()) || !isEquivalent(t); }
 };
 
 class STUInt8 : public SerializedType
@@ -60,7 +69,7 @@ public:
 	static STUInt8* construct(SerializerIterator&, const char *name=NULL);
 
 	int getLength() const { return 1; }
-	SerializedTypeID getType() const { return STI_UINT8; }
+	SerializedTypeID getSType() const { return STI_UINT8; }
 	STUInt8* duplicate() const { return new STUInt8(name, value); }
 	std::string getText() const;
 	void add(Serializer& s) const { s.add8(value); }
@@ -70,6 +79,7 @@ public:
 
 	operator unsigned char() const { return value; }
 	STUInt8& operator=(unsigned char v) { value=v; return *this; }
+	virtual bool isEquivalent(const SerializedType& t) const;
 };
 
 class STUInt16 : public SerializedType
@@ -84,7 +94,7 @@ public:
 	static STUInt16* construct(SerializerIterator&, const char *name=NULL);
 
 	int getLength() const { return 2; }
-	SerializedTypeID getType() const { return STI_UINT16; }
+	SerializedTypeID getSType() const { return STI_UINT16; }
 	STUInt16* duplicate() const { return new STUInt16(name, value); }
 	std::string getText() const;
 	void add(Serializer& s) const { s.add16(value); }
@@ -94,6 +104,7 @@ public:
 
 	operator uint16() const { return value; }
 	STUInt16& operator=(uint16 v) { value=v; return *this; }
+	virtual bool isEquivalent(const SerializedType& t) const;
 };
 
 class STUInt32 : public SerializedType
@@ -108,7 +119,7 @@ public:
 	static STUInt32* construct(SerializerIterator&, const char *name=NULL);
 
 	int getLength() const { return 4; }
-	SerializedTypeID getType() const { return STI_UINT32; }
+	SerializedTypeID getSType() const { return STI_UINT32; }
 	STUInt32* duplicate() const { return new STUInt32(name, value); }
 	std::string getText() const;
 	void add(Serializer& s) const { s.add32(value); }
@@ -118,6 +129,7 @@ public:
 
 	operator uint32() const { return value; }
 	STUInt32& operator=(uint32 v) { value=v; return *this; }
+	virtual bool isEquivalent(const SerializedType& t) const;
 };
 
 class STUInt64 : public SerializedType
@@ -132,7 +144,7 @@ public:
 	static STUInt64* construct(SerializerIterator&, const char *name=NULL);
 
 	int getLength() const { return 8; }
-	SerializedTypeID getType() const { return STI_UINT64; }
+	SerializedTypeID getSType() const { return STI_UINT64; }
 	STUInt64* duplicate() const { return new STUInt64(name, value); }
 	std::string getText() const;
 	void add(Serializer& s) const { s.add64(value); }
@@ -142,6 +154,77 @@ public:
 
 	operator uint64() const { return value; }
 	STUInt64& operator=(uint64 v) { value=v; return *this; }
+	virtual bool isEquivalent(const SerializedType& t) const;
+};
+
+class STAmount : public SerializedType
+{
+	// Internal form:
+	// 1: If amount is zero, then offset and value are both zero.
+	// 2: Otherwise:
+	//   legal offset range is -96 to +80 inclusive
+	//   value range is 10^15 to (10^16 - 1) inclusive
+	//  amount = value * [10 ^ offset]
+
+	// Wire form:
+	// High 8 bits are (offset+142), legal range is, 80 to 22 inclusive
+	// Low 56 bits are value, legal range is 10^15 to (10^16 - 1) inclusive
+
+protected:
+	int offset; // These variables *always* hold canonical values on entry/exit
+	uint64 value;
+
+	void canonicalize();
+
+	static const int cMinOffset=-96, cMaxOffset=80;
+	static const uint64 cMinValue=1000000000000000ull, cMaxValue=9999999999999999ull;
+
+public:
+	STAmount(uint64 v=0, int off=0) : offset(off), value(v)
+	{  canonicalize(); } // (1,0)=$1 (1,-2)=$.01 (100,0)=(10000,-2)=$.01
+	STAmount(const char *n, uint64 v=0, int off=1) : SerializedType(n), offset(off), value(v)
+	{ canonicalize(); }
+	STAmount(const STAmount& a) : SerializedType(a), offset(a.offset), value(a.value) { ; }
+	static STAmount* construct(SerializerIterator&, const char *name=NULL);
+
+	int getLength() const { return 8; }
+	SerializedTypeID getSType() const { return STI_AMOUNT; }
+	STAmount* duplicate() const { return new STAmount(name, offset, value); }
+	std::string getText() const;
+	void add(Serializer& s) const;
+
+	int getOffset() const { return offset; }
+	uint64 getValue() const { return value; }
+
+	virtual bool isEquivalent(const SerializedType& t) const;
+
+	bool operator==(const STAmount&) const;
+	bool operator!=(const STAmount&) const;
+	bool operator<(const STAmount&) const;
+	bool operator>(const STAmount&) const;
+	bool operator<=(const STAmount&) const;
+	bool operator>=(const STAmount&) const;
+
+	STAmount& operator+=(const STAmount&);
+	STAmount& operator-=(const STAmount&);
+	STAmount& operator=(const STAmount&);
+	STAmount& operator+=(uint64);
+	STAmount& operator-=(uint64);
+	STAmount& operator=(uint64);
+
+	operator double() const;
+
+	friend STAmount operator+(STAmount v1, STAmount v2);
+	friend STAmount operator-(STAmount v1, STAmount v2);
+
+	// Someone is offering X for Y, what is the rate?
+	friend STAmount getRate(const STAmount& offerIn, const STAmount& offerOut);
+
+	// Someone is offering X for Y, I pay Z, how much do I get?
+	friend STAmount getClaimed(const STAmount& offerIn, const STAmount& offerOut, const STAmount& paid);
+
+	// Someone is offering X for Y, I need Z, how much do I pay
+	friend STAmount getNeeded(const STAmount& offerIn, const STAmount& offerOut, const STAmount& needed);
 };
 
 class STHash128 : public SerializedType
@@ -157,7 +240,7 @@ public:
 	static STHash128* construct(SerializerIterator&, const char *name=NULL);
 
 	int getLength() const { return 20; }
-	SerializedTypeID getType() const { return STI_HASH128; }
+	SerializedTypeID getSType() const { return STI_HASH128; }
 	STHash128* duplicate() const { return new STHash128(name, value); }
 	virtual std::string getText() const;
 	void add(Serializer& s) const { s.add128(value); }
@@ -167,6 +250,7 @@ public:
 
 	operator uint128() const { return value; }
 	STHash128& operator=(const uint128& v) { value=v; return *this; }
+	virtual bool isEquivalent(const SerializedType& t) const;
 };
 
 class STHash160 : public SerializedType
@@ -182,7 +266,7 @@ public:
 	static STHash160* construct(SerializerIterator&, const char *name=NULL);
 
 	int getLength() const { return 20; }
-	SerializedTypeID getType() const { return STI_HASH160; }
+	SerializedTypeID getSType() const { return STI_HASH160; }
 	STHash160* duplicate() const { return new STHash160(name, value); }
 	virtual std::string getText() const;
 	void add(Serializer& s) const { s.add160(value); }
@@ -192,6 +276,7 @@ public:
 
 	operator uint160() const { return value; }
 	STHash160& operator=(const uint160& v) { value=v; return *this; }
+	virtual bool isEquivalent(const SerializedType& t) const;
 };
 
 class STHash256 : public SerializedType
@@ -207,7 +292,7 @@ public:
 	static STHash256* construct(SerializerIterator&, const char *name=NULL);
 
 	int getLength() const { return 32; }
-	SerializedTypeID getType() const { return STI_HASH256; }
+	SerializedTypeID getSType() const { return STI_HASH256; }
 	STHash256* duplicate() const { return new STHash256(name, value); }
 	std::string getText() const;
 	void add(Serializer& s) const { s.add256(value); }
@@ -217,6 +302,7 @@ public:
 
 	operator uint256() const { return value; }
 	STHash256& operator=(const uint256& v) { value=v; return *this; }
+	virtual bool isEquivalent(const SerializedType& t) const;
 };
 
 class STVariableLength : public SerializedType
@@ -233,7 +319,7 @@ public:
 	static STVariableLength* construct(SerializerIterator&, const char *name=NULL);
 
 	int getLength() const;
-	virtual SerializedTypeID getType() const { return STI_VL; }
+	virtual SerializedTypeID getSType() const { return STI_VL; }
 	virtual STVariableLength* duplicate() const { return new STVariableLength(name, value); }
 	virtual std::string getText() const;
 	void add(Serializer& s) const { s.addVL(value); }
@@ -245,6 +331,7 @@ public:
 
 	operator std::vector<unsigned char>() const { return value; }
 	STVariableLength& operator=(const std::vector<unsigned char>& v) { value=v; return *this; }
+	virtual bool isEquivalent(const SerializedType& t) const;
 };
 
 class STAccount : public STVariableLength
@@ -257,7 +344,7 @@ public:
 	STAccount() { ; }
 	static STAccount* construct(SerializerIterator&, const char *name=NULL);
 
-	SerializedTypeID getType() const { return STI_ACCOUNT; }
+	SerializedTypeID getSType() const { return STI_ACCOUNT; }
 	virtual STAccount* duplicate() const { return new STAccount(name, value); }
 	std::string getText() const;
 
@@ -280,7 +367,7 @@ public:
 	static STTaggedList* construct(SerializerIterator&, const char *name=NULL);
 
 	int getLength() const;
-	SerializedTypeID getType() const { return STI_TL; }
+	SerializedTypeID getSType() const { return STI_TL; }
 	STTaggedList* duplicate() const { return new STTaggedList(name, value); }
 	std::string getText() const;
 	void add(Serializer& s) const { if(s.addTaggedList(value)<0) throw(0); }
@@ -299,6 +386,7 @@ public:
 
 	operator std::vector<TaggedListItem>() const { return value; }
 	STTaggedList& operator=(const std::vector<TaggedListItem>& v) { value=v; return *this; }
+	virtual bool isEquivalent(const SerializedType& t) const;
 };
 
 #endif

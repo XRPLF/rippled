@@ -1,0 +1,6 @@
+#!/bin/sh -x
+
+cd ~/NewCoin
+git pull
+scons -j 2
+cp -p newcoind bin/

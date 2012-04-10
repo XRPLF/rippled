@@ -9,9 +9,13 @@
 # Ignore python compiled files.
 *.pyc
 
+# Ignore backup/temps
+*~
+
 # Ignore object files.
 *.o
 obj/*
+bin/newcoind
 
 newcoind
 

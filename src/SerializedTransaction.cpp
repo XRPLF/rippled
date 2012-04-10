@@ -77,6 +77,16 @@ int SerializedTransaction::getTransaction(Serializer& s, bool include_length) co
 	return l;
 }
 
+bool SerializedTransaction::isEquivalent(const SerializedType& t) const
+{ // Signatures are not compared
+	const SerializedTransaction* v=dynamic_cast<const SerializedTransaction*>(&t);
+	if(!v) return false;
+	if(type != v->type) return false;
+	if(mMiddleTxn != v->mMiddleTxn) return false;
+	if(mInnerTxn != v->mInnerTxn) return false;
+	return true;
+}
+
 uint256 SerializedTransaction::getSigningHash() const
 {
 	Serializer s;
@@ -206,7 +216,7 @@ bool SerializedTransaction::getITFieldPresent(SOE_Field field) const
 	return mInnerTxn.isFieldPresent(field);
 }
 
-const SerializedType& SerializedTransaction::peekITField(SOE_Field field)
+const SerializedType& SerializedTransaction::peekITField(SOE_Field field) const
 {
 	return mInnerTxn.peekAtField(field);
 }
