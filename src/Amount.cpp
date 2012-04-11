@@ -235,18 +235,18 @@ STAmount operator*(const STAmount &v1, const STAmount &v2)
 {
 	if( (v1.value == 0) || (v2.value == 0) ) return STAmount();
 
-	// Compute (numerator * denominator) / 10^15
+	// Compute (numerator * denominator) / 10^16
 	CBigNum v;
-	if( (BN_add_word(&v, v1.value) != 1) ||
-	    (BN_mul_word(&v, v2.value) != 1) ||
-		(BN_div_word(&v, 1000000000000000ull) == ((BN_ULONG)-1)) )
+	if( (BN_add_word(&v, v1.value + 1) != 1) ||
+	    (BN_mul_word(&v, v2.value + 1) != 1) ||
+		(BN_div_word(&v, 10000000000000000ull) == ((BN_ULONG)-1)) )
 	{
 		throw std::runtime_error("internal bn error");
 	}
 
-	// 10^15 <= product <= 10^17
+	// 10^16 <= product <= 10^18
 	assert(BN_num_bytes(&v)<=60);
-	return STAmount(v.getulong(), v1.offset + v2.offset + 15);
+	return STAmount(v.getulong(), v1.offset + v2.offset + 16);
 }
 
 STAmount getRate(const STAmount& offerOut, const STAmount& offerIn)
@@ -280,7 +280,7 @@ STAmount getClaimed(STAmount& offerOut, STAmount& offerIn, STAmount& paid)
 	}
 
 	// partial satisfaction of a normal offer
-	STAmount ret = (paid * offerOut ) / offerIn;
+	STAmount ret = (paid * offerOut) / offerIn;
 	offerOut -= ret;
 	offerIn -= paid;
 	if( (offerOut.value == 0) || (offerIn.value == 0) )
@@ -295,6 +295,6 @@ STAmount getNeeded(const STAmount& offerOut, const STAmount& offerIn, const STAm
 { // Someone wants to get (needed) out of the offer, how much should they pay in?
 	if(offerOut.isZero()) return STAmount();
 	if(needed >= offerOut) return needed;
-	STAmount ret = needed * (offerIn / offerOut);
+	STAmount ret = (needed * offerIn) / offerOut;
 	return (ret > offerIn) ? offerIn : ret;
 }
