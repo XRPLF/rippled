@@ -23,13 +23,13 @@ void STAmount::canonicalize()
 	{
 		if(offset<=cMinOffset) throw std::runtime_error("value overflow");
 		value*=10;
-		offset-=1;
+		--offset;
 	}
 	while(value>cMaxValue)
 	{
 		if(offset>=cMaxOffset) throw std::runtime_error("value underflow");
 		value/=10;
-		offset+=1;
+		++offset;
 	}
 	assert( (value==0) || ( (value>=cMinValue) && (value<=cMaxValue) ) );
 	assert( (offset>=cMinOffset) && (offset<=cMaxOffset) );
@@ -235,11 +235,11 @@ STAmount operator*(const STAmount &v1, const STAmount &v2)
 {
 	if( (v1.value == 0) || (v2.value == 0) ) return STAmount();
 
-	// Compute (numerator * denominator) / 10^16
+	// Compute (numerator*10 * denominator*10) / 10^18
 	CBigNum v;
-	if( (BN_add_word(&v, v1.value + 1) != 1) ||
-	    (BN_mul_word(&v, v2.value + 1) != 1) ||
-		(BN_div_word(&v, 10000000000000000ull) == ((BN_ULONG)-1)) )
+	if( (BN_add_word(&v, (v1.value*10) + 3) != 1) ||
+	    (BN_mul_word(&v, (v2.value*10) + 3) != 1) ||
+		(BN_div_word(&v, 1000000000000000000ull) == ((BN_ULONG)-1)) )
 	{
 		throw std::runtime_error("internal bn error");
 	}
