@@ -195,15 +195,11 @@ STAmount operator+(STAmount v1, STAmount v2)
 
 STAmount operator-(STAmount v1, STAmount v2)
 { // We can check for precision loss here (value%10)!=0
-	while(v1.offset < v2.offset)
-	{
-		v1.value/=10;
-		v1.offset+=1;
-	}
-	while(v2.offset < v1.offset)
+	if(v2.offset > v1.offset) throw std::runtime_error("value underflow");
+	while(v1.offset > v2.offset)
 	{
 		v2.value/=10;
-		v2.offset+=1;
+		++v2.offset;
 	}
 	if(v1.value < v2.value) throw std::runtime_error("value underflow");
 	return STAmount(v1.name, v1.value - v2.value, v1.offset);
