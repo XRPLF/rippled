@@ -19,14 +19,14 @@ void STAmount::canonicalize()
 		value=0;
 		return;
 	}
-	while(value < cMinValue)
+	while (value < cMinValue)
 	{
 		if (offset <= cMinOffset)
 			throw std::runtime_error("value overflow");
 		value *= 10;
 		--offset;
 	}
-	while(value > cMaxValue)
+	while (value > cMaxValue)
 	{
 		if (offset >= cMaxOffset)
 			throw std::runtime_error("value underflow");
@@ -186,12 +186,12 @@ STAmount operator+(STAmount v1, STAmount v2)
 { // We can check for precision loss here (value%10)!=0
 	if (v1.value == 0) return v2;
 	if (v2.value == 0) return v1;
-	while(v1.offset < v2.offset)
+	while (v1.offset < v2.offset)
 	{
 		v1.value /= 10;
 		++v1.offset;
 	}
-	while(v2.offset < v1.offset)
+	while (v2.offset < v1.offset)
 	{
 		v2.value /= 10;
 		++v2.offset;
@@ -206,7 +206,7 @@ STAmount operator-(STAmount v1, STAmount v2)
 	if ( (v1.value == 0) || (v2.offset > v1.offset) )
 		throw std::runtime_error("value underflow");
 
-	while(v1.offset > v2.offset)
+	while (v1.offset > v2.offset)
 	{
 		v2.value /= 10;
 		++v2.offset;
@@ -219,24 +219,23 @@ STAmount operator-(STAmount v1, STAmount v2)
 
 STAmount operator/(const STAmount& num, const STAmount& den)
 {
-	CBigNum numerator, denominator, quotient;
+	CBigNum v;
 
 	if (den.value == 0) throw std::runtime_error("illegal offer");
 	if (num.value == 0) return STAmount();
 
 	// Compute (numerator * 10^16) / denominator
-	if ((BN_add_word(&numerator, num.value) != 1) ||
-		(BN_add_word(&denominator, den.value) != 1) ||
-		(BN_mul_word(&numerator, 10000000000000000ull) != 1) ||
-		(BN_div(&quotient, NULL, &numerator, &denominator, CAutoBN_CTX()) != 1))
+	if ((BN_add_word(&v, num.value) != 1) ||
+		(BN_mul_word(&v, 10000000000000000ull) != 1) ||
+		(BN_div_word(&v, den.value) == ((BN_ULONG)-1)))
 	{
 		throw std::runtime_error("internal bn error");
 	}
 
 	// 10^15 <= quotient <= 10^17
-	assert(BN_num_bytes(&quotient) <= 60);
+	assert(BN_num_bytes(&v) <= 60);
 
-	return STAmount(quotient.getulong(), num.offset - den.offset - 16);
+	return STAmount(v.getulong(), num.offset - den.offset - 16);
 }
 
 STAmount operator*(const STAmount &v1, const STAmount &v2)
