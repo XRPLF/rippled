@@ -58,6 +58,11 @@ STAmount* STAmount::construct(SerializerIterator& sit, const char *name)
 	return new STAmount(name, value, offset);
 }
 
+std::string STAmount::getRaw() const
+{ // show raw internal form
+	return boost::lexical_cast<std::string>(value) + "e" + boost::lexical_cast<std::string>(offset);
+}
+
 std::string STAmount::getText() const
 {
 	if (value == 0) return "0";
@@ -246,7 +251,7 @@ STAmount operator*(const STAmount &v1, const STAmount &v2)
 	// Compute (numerator*10 * denominator*10) / 10^18
 	CBigNum v;
 	if ((BN_add_word(&v, (v1.value*10) + 3) != 1) ||
-	    (BN_mul_word(&v, (v2.value*10) + 3) != 1) ||
+		(BN_mul_word(&v, (v2.value*10) + 3) != 1) ||
 		(BN_div_word(&v, 1000000000000000000ull) == ((BN_ULONG)-1)))
 	{
 		throw std::runtime_error("internal bn error");
