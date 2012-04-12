@@ -191,6 +191,7 @@ public:
 	SerializedTypeID getSType() const { return STI_AMOUNT; }
 	STAmount* duplicate() const { return new STAmount(name, offset, value); }
 	std::string getText() const;
+	std::string getRaw() const;
 	void add(Serializer& s) const;
 
 	int getOffset() const { return offset; }
