@@ -4,6 +4,9 @@
 #include <cmath>
 #include <stdexcept>
 
+// CAUTION: This is currently dead code based on the old currency scheme
+// It will be updated.
+
 uint160 Currency::sNatMask("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF0000");
 uint160 Currency::sNatZero("FFFFFFFFFFFFFFFFFFFFFFFFFFFF000000000000");
 uint64 Amount::sMaxCanon(1ull << 63);

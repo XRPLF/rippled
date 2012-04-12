@@ -1,6 +1,9 @@
 #ifndef __CURRENCY__
 #define __CURRENCY__
 
+// CAUTION: This is currently dead code based on the old currency scheme.
+// It will be updated to use the new STAmount code
+
 #include <string>
 
 #include "uint256.h"
