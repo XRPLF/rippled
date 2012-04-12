@@ -312,3 +312,13 @@ STAmount getNeeded(const STAmount& offerOut, const STAmount& offerIn, const STAm
 	STAmount ret = (needed * offerIn) / offerOut;
 	return (ret > offerIn) ? offerIn : ret;
 }
+
+STAmount convertToDisplayAmount(const STAmount& internalAmount, const STAmount& totalNow, const STAmount& totalInit)
+{ // Convert an internal ledger/account quantity of native currency to a display amount
+	return (internalAmount * totalInit) / totalNow;
+}
+
+STAmount convertToInternalAmount(const STAmount& displayAmount, const STAmount& totalNow, const STAmount& totalInit)
+{ // Convert a display/request currency amount to an internal amount
+	return (displayAmount * totalNow) / totalInit;
+}
