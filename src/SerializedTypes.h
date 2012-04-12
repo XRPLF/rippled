@@ -195,6 +195,8 @@ public:
 
 	int getOffset() const { return offset; }
 	uint64 getValue() const { return value; }
+	void zero() { offset=0; value=0; }
+	bool isZero() const { return value==0; }
 
 	virtual bool isEquivalent(const SerializedType& t) const;
 
@@ -216,15 +218,18 @@ public:
 
 	friend STAmount operator+(STAmount v1, STAmount v2);
 	friend STAmount operator-(STAmount v1, STAmount v2);
+	friend STAmount operator/(const STAmount& v1, const STAmount& v2);
+	friend STAmount operator*(const STAmount& v1, const STAmount& v2);
 
 	// Someone is offering X for Y, what is the rate?
-	friend STAmount getRate(const STAmount& offerIn, const STAmount& offerOut);
+	friend STAmount getRate(const STAmount& offerOut, const STAmount& offerIn);
 
-	// Someone is offering X for Y, I pay Z, how much do I get?
-	friend STAmount getClaimed(const STAmount& offerIn, const STAmount& offerOut, const STAmount& paid);
+	// Someone is offering X for Y, I try to pay Z, how much do I get?
+	// And what's left of the offer? And how much do I actually pay?
+	friend STAmount getClaimed(STAmount& offerOut, STAmount& offerIn, STAmount& paid);
 
 	// Someone is offering X for Y, I need Z, how much do I pay
-	friend STAmount getNeeded(const STAmount& offerIn, const STAmount& offerOut, const STAmount& needed);
+	friend STAmount getNeeded(const STAmount& offerOut, const STAmount& offerIn, const STAmount& needed);
 };
 
 class STHash128 : public SerializedType
