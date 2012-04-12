@@ -72,9 +72,9 @@ public:
 
 	int getCount() const { return mData.size(); }
 
-	bool setFlag(int);
-	bool clearFlag(int);
-	int getFlag() const;
+	bool setFlag(uint32);
+	bool clearFlag(uint32);
+	uint32 getFlags() const;
 
 	const SerializedType& peekAtIndex(int offset) const { return mData[offset]; }
 	SerializedType& getIndex(int offset) { return mData[offset]; }

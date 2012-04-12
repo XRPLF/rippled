@@ -112,9 +112,9 @@ STObject::STObject(SOElement* elem, SerializerIterator& sit, const char *name) :
 		}
 		else if(elem->e_type==SOE_FLAGS)
 		{
-			assert(elem->e_id==STI_UINT16);
-			flags=sit.get16();
-			mFlagIdx=giveObject(new STUInt16(elem->e_name, flags));
+			assert(elem->e_id==STI_UINT32);
+			flags=sit.get32();
+			mFlagIdx=giveObject(new STUInt32(elem->e_name, flags));
 			done=true;
 		}
 		if(!done)
@@ -232,28 +232,28 @@ bool STObject::isFieldPresent(SOE_Field field) const
 	return peekAtIndex(field).getSType()==STI_OBJECT;
 }
 
-bool STObject::setFlag(int f)
+bool STObject::setFlag(uint32 f)
 {
 	if(mFlagIdx<0) return false;
-	STUInt16* t=dynamic_cast<STUInt16*>(getPIndex(mFlagIdx));
+	STUInt32* t=dynamic_cast<STUInt32*>(getPIndex(mFlagIdx));
 	assert(t);
 	t->setValue(t->getValue() | f);
 	return true;
 }
 
-bool STObject::clearFlag(int f)
+bool STObject::clearFlag(uint32 f)
 {
 	if(mFlagIdx<0) return false;
-	STUInt16* t=dynamic_cast<STUInt16*>(getPIndex(mFlagIdx));
+	STUInt32* t=dynamic_cast<STUInt32*>(getPIndex(mFlagIdx));
 	assert(t);
 	t->setValue(t->getValue() & ~f);
 	return true;
 }
 
-int STObject::getFlag(void) const
+uint32 STObject::getFlags(void) const
 {
 	if(mFlagIdx<0) return 0;
-	const STUInt16* t=dynamic_cast<const STUInt16*>(peekAtPIndex(mFlagIdx));
+	const STUInt32* t=dynamic_cast<const STUInt32*>(peekAtPIndex(mFlagIdx));
 	assert(t);
 	return t->getValue();
 }

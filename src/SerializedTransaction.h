@@ -52,10 +52,9 @@ public:
 	std::string getTransactionType() const { return mFormat->t_name; }
 
 	// inner transaction functions
-	uint16 getFlags() const;
-	void setFlag(int v);
-	void clearFlag(int v);
-	bool isFlag(int v);
+	uint32 getFlags() const { return mInnerTxn.getFlags(); }
+	void setFlag(uint32 v) { mInnerTxn.setFlag(v); }
+	void clearFlag(uint32 v) { mInnerTxn.clearFlag(v); }
 	
 	uint32 getSequence() const;
 	void setSequence(uint32);
