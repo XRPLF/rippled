@@ -231,6 +231,12 @@ public:
 
 	// Someone is offering X for Y, I need Z, how much do I pay
 	friend STAmount getNeeded(const STAmount& offerOut, const STAmount& offerIn, const STAmount& needed);
+
+	// Native currency conversions, to/from display format
+	friend STAmount convertToDisplayAmount(const STAmount& internalAmount,
+		const STAmount& totalNow, const STAmount& totalInit);
+	friend STAmount convertToInternalAmount(const STAmount& displayAmount,
+		const STAmount& totalNow, const STAmount& totalInit);
 };
 
 class STHash128 : public SerializedType
