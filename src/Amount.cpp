@@ -326,3 +326,66 @@ STAmount convertToInternalAmount(const STAmount& displayAmount, const STAmount& 
 { // Convert a display/request currency amount to an internal amount
 	return (displayAmount * totalNow) / totalInit;
 }
+
+void STAmount::unitTest()
+{
+	STAmount zero, one(1), hundred(100);
+
+	if (!zero.isZero()) throw std::runtime_error("STAmount fail");
+	if (one.isZero()) throw std::runtime_error("STAmount fail");
+	if (hundred.isZero()) throw std::runtime_error("STAmount fail");
+	if ((zero < zero)) throw std::runtime_error("STAmount fail");
+	if (!(zero < one)) throw std::runtime_error("STAmount fail");
+	if (!(zero < hundred)) throw std::runtime_error("STAmount fail");
+	if ((one < zero)) throw std::runtime_error("STAmount fail");
+	if ((one < one)) throw std::runtime_error("STAmount fail");
+	if (!(one < hundred)) throw std::runtime_error("STAmount fail");
+	if ((hundred < zero)) throw std::runtime_error("STAmount fail");
+	if ((hundred < one)) throw std::runtime_error("STAmount fail");
+	if ((hundred < hundred)) throw std::runtime_error("STAmount fail");
+	if ((zero > zero)) throw std::runtime_error("STAmount fail");
+	if ((zero > one)) throw std::runtime_error("STAmount fail");
+	if ((zero > hundred)) throw std::runtime_error("STAmount fail");
+	if (!(one > zero)) throw std::runtime_error("STAmount fail");
+	if ((one > one)) throw std::runtime_error("STAmount fail");
+	if ((one > hundred)) throw std::runtime_error("STAmount fail");
+	if (!(hundred > zero)) throw std::runtime_error("STAmount fail");
+	if (!(hundred > one)) throw std::runtime_error("STAmount fail");
+	if ((hundred > hundred)) throw std::runtime_error("STAmount fail");
+	if (!(zero <= zero)) throw std::runtime_error("STAmount fail");
+	if (!(zero <= one)) throw std::runtime_error("STAmount fail");
+	if (!(zero <= hundred)) throw std::runtime_error("STAmount fail");
+	if ((one <= zero)) throw std::runtime_error("STAmount fail");
+	if (!(one <= one)) throw std::runtime_error("STAmount fail");
+	if (!(one <= hundred)) throw std::runtime_error("STAmount fail");
+	if ((hundred <= zero)) throw std::runtime_error("STAmount fail");
+	if ((hundred <= one)) throw std::runtime_error("STAmount fail");
+	if (!(hundred <= hundred)) throw std::runtime_error("STAmount fail");
+	if (!(zero >= zero)) throw std::runtime_error("STAmount fail");
+	if ((zero >= one)) throw std::runtime_error("STAmount fail");
+	if ((zero >= hundred)) throw std::runtime_error("STAmount fail");
+	if (!(one >= zero)) throw std::runtime_error("STAmount fail");
+	if (!(one >= one)) throw std::runtime_error("STAmount fail");
+	if ((one >= hundred)) throw std::runtime_error("STAmount fail");
+	if (!(hundred >= zero)) throw std::runtime_error("STAmount fail");
+	if (!(hundred >= one)) throw std::runtime_error("STAmount fail");
+	if (!(hundred >= hundred)) throw std::runtime_error("STAmount fail");
+	if (!(zero == zero)) throw std::runtime_error("STAmount fail");
+	if ((zero == one)) throw std::runtime_error("STAmount fail");
+	if ((zero == hundred)) throw std::runtime_error("STAmount fail");
+	if ((one == zero)) throw std::runtime_error("STAmount fail");
+	if (!(one == one)) throw std::runtime_error("STAmount fail");
+	if ((one == hundred)) throw std::runtime_error("STAmount fail");
+	if ((hundred == zero)) throw std::runtime_error("STAmount fail");
+	if ((hundred == one)) throw std::runtime_error("STAmount fail");
+	if (!(hundred == hundred)) throw std::runtime_error("STAmount fail");
+	if ((zero != zero)) throw std::runtime_error("STAmount fail");
+	if (!(zero != one)) throw std::runtime_error("STAmount fail");
+	if (!(zero != hundred)) throw std::runtime_error("STAmount fail");
+	if (!(one != zero)) throw std::runtime_error("STAmount fail");
+	if ((one != one)) throw std::runtime_error("STAmount fail");
+	if (!(one != hundred)) throw std::runtime_error("STAmount fail");
+	if (!(hundred != zero)) throw std::runtime_error("STAmount fail");
+	if (!(hundred != one)) throw std::runtime_error("STAmount fail");
+	if ((hundred != hundred)) throw std::runtime_error("STAmount fail");
+}

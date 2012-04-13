@@ -237,6 +237,8 @@ public:
 		const STAmount& totalNow, const STAmount& totalInit);
 	friend STAmount convertToInternalAmount(const STAmount& displayAmount,
 		const STAmount& totalNow, const STAmount& totalInit);
+
+	static void unitTest();
 };
 
 class STHash128 : public SerializedType
