@@ -15,8 +15,8 @@ void STAmount::canonicalize()
 {
 	if (value == 0)
 	{
-		offset=0;
-		value=0;
+		offset = 0;
+		value = 0;
 		return;
 	}
 	while (value < cMinValue)
@@ -116,7 +116,8 @@ bool STAmount::operator!=(const STAmount& a) const
 
 bool STAmount::operator<(const STAmount& a) const
 {
-	if (value == 0) return false;
+	if (a.value == 0) return false;
+	if (value == 0) return true;
 	if (offset < a.offset) return true;
 	if (a.offset < offset) return false;
 	return value < a.value;
@@ -124,7 +125,8 @@ bool STAmount::operator<(const STAmount& a) const
 
 bool STAmount::operator>(const STAmount& a) const
 {
-	if (value == 0) return a.value != 0;
+	if (value == 0) return false;
+	if (a.value == 0) return true;
 	if (offset > a.offset) return true;
 	if (a.offset > offset) return false;
 	return value > a.value;
@@ -132,7 +134,8 @@ bool STAmount::operator>(const STAmount& a) const
 
 bool STAmount::operator<=(const STAmount& a) const
 {
-	if (value == 0) return a.value == 0;
+	if (value == 0) return true;
+	if (a.value == 0) return false;
 	if (offset < a.offset) return true;
 	if (a.offset < offset) return false;
 	return value <= a.value;
@@ -140,7 +143,8 @@ bool STAmount::operator<=(const STAmount& a) const
 
 bool STAmount::operator>=(const STAmount& a) const
 {
-	if (value == 0) return true;
+	if (a.value == 0) return true;
+	if (value == 0) return false;
 	if (offset > a.offset) return true;
 	if (a.offset > offset) return false;
 	return value >= a.value;
