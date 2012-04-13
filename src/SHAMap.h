@@ -166,16 +166,16 @@ public:
 
 	// node functions
 	uint32 getSeq() const { return mSeq; }
-	void setSeq(uint32 s) { mSeq=s; }
+	void setSeq(uint32 s) { mSeq = s; }
 	const uint256& getNodeHash() const	{ return mHash; }
 	TNType getType() const { return mType; }
 
 	// type functions
-	bool isLeaf() const { return (mType==tnTRANSACTION) || (mType==tnACCOUNT_STATE); }
-	bool isInner() const { return mType==tnINNER; }
-	bool isValid() const { return mType!=tnERROR; }
-	bool isTransaction() const { return mType!=tnTRANSACTION; }
-	bool isAccountState() const { return mType!=tnACCOUNT_STATE; }
+	bool isLeaf() const { return (mType == tnTRANSACTION) || (mType == tnACCOUNT_STATE); }
+	bool isInner() const { return mType == tnINNER; }
+	bool isValid() const { return mType != tnERROR; }
+	bool isTransaction() const { return mType != tnTRANSACTION; }
+	bool isAccountState() const { return mType != tnACCOUNT_STATE; }
 
 	// inner node functions
 	bool isInnerNode() const { return !mItem; }
@@ -196,7 +196,7 @@ public:
 
 	// sync functions
 	bool isFullBelow(void) const		{ return mFullBelow; }
-	void setFullBelow(void)				{ mFullBelow=true; }
+	void setFullBelow(void)				{ mFullBelow = true; }
 
 	virtual void dump();
 	virtual std::string getString() const;
@@ -204,18 +204,18 @@ public:
 
 enum SHAMapException
 {
-	MissingNode=1,
-	InvalidNode=2,
-	InvalidMap=3,
+	MissingNode = 1,
+	InvalidNode = 2,
+	InvalidMap = 3,
 };
 
 enum SHAMapState
 {
-	Modifying=0,	// Objects can be added and removed (like an open ledger)
-	Immutable=1,	// Map cannot be changed (like a closed ledger)
-	Synching=2,		// Map's hash is locked in, valid nodes can be added (like a peer's closing ledger)
-	Floating=3,		// Map is free to change hash (like a synching open ledger)
-	Invalid=4,		// Map is known not to be valid (usually synching a corrupt ledger)
+	Modifying = 0,		// Objects can be added and removed (like an open ledger)
+	Immutable = 1,		// Map cannot be changed (like a closed ledger)
+	Synching = 2,		// Map's hash is locked in, valid nodes can be added (like a peer's closing ledger)
+	Floating = 3,		// Map is free to change hash (like a synching open ledger)
+	Invalid = 4,		// Map is known not to be valid (usually synching a corrupt ledger)
 };
 
 class SHAMap
@@ -298,13 +298,13 @@ public:
 	bool addKnownNode(const SHAMapNode& nodeID, const std::vector<unsigned char>& rawNode);
 
 	// status functions
-	void setImmutable(void) { assert(mState!=Invalid); mState=Immutable; }
-	void clearImmutable(void) { mState=Modifying; }
-	bool isSynching(void) const { return mState==Floating || mState==Synching; }
-	void setSynching(void) { mState=Synching; }
-	void setFloating(void) { mState=Floating; }
-	void clearSynching(void) { mState=Modifying; }
-	bool isValid(void) { return mState!=Invalid; }
+	void setImmutable(void)		{ assert(mState != Invalid); mState = Immutable; }
+	void clearImmutable(void)	{ mState = Modifying; }
+	bool isSynching(void) const	{ return mState == Floating || mState == Synching; }
+	void setSynching(void)		{ mState = Synching; }
+	void setFloating(void)		{ mState = Floating; }
+	void clearSynching(void)	{ mState = Modifying; }
+	bool isValid(void)			{ return mState != Invalid; }
 
 	// caution: otherMap must be accessed only by this function
 	// return value: true=successfully completed, false=too different
@@ -312,18 +312,18 @@ public:
 
 	int flushDirty(int maxNodes, HashedObjectType t, uint32 seq);
 
-	void setSeq(uint32 seq) { mSeq=seq; }
+	void setSeq(uint32 seq) { mSeq = seq; }
 	uint32 getSeq() { return mSeq; }
 
 	// overloads for backed maps
 	bool fetchNode(const uint256& hash, std::vector<unsigned char>& rawNode);
 
-	bool operator==(const SHAMap& s) { return getHash()==s.getHash(); }
+	bool operator==(const SHAMap& s) { return getHash() == s.getHash(); }
 
 	static bool TestSHAMap();
 	static bool syncTest();
 	bool deepCompare(SHAMap& other);
-	virtual void dump(bool withHashes=false);
+	virtual void dump(bool withHashes = false);
 };
 
 #endif

@@ -9,14 +9,14 @@
 std::string SerializedType::getFullText() const
 {
 	std::string ret;
-	if(getSType()!=STI_NOTPRESENT)
+	if (getSType() != STI_NOTPRESENT)
 	{
-		if(name!=NULL)
+		if(name != NULL)
 		{
-			ret=name;
-			ret+=" = ";
+			ret = name;
+			ret += " = ";
 		}
-		ret+=getText();
+		ret += getText();
 	}
 	return ret;
 }
@@ -33,8 +33,8 @@ std::string STUInt8::getText() const
 
 bool STUInt8::isEquivalent(const SerializedType& t) const
 {
-	const STUInt8* v=dynamic_cast<const STUInt8*>(&t);
-	return v && (value==v->value);
+	const STUInt8* v = dynamic_cast<const STUInt8*>(&t);
+	return v && (value == v->value);
 }
 
 STUInt16* STUInt16::construct(SerializerIterator& u, const char *name)
@@ -49,8 +49,8 @@ std::string STUInt16::getText() const
 
 bool STUInt16::isEquivalent(const SerializedType& t) const
 {
-	const STUInt16* v=dynamic_cast<const STUInt16*>(&t);
-	return v && (value==v->value);
+	const STUInt16* v = dynamic_cast<const STUInt16*>(&t);
+	return v && (value == v->value);
 }
 
 STUInt32* STUInt32::construct(SerializerIterator& u, const char *name)
@@ -65,8 +65,8 @@ std::string STUInt32::getText() const
 
 bool STUInt32::isEquivalent(const SerializedType& t) const
 {
-	const STUInt32* v=dynamic_cast<const STUInt32*>(&t);
-	return v && (value==v->value);
+	const STUInt32* v = dynamic_cast<const STUInt32*>(&t);
+	return v && (value == v->value);
 }
 
 STUInt64* STUInt64::construct(SerializerIterator& u, const char *name)
@@ -81,8 +81,8 @@ std::string STUInt64::getText() const
 
 bool STUInt64::isEquivalent(const SerializedType& t) const
 {
-	const STUInt64* v=dynamic_cast<const STUInt64*>(&t);
-	return v && (value==v->value);
+	const STUInt64* v = dynamic_cast<const STUInt64*>(&t);
+	return v && (value == v->value);
 }
 
 STHash128* STHash128::construct(SerializerIterator& u, const char *name)
@@ -97,8 +97,8 @@ std::string STHash128::getText() const
 
 bool STHash128::isEquivalent(const SerializedType& t) const
 {
-	const STHash128* v=dynamic_cast<const STHash128*>(&t);
-	return v && (value==v->value);
+	const STHash128* v = dynamic_cast<const STHash128*>(&t);
+	return v && (value == v->value);
 }
 
 STHash160* STHash160::construct(SerializerIterator& u, const char *name)
@@ -113,8 +113,8 @@ std::string STHash160::getText() const
 
 bool STHash160::isEquivalent(const SerializedType& t) const
 {
-	const STHash160* v=dynamic_cast<const STHash160*>(&t);
-	return v && (value==v->value);
+	const STHash160* v = dynamic_cast<const STHash160*>(&t);
+	return v && (value == v->value);
 }
 
 STHash256* STHash256::construct(SerializerIterator& u, const char *name)
@@ -129,8 +129,8 @@ std::string STHash256::getText() const
 
 bool STHash256::isEquivalent(const SerializedType& t) const
 {
-	const STHash256* v=dynamic_cast<const STHash256*>(&t);
-	return v && (value==v->value);
+	const STHash256* v = dynamic_cast<const STHash256*>(&t);
+	return v && (value == v->value);
 }
 
 static std::string hex(const std::vector<unsigned char>& value)
@@ -159,26 +159,28 @@ int STVariableLength::getLength() const
 
 bool STVariableLength::isEquivalent(const SerializedType& t) const
 {
-	const STVariableLength* v=dynamic_cast<const STVariableLength*>(&t);
-	return v && (value==v->value);
+	const STVariableLength* v = dynamic_cast<const STVariableLength*>(&t);
+	return v && (value == v->value);
 }
 
 std::string STAccount::getText() const
 {
 	uint160 u;
 	NewcoinAddress a;
-	if(!getValueH160(u)) return STVariableLength::getText();
+
+	if (!getValueH160(u))
+		return STVariableLength::getText();
 	a.setAccountID(u);
 	return a.humanAccountPublic();
 }
 
 STAccount* STAccount::construct(SerializerIterator& u, const char *name)
 {
-	STAccount *ret=new STAccount(u.getVL());
-	if(!ret->isValueH160())
+	STAccount *ret = new STAccount(u.getVL());
+	if (!ret->isValueH160())
 	{
 		delete ret;
-		throw(std::runtime_error("invalid account in transaction"));
+		throw std::runtime_error("invalid account in transaction");
 	}
 	return ret;
 }
@@ -196,7 +198,7 @@ void STAccount::setValueH160(const uint160& v)
 
 bool STAccount::getValueH160(uint160& v) const
 {
-	if(!isValueH160()) return false;
+	if (!isValueH160()) return false;
 	memcpy(v.begin(), &(peekValue().front()), 32);
 	return true;
 }
@@ -204,11 +206,11 @@ bool STAccount::getValueH160(uint160& v) const
 std::string STTaggedList::getText() const
 {
 	std::string ret;
-	for(std::vector<TaggedListItem>::const_iterator it=value.begin(); it!=value.end(); ++it)
+	for (std::vector<TaggedListItem>::const_iterator it=value.begin(); it!=value.end(); ++it)
 	{
-		ret+=boost::lexical_cast<std::string>(it->first);
-		ret+=",";
-		ret+=hex(it->second);
+		ret += boost::lexical_cast<std::string>(it->first);
+		ret += ",";
+		ret += hex(it->second);
 	}
 	return ret;
 }
@@ -220,13 +222,13 @@ STTaggedList* STTaggedList::construct(SerializerIterator& u, const char *name)
 
 int STTaggedList::getLength() const
 {
-	int ret=Serializer::getTaggedListLength(value);
-	if(ret<0) throw(std::overflow_error("bad TL length"));
+	int ret = Serializer::getTaggedListLength(value);
+	if (ret<0) throw std::overflow_error("bad TL length");
 	return ret;
 }
 
 bool STTaggedList::isEquivalent(const SerializedType& t) const
 {
-	const STTaggedList* v=dynamic_cast<const STTaggedList*>(&t);
-	return v && (value==v->value);
+	const STTaggedList* v = dynamic_cast<const STTaggedList*>(&t);
+	return v && (value == v->value);
 }
