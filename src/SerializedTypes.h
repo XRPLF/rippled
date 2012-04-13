@@ -160,7 +160,7 @@ public:
 class STAmount : public SerializedType
 {
 	// Internal form:
-	// 1: If amount is zero, then offset and value are both zero.
+	// 1: If amount is zero, then value is zero and offset is -100
 	// 2: Otherwise:
 	//   legal offset range is -96 to +80 inclusive
 	//   value range is 10^15 to (10^16 - 1) inclusive
@@ -196,7 +196,7 @@ public:
 
 	int getOffset() const { return offset; }
 	uint64 getValue() const { return value; }
-	void zero() { offset=0; value=0; }
+	void zero() { offset=0; value=-100; }
 	bool isZero() const { return value==0; }
 
 	virtual bool isEquivalent(const SerializedType& t) const;

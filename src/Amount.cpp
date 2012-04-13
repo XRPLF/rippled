@@ -15,7 +15,7 @@ void STAmount::canonicalize()
 {
 	if (value == 0)
 	{
-		offset = 0;
+		offset = -100;
 		value = 0;
 		return;
 	}
@@ -34,7 +34,8 @@ void STAmount::canonicalize()
 		++offset;
 	}
 	assert( (value == 0) || ( (value >= cMinValue) && (value <= cMaxValue) ) );
-	assert( (offset >= cMinOffset) && (offset <= cMaxOffset) );
+	assert( (value == 0) || (offset >= cMinOffset) && (offset <= cMaxOffset) );
+	assert( (value != 0) || (offset != -100) );
 }
 
 STAmount* STAmount::construct(SerializerIterator& sit, const char *name)
@@ -60,6 +61,7 @@ STAmount* STAmount::construct(SerializerIterator& sit, const char *name)
 
 std::string STAmount::getRaw() const
 { // show raw internal form
+	if (value == 0) return "0";
 	return boost::lexical_cast<std::string>(value) + "e" + boost::lexical_cast<std::string>(offset);
 }
 
@@ -116,8 +118,6 @@ bool STAmount::operator!=(const STAmount& a) const
 
 bool STAmount::operator<(const STAmount& a) const
 {
-	if (a.value == 0) return false;
-	if (value == 0) return true;
 	if (offset < a.offset) return true;
 	if (a.offset < offset) return false;
 	return value < a.value;
@@ -125,8 +125,6 @@ bool STAmount::operator<(const STAmount& a) const
 
 bool STAmount::operator>(const STAmount& a) const
 {
-	if (value == 0) return false;
-	if (a.value == 0) return true;
 	if (offset > a.offset) return true;
 	if (a.offset > offset) return false;
 	return value > a.value;
@@ -134,8 +132,6 @@ bool STAmount::operator>(const STAmount& a) const
 
 bool STAmount::operator<=(const STAmount& a) const
 {
-	if (value == 0) return true;
-	if (a.value == 0) return false;
 	if (offset < a.offset) return true;
 	if (a.offset < offset) return false;
 	return value <= a.value;
@@ -143,8 +139,6 @@ bool STAmount::operator<=(const STAmount& a) const
 
 bool STAmount::operator>=(const STAmount& a) const
 {
-	if (a.value == 0) return true;
-	if (value == 0) return false;
 	if (offset > a.offset) return true;
 	if (a.offset > offset) return false;
 	return value >= a.value;
