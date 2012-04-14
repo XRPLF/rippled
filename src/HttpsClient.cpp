@@ -44,13 +44,13 @@ void HttpsClient::httpsGet(
 
 void HttpsClient::httpsNext()
 {
-	std::cerr << "Fetch: " << mDeqSites[0] << std::endl;
+	// std::cerr << "Fetch: " << mDeqSites[0] << std::endl;
     boost::shared_ptr<boost::asio::ip::tcp::resolver::query>	query(new boost::asio::ip::tcp::resolver::query(mDeqSites[0], boost::lexical_cast<std::string>(mPort),
 			ip::resolver_query_base::numeric_service|ip::resolver_query_base::numeric_service));
 	mQuery	= query;
 
 	mCtx.set_default_verify_paths(mShutdown);
-	if (!mShutdown)
+	if (mShutdown)
 	{
 		std::cerr << "set_default_verify_paths: " << mShutdown.message() << std::endl;
 	}
@@ -59,7 +59,7 @@ void HttpsClient::httpsNext()
 	{
 		mDeadline.expires_from_now(mTimeout, mShutdown);
 
-		std::cerr << "expires_from_now: " << mShutdown.message() << std::endl;
+		// std::cerr << "expires_from_now: " << mShutdown.message() << std::endl;
 	}
 
 	if (!mShutdown)
@@ -73,7 +73,7 @@ void HttpsClient::httpsNext()
 
     if (!mShutdown)
     {
-		std::cerr << "Resolving: " << mDeqSites[0] << std::endl;
+		// std::cerr << "Resolving: " << mDeqSites[0] << std::endl;
 
 		mResolver.async_resolve(*mQuery,
 			boost::bind(
@@ -92,9 +92,9 @@ void HttpsClient::handleDeadline(const boost::system::error_code& ecResult)
 	if (ecResult == boost::asio::error::operation_aborted)
 	{
 		// Timer canceled because deadline no longer needed.
-		std::cerr << "Deadline cancelled." << std::endl;
+		// std::cerr << "Deadline cancelled." << std::endl;
 
-		// Do nothing.  Aborter is done.
+		// nothing();  // Aborter is done.
 	}
 	else if (ecResult)
     {
@@ -142,7 +142,7 @@ void HttpsClient::handleResolve(
     }
     else
 	{
-		std::cerr << "Resolve complete." << std::endl;
+		// std::cerr << "Resolve complete." << std::endl;
 
 		boost::asio::async_connect(
 			mSocketSsl.lowest_layer(),
@@ -166,7 +166,7 @@ void HttpsClient::handleConnect(const boost::system::error_code& ecResult)
 
     if (!mShutdown)
 	{
-		std::cerr << "Connected." << std::endl;
+		// std::cerr << "Connectted." << std::endl;
 
 	    mSocketSsl.lowest_layer().set_option(boost::asio::ip::tcp::no_delay(true));
 	    mSocketSsl.set_verify_mode(boost::asio::ssl::verify_peer);
@@ -206,7 +206,7 @@ void HttpsClient::handleRequest(const boost::system::error_code& ecResult)
     }
 	else
 	{
-		std::cerr << "SSL session started." << std::endl;
+		// std::cerr << "SSL session started." << std::endl;
 
 		std::ostream			osRequest(&mRequest);
 
@@ -238,7 +238,7 @@ void HttpsClient::handleWrite(const boost::system::error_code& ecResult)
     }
     else
     {
-		std::cerr << "Wrote." << std::endl;
+		// std::cerr << "Wrote." << std::endl;
 
 		boost::asio::async_read(
 			mSocketSsl,
@@ -265,7 +265,8 @@ void HttpsClient::handleData(const boost::system::error_code& ecResult)
     {
 		if (mShutdown)
 		{
-			std::cerr << "Complete." << std::endl;
+			// std::cerr << "Complete." << std::endl;
+			// nothing();
 		}
 		else
 		{
