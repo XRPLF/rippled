@@ -2,6 +2,8 @@
 #define __TRANSACTIONENGINE__
 
 #include "Ledger.h"
+#include "LedgerEngine.h"
+#include "Currency.h"
 #include "SerializedTransaction.h"
 #include "SerializedLedger.h"
 
@@ -32,7 +34,7 @@ enum TransactionEngineParams
 class TransactionEngine
 {
 protected:
-	Ledger::pointer mTargetLedger;
+	LedgerEngine::pointer mTxnEngine;
 
 	TransactionEngineResult doPayment(const SerializedTransaction&, SerializedLedgerEntry& source);
 	TransactionEngineResult doInvoice(const SerializedTransaction&, SerializedLedgerEntry& source);
@@ -43,10 +45,11 @@ protected:
 	TransactionEngineResult doDelete(const SerializedTransaction&, SerializedLedgerEntry& source);
 
 public:
-	TransactionEngine(Ledger::pointer targetLedger) : mTargetLedger(targetLedger) { ; }
+	TransactionEngine() { ; }
+	TransactionEngine(LedgerEngine::pointer txnEngine) : mTxnEngine(txnEngine) { ; }
 
-	Ledger::pointer getTargetLedger() { return mTargetLedger; }
-	void setTargetLedger(Ledger::pointer targetLedger) { mTargetLedger = targetLedger; }
+	LedgerEngine::pointer getLedgerEngine() { return mTxnEngine; }
+	void setLedgerEngine(LedgerEngine::pointer engine) { mTxnEngine = engine; }
 
 	TransactionEngineResult applyTransaction(const SerializedTransaction&, TransactionEngineParams);
 };
