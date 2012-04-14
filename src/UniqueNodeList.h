@@ -23,39 +23,65 @@
 
 class UniqueNodeList
 {
+public:
+	typedef enum {
+		vsManual	= 'M',
+		vsValidator	= 'V',	// validators.txt
+		vsWeb		= 'W',
+		vsReferral	= 'R',
+	} validatorSource;
+
 private:
+	typedef struct {
+		std::string					strDomain;
+		NewcoinAddress				naPublicKey;
+		validatorSource				vsSource;
+		boost::posix_time::ptime	tpNext;
+		boost::posix_time::ptime	tpScan;
+		boost::posix_time::ptime	tpFetch;
+		uint256						iSha256;
+		std::string					strComment;
+	} seedDomain;
+
+	int iSourceScore(validatorSource vsWhy);
+
 	void responseFetch(const std::string strDomain, const boost::system::error_code& err, const std::string strSiteFile);
 
-	boost::mutex							mFetchLock;
-	int										mFetchActive;	// count of active fetches
-	std::deque<std::string>					mFetchPending;
+	boost::mutex					mFetchLock;
+	int								mFetchActive;	// count of active fetches
 
-	std::string								mStrIpsUrl;
-	std::string								mStrValidatorsUrl;
+	boost::posix_time::ptime		mtpFetchNext;
+	boost::asio::deadline_timer		mdtFetchTimer;
 
 	void fetchNext();
+	void fetchFinish();
 	void fetchProcess(std::string strDomain);
+	void fetchTimerHandler(const boost::system::error_code& err);
 
-	void getValidatorsUrl();
-	void getIpsUrl();
-	void getFinish();
-	void responseIps(const boost::system::error_code& err, const std::string strIpsFile);
-	void responseValidators(const boost::system::error_code& err, const std::string strValidatorsFile);
+	void getValidatorsUrl(NewcoinAddress naNodePublic, section secSite);
+	void getIpsUrl(section secSite);
+	void responseIps(const std::string& strSite, const boost::system::error_code& err, const std::string strIpsFile);
+	void responseValidators(NewcoinAddress naNodePublic, section secSite, const std::string& strSite, const boost::system::error_code& err, const std::string strValidatorsFile);
 
-	void processIps(section::mapped_type& vecStrIps);
-	void processValidators(section::mapped_type& vecStrValidators);
+	void processIps(const std::string& strSite, section::mapped_type* pmtVecStrIps);
+	void processValidators(const std::string& strSite, NewcoinAddress naNodePublic, section::mapped_type* pmtVecStrValidators);
+
+	void processFile(const std::string strDomain, NewcoinAddress naNodePublic, section secSite);
+
+	bool getSeedDomans(const std::string& strDomain, seedDomain& dstSeedDomain);
+	void setSeedDomans(const seedDomain& dstSeedDomain);
 
 public:
-	UniqueNodeList();
+	UniqueNodeList(boost::asio::io_service& io_service);
 
-	void nodeAdd(NewcoinAddress naNodePublic, std::string strComment);
-	void nodeFetch(std::string strDomain);
+	// Begin processing.
+	void start();
+
+	void nodeAddPublic(NewcoinAddress naNodePublic, std::string strComment);
+	void nodeAddDomain(std::string strDomain, validatorSource vsWhy, std::string strComment="");
 	void nodeRemove(NewcoinAddress naNodePublic);
 	void nodeDefault(std::string strValidators);
 	void nodeReset();
-
-	// 2- we don't care, 1- we care and is valid, 2-invalid signature
-//	int checkValid(newcoin::Validation& valid);
 
 	Json::Value getUnlJson();
 };

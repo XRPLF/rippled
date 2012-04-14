@@ -9,15 +9,21 @@
 #include <cassert>
 #include <algorithm>
 #include <iostream>
+#include <boost/format.hpp>
 
 NewcoinAddress::NewcoinAddress()
 {
     nVersion = VER_NONE;
 }
 
-bool NewcoinAddress::IsValid()
+bool NewcoinAddress::IsValid() const
 {
     return !vchData.empty();
+}
+
+void NewcoinAddress::clear()
+{
+    nVersion = VER_NONE;
 }
 
 //
@@ -38,7 +44,7 @@ uint160 NewcoinAddress::getHanko() const
 		return Hash160(vchData);
 
     default:
-		throw std::runtime_error("bad source");
+		throw std::runtime_error(str(boost::format("bad source: %d") % int(nVersion)));
     }
 }
 
@@ -61,7 +67,7 @@ std::string NewcoinAddress::humanHanko() const
 	}
 
     default:
-		throw std::runtime_error("bad source");
+		throw std::runtime_error(str(boost::format("bad source: %d") % int(nVersion)));
     }
 }
 
@@ -96,7 +102,7 @@ const std::vector<unsigned char>& NewcoinAddress::getNodePublic() const
 		return vchData;
 
     default:
-		throw std::runtime_error("bad source");
+		throw std::runtime_error(str(boost::format("bad source: %d") % int(nVersion)));
     }
 }
 
@@ -113,7 +119,7 @@ std::string NewcoinAddress::humanNodePublic() const
 		return ToString();
 
     default:
-		throw std::runtime_error("bad source");
+		throw std::runtime_error(str(boost::format("bad source: %d") % int(nVersion)));
     }
 }
 
@@ -141,7 +147,7 @@ uint256 NewcoinAddress::getNodePrivate() const
 		return uint256(vchData);
 
     default:
-		throw std::runtime_error("bad source");
+		throw std::runtime_error(str(boost::format("bad source: %d") % int(nVersion)));
     }
 }
 
@@ -155,7 +161,7 @@ std::string NewcoinAddress::humanNodePrivate() const
 		return ToString();
 
     default:
-		throw std::runtime_error("bad source");
+		throw std::runtime_error(str(boost::format("bad source: %d") % int(nVersion)));
     }
 }
 
@@ -191,7 +197,7 @@ uint160 NewcoinAddress::getAccountID() const
 		return Hash160(vchData);
 
     default:
-		throw std::runtime_error("bad source");
+		throw std::runtime_error(str(boost::format("bad source: %d") % int(nVersion)));
     }
 }
 
@@ -214,7 +220,7 @@ std::string NewcoinAddress::humanAccountID() const
 	}
 
     default:
-		throw std::runtime_error("bad source");
+		throw std::runtime_error(str(boost::format("bad source: %d") % int(nVersion)));
     }
 }
 
@@ -246,7 +252,7 @@ const std::vector<unsigned char>& NewcoinAddress::getAccountPublic() const
 		return vchData;
 
     default:
-		throw std::runtime_error("bad source");
+		throw std::runtime_error(str(boost::format("bad source: %d") % int(nVersion)));
     }
 }
 
@@ -263,7 +269,7 @@ std::string NewcoinAddress::humanAccountPublic() const
 		return ToString();
 
     default:
-		throw std::runtime_error("bad source");
+		throw std::runtime_error(str(boost::format("bad source: %d") % int(nVersion)));
     }
 }
 
@@ -298,7 +304,7 @@ uint256 NewcoinAddress::getAccountPrivate() const
 		return uint256(vchData);
 
     default:
-		throw std::runtime_error("bad source");
+		throw std::runtime_error(str(boost::format("bad source: %d") % int(nVersion)));
     }
 }
 
@@ -312,7 +318,7 @@ std::string NewcoinAddress::humanAccountPrivate() const
 		return ToString();
 
     default:
-		throw std::runtime_error("bad source");
+		throw std::runtime_error(str(boost::format("bad source: %d") % int(nVersion)));
     }
 }
 
@@ -346,7 +352,7 @@ BIGNUM* NewcoinAddress::getFamilyGeneratorBN() const
 		break;
 
     default:
-		throw std::runtime_error("bad source");
+		throw std::runtime_error(str(boost::format("bad source: %d") % int(nVersion)));
     }
 
     BIGNUM*	ret	= BN_bin2bn(&vchData[0], vchData.size(), NULL);
@@ -366,7 +372,7 @@ const std::vector<unsigned char>& NewcoinAddress::getFamilyGenerator() const
 		return vchData;
 
     default:
-		throw std::runtime_error("bad source");
+		throw std::runtime_error(str(boost::format("bad source: %d") % int(nVersion)));
     }
 }
 
@@ -380,7 +386,7 @@ std::string NewcoinAddress::humanFamilyGenerator() const
 		return ToString();
 
     default:
-		throw std::runtime_error("bad source");
+		throw std::runtime_error(str(boost::format("bad source: %d") % int(nVersion)));
     }
 }
 
@@ -426,7 +432,7 @@ uint128 NewcoinAddress::getFamilySeed() const
 		return uint128(vchData);
 
     default:
-		throw std::runtime_error("bad source");
+		throw std::runtime_error(str(boost::format("bad source: %d") % int(nVersion)));
     }
 }
 
@@ -462,7 +468,7 @@ std::string NewcoinAddress::humanFamilySeed1751() const
 		}
 
     default:
-		throw std::runtime_error("bad source");
+		throw std::runtime_error(str(boost::format("bad source: %d") % int(nVersion)));
     }
 }
 
@@ -476,7 +482,7 @@ std::string NewcoinAddress::humanFamilySeed() const
 		return ToString();
 
     default:
-		throw std::runtime_error("bad source");
+		throw std::runtime_error(str(boost::format("bad source: %d") % int(nVersion)));
     }
 }
 

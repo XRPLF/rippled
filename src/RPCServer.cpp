@@ -505,27 +505,28 @@ Json::Value RPCServer::doLedger(Json::Value& params)
 	return "not implemented";
 }
 
-// unl_add <node_public>
-// unl_add <node_public> <comment>
+// unl_add <domain><node_public> [<comment>]
 Json::Value RPCServer::doUnlAdd(Json::Value& params) {
 	if(params.size()==1 || params.size()==2)
 	{
-		std::string	strNodePublic=params[0u].asString();
+		std::string	strNode	= params[0u].asString();
 		std::string strComment=params.size() == 2
 			? ""
 			: params[1u].asString();
 
 		NewcoinAddress	nodePublic;
 
-		if(nodePublic.setNodePublic(strNodePublic))
+		if(nodePublic.setNodePublic(strNode))
 		{
-			theApp->getUNL().nodeAdd(nodePublic, strComment);
+			theApp->getUNL().nodeAddPublic(nodePublic, strComment);
 
-			return "adding node";
+			return "adding node by public key";
 		}
 		else
 		{
-			return "invalid public key";
+			theApp->getUNL().nodeAddDomain(strNode, UniqueNodeList::vsManual, strComment);
+
+			return "adding node by domain";
 		}
 	}
 	else return "invalid params";
@@ -535,6 +536,9 @@ Json::Value RPCServer::doUnlAdd(Json::Value& params) {
 // validation_create <pass_phrase>
 // validation_create <seed>
 // validation_create <seed_key>
+//
+// NOTE: It is poor security to specify secret information on the command line.  This information might be saved in the command
+// shell history file (e.g. .bash_history) and it may be leaked via the process status command (i.e. ps).
 Json::Value RPCServer::doValidatorCreate(Json::Value& params) {
 	NewcoinAddress	familySeed;
 	NewcoinAddress	familyGenerator;
@@ -675,18 +679,6 @@ Json::Value RPCServer::doUnlDelete(Json::Value& params) {
 	else return "invalid params";
 }
 
-Json::Value RPCServer::doUnlFetch(Json::Value& params) {
-	if(params.size() == 1)
-	{
-		std::string	strDomain=params[0u].asString();
-
-		theApp->getUNL().nodeFetch(strDomain);
-
-		return "fetching domain";
-	}
-	else return "invalid params";
-}
-
 Json::Value RPCServer::doUnlList(Json::Value& params) {
 	return theApp->getUNL().getUnlJson();
 }
@@ -716,7 +708,6 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 	if(command=="unl_add") return doUnlAdd(params);
 	if(command=="unl_default") return doUnlDefault(params);
 	if(command=="unl_delete") return doUnlDelete(params);
-	if(command=="unl_fetch") return doUnlFetch(params);
 	if(command=="unl_list") return doUnlList(params);
 	if(command=="unl_reset") return doUnlReset(params);
 

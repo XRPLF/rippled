@@ -38,6 +38,8 @@ class Application
 	NetworkOPs mNetOps;
 	Wallet mWallet;
 
+	boost::asio::io_service mIOService;
+
 	TimingService mTimingService;
 	UniqueNodeList mUNL;
 	KnownNodeList mKnownNodes;
@@ -54,8 +56,6 @@ class Application
 
 	std::map<std::string, Peer::pointer> mPeerMap;
 	boost::recursive_mutex	mPeerMapLock;
-
-	boost::asio::io_service mIOService;
 
 public:
 	Application();

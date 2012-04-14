@@ -31,6 +31,7 @@ for dir in ['src', 'database', 'json', 'util']:
 env.ParseConfig('pkg-config --cflags --libs openssl')
 
 env.Append(LIBS = [
+    'boost_date_time-mt',
     'boost_filesystem-mt',
     'boost_program_options-mt',
     'boost_regex-mt',

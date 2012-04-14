@@ -41,6 +41,7 @@ DatabaseCon::~DatabaseCon()
 }
 
 Application::Application() :
+	mUNL(mIOService),
 	mTxnDB(NULL), mLedgerDB(NULL), mWalletDB(NULL), mHashNodeDB(NULL), mNetNodeDB(NULL),
 	mPeerDoor(NULL), mRPCDoor(NULL)
 {
@@ -61,17 +62,32 @@ void Application::run()
 {
 	assert(mTxnDB==NULL);
 
+	//
+	// Construct databases.
+	//
 	mTxnDB=new DatabaseCon("transaction.db", TxnDBInit, TxnDBCount);
 	mLedgerDB=new DatabaseCon("ledger.db", LedgerDBInit, LedgerDBCount);
 	mWalletDB=new DatabaseCon("wallet.db", WalletDBInit, WalletDBCount);
 	mHashNodeDB=new DatabaseCon("hashnode.db", HashNodeDBInit, HashNodeDBCount);
 	mNetNodeDB=new DatabaseCon("netnode.db", NetNodeDBInit, NetNodeDBCount);
 
+	//
+	// Begin validation and ip maintenance.
+	//
+
+	mWallet.start();
+
+	//
+	// Allow peer connections.
+	//
 	if(theConfig.PEER_PORT)
 	{
 		mPeerDoor=new PeerDoor(mIOService);
 	}//else BOOST_LOG_TRIVIAL(info) << "No Peer Port set. Not listening for connections.";
 
+	//
+	// Allow RPC connections.
+	//
 	if(theConfig.RPC_PORT)
 	{
 		mRPCDoor=new RPCDoor(mIOService);
@@ -79,6 +95,7 @@ void Application::run()
 
 	mConnectionPool.connectToNetwork(mKnownNodes, mIOService);
 	mTimingService.start(mIOService);
+
 	std::cout << "Before Run." << std::endl;
 
 	// Temporary root account will be ["This is my payphrase."]:0

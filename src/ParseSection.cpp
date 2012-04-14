@@ -69,7 +69,7 @@ void PrintSection(section secInput)
     std::cerr << "PrintSection<" << std::endl;
 }
 
-section::mapped_type* sectionEntries(section& secSource, std::string strSection)
+section::mapped_type* sectionEntries(section& secSource, const std::string strSection)
 {
 	section::iterator		it;
 	section::mapped_type*	smtResult;
@@ -96,7 +96,7 @@ int sectionCount(section& secSource, std::string strSection)
 	return pmtEntries ? -1 : pmtEntries->size();
 }
 
-bool sectionSingleB(section& secSource, std::string strSection, std::string& strValue)
+bool sectionSingleB(section& secSource, const std::string strSection, std::string& strValue)
 {
 	section::mapped_type*	pmtEntries	= sectionEntries(secSource, strSection);
 	bool					bSingle		= pmtEntries && 1 == pmtEntries->size();
