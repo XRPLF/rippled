@@ -263,7 +263,7 @@ bool checkECIES(void)
 {
 	CKey senderPriv, recipientPriv, senderPub, recipientPub;
 
-	for(int i = 0; i < 30000; ++i)
+	for (int i = 0; i < 30000; ++i)
 	{
 		if ((i % 100) == 0)
 		{ // generate new keys every 100 times
