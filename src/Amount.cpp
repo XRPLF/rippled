@@ -34,7 +34,7 @@ void STAmount::canonicalize()
 		++offset;
 	}
 	assert( (value == 0) || ( (value >= cMinValue) && (value <= cMaxValue) ) );
-	assert( (value == 0) || (offset >= cMinOffset) && (offset <= cMaxOffset) );
+	assert( (value == 0) || ( (offset >= cMinOffset) && (offset <= cMaxOffset) ) );
 	assert( (value != 0) || (offset != -100) );
 }
 
@@ -61,13 +61,13 @@ STAmount* STAmount::construct(SerializerIterator& sit, const char *name)
 
 std::string STAmount::getRaw() const
 { // show raw internal form
-	if (value == 0) return "0";
+	if (isZero()) return "0";
 	return boost::lexical_cast<std::string>(value) + "e" + boost::lexical_cast<std::string>(offset);
 }
 
 std::string STAmount::getText() const
 {
-	if (value == 0) return "0";
+	if (isZero()) return "0";
 	if ( (offset < -25) || (offset > -5) )
 		return boost::lexical_cast<std::string>(value) + "e" + boost::lexical_cast<std::string>(offset);
 
@@ -93,7 +93,7 @@ std::string STAmount::getText() const
 
 void STAmount::add(Serializer& s) const
 {
-	if (value == 0)
+	if (isZero())
 		s.add64(0);
 	else
 		s.add64(value + (static_cast<uint64>(offset + 142) << (64 - 8)));
@@ -187,8 +187,8 @@ STAmount::operator double() const
 
 STAmount operator+(STAmount v1, STAmount v2)
 { // We can check for precision loss here (value%10)!=0
-	if (v1.value == 0) return v2;
-	if (v2.value == 0) return v1;
+	if (v1.isZero()) return v2;
+	if (v2.isZero()) return v1;
 	while (v1.offset < v2.offset)
 	{
 		v1.value /= 10;
@@ -205,8 +205,8 @@ STAmount operator+(STAmount v1, STAmount v2)
 
 STAmount operator-(STAmount v1, STAmount v2)
 {
-	if (v2.value == 0) return v1;
-	if ( (v1.value == 0) || (v2.offset > v1.offset) )
+	if (v2.isZero()) return v1;
+	if ( v1.isZero() || (v2.offset > v1.offset) )
 		throw std::runtime_error("value underflow");
 
 	while (v1.offset > v2.offset)
@@ -222,12 +222,11 @@ STAmount operator-(STAmount v1, STAmount v2)
 
 STAmount operator/(const STAmount& num, const STAmount& den)
 {
-	CBigNum v;
-
-	if (den.value == 0) throw std::runtime_error("illegal offer");
-	if (num.value == 0) return STAmount();
+	if (den.isZero()) throw std::runtime_error("illegal offer");
+	if (num.isZero()) return STAmount();
 
 	// Compute (numerator * 10^16) / denominator
+	CBigNum v;
 	if ((BN_add_word(&v, num.value) != 1) ||
 		(BN_mul_word(&v, 10000000000000000ull) != 1) ||
 		(BN_div_word(&v, den.value) == ((BN_ULONG)-1)))
@@ -243,10 +242,10 @@ STAmount operator/(const STAmount& num, const STAmount& den)
 
 STAmount operator*(const STAmount &v1, const STAmount &v2)
 {
-	if ( (v1.value == 0) || (v2.value == 0) )
+	if (v1.isZero() || v2.isZero())
 		return STAmount();
 
-	// Compute (numerator*10 * denominator*10) / 10^18
+	// Compute (numerator*10 * denominator*10) / 10^18 with rounding
 	CBigNum v;
 	if ((BN_add_word(&v, (v1.value*10) + 3) != 1) ||
 		(BN_mul_word(&v, (v2.value*10) + 3) != 1) ||
@@ -272,10 +271,10 @@ STAmount getClaimed(STAmount& offerOut, STAmount& offerIn, STAmount& paid)
 { // if someone is offering (offerOut) for (offerIn), and I pay (paid), how much do I get?
 
 	// If you pay nothing, you get nothing. Offer is untouched
-	if (paid.value == 0) return STAmount();
+	if (paid.isZero()) return STAmount();
 
-	if ( (offerIn.value == 0) || (offerOut.value == 0) )
-	{ // If the other is invalid or empty, you pay nothing and get nothing and the offer is dead
+	if (offerIn.isZero() || offerOut.isZero())
+	{ // If the offer is invalid or empty, you pay nothing and get nothing and the offer is dead
 		offerIn.zero();
 		offerOut.zero();
 		paid.zero();
@@ -295,7 +294,7 @@ STAmount getClaimed(STAmount& offerOut, STAmount& offerIn, STAmount& paid)
 	STAmount ret = (paid * offerOut) / offerIn;
 	offerOut -= ret;
 	offerIn -= paid;
-	if ( (offerOut.value == 0) || (offerIn.value == 0) )
+	if (offerOut.isZero() || offerIn.isZero())
 	{
 		offerIn.zero();
 		offerOut.zero();
