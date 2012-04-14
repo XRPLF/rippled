@@ -3,6 +3,7 @@
 
 #include "Ledger.h"
 #include "SerializedTransaction.h"
+#include "SerializedLedger.h"
 
 // A TransactionEngine applies serialized transactions to a ledger
 // It can also, verify signatures, verify fees, and give rejection reasons
@@ -33,13 +34,13 @@ class TransactionEngine
 protected:
 	Ledger::pointer mTargetLedger;
 
-	TransactionEngineResult doPayment(const SerializedTransaction&);
-	TransactionEngineResult doInvoice(const SerializedTransaction&);
-	TransactionEngineResult doOffer(const SerializedTransaction&);
-	TransactionEngineResult doTake(const SerializedTransaction&);
-	TransactionEngineResult doCancel(const SerializedTransaction&);
-	TransactionEngineResult doStore(const SerializedTransaction&);
-	TransactionEngineResult doDelete(const SerializedTransaction&);
+	TransactionEngineResult doPayment(const SerializedTransaction&, SerializedLedgerEntry& source);
+	TransactionEngineResult doInvoice(const SerializedTransaction&, SerializedLedgerEntry& source);
+	TransactionEngineResult doOffer(const SerializedTransaction&, SerializedLedgerEntry& source);
+	TransactionEngineResult doTake(const SerializedTransaction&, SerializedLedgerEntry& source);
+	TransactionEngineResult doCancel(const SerializedTransaction&, SerializedLedgerEntry& source);
+	TransactionEngineResult doStore(const SerializedTransaction&, SerializedLedgerEntry& source);
+	TransactionEngineResult doDelete(const SerializedTransaction&, SerializedLedgerEntry& source);
 
 public:
 	TransactionEngine(Ledger::pointer targetLedger) : mTargetLedger(targetLedger) { ; }

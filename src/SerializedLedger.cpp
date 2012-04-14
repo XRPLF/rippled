@@ -1,7 +1,7 @@
 
 #include "SerializedLedger.h"
 
-SerializedLedger::SerializedLedger(SerializerIterator& sit, const uint256& index)
+SerializedLedgerEntry::SerializedLedgerEntry(SerializerIterator& sit, const uint256& index)
 	: STObject("LedgerEntry"), mIndex(index)
 {
 	uint16 type=sit.get16();
@@ -12,7 +12,7 @@ SerializedLedger::SerializedLedger(SerializerIterator& sit, const uint256& index
 	mObject=STObject(mFormat->elements, sit, "Entry");
 }
 
-SerializedLedger::SerializedLedger(LedgerEntryType type) : STObject("LedgerEntry"), mType(type)
+SerializedLedgerEntry::SerializedLedgerEntry(LedgerEntryType type) : STObject("LedgerEntry"), mType(type)
 {
 	mFormat=getLgrFormat(type);
 	if(mFormat==NULL) throw std::runtime_error("invalid ledger entry type");
@@ -20,7 +20,7 @@ SerializedLedger::SerializedLedger(LedgerEntryType type) : STObject("LedgerEntry
 	mObject=STObject(mFormat->elements, "Entry");
 }
 
-std::string SerializedLedger::getFullText() const
+std::string SerializedLedgerEntry::getFullText() const
 {
 	std::string ret="\"";
 	ret+=mIndex.GetHex();
@@ -32,7 +32,7 @@ std::string SerializedLedger::getFullText() const
 	return ret;
 }
 
-std::string SerializedLedger::getText() const
+std::string SerializedLedgerEntry::getText() const
 {
 	std::string ret="{";
 	ret+=mIndex.GetHex();
@@ -42,9 +42,9 @@ std::string SerializedLedger::getText() const
 	return ret;
 }
 
-bool SerializedLedger::isEquivalent(const SerializedType& t) const
+bool SerializedLedgerEntry::isEquivalent(const SerializedType& t) const
 { // locators are not compared
-	const SerializedLedger* v=dynamic_cast<const SerializedLedger*>(&t);
+	const SerializedLedgerEntry* v=dynamic_cast<const SerializedLedgerEntry*>(&t);
 	if(!v) return false;
 	if(mType != v->mType) return false;
 	if(mObject != v->mObject) return false;

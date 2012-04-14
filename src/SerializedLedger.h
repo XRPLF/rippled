@@ -4,10 +4,10 @@
 #include "SerializedObject.h"
 #include "LedgerFormats.h"
 
-class SerializedLedger : public STObject
+class SerializedLedgerEntry : public STObject
 {
 public:
-	typedef boost::shared_ptr<SerializedLedger> pointer;
+	typedef boost::shared_ptr<SerializedLedgerEntry> pointer;
 
 protected:
 	uint256 mIndex;
@@ -17,12 +17,12 @@ protected:
 	LedgerEntryFormat* mFormat;
 
 public:
-	SerializedLedger(SerializerIterator& sit, const uint256& index);
-	SerializedLedger(LedgerEntryType type);
+	SerializedLedgerEntry(SerializerIterator& sit, const uint256& index);
+	SerializedLedgerEntry(LedgerEntryType type);
 
 	int getLength() const { return mVersion.getLength() + mObject.getLength(); }
 	SerializedTypeID getSType() const { return STI_LEDGERENTRY; }
-	SerializedLedger* duplicate() const { return new SerializedLedger(*this); }
+	SerializedLedgerEntry* duplicate() const { return new SerializedLedgerEntry(*this); }
 	std::string getFullText() const;
 	std::string getText() const;
 	void add(Serializer& s) const { mVersion.add(s); mObject.add(s); }
