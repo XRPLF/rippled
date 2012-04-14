@@ -30,7 +30,8 @@ public:
 	std::string& getPass(){ return(mDBPass); }
 
 	virtual void escape(const unsigned char* start,int size,std::string& retStr)=0;
-	
+	std::string escape(const std::string strValue);
+
 	// returns true if the query went ok
 	virtual bool executeSQL(const char* sql, bool fail_okay=false)=0;
 
@@ -47,6 +48,7 @@ public:
 	virtual bool getNextRow()=0;
 
 	// get Data from the current row
+	bool getNull(const char* colName);
 	char* getStr(const char* colName,std::string& retStr);
 	int32 getInt(const char* colName);
 	float getFloat(const char* colName);
@@ -55,6 +57,7 @@ public:
 	int getBinary(const char* colName,unsigned char* buf,int maxSize);
 	uint64 getBigInt(const char* colName);
 
+	virtual bool getNull(int colIndex)=0;
 	virtual char* getStr(int colIndex,std::string& retStr)=0;
 	virtual int32 getInt(int colIndex)=0;
 	virtual float getFloat(int colIndex)=0;

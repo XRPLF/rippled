@@ -14,6 +14,15 @@ Database::~Database()
 {
 }
 
+bool Database::getNull(const char* colName)
+{
+	int index;
+	if(getColNumber(colName,&index))
+	{
+		return(getNull(index));
+	}
+	return true;
+}
 
 char* Database::getStr(const char* colName,std::string& retStr)
 {
@@ -135,3 +144,13 @@ char* Database::getSingleDBValueStr(const char* sql,std::string& retStr)
 	}
 	return(ret);
 }
+
+std::string Database::escape(const std::string strValue)
+{
+    std::string	strReturn;
+
+    escape(reinterpret_cast<const unsigned char*>(strValue.c_str()), strValue.size(), strReturn);
+
+    return strReturn;
+}
+// vim:ts=4
