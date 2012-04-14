@@ -120,6 +120,11 @@ bool SqliteDatabase::getNextRow()
 	}
 }
 
+bool SqliteDatabase::getNull(int colIndex)
+{
+    return(SQLITE_NULL == sqlite3_column_type(mCurrentStmt, colIndex));
+}
+
 char* SqliteDatabase::getStr(int colIndex,std::string& retStr)
 {
 	retStr=(char*)sqlite3_column_text(mCurrentStmt, colIndex);
@@ -173,3 +178,4 @@ void SqliteDatabase::escape(const unsigned char* start, int size, std::string& r
 	}
 	retStr.push_back('\'');
 }
+// vim:ts=4

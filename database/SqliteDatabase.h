@@ -29,6 +29,7 @@ public:
 	// will return false if there are no more rows
 	bool getNextRow();
 
+	bool getNull(int colIndex);
 	char* getStr(int colIndex,std::string& retStr);
 	int32 getInt(int colIndex);
 	float getFloat(int colIndex);
