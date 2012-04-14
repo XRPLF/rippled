@@ -27,7 +27,8 @@ private:
 public:
 	NewcoinAddress();
 
-	bool IsValid();
+	bool IsValid() const;
+	void clear();
 
 	//
 	// hanko
