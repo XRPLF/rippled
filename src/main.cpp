@@ -36,7 +36,7 @@ void printHelp()
 	cout << "     sendto <destination> <amount> [<tag>]" << endl;
 	cout << "     stop" << endl;
 	cout << "     tx" << endl;
-	cout << "     unl_add <public> [<comment>]" << endl;
+	cout << "     unl_add <domain>|<public> [<comment>]" << endl;
 	cout << "     unl_delete <public_key>" << endl;
 	cout << "     unl_list" << endl;
 	cout << "     unl_reset" << endl;

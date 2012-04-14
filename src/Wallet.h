@@ -5,6 +5,7 @@
 #include <map>
 #include <string>
 
+#include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/thread/recursive_mutex.hpp>
 #include <boost/shared_ptr.hpp>
 
@@ -25,6 +26,12 @@ private:
 	bool	nodeIdentityLoad();
 	bool	nodeIdentityCreate();
 
+	// Misc persistent information
+	boost::posix_time::ptime	mPtScoresUpdated;
+
+	bool	miscLoad();
+	bool	miscSave();
+
 protected:
 	boost::recursive_mutex mLock;
 
@@ -43,7 +50,11 @@ protected:
 	// void addFamily(const NewcoinAddress& family, const std::string& pubKey, int seq, const std::string& name, const std::string& comment);
 
 public:
-	Wallet() : mLedger(0) { ; }
+	Wallet();
+
+	// Begin processing.
+	// - Maintain peer connectivity through validation and peer management.
+	void start();
 
 	NewcoinAddress addFamily(const std::string& passPhrase, bool lock);
 	NewcoinAddress addFamily(const NewcoinAddress& familySeed, bool lock);

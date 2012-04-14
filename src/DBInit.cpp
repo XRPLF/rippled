@@ -55,14 +55,144 @@ const char *WalletDBInit[] = {
 		Seq				BIGINT UNSIGNED,			\
 		Comment			TEXT						\
 	);",
+
+	// XXX Don't really need this.
+	// We should generate communication identity per launch.
+	// Validation id is provided via rpc or stored in config.
 	"CREATE TABLE NodeIdentity (					\
 		PublicKey		CHARACTER(53),				\
 		PrivateKey		CHARACTER(52)				\
 	);",
-	"CREATE TABLE TrustedNodes (					\
-		PublicKey		CHARACTER(53) PRIMARY KEY,  \
+
+	// Miscellaneous persistent information
+	// ScoresUpdated: when scores was last updated.
+	// Scores need updating if:
+	// - This time is 0
+	// - This time is prior to the most recent SeedDomains or SeedNodes fetch.
+	"CREATE TABLE Misc (							\
+		ScoresUpdated	DATETIME					\
+	);",
+
+	// Domain:
+	//  Domain source for https.
+	// PublicKey:
+	//  Set if ever succeeded.
+	// XXX Use NULL in place of ""
+	// Source:
+	//  'M' = Manually added.	: 1500
+	//  'V' = validators.txt	: 1000
+	//  'W' = Web browsing.		:  200
+	//  'R' = Referral			:    0
+	// Next:
+	//  Time of next fetch attempt.
+	// Scan:
+	//  Time of last fetch attempt.
+	// Fetch:
+	//  Time of last successful fetch.
+	// Sha256:
+	//  Checksum of last fetch.
+	// Comment:
+	//  User supplied comment.
+	// Table of Domains user has asked to trust.
+	"CREATE TABLE SeedDomains (						\
+		Domain			TEXT PRIMARY KEY NOT NULL,	\
+		PublicKey		CHARACTER(53),				\
+		Source			CHARACTER(1) NOT NULL,		\
+		Next			DATETIME,					\
+		Scan			DATETIME,					\
+		Fetch			DATETIME,					\
+		Sha256			CHARACTER[64],				\
 		Comment			TEXT						\
-	);"
+	);",
+
+	// Allow us to easily find the next SeedDomain to fetch.
+	"CREATE INDEX SeedDomainNext ON SeedDomains (Next);",
+
+	// Table of PublicKeys user has asked to trust.
+	// Fetches are made to the CAS.
+	// Next:
+	//  Time of next fetch attempt.
+	// Scan:
+	//  Time of last fetch attempt.
+	// Fetch:
+	//  Time of last successful fetch.
+	// Sha256:
+	//  Checksum of last fetch.
+	// Comment:
+	//  User supplied comment.
+	"CREATE TABLE SeedNodes (						\
+		PublicKey		CHARACTER(53) PRIMARY KEY NOT NULL,		\
+		Next			DATETIME,					\
+		Scan			DATETIME,					\
+		Fetch			DATETIME,					\
+		Sha256			CHARACTER[64],				\
+		Comment			TEXT						\
+	);",
+
+	// Allow us to easily find the next SeedNode to fetch.
+	"CREATE INDEX SeedNodeNext ON SeedNodes (Next);",
+
+	// Table of trusted nodes.
+	// Score:
+	//  Computed trust score.  Higher is better.
+	// Seen:
+	//  Last validation received.
+	"CREATE TABLE TrustedNodes (					\
+		PublicKey		CHARACTER(53) PRIMARY KEY NOT NULL,		\
+		Score			INTEGER,					\
+		Seen			DATETIME					\
+	);",
+
+	// List of referrals.
+	// - There may be multiple sources for a Validator.  The last source is used.
+	// Validator:
+	//  Public key of referrer.
+	// Index:
+	//  Entry index in [validators] table.
+	// Referral:
+	//  Public key of referred or Domain.
+	// XXX Index by validator for fast delete
+	"CREATE TABLE ValidatorReferrals (				\
+		Validator		CHARACTER(53),				\
+		Entry			INTEGER,					\
+		Referral		TEXT						\
+	);",
+
+	// List of referrals.
+	// Validator:
+	//  Public key of referree.
+	// Index:
+	//  Entry index in [validators] table.
+	// IP:
+	//  IP of referred.
+	"CREATE TABLE IpReferrals (						\
+		Validator		CHARACTER(53),				\
+		Index			INTEGER,					\
+		IP				TEXT						\
+	);",
+
+	// Table of IPs to contact the nextwork.
+	// IP:
+	//  IP address to contact.
+	// Port:
+	//  Port to contact. 0=default.
+	// Score:
+	//  Computed trust score.  Higher is better.
+	// Source:
+	//  'V' = Validation file
+	//  'M' = Manually added.
+	//  'I' = Inbound connection.
+	//  'O' = Other.
+	// Contact:
+	//  Time of last contact.
+	//  XXX Update on connect and hourly.
+	"CREATE TABLE PeerIps (							\
+		IP				TEXT PRIMARY KEY,			\
+		PORT			INTEGER,					\
+		Score			INTEGER,					\
+		Source			CHARACTER(1),				\
+		Contact			DATETIME					\
+	);",
 };
 
 #if 0
@@ -78,7 +208,6 @@ const char *WalletDBInit[] = {
 
 int WalletDBCount=sizeof(WalletDBInit)/sizeof(const char *);
 
-
 // Hash node database holds nodes indexed by hash
 const char *HashNodeDBInit[] = {
 	"CREATE TABLE CommittedObjects 					\
@@ -88,11 +217,13 @@ const char *HashNodeDBInit[] = {
 		Object		BLOB							\
 	);",
 	"CREATE INDEX ObjectLocate ON					\
-		CommittedObjects(LedgerIndex, ObjType);" };
+		CommittedObjects(LedgerIndex, ObjType);"
+};
 
 int HashNodeDBCount=sizeof(HashNodeDBInit)/sizeof(const char *);
 
 // Net node database holds nodes seen on the network
+// XXX Not really used needs replacement.
 const char *NetNodeDBInit[] = {
 	"CREATE TABLE KnownNodes	(					\
 		Hanko			CHARACTER(35) PRIMARY KEY,	\

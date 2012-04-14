@@ -4,10 +4,10 @@
 
 #include "openssl/ec.h"
 
-#include "boost/foreach.hpp"
-#include "boost/lexical_cast.hpp"
-#include "boost/interprocess/sync/scoped_lock.hpp"
-#include "boost/make_shared.hpp"
+#include <boost/foreach.hpp>
+#include <boost/lexical_cast.hpp>
+#include <boost/interprocess/sync/scoped_lock.hpp>
+#include <boost/make_shared.hpp>
 
 #include "Wallet.h"
 #include "Ledger.h"
@@ -244,6 +244,10 @@ LocalAccount::pointer LocalAccountFamily::get(int seq)
 	return ret;
 }
 
+Wallet::Wallet() : mLedger(0) {
+	mPtScoresUpdated	= boost::posix_time::from_time_t(0);
+}
+
 NewcoinAddress Wallet::addFamily(const NewcoinAddress& familySeed, bool lock)
 {
 	LocalAccountFamily::pointer fam(doPrivate(familySeed, true, !lock));
@@ -330,12 +334,67 @@ Json::Value Wallet::getFamilyJson(const NewcoinAddress& family)
 	return fit->second->getJson();
 }
 
+void Wallet::start()
+{
+	miscLoad();
+
+	struct tm	tmScoresUpdated	= to_tm(mPtScoresUpdated);
+	time_t		ttScoresUpdated	= mktime(&tmScoresUpdated);
+
+	std::cerr << "Validator scores updated: "
+		<< (ttScoresUpdated
+			? "Never"
+			: boost::posix_time::to_simple_string(mPtScoresUpdated)
+			)
+		<< std::endl;
+
+	theApp->getUNL().start();
+}
+
+bool Wallet::miscLoad()
+{
+	std::string strSql("SELECT * FROM Misc;");
+
+	ScopedLock sl(theApp->getWalletDB()->getDBLock());
+	Database *db=theApp->getWalletDB()->getDB();
+
+	if(!db->executeSQL(strSql.c_str())) return false;
+	if(!db->startIterRows()) return false;
+
+	time_t	ttScoresUpdated	= db->getInt("ScoresUpdated");
+
+	mPtScoresUpdated	= boost::posix_time::from_time_t(ttScoresUpdated);
+
+	db->endIterRows();
+
+	return true;
+}
+
+bool Wallet::miscSave()
+{
+	struct tm	tmScoresUpdated	= to_tm(mPtScoresUpdated);
+	time_t		ttScoresUpdated	= mktime(&tmScoresUpdated);
+	std::string	strScoresUpdate	= boost::lexical_cast<std::string>(ttScoresUpdated);
+
+	std::string strSql("REPLACE INTO Misc (ScoresUpdated) VALUES (");
+	// Should be a parameter.
+	strSql.append(strScoresUpdate);
+	strSql.append(");");
+
+	Database*	db=theApp->getWalletDB()->getDB();
+	ScopedLock	sl(theApp->getWalletDB()->getDBLock());
+
+	db->executeSQL(strSql.c_str());
+
+	return true;
+}
+
 bool Wallet::nodeIdentityLoad()
 {
 	std::string strSql("SELECT * FROM NodeIdentity;");
 
-	ScopedLock sl(theApp->getWalletDB()->getDBLock());
-	Database *db=theApp->getWalletDB()->getDB();
+	Database*	db=theApp->getWalletDB()->getDB();
+	ScopedLock	sl(theApp->getWalletDB()->getDBLock());
 
 	if(!db->executeSQL(strSql.c_str())) return false;
 	if(!db->startIterRows()) return false;
