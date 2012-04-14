@@ -3,14 +3,13 @@
 class Config
 {
 public:
-
 	// core software parameters
 	int VERSION;
 	std::string VERSION_STR;
 
 	// network parameters
-	std::string NETWORK_ID;
-	std::string NETWORK_DNS_SEEDS;
+//	std::string NETWORK_ID;
+//	std::string NETWORK_DNS_SEEDS;
 	int NETWORK_START_TIME;  // The Unix time we start ledger 0
 	int TRANSACTION_FEE_BASE;
 	int LEDGER_SECONDS;
@@ -23,13 +22,13 @@ public:
 	std::string PEER_IP;
 	int PEER_PORT;
 	int NUMBER_CONNECTIONS;
-	bool NODE_INBOUND;		// we accept inbound connections
-	bool NODE_DATABASE;		// we offer historical data services
-	bool NODE_PUBLIC;		// we do not attempt to hide our identity
-	bool NODE_DUMB;			// we are a 'dumb' client
-	bool NODE_SMART;		// we offer services to 'dumb' clients
+//	bool NODE_INBOUND;		// we accept inbound connections
+//	bool NODE_DATABASE;		// we offer historical data services
+//	bool NODE_PUBLIC;		// we do not attempt to hide our identity
+//	bool NODE_DUMB;			// we are a 'dumb' client
+//	bool NODE_SMART;		// we offer services to 'dumb' clients
 
-	std::string HANKO_PRIVATE;
+//	std::string HANKO_PRIVATE;
 
 	// RPC parameters
 	std::string RPC_IP;
