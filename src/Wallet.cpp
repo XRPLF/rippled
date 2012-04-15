@@ -245,7 +245,6 @@ LocalAccount::pointer LocalAccountFamily::get(int seq)
 }
 
 Wallet::Wallet() : mLedger(0) {
-	mPtScoresUpdated	= boost::posix_time::from_time_t(0);
 }
 
 NewcoinAddress Wallet::addFamily(const NewcoinAddress& familySeed, bool lock)
@@ -336,57 +335,7 @@ Json::Value Wallet::getFamilyJson(const NewcoinAddress& family)
 
 void Wallet::start()
 {
-	miscLoad();
-
-	struct tm	tmScoresUpdated	= to_tm(mPtScoresUpdated);
-	time_t		ttScoresUpdated	= mktime(&tmScoresUpdated);
-
-	std::cerr << "Validator scores updated: "
-		<< (ttScoresUpdated
-			? "Never"
-			: boost::posix_time::to_simple_string(mPtScoresUpdated)
-			)
-		<< std::endl;
-
 	theApp->getUNL().start();
-}
-
-bool Wallet::miscLoad()
-{
-	std::string strSql("SELECT * FROM Misc;");
-
-	ScopedLock sl(theApp->getWalletDB()->getDBLock());
-	Database *db=theApp->getWalletDB()->getDB();
-
-	if(!db->executeSQL(strSql.c_str())) return false;
-	if(!db->startIterRows()) return false;
-
-	time_t	ttScoresUpdated	= db->getInt("ScoresUpdated");
-
-	mPtScoresUpdated	= boost::posix_time::from_time_t(ttScoresUpdated);
-
-	db->endIterRows();
-
-	return true;
-}
-
-bool Wallet::miscSave()
-{
-	struct tm	tmScoresUpdated	= to_tm(mPtScoresUpdated);
-	time_t		ttScoresUpdated	= mktime(&tmScoresUpdated);
-	std::string	strScoresUpdate	= boost::lexical_cast<std::string>(ttScoresUpdated);
-
-	std::string strSql("REPLACE INTO Misc (ScoresUpdated) VALUES (");
-	// Should be a parameter.
-	strSql.append(strScoresUpdate);
-	strSql.append(");");
-
-	Database*	db=theApp->getWalletDB()->getDB();
-	ScopedLock	sl(theApp->getWalletDB()->getDBLock());
-
-	db->executeSQL(strSql.c_str());
-
-	return true;
 }
 
 bool Wallet::nodeIdentityLoad()
@@ -458,6 +407,8 @@ bool Wallet::nodeIdentityCreate() {
 
 void Wallet::load()
 {
+#if 0
+	// XXX Commented out because not currently used.
 	if (!nodeIdentityLoad()) {
 		nodeIdentityCreate();
 		if (!nodeIdentityLoad())
@@ -467,7 +418,7 @@ void Wallet::load()
 	std::cerr << "NodeIdentity:" << std::endl;
 	fprintf(stderr, "public: %s\n", mNodePublicKey.humanNodePublic().c_str());
 	fprintf(stderr, "private: %s\n", mNodePrivateKey.humanNodePrivate().c_str());
-
+#endif
 	std::string sql("SELECT * FROM LocalAcctFamilies;");
 
 	ScopedLock sl(theApp->getWalletDB()->getDBLock());

@@ -26,12 +26,6 @@ private:
 	bool	nodeIdentityLoad();
 	bool	nodeIdentityCreate();
 
-	// Misc persistent information
-	boost::posix_time::ptime	mPtScoresUpdated;
-
-	bool	miscLoad();
-	bool	miscSave();
-
 protected:
 	boost::recursive_mutex mLock;
 
