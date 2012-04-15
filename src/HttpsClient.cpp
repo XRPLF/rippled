@@ -3,6 +3,7 @@
 //
 
 #include "HttpsClient.h"
+#include "utils.h"
 
 #include <iostream>
 #include <boost/bind.hpp>
@@ -94,7 +95,7 @@ void HttpsClient::handleDeadline(const boost::system::error_code& ecResult)
 		// Timer canceled because deadline no longer needed.
 		// std::cerr << "Deadline cancelled." << std::endl;
 
-		// nothing();  // Aborter is done.
+		nothing();  // Aborter is done.
 	}
 	else if (ecResult)
     {
@@ -136,7 +137,7 @@ void HttpsClient::handleResolve(
 
     if (mShutdown)
     {
-		std::cerr << "Resolve error: " << mDeqSites[0] << ": " << mShutdown.message() << std::endl;
+		// std::cerr << "Resolve error: " << mDeqSites[0] << ": " << mShutdown.message() << std::endl;
 
 		invokeComplete(mShutdown);
     }
@@ -266,7 +267,7 @@ void HttpsClient::handleData(const boost::system::error_code& ecResult)
 		if (mShutdown)
 		{
 			// std::cerr << "Complete." << std::endl;
-			// nothing();
+			nothing();
 		}
 		else
 		{
@@ -364,17 +365,18 @@ void HttpsClient::httpsGet(
 
 bool HttpsClient::httpsParseUrl(const std::string strUrl, std::string& strDomain, std::string& strPath)
 {
-	static boost::regex	reUrl("(?i)\\`https://([^/]+)(/.*)\\'");			// https://DOMAINPATH
+	static boost::regex	reUrl("(?i)\\`\\s*https://([^/]+)(/.*)\\s*\\'");	// https://DOMAINPATH
 
 	boost::smatch	smMatch;
 
-	bool	bMatch	= boost::regex_match(strUrl, smMatch, reUrl);		// Match status code.
+	bool	bMatch	= boost::regex_match(strUrl, smMatch, reUrl);			// Match status code.
 
 	if (bMatch)
 	{
 		strDomain	= smMatch[1];
-		strDomain	= smMatch[2];
+		strPath		= smMatch[2];
 	}
+	// std::cerr << strUrl << " : " << bMatch << " : '" << strDomain << "' : '" << strPath << "'" << std::endl;
 
 	return bMatch;
 }
