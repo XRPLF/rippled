@@ -1,16 +1,19 @@
+// XXX Dynamically limit fetching by distance.
+// XXX Want a limit of 2000 validators.
+
 #include "Application.h"
 #include "Conversion.h"
 #include "HttpsClient.h"
 #include "ParseSection.h"
 #include "Serializer.h"
 #include "UniqueNodeList.h"
+#include "utils.h"
 
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 #include <boost/mem_fn.hpp>
 #include <boost/format.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
 
 // Gather string constants.
 #define SECTION_CURRENCIES		"currencies"
@@ -25,24 +28,8 @@
 #define REFERRAL_VALIDATORS_MAX	50
 #define REFERRAL_IPS_MAX		50
 
-static boost::posix_time::ptime ptEpoch()
-{
-	return boost::posix_time::ptime(boost::gregorian::date(2000, boost::gregorian::Jan, 1));
-}
-
-static int iToSeconds(boost::posix_time::ptime ptWhen)
-{
-	boost::posix_time::time_duration	td	= ptWhen - ptEpoch();
-
-	return td.total_seconds();
-}
-
-static boost::posix_time::ptime ptFromSeconds(int iSeconds)
-{
-	return ptEpoch() + boost::posix_time::seconds(iSeconds);
-}
-
 UniqueNodeList::UniqueNodeList(boost::asio::io_service& io_service) :
+	mdtScoreTimer(io_service),
 	mFetchActive(0),
 	mdtFetchTimer(io_service)
 {
@@ -50,7 +37,96 @@ UniqueNodeList::UniqueNodeList(boost::asio::io_service& io_service) :
 
 void UniqueNodeList::start()
 {
+	miscLoad();
+
+	std::cerr << "Validator fetch updated: " << mtpFetchUpdated << std::endl;
+	std::cerr << "Validator score updated: " << mtpScoreUpdated << std::endl;
+
 	fetchNext();			// Start fetching.
+	scoreNext();			// Start scoring.
+}
+
+bool UniqueNodeList::miscLoad()
+{
+	std::string strSql("SELECT * FROM Misc;");
+
+	ScopedLock sl(theApp->getWalletDB()->getDBLock());
+	Database *db=theApp->getWalletDB()->getDB();
+
+	if (!db->executeSQL(strSql.c_str())) return false;
+
+	bool	bAvail	= !!db->startIterRows();
+
+	mtpFetchUpdated	= ptFromSeconds(bAvail ? db->getInt("FetchUpdated") : -1);
+	mtpScoreUpdated	= ptFromSeconds(bAvail ? db->getInt("ScoreUpdated") : -1);
+
+	db->endIterRows();
+
+	return true;
+}
+
+bool UniqueNodeList::miscSave()
+{
+	std::string strSql	= str(boost::format("REPLACE INTO Misc (FetchUpdated,ScoreUpdated) VALUES (%d,%d);")
+		% iToSeconds(mtpFetchUpdated)
+		% iToSeconds(mtpScoreUpdated));
+
+	Database*	db=theApp->getWalletDB()->getDB();
+	ScopedLock	sl(theApp->getWalletDB()->getDBLock());
+
+	db->executeSQL(strSql.c_str());
+
+	return true;
+}
+
+void UniqueNodeList::scoreCompute()
+{
+
+}
+
+// Begin scoring if timer was not cancelled.
+void UniqueNodeList::scoreTimerHandler(const boost::system::error_code& err)
+{
+	if (!err)
+	{
+		mtpScoreNext	= boost::posix_time::ptime(boost::posix_time::not_a_date_time);	// Timer not set.
+		mtpScoreStart	= boost::posix_time::second_clock::universal_time();			// Scoring.
+
+		std::cerr << "Scoring start." << std::endl;
+
+		std::cerr << "Scoring end." << std::endl;
+
+		// Save update time.
+		mtpScoreUpdated	= mtpScoreStart;
+		miscSave();
+
+		mtpScoreStart	= boost::posix_time::ptime(boost::posix_time::not_a_date_time);	// Not scoring.
+
+		// Score again if needed.
+		scoreNext();
+	}
+}
+
+// Start a timer to update scores.
+void UniqueNodeList::scoreNext()
+{
+	std::cerr << "scoreNext>" << std::endl;
+
+	std::cerr << str(boost::format("scoreNext: mtpFetchUpdated=%s mtpScoreStart=%s mtpScoreUpdated=%s mtpScoreNext=%s") % mtpFetchUpdated % mtpScoreStart % mtpScoreUpdated % mtpScoreNext)  << std::endl;
+	if (mtpScoreStart.is_not_a_date_time()												// Not scoring
+		&& !mtpFetchUpdated.is_not_a_date_time()										// Need to score.
+		&& (mtpScoreUpdated.is_not_a_date_time() || mtpScoreUpdated <= mtpFetchUpdated)	// Not already scored.
+		&& (mtpScoreNext.is_not_a_date_time()											// Timer is not fine.
+			|| mtpScoreNext < mtpFetchUpdated + boost::posix_time::seconds(SCORE_DELAY_SECONDS)))
+	{
+		// Need to update or set timer.
+		mtpScoreNext = boost::posix_time::second_clock::universal_time()					// Past now too.
+							+ boost::posix_time::seconds(SCORE_DELAY_SECONDS);
+
+	std::cerr << str(boost::format("scoreNext: @%s") % mtpScoreNext)  << std::endl;
+		mdtScoreTimer.expires_at(mtpScoreNext);
+		mdtScoreTimer.async_wait(boost::bind(&UniqueNodeList::scoreTimerHandler, this, _1));
+	}
 }
 
 void UniqueNodeList::fetchFinish()
@@ -73,28 +149,32 @@ void UniqueNodeList::processIps(const std::string& strSite, section::mapped_type
 	// XXX Do something with ips.
 }
 
-void UniqueNodeList::processValidators(const std::string& strSite, NewcoinAddress naNodePublic, section::mapped_type* pmtVecStrValidators)
+void UniqueNodeList::processValidators(const std::string& strSite, const std::string& strValidatorsSrc, NewcoinAddress naNodePublic, section::mapped_type* pmtVecStrValidators)
 {
 	Database*	db=theApp->getWalletDB()->getDB();
 
 	std::string strEscNodePublic	= db->escape(naNodePublic.humanNodePublic());
 
 	std::cerr
-		<< str(boost::format("Validator: '%s' processing %d validators.")
-			% strSite % ( pmtVecStrValidators ? pmtVecStrValidators->size() : 0))
+		<< str(boost::format("Validator: '%s' : '%s' : processing %d validators.")
+			% strSite
+			% strValidatorsSrc
+			% ( pmtVecStrValidators ? pmtVecStrValidators->size() : 0))
 		<< std::endl;
 
 	// Remove all current entries Validator in ValidatorReferrals
 	// XXX INDEX BY ValidatorReferralsIndex
-	std::string strSql	= str(boost::format("DELETE FROM ValidatorReferrals WHERE Validator=%s;")
-		% strEscNodePublic);
+	{
+		std::string strSql	= str(boost::format("DELETE FROM ValidatorReferrals WHERE Validator=%s;")
+			% strEscNodePublic);
 
-	ScopedLock	sl(theApp->getWalletDB()->getDBLock());
-	db->executeSQL(strSql.c_str());
-	// XXX Check result.
+		ScopedLock	sl(theApp->getWalletDB()->getDBLock());
+		db->executeSQL(strSql.c_str());
+		// XXX Check result.
+	}
 
 	// Add new referral entries.
-	if (pmtVecStrValidators->size()) {
+	if (pmtVecStrValidators && pmtVecStrValidators->size()) {
 		std::ostringstream	ossValues;
 
 		int	i = 0;
@@ -131,7 +211,12 @@ void UniqueNodeList::processValidators(const std::string& strSite, NewcoinAddres
 		// XXX Check result.
 	}
 
-	// XXX Set timer to cause rebuild.
+	// Note update.
+	mtpFetchUpdated	= boost::posix_time::second_clock::universal_time();
+	miscSave();
+
+	// Update scores.
+	scoreNext();
 }
 
 void UniqueNodeList::responseIps(const std::string& strSite, const boost::system::error_code& err, const std::string strIpsFile)
@@ -174,13 +259,13 @@ void UniqueNodeList::getIpsUrl(section secSite)
 	}
 }
 
-void UniqueNodeList::responseValidators(NewcoinAddress naNodePublic, section secSite, const std::string& strSite, const boost::system::error_code& err, const std::string strValidatorsFile)
+void UniqueNodeList::responseValidators(const std::string& strValidatorsUrl, NewcoinAddress naNodePublic, section secSite, const std::string& strSite, const boost::system::error_code& err, const std::string strValidatorsFile)
 {
 	if (!err)
 	{
 		section		secFile		= ParseSection(strValidatorsFile, true);
 
-		processValidators(strSite, naNodePublic, sectionEntries(secFile, SECTION_VALIDATORS));
+		processValidators(strSite, strValidatorsUrl, naNodePublic, sectionEntries(secFile, SECTION_VALIDATORS));
 	}
 
 	getIpsUrl(secSite);
@@ -206,7 +291,7 @@ void UniqueNodeList::getValidatorsUrl(NewcoinAddress naNodePublic, section secSi
 			strPath,
 			NODE_FILE_BYTES_MAX,
 			boost::posix_time::seconds(NODE_FETCH_SECONDS),
-			boost::bind(&UniqueNodeList::responseValidators, this, naNodePublic, secSite, strDomain, _1, _2));
+			boost::bind(&UniqueNodeList::responseValidators, this, strValidatorsUrl, naNodePublic, secSite, strDomain, _1, _2));
 	}
 	else
 	{
@@ -220,7 +305,7 @@ void UniqueNodeList::processFile(const std::string strDomain, NewcoinAddress naN
 	//
 	// Process Validators
 	//
-	processValidators(strDomain, naNodePublic, sectionEntries(secSite, SECTION_VALIDATORS));
+	processValidators(strDomain, NODE_FILE_NAME, naNodePublic, sectionEntries(secSite, SECTION_VALIDATORS));
 
 	//
 	// Process ips
@@ -321,7 +406,7 @@ void UniqueNodeList::responseFetch(const std::string strDomain, const boost::sys
 
 		seedDomain	sdCurrent;
 
-		bool		bFound	= getSeedDomans(strDomain, sdCurrent);
+		bool		bFound	= getSeedDomains(strDomain, sdCurrent);
 
 		assert(bFound);
 
@@ -338,7 +423,7 @@ void UniqueNodeList::responseFetch(const std::string strDomain, const boost::sys
 		sdCurrent.tpFetch		= boost::posix_time::second_clock::universal_time();
 		sdCurrent.iSha256		= iSha256;
 
-		setSeedDomans(sdCurrent);
+		setSeedDomains(sdCurrent, true);
 
 		if (bChangedB)
 		{
@@ -425,6 +510,7 @@ void UniqueNodeList::fetchNext()
 			tpNext	= ptFromSeconds(iNext);
 			tpNow	= boost::posix_time::second_clock::universal_time();
 
+			std::cerr << str(boost::format("fetchNext: iNext=%s tpNext=%s tpNow=%s") % iNext % tpNext % tpNow) << std::endl;
 			db->getStr("Domain", strDomain);
 
 			db->endIterRows();
@@ -443,10 +529,13 @@ void UniqueNodeList::fetchNext()
 
 		if (strDomain.empty() || bFull)
 		{
-			// nothing();
+			std::cerr << str(boost::format("fetchNext: strDomain=%s bFull=%d") % strDomain % bFull) << std::endl;
+
+			nothing();
 		}
 		else if (tpNext > tpNow)
 		{
+			std::cerr << str(boost::format("fetchNext: set timer : strDomain=%s") % strDomain) << std::endl;
 			// Fetch needs to happen in the future.  Set a timer to wake us.
 			mtpFetchNext	= tpNext;
 
@@ -455,11 +544,12 @@ void UniqueNodeList::fetchNext()
 		}
 		else
 		{
+			std::cerr << str(boost::format("fetchNext: fetch now: strDomain=%s tpNext=%s tpNow=%s") % strDomain % tpNext %tpNow) << std::endl;
 			// Fetch needs to happen now.
 			mtpFetchNext	= boost::posix_time::ptime(boost::posix_time::not_a_date_time);
 
 			seedDomain	sdCurrent;
-			bool		bFound	= getSeedDomans(strDomain, sdCurrent);
+			bool		bFound	= getSeedDomains(strDomain, sdCurrent);
 
 			assert(bFound);
 
@@ -469,7 +559,7 @@ void UniqueNodeList::fetchNext()
 			// XXX Use a longer duration if we have lots of validators.
 			sdCurrent.tpNext		= sdCurrent.tpScan+boost::posix_time::hours(7*24);
 
-			setSeedDomans(sdCurrent);
+			setSeedDomains(sdCurrent, false);
 
 			std::cerr << "Validator: '" << strDomain << "' fetching " NODE_FILE_NAME "." << std::endl;
 
@@ -504,7 +594,7 @@ void UniqueNodeList::nodeAddDomain(std::string strDomain, validatorSource vsWhy,
 	// YYY Would be best to verify strDomain is a valid domain.
 	seedDomain	sdCurrent;
 
-	bool		bFound		= getSeedDomans(strDomain, sdCurrent);
+	bool		bFound		= getSeedDomains(strDomain, sdCurrent);
 	bool		bChanged	= false;
 
 	if (!bFound)
@@ -529,10 +619,10 @@ void UniqueNodeList::nodeAddDomain(std::string strDomain, validatorSource vsWhy,
 	}
 
 	if (bChanged)
-		setSeedDomans(sdCurrent);
+		setSeedDomains(sdCurrent, true);
 }
 
-bool UniqueNodeList::getSeedDomans(const std::string& strDomain, seedDomain& dstSeedDomain)
+bool UniqueNodeList::getSeedDomains(const std::string& strDomain, seedDomain& dstSeedDomain)
 {
 	bool		bResult;
 	Database*	db=theApp->getWalletDB()->getDB();
@@ -581,13 +671,15 @@ bool UniqueNodeList::getSeedDomans(const std::string& strDomain, seedDomain& dst
 	return bResult;
 }
 
-void UniqueNodeList::setSeedDomans(const seedDomain& sdSource)
+void UniqueNodeList::setSeedDomains(const seedDomain& sdSource, bool bNext)
 {
 	Database*	db=theApp->getWalletDB()->getDB();
 
 	int		iNext	= iToSeconds(sdSource.tpNext);
 	int		iScan	= iToSeconds(sdSource.tpScan);
 	int		iFetch	= iToSeconds(sdSource.tpFetch);
+
+	// std::cerr << str(boost::format("setSeedDomains: iNext=%s tpNext=%s") % iNext % sdSource.tpNext) << std::endl;
 
 	std::string strSql	= str(boost::format("REPLACE INTO SeedDomains (Domain,PublicKey,Source,Next,Scan,Fetch,Sha256,Comment) VALUES (%s, %s, %s, %d, %d, %d, '%s', %s);")
 		% db->escape(sdSource.strDomain)
@@ -602,10 +694,13 @@ void UniqueNodeList::setSeedDomans(const seedDomain& sdSource)
 
 	ScopedLock	sl(theApp->getWalletDB()->getDBLock());
 
-	db->executeSQL(strSql.c_str());
-	// XXX Check result.
+	if (!db->executeSQL(strSql.c_str()))
+	{
+		// XXX Check result.
+		std::cerr << "setSeedDomains: failed." << std::endl;
+	}
 
-	if (mtpFetchNext.is_not_a_date_time() || mtpFetchNext > sdSource.tpNext)
+	if (bNext && (mtpFetchNext.is_not_a_date_time() || mtpFetchNext > sdSource.tpNext))
 	{
 		// Schedule earlier wake up.
 		fetchNext();
@@ -662,7 +757,7 @@ Json::Value UniqueNodeList::getUnlJson()
     Json::Value ret(Json::arrayValue);
 
 	ScopedLock sl(theApp->getWalletDB()->getDBLock());
-	if( db->executeSQL(strSql.c_str()) )
+	if (db->executeSQL(strSql.c_str()))
 	{
 		bool	more	= db->startIterRows();
 		while (more)

@@ -21,6 +21,9 @@
 #define NODE_FILE_NAME			SYSTEM_NAME ".txt"
 #define NODE_FILE_PATH			"/" NODE_FILE_NAME
 
+// Wait for validation information to be stable before scoring.
+#define SCORE_DELAY_SECONDS		20
+
 class UniqueNodeList
 {
 public:
@@ -32,6 +35,13 @@ public:
 	} validatorSource;
 
 private:
+	// Misc persistent information
+	boost::posix_time::ptime		mtpScoreUpdated;
+	boost::posix_time::ptime		mtpFetchUpdated;
+
+	bool	miscLoad();
+	bool	miscSave();
+
 	typedef struct {
 		std::string					strDomain;
 		NewcoinAddress				naPublicKey;
@@ -47,11 +57,19 @@ private:
 
 	void responseFetch(const std::string strDomain, const boost::system::error_code& err, const std::string strSiteFile);
 
-	boost::mutex					mFetchLock;
-	int								mFetchActive;	// count of active fetches
+	boost::posix_time::ptime		mtpScoreNext;		// When to start scoring.
+	boost::posix_time::ptime		mtpScoreStart;		// Time currently started scoring.
+	boost::asio::deadline_timer		mdtScoreTimer;		// Timer to start scoring.
 
-	boost::posix_time::ptime		mtpFetchNext;
-	boost::asio::deadline_timer		mdtFetchTimer;
+	void scoreNext();									// Update scoring timer.
+	void scoreCompute();
+	void scoreTimerHandler(const boost::system::error_code& err);
+
+	boost::mutex					mFetchLock;
+	int								mFetchActive;		// Count of active fetches.
+
+	boost::posix_time::ptime		mtpFetchNext;		// Time of to start next fetch.
+	boost::asio::deadline_timer		mdtFetchTimer;		// Timer to start fetching.
 
 	void fetchNext();
 	void fetchFinish();
@@ -61,15 +79,15 @@ private:
 	void getValidatorsUrl(NewcoinAddress naNodePublic, section secSite);
 	void getIpsUrl(section secSite);
 	void responseIps(const std::string& strSite, const boost::system::error_code& err, const std::string strIpsFile);
-	void responseValidators(NewcoinAddress naNodePublic, section secSite, const std::string& strSite, const boost::system::error_code& err, const std::string strValidatorsFile);
+	void responseValidators(const std::string& strValidatorsUrl, NewcoinAddress naNodePublic, section secSite, const std::string& strSite, const boost::system::error_code& err, const std::string strValidatorsFile);
 
 	void processIps(const std::string& strSite, section::mapped_type* pmtVecStrIps);
-	void processValidators(const std::string& strSite, NewcoinAddress naNodePublic, section::mapped_type* pmtVecStrValidators);
+	void processValidators(const std::string& strSite, const std::string& strValidatorsSrc, NewcoinAddress naNodePublic, section::mapped_type* pmtVecStrValidators);
 
 	void processFile(const std::string strDomain, NewcoinAddress naNodePublic, section secSite);
 
-	bool getSeedDomans(const std::string& strDomain, seedDomain& dstSeedDomain);
-	void setSeedDomans(const seedDomain& dstSeedDomain);
+	bool getSeedDomains(const std::string& strDomain, seedDomain& dstSeedDomain);
+	void setSeedDomains(const seedDomain& dstSeedDomain, bool bNext);
 
 public:
 	UniqueNodeList(boost::asio::io_service& io_service);

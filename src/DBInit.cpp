@@ -65,12 +65,10 @@ const char *WalletDBInit[] = {
 	);",
 
 	// Miscellaneous persistent information
-	// ScoresUpdated: when scores was last updated.
-	// Scores need updating if:
-	// - This time is 0
-	// - This time is prior to the most recent SeedDomains or SeedNodes fetch.
+	// ScoreUpdated: when scores was last updated.
 	"CREATE TABLE Misc (							\
-		ScoresUpdated	DATETIME					\
+		ScoreUpdated	DATETIME,					\
+		FetchUpdated	DATETIME					\
 	);",
 
 	// Domain:
