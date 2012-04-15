@@ -23,9 +23,9 @@ class PeerDoor;
 class DatabaseCon
 {
 protected:
-	Database *mDatabase;
-	boost::recursive_mutex mLock;
-	
+	Database*				mDatabase;
+	boost::recursive_mutex	mLock;
+
 public:
 	DatabaseCon(const std::string& name, const char *initString[], int countInit);
 	~DatabaseCon();
@@ -35,24 +35,24 @@ public:
 
 class Application
 {
-	NetworkOPs mNetOps;
-	Wallet mWallet;
+	NetworkOPs				mNetOps;
+	Wallet					mWallet;
 
-	boost::asio::io_service mIOService;
+	boost::asio::io_service	mIOService;
 
-	TimingService mTimingService;
-	UniqueNodeList mUNL;
-	KnownNodeList mKnownNodes;
-	PubKeyCache mPKCache;
-	LedgerMaster mMasterLedger;
-	LedgerAcquireMaster mMasterLedgerAcquire;
-	TransactionMaster mMasterTransaction;
+	TimingService			mTimingService;
+	UniqueNodeList			mUNL;
+	KnownNodeList			mKnownNodes;
+	PubKeyCache				mPKCache;
+	LedgerMaster			mMasterLedger;
+	LedgerAcquireMaster		mMasterLedgerAcquire;
+	TransactionMaster		mMasterTransaction;
 
-	DatabaseCon *mTxnDB, *mLedgerDB, *mWalletDB, *mHashNodeDB, *mNetNodeDB;
+	DatabaseCon* mTxnDB, *mLedgerDB, *mWalletDB, *mHashNodeDB, *mNetNodeDB;
 
-	ConnectionPool mConnectionPool;
-	PeerDoor* mPeerDoor;
-	RPCDoor* mRPCDoor;
+	ConnectionPool			mConnectionPool;
+	PeerDoor*				mPeerDoor;
+	RPCDoor*				mRPCDoor;
 
 	std::map<std::string, Peer::pointer> mPeerMap;
 	boost::recursive_mutex	mPeerMapLock;

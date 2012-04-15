@@ -65,4 +65,4 @@ int main(int argc, char* argv[])
 
 	return(parseCommandline(argc,argv));
 }
-
+// vim:ts=4
