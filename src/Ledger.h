@@ -15,6 +15,7 @@
 #include "Hanko.h"
 #include "AccountState.h"
 #include "SHAMap.h"
+#include "SerializedLedger.h"
 
 
 class Ledger : public boost::enable_shared_from_this<Ledger>
@@ -37,6 +38,10 @@ public:
 		TR_TOOSMALL =9, // amount is less than Tx fee
 	};
 
+	enum LedgerStateParms
+	{
+		lepCREATE = 1,  // Create if not present
+	};
 
 private:
 	uint256 mHash, mParentHash, mTransHash, mAccountHash;
@@ -95,22 +100,33 @@ public:
 	bool isAcquiringTx(void);
 	bool isAcquiringAS(void);
 
-	// mid level functions
+	// Transaction Functions
 	bool hasTransaction(const uint256& TransID) const;
-	AccountState::pointer getAccountState(const NewcoinAddress& acctID);
 	Transaction::pointer getTransaction(const uint256& transID) const;
-	uint64 getBalance(const NewcoinAddress& acctID) const;
 
-	// high level functions
+	// OLD high level functions
+	uint64 getBalance(const NewcoinAddress& acctID) const;
+	AccountState::pointer getAccountState(const NewcoinAddress& acctID);
 	TransResult applyTransaction(Transaction::pointer trans);
 	TransResult removeTransaction(Transaction::pointer trans);
 	TransResult hasTransaction(Transaction::pointer trans);
 	Ledger::pointer switchPreviousLedger(Ledger::pointer oldPrevious, Ledger::pointer newPrevious,  int limit);
 
+	// high-level functions
+	SerializedLedgerEntry::pointer getAccountRoot(LedgerStateParms parms, const uint160& accountID);
+	SerializedLedgerEntry::pointer getNickname(LedgerStateParms parms, const std::string& nickname);
+	SerializedLedgerEntry::pointer getNickname(LedgerStateParms parms, const uint256& nickHash);
+//	SerializedLedgerEntry::pointer getRippleState(LedgerStateParms parms, const uint160& offeror,
+//		const uint160& borrower, const Currency& currency);
+
 	// database functions
 	static void saveAcceptedLedger(Ledger::pointer);
 	static Ledger::pointer loadByIndex(uint32 ledgerIndex);
 	static Ledger::pointer loadByHash(const uint256& ledgerHash);
+
+	// index calculation functions
+	static uint256 getAccountRootIndex(const uint160& account);
+	static uint256 getRippleIndex(const uint160& account, const uint160& extendTo, const uint160& currency);
 
 	Ledger::pointer closeLedger(uint64 timestamp);
 	bool isCompatible(boost::shared_ptr<Ledger> other);
