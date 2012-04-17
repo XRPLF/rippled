@@ -18,10 +18,24 @@
 #include "SerializedLedger.h"
 
 
+enum LedgerStateParms
+{
+	// input flags
+	lepCREATE,		  			// Create if not present
+
+	// output flags
+	lepOKAY,					// success
+	lepMISSING,					// No node in that slot
+	lepWRONGTYPE,				// Node of different type there
+	lepCREATED,					// Node was created
+	lepERROR,					// error
+};
+
 class Ledger : public boost::enable_shared_from_this<Ledger>
 { // The basic Ledger structure, can be opened, closed, or synching
 public:
 	typedef boost::shared_ptr<Ledger> pointer;
+
 
 	enum TransResult
 	{
@@ -38,10 +52,6 @@ public:
 		TR_TOOSMALL =9, // amount is less than Tx fee
 	};
 
-	enum LedgerStateParms
-	{
-		lepCREATE = 1,  // Create if not present
-	};
 
 private:
 	uint256 mHash, mParentHash, mTransHash, mAccountHash;
@@ -113,9 +123,10 @@ public:
 	Ledger::pointer switchPreviousLedger(Ledger::pointer oldPrevious, Ledger::pointer newPrevious,  int limit);
 
 	// high-level functions
-	SerializedLedgerEntry::pointer getAccountRoot(LedgerStateParms parms, const uint160& accountID);
-	SerializedLedgerEntry::pointer getNickname(LedgerStateParms parms, const std::string& nickname);
-	SerializedLedgerEntry::pointer getNickname(LedgerStateParms parms, const uint256& nickHash);
+	LedgerStateParms writeBack(LedgerStateParms parms, SerializedLedgerEntry::pointer);
+	SerializedLedgerEntry::pointer getAccountRoot(LedgerStateParms& parms, const uint160& accountID);
+	SerializedLedgerEntry::pointer getNickname(LedgerStateParms& parms, const std::string& nickname);
+	SerializedLedgerEntry::pointer getNickname(LedgerStateParms& parms, const uint256& nickHash);
 //	SerializedLedgerEntry::pointer getRippleState(LedgerStateParms parms, const uint160& offeror,
 //		const uint160& borrower, const Currency& currency);
 
@@ -136,5 +147,15 @@ public:
 
 	static bool unitTest();
 };
+
+inline LedgerStateParms operator|(const LedgerStateParms& l1, const LedgerStateParms& l2)
+{
+	return static_cast<LedgerStateParms>(static_cast<int>(l1) | static_cast<int>(l2));
+}
+
+inline LedgerStateParms operator&(const LedgerStateParms& l1, const LedgerStateParms& l2)
+{
+	return static_cast<LedgerStateParms>(static_cast<int>(l1) & static_cast<int>(l2));
+}
 
 #endif
