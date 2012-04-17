@@ -331,7 +331,7 @@ Ledger::pointer Ledger::closeLedger(uint64 timeStamp)
 	// CAUTION: New ledger needs its SHAMap's connected to storage
 	updateHash();
 	setClosed();
-	return Ledger::pointer(new Ledger(*this, timeStamp)); // can't use make_shared
+	return Ledger::pointer(new Ledger(*this, timeStamp)); // can't use make_shared, constructor is protected
 }
 
 void LocalAccount::syncLedger()
@@ -364,7 +364,7 @@ bool Ledger::unitTest()
 
 	Ledger::pointer ledger=boost::make_shared<Ledger>(la1, 100000);
 
-	ledger=Ledger::pointer(new Ledger(*ledger, 0)); // can't use make_shared
+	ledger=make_shared<Ledger>(*ledger, 0); // can't use make_shared
 
 	AccountState::pointer as=ledger->getAccountState(la1);
 	assert(as);
