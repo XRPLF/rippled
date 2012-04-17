@@ -64,6 +64,13 @@ int Serializer::addRaw(const std::vector<unsigned char> &vector)
 	return ret;
 }
 
+int Serializer::addRaw(const Serializer &s)
+{
+	int ret = mData.size();
+	mData.insert(mData.end(), s.begin(), s.end());
+	return ret;
+}
+
 int Serializer::addRaw(const void *ptr, int len)
 {
 	int ret = mData.size();
