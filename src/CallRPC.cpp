@@ -1,5 +1,4 @@
 
-
 #include <iostream>
 #include <cstdlib>
 
@@ -19,9 +18,7 @@
 #include "Config.h"
 #include "BitcoinUtil.h"
 
-using namespace boost::asio;
-
-inline bool isSwitchChar(char c)
+static inline bool isSwitchChar(char c)
 {
 #ifdef __WXMSW__
 	return c == '-' || c == '/';
@@ -56,13 +53,13 @@ int commandLineRPC(int argc, char *argv[])
 	try
 	{
 		// Skip switches
-		while(argc > 1 && isSwitchChar(argv[1][0]))
+		while ((argc > 1) && isSwitchChar(argv[1][0]))
 		{
 			argc--;
 			argv++;
 		}
 
-		if(argc < 2) return(0);
+		if (argc < 2) return 0;
 
 		std::string strMethod = argv[1];
 
@@ -75,22 +72,20 @@ int commandLineRPC(int argc, char *argv[])
 		Json::Value reply = callRPC(strMethod, params);
 
 		// Parse reply
-		Json::Value result=reply.get("result", Json::Value());
-		Json::Value error=reply.get("error", Json::Value());
+		Json::Value result = reply.get("result", Json::Value());
+		Json::Value error = reply.get("error", Json::Value());
 
-		if(result.isString() && result.asString()=="unknown command")
+		if (result.isString() && (result.asString() == "unknown command"))
 			nRet=1;
 
-		if(!error.isNull())
-		{
-			// Error
+		if (!error.isNull())
+		{ // Error
 			strPrint = "error: " + error.toStyledString();
 			int code = error["code"].asInt();
 			nRet = abs(code);
 		}
 		else
-		{
-			// Result
+		{ // Result
 			if (result.isNull())
 				strPrint = "";
 			else if (result.isString())
@@ -109,7 +104,7 @@ int commandLineRPC(int argc, char *argv[])
 		std::cout << "Exception CommandLineRPC()" << std::endl;
 	}
 
-	if(strPrint != "")
+	if (strPrint != "")
 	{
 		std::cout << strPrint << std::endl;
 	}
@@ -119,26 +114,23 @@ int commandLineRPC(int argc, char *argv[])
 
 Json::Value callRPC(const std::string& strMethod, const Json::Value& params)
 {
-	if(theConfig.RPC_USER == "" && theConfig.RPC_PASSWORD == "")
+	if (theConfig.RPC_USER.empty() && theConfig.RPC_PASSWORD.empty())
 		throw std::runtime_error("You must set rpcpassword=<password> in the configuration file"
 		"If the file does not exist, create it with owner-readable-only file permissions.");
 
 	// Connect to localhost
-
 	std::cout << "Connecting to port:" << theConfig.RPC_PORT << std::endl;
-	ip::tcp::endpoint endpoint(ip::address::from_string(theConfig.RPC_IP), theConfig.RPC_PORT);
-	ip::tcp::iostream stream;
+	boost::asio::ip::tcp::endpoint
+		endpoint(boost::asio::ip::address::from_string(theConfig.RPC_IP), theConfig.RPC_PORT);
+	boost::asio::ip::tcp::iostream stream;
 	stream.connect(endpoint);
-	if(stream.fail())
+	if (stream.fail())
 		throw std::runtime_error("couldn't connect to server");
-
-
 
 	// HTTP basic authentication
 	std::string strUserPass64 = EncodeBase64(theConfig.RPC_USER + ":" + theConfig.RPC_PASSWORD);
 	std::map<std::string, std::string> mapRequestHeaders;
 	mapRequestHeaders["Authorization"] = std::string("Basic ") + strUserPass64;
-
 
 	// Send request
 	std::string strRequest = JSONRPCRequest(strMethod, params, Json::Value(1));
@@ -154,7 +146,7 @@ Json::Value callRPC(const std::string& strMethod, const Json::Value& params)
 	int nStatus = ReadHTTP(stream, mapHeaders, strReply);
 	if (nStatus == 401)
 		throw std::runtime_error("incorrect rpcuser or rpcpassword (authorization failed)");
-	else if (nStatus >= 400 && nStatus != 400 && nStatus != 404 && nStatus != 500)
+	else if ((nStatus >= 400) && (nStatus != 400) && (nStatus != 404) && (nStatus != 500)) // ?
 		throw std::runtime_error(strprintf("server returned HTTP error %d", nStatus));
 	else if (strReply.empty())
 		throw std::runtime_error("no response from server");
@@ -170,3 +162,4 @@ Json::Value callRPC(const std::string& strMethod, const Json::Value& params)
 	return valReply;
 }
 
+// vim:ts=4

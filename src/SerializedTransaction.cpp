@@ -4,7 +4,7 @@
 SerializedTransaction::SerializedTransaction(TransactionType type)
 {
 	mFormat=getTxnFormat(type);
-	if(mFormat==NULL) throw(std::runtime_error("invalid transaction type"));
+	if (mFormat == NULL) throw std::runtime_error("invalid transaction type");
 
 	mMiddleTxn.giveObject(new STUInt32("Magic", TransactionMagic));
 	mMiddleTxn.giveObject(new STVariableLength("SigningAccount"));
@@ -17,27 +17,27 @@ SerializedTransaction::SerializedTransaction(TransactionType type)
 
 SerializedTransaction::SerializedTransaction(SerializerIterator& sit, int length)
 {
-	if(length==-1) length=sit.getBytesLeft();
-	else if(length==0) length=sit.get32();
-	if( (length<TransactionMinLen) || (length>TransactionMaxLen) )
-		throw(std::runtime_error("Transaction length invalid"));
+	if (length == -1) length=sit.getBytesLeft();
+	else if (length == 0) length=sit.get32();
+	if ( (length < TransactionMinLen) || (length > TransactionMaxLen) )
+		throw std::runtime_error("Transaction length invalid");
 
 	mSignature.setValue(sit.getVL());
 
-	if(sit.get32()!=TransactionMagic)
-		throw(std::runtime_error("Transaction has invalid magic"));
+	if (sit.get32() != TransactionMagic)
+		throw std::runtime_error("Transaction has invalid magic");
 
 	mMiddleTxn.giveObject(new STUInt32("Magic", TransactionMagic));
 	mMiddleTxn.giveObject(new STVariableLength("SigningAccount", sit.getVL()));
 	mMiddleTxn.giveObject(new STUInt32("Sequence", sit.get32()));
 
-	int type=sit.get32();
+	int type = sit.get32();
 	mMiddleTxn.giveObject(new STUInt32("Type", type));
-	mFormat=getTxnFormat(static_cast<TransactionType>(type));
-	if(!mFormat) throw(std::runtime_error("Transaction has invalid type"));
+	mFormat = getTxnFormat(static_cast<TransactionType>(type));
+	if (!mFormat) throw std::runtime_error("Transaction has invalid type");
 	mMiddleTxn.giveObject(new STUInt64("Fee", sit.get64()));
 
-	mInnerTxn=STObject(mFormat->elements, sit, "InnerTransaction");
+	mInnerTxn = STObject(mFormat->elements, sit, "InnerTransaction");
 }
 
 int SerializedTransaction::getLength() const
@@ -47,30 +47,30 @@ int SerializedTransaction::getLength() const
 
 std::string SerializedTransaction::getFullText() const
 {
-	std::string ret="\"";
-	ret+=getTransactionID().GetHex();
-	ret+="\" = {";
-	ret+=mSignature.getFullText();
-	ret+=mMiddleTxn.getFullText();
-	ret+=mInnerTxn.getFullText();
-	ret+="}";
+	std::string ret = "\"";
+	ret += getTransactionID().GetHex();
+	ret += "\" = {";
+	ret += mSignature.getFullText();
+	ret += mMiddleTxn.getFullText();
+	ret += mInnerTxn.getFullText();
+	ret += "}";
 	return ret;
 }
 
 std::string SerializedTransaction::getText() const
 {
-	std::string ret="{";
-	ret+=mSignature.getText();
-	ret+=mMiddleTxn.getText();
-	ret+=mInnerTxn.getText();
-	ret+="}";
+	std::string ret = "{";
+	ret += mSignature.getText();
+	ret += mMiddleTxn.getText();
+	ret += mInnerTxn.getText();
+	ret += "}";
 	return ret;
 }
 
 int SerializedTransaction::getTransaction(Serializer& s, bool include_length) const
 {
-	int l=getLength();
-	if(include_length) s.add32(l);
+	int l = getLength();
+	if (include_length) s.add32(l);
 	mSignature.add(s);
 	mMiddleTxn.add(s);
 	mInnerTxn.add(s);
@@ -79,11 +79,11 @@ int SerializedTransaction::getTransaction(Serializer& s, bool include_length) co
 
 bool SerializedTransaction::isEquivalent(const SerializedType& t) const
 { // Signatures are not compared
-	const SerializedTransaction* v=dynamic_cast<const SerializedTransaction*>(&t);
-	if(!v) return false;
-	if(type != v->type) return false;
-	if(mMiddleTxn != v->mMiddleTxn) return false;
-	if(mInnerTxn != v->mInnerTxn) return false;
+	const SerializedTransaction* v = dynamic_cast<const SerializedTransaction*>(&t);
+	if (!v) return false;
+	if (type != v->type) return false;
+	if (mMiddleTxn != v->mMiddleTxn) return false;
+	if (mInnerTxn != v->mInnerTxn) return false;
 	return true;
 }
 
@@ -131,51 +131,51 @@ void SerializedTransaction::setSignature(const std::vector<unsigned char>& sig)
 
 uint32 SerializedTransaction::getVersion() const
 {
-	const STUInt32* v=dynamic_cast<const STUInt32*>(mMiddleTxn.peekAtPIndex(TransactionIVersion));
-	if(!v) throw(std::runtime_error("corrupt transaction"));
+	const STUInt32* v = dynamic_cast<const STUInt32*>(mMiddleTxn.peekAtPIndex(TransactionIVersion));
+	if (!v) throw std::runtime_error("corrupt transaction");
 	return v->getValue();
 }
 
 void SerializedTransaction::setVersion(uint32 ver)
 {
-	STUInt32* v=dynamic_cast<STUInt32*>(mMiddleTxn.getPIndex(TransactionIVersion));
-	if(!v) throw(std::runtime_error("corrupt transaction"));
+	STUInt32* v = dynamic_cast<STUInt32*>(mMiddleTxn.getPIndex(TransactionIVersion));
+	if (!v) throw std::runtime_error("corrupt transaction");
 	v->setValue(ver);
 }
 
 uint64 SerializedTransaction::getTransactionFee() const
 {
-	const STUInt64* v=dynamic_cast<const STUInt64*>(mMiddleTxn.peekAtPIndex(TransactionIFee));
-	if(!v) throw(std::runtime_error("corrupt transaction"));
+	const STUInt64* v = dynamic_cast<const STUInt64*>(mMiddleTxn.peekAtPIndex(TransactionIFee));
+	if (!v) throw std::runtime_error("corrupt transaction");
 	return v->getValue();
 }
 
 void SerializedTransaction::setTransactionFee(uint64 fee)
 {
-	STUInt64* v=dynamic_cast<STUInt64*>(mMiddleTxn.getPIndex(TransactionIFee));
-	if(!v) throw(std::runtime_error("corrupt transaction"));
+	STUInt64* v = dynamic_cast<STUInt64*>(mMiddleTxn.getPIndex(TransactionIFee));
+	if (!v) throw std::runtime_error("corrupt transaction");
 	v->setValue(fee);
 }
 
 uint32 SerializedTransaction::getSequence() const
 {
-	const STUInt32* v=dynamic_cast<const STUInt32*>(mMiddleTxn.peekAtPIndex(TransactionISequence));
-	if(!v) throw(std::runtime_error("corrupt transaction"));
+	const STUInt32* v = dynamic_cast<const STUInt32*>(mMiddleTxn.peekAtPIndex(TransactionISequence));
+	if (!v) throw std::runtime_error("corrupt transaction");
 	return v->getValue();
 }
 
 void SerializedTransaction::setSequence(uint32 seq)
 {
-	STUInt32* v=dynamic_cast<STUInt32*>(mMiddleTxn.getPIndex(TransactionISequence));
-	if(!v) throw(std::runtime_error("corrupt transaction"));
+	STUInt32* v = dynamic_cast<STUInt32*>(mMiddleTxn.getPIndex(TransactionISequence));
+	if (!v) throw std::runtime_error("corrupt transaction");
 	v->setValue(seq);
 }
 
 std::vector<unsigned char> SerializedTransaction::getSigningAccount() const
 {
-	const STVariableLength* v=
+	const STVariableLength* v =
 		dynamic_cast<const STVariableLength*>(mMiddleTxn.peekAtPIndex(TransactionISigningAccount));
-	if(!v) throw(std::runtime_error("corrupt transaction"));
+	if (!v) throw std::runtime_error("corrupt transaction");
 	return v->getValue();
 }
 
@@ -183,21 +183,21 @@ const std::vector<unsigned char>& SerializedTransaction::peekSigningAccount() co
 {
 	const STVariableLength* v=
 		dynamic_cast<const STVariableLength*>(mMiddleTxn.peekAtPIndex(TransactionISigningAccount));
-	if(!v) throw(std::runtime_error("corrupt transaction"));
+	if (!v) throw std::runtime_error("corrupt transaction");
 	return v->peekValue();
 }
 
 std::vector<unsigned char>& SerializedTransaction::peekSigningAccount()
 {
-	STVariableLength* v=dynamic_cast<STVariableLength*>(mMiddleTxn.getPIndex(TransactionISigningAccount));
-	if(!v) throw(std::runtime_error("corrupt transaction"));
+	STVariableLength* v = dynamic_cast<STVariableLength*>(mMiddleTxn.getPIndex(TransactionISigningAccount));
+	if (!v) throw std::runtime_error("corrupt transaction");
 	return v->peekValue();
 }
 
 void SerializedTransaction::setSigningAccount(const std::vector<unsigned char>& s)
 {
-	STVariableLength* v=dynamic_cast<STVariableLength*>(mMiddleTxn.getPIndex(TransactionISigningAccount));
-	if(!v) throw(std::runtime_error("corrupt transaction"));
+	STVariableLength* v = dynamic_cast<STVariableLength*>(mMiddleTxn.getPIndex(TransactionISigningAccount));
+	if (!v) throw std::runtime_error("corrupt transaction");
 	v->setValue(s);
 }
 
@@ -239,10 +239,10 @@ void SerializedTransaction::makeITFieldAbsent(SOE_Field field)
 Json::Value SerializedTransaction::getJson(int options) const
 {
 	Json::Value ret(Json::objectValue);
-	ret["Type"]=mFormat->t_name;
-	ret["ID"]=getTransactionID().GetHex();
-	ret["Signature"]=mSignature.getText();
-	ret["Middle"]=mMiddleTxn.getJson(options);
-	ret["Inner"]=mInnerTxn.getJson(options);
+	ret["Type"] = mFormat->t_name;
+	ret["ID"] = getTransactionID().GetHex();
+	ret["Signature"] = mSignature.getText();
+	ret["Middle"] = mMiddleTxn.getJson(options);
+	ret["Inner"] = mInnerTxn.getJson(options);
 	return ret;
 }

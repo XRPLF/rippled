@@ -11,13 +11,17 @@
 
 enum SOE_Type
 {
-	SOE_NEVER=-1, SOE_REQUIRED=0, SOE_FLAGS, SOE_IFFLAG=1, SOE_IFNFLAG=2
+	SOE_NEVER = -1,		// never occurs (marks end of object)
+	SOE_REQUIRED = 0,	// required
+	SOE_FLAGS = 1,		// flags field
+	SOE_IFFLAG = 2,		// present if flag set
+	SOE_IFNFLAG = 3		// present if flag not set
 };
 
 enum SOE_Field
 {
-	sfInvalid=-1,
-	sfGeneric=0,
+	sfInvalid = -1,
+	sfGeneric = 0,
 
 	// common fields
 	sfFlags, sfExtensions, sfTargetLedger, sfSourceTag, sfIdentifier,
@@ -50,9 +54,9 @@ protected:
 	static SerializedType* makeDeserializedObject(SerializedTypeID id, const char *name, SerializerIterator&);
 
 public:
-	STObject(const char *n=NULL) : SerializedType(n), mFlagIdx(-1) { ; }
-	STObject(SOElement *t, const char *n=NULL);
-	STObject(SOElement *t, SerializerIterator& u, const char *n=NULL);
+	STObject(const char *n = NULL) : SerializedType(n), mFlagIdx(-1) { ; }
+	STObject(SOElement *t, const char *n = NULL);
+	STObject(SOElement *t, SerializerIterator& u, const char *n = NULL);
 	virtual ~STObject() { ; }
 
 	int getLength() const;

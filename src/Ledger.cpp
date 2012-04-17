@@ -19,12 +19,12 @@ Ledger::Ledger(const NewcoinAddress& masterID, uint64 startAmount) :
 	mFeeHeld(0), mTimeStamp(0), mLedgerSeq(0),
 	mClosed(false), mValidHash(false), mAccepted(false), mImmutable(false)
 {
-	mTransactionMap=boost::make_shared<SHAMap>();
-	mAccountStateMap=boost::make_shared<SHAMap>();
+	mTransactionMap = boost::make_shared<SHAMap>();
+	mAccountStateMap = boost::make_shared<SHAMap>();
 
-	AccountState::pointer startAccount=boost::make_shared<AccountState>(masterID);
+	AccountState::pointer startAccount = boost::make_shared<AccountState>(masterID);
 	startAccount->credit(startAmount);
-	if(!addAccountState(startAccount))
+	if (!addAccountState(startAccount))
 		assert(false);
 }
 
@@ -41,8 +41,8 @@ Ledger::Ledger(Ledger &prevLedger, uint64 ts) : mTimeStamp(ts),
 	mClosed(false), mValidHash(false), mAccepted(false), mImmutable(false),
 	mTransactionMap(new SHAMap()), mAccountStateMap(prevLedger.mAccountStateMap)
 {
-	mParentHash=prevLedger.getHash();
-	mLedgerSeq=prevLedger.mLedgerSeq+1;
+	mParentHash = prevLedger.getHash();
+	mLedgerSeq = prevLedger.mLedgerSeq+1;
 	mAccountStateMap->setSeq(mLedgerSeq);
 }
 
@@ -51,17 +51,17 @@ Ledger::Ledger(const std::vector<unsigned char>& rawLedger) : mFeeHeld(0), mTime
 {
 	Serializer s(rawLedger);
 	// 32seq, 64fee, 256phash, 256thash, 256ahash, 64ts
-	if(!s.get32(mLedgerSeq, BLgPIndex)) return;
-	if(!s.get64(mFeeHeld, BLgPFeeHeld)) return;
-	if(!s.get256(mParentHash, BLgPPrevLg)) return;
-	if(!s.get256(mTransHash, BLgPTxT)) return;
-	if(!s.get256(mAccountHash, BLgPAcT)) return;
-	if(!s.get64(mTimeStamp, BLgPClTs)) return;
+	if (!s.get32(mLedgerSeq, BLgPIndex)) return;
+	if (!s.get64(mFeeHeld, BLgPFeeHeld)) return;
+	if (!s.get256(mParentHash, BLgPPrevLg)) return;
+	if (!s.get256(mTransHash, BLgPTxT)) return;
+	if (!s.get256(mAccountHash, BLgPAcT)) return;
+	if (!s.get64(mTimeStamp, BLgPClTs)) return;
 	updateHash();
 	if(mValidHash)
 	{
-		mTransactionMap=boost::make_shared<SHAMap>();
-		mAccountStateMap=boost::make_shared<SHAMap>();
+		mTransactionMap = boost::make_shared<SHAMap>();
+		mAccountStateMap = boost::make_shared<SHAMap>();
 	}
 }
 
@@ -70,17 +70,17 @@ Ledger::Ledger(const std::string& rawLedger) : mFeeHeld(0), mTimeStamp(0),
 {
 	Serializer s(rawLedger);
 	// 32seq, 64fee, 256phash, 256thash, 256ahash, 64ts
-	if(!s.get32(mLedgerSeq, BLgPIndex)) return;
-	if(!s.get64(mFeeHeld, BLgPFeeHeld)) return;
-	if(!s.get256(mParentHash, BLgPPrevLg)) return;
-	if(!s.get256(mTransHash, BLgPTxT)) return;
-	if(!s.get256(mAccountHash, BLgPAcT)) return;
-	if(!s.get64(mTimeStamp, BLgPClTs)) return;
+	if (!s.get32(mLedgerSeq, BLgPIndex)) return;
+	if (!s.get64(mFeeHeld, BLgPFeeHeld)) return;
+	if (!s.get256(mParentHash, BLgPPrevLg)) return;
+	if (!s.get256(mTransHash, BLgPTxT)) return;
+	if (!s.get256(mAccountHash, BLgPAcT)) return;
+	if (!s.get64(mTimeStamp, BLgPClTs)) return;
 	updateHash();
 	if(mValidHash)
 	{
-		mTransactionMap=boost::make_shared<SHAMap>();
-		mAccountStateMap=boost::make_shared<SHAMap>();
+		mTransactionMap = boost::make_shared<SHAMap>();
+		mAccountStateMap = boost::make_shared<SHAMap>();
 	}
 }
 
@@ -88,16 +88,16 @@ void Ledger::updateHash()
 {
 	if(!mImmutable)
 	{
-		if(mTransactionMap) mTransHash=mTransactionMap->getHash();
+		if (mTransactionMap) mTransHash = mTransactionMap->getHash();
 		else mTransHash.zero();
-		if(mAccountStateMap) mAccountHash=mAccountStateMap->getHash();
+		if (mAccountStateMap) mAccountHash = mAccountStateMap->getHash();
 		else mAccountHash.zero();
 	}
 
 	Serializer s(116);
 	addRaw(s);
-	mHash=s.getSHA512Half();
-	mValidHash=true;
+	mHash  =s.getSHA512Half();
+	mValidHash = true;
 }
 
 void Ledger::addRaw(Serializer &s)
@@ -116,8 +116,8 @@ AccountState::pointer Ledger::getAccountState(const NewcoinAddress& accountID)
 	std::cerr << "Ledger:getAccountState(" << accountID.humanAccountID() << ")" << std::endl;
 #endif
 	ScopedLock l(mTransactionMap->Lock());
-	SHAMapItem::pointer item=mAccountStateMap->peekItem(accountID.getAccountID().to256());
-	if(!item)
+	SHAMapItem::pointer item = mAccountStateMap->peekItem(accountID.getAccountID().to256());
+	if (!item)
 	{
 #ifdef DEBUG
 		std::cerr << "   notfound" << std::endl;
@@ -130,23 +130,23 @@ AccountState::pointer Ledger::getAccountState(const NewcoinAddress& accountID)
 uint64 Ledger::getBalance(const NewcoinAddress& accountID) const
 {
 	ScopedLock l(mTransactionMap->Lock());
-	SHAMapItem::pointer item=mAccountStateMap->peekItem(accountID.getAccountID().to256());
-	if(!item) return 0;
+	SHAMapItem::pointer item = mAccountStateMap->peekItem(accountID.getAccountID().to256());
+	if (!item) return 0;
 	return AccountState(item->getData()).getBalance();
 }
 
 bool Ledger::updateAccountState(AccountState::pointer state)
 {
 	assert(!mAccepted);
-	SHAMapItem::pointer item=boost::make_shared<SHAMapItem>(state->getAccountID().getAccountID(), state->getRaw());
-	return mAccountStateMap->updateGiveItem(item, false);
+	return mAccountStateMap->updateGiveItem(boost::make_shared<SHAMapItem>(state->getAccountID().getAccountID(),
+		state->getRaw()), false);
 }
 
 bool Ledger::addAccountState(AccountState::pointer state)
 {
 	assert(!mAccepted);
 	assert( (state->getBalance()==0) || (state->getSeq()>0) );
-	SHAMapItem::pointer item=boost::make_shared<SHAMapItem>(state->getAccountID().getAccountID(), state->getRaw());
+	SHAMapItem::pointer item = boost::make_shared<SHAMapItem>(state->getAccountID().getAccountID(), state->getRaw());
 	return mAccountStateMap->addGiveItem(item, false);
 }
 
@@ -156,7 +156,7 @@ bool Ledger::addTransaction(Transaction::pointer trans)
 	assert(!!trans->getID());
 	Serializer s;
 	trans->getSTransaction()->getTransaction(s, false);
-	SHAMapItem::pointer item=boost::make_shared<SHAMapItem>(trans->getID(), s.peekData());
+	SHAMapItem::pointer item = boost::make_shared<SHAMapItem>(trans->getID(), s.peekData());
 	return mTransactionMap->addGiveItem(item, true);
 }
 
@@ -173,14 +173,15 @@ bool Ledger::hasTransaction(const uint256& transID) const
 
 Transaction::pointer Ledger::getTransaction(const uint256& transID) const
 {
-	SHAMapItem::pointer item=mTransactionMap->peekItem(transID);
-	if(!item) return Transaction::pointer();
+	SHAMapItem::pointer item = mTransactionMap->peekItem(transID);
+	if (!item) return Transaction::pointer();
 
-	Transaction::pointer txn=theApp->getMasterTransaction().fetch(transID, false);
-	if(txn) return txn;
+	Transaction::pointer txn = theApp->getMasterTransaction().fetch(transID, false);
+	if (txn) return txn;
 
-	txn=boost::make_shared<Transaction>(item->getData(), true);
-	if(txn->getStatus()==NEW) txn->setStatus(mClosed ? COMMITTED : INCLUDED, mLedgerSeq);
+	txn = boost::make_shared<Transaction>(item->getData(), true);
+	if (txn->getStatus() == NEW)
+		txn->setStatus(mClosed ? COMMITTED : INCLUDED, mLedgerSeq);
 
 	theApp->getMasterTransaction().canonicalize(txn, false);
 	return txn;
@@ -190,9 +191,9 @@ Ledger::TransResult Ledger::applyTransaction(Transaction::pointer trans)
 {
 	assert(!mAccepted);
 	boost::recursive_mutex::scoped_lock sl(mLock);
-	if(trans->getSourceLedger()>mLedgerSeq) return TR_BADLSEQ;
+	if (trans->getSourceLedger() > mLedgerSeq) return TR_BADLSEQ;
 
-	if(trans->getAmount()<trans->getFee())
+	if (trans->getAmount()<trans->getFee())
 	{
 #ifdef DEBUG
 			std::cerr << "Transaction for " << trans->getAmount() << ", but fee is " <<
@@ -519,38 +520,37 @@ Ledger::pointer Ledger::switchPreviousLedger(Ledger::pointer oldPrevious, Ledger
 	do
 	{
 		count=0;
-		std::map<uint256, std::pair<Transaction::pointer, Transaction::pointer> >::iterator it=TxnDiff.begin();
-		while(it!=TxnDiff.end())
+		std::map<uint256, std::pair<Transaction::pointer, Transaction::pointer> >::iterator it = TxnDiff.begin();
+		while (it != TxnDiff.end())
 		{
-			Transaction::pointer& tx=it->second.second;
-			if(!tx || newLedger->addTransaction(tx))
+			Transaction::pointer& tx = it->second.second;
+			if (!tx || newLedger->addTransaction(tx))
 			{
 				count++;
 				TxnDiff.erase(it++);
 			}
 			else ++it;
 		}
-	} while(count!=0);
+	} while (count!=0);
 
 	// WRITEME: Handle rejected transactions left in TxnDiff
 
 	// 5) Try to add transactions from this ledger to the new ledger.
 	std::map<uint256, Transaction::pointer> txnMap;
-	for(SHAMapItem::pointer mit=peekTransactionMap()->peekFirstItem();
-			!!mit;
-			mit=peekTransactionMap()->peekNextItem(mit->getTag()))
+	for(SHAMapItem::pointer mit = peekTransactionMap()->peekFirstItem();
+			!!mit; mit = peekTransactionMap()->peekNextItem(mit->getTag()))
 	{
-		uint256 txnID=mit->getTag();
-		Transaction::pointer tx=theApp->getMasterTransaction().fetch(txnID, false);
-		if(!tx) tx=boost::make_shared<Transaction>(mit->peekData(), false);
+		uint256 txnID = mit->getTag();
+		Transaction::pointer tx = theApp->getMasterTransaction().fetch(txnID, false);
+		if(!tx) tx = boost::make_shared<Transaction>(mit->peekData(), false);
 		txnMap.insert(std::make_pair(txnID, tx));
 	}
 
 	do
 	{
 		count=0;
-		std::map<uint256, Transaction::pointer>::iterator it=txnMap.begin();
-		while(it!=txnMap.end())
+		std::map<uint256, Transaction::pointer>::iterator it = txnMap.begin();
+		while (it != txnMap.end())
 		{
 			if(newLedger->addTransaction(it->second))
 			{

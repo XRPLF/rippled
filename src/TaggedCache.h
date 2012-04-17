@@ -52,18 +52,14 @@ public:
 
 template<typename c_Key, typename c_Data> int TaggedCache<c_Key, c_Data>::getTargetSize() const
 {
-	mLock.lock();
-	int ret=mTargetSize;
-	mLock.unlock();
-	return ret;
+	boost::recursive_mutex::scoped_lock sl(mLock);
+	return mTargetSize;
 }
 
 template<typename c_Key, typename c_Data> int TaggedCache<c_Key, c_Data>::getTargetAge() const
 {
-	mLock.lock();
-	int ret=mTargetAge;
-	mLock.unlock();
-	return ret;
+	boost::recursive_mutex::scoped_lock sl(mLock);
+	return mTargetAge;
 }
 
 template<typename c_Key, typename c_Data> int TaggedCache<c_Key, c_Data>::getCacheSize()
@@ -76,28 +72,28 @@ template<typename c_Key, typename c_Data> void TaggedCache<c_Key, c_Data>::sweep
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
-	if(mCache.size()<mTargetSize) return;
+	if (mCache.size() < mTargetSize) return;
 
-	time_t now=time(NULL);
-	if((mLastSweep+10)<now) return;
+	time_t now = time(NULL);
+	if ((mLastSweep + 10) < now) return;
 	
-	mLastSweep=now;
-	time_t target=now-mTargetAge;
+	mLastSweep = now;
+	time_t target = now - mTargetAge;
 
 	// Pass 1, remove old objects from cache
-	typename std::map<key_type, cache_entry>::iterator cit=mCache.begin();
-	while(cit!=mCache.end())
+	typename std::map<key_type, cache_entry>::iterator cit = mCache.begin();
+	while (cit != mCache.end())
 	{
-		if(cit->second->second.first<target)
+		if (cit->second->second.first < target)
 			mCache.erase(cit++);
 		else ++cit;
 	}
 
 	// Pass 2, remove dead objects from map
-	typename std::map<key_type, weak_data_ptr>::iterator mit=mMap.begin();
-	while(mit!=mMap.end())
+	typename std::map<key_type, weak_data_ptr>::iterator mit = mMap.begin();
+	while (mit != mMap.end())
 	{
-		if(mit->second->expired())
+		if (mit->second->expired())
 			mMap.erase(mit++);
 		else ++mit;
 	}
@@ -108,19 +104,19 @@ template<typename c_Key, typename c_Data> bool TaggedCache<c_Key, c_Data>::touch
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
 	// Is the object in the map?
-	typename std::map<key_type, weak_data_ptr>::iterator mit=mMap.find(key);
-	if(mit==mMap.end()) return false;
-	if(mit->second->expired())
+	typename std::map<key_type, weak_data_ptr>::iterator mit = mMap.find(key);
+	if (mit == mMap.end()) return false;
+	if (mit->second->expired())
 	{	// in map, but expired
 		mMap.erase(mit);
 		return false;
 	}
 
 	// Is the object in the cache?
-	typename std::map<key_type, cache_entry>::iterator cit=mCache.find(key);
-	if(cit!=mCache.end())
+	typename std::map<key_type, cache_entry>::iterator cit = mCache.find(key);
+	if (cit != mCache.end())
 	{ // in both map and cache
-		cit->second->first=time(NULL);
+		cit->second->first = time(NULL);
 		return true;
 	}
 
@@ -133,8 +129,8 @@ template<typename c_Key, typename c_Data> bool TaggedCache<c_Key, c_Data>::del(c
 {	// Remove from cache, map unaffected
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
-	typename std::map<key_type, cache_entry>::iterator cit=mCache.find(key);
-	if(cit==mCache.end()) return false;
+	typename std::map<key_type, cache_entry>::iterator cit = mCache.find(key);
+	if (cit == mCache.end()) return false;
 	mCache.erase(cit);
 	return true;	
 }
@@ -145,27 +141,27 @@ bool TaggedCache<c_Key, c_Data>::canonicalize(const key_type& key, boost::shared
 	// Return values: true=we had the data already
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
-	typename std::map<key_type, weak_data_ptr>::iterator mit=mMap.find(key);
-	if(mit==mMap.end())
+	typename std::map<key_type, weak_data_ptr>::iterator mit = mMap.find(key);
+	if (mit == mMap.end())
 	{ // not in map
 		mCache.insert(std::make_pair(key, std::make_pair(time(NULL), data)));
 		mMap.insert(std::make_pair(key, data));
 		return false;
 	}
-	if(mit->second.expired())
+	if (mit->second.expired())
 	{ // in map, but expired
-		mit->second=data;
+		mit->second = data;
 		mCache.insert(std::make_pair(key, std::make_pair(time(NULL), data)));
 		return false;
 	}
 	
-	data=mit->second.lock();
+	data = mit->second.lock();
 	assert(!!data);
 
 	// Valid in map, is it in cache?
-	typename std::map<key_type, cache_entry>::iterator cit=mCache.find(key);
-	if(cit!=mCache.end())
-		cit->second.first=time(NULL); // Yes, refesh
+	typename std::map<key_type, cache_entry>::iterator cit = mCache.find(key);
+	if (cit != mCache.end())
+		cit->second.first = time(NULL); // Yes, refesh
 	else // no, add to cache
 		mCache.insert(std::make_pair(key, std::make_pair(time(NULL), data)));
 
@@ -178,20 +174,20 @@ boost::shared_ptr<c_Data> TaggedCache<c_Key, c_Data>::fetch(const key_type& key)
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
 	// Is it in the map?
-	typename std::map<key_type, weak_data_ptr>::iterator mit=mMap.find(key);
-	if(mit==mMap.end()) return data_ptr(); // No, we're done
-	if(mit->second.expired())
+	typename std::map<key_type, weak_data_ptr>::iterator mit = mMap.find(key);
+	if (mit == mMap.end()) return data_ptr(); // No, we're done
+	if (mit->second.expired())
 	{ // in map, but expired
 		mMap.erase(mit);
 		return data_ptr();
 	}
 
-	boost::shared_ptr<c_Data> data=mit->second.lock();
+	boost::shared_ptr<c_Data> data = mit->second.lock();
 	
 	// Valid in map, is it in the cache?
-	typename std::map<key_type, cache_entry>::iterator cit=mCache.find(key);
-	if(cit!=mCache.end())
-		cit->second.first=time(NULL); // Yes, refresh
+	typename std::map<key_type, cache_entry>::iterator cit = mCache.find(key);
+	if (cit != mCache.end())
+		cit->second.first = time(NULL); // Yes, refresh
 	else // No, add to cache
 		mCache.insert(std::make_pair(key, std::make_pair(time(NULL), data)));
 
