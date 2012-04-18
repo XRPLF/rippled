@@ -11,6 +11,7 @@
 #include "ParseSection.h"
 
 #include <boost/thread/mutex.hpp>
+#include <boost/unordered_map.hpp>
 
 #define SYSTEM_NAME	"newcoin"
 
@@ -22,7 +23,11 @@
 #define NODE_FILE_PATH			"/" NODE_FILE_NAME
 
 // Wait for validation information to be stable before scoring.
-#define SCORE_DELAY_SECONDS		20
+// #define SCORE_DELAY_SECONDS		20
+#define SCORE_DELAY_SECONDS		5
+
+// Don't bother propagating past this number of rounds.
+#define SCORE_ROUNDS			10
 
 class UniqueNodeList
 {
@@ -53,6 +58,18 @@ private:
 		std::string					strComment;
 	} seedDomain;
 
+	typedef struct {
+		int					iScore;
+		int					iRoundScore;
+		int					iRoundSeed;
+		int					iSeen;
+		std::string			strValidator;	// The public key.
+		std::vector<int>	viReferrals;
+	} scoreNode;
+
+	typedef boost::unordered_map<std::string,int> strIndex;
+
+	bool scoreRound(std::vector<scoreNode>& vsnNodes);
 	int iSourceScore(validatorSource vsWhy);
 
 	void responseFetch(const std::string strDomain, const boost::system::error_code& err, const std::string strSiteFile);

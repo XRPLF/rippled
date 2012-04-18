@@ -12,8 +12,8 @@
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
-#include <boost/mem_fn.hpp>
 #include <boost/format.hpp>
+#include <boost/mem_fn.hpp>
 
 // Gather string constants.
 #define SECTION_CURRENCIES		"currencies"
@@ -48,12 +48,10 @@ void UniqueNodeList::start()
 
 bool UniqueNodeList::miscLoad()
 {
-	std::string strSql("SELECT * FROM Misc;");
-
 	ScopedLock sl(theApp->getWalletDB()->getDBLock());
 	Database *db=theApp->getWalletDB()->getDB();
 
-	if (!db->executeSQL(strSql.c_str())) return false;
+	if (!db->executeSQL("SELECT * FROM Misc;")) return false;
 
 	bool	bAvail	= !!db->startIterRows();
 
@@ -67,21 +65,309 @@ bool UniqueNodeList::miscLoad()
 
 bool UniqueNodeList::miscSave()
 {
-	std::string strSql	= str(boost::format("REPLACE INTO Misc (FetchUpdated,ScoreUpdated) VALUES (%d,%d);")
-		% iToSeconds(mtpFetchUpdated)
-		% iToSeconds(mtpScoreUpdated));
-
 	Database*	db=theApp->getWalletDB()->getDB();
 	ScopedLock	sl(theApp->getWalletDB()->getDBLock());
 
-	db->executeSQL(strSql.c_str());
+	db->executeSQL(str(boost::format("REPLACE INTO Misc (FetchUpdated,ScoreUpdated) VALUES (%d,%d);")
+		% iToSeconds(mtpFetchUpdated)
+		% iToSeconds(mtpScoreUpdated)));
 
 	return true;
 }
 
+// Returns true, iff scores were distributed.
+bool UniqueNodeList::scoreRound(std::vector<scoreNode>& vsnNodes)
+{
+    bool    bDist   = false;
+
+    // For each node, distribute roundSeed to roundScores.
+    BOOST_FOREACH(scoreNode& sn, vsnNodes) {
+		long	iEntries	= sn.viReferrals.size();
+
+		if (sn.iRoundSeed && iEntries)
+		{
+			long	iTotal	= (iEntries + 1) * iEntries / 2;
+			long	iBase	= sn.iRoundSeed * iEntries / iTotal;
+
+			// Distribute the current entires' seed score to validators prioritized by mention order.
+			for (int i=0; i != iEntries; i++) {
+				vsnNodes[sn.viReferrals[i]].iRoundScore	+=
+					iBase * (iEntries - i) / iEntries;
+			}
+		}
+    }
+
+	std::cerr << "midway: " << std::endl;
+
+	BOOST_FOREACH(scoreNode& sn, vsnNodes)
+	{
+		std::cerr << str(boost::format("%s| %d, %d, %d: [%s]")
+			% sn.strValidator
+			% sn.iScore
+			% sn.iRoundScore
+			% sn.iRoundSeed
+			% strJoin(sn.viReferrals.begin(), sn.viReferrals.end(), ","))
+			<< std::endl;
+	}
+
+    // Add roundScore to score.
+    // Make roundScore new roundSeed.
+    BOOST_FOREACH(scoreNode& sn, vsnNodes) {
+		if (!bDist && sn.iRoundScore)
+			bDist   = true;
+
+		sn.iScore		+= sn.iRoundScore;
+		sn.iRoundSeed	= sn.iRoundScore;
+		sn.iRoundScore	= 0;
+    }
+
+	std::cerr << "finish: " << std::endl;
+
+	BOOST_FOREACH(scoreNode& sn, vsnNodes)
+	{
+		std::cerr << str(boost::format("%s| %d, %d, %d: [%s]")
+			% sn.strValidator
+			% sn.iScore
+			% sn.iRoundScore
+			% sn.iRoundSeed
+			% strJoin(sn.viReferrals.begin(), sn.viReferrals.end(), ","))
+			<< std::endl;
+	}
+
+    return bDist;
+}
+
 void UniqueNodeList::scoreCompute()
 {
+	strIndex				umPulicIdx;		// Map of public key to index.
+	strIndex				umDomainIdx;	// Map of domain to index.
+	std::vector<scoreNode>	vsnNodes;
 
+	Database*	db=theApp->getWalletDB()->getDB();
+
+	std::string strSql;
+
+	{
+		ScopedLock	sl(theApp->getWalletDB()->getDBLock());
+
+		if (db->executeSQL("SELECT Domain,PublicKey,Source FROM SeedDomains;"))
+		{
+			bool	bMore	= db->startIterRows();
+			while (bMore)
+			{
+				if (db->getNull("PublicKey"))
+				{
+					nothing();	// We ignore entrys we don't have public keys for.
+				}
+				else
+				{
+					std::string	strDomain;
+					std::string	strPublicKey;
+					std::string	strSource;
+
+					db->getStr("Domain", strDomain);
+					db->getStr("PublicKey", strPublicKey);
+					db->getStr("Source", strSource);
+
+					int			iNode		= vsnNodes.size();
+
+					umPulicIdx[strPublicKey]	= iNode;
+					umDomainIdx[strDomain]		= iNode;
+
+					scoreNode	snCurrent;
+
+					snCurrent.strValidator	= strPublicKey;
+					snCurrent.iScore		= iSourceScore(static_cast<validatorSource>(strSource[0]));
+					snCurrent.iRoundSeed	= snCurrent.iScore;
+					snCurrent.iRoundScore	= 0;
+					snCurrent.iSeen			= -1;
+
+					vsnNodes.push_back(snCurrent);
+				}
+
+				bMore	= db->getNextRow();
+			}
+
+			db->endIterRows();
+		}
+	}
+
+	BOOST_FOREACH(scoreNode& sn, vsnNodes)
+	{
+		std::cerr << str(boost::format("%s| %d, %d, %d")
+			% sn.strValidator
+			% sn.iScore
+			% sn.iRoundScore
+			% sn.iRoundSeed)
+			<< std::endl;
+	}
+
+	// XXX When we have a CAS do SeedNodes here.
+
+	// std::cerr << str(boost::format("vsnNodes.size=%d") % vsnNodes.size()) << std::endl;
+
+	// Step through growing list of nodes adding each validation list.
+	for (int iNode=0; iNode != vsnNodes.size(); iNode++)
+	{
+		scoreNode&			sn				= vsnNodes[iNode];
+		std::string&		strValidator	= sn.strValidator;
+		std::vector<int>&	viReferrals		= sn.viReferrals;
+
+		strSql	= str(boost::format("SELECT Referral FROM ValidatorReferrals WHERE Validator=%s ORDER BY Entry;")
+					% db->escape(strValidator));
+
+		ScopedLock	sl(theApp->getWalletDB()->getDBLock());
+
+		if (db->executeSQL(strSql))
+		{
+			bool	bMore	= db->startIterRows();
+			while (bMore)
+			{
+				std::string	strReferral;
+				int			iReferral;
+
+				db->getStr("Referral", strReferral);
+
+				strIndex::iterator	itEntry;
+
+				NewcoinAddress		na;
+
+				if (na.setNodePublic(strReferral))
+				{
+					// Referring a public key.
+					itEntry		= umPulicIdx.find(strReferral);
+
+					if (itEntry == umPulicIdx.end())
+					{
+						// Not found add public key to list of nodes.
+						iReferral				= vsnNodes.size();
+
+						umPulicIdx[strReferral]	= iReferral;
+
+						scoreNode	snCurrent;
+
+						snCurrent.strValidator	= strReferral;
+						snCurrent.iScore		= iSourceScore(vsReferral);
+						snCurrent.iRoundSeed	= snCurrent.iScore;
+						snCurrent.iRoundScore	= 0;
+						snCurrent.iSeen			= -1;
+
+						vsnNodes.push_back(snCurrent);
+					}
+					else
+					{
+						iReferral	=  itEntry->second;
+					}
+
+					// std::cerr << str(boost::format("%s: Public=%s iReferral=%d") % strValidator % strReferral % iReferral) << std::endl;
+
+				}
+				else
+				{
+					// Referring a domain.
+					itEntry		= umDomainIdx.find(strReferral);
+					iReferral	= itEntry == umDomainIdx.end()
+									? -1			// We ignore domains we can't find entires for.
+									: itEntry->second;
+
+					// std::cerr << str(boost::format("%s: Domain=%s iReferral=%d") % strValidator % strReferral % iReferral) << std::endl;
+				}
+
+				if (iReferral >= 0 && iNode != iReferral)
+					viReferrals.push_back(iReferral);
+
+				bMore	= db->getNextRow();
+			}
+
+			db->endIterRows();
+		}
+	}
+
+	bool	bDist	= true;
+
+    for (int i = SCORE_ROUNDS; bDist && i--;)
+		bDist	= scoreRound(vsnNodes);
+
+	std::cerr << "Scored:" << std::endl;
+
+	BOOST_FOREACH(scoreNode& sn, vsnNodes)
+	{
+		std::cerr << str(boost::format("%s| %d, %d, %d: [%s]")
+			% sn.strValidator
+			% sn.iScore
+			% sn.iRoundScore
+			% sn.iRoundSeed
+			% strJoin(sn.viReferrals.begin(), sn.viReferrals.end(), ","))
+			<< std::endl;
+	}
+
+	ScopedLock sl(theApp->getWalletDB()->getDBLock());
+
+	db->executeSQL("BEGIN;");
+	db->executeSQL("UPDATE TrustedNodes SET Score = 0 WHERE Score != 0;");
+
+	if (vsnNodes.size())
+	{
+		// Merge existing Seens.
+		std::vector<std::string>	vstrPublicKeys;
+
+		vstrPublicKeys.resize(vsnNodes.size());
+
+		for (int iNode=vsnNodes.size(); iNode--;)
+		{
+			vstrPublicKeys[iNode]	= db->escape(vsnNodes[iNode].strValidator);
+		}
+
+		if (db->executeSQL(str(boost::format("SELECT PublicKey,Seen FROM TrustedNodes WHERE PublicKey IN (%s);")
+				% strJoin(vstrPublicKeys.begin(), vstrPublicKeys.end(), ","))))
+		{
+			bool	bMore	= db->startIterRows();
+			while (bMore)
+			{
+				std::string	strPublicKey;
+
+				db->getStr("PublicKey", strPublicKey);
+
+				vsnNodes[umPulicIdx[strPublicKey]].iSeen	= db->getNull("Seen") ? -1 : db->getInt("Seen");
+
+				bMore	= db->getNextRow();
+			}
+
+			db->endIterRows();
+		}
+	}
+
+	if (vsnNodes.size())
+	{
+		// Update old PublicKeys and add new ones.
+		std::vector<std::string>	vstrValues;
+
+		vstrValues.resize(vsnNodes.size());
+
+		for (int iNode=vsnNodes.size(); iNode--;)
+		{
+			scoreNode& sn	= vsnNodes[iNode];
+
+			if (sn.iSeen >= 0)
+			{
+				vstrValues[iNode]	= str(boost::format("(%s,%s,%s)")
+					% db->escape(sn.strValidator)
+					% sn.iScore
+					% sn.iSeen);
+			}
+			else
+			{
+				vstrValues[iNode]	= str(boost::format("(%s,%s,NULL)")
+					% db->escape(sn.strValidator)
+					% sn.iScore);
+			}
+		}
+
+		db->executeSQL(str(boost::format("REPLACE INTO TrustedNodes (PublicKey,Score,Seen) VALUES %s;")
+				% strJoin(vstrValues.begin(), vstrValues.end(), ",")));
+	}
+
+	db->executeSQL("COMMIT;");
 }
 
 // Begin scoring if timer was not cancelled.
@@ -93,6 +379,8 @@ void UniqueNodeList::scoreTimerHandler(const boost::system::error_code& err)
 		mtpScoreStart	= boost::posix_time::second_clock::universal_time();			// Scoring.
 
 		std::cerr << "Scoring start." << std::endl;
+
+		scoreCompute();
 
 		std::cerr << "Scoring end." << std::endl;
 
@@ -169,13 +457,15 @@ void UniqueNodeList::processValidators(const std::string& strSite, const std::st
 			% strEscNodePublic);
 
 		ScopedLock	sl(theApp->getWalletDB()->getDBLock());
-		db->executeSQL(strSql.c_str());
+		db->executeSQL(strSql);
 		// XXX Check result.
 	}
 
 	// Add new referral entries.
 	if (pmtVecStrValidators && pmtVecStrValidators->size()) {
-		std::ostringstream	ossValues;
+		std::vector<std::string> vstrValues;
+
+		vstrValues.resize(MIN(pmtVecStrValidators->size(), REFERRAL_VALIDATORS_MAX));
 
 		int	i = 0;
 		BOOST_FOREACH(std::string strReferral, *pmtVecStrValidators)
@@ -183,9 +473,7 @@ void UniqueNodeList::processValidators(const std::string& strSite, const std::st
 			if (i == REFERRAL_VALIDATORS_MAX)
 				break;
 
-			ossValues <<
-				str(boost::format("%s(%s,%d,%s)")
-					% ( i ? "," : "") % strEscNodePublic % i % db->escape(strReferral));
+			vstrValues[i]	= str(boost::format("(%s,%d,%s)") % strEscNodePublic % i % db->escape(strReferral));
 			i++;
 
 			NewcoinAddress	naValidator;
@@ -203,11 +491,11 @@ void UniqueNodeList::processValidators(const std::string& strSite, const std::st
 		}
 
 		std::string strSql	= str(boost::format("INSERT INTO ValidatorReferrals (Validator,Entry,Referral) VALUES %s;")
-			% ossValues.str());
+			% strJoin(vstrValues.begin(), vstrValues.end(), ","));
 
 		ScopedLock sl(theApp->getWalletDB()->getDBLock());
 
-		db->executeSQL(strSql.c_str());
+		db->executeSQL(strSql);
 		// XXX Check result.
 	}
 
@@ -495,7 +783,6 @@ void UniqueNodeList::fetchNext()
 	if (!bFull)
 	{
 		// Determine next scan.
-		std::string strSql("SELECT Domain,Next FROM SeedDomains ORDER BY Next ASC LIMIT 1;");
 		std::string	strDomain;
 		boost::posix_time::ptime	tpNext;
 		boost::posix_time::ptime	tpNow;
@@ -503,7 +790,8 @@ void UniqueNodeList::fetchNext()
 		ScopedLock sl(theApp->getWalletDB()->getDBLock());
 		Database *db=theApp->getWalletDB()->getDB();
 
-		if (db->executeSQL(strSql.c_str()) && db->startIterRows())
+		if (db->executeSQL("SELECT Domain,Next FROM SeedDomains ORDER BY Next LIMIT 1;")
+			&& db->startIterRows())
 		{
 			int			iNext	= db->getInt("Next");
 
@@ -632,7 +920,7 @@ bool UniqueNodeList::getSeedDomains(const std::string& strDomain, seedDomain& ds
 
 	ScopedLock	sl(theApp->getWalletDB()->getDBLock());
 
-	bResult	= db->executeSQL(strSql.c_str()) && db->startIterRows();
+	bResult	= db->executeSQL(strSql) && db->startIterRows();
 	if (bResult)
 	{
 		std::string		strPublicKey;
@@ -662,7 +950,7 @@ bool UniqueNodeList::getSeedDomains(const std::string& strDomain, seedDomain& ds
 		iFetch	= db->getInt("Fetch");
 			dstSeedDomain.tpFetch	= ptFromSeconds(iFetch);
 		db->getStr("Sha256", strSha256);
-			dstSeedDomain.iSha256.SetHex(strSha256.c_str());
+			dstSeedDomain.iSha256.SetHex(strSha256);
 		db->getStr("Comment", dstSeedDomain.strComment);
 
 		db->endIterRows();
@@ -694,7 +982,7 @@ void UniqueNodeList::setSeedDomains(const seedDomain& sdSource, bool bNext)
 
 	ScopedLock	sl(theApp->getWalletDB()->getDBLock());
 
-	if (!db->executeSQL(strSql.c_str()))
+	if (!db->executeSQL(strSql))
 	{
 		// XXX Check result.
 		std::cerr << "setSeedDomains: failed." << std::endl;
@@ -710,54 +998,41 @@ void UniqueNodeList::setSeedDomains(const seedDomain& sdSource, bool bNext)
 // XXX allow update of comment.
 void UniqueNodeList::nodeAddPublic(NewcoinAddress naNodePublic, std::string strComment)
 {
-	Database* db=theApp->getWalletDB()->getDB();
-
 	std::string strPublicKey	= naNodePublic.humanNodePublic();
-	std::string strTmp;
 
-	std::string strSql="INSERT INTO TrustedNodes (PublicKey,Comment) values (";
-	strSql.append(db->escape(strPublicKey));
-	strSql.append(",");
-	strSql.append(db->escape(strComment));
-	strSql.append(")");
-
+	Database* db=theApp->getWalletDB()->getDB();
 	ScopedLock sl(theApp->getWalletDB()->getDBLock());
-	db->executeSQL(strSql.c_str());
+
+	db->executeSQL(str(boost::format("INSERT INTO TrustedNodes (PublicKey,Comment) values (%s,%s);")
+		% db->escape(strPublicKey) % db->escape(strComment)));
 }
 
 void UniqueNodeList::nodeRemove(NewcoinAddress naNodePublic)
 {
-	Database* db=theApp->getWalletDB()->getDB();
-
 	std::string strPublic	= naNodePublic.humanNodePublic();
-	std::string strTmp;
 
-	std::string strSql		= "DELETE FROM TrustedNodes where PublicKey=";
-	db->escape(reinterpret_cast<const unsigned char*>(strPublic.c_str()), strPublic.size(), strTmp);
-	strSql.append(strTmp);
-
+	Database* db=theApp->getWalletDB()->getDB();
 	ScopedLock sl(theApp->getWalletDB()->getDBLock());
-	db->executeSQL(strSql.c_str());
+
+	db->executeSQL(str(boost::format("DELETE FROM TrustedNodes where PublicKey=%s") % db->escape(strPublic)));
 }
 
 void UniqueNodeList::nodeReset()
 {
 	Database* db=theApp->getWalletDB()->getDB();
 
-	std::string strSql		= "DELETE FROM TrustedNodes";
 	ScopedLock sl(theApp->getWalletDB()->getDBLock());
-	db->executeSQL(strSql.c_str());
+	db->executeSQL("DELETE FROM TrustedNodes");
 }
 
 Json::Value UniqueNodeList::getUnlJson()
 {
 	Database* db=theApp->getWalletDB()->getDB();
-	std::string strSql="SELECT * FROM TrustedNodes;";
 
     Json::Value ret(Json::arrayValue);
 
 	ScopedLock sl(theApp->getWalletDB()->getDBLock());
-	if (db->executeSQL(strSql.c_str()))
+	if (db->executeSQL("SELECT * FROM TrustedNodes;"))
 	{
 		bool	more	= db->startIterRows();
 		while (more)
