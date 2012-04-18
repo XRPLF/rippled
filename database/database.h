@@ -35,6 +35,10 @@ public:
 	// returns true if the query went ok
 	virtual bool executeSQL(const char* sql, bool fail_okay=false)=0;
 
+	bool executeSQL(std::string strSql, bool fail_okay=false) {
+	    return executeSQL(strSql.c_str(), fail_okay);
+	}
+
 	// tells you how many rows were changed by an update or insert
 	virtual int getNumRowsAffected()=0;
 	virtual int getLastInsertID()=0;
