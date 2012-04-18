@@ -135,10 +135,10 @@ const char *WalletDBInit[] = {
 	//  Computed trust score.  Higher is better.
 	// Seen:
 	//  Last validation received.
-	"CREATE TABLE TrustedNodes (					\
-		PublicKey		CHARACTER(53) PRIMARY KEY NOT NULL,		\
-		Score			INTEGER,					\
-		Seen			DATETIME					\
+	"CREATE TABLE TrustedNodes (							\
+		PublicKey		CHARACTER(53) PRIMARY KEY NOT NULL,	\
+		Score			INTEGER DEFAULT 0 NOT NULL,			\
+		Seen			DATETIME							\
 	);",
 
 	// List of referrals.
@@ -148,12 +148,15 @@ const char *WalletDBInit[] = {
 	// Index:
 	//  Entry index in [validators] table.
 	// Referral:
-	//  Public key of referred or Domain.
-	// XXX Index by validator for fast delete
+	//  This is the form provided by the newcoin.txt:
+	//  - Public key for CAS based referral.
+	//  - Domain for domain based referral.
+	// XXX Might keep a reference count for garbage collection.
 	"CREATE TABLE ValidatorReferrals (				\
 		Validator		CHARACTER(53),				\
 		Entry			INTEGER,					\
-		Referral		TEXT						\
+		Referral		TEXT,						\
+		PRIMARY KEY (Validator,Entry)				\
 	);",
 
 	// List of referrals.
