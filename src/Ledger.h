@@ -15,12 +15,27 @@
 #include "Hanko.h"
 #include "AccountState.h"
 #include "SHAMap.h"
+#include "SerializedLedger.h"
 
+
+enum LedgerStateParms
+{
+	// input flags
+	lepCREATE,		  			// Create if not present
+
+	// output flags
+	lepOKAY,					// success
+	lepMISSING,					// No node in that slot
+	lepWRONGTYPE,				// Node of different type there
+	lepCREATED,					// Node was created
+	lepERROR,					// error
+};
 
 class Ledger : public boost::enable_shared_from_this<Ledger>
 { // The basic Ledger structure, can be opened, closed, or synching
 public:
 	typedef boost::shared_ptr<Ledger> pointer;
+
 
 	enum TransResult
 	{
@@ -95,22 +110,34 @@ public:
 	bool isAcquiringTx(void);
 	bool isAcquiringAS(void);
 
-	// mid level functions
+	// Transaction Functions
 	bool hasTransaction(const uint256& TransID) const;
-	AccountState::pointer getAccountState(const NewcoinAddress& acctID);
 	Transaction::pointer getTransaction(const uint256& transID) const;
-	uint64 getBalance(const NewcoinAddress& acctID) const;
 
-	// high level functions
+	// OLD high level functions
+	uint64 getBalance(const NewcoinAddress& acctID) const;
+	AccountState::pointer getAccountState(const NewcoinAddress& acctID);
 	TransResult applyTransaction(Transaction::pointer trans);
 	TransResult removeTransaction(Transaction::pointer trans);
 	TransResult hasTransaction(Transaction::pointer trans);
 	Ledger::pointer switchPreviousLedger(Ledger::pointer oldPrevious, Ledger::pointer newPrevious,  int limit);
 
+	// high-level functions
+	LedgerStateParms writeBack(LedgerStateParms parms, SerializedLedgerEntry::pointer);
+	SerializedLedgerEntry::pointer getAccountRoot(LedgerStateParms& parms, const uint160& accountID);
+	SerializedLedgerEntry::pointer getNickname(LedgerStateParms& parms, const std::string& nickname);
+	SerializedLedgerEntry::pointer getNickname(LedgerStateParms& parms, const uint256& nickHash);
+//	SerializedLedgerEntry::pointer getRippleState(LedgerStateParms parms, const uint160& offeror,
+//		const uint160& borrower, const Currency& currency);
+
 	// database functions
 	static void saveAcceptedLedger(Ledger::pointer);
 	static Ledger::pointer loadByIndex(uint32 ledgerIndex);
 	static Ledger::pointer loadByHash(const uint256& ledgerHash);
+
+	// index calculation functions
+	static uint256 getAccountRootIndex(const uint160& account);
+	static uint256 getRippleIndex(const uint160& account, const uint160& extendTo, const uint160& currency);
 
 	Ledger::pointer closeLedger(uint64 timestamp);
 	bool isCompatible(boost::shared_ptr<Ledger> other);
@@ -120,5 +147,15 @@ public:
 
 	static bool unitTest();
 };
+
+inline LedgerStateParms operator|(const LedgerStateParms& l1, const LedgerStateParms& l2)
+{
+	return static_cast<LedgerStateParms>(static_cast<int>(l1) | static_cast<int>(l2));
+}
+
+inline LedgerStateParms operator&(const LedgerStateParms& l1, const LedgerStateParms& l2)
+{
+	return static_cast<LedgerStateParms>(static_cast<int>(l1) & static_cast<int>(l2));
+}
 
 #endif

@@ -17,6 +17,7 @@ protected:
 	LedgerEntryFormat* mFormat;
 
 public:
+	SerializedLedgerEntry(const Serializer& s, const uint256& index);
 	SerializedLedgerEntry(SerializerIterator& sit, const uint256& index);
 	SerializedLedgerEntry(LedgerEntryType type);
 

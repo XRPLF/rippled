@@ -35,6 +35,7 @@ class Serializer
 	int add256(const uint256&);		// transaction and ledger hashes
 	int addRaw(const std::vector<unsigned char> &vector);
 	int addRaw(const void *ptr, int len);
+	int addRaw(const Serializer& s);
 
 	int addVL(const std::vector<unsigned char> &vector);
 	int addVL(const void *ptr, int len);
@@ -61,7 +62,6 @@ class Serializer
 	bool getTaggedList(std::list<TaggedListItem>&, int offset, int& length) const;
 	bool getTaggedList(std::vector<TaggedListItem>&, int offset, int& length) const;
 
-
 	// hash functions
 	uint160 getRIPEMD160(int size=-1) const;
 	uint256 getSHA256(int size=-1) const;
@@ -81,7 +81,14 @@ class Serializer
 	void erase() { mData.clear(); }
 	int removeLastByte();
 	bool chop(int num);
-	
+
+	// vector-like functions
+	std::vector<unsigned char>::iterator begin() { return mData.begin(); }
+	std::vector<unsigned char>::iterator end() { return mData.end(); }
+	std::vector<unsigned char>::const_iterator begin() const { return mData.begin(); }
+	std::vector<unsigned char>::const_iterator end() const { return mData.end(); }
+	std::vector<unsigned char>::size_type size() const { return mData.size(); }
+
 	// signature functions
 	bool checkSignature(int pubkeyOffset, int signatureOffset) const;
 	bool checkSignature(const std::vector<unsigned char>& signature, CKey& rkey) const;

@@ -91,7 +91,7 @@ public:
 
 private:
 	uint256 mTag;
-	std::vector<unsigned char> mData;
+	Serializer mData;
 
 public:
 
@@ -102,11 +102,12 @@ public:
 	// for account balances
 	SHAMapItem(const uint160& tag, const std::vector<unsigned char>& data);
 
-	const uint256& getTag() const { return mTag; }
-	std::vector<unsigned char> getData() const { return mData; }
-	const std::vector<unsigned char>& peekData() const { return mData; }
-	void addRaw(Serializer &s) { s.addRaw(mData); }
-	void addRaw(std::vector<unsigned char>& s) { s.insert(s.end(), mData.begin(), mData.end()); }
+	const uint256& getTag() const				{ return mTag; }
+	std::vector<unsigned char> getData() const	{ return mData.getData(); }
+	const std::vector<unsigned char>& peekData() const { return mData.peekData(); }
+	Serializer& peekSerializer()				{ return mData; }
+	void addRaw(Serializer &s)					{ s.addRaw(mData); }
+	void addRaw(std::vector<unsigned char>& s)	{ s.insert(s.end(), mData.begin(), mData.end()); }
 
 	void updateData(const std::vector<unsigned char>& data) { mData=data; }
 
