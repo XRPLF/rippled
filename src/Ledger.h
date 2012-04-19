@@ -77,6 +77,9 @@ protected:
 	
 	static Ledger::pointer getSQL(const std::string& sqlStatement);
 
+	SerializedLedgerEntry::pointer getASNode(LedgerStateParms& parms, const uint256& nodeID,
+	 LedgerEntryType let);
+
 public:
 	Ledger(const NewcoinAddress& masterID, uint64 startAmount); // used for the starting bootstrap ledger
 	Ledger(const uint256 &parentHash, const uint256 &transHash, const uint256 &accountHash,
