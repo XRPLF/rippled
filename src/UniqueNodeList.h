@@ -39,6 +39,8 @@ public:
 		vsReferral	= 'R',
 	} validatorSource;
 
+	typedef long score;
+
 private:
 	// Misc persistent information
 	boost::posix_time::ptime		mtpScoreUpdated;
@@ -68,6 +70,8 @@ private:
 	} scoreNode;
 
 	typedef boost::unordered_map<std::string,int> strIndex;
+	typedef std::pair<std::string,int> ipPort;
+	typedef boost::unordered_map<std::pair< std::string, int>, score>	epScore;
 
 	bool scoreRound(std::vector<scoreNode>& vsnNodes);
 	int iSourceScore(validatorSource vsWhy);
@@ -78,7 +82,7 @@ private:
 	boost::posix_time::ptime		mtpScoreStart;		// Time currently started scoring.
 	boost::asio::deadline_timer		mdtScoreTimer;		// Timer to start scoring.
 
-	void scoreNext();									// Update scoring timer.
+	void scoreNext(bool bNow);							// Update scoring timer.
 	void scoreCompute();
 	void scoreTimerHandler(const boost::system::error_code& err);
 
@@ -89,16 +93,17 @@ private:
 	boost::asio::deadline_timer		mdtFetchTimer;		// Timer to start fetching.
 
 	void fetchNext();
+	void fetchDirty();
 	void fetchFinish();
 	void fetchProcess(std::string strDomain);
 	void fetchTimerHandler(const boost::system::error_code& err);
 
 	void getValidatorsUrl(NewcoinAddress naNodePublic, section secSite);
-	void getIpsUrl(section secSite);
-	void responseIps(const std::string& strSite, const boost::system::error_code& err, const std::string strIpsFile);
+	void getIpsUrl(NewcoinAddress naNodePublic, section secSite);
+	void responseIps(const std::string& strSite, NewcoinAddress naNodePublic, const boost::system::error_code& err, const std::string strIpsFile);
 	void responseValidators(const std::string& strValidatorsUrl, NewcoinAddress naNodePublic, section secSite, const std::string& strSite, const boost::system::error_code& err, const std::string strValidatorsFile);
 
-	void processIps(const std::string& strSite, section::mapped_type* pmtVecStrIps);
+	void processIps(const std::string& strSite, NewcoinAddress naNodePublic, section::mapped_type* pmtVecStrIps);
 	void processValidators(const std::string& strSite, const std::string& strValidatorsSrc, NewcoinAddress naNodePublic, section::mapped_type* pmtVecStrValidators);
 
 	void processFile(const std::string strDomain, NewcoinAddress naNodePublic, section secSite);
@@ -117,6 +122,8 @@ public:
 	void nodeRemove(NewcoinAddress naNodePublic);
 	void nodeDefault(std::string strValidators);
 	void nodeReset();
+
+	void nodeScore();
 
 	Json::Value getUnlJson();
 };

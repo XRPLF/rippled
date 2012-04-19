@@ -52,6 +52,7 @@ class RPCServer  : public boost::enable_shared_from_this<RPCServer>
 	Json::Value doUnlFetch(Json::Value& params);
 	Json::Value doUnlList(Json::Value& params);
 	Json::Value doUnlReset(Json::Value& params);
+	Json::Value doUnlScore(Json::Value& params);
 
 	Json::Value doValidatorCreate(Json::Value& params);
 

@@ -145,38 +145,44 @@ const char *WalletDBInit[] = {
 	// - There may be multiple sources for a Validator.  The last source is used.
 	// Validator:
 	//  Public key of referrer.
-	// Index:
+	// Entry:
 	//  Entry index in [validators] table.
 	// Referral:
 	//  This is the form provided by the newcoin.txt:
 	//  - Public key for CAS based referral.
 	//  - Domain for domain based referral.
-	// XXX Might keep a reference count for garbage collection.
+	// XXX Do garbage collection when validators have no references.
 	"CREATE TABLE ValidatorReferrals (				\
-		Validator		CHARACTER(53),				\
-		Entry			INTEGER,					\
-		Referral		TEXT,						\
+		Validator		CHARACTER(53) NOT NULL,		\
+		Entry			INTEGER NOT NULL,			\
+		Referral		TEXT NOT NULL,				\
 		PRIMARY KEY (Validator,Entry)				\
 	);",
 
-	// List of referrals.
+	// List of referrals from newcoin.txt files.
 	// Validator:
 	//  Public key of referree.
-	// Index:
+	// Entry:
 	//  Entry index in [validators] table.
 	// IP:
 	//  IP of referred.
-	"CREATE TABLE IpReferrals (						\
-		Validator		CHARACTER(53),				\
-		Index			INTEGER,					\
-		IP				TEXT						\
+	// Port:
+	//  -1 = Default
+	// XXX Do garbage collection when ips have no references.
+	"CREATE TABLE IpReferrals (							\
+		Validator		CHARACTER(53) NOT NULL,			\
+		Entry			INTEGER NOT NULL,				\
+		IP				TEXT NOT NULL,					\
+		Port			INTEGER NOT NULL DEFAULT -1,	\
+		PRIMARY KEY (Validator,Entry)					\
 	);",
 
 	// Table of IPs to contact the nextwork.
 	// IP:
 	//  IP address to contact.
 	// Port:
-	//  Port to contact. 0=default.
+	//  Port to contact.
+	//  -1 = Default
 	// Score:
 	//  Computed trust score.  Higher is better.
 	// Source:
@@ -187,12 +193,13 @@ const char *WalletDBInit[] = {
 	// Contact:
 	//  Time of last contact.
 	//  XXX Update on connect and hourly.
-	"CREATE TABLE PeerIps (							\
-		IP				TEXT PRIMARY KEY,			\
-		PORT			INTEGER,					\
-		Score			INTEGER,					\
-		Source			CHARACTER(1),				\
-		Contact			DATETIME					\
+	"CREATE TABLE PeerIps (								\
+		IP				TEXT NOT NULL,					\
+		Port			INTEGER NOT NULL DEFAULT -1,	\
+		Score			INTEGER NOT NULL,				\
+		Source			CHARACTER(1) NOT NULL,			\
+		Contact			DATETIME,						\
+		PRIMARY KEY (IP,PORT)							\
 	);",
 };
 
@@ -217,6 +224,7 @@ const char *HashNodeDBInit[] = {
 		LedgerIndex	BIGINT UNSIGNED,				\
 		Object		BLOB							\
 	);",
+
 	"CREATE INDEX ObjectLocate ON					\
 		CommittedObjects(LedgerIndex, ObjType);"
 };
@@ -231,7 +239,7 @@ const char *NetNodeDBInit[] = {
 		LastSeen		TEXT,						\
 		HaveContactInfo	CHARACTER(1),				\
 		ContactObject	BLOB						\
-		);"
+	);"
 };
 
 
