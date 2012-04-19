@@ -694,6 +694,17 @@ Json::Value RPCServer::doUnlReset(Json::Value& params) {
 	else return "invalid params";
 }
 
+// unl_score
+Json::Value RPCServer::doUnlScore(Json::Value& params) {
+	if(!params.size())
+	{
+		theApp->getUNL().nodeScore();
+
+		return "scoring requested";
+	}
+	else return "invalid params";
+}
+
 Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params)
 {
 	std::cerr << "RPC:" << command << std::endl;
@@ -710,6 +721,7 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 	if(command=="unl_delete") return doUnlDelete(params);
 	if(command=="unl_list") return doUnlList(params);
 	if(command=="unl_reset") return doUnlReset(params);
+	if(command=="unl_score") return doUnlScore(params);
 
 	if(command=="validation_create") return doValidatorCreate(params);
 
