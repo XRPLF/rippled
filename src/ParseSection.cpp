@@ -43,10 +43,7 @@ section ParseSection(const std::string strInput, const bool bTrim)
 		{
 			// Another line in a section.
 			if (bTrim)
-			{
-				boost::algorithm::trim_right_if(strValue, boost::algorithm::is_space());
-				boost::algorithm::trim_left_if(strValue, boost::algorithm::is_space());
-			}
+				boost::algorithm::trim(strValue);
 
 			secResult[strSection].push_back(strValue);
 		}
