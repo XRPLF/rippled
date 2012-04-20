@@ -14,53 +14,52 @@
 Transaction::Transaction(LocalAccount::pointer fromLocalAccount, const NewcoinAddress& toAccount, uint64 amount,
 	uint32 ident, uint32 ledger) : mInLedger(0), mStatus(NEW)
 {
-	mAccountFrom=fromLocalAccount->getAddress();
-	mAccountTo=toAccount;
+	mAccountFrom = fromLocalAccount->getAddress();
+	mAccountTo = toAccount;
 
-	mTransaction=boost::make_shared<SerializedTransaction>(ttMAKE_PAYMENT);
+	mTransaction = boost::make_shared<SerializedTransaction>(ttMAKE_PAYMENT);
 
-	mFromPubKey=fromLocalAccount->getPublicKey();
+	mFromPubKey = fromLocalAccount->getPublicKey();
 	assert(mFromPubKey);
 	mTransaction->setSigningAccount(mFromPubKey->GetPubKey());
 
 	mTransaction->setSequence(fromLocalAccount->getTxnSeq());
-	assert(mTransaction->getSequence()!=0);
+	assert(mTransaction->getSequence() != 0);
 	mTransaction->setTransactionFee(100); // for now
 
 	mTransaction->setITFieldVL(sfDestination, toAccount.getAccountPublic());
 	mTransaction->setITFieldU64(sfAmount, amount);
-	if(ledger!=0)
+	if (ledger != 0)
 	{
 		mTransaction->makeITFieldPresent(sfTargetLedger);
 		mTransaction->setITFieldU32(sfTargetLedger, ledger);
 	}
-	if(ident!=0)
+	if (ident != 0)
 	{
 		mTransaction->makeITFieldPresent(sfSourceTag);
 		mTransaction->setITFieldU32(sfSourceTag, ident);
 	}
 
 	assert(mFromPubKey);
-	if(!sign(fromLocalAccount))
+	if (!sign(fromLocalAccount))
 	{
 #ifdef DEBUG
 		std::cerr << "Unable to sign transaction" << std::endl;
 #endif
-		mStatus=INCOMPLETE;
+		mStatus = INCOMPLETE;
 	}
 }
 
 Transaction::Transaction(SerializedTransaction::pointer sit, bool validate) : mStatus(INVALID), mTransaction(sit)
 {
-	uint160	toAccountID;
-	uint160	fromAccountID;
+	uint160	toAccountID, fromAccountID;
 	std::vector<unsigned char> pubKey;
 
 	try
 	{
-		toAccountID=mTransaction->getITFieldH160(sfDestination);
-		pubKey=mTransaction->getSigningAccount();
-		mTransactionID=mTransaction->getTransactionID();
+		toAccountID = mTransaction->getITFieldH160(sfDestination);
+		pubKey = mTransaction->getRawSigningAccount();
+		mTransactionID = mTransaction->getTransactionID();
 	}
 	catch(...)
 	{
@@ -70,13 +69,13 @@ Transaction::Transaction(SerializedTransaction::pointer sit, bool validate) : mS
 	mAccountTo.setAccountID(toAccountID);
 	mAccountFrom.setAccountID(fromAccountID);
 
-	mFromPubKey=boost::make_shared<CKey>();
-	if(!mFromPubKey->SetPubKey(pubKey)) return;
+	mFromPubKey = boost::make_shared<CKey>();
+	if (!mFromPubKey->SetPubKey(pubKey)) return;
 	mAccountFrom.setAccountPublic(pubKey);
-	mFromPubKey=theApp->getPubKeyCache().store(mAccountFrom, mFromPubKey);
+	mFromPubKey = theApp->getPubKeyCache().store(mAccountFrom, mFromPubKey);
 
-	if(!validate || checkSign())
-		mStatus=NEW;
+	if (!validate || checkSign())
+		mStatus = NEW;
 }
 
 Transaction::Transaction(const std::vector<unsigned char>& raw, bool validate) : mStatus(INVALID)
@@ -89,22 +88,22 @@ Transaction::Transaction(const std::vector<unsigned char>& raw, bool validate) :
 	{
 		Serializer s(raw);
 		SerializerIterator sit(s);
-		mTransaction=boost::make_shared<SerializedTransaction>(boost::ref(sit), -1);
+		mTransaction = boost::make_shared<SerializedTransaction>(boost::ref(sit), -1);
 
-		mFromPubKey=boost::make_shared<CKey>();
-		if(!mFromPubKey->SetPubKey(pubKey)) return;
+		mFromPubKey = boost::make_shared<CKey>();
+		if (!mFromPubKey->SetPubKey(pubKey)) return;
 		mAccountFrom.setAccountPublic(pubKey);
-		mFromPubKey=theApp->getPubKeyCache().store(mAccountFrom, mFromPubKey);
-		if(!mFromPubKey->SetPubKey(pubKey)) return;
+		mFromPubKey = theApp->getPubKeyCache().store(mAccountFrom, mFromPubKey);
+		if (!mFromPubKey->SetPubKey(pubKey)) return;
 		mAccountFrom.setAccountPublic(pubKey);
-		mFromPubKey=theApp->getPubKeyCache().store(mAccountFrom, mFromPubKey);
+		mFromPubKey = theApp->getPubKeyCache().store(mAccountFrom, mFromPubKey);
 	}
-	catch(...)
+	catch (...)
 	{
 		return;
 	}
-	if(!validate || checkSign())
-		mStatus=NEW;
+	if (!validate || checkSign())
+		mStatus = NEW;
 }
 
 Transaction::Transaction(const NewcoinAddress& fromID, const NewcoinAddress& toID,

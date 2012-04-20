@@ -15,10 +15,13 @@ public:
 	typedef boost::shared_ptr<SerializedTransaction> pointer;
 
 protected:
-	TransactionType type;
+	uint160 mSigningAccount;
+	TransactionType mType;
 	STVariableLength mSignature;
 	STObject mMiddleTxn, mInnerTxn;
 	TransactionFormat* mFormat;
+
+	void updateSigningAccount();
 
 public:
 	SerializedTransaction(SerializerIterator& sit, int length); // -1=all remaining, 0=get from sit
@@ -42,12 +45,13 @@ public:
 	// middle transaction functions
 	uint32 getVersion() const;
 	void setVersion(uint32);
-	TransactionType getTxnType() const { return type; }
+	TransactionType getTxnType() const { return mType; }
 	uint64 getTransactionFee() const;
 	void setTransactionFee(uint64);
-	std::vector<unsigned char> getSigningAccount() const;
-	const std::vector<unsigned char>& peekSigningAccount() const;
-	std::vector<unsigned char>& peekSigningAccount();
+	uint160 getSigningAccount() const;
+	std::vector<unsigned char> getRawSigningAccount() const;
+	const std::vector<unsigned char>& peekRawSigningAccount() const;
+	std::vector<unsigned char>& peekRawSigningAccount();
 	void setSigningAccount(const std::vector<unsigned char>& s);
 	std::string getTransactionType() const { return mFormat->t_name; }
 

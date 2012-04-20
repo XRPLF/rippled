@@ -1,9 +1,9 @@
 
 #include "SerializedTransaction.h"
 
-SerializedTransaction::SerializedTransaction(TransactionType type)
+SerializedTransaction::SerializedTransaction(TransactionType type) : mType(type)
 {
-	mFormat=getTxnFormat(type);
+	mFormat = getTxnFormat(type);
 	if (mFormat == NULL) throw std::runtime_error("invalid transaction type");
 
 	mMiddleTxn.giveObject(new STUInt32("Magic", TransactionMagic));
@@ -31,13 +31,21 @@ SerializedTransaction::SerializedTransaction(SerializerIterator& sit, int length
 	mMiddleTxn.giveObject(new STVariableLength("SigningAccount", sit.getVL()));
 	mMiddleTxn.giveObject(new STUInt32("Sequence", sit.get32()));
 
-	int type = sit.get32();
-	mMiddleTxn.giveObject(new STUInt32("Type", type));
-	mFormat = getTxnFormat(static_cast<TransactionType>(type));
+	mType = static_cast<TransactionType>(sit.get32());
+	mMiddleTxn.giveObject(new STUInt32("Type", static_cast<uint32>(mType)));
+	mFormat = getTxnFormat(mType);
 	if (!mFormat) throw std::runtime_error("Transaction has invalid type");
 	mMiddleTxn.giveObject(new STUInt64("Fee", sit.get64()));
 
 	mInnerTxn = STObject(mFormat->elements, sit, "InnerTransaction");
+	updateSigningAccount();
+}
+
+void SerializedTransaction::updateSigningAccount()
+{
+	NewcoinAddress a;
+	a.setAccountPublic(peekRawSigningAccount());
+	mSigningAccount = a.getAccountID();
 }
 
 int SerializedTransaction::getLength() const
@@ -81,7 +89,7 @@ bool SerializedTransaction::isEquivalent(const SerializedType& t) const
 { // Signatures are not compared
 	const SerializedTransaction* v = dynamic_cast<const SerializedTransaction*>(&t);
 	if (!v) return false;
-	if (type != v->type) return false;
+	if (mType != v->mType) return false;
 	if (mMiddleTxn != v->mMiddleTxn) return false;
 	if (mInnerTxn != v->mInnerTxn) return false;
 	return true;
@@ -171,7 +179,7 @@ void SerializedTransaction::setSequence(uint32 seq)
 	v->setValue(seq);
 }
 
-std::vector<unsigned char> SerializedTransaction::getSigningAccount() const
+std::vector<unsigned char> SerializedTransaction::getRawSigningAccount() const
 {
 	const STVariableLength* v =
 		dynamic_cast<const STVariableLength*>(mMiddleTxn.peekAtPIndex(TransactionISigningAccount));
@@ -179,7 +187,7 @@ std::vector<unsigned char> SerializedTransaction::getSigningAccount() const
 	return v->getValue();
 }
 
-const std::vector<unsigned char>& SerializedTransaction::peekSigningAccount() const
+const std::vector<unsigned char>& SerializedTransaction::peekRawSigningAccount() const
 {
 	const STVariableLength* v=
 		dynamic_cast<const STVariableLength*>(mMiddleTxn.peekAtPIndex(TransactionISigningAccount));
@@ -187,7 +195,7 @@ const std::vector<unsigned char>& SerializedTransaction::peekSigningAccount() co
 	return v->peekValue();
 }
 
-std::vector<unsigned char>& SerializedTransaction::peekSigningAccount()
+std::vector<unsigned char>& SerializedTransaction::peekRawSigningAccount()
 {
 	STVariableLength* v = dynamic_cast<STVariableLength*>(mMiddleTxn.getPIndex(TransactionISigningAccount));
 	if (!v) throw std::runtime_error("corrupt transaction");
@@ -199,6 +207,7 @@ void SerializedTransaction::setSigningAccount(const std::vector<unsigned char>& 
 	STVariableLength* v = dynamic_cast<STVariableLength*>(mMiddleTxn.getPIndex(TransactionISigningAccount));
 	if (!v) throw std::runtime_error("corrupt transaction");
 	v->setValue(s);
+	updateSigningAccount();
 }
 
 int SerializedTransaction::getITFieldIndex(SOE_Field field) const
