@@ -210,6 +210,18 @@ void SerializedTransaction::setSigningAccount(const std::vector<unsigned char>& 
 	updateSigningAccount();
 }
 
+uint160 SerializedTransaction::GetITFieldAccount(SOE_Field field)
+{
+	uint160 r;
+	SerializedType* st = mInnerTxn.getPField(field);
+	if (!st) return r;
+
+	STAccount *ac = dynamic_cast<STAccount*>(ac);
+	if (!ac) return r;
+	ac->getValueH160(r);
+	return r;
+}
+
 int SerializedTransaction::getITFieldIndex(SOE_Field field) const
 {
 	return mInnerTxn.getFieldIndex(field);
