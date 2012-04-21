@@ -199,7 +199,7 @@ void STAccount::setValueH160(const uint160& v)
 bool STAccount::getValueH160(uint160& v) const
 {
 	if (!isValueH160()) return false;
-	memcpy(v.begin(), &(peekValue().front()), 32);
+	memcpy(v.begin(), &(peekValue().front()), 20);
 	return true;
 }
 
