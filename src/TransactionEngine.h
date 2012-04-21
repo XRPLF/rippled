@@ -12,11 +12,13 @@
 
 enum TransactionEngineResult
 { // <0 = Can never succeed, 0 = success, >0 = failed, but could succeed
+	terFAILED      = -4,	// Something broke horribly
 	terUNKNOWN     = -3,	// The transactions requires logic not implemented yet
 	terINSUF_FEE_P = -2,	// fee totally insufficient
 	terINVALID     = -1,	// The transaction is ill-formed
 	terSUCCESS     = 0,		// The transaction was applied
 	terALREADY,				// The transaction was already in the ledger
+	terNO_ACCOUNT,			// The source account does not exist
 	terINSUF_FEE_T,			// fee insufficient now (account doesn't exist, network load)
 	terUNFUNDED,			// Source account had insufficient balance
 	terNO_PATH,				// No path existed or met transaction/balance requirements
