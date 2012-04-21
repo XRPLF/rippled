@@ -48,7 +48,7 @@ public:
 	TransactionType getTxnType() const { return mType; }
 	uint64 getTransactionFee() const;
 	void setTransactionFee(uint64);
-	uint160 getSigningAccount() const;
+	uint160 getSigningAccount() const { return mSigningAccount; }
 	std::vector<unsigned char> getRawSigningAccount() const;
 	const std::vector<unsigned char>& peekRawSigningAccount() const;
 	std::vector<unsigned char>& peekRawSigningAccount();
