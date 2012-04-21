@@ -20,6 +20,8 @@
 
 enum LedgerStateParms
 {
+	lepNONE = 0,				// no special flags
+
 	// input flags
 	lepCREATE,		  			// Create if not present
 
@@ -33,6 +35,7 @@ enum LedgerStateParms
 
 class Ledger : public boost::enable_shared_from_this<Ledger>
 { // The basic Ledger structure, can be opened, closed, or synching
+	friend class TransactionEngine;
 public:
 	typedef boost::shared_ptr<Ledger> pointer;
 
@@ -73,6 +76,7 @@ protected:
 	bool addAccountState(AccountState::pointer);
 	bool updateAccountState(AccountState::pointer);
 	bool addTransaction(Transaction::pointer);
+	bool addTransaction(const uint256& id, const Serializer& txn);
 	bool delTransaction(const uint256& id);
 	
 	static Ledger::pointer getSQL(const std::string& sqlStatement);

@@ -160,6 +160,12 @@ bool Ledger::addTransaction(Transaction::pointer trans)
 	return mTransactionMap->addGiveItem(item, true);
 }
 
+bool Ledger::addTransaction(const uint256& txID, const Serializer& txn)
+{ // low-level - just add to table
+	SHAMapItem::pointer item = boost::make_shared<SHAMapItem>(txID, txn.peekData());
+	return mTransactionMap->addGiveItem(item, true);
+}
+
 bool Ledger::delTransaction(const uint256& transID)
 {
 	assert(!mAccepted);
