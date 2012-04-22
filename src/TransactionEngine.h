@@ -19,8 +19,10 @@ enum TransactionEngineResult
 	terSUCCESS     = 0,		// The transaction was applied
 	terALREADY,				// The transaction was already in the ledger
 	terNO_ACCOUNT,			// The source account does not exist
+	terNO_TARGET,			// The destination does not exist
 	terINSUF_FEE_T,			// fee insufficient now (account doesn't exist, network load)
-	terUNFUNDED,			// Source account had insufficient balance
+	terINSUF_FEE_B,			// Account balance can't pay fee
+	terUNFUNDED,			// Source account had insufficient balance for transactin
 	terNO_PATH,				// No path existed or met transaction/balance requirements
 	terPAST_SEQ,			// This sequence number has already past
 	terPRE_SEQ,				// Missing/inapplicable prior transaction
@@ -29,6 +31,7 @@ enum TransactionEngineResult
 
 enum TransactionEngineParams
 {
+	tepNONE          = 0,
 	tepNO_CHECK_SIGN = 1,	// Signature already checked
 	tepNO_CHECK_FEE  = 2,	// It was voted into a ledger anyway
 };
@@ -55,5 +58,15 @@ public:
 
 	TransactionEngineResult applyTransaction(const SerializedTransaction&, TransactionEngineParams);
 };
+
+inline TransactionEngineParams operator|(const TransactionEngineParams& l1, const TransactionEngineParams& l2)
+{
+	return static_cast<TransactionEngineParams>(static_cast<int>(l1) | static_cast<int>(l2));
+}
+
+inline TransactionEngineParams operator&(const TransactionEngineParams& l1, const TransactionEngineParams& l2)
+{
+	return static_cast<TransactionEngineParams>(static_cast<int>(l1) & static_cast<int>(l2));
+}
 
 #endif
