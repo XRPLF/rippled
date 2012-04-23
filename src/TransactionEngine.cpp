@@ -24,7 +24,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	}
 
 	// get source account ID
-	uint160 srcAccount = txn.getSigningAccount();
+	uint160 srcAccount = txn.getSourceAccount().getAccountID();
 	if (!srcAccount) return terINVALID;
 
 	boost::recursive_mutex::scoped_lock sl(mLedger->mLock);
