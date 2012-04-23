@@ -60,6 +60,8 @@ public:
 		{ return mObject.setValueFieldVL(field, v); }
 	void setIFieldTL(SOE_Field field, const std::vector<TaggedListItem>& v)
 		{ return mObject.setValueFieldTL(field, v); }
+	void setIFieldAccount(SOE_Field field, const uint160& account)
+		{ return mObject.setValueFieldAccount(field, account); }
 
 	bool getIFieldPresent(SOE_Field field) const { return mObject.isFieldPresent(field); }
 	void makeIFieldPresent(SOE_Field field) { return mObject.makeFieldPresent(field); }

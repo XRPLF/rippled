@@ -113,6 +113,7 @@ public:
 	void setValueFieldH256(SOE_Field field, const uint256&);
 	void setValueFieldVL(SOE_Field field, const std::vector<unsigned char>&);
 	void setValueFieldTL(SOE_Field field, const std::vector<TaggedListItem>&);
+	void setValueFieldAccount(SOE_Field field, const uint160&);
 
 	bool isFieldPresent(SOE_Field field) const;
 	void makeFieldPresent(SOE_Field field);
