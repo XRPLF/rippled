@@ -15,7 +15,6 @@ Transaction::Transaction(LocalAccount::pointer fromLocalAccount, const NewcoinAd
 	uint32 ident, uint32 ledger) : mInLedger(0), mStatus(NEW)
 {
 	mAccountFrom = fromLocalAccount->getAddress();
-	mAccountTo = toAccount;
 
 	mTransaction = boost::make_shared<SerializedTransaction>(ttMAKE_PAYMENT);
 
@@ -27,7 +26,7 @@ Transaction::Transaction(LocalAccount::pointer fromLocalAccount, const NewcoinAd
 	assert(mTransaction->getSequence() != 0);
 	mTransaction->setTransactionFee(100); // for now
 
-	mTransaction->setITFieldVL(sfDestination, toAccount.getAccountPublic());
+	mTransaction->setITFieldAccount(sfDestination, toAccount);
 	mTransaction->setITFieldU64(sfAmount, amount);
 	if (ledger != 0)
 	{
@@ -52,26 +51,21 @@ Transaction::Transaction(LocalAccount::pointer fromLocalAccount, const NewcoinAd
 
 Transaction::Transaction(SerializedTransaction::pointer sit, bool validate) : mStatus(INVALID), mTransaction(sit)
 {
-	uint160	toAccountID, fromAccountID;
 	std::vector<unsigned char> pubKey;
 
 	try
 	{
-		toAccountID = mTransaction->getITFieldH160(sfDestination);
 		pubKey = mTransaction->getRawSigningAccount();
 		mTransactionID = mTransaction->getTransactionID();
+		mAccountFrom = mTransaction->getSourceAccount();
 	}
 	catch(...)
 	{
 		return;
 	}
 
-	mAccountTo.setAccountID(toAccountID);
-	mAccountFrom.setAccountID(fromAccountID);
-
 	mFromPubKey = boost::make_shared<CKey>();
 	if (!mFromPubKey->SetPubKey(pubKey)) return;
-	mAccountFrom.setAccountPublic(pubKey);
 	mFromPubKey = theApp->getPubKeyCache().store(mAccountFrom, mFromPubKey);
 
 	if (!validate || checkSign())
@@ -109,7 +103,7 @@ Transaction::Transaction(const std::vector<unsigned char>& raw, bool validate) :
 Transaction::Transaction(const NewcoinAddress& fromID, const NewcoinAddress& toID,
 	CKey::pointer pubKey, uint64 amount, uint64 fee, uint32 fromSeq, uint32 fromLedger,
 	uint32 ident, const std::vector<unsigned char>& signature, uint32 ledgerSeq, TransStatus st) :
-	mAccountFrom(fromID), mAccountTo(toID), mFromPubKey(pubKey), mInLedger(ledgerSeq), mStatus(st)
+	mAccountFrom(fromID), mFromPubKey(pubKey), mInLedger(ledgerSeq), mStatus(st)
 {
 	mTransaction=boost::make_shared<SerializedTransaction>(ttMAKE_PAYMENT);
 	mTransaction->setSignature(signature);
@@ -127,6 +121,7 @@ Transaction::Transaction(const NewcoinAddress& fromID, const NewcoinAddress& toI
 		mTransaction->setITFieldU32(sfSourceTag, ident);
 	}
 	mTransaction->setValueFieldU64(sfAmount, amount);
+	mTransaction->setValueFieldAccount(sfDestination, toID.getAccountID());
 	updateID();
 }
 
@@ -141,7 +136,7 @@ bool Transaction::sign(LocalAccount::pointer fromLocalAccount)
 		return false;
 	}
 
-	if( (mTransaction->getITFieldU64(sfAmount)==0) || !mAccountTo.IsValid() )
+	if( (mTransaction->getITFieldU64(sfAmount)==0) )
 	{
 #ifdef DEBUG
 		std::cerr << "Bad amount or destination" << std::endl;
@@ -354,7 +349,9 @@ bool Transaction::isHexTxID(const std::string& txid)
 Json::Value Transaction::getJson(bool decorate, bool paid, bool credited) const
 {
 	Json::Value ret(mTransaction->getJson(0));
+
 	if(mInLedger) ret["InLedger"]=mInLedger;
+	if(paid) ret["Paid"]=true;
 
 	switch(mStatus)
 	{
@@ -370,12 +367,7 @@ Json::Value Transaction::getJson(bool decorate, bool paid, bool credited) const
 		default: ret["Status"]="unknown";
 	}
 
-	Json::Value source(Json::objectValue);
-	source["AccountID"]=mAccountFrom.humanAccountID();
-
-	Json::Value destination(Json::objectValue);
-	destination["AccountID"]=mAccountTo.humanAccountID();
-
+#if 0
 	if(decorate)
 	{
 		LocalAccount::pointer lac=theApp->getWallet().getLocalAccount(mAccountFrom);
@@ -383,9 +375,7 @@ Json::Value Transaction::getJson(bool decorate, bool paid, bool credited) const
 		lac=theApp->getWallet().getLocalAccount(mAccountTo);
 		if(!!lac) destination=lac->getJson();
 	}
-	if(paid) source["Paid"]=true;
-	if(credited) destination["Credited"]=true;
-	ret["Source"]=source;
-	ret["Destination"]=destination;
+#endif
+
 	return ret;
 }
