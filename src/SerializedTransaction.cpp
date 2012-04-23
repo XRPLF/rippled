@@ -38,14 +38,14 @@ SerializedTransaction::SerializedTransaction(SerializerIterator& sit, int length
 	mMiddleTxn.giveObject(new STUInt64("Fee", sit.get64()));
 
 	mInnerTxn = STObject(mFormat->elements, sit, "InnerTransaction");
-	updateSigningAccount();
+	updateSourceAccount();
 }
 
-void SerializedTransaction::updateSigningAccount()
+void SerializedTransaction::updateSourceAccount()
 {
 	NewcoinAddress a;
 	a.setAccountPublic(peekRawSigningAccount());
-	mSigningAccount = a.getAccountID();
+	mSourceAccount.setAccountID(a.getAccountID());
 }
 
 int SerializedTransaction::getLength() const
@@ -207,7 +207,7 @@ void SerializedTransaction::setSigningAccount(const std::vector<unsigned char>& 
 	STVariableLength* v = dynamic_cast<STVariableLength*>(mMiddleTxn.getPIndex(TransactionISigningAccount));
 	if (!v) throw std::runtime_error("corrupt transaction");
 	v->setValue(s);
-	updateSigningAccount();
+	updateSourceAccount();
 }
 
 uint160 SerializedTransaction::getITFieldAccount(SOE_Field field) const
