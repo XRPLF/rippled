@@ -128,7 +128,7 @@ void Application::run()
 
 Application::~Application()
 {
-	delete mTxnDB;;
+	delete mTxnDB;
 	delete mLedgerDB;
 	delete mWalletDB;
 	delete mHashNodeDB;
