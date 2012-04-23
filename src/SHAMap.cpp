@@ -155,10 +155,6 @@ SHAMapItem::SHAMapItem(const uint256& tag, const std::vector<unsigned char>& dat
 	: mTag(tag), mData(data)
 { ; }
 
-SHAMapItem::SHAMapItem(const uint160& tag, const std::vector<unsigned char>& data)
-	: mTag(tag.to256()), mData(data)
-{ ; }
-
 SHAMapItem::pointer SHAMap::firstBelow(SHAMapTreeNode::pointer node)
 {
 	// Return the first item below this node

@@ -313,7 +313,7 @@ static SHAMapItem::pointer makeRandomAS()
 		Serializer s;
 		for(int d=0; d<3; d++)
 			s.add32(rand());
-		return boost::make_shared<SHAMapItem>(s.getRIPEMD160(), s.peekData());
+		return boost::make_shared<SHAMapItem>(s.getRIPEMD160().to256(), s.peekData());
 }
 
 static bool confuseMap(SHAMap &map, int count)

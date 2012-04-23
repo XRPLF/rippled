@@ -192,9 +192,9 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned 
 	}
 	else if(type==1)
 	{ // account state
-		uint160 u;
-		s.get160(u, len-20);
-		s.chop(20);
+		uint256 u;
+		s.get256(u, len-32);
+		s.chop(256/8);
 		if(u.isZero()) throw SHAMapException(InvalidNode);
 		mItem=boost::make_shared<SHAMapItem>(u, s.peekData());
 		mType=tnACCOUNT_STATE;
@@ -236,7 +236,7 @@ void SHAMapTreeNode::addRaw(Serializer &s)
 	if(mType==tnACCOUNT_STATE)
 	{
 		mItem->addRaw(s);
-		s.add160(mItem->getTag().to160());
+		s.add256(mItem->getTag());
 		s.add8(1);
 		return;
 	}

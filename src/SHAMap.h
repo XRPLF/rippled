@@ -99,8 +99,6 @@ public:
 	SHAMapItem(const uint256& tag, const std::vector<unsigned char>& data);
 	SHAMapItem(const std::vector<unsigned char>& data); // tag by hash
 
-	SHAMapItem(const uint160& tag, const std::vector<unsigned char>& data); // deprecated
-
 	const uint256& getTag() const				{ return mTag; }
 	std::vector<unsigned char> getData() const	{ return mData.getData(); }
 	const std::vector<unsigned char>& peekData() const { return mData.peekData(); }
@@ -285,9 +283,6 @@ public:
 	SHAMapItem::pointer peekLastItem();
 	SHAMapItem::pointer peekNextItem(const uint256&);
 	SHAMapItem::pointer peekPrevItem(const uint256&);
-
-	SHAMapItem::pointer peekPrevItem(const uint160& u) { return peekPrevItem(u.to256()); }
-	SHAMapItem::pointer peekNextItem(const uint160& u) { return peekNextItem(u.to256()); }
 
 	// comparison/sync functions
 	void getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint256>& hashes, int max);
