@@ -36,18 +36,28 @@ enum TransactionEngineParams
 	tepNO_CHECK_FEE  = 2,	// It was voted into a ledger anyway
 };
 
+enum TransactionAccountAction
+{
+	taaACCESS,
+	taaCREATE,
+	taaMODIFY,
+	taaDELETE
+};
+
+typedef std::pair<TransactionAccountAction, SerializedLedgerEntry::pointer> AffectedAccount;
+
 class TransactionEngine
 {
 protected:
 	Ledger::pointer mLedger;
 
-	TransactionEngineResult doPayment(const SerializedTransaction&, SerializedLedgerEntry& source);
-	TransactionEngineResult doInvoice(const SerializedTransaction&, SerializedLedgerEntry& source);
-	TransactionEngineResult doOffer(const SerializedTransaction&, SerializedLedgerEntry& source);
-	TransactionEngineResult doTake(const SerializedTransaction&, SerializedLedgerEntry& source);
-	TransactionEngineResult doCancel(const SerializedTransaction&, SerializedLedgerEntry& source);
-	TransactionEngineResult doStore(const SerializedTransaction&, SerializedLedgerEntry& source);
-	TransactionEngineResult doDelete(const SerializedTransaction&, SerializedLedgerEntry& source);
+	TransactionEngineResult doPayment(const SerializedTransaction&, std::vector<AffectedAccount>&);
+	TransactionEngineResult doInvoice(const SerializedTransaction&, std::vector<AffectedAccount>&);
+	TransactionEngineResult doOffer(const SerializedTransaction&, std::vector<AffectedAccount>&);
+	TransactionEngineResult doTake(const SerializedTransaction&, std::vector<AffectedAccount>&);
+	TransactionEngineResult doCancel(const SerializedTransaction&, std::vector<AffectedAccount>&);
+	TransactionEngineResult doStore(const SerializedTransaction&, std::vector<AffectedAccount>&);
+	TransactionEngineResult doDelete(const SerializedTransaction&, std::vector<AffectedAccount>&);
 
 public:
 	TransactionEngine() { ; }

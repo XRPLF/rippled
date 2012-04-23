@@ -1,5 +1,6 @@
 
 #include "TransactionEngine.h"
+
 #include "TransactionFormats.h"
 
 TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTransaction& txn,
@@ -51,7 +52,10 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 			return terALREADY;
 		return terPAST_SEQ;
 	}
+	else src->setIFieldU32(sfSequence, t_seq);
 
+	std::vector<AffectedAccount> accounts;
+	accounts.push_back(std::make_pair(taaMODIFY, src));
 	TransactionEngineResult result = terUNKNOWN;
 	switch(txn.getTxnType())
 	{
@@ -60,15 +64,15 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 			break;
 
 		case ttMAKE_PAYMENT:
-			result = doPayment(txn, *src);
+			result = doPayment(txn, accounts);
 			break;
 
 		case ttINVOICE:
-			result = doInvoice(txn, *src);
+			result = doInvoice(txn, accounts);
 			break;
 
 		case ttEXCHANGE_OFFER:
-			result = doOffer(txn, *src);
+			result = doOffer(txn, accounts);
 			break;
 
 		default:
@@ -77,13 +81,21 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	}
 
 	if (result == terSUCCESS)
-	{ // Write back the source account state and add the transaction to the ledger
+	{ // Write back the account states and add the transaction to the ledger
 		// WRITEME: Special case code for changing transaction key
-		src->setIFieldU32(sfSequence, t_seq);
-		if(mLedger->writeBack(lepNONE, src) & lepERROR)
+		for(std::vector<AffectedAccount>::iterator it=accounts.begin(), end=accounts.end();
+			it != end; ++it)
 		{
-			assert(false);
-			return terFAILED;
+			if ( (it->first==taaMODIFY) || (it->first==taaCREATE) )
+			{
+				if(mLedger->writeBack(lepNONE, it->second) & lepERROR)
+					assert(false);
+			}
+			else if (it->first == taaDELETE)
+			{
+				if(!mLedger->peekAccountStateMap()->delItem(it->second->getIndex()))
+					assert(false);
+			}
 		}
 
 		Serializer s;
@@ -94,38 +106,84 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	return result;
 }
 
-TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction& txn, SerializedLedgerEntry& source)
+TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction& txn,
+	std::vector<AffectedAccount>& accounts)
+{
+	uint32 txFlags = txn.getFlags();
+	uint160 destAccount = txn.getITFieldAccount(sfDestination);
+
+	// Does the destination account exist?
+	if (!destAccount) return terINVALID;
+	LedgerStateParms qry = lepNONE;
+	SerializedLedgerEntry::pointer dest = mLedger->getAccountRoot(qry, destAccount);
+	if (!dest)
+	{ // can this transaction create an account
+		if ((txFlags & 0x00010000) == 0) // no
+			return terNO_TARGET;
+
+		dest = boost::make_shared<SerializedLedgerEntry>(ltACCOUNT_ROOT);
+		dest->setIndex(Ledger::getAccountRootIndex(destAccount));
+		dest->setIFieldAccount(sfAccount, destAccount);
+		dest->setIFieldU32(sfSequence, 1);
+		accounts.push_back(std::make_pair(taaCREATE, dest));
+	}
+	else accounts.push_back(std::make_pair(taaMODIFY, dest));
+
+	uint64 amount = txn.getITFieldU64(sfAmount);
+
+	uint160 currency;
+	if(txn.getITFieldPresent(sfCurrency))
+		currency = txn.getITFieldH160(sfCurrency);
+	bool native = !!currency;
+
+	if (native)
+	{
+		uint64 balance = accounts[0].second->getIFieldU64(sfBalance);
+		if (balance < amount) return terUNFUNDED;
+		accounts[0].second->setIFieldU64(sfBalance, balance - amount);
+		accounts[1].second->setIFieldU64(sfBalance, accounts[1].second->getIFieldU64(sfBalance) + amount);
+	}
+	else
+	{
+		// WRITEME: Handle non-native currencies, paths
+		return terUNKNOWN;
+	}
+
+	return terUNKNOWN;
+}
+
+TransactionEngineResult TransactionEngine::doInvoice(const SerializedTransaction& txn,
+	std::vector<AffectedAccount>& accounts)
 {
 	return terUNKNOWN;
 }
 
-TransactionEngineResult TransactionEngine::doInvoice(const SerializedTransaction&, SerializedLedgerEntry& source)
+TransactionEngineResult TransactionEngine::doOffer(const SerializedTransaction& txn,
+	std::vector<AffectedAccount>& accounts)
 {
 	return terUNKNOWN;
 }
 
-TransactionEngineResult TransactionEngine::doOffer(const SerializedTransaction&, SerializedLedgerEntry& source)
+TransactionEngineResult TransactionEngine::doTake(const SerializedTransaction& txn,
+	std::vector<AffectedAccount>& accounts)
 {
 	return terUNKNOWN;
 }
 
-TransactionEngineResult TransactionEngine::doTake(const SerializedTransaction&, SerializedLedgerEntry& source)
+TransactionEngineResult TransactionEngine::doCancel(const SerializedTransaction& txn,
+	 std::vector<AffectedAccount>& accounts)
 {
 	return terUNKNOWN;
 }
 
-TransactionEngineResult TransactionEngine::doCancel(const SerializedTransaction&, SerializedLedgerEntry& source)
+TransactionEngineResult TransactionEngine::doStore(const SerializedTransaction& txn,
+	std::vector<AffectedAccount>& accounts)
 {
 	return terUNKNOWN;
 }
 
-TransactionEngineResult TransactionEngine::doStore(const SerializedTransaction&, SerializedLedgerEntry& source)
+TransactionEngineResult TransactionEngine::doDelete(const SerializedTransaction& txn,
+	std::vector<AffectedAccount>& accounts)
 {
 	return terUNKNOWN;
 }
-
-TransactionEngineResult TransactionEngine::doDelete(const SerializedTransaction&, SerializedLedgerEntry& source)
-{
-	return terUNKNOWN;
-}
-
