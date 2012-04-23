@@ -1,8 +1,13 @@
+
 #include "PeerDoor.h"
-#include "Config.h"
+
+#include <iostream>
+
 #include <boost/bind.hpp>
 //#include <boost/log/trivial.hpp>
-#include <iostream>
+
+#include "Config.h"
+
 using namespace std;
 using namespace boost::asio::ip;
 
