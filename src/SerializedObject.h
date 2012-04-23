@@ -102,6 +102,7 @@ public:
 	uint64 getValueFieldU64(SOE_Field field) const;
 	uint160 getValueFieldH160(SOE_Field field) const;
 	uint256 getValueFieldH256(SOE_Field field) const;
+	NewcoinAddress getValueFieldAccount(SOE_Field field) const;
 	std::vector<unsigned char> getValueFieldVL(SOE_Field field) const;
 	std::vector<TaggedListItem> getValueFieldTL(SOE_Field field) const;
 
@@ -114,6 +115,8 @@ public:
 	void setValueFieldVL(SOE_Field field, const std::vector<unsigned char>&);
 	void setValueFieldTL(SOE_Field field, const std::vector<TaggedListItem>&);
 	void setValueFieldAccount(SOE_Field field, const uint160&);
+	void setValueFieldAccount(SOE_Field field, const NewcoinAddress& addr)
+	{ setValueFieldAccount(field, addr.getAccountID()); }
 
 	bool isFieldPresent(SOE_Field field) const;
 	void makeFieldPresent(SOE_Field field);

@@ -350,6 +350,17 @@ uint256 STObject::getValueFieldH256(SOE_Field field) const
 	return cf->getValue();
 }
 
+NewcoinAddress STObject::getValueFieldAccount(SOE_Field field) const
+{
+	const SerializedType* rf = peekAtPField(field);
+	if (!rf) throw std::runtime_error("Field not found");
+	SerializedTypeID id = rf->getSType();
+	if (id == STI_OBJECT) return NewcoinAddress(); // optional field not present
+	const STAccount* cf = dynamic_cast<const STAccount *>(rf);
+	if (!cf) throw std::runtime_error("Wrong field type");
+	return cf->getValueNCA();
+}
+
 std::vector<unsigned char> STObject::getValueFieldVL(SOE_Field field) const
 {
 	const SerializedType* rf = peekAtPField(field);
