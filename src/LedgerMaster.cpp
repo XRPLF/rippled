@@ -14,20 +14,6 @@ uint32 LedgerMaster::getCurrentLedgerIndex()
 	return mCurrentLedger->getLedgerSeq();
 }
 
-uint64 LedgerMaster::getBalance(const NewcoinAddress& acctID)
-{
-	return mCurrentLedger->getBalance(acctID);
-}
-
-uint64 LedgerMaster::getBalance(std::string& strAcctID)
-{
-	NewcoinAddress	acctID;
-
-	acctID.setAccountID(strAcctID);
-
-	return mCurrentLedger->getBalance(acctID);
-}
-
 bool LedgerMaster::addHeldTransaction(Transaction::pointer transaction)
 { // returns true if transaction was added
 	boost::recursive_mutex::scoped_lock ml(mLock);
@@ -43,8 +29,9 @@ void LedgerMaster::pushLedger(Ledger::pointer newLedger)
 		mFinalizingLedger->setAccepted();
 		mLedgerHistory.addAcceptedLedger(mFinalizingLedger);
 	}
-	mFinalizingLedger=mCurrentLedger;
-	mCurrentLedger=newLedger;
+	mFinalizingLedger = mCurrentLedger;
+	mCurrentLedger = newLedger;
+	mEngine.setLedger(newLedger);
 }
 
 #if 0

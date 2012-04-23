@@ -6,6 +6,7 @@
 #include "Peer.h"
 #include "types.h"
 #include "Transaction.h"
+#include "TransactionEngine.h"
 
 // Tracks the current ledger and any ledgers in the process of closing
 // Tracks ledger history
@@ -15,6 +16,8 @@ class LedgerMaster
 {
 	boost::recursive_mutex mLock;
 	bool mIsSynced;
+
+	TransactionEngine mEngine;
 
 	Ledger::pointer mCurrentLedger;
 	Ledger::pointer mFinalizingLedger;
@@ -38,6 +41,9 @@ public:
 	Ledger::pointer getCurrentLedger() { return mCurrentLedger; }
 	Ledger::pointer getClosingLedger() { return mFinalizingLedger; }
 
+	TransactionEngineResult doTransaction(const SerializedTransaction& txn, TransactionEngineParams params)
+	{ return mEngine.applyTransaction(txn, params); }
+
 	void pushLedger(Ledger::pointer newLedger);
 
 	Ledger::pointer getLedgerBySeq(uint32 index)
@@ -54,12 +60,9 @@ public:
 		return mLedgerHistory.getLedgerByHash(hash);
 	}
 
-	uint64 getBalance(std::string& strAcctID);
-	uint64 getBalance(const NewcoinAddress& acctID);
-	AccountState::pointer getAccountState(const NewcoinAddress& addr)
-	{ return mCurrentLedger->getAccountState(addr); }
-
 	bool addHeldTransaction(Transaction::pointer trans);
+	uint64 getBalance(std::string& strAcctID, const uint160 currency = 0);
+	uint64 getBalance(const NewcoinAddress& acctID, const uint160 currency = 0);
 };
 
 #endif
