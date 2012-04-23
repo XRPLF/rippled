@@ -762,6 +762,12 @@ void Wallet::syncToLedger(bool force, Ledger* ledger)
 	if(mLedger<ledger->getLedgerSeq()) mLedger=ledger->getLedgerSeq();
 }
 
+#if 0
+
+// We can't replicate the transaction logic in the wallet
+// The right way is to apply the transactions to the ledger
+// And then sync all affected accounts to the ledger
+
 void Wallet::applyTransaction(Transaction::pointer txn)
 {
 	TransStatus st=txn->getStatus();
@@ -775,7 +781,7 @@ void Wallet::applyTransaction(Transaction::pointer txn)
 	if(lti!=mTransactions.end()) ltx=lti->second;
 
 	std::map<NewcoinAddress, LocalAccount::pointer>::iterator lac=mAccounts.find(txn->getToAccount());
-	if(lac!=mAccounts.end())
+	if(lac != mAccounts.end())
 	{ // this is to a local account
 		if(!ltx)
 		{ // this is to a local account, and we don't have a local transaction for it
@@ -788,8 +794,8 @@ void Wallet::applyTransaction(Transaction::pointer txn)
 		}
 	}
 
-	lac=mAccounts.find(txn->getFromAccount());
-	if(lac==mAccounts.end()) return;
+	lac = mAccounts.find(txn->getFromAccount());
+	if(lac == mAccounts.end()) return;
 
 	if ( (st!=INVALID) && (lac->second->getTxnSeq()==txn->getFromAccountSeq()) )
 		lac->second->incTxnSeq();
@@ -830,6 +836,8 @@ void Wallet::applyTransaction(Transaction::pointer txn)
 	}
 }
 
+#endif
+
 void Wallet::addLocalTransactions(Json::Value& ret)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
@@ -841,9 +849,9 @@ void Wallet::addLocalTransactions(Json::Value& ret)
 bool Wallet::getTxJson(const uint256& txn, Json::Value& ret)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
-	std::map<uint256, LocalTransaction::pointer>::iterator it=mTransactions.find(txn);
-	if(it==mTransactions.end()) return false;
-	ret=it->second->getJson();
+	std::map<uint256, LocalTransaction::pointer>::iterator it = mTransactions.find(txn);
+	if (it == mTransactions.end()) return false;
+	ret = it->second->getJson();
 
 	return true;
 }
@@ -851,12 +859,12 @@ bool Wallet::getTxJson(const uint256& txn, Json::Value& ret)
 bool Wallet::getTxsJson(const NewcoinAddress& account, Json::Value& ret)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
-	for(std::map<uint256, LocalTransaction::pointer>::iterator it=mTransactions.begin();
-			it!=mTransactions.end(); ++it)
+	for(std::map<uint256, LocalTransaction::pointer>::iterator it = mTransactions.begin(),
+		end = mTransactions.end(); it != end; ++it)
 	{
-		Transaction::pointer txn=it->second->getTransaction();
-		if(txn && ((account==txn->getFromAccount())||(account==txn->getToAccount())) )
-			ret[it->first.GetHex()]=it->second->getJson();
+		Transaction::pointer txn = it->second->getTransaction();
+		if(txn && (account == txn->getFromAccount())) // FIXME: Need a way to get all accounts a txn affects
+			ret[it->first.GetHex()] = it->second->getJson();
 	}
 
 	return true;
