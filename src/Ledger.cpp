@@ -22,10 +22,11 @@ Ledger::Ledger(const NewcoinAddress& masterID, uint64 startAmount) :
 	mTransactionMap = boost::make_shared<SHAMap>();
 	mAccountStateMap = boost::make_shared<SHAMap>();
 
+	// special case: put coins in root account
 	AccountState::pointer startAccount = boost::make_shared<AccountState>(masterID);
-	startAccount->credit(startAmount);
-	if (!addAccountState(startAccount))
-		assert(false);
+	startAccount->peekSLE().setIFieldU64(sfBalance, startAmount);
+	startAccount->peekSLE().setIFieldU32(sfSequence, 1);
+	writeBack(lepCREATE, startAccount->getSLE());
 }
 
 Ledger::Ledger(const uint256 &parentHash, const uint256 &transHash, const uint256 &accountHash,
@@ -116,7 +117,7 @@ AccountState::pointer Ledger::getAccountState(const NewcoinAddress& accountID)
 	std::cerr << "Ledger:getAccountState(" << accountID.humanAccountID() << ")" << std::endl;
 #endif
 	ScopedLock l(mTransactionMap->Lock());
-	SHAMapItem::pointer item = mAccountStateMap->peekItem(accountID.getAccountID().to256());
+	SHAMapItem::pointer item = mAccountStateMap->peekItem(Ledger::getAccountRootIndex(accountID));
 	if (!item)
 	{
 #ifdef DEBUG
@@ -124,30 +125,10 @@ AccountState::pointer Ledger::getAccountState(const NewcoinAddress& accountID)
 #endif
 		return AccountState::pointer();
 	}
-	return boost::make_shared<AccountState>(item->getData());
-}
-
-uint64 Ledger::getBalance(const NewcoinAddress& accountID) const
-{
-	ScopedLock l(mTransactionMap->Lock());
-	SHAMapItem::pointer item = mAccountStateMap->peekItem(accountID.getAccountID().to256());
-	if (!item) return 0;
-	return AccountState(item->getData()).getBalance();
-}
-
-bool Ledger::updateAccountState(AccountState::pointer state)
-{
-	assert(!mAccepted);
-	return mAccountStateMap->updateGiveItem(boost::make_shared<SHAMapItem>(state->getAccountID().getAccountID(),
-		state->getRaw()), false);
-}
-
-bool Ledger::addAccountState(AccountState::pointer state)
-{
-	assert(!mAccepted);
-	assert( (state->getBalance()==0) || (state->getSeq()>0) );
-	SHAMapItem::pointer item = boost::make_shared<SHAMapItem>(state->getAccountID().getAccountID(), state->getRaw());
-	return mAccountStateMap->addGiveItem(item, false);
+	SerializedLedgerEntry::pointer sle =
+		boost::make_shared<SerializedLedgerEntry>(item->peekSerializer(), item->getTag());
+	if (sle->getType() != ltACCOUNT_ROOT) return AccountState::pointer();
+	return boost::make_shared<AccountState>(sle);
 }
 
 bool Ledger::addTransaction(Transaction::pointer trans)
@@ -193,145 +174,6 @@ Transaction::pointer Ledger::getTransaction(const uint256& transID) const
 	return txn;
 }
 
-Ledger::TransResult Ledger::applyTransaction(Transaction::pointer trans)
-{
-	assert(!mAccepted);
-	boost::recursive_mutex::scoped_lock sl(mLock);
-	if (trans->getSourceLedger() > mLedgerSeq) return TR_BADLSEQ;
-
-	if (trans->getAmount()<trans->getFee())
-	{
-#ifdef DEBUG
-			std::cerr << "Transaction for " << trans->getAmount() << ", but fee is " <<
-					trans->getFee() << std::endl;
-#endif
-		return TR_TOOSMALL;
-	}
-
-	if(!mTransactionMap || !mAccountStateMap) return TR_ERROR;
-	try
-	{
-		// already applied?
-		Transaction::pointer dupTrans=getTransaction(trans->getID());
-		if(dupTrans) return TR_ALREADY;
-
-		// accounts exist?
-		AccountState::pointer fromAccount=getAccountState(trans->getFromAccount());
-		AccountState::pointer toAccount=getAccountState(trans->getToAccount());
-
-		// temporary code -- if toAccount doesn't exist but fromAccount does, create it
-		if(!!fromAccount && !toAccount)
-		{
-			toAccount=boost::make_shared<AccountState>(trans->getToAccount());
-			toAccount->incSeq(); // an account in a ledger has a sequence of 1
-			updateAccountState(toAccount);
-		}
-
-		if(!fromAccount || !toAccount) return TR_BADACCT;
-
-		// pass sanity checks?
-		if(fromAccount->getBalance()<trans->getAmount())
-		{
-#ifdef DEBUG
-			std::cerr << "Transaction for " << trans->getAmount() << ", but account has " <<
-					fromAccount->getBalance() << std::endl;
-#endif
-			return TR_INSUFF;
-		}
-#ifdef DEBUG
-		if(fromAccount->getSeq()!=trans->getFromAccountSeq())
-			std::cerr << "aSeq=" << fromAccount->getSeq() << ", tSeq=" << trans->getFromAccountSeq() << std::endl;
-#endif
-		if(fromAccount->getSeq()>trans->getFromAccountSeq()) return TR_PASTASEQ;
-		if(fromAccount->getSeq()<trans->getFromAccountSeq()) return TR_PREASEQ;
-
-		// apply
-		fromAccount->charge(trans->getAmount());
-		fromAccount->incSeq();
-		toAccount->credit(trans->getAmount()-trans->getFee());
-		mFeeHeld+=trans->getFee();
-		trans->setStatus(INCLUDED, mLedgerSeq);
-
-		updateAccountState(fromAccount);
-		updateAccountState(toAccount);
-		addTransaction(trans);
-
-		return TR_SUCCESS;
-	}
-	catch (SHAMapException)
-	{
-		return TR_ERROR;
-	}
-}
-
-Ledger::TransResult Ledger::removeTransaction(Transaction::pointer trans)
-{ // high-level - reverse application of transaction
-	assert(!mAccepted);
-	boost::recursive_mutex::scoped_lock sl(mLock);
-	if(!mTransactionMap || !mAccountStateMap) return TR_ERROR;
-	try
-	{
-		Transaction::pointer ourTrans=getTransaction(trans->getID());
-		if(!ourTrans) return TR_NOTFOUND;
-
-		// accounts exist
-		AccountState::pointer fromAccount=getAccountState(trans->getFromAccount());
-		AccountState::pointer toAccount=getAccountState(trans->getToAccount());
-		if(!fromAccount || !toAccount) return TR_BADACCT;
-
-		// pass sanity checks?
-		if(toAccount->getBalance()<trans->getAmount()) return TR_INSUFF;
-		if(fromAccount->getSeq()!=(trans->getFromAccountSeq()+1)) return TR_PASTASEQ;
-		
-		// reverse
-		fromAccount->credit(trans->getAmount());
-		fromAccount->decSeq();
-		toAccount->charge(trans->getAmount()-trans->getFee());
-		mFeeHeld-=trans->getFee();
-		trans->setStatus(REMOVED, mLedgerSeq);
-		
-		if(!delTransaction(trans->getID()))
-		{
-			assert(false);
-			return TR_ERROR;
-		}
-		updateAccountState(fromAccount);
-		updateAccountState(toAccount);
-		return TR_SUCCESS;
-	}
-	catch (SHAMapException)
-	{
-		return TR_ERROR;
-	}
-}
-
-Ledger::TransResult Ledger::hasTransaction(Transaction::pointer trans)
-{ // Is this transaction in this ledger? If not, could it go in it?
-	boost::recursive_mutex::scoped_lock sl(mLock);
-	if(mTransactionMap==NULL) return TR_ERROR;
-	try
-	{
-		Transaction::pointer t=getTransaction(trans->getID());
-		if(!!t) return TR_ALREADY;
-		
-		if(trans->getSourceLedger()>mLedgerSeq) return TR_BADLSEQ;
-
-		AccountState::pointer fromAccount=getAccountState(trans->getFromAccount());
-		if(!fromAccount) return TR_BADACCT; // cannot send from non-existent account
-
-		// may be in a previous ledger
-		if(fromAccount->getSeq()>trans->getFromAccountSeq()) return TR_PASTASEQ;
-
-		if(fromAccount->getSeq()<trans->getFromAccountSeq()) return TR_PREASEQ;
-		if(fromAccount->getBalance()<trans->getAmount()) return TR_INSUFF;
-		return TR_NOTFOUND;
-	}
-	catch (SHAMapException)
-	{
-		return TR_ERROR;
-	}
-}
-
 Ledger::pointer Ledger::closeLedger(uint64 timeStamp)
 { // close this ledger, return a pointer to the next ledger
 	// CAUTION: New ledger needs its SHAMap's connected to storage
@@ -342,13 +184,13 @@ Ledger::pointer Ledger::closeLedger(uint64 timeStamp)
 
 void LocalAccount::syncLedger()
 {
-	AccountState::pointer as=theApp->getMasterLedger().getAccountState(getAddress());
-	if(!as)	mLgrBalance=0;
+	AccountState::pointer as = theApp->getMasterLedger().getCurrentLedger()->getAccountState(getAddress());
+	if(!as)	mLgrBalance = 0;
 	else
 	{
-		mLgrBalance=as->getBalance();
-		if( (mLgrBalance!=0) && (mTxnSeq==0) ) mTxnSeq=1;
-		if(mTxnSeq<as->getSeq()) mTxnSeq=as->getSeq();
+		mLgrBalance = as->getBalance();
+		if ( (mLgrBalance != 0) && (mTxnSeq == 0) ) mTxnSeq = 1;
+		if (mTxnSeq < as->getSeq()) mTxnSeq = as->getSeq();
 	}
 }
 

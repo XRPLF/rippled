@@ -10,12 +10,10 @@
 #include "../json/value.h"
 
 #include "Transaction.h"
+#include "AccountState.h"
 #include "types.h"
 #include "BitcoinUtil.h"
-#include "Hanko.h"
-#include "AccountState.h"
 #include "SHAMap.h"
-#include "SerializedLedger.h"
 
 
 enum LedgerStateParms
@@ -73,8 +71,6 @@ protected:
 	Ledger(Ledger& previous, uint64 timestamp);	// ledger after this one
 	void updateHash();
 
-	bool addAccountState(AccountState::pointer);
-	bool updateAccountState(AccountState::pointer);
 	bool addTransaction(Transaction::pointer);
 	bool addTransaction(const uint256& id, const Serializer& txn);
 	bool delTransaction(const uint256& id);
@@ -121,15 +117,10 @@ public:
 	bool hasTransaction(const uint256& TransID) const;
 	Transaction::pointer getTransaction(const uint256& transID) const;
 
-	// OLD high level functions
-	uint64 getBalance(const NewcoinAddress& acctID) const;
-	AccountState::pointer getAccountState(const NewcoinAddress& acctID);
-	TransResult applyTransaction(Transaction::pointer trans);
-	TransResult removeTransaction(Transaction::pointer trans);
-	TransResult hasTransaction(Transaction::pointer trans);
 	Ledger::pointer switchPreviousLedger(Ledger::pointer oldPrevious, Ledger::pointer newPrevious,  int limit);
 
 	// high-level functions
+	AccountState::pointer getAccountState(const NewcoinAddress& acctID);
 	LedgerStateParms writeBack(LedgerStateParms parms, SerializedLedgerEntry::pointer);
 	SerializedLedgerEntry::pointer getAccountRoot(LedgerStateParms& parms, const uint160& accountID);
 	SerializedLedgerEntry::pointer getNickname(LedgerStateParms& parms, const std::string& nickname);
@@ -144,7 +135,15 @@ public:
 
 	// index calculation functions
 	static uint256 getAccountRootIndex(const uint160& account);
+	static uint256 getAccountRootIndex(const NewcoinAddress& account)
+	{ return getAccountRootIndex(account.getAccountID()); }
+
 	static uint256 getRippleIndex(const uint160& account, const uint160& extendTo, const uint160& currency);
+	static uint256 getRippleIndex(const uint160& account, const uint160& extendTo)
+	{ return getRippleIndex(account, extendTo, uint160()); }
+	static uint256 getRippleIndex(const NewcoinAddress& account, const NewcoinAddress& extendTo,
+	 const uint160& currency)
+	{ return getRippleIndex(account.getAccountID(), extendTo.getAccountID(), currency); }
 
 	Ledger::pointer closeLedger(uint64 timestamp);
 	bool isCompatible(boost::shared_ptr<Ledger> other);
