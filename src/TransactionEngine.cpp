@@ -149,7 +149,7 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 		return terUNKNOWN;
 	}
 
-	return terUNKNOWN;
+	return terSUCCESS;
 }
 
 TransactionEngineResult TransactionEngine::doInvoice(const SerializedTransaction& txn,
