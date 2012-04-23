@@ -52,10 +52,10 @@ public:
 	uint32 getTxnSeq() const { return  mTxnSeq; }
 	uint32 incTxnSeq() { return mTxnSeq++; }
 
-	int64 getEffectiveBalance() const { return static_cast<int64_t>(mLgrBalance)+mTxnDelta; }
-	void credit(uint64 amount) { mTxnDelta+=amount; }
-	void debit(uint64 amount) { mTxnDelta-=amount; }
-	void setLedgerBalance(uint64_t lb) { mLgrBalance=lb; if(mTxnSeq==0) mTxnSeq=1; }
+	int64 getEffectiveBalance() const { return static_cast<int64_t>(mLgrBalance) + mTxnDelta; }
+	void credit(uint64 amount) { mTxnDelta += amount; }
+	void debit(uint64 amount) { mTxnDelta -= amount; }
+	void setLedgerBalance(uint64_t lb) { mLgrBalance = lb; if (mTxnSeq == 0) mTxnSeq = 1; }
 
 	void syncLedger();
 };
