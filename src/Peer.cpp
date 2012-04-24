@@ -41,7 +41,7 @@ void Peer::handle_write(const boost::system::error_code& error, size_t bytes_tra
 	if(!mSendQ.empty())
 	{
 		PackedMessage::pointer packet=mSendQ.front();
-		if(packet) 
+		if(packet)
 		{
 			sendPacketForce(packet);
 			mSendQ.pop_front();
@@ -70,7 +70,6 @@ void Peer::connected(const boost::system::error_code& error)
 		detach();
 		std::cout  << "Peer::connected Error: " << error << std::endl; //else BOOST_LOG_TRIVIAL(info) << "Error: " << error;
 	}
-	
 }
 
 void Peer::sendPacketForce(PackedMessage::pointer packet)
@@ -141,7 +140,7 @@ void Peer::handle_read_header(const boost::system::error_code& error)
 
 void Peer::handle_read_body(const boost::system::error_code& error)
 {
-	if(!error) 
+	if(!error)
 	{
 		processReadBuffer();
 		start_read_header();
@@ -358,7 +357,7 @@ void Peer::recvTransaction(newcoin::TMTransaction& packet)
 #endif
 		return;
 	}
-	
+
 	tx=theApp->getOPs().processTransaction(tx, this);
 
 	if(tx->getStatus()!=INCLUDED)
@@ -543,7 +542,7 @@ void Peer::sendHello()
 
 	PackedMessage::pointer packet=boost::make_shared<PackedMessage>
 		(PackedMessage::MessagePointer(h), newcoin::mtHELLO);
- 	sendPacket(packet);
+	sendPacket(packet);
 }
 
 void Peer::punishPeer(PeerPunish)
@@ -571,7 +570,7 @@ PackedMessage::pointer Peer::createFullLedger(Ledger::pointer ledger)
 		newcoin::FullLedger* fullLedger=new newcoin::FullLedger();
 		ledger->
 	}
-	
+
 	return(PackedMessage::pointer());
 }*/
 
@@ -599,7 +598,6 @@ PackedMessage::pointer Peer::createValidation(Ledger::pointer ledger)
 	valid->set_seqnum(ledger->getValidSeqNum());
 	valid->set_sig(sig.begin(), sig.GetSerializeSize());
 	valid->set_hanko(theConfig.HANKO);
-	
 
 	PackedMessage::pointer packet=boost::make_shared<PackedMessage>
 		(PackedMessage::MessagePointer(valid), newcoin::VALIDATION);
@@ -623,12 +621,12 @@ void Peer::sendLedgerProposal(Ledger::pointer ledger)
 }
 
 void Peer::sendFullLedger(Ledger::pointer ledger)
-{	
+{
 	if(ledger)
 	{
 		PackedMessage::pointer packet(
 			new PackedMessage(PackedMessage::MessagePointer(ledger->createFullLedger()), newcoin::FULL_LEDGER));
-		sendPacket(packet);	
+		sendPacket(packet);
 	}
 }
 
@@ -679,7 +677,7 @@ void Peer::receiveTransaction(TransactionPtr trans)
 			(PackedMessage::MessagePointer(new newcoin::Transaction(*(trans.get()))), newcoin::TRANSACTION);
 		pool.relayMessage(this, packet);
 	}
-	else 
+	else
 	{
 		std::cout << "Invalid transaction: " << trans->from() << std::endl;
 	}
@@ -687,7 +685,6 @@ void Peer::receiveTransaction(TransactionPtr trans)
 
 void Peer::receiveProposeLedger(newcoin::ProposeLedger& packet)
 {
-	
 	theApp->getLedgerMaster().checkLedgerProposal(shared_from_this(), packet);
 }
 
@@ -699,9 +696,9 @@ void Peer::receiveFullLedger(newcoin::FullLedger& packet)
 void Peer::connectTo(KnownNode& node)
 {
 	tcp::endpoint endpoint( address::from_string(node.mIP), node.mPort);
-	mSocket.async_connect(endpoint, 
+	mSocket.async_connect(endpoint,
 		boost::bind(&Peer::connected, this, boost::asio::placeholders::error) );
-	
 }
 
 #endif
+// vim:ts=4

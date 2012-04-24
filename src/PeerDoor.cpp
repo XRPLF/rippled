@@ -33,4 +33,4 @@ void PeerDoor::handleConnect(Peer::pointer new_connection,
 
 	startListening();
 }
-
+// vim:ts=4

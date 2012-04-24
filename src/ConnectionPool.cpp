@@ -115,9 +115,9 @@ Json::Value ConnectionPool::getPeersJson()
 
     BOOST_FOREACH(Peer::pointer peer, mPeers)
     {
-	ret.append(peer->getJson());
+		ret.append(peer->getJson());
     }
 
     return ret;
 }
-
+// vim:ts=4

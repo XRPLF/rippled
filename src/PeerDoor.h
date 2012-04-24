@@ -19,3 +19,4 @@ class PeerDoor
 public:
 	PeerDoor(boost::asio::io_service& io_service);
 };
+// vim:ts=4
