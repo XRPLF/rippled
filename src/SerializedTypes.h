@@ -46,8 +46,6 @@ public:
 
 	virtual void add(Serializer& s) const { return; }
 
-	SerializedType* new_clone(const SerializedType& s) { return s.duplicate(); }
-	void delete_clone(const SerializedType* s) { boost::checked_delete(s); }
 
 	virtual bool isEquivalent(const SerializedType& t) const { return true; }
 
@@ -56,6 +54,9 @@ public:
 	bool operator!=(const SerializedType& t) const
 	{ return (getSType()!=t.getSType()) || !isEquivalent(t); }
 };
+
+inline SerializedType* new_clone(const SerializedType& s) { return s.duplicate(); }
+inline void delete_clone(const SerializedType* s) { boost::checked_delete(s); }
 
 class STUInt8 : public SerializedType
 {
