@@ -11,7 +11,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 
 	// extract signing key
 	CKey acctKey;
-	if (!acctKey.SetPubKey(txn.getRawSigningAccount())) return terINVALID;
+	if (!acctKey.SetPubKey(txn.peekSigningPubKey())) return terINVALID;
 
 	// check signature
 	if (!txn.checkSign(acctKey)) return terINVALID;

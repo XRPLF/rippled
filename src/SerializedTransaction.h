@@ -52,10 +52,10 @@ public:
 	void setTransactionFee(uint64);
 
 	const NewcoinAddress& getSourceAccount() const { return mSourceAccount; }
-	std::vector<unsigned char> getRawSigningAccount() const;
-	const std::vector<unsigned char>& peekRawSigningAccount() const;
-	std::vector<unsigned char>& peekRawSigningAccount();
-	void setSigningAccount(const std::vector<unsigned char>& s);
+	std::vector<unsigned char> getSigningPubKey() const;
+	const std::vector<unsigned char>& peekSigningPubKey() const;
+	std::vector<unsigned char>& peekSigningPubKey();
+	const NewcoinAddress& setSigningPubKey(const std::vector<unsigned char>& s);
 	std::string getTransactionType() const { return mFormat->t_name; }
 
 	// inner transaction functions

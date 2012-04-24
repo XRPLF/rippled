@@ -23,7 +23,7 @@ Transaction::Transaction(LocalAccount::pointer fromLocalAccount, const NewcoinAd
 
 	mFromPubKey = fromLocalAccount->getPublicKey();
 	assert(mFromPubKey);
-	mTransaction->setSigningAccount(mFromPubKey->GetPubKey());
+	mTransaction->setSigningPubKey(mFromPubKey->GetPubKey());
 
 	mTransaction->setSequence(accountState->getSeq());
 	assert(mTransaction->getSequence() != 0);
@@ -59,7 +59,7 @@ Transaction::Transaction(SerializedTransaction::pointer sit, bool validate) : mS
 
 	try
 	{
-		pubKey = mTransaction->getRawSigningAccount();
+		pubKey = mTransaction->peekSigningPubKey();
 		mTransactionID = mTransaction->getTransactionID();
 		mAccountFrom = mTransaction->getSourceAccount();
 	}
@@ -109,17 +109,17 @@ Transaction::Transaction(const NewcoinAddress& fromID, const NewcoinAddress& toI
 	uint32 ident, const std::vector<unsigned char>& signature, uint32 ledgerSeq, TransStatus st) :
 	mAccountFrom(fromID), mFromPubKey(pubKey), mInLedger(ledgerSeq), mStatus(st)
 {
-	mTransaction=boost::make_shared<SerializedTransaction>(ttMAKE_PAYMENT);
+	mTransaction = boost::make_shared<SerializedTransaction>(ttMAKE_PAYMENT);
 	mTransaction->setSignature(signature);
 	mTransaction->setTransactionFee(fee);
-	mTransaction->setSigningAccount(pubKey->GetPubKey());
+	mTransaction->setSigningPubKey(pubKey->GetPubKey());
 	mTransaction->setSequence(fromSeq);
-	if(fromLedger!=0)
+	if (fromLedger != 0)
 	{
 		mTransaction->makeITFieldPresent(sfTargetLedger);
 		mTransaction->setITFieldU32(sfTargetLedger, fromLedger);
 	}
-	if(ident!=0)
+	if (ident != 0)
 	{
 		mTransaction->makeITFieldPresent(sfSourceTag);
 		mTransaction->setITFieldU32(sfSourceTag, ident);
@@ -131,7 +131,7 @@ Transaction::Transaction(const NewcoinAddress& fromID, const NewcoinAddress& toI
 
 bool Transaction::sign(LocalAccount::pointer fromLocalAccount)
 {
-	CKey::pointer privateKey=fromLocalAccount->getPrivateKey();
+	CKey::pointer privateKey = fromLocalAccount->getPrivateKey();
 	if(!privateKey)
 	{
 #ifdef DEBUG
