@@ -38,10 +38,10 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 		return trans;
 	}
 
-	Ledger::TransResult r=theApp->getMasterLedger().getCurrentLedger()->applyTransaction(trans);
-	if(r==Ledger::TR_ERROR) throw Fault(IO_ERROR);
+	TransactionEngineResult r=theApp->getMasterLedger().doTransaction(*trans->getSTransaction(), tepNONE);
+	if(r==terFAILED) throw Fault(IO_ERROR);
 
-	if((r==Ledger::TR_PREASEQ) || (r==Ledger::TR_BADLSEQ))
+	if(r == terPRE_SEQ)
 	{ // transaction should be held
 #ifdef DEBUG
 		std::cerr << "Transaction should be held" << std::endl;
@@ -51,7 +51,7 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 		theApp->getMasterLedger().addHeldTransaction(trans);
 		return trans;
 	}
-	if( (r==Ledger::TR_PASTASEQ) || (r==Ledger::TR_ALREADY) )
+	if ( (r==terPAST_SEQ || r==terPAST_LEDGER) )
 	{ // duplicate or conflict
 #ifdef DEBUG
 		std::cerr << "Transaction is obsolete" << std::endl;
@@ -60,14 +60,18 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 		return trans;
 	}
 
-	if(r==Ledger::TR_SUCCESS)
+	if(r==terSUCCESS)
 	{
 #ifdef DEBUG
 		std::cerr << "Transaction is now included, synching to wallet" << std::endl;
 #endif
 		trans->setStatus(INCLUDED);
 		theApp->getMasterTransaction().canonicalize(trans, true);
-		theApp->getWallet().applyTransaction(trans);
+
+// FIXME: Need code to get all accounts affected by a transaction and re-synch
+// any of them that affect local accounts cached in memory. Or, we need to
+// no cache the account balance information and always get it from the current ledger
+//		theApp->getWallet().applyTransaction(trans);
 
 		newcoin::TMTransaction *tx=new newcoin::TMTransaction();
 

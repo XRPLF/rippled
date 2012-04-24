@@ -362,6 +362,9 @@ public:
 	virtual STAccount* duplicate() const { return new STAccount(name, value); }
 	std::string getText() const;
 
+	NewcoinAddress getValueNCA() const;
+	void setValueNCA(const NewcoinAddress& nca);
+
 	void setValueH160(const uint160& v);
 	bool getValueH160(uint160&) const;
 	bool isValueH160() const;

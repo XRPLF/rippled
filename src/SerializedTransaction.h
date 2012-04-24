@@ -8,6 +8,7 @@
 #include "uint256.h"
 #include "SerializedObject.h"
 #include "TransactionFormats.h"
+#include "NewcoinAddress.h"
 
 class SerializedTransaction : public STObject
 {
@@ -15,10 +16,13 @@ public:
 	typedef boost::shared_ptr<SerializedTransaction> pointer;
 
 protected:
-	TransactionType type;
+	NewcoinAddress mSourceAccount;
+	TransactionType mType;
 	STVariableLength mSignature;
 	STObject mMiddleTxn, mInnerTxn;
 	TransactionFormat* mFormat;
+
+	void updateSourceAccount();
 
 public:
 	SerializedTransaction(SerializerIterator& sit, int length); // -1=all remaining, 0=get from sit
@@ -42,13 +46,16 @@ public:
 	// middle transaction functions
 	uint32 getVersion() const;
 	void setVersion(uint32);
-	TransactionType getTxnType() const { return type; }
+
+	TransactionType getTxnType() const { return mType; }
 	uint64 getTransactionFee() const;
 	void setTransactionFee(uint64);
-	std::vector<unsigned char> getSigningAccount() const;
-	const std::vector<unsigned char>& peekSigningAccount() const;
-	std::vector<unsigned char>& peekSigningAccount();
-	void setSigningAccount(const std::vector<unsigned char>& s);
+
+	const NewcoinAddress& getSourceAccount() const { return mSourceAccount; }
+	std::vector<unsigned char> getSigningPubKey() const;
+	const std::vector<unsigned char>& peekSigningPubKey() const;
+	std::vector<unsigned char>& peekSigningPubKey();
+	const NewcoinAddress& setSigningPubKey(const std::vector<unsigned char>& s);
 	std::string getTransactionType() const { return mFormat->t_name; }
 
 	// inner transaction functions
@@ -72,6 +79,7 @@ public:
 	uint32 getITFieldU32(SOE_Field field) const { return mInnerTxn.getValueFieldU32(field); }
 	uint64 getITFieldU64(SOE_Field field) const { return mInnerTxn.getValueFieldU64(field); }
 	uint160 getITFieldH160(SOE_Field field) const { return mInnerTxn.getValueFieldH160(field); }
+	uint160 getITFieldAccount(SOE_Field field) const;
 	uint256 getITFieldH256(SOE_Field field) const { return mInnerTxn.getValueFieldH256(field); }
 	std::vector<unsigned char> getITFieldVL(SOE_Field field) const { return mInnerTxn.getValueFieldVL(field); }
 	std::vector<TaggedListItem> getITFieldTL(SOE_Field field) const { return mInnerTxn.getValueFieldTL(field); }
@@ -85,11 +93,17 @@ public:
 		{ return mInnerTxn.setValueFieldVL(field, v); }
 	void setITFieldTL(SOE_Field field, const std::vector<TaggedListItem>& v)
 		{ return mInnerTxn.setValueFieldTL(field, v); }
+	void setITFieldAccount(SOE_Field field, const uint160& v)
+		{ return mInnerTxn.setValueFieldAccount(field, v); }
+	void setITFieldAccount(SOE_Field field, const NewcoinAddress& v)
+		{ return mInnerTxn.setValueFieldAccount(field, v); }
 
 	// optional field functions
 	bool getITFieldPresent(SOE_Field field) const;
 	void makeITFieldPresent(SOE_Field field);
 	void makeITFieldAbsent(SOE_Field field);
+
+	std::vector<NewcoinAddress> getAffectedAccounts() const;
 
 	// whole transaction functions
 	int getTransaction(Serializer& s, bool include_length) const;

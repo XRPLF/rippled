@@ -1,7 +1,8 @@
 #ifndef __ACCOUNTSTATE__
 #define __ACCOUNTSTATE__
 
-// An account's state in one or more accepted ledgers
+// An account's state
+// Used to track information about a local account
 
 #include <vector>
 
@@ -10,47 +11,30 @@
 #include "../json/value.h"
 
 #include "types.h"
-#include "uint256.h"
 #include "NewcoinAddress.h"
+#include "SerializedLedger.h"
 
 class AccountState
 {
 public:
-    typedef boost::shared_ptr<AccountState> pointer;
+	typedef boost::shared_ptr<AccountState> pointer;
 
 private:
-    NewcoinAddress mAccountID;
-    uint64 mBalance;
-    uint32 mAccountSeq;
-    bool mValid;
+	NewcoinAddress mAccountID;
+	SerializedLedgerEntry::pointer mLedgerEntry;
+	bool mValid;
 
 public:
-	AccountState(const NewcoinAddress& mAccountID);			// new account
-	AccountState(const std::vector<unsigned char>&);	// raw form
+	AccountState(const NewcoinAddress& AccountID);				// For new accounts
+	AccountState(SerializedLedgerEntry::pointer ledgerEntry);	// For accounts in a ledger
 
 	const NewcoinAddress& getAccountID() const { return mAccountID; }
-	uint64 getBalance() const { return mBalance; }
-	uint32 getSeq() const { return mAccountSeq; }
+	uint64 getBalance() const { return mLedgerEntry->getIFieldU64(sfBalance); }
+	uint32 getSeq() const { return mLedgerEntry->getIFieldU32(sfSequence); }
 
-	void credit(const uint64& a)
-	{
-		mBalance+=a;
-		if(!mAccountSeq) mAccountSeq=1; // an account with non-0 balance cannot have 0 sequence
-	}
-	void charge(const uint64& a)
-	{
-		assert(mBalance>=a);
-		mBalance-=a;
-	}
-	void incSeq()
-	{
-		mAccountSeq++;
-	}
-	void decSeq()
-	{
-		assert(mAccountSeq!=0);
-		mAccountSeq--;
-	}
+	SerializedLedgerEntry::pointer getSLE() { return mLedgerEntry; }
+	const SerializedLedgerEntry& peekSLE() const { return *mLedgerEntry; }
+	SerializedLedgerEntry& peekSLE() { return *mLedgerEntry; }
 
 	std::vector<unsigned char> getRaw() const;
 	void addJson(Json::Value& value);

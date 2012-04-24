@@ -117,7 +117,7 @@ void Application::run()
 	// temporary
 
 	mWallet.load();
-	mWallet.syncToLedger(true, &(*secondLedger));
+//	mWallet.syncToLedger(true, &(*secondLedger));
 
 	// temporary
 	mIOService.run(); // This blocks
@@ -128,7 +128,7 @@ void Application::run()
 
 Application::~Application()
 {
-	delete mTxnDB;;
+	delete mTxnDB;
 	delete mLedgerDB;
 	delete mWalletDB;
 	delete mHashNodeDB;

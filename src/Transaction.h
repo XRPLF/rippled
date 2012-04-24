@@ -39,7 +39,7 @@ public:
 
 private:
 	uint256			mTransactionID;
-	NewcoinAddress	mAccountFrom, mAccountTo;
+	NewcoinAddress	mAccountFrom;
 	CKey::pointer	mFromPubKey;
 
 	uint32		mInLedger;
@@ -66,7 +66,6 @@ public:
 
 	const uint256& getID() const { return mTransactionID; }
 	const NewcoinAddress& getFromAccount() const { return mAccountFrom; }
-	const NewcoinAddress& getToAccount() const { return mAccountTo; }
 	uint64 getAmount() const { return mTransaction->getITFieldU64(sfAmount); }
 	uint64 getFee() const { return mTransaction->getTransactionFee(); }
 	uint32 getFromAccountSeq() const { return mTransaction->getSequence(); }

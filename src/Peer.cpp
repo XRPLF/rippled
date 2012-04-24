@@ -339,14 +339,13 @@ void Peer::recvTransaction(newcoin::TMTransaction& packet)
 	Transaction::pointer tx;
 	try
 	{
-		std::string rawTx=packet.rawtransaction();
+		std::string rawTx = packet.rawtransaction();
 		Serializer s(std::vector<unsigned char>(rawTx.begin(), rawTx.end()));
 		SerializerIterator sit(s);
-		SerializedTransaction::pointer stx=boost::make_shared<SerializedTransaction>(boost::ref(sit), -1);
+		SerializedTransaction::pointer stx = boost::make_shared<SerializedTransaction>(boost::ref(sit), -1);
 
-		if(stx->getTxnType()!=ttMAKE_PAYMENT) throw(0); // FIXME to support other transaction
-		tx=boost::make_shared<Transaction>(stx, true);
-		if(tx->getStatus()==INVALID) throw(0);
+		tx = boost::make_shared<Transaction>(stx, true);
+		if (tx->getStatus() == INVALID) throw(0);
 	}
 	catch (...)
 	{
@@ -358,7 +357,7 @@ void Peer::recvTransaction(newcoin::TMTransaction& packet)
 		return;
 	}
 
-	tx=theApp->getOPs().processTransaction(tx, this);
+	tx = theApp->getOPs().processTransaction(tx, this);
 
 	if(tx->getStatus()!=INCLUDED)
 	{ // transaction wasn't accepted into ledger

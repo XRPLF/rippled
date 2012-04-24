@@ -350,6 +350,17 @@ uint256 STObject::getValueFieldH256(SOE_Field field) const
 	return cf->getValue();
 }
 
+NewcoinAddress STObject::getValueFieldAccount(SOE_Field field) const
+{
+	const SerializedType* rf = peekAtPField(field);
+	if (!rf) throw std::runtime_error("Field not found");
+	SerializedTypeID id = rf->getSType();
+	if (id == STI_OBJECT) return NewcoinAddress(); // optional field not present
+	const STAccount* cf = dynamic_cast<const STAccount *>(rf);
+	if (!cf) throw std::runtime_error("Wrong field type");
+	return cf->getValueNCA();
+}
+
 std::vector<unsigned char> STObject::getValueFieldVL(SOE_Field field) const
 {
 	const SerializedType* rf = peekAtPField(field);
@@ -450,6 +461,22 @@ void STObject::setValueFieldH160(SOE_Field field, const uint160& v)
 	STHash160* cf = dynamic_cast<STHash160*>(rf);
 	if (!cf) throw std::runtime_error("Wrong field type");
 	cf->setValue(v);
+}
+
+void STObject::setValueFieldAccount(SOE_Field field, const uint160& v)
+{
+	SerializedType* rf = getPField(field);
+	if (!rf) throw std::runtime_error("Field not found");
+	SerializedTypeID id = rf->getSType();
+	if (id == STI_OBJECT)
+	{
+		makeFieldPresent(field);
+		rf = getPField(field);
+		id = rf->getSType();
+	}
+	STAccount* cf = dynamic_cast<STAccount*>(rf);
+	if (!cf) throw std::runtime_error("Wrong field type");
+	cf->setValueH160(v);
 }
 
 void STObject::setValueFieldVL(SOE_Field field, const std::vector<unsigned char>& v)

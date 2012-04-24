@@ -127,7 +127,7 @@ void ValidationCollection::addToGroup(newcoin::Validation& newValid)
 		// see if this hash is already on the list. If so add it there.
 		vector< Group >& groups=mIndexGroups[newValid.ledgerindex()];
 		BOOST_FOREACH(Group& group,groups)
-		{
+		{ // FIXME: Cannot modify *at* *all* inside a BOOST_FOREACH
 			BOOST_FOREACH(newcoin::Validation& valid,group.mValidations)
 			{
 				if(valid.hash()==newValid.hash())

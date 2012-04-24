@@ -24,12 +24,10 @@
 //
 
 LocalAccount::LocalAccount(boost::shared_ptr<LocalAccountFamily> family, int familySeq) :
-	mPublicKey(family->getPublicKey(familySeq)), mFamily(family), mAccountFSeq(familySeq),
-	mLgrBalance(0), mTxnDelta(0), mTxnSeq(0)
+	mPublicKey(family->getPublicKey(familySeq)), mFamily(family), mAccountFSeq(familySeq)
 {
 	mAcctID.setAccountPublic(mPublicKey->GetPubKey());
-
-	if(theApp!=NULL) mPublicKey=theApp->getPubKeyCache().store(mAcctID, mPublicKey);
+	if(theApp!=NULL) mPublicKey = theApp->getPubKeyCache().store(mAcctID, mPublicKey);
 }
 
 std::string LocalAccount::getFullName() const
@@ -37,7 +35,6 @@ std::string LocalAccount::getFullName() const
 	std::string ret(mFamily->getFamily().humanFamilyGenerator());
 	ret.append(":");
 	ret.append(boost::lexical_cast<std::string>(mAccountFSeq));
-
 	return ret;
 }
 
@@ -51,21 +48,36 @@ std::string LocalAccount::getFamilyName() const
 	return mFamily->getFamily().humanFamilyGenerator();
 }
 
+AccountState::pointer LocalAccount::getAccountState() const
+{
+	return theApp->getOPs().getAccountState(mAcctID);
+}
+
+uint64 LocalAccount::getEffectiveBalance() const
+{
+	AccountState::pointer as = getAccountState();
+	if (!as) return 0;
+	return as->getBalance();
+}
+
 Json::Value LocalAccount::getJson() const
 {
 	Json::Value ret(Json::objectValue);
-	ret["Family"]=getFamilyName();
-	ret["AccountID"]=getAddress().humanAccountID();
-	ret["AccountPublic"]=getAddress().humanAccountPublic();
-	ret["FullName"]=getFullName();
-	ret["Issued"]=Json::Value(isIssued());
-	ret["IsLocked"]=mFamily->isLocked();
+	ret["Family"] = getFamilyName();
+	ret["AccountID"] = getAddress().humanAccountID();
+	ret["AccountPublic"] = getAddress().humanAccountPublic();
+	ret["FullName"] = getFullName();
+	ret["Issued"] = Json::Value(isIssued());
+	ret["IsLocked"] = mFamily->isLocked();
 
-	uint64 eb=getEffectiveBalance();
-	if(eb!=0) ret["Balance"]=boost::lexical_cast<std::string>(eb);
-
-	uint32 sq=getTxnSeq();
-	if(sq!=0) ret["TxnSeq"]=boost::lexical_cast<std::string>(sq);
+	AccountState::pointer as = getAccountState();
+	if (as) ret["Account"] = "None";
+	else
+	{
+		Json::Value acct(Json::objectValue);
+		as->addJson(acct);
+		ret["Account"] = acct;
+	}
 
 	return ret;
 }
@@ -475,7 +487,6 @@ LocalAccount::pointer Wallet::getNewLocalAccount(const NewcoinAddress& family)
 	mAccounts.insert(std::make_pair(acct, lac));
 
 	sl.unlock();
-	lac->syncLedger();
 
 	return lac;
 }
@@ -495,7 +506,6 @@ LocalAccount::pointer Wallet::getLocalAccount(const NewcoinAddress& family, int 
 	mAccounts.insert(std::make_pair(acct, lac));
 
 	sl.unlock();
-	lac->syncLedger();
 
 	return lac;
 }
@@ -743,24 +753,11 @@ bool Wallet::unitTest()
 	return true;
 }
 
-void Wallet::syncToLedger(bool force, Ledger* ledger)
-{
-	boost::recursive_mutex::scoped_lock sl(mLock);
-	if(!force && (mLedger>=ledger->getLedgerSeq())) return;
-	for(std::map<uint256, LocalTransaction::pointer>::iterator xit=mTransactions.begin();
-			xit!=mTransactions.end(); ++xit)
-	{ // check each transaction, see if it's in the ledger or allowed in the ledger
-		// WRITEME
-	}	
-	for(std::map<NewcoinAddress, LocalAccount::pointer>::iterator ait=mAccounts.begin(); ait!=mAccounts.end(); ++ait)
-	{ // check each account, see if our ledger balance matches
-		LocalAccount::pointer& lac=ait->second;
-		AccountState::pointer acs=ledger->getAccountState(ait->first);
-		if(!acs) lac->setLedgerBalance(0);
-		else lac->setLedgerBalance(acs->getBalance());
-	}
-	if(mLedger<ledger->getLedgerSeq()) mLedger=ledger->getLedgerSeq();
-}
+#if 0
+
+// We can't replicate the transaction logic in the wallet
+// The right way is to apply the transactions to the ledger
+// And then sync all affected accounts to the ledger
 
 void Wallet::applyTransaction(Transaction::pointer txn)
 {
@@ -775,7 +772,7 @@ void Wallet::applyTransaction(Transaction::pointer txn)
 	if(lti!=mTransactions.end()) ltx=lti->second;
 
 	std::map<NewcoinAddress, LocalAccount::pointer>::iterator lac=mAccounts.find(txn->getToAccount());
-	if(lac!=mAccounts.end())
+	if(lac != mAccounts.end())
 	{ // this is to a local account
 		if(!ltx)
 		{ // this is to a local account, and we don't have a local transaction for it
@@ -788,8 +785,8 @@ void Wallet::applyTransaction(Transaction::pointer txn)
 		}
 	}
 
-	lac=mAccounts.find(txn->getFromAccount());
-	if(lac==mAccounts.end()) return;
+	lac = mAccounts.find(txn->getFromAccount());
+	if(lac == mAccounts.end()) return;
 
 	if ( (st!=INVALID) && (lac->second->getTxnSeq()==txn->getFromAccountSeq()) )
 		lac->second->incTxnSeq();
@@ -830,6 +827,8 @@ void Wallet::applyTransaction(Transaction::pointer txn)
 	}
 }
 
+#endif
+
 void Wallet::addLocalTransactions(Json::Value& ret)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
@@ -841,9 +840,9 @@ void Wallet::addLocalTransactions(Json::Value& ret)
 bool Wallet::getTxJson(const uint256& txn, Json::Value& ret)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
-	std::map<uint256, LocalTransaction::pointer>::iterator it=mTransactions.find(txn);
-	if(it==mTransactions.end()) return false;
-	ret=it->second->getJson();
+	std::map<uint256, LocalTransaction::pointer>::iterator it = mTransactions.find(txn);
+	if (it == mTransactions.end()) return false;
+	ret = it->second->getJson();
 
 	return true;
 }
@@ -851,12 +850,12 @@ bool Wallet::getTxJson(const uint256& txn, Json::Value& ret)
 bool Wallet::getTxsJson(const NewcoinAddress& account, Json::Value& ret)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
-	for(std::map<uint256, LocalTransaction::pointer>::iterator it=mTransactions.begin();
-			it!=mTransactions.end(); ++it)
+	for(std::map<uint256, LocalTransaction::pointer>::iterator it = mTransactions.begin(),
+		end = mTransactions.end(); it != end; ++it)
 	{
-		Transaction::pointer txn=it->second->getTransaction();
-		if(txn && ((account==txn->getFromAccount())||(account==txn->getToAccount())) )
-			ret[it->first.GetHex()]=it->second->getJson();
+		Transaction::pointer txn = it->second->getTransaction();
+		if(txn && (account == txn->getFromAccount())) // FIXME: Need a way to get all accounts a txn affects
+			ret[it->first.GetHex()] = it->second->getJson();
 	}
 
 	return true;

@@ -3,12 +3,30 @@
 
 #include "boost/make_shared.hpp"
 
-SerializedLedgerEntry::pointer Ledger::getAccountRoot(LedgerStateParms& parms, const uint160& accountID)
+LedgerStateParms Ledger::writeBack(LedgerStateParms parms, SerializedLedgerEntry::pointer entry)
 {
-	uint256 nodeID=getAccountRootIndex(accountID);
-
 	ScopedLock l(mAccountStateMap->Lock());
+	bool create = false;
 
+	if (!mAccountStateMap->hasItem(entry->getIndex()))
+	{
+		if ((parms & lepCREATE) == 0)
+			return lepMISSING;
+		create = true;
+	}
+
+	SHAMapItem::pointer item = boost::make_shared<SHAMapItem>(entry->getIndex());
+	entry->add(item->peekSerializer());
+
+	if (!mAccountStateMap->updateGiveItem(item, false))
+		return lepERROR;
+
+	return create ? lepCREATED : lepOKAY;
+}
+
+SerializedLedgerEntry::pointer Ledger::getASNode(LedgerStateParms& parms, const uint256& nodeID,
+ LedgerEntryType let )
+{
 	SHAMapItem::pointer account = mAccountStateMap->peekItem(nodeID);
 	if (!account)
 	{
@@ -18,26 +36,57 @@ SerializedLedgerEntry::pointer Ledger::getAccountRoot(LedgerStateParms& parms, c
 			return SerializedLedgerEntry::pointer();
 		}
 
-		parms = lepCREATED;
-		SerializedLedgerEntry::pointer sle=boost::make_shared<SerializedLedgerEntry>(ltACCOUNT_ROOT);
+		parms = parms | lepCREATED | lepOKAY;
+		SerializedLedgerEntry::pointer sle=boost::make_shared<SerializedLedgerEntry>(let);
 		sle->setIndex(nodeID);
 		return sle;
 	}
 
+	SerializedLedgerEntry::pointer sle =
+		boost::make_shared<SerializedLedgerEntry>(account->peekSerializer(), nodeID);
+
+	if(sle->getType() != let)
+	{ // maybe it's a currency or something
+		parms = parms | lepWRONGTYPE;
+		return SerializedLedgerEntry::pointer();
+	}
+
+	parms = parms | lepOKAY;
+	return sle;
+
+}
+
+SerializedLedgerEntry::pointer Ledger::getAccountRoot(LedgerStateParms& parms, const uint160& accountID)
+{
+	uint256 nodeID=getAccountRootIndex(accountID);
+
+	ScopedLock l(mAccountStateMap->Lock());
+
 	try
 	{
-		SerializedLedgerEntry::pointer sle =
-			boost::make_shared<SerializedLedgerEntry>(account->peekSerializer(), nodeID);
-
-		if(sle->getType() != ltACCOUNT_ROOT)
-		{ // maybe it's a currency or something
-			parms = lepWRONGTYPE;
-			return SerializedLedgerEntry::pointer();
-		}
-		parms = lepOKAY;
-		return sle;
+		return getASNode(parms, nodeID, ltACCOUNT_ROOT);
 	}
-	catch(...)
+	catch (...)
+	{
+		parms = lepERROR;
+		return SerializedLedgerEntry::pointer();
+	}
+}
+
+SerializedLedgerEntry::pointer Ledger::getNickname(LedgerStateParms& parms, const std::string& nickname)
+{
+	return getNickname(parms, Serializer::getSHA512Half(nickname));
+}
+
+SerializedLedgerEntry::pointer Ledger::getNickname(LedgerStateParms& parms, const uint256& nickHash)
+{
+	ScopedLock l(mAccountStateMap->Lock());
+
+	try
+	{
+		return getASNode(parms, nickHash, ltNICKNAME);
+	}
+	catch (...)
 	{
 		parms = lepERROR;
 		return SerializedLedgerEntry::pointer();

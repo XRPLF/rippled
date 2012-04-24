@@ -3,6 +3,7 @@
 
 #include "SerializedObject.h"
 #include "LedgerFormats.h"
+#include "NewcoinAddress.h"
 
 class SerializedLedgerEntry : public STObject
 {
@@ -50,7 +51,8 @@ public:
 	uint256 getIFieldH256(SOE_Field field) const { return mObject.getValueFieldH256(field); }
 	std::vector<unsigned char> getIFieldVL(SOE_Field field) const { return mObject.getValueFieldVL(field); }
 	std::vector<TaggedListItem> getIFieldTL(SOE_Field field) const { return mObject.getValueFieldTL(field); }
-	void setIFieldU8(SOE_Field field, unsigned char v) { return mObject.setValueFieldU8(field, v); }
+	NewcoinAddress getIValueFieldAccount(SOE_Field field) const { return mObject.getValueFieldAccount(field); }
+    void setIFieldU8(SOE_Field field, unsigned char v) { return mObject.setValueFieldU8(field, v); }
 	void setIFieldU16(SOE_Field field, uint16 v) { return mObject.setValueFieldU16(field, v); }
 	void setIFieldU32(SOE_Field field, uint32 v) { return mObject.setValueFieldU32(field, v); }
 	void setIFieldU64(SOE_Field field, uint32 v) { return mObject.setValueFieldU64(field, v); }
@@ -60,12 +62,14 @@ public:
 		{ return mObject.setValueFieldVL(field, v); }
 	void setIFieldTL(SOE_Field field, const std::vector<TaggedListItem>& v)
 		{ return mObject.setValueFieldTL(field, v); }
+	void setIFieldAccount(SOE_Field field, const uint160& account)
+		{ return mObject.setValueFieldAccount(field, account); }
+	void setIFieldAccount(SOE_Field field, const NewcoinAddress& account)
+		{ return mObject.setValueFieldAccount(field, account); }
 
 	bool getIFieldPresent(SOE_Field field) const { return mObject.isFieldPresent(field); }
 	void makeIFieldPresent(SOE_Field field) { return mObject.makeFieldPresent(field); }
 	void makeIFieldAbsent(SOE_Field field) { return mObject.makeFieldAbsent(field); }
-
-
 };
 
 #endif

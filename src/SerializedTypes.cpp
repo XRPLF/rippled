@@ -199,8 +199,22 @@ void STAccount::setValueH160(const uint160& v)
 bool STAccount::getValueH160(uint160& v) const
 {
 	if (!isValueH160()) return false;
-	memcpy(v.begin(), &(peekValue().front()), 32);
+	memcpy(v.begin(), &(peekValue().front()), 20);
 	return true;
+}
+
+NewcoinAddress STAccount::getValueNCA() const
+{
+	NewcoinAddress a;
+	uint160 v;
+	if (getValueH160(v))
+		a.setAccountID(v);
+	return a;
+}
+
+void STAccount::setValueNCA(const NewcoinAddress& nca)
+{
+	setValueH160(nca.getAccountID());
 }
 
 std::string STTaggedList::getText() const
