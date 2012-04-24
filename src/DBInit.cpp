@@ -65,8 +65,11 @@ const char *WalletDBInit[] = {
 	);",
 
 	// Miscellaneous persistent information
+	// Integer: 1 : Used to simplify SQL.
 	// ScoreUpdated: when scores was last updated.
+	// FetchUpdated: when last fetch succeeded.
 	"CREATE TABLE Misc (							\
+		Magic			INTEGER UNIQUE NOT NULL,	\
 		ScoreUpdated	DATETIME,					\
 		FetchUpdated	DATETIME					\
 	);",

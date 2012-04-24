@@ -56,7 +56,7 @@ bool UniqueNodeList::miscLoad()
 	ScopedLock sl(theApp->getWalletDB()->getDBLock());
 	Database *db=theApp->getWalletDB()->getDB();
 
-	if (!db->executeSQL("SELECT * FROM Misc;")) return false;
+	if (!db->executeSQL("SELECT * FROM Misc WHERE Magic=1;")) return false;
 
 	bool	bAvail	= !!db->startIterRows();
 
@@ -73,7 +73,7 @@ bool UniqueNodeList::miscSave()
 	Database*	db=theApp->getWalletDB()->getDB();
 	ScopedLock	sl(theApp->getWalletDB()->getDBLock());
 
-	db->executeSQL(str(boost::format("REPLACE INTO Misc (FetchUpdated,ScoreUpdated) VALUES (%d,%d);")
+	db->executeSQL(str(boost::format("REPLACE INTO Misc (Magic,FetchUpdated,ScoreUpdated) VALUES (1,%d,%d);")
 		% iToSeconds(mtpFetchUpdated)
 		% iToSeconds(mtpScoreUpdated)));
 
