@@ -14,6 +14,9 @@
 Transaction::Transaction(LocalAccount::pointer fromLocalAccount, const NewcoinAddress& toAccount, uint64 amount,
 	uint32 ident, uint32 ledger) : mInLedger(0), mStatus(NEW)
 {
+	AccountState::pointer accountState = fromLocalAccount->getAccountState();
+	if (!accountState) throw std::runtime_error("transaction on non-existent account");
+
 	mAccountFrom = fromLocalAccount->getAddress();
 
 	mTransaction = boost::make_shared<SerializedTransaction>(ttMAKE_PAYMENT);
@@ -22,8 +25,9 @@ Transaction::Transaction(LocalAccount::pointer fromLocalAccount, const NewcoinAd
 	assert(mFromPubKey);
 	mTransaction->setSigningAccount(mFromPubKey->GetPubKey());
 
-	mTransaction->setSequence(fromLocalAccount->getTxnSeq());
+	mTransaction->setSequence(accountState->getSeq());
 	assert(mTransaction->getSequence() != 0);
+
 	mTransaction->setTransactionFee(100); // for now
 
 	mTransaction->setITFieldAccount(sfDestination, toAccount);

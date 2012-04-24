@@ -4,6 +4,8 @@
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/shared_ptr.hpp>
 
+#include "AccountState.h"
+
 class LocalAccountFamily;
 
 class LocalAccount
@@ -20,11 +22,6 @@ protected:
 	// family information
 	boost::shared_ptr<LocalAccountFamily> mFamily;
 	int mAccountFSeq;
-
-	// local usage tracking
-	uint64 mLgrBalance;		// The balance, from the last ledger
-	int64 mTxnDelta;		// The balance changes from local/pending transactions
-	uint32 mTxnSeq;			// The sequence number of the next transaction
 
 public:
 	LocalAccount(boost::shared_ptr<LocalAccountFamily> family, int accountSeq);
@@ -48,16 +45,8 @@ public:
 	CKey::pointer getPrivateKey();
 	Json::Value getJson() const;
 
-	void update(uint64 balance, uint32 seq);
-	uint32 getTxnSeq() const { return  mTxnSeq; }
-	uint32 incTxnSeq() { return mTxnSeq++; }
-
-	int64 getEffectiveBalance() const { return static_cast<int64_t>(mLgrBalance) + mTxnDelta; }
-	void credit(uint64 amount) { mTxnDelta += amount; }
-	void debit(uint64 amount) { mTxnDelta -= amount; }
-	void setLedgerBalance(uint64_t lb) { mLgrBalance = lb; if (mTxnSeq == 0) mTxnSeq = 1; }
-
-	void syncLedger();
+	AccountState::pointer getAccountState() const;
+	uint64 getEffectiveBalance() const;
 };
 
 class LocalAccountFamily : public boost::enable_shared_from_this<LocalAccountFamily>

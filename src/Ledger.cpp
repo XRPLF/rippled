@@ -182,18 +182,6 @@ Ledger::pointer Ledger::closeLedger(uint64 timeStamp)
 	return Ledger::pointer(new Ledger(*this, timeStamp)); // can't use make_shared, constructor is protected
 }
 
-void LocalAccount::syncLedger()
-{
-	AccountState::pointer as = theApp->getMasterLedger().getCurrentLedger()->getAccountState(getAddress());
-	if(!as)	mLgrBalance = 0;
-	else
-	{
-		mLgrBalance = as->getBalance();
-		if ( (mLgrBalance != 0) && (mTxnSeq == 0) ) mTxnSeq = 1;
-		if (mTxnSeq < as->getSeq()) mTxnSeq = as->getSeq();
-	}
-}
-
 bool Ledger::unitTest()
 {
 #if 0

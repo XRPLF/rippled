@@ -117,7 +117,7 @@ void Application::run()
 	// temporary
 
 	mWallet.load();
-	mWallet.syncToLedger(true, &(*secondLedger));
+//	mWallet.syncToLedger(true, &(*secondLedger));
 
 	// temporary
 	mIOService.run(); // This blocks

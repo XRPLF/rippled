@@ -24,12 +24,10 @@
 //
 
 LocalAccount::LocalAccount(boost::shared_ptr<LocalAccountFamily> family, int familySeq) :
-	mPublicKey(family->getPublicKey(familySeq)), mFamily(family), mAccountFSeq(familySeq),
-	mLgrBalance(0), mTxnDelta(0), mTxnSeq(0)
+	mPublicKey(family->getPublicKey(familySeq)), mFamily(family), mAccountFSeq(familySeq)
 {
 	mAcctID.setAccountPublic(mPublicKey->GetPubKey());
-
-	if(theApp!=NULL) mPublicKey=theApp->getPubKeyCache().store(mAcctID, mPublicKey);
+	if(theApp!=NULL) mPublicKey = theApp->getPubKeyCache().store(mAcctID, mPublicKey);
 }
 
 std::string LocalAccount::getFullName() const
@@ -37,7 +35,6 @@ std::string LocalAccount::getFullName() const
 	std::string ret(mFamily->getFamily().humanFamilyGenerator());
 	ret.append(":");
 	ret.append(boost::lexical_cast<std::string>(mAccountFSeq));
-
 	return ret;
 }
 
@@ -51,21 +48,36 @@ std::string LocalAccount::getFamilyName() const
 	return mFamily->getFamily().humanFamilyGenerator();
 }
 
+AccountState::pointer LocalAccount::getAccountState() const
+{
+	return theApp->getOPs().getAccountState(mAcctID);
+}
+
+uint64 LocalAccount::getEffectiveBalance() const
+{
+	AccountState::pointer as = getAccountState();
+	if (!as) return 0;
+	return as->getBalance();
+}
+
 Json::Value LocalAccount::getJson() const
 {
 	Json::Value ret(Json::objectValue);
-	ret["Family"]=getFamilyName();
-	ret["AccountID"]=getAddress().humanAccountID();
-	ret["AccountPublic"]=getAddress().humanAccountPublic();
-	ret["FullName"]=getFullName();
-	ret["Issued"]=Json::Value(isIssued());
-	ret["IsLocked"]=mFamily->isLocked();
+	ret["Family"] = getFamilyName();
+	ret["AccountID"] = getAddress().humanAccountID();
+	ret["AccountPublic"] = getAddress().humanAccountPublic();
+	ret["FullName"] = getFullName();
+	ret["Issued"] = Json::Value(isIssued());
+	ret["IsLocked"] = mFamily->isLocked();
 
-	uint64 eb=getEffectiveBalance();
-	if(eb!=0) ret["Balance"]=boost::lexical_cast<std::string>(eb);
-
-	uint32 sq=getTxnSeq();
-	if(sq!=0) ret["TxnSeq"]=boost::lexical_cast<std::string>(sq);
+	AccountState::pointer as = getAccountState();
+	if (as) ret["Account"] = "None";
+	else
+	{
+		Json::Value acct(Json::objectValue);
+		as->addJson(acct);
+		ret["Account"] = acct;
+	}
 
 	return ret;
 }
@@ -475,7 +487,6 @@ LocalAccount::pointer Wallet::getNewLocalAccount(const NewcoinAddress& family)
 	mAccounts.insert(std::make_pair(acct, lac));
 
 	sl.unlock();
-	lac->syncLedger();
 
 	return lac;
 }
@@ -495,7 +506,6 @@ LocalAccount::pointer Wallet::getLocalAccount(const NewcoinAddress& family, int 
 	mAccounts.insert(std::make_pair(acct, lac));
 
 	sl.unlock();
-	lac->syncLedger();
 
 	return lac;
 }
@@ -741,25 +751,6 @@ bool Wallet::unitTest()
 	}
 #endif
 	return true;
-}
-
-void Wallet::syncToLedger(bool force, Ledger* ledger)
-{
-	boost::recursive_mutex::scoped_lock sl(mLock);
-	if(!force && (mLedger>=ledger->getLedgerSeq())) return;
-	for(std::map<uint256, LocalTransaction::pointer>::iterator xit=mTransactions.begin();
-			xit!=mTransactions.end(); ++xit)
-	{ // check each transaction, see if it's in the ledger or allowed in the ledger
-		// WRITEME
-	}	
-	for(std::map<NewcoinAddress, LocalAccount::pointer>::iterator ait=mAccounts.begin(); ait!=mAccounts.end(); ++ait)
-	{ // check each account, see if our ledger balance matches
-		LocalAccount::pointer& lac=ait->second;
-		AccountState::pointer acs=ledger->getAccountState(ait->first);
-		if(!acs) lac->setLedgerBalance(0);
-		else lac->setLedgerBalance(acs->getBalance());
-	}
-	if(mLedger<ledger->getLedgerSeq()) mLedger=ledger->getLedgerSeq();
 }
 
 #if 0

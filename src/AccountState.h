@@ -17,12 +17,12 @@
 class AccountState
 {
 public:
-    typedef boost::shared_ptr<AccountState> pointer;
+	typedef boost::shared_ptr<AccountState> pointer;
 
 private:
-    NewcoinAddress mAccountID;
-    SerializedLedgerEntry::pointer mLedgerEntry;
-    bool mValid;
+	NewcoinAddress mAccountID;
+	SerializedLedgerEntry::pointer mLedgerEntry;
+	bool mValid;
 
 public:
 	AccountState(const NewcoinAddress& AccountID);				// For new accounts
