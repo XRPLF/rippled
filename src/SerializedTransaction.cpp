@@ -75,6 +75,21 @@ std::string SerializedTransaction::getText() const
 	return ret;
 }
 
+std::vector<NewcoinAddress> SerializedTransaction::getAffectedAccounts() const
+{
+	std::vector<NewcoinAddress> accounts;
+	accounts.push_back(mSourceAccount);
+
+	for(boost::ptr_vector<SerializedType>::const_iterator it = mInnerTxn.peekData().begin(),
+		end = mInnerTxn.peekData().end(); it != end ; ++it)
+	{
+		const STAccount* sa = dynamic_cast<const STAccount*>(&*it);
+		if (sa != NULL) // FIXME: Should we check for duplicates?
+			accounts.push_back(sa->getValueNCA());
+	}
+	return accounts;
+}
+
 int SerializedTransaction::getTransaction(Serializer& s, bool include_length) const
 {
 	int l = getLength();

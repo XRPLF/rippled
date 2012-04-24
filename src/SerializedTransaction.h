@@ -103,6 +103,8 @@ public:
 	void makeITFieldPresent(SOE_Field field);
 	void makeITFieldAbsent(SOE_Field field);
 
+	std::vector<NewcoinAddress> getAffectedAccounts() const;
+
 	// whole transaction functions
 	int getTransaction(Serializer& s, bool include_length) const;
 	uint256 getTransactionID() const;
