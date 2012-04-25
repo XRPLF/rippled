@@ -89,6 +89,11 @@ class Serializer
 	std::vector<unsigned char>::const_iterator end() const { return mData.end(); }
 	std::vector<unsigned char>::size_type size() const { return mData.size(); }
 
+	bool operator==(const std::vector<unsigned char>& v) { return v == mData; }
+	bool operator!=(const std::vector<unsigned char>& v) { return v != mData; }
+	bool operator==(const Serializer& v) { return v.mData == mData; }
+	bool operator!=(const Serializer& v) { return v.mData != mData; }
+
 	// signature functions
 	bool checkSignature(int pubkeyOffset, int signatureOffset) const;
 	bool checkSignature(const std::vector<unsigned char>& signature, CKey& rkey) const;
