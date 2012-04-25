@@ -20,7 +20,7 @@ public:
 	typedef boost::shared_ptr<Transaction> pointer;
 
 private:
-	uint256 mTransactionID;
+	uint256 mID;
 	uint160 mHanko;
 	uint64 mTimestamp;
 	ConfirmationStatus mStatus;
@@ -28,11 +28,11 @@ private:
 	std::vector<unsigned char> mSignature;
 
 public:
-	Transaction();
-	Transaction(const uint256 &id);
-	Transaction(const std::vector<unsigned char> rawTransaction);
+	Confirmation();
+	Confirmation(const uint256 &id);
+	Confirmation(const std::vector<unsigned char> rawConfirmation);
 
-	const uint256& GetID() const { return mTransactionID; }
+	const uint256& GetID() const { return mID; }
 	const uint160& GetHanko() const { return mHanko; }
 	uint64 GetTimestamp() const { return mTimestamp; }
 	ConfirmationStatus() const { return mStatus; }

@@ -83,7 +83,7 @@ void CKey::getECIESSecret(CKey& otherKey, ECIES_ENC_KEY_TYPE& enc_key, ECIES_HMA
 	memset(hbuf, 0, ECIES_KEY_LENGTH);
 }
 
-static ECIES_HMAC_TYPE makeHMAC(const ECIES_HMAC_KEY_TYPE& secret, const std::vector<unsigned char> data)
+static ECIES_HMAC_TYPE makeHMAC(const ECIES_HMAC_KEY_TYPE& secret, const std::vector<unsigned char>& data)
 {
 	HMAC_CTX ctx;
 	HMAC_CTX_init(&ctx);

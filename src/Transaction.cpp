@@ -53,7 +53,8 @@ Transaction::Transaction(LocalAccount::pointer fromLocalAccount, const NewcoinAd
 	}
 }
 
-Transaction::Transaction(SerializedTransaction::pointer sit, bool validate) : mStatus(INVALID), mTransaction(sit)
+Transaction::Transaction(SerializedTransaction::pointer sit, bool validate)
+	: mInLedger(0), mStatus(INVALID), mTransaction(sit)
 {
 	std::vector<unsigned char> pubKey;
 
@@ -76,7 +77,7 @@ Transaction::Transaction(SerializedTransaction::pointer sit, bool validate) : mS
 		mStatus = NEW;
 }
 
-Transaction::Transaction(const std::vector<unsigned char>& raw, bool validate) : mStatus(INVALID)
+Transaction::Transaction(const std::vector<unsigned char>& raw, bool validate) : mInLedger(0), mStatus(INVALID)
 {
 	uint160	toAccountID;
 	uint160	fromAccountID;
