@@ -181,12 +181,11 @@ protected:
 	static const uint64 cMinValue=1000000000000000ull, cMaxValue=9999999999999999ull;
 
 public:
-	STAmount(uint64 v=0, int off=0) : offset(off), value(v)
-	{  canonicalize(); } // (1,0)=$1 (1,-2)=$.01 (100,0)=(10000,-2)=$.01
-	STAmount(const char *n, uint64 v=0, int off=1) : SerializedType(n), offset(off), value(v)
+	STAmount(uint64 v = 0, int off = 0) : offset(off), value(v)
+	{ canonicalize(); } // (1,0)=$1 (1,-2)=$.01 (100,0)=(10000,-2)=$.01
+	STAmount(const char *n, uint64 v = 0, int off = 0) : SerializedType(n), offset(off), value(v)
 	{ canonicalize(); }
-	STAmount(const STAmount& a) : SerializedType(a), offset(a.offset), value(a.value) { ; }
-	static STAmount* construct(SerializerIterator&, const char *name=NULL);
+	static STAmount* construct(SerializerIterator&, const char *name = NULL);
 
 	int getLength() const { return 8; }
 	SerializedTypeID getSType() const { return STI_AMOUNT; }
@@ -197,8 +196,8 @@ public:
 
 	int getOffset() const { return offset; }
 	uint64 getValue() const { return value; }
-	void zero() { offset=0; value=-100; }
-	bool isZero() const { return value==0; }
+	void zero() { offset = -100; value = 0; }
+	bool isZero() const { return value == 0; }
 
 	virtual bool isEquivalent(const SerializedType& t) const;
 

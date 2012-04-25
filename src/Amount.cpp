@@ -9,14 +9,13 @@
 // amount = value * [10 ^ offset]
 // representation range is 10^80 - 10^(-80)
 // on the wire, high 8 bits are (offset+142), low 56 bits are value
-// value is zero if amount is zero, otherwise value is 10^15 - (10^16 - 1) inclusive
+// value is zero if amount is zero, otherwise value is 10^15 to (10^16 - 1) inclusive
 
 void STAmount::canonicalize()
 {
 	if (value == 0)
 	{
 		offset = -100;
-		value = 0;
 		return;
 	}
 	while (value < cMinValue)
@@ -66,7 +65,7 @@ std::string STAmount::getRaw() const
 }
 
 std::string STAmount::getText() const
-{
+{ // keep full internal accuracy, but make more human friendly if posible
 	if (isZero()) return "0";
 	if ( (offset < -25) || (offset > -5) )
 		return boost::lexical_cast<std::string>(value) + "e" + boost::lexical_cast<std::string>(offset);
@@ -164,7 +163,7 @@ STAmount& STAmount::operator=(const STAmount& a)
 }
 
 STAmount& STAmount::operator=(uint64 v)
-{
+{ // does not copy name
 	return *this = STAmount(v, 0);
 }
 
@@ -179,7 +178,7 @@ STAmount& STAmount::operator-=(uint64 v)
 }
 
 STAmount::operator double() const
-{
+{ // Does not keep the precise value. Not recommended
 	if (!value)
 		return 0.0;
 	return static_cast<double>(value) * pow(10.0, offset);
@@ -222,7 +221,7 @@ STAmount operator-(STAmount v1, STAmount v2)
 
 STAmount operator/(const STAmount& num, const STAmount& den)
 {
-	if (den.isZero()) throw std::runtime_error("illegal offer");
+	if (den.isZero()) throw std::runtime_error("division by zero");
 	if (num.isZero()) return STAmount();
 
 	// Compute (numerator * 10^16) / denominator
@@ -270,9 +269,6 @@ STAmount getRate(const STAmount& offerOut, const STAmount& offerIn)
 STAmount getClaimed(STAmount& offerOut, STAmount& offerIn, STAmount& paid)
 { // if someone is offering (offerOut) for (offerIn), and I pay (paid), how much do I get?
 
-	// If you pay nothing, you get nothing. Offer is untouched
-	if (paid.isZero()) return STAmount();
-
 	if (offerIn.isZero() || offerOut.isZero())
 	{ // If the offer is invalid or empty, you pay nothing and get nothing and the offer is dead
 		offerIn.zero();
@@ -280,6 +276,9 @@ STAmount getClaimed(STAmount& offerOut, STAmount& offerIn, STAmount& paid)
 		paid.zero();
 		return STAmount();
 	}
+
+	// If you pay nothing, you get nothing. Offer is untouched
+	if (paid.isZero()) return STAmount();
 
 	if (paid >= offerIn)
 	{ // If you pay equal to or more than the offer amount, you get the whole offer and pay its input
@@ -381,4 +380,9 @@ void STAmount::unitTest()
 	if (!(hundred != zero)) throw std::runtime_error("STAmount fail");
 	if (!(hundred != one)) throw std::runtime_error("STAmount fail");
 	if ((hundred != hundred)) throw std::runtime_error("STAmount fail");
+	if (STAmount().getText() != "0") throw std::runtime_error("STAmount fail");
+	if (STAmount(31).getText() != "31") throw std::runtime_error("STAmount fail");
+	if (STAmount(31,1).getText() != "310") throw std::runtime_error("STAmount fail");
+	if (STAmount(31,-1).getText() != "3.1") throw std::runtime_error("STAmount fail");
+	if (STAmount(31,-2).getText() != "0.31") throw std::runtime_error("STAmount fail");
 }
