@@ -31,7 +31,7 @@ protected:
 	std::list<PackedMessage::pointer> mSendQ;
 	PackedMessage::pointer mSendingPacket;
 	std::bitset<32> mPeerBits;
-	uint160 mHanko;
+	NewcoinAddress	mPublicKey;		// Public key of peer.
 
 	Peer(boost::asio::io_service& io_service);
 

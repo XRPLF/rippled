@@ -52,7 +52,6 @@ DB_SRCS		= glob.glob('database/*.c') + glob.glob('database/*.cpp')
 JSON_SRCS	= glob.glob('json/*.cpp')
 NEWCOIN_SRCS	= glob.glob('src/*.cpp')
 PROTO_SRCS	= env.Protoc([], 'src/newcoin.proto', PROTOCOUTDIR='obj', PROTOCPYTHONOUTDIR=None)
-UTIL_SRCS	= glob.glob('util/*.cpp')
 
 env.Clean(PROTO_SRCS, 'site_scons/site_tools/protoc.pyc')
 
@@ -62,7 +61,7 @@ UNUSED_SRCS	= ['src/HttpReply.cpp', 'src/ValidationCollection.cpp']
 for file in UNUSED_SRCS:
     NEWCOIN_SRCS.remove(file)
 
-NEWCOIN_SRCS	+= DB_SRCS + JSON_SRCS + UTIL_SRCS
+NEWCOIN_SRCS	+= DB_SRCS + JSON_SRCS
 
 # Derive the object files from the source files.
 NEWCOIN_OBJS	= []

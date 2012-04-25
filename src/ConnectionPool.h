@@ -8,8 +8,6 @@
 #include "PackedMessage.h"
 #include "types.h"
 
-class KnownNodeList;
-
 /*
 This is the list of all the Peers we are currently connected to
 */
@@ -18,24 +16,34 @@ class ConnectionPool
     boost::mutex peerLock;
     std::vector<Peer::pointer> mPeers; // FIXME
     std::map<uint160, Peer::pointer> peerMap;
-	//std::vector<std::pair<PackedMessage::pointer,int> > mBroadcastMessages;
 
 public:
 	ConnectionPool();
-	void connectToNetwork(KnownNodeList& nodeList, boost::asio::io_service& io_service);
+	void connectToNetwork(boost::asio::io_service& io_service);
 	void relayMessage(Peer* fromPeer, PackedMessage::pointer msg);
-	//bool isMessageKnown(PackedMessage::pointer msg);
 
-	// hanko->peer mapping functions
-	bool inMap(const uint160& hanko);
-	bool addToMap(const uint160& hanko, Peer::pointer peer);
-	bool delFromMap(const uint160& hanko);
-	Peer::pointer findInMap(const uint160& hanko);
-	std::map<uint160, Peer::pointer> getAllConnected();
-
+	// Manual connection request.
+	// Queue for immediate scanning.
 	bool connectTo(const std::string& host, const std::string& port);
 
+	// Peer notification routines.
+	void peerDisconnected(NewcoinAddress naPeer);
+
 	Json::Value getPeersJson();
+
+#if 0
+	//std::vector<std::pair<PackedMessage::pointer,int> > mBroadcastMessages;
+
+	bool isMessageKnown(PackedMessage::pointer msg);
+
+	// hanko->peer mapping functions
+	bool addToMap(const uint160& hanko, Peer::pointer peer);
+	bool delFromMap(const uint160& hanko);
+
+	bool inMap(const uint160& hanko);
+	std::map<uint160, Peer::pointer> getAllConnected();
+	Peer::pointer findInMap(const uint160& hanko);
+#endif
 };
 
 #endif

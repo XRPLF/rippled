@@ -10,7 +10,6 @@
 #include "../json/writer.h"
 
 #include "Peer.h"
-#include "KnownNodeList.h"
 #include "Config.h"
 #include "Application.h"
 #include "Conversion.h"
@@ -53,7 +52,9 @@ void Peer::detach()
 {
 	mSendQ.clear();
 	mSocket.close();
-	if(!!mHanko) theApp->getConnectionPool().delFromMap(mHanko);
+
+	// XXX Insufficient need to ip and port.
+	if(mPublicKey.IsValid()) theApp->getConnectionPool().peerDisconnected(mPublicKey);
 }
 
 void Peer::connected(const boost::system::error_code& error)
@@ -551,9 +552,9 @@ void Peer::punishPeer(PeerPunish)
 Json::Value Peer::getJson() {
     Json::Value ret(Json::objectValue);
 
-    ret["ip"]	    = mSocket.remote_endpoint().address().to_string();
-    ret["port"]	    = mSocket.remote_endpoint().port();
-    ret["hanko"]    = mHanko.ToString();
+    ret["ip"]			= mSocket.remote_endpoint().address().to_string();
+    ret["port"]			= mSocket.remote_endpoint().port();
+    ret["public_key"]	= mPublicKey.ToString();
 
     return ret;
 }
