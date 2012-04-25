@@ -73,6 +73,7 @@ void Application::run()
 
 	//
 	// Begin validation and ip maintenance.
+	// - Wallet maintains local information: including identity and network connection persistency information.
 	//
 
 	mWallet.start();
