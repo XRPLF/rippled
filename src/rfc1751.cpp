@@ -424,7 +424,7 @@ static int etob(std::string& strData, std::vector<std::string> vsHuman)
 //   0 if word not in dictionary
 //  -1 if badly formed string
 //  -2 if words are okay but parity is wrong.
-int eng2key(std::string& strKey, const std::string strHuman)
+int eng2key(std::string& strKey, const std::string& strHuman)
 {
     std::vector<std::string> vWords;
 	std::string	strFirst, strSecond;
@@ -452,7 +452,7 @@ int eng2key(std::string& strKey, const std::string strHuman)
 }
 
 // key2eng() given a 128 bit key in big-endian format, convert to human.
-void key2eng(std::string& strHuman, const std::string strKey)
+void key2eng(std::string& strHuman, const std::string& strKey)
 {
 	std::string	strFirst, strSecond;
 
