@@ -27,7 +27,7 @@ private:
 public:
 	NewcoinAddress();
 
-	bool IsValid() const;
+	bool isValid() const;
 	void clear();
 
 	//

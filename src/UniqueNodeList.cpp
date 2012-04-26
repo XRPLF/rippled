@@ -1117,7 +1117,7 @@ void UniqueNodeList::setSeedDomains(const seedDomain& sdSource, bool bNext)
 
 	std::string strSql	= str(boost::format("REPLACE INTO SeedDomains (Domain,PublicKey,Source,Next,Scan,Fetch,Sha256,Comment) VALUES (%s, %s, %s, %d, %d, %d, '%s', %s);")
 		% db->escape(sdSource.strDomain)
-		% (sdSource.naPublicKey.IsValid() ? db->escape(sdSource.naPublicKey.humanNodePublic()) : "NULL")
+		% (sdSource.naPublicKey.isValid() ? db->escape(sdSource.naPublicKey.humanNodePublic()) : "NULL")
 		% db->escape(std::string(1, static_cast<char>(sdSource.vsSource)))
 		% iNext
 		% iScan

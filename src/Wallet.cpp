@@ -561,7 +561,7 @@ LocalAccount::pointer Wallet::parseAccount(const std::string& specifier)
 		;	// nothing
 	}
 
-	return familyFound.IsValid()
+	return familyFound.isValid()
 		? getLocalAccount(familyFound, boost::lexical_cast<int>(seq))
 		: LocalAccount::pointer();
 }

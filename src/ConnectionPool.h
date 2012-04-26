@@ -1,33 +1,57 @@
 #ifndef __CONNECTION_POOL__
 #define __CONNECTION_POOL__
 
-#include <boost/asio.hpp>
 #include <boost/thread/mutex.hpp>
 
 #include "Peer.h"
 #include "PackedMessage.h"
 #include "types.h"
 
-/*
-This is the list of all the Peers we are currently connected to
-*/
+//
+// Access to the Newcoin network.
+//
 class ConnectionPool
 {
-    boost::mutex peerLock;
-    std::vector<Peer::pointer> mPeers; // FIXME
-    std::map<uint160, Peer::pointer> peerMap;
+private:
+    boost::mutex mPeerLock;
+
+	typedef std::pair<std::vector<unsigned char>, Peer::pointer> naPeer;
+
+	// Count of peers we are in progress of connecting to.
+	// We are in progress until we know their network public key.
+	int			iConnecting;
+
+	// Peers we are connecting with and non-thin peers we are connected to.
+    boost::unordered_map<ipPort, Peer::pointer> mIpMap;
+
+	// Non-thin peers which we are connected to.
+    boost::unordered_map<std::vector<unsigned char>, Peer::pointer> mConnectedMap;
 
 public:
 	ConnectionPool();
-	void connectToNetwork(boost::asio::io_service& io_service);
+
+	// Begin enforcing connection policy.
+	void start();
+
+	// Send message to network.
 	void relayMessage(Peer* fromPeer, PackedMessage::pointer msg);
 
 	// Manual connection request.
 	// Queue for immediate scanning.
-	bool connectTo(const std::string& host, const std::string& port);
+	bool connectTo(const std::string& strIp, int iPort);
 
-	// Peer notification routines.
-	void peerDisconnected(NewcoinAddress naPeer);
+	//
+	// Peer connectivity notification.
+	//
+
+	// Inbound connection, false=reject
+	bool peerAccepted(Peer::pointer peer, const std::string& strIp, int iPort);
+
+	// We know peers node public key.
+	void peerConnected(Peer::pointer peer);
+
+	// No longer connected.
+	void peerDisconnected(Peer::pointer peer);
 
 	Json::Value getPeersJson();
 
@@ -35,14 +59,6 @@ public:
 	//std::vector<std::pair<PackedMessage::pointer,int> > mBroadcastMessages;
 
 	bool isMessageKnown(PackedMessage::pointer msg);
-
-	// hanko->peer mapping functions
-	bool addToMap(const uint160& hanko, Peer::pointer peer);
-	bool delFromMap(const uint160& hanko);
-
-	bool inMap(const uint160& hanko);
-	std::map<uint160, Peer::pointer> getAllConnected();
-	Peer::pointer findInMap(const uint160& hanko);
 #endif
 };
 

@@ -1,11 +1,11 @@
 
 #include <iostream>
 
-#include <boost/foreach.hpp>
-//#include <boost/log/trivial.hpp>
 #include <boost/bind.hpp>
+#include <boost/foreach.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/ref.hpp>
+//#include <boost/log/trivial.hpp>
 
 #include "../json/writer.h"
 
@@ -16,7 +16,9 @@
 #include "SerializedTransaction.h"
 
 Peer::Peer(boost::asio::io_service& io_service)
-	: mSocket(io_service)
+	: mSocket(io_service),
+		mCtx(boost::asio::ssl::context::sslv23),
+		mSocketSsl(io_service, mCtx)
 {
 }
 
@@ -53,23 +55,101 @@ void Peer::detach()
 	mSendQ.clear();
 	mSocket.close();
 
-	// XXX Insufficient need to ip and port.
-	if(mPublicKey.IsValid()) theApp->getConnectionPool().peerDisconnected(mPublicKey);
+	theApp->getConnectionPool().peerDisconnected(shared_from_this());
 }
 
-void Peer::connected(const boost::system::error_code& error)
+// Begin trying to connect.  We are not connected till we know and accept peer's public key.
+// Only takes IP addresses (not domains).
+void Peer::connect(const std::string strIp, int iPort)
 {
-	if(!error)
-	{
-		std::cout << "Connected to Peer." << std::endl; //BOOST_LOG_TRIVIAL(info) << "Connected to Peer.";
+	int	iPortAct	= iPort < 0 ? SYSTEM_PEER_PORT : iPort;
 
-		sendHello();
-		start_read_header();
+    boost::asio::ip::tcp::resolver::query	query(strIp, boost::lexical_cast<std::string>(iPortAct),
+			boost::asio::ip::resolver_query_base::numeric_host|boost::asio::ip::resolver_query_base::numeric_service);
+	boost::asio::ip::tcp::resolver				resolver(theApp->getIOService());
+	boost::system::error_code					err;
+	boost::asio::ip::tcp::resolver::iterator	itrEndpoint	= resolver.resolve(query, err);
+
+	if (err || itrEndpoint == boost::asio::ip::tcp::resolver::iterator())
+	{
+		// Failed to resolve ip.
+		detach();
 	}
 	else
 	{
+		mIpPort	= make_pair(strIp, iPort);
+#if 1
+		boost::asio::async_connect(
+			mSocket,
+			itrEndpoint,
+			boost::bind(
+				&Peer::handleConnect,
+				shared_from_this(),
+				boost::asio::placeholders::error,
+				boost::asio::placeholders::iterator));
+#else
+		// Connect via ssl.
+		// XXX Why doesn't handler need an iterator?
+		boost::asio::async_connect(
+			mSocketSsl.lowest_layer(),
+			itrEndpoint,
+			boost::bind(
+				&Peer::handleConnect,
+				shared_from_this(),
+				boost::asio::placeholders::error));
+#endif
+	}
+}
+
+// SSL connection.
+void Peer::handleConnect(const boost::system::error_code& error, boost::asio::ip::tcp::resolver::iterator it)
+{
+	if (error)
+	{
+		std::cout << "Socket Connect failed:" << error << std::endl;
 		detach();
-		std::cout  << "Peer::connected Error: " << error << std::endl; //else BOOST_LOG_TRIVIAL(info) << "Error: " << error;
+	}
+	else
+	{
+		std::cout << "Socket Connected." << std::endl;
+	// XXX Exchange public keys.
+		sendHello();
+		start_read_header();
+	}
+}
+
+// Peer connected via door.
+void Peer::connected(const boost::system::error_code& error)
+{
+	boost::asio::ip::tcp::endpoint	ep		= mSocket.remote_endpoint();
+	int								iPort	= ep.port();
+	std::string						strIp	= ep.address().to_string();
+
+	if (iPort == SYSTEM_PEER_PORT)
+		iPort	= -1;
+
+	std::cout  << "Remote peer: accept: " << strIp << " " << iPort << std::endl;
+
+	if (error)
+	{
+		std::cout  << "Remote peer: accept error: " << error << std::endl;
+		detach();
+	}
+	else if (!theApp->getConnectionPool().peerAccepted(shared_from_this(), strIp, iPort))
+	{
+		std::cout << "Remote peer: rejecting." << std::endl;
+		// XXX Reject with a rejection message: already connected
+		detach();
+	}
+	else
+	{
+		std::cout << "Remote peer: accepted." << std::endl;
+		//BOOST_LOG_TRIVIAL(info) << "Connected to Peer.";
+
+		// Not redundant, add to connection list.
+	// XXX Exchange public keys.
+		sendHello();
+		start_read_header();
 	}
 }
 

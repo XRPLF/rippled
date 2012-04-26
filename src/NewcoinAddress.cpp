@@ -16,7 +16,7 @@ NewcoinAddress::NewcoinAddress()
     nVersion = VER_NONE;
 }
 
-bool NewcoinAddress::IsValid() const
+bool NewcoinAddress::isValid() const
 {
     return !vchData.empty();
 }

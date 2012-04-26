@@ -6,7 +6,7 @@
 #include <fstream>
 #include <boost/lexical_cast.hpp>
 
-#define CONFIG_FILE_NAME			"newcoind.cfg"
+#define CONFIG_FILE_NAME			SYSTEM_NAME "d.cfg"	// newcoind.cfg
 #define SECTION_PEER_IP				"peer_ip"
 #define SECTION_PEER_PORT			"peer_port"
 #define SECTION_RPC_IP				"rpc_ip"
@@ -22,8 +22,7 @@ Config::Config()
 
 	NETWORK_START_TIME=1319844908;
 
-
-	PEER_PORT=6561;
+	PEER_PORT=SYSTEM_PEER_PORT;
 	RPC_PORT=5001;
 	NUMBER_CONNECTIONS=30;
 

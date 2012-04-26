@@ -225,3 +225,4 @@ message TMErrorMsg {
 	optional int32 errorCode	= 1;
 	optional string message		= 2;
 }
+// vim:ts=4
