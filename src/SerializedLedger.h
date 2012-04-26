@@ -68,7 +68,7 @@ public:
 		{ return mObject.setValueFieldAccount(field, account); }
 
 	bool getIFieldPresent(SOE_Field field) const { return mObject.isFieldPresent(field); }
-	void makeIFieldPresent(SOE_Field field) { return mObject.makeFieldPresent(field); }
+	void makeIFieldPresent(SOE_Field field) { mObject.makeFieldPresent(field); }
 	void makeIFieldAbsent(SOE_Field field) { return mObject.makeFieldAbsent(field); }
 };
 
