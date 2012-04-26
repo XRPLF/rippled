@@ -29,9 +29,9 @@ public:
 
 	bool isValid() const;
 	void clear();
-
+#if 0
 	//
-	// hanko
+	// hanko - OBSOLETE
 	//
 	uint160 getHanko() const;
 
@@ -40,7 +40,7 @@ public:
 	bool setHanko(const std::string& strHanko);
 	void setHanko(const uint160& hash160);
 	void setHanko(const NewcoinAddress& nodePublic);
-
+#endif
 	//
 	// Node Public
 	//
