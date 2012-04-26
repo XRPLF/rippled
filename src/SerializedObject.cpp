@@ -3,6 +3,8 @@
 
 #include "boost/lexical_cast.hpp"
 
+#include "../json/writer.h"
+
 SerializedType* STObject::makeDefaultObject(SerializedTypeID id, const char *name)
 {
 	switch(id)
@@ -35,6 +37,7 @@ SerializedType* STObject::makeDefaultObject(SerializedTypeID id, const char *nam
 			return new STAccount(name);
 
 		default:
+			assert(false);
 			return NULL;
 	}
 }
@@ -71,6 +74,7 @@ SerializedType* STObject::makeDeserializedObject(SerializedTypeID id, const char
 			return STAccount::construct(sit, name);
 
 		default:
+			assert(false);
 			return NULL;
 	}
 }
@@ -82,7 +86,7 @@ STObject::STObject(SOElement* elem, const char *name) : SerializedType(name), mF
 		if (elem->e_type == SOE_FLAGS) mFlagIdx = mType.size();
 		mType.push_back(elem);
 		if (elem->e_type == SOE_IFFLAG)
-			giveObject(new STObject(elem->e_name));
+			giveObject(new SerializedType(elem->e_name));
 		else
 		{
 			SerializedType* t = makeDefaultObject(elem->e_id, elem->e_name);
@@ -229,7 +233,7 @@ bool STObject::isFieldPresent(SOE_Field field) const
 {
 	int index = getFieldIndex(field);
 	if (index == -1) return false;
-	return peekAtIndex(index).getSType() != STI_OBJECT;
+	return peekAtIndex(index).getSType() != STI_NOTPRESENT;
 }
 
 bool STObject::setFlag(uint32 f)
@@ -267,7 +271,7 @@ SerializedType* STObject::makeFieldPresent(SOE_Field field)
 		throw std::runtime_error("field is not optional");
 
 	ret = getPIndex(index);
-	if (ret->getSType() != STI_OBJECT) return ret;
+	if (ret->getSType() != STI_NOTPRESENT) return ret;
 	ret = makeDefaultObject(mType[index]->e_id, mType[index]->e_name);
 	mData.replace(index, ret);
 
@@ -286,8 +290,8 @@ void STObject::makeFieldAbsent(SOE_Field field)
 	if ((mType[index]->e_type != SOE_IFFLAG) && (mType[index]->e_type != SOE_IFNFLAG))
 		throw std::runtime_error("field is not optional");
 
-	if (peekAtIndex(index).getSType() == STI_OBJECT) return;
-	mData.replace(index, new STObject(mType[index]->e_name));
+	if (peekAtIndex(index).getSType() == STI_NOTPRESENT) return;
+	mData.replace(index, new SerializedType(mType[index]->e_name));
 
 	if (mType[index]->e_type == SOE_IFFLAG)
 		clearFlag(mType[index]->e_flags);
@@ -307,7 +311,7 @@ unsigned char STObject::getValueFieldU8(SOE_Field field) const
 	const SerializedType* rf = peekAtPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
 	SerializedTypeID id = rf->getSType();
-	if (id == STI_OBJECT) return 0; // optional field not present
+	if (id == STI_NOTPRESENT) return 0; // optional field not present
 	const STUInt8 *cf = dynamic_cast<const STUInt8 *>(rf);
 	if (!cf) throw std::runtime_error("Wrong field type");
 	return cf->getValue();
@@ -318,7 +322,7 @@ uint16 STObject::getValueFieldU16(SOE_Field field) const
 	const SerializedType* rf = peekAtPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
 	SerializedTypeID id = rf->getSType();
-	if (id == STI_OBJECT) return 0; // optional field not present
+	if (id == STI_NOTPRESENT) return 0; // optional field not present
 	const STUInt16 *cf = dynamic_cast<const STUInt16 *>(rf);
 	if (!cf) throw std::runtime_error("Wrong field type");
 	return cf->getValue();
@@ -329,7 +333,7 @@ uint32 STObject::getValueFieldU32(SOE_Field field) const
 	const SerializedType* rf = peekAtPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
 	SerializedTypeID id = rf->getSType();
-	if (id == STI_OBJECT) return 0; // optional field not present
+	if (id == STI_NOTPRESENT) return 0; // optional field not present
 	const STUInt32 *cf = dynamic_cast<const STUInt32 *>(rf);
 	if (!cf) throw std::runtime_error("Wrong field type");
 	return cf->getValue();
@@ -340,7 +344,7 @@ uint64 STObject::getValueFieldU64(SOE_Field field) const
 	const SerializedType* rf = peekAtPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
 	SerializedTypeID id = rf->getSType();
-	if (id == STI_OBJECT) return 0; // optional field not present
+	if (id == STI_NOTPRESENT) return 0; // optional field not present
 	const STUInt64 *cf = dynamic_cast<const STUInt64 *>(rf);
 	if (!cf) throw std::runtime_error("Wrong field type");
 	return cf->getValue();
@@ -351,7 +355,7 @@ uint160 STObject::getValueFieldH160(SOE_Field field) const
 	const SerializedType* rf = peekAtPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
 	SerializedTypeID id = rf->getSType();
-	if (id == STI_OBJECT) return uint160(); // optional field not present
+	if (id == STI_NOTPRESENT) return uint160(); // optional field not present
 	const STHash160 *cf = dynamic_cast<const STHash160 *>(rf);
 	if (!cf) throw std::runtime_error("Wrong field type");
 	return cf->getValue();
@@ -362,7 +366,7 @@ uint256 STObject::getValueFieldH256(SOE_Field field) const
 	const SerializedType* rf = peekAtPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
 	SerializedTypeID id = rf->getSType();
-	if (id == STI_OBJECT) return uint256(); // optional field not present
+	if (id == STI_NOTPRESENT) return uint256(); // optional field not present
 	const STHash256 *cf = dynamic_cast<const STHash256 *>(rf);
 	if (!cf) throw std::runtime_error("Wrong field type");
 	return cf->getValue();
@@ -373,7 +377,7 @@ NewcoinAddress STObject::getValueFieldAccount(SOE_Field field) const
 	const SerializedType* rf = peekAtPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
 	SerializedTypeID id = rf->getSType();
-	if (id == STI_OBJECT) return NewcoinAddress(); // optional field not present
+	if (id == STI_NOTPRESENT) return NewcoinAddress(); // optional field not present
 	const STAccount* cf = dynamic_cast<const STAccount *>(rf);
 	if (!cf) throw std::runtime_error("Wrong field type");
 	return cf->getValueNCA();
@@ -384,7 +388,7 @@ std::vector<unsigned char> STObject::getValueFieldVL(SOE_Field field) const
 	const SerializedType* rf = peekAtPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
 	SerializedTypeID id = rf->getSType();
-	if (id == STI_OBJECT) return std::vector<unsigned char>(); // optional field not present
+	if (id == STI_NOTPRESENT) return std::vector<unsigned char>(); // optional field not present
 	const STVariableLength *cf = dynamic_cast<const STVariableLength *>(rf);
 	if (!cf) throw std::runtime_error("Wrong field type");
 	return cf->getValue();
@@ -395,7 +399,7 @@ std::vector<TaggedListItem> STObject::getValueFieldTL(SOE_Field field) const
 	const SerializedType* rf = peekAtPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
 	SerializedTypeID id = rf->getSType();
-	if (id == STI_OBJECT) return std::vector<TaggedListItem>(); // optional field not present
+	if (id == STI_NOTPRESENT) return std::vector<TaggedListItem>(); // optional field not present
 	const STTaggedList *cf = dynamic_cast<const STTaggedList *>(rf);
 	if (!cf) throw std::runtime_error("Wrong field type");
 	return cf->getValue();
@@ -405,7 +409,7 @@ void STObject::setValueFieldU8(SOE_Field field, unsigned char v)
 {
 	SerializedType* rf = getPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
-	if (rf->getSType() == STI_OBJECT) rf = makeFieldPresent(field);
+	if (rf->getSType() == STI_NOTPRESENT) rf = makeFieldPresent(field);
 	STUInt8* cf = dynamic_cast<STUInt8*>(rf);
 	if (!cf) throw std::runtime_error("Wrong field type");
 	cf->setValue(v);
@@ -415,7 +419,7 @@ void STObject::setValueFieldU16(SOE_Field field, uint16 v)
 {
 	SerializedType* rf = getPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
-	if (rf->getSType() == STI_OBJECT) rf = makeFieldPresent(field);
+	if (rf->getSType() == STI_NOTPRESENT) rf = makeFieldPresent(field);
 	STUInt16* cf = dynamic_cast<STUInt16*>(rf);
 	if (!cf) throw std::runtime_error("Wrong field type");
 	cf->setValue(v);
@@ -425,7 +429,7 @@ void STObject::setValueFieldU32(SOE_Field field, uint32 v)
 {
 	SerializedType* rf = getPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
-	if (rf->getSType() == STI_OBJECT) rf = makeFieldPresent(field);
+	if (rf->getSType() == STI_NOTPRESENT) rf = makeFieldPresent(field);
 	STUInt32* cf = dynamic_cast<STUInt32*>(rf);
 	if (!cf) throw std::runtime_error("Wrong field type");
 	cf->setValue(v);
@@ -435,7 +439,7 @@ void STObject::setValueFieldU64(SOE_Field field, uint64 v)
 {
 	SerializedType* rf = getPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
-	if (rf->getSType() == STI_OBJECT) rf = makeFieldPresent(field);
+	if (rf->getSType() == STI_NOTPRESENT) rf = makeFieldPresent(field);
 	STUInt64* cf = dynamic_cast<STUInt64*>(rf);
 	if (!cf) throw std::runtime_error("Wrong field type");
 	cf->setValue(v);
@@ -445,7 +449,7 @@ void STObject::setValueFieldH160(SOE_Field field, const uint160& v)
 {
 	SerializedType* rf = getPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
-	if (rf->getSType() == STI_OBJECT) rf = makeFieldPresent(field);
+	if (rf->getSType() == STI_NOTPRESENT) rf = makeFieldPresent(field);
 	STHash160* cf = dynamic_cast<STHash160*>(rf);
 	if (!cf) throw std::runtime_error("Wrong field type");
 	cf->setValue(v);
@@ -455,7 +459,7 @@ void STObject::setValueFieldAccount(SOE_Field field, const uint160& v)
 {
 	SerializedType* rf = getPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
-	if (rf->getSType() == STI_OBJECT) rf = makeFieldPresent(field);
+	if (rf->getSType() == STI_NOTPRESENT) rf = makeFieldPresent(field);
 	STAccount* cf = dynamic_cast<STAccount*>(rf);
 	if (!cf) throw std::runtime_error("Wrong field type");
 	cf->setValueH160(v);
@@ -465,7 +469,7 @@ void STObject::setValueFieldVL(SOE_Field field, const std::vector<unsigned char>
 {
 	SerializedType* rf = getPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
-	if (rf->getSType() == STI_OBJECT) rf = makeFieldPresent(field);
+	if (rf->getSType() == STI_NOTPRESENT) rf = makeFieldPresent(field);
 	STVariableLength* cf = dynamic_cast<STVariableLength*>(rf);
 	if (!cf) throw std::runtime_error("Wrong field type");
 	cf->setValue(v);
@@ -475,7 +479,7 @@ void STObject::setValueFieldTL(SOE_Field field, const std::vector<TaggedListItem
 {
 	SerializedType* rf = getPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
-	if (rf->getSType() == STI_OBJECT) rf = makeFieldPresent(field);
+	if (rf->getSType() == STI_NOTPRESENT) rf = makeFieldPresent(field);
 	STTaggedList* cf = dynamic_cast<STTaggedList*>(rf);
 	if (!cf) throw std::runtime_error("Wrong field type");
 	cf->setValue(v);
@@ -492,7 +496,7 @@ Json::Value STObject::getJson(int options) const
 		{
 			if (it->getName() == NULL)
 				ret[boost::lexical_cast<std::string>(index)] = it->getText();
-			else ret[it->getName()]=it->getText();
+			else ret[it->getName()] = it->getText();
 		}
 	}
 	return ret;
@@ -504,6 +508,7 @@ static SOElement testSOElements[2][16] =
 		{ sfFlags, "Flags", STI_UINT32,		SOE_FLAGS, 0 },
 		{ sfTest1, "Test1", STI_VL,			SOE_REQUIRED, 0 },
 		{ sfTest2, "Test2", STI_HASH256,	SOE_IFFLAG, 1 },
+		{ sfTest3, "Test3", STI_UINT32,     SOE_REQUIRED, 0 },
 		{ sfInvalid, NULL, STI_DONE,		SOE_NEVER, -1 }
 	}
 };
@@ -525,8 +530,21 @@ void STObject::unitTest()
 
 	if (object1.getSerializer() == object2.getSerializer()) throw std::runtime_error("STObject error");
 	object1.makeFieldAbsent(sfTest2);
+	if (object1.isFieldPresent(sfTest2)) throw std::runtime_error("STObject error");
 	if (object1.getFlags() != 0) throw std::runtime_error("STObject error");
 	if (object1.getSerializer() != object2.getSerializer()) throw std::runtime_error("STObject error");
+
+	STObject copy(object1);
+	if (object1.isFieldPresent(sfTest2)) throw std::runtime_error("STObject error");
+	if (copy.isFieldPresent(sfTest2)) throw std::runtime_error("STObject error");
+	if (object1.getSerializer() != copy.getSerializer()) throw std::runtime_error("STObject error");
+	copy.setValueFieldU32(sfTest3, 1);
+	if (object1.getSerializer() == copy.getSerializer()) throw std::runtime_error("STObject error");
+#ifdef DEBUG
+	Json::StyledStreamWriter ssw;
+	ssw.write(std::cerr, copy.getJson(0));
+#endif
+
 }
 
 // vim:ts=4
