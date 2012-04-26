@@ -265,7 +265,7 @@ SerializedType& SerializedTransaction::getITField(SOE_Field field)
 
 void SerializedTransaction::makeITFieldPresent(SOE_Field field)
 {
-	return mInnerTxn.makeFieldPresent(field);
+	mInnerTxn.makeFieldPresent(field);
 }
 
 void SerializedTransaction::makeITFieldAbsent(SOE_Field field)
