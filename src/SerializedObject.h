@@ -31,7 +31,10 @@ enum SOE_Field
 	sfAccount, sfSequence, sfBalance, sfWalletLocator, sfEmailHash,
 	sfBorrower, sfLendfer, sfLimit, sfOfferCurrency,
 	sfLastReceive, sfLastTxn, sfLender, sfNextRate, sfNextRateLgr, sfNextRateExp,
-	sfNickname, sfMinimumOffer
+	sfNickname, sfMinimumOffer,
+
+	// test fields
+	sfTest1, sfTest2, sfTest3, sfTest4
 };
 
 struct SOElement
@@ -65,6 +68,7 @@ public:
 	virtual bool isEquivalent(const SerializedType& t) const;
 
 	void add(Serializer& s) const;
+	Serializer getSerializer() const { Serializer s; add(s); return s; }
 	std::string getFullText() const;
 	std::string getText() const;
 	virtual Json::Value getJson(int options) const;
@@ -119,8 +123,10 @@ public:
 	{ setValueFieldAccount(field, addr.getAccountID()); }
 
 	bool isFieldPresent(SOE_Field field) const;
-	void makeFieldPresent(SOE_Field field);
+	SerializedType* makeFieldPresent(SOE_Field field);
 	void makeFieldAbsent(SOE_Field field);
+
+	static void unitTest();
 };
 
 
