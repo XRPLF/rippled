@@ -15,7 +15,7 @@ class ConnectionPool
 private:
     boost::mutex mPeerLock;
 
-	typedef std::pair<std::vector<unsigned char>, Peer::pointer> naPeer;
+	typedef std::pair<NewcoinAddress, Peer::pointer> naPeer;
 
 	// Count of peers we are in progress of connecting to.
 	// We are in progress until we know their network public key.
@@ -25,7 +25,7 @@ private:
     boost::unordered_map<ipPort, Peer::pointer> mIpMap;
 
 	// Non-thin peers which we are connected to.
-    boost::unordered_map<std::vector<unsigned char>, Peer::pointer> mConnectedMap;
+    boost::unordered_map<NewcoinAddress, Peer::pointer> mConnectedMap;
 
 public:
 	ConnectionPool();

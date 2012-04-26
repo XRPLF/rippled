@@ -122,10 +122,9 @@ void ConnectionPool::peerDisconnected(Peer::pointer peer)
 	// XXX Don't access member variable directly.
 	if (peer->mPublicKey.isValid())
 	{
-		// XXX Would be better if NewcoinAddress had a hash function.
-		boost::unordered_map<std::vector<unsigned char>, Peer::pointer>::iterator itCm;
+		boost::unordered_map<NewcoinAddress, Peer::pointer>::iterator itCm;
 
-		itCm	= mConnectedMap.find(peer->mPublicKey.getNodePublic());
+		itCm	= mConnectedMap.find(peer->mPublicKey);
 
 		if (itCm == mConnectedMap.end())
 		{
