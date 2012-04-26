@@ -1,4 +1,11 @@
-#include "string"
+#ifndef __CONFIG__
+#define __CONFIG__
+
+#include <string>
+
+#define SYSTEM_NAME	"newcoin"
+
+const int SYSTEM_PEER_PORT=6561;
 
 class Config
 {
@@ -8,9 +15,7 @@ public:
 	std::string VERSION_STR;
 
 	// network parameters
-//	std::string NETWORK_ID;
-//	std::string NETWORK_DNS_SEEDS;
-	int NETWORK_START_TIME;  // The Unix time we start ledger 0
+	int NETWORK_START_TIME;		// The Unix time we start ledger 0
 	int TRANSACTION_FEE_BASE;
 	int LEDGER_SECONDS;
 	int LEDGER_PROPOSAL_DELAY_SECONDS;
@@ -27,8 +32,6 @@ public:
 //	bool NODE_PUBLIC;		// we do not attempt to hide our identity
 //	bool NODE_DUMB;			// we are a 'dumb' client
 //	bool NODE_SMART;		// we offer services to 'dumb' clients
-
-//	std::string HANKO_PRIVATE;
 
 	// RPC parameters
 	std::string RPC_IP;
@@ -48,3 +51,4 @@ public:
 };
 
 extern Config theConfig;
+#endif

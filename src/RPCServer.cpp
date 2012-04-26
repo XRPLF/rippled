@@ -205,12 +205,12 @@ Json::Value RPCServer::doCreateFamily(Json::Value& params)
 		family=theApp->getWallet().addFamily(query, false);
 	}
 
-	if(!family.IsValid())
+	if(!family.isValid())
 		return JSONRPCError(500, "Invalid family specifier");
 
 	Json::Value ret(theApp->getWallet().getFamilyJson(family));
 	if(ret.isNull()) return JSONRPCError(500, "Invalid family");
-	if(seed.IsValid())
+	if(seed.isValid())
 	{
 		ret["FamilySeed"]=seed.humanFamilySeed();
 	}
@@ -255,7 +255,7 @@ Json::Value RPCServer::doNewAccount(Json::Value &params)
 		return JSONRPCError(500, "Family required");
 
 	NewcoinAddress family = parseFamily(fParam);
-	if(!family.IsValid()) return JSONRPCError(500, "Family not found.");
+	if(!family.isValid()) return JSONRPCError(500, "Family not found.");
 
 	LocalAccount::pointer account(theApp->getWallet().getNewLocalAccount(family));
 	if(!account)
@@ -272,7 +272,7 @@ Json::Value RPCServer::doLock(Json::Value &params)
 	if(extractString(fParam, params, 0))
 	{ // local <family>
 		NewcoinAddress family = parseFamily(fParam);
-		if(!family.IsValid()) return JSONRPCError(500, "Family not found");
+		if(!family.isValid()) return JSONRPCError(500, "Family not found");
 
 		theApp->getWallet().lock(family);
 	}
@@ -304,7 +304,7 @@ Json::Value RPCServer::doUnlock(Json::Value &params)
 		// pass phrase
 		family=theApp->getWallet().addFamily(param, false);
 
-	if(!family.IsValid())
+	if(!family.isValid())
 		return JSONRPCError(500, "Bad family");
 
 	Json::Value ret(theApp->getWallet().getFamilyJson(family));
@@ -339,7 +339,7 @@ Json::Value RPCServer::doFamilyInfo(Json::Value &params)
 	extractString(fParam, params, 0);
 
 	NewcoinAddress family=parseFamily(fParam);
-	if(!family.IsValid()) return JSONRPCError(500, "No such family");
+	if(!family.isValid()) return JSONRPCError(500, "No such family");
 
 	Json::Value obj(theApp->getWallet().getFamilyJson(family));
 	if(obj.isNull())
@@ -352,7 +352,7 @@ Json::Value RPCServer::doFamilyInfo(Json::Value &params)
 		int kn=boost::lexical_cast<int>(keyNum);
 		NewcoinAddress k=theApp->getWallet().peekKey(family, kn);
 
-		if(k.IsValid())
+		if(k.isValid())
 		{
 			Json::Value key(Json::objectValue);
 			key["Number"]=kn;
@@ -367,14 +367,30 @@ Json::Value RPCServer::doFamilyInfo(Json::Value &params)
 Json::Value RPCServer::doConnect(Json::Value& params)
 {
 	// connect <ip> [port]
-	std::string host, port;
+	std::string strIp;
+	int			iPort	= -1;
 
-	if(!extractString(host, params, 0))
-		return JSONRPCError(500, "Host required");
-	if(!extractString(port, params, 1))
-		port="6561";
-	if(!theApp->getConnectionPool().connectTo(host, port))
+	if(!params.isArray() || !params.size() || params.size() > 2)
+		return JSONRPCError(500, "Invalid parameters");
+
+	// XXX Might allow domain for manual connections.
+	if(!extractString(strIp, params, 0))
+		return JSONRPCError(500, "Host IP required");
+
+	if(params.size() == 2)
+	{
+		std::string strPort;
+
+		// YYY Should make an extract int.
+		if (!extractString(strPort, params, 1))
+			return JSONRPCError(500, "Bad port");
+
+		iPort	= boost::lexical_cast<int>(strPort);
+	}
+
+	if(!theApp->getConnectionPool().connectTo(strIp, iPort))
 		return JSONRPCError(500, "Unable to connect");
+
 	return "connecting";
 }
 
@@ -400,7 +416,7 @@ Json::Value RPCServer::doSendTo(Json::Value& params)
 		return JSONRPCError(500, "Invalid parameters");
 
 	NewcoinAddress destAccount	= parseAccount(sDest);
-	if(!destAccount.IsValid())
+	if(!destAccount.isValid())
 		return JSONRPCError(500, "Unable to parse destination account");
 
 	uint64 iAmount;
@@ -713,7 +729,7 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 	{
 		theApp->stop();
 
-		return "newcoin server stopping";
+		return SYSTEM_NAME " server stopping";
 	}
 
 	if(command=="unl_add") return doUnlAdd(params);

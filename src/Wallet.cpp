@@ -5,8 +5,9 @@
 #include "openssl/ec.h"
 
 #include <boost/foreach.hpp>
-#include <boost/lexical_cast.hpp>
+#include <boost/format.hpp>
 #include <boost/interprocess/sync/scoped_lock.hpp>
+#include <boost/lexical_cast.hpp>
 #include <boost/make_shared.hpp>
 
 #include "Wallet.h"
@@ -347,32 +348,47 @@ Json::Value Wallet::getFamilyJson(const NewcoinAddress& family)
 
 void Wallet::start()
 {
+	// We need our node identity before we begin networking.
+	// - Allows others to identify if they have connected multiple times.
+	// - Determines our CAS routing and responsibilities.
+	// - This is not our validation identity.
+	if (!nodeIdentityLoad()) {
+		nodeIdentityCreate();
+		if (!nodeIdentityLoad())
+			throw std::runtime_error("unable to retrieve new node identity.");
+	}
+
+	std::cerr << "NodeIdentity: " << mNodePublicKey.humanNodePublic() << std::endl;
+
 	theApp->getUNL().start();
 }
 
+// Retrieve network identity.
 bool Wallet::nodeIdentityLoad()
 {
-	std::string strSql("SELECT * FROM NodeIdentity;");
-
 	Database*	db=theApp->getWalletDB()->getDB();
 	ScopedLock	sl(theApp->getWalletDB()->getDBLock());
+	bool		bSuccess	= false;
 
-	if(!db->executeSQL(strSql.c_str())) return false;
-	if(!db->startIterRows()) return false;
 
-	std::string strPublicKey, strPrivateKey;
+	if(db->executeSQL("SELECT * FROM NodeIdentity;") && db->startIterRows())
+	{
+		std::string strPublicKey, strPrivateKey;
 
-	db->getStr("PublicKey", strPublicKey);
-	db->getStr("PrivateKey", strPrivateKey);
+		db->getStr("PublicKey", strPublicKey);
+		db->getStr("PrivateKey", strPrivateKey);
 
-	mNodePublicKey.setNodePublic(strPublicKey);
-	mNodePrivateKey.setNodePrivate(strPrivateKey);
+		mNodePublicKey.setNodePublic(strPublicKey);
+		mNodePrivateKey.setNodePrivate(strPrivateKey);
 
-	db->endIterRows();
+		db->endIterRows();
+		bSuccess	= true;
+	}
 
-	return true;
+	return bSuccess;
 }
 
+// Create and store a network identity.
 bool Wallet::nodeIdentityCreate() {
 	//
 	// Generate the public and private key
@@ -389,48 +405,24 @@ bool Wallet::nodeIdentityCreate() {
 	nodePublicKey.setNodePublic(CKey(familyGenerator, 0).GetPubKey());
 	nodePrivateKey.setNodePrivate(CKey(familyGenerator, familySeed.getFamilyPrivateKey(), 0).GetSecret());
 
-	std::cerr << "New NodeIdentity:" << std::endl;
-	fprintf(stderr, "public: %s\n", nodePublicKey.humanNodePublic().c_str());
-	fprintf(stderr, "private: %s\n", nodePrivateKey.humanNodePrivate().c_str());
+	std::cerr << "NodeIdentity: Created." << std::endl;
 
 	//
 	// Store the node information
 	//
 	Database* db	= theApp->getWalletDB()->getDB();
 
-	std::string strTmp;
-
-	std::string strPublicKey	= nodePublicKey.humanNodePublic();
-	std::string strPrivateKey	= nodePrivateKey.humanNodePrivate();
-
-	std::string strSql	= "INSERT INTO NodeIdentity (PublicKey,PrivateKey) VALUES (";
-	db->escape(reinterpret_cast<const unsigned char*>(strPublicKey.c_str()), strPublicKey.size(), strTmp);
-	strSql.append(strTmp);
-	strSql.append(",");
-	db->escape(reinterpret_cast<const unsigned char*>(strPrivateKey.c_str()), strPrivateKey.size(), strTmp);
-	strSql.append(strTmp);
-	strSql.append(");");
-
 	ScopedLock sl(theApp->getWalletDB()->getDBLock());
-	db->executeSQL(strSql.c_str());
+	db->executeSQL(str(boost::format("INSERT INTO NodeIdentity (PublicKey,PrivateKey) VALUES (%s,%s);")
+		% db->escape(nodePublicKey.humanNodePublic())
+		% db->escape(nodePrivateKey.humanNodePrivate())));
+	// XXX Check error result.
 
 	return true;
 }
 
 void Wallet::load()
 {
-#if 0
-	// XXX Commented out because not currently used.
-	if (!nodeIdentityLoad()) {
-		nodeIdentityCreate();
-		if (!nodeIdentityLoad())
-			throw std::runtime_error("unable to retrieve new node identity.");
-	}
-
-	std::cerr << "NodeIdentity:" << std::endl;
-	fprintf(stderr, "public: %s\n", mNodePublicKey.humanNodePublic().c_str());
-	fprintf(stderr, "private: %s\n", mNodePrivateKey.humanNodePrivate().c_str());
-#endif
 	std::string sql("SELECT * FROM LocalAcctFamilies;");
 
 	ScopedLock sl(theApp->getWalletDB()->getDBLock());
@@ -569,7 +561,7 @@ LocalAccount::pointer Wallet::parseAccount(const std::string& specifier)
 		;	// nothing
 	}
 
-	return familyFound.IsValid()
+	return familyFound.isValid()
 		? getLocalAccount(familyFound, boost::lexical_cast<int>(seq))
 		: LocalAccount::pointer();
 }

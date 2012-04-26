@@ -3,7 +3,6 @@
 
 #include "UniqueNodeList.h"
 #include "ConnectionPool.h"
-#include "KnownNodeList.h"
 #include "TimingService.h"
 #include "PubKeyCache.h"
 #include "ScopedLock.h"
@@ -42,7 +41,6 @@ class Application
 
 	TimingService			mTimingService;
 	UniqueNodeList			mUNL;
-	KnownNodeList			mKnownNodes;
 	PubKeyCache				mPKCache;
 	LedgerMaster			mMasterLedger;
 	LedgerAcquireMaster		mMasterLedgerAcquire;

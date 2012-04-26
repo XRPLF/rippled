@@ -2,9 +2,10 @@
 #define __PEER__
 
 #include <bitset>
-#include <boost/shared_ptr.hpp>
-#include <boost/enable_shared_from_this.hpp>
 #include <boost/asio.hpp>
+#include <boost/asio/ssl.hpp>
+#include <boost/enable_shared_from_this.hpp>
+#include <boost/shared_ptr.hpp>
 
 #include "../obj/src/newcoin.pb.h"
 #include "PackedMessage.h"
@@ -19,19 +20,30 @@ enum PeerPunish
 	PP_UNWANTED_DATA=3,		// The peer sent us data we didn't want/need
 };
 
+typedef std::pair<std::string,int> ipPort;
+
 class Peer : public boost::enable_shared_from_this<Peer>
 {
 public:
 	static const int psbGotHello=0, psbSentHello=1, psbInMap=2, psbTrusted=3;
 	static const int psbNoLedgers=4, psbNoTransactions=5, psbDownLevel=6;
 
-protected:
+	NewcoinAddress	mPublicKey;		// Public key of peer.
+	ipPort			mIpPort;
+
+	void			handleConnect(const boost::system::error_code& error, boost::asio::ip::tcp::resolver::iterator it);
+
+private:
 	boost::asio::ip::tcp::socket mSocket;
+    boost::asio::ssl::context									mCtx;
+    boost::asio::ssl::stream<boost::asio::ip::tcp::socket>		mSocketSsl;
+
+protected:
+
 	std::vector<uint8_t> mReadbuf;
 	std::list<PackedMessage::pointer> mSendQ;
 	PackedMessage::pointer mSendingPacket;
 	std::bitset<32> mPeerBits;
-	uint160 mHanko;
 
 	Peer(boost::asio::io_service& io_service);
 
@@ -42,7 +54,7 @@ protected:
 	void processReadBuffer();
 	void start_read_header();
 	void start_read_body(unsigned msg_len);
-	
+
 	void sendPacketForce(PackedMessage::pointer packet);
 
 	void sendHello();
@@ -81,6 +93,7 @@ public:
 		return mSocket;
 	}
 
+	void connect(const std::string strIp, int iPort);
 	void connected(const boost::system::error_code& error);
 	void detach();
 	bool samePeer(Peer::pointer p) { return samePeer(*p); }

@@ -1,41 +1,65 @@
 #ifndef __CONNECTION_POOL__
 #define __CONNECTION_POOL__
 
-#include <boost/asio.hpp>
 #include <boost/thread/mutex.hpp>
 
 #include "Peer.h"
 #include "PackedMessage.h"
 #include "types.h"
 
-class KnownNodeList;
-
-/*
-This is the list of all the Peers we are currently connected to
-*/
+//
+// Access to the Newcoin network.
+//
 class ConnectionPool
 {
-    boost::mutex peerLock;
-    std::vector<Peer::pointer> mPeers; // FIXME
-    std::map<uint160, Peer::pointer> peerMap;
-	//std::vector<std::pair<PackedMessage::pointer,int> > mBroadcastMessages;
+private:
+    boost::mutex mPeerLock;
+
+	typedef std::pair<NewcoinAddress, Peer::pointer> naPeer;
+
+	// Count of peers we are in progress of connecting to.
+	// We are in progress until we know their network public key.
+	int			iConnecting;
+
+	// Peers we are connecting with and non-thin peers we are connected to.
+    boost::unordered_map<ipPort, Peer::pointer> mIpMap;
+
+	// Non-thin peers which we are connected to.
+    boost::unordered_map<NewcoinAddress, Peer::pointer> mConnectedMap;
 
 public:
 	ConnectionPool();
-	void connectToNetwork(KnownNodeList& nodeList, boost::asio::io_service& io_service);
+
+	// Begin enforcing connection policy.
+	void start();
+
+	// Send message to network.
 	void relayMessage(Peer* fromPeer, PackedMessage::pointer msg);
-	//bool isMessageKnown(PackedMessage::pointer msg);
 
-	// hanko->peer mapping functions
-	bool inMap(const uint160& hanko);
-	bool addToMap(const uint160& hanko, Peer::pointer peer);
-	bool delFromMap(const uint160& hanko);
-	Peer::pointer findInMap(const uint160& hanko);
-	std::map<uint160, Peer::pointer> getAllConnected();
+	// Manual connection request.
+	// Queue for immediate scanning.
+	bool connectTo(const std::string& strIp, int iPort);
 
-	bool connectTo(const std::string& host, const std::string& port);
+	//
+	// Peer connectivity notification.
+	//
+
+	// Inbound connection, false=reject
+	bool peerAccepted(Peer::pointer peer, const std::string& strIp, int iPort);
+
+	// We know peers node public key.
+	void peerConnected(Peer::pointer peer);
+
+	// No longer connected.
+	void peerDisconnected(Peer::pointer peer);
 
 	Json::Value getPeersJson();
+
+#if 0
+	//std::vector<std::pair<PackedMessage::pointer,int> > mBroadcastMessages;
+
+	bool isMessageKnown(PackedMessage::pointer msg);
+#endif
 };
 
 #endif

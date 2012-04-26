@@ -1,32 +1,163 @@
 
-#include <boost/foreach.hpp>
 #include <boost/asio.hpp>
+#include <boost/foreach.hpp>
 
 #include "ConnectionPool.h"
 #include "Config.h"
-#include "KnownNodeList.h"
 #include "Peer.h"
 #include "Application.h"
+#include "utils.h"
 
 
-ConnectionPool::ConnectionPool() 
+ConnectionPool::ConnectionPool() :
+	iConnecting(0)
 { ; }
 
 
-void ConnectionPool::connectToNetwork(KnownNodeList& nodeList,boost::asio::io_service& io_service)
+void ConnectionPool::start()
 {
-	for(int n=0; n<theConfig.NUMBER_CONNECTIONS; n++)
+	// XXX Start running policy.
+}
+
+// XXX Broken don't send a message to a peer if we got it from the peer.
+void ConnectionPool::relayMessage(Peer* fromPeer, PackedMessage::pointer msg)
+{
+	BOOST_FOREACH(naPeer pair, mConnectedMap)
 	{
-		KnownNode* node=nodeList.getNextNode();
-		if(!node) return;
-		
-		Peer::pointer peer=Peer::create(io_service);
-//		peer->connectTo(*node); // FIXME
-		mPeers.push_back(peer);
-		
+		Peer::pointer peer	= pair.second;
+
+		if(!fromPeer || !(peer.get() == fromPeer))
+			peer->sendPacket(msg);
 	}
 }
-/*
+
+// Inbound connection, false=reject
+// Reject addresses we already have in our table.
+// XXX Reject, if we have too many connections.
+bool ConnectionPool::peerAccepted(Peer::pointer peer, const std::string& strIp, int iPort)
+{
+	bool	bAccept;
+	ipPort	ip	= make_pair(strIp, iPort);
+
+    boost::unordered_map<ipPort, Peer::pointer>::iterator	it;
+
+	boost::mutex::scoped_lock sl(mPeerLock);
+
+	it	= mIpMap.find(ip);
+
+	if (it == mIpMap.end())
+	{
+		// Did not find it.  Not already connecting or connected.
+
+		std::cerr << "ConnectionPool::peerAccepted: " << ip.first << " " << ip.second << std::endl;
+		// Mark as connecting.
+		mIpMap[ip]	= peer;
+		bAccept		= true;
+	}
+	else
+	{
+		// Found it.  Already connected or connecting.
+
+		bAccept	= false;
+	}
+
+	return bAccept;
+}
+
+bool ConnectionPool::connectTo(const std::string& strIp, int iPort)
+{
+	ipPort	ip	= make_pair(strIp, iPort);
+
+    boost::unordered_map<ipPort, Peer::pointer>::iterator	it;
+
+	boost::mutex::scoped_lock sl(mPeerLock);
+
+	it	= mIpMap.find(ip);
+
+	if (it == mIpMap.end())
+	{
+		// Did not find it.  Not already connecting or connected.
+
+		Peer::pointer peer(Peer::create(theApp->getIOService()));
+
+		mIpMap[ip]	= peer;
+
+		peer->connect(strIp, iPort);
+	}
+	else
+	{
+		// Found it.  Already connected.
+		std::cerr << "ConnectionPool::connectTo: Already connected: "
+			<< strIp << " " << iPort << std::endl;
+	}
+
+	return true;
+}
+
+Json::Value ConnectionPool::getPeersJson()
+{
+    Json::Value ret(Json::arrayValue);
+
+	BOOST_FOREACH(naPeer pair, mConnectedMap)
+	{
+		Peer::pointer peer	= pair.second;
+
+		ret.append(peer->getJson());
+    }
+
+    return ret;
+}
+
+void ConnectionPool::peerConnected(Peer::pointer peer)
+{
+	std::cerr << "ConnectionPool::peerConnected" << std::endl;
+}
+
+void ConnectionPool::peerDisconnected(Peer::pointer peer)
+{
+	std::cerr << "ConnectionPool::peerDisconnected: " << peer->mIpPort.first << " " << peer->mIpPort.second << std::endl;
+
+	boost::mutex::scoped_lock sl(mPeerLock);
+
+	// XXX Don't access member variable directly.
+	if (peer->mPublicKey.isValid())
+	{
+		boost::unordered_map<NewcoinAddress, Peer::pointer>::iterator itCm;
+
+		itCm	= mConnectedMap.find(peer->mPublicKey);
+
+		if (itCm == mConnectedMap.end())
+		{
+			// Did not find it.  Not already connecting or connected.
+			std::cerr << "Internal Error: peer connection was inconsistent." << std::endl;
+			// XXX Bad error.
+		}
+		else
+		{
+			// Found it. Delete it.
+			mConnectedMap.erase(itCm);
+		}
+	}
+
+	// XXX Don't access member variable directly.
+    boost::unordered_map<ipPort, Peer::pointer>::iterator	itIp;
+
+	itIp	= mIpMap.find(peer->mIpPort);
+
+	if (itIp == mIpMap.end())
+	{
+		// Did not find it.  Not already connecting or connected.
+		std::cerr << "Internal Error: peer wasn't connected." << std::endl;
+		// XXX Bad error.
+	}
+	else
+	{
+		// Found it. Delete it.
+		mIpMap.erase(itIp);
+	}
+}
+
+#if 0
 bool ConnectionPool::isMessageKnown(PackedMessage::pointer msg)
 {
 	for(unsigned int n=0; n<mBroadcastMessages.size(); n++)
@@ -35,89 +166,6 @@ bool ConnectionPool::isMessageKnown(PackedMessage::pointer msg)
 	}
 	return(false);
 }
-*/
+#endif
 
-
-void ConnectionPool::relayMessage(Peer* fromPeer, PackedMessage::pointer msg)
-{
-	BOOST_FOREACH(Peer::pointer peer, mPeers)
-	{
-		if(!fromPeer || !(peer.get() == fromPeer))
-			peer->sendPacket(msg);
-	}
-}
-
-bool ConnectionPool::addToMap(const uint160& hanko, Peer::pointer peer)
-{
-	boost::mutex::scoped_lock sl(peerLock);
-	return peerMap.insert(std::make_pair(hanko, peer)).second;
-}
-
-bool ConnectionPool::delFromMap(const uint160& hanko)
-{
-	boost::mutex::scoped_lock sl(peerLock);
-	std::map<uint160, Peer::pointer>::iterator it=peerMap.find(hanko);
-	if((it==peerMap.end()) || (it->first!=hanko)) return false;
-	peerMap.erase(it);
-	return true;
-}
-
-Peer::pointer ConnectionPool::findInMap(const uint160& hanko)
-{
-	boost::mutex::scoped_lock sl(peerLock);
-	std::map<uint160, Peer::pointer>::iterator it=peerMap.find(hanko);
-	if(it==peerMap.end()) return Peer::pointer();
-	return it->second;
-}
-
-bool ConnectionPool::inMap(const uint160& hanko)
-{
-	boost::mutex::scoped_lock sl(peerLock);
-	return peerMap.find(hanko) != peerMap.end();
-}
-
-std::map<uint160, Peer::pointer> ConnectionPool::getAllConnected()
-{
-	boost::mutex::scoped_lock sl(peerLock);
-	return peerMap;
-}
-
-bool ConnectionPool::connectTo(const std::string& host, const std::string& port)
-{
-	try
-	{
-		boost::asio::ip::tcp::resolver res(theApp->getIOService());
-		boost::asio::ip::tcp::resolver::query query(host.c_str(), port.c_str());
-		boost::asio::ip::tcp::resolver::iterator it(res.resolve(query)), end;
-
-		Peer::pointer peer(Peer::create(theApp->getIOService()));
-		boost::system::error_code error = boost::asio::error::host_not_found;
-		while (error && (it!=end))
-		{
-			peer->getSocket().close();
-			peer->getSocket().connect(*it++, error);
-		}
-		if(error) return false;
-		boost::mutex::scoped_lock sl(peerLock);
-		mPeers.push_back(peer);
-		peer->connected(boost::system::error_code());
-	}
-	catch (...)
-	{
-		return false;
-	}
-	return true;
-}
-
-Json::Value ConnectionPool::getPeersJson()
-{
-    Json::Value ret(Json::arrayValue);
-
-    BOOST_FOREACH(Peer::pointer peer, mPeers)
-    {
-		ret.append(peer->getJson());
-    }
-
-    return ret;
-}
 // vim:ts=4

@@ -6,14 +6,12 @@
 #include "../json/value.h"
 
 #include "NewcoinAddress.h"
-
+#include "Config.h"
 #include "HttpsClient.h"
 #include "ParseSection.h"
 
 #include <boost/thread/mutex.hpp>
 #include <boost/unordered_map.hpp>
-
-#define SYSTEM_NAME	"newcoin"
 
 // Guarantees minimum thoughput of 1 node per second.
 #define NODE_FETCH_JOBS			10

@@ -10,13 +10,14 @@
 #include <algorithm>
 #include <iostream>
 #include <boost/format.hpp>
+#include <boost/functional/hash.hpp>
 
 NewcoinAddress::NewcoinAddress()
 {
     nVersion = VER_NONE;
 }
 
-bool NewcoinAddress::IsValid() const
+bool NewcoinAddress::isValid() const
 {
     return !vchData.empty();
 }
@@ -26,8 +27,9 @@ void NewcoinAddress::clear()
     nVersion = VER_NONE;
 }
 
+#if 0
 //
-// Hanko
+// Hanko - OBSOLETE
 //
 
 uint160 NewcoinAddress::getHanko() const
@@ -84,6 +86,7 @@ void NewcoinAddress::setHanko(const uint160& hash160)
 void NewcoinAddress::setHanko(const NewcoinAddress& nodePublic) {
 	setHanko(nodePublic.getHanko());
 }
+#endif
 
 //
 // NodePublic

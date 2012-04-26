@@ -73,8 +73,8 @@ void Application::run()
 
 	//
 	// Begin validation and ip maintenance.
+	// - Wallet maintains local information: including identity and network connection persistency information.
 	//
-
 	mWallet.start();
 
 	//
@@ -93,10 +93,12 @@ void Application::run()
 		mRPCDoor=new RPCDoor(mIOService);
 	}//else BOOST_LOG_TRIVIAL(info) << "No RPC Port set. Not listening for commands.";
 
-	mConnectionPool.connectToNetwork(mKnownNodes, mIOService);
-	mTimingService.start(mIOService);
+	//
+	// Begin connectting to network.
+	//
+	mConnectionPool.start();
 
-	std::cout << "Before Run." << std::endl;
+	mTimingService.start(mIOService);
 
 	// Temporary root account will be ["This is my payphrase."]:0
 	NewcoinAddress rootFamilySeed;		// Hold the 128 password.
