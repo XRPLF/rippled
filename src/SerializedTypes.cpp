@@ -171,7 +171,7 @@ std::string STAccount::getText() const
 	if (!getValueH160(u))
 		return STVariableLength::getText();
 	a.setAccountID(u);
-	return a.humanAccountPublic();
+	return a.humanAccountID();
 }
 
 STAccount* STAccount::construct(SerializerIterator& u, const char *name)
