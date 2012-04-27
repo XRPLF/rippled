@@ -11,17 +11,34 @@ LedgerStateParms Ledger::writeBack(LedgerStateParms parms, SerializedLedgerEntry
 	if (!mAccountStateMap->hasItem(entry->getIndex()))
 	{
 		if ((parms & lepCREATE) == 0)
+		{
+#ifdef DEBUG
+			std::cerr << "writeBack no create" << std::endl;
+#endif
 			return lepMISSING;
+		}
 		create = true;
 	}
 
 	SHAMapItem::pointer item = boost::make_shared<SHAMapItem>(entry->getIndex());
 	entry->add(item->peekSerializer());
 
-	if (!mAccountStateMap->updateGiveItem(item, false))
-		return lepERROR;
+	if (create)
+	{
+		if(!mAccountStateMap->addGiveItem(item, false))
+		{
+			assert(false);
+			return lepERROR;
+		}
+		return lepCREATED;
+	}
 
-	return create ? lepCREATED : lepOKAY;
+	if(!mAccountStateMap->updateGiveItem(item, false))
+	{
+		assert(false);
+		return lepERROR;
+	}
+	return lepOKAY;
 }
 
 SerializedLedgerEntry::pointer Ledger::getASNode(LedgerStateParms& parms, const uint256& nodeID,
