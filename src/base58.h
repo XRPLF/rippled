@@ -18,7 +18,6 @@
 #include <string>
 #include <algorithm>
 #include <vector>
-#include <boost/foreach.hpp>
 #include <boost/functional/hash.hpp>
 
 #include "bignum.h"
@@ -244,18 +243,14 @@ public:
     bool operator< (const CBase58Data& b58) const { return CompareTo(b58) <  0; }
     bool operator> (const CBase58Data& b58) const { return CompareTo(b58) >  0; }
 
-	friend std::size_t hash_value(CBase58Data const& b58);
+	friend std::size_t hash_value(const CBase58Data& b58);
 };
 
-inline std::size_t hash_value(CBase58Data const& b58)
+inline std::size_t hash_value(const CBase58Data& b58)
 {
-	std::size_t seed = 0;
+	std::size_t seed = boost::hash_value(b58.nVersion);
 
-	boost::hash_combine(seed, b58.nVersion);
-	BOOST_FOREACH(const unsigned char& x, b58.vchData)
-	{
-		boost::hash_combine(seed, x);
-	}
+	boost::hash_combine(seed, b58.vchData);
 
 	return seed;
 }

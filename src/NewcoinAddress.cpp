@@ -25,6 +25,7 @@ bool NewcoinAddress::isValid() const
 void NewcoinAddress::clear()
 {
     nVersion = VER_NONE;
+    vchData.clear();
 }
 
 #if 0

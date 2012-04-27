@@ -50,6 +50,8 @@ public:
 	// - Maintain peer connectivity through validation and peer management.
 	void start();
 
+	NewcoinAddress& getNodePublic() { return mNodePublicKey; }
+
 	NewcoinAddress addFamily(const std::string& passPhrase, bool lock);
 	NewcoinAddress addFamily(const NewcoinAddress& familySeed, bool lock);
 	NewcoinAddress addFamily(const NewcoinAddress& familyGenerator);
