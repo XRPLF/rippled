@@ -683,8 +683,8 @@ void Peer::punishPeer(PeerPunish)
 Json::Value Peer::getJson() {
     Json::Value ret(Json::objectValue);
 
-    ret["ip"]			= mSocket.remote_endpoint().address().to_string();
-    ret["port"]			= mSocket.remote_endpoint().port();
+    ret["ip"]			= mIpPort.first;
+    ret["port"]			= mIpPort.second;
     ret["public_key"]	= mPublicKey.ToString();
 
     return ret;

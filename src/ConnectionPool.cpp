@@ -124,7 +124,8 @@ bool ConnectionPool::peerConnected(Peer::pointer peer, const NewcoinAddress& na)
 	}
 	else
 	{
-		bSuccess	= true;
+		mConnectedMap[na]	= peer;
+		bSuccess			= true;
 	}
 
 	return bSuccess;
