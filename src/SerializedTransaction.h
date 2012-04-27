@@ -10,7 +10,7 @@
 #include "TransactionFormats.h"
 #include "NewcoinAddress.h"
 
-class SerializedTransaction : public STObject
+class SerializedTransaction : public SerializedType
 {
 public:
 	typedef boost::shared_ptr<SerializedTransaction> pointer;

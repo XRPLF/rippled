@@ -2,7 +2,7 @@
 #include "SerializedLedger.h"
 
 SerializedLedgerEntry::SerializedLedgerEntry(SerializerIterator& sit, const uint256& index)
-	: STObject("LedgerEntry"), mIndex(index)
+	: SerializedType("LedgerEntry"), mIndex(index)
 {
 	uint16 type = sit.get16();
 	mFormat = getLgrFormat(static_cast<LedgerEntryType>(type));
@@ -13,7 +13,7 @@ SerializedLedgerEntry::SerializedLedgerEntry(SerializerIterator& sit, const uint
 }
 
 SerializedLedgerEntry::SerializedLedgerEntry(const Serializer& s, const uint256& index)
-	: STObject("LedgerEntry"), mIndex(index)
+	: SerializedType("LedgerEntry"), mIndex(index)
 {
 	SerializerIterator sit(s);
 
@@ -25,7 +25,7 @@ SerializedLedgerEntry::SerializedLedgerEntry(const Serializer& s, const uint256&
 	mObject = STObject(mFormat->elements, sit);
 }
 
-SerializedLedgerEntry::SerializedLedgerEntry(LedgerEntryType type) : STObject("LedgerEntry"), mType(type)
+SerializedLedgerEntry::SerializedLedgerEntry(LedgerEntryType type) : SerializedType("LedgerEntry"), mType(type)
 {
 	mFormat = getLgrFormat(type);
 	if (mFormat == NULL) throw std::runtime_error("invalid ledger entry type");

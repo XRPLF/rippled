@@ -5,7 +5,7 @@
 #include "LedgerFormats.h"
 #include "NewcoinAddress.h"
 
-class SerializedLedgerEntry : public STObject
+class SerializedLedgerEntry : public SerializedType
 {
 public:
 	typedef boost::shared_ptr<SerializedLedgerEntry> pointer;
