@@ -134,6 +134,7 @@ STObject::STObject(SOElement* elem, SerializerIterator& sit, const char *name) :
 std::string STObject::getFullText() const
 {
 	std::string ret;
+	bool first = true;
 	if (name != NULL)
 	{
 		ret = name;
@@ -141,7 +142,11 @@ std::string STObject::getFullText() const
 	}
 	else ret = "{";
 	for (boost::ptr_vector<SerializedType>::const_iterator it = mData.begin(), end = mData.end(); it != end; ++it)
+	{
+		if (!first) ret += ", ";
+		else first = false;
 		ret += it->getFullText();
+	}
 	ret += "}";
 	return ret;
 }
@@ -375,7 +380,14 @@ uint256 STObject::getValueFieldH256(SOE_Field field) const
 NewcoinAddress STObject::getValueFieldAccount(SOE_Field field) const
 {
 	const SerializedType* rf = peekAtPField(field);
-	if (!rf) throw std::runtime_error("Field not found");
+	if (!rf)
+	{
+#ifdef DEBUG
+		std::cerr << "Account field not found" << std::endl;
+		std::cerr << getFullText() << std::endl;
+#endif
+		throw std::runtime_error("Field not found");
+	}
 	SerializedTypeID id = rf->getSType();
 	if (id == STI_NOTPRESENT) return NewcoinAddress(); // optional field not present
 	const STAccount* cf = dynamic_cast<const STAccount *>(rf);
