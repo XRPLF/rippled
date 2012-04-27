@@ -9,7 +9,7 @@ SerializedLedgerEntry::SerializedLedgerEntry(SerializerIterator& sit, const uint
 	if (mFormat == NULL) throw std::runtime_error("invalid ledger entry type");
 	mType = mFormat->t_type;
 	mVersion.setValue(type);
-	mObject = STObject(mFormat->elements, sit, "Entry");
+	mObject = STObject(mFormat->elements, sit);
 }
 
 SerializedLedgerEntry::SerializedLedgerEntry(const Serializer& s, const uint256& index)
@@ -22,7 +22,7 @@ SerializedLedgerEntry::SerializedLedgerEntry(const Serializer& s, const uint256&
 	if (mFormat == NULL) throw std::runtime_error("invalid ledger entry type");
 	mType = mFormat->t_type;
 	mVersion.setValue(type);
-	mObject = STObject(mFormat->elements, sit, "Entry");
+	mObject = STObject(mFormat->elements, sit);
 }
 
 SerializedLedgerEntry::SerializedLedgerEntry(LedgerEntryType type) : STObject("LedgerEntry"), mType(type)
@@ -30,7 +30,7 @@ SerializedLedgerEntry::SerializedLedgerEntry(LedgerEntryType type) : STObject("L
 	mFormat = getLgrFormat(type);
 	if (mFormat == NULL) throw std::runtime_error("invalid ledger entry type");
 	mVersion.setValue(static_cast<uint16>(mFormat->t_type));
-	mObject = STObject(mFormat->elements, "Entry");
+	mObject = STObject(mFormat->elements);
 }
 
 std::string SerializedLedgerEntry::getFullText() const
