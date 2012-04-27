@@ -519,17 +519,20 @@ bool SHAMap::updateGiveItem(SHAMapItem::pointer item, bool isTransaction)
 
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
-	std::stack<SHAMapTreeNode::pointer> stack=getStack(tag, true);
+	std::stack<SHAMapTreeNode::pointer> stack = getStack(tag, true);
 	if(stack.empty()) throw SHAMapException(MissingNode);
 
 	SHAMapTreeNode::pointer node=stack.top();
 	stack.pop();
 
-	if(!node->isLeaf() || (node->peekItem()->getTag()==tag) )
+	if (!node->isLeaf() || (node->peekItem()->getTag() == tag) )
+	{
+		assert(false);
 		return false;
+	}
 
 	returnNode(node, true);
-	if(!node->setItem(item, isTransaction ? SHAMapTreeNode::tnTRANSACTION : SHAMapTreeNode::tnACCOUNT_STATE))
+	if (!node->setItem(item, isTransaction ? SHAMapTreeNode::tnTRANSACTION : SHAMapTreeNode::tnACCOUNT_STATE))
 		return true;
 
 	dirtyUp(stack, tag, node->getNodeHash());
