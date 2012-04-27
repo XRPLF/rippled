@@ -15,8 +15,7 @@
 #include "Wallet.h"
 #include "BinaryFormats.h"
 
-Ledger::Ledger(const NewcoinAddress& masterID, uint64 startAmount) :
-	mFeeHeld(0), mTimeStamp(0), mLedgerSeq(0),
+Ledger::Ledger(const NewcoinAddress& masterID, uint64 startAmount) : mFeeHeld(0), mTimeStamp(0), mLedgerSeq(0),
 	mClosed(false), mValidHash(false), mAccepted(false), mImmutable(false)
 {
 	mTransactionMap = boost::make_shared<SHAMap>();
@@ -27,6 +26,9 @@ Ledger::Ledger(const NewcoinAddress& masterID, uint64 startAmount) :
 	startAccount->peekSLE().setIFieldU64(sfBalance, startAmount);
 	startAccount->peekSLE().setIFieldU32(sfSequence, 1);
 	writeBack(lepCREATE, startAccount->getSLE());
+#ifdef DEBUG
+	startAccount->dump();
+#endif
 }
 
 Ledger::Ledger(const uint256 &parentHash, const uint256 &transHash, const uint256 &accountHash,
@@ -206,7 +208,7 @@ bool Ledger::unitTest()
 	assert(as);
 	assert(as->getBalance()==100000);
 	assert(as->getSeq()==0);
-	as=ledger->getAccountState(la2);
+	as = ledger->getAccountState(la2);
 	assert(!as);
 
 	Transaction::pointer t=boost::make_shared<Transaction>(l1, l2->getAddress(), 2500, 0, 1);
