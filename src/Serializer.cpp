@@ -222,7 +222,7 @@ uint256 Serializer::getSHA512Half(const unsigned char *data, int len)
 
 uint256 Serializer::getSHA512Half(const std::string& strData)
 {
-    return getSHA512Half(reinterpret_cast<const unsigned char*>(strData.c_str()), strData.size());
+	return getSHA512Half(reinterpret_cast<const unsigned char*>(strData.c_str()), strData.size());
 }
 
 bool Serializer::checkSignature(int pubkeyOffset, int signatureOffset) const
@@ -322,7 +322,7 @@ int Serializer::getTaggedListLength(const std::vector<TaggedListItem>& list)
 bool Serializer::getVL(std::vector<unsigned char>& objectVL, int offset, int& length) const
 {
 	int b1;
-	if (!get8(b1, ++offset)) return false;
+	if (!get8(b1, offset++)) return false;
 
 	int datLen, lenLen = decodeLengthLength(b1);
 	try
@@ -332,14 +332,14 @@ bool Serializer::getVL(std::vector<unsigned char>& objectVL, int offset, int& le
 		else if (lenLen == 2)
 		{
 			int b2;
-			if (!get8(b2, ++offset)) return false;
-			datLen=decodeVLLength(b1, b2);
+			if (!get8(b2, offset++)) return false;
+			datLen = decodeVLLength(b1, b2);
 		}
 		else if (lenLen == 3)
 		{
 			int b2, b3;
-			if (!get8(b2, ++offset)) return false;
-			if (!get8(b3, ++offset)) return false;
+			if (!get8(b2, offset++)) return false;
+			if (!get8(b3, offset++)) return false;
 			datLen = decodeVLLength(b1, b2, b3);
 		}
 		else return false;
@@ -433,14 +433,14 @@ std::vector<unsigned char> Serializer::encodeVL(int length)
 	else if (length <= 12480)
 	{
 		length -= 193;
-		lenBytes[0] = static_cast<unsigned char>(length >> 8);
+		lenBytes[0] = 193 + static_cast<unsigned char>(length >> 8);
 		lenBytes[1] = static_cast<unsigned char>(length & 0xff);
 		return std::vector<unsigned char>(&lenBytes[0], &lenBytes[2]);
 	}
 	else if (length <= 918744)
 	{
 		length -= 12481;
-		lenBytes[0] = static_cast<unsigned char>(length >> 16);
+		lenBytes[0] = 241 + static_cast<unsigned char>(length >> 16);
 		lenBytes[1] = static_cast<unsigned char>((length >> 8) & 0xff);
 		lenBytes[2] = static_cast<unsigned char>(length & 0xff);
 		return std::vector<unsigned char>(&lenBytes[0], &lenBytes[3]);
@@ -500,7 +500,7 @@ int SerializerIterator::getBytesLeft()
 unsigned char SerializerIterator::get8()
 {
 	int val;
-	if (!mSerializer.get8(val, mPos)) throw std::runtime_error("invalid serializer get");
+	if (!mSerializer.get8(val, mPos)) throw std::runtime_error("invalid serializer get8");
 	mPos++;
 	return val;
 }
@@ -508,7 +508,7 @@ unsigned char SerializerIterator::get8()
 uint16 SerializerIterator::get16()
 {
 	uint16 val;
-	if (!mSerializer.get16(val, mPos)) throw std::runtime_error("invalid serializer get");
+	if (!mSerializer.get16(val, mPos)) throw std::runtime_error("invalid serializer get16");
 	mPos += 16/8;
 	return val;
 }
@@ -516,7 +516,7 @@ uint16 SerializerIterator::get16()
 uint32 SerializerIterator::get32()
 {
 	uint32 val;
-	if (!mSerializer.get32(val, mPos)) throw std::runtime_error("invalid serializer get");
+	if (!mSerializer.get32(val, mPos)) throw std::runtime_error("invalid serializer get32");
 	mPos += 32/8;
 	return val;
 }
@@ -524,7 +524,7 @@ uint32 SerializerIterator::get32()
 uint64 SerializerIterator::get64()
 {
 	uint64 val;
-	if (!mSerializer.get64(val, mPos)) throw std::runtime_error("invalid serializer get");
+	if (!mSerializer.get64(val, mPos)) throw std::runtime_error("invalid serializer get64");
 	mPos += 64/8;
 	return val;
 }
@@ -532,7 +532,7 @@ uint64 SerializerIterator::get64()
 uint128 SerializerIterator::get128()
 {
 	uint128 val;
-	if (!mSerializer.get128(val, mPos)) throw std::runtime_error("invalid serializer get");
+	if (!mSerializer.get128(val, mPos)) throw std::runtime_error("invalid serializer get128");
 	mPos += 128/8;
 	return val;
 }
@@ -540,7 +540,7 @@ uint128 SerializerIterator::get128()
 uint160 SerializerIterator::get160()
 {
 	uint160 val;
-	if (!mSerializer.get160(val, mPos)) throw std::runtime_error("invalid serializer get");
+	if (!mSerializer.get160(val, mPos)) throw std::runtime_error("invalid serializer get160");
 	mPos += 160/8;
 	return val;
 }
@@ -548,7 +548,7 @@ uint160 SerializerIterator::get160()
 uint256 SerializerIterator::get256()
 {
 	uint256 val;
-	if (!mSerializer.get256(val, mPos)) throw std::runtime_error("invalid serializer get");
+	if (!mSerializer.get256(val, mPos)) throw std::runtime_error("invalid serializer get256");
 	mPos += 256/8;
 	return val;
 }
@@ -557,8 +557,8 @@ std::vector<unsigned char> SerializerIterator::getVL()
 {
 	int length;
 	std::vector<unsigned char> vl;
-	if (!mSerializer.getVL(vl, mPos, length)) throw std::runtime_error("invalid serializer get");
-	mPos  +=  length;
+	if (!mSerializer.getVL(vl, mPos, length)) throw std::runtime_error("invalid serializer getVL");
+	mPos += length;
 	return vl;
 }
 
@@ -566,7 +566,7 @@ std::vector<TaggedListItem> SerializerIterator::getTaggedList()
 {
 	int length;
 	std::vector<TaggedListItem> tl;
-	if (!mSerializer.getTaggedList(tl, mPos, length)) throw std::runtime_error("invalid serializer get");
-	mPos  +=  length;
+	if (!mSerializer.getTaggedList(tl, mPos, length)) throw std::runtime_error("invalid serializer getTL");
+	mPos += length;
 	return tl;
 }
