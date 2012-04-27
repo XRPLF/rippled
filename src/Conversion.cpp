@@ -2,6 +2,8 @@
 #include "base58.h"
 using namespace std;
 
+#if 0
+
 uint160 protobufTo160(const std::string& buf)
 {
 	uint160 ret;
@@ -38,16 +40,18 @@ bool u160ToHuman(uint160& buf, std::string& retStr)
 	return(true);
 }
 
+#endif
+
 base_uint160 uint256::to160() const
 {
  uint160 m;
- memcpy(&m, this, sizeof(uint160));
+ memcpy(m.begin(), begin(), m.size());
  return m;
 }
 
 base_uint256 uint160::to256() const
 {
  uint256 m;
- memcpy(&m, this, sizeof(this));
+ memcpy(m.begin(), begin(), size());
  return m;
 }
