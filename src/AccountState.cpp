@@ -35,6 +35,7 @@ void AccountState::addJson(Json::Value& val)
 void AccountState::dump()
 {
 	Json::Value j(Json::objectValue);
+	addJson(j);
 	Json::StyledStreamWriter ssw;
 	ssw.write(std::cerr, j);
 }
