@@ -38,7 +38,7 @@ message TMHello {
 	required uint32 version				= 1;
 	optional uint32 ledgerIndex			= 2;
 	optional uint64 netTime				= 3;
-	optional bytes nodeID				= 4; // node may opt to remain anonymous
+	optional bytes nodePublic			= 4; // node may opt to remain anonymous
 	optional uint32 ipv4Port			= 5;
 	optional bytes closedLedger 		= 6;
 }

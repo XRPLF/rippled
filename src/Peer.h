@@ -28,12 +28,14 @@ public:
 	static const int psbGotHello=0, psbSentHello=1, psbInMap=2, psbTrusted=3;
 	static const int psbNoLedgers=4, psbNoTransactions=5, psbDownLevel=6;
 
-	NewcoinAddress	mPublicKey;		// Public key of peer.
+	NewcoinAddress	mPublicKey;		// Node public key of peer.
 	ipPort			mIpPort;
 
 	void			handleConnect(const boost::system::error_code& error, boost::asio::ip::tcp::resolver::iterator it);
 
 private:
+	bool			bRegistered;
+
 	boost::asio::ip::tcp::socket mSocket;
     boost::asio::ssl::context									mCtx;
     boost::asio::ssl::stream<boost::asio::ip::tcp::socket>		mSocketSsl;
