@@ -38,6 +38,7 @@ public:
 
 	std::vector<unsigned char> getRaw() const;
 	void addJson(Json::Value& value);
+	void dump();
 };
 
 #endif
