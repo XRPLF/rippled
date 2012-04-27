@@ -222,10 +222,10 @@ Json::Value RPCServer::doAccountInfo(Json::Value &params)
 {   // accountinfo <family>:<number>
 	// accountinfo <account>
 	std::string acct;
-	if(!extractString(acct, params, 0))
+	if (!extractString(acct, params, 0))
 		return JSONRPCError(500, "Invalid account identifier");
 
-	LocalAccount::pointer account=theApp->getWallet().parseAccount(acct);
+	LocalAccount::pointer account = theApp->getWallet().parseAccount(acct);
 	if(account) return account->getJson();
 
 	NewcoinAddress acctid;
@@ -233,7 +233,7 @@ Json::Value RPCServer::doAccountInfo(Json::Value &params)
 		return JSONRPCError(500, "Unable to parse account");
 
 	LocalAccount::pointer lac(theApp->getWallet().getLocalAccount(acctid));
-	if(!!lac) return lac->getJson();
+	if (!!lac) return lac->getJson();
 
 	AccountState::pointer as=theApp->getMasterLedger().getCurrentLedger()->getAccountState(acctid);
 	Json::Value ret(Json::objectValue);
