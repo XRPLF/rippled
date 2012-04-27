@@ -259,6 +259,7 @@ int Serializer::addVL(const std::vector<unsigned char>& vector)
 {
 	int ret = addRaw(encodeVL(vector.size()));
 	addRaw(vector);
+	assert(mData.size() + (ret + vector.size() + encodeLengthLength(vector.size())));
 	return ret;
 }
 
@@ -355,7 +356,7 @@ bool Serializer::getVL(std::vector<unsigned char>& objectVL, int offset, int& le
 bool Serializer::getVLLength(int& length, int offset) const
 {
 	int b1;
-	if (!get8(b1, ++offset)) return false;
+	if (!get8(b1, offset++)) return false;
 
 	int lenLen = decodeLengthLength(b1);
 	try
@@ -365,14 +366,14 @@ bool Serializer::getVLLength(int& length, int offset) const
 		else if (lenLen == 2)
 		{
 			int b2;
-			if (!get8(b2, ++offset)) return false;
+			if (!get8(b2, offset++)) return false;
 			length=decodeVLLength(b1, b2);
 		}
 		else if (lenLen == 3)
 		{
 			int b2, b3;
-			if (!get8(b2, ++offset)) return false;
-			if (!get8(b3, ++offset)) return false;
+			if (!get8(b2, offset++)) return false;
+			if (!get8(b3, offset++)) return false;
 			length = decodeVLLength(b1, b2, b3);
 		}
 		else return false;
