@@ -27,6 +27,7 @@ Ledger::Ledger(const NewcoinAddress& masterID, uint64 startAmount) : mFeeHeld(0)
 	startAccount->peekSLE().setIFieldU32(sfSequence, 1);
 	writeBack(lepCREATE, startAccount->getSLE());
 #ifdef DEBUG
+	std::cerr << "Root account:";
 	startAccount->dump();
 #endif
 }
@@ -116,14 +117,14 @@ void Ledger::addRaw(Serializer &s)
 AccountState::pointer Ledger::getAccountState(const NewcoinAddress& accountID)
 {
 #ifdef DEBUG
-	std::cerr << "Ledger:getAccountState(" << accountID.humanAccountID() << ")" << std::endl;
+//	std::cerr << "Ledger:getAccountState(" << accountID.humanAccountID() << ")" << std::endl;
 #endif
 	ScopedLock l(mTransactionMap->Lock());
 	SHAMapItem::pointer item = mAccountStateMap->peekItem(Ledger::getAccountRootIndex(accountID));
 	if (!item)
 	{
 #ifdef DEBUG
-		std::cerr << "   notfound" << std::endl;
+//		std::cerr << "   notfound" << std::endl;
 #endif
 		return AccountState::pointer();
 	}
