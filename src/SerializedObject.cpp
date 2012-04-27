@@ -545,6 +545,21 @@ void STObject::unitTest()
 	ssw.write(std::cerr, copy.getJson(0));
 #endif
 
+	for (int i = 0; i < 1000; i++)
+	{
+		std::cerr << "tol: i=" << i << std::endl;
+		std::vector<unsigned char> j(i, 2);
+		object1.setValueFieldVL(sfTest1, j);
+
+		Serializer s;
+		object1.add(s);
+		SerializerIterator it(s);
+		STObject object3(testSOElements[0], it, "TestElement3");
+
+		if (object1.getValueFieldVL(sfTest1) != j) throw std::runtime_error("STObject error");
+		if (object3.getValueFieldVL(sfTest1) != j) throw std::runtime_error("STObject error");
+	}
+
 }
 
 // vim:ts=4
