@@ -46,7 +46,6 @@ public:
 
 	virtual void add(Serializer& s) const { return; }
 
-
 	virtual bool isEquivalent(const SerializedType& t) const { return true; }
 
 	bool operator==(const SerializedType& t) const
@@ -356,7 +355,7 @@ public:
 	STAccount(const char *n, const std::vector<unsigned char>& v) : STVariableLength(n, v) { ; }
 	STAccount(const char *n) : STVariableLength(n) { ; }
 	STAccount() { ; }
-	static STAccount* construct(SerializerIterator&, const char *name=NULL);
+	static STAccount* construct(SerializerIterator&, const char *name = NULL);
 
 	SerializedTypeID getSType() const { return STI_ACCOUNT; }
 	virtual STAccount* duplicate() const { return new STAccount(name, value); }
