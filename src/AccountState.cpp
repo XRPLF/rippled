@@ -22,8 +22,17 @@ AccountState::AccountState(SerializedLedgerEntry::pointer ledgerEntry) : mLedger
 {
 	if (!mLedgerEntry) return;
 	if (mLedgerEntry->getType() != ltACCOUNT_ROOT) return;
-	mAccountID = mLedgerEntry->getValueFieldAccount(sfAccount);
-	if (mAccountID.isValid()) mValid = true;
+	mAccountID = mLedgerEntry->getIValueFieldAccount(sfAccount);
+	if (mAccountID.isValid())
+		mValid = true;
+#ifdef DEBUG
+	if (!mValid) std::cerr << "AccountState not valid" << std::endl;
+	else
+	{
+		std::cerr << "AccountState: " << std::endl << "  ";
+		dump();
+	}
+#endif
 }
 
 void AccountState::addJson(Json::Value& val)
