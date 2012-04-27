@@ -27,6 +27,7 @@ public:
 	SerializedLedgerEntry* duplicate() const { return new SerializedLedgerEntry(*this); }
 	std::string getFullText() const;
 	std::string getText() const;
+	Json::Value getJson(int options) const;
 	void add(Serializer& s) const { mVersion.add(s); mObject.add(s); }
 	virtual bool isEquivalent(const SerializedType& t) const;
 

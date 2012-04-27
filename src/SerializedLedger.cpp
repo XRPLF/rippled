@@ -55,6 +55,14 @@ std::string SerializedLedgerEntry::getText() const
 	return ret;
 }
 
+Json::Value SerializedLedgerEntry::getJson(int options) const
+{
+	Json::Value ret(mObject.getJson(options));
+	ret["Index"] = mIndex.GetHex();
+	ret["Version"] = mVersion.getText();
+	return ret;
+}
+
 bool SerializedLedgerEntry::isEquivalent(const SerializedType& t) const
 { // locators are not compared
 	const SerializedLedgerEntry* v = dynamic_cast<const SerializedLedgerEntry*>(&t);
