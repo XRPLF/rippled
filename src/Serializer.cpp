@@ -81,7 +81,7 @@ int Serializer::addRaw(const void *ptr, int len)
 bool Serializer::get16(uint16& o, int offset) const
 {
 	if ((offset + 2) > mData.size()) return false;
-	o = mData.at(++offset);
+	o = mData.at(offset++);
 	o <<= 8; o |= mData.at(offset);
 	return true;
 }
@@ -89,8 +89,8 @@ bool Serializer::get16(uint16& o, int offset) const
 bool Serializer::get32(uint32& o, int offset) const
 {
 	if ((offset + 4) > mData.size()) return false;
-	o=mData.at(++offset);
-	o<<=8; o |= mData.at(++offset); o <<= 8; o |= mData.at(++offset);
+	o=mData.at(offset++);
+	o<<=8; o |= mData.at(offset++); o <<= 8; o |= mData.at(offset++);
 	o<<=8; o |= mData.at(offset);
 	return true;
 }
@@ -98,10 +98,10 @@ bool Serializer::get32(uint32& o, int offset) const
 bool Serializer::get64(uint64& o, int offset) const
 {
 	if ((offset + 8) > mData.size()) return false;
-	o=mData.at(++offset);
-	o<<=8; o|= mData.at(++offset); o <<= 8; o |= mData.at(++offset);
-	o<<=8; o|= mData.at(++offset); o <<= 8; o |= mData.at(++offset);
-	o<<=8; o|= mData.at(++offset); o <<= 8; o |= mData.at(++offset);
+	o=mData.at(offset++);
+	o<<=8; o|= mData.at(offset++); o <<= 8; o |= mData.at(offset++);
+	o<<=8; o|= mData.at(offset++); o <<= 8; o |= mData.at(offset++);
+	o<<=8; o|= mData.at(offset++); o <<= 8; o |= mData.at(offset++);
 	o<<=8; o|= mData.at(offset);
 	return true;
 }
@@ -390,12 +390,12 @@ bool Serializer::getTaggedList(std::list<TaggedListItem>& list, int offset, int&
 	list.clear();
 	int startOffset = offset;
 	int numElem;
-	if (!get8(numElem, ++offset)) return false;
+	if (!get8(numElem, offset++)) return false;
 	for (int i = 0; i<numElem; i++)
 	{
 		int tag, len;
 		std::vector<unsigned char> data;
-		if (!get8(tag, ++offset)) return false;
+		if (!get8(tag, offset++)) return false;
 		if (!getVL(data, offset, len)) return false;
 		offset += len;
 		list.push_back(std::make_pair(tag, data));
@@ -409,12 +409,12 @@ bool Serializer::getTaggedList(std::vector<TaggedListItem>& list, int offset, in
 	list.clear();
 	int startOffset=offset;
 	int numElem;
-	if (!get8(numElem, ++offset)) return false;
+	if (!get8(numElem, offset++)) return false;
 	for (int i=0; i<numElem; i++)
 	{
 		int tag, len;
 		std::vector<unsigned char> data;
-		if (!get8(tag, ++offset)) return false;
+		if (!get8(tag, offset++)) return false;
 		if (!getVL(data, offset, len)) return false;
 		offset += len;
 		list.push_back(std::make_pair(tag, data));
