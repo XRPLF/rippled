@@ -105,16 +105,20 @@ void Application::run()
 	NewcoinAddress rootFamilyGenerator;	// Hold the generator.
 	NewcoinAddress rootAddress;
 
-	rootFamilySeed.setFamilySeed(CKey::PassPhraseToKey("This is my payphrase"));
+	rootFamilySeed.setFamilySeed(CKey::PassPhraseToKey("This is my payphrase."));
 	rootFamilyGenerator.setFamilyGenerator(rootFamilySeed);
 	rootAddress.setAccountPublic(rootFamilyGenerator, 0);
+	std::cerr << "Root account: " << rootAddress.humanAccountID() << std::endl;
 
 	Ledger::pointer firstLedger(new Ledger(rootAddress, 100000000));
+	assert(!!firstLedger->getAccountState(rootAddress));
 	firstLedger->setClosed();
 	firstLedger->setAccepted();
 	mMasterLedger.pushLedger(firstLedger);
-	Ledger::pointer secondLedger=firstLedger->closeLedger(time(NULL));
+
+	Ledger::pointer secondLedger = firstLedger->closeLedger(time(NULL));
 	mMasterLedger.pushLedger(secondLedger);
+	assert(!!secondLedger->getAccountState(rootAddress));
 	mMasterLedger.setSynced();
 	// temporary
 
