@@ -176,7 +176,7 @@ std::string STAccount::getText() const
 
 STAccount* STAccount::construct(SerializerIterator& u, const char *name)
 {
-	STAccount *ret = new STAccount(u.getVL());
+	STAccount *ret = new STAccount(name, u.getVL());
 	if (!ret->isValueH160())
 	{
 		delete ret;
@@ -194,12 +194,13 @@ void STAccount::setValueH160(const uint160& v)
 {
 	peekValue().empty();
 	peekValue().insert(peekValue().end(), v.begin(), v.end());
+	assert(peekValue().size() == (160/8));
 }
 
 bool STAccount::getValueH160(uint160& v) const
 {
 	if (!isValueH160()) return false;
-	memcpy(v.begin(), &(peekValue().front()), 20);
+	memcpy(v.begin(), &(peekValue().front()), (160/8));
 	return true;
 }
 
