@@ -45,10 +45,10 @@ public:
 	//
 
 	// Inbound connection, false=reject
-	bool peerAccepted(Peer::pointer peer, const std::string& strIp, int iPort);
+	bool peerRegister(Peer::pointer peer, const std::string& strIp, int iPort);
 
-	// We know peers node public key.
-	void peerConnected(Peer::pointer peer);
+	// We know peers node public key.  false=reject
+	bool peerConnected(Peer::pointer peer, const NewcoinAddress& na);
 
 	// No longer connected.
 	void peerDisconnected(Peer::pointer peer);

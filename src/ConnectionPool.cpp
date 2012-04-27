@@ -34,7 +34,7 @@ void ConnectionPool::relayMessage(Peer* fromPeer, PackedMessage::pointer msg)
 // Inbound connection, false=reject
 // Reject addresses we already have in our table.
 // XXX Reject, if we have too many connections.
-bool ConnectionPool::peerAccepted(Peer::pointer peer, const std::string& strIp, int iPort)
+bool ConnectionPool::peerRegister(Peer::pointer peer, const std::string& strIp, int iPort)
 {
 	bool	bAccept;
 	ipPort	ip	= make_pair(strIp, iPort);
@@ -49,7 +49,7 @@ bool ConnectionPool::peerAccepted(Peer::pointer peer, const std::string& strIp, 
 	{
 		// Did not find it.  Not already connecting or connected.
 
-		std::cerr << "ConnectionPool::peerAccepted: " << ip.first << " " << ip.second << std::endl;
+		std::cerr << "ConnectionPool::peerRegister: " << ip.first << " " << ip.second << std::endl;
 		// Mark as connecting.
 		mIpMap[ip]	= peer;
 		bAccept		= true;
@@ -77,6 +77,8 @@ bool ConnectionPool::connectTo(const std::string& strIp, int iPort)
 	if (it == mIpMap.end())
 	{
 		// Did not find it.  Not already connecting or connected.
+		std::cerr << "ConnectionPool::connectTo: Connectting: "
+			<< strIp << " " << iPort << std::endl;
 
 		Peer::pointer peer(Peer::create(theApp->getIOService()));
 
@@ -108,9 +110,24 @@ Json::Value ConnectionPool::getPeersJson()
     return ret;
 }
 
-void ConnectionPool::peerConnected(Peer::pointer peer)
+// Now know peer's node public key.  Determine if we want to stay connected.
+bool ConnectionPool::peerConnected(Peer::pointer peer, const NewcoinAddress& na)
 {
-	std::cerr << "ConnectionPool::peerConnected" << std::endl;
+	bool	bSuccess;
+
+	std::cerr << "ConnectionPool::peerConnected: " << na.humanNodePublic() << std::endl;
+
+	if (na == theApp->getWallet().getNodePublic())
+	{
+		std::cerr << "ConnectionPool::peerConnected: To self." << std::endl;
+		bSuccess	= false;
+	}
+	else
+	{
+		bSuccess	= true;
+	}
+
+	return bSuccess;
 }
 
 void ConnectionPool::peerDisconnected(Peer::pointer peer)
@@ -147,7 +164,8 @@ void ConnectionPool::peerDisconnected(Peer::pointer peer)
 	if (itIp == mIpMap.end())
 	{
 		// Did not find it.  Not already connecting or connected.
-		std::cerr << "Internal Error: peer wasn't connected." << std::endl;
+		std::cerr << "Internal Error: peer wasn't connected: "
+			<< peer->mIpPort.first << " " << peer->mIpPort.second << std::endl;
 		// XXX Bad error.
 	}
 	else
