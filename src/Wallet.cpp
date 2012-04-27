@@ -72,7 +72,7 @@ Json::Value LocalAccount::getJson() const
 	ret["IsLocked"] = mFamily->isLocked();
 
 	AccountState::pointer as = getAccountState();
-	if (as) ret["Account"] = "None";
+	if (!as) ret["Account"] = "None";
 	else
 	{
 		Json::Value acct(Json::objectValue);
