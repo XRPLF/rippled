@@ -3,7 +3,9 @@
 
 uint256 Ledger::getAccountRootIndex(const uint160& accountID)
 { // Index is accountID extended to 256 bits
-	return accountID.to256();
+	uint256 index;
+	memcpy(index.begin() + (index.size() - accountID.size()), accountID.begin(), accountID.size());
+	return index;
 }
 
 uint256 Ledger::getRippleIndex(const uint160& accountID, const uint160& extendTo, const uint160& currency)
