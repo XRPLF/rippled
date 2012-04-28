@@ -7,6 +7,9 @@
 
 const int SYSTEM_PEER_PORT=6561;
 
+// Allow anonymous DH.
+#define DEFAULT_PEER_SSL_CIPHER_LIST	"ALL:!LOW:!EXP:!MD5:@STRENGTH"
+
 class Config
 {
 public:
@@ -41,6 +44,8 @@ public:
 
 	std::string VALIDATION_PASSWORD;
 	std::string VALIDATION_KEY;
+
+	std::string PEER_SSL_CIPHER_LIST;
 
 	// configuration parameters
 	std::string DATA_DIR;
