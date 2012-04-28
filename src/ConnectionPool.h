@@ -54,7 +54,7 @@ public:
 	bool peerConnected(Peer::pointer peer, const NewcoinAddress& na);
 
 	// No longer connected.
-	void peerDisconnected(Peer::pointer peer);
+	void peerDisconnected(Peer::pointer peer, const ipPort& ipPeer, const NewcoinAddress& naPeer);
 
 	Json::Value getPeersJson();
 
