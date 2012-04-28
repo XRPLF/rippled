@@ -8,10 +8,17 @@
 #include "Application.h"
 #include "utils.h"
 
-
 ConnectionPool::ConnectionPool() :
-	iConnecting(0)
-{ ; }
+	iConnecting(0),
+	mCtx(boost::asio::ssl::context::sslv23)
+{
+	mCtx.set_options(
+		boost::asio::ssl::context::default_workarounds
+		| boost::asio::ssl::context::no_sslv2
+		| boost::asio::ssl::context::single_dh_use);
+
+	SSL_CTX_set_cipher_list(mCtx.native_handle(), "ALL:!LOW:!EXP:!MD5:@STRENGTH");
+}
 
 
 void ConnectionPool::start()
@@ -80,7 +87,7 @@ bool ConnectionPool::connectTo(const std::string& strIp, int iPort)
 		std::cerr << "ConnectionPool::connectTo: Connectting: "
 			<< strIp << " " << iPort << std::endl;
 
-		Peer::pointer peer(Peer::create(theApp->getIOService()));
+		Peer::pointer peer(Peer::create(theApp->getIOService(), mCtx));
 
 		mIpMap[ip]	= peer;
 

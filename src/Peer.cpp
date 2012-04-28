@@ -16,10 +16,8 @@
 #include "SerializedTransaction.h"
 #include "utils.h"
 
-Peer::Peer(boost::asio::io_service& io_service)
-	: mSocket(io_service),
-		mCtx(boost::asio::ssl::context::sslv23),
-		mSocketSsl(io_service, mCtx)
+Peer::Peer(boost::asio::io_service& io_service, boost::asio::ssl::context& ctx)
+	: mSocketSsl(io_service, ctx)
 {
 }
 
@@ -54,7 +52,7 @@ void Peer::handle_write(const boost::system::error_code& error, size_t bytes_tra
 void Peer::detach()
 {
 	mSendQ.clear();
-	mSocket.close();
+	// mSocketSsl.close();
 
 	if (!mIpPort.first.empty()) {
 		theApp->getConnectionPool().peerDisconnected(shared_from_this());
@@ -86,30 +84,33 @@ void Peer::connect(const std::string strIp, int iPort)
 	else
 	{
 		std::cerr << "Peer::connect: Connectting: " << mIpPort.first << " " << mIpPort.second << std::endl;
-#if 1
-		boost::asio::async_connect(
-			mSocket,
-			itrEndpoint,
-			boost::bind(
-				&Peer::handleConnect,
-				shared_from_this(),
-				boost::asio::placeholders::error,
-				boost::asio::placeholders::iterator));
-#else
-		// Connect via ssl.
-		// XXX Why doesn't handler need an iterator?
+
 		boost::asio::async_connect(
 			mSocketSsl.lowest_layer(),
 			itrEndpoint,
 			boost::bind(
 				&Peer::handleConnect,
 				shared_from_this(),
-				boost::asio::placeholders::error));
-#endif
+				boost::asio::placeholders::error,
+				boost::asio::placeholders::iterator));
 	}
 }
 
-// SSL connection.
+void Peer::handleStart(const boost::system::error_code& error)
+{
+	if (error)
+	{
+		std::cout << "Peer::handleStart: failed:" << error << std::endl;
+		detach();
+	}
+	else
+	{
+		start_read_header();
+		sendHello();
+	}
+}
+
+// Connect as client.
 void Peer::handleConnect(const boost::system::error_code& error, boost::asio::ip::tcp::resolver::iterator it)
 {
 	if (error)
@@ -121,15 +122,23 @@ void Peer::handleConnect(const boost::system::error_code& error, boost::asio::ip
 	{
 		std::cout << "Socket Connected." << std::endl;
 
-		start_read_header();
-		sendHello();
+	    mSocketSsl.lowest_layer().set_option(boost::asio::ip::tcp::no_delay(true));
+	    mSocketSsl.set_verify_mode(boost::asio::ssl::verify_none);
+
+		// XXX Do what?
+	    // mSocketSsl.set_verify_callback(boost::asio::ssl::rfc2818_verification(mDeqSites[0]), mShutdown);
+
+	    mSocketSsl.async_handshake(boost::asio::ssl::stream<boost::asio::ip::tcp::socket>::client,
+			boost::bind(&Peer::handleStart,
+				shared_from_this(),
+				boost::asio::placeholders::error));
 	}
 }
 
-// Peer connected via door.
+// Connect as server.
 void Peer::connected(const boost::system::error_code& error)
 {
-	boost::asio::ip::tcp::endpoint	ep		= mSocket.remote_endpoint();
+	boost::asio::ip::tcp::endpoint	ep		= mSocketSsl.lowest_layer().remote_endpoint();
 	int								iPort	= ep.port();
 	std::string						strIp	= ep.address().to_string();
 
@@ -158,15 +167,23 @@ void Peer::connected(const boost::system::error_code& error)
 
 		mIpPort		= make_pair(strIp, iPort);
 
-		start_read_header();
-		sendHello();
+	    mSocketSsl.lowest_layer().set_option(boost::asio::ip::tcp::no_delay(true));
+	    mSocketSsl.set_verify_mode(boost::asio::ssl::verify_none);
+
+		// XXX Do what?
+	    // mSocketSsl.set_verify_callback(boost::asio::ssl::rfc2818_verification(mDeqSites[0]), mShutdown);
+
+	    mSocketSsl.async_handshake(boost::asio::ssl::stream<boost::asio::ip::tcp::socket>::server,
+			boost::bind(&Peer::handleStart,
+				shared_from_this(),
+				boost::asio::placeholders::error));
 	}
 }
 
 void Peer::sendPacketForce(PackedMessage::pointer packet)
 {
 	mSendingPacket=packet;
-	boost::asio::async_write(mSocket, boost::asio::buffer(packet->getBuffer()),
+	boost::asio::async_write(mSocketSsl, boost::asio::buffer(packet->getBuffer()),
 		boost::bind(&Peer::handle_write, shared_from_this(),
 		boost::asio::placeholders::error,
 		boost::asio::placeholders::bytes_transferred));
@@ -194,7 +211,7 @@ void Peer::start_read_header()
 #endif
 	mReadbuf.clear();
 	mReadbuf.resize(HEADER_SIZE);
-	boost::asio::async_read(mSocket, boost::asio::buffer(mReadbuf),
+	boost::asio::async_read(mSocketSsl, boost::asio::buffer(mReadbuf),
 		boost::bind(&Peer::handle_read_header, shared_from_this(), boost::asio::placeholders::error));
 }
 
@@ -205,13 +222,13 @@ void Peer::start_read_body(unsigned msg_len)
 	// read into the body.
 	//
 	mReadbuf.resize(HEADER_SIZE + msg_len);
-	boost::asio::async_read(mSocket, boost::asio::buffer(&mReadbuf[HEADER_SIZE], msg_len),
+	boost::asio::async_read(mSocketSsl, boost::asio::buffer(&mReadbuf[HEADER_SIZE], msg_len),
 		boost::bind(&Peer::handle_read_body, shared_from_this(), boost::asio::placeholders::error));
 }
 
 void Peer::handle_read_header(const boost::system::error_code& error)
 {
-	if(!error)
+	if (!error)
 	{
 		unsigned msg_len = PackedMessage::getLength(mReadbuf);
 		// WRITEME: Compare to maximum message length, abort if too large
@@ -225,13 +242,13 @@ void Peer::handle_read_header(const boost::system::error_code& error)
 	else
 	{
 		detach();
-		std::cout  << "Peer::connected Error: " << error << std::endl; //else BOOST_LOG_TRIVIAL(info) << "Error: " << error;
+		std::cout  << "Peer::handle_read_header: Error: " << error << std::endl; //else BOOST_LOG_TRIVIAL(info) << "Error: " << error;
 	}
 }
 
 void Peer::handle_read_body(const boost::system::error_code& error)
 {
-	if(!error)
+	if (!error)
 	{
 		processReadBuffer();
 		start_read_header();
@@ -239,7 +256,7 @@ void Peer::handle_read_body(const boost::system::error_code& error)
 	else
 	{
 		detach();
-		std::cout  << "Peer::connected Error: " << error << std::endl; //else BOOST_LOG_TRIVIAL(info) << "Error: " << error;
+		std::cout  << "Peer::handle_read_body: Error: " << error << std::endl; //else BOOST_LOG_TRIVIAL(info) << "Error: " << error;
 	}
 }
 
@@ -360,7 +377,7 @@ void Peer::processReadBuffer()
 			}
 			break;
 
-	#if 0
+#if 0
 		case newcoin::mtPROPOSE_LEDGER:
 			{
 				newcoin::TM msg;
@@ -396,9 +413,7 @@ void Peer::processReadBuffer()
 				else std::cout << "pars error: " << type << std::endl;
 			}
 			break;
-
-	#endif
-
+#endif
 		case newcoin::mtGET_OBJECT:
 			{
 				newcoin::TMGetObjectByHash msg;

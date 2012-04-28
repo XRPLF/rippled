@@ -1,6 +1,7 @@
 #ifndef __CONNECTION_POOL__
 #define __CONNECTION_POOL__
 
+#include <boost/asio/ssl.hpp>
 #include <boost/thread/mutex.hpp>
 
 #include "Peer.h"
@@ -26,6 +27,8 @@ private:
 
 	// Non-thin peers which we are connected to.
     boost::unordered_map<NewcoinAddress, Peer::pointer> mConnectedMap;
+
+    boost::asio::ssl::context							mCtx;
 
 public:
 	ConnectionPool();
