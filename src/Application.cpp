@@ -11,6 +11,7 @@
 #include "RPCDoor.h"
 #include "BitcoinUtil.h"
 #include "key.h"
+#include "utils.h"
 
 Application* theApp=NULL;
 
@@ -45,7 +46,7 @@ Application::Application() :
 	mTxnDB(NULL), mLedgerDB(NULL), mWalletDB(NULL), mHashNodeDB(NULL), mNetNodeDB(NULL),
 	mPeerDoor(NULL), mRPCDoor(NULL)
 {
-	theConfig.load();
+	nothing();
 }
 
 extern const char *TxnDBInit[], *LedgerDBInit[], *WalletDBInit[], *HashNodeDBInit[], *NetNodeDBInit[];
