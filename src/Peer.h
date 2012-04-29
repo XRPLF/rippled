@@ -33,6 +33,7 @@ public:
 private:
 	NewcoinAddress	mNodePublic;		// Node public key of peer.
 	ipPort			mIpPort;
+	uint256			mCookieHash;
 
     boost::asio::ssl::stream<boost::asio::ip::tcp::socket>		mSocketSsl;
 
@@ -81,7 +82,7 @@ protected:
 	void recvGetLedger(newcoin::TMGetLedger& packet);
 	void recvLedger(newcoin::TMLedgerData& packet);
 
-	std::vector<unsigned char> getSessionCookie();
+	void getSessionCookie(std::string& strDst);
 
 public:
 	typedef boost::shared_ptr<Peer> pointer;
