@@ -141,6 +141,20 @@ void NewcoinAddress::setNodePublic(const std::vector<unsigned char>& vPublic)
 // NodePrivate
 //
 
+const std::vector<unsigned char>& NewcoinAddress::getNodePrivateData() const
+{
+    switch (nVersion) {
+    case VER_NONE:
+		throw std::runtime_error("unset source");
+
+    case VER_NODE_PRIVATE:
+		return vchData;
+
+    default:
+		throw std::runtime_error(str(boost::format("bad source: %d") % int(nVersion)));
+    }
+}
+
 uint256 NewcoinAddress::getNodePrivate() const
 {
     switch (nVersion) {

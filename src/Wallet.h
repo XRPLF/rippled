@@ -51,6 +51,7 @@ public:
 	void start();
 
 	NewcoinAddress& getNodePublic() { return mNodePublicKey; }
+	NewcoinAddress& getNodePrivate() { return mNodePrivateKey; }
 
 	NewcoinAddress addFamily(const std::string& passPhrase, bool lock);
 	NewcoinAddress addFamily(const NewcoinAddress& familySeed, bool lock);

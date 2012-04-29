@@ -54,6 +54,7 @@ public:
 	//
 	// Node Private
 	//
+	const std::vector<unsigned char>& getNodePrivateData() const;
 	uint256 getNodePrivate() const;
 
 	std::string humanNodePrivate() const;
