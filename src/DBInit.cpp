@@ -56,12 +56,11 @@ const char *WalletDBInit[] = {
 		Comment			TEXT						\
 	);",
 
-	// XXX Don't really need this.
-	// We should generate communication identity per launch.
-	// Validation id is provided via rpc or stored in config.
 	"CREATE TABLE NodeIdentity (					\
 		PublicKey		CHARACTER(53),				\
-		PrivateKey		CHARACTER(52)				\
+		PrivateKey		CHARACTER(52),				\
+		Dh512			TEXT,						\
+		Dh1024			TEXT						\
 	);",
 
 	// Miscellaneous persistent information

@@ -14,6 +14,7 @@
 #include "Ledger.h"
 #include "NewcoinAddress.h"
 #include "Application.h"
+#include "utils.h"
 
 // TEMPORARY
 #ifndef CHECK_NEW_FAMILIES
@@ -381,6 +382,14 @@ bool Wallet::nodeIdentityLoad()
 		mNodePublicKey.setNodePublic(strPublicKey);
 		mNodePrivateKey.setNodePrivate(strPrivateKey);
 
+		std::string	strDh512, strDh1024;
+
+		db->getStr("Dh512", strDh512);
+		db->getStr("Dh1024", strDh1024);
+
+		mDh512	= DH_der_load_hex(strDh512);
+		mDh1024	= DH_der_load_hex(strDh1024);
+
 		db->endIterRows();
 		bSuccess	= true;
 	}
@@ -390,6 +399,8 @@ bool Wallet::nodeIdentityLoad()
 
 // Create and store a network identity.
 bool Wallet::nodeIdentityCreate() {
+	std::cerr << "NodeIdentity: Creating." << std::endl;
+
 	//
 	// Generate the public and private key
 	//
@@ -403,7 +414,14 @@ bool Wallet::nodeIdentityCreate() {
 	nodePublicKey.setNodePublic(key.GetPubKey());
 	nodePrivateKey.setNodePrivate(key.GetSecret());
 
-	std::cerr << "NodeIdentity: Created." << std::endl;
+	std::string	strDh512, strDh1024;
+
+	DH_der_gen_hex(strDh512, 512);		// Using hex as db->escape in insufficient.
+#if 1
+	strDh1024	= strDh512;				// For testing and most cases 512 is fine.
+#else
+	DH_der_gen_hex(strDh1024, 1024);
+#endif
 
 	//
 	// Store the node information
@@ -411,10 +429,14 @@ bool Wallet::nodeIdentityCreate() {
 	Database* db	= theApp->getWalletDB()->getDB();
 
 	ScopedLock sl(theApp->getWalletDB()->getDBLock());
-	db->executeSQL(str(boost::format("INSERT INTO NodeIdentity (PublicKey,PrivateKey) VALUES (%s,%s);")
+	db->executeSQL(str(boost::format("INSERT INTO NodeIdentity (PublicKey,PrivateKey,Dh512,Dh1024) VALUES (%s,%s,%s,%s);")
 		% db->escape(nodePublicKey.humanNodePublic())
-		% db->escape(nodePrivateKey.humanNodePrivate())));
+		% db->escape(nodePrivateKey.humanNodePrivate())
+		% db->escape(strDh512)
+		% db->escape(strDh1024)));
 	// XXX Check error result.
+
+	std::cerr << "NodeIdentity: Created." << std::endl;
 
 	return true;
 }

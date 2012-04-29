@@ -10,6 +10,7 @@
 #include <boost/shared_ptr.hpp>
 
 #include "openssl/ec.h"
+#include "openssl/dh.h"
 
 #include "../json/value.h"
 
@@ -31,6 +32,8 @@ protected:
 
 	NewcoinAddress	mNodePublicKey;
 	NewcoinAddress	mNodePrivateKey;
+	DH*		mDh512;
+	DH*		mDh1024;
 
 	std::map<NewcoinAddress, LocalAccountFamily::pointer> mFamilies;
 	std::map<NewcoinAddress, LocalAccount::pointer> mAccounts;
@@ -50,8 +53,10 @@ public:
 	// - Maintain peer connectivity through validation and peer management.
 	void start();
 
-	NewcoinAddress& getNodePublic() { return mNodePublicKey; }
-	NewcoinAddress& getNodePrivate() { return mNodePrivateKey; }
+	NewcoinAddress&	    getNodePublic() { return mNodePublicKey; }
+	NewcoinAddress&	    getNodePrivate() { return mNodePrivateKey; }
+	DH*		    getDh512() { return DHparams_dup(mDh512); }
+	DH*		    getDh1024() { return DHparams_dup(mDh1024); }
 
 	NewcoinAddress addFamily(const std::string& passPhrase, bool lock);
 	NewcoinAddress addFamily(const NewcoinAddress& familySeed, bool lock);
