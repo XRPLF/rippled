@@ -28,17 +28,15 @@ public:
 	static const int psbGotHello=0, psbSentHello=1, psbInMap=2, psbTrusted=3;
 	static const int psbNoLedgers=4, psbNoTransactions=5, psbDownLevel=6;
 
-	NewcoinAddress	mPublicKey;		// Node public key of peer.
+	NewcoinAddress	mNodePublic;		// Node public key of peer.
 	ipPort			mIpPort;
 
 	void			handleConnect(const boost::system::error_code& error, boost::asio::ip::tcp::resolver::iterator it);
 
 private:
-	bool			bRegistered;
-
-	boost::asio::ip::tcp::socket mSocket;
-    boost::asio::ssl::context									mCtx;
     boost::asio::ssl::stream<boost::asio::ip::tcp::socket>		mSocketSsl;
+
+	void			handleStart(const boost::system::error_code& error);
 
 protected:
 
@@ -47,7 +45,7 @@ protected:
 	PackedMessage::pointer mSendingPacket;
 	std::bitset<32> mPeerBits;
 
-	Peer(boost::asio::io_service& io_service);
+	Peer(boost::asio::io_service& io_service, boost::asio::ssl::context& ctx);
 
 	void handle_write(const boost::system::error_code& error, size_t bytes_transferred);
 	//void handle_read(const boost::system::error_code& error, size_t bytes_transferred);
@@ -85,14 +83,14 @@ public:
 
 	//bool operator == (const Peer& other);
 
-	static pointer create(boost::asio::io_service& io_service)
+	static pointer create(boost::asio::io_service& io_service, boost::asio::ssl::context& ctx)
 	{
-		return pointer(new Peer(io_service));
+		return pointer(new Peer(io_service, ctx));
 	}
 
-	boost::asio::ip::tcp::socket& getSocket()
+	boost::asio::ssl::stream<boost::asio::ip::tcp::socket>::lowest_layer_type& getSocket()
 	{
-		return mSocket;
+		return mSocketSsl.lowest_layer();
 	}
 
 	void connect(const std::string strIp, int iPort);

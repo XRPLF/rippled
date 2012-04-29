@@ -47,14 +47,17 @@ void printHelp()
 int parseCommandline(int argc, char* argv[])
 {
 	int ret=0;
+
+	theConfig.load();
+
 	if(argc>1)
 	{
-		theConfig.load();
 		ret=commandLineRPC(argc, argv);
 		if(ret)
 			printHelp();
 	}
 	else startApp();
+
 	return ret;
 }
 

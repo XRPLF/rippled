@@ -8,18 +8,27 @@
 #include "Application.h"
 #include "utils.h"
 
+// XXX On Windows make sure OpenSSL PRNG is seeded: EGADS
 
 ConnectionPool::ConnectionPool() :
-	iConnecting(0)
-{ ; }
+	iConnecting(0),
+	mCtx(boost::asio::ssl::context::sslv23)
+{
+	mCtx.set_options(
+		boost::asio::ssl::context::default_workarounds
+		| boost::asio::ssl::context::no_sslv2
+		| boost::asio::ssl::context::single_dh_use);
 
+	if (1 != SSL_CTX_set_cipher_list(mCtx.native_handle(), theConfig.PEER_SSL_CIPHER_LIST.c_str()))
+		std::runtime_error("Error setting cipher list (no valid ciphers).");
+}
 
 void ConnectionPool::start()
 {
 	// XXX Start running policy.
 }
 
-// XXX Broken don't send a message to a peer if we got it from the peer.
+// XXX Broken: also don't send a message to a peer if we got it from the peer.
 void ConnectionPool::relayMessage(Peer* fromPeer, PackedMessage::pointer msg)
 {
 	BOOST_FOREACH(naPeer pair, mConnectedMap)
@@ -80,7 +89,7 @@ bool ConnectionPool::connectTo(const std::string& strIp, int iPort)
 		std::cerr << "ConnectionPool::connectTo: Connectting: "
 			<< strIp << " " << iPort << std::endl;
 
-		Peer::pointer peer(Peer::create(theApp->getIOService()));
+		Peer::pointer peer(Peer::create(theApp->getIOService(), mCtx));
 
 		mIpMap[ip]	= peer;
 
@@ -131,18 +140,17 @@ bool ConnectionPool::peerConnected(Peer::pointer peer, const NewcoinAddress& na)
 	return bSuccess;
 }
 
-void ConnectionPool::peerDisconnected(Peer::pointer peer)
+void ConnectionPool::peerDisconnected(Peer::pointer peer, const ipPort& ipPeer, const NewcoinAddress& naPeer)
 {
 	std::cerr << "ConnectionPool::peerDisconnected: " << peer->mIpPort.first << " " << peer->mIpPort.second << std::endl;
 
 	boost::mutex::scoped_lock sl(mPeerLock);
 
-	// XXX Don't access member variable directly.
-	if (peer->mPublicKey.isValid())
+	if (naPeer.isValid())
 	{
 		boost::unordered_map<NewcoinAddress, Peer::pointer>::iterator itCm;
 
-		itCm	= mConnectedMap.find(peer->mPublicKey);
+		itCm	= mConnectedMap.find(naPeer);
 
 		if (itCm == mConnectedMap.end())
 		{
@@ -157,16 +165,15 @@ void ConnectionPool::peerDisconnected(Peer::pointer peer)
 		}
 	}
 
-	// XXX Don't access member variable directly.
     boost::unordered_map<ipPort, Peer::pointer>::iterator	itIp;
 
-	itIp	= mIpMap.find(peer->mIpPort);
+	itIp	= mIpMap.find(ipPeer);
 
 	if (itIp == mIpMap.end())
 	{
 		// Did not find it.  Not already connecting or connected.
 		std::cerr << "Internal Error: peer wasn't connected: "
-			<< peer->mIpPort.first << " " << peer->mIpPort.second << std::endl;
+			<< ipPeer.first << " " << ipPeer.second << std::endl;
 		// XXX Bad error.
 	}
 	else
