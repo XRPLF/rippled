@@ -16,8 +16,12 @@
 #include "SerializedTransaction.h"
 #include "utils.h"
 
+// Node has this long to verify its identity from connection accepted or connection attempt.
+#define NODE_VERIFY_SECONDS		15
+
 Peer::Peer(boost::asio::io_service& io_service, boost::asio::ssl::context& ctx)
-	: mSocketSsl(io_service, ctx)
+	: mSocketSsl(io_service, ctx),
+		mVerifyTimer(io_service)
 {
 }
 
@@ -51,6 +55,10 @@ void Peer::handle_write(const boost::system::error_code& error, size_t bytes_tra
 
 void Peer::detach()
 {
+	boost::system::error_code ecCancel;
+
+	(void) mVerifyTimer.cancel();
+
 	mSendQ.clear();
 	// mSocketSsl.close();
 
@@ -60,12 +68,36 @@ void Peer::detach()
 	}
 }
 
+void Peer::handleVerifyTimer(const boost::system::error_code& ecResult)
+{
+	if (ecResult == boost::asio::error::operation_aborted)
+	{
+		// Timer canceled because deadline no longer needed.
+		// std::cerr << "Deadline cancelled." << std::endl;
+
+		nothing();  // Aborter is done.
+	}
+	else if (ecResult)
+    {
+		std::cerr << "Peer verify timer error: " << std::endl;
+
+		// Can't do anything sound.
+		abort();
+    }
+	else
+	{
+		std::cerr << "Peer failed to verify in time." << std::endl;
+		detach();
+	}
+}
+
 // Begin trying to connect.  We are not connected till we know and accept peer's public key.
 // Only takes IP addresses (not domains).
 void Peer::connect(const std::string strIp, int iPort)
 {
 	int	iPortAct	= iPort < 0 ? SYSTEM_PEER_PORT : iPort;
 
+	// XXX Should not print IP if not known sane.
 	std::cerr  << "Peer::connect: " << strIp << " " << iPort << std::endl;
 	mIpPort		= make_pair(strIp, iPort);
 
@@ -78,10 +110,21 @@ void Peer::connect(const std::string strIp, int iPort)
 	if (err || itrEndpoint == boost::asio::ip::tcp::resolver::iterator())
 	{
 		std::cerr << "Peer::connect: Bad IP" << std::endl;
-		// Failed to resolve ip.
 		detach();
 	}
 	else
+	{
+		mVerifyTimer.expires_from_now(boost::posix_time::seconds(NODE_VERIFY_SECONDS), err);
+		mVerifyTimer.async_wait(boost::bind(&Peer::handleVerifyTimer, shared_from_this(), boost::asio::placeholders::error));
+
+		if (err)
+		{
+			std::cerr << "Peer::connect: Failed to set timer." << std::endl;
+			detach();
+		}
+	}
+
+	if (!err)
 	{
 		std::cerr << "Peer::connect: Connectting: " << mIpPort.first << " " << mIpPort.second << std::endl;
 
@@ -461,8 +504,12 @@ void Peer::recvHello(newcoin::TMHello& packet)
 	else
 	{
 		// Successful connection.
-		// XXX Kill hello timer.
 		// XXX Set timer: connection is in grace period to be useful.
+		// XXX Set timer: connection idle (idle may vary depending on connection type.)
+
+		// XXX Only kill if verified no man-in-the-middle.
+		(void) mVerifyTimer.cancel();
+
 		bDetach	= false;
 	}
 

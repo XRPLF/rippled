@@ -142,7 +142,7 @@ bool ConnectionPool::peerConnected(Peer::pointer peer, const NewcoinAddress& na)
 
 void ConnectionPool::peerDisconnected(Peer::pointer peer, const ipPort& ipPeer, const NewcoinAddress& naPeer)
 {
-	std::cerr << "ConnectionPool::peerDisconnected: " << peer->mIpPort.first << " " << peer->mIpPort.second << std::endl;
+	std::cerr << "ConnectionPool::peerDisconnected: " << ipPeer.first << " " << ipPeer.second << std::endl;
 
 	boost::mutex::scoped_lock sl(mPeerLock);
 
