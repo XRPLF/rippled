@@ -17,7 +17,7 @@ bool AddSystemEntropy()
 	if (!CryptAcquireContext(&cryptoHandle, NULL, name, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT | CRYPT_SILENT))
 		return false;
 
-	if(!CryptGenRandom(cryptoHandle, 128, reinterpret_cast<BYTE*> rand))
+	if(!CryptGenRandom(cryptoHandle, 128, reinterpret_cast<BYTE*>(rand)))
 	{
 		CryptReleaseContext(cryptoHandle, 0);
 		return false;
