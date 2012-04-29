@@ -665,6 +665,27 @@ void Peer::recvLedger(newcoin::TMLedgerData& packet)
 		punishPeer(PP_UNWANTED_DATA);
 }
 
+std::vector<unsigned char> Peer::getSessionCookie()
+{
+	// get session information we can sign
+	// (both sides get the same information, neither side controls it)
+	SSL* ssl = mSocketSsl.native_handle();
+	if (!ssl) throw std::runtime_error("No underlying connection");
+
+	// Get both finished messages
+	unsigned char s1[1024], s2[1024];
+	int l1 = SSL_get_finished(ssl, s1, 1024);
+	int l2 = SSL_get_finished(ssl, s2, 1024);
+	if ((l1 < 16) || (l2 < 16)) throw std::runtime_error("Connection setup not complete");
+
+	// Hash them and XOR the results
+	unsigned char sha1[32], sha2[32];
+	SHA512(s1, l1, sha1);
+	SHA512(s2, l2, sha2);
+	for(int i=0; i<32; i++) sha1[i]^=sha2[i];
+	return std::vector<unsigned char>(sha1, sha1+33);
+}
+
 void Peer::sendHello()
 {
 	// XXX Start timer for hello required by.
