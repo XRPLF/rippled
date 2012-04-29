@@ -4,6 +4,8 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/format.hpp>
 
+#include <openssl/dh.h>
+
 #define nothing()   do {} while (0)
 
 boost::posix_time::ptime ptEpoch();
@@ -45,6 +47,14 @@ inline void strHex(std::string& strDst, const std::string& strSrc) {
 inline void strHex(std::string& strDst, const std::vector<unsigned char> vchData) {
 	strHex(strDst, vchData.begin(), vchData.size());
 }
+
+int charUnHex(char cDigit);
+void strUnHex(std::string& strDst, const std::string& strSrc);
+
+DH* DH_der_load(const std::string& strDer);
+DH* DH_der_load_hex(const std::string& strDer);
+void DH_der_gen(std::string& strDer, int iKeyLength);
+void DH_der_gen_hex(std::string& strDer, int iKeyLength);
 
 #endif
 
