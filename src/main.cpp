@@ -1,9 +1,13 @@
+
 #include "Application.h"
+
 #include <iostream>
+
 #include "CallRPC.h"
 #include "Config.h"
 
 extern void runTests();
+extern bool AddSystemEntropy();
 using namespace std;
 using namespace boost;
 
@@ -50,9 +54,16 @@ int parseCommandline(int argc, char* argv[])
 
 	theConfig.load();
 
+	if (!AddSystemEntropy())
+	{
+#ifdef DEBUG
+		std::cerr << "Unable to add system entropy" << std::endl;
+#endif
+	}
+
 	if(argc>1)
 	{
-		ret=commandLineRPC(argc, argv);
+		ret = commandLineRPC(argc, argv);
 		if(ret)
 			printHelp();
 	}
@@ -66,6 +77,6 @@ int main(int argc, char* argv[])
 {
 //	runTests();
 
-	return(parseCommandline(argc,argv));
+	return(parseCommandline(argc, argv));
 }
 // vim:ts=4
