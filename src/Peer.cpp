@@ -16,8 +16,12 @@
 #include "SerializedTransaction.h"
 #include "utils.h"
 
+// Node has this long to verify its identity from connection accepted or connection attempt.
+#define NODE_VERIFY_SECONDS		15
+
 Peer::Peer(boost::asio::io_service& io_service, boost::asio::ssl::context& ctx)
-	: mSocketSsl(io_service, ctx)
+	: mSocketSsl(io_service, ctx),
+		mVerifyTimer(io_service)
 {
 }
 
@@ -51,12 +55,39 @@ void Peer::handle_write(const boost::system::error_code& error, size_t bytes_tra
 
 void Peer::detach()
 {
+	boost::system::error_code ecCancel;
+
+	(void) mVerifyTimer.cancel();
+
 	mSendQ.clear();
 	// mSocketSsl.close();
 
 	if (!mIpPort.first.empty()) {
 		theApp->getConnectionPool().peerDisconnected(shared_from_this(), mIpPort, mNodePublic);
 		mIpPort.first.clear();
+	}
+}
+
+void Peer::handleVerifyTimer(const boost::system::error_code& ecResult)
+{
+	if (ecResult == boost::asio::error::operation_aborted)
+	{
+		// Timer canceled because deadline no longer needed.
+		// std::cerr << "Deadline cancelled." << std::endl;
+
+		nothing();  // Aborter is done.
+	}
+	else if (ecResult)
+    {
+		std::cerr << "Peer verify timer error: " << std::endl;
+
+		// Can't do anything sound.
+		abort();
+    }
+	else
+	{
+		std::cerr << "Peer failed to verify in time." << std::endl;
+		detach();
 	}
 }
 
@@ -78,10 +109,21 @@ void Peer::connect(const std::string strIp, int iPort)
 	if (err || itrEndpoint == boost::asio::ip::tcp::resolver::iterator())
 	{
 		std::cerr << "Peer::connect: Bad IP" << std::endl;
-		// Failed to resolve ip.
 		detach();
 	}
 	else
+	{
+		mVerifyTimer.expires_from_now(boost::posix_time::seconds(NODE_VERIFY_SECONDS), err);
+		mVerifyTimer.async_wait(boost::bind(&Peer::handleVerifyTimer, shared_from_this(), boost::asio::placeholders::error));
+
+		if (err)
+		{
+			std::cerr << "Peer::connect: Failed to set timer." << std::endl;
+			detach();
+		}
+	}
+
+	if (!err)
 	{
 		std::cerr << "Peer::connect: Connectting: " << mIpPort.first << " " << mIpPort.second << std::endl;
 
@@ -99,7 +141,7 @@ void Peer::connect(const std::string strIp, int iPort)
 // We have an ecrypted connection to the peer.
 // Have it say who it is so we know to avoid redundant connections.
 // Establish that it really who we are talking to by having it sign a connection detail.
-// XXX Also need to establish no man in the middle attack is in progress.
+// Also need to establish no man in the middle attack is in progress.
 void Peer::handleStart(const boost::system::error_code& error)
 {
 	if (error)
@@ -130,9 +172,7 @@ void Peer::handleConnect(const boost::system::error_code& error, boost::asio::ip
 	    mSocketSsl.set_verify_mode(boost::asio::ssl::verify_none);
 
 	    mSocketSsl.async_handshake(boost::asio::ssl::stream<boost::asio::ip::tcp::socket>::client,
-			boost::bind(&Peer::handleStart,
-				shared_from_this(),
-				boost::asio::placeholders::error));
+			boost::bind(&Peer::handleStart, shared_from_this(), boost::asio::placeholders::error));
 	}
 }
 
@@ -172,9 +212,7 @@ void Peer::connected(const boost::system::error_code& error)
 	    mSocketSsl.set_verify_mode(boost::asio::ssl::verify_none);
 
 	    mSocketSsl.async_handshake(boost::asio::ssl::stream<boost::asio::ip::tcp::socket>::server,
-			boost::bind(&Peer::handleStart,
-				shared_from_this(),
-				boost::asio::placeholders::error));
+			boost::bind(&Peer::handleStart, shared_from_this(), boost::asio::placeholders::error));
 	}
 }
 
@@ -445,13 +483,14 @@ void Peer::recvHello(newcoin::TMHello& packet)
 #endif
 	bool	bDetach	= true;
 
-	if (mNodePublic.isValid())
-	{
-		std::cerr << "Recv(Hello): Disconnect: Extraneous node public key." << std::endl;
-	}
-	else if (!mNodePublic.setNodePublic(packet.nodepublic()))
+	if (!mNodePublic.setNodePublic(packet.nodepublic()))
 	{
 		std::cerr << "Recv(Hello): Disconnect: Bad node public key." << std::endl;
+	}
+	else if (!mNodePublic.verifyNodePublic(mCookieHash, packet.nodeproof()))
+	{
+		// Unable to verify they have private key for claimed public key.
+		std::cerr << "Recv(Hello): Disconnect: Failed to verify session." << std::endl;
 	}
 	else if (!theApp->getConnectionPool().peerConnected(shared_from_this(), mNodePublic))
 	{
@@ -461,8 +500,13 @@ void Peer::recvHello(newcoin::TMHello& packet)
 	else
 	{
 		// Successful connection.
-		// XXX Kill hello timer.
+
+		// Cancel verification timeout.
+		(void) mVerifyTimer.cancel();
+
 		// XXX Set timer: connection is in grace period to be useful.
+		// XXX Set timer: connection idle (idle may vary depending on connection type.)
+
 		bDetach	= false;
 	}
 
@@ -665,36 +709,50 @@ void Peer::recvLedger(newcoin::TMLedgerData& packet)
 		punishPeer(PP_UNWANTED_DATA);
 }
 
-std::vector<unsigned char> Peer::getSessionCookie()
+// Get session information we can sign to prevent man in the middle attack.
+// (both sides get the same information, neither side controls it)
+void Peer::getSessionCookie(std::string& strDst)
 {
-	// get session information we can sign
-	// (both sides get the same information, neither side controls it)
 	SSL* ssl = mSocketSsl.native_handle();
 	if (!ssl) throw std::runtime_error("No underlying connection");
 
 	// Get both finished messages
 	unsigned char s1[1024], s2[1024];
-	int l1 = SSL_get_finished(ssl, s1, 1024);
-	int l2 = SSL_get_finished(ssl, s2, 1024);
-	if ((l1 < 16) || (l2 < 16)) throw std::runtime_error("Connection setup not complete");
+	int l1 = SSL_get_finished(ssl, s1, sizeof(s1));
+	int l2 = SSL_get_peer_finished(ssl, s2, sizeof(s2));
+
+	if ((l1 < 12) || (l2 < 12))
+		throw std::runtime_error(str(boost::format("Connection setup not complete: %d %d") % l1 % l2));
 
 	// Hash them and XOR the results
-	unsigned char sha1[32], sha2[32];
+	unsigned char sha1[64], sha2[64];
+
 	SHA512(s1, l1, sha1);
 	SHA512(s2, l2, sha2);
-	for(int i=0; i<32; i++) sha1[i]^=sha2[i];
-	return std::vector<unsigned char>(sha1, sha1+33);
+
+	for (int i=0; i<sizeof(sha1); i++)
+		sha1[i] ^= sha2[i];
+
+	strDst.assign((char *) &sha1[0], sizeof(sha1));
 }
 
 void Peer::sendHello()
 {
-	// XXX Start timer for hello required by.
+	std::string					strCookie;
+	std::vector<unsigned char>	vchSig;
+
+	getSessionCookie(strCookie);
+	mCookieHash	= Serializer::getSHA512Half(strCookie);
+
+	theApp->getWallet().getNodePrivate().signNodePrivate(mCookieHash, vchSig);
+
 	newcoin::TMHello* h=new newcoin::TMHello();
-	// set up parameters
+
 	h->set_version(theConfig.VERSION);
 	h->set_ledgerindex(theApp->getOPs().getCurrentLedgerID());
 	h->set_nettime(theApp->getOPs().getNetworkTime());
 	h->set_nodepublic(theApp->getWallet().getNodePublic().humanNodePublic());
+	h->set_nodeproof(&vchSig[0], vchSig.size());
 	h->set_ipv4port(theConfig.PEER_PORT);
 
 	Ledger::pointer closingLedger=theApp->getMasterLedger().getClosingLedger();

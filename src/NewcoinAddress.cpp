@@ -137,9 +137,48 @@ void NewcoinAddress::setNodePublic(const std::vector<unsigned char>& vPublic)
     SetData(VER_NODE_PUBLIC, vPublic);
 }
 
+bool NewcoinAddress::verifyNodePublic(const uint256& hash, const std::vector<unsigned char>& vchSig) const
+{
+	CKey	pubkey	= CKey();
+	bool	bVerified;
+
+	if (!pubkey.SetPubKey(getNodePublic()))
+	{
+		// Failed to set public key.
+		bVerified	= false;
+	}
+	else
+	{
+		bVerified	= pubkey.Verify(hash, vchSig);
+	}
+
+	return bVerified;
+}
+
+bool NewcoinAddress::verifyNodePublic(const uint256& hash, const std::string& strSig) const
+{
+	std::vector<unsigned char> vchSig(strSig.begin(), strSig.end());
+
+	return verifyNodePublic(hash, vchSig);
+}
+
 //
 // NodePrivate
 //
+
+const std::vector<unsigned char>& NewcoinAddress::getNodePrivateData() const
+{
+    switch (nVersion) {
+    case VER_NONE:
+		throw std::runtime_error("unset source");
+
+    case VER_NODE_PRIVATE:
+		return vchData;
+
+    default:
+		throw std::runtime_error(str(boost::format("bad source: %d") % int(nVersion)));
+    }
+}
 
 uint256 NewcoinAddress::getNodePrivate() const
 {
@@ -181,6 +220,17 @@ void NewcoinAddress::setNodePrivate(const std::vector<unsigned char>& vPrivate) 
 void NewcoinAddress::setNodePrivate(uint256 hash256)
 {
     SetData(VER_NODE_PRIVATE, hash256.begin(), 32);
+}
+
+void NewcoinAddress::signNodePrivate(const uint256& hash, std::vector<unsigned char>& vchSig) const
+{
+	CKey	privkey	= CKey();
+
+	if (!privkey.SetSecret(getNodePrivateData()))
+		throw std::runtime_error("SetSecret failed.");
+
+	if (!privkey.Sign(hash, vchSig))
+		throw std::runtime_error("Signing failed.");
 }
 
 //

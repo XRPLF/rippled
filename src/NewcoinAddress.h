@@ -50,10 +50,13 @@ public:
 
 	bool setNodePublic(const std::string& strPublic);
 	void setNodePublic(const std::vector<unsigned char>& vPublic);
+	bool verifyNodePublic(const uint256& hash, const std::vector<unsigned char>& vchSig) const;
+	bool verifyNodePublic(const uint256& hash, const std::string& strSig) const;
 
 	//
 	// Node Private
 	//
+	const std::vector<unsigned char>& getNodePrivateData() const;
 	uint256 getNodePrivate() const;
 
 	std::string humanNodePrivate() const;
@@ -61,6 +64,7 @@ public:
 	bool setNodePrivate(const std::string& strPrivate);
 	void setNodePrivate(const std::vector<unsigned char>& vPrivate);
 	void setNodePrivate(uint256 hash256);
+	void signNodePrivate(const uint256& hash, std::vector<unsigned char>& vchSig) const;
 
 	//
 	// Accounts IDs

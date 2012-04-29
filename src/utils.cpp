@@ -19,4 +19,9 @@ boost::posix_time::ptime ptFromSeconds(int iSeconds)
 		: ptEpoch() + boost::posix_time::seconds(iSeconds);
 }
 
+char charHex(int iDigit)
+{
+	return iDigit < 10 ? '0' + iDigit : 'A' - 10 + iDigit;
+}
+
 // vim:ts=4
