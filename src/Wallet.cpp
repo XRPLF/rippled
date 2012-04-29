@@ -393,17 +393,15 @@ bool Wallet::nodeIdentityCreate() {
 	//
 	// Generate the public and private key
 	//
-	NewcoinAddress	familySeed;
-	NewcoinAddress	familyGenerator;
 	NewcoinAddress	nodePublicKey;
 	NewcoinAddress	nodePrivateKey;
 
-	familySeed.setFamilySeedRandom();					// Get a random seed.
-	familyGenerator.setFamilyGenerator(familySeed);		// Derive generator from seed.
+	// Make new key.
+	CKey	key;
 
-	// The node public and private is 0th of the sequence.
-	nodePublicKey.setNodePublic(CKey(familyGenerator, 0).GetPubKey());
-	nodePrivateKey.setNodePrivate(CKey(familyGenerator, familySeed.getFamilyPrivateKey(), 0).GetSecret());
+	key.MakeNewKey();
+	nodePublicKey.setNodePublic(key.GetPubKey());
+	nodePrivateKey.setNodePrivate(key.GetSecret());
 
 	std::cerr << "NodeIdentity: Created." << std::endl;
 
