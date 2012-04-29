@@ -81,6 +81,8 @@ protected:
 	void recvGetLedger(newcoin::TMGetLedger& packet);
 	void recvLedger(newcoin::TMLedgerData& packet);
 
+	std::vector<unsigned char> getSessionCookie();
+
 public:
 	typedef boost::shared_ptr<Peer> pointer;
 

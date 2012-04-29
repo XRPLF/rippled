@@ -125,8 +125,8 @@ Transaction::Transaction(const NewcoinAddress& fromID, const NewcoinAddress& toI
 		mTransaction->makeITFieldPresent(sfSourceTag);
 		mTransaction->setITFieldU32(sfSourceTag, ident);
 	}
-	mTransaction->setValueFieldU64(sfAmount, amount);
-	mTransaction->setValueFieldAccount(sfDestination, toID.getAccountID());
+	mTransaction->setITFieldU64(sfAmount, amount);
+	mTransaction->setITFieldAccount(sfDestination, toID.getAccountID());
 	updateID();
 }
 
