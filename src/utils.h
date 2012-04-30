@@ -8,6 +8,10 @@
 
 #define nothing()   do {} while (0)
 
+#ifndef MAX
+#define MAX(x,y) ((x) < (y) ? (y) : (x))
+#endif
+
 boost::posix_time::ptime ptEpoch();
 int iToSeconds(boost::posix_time::ptime ptWhen);
 boost::posix_time::ptime ptFromSeconds(int iSeconds);
