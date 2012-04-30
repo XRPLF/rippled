@@ -3,8 +3,10 @@
 
 #include <string>
 
-#define SYSTEM_NAME	"newcoin"
+#define SYSTEM_NAME		"newcoin"
+#define VALIDATORS_SITE		"redstem.com"
 
+#define VALIDATORS_FILE_NAME	"validators.txt"
 const int SYSTEM_PEER_PORT=6561;
 
 // Allow anonymous DH.

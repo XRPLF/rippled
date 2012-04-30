@@ -1020,9 +1020,14 @@ int UniqueNodeList::iSourceScore(validatorSource vsWhy)
 // Queue a domain for a single attempt fetch a newcoin.txt.
 // --> strComment: only used on vsManual
 // YYY As a lot of these may happen at once, would be nice to wrap multiple calls in a transaction.
-void UniqueNodeList::nodeAddDomain(std::string strDomain, validatorSource vsWhy, std::string strComment)
+void UniqueNodeList::nodeAddDomain(const std::string& strDomain, validatorSource vsWhy, std::string strComment)
 {
 	// YYY Would be best to verify strDomain is a valid domain.
+	// std::cerr << str(boost::format("nodeAddDomain: '%s' %c '%s'")
+	//	% strDomain
+	//	% vsWhy
+	//	% strComment) << std::endl;
+
 	seedDomain	sdCurrent;
 
 	bool		bFound		= getSeedDomains(strDomain, sdCurrent);
@@ -1210,6 +1215,10 @@ void UniqueNodeList::nodeDefault(std::string strValidators) {
 		{
 			nodeAddDomain(strValidator, vsValidator);
 		}
+	}
+	else
+	{
+		std::cerr << "WARNING: '" VALIDATORS_FILE_NAME "' missing [" SECTION_VALIDATORS "]." << std::endl;
 	}
 }
 

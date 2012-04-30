@@ -22,10 +22,8 @@
 #include "AccountState.h"
 
 #define VALIDATORS_FETCH_SECONDS	30
-#define VALIDATORS_FILE_NAME		"validators.txt"
 #define VALIDATORS_FILE_PATH		"/" VALIDATORS_FILE_NAME
 #define VALIDATORS_FILE_BYTES_MAX	(50 << 10)
-#define VALIDATORS_SITE				"redstem.com"
 
 /*
 Just read from wire until the entire request is in.
@@ -609,7 +607,7 @@ void RPCServer::validatorsResponse(const boost::system::error_code& err, std::st
 {
 	std::cerr << "Fetch '" VALIDATORS_FILE_NAME "' complete." << std::endl;
 
-	if(!err)
+	if (!err)
 	{
 		theApp->getUNL().nodeDefault(strResponse);
 	}

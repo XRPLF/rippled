@@ -116,7 +116,7 @@ public:
 	void start();
 
 	void nodeAddPublic(NewcoinAddress naNodePublic, std::string strComment);
-	void nodeAddDomain(std::string strDomain, validatorSource vsWhy, std::string strComment="");
+	void nodeAddDomain(const std::string& strDomain, validatorSource vsWhy, std::string strComment="");
 	void nodeRemove(NewcoinAddress naNodePublic);
 	void nodeDefault(std::string strValidators);
 	void nodeReset();
