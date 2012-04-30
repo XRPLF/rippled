@@ -31,28 +31,28 @@ void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint2
 	std::stack<SHAMapTreeNode::pointer> stack;
 	stack.push(root);
 
-	while( (max>0) && (!stack.empty()) )
+	while ((max > 0) && (!stack.empty()))
 	{
-		SHAMapTreeNode::pointer node=stack.top();
+		SHAMapTreeNode::pointer node = stack.top();
 		stack.pop();
 
 #ifdef GMN_DEBUG
 		std::cerr << "gMN: popped " << node->getString() << std::endl;
 #endif
 
-		for(int i=0; i<16; i++)
-			if(!node->isEmptyBranch(i))
+		for (int i = 0; i < 16; ++i)
+			if( !node->isEmptyBranch(i))
 			{
 #ifdef GMN_DEBUG
 				std::cerr << "gMN: " << node->getString() << " has non-empty branch " << i << std::endl;
 #endif
-				SHAMapTreeNode::pointer desc=getNode(node->getChildNodeID(i), node->getChildHash(i), false);
+				SHAMapTreeNode::pointer desc = getNode(node->getChildNodeID(i), node->getChildHash(i), false);
 				if(desc)
 				{
-					if(desc->isInner() && !desc->isFullBelow())
+					if (desc->isInner() && !desc->isFullBelow())
 						stack.push(desc);
 				}
-				else if(max-- > 0)
+				else if (max-- > 0)
 				{
 #ifdef GMN_DEBUG
 					std::cerr << "gMN: need " << node->getChildNodeID(i).getString() << std::endl;
@@ -65,11 +65,11 @@ void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint2
 
 bool SHAMap::getNodeFat(const SHAMapNode& wanted, std::vector<SHAMapNode>& nodeIDs,
 	std::list<std::vector<unsigned char> >& rawNodes)
-{
+{ // Gets a node and some of its children
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
-	SHAMapTreeNode::pointer node=getNode(wanted);
-	if(!node)
+	SHAMapTreeNode::pointer node = getNode(wanted);
+	if (!node)
 	{
 		assert(false); // Remove for release, this can happen if we get a bogus request
 		return false;
@@ -80,13 +80,13 @@ bool SHAMap::getNodeFat(const SHAMapNode& wanted, std::vector<SHAMapNode>& nodeI
 	node->addRaw(s);
 	rawNodes.push_back(s.peekData());
 
-	if(node->isRoot() || node->isLeaf()) // don't get a fat root, can't get a fat leaf
+	if (node->isRoot() || node->isLeaf()) // don't get a fat root, can't get a fat leaf
 		return true;
 
-	for(int i=0; i<16; i++)
-		if(!node->isEmptyBranch(i))
+	for (int i = 0; i < 16; ++i)
+		if (!node->isEmptyBranch(i))
 		{
-			SHAMapTreeNode::pointer nextNode=getNode(node->getChildNodeID(i), node->getChildHash(i), false);
+			SHAMapTreeNode::pointer nextNode = getNode(node->getChildNodeID(i), node->getChildHash(i), false);
 			assert(nextNode);
 			if(nextNode)
 			{
@@ -105,7 +105,7 @@ bool SHAMap::addRootNode(const std::vector<unsigned char>& rootNode)
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
 	// we already have a root node
-	if(root->getNodeHash().isNonZero())
+	if (root->getNodeHash().isNonZero())
 	{
 #ifdef DEBUG
 		std::cerr << "got root node, already have one" << std::endl;
@@ -113,8 +113,8 @@ bool SHAMap::addRootNode(const std::vector<unsigned char>& rootNode)
 		return true;
 	}
 
-	SHAMapTreeNode::pointer node=boost::make_shared<SHAMapTreeNode>(SHAMapNode(), rootNode, 0);
-	if(!node) return false;
+	SHAMapTreeNode::pointer node = boost::make_shared<SHAMapTreeNode>(SHAMapNode(), rootNode, 0);
+	if (!node) return false;
 
 #ifdef DEBUG
 	node->dump();
@@ -122,9 +122,9 @@ bool SHAMap::addRootNode(const std::vector<unsigned char>& rootNode)
 
 	returnNode(root, true);
 
-	root=node;
-	mTNByID[*root]=root;
-	if(!root->getNodeHash())
+	root = node;
+	mTNByID[*root] = root;
+	if (!root->getNodeHash())
 	{
 		root->setFullBelow();
 		clearSynching();
@@ -138,23 +138,23 @@ bool SHAMap::addRootNode(const uint256& hash, const std::vector<unsigned char>& 
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
 	// we already have a root node
-	if(root->getNodeHash().isNonZero())
+	if (root->getNodeHash().isNonZero())
 	{
 #ifdef DEBUG
 		std::cerr << "got root node, already have one" << std::endl;
 #endif
-		assert(root->getNodeHash()==hash);
+		assert(root->getNodeHash() == hash);
 		return true;
 	}
 
-	SHAMapTreeNode::pointer node=boost::make_shared<SHAMapTreeNode>(SHAMapNode(), rootNode, 0);
-	if(!node) return false;
-	if(node->getNodeHash()!=hash) return false;
+	SHAMapTreeNode::pointer node = boost::make_shared<SHAMapTreeNode>(SHAMapNode(), rootNode, 0);
+	if (!node) return false;
+	if (node->getNodeHash() != hash) return false;
 
 	returnNode(root, true);
-	root=node;
-	mTNByID[*root]=root;
-	if(!root->getNodeHash())
+	root = node;
+	mTNByID[*root] = root;
+	if (!root->getNodeHash())
 	{
 		root->setFullBelow();
 		clearSynching();
@@ -166,23 +166,23 @@ bool SHAMap::addRootNode(const uint256& hash, const std::vector<unsigned char>& 
 bool SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigned char>& rawNode)
 { // return value: true=okay, false=error
 	assert(!node.isRoot());
-	if(!isSynching()) return false;
+	if (!isSynching()) return false;
 
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
-	if(checkCacheNode(node)) return true;
+	if (checkCacheNode(node)) return true;
 
-	std::stack<SHAMapTreeNode::pointer> stack=getStack(node.getNodeID(), true);
-	if(stack.empty()) return false;
+	std::stack<SHAMapTreeNode::pointer> stack = getStack(node.getNodeID(), true);
+	if (stack.empty()) return false;
 
 	SHAMapTreeNode::pointer iNode=stack.top();
-	if(!iNode)
+	if (!iNode)
 	{	// we should always have a root
 		assert(false);
 		return true;
 	}
 
-	if(iNode->isLeaf() || (iNode->getDepth()==node.getDepth()))
+	if (iNode->isLeaf() || (iNode->getDepth() == node.getDepth()))
 	{
 #ifdef DEBUG
 		std::cerr << "got inner node, already had it (late)" << std::endl;
@@ -190,8 +190,8 @@ bool SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigned cha
 		return true;
 	}
 
-	if(iNode->getDepth()!=(node.getDepth()-1))
-	{ // Either this node is broken or we didn't request it
+	if (iNode->getDepth() != (node.getDepth() - 1))
+	{ // Either this node is broken or we didn't request it (yet)
 #ifdef DEBUG
 		std::cerr << "unable to hook node " << node.getString() << std::endl;
 		std::cerr << " stuck at " << iNode->getString() << std::endl;
@@ -200,39 +200,39 @@ bool SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigned cha
 		return false;
 	}
 
-	int branch=iNode->selectBranch(node.getNodeID());
-	if(branch<0)
+	int branch = iNode->selectBranch(node.getNodeID());
+	if (branch < 0)
 	{
 		assert(false);
 		return false;
 	}
-	uint256 hash=iNode->getChildHash(branch);
-	if(!hash) return false;
+	uint256 hash = iNode->getChildHash(branch);
+	if (!hash) return false;
 
-	SHAMapTreeNode::pointer newNode=boost::make_shared<SHAMapTreeNode>(node, rawNode, mSeq);
-	if(hash!=newNode->getNodeHash()) // these aren't the droids we're looking for
+	SHAMapTreeNode::pointer newNode = boost::make_shared<SHAMapTreeNode>(node, rawNode, mSeq);
+	if (hash != newNode->getNodeHash()) // these aren't the droids we're looking for
 		return false;
 
-	mTNByID[*newNode]=newNode;
-	if(!newNode->isLeaf())
+	mTNByID[*newNode] = newNode;
+	if (!newNode->isLeaf())
 		return true; // only a leaf can fill a branch
 
 	// did this new leaf cause its parents to fill up
 	do
 	{
-		iNode=stack.top();
+		iNode = stack.top();
 		stack.pop();
 		assert(iNode->isInner());
-		for(int i=0; i<16; i++)
-			if(!iNode->isEmptyBranch(i))
+		for(int i = 0; i < 16; ++i)
+			if (!iNode->isEmptyBranch(i))
 			{
-				SHAMapTreeNode::pointer nextNode=getNode(iNode->getChildNodeID(i), iNode->getChildHash(i), false);
-				if(!nextNode) return true;
-				if(nextNode->isInner() && !nextNode->isFullBelow()) return true;
+				SHAMapTreeNode::pointer nextNode = getNode(iNode->getChildNodeID(i), iNode->getChildHash(i), false);
+				if (!nextNode) return true;
+				if (nextNode->isInner() && !nextNode->isFullBelow()) return true;
 			}
 		iNode->setFullBelow();
-	} while(!stack.empty());
-	if(root->isFullBelow()) clearSynching();
+	} while (!stack.empty());
+	if (root->isFullBelow()) clearSynching();
 	return true;
 }
 
@@ -242,21 +242,21 @@ bool SHAMap::deepCompare(SHAMap& other)
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
 	stack.push(root);
-	while(!stack.empty())
+	while (!stack.empty())
 	{
-		SHAMapTreeNode::pointer node=stack.top();
+		SHAMapTreeNode::pointer node = stack.top();
 		stack.pop();
 
 		SHAMapTreeNode::pointer otherNode;
-		if(node->isRoot()) otherNode=other.root;
-		else otherNode=other.getNode(*node, node->getNodeHash(), false);
+		if(node->isRoot()) otherNode = other.root;
+		else otherNode = other.getNode(*node, node->getNodeHash(), false);
 
-		if(!otherNode)
+		if (!otherNode)
 		{
 			std::cerr << "unable to fetch node" << std::endl;
 			return false;
 		}
-		else if(otherNode->getNodeHash()!=node->getNodeHash())
+		else if (otherNode->getNodeHash() != node->getNodeHash())
 		{
 			std::cerr << "node hash mismatch" << std::endl;
 			return false;
@@ -266,32 +266,28 @@ bool SHAMap::deepCompare(SHAMap& other)
 		std::cerr << "Comparing inner nodes " << node->getString() << std::endl;
 #endif
 
-		if(node->getNodeHash() != otherNode->getNodeHash())
+		if (node->getNodeHash() != otherNode->getNodeHash())
 			return false;
-		if(node->isLeaf())
+		if (node->isLeaf())
 		{
-			if(!otherNode->isLeaf())
-				return false;
-			if(node->peekItem()->getTag()!=otherNode->peekItem()->getTag())
-				return false;
-			if(node->peekItem()->getData()!=otherNode->peekItem()->getData())
-				return false;
+			if (!otherNode->isLeaf()) return false;
+			if (node->peekItem()->getTag() != otherNode->peekItem()->getTag()) return false;
+			if (node->peekItem()->getData() != otherNode->peekItem()->getData()) return false;
 		}
-		else if(node->isInner())
+		else if (node->isInner())
 		{
-			if(!otherNode->isInner())
+			if (!otherNode->isInner())
 				return false;
 			for(int i=0; i<16; i++)
 			{
 				if(node->isEmptyBranch(i))
 				{
-					if(!otherNode->isEmptyBranch(i))
-						return false;
+					if(!otherNode->isEmptyBranch(i)) return false;
 				}
 				else
 				{
-					SHAMapTreeNode::pointer next=getNode(node->getChildNodeID(i), node->getChildHash(i), false);
-					if(!next)
+					SHAMapTreeNode::pointer next = getNode(node->getChildNodeID(i), node->getChildHash(i), false);
+					if (!next)
 					{
 						std::cerr << "unable to fetch inner node" << std::endl;
 						return false;
@@ -311,8 +307,7 @@ bool SHAMap::deepCompare(SHAMap& other)
 static SHAMapItem::pointer makeRandomAS()
 {
 		Serializer s;
-		for(int d=0; d<3; d++)
-			s.add32(rand());
+		for(int d = 0; d < 3; ++d) s.add32(rand());
 		return boost::make_shared<SHAMapItem>(s.getRIPEMD160().to256(), s.peekData());
 }
 
@@ -320,31 +315,31 @@ static bool confuseMap(SHAMap &map, int count)
 {
 	// add a bunch of random states to a map, then remove them
 	// map should be the same
-	uint256 beforeHash=map.getHash();
+	uint256 beforeHash = map.getHash();
 
 	std::list<uint256> items;
 
-	for(int i=0; i<count; i++)
+	for (int i = 0; i < count; ++i)
 	{
-		SHAMapItem::pointer item=makeRandomAS();
+		SHAMapItem::pointer item = makeRandomAS();
 		items.push_back(item->getTag());
-		if(!map.addItem(*item, false))
+		if (!map.addItem(*item, false))
 		{
 			std::cerr << "Unable to add item to map" << std::endl;
 			return false;
 		}
 	}
 
-	for(std::list<uint256>::iterator it=items.begin(); it!=items.end(); ++it)
+	for (std::list<uint256>::iterator it = items.begin(); it != items.end(); ++it)
 	{
-		if(!map.delItem(*it))
+		if (!map.delItem(*it))
 		{
 			std::cerr << "Unable to remove item from map" << std::endl;
 			return false;
 		}
 	}
 
-	if(beforeHash!=map.getHash())
+	if (beforeHash != map.getHash())
 	{
 		std::cerr << "Hashes do not match" << std::endl;
 		return false;
@@ -363,15 +358,14 @@ bool SHAMap::syncTest()
 
 
 	// add random data to the source map
-	int items=10000;
-	for(int i=0; i<items; i++)
+	int items = 10000;
+	for (int i = 0; i < items; ++i)
 		source.addItem(*makeRandomAS(), false);
 
 #ifdef DEBUG
 	std::cerr << "Adding items, then removing them" << std::endl;
 #endif
-	if(!confuseMap(source, 500))
-		return false;
+	if(!confuseMap(source, 500)) return false;
 
 	source.setImmutable();
 
@@ -386,24 +380,24 @@ bool SHAMap::syncTest()
 	std::vector<SHAMapNode>::iterator nodeIDIterator;
 	std::list<std::vector<unsigned char> >::iterator rawNodeIterator;
 
-	int passes=0;
-	int nodes=0;
+	int passes = 0;
+	int nodes = 0;
 
 	destination.setSynching();
 
-	if(!source.getNodeFat(SHAMapNode(), nodeIDs, gotNodes))
+	if (!source.getNodeFat(SHAMapNode(), nodeIDs, gotNodes))
 	{
 		std::cerr << "GetNodeFat(root) fails" << std::endl;
 		assert(false);
 		return false;
 	}
-	if(gotNodes.size()!=1)
+	if (gotNodes.size() != 1)
 	{
 		std::cerr << "Didn't get root node " << gotNodes.size() << std::endl;
 		assert(false);
 		return false;
 	}
-	if(!destination.addRootNode(*gotNodes.begin()))
+	if (!destination.addRootNode(*gotNodes.begin()))
 	{
 		std::cerr << "AddRootNode fails" << std::endl;
 		assert(false);
@@ -416,12 +410,12 @@ bool SHAMap::syncTest()
 	std::cerr << "ROOT COMPLETE, INNER SYNCHING" << std::endl;
 #endif
 #ifdef SMS_DEBUG
-	int bytes=0;
+	int bytes = 0;
 #endif
 
 	do
 	{
-		passes++;
+		++passes;
 		hashes.clear();
 
 		// get the list of nodes we know we need
@@ -433,8 +427,8 @@ bool SHAMap::syncTest()
 #endif
 		
 		// get as many nodes as possible based on this information
-		for(nodeIDIterator=nodeIDs.begin(); nodeIDIterator!=nodeIDs.end(); ++nodeIDIterator)
-			if(!source.getNodeFat(*nodeIDIterator, gotNodeIDs, gotNodes))
+		for (nodeIDIterator = nodeIDs.begin(); nodeIDIterator != nodeIDs.end(); ++nodeIDIterator)
+			if (!source.getNodeFat(*nodeIDIterator, gotNodeIDs, gotNodes))
 			{
 				std::cerr << "GetNodeFat fails" << std::endl;
 				assert(false);
@@ -444,7 +438,7 @@ bool SHAMap::syncTest()
 		nodeIDs.clear();
 		hashes.clear();
 
-		if(gotNodeIDs.empty())
+		if (gotNodeIDs.empty())
 		{
 			std::cerr << "No nodes gotten" << std::endl;
 			assert(false);
@@ -454,14 +448,14 @@ bool SHAMap::syncTest()
 #ifdef SMS_DEBUG
 		std::cerr << gotNodeIDs.size() << " found nodes" << std::endl;
 #endif
-		for(nodeIDIterator=gotNodeIDs.begin(), rawNodeIterator=gotNodes.begin();
-				nodeIDIterator!=gotNodeIDs.end(); ++nodeIDIterator, ++rawNodeIterator)
+		for (nodeIDIterator = gotNodeIDs.begin(), rawNodeIterator = gotNodes.begin();
+				nodeIDIterator != gotNodeIDs.end(); ++nodeIDIterator, ++rawNodeIterator)
 		{
-			nodes++;
+			++nodes;
 #ifdef SMS_DEBUG
-			bytes+=rawNodeIterator->size();
+			bytes += rawNodeIterator->size();
 #endif
-			if(!destination.addKnownNode(*nodeIDIterator, *rawNodeIterator))
+			if (!destination.addKnownNode(*nodeIDIterator, *rawNodeIterator))
 			{
 				std::cerr << "AddKnownNode fails" << std::endl;
 				assert(false);
@@ -472,15 +466,15 @@ bool SHAMap::syncTest()
 		gotNodes.clear();
 
 
-	} while(1);
+	} while (1);
 	destination.clearSynching();
 
 #ifdef SMS_DEBUG
 	std::cerr << "SYNCHING COMPLETE " << items << " items, " << nodes << " nodes, " <<
-		bytes/1024 << " KB" << std::endl;
+		bytes / 1024 << " KB" << std::endl;
 #endif
 
-	if(!source.deepCompare(destination))
+	if (!source.deepCompare(destination))
 	{
 		std::cerr << "DeepCompare fails" << std::endl;
 		assert(false);
