@@ -63,6 +63,9 @@ void Peer::detach()
 	// mSocketSsl.close();
 
 	if (!mIpPort.first.empty()) {
+		if (mClientConnect)
+			theApp->getConnectionPool().peerFailed(mIpPort.first, mIpPort.second);
+
 		theApp->getConnectionPool().peerDisconnected(shared_from_this(), mIpPort, mNodePublic);
 		mIpPort.first.clear();
 	}
@@ -96,6 +99,8 @@ void Peer::handleVerifyTimer(const boost::system::error_code& ecResult)
 void Peer::connect(const std::string strIp, int iPort)
 {
 	int	iPortAct	= iPort < 0 ? SYSTEM_PEER_PORT : iPort;
+
+	mClientConnect	= true;
 
 	std::cerr  << "Peer::connect: " << strIp << " " << iPort << std::endl;
 	mIpPort		= make_pair(strIp, iPort);
@@ -156,7 +161,7 @@ void Peer::handleStart(const boost::system::error_code& error)
 	}
 }
 
-// Connect as client.
+// Connect ssl as client.
 void Peer::handleConnect(const boost::system::error_code& error, boost::asio::ip::tcp::resolver::iterator it)
 {
 	if (error)
@@ -176,12 +181,14 @@ void Peer::handleConnect(const boost::system::error_code& error, boost::asio::ip
 	}
 }
 
-// Connect as server.
+// Connect ssl as server.
 void Peer::connected(const boost::system::error_code& error)
 {
 	boost::asio::ip::tcp::endpoint	ep		= mSocketSsl.lowest_layer().remote_endpoint();
 	int								iPort	= ep.port();
 	std::string						strIp	= ep.address().to_string();
+
+	mClientConnect	= false;
 
 	if (iPort == SYSTEM_PEER_PORT)
 		iPort	= -1;
@@ -501,6 +508,14 @@ void Peer::recvHello(newcoin::TMHello& packet)
 
 		// Cancel verification timeout.
 		(void) mVerifyTimer.cancel();
+
+		if (mClientConnect)
+		{
+			theApp->getConnectionPool().peerVerified(mIpPort.first, mIpPort.second);
+
+			// No longer connecting as client.
+			mClientConnect	= false;
+		}
 
 		// XXX Set timer: connection is in grace period to be useful.
 		// XXX Set timer: connection idle (idle may vary depending on connection type.)

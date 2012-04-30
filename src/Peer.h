@@ -31,6 +31,7 @@ public:
 	void			handleConnect(const boost::system::error_code& error, boost::asio::ip::tcp::resolver::iterator it);
 
 private:
+	bool			mClientConnect;		// In process of connecting as client.
 	NewcoinAddress	mNodePublic;		// Node public key of peer.
 	ipPort			mIpPort;
 	uint256			mCookieHash;
