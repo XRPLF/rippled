@@ -1,6 +1,7 @@
 #include "Config.h"
 
 #include "ParseSection.h"
+#include "utils.h"
 
 #include <iostream>
 #include <fstream>
@@ -14,6 +15,7 @@
 #define SECTION_VALIDATION_PASSWORD		"validation_password"
 #define SECTION_VALIDATION_KEY			"validation_key"
 #define SECTION_PEER_SSL_CIPHER_LIST	"peer_ssl_cipher_list"
+#define SECTION_PEER_SCAN_INTERVAL_MIN	"peer_scan_interval_min"
 
 Config theConfig;
 
@@ -36,6 +38,7 @@ Config::Config()
 	DATA_DIR				= "db/";
 
 	PEER_SSL_CIPHER_LIST	= DEFAULT_PEER_SSL_CIPHER_LIST;
+	PEER_SCAN_INTERVAL_MIN	= DEFAULT_PEER_SCAN_INTERVAL_MIN;
 
 	TRANSACTION_FEE_BASE	= 1000;
 }
@@ -78,6 +81,8 @@ void Config::load()
 			(void) sectionSingleB(secConfig, SECTION_VALIDATION_KEY, VALIDATION_KEY);
 
 			(void) sectionSingleB(secConfig, SECTION_PEER_SSL_CIPHER_LIST, PEER_SSL_CIPHER_LIST);
+			(void) sectionSingleB(secConfig, SECTION_PEER_SCAN_INTERVAL_MIN, strTemp);
+				PEER_SCAN_INTERVAL_MIN=MAX(60, boost::lexical_cast<int>(strTemp));
 		}
 	}
 

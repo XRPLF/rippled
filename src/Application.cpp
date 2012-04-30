@@ -44,6 +44,7 @@ DatabaseCon::~DatabaseCon()
 Application::Application() :
 	mUNL(mIOService),
 	mTxnDB(NULL), mLedgerDB(NULL), mWalletDB(NULL), mHashNodeDB(NULL), mNetNodeDB(NULL),
+	mConnectionPool(mIOService),
 	mPeerDoor(NULL), mRPCDoor(NULL)
 {
 	nothing();

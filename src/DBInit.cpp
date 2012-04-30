@@ -56,6 +56,7 @@ const char *WalletDBInit[] = {
 		Comment			TEXT						\
 	);",
 
+	// Node identity must be persisted for CAS routing and responsibilites.
 	"CREATE TABLE NodeIdentity (					\
 		PublicKey		CHARACTER(53),				\
 		PrivateKey		CHARACTER(52),				\
@@ -179,7 +180,7 @@ const char *WalletDBInit[] = {
 		PRIMARY KEY (Validator,Entry)					\
 	);",
 
-	// Table of IPs to contact the nextwork.
+	// Table of IPs to contact the network.
 	// IP:
 	//  IP address to contact.
 	// Port:
@@ -192,17 +193,22 @@ const char *WalletDBInit[] = {
 	//  'M' = Manually added.
 	//  'I' = Inbound connection.
 	//  'O' = Other.
-	// Contact:
-	//  Time of last contact.
-	//  XXX Update on connect and hourly.
+	// ScanNext:
+	//  When to next scan.  Null=not scanning.
+	// ScanInterval:
+	//  Delay between scans.
 	"CREATE TABLE PeerIps (								\
 		IP				TEXT NOT NULL,					\
 		Port			INTEGER NOT NULL DEFAULT -1,	\
 		Score			INTEGER NOT NULL,				\
 		Source			CHARACTER(1) NOT NULL,			\
-		Contact			DATETIME,						\
-		PRIMARY KEY (IP,PORT)							\
+		ScanNext		DATETIME DEFAULT 0,				\
+		ScanInterval	INTEGER NOT NULL DEFAULT 0,		\
+		PRIMARY KEY (IP,Port)							\
 	);",
+
+	"CREATE INDEX PeerScanIndex ON						\
+		PeerIps(ScanNext);"
 };
 
 #if 0

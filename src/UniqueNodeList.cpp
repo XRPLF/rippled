@@ -449,6 +449,9 @@ void UniqueNodeList::scoreTimerHandler(const boost::system::error_code& err)
 
 		// Score again if needed.
 		scoreNext(false);
+
+		// Scan may be dirty due to new ips.
+		theApp->getConnectionPool().scanRefresh();
 	}
 }
 
@@ -923,14 +926,14 @@ void UniqueNodeList::fetchNext()
 	if (!bFull)
 	{
 		// Determine next scan.
-		std::string	strDomain;
+		std::string					strDomain;
 		boost::posix_time::ptime	tpNext;
 		boost::posix_time::ptime	tpNow;
 
 		ScopedLock sl(theApp->getWalletDB()->getDBLock());
 		Database *db=theApp->getWalletDB()->getDB();
 
-		if (db->executeSQL("SELECT Domain,Next FROM SeedDomains ORDER BY Next LIMIT 1;")
+		if (db->executeSQL("SELECT Domain,Next FROM SeedDomains INDEXED BY SeedDomainNext ORDER BY Next LIMIT 1;")
 			&& db->startIterRows())
 		{
 			int			iNext	= db->getInt("Next");

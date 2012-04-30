@@ -371,7 +371,6 @@ bool Wallet::nodeIdentityLoad()
 	ScopedLock	sl(theApp->getWalletDB()->getDBLock());
 	bool		bSuccess	= false;
 
-
 	if(db->executeSQL("SELECT * FROM NodeIdentity;") && db->startIterRows())
 	{
 		std::string strPublicKey, strPrivateKey;

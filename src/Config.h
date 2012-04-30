@@ -10,6 +10,9 @@ const int SYSTEM_PEER_PORT=6561;
 // Allow anonymous DH.
 #define DEFAULT_PEER_SSL_CIPHER_LIST	"ALL:!LOW:!EXP:!MD5:@STRENGTH"
 
+// 1 hour.
+#define DEFAULT_PEER_SCAN_INTERVAL_MIN	(60*60)
+
 class Config
 {
 public:
@@ -46,6 +49,7 @@ public:
 	std::string VALIDATION_KEY;
 
 	std::string PEER_SSL_CIPHER_LIST;
+	int	    PEER_SCAN_INTERVAL_MIN;
 
 	// configuration parameters
 	std::string DATA_DIR;

@@ -16,22 +16,25 @@ class ConnectionPool
 private:
     boost::mutex mPeerLock;
 
-	typedef std::pair<NewcoinAddress, Peer::pointer> naPeer;
-
-	// Count of peers we are in progress of connecting to.
-	// We are in progress until we know their network public key.
-	int			iConnecting;
+	typedef std::pair<NewcoinAddress, Peer::pointer>	naPeer;
 
 	// Peers we are connecting with and non-thin peers we are connected to.
-    boost::unordered_map<ipPort, Peer::pointer> mIpMap;
+    boost::unordered_map<ipPort, Peer::pointer>			mIpMap;
 
 	// Non-thin peers which we are connected to.
-    boost::unordered_map<NewcoinAddress, Peer::pointer> mConnectedMap;
+    boost::unordered_map<NewcoinAddress, Peer::pointer>	mConnectedMap;
 
     boost::asio::ssl::context							mCtx;
 
+	bool												bScanning;
+	boost::asio::deadline_timer							mScanTimer;
+	std::string											mScanIp;
+	int													mScanPort;
+
+	void		scanHandler(const boost::system::error_code& ecResult);
+
 public:
-	ConnectionPool();
+	ConnectionPool(boost::asio::io_service& io_service);
 
 	// Begin enforcing connection policy.
 	void start();
@@ -56,7 +59,19 @@ public:
 	// No longer connected.
 	void peerDisconnected(Peer::pointer peer, const ipPort& ipPeer, const NewcoinAddress& naPeer);
 
+	// As client accepted.
+	void peerVerified(const std::string& strIp, int iPort);
+
+	// As client failed connect and be accepted.
+	void peerFailed(const std::string& strIp, int iPort);
+
 	Json::Value getPeersJson();
+
+	//
+	// Scanning
+	//
+
+	void scanRefresh();
 
 #if 0
 	//std::vector<std::pair<PackedMessage::pointer,int> > mBroadcastMessages;
