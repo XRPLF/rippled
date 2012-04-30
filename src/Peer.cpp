@@ -151,8 +151,8 @@ void Peer::handleStart(const boost::system::error_code& error)
 	}
 	else
 	{
+		sendHello();			// Must compute mCookieHash before receiving a hello.
 		start_read_header();
-		sendHello();
 	}
 }
 
@@ -161,12 +161,12 @@ void Peer::handleConnect(const boost::system::error_code& error, boost::asio::ip
 {
 	if (error)
 	{
-		std::cerr << "Socket Connect failed:" << error << std::endl;
+		std::cerr << "Connect peer: failed:" << error << std::endl;
 		detach();
 	}
 	else
 	{
-		std::cerr << "Socket Connected." << std::endl;
+		std::cerr << "Connect peer: success." << std::endl;
 
 	    mSocketSsl.lowest_layer().set_option(boost::asio::ip::tcp::no_delay(true));
 	    mSocketSsl.set_verify_mode(boost::asio::ssl::verify_none);
@@ -186,16 +186,14 @@ void Peer::connected(const boost::system::error_code& error)
 	if (iPort == SYSTEM_PEER_PORT)
 		iPort	= -1;
 
-	std::cerr  << "Remote peer: accept: " << strIp << " " << iPort << std::endl;
-
 	if (error)
 	{
-		std::cerr  << "Remote peer: accept error: " << error << std::endl;
+		std::cerr << "Remote peer: accept error: " << strIp << " " << iPort << " : " << error << std::endl;
 		detach();
 	}
 	else if (!theApp->getConnectionPool().peerRegister(shared_from_this(), strIp, iPort))
 	{
-		std::cerr << "Remote peer: rejecting." << std::endl;
+		std::cerr << "Remote peer: rejecting: " << strIp << " " << iPort << std::endl;
 		// XXX Reject with a rejection message: already connected
 		detach();
 	}
@@ -203,7 +201,7 @@ void Peer::connected(const boost::system::error_code& error)
 	{
 		// Not redundant ip and port, add to connection list.
 
-		std::cerr << "Remote peer: accepted." << std::endl;
+		std::cerr << "Remote peer: accepted: " << strIp << " " << iPort << std::endl;
 		//BOOST_LOG_TRIVIAL(info) << "Connected to Peer.";
 
 		mIpPort		= make_pair(strIp, iPort);
@@ -304,9 +302,9 @@ void Peer::processReadBuffer()
 	std::cerr << "PRB(" << type << "), len=" << (mReadbuf.size()-HEADER_SIZE) << std::endl;
 #endif
 
+	// If not connected, only accept mtHELLO.  Otherwise, don't accept mtHELLO.
 	if (mIpPort.first.empty() == (type == newcoin::mtHELLO))
 	{
-		// If not connectted, only accept mtHELLO.  Otherwise, don't accept mtHELLO.
 		std::cerr << "Wrong message type: " << type << std::endl;
 		detach();
 	}
