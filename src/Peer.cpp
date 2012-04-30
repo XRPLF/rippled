@@ -727,8 +727,10 @@ void Peer::getSessionCookie(std::string& strDst)
 
 	SHA512(s1, l1, sha1);
 	SHA512(s2, l2, sha2);
+	if (memcmp(s1, s2, sizeof(sha1))
+		throw std::runtime_errror("Identical finished messages");
 
-	for (int i=0; i<sizeof(sha1); i++)
+	for (int i = 0; i < sizeof(sha1); ++i)
 		sha1[i] ^= sha2[i];
 
 	strDst.assign((char *) &sha1[0], sizeof(sha1));
