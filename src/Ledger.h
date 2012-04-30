@@ -56,7 +56,7 @@ public:
 
 private:
 	uint256 mHash, mParentHash, mTransHash, mAccountHash;
-	uint64 mFeeHeld, mTimeStamp;
+	uint64 mTotCoins, mTimeStamp;
 	uint32 mLedgerSeq;
 	bool mClosed, mValidHash, mAccepted, mImmutable;
 	
@@ -72,8 +72,7 @@ protected:
 	void updateHash();
 
 	bool addTransaction(Transaction::pointer);
-	bool addTransaction(const uint256& id, const Serializer& txn);
-	bool delTransaction(const uint256& id);
+	bool addTransaction(const uint256& id, const Serializer& txn, uint64_t fee);
 	
 	static Ledger::pointer getSQL(const std::string& sqlStatement);
 
@@ -83,7 +82,7 @@ protected:
 public:
 	Ledger(const NewcoinAddress& masterID, uint64 startAmount); // used for the starting bootstrap ledger
 	Ledger(const uint256 &parentHash, const uint256 &transHash, const uint256 &accountHash,
-	 uint64 feeHeld, uint64 timeStamp, uint32 ledgerSeq); // used for received ledgers
+	 uint64 totCoins, uint64 timeStamp, uint32 ledgerSeq); // used for received ledgers
 	Ledger(const std::vector<unsigned char>& rawLedger);
 	Ledger(const std::string& rawLedger);
 
@@ -99,7 +98,7 @@ public:
 	const uint256& getParentHash() const { return mParentHash; }
 	const uint256& getTransHash() const { return mTransHash; }
 	const uint256& getAccountHash() const { return mAccountHash; }
-	uint64 getFeeHeld() const { return mFeeHeld; }
+	uint64 getTotalCoins() const { return mTotCoins; }
 	uint64 getTimeStamp() const { return mTimeStamp; }
 	uint32 getLedgerSeq() const { return mLedgerSeq; }
 

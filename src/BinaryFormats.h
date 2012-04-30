@@ -14,7 +14,7 @@ const int BTxPSig=73, BTxLSig=72;			// signature
 // ledger (note: fields after the timestamp are not part of the hash)
 const int BLgSize=192;
 const int BLgPIndex=0, BLgLIndex=4;			// ledger index
-const int BLgPFeeHeld=4, BLgLFeeHeld=8;		// transaction fees held
+const int BLgPTotCoins=4, BLgLTotCoins=8;	// total native coins
 const int BLgPPrevLg=12, BLgLPrevLg=32;		// previous ledger hash
 const int BLgPTxT=44, BLgLTxT=32;			// transaction tree hash
 const int BLgPAcT=76, BLgLPAct=32;			// account state hash

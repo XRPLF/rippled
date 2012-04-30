@@ -15,8 +15,8 @@
 #include "Wallet.h"
 #include "BinaryFormats.h"
 
-Ledger::Ledger(const NewcoinAddress& masterID, uint64 startAmount) : mFeeHeld(0), mTimeStamp(0), mLedgerSeq(0),
-	mClosed(false), mValidHash(false), mAccepted(false), mImmutable(false)
+Ledger::Ledger(const NewcoinAddress& masterID, uint64 startAmount) : mTotCoins(startAmount),
+	mTimeStamp(0), mLedgerSeq(0), mClosed(false), mValidHash(false), mAccepted(false), mImmutable(false)
 {
 	mTransactionMap = boost::make_shared<SHAMap>();
 	mAccountStateMap = boost::make_shared<SHAMap>();
@@ -33,9 +33,9 @@ Ledger::Ledger(const NewcoinAddress& masterID, uint64 startAmount) : mFeeHeld(0)
 }
 
 Ledger::Ledger(const uint256 &parentHash, const uint256 &transHash, const uint256 &accountHash,
-	uint64 feeHeld, uint64 timeStamp, uint32 ledgerSeq)
+	uint64 totCoins, uint64 timeStamp, uint32 ledgerSeq)
 		: mParentHash(parentHash), mTransHash(transHash), mAccountHash(accountHash),
-		mFeeHeld(feeHeld), mTimeStamp(timeStamp), mLedgerSeq(ledgerSeq),
+		mTotCoins(totCoins), mTimeStamp(timeStamp), mLedgerSeq(ledgerSeq),
 		mClosed(false), mValidHash(false), mAccepted(false), mImmutable(false)
 {
 	updateHash();
@@ -50,13 +50,13 @@ Ledger::Ledger(Ledger &prevLedger, uint64 ts) : mTimeStamp(ts),
 	mAccountStateMap->setSeq(mLedgerSeq);
 }
 
-Ledger::Ledger(const std::vector<unsigned char>& rawLedger) : mFeeHeld(0), mTimeStamp(0),
+Ledger::Ledger(const std::vector<unsigned char>& rawLedger) : mTotCoins(0), mTimeStamp(0),
 	mLedgerSeq(0), mClosed(false), mValidHash(false), mAccepted(false), mImmutable(true)
 {
 	Serializer s(rawLedger);
 	// 32seq, 64fee, 256phash, 256thash, 256ahash, 64ts
 	if (!s.get32(mLedgerSeq, BLgPIndex)) return;
-	if (!s.get64(mFeeHeld, BLgPFeeHeld)) return;
+	if (!s.get64(mTotCoins, BLgPTotCoins)) return;
 	if (!s.get256(mParentHash, BLgPPrevLg)) return;
 	if (!s.get256(mTransHash, BLgPTxT)) return;
 	if (!s.get256(mAccountHash, BLgPAcT)) return;
@@ -69,13 +69,13 @@ Ledger::Ledger(const std::vector<unsigned char>& rawLedger) : mFeeHeld(0), mTime
 	}
 }
 
-Ledger::Ledger(const std::string& rawLedger) : mFeeHeld(0), mTimeStamp(0),
+Ledger::Ledger(const std::string& rawLedger) : mTotCoins(0), mTimeStamp(0),
 	mLedgerSeq(0), mClosed(false), mValidHash(false), mAccepted(false), mImmutable(true)
 {
 	Serializer s(rawLedger);
 	// 32seq, 64fee, 256phash, 256thash, 256ahash, 64ts
 	if (!s.get32(mLedgerSeq, BLgPIndex)) return;
-	if (!s.get64(mFeeHeld, BLgPFeeHeld)) return;
+	if (!s.get64(mTotCoins, BLgPTotCoins)) return;
 	if (!s.get256(mParentHash, BLgPPrevLg)) return;
 	if (!s.get256(mTransHash, BLgPTxT)) return;
 	if (!s.get256(mAccountHash, BLgPAcT)) return;
@@ -107,7 +107,7 @@ void Ledger::updateHash()
 void Ledger::addRaw(Serializer &s)
 {
 	s.add32(mLedgerSeq);
-	s.add64(mFeeHeld);
+	s.add64(mTotCoins);
 	s.add256(mParentHash);
 	s.add256(mTransHash);
 	s.add256(mAccountHash);
@@ -135,25 +135,23 @@ AccountState::pointer Ledger::getAccountState(const NewcoinAddress& accountID)
 }
 
 bool Ledger::addTransaction(Transaction::pointer trans)
-{ // low-level - just add to table
+{ // low-level - just add to table, debit fee
 	assert(!mAccepted);
 	assert(!!trans->getID());
 	Serializer s;
 	trans->getSTransaction()->getTransaction(s, false);
 	SHAMapItem::pointer item = boost::make_shared<SHAMapItem>(trans->getID(), s.peekData());
-	return mTransactionMap->addGiveItem(item, true);
+	if (!mTransactionMap->addGiveItem(item, true)) return false;
+	mTotCoins -= trans->getFee();
+	return true;
 }
 
-bool Ledger::addTransaction(const uint256& txID, const Serializer& txn)
+bool Ledger::addTransaction(const uint256& txID, const Serializer& txn, uint64_t fee)
 { // low-level - just add to table
 	SHAMapItem::pointer item = boost::make_shared<SHAMapItem>(txID, txn.peekData());
-	return mTransactionMap->addGiveItem(item, true);
-}
-
-bool Ledger::delTransaction(const uint256& transID)
-{
-	assert(!mAccepted);
-	return mTransactionMap->delItem(transID); 
+	if (!mTransactionMap->addGiveItem(item, true)) return false;
+	mTotCoins -= fee;
+	return true;
 }
 
 bool Ledger::hasTransaction(const uint256& transID) const
@@ -233,14 +231,14 @@ uint256 Ledger::getHash()
 void Ledger::saveAcceptedLedger(Ledger::pointer ledger)
 {
 	std::string sql="INSERT INTO Ledgers "
-		"(LedgerHash,LedgerSeq,PrevHash,FeeHeld,ClosingTime,AccountSetHash,TransSetHash) VALUES ('";
+		"(LedgerHash,LedgerSeq,TotalCoins,,ClosingTime,AccountSetHash,TransSetHash) VALUES ('";
 	sql.append(ledger->getHash().GetHex());
 	sql.append("','");
 	sql.append(boost::lexical_cast<std::string>(ledger->mLedgerSeq));
 	sql.append("','");
 	sql.append(ledger->mParentHash.GetHex());
 	sql.append("','");
-	sql.append(boost::lexical_cast<std::string>(ledger->mFeeHeld));
+	sql.append(boost::lexical_cast<std::string>(ledger->mTotCoins));
 	sql.append("','");
 	sql.append(boost::lexical_cast<std::string>(ledger->mTimeStamp));
 	sql.append("','");
@@ -263,15 +261,15 @@ void Ledger::saveAcceptedLedger(Ledger::pointer ledger)
 Ledger::pointer Ledger::getSQL(const std::string& sql)
 {
 	uint256 ledgerHash, prevHash, accountHash, transHash;
-	uint64 feeHeld, closingTime;
+	uint64 totCoins, closingTime;
 	uint32 ledgerSeq;
 	std::string hash;
 
 	if(1)
 	{
 		ScopedLock sl(theApp->getLedgerDB()->getDBLock());
-		Database *db=theApp->getLedgerDB()->getDB();
-		if(!db->executeSQL(sql.c_str()) || !db->startIterRows() || !db->getNextRow())
+		Database *db = theApp->getLedgerDB()->getDB();
+		if (!db->executeSQL(sql.c_str()) || !db->startIterRows() || !db->getNextRow())
 			 return Ledger::pointer();
 
 		db->getStr("LedgerHash", hash);
@@ -282,14 +280,14 @@ Ledger::pointer Ledger::getSQL(const std::string& sql)
 		accountHash.SetHex(hash);
 		db->getStr("TransSetHash", hash);
 		transHash.SetHex(hash);
-		feeHeld=db->getBigInt("FeeHeld");
-		closingTime=db->getBigInt("ClosingTime");
-		ledgerSeq=db->getBigInt("LedgerSeq");
+		totCoins = db->getBigInt("TotalCoins");
+		closingTime = db->getBigInt("ClosingTime");
+		ledgerSeq = db->getBigInt("LedgerSeq");
 		db->endIterRows();
 	}
 	
-	Ledger::pointer ret=boost::make_shared<Ledger>(prevHash, transHash, accountHash, feeHeld, closingTime, ledgerSeq);
-	if(ret->getHash()!=ledgerHash)
+	Ledger::pointer ret=boost::make_shared<Ledger>(prevHash, transHash, accountHash, totCoins, closingTime, ledgerSeq);
+	if (ret->getHash() != ledgerHash)
 	{
 		assert(false);
 		return Ledger::pointer();

@@ -100,7 +100,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 
 		Serializer s;
 		txn.add(s);
-		mLedger->addTransaction(txID, s);
+		mLedger->addTransaction(txID, s, txnFee);
 	}
 
 	return result;

@@ -28,7 +28,7 @@ const char *LedgerDBInit[] = {
 		LedgerHash		CHARACTER(64) PRIMARY KEY,	\
 		LedgerSeq		BIGINT UNSIGNED,			\
 		PrevHash		CHARACTER(64),				\
-		FeeHeld			BIGINT UNSIGNED,			\
+		TotalCoins		BIGINT UNSIGNED,			\
 		ClosingTime		BIGINT UNSINGED,			\
 		AccountSetHash	CHARACTER(64),				\
 		TransSetHash	CHARACTER(64)				\
