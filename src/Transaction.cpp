@@ -179,8 +179,8 @@ bool Transaction::checkSign() const
 
 void Transaction::setStatus(TransStatus ts, uint32 lseq)
 {
-	mStatus=ts;
-	mInLedger=lseq;
+	mStatus = ts;
+	mInLedger = lseq;
 }
 
 void Transaction::saveTransaction(Transaction::pointer txn)
@@ -190,9 +190,9 @@ void Transaction::saveTransaction(Transaction::pointer txn)
 
 bool Transaction::save() const
 { // This code needs to be fixed to support new-style transactions - FIXME
-	if((mStatus==INVALID)||(mStatus==REMOVED)) return false;
+	if ((mStatus == INVALID) || (mStatus == REMOVED)) return false;
 
-	std::string sql="INSERT INTO Transactions "
+	std::string sql = "INSERT INTO Transactions "
 		"(TransID,TransType,FromAcct,FromSeq,OtherAcct,Amount,FirstSeen,CommitSeq,Status,RawTxn)"
 		" VALUES ('";
 	sql.append(mTransactionID.GetHex());
@@ -227,7 +227,7 @@ bool Transaction::save() const
 	sql.append(");");
 	
 	ScopedLock sl(theApp->getTxnDB()->getDBLock());
-	Database* db=theApp->getTxnDB()->getDB();
+	Database* db = theApp->getTxnDB()->getDB();
 	return db->executeSQL(sql.c_str());
 }
 
@@ -240,31 +240,31 @@ Transaction::pointer Transaction::transactionFromSQL(const std::string& sql)
 	if(1)
 	{
 		ScopedLock sl(theApp->getTxnDB()->getDBLock());
-		Database* db=theApp->getTxnDB()->getDB();
+		Database* db = theApp->getTxnDB()->getDB();
 
-		if(!db->executeSQL(sql.c_str(), true) || !db->startIterRows() || !db->getNextRow())
+		if (!db->executeSQL(sql.c_str(), true) || !db->startIterRows() || !db->getNextRow())
 			return Transaction::pointer();
 
 		db->getStr("Status", status);
-		int txSize=db->getBinary("RawTxn", &(rawTxn.front()), rawTxn.size());
+		int txSize = db->getBinary("RawTxn", &(rawTxn.front()), rawTxn.size());
 		rawTxn.resize(txSize);
-		if(txSize>rawTxn.size()) db->getBinary("RawTxn", &(rawTxn.front()), rawTxn.size());
+		if (txSize>rawTxn.size()) db->getBinary("RawTxn", &(rawTxn.front()), rawTxn.size());
 		db->endIterRows();
 	}
 
 	Serializer s(rawTxn);
 	SerializerIterator it(s);
-	SerializedTransaction::pointer txn=boost::make_shared<SerializedTransaction>(boost::ref(it), -1);
-	Transaction::pointer tr=boost::make_shared<Transaction>(txn, true);
+	SerializedTransaction::pointer txn = boost::make_shared<SerializedTransaction>(boost::ref(it), -1);
+	Transaction::pointer tr = boost::make_shared<Transaction>(txn, true);
 
 	TransStatus st(INVALID);
 	switch(status[0])
 	{
-		case 'N': st=NEW; break;
-		case 'A': st=INCLUDED; break;
-		case 'C': st=CONFLICTED; break;
-		case 'D': st=COMMITTED; break;
-		case 'H': st=HELD; break;
+		case 'N': st = NEW; break;
+		case 'A': st = INCLUDED; break;
+		case 'C': st = CONFLICTED; break;
+		case 'D': st = COMMITTED; break;
+		case 'H': st = HELD; break;
 	}
 	tr->setStatus(st);
 
@@ -274,7 +274,7 @@ Transaction::pointer Transaction::transactionFromSQL(const std::string& sql)
 
 Transaction::pointer Transaction::load(const uint256& id)
 {
-	std::string sql="SELECT Status,RawTxn FROM Transactions WHERE TransID='";
+	std::string sql = "SELECT Status,RawTxn FROM Transactions WHERE TransID='";
 	sql.append(id.GetHex());
 	sql.append("';");
 	return transactionFromSQL(sql);
@@ -282,7 +282,7 @@ Transaction::pointer Transaction::load(const uint256& id)
 
 Transaction::pointer Transaction::findFrom(const NewcoinAddress& fromID, uint32 seq)
 {
-	std::string sql="SELECT Status,RawTxn FROM Transactions WHERE FromID='";
+	std::string sql = "SELECT Status,RawTxn FROM Transactions WHERE FromID='";
 	sql.append(fromID.humanAccountID());
 	sql.append("' AND FromSeq='");
 	sql.append(boost::lexical_cast<std::string>(seq));
@@ -296,19 +296,17 @@ bool Transaction::convertToTransactions(uint32 firstLedgerSeq, uint32 secondLedg
 { // convert a straight SHAMap payload difference to a transaction difference table
   // return value: true=ledgers are valid, false=a ledger is invalid
 	std::map<uint256, std::pair<SHAMapItem::pointer, SHAMapItem::pointer> >::const_iterator it;
-	for(it=inMap.begin(); it!=inMap.end(); ++it)
+	for(it = inMap.begin(); it != inMap.end(); ++it)
 	{
-		const uint256& id=it->first;
-		const SHAMapItem::pointer& first=it->second.first;
-		const SHAMapItem::pointer& second=it->second.second;
+		const uint256& id = it->first;
+		const SHAMapItem::pointer& first = it->second.first;
+		const SHAMapItem::pointer& second = it->second.second;
 	
 		Transaction::pointer firstTrans, secondTrans;	
-		if(!!first)
+		if (!!first)
 		{ // transaction in our table
-			Serializer s(first->getData());
-			SerializerIterator sit(s);
-			firstTrans=boost::make_shared<Transaction>(first->getData(), checkFirstTransactions);
-			if( (firstTrans->getStatus()==INVALID) || (firstTrans->getID()!=id) )
+			firstTrans = boost::make_shared<Transaction>(first->getData(), checkFirstTransactions);
+			if ((firstTrans->getStatus() == INVALID) || (firstTrans->getID() != id ))
 			{
 				firstTrans->setStatus(INVALID, firstLedgerSeq);
 				return false;
@@ -316,10 +314,10 @@ bool Transaction::convertToTransactions(uint32 firstLedgerSeq, uint32 secondLedg
 			else firstTrans->setStatus(INCLUDED, firstLedgerSeq);
 		}
 
-		if(!!second)
+		if (!!second)
 		{ // transaction in other table
-			secondTrans=boost::make_shared<Transaction>(second->getData(), checkSecondTransactions);
-			if( (secondTrans->getStatus()==INVALID) || (secondTrans->getID()!=id) )
+			secondTrans = boost::make_shared<Transaction>(second->getData(), checkSecondTransactions);
+			if ((secondTrans->getStatus() == INVALID) || (secondTrans->getID() != id))
 			{
 				secondTrans->setStatus(INVALID, secondLedgerSeq);
 				return false;
@@ -327,27 +325,27 @@ bool Transaction::convertToTransactions(uint32 firstLedgerSeq, uint32 secondLedg
 			else secondTrans->setStatus(INCLUDED, secondLedgerSeq);
 		}
 		assert(firstTrans || secondTrans);
-		if(firstTrans && secondTrans && (firstTrans->getStatus()!=INVALID) && (secondTrans->getStatus()!=INVALID))
+		if(firstTrans && secondTrans && (firstTrans->getStatus() != INVALID) && (secondTrans->getStatus() != INVALID))
 			return false; // one or the other SHAMap is structurally invalid or a miracle has happened
 
-		outMap[id]=std::pair<Transaction::pointer, Transaction::pointer>(firstTrans, secondTrans);
+		outMap[id] = std::pair<Transaction::pointer, Transaction::pointer>(firstTrans, secondTrans);
 	}
 	return true;
 }
 
 static bool isHex(char j)
 {
-	if((j>='0') && (j<='9')) return true;
-	if((j>='A') && (j<='F')) return true;
-	if((j>='a') && (j<='f')) return true;
+	if ((j >= '0') && (j <= '9')) return true;
+	if ((j >= 'A') && (j <= 'F')) return true;
+	if ((j >= 'a') && (j <= 'f')) return true;
 	return false;
 }
 						
 bool Transaction::isHexTxID(const std::string& txid)
 {
-	if(txid.size()!=64) return false;
-	for(int i=0; i<64; i++)
-		if(!isHex(txid[i])) return false;
+	if (txid.size() != 64) return false;
+	for (int i = 0; i < 64; ++i)
+		if (!isHex(txid[i])) return false;
 	return true;
 }
 
@@ -355,30 +353,30 @@ Json::Value Transaction::getJson(bool decorate, bool paid, bool credited) const
 {
 	Json::Value ret(mTransaction->getJson(0));
 
-	if(mInLedger) ret["InLedger"]=mInLedger;
-	if(paid) ret["Paid"]=true;
+	if (mInLedger) ret["InLedger"]=mInLedger;
+	if (paid) ret["Paid"]=true;
 
 	switch(mStatus)
 	{
-		case NEW: ret["Status"]="new"; break;
-		case INVALID: ret["Status"]="invalid"; break;
-		case INCLUDED: ret["Status"]="included"; break;
-		case CONFLICTED: ret["Status"]="conflicted"; break;
-		case COMMITTED: ret["Status"]="committed"; break;
-		case HELD: ret["Status"]="held"; break;
-		case REMOVED: ret["Status"]="removed"; break;
-		case OBSOLETE: ret["Status"]="obsolete"; break;
-		case INCOMPLETE: ret["Status"]="incomplete"; break;
-		default: ret["Status"]="unknown";
+		case NEW: ret["Status"] = "new"; break;
+		case INVALID: ret["Status"] = "invalid"; break;
+		case INCLUDED: ret["Status"] = "included"; break;
+		case CONFLICTED: ret["Status"] = "conflicted"; break;
+		case COMMITTED: ret["Status"] = "committed"; break;
+		case HELD: ret["Status"] = "held"; break;
+		case REMOVED: ret["Status"] = "removed"; break;
+		case OBSOLETE: ret["Status"] = "obsolete"; break;
+		case INCOMPLETE: ret["Status"] = "incomplete"; break;
+		default: ret["Status"] = "unknown";
 	}
 
 #if 0
 	if(decorate)
 	{
-		LocalAccount::pointer lac=theApp->getWallet().getLocalAccount(mAccountFrom);
-		if(!!lac) source=lac->getJson();
-		lac=theApp->getWallet().getLocalAccount(mAccountTo);
-		if(!!lac) destination=lac->getJson();
+		LocalAccount::pointer lac = theApp->getWallet().getLocalAccount(mAccountFrom);
+		if (!!lac) source = lac->getJson();
+		lac = theApp->getWallet().getLocalAccount(mAccountTo);
+		if (!!lac) destination = lac->getJson();
 	}
 #endif
 
