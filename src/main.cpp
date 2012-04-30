@@ -19,7 +19,7 @@ using namespace boost;
 
 void startApp()
 {
-	theApp=new Application();
+	theApp = new Application();
 	theApp->run(); // blocks till we get a stop RPC
 }
 
