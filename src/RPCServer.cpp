@@ -389,7 +389,7 @@ Json::Value RPCServer::doConnect(Json::Value& params)
 	}
 
 	if(!theApp->getConnectionPool().connectTo(strIp, iPort))
-		return JSONRPCError(500, "Unable to connect");
+		return "connected";
 
 	return "connecting";
 }
