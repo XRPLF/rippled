@@ -228,7 +228,7 @@ STAmount operator/(const STAmount& num, const STAmount& den)
 	CBigNum v;
 	if ((BN_add_word(&v, num.value) != 1) ||
 		(BN_mul_word(&v, 10000000000000000ull) != 1) ||
-		(BN_div_word(&v, den.value) == ((BN_ULONG)-1)))
+		(BN_div_word(&v, den.value) == ((BN_ULONG) - 1)))
 	{
 		throw std::runtime_error("internal bn error");
 	}
@@ -248,7 +248,7 @@ STAmount operator*(const STAmount &v1, const STAmount &v2)
 	CBigNum v;
 	if ((BN_add_word(&v, (v1.value*10) + 3) != 1) ||
 		(BN_mul_word(&v, (v2.value*10) + 3) != 1) ||
-		(BN_div_word(&v, 1000000000000000000ull) == ((BN_ULONG)-1)))
+		(BN_div_word(&v, 1000000000000000000ull) == ((BN_ULONG) - 1)))
 	{
 		throw std::runtime_error("internal bn error");
 	}
@@ -309,14 +309,27 @@ STAmount getNeeded(const STAmount& offerOut, const STAmount& offerIn, const STAm
 	return (ret > offerIn) ? offerIn : ret;
 }
 
-STAmount convertToDisplayAmount(const STAmount& internalAmount, const STAmount& totalNow, const STAmount& totalInit)
-{ // Convert an internal ledger/account quantity of native currency to a display amount
-	return (internalAmount * totalInit) / totalNow;
+static uint64_t muldiv(uint64_t a, uint64_t b, uint64_t c)
+{ // computes (a*b)/c rounding up - supports values up to 10^18
+	if (c == 0) throw std::runtime_error("underflow");
+	if ((a == 0) || (b == 0)) return 0;
+
+	CBigNum v;
+	if ((BN_add_word(&v, a * 10 + 3) != 1) || (BN_mul_word(&v, b * 10 + 3) != 1) ||
+		(BN_div_word(&v, c) == ((BN_ULONG) - 1)) || (BN_div_word(&v, 100) == ((BN_ULONG) - 1)))
+		throw std::runtime_error("muldiv error");
+
+	return v.getulong();
 }
 
-STAmount convertToInternalAmount(const STAmount& displayAmount, const STAmount& totalNow, const STAmount& totalInit)
+STAmount convertToDisplayAmount(uint64_t internalAmount, uint64_t totalNow, uint64_t totalInit)
+{ // Convert an internal ledger/account quantity of native currency to a display amount
+	return muldiv(internalAmount, totalInit, totalNow);
+}
+
+STAmount convertToInternalAmount(uint64_t displayAmount, uint64_t totalNow, uint64_t totalInit)
 { // Convert a display/request currency amount to an internal amount
-	return (displayAmount * totalNow) / totalInit;
+	return muldiv(displayAmount, totalNow, totalInit);
 }
 
 void STAmount::unitTest()
