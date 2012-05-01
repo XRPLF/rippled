@@ -22,14 +22,16 @@ bool LedgerMaster::addHeldTransaction(Transaction::pointer transaction)
 
 void LedgerMaster::pushLedger(Ledger::pointer newLedger)
 {
+	// Caller should already have properly assembled this ledger into "ready-to-close" form --
+	// all candidate transactions must already be appled
 	ScopedLock sl(mLock);
-	if(!!mFinalizingLedger)
+	if(!!mFinalizedLedger)
 	{
-		mFinalizingLedger->setClosed();
-		mFinalizingLedger->setAccepted();
-		mLedgerHistory.addAcceptedLedger(mFinalizingLedger);
+		mFinalizedLedger->setClosed();
+		mFinalizedLedger->setAccepted();
+		mLedgerHistory.addAcceptedLedger(mFinalizedLedger);
 	}
-	mFinalizingLedger = mCurrentLedger;
+	mFinalizedLedger = mCurrentLedger;
 	mCurrentLedger = newLedger;
 	mEngine.setLedger(newLedger);
 }
@@ -38,27 +40,27 @@ void LedgerMaster::pushLedger(Ledger::pointer newLedger)
 
 void LedgerMaster::startFinalization()
 {
-	mFinalizingLedger=mCurrentLedger;
+	mFinalizedLedger=mCurrentLedger;
 	mCurrentLedger=Ledger::pointer(new Ledger(mCurrentLedger->getIndex()+1));
 
-	applyFutureProposals( mFinalizingLedger->getIndex() );
+	applyFutureProposals( mFinalizedLedger->getIndex() );
 	applyFutureTransactions( mCurrentLedger->getIndex() );
 }
 
 void LedgerMaster::sendProposal()
 {
-	PackedMessage::pointer packet=Peer::createLedgerProposal(mFinalizingLedger);
+	PackedMessage::pointer packet=Peer::createLedgerProposal(mFinalizedLedger);
 	theApp->getConnectionPool().relayMessage(NULL,packet);
 }
 
 
 void LedgerMaster::endFinalization()
 {
-	mFinalizingLedger->publishValidation();
-	mLedgerHistory.addAcceptedLedger(mFinalizingLedger);
-	mLedgerHistory.addLedger(mFinalizingLedger);
+	mFinalizedLedger->publishValidation();
+	mLedgerHistory.addAcceptedLedger(mFinalizedLedger);
+	mLedgerHistory.addLedger(mFinalizedLedger);
 
-	mFinalizingLedger=Ledger::pointer();
+	mFinalizedLedger=Ledger::pointer();
 }
 
 void LedgerMaster::addFutureProposal(Peer::pointer peer,newcoin::ProposeLedger& otherLedger)
@@ -100,8 +102,8 @@ void LedgerMaster::checkLedgerProposal(Peer::pointer peer, newcoin::ProposeLedge
 
 	if(otherLedger.ledgerindex()<mCurrentLedger->getIndex())
 	{
-		if( (!mFinalizingLedger) || 
-			otherLedger.ledgerindex()<mFinalizingLedger->getIndex())
+		if( (!mFinalizedLedger) || 
+			otherLedger.ledgerindex()<mFinalizedLedger->getIndex())
 		{ // you have already closed this ledger
 			Ledger::pointer oldLedger=mLedgerHistory.getAcceptedLedger(otherLedger.ledgerindex());
 			if(oldLedger)
@@ -115,11 +117,11 @@ void LedgerMaster::checkLedgerProposal(Peer::pointer peer, newcoin::ProposeLedge
 		}else
 		{ // you guys are on the same page
 			uint256 otherHash=protobufTo256(otherLedger.hash());
-			if(mFinalizingLedger->getHash()!= otherHash)
+			if(mFinalizedLedger->getHash()!= otherHash)
 			{
-				if( mFinalizingLedger->getNumTransactions()>=otherLedger.numtransactions())
+				if( mFinalizedLedger->getNumTransactions()>=otherLedger.numtransactions())
 				{
-					peer->sendLedgerProposal(mFinalizingLedger);
+					peer->sendLedgerProposal(mFinalizedLedger);
 				}else
 				{
 					peer->sendGetFullLedger(otherHash);
@@ -127,7 +129,7 @@ void LedgerMaster::checkLedgerProposal(Peer::pointer peer, newcoin::ProposeLedge
 			}
 		}
 	}else
-	{ // you haven't started finalizing this one yet save it for when you do
+	{ // you haven't started finalizde this one yet save it for when you do
 		addFutureProposal(peer,otherLedger);
 	}
 }
