@@ -28,67 +28,6 @@ void NewcoinAddress::clear()
     vchData.clear();
 }
 
-#if 0
-//
-// Hanko - OBSOLETE
-//
-
-uint160 NewcoinAddress::getHanko() const
-{
-    switch (nVersion) {
-    case VER_NONE:
-		throw std::runtime_error("unset source");
-
-    case VER_HANKO:
-		return uint160(vchData);
-
-    case VER_NODE_PUBLIC:
-		// Note, we are encoding the left or right.
-		return Hash160(vchData);
-
-    default:
-		throw std::runtime_error(str(boost::format("bad source: %d") % int(nVersion)));
-    }
-}
-
-std::string NewcoinAddress::humanHanko() const
-{
-    switch (nVersion) {
-    case VER_NONE:
-		throw std::runtime_error("unset source");
-
-    case VER_HANKO:
-		return ToString();
-
-    case VER_NODE_PUBLIC:
-	{
-	    NewcoinAddress	hanko;
-
-	    (void) hanko.setHanko(getHanko());
-
-	    return hanko.ToString();
-	}
-
-    default:
-		throw std::runtime_error(str(boost::format("bad source: %d") % int(nVersion)));
-    }
-}
-
-bool NewcoinAddress::setHanko(const std::string& strHanko)
-{
-    return SetString(strHanko.c_str(), VER_HANKO);
-}
-
-void NewcoinAddress::setHanko(const uint160& hash160)
-{
-    SetData(VER_HANKO, hash160.begin(), 20);
-}
-
-void NewcoinAddress::setHanko(const NewcoinAddress& nodePublic) {
-	setHanko(nodePublic.getHanko());
-}
-#endif
-
 //
 // NodePublic
 //
@@ -98,9 +37,6 @@ const std::vector<unsigned char>& NewcoinAddress::getNodePublic() const
     switch (nVersion) {
     case VER_NONE:
 		throw std::runtime_error("unset source");
-
-    case VER_HANKO:
-		throw std::runtime_error("public not available from hanko");
 
     case VER_NODE_PUBLIC:
 		return vchData;
@@ -115,9 +51,6 @@ std::string NewcoinAddress::humanNodePublic() const
     switch (nVersion) {
     case VER_NONE:
 		throw std::runtime_error("unset source");
-
-    case VER_HANKO:
-		throw std::runtime_error("public not available from hanko");
 
     case VER_NODE_PUBLIC:
 		return ToString();
