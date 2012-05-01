@@ -493,18 +493,15 @@ void Peer::recvHello(newcoin::TMHello& packet)
 		std::cerr << "Recv(Hello): Disconnect: Bad node public key." << std::endl;
 	}
 	else if (!mNodePublic.verifyNodePublic(mCookieHash, packet.nodeproof()))
-	{
-		// Unable to verify they have private key for claimed public key.
+	{ // Unable to verify they have private key for claimed public key.
 		std::cerr << "Recv(Hello): Disconnect: Failed to verify session." << std::endl;
 	}
 	else if (!theApp->getConnectionPool().peerConnected(shared_from_this(), mNodePublic))
-	{
-		// Already connected, self, or some other reason.
+	{ // Already connected, self, or some other reason.
 		std::cerr << "Recv(Hello): Disconnect: Extraneous connection." << std::endl;
 	}
 	else
-	{
-		// Successful connection.
+	{ // Successful connection.
 
 		// Cancel verification timeout.
 		(void) mVerifyTimer.cancel();
@@ -638,17 +635,17 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 	}
 	else if(packet.has_ledgerseq())
 		ledger=theApp->getMasterLedger().getLedgerBySeq(packet.ledgerseq());
-	else if(packet.has_ltype() && (packet.ltype()==newcoin::ltCURRENT) )
+	else if(packet.has_ltype() && (packet.ltype() == newcoin::ltCURRENT) )
 		ledger=theApp->getMasterLedger().getCurrentLedger();
-	else if(packet.has_ltype() && (packet.ltype()==newcoin::ltCLOSING) )
+	else if(packet.has_ltype() && (packet.ltype() == newcoin::ltCLOSING) )
 	{
-		ledger=theApp->getMasterLedger().getClosingLedger();
+		ledger = theApp->getMasterLedger().getClosedLedger();
 	}
-	else if(packet.has_ltype() && (packet.ltype()==newcoin::ltCLOSED) )
+	else if(packet.has_ltype() && (packet.ltype() == newcoin::ltCLOSED) )
 	{
-		ledger=theApp->getMasterLedger().getClosingLedger();
+		ledger = theApp->getMasterLedger().getClosedLedger();
 		if(ledger && !ledger->isClosed())
-			ledger=theApp->getMasterLedger().getLedgerBySeq(ledger->getLedgerSeq()-1);
+			ledger = theApp->getMasterLedger().getLedgerBySeq(ledger->getLedgerSeq() - 1);
 	}
 	else
 	{
@@ -767,7 +764,7 @@ void Peer::sendHello()
 
 	theApp->getWallet().getNodePrivate().signNodePrivate(mCookieHash, vchSig);
 
-	newcoin::TMHello* h=new newcoin::TMHello();
+	newcoin::TMHello* h = new newcoin::TMHello();
 
 	h->set_version(theConfig.VERSION);
 	h->set_ledgerindex(theApp->getOPs().getCurrentLedgerID());
@@ -776,15 +773,16 @@ void Peer::sendHello()
 	h->set_nodeproof(&vchSig[0], vchSig.size());
 	h->set_ipv4port(theConfig.PEER_PORT);
 
-	Ledger::pointer closingLedger=theApp->getMasterLedger().getClosingLedger();
-	if(closingLedger->isClosed())
+	Ledger::pointer closedLedger = theApp->getMasterLedger().getClosedLedger();
+	assert(closedLedger && closedLedger->isClosed());
+	if(closedLedger->isClosed())
 	{
 		Serializer s(128);
-		closingLedger->addRaw(s);
+		closedLedger->addRaw(s);
 		h->set_closedledger(s.getDataPtr(), s.getLength());
 	}
 
-	PackedMessage::pointer packet=boost::make_shared<PackedMessage>
+	PackedMessage::pointer packet = boost::make_shared<PackedMessage>
 		(PackedMessage::MessagePointer(h), newcoin::mtHELLO);
 	sendPacket(packet);
 }

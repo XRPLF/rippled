@@ -48,7 +48,6 @@ protected:
 	std::vector<uint8_t> mReadbuf;
 	std::list<PackedMessage::pointer> mSendQ;
 	PackedMessage::pointer mSendingPacket;
-	std::bitset<32> mPeerBits;
 
 	Peer(boost::asio::io_service& io_service, boost::asio::ssl::context& ctx);
 
