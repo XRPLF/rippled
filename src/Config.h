@@ -34,8 +34,9 @@ public:
 	int LEDGER_SECONDS;
 	int LEDGER_PROPOSAL_DELAY_SECONDS;
 	int LEDGER_AVALANCHE_SECONDS;
-	int BELIEF_QUORUM;
-	float BELIEF_PERCENT;
+
+	int NETWORK_QUORUM;			// Minimum number of nodes to consider the network present
+	int BELIEF_QUORUM;			// Percent agreement needed to sync ledger w/o validations
 
 	// node networking parameters
 	std::string PEER_IP;
