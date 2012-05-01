@@ -91,16 +91,20 @@ void Config::load()
 			(void) sectionSingleB(secConfig, SECTION_VALIDATION_KEY, VALIDATION_KEY);
 
 			(void) sectionSingleB(secConfig, SECTION_PEER_SSL_CIPHER_LIST, PEER_SSL_CIPHER_LIST);
-			(void) sectionSingleB(secConfig, SECTION_PEER_SCAN_INTERVAL_MIN, strTemp);
+
+			if (sectionSingleB(secConfig, SECTION_PEER_SCAN_INTERVAL_MIN, strTemp))
 				PEER_SCAN_INTERVAL_MIN = MAX(60, boost::lexical_cast<int>(strTemp));
-			(void) sectionSingleB(secConfig, SECTION_PEER_START_MAX, strTemp);
+
+			if (sectionSingleB(secConfig, SECTION_PEER_START_MAX, strTemp))
 				PEER_START_MAX = MIN(1, boost::lexical_cast<int>(strTemp));
-			(void) sectionSingleB(secConfig, SECTION_PEER_CONNECT_LOW_WATER, strTemp);
+
+			if (sectionSingleB(secConfig, SECTION_PEER_CONNECT_LOW_WATER, strTemp))
 				PEER_CONNECT_LOW_WATER = MAX(1, boost::lexical_cast<int>(strTemp));
 
-			(void) sectionSingleB(secConfig, SECTION_NETWORK_QUORUM, strTemp);
+			if (sectionSingleB(secConfig, SECTION_NETWORK_QUORUM, strTemp))
 				NETWORK_QUORUM = MIN(0, boost::lexical_cast<int>(strTemp));
-			(void) sectionSingleB(secConfig, SECTION_BELIEF_QUORUM, strTemp);
+
+			if (sectionSingleB(secConfig, SECTION_BELIEF_QUORUM, strTemp))
 				BELIEF_QUORUM = MIN(0, boost::lexical_cast<int>(strTemp));
 		}
 	}
