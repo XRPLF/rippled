@@ -506,13 +506,15 @@ Json::Value RPCServer::doLedger(Json::Value& params)
 	// ledger <seq>
 	// ledger <account>
 
-	int paramCount=getParamCount(params);
+	int paramCount = getParamCount(params);
 
-	if(paramCount==0);
+	if(paramCount == 0);
 	{
-		Json::Value ret(Json::objectValue);
-		theApp->getMasterLedger().getCurrentLedger()->addJson(ret);
-		theApp->getMasterLedger().getClosingLedger()->addJson(ret);
+		Json::Value ret(Json::objectValue), current(Json::objectValue), closed(Json::objectValue);
+		theApp->getMasterLedger().getCurrentLedger()->addJson(current);
+		theApp->getMasterLedger().getClosedLedger()->addJson(closed);
+		ret["open"] = current;
+		ret["closed"] = closed;
 		return ret;
 	}
 
@@ -520,13 +522,12 @@ Json::Value RPCServer::doLedger(Json::Value& params)
 }
 
 // unl_add <domain><node_public> [<comment>]
-Json::Value RPCServer::doUnlAdd(Json::Value& params) {
-	if(params.size()==1 || params.size()==2)
+Json::Value RPCServer::doUnlAdd(Json::Value& params)
+{
+	if (params.size() == 1 || params.size() == 2)
 	{
 		std::string	strNode	= params[0u].asString();
-		std::string strComment=params.size() == 2
-			? ""
-			: params[1u].asString();
+		std::string strComment = (params.size() == 2) ? "" : params[1u].asString();
 
 		NewcoinAddress	nodePublic;
 
@@ -543,7 +544,7 @@ Json::Value RPCServer::doUnlAdd(Json::Value& params) {
 			return "adding node by domain";
 		}
 	}
-	else return "invalid params";
+	return "invalid params";
 }
 
 // validation_create
