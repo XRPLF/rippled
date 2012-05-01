@@ -12,6 +12,10 @@
 #define MAX(x,y) ((x) < (y) ? (y) : (x))
 #endif
 
+#ifndef MIN
+#define MIN(x,y) ((x) > (y) ? (y) : (x))
+#endif
+
 boost::posix_time::ptime ptEpoch();
 int iToSeconds(boost::posix_time::ptime ptWhen);
 boost::posix_time::ptime ptFromSeconds(int iSeconds);
