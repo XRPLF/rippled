@@ -91,12 +91,11 @@ void Config::load()
 			(void) sectionSingleB(secConfig, SECTION_VALIDATION_KEY, VALIDATION_KEY);
 
 			(void) sectionSingleB(secConfig, SECTION_PEER_SSL_CIPHER_LIST, PEER_SSL_CIPHER_LIST);
-
 			if (sectionSingleB(secConfig, SECTION_PEER_SCAN_INTERVAL_MIN, strTemp))
 				PEER_SCAN_INTERVAL_MIN = MAX(60, boost::lexical_cast<int>(strTemp));
 
 			if (sectionSingleB(secConfig, SECTION_PEER_START_MAX, strTemp))
-				PEER_START_MAX = MIN(1, boost::lexical_cast<int>(strTemp));
+				PEER_START_MAX = MAX(1, boost::lexical_cast<int>(strTemp));
 
 			if (sectionSingleB(secConfig, SECTION_PEER_CONNECT_LOW_WATER, strTemp))
 				PEER_CONNECT_LOW_WATER = MAX(1, boost::lexical_cast<int>(strTemp));
