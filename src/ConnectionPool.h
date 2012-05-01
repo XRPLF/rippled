@@ -17,6 +17,7 @@ private:
     boost::mutex mPeerLock;
 
 	typedef std::pair<NewcoinAddress, Peer::pointer>	naPeer;
+	typedef std::pair<ipPort, Peer::pointer>			pipPeer;
 
 	// Peers we are connecting with and non-thin peers we are connected to.
     boost::unordered_map<ipPort, Peer::pointer>			mIpMap;
@@ -32,6 +33,11 @@ private:
 	int													mScanPort;
 
 	void		scanHandler(const boost::system::error_code& ecResult);
+
+	// Peers we are establishing a connection with as a client.
+	// int												miConnectStarting;
+
+	bool												peerAvailable(std::string& strIp, int& iPort);
 
 public:
 	ConnectionPool(boost::asio::io_service& io_service);
@@ -72,6 +78,12 @@ public:
 	//
 
 	void scanRefresh();
+
+	//
+	// Connection policy
+	//
+	void policyLowWater();
+	void policyEnforce();
 
 #if 0
 	//std::vector<std::pair<PackedMessage::pointer,int> > mBroadcastMessages;

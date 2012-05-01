@@ -516,6 +516,12 @@ void Peer::recvHello(newcoin::TMHello& packet)
 			// No longer connecting as client.
 			mClientConnect	= false;
 		}
+		else
+		{
+			// XXX At this point we could add the inbound connection to our IP list.  However, the inbound IP address might be that of
+			// a NAT. It would be best to only add it if and only if we can immediatly verify it.
+			nothing();
+		}
 
 		// XXX Set timer: connection is in grace period to be useful.
 		// XXX Set timer: connection idle (idle may vary depending on connection type.)

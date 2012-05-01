@@ -409,18 +409,16 @@ void UniqueNodeList::scoreCompute()
 		BOOST_FOREACH(ipScore, umScore)
 		{
 			ipPort		ipEndpoint	= ipScore.first;
-			std::string	strIP		= ipEndpoint.first;
-			int			iPort		= ipEndpoint.second;
+			std::string	strIpPort	= str(boost::format("%s %d") % ipEndpoint.first % ipEndpoint.second);
 			score		iPoints		= ipScore.second;
 
-			vstrValues.push_back(str(boost::format("(%s,%d,%d,'V')")
-				% db->escape(strIP)
-				% iPort
+			vstrValues.push_back(str(boost::format("(%s,%d,'V')")
+				% db->escape(strIpPort)
 				% iPoints));
 		}
 
 		// Set scores for each IP.
-		db->executeSQL(str(boost::format("REPLACE INTO PeerIps (IP,Port,Score,Source) VALUES %s;")
+		db->executeSQL(str(boost::format("REPLACE INTO PeerIps (IpPort,Score,Source) VALUES %s;")
 				% strJoin(vstrValues.begin(), vstrValues.end(), ",")));
 	}
 

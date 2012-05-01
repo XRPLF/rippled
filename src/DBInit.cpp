@@ -198,13 +198,11 @@ const char *WalletDBInit[] = {
 	// ScanInterval:
 	//  Delay between scans.
 	"CREATE TABLE PeerIps (								\
-		IP				TEXT NOT NULL,					\
-		Port			INTEGER NOT NULL DEFAULT -1,	\
+		IpPort			TEXT NOT NULL PRIMARY KEY,		\
 		Score			INTEGER NOT NULL,				\
 		Source			CHARACTER(1) NOT NULL,			\
 		ScanNext		DATETIME DEFAULT 0,				\
-		ScanInterval	INTEGER NOT NULL DEFAULT 0,		\
-		PRIMARY KEY (IP,Port)							\
+		ScanInterval	INTEGER NOT NULL DEFAULT 0		\
 	);",
 
 	"CREATE INDEX PeerScanIndex ON						\

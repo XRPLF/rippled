@@ -9,6 +9,16 @@
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>
+#include <boost/algorithm/string.hpp>
+
+static void splitIpPort(const std::string& strIpPort, std::string& strIp, int& iPort)
+{
+	std::vector<std::string>	vIpPort;
+	boost::split(vIpPort, strIpPort, boost::is_any_of(" "));
+
+	strIp	= vIpPort[0];
+	iPort	= boost::lexical_cast<int>(vIpPort[1]);
+}
 
 ConnectionPool::ConnectionPool(boost::asio::io_service& io_service) :
 	mCtx(boost::asio::ssl::context::sslv23),
@@ -27,9 +37,84 @@ ConnectionPool::ConnectionPool(boost::asio::io_service& io_service) :
 void ConnectionPool::start()
 {
 	// XXX Start running policy.
+	policyEnforce();
 
 	// Start scanning.
 	scanRefresh();
+}
+
+bool ConnectionPool::peerAvailable(std::string& strIp, int& iPort)
+{
+	Database*					db = theApp->getWalletDB()->getDB();
+	std::vector<std::string>	vstrIpPort;
+
+	vstrIpPort.reserve(mIpMap.size());
+
+	pipPeer		ipPeer;
+	BOOST_FOREACH(ipPeer, mIpMap)
+	{
+		std::string&	strIp	= ipPeer.first.first;
+		int				iPort	= ipPeer.first.second;
+
+		vstrIpPort.push_back(db->escape(str(boost::format("%s %d") % strIp % iPort)));
+	}
+
+	std::string strIpPort;
+
+	ScopedLock	sl(theApp->getWalletDB()->getDBLock());
+	if (db->executeSQL(str(boost::format("SELECT IpPort FROM PeerIps WHERE ScanNext IS NULL AND IpPort NOT IN (%s) LIMIT 1;")
+		% strJoin(vstrIpPort.begin(), vstrIpPort.end(), ",")))
+		&& db->startIterRows())
+	{
+		db->getStr("IpPort", strIpPort);
+	}
+
+	bool		bAvailable	= !strIpPort.empty();
+
+	if (bAvailable)
+		splitIpPort(strIpPort, strIp, iPort);
+
+	return bAvailable;
+}
+
+void ConnectionPool::policyLowWater()
+{
+	std::string	strIp;
+	int			iPort;
+
+	// Find an entry to connect to.
+	if (mConnectedMap.size() > theConfig.PEER_CONNECT_LOW_WATER)
+	{
+		// Above low water mark, don't need more connections.
+		nothing();
+	}
+#if 0
+	else if (miConnectStarting == theConfig.PEER_START_MAX)
+	{
+		// Too many connections starting to start another.
+		nothing();
+	}
+#endif
+	else if (!peerAvailable(strIp, iPort))
+	{
+		// No more connections available to start.
+		// XXX Might ask peers for more ips.
+		nothing();
+	}
+	else
+	{
+		// Try to start connection.
+		if (!connectTo(strIp, iPort))
+			throw std::runtime_error("Internal error: standby was already connected.");
+
+		// Check if we need more.
+		policyLowWater();
+	}
+}
+
+void ConnectionPool::policyEnforce()
+{
+	policyLowWater();
 }
 
 // XXX Broken: also don't send a message to a peer if we got it from the peer.
@@ -99,6 +184,8 @@ bool ConnectionPool::connectTo(const std::string& strIp, int iPort)
 		mIpMap[ip]	= peer;
 
 		peer->connect(strIp, iPort);
+
+		// ++miConnectStarting;
 
 		bConnecting	= true;
 	}
@@ -205,14 +292,14 @@ void ConnectionPool::peerVerified(const std::string& strIp, int iPort)
 {
 	if (bScanning && !mScanIp.compare(strIp), mScanPort == iPort)
 	{
+		std::string	strIpPort	= str(boost::format("%s %d") % strIp % iPort);
 		// Scan completed successfully.
 		{
 			ScopedLock sl(theApp->getWalletDB()->getDBLock());
 			Database *db=theApp->getWalletDB()->getDB();
 
-			db->executeSQL(str(boost::format("UPDATE PeerIps SET ScanNext=NULL,ScanInterval=0 WHERE IP=%s AND Port=%d;")
-				% db->escape(strIp)
-				% iPort));
+			db->executeSQL(str(boost::format("UPDATE PeerIps SET ScanNext=NULL,ScanInterval=0 WHERE IpPort=%s;")
+				% db->escape(strIpPort)));
 			// XXX Check error.
 		}
 
@@ -252,8 +339,7 @@ void ConnectionPool::scanRefresh()
 		// Discover if there are entries that need scanning.
 		boost::posix_time::ptime	tpNext;
 		boost::posix_time::ptime	tpNow;
-		std::string					strIp;
-		int							iPort;
+		std::string					strIpPort;
 		int							iInterval;
 
 		{
@@ -269,8 +355,7 @@ void ConnectionPool::scanRefresh()
 				tpNext	= ptFromSeconds(iNext);
 				tpNow	= boost::posix_time::second_clock::universal_time();
 
-				db->getStr("IP", strIp);
-				iPort		= db->getInt("Port");
+				db->getStr("IpPort", strIpPort);
 				iInterval	= db->getInt("ScanInterval");
 			}
 			else
@@ -289,12 +374,12 @@ void ConnectionPool::scanRefresh()
 		else if (tpNext <= tpNow)
 		{
 			// Scan it.
+			splitIpPort(strIpPort, mScanIp, mScanPort);
+
 			(void) mScanTimer.cancel();
 
-			std::cerr << "scanRefresh: scanning: " << strIp << " " << iPort << std::endl;
+			std::cerr << "scanRefresh: scanning: " << mScanIp << " " << mScanPort << std::endl;
 			bScanning	= true;
-			mScanIp		= strIp;
-			mScanPort	= iPort;
 
 			iInterval	*= 2;
 			iInterval	= MAX(iInterval, theConfig.PEER_SCAN_INTERVAL_MIN);
@@ -305,11 +390,10 @@ void ConnectionPool::scanRefresh()
 				ScopedLock sl(theApp->getWalletDB()->getDBLock());
 				Database *db=theApp->getWalletDB()->getDB();
 
-				db->executeSQL(str(boost::format("UPDATE PeerIps SET ScanNext=%d,ScanInterval=%d WHERE IP=%s AND Port=%d;")
+				db->executeSQL(str(boost::format("UPDATE PeerIps SET ScanNext=%d,ScanInterval=%d WHERE IpPort=%s;")
 					% iToSeconds(tpNext)
 					% iInterval
-					% db->escape(strIp)
-					% iPort));
+					% db->escape(strIpPort)));
 				// XXX Check error.
 			}
 
