@@ -15,6 +15,12 @@ const int SYSTEM_PEER_PORT=6561;
 // 1 hour.
 #define DEFAULT_PEER_SCAN_INTERVAL_MIN	(60*60)
 
+// Maximum number of peers to try to connect to as client at once.
+#define DEFAULT_PEER_START_MAX		5
+
+// Might connect with fewer for testing.
+#define	DEFAULT_PEER_CONNECT_LOW_WATER	4
+
 class Config
 {
 public:
@@ -52,6 +58,8 @@ public:
 
 	std::string PEER_SSL_CIPHER_LIST;
 	int	    PEER_SCAN_INTERVAL_MIN;
+	int	    PEER_START_MAX;
+	int	    PEER_CONNECT_LOW_WATER;
 
 	// configuration parameters
 	std::string DATA_DIR;
