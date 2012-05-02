@@ -255,7 +255,7 @@ protected:
 public:
 
 	// build new map
-	SHAMap(uint32 seq=0);
+	SHAMap(uint32 seq = 0);
 
 	// hold the map stable across operations
 	ScopedLock Lock() const { return ScopedLock(mLock); }
@@ -314,6 +314,11 @@ public:
 	bool fetchNode(const uint256& hash, std::vector<unsigned char>& rawNode);
 
 	bool operator==(const SHAMap& s) { return getHash() == s.getHash(); }
+
+	// trusted path operations - prove a particular node is in a particular ledger
+	std::list<std::vector<unsigned char> > getTrustedPath(const uint256& index);
+	static std::vector<unsigned char> checkTrustedPath(const uint256& ledgerHash, const uint256& leafIndex,
+		const std::list<std::vector<unsigned char> >& path);
 
 	static bool TestSHAMap();
 	static bool syncTest();
