@@ -33,8 +33,8 @@ Config::Config()
 	RPC_PORT				= 5001;
 	NUMBER_CONNECTIONS		= 30;
 
-	// a new ledger every 30 min
-	LEDGER_SECONDS			= (60*30);
+	// a new ledger every minute
+	LEDGER_SECONDS			= 60;
 
 	RPC_USER				= "admin";
 	RPC_PASSWORD			= "pass";
@@ -49,8 +49,8 @@ Config::Config()
 
 	TRANSACTION_FEE_BASE	= 1000;
 
-	NETWORK_QUORUM			= 0;
-	BELIEF_QUORUM			= 1;
+	NETWORK_QUORUM			= 0;	// Don't need to see other nodes
+	BELIEF_QUORUM			= 1;	// Only need one node to vouch
 }
 
 void Config::load()
@@ -101,10 +101,10 @@ void Config::load()
 				PEER_CONNECT_LOW_WATER = MAX(1, boost::lexical_cast<int>(strTemp));
 
 			if (sectionSingleB(secConfig, SECTION_NETWORK_QUORUM, strTemp))
-				NETWORK_QUORUM = MIN(0, boost::lexical_cast<int>(strTemp));
+				NETWORK_QUORUM = MAX(0, boost::lexical_cast<int>(strTemp));
 
 			if (sectionSingleB(secConfig, SECTION_BELIEF_QUORUM, strTemp))
-				BELIEF_QUORUM = MIN(0, boost::lexical_cast<int>(strTemp));
+				BELIEF_QUORUM = MAX(0, boost::lexical_cast<int>(strTemp));
 		}
 	}
 
