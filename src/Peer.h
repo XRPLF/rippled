@@ -15,9 +15,9 @@
 
 enum PeerPunish
 {
-	PP_INVALID_REQUEST=1,	// The peer sent a request that makes no sense
-	PP_UNKNOWN_REQUEST=2,	// The peer sent a request that might be garbage
-	PP_UNWANTED_DATA=3,		// The peer sent us data we didn't want/need
+	PP_INVALID_REQUEST = 1,	// The peer sent a request that makes no sense
+	PP_UNKNOWN_REQUEST = 2,	// The peer sent a request that might be garbage
+	PP_UNWANTED_DATA = 3,		// The peer sent us data we didn't want/need
 };
 
 typedef std::pair<std::string,int> ipPort;
@@ -25,8 +25,8 @@ typedef std::pair<std::string,int> ipPort;
 class Peer : public boost::enable_shared_from_this<Peer>
 {
 public:
-	static const int psbGotHello=0, psbSentHello=1, psbInMap=2, psbTrusted=3;
-	static const int psbNoLedgers=4, psbNoTransactions=5, psbDownLevel=6;
+	static const int psbGotHello = 0, psbSentHello = 1, psbInMap = 2, psbTrusted = 3;
+	static const int psbNoLedgers = 4, psbNoTransactions = 5, psbDownLevel = 6;
 
 	void			handleConnect(const boost::system::error_code& error, boost::asio::ip::tcp::resolver::iterator it);
 
@@ -36,7 +36,11 @@ private:
 	ipPort			mIpPort;
 	uint256			mCookieHash;
 
-    boost::asio::ssl::stream<boost::asio::ip::tcp::socket>		mSocketSsl;
+	// network state information
+	uint256						mClosedLedgerHash;
+	boost::posix_time::ptime	mClosedLedgerTime;
+
+	boost::asio::ssl::stream<boost::asio::ip::tcp::socket>		mSocketSsl;
 
 	boost::asio::deadline_timer									mVerifyTimer;
 

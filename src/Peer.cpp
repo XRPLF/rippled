@@ -523,6 +523,12 @@ void Peer::recvHello(newcoin::TMHello& packet)
 		// XXX Set timer: connection is in grace period to be useful.
 		// XXX Set timer: connection idle (idle may vary depending on connection type.)
 
+		if ((packet.has_closedledger()) && (packet.closedledger().size() == (256 / 8)))
+		{
+			memcpy(mClosedLedgerHash.begin(), packet.closedledger().data(), (256 / 8));
+			mClosedLedgerTime = boost::posix_time::second_clock::universal_time();
+		}
+
 		bDetach	= false;
 	}
 
@@ -775,11 +781,10 @@ void Peer::sendHello()
 
 	Ledger::pointer closedLedger = theApp->getMasterLedger().getClosedLedger();
 	assert(closedLedger && closedLedger->isClosed());
-	if(closedLedger->isClosed())
+	if (closedLedger->isClosed())
 	{
-		Serializer s(128);
-		closedLedger->addRaw(s);
-		h->set_closedledger(s.getDataPtr(), s.getLength());
+		uint256 hash = closedLedger->getHash();
+		h->set_closedledger(hash.begin(), hash.GetSerializeSize());
 	}
 
 	PackedMessage::pointer packet = boost::make_shared<PackedMessage>
