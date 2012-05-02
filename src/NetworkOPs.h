@@ -5,6 +5,7 @@
 #include "AccountState.h"
 
 // Operations that clients may wish to perform against the network
+// Master operational handler, server sequencer, network tracker
 
 class Peer;
 
@@ -18,17 +19,13 @@ class NetworkOPs
 
 	enum OperatingMode
 	{ // how we process transactions or account balance requests
-		FAULTED=0,		// we are unable to process requests (not ready or no network)
-		FULL_LOCAL=1,	// we are in full local sync
-		PART_LOCAL=2,	// we can validate remote data but have to request it
-		REMOTE=3		// we have to trust remote nodes
+		DISCONNECTED=0,	// not ready to process requests
+		CONNECTED=1,	// convinced we are talking to the network
+		TRACKING=2,		// convinced we agree with the network
+		FULL=3			// we have the ledger and can even validate
 	};
 
 public:
-
-	// context information
-	OperatingMode getOperatingMode();
-
 	// network information
 	uint64 getNetworkTime();
 	uint32 getCurrentLedgerID();
@@ -43,8 +40,6 @@ public:
 
 	// account operations
 	AccountState::pointer getAccountState(const NewcoinAddress& accountID);
-
-	// contact block operations
 
 	// raw object operations
 	bool findRawLedger(const uint256& ledgerHash, std::vector<unsigned char>& rawLedger);
