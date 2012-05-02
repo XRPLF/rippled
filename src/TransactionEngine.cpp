@@ -85,8 +85,12 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 		// WRITEME: Special case code for changing transaction key
 		for(std::vector<AffectedAccount>::iterator it=accounts.begin(), end=accounts.end();
 			it != end; ++it)
-		{
-			if ( (it->first==taaMODIFY) || (it->first==taaCREATE) )
+		{	if (it->first == taaCREATE)
+			{
+				if (mLedger->writeBack(lepCREATE, it->second) & lepERROR)
+					assert(false);
+			}
+			else if (it->first==taaMODIFY)
 			{
 				if(mLedger->writeBack(lepNONE, it->second) & lepERROR)
 					assert(false);
