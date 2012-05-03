@@ -19,7 +19,7 @@
 #define SECTION_PEER_START_MAX			"peer_start_max"
 #define	SECTION_PEER_CONNECT_LOW_WATER	"peer_connect_low_water"
 #define SECTION_NETWORK_QUORUM			"network_quorum"
-#define SECTION_BELIEF_QUORUM			"belief_quorum"
+#define SECTION_VALIDATION_QUORUM		"validation_quorum"
 
 Config theConfig;
 
@@ -50,7 +50,7 @@ Config::Config()
 	TRANSACTION_FEE_BASE	= 1000;
 
 	NETWORK_QUORUM			= 0;	// Don't need to see other nodes
-	BELIEF_QUORUM			= 1;	// Only need one node to vouch
+	VALIDATION_QUORUM		= 1;	// Only need one node to vouch
 }
 
 void Config::load()
@@ -103,8 +103,8 @@ void Config::load()
 			if (sectionSingleB(secConfig, SECTION_NETWORK_QUORUM, strTemp))
 				NETWORK_QUORUM = MAX(0, boost::lexical_cast<int>(strTemp));
 
-			if (sectionSingleB(secConfig, SECTION_BELIEF_QUORUM, strTemp))
-				BELIEF_QUORUM = MAX(0, boost::lexical_cast<int>(strTemp));
+			if (sectionSingleB(secConfig, SECTION_VALIDATION_QUORUM, strTemp))
+				VALIDATION_QUORUM = MAX(0, boost::lexical_cast<int>(strTemp));
 		}
 	}
 
