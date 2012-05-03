@@ -215,6 +215,19 @@ Json::Value ConnectionPool::getPeersJson()
     return ret;
 }
 
+std::vector<Peer::pointer> ConnectionPool::getPeerVector()
+{
+	std::vector<Peer::pointer> ret;
+	ret.resize(mConnectedMap.size());
+
+	BOOST_FOREACH(naPeer pair, mConnectedMap)
+	{
+		ret.push_back(pair.second);
+    }
+
+    return ret;
+}
+
 // Now know peer's node public key.  Determine if we want to stay connected.
 bool ConnectionPool::peerConnected(Peer::pointer peer, const NewcoinAddress& na)
 {
