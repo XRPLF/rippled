@@ -142,6 +142,11 @@ static std::string hex(const std::vector<unsigned char>& value)
 	return std::string(psz, psz + value.size()*2);
 }
 
+STVariableLength::STVariableLength(SerializerIterator& st, const char *name) : SerializedType(name)
+{
+	value = st.getVL();
+}
+
 std::string STVariableLength::getText() const
 {
 	return hex(value);
