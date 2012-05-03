@@ -467,6 +467,16 @@ void STObject::setValueFieldH160(SOE_Field field, const uint160& v)
 	cf->setValue(v);
 }
 
+void STObject::setValueFieldH256(SOE_Field field, const uint256& v)
+{
+	SerializedType* rf = getPField(field);
+	if (!rf) throw std::runtime_error("Field not found");
+	if (rf->getSType() == STI_NOTPRESENT) rf = makeFieldPresent(field);
+	STHash256* cf = dynamic_cast<STHash256*>(rf);
+	if (!cf) throw std::runtime_error("Wrong field type");
+	cf->setValue(v);
+}
+
 void STObject::setValueFieldAccount(SOE_Field field, const uint160& v)
 {
 	SerializedType* rf = getPField(field);
