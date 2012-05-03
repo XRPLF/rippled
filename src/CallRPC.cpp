@@ -52,7 +52,7 @@ int commandLineRPC(const std::vector<std::string>& vCmd)
 	int nRet = 0;
 	try
 	{
-		if (vCmd.size() < 2) return 1;
+		if (!vCmd.size()) return 1;
 
 		std::string strMethod = vCmd[0];
 
