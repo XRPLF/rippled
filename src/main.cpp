@@ -1,34 +1,31 @@
 
 #include "Application.h"
+#include "CallRPC.h"
+#include "Config.h"
+#include "utils.h"
 
 #include <iostream>
 
-#include "CallRPC.h"
-#include "Config.h"
+#include <boost/program_options.hpp>
+namespace po = boost::program_options;
 
-extern void runTests();
 extern bool AddSystemEntropy();
 using namespace std;
 using namespace boost;
 
-/*
-	Detect if another is running
-	If so message it with the users command
-*/
-
-
-void startApp()
+void startServer()
 {
 	theApp = new Application();
-	theApp->run(); // blocks till we get a stop RPC
+	theApp->run();					// Blocks till we get a stop RPC.
 }
 
-void printHelp()
+void printHelp(const po::options_description& desc)
 {
 	cout << "newcoin [options] <command> <params>" << endl;
-	cout << "options: " << endl;
-	cout << "     -" << endl;
-	cout << "commands: " << endl;
+
+	cout << desc << endl;
+
+	cout << "Commands: " << endl;
 	cout << "     accountinfo <family>:<key>" << endl;
 	cout << "     connect <ip> [<port>]" << endl;
 	cout << "     createfamily [<key>]" << endl;
@@ -48,35 +45,69 @@ void printHelp()
 	cout << "     validation_create [<seed>|<pass_phrase>|<key>]" << endl;
 }
 
-int parseCommandline(int argc, char* argv[])
+int main(int argc, char* argv[])
 {
-	int ret=0;
+	int					iResult	= 0;
+	po::variables_map	vm;										// Map of options.
 
+	//
+	// Set up option parsing.
+	//
+	po::options_description desc("Options");
+	desc.add_options()
+		("help,h", "Display this message.")
+		("command", po::value< vector<string> >(), "Specify a comma seperated RPC command.")
+	;
+
+	po::positional_options_description p;
+	p.add("command", -1);
+
+	//
+	// Prepare to run
+	//
 	theConfig.load();
 
 	if (!AddSystemEntropy())
 	{
-#ifdef DEBUG
 		std::cerr << "Unable to add system entropy" << std::endl;
-#endif
+		iResult	= 2;
 	}
 
-	if(argc>1)
+	// Parse options, if no error.
+	if (!iResult)
 	{
-		ret = commandLineRPC(argc, argv);
-		if(ret)
-			printHelp();
+		po::store(po::command_line_parser(argc, argv)
+			.options(desc)											// Parse options.
+			.positional(p)											// Remainder as --command.
+			.run(),
+			vm);
+		po::notify(vm);												// Invoke option notify functions.
 	}
-	else startApp();
 
-	return ret;
-}
+	if (iResult)
+	{
+		nothing();
+	}
+	else if (vm.count("help"))
+	{
+		iResult	= 1;
+	}
+	else if (!vm.count("command"))
+	{
+		// No arguments. Run server.
+		startServer();
+	}
+	else
+	{
+		// Have a RPC command.
+		std::vector<std::string> vCmd	= vm["command"].as<std::vector<std::string> >();
 
+		iResult	= commandLineRPC(vCmd);
+	}
 
-int main(int argc, char* argv[])
-{
-//	runTests();
+	if (1 == iResult)
+		printHelp(desc);
 
-	return(parseCommandline(argc, argv));
+	return iResult;
 }
 // vim:ts=4
