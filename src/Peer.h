@@ -66,8 +66,6 @@ protected:
 	void sendPacketForce(PackedMessage::pointer packet);
 
 	void sendHello();
-	void sendTransaction(newcoin::TMTransaction& packet);
-	void sendValidation();
 
 	void recvHello(newcoin::TMHello& packet);
 	void recvTransaction(newcoin::TMTransaction& packet);
