@@ -34,11 +34,10 @@ public:
 
 class Application
 {
-	NetworkOPs				mNetOps;
-	Wallet					mWallet;
-
 	boost::asio::io_service	mIOService;
 
+	NetworkOPs				mNetOps;
+	Wallet					mWallet;
 	TimingService			mTimingService;
 	UniqueNodeList			mUNL;
 	PubKeyCache				mPKCache;

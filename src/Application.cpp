@@ -41,11 +41,9 @@ DatabaseCon::~DatabaseCon()
 	delete mDatabase;
 }
 
-Application::Application() :
-	mUNL(mIOService),
+Application::Application() : mNetOps(mIOService), mUNL(mIOService),
 	mTxnDB(NULL), mLedgerDB(NULL), mWalletDB(NULL), mHashNodeDB(NULL), mNetNodeDB(NULL),
-	mConnectionPool(mIOService),
-	mPeerDoor(NULL), mRPCDoor(NULL)
+	mConnectionPool(mIOService), mPeerDoor(NULL), mRPCDoor(NULL)
 {
 	nothing();
 }

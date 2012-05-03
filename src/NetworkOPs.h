@@ -11,27 +11,35 @@ class Peer;
 
 class NetworkOPs
 {
+public:
 	enum Fault
 	{ // exceptions these functions can throw
-		IO_ERROR=1,
-		NO_NETWORK=2,
+		IO_ERROR = 1,
+		NO_NETWORK = 2,
 	};
 
 	enum OperatingMode
 	{ // how we process transactions or account balance requests
-		DISCONNECTED=0,	// not ready to process requests
-		CONNECTED=1,	// convinced we are talking to the network
-		TRACKING=2,		// convinced we agree with the network
-		FULL=3			// we have the ledger and can even validate
+		omDISCONNECTED = 0,	// not ready to process requests
+		omCONNECTED = 1,		// convinced we are talking to the network
+		omTRACKING = 2,		// convinced we agree with the network
+		omFULL = 3			// we have the ledger and can even validate
 	};
 
+protected:
+	OperatingMode				mMode;
+	boost::asio::deadline_timer mNetTimer;
+
 public:
+	NetworkOPs(boost::asio::io_service& io_service) : mMode(omDISCONNECTED), mNetTimer(io_service) { ; }
+
 	// network information
 	uint64 getNetworkTime();
 	uint32 getCurrentLedgerID();
+	OperatingMode getOperatingMode() { return mMode; }
 
 	// transaction operations
-	Transaction::pointer processTransaction(Transaction::pointer transaction, Peer* source=NULL);
+	Transaction::pointer processTransaction(Transaction::pointer transaction, Peer* source = NULL);
 	Transaction::pointer findTransactionByID(const uint256& transactionID);
 	int findTransactionsBySource(std::list<Transaction::pointer>&, const NewcoinAddress& sourceAccount,
 		uint32 minSeq, uint32 maxSeq);
@@ -52,6 +60,9 @@ public:
 		const std::vector<unsigned char>& myNode, std::list<std::vector<unsigned char> >& newNodes);
 	bool getAccountStateNodes(uint32 ledgerSeq, const uint256& myNodeId,
 		const std::vector<unsigned char>& myNode, std::list<std::vector<unsigned char> >& newNodes);
+
+	// network state machine
+	void checkState();
 };
 
 #endif
