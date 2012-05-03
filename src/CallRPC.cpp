@@ -46,27 +46,20 @@ std::string EncodeBase64(const std::string& s)
 	return result;
 }
 
-int commandLineRPC(int argc, char *argv[])
+int commandLineRPC(const std::vector<std::string>& vCmd)
 {
 	std::string strPrint;
 	int nRet = 0;
 	try
 	{
-		// Skip switches
-		while ((argc > 1) && isSwitchChar(argv[1][0]))
-		{
-			argc--;
-			argv++;
-		}
+		if (!vCmd.size()) return 1;
 
-		if (argc < 2) return 0;
-
-		std::string strMethod = argv[1];
+		std::string strMethod = vCmd[0];
 
 		// Parameters default to strings
 		Json::Value params(Json::arrayValue);
-		for (int i = 2; i < argc; i++)
-			params.append(argv[i]);
+		for (int i = 1; i != vCmd.size(); i++)
+			params.append(vCmd[i]);
 
 		// Execute
 		Json::Value reply = callRPC(strMethod, params);

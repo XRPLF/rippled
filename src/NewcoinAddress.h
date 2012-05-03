@@ -12,7 +12,6 @@ class NewcoinAddress : public CBase58Data
 private:
 	typedef enum {
 	    VER_NONE		    = 1,
-	    VER_HANKO		    = 8,
 	    VER_NODE_PUBLIC	    = 28,
 	    VER_NODE_PRIVATE	    = 32,
 	    VER_ACCOUNT_ID	    = 0,
@@ -29,18 +28,7 @@ public:
 
 	bool isValid() const;
 	void clear();
-#if 0
-	//
-	// hanko - OBSOLETE
-	//
-	uint160 getHanko() const;
 
-	std::string humanHanko() const;
-
-	bool setHanko(const std::string& strHanko);
-	void setHanko(const uint160& hash160);
-	void setHanko(const NewcoinAddress& nodePublic);
-#endif
 	//
 	// Node Public
 	//
