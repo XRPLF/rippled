@@ -348,6 +348,26 @@ static bool confuseMap(SHAMap &map, int count)
 	return true;
 }
 
+std::list<std::vector<unsigned char> > SHAMap::getTrustedPath(const uint256& index)
+{
+	boost::recursive_mutex::scoped_lock sl(mLock);
+	std::stack<SHAMapTreeNode::pointer> stack = SHAMap::getStack(index, false);
+
+	if (stack.empty() || !stack.top()->isLeaf())
+		throw std::runtime_error("requested leaf not present");
+
+	std::list< std::vector<unsigned char> > path;
+	Serializer s;
+	while (!stack.empty())
+	{
+		stack.top()->addRaw(s);
+		path.push_back(s.getData());
+		s.erase();
+		stack.pop();
+	}
+	return path;
+}
+
 bool SHAMap::syncTest()
 {
 	unsigned int seed;
