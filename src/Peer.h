@@ -120,6 +120,9 @@ public:
 	static PackedMessage::pointer createLedgerProposal(Ledger::pointer ledger);
 	static PackedMessage::pointer createValidation(Ledger::pointer ledger);
 	static PackedMessage::pointer createGetFullLedger(uint256& hash);
+
+	uint256 getClosedLedgerHash() const { return mClosedLedgerHash; }
+	NewcoinAddress getNodePublic() const { return mNodePublic; }
 };
 
 #endif
