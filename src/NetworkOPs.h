@@ -1,6 +1,8 @@
 #ifndef __NETWORK_OPS__
 #define __NETWORK_OPS__
 
+#include <boost/asio.hpp>
+
 #include "Transaction.h"
 #include "AccountState.h"
 
@@ -31,7 +33,7 @@ protected:
 	boost::asio::deadline_timer mNetTimer;
 
 public:
-	NetworkOPs(boost::asio::io_service& io_service) : mMode(omDISCONNECTED), mNetTimer(io_service) { ; }
+	NetworkOPs(boost::asio::io_service& io_service);
 
 	// network information
 	uint64 getNetworkTime();
@@ -55,7 +57,7 @@ public:
 	bool findAccountNode(const uint256& nodeHash, std::vector<unsigned char>& rawAccountNode);
 	bool findTransactionNode(const uint256& nodeHash, std::vector<unsigned char>& rawTransactionNode);
 
-	// tree synchronzation operations
+	// tree synchronization operations
 	bool getTransactionTreeNodes(uint32 ledgerSeq, const uint256& myNodeID,
 		const std::vector<unsigned char>& myNode, std::list<std::vector<unsigned char> >& newNodes);
 	bool getAccountStateNodes(uint32 ledgerSeq, const uint256& myNodeId,
@@ -63,6 +65,11 @@ public:
 
 	// network state machine
 	void checkState();
+
+protected:
+
+	void setStateTimer(int seconds);
+
 };
 
 #endif
