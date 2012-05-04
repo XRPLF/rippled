@@ -160,8 +160,8 @@ public:
 	ValidationCount() : trustedValidations(0), untrustedValidations(0), nodesUsing(0) { ; }
 	bool operator>(const ValidationCount& v)
 	{
-		if (trustedValidations >  v.trustedValidations) return true;
-		if (trustedValidations <  v.trustedValidations) return false;
+		if (trustedValidations > v.trustedValidations) return true;
+		if (trustedValidations < v.trustedValidations) return false;
 		if (untrustedValidations > v.untrustedValidations) return true;
 		if (untrustedValidations < v.untrustedValidations) return false;
 		if (nodesUsing > v.nodesUsing) return true;
@@ -203,7 +203,7 @@ void NetworkOPs::checkState()
 		if (!!peerLedger)
 		{
 			ValidationCount& vc = ledgers[peerLedger];
-			if ((vc.nodesUsing == 0) ||  ((*it)->getNodePublic() > vc.highNode))
+			if ((vc.nodesUsing == 0) || ((*it)->getNodePublic() > vc.highNode))
 				vc.highNode = (*it)->getNodePublic();
 			++vc.nodesUsing;
 			// WRITEME: Validations, trusted peers
