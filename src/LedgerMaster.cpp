@@ -36,6 +36,17 @@ void LedgerMaster::pushLedger(Ledger::pointer newLedger)
 	mEngine.setLedger(newLedger);
 }
 
+void LedgerMaster::switchLedgers(Ledger::pointer lastClosed, Ledger::pointer current)
+{
+	mFinalizedLedger = lastClosed;
+	mFinalizedLedger->setClosed();
+	mFinalizedLedger->setAccepted();
+
+	mCurrentLedger = current;
+	assert(!mCurrentLedger->isClosed());
+	mEngine.setLedger(mCurrentLedger);
+}
+
 #if 0
 
 void LedgerMaster::startFinalization()
