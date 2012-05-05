@@ -81,7 +81,7 @@ int Serializer::addRaw(const void *ptr, int len)
 bool Serializer::get16(uint16& o, int offset) const
 {
 	if ((offset + 2) > mData.size()) return false;
-	unsigned char *ptr = &mData[offset];
+	const unsigned char *ptr = &mData[offset];
 	o = *ptr++; o <<= 8; o |= *ptr;
 	return true;
 }
@@ -89,7 +89,7 @@ bool Serializer::get16(uint16& o, int offset) const
 bool Serializer::get32(uint32& o, int offset) const
 {
 	if ((offset + 4) > mData.size()) return false;
-	unsigned char *ptr = &mData[offset];
+	const unsigned char *ptr = &mData[offset];
 	o = *ptr++;
 	o <<= 8; o |= *ptr++;
 	o <<= 8; o |= *ptr++;
@@ -100,7 +100,7 @@ bool Serializer::get32(uint32& o, int offset) const
 bool Serializer::get64(uint64& o, int offset) const
 {
 	if ((offset + 8) > mData.size()) return false;
-	unsigned char *ptr = &mData[offset];
+	const unsigned char *ptr = &mData[offset];
 	o = *ptr++;
 	o <<= 8; o |= *ptr++; o <<= 8; o |= *ptr++;
 	o <<= 8; o |= *ptr++; o <<= 8; o |= *ptr++;
