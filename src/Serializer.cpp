@@ -262,7 +262,7 @@ int Serializer::addVL(const std::vector<unsigned char>& vector)
 {
 	int ret = addRaw(encodeVL(vector.size()));
 	addRaw(vector);
-	assert(mData.size() + (ret + vector.size() + encodeLengthLength(vector.size())));
+	assert(mData.size() == (ret + vector.size() + encodeLengthLength(vector.size())));
 	return ret;
 }
 
