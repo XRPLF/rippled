@@ -9,7 +9,8 @@ SOElement SerializedValidation::sValidationFormat[16] = {
 	{ sfInvalid,		NULL,				STI_DONE,		SOE_NEVER,		-1 },
 };
 
-const uint32 SerializedValidation::sFullFlag = 0x00010000;
+const uint32 SerializedValidation::sFullFlag		= 0x00010000;
+const uint32 SerializedValidation::sValidationMagic	= 0x4c575200; // "LGR"
 
 SerializedValidation::SerializedValidation(SerializerIterator& sit, bool checkSignature)
 	: STObject(sValidationFormat, sit), mSignature(sit, "Signature")
@@ -31,6 +32,7 @@ SerializedValidation::SerializedValidation(const uint256& ledgerHash, CKey::poin
 uint256 SerializedValidation::getSigningHash() const
 {
 	Serializer s;
+	s.add32(sValidationMagic);
 	add(s);
 	return s.getSHA512Half();
 }
