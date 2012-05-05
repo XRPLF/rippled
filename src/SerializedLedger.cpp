@@ -71,3 +71,4 @@ bool SerializedLedgerEntry::isEquivalent(const SerializedType& t) const
 	if (mObject != v->mObject) return false;
 	return true;
 }
+// vim:ts=4

@@ -80,3 +80,4 @@ inline TransactionEngineParams operator&(const TransactionEngineParams& l1, cons
 }
 
 #endif
+// vim:ts=4

@@ -191,3 +191,4 @@ TransactionEngineResult TransactionEngine::doDelete(const SerializedTransaction&
 {
 	return terUNKNOWN;
 }
+// vim:ts=4

@@ -233,12 +233,12 @@ bool Serializer::checkSignature(int pubkeyOffset, int signatureOffset) const
 
 	CKey pubCKey;
 	if (!pubCKey.SetPubKey(pubkey)) return false;
-	return pubCKey.Verify(getSHA512Half(signatureOffset), signature);	
+	return pubCKey.Verify(getSHA512Half(signatureOffset), signature);
 }
 
 bool Serializer::checkSignature(const std::vector<unsigned char> &signature, CKey& key) const
 {
-	return key.Verify(getSHA512Half(), signature);	
+	return key.Verify(getSHA512Half(), signature);
 }
 
 bool Serializer::makeSignature(std::vector<unsigned char> &signature, CKey& key) const
@@ -571,3 +571,4 @@ std::vector<TaggedListItem> SerializerIterator::getTaggedList()
 	mPos += length;
 	return tl;
 }
+// vim:ts=4

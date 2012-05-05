@@ -21,7 +21,7 @@ enum LedgerStateParms
 	lepNONE = 0,				// no special flags
 
 	// input flags
-	lepCREATE,		  			// Create if not present
+	lepCREATE,					// Create if not present
 
 	// output flags
 	lepOKAY,					// success
@@ -60,11 +60,11 @@ private:
 	uint32 mLedgerSeq;
 	uint16 mLedgerInterval;
 	bool mClosed, mValidHash, mAccepted, mImmutable;
-	
+
 	SHAMap::pointer mTransactionMap, mAccountStateMap;
 
 	mutable boost::recursive_mutex mLock;
-	
+
 	Ledger(const Ledger&);				// no implementation
 	Ledger& operator=(const Ledger&);	// no implementation
 
@@ -72,7 +72,7 @@ protected:
 
 	bool addTransaction(Transaction::pointer);
 	bool addTransaction(const uint256& id, const Serializer& txn, uint64_t fee);
-	
+
 	static Ledger::pointer getSQL(const std::string& sqlStatement);
 
 	SerializedLedgerEntry::pointer getASNode(LedgerStateParms& parms, const uint256& nodeID,
@@ -87,7 +87,7 @@ public:
 	Ledger(Ledger::pointer previous);	// ledger after this one
 
 	void updateHash();
-	void setClosed() 	{ mClosed = true; }
+	void setClosed()	{ mClosed = true; }
 	void setAccepted()	{ mAccepted = true; }
 	bool isClosed()		{ return mClosed; }
 	bool isAccepted()	{ return mAccepted; }
@@ -118,7 +118,7 @@ public:
 	bool hasTransaction(const uint256& TransID) const;
 	Transaction::pointer getTransaction(const uint256& transID) const;
 
-	Ledger::pointer switchPreviousLedger(Ledger::pointer oldPrevious, Ledger::pointer newPrevious,  int limit);
+	Ledger::pointer switchPreviousLedger(Ledger::pointer oldPrevious, Ledger::pointer newPrevious,	int limit);
 
 	// high-level functions
 	AccountState::pointer getAccountState(const NewcoinAddress& acctID);
@@ -165,3 +165,4 @@ inline LedgerStateParms operator&(const LedgerStateParms& l1, const LedgerStateP
 }
 
 #endif
+// vim:ts=4

@@ -55,3 +55,4 @@ TransactionFormat* getTxnFormat(TransactionType t)
 	}
 	return NULL;
 }
+// vim:ts=4

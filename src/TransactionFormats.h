@@ -29,3 +29,4 @@ const int TransactionMaxLen=1048576;
 extern TransactionFormat InnerTxnFormats[];
 extern TransactionFormat* getTxnFormat(TransactionType t);
 #endif
+// vim:ts=4

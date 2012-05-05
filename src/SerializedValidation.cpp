@@ -1,7 +1,7 @@
 
 #include "SerializedValidation.h"
 
-SOElement SerializedValidation::sValidationFormat[16] = {
+SOElement SerializedValidation::sValidationFormat[] = {
 	{ sfFlags,			"Flags",			STI_UINT32,		SOE_FLAGS,		0 },
 	{ sfLedgerHash,		"LedgerHash",		STI_HASH256,	SOE_REQUIRED,	0 },
 	{ sfSigningKey,		"SigningKey",		STI_VL,			SOE_REQUIRED,	0 },
@@ -90,3 +90,4 @@ std::vector<unsigned char> SerializedValidation::getSignature() const
 {
 	return mSignature.peekValue();
 }
+// vim:ts=4
