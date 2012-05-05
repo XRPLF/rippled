@@ -16,7 +16,8 @@
 #include "BinaryFormats.h"
 
 Ledger::Ledger(const NewcoinAddress& masterID, uint64 startAmount) : mTotCoins(startAmount),
-	mTimeStamp(0), mLedgerSeq(0), mClosed(false), mValidHash(false), mAccepted(false), mImmutable(false)
+	mTimeStamp(0), mLedgerSeq(0), mLedgerInterval(60), mClosed(false), mValidHash(false),
+	mAccepted(false), mImmutable(false)
 {
 	mTransactionMap = boost::make_shared<SHAMap>();
 	mAccountStateMap = boost::make_shared<SHAMap>();
@@ -35,19 +36,23 @@ Ledger::Ledger(const NewcoinAddress& masterID, uint64 startAmount) : mTotCoins(s
 Ledger::Ledger(const uint256 &parentHash, const uint256 &transHash, const uint256 &accountHash,
 	uint64 totCoins, uint64 timeStamp, uint32 ledgerSeq)
 		: mParentHash(parentHash), mTransHash(transHash), mAccountHash(accountHash),
-		mTotCoins(totCoins), mTimeStamp(timeStamp), mLedgerSeq(ledgerSeq),
+		mTotCoins(totCoins), mTimeStamp(timeStamp), mLedgerSeq(ledgerSeq), mLedgerInterval(60),
 		mClosed(false), mValidHash(false), mAccepted(false), mImmutable(false)
 {
 	updateHash();
 }
 
-Ledger::Ledger(Ledger &prevLedger, uint64 ts) : mTimeStamp(ts), 
+Ledger::Ledger(Ledger::pointer prevLedger) : mParentHash(prevLedger->getHash()), mTotCoins(prevLedger->mTotCoins),
+	mLedgerSeq(prevLedger->mLedgerSeq + 1), mLedgerInterval(prevLedger->mLedgerInterval),
 	mClosed(false), mValidHash(false), mAccepted(false), mImmutable(false),
-	mTransactionMap(new SHAMap()), mAccountStateMap(prevLedger.mAccountStateMap)
+	mTransactionMap(new SHAMap()), mAccountStateMap(prevLedger->mAccountStateMap)
 {
-	mParentHash = prevLedger.getHash();
-	mLedgerSeq = prevLedger.mLedgerSeq+1;
+	prevLedger->setClosed();
+	prevLedger->updateHash();
 	mAccountStateMap->setSeq(mLedgerSeq);
+	if (prevLedger->mTimeStamp == 0)
+		mTimeStamp = (theApp->getOPs().getNetworkTime() % mLedgerInterval) + mLedgerInterval;
+	else mTimeStamp = prevLedger->mTimeStamp + prevLedger->mLedgerInterval;
 }
 
 Ledger::Ledger(const std::vector<unsigned char>& rawLedger) : mTotCoins(0), mTimeStamp(0),
@@ -61,6 +66,7 @@ Ledger::Ledger(const std::vector<unsigned char>& rawLedger) : mTotCoins(0), mTim
 	if (!s.get256(mTransHash, BLgPTxT)) return;
 	if (!s.get256(mAccountHash, BLgPAcT)) return;
 	if (!s.get64(mTimeStamp, BLgPClTs)) return;
+	if (!s.get16(mLedgerInterval, BLgPNlIn)) return;
 	updateHash();
 	if(mValidHash)
 	{
@@ -80,6 +86,7 @@ Ledger::Ledger(const std::string& rawLedger) : mTotCoins(0), mTimeStamp(0),
 	if (!s.get256(mTransHash, BLgPTxT)) return;
 	if (!s.get256(mAccountHash, BLgPAcT)) return;
 	if (!s.get64(mTimeStamp, BLgPClTs)) return;
+	if (!s.get16(mLedgerInterval, BLgPNlIn)) return;
 	updateHash();
 	if(mValidHash)
 	{
@@ -112,6 +119,7 @@ void Ledger::addRaw(Serializer &s)
 	s.add256(mTransHash);
 	s.add256(mAccountHash);
 	s.add64(mTimeStamp);
+	s.add16(mLedgerInterval);
 }
 
 AccountState::pointer Ledger::getAccountState(const NewcoinAddress& accountID)
@@ -173,14 +181,6 @@ Transaction::pointer Ledger::getTransaction(const uint256& transID) const
 
 	theApp->getMasterTransaction().canonicalize(txn, false);
 	return txn;
-}
-
-Ledger::pointer Ledger::closeLedger(uint64 timeStamp)
-{ // close this ledger, return a pointer to the next ledger
-	// CAUTION: New ledger needs its SHAMap's connected to storage
-	updateHash();
-	setClosed();
-	return Ledger::pointer(new Ledger(*this, timeStamp)); // can't use make_shared, constructor is protected
 }
 
 bool Ledger::unitTest()
@@ -339,42 +339,42 @@ Ledger::pointer Ledger::switchPreviousLedger(Ledger::pointer oldPrevious, Ledger
 	int count;
 
 	// 1) Validate sequences and make sure the specified ledger is a valid prior ledger
-	if(newPrevious->getLedgerSeq()!=oldPrevious->getLedgerSeq()) return Ledger::pointer();
+	if (newPrevious->getLedgerSeq() != oldPrevious->getLedgerSeq()) return Ledger::pointer();
 
 	// 2) Begin building a new ledger with the specified ledger as previous.
-	Ledger* newLedger=new Ledger(*newPrevious, mTimeStamp);
+	Ledger::pointer newLedger = boost::make_shared<Ledger>(newPrevious);
 
 	// 3) For any transactions in our previous ledger but not in the new previous ledger, add them to the set
 	SHAMap::SHAMapDiff mapDifferences;
 	std::map<uint256, std::pair<Transaction::pointer, Transaction::pointer> > TxnDiff;
-	if(!newPrevious->mTransactionMap->compare(oldPrevious->mTransactionMap, mapDifferences, limit))
+	if (!newPrevious->mTransactionMap->compare(oldPrevious->mTransactionMap, mapDifferences, limit))
 		return Ledger::pointer();
-	if(!Transaction::convertToTransactions(oldPrevious->getLedgerSeq(), newPrevious->getLedgerSeq(),
+	if (!Transaction::convertToTransactions(oldPrevious->getLedgerSeq(), newPrevious->getLedgerSeq(),
 			false, true, mapDifferences, TxnDiff))
 		return Ledger::pointer(); // new previous ledger contains invalid transactions
 
 	// 4) Try to add those transactions to the new ledger.
 	do
 	{
-		count=0;
+		count = 0;
 		std::map<uint256, std::pair<Transaction::pointer, Transaction::pointer> >::iterator it = TxnDiff.begin();
 		while (it != TxnDiff.end())
 		{
 			Transaction::pointer& tx = it->second.second;
-			if (!tx || newLedger->addTransaction(tx))
+			if (!tx || newLedger->addTransaction(tx)) // FIXME: addTransaction doesn't do checks
 			{
-				count++;
+				++count;
 				TxnDiff.erase(it++);
 			}
 			else ++it;
 		}
-	} while (count!=0);
+	} while (count != 0);
 
 	// WRITEME: Handle rejected transactions left in TxnDiff
 
 	// 5) Try to add transactions from this ledger to the new ledger.
 	std::map<uint256, Transaction::pointer> txnMap;
-	for(SHAMapItem::pointer mit = peekTransactionMap()->peekFirstItem();
+	for (SHAMapItem::pointer mit = peekTransactionMap()->peekFirstItem();
 			!!mit; mit = peekTransactionMap()->peekNextItem(mit->getTag()))
 	{
 		uint256 txnID = mit->getTag();
@@ -385,18 +385,18 @@ Ledger::pointer Ledger::switchPreviousLedger(Ledger::pointer oldPrevious, Ledger
 
 	do
 	{
-		count=0;
+		count = 0;
 		std::map<uint256, Transaction::pointer>::iterator it = txnMap.begin();
 		while (it != txnMap.end())
 		{
-			if(newLedger->addTransaction(it->second))
+			if (newLedger->addTransaction(it->second)) // FIXME: addTransaction doesn't do checks
 			{
-				count++;
+				++count;
 				txnMap.erase(it++);
 			}
 			else ++it;
 		}
-	} while(count!=0);
+	} while(count != 0);
 
 
 	// WRITEME: Handle rejected transactions left in txnMap
@@ -406,7 +406,7 @@ Ledger::pointer Ledger::switchPreviousLedger(Ledger::pointer oldPrevious, Ledger
 
 void Ledger::setAcquiring(void)
 {
-	if(!mTransactionMap || !mAccountStateMap) throw SHAMapException(InvalidMap);
+	if (!mTransactionMap || !mAccountStateMap) throw SHAMapException(InvalidMap);
 	mTransactionMap->setSynching();
 	mAccountStateMap->setSynching();
 }

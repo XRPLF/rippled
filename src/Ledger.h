@@ -58,6 +58,7 @@ private:
 	uint256 mHash, mParentHash, mTransHash, mAccountHash;
 	uint64 mTotCoins, mTimeStamp;
 	uint32 mLedgerSeq;
+	uint16 mLedgerInterval;
 	bool mClosed, mValidHash, mAccepted, mImmutable;
 	
 	SHAMap::pointer mTransactionMap, mAccountStateMap;
@@ -68,8 +69,6 @@ private:
 	Ledger& operator=(const Ledger&);	// no implementation
 
 protected:
-	Ledger(Ledger& previous, uint64 timestamp);	// ledger after this one
-	void updateHash();
 
 	bool addTransaction(Transaction::pointer);
 	bool addTransaction(const uint256& id, const Serializer& txn, uint64_t fee);
@@ -85,22 +84,25 @@ public:
 	 uint64 totCoins, uint64 timeStamp, uint32 ledgerSeq); // used for received ledgers
 	Ledger(const std::vector<unsigned char>& rawLedger);
 	Ledger(const std::string& rawLedger);
+	Ledger(Ledger::pointer previous);	// ledger after this one
 
-	void setClosed() { mClosed=true; }
-	void setAccepted() { mAccepted=true; }
-	bool isClosed() { return mClosed; }
-	bool isAccepted() { return mAccepted; }
+	void updateHash();
+	void setClosed() 	{ mClosed = true; }
+	void setAccepted()	{ mAccepted = true; }
+	bool isClosed()		{ return mClosed; }
+	bool isAccepted()	{ return mAccepted; }
 
 	// ledger signature operations
 	void addRaw(Serializer &s);
 
 	uint256 getHash();
-	const uint256& getParentHash() const { return mParentHash; }
-	const uint256& getTransHash() const { return mTransHash; }
-	const uint256& getAccountHash() const { return mAccountHash; }
-	uint64 getTotalCoins() const { return mTotCoins; }
-	uint64 getTimeStamp() const { return mTimeStamp; }
-	uint32 getLedgerSeq() const { return mLedgerSeq; }
+	const uint256& getParentHash() const	{ return mParentHash; }
+	const uint256& getTransHash() const		{ return mTransHash; }
+	const uint256& getAccountHash() const	{ return mAccountHash; }
+	uint64 getTotalCoins() const			{ return mTotCoins; }
+	uint64 getTimeStamp() const				{ return mTimeStamp; }
+	uint32 getLedgerSeq() const				{ return mLedgerSeq; }
+	uint16 getInterval() const				{ return mLedgerInterval; }
 
 	// low level functions
 	SHAMap::pointer peekTransactionMap() { return mTransactionMap; }
@@ -144,7 +146,6 @@ public:
 	 const uint160& currency)
 	{ return getRippleIndex(account.getAccountID(), extendTo.getAccountID(), currency); }
 
-	Ledger::pointer closeLedger(uint64 timestamp);
 	bool isCompatible(boost::shared_ptr<Ledger> other);
 	bool signLedger(std::vector<unsigned char> &signature, const LocalHanko &hanko);
 
