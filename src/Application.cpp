@@ -80,7 +80,7 @@ void Application::run()
 	//
 	// Allow peer connections.
 	//
-	if(theConfig.PEER_PORT)
+	if(!theConfig.PEER_IP.empty() && theConfig.PEER_PORT)
 	{
 		mPeerDoor=new PeerDoor(mIOService);
 	}//else BOOST_LOG_TRIVIAL(info) << "No Peer Port set. Not listening for connections.";
@@ -88,7 +88,7 @@ void Application::run()
 	//
 	// Allow RPC connections.
 	//
-	if(theConfig.RPC_PORT)
+	if(!theConfig.RPC_IP.empty() && theConfig.RPC_PORT)
 	{
 		mRPCDoor=new RPCDoor(mIOService);
 	}//else BOOST_LOG_TRIVIAL(info) << "No RPC Port set. Not listening for commands.";
