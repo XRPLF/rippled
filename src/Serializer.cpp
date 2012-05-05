@@ -81,28 +81,31 @@ int Serializer::addRaw(const void *ptr, int len)
 bool Serializer::get16(uint16& o, int offset) const
 {
 	if ((offset + 2) > mData.size()) return false;
-	o = mData.at(offset++);
-	o <<= 8; o |= mData.at(offset);
+	const unsigned char *ptr = &mData[offset];
+	o = *ptr++; o <<= 8; o |= *ptr;
 	return true;
 }
 
 bool Serializer::get32(uint32& o, int offset) const
 {
 	if ((offset + 4) > mData.size()) return false;
-	o=mData.at(offset++);
-	o<<=8; o |= mData.at(offset++); o <<= 8; o |= mData.at(offset++);
-	o<<=8; o |= mData.at(offset);
+	const unsigned char *ptr = &mData[offset];
+	o = *ptr++;
+	o <<= 8; o |= *ptr++;
+	o <<= 8; o |= *ptr++;
+	o <<= 8; o |= *ptr;
 	return true;
 }
 
 bool Serializer::get64(uint64& o, int offset) const
 {
 	if ((offset + 8) > mData.size()) return false;
-	o=mData.at(offset++);
-	o<<=8; o|= mData.at(offset++); o <<= 8; o |= mData.at(offset++);
-	o<<=8; o|= mData.at(offset++); o <<= 8; o |= mData.at(offset++);
-	o<<=8; o|= mData.at(offset++); o <<= 8; o |= mData.at(offset++);
-	o<<=8; o|= mData.at(offset);
+	const unsigned char *ptr = &mData[offset];
+	o = *ptr++;
+	o <<= 8; o |= *ptr++; o <<= 8; o |= *ptr++;
+	o <<= 8; o |= *ptr++; o <<= 8; o |= *ptr++;
+	o <<= 8; o |= *ptr++; o <<= 8; o |= *ptr++;
+	o <<= 8; o |= *ptr;
 	return true;
 }
 
@@ -259,7 +262,7 @@ int Serializer::addVL(const std::vector<unsigned char>& vector)
 {
 	int ret = addRaw(encodeVL(vector.size()));
 	addRaw(vector);
-	assert(mData.size() + (ret + vector.size() + encodeLengthLength(vector.size())));
+	assert(mData.size() == (ret + vector.size() + encodeLengthLength(vector.size())));
 	return ret;
 }
 
