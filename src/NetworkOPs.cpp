@@ -256,8 +256,7 @@ void NetworkOPs::checkState()
 			}
 			consensus = acq->getLedger();
 		}
-		// WRITEME switchLedgers(currentClosed, consenus, slNETJUMP);
-		// Function to call Ledger::switchPreviousLedger
+		switchLastClosedLedger(consensus);
 	}
 
 	if (mMode == omCONNECTED)
@@ -277,4 +276,12 @@ void NetworkOPs::checkState()
 	}
 
 	setStateTimer(10);
+}
+
+void NetworkOPs::switchLastClosedLedger(Ledger::pointer newLedger)
+{ // set the newledger as our last closed ledger
+	// FIXME: Must recover transactions
+	Ledger::pointer openLedger = boost::make_shared<Ledger>(newLedger);
+	theApp->getMasterLedger().switchLedgers(newLedger, openLedger);
+	// FIXME: Set close timer
 }

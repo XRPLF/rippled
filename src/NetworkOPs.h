@@ -5,6 +5,7 @@
 
 #include "Transaction.h"
 #include "AccountState.h"
+#include "Ledger.h"
 
 // Operations that clients may wish to perform against the network
 // Master operational handler, server sequencer, network tracker
@@ -65,6 +66,7 @@ public:
 
 	// network state machine
 	void checkState();
+	void switchLastClosedLedger(Ledger::pointer newLedger);
 
 protected:
 
