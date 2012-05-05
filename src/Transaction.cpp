@@ -225,7 +225,7 @@ bool Transaction::save() const
 	theApp->getTxnDB()->getDB()->escape(static_cast<const unsigned char *>(s.getDataPtr()), s.getLength(), rawTxn);
 	sql.append(rawTxn);
 	sql.append(");");
-	
+
 	ScopedLock sl(theApp->getTxnDB()->getDBLock());
 	Database* db = theApp->getTxnDB()->getDB();
 	return db->executeSQL(sql.c_str());
@@ -237,12 +237,11 @@ Transaction::pointer Transaction::transactionFromSQL(const std::string& sql)
 	std::string status;
 
 	rawTxn.reserve(2048);
-	if(1)
 	{
 		ScopedLock sl(theApp->getTxnDB()->getDBLock());
 		Database* db = theApp->getTxnDB()->getDB();
 
-		if (!db->executeSQL(sql.c_str(), true) || !db->startIterRows() || !db->getNextRow())
+		if (!db->executeSQL(sql, true) || !db->startIterRows())
 			return Transaction::pointer();
 
 		db->getStr("Status", status);
@@ -258,7 +257,7 @@ Transaction::pointer Transaction::transactionFromSQL(const std::string& sql)
 	Transaction::pointer tr = boost::make_shared<Transaction>(txn, true);
 
 	TransStatus st(INVALID);
-	switch(status[0])
+	switch (status[0])
 	{
 		case 'N': st = NEW; break;
 		case 'A': st = INCLUDED; break;
@@ -382,3 +381,4 @@ Json::Value Transaction::getJson(bool decorate, bool paid, bool credited) const
 
 	return ret;
 }
+// vim:ts=4

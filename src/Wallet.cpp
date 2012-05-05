@@ -190,7 +190,7 @@ LocalAccountFamily::pointer LocalAccountFamily::readFamily(const NewcoinAddress&
 		ScopedLock sl(theApp->getWalletDB()->getDBLock());
 		Database *db=theApp->getWalletDB()->getDB();
 
-		if(!db->executeSQL(sql.c_str()) || !db->startIterRows() || !db->getNextRow())
+		if(!db->executeSQL(sql.c_str()) || !db->startIterRows())
 			return LocalAccountFamily::pointer();
 
 		db->getStr("Comment", comment);
@@ -456,8 +456,7 @@ void Wallet::load()
 
 	if(!db->startIterRows()) return;
 
-	while(db->getNextRow())
-	{
+	do {
 		std::string strGenerator, strComment;
 
 		db->getStr("FamilyGenerator", strGenerator);
@@ -476,7 +475,8 @@ void Wallet::load()
 			f->setComment(strComment);
 		}
 		else assert(false);
-	}
+	} while(db->getNextRow());
+
 	db->endIterRows();
 }
 

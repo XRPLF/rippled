@@ -86,18 +86,18 @@ HashedObject::pointer HashedObject::retrieve(const uint256& hash)
 	uint32 index;
 	std::vector<unsigned char> data;
 	data.reserve(8192);
-	if(1)
+
 	{
 		ScopedLock sl(theApp->getHashNodeDB()->getDBLock());
 		Database* db=theApp->getHashNodeDB()->getDB();
 
-		if(!db->executeSQL(sql.c_str()) || !db->startIterRows() || !db->getNextRow())
+		if(!db->executeSQL(sql.c_str()) || !db->startIterRows())
 			return HashedObject::pointer();
 
 		std::string type;
-		db->getStr("ObjType", type);	
+		db->getStr("ObjType", type);
 		if(type.size()==0) return HashedObject::pointer();
-	
+
 		index=db->getBigInt("LedgerIndex");
 
 		int size=db->getBinary("Object", NULL, 0);
@@ -105,7 +105,7 @@ HashedObject::pointer HashedObject::retrieve(const uint256& hash)
 		db->getBinary("Object", &(data.front()), size);
 		db->endIterRows();
 	}
-	
+
 	HashedObjectType htype=UNKNOWN;
 	switch(type[0])
 	{
@@ -114,7 +114,7 @@ HashedObject::pointer HashedObject::retrieve(const uint256& hash)
 		case 'A': htype=ACCOUNT_NODE; break;
 		case 'N': htype=TRANSACTION_NODE; break;
 	}
-	
+
 	HashedObject::pointer obj(new HashedObject(htype, index, data));
 	obj->mHash=hash;
 #ifdef DEBUG
@@ -122,3 +122,4 @@ HashedObject::pointer HashedObject::retrieve(const uint256& hash)
 #endif
 	return obj;
 }
+// vim:ts=4

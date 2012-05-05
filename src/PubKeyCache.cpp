@@ -19,11 +19,11 @@ CKey::pointer PubKeyCache::locate(const NewcoinAddress& id)
 	std::vector<unsigned char> data;
 	data.reserve(65); // our public keys are actually 33 bytes
 	int pkSize;
-	if(1)
+
 	{ // is it in the database
 		ScopedLock sl(theApp->getTxnDB()->getDBLock());
 		Database* db=theApp->getTxnDB()->getDB();
-		if(!db->executeSQL(sql.c_str()) || !db->startIterRows() || !db->getNextRow())
+		if(!db->executeSQL(sql.c_str()) || !db->startIterRows())
 			return CKey::pointer();
 		pkSize=db->getBinary("PubKey", &(data.front()), data.size());
 		db->endIterRows();
@@ -36,7 +36,6 @@ CKey::pointer PubKeyCache::locate(const NewcoinAddress& id)
 		return CKey::pointer();
 	}
 
-	if(1)
 	{ // put it in cache (okay if we race with another retriever)
 		boost::mutex::scoped_lock sl(mLock);
 		mCache.insert(std::make_pair(id, ckp));
@@ -46,7 +45,6 @@ CKey::pointer PubKeyCache::locate(const NewcoinAddress& id)
 
 CKey::pointer PubKeyCache::store(const NewcoinAddress& id, CKey::pointer key)
 { // stored if needed, returns cached copy (possibly the original)
-	if(1)
 	{
 		boost::mutex::scoped_lock sl(mLock);
 		std::pair<std::map<NewcoinAddress,CKey::pointer>::iterator, bool> pit(mCache.insert(std::make_pair(id, key)));
@@ -74,3 +72,4 @@ void PubKeyCache::clear()
 	boost::mutex::scoped_lock sl(mLock);
 	mCache.empty();
 }
+// vim:ts=4

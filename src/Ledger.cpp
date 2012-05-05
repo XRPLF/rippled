@@ -269,7 +269,8 @@ Ledger::pointer Ledger::getSQL(const std::string& sql)
 	{
 		ScopedLock sl(theApp->getLedgerDB()->getDBLock());
 		Database *db = theApp->getLedgerDB()->getDB();
-		if (!db->executeSQL(sql.c_str()) || !db->startIterRows() || !db->getNextRow())
+
+		if (!db->executeSQL(sql) || !db->startIterRows())
 			 return Ledger::pointer();
 
 		db->getStr("LedgerHash", hash);
@@ -285,7 +286,7 @@ Ledger::pointer Ledger::getSQL(const std::string& sql)
 		ledgerSeq = db->getBigInt("LedgerSeq");
 		db->endIterRows();
 	}
-	
+
 	Ledger::pointer ret=boost::make_shared<Ledger>(prevHash, transHash, accountHash, totCoins, closingTime, ledgerSeq);
 	if (ret->getHash() != ledgerHash)
 	{
@@ -425,3 +426,4 @@ bool Ledger::isAcquiringAS(void)
 {
 	return mAccountStateMap->isSynching();
 }
+// vim:ts=4
