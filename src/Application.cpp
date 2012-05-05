@@ -112,11 +112,12 @@ void Application::run()
 
 	Ledger::pointer firstLedger(new Ledger(rootAddress, 100000000));
 	assert(!!firstLedger->getAccountState(rootAddress));
+	firstLedger->updateHash();
 	firstLedger->setClosed();
 	firstLedger->setAccepted();
 	mMasterLedger.pushLedger(firstLedger);
 
-	Ledger::pointer secondLedger = firstLedger->closeLedger(time(NULL));
+	Ledger::pointer secondLedger = boost::make_shared<Ledger>(firstLedger);
 	mMasterLedger.pushLedger(secondLedger);
 	assert(!!secondLedger->getAccountState(rootAddress));
 	mMasterLedger.setSynced();
