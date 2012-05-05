@@ -83,7 +83,11 @@ void Application::run()
 	if(!theConfig.PEER_IP.empty() && theConfig.PEER_PORT)
 	{
 		mPeerDoor=new PeerDoor(mIOService);
-	}//else BOOST_LOG_TRIVIAL(info) << "No Peer Port set. Not listening for connections.";
+	}
+	else
+	{
+		std::cerr << "Peer interface: disabled" << std::endl;
+	}
 
 	//
 	// Allow RPC connections.
@@ -91,7 +95,11 @@ void Application::run()
 	if(!theConfig.RPC_IP.empty() && theConfig.RPC_PORT)
 	{
 		mRPCDoor=new RPCDoor(mIOService);
-	}//else BOOST_LOG_TRIVIAL(info) << "No RPC Port set. Not listening for commands.";
+	}
+	else
+	{
+		std::cerr << "RPC interface: disabled" << std::endl;
+	}
 
 	//
 	// Begin connectting to network.
