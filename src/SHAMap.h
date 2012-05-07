@@ -40,14 +40,14 @@ public:
 	SHAMapNode(int depth, const uint256& hash);
 	int getDepth() const				{ return mDepth; }
 	const uint256& getNodeID()	const	{ return mNodeID; }
-	bool isValid() const { return (mDepth>=0) && (mDepth<64); }
+	bool isValid() const { return (mDepth >= 0) && (mDepth < 64); }
 
 	virtual bool isPopulated() const { return false; }
 
 	SHAMapNode getParentNodeID() const
 	{
 		assert(mDepth);
-		return SHAMapNode(mDepth-1, mNodeID);
+		return SHAMapNode(mDepth - 1, mNodeID);
 	}
 	SHAMapNode getChildNodeID(int m) const;
 	int selectBranch(const uint256& hash) const;
@@ -108,18 +108,18 @@ public:
 
 	void updateData(const std::vector<unsigned char>& data) { mData=data; }
 
-	bool operator<(const SHAMapItem& i) const		{ return mTag<i.mTag; }
-	bool operator>(const SHAMapItem& i) const		{ return mTag>i.mTag; }
-	bool operator==(const SHAMapItem& i) const		{ return mTag==i.mTag; }
-	bool operator!=(const SHAMapItem& i) const		{ return mTag!=i.mTag; }
-	bool operator<=(const SHAMapItem& i) const		{ return mTag<=i.mTag; }
-	bool operator>=(const SHAMapItem& i) const		{ return mTag>=i.mTag; }
-	bool operator<(const uint256& i) const			{ return mTag<i; }
-	bool operator>(const uint256& i) const			{ return mTag>i; }
-	bool operator==(const uint256& i) const			{ return mTag==i; }
-	bool operator!=(const uint256& i) const			{ return mTag!=i; }
-	bool operator<=(const uint256& i) const			{ return mTag<=i; }
-	bool operator>=(const uint256& i) const			{ return mTag>=i; }
+	bool operator<(const SHAMapItem& i) const		{ return mTag < i.mTag; }
+	bool operator>(const SHAMapItem& i) const		{ return mTag > i.mTag; }
+	bool operator==(const SHAMapItem& i) const		{ return mTag == i.mTag; }
+	bool operator!=(const SHAMapItem& i) const		{ return mTag != i.mTag; }
+	bool operator<=(const SHAMapItem& i) const		{ return mTag <= i.mTag; }
+	bool operator>=(const SHAMapItem& i) const		{ return mTag >= i.mTag; }
+	bool operator<(const uint256& i) const			{ return mTag < i; }
+	bool operator>(const uint256& i) const			{ return mTag > i; }
+	bool operator==(const uint256& i) const			{ return mTag == i; }
+	bool operator!=(const uint256& i) const			{ return mTag != i; }
+	bool operator<=(const uint256& i) const			{ return mTag <= i; }
+	bool operator>=(const uint256& i) const			{ return mTag >= i; }
 	virtual void dump();
 };
 
@@ -132,10 +132,10 @@ public:
 
 	enum TNType
 	{
-		tnERROR			=0,
-		tnINNER			=1,
-		tnTRANSACTION	=2,
-		tnACCOUNT_STATE	=3
+		tnERROR			= 0,
+		tnINNER			= 1,
+		tnTRANSACTION	= 2,
+		tnACCOUNT_STATE	= 3
 	};
 
 private:
@@ -295,7 +295,7 @@ public:
 	// status functions
 	void setImmutable(void)		{ assert(mState != Invalid); mState = Immutable; }
 	void clearImmutable(void)	{ mState = Modifying; }
-	bool isSynching(void) const	{ return mState == Floating || mState == Synching; }
+	bool isSynching(void) const	{ return (mState == Floating) || (mState == Synching); }
 	void setSynching(void)		{ mState = Synching; }
 	void setFloating(void)		{ mState = Floating; }
 	void clearSynching(void)	{ mState = Modifying; }
