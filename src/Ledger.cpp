@@ -7,6 +7,7 @@
 
 #include "Application.h"
 #include "Ledger.h"
+#include "utils.h"
 #include "../obj/src/newcoin.pb.h"
 #include "PackedMessage.h"
 #include "Config.h"
@@ -50,9 +51,7 @@ Ledger::Ledger(Ledger::pointer prevLedger) : mParentHash(prevLedger->getHash()),
 	prevLedger->setClosed();
 	prevLedger->updateHash();
 	mAccountStateMap->setSeq(mLedgerSeq);
-	if (prevLedger->mTimeStamp == 0)
-		mTimeStamp = (theApp->getOPs().getNetworkTime() % mLedgerInterval) + mLedgerInterval;
-	else mTimeStamp = prevLedger->mTimeStamp + prevLedger->mLedgerInterval;
+	mTimeStamp = prevLedger->getNextLedgerClose();
 }
 
 Ledger::Ledger(const std::vector<unsigned char>& rawLedger) : mTotCoins(0), mTimeStamp(0),
@@ -426,4 +425,22 @@ bool Ledger::isAcquiringAS(void)
 {
 	return mAccountStateMap->isSynching();
 }
+
+boost::posix_time::ptime Ledger::getCloseTime() const
+{
+	return ptFromSeconds(mTimeStamp);
+}
+
+void Ledger::setCloseTime(boost::posix_time::ptime ptm)
+{
+	mTimeStamp = iToSeconds(ptm);
+}
+
+uint64 Ledger::getNextLedgerClose() const
+{
+	if (mTimeStamp == 0)
+		return theApp->getOPs().getNetworkTimeNC() + 2 * mLedgerInterval - 1;
+	return mTimeStamp + mLedgerInterval;
+}
+
 // vim:ts=4

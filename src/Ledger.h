@@ -6,6 +6,7 @@
 
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
 
 #include "../json/value.h"
 
@@ -56,7 +57,8 @@ public:
 
 private:
 	uint256 mHash, mParentHash, mTransHash, mAccountHash;
-	uint64 mTotCoins, mTimeStamp;
+	uint64 mTotCoins;
+	uint64 mTimeStamp; // when this ledger closes
 	uint32 mLedgerSeq;
 	uint16 mLedgerInterval;
 	bool mClosed, mValidHash, mAccepted, mImmutable;
@@ -81,7 +83,7 @@ protected:
 public:
 	Ledger(const NewcoinAddress& masterID, uint64 startAmount); // used for the starting bootstrap ledger
 	Ledger(const uint256 &parentHash, const uint256 &transHash, const uint256 &accountHash,
-	 uint64 totCoins, uint64 timeStamp, uint32 ledgerSeq); // used for received ledgers
+		uint64 totCoins, uint64 timeStamp, uint32 ledgerSeq); // used for database ledgers
 	Ledger(const std::vector<unsigned char>& rawLedger);
 	Ledger(const std::string& rawLedger);
 	Ledger(Ledger::pointer previous);	// ledger after this one
@@ -100,9 +102,14 @@ public:
 	const uint256& getTransHash() const		{ return mTransHash; }
 	const uint256& getAccountHash() const	{ return mAccountHash; }
 	uint64 getTotalCoins() const			{ return mTotCoins; }
-	uint64 getTimeStamp() const				{ return mTimeStamp; }
+	uint64 getRawTimeStamp() const			{ return mTimeStamp; }
 	uint32 getLedgerSeq() const				{ return mLedgerSeq; }
 	uint16 getInterval() const				{ return mLedgerInterval; }
+
+	// close time functions
+	boost::posix_time::ptime getCloseTime() const;
+	void setCloseTime(boost::posix_time::ptime);
+	uint64 getNextLedgerClose() const;
 
 	// low level functions
 	SHAMap::pointer peekTransactionMap() { return mTransactionMap; }
