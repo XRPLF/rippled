@@ -31,7 +31,7 @@ DatabaseCon::DatabaseCon(const std::string& name, const char *initStrings[], int
 	std::string path=strprintf("%s%s", theConfig.DATA_DIR.c_str(), name.c_str());
 	mDatabase=new SqliteDatabase(path.c_str());
 	mDatabase->connect();
-	for(int i=0; i<initCount; i++)
+	for(int i = 0; i < initCount; ++i)
 		mDatabase->executeSQL(initStrings[i], true);
 }
 
@@ -133,6 +133,7 @@ void Application::run()
 
 	mWallet.load();
 //	mWallet.syncToLedger(true, &(*secondLedger));
+	mNetOps.setStateTimer(5);
 
 	// temporary
 	mIOService.run(); // This blocks
