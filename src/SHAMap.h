@@ -251,7 +251,7 @@ protected:
 
 	bool walkBranch(SHAMapTreeNode::pointer node, SHAMapItem::pointer otherMapItem, bool isFirstMap,
 	    SHAMapDiff& differences, int& maxCount);
-	
+
 public:
 
 	// build new map
@@ -327,3 +327,4 @@ public:
 };
 
 #endif
+// vim:ts=4

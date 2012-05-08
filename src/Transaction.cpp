@@ -228,7 +228,7 @@ bool Transaction::save() const
 
 	ScopedLock sl(theApp->getTxnDB()->getDBLock());
 	Database* db = theApp->getTxnDB()->getDB();
-	return db->executeSQL(sql.c_str());
+	return db->executeSQL(sql);
 }
 
 Transaction::pointer Transaction::transactionFromSQL(const std::string& sql)
@@ -339,7 +339,7 @@ static bool isHex(char j)
 	if ((j >= 'a') && (j <= 'f')) return true;
 	return false;
 }
-						
+
 bool Transaction::isHexTxID(const std::string& txid)
 {
 	if (txid.size() != 64) return false;

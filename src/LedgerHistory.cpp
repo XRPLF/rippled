@@ -77,10 +77,11 @@ Ledger::pointer LedgerHistory::canonicalizeLedger(Ledger::pointer ledger, bool s
 		if(ret) return ret;
 		return ledger;
 	}
-	
+
 	// save input ledger in map if not in map, otherwise return corresponding map ledger
 	boost::recursive_mutex::scoped_lock sl(mLedgersByHash.peekMutex());
 	mLedgersByHash.canonicalize(h, ledger);
 	if(ledger->isAccepted()) mLedgersByIndex[ledger->getLedgerSeq()]=ledger;
 	return ledger;
 }
+// vim:ts=4

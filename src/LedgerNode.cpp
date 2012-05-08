@@ -109,3 +109,4 @@ SerializedLedgerEntry::pointer Ledger::getNickname(LedgerStateParms& parms, cons
 		return SerializedLedgerEntry::pointer();
 	}
 }
+// vim:ts=4

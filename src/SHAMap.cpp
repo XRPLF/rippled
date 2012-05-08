@@ -342,7 +342,7 @@ SHAMapItem::pointer SHAMap::peekItem(const uint256& id)
 
 bool SHAMap::hasItem(const uint256& id)
 { // does the tree have an item with this ID
-	boost::recursive_mutex::scoped_lock sl(mLock);  
+	boost::recursive_mutex::scoped_lock sl(mLock); 
 	SHAMapTreeNode::pointer leaf=walkTo(id, false);
 	if(!leaf) return false;
 	SHAMapItem::pointer item=leaf->peekItem();
@@ -472,7 +472,7 @@ bool SHAMap::addGiveItem(SHAMapItem::pointer item, bool isTransaction)
 		node->makeInner();
 
 		int b1, b2;
-		
+
 		while( (b1=node->selectBranch(tag)) == (b2=node->selectBranch(otherItem->getTag())) )
 		{ // we need a new inner node, since both go on same branch at this level
 #ifdef ST_DEBUG
@@ -675,4 +675,4 @@ bool SHAMap::TestSHAMap()
 		 return false;
 	return true;
 }
-
+// vim:ts=4

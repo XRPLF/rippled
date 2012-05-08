@@ -225,7 +225,7 @@ bool Ledger::unitTest()
 uint256 Ledger::getHash()
 {
 	if(!mValidHash) updateHash();
-	return(mHash); 
+	return(mHash);
 }
 
 void Ledger::saveAcceptedLedger(Ledger::pointer ledger)
@@ -248,7 +248,7 @@ void Ledger::saveAcceptedLedger(Ledger::pointer ledger)
 	sql.append("');");
 
 	ScopedLock sl(theApp->getLedgerDB()->getDBLock());
-	theApp->getLedgerDB()->getDB()->executeSQL(sql.c_str());
+	theApp->getLedgerDB()->getDB()->executeSQL(sql);
 
 	// write out dirty nodes
 	while(ledger->mTransactionMap->flushDirty(64, TRANSACTION_NODE, ledger->mLedgerSeq))

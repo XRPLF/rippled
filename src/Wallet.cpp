@@ -190,7 +190,7 @@ LocalAccountFamily::pointer LocalAccountFamily::readFamily(const NewcoinAddress&
 		ScopedLock sl(theApp->getWalletDB()->getDBLock());
 		Database *db=theApp->getWalletDB()->getDB();
 
-		if(!db->executeSQL(sql.c_str()) || !db->startIterRows())
+		if(!db->executeSQL(sql) || !db->startIterRows())
 			return LocalAccountFamily::pointer();
 
 		db->getStr("Comment", comment);
@@ -223,7 +223,7 @@ void LocalAccountFamily::write(bool is_new)
 	sql.append(");");
 
 	ScopedLock sl(theApp->getWalletDB()->getDBLock());
-	theApp->getWalletDB()->getDB()->executeSQL(sql.c_str());
+	theApp->getWalletDB()->getDB()->executeSQL(sql);
 }
 
 std::string LocalAccountFamily::getSQLFields()
@@ -446,7 +446,7 @@ void Wallet::load()
 
 	ScopedLock sl(theApp->getWalletDB()->getDBLock());
 	Database *db=theApp->getWalletDB()->getDB();
-	if(!db->executeSQL(sql.c_str()))
+	if(!db->executeSQL(sql))
 	{
 #ifdef DEBUG
 		std::cerr << "Unable to load wallet" << std::endl;

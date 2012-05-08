@@ -64,7 +64,7 @@ bool HashedObject::store(HashedObjectType type, uint32 index, const std::vector<
 
 	ScopedLock sl(theApp->getHashNodeDB()->getDBLock());
 	Database* db=theApp->getHashNodeDB()->getDB();
-	return db->executeSQL(sql.c_str());
+	return db->executeSQL(sql);
 }
 
 bool HashedObject::store() const
@@ -91,7 +91,7 @@ HashedObject::pointer HashedObject::retrieve(const uint256& hash)
 		ScopedLock sl(theApp->getHashNodeDB()->getDBLock());
 		Database* db=theApp->getHashNodeDB()->getDB();
 
-		if(!db->executeSQL(sql.c_str()) || !db->startIterRows())
+		if(!db->executeSQL(sql) || !db->startIterRows())
 			return HashedObject::pointer();
 
 		std::string type;

@@ -21,3 +21,4 @@ struct LedgerEntryFormat
 extern LedgerEntryFormat LedgerFormats[];
 extern LedgerEntryFormat* getLgrFormat(LedgerEntryType t);
 #endif
+// vim:ts=4
