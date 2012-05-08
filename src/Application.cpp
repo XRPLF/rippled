@@ -55,7 +55,7 @@ void Application::stop()
 {
 	mIOService.stop();
 
-    std::cerr << "Stopped: " << mIOService.stopped() << std::endl;
+	std::cerr << "Stopped: " << mIOService.stopped() << std::endl;
 }
 
 void Application::run()
