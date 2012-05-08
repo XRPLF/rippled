@@ -39,7 +39,7 @@ std::string SerializedLedgerEntry::getFullText() const
 	ret += mIndex.GetHex();
 	ret += "\" = { ";
 	ret += mFormat->t_name;
-	ret +=  ", ";
+	ret += ", ";
 	ret += mObject.getFullText();
 	ret += "}";
 	return ret;
