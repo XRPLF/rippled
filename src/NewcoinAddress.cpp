@@ -11,6 +11,7 @@
 #include <iostream>
 #include <boost/format.hpp>
 #include <boost/functional/hash.hpp>
+#include <boost/test/unit_test.hpp>
 
 NewcoinAddress::NewcoinAddress()
 {
@@ -506,4 +507,13 @@ void NewcoinAddress::setFamilySeedRandom()
 
 	NewcoinAddress::setFamilySeed(key);
 }
+
+BOOST_AUTO_TEST_SUITE(newcoin_address)
+
+BOOST_AUTO_TEST_CASE( my_test )
+{
+	BOOST_CHECK( false );
+}
+
+BOOST_AUTO_TEST_SUITE_END()
 // vim:ts=4

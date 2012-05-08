@@ -11,14 +11,14 @@ class NewcoinAddress : public CBase58Data
 {
 private:
 	typedef enum {
-	    VER_NONE		    = 1,
-	    VER_NODE_PUBLIC	    = 28,
+	    VER_NONE				= 1,
+	    VER_NODE_PUBLIC			= 28,
 	    VER_NODE_PRIVATE	    = 32,
-	    VER_ACCOUNT_ID	    = 0,
+	    VER_ACCOUNT_ID			= 0,
 	    VER_ACCOUNT_PUBLIC	    = 35,
 	    VER_ACCOUNT_PRIVATE	    = 34,
 	    VER_FAMILY_GENERATOR    = 41,
-	    VER_FAMILY_SEED	    = 33,
+	    VER_FAMILY_SEED			= 33,
 	} VersionEncoding;
 
 	void seedInfo(NewcoinAddress* dstGenerator, BIGNUM** dstPrivateKey) const;
@@ -88,6 +88,7 @@ public:
 
 	//
 	// Family Generators
+	// Use to generate a master or regular family.
 	//
 	BIGNUM* getFamilyGeneratorBN() const;
 	const std::vector<unsigned char>& getFamilyGenerator() const;
@@ -114,3 +115,4 @@ public:
 };
 
 #endif
+// vim:ts=4
