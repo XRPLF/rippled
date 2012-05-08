@@ -37,7 +37,9 @@ public:
 	NetworkOPs(boost::asio::io_service& io_service);
 
 	// network information
-	uint64 getNetworkTime();
+	uint64 getNetworkTimeNC();
+	time_t getNetworkTimeTT();
+	boost::posix_time::ptime getNetworkTimePT();
 	uint32 getCurrentLedgerID();
 	OperatingMode getOperatingMode() { return mMode; }
 

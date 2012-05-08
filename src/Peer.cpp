@@ -774,7 +774,7 @@ void Peer::sendHello()
 
 	h->set_version(theConfig.VERSION);
 	h->set_ledgerindex(theApp->getOPs().getCurrentLedgerID());
-	h->set_nettime(theApp->getOPs().getNetworkTime());
+	h->set_nettime(theApp->getOPs().getNetworkTimeNC());
 	h->set_nodepublic(theApp->getWallet().getNodePublic().humanNodePublic());
 	h->set_nodeproof(&vchSig[0], vchSig.size());
 	h->set_ipv4port(theConfig.PEER_PORT);

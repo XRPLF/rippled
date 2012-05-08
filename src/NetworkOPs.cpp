@@ -4,6 +4,7 @@
 #include <boost/bind.hpp>
 #include <boost/unordered_map.hpp>
 
+#include "utils.h"
 #include "Application.h"
 #include "Transaction.h"
 
@@ -24,9 +25,19 @@ NetworkOPs::NetworkOPs(boost::asio::io_service& io_service) : mMode(omDISCONNECT
 	setStateTimer(5);
 }
 
-uint64 NetworkOPs::getNetworkTime()
+time_t NetworkOPs::getNetworkTimeTT()
 {
 	return time(NULL);
+}
+
+boost::posix_time::ptime NetworkOPs::getNetworkTimePT()
+{
+	return boost::posix_time::from_time_t(getNetworkTimeTT());
+}
+
+uint64 NetworkOPs::getNetworkTimeNC()
+{
+	return iToSeconds(getNetworkTimePT());
 }
 
 uint32 NetworkOPs::getCurrentLedgerID()
@@ -89,7 +100,7 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 		trans->getSTransaction()->getTransaction(*s, false);
 		tx->set_rawtransaction(&s->getData().front(), s->getLength());
 		tx->set_status(newcoin::tsCURRENT);
-		tx->set_receivetimestamp(getNetworkTime());
+		tx->set_receivetimestamp(getNetworkTimeNC());
 		tx->set_ledgerindexpossible(trans->getLedger());
 
 		PackedMessage::pointer packet(new PackedMessage(PackedMessage::MessagePointer(tx), newcoin::mtTRANSACTION));
@@ -280,8 +291,19 @@ void NetworkOPs::checkState()
 
 void NetworkOPs::switchLastClosedLedger(Ledger::pointer newLedger)
 { // set the newledger as our last closed ledger
-	// FIXME: Must recover transactions
+	// FIXME: Correct logic is:
+	// 1) Mark this ledger closed, schedule it to be saved
+	// 2) Open a new subsequent ledger
+	// 3) Walk back the previous ledger chain from our current ledger and the new last closed ledger
+	//   find a common previous ledger, if possible. Try to insert any transactions in our ledger
+	//   chain into the new open ledger. Broadcast any that make it in.
+
 	Ledger::pointer openLedger = boost::make_shared<Ledger>(newLedger);
 	theApp->getMasterLedger().switchLedgers(newLedger, openLedger);
-	// FIXME: Set close timer
+
+#if 0
+	if (getNetworkTime() > openLedger->getCloseTime())
+	{ // this ledger has already closed
+	}
+#endif
 }
