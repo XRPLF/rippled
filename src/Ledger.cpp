@@ -17,7 +17,7 @@
 #include "BinaryFormats.h"
 
 Ledger::Ledger(const NewcoinAddress& masterID, uint64 startAmount) : mTotCoins(startAmount),
-	mTimeStamp(0), mLedgerSeq(0), mLedgerInterval(60), mClosed(false), mValidHash(false),
+	mCloseTime(0), mLedgerSeq(0), mLedgerInterval(60), mClosed(false), mValidHash(false),
 	mAccepted(false), mImmutable(false)
 {
 	mTransactionMap = boost::make_shared<SHAMap>();
@@ -37,7 +37,7 @@ Ledger::Ledger(const NewcoinAddress& masterID, uint64 startAmount) : mTotCoins(s
 Ledger::Ledger(const uint256 &parentHash, const uint256 &transHash, const uint256 &accountHash,
 	uint64 totCoins, uint64 timeStamp, uint32 ledgerSeq)
 		: mParentHash(parentHash), mTransHash(transHash), mAccountHash(accountHash),
-		mTotCoins(totCoins), mTimeStamp(timeStamp), mLedgerSeq(ledgerSeq), mLedgerInterval(60),
+		mTotCoins(totCoins), mCloseTime(timeStamp), mLedgerSeq(ledgerSeq), mLedgerInterval(60),
 		mClosed(false), mValidHash(false), mAccepted(false), mImmutable(false)
 {
 	updateHash();
@@ -51,10 +51,10 @@ Ledger::Ledger(Ledger::pointer prevLedger) : mParentHash(prevLedger->getHash()),
 	prevLedger->setClosed();
 	prevLedger->updateHash();
 	mAccountStateMap->setSeq(mLedgerSeq);
-	mTimeStamp = prevLedger->getNextLedgerClose();
+	mCloseTime = prevLedger->getNextLedgerClose();
 }
 
-Ledger::Ledger(const std::vector<unsigned char>& rawLedger) : mTotCoins(0), mTimeStamp(0),
+Ledger::Ledger(const std::vector<unsigned char>& rawLedger) : mTotCoins(0), mCloseTime(0),
 	mLedgerSeq(0), mClosed(false), mValidHash(false), mAccepted(false), mImmutable(true)
 {
 	Serializer s(rawLedger);
@@ -64,7 +64,7 @@ Ledger::Ledger(const std::vector<unsigned char>& rawLedger) : mTotCoins(0), mTim
 	if (!s.get256(mParentHash, BLgPPrevLg)) return;
 	if (!s.get256(mTransHash, BLgPTxT)) return;
 	if (!s.get256(mAccountHash, BLgPAcT)) return;
-	if (!s.get64(mTimeStamp, BLgPClTs)) return;
+	if (!s.get64(mCloseTime, BLgPClTs)) return;
 	if (!s.get16(mLedgerInterval, BLgPNlIn)) return;
 	updateHash();
 	if(mValidHash)
@@ -74,7 +74,7 @@ Ledger::Ledger(const std::vector<unsigned char>& rawLedger) : mTotCoins(0), mTim
 	}
 }
 
-Ledger::Ledger(const std::string& rawLedger) : mTotCoins(0), mTimeStamp(0),
+Ledger::Ledger(const std::string& rawLedger) : mTotCoins(0), mCloseTime(0),
 	mLedgerSeq(0), mClosed(false), mValidHash(false), mAccepted(false), mImmutable(true)
 {
 	Serializer s(rawLedger);
@@ -84,7 +84,7 @@ Ledger::Ledger(const std::string& rawLedger) : mTotCoins(0), mTimeStamp(0),
 	if (!s.get256(mParentHash, BLgPPrevLg)) return;
 	if (!s.get256(mTransHash, BLgPTxT)) return;
 	if (!s.get256(mAccountHash, BLgPAcT)) return;
-	if (!s.get64(mTimeStamp, BLgPClTs)) return;
+	if (!s.get64(mCloseTime, BLgPClTs)) return;
 	if (!s.get16(mLedgerInterval, BLgPNlIn)) return;
 	updateHash();
 	if(mValidHash)
@@ -106,7 +106,7 @@ void Ledger::updateHash()
 
 	Serializer s(116);
 	addRaw(s);
-	mHash  =s.getSHA512Half();
+	mHash = s.getSHA512Half();
 	mValidHash = true;
 }
 
@@ -117,7 +117,7 @@ void Ledger::addRaw(Serializer &s)
 	s.add256(mParentHash);
 	s.add256(mTransHash);
 	s.add256(mAccountHash);
-	s.add64(mTimeStamp);
+	s.add64(mCloseTime);
 	s.add16(mLedgerInterval);
 }
 
@@ -131,7 +131,7 @@ AccountState::pointer Ledger::getAccountState(const NewcoinAddress& accountID)
 	if (!item)
 	{
 #ifdef DEBUG
-//		std::cerr << "   notfound" << std::endl;
+//		std::cerr << " notfound" << std::endl;
 #endif
 		return AccountState::pointer();
 	}
@@ -239,7 +239,7 @@ void Ledger::saveAcceptedLedger(Ledger::pointer ledger)
 	sql.append("','");
 	sql.append(boost::lexical_cast<std::string>(ledger->mTotCoins));
 	sql.append("','");
-	sql.append(boost::lexical_cast<std::string>(ledger->mTimeStamp));
+	sql.append(boost::lexical_cast<std::string>(ledger->mCloseTime));
 	sql.append("','");
 	sql.append(ledger->mAccountHash.GetHex());
 	sql.append("','");
@@ -316,18 +316,21 @@ void Ledger::addJson(Json::Value& ret)
 	Json::Value ledger(Json::objectValue);
 
 	boost::recursive_mutex::scoped_lock sl(mLock);
-	ledger["ParentHash"]=mParentHash.GetHex();
+	ledger["ParentHash"] = mParentHash.GetHex();
 
 	if(mClosed)
 	{
-		ledger["Hash"]=mHash.GetHex();
-		ledger["TransactionHash"]=mTransHash.GetHex();
-		ledger["AccountHash"]=mAccountHash.GetHex();
-		ledger["Closed"]=true;
-		ledger["Accepted"]=mAccepted;
+		ledger["Hash"] = mHash.GetHex();
+		ledger["TransactionHash"] = mTransHash.GetHex();
+		ledger["AccountHash"] = mAccountHash.GetHex();
+		ledger["Closed"] = true;
+		ledger["Accepted"] = mAccepted;
+		ledger["TotalCoins"] = boost::lexical_cast<std::string>(mTotCoins);
 	}
-	else ledger["Closed"]=false;
-	ret[boost::lexical_cast<std::string>(mLedgerSeq)]=ledger;
+	else ledger["Closed"] = false;
+	if (mCloseTime != 0)
+		ledger["CloseTime"] = boost::posix_time::to_simple_string(ptFromSeconds(mCloseTime));
+	ret[boost::lexical_cast<std::string>(mLedgerSeq)] = ledger;
 }
 
 Ledger::pointer Ledger::switchPreviousLedger(Ledger::pointer oldPrevious, Ledger::pointer newPrevious, int limit)
@@ -428,19 +431,22 @@ bool Ledger::isAcquiringAS(void)
 
 boost::posix_time::ptime Ledger::getCloseTime() const
 {
-	return ptFromSeconds(mTimeStamp);
+	return ptFromSeconds(mCloseTime);
 }
 
 void Ledger::setCloseTime(boost::posix_time::ptime ptm)
 {
-	mTimeStamp = iToSeconds(ptm);
+	mCloseTime = iToSeconds(ptm);
 }
 
 uint64 Ledger::getNextLedgerClose() const
 {
-	if (mTimeStamp == 0)
-		return theApp->getOPs().getNetworkTimeNC() + 2 * mLedgerInterval - 1;
-	return mTimeStamp + mLedgerInterval;
+	if (mCloseTime == 0)
+	{
+		uint64 closeTime = theApp->getOPs().getNetworkTimeNC() + mLedgerInterval - 1;
+		return closeTime - (closeTime % mLedgerInterval);
+	}
+	return mCloseTime + mLedgerInterval;
 }
 
 // vim:ts=4
