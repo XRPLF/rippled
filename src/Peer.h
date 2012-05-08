@@ -104,7 +104,7 @@ public:
 
 	void connect(const std::string strIp, int iPort);
 	void connected(const boost::system::error_code& error);
-	void detach();
+	void detach(const char *);
 	bool samePeer(Peer::pointer p) { return samePeer(*p); }
 	bool samePeer(const Peer& p) { return this == &p; }
 

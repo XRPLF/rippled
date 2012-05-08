@@ -38,7 +38,7 @@ void Peer::handle_write(const boost::system::error_code& error, size_t bytes_tra
 
 	if(error)
 	{
-		detach();
+		detach("hw");
 		return;
 	}
 
@@ -53,8 +53,11 @@ void Peer::handle_write(const boost::system::error_code& error, size_t bytes_tra
 	}
 }
 
-void Peer::detach()
+void Peer::detach(const char *rsn)
 {
+#ifdef DEBUG
+	std::cerr << "DETACHING PEER: " << rsn << std::endl;
+#endif
 	boost::system::error_code ecCancel;
 
 	(void) mVerifyTimer.cancel();
@@ -90,7 +93,7 @@ void Peer::handleVerifyTimer(const boost::system::error_code& ecResult)
 	else
 	{
 		std::cerr << "Peer failed to verify in time." << std::endl;
-		detach();
+		detach("hvt");
 	}
 }
 
@@ -114,7 +117,7 @@ void Peer::connect(const std::string strIp, int iPort)
 	if (err || itrEndpoint == boost::asio::ip::tcp::resolver::iterator())
 	{
 		std::cerr << "Peer::connect: Bad IP" << std::endl;
-		detach();
+		detach("c");
 		return;
 	}
 	else
@@ -125,7 +128,7 @@ void Peer::connect(const std::string strIp, int iPort)
 		if (err)
 		{
 			std::cerr << "Peer::connect: Failed to set timer." << std::endl;
-			detach();
+			detach("c2");
 			return;
 		}
 	}
@@ -154,7 +157,7 @@ void Peer::handleStart(const boost::system::error_code& error)
 	if (error)
 	{
 		std::cerr << "Peer::handleStart: failed:" << error << std::endl;
-		detach();
+		detach("hs");
 	}
 	else
 	{
@@ -169,7 +172,7 @@ void Peer::handleConnect(const boost::system::error_code& error, boost::asio::ip
 	if (error)
 	{
 		std::cerr << "Connect peer: failed:" << error << std::endl;
-		detach();
+		detach("hc");
 	}
 	else
 	{
@@ -198,13 +201,13 @@ void Peer::connected(const boost::system::error_code& error)
 	if (error)
 	{
 		std::cerr << "Remote peer: accept error: " << strIp << " " << iPort << " : " << error << std::endl;
-		detach();
+		detach("ctd");
 	}
 	else if (!theApp->getConnectionPool().peerRegister(shared_from_this(), strIp, iPort))
 	{
 		std::cerr << "Remote peer: rejecting: " << strIp << " " << iPort << std::endl;
 		// XXX Reject with a rejection message: already connected
-		detach();
+		detach("ctd2");
 	}
 	else
 	{
@@ -277,14 +280,14 @@ void Peer::handle_read_header(const boost::system::error_code& error)
 		// WRITEME: Compare to maximum message length, abort if too large
 		if(msg_len>(32*1024*1024))
 		{
-			detach();
+			detach("hrh");
 			return;
 		}
 		start_read_body(msg_len);
 	}
 	else
 	{
-		detach();
+		detach("hrh2");
 		std::cerr  << "Peer::handle_read_header: Error: " << error << std::endl; //else BOOST_LOG_TRIVIAL(info) << "Error: " << error;
 	}
 }
@@ -298,7 +301,7 @@ void Peer::handle_read_body(const boost::system::error_code& error)
 	}
 	else
 	{
-		detach();
+		detach("hrb");
 		std::cerr  << "Peer::handle_read_body: Error: " << error << std::endl; //else BOOST_LOG_TRIVIAL(info) << "Error: " << error;
 	}
 }
@@ -315,7 +318,7 @@ void Peer::processReadBuffer()
 	if (mIpPort.first.empty() == (type == newcoin::mtHELLO))
 	{
 		std::cerr << "Wrong message type: " << type << std::endl;
-		detach();
+		detach("prb1");
 	}
 	else
 	{
@@ -551,7 +554,7 @@ void Peer::recvHello(newcoin::TMHello& packet)
 	if (bDetach)
 	{
 		mNodePublic.clear();
-		detach();
+		detach("recvh");
 	}
 }
 
