@@ -58,7 +58,7 @@ public:
 private:
 	uint256 mHash, mParentHash, mTransHash, mAccountHash;
 	uint64 mTotCoins;
-	uint64 mTimeStamp; // when this ledger closes
+	uint64 mCloseTime; // when this ledger closes
 	uint32 mLedgerSeq;
 	uint16 mLedgerInterval;
 	bool mClosed, mValidHash, mAccepted, mImmutable;
@@ -102,7 +102,7 @@ public:
 	const uint256& getTransHash() const		{ return mTransHash; }
 	const uint256& getAccountHash() const	{ return mAccountHash; }
 	uint64 getTotalCoins() const			{ return mTotCoins; }
-	uint64 getRawTimeStamp() const			{ return mTimeStamp; }
+	uint64 getCloseTimeNC() const			{ return mCloseTime; }
 	uint32 getLedgerSeq() const				{ return mLedgerSeq; }
 	uint16 getInterval() const				{ return mLedgerInterval; }
 
