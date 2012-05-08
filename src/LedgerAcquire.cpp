@@ -126,7 +126,7 @@ void LedgerAcquire::trigger(bool timer)
 				tmGL->set_ledgerhash(mHash.begin(), mHash.size());
 				tmGL->set_ledgerseq(mLedger->getLedgerSeq());
 				tmGL->set_itype(newcoin::liAS_NODE);
-				for (std::vector<SHAMapNode>::iterator it  =nodeIDs.begin(); it != nodeIDs.end(); ++it)
+				for (std::vector<SHAMapNode>::iterator it =nodeIDs.begin(); it != nodeIDs.end(); ++it)
 					*(tmGL->add_nodeids()) = it->getRawString();
 				sendRequest(tmGL);
 			}
@@ -164,11 +164,11 @@ void LedgerAcquire::peerHas(Peer::pointer ptr)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	std::list<boost::weak_ptr<Peer> >::iterator it=mPeers.begin();
-	while(it!=mPeers.end())
+	while (it != mPeers.end())
 	{
-		Peer::pointer pr=it->lock();
+		Peer::pointer pr = it->lock();
 		if (!pr) // we have a dead entry, remove it
-			it=mPeers.erase(it);
+			it = mPeers.erase(it);
 		else
 		{
 			if (pr->samePeer(ptr)) return;	// we already have this peer
@@ -182,11 +182,11 @@ void LedgerAcquire::badPeer(Peer::pointer ptr)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	std::list<boost::weak_ptr<Peer> >::iterator it=mPeers.begin();
-	while(it!=mPeers.end())
+	while (it != mPeers.end())
 	{
-		Peer::pointer pr=it->lock();
+		Peer::pointer pr = it->lock();
 		if (!pr) // we have a dead entry, remove it
-			it=mPeers.erase(it);
+			it = mPeers.erase(it);
 		else
 		{
 			if (ptr->samePeer(pr))
@@ -203,15 +203,15 @@ bool LedgerAcquire::takeBase(const std::string& data)
 { // Return value: true=normal, false=bad data
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	if (mHaveBase) return true;
-	Ledger* ledger=new Ledger(data);
-	if (ledger->getHash()!=mHash)
+	Ledger* ledger = new Ledger(data);
+	if (ledger->getHash() != mHash)
 	{
 		delete ledger;
 		return false;
 	}
-	mLedger=Ledger::pointer(ledger);
+	mLedger = Ledger::pointer(ledger);
 	mLedger->setAcquiring();
-	mHaveBase=true;
+	mHaveBase = true;
 	return true;
 }
 
@@ -219,16 +219,16 @@ bool LedgerAcquire::takeTxNode(const std::list<SHAMapNode>& nodeIDs,
 	const std::list<std::vector<unsigned char> >& data)
 {
 	if (!mHaveBase) return false;
-	std::list<SHAMapNode>::const_iterator nodeIDit=nodeIDs.begin();
-	std::list<std::vector<unsigned char> >::const_iterator nodeDatait=data.begin();
-	while(nodeIDit!=nodeIDs.end())
+	std::list<SHAMapNode>::const_iterator nodeIDit = nodeIDs.begin();
+	std::list<std::vector<unsigned char> >::const_iterator nodeDatait = data.begin();
+	while (nodeIDit != nodeIDs.end())
 	{
 		if (!mLedger->peekTransactionMap()->addKnownNode(*nodeIDit, *nodeDatait))
 			return false;
 		++nodeIDit;
 		++nodeDatait;
 	}
-	if (!mLedger->peekTransactionMap()->isSynching()) mHaveTransactions=true;
+	if (!mLedger->peekTransactionMap()->isSynching()) mHaveTransactions = true;
 	return true;
 }
 
@@ -236,23 +236,23 @@ bool LedgerAcquire::takeAsNode(const std::list<SHAMapNode>& nodeIDs,
 	const std::list<std::vector<unsigned char> >& data)
 {
 	if (!mHaveBase) return false;
-	std::list<SHAMapNode>::const_iterator nodeIDit=nodeIDs.begin();
-	std::list<std::vector<unsigned char> >::const_iterator nodeDatait=data.begin();
-	while(nodeIDit!=nodeIDs.end())
+	std::list<SHAMapNode>::const_iterator nodeIDit = nodeIDs.begin();
+	std::list<std::vector<unsigned char> >::const_iterator nodeDatait = data.begin();
+	while (nodeIDit != nodeIDs.end())
 	{
 		if (!mLedger->peekAccountStateMap()->addKnownNode(*nodeIDit, *nodeDatait))
 			return false;
 		++nodeIDit;
 		++nodeDatait;
 	}
-	if (!mLedger->peekAccountStateMap()->isSynching()) mHaveState=true;
+	if (!mLedger->peekAccountStateMap()->isSynching()) mHaveState = true;
 	return true;
 }
 
 LedgerAcquire::pointer LedgerAcquireMaster::findCreate(const uint256& hash)
 {
 	boost::mutex::scoped_lock sl(mLock);
-	LedgerAcquire::pointer& ptr=mLedgers[hash];
+	LedgerAcquire::pointer& ptr = mLedgers[hash];
 	if (ptr) return ptr;
 	return boost::make_shared<LedgerAcquire>(hash);
 }
@@ -260,7 +260,7 @@ LedgerAcquire::pointer LedgerAcquireMaster::findCreate(const uint256& hash)
 LedgerAcquire::pointer LedgerAcquireMaster::find(const uint256& hash)
 {
 	boost::mutex::scoped_lock sl(mLock);
-	std::map<uint256, LedgerAcquire::pointer>::iterator it=mLedgers.find(hash);
+	std::map<uint256, LedgerAcquire::pointer>::iterator it = mLedgers.find(hash);
 	if (it != mLedgers.end()) return it->second;
 	return LedgerAcquire::pointer();
 }
@@ -289,7 +289,7 @@ bool LedgerAcquireMaster::gotLedgerData(newcoin::TMLedgerData& packet)
 	if (packet.type() == newcoin::liBASE)
 	{
 		if (packet.nodes_size() != 1) return false;
-		const newcoin::TMLedgerNode& node=packet.nodes(0);
+		const newcoin::TMLedgerNode& node = packet.nodes(0);
 		if (!node.has_nodedata()) return false;
 		return ledger->takeBase(node.nodedata());
 	}
