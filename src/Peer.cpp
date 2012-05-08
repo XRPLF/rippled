@@ -19,9 +19,10 @@
 // Node has this long to verify its identity from connection accepted or connection attempt.
 #define NODE_VERIFY_SECONDS		15
 
-Peer::Peer(boost::asio::io_service& io_service, boost::asio::ssl::context& ctx)
-	: mSocketSsl(io_service, ctx),
-		mVerifyTimer(io_service)
+Peer::Peer(boost::asio::io_service& io_service, boost::asio::ssl::context& ctx) :
+	mConnected(false),
+	mSocketSsl(io_service, ctx),
+	mVerifyTimer(io_service)
 {
 }
 
@@ -36,13 +37,13 @@ void Peer::handle_write(const boost::system::error_code& error, size_t bytes_tra
 
 	mSendingPacket = PackedMessage::pointer();
 
-	if(error)
+	if (error)
 	{
 		detach("hw");
 		return;
 	}
 
-	if(!mSendQ.empty())
+	if (!mSendQ.empty())
 	{
 		PackedMessage::pointer packet=mSendQ.front();
 		if(packet)
@@ -63,11 +64,11 @@ void Peer::detach(const char *rsn)
 	(void) mVerifyTimer.cancel();
 
 	mSendQ.clear();
-	// mSocketSsl.close();
 
 	if (!mIpPort.first.empty())
 	{
 		if (mClientConnect)
+			// Connection might be part of scanning.  Inform connect failed.
 			theApp->getConnectionPool().peerFailed(mIpPort.first, mIpPort.second);
 
 		theApp->getConnectionPool().peerDisconnected(shared_from_this(), mIpPort, mNodePublic);
@@ -317,8 +318,11 @@ void Peer::processReadBuffer()
 	std::cerr << "PRB(" << type << "), len=" << (mReadbuf.size()-HEADER_SIZE) << std::endl;
 #endif
 
-	// If not connected, only accept mtHELLO. Otherwise, don't accept mtHELLO.
-	if (mIpPort.first.empty() == (type == newcoin::mtHELLO))
+	std::cerr << "Peer::processReadBuffer: " << mIpPort.first << " " << mIpPort.second << std::endl;
+	std::cerr << "Peer::processReadBuffer: empty()=" << mIpPort.first.empty() << " " << (type == newcoin::mtHELLO) << std::endl;
+
+	// If connected and get a mtHELLO or if not connected and get a non-mtHELLO, wrong message was sent.
+	if (mConnected == (type == newcoin::mtHELLO))
 	{
 		std::cerr << "Wrong message type: " << type << std::endl;
 		detach("prb1");
@@ -534,10 +538,13 @@ void Peer::recvHello(newcoin::TMHello& packet)
 		}
 		else
 		{
-			// XXX At this point we could add the inbound connection to our IP list.  However, the inbound IP address might be that of
+			// At this point we could add the inbound connection to our IP list.  However, the inbound IP address might be that of
 			// a NAT. It would be best to only add it if and only if we can immediatly verify it.
 			nothing();
 		}
+
+		// Consider us connected.  No longer accepting mtHELLO.
+		mConnected	= true;
 
 		// XXX Set timer: connection is in grace period to be useful.
 		// XXX Set timer: connection idle (idle may vary depending on connection type.)

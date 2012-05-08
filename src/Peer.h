@@ -32,6 +32,7 @@ public:
 
 private:
 	bool			mClientConnect;		// In process of connecting as client.
+	bool			mConnected;			// True, if hello accepted.
 	NewcoinAddress	mNodePublic;		// Node public key of peer.
 	ipPort			mIpPort;
 	uint256			mCookieHash;
