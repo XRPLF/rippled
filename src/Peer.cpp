@@ -34,7 +34,7 @@ void Peer::handle_write(const boost::system::error_code& error, size_t bytes_tra
 		std::cerr  << "Peer::handle_write bytes: "<< bytes_transferred << std::endl;
 #endif
 
-	mSendingPacket=PackedMessage::pointer();
+	mSendingPacket = PackedMessage::pointer();
 
 	if(error)
 	{
@@ -400,6 +400,17 @@ void Peer::processReadBuffer()
 			}
 			break;
 
+		case newcoin::mtSTATUS_CHANGE:
+			{
+				newcoin::TMStatusChange msg;
+				if(msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
+					recvStatus(msg);
+				else std::cerr << "parse error: " << type << std::endl;
+			}
+			break;
+
+
+
 		case newcoin::mtGET_LEDGER:
 			{
 				newcoin::TMGetLedger msg;
@@ -627,33 +638,49 @@ void Peer::recvAccount(newcoin::TMAccount& packet)
 {
 }
 
+void Peer::recvStatus(newcoin::TMStatusChange& packet)
+{
+	if (packet.has_ledgerhash() && (packet.ledgerhash().size() == (256 / 8)))
+	{ // a peer has changed ledgers
+		if (packet.has_previousledgerhash() && (packet.previousledgerhash().size() == (256 / 8)))
+			memcpy(mPreviousLedgerHash.begin(), packet.previousledgerhash().data(), 256 / 8);
+		else
+			mPreviousLedgerHash = mClosedLedgerHash;
+		memcpy(mClosedLedgerHash.begin(), packet.ledgerhash().data(), 256 / 8);
+		if (packet.has_networktime())
+			mClosedLedgerTime = ptFromSeconds(packet.networktime());
+		else
+			mClosedLedgerTime = theApp->getOPs().getNetworkTimePT();
+	}
+}
+
 void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 {
 	// Figure out what ledger they want
 	Ledger::pointer ledger;
-	if(packet.has_ledgerhash())
+	if (packet.has_ledgerhash())
 	{
 		uint256 ledgerhash;
-		if(packet.ledgerhash().size()!=32)
+		if (packet.ledgerhash().size() != 32)
 		{
 			punishPeer(PP_INVALID_REQUEST);
 			return;
 		}
 		memcpy(&ledgerhash, packet.ledgerhash().data(), 32);
-		ledger=theApp->getMasterLedger().getLedgerByHash(ledgerhash);
+		ledger = theApp->getMasterLedger().getLedgerByHash(ledgerhash);
 	}
-	else if(packet.has_ledgerseq())
-		ledger=theApp->getMasterLedger().getLedgerBySeq(packet.ledgerseq());
-	else if(packet.has_ltype() && (packet.ltype() == newcoin::ltCURRENT) )
-		ledger=theApp->getMasterLedger().getCurrentLedger();
-	else if(packet.has_ltype() && (packet.ltype() == newcoin::ltCLOSING) )
+	else if (packet.has_ledgerseq())
+		ledger = theApp->getMasterLedger().getLedgerBySeq(packet.ledgerseq());
+	else if (packet.has_ltype() && (packet.ltype() == newcoin::ltCURRENT))
+		ledger = theApp->getMasterLedger().getCurrentLedger();
+	else if (packet.has_ltype() && (packet.ltype() == newcoin::ltCLOSING))
 	{
 		ledger = theApp->getMasterLedger().getClosedLedger();
 	}
-	else if(packet.has_ltype() && (packet.ltype() == newcoin::ltCLOSED) )
+	else if (packet.has_ltype() && (packet.ltype() == newcoin::ltCLOSED) )
 	{
 		ledger = theApp->getMasterLedger().getClosedLedger();
-		if(ledger && !ledger->isClosed())
+		if (ledger && !ledger->isClosed())
 			ledger = theApp->getMasterLedger().getLedgerBySeq(ledger->getLedgerSeq() - 1);
 	}
 	else
@@ -669,8 +696,8 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 	}
 
 	// Figure out what information they want
-	newcoin::TMLedgerData* data=new newcoin::TMLedgerData;
-	uint256 lHash=ledger->getHash();
+	newcoin::TMLedgerData* data  =new newcoin::TMLedgerData;
+	uint256 lHash = ledger->getHash();
 	data->set_ledgerhash(lHash.begin(), lHash.size());
 	data->set_ledgerseq(ledger->getLedgerSeq());
 	data->set_type(packet.itype());
@@ -788,6 +815,8 @@ void Peer::sendHello()
 	{
 		uint256 hash = closedLedger->getHash();
 		h->set_closedledger(hash.begin(), hash.GetSerializeSize());
+		hash = closedLedger->getParentHash();
+		h->set_previousledger(hash.begin(), hash.GetSerializeSize());
 	}
 
 	PackedMessage::pointer packet = boost::make_shared<PackedMessage>

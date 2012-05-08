@@ -324,6 +324,19 @@ void NetworkOPs::switchLastClosedLedger(Ledger::pointer newLedger, bool normal)
 	{ // this ledger has already closed
 	}
 
+	newcoin::TMStatusChange* s = new newcoin::TMStatusChange();
+
+	s->set_newevent(normal ? newcoin::neACCEPTED_LEDGER : newcoin::neSWITCHED_LEDGER);
+	s->set_ledgerseq(newLedger->getLedgerSeq());
+	s->set_networktime(getNetworkTimeNC());
+
+	uint256 lhash = newLedger->getHash();
+	s->set_ledgerhash(lhash.begin(), lhash.size());
+	lhash = newLedger->getParentHash();
+	s->set_previousledgerhash(lhash.begin(), lhash.size());
+
+	PackedMessage::pointer packet =
+		boost::make_shared<PackedMessage>(PackedMessage::MessagePointer(s), newcoin::mtSTATUS_CHANGE);
+	theApp->getConnectionPool().relayMessage(NULL, packet);
 }
 
-// FIXME: We have to tell peers when we change our active ledger

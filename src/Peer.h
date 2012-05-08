@@ -83,6 +83,7 @@ protected:
 	void recvAccount(newcoin::TMAccount& packet);
 	void recvGetLedger(newcoin::TMGetLedger& packet);
 	void recvLedger(newcoin::TMLedgerData& packet);
+	void recvStatus(newcoin::TMStatusChange& packet);
 
 	void getSessionCookie(std::string& strDst);
 
