@@ -213,7 +213,7 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned 
 			int pos;
 			s.get8(pos, 32 + (i * 33));
 			if ((pos < 0) || (pos >= 16)) throw SHAMapException(InvalidNode);
-			s.get256(mHashes[pos], i* 3 3);
+			s.get256(mHashes[pos], i * 33);
 		}
 		mType = tnINNER;
 	}
