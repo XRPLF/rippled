@@ -10,7 +10,6 @@ enum MessageType {
 	mtGET_CONTACTS=		10;
 	mtCONTACT=			11;
 
-
 // operations for 'small' nodes
 	mtSEARCH_TRANSACTION=	20;
 	mtGET_ACCOUNT=			21;
@@ -22,6 +21,7 @@ enum MessageType {
 	mtLEDGER=				32;
 	mtPROPOSE_LEDGER=		33;
 	mtCLOSE_LEDGER=			35;
+	mtSTATUS_CHANGE=		36;
 
 // data replication and synchronization
 	mtGET_VALIDATIONS=		40;
@@ -41,7 +41,8 @@ message TMHello {
 	optional bytes	nodePublic			= 4; // node may opt to remain anonymous
 	optional bytes	nodeProof			= 5;
 	optional uint32 ipv4Port			= 6;
-	optional bytes	closedLedger 		= 7;
+	optional bytes	closedLedger 		= 7; // our last closed ledger
+	optional bytes	previousLedger		= 8; // the ledger before the last closed ledger
 }
 
 
@@ -70,6 +71,33 @@ message TMTransaction {
 	optional uint32 ledgerIndexFinal	= 12;
 	optional bytes conflictingTransaction	= 13;
 }
+
+
+
+enum NodeStatus {
+	nsCONNECTING	= 1;		// acquiring connections
+	nsCONNECTED		= 2;		// convinced we are connected to the real network
+	nsMONITORING	= 3;		// we know what the previous ledger is
+	nsVALIDATING	= 4;		// we have the full ledger contents
+}
+
+enum NodeEvent {
+	neCLOSED_LEDGER		= 1;	// closing a ledger because its close time has come
+	neACCEPTED_LEDGER	= 2;	// accepting a closed ledger, we have finished computing it
+	neSWITCHED_LEDGER	= 3;	// switching ledgers due to network consensus 
+	neSHUTTING_DOWN		= 4;
+}
+
+message TMStatusChange {
+	optional NodeStatus newStatus		= 1;
+	optional NodeEvent	newEvent		= 2;
+	optional uint32 ledgerSeq			= 3;
+	optional bytes ledgerHash			= 4;
+	optional bytes previousLedgerHash	= 5;
+	optional uint64 networkTime			= 6;
+}
+
+
 
 message TMProposeLedger {
 	required uint32 closingSeq			= 1;

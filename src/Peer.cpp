@@ -81,7 +81,7 @@ void Peer::handleVerifyTimer(const boost::system::error_code& ecResult)
 		nothing();  // Aborter is done.
 	}
 	else if (ecResult)
-    {
+	{
 		std::cerr << "Peer verify timer error: " << std::endl;
 
 		// Can't do anything sound.
@@ -525,7 +525,10 @@ void Peer::recvHello(newcoin::TMHello& packet)
 
 		if ((packet.has_closedledger()) && (packet.closedledger().size() == (256 / 8)))
 		{
-			memcpy(mClosedLedgerHash.begin(), packet.closedledger().data(), (256 / 8));
+			memcpy(mClosedLedgerHash.begin(), packet.closedledger().data(), 256 / 8);
+			if ((packet.has_previousledger()) && (packet.previousledger().size() == (256 / 8)))
+				memcpy(mPreviousLedgerHash.begin(), packet.previousledger().data(), 256 / 8);
+			else mPreviousLedgerHash.zero();
 			mClosedLedgerTime = boost::posix_time::second_clock::universal_time();
 		}
 
