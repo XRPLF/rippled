@@ -22,7 +22,6 @@
 
 NetworkOPs::NetworkOPs(boost::asio::io_service& io_service) : mMode(omDISCONNECTED), mNetTimer(io_service)
 {
-	setStateTimer(5);
 }
 
 time_t NetworkOPs::getNetworkTimeTT()
@@ -156,9 +155,15 @@ AccountState::pointer NetworkOPs::getAccountState(const NewcoinAddress& accountI
 	return theApp->getMasterLedger().getCurrentLedger()->getAccountState(accountID);
 }
 
-void NetworkOPs::setStateTimer(int seconds)
+void NetworkOPs::setStateTimer(int sec)
 {
-	mNetTimer.expires_from_now(boost::posix_time::seconds(5));
+	uint64 closedTime = theApp->getMasterLedger().getCurrentLedger()->getCloseTimeNC();
+	uint64 now = getNetworkTimeNC();
+
+	if (now > closedTime) sec = 0;
+	if (sec > (closedTime - now)) sec = (closedTime - now);
+
+	mNetTimer.expires_from_now(boost::posix_time::seconds(sec));
 	mNetTimer.async_wait(boost::bind(&NetworkOPs::checkState, this));
 }
 
@@ -213,6 +218,7 @@ void NetworkOPs::checkState()
 		uint256 peerLedger = (*it)->getClosedLedgerHash();
 		if (!!peerLedger)
 		{
+			// FIXME: If we have this ledger, don't count it if it's too far past its close time
 			ValidationCount& vc = ledgers[peerLedger];
 			if ((vc.nodesUsing == 0) || ((*it)->getNodePublic() > vc.highNode))
 				vc.highNode = (*it)->getNodePublic();
@@ -267,7 +273,7 @@ void NetworkOPs::checkState()
 			}
 			consensus = acq->getLedger();
 		}
-		switchLastClosedLedger(consensus);
+		switchLastClosedLedger(consensus, false);
 	}
 
 	if (mMode == omCONNECTED)
@@ -286,24 +292,38 @@ void NetworkOPs::checkState()
 		// check if the ledger is bad enough to go to omTRACKING
 	}
 
+	Ledger::pointer currentLedger = theApp->getMasterLedger().getCurrentLedger();
+	if (getNetworkTimeNC() > currentLedger->getCloseTimeNC())
+	{
+		currentLedger->setClosed();
+		switchLastClosedLedger(currentLedger, true);
+	}
+
 	setStateTimer(10);
 }
 
-void NetworkOPs::switchLastClosedLedger(Ledger::pointer newLedger)
+void NetworkOPs::switchLastClosedLedger(Ledger::pointer newLedger, bool normal)
 { // set the newledger as our last closed ledger
 	// FIXME: Correct logic is:
 	// 1) Mark this ledger closed, schedule it to be saved
-	// 2) Open a new subsequent ledger
-	// 3) Walk back the previous ledger chain from our current ledger and the new last closed ledger
+	// 2) If normal, reprocess transactions
+	// 3) Open a new subsequent ledger
+	// 4) Walk back the previous ledger chain from our current ledger and the new last closed ledger
 	//   find a common previous ledger, if possible. Try to insert any transactions in our ledger
 	//   chain into the new open ledger. Broadcast any that make it in.
 
+#ifdef DEBUG
+	std::cerr << "Switching last closed ledger to " << newLedger->getHash().GetHex() << std::endl;
+#endif
+
+	newLedger->setClosed();
 	Ledger::pointer openLedger = boost::make_shared<Ledger>(newLedger);
 	theApp->getMasterLedger().switchLedgers(newLedger, openLedger);
 
-#if 0
-	if (getNetworkTime() > openLedger->getCloseTime())
+	if (getNetworkTimeNC() > openLedger->getCloseTimeNC())
 	{ // this ledger has already closed
 	}
-#endif
+
 }
+
+// FIXME: We have to tell peers when we change our active ledger
