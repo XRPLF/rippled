@@ -319,7 +319,6 @@ void Peer::processReadBuffer()
 #endif
 
 	std::cerr << "Peer::processReadBuffer: " << mIpPort.first << " " << mIpPort.second << std::endl;
-	std::cerr << "Peer::processReadBuffer: empty()=" << mIpPort.first.empty() << " " << (type == newcoin::mtHELLO) << std::endl;
 
 	// If connected and get a mtHELLO or if not connected and get a non-mtHELLO, wrong message was sent.
 	if (mConnected == (type == newcoin::mtHELLO))
