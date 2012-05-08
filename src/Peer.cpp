@@ -98,7 +98,7 @@ void Peer::handleVerifyTimer(const boost::system::error_code& ecResult)
 // Only takes IP addresses (not domains).
 void Peer::connect(const std::string strIp, int iPort)
 {
-	int	iPortAct	= iPort < 0 ? SYSTEM_PEER_PORT : iPort;
+	int	iPortAct	= (iPort <= 0) ? SYSTEM_PEER_PORT : iPort;
 
 	mClientConnect	= true;
 
@@ -115,6 +115,7 @@ void Peer::connect(const std::string strIp, int iPort)
 	{
 		std::cerr << "Peer::connect: Bad IP" << std::endl;
 		detach();
+		return;
 	}
 	else
 	{
@@ -125,12 +126,13 @@ void Peer::connect(const std::string strIp, int iPort)
 		{
 			std::cerr << "Peer::connect: Failed to set timer." << std::endl;
 			detach();
+			return;
 		}
 	}
 
 	if (!err)
 	{
-		std::cerr << "Peer::connect: Connectting: " << mIpPort.first << " " << mIpPort.second << std::endl;
+		std::cerr << "Peer::connect: Connecting: " << mIpPort.first << " " << mIpPort.second << std::endl;
 
 		boost::asio::async_connect(
 			mSocketSsl.lowest_layer(),
@@ -640,6 +642,9 @@ void Peer::recvAccount(newcoin::TMAccount& packet)
 
 void Peer::recvStatus(newcoin::TMStatusChange& packet)
 {
+#ifdef DEBUG
+	std::cerr << "Received status change from peer" << std::endl;
+#endif
 	if (packet.has_ledgerhash() && (packet.ledgerhash().size() == (256 / 8)))
 	{ // a peer has changed ledgers
 		if (packet.has_previousledgerhash() && (packet.previousledgerhash().size() == (256 / 8)))
@@ -651,6 +656,9 @@ void Peer::recvStatus(newcoin::TMStatusChange& packet)
 			mClosedLedgerTime = ptFromSeconds(packet.networktime());
 		else
 			mClosedLedgerTime = theApp->getOPs().getNetworkTimePT();
+#ifdef DEBUG
+	std::cerr << "peer LCL is " << mClosedLedgerHash.GetHex() << std::endl;
+#endif
 	}
 }
 

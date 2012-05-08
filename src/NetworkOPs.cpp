@@ -156,7 +156,7 @@ AccountState::pointer NetworkOPs::getAccountState(const NewcoinAddress& accountI
 }
 
 void NetworkOPs::setStateTimer(int sec)
-{
+{ // set timer early if ledger is closing
 	uint64 closedTime = theApp->getMasterLedger().getCurrentLedger()->getCloseTimeNC();
 	uint64 now = getNetworkTimeNC();
 
@@ -215,15 +215,22 @@ void NetworkOPs::checkState()
 
 	for (std::vector<Peer::pointer>::iterator it = peerList.begin(), end = peerList.end(); it != end; ++it)
 	{
-		uint256 peerLedger = (*it)->getClosedLedgerHash();
-		if (!!peerLedger)
+		if (!*it)
 		{
-			// FIXME: If we have this ledger, don't count it if it's too far past its close time
-			ValidationCount& vc = ledgers[peerLedger];
-			if ((vc.nodesUsing == 0) || ((*it)->getNodePublic() > vc.highNode))
-				vc.highNode = (*it)->getNodePublic();
-			++vc.nodesUsing;
-			// WRITEME: Validations, trusted peers
+			std::cerr << "NOP::CS Dead pointer in peer list" << std::endl;
+		}
+		else
+		{
+			uint256 peerLedger = (*it)->getClosedLedgerHash();
+			if (!!peerLedger)
+			{
+				// FIXME: If we have this ledger, don't count it if it's too far past its close time
+				ValidationCount& vc = ledgers[peerLedger];
+				if ((vc.nodesUsing == 0) || ((*it)->getNodePublic() > vc.highNode))
+					vc.highNode = (*it)->getNodePublic();
+				++vc.nodesUsing;
+				// WRITEME: Validations, trusted peers
+			}
 		}
 	}
 
@@ -247,10 +254,15 @@ void NetworkOPs::checkState()
 		}
 	}
 
+
 	if (switchLedgers)
 	{
 		std::cerr << "We are not running on the consensus ledger" << std::endl;
-		if ( (mMode == omTRACKING) || (mMode == omFULL) ) mMode = omTRACKING;
+#ifdef DEBUG
+		std::cerr << "Our LCL " << currentClosed->getHash().GetHex() << std::endl;
+		std::cerr << "Net LCL " << closedLedger.GetHex() << std::endl;
+#endif
+		if ((mMode == omTRACKING) || (mMode == omFULL)) mMode = omTRACKING;
 		Ledger::pointer consensus = theApp->getMasterLedger().getLedgerByHash(closedLedger);
 		if (!consensus)
 		{
@@ -293,7 +305,7 @@ void NetworkOPs::checkState()
 	}
 
 	Ledger::pointer currentLedger = theApp->getMasterLedger().getCurrentLedger();
-	if (getNetworkTimeNC() > currentLedger->getCloseTimeNC())
+	if (getNetworkTimeNC() >= currentLedger->getCloseTimeNC())
 	{
 		currentLedger->setClosed();
 		switchLastClosedLedger(currentLedger, true);
@@ -334,6 +346,11 @@ void NetworkOPs::switchLastClosedLedger(Ledger::pointer newLedger, bool normal)
 	s->set_ledgerhash(lhash.begin(), lhash.size());
 	lhash = newLedger->getParentHash();
 	s->set_previousledgerhash(lhash.begin(), lhash.size());
+
+
+#ifdef DEBUG
+	std::cerr << "Broadcasting ledger change" << std::endl;
+#endif
 
 	PackedMessage::pointer packet =
 		boost::make_shared<PackedMessage>(PackedMessage::MessagePointer(s), newcoin::mtSTATUS_CHANGE);

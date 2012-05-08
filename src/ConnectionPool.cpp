@@ -123,8 +123,9 @@ void ConnectionPool::relayMessage(Peer* fromPeer, PackedMessage::pointer msg)
 	BOOST_FOREACH(naPeer pair, mConnectedMap)
 	{
 		Peer::pointer peer	= pair.second;
-
-		if(!fromPeer || !(peer.get() == fromPeer))
+		if (!peer)
+			std::cerr << "CP::RM null peer in list" << std::endl;
+		else if (!fromPeer || !(peer.get() == fromPeer))
 			peer->sendPacket(msg);
 	}
 }
@@ -208,8 +209,9 @@ Json::Value ConnectionPool::getPeersJson()
 	BOOST_FOREACH(naPeer pair, mConnectedMap)
 	{
 		Peer::pointer peer	= pair.second;
-
-		ret.append(peer->getJson());
+		if (!peer)
+			std::cerr << "CP::GPH null peer" << std::endl;
+		else ret.append(peer->getJson());
     }
 
     return ret;
@@ -218,10 +220,11 @@ Json::Value ConnectionPool::getPeersJson()
 std::vector<Peer::pointer> ConnectionPool::getPeerVector()
 {
 	std::vector<Peer::pointer> ret;
-	ret.resize(mConnectedMap.size());
+	ret.reserve(mConnectedMap.size());
 
 	BOOST_FOREACH(naPeer pair, mConnectedMap)
 	{
+		assert(!!pair.second);
 		ret.push_back(pair.second);
     }
 
@@ -234,7 +237,7 @@ bool ConnectionPool::peerConnected(Peer::pointer peer, const NewcoinAddress& na)
 	bool	bSuccess;
 
 	std::cerr << "ConnectionPool::peerConnected: " << na.humanNodePublic() << std::endl;
-
+	assert(!!peer);
 	if (na == theApp->getWallet().getNodePublic())
 	{
 		std::cerr << "ConnectionPool::peerConnected: To self." << std::endl;
