@@ -368,3 +368,4 @@ const uint256& SHAMapTreeNode::getChildHash(int m) const
 	assert((m >= 0) && (m < 16) && (mType == tnINNER));
 	return mHashes[m];
 }
+// vim:ts=4

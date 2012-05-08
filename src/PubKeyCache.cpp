@@ -23,7 +23,7 @@ CKey::pointer PubKeyCache::locate(const NewcoinAddress& id)
 	{ // is it in the database
 		ScopedLock sl(theApp->getTxnDB()->getDBLock());
 		Database* db=theApp->getTxnDB()->getDB();
-		if(!db->executeSQL(sql.c_str()) || !db->startIterRows())
+		if(!db->executeSQL(sql) || !db->startIterRows())
 			return CKey::pointer();
 		pkSize=db->getBinary("PubKey", &(data.front()), data.size());
 		db->endIterRows();
@@ -63,7 +63,7 @@ CKey::pointer PubKeyCache::store(const NewcoinAddress& id, CKey::pointer key)
 	sql.append(");");
 
 	ScopedLock dbl(theApp->getTxnDB()->getDBLock());
-	theApp->getTxnDB()->getDB()->executeSQL(sql.c_str(), true);
+	theApp->getTxnDB()->getDB()->executeSQL(sql, true);
 	return key;
 }
 

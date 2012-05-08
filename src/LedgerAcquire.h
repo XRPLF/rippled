@@ -35,13 +35,13 @@ protected:
 public:
 	LedgerAcquire(const uint256& hash);
 
-	const uint256& getHash() const 		{ return mHash; }
-	bool isComplete() const 			{ return mComplete; }
-	bool isFailed() const 				{ return mFailed; }
-	bool isBase() const 				{ return mHaveBase; }
-	bool isAcctStComplete() const 		{ return mHaveState; }
-	bool isTransComplete() const 		{ return mHaveTransactions; }
-	Ledger::pointer getLedger()			{ return mLedger; }		
+	const uint256& getHash() const		{ return mHash; }
+	bool isComplete() const				{ return mComplete; }
+	bool isFailed() const				{ return mFailed; }
+	bool isBase() const					{ return mHaveBase; }
+	bool isAcctStComplete() const		{ return mHaveState; }
+	bool isTransComplete() const		{ return mHaveTransactions; }
+	Ledger::pointer getLedger()			{ return mLedger; }
 
 	void addOnComplete(boost::function<void (LedgerAcquire::pointer)>);
 
@@ -60,7 +60,7 @@ protected:
 
 public:
 	LedgerAcquireMaster() { ; }
-	
+
 	LedgerAcquire::pointer findCreate(const uint256& hash);
 	LedgerAcquire::pointer find(const uint256& hash);
 	bool hasLedger(const uint256& ledgerHash);
@@ -69,3 +69,4 @@ public:
 };
 
 #endif
+// vim:ts=4

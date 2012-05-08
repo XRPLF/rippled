@@ -39,7 +39,7 @@ void ValidationCollection::addToDB(newcoin::Validation& valid,int weCare)
 	db->escape(hanko.begin(),hanko.GetSerializeSize(),hankoStr);
 	db->escape(sig.begin(),sig.GetSerializeSize(),sigStr);
 	string sql=strprintf("INSERT INTO Validations (LedgerIndex,Hash,Hanko,SeqNum,Sig,WeCare) values (%d,%s,%s,%d,%s,%d)",valid.ledgerindex(),hashStr.c_str(),hankoStr.c_str(),valid.seqnum(),sigStr.c_str(),weCare);
-	db->executeSQL(sql.c_str());
+	db->executeSQL(sql);
 
 }
 
