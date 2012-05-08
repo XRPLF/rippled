@@ -68,10 +68,7 @@ public:
 
 	// network state machine
 	void checkState();
-	void switchLastClosedLedger(Ledger::pointer newLedger);
-
-protected:
-
+	void switchLastClosedLedger(Ledger::pointer newLedger, bool normal);
 	void setStateTimer(int seconds);
 
 };
