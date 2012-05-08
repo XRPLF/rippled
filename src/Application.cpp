@@ -102,7 +102,7 @@ void Application::run()
 	}
 
 	//
-	// Begin connectting to network.
+	// Begin connecting to network.
 	//
 	mConnectionPool.start();
 

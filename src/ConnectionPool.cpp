@@ -177,7 +177,7 @@ bool ConnectionPool::connectTo(const std::string& strIp, int iPort)
 	if (it == mIpMap.end())
 	{
 		// Did not find it.  Not already connecting or connected.
-		std::cerr << "ConnectionPool::connectTo: Connectting: "
+		std::cerr << "ConnectionPool::connectTo: Connecting: "
 			<< strIp << " " << iPort << std::endl;
 
 		Peer::pointer peer(Peer::create(theApp->getIOService(), mCtx));

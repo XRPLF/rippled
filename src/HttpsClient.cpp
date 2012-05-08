@@ -167,7 +167,7 @@ void HttpsClient::handleConnect(const boost::system::error_code& ecResult)
 
     if (!mShutdown)
 	{
-		// std::cerr << "Connectted." << std::endl;
+		// std::cerr << "Connected." << std::endl;
 
 	    mSocketSsl.lowest_layer().set_option(boost::asio::ip::tcp::no_delay(true));
 	    mSocketSsl.set_verify_mode(boost::asio::ssl::verify_peer);
