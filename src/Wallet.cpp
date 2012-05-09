@@ -28,8 +28,8 @@
 LocalAccount::LocalAccount(boost::shared_ptr<LocalAccountFamily> family, int familySeq) :
 	mPublicKey(family->getPublicKey(familySeq)), mFamily(family), mAccountFSeq(familySeq)
 {
-	mAcctID.setAccountPublic(mPublicKey->GetPubKey());
-	if(theApp!=NULL) mPublicKey = theApp->getPubKeyCache().store(mAcctID, mPublicKey);
+	mAccount.setAccountPublic(mPublicKey->GetPubKey());
+	if (theApp != NULL) mPublicKey = theApp->getPubKeyCache().store(mAccount, mPublicKey);
 }
 
 std::string LocalAccount::getFullName() const
@@ -52,7 +52,7 @@ std::string LocalAccount::getFamilyName() const
 
 AccountState::pointer LocalAccount::getAccountState() const
 {
-	return theApp->getOPs().getAccountState(mAcctID);
+	return theApp->getOPs().getAccountState(mAccount);
 }
 
 uint64 LocalAccount::getEffectiveBalance() const
@@ -73,12 +73,13 @@ Json::Value LocalAccount::getJson() const
 	ret["IsLocked"] = mFamily->isLocked();
 
 	AccountState::pointer as = getAccountState();
-	if (!as) ret["Account"] = "None";
+	if (!as) ret["State"] = "None";
 	else
 	{
+		assert(as->getAccountID().getAccountID() == mAccount.getAccountID());
 		Json::Value acct(Json::objectValue);
 		as->addJson(acct);
-		ret["Account"] = acct;
+		ret["State"] = acct;
 	}
 
 	return ret;
@@ -484,17 +485,17 @@ void Wallet::load()
 LocalAccount::pointer Wallet::getNewLocalAccount(const NewcoinAddress& family)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
-	std::map<NewcoinAddress, LocalAccountFamily::pointer>::iterator fit=mFamilies.find(family);
-	if(fit==mFamilies.end()) return LocalAccount::pointer();
+	std::map<NewcoinAddress, LocalAccountFamily::pointer>::iterator fit = mFamilies.find(family);
+	if (fit == mFamilies.end()) return LocalAccount::pointer();
 
-	uint32 seq=fit->second->getSeq();
-	NewcoinAddress acct=fit->second->getAccount(seq, true);
-	fit->second->setSeq(seq+1); // FIXME: writeout new seq
+	uint32 seq = fit->second->getSeq();
+	NewcoinAddress acct = fit->second->getAccount(seq, true);
+	fit->second->setSeq(seq + 1); // FIXME: writeout new seq
 
-	std::map<NewcoinAddress, LocalAccount::pointer>::iterator ait=mAccounts.find(acct);
-	if(ait!=mAccounts.end()) return ait->second;
+	std::map<NewcoinAddress, LocalAccount::pointer>::iterator ait = mAccounts.find(acct);
+	if (ait != mAccounts.end()) return ait->second;
 
-	LocalAccount::pointer lac=boost::make_shared<LocalAccount>(fit->second, seq);
+	LocalAccount::pointer lac = boost::make_shared<LocalAccount>(fit->second, seq);
 	mAccounts.insert(std::make_pair(acct, lac));
 
 	sl.unlock();
