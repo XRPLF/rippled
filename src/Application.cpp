@@ -118,7 +118,7 @@ void Application::run()
 	rootAddress.setAccountPublic(rootFamilyGenerator, 0);
 	std::cerr << "Root account: " << rootAddress.humanAccountID() << std::endl;
 
-	Ledger::pointer firstLedger(new Ledger(rootAddress, 100000000));
+	Ledger::pointer firstLedger = boost::make_shared<Ledger>(rootAddress, 100000000);
 	assert(!!firstLedger->getAccountState(rootAddress));
 	firstLedger->updateHash();
 	firstLedger->setClosed();
