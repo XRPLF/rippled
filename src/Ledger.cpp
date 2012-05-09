@@ -230,7 +230,7 @@ uint256 Ledger::getHash()
 void Ledger::saveAcceptedLedger(Ledger::pointer ledger)
 {
 	std::string sql="INSERT INTO Ledgers "
-		"(LedgerHash,LedgerSeq,TotalCoins,,ClosingTime,AccountSetHash,TransSetHash) VALUES ('";
+		"(LedgerHash,LedgerSeq,TotalCoins,ClosingTime,AccountSetHash,TransSetHash) VALUES ('";
 	sql.append(ledger->getHash().GetHex());
 	sql.append("','");
 	sql.append(boost::lexical_cast<std::string>(ledger->mLedgerSeq));
