@@ -87,8 +87,7 @@ SHAMapTreeNode::pointer SHAMap::checkCacheNode(const SHAMapNode& iNode)
 
 SHAMapTreeNode::pointer SHAMap::walkTo(const uint256& id, bool modify)
 { // walk down to the terminal node for this ID
-
-	SHAMapTreeNode::pointer inNode=root;
+	SHAMapTreeNode::pointer inNode = root;
 
 	while (!inNode->isLeaf())
 	{
@@ -101,6 +100,7 @@ SHAMapTreeNode::pointer SHAMap::walkTo(const uint256& id, bool modify)
 		if (!nextNode) throw SHAMapException(MissingNode);
 		inNode = nextNode;
 	}
+	if (inNode->getTag() != id) return SHAMapTreeNode::pointer();
 	if (modify) returnNode(inNode, true);
 	return inNode;
 }
