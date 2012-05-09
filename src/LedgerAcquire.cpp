@@ -48,7 +48,6 @@ void LedgerAcquire::trigger(bool timer)
 
 	if (!mHaveBase)
 	{
-		// WRITEME: Do we need to search for peers?
 		boost::shared_ptr<newcoin::TMGetLedger> tmGL = boost::make_shared<newcoin::TMGetLedger>();
 		tmGL->set_ledgerhash(mHash.begin(), mHash.size());
 		tmGL->set_itype(newcoin::liBASE);
@@ -147,7 +146,7 @@ void LedgerAcquire::sendRequest(boost::shared_ptr<newcoin::TMGetLedger> tmGL)
 	PackedMessage::pointer packet = boost::make_shared<PackedMessage>(tmGL, newcoin::mtGET_LEDGER);
 
 	std::list<boost::weak_ptr<Peer> >::iterator it = mPeers.begin();
-	while(it!=mPeers.end())
+	while(it != mPeers.end())
 	{
 		if (it->expired())
 			mPeers.erase(it++);
@@ -203,15 +202,16 @@ bool LedgerAcquire::takeBase(const std::string& data)
 { // Return value: true=normal, false=bad data
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	if (mHaveBase) return true;
-	Ledger* ledger = new Ledger(data);
-	if (ledger->getHash() != mHash)
+	mLedger = boost::make_shared<Ledger>(data);
+	if (mLedger->getHash() != mHash)
 	{
-		delete ledger;
+		mLedger = Ledger::pointer();
 		return false;
 	}
-	mLedger = Ledger::pointer(ledger);
-	mLedger->setAcquiring();
 	mHaveBase = true;
+	if (!mLedger->getTransHash()) mHaveTransactions = true;
+	if (!mLedger->getAccountHash()) mHaveState = true;
+	mLedger->setAcquiring();
 	return true;
 }
 
