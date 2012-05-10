@@ -42,6 +42,7 @@ public:
 	bool isAcctStComplete() const		{ return mHaveState; }
 	bool isTransComplete() const		{ return mHaveTransactions; }
 	Ledger::pointer getLedger()			{ return mLedger; }
+	void trigger()						{ trigger(false); }
 
 	void addOnComplete(boost::function<void (LedgerAcquire::pointer)>);
 
