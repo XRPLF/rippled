@@ -9,21 +9,21 @@
 
 bool HashedObject::checkHash() const
 {
-	uint256 hash=Serializer::getSHA512Half(mData);
-	return hash==mHash;
+	uint256 hash = Serializer::getSHA512Half(mData);
+	return hash == mHash;
 }
 
 bool HashedObject::checkFixHash()
 {
-	uint256 hash=Serializer::getSHA512Half(mData);
-	if(hash==mHash) return true;
-	mHash=hash;
+	uint256 hash = Serializer::getSHA512Half(mData);
+	if (hash == mHash) return true;
+	mHash = hash;
 	return false;
 }
 
 void HashedObject::setHash()
 {
-	mHash=Serializer::getSHA512Half(mData);
+	mHash = Serializer::getSHA512Half(mData);
 }
 
 /*
@@ -39,12 +39,12 @@ CREATE INDEX ObjectLocate ON CommittedObjects(LedgerIndex, ObjType);
 bool HashedObject::store(HashedObjectType type, uint32 index, const std::vector<unsigned char>& data,
 	const uint256& hash)
 {
-	if(!theApp->getHashNodeDB()) return true;
+	if (!theApp->getHashNodeDB()) return true;
 #ifdef DEBUG
 	Serializer s(data);
-	assert(hash==s.getSHA512Half());
+	assert(hash == s.getSHA512Half());
 #endif
-	std::string sql="INSERT INTO CommitedObjects (Hash,ObjType,LedgerIndex,Object) VALUES ('";
+	std::string sql = "INSERT INTO CommitedObjects (Hash,ObjType,LedgerIndex,Object) VALUES ('";
 	sql.append(hash.GetHex());
 	switch(type)
 	{
@@ -63,7 +63,7 @@ bool HashedObject::store(HashedObjectType type, uint32 index, const std::vector<
 	sql.append(");");
 
 	ScopedLock sl(theApp->getHashNodeDB()->getDBLock());
-	Database* db=theApp->getHashNodeDB()->getDB();
+	Database* db = theApp->getHashNodeDB()->getDB();
 	return db->executeSQL(sql);
 }
 
@@ -77,8 +77,8 @@ bool HashedObject::store() const
 
 HashedObject::pointer HashedObject::retrieve(const uint256& hash)
 {
-	if(!theApp->getHashNodeDB()) return HashedObject::pointer();
-	std::string sql="SELECT * from CommitedObjects WHERE Hash='";
+	if (!theApp->getHashNodeDB()) return HashedObject::pointer();
+	std::string sql = "SELECT * from CommitedObjects WHERE Hash='";
 	sql.append(hash.GetHex());
 	sql.append("';");
 
@@ -89,37 +89,38 @@ HashedObject::pointer HashedObject::retrieve(const uint256& hash)
 
 	{
 		ScopedLock sl(theApp->getHashNodeDB()->getDBLock());
-		Database* db=theApp->getHashNodeDB()->getDB();
+		Database* db = theApp->getHashNodeDB()->getDB();
 
-		if(!db->executeSQL(sql) || !db->startIterRows())
+		if (!db->executeSQL(sql) || !db->startIterRows())
 			return HashedObject::pointer();
 
 		std::string type;
 		db->getStr("ObjType", type);
-		if(type.size()==0) return HashedObject::pointer();
+		if (type.size() == 0) return HashedObject::pointer();
 
-		index=db->getBigInt("LedgerIndex");
+		index = db->getBigInt("LedgerIndex");
 
-		int size=db->getBinary("Object", NULL, 0);
+		int size = db->getBinary("Object", NULL, 0);
 		data.resize(size);
 		db->getBinary("Object", &(data.front()), size);
 		db->endIterRows();
 	}
 
-	HashedObjectType htype=UNKNOWN;
+	HashedObjectType htype = UNKNOWN;
 	switch(type[0])
 	{
-		case 'L': htype=LEDGER; break;
-		case 'T': htype=TRANSACTION; break;
-		case 'A': htype=ACCOUNT_NODE; break;
-		case 'N': htype=TRANSACTION_NODE; break;
+		case 'L': htype = LEDGER; break;
+		case 'T': htype = TRANSACTION; break;
+		case 'A': htype = ACCOUNT_NODE; break;
+		case 'N': htype = TRANSACTION_NODE; break;
 	}
 
-	HashedObject::pointer obj(new HashedObject(htype, index, data));
-	obj->mHash=hash;
+	HashedObject::pointer obj = boost::make_shared<HashedObject>(htype, index, data);
+	obj->mHash = hash;
 #ifdef DEBUG
 	assert(obj->checkHash());
 #endif
 	return obj;
 }
+
 // vim:ts=4
