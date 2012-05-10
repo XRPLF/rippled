@@ -13,14 +13,13 @@ void PackedMessage::encodeHeader(unsigned size, int type)
 }
 
 
-PackedMessage::PackedMessage(MessagePointer msg, int type)
-	: mMsg(msg)
+PackedMessage::PackedMessage(MessagePointer msg, int type)	: mMsg(msg)
 {
 	unsigned msg_size = mMsg->ByteSize();
 	assert(msg_size);
 	mBuffer.resize(HEADER_SIZE + msg_size);
-	encodeHeader(msg_size,type);
-	if(msg_size)
+	encodeHeader(msg_size, type);
+	if (msg_size)
 	{
 		mMsg->SerializeToArray(&mBuffer[HEADER_SIZE], msg_size);
 #ifdef DEBUG
@@ -31,30 +30,25 @@ PackedMessage::PackedMessage(MessagePointer msg, int type)
 
 bool PackedMessage::operator == (const PackedMessage& other)
 {
-	return(mBuffer==other.mBuffer);
+	return (mBuffer == other.mBuffer);
 }
 
 unsigned PackedMessage::getLength(std::vector<uint8_t>& buf)
 {
-	if(buf.size() < HEADER_SIZE) return 0;
+	if(buf.size() < HEADER_SIZE)
+		return 0;
 
-	int ret=buf[0];
-	ret<<=8;
-	ret|=buf[1];
-	ret<<=8;
-	ret|=buf[2];
-	ret<<=8;
-	ret|=buf[3];
-
-	return(ret);
+	int ret = buf[0];
+	ret <<= 8; ret |= buf[1]; ret <<= 8; ret |= buf[2];	ret <<= 8; ret |= buf[3];
+	return ret;
 }
 
 int PackedMessage::getType(std::vector<uint8_t>& buf)
 {
-	if(buf.size() < HEADER_SIZE) return 0;
+	if(buf.size() < HEADER_SIZE)
+		return 0;
 
-	int ret=buf[4];
-	ret<<=8;
-	ret|=buf[5];
-	return(ret);
+	int ret = buf[4];
+	ret <<= 8; ret |= buf[5];
+	return ret;
 }
