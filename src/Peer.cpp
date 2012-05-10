@@ -726,8 +726,7 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 	{
 		Serializer nData(116);
 		ledger->addRaw(nData);
-		newcoin::TMLedgerNode* node = data->add_nodes();
-		node->set_nodedata(nData.getDataPtr(), nData.getLength());
+		data->add_nodes()->set_nodedata(nData.getDataPtr(), nData.getLength());
 	}
 	else if ( (packet.itype()==newcoin::liTX_NODE) || (packet.itype()==newcoin::liAS_NODE) )
 	{
@@ -756,9 +755,9 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 				for(nodeIDIterator=nodeIDs.begin(), rawNodeIterator=rawNodes.begin();
 					nodeIDIterator!=nodeIDs.end(); ++nodeIDIterator, ++rawNodeIterator)
 				{
-					newcoin::TMLedgerNode* node=data->add_nodes();
 					Serializer nID(33);
 					nodeIDIterator->addIDRaw(nID);
+					newcoin::TMLedgerNode* node=data->add_nodes();
 					node->set_nodeid(nID.getDataPtr(), nID.getLength());
 					node->set_nodedata(&rawNodeIterator->front(), rawNodeIterator->size());
 				}
