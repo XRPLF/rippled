@@ -3,7 +3,6 @@
 
 #include "UniqueNodeList.h"
 #include "ConnectionPool.h"
-#include "TimingService.h"
 #include "PubKeyCache.h"
 #include "ScopedLock.h"
 #include "LedgerMaster.h"
@@ -38,7 +37,6 @@ class Application
 
 	NetworkOPs				mNetOps;
 	Wallet					mWallet;
-	TimingService			mTimingService;
 	UniqueNodeList			mUNL;
 	PubKeyCache				mPKCache;
 	LedgerMaster			mMasterLedger;

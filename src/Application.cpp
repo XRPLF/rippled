@@ -106,8 +106,6 @@ void Application::run()
 	//
 	mConnectionPool.start();
 
-	mTimingService.start(mIOService);
-
 	// Temporary root account will be ["This is my payphrase."]:0
 	NewcoinAddress rootFamilySeed;		// Hold the 128 password.
 	NewcoinAddress rootFamilyGenerator;	// Hold the generator.
