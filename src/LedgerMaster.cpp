@@ -1,7 +1,6 @@
 #include "LedgerMaster.h"
 #include "Application.h"
 #include "NewcoinAddress.h"
-#include "TimingService.h"
 #include "Conversion.h"
 #include <boost/foreach.hpp>
 

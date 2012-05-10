@@ -24,14 +24,9 @@ NetworkOPs::NetworkOPs(boost::asio::io_service& io_service) : mMode(omDISCONNECT
 {
 }
 
-time_t NetworkOPs::getNetworkTimeTT()
-{
-	return time(NULL);
-}
-
 boost::posix_time::ptime NetworkOPs::getNetworkTimePT()
 {
-	return boost::posix_time::from_time_t(getNetworkTimeTT());
+	return boost::posix_time::second_clock::universal_time();
 }
 
 uint64 NetworkOPs::getNetworkTimeNC()
@@ -356,4 +351,4 @@ void NetworkOPs::switchLastClosedLedger(Ledger::pointer newLedger, bool normal)
 		boost::make_shared<PackedMessage>(PackedMessage::MessagePointer(s), newcoin::mtSTATUS_CHANGE);
 	theApp->getConnectionPool().relayMessage(NULL, packet);
 }
-
+// vim:ts=4

@@ -38,7 +38,6 @@ public:
 
 	// network information
 	uint64 getNetworkTimeNC();
-	time_t getNetworkTimeTT();
 	boost::posix_time::ptime getNetworkTimePT();
 	uint32 getCurrentLedgerID();
 	OperatingMode getOperatingMode() { return mMode; }
@@ -74,3 +73,4 @@ public:
 };
 
 #endif
+// vim:ts=4
