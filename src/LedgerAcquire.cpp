@@ -243,7 +243,12 @@ bool LedgerAcquire::takeTxNode(const std::list<SHAMapNode>& nodeIDs,
 	std::list<std::vector<unsigned char> >::const_iterator nodeDatait = data.begin();
 	while (nodeIDit != nodeIDs.end())
 	{
-		if (!mLedger->peekTransactionMap()->addKnownNode(*nodeIDit, *nodeDatait))
+		if (nodeIDit->isRoot())
+		{
+			if (!mLedger->peekTransactionMap()->addRootNode(mLedger->getTransHash(), *nodeDatait))
+				return false;
+		}
+		else if (!mLedger->peekTransactionMap()->addKnownNode(*nodeIDit, *nodeDatait))
 			return false;
 		++nodeIDit;
 		++nodeDatait;
@@ -263,7 +268,12 @@ bool LedgerAcquire::takeAsNode(const std::list<SHAMapNode>& nodeIDs,
 	std::list<std::vector<unsigned char> >::const_iterator nodeDatait = data.begin();
 	while (nodeIDit != nodeIDs.end())
 	{
-		if (!mLedger->peekAccountStateMap()->addKnownNode(*nodeIDit, *nodeDatait))
+		if (nodeIDit->isRoot())
+		{
+			if (!mLedger->peekAccountStateMap()->addRootNode(mLedger->getAccountHash(), *nodeDatait))
+				return false;
+		}
+		else if (!mLedger->peekAccountStateMap()->addKnownNode(*nodeIDit, *nodeDatait))
 			return false;
 		++nodeIDit;
 		++nodeDatait;
