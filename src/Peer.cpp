@@ -256,9 +256,6 @@ void Peer::sendPacket(PackedMessage::pointer packet)
 
 void Peer::start_read_header()
 {
-#ifdef DEBUG
-	std::cerr << "SRH" << std::endl;
-#endif
 	mReadbuf.clear();
 	mReadbuf.resize(HEADER_SIZE);
 	boost::asio::async_read(mSocketSsl, boost::asio::buffer(mReadbuf),
