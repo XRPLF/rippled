@@ -16,7 +16,6 @@
 #include "BitcoinUtil.h"
 #include "SHAMap.h"
 
-
 enum LedgerStateParms
 {
 	lepNONE = 0,				// no special flags
@@ -38,20 +37,19 @@ class Ledger : public boost::enable_shared_from_this<Ledger>
 public:
 	typedef boost::shared_ptr<Ledger> pointer;
 
-
 	enum TransResult
 	{
-		TR_ERROR	=-1,
-		TR_SUCCESS	=0,
-		TR_NOTFOUND	=1,
-		TR_ALREADY	=2,
-		TR_BADTRANS =3,	// the transaction itself is corrupt
-		TR_BADACCT	=4,	// one of the accounts is invalid
-		TR_INSUFF	=5,	// the sending(apply)/receiving(remove) account is broke
-		TR_PASTASEQ	=6,	// account is past this transaction
-		TR_PREASEQ	=7,	// account is missing transactions before this
-		TR_BADLSEQ	=8,	// ledger too early
-		TR_TOOSMALL =9, // amount is less than Tx fee
+		TR_ERROR	= -1,
+		TR_SUCCESS	= 0,
+		TR_NOTFOUND	= 1,
+		TR_ALREADY	= 2,
+		TR_BADTRANS = 3,	// the transaction itself is corrupt
+		TR_BADACCT	= 4,	// one of the accounts is invalid
+		TR_INSUFF	= 5,	// the sending(apply)/receiving(remove) account is broke
+		TR_PASTASEQ	= 6,	// account is past this transaction
+		TR_PREASEQ	= 7,	// account is missing transactions before this
+		TR_BADLSEQ	= 8,	// ledger too early
+		TR_TOOSMALL = 9, // amount is less than Tx fee
 	};
 
 
