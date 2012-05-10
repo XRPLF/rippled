@@ -69,7 +69,7 @@ void DH_der_gen_hex(std::string& strDer, int iKeyLength)
 
 	DH_der_gen(strBuf, iKeyLength);
 
-	strHex(strDer, strBuf);
+	strDer	= strHex(strBuf);
 }
 
 DH* DH_der_load(const std::string& strDer)
