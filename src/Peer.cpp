@@ -716,17 +716,17 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 	}
 
 	// Figure out what information they want
-	newcoin::TMLedgerData* data = new newcoin::TMLedgerData;
+	boost::shared_ptr<newcoin::TMLedgerData> data = boost::make_shared<newcoin::TMLedgerData>();
 	uint256 lHash = ledger->getHash();
 	data->set_ledgerhash(lHash.begin(), lHash.size());
 	data->set_ledgerseq(ledger->getLedgerSeq());
 	data->set_type(packet.itype());
 
-	if(packet.itype()==newcoin::liBASE)
+	if(packet.itype() == newcoin::liBASE)
 	{
 		Serializer nData(116);
 		ledger->addRaw(nData);
-		newcoin::TMLedgerNode* node=data->add_nodes();
+		newcoin::TMLedgerNode* node = data->add_nodes();
 		node->set_nodedata(nData.getDataPtr(), nData.getLength());
 	}
 	else if ( (packet.itype()==newcoin::liTX_NODE) || (packet.itype()==newcoin::liAS_NODE) )
@@ -820,7 +820,7 @@ void Peer::sendHello()
 
 	theApp->getWallet().getNodePrivate().signNodePrivate(mCookieHash, vchSig);
 
-	newcoin::TMHello* h = new newcoin::TMHello();
+	boost::shared_ptr<newcoin::TMHello> h = boost::make_shared<newcoin::TMHello>();
 
 	h->set_version(theConfig.VERSION);
 	h->set_ledgerindex(theApp->getOPs().getCurrentLedgerID());

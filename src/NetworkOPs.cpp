@@ -88,7 +88,7 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 // no cache the account balance information and always get it from the current ledger
 //		theApp->getWallet().applyTransaction(trans);
 
-		newcoin::TMTransaction *tx=new newcoin::TMTransaction();
+		boost::shared_ptr<newcoin::TMTransaction> tx = boost::make_shared<newcoin::TMTransaction>();
 
 		Serializer::pointer s;
 		trans->getSTransaction()->getTransaction(*s, false);
@@ -334,7 +334,7 @@ void NetworkOPs::switchLastClosedLedger(Ledger::pointer newLedger, bool normal)
 	{ // this ledger has already closed
 	}
 
-	newcoin::TMStatusChange* s = new newcoin::TMStatusChange();
+	boost::shared_ptr<newcoin::TMStatusChange> s = boost::make_shared<newcoin::TMStatusChange>();
 
 	s->set_newevent(normal ? newcoin::neACCEPTED_LEDGER : newcoin::neSWITCHED_LEDGER);
 	s->set_ledgerseq(newLedger->getLedgerSeq());
