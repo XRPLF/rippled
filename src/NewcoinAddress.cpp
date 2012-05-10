@@ -3,14 +3,14 @@
 #include "Config.h"
 #include "BitcoinUtil.h"
 #include "rfc1751.h"
+#include "utils.h"
 
-#include "openssl/rand.h"
-
-#include <cassert>
 #include <algorithm>
-#include <iostream>
 #include <boost/format.hpp>
 #include <boost/functional/hash.hpp>
+#include <cassert>
+#include <iostream>
+#include <openssl/rand.h>
 
 NewcoinAddress::NewcoinAddress()
 {
@@ -272,7 +272,7 @@ void NewcoinAddress::setAccountPublic(const std::vector<unsigned char>& vPublic)
 
 void NewcoinAddress::setAccountPublic(const NewcoinAddress& generator, int seq)
 {
-	CKey	pubkey	= CKey(generator, seq);
+	CKey	pubkey	= CKey(generator, seq+1);
 
 	setAccountPublic(pubkey.GetPubKey());
 }
@@ -281,14 +281,14 @@ void NewcoinAddress::setAccountPublic(const NewcoinAddress& generator, int seq)
 // AccountPrivate
 //
 
-uint256 NewcoinAddress::getAccountPrivate() const
+const std::vector<unsigned char>& NewcoinAddress::getAccountPrivate() const
 {
     switch (nVersion) {
     case VER_NONE:
 		throw std::runtime_error("unset source");
 
     case VER_ACCOUNT_PRIVATE:
-		return uint256(vchData);
+		return vchData;
 
     default:
 		throw std::runtime_error(str(boost::format("bad source: %d") % int(nVersion)));
@@ -322,6 +322,73 @@ void NewcoinAddress::setAccountPrivate(const std::vector<unsigned char>& vPrivat
 void NewcoinAddress::setAccountPrivate(uint256 hash256)
 {
     SetData(VER_ACCOUNT_PRIVATE, hash256.begin(), 32);
+}
+
+void NewcoinAddress::setAccountPrivate(const NewcoinAddress& generator, const NewcoinAddress& seed, int seq)
+{
+	CKey	privkey	= CKey(generator, seed.getFamilyPrivateKey(), seq+1);
+
+	setAccountPrivate(privkey.GetPrivKey());
+}
+
+std::vector<unsigned char> NewcoinAddress::accountPrivateEncrypt(const NewcoinAddress& naPublicTo, const std::vector<unsigned char>& vucPlainText)
+{
+	CKey						ckPrivate;
+	CKey						ckPublic;
+	std::vector<unsigned char>	vucCipherText;
+
+	if (!ckPublic.SetPubKey(naPublicTo.getAccountPublic()))
+	{
+		// Bad public key.
+		std::cerr << "accountPrivateEncrypt: Bad public key." << std::endl;
+	}
+	else if (!ckPrivate.SetPrivKey(getAccountPrivate()))
+	{
+		// Bad private key.
+		std::cerr << "accountPrivateEncrypt: Bad private key." << std::endl;
+	}
+	else
+	{
+		try {
+			vucCipherText = ckPrivate.encryptECIES(ckPublic, vucPlainText);
+		}
+		catch (...)
+		{
+			nothing();
+		}
+	}
+
+	return vucCipherText;
+}
+
+std::vector<unsigned char> NewcoinAddress::accountPrivateDecrypt(const NewcoinAddress& naPublicFrom, const std::vector<unsigned char>& vucCipherText)
+{
+	CKey						ckPrivate;
+	CKey						ckPublic;
+	std::vector<unsigned char>	vucPlainText;
+
+	if (!ckPublic.SetPubKey(naPublicFrom.getAccountPublic()))
+	{
+		// Bad public key.
+		std::cerr << "accountPrivateDecrypt: Bad public key." << std::endl;
+	}
+	else if (!ckPrivate.SetPrivKey(getAccountPrivate()))
+	{
+		// Bad private key.
+		std::cerr << "accountPrivateDecrypt: Bad private key." << std::endl;
+	}
+	else
+	{
+		try {
+			vucPlainText = ckPrivate.decryptECIES(ckPublic, vucCipherText);
+		}
+		catch (...)
+		{
+			nothing();
+		}
+	}
+
+	return vucPlainText;
 }
 
 //
