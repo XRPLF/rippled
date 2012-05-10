@@ -159,7 +159,7 @@ void NetworkOPs::setStateTimer(int sec)
 	else if (sec > (closedTime - now)) sec = (closedTime - now);
 
 	mNetTimer.expires_from_now(boost::posix_time::seconds(sec));
-	mNetTimer.async_wait(boost::bind(&NetworkOPs::checkState, this));
+	mNetTimer.async_wait(boost::bind(&NetworkOPs::checkState, this, boost::asio::placeholders::error));
 }
 
 class ValidationCount
@@ -181,8 +181,11 @@ public:
 	}
 };
 
-void NetworkOPs::checkState()
+void NetworkOPs::checkState(const boost::system::error_code& result)
 { // Network state machine
+	if (result == boost::asio::error::operation_aborted)
+		return;
+
 	std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
 
 	// do we have sufficient peers? If not, we are disconnected.

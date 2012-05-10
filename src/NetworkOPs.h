@@ -66,7 +66,7 @@ public:
 		const std::vector<unsigned char>& myNode, std::list<std::vector<unsigned char> >& newNodes);
 
 	// network state machine
-	void checkState();
+	void checkState(const boost::system::error_code& result);
 	void switchLastClosedLedger(Ledger::pointer newLedger, bool normal);
 	void setStateTimer(int seconds);
 
