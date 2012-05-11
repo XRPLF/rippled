@@ -1,12 +1,17 @@
 
-#include "boost/foreach.hpp"
-#include "boost/make_shared.hpp"
-
-#include "Application.h"
 #include "LedgerAcquire.h"
 
+#include <boost/foreach.hpp>
+#include <boost/make_shared.hpp>
+#include <boost/bind.hpp>
+
+#include "Application.h"
+
+#define LEDGER_ACQUIRE_TIMEOUT 2
+
 LedgerAcquire::LedgerAcquire(const uint256& hash) : mHash(hash),
-	mComplete(false), mFailed(false), mHaveBase(false), mHaveState(false), mHaveTransactions(false)
+	mComplete(false), mFailed(false), mHaveBase(false), mHaveState(false), mHaveTransactions(false),
+	mTimer(theApp->getIOService())
 {
 #ifdef DEBUG
 	std::cerr << "Acquiring ledger " << mHash.GetHex() << std::endl;
@@ -29,15 +34,18 @@ void LedgerAcquire::done()
 		triggers[i](shared_from_this());
 }
 
-void LedgerAcquire::setTimer()
+void LedgerAcquire::resetTimer()
 {
-	// WRITEME
+	mTimer.expires_from_now(boost::posix_time::seconds(LEDGER_ACQUIRE_TIMEOUT));
+	mTimer.async_wait(boost::bind(&LedgerAcquire::timerEntry,
+		boost::weak_ptr<LedgerAcquire>(shared_from_this()), boost::asio::placeholders::error));	
 }
 
-void LedgerAcquire::timerEntry(boost::weak_ptr<LedgerAcquire> wptr)
+void LedgerAcquire::timerEntry(boost::weak_ptr<LedgerAcquire> wptr, const boost::system::error_code& result)
 {
+	if (result == boost::asio::error::operation_aborted) return;
 	LedgerAcquire::pointer ptr = wptr.lock();
-	if (ptr) ptr->trigger(true);
+	if (!!ptr) ptr->trigger();
 }
 
 void LedgerAcquire::addOnComplete(boost::function<void (LedgerAcquire::pointer)> trigger)
@@ -47,7 +55,7 @@ void LedgerAcquire::addOnComplete(boost::function<void (LedgerAcquire::pointer)>
 	mLock.unlock();
 }
 
-void LedgerAcquire::trigger(bool timer)
+void LedgerAcquire::trigger()
 {
 #ifdef DEBUG
 	std::cerr << "Trigger acquiring ledger " << mHash.GetHex() << std::endl;
@@ -151,8 +159,8 @@ void LedgerAcquire::trigger(bool timer)
 
 	if (mComplete || mFailed)
 		done();
-	else if (timer)
-		setTimer();
+	else
+		resetTimer();
 }
 
 void LedgerAcquire::sendRequest(boost::shared_ptr<newcoin::TMGetLedger> tmGL)
@@ -286,12 +294,10 @@ LedgerAcquire::pointer LedgerAcquireMaster::findCreate(const uint256& hash)
 {
 	boost::mutex::scoped_lock sl(mLock);
 	LedgerAcquire::pointer& ptr = mLedgers[hash];
-	if (ptr)
-	{
-		ptr->trigger();
-		return ptr;
-	}
+	if (ptr) return ptr;
 	ptr = boost::make_shared<LedgerAcquire>(hash);
+	assert(mLedgers[hash] == ptr);
+	ptr->resetTimer(); // Cannot call in constructor
 	return ptr;
 }
 

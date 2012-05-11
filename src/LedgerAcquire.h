@@ -4,8 +4,10 @@
 #include <vector>
 #include <map>
 
-#include "boost/enable_shared_from_this.hpp"
-#include "boost/function.hpp"
+#include <boost/enable_shared_from_this.hpp>
+#include <boost/function.hpp>
+#include <boost/asio.hpp>
+#include <boost/thread/mutex.hpp>
 
 #include "Ledger.h"
 #include "Peer.h"
@@ -21,16 +23,18 @@ protected:
 	Ledger::pointer mLedger;
 	uint256 mHash;
 	bool mComplete, mFailed, mHaveBase, mHaveState, mHaveTransactions;
+
+	boost::asio::deadline_timer mTimer;
+
 	std::vector< boost::function<void (LedgerAcquire::pointer)> > mOnComplete;
 
 	std::list<boost::weak_ptr<Peer> > mPeers; // peers known to have this ledger
 
 	void done();
-	void trigger(bool timer);
+	void trigger();
 
-	static void timerEntry(boost::weak_ptr<LedgerAcquire>);
+	static void timerEntry(boost::weak_ptr<LedgerAcquire>, const boost::system::error_code&);
 	void sendRequest(boost::shared_ptr<newcoin::TMGetLedger> message);
-	void setTimer();
 
 public:
 	LedgerAcquire(const uint256& hash);
@@ -42,7 +46,6 @@ public:
 	bool isAcctStComplete() const		{ return mHaveState; }
 	bool isTransComplete() const		{ return mHaveTransactions; }
 	Ledger::pointer getLedger()			{ return mLedger; }
-	void trigger()						{ trigger(false); }
 
 	void addOnComplete(boost::function<void (LedgerAcquire::pointer)>);
 
@@ -51,6 +54,7 @@ public:
 	bool takeBase(const std::string& data);
 	bool takeTxNode(const std::list<SHAMapNode>& IDs, const std::list<std::vector<unsigned char> >& data);
 	bool takeAsNode(const std::list<SHAMapNode>& IDs, const std::list<std::vector<unsigned char> >& data);
+	void resetTimer();
 };
 
 class LedgerAcquireMaster
