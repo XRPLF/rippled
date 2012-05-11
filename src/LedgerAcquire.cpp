@@ -59,9 +59,11 @@ void LedgerAcquire::trigger()
 {
 #ifdef DEBUG
 	std::cerr << "Trigger acquiring ledger " << mHash.GetHex() << std::endl;
+	std::cerr << "complete=" << mComplete << " failed=" << mFailed << std::endl;
+	std::cerr << "base=" << mHaveBase << " tx=" << mHaveTransactions << " as=" << mHaveState << std::endl;
 #endif
-	if (mComplete || mFailed) return;
-
+	if (mComplete || mFailed)
+		return;
 	if (!mHaveBase)
 	{
 #ifdef DEBUG
@@ -233,6 +235,10 @@ bool LedgerAcquire::takeBase(const std::string& data)
 	mLedger = boost::make_shared<Ledger>(data);
 	if (mLedger->getHash() != mHash)
 	{
+#ifdef DEBUG
+		std::cerr << "Acquire hash mismatch" << std::endl;
+		std::cerr << mLedger->getHash().GetHex() << "!=" << mHash.GetHex() << std::endl;
+#endif
 		mLedger = Ledger::pointer();
 		return false;
 	}
@@ -261,7 +267,10 @@ bool LedgerAcquire::takeTxNode(const std::list<SHAMapNode>& nodeIDs,
 		++nodeIDit;
 		++nodeDatait;
 	}
-	if (!mLedger->peekTransactionMap()->isSynching()) mHaveTransactions = true;
+	if (!mLedger->peekTransactionMap()->isSynching())
+	{
+		mHaveTransactions = true;
+		if (mHaveState) mComplete = true;
 	return true;
 }
 
@@ -286,7 +295,11 @@ bool LedgerAcquire::takeAsNode(const std::list<SHAMapNode>& nodeIDs,
 		++nodeIDit;
 		++nodeDatait;
 	}
-	if (!mLedger->peekAccountStateMap()->isSynching()) mHaveState = true;
+	if (!mLedger->peekAccountStateMap()->isSynching())
+	{
+		mHaveState = true;
+		if (mHaveTransactions) mComplete = true;
+	}
 	return true;
 }
 
