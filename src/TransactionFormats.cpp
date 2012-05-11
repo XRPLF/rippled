@@ -13,7 +13,7 @@ TransactionFormat InnerTxnFormats[]=
 		{ S_FIELD(SourceTag),    STI_UINT32,  SOE_IFFLAG,   2 },
 		{ S_FIELD(TargetLedger), STI_UINT32,  SOE_IFFLAG,   4 },
 		{ S_FIELD(InvoiceID),    STI_HASH256, SOE_IFFLAG,   8 },
-		{ S_FIELD(Extensions),   STI_TL,      SOE_IFFLAG,   0x01000000 },
+		{ S_FIELD(Extensions),   STI_TL,      SOE_IFFLAG,   0x02000000 },
 		{ sfInvalid, NULL,       STI_DONE,    SOE_NEVER,    -1 } }
 	},
 	{ "Invoice", ttINVOICE, {
@@ -25,7 +25,7 @@ TransactionFormat InnerTxnFormats[]=
 		{ S_FIELD(Destination),  STI_ACCOUNT, SOE_IFFLAG,   4 },
 		{ S_FIELD(TargetLedger), STI_UINT32,  SOE_IFFLAG,   8 },
 		{ S_FIELD(Identifier),   STI_VL,      SOE_IFFLAG,   16 },
-		{ S_FIELD(Extensions),   STI_TL,      SOE_IFFLAG,   0x01000000 },
+		{ S_FIELD(Extensions),   STI_TL,      SOE_IFFLAG,   0x02000000 },
 		{ sfInvalid, NULL,       STI_DONE,    SOE_NEVER,    -1 } }
 	},
 	{ "Offer", ttEXCHANGE_OFFER, {
@@ -39,7 +39,7 @@ TransactionFormat InnerTxnFormats[]=
 		{ S_FIELD(TargetLedger), STI_UINT32,  SOE_IFFLAG,   32 },
 		{ S_FIELD(ExpireLedger), STI_UINT32,  SOE_IFFLAG,   64 },
 		{ S_FIELD(Identifier),   STI_VL,      SOE_IFFLAG,   128 },
-		{ S_FIELD(Extensions),   STI_TL,      SOE_IFFLAG,   0x01000000 },
+		{ S_FIELD(Extensions),   STI_TL,      SOE_IFFLAG,   0x02000000 },
 		{ sfInvalid, NULL,       STI_DONE,    SOE_NEVER,    -1 } }
 	},
 	{ NULL, ttINVALID }
