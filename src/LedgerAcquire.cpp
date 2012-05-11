@@ -271,6 +271,7 @@ bool LedgerAcquire::takeTxNode(const std::list<SHAMapNode>& nodeIDs,
 	{
 		mHaveTransactions = true;
 		if (mHaveState) mComplete = true;
+	}
 	return true;
 }
 
