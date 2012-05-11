@@ -4,8 +4,10 @@
 #include <vector>
 #include <map>
 
-#include "boost/enable_shared_from_this.hpp"
-#include "boost/function.hpp"
+#include <boost/enable_shared_from_this.hpp>
+#include <boost/function.hpp>
+#include <boost/asio.hpp>
+#include <boost/thread/mutex.hpp>
 
 #include "Ledger.h"
 #include "Peer.h"
@@ -21,16 +23,19 @@ protected:
 	Ledger::pointer mLedger;
 	uint256 mHash;
 	bool mComplete, mFailed, mHaveBase, mHaveState, mHaveTransactions;
+
+	boost::asio::deadline_timer mTimer;
+
 	std::vector< boost::function<void (LedgerAcquire::pointer)> > mOnComplete;
 
 	std::list<boost::weak_ptr<Peer> > mPeers; // peers known to have this ledger
 
 	void done();
-	void trigger(bool timer);
 
-	static void timerEntry(boost::weak_ptr<LedgerAcquire>);
+	static void timerEntry(boost::weak_ptr<LedgerAcquire>, const boost::system::error_code&);
 	void sendRequest(boost::shared_ptr<newcoin::TMGetLedger> message);
-	void setTimer();
+	void sendRequest(boost::shared_ptr<newcoin::TMGetLedger> message, Peer::pointer peer);
+	void trigger(Peer::pointer peer);
 
 public:
 	LedgerAcquire(const uint256& hash);
@@ -47,9 +52,12 @@ public:
 
 	void peerHas(Peer::pointer);
 	void badPeer(Peer::pointer);
-	bool takeBase(const std::string& data);
-	bool takeTxNode(const std::list<SHAMapNode>& IDs, const std::list<std::vector<unsigned char> >& data);
-	bool takeAsNode(const std::list<SHAMapNode>& IDs, const std::list<std::vector<unsigned char> >& data);
+	bool takeBase(const std::string& data, Peer::pointer);
+	bool takeTxNode(const std::list<SHAMapNode>& IDs, const std::list<std::vector<unsigned char> >& data,
+		Peer::pointer);
+	bool takeAsNode(const std::list<SHAMapNode>& IDs, const std::list<std::vector<unsigned char> >& data,
+		Peer::pointer);
+	void resetTimer();
 };
 
 class LedgerAcquireMaster
@@ -65,7 +73,7 @@ public:
 	LedgerAcquire::pointer find(const uint256& hash);
 	bool hasLedger(const uint256& ledgerHash);
 	bool dropLedger(const uint256& ledgerHash);
-	bool gotLedgerData(newcoin::TMLedgerData& packet);
+	bool gotLedgerData(newcoin::TMLedgerData& packet, Peer::pointer);
 };
 
 #endif

@@ -155,8 +155,11 @@ void NetworkOPs::setStateTimer(int sec)
 	uint64 closedTime = theApp->getMasterLedger().getCurrentLedger()->getCloseTimeNC();
 	uint64 now = getNetworkTimeNC();
 
-	if (now >= closedTime) sec = 0;
-	else if (sec > (closedTime - now)) sec = (closedTime - now);
+	if (mMode == omFULL)
+	{
+		if (now >= closedTime) sec = 0;
+		else if (sec > (closedTime - now)) sec = (closedTime - now);
+	}
 
 	mNetTimer.expires_from_now(boost::posix_time::seconds(sec));
 	mNetTimer.async_wait(boost::bind(&NetworkOPs::checkState, this, boost::asio::placeholders::error));
@@ -264,6 +267,9 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 		Ledger::pointer consensus = theApp->getMasterLedger().getLedgerByHash(closedLedger);
 		if (!consensus)
 		{
+#ifdef DEBUG
+			std::cerr << "Acquiring consensus ledger" << std::endl;
+#endif
 			LedgerAcquire::pointer acq = theApp->getMasterLedgerAcquire().findCreate(closedLedger);
 			if (!acq || acq->isFailed())
 			{
