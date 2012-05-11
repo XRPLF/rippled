@@ -773,7 +773,7 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 
 void Peer::recvLedger(newcoin::TMLedgerData& packet)
 {
-	if(!theApp->getMasterLedgerAcquire().gotLedgerData(packet))
+	if(!theApp->getMasterLedgerAcquire().gotLedgerData(packet, shared_from_this()))
 		punishPeer(PP_UNWANTED_DATA);
 }
 
