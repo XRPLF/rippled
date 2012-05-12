@@ -25,6 +25,7 @@ enum TransactionEngineResult
 	terUNFUNDED,			// Source account had insufficient balance for transactin
 	terNO_PATH,				// No path existed or met transaction/balance requirements
 	terPAST_SEQ,			// This sequence number has already past
+	terBAD_SEQ,				// This sequence number should be zero for prepaid transactions.
 	terPRE_SEQ,				// Missing/inapplicable prior transaction
 	terPAST_LEDGER,			// The transaction expired and can't be applied
 };
@@ -51,13 +52,14 @@ class TransactionEngine
 protected:
 	Ledger::pointer mLedger;
 
-	TransactionEngineResult doPayment(const SerializedTransaction&, std::vector<AffectedAccount>&);
+	TransactionEngineResult doCancel(const SerializedTransaction&, std::vector<AffectedAccount>&);
+	TransactionEngineResult doClaim(const SerializedTransaction&, std::vector<AffectedAccount>&);
+	TransactionEngineResult doDelete(const SerializedTransaction&, std::vector<AffectedAccount>&);
 	TransactionEngineResult doInvoice(const SerializedTransaction&, std::vector<AffectedAccount>&);
 	TransactionEngineResult doOffer(const SerializedTransaction&, std::vector<AffectedAccount>&);
-	TransactionEngineResult doTake(const SerializedTransaction&, std::vector<AffectedAccount>&);
-	TransactionEngineResult doCancel(const SerializedTransaction&, std::vector<AffectedAccount>&);
+	TransactionEngineResult doPayment(const SerializedTransaction&, std::vector<AffectedAccount>&);
 	TransactionEngineResult doStore(const SerializedTransaction&, std::vector<AffectedAccount>&);
-	TransactionEngineResult doDelete(const SerializedTransaction&, std::vector<AffectedAccount>&);
+	TransactionEngineResult doTake(const SerializedTransaction&, std::vector<AffectedAccount>&);
 
 public:
 	TransactionEngine() { ; }

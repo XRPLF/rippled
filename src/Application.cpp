@@ -108,34 +108,28 @@ void Application::run()
 
 	// New stuff.
 	NewcoinAddress	rootSeedMaster;
-	NewcoinAddress	rootSeedRegular;
 	NewcoinAddress	rootGeneratorMaster;
-	NewcoinAddress	rootGeneratorRegular;
-	NewcoinAddress	reservedPublicRegular;
-	NewcoinAddress	reservedPrivateRegular;
 	NewcoinAddress	rootAddress;
 
 	rootSeedMaster.setFamilySeed(CKey::PassPhraseToKey("Master passphrase."));
-	rootSeedRegular.setFamilySeed(CKey::PassPhraseToKey("Regular passphrase."));
-
-	std::cerr << "Master seed: " << rootSeedMaster.humanFamilySeed() << std::endl;
-	std::cerr << "Regular seed: " << rootSeedRegular.humanFamilySeed() << std::endl;
-
 	rootGeneratorMaster.setFamilyGenerator(rootSeedMaster);
-	rootGeneratorRegular.setFamilyGenerator(rootSeedRegular);
-
-	std::cerr << "Master generator: " << rootGeneratorMaster.humanFamilyGenerator() << std::endl;
-	std::cerr << "Regular generator: " << rootGeneratorRegular.humanFamilyGenerator() << std::endl;
 
 	rootAddress.setAccountPublic(rootGeneratorMaster, 0);
 
-	std::cerr << "Regular address: " << rootAddress.humanAccountPublic() << std::endl;
+	std::cerr << "Master seed: " << rootSeedMaster.humanFamilySeed() << std::endl;
+	std::cerr << "Master generator: " << rootGeneratorMaster.humanFamilyGenerator() << std::endl;
+	std::cerr << "Root address: " << rootAddress.humanAccountPublic() << std::endl;
+#if 0
+	NewcoinAddress	rootSeedRegular;
+	NewcoinAddress	rootGeneratorRegular;
+	NewcoinAddress	reservedPublicRegular;
+	NewcoinAddress	reservedPrivateRegular;
+
+	rootSeedRegular.setFamilySeed(CKey::PassPhraseToKey("Regular passphrase."));
+	rootGeneratorRegular.setFamilyGenerator(rootSeedRegular);
 
 	reservedPublicRegular.setAccountPublic(rootGeneratorRegular, -1);
 	reservedPrivateRegular.setAccountPrivate(rootGeneratorRegular, rootSeedRegular, -1);
-
-	std::cerr << "Reserved public regular: " << reservedPublicRegular.humanAccountPublic() << std::endl;
-	std::cerr << "Reserved private regular: " << reservedPrivateRegular.humanAccountPrivate() << std::endl;
 
 	// hash of regular account #reserved public key.
 	uint160						uiGeneratorID		= reservedPublicRegular.getAccountID();
@@ -152,6 +146,11 @@ void Application::run()
 	std::vector<unsigned char>	vucGeneratorText	= reservedPrivateRegular.accountPrivateDecrypt(reservedPublicRegular, vucGeneratorCipher);
 
 	std::cerr << "Plain: " << strHex(vucGeneratorText) << std::endl;
+	std::cerr << "Regular seed: " << rootSeedRegular.humanFamilySeed() << std::endl;
+	std::cerr << "Regular generator: " << rootGeneratorRegular.humanFamilyGenerator() << std::endl;
+	std::cerr << "Reserved public regular: " << reservedPublicRegular.humanAccountPublic() << std::endl;
+	std::cerr << "Reserved private regular: " << reservedPrivateRegular.humanAccountPrivate() << std::endl;
+#endif
 
 	// Temporary root account will be ["This is my payphrase."]:0
 	NewcoinAddress rootFamilySeed;		// Hold the 128 password.
@@ -162,7 +161,6 @@ void Application::run()
 	rootFamilyGenerator.setFamilyGenerator(rootFamilySeed);
 	rootAddress.setAccountPublic(rootFamilyGenerator, 0);
 	std::cerr << "Root account: " << rootAddress.humanAccountID() << std::endl;
-
 
 	Ledger::pointer firstLedger = boost::make_shared<Ledger>(rootAddress, 100000000);
 	assert(!!firstLedger->getAccountState(rootAddress));

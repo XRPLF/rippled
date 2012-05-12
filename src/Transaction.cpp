@@ -23,7 +23,14 @@ Transaction::Transaction(LocalAccount::pointer fromLocalAccount, const NewcoinAd
 
 	mFromPubKey = fromLocalAccount->getPublicKey();
 	assert(mFromPubKey);
-	mTransaction->setSigningPubKey(mFromPubKey->GetPubKey());
+
+	// XXX Temporary: We don't really have local accounts.
+	NewcoinAddress	signPubKey;
+
+	signPubKey.setAccountPublic(mFromPubKey->GetPubKey());
+
+	mTransaction->setSigningPubKey(signPubKey);
+	mTransaction->setSourceAccount(mAccountFrom);
 
 	mTransaction->setSequence(accountState->getSeq());
 	assert(mTransaction->getSequence() != 0);
@@ -105,6 +112,7 @@ Transaction::Transaction(const std::vector<unsigned char>& raw, bool validate) :
 		mStatus = NEW;
 }
 
+#if 0
 Transaction::Transaction(const NewcoinAddress& fromID, const NewcoinAddress& toID,
 	CKey::pointer pubKey, uint64 amount, uint64 fee, uint32 fromSeq, uint32 fromLedger,
 	uint32 ident, const std::vector<unsigned char>& signature, uint32 ledgerSeq, TransStatus st) :
@@ -113,7 +121,8 @@ Transaction::Transaction(const NewcoinAddress& fromID, const NewcoinAddress& toI
 	mTransaction = boost::make_shared<SerializedTransaction>(ttMAKE_PAYMENT);
 	mTransaction->setSignature(signature);
 	mTransaction->setTransactionFee(fee);
-	mTransaction->setSigningPubKey(pubKey->GetPubKey());
+	mTransaction->setSigningPubKey(pubKey);			// BROKEN
+	mTransaction->setSourceAccount(mAccountFrom);	// BROKEN
 	mTransaction->setSequence(fromSeq);
 	if (fromLedger != 0)
 	{
@@ -129,6 +138,7 @@ Transaction::Transaction(const NewcoinAddress& fromID, const NewcoinAddress& toI
 	mTransaction->setITFieldAccount(sfDestination, toID.getAccountID());
 	updateID();
 }
+#endif
 
 bool Transaction::sign(LocalAccount::pointer fromLocalAccount)
 {

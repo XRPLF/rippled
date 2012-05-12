@@ -38,14 +38,6 @@ SerializedTransaction::SerializedTransaction(SerializerIterator& sit, int length
 	mMiddleTxn.giveObject(new STUInt64("Fee", sit.get64()));
 
 	mInnerTxn = STObject(mFormat->elements, sit, "InnerTransaction");
-	updateSourceAccount();
-}
-
-void SerializedTransaction::updateSourceAccount()
-{
-	NewcoinAddress a;
-	a.setAccountPublic(peekSigningPubKey());
-	mSourceAccount.setAccountID(a.getAccountID());
 }
 
 int SerializedTransaction::getLength() const
@@ -217,12 +209,25 @@ std::vector<unsigned char>& SerializedTransaction::peekSigningPubKey()
 	return v->peekValue();
 }
 
-const NewcoinAddress& SerializedTransaction::setSigningPubKey(const std::vector<unsigned char>& s)
+const NewcoinAddress& SerializedTransaction::setSigningPubKey(const NewcoinAddress& naSignPubKey)
 {
+	mSignPubKey	= naSignPubKey;
+
 	STVariableLength* v = dynamic_cast<STVariableLength*>(mMiddleTxn.getPIndex(TransactionISigningPubKey));
 	if (!v) throw std::runtime_error("corrupt transaction");
-	v->setValue(s);
-	updateSourceAccount();
+	v->setValue(mSignPubKey.getAccountPublic());
+
+	return mSignPubKey;
+}
+
+const NewcoinAddress& SerializedTransaction::setSourceAccount(const NewcoinAddress& naSource)
+{
+	mSourceAccount	= naSource;
+
+	STHash160* v = dynamic_cast<STHash160*>(mMiddleTxn.getPIndex(TransactionISourceID));
+	if (!v) throw std::runtime_error("corrupt transaction");
+	v->setValue(mSourceAccount.getAccountID());
+
 	return mSourceAccount;
 }
 
@@ -283,3 +288,4 @@ Json::Value SerializedTransaction::getJson(int options) const
 	ret["Inner"] = mInnerTxn.getJson(options);
 	return ret;
 }
+// vim:ts=4

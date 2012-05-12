@@ -16,6 +16,13 @@ TransactionFormat InnerTxnFormats[]=
 		{ S_FIELD(Extensions),   STI_TL,      SOE_IFFLAG,   0x01000000 },
 		{ sfInvalid, NULL,       STI_DONE,    SOE_NEVER,    -1 } }
 	},
+	{ "Claim", ttCLAIM, {
+		{ S_FIELD(Flags),        STI_UINT32,  SOE_FLAGS,    0 },
+		{ S_FIELD(GeneratorID),  STI_AMOUNT,  SOE_REQUIRED, 0 },
+		{ S_FIELD(Generator),    STI_VL,      SOE_REQUIRED, 0 },
+		{ S_FIELD(Extensions),   STI_TL,      SOE_IFFLAG,   0x02000000 },
+		{ sfInvalid, NULL,       STI_DONE,    SOE_NEVER,    -1 } }
+	},
 	{ "Invoice", ttINVOICE, {
 		{ S_FIELD(Flags),        STI_UINT32,  SOE_FLAGS,    0 },
 		{ S_FIELD(Target),       STI_ACCOUNT, SOE_REQUIRED, 0 },
