@@ -11,7 +11,7 @@ class LedgerHistory
 
 public:
 	LedgerHistory();
-	
+
 	void addLedger(Ledger::pointer ledger);
 	void addAcceptedLedger(Ledger::pointer ledger);
 

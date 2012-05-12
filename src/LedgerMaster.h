@@ -45,6 +45,7 @@ public:
 	{ return mEngine.applyTransaction(txn, params); }
 
 	void pushLedger(Ledger::pointer newLedger);
+	void switchLedgers(Ledger::pointer lastClosed, Ledger::pointer newCurrent);
 
 	Ledger::pointer getLedgerBySeq(uint32 index)
 	{
@@ -66,3 +67,4 @@ public:
 };
 
 #endif
+// vim:ts=4

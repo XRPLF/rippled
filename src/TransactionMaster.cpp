@@ -38,3 +38,4 @@ bool TransactionMaster::canonicalize(Transaction::pointer& txn, bool may_be_new)
 		theApp->getIOService().post(boost::bind(&Transaction::saveTransaction, txn));
 	return false;
 }
+// vim:ts=4

@@ -100,50 +100,59 @@ bool Database::getColNumber(const char* colName,int* retIndex)
 	return(false);
 }
 
+#if 0
 int Database::getSingleDBValueInt(const char* sql)
 {
 	int ret;
-	if( executeSQL(sql) && startIterRows() && getNextRow())
+	if( executeSQL(sql) && startIterRows()
 	{
 		ret=getInt(0);
 		endIterRows();
-	}else 
+	}
+	else
 	{
 		//theUI->statusMsg("ERROR with database: %s",sql);
 		ret=0;
 	}
 	return(ret);
 }
+#endif
 
+#if 0
 float Database::getSingleDBValueFloat(const char* sql)
 {
 	float ret;
-	if( executeSQL(sql) && startIterRows() && getNextRow())
+	if(executeSQL(sql) && startIterRows() && getNextRow())
 	{
 		ret=getFloat(0);
 		endIterRows();
-	}else 
+	}
+	else
 	{
 		//theUI->statusMsg("ERROR with database: %s",sql);
 		ret=0;
 	}
 	return(ret);
 }
+#endif
 
+#if 0
 char* Database::getSingleDBValueStr(const char* sql,std::string& retStr)
 {
 	char* ret;
-	if( executeSQL(sql) && startIterRows() && getNextRow())
+	if(executeSQL(sql) && startIterRows())
 	{
 		ret=getStr(0,retStr);
 		endIterRows();
-	}else 
+	}
+	else
 	{
 		//theUI->statusMsg("ERROR with database: %s",sql);
 		ret=0;
 	}
 	return(ret);
 }
+#endif
 
 std::string Database::escape(const std::string strValue)
 {

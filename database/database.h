@@ -69,10 +69,9 @@ public:
 	virtual int getBinary(int colIndex,unsigned char* buf,int maxSize)=0;
 	virtual uint64 getBigInt(int colIndex)=0;
 
-	int getSingleDBValueInt(const char* sql);
-	float getSingleDBValueFloat(const char* sql);
-	char* getSingleDBValueStr(const char* sql, std::string& retStr);
-
+	// int getSingleDBValueInt(const char* sql);
+	// float getSingleDBValueFloat(const char* sql);
+	// char* getSingleDBValueStr(const char* sql, std::string& retStr);
 };
 
 

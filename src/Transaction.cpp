@@ -23,7 +23,14 @@ Transaction::Transaction(LocalAccount::pointer fromLocalAccount, const NewcoinAd
 
 	mFromPubKey = fromLocalAccount->getPublicKey();
 	assert(mFromPubKey);
-	mTransaction->setSigningPubKey(mFromPubKey->GetPubKey());
+
+	// XXX Temporary: We don't really have local accounts.
+	NewcoinAddress	signPubKey;
+
+	signPubKey.setAccountPublic(mFromPubKey->GetPubKey());
+
+	mTransaction->setSigningPubKey(signPubKey);
+	mTransaction->setSourceAccount(mAccountFrom);
 
 	mTransaction->setSequence(accountState->getSeq());
 	assert(mTransaction->getSequence() != 0);
@@ -105,6 +112,7 @@ Transaction::Transaction(const std::vector<unsigned char>& raw, bool validate) :
 		mStatus = NEW;
 }
 
+#if 0
 Transaction::Transaction(const NewcoinAddress& fromID, const NewcoinAddress& toID,
 	CKey::pointer pubKey, uint64 amount, uint64 fee, uint32 fromSeq, uint32 fromLedger,
 	uint32 ident, const std::vector<unsigned char>& signature, uint32 ledgerSeq, TransStatus st) :
@@ -113,7 +121,8 @@ Transaction::Transaction(const NewcoinAddress& fromID, const NewcoinAddress& toI
 	mTransaction = boost::make_shared<SerializedTransaction>(ttMAKE_PAYMENT);
 	mTransaction->setSignature(signature);
 	mTransaction->setTransactionFee(fee);
-	mTransaction->setSigningPubKey(pubKey->GetPubKey());
+	mTransaction->setSigningPubKey(pubKey);			// BROKEN
+	mTransaction->setSourceAccount(mAccountFrom);	// BROKEN
 	mTransaction->setSequence(fromSeq);
 	if (fromLedger != 0)
 	{
@@ -129,6 +138,7 @@ Transaction::Transaction(const NewcoinAddress& fromID, const NewcoinAddress& toI
 	mTransaction->setITFieldAccount(sfDestination, toID.getAccountID());
 	updateID();
 }
+#endif
 
 bool Transaction::sign(LocalAccount::pointer fromLocalAccount)
 {
@@ -225,10 +235,10 @@ bool Transaction::save() const
 	theApp->getTxnDB()->getDB()->escape(static_cast<const unsigned char *>(s.getDataPtr()), s.getLength(), rawTxn);
 	sql.append(rawTxn);
 	sql.append(");");
-	
+
 	ScopedLock sl(theApp->getTxnDB()->getDBLock());
 	Database* db = theApp->getTxnDB()->getDB();
-	return db->executeSQL(sql.c_str());
+	return db->executeSQL(sql);
 }
 
 Transaction::pointer Transaction::transactionFromSQL(const std::string& sql)
@@ -237,12 +247,11 @@ Transaction::pointer Transaction::transactionFromSQL(const std::string& sql)
 	std::string status;
 
 	rawTxn.reserve(2048);
-	if(1)
 	{
 		ScopedLock sl(theApp->getTxnDB()->getDBLock());
 		Database* db = theApp->getTxnDB()->getDB();
 
-		if (!db->executeSQL(sql.c_str(), true) || !db->startIterRows() || !db->getNextRow())
+		if (!db->executeSQL(sql, true) || !db->startIterRows())
 			return Transaction::pointer();
 
 		db->getStr("Status", status);
@@ -258,7 +267,7 @@ Transaction::pointer Transaction::transactionFromSQL(const std::string& sql)
 	Transaction::pointer tr = boost::make_shared<Transaction>(txn, true);
 
 	TransStatus st(INVALID);
-	switch(status[0])
+	switch (status[0])
 	{
 		case 'N': st = NEW; break;
 		case 'A': st = INCLUDED; break;
@@ -340,7 +349,7 @@ static bool isHex(char j)
 	if ((j >= 'a') && (j <= 'f')) return true;
 	return false;
 }
-						
+
 bool Transaction::isHexTxID(const std::string& txid)
 {
 	if (txid.size() != 64) return false;
@@ -382,3 +391,4 @@ Json::Value Transaction::getJson(bool decorate, bool paid, bool credited) const
 
 	return ret;
 }
+// vim:ts=4

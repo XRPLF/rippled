@@ -78,13 +78,20 @@ public:
 	//
 	// Accounts Private
 	//
-	uint256 getAccountPrivate() const;
+	const std::vector<unsigned char>& getAccountPrivate() const;
 
 	std::string humanAccountPrivate() const;
 
 	bool setAccountPrivate(const std::string& strPrivate);
 	void setAccountPrivate(const std::vector<unsigned char>& vPrivate);
 	void setAccountPrivate(uint256 hash256);
+	void setAccountPrivate(const NewcoinAddress& generator, const NewcoinAddress& seed, int seq);
+
+	// Encrypt a message.
+	std::vector<unsigned char> accountPrivateEncrypt(const NewcoinAddress& naPublicTo, const std::vector<unsigned char>& vucPlainText);
+
+	// Decrypt a message.
+	std::vector<unsigned char> accountPrivateDecrypt(const NewcoinAddress& naPublicFrom, const std::vector<unsigned char>& vucCipherText);
 
 	//
 	// Family Generators

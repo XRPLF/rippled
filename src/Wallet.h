@@ -32,8 +32,8 @@ protected:
 
 	NewcoinAddress	mNodePublicKey;
 	NewcoinAddress	mNodePrivateKey;
-	DH*		mDh512;
-	DH*		mDh1024;
+	DH*				mDh512;
+	DH*				mDh1024;
 
 	std::map<NewcoinAddress, LocalAccountFamily::pointer> mFamilies;
 	std::map<NewcoinAddress, LocalAccount::pointer> mAccounts;
@@ -53,8 +53,8 @@ public:
 	// - Maintain peer connectivity through validation and peer management.
 	void start();
 
-	NewcoinAddress&	    getNodePublic() { return mNodePublicKey; }
-	NewcoinAddress&	    getNodePrivate() { return mNodePrivateKey; }
+	const NewcoinAddress&	getNodePublic() const { return mNodePublicKey; }
+	const NewcoinAddress&	getNodePrivate() const { return mNodePrivateKey; }
 	DH*		    getDh512() { return DHparams_dup(mDh512); }
 	DH*		    getDh1024() { return DHparams_dup(mDh1024); }
 

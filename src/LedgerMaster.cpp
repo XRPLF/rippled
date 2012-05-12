@@ -1,7 +1,6 @@
 #include "LedgerMaster.h"
 #include "Application.h"
 #include "NewcoinAddress.h"
-#include "TimingService.h"
 #include "Conversion.h"
 #include <boost/foreach.hpp>
 
@@ -34,6 +33,17 @@ void LedgerMaster::pushLedger(Ledger::pointer newLedger)
 	mFinalizedLedger = mCurrentLedger;
 	mCurrentLedger = newLedger;
 	mEngine.setLedger(newLedger);
+}
+
+void LedgerMaster::switchLedgers(Ledger::pointer lastClosed, Ledger::pointer current)
+{
+	mFinalizedLedger = lastClosed;
+	mFinalizedLedger->setClosed();
+	mFinalizedLedger->setAccepted();
+
+	mCurrentLedger = current;
+	assert(!mCurrentLedger->isClosed());
+	mEngine.setLedger(mCurrentLedger);
 }
 
 #if 0

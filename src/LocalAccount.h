@@ -16,7 +16,7 @@ public:
 protected:
 	// core account information
 	CKey::pointer mPublicKey;
-	NewcoinAddress mAcctID;
+	NewcoinAddress mAccount;
 	std::string mComment;
 
 	// family information
@@ -32,7 +32,7 @@ public:
 	bool updateName();		// writes changed name/comment
 	bool updateBalance();	// writes changed balance/seq
 
-	const NewcoinAddress& getAddress() const { return mAcctID; }
+	const NewcoinAddress& getAddress() const { return mAccount; }
 	int getAcctFSeq() const { return mAccountFSeq; }
 
 	std::string getFullName() const;

@@ -7,6 +7,7 @@
 
 #include "Application.h"
 #include "Ledger.h"
+#include "utils.h"
 #include "../obj/src/newcoin.pb.h"
 #include "PackedMessage.h"
 #include "Config.h"
@@ -16,7 +17,8 @@
 #include "BinaryFormats.h"
 
 Ledger::Ledger(const NewcoinAddress& masterID, uint64 startAmount) : mTotCoins(startAmount),
-	mTimeStamp(0), mLedgerSeq(0), mClosed(false), mValidHash(false), mAccepted(false), mImmutable(false)
+	mCloseTime(0), mLedgerSeq(0), mLedgerInterval(60), mClosed(false), mValidHash(false),
+	mAccepted(false), mImmutable(false)
 {
 	mTransactionMap = boost::make_shared<SHAMap>();
 	mAccountStateMap = boost::make_shared<SHAMap>();
@@ -35,22 +37,24 @@ Ledger::Ledger(const NewcoinAddress& masterID, uint64 startAmount) : mTotCoins(s
 Ledger::Ledger(const uint256 &parentHash, const uint256 &transHash, const uint256 &accountHash,
 	uint64 totCoins, uint64 timeStamp, uint32 ledgerSeq)
 		: mParentHash(parentHash), mTransHash(transHash), mAccountHash(accountHash),
-		mTotCoins(totCoins), mTimeStamp(timeStamp), mLedgerSeq(ledgerSeq),
+		mTotCoins(totCoins), mCloseTime(timeStamp), mLedgerSeq(ledgerSeq), mLedgerInterval(60),
 		mClosed(false), mValidHash(false), mAccepted(false), mImmutable(false)
 {
 	updateHash();
 }
 
-Ledger::Ledger(Ledger &prevLedger, uint64 ts) : mTimeStamp(ts), 
+Ledger::Ledger(Ledger::pointer prevLedger) : mParentHash(prevLedger->getHash()), mTotCoins(prevLedger->mTotCoins),
+	mLedgerSeq(prevLedger->mLedgerSeq + 1), mLedgerInterval(prevLedger->mLedgerInterval),
 	mClosed(false), mValidHash(false), mAccepted(false), mImmutable(false),
-	mTransactionMap(new SHAMap()), mAccountStateMap(prevLedger.mAccountStateMap)
+	mTransactionMap(new SHAMap()), mAccountStateMap(prevLedger->mAccountStateMap)
 {
-	mParentHash = prevLedger.getHash();
-	mLedgerSeq = prevLedger.mLedgerSeq+1;
+	prevLedger->setClosed();
+	prevLedger->updateHash();
 	mAccountStateMap->setSeq(mLedgerSeq);
+	mCloseTime = prevLedger->getNextLedgerClose();
 }
 
-Ledger::Ledger(const std::vector<unsigned char>& rawLedger) : mTotCoins(0), mTimeStamp(0),
+Ledger::Ledger(const std::vector<unsigned char>& rawLedger) : mTotCoins(0), mCloseTime(0),
 	mLedgerSeq(0), mClosed(false), mValidHash(false), mAccepted(false), mImmutable(true)
 {
 	Serializer s(rawLedger);
@@ -60,7 +64,8 @@ Ledger::Ledger(const std::vector<unsigned char>& rawLedger) : mTotCoins(0), mTim
 	if (!s.get256(mParentHash, BLgPPrevLg)) return;
 	if (!s.get256(mTransHash, BLgPTxT)) return;
 	if (!s.get256(mAccountHash, BLgPAcT)) return;
-	if (!s.get64(mTimeStamp, BLgPClTs)) return;
+	if (!s.get64(mCloseTime, BLgPClTs)) return;
+	if (!s.get16(mLedgerInterval, BLgPNlIn)) return;
 	updateHash();
 	if(mValidHash)
 	{
@@ -69,7 +74,7 @@ Ledger::Ledger(const std::vector<unsigned char>& rawLedger) : mTotCoins(0), mTim
 	}
 }
 
-Ledger::Ledger(const std::string& rawLedger) : mTotCoins(0), mTimeStamp(0),
+Ledger::Ledger(const std::string& rawLedger) : mTotCoins(0), mCloseTime(0),
 	mLedgerSeq(0), mClosed(false), mValidHash(false), mAccepted(false), mImmutable(true)
 {
 	Serializer s(rawLedger);
@@ -79,7 +84,8 @@ Ledger::Ledger(const std::string& rawLedger) : mTotCoins(0), mTimeStamp(0),
 	if (!s.get256(mParentHash, BLgPPrevLg)) return;
 	if (!s.get256(mTransHash, BLgPTxT)) return;
 	if (!s.get256(mAccountHash, BLgPAcT)) return;
-	if (!s.get64(mTimeStamp, BLgPClTs)) return;
+	if (!s.get64(mCloseTime, BLgPClTs)) return;
+	if (!s.get16(mLedgerInterval, BLgPNlIn)) return;
 	updateHash();
 	if(mValidHash)
 	{
@@ -100,7 +106,7 @@ void Ledger::updateHash()
 
 	Serializer s(116);
 	addRaw(s);
-	mHash  =s.getSHA512Half();
+	mHash = s.getSHA512Half();
 	mValidHash = true;
 }
 
@@ -111,7 +117,8 @@ void Ledger::addRaw(Serializer &s)
 	s.add256(mParentHash);
 	s.add256(mTransHash);
 	s.add256(mAccountHash);
-	s.add64(mTimeStamp);
+	s.add64(mCloseTime);
+	s.add16(mLedgerInterval);
 }
 
 AccountState::pointer Ledger::getAccountState(const NewcoinAddress& accountID)
@@ -124,7 +131,7 @@ AccountState::pointer Ledger::getAccountState(const NewcoinAddress& accountID)
 	if (!item)
 	{
 #ifdef DEBUG
-//		std::cerr << "   notfound" << std::endl;
+//		std::cerr << " notfound" << std::endl;
 #endif
 		return AccountState::pointer();
 	}
@@ -175,14 +182,6 @@ Transaction::pointer Ledger::getTransaction(const uint256& transID) const
 	return txn;
 }
 
-Ledger::pointer Ledger::closeLedger(uint64 timeStamp)
-{ // close this ledger, return a pointer to the next ledger
-	// CAUTION: New ledger needs its SHAMap's connected to storage
-	updateHash();
-	setClosed();
-	return Ledger::pointer(new Ledger(*this, timeStamp)); // can't use make_shared, constructor is protected
-}
-
 bool Ledger::unitTest()
 {
 #if 0
@@ -225,13 +224,13 @@ bool Ledger::unitTest()
 uint256 Ledger::getHash()
 {
 	if(!mValidHash) updateHash();
-	return(mHash); 
+	return(mHash);
 }
 
 void Ledger::saveAcceptedLedger(Ledger::pointer ledger)
 {
 	std::string sql="INSERT INTO Ledgers "
-		"(LedgerHash,LedgerSeq,TotalCoins,,ClosingTime,AccountSetHash,TransSetHash) VALUES ('";
+		"(LedgerHash,LedgerSeq,TotalCoins,ClosingTime,AccountSetHash,TransSetHash) VALUES ('";
 	sql.append(ledger->getHash().GetHex());
 	sql.append("','");
 	sql.append(boost::lexical_cast<std::string>(ledger->mLedgerSeq));
@@ -240,7 +239,7 @@ void Ledger::saveAcceptedLedger(Ledger::pointer ledger)
 	sql.append("','");
 	sql.append(boost::lexical_cast<std::string>(ledger->mTotCoins));
 	sql.append("','");
-	sql.append(boost::lexical_cast<std::string>(ledger->mTimeStamp));
+	sql.append(boost::lexical_cast<std::string>(ledger->mCloseTime));
 	sql.append("','");
 	sql.append(ledger->mAccountHash.GetHex());
 	sql.append("','");
@@ -248,7 +247,7 @@ void Ledger::saveAcceptedLedger(Ledger::pointer ledger)
 	sql.append("');");
 
 	ScopedLock sl(theApp->getLedgerDB()->getDBLock());
-	theApp->getLedgerDB()->getDB()->executeSQL(sql.c_str());
+	theApp->getLedgerDB()->getDB()->executeSQL(sql);
 
 	// write out dirty nodes
 	while(ledger->mTransactionMap->flushDirty(64, TRANSACTION_NODE, ledger->mLedgerSeq))
@@ -269,7 +268,8 @@ Ledger::pointer Ledger::getSQL(const std::string& sql)
 	{
 		ScopedLock sl(theApp->getLedgerDB()->getDBLock());
 		Database *db = theApp->getLedgerDB()->getDB();
-		if (!db->executeSQL(sql.c_str()) || !db->startIterRows() || !db->getNextRow())
+
+		if (!db->executeSQL(sql) || !db->startIterRows())
 			 return Ledger::pointer();
 
 		db->getStr("LedgerHash", hash);
@@ -285,7 +285,7 @@ Ledger::pointer Ledger::getSQL(const std::string& sql)
 		ledgerSeq = db->getBigInt("LedgerSeq");
 		db->endIterRows();
 	}
-	
+
 	Ledger::pointer ret=boost::make_shared<Ledger>(prevHash, transHash, accountHash, totCoins, closingTime, ledgerSeq);
 	if (ret->getHash() != ledgerHash)
 	{
@@ -316,18 +316,21 @@ void Ledger::addJson(Json::Value& ret)
 	Json::Value ledger(Json::objectValue);
 
 	boost::recursive_mutex::scoped_lock sl(mLock);
-	ledger["ParentHash"]=mParentHash.GetHex();
+	ledger["ParentHash"] = mParentHash.GetHex();
 
 	if(mClosed)
 	{
-		ledger["Hash"]=mHash.GetHex();
-		ledger["TransactionHash"]=mTransHash.GetHex();
-		ledger["AccountHash"]=mAccountHash.GetHex();
-		ledger["Closed"]=true;
-		ledger["Accepted"]=mAccepted;
+		ledger["Hash"] = mHash.GetHex();
+		ledger["TransactionHash"] = mTransHash.GetHex();
+		ledger["AccountHash"] = mAccountHash.GetHex();
+		ledger["Closed"] = true;
+		ledger["Accepted"] = mAccepted;
+		ledger["TotalCoins"] = boost::lexical_cast<std::string>(mTotCoins);
 	}
-	else ledger["Closed"]=false;
-	ret[boost::lexical_cast<std::string>(mLedgerSeq)]=ledger;
+	else ledger["Closed"] = false;
+	if (mCloseTime != 0)
+		ledger["CloseTime"] = boost::posix_time::to_simple_string(ptFromSeconds(mCloseTime));
+	ret[boost::lexical_cast<std::string>(mLedgerSeq)] = ledger;
 }
 
 Ledger::pointer Ledger::switchPreviousLedger(Ledger::pointer oldPrevious, Ledger::pointer newPrevious, int limit)
@@ -339,42 +342,42 @@ Ledger::pointer Ledger::switchPreviousLedger(Ledger::pointer oldPrevious, Ledger
 	int count;
 
 	// 1) Validate sequences and make sure the specified ledger is a valid prior ledger
-	if(newPrevious->getLedgerSeq()!=oldPrevious->getLedgerSeq()) return Ledger::pointer();
+	if (newPrevious->getLedgerSeq() != oldPrevious->getLedgerSeq()) return Ledger::pointer();
 
 	// 2) Begin building a new ledger with the specified ledger as previous.
-	Ledger* newLedger=new Ledger(*newPrevious, mTimeStamp);
+	Ledger::pointer newLedger = boost::make_shared<Ledger>(newPrevious);
 
 	// 3) For any transactions in our previous ledger but not in the new previous ledger, add them to the set
 	SHAMap::SHAMapDiff mapDifferences;
 	std::map<uint256, std::pair<Transaction::pointer, Transaction::pointer> > TxnDiff;
-	if(!newPrevious->mTransactionMap->compare(oldPrevious->mTransactionMap, mapDifferences, limit))
+	if (!newPrevious->mTransactionMap->compare(oldPrevious->mTransactionMap, mapDifferences, limit))
 		return Ledger::pointer();
-	if(!Transaction::convertToTransactions(oldPrevious->getLedgerSeq(), newPrevious->getLedgerSeq(),
+	if (!Transaction::convertToTransactions(oldPrevious->getLedgerSeq(), newPrevious->getLedgerSeq(),
 			false, true, mapDifferences, TxnDiff))
 		return Ledger::pointer(); // new previous ledger contains invalid transactions
 
 	// 4) Try to add those transactions to the new ledger.
 	do
 	{
-		count=0;
+		count = 0;
 		std::map<uint256, std::pair<Transaction::pointer, Transaction::pointer> >::iterator it = TxnDiff.begin();
 		while (it != TxnDiff.end())
 		{
 			Transaction::pointer& tx = it->second.second;
-			if (!tx || newLedger->addTransaction(tx))
+			if (!tx || newLedger->addTransaction(tx)) // FIXME: addTransaction doesn't do checks
 			{
-				count++;
+				++count;
 				TxnDiff.erase(it++);
 			}
 			else ++it;
 		}
-	} while (count!=0);
+	} while (count != 0);
 
 	// WRITEME: Handle rejected transactions left in TxnDiff
 
 	// 5) Try to add transactions from this ledger to the new ledger.
 	std::map<uint256, Transaction::pointer> txnMap;
-	for(SHAMapItem::pointer mit = peekTransactionMap()->peekFirstItem();
+	for (SHAMapItem::pointer mit = peekTransactionMap()->peekFirstItem();
 			!!mit; mit = peekTransactionMap()->peekNextItem(mit->getTag()))
 	{
 		uint256 txnID = mit->getTag();
@@ -385,18 +388,18 @@ Ledger::pointer Ledger::switchPreviousLedger(Ledger::pointer oldPrevious, Ledger
 
 	do
 	{
-		count=0;
+		count = 0;
 		std::map<uint256, Transaction::pointer>::iterator it = txnMap.begin();
 		while (it != txnMap.end())
 		{
-			if(newLedger->addTransaction(it->second))
+			if (newLedger->addTransaction(it->second)) // FIXME: addTransaction doesn't do checks
 			{
-				count++;
+				++count;
 				txnMap.erase(it++);
 			}
 			else ++it;
 		}
-	} while(count!=0);
+	} while(count != 0);
 
 
 	// WRITEME: Handle rejected transactions left in txnMap
@@ -406,7 +409,7 @@ Ledger::pointer Ledger::switchPreviousLedger(Ledger::pointer oldPrevious, Ledger
 
 void Ledger::setAcquiring(void)
 {
-	if(!mTransactionMap || !mAccountStateMap) throw SHAMapException(InvalidMap);
+	if (!mTransactionMap || !mAccountStateMap) throw SHAMapException(InvalidMap);
 	mTransactionMap->setSynching();
 	mAccountStateMap->setSynching();
 }
@@ -425,3 +428,25 @@ bool Ledger::isAcquiringAS(void)
 {
 	return mAccountStateMap->isSynching();
 }
+
+boost::posix_time::ptime Ledger::getCloseTime() const
+{
+	return ptFromSeconds(mCloseTime);
+}
+
+void Ledger::setCloseTime(boost::posix_time::ptime ptm)
+{
+	mCloseTime = iToSeconds(ptm);
+}
+
+uint64 Ledger::getNextLedgerClose() const
+{
+	if (mCloseTime == 0)
+	{
+		uint64 closeTime = theApp->getOPs().getNetworkTimeNC() + mLedgerInterval - 1;
+		return closeTime - (closeTime % mLedgerInterval);
+	}
+	return mCloseTime + mLedgerInterval;
+}
+
+// vim:ts=4

@@ -5,6 +5,7 @@
 #include "SerializedObject.h"
 #include "TransactionFormats.h"
 #include "NewcoinAddress.h"
+#include "utils.h"
 
 std::string SerializedType::getFullText() const
 {
@@ -133,18 +134,14 @@ bool STHash256::isEquivalent(const SerializedType& t) const
 	return v && (value == v->value);
 }
 
-static std::string hex(const std::vector<unsigned char>& value)
+STVariableLength::STVariableLength(SerializerIterator& st, const char *name) : SerializedType(name)
 {
-	int dlen=value.size(), i=0;
-	char psz[dlen*2 + 1];
-	for(std::vector<unsigned char>::const_iterator it=value.begin(), end=value.end(); it!=end; ++it)
-		sprintf(psz + 2*(i++), "%02X", *it);
-	return std::string(psz, psz + value.size()*2);
+	value = st.getVL();
 }
 
 std::string STVariableLength::getText() const
 {
-	return hex(value);
+	return strHex(value);
 }
 
 STVariableLength* STVariableLength::construct(SerializerIterator& u, const char *name)
@@ -225,7 +222,7 @@ std::string STTaggedList::getText() const
 	{
 		ret += boost::lexical_cast<std::string>(it->first);
 		ret += ",";
-		ret += hex(it->second);
+		ret += strHex(it->second);
 	}
 	return ret;
 }

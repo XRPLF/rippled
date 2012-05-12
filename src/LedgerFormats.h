@@ -5,10 +5,11 @@
 
 enum LedgerEntryType
 {
-	ltINVALID=-1,
-	ltACCOUNT_ROOT=0,
-	ltRIPPLE_STATE=1,
-	ltNICKNAME=2
+	ltINVALID		=-1,
+	ltACCOUNT_ROOT	=0,
+	ltRIPPLE_STATE	=1,
+	ltGENERATOR_MAP	=2,
+	ltNICKNAME		=3
 };
 
 struct LedgerEntryFormat
@@ -21,3 +22,4 @@ struct LedgerEntryFormat
 extern LedgerEntryFormat LedgerFormats[];
 extern LedgerEntryFormat* getLgrFormat(LedgerEntryType t);
 #endif
+// vim:ts=4

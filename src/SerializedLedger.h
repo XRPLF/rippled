@@ -53,7 +53,7 @@ public:
 	std::vector<unsigned char> getIFieldVL(SOE_Field field) const { return mObject.getValueFieldVL(field); }
 	std::vector<TaggedListItem> getIFieldTL(SOE_Field field) const { return mObject.getValueFieldTL(field); }
 	NewcoinAddress getIValueFieldAccount(SOE_Field field) const { return mObject.getValueFieldAccount(field); }
-    void setIFieldU8(SOE_Field field, unsigned char v) { return mObject.setValueFieldU8(field, v); }
+	void setIFieldU8(SOE_Field field, unsigned char v) { return mObject.setValueFieldU8(field, v); }
 	void setIFieldU16(SOE_Field field, uint16 v) { return mObject.setValueFieldU16(field, v); }
 	void setIFieldU32(SOE_Field field, uint32 v) { return mObject.setValueFieldU32(field, v); }
 	void setIFieldU64(SOE_Field field, uint32 v) { return mObject.setValueFieldU64(field, v); }
@@ -74,3 +74,4 @@ public:
 };
 
 #endif
+// vim:ts=4

@@ -6,21 +6,63 @@
 TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTransaction& txn,
 	TransactionEngineParams params)
 {
+	TransactionEngineResult result = terSUCCESS;
+
 	uint256 txID = txn.getTransactionID();
 	if(!txID) return terINVALID;
 
-	// extract signing key
+	// Extract signing key
+	// Transactions contain a signing key.  This allows us to trivially verify a transaction has at least been properly signed
+	// without going to disk.  Each transaction also notes a source account id.  This is used to verify that the signing key is
+	// associated with the account.
 	CKey acctKey;
 	if (!acctKey.SetPubKey(txn.peekSigningPubKey())) return terINVALID;
 
 	// check signature
 	if (!txn.checkSign(acctKey)) return terINVALID;
 
+	bool	bPrepaid	= false;
+
+	// Customize behavoir based on transaction type.
+	switch(txn.getTxnType())
+	{
+		case ttCLAIM:
+			bPrepaid	= true;
+			break;
+
+		case ttMAKE_PAYMENT:
+		case ttINVOICE:
+		case ttEXCHANGE_OFFER:
+			result = terSUCCESS;
+			break;
+
+		case ttINVALID:
+			result = terINVALID;
+			break;
+
+		default:
+			result = terUNKNOWN;
+			break;
+	}
+
+	if (terSUCCESS != result)
+		return result;
+
 	uint64 txnFee = txn.getTransactionFee();
 	if ( (params & tepNO_CHECK_FEE) != tepNONE)
 	{
-		// WRITEME: Check if fee is adequate
-		if (txnFee == 0) return terINSUF_FEE_P;
+		if (bPrepaid)
+		{
+			if (txnFee)
+				// Transaction is malformed.
+				return terINSUF_FEE_P;
+		}
+		else
+		{
+			// WRITEME: Check if fee is adequate
+			if (txnFee == 0)
+				return terINSUF_FEE_P;
+		}
 	}
 
 	// get source account ID
@@ -30,37 +72,57 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	boost::recursive_mutex::scoped_lock sl(mLedger->mLock);
 
 	// find source account
+	// If we are only verifying some transactions, this would be probablistic.
 	LedgerStateParms qry = lepNONE;
 	SerializedLedgerEntry::pointer src = mLedger->getAccountRoot(qry, srcAccount);
 	if (!src) return terNO_ACCOUNT;
 
 	// deduct the fee, so it's not available during the transaction
 	// we only write the account back if the transaction succeeds
-	uint64 balance = src->getIFieldU64(sfBalance);
-	if (balance < txnFee)
-		return terINSUF_FEE_B;
-	src->setIFieldU64(sfBalance, balance - txnFee);
-
-	// validate sequence
-	uint32 t_seq = txn.getSequence();
-	uint32 a_seq = src->getIFieldU32(sfSequence);
-	if (t_seq != a_seq)
+	if (txnFee)
 	{
-		// WRITEME: Special case code for changing transaction key
-		if (a_seq < t_seq) return terPRE_SEQ;
-		if (mLedger->hasTransaction(txID))
-			return terALREADY;
-		return terPAST_SEQ;
+		uint64 balance = src->getIFieldU64(sfBalance);
+
+		if (balance < txnFee)
+			return terINSUF_FEE_B;
+
+		src->setIFieldU64(sfBalance, balance - txnFee);
 	}
-	else src->setIFieldU32(sfSequence, t_seq);
+
+	// Validate sequence
+	uint32 t_seq = txn.getSequence();
+
+	if (bPrepaid)
+	{
+		if (t_seq)
+			return terPAST_SEQ;
+	}
+	else
+	{
+		uint32 a_seq = src->getIFieldU32(sfSequence);
+
+		if (t_seq != a_seq)
+		{
+			// WRITEME: Special case code for changing transaction key
+			if (a_seq < t_seq) return terPRE_SEQ;
+			if (mLedger->hasTransaction(txID))
+				return terALREADY;
+			return terPAST_SEQ;
+		}
+		else src->setIFieldU32(sfSequence, t_seq);
+	}
 
 	std::vector<AffectedAccount> accounts;
 	accounts.push_back(std::make_pair(taaMODIFY, src));
-	TransactionEngineResult result = terUNKNOWN;
+
 	switch(txn.getTxnType())
 	{
 		case ttINVALID:
 			result = terINVALID;
+			break;
+
+		case ttCLAIM:
+			result = doClaim(txn, accounts);
 			break;
 
 		case ttMAKE_PAYMENT:
@@ -85,8 +147,12 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 		// WRITEME: Special case code for changing transaction key
 		for(std::vector<AffectedAccount>::iterator it=accounts.begin(), end=accounts.end();
 			it != end; ++it)
-		{
-			if ( (it->first==taaMODIFY) || (it->first==taaCREATE) )
+		{	if (it->first == taaCREATE)
+			{
+				if (mLedger->writeBack(lepCREATE, it->second) & lepERROR)
+					assert(false);
+			}
+			else if (it->first==taaMODIFY)
 			{
 				if(mLedger->writeBack(lepNONE, it->second) & lepERROR)
 					assert(false);
@@ -104,6 +170,12 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	}
 
 	return result;
+}
+
+TransactionEngineResult TransactionEngine::doClaim(const SerializedTransaction& txn,
+	 std::vector<AffectedAccount>& accounts)
+{
+	return terUNKNOWN;
 }
 
 TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction& txn,
@@ -187,3 +259,4 @@ TransactionEngineResult TransactionEngine::doDelete(const SerializedTransaction&
 {
 	return terUNKNOWN;
 }
+// vim:ts=4

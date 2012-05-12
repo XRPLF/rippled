@@ -27,11 +27,12 @@ enum SOE_Field
 	sfFlags, sfExtensions, sfTargetLedger, sfSourceTag, sfIdentifier,
 	sfDestination, sfTarget, sfAmount, sfCurrency,
 	sfAmountIn, sfAmountOut, sfCurrencyIn, sfCurrencyOut,
-	sfInvoiceID, sfExpireLedger, sfMessageKey, sfCurrentRate, sfRateLock,
+	sfInvoiceID, sfExpireLedger, sfMessageKey, sfSigningKey, sfCurrentRate, sfRateLock,
 	sfAccount, sfSequence, sfBalance, sfWalletLocator, sfEmailHash,
-	sfBorrower, sfLendfer, sfLimit, sfOfferCurrency,
-	sfLastReceive, sfLastTxn, sfLender, sfNextRate, sfNextRateLgr, sfNextRateExp,
+	sfBorrower, sfLender, sfLimit, sfOfferCurrency, sfLedgerHash,
+	sfLastReceive, sfLastTxn, sfNextRate, sfNextRateLgr, sfNextRateExp,
 	sfNickname, sfMinimumOffer,
+	sfAuthorizedKey, sfGenerator, sfGeneratorID, sfAccountID,
 
 	// test fields
 	sfTest1, sfTest2, sfTest3, sfTest4
@@ -131,3 +132,4 @@ public:
 
 
 #endif
+// vim:ts=4

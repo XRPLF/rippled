@@ -39,7 +39,7 @@ void ValidationCollection::addToDB(newcoin::Validation& valid,int weCare)
 	db->escape(hanko.begin(),hanko.GetSerializeSize(),hankoStr);
 	db->escape(sig.begin(),sig.GetSerializeSize(),sigStr);
 	string sql=strprintf("INSERT INTO Validations (LedgerIndex,Hash,Hanko,SeqNum,Sig,WeCare) values (%d,%s,%s,%d,%s,%d)",valid.ledgerindex(),hashStr.c_str(),hankoStr.c_str(),valid.seqnum(),sigStr.c_str(),weCare);
-	db->executeSQL(sql.c_str());
+	db->executeSQL(sql);
 
 }
 
@@ -50,24 +50,18 @@ bool ValidationCollection::hasValidation(uint32 ledgerIndex,uint160& hanko,uint3
 	db->escape(hanko.begin(),hanko.GetSerializeSize(),hankoStr);
 	string sql=strprintf("SELECT ValidationID,seqnum from Validations where LedgerIndex=%d and hanko=%s",
 	 ledgerIndex,hankoStr.c_str());
-	if(db->executeSQL(sql.c_str()))
+	if(db->executeSQL(sql) && db->startIterRows())
 	{
-		if(db->startIterRows())
+		uint32 currentSeqNum=db->getInt(1);
+		if(currentSeqNum>=seqnum)
 		{
-			if(db->getNextRow())
-			{
-				uint32 currentSeqNum=db->getInt(1);
-				if(currentSeqNum>=seqnum) 
-				{
-					db->endIterRows();
-					return(true);
-				}
-				// delete the old validation we were storing
-				sql=strprintf("DELETE FROM Validations where ValidationID=%d",db->getInt(0));
-				db->endIterRows();
-				db->executeSQL(sql.c_str());
-			}
+			db->endIterRows();
+			return(true);
 		}
+		// delete the old validation we were storing
+		sql=strprintf("DELETE FROM Validations where ValidationID=%d",db->getInt(0));
+		db->endIterRows();
+		db->executeSQL(sql);
 	}
 	return(false);
 }
@@ -191,7 +185,6 @@ void ValidationCollection::getValidations(uint32 ledgerIndex,vector<newcoin::Val
 	string sql=strprintf("SELECT * From Validations where LedgerIndex=%d and wecare=1",ledgerIndex);
 
 	// TODO: ValidationCollection::getValidations(uint32 ledgerIndex)
-	
 }
 
 
@@ -203,7 +196,6 @@ bool ValidationCollection::getConsensusLedger(uint32 ledgerIndex, uint256& ourHa
 	bool ret=false;
 	if(mIndexGroups.count(ledgerIndex))
 	{
-		
 		unsigned int maxVotes=theConfig.MIN_VOTES_FOR_CONSENSUS;
 		vector< Group >& groups=mIndexGroups[ledgerIndex];
 		Group empty;
@@ -228,6 +220,7 @@ bool ValidationCollection::getConsensusLedger(uint32 ledgerIndex, uint256& ourHa
 			}
 		}
 	}
-	
+
 	return(ret);
 }
+// vim:ts=4

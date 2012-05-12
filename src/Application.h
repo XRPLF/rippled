@@ -3,7 +3,6 @@
 
 #include "UniqueNodeList.h"
 #include "ConnectionPool.h"
-#include "TimingService.h"
 #include "PubKeyCache.h"
 #include "ScopedLock.h"
 #include "LedgerMaster.h"
@@ -34,12 +33,10 @@ public:
 
 class Application
 {
-	NetworkOPs				mNetOps;
-	Wallet					mWallet;
-
 	boost::asio::io_service	mIOService;
 
-	TimingService			mTimingService;
+	NetworkOPs				mNetOps;
+	Wallet					mWallet;
 	UniqueNodeList			mUNL;
 	PubKeyCache				mPKCache;
 	LedgerMaster			mMasterLedger;

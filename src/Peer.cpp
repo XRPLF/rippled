@@ -19,9 +19,10 @@
 // Node has this long to verify its identity from connection accepted or connection attempt.
 #define NODE_VERIFY_SECONDS		15
 
-Peer::Peer(boost::asio::io_service& io_service, boost::asio::ssl::context& ctx)
-	: mSocketSsl(io_service, ctx),
-		mVerifyTimer(io_service)
+Peer::Peer(boost::asio::io_service& io_service, boost::asio::ssl::context& ctx) :
+	mConnected(false),
+	mSocketSsl(io_service, ctx),
+	mVerifyTimer(io_service)
 {
 }
 
@@ -29,20 +30,20 @@ void Peer::handle_write(const boost::system::error_code& error, size_t bytes_tra
 {
 #ifdef DEBUG
 	if(error)
-		std::cerr  << "Peer::handle_write Error: " << error << " bytes: " << bytes_transferred << std::endl;
+		std::cerr << "Peer::handle_write Error: " << error << " bytes: " << bytes_transferred << std::endl;
 	else
-		std::cerr  << "Peer::handle_write bytes: "<< bytes_transferred << std::endl;
+		std::cerr << "Peer::handle_write bytes: "<< bytes_transferred << std::endl;
 #endif
 
-	mSendingPacket=PackedMessage::pointer();
+	mSendingPacket = PackedMessage::pointer();
 
-	if(error)
+	if (error)
 	{
-		detach();
+		detach("hw");
 		return;
 	}
 
-	if(!mSendQ.empty())
+	if (!mSendQ.empty())
 	{
 		PackedMessage::pointer packet=mSendQ.front();
 		if(packet)
@@ -53,17 +54,21 @@ void Peer::handle_write(const boost::system::error_code& error, size_t bytes_tra
 	}
 }
 
-void Peer::detach()
+void Peer::detach(const char *rsn)
 {
+#ifdef DEBUG
+	std::cerr << "DETACHING PEER: " << rsn << std::endl;
+#endif
 	boost::system::error_code ecCancel;
 
 	(void) mVerifyTimer.cancel();
 
 	mSendQ.clear();
-	// mSocketSsl.close();
 
-	if (!mIpPort.first.empty()) {
+	if (!mIpPort.first.empty())
+	{
 		if (mClientConnect)
+			// Connection might be part of scanning.  Inform connect failed.
 			theApp->getConnectionPool().peerFailed(mIpPort.first, mIpPort.second);
 
 		theApp->getConnectionPool().peerDisconnected(shared_from_this(), mIpPort, mNodePublic);
@@ -78,34 +83,35 @@ void Peer::handleVerifyTimer(const boost::system::error_code& ecResult)
 		// Timer canceled because deadline no longer needed.
 		// std::cerr << "Deadline cancelled." << std::endl;
 
-		nothing();  // Aborter is done.
+		nothing(); // Aborter is done.
 	}
 	else if (ecResult)
-    {
+	{
 		std::cerr << "Peer verify timer error: " << std::endl;
 
 		// Can't do anything sound.
 		abort();
-    }
+	}
 	else
 	{
 		std::cerr << "Peer failed to verify in time." << std::endl;
-		detach();
+		detach("hvt");
 	}
 }
 
-// Begin trying to connect.  We are not connected till we know and accept peer's public key.
+// Begin trying to connect. We are not connected till we know and accept peer's public key.
 // Only takes IP addresses (not domains).
 void Peer::connect(const std::string strIp, int iPort)
 {
-	int	iPortAct	= iPort < 0 ? SYSTEM_PEER_PORT : iPort;
+	int	iPortAct	= (iPort <= 0) ? SYSTEM_PEER_PORT : iPort;
 
 	mClientConnect	= true;
 
-	std::cerr  << "Peer::connect: " << strIp << " " << iPort << std::endl;
+	std::cerr << "Peer::connect: " << strIp << " " << iPort << std::endl;
 	mIpPort		= make_pair(strIp, iPort);
+	assert(!mIpPort.first.empty());
 
-    boost::asio::ip::tcp::resolver::query	query(strIp, boost::lexical_cast<std::string>(iPortAct),
+	boost::asio::ip::tcp::resolver::query	query(strIp, boost::lexical_cast<std::string>(iPortAct),
 			boost::asio::ip::resolver_query_base::numeric_host|boost::asio::ip::resolver_query_base::numeric_service);
 	boost::asio::ip::tcp::resolver				resolver(theApp->getIOService());
 	boost::system::error_code					err;
@@ -114,7 +120,8 @@ void Peer::connect(const std::string strIp, int iPort)
 	if (err || itrEndpoint == boost::asio::ip::tcp::resolver::iterator())
 	{
 		std::cerr << "Peer::connect: Bad IP" << std::endl;
-		detach();
+		detach("c");
+		return;
 	}
 	else
 	{
@@ -124,13 +131,14 @@ void Peer::connect(const std::string strIp, int iPort)
 		if (err)
 		{
 			std::cerr << "Peer::connect: Failed to set timer." << std::endl;
-			detach();
+			detach("c2");
+			return;
 		}
 	}
 
 	if (!err)
 	{
-		std::cerr << "Peer::connect: Connectting: " << mIpPort.first << " " << mIpPort.second << std::endl;
+		std::cerr << "Peer::connect: Connecting: " << mIpPort.first << " " << mIpPort.second << std::endl;
 
 		boost::asio::async_connect(
 			mSocketSsl.lowest_layer(),
@@ -152,7 +160,7 @@ void Peer::handleStart(const boost::system::error_code& error)
 	if (error)
 	{
 		std::cerr << "Peer::handleStart: failed:" << error << std::endl;
-		detach();
+		detach("hs");
 	}
 	else
 	{
@@ -167,16 +175,16 @@ void Peer::handleConnect(const boost::system::error_code& error, boost::asio::ip
 	if (error)
 	{
 		std::cerr << "Connect peer: failed:" << error << std::endl;
-		detach();
+		detach("hc");
 	}
 	else
 	{
 		std::cerr << "Connect peer: success." << std::endl;
 
-	    mSocketSsl.lowest_layer().set_option(boost::asio::ip::tcp::no_delay(true));
-	    mSocketSsl.set_verify_mode(boost::asio::ssl::verify_none);
+		mSocketSsl.lowest_layer().set_option(boost::asio::ip::tcp::no_delay(true));
+		mSocketSsl.set_verify_mode(boost::asio::ssl::verify_none);
 
-	    mSocketSsl.async_handshake(boost::asio::ssl::stream<boost::asio::ip::tcp::socket>::client,
+		mSocketSsl.async_handshake(boost::asio::ssl::stream<boost::asio::ip::tcp::socket>::client,
 			boost::bind(&Peer::handleStart, shared_from_this(), boost::asio::placeholders::error));
 	}
 }
@@ -196,13 +204,13 @@ void Peer::connected(const boost::system::error_code& error)
 	if (error)
 	{
 		std::cerr << "Remote peer: accept error: " << strIp << " " << iPort << " : " << error << std::endl;
-		detach();
+		detach("ctd");
 	}
 	else if (!theApp->getConnectionPool().peerRegister(shared_from_this(), strIp, iPort))
 	{
 		std::cerr << "Remote peer: rejecting: " << strIp << " " << iPort << std::endl;
 		// XXX Reject with a rejection message: already connected
-		detach();
+		detach("ctd2");
 	}
 	else
 	{
@@ -212,11 +220,12 @@ void Peer::connected(const boost::system::error_code& error)
 		//BOOST_LOG_TRIVIAL(info) << "Connected to Peer.";
 
 		mIpPort		= make_pair(strIp, iPort);
+		assert(!mIpPort.first.empty());
 
-	    mSocketSsl.lowest_layer().set_option(boost::asio::ip::tcp::no_delay(true));
-	    mSocketSsl.set_verify_mode(boost::asio::ssl::verify_none);
+		mSocketSsl.lowest_layer().set_option(boost::asio::ip::tcp::no_delay(true));
+		mSocketSsl.set_verify_mode(boost::asio::ssl::verify_none);
 
-	    mSocketSsl.async_handshake(boost::asio::ssl::stream<boost::asio::ip::tcp::socket>::server,
+		mSocketSsl.async_handshake(boost::asio::ssl::stream<boost::asio::ip::tcp::socket>::server,
 			boost::bind(&Peer::handleStart, shared_from_this(), boost::asio::placeholders::error));
 	}
 }
@@ -247,9 +256,6 @@ void Peer::sendPacket(PackedMessage::pointer packet)
 
 void Peer::start_read_header()
 {
-#ifdef DEBUG
-	std::cerr << "SRH" << std::endl;
-#endif
 	mReadbuf.clear();
 	mReadbuf.resize(HEADER_SIZE);
 	boost::asio::async_read(mSocketSsl, boost::asio::buffer(mReadbuf),
@@ -275,15 +281,15 @@ void Peer::handle_read_header(const boost::system::error_code& error)
 		// WRITEME: Compare to maximum message length, abort if too large
 		if(msg_len>(32*1024*1024))
 		{
-			detach();
+			detach("hrh");
 			return;
 		}
 		start_read_body(msg_len);
 	}
 	else
 	{
-		detach();
-		std::cerr  << "Peer::handle_read_header: Error: " << error << std::endl; //else BOOST_LOG_TRIVIAL(info) << "Error: " << error;
+		detach("hrh2");
+		std::cerr << "Peer::handle_read_header: Error: " << error << std::endl; //else BOOST_LOG_TRIVIAL(info) << "Error: " << error;
 	}
 }
 
@@ -296,8 +302,8 @@ void Peer::handle_read_body(const boost::system::error_code& error)
 	}
 	else
 	{
-		detach();
-		std::cerr  << "Peer::handle_read_body: Error: " << error << std::endl; //else BOOST_LOG_TRIVIAL(info) << "Error: " << error;
+		detach("hrb");
+		std::cerr << "Peer::handle_read_body: Error: " << error << std::endl; //else BOOST_LOG_TRIVIAL(info) << "Error: " << error;
 	}
 }
 
@@ -309,11 +315,13 @@ void Peer::processReadBuffer()
 	std::cerr << "PRB(" << type << "), len=" << (mReadbuf.size()-HEADER_SIZE) << std::endl;
 #endif
 
-	// If not connected, only accept mtHELLO.  Otherwise, don't accept mtHELLO.
-	if (mIpPort.first.empty() == (type == newcoin::mtHELLO))
+	std::cerr << "Peer::processReadBuffer: " << mIpPort.first << " " << mIpPort.second << std::endl;
+
+	// If connected and get a mtHELLO or if not connected and get a non-mtHELLO, wrong message was sent.
+	if (mConnected == (type == newcoin::mtHELLO))
 	{
 		std::cerr << "Wrong message type: " << type << std::endl;
-		detach();
+		detach("prb1");
 	}
 	else
 	{
@@ -324,7 +332,7 @@ void Peer::processReadBuffer()
 				newcoin::TMHello msg;
 				if(msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvHello(msg);
-				else std::cerr  << "parse error: " << type << std::endl; //else BOOST_LOG_TRIVIAL(info) << "Error: " << error;
+				else std::cerr << "parse error: " << type << std::endl; //else BOOST_LOG_TRIVIAL(info) << "Error: " << error;
 			}
 			break;
 
@@ -400,6 +408,17 @@ void Peer::processReadBuffer()
 			}
 			break;
 
+		case newcoin::mtSTATUS_CHANGE:
+			{
+				newcoin::TMStatusChange msg;
+				if(msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
+					recvStatus(msg);
+				else std::cerr << "parse error: " << type << std::endl;
+			}
+			break;
+
+
+
 		case newcoin::mtGET_LEDGER:
 			{
 				newcoin::TMGetLedger msg;
@@ -474,7 +493,7 @@ void Peer::processReadBuffer()
 			break;
 
 		default:
-			std::cerr  << "Unknown Msg: " << type << std::endl; //else BOOST_LOG_TRIVIAL(info) << "Error: " << error;
+			std::cerr << "Unknown Msg: " << type << std::endl; //else BOOST_LOG_TRIVIAL(info) << "Error: " << error;
 		}
 	}
 }
@@ -515,13 +534,25 @@ void Peer::recvHello(newcoin::TMHello& packet)
 		}
 		else
 		{
-			// XXX At this point we could add the inbound connection to our IP list.  However, the inbound IP address might be that of
+			// At this point we could add the inbound connection to our IP list.  However, the inbound IP address might be that of
 			// a NAT. It would be best to only add it if and only if we can immediatly verify it.
 			nothing();
 		}
 
+		// Consider us connected.  No longer accepting mtHELLO.
+		mConnected	= true;
+
 		// XXX Set timer: connection is in grace period to be useful.
 		// XXX Set timer: connection idle (idle may vary depending on connection type.)
+
+		if ((packet.has_closedledger()) && (packet.closedledger().size() == (256 / 8)))
+		{
+			memcpy(mClosedLedgerHash.begin(), packet.closedledger().data(), 256 / 8);
+			if ((packet.has_previousledger()) && (packet.previousledger().size() == (256 / 8)))
+				memcpy(mPreviousLedgerHash.begin(), packet.previousledger().data(), 256 / 8);
+			else mPreviousLedgerHash.zero();
+			mClosedLedgerTime = boost::posix_time::second_clock::universal_time();
+		}
 
 		bDetach	= false;
 	}
@@ -529,7 +560,7 @@ void Peer::recvHello(newcoin::TMHello& packet)
 	if (bDetach)
 	{
 		mNodePublic.clear();
-		detach();
+		detach("recvh");
 	}
 }
 
@@ -618,33 +649,55 @@ void Peer::recvAccount(newcoin::TMAccount& packet)
 {
 }
 
+void Peer::recvStatus(newcoin::TMStatusChange& packet)
+{
+#ifdef DEBUG
+	std::cerr << "Received status change from peer" << std::endl;
+#endif
+	if (packet.has_ledgerhash() && (packet.ledgerhash().size() == (256 / 8)))
+	{ // a peer has changed ledgers
+		if (packet.has_previousledgerhash() && (packet.previousledgerhash().size() == (256 / 8)))
+			memcpy(mPreviousLedgerHash.begin(), packet.previousledgerhash().data(), 256 / 8);
+		else
+			mPreviousLedgerHash = mClosedLedgerHash;
+		memcpy(mClosedLedgerHash.begin(), packet.ledgerhash().data(), 256 / 8);
+		if (packet.has_networktime())
+			mClosedLedgerTime = ptFromSeconds(packet.networktime());
+		else
+			mClosedLedgerTime = theApp->getOPs().getNetworkTimePT();
+#ifdef DEBUG
+	std::cerr << "peer LCL is " << mClosedLedgerHash.GetHex() << std::endl;
+#endif
+	}
+}
+
 void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 {
 	// Figure out what ledger they want
 	Ledger::pointer ledger;
-	if(packet.has_ledgerhash())
+	if (packet.has_ledgerhash())
 	{
 		uint256 ledgerhash;
-		if(packet.ledgerhash().size()!=32)
+		if (packet.ledgerhash().size() != 32)
 		{
 			punishPeer(PP_INVALID_REQUEST);
 			return;
 		}
 		memcpy(&ledgerhash, packet.ledgerhash().data(), 32);
-		ledger=theApp->getMasterLedger().getLedgerByHash(ledgerhash);
+		ledger = theApp->getMasterLedger().getLedgerByHash(ledgerhash);
 	}
-	else if(packet.has_ledgerseq())
-		ledger=theApp->getMasterLedger().getLedgerBySeq(packet.ledgerseq());
-	else if(packet.has_ltype() && (packet.ltype() == newcoin::ltCURRENT) )
-		ledger=theApp->getMasterLedger().getCurrentLedger();
-	else if(packet.has_ltype() && (packet.ltype() == newcoin::ltCLOSING) )
+	else if (packet.has_ledgerseq())
+		ledger = theApp->getMasterLedger().getLedgerBySeq(packet.ledgerseq());
+	else if (packet.has_ltype() && (packet.ltype() == newcoin::ltCURRENT))
+		ledger = theApp->getMasterLedger().getCurrentLedger();
+	else if (packet.has_ltype() && (packet.ltype() == newcoin::ltCLOSING))
 	{
 		ledger = theApp->getMasterLedger().getClosedLedger();
 	}
-	else if(packet.has_ltype() && (packet.ltype() == newcoin::ltCLOSED) )
+	else if (packet.has_ltype() && (packet.ltype() == newcoin::ltCLOSED) )
 	{
 		ledger = theApp->getMasterLedger().getClosedLedger();
-		if(ledger && !ledger->isClosed())
+		if (ledger && !ledger->isClosed())
 			ledger = theApp->getMasterLedger().getLedgerBySeq(ledger->getLedgerSeq() - 1);
 	}
 	else
@@ -660,18 +713,17 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 	}
 
 	// Figure out what information they want
-	newcoin::TMLedgerData* data=new newcoin::TMLedgerData;
-	uint256 lHash=ledger->getHash();
+	boost::shared_ptr<newcoin::TMLedgerData> data = boost::make_shared<newcoin::TMLedgerData>();
+	uint256 lHash = ledger->getHash();
 	data->set_ledgerhash(lHash.begin(), lHash.size());
 	data->set_ledgerseq(ledger->getLedgerSeq());
 	data->set_type(packet.itype());
 
-	if(packet.itype()==newcoin::liBASE)
+	if(packet.itype() == newcoin::liBASE)
 	{
 		Serializer nData(116);
 		ledger->addRaw(nData);
-		newcoin::TMLedgerNode* node=data->add_nodes();
-		node->set_nodedata(nData.getDataPtr(), nData.getLength());
+		data->add_nodes()->set_nodedata(nData.getDataPtr(), nData.getLength());
 	}
 	else if ( (packet.itype()==newcoin::liTX_NODE) || (packet.itype()==newcoin::liAS_NODE) )
 	{
@@ -696,13 +748,13 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 			if(map->getNodeFat(mn, nodeIDs, rawNodes))
 			{
 				std::vector<SHAMapNode>::iterator nodeIDIterator;
-		        std::list<std::vector<unsigned char> >::iterator rawNodeIterator;
+				std::list<std::vector<unsigned char> >::iterator rawNodeIterator;
 				for(nodeIDIterator=nodeIDs.begin(), rawNodeIterator=rawNodes.begin();
 					nodeIDIterator!=nodeIDs.end(); ++nodeIDIterator, ++rawNodeIterator)
 				{
-					newcoin::TMLedgerNode* node=data->add_nodes();
 					Serializer nID(33);
 					nodeIDIterator->addIDRaw(nID);
+					newcoin::TMLedgerNode* node=data->add_nodes();
 					node->set_nodeid(nID.getDataPtr(), nID.getLength());
 					node->set_nodedata(&rawNodeIterator->front(), rawNodeIterator->size());
 				}
@@ -721,7 +773,7 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 
 void Peer::recvLedger(newcoin::TMLedgerData& packet)
 {
-	if(!theApp->getMasterLedgerAcquire().gotLedgerData(packet))
+	if(!theApp->getMasterLedgerAcquire().gotLedgerData(packet, shared_from_this()))
 		punishPeer(PP_UNWANTED_DATA);
 }
 
@@ -764,22 +816,23 @@ void Peer::sendHello()
 
 	theApp->getWallet().getNodePrivate().signNodePrivate(mCookieHash, vchSig);
 
-	newcoin::TMHello* h = new newcoin::TMHello();
+	boost::shared_ptr<newcoin::TMHello> h = boost::make_shared<newcoin::TMHello>();
 
 	h->set_version(theConfig.VERSION);
 	h->set_ledgerindex(theApp->getOPs().getCurrentLedgerID());
-	h->set_nettime(theApp->getOPs().getNetworkTime());
+	h->set_nettime(theApp->getOPs().getNetworkTimeNC());
 	h->set_nodepublic(theApp->getWallet().getNodePublic().humanNodePublic());
 	h->set_nodeproof(&vchSig[0], vchSig.size());
 	h->set_ipv4port(theConfig.PEER_PORT);
 
 	Ledger::pointer closedLedger = theApp->getMasterLedger().getClosedLedger();
 	assert(closedLedger && closedLedger->isClosed());
-	if(closedLedger->isClosed())
+	if (closedLedger->isClosed())
 	{
-		Serializer s(128);
-		closedLedger->addRaw(s);
-		h->set_closedledger(s.getDataPtr(), s.getLength());
+		uint256 hash = closedLedger->getHash();
+		h->set_closedledger(hash.begin(), hash.GetSerializeSize());
+		hash = closedLedger->getParentHash();
+		h->set_previousledger(hash.begin(), hash.GetSerializeSize());
 	}
 
 	PackedMessage::pointer packet = boost::make_shared<PackedMessage>

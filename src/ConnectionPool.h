@@ -72,6 +72,7 @@ public:
 	void peerFailed(const std::string& strIp, int iPort);
 
 	Json::Value getPeersJson();
+	std::vector<Peer::pointer> getPeerVector();
 
 	//
 	// Scanning

@@ -81,28 +81,31 @@ int Serializer::addRaw(const void *ptr, int len)
 bool Serializer::get16(uint16& o, int offset) const
 {
 	if ((offset + 2) > mData.size()) return false;
-	o = mData.at(offset++);
-	o <<= 8; o |= mData.at(offset);
+	const unsigned char *ptr = &mData[offset];
+	o = *ptr++; o <<= 8; o |= *ptr;
 	return true;
 }
 
 bool Serializer::get32(uint32& o, int offset) const
 {
 	if ((offset + 4) > mData.size()) return false;
-	o=mData.at(offset++);
-	o<<=8; o |= mData.at(offset++); o <<= 8; o |= mData.at(offset++);
-	o<<=8; o |= mData.at(offset);
+	const unsigned char *ptr = &mData[offset];
+	o = *ptr++;
+	o <<= 8; o |= *ptr++;
+	o <<= 8; o |= *ptr++;
+	o <<= 8; o |= *ptr;
 	return true;
 }
 
 bool Serializer::get64(uint64& o, int offset) const
 {
 	if ((offset + 8) > mData.size()) return false;
-	o=mData.at(offset++);
-	o<<=8; o|= mData.at(offset++); o <<= 8; o |= mData.at(offset++);
-	o<<=8; o|= mData.at(offset++); o <<= 8; o |= mData.at(offset++);
-	o<<=8; o|= mData.at(offset++); o <<= 8; o |= mData.at(offset++);
-	o<<=8; o|= mData.at(offset);
+	const unsigned char *ptr = &mData[offset];
+	o = *ptr++;
+	o <<= 8; o |= *ptr++; o <<= 8; o |= *ptr++;
+	o <<= 8; o |= *ptr++; o <<= 8; o |= *ptr++;
+	o <<= 8; o |= *ptr++; o <<= 8; o |= *ptr++;
+	o <<= 8; o |= *ptr;
 	return true;
 }
 
@@ -172,7 +175,7 @@ int Serializer::removeLastByte()
 bool Serializer::getRaw(std::vector<unsigned char>& o, int offset, int length) const
 {
 	if ((offset + length) > mData.size()) return false;
-	o.assign(mData.begin() + offset, mData.begin() + offset+length);
+	o.assign(mData.begin() + offset, mData.begin() + offset + length);
 	return true;
 }
 
@@ -233,12 +236,12 @@ bool Serializer::checkSignature(int pubkeyOffset, int signatureOffset) const
 
 	CKey pubCKey;
 	if (!pubCKey.SetPubKey(pubkey)) return false;
-	return pubCKey.Verify(getSHA512Half(signatureOffset), signature);	
+	return pubCKey.Verify(getSHA512Half(signatureOffset), signature);
 }
 
 bool Serializer::checkSignature(const std::vector<unsigned char> &signature, CKey& key) const
 {
-	return key.Verify(getSHA512Half(), signature);	
+	return key.Verify(getSHA512Half(), signature);
 }
 
 bool Serializer::makeSignature(std::vector<unsigned char> &signature, CKey& key) const
@@ -259,7 +262,7 @@ int Serializer::addVL(const std::vector<unsigned char>& vector)
 {
 	int ret = addRaw(encodeVL(vector.size()));
 	addRaw(vector);
-	assert(mData.size() + (ret + vector.size() + encodeLengthLength(vector.size())));
+	assert(mData.size() == (ret + vector.size() + encodeLengthLength(vector.size())));
 	return ret;
 }
 
@@ -362,12 +365,12 @@ bool Serializer::getVLLength(int& length, int offset) const
 	try
 	{
 		if (lenLen == 1)
-			length=decodeVLLength(b1);
+			length = decodeVLLength(b1);
 		else if (lenLen == 2)
 		{
 			int b2;
 			if (!get8(b2, offset++)) return false;
-			length=decodeVLLength(b1, b2);
+			length = decodeVLLength(b1, b2);
 		}
 		else if (lenLen == 3)
 		{
@@ -391,7 +394,7 @@ bool Serializer::getTaggedList(std::list<TaggedListItem>& list, int offset, int&
 	int startOffset = offset;
 	int numElem;
 	if (!get8(numElem, offset++)) return false;
-	for (int i = 0; i<numElem; i++)
+	for (int i = 0; i<numElem; ++i)
 	{
 		int tag, len;
 		std::vector<unsigned char> data;
@@ -407,10 +410,10 @@ bool Serializer::getTaggedList(std::list<TaggedListItem>& list, int offset, int&
 bool Serializer::getTaggedList(std::vector<TaggedListItem>& list, int offset, int& length) const
 {
 	list.clear();
-	int startOffset=offset;
+	int startOffset = offset;
 	int numElem;
 	if (!get8(numElem, offset++)) return false;
-	for (int i=0; i<numElem; i++)
+	for (int i = 0; i<numElem; ++i)
 	{
 		int tag, len;
 		std::vector<unsigned char> data;
@@ -502,7 +505,7 @@ unsigned char SerializerIterator::get8()
 {
 	int val;
 	if (!mSerializer.get8(val, mPos)) throw std::runtime_error("invalid serializer get8");
-	mPos++;
+	++mPos;
 	return val;
 }
 
@@ -510,7 +513,7 @@ uint16 SerializerIterator::get16()
 {
 	uint16 val;
 	if (!mSerializer.get16(val, mPos)) throw std::runtime_error("invalid serializer get16");
-	mPos += 16/8;
+	mPos += 16 / 8;
 	return val;
 }
 
@@ -518,7 +521,7 @@ uint32 SerializerIterator::get32()
 {
 	uint32 val;
 	if (!mSerializer.get32(val, mPos)) throw std::runtime_error("invalid serializer get32");
-	mPos += 32/8;
+	mPos += 32 / 8;
 	return val;
 }
 
@@ -526,7 +529,7 @@ uint64 SerializerIterator::get64()
 {
 	uint64 val;
 	if (!mSerializer.get64(val, mPos)) throw std::runtime_error("invalid serializer get64");
-	mPos += 64/8;
+	mPos += 64 / 8;
 	return val;
 }
 
@@ -534,7 +537,7 @@ uint128 SerializerIterator::get128()
 {
 	uint128 val;
 	if (!mSerializer.get128(val, mPos)) throw std::runtime_error("invalid serializer get128");
-	mPos += 128/8;
+	mPos += 128 / 8;
 	return val;
 }
 
@@ -542,7 +545,7 @@ uint160 SerializerIterator::get160()
 {
 	uint160 val;
 	if (!mSerializer.get160(val, mPos)) throw std::runtime_error("invalid serializer get160");
-	mPos += 160/8;
+	mPos += 160 / 8;
 	return val;
 }
 
@@ -550,7 +553,7 @@ uint256 SerializerIterator::get256()
 {
 	uint256 val;
 	if (!mSerializer.get256(val, mPos)) throw std::runtime_error("invalid serializer get256");
-	mPos += 256/8;
+	mPos += 256 / 8;
 	return val;
 }
 
@@ -571,3 +574,4 @@ std::vector<TaggedListItem> SerializerIterator::getTaggedList()
 	mPos += length;
 	return tl;
 }
+// vim:ts=4

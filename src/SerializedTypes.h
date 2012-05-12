@@ -66,7 +66,7 @@ public:
 
 	STUInt8(unsigned char v=0) : value(v) { ; }
 	STUInt8(const char *n, unsigned char v=0) : SerializedType(n), value(v) { ; }
-	static STUInt8* construct(SerializerIterator&, const char *name=NULL);
+	static STUInt8* construct(SerializerIterator&, const char *name = NULL);
 
 	int getLength() const { return 1; }
 	SerializedTypeID getSType() const { return STI_UINT8; }
@@ -91,7 +91,7 @@ public:
 
 	STUInt16(uint16 v=0) : value(v) { ; }
 	STUInt16(const char *n, uint16 v=0) : SerializedType(n), value(v) { ; }
-	static STUInt16* construct(SerializerIterator&, const char *name=NULL);
+	static STUInt16* construct(SerializerIterator&, const char *name = NULL);
 
 	int getLength() const { return 2; }
 	SerializedTypeID getSType() const { return STI_UINT16; }
@@ -116,7 +116,7 @@ public:
 
 	STUInt32(uint32 v=0) : value(v) { ; }
 	STUInt32(const char *n, uint32 v=0) : SerializedType(n), value(v) { ; }
-	static STUInt32* construct(SerializerIterator&, const char *name=NULL);
+	static STUInt32* construct(SerializerIterator&, const char *name = NULL);
 
 	int getLength() const { return 4; }
 	SerializedTypeID getSType() const { return STI_UINT32; }
@@ -141,7 +141,7 @@ public:
 
 	STUInt64(uint64 v=0) : value(v) { ; }
 	STUInt64(const char *n, uint64 v=0) : SerializedType(n), value(v) { ; }
-	static STUInt64* construct(SerializerIterator&, const char *name=NULL);
+	static STUInt64* construct(SerializerIterator&, const char *name = NULL);
 
 	int getLength() const { return 8; }
 	SerializedTypeID getSType() const { return STI_UINT64; }
@@ -247,10 +247,11 @@ protected:
 
 public:
 
-	STHash128(const uint128& v=uint128()) : value(v) { ; }
-	STHash128(const char *n, const uint128& v=uint128()) : SerializedType(n), value(v) { ; }
+	STHash128(const uint128& v) : value(v) { ; }
+	STHash128(const char *n, const uint128& v) : SerializedType(n), value(v) { ; }
+	STHash128(const char *n) : SerializedType(n) { ; }
 	STHash128() { ; }
-	static STHash128* construct(SerializerIterator&, const char *name=NULL);
+	static STHash128* construct(SerializerIterator&, const char *name = NULL);
 
 	int getLength() const { return 20; }
 	SerializedTypeID getSType() const { return STI_HASH128; }
@@ -273,10 +274,11 @@ protected:
 
 public:
 
-	STHash160(const uint160& v=uint160()) : value(v) { ; }
-	STHash160(const char *n, const uint160& v=uint160()) : SerializedType(n), value(v) { ; }
+	STHash160(const uint160& v) : value(v) { ; }
+	STHash160(const char *n, const uint160& v) : SerializedType(n), value(v) { ; }
+	STHash160(const char *n) : SerializedType(n) { ; }
 	STHash160() { ; }
-	static STHash160* construct(SerializerIterator&, const char *name=NULL);
+	static STHash160* construct(SerializerIterator&, const char *name = NULL);
 
 	int getLength() const { return 20; }
 	SerializedTypeID getSType() const { return STI_HASH160; }
@@ -300,9 +302,10 @@ protected:
 public:
 
 	STHash256(const uint256& v) : value(v) { ; }
-	STHash256(const char *n, const uint256& v=uint256()) : SerializedType(n), value(v) { ; }
+	STHash256(const char *n, const uint256& v) : SerializedType(n), value(v) { ; }
+	STHash256(const char *n) : SerializedType(n) { ; }
 	STHash256() { ; }
-	static STHash256* construct(SerializerIterator&, const char *name=NULL);
+	static STHash256* construct(SerializerIterator&, const char *name = NULL);
 
 	int getLength() const { return 32; }
 	SerializedTypeID getSType() const { return STI_HASH256; }
@@ -328,8 +331,9 @@ public:
 	STVariableLength(const std::vector<unsigned char>& v) : value(v) { ; }
 	STVariableLength(const char *n, const std::vector<unsigned char>& v) : SerializedType(n), value(v) { ; }
 	STVariableLength(const char *n) : SerializedType(n) { ; }
+	STVariableLength(SerializerIterator&, const char *name = NULL);
 	STVariableLength() { ; }
-	static STVariableLength* construct(SerializerIterator&, const char *name=NULL);
+	static STVariableLength* construct(SerializerIterator&, const char *name = NULL);
 
 	int getLength() const;
 	virtual SerializedTypeID getSType() const { return STI_VL; }
@@ -380,7 +384,7 @@ public:
 	STTaggedList(const char *n) : SerializedType(n) { ; }
 	STTaggedList(const std::vector<TaggedListItem>& v) : value(v) { ; }
 	STTaggedList(const char *n, const std::vector<TaggedListItem>& v) : SerializedType(n), value(v) { ; }
-	static STTaggedList* construct(SerializerIterator&, const char *name=NULL);
+	static STTaggedList* construct(SerializerIterator&, const char *name = NULL);
 
 	int getLength() const;
 	SerializedTypeID getSType() const { return STI_TL; }
@@ -406,3 +410,4 @@ public:
 };
 
 #endif
+// vim:ts=4

@@ -253,7 +253,7 @@ Json::Value RPCServer::doNewAccount(Json::Value &params)
 		return JSONRPCError(500, "Family required");
 
 	NewcoinAddress family = parseFamily(fParam);
-	if(!family.isValid()) return JSONRPCError(500, "Family not found.");
+	if (!family.isValid()) return JSONRPCError(500, "Family not found.");
 
 	LocalAccount::pointer account(theApp->getWallet().getNewLocalAccount(family));
 	if(!account)

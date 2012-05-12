@@ -7,7 +7,7 @@
 #define VALIDATORS_SITE		"redstem.com"
 
 #define VALIDATORS_FILE_NAME	"validators.txt"
-const int SYSTEM_PEER_PORT=6561;
+const int SYSTEM_PEER_PORT = 6561;
 
 // Allow anonymous DH.
 #define DEFAULT_PEER_SSL_CIPHER_LIST	"ALL:!LOW:!EXP:!MD5:@STRENGTH"
@@ -35,8 +35,9 @@ public:
 	int LEDGER_PROPOSAL_DELAY_SECONDS;
 	int LEDGER_AVALANCHE_SECONDS;
 
+	// Note: The following parameters do not relate to the UNL or trust at all
 	int NETWORK_QUORUM;			// Minimum number of nodes to consider the network present
-	int BELIEF_QUORUM;			// Percent agreement needed to sync ledger w/o validations
+	int VALIDATION_QUORUM;		// Minimum validations to consider ledger authoritative
 
 	// node networking parameters
 	std::string PEER_IP;

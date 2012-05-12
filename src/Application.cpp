@@ -31,7 +31,7 @@ DatabaseCon::DatabaseCon(const std::string& name, const char *initStrings[], int
 	std::string path=strprintf("%s%s", theConfig.DATA_DIR.c_str(), name.c_str());
 	mDatabase=new SqliteDatabase(path.c_str());
 	mDatabase->connect();
-	for(int i=0; i<initCount; i++)
+	for(int i = 0; i < initCount; ++i)
 		mDatabase->executeSQL(initStrings[i], true);
 }
 
@@ -41,11 +41,9 @@ DatabaseCon::~DatabaseCon()
 	delete mDatabase;
 }
 
-Application::Application() :
-	mUNL(mIOService),
+Application::Application() : mNetOps(mIOService), mUNL(mIOService),
 	mTxnDB(NULL), mLedgerDB(NULL), mWalletDB(NULL), mHashNodeDB(NULL), mNetNodeDB(NULL),
-	mConnectionPool(mIOService),
-	mPeerDoor(NULL), mRPCDoor(NULL)
+	mConnectionPool(mIOService), mPeerDoor(NULL), mRPCDoor(NULL)
 {
 	nothing();
 }
@@ -57,7 +55,7 @@ void Application::stop()
 {
 	mIOService.stop();
 
-    std::cerr << "Stopped: " << mIOService.stopped() << std::endl;
+	std::cerr << "Stopped: " << mIOService.stopped() << std::endl;
 }
 
 void Application::run()
@@ -82,43 +80,96 @@ void Application::run()
 	//
 	// Allow peer connections.
 	//
-	if(theConfig.PEER_PORT)
+	if(!theConfig.PEER_IP.empty() && theConfig.PEER_PORT)
 	{
 		mPeerDoor=new PeerDoor(mIOService);
-	}//else BOOST_LOG_TRIVIAL(info) << "No Peer Port set. Not listening for connections.";
+	}
+	else
+	{
+		std::cerr << "Peer interface: disabled" << std::endl;
+	}
 
 	//
 	// Allow RPC connections.
 	//
-	if(theConfig.RPC_PORT)
+	if(!theConfig.RPC_IP.empty() && theConfig.RPC_PORT)
 	{
 		mRPCDoor=new RPCDoor(mIOService);
-	}//else BOOST_LOG_TRIVIAL(info) << "No RPC Port set. Not listening for commands.";
+	}
+	else
+	{
+		std::cerr << "RPC interface: disabled" << std::endl;
+	}
 
 	//
-	// Begin connectting to network.
+	// Begin connecting to network.
 	//
 	mConnectionPool.start();
 
-	mTimingService.start(mIOService);
+	// New stuff.
+	NewcoinAddress	rootSeedMaster;
+	NewcoinAddress	rootGeneratorMaster;
+	NewcoinAddress	rootAddress;
+
+	rootSeedMaster.setFamilySeed(CKey::PassPhraseToKey("Master passphrase."));
+	rootGeneratorMaster.setFamilyGenerator(rootSeedMaster);
+
+	rootAddress.setAccountPublic(rootGeneratorMaster, 0);
+
+	std::cerr << "Master seed: " << rootSeedMaster.humanFamilySeed() << std::endl;
+	std::cerr << "Master generator: " << rootGeneratorMaster.humanFamilyGenerator() << std::endl;
+	std::cerr << "Root address: " << rootAddress.humanAccountPublic() << std::endl;
+#if 0
+	NewcoinAddress	rootSeedRegular;
+	NewcoinAddress	rootGeneratorRegular;
+	NewcoinAddress	reservedPublicRegular;
+	NewcoinAddress	reservedPrivateRegular;
+
+	rootSeedRegular.setFamilySeed(CKey::PassPhraseToKey("Regular passphrase."));
+	rootGeneratorRegular.setFamilyGenerator(rootSeedRegular);
+
+	reservedPublicRegular.setAccountPublic(rootGeneratorRegular, -1);
+	reservedPrivateRegular.setAccountPrivate(rootGeneratorRegular, rootSeedRegular, -1);
+
+	// hash of regular account #reserved public key.
+	uint160						uiGeneratorID		= reservedPublicRegular.getAccountID();
+
+	// std::cerr << "uiGeneratorID: " << uiGeneratorID << std::endl;
+
+	// Encrypt with regular account #reserved private key.
+	std::vector<unsigned char>	vucGeneratorCipher	= reservedPrivateRegular.accountPrivateEncrypt(reservedPublicRegular, rootGeneratorMaster.getFamilyGenerator());
+
+	std::cerr << "Plain: " << strHex(rootGeneratorMaster.getFamilyGenerator()) << std::endl;
+
+	std::cerr << "Cipher: " << strHex(vucGeneratorCipher) << std::endl;
+
+	std::vector<unsigned char>	vucGeneratorText	= reservedPrivateRegular.accountPrivateDecrypt(reservedPublicRegular, vucGeneratorCipher);
+
+	std::cerr << "Plain: " << strHex(vucGeneratorText) << std::endl;
+	std::cerr << "Regular seed: " << rootSeedRegular.humanFamilySeed() << std::endl;
+	std::cerr << "Regular generator: " << rootGeneratorRegular.humanFamilyGenerator() << std::endl;
+	std::cerr << "Reserved public regular: " << reservedPublicRegular.humanAccountPublic() << std::endl;
+	std::cerr << "Reserved private regular: " << reservedPrivateRegular.humanAccountPrivate() << std::endl;
+#endif
 
 	// Temporary root account will be ["This is my payphrase."]:0
 	NewcoinAddress rootFamilySeed;		// Hold the 128 password.
 	NewcoinAddress rootFamilyGenerator;	// Hold the generator.
-	NewcoinAddress rootAddress;
+	// NewcoinAddress rootAddress;
 
 	rootFamilySeed.setFamilySeed(CKey::PassPhraseToKey("This is my payphrase."));
 	rootFamilyGenerator.setFamilyGenerator(rootFamilySeed);
 	rootAddress.setAccountPublic(rootFamilyGenerator, 0);
 	std::cerr << "Root account: " << rootAddress.humanAccountID() << std::endl;
 
-	Ledger::pointer firstLedger(new Ledger(rootAddress, 100000000));
+	Ledger::pointer firstLedger = boost::make_shared<Ledger>(rootAddress, 100000000);
 	assert(!!firstLedger->getAccountState(rootAddress));
+	firstLedger->updateHash();
 	firstLedger->setClosed();
 	firstLedger->setAccepted();
 	mMasterLedger.pushLedger(firstLedger);
 
-	Ledger::pointer secondLedger = firstLedger->closeLedger(time(NULL));
+	Ledger::pointer secondLedger = boost::make_shared<Ledger>(firstLedger);
 	mMasterLedger.pushLedger(secondLedger);
 	assert(!!secondLedger->getAccountState(rootAddress));
 	mMasterLedger.setSynced();
@@ -126,6 +177,7 @@ void Application::run()
 
 	mWallet.load();
 //	mWallet.syncToLedger(true, &(*secondLedger));
+	mNetOps.setStateTimer(5);
 
 	// temporary
 	mIOService.run(); // This blocks

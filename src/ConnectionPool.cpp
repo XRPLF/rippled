@@ -123,8 +123,9 @@ void ConnectionPool::relayMessage(Peer* fromPeer, PackedMessage::pointer msg)
 	BOOST_FOREACH(naPeer pair, mConnectedMap)
 	{
 		Peer::pointer peer	= pair.second;
-
-		if(!fromPeer || !(peer.get() == fromPeer))
+		if (!peer)
+			std::cerr << "CP::RM null peer in list" << std::endl;
+		else if (!fromPeer || !(peer.get() == fromPeer))
 			peer->sendPacket(msg);
 	}
 }
@@ -176,7 +177,7 @@ bool ConnectionPool::connectTo(const std::string& strIp, int iPort)
 	if (it == mIpMap.end())
 	{
 		// Did not find it.  Not already connecting or connected.
-		std::cerr << "ConnectionPool::connectTo: Connectting: "
+		std::cerr << "ConnectionPool::connectTo: Connecting: "
 			<< strIp << " " << iPort << std::endl;
 
 		Peer::pointer peer(Peer::create(theApp->getIOService(), mCtx));
@@ -208,8 +209,23 @@ Json::Value ConnectionPool::getPeersJson()
 	BOOST_FOREACH(naPeer pair, mConnectedMap)
 	{
 		Peer::pointer peer	= pair.second;
+		if (!peer)
+			std::cerr << "CP::GPH null peer" << std::endl;
+		else ret.append(peer->getJson());
+    }
 
-		ret.append(peer->getJson());
+    return ret;
+}
+
+std::vector<Peer::pointer> ConnectionPool::getPeerVector()
+{
+	std::vector<Peer::pointer> ret;
+	ret.reserve(mConnectedMap.size());
+
+	BOOST_FOREACH(naPeer pair, mConnectedMap)
+	{
+		assert(!!pair.second);
+		ret.push_back(pair.second);
     }
 
     return ret;
@@ -221,7 +237,7 @@ bool ConnectionPool::peerConnected(Peer::pointer peer, const NewcoinAddress& na)
 	bool	bSuccess;
 
 	std::cerr << "ConnectionPool::peerConnected: " << na.humanNodePublic() << std::endl;
-
+	assert(!!peer);
 	if (na == theApp->getWallet().getNodePublic())
 	{
 		std::cerr << "ConnectionPool::peerConnected: To self." << std::endl;
@@ -281,9 +297,12 @@ void ConnectionPool::peerDisconnected(Peer::pointer peer, const ipPort& ipPeer, 
 
 void ConnectionPool::peerFailed(const std::string& strIp, int iPort)
 {
-	if (bScanning && !mScanIp.compare(strIp), mScanPort == iPort)
+	// If the fail was our scan, we are no longer scanning.
+	if (bScanning && !mScanIp.compare(strIp) && mScanPort == iPort)
 	{
 		bScanning	= false;
+
+		// Look for more to scan.
 		scanRefresh();
 	}
 }

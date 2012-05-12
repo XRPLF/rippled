@@ -16,13 +16,12 @@ public:
 	typedef boost::shared_ptr<SerializedTransaction> pointer;
 
 protected:
+	NewcoinAddress mSignPubKey;
 	NewcoinAddress mSourceAccount;
 	TransactionType mType;
 	STVariableLength mSignature;
 	STObject mMiddleTxn, mInnerTxn;
 	TransactionFormat* mFormat;
-
-	void updateSourceAccount();
 
 public:
 	SerializedTransaction(SerializerIterator& sit, int length); // -1=all remaining, 0=get from sit
@@ -42,7 +41,7 @@ public:
 	const std::vector<unsigned char>& peekSignature() const;
 	void setSignature(const std::vector<unsigned char>& s);
 	uint256 getSigningHash() const;
-		
+
 	// middle transaction functions
 	uint32 getVersion() const;
 	void setVersion(uint32);
@@ -55,14 +54,15 @@ public:
 	std::vector<unsigned char> getSigningPubKey() const;
 	const std::vector<unsigned char>& peekSigningPubKey() const;
 	std::vector<unsigned char>& peekSigningPubKey();
-	const NewcoinAddress& setSigningPubKey(const std::vector<unsigned char>& s);
+	const NewcoinAddress& setSigningPubKey(const NewcoinAddress& naSignPubKey);
+	const NewcoinAddress& setSourceAccount(const NewcoinAddress& naSource);
 	std::string getTransactionType() const { return mFormat->t_name; }
 
 	// inner transaction functions
 	uint32 getFlags() const { return mInnerTxn.getFlags(); }
 	void setFlag(uint32 v) { mInnerTxn.setFlag(v); }
 	void clearFlag(uint32 v) { mInnerTxn.clearFlag(v); }
-	
+
 	uint32 getSequence() const;
 	void setSequence(uint32);
 
@@ -116,3 +116,4 @@ public:
 };
 
 #endif
+// vim:ts=4
