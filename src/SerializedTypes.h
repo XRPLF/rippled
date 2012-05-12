@@ -247,8 +247,9 @@ protected:
 
 public:
 
-	STHash128(const uint128& v=uint128()) : value(v) { ; }
-	STHash128(const char *n, const uint128& v=uint128()) : SerializedType(n), value(v) { ; }
+	STHash128(const uint128& v) : value(v) { ; }
+	STHash128(const char *n, const uint128& v) : SerializedType(n), value(v) { ; }
+	STHash128(const char *n) : SerializedType(n) { ; }
 	STHash128() { ; }
 	static STHash128* construct(SerializerIterator&, const char *name = NULL);
 
@@ -273,8 +274,9 @@ protected:
 
 public:
 
-	STHash160(const uint160& v=uint160()) : value(v) { ; }
-	STHash160(const char *n, const uint160& v=uint160()) : SerializedType(n), value(v) { ; }
+	STHash160(const uint160& v) : value(v) { ; }
+	STHash160(const char *n, const uint160& v) : SerializedType(n), value(v) { ; }
+	STHash160(const char *n) : SerializedType(n) { ; }
 	STHash160() { ; }
 	static STHash160* construct(SerializerIterator&, const char *name = NULL);
 
@@ -300,7 +302,8 @@ protected:
 public:
 
 	STHash256(const uint256& v) : value(v) { ; }
-	STHash256(const char *n, const uint256& v=uint256()) : SerializedType(n), value(v) { ; }
+	STHash256(const char *n, const uint256& v) : SerializedType(n), value(v) { ; }
+	STHash256(const char *n) : SerializedType(n) { ; }
 	STHash256() { ; }
 	static STHash256* construct(SerializerIterator&, const char *name = NULL);
 
