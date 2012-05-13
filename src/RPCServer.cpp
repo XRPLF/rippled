@@ -597,11 +597,37 @@ Json::Value RPCServer::doValidatorCreate(Json::Value& params) {
 
 	Json::Value obj(Json::objectValue);
 
-	obj["validation_public_key"]	= nodePublicKey.humanNodePublic().c_str();
-	obj["validation_seed"]			= familySeed.humanFamilySeed().c_str();
-	obj["validation_key"]			= familySeed.humanFamilySeed1751().c_str();
+	obj["validation_public_key"]	= nodePublicKey.humanNodePublic();
+	obj["validation_seed"]			= familySeed.humanFamilySeed();
+	obj["validation_key"]			= familySeed.humanFamilySeed1751();
 
 	return obj;
+}
+
+// wallet_propose
+Json::Value RPCServer::doWalletPropose(Json::Value& params) {
+	if(params.size())
+	{
+		return "invalid params";
+	}
+	else
+	{
+		NewcoinAddress	naSeed;
+		NewcoinAddress	naGenerator;
+		NewcoinAddress	naAccount;
+
+		naSeed.setFamilySeedRandom();
+		naGenerator.setFamilyGenerator(naSeed);
+		naAccount.setAccountPublic(naGenerator, 0);
+
+		Json::Value obj(Json::objectValue);
+
+		obj["master_seed"]		= naSeed.humanFamilySeed();
+		obj["master_key"]		= naSeed.humanFamilySeed1751();
+		obj["account_id"]		= naAccount.humanAccountID();
+
+		return obj;
+	}
 }
 
 void RPCServer::validatorsResponse(const boost::system::error_code& err, std::string strResponse)
@@ -739,6 +765,8 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 	if(command=="unl_score") return doUnlScore(params);
 
 	if(command=="validation_create") return doValidatorCreate(params);
+
+	if(command=="wallet_propose") return doWalletPropose(params);
 
 	if(command=="createfamily") return doCreateFamily(params);
 	if(command=="familyinfo") return doFamilyInfo(params);
