@@ -37,10 +37,14 @@ public:
 
 protected:
 	virtual void newPeer(Peer::pointer) = 0;
-	virtual boost::function<void (boost::system::error_code)> getTimerLamba() = 0;
+	virtual void onTimer(void) = 0;
+	virtual boost::weak_ptr<PeerSet> pmDowncast() = 0;
 
 	void setComplete()					{ mComplete = true; }
 	void setFailed()					{ mFailed = true; }
+
+private:
+	static void TimerEntry(boost::weak_ptr<PeerSet>, const boost::system::error_code& result);
 };
 
 class LedgerAcquire : public PeerSet, public boost::enable_shared_from_this<LedgerAcquire>
@@ -61,8 +65,8 @@ protected:
 	void sendRequest(boost::shared_ptr<newcoin::TMGetLedger> message, Peer::pointer peer);
 	void newPeer(Peer::pointer peer) { trigger(peer); }
 	void trigger(Peer::pointer);
-	virtual boost::function<void (boost::system::error_code)> getTimerLamba();
-	static void LATimerEntry(boost::weak_ptr<LedgerAcquire>, const boost::system::error_code&);
+
+	boost::weak_ptr<PeerSet> pmDowncast();
 
 public:
 	LedgerAcquire(const uint256& hash);
