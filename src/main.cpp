@@ -53,6 +53,8 @@ void printHelp(const po::options_description& desc)
 	cout << "     unl_reset" << endl;
 	cout << "     unlock <passphrase>" << endl;
 	cout << "     validation_create [<seed>|<pass_phrase>|<key>]" << endl;
+	cout << "     wallet_claim <master_seed> <regular_seed> [<source_tag>] [<account_annotation>]" << endl;
+	cout << "     wallet_propose" << endl;
 }
 
 int main(int argc, char* argv[])
