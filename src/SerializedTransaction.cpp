@@ -129,14 +129,14 @@ const std::vector<unsigned char>& SerializedTransaction::peekSignature() const
 	return mSignature.peekValue();
 }
 
-bool SerializedTransaction::sign(CKey& key)
+bool SerializedTransaction::sign(const NewcoinAddress& naAccountPrivate)
 {
-	return key.Sign(getSigningHash(), mSignature.peekValue());
+	return naAccountPrivate.accountPrivateSign(getSigningHash(), mSignature.peekValue());
 }
 
-bool SerializedTransaction::checkSign(const CKey& key) const
+bool SerializedTransaction::checkSign(const NewcoinAddress& naAccountPrivate) const
 {
-	return key.Verify(getSigningHash(), mSignature.getValue());
+	return naAccountPrivate.accountPrivateVerify(getSigningHash(), mSignature.getValue());
 }
 
 void SerializedTransaction::setSignature(const std::vector<unsigned char>& sig)

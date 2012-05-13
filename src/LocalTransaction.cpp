@@ -18,6 +18,10 @@ bool LocalTransaction::makeTransaction()
 		return false;
 	}
 
+	std::cerr << "LocalTransaction is obsolete." << std::endl;
+	return false;
+
+#if 0
 	mTransaction=Transaction::pointer(new Transaction(lac, mDestAcctID, mAmount, mTag,
 		theApp->getOPs().getCurrentLedgerID()));
 	if(mTransaction->getStatus()!=NEW)
@@ -31,6 +35,7 @@ bool LocalTransaction::makeTransaction()
 		return false;
 	}
 	return true;
+#endif
 }
 
 void LocalTransaction::performTransaction()

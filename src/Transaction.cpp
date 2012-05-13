@@ -11,28 +11,22 @@
 #include "Serializer.h"
 #include "SerializedTransaction.h"
 
-Transaction::Transaction(LocalAccount::pointer fromLocalAccount, const NewcoinAddress& toAccount, uint64 amount,
-	uint32 ident, uint32 ledger) : mInLedger(0), mStatus(NEW)
+Transaction::Transaction(const NewcoinAddress& naPublicKey, const NewcoinAddress& naPrivateKey,
+	const NewcoinAddress& naFromAccount, const NewcoinAddress& toAccount,
+	uint64 amount,
+	uint32 iSeq, uint32 ident, uint32 ledger) : mInLedger(0), mStatus(NEW)
 {
-	AccountState::pointer accountState = fromLocalAccount->getAccountState();
-	if (!accountState) throw std::runtime_error("transaction on non-existent account");
+	mAccountFrom	= naFromAccount;
 
-	mAccountFrom = fromLocalAccount->getAddress();
+	mFromPubKey		= naPublicKey;
+	assert(mFromPubKey.isValid());
 
-	mTransaction = boost::make_shared<SerializedTransaction>(ttMAKE_PAYMENT);
+	mTransaction	= boost::make_shared<SerializedTransaction>(ttMAKE_PAYMENT);
 
-	mFromPubKey = fromLocalAccount->getPublicKey();
-	assert(mFromPubKey);
-
-	// XXX Temporary: We don't really have local accounts.
-	NewcoinAddress	signPubKey;
-
-	signPubKey.setAccountPublic(mFromPubKey->GetPubKey());
-
-	mTransaction->setSigningPubKey(signPubKey);
+	mTransaction->setSigningPubKey(mFromPubKey);
 	mTransaction->setSourceAccount(mAccountFrom);
 
-	mTransaction->setSequence(accountState->getSeq());
+	mTransaction->setSequence(iSeq);
 	assert(mTransaction->getSequence() != 0);
 
 	mTransaction->setTransactionFee(100); // for now
@@ -50,8 +44,7 @@ Transaction::Transaction(LocalAccount::pointer fromLocalAccount, const NewcoinAd
 		mTransaction->setITFieldU32(sfSourceTag, ident);
 	}
 
-	assert(mFromPubKey);
-	if (!sign(fromLocalAccount))
+	if (!sign(naPrivateKey))
 	{
 #ifdef DEBUG
 		std::cerr << "Unable to sign transaction" << std::endl;
@@ -60,56 +53,39 @@ Transaction::Transaction(LocalAccount::pointer fromLocalAccount, const NewcoinAd
 	}
 }
 
-Transaction::Transaction(SerializedTransaction::pointer sit, bool validate)
+Transaction::Transaction(const SerializedTransaction::pointer sit, bool bValidate)
 	: mInLedger(0), mStatus(INVALID), mTransaction(sit)
 {
-	std::vector<unsigned char> pubKey;
-
 	try
 	{
-		pubKey = mTransaction->peekSigningPubKey();
-		mTransactionID = mTransaction->getTransactionID();
-		mAccountFrom = mTransaction->getSourceAccount();
+		mFromPubKey.setAccountPublic(mTransaction->peekSigningPubKey());
+		mTransactionID	= mTransaction->getTransactionID();
+		mAccountFrom	= mTransaction->getSourceAccount();
 	}
 	catch(...)
 	{
 		return;
 	}
 
-	mFromPubKey = boost::make_shared<CKey>();
-	if (!mFromPubKey->SetPubKey(pubKey)) return;
-	mFromPubKey = theApp->getPubKeyCache().store(mAccountFrom, mFromPubKey);
-
-	if (!validate || checkSign())
+	if (!bValidate || checkSign())
 		mStatus = NEW;
 }
 
-Transaction::Transaction(const std::vector<unsigned char>& raw, bool validate) : mInLedger(0), mStatus(INVALID)
+Transaction::pointer Transaction::sharedTransaction(const std::vector<unsigned char>&vucTransaction, bool bValidate)
 {
-	uint160	toAccountID;
-	uint160	fromAccountID;
-	std::vector<unsigned char> pubKey;
-
 	try
 	{
-		Serializer s(raw);
-		SerializerIterator sit(s);
-		mTransaction = boost::make_shared<SerializedTransaction>(boost::ref(sit), -1);
+		Serializer			s(vucTransaction);
+		SerializerIterator	sit(s);
 
-		mFromPubKey = boost::make_shared<CKey>();
-		if (!mFromPubKey->SetPubKey(pubKey)) return;
-		mAccountFrom.setAccountPublic(pubKey);
-		mFromPubKey = theApp->getPubKeyCache().store(mAccountFrom, mFromPubKey);
-		if (!mFromPubKey->SetPubKey(pubKey)) return;
-		mAccountFrom.setAccountPublic(pubKey);
-		mFromPubKey = theApp->getPubKeyCache().store(mAccountFrom, mFromPubKey);
+		SerializedTransaction::pointer	st	= boost::make_shared<SerializedTransaction>(boost::ref(sit), -1);
+
+		return boost::make_shared<Transaction>(st, bValidate);
 	}
 	catch (...)
 	{
-		return;
+		return boost::shared_ptr<Transaction>();
 	}
-	if (!validate || checkSign())
-		mStatus = NEW;
 }
 
 #if 0
@@ -140,10 +116,9 @@ Transaction::Transaction(const NewcoinAddress& fromID, const NewcoinAddress& toI
 }
 #endif
 
-bool Transaction::sign(LocalAccount::pointer fromLocalAccount)
+bool Transaction::sign(const NewcoinAddress& naAccountPrivate)
 {
-	CKey::pointer privateKey = fromLocalAccount->getPrivateKey();
-	if(!privateKey)
+	if(!naAccountPrivate.isValid())
 	{
 #ifdef DEBUG
 		std::cerr << "No private key for signing" << std::endl;
@@ -151,6 +126,7 @@ bool Transaction::sign(LocalAccount::pointer fromLocalAccount)
 		return false;
 	}
 
+#if 0
 	if( (mTransaction->getITFieldU64(sfAmount)==0) )
 	{
 #ifdef DEBUG
@@ -159,17 +135,9 @@ bool Transaction::sign(LocalAccount::pointer fromLocalAccount)
 		assert(false);
 		return false;
 	}
-
-	if(mAccountFrom.getAccountID()!=fromLocalAccount->getAddress().getAccountID())
-	{
-#ifdef DEBUG
-		std::cerr << "Source mismatch" << std::endl;
 #endif
-		assert(false);
-		return false;
-	}
 
-	if(!getSTransaction()->sign(*privateKey))
+	if(!getSTransaction()->sign(naAccountPrivate))
 	{
 #ifdef DEBUG
 		std::cerr << "Failed to make signature" << std::endl;
@@ -177,14 +145,16 @@ bool Transaction::sign(LocalAccount::pointer fromLocalAccount)
 		assert(false);
 		return false;
 	}
+
 	updateID();
+
 	return true;
 }
 
 bool Transaction::checkSign() const
 {
-	assert(mFromPubKey);
-	return mTransaction->checkSign(*mFromPubKey);
+	assert(mFromPubKey.isValid());
+	return mTransaction->checkSign(mFromPubKey);
 }
 
 void Transaction::setStatus(TransStatus ts, uint32 lseq)
@@ -310,11 +280,11 @@ bool Transaction::convertToTransactions(uint32 firstLedgerSeq, uint32 secondLedg
 		const uint256& id = it->first;
 		const SHAMapItem::pointer& first = it->second.first;
 		const SHAMapItem::pointer& second = it->second.second;
-	
-		Transaction::pointer firstTrans, secondTrans;	
+
+		Transaction::pointer firstTrans, secondTrans;
 		if (!!first)
 		{ // transaction in our table
-			firstTrans = boost::make_shared<Transaction>(first->getData(), checkFirstTransactions);
+			firstTrans = sharedTransaction(first->getData(), checkFirstTransactions);
 			if ((firstTrans->getStatus() == INVALID) || (firstTrans->getID() != id ))
 			{
 				firstTrans->setStatus(INVALID, firstLedgerSeq);
@@ -325,7 +295,7 @@ bool Transaction::convertToTransactions(uint32 firstLedgerSeq, uint32 secondLedg
 
 		if (!!second)
 		{ // transaction in other table
-			secondTrans = boost::make_shared<Transaction>(second->getData(), checkSecondTransactions);
+			secondTrans = sharedTransaction(second->getData(), checkSecondTransactions);
 			if ((secondTrans->getStatus() == INVALID) || (secondTrans->getID() != id))
 			{
 				secondTrans->setStatus(INVALID, secondLedgerSeq);

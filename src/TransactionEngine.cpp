@@ -15,11 +15,14 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	// Transactions contain a signing key.  This allows us to trivially verify a transaction has at least been properly signed
 	// without going to disk.  Each transaction also notes a source account id.  This is used to verify that the signing key is
 	// associated with the account.
-	CKey acctKey;
-	if (!acctKey.SetPubKey(txn.peekSigningPubKey())) return tenINVALID;
+	// XXX This could be a lot cleaner to prevent unnecessary copying.
+	NewcoinAddress	naPubKey;
+
+	naPubKey.setAccountPublic(txn.peekSigningPubKey());
 
 	// check signature
-	if (!txn.checkSign(acctKey)) return tenINVALID;
+	if (!txn.checkSign(naPubKey))
+		return tenINVALID;
 
 	bool	bPrepaid	= false;
 

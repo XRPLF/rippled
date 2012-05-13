@@ -15,20 +15,19 @@
 #include "Hanko.h"
 #include "Serializer.h"
 #include "SHAMap.h"
-#include "LocalAccount.h"
 #include "SerializedTransaction.h"
 
 enum TransStatus
 {
-	NEW			=0,	// just received / generated
-	INVALID		=1,	// no valid signature, insufficient funds
-	INCLUDED	=2,	// added to the current ledger
-	CONFLICTED	=3,	// losing to a conflicting transaction
-	COMMITTED	=4,	// known to be in a ledger
-	HELD		=5,	// not valid now, maybe later
-	REMOVED		=6,	// taken out of a ledger
-	OBSOLETE	=7, // a compatible transaction has taken precedence
-	INCOMPLETE	=8  // needs more signatures
+	NEW			= 0, // just received / generated
+	INVALID		= 1, // no valid signature, insufficient funds
+	INCLUDED	= 2, // added to the current ledger
+	CONFLICTED	= 3, // losing to a conflicting transaction
+	COMMITTED	= 4, // known to be in a ledger
+	HELD		= 5, // not valid now, maybe later
+	REMOVED		= 6, // taken out of a ledger
+	OBSOLETE	= 7, // a compatible transaction has taken precedence
+	INCOMPLETE	= 8  // needs more signatures
 };
 
 class Transaction : public boost::enable_shared_from_this<Transaction>
@@ -40,7 +39,7 @@ public:
 private:
 	uint256			mTransactionID;
 	NewcoinAddress	mAccountFrom;
-	CKey::pointer	mFromPubKey;
+	NewcoinAddress	mFromPubKey;
 
 	uint32		mInLedger;
 	TransStatus	mStatus;
@@ -48,17 +47,22 @@ private:
 	SerializedTransaction::pointer mTransaction;
 
 public:
-	Transaction(const std::vector<unsigned char>&, bool validate);
-	Transaction(SerializedTransaction::pointer st, bool validate);
+	Transaction(const SerializedTransaction::pointer st, bool bValidate);
 
-	Transaction(LocalAccount::pointer fromLocal, const NewcoinAddress& to, uint64 amount,
-		uint32 ident, uint32 ledger);
+	static Transaction::pointer sharedTransaction(const std::vector<unsigned char>&vucTransaction, bool bValidate);
 
+	Transaction(const NewcoinAddress& naPublicKey, const NewcoinAddress& naPrivateKey,
+		const NewcoinAddress& naFromAccount, const NewcoinAddress& toAccount,
+		uint64 amount,
+		uint32 iSeq, uint32 ident, uint32 ledger);
+
+#if 0
 	Transaction(const NewcoinAddress& fromID, const NewcoinAddress& toID,
 		CKey::pointer pubKey, uint64 amount, uint64 fee, uint32 fromSeq, uint32 fromLedger,
 		uint32 ident, const std::vector<unsigned char>& signature, uint32 ledgerSeq, TransStatus st);
+#endif
 
-	bool sign(LocalAccount::pointer fromLocalAccount);
+	bool sign(const NewcoinAddress& naAccountPrivate);
 	bool checkSign() const;
 	void updateID() { mTransactionID=mTransaction->getTransactionID(); }
 

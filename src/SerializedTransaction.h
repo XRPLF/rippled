@@ -111,8 +111,8 @@ public:
 
 	virtual Json::Value getJson(int options) const;
 
-	bool sign(CKey& key);
-	bool checkSign(const CKey& key) const;
+	bool sign(const NewcoinAddress& naAccountPrivate);
+	bool checkSign(const NewcoinAddress& naAccountPrivate) const;
 };
 
 #endif

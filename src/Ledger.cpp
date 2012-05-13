@@ -174,7 +174,7 @@ Transaction::pointer Ledger::getTransaction(const uint256& transID) const
 	Transaction::pointer txn = theApp->getMasterTransaction().fetch(transID, false);
 	if (txn) return txn;
 
-	txn = boost::make_shared<Transaction>(item->getData(), true);
+	txn = Transaction::sharedTransaction(item->getData(), true);
 	if (txn->getStatus() == NEW)
 		txn->setStatus(mClosed ? COMMITTED : INCLUDED, mLedgerSeq);
 
@@ -382,7 +382,7 @@ Ledger::pointer Ledger::switchPreviousLedger(Ledger::pointer oldPrevious, Ledger
 	{
 		uint256 txnID = mit->getTag();
 		Transaction::pointer tx = theApp->getMasterTransaction().fetch(txnID, false);
-		if(!tx) tx = boost::make_shared<Transaction>(mit->peekData(), false);
+		if(!tx) tx = Transaction::sharedTransaction(mit->peekData(), false);
 		txnMap.insert(std::make_pair(txnID, tx));
 	}
 
