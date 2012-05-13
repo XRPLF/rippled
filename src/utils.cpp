@@ -1,4 +1,19 @@
 #include "utils.h"
+#include "uint256.h"
+
+uint256 uint160extend256(const uint160& uSource)
+{
+	uint256 uResult;
+
+	memcpy(uResult.begin() + (uResult.size() - uSource.size()), uSource.begin(), uSource.size());
+
+	return uResult;
+}
+
+//
+// Time support
+// We have our own epoch.
+//
 
 boost::posix_time::ptime ptEpoch()
 {
@@ -18,6 +33,10 @@ boost::posix_time::ptime ptFromSeconds(int iSeconds)
 		? boost::posix_time::ptime(boost::posix_time::not_a_date_time)
 		: ptEpoch() + boost::posix_time::seconds(iSeconds);
 }
+
+//
+// Hex suport
+//
 
 char charHex(int iDigit)
 {
@@ -44,6 +63,10 @@ void strUnHex(std::string& strDst, const std::string& strSrc)
 	for (int i=0; i != iBytes; i++)
 		strDst[i]	= (charUnHex(strSrc[i*2]) << 4) | charUnHex(strSrc[i*2+1]);
 }
+
+//
+// DH support
+//
 
 void DH_der_gen(std::string& strDer, int iKeyLength)
 {
