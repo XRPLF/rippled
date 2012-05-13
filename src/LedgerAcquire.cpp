@@ -56,13 +56,13 @@ void PeerSet::badPeer(Peer::pointer ptr)
 void PeerSet::resetTimer()
 {
 	mTimer.expires_from_now(boost::posix_time::seconds(mTimerInterval));
-	mTimer.async_wait(getTimerLamba());
+	mTimer.async_wait(boost::bind(&PeerSet::TimerEntry, pmDowncast(), boost::asio::placeholders::error));
 }
 
-void LedgerAcquire::LATimerEntry(boost::weak_ptr<LedgerAcquire> wptr, const boost::system::error_code& result)
+void PeerSet::TimerEntry(boost::weak_ptr<PeerSet> wptr, const boost::system::error_code& result)
 {
 	if (result == boost::asio::error::operation_aborted) return;
-	boost::shared_ptr<LedgerAcquire> ptr = wptr.lock();
+	boost::shared_ptr<PeerSet> ptr = wptr.lock();
 	if (!!ptr) ptr->onTimer();
 }
 
@@ -74,10 +74,9 @@ LedgerAcquire::LedgerAcquire(const uint256& hash) : PeerSet(hash, LEDGER_ACQUIRE
 #endif
 }
 
-boost::function<void (boost::system::error_code)> LedgerAcquire::getTimerLamba()
+boost::weak_ptr<PeerSet> LedgerAcquire::pmDowncast()
 {
-	return boost::bind(&LedgerAcquire::LATimerEntry, boost::weak_ptr<LedgerAcquire>(shared_from_this()),
-		boost::asio::placeholders::error);
+	return boost::shared_polymorphic_downcast<PeerSet, LedgerAcquire>(shared_from_this());
 }
 
 void LedgerAcquire::done()
