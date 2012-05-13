@@ -562,6 +562,24 @@ bool NewcoinAddress::setFamilySeed(const std::string& strSeed)
     return SetString(strSeed.c_str(), VER_FAMILY_SEED);
 }
 
+void NewcoinAddress::setFamilySeedGeneric(const std::string& strText)
+{
+	if (setFamilySeed(strText))
+	{
+		std::cerr << "Recognized seed." << std::endl;
+	}
+	else if (1 == setFamilySeed1751(strText))
+	{
+		std::cerr << "Recognized 1751 seed." << std::endl;
+	}
+	else
+	{
+		std::cerr << "Creating seed from pass phrase." << std::endl;
+
+		setFamilySeed(CKey::PassPhraseToKey(strText));
+	}
+}
+
 void NewcoinAddress::setFamilySeed(uint128 hash128) {
     SetData(VER_FAMILY_SEED, hash128.begin(), 16);
 }
