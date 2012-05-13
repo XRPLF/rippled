@@ -9,13 +9,75 @@
 
 #define LEDGER_ACQUIRE_TIMEOUT 2
 
-LedgerAcquire::LedgerAcquire(const uint256& hash) : mHash(hash),
-	mComplete(false), mFailed(false), mHaveBase(false), mHaveState(false), mHaveTransactions(false),
-	mTimer(theApp->getIOService())
+PeerSet::PeerSet(const uint256& hash, int interval) : mHash(hash), mTimerInterval(interval),
+	mComplete(false), mFailed(false), mTimer(theApp->getIOService())
+{ ; }
+
+void PeerSet::peerHas(Peer::pointer ptr)
+{
+	boost::recursive_mutex::scoped_lock sl(mLock);
+	std::list<boost::weak_ptr<Peer> >::iterator it = mPeers.begin();
+	while (it != mPeers.end())
+	{
+		Peer::pointer pr = it->lock();
+		if (!pr) // we have a dead entry, remove it
+			it = mPeers.erase(it);
+		else
+		{
+			if (pr->samePeer(ptr)) return;	// we already have this peer
+			++it;
+		}
+	}
+	mPeers.push_back(ptr);
+	newPeer(ptr);
+}
+
+void PeerSet::badPeer(Peer::pointer ptr)
+{
+	boost::recursive_mutex::scoped_lock sl(mLock);
+	std::list<boost::weak_ptr<Peer> >::iterator it=mPeers.begin();
+	while (it != mPeers.end())
+	{
+		Peer::pointer pr = it->lock();
+		if (!pr) // we have a dead entry, remove it
+			it = mPeers.erase(it);
+		else
+		{
+			if (ptr->samePeer(pr))
+			{ // We found a pointer to the bad peer
+				mPeers.erase(it);
+				return;
+			}
+			++it;
+		}
+	}
+}
+
+void PeerSet::resetTimer()
+{
+	mTimer.expires_from_now(boost::posix_time::seconds(mTimerInterval));
+	mTimer.async_wait(getTimerLamba());
+}
+
+void LedgerAcquire::LATimerEntry(boost::weak_ptr<LedgerAcquire> wptr, const boost::system::error_code& result)
+{
+	if (result == boost::asio::error::operation_aborted) return;
+	boost::shared_ptr<LedgerAcquire> ptr = wptr.lock();
+	if (!!ptr) ptr->onTimer();
+}
+
+LedgerAcquire::LedgerAcquire(const uint256& hash) : PeerSet(hash, LEDGER_ACQUIRE_TIMEOUT), 
+	mHaveBase(false), mHaveState(false), mHaveTransactions(false)
 {
 #ifdef DEBUG
 	std::cerr << "Acquiring ledger " << mHash.GetHex() << std::endl;
 #endif
+}
+
+boost::function<void (boost::system::error_code)> LedgerAcquire::getTimerLamba()
+{
+	return boost::bind(&LedgerAcquire::LATimerEntry, boost::weak_ptr<LedgerAcquire>(shared_from_this()),
+		boost::asio::placeholders::error);
 }
 
 void LedgerAcquire::done()
@@ -25,28 +87,23 @@ void LedgerAcquire::done()
 #endif
 	std::vector< boost::function<void (LedgerAcquire::pointer)> > triggers;
 
+	setComplete();
 	mLock.lock();
 	triggers = mOnComplete;
 	mOnComplete.empty();
 	mLock.unlock();
 
 	for (int i = 0; i<triggers.size(); ++i)
-		triggers[i](shared_from_this());
+		triggers[i](boost::enable_shared_from_this<LedgerAcquire>::shared_from_this());
 }
 
-void LedgerAcquire::resetTimer()
+struct null_deleter
 {
-	mTimer.expires_from_now(boost::posix_time::seconds(LEDGER_ACQUIRE_TIMEOUT));
-	mTimer.async_wait(boost::bind(&LedgerAcquire::timerEntry,
-		boost::weak_ptr<LedgerAcquire>(shared_from_this()), boost::asio::placeholders::error));	
-}
-
-void LedgerAcquire::timerEntry(boost::weak_ptr<LedgerAcquire> wptr, const boost::system::error_code& result)
-{
-	if (result == boost::asio::error::operation_aborted) return;
-	LedgerAcquire::pointer ptr = wptr.lock();
-	if (!!ptr) ptr->trigger(Peer::pointer());
-}
+	void operator()(void const *) const
+	{ // weak pointers never need to delete
+		assert(false);
+	}
+};
 
 void LedgerAcquire::addOnComplete(boost::function<void (LedgerAcquire::pointer)> trigger)
 {
@@ -213,46 +270,6 @@ void LedgerAcquire::sendRequest(boost::shared_ptr<newcoin::TMGetLedger> tmGL)
 			Peer::pointer peer = it->lock();
 			if (peer) peer->sendPacket(packet);
 			return;
-		}
-	}
-}
-
-void LedgerAcquire::peerHas(Peer::pointer ptr)
-{
-	boost::recursive_mutex::scoped_lock sl(mLock);
-	std::list<boost::weak_ptr<Peer> >::iterator it = mPeers.begin();
-	while (it != mPeers.end())
-	{
-		Peer::pointer pr = it->lock();
-		if (!pr) // we have a dead entry, remove it
-			it = mPeers.erase(it);
-		else
-		{
-			if (pr->samePeer(ptr)) return;	// we already have this peer
-			++it;
-		}
-	}
-	mPeers.push_back(ptr);
-	if (mPeers.size() == 1) trigger(ptr);
-}
-
-void LedgerAcquire::badPeer(Peer::pointer ptr)
-{
-	boost::recursive_mutex::scoped_lock sl(mLock);
-	std::list<boost::weak_ptr<Peer> >::iterator it=mPeers.begin();
-	while (it != mPeers.end())
-	{
-		Peer::pointer pr = it->lock();
-		if (!pr) // we have a dead entry, remove it
-			it = mPeers.erase(it);
-		else
-		{
-			if (ptr->samePeer(pr))
-			{ // We found a pointer to the bad peer
-				mPeers.erase(it);
-				return;
-			}
-			++it;
 		}
 	}
 }
