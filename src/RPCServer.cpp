@@ -20,6 +20,7 @@
 #include "LocalTransaction.h"
 #include "NewcoinAddress.h"
 #include "AccountState.h"
+#include "utils.h"
 
 #define VALIDATORS_FETCH_SECONDS	30
 #define VALIDATORS_FILE_PATH		"/" VALIDATORS_FILE_NAME
@@ -48,18 +49,18 @@ void RPCServer::connected()
 void RPCServer::handle_read(const boost::system::error_code& e,
 	std::size_t bytes_transferred)
 {
-	if(!e)
+	if (!e)
 	{
 		boost::tribool result;
 		result = mRequestParser.parse(
 			mIncomingRequest, mReadBuffer.data(), mReadBuffer.data() + bytes_transferred);
 
-		if(result)
+		if (result)
 		{
 			mReplyStr=handleRequest(mIncomingRequest.mBody);
 			sendReply();
 		}
-		else if(!result)
+		else if (!result)
 		{ // bad request
 			std::cout << "bad request" << std::endl;
 		}
@@ -71,7 +72,7 @@ void RPCServer::handle_read(const boost::system::error_code& e,
 				boost::asio::placeholders::bytes_transferred));
 		}
 	}
-	else if(e != boost::asio::error::operation_aborted)
+	else if (e != boost::asio::error::operation_aborted)
 	{
 
 	}
@@ -85,7 +86,7 @@ std::string RPCServer::handleRequest(const std::string& requestStr)
 	// Parse request
 	Json::Value valRequest;
 	Json::Reader reader;
-	if(!reader.parse(requestStr, valRequest) || valRequest.isNull() || !valRequest.isObject())
+	if (!reader.parse(requestStr, valRequest) || valRequest.isNull() || !valRequest.isObject())
 		return(HTTPReply(400, ""));
 
 	// Parse id now so errors from here on will have the id
@@ -103,7 +104,7 @@ std::string RPCServer::handleRequest(const std::string& requestStr)
 	Json::Value valParams = valRequest["params"];
 	if (valParams.isNull())
 		valParams = Json::Value(Json::arrayValue);
-	else if(!valParams.isArray())
+	else if (!valParams.isArray())
 		return(HTTPReply(400, ""));
 
 #ifdef DEBUG
@@ -123,37 +124,37 @@ std::string RPCServer::handleRequest(const std::string& requestStr)
 
 int RPCServer::getParamCount(const Json::Value& params)
 { // If non-array, only counts strings
-	if(params.isNull()) return 0;
-	if(params.isArray()) return params.size();
-	if(!params.isConvertibleTo(Json::stringValue))
+	if (params.isNull()) return 0;
+	if (params.isArray()) return params.size();
+	if (!params.isConvertibleTo(Json::stringValue))
 		return 0;
 	return 1;
 }
 
 bool RPCServer::extractString(std::string& param, const Json::Value& params, int index)
 {
-	if(params.isNull()) return false;
+	if (params.isNull()) return false;
 
-	if(index!=0)
+	if (index!=0)
 	{
-		if(!params.isArray() || !params.isValidIndex(index))
+		if (!params.isArray() || !params.isValidIndex(index))
 			return false;
 		Json::Value p(params.get(index, Json::nullValue));
-		if(p.isNull() || !p.isConvertibleTo(Json::stringValue))
+		if (p.isNull() || !p.isConvertibleTo(Json::stringValue))
 			return false;
 		param = p.asString();
 		return true;
 	}
 
-	if(params.isArray())
+	if (params.isArray())
 	{
-		if( (!params.isValidIndex(0)) || (!params[0u].isConvertibleTo(Json::stringValue)) )
+		if ( (!params.isValidIndex(0)) || (!params[0u].isConvertibleTo(Json::stringValue)) )
 			return false;
 		param = params[0u].asString();
 		return true;
 	}
 
-	if(!params.isConvertibleTo(Json::stringValue))
+	if (!params.isConvertibleTo(Json::stringValue))
 		return false;
 	param = params.asString();
 	return true;
@@ -163,7 +164,7 @@ NewcoinAddress RPCServer::parseFamily(const std::string& fParam)
 {
 	NewcoinAddress	family;
 
-	if(family.setFamilyGenerator(fParam))
+	if (family.setFamilyGenerator(fParam))
 	{
 		family = theApp->getWallet().findFamilyPK(family);
 	}
@@ -182,17 +183,17 @@ Json::Value RPCServer::doCreateFamily(Json::Value& params)
 	NewcoinAddress family;
 	NewcoinAddress seed;
 
-	if(!extractString(query, params, 0))
+	if (!extractString(query, params, 0))
 	{
 		// No parameters, generate a family from a random seed.
 		family=theApp->getWallet().addRandomFamily(seed);
 	}
-	else if(seed.setFamilySeed(query))
+	else if (seed.setFamilySeed(query))
 	{
 		// Had a family seed.
 		family=theApp->getWallet().addFamily(seed, false);
 	}
-	else if(family.setFamilyGenerator(query))
+	else if (family.setFamilyGenerator(query))
 	{
 		// Had a public generator
 		family=theApp->getWallet().addFamily(family);
@@ -203,12 +204,12 @@ Json::Value RPCServer::doCreateFamily(Json::Value& params)
 		family=theApp->getWallet().addFamily(query, false);
 	}
 
-	if(!family.isValid())
+	if (!family.isValid())
 		return JSONRPCError(500, "Invalid family specifier");
 
 	Json::Value ret(theApp->getWallet().getFamilyJson(family));
-	if(ret.isNull()) return JSONRPCError(500, "Invalid family");
-	if(seed.isValid())
+	if (ret.isNull()) return JSONRPCError(500, "Invalid family");
+	if (seed.isValid())
 	{
 		ret["FamilySeed"]=seed.humanFamilySeed();
 	}
@@ -224,7 +225,7 @@ Json::Value RPCServer::doAccountInfo(Json::Value &params)
 		return JSONRPCError(500, "Invalid account identifier");
 
 	LocalAccount::pointer account = theApp->getWallet().parseAccount(acct);
-	if(account) return account->getJson();
+	if (account) return account->getJson();
 
 	NewcoinAddress acctid;
 	if (!acctid.setAccountID(acct))
@@ -235,7 +236,7 @@ Json::Value RPCServer::doAccountInfo(Json::Value &params)
 
 	AccountState::pointer as=theApp->getMasterLedger().getCurrentLedger()->getAccountState(acctid);
 	Json::Value ret(Json::objectValue);
-	if(as)
+	if (as)
 		as->addJson(ret);
 	else
 	{
@@ -249,14 +250,14 @@ Json::Value RPCServer::doAccountInfo(Json::Value &params)
 Json::Value RPCServer::doNewAccount(Json::Value &params)
 {   // newaccount <family> [<name>]
 	std::string fParam;
-	if(!extractString(fParam, params, 0))
+	if (!extractString(fParam, params, 0))
 		return JSONRPCError(500, "Family required");
 
 	NewcoinAddress family = parseFamily(fParam);
 	if (!family.isValid()) return JSONRPCError(500, "Family not found.");
 
 	LocalAccount::pointer account(theApp->getWallet().getNewLocalAccount(family));
-	if(!account)
+	if (!account)
 		return JSONRPCError(500, "Family not found");
 
 	return account->getJson();
@@ -267,10 +268,10 @@ Json::Value RPCServer::doLock(Json::Value &params)
 	// lock
 	std::string fParam;
 
-	if(extractString(fParam, params, 0))
+	if (extractString(fParam, params, 0))
 	{ // local <family>
 		NewcoinAddress family = parseFamily(fParam);
-		if(!family.isValid()) return JSONRPCError(500, "Family not found");
+		if (!family.isValid()) return JSONRPCError(500, "Family not found");
 
 		theApp->getWallet().lock(family);
 	}
@@ -289,24 +290,24 @@ Json::Value RPCServer::doUnlock(Json::Value &params)
 	std::string param;
 	NewcoinAddress familyGenerator;
 
-	if(!extractString(param, params, 0) || familyGenerator.setFamilyGenerator(param))
+	if (!extractString(param, params, 0) || familyGenerator.setFamilyGenerator(param))
 		return JSONRPCError(500, "Private key required");
 
 	NewcoinAddress family;
 	NewcoinAddress familySeed;
 
-	if(familySeed.setFamilySeed(param))
+	if (familySeed.setFamilySeed(param))
 		// sXXX
 		family=theApp->getWallet().addFamily(familySeed, false);
 	else
 		// pass phrase
 		family=theApp->getWallet().addFamily(param, false);
 
-	if(!family.isValid())
+	if (!family.isValid())
 		return JSONRPCError(500, "Bad family");
 
 	Json::Value ret(theApp->getWallet().getFamilyJson(family));
-	if(ret.isNull()) return JSONRPCError(500, "Invalid family");
+	if (ret.isNull()) return JSONRPCError(500, "Invalid family");
 
 	return ret;
 }
@@ -318,7 +319,7 @@ Json::Value RPCServer::doFamilyInfo(Json::Value &params)
 	// familyinfo
 	int paramCount=getParamCount(params);
 
-	if(paramCount==0)
+	if (paramCount==0)
 	{
 		std::vector<NewcoinAddress> familyIDs;
 		theApp->getWallet().getFamilies(familyIDs);
@@ -327,30 +328,30 @@ Json::Value RPCServer::doFamilyInfo(Json::Value &params)
 		BOOST_FOREACH(const NewcoinAddress& fid, familyIDs)
 		{
 			Json::Value obj(theApp->getWallet().getFamilyJson(fid));
-			if(!obj.isNull()) ret.append(obj);
+			if (!obj.isNull()) ret.append(obj);
 		}
 		return ret;
 	}
 
-	if(paramCount>2) return JSONRPCError(500, "Invalid parameters");
+	if (paramCount>2) return JSONRPCError(500, "Invalid parameters");
 	std::string fParam;
 	extractString(fParam, params, 0);
 
 	NewcoinAddress family=parseFamily(fParam);
-	if(!family.isValid()) return JSONRPCError(500, "No such family");
+	if (!family.isValid()) return JSONRPCError(500, "No such family");
 
 	Json::Value obj(theApp->getWallet().getFamilyJson(family));
-	if(obj.isNull())
+	if (obj.isNull())
 		return JSONRPCError(500, "Family not found");
 
-	if(paramCount==2)
+	if (paramCount==2)
 	{
 		std::string keyNum;
 		extractString(keyNum, params, 1);
 		int kn=boost::lexical_cast<int>(keyNum);
 		NewcoinAddress k=theApp->getWallet().peekKey(family, kn);
 
-		if(k.isValid())
+		if (k.isValid())
 		{
 			Json::Value key(Json::objectValue);
 			key["Number"]=kn;
@@ -368,14 +369,14 @@ Json::Value RPCServer::doConnect(Json::Value& params)
 	std::string strIp;
 	int			iPort	= -1;
 
-	if(!params.isArray() || !params.size() || params.size() > 2)
+	if (!params.isArray() || !params.size() || params.size() > 2)
 		return JSONRPCError(500, "Invalid parameters");
 
 	// XXX Might allow domain for manual connections.
-	if(!extractString(strIp, params, 0))
+	if (!extractString(strIp, params, 0))
 		return JSONRPCError(500, "Host IP required");
 
-	if(params.size() == 2)
+	if (params.size() == 2)
 	{
 		std::string strPort;
 
@@ -386,7 +387,7 @@ Json::Value RPCServer::doConnect(Json::Value& params)
 		iPort	= boost::lexical_cast<int>(strPort);
 	}
 
-	if(!theApp->getConnectionPool().connectTo(strIp, iPort))
+	if (!theApp->getConnectionPool().connectTo(strIp, iPort))
 		return "connected";
 
 	return "connecting";
@@ -402,26 +403,26 @@ Json::Value RPCServer::doSendTo(Json::Value& params)
 {   // Implement simple sending without gathering
 	// sendto <destination> <amount>
 	// sendto <destination> <amount> <tag>
-	if(!params.isArray() || (params.size()<2))
+	if (!params.isArray() || (params.size()<2))
 		return JSONRPCError(500, "Invalid parameters");
 
 	int paramCount=getParamCount(params);
-	if((paramCount<2)||(paramCount>3))
+	if ((paramCount<2)||(paramCount>3))
 		return JSONRPCError(500, "Invalid parameters");
 
 	std::string sDest, sAmount;
-	if(!extractString(sDest, params, 0) || !extractString(sAmount, params, 1))
+	if (!extractString(sDest, params, 0) || !extractString(sAmount, params, 1))
 		return JSONRPCError(500, "Invalid parameters");
 
 	NewcoinAddress destAccount	= parseAccount(sDest);
-	if(!destAccount.isValid())
+	if (!destAccount.isValid())
 		return JSONRPCError(500, "Unable to parse destination account");
 
 	uint64 iAmount;
 	try
 	{
 		iAmount=boost::lexical_cast<uint64>(sAmount);
-		if(iAmount<=0) return JSONRPCError(500, "Invalid amount");
+		if (iAmount<=0) return JSONRPCError(500, "Invalid amount");
 	}
 	catch (...)
 	{
@@ -431,7 +432,7 @@ Json::Value RPCServer::doSendTo(Json::Value& params)
 	uint32 iTag(0);
 	try
 	{
-		if(paramCount>2)
+		if (paramCount>2)
 		{
 			std::string sTag;
 			extractString(sTag, params, 2);
@@ -449,7 +450,7 @@ Json::Value RPCServer::doSendTo(Json::Value& params)
 #endif
 
 	LocalTransaction::pointer lt(new LocalTransaction(destAccount, iAmount, iTag));
-	if(!lt->makeTransaction())
+	if (!lt->makeTransaction())
 		return JSONRPCError(500, "Insufficient funds in unlocked accounts");
 	lt->performTransaction();
 	return lt->getTransaction()->getJson(true);
@@ -463,32 +464,32 @@ Json::Value RPCServer::doTx(Json::Value& params)
 	// tx <account>
 
 	std::string param1, param2;
-	if(!extractString(param1, params, 0))
+	if (!extractString(param1, params, 0))
 	{ // all local transactions
 		Json::Value ret(Json::objectValue);
 		theApp->getWallet().addLocalTransactions(ret);
 		return ret;
 	}
 
-	if(Transaction::isHexTxID(param1))
+	if (Transaction::isHexTxID(param1))
 	{ // transaction by ID
 		Json::Value ret;
 		uint256 txid(param1);
-		if(theApp->getWallet().getTxJson(txid, ret))
+		if (theApp->getWallet().getTxJson(txid, ret))
 			return ret;
 
 		Transaction::pointer txn=theApp->getMasterTransaction().fetch(txid, true);
-		if(!txn) return JSONRPCError(500, "Transaction not found");
+		if (!txn) return JSONRPCError(500, "Transaction not found");
 		return txn->getJson(true);
 	}
 
-	if(extractString(param2, params, 1))
+	if (extractString(param2, params, 1))
 	{ // family seq
 		LocalAccount::pointer account=theApp->getWallet().parseAccount(param1+":"+param2);
-		if(!account)
+		if (!account)
 			return JSONRPCError(500, "Account not found");
 		Json::Value ret;
-		if(!theApp->getWallet().getTxsJson(account->getAddress(), ret))
+		if (!theApp->getWallet().getTxsJson(account->getAddress(), ret))
 			return JSONRPCError(500, "Unable to get wallet transactions");
 		return ret;
 	}
@@ -508,7 +509,7 @@ Json::Value RPCServer::doLedger(Json::Value& params)
 
 	int paramCount = getParamCount(params);
 
-	if(paramCount == 0);
+	if (paramCount == 0);
 	{
 		Json::Value ret(Json::objectValue), current(Json::objectValue), closed(Json::objectValue);
 		theApp->getMasterLedger().getCurrentLedger()->addJson(current);
@@ -526,12 +527,12 @@ Json::Value RPCServer::doUnlAdd(Json::Value& params)
 {
 	if (params.size() == 1 || params.size() == 2)
 	{
-		std::string	strNode	= params[0u].asString();
-		std::string strComment = (params.size() == 2) ? "" : params[1u].asString();
+		std::string	strNode		= params[0u].asString();
+		std::string strComment	= (params.size() == 2) ? "" : params[1u].asString();
 
 		NewcoinAddress	nodePublic;
 
-		if(nodePublic.setNodePublic(strNode))
+		if (nodePublic.setNodePublic(strNode))
 		{
 			theApp->getUNL().nodeAddPublic(nodePublic, strComment);
 
@@ -560,7 +561,7 @@ Json::Value RPCServer::doValidatorCreate(Json::Value& params) {
 	NewcoinAddress	nodePublicKey;
 	NewcoinAddress	nodePrivateKey;
 
-	if(params.empty())
+	if (params.empty())
 	{
 		std::cerr << "Creating random validation seed." << std::endl;
 
@@ -568,20 +569,7 @@ Json::Value RPCServer::doValidatorCreate(Json::Value& params) {
 	}
 	else if (1 == params.size())
 	{
-		if (familySeed.setFamilySeed(params[0u].asString()))
-		{
-			std::cerr << "Recognized validation seed." << std::endl;
-		}
-		else if (1 == familySeed.setFamilySeed1751(params[0u].asString()))
-		{
-			std::cerr << "Recognized 1751 validation seed." << std::endl;
-		}
-		else
-		{
-			std::cerr << "Creating validation seed from pass phrase." << std::endl;
-
-			familySeed.setFamilySeed(CKey::PassPhraseToKey(params[0u].asString()));
-		}
+		familySeed.setFamilySeedGeneric(params[0u].asString());
 	}
 	else return "invalid params";
 
@@ -597,11 +585,99 @@ Json::Value RPCServer::doValidatorCreate(Json::Value& params) {
 
 	Json::Value obj(Json::objectValue);
 
-	obj["validation_public_key"]	= nodePublicKey.humanNodePublic().c_str();
-	obj["validation_seed"]			= familySeed.humanFamilySeed().c_str();
-	obj["validation_key"]			= familySeed.humanFamilySeed1751().c_str();
+	obj["validation_public_key"]	= nodePublicKey.humanNodePublic();
+	obj["validation_seed"]			= familySeed.humanFamilySeed();
+	obj["validation_key"]			= familySeed.humanFamilySeed1751();
 
 	return obj;
+}
+
+// wallet_claim <master_seed> <regular_seed> [<account_annotation>]
+//
+// To provide an example to client writers, we do everything we expect a client to do here.
+Json::Value RPCServer::doWalletClaim(Json::Value& params)
+{
+	if (2 != params.size() && 3 != params.size())
+	{
+		return "invalid params";
+	}
+	else
+	{
+		// Trying to build:
+		//   peer_wallet_claim <account_id> <generator_id> <encrypted_master_public_generator> <account_id_signature> [<annotation>]
+		//
+		// Which has no confidential information.
+
+		// XXX Annotation is ignored.
+		std::string strAnnotation	= (params.size() == 2) ? "" : params[2u].asString();
+
+		NewcoinAddress	naMasterSeed;
+		NewcoinAddress	naMasterGenerator;
+
+		NewcoinAddress	naRegularSeed;
+		NewcoinAddress	naRegularGenerator;
+		NewcoinAddress	naRegularReservedPublic;
+		NewcoinAddress	naRegularReservedPrivate;
+
+		NewcoinAddress	naAccount;
+
+		naMasterSeed.setFamilySeedGeneric(params[0u].asString());
+		naRegularSeed.setFamilySeedGeneric(params[1u].asString());
+
+		naMasterGenerator.setFamilyGenerator(naMasterSeed);
+		naAccount.setAccountPublic(naMasterGenerator, 0);
+
+		naRegularGenerator.setFamilyGenerator(naRegularSeed);
+
+		naRegularReservedPublic.setAccountPublic(naRegularGenerator, -1);
+		naRegularReservedPrivate.setAccountPrivate(naRegularGenerator, naRegularSeed, -1);
+
+		// hash of regular account #reserved public key.
+		uint160						uGeneratorID		= naRegularReservedPublic.getAccountID();
+		std::vector<unsigned char>	vucGeneratorCipher	= naRegularReservedPrivate.accountPrivateEncrypt(naRegularReservedPublic, naMasterGenerator.getFamilyGenerator());
+
+		Json::Value obj(Json::objectValue);
+
+		// We "echo" the seeds so they can be checked.
+		obj["master_seed"]		= naMasterSeed.humanFamilySeed();
+		obj["master_key"]		= naMasterSeed.humanFamilySeed1751();
+		obj["regular_seed"]		= naRegularSeed.humanFamilySeed();
+		obj["regular_key"]		= naRegularSeed.humanFamilySeed1751();
+
+		obj["account_id"]		= naAccount.humanAccountID();
+		obj["generator_id"]		= strHex(uGeneratorID);
+		obj["generator"]		= strHex(vucGeneratorCipher);
+		obj["annotation"]		= strAnnotation;
+
+		return obj;
+	}
+}
+
+// wallet_propose
+Json::Value RPCServer::doWalletPropose(Json::Value& params)
+{
+	if (params.size())
+	{
+		return "invalid params";
+	}
+	else
+	{
+		NewcoinAddress	naSeed;
+		NewcoinAddress	naGenerator;
+		NewcoinAddress	naAccount;
+
+		naSeed.setFamilySeedRandom();
+		naGenerator.setFamilyGenerator(naSeed);
+		naAccount.setAccountPublic(naGenerator, 0);
+
+		Json::Value obj(Json::objectValue);
+
+		obj["master_seed"]		= naSeed.humanFamilySeed();
+		obj["master_key"]		= naSeed.humanFamilySeed1751();
+		obj["account_id"]		= naAccount.humanAccountID();
+
+		return obj;
+	}
 }
 
 void RPCServer::validatorsResponse(const boost::system::error_code& err, std::string strResponse)
@@ -620,7 +696,7 @@ void RPCServer::validatorsResponse(const boost::system::error_code& err, std::st
 
 // Populate the UNL from a validators.txt file.
 Json::Value RPCServer::doUnlDefault(Json::Value& params) {
-	if(!params.size() || (1==params.size() && !params[0u].compare("network")))
+	if (!params.size() || (1==params.size() && !params[0u].compare("network")))
 	{
 		bool			bNetwork	= 1 == params.size();
 		std::string		strValidators;
@@ -674,13 +750,13 @@ Json::Value RPCServer::doUnlDefault(Json::Value& params) {
 
 // unl_delete <public_key>
 Json::Value RPCServer::doUnlDelete(Json::Value& params) {
-	if(params.size()==1)
+	if (params.size()==1)
 	{
 		std::string	strNodePublic=params[0u].asString();
 
 		NewcoinAddress	naNodePublic;
 
-		if(naNodePublic.setNodePublic(strNodePublic))
+		if (naNodePublic.setNodePublic(strNodePublic))
 		{
 			theApp->getUNL().nodeRemove(naNodePublic);
 
@@ -700,7 +776,7 @@ Json::Value RPCServer::doUnlList(Json::Value& params) {
 
 // unl_reset
 Json::Value RPCServer::doUnlReset(Json::Value& params) {
-	if(!params.size())
+	if (!params.size())
 	{
 		theApp->getUNL().nodeReset();
 
@@ -711,7 +787,7 @@ Json::Value RPCServer::doUnlReset(Json::Value& params) {
 
 // unl_score
 Json::Value RPCServer::doUnlScore(Json::Value& params) {
-	if(!params.size())
+	if (!params.size())
 	{
 		theApp->getUNL().nodeScore();
 
@@ -724,33 +800,36 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 {
 	std::cerr << "RPC:" << command << std::endl;
 
-	if(command== "stop")
+	if (command== "stop")
 	{
 		theApp->stop();
 
 		return SYSTEM_NAME " server stopping";
 	}
 
-	if(command=="unl_add") return doUnlAdd(params);
-	if(command=="unl_default") return doUnlDefault(params);
-	if(command=="unl_delete") return doUnlDelete(params);
-	if(command=="unl_list") return doUnlList(params);
-	if(command=="unl_reset") return doUnlReset(params);
-	if(command=="unl_score") return doUnlScore(params);
+	if (command=="unl_add") return doUnlAdd(params);
+	if (command=="unl_default") return doUnlDefault(params);
+	if (command=="unl_delete") return doUnlDelete(params);
+	if (command=="unl_list") return doUnlList(params);
+	if (command=="unl_reset") return doUnlReset(params);
+	if (command=="unl_score") return doUnlScore(params);
 
-	if(command=="validation_create") return doValidatorCreate(params);
+	if (command=="validation_create") return doValidatorCreate(params);
 
-	if(command=="createfamily") return doCreateFamily(params);
-	if(command=="familyinfo") return doFamilyInfo(params);
-	if(command=="accountinfo") return doAccountInfo(params);
-	if(command=="newaccount") return doNewAccount(params);
-	if(command=="lock") return doLock(params);
-	if(command=="unlock") return doUnlock(params);
-	if(command=="sendto") return doSendTo(params);
-	if(command=="connect") return doConnect(params);
-	if(command=="peers") return doPeers(params);
-	if(command=="tx") return doTx(params);
-	if(command=="ledger") return doLedger(params);
+	if (command=="wallet_claim") return doWalletClaim(params);
+	if (command=="wallet_propose") return doWalletPropose(params);
+
+	if (command=="createfamily") return doCreateFamily(params);
+	if (command=="familyinfo") return doFamilyInfo(params);
+	if (command=="accountinfo") return doAccountInfo(params);
+	if (command=="newaccount") return doNewAccount(params);
+	if (command=="lock") return doLock(params);
+	if (command=="unlock") return doUnlock(params);
+	if (command=="sendto") return doSendTo(params);
+	if (command=="connect") return doConnect(params);
+	if (command=="peers") return doPeers(params);
+	if (command=="tx") return doTx(params);
+	if (command=="ledger") return doLedger(params);
 
 	return "unknown command";
 }
@@ -768,7 +847,7 @@ void RPCServer::handle_write(const boost::system::error_code& /*error*/)
 
 NewcoinAddress RPCServer::parseAccount(const std::string& account)
 { // FIXME: Support local wallet key names
-	if(account.find(':')!=std::string::npos)
+	if (account.find(':')!=std::string::npos)
 	{ // local account in family:seq form
 		LocalAccount::pointer lac(theApp->getWallet().parseAccount(account));
 

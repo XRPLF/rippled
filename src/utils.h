@@ -6,6 +6,8 @@
 
 #include <openssl/dh.h>
 
+#include "uint256.h"
+
 #define nothing()   do {} while (0)
 
 #ifndef MAX
@@ -58,6 +60,10 @@ inline const std::string strHex(const std::string& strSrc) {
 
 inline std::string strHex(const std::vector<unsigned char> vchData) {
 	return strHex(vchData.begin(), vchData.size());
+}
+
+inline const std::string strHex(const uint160& ui) {
+	return strHex(ui.begin(), ui.size());
 }
 
 int charUnHex(char cDigit);
