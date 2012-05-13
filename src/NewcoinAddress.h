@@ -11,14 +11,14 @@ class NewcoinAddress : public CBase58Data
 {
 private:
 	typedef enum {
-	    VER_NONE		    = 1,
-	    VER_NODE_PUBLIC	    = 28,
+	    VER_NONE				= 1,
+	    VER_NODE_PUBLIC			= 28,
 	    VER_NODE_PRIVATE	    = 32,
-	    VER_ACCOUNT_ID	    = 0,
+	    VER_ACCOUNT_ID			= 0,
 	    VER_ACCOUNT_PUBLIC	    = 35,
 	    VER_ACCOUNT_PRIVATE	    = 34,
 	    VER_FAMILY_GENERATOR    = 41,
-	    VER_FAMILY_SEED	    = 33,
+	    VER_FAMILY_SEED			= 33,
 	} VersionEncoding;
 
 	void seedInfo(NewcoinAddress* dstGenerator, BIGNUM** dstPrivateKey) const;
@@ -26,6 +26,7 @@ private:
 public:
 	NewcoinAddress();
 
+	// For public and private key, checks if they are legal.
 	bool isValid() const;
 	void clear();
 
@@ -87,11 +88,14 @@ public:
 	void setAccountPrivate(uint256 hash256);
 	void setAccountPrivate(const NewcoinAddress& generator, const NewcoinAddress& seed, int seq);
 
+	bool accountPrivateSign(const uint256& uHash, std::vector<unsigned char>& vucSig) const;
+	bool accountPrivateVerify(const uint256& uHash, const std::vector<unsigned char>& vucSig) const;
+
 	// Encrypt a message.
-	std::vector<unsigned char> accountPrivateEncrypt(const NewcoinAddress& naPublicTo, const std::vector<unsigned char>& vucPlainText);
+	std::vector<unsigned char> accountPrivateEncrypt(const NewcoinAddress& naPublicTo, const std::vector<unsigned char>& vucPlainText) const;
 
 	// Decrypt a message.
-	std::vector<unsigned char> accountPrivateDecrypt(const NewcoinAddress& naPublicFrom, const std::vector<unsigned char>& vucCipherText);
+	std::vector<unsigned char> accountPrivateDecrypt(const NewcoinAddress& naPublicFrom, const std::vector<unsigned char>& vucCipherText) const;
 
 	//
 	// Family Generators

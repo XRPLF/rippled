@@ -20,7 +20,31 @@ NewcoinAddress::NewcoinAddress()
 
 bool NewcoinAddress::isValid() const
 {
-    return !vchData.empty();
+    bool	bValid	= false;
+
+	if (!vchData.empty())
+	{
+		CKey	key;
+
+		switch (nVersion) {
+		case VER_NODE_PUBLIC:
+			bValid	= key.SetPubKey(getNodePublic());
+			break;
+
+		case VER_ACCOUNT_PUBLIC:
+			bValid	= key.SetPubKey(getAccountPublic());
+			break;
+
+		case VER_ACCOUNT_PRIVATE:
+			bValid	= key.SetPrivKey(getAccountPrivate());
+			break;
+
+		default:
+			nothing();
+		}
+	}
+
+	return bValid;
 }
 
 void NewcoinAddress::clear()
@@ -332,7 +356,47 @@ void NewcoinAddress::setAccountPrivate(const NewcoinAddress& generator, const Ne
 	setAccountPrivate(privkey.GetPrivKey());
 }
 
-std::vector<unsigned char> NewcoinAddress::accountPrivateEncrypt(const NewcoinAddress& naPublicTo, const std::vector<unsigned char>& vucPlainText)
+bool NewcoinAddress::accountPrivateSign(const uint256& uHash, std::vector<unsigned char>& vucSig) const
+{
+	CKey		ckPrivate;
+	bool		bResult;
+
+	if (!ckPrivate.SetPrivKey(getAccountPrivate()))
+	{
+		// Bad private key.
+		std::cerr << "accountPrivateSign: Bad private key." << std::endl;
+		bResult	= false;
+	}
+	else
+	{
+		bResult	= ckPrivate.Sign(uHash, vucSig);
+		if (!bResult)
+			std::cerr << "accountPrivateSign: Signing failed." << std::endl;
+	}
+
+	return bResult;
+}
+
+bool NewcoinAddress::accountPrivateVerify(const uint256& uHash, const std::vector<unsigned char>& vucSig) const
+{
+	CKey		ckPrivate;
+	bool		bVerified;
+
+	if (!ckPrivate.SetPrivKey(getAccountPrivate()))
+	{
+		// Bad private key.
+		std::cerr << "accountPrivateVerify: Bad private key." << std::endl;
+		bVerified	= false;
+	}
+	else
+	{
+		bVerified	= ckPrivate.Verify(uHash, vucSig);
+	}
+
+	return bVerified;
+}
+
+std::vector<unsigned char> NewcoinAddress::accountPrivateEncrypt(const NewcoinAddress& naPublicTo, const std::vector<unsigned char>& vucPlainText) const
 {
 	CKey						ckPrivate;
 	CKey						ckPublic;
@@ -362,7 +426,7 @@ std::vector<unsigned char> NewcoinAddress::accountPrivateEncrypt(const NewcoinAd
 	return vucCipherText;
 }
 
-std::vector<unsigned char> NewcoinAddress::accountPrivateDecrypt(const NewcoinAddress& naPublicFrom, const std::vector<unsigned char>& vucCipherText)
+std::vector<unsigned char> NewcoinAddress::accountPrivateDecrypt(const NewcoinAddress& naPublicFrom, const std::vector<unsigned char>& vucCipherText) const
 {
 	CKey						ckPrivate;
 	CKey						ckPublic;
