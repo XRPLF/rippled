@@ -109,4 +109,26 @@ SerializedLedgerEntry::pointer Ledger::getNickname(LedgerStateParms& parms, cons
 		return SerializedLedgerEntry::pointer();
 	}
 }
+
+//
+// Generator Map
+//
+
+SerializedLedgerEntry::pointer Ledger::getGenerator(LedgerStateParms& parms, const uint160& uGeneratorID)
+{
+	uint256 nodeID=getGeneratorIndex(uGeneratorID);
+
+	ScopedLock l(mAccountStateMap->Lock());
+
+	try
+	{
+		return getASNode(parms, nodeID, ltGENERATOR_MAP);
+	}
+	catch (...)
+	{
+		parms = lepERROR;
+		return SerializedLedgerEntry::pointer();
+	}
+}
+
 // vim:ts=4

@@ -140,9 +140,24 @@ public:
 	static Ledger::pointer loadByHash(const uint256& ledgerHash);
 
 	// index calculation functions
-	static uint256 getAccountRootIndex(const uint160& account);
+	static uint256 getAccountRootIndex(const uint160& account)
+	{ return uint160extend256(account); }		// Index is accountID extended to 256 bits
+
 	static uint256 getAccountRootIndex(const NewcoinAddress& account)
 	{ return getAccountRootIndex(account.getAccountID()); }
+
+	//
+	// Generator Map functions
+	//
+
+	SerializedLedgerEntry::pointer getGenerator(LedgerStateParms& parms, const uint160& uGeneratorID);
+
+	static uint256 getGeneratorIndex(const uint160& uGeneratorID)
+	{ return uint160extend256(uGeneratorID); }	// Index is the generator ID extended to 256 bits
+
+	//
+	// Ripple functions
+	//
 
 	static uint256 getRippleIndex(const uint160& account, const uint160& extendTo, const uint160& currency);
 	static uint256 getRippleIndex(const uint160& account, const uint160& extendTo)

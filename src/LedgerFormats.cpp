@@ -19,21 +19,6 @@ LedgerEntryFormat LedgerFormats[]=
 		{ S_FIELD(Extensions),   STI_TL,      SOE_IFFLAG,   0x01000000 },
 		{ sfInvalid, NULL,       STI_DONE,    SOE_NEVER,    -1 } }
 	},
-	{ "RippleState", ltRIPPLE_STATE, {
-		{ S_FIELD(Flags),        STI_UINT32,  SOE_FLAGS,    0 },
-		{ S_FIELD(Borrower),     STI_ACCOUNT, SOE_REQUIRED, 0 },
-		{ S_FIELD(Lender),       STI_ACCOUNT, SOE_REQUIRED, 0 },
-		{ S_FIELD(Currency),     STI_HASH160, SOE_IFFLAG,   1 },
-		{ S_FIELD(Limit),        STI_AMOUNT,  SOE_REQUIRED, 0 },
-		{ S_FIELD(Balance),      STI_AMOUNT,  SOE_REQUIRED, 0 },
-		{ S_FIELD(CurrentRate),  STI_UINT32,  SOE_IFFLAG,   2 },
-		{ S_FIELD(RateLock),     STI_UINT32,  SOE_IFFLAG,   4 },
-		{ S_FIELD(NextRate),     STI_UINT32,  SOE_IFFLAG,   8 },
-		{ S_FIELD(NextRateLgr),  STI_UINT32,  SOE_IFFLAG,   8 },
-		{ S_FIELD(NextRateExp),  STI_UINT32,  SOE_IFFLAG,   16 },
-		{ S_FIELD(Extensions),   STI_TL,      SOE_IFFLAG,   0x01000000 },
-		{ sfInvalid, NULL,       STI_DONE,    SOE_NEVER,    -1 } }
-	},
 	{ "GeneratorMap", ltGENERATOR_MAP, {
 		{ S_FIELD(Flags),        STI_UINT32,  SOE_FLAGS,    0 },
 		{ S_FIELD(GeneratorID),	 STI_ACCOUNT, SOE_REQUIRED, 0 },
@@ -50,6 +35,21 @@ LedgerEntryFormat LedgerFormats[]=
 		{ S_FIELD(Extensions),   STI_TL,      SOE_IFFLAG,   0x01000000 },
 		{ sfInvalid, NULL,       STI_DONE,    SOE_NEVER,    -1 } }
 	},
+	{ "RippleState", ltRIPPLE_STATE, {
+		{ S_FIELD(Flags),        STI_UINT32,  SOE_FLAGS,    0 },
+		{ S_FIELD(Borrower),     STI_ACCOUNT, SOE_REQUIRED, 0 },
+		{ S_FIELD(Lender),       STI_ACCOUNT, SOE_REQUIRED, 0 },
+		{ S_FIELD(Currency),     STI_HASH160, SOE_IFFLAG,   1 },
+		{ S_FIELD(Limit),        STI_AMOUNT,  SOE_REQUIRED, 0 },
+		{ S_FIELD(Balance),      STI_AMOUNT,  SOE_REQUIRED, 0 },
+		{ S_FIELD(CurrentRate),  STI_UINT32,  SOE_IFFLAG,   2 },
+		{ S_FIELD(RateLock),     STI_UINT32,  SOE_IFFLAG,   4 },
+		{ S_FIELD(NextRate),     STI_UINT32,  SOE_IFFLAG,   8 },
+		{ S_FIELD(NextRateLgr),  STI_UINT32,  SOE_IFFLAG,   8 },
+		{ S_FIELD(NextRateExp),  STI_UINT32,  SOE_IFFLAG,   16 },
+		{ S_FIELD(Extensions),   STI_TL,      SOE_IFFLAG,   0x01000000 },
+		{ sfInvalid, NULL,       STI_DONE,    SOE_NEVER,    -1 } }
+	},
 	{ NULL, ltINVALID }
 };
 
@@ -63,3 +63,4 @@ LedgerEntryFormat* getLgrFormat(LedgerEntryType t)
 	}
 	return NULL;
 }
+// vim:ts=4
