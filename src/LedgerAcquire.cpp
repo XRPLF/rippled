@@ -427,3 +427,4 @@ bool LedgerAcquireMaster::gotLedgerData(newcoin::TMLedgerData& packet, Peer::poi
 
 	return false;
 }
+// vim:ts=4

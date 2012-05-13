@@ -9,17 +9,17 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	TransactionEngineResult result = terSUCCESS;
 
 	uint256 txID = txn.getTransactionID();
-	if(!txID) return terINVALID;
+	if(!txID) return tenINVALID;
 
 	// Extract signing key
 	// Transactions contain a signing key.  This allows us to trivially verify a transaction has at least been properly signed
 	// without going to disk.  Each transaction also notes a source account id.  This is used to verify that the signing key is
 	// associated with the account.
 	CKey acctKey;
-	if (!acctKey.SetPubKey(txn.peekSigningPubKey())) return terINVALID;
+	if (!acctKey.SetPubKey(txn.peekSigningPubKey())) return tenINVALID;
 
 	// check signature
-	if (!txn.checkSign(acctKey)) return terINVALID;
+	if (!txn.checkSign(acctKey)) return tenINVALID;
 
 	bool	bPrepaid	= false;
 
@@ -37,11 +37,11 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 			break;
 
 		case ttINVALID:
-			result = terINVALID;
+			result = tenINVALID;
 			break;
 
 		default:
-			result = terUNKNOWN;
+			result = tenUNKNOWN;
 			break;
 	}
 
@@ -55,19 +55,19 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 		{
 			if (txnFee)
 				// Transaction is malformed.
-				return terINSUF_FEE_P;
+				return tenINSUF_FEE_P;
 		}
 		else
 		{
 			// WRITEME: Check if fee is adequate
 			if (txnFee == 0)
-				return terINSUF_FEE_P;
+				return tenINSUF_FEE_P;
 		}
 	}
 
 	// get source account ID
 	uint160 srcAccount = txn.getSourceAccount().getAccountID();
-	if (!srcAccount) return terINVALID;
+	if (!srcAccount) return tenINVALID;
 
 	boost::recursive_mutex::scoped_lock sl(mLedger->mLock);
 
@@ -118,7 +118,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	switch(txn.getTxnType())
 	{
 		case ttINVALID:
-			result = terINVALID;
+			result = tenINVALID;
 			break;
 
 		case ttCLAIM:
@@ -138,7 +138,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 			break;
 
 		default:
-			result = terUNKNOWN;
+			result = tenUNKNOWN;
 			break;
 	}
 
@@ -183,7 +183,7 @@ TransactionEngineResult TransactionEngine::doClaim(const SerializedTransaction& 
 
 	if (sourceAccountID != txn.getSourceAccount().getAccountID())
 		// Signing Pub Key must be for Source Account ID.
-		return terINVALID;
+		return tenINVALID;
 
 	LedgerStateParms				qry				= lepNONE;
 	SerializedLedgerEntry::pointer	dest			= mLedger->getAccountRoot(qry, sourceAccountID);
@@ -194,14 +194,14 @@ TransactionEngineResult TransactionEngine::doClaim(const SerializedTransaction& 
 
 	if (dest->getIFieldPresent(sfAuthorizedKey))
 		// Source account already claimed.
-		return terCLAIMED;
+		return tenCLAIMED;
 
 	uint160							hGeneratorID	= txn.getITFieldH160(sfGeneratorID);
 									qry				= lepNONE;
 	SerializedLedgerEntry::pointer	gen				= mLedger->getGenerator(qry, hGeneratorID);
 	if (gen)
 		// Generator is already in use.  Regular passphrases limited to one wallet.
-		return terGEN_IN_USE;
+		return tenGEN_IN_USE;
 
 	//
 	// Claim the account.
@@ -232,7 +232,7 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 	uint160 destAccount = txn.getITFieldAccount(sfDestination);
 
 	// Does the destination account exist?
-	if (!destAccount) return terINVALID;
+	if (!destAccount) return tenINVALID;
 	LedgerStateParms qry = lepNONE;
 	SerializedLedgerEntry::pointer dest = mLedger->getAccountRoot(qry, destAccount);
 	if (!dest)
@@ -265,7 +265,7 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 	else
 	{
 		// WRITEME: Handle non-native currencies, paths
-		return terUNKNOWN;
+		return tenUNKNOWN;
 	}
 
 	return terSUCCESS;
@@ -274,36 +274,36 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 TransactionEngineResult TransactionEngine::doInvoice(const SerializedTransaction& txn,
 	std::vector<AffectedAccount>& accounts)
 {
-	return terUNKNOWN;
+	return tenUNKNOWN;
 }
 
 TransactionEngineResult TransactionEngine::doOffer(const SerializedTransaction& txn,
 	std::vector<AffectedAccount>& accounts)
 {
-	return terUNKNOWN;
+	return tenUNKNOWN;
 }
 
 TransactionEngineResult TransactionEngine::doTake(const SerializedTransaction& txn,
 	std::vector<AffectedAccount>& accounts)
 {
-	return terUNKNOWN;
+	return tenUNKNOWN;
 }
 
 TransactionEngineResult TransactionEngine::doCancel(const SerializedTransaction& txn,
 	 std::vector<AffectedAccount>& accounts)
 {
-	return terUNKNOWN;
+	return tenUNKNOWN;
 }
 
 TransactionEngineResult TransactionEngine::doStore(const SerializedTransaction& txn,
 	std::vector<AffectedAccount>& accounts)
 {
-	return terUNKNOWN;
+	return tenUNKNOWN;
 }
 
 TransactionEngineResult TransactionEngine::doDelete(const SerializedTransaction& txn,
 	std::vector<AffectedAccount>& accounts)
 {
-	return terUNKNOWN;
+	return tenUNKNOWN;
 }
 // vim:ts=4

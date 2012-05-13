@@ -54,7 +54,7 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 	}
 
 	TransactionEngineResult r = theApp->getMasterLedger().doTransaction(*trans->getSTransaction(), tepNONE);
-	if (r == terFAILED) throw Fault(IO_ERROR);
+	if (r == tenFAILED) throw Fault(IO_ERROR);
 
 	if (r == terPRE_SEQ)
 	{ // transaction should be held
