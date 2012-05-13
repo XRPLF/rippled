@@ -119,38 +119,6 @@ void Application::run()
 	std::cerr << "Master seed: " << rootSeedMaster.humanFamilySeed() << std::endl;
 	std::cerr << "Master generator: " << rootGeneratorMaster.humanFamilyGenerator() << std::endl;
 	std::cerr << "Root address: " << rootAddress.humanAccountPublic() << std::endl;
-#if 0
-	NewcoinAddress	rootSeedRegular;
-	NewcoinAddress	rootGeneratorRegular;
-	NewcoinAddress	reservedPublicRegular;
-	NewcoinAddress	reservedPrivateRegular;
-
-	rootSeedRegular.setFamilySeed(CKey::PassPhraseToKey("Regular passphrase."));
-	rootGeneratorRegular.setFamilyGenerator(rootSeedRegular);
-
-	reservedPublicRegular.setAccountPublic(rootGeneratorRegular, -1);
-	reservedPrivateRegular.setAccountPrivate(rootGeneratorRegular, rootSeedRegular, -1);
-
-	// hash of regular account #reserved public key.
-	uint160						uiGeneratorID		= reservedPublicRegular.getAccountID();
-
-	// std::cerr << "uiGeneratorID: " << uiGeneratorID << std::endl;
-
-	// Encrypt with regular account #reserved private key.
-	std::vector<unsigned char>	vucGeneratorCipher	= reservedPrivateRegular.accountPrivateEncrypt(reservedPublicRegular, rootGeneratorMaster.getFamilyGenerator());
-
-	std::cerr << "Plain: " << strHex(rootGeneratorMaster.getFamilyGenerator()) << std::endl;
-
-	std::cerr << "Cipher: " << strHex(vucGeneratorCipher) << std::endl;
-
-	std::vector<unsigned char>	vucGeneratorText	= reservedPrivateRegular.accountPrivateDecrypt(reservedPublicRegular, vucGeneratorCipher);
-
-	std::cerr << "Plain: " << strHex(vucGeneratorText) << std::endl;
-	std::cerr << "Regular seed: " << rootSeedRegular.humanFamilySeed() << std::endl;
-	std::cerr << "Regular generator: " << rootGeneratorRegular.humanFamilyGenerator() << std::endl;
-	std::cerr << "Reserved public regular: " << reservedPublicRegular.humanAccountPublic() << std::endl;
-	std::cerr << "Reserved private regular: " << reservedPrivateRegular.humanAccountPrivate() << std::endl;
-#endif
 
 	// Temporary root account will be ["This is my payphrase."]:0
 	NewcoinAddress rootFamilySeed;		// Hold the 128 password.
