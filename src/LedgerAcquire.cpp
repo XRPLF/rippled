@@ -97,14 +97,6 @@ void LedgerAcquire::done()
 		triggers[i](boost::enable_shared_from_this<LedgerAcquire>::shared_from_this());
 }
 
-struct null_deleter
-{
-	void operator()(void const *) const
-	{ // weak pointers never need to delete
-		assert(false);
-	}
-};
-
 void LedgerAcquire::addOnComplete(boost::function<void (LedgerAcquire::pointer)> trigger)
 {
 	mLock.lock();
