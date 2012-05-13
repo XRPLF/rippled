@@ -175,7 +175,54 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 TransactionEngineResult TransactionEngine::doClaim(const SerializedTransaction& txn,
 	 std::vector<AffectedAccount>& accounts)
 {
-	return terUNKNOWN;
+	NewcoinAddress				naSigningPubKey;
+
+	naSigningPubKey.setAccountPublic(txn.peekSigningPubKey());
+
+	uint160	sourceAccountID	= naSigningPubKey.getAccountID();
+
+	if (sourceAccountID != txn.getSourceAccount().getAccountID())
+		// Signing Pub Key must be for Source Account ID.
+		return terINVALID;
+
+	LedgerStateParms				qry				= lepNONE;
+	SerializedLedgerEntry::pointer	dest			= mLedger->getAccountRoot(qry, sourceAccountID);
+
+	if (!dest)
+		// Source account does not exist.  Could succeed if it was created first.
+		return terNO_ACCOUNT;
+
+	if (dest->getIFieldPresent(sfAuthorizedKey))
+		// Source account already claimed.
+		return terCLAIMED;
+
+	uint160							hGeneratorID	= txn.getITFieldH160(sfGeneratorID);
+									qry				= lepNONE;
+	SerializedLedgerEntry::pointer	gen				= mLedger->getGenerator(qry, hGeneratorID);
+	if (gen)
+		// Generator is already in use.  Regular passphrases limited to one wallet.
+		return terGEN_IN_USE;
+
+	//
+	// Claim the account.
+	//
+	std::vector<unsigned char>		vucCipher		= txn.getITFieldVL(sfGenerator);
+
+	// Set the public key needed to use the account.
+	dest->setIFieldH160(sfAuthorizedKey, hGeneratorID);
+
+	accounts.push_back(std::make_pair(taaMODIFY, dest));
+
+	// Construct a generator map entry.
+									gen				= boost::make_shared<SerializedLedgerEntry>(ltGENERATOR_MAP);
+
+	gen->setIndex(Ledger::getGeneratorIndex(hGeneratorID));
+	gen->setIFieldH160(sfGeneratorID, hGeneratorID);
+	gen->setIFieldVL(sfGenerator, vucCipher);
+
+	accounts.push_back(std::make_pair(taaCREATE, gen));
+
+	return terSUCCESS;
 }
 
 TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction& txn,

@@ -12,6 +12,8 @@
 
 enum TransactionEngineResult
 { // <0 = Can never succeed, 0 = success, >0 = failed, but could succeed
+	terGEN_IN_USE  = -6,	// Generator already in use.
+	terCLAIMED	   = -5,	// Can not claim a previously claimed account.
 	terFAILED      = -4,	// Something broke horribly
 	terUNKNOWN     = -3,	// The transactions requires logic not implemented yet
 	terINSUF_FEE_P = -2,	// fee totally insufficient
