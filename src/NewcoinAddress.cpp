@@ -40,7 +40,8 @@ bool NewcoinAddress::isValid() const
 			break;
 
 		default:
-			nothing();
+			bValid	= true;
+			break;
 		}
 	}
 
