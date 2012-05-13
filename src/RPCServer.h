@@ -56,6 +56,7 @@ class RPCServer  : public boost::enable_shared_from_this<RPCServer>
 
 	Json::Value doValidatorCreate(Json::Value& params);
 
+	Json::Value doWalletClaim(Json::Value& params);
 	Json::Value doWalletPropose(Json::Value& params);
 
 	// Parses a string account name into a local or remote NewcoinAddress.
