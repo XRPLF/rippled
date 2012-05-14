@@ -15,9 +15,6 @@ void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint2
 	
 	if(root->isFullBelow())
 	{
-#ifdef GMN_DEBUG
-		std::cerr << "getMissingNodes: root is full below" << std::endl;
-#endif
 		clearSynching();
 		return;
 	}
@@ -31,34 +28,23 @@ void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint2
 	std::stack<SHAMapTreeNode::pointer> stack;
 	stack.push(root);
 
-	while ((max > 0) && (!stack.empty()))
+	while (!stack.empty())
 	{
 		SHAMapTreeNode::pointer node = stack.top();
 		stack.pop();
 
-#ifdef GMN_DEBUG
-		std::cerr << "gMN: popped " << node->getString() << std::endl;
-#endif
-
 		for (int i = 0; i < 16; ++i)
-			if( !node->isEmptyBranch(i))
+			if (!node->isEmptyBranch(i))
 			{
-#ifdef GMN_DEBUG
-				std::cerr << "gMN: " << node->getString() << " has non-empty branch " << i << std::endl;
-#endif
 				SHAMapTreeNode::pointer desc = getNode(node->getChildNodeID(i), node->getChildHash(i), false);
-				if(desc)
+				if (!desc)
 				{
-					if (desc->isInner() && !desc->isFullBelow())
-						stack.push(desc);
-				}
-				else if (max-- > 0)
-				{
-#ifdef GMN_DEBUG
-					std::cerr << "gMN: need " << node->getChildNodeID(i).getString() << std::endl;
-#endif
 					nodeIDs.push_back(node->getChildNodeID(i));
+					if (--max <= 0)
+						return;
 				}
+				else if (desc->isInner() && !desc->isFullBelow())
+					stack.push(desc);
 			}
 	}
 }
