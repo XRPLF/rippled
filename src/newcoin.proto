@@ -205,7 +205,7 @@ message TMObjectByHash
 }
 
 message TMLedgerNode {
-	optional bytes nodeid			= 1;
+	required bytes nodeid			= 1;
 	required bytes nodedata			= 2;
 }
 
