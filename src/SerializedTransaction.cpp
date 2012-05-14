@@ -8,6 +8,7 @@ SerializedTransaction::SerializedTransaction(TransactionType type) : mType(type)
 
 	mMiddleTxn.giveObject(new STUInt32("Magic", TransactionMagic));
 	mMiddleTxn.giveObject(new STVariableLength("SigningPubKey"));
+	mMiddleTxn.giveObject(new STAccount("SourceAccount"));
 	mMiddleTxn.giveObject(new STUInt32("Sequence"));
 	mMiddleTxn.giveObject(new STUInt8("Type", static_cast<unsigned char>(type)));
 	mMiddleTxn.giveObject(new STUInt64("Fee"));
@@ -29,6 +30,7 @@ SerializedTransaction::SerializedTransaction(SerializerIterator& sit, int length
 
 	mMiddleTxn.giveObject(new STUInt32("Magic", TransactionMagic));
 	mMiddleTxn.giveObject(new STVariableLength("SigningPubKey", sit.getVL()));
+	mMiddleTxn.giveObject(new STAccount("SourceAccount", sit.getVL()));
 	mMiddleTxn.giveObject(new STUInt32("Sequence", sit.get32()));
 
 	mType = static_cast<TransactionType>(sit.get32());
@@ -224,10 +226,9 @@ const NewcoinAddress& SerializedTransaction::setSourceAccount(const NewcoinAddre
 {
 	mSourceAccount	= naSource;
 
-	STHash160* v = dynamic_cast<STHash160*>(mMiddleTxn.getPIndex(TransactionISourceID));
+	STAccount* v = dynamic_cast<STAccount*>(mMiddleTxn.getPIndex(TransactionISourceID));
 	if (!v) throw std::runtime_error("corrupt transaction");
-	v->setValue(mSourceAccount.getAccountID());
-
+	v->setValueNCA(mSourceAccount);
 	return mSourceAccount;
 }
 

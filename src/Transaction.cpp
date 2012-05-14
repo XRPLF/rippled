@@ -27,7 +27,6 @@ Transaction::Transaction(const NewcoinAddress& naPublicKey, const NewcoinAddress
 	mTransaction->setSourceAccount(mAccountFrom);
 
 	mTransaction->setSequence(iSeq);
-	assert(mTransaction->getSequence() != 0);
 
 	mTransaction->setTransactionFee(100); // for now
 
