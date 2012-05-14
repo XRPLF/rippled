@@ -38,6 +38,7 @@ public:
 
 	SHAMapNode() : mDepth(0)			{ ; }
 	SHAMapNode(int depth, const uint256& hash);
+	virtual ~SHAMapNode()				{ ; }
 	int getDepth() const				{ return mDepth; }
 	const uint256& getNodeID()	const	{ return mNodeID; }
 	bool isValid() const { return (mDepth >= 0) && (mDepth < 64); }
