@@ -15,9 +15,10 @@
 #include "BitcoinUtil.h"
 #include "Wallet.h"
 #include "BinaryFormats.h"
+#include "LedgerTiming.h"
 
 Ledger::Ledger(const NewcoinAddress& masterID, uint64 startAmount) : mTotCoins(startAmount),
-	mCloseTime(0), mLedgerSeq(0), mLedgerInterval(60), mClosed(false), mValidHash(false),
+	mCloseTime(0), mLedgerSeq(0), mLedgerInterval(LEDGER_INTERVAL), mClosed(false), mValidHash(false),
 	mAccepted(false), mImmutable(false)
 {
 	mTransactionMap = boost::make_shared<SHAMap>();
@@ -37,7 +38,7 @@ Ledger::Ledger(const NewcoinAddress& masterID, uint64 startAmount) : mTotCoins(s
 Ledger::Ledger(const uint256 &parentHash, const uint256 &transHash, const uint256 &accountHash,
 	uint64 totCoins, uint64 timeStamp, uint32 ledgerSeq)
 		: mParentHash(parentHash), mTransHash(transHash), mAccountHash(accountHash),
-		mTotCoins(totCoins), mCloseTime(timeStamp), mLedgerSeq(ledgerSeq), mLedgerInterval(60),
+		mTotCoins(totCoins), mCloseTime(timeStamp), mLedgerSeq(ledgerSeq), mLedgerInterval(LEDGER_INTERVAL),
 		mClosed(false), mValidHash(false), mAccepted(false), mImmutable(false)
 {
 	updateHash();
