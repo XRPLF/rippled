@@ -101,7 +101,7 @@ message TMStatusChange {
 
 message TMProposeLedger {
 	required uint32 closingSeq			= 1;
-	required uint32 secondsSinceClose	= 2;
+	required uint32 proposeSeq			= 2;
 	required bytes previousLedgerHash	= 3;	// 0 if first proposal, hash we no longer propose
 	required bytes currentLedgerHash	= 4;	// the hash of the ledger we are proposing
 	required bytes hanko				= 5;
@@ -210,9 +210,10 @@ message TMLedgerNode {
 }
 
 enum TMLedgerInfoType {
-	liBASE	= 0;	// basic ledger info
-	liTX_NODE = 1;	// transaction node
-	liAS_NODE = 2;	// account state node
+	liBASE	= 0;		// basic ledger info
+	liTX_NODE = 1;		// transaction node
+	liAS_NODE = 2;		// account state node
+	liTS_CANDIDATE = 3; // candidate transaction set
 }
 
 enum TMLedgerType {
