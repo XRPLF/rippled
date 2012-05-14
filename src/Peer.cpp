@@ -749,12 +749,12 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 			{
 				std::vector<SHAMapNode>::iterator nodeIDIterator;
 				std::list<std::vector<unsigned char> >::iterator rawNodeIterator;
-				for(nodeIDIterator=nodeIDs.begin(), rawNodeIterator=rawNodes.begin();
-					nodeIDIterator!=nodeIDs.end(); ++nodeIDIterator, ++rawNodeIterator)
+				for(nodeIDIterator = nodeIDs.begin(), rawNodeIterator = rawNodes.begin();
+					nodeIDIterator != nodeIDs.end(); ++nodeIDIterator, ++rawNodeIterator)
 				{
 					Serializer nID(33);
 					nodeIDIterator->addIDRaw(nID);
-					newcoin::TMLedgerNode* node=data->add_nodes();
+					newcoin::TMLedgerNode* node = data->add_nodes();
 					node->set_nodeid(nID.getDataPtr(), nID.getLength());
 					node->set_nodedata(&rawNodeIterator->front(), rawNodeIterator->size());
 				}
@@ -766,14 +766,14 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 		punishPeer(PP_INVALID_REQUEST);
 		return;
 	}
-	PackedMessage::pointer oPacket=boost::make_shared<PackedMessage>
+	PackedMessage::pointer oPacket = boost::make_shared<PackedMessage>
 		(PackedMessage::MessagePointer(data), newcoin::mtLEDGER);
 	sendPacket(oPacket);
 }
 
 void Peer::recvLedger(newcoin::TMLedgerData& packet)
 {
-	if(!theApp->getMasterLedgerAcquire().gotLedgerData(packet, shared_from_this()))
+	if (!theApp->getMasterLedgerAcquire().gotLedgerData(packet, shared_from_this()))
 		punishPeer(PP_UNWANTED_DATA);
 }
 
