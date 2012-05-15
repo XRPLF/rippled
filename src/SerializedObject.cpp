@@ -5,77 +5,88 @@
 
 #include "../json/writer.h"
 
-SerializedType* STObject::makeDefaultObject(SerializedTypeID id, const char *name)
+std::auto_ptr<SerializedType> STObject::makeDefaultObject(SerializedTypeID id, const char *name)
 {
 	switch(id)
 	{
+		case STI_NOTPRESENT:
+			return std::auto_ptr<SerializedType>(new SerializedType(name));
+
 		case STI_UINT16:
-			return new STUInt16(name);
+			return std::auto_ptr<SerializedType>(new STUInt16(name));
 
 		case STI_UINT32:
-			return new STUInt32(name);
+			return std::auto_ptr<SerializedType>(new STUInt32(name));
 
 		case STI_UINT64:
-			return new STUInt64(name);
+			return std::auto_ptr<SerializedType>(new STUInt64(name));
 
 		case STI_AMOUNT:
-			return new STAmount(name);
+			return std::auto_ptr<SerializedType>(new STAmount(name));
+
+		case STI_HASH128:
+			return std::auto_ptr<SerializedType>(new STHash128(name));
 
 		case STI_HASH160:
-			return new STHash160(name);
+			return std::auto_ptr<SerializedType>(new STHash160(name));
 
 		case STI_HASH256:
-			return new STHash256(name);
+			return std::auto_ptr<SerializedType>(new STHash256(name));
 
 		case STI_VL:
-			return new STVariableLength(name);
+			return std::auto_ptr<SerializedType>(new STVariableLength(name));
 
 		case STI_TL:
-			return new STTaggedList(name);
+			return std::auto_ptr<SerializedType>(new STTaggedList(name));
 
 		case STI_ACCOUNT:
-			return new STAccount(name);
+			return std::auto_ptr<SerializedType>(new STAccount(name));
 
 		default:
-			assert(false);
-			return NULL;
+			throw std::runtime_error("Unknown object type");
 	}
 }
 
-SerializedType* STObject::makeDeserializedObject(SerializedTypeID id, const char *name, SerializerIterator& sit)
+std::auto_ptr<SerializedType> STObject::makeDeserializedObject(SerializedTypeID id, const char *name,
+	SerializerIterator& sit)
 {
 	switch(id)
 	{
+		case STI_NOTPRESENT:
+			return SerializedType::deserialize(name);
+
 		case STI_UINT16:
-			return STUInt16::construct(sit, name);
+			return STUInt16::deserialize(sit, name);
 
 		case STI_UINT32:
-			return STUInt32::construct(sit, name);
+			return STUInt32::deserialize(sit, name);
 
 		case STI_UINT64:
-			return STUInt64::construct(sit, name);
+			return STUInt64::deserialize(sit, name);
 
 		case STI_AMOUNT:
-			return STAmount::construct(sit, name);
+			return STAmount::deserialize(sit, name);
+
+		case STI_HASH128:
+			return STHash128::deserialize(sit, name);
 
 		case STI_HASH160:
-			return STHash160::construct(sit, name);
+			return STHash160::deserialize(sit, name);
 
 		case STI_HASH256:
-			return STHash256::construct(sit, name);
+			return STHash256::deserialize(sit, name);
 
 		case STI_VL:
-			return STVariableLength::construct(sit, name);
+			return STVariableLength::deserialize(sit, name);
 
 		case STI_TL:
-			return STTaggedList::construct(sit, name);
+			return STTaggedList::deserialize(sit, name);
 
 		case STI_ACCOUNT:
-			return STAccount::construct(sit, name);
+			return STAccount::deserialize(sit, name);
 
 		default:
-			assert(false);
-			return NULL;
+			throw std::runtime_error("Unknown object type");
 	}
 }
 
@@ -86,13 +97,9 @@ STObject::STObject(SOElement* elem, const char *name) : SerializedType(name), mF
 		if (elem->e_type == SOE_FLAGS) mFlagIdx = mType.size();
 		mType.push_back(elem);
 		if (elem->e_type == SOE_IFFLAG)
-			giveObject(new SerializedType(elem->e_name));
+			giveObject(makeDefaultObject(STI_NOTPRESENT, elem->e_name));
 		else
-		{
-			SerializedType* t = makeDefaultObject(elem->e_id, elem->e_name);
-			if (!t) throw std::runtime_error("invalid transaction element");
-			giveObject(t);
-		}
+			giveObject(makeDefaultObject(elem->e_id, elem->e_name));
 		++elem;
 	}
 }
@@ -107,12 +114,20 @@ STObject::STObject(SOElement* elem, SerializerIterator& sit, const char *name) :
 		if (elem->e_type == SOE_IFFLAG)
 		{
 			assert(flags >= 0);
-			if ((flags&elem->e_flags) == 0) done = true;
+			if ((flags&elem->e_flags) == 0)
+			{
+				done = true;
+				giveObject(makeDefaultObject(elem->e_id, elem->e_name));
+			}
 		}
 		else if (elem->e_type == SOE_IFNFLAG)
 		{
 			assert(flags >= 0);
-			if ((flags&elem->e_flags) != 0) done = true;
+			if ((flags&elem->e_flags) != 0)
+			{
+				done = true;
+				giveObject(makeDefaultObject(STI_NOTPRESENT, elem->e_name));
+			}
 		}
 		else if (elem->e_type == SOE_FLAGS)
 		{
@@ -122,11 +137,7 @@ STObject::STObject(SOElement* elem, SerializerIterator& sit, const char *name) :
 			done = true;
 		}
 		if (!done)
-		{
-			SerializedType* t = makeDeserializedObject(elem->e_id, elem->e_name, sit);
-			if (!t) throw std::runtime_error("invalid transaction element");
-			giveObject(t);
-		}
+			giveObject(makeDeserializedObject(elem->e_id, elem->e_name, sit));
 		elem++;
 	}
 }
@@ -141,12 +152,14 @@ std::string STObject::getFullText() const
 		ret += " = {";
 	}
 	else ret = "{";
+
 	for (boost::ptr_vector<SerializedType>::const_iterator it = mData.begin(), end = mData.end(); it != end; ++it)
 	{
 		if (!first) ret += ", ";
 		else first = false;
 		ret += it->getFullText();
 	}
+
 	ret += "}";
 	return ret;
 }
@@ -269,23 +282,22 @@ uint32 STObject::getFlags(void) const
 
 SerializedType* STObject::makeFieldPresent(SOE_Field field)
 {
-	SerializedType* ret = NULL;
 	int index = getFieldIndex(field);
 	if (index == -1) throw std::runtime_error("Field not found");
 	if ((mType[index]->e_type != SOE_IFFLAG) && (mType[index]->e_type != SOE_IFNFLAG))
 		throw std::runtime_error("field is not optional");
 
-	ret = getPIndex(index);
-	if (ret->getSType() != STI_NOTPRESENT) return ret;
-	ret = makeDefaultObject(mType[index]->e_id, mType[index]->e_name);
-	mData.replace(index, ret);
+	SerializedType* f = getPIndex(index);
+	if (f->getSType() != STI_NOTPRESENT) return f;
+	mData.replace(index, makeDefaultObject(mType[index]->e_id, mType[index]->e_name));
+	f = getPIndex(index);
 
 	if (mType[index]->e_type == SOE_IFFLAG)
 		setFlag(mType[index]->e_flags);
 	else if (mType[index]->e_type == SOE_IFNFLAG)
 		clearFlag(mType[index]->e_flags);
 
-	return ret;
+	return f;
 }
 
 void STObject::makeFieldAbsent(SOE_Field field)

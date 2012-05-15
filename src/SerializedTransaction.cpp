@@ -136,9 +136,9 @@ bool SerializedTransaction::sign(const NewcoinAddress& naAccountPrivate)
 	return naAccountPrivate.accountPrivateSign(getSigningHash(), mSignature.peekValue());
 }
 
-bool SerializedTransaction::checkSign(const NewcoinAddress& naAccountPrivate) const
+bool SerializedTransaction::checkSign(const NewcoinAddress& naAccountPublic) const
 {
-	return naAccountPrivate.accountPrivateVerify(getSigningHash(), mSignature.getValue());
+	return naAccountPublic.accountPublicVerify(getSigningHash(), mSignature.getValue());
 }
 
 void SerializedTransaction::setSignature(const std::vector<unsigned char>& sig)

@@ -17,6 +17,8 @@ protected:
 	STObject mObject;
 	LedgerEntryFormat* mFormat;
 
+	SerializedLedgerEntry* duplicate() const { return new SerializedLedgerEntry(*this); }
+
 public:
 	SerializedLedgerEntry(const Serializer& s, const uint256& index);
 	SerializedLedgerEntry(SerializerIterator& sit, const uint256& index);
@@ -24,7 +26,6 @@ public:
 
 	int getLength() const { return mVersion.getLength() + mObject.getLength(); }
 	SerializedTypeID getSType() const { return STI_LEDGERENTRY; }
-	SerializedLedgerEntry* duplicate() const { return new SerializedLedgerEntry(*this); }
 	std::string getFullText() const;
 	std::string getText() const;
 	Json::Value getJson(int options) const;

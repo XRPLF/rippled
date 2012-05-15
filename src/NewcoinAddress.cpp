@@ -303,6 +303,25 @@ void NewcoinAddress::setAccountPublic(const NewcoinAddress& generator, int seq)
 	setAccountPublic(pubkey.GetPubKey());
 }
 
+bool NewcoinAddress::accountPublicVerify(const uint256& uHash, const std::vector<unsigned char>& vucSig) const
+{
+	CKey		ckPublic;
+	bool		bVerified;
+
+	if (!ckPublic.SetPubKey(getAccountPublic()))
+	{
+		// Bad private key.
+		std::cerr << "accountPublicVerify: Bad private key." << std::endl;
+		bVerified	= false;
+	}
+	else
+	{
+		bVerified	= ckPublic.Verify(uHash, vucSig);
+	}
+
+	return bVerified;
+}
+
 //
 // AccountPrivate
 //
@@ -631,16 +650,17 @@ void NewcoinAddress::setFamilySeedGeneric(const std::string& strText)
 {
 	if (setFamilySeed(strText))
 	{
-		std::cerr << "Recognized seed." << std::endl;
+		// std::cerr << "Recognized seed." << std::endl;
+		nothing();
 	}
 	else if (1 == setFamilySeed1751(strText))
 	{
-		std::cerr << "Recognized 1751 seed." << std::endl;
+		// std::cerr << "Recognized 1751 seed." << std::endl;
+		nothing();
 	}
 	else
 	{
-		std::cerr << "Creating seed from pass phrase." << std::endl;
-
+		// std::cerr << "Creating seed from pass phrase." << std::endl;
 		setFamilySeed(CKey::PassPhraseToKey(strText));
 	}
 }

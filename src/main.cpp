@@ -36,13 +36,12 @@ void printHelp(const po::options_description& desc)
 	cout << desc << endl;
 
 	cout << "Commands: " << endl;
-	cout << "     accountinfo <family>:<key>" << endl;
+	cout << "     account_info <account>|<nickname>" << endl;
+	cout << "     account_info <seed>|<pass_phrase>|<key> [<index>]" << endl;
 	cout << "     connect <ip> [<port>]" << endl;
-	cout << "     createfamily [<key>]" << endl;
 	cout << "     familyinfo" << endl;
 	cout << "     ledger" << endl;
 	cout << "     lock <family>" << endl;
-	cout << "     newaccount <family> [<name>]" << endl;
 	cout << "     peers" << endl;
 	cout << "     sendto <destination> <amount> [<tag>]" << endl;
 	cout << "     stop" << endl;
@@ -115,14 +114,14 @@ int main(int argc, char* argv[])
 		if (iCmd)
 			vCmd	= vm["parameters"].as<std::vector<std::string> >();
 
-		/*
-		char*	pvCmd[iCmd];
+		std::vector<char*>			pvCmd;
+
+		pvCmd.resize(iCmd);
 
 		for (int i=0; i != iCmd; ++i)
 			pvCmd[i]	= (char*) (vCmd[0].c_str());
 
-		iResult	= unit_test_main(init_unit_test, iCmd, pvCmd);
-		*/
+		iResult	= unit_test_main(init_unit_test, iCmd, &pvCmd.front());
 	}
 	else if (!vm.count("parameters"))
 	{

@@ -76,6 +76,8 @@ public:
 	void setAccountPublic(const std::vector<unsigned char>& vPublic);
 	void setAccountPublic(const NewcoinAddress& generator, int seq);
 
+	bool accountPublicVerify(const uint256& uHash, const std::vector<unsigned char>& vucSig) const;
+
 	//
 	// Accounts Private
 	//

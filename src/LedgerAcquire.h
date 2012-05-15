@@ -25,6 +25,7 @@ protected:
 	std::list< boost::weak_ptr<Peer> >	mPeers;
 
 	PeerSet(const uint256& hash, int interval);
+	virtual ~PeerSet() { ; }
 
 public:
 	const uint256& getHash() const		{ return mHash; }
@@ -82,6 +83,29 @@ public:
 	bool takeTxNode(const std::list<SHAMapNode>& IDs, const std::list<std::vector<unsigned char> >& data,
 		Peer::pointer);
 	bool takeAsNode(const std::list<SHAMapNode>& IDs, const std::list<std::vector<unsigned char> >& data,
+		Peer::pointer);
+};
+
+class TransactionAcquire : public PeerSet, public boost::enable_shared_from_this<TransactionAcquire>
+{ // A transaction set we are trying to acquire
+public:
+	typedef boost::shared_ptr<TransactionAcquire> pointer;
+
+protected:
+	SHAMap::pointer mMap;
+
+	void onTimer()						{ trigger(Peer::pointer()); }
+	void newPeer(Peer::pointer peer)	{ trigger(peer); }
+
+	void done();
+	void trigger(Peer::pointer);
+	boost::weak_ptr<PeerSet> pmDowncast();
+
+public:
+	TransactionAcquire(const uint256& hash);
+	SHAMap::pointer getMap();
+
+	bool takeNode(const std::list<SHAMapNode>& IDs, const std::list<std::vector<unsigned char> >& data,
 		Peer::pointer);
 };
 
