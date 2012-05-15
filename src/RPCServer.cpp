@@ -645,9 +645,25 @@ Json::Value RPCServer::doValidatorCreate(Json::Value& params) {
 // To provide an example to client writers, we do everything we expect a client to do here.
 Json::Value RPCServer::doWalletClaim(Json::Value& params)
 {
+	NewcoinAddress	naTemp;
+
 	if (params.size() < 2 || params.size() > 4)
 	{
 		return "invalid params";
+	}
+	else if (naTemp.setAccountID(params[0u].asString())
+		|| naTemp.setAccountPublic(params[0u].asString())
+		|| naTemp.setAccountPrivate(params[0u].asString()))
+	{
+		// Should also not allow account id's as seeds.
+		return "master seed expected";
+	}
+	else if (naTemp.setAccountID(params[1u].asString())
+		|| naTemp.setAccountPublic(params[1u].asString())
+		|| naTemp.setAccountPrivate(params[1u].asString()))
+	{
+		// Should also not allow account id's as seeds.
+		return "regular seed expected";
 	}
 	else
 	{
@@ -671,7 +687,6 @@ Json::Value RPCServer::doWalletClaim(Json::Value& params)
 
 		NewcoinAddress	naAccountPublic;
 		NewcoinAddress	naAccountPrivate;
-		NewcoinAddress	naUnset;
 
 		naMasterSeed.setFamilySeedGeneric(params[0u].asString());
 		naRegularSeed.setFamilySeedGeneric(params[1u].asString());
@@ -689,13 +704,14 @@ Json::Value RPCServer::doWalletClaim(Json::Value& params)
 		uint160						uGeneratorID		= naRegularReservedPublic.getAccountID();
 		std::vector<unsigned char>	vucGeneratorCipher	= naRegularReservedPrivate.accountPrivateEncrypt(naRegularReservedPublic, naMasterGenerator.getFamilyGenerator());
 
-
 		Transaction::pointer	trns	= Transaction::sharedClaim(
 			naAccountPublic, naAccountPrivate,
 			naAccountPublic,
 			uSourceTag,
 			naRegularReservedPublic,	// GeneratorID
 			vucGeneratorCipher);
+
+		(void) theApp->getOPs().processTransaction(trns);
 
 		Json::Value obj(Json::objectValue);
 
@@ -711,6 +727,7 @@ Json::Value RPCServer::doWalletClaim(Json::Value& params)
 		obj["annotation"]		= strAnnotation;
 
 		obj["transaction"]		= trns->getSTransaction()->getJson(0);
+		obj["status"]			= trns->getStatus();
 
 		return obj;
 	}
