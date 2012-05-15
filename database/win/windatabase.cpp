@@ -1,6 +1,8 @@
 #include "windatabase.h"
 #include "dbutility.h"
 
+using namespace std;
+
 Database* Database::newMysqlDatabase(const char* host,const char* user,const char* pass)
 {
 	return(new WinDatabase(host,user,pass));
@@ -71,7 +73,7 @@ int WinDatabase::getNumRowsAffected()
 }
 
 // returns true if the query went ok
-bool WinDatabase::executeSQL(const char* sql)
+bool WinDatabase::executeSQL(const char* sql, bool fail_okay)
 {
 	SQLRETURN rc = SQLExecDirect(hstmt,(unsigned char*) sql,SQL_NTS);
 	if(rc==SQL_ERROR)
@@ -120,8 +122,7 @@ bool WinDatabase::startIterRows()
 
 	if(mNumCol)
 	{
-		delete[](mColNameTable);
-		mColNameTable=new i4_str[mNumCol];
+		mColNameTable.resize(mNumCol);
 
 		// fill out the column name table
 		for(int n = 1; n <= mNumCol; n++)
@@ -149,14 +150,14 @@ bool WinDatabase::getNextRow()
 char* WinDatabase::getStr(int colIndex,string& retStr)
 {
 	colIndex++;
-	(*retStr)="";
+	retStr="";
 	char buf[1000];
 //	SQLINTEGER len;
 	buf[0]=0;
 
 	while(SQLGetData(hstmt, colIndex, SQL_C_CHAR, &buf, 1000,NULL)!= SQL_NO_DATA) 
 	{
-		(*retStr) += buf;
+		retStr += buf;
 //		theUI->statusMsg("Win: %s",buf);
 	}
 
@@ -166,7 +167,7 @@ char* WinDatabase::getStr(int colIndex,string& retStr)
 
 	//theUI->statusMsg("Win: %s",buf);
 	
-	return(*retStr);
+	return((char*)retStr.c_str());
 }
 
 int32 WinDatabase::getInt(int colIndex)

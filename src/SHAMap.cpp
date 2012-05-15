@@ -4,6 +4,7 @@
 #include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/smart_ptr/make_shared.hpp>
+#include <iostream>
 
 #include "Serializer.h"
 #include "BitcoinUtil.h"
