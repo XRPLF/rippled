@@ -54,8 +54,10 @@ protected:
 	boost::ptr_vector<SerializedType> mData;
 	std::vector<SOElement*> mType;
 
-	static SerializedType* makeDefaultObject(SerializedTypeID id, const char *name);
-	static SerializedType* makeDeserializedObject(SerializedTypeID id, const char *name, SerializerIterator&);
+	static std::auto_ptr<SerializedType> makeDefaultObject(SerializedTypeID id, const char *name);
+	static std::auto_ptr<SerializedType> makeDeserializedObject(SerializedTypeID id, const char *name,
+		SerializerIterator&);
+	STObject* duplicate() const { return new STObject(*this); }
 
 public:
 	STObject(const char *n = NULL) : SerializedType(n), mFlagIdx(-1) { ; }
@@ -65,7 +67,6 @@ public:
 
 	int getLength() const;
 	SerializedTypeID getSType() const { return STI_OBJECT; }
-	STObject* duplicate() const { return new STObject(*this); }
 	virtual bool isEquivalent(const SerializedType& t) const;
 
 	void add(Serializer& s) const;
@@ -74,8 +75,9 @@ public:
 	std::string getText() const;
 	virtual Json::Value getJson(int options) const;
 
-	int addObject(const SerializedType& t) { mData.push_back(t.duplicate()); return mData.size()-1; }
-	int giveObject(SerializedType* t) { mData.push_back(t); return mData.size()-1; }
+	int addObject(const SerializedType& t) { mData.push_back(t.clone()); return mData.size() - 1; }
+	int giveObject(std::auto_ptr<SerializedType> t) { mData.push_back(t); return mData.size() - 1; }
+	int giveObject(SerializedType* t) { mData.push_back(t); return mData.size() - 1; }
 	const boost::ptr_vector<SerializedType>& peekData() const { return mData; }
 	boost::ptr_vector<SerializedType>& peekData() { return mData; }
 
