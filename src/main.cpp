@@ -119,9 +119,9 @@ int main(int argc, char* argv[])
 		pvCmd.resize(iCmd);
 
 		for (int i=0; i != iCmd; ++i)
-			pvCmd[i]	= (char*) (vCmd[0].c_str());
+			pvCmd[i]	= (char*) (vCmd[i].c_str());
 
-		iResult	= unit_test_main(init_unit_test, iCmd, &pvCmd.front());
+		iResult	= unit_test_main(init_unit_test, iCmd, &pvCmd[0]);
 	}
 	else if (!vm.count("parameters"))
 	{
