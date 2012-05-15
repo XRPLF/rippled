@@ -23,6 +23,8 @@ protected:
 	STObject mMiddleTxn, mInnerTxn;
 	TransactionFormat* mFormat;
 
+	SerializedTransaction* duplicate() const { return new SerializedTransaction(*this); }
+
 public:
 	SerializedTransaction(SerializerIterator& sit, int length); // -1=all remaining, 0=get from sit
 	SerializedTransaction(TransactionType type);
@@ -30,7 +32,6 @@ public:
 	// STObject functions
 	int getLength() const;
 	SerializedTypeID getSType() const { return STI_TRANSACTION; }
-	SerializedTransaction* duplicate() const { return new SerializedTransaction(*this); }
 	std::string getFullText() const;
 	std::string getText() const;
 	void add(Serializer& s) const { getTransaction(s, true); }

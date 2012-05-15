@@ -26,6 +26,8 @@ class SerializedType
 protected:
 	const char *name;
 
+	virtual SerializedType* duplicate() const { return new SerializedType(name); }
+
 public:
 
 	SerializedType() : name(NULL) { ; }
@@ -33,12 +35,15 @@ public:
 	SerializedType(const SerializedType& n) : name(n.name) { ; }
 	virtual ~SerializedType() { ; }
 
+	static std::auto_ptr<SerializedType> deserialize(const char *name)
+	{ return std::auto_ptr<SerializedType>(new SerializedType(name)); }
+
 	void setName(const char *n) { name=n; }
 	const char *getName() const { return name; }
 
 	virtual int getLength() const { return 0; }
 	virtual SerializedTypeID getSType() const { return STI_NOTPRESENT; }
-	virtual SerializedType* duplicate() const { return new SerializedType(name); }
+	std::auto_ptr<SerializedType> clone() const { return std::auto_ptr<SerializedType>(duplicate()); }
 
 	virtual std::string getFullText() const;
 	virtual std::string getText() const // just the value
@@ -49,12 +54,12 @@ public:
 	virtual bool isEquivalent(const SerializedType& t) const { return true; }
 
 	bool operator==(const SerializedType& t) const
-	{ return (getSType()==t.getSType()) && isEquivalent(t); }
+	{ return (getSType() == t.getSType()) && isEquivalent(t); }
 	bool operator!=(const SerializedType& t) const
-	{ return (getSType()!=t.getSType()) || !isEquivalent(t); }
+	{ return (getSType() != t.getSType()) || !isEquivalent(t); }
 };
 
-inline SerializedType* new_clone(const SerializedType& s) { return s.duplicate(); }
+inline SerializedType* new_clone(const SerializedType& s) { return s.clone().release(); }
 inline void delete_clone(const SerializedType* s) { boost::checked_delete(s); }
 
 class STUInt8 : public SerializedType
@@ -62,15 +67,18 @@ class STUInt8 : public SerializedType
 protected:
 	unsigned char value;
 
+	STUInt8* duplicate() const { return new STUInt8(name, value); }
+	static STUInt8* construct(SerializerIterator&, const char *name = NULL);
+
 public:
 
 	STUInt8(unsigned char v=0) : value(v) { ; }
 	STUInt8(const char *n, unsigned char v=0) : SerializedType(n), value(v) { ; }
-	static STUInt8* construct(SerializerIterator&, const char *name = NULL);
+	static std::auto_ptr<SerializedType> deserialize(SerializerIterator& sit, const char *name)
+	{ return std::auto_ptr<SerializedType>(construct(sit, name)); }
 
 	int getLength() const { return 1; }
 	SerializedTypeID getSType() const { return STI_UINT8; }
-	STUInt8* duplicate() const { return new STUInt8(name, value); }
 	std::string getText() const;
 	void add(Serializer& s) const { s.add8(value); }
 
@@ -87,15 +95,18 @@ class STUInt16 : public SerializedType
 protected:
 	uint16 value;
 
+	STUInt16* duplicate() const { return new STUInt16(name, value); }
+	static STUInt16* construct(SerializerIterator&, const char *name = NULL);
+
 public:
 
 	STUInt16(uint16 v=0) : value(v) { ; }
 	STUInt16(const char *n, uint16 v=0) : SerializedType(n), value(v) { ; }
-	static STUInt16* construct(SerializerIterator&, const char *name = NULL);
+	static std::auto_ptr<SerializedType> deserialize(SerializerIterator& sit, const char *name)
+	{ return std::auto_ptr<SerializedType>(construct(sit, name)); }
 
 	int getLength() const { return 2; }
 	SerializedTypeID getSType() const { return STI_UINT16; }
-	STUInt16* duplicate() const { return new STUInt16(name, value); }
 	std::string getText() const;
 	void add(Serializer& s) const { s.add16(value); }
 
@@ -112,15 +123,18 @@ class STUInt32 : public SerializedType
 protected:
 	uint32 value;
 
+	STUInt32* duplicate() const { return new STUInt32(name, value); }
+	static STUInt32* construct(SerializerIterator&, const char *name = NULL);
+
 public:
 
 	STUInt32(uint32 v=0) : value(v) { ; }
 	STUInt32(const char *n, uint32 v=0) : SerializedType(n), value(v) { ; }
-	static STUInt32* construct(SerializerIterator&, const char *name = NULL);
+	static std::auto_ptr<SerializedType> deserialize(SerializerIterator& sit, const char *name)
+	{ return std::auto_ptr<SerializedType>(construct(sit, name)); }
 
 	int getLength() const { return 4; }
 	SerializedTypeID getSType() const { return STI_UINT32; }
-	STUInt32* duplicate() const { return new STUInt32(name, value); }
 	std::string getText() const;
 	void add(Serializer& s) const { s.add32(value); }
 
@@ -137,15 +151,18 @@ class STUInt64 : public SerializedType
 protected:
 	uint64 value;
 
+	STUInt64* duplicate() const { return new STUInt64(name, value); }
+	static STUInt64* construct(SerializerIterator&, const char *name = NULL);
+
 public:
 
 	STUInt64(uint64 v=0) : value(v) { ; }
 	STUInt64(const char *n, uint64 v=0) : SerializedType(n), value(v) { ; }
-	static STUInt64* construct(SerializerIterator&, const char *name = NULL);
+	static std::auto_ptr<SerializedType> deserialize(SerializerIterator& sit, const char *name)
+	{ return std::auto_ptr<SerializedType>(construct(sit, name)); }
 
 	int getLength() const { return 8; }
 	SerializedTypeID getSType() const { return STI_UINT64; }
-	STUInt64* duplicate() const { return new STUInt64(name, value); }
 	std::string getText() const;
 	void add(Serializer& s) const { s.add64(value); }
 
@@ -175,6 +192,8 @@ protected:
 	uint64 value;
 
 	void canonicalize();
+	STAmount* duplicate() const { return new STAmount(name, offset, value); }
+	static STAmount* construct(SerializerIterator&, const char *name = NULL);
 
 	static const int cMinOffset=-96, cMaxOffset=80;
 	static const uint64 cMinValue=1000000000000000ull, cMaxValue=9999999999999999ull;
@@ -184,11 +203,11 @@ public:
 	{ canonicalize(); } // (1,0)=$1 (1,-2)=$.01 (100,0)=(10000,-2)=$.01
 	STAmount(const char *n, uint64 v = 0, int off = 0) : SerializedType(n), offset(off), value(v)
 	{ canonicalize(); }
-	static STAmount* construct(SerializerIterator&, const char *name = NULL);
+	static std::auto_ptr<SerializedType> deserialize(SerializerIterator& sit, const char *name)
+	{ return std::auto_ptr<SerializedType>(construct(sit, name)); }
 
 	int getLength() const { return 8; }
 	SerializedTypeID getSType() const { return STI_AMOUNT; }
-	STAmount* duplicate() const { return new STAmount(name, offset, value); }
 	std::string getText() const;
 	std::string getRaw() const;
 	void add(Serializer& s) const;
@@ -245,17 +264,20 @@ class STHash128 : public SerializedType
 protected:
 	uint128 value;
 
+	STHash128* duplicate() const { return new STHash128(name, value); }
+	static STHash128* construct(SerializerIterator&, const char *name = NULL);
+
 public:
 
 	STHash128(const uint128& v) : value(v) { ; }
 	STHash128(const char *n, const uint128& v) : SerializedType(n), value(v) { ; }
 	STHash128(const char *n) : SerializedType(n) { ; }
 	STHash128() { ; }
-	static STHash128* construct(SerializerIterator&, const char *name = NULL);
+	static std::auto_ptr<SerializedType> deserialize(SerializerIterator& sit, const char *name)
+	{ return std::auto_ptr<SerializedType>(construct(sit, name)); }
 
 	int getLength() const { return 20; }
 	SerializedTypeID getSType() const { return STI_HASH128; }
-	STHash128* duplicate() const { return new STHash128(name, value); }
 	virtual std::string getText() const;
 	void add(Serializer& s) const { s.add128(value); }
 
@@ -272,17 +294,20 @@ class STHash160 : public SerializedType
 protected:
 	uint160 value;
 
+	STHash160* duplicate() const { return new STHash160(name, value); }
+	static STHash160* construct(SerializerIterator&, const char *name = NULL);
+
 public:
 
 	STHash160(const uint160& v) : value(v) { ; }
 	STHash160(const char *n, const uint160& v) : SerializedType(n), value(v) { ; }
 	STHash160(const char *n) : SerializedType(n) { ; }
 	STHash160() { ; }
-	static STHash160* construct(SerializerIterator&, const char *name = NULL);
+	static std::auto_ptr<SerializedType> deserialize(SerializerIterator& sit, const char *name)
+	{ return std::auto_ptr<SerializedType>(construct(sit, name)); }
 
 	int getLength() const { return 20; }
 	SerializedTypeID getSType() const { return STI_HASH160; }
-	STHash160* duplicate() const { return new STHash160(name, value); }
 	virtual std::string getText() const;
 	void add(Serializer& s) const { s.add160(value); }
 
@@ -299,17 +324,20 @@ class STHash256 : public SerializedType
 protected:
 	uint256 value;
 
+	STHash256* duplicate() const { return new STHash256(name, value); }
+	static STHash256* construct(SerializerIterator&, const char *name = NULL);
+
 public:
 
 	STHash256(const uint256& v) : value(v) { ; }
 	STHash256(const char *n, const uint256& v) : SerializedType(n), value(v) { ; }
 	STHash256(const char *n) : SerializedType(n) { ; }
 	STHash256() { ; }
-	static STHash256* construct(SerializerIterator&, const char *name = NULL);
+	static std::auto_ptr<SerializedType> deserialize(SerializerIterator& sit, const char *name)
+	{ return std::auto_ptr<SerializedType>(construct(sit, name)); }
 
 	int getLength() const { return 32; }
 	SerializedTypeID getSType() const { return STI_HASH256; }
-	STHash256* duplicate() const { return new STHash256(name, value); }
 	std::string getText() const;
 	void add(Serializer& s) const { s.add256(value); }
 
@@ -326,6 +354,9 @@ class STVariableLength : public SerializedType
 protected:
 	std::vector<unsigned char> value;
 
+	virtual STVariableLength* duplicate() const { return new STVariableLength(name, value); }
+	static STVariableLength* construct(SerializerIterator&, const char *name = NULL);
+
 public:
 
 	STVariableLength(const std::vector<unsigned char>& v) : value(v) { ; }
@@ -333,11 +364,11 @@ public:
 	STVariableLength(const char *n) : SerializedType(n) { ; }
 	STVariableLength(SerializerIterator&, const char *name = NULL);
 	STVariableLength() { ; }
-	static STVariableLength* construct(SerializerIterator&, const char *name = NULL);
+	static std::auto_ptr<SerializedType> deserialize(SerializerIterator& sit, const char *name)
+	{ return std::auto_ptr<SerializedType>(construct(sit, name)); }
 
 	int getLength() const;
 	virtual SerializedTypeID getSType() const { return STI_VL; }
-	virtual STVariableLength* duplicate() const { return new STVariableLength(name, value); }
 	virtual std::string getText() const;
 	void add(Serializer& s) const { s.addVL(value); }
 
@@ -353,16 +384,20 @@ public:
 
 class STAccount : public STVariableLength
 {
+protected:
+	virtual STAccount* duplicate() const { return new STAccount(name, value); }
+	static STAccount* construct(SerializerIterator&, const char *name = NULL);
+
 public:
 
 	STAccount(const std::vector<unsigned char>& v) : STVariableLength(v) { ; }
 	STAccount(const char *n, const std::vector<unsigned char>& v) : STVariableLength(n, v) { ; }
 	STAccount(const char *n) : STVariableLength(n) { ; }
 	STAccount() { ; }
-	static STAccount* construct(SerializerIterator&, const char *name = NULL);
+	static std::auto_ptr<SerializedType> deserialize(SerializerIterator& sit, const char *name)
+	{ return std::auto_ptr<SerializedType>(construct(sit, name)); }
 
 	SerializedTypeID getSType() const { return STI_ACCOUNT; }
-	virtual STAccount* duplicate() const { return new STAccount(name, value); }
 	std::string getText() const;
 
 	NewcoinAddress getValueNCA() const;
@@ -378,17 +413,20 @@ class STTaggedList : public SerializedType
 protected:
 	std::vector<TaggedListItem> value;
 
+	STTaggedList* duplicate() const { return new STTaggedList(name, value); }
+	static STTaggedList* construct(SerializerIterator&, const char *name = NULL);
+
 public:
 
 	STTaggedList() { ; }
 	STTaggedList(const char *n) : SerializedType(n) { ; }
 	STTaggedList(const std::vector<TaggedListItem>& v) : value(v) { ; }
 	STTaggedList(const char *n, const std::vector<TaggedListItem>& v) : SerializedType(n), value(v) { ; }
-	static STTaggedList* construct(SerializerIterator&, const char *name = NULL);
+	static std::auto_ptr<SerializedType> deserialize(SerializerIterator& sit, const char *name)
+	{ return std::auto_ptr<SerializedType>(construct(sit, name)); }
 
 	int getLength() const;
 	SerializedTypeID getSType() const { return STI_TL; }
-	STTaggedList* duplicate() const { return new STTaggedList(name, value); }
 	std::string getText() const;
 	void add(Serializer& s) const { if(s.addTaggedList(value)<0) throw(0); }
 
