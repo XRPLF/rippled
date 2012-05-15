@@ -118,16 +118,7 @@ void Application::run()
 
 	std::cerr << "Master seed: " << rootSeedMaster.humanFamilySeed() << std::endl;
 	std::cerr << "Master generator: " << rootGeneratorMaster.humanFamilyGenerator() << std::endl;
-	std::cerr << "Root address: " << rootAddress.humanAccountPublic() << std::endl;
-
-	// Temporary root account will be ["This is my payphrase."]:0
-	NewcoinAddress rootFamilySeed;		// Hold the 128 password.
-	NewcoinAddress rootFamilyGenerator;	// Hold the generator.
-	// NewcoinAddress rootAddress;
-
-	rootFamilySeed.setFamilySeed(CKey::PassPhraseToKey("This is my payphrase."));
-	rootFamilyGenerator.setFamilyGenerator(rootFamilySeed);
-	rootAddress.setAccountPublic(rootFamilyGenerator, 0);
+	std::cerr << "Root public key: " << rootAddress.humanAccountPublic() << std::endl;
 	std::cerr << "Root account: " << rootAddress.humanAccountID() << std::endl;
 
 	Ledger::pointer firstLedger = boost::make_shared<Ledger>(rootAddress, 100000000);
