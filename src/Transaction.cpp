@@ -46,6 +46,10 @@ Transaction::pointer Transaction::sharedTransaction(const std::vector<unsigned c
 	}
 }
 
+//
+// Generic transaction construction
+//
+
 Transaction::Transaction(
 	TransactionType ttKind,
 	const NewcoinAddress& naPublicKey,
@@ -72,6 +76,72 @@ Transaction::Transaction(
 		mTransaction->setITFieldU32(sfSourceTag, uSourceTag);
 	}
 }
+
+bool Transaction::sign(const NewcoinAddress& naAccountPrivate)
+{
+	bool	bResult	= true;
+
+	if (!naAccountPrivate.isValid())
+	{
+#ifdef DEBUG
+		std::cerr << "No private key for signing" << std::endl;
+#endif
+		bResult	= false;
+	}
+	else if (!getSTransaction()->sign(naAccountPrivate))
+	{
+#ifdef DEBUG
+		std::cerr << "Failed to make signature" << std::endl;
+#endif
+		assert(false);
+		bResult	= false;
+	}
+
+	if (bResult)
+	{
+		updateID();
+	}
+	else
+	{
+		mStatus = INCOMPLETE;
+	}
+
+	return bResult;
+}
+
+//
+// Claim
+//
+
+Transaction::pointer Transaction::setClaim(
+	const NewcoinAddress& naPrivateKey,
+	const NewcoinAddress& naGeneratorID,
+	const std::vector<unsigned char>& vucGenerator)
+{
+	sign(naPrivateKey);
+
+	return shared_from_this();
+}
+
+Transaction::pointer Transaction::sharedClaim(
+	const NewcoinAddress& naPublicKey, const NewcoinAddress& naPrivateKey,
+	const NewcoinAddress& naSourceAccount,
+	uint32 uSourceTag,
+	const NewcoinAddress& naGeneratorID,
+	const std::vector<unsigned char>& vucGenerator)
+{
+	pointer	tResult	= boost::make_shared<Transaction>(ttCLAIM,
+						naPublicKey, naSourceAccount,
+						0,		// Sequence of 0.
+						0,		// Free.
+						uSourceTag);
+
+	return tResult->setClaim(naPrivateKey, naGeneratorID, vucGenerator);
+}
+
+//
+// Payment
+//
 
 Transaction::pointer Transaction::setPayment(
 	const NewcoinAddress& naPrivateKey,
@@ -110,63 +180,9 @@ Transaction::pointer Transaction::sharedPayment(
 	return tResult->setPayment(naPrivateKey, toAccount, uAmount, ledger);
 }
 
-Transaction::pointer Transaction::setClaim(
-	const NewcoinAddress& naPrivateKey,
-	const NewcoinAddress& naGeneratorID,
-	const std::vector<unsigned char>& vucGenerator)
-{
-	sign(naPrivateKey);
-
-	return shared_from_this();
-}
-
-Transaction::pointer Transaction::sharedClaim(
-	const NewcoinAddress& naPublicKey, const NewcoinAddress& naPrivateKey,
-	const NewcoinAddress& naSourceAccount,
-	uint32 uSourceTag,
-	const NewcoinAddress& naGeneratorID,
-	const std::vector<unsigned char>& vucGenerator)
-{
-	pointer	tResult	= boost::make_shared<Transaction>(ttCLAIM,
-						naPublicKey, naSourceAccount,
-						0,		// Sequence of 0.
-						0,		// Free.
-						uSourceTag);
-
-	return tResult->setClaim(naPrivateKey, naGeneratorID, vucGenerator);
-}
-
-bool Transaction::sign(const NewcoinAddress& naAccountPrivate)
-{
-	bool	bResult	= true;
-
-	if (!naAccountPrivate.isValid())
-	{
-#ifdef DEBUG
-		std::cerr << "No private key for signing" << std::endl;
-#endif
-		bResult	= false;
-	}
-	else if (!getSTransaction()->sign(naAccountPrivate))
-	{
-#ifdef DEBUG
-		std::cerr << "Failed to make signature" << std::endl;
-#endif
-		assert(false);
-		bResult	= false;
-	}
-
-	if (bResult)
-	{
-		updateID();
-	}
-	else
-	{
-		mStatus = INCOMPLETE;
-	}
-
-	return bResult;
-}
+//
+// Misc.
+//
 
 bool Transaction::checkSign() const
 {
@@ -176,8 +192,8 @@ bool Transaction::checkSign() const
 
 void Transaction::setStatus(TransStatus ts, uint32 lseq)
 {
-	mStatus = ts;
-	mInLedger = lseq;
+	mStatus		= ts;
+	mInLedger	= lseq;
 }
 
 void Transaction::saveTransaction(Transaction::pointer txn)
@@ -265,7 +281,6 @@ Transaction::pointer Transaction::transactionFromSQL(const std::string& sql)
 	tr->setStatus(st);
 
 	return tr;
-
 }
 
 Transaction::pointer Transaction::load(const uint256& id)
@@ -329,22 +344,6 @@ bool Transaction::convertToTransactions(uint32 firstLedgerSeq, uint32 secondLedg
 	return true;
 }
 
-static bool isHex(char j)
-{
-	if ((j >= '0') && (j <= '9')) return true;
-	if ((j >= 'A') && (j <= 'F')) return true;
-	if ((j >= 'a') && (j <= 'f')) return true;
-	return false;
-}
-
-bool Transaction::isHexTxID(const std::string& txid)
-{
-	if (txid.size() != 64) return false;
-	for (int i = 0; i < 64; ++i)
-		if (!isHex(txid[i])) return false;
-	return true;
-}
-
 Json::Value Transaction::getJson(bool decorate, bool paid, bool credited) const
 {
 	Json::Value ret(mTransaction->getJson(0));
@@ -378,4 +377,25 @@ Json::Value Transaction::getJson(bool decorate, bool paid, bool credited) const
 
 	return ret;
 }
+
+//
+// Obsolete
+//
+
+static bool isHex(char j)
+{
+	if ((j >= '0') && (j <= '9')) return true;
+	if ((j >= 'A') && (j <= 'F')) return true;
+	if ((j >= 'a') && (j <= 'f')) return true;
+	return false;
+}
+
+bool Transaction::isHexTxID(const std::string& txid)
+{
+	if (txid.size() != 64) return false;
+	for (int i = 0; i < 64; ++i)
+		if (!isHex(txid[i])) return false;
+	return true;
+}
+
 // vim:ts=4
