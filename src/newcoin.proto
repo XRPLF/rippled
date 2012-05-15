@@ -22,6 +22,7 @@ enum MessageType {
 	mtPROPOSE_LEDGER=		33;
 	mtCLOSE_LEDGER=			35;
 	mtSTATUS_CHANGE=		36;
+	mtPEER_POSITION=		37;
 
 // data replication and synchronization
 	mtGET_VALIDATIONS=		40;
@@ -98,6 +99,17 @@ message TMStatusChange {
 }
 
 
+message TMPeerPosition {
+	required uint32 ledgerSequence		= 1;
+	required bytes pubKey				= 2;
+	required uint32 sequence			= 3;
+	required bytes transactionHash		= 4;
+	required bytes signature			= 5;
+}
+
+message TMHaveTransactionSet {
+	repeated bytes hashes				= 1;
+}
 
 message TMProposeLedger {
 	required uint32 closingSeq			= 1;
@@ -109,6 +121,8 @@ message TMProposeLedger {
 	repeated bytes removedTransactions	= 7;
 	required bytes signature			= 8;
 }
+
+
 
 // Used to propose/validate during ledger close
 message TMValidation {
