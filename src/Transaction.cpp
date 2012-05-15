@@ -11,47 +11,6 @@
 #include "Serializer.h"
 #include "SerializedTransaction.h"
 
-Transaction::Transaction(const NewcoinAddress& naPublicKey, const NewcoinAddress& naPrivateKey,
-	const NewcoinAddress& naFromAccount, const NewcoinAddress& toAccount,
-	uint64 amount,
-	uint32 iSeq, uint32 ident, uint32 ledger) : mInLedger(0), mStatus(NEW)
-{
-	mAccountFrom	= naFromAccount;
-
-	mFromPubKey		= naPublicKey;
-	assert(mFromPubKey.isValid());
-
-	mTransaction	= boost::make_shared<SerializedTransaction>(ttMAKE_PAYMENT);
-
-	mTransaction->setSigningPubKey(mFromPubKey);
-	mTransaction->setSourceAccount(mAccountFrom);
-
-	mTransaction->setSequence(iSeq);
-
-	mTransaction->setTransactionFee(100); // for now
-
-	mTransaction->setITFieldAccount(sfDestination, toAccount);
-	mTransaction->setITFieldU64(sfAmount, amount);
-	if (ledger != 0)
-	{
-		mTransaction->makeITFieldPresent(sfTargetLedger);
-		mTransaction->setITFieldU32(sfTargetLedger, ledger);
-	}
-	if (ident != 0)
-	{
-		mTransaction->makeITFieldPresent(sfSourceTag);
-		mTransaction->setITFieldU32(sfSourceTag, ident);
-	}
-
-	if (!sign(naPrivateKey))
-	{
-#ifdef DEBUG
-		std::cerr << "Unable to sign transaction" << std::endl;
-#endif
-		mStatus = INCOMPLETE;
-	}
-}
-
 Transaction::Transaction(const SerializedTransaction::pointer sit, bool bValidate)
 	: mInLedger(0), mStatus(INVALID), mTransaction(sit)
 {
@@ -87,67 +46,126 @@ Transaction::pointer Transaction::sharedTransaction(const std::vector<unsigned c
 	}
 }
 
-#if 0
-Transaction::Transaction(const NewcoinAddress& fromID, const NewcoinAddress& toID,
-	CKey::pointer pubKey, uint64 amount, uint64 fee, uint32 fromSeq, uint32 fromLedger,
-	uint32 ident, const std::vector<unsigned char>& signature, uint32 ledgerSeq, TransStatus st) :
-	mAccountFrom(fromID), mFromPubKey(pubKey), mInLedger(ledgerSeq), mStatus(st)
+Transaction::Transaction(
+	TransactionType ttKind,
+	const NewcoinAddress& naPublicKey,
+	const NewcoinAddress& naSourceAccount,
+	uint32 uSeq,
+	uint64 uFee,
+	uint32 uSourceTag) :
+	mInLedger(0), mStatus(NEW)
 {
-	mTransaction = boost::make_shared<SerializedTransaction>(ttMAKE_PAYMENT);
-	mTransaction->setSignature(signature);
-	mTransaction->setTransactionFee(fee);
-	mTransaction->setSigningPubKey(pubKey);			// BROKEN
-	mTransaction->setSourceAccount(mAccountFrom);	// BROKEN
-	mTransaction->setSequence(fromSeq);
-	if (fromLedger != 0)
-	{
-		mTransaction->makeITFieldPresent(sfTargetLedger);
-		mTransaction->setITFieldU32(sfTargetLedger, fromLedger);
-	}
-	if (ident != 0)
+	mAccountFrom	= naSourceAccount;
+	mFromPubKey		= naPublicKey;
+	assert(mFromPubKey.isValid());
+
+	mTransaction	= boost::make_shared<SerializedTransaction>(ttKind);
+
+	mTransaction->setSigningPubKey(mFromPubKey);
+	mTransaction->setSourceAccount(mAccountFrom);
+	mTransaction->setSequence(uSeq);
+	mTransaction->setTransactionFee(uFee);
+
+	if (uSourceTag)
 	{
 		mTransaction->makeITFieldPresent(sfSourceTag);
-		mTransaction->setITFieldU32(sfSourceTag, ident);
+		mTransaction->setITFieldU32(sfSourceTag, uSourceTag);
 	}
-	mTransaction->setITFieldU64(sfAmount, amount);
-	mTransaction->setITFieldAccount(sfDestination, toID.getAccountID());
-	updateID();
 }
-#endif
+
+Transaction::pointer Transaction::setPayment(
+	const NewcoinAddress& naPrivateKey,
+	const NewcoinAddress& toAccount,
+	uint64 uAmount,
+	uint32 ledger)
+{
+	mTransaction->setITFieldAccount(sfDestination, toAccount);
+	mTransaction->setITFieldU64(sfAmount, uAmount);
+
+	if (ledger != 0)
+	{
+		mTransaction->makeITFieldPresent(sfTargetLedger);
+		mTransaction->setITFieldU32(sfTargetLedger, ledger);
+	}
+
+	sign(naPrivateKey);
+
+	return shared_from_this();
+}
+
+Transaction::pointer Transaction::sharedPayment(
+	const NewcoinAddress& naPublicKey, const NewcoinAddress& naPrivateKey,
+	const NewcoinAddress& naSourceAccount,
+	uint32 uSeq,
+	uint64 uFee,
+	uint32 uSourceTag,
+	const NewcoinAddress& toAccount,
+	uint64 uAmount,
+	uint32 ledger)
+{
+	pointer	tResult	= boost::make_shared<Transaction>(ttMAKE_PAYMENT,
+						naPublicKey, naSourceAccount,
+						uSeq, uFee, uSourceTag);
+
+	return tResult->setPayment(naPrivateKey, toAccount, uAmount, ledger);
+}
+
+Transaction::pointer Transaction::setClaim(
+	const NewcoinAddress& naPrivateKey,
+	const NewcoinAddress& naGeneratorID,
+	const std::vector<unsigned char>& vucGenerator)
+{
+	sign(naPrivateKey);
+
+	return shared_from_this();
+}
+
+Transaction::pointer Transaction::sharedClaim(
+	const NewcoinAddress& naPublicKey, const NewcoinAddress& naPrivateKey,
+	const NewcoinAddress& naSourceAccount,
+	uint32 uSourceTag,
+	const NewcoinAddress& naGeneratorID,
+	const std::vector<unsigned char>& vucGenerator)
+{
+	pointer	tResult	= boost::make_shared<Transaction>(ttCLAIM,
+						naPublicKey, naSourceAccount,
+						0,		// Sequence of 0.
+						0,		// Free.
+						uSourceTag);
+
+	return tResult->setClaim(naPrivateKey, naGeneratorID, vucGenerator);
+}
 
 bool Transaction::sign(const NewcoinAddress& naAccountPrivate)
 {
-	if(!naAccountPrivate.isValid())
+	bool	bResult	= true;
+
+	if (!naAccountPrivate.isValid())
 	{
 #ifdef DEBUG
 		std::cerr << "No private key for signing" << std::endl;
 #endif
-		return false;
+		bResult	= false;
 	}
-
-#if 0
-	if( (mTransaction->getITFieldU64(sfAmount)==0) )
-	{
-#ifdef DEBUG
-		std::cerr << "Bad amount or destination" << std::endl;
-#endif
-		assert(false);
-		return false;
-	}
-#endif
-
-	if(!getSTransaction()->sign(naAccountPrivate))
+	else if (!getSTransaction()->sign(naAccountPrivate))
 	{
 #ifdef DEBUG
 		std::cerr << "Failed to make signature" << std::endl;
 #endif
 		assert(false);
-		return false;
+		bResult	= false;
 	}
 
-	updateID();
+	if (bResult)
+	{
+		updateID();
+	}
+	else
+	{
+		mStatus = INCOMPLETE;
+	}
 
-	return true;
+	return bResult;
 }
 
 bool Transaction::checkSign() const
