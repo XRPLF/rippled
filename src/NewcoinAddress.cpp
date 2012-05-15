@@ -303,6 +303,25 @@ void NewcoinAddress::setAccountPublic(const NewcoinAddress& generator, int seq)
 	setAccountPublic(pubkey.GetPubKey());
 }
 
+bool NewcoinAddress::accountPublicVerify(const uint256& uHash, const std::vector<unsigned char>& vucSig) const
+{
+	CKey		ckPublic;
+	bool		bVerified;
+
+	if (!ckPublic.SetPubKey(getAccountPublic()))
+	{
+		// Bad private key.
+		std::cerr << "accountPublicVerify: Bad private key." << std::endl;
+		bVerified	= false;
+	}
+	else
+	{
+		bVerified	= ckPublic.Verify(uHash, vucSig);
+	}
+
+	return bVerified;
+}
+
 //
 // AccountPrivate
 //
