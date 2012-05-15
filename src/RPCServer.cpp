@@ -608,8 +608,9 @@ Json::Value RPCServer::doWalletClaim(Json::Value& params)
 		//
 		// Which has no confidential information.
 
+		// XXX Need better parsing.
+		uint32		uSourceTag		= (params.size() == 2) ? 0 : boost::lexical_cast<uint32>(params[2u].asString());
 		// XXX Annotation is ignored.
-		uint32		uSourceTag		= (params.size() == 2) ? 0 : params[2u].asUInt();
 		std::string strAnnotation	= (params.size() == 3) ? "" : params[3u].asString();
 
 		NewcoinAddress	naMasterSeed;
@@ -641,13 +642,12 @@ Json::Value RPCServer::doWalletClaim(Json::Value& params)
 		std::vector<unsigned char>	vucGeneratorCipher	= naRegularReservedPrivate.accountPrivateEncrypt(naRegularReservedPublic, naMasterGenerator.getFamilyGenerator());
 
 
-		Transaction::pointer	trns	= boost::make_shared<Transaction>(
+		Transaction::pointer	trns	= Transaction::sharedClaim(
 			naAccountPublic, naAccountPrivate,
-			naAccountPublic, naUnset,
-			0,			// Free
-			0,			// Seq
-			uSourceTag,	// Source tag
-			0);			// Ledger not specified.
+			naAccountPublic,
+			uSourceTag,
+			naRegularReservedPublic,	// GeneratorID
+			vucGeneratorCipher);
 
 		Json::Value obj(Json::objectValue);
 
@@ -661,6 +661,8 @@ Json::Value RPCServer::doWalletClaim(Json::Value& params)
 		obj["generator_id"]		= strHex(uGeneratorID);
 		obj["generator"]		= strHex(vucGeneratorCipher);
 		obj["annotation"]		= strAnnotation;
+
+		obj["transaction"]		= trns->getSTransaction()->getJson(0);
 
 		return obj;
 	}

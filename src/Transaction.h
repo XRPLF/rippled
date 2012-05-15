@@ -30,35 +30,66 @@ enum TransStatus
 	INCOMPLETE	= 8  // needs more signatures
 };
 
+// This class is for constructing and examining transactions.  Transactions are static so manipulation functions are unnecessary.
 class Transaction : public boost::enable_shared_from_this<Transaction>
 {
 public:
-
 	typedef boost::shared_ptr<Transaction> pointer;
 
 private:
 	uint256			mTransactionID;
 	NewcoinAddress	mAccountFrom;
-	NewcoinAddress	mFromPubKey;
+	NewcoinAddress	mFromPubKey;	// Sign transaction with this. mSignPubKey
+	NewcoinAddress	mSourcePrivate;	// Sign transaction with this.
 
-	uint32		mInLedger;
-	TransStatus	mStatus;
+	uint32			mInLedger;
+	TransStatus		mStatus;
 
 	SerializedTransaction::pointer mTransaction;
+
+	Transaction::pointer setPayment(
+		const NewcoinAddress& naPrivateKey,
+		const NewcoinAddress& toAccount,
+		uint64 uAmount,
+		uint32 ledger);
+
+	Transaction::pointer setClaim(
+		const NewcoinAddress& naPrivateKey,
+		const NewcoinAddress& naGeneratorID,
+		const std::vector<unsigned char>& vucGenerator);
 
 public:
 	Transaction(const SerializedTransaction::pointer st, bool bValidate);
 
 	static Transaction::pointer sharedTransaction(const std::vector<unsigned char>&vucTransaction, bool bValidate);
 
-	Transaction(const NewcoinAddress& naPublicKey, const NewcoinAddress& naPrivateKey,
-		const NewcoinAddress& naFromAccount, const NewcoinAddress& toAccount,
-		uint64 amount,
-		uint32 iSeq, uint32 ident, uint32 ledger);
+	Transaction(
+		TransactionType ttKind,
+		const NewcoinAddress& naPublicKey,
+		const NewcoinAddress& naSourceAccount,
+		uint32 uSeq,
+		uint64 uFee,
+		uint32 uSourceTag);
 
+	static Transaction::pointer sharedPayment(
+		const NewcoinAddress& naPublicKey, const NewcoinAddress& naPrivateKey,
+		const NewcoinAddress& naSourceAccount,
+		uint32 uSeq,
+		uint64 uFee,
+		uint32 uSourceTag,
+		const NewcoinAddress& toAccount,
+		uint64 uAmount,
+		uint32 ledger);
+
+	static Transaction::pointer sharedClaim(
+		const NewcoinAddress& naPublicKey, const NewcoinAddress& naPrivateKey,
+		const NewcoinAddress& naSourceAccount,
+		uint32 uSourceTag,
+		const NewcoinAddress& naGeneratorID,
+		const std::vector<unsigned char>& vucGenerator);
 #if 0
 	Transaction(const NewcoinAddress& fromID, const NewcoinAddress& toID,
-		CKey::pointer pubKey, uint64 amount, uint64 fee, uint32 fromSeq, uint32 fromLedger,
+		CKey::pointer pubKey, uint64 uAmount, uint64 fee, uint32 fromSeq, uint32 fromLedger,
 		uint32 ident, const std::vector<unsigned char>& signature, uint32 ledgerSeq, TransStatus st);
 #endif
 
@@ -106,9 +137,11 @@ public:
 
 protected:
 	static Transaction::pointer transactionFromSQL(const std::string& statement);
+#if 0
 	Transaction(const uint256& transactionID, const NewcoinAddress& accountFrom, const NewcoinAddress& accountTo,
-		 CKey::pointer key, uint64 amount, uint64 fee, uint32 fromAccountSeq, uint32 sourceLedger,
+		 CKey::pointer key, uint64 uAmount, uint64 fee, uint32 fromAccountSeq, uint32 sourceLedger,
 		 uint32 ident, const std::vector<unsigned char>& signature, uint32 inLedger, TransStatus status);
+#endif
 };
 
 #endif

@@ -115,12 +115,14 @@ int main(int argc, char* argv[])
 		if (iCmd)
 			vCmd	= vm["parameters"].as<std::vector<std::string> >();
 
-		char*	pvCmd[iCmd];
+		std::vector<char*>			pvCmd;
+
+		pvCmd.resize(iCmd);
 
 		for (int i=0; i != iCmd; ++i)
 			pvCmd[i]	= (char*) (vCmd[0].c_str());
 
-		iResult	= unit_test_main(init_unit_test, iCmd, pvCmd);
+		iResult	= unit_test_main(init_unit_test, iCmd, &pvCmd.front());
 	}
 	else if (!vm.count("parameters"))
 	{
