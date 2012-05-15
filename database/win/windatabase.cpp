@@ -211,3 +211,29 @@ void WinDatabase::endIterRows()
 	rc = SQLFreeStmt(hstmt, SQL_CLOSE);
 	mystmt(hstmt,rc);
 }
+
+// TODO
+void WinDatabase::escape(const unsigned char* start,int size,std::string& retStr)
+{
+	retStr=(char*)start;
+}
+
+// TODO
+int WinDatabase::getLastInsertID()
+{
+	return(0);
+}
+
+uint64 WinDatabase::getBigInt(int colIndex)
+{
+	colIndex++;
+	uint64 ret=0;
+	SQLRETURN rc = SQLGetData(hstmt,colIndex,SQL_INTEGER,&ret,sizeof(uint64),NULL);
+	mystmt(hstmt,rc);
+	return(ret);
+}
+// TODO:
+int WinDatabase::getBinary(int colIndex,unsigned char* buf,int maxSize)
+{
+	return(0);
+}

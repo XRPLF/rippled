@@ -121,7 +121,7 @@ int main(int argc, char* argv[])
 		for (int i=0; i != iCmd; ++i)
 			pvCmd[i]	= (char*) (vCmd[0].c_str());
 
-		iResult	= unit_test_main(init_unit_test, iCmd, &pvCmd.front());
+		//iResult	= unit_test_main(init_unit_test, iCmd, &pvCmd.front());
 	}
 	else if (!vm.count("parameters"))
 	{
