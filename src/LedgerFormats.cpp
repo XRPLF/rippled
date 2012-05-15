@@ -55,11 +55,11 @@ LedgerEntryFormat LedgerFormats[]=
 
 LedgerEntryFormat* getLgrFormat(LedgerEntryType t)
 {
-	LedgerEntryFormat* f=LedgerFormats;
-	while(f->t_name!=NULL)
+	LedgerEntryFormat* f = LedgerFormats;
+	while(f->t_name != NULL)
 	{
-		if(f->t_type==t) return f;
-		f++;
+		if(f->t_type == t) return f;
+		++f;
 	}
 	return NULL;
 }
