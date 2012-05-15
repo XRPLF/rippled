@@ -1,6 +1,8 @@
 #ifndef __LEDGER_CONSENSUS__
 #define __LEDGER_CONSENSUS__
 
+#include <list>
+
 #include <boost/unordered/unordered_map.hpp>
 
 #include "key.h"
@@ -69,6 +71,8 @@ protected:
 	boost::unordered_map<uint256, SHAMap::pointer> mComplete;
 	boost::unordered_map<uint256, TransactionAcquire::pointer> mAcquiring;
 
+	// Peer sets
+	boost::unordered_map<uint256, std::vector< boost::weak_ptr<Peer> > > mPeerData;
 
 public:
 	LedgerConsensus(Ledger::pointer previousLedger, Ledger::pointer currentLedger) :
@@ -82,6 +86,14 @@ public:
 	SHAMap::pointer getTransactionTree(const uint256& hash);
 	TransactionAcquire::pointer getAcquiring(const uint256& hash);
 	void acquireComplete(const uint256& hash);
+
+	LCPosition::pointer getPeerPosition(const uint256& peer);
+
+	// high-level functions
+	bool peerPosition(Peer::pointer peer, const Serializer& report);
+	bool peerHasSet(Peer::pointer peer, const std::vector<uint256>& sets);
+	bool peerGaveNodes(Peer::pointer peer, const uint256& setHash,
+		const std::list<SHAMapNode>& nodeIDs, const std::list< std::vector<unsigned char> >& nodeData);
 };
 
 
