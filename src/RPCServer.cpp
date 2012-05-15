@@ -172,6 +172,7 @@ NewcoinAddress RPCServer::parseFamily(const std::string& fParam)
 	return family;
 }
 
+#if 0
 Json::Value RPCServer::doCreateFamily(Json::Value& params)
 {
 	// createfamily FXXXX
@@ -216,37 +217,83 @@ Json::Value RPCServer::doCreateFamily(Json::Value& params)
 
 	return ret;
 }
+#endif
 
+// account_info <account>|<nickname>|<account_public_key>
+// account_info <seed>|<pass_phrase>|<key> [<index>]
 Json::Value RPCServer::doAccountInfo(Json::Value &params)
-{   // accountinfo <family>:<number>
-	// accountinfo <account>
-	std::string acct;
-	if (!extractString(acct, params, 0))
-		return JSONRPCError(500, "Invalid account identifier");
-
-	LocalAccount::pointer account = theApp->getWallet().parseAccount(acct);
-	if (account) return account->getJson();
-
-	NewcoinAddress acctid;
-	if (!acctid.setAccountID(acct))
-		return JSONRPCError(500, "Unable to parse account");
-
-	LocalAccount::pointer lac(theApp->getWallet().getLocalAccount(acctid));
-	if (!!lac) return lac->getJson();
-
-	AccountState::pointer as=theApp->getMasterLedger().getCurrentLedger()->getAccountState(acctid);
-	Json::Value ret(Json::objectValue);
-	if (as)
-		as->addJson(ret);
+{
+	if (params.size() < 1 || params.size() > 2)
+	{
+		return "invalid params";
+	}
 	else
 	{
-		NewcoinAddress ad;
-		ad.setAccountID(acct);
-		ret[ad.humanAccountID()]="NotFound";
+		std::string		strIdent	= params[0u].asString();
+		bool			bIndex		= 2 == params.size();
+		int				iIndex		= bIndex ? boost::lexical_cast<int>(params[1u].asString()) : 0;
+
+		NewcoinAddress	naAccount;
+		NewcoinAddress	naSeed;
+
+		if (!bIndex && (naAccount.setAccountPublic(strIdent) || naAccount.setAccountID(strIdent)))
+		{
+			// Got the account.
+			nothing();
+		}
+		else
+		{
+			// Must be a seed.
+			naSeed.setFamilySeedGeneric(strIdent);
+
+			NewcoinAddress	naGenerator;
+			NewcoinAddress	naRegularReservedPublic;
+
+			naGenerator.setFamilyGenerator(naSeed);
+
+			naRegularReservedPublic.setAccountPublic(naGenerator, -1);
+
+			uint160						uGeneratorID		= naRegularReservedPublic.getAccountID();
+
+			// if (probe (uGeneratorID))
+			if (false)
+			{
+				// Found master public key.
+
+			}
+			else
+			{
+				// Didn't find a generator map, assume it is a master generator.
+				nothing();
+			}
+
+			bIndex	= true;
+
+			naAccount.setAccountPublic(naGenerator, iIndex);
+		}
+
+		// Get info on account.
+		Json::Value ret(Json::objectValue);
+
+		AccountState::pointer as=theApp->getMasterLedger().getCurrentLedger()->getAccountState(naAccount);
+		if (as)
+		{
+			as->addJson(ret);
+		}
+		else
+		{
+			ret["account"]	= naAccount.humanAccountID();
+			ret["status"]	= "NotFound";
+			ret["bIndex"]	= bIndex;
+			if (bIndex)
+				ret["index"]	= iIndex;
+		}
+
+		return ret;
 	}
-	return ret;
 }
 
+#if 0
 Json::Value RPCServer::doNewAccount(Json::Value &params)
 {   // newaccount <family> [<name>]
 	std::string fParam;
@@ -262,6 +309,7 @@ Json::Value RPCServer::doNewAccount(Json::Value &params)
 
 	return account->getJson();
 }
+#endif
 
 Json::Value RPCServer::doLock(Json::Value &params)
 {   // lock <family>
@@ -597,9 +645,25 @@ Json::Value RPCServer::doValidatorCreate(Json::Value& params) {
 // To provide an example to client writers, we do everything we expect a client to do here.
 Json::Value RPCServer::doWalletClaim(Json::Value& params)
 {
+	NewcoinAddress	naTemp;
+
 	if (params.size() < 2 || params.size() > 4)
 	{
 		return "invalid params";
+	}
+	else if (naTemp.setAccountID(params[0u].asString())
+		|| naTemp.setAccountPublic(params[0u].asString())
+		|| naTemp.setAccountPrivate(params[0u].asString()))
+	{
+		// Should also not allow account id's as seeds.
+		return "master seed expected";
+	}
+	else if (naTemp.setAccountID(params[1u].asString())
+		|| naTemp.setAccountPublic(params[1u].asString())
+		|| naTemp.setAccountPrivate(params[1u].asString()))
+	{
+		// Should also not allow account id's as seeds.
+		return "regular seed expected";
 	}
 	else
 	{
@@ -623,7 +687,6 @@ Json::Value RPCServer::doWalletClaim(Json::Value& params)
 
 		NewcoinAddress	naAccountPublic;
 		NewcoinAddress	naAccountPrivate;
-		NewcoinAddress	naUnset;
 
 		naMasterSeed.setFamilySeedGeneric(params[0u].asString());
 		naRegularSeed.setFamilySeedGeneric(params[1u].asString());
@@ -641,13 +704,14 @@ Json::Value RPCServer::doWalletClaim(Json::Value& params)
 		uint160						uGeneratorID		= naRegularReservedPublic.getAccountID();
 		std::vector<unsigned char>	vucGeneratorCipher	= naRegularReservedPrivate.accountPrivateEncrypt(naRegularReservedPublic, naMasterGenerator.getFamilyGenerator());
 
-
 		Transaction::pointer	trns	= Transaction::sharedClaim(
 			naAccountPublic, naAccountPrivate,
 			naAccountPublic,
 			uSourceTag,
 			naRegularReservedPublic,	// GeneratorID
 			vucGeneratorCipher);
+
+		(void) theApp->getOPs().processTransaction(trns);
 
 		Json::Value obj(Json::objectValue);
 
@@ -663,6 +727,7 @@ Json::Value RPCServer::doWalletClaim(Json::Value& params)
 		obj["annotation"]		= strAnnotation;
 
 		obj["transaction"]		= trns->getSTransaction()->getJson(0);
+		obj["status"]			= trns->getStatus();
 
 		return obj;
 	}
@@ -811,38 +876,47 @@ Json::Value RPCServer::doUnlScore(Json::Value& params) {
 	else return "invalid params";
 }
 
-Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params)
-{
-	std::cerr << "RPC:" << command << std::endl;
-
-	if (command== "stop")
+Json::Value RPCServer::doStop(Json::Value& params) {
+	if (!params.size())
 	{
 		theApp->stop();
 
 		return SYSTEM_NAME " server stopping";
 	}
+	else return "invalid params";
+}
 
-	if (command=="unl_add") return doUnlAdd(params);
-	if (command=="unl_default") return doUnlDefault(params);
-	if (command=="unl_delete") return doUnlDelete(params);
-	if (command=="unl_list") return doUnlList(params);
-	if (command=="unl_reset") return doUnlReset(params);
-	if (command=="unl_score") return doUnlScore(params);
+Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params)
+{
+	std::cerr << "RPC:" << command << std::endl;
 
-	if (command=="validation_create") return doValidatorCreate(params);
+	if (command == "account_info")		return doAccountInfo(params);
+	if (command == "connect")			return doConnect(params);
+	if (command == "peers")				return doPeers(params);
+	if (command == "stop")				return doStop(params);
 
-	if (command=="wallet_claim") return doWalletClaim(params);
-	if (command=="wallet_propose") return doWalletPropose(params);
+	if (command == "unl_add")			return doUnlAdd(params);
+	if (command == "unl_default")		return doUnlDefault(params);
+	if (command == "unl_delete")		return doUnlDelete(params);
+	if (command == "unl_list")			return doUnlList(params);
+	if (command == "unl_reset")			return doUnlReset(params);
+	if (command == "unl_score")			return doUnlScore(params);
 
-	if (command=="createfamily") return doCreateFamily(params);
+	if (command == "validation_create")	return doValidatorCreate(params);
+
+	if (command == "wallet_claim")		return doWalletClaim(params);
+	if (command == "wallet_propose")	return doWalletPropose(params);
+
+	//
+	// Obsolete or need rewrite:
+	//
+
+//	if (command=="createfamily") return doCreateFamily(params);
 	if (command=="familyinfo") return doFamilyInfo(params);
-	if (command=="accountinfo") return doAccountInfo(params);
-	if (command=="newaccount") return doNewAccount(params);
+//	if (command=="newaccount") return doNewAccount(params);
 	if (command=="lock") return doLock(params);
 	if (command=="unlock") return doUnlock(params);
 	if (command=="sendto") return doSendTo(params);
-	if (command=="connect") return doConnect(params);
-	if (command=="peers") return doPeers(params);
 	if (command=="tx") return doTx(params);
 	if (command=="ledger") return doLedger(params);
 

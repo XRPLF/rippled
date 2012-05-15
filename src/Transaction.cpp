@@ -1,5 +1,6 @@
 #include <cassert>
 
+#include <boost/format.hpp>
 #include "boost/lexical_cast.hpp"
 #include "boost/make_shared.hpp"
 #include "boost/ref.hpp"
@@ -65,6 +66,8 @@ Transaction::Transaction(
 
 	mTransaction	= boost::make_shared<SerializedTransaction>(ttKind);
 
+	std::cerr << str(boost::format("Transaction: account: %s") % naSourceAccount.humanAccountID()) << std::endl;
+	std::cerr << str(boost::format("Transaction: mAccountFrom: %s") % mAccountFrom.humanAccountID()) << std::endl;
 	mTransaction->setSigningPubKey(mFromPubKey);
 	mTransaction->setSourceAccount(mAccountFrom);
 	mTransaction->setSequence(uSeq);

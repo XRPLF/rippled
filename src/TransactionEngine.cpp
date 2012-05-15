@@ -1,15 +1,21 @@
-
 #include "TransactionEngine.h"
-
 #include "TransactionFormats.h"
+
+#include <boost/format.hpp>
 
 TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTransaction& txn,
 	TransactionEngineParams params)
 {
+	std::cerr << "applyTransaction>" << std::endl;
+
 	TransactionEngineResult result = terSUCCESS;
 
 	uint256 txID = txn.getTransactionID();
-	if(!txID) return tenINVALID;
+	if (!txID)
+	{
+		std::cerr << "applyTransaction: invalid transaction id" << std::endl;
+		return tenINVALID;
+	}
 
 	// Extract signing key
 	// Transactions contain a signing key.  This allows us to trivially verify a transaction has at least been properly signed
@@ -22,7 +28,10 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 
 	// check signature
 	if (!txn.checkSign(naPubKey))
+	{
+		std::cerr << "applyTransaction: invalid signature" << std::endl;
 		return tenINVALID;
+	}
 
 	bool	bPrepaid	= false;
 
@@ -40,10 +49,12 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 			break;
 
 		case ttINVALID:
+			std::cerr << "applyTransaction: ttINVALID transaction type" << std::endl;
 			result = tenINVALID;
 			break;
 
 		default:
+			std::cerr << "applyTransaction: unknown transaction type" << std::endl;
 			result = tenUNKNOWN;
 			break;
 	}
@@ -57,20 +68,30 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 		if (bPrepaid)
 		{
 			if (txnFee)
+			{
 				// Transaction is malformed.
+				std::cerr << "applyTransaction: fee not allowed" << std::endl;
 				return tenINSUF_FEE_P;
+			}
 		}
 		else
 		{
 			// WRITEME: Check if fee is adequate
 			if (txnFee == 0)
+			{
+				std::cerr << "applyTransaction: insufficient fee" << std::endl;
 				return tenINSUF_FEE_P;
+			}
 		}
 	}
 
 	// get source account ID
 	uint160 srcAccount = txn.getSourceAccount().getAccountID();
-	if (!srcAccount) return tenINVALID;
+	if (!srcAccount)
+	{
+		std::cerr << "applyTransaction: bad source id" << std::endl;
+		return tenINVALID;
+	}
 
 	boost::recursive_mutex::scoped_lock sl(mLedger->mLock);
 
@@ -78,7 +99,11 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	// If we are only verifying some transactions, this would be probablistic.
 	LedgerStateParms qry = lepNONE;
 	SerializedLedgerEntry::pointer src = mLedger->getAccountRoot(qry, srcAccount);
-	if (!src) return terNO_ACCOUNT;
+	if (!src)
+	{
+		std::cerr << str(boost::format("applyTransaction: no such account: %s") % txn.getSourceAccount().humanAccountID()) << std::endl;
+		return terNO_ACCOUNT;
+	}
 
 	// deduct the fee, so it's not available during the transaction
 	// we only write the account back if the transaction succeeds
@@ -87,7 +112,10 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 		uint64 balance = src->getIFieldU64(sfBalance);
 
 		if (balance < txnFee)
+		{
+			std::cerr << "applyTransaction: insufficent balance" << std::endl;
 			return terINSUF_FEE_B;
+		}
 
 		src->setIFieldU64(sfBalance, balance - txnFee);
 	}
@@ -98,7 +126,10 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	if (bPrepaid)
 	{
 		if (t_seq)
+		{
+			std::cerr << "applyTransaction: bad sequence for pre-paid transaction" << std::endl;
 			return terPAST_SEQ;
+		}
 	}
 	else
 	{
@@ -107,9 +138,18 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 		if (t_seq != a_seq)
 		{
 			// WRITEME: Special case code for changing transaction key
-			if (a_seq < t_seq) return terPRE_SEQ;
+			if (a_seq < t_seq)
+			{
+				std::cerr << "applyTransaction: future sequence number" << std::endl;
+				return terPRE_SEQ;
+			}
 			if (mLedger->hasTransaction(txID))
+			{
+				std::cerr << "applyTransaction: duplicate sequence number" << std::endl;
 				return terALREADY;
+			}
+
+			std::cerr << "applyTransaction: past sequence number" << std::endl;
 			return terPAST_SEQ;
 		}
 		else src->setIFieldU32(sfSequence, t_seq);
@@ -121,6 +161,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	switch(txn.getTxnType())
 	{
 		case ttINVALID:
+			std::cerr << "applyTransaction: invalid type" << std::endl;
 			result = tenINVALID;
 			break;
 
@@ -178,6 +219,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 TransactionEngineResult TransactionEngine::doClaim(const SerializedTransaction& txn,
 	 std::vector<AffectedAccount>& accounts)
 {
+	std::cerr << "doClaim>" << std::endl;
 	NewcoinAddress				naSigningPubKey;
 
 	naSigningPubKey.setAccountPublic(txn.peekSigningPubKey());
@@ -185,15 +227,24 @@ TransactionEngineResult TransactionEngine::doClaim(const SerializedTransaction& 
 	uint160	sourceAccountID	= naSigningPubKey.getAccountID();
 
 	if (sourceAccountID != txn.getSourceAccount().getAccountID())
+	{
 		// Signing Pub Key must be for Source Account ID.
+		std::cerr << "sourceAccountID: " << naSigningPubKey.humanAccountID() << std::endl;
+		std::cerr << "txn accountID: " << txn.getSourceAccount().humanAccountID() << std::endl;
 		return tenINVALID;
+	}
 
 	LedgerStateParms				qry				= lepNONE;
 	SerializedLedgerEntry::pointer	dest			= mLedger->getAccountRoot(qry, sourceAccountID);
 
 	if (!dest)
+	{
 		// Source account does not exist.  Could succeed if it was created first.
+		std::cerr << str(boost::format("doClaim: no such account: %s") % txn.getSourceAccount().humanAccountID()) << std::endl;
 		return terNO_ACCOUNT;
+	}
+
+	std::cerr << str(boost::format("doClaim: %s") % dest->getFullText()) << std::endl;
 
 	if (dest->getIFieldPresent(sfAuthorizedKey))
 		// Source account already claimed.
@@ -225,6 +276,7 @@ TransactionEngineResult TransactionEngine::doClaim(const SerializedTransaction& 
 
 	accounts.push_back(std::make_pair(taaCREATE, gen));
 
+	std::cerr << "doClaim<" << std::endl;
 	return terSUCCESS;
 }
 
