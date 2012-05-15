@@ -33,7 +33,7 @@ LedgerStateParms Ledger::writeBack(LedgerStateParms parms, SerializedLedgerEntry
 		return lepCREATED;
 	}
 
-	if(!mAccountStateMap->updateGiveItem(item, false))
+	if (!mAccountStateMap->updateGiveItem(item, false))
 	{
 		assert(false);
 		return lepERROR;

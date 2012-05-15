@@ -6,6 +6,7 @@
 
 #include <iostream>
 
+#include <boost/foreach.hpp>
 #include <boost/program_options.hpp>
 #include <boost/test/included/unit_test.hpp>
 
@@ -108,20 +109,22 @@ int main(int argc, char* argv[])
 	}
 	else if (vm.count("test"))
 	{
-		std::vector<std::string>	vCmd;
-		int							iCmd	= vm.count("parameters");
+		int					iCmd	= vm.count("parameters");
+		std::vector<char*>	pvCmd;
+
+		pvCmd.push_back(argv[0]);
 
 		if (iCmd)
+		{
+			std::vector<std::string>	vCmd;
+
 			vCmd	= vm["parameters"].as<std::vector<std::string> >();
 
-		std::vector<char*>			pvCmd;
+			BOOST_FOREACH(std::string& param, vCmd)
+				pvCmd.push_back(const_cast<char*>(param.c_str()));
+		}
 
-		pvCmd.resize(iCmd);
-
-		for (int i=0; i != iCmd; ++i)
-			pvCmd[i]	= (char*) (vCmd[0].c_str());
-
-		iResult	= unit_test_main(init_unit_test, iCmd, &pvCmd.front());
+		iResult	= unit_test_main(init_unit_test, iCmd, &pvCmd[0]);
 	}
 	else if (!vm.count("parameters"))
 	{
