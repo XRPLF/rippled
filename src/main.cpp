@@ -36,13 +36,12 @@ void printHelp(const po::options_description& desc)
 	cout << desc << endl;
 
 	cout << "Commands: " << endl;
-	cout << "     accountinfo <family>:<key>" << endl;
+	cout << "     account_info <account>|<nickname>" << endl;
+	cout << "     account_info <seed>|<pass_phrase>|<key> [<index>]" << endl;
 	cout << "     connect <ip> [<port>]" << endl;
-	cout << "     createfamily [<key>]" << endl;
 	cout << "     familyinfo" << endl;
 	cout << "     ledger" << endl;
 	cout << "     lock <family>" << endl;
-	cout << "     newaccount <family> [<name>]" << endl;
 	cout << "     peers" << endl;
 	cout << "     sendto <destination> <amount> [<tag>]" << endl;
 	cout << "     stop" << endl;
