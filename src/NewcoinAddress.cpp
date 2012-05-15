@@ -631,16 +631,17 @@ void NewcoinAddress::setFamilySeedGeneric(const std::string& strText)
 {
 	if (setFamilySeed(strText))
 	{
-		std::cerr << "Recognized seed." << std::endl;
+		// std::cerr << "Recognized seed." << std::endl;
+		nothing();
 	}
 	else if (1 == setFamilySeed1751(strText))
 	{
-		std::cerr << "Recognized 1751 seed." << std::endl;
+		// std::cerr << "Recognized 1751 seed." << std::endl;
+		nothing();
 	}
 	else
 	{
-		std::cerr << "Creating seed from pass phrase." << std::endl;
-
+		// std::cerr << "Creating seed from pass phrase." << std::endl;
 		setFamilySeed(CKey::PassPhraseToKey(strText));
 	}
 }
