@@ -107,12 +107,20 @@ STObject::STObject(SOElement* elem, SerializerIterator& sit, const char *name) :
 		if (elem->e_type == SOE_IFFLAG)
 		{
 			assert(flags >= 0);
-			if ((flags&elem->e_flags) == 0) done = true;
+			if ((flags&elem->e_flags) == 0)
+			{
+				done = true;
+				giveObject(new SerializedType(elem->e_name));
+			}
 		}
 		else if (elem->e_type == SOE_IFNFLAG)
 		{
 			assert(flags >= 0);
-			if ((flags&elem->e_flags) != 0) done = true;
+			if ((flags&elem->e_flags) != 0)
+			{
+				done = true;
+				giveObject(new SerializedType(elem->e_name));
+			}
 		}
 		else if (elem->e_type == SOE_FLAGS)
 		{
@@ -141,12 +149,14 @@ std::string STObject::getFullText() const
 		ret += " = {";
 	}
 	else ret = "{";
+
 	for (boost::ptr_vector<SerializedType>::const_iterator it = mData.begin(), end = mData.end(); it != end; ++it)
 	{
 		if (!first) ret += ", ";
 		else first = false;
 		ret += it->getFullText();
 	}
+
 	ret += "}";
 	return ret;
 }
