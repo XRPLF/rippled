@@ -247,15 +247,21 @@ TransactionEngineResult TransactionEngine::doClaim(const SerializedTransaction& 
 	std::cerr << str(boost::format("doClaim: %s") % dest->getFullText()) << std::endl;
 
 	if (dest->getIFieldPresent(sfAuthorizedKey))
+	{
 		// Source account already claimed.
+		std::cerr << "doClaim: source already claimed" << std::endl;
 		return tenCLAIMED;
+	}
 
 	uint160							hGeneratorID	= txn.getITFieldH160(sfGeneratorID);
 									qry				= lepNONE;
 	SerializedLedgerEntry::pointer	gen				= mLedger->getGenerator(qry, hGeneratorID);
 	if (gen)
+	{
 		// Generator is already in use.  Regular passphrases limited to one wallet.
+		std::cerr << "doClaim: generator already in use" << std::endl;
 		return tenGEN_IN_USE;
+	}
 
 	//
 	// Claim the account.
