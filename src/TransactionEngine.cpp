@@ -254,7 +254,26 @@ TransactionEngineResult TransactionEngine::doClaim(const SerializedTransaction& 
 		return tenCLAIMED;
 	}
 
-	uint160							hGeneratorID	= txn.getITFieldH160(sfGeneratorID);
+	//
+	// Verify claim is authorized
+	//
+
+	std::vector<unsigned char>		vucCipher		= txn.getITFieldVL(sfGenerator);
+	std::vector<unsigned char>		vucPubKey		= txn.getITFieldVL(sfPubKey);
+	std::vector<unsigned char>		vucSignature	= txn.getITFieldVL(sfSignature);
+
+	NewcoinAddress					naAccountPublic;
+
+	naAccountPublic.setAccountPublic(vucPubKey);
+
+	if (!naAccountPublic.accountPublicVerify(Serializer::getSHA512Half(vucCipher), vucSignature))
+	{
+		std::cerr << "doClaim: bad signature unauthorized claim" << std::endl;
+		return tenINVALID;
+	}
+
+	uint160							hGeneratorID	= naAccountPublic.getAccountID();
+
 									qry				= lepNONE;
 	SerializedLedgerEntry::pointer	gen				= mLedger->getGenerator(qry, hGeneratorID);
 	if (gen)
@@ -267,7 +286,6 @@ TransactionEngineResult TransactionEngine::doClaim(const SerializedTransaction& 
 	//
 	// Claim the account.
 	//
-	std::vector<unsigned char>		vucCipher		= txn.getITFieldVL(sfGenerator);
 
 	// Set the public key needed to use the account.
 	dest->setIFieldH160(sfAuthorizedKey, hGeneratorID);
