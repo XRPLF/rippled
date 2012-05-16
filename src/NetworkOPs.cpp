@@ -90,9 +90,9 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 
 		boost::shared_ptr<newcoin::TMTransaction> tx = boost::make_shared<newcoin::TMTransaction>();
 
-		Serializer::pointer s;
-		trans->getSTransaction()->getTransaction(*s, false);
-		tx->set_rawtransaction(&s->getData().front(), s->getLength());
+		Serializer s;
+		trans->getSTransaction()->getTransaction(s, false);
+		tx->set_rawtransaction(&s.getData().front(), s.getLength());
 		tx->set_status(newcoin::tsCURRENT);
 		tx->set_receivetimestamp(getNetworkTimeNC());
 		tx->set_ledgerindexpossible(trans->getLedger());
