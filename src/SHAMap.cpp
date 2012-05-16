@@ -56,7 +56,7 @@ void SHAMap::dirtyUp(std::stack<SHAMapTreeNode::pointer>& stack, const uint256& 
 
 	while (!stack.empty())
 	{
-		SHAMapTreeNode::pointer node=stack.top();
+		SHAMapTreeNode::pointer node = stack.top();
 		stack.pop();
 		assert(node->isInnerNode());
 
@@ -424,12 +424,12 @@ bool SHAMap::addGiveItem(SHAMapItem::pointer item, bool isTransaction)
 	std::cerr << "aGI " << item->getTag().GetHex() << std::endl;
 #endif
 
-	uint256 tag=item->getTag();
-	SHAMapTreeNode::TNType type=isTransaction ? SHAMapTreeNode::tnTRANSACTION : SHAMapTreeNode::tnACCOUNT_STATE;
+	uint256 tag = item->getTag();
+	SHAMapTreeNode::TNType type = isTransaction ? SHAMapTreeNode::tnTRANSACTION : SHAMapTreeNode::tnACCOUNT_STATE;
 
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
-	std::stack<SHAMapTreeNode::pointer> stack=getStack(tag, true);
+	std::stack<SHAMapTreeNode::pointer> stack = getStack(tag, true);
 	if (stack.empty()) throw SHAMapException(MissingNode);
 
 	SHAMapTreeNode::pointer node=stack.top();
@@ -476,7 +476,8 @@ bool SHAMap::addGiveItem(SHAMapItem::pointer item, bool isTransaction)
 #ifdef ST_DEBUG
 			std::cerr << "need new inner node at " << node->getDepth() << std::endl;
 #endif
-			SHAMapTreeNode::pointer newNode=boost::make_shared<SHAMapTreeNode>(node->getChildNodeID(b1), mSeq);
+			SHAMapTreeNode::pointer newNode =
+				boost::make_shared<SHAMapTreeNode>(node->getChildNodeID(b1), mSeq);
 			newNode->makeInner();
 			if(!mTNByID.insert(std::make_pair(SHAMapNode(*newNode), newNode)).second)
 				assert(false);
@@ -500,9 +501,7 @@ bool SHAMap::addGiveItem(SHAMapItem::pointer item, bool isTransaction)
 		node->setChildHash(b2, newNode->getNodeHash());
 	}
 
-	prevHash = node->getNodeHash();
-	assert(prevHash.isNonZero());
-	dirtyUp(stack, tag, prevHash);
+	dirtyUp(stack, tag, node->getNodeHash());
 	return true;
 }
 
