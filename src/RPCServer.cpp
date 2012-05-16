@@ -557,7 +557,7 @@ Json::Value RPCServer::doLedger(Json::Value& params)
 
 	int paramCount = getParamCount(params);
 
-	if (paramCount == 0);
+	if (paramCount == 0)
 	{
 		Json::Value ret(Json::objectValue), current(Json::objectValue), closed(Json::objectValue);
 		theApp->getMasterLedger().getCurrentLedger()->addJson(current);

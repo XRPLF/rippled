@@ -70,10 +70,10 @@ int main(int argc, char* argv[])
 		("help,h", "Display this message.")
 		("rpc", "Perform rpc command (default).")
 		("test,t", "Perform unit tests.")
-		("parameters", po::value< vector<string> >(), "Specify comma seperated parameters.")
+		("parameters", po::value< vector<string> >(), "Specify comma separated parameters.")
 	;
 
-	// Interpert positional arguments as --parameters.
+	// Interpret positional arguments as --parameters.
 	po::positional_options_description p;
 	p.add("parameters", -1);
 
@@ -124,7 +124,7 @@ int main(int argc, char* argv[])
 				pvCmd.push_back(const_cast<char*>(param.c_str()));
 		}
 
-//		iResult	= unit_test_main(init_unit_test, iCmd, &pvCmd[0]);
+		iResult	= unit_test_main(init_unit_test, iCmd, &pvCmd[0]);
 	}
 	else if (!vm.count("parameters"))
 	{
