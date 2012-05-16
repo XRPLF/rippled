@@ -32,7 +32,7 @@ enum SOE_Field
 	sfBorrower, sfLender, sfLimit, sfOfferCurrency, sfLedgerHash,
 	sfLastReceive, sfLastTxn, sfNextRate, sfNextRateLgr, sfNextRateExp,
 	sfNickname, sfMinimumOffer,
-	sfAuthorizedKey, sfGenerator, sfGeneratorID, sfAccountID,
+	sfAuthorizedKey, sfGenerator, sfPubKey, sfSignature, sfGeneratorID, sfAccountID,
 
 	// test fields
 	sfTest1, sfTest2, sfTest3, sfTest4

@@ -55,8 +55,9 @@ private:
 
 	Transaction::pointer setClaim(
 		const NewcoinAddress& naPrivateKey,
-		const NewcoinAddress& naGeneratorID,
-		const std::vector<unsigned char>& vucGenerator);
+		const std::vector<unsigned char>& vucGenerator,
+		const std::vector<unsigned char>& vucPubKey,
+		const std::vector<unsigned char>& vucSignature);
 
 public:
 	Transaction(const SerializedTransaction::pointer st, bool bValidate);
@@ -85,8 +86,9 @@ public:
 		const NewcoinAddress& naPublicKey, const NewcoinAddress& naPrivateKey,
 		const NewcoinAddress& naSourceAccount,
 		uint32 uSourceTag,
-		const NewcoinAddress& naGeneratorID,
-		const std::vector<unsigned char>& vucGenerator);
+		const std::vector<unsigned char>& vucGenerator,
+		const std::vector<unsigned char>& vucPubKey,
+		const std::vector<unsigned char>& vucSignature);
 #if 0
 	Transaction(const NewcoinAddress& fromID, const NewcoinAddress& toID,
 		CKey::pointer pubKey, uint64 uAmount, uint64 fee, uint32 fromSeq, uint32 fromLedger,

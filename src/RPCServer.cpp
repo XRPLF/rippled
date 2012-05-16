@@ -668,7 +668,9 @@ Json::Value RPCServer::doWalletClaim(Json::Value& params)
 	else
 	{
 		// Trying to build:
-		//   peer_wallet_claim <account_id> <generator_id> <encrypted_master_public_generator> <account_id_signature> [<source_tag>] [<annotation>]
+		//   peer_wallet_claim <account_id> <encrypted_master_public_generator> <generator_pubkey> <generator_signature>
+		//		<source_tag> [<annotation>]
+		//
 		//
 		// Which has no confidential information.
 
@@ -703,13 +705,18 @@ Json::Value RPCServer::doWalletClaim(Json::Value& params)
 		// hash of regular account #reserved public key.
 		uint160						uGeneratorID		= naRegularReservedPublic.getAccountID();
 		std::vector<unsigned char>	vucGeneratorCipher	= naRegularReservedPrivate.accountPrivateEncrypt(naRegularReservedPublic, naMasterGenerator.getFamilyGenerator());
+		std::vector<unsigned char>	vucGeneratorSig;
+
+		// XXX Check result.
+		naRegularReservedPrivate.accountPrivateSign(Serializer::getSHA512Half(vucGeneratorCipher), vucGeneratorSig);
 
 		Transaction::pointer	trns	= Transaction::sharedClaim(
 			naAccountPublic, naAccountPrivate,
 			naAccountPublic,
 			uSourceTag,
-			naRegularReservedPublic,	// GeneratorID
-			vucGeneratorCipher);
+			vucGeneratorCipher,
+			naRegularReservedPublic.getAccountPublic(),
+			vucGeneratorSig);
 
 		(void) theApp->getOPs().processTransaction(trns);
 

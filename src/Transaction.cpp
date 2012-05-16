@@ -118,11 +118,13 @@ bool Transaction::sign(const NewcoinAddress& naAccountPrivate)
 
 Transaction::pointer Transaction::setClaim(
 	const NewcoinAddress& naPrivateKey,
-	const NewcoinAddress& naGeneratorID,
-	const std::vector<unsigned char>& vucGenerator)
+	const std::vector<unsigned char>& vucGenerator,
+	const std::vector<unsigned char>& vucPubKey,
+	const std::vector<unsigned char>& vucSignature)
 {
-	mTransaction->setITFieldH160(sfGeneratorID, naGeneratorID.getAccountID());
 	mTransaction->setITFieldVL(sfGenerator, vucGenerator);
+	mTransaction->setITFieldVL(sfPubKey, vucPubKey);
+	mTransaction->setITFieldVL(sfSignature, vucSignature);
 
 	sign(naPrivateKey);
 
@@ -133,8 +135,9 @@ Transaction::pointer Transaction::sharedClaim(
 	const NewcoinAddress& naPublicKey, const NewcoinAddress& naPrivateKey,
 	const NewcoinAddress& naSourceAccount,
 	uint32 uSourceTag,
-	const NewcoinAddress& naGeneratorID,
-	const std::vector<unsigned char>& vucGenerator)
+	const std::vector<unsigned char>& vucGenerator,
+	const std::vector<unsigned char>& vucPubKey,
+	const std::vector<unsigned char>& vucSignature)
 {
 	pointer	tResult	= boost::make_shared<Transaction>(ttCLAIM,
 						naPublicKey, naSourceAccount,
@@ -142,7 +145,7 @@ Transaction::pointer Transaction::sharedClaim(
 						0,		// Free.
 						uSourceTag);
 
-	return tResult->setClaim(naPrivateKey, naGeneratorID, vucGenerator);
+	return tResult->setClaim(naPrivateKey, vucGenerator, vucPubKey, vucSignature);
 }
 
 //
