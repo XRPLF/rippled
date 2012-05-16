@@ -653,6 +653,39 @@ Json::Value RPCServer::doWalletPropose(Json::Value& params)
 	}
 }
 
+// wallet_seed [<seed>|<passphrase>|<passkey>]
+Json::Value RPCServer::doWalletSeed(Json::Value& params)
+{
+	if (params.size() > 1)
+	{
+		return "invalid params";
+	}
+	else
+	{
+		NewcoinAddress	naSeed;
+		NewcoinAddress	naGenerator;
+		NewcoinAddress	naAccount;
+
+		if (params.size())
+		{
+			naSeed.setFamilySeedGeneric(params[0u].asString());
+		}
+		else
+		{
+			naSeed.setFamilySeedRandom();
+		}
+		naGenerator.setFamilyGenerator(naSeed);
+		naAccount.setAccountPublic(naGenerator, 0);
+
+		Json::Value obj(Json::objectValue);
+
+		obj["seed"]		= naSeed.humanFamilySeed();
+		obj["key"]		= naSeed.humanFamilySeed1751();
+
+		return obj;
+	}
+}
+
 void RPCServer::validatorsResponse(const boost::system::error_code& err, std::string strResponse)
 {
 	std::cerr << "Fetch '" VALIDATORS_FILE_NAME "' complete." << std::endl;
@@ -799,13 +832,12 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 
 	if (command == "wallet_claim")		return doWalletClaim(params);
 	if (command == "wallet_propose")	return doWalletPropose(params);
+	if (command == "wallet_seed")		return doWalletSeed(params);
 
 	//
 	// Obsolete or need rewrite:
 	//
 
-	if (command=="lock") return doLock(params);
-	if (command=="unlock") return doUnlock(params);
 	if (command=="sendto") return doSendTo(params);
 	if (command=="tx") return doTx(params);
 	if (command=="ledger") return doLedger(params);
