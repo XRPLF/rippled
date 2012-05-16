@@ -189,7 +189,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	if (result == terSUCCESS)
 	{ // Write back the account states and add the transaction to the ledger
 		// WRITEME: Special case code for changing transaction key
-		for (std::vector<AffectedAccount>::iterator it=accounts.begin(), end=accounts.end();
+		for (std::vector<AffectedAccount>::iterator it = accounts.begin(), end = accounts.end();
 			it != end; ++it)
 		{
 			if (it->first == taaCREATE)

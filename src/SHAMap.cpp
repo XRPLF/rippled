@@ -111,7 +111,7 @@ SHAMapTreeNode::pointer SHAMap::getNode(const SHAMapNode& id, const uint256& has
 	SHAMapTreeNode::pointer node = checkCacheNode(id);
 	if (node)
 	{
-		if (node->getNodeHash()!=hash)
+		if (node->getNodeHash() != hash)
 		{
 #ifdef DEBUG
 			std::cerr << "Attempt to get node, hash not in tree" << std::endl;
@@ -127,7 +127,7 @@ SHAMapTreeNode::pointer SHAMap::getNode(const SHAMapNode& id, const uint256& has
 	}
 
 	std::vector<unsigned char> nodeData;
-	if(!fetchNode(hash, nodeData)) return SHAMapTreeNode::pointer();
+	if (!fetchNode(hash, nodeData)) return SHAMapTreeNode::pointer();
 
 	node = boost::make_shared<SHAMapTreeNode>(id, nodeData, mSeq);
 	if (node->getNodeHash() != hash) throw SHAMapException(InvalidNode);
@@ -344,10 +344,10 @@ SHAMapItem::pointer SHAMap::peekItem(const uint256& id)
 bool SHAMap::hasItem(const uint256& id)
 { // does the tree have an item with this ID
 	boost::recursive_mutex::scoped_lock sl(mLock); 
-	SHAMapTreeNode::pointer leaf=walkTo(id, false);
-	if(!leaf) return false;
-	SHAMapItem::pointer item=leaf->peekItem();
-	if(!item || item->getTag()!=id) return false;
+	SHAMapTreeNode::pointer leaf = walkTo(id, false);
+	if (!leaf) return false;
+	SHAMapItem::pointer item = leaf->peekItem();
+	if (!item || item->getTag() != id) return false;
 	return true;
 }
 
