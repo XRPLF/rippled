@@ -299,7 +299,7 @@ bool SHAMapTreeNode::setItem(SHAMapItem::pointer& i, TNType type)
 	mItem = i;
 	assert(isLeaf());
 	updateHash();
-	return getNodeHash() == hash;
+	return getNodeHash() != hash;
 }
 
 SHAMapItem::pointer SHAMapTreeNode::getItem() const
