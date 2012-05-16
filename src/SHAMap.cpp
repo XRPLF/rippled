@@ -111,7 +111,7 @@ SHAMapTreeNode::pointer SHAMap::getNode(const SHAMapNode& id, const uint256& has
 	SHAMapTreeNode::pointer node = checkCacheNode(id);
 	if (node)
 	{
-		if (node->getNodeHash()!=hash)
+		if (node->getNodeHash() != hash)
 		{
 #ifdef DEBUG
 			std::cerr << "Attempt to get node, hash not in tree" << std::endl;
@@ -127,7 +127,7 @@ SHAMapTreeNode::pointer SHAMap::getNode(const SHAMapNode& id, const uint256& has
 	}
 
 	std::vector<unsigned char> nodeData;
-	if(!fetchNode(hash, nodeData)) return SHAMapTreeNode::pointer();
+	if (!fetchNode(hash, nodeData)) return SHAMapTreeNode::pointer();
 
 	node = boost::make_shared<SHAMapTreeNode>(id, nodeData, mSeq);
 	if (node->getNodeHash() != hash) throw SHAMapException(InvalidNode);
@@ -140,7 +140,7 @@ SHAMapTreeNode::pointer SHAMap::getNode(const SHAMapNode& id, const uint256& has
 void SHAMap::returnNode(SHAMapTreeNode::pointer& node, bool modify)
 { // make sure the node is suitable for the intended operation (copy on write)
 	assert(node->isValid());
-	if (node && modify && (node->getSeq()!=mSeq))
+	if (node && modify && (node->getSeq() != mSeq))
 	{
 #ifdef DEBUG
 		std::cerr << "returnNode COW" << std::endl;
@@ -344,10 +344,10 @@ SHAMapItem::pointer SHAMap::peekItem(const uint256& id)
 bool SHAMap::hasItem(const uint256& id)
 { // does the tree have an item with this ID
 	boost::recursive_mutex::scoped_lock sl(mLock); 
-	SHAMapTreeNode::pointer leaf=walkTo(id, false);
-	if(!leaf) return false;
-	SHAMapItem::pointer item=leaf->peekItem();
-	if(!item || item->getTag()!=id) return false;
+	SHAMapTreeNode::pointer leaf = walkTo(id, false);
+	if (!leaf) return false;
+	SHAMapItem::pointer item = leaf->peekItem();
+	if (!item || item->getTag() != id) return false;
 	return true;
 }
 
@@ -516,17 +516,17 @@ bool SHAMap::addItem(const SHAMapItem& i, bool isTransaction)
 
 bool SHAMap::updateGiveItem(SHAMapItem::pointer item, bool isTransaction)
 { // can't change the tag but can change the hash
-	uint256 tag=item->getTag();
+	uint256 tag = item->getTag();
 
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
 	std::stack<SHAMapTreeNode::pointer> stack = getStack(tag, true);
 	if (stack.empty()) throw SHAMapException(MissingNode);
 
-	SHAMapTreeNode::pointer node=stack.top();
+	SHAMapTreeNode::pointer node = stack.top();
 	stack.pop();
 
-	if (!node->isLeaf() || (node->peekItem()->getTag() != tag) )
+	if (!node->isLeaf() || (node->peekItem()->getTag() != tag))
 	{
 		assert(false);
 		return false;

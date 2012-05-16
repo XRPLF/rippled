@@ -189,14 +189,15 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	if (result == terSUCCESS)
 	{ // Write back the account states and add the transaction to the ledger
 		// WRITEME: Special case code for changing transaction key
-		for (std::vector<AffectedAccount>::iterator it=accounts.begin(), end=accounts.end();
+		for (std::vector<AffectedAccount>::iterator it = accounts.begin(), end = accounts.end();
 			it != end; ++it)
-		{	if (it->first == taaCREATE)
+		{
+			if (it->first == taaCREATE)
 			{
 				if (mLedger->writeBack(lepCREATE, it->second) & lepERROR)
 					assert(false);
 			}
-			else if (it->first==taaMODIFY)
+			else if (it->first == taaMODIFY)
 			{
 				if (mLedger->writeBack(lepNONE, it->second) & lepERROR)
 					assert(false);
@@ -235,7 +236,7 @@ TransactionEngineResult TransactionEngine::doClaim(const SerializedTransaction& 
 	}
 
 	LedgerStateParms				qry				= lepNONE;
-	SerializedLedgerEntry::pointer	dest			= mLedger->getAccountRoot(qry, sourceAccountID);
+	SerializedLedgerEntry::pointer	dest			= accounts[0].second;
 
 	if (!dest)
 	{
@@ -265,8 +266,6 @@ TransactionEngineResult TransactionEngine::doClaim(const SerializedTransaction& 
 	// Set the public key needed to use the account.
 	dest->setIFieldH160(sfAuthorizedKey, hGeneratorID);
 
-	accounts.push_back(std::make_pair(taaMODIFY, dest));
-
 	// Construct a generator map entry.
 									gen				= boost::make_shared<SerializedLedgerEntry>(ltGENERATOR_MAP);
 
@@ -289,6 +288,8 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 	// Does the destination account exist?
 	if (!destAccount) return tenINVALID;
 	LedgerStateParms qry = lepNONE;
+
+	// FIXME: If this transfer is to the same account, bad things will happen
 	SerializedLedgerEntry::pointer dest = mLedger->getAccountRoot(qry, destAccount);
 	if (!dest)
 	{ // can this transaction create an account
