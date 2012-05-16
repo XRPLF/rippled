@@ -4,7 +4,7 @@
 #include <boost/make_shared.hpp>
 
 #include <openssl/rand.h>
-
+#include <iostream>
 #include "SHAMap.h"
 
 void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint256>& hashes, int max)

@@ -37,109 +37,19 @@
     <Filter Include="tests\client2">
       <UniqueIdentifier>{b27b04b8-1c6e-4b20-9364-f18d4682dc00}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\database">
+      <UniqueIdentifier>{60c3631e-8855-4a61-bdd3-9892d96242d5}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Application.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ConnectionPool.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Peer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Config.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="KnownNodeList.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="util\pugixml.cpp">
-      <Filter>Header Files\util</Filter>
-    </ClCompile>
-    <ClCompile Include="LedgerHistory.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Ledger.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Wallet.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="UniqueNodeList.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="PeerDoor.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RPCDoor.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="newcoin.pb.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="PackedMessage.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="rpc.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="BitcoinUtil.cpp">
-      <Filter>Header Files\util</Filter>
-    </ClCompile>
-    <ClCompile Include="RequestParser.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RPCServer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="TimingService.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="LedgerMaster.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="NewcoinAddress.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="cryptopp\cpu.cpp">
       <Filter>Source Files\cryptopp</Filter>
     </ClCompile>
     <ClCompile Include="cryptopp\sha.cpp">
       <Filter>Source Files\cryptopp</Filter>
     </ClCompile>
-    <ClCompile Include="database\database.cpp">
-      <Filter>Header Files\util</Filter>
-    </ClCompile>
-    <ClCompile Include="database\SqliteDatabase.cpp">
-      <Filter>Header Files\util</Filter>
-    </ClCompile>
     <ClCompile Include="database\sqlite3.c">
       <Filter>Header Files\util</Filter>
-    </ClCompile>
-    <ClCompile Include="Conversion.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="AccountState.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="DeterministicKeys.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="SHAMap.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="SHAMapDiff.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="SHAMapNodes.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Serializer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Transaction.cpp">
-      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="json\json_reader.cpp">
       <Filter>Source Files\json</Filter>
@@ -150,25 +60,181 @@
     <ClCompile Include="json\json_writer.cpp">
       <Filter>Source Files\json</Filter>
     </ClCompile>
-    <ClCompile Include="LocalTransaction.cpp">
+    <ClCompile Include="src\AccountState.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="PubKeyCache.cpp">
+    <ClCompile Include="src\Amount.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="HashedObject.cpp">
+    <ClCompile Include="src\Application.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="NetworkOPs.cpp">
+    <ClCompile Include="src\CallRPC.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="DBInit.cpp">
+    <ClCompile Include="src\Config.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="main.cpp">
+    <ClCompile Include="src\ConnectionPool.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="CallRPC.cpp">
+    <ClCompile Include="src\Conversion.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Currency.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\DBInit.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\DeterministicKeys.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ECIES.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Hanko.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\HashedObject.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\HttpsClient.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Ledger.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\LedgerAcquire.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\LedgerFormats.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\LedgerHistory.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\LedgerIndex.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\LedgerMaster.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\LedgerNode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\LocalTransaction.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\NetworkOPs.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\NewcoinAddress.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\PackedMessage.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ParseSection.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Peer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\PeerDoor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\PlatRand.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\PubKeyCache.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\RequestParser.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rfc1751.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rpc.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\RPCCommands.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\RPCDoor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\RPCServer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\SerializedLedger.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\SerializedObject.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\SerializedTransaction.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\SerializedTypes.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\SerializedValidation.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Serializer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\SHAMap.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\SHAMapDiff.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\SHAMapNodes.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\SHAMapSync.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Transaction.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\TransactionEngine.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\TransactionFormats.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\TransactionMaster.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\UniqueNodeList.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\utils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Wallet.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\BitcoinUtil.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="database\database.cpp">
+      <Filter>Source Files\database</Filter>
+    </ClCompile>
+    <ClCompile Include="database\SqliteDatabase.cpp">
+      <Filter>Source Files\database</Filter>
+    </ClCompile>
+    <ClCompile Include="database\win\windatabase.cpp">
+      <Filter>Source Files\database</Filter>
+    </ClCompile>
+    <ClCompile Include="obj\src\newcoin.pb.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -240,9 +306,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="TransactionBundle.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="newcoin.pb.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="PackedMessage.h">
@@ -341,6 +404,9 @@
     <ClInclude Include="SecureAllocator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="obj\src\newcoin.pb.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="nodes.xml" />
@@ -357,8 +423,9 @@
     <None Include="tests\client2\config.xml">
       <Filter>tests\client2</Filter>
     </None>
+    <None Include="SConstruct" />
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="newcoin.proto" />
+    <CustomBuild Include="src\newcoin.proto" />
   </ItemGroup>
 </Project>
