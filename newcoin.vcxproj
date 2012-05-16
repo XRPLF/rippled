@@ -94,7 +94,7 @@
     <ClCompile Include="json\json_reader.cpp" />
     <ClCompile Include="json\json_value.cpp" />
     <ClCompile Include="json\json_writer.cpp" />
-    <ClCompile Include="newcoin.pb.cc" />
+    <ClCompile Include="obj\src\newcoin.pb.cc" />
     <ClCompile Include="src\AccountState.cpp" />
     <ClCompile Include="src\Amount.cpp" />
     <ClCompile Include="src\Application.cpp" />
@@ -183,8 +183,8 @@
     <ClInclude Include="Ledger.h" />
     <ClInclude Include="LedgerHistory.h" />
     <ClInclude Include="LedgerMaster.h" />
-    <ClInclude Include="newcoin.pb.h" />
     <ClInclude Include="NewcoinAddress.h" />
+    <ClInclude Include="obj\src\newcoin.pb.h" />
     <ClInclude Include="PackedMessage.h" />
     <ClInclude Include="PeerDoor.h" />
     <ClInclude Include="NetworkThread.h" />

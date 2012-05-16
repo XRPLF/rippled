@@ -234,7 +234,7 @@
     <ClCompile Include="database\win\windatabase.cpp">
       <Filter>Source Files\database</Filter>
     </ClCompile>
-    <ClCompile Include="newcoin.pb.cc">
+    <ClCompile Include="obj\src\newcoin.pb.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -306,9 +306,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="TransactionBundle.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="newcoin.pb.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="PackedMessage.h">
@@ -405,6 +402,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="SecureAllocator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="obj\src\newcoin.pb.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
