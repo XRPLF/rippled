@@ -48,7 +48,7 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>BOOST_TEST_NO_MAIN;_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0501;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>BOOST_TEST_ALTERNATIVE_INIT_API;BOOST_TEST_NO_MAIN;_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0501;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\OpenSSL\include;..\boost_1_47_0;..\protobuf-2.4.1\src\</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
