@@ -33,7 +33,7 @@ public:
 	virtual bool isEquivalent(const SerializedType& t) const;
 
 	const uint256& getIndex() const { return mIndex; }
-	void setIndex(const uint256& i) { mIndex=i; }
+	void setIndex(const uint256& i) { mIndex = i; }
 
 	LedgerEntryType getType() const { return mType; }
 	uint16 getVersion() const { return mVersion.getValue(); }
