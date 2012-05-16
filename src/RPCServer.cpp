@@ -172,53 +172,6 @@ NewcoinAddress RPCServer::parseFamily(const std::string& fParam)
 	return family;
 }
 
-#if 0
-Json::Value RPCServer::doCreateFamily(Json::Value& params)
-{
-	// createfamily FXXXX
-	// createfamily fXXXX
-	// createfamily "<pass phrase>"
-	// createfamily
-
-	std::string query;
-	NewcoinAddress family;
-	NewcoinAddress seed;
-
-	if (!extractString(query, params, 0))
-	{
-		// No parameters, generate a family from a random seed.
-		family=theApp->getWallet().addRandomFamily(seed);
-	}
-	else if (seed.setFamilySeed(query))
-	{
-		// Had a family seed.
-		family=theApp->getWallet().addFamily(seed, false);
-	}
-	else if (family.setFamilyGenerator(query))
-	{
-		// Had a public generator
-		family=theApp->getWallet().addFamily(family);
-	}
-	else
-	{
-		// Must be a pass phrase.
-		family=theApp->getWallet().addFamily(query, false);
-	}
-
-	if (!family.isValid())
-		return JSONRPCError(500, "Invalid family specifier");
-
-	Json::Value ret(theApp->getWallet().getFamilyJson(family));
-	if (ret.isNull()) return JSONRPCError(500, "Invalid family");
-	if (seed.isValid())
-	{
-		ret["FamilySeed"]=seed.humanFamilySeed();
-	}
-
-	return ret;
-}
-#endif
-
 // account_info <account>|<nickname>|<account_public_key>
 // account_info <seed>|<pass_phrase>|<key> [<index>]
 Json::Value RPCServer::doAccountInfo(Json::Value &params)
@@ -294,23 +247,6 @@ Json::Value RPCServer::doAccountInfo(Json::Value &params)
 }
 
 #if 0
-Json::Value RPCServer::doNewAccount(Json::Value &params)
-{   // newaccount <family> [<name>]
-	std::string fParam;
-	if (!extractString(fParam, params, 0))
-		return JSONRPCError(500, "Family required");
-
-	NewcoinAddress family = parseFamily(fParam);
-	if (!family.isValid()) return JSONRPCError(500, "Family not found.");
-
-	LocalAccount::pointer account(theApp->getWallet().getNewLocalAccount(family));
-	if (!account)
-		return JSONRPCError(500, "Family not found");
-
-	return account->getJson();
-}
-#endif
-
 Json::Value RPCServer::doLock(Json::Value &params)
 {   // lock <family>
 	// lock
@@ -359,57 +295,7 @@ Json::Value RPCServer::doUnlock(Json::Value &params)
 
 	return ret;
 }
-
-Json::Value RPCServer::doFamilyInfo(Json::Value &params)
-{
-	// familyinfo <family>
-	// familyinfo <family> <number>
-	// familyinfo
-	int paramCount=getParamCount(params);
-
-	if (paramCount==0)
-	{
-		std::vector<NewcoinAddress> familyIDs;
-		theApp->getWallet().getFamilies(familyIDs);
-
-		Json::Value ret(Json::arrayValue);
-		BOOST_FOREACH(const NewcoinAddress& fid, familyIDs)
-		{
-			Json::Value obj(theApp->getWallet().getFamilyJson(fid));
-			if (!obj.isNull()) ret.append(obj);
-		}
-		return ret;
-	}
-
-	if (paramCount>2) return JSONRPCError(500, "Invalid parameters");
-	std::string fParam;
-	extractString(fParam, params, 0);
-
-	NewcoinAddress family=parseFamily(fParam);
-	if (!family.isValid()) return JSONRPCError(500, "No such family");
-
-	Json::Value obj(theApp->getWallet().getFamilyJson(family));
-	if (obj.isNull())
-		return JSONRPCError(500, "Family not found");
-
-	if (paramCount==2)
-	{
-		std::string keyNum;
-		extractString(keyNum, params, 1);
-		int kn=boost::lexical_cast<int>(keyNum);
-		NewcoinAddress k=theApp->getWallet().peekKey(family, kn);
-
-		if (k.isValid())
-		{
-			Json::Value key(Json::objectValue);
-			key["Number"]=kn;
-			key["Address"]=k.humanAccountID();
-			obj["Account"]=key;
-		}
-	}
-
-	return obj;
-}
+#endif
 
 Json::Value RPCServer::doConnect(Json::Value& params)
 {
@@ -918,9 +804,6 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 	// Obsolete or need rewrite:
 	//
 
-//	if (command=="createfamily") return doCreateFamily(params);
-	if (command=="familyinfo") return doFamilyInfo(params);
-//	if (command=="newaccount") return doNewAccount(params);
 	if (command=="lock") return doLock(params);
 	if (command=="unlock") return doUnlock(params);
 	if (command=="sendto") return doSendTo(params);

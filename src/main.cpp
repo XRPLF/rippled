@@ -40,9 +40,7 @@ void printHelp(const po::options_description& desc)
 	cout << "     account_info <account>|<nickname>" << endl;
 	cout << "     account_info <seed>|<pass_phrase>|<key> [<index>]" << endl;
 	cout << "     connect <ip> [<port>]" << endl;
-	cout << "     familyinfo" << endl;
 	cout << "     ledger" << endl;
-	cout << "     lock <family>" << endl;
 	cout << "     peers" << endl;
 	cout << "     sendto <destination> <amount> [<tag>]" << endl;
 	cout << "     stop" << endl;
@@ -51,7 +49,6 @@ void printHelp(const po::options_description& desc)
 	cout << "     unl_delete <public_key>" << endl;
 	cout << "     unl_list" << endl;
 	cout << "     unl_reset" << endl;
-	cout << "     unlock <passphrase>" << endl;
 	cout << "     validation_create [<seed>|<pass_phrase>|<key>]" << endl;
 	cout << "     wallet_claim <master_seed> <regular_seed> [<source_tag>] [<account_annotation>]" << endl;
 	cout << "     wallet_propose" << endl;

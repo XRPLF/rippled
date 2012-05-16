@@ -33,10 +33,7 @@ class RPCServer  : public boost::enable_shared_from_this<RPCServer>
 
 	NewcoinAddress parseFamily(const std::string& family);
 
-	Json::Value doCreateFamily(Json::Value& params);
-	Json::Value doFamilyInfo(Json::Value& params);
 	Json::Value doAccountInfo(Json::Value& params);
-	Json::Value doNewAccount(Json::Value& params);
 	Json::Value doLock(Json::Value& params);
 	Json::Value doUnlock(Json::Value& params);
 	Json::Value doSendTo(Json::Value& params);
