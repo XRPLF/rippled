@@ -212,6 +212,9 @@ void Transaction::saveTransaction(Transaction::pointer txn)
 
 bool Transaction::save() const
 { // This code needs to be fixed to support new-style transactions - FIXME
+#if 0
+	// Identify minimums fields to write for now.
+	// Also maybe write effected accounts for use later.
 	if ((mStatus == INVALID) || (mStatus == REMOVED)) return false;
 
 	std::string sql = "INSERT INTO Transactions "
@@ -251,6 +254,8 @@ bool Transaction::save() const
 	ScopedLock sl(theApp->getTxnDB()->getDBLock());
 	Database* db = theApp->getTxnDB()->getDB();
 	return db->executeSQL(sql);
+#endif
+	return true;
 }
 
 Transaction::pointer Transaction::transactionFromSQL(const std::string& sql)

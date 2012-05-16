@@ -255,7 +255,7 @@ TransactionEngineResult TransactionEngine::doClaim(const SerializedTransaction& 
 	}
 
 	//
-	// Verify claim is authorized
+	// Verify claim is authorized for public key.
 	//
 
 	std::vector<unsigned char>		vucCipher		= txn.getITFieldVL(sfGenerator);
@@ -271,6 +271,10 @@ TransactionEngineResult TransactionEngine::doClaim(const SerializedTransaction& 
 		std::cerr << "doClaim: bad signature unauthorized claim" << std::endl;
 		return tenINVALID;
 	}
+
+	//
+	// Verify generator not already in use.
+	//
 
 	uint160							hGeneratorID	= naAccountPublic.getAccountID();
 
