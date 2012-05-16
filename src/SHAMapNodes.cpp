@@ -278,7 +278,7 @@ bool SHAMapTreeNode::updateHash()
 	{
 		Serializer s;
 		mItem->addRaw(s);
-		s.add160(mItem->getTag().to160());
+		s.add256(mItem->getTag());
 		nh = s.getSHA512Half();
 	}
 	else if (mType == tnTRANSACTION)
@@ -299,7 +299,7 @@ bool SHAMapTreeNode::setItem(SHAMapItem::pointer& i, TNType type)
 	mItem = i;
 	assert(isLeaf());
 	updateHash();
-	return getNodeHash() == hash;
+	return getNodeHash() != hash;
 }
 
 SHAMapItem::pointer SHAMapTreeNode::getItem() const
