@@ -54,6 +54,6 @@ double Amount::getDisplayQuantity() const
 {
 	if(!mCurrency.isNational()) throw std::runtime_error("Can only scale national currencies");
 	int scale=mCurrency.getScale();
-	return static_cast<double>(mQuantity) * pow(10, 128-scale);
+	return static_cast<double>(mQuantity) * pow((double)10, 128-scale);
 }
 

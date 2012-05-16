@@ -19,13 +19,13 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <CharacterSet>Unicode</CharacterSet>
+    <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <CharacterSet>Unicode</CharacterSet>
+    <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -48,14 +48,14 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0501;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>BOOST_TEST_NO_MAIN;_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0501;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\OpenSSL\include;..\boost_1_47_0;..\protobuf-2.4.1\src\</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>..\OpenSSL\lib\VC;..\boost_1_47_0\stage\lib;..\protobuf-2.4.1\vsprojects\Debug</AdditionalLibraryDirectories>
-      <AdditionalDependencies>libeay32MTd.lib;libprotobuf.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ssleay32MDd.lib;libeay32MTd.lib;libprotobuf.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PreBuildEvent>
       <Command>
@@ -72,62 +72,84 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0501;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\code\boost_1_47_0;C:\code\protobuf-2.4.1\src\google</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>BOOST_TEST_NO_MAIN;_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0501;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\OpenSSL\include;..\boost_1_47_0;..\protobuf-2.4.1\src</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>C:\code\OpenSSL\lib\VC;C:\code\boost_1_47_0\stage\lib;</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\OpenSSL\lib\VC;..\boost_1_47_0\stage\lib;..\protobuf-2.4.1\vsprojects\Release</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libprotobuf.lib;ssleay32MD.lib;libeay32MD.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="AccountState.cpp" />
-    <ClCompile Include="Application.cpp" />
-    <ClCompile Include="BitcoinUtil.cpp" />
-    <ClCompile Include="CallRPC.cpp" />
-    <ClCompile Include="Config.cpp" />
-    <ClCompile Include="ConnectionPool.cpp" />
-    <ClCompile Include="Conversion.cpp" />
     <ClCompile Include="cryptopp\cpu.cpp" />
     <ClCompile Include="cryptopp\sha.cpp" />
     <ClCompile Include="database\database.cpp" />
     <ClCompile Include="database\sqlite3.c" />
     <ClCompile Include="database\SqliteDatabase.cpp" />
-    <ClCompile Include="DBInit.cpp" />
-    <ClCompile Include="DeterministicKeys.cpp" />
-    <ClCompile Include="HashedObject.cpp" />
+    <ClCompile Include="database\win\windatabase.cpp" />
     <ClCompile Include="json\json_reader.cpp" />
     <ClCompile Include="json\json_value.cpp" />
     <ClCompile Include="json\json_writer.cpp" />
-    <ClCompile Include="KnownNodeList.cpp" />
-    <ClCompile Include="Ledger.cpp" />
-    <ClCompile Include="LedgerHistory.cpp" />
-    <ClCompile Include="LedgerMaster.cpp" />
-    <ClCompile Include="LocalTransaction.cpp" />
-    <ClCompile Include="main.cpp" />
-    <ClCompile Include="NetworkOPs.cpp" />
-    <ClCompile Include="newcoin.pb.cc" />
-    <ClCompile Include="NewcoinAddress.cpp" />
-    <ClCompile Include="PackedMessage.cpp" />
-    <ClCompile Include="PeerDoor.cpp" />
-    <ClCompile Include="Peer.cpp" />
-    <ClCompile Include="PubKeyCache.cpp" />
-    <ClCompile Include="RequestParser.cpp" />
-    <ClCompile Include="rpc.cpp" />
-    <ClCompile Include="RPCServer.cpp" />
-    <ClCompile Include="RPCDoor.cpp" />
-    <ClCompile Include="Serializer.cpp" />
-    <ClCompile Include="SHAMap.cpp" />
-    <ClCompile Include="SHAMapDiff.cpp" />
-    <ClCompile Include="SHAMapNodes.cpp" />
-    <ClCompile Include="TimingService.cpp" />
-    <ClCompile Include="Transaction.cpp" />
-    <ClCompile Include="UniqueNodeList.cpp" />
-    <ClCompile Include="util\pugixml.cpp" />
-    <ClCompile Include="Wallet.cpp" />
+    <ClCompile Include="obj\src\newcoin.pb.cc" />
+    <ClCompile Include="src\AccountState.cpp" />
+    <ClCompile Include="src\Amount.cpp" />
+    <ClCompile Include="src\Application.cpp" />
+    <ClCompile Include="src\BitcoinUtil.cpp" />
+    <ClCompile Include="src\CallRPC.cpp" />
+    <ClCompile Include="src\Config.cpp" />
+    <ClCompile Include="src\ConnectionPool.cpp" />
+    <ClCompile Include="src\Conversion.cpp" />
+    <ClCompile Include="src\Currency.cpp" />
+    <ClCompile Include="src\DBInit.cpp" />
+    <ClCompile Include="src\DeterministicKeys.cpp" />
+    <ClCompile Include="src\ECIES.cpp" />
+    <ClCompile Include="src\Hanko.cpp" />
+    <ClCompile Include="src\HashedObject.cpp" />
+    <ClCompile Include="src\HttpsClient.cpp" />
+    <ClCompile Include="src\Ledger.cpp" />
+    <ClCompile Include="src\LedgerAcquire.cpp" />
+    <ClCompile Include="src\LedgerFormats.cpp" />
+    <ClCompile Include="src\LedgerHistory.cpp" />
+    <ClCompile Include="src\LedgerIndex.cpp" />
+    <ClCompile Include="src\LedgerMaster.cpp" />
+    <ClCompile Include="src\LedgerNode.cpp" />
+    <ClCompile Include="src\LocalTransaction.cpp" />
+    <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\NetworkOPs.cpp" />
+    <ClCompile Include="src\NewcoinAddress.cpp" />
+    <ClCompile Include="src\PackedMessage.cpp" />
+    <ClCompile Include="src\ParseSection.cpp" />
+    <ClCompile Include="src\Peer.cpp" />
+    <ClCompile Include="src\PeerDoor.cpp" />
+    <ClCompile Include="src\PlatRand.cpp" />
+    <ClCompile Include="src\PubKeyCache.cpp" />
+    <ClCompile Include="src\RequestParser.cpp" />
+    <ClCompile Include="src\rfc1751.cpp" />
+    <ClCompile Include="src\rpc.cpp" />
+    <ClCompile Include="src\RPCCommands.cpp" />
+    <ClCompile Include="src\RPCDoor.cpp" />
+    <ClCompile Include="src\RPCServer.cpp" />
+    <ClCompile Include="src\SerializedLedger.cpp" />
+    <ClCompile Include="src\SerializedObject.cpp" />
+    <ClCompile Include="src\SerializedTransaction.cpp" />
+    <ClCompile Include="src\SerializedTypes.cpp" />
+    <ClCompile Include="src\SerializedValidation.cpp" />
+    <ClCompile Include="src\Serializer.cpp" />
+    <ClCompile Include="src\SHAMap.cpp" />
+    <ClCompile Include="src\SHAMapDiff.cpp" />
+    <ClCompile Include="src\SHAMapNodes.cpp" />
+    <ClCompile Include="src\SHAMapSync.cpp" />
+    <ClCompile Include="src\Transaction.cpp" />
+    <ClCompile Include="src\TransactionEngine.cpp" />
+    <ClCompile Include="src\TransactionFormats.cpp" />
+    <ClCompile Include="src\TransactionMaster.cpp" />
+    <ClCompile Include="src\UniqueNodeList.cpp" />
+    <ClCompile Include="src\utils.cpp" />
+    <ClCompile Include="src\Wallet.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Account.h" />
@@ -161,8 +183,8 @@
     <ClInclude Include="Ledger.h" />
     <ClInclude Include="LedgerHistory.h" />
     <ClInclude Include="LedgerMaster.h" />
-    <ClInclude Include="newcoin.pb.h" />
     <ClInclude Include="NewcoinAddress.h" />
+    <ClInclude Include="obj\src\newcoin.pb.h" />
     <ClInclude Include="PackedMessage.h" />
     <ClInclude Include="PeerDoor.h" />
     <ClInclude Include="NetworkThread.h" />
@@ -189,11 +211,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="config.xml" />
-    <CustomBuild Include="newcoin.proto">
-      <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\protoc-2.4.1-win32\protoc -I=..\newcoin --cpp_out=..\newcoin  ..\newcoin\newcoin.proto</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">newcoin.pb.h</Outputs>
-    </CustomBuild>
     <None Include="db layout.txt" />
     <None Include="html\newcoin.html">
       <SubType>Designer</SubType>
@@ -201,7 +218,15 @@
     <None Include="Makefile" />
     <None Include="nodes.xml" />
     <None Include="notes.txt" />
-    <None Include="tests\client2\config.xml" />
+    <CustomBuild Include="src\newcoin.proto">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\protoc-2.4.1-win32\protoc -I=..\newcoin\src --cpp_out=..\newcoin\obj\src  ..\newcoin\src\newcoin.proto</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">obj\src\newcoin.pb.h</Outputs>
+    </CustomBuild>
+    <None Include="SConstruct" />
+    <None Include="tests\client2\config.xml">
+      <SubType>Designer</SubType>
+    </None>
     <None Include="todo.txt" />
     <None Include="unl.xml" />
     <None Include="wallet.xml" />

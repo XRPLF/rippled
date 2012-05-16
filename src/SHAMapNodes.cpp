@@ -6,7 +6,7 @@
 #include <boost/smart_ptr/make_shared.hpp>
 
 #include <openssl/sha.h>
-
+#include <iostream>
 #include "Serializer.h"
 #include "BitcoinUtil.h"
 #include "SHAMap.h"

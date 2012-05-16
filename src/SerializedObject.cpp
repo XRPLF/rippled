@@ -117,7 +117,7 @@ STObject::STObject(SOElement* elem, SerializerIterator& sit, const char *name) :
 			if ((flags&elem->e_flags) == 0)
 			{
 				done = true;
-				giveObject(makeDefaultObject(elem->e_id, elem->e_name));
+				giveObject(makeDefaultObject(STI_NOTPRESENT, elem->e_name));
 			}
 		}
 		else if (elem->e_type == SOE_IFNFLAG)
@@ -126,7 +126,7 @@ STObject::STObject(SOElement* elem, SerializerIterator& sit, const char *name) :
 			if ((flags&elem->e_flags) != 0)
 			{
 				done = true;
-				giveObject(makeDefaultObject(STI_NOTPRESENT, elem->e_name));
+				giveObject(makeDefaultObject(elem->e_id, elem->e_name));
 			}
 		}
 		else if (elem->e_type == SOE_FLAGS)

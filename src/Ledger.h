@@ -18,17 +18,17 @@
 
 enum LedgerStateParms
 {
-	lepNONE = 0,				// no special flags
+	lepNONE = 0,					// no special flags
 
 	// input flags
-	lepCREATE,					// Create if not present
+	lepCREATE = 1,					// Create if not present
 
 	// output flags
-	lepOKAY,					// success
-	lepMISSING,					// No node in that slot
-	lepWRONGTYPE,				// Node of different type there
-	lepCREATED,					// Node was created
-	lepERROR,					// error
+	lepOKAY = 2,					// success
+	lepMISSING = 4,					// No node in that slot
+	lepWRONGTYPE = 8,				// Node of different type there
+	lepCREATED = 16,				// Node was created
+	lepERROR = 32,					// error
 };
 
 class Ledger : public boost::enable_shared_from_this<Ledger>

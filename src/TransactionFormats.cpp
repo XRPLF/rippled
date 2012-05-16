@@ -55,11 +55,11 @@ TransactionFormat InnerTxnFormats[]=
 
 TransactionFormat* getTxnFormat(TransactionType t)
 {
-	TransactionFormat* f=InnerTxnFormats;
-	while(f->t_name!=NULL)
+	TransactionFormat* f = InnerTxnFormats;
+	while(f->t_name != NULL)
 	{
-		if(f->t_type==t) return f;
-		f++;
+		if(f->t_type == t) return f;
+		++f;
 	}
 	return NULL;
 }

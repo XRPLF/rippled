@@ -30,7 +30,7 @@ public:
 	//char* getPass(){ return((char*)mDBPass.c_str()); }
 	
 	// returns true if the query went ok
-	bool executeSQL(const char* sql);
+	bool executeSQL(const char* sql, bool fail_okay=false);
 
 	int getNumRowsAffected();
 	int getLastInsertID();
@@ -49,9 +49,10 @@ public:
 	float getFloat(int colIndex);
 	bool getBool(int colIndex);
 	uint64 getBigInt(int colIndex);
-	bool getBinary(int colIndex,unsigned char* buf,int maxSize);
+	int getBinary(int colIndex,unsigned char* buf,int maxSize);
+	bool getNull(int colIndex){ return(true); }
 
-	void escape(unsigned char* start,int size,std::string& retStr);
+	void escape(const unsigned char* start,int size,std::string& retStr);
 };
 
 
