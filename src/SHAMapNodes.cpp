@@ -278,7 +278,7 @@ bool SHAMapTreeNode::updateHash()
 	{
 		Serializer s;
 		mItem->addRaw(s);
-		s.add160(mItem->getTag().to160());
+		s.add256(mItem->getTag());
 		nh = s.getSHA512Half();
 	}
 	else if (mType == tnTRANSACTION)
