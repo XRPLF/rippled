@@ -25,6 +25,7 @@
 // LocalAccount - an account
 //
 
+#if 0
 LocalAccount::LocalAccount(boost::shared_ptr<LocalAccountFamily> family, int familySeq) :
 	mPublicKey(family->getPublicKey(familySeq)), mFamily(family), mAccountFSeq(familySeq)
 {
@@ -94,6 +95,7 @@ CKey::pointer LocalAccount::getPrivateKey()
 {
 	return mFamily->getPrivateKey(mAccountFSeq);
 }
+
 //
 // LocalAccountFamily - a sequences of accounts
 //
@@ -258,10 +260,12 @@ LocalAccount::pointer LocalAccountFamily::get(int seq)
 
 	return ret;
 }
+#endif
 
 Wallet::Wallet() : mLedger(0) {
 }
 
+#if 0
 NewcoinAddress Wallet::addFamily(const NewcoinAddress& familySeed, bool lock)
 {
 	LocalAccountFamily::pointer fam(doPrivate(familySeed, true, !lock));
@@ -324,7 +328,6 @@ bool Wallet::getFamilyInfo(const NewcoinAddress& family, std::string& comment)
 	return true;
 }
 
-#if 0
 bool Wallet::getFullFamilyInfo(const NewcoinAddress& family, std::string& comment,
 	std::string& pubGen, bool& isLocked)
 {
@@ -337,7 +340,6 @@ bool Wallet::getFullFamilyInfo(const NewcoinAddress& family, std::string& commen
 	isLocked=fit->second->isLocked();
 	return true;
 }
-#endif
 
 Json::Value Wallet::getFamilyJson(const NewcoinAddress& family)
 {
@@ -347,6 +349,7 @@ Json::Value Wallet::getFamilyJson(const NewcoinAddress& family)
 	assert(fit->second->getFamily()==family);
 	return fit->second->getJson();
 }
+#endif
 
 void Wallet::start()
 {
@@ -443,6 +446,7 @@ bool Wallet::nodeIdentityCreate() {
 
 void Wallet::load()
 {
+#if 0
 	std::string sql("SELECT * FROM LocalAcctFamilies;");
 
 	ScopedLock sl(theApp->getWalletDB()->getDBLock());
@@ -479,8 +483,10 @@ void Wallet::load()
 	} while(db->getNextRow());
 
 	db->endIterRows();
+#endif
 }
 
+#if 0
 // YYY Perhaps this should take a comment.
 LocalAccount::pointer Wallet::getNewLocalAccount(const NewcoinAddress& family)
 {
@@ -684,13 +690,16 @@ bool Wallet::lock(const NewcoinAddress& family)
     fit->second->lock();
     return true;
 }
+#endif
 
 void Wallet::lock()
 {
+#if 0
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	for(std::map<NewcoinAddress, LocalAccountFamily::pointer>::iterator fit=mFamilies.begin();
 			fit!=mFamilies.end(); ++fit)
 		fit->second->lock();
+#endif
 }
 
 bool Wallet::unitTest()
@@ -841,6 +850,7 @@ void Wallet::applyTransaction(Transaction::pointer txn)
 
 #endif
 
+#if 0
 void Wallet::addLocalTransactions(Json::Value& ret)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
@@ -848,19 +858,22 @@ void Wallet::addLocalTransactions(Json::Value& ret)
 			it!=mTransactions.end(); ++it)
 		ret[it->first.GetHex()]=it->second->getJson();
 }
+#endif
 
 bool Wallet::getTxJson(const uint256& txn, Json::Value& ret)
 {
+#if 0
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	std::map<uint256, LocalTransaction::pointer>::iterator it = mTransactions.find(txn);
 	if (it == mTransactions.end()) return false;
 	ret = it->second->getJson();
-
+#endif
 	return true;
 }
 
 bool Wallet::getTxsJson(const NewcoinAddress& account, Json::Value& ret)
 {
+#if 0
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	for(std::map<uint256, LocalTransaction::pointer>::iterator it = mTransactions.begin(),
 		end = mTransactions.end(); it != end; ++it)
@@ -869,7 +882,7 @@ bool Wallet::getTxsJson(const NewcoinAddress& account, Json::Value& ret)
 		if(txn && (account == txn->getFromAccount())) // FIXME: Need a way to get all accounts a txn affects
 			ret[it->first.GetHex()] = it->second->getJson();
 	}
-
+#endif
 	return true;
 }
 // vim:ts=4

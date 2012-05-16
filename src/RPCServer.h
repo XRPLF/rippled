@@ -31,18 +31,15 @@ class RPCServer  : public boost::enable_shared_from_this<RPCServer>
 	int getParamCount(const Json::Value& params);
 	bool extractString(std::string& param, const Json::Value& params, int index);
 
-	NewcoinAddress parseFamily(const std::string& family);
-
 	Json::Value doAccountInfo(Json::Value& params);
-	Json::Value doLock(Json::Value& params);
-	Json::Value doUnlock(Json::Value& params);
-	Json::Value doSendTo(Json::Value& params);
 	Json::Value doConnect(Json::Value& params);
-	Json::Value doPeers(Json::Value& params);
-	Json::Value doTx(Json::Value& params);
 	Json::Value doLedger(Json::Value& params);
-	Json::Value doAccount(Json::Value& params);
+	Json::Value doPeers(Json::Value& params);
+	Json::Value doSendTo(Json::Value& params);
+	Json::Value doSessionClose(Json::Value& params);
+	Json::Value doSessionOpen(Json::Value& params);
 	Json::Value doStop(Json::Value& params);
+	Json::Value doTx(Json::Value& params);
 
 	Json::Value doUnlAdd(Json::Value& params);
 	Json::Value doUnlDefault(Json::Value& params);
@@ -54,12 +51,14 @@ class RPCServer  : public boost::enable_shared_from_this<RPCServer>
 
 	Json::Value doValidatorCreate(Json::Value& params);
 
+	Json::Value doWalletAccounts(Json::Value& params);
 	Json::Value doWalletClaim(Json::Value& params);
+	Json::Value doWalletCreate(Json::Value& params);
+	Json::Value doWalletLock(Json::Value& params);
 	Json::Value doWalletPropose(Json::Value& params);
 	Json::Value doWalletSeed(Json::Value& params);
+	Json::Value doWalletUnlock(Json::Value& params);
 
-	// Parses a string account name into a local or remote NewcoinAddress.
-	NewcoinAddress parseAccount(const std::string& account);
 	void validatorsResponse(const boost::system::error_code& err, std::string strResponse);
 
 public:

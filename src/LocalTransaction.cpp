@@ -11,6 +11,10 @@ bool LocalTransaction::makeTransaction()
 {
 	if(!!mTransaction) return true;
 
+	std::cerr << "LocalTransaction is obsolete." << std::endl;
+	return false;
+
+#if 0
 	LocalAccount::pointer lac(theApp->getWallet().findAccountForTransaction(mAmount));
 	if(!lac)
 	{
@@ -18,10 +22,6 @@ bool LocalTransaction::makeTransaction()
 		return false;
 	}
 
-	std::cerr << "LocalTransaction is obsolete." << std::endl;
-	return false;
-
-#if 0
 	mTransaction=Transaction::pointer(new Transaction(lac, mDestAcctID, mAmount, mTag,
 		theApp->getOPs().getCurrentLedgerID()));
 	if(mTransaction->getStatus()!=NEW)

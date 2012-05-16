@@ -3,7 +3,6 @@
 
 #include "UniqueNodeList.h"
 #include "ConnectionPool.h"
-#include "PubKeyCache.h"
 #include "ScopedLock.h"
 #include "LedgerMaster.h"
 #include "LedgerAcquire.h"
@@ -38,7 +37,6 @@ class Application
 	NetworkOPs				mNetOps;
 	Wallet					mWallet;
 	UniqueNodeList			mUNL;
-	PubKeyCache				mPKCache;
 	LedgerMaster			mMasterLedger;
 	LedgerAcquireMaster		mMasterLedgerAcquire;
 	TransactionMaster		mMasterTransaction;
@@ -62,8 +60,6 @@ public:
 
 	Wallet& getWallet() { return mWallet ; }
 	NetworkOPs& getOPs() { return mNetOps; }
-
-	PubKeyCache& getPubKeyCache() { return mPKCache; }
 
 	boost::asio::io_service& getIOService() { return mIOService; }
 

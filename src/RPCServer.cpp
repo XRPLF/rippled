@@ -160,6 +160,7 @@ bool RPCServer::extractString(std::string& param, const Json::Value& params, int
 	return true;
 }
 
+#if 0
 NewcoinAddress RPCServer::parseFamily(const std::string& fParam)
 {
 	NewcoinAddress	family;
@@ -171,6 +172,7 @@ NewcoinAddress RPCServer::parseFamily(const std::string& fParam)
 
 	return family;
 }
+#endif
 
 // account_info <account>|<nickname>|<account_public_key>
 // account_info <seed>|<pass_phrase>|<key> [<index>]
@@ -348,7 +350,9 @@ Json::Value RPCServer::doSendTo(Json::Value& params)
 	if (!extractString(sDest, params, 0) || !extractString(sAmount, params, 1))
 		return JSONRPCError(500, "Invalid parameters");
 
-	NewcoinAddress destAccount	= parseAccount(sDest);
+	NewcoinAddress destAccount;
+
+	destAccount.setAccountID(sDest) || destAccount.setAccountPublic(sDest);
 	if (!destAccount.isValid())
 		return JSONRPCError(500, "Unable to parse destination account");
 
@@ -400,9 +404,13 @@ Json::Value RPCServer::doTx(Json::Value& params)
 	std::string param1, param2;
 	if (!extractString(param1, params, 0))
 	{ // all local transactions
+#if 1
+		return "not implemented";
+#else
 		Json::Value ret(Json::objectValue);
 		theApp->getWallet().addLocalTransactions(ret);
 		return ret;
+#endif
 	}
 
 	if (Transaction::isHexTxID(param1))
@@ -419,13 +427,7 @@ Json::Value RPCServer::doTx(Json::Value& params)
 
 	if (extractString(param2, params, 1))
 	{ // family seq
-		LocalAccount::pointer account=theApp->getWallet().parseAccount(param1+":"+param2);
-		if (!account)
-			return JSONRPCError(500, "Account not found");
-		Json::Value ret;
-		if (!theApp->getWallet().getTxsJson(account->getAddress(), ret))
-			return JSONRPCError(500, "Unable to get wallet transactions");
-		return ret;
+		return "not implemented";
 	}
 	else
 	{
@@ -623,6 +625,96 @@ Json::Value RPCServer::doWalletClaim(Json::Value& params)
 		obj["status"]			= trns->getStatus();
 
 		return obj;
+	}
+}
+
+// wallet_create paying_account account_id [initial_funds]
+Json::Value RPCServer::doWalletCreate(Json::Value& params)
+{
+	NewcoinAddress	naSourceID;
+	NewcoinAddress	naCreateID;
+
+	if (params.size() < 2 || params.size() > 3)
+	{
+		return "invalid params";
+	}
+	else if (!naSourceID.setAccountID(params[0u].asString()))
+	{
+		return "source account id needed";
+	}
+	else if (!naCreateID.setAccountID(params[1u].asString()))
+	{
+		return "create account id needed";
+	}
+	else
+	{
+		// Trying to build:
+		//   peer_payment
+		//
+		// Which has no confidential information.
+
+		return "not implemented";
+#if 0
+		// XXX Need better parsing.
+		uint64		uInitalFunds	= 0;
+		uint32		uSourceTag		= (params.size() == 2) ? 0 : boost::lexical_cast<uint32>(params[2u].asString());
+		// XXX Annotation is ignored.
+		std::string strAnnotation	= (params.size() == 3) ? "" : params[3u].asString();
+
+		NewcoinAddress	naMasterSeed;
+		NewcoinAddress	naMasterGenerator;
+
+		NewcoinAddress	naRegularSeed;
+		NewcoinAddress	naRegularGenerator;
+		NewcoinAddress	naRegularReservedPublic;
+		NewcoinAddress	naRegularReservedPrivate;
+
+		NewcoinAddress	naAccountPublic;
+		NewcoinAddress	naAccountPrivate;
+
+		naMasterSeed.setFamilySeedGeneric(params[0u].asString());
+		naRegularSeed.setFamilySeedGeneric(params[1u].asString());
+
+		naMasterGenerator.setFamilyGenerator(naMasterSeed);
+		naAccountPublic.setAccountPublic(naMasterGenerator, 0);
+		naAccountPrivate.setAccountPrivate(naMasterGenerator, naMasterSeed, 0);
+
+		naRegularGenerator.setFamilyGenerator(naRegularSeed);
+
+		naRegularReservedPublic.setAccountPublic(naRegularGenerator, -1);
+		naRegularReservedPrivate.setAccountPrivate(naRegularGenerator, naRegularSeed, -1);
+
+		// hash of regular account #reserved public key.
+		uint160						uGeneratorID		= naRegularReservedPublic.getAccountID();
+		std::vector<unsigned char>	vucGeneratorCipher	= naRegularReservedPrivate.accountPrivateEncrypt(naRegularReservedPublic, naMasterGenerator.getFamilyGenerator());
+		std::vector<unsigned char>	vucGeneratorSig;
+
+		// XXX Check result.
+		naRegularReservedPrivate.accountPrivateSign(Serializer::getSHA512Half(vucGeneratorCipher), vucGeneratorSig);
+
+		Transaction::pointer	trns	= Transaction::sharedWalletCreate(
+			naAccountPublic, naAccountPrivate,
+			naAccountPublic,
+			uSourceTag,
+			vucGeneratorCipher,
+			naRegularReservedPublic.getAccountPublic(),
+			vucGeneratorSig);
+
+		(void) theApp->getOPs().processTransaction(trns);
+
+		Json::Value obj(Json::objectValue);
+
+
+		obj["account_id"]		= naAccountPublic.humanAccountID();
+		obj["generator_id"]		= strHex(uGeneratorID);
+		obj["generator"]		= strHex(vucGeneratorCipher);
+		obj["annotation"]		= strAnnotation;
+
+		obj["transaction"]		= trns->getSTransaction()->getJson(0);
+		obj["status"]			= trns->getStatus();
+
+		return obj;
+#endif
 	}
 }
 
@@ -856,21 +948,4 @@ void RPCServer::handle_write(const boost::system::error_code& /*error*/)
 {
 }
 
-NewcoinAddress RPCServer::parseAccount(const std::string& account)
-{ // FIXME: Support local wallet key names
-	if (account.find(':')!=std::string::npos)
-	{ // local account in family:seq form
-		LocalAccount::pointer lac(theApp->getWallet().parseAccount(account));
-
-		return lac
-			? lac->getAddress()
-			: NewcoinAddress();
-	}
-
-	NewcoinAddress *nap	= new NewcoinAddress();
-
-	nap->setAccountID(account) || nap->setAccountPublic(account);
-
-	return *nap;
-}
 // vim:ts=4
