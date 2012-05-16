@@ -149,6 +149,7 @@ void SHAMap::returnNode(SHAMapTreeNode::pointer& node, bool modify)
 		node = boost::make_shared<SHAMapTreeNode>(*node, mSeq);
 		assert(node->isValid());
 		mTNByID[*node] = node;
+		if (node->isRoot()) root = node;
 	}
 }
 
