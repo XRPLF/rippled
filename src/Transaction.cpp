@@ -121,6 +121,9 @@ Transaction::pointer Transaction::setClaim(
 	const NewcoinAddress& naGeneratorID,
 	const std::vector<unsigned char>& vucGenerator)
 {
+	mTransaction->setITFieldH160(sfGeneratorID, naGeneratorID.getAccountID());
+	mTransaction->setITFieldVL(sfGenerator, vucGenerator);
+
 	sign(naPrivateKey);
 
 	return shared_from_this();
