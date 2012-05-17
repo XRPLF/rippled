@@ -57,8 +57,9 @@ Transaction::Transaction(
 	const NewcoinAddress& naSourceAccount,
 	uint32 uSeq,
 	uint64 uFee,
-	uint32 uSourceTag) :
-	mInLedger(0), mStatus(NEW)
+	uint32 uSourceTag,
+	uint32 uLedger) :
+	mStatus(NEW)
 {
 	mAccountFrom	= naSourceAccount;
 	mFromPubKey		= naPublicKey;
@@ -77,6 +78,12 @@ Transaction::Transaction(
 	{
 		mTransaction->makeITFieldPresent(sfSourceTag);
 		mTransaction->setITFieldU32(sfSourceTag, uSourceTag);
+	}
+
+	if (uLedger)
+	{
+		mTransaction->makeITFieldPresent(sfTargetLedger);
+		mTransaction->setITFieldU32(sfTargetLedger, uLedger);
 	}
 }
 
@@ -149,23 +156,51 @@ Transaction::pointer Transaction::sharedClaim(
 }
 
 //
+// Create
+//
+
+Transaction::pointer Transaction::setCreate(
+	const NewcoinAddress& naPrivateKey,
+	const NewcoinAddress& naCreateAccountID,
+	uint64 uFund)
+{
+	mTransaction->setITFieldU32(sfFlags, tfCreateAccount);
+	mTransaction->setITFieldAccount(sfDestination, naCreateAccountID);
+	mTransaction->setITFieldU64(sfAmount, uFund);
+
+	sign(naPrivateKey);
+
+	return shared_from_this();
+}
+
+Transaction::pointer Transaction::sharedCreate(
+	const NewcoinAddress& naPublicKey, const NewcoinAddress& naPrivateKey,
+	const NewcoinAddress& naSourceAccount,
+	uint32 uSeq,
+	uint64 uFee,
+	uint32 uSourceTag,
+	uint32 uLedger,
+	const NewcoinAddress& naCreateAccountID,
+	uint64 uFund)
+{
+	pointer	tResult	= boost::make_shared<Transaction>(ttPAYMENT,
+						naPublicKey, naSourceAccount,
+						uSeq, uFee, uSourceTag, uLedger);
+
+	return tResult->setCreate(naPrivateKey, naCreateAccountID, uFund);
+}
+
+//
 // Payment
 //
 
 Transaction::pointer Transaction::setPayment(
 	const NewcoinAddress& naPrivateKey,
 	const NewcoinAddress& toAccount,
-	uint64 uAmount,
-	uint32 ledger)
+	uint64 uAmount)
 {
 	mTransaction->setITFieldAccount(sfDestination, toAccount);
 	mTransaction->setITFieldU64(sfAmount, uAmount);
-
-	if (ledger != 0)
-	{
-		mTransaction->makeITFieldPresent(sfTargetLedger);
-		mTransaction->setITFieldU32(sfTargetLedger, ledger);
-	}
 
 	sign(naPrivateKey);
 
@@ -178,15 +213,15 @@ Transaction::pointer Transaction::sharedPayment(
 	uint32 uSeq,
 	uint64 uFee,
 	uint32 uSourceTag,
+	uint32 uLedger,
 	const NewcoinAddress& toAccount,
-	uint64 uAmount,
-	uint32 ledger)
+	uint64 uAmount)
 {
-	pointer	tResult	= boost::make_shared<Transaction>(ttMAKE_PAYMENT,
+	pointer	tResult	= boost::make_shared<Transaction>(ttPAYMENT,
 						naPublicKey, naSourceAccount,
-						uSeq, uFee, uSourceTag);
+						uSeq, uFee, uSourceTag, uLedger);
 
-	return tResult->setPayment(naPrivateKey, toAccount, uAmount, ledger);
+	return tResult->setPayment(naPrivateKey, toAccount, uAmount);
 }
 
 //

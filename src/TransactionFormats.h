@@ -6,7 +6,7 @@
 enum TransactionType
 {
 	ttINVALID			= -1,
-	ttMAKE_PAYMENT		= 0,
+	ttPAYMENT			= 0,
 	ttCLAIM				= 1,
 	ttINVOICE			= 2,
 	ttEXCHANGE_OFFER	= 3
@@ -30,6 +30,9 @@ const int TransactionIFee			= 5;
 
 const int TransactionMinLen=32;
 const int TransactionMaxLen=1048576;
+
+// Transaction flags.
+const uint32 tfCreateAccount		= 0x00010000;
 
 extern TransactionFormat InnerTxnFormats[];
 extern TransactionFormat* getTxnFormat(TransactionType t);

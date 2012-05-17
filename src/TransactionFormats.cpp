@@ -5,7 +5,7 @@
 
 TransactionFormat InnerTxnFormats[]=
 {
-	{ "MakePayment", ttMAKE_PAYMENT, {
+	{ "Payment", ttPAYMENT, {
 		{ S_FIELD(Flags),        STI_UINT32,  SOE_FLAGS,    0 },
 		{ S_FIELD(Destination),  STI_ACCOUNT, SOE_REQUIRED, 0 },
 		{ S_FIELD(Amount),       STI_AMOUNT,  SOE_REQUIRED, 0 },

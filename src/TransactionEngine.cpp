@@ -29,7 +29,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	// check signature
 	if (!txn.checkSign(naPubKey))
 	{
-		std::cerr << "applyTransaction: invalid signature" << std::endl;
+		std::cerr << "applyTransaction: Invalid transaction: bad signature" << std::endl;
 		return tenINVALID;
 	}
 
@@ -42,19 +42,19 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 			bPrepaid	= true;
 			break;
 
-		case ttMAKE_PAYMENT:
+		case ttPAYMENT:
 		case ttINVOICE:
 		case ttEXCHANGE_OFFER:
 			result = terSUCCESS;
 			break;
 
 		case ttINVALID:
-			std::cerr << "applyTransaction: ttINVALID transaction type" << std::endl;
+			std::cerr << "applyTransaction: Invalid transaction: ttINVALID transaction type" << std::endl;
 			result = tenINVALID;
 			break;
 
 		default:
-			std::cerr << "applyTransaction: unknown transaction type" << std::endl;
+			std::cerr << "applyTransaction: Invalid transaction: unknown transaction type" << std::endl;
 			result = tenUNKNOWN;
 			break;
 	}
@@ -85,9 +85,9 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 		}
 	}
 
-	// get source account ID
-	uint160 srcAccount = txn.getSourceAccount().getAccountID();
-	if (!srcAccount)
+	// Get source account ID.
+	uint160 srcAccountID = txn.getSourceAccount().getAccountID();
+	if (!srcAccountID)
 	{
 		std::cerr << "applyTransaction: bad source id" << std::endl;
 		return tenINVALID;
@@ -98,10 +98,10 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	// find source account
 	// If we are only verifying some transactions, this would be probablistic.
 	LedgerStateParms qry = lepNONE;
-	SerializedLedgerEntry::pointer src = mLedger->getAccountRoot(qry, srcAccount);
+	SerializedLedgerEntry::pointer src = mLedger->getAccountRoot(qry, srcAccountID);
 	if (!src)
 	{
-		std::cerr << str(boost::format("applyTransaction: no such account: %s") % txn.getSourceAccount().humanAccountID()) << std::endl;
+		std::cerr << str(boost::format("applyTransaction: Delay transaction: source account does not exisit: %s") % txn.getSourceAccount().humanAccountID()) << std::endl;
 		return terNO_ACCOUNT;
 	}
 
@@ -109,15 +109,15 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	// we only write the account back if the transaction succeeds
 	if (txnFee)
 	{
-		uint64 balance = src->getIFieldU64(sfBalance);
+		uint64 uSrcBalance = src->getIFieldU64(sfBalance);
 
-		if (balance < txnFee)
+		if (uSrcBalance < txnFee)
 		{
-			std::cerr << "applyTransaction: insufficent balance" << std::endl;
+			std::cerr << "applyTransaction: Delay transaction: insufficent balance" << std::endl;
 			return terINSUF_FEE_B;
 		}
 
-		src->setIFieldU64(sfBalance, balance - txnFee);
+		src->setIFieldU64(sfBalance, uSrcBalance - txnFee);
 	}
 
 	// Validate sequence
@@ -169,8 +169,8 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 			result = doClaim(txn, accounts);
 			break;
 
-		case ttMAKE_PAYMENT:
-			result = doPayment(txn, accounts);
+		case ttPAYMENT:
+			result = doPayment(txn, accounts, srcAccountID);
 			break;
 
 		case ttINVOICE:
@@ -308,43 +308,82 @@ TransactionEngineResult TransactionEngine::doClaim(const SerializedTransaction& 
 }
 
 TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction& txn,
-	std::vector<AffectedAccount>& accounts)
+	std::vector<AffectedAccount>& accounts,
+	uint160 srcAccountID)
 {
-	uint32 txFlags = txn.getFlags();
-	uint160 destAccount = txn.getITFieldAccount(sfDestination);
+	uint32	txFlags			= txn.getFlags();
+	uint160 dstAccountID	= txn.getITFieldAccount(sfDestination);
 
 	// Does the destination account exist?
-	if (!destAccount) return tenINVALID;
+	if (!dstAccountID)
+	{
+		std::cerr << "doPayment: Invalid transaction: Payment destination account not specifed." << std::endl;
+		return tenINVALID;
+	}
+	else if (srcAccountID == dstAccountID)
+	{
+		std::cerr << "doPayment: Invalid transaction: Source account is the same as destination." << std::endl;
+		return tenINVALID;
+	}
+
+	bool	bCreate	= !(txFlags & tfCreateAccount);
+
+	uint160	currency;
+	if (txn.getITFieldPresent(sfCurrency))
+		currency = txn.getITFieldH160(sfCurrency);
+	// XXX No XNC don't allow currency.
+
 	LedgerStateParms qry = lepNONE;
 
-	// FIXME: If this transfer is to the same account, bad things will happen
-	SerializedLedgerEntry::pointer dest = mLedger->getAccountRoot(qry, destAccount);
+	SerializedLedgerEntry::pointer dest = mLedger->getAccountRoot(qry, dstAccountID);
 	if (!dest)
-	{ // can this transaction create an account
-		if ((txFlags & 0x00010000) == 0) // no
+	{
+		// Destination account does not exist.
+		if (bCreate && !!currency)
+		{
+			std::cerr << "doPayment: Invalid transaction: Create account may only fund XBC." << std::endl;
+			return tenCREATEXNC;
+		}
+		else if (!bCreate)
+		{
+			std::cerr << "doPayment: Delay transaction: Destination account does not exist." << std::endl;
 			return terNO_TARGET;
+		}
 
+		// Create the account.
 		dest = boost::make_shared<SerializedLedgerEntry>(ltACCOUNT_ROOT);
-		dest->setIndex(Ledger::getAccountRootIndex(destAccount));
-		dest->setIFieldAccount(sfAccount, destAccount);
+
+		dest->setIndex(Ledger::getAccountRootIndex(dstAccountID));
+		dest->setIFieldAccount(sfAccount, dstAccountID);
 		dest->setIFieldU32(sfSequence, 1);
+
 		accounts.push_back(std::make_pair(taaCREATE, dest));
 	}
-	else accounts.push_back(std::make_pair(taaMODIFY, dest));
-
-	uint64 amount = txn.getITFieldU64(sfAmount);
-
-	uint160 currency;
-	if(txn.getITFieldPresent(sfCurrency))
-		currency = txn.getITFieldH160(sfCurrency);
-	bool native = !!currency;
-
-	if (native)
+	// Destination exists.
+	else if (bCreate)
 	{
-		uint64 balance = accounts[0].second->getIFieldU64(sfBalance);
-		if (balance < amount) return terUNFUNDED;
-		accounts[0].second->setIFieldU64(sfBalance, balance - amount);
-		accounts[1].second->setIFieldU64(sfBalance, accounts[1].second->getIFieldU64(sfBalance) + amount);
+		std::cerr << "doPayment: Invalid transaction: Account already created." << std::endl;
+		return tenCREATED;
+	}
+	else
+	{
+		accounts.push_back(std::make_pair(taaMODIFY, dest));
+	}
+
+	uint64	uAmount = txn.getITFieldU64(sfAmount);
+
+	if (!currency)
+	{
+		uint64	uSrcBalance = accounts[0].second->getIFieldU64(sfBalance);
+
+		if (uSrcBalance < uAmount)
+		{
+			std::cerr << "doPayment: Delay transaction: Insufficent funds." << std::endl;
+			return terUNFUNDED;
+		}
+
+		accounts[0].second->setIFieldU64(sfBalance, uSrcBalance - uAmount);
+		accounts[1].second->setIFieldU64(sfBalance, accounts[1].second->getIFieldU64(sfBalance) + uAmount);
 	}
 	else
 	{

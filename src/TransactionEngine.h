@@ -13,9 +13,17 @@
 enum TransactionEngineResult
 {
 	// tenCAN_NEVER_SUCCEED = <0
-	tenGEN_IN_USE  = -100,	// Generator already in use.
+
+	// Malformed
+	tenGEN_IN_USE  = -300,	// Generator already in use.
+	tenCREATEXNC,			// Can not specify non XNC for Create.
+
+	// Not possible due to ledger database.
+	tenCREATED		= -200,	// Can not create a previously created account.
 	tenCLAIMED,				// Can not claim a previously claimed account.
-	tenFAILED,				// Something broke horribly
+
+	// Other
+	tenFAILED		= -100,	// Something broke horribly
 	tenUNKNOWN,				// The transactions requires logic not implemented yet
 	tenINSUF_FEE_P,			// fee totally insufficient
 	tenINVALID,				// The transaction is ill-formed
@@ -63,7 +71,8 @@ protected:
 	TransactionEngineResult doDelete(const SerializedTransaction&, std::vector<AffectedAccount>&);
 	TransactionEngineResult doInvoice(const SerializedTransaction&, std::vector<AffectedAccount>&);
 	TransactionEngineResult doOffer(const SerializedTransaction&, std::vector<AffectedAccount>&);
-	TransactionEngineResult doPayment(const SerializedTransaction&, std::vector<AffectedAccount>&);
+	TransactionEngineResult doPayment(const SerializedTransaction&, std::vector<AffectedAccount>&,
+								uint160 srcAccountID);
 	TransactionEngineResult doStore(const SerializedTransaction&, std::vector<AffectedAccount>&);
 	TransactionEngineResult doTake(const SerializedTransaction&, std::vector<AffectedAccount>&);
 
