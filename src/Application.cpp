@@ -112,7 +112,7 @@ void Application::run()
 	NewcoinAddress	rootGeneratorMaster;
 	NewcoinAddress	rootAddress;
 
-	rootSeedMaster.setFamilySeed(CKey::PassPhraseToKey("Master passphrase."));
+	rootSeedMaster.setFamilySeed(CKey::PassPhraseToKey("masterpassphrase"));
 	rootGeneratorMaster.setFamilyGenerator(rootSeedMaster);
 
 	rootAddress.setAccountPublic(rootGeneratorMaster, 0);
