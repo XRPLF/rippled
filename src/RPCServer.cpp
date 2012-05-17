@@ -628,31 +628,57 @@ Json::Value RPCServer::doWalletClaim(Json::Value& params)
 	}
 }
 
-// wallet_create paying_account account_id [initial_funds]
+// wallet_create regular_seed paying_account account_id [initial_funds]
 Json::Value RPCServer::doWalletCreate(Json::Value& params)
 {
 	NewcoinAddress	naSourceID;
 	NewcoinAddress	naCreateID;
 
-	if (params.size() < 2 || params.size() > 3)
+	if (params.size() < 3 || params.size() > 2)
 	{
 		return "invalid params";
 	}
-	else if (!naSourceID.setAccountID(params[0u].asString()))
+	else if (!naSourceID.setAccountID(params[1u].asString()))
 	{
 		return "source account id needed";
 	}
-	else if (!naCreateID.setAccountID(params[1u].asString()))
+	else if (!naCreateID.setAccountID(params[2u].asString()))
 	{
 		return "create account id needed";
 	}
 	else
 	{
 		// Trying to build:
+		//   peer_wallet_create <paying_account> <paying_signature> <account_id> [<initial_funds>] [<annotation>]
 		//   peer_payment
 		//
 		// Which has no confidential information.
+#if 0
+		NewcoinAddress	naRegularSeed;
+		NewcoinAddress	naRegularGenerator;
+		NewcoinAddress	naRegularReservedPublic;
+		NewcoinAddress	naRegularReservedPrivate;
 
+		NewcoinAddress	naRegularAccountPublic;
+		NewcoinAddress	naRegularAccountPrivate;
+
+		naRegularSeed.setFamilySeedGeneric(params[0u].asString());
+
+		seed-> master_public_generator -> master_accounts & regular_accounts
+		-> regular_public_key (verified) -> regular_private_key
+
+		AccountState::pointer account=theApp->getMasterLedger().getCurrentLedger()->getAccountState(naAccount);
+
+		Transaction::pointer	trans	= Transaction::sharedCreate(
+			const NewcoinAddress& naPublicKey, const NewcoinAddress& naPrivateKey,
+			naSourceID,
+			uint32 uSeq,
+			uint64 uFee,
+			uint32 uSourceTag,
+			uint32 uLedger,
+			const NewcoinAddress& naCreateAccountID,	// Account to create.
+			uint64 uFund);								// Initial funds in XNC.
+#endif
 		return "not implemented";
 #if 0
 		// XXX Need better parsing.
@@ -664,16 +690,10 @@ Json::Value RPCServer::doWalletCreate(Json::Value& params)
 		NewcoinAddress	naMasterSeed;
 		NewcoinAddress	naMasterGenerator;
 
-		NewcoinAddress	naRegularSeed;
-		NewcoinAddress	naRegularGenerator;
-		NewcoinAddress	naRegularReservedPublic;
-		NewcoinAddress	naRegularReservedPrivate;
-
 		NewcoinAddress	naAccountPublic;
 		NewcoinAddress	naAccountPrivate;
 
 		naMasterSeed.setFamilySeedGeneric(params[0u].asString());
-		naRegularSeed.setFamilySeedGeneric(params[1u].asString());
 
 		naMasterGenerator.setFamilyGenerator(naMasterSeed);
 		naAccountPublic.setAccountPublic(naMasterGenerator, 0);
@@ -923,6 +943,7 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 	if (command == "validation_create")	return doValidatorCreate(params);
 
 	if (command == "wallet_claim")		return doWalletClaim(params);
+	if (command == "wallet_create")		return doWalletCreate(params);
 	if (command == "wallet_propose")	return doWalletPropose(params);
 	if (command == "wallet_seed")		return doWalletSeed(params);
 
