@@ -87,9 +87,6 @@ protected:
 	boost::ptr_vector<SerializedType> mData;
 	std::vector<SOElement*> mType;
 
-	static std::auto_ptr<SerializedType> makeDefaultObject(SerializedTypeID id, const char *name);
-	static std::auto_ptr<SerializedType> makeDeserializedObject(SerializedTypeID id, const char *name,
-		SerializerIterator&);
 	STObject* duplicate() const { return new STObject(*this); }
 
 public:
@@ -163,6 +160,10 @@ public:
 	bool isFieldPresent(SOE_Field field) const;
 	SerializedType* makeFieldPresent(SOE_Field field);
 	void makeFieldAbsent(SOE_Field field);
+
+	static std::auto_ptr<SerializedType> makeDefaultObject(SerializedTypeID id, const char *name);
+	static std::auto_ptr<SerializedType> makeDeserializedObject(SerializedTypeID id, const char *name,
+		SerializerIterator&);
 
 	static void unitTest();
 };
