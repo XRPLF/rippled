@@ -90,6 +90,11 @@ SerializedLedgerEntry::pointer Ledger::getAccountRoot(LedgerStateParms& parms, c
 	}
 }
 
+SerializedLedgerEntry::pointer Ledger::getAccountRoot(LedgerStateParms& parms, const NewcoinAddress& naAccountID)
+{
+	return getAccountRoot(parms, naAccountID.getAccountID());
+}
+
 SerializedLedgerEntry::pointer Ledger::getNickname(LedgerStateParms& parms, const std::string& nickname)
 {
 	return getNickname(parms, Serializer::getSHA512Half(nickname));

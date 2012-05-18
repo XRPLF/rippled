@@ -17,16 +17,16 @@ class NetworkOPs
 public:
 	enum Fault
 	{ // exceptions these functions can throw
-		IO_ERROR = 1,
-		NO_NETWORK = 2,
+		IO_ERROR	= 1,
+		NO_NETWORK	= 2,
 	};
 
 	enum OperatingMode
 	{ // how we process transactions or account balance requests
-		omDISCONNECTED = 0,	// not ready to process requests
-		omCONNECTED = 1,		// convinced we are talking to the network
-		omTRACKING = 2,		// convinced we agree with the network
-		omFULL = 3			// we have the ledger and can even validate
+		omDISCONNECTED	= 0,	// not ready to process requests
+		omCONNECTED		= 1,	// convinced we are talking to the network
+		omTRACKING		= 2,	// convinced we agree with the network
+		omFULL			= 3		// we have the ledger and can even validate
 	};
 
 protected:
@@ -41,6 +41,9 @@ public:
 	boost::posix_time::ptime getNetworkTimePT();
 	uint32 getCurrentLedgerID();
 	OperatingMode getOperatingMode() { return mMode; }
+	inline bool available() {
+		return omDISCONNECTED != mMode;
+	}
 
 	// transaction operations
 	Transaction::pointer processTransaction(Transaction::pointer transaction, Peer* source = NULL);

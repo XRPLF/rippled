@@ -182,6 +182,9 @@ Json::Value RPCServer::doAccountInfo(Json::Value &params)
 	{
 		return "invalid params";
 	}
+	else if (!theApp->getOPs().available()) {
+		return "network not available";
+	}
 	else
 	{
 		std::string		strIdent	= params[0u].asString();
@@ -196,30 +199,45 @@ Json::Value RPCServer::doAccountInfo(Json::Value &params)
 			// Got the account.
 			nothing();
 		}
+		// Must be a seed.
+		else if (!naSeed.setFamilySeedGeneric(strIdent))
+		{
+			return "disallowed seed";
+		}
 		else
 		{
-			// Must be a seed.
-			naSeed.setFamilySeedGeneric(strIdent);
-
+			// We allow the use of the seeds to access #0.
+			// This is poor practice and merely for debuging convenience.
 			NewcoinAddress	naGenerator;
-			NewcoinAddress	naRegularReservedPublic;
+			NewcoinAddress	naRegular0Public;
+			NewcoinAddress	naRegular0Private;
 
 			naGenerator.setFamilyGenerator(naSeed);
 
-			naRegularReservedPublic.setAccountPublic(naGenerator, -1);
+			naRegular0Public.setAccountPublic(naGenerator, 0);
+			naRegular0Private.setAccountPrivate(naGenerator, naSeed, 0);
 
-			uint160						uGeneratorID		= naRegularReservedPublic.getAccountID();
+			uint160							uGeneratorID	= naRegular0Public.getAccountID();
 
-			// if (probe (uGeneratorID))
-			if (false)
-			{
-				// Found master public key.
-
-			}
-			else
+			Ledger::pointer					ledger			= theApp->getMasterLedger().getCurrentLedger();
+			LedgerStateParms				qry				= lepNONE;
+			SerializedLedgerEntry::pointer	sleGen			= ledger->getGenerator(qry, naRegular0Public.getAccountID());
+			if (!sleGen)
 			{
 				// Didn't find a generator map, assume it is a master generator.
 				nothing();
+			}
+			else
+			{
+				// Found master public key.
+				std::vector<unsigned char>	vucCipher				= sleGen->getIFieldVL(sfGenerator);
+				std::vector<unsigned char>	vucMasterGenerator		= naRegular0Private.accountPrivateDecrypt(naRegular0Public, vucCipher);
+				if (vucMasterGenerator.empty())
+				{
+					return "internal error: password failed to decrypt master public generator";
+				}
+
+				naGenerator.setFamilyGenerator(vucMasterGenerator);
 			}
 
 			bIndex	= true;
@@ -497,17 +515,20 @@ Json::Value RPCServer::doValidatorCreate(Json::Value& params) {
 	NewcoinAddress	nodePublicKey;
 	NewcoinAddress	nodePrivateKey;
 
-	if (params.empty())
+	if (params.size() > 1)
+	{
+		return "invalid params";
+	}
+	else if (params.empty())
 	{
 		std::cerr << "Creating random validation seed." << std::endl;
 
 		familySeed.setFamilySeedRandom();					// Get a random seed.
 	}
-	else if (1 == params.size())
+	else if (!familySeed.setFamilySeedGeneric(params[0u].asString()))
 	{
-		familySeed.setFamilySeedGeneric(params[0u].asString());
+		return "disallowed seed";
 	}
-	else return "invalid params";
 
 	// Derive generator from seed.
 	familyGenerator.setFamilyGenerator(familySeed);
@@ -533,22 +554,19 @@ Json::Value RPCServer::doValidatorCreate(Json::Value& params) {
 // To provide an example to client writers, we do everything we expect a client to do here.
 Json::Value RPCServer::doWalletClaim(Json::Value& params)
 {
-	NewcoinAddress	naTemp;
+	NewcoinAddress	naMasterSeed;
+	NewcoinAddress	naRegularSeed;
 
 	if (params.size() < 2 || params.size() > 4)
 	{
 		return "invalid params";
 	}
-	else if (naTemp.setAccountID(params[0u].asString())
-		|| naTemp.setAccountPublic(params[0u].asString())
-		|| naTemp.setAccountPrivate(params[0u].asString()))
+	else if (!naMasterSeed.setFamilySeedGeneric(params[0u].asString()))
 	{
 		// Should also not allow account id's as seeds.
 		return "master seed expected";
 	}
-	else if (naTemp.setAccountID(params[1u].asString())
-		|| naTemp.setAccountPublic(params[1u].asString())
-		|| naTemp.setAccountPrivate(params[1u].asString()))
+	else if (!naRegularSeed.setFamilySeedGeneric(params[1u].asString()))
 	{
 		// Should also not allow account id's as seeds.
 		return "regular seed expected";
@@ -556,7 +574,7 @@ Json::Value RPCServer::doWalletClaim(Json::Value& params)
 	else
 	{
 		// Trying to build:
-		//   peer_wallet_claim <account_id> <encrypted_master_public_generator> <generator_pubkey> <generator_signature>
+		//   peer_wallet_claim <account_id> <authorized_key> <encrypted_master_public_generator> <generator_pubkey> <generator_signature>
 		//		<source_tag> [<annotation>]
 		//
 		//
@@ -567,19 +585,13 @@ Json::Value RPCServer::doWalletClaim(Json::Value& params)
 		// XXX Annotation is ignored.
 		std::string strAnnotation	= (params.size() == 3) ? "" : params[3u].asString();
 
-		NewcoinAddress	naMasterSeed;
 		NewcoinAddress	naMasterGenerator;
-
-		NewcoinAddress	naRegularSeed;
 		NewcoinAddress	naRegularGenerator;
-		NewcoinAddress	naRegularReservedPublic;
-		NewcoinAddress	naRegularReservedPrivate;
+		NewcoinAddress	naRegular0Public;
+		NewcoinAddress	naRegular0Private;
 
 		NewcoinAddress	naAccountPublic;
 		NewcoinAddress	naAccountPrivate;
-
-		naMasterSeed.setFamilySeedGeneric(params[0u].asString());
-		naRegularSeed.setFamilySeedGeneric(params[1u].asString());
 
 		naMasterGenerator.setFamilyGenerator(naMasterSeed);
 		naAccountPublic.setAccountPublic(naMasterGenerator, 0);
@@ -587,23 +599,23 @@ Json::Value RPCServer::doWalletClaim(Json::Value& params)
 
 		naRegularGenerator.setFamilyGenerator(naRegularSeed);
 
-		naRegularReservedPublic.setAccountPublic(naRegularGenerator, -1);
-		naRegularReservedPrivate.setAccountPrivate(naRegularGenerator, naRegularSeed, -1);
+		naRegular0Public.setAccountPublic(naRegularGenerator, 0);
+		naRegular0Private.setAccountPrivate(naRegularGenerator, naRegularSeed, 0);
 
 		// hash of regular account #reserved public key.
-		uint160						uGeneratorID		= naRegularReservedPublic.getAccountID();
-		std::vector<unsigned char>	vucGeneratorCipher	= naRegularReservedPrivate.accountPrivateEncrypt(naRegularReservedPublic, naMasterGenerator.getFamilyGenerator());
+		uint160						uGeneratorID		= naRegular0Public.getAccountID();
+		std::vector<unsigned char>	vucGeneratorCipher	= naRegular0Private.accountPrivateEncrypt(naRegular0Public, naMasterGenerator.getFamilyGenerator());
 		std::vector<unsigned char>	vucGeneratorSig;
 
 		// XXX Check result.
-		naRegularReservedPrivate.accountPrivateSign(Serializer::getSHA512Half(vucGeneratorCipher), vucGeneratorSig);
+		naRegular0Private.accountPrivateSign(Serializer::getSHA512Half(vucGeneratorCipher), vucGeneratorSig);
 
 		Transaction::pointer	trns	= Transaction::sharedClaim(
 			naAccountPublic, naAccountPrivate,
 			naAccountPublic,
 			uSourceTag,
 			vucGeneratorCipher,
-			naRegularReservedPublic.getAccountPublic(),
+			naRegular0Public.getAccountPublic(),
 			vucGeneratorSig);
 
 		(void) theApp->getOPs().processTransaction(trns);
@@ -629,12 +641,16 @@ Json::Value RPCServer::doWalletClaim(Json::Value& params)
 }
 
 // wallet_create regular_seed paying_account account_id [initial_funds]
+// We don't allow creating an account_id by default here because we want to make sure the person has a chance to write down the
+// master seed of the account to be created.
+// YYY Need annotation and source tag
 Json::Value RPCServer::doWalletCreate(Json::Value& params)
 {
 	NewcoinAddress	naSourceID;
 	NewcoinAddress	naCreateID;
+	NewcoinAddress	naRegularSeed;
 
-	if (params.size() < 3 || params.size() > 2)
+	if (params.size() < 3 || params.size() > 4)
 	{
 		return "invalid params";
 	}
@@ -646,6 +662,18 @@ Json::Value RPCServer::doWalletCreate(Json::Value& params)
 	{
 		return "create account id needed";
 	}
+	else if (!naRegularSeed.setFamilySeedGeneric(params[0u].asString()))
+	{
+		return "disallowed seed";
+	}
+	else if (!theApp->getOPs().available()) {
+		// We require access to the paying account's sequence number and key information.
+		return "network not available";
+	}
+	else if (theApp->getMasterLedger().getCurrentLedger()->getAccountState(naCreateID))
+	{
+		return "account already exists";
+	}
 	else
 	{
 		// Trying to build:
@@ -653,88 +681,100 @@ Json::Value RPCServer::doWalletCreate(Json::Value& params)
 		//   peer_payment
 		//
 		// Which has no confidential information.
-#if 0
-		NewcoinAddress	naRegularSeed;
+
+		Ledger::pointer					ledger			= theApp->getMasterLedger().getCurrentLedger();
+		LedgerStateParms				qry				= lepNONE;
+	    SerializedLedgerEntry::pointer	sleSrc			= ledger->getAccountRoot(qry, naSourceID);
+
+		if (!sleSrc)
+		{
+			return "source account does not exist";
+		}
+
+		uint64							uSrcBalance		= sleSrc->getIFieldU64(sfBalance);
+		uint64							uInitialFunds	= (params.size() < 4) ? 0 : boost::lexical_cast<uint64>(params[3u].asString());
+
+		if (uSrcBalance < theConfig.FEE_CREATE + uInitialFunds)
+		{
+			return "insufficent funds";
+		}
+		else if (!sleSrc->getIFieldPresent(sfAuthorizedKey))
+		{
+			return "source account has not been claimed";
+		}
+
 		NewcoinAddress	naRegularGenerator;
-		NewcoinAddress	naRegularReservedPublic;
-		NewcoinAddress	naRegularReservedPrivate;
+		NewcoinAddress	naRegular0Public;
+		NewcoinAddress	naRegular0Private;
+
+		naRegularGenerator.setFamilyGenerator(naRegularSeed);
+		naRegular0Public.setAccountPublic(naRegularGenerator, 0);
+		naRegular0Private.setAccountPrivate(naRegularGenerator, naRegularSeed, 0);
+
+										qry				= lepNONE;
+		SerializedLedgerEntry::pointer	sleGen			= ledger->getGenerator(qry, naRegular0Public.getAccountID());
+
+		if (!sleGen)
+		{
+			// No account has been claimed or has had it password set for seed.
+			return "wrong password";
+		}
+
+		std::vector<unsigned char>	vucCipher			= sleGen->getIFieldVL(sfGenerator);
+		std::vector<unsigned char>	vucMasterGenerator	= naRegular0Private.accountPrivateDecrypt(naRegular0Public, vucCipher);
+		if (vucMasterGenerator.empty())
+		{
+			return "internal error: password failed to decrypt master public generator";
+		}
+
+		NewcoinAddress	naMasterGenerator;
+
+		naMasterGenerator.setFamilyGenerator(vucMasterGenerator);
+
+		//
+		// Find the index of the account from the master generator, so we can generator the public and private keys.
+		//
+		NewcoinAddress	naMasterAccountPublic;
+		uint			iIndex = -1;	// Compensate for initial increment.
+
+		// XXX Stop after Config.account_probe_max
+		do {
+			++iIndex;
+			naMasterAccountPublic.setAccountPublic(naMasterGenerator, iIndex);
+		} while (naSourceID.getAccountID() != naMasterAccountPublic.getAccountID());
 
 		NewcoinAddress	naRegularAccountPublic;
 		NewcoinAddress	naRegularAccountPrivate;
 
-		naRegularSeed.setFamilySeedGeneric(params[0u].asString());
+		naRegularAccountPublic.setAccountPublic(naRegularGenerator, iIndex);
+		naRegularAccountPrivate.setAccountPrivate(naRegularGenerator, naRegularSeed, iIndex);
 
-		seed-> master_public_generator -> master_accounts & regular_accounts
-		-> regular_public_key (verified) -> regular_private_key
+		if (sleSrc->getIFieldH160(sfAuthorizedKey) != naRegularAccountPublic.getAccountID())
+		{
+			std::cerr << "iIndex: " << iIndex << std::endl;
+			std::cerr << "sfAuthorizedKey: " << strHex(sleSrc->getIFieldH160(sfAuthorizedKey)) << std::endl;
+			std::cerr << "naRegularAccountPublic: " << strHex(naRegularAccountPublic.getAccountID()) << std::endl;
 
-		AccountState::pointer account=theApp->getMasterLedger().getCurrentLedger()->getAccountState(naAccount);
+			return "wrong password (changed)";
+		}
 
 		Transaction::pointer	trans	= Transaction::sharedCreate(
-			const NewcoinAddress& naPublicKey, const NewcoinAddress& naPrivateKey,
+			naRegularAccountPublic, naRegularAccountPrivate,
 			naSourceID,
-			uint32 uSeq,
-			uint64 uFee,
-			uint32 uSourceTag,
-			uint32 uLedger,
-			const NewcoinAddress& naCreateAccountID,	// Account to create.
-			uint64 uFund);								// Initial funds in XNC.
-#endif
-		return "not implemented";
-#if 0
-		// XXX Need better parsing.
-		uint64		uInitalFunds	= 0;
-		uint32		uSourceTag		= (params.size() == 2) ? 0 : boost::lexical_cast<uint32>(params[2u].asString());
-		// XXX Annotation is ignored.
-		std::string strAnnotation	= (params.size() == 3) ? "" : params[3u].asString();
+			sleSrc->getIFieldU32(sfSequence),
+			theConfig.FEE_CREATE,
+			0,											// YYY No source tag
+			naCreateID,
+			uInitialFunds);								// Initial funds in XNC.
 
-		NewcoinAddress	naMasterSeed;
-		NewcoinAddress	naMasterGenerator;
-
-		NewcoinAddress	naAccountPublic;
-		NewcoinAddress	naAccountPrivate;
-
-		naMasterSeed.setFamilySeedGeneric(params[0u].asString());
-
-		naMasterGenerator.setFamilyGenerator(naMasterSeed);
-		naAccountPublic.setAccountPublic(naMasterGenerator, 0);
-		naAccountPrivate.setAccountPrivate(naMasterGenerator, naMasterSeed, 0);
-
-		naRegularGenerator.setFamilyGenerator(naRegularSeed);
-
-		naRegularReservedPublic.setAccountPublic(naRegularGenerator, -1);
-		naRegularReservedPrivate.setAccountPrivate(naRegularGenerator, naRegularSeed, -1);
-
-		// hash of regular account #reserved public key.
-		uint160						uGeneratorID		= naRegularReservedPublic.getAccountID();
-		std::vector<unsigned char>	vucGeneratorCipher	= naRegularReservedPrivate.accountPrivateEncrypt(naRegularReservedPublic, naMasterGenerator.getFamilyGenerator());
-		std::vector<unsigned char>	vucGeneratorSig;
-
-		// XXX Check result.
-		naRegularReservedPrivate.accountPrivateSign(Serializer::getSHA512Half(vucGeneratorCipher), vucGeneratorSig);
-
-		Transaction::pointer	trns	= Transaction::sharedWalletCreate(
-			naAccountPublic, naAccountPrivate,
-			naAccountPublic,
-			uSourceTag,
-			vucGeneratorCipher,
-			naRegularReservedPublic.getAccountPublic(),
-			vucGeneratorSig);
-
-		(void) theApp->getOPs().processTransaction(trns);
+		(void) theApp->getOPs().processTransaction(trans);
 
 		Json::Value obj(Json::objectValue);
 
-
-		obj["account_id"]		= naAccountPublic.humanAccountID();
-		obj["generator_id"]		= strHex(uGeneratorID);
-		obj["generator"]		= strHex(vucGeneratorCipher);
-		obj["annotation"]		= strAnnotation;
-
-		obj["transaction"]		= trns->getSTransaction()->getJson(0);
-		obj["status"]			= trns->getStatus();
+		obj["transaction"]		= trans->getSTransaction()->getJson(0);
+		obj["status"]			= trans->getStatus();
 
 		return obj;
-#endif
 	}
 }
 
@@ -768,21 +808,23 @@ Json::Value RPCServer::doWalletPropose(Json::Value& params)
 // wallet_seed [<seed>|<passphrase>|<passkey>]
 Json::Value RPCServer::doWalletSeed(Json::Value& params)
 {
+	NewcoinAddress	naSeed;
+
 	if (params.size() > 1)
 	{
 		return "invalid params";
 	}
+	else if (params.size()
+		&& !naSeed.setFamilySeedGeneric(params[0u].asString()))
+	{
+		return "disallowed seed";
+	}
 	else
 	{
-		NewcoinAddress	naSeed;
 		NewcoinAddress	naGenerator;
 		NewcoinAddress	naAccount;
 
-		if (params.size())
-		{
-			naSeed.setFamilySeedGeneric(params[0u].asString());
-		}
-		else
+		if (!params.size())
 		{
 			naSeed.setFamilySeedRandom();
 		}
