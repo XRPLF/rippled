@@ -50,12 +50,6 @@ int LedgerDBCount=sizeof(LedgerDBInit)/sizeof(const char *);
 
 // Wallet database holds local accounts and trusted nodes
 const char *WalletDBInit[] = {
-	"CREATE TABLE LocalAcctFamilies (				\
-		FamilyGenerator	CHARACTER(53) PRIMARY KEY,	\
-		Seq				BIGINT UNSIGNED,			\
-		Comment			TEXT						\
-	);",
-
 	// Node identity must be persisted for CAS routing and responsibilites.
 	"CREATE TABLE NodeIdentity (					\
 		PublicKey		CHARACTER(53),				\
@@ -208,17 +202,6 @@ const char *WalletDBInit[] = {
 	"CREATE INDEX PeerScanIndex ON						\
 		PeerIps(ScanNext);"
 };
-
-#if 0
-	"CREATE TABLE LocalAccounts (					\
-		ID			CHARACTER(35) PRIMARY KEY,		\
-		PrivateKey	TEXT							\
-		Seq			BIGINT UNSIGNED,				\
-		Balance		BIGINT UNSIGNED,				\
-		LedgerSeq	BIGINT UNSIGNED,				\
-		Comment		TEXT							\
-	);",
-#endif
 
 int WalletDBCount=sizeof(WalletDBInit)/sizeof(const char *);
 
