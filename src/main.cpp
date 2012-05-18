@@ -59,6 +59,7 @@ int main(int argc, char* argv[])
 {
 	int					iResult	= 0;
 	po::variables_map	vm;										// Map of options.
+	bool				bTest	= false;
 
 	//
 	// Set up option parsing.
@@ -86,9 +87,16 @@ int main(int argc, char* argv[])
 		iResult	= 2;
 	}
 
-	// Parse options, if no error.
-	if (!iResult)
+	if (iResult)
 	{
+		nothing();
+	}
+	else if (argc >= 2 && !strcmp(argv[1], "--test")) {
+		bTest	= true;
+	}
+	else
+	{
+		// Parse options, if no error.
 		po::store(po::command_line_parser(argc, argv)
 			.options(desc)											// Parse options.
 			.positional(p)											// Remainder as --parameters.
@@ -107,22 +115,20 @@ int main(int argc, char* argv[])
 	}
 	else if (vm.count("test"))
 	{
-		int					iCmd	= vm.count("parameters");
+		std::cerr << "--test must be first parameter." << std::endl;
+		iResult	= 1;
+	}
+	else if (bTest)
+	{
 		std::vector<char*>	pvCmd;
 
+		// Copy all but "--test" at argv[1].
 		pvCmd.push_back(argv[0]);
 
-		if (iCmd)
-		{
-			std::vector<std::string>	vCmd;
+		for (int i=1; i++ != argc; )
+			pvCmd.push_back(argv[i]);
 
-			vCmd	= vm["parameters"].as<std::vector<std::string> >();
-
-			BOOST_FOREACH(std::string& param, vCmd)
-				pvCmd.push_back(const_cast<char*>(param.c_str()));
-		}
-
-		iResult	= unit_test_main(init_unit_test, iCmd, &pvCmd[0]);
+		iResult	= unit_test_main(init_unit_test, pvCmd.size()-1, &pvCmd[0]);
 	}
 	else if (!vm.count("parameters"))
 	{
