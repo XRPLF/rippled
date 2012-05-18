@@ -74,8 +74,7 @@ public:
 		const NewcoinAddress& naSourceAccount,	// To identify the paying account.
 		uint32 uSeq,							// To order transactions.
 		uint64 uFee,							// Transaction fee.
-		uint32 uSourceTag,						// User call back value.
-		uint32 uLedger=0);
+		uint32 uSourceTag);						// User call back value.
 
 	// Claim a wallet.
 	static Transaction::pointer sharedClaim(
@@ -93,7 +92,6 @@ public:
 		uint32 uSeq,
 		uint64 uFee,
 		uint32 uSourceTag,
-		uint32 uLedger,
 		const NewcoinAddress& naCreateAccountID,	// Account to create.
 		uint64 uFund);								// Initial funds in XNC.
 
@@ -104,7 +102,6 @@ public:
 		uint32 uSeq,
 		uint64 uFee,
 		uint32 uSourceTag,
-		uint32 uLedger,
 		const NewcoinAddress& toAccount,
 		uint64 uAmount);
 
