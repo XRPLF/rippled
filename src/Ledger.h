@@ -129,6 +129,7 @@ public:
 	AccountState::pointer getAccountState(const NewcoinAddress& acctID);
 	LedgerStateParms writeBack(LedgerStateParms parms, SerializedLedgerEntry::pointer);
 	SerializedLedgerEntry::pointer getAccountRoot(LedgerStateParms& parms, const uint160& accountID);
+	SerializedLedgerEntry::pointer getAccountRoot(LedgerStateParms& parms, const NewcoinAddress& naAccountID);
 	SerializedLedgerEntry::pointer getNickname(LedgerStateParms& parms, const std::string& nickname);
 	SerializedLedgerEntry::pointer getNickname(LedgerStateParms& parms, const uint256& nickHash);
 //	SerializedLedgerEntry::pointer getRippleState(LedgerStateParms parms, const uint160& offeror,
@@ -141,7 +142,7 @@ public:
 
 	// index calculation functions
 	static uint256 getAccountRootIndex(const uint160& account)
-	{ return uint160extend256(account); }		// Index is accountID extended to 256 bits
+	{ return uint160extend256(account, 0); }		// Index is accountID extended to 256 bits
 
 	static uint256 getAccountRootIndex(const NewcoinAddress& account)
 	{ return getAccountRootIndex(account.getAccountID()); }
@@ -153,7 +154,7 @@ public:
 	SerializedLedgerEntry::pointer getGenerator(LedgerStateParms& parms, const uint160& uGeneratorID);
 
 	static uint256 getGeneratorIndex(const uint160& uGeneratorID)
-	{ return uint160extend256(uGeneratorID); }	// Index is the generator ID extended to 256 bits
+	{ return uint160extend256(uGeneratorID, 1); }	// Index is the generator ID extended to 256 bits in namespace 1
 
 	//
 	// Ripple functions
