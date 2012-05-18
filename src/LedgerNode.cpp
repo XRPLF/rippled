@@ -25,6 +25,7 @@ LedgerStateParms Ledger::writeBack(LedgerStateParms parms, SerializedLedgerEntry
 
 	if (create)
 	{
+		assert(!mAccountStateMap->hasItem(entry->getIndex()));
 		if(!mAccountStateMap->addGiveItem(item, false))
 		{
 			assert(false);

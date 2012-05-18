@@ -74,18 +74,18 @@ bool SHAMapNode::operator!=(const uint256 &s) const
 void SHAMapNode::ClassInit()
 { // set up the depth masks
 	uint256 selector;
-	for(int i=0; i<64; i+=2)
+	for(int i = 0; i < 64; i += 2)
 	{
-		smMasks[i]=selector;
-		*(selector.begin()+(i/2))=0x0F;
-		smMasks[i+1]=selector;
-		*(selector.begin()+(i/2))=0xFF;
+		smMasks[i] = selector;
+		*(selector.begin() + (i / 2)) = 0x0F;
+		smMasks[i + 1]=selector;
+		*(selector.begin() + (i / 2)) = 0xFF;
 	}
 }
 
 uint256 SHAMapNode::getNodeID(int depth, const uint256& hash)
 {
-	assert(depth>=0 && depth<64);
+	assert(depth >= 0 && depth < 64);
 	return hash & smMasks[depth];
 }
 
@@ -134,6 +134,7 @@ int SHAMapNode::selectBranch(const uint256& hash) const
 		assert(false);
 		return -1;
 	}
+
 	if ((hash & smMasks[mDepth]) != mNodeID)
 	{
 		std::cerr << "selectBranch(" << getString() << std::endl;
@@ -155,15 +156,15 @@ void SHAMapNode::dump() const
 	std::cerr << getString() << std::endl;
 }
 
-SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& nodeID, uint32 seq) : SHAMapNode(nodeID), mHash(0), mSeq(seq),
+SHAMapTreeNode::SHAMapTreeNode(uint32 seq, const SHAMapNode& nodeID) : SHAMapNode(nodeID), mHash(0), mSeq(seq),
 	mType(tnERROR), mFullBelow(false)
 {
 }
 
 SHAMapTreeNode::SHAMapTreeNode(const SHAMapTreeNode& node, uint32 seq) : SHAMapNode(node),
-		mHash(node.mHash), mItem(node.mItem), mSeq(seq), mType(node.mType), mFullBelow(false)
+		mHash(node.mHash), mSeq(seq), mType(node.mType), mFullBelow(false)
 {
-	if(node.mItem)
+	if (node.mItem)
 		mItem = boost::make_shared<SHAMapItem>(*node.mItem);
 	else
 		memcpy(mHashes, node.mHashes, sizeof(mHashes));
@@ -342,13 +343,19 @@ std::string SHAMapTreeNode::getString() const
 		for(int i = 0; i < 16; ++i)
 			if (!isEmptyBranch(i))
 			{
-				ret += ",b";
+				ret += "\nb";
 				ret += boost::lexical_cast<std::string>(i);
+				ret += " = ";
+				ret += mHashes[i].GetHex();
 			}
 	}
 	if (isLeaf())
 	{
-		ret += ",leaf";
+		ret += ",leaf\n";
+		ret += "  Tag=";
+		ret += getTag().GetHex();
+		ret += "\n  Hash=";
+		ret += mHash.GetHex();
 	}
 	return ret;
 }

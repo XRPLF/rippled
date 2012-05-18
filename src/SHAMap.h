@@ -153,7 +153,7 @@ private:
 	SHAMapTreeNode& operator=(const SHAMapTreeNode&); // no implementation
 
 public:
-	SHAMapTreeNode(const SHAMapNode& nodeID, uint32 seq); // empty node
+	SHAMapTreeNode(uint32 seq, const SHAMapNode& nodeID); // empty node
 	SHAMapTreeNode(const SHAMapTreeNode& node, uint32 seq); // copy node from older tree
 	SHAMapTreeNode(const SHAMapNode& nodeID, SHAMapItem::pointer item, TNType type, uint32 seq);
 

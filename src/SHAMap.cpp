@@ -12,7 +12,7 @@
 
 SHAMap::SHAMap(uint32 seq) : mSeq(seq), mState(Modifying)
 {
-	root = boost::make_shared<SHAMapTreeNode>(SHAMapNode(0, uint256()), mSeq);
+	root = boost::make_shared<SHAMapTreeNode>(mSeq, SHAMapNode(0, uint256()));
 	root->makeInner();
 	mTNByID[*root] = root;
 }
@@ -88,6 +88,7 @@ SHAMapTreeNode::pointer SHAMap::checkCacheNode(const SHAMapNode& iNode)
 
 SHAMapTreeNode::pointer SHAMap::walkTo(const uint256& id, bool modify)
 { // walk down to the terminal node for this ID
+
 	SHAMapTreeNode::pointer inNode = root;
 
 	while (!inNode->isLeaf())
@@ -323,10 +324,10 @@ SHAMapItem::pointer SHAMap::peekPrevItem(const uint256& id)
 		else for(int i=node->selectBranch(id)-1; i>=0; i--)
 				if(!node->isEmptyBranch(i))
 			{
-				node=getNode(node->getChildNodeID(i), node->getChildHash(i), false);
+				node = getNode(node->getChildNodeID(i), node->getChildHash(i), false);
 				if(!node) throw SHAMapException(MissingNode);
-				SHAMapItem::pointer item=firstBelow(node);
-				if(!item) throw SHAMapException(MissingNode);
+				SHAMapItem::pointer item = firstBelow(node);
+				if (!item) throw SHAMapException(MissingNode);
 				return item;
 			}
 	}
@@ -337,8 +338,8 @@ SHAMapItem::pointer SHAMap::peekPrevItem(const uint256& id)
 SHAMapItem::pointer SHAMap::peekItem(const uint256& id)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
-	SHAMapTreeNode::pointer leaf=walkTo(id, false);
-	if(!leaf) return SHAMapItem::pointer();
+	SHAMapTreeNode::pointer leaf = walkTo(id, false);
+	if (!leaf) return SHAMapItem::pointer();
 	return leaf->peekItem();
 }
 
@@ -433,7 +434,7 @@ bool SHAMap::addGiveItem(SHAMapItem::pointer item, bool isTransaction)
 	std::stack<SHAMapTreeNode::pointer> stack = getStack(tag, true);
 	if (stack.empty()) throw SHAMapException(MissingNode);
 
-	SHAMapTreeNode::pointer node=stack.top();
+	SHAMapTreeNode::pointer node = stack.top();
 	stack.pop();
 
 	if (node->isLeaf() && (node->peekItem()->getTag() == tag))
@@ -464,9 +465,10 @@ bool SHAMap::addGiveItem(SHAMapItem::pointer item, bool isTransaction)
 	{ // this is a leaf node that has to be made an inner node holding two items
 #ifdef ST_DEBUG
 		std::cerr << "aGI leaf " << node->getString() << std::endl;
+		std::cerr << "Existing: " << node->peekItem()->getTag().GetHex() << std::endl;
 #endif
 		SHAMapItem::pointer otherItem = node->peekItem();
-		assert(otherItem && (tag != otherItem->getTag()) );
+		assert(otherItem && (tag != otherItem->getTag()));
 
 		node->makeInner();
 
@@ -475,10 +477,11 @@ bool SHAMap::addGiveItem(SHAMapItem::pointer item, bool isTransaction)
 		while ((b1 = node->selectBranch(tag)) == (b2 = node->selectBranch(otherItem->getTag())))
 		{ // we need a new inner node, since both go on same branch at this level
 #ifdef ST_DEBUG
-			std::cerr << "need new inner node at " << node->getDepth() << std::endl;
+			std::cerr << "need new inner node at " << node->getDepth() << ", "
+				<< b1 << "==" << b2 << std::endl;
 #endif
 			SHAMapTreeNode::pointer newNode =
-				boost::make_shared<SHAMapTreeNode>(node->getChildNodeID(b1), mSeq);
+				boost::make_shared<SHAMapTreeNode>(mSeq, node->getChildNodeID(b1));
 			newNode->makeInner();
 			if(!mTNByID.insert(std::make_pair(SHAMapNode(*newNode), newNode)).second)
 				assert(false);
@@ -607,8 +610,8 @@ void SHAMap::dump(bool hash)
 
 	std::cerr << " MAP Contains" << std::endl;
 	boost::recursive_mutex::scoped_lock sl(mLock);
-	for(boost::unordered_map<SHAMapNode, SHAMapTreeNode::pointer, hash_SMN>::iterator it=mTNByID.begin();
-			it!=mTNByID.end(); ++it)
+	for(boost::unordered_map<SHAMapNode, SHAMapTreeNode::pointer, hash_SMN>::iterator it = mTNByID.begin();
+			it != mTNByID.end(); ++it)
 	{
 		std::cerr << it->second->getString() << std::endl;
 		if(hash) std::cerr << "   " << it->second->getNodeHash().GetHex() << std::endl;

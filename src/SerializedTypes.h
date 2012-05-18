@@ -188,34 +188,49 @@ class STAmount : public SerializedType
 	// Low 56 bits are value, legal range is 10^15 to (10^16 - 1) inclusive
 
 protected:
-	int offset; // These variables *always* hold canonical values on entry/exit
-	uint64 value;
+	uint160 mCurrency;
+	uint64 mValue;
+	int mOffset;
+	bool mIsNative;
 
 	void canonicalize();
-	STAmount* duplicate() const { return new STAmount(name, offset, value); }
+	STAmount* duplicate() const { return new STAmount(name, mCurrency, mOffset, mValue); }
 	static STAmount* construct(SerializerIterator&, const char *name = NULL);
 
-	static const int cMinOffset=-96, cMaxOffset=80;
-	static const uint64 cMinValue=1000000000000000ull, cMaxValue=9999999999999999ull;
+	static const int cMinOffset = -96, cMaxOffset = 80;
+	static const uint64 cMinValue = 1000000000000000ull, cMaxValue = 9999999999999999ull;
+	static const uint64 cMaxNative = 9000000000000000000ull;
+	static const uint64 cNotNative = 0x8000000000000000ull;
 
 public:
-	STAmount(uint64 v = 0, int off = 0) : offset(off), value(v)
-	{ canonicalize(); } // (1,0)=$1 (1,-2)=$.01 (100,0)=(10000,-2)=$.01
-	STAmount(const char *n, uint64 v = 0, int off = 0) : SerializedType(n), offset(off), value(v)
+	STAmount(uint64 v = 0) : mValue(v), mOffset(0), mIsNative(true)
+	{ ; }
+
+	STAmount(const char *n, uint64 v = 0) : SerializedType(n), mValue(v), mOffset(0), mIsNative(true)
+	{ ; }
+
+	STAmount(const uint160& currency, uint64 v = 0, int off = 0) : mCurrency(currency), mValue(v), mOffset(off)
 	{ canonicalize(); }
+
+	STAmount(const char *n, const uint160& currency, uint64 v = 0, int off = 0) : SerializedType(n),
+		mCurrency(currency), mValue(v), mOffset(off)
+	{ canonicalize(); }
+
 	static std::auto_ptr<SerializedType> deserialize(SerializerIterator& sit, const char *name)
 	{ return std::auto_ptr<SerializedType>(construct(sit, name)); }
 
-	int getLength() const { return 8; }
+	int getLength() const { return mIsNative ? 8 : 28; }
 	SerializedTypeID getSType() const { return STI_AMOUNT; }
 	std::string getText() const;
 	std::string getRaw() const;
 	void add(Serializer& s) const;
 
-	int getOffset() const { return offset; }
-	uint64 getValue() const { return value; }
-	void zero() { offset = -100; value = 0; }
-	bool isZero() const { return value == 0; }
+	int getOffset() const { return mOffset; }
+	uint64 getValue() const { return mValue; }
+	bool isNative() const { return mIsNative; }
+	const uint160& getCurrency() const { return mCurrency; }
+	void zero() { mOffset = mIsNative ? -100 : 0; mValue = 0; }
+	bool isZero() const { return mValue == 0; }
 
 	virtual bool isEquivalent(const SerializedType& t) const;
 
@@ -225,6 +240,8 @@ public:
 	bool operator>(const STAmount&) const;
 	bool operator<=(const STAmount&) const;
 	bool operator>=(const STAmount&) const;
+	bool isComparable(const STAmount&) const;
+	void throwComparable(const STAmount&) const;
 
 	STAmount& operator+=(const STAmount&);
 	STAmount& operator-=(const STAmount&);
@@ -237,11 +254,12 @@ public:
 
 	friend STAmount operator+(STAmount v1, STAmount v2);
 	friend STAmount operator-(STAmount v1, STAmount v2);
-	friend STAmount operator/(const STAmount& v1, const STAmount& v2);
-	friend STAmount operator*(const STAmount& v1, const STAmount& v2);
 
-	// Someone is offering X for Y, what is the rate?
-	friend STAmount getRate(const STAmount& offerOut, const STAmount& offerIn);
+	friend STAmount divide(const STAmount& v1, const STAmount& v2, const uint160& currencyOut);
+	friend STAmount multiply(const STAmount& v1, const STAmount& v2, const uint160& currencyOut);
+
+	// Someone iis offering X for Y, what is the rate?
+	friend uint64 getRate(const STAmount& offerOut, const STAmount& offerIn);
 
 	// Someone is offering X for Y, I try to pay Z, how much do I get?
 	// And what's left of the offer? And how much do I actually pay?
@@ -251,12 +269,11 @@ public:
 	friend STAmount getNeeded(const STAmount& offerOut, const STAmount& offerIn, const STAmount& needed);
 
 	// Native currency conversions, to/from display format
-	friend STAmount convertToDisplayAmount(const STAmount& internalAmount,
-		const STAmount& totalNow, const STAmount& totalInit);
-	friend STAmount convertToInternalAmount(const STAmount& displayAmount,
-		const STAmount& totalNow, const STAmount& totalInit);
+	friend uint64 convertToDisplayAmount(const STAmount& internalAmount, uint64 totalNow, uint64 totalInit);
+	friend STAmount convertToInternalAmount(uint64 displayAmount, uint64 totalNow, uint64 totalInit,
+		const char *name = NULL);
 
-	static void unitTest();
+	static STAmount deSerialize(SerializerIterator&);
 };
 
 class STHash128 : public SerializedType
