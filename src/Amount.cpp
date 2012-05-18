@@ -3,6 +3,7 @@
 #include <iomanip>
 
 #include <boost/lexical_cast.hpp>
+#include <boost/test/included/unit_test.hpp>
 
 #include "SerializedTypes.h"
 
@@ -493,149 +494,156 @@ static STAmount serdes(const STAmount &s)
 	return STAmount::deSerialize(sit);
 }
 
-void STAmount::unitTestNC()
+
+BOOST_AUTO_TEST_SUITE(amount)
+
+BOOST_AUTO_TEST_CASE( NativeCurrency_test )
 {
 	STAmount zero, one(1), hundred(100);
 
-	if (serdes(zero) != zero) throw std::runtime_error("STAmount fail");
-	if (serdes(one) != one) throw std::runtime_error("STAmount fail");
-	if (serdes(hundred) != hundred) throw std::runtime_error("STAmount fail");
+	if (serdes(zero) != zero) BOOST_FAIL("STAmount fail");
+	if (serdes(one) != one) BOOST_FAIL("STAmount fail");
+	if (serdes(hundred) != hundred) BOOST_FAIL("STAmount fail");
 
-	if (!zero.isNative()) throw std::runtime_error("STAmount fail");
-	if (!hundred.isNative()) throw std::runtime_error("STAmount fail");
-	if (!zero.isZero()) throw std::runtime_error("STAmount fail");
-	if (one.isZero()) throw std::runtime_error("STAmount fail");
-	if (hundred.isZero()) throw std::runtime_error("STAmount fail");
-	if ((zero < zero)) throw std::runtime_error("STAmount fail");
-	if (!(zero < one)) throw std::runtime_error("STAmount fail");
-	if (!(zero < hundred)) throw std::runtime_error("STAmount fail");
-	if ((one < zero)) throw std::runtime_error("STAmount fail");
-	if ((one < one)) throw std::runtime_error("STAmount fail");
-	if (!(one < hundred)) throw std::runtime_error("STAmount fail");
-	if ((hundred < zero)) throw std::runtime_error("STAmount fail");
-	if ((hundred < one)) throw std::runtime_error("STAmount fail");
-	if ((hundred < hundred)) throw std::runtime_error("STAmount fail");
-	if ((zero > zero)) throw std::runtime_error("STAmount fail");
-	if ((zero > one)) throw std::runtime_error("STAmount fail");
-	if ((zero > hundred)) throw std::runtime_error("STAmount fail");
-	if (!(one > zero)) throw std::runtime_error("STAmount fail");
-	if ((one > one)) throw std::runtime_error("STAmount fail");
-	if ((one > hundred)) throw std::runtime_error("STAmount fail");
-	if (!(hundred > zero)) throw std::runtime_error("STAmount fail");
-	if (!(hundred > one)) throw std::runtime_error("STAmount fail");
-	if ((hundred > hundred)) throw std::runtime_error("STAmount fail");
-	if (!(zero <= zero)) throw std::runtime_error("STAmount fail");
-	if (!(zero <= one)) throw std::runtime_error("STAmount fail");
-	if (!(zero <= hundred)) throw std::runtime_error("STAmount fail");
-	if ((one <= zero)) throw std::runtime_error("STAmount fail");
-	if (!(one <= one)) throw std::runtime_error("STAmount fail");
-	if (!(one <= hundred)) throw std::runtime_error("STAmount fail");
-	if ((hundred <= zero)) throw std::runtime_error("STAmount fail");
-	if ((hundred <= one)) throw std::runtime_error("STAmount fail");
-	if (!(hundred <= hundred)) throw std::runtime_error("STAmount fail");
-	if (!(zero >= zero)) throw std::runtime_error("STAmount fail");
-	if ((zero >= one)) throw std::runtime_error("STAmount fail");
-	if ((zero >= hundred)) throw std::runtime_error("STAmount fail");
-	if (!(one >= zero)) throw std::runtime_error("STAmount fail");
-	if (!(one >= one)) throw std::runtime_error("STAmount fail");
-	if ((one >= hundred)) throw std::runtime_error("STAmount fail");
-	if (!(hundred >= zero)) throw std::runtime_error("STAmount fail");
-	if (!(hundred >= one)) throw std::runtime_error("STAmount fail");
-	if (!(hundred >= hundred)) throw std::runtime_error("STAmount fail");
-	if (!(zero == zero)) throw std::runtime_error("STAmount fail");
-	if ((zero == one)) throw std::runtime_error("STAmount fail");
-	if ((zero == hundred)) throw std::runtime_error("STAmount fail");
-	if ((one == zero)) throw std::runtime_error("STAmount fail");
-	if (!(one == one)) throw std::runtime_error("STAmount fail");
-	if ((one == hundred)) throw std::runtime_error("STAmount fail");
-	if ((hundred == zero)) throw std::runtime_error("STAmount fail");
-	if ((hundred == one)) throw std::runtime_error("STAmount fail");
-	if (!(hundred == hundred)) throw std::runtime_error("STAmount fail");
-	if ((zero != zero)) throw std::runtime_error("STAmount fail");
-	if (!(zero != one)) throw std::runtime_error("STAmount fail");
-	if (!(zero != hundred)) throw std::runtime_error("STAmount fail");
-	if (!(one != zero)) throw std::runtime_error("STAmount fail");
-	if ((one != one)) throw std::runtime_error("STAmount fail");
-	if (!(one != hundred)) throw std::runtime_error("STAmount fail");
-	if (!(hundred != zero)) throw std::runtime_error("STAmount fail");
-	if (!(hundred != one)) throw std::runtime_error("STAmount fail");
-	if ((hundred != hundred)) throw std::runtime_error("STAmount fail");
-	if (STAmount().getText() != "0") throw std::runtime_error("STAmount fail");
-	if (STAmount(31).getText() != "31")	throw std::runtime_error("STAmount fail");
-	if (STAmount(310).getText() != "310") throw std::runtime_error("STAmount fail");
+	if (!zero.isNative()) BOOST_FAIL("STAmount fail");
+	if (!hundred.isNative()) BOOST_FAIL("STAmount fail");
+	if (!zero.isZero()) BOOST_FAIL("STAmount fail");
+	if (one.isZero()) BOOST_FAIL("STAmount fail");
+	if (hundred.isZero()) BOOST_FAIL("STAmount fail");
+	if ((zero < zero)) BOOST_FAIL("STAmount fail");
+	if (!(zero < one)) BOOST_FAIL("STAmount fail");
+	if (!(zero < hundred)) BOOST_FAIL("STAmount fail");
+	if ((one < zero)) BOOST_FAIL("STAmount fail");
+	if ((one < one)) BOOST_FAIL("STAmount fail");
+	if (!(one < hundred)) BOOST_FAIL("STAmount fail");
+	if ((hundred < zero)) BOOST_FAIL("STAmount fail");
+	if ((hundred < one)) BOOST_FAIL("STAmount fail");
+	if ((hundred < hundred)) BOOST_FAIL("STAmount fail");
+	if ((zero > zero)) BOOST_FAIL("STAmount fail");
+	if ((zero > one)) BOOST_FAIL("STAmount fail");
+	if ((zero > hundred)) BOOST_FAIL("STAmount fail");
+	if (!(one > zero)) BOOST_FAIL("STAmount fail");
+	if ((one > one)) BOOST_FAIL("STAmount fail");
+	if ((one > hundred)) BOOST_FAIL("STAmount fail");
+	if (!(hundred > zero)) BOOST_FAIL("STAmount fail");
+	if (!(hundred > one)) BOOST_FAIL("STAmount fail");
+	if ((hundred > hundred)) BOOST_FAIL("STAmount fail");
+	if (!(zero <= zero)) BOOST_FAIL("STAmount fail");
+	if (!(zero <= one)) BOOST_FAIL("STAmount fail");
+	if (!(zero <= hundred)) BOOST_FAIL("STAmount fail");
+	if ((one <= zero)) BOOST_FAIL("STAmount fail");
+	if (!(one <= one)) BOOST_FAIL("STAmount fail");
+	if (!(one <= hundred)) BOOST_FAIL("STAmount fail");
+	if ((hundred <= zero)) BOOST_FAIL("STAmount fail");
+	if ((hundred <= one)) BOOST_FAIL("STAmount fail");
+	if (!(hundred <= hundred)) BOOST_FAIL("STAmount fail");
+	if (!(zero >= zero)) BOOST_FAIL("STAmount fail");
+	if ((zero >= one)) BOOST_FAIL("STAmount fail");
+	if ((zero >= hundred)) BOOST_FAIL("STAmount fail");
+	if (!(one >= zero)) BOOST_FAIL("STAmount fail");
+	if (!(one >= one)) BOOST_FAIL("STAmount fail");
+	if ((one >= hundred)) BOOST_FAIL("STAmount fail");
+	if (!(hundred >= zero)) BOOST_FAIL("STAmount fail");
+	if (!(hundred >= one)) BOOST_FAIL("STAmount fail");
+	if (!(hundred >= hundred)) BOOST_FAIL("STAmount fail");
+	if (!(zero == zero)) BOOST_FAIL("STAmount fail");
+	if ((zero == one)) BOOST_FAIL("STAmount fail");
+	if ((zero == hundred)) BOOST_FAIL("STAmount fail");
+	if ((one == zero)) BOOST_FAIL("STAmount fail");
+	if (!(one == one)) BOOST_FAIL("STAmount fail");
+	if ((one == hundred)) BOOST_FAIL("STAmount fail");
+	if ((hundred == zero)) BOOST_FAIL("STAmount fail");
+	if ((hundred == one)) BOOST_FAIL("STAmount fail");
+	if (!(hundred == hundred)) BOOST_FAIL("STAmount fail");
+	if ((zero != zero)) BOOST_FAIL("STAmount fail");
+	if (!(zero != one)) BOOST_FAIL("STAmount fail");
+	if (!(zero != hundred)) BOOST_FAIL("STAmount fail");
+	if (!(one != zero)) BOOST_FAIL("STAmount fail");
+	if ((one != one)) BOOST_FAIL("STAmount fail");
+	if (!(one != hundred)) BOOST_FAIL("STAmount fail");
+	if (!(hundred != zero)) BOOST_FAIL("STAmount fail");
+	if (!(hundred != one)) BOOST_FAIL("STAmount fail");
+	if ((hundred != hundred)) BOOST_FAIL("STAmount fail");
+	if (STAmount().getText() != "0") BOOST_FAIL("STAmount fail");
+	if (STAmount(31).getText() != "31")	BOOST_FAIL("STAmount fail");
+	if (STAmount(310).getText() != "310") BOOST_FAIL("STAmount fail");
 }
 
-void STAmount::unitTestNNC()
+BOOST_AUTO_TEST_CASE( CustomCurrency_test )
 {
 	uint160 currency(1);
 	STAmount zero(currency), one(currency, 1), hundred(currency, 100);
 
-	if (serdes(zero) != zero) throw std::runtime_error("STAmount fail");
-	if (serdes(one) != one) throw std::runtime_error("STAmount fail");
-	if (serdes(hundred) != hundred) throw std::runtime_error("STAmount fail");
+	if (serdes(zero) != zero) BOOST_FAIL("STAmount fail");
+	if (serdes(one) != one) BOOST_FAIL("STAmount fail");
+	if (serdes(hundred) != hundred) BOOST_FAIL("STAmount fail");
 
-	if (zero.isNative()) throw std::runtime_error("STAmount fail");
-	if (hundred.isNative()) throw std::runtime_error("STAmount fail");
-	if (!zero.isZero()) throw std::runtime_error("STAmount fail");
-	if (one.isZero()) throw std::runtime_error("STAmount fail");
-	if (hundred.isZero()) throw std::runtime_error("STAmount fail");
-	if ((zero < zero)) throw std::runtime_error("STAmount fail");
-	if (!(zero < one)) throw std::runtime_error("STAmount fail");
-	if (!(zero < hundred)) throw std::runtime_error("STAmount fail");
-	if ((one < zero)) throw std::runtime_error("STAmount fail");
-	if ((one < one)) throw std::runtime_error("STAmount fail");
-	if (!(one < hundred)) throw std::runtime_error("STAmount fail");
-	if ((hundred < zero)) throw std::runtime_error("STAmount fail");
-	if ((hundred < one)) throw std::runtime_error("STAmount fail");
-	if ((hundred < hundred)) throw std::runtime_error("STAmount fail");
-	if ((zero > zero)) throw std::runtime_error("STAmount fail");
-	if ((zero > one)) throw std::runtime_error("STAmount fail");
-	if ((zero > hundred)) throw std::runtime_error("STAmount fail");
-	if (!(one > zero)) throw std::runtime_error("STAmount fail");
-	if ((one > one)) throw std::runtime_error("STAmount fail");
-	if ((one > hundred)) throw std::runtime_error("STAmount fail");
-	if (!(hundred > zero)) throw std::runtime_error("STAmount fail");
-	if (!(hundred > one)) throw std::runtime_error("STAmount fail");
-	if ((hundred > hundred)) throw std::runtime_error("STAmount fail");
-	if (!(zero <= zero)) throw std::runtime_error("STAmount fail");
-	if (!(zero <= one)) throw std::runtime_error("STAmount fail");
-	if (!(zero <= hundred)) throw std::runtime_error("STAmount fail");
-	if ((one <= zero)) throw std::runtime_error("STAmount fail");
-	if (!(one <= one)) throw std::runtime_error("STAmount fail");
-	if (!(one <= hundred)) throw std::runtime_error("STAmount fail");
-	if ((hundred <= zero)) throw std::runtime_error("STAmount fail");
-	if ((hundred <= one)) throw std::runtime_error("STAmount fail");
-	if (!(hundred <= hundred)) throw std::runtime_error("STAmount fail");
-	if (!(zero >= zero)) throw std::runtime_error("STAmount fail");
-	if ((zero >= one)) throw std::runtime_error("STAmount fail");
-	if ((zero >= hundred)) throw std::runtime_error("STAmount fail");
-	if (!(one >= zero)) throw std::runtime_error("STAmount fail");
-	if (!(one >= one)) throw std::runtime_error("STAmount fail");
-	if ((one >= hundred)) throw std::runtime_error("STAmount fail");
-	if (!(hundred >= zero)) throw std::runtime_error("STAmount fail");
-	if (!(hundred >= one)) throw std::runtime_error("STAmount fail");
-	if (!(hundred >= hundred)) throw std::runtime_error("STAmount fail");
-	if (!(zero == zero)) throw std::runtime_error("STAmount fail");
-	if ((zero == one)) throw std::runtime_error("STAmount fail");
-	if ((zero == hundred)) throw std::runtime_error("STAmount fail");
-	if ((one == zero)) throw std::runtime_error("STAmount fail");
-	if (!(one == one)) throw std::runtime_error("STAmount fail");
-	if ((one == hundred)) throw std::runtime_error("STAmount fail");
-	if ((hundred == zero)) throw std::runtime_error("STAmount fail");
-	if ((hundred == one)) throw std::runtime_error("STAmount fail");
-	if (!(hundred == hundred)) throw std::runtime_error("STAmount fail");
-	if ((zero != zero)) throw std::runtime_error("STAmount fail");
-	if (!(zero != one)) throw std::runtime_error("STAmount fail");
-	if (!(zero != hundred)) throw std::runtime_error("STAmount fail");
-	if (!(one != zero)) throw std::runtime_error("STAmount fail");
-	if ((one != one)) throw std::runtime_error("STAmount fail");
-	if (!(one != hundred)) throw std::runtime_error("STAmount fail");
-	if (!(hundred != zero)) throw std::runtime_error("STAmount fail");
-	if (!(hundred != one)) throw std::runtime_error("STAmount fail");
-	if ((hundred != hundred)) throw std::runtime_error("STAmount fail");
-	if (STAmount(currency).getText() != "0") throw std::runtime_error("STAmount fail");
-	if (STAmount(currency,31).getText() != "31") throw std::runtime_error("STAmount fail");
-	if (STAmount(currency,31,1).getText() != "310") throw std::runtime_error("STAmount fail");
-	if (STAmount(currency,31,-1).getText() != "3.1") throw std::runtime_error("STAmount fail");
-	if (STAmount(currency,31,-2).getText() != "0.31") throw std::runtime_error("STAmount fail");
+	if (zero.isNative()) BOOST_FAIL("STAmount fail");
+	if (hundred.isNative()) BOOST_FAIL("STAmount fail");
+	if (!zero.isZero()) BOOST_FAIL("STAmount fail");
+	if (one.isZero()) BOOST_FAIL("STAmount fail");
+	if (hundred.isZero()) BOOST_FAIL("STAmount fail");
+	if ((zero < zero)) BOOST_FAIL("STAmount fail");
+	if (!(zero < one)) BOOST_FAIL("STAmount fail");
+	if (!(zero < hundred)) BOOST_FAIL("STAmount fail");
+	if ((one < zero)) BOOST_FAIL("STAmount fail");
+	if ((one < one)) BOOST_FAIL("STAmount fail");
+	if (!(one < hundred)) BOOST_FAIL("STAmount fail");
+	if ((hundred < zero)) BOOST_FAIL("STAmount fail");
+	if ((hundred < one)) BOOST_FAIL("STAmount fail");
+	if ((hundred < hundred)) BOOST_FAIL("STAmount fail");
+	if ((zero > zero)) BOOST_FAIL("STAmount fail");
+	if ((zero > one)) BOOST_FAIL("STAmount fail");
+	if ((zero > hundred)) BOOST_FAIL("STAmount fail");
+	if (!(one > zero)) BOOST_FAIL("STAmount fail");
+	if ((one > one)) BOOST_FAIL("STAmount fail");
+	if ((one > hundred)) BOOST_FAIL("STAmount fail");
+	if (!(hundred > zero)) BOOST_FAIL("STAmount fail");
+	if (!(hundred > one)) BOOST_FAIL("STAmount fail");
+	if ((hundred > hundred)) BOOST_FAIL("STAmount fail");
+	if (!(zero <= zero)) BOOST_FAIL("STAmount fail");
+	if (!(zero <= one)) BOOST_FAIL("STAmount fail");
+	if (!(zero <= hundred)) BOOST_FAIL("STAmount fail");
+	if ((one <= zero)) BOOST_FAIL("STAmount fail");
+	if (!(one <= one)) BOOST_FAIL("STAmount fail");
+	if (!(one <= hundred)) BOOST_FAIL("STAmount fail");
+	if ((hundred <= zero)) BOOST_FAIL("STAmount fail");
+	if ((hundred <= one)) BOOST_FAIL("STAmount fail");
+	if (!(hundred <= hundred)) BOOST_FAIL("STAmount fail");
+	if (!(zero >= zero)) BOOST_FAIL("STAmount fail");
+	if ((zero >= one)) BOOST_FAIL("STAmount fail");
+	if ((zero >= hundred)) BOOST_FAIL("STAmount fail");
+	if (!(one >= zero)) BOOST_FAIL("STAmount fail");
+	if (!(one >= one)) BOOST_FAIL("STAmount fail");
+	if ((one >= hundred)) BOOST_FAIL("STAmount fail");
+	if (!(hundred >= zero)) BOOST_FAIL("STAmount fail");
+	if (!(hundred >= one)) BOOST_FAIL("STAmount fail");
+	if (!(hundred >= hundred)) BOOST_FAIL("STAmount fail");
+	if (!(zero == zero)) BOOST_FAIL("STAmount fail");
+	if ((zero == one)) BOOST_FAIL("STAmount fail");
+	if ((zero == hundred)) BOOST_FAIL("STAmount fail");
+	if ((one == zero)) BOOST_FAIL("STAmount fail");
+	if (!(one == one)) BOOST_FAIL("STAmount fail");
+	if ((one == hundred)) BOOST_FAIL("STAmount fail");
+	if ((hundred == zero)) BOOST_FAIL("STAmount fail");
+	if ((hundred == one)) BOOST_FAIL("STAmount fail");
+	if (!(hundred == hundred)) BOOST_FAIL("STAmount fail");
+	if ((zero != zero)) BOOST_FAIL("STAmount fail");
+	if (!(zero != one)) BOOST_FAIL("STAmount fail");
+	if (!(zero != hundred)) BOOST_FAIL("STAmount fail");
+	if (!(one != zero)) BOOST_FAIL("STAmount fail");
+	if ((one != one)) BOOST_FAIL("STAmount fail");
+	if (!(one != hundred)) BOOST_FAIL("STAmount fail");
+	if (!(hundred != zero)) BOOST_FAIL("STAmount fail");
+	if (!(hundred != one)) BOOST_FAIL("STAmount fail");
+	if ((hundred != hundred)) BOOST_FAIL("STAmount fail");
+	if (STAmount(currency).getText() != "0") BOOST_FAIL("STAmount fail");
+	if (STAmount(currency,31).getText() != "31") BOOST_FAIL("STAmount fail");
+	if (STAmount(currency,31,1).getText() != "310") BOOST_FAIL("STAmount fail");
+	if (STAmount(currency,31,-1).getText() != "3.1") BOOST_FAIL("STAmount fail");
+	if (STAmount(currency,31,-2).getText() != "0.31") BOOST_FAIL("STAmount fail");
 }
+
+BOOST_AUTO_TEST_SUITE_END()
+
+// vim:ts=4

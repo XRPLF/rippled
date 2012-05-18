@@ -274,8 +274,6 @@ public:
 		const char *name = NULL);
 
 	static STAmount deSerialize(SerializerIterator&);
-	static void unitTestNC();
-	static void unitTestNNC();
 };
 
 class STHash128 : public SerializedType
