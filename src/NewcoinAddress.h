@@ -114,7 +114,7 @@ public:
 
 	//
 	// Family Seeds
-	//
+	// Clients must disallow reconizable entries from being seeds.
 	uint128 getFamilySeed() const;
 	BIGNUM*	getFamilyPrivateKey() const;
 
@@ -123,7 +123,7 @@ public:
 
 	bool setFamilySeed(const std::string& strSeed);
 	int setFamilySeed1751(const std::string& strHuman1751);
-	void setFamilySeedGeneric(const std::string& strText);
+	bool setFamilySeedGeneric(const std::string& strText);
 	void setFamilySeed(uint128 hash128);
 	void setFamilySeedRandom();
 };

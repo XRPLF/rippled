@@ -298,7 +298,7 @@ void NewcoinAddress::setAccountPublic(const std::vector<unsigned char>& vPublic)
 
 void NewcoinAddress::setAccountPublic(const NewcoinAddress& generator, int seq)
 {
-	CKey	pubkey	= CKey(generator, seq+1);
+	CKey	pubkey	= CKey(generator, seq);
 
 	setAccountPublic(pubkey.GetPubKey());
 }
@@ -371,7 +371,7 @@ void NewcoinAddress::setAccountPrivate(uint256 hash256)
 
 void NewcoinAddress::setAccountPrivate(const NewcoinAddress& generator, const NewcoinAddress& seed, int seq)
 {
-	CKey	privkey	= CKey(generator, seed.getFamilyPrivateKey(), seq+1);
+	CKey	privkey	= CKey(generator, seed.getFamilyPrivateKey(), seq);
 
 	setAccountPrivate(privkey.GetPrivKey());
 }
@@ -646,9 +646,18 @@ bool NewcoinAddress::setFamilySeed(const std::string& strSeed)
     return SetString(strSeed.c_str(), VER_FAMILY_SEED);
 }
 
-void NewcoinAddress::setFamilySeedGeneric(const std::string& strText)
+bool NewcoinAddress::setFamilySeedGeneric(const std::string& strText)
 {
-	if (setFamilySeed(strText))
+	NewcoinAddress	naTemp;
+	bool			bResult	= true;
+
+	if (naTemp.setAccountID(strText)
+		|| naTemp.setAccountPublic(strText)
+		|| naTemp.setAccountPrivate(strText))
+	{
+		bResult	= false;
+	}
+	else if (setFamilySeed(strText))
 	{
 		// std::cerr << "Recognized seed." << std::endl;
 		nothing();
@@ -663,6 +672,8 @@ void NewcoinAddress::setFamilySeedGeneric(const std::string& strText)
 		// std::cerr << "Creating seed from pass phrase." << std::endl;
 		setFamilySeed(CKey::PassPhraseToKey(strText));
 	}
+
+	return bResult;
 }
 
 void NewcoinAddress::setFamilySeed(uint128 hash128) {
