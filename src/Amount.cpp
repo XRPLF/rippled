@@ -3,7 +3,7 @@
 #include <iomanip>
 
 #include <boost/lexical_cast.hpp>
-#include <boost/test/included/unit_test.hpp>
+#include <boost/test/unit_test.hpp>
 
 #include "SerializedTypes.h"
 
@@ -567,6 +567,7 @@ BOOST_AUTO_TEST_CASE( NativeCurrency_test )
 	if (STAmount().getText() != "0") BOOST_FAIL("STAmount fail");
 	if (STAmount(31).getText() != "31")	BOOST_FAIL("STAmount fail");
 	if (STAmount(310).getText() != "310") BOOST_FAIL("STAmount fail");
+	BOOST_TEST_MESSAGE("Amount NC Complete");
 }
 
 BOOST_AUTO_TEST_CASE( CustomCurrency_test )
@@ -642,6 +643,7 @@ BOOST_AUTO_TEST_CASE( CustomCurrency_test )
 	if (STAmount(currency,31,1).getText() != "310") BOOST_FAIL("STAmount fail");
 	if (STAmount(currency,31,-1).getText() != "3.1") BOOST_FAIL("STAmount fail");
 	if (STAmount(currency,31,-2).getText() != "0.31") BOOST_FAIL("STAmount fail");
+	BOOST_TEST_MESSAGE("Amount CC Complete");
 }
 
 BOOST_AUTO_TEST_SUITE_END()
