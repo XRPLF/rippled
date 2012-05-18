@@ -1,11 +1,14 @@
 #include "utils.h"
 #include "uint256.h"
 
-uint256 uint160extend256(const uint160& uSource)
+// XXX Assume little-endian.
+uint256 uint160extend256(const uint160& uSource, uint uNamespace)
 {
 	uint256 uResult;
 
-	memcpy(uResult.begin() + (uResult.size() - uSource.size()), uSource.begin(), uSource.size());
+	// Place right justified: in most significant bits.
+	memcpy(uResult.end() - uSource.size(), uSource.begin(), uSource.size());
+	uResult.begin()[uResult.size() - uSource.size() - 1]	= uNamespace;
 
 	return uResult;
 }

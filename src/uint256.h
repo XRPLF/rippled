@@ -709,7 +709,7 @@ inline const uint256 operator|(const uint256& a, const uint256& b)	  { return (b
 inline const uint256 operator+(const uint256& a, const uint256& b)	  { return (base_uint256)a +  (base_uint256)b; }
 inline const uint256 operator-(const uint256& a, const uint256& b)	  { return (base_uint256)a -  (base_uint256)b; }
 
-uint256 uint160extend256(const uint160& uSource);
+uint256 uint160extend256(const uint160& uSource, uint uNamespace);
 
 inline int Testuint256AdHoc(std::vector<std::string> vArg)
 {
