@@ -1,6 +1,8 @@
 #ifndef __CONFIG__
 #define __CONFIG__
 
+#include "types.h"
+
 #include <string>
 
 #define SYSTEM_NAME		"newcoin"
@@ -62,6 +64,9 @@ public:
 	int	    PEER_SCAN_INTERVAL_MIN;
 	int	    PEER_START_MAX;
 	int	    PEER_CONNECT_LOW_WATER;
+
+	uint64	    FEE_CREATE;		// Fee to create an account
+	uint64	    FEE_DEFAULT;	// Default fee.
 
 	// configuration parameters
 	std::string DATA_DIR;
