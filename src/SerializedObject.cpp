@@ -429,6 +429,17 @@ std::vector<TaggedListItem> STObject::getValueFieldTL(SOE_Field field) const
 	return cf->getValue();
 }
 
+STAmount STObject::getValueFieldAmount(SOE_Field field) const
+{
+	const SerializedType* rf = peekAtPField(field);
+	if (!rf) throw std::runtime_error("Field not found");
+	SerializedTypeID id = rf->getSType();
+	if (id == STI_NOTPRESENT) return STAmount(); // optional field not present
+	const STAmount *cf = dynamic_cast<const STAmount *>(rf);
+	if (!cf) throw std::runtime_error("Wrong field type");
+	return *cf;
+}
+
 void STObject::setValueFieldU8(SOE_Field field, unsigned char v)
 {
 	SerializedType* rf = getPField(field);
@@ -517,6 +528,16 @@ void STObject::setValueFieldTL(SOE_Field field, const std::vector<TaggedListItem
 	STTaggedList* cf = dynamic_cast<STTaggedList*>(rf);
 	if (!cf) throw std::runtime_error("Wrong field type");
 	cf->setValue(v);
+}
+
+void STObject::setValueFieldAmount(SOE_Field field, const STAmount &v)
+{
+	SerializedType* rf = getPField(field);
+	if (!rf) throw std::runtime_error("Field not found");
+	if (rf->getSType() == STI_NOTPRESENT) rf = makeFieldPresent(field);
+	STAmount* cf = dynamic_cast<STAmount*>(rf);
+	if (!cf) throw std::runtime_error("Wrong field type");
+	(*cf) = v;
 }
 
 Json::Value STObject::getJson(int options) const
