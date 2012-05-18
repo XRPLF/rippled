@@ -145,6 +145,7 @@ public:
 	NewcoinAddress getValueFieldAccount(SOE_Field field) const;
 	std::vector<unsigned char> getValueFieldVL(SOE_Field field) const;
 	std::vector<TaggedListItem> getValueFieldTL(SOE_Field field) const;
+	STAmount getValueFieldAmount(SOE_Field field) const;
 
 	void setValueFieldU8(SOE_Field field, unsigned char);
 	void setValueFieldU16(SOE_Field field, uint16);
@@ -157,6 +158,7 @@ public:
 	void setValueFieldAccount(SOE_Field field, const uint160&);
 	void setValueFieldAccount(SOE_Field field, const NewcoinAddress& addr)
 	{ setValueFieldAccount(field, addr.getAccountID()); }
+	void setValueFieldAmount(SOE_Field field, const STAmount&);
 
 	bool isFieldPresent(SOE_Field field) const;
 	SerializedType* makeFieldPresent(SOE_Field field);

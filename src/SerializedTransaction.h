@@ -84,6 +84,7 @@ public:
 	uint256 getITFieldH256(SOE_Field field) const { return mInnerTxn.getValueFieldH256(field); }
 	std::vector<unsigned char> getITFieldVL(SOE_Field field) const { return mInnerTxn.getValueFieldVL(field); }
 	std::vector<TaggedListItem> getITFieldTL(SOE_Field field) const { return mInnerTxn.getValueFieldTL(field); }
+	STAmount getITFieldAmount(SOE_Field field) const { return mInnerTxn.getValueFieldAmount(field); }
 	void setITFieldU8(SOE_Field field, unsigned char v) { return mInnerTxn.setValueFieldU8(field, v); }
 	void setITFieldU16(SOE_Field field, uint16 v) { return mInnerTxn.setValueFieldU16(field, v); }
 	void setITFieldU32(SOE_Field field, uint32 v) { return mInnerTxn.setValueFieldU32(field, v); }
@@ -98,6 +99,8 @@ public:
 		{ return mInnerTxn.setValueFieldAccount(field, v); }
 	void setITFieldAccount(SOE_Field field, const NewcoinAddress& v)
 		{ return mInnerTxn.setValueFieldAccount(field, v); }
+	void setITFieldAmount(SOE_Field field, const STAmount& v)
+		{ return mInnerTxn.setValueFieldAmount(field, v); }
 
 	// optional field functions
 	bool getITFieldPresent(SOE_Field field) const;
