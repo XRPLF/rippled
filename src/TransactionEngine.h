@@ -17,6 +17,7 @@ enum TransactionEngineResult
 	// Malformed
 	tenGEN_IN_USE  = -300,	// Generator already in use.
 	tenCREATEXNC,			// Can not specify non XNC for Create.
+	tenEXPLICITXNC,			// XNC is used by default, don't specify it.
 
 	// Not possible due to ledger database.
 	tenCREATED		= -200,	// Can not create a previously created account.

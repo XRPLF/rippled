@@ -1,4 +1,6 @@
 #include "TransactionEngine.h"
+
+#include "Config.h"
 #include "TransactionFormats.h"
 
 #include <boost/format.hpp>
@@ -33,16 +35,22 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 		return tenINVALID;
 	}
 
-	bool	bPrepaid	= false;
+	uint64	uFee		= theConfig.FEE_DEFAULT;
 
 	// Customize behavoir based on transaction type.
 	switch(txn.getTxnType())
 	{
 		case ttCLAIM:
-			bPrepaid	= true;
+			uFee	= 0;
 			break;
 
 		case ttPAYMENT:
+			if (txn.getFlags() & tfCreateAccount)
+			{
+				uFee	= theConfig.FEE_CREATE;
+			}
+			break;
+
 		case ttINVOICE:
 		case ttEXCHANGE_OFFER:
 			result = terSUCCESS;
@@ -65,21 +73,21 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	uint64 txnFee = txn.getTransactionFee();
 	if ( (params & tepNO_CHECK_FEE) != tepNONE)
 	{
-		if (bPrepaid)
-		{
-			if (txnFee)
-			{
-				// Transaction is malformed.
-				std::cerr << "applyTransaction: fee not allowed" << std::endl;
-				return tenINSUF_FEE_P;
-			}
-		}
-		else
+		if (uFee)
 		{
 			// WRITEME: Check if fee is adequate
 			if (txnFee == 0)
 			{
 				std::cerr << "applyTransaction: insufficient fee" << std::endl;
+				return tenINSUF_FEE_P;
+			}
+		}
+		else
+		{
+			if (txnFee)
+			{
+				// Transaction is malformed.
+				std::cerr << "applyTransaction: fee not allowed" << std::endl;
 				return tenINSUF_FEE_P;
 			}
 		}
@@ -123,15 +131,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	// Validate sequence
 	uint32 t_seq = txn.getSequence();
 
-	if (bPrepaid)
-	{
-		if (t_seq)
-		{
-			std::cerr << "applyTransaction: bad sequence for pre-paid transaction" << std::endl;
-			return terPAST_SEQ;
-		}
-	}
-	else
+	if (uFee)
 	{
 		uint32 a_seq = src->getIFieldU32(sfSequence);
 
@@ -153,6 +153,14 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 			return terPAST_SEQ;
 		}
 		else src->setIFieldU32(sfSequence, t_seq);
+	}
+	else
+	{
+		if (t_seq)
+		{
+			std::cerr << "applyTransaction: bad sequence for pre-paid transaction" << std::endl;
+			return terPAST_SEQ;
+		}
 	}
 
 	std::vector<AffectedAccount> accounts;
@@ -326,12 +334,18 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 		return tenINVALID;
 	}
 
-	bool	bCreate	= !(txFlags & tfCreateAccount);
+	bool	bCreate	= !!(txFlags & tfCreateAccount);
 
 	uint160	currency;
 	if (txn.getITFieldPresent(sfCurrency))
+	{
 		currency = txn.getITFieldH160(sfCurrency);
-	// XXX No XNC don't allow currency.
+		if (!currency)
+		{
+			std::cerr << "doPayment: Invalid transaction: XNC explicitly specified." << std::endl;
+			return tenEXPLICITXNC;
+		}
+	}
 
 	LedgerStateParms qry = lepNONE;
 
