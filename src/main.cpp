@@ -120,15 +120,7 @@ int main(int argc, char* argv[])
 	}
 	else if (bTest)
 	{
-		std::vector<char*>	pvCmd;
-
-		// Copy all but "--test" at argv[1].
-		pvCmd.push_back(argv[0]);
-
-		for (int i=1; i++ != argc; )
-			pvCmd.push_back(argv[i]);
-
-		iResult	= unit_test_main(init_unit_test, pvCmd.size()-1, &pvCmd[0]);
+		iResult	= unit_test_main(init_unit_test, argc, argv);
 	}
 	else if (!vm.count("parameters"))
 	{
