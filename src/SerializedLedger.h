@@ -54,6 +54,7 @@ public:
 	std::vector<unsigned char> getIFieldVL(SOE_Field field) const { return mObject.getValueFieldVL(field); }
 	std::vector<TaggedListItem> getIFieldTL(SOE_Field field) const { return mObject.getValueFieldTL(field); }
 	NewcoinAddress getIValueFieldAccount(SOE_Field field) const { return mObject.getValueFieldAccount(field); }
+	STAmount getIValueFieldAmount(SOE_Field field) const { return mObject.getValueFieldAmount(field); }
 	void setIFieldU8(SOE_Field field, unsigned char v) { return mObject.setValueFieldU8(field, v); }
 	void setIFieldU16(SOE_Field field, uint16 v) { return mObject.setValueFieldU16(field, v); }
 	void setIFieldU32(SOE_Field field, uint32 v) { return mObject.setValueFieldU32(field, v); }
@@ -68,6 +69,8 @@ public:
 		{ return mObject.setValueFieldAccount(field, account); }
 	void setIFieldAccount(SOE_Field field, const NewcoinAddress& account)
 		{ return mObject.setValueFieldAccount(field, account); }
+	void setIFeldAmount(SOE_Field field, const STAmount& amount)
+		{ return mObject.setValueFieldAmount(field, amount); }
 
 	bool getIFieldPresent(SOE_Field field) const { return mObject.isFieldPresent(field); }
 	void makeIFieldPresent(SOE_Field field) { mObject.makeFieldPresent(field); }
