@@ -15,7 +15,7 @@
 void STAmount::canonicalize()
 {
 	if (!mCurrency)
-	{
+	{ // native currency amounts should always have an offset of zero
 		mIsNative = true;
 
 		if (mValue == 0)
@@ -52,6 +52,8 @@ void STAmount::canonicalize()
 		if (mOffset <= cMinOffset)
 			throw std::runtime_error("value overflow");
 		mValue *= 10;
+		if (mValue >= cMaxValue)
+			throw std::runtime_error("value overflow");
 		--mOffset;
 	}
 
@@ -77,7 +79,7 @@ void STAmount::add(Serializer& s) const
 	}
 	if (isZero())
 		s.add64(cNotNative);
-	else
+	else // Adding 396 centers the offset and sets the "not native" flag
 		s.add64(mValue + (static_cast<uint64>(mOffset + 396) << (64 - 9)));
 	s.add160(mCurrency);
 }
@@ -93,7 +95,7 @@ STAmount* STAmount::construct(SerializerIterator& sit, const char *name)
 	if (!currency)
 		throw std::runtime_error("invalid native currency");
 
-	int offset = static_cast<int>(value >> (64-9));
+	int offset = static_cast<int>(value >> (64-9)); // 9 bits for the offset and "not native" flag
 	value &= ~(1023ull << (64-9));
 
 	if (value == 0)
@@ -103,7 +105,7 @@ STAmount* STAmount::construct(SerializerIterator& sit, const char *name)
 	}
 	else
 	{
-		offset -= 396; // center the range and set the "not native" bit
+		offset -= 396; // center the range and remove the "not native" bit
 		if ((value < cMinValue) || (value > cMaxValue) || (offset < cMinOffset) || (offset > cMaxOffset))
 			throw std::runtime_error("invalid currency value");
 	}
@@ -147,7 +149,7 @@ std::string STAmount::getText() const
 }
 
 bool STAmount::isComparable(const STAmount& t) const
-{
+{ // are these two STAmount instances in the same currency
 	if (mIsNative) return t.mIsNative;
 	if (t.mIsNative) return false;
 	return mCurrency == t.mCurrency;
@@ -161,7 +163,7 @@ bool STAmount::isEquivalent(const SerializedType& t) const
 }
 
 void STAmount::throwComparable(const STAmount& t) const
-{
+{ // throw an exception if these two STAmount instances are incomparable
 	if (!isComparable(t))
 		throw std::runtime_error("amounts are not comparable");
 }
@@ -240,7 +242,7 @@ STAmount& STAmount::operator=(uint64 v)
 STAmount& STAmount::operator+=(uint64 v)
 {
 	if (mIsNative) mValue += v;
-	*this += STAmount(mCurrency, v);
+	else *this += STAmount(mCurrency, v);
 	return *this;
 }
 
@@ -252,7 +254,7 @@ STAmount& STAmount::operator-=(uint64 v)
 			throw std::runtime_error("amount underflow");
 		mValue -= v;
 	}
-	*this -= STAmount(mCurrency, v);
+	else *this -= STAmount(mCurrency, v);
 	return *this;
 }
 
@@ -271,6 +273,7 @@ STAmount operator+(STAmount v1, STAmount v2)
 
 	if (v1.isZero()) return v2;
 	if (v2.isZero()) return v1;
+
 	while (v1.mOffset < v2.mOffset)
 	{
 		v1.mValue /= 10;
@@ -281,7 +284,7 @@ STAmount operator+(STAmount v1, STAmount v2)
 		v2.mValue /= 10;
 		++v2.mOffset;
 	}
-	// this addition cannot overflow
+	// this addition cannot overflow a uint64, it can overflow an STAmount and the constructor will throw
 	return STAmount(v1.name, v1.mCurrency, v1.mValue + v2.mValue, v1.mOffset);
 }
 
@@ -295,7 +298,7 @@ STAmount operator-(STAmount v1, STAmount v2)
 		return STAmount(v1.mValue - v2.mValue);
 	}
 	if (v2.isZero()) return v1;
-	if ( v1.isZero() || (v2.mOffset > v1.mOffset) )
+	if (v1.isZero() || (v2.mOffset > v1.mOffset) )
 		throw std::runtime_error("value underflow");
 
 	while (v1.mOffset > v2.mOffset)
@@ -323,7 +326,7 @@ STAmount divide(const STAmount& num, const STAmount& den, const uint160& currenc
 
 	if (num.mIsNative)
 		while (numVal < STAmount::cMinValue)
-		{
+		{ // Need to bring into range
 			numVal *= 10;
 			--numOffset;
 		}
@@ -374,7 +377,7 @@ STAmount multiply(const STAmount& v1, const STAmount& v2, const uint160& currenc
 		}
 	}
 	else
-	{
+	{ // round
 		value1 *= 10;
 		value1 += 3;
 		--offset1;
@@ -389,7 +392,7 @@ STAmount multiply(const STAmount& v1, const STAmount& v2, const uint160& currenc
 		}
 	}
 	else
-	{
+	{ // round
 		value2 *= 10;
 		value2 += 3;
 		--offset2;
@@ -411,7 +414,7 @@ STAmount multiply(const STAmount& v1, const STAmount& v2, const uint160& currenc
 }
 
 uint64 getRate(const STAmount& offerOut, const STAmount& offerIn)
-{
+{ // Convert an offer into an index amount so they sort
 	// offerOut = how much comes out of the offer, from the offeror to the taker
 	// offerIn = how much goes into the offer, from the taker to the offeror
 	if (offerOut.isZero()) return 0;
