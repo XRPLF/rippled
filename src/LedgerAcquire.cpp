@@ -16,7 +16,7 @@ PeerSet::PeerSet(const uint256& hash, int interval) : mHash(hash), mTimerInterva
 void PeerSet::peerHas(Peer::pointer ptr)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
-	std::list<boost::weak_ptr<Peer> >::iterator it = mPeers.begin();
+	std::vector< boost::weak_ptr<Peer> >::iterator it = mPeers.begin();
 	while (it != mPeers.end())
 	{
 		Peer::pointer pr = it->lock();
@@ -35,7 +35,7 @@ void PeerSet::peerHas(Peer::pointer ptr)
 void PeerSet::badPeer(Peer::pointer ptr)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
-	std::list<boost::weak_ptr<Peer> >::iterator it=mPeers.begin();
+	std::vector< boost::weak_ptr<Peer> >::iterator it = mPeers.begin();
 	while (it != mPeers.end())
 	{
 		Peer::pointer pr = it->lock();
@@ -92,8 +92,8 @@ void LedgerAcquire::done()
 	mOnComplete.empty();
 	mLock.unlock();
 
-	for (int i = 0; i<triggers.size(); ++i)
-		triggers[i](boost::enable_shared_from_this<LedgerAcquire>::shared_from_this());
+	for (int i = 0; i < triggers.size(); ++i)
+		triggers[i](shared_from_this());
 }
 
 void LedgerAcquire::addOnComplete(boost::function<void (LedgerAcquire::pointer)> trigger)
@@ -250,8 +250,8 @@ void LedgerAcquire::sendRequest(boost::shared_ptr<newcoin::TMGetLedger> tmGL)
 
 	PackedMessage::pointer packet = boost::make_shared<PackedMessage>(tmGL, newcoin::mtGET_LEDGER);
 
-	std::list<boost::weak_ptr<Peer> >::iterator it = mPeers.begin();
-	while(it != mPeers.end())
+	std::vector<boost::weak_ptr<Peer> >::iterator it = mPeers.begin();
+	while (it != mPeers.end())
 	{
 		if (it->expired())
 			mPeers.erase(it++);
@@ -412,7 +412,7 @@ bool LedgerAcquireMaster::gotLedgerData(newcoin::TMLedgerData& packet, Peer::poi
 		std::list<std::vector<unsigned char> > nodeData;
 
 		if (packet.nodes().size() <= 0) return false;
-		for (int i = 0; i<packet.nodes().size(); ++i)
+		for (int i = 0; i < packet.nodes().size(); ++i)
 		{
 			const newcoin::TMLedgerNode& node = packet.nodes(i);
 			if (!node.has_nodeid() || !node.has_nodedata()) return false;
