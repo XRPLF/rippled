@@ -137,7 +137,7 @@ void Application::run()
 
 	mWallet.load();
 //	mWallet.syncToLedger(true, &(*secondLedger));
-	mNetOps.setStateTimer(5);
+	mNetOps.setStateTimer(0);
 
 	// temporary
 	mIOService.run(); // This blocks
