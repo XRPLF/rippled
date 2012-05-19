@@ -99,7 +99,7 @@ public:
 	void set(SOElement *t, SerializerIterator& u);
 
 	int getLength() const;
-	SerializedTypeID getSType() const { return STI_OBJECT; }
+	virtual SerializedTypeID getSType() const { return STI_OBJECT; }
 	virtual bool isEquivalent(const SerializedType& t) const;
 
 	void add(Serializer& s) const;

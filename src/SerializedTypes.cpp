@@ -227,6 +227,19 @@ std::string STTaggedList::getText() const
 	return ret;
 }
 
+Json::Value STTaggedList::getJson(int) const
+{
+	Json::Value ret(Json::arrayValue);
+	for (std::vector<TaggedListItem>::const_iterator it=value.begin(); it!=value.end(); ++it)
+	{
+		Json::Value elem(Json::arrayValue);
+		elem.append(it->first);
+		elem.append(strHex(it->second));
+		ret.append(elem);
+	}
+	return ret;
+}
+
 STTaggedList* STTaggedList::construct(SerializerIterator& u, const char *name)
 {
 	return new STTaggedList(name, u.getTaggedList());
@@ -243,4 +256,148 @@ bool STTaggedList::isEquivalent(const SerializedType& t) const
 {
 	const STTaggedList* v = dynamic_cast<const STTaggedList*>(&t);
 	return v && (value == v->value);
+}
+
+STPath* STPath::construct(SerializerIterator& s, const char *name)
+{
+	std::vector<STPathElement> path;
+	do
+	{
+		switch(s.get8())
+		{
+			case STPathElement::typeEnd:
+				return new STPath(name, path);
+
+			case STPathElement::typeAccount:
+			{
+				STPathElement element;
+				element.mType = STPathElement::typeAccount;
+				element.mNode = s.get160();
+				path.push_back(element);
+				break;
+			}
+
+			case STPathElement::typeOffer:
+			{
+				STPathElement element;
+				element.mType = STPathElement::typeOffer;
+				element.mNode = s.get160();
+				element.mCurrency = s.get160();
+				path.push_back(element);
+				break;
+			}
+
+			default: throw std::runtime_error("Unknown path element");
+		}
+	} while(1);
+}
+
+int STPath::getLength() const
+{
+	int ret = 1; // for end of path
+	for (std::vector<STPathElement>::const_iterator it = value.begin(), end = value.end(); it != end; ++it)
+	{
+		switch (it->mType)
+		{
+			case STPathElement::typeAccount:
+				ret += 1 + 160 / 8;	// type, account ID
+				break;
+
+			case STPathElement::typeOffer:
+				ret += 1 + 320 / 8; // type, account ID, and currency
+				break;
+
+			default: throw std::runtime_error("Unknown path element");
+		}
+	}
+	return ret;
+}
+
+Json::Value STPath::getJson(int) const
+{
+	Json::Value ret(Json::arrayValue);
+	for (std::vector<STPathElement>::const_iterator it = value.begin(), end = value.end(); it != end; ++it)
+	{
+		switch (it->mType)
+		{
+			case STPathElement::typeAccount:
+			{
+				NewcoinAddress account;
+				account.setAccountID(it->mNode);
+				ret.append(account.humanAccountID());
+				break;
+			}
+
+			case STPathElement::typeOffer:
+			{
+				Json::Value elem(Json::objectValue);
+				NewcoinAddress account;
+				account.setAccountID(it->mNode);
+				elem["Offer"] = account.humanAccountID();
+				elem["Currency"] = it->mCurrency.GetHex(); // FIXME: We need a way to display currencies
+				ret.append(elem);
+				break;
+			}
+
+			default: throw std::runtime_error("Unknown path element");
+		}
+	}
+	return ret;
+}
+
+std::string STPath::getText() const
+{
+	std::string ret;
+	bool first = true;
+	for (std::vector<STPathElement>::const_iterator it = value.begin(), end = value.end(); it != end; ++it)
+	{
+		if (!first) ret += ", ";
+		switch (it->mType)
+		{
+			case STPathElement::typeAccount:
+			{
+				NewcoinAddress account;
+				account.setAccountID(it->mNode);
+				ret += account.humanAccountID();
+				break;
+			}
+			case STPathElement::typeOffer:
+			{
+				NewcoinAddress account;
+				account.setAccountID(it->mNode);
+				ret += account.humanAccountID();
+				ret += "/";
+				ret += it->mCurrency.GetHex(); // FIXME: We need a way to display currencies
+				break;
+			}
+
+			default: throw std::runtime_error("Unknown path element");
+		}
+		first = false;
+	}
+	return ret;
+}
+
+void STPath::add(Serializer& s) const
+{
+	for (std::vector<STPathElement>::const_iterator it = value.begin(), end = value.end(); it != end; ++it)
+	{
+		switch (it->mType)
+		{
+			case STPathElement::typeAccount:
+				s.add8(STPathElement::typeAccount);
+				s.add160(it->mNode);
+				break;
+
+			case STPathElement::typeOffer:
+				s.add8(STPathElement::typeOffer);
+				s.add160(it->mNode);
+				s.add160(it->mCurrency);
+				break;
+
+			default: throw std::runtime_error("Unknown path element");
+		}
+	}
+
+	s.add8(STPathElement::typeEnd);
 }
