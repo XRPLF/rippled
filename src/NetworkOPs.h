@@ -11,6 +11,7 @@
 // Master operational handler, server sequencer, network tracker
 
 class Peer;
+class LedgerConsensus;
 
 class NetworkOPs
 {
@@ -30,8 +31,9 @@ public:
 	};
 
 protected:
-	OperatingMode				mMode;
-	boost::asio::deadline_timer mNetTimer;
+	OperatingMode						mMode;
+	boost::asio::deadline_timer 		mNetTimer;
+	boost::shared_ptr<LedgerConsensus>	mConsensus;
 
 public:
 	NetworkOPs(boost::asio::io_service& io_service);
@@ -70,7 +72,8 @@ public:
 
 	// network state machine
 	void checkState(const boost::system::error_code& result);
-	void switchLastClosedLedger(Ledger::pointer newLedger, bool normal);
+	void switchLastClosedLedger(Ledger::pointer newLedger); // Used for the "jump" case
+	void beginConsensus(Ledger::pointer closingLedger);
 	void setStateTimer(int seconds);
 
 };

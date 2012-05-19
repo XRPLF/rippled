@@ -3,11 +3,14 @@
 
 #include <list>
 
+#include <boost/weak_ptr.hpp>
 #include <boost/unordered/unordered_map.hpp>
 
 #include "key.h"
 #include "Transaction.h"
 #include "LedgerAcquire.h"
+#include "LedgerProposal.h"
+#include "Peer.h"
 
 class LCPosition
 { // A position taken by one of our trusted peers
@@ -63,6 +66,7 @@ class LedgerConsensus
 {
 protected:
 	Ledger::pointer mPreviousLedger, mCurrentLedger;
+	LedgerProposal::pointer mCurrentProposal;
 
 	// Convergence tracking, trusted peers indexed by hash of public key
 	boost::unordered_map<uint256, LCPosition::pointer> mPeerPositions;
@@ -74,9 +78,13 @@ protected:
 	// Peer sets
 	boost::unordered_map<uint256, std::vector< boost::weak_ptr<Peer> > > mPeerData;
 
+	void startup();
+	void weHave(const uint256& id, Peer::pointer avoidPeer);
+
 public:
 	LedgerConsensus(Ledger::pointer previousLedger, Ledger::pointer currentLedger) :
-		mPreviousLedger(previousLedger), mCurrentLedger(currentLedger) { ; }
+		mPreviousLedger(previousLedger), mCurrentLedger(currentLedger)
+	{ startup(); }
 
 	Ledger::pointer peekPreviousLedger()	{ return mPreviousLedger; }
 	Ledger::pointer peekCurrentLedger()		{ return mCurrentLedger; }
@@ -90,6 +98,7 @@ public:
 	LCPosition::pointer getPeerPosition(const uint256& peer);
 
 	// high-level functions
+	void abort();
 	bool peerPosition(Peer::pointer peer, const Serializer& report);
 	bool peerHasSet(Peer::pointer peer, const std::vector<uint256>& sets);
 	bool peerGaveNodes(Peer::pointer peer, const uint256& setHash,

@@ -83,7 +83,7 @@ enum NodeStatus {
 }
 
 enum NodeEvent {
-	neCLOSED_LEDGER		= 1;	// closing a ledger because its close time has come
+	neCLOSING_LEDGER	= 1;	// closing a ledger because its close time has come
 	neACCEPTED_LEDGER	= 2;	// accepting a closed ledger, we have finished computing it
 	neSWITCHED_LEDGER	= 3;	// switching ledgers due to network consensus 
 	neSHUTTING_DOWN		= 4;
@@ -91,7 +91,7 @@ enum NodeEvent {
 
 message TMStatusChange {
 	optional NodeStatus newStatus		= 1;
-	optional NodeEvent	newEvent		= 2;
+	optional NodeEvent newEvent			= 2;
 	optional uint32 ledgerSeq			= 3;
 	optional bytes ledgerHash			= 4;
 	optional bytes previousLedgerHash	= 5;
@@ -99,41 +99,29 @@ message TMStatusChange {
 }
 
 
-message TMPeerPosition {
-	required uint32 ledgerSequence		= 1;
-	required bytes pubKey				= 2;
-	required uint32 sequence			= 3;
-	required bytes transactionHash		= 4;
-	required bytes signature			= 5;
+// Announce to the network our position on a closing ledger
+message TMProposeSet {
+	required uint32 closingSeq			= 1;
+	required uint32 proposeSeq			= 2;
+	required bytes previousTxHash		= 3;	// 0 if first proposal, hash we no longer propose
+	required bytes currentTxHash		= 4;	// the hash of the ledger we are proposing
+	required bytes nodePubKey			= 5;
+	required bytes signature			= 6;	// signature of above fields
+	repeated bytes addedTransactions	= 7;	// not required if number is large
+	repeated bytes removedTransactions	= 8;	// not required if number is large
 }
 
+// Announce to a peer that we have fully acquired a transaction set
 message TMHaveTransactionSet {
 	repeated bytes hashes				= 1;
 }
 
-message TMProposeLedger {
-	required uint32 closingSeq			= 1;
-	required uint32 proposeSeq			= 2;
-	required bytes previousLedgerHash	= 3;	// 0 if first proposal, hash we no longer propose
-	required bytes currentLedgerHash	= 4;	// the hash of the ledger we are proposing
-	required bytes hanko				= 5;
-	repeated bytes addedTransactions	= 6;
-	repeated bytes removedTransactions	= 7;
-	required bytes signature			= 8;
-}
 
-
-
-// Used to propose/validate during ledger close
+// Used to sign a final closed ledger after reprocessing
 message TMValidation {
-	required uint32 ledgerIndex		= 1;
-	required bytes ledgerHash		= 2;
-	optional uint64 timestamp		= 3; // only in proposed ledgers
-	optional uint32 confidence		= 4; // only in proposed ledgers
-	required bytes hanko			= 5;
-	required bytes sig				= 6;
+	required bytes validation		= 1;		// in SerializedValidation form
+	required bytes signature		= 2;
 }
-
 
 
 message TMGetValidations {

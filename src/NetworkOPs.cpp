@@ -7,6 +7,7 @@
 #include "utils.h"
 #include "Application.h"
 #include "Transaction.h"
+#include "LedgerConsensus.h"
 
 
 // This is the primary interface into the "client" portion of the program.
@@ -155,7 +156,7 @@ void NetworkOPs::setStateTimer(int sec)
 	uint64 closedTime = theApp->getMasterLedger().getCurrentLedger()->getCloseTimeNC();
 	uint64 now = getNetworkTimeNC();
 
-	if (mMode == omFULL)
+	if ((mMode == omFULL) && !mConsensus)
 	{
 		if (now >= closedTime) sec = 0;
 		else if (sec > (closedTime - now)) sec = (closedTime - now);
@@ -289,7 +290,7 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 			}
 			consensus = acq->getLedger();
 		}
-		switchLastClosedLedger(consensus, false);
+		switchLastClosedLedger(consensus);
 	}
 
 	if (mMode == omCONNECTED)
@@ -300,6 +301,7 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 	if (mMode == omTRACKING)
 	{
 		// check if the ledger is good enough to go to omFULL
+		// Note: Do not go to omFULL if we don't have the previous ledger
 		// check if the ledger is bad enough to go to omCONNECTED
 	}
 
@@ -309,28 +311,24 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 	}
 
 	Ledger::pointer currentLedger = theApp->getMasterLedger().getCurrentLedger();
-	if (getNetworkTimeNC() >= currentLedger->getCloseTimeNC())
-	{
-		currentLedger->setClosed();
-		switchLastClosedLedger(currentLedger, true);
-	}
+	if ( (getNetworkTimeNC() >= currentLedger->getCloseTimeNC()) && !mConsensus)
+		beginConsensus(currentLedger);
 
 	setStateTimer(10);
 }
 
-void NetworkOPs::switchLastClosedLedger(Ledger::pointer newLedger, bool normal)
-{ // set the newledger as our last closed ledger
-	// FIXME: Correct logic is:
-	// 1) Mark this ledger closed, schedule it to be saved
-	// 2) If normal, reprocess transactions
-	// 3) Open a new subsequent ledger
-	// 4) Walk back the previous ledger chain from our current ledger and the new last closed ledger
-	//   find a common previous ledger, if possible. Try to insert any transactions in our ledger
-	//   chain into the new open ledger. Broadcast any that make it in.
+void NetworkOPs::switchLastClosedLedger(Ledger::pointer newLedger)
+{ // set the newledger as our last closed ledger -- this is abnormal code
 
 #ifdef DEBUG
 	std::cerr << "Switching last closed ledger to " << newLedger->getHash().GetHex() << std::endl;
 #endif
+
+	if (mConsensus)
+	{
+		mConsensus->abort();
+		mConsensus = boost::shared_ptr<LedgerConsensus>();
+	}
 
 	newLedger->setClosed();
 	Ledger::pointer openLedger = boost::make_shared<Ledger>(newLedger);
@@ -340,24 +338,40 @@ void NetworkOPs::switchLastClosedLedger(Ledger::pointer newLedger, bool normal)
 	{ // this ledger has already closed
 	}
 
-	boost::shared_ptr<newcoin::TMStatusChange> s = boost::make_shared<newcoin::TMStatusChange>();
+}
+// vim:ts=4
 
-	s->set_newevent(normal ? newcoin::neACCEPTED_LEDGER : newcoin::neSWITCHED_LEDGER);
-	s->set_ledgerseq(newLedger->getLedgerSeq());
-	s->set_networktime(getNetworkTimeNC());
+void NetworkOPs::beginConsensus(Ledger::pointer closingLedger)
+{
+	if (mMode != omFULL)
+	{ // We just close this ledger and start a new one
+		switchLastClosedLedger(closingLedger);
+		return;
+	}
+	Ledger::pointer prevLedger = theApp->getMasterLedger().getLedgerByHash(closingLedger->getParentHash());
+	if (!prevLedger)
+	{ // this shouldn't happen if we jump ledgers
+		mMode = omTRACKING;
+		return;
+	}
 
-	uint256 lhash = newLedger->getHash();
-	s->set_ledgerhash(lhash.begin(), lhash.size());
-	lhash = newLedger->getParentHash();
-	s->set_previousledgerhash(lhash.begin(), lhash.size());
+	// Create a new ledger to be the open ledger
+	theApp->getMasterLedger().pushLedger(boost::make_shared<Ledger>(closingLedger));
 
+	// Create a consensus object to get consensus on this ledger
+	if (!!mConsensus) mConsensus->abort();
+	mConsensus = boost::make_shared<LedgerConsensus>(prevLedger, closingLedger);
 
 #ifdef DEBUG
-	std::cerr << "Broadcasting ledger change" << std::endl;
+	std::cerr << "Broadcasting ledger close" << std::endl;
 #endif
-
+	boost::shared_ptr<newcoin::TMStatusChange> s = boost::make_shared<newcoin::TMStatusChange>();
+	s->set_newevent(newcoin::neCLOSING_LEDGER);
+	s->set_ledgerseq(closingLedger->getLedgerSeq());
+	s->set_networktime(getNetworkTimeNC());
+	uint256 plhash = closingLedger->getParentHash();
+	s->set_previousledgerhash(plhash.begin(), plhash.size());
 	PackedMessage::pointer packet =
 		boost::make_shared<PackedMessage>(PackedMessage::MessagePointer(s), newcoin::mtSTATUS_CHANGE);
 	theApp->getConnectionPool().relayMessage(NULL, packet);
 }
-// vim:ts=4
