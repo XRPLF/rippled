@@ -161,11 +161,20 @@ public:
 	//
 
 	static uint256 getRippleIndex(const uint160& account, const uint160& extendTo, const uint160& currency);
+
 	static uint256 getRippleIndex(const uint160& account, const uint160& extendTo)
 	{ return getRippleIndex(account, extendTo, uint160()); }
+
 	static uint256 getRippleIndex(const NewcoinAddress& account, const NewcoinAddress& extendTo,
 	 const uint160& currency)
 	{ return getRippleIndex(account.getAccountID(), extendTo.getAccountID(), currency); }
+
+	static uint160 getOfferBase(const uint160& currencyIn, const uint160& accountIn,
+		const uint160& currencyOut, const uint160& accountOut);
+
+	static uint256 getOfferIndex(const uint160& offerBase, uint64 rate, int skip = 0);
+
+	static int getOfferSkip(const uint256& offerId);
 
 	bool isCompatible(boost::shared_ptr<Ledger> other);
 	bool signLedger(std::vector<unsigned char> &signature, const LocalHanko &hanko);
