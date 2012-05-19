@@ -438,7 +438,7 @@ public:
 	static const int typeOffer		= 2;	// Claiming an offer
 
 	int mType;
-	uint160 mNode, mCurrency;
+	uint160 mNode;
 };
 
 class STPath : public SerializedType

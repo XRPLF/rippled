@@ -282,7 +282,6 @@ STPath* STPath::construct(SerializerIterator& s, const char *name)
 				STPathElement element;
 				element.mType = STPathElement::typeOffer;
 				element.mNode = s.get160();
-				element.mCurrency = s.get160();
 				path.push_back(element);
 				break;
 			}
@@ -304,7 +303,7 @@ int STPath::getLength() const
 				break;
 
 			case STPathElement::typeOffer:
-				ret += 1 + 320 / 8; // type, account ID, and currency
+				ret += 1 + 160 / 8; // type, account ID, and currency
 				break;
 
 			default: throw std::runtime_error("Unknown path element");
@@ -322,19 +321,18 @@ Json::Value STPath::getJson(int) const
 		{
 			case STPathElement::typeAccount:
 			{
+				Json::Value elem(Json::objectValue);
 				NewcoinAddress account;
 				account.setAccountID(it->mNode);
-				ret.append(account.humanAccountID());
+				elem["Account"] = account.humanAccountID();
+				ret.append(elem);
 				break;
 			}
 
 			case STPathElement::typeOffer:
 			{
 				Json::Value elem(Json::objectValue);
-				NewcoinAddress account;
-				account.setAccountID(it->mNode);
-				elem["Offer"] = account.humanAccountID();
-				elem["Currency"] = it->mCurrency.GetHex(); // FIXME: We need a way to display currencies
+				elem["Offer"] = it->mNode.GetHex();
 				ret.append(elem);
 				break;
 			}
@@ -363,11 +361,9 @@ std::string STPath::getText() const
 			}
 			case STPathElement::typeOffer:
 			{
-				NewcoinAddress account;
-				account.setAccountID(it->mNode);
-				ret += account.humanAccountID();
-				ret += "/";
-				ret += it->mCurrency.GetHex(); // FIXME: We need a way to display currencies
+				ret += "Offer(";
+				ret += it->mNode.GetHex();
+				ret += ")";
 				break;
 			}
 
@@ -392,7 +388,6 @@ void STPath::add(Serializer& s) const
 			case STPathElement::typeOffer:
 				s.add8(STPathElement::typeOffer);
 				s.add160(it->mNode);
-				s.add160(it->mCurrency);
 				break;
 
 			default: throw std::runtime_error("Unknown path element");
