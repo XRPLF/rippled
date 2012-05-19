@@ -353,7 +353,8 @@ Json::Value RPCServer::doPeers(Json::Value& params)
 	return theApp->getConnectionPool().getPeersJson();
 }
 
-Json::Value RPCServer::doSendTo(Json::Value& params)
+
+Json::Value RPCServer::doSend(Json::Value& params)
 {   // Implement simple sending without gathering
 	// sendto <destination> <amount>
 	// sendto <destination> <amount> <tag>
@@ -549,6 +550,16 @@ Json::Value RPCServer::doValidatorCreate(Json::Value& params) {
 	return obj;
 }
 
+Json::Value RPCServer::doWalletAccounts(Json::Value& params)
+{
+	return "not implemented";
+}
+
+Json::Value RPCServer::doWalletAdd(Json::Value& params)
+{
+	return "not implemented";
+}
+
 // wallet_claim <master_seed> <regular_seed> [<source_tag>] [<account_annotation>]
 //
 // To provide an example to client writers, we do everything we expect a client to do here.
@@ -694,7 +705,6 @@ Json::Value RPCServer::doWalletCreate(Json::Value& params)
 		STAmount						saSrcBalance	= sleSrc->getIValueFieldAmount(sfBalance);
 		STAmount						saInitialFunds	= (params.size() < 4) ? 0 : boost::lexical_cast<uint64>(params[3u].asString());
 
-#if 0
 		if (saSrcBalance < theConfig.FEE_CREATE + saInitialFunds)
 		{
 			return "insufficent funds";
@@ -703,7 +713,7 @@ Json::Value RPCServer::doWalletCreate(Json::Value& params)
 		{
 			return "source account has not been claimed";
 		}
-#endif
+
 		NewcoinAddress	naRegularGenerator;
 		NewcoinAddress	naRegular0Public;
 		NewcoinAddress	naRegular0Private;
@@ -841,6 +851,11 @@ Json::Value RPCServer::doWalletSeed(Json::Value& params)
 	}
 }
 
+Json::Value RPCServer::doWalletVerify(Json::Value& params)
+{
+	return "not implemented";
+}
+
 void RPCServer::validatorsResponse(const boost::system::error_code& err, std::string strResponse)
 {
 	std::cerr << "Fetch '" VALIDATORS_FILE_NAME "' complete." << std::endl;
@@ -974,6 +989,8 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 	if (command == "account_info")		return doAccountInfo(params);
 	if (command == "connect")			return doConnect(params);
 	if (command == "peers")				return doPeers(params);
+
+	if (command == "send")				return doSend(params);
 	if (command == "stop")				return doStop(params);
 
 	if (command == "unl_add")			return doUnlAdd(params);
@@ -985,16 +1002,18 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 
 	if (command == "validation_create")	return doValidatorCreate(params);
 
+	if (command == "wallet_accounts")	return doWalletAccounts(params);
+	if (command == "wallet_add")		return doWalletAdd(params);
 	if (command == "wallet_claim")		return doWalletClaim(params);
 	if (command == "wallet_create")		return doWalletCreate(params);
 	if (command == "wallet_propose")	return doWalletPropose(params);
 	if (command == "wallet_seed")		return doWalletSeed(params);
+	if (command == "wallet_verify")		return doWalletVerify(params);
 
 	//
 	// Obsolete or need rewrite:
 	//
 
-	if (command=="sendto") return doSendTo(params);
 	if (command=="tx") return doTx(params);
 	if (command=="ledger") return doLedger(params);
 
