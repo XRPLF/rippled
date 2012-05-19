@@ -32,8 +32,6 @@ Ledger::Ledger(const NewcoinAddress& masterID, uint64 startAmount) : mTotCoins(s
 #ifdef DEBUG
 	std::cerr << "Root account:";
 	startAccount->dump();
-	AccountState::pointer as = getAccountState(masterID);
-	as->dump();
 #endif
 }
 
