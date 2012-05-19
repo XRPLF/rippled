@@ -194,7 +194,7 @@ protected:
 	bool mIsNative;
 
 	void canonicalize();
-	STAmount* duplicate() const { return new STAmount(name, mCurrency, mOffset, mValue); }
+	STAmount* duplicate() const { return new STAmount(name, mCurrency, mValue, mOffset); }
 	static STAmount* construct(SerializerIterator&, const char *name = NULL);
 
 	static const int cMinOffset = -96, cMaxOffset = 80;
