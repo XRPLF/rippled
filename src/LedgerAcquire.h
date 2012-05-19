@@ -3,11 +3,13 @@
 
 #include <vector>
 #include <map>
+#include <list>
 
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/function.hpp>
 #include <boost/asio.hpp>
 #include <boost/thread/mutex.hpp>
+#include <boost/weak_ptr.hpp>
 
 #include "Ledger.h"
 #include "Peer.h"
@@ -20,9 +22,9 @@ protected:
 	int mTimerInterval;
 	bool mComplete, mFailed;
 
-	boost::recursive_mutex				mLock;
-	boost::asio::deadline_timer			mTimer;
-	std::list< boost::weak_ptr<Peer> >	mPeers;
+	boost::recursive_mutex					mLock;
+	boost::asio::deadline_timer				mTimer;
+	std::vector< boost::weak_ptr<Peer> >	mPeers;
 
 	PeerSet(const uint256& hash, int interval);
 	virtual ~PeerSet() { ; }
