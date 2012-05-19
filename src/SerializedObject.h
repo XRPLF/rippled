@@ -95,6 +95,9 @@ public:
 	STObject(SOElement *t, SerializerIterator& u, const char *n = NULL);
 	virtual ~STObject() { ; }
 
+	void set(SOElement *t);
+	void set(SOElement *t, SerializerIterator& u);
+
 	int getLength() const;
 	SerializedTypeID getSType() const { return STI_OBJECT; }
 	virtual bool isEquivalent(const SerializedType& t) const;

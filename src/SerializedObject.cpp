@@ -65,7 +65,13 @@ std::auto_ptr<SerializedType> STObject::makeDeserializedObject(SerializedTypeID 
 			return STUInt64::deserialize(sit, name);
 
 		case STI_AMOUNT:
-			return STAmount::deserialize(sit, name);
+		{
+			std::cerr << "Deserializing " << name << std::endl;
+			std::auto_ptr<SerializedType> ptr = STAmount::deserialize(sit, name);
+			assert(!dynamic_cast<STAmount*>(&*ptr)->isZero());
+			std::cerr << "Got: " << ptr->getText() << std::endl;
+			return ptr;
+		}
 
 		case STI_HASH128:
 			return STHash128::deserialize(sit, name);
@@ -90,8 +96,12 @@ std::auto_ptr<SerializedType> STObject::makeDeserializedObject(SerializedTypeID 
 	}
 }
 
-STObject::STObject(SOElement* elem, const char *name) : SerializedType(name), mFlagIdx(-1)
+void STObject::set(SOElement* elem)
 {
+	mData.empty();
+	mType.empty();
+	mFlagIdx = -1;
+
 	while (elem->e_id != STI_DONE)
 	{
 		if (elem->e_type == SOE_FLAGS) mFlagIdx = mType.size();
@@ -104,8 +114,17 @@ STObject::STObject(SOElement* elem, const char *name) : SerializedType(name), mF
 	}
 }
 
-STObject::STObject(SOElement* elem, SerializerIterator& sit, const char *name) : SerializedType(name), mFlagIdx(-1)
+STObject::STObject(SOElement* elem, const char *name) : SerializedType(name)
 {
+	set(elem);
+}
+
+void STObject::set(SOElement* elem, SerializerIterator& sit)
+{
+	mData.empty();
+	mType.empty();
+	mFlagIdx = -1;
+
 	int flags = -1;
 	while (elem->e_id != STI_DONE)
 	{
@@ -140,6 +159,11 @@ STObject::STObject(SOElement* elem, SerializerIterator& sit, const char *name) :
 			giveObject(makeDeserializedObject(elem->e_id, elem->e_name, sit));
 		elem++;
 	}
+}
+
+STObject::STObject(SOElement* elem, SerializerIterator& sit, const char *name) : SerializedType(name), mFlagIdx(-1)
+{
+	set(elem, sit);
 }
 
 std::string STObject::getFullText() const
