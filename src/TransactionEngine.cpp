@@ -120,7 +120,11 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 
 		if (saSrcBalance < saPaid)
 		{
-			std::cerr << "applyTransaction: Delay transaction: insufficent balance" << std::endl;
+			std::cerr
+				<< str(boost::format("applyTransaction: Delay transaction: insufficent balance: balance=%s paid=%s")
+					% saSrcBalance
+					% saPaid)
+				<< std::endl;
 			return terINSUF_FEE_B;
 		}
 

@@ -11,7 +11,7 @@ SerializedTransaction::SerializedTransaction(TransactionType type) : mType(type)
 	mMiddleTxn.giveObject(new STAccount("SourceAccount"));
 	mMiddleTxn.giveObject(new STUInt32("Sequence"));
 	mMiddleTxn.giveObject(new STUInt8("Type", static_cast<unsigned char>(type)));
-	mMiddleTxn.giveObject(new STUInt64("Fee"));
+	mMiddleTxn.giveObject(new STAmount("Fee"));
 
 	mInnerTxn=STObject(mFormat->elements, "InnerTransaction");
 }
@@ -37,7 +37,7 @@ SerializedTransaction::SerializedTransaction(SerializerIterator& sit, int length
 	mMiddleTxn.giveObject(new STUInt32("Type", static_cast<uint32>(mType)));
 	mFormat = getTxnFormat(mType);
 	if (!mFormat) throw std::runtime_error("Transaction has invalid type");
-	mMiddleTxn.giveObject(new STUInt64("Fee", sit.get64()));
+	mMiddleTxn.giveObject(new STAmount("Fee", sit.get64()));
 
 	mInnerTxn = STObject(mFormat->elements, sit, "InnerTransaction");
 }
@@ -169,7 +169,7 @@ STAmount SerializedTransaction::getTransactionFee() const
 
 void SerializedTransaction::setTransactionFee(STAmount saFee)
 {
-	STUInt64* v = dynamic_cast<STUInt64*>(mMiddleTxn.getPIndex(TransactionIFee));
+	STAmount* v = dynamic_cast<STAmount*>(mMiddleTxn.getPIndex(TransactionIFee));
 	if (!v) throw std::runtime_error("corrupt transaction");
 	v->setValue(saFee);
 }

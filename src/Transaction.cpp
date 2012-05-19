@@ -159,7 +159,7 @@ Transaction::pointer Transaction::setCreate(
 {
 	mTransaction->setITFieldU32(sfFlags, tfCreateAccount);
 	mTransaction->setITFieldAccount(sfDestination, naCreateAccountID);
-	mTransaction->setITFieldU64(sfAmount, uFund);
+	mTransaction->setITFieldAmount(sfAmount, uFund);
 
 	sign(naPrivateKey);
 
@@ -192,7 +192,7 @@ Transaction::pointer Transaction::setPayment(
 	STAmount saAmount)
 {
 	mTransaction->setITFieldAccount(sfDestination, toAccount);
-	mTransaction->setITFieldU64(sfAmount, saAmount);
+	mTransaction->setITFieldAmount(sfAmount, saAmount);
 
 	sign(naPrivateKey);
 

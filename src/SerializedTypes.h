@@ -227,6 +227,7 @@ public:
 
 	int getOffset() const { return mOffset; }
 	uint64 getValue() const { return mValue; }
+	void setValue(const STAmount& v) { mValue=v; }
 	bool isNative() const { return mIsNative; }
 	const uint160& getCurrency() const { return mCurrency; }
 	void zero() { mOffset = mIsNative ? -100 : 0; mValue = 0; }

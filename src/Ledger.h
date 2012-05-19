@@ -99,7 +99,7 @@ public:
 	const uint256& getParentHash() const	{ return mParentHash; }
 	const uint256& getTransHash() const		{ return mTransHash; }
 	const uint256& getAccountHash() const	{ return mAccountHash; }
-	STAmount getTotalCoins() const			{ return mTotCoins; }
+	uint64 getTotalCoins() const			{ return mTotCoins; }
 	uint64 getCloseTimeNC() const			{ return mCloseTime; }
 	uint32 getLedgerSeq() const				{ return mLedgerSeq; }
 	uint16 getInterval() const				{ return mLedgerInterval; }
