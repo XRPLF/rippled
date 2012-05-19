@@ -618,7 +618,7 @@ Json::Value RPCServer::doWalletClaim(Json::Value& params)
 			naRegular0Public.getAccountPublic(),
 			vucGeneratorSig);
 
-		(void) theApp->getOPs().processTransaction(trns);
+		// (void) theApp->getOPs().processTransaction(trns);
 
 		Json::Value obj(Json::objectValue);
 
@@ -691,10 +691,11 @@ Json::Value RPCServer::doWalletCreate(Json::Value& params)
 			return "source account does not exist";
 		}
 
-		uint64							uSrcBalance		= sleSrc->getIFieldU64(sfBalance);
-		uint64							uInitialFunds	= (params.size() < 4) ? 0 : boost::lexical_cast<uint64>(params[3u].asString());
+		STAmount						saSrcBalance	= sleSrc->getIValueFieldAmount(sfBalance);
+		STAmount						saInitialFunds	= (params.size() < 4) ? 0 : boost::lexical_cast<uint64>(params[3u].asString());
 
-		if (uSrcBalance < theConfig.FEE_CREATE + uInitialFunds)
+#if 0
+		if (saSrcBalance < theConfig.FEE_CREATE + saInitialFunds)
 		{
 			return "insufficent funds";
 		}
@@ -702,7 +703,7 @@ Json::Value RPCServer::doWalletCreate(Json::Value& params)
 		{
 			return "source account has not been claimed";
 		}
-
+#endif
 		NewcoinAddress	naRegularGenerator;
 		NewcoinAddress	naRegular0Public;
 		NewcoinAddress	naRegular0Private;
@@ -765,7 +766,7 @@ Json::Value RPCServer::doWalletCreate(Json::Value& params)
 			theConfig.FEE_CREATE,
 			0,											// YYY No source tag
 			naCreateID,
-			uInitialFunds);								// Initial funds in XNC.
+			saInitialFunds);							// Initial funds in XNC.
 
 		(void) theApp->getOPs().processTransaction(trans);
 

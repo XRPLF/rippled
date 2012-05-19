@@ -48,8 +48,8 @@ public:
 	void setVersion(uint32);
 
 	TransactionType getTxnType() const { return mType; }
-	uint64 getTransactionFee() const;
-	void setTransactionFee(uint64);
+	STAmount getTransactionFee() const;
+	void setTransactionFee(STAmount saFee);
 
 	const NewcoinAddress& getSourceAccount() const { return mSourceAccount; }
 	std::vector<unsigned char> getSigningPubKey() const;

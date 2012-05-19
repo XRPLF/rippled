@@ -69,7 +69,7 @@ public:
 		{ return mObject.setValueFieldAccount(field, account); }
 	void setIFieldAccount(SOE_Field field, const NewcoinAddress& account)
 		{ return mObject.setValueFieldAccount(field, account); }
-	void setIFeldAmount(SOE_Field field, const STAmount& amount)
+	void setIFieldAmount(SOE_Field field, const STAmount& amount)
 		{ return mObject.setValueFieldAmount(field, amount); }
 
 	bool getIFieldPresent(SOE_Field field) const { return mObject.isFieldPresent(field); }
