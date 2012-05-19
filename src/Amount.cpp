@@ -414,12 +414,12 @@ STAmount multiply(const STAmount& v1, const STAmount& v2, const uint160& currenc
 }
 
 uint64 getRate(const STAmount& offerOut, const STAmount& offerIn)
-{ // Convert an offer into an index amount so they sort
+{ // Convert an offer into an index amount so they sort (lower is better)
 	// offerOut = how much comes out of the offer, from the offeror to the taker
 	// offerIn = how much goes into the offer, from the taker to the offeror
-	if (offerOut.isZero()) return 0;
-	STAmount r = divide(offerOut, offerIn, uint160(1));
+	if (offerOut.isZero()) throw std::runtime_error("Worthless offer");
 
+	STAmount r = divide(offerIn, offerOut, uint160(1));
 	assert((r.getOffset() >= -100) && (r.getOffset() <= 155));
 	uint64 ret = r.getOffset() + 100;
 	return (ret << (64 - 8)) | r.getValue();
