@@ -31,7 +31,7 @@ public:
 	AccountState(SerializedLedgerEntry::pointer ledgerEntry);	// For accounts in a ledger
 
 	const NewcoinAddress& getAccountID() const { return mAccountID; }
-	uint64 getBalance() const { return mLedgerEntry->getIFieldU64(sfBalance); }
+	STAmount getBalance() const { return mLedgerEntry->getIValueFieldAmount(sfBalance); }
 	uint32 getSeq() const { return mLedgerEntry->getIFieldU32(sfSequence); }
 
 	SerializedLedgerEntry::pointer getSLE() { return mLedgerEntry; }

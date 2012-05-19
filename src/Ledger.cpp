@@ -26,7 +26,7 @@ Ledger::Ledger(const NewcoinAddress& masterID, uint64 startAmount) : mTotCoins(s
 
 	// special case: put coins in root account
 	AccountState::pointer startAccount = boost::make_shared<AccountState>(masterID);
-	startAccount->peekSLE().setIFieldU64(sfBalance, startAmount);
+	startAccount->peekSLE().setIFieldAmount(sfBalance, startAmount);
 	startAccount->peekSLE().setIFieldU32(sfSequence, 1);
 	writeBack(lepCREATE, startAccount->getSLE());
 #ifdef DEBUG
@@ -55,7 +55,7 @@ Ledger::Ledger(Ledger::pointer prevLedger) : mParentHash(prevLedger->getHash()),
 	mCloseTime = prevLedger->getNextLedgerClose();
 }
 
-Ledger::Ledger(const std::vector<unsigned char>& rawLedger) : mTotCoins(0), mCloseTime(0),
+Ledger::Ledger(const std::vector<unsigned char>& rawLedger) : mCloseTime(0),
 	mLedgerSeq(0), mClosed(false), mValidHash(false), mAccepted(false), mImmutable(true)
 {
 	Serializer s(rawLedger);
@@ -75,7 +75,7 @@ Ledger::Ledger(const std::vector<unsigned char>& rawLedger) : mTotCoins(0), mClo
 	}
 }
 
-Ledger::Ledger(const std::string& rawLedger) : mTotCoins(0), mCloseTime(0),
+Ledger::Ledger(const std::string& rawLedger) : mCloseTime(0),
 	mLedgerSeq(0), mClosed(false), mValidHash(false), mAccepted(false), mImmutable(true)
 {
 	Serializer s(rawLedger);
@@ -154,11 +154,11 @@ bool Ledger::addTransaction(Transaction::pointer trans)
 	return true;
 }
 
-bool Ledger::addTransaction(const uint256& txID, const Serializer& txn, uint64_t fee)
+bool Ledger::addTransaction(const uint256& txID, const Serializer& txn, STAmount saPaid)
 { // low-level - just add to table
 	SHAMapItem::pointer item = boost::make_shared<SHAMapItem>(txID, txn.peekData());
 	if (!mTransactionMap->addGiveItem(item, true)) return false;
-	mTotCoins -= fee;
+	mTotCoins -= saPaid;
 	return true;
 }
 

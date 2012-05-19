@@ -54,12 +54,12 @@ public:
 
 
 private:
-	uint256 mHash, mParentHash, mTransHash, mAccountHash;
-	uint64 mTotCoins;
-	uint64 mCloseTime; // when this ledger closes
-	uint32 mLedgerSeq;
-	uint16 mLedgerInterval;
-	bool mClosed, mValidHash, mAccepted, mImmutable;
+	uint256		mHash, mParentHash, mTransHash, mAccountHash;
+	uint64		mTotCoins;
+	uint64		mCloseTime; // when this ledger closes
+	uint32		mLedgerSeq;
+	uint16		mLedgerInterval;
+	bool		mClosed, mValidHash, mAccepted, mImmutable;
 
 	SHAMap::pointer mTransactionMap, mAccountStateMap;
 
@@ -71,7 +71,7 @@ private:
 protected:
 
 	bool addTransaction(Transaction::pointer);
-	bool addTransaction(const uint256& id, const Serializer& txn, uint64_t fee);
+	bool addTransaction(const uint256& id, const Serializer& txn, STAmount saPaid);
 
 	static Ledger::pointer getSQL(const std::string& sqlStatement);
 
@@ -99,7 +99,7 @@ public:
 	const uint256& getParentHash() const	{ return mParentHash; }
 	const uint256& getTransHash() const		{ return mTransHash; }
 	const uint256& getAccountHash() const	{ return mAccountHash; }
-	uint64 getTotalCoins() const			{ return mTotCoins; }
+	STAmount getTotalCoins() const			{ return mTotCoins; }
 	uint64 getCloseTimeNC() const			{ return mCloseTime; }
 	uint32 getLedgerSeq() const				{ return mLedgerSeq; }
 	uint16 getInterval() const				{ return mLedgerInterval; }

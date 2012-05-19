@@ -56,12 +56,12 @@ private:
 	Transaction::pointer setCreate(
 		const NewcoinAddress& naPrivateKey,
 		const NewcoinAddress& naCreateAccountID,
-		uint64 uFund);
+		STAmount uFund);
 
 	Transaction::pointer setPayment(
 		const NewcoinAddress& naPrivateKey,
 		const NewcoinAddress& toAccount,
-		uint64 uAmount);
+		STAmount saAmount);
 
 public:
 	Transaction(const SerializedTransaction::pointer st, bool bValidate);
@@ -73,7 +73,7 @@ public:
 		const NewcoinAddress& naPublicKey,		// To prove transaction is consistent and authorized.
 		const NewcoinAddress& naSourceAccount,	// To identify the paying account.
 		uint32 uSeq,							// To order transactions.
-		uint64 uFee,							// Transaction fee.
+		STAmount saFee,							// Transaction fee.
 		uint32 uSourceTag);						// User call back value.
 
 	// Claim a wallet.
@@ -90,26 +90,20 @@ public:
 		const NewcoinAddress& naPublicKey, const NewcoinAddress& naPrivateKey,
 		const NewcoinAddress& naSourceAccount,
 		uint32 uSeq,
-		uint64 uFee,
+		STAmount saFee,
 		uint32 uSourceTag,
 		const NewcoinAddress& naCreateAccountID,	// Account to create.
-		uint64 uFund);								// Initial funds in XNC.
+		STAmount uFund);								// Initial funds in XNC.
 
 	// Make a payment.
 	static Transaction::pointer sharedPayment(
 		const NewcoinAddress& naPublicKey, const NewcoinAddress& naPrivateKey,
 		const NewcoinAddress& naSourceAccount,
 		uint32 uSeq,
-		uint64 uFee,
+		STAmount saFee,
 		uint32 uSourceTag,
 		const NewcoinAddress& toAccount,
-		uint64 uAmount);
-
-#if 0
-	Transaction(const NewcoinAddress& fromID, const NewcoinAddress& toID,
-		CKey::pointer pubKey, uint64 uAmount, uint64 fee, uint32 fromSeq, uint32 fromLedger,
-		uint32 ident, const std::vector<unsigned char>& signature, uint32 ledgerSeq, TransStatus st);
-#endif
+		STAmount saAmount);
 
 	bool sign(const NewcoinAddress& naAccountPrivate);
 	bool checkSign() const;
@@ -119,8 +113,8 @@ public:
 
 	const uint256& getID() const { return mTransactionID; }
 	const NewcoinAddress& getFromAccount() const { return mAccountFrom; }
-	uint64 getAmount() const { return mTransaction->getITFieldU64(sfAmount); }
-	uint64 getFee() const { return mTransaction->getTransactionFee(); }
+	STAmount getAmount() const { return mTransaction->getITFieldU64(sfAmount); }
+	STAmount getFee() const { return mTransaction->getTransactionFee(); }
 	uint32 getFromAccountSeq() const { return mTransaction->getSequence(); }
 	uint32 getSourceLedger() const { return mTransaction->getITFieldU32(sfTargetLedger); }
 	uint32 getIdent() const { return mTransaction->getITFieldU32(sfSourceTag); }
@@ -155,11 +149,6 @@ public:
 
 protected:
 	static Transaction::pointer transactionFromSQL(const std::string& statement);
-#if 0
-	Transaction(const uint256& transactionID, const NewcoinAddress& accountFrom, const NewcoinAddress& accountTo,
-		 CKey::pointer key, uint64 uAmount, uint64 fee, uint32 fromAccountSeq, uint32 sourceLedger,
-		 uint32 ident, const std::vector<unsigned char>& signature, uint32 inLedger, TransStatus status);
-#endif
 };
 
 #endif
