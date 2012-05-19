@@ -258,7 +258,7 @@ public:
 	friend STAmount divide(const STAmount& v1, const STAmount& v2, const uint160& currencyOut);
 	friend STAmount multiply(const STAmount& v1, const STAmount& v2, const uint160& currencyOut);
 
-	// Someone iis offering X for Y, what is the rate?
+	// Someone is offering X for Y, what is the rate?
 	friend uint64 getRate(const STAmount& offerOut, const STAmount& offerIn);
 
 	// Someone is offering X for Y, I try to pay Z, how much do I get?

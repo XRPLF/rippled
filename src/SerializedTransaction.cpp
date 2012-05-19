@@ -160,18 +160,18 @@ void SerializedTransaction::setVersion(uint32 ver)
 	v->setValue(ver);
 }
 
-uint64 SerializedTransaction::getTransactionFee() const
+STAmount SerializedTransaction::getTransactionFee() const
 {
-	const STUInt64* v = dynamic_cast<const STUInt64*>(mMiddleTxn.peekAtPIndex(TransactionIFee));
+	const STAmount* v = dynamic_cast<const STAmount*>(mMiddleTxn.peekAtPIndex(TransactionIFee));
 	if (!v) throw std::runtime_error("corrupt transaction");
 	return v->getValue();
 }
 
-void SerializedTransaction::setTransactionFee(uint64 fee)
+void SerializedTransaction::setTransactionFee(STAmount saFee)
 {
 	STUInt64* v = dynamic_cast<STUInt64*>(mMiddleTxn.getPIndex(TransactionIFee));
 	if (!v) throw std::runtime_error("corrupt transaction");
-	v->setValue(fee);
+	v->setValue(saFee);
 }
 
 uint32 SerializedTransaction::getSequence() const

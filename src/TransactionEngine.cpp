@@ -35,19 +35,19 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 		return tenINVALID;
 	}
 
-	uint64	uFee		= theConfig.FEE_DEFAULT;
+	STAmount	saCost		= theConfig.FEE_DEFAULT;
 
 	// Customize behavoir based on transaction type.
 	switch(txn.getTxnType())
 	{
 		case ttCLAIM:
-			uFee	= 0;
+			saCost	= 0;
 			break;
 
 		case ttPAYMENT:
 			if (txn.getFlags() & tfCreateAccount)
 			{
-				uFee	= theConfig.FEE_CREATE;
+				saCost	= theConfig.FEE_CREATE;
 			}
 			break;
 
@@ -70,13 +70,12 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	if (terSUCCESS != result)
 		return result;
 
-	uint64 txnFee = txn.getTransactionFee();
+	STAmount saPaid = txn.getTransactionFee();
 	if ( (params & tepNO_CHECK_FEE) != tepNONE)
 	{
-		if (uFee)
+		if (saCost)
 		{
-			// WRITEME: Check if fee is adequate
-			if (txnFee == 0)
+			if (saPaid < saCost)
 			{
 				std::cerr << "applyTransaction: insufficient fee" << std::endl;
 				return tenINSUF_FEE_P;
@@ -84,7 +83,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 		}
 		else
 		{
-			if (txnFee)
+			if (!saPaid.isZero())
 			{
 				// Transaction is malformed.
 				std::cerr << "applyTransaction: fee not allowed" << std::endl;
@@ -105,9 +104,9 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 
 	// find source account
 	// If we are only verifying some transactions, this would be probablistic.
-	LedgerStateParms qry = lepNONE;
-	SerializedLedgerEntry::pointer src = mLedger->getAccountRoot(qry, srcAccountID);
-	if (!src)
+	LedgerStateParms				qry		= lepNONE;
+	SerializedLedgerEntry::pointer	sleSrc	= mLedger->getAccountRoot(qry, srcAccountID);
+	if (!sleSrc)
 	{
 		std::cerr << str(boost::format("applyTransaction: Delay transaction: source account does not exisit: %s") % txn.getSourceAccount().humanAccountID()) << std::endl;
 		return terNO_ACCOUNT;
@@ -115,25 +114,25 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 
 	// deduct the fee, so it's not available during the transaction
 	// we only write the account back if the transaction succeeds
-	if (txnFee)
+	if (!saCost.isZero())
 	{
-		uint64 uSrcBalance = src->getIFieldU64(sfBalance);
+		STAmount saSrcBalance = sleSrc->getIValueFieldAmount(sfBalance);
 
-		if (uSrcBalance < txnFee)
+		if (saSrcBalance < saPaid)
 		{
 			std::cerr << "applyTransaction: Delay transaction: insufficent balance" << std::endl;
 			return terINSUF_FEE_B;
 		}
 
-		src->setIFieldU64(sfBalance, uSrcBalance - txnFee);
+		sleSrc->setIFieldAmount(sfBalance, saSrcBalance - saPaid);
 	}
 
 	// Validate sequence
 	uint32 t_seq = txn.getSequence();
 
-	if (uFee)
+	if (saCost)
 	{
-		uint32 a_seq = src->getIFieldU32(sfSequence);
+		uint32 a_seq = sleSrc->getIFieldU32(sfSequence);
 
 		if (t_seq != a_seq)
 		{
@@ -152,7 +151,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 			std::cerr << "applyTransaction: past sequence number" << std::endl;
 			return terPAST_SEQ;
 		}
-		else src->setIFieldU32(sfSequence, t_seq);
+		else sleSrc->setIFieldU32(sfSequence, t_seq);
 	}
 	else
 	{
@@ -164,7 +163,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	}
 
 	std::vector<AffectedAccount> accounts;
-	accounts.push_back(std::make_pair(taaMODIFY, src));
+	accounts.push_back(std::make_pair(taaMODIFY, sleSrc));
 
 	switch(txn.getTxnType())
 	{
@@ -219,7 +218,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 
 		Serializer s;
 		txn.add(s);
-		mLedger->addTransaction(txID, s, txnFee);
+		mLedger->addTransaction(txID, s, saPaid);
 	}
 
 	return result;
@@ -384,20 +383,20 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 		accounts.push_back(std::make_pair(taaMODIFY, dest));
 	}
 
-	uint64	uAmount = txn.getITFieldU64(sfAmount);
+	STAmount	saAmount = txn.getITFieldAmount(sfAmount);
 
 	if (!currency)
 	{
-		uint64	uSrcBalance = accounts[0].second->getIFieldU64(sfBalance);
+		STAmount	saSrcBalance = accounts[0].second->getIValueFieldAmount(sfBalance);
 
-		if (uSrcBalance < uAmount)
+		if (saSrcBalance < saAmount)
 		{
 			std::cerr << "doPayment: Delay transaction: Insufficent funds." << std::endl;
 			return terUNFUNDED;
 		}
 
-		accounts[0].second->setIFieldU64(sfBalance, uSrcBalance - uAmount);
-		accounts[1].second->setIFieldU64(sfBalance, accounts[1].second->getIFieldU64(sfBalance) + uAmount);
+		accounts[0].second->setIFieldAmount(sfBalance, saSrcBalance - saAmount);
+		accounts[1].second->setIFieldAmount(sfBalance, accounts[1].second->getIValueFieldAmount(sfBalance) + saAmount);
 	}
 	else
 	{
