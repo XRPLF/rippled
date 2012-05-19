@@ -618,7 +618,7 @@ Json::Value RPCServer::doWalletClaim(Json::Value& params)
 			naRegular0Public.getAccountPublic(),
 			vucGeneratorSig);
 
-		// (void) theApp->getOPs().processTransaction(trns);
+		(void) theApp->getOPs().processTransaction(trns);
 
 		Json::Value obj(Json::objectValue);
 
