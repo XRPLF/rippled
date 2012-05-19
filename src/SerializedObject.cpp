@@ -65,13 +65,7 @@ std::auto_ptr<SerializedType> STObject::makeDeserializedObject(SerializedTypeID 
 			return STUInt64::deserialize(sit, name);
 
 		case STI_AMOUNT:
-		{
-			std::cerr << "Deserializing " << name << std::endl;
-			std::auto_ptr<SerializedType> ptr = STAmount::deserialize(sit, name);
-			assert(!dynamic_cast<STAmount*>(&*ptr)->isZero());
-			std::cerr << "Got: " << ptr->getText() << std::endl;
-			return ptr;
-		}
+			return STAmount::deserialize(sit, name);
 
 		case STI_HASH128:
 			return STHash128::deserialize(sit, name);
