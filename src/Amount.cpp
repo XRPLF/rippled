@@ -317,6 +317,10 @@ STAmount divide(const STAmount& num, const STAmount& den, const uint160& currenc
 	uint64 numVal = num.mValue, denVal = den.mValue;
 	int numOffset = num.mOffset, denOffset = den.mOffset;
 
+	int finOffset = numOffset - denOffset;
+	if ((finOffset > 80) || (finOffset < 22))
+		throw std::runtime_error("division produces out of range result");
+
 	if (num.mIsNative)
 		while (numVal < STAmount::cMinValue)
 		{
@@ -356,6 +360,10 @@ STAmount multiply(const STAmount& v1, const STAmount& v2, const uint160& currenc
 
 	uint64 value1 = v1.mValue, value2 = v2.mValue;
 	int offset1 = v1.mOffset, offset2 = v2.mOffset;
+
+	int finOffset = offset1 + offset2;
+	if ((finOffset > 80) || (finOffset < 22))
+		throw std::runtime_error("multiplication produces out of range result");
 
 	if (v1.mIsNative)
 	{
@@ -406,12 +414,18 @@ uint64 getRate(const STAmount& offerOut, const STAmount& offerIn)
 {
 	// offerOut = how much comes out of the offer, from the offeror to the taker
 	// offerIn = how much goes into the offer, from the taker to the offeror
-	// FIXME
-	return offerOut / offerIn;
+	if (offerOut.isZero()) return 0;
+	STAmount r = divide(offerOut, offerIn, uint160(1));
+
+	assert((r.getOffset() >= -100) && (r.getOffset() <= 155));
+	uint64 ret = r.getOffset() + 100;
+	return (ret << (64 - 8)) | r.getValue();
 }
 
 STAmount getClaimed(STAmount& offerOut, STAmount& offerIn, STAmount& paid)
 { // if someone is offering (offerOut) for (offerIn), and I pay (paid), how much do I get?
+
+	offerIn.throwComparable(paid);
 
 	if (offerIn.isZero() || offerOut.isZero())
 	{ // If the offer is invalid or empty, you pay nothing and get nothing and the offer is dead
@@ -434,7 +448,7 @@ STAmount getClaimed(STAmount& offerOut, STAmount& offerIn, STAmount& paid)
 	}
 
 	// partial satisfaction of a normal offer
-	STAmount ret = (paid * offerOut) / offerIn;
+	STAmount ret = divide(multiply(paid, offerOut, uint160(1)) , offerIn, offerOut.getCurrency());
 	offerOut -= ret;
 	offerIn -= paid;
 	if (offerOut.isZero() || offerIn.isZero())
@@ -447,9 +461,9 @@ STAmount getClaimed(STAmount& offerOut, STAmount& offerIn, STAmount& paid)
 
 STAmount getNeeded(const STAmount& offerOut, const STAmount& offerIn, const STAmount& needed)
 { // Someone wants to get (needed) out of the offer, how much should they pay in?
-	if (offerOut.isZero()) return STAmount();
+	if (offerOut.isZero()) return STAmount(offerIn.getCurrency());
 	if (needed >= offerOut) return needed;
-	STAmount ret = (needed * offerIn) / offerOut;
+	STAmount ret = divide(multiply(needed, offerIn, uint160(1)), offerOut, offerIn.getCurrency());
 	return (ret > offerIn) ? offerIn : ret;
 }
 
