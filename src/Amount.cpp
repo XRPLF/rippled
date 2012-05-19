@@ -230,7 +230,7 @@ STAmount& STAmount::operator=(const STAmount& a)
 }
 
 STAmount& STAmount::operator=(uint64 v)
-{ // does not copy name
+{ // does not copy name, does not change currency type
 	mOffset = 0;
 	mValue = v;
 	if (!mIsNative) canonicalize();
