@@ -33,7 +33,7 @@ bool STAmount::currencyFromString(uint160& uDstCurrency, const std::string& sCur
 		s.addZeros(96/8);
 		s.addRaw(vucIso);
 		s.addZeros(16/8);
-		s.addZeros(25/8);
+		s.addZeros(24/8);
 
 		SerializerIterator	sit(s);
 
