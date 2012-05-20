@@ -54,16 +54,28 @@ std::string strHex(Iterator first, int iSize)
 	return strDst;
 }
 
-inline const std::string strHex(const std::string& strSrc) {
+inline const std::string strHex(const std::string& strSrc)
+{
 	return strHex(strSrc.begin(), strSrc.size());
 }
 
-inline std::string strHex(const std::vector<unsigned char> vchData) {
-	return strHex(vchData.begin(), vchData.size());
+inline std::string strHex(const std::vector<unsigned char> vucData)
+{
+	return strHex(vucData.begin(), vucData.size());
 }
 
-inline const std::string strHex(const uint160& ui) {
+inline const std::string strHex(const uint160& ui)
+{
 	return strHex(ui.begin(), ui.size());
+}
+
+template<class Iterator>
+bool isZero(Iterator first, int iSize)
+{
+	while (iSize && !*first++)
+		--iSize;
+
+	return !iSize;
 }
 
 int charUnHex(char cDigit);
