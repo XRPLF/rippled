@@ -5,14 +5,13 @@
 #include <set>
 
 #include "Transaction.h"
-#include "Hanko.h"
 
 class DisputedTransaction
 {
 protected:
 	Transaction::pointer mTransaction;
-	std::vector<Hanko::pointer> mNodesIncluding;
-	std::vector<Hanko::pointer> mNodesRejecting;
+//	std::vector<Hanko::pointer> mNodesIncluding;
+//	std::vector<Hanko::pointer> mNodesRejecting;
 	uint64 mTimeTaken; // when we took our position on this transaction
 	bool mOurPosition;
 };

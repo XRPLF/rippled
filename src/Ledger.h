@@ -177,7 +177,7 @@ public:
 	static int getOfferSkip(const uint256& offerId);
 
 	bool isCompatible(boost::shared_ptr<Ledger> other);
-	bool signLedger(std::vector<unsigned char> &signature, const LocalHanko &hanko);
+//	bool signLedger(std::vector<unsigned char> &signature, const LocalHanko &hanko);
 
 	void addJson(Json::Value&);
 

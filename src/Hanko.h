@@ -39,7 +39,7 @@ public:
         const CKey& GetPublicKey() const { return mPubKey; }
 
         int UpdateContact(std::vector<unsigned char>& Contact);
-        
+
         bool CheckHashSign(const uint256& hash, const std::vector<unsigned char>& Signature);
         bool CheckPrefixSign(const std::vector<unsigned char>& data, uint64 type,
           const std::vector<unsigned char> &signature);
@@ -62,3 +62,4 @@ public:
 };
 
 #endif
+// vim:ts=4
