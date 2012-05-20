@@ -1,11 +1,156 @@
 
 #include <cmath>
 #include <iomanip>
+#include <algorithm>
 
 #include <boost/lexical_cast.hpp>
 #include <boost/test/unit_test.hpp>
 
+#include "Config.h"
 #include "SerializedTypes.h"
+#include "utils.h"
+
+bool STAmount::currencyFromString(uint160& uDstCurrency, const std::string& sCurrency)
+{
+	bool	bSuccess	= true;
+
+	if (sCurrency.empty() || !sCurrency.compare(SYSTEM_CURRENCY_CODE))
+	{
+		uDstCurrency	= 0;
+	}
+	else if (3 == sCurrency.size())
+	{
+		std::vector<unsigned char>	vucIso(3);
+
+		std::transform(sCurrency.begin(), sCurrency.end(), vucIso.begin(), ::toupper);
+
+		// std::string	sIso;
+		// sIso.assign(vucIso.begin(), vucIso.end());
+		// std::cerr << "currency: " << sIso << std::endl;
+
+		Serializer	s;
+
+		s.addZeros(98/8);
+		s.addRaw(vucIso);
+		s.addZeros(16/8);
+		s.addZeros(25/8);
+
+		SerializerIterator	sit(s);
+
+		uDstCurrency	= sit.get160();
+	}
+	else
+	{
+		bSuccess	= false;
+	}
+
+	return bSuccess;
+}
+
+std::string STAmount::getCurrencyHuman()
+{
+	std::string	sCurrency;
+
+	if (mIsNative)
+	{
+		return SYSTEM_CURRENCY_CODE;
+	}
+	else
+	{
+		uint160	uReserved	= mCurrency;
+		Serializer s(160/20);
+
+		s.add160(mCurrency);
+
+		SerializerIterator	sit(s);
+
+		std::vector<unsigned char>	vucZeros	= sit.getRaw(96/8);
+		std::vector<unsigned char>	vucIso		= sit.getRaw(24/8);
+		std::vector<unsigned char>	vucVersion	= sit.getRaw(16/8);
+		std::vector<unsigned char>	vucReserved	= sit.getRaw(24/8);
+
+		if (!::isZero(vucZeros.begin(), vucZeros.size()))
+		{
+			throw std::runtime_error("bad currency: zeros");
+		}
+		else if (!::isZero(vucVersion.begin(), vucVersion.size()))
+		{
+			throw std::runtime_error("bad currency: version");
+		}
+		else if (!::isZero(vucReserved.begin(), vucReserved.size()))
+		{
+			throw std::runtime_error("bad currency: reserved");
+		}
+		else
+		{
+			sCurrency.assign(vucIso.begin(), vucIso.end());
+		}
+	}
+
+	return sCurrency;
+}
+
+// Not meant to be the ultimate parser.  For use by RPC which is supposed to be sane and trusted.
+bool STAmount::setValue(const std::string& sAmount, const std::string& sCurrency)
+{
+	if (!currencyFromString(mCurrency, sCurrency))
+		return false;
+
+	uint64	uValue;
+	int		iOffset;
+	size_t	uDecimal	= sAmount.find_first_of(".,");
+	bool	bInteger	= uDecimal == std::string::npos;
+
+	if (bInteger)
+	{
+		uValue	= sAmount.empty() ? 0 : boost::lexical_cast<uint>(sAmount);
+		iOffset	= 0;
+	}
+	else
+	{
+		// Example size decimal size-decimal offset
+		//    .1      2       0            2     -1
+		// 123.       4       3            1      0
+		//   1.23     4       1            3     -2
+		iOffset	= -(sAmount.size()-uDecimal-1);
+
+		uint64	uInteger	= uDecimal ? boost::lexical_cast<uint64>(sAmount.substr(0, uDecimal)) : 0;
+		uint64	uFraction	= iOffset ? boost::lexical_cast<uint64>(sAmount.substr(uDecimal+1)) : 0;
+
+		uValue	= uInteger;
+		for (int i=-iOffset; i--;)
+			uValue	*= 10;
+
+		uValue += uFraction;
+	}
+
+	mIsNative	= !mCurrency;
+	if (mIsNative)
+	{
+		if (bInteger)
+			iOffset	= -SYSTEM_CURRENCY_PRECISION;
+
+		while (iOffset > -SYSTEM_CURRENCY_PRECISION) {
+			uValue	*= 10;
+			--iOffset;
+		}
+
+		while (iOffset < -SYSTEM_CURRENCY_PRECISION) {
+			uValue	/= 10;
+			++iOffset;
+		}
+
+		mValue		= uValue;
+	}
+	else
+	{
+		mValue		= uValue;
+		mOffset		= iOffset;
+		canonicalize();
+	}
+
+	return true;
+}
 
 // amount = value * [10 ^ offset]
 // representation range is 10^80 - 10^(-80)

@@ -4,6 +4,16 @@
 #include <openssl/ripemd.h>
 #include <openssl/sha.h>
 
+int Serializer::addZeros(size_t uBytes)
+{
+	int ret = mData.size();
+
+	while (uBytes--)
+		mData.push_back(0);
+
+	return ret;
+}
+
 int Serializer::add16(uint16 i)
 {
 	int ret = mData.size();
@@ -574,4 +584,13 @@ std::vector<TaggedListItem> SerializerIterator::getTaggedList()
 	mPos += length;
 	return tl;
 }
+
+std::vector<unsigned char> SerializerIterator::getRaw(int iLength)
+{
+	int	iPos	= mPos;
+	mPos		+= iLength;
+
+	return mSerializer.getRaw(iPos, iLength);
+}
+
 // vim:ts=4

@@ -7,6 +7,7 @@
 #include <fstream>
 #include <boost/lexical_cast.hpp>
 
+// Fees are in XNS raw.
 #define	DEFAULT_FEE_CREATE				1000
 #define	DEFAULT_FEE_DEFAULT				100
 
@@ -121,15 +122,6 @@ void Config::load()
 				FEE_DEFAULT = boost::lexical_cast<int>(strTemp);
 		}
 	}
-
-	/*
-	node=root.child("DB_TYPE");
-	if(!node.empty())
-	{
-		if( stricmp(node.child_value(),"mysql")==0 ) theApp->setDB(Database::newMysqlDatabase("host","user","pass"));
-		else theApp->setSerializer(new DiskSerializer());
-	}else */
-
 }
 
 // vim:ts=4

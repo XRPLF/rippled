@@ -232,10 +232,12 @@ public:
 	int getOffset() const { return mOffset; }
 	uint64 getValue() const { return mValue; }
 	void setValue(const STAmount& v) { mValue=v; }
+	std::string getCurrencyHuman();
 	bool isNative() const { return mIsNative; }
 	const uint160& getCurrency() const { return mCurrency; }
 	void zero() { mOffset = mIsNative ? -100 : 0; mValue = 0; }
 	bool isZero() const { return mValue == 0; }
+	bool setValue(const std::string& sAmount, const std::string& sCurrency);
 
 	virtual bool isEquivalent(const SerializedType& t) const;
 
@@ -279,6 +281,7 @@ public:
 		const char* name = NULL);
 
 	static STAmount deSerialize(SerializerIterator&);
+	static bool currencyFromString(uint160& uDstCurrency, const std::string& sCurrency);
 };
 
 class STHash128 : public SerializedType
