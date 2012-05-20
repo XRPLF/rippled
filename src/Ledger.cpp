@@ -29,7 +29,7 @@ Ledger::Ledger(const NewcoinAddress& masterID, uint64 startAmount) : mTotCoins(s
 	startAccount->peekSLE().setIFieldAmount(sfBalance, startAmount);
 	startAccount->peekSLE().setIFieldU32(sfSequence, 1);
 	writeBack(lepCREATE, startAccount->getSLE());
-#ifdef DEBUG
+#if 0
 	std::cerr << "Root account:";
 	startAccount->dump();
 	AccountState::pointer as = getAccountState(masterID);

@@ -15,17 +15,6 @@
 
 Application* theApp=NULL;
 
-/*
-What needs to happen:
-	Listen for connections
-	Try to maintain the right number of connections
-	Process messages from peers
-	Process messages from RPC
-	Periodically publish a new ledger
-	Save the various pieces of data 
-
-*/
-
 DatabaseCon::DatabaseCon(const std::string& name, const char *initStrings[], int initCount)
 {
 	std::string path=strprintf("%s%s", theConfig.DATA_DIR.c_str(), name.c_str());
@@ -117,9 +106,8 @@ void Application::run()
 
 	rootAddress.setAccountPublic(rootGeneratorMaster, 0);
 
-	std::cerr << "Master seed: " << rootSeedMaster.humanFamilySeed() << std::endl;
-	std::cerr << "Master generator: " << rootGeneratorMaster.humanFamilyGenerator() << std::endl;
-	std::cerr << "Root public key: " << rootAddress.humanAccountPublic() << std::endl;
+	// Print enough information to be able to claim root account.
+	std::cerr << "Root master seed: " << rootSeedMaster.humanFamilySeed() << std::endl;
 	std::cerr << "Root account: " << rootAddress.humanAccountID() << std::endl;
 
 	Ledger::pointer firstLedger = boost::make_shared<Ledger>(rootAddress, 100000000);
