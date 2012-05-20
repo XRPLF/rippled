@@ -36,6 +36,7 @@ class Serializer
 	int addRaw(const std::vector<unsigned char> &vector);
 	int addRaw(const void *ptr, int len);
 	int addRaw(const Serializer& s);
+	int addZeros(size_t uBytes);
 
 	int addVL(const std::vector<unsigned char> &vector);
 	int addVL(const void *ptr, int len);
@@ -135,6 +136,8 @@ public:
 	uint128 get128();
 	uint160 get160();
 	uint256 get256();
+
+	std::vector<unsigned char> getRaw(int iLength);
 
 	std::vector<unsigned char> getVL();
 	std::vector<TaggedListItem> getTaggedList();
