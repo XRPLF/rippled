@@ -8,6 +8,7 @@
 #include "HttpRequest.h"
 #include "RequestParser.h"
 #include "NewcoinAddress.h"
+#include "SerializedLedger.h"
 
 class RPCServer  : public boost::enable_shared_from_this<RPCServer>
 {
@@ -30,6 +31,10 @@ class RPCServer  : public boost::enable_shared_from_this<RPCServer>
 	Json::Value doCommand(const std::string& command, Json::Value& params);
 	int getParamCount(const Json::Value& params);
 	bool extractString(std::string& param, const Json::Value& params, int index);
+
+	Json::Value authorize(const NewcoinAddress& naSeed, const NewcoinAddress& naSrcAccountID,
+	    NewcoinAddress& naAccountPublic, NewcoinAddress& naAccountPrivate,
+	    SerializedLedgerEntry::pointer& sleSrc);
 
 	Json::Value doAccountInfo(Json::Value& params);
 	Json::Value doConnect(Json::Value& params);

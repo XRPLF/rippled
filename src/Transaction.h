@@ -103,7 +103,8 @@ public:
 		STAmount saFee,
 		uint32 uSourceTag,
 		const NewcoinAddress& toAccount,
-		STAmount saAmount);
+		STAmount saAmount,
+		STAmount saSendMax);
 
 	bool sign(const NewcoinAddress& naAccountPrivate);
 	bool checkSign() const;

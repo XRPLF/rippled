@@ -206,7 +206,8 @@ Transaction::pointer Transaction::sharedPayment(
 	STAmount saFee,
 	uint32 uSourceTag,
 	const NewcoinAddress& toAccount,
-	STAmount saAmount)
+	STAmount saAmount,
+	STAmount saSendMax)
 {
 	pointer	tResult	= boost::make_shared<Transaction>(ttPAYMENT,
 						naPublicKey, naSourceAccount,

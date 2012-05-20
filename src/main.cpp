@@ -42,7 +42,7 @@ void printHelp(const po::options_description& desc)
 	cout << "     connect <ip> [<port>]" << endl;
 	cout << "     ledger" << endl;
 	cout << "     peers" << endl;
-	cout << "     sendto <destination> <amount> [<tag>]" << endl;
+	cout << "     send <regular_seed> <paying_account> <account_id> <amount> [<currency>] [<send_max>] [<send_currency>]" << endl;
 	cout << "     stop" << endl;
 	cout << "     tx" << endl;
 	cout << "     unl_add <domain>|<public> [<comment>]" << endl;

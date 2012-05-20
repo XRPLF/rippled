@@ -17,7 +17,6 @@
 #include "RPC.h"
 #include "Wallet.h"
 #include "Conversion.h"
-#include "LocalTransaction.h"
 #include "NewcoinAddress.h"
 #include "AccountState.h"
 #include "utils.h"
@@ -160,19 +159,83 @@ bool RPCServer::extractString(std::string& param, const Json::Value& params, int
 	return true;
 }
 
-#if 0
-NewcoinAddress RPCServer::parseFamily(const std::string& fParam)
+// Given a seed and a source account get the public and private key for authorizing transactions for the account.
+Json::Value RPCServer::authorize(const NewcoinAddress& naSeed, const NewcoinAddress& naSrcAccountID,
+	NewcoinAddress& naAccountPublic, NewcoinAddress& naAccountPrivate,
+	SerializedLedgerEntry::pointer& sleSrc)
 {
-	NewcoinAddress	family;
+	Ledger::pointer					ledger			= theApp->getMasterLedger().getCurrentLedger();
+	LedgerStateParms				qry				= lepNONE;
 
-	if (family.setFamilyGenerator(fParam))
+	sleSrc			= ledger->getAccountRoot(qry, naSrcAccountID);
+	if (!sleSrc)
 	{
-		family = theApp->getWallet().findFamilyPK(family);
+		return JSONRPCError(500, "source account does not exist");
 	}
 
-	return family;
+	if (!sleSrc->getIFieldPresent(sfAuthorizedKey))
+	{
+		return JSONRPCError(500, "source account has not been claimed");
+	}
+
+	NewcoinAddress	naGenerator;
+	NewcoinAddress	na0Public;		// To find the generator index.
+	NewcoinAddress	na0Private;		// To decrypt the master generator's cipher.
+
+	naGenerator.setFamilyGenerator(naSeed);
+	na0Public.setAccountPublic(naGenerator, 0);
+	na0Private.setAccountPrivate(naGenerator, naSeed, 0);
+
+									qry				= lepNONE;
+	SerializedLedgerEntry::pointer	sleGen			= ledger->getGenerator(qry, na0Public.getAccountID());
+
+	if (!sleGen)
+	{
+		// No account has been claimed or has had it password set for seed.
+		return JSONRPCError(500, "wrong password");
+	}
+
+	std::vector<unsigned char>	vucCipher			= sleGen->getIFieldVL(sfGenerator);
+	std::vector<unsigned char>	vucMasterGenerator	= na0Private.accountPrivateDecrypt(na0Public, vucCipher);
+	if (vucMasterGenerator.empty())
+	{
+		return JSONRPCError(500, "internal error: password failed to decrypt master public generator");
+	}
+
+	NewcoinAddress	naMasterGenerator;
+
+	naMasterGenerator.setFamilyGenerator(vucMasterGenerator);
+
+	//
+	// Find the index of the account from the master generator, so we can generate the public and private keys.
+	//
+	NewcoinAddress	naMasterAccountPublic;
+	uint			iIndex = -1;	// Compensate for initial increment.
+
+	// XXX Stop after Config.account_probe_max
+	// Don't look at ledger entries to determine if the account exists.  Don't want to leak to thin server that these accounts are
+	// related.
+	do {
+		++iIndex;
+		naMasterAccountPublic.setAccountPublic(naMasterGenerator, iIndex);
+	} while (naSrcAccountID.getAccountID() != naMasterAccountPublic.getAccountID());
+
+	naAccountPublic.setAccountPublic(naGenerator, iIndex);
+	naAccountPrivate.setAccountPrivate(naGenerator, naSeed, iIndex);
+
+	if (sleSrc->getIFieldH160(sfAuthorizedKey) != naAccountPublic.getAccountID())
+	{
+		std::cerr << "iIndex: " << iIndex << std::endl;
+		std::cerr << "sfAuthorizedKey: " << strHex(sleSrc->getIFieldH160(sfAuthorizedKey)) << std::endl;
+		std::cerr << "naAccountPublic: " << strHex(naAccountPublic.getAccountID()) << std::endl;
+
+		return JSONRPCError(500, "wrong password (changed)");
+	}
+
+	Json::Value obj(Json::objectValue);
+
+	return obj;
 }
-#endif
 
 // account_info <account>|<nickname>|<account_public_key>
 // account_info <seed>|<pass_phrase>|<key> [<index>]
@@ -266,57 +329,6 @@ Json::Value RPCServer::doAccountInfo(Json::Value &params)
 	}
 }
 
-#if 0
-Json::Value RPCServer::doLock(Json::Value &params)
-{   // lock <family>
-	// lock
-	std::string fParam;
-
-	if (extractString(fParam, params, 0))
-	{ // local <family>
-		NewcoinAddress family = parseFamily(fParam);
-		if (!family.isValid()) return JSONRPCError(500, "Family not found");
-
-		theApp->getWallet().lock(family);
-	}
-	else
-	{
-		theApp->getWallet().lock();
-	}
-
-	return "locked";
-}
-
-Json::Value RPCServer::doUnlock(Json::Value &params)
-{   // unlock sXXXX
-    // unlock "<pass phrase>"
-
-	std::string param;
-	NewcoinAddress familyGenerator;
-
-	if (!extractString(param, params, 0) || familyGenerator.setFamilyGenerator(param))
-		return JSONRPCError(500, "Private key required");
-
-	NewcoinAddress family;
-	NewcoinAddress familySeed;
-
-	if (familySeed.setFamilySeed(param))
-		// sXXX
-		family=theApp->getWallet().addFamily(familySeed, false);
-	else
-		// pass phrase
-		family=theApp->getWallet().addFamily(param, false);
-
-	if (!family.isValid())
-		return JSONRPCError(500, "Bad family");
-
-	Json::Value ret(theApp->getWallet().getFamilyJson(family));
-	if (ret.isNull()) return JSONRPCError(500, "Invalid family");
-
-	return ret;
-}
-#endif
-
 Json::Value RPCServer::doConnect(Json::Value& params)
 {
 	// connect <ip> [port]
@@ -395,18 +407,50 @@ Json::Value RPCServer::doSend(Json::Value& params)
 	{
 		return JSONRPCError(500, "bad src amount/currency");
 	}
+	else if (!theApp->getOPs().available()) {
+		return "network not available";
+	}
 	else
 	{
-		Json::Value obj(Json::objectValue);
+		NewcoinAddress					naAccountPublic;
+		NewcoinAddress					naAccountPrivate;
+	    SerializedLedgerEntry::pointer	sleSrc;
+		Json::Value						obj				= authorize(naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate, sleSrc);
 
-		// obj["transaction"]		= trans->getSTransaction()->getJson(0);
-		obj["seed"]				= naSeed.humanFamilySeed();
-		obj["srcAccountID"]		= naSrcAccountID.humanAccountID();
-		obj["dstAccountID"]		= naDstAccountID.humanAccountID();
-		obj["srcAmount"]		= saSrcAmount.getText();
-		obj["srcISO"]			= saSrcAmount.getCurrencyHuman();
-		obj["dstAmount"]		= saDstAmount.getText();
-		obj["dstISO"]			= saDstAmount.getCurrencyHuman();
+		STAmount						saSrcBalance	= sleSrc->getIValueFieldAmount(sfBalance);
+
+		if (!obj.isNull())
+		{
+			nothing();
+		}
+		else if (saSrcBalance < theConfig.FEE_DEFAULT)
+		{
+			return JSONRPCError(500, "insufficent funds");
+		}
+		else
+		{
+			Transaction::pointer	trans	= Transaction::sharedPayment(
+				naAccountPublic, naAccountPrivate,
+				naSrcAccountID,
+				sleSrc->getIFieldU32(sfSequence),
+				theConfig.FEE_DEFAULT,
+				0,											// YYY No source tag
+				naDstAccountID,
+				saDstAmount,
+				saSrcAmount);
+
+			(void) theApp->getOPs().processTransaction(trans);
+
+			obj["transaction"]		= trans->getSTransaction()->getJson(0);
+			obj["status"]			= trans->getStatus();
+			obj["seed"]				= naSeed.humanFamilySeed();
+			obj["srcAccountID"]		= naSrcAccountID.humanAccountID();
+			obj["dstAccountID"]		= naDstAccountID.humanAccountID();
+			obj["srcAmount"]		= saSrcAmount.getText();
+			obj["srcISO"]			= saSrcAmount.getCurrencyHuman();
+			obj["dstAmount"]		= saDstAmount.getText();
+			obj["dstISO"]			= saDstAmount.getCurrencyHuman();
+		}
 
 		return obj;
 	}
@@ -422,21 +466,15 @@ Json::Value RPCServer::doTx(Json::Value& params)
 	std::string param1, param2;
 	if (!extractString(param1, params, 0))
 	{ // all local transactions
-#if 1
 		return "not implemented";
-#else
-		Json::Value ret(Json::objectValue);
-		theApp->getWallet().addLocalTransactions(ret);
-		return ret;
-#endif
 	}
 
 	if (Transaction::isHexTxID(param1))
 	{ // transaction by ID
 		Json::Value ret;
 		uint256 txid(param1);
-		if (theApp->getWallet().getTxJson(txid, ret))
-			return ret;
+		// if (theApp->getWallet().getTxJson(txid, ret))
+		//	return ret;
 
 		Transaction::pointer txn=theApp->getMasterTransaction().fetch(txid, true);
 		if (!txn) return JSONRPCError(500, "Transaction not found");
@@ -658,13 +696,13 @@ Json::Value RPCServer::doWalletCreate(Json::Value& params)
 {
 	NewcoinAddress	naSrcAccountID;
 	NewcoinAddress	naDstAccountID;
-	NewcoinAddress	naRegularSeed;
+	NewcoinAddress	naSeed;
 
 	if (params.size() < 3 || params.size() > 4)
 	{
 		return "invalid params";
 	}
-	else if (!naRegularSeed.setFamilySeedGeneric(params[0u].asString()))
+	else if (!naSeed.setFamilySeedGeneric(params[0u].asString()))
 	{
 		return "disallowed seed";
 	}
@@ -688,101 +726,40 @@ Json::Value RPCServer::doWalletCreate(Json::Value& params)
 	{
 		// Trying to build:
 		//   peer_wallet_create <paying_account> <paying_signature> <account_id> [<initial_funds>] [<annotation>]
-		//   peer_payment
-		//
-		// Which has no confidential information.
 
-		Ledger::pointer					ledger			= theApp->getMasterLedger().getCurrentLedger();
-		LedgerStateParms				qry				= lepNONE;
-	    SerializedLedgerEntry::pointer	sleSrc			= ledger->getAccountRoot(qry, naSrcAccountID);
-
-		if (!sleSrc)
-		{
-			return "source account does not exist";
-		}
+		NewcoinAddress					naAccountPublic;
+		NewcoinAddress					naAccountPrivate;
+	    SerializedLedgerEntry::pointer	sleSrc;
+		Json::Value						obj				= authorize(naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate, sleSrc);
 
 		STAmount						saSrcBalance	= sleSrc->getIValueFieldAmount(sfBalance);
 		STAmount						saInitialFunds	= (params.size() < 4) ? 0 : boost::lexical_cast<uint64>(params[3u].asString());
 
-		if (saSrcBalance < theConfig.FEE_CREATE + saInitialFunds)
+
+		if (!obj.isNull())
 		{
-			return "insufficent funds";
+			nothing();
 		}
-		else if (!sleSrc->getIFieldPresent(sfAuthorizedKey))
+		else if (saSrcBalance < theConfig.FEE_CREATE + saInitialFunds)
 		{
-			return "source account has not been claimed";
+			return JSONRPCError(500, "insufficent funds");
 		}
-
-		NewcoinAddress	naRegularGenerator;
-		NewcoinAddress	naRegular0Public;
-		NewcoinAddress	naRegular0Private;
-
-		naRegularGenerator.setFamilyGenerator(naRegularSeed);
-		naRegular0Public.setAccountPublic(naRegularGenerator, 0);
-		naRegular0Private.setAccountPrivate(naRegularGenerator, naRegularSeed, 0);
-
-										qry				= lepNONE;
-		SerializedLedgerEntry::pointer	sleGen			= ledger->getGenerator(qry, naRegular0Public.getAccountID());
-
-		if (!sleGen)
+		else
 		{
-			// No account has been claimed or has had it password set for seed.
-			return "wrong password";
+			Transaction::pointer	trans	= Transaction::sharedCreate(
+				naAccountPublic, naAccountPrivate,
+				naSrcAccountID,
+				sleSrc->getIFieldU32(sfSequence),
+				theConfig.FEE_CREATE,
+				0,											// YYY No source tag
+				naDstAccountID,
+				saInitialFunds);							// Initial funds in XNC.
+
+			(void) theApp->getOPs().processTransaction(trans);
+
+			obj["transaction"]		= trans->getSTransaction()->getJson(0);
+			obj["status"]			= trans->getStatus();
 		}
-
-		std::vector<unsigned char>	vucCipher			= sleGen->getIFieldVL(sfGenerator);
-		std::vector<unsigned char>	vucMasterGenerator	= naRegular0Private.accountPrivateDecrypt(naRegular0Public, vucCipher);
-		if (vucMasterGenerator.empty())
-		{
-			return "internal error: password failed to decrypt master public generator";
-		}
-
-		NewcoinAddress	naMasterGenerator;
-
-		naMasterGenerator.setFamilyGenerator(vucMasterGenerator);
-
-		//
-		// Find the index of the account from the master generator, so we can generator the public and private keys.
-		//
-		NewcoinAddress	naMasterAccountPublic;
-		uint			iIndex = -1;	// Compensate for initial increment.
-
-		// XXX Stop after Config.account_probe_max
-		do {
-			++iIndex;
-			naMasterAccountPublic.setAccountPublic(naMasterGenerator, iIndex);
-		} while (naSrcAccountID.getAccountID() != naMasterAccountPublic.getAccountID());
-
-		NewcoinAddress	naRegularAccountPublic;
-		NewcoinAddress	naRegularAccountPrivate;
-
-		naRegularAccountPublic.setAccountPublic(naRegularGenerator, iIndex);
-		naRegularAccountPrivate.setAccountPrivate(naRegularGenerator, naRegularSeed, iIndex);
-
-		if (sleSrc->getIFieldH160(sfAuthorizedKey) != naRegularAccountPublic.getAccountID())
-		{
-			std::cerr << "iIndex: " << iIndex << std::endl;
-			std::cerr << "sfAuthorizedKey: " << strHex(sleSrc->getIFieldH160(sfAuthorizedKey)) << std::endl;
-			std::cerr << "naRegularAccountPublic: " << strHex(naRegularAccountPublic.getAccountID()) << std::endl;
-
-			return "wrong password (changed)";
-		}
-
-		Transaction::pointer	trans	= Transaction::sharedCreate(
-			naRegularAccountPublic, naRegularAccountPrivate,
-			naSrcAccountID,
-			sleSrc->getIFieldU32(sfSequence),
-			theConfig.FEE_CREATE,
-			0,											// YYY No source tag
-			naDstAccountID,
-			saInitialFunds);							// Initial funds in XNC.
-
-		(void) theApp->getOPs().processTransaction(trans);
-
-		Json::Value obj(Json::objectValue);
-
-		obj["transaction"]		= trans->getSTransaction()->getJson(0);
-		obj["status"]			= trans->getStatus();
 
 		return obj;
 	}
