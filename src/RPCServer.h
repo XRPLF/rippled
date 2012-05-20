@@ -35,7 +35,7 @@ class RPCServer  : public boost::enable_shared_from_this<RPCServer>
 	Json::Value doConnect(Json::Value& params);
 	Json::Value doLedger(Json::Value& params);
 	Json::Value doPeers(Json::Value& params);
-	Json::Value doSendTo(Json::Value& params);
+	Json::Value doSend(Json::Value& params);
 	Json::Value doSessionClose(Json::Value& params);
 	Json::Value doSessionOpen(Json::Value& params);
 	Json::Value doStop(Json::Value& params);
@@ -52,12 +52,14 @@ class RPCServer  : public boost::enable_shared_from_this<RPCServer>
 	Json::Value doValidatorCreate(Json::Value& params);
 
 	Json::Value doWalletAccounts(Json::Value& params);
+	Json::Value doWalletAdd(Json::Value& params);
 	Json::Value doWalletClaim(Json::Value& params);
 	Json::Value doWalletCreate(Json::Value& params);
 	Json::Value doWalletLock(Json::Value& params);
 	Json::Value doWalletPropose(Json::Value& params);
 	Json::Value doWalletSeed(Json::Value& params);
 	Json::Value doWalletUnlock(Json::Value& params);
+	Json::Value doWalletVerify(Json::Value& params);
 
 	void validatorsResponse(const boost::system::error_code& err, std::string strResponse);
 

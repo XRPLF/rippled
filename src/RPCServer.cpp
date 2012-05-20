@@ -354,63 +354,62 @@ Json::Value RPCServer::doPeers(Json::Value& params)
 }
 
 
+// send regular_seed paying_account account_id amount [currency] [send_max] [send_currency]
 Json::Value RPCServer::doSend(Json::Value& params)
-{   // Implement simple sending without gathering
-	// sendto <destination> <amount>
-	// sendto <destination> <amount> <tag>
-	if (!params.isArray() || (params.size()<2))
+{
+	NewcoinAddress	naSeed;
+	NewcoinAddress	naSrcAccountID;
+	NewcoinAddress	naDstAccountID;
+	STAmount		saSrcAmount;
+	STAmount		saDstAmount;
+	std::string		sSrcCurrency;
+	std::string		sDstCurrency;
+
+	if (params.size() >= 5)
+		sDstCurrency	= params[4u].asString();
+
+	if (params.size() >= 7)
+		sSrcCurrency	= params[6u].asString();
+
+	if (!params.isArray() || params.size() < 3 || params.size() > 7)
+	{
 		return JSONRPCError(500, "Invalid parameters");
-
-	int paramCount=getParamCount(params);
-	if ((paramCount<2)||(paramCount>3))
-		return JSONRPCError(500, "Invalid parameters");
-
-	std::string sDest, sAmount;
-	if (!extractString(sDest, params, 0) || !extractString(sAmount, params, 1))
-		return JSONRPCError(500, "Invalid parameters");
-
-	NewcoinAddress destAccount;
-
-	destAccount.setAccountID(sDest) || destAccount.setAccountPublic(sDest);
-	if (!destAccount.isValid())
-		return JSONRPCError(500, "Unable to parse destination account");
-
-	uint64 iAmount;
-	try
-	{
-		iAmount=boost::lexical_cast<uint64>(sAmount);
-		if (iAmount<=0) return JSONRPCError(500, "Invalid amount");
 	}
-	catch (...)
+	else if (!naSeed.setFamilySeedGeneric(params[0u].asString()))
 	{
-		return JSONRPCError(500, "Invalid amount");
+		return JSONRPCError(500, "disallowed seed");
 	}
-
-	uint32 iTag(0);
-	try
+	else if (!naSrcAccountID.setAccountID(params[1u].asString()))
 	{
-		if (paramCount>2)
-		{
-			std::string sTag;
-			extractString(sTag, params, 2);
-			iTag=boost::lexical_cast<uint32>(sTag);
-		}
+		return JSONRPCError(500, "source account id needed");
 	}
-	catch (...)
+	else if (!naDstAccountID.setAccountID(params[2u].asString()))
 	{
-		return JSONRPCError(500, "Invalid tag");
+		return JSONRPCError(500, "create account id needed");
 	}
+	else if (!saDstAmount.setValue(params[3u].asString(), sDstCurrency))
+	{
+		return JSONRPCError(500, "bad dst amount/currency");
+	}
+	else if (!saSrcAmount.setValue(params[5u].asString(), sSrcCurrency))
+	{
+		return JSONRPCError(500, "bad src amount/currency");
+	}
+	else
+	{
+		Json::Value obj(Json::objectValue);
 
-#ifdef DEBUG
-	std::cerr << "SendTo(" << destAccount.humanAccountID() << ") amount=" << iAmount <<
-		", tag=" << iTag << std::endl;
-#endif
+		// obj["transaction"]		= trans->getSTransaction()->getJson(0);
+		obj["seed"]				= naSeed.humanFamilySeed();
+		obj["srcAccountID"]		= naSrcAccountID.humanAccountID();
+		obj["dstAccountID"]		= naDstAccountID.humanAccountID();
+		obj["srcAmount"]		= saSrcAmount.getText();
+		obj["srcISO"]			= saSrcAmount.getCurrencyHuman();
+		obj["dstAmount"]		= saDstAmount.getText();
+		obj["dstISO"]			= saDstAmount.getCurrencyHuman();
 
-	LocalTransaction::pointer lt(new LocalTransaction(destAccount, iAmount, iTag));
-	if (!lt->makeTransaction())
-		return JSONRPCError(500, "Insufficient funds in unlocked accounts");
-	lt->performTransaction();
-	return lt->getTransaction()->getJson(true);
+		return obj;
+	}
 }
 
 Json::Value RPCServer::doTx(Json::Value& params)
@@ -584,7 +583,7 @@ Json::Value RPCServer::doWalletClaim(Json::Value& params)
 	}
 	else
 	{
-		// Trying to build:
+		// Building:
 		//   peer_wallet_claim <account_id> <authorized_key> <encrypted_master_public_generator> <generator_pubkey> <generator_signature>
 		//		<source_tag> [<annotation>]
 		//
@@ -657,31 +656,31 @@ Json::Value RPCServer::doWalletClaim(Json::Value& params)
 // YYY Need annotation and source tag
 Json::Value RPCServer::doWalletCreate(Json::Value& params)
 {
-	NewcoinAddress	naSourceID;
-	NewcoinAddress	naCreateID;
+	NewcoinAddress	naSrcAccountID;
+	NewcoinAddress	naDstAccountID;
 	NewcoinAddress	naRegularSeed;
 
 	if (params.size() < 3 || params.size() > 4)
 	{
 		return "invalid params";
 	}
-	else if (!naSourceID.setAccountID(params[1u].asString()))
-	{
-		return "source account id needed";
-	}
-	else if (!naCreateID.setAccountID(params[2u].asString()))
-	{
-		return "create account id needed";
-	}
 	else if (!naRegularSeed.setFamilySeedGeneric(params[0u].asString()))
 	{
 		return "disallowed seed";
+	}
+	else if (!naSrcAccountID.setAccountID(params[1u].asString()))
+	{
+		return "source account id needed";
+	}
+	else if (!naDstAccountID.setAccountID(params[2u].asString()))
+	{
+		return "create account id needed";
 	}
 	else if (!theApp->getOPs().available()) {
 		// We require access to the paying account's sequence number and key information.
 		return "network not available";
 	}
-	else if (theApp->getMasterLedger().getCurrentLedger()->getAccountState(naCreateID))
+	else if (theApp->getMasterLedger().getCurrentLedger()->getAccountState(naDstAccountID))
 	{
 		return "account already exists";
 	}
@@ -695,7 +694,7 @@ Json::Value RPCServer::doWalletCreate(Json::Value& params)
 
 		Ledger::pointer					ledger			= theApp->getMasterLedger().getCurrentLedger();
 		LedgerStateParms				qry				= lepNONE;
-	    SerializedLedgerEntry::pointer	sleSrc			= ledger->getAccountRoot(qry, naSourceID);
+	    SerializedLedgerEntry::pointer	sleSrc			= ledger->getAccountRoot(qry, naSrcAccountID);
 
 		if (!sleSrc)
 		{
@@ -752,7 +751,7 @@ Json::Value RPCServer::doWalletCreate(Json::Value& params)
 		do {
 			++iIndex;
 			naMasterAccountPublic.setAccountPublic(naMasterGenerator, iIndex);
-		} while (naSourceID.getAccountID() != naMasterAccountPublic.getAccountID());
+		} while (naSrcAccountID.getAccountID() != naMasterAccountPublic.getAccountID());
 
 		NewcoinAddress	naRegularAccountPublic;
 		NewcoinAddress	naRegularAccountPrivate;
@@ -771,11 +770,11 @@ Json::Value RPCServer::doWalletCreate(Json::Value& params)
 
 		Transaction::pointer	trans	= Transaction::sharedCreate(
 			naRegularAccountPublic, naRegularAccountPrivate,
-			naSourceID,
+			naSrcAccountID,
 			sleSrc->getIFieldU32(sfSequence),
 			theConfig.FEE_CREATE,
 			0,											// YYY No source tag
-			naCreateID,
+			naDstAccountID,
 			saInitialFunds);							// Initial funds in XNC.
 
 		(void) theApp->getOPs().processTransaction(trans);
