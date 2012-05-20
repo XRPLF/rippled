@@ -185,40 +185,6 @@ Transaction::pointer Ledger::getTransaction(const uint256& transID) const
 
 bool Ledger::unitTest()
 {
-#if 0
-	uint160 la1=theApp->getWallet().addFamily(CKey::PassPhraseToKey("This is my payphrase!"), false);
-	uint160 la2=theApp->getWallet().addFamily(CKey::PassPhraseToKey("Another payphrase"), false);
-
-	LocalAccount::pointer l1=theApp->getWallet().getLocalAccount(la1, 0);
-	LocalAccount::pointer l2=theApp->getWallet().getLocalAccount(la2, 0);
-
-	assert(l1->getAddress()==la1);
-
-#ifdef DEBUG
-	std::cerr << "Account1: " << la1.humanAccountID() << std::endl;
-	std::cerr << "Account2: " << la2.humanAccountID() << std::endl;
-#endif
-
-	Ledger::pointer ledger=boost::make_shared<Ledger>(la1, 100000);
-
-	ledger=make_shared<Ledger>(*ledger, 0); // can't use make_shared
-
-	AccountState::pointer as=ledger->getAccountState(la1);
-	assert(as);
-	assert(as->getBalance()==100000);
-	assert(as->getSeq()==0);
-	as = ledger->getAccountState(la2);
-	assert(!as);
-
-	Transaction::pointer t=boost::make_shared<Transaction>(l1, l2->getAddress(), 2500, 0, 1);
-	assert(!!t->getID());
-
-	Ledger::TransResult tr=ledger->applyTransaction(t);
-#ifdef DEBUG
-	std::cerr << "Transaction: " << tr << std::endl;
-#endif
-	assert(tr==TR_SUCCESS);
-#endif
 	return true;
 }
 

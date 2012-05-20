@@ -123,8 +123,6 @@ void Application::run()
 	mMasterLedger.setSynced();
 	// temporary
 
-	mWallet.load();
-//	mWallet.syncToLedger(true, &(*secondLedger));
 	mNetOps.setStateTimer(0);
 
 	// temporary
