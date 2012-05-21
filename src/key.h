@@ -221,14 +221,24 @@ public:
 		return vchPrivKey;
 	}
 
-	bool SetPubKey(const std::vector<unsigned char>& vchPubKey)
+	bool SetPubKey(const void *ptr, size_t len)
 	{
-		const unsigned char* pbegin = &vchPubKey[0];
-		if (!o2i_ECPublicKey(&pkey, &pbegin, vchPubKey.size()))
+		const unsigned char* pbegin = static_cast<const unsigned char *>(ptr);
+		if (!o2i_ECPublicKey(&pkey, &pbegin, len))
 			return false;
 		EC_KEY_set_conv_form(pkey, POINT_CONVERSION_COMPRESSED);
 		fSet = true;
 		return true;
+	}
+
+	bool SetPubKey(const std::vector<unsigned char>& vchPubKey)
+	{
+		return SetPubKey(&vchPubKey[0], vchPubKey.size());
+	}
+
+	bool SetPubKey(const std::string& pubKey)
+	{
+		return SetPubKey(pubKey.data(), pubKey.size());
 	}
 
 	std::vector<unsigned char> GetPubKey() const
