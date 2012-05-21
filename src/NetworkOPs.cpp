@@ -310,9 +310,18 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 		// check if the ledger is bad enough to go to omTRACKING
 	}
 
+	if (mConsensus)
+	{
+		setStateTimer(mConsensus->timerEntry());
+		return;
+	}
+
 	Ledger::pointer currentLedger = theApp->getMasterLedger().getCurrentLedger();
-	if ( (getNetworkTimeNC() >= currentLedger->getCloseTimeNC()) && !mConsensus)
-		beginConsensus(currentLedger);
+	if (getNetworkTimeNC() >= currentLedger->getCloseTimeNC())
+	{
+		setStateTimer(beginConsensus(currentLedger));
+		return;
+	}
 
 	setStateTimer(10);
 }
@@ -321,7 +330,8 @@ void NetworkOPs::switchLastClosedLedger(Ledger::pointer newLedger)
 { // set the newledger as our last closed ledger -- this is abnormal code
 
 #ifdef DEBUG
-	std::cerr << "Switching last closed ledger to " << newLedger->getHash().GetHex() << std::endl;
+	assert(false);
+	std::cerr << "ABNORMAL Switching last closed ledger to " << newLedger->getHash().GetHex() << std::endl;
 #endif
 
 	if (mConsensus)
@@ -341,18 +351,16 @@ void NetworkOPs::switchLastClosedLedger(Ledger::pointer newLedger)
 }
 // vim:ts=4
 
-void NetworkOPs::beginConsensus(Ledger::pointer closingLedger)
+int NetworkOPs::beginConsensus(Ledger::pointer closingLedger)
 {
-	if (mMode != omFULL)
-	{ // We just close this ledger and start a new one
-		switchLastClosedLedger(closingLedger);
-		return;
-	}
+#ifdef DEBUG
+	std::cerr << "Ledger close time for ledger " << closingLedger->getLedgerSeq() << std::endl;
+#endif
 	Ledger::pointer prevLedger = theApp->getMasterLedger().getLedgerByHash(closingLedger->getParentHash());
 	if (!prevLedger)
 	{ // this shouldn't happen if we jump ledgers
 		mMode = omTRACKING;
-		return;
+		return 3;
 	}
 
 	// Create a new ledger to be the open ledger
@@ -374,4 +382,22 @@ void NetworkOPs::beginConsensus(Ledger::pointer closingLedger)
 	PackedMessage::pointer packet =
 		boost::make_shared<PackedMessage>(PackedMessage::MessagePointer(s), newcoin::mtSTATUS_CHANGE);
 	theApp->getConnectionPool().relayMessage(NULL, packet);
+
+	return mConsensus->startup();
+}
+
+bool NetworkOPs::proposeLedger(uint32 closingSeq, uint32 proposeSeq,
+	const uint256& prevHash, const uint256& proposeHash, const std::string& pubKey, const std::string& signature)
+{
+	uint256 nodeID = Serializer::getSHA512Half(pubKey);
+
+	// Is this node on our UNL?
+	// WRITEME
+
+	// Are we currently closing?
+
+	// Yes: Is it an update?
+	// WRITEME
+
+	return true;
 }

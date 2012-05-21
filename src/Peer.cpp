@@ -310,7 +310,7 @@ void Peer::handle_read_body(const boost::system::error_code& error)
 
 void Peer::processReadBuffer()
 {
-	int type=PackedMessage::getType(mReadbuf);
+	int type = PackedMessage::getType(mReadbuf);
 #ifdef DEBUG
 	std::cerr << "PRB(" << type << "), len=" << (mReadbuf.size()-HEADER_SIZE) << std::endl;
 #endif
@@ -417,6 +417,15 @@ void Peer::processReadBuffer()
 			}
 			break;
 
+		case newcoin::mtPROPOSE_LEDGER:
+			{
+				boost::shared_ptr<newcoin::TMProposeSet> msg = boost::make_shared<newcoin::TMProposeSet>();
+				if(msg->ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
+					recvPropose(msg);
+				else std::cerr << "parse error: " << type << std::endl;
+			}
+			break;
+
 
 
 		case newcoin::mtGET_LEDGER:
@@ -438,15 +447,6 @@ void Peer::processReadBuffer()
 			break;
 
 #if 0
-		case newcoin::mtPROPOSE_LEDGER:
-			{
-				newcoin::TM msg;
-				if(msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
-					recv(msg);
-				else std::cerr << "parse error: " << type << std::endl;
-			}
-			break;
-
 		case newcoin::mtCLOSE_LEDGER:
 			{
 				newcoin::TM msg;
@@ -593,11 +593,30 @@ void Peer::recvTransaction(newcoin::TMTransaction& packet)
 
 	tx = theApp->getOPs().processTransaction(tx, this);
 
-	if(tx->getStatus()!=INCLUDED)
+	if(tx->getStatus() != INCLUDED)
 	{ // transaction wasn't accepted into ledger
 #ifdef DEBUG
 		std::cerr << "Transaction from peer won't go in ledger" << std::endl;
 #endif
+	}
+}
+
+void Peer::recvPropose(boost::shared_ptr<newcoin::TMProposeSet> packet)
+{
+	if ((packet->previoustxhash().size() != 32) || (packet->currenttxhash().size() != 32) ||
+		(packet->nodepubkey().size() < 28) || (packet->signature().size() < 56))
+		return;
+
+	uint32 closingSeq = packet->closingseq(), proposeSeq = packet->proposeseq();
+	uint256 previousTxHash, currentTxHash;
+	memcpy(previousTxHash.begin(), packet->previoustxhash().data(), 32);
+	memcpy(currentTxHash.begin(), packet->currenttxhash().data(), 32);
+
+	if(theApp->getOPs().proposeLedger(closingSeq, proposeSeq, previousTxHash, currentTxHash,
+		packet->nodepubkey(), packet->signature()))
+	{ // FIXME: Not all nodes will want proposals
+		PackedMessage::pointer message = boost::make_shared<PackedMessage>(packet, newcoin::mtPROPOSE_LEDGER);
+		theApp->getConnectionPool().relayMessage(this, message);
 	}
 }
 
@@ -654,6 +673,10 @@ void Peer::recvStatus(newcoin::TMStatusChange& packet)
 #ifdef DEBUG
 	std::cerr << "Received status change from peer" << std::endl;
 #endif
+	if (!packet.has_networktime())
+		packet.set_networktime(theApp->getOPs().getNetworkTimeNC());
+	mLastStatus = packet;
+
 	if (packet.has_ledgerhash() && (packet.ledgerhash().size() == (256 / 8)))
 	{ // a peer has changed ledgers
 		if (packet.has_previousledgerhash() && (packet.previousledgerhash().size() == (256 / 8)))
@@ -661,10 +684,7 @@ void Peer::recvStatus(newcoin::TMStatusChange& packet)
 		else
 			mPreviousLedgerHash = mClosedLedgerHash;
 		memcpy(mClosedLedgerHash.begin(), packet.ledgerhash().data(), 256 / 8);
-		if (packet.has_networktime())
-			mClosedLedgerTime = ptFromSeconds(packet.networktime());
-		else
-			mClosedLedgerTime = theApp->getOPs().getNetworkTimePT();
+		mClosedLedgerTime = ptFromSeconds(packet.networktime());
 #ifdef DEBUG
 	std::cerr << "peer LCL is " << mClosedLedgerHash.GetHex() << std::endl;
 #endif
@@ -868,19 +888,6 @@ PackedMessage::pointer Peer::createFullLedger(Ledger::pointer ledger)
 
 	return(PackedMessage::pointer());
 }*/
-
-PackedMessage::pointer Peer::createLedgerProposal(Ledger::pointer ledger)
-{
-	uint256& hash=ledger->getHash();
-	newcoin::ProposeLedger* prop=new newcoin::ProposeLedger();
-	prop->set_ledgerindex(ledger->getIndex());
-	prop->set_hash(hash.begin(), hash.GetSerializeSize());
-	prop->set_numtransactions(ledger->getNumTransactions());
-
-	PackedMessage::pointer packet=boost::make_shared<PackedMessage>
-		(PackedMessage::MessagePointer(prop), newcoin::PROPOSE_LEDGER);
-	return(packet);
-}
 
 PackedMessage::pointer Peer::createValidation(Ledger::pointer ledger)
 {

@@ -53,6 +53,7 @@ protected:
 	std::vector<uint8_t> mReadbuf;
 	std::list<PackedMessage::pointer> mSendQ;
 	PackedMessage::pointer mSendingPacket;
+	newcoin::TMStatusChange mLastStatus;
 
 	Peer(boost::asio::io_service& io_service, boost::asio::ssl::context& ctx);
 
@@ -85,7 +86,7 @@ protected:
 	void recvGetLedger(newcoin::TMGetLedger& packet);
 	void recvLedger(newcoin::TMLedgerData& packet);
 	void recvStatus(newcoin::TMStatusChange& packet);
-	void recvPropose(newcoin::TMProposeSet& packet);
+	void recvPropose(boost::shared_ptr<newcoin::TMProposeSet> packet);
 	void recvHaveTxSet(newcoin::TMHaveTransactionSet& packet);
 
 	void getSessionCookie(std::string& strDst);

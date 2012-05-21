@@ -5,6 +5,12 @@ void LedgerConsensus::abort()
 {
 }
 
-void LedgerConsensus::startup()
+int LedgerConsensus::startup()
 {
+	return 5;
+}
+
+int LedgerConsensus::timerEntry()
+{
+	return 5;
 }

@@ -17,14 +17,21 @@ class LCPosition
 protected:
 	uint256 mPubKeyHash;
 	CKey::pointer mPubKey;
-	uint256 mCurrentPosition;
+	uint256 mPreviousPosition, mCurrentPosition;
 	uint32 mSequence;
 
 public:
 	typedef boost::shared_ptr<LCPosition> pointer;
 
-	LCPosition(CKey::pointer pubKey, const uint256& currentPosition, uint32 seq) :
-		mPubKey(pubKey), mCurrentPosition(currentPosition), mSequence(seq) { ; }
+	// for remote positions
+	LCPosition(uint32 closingSeq, uint32 proposeSeq, const uint256& previousTxHash,
+		const uint256& currentTxHash, CKey::pointer nodePubKey, const std::string& signature);
+
+	// for our initial position
+	LCPosition(CKey::pointer privKey, uint32 ledgerSeq, const uint256& currentPosition);
+
+	// for our subsequent positions
+	LCPosition(LCPosition::pointer previousPosition, CKey::pointer privKey, const uint256& newPosition);
 
 	const uint256& getPubKeyHash() const		{ return mPubKeyHash; }
 	const uint256& getCurrentPosition() const	{ return mCurrentPosition; }
@@ -68,6 +75,8 @@ protected:
 	Ledger::pointer mPreviousLedger, mCurrentLedger;
 	LedgerProposal::pointer mCurrentProposal;
 
+	LCPosition::pointer mOurPosition;
+
 	// Convergence tracking, trusted peers indexed by hash of public key
 	boost::unordered_map<uint256, LCPosition::pointer> mPeerPositions;
 
@@ -78,13 +87,13 @@ protected:
 	// Peer sets
 	boost::unordered_map<uint256, std::vector< boost::weak_ptr<Peer> > > mPeerData;
 
-	void startup();
 	void weHave(const uint256& id, Peer::pointer avoidPeer);
 
 public:
 	LedgerConsensus(Ledger::pointer previousLedger, Ledger::pointer currentLedger) :
-		mPreviousLedger(previousLedger), mCurrentLedger(currentLedger)
-	{ startup(); }
+		mPreviousLedger(previousLedger), mCurrentLedger(currentLedger) { ; }
+
+	int startup();
 
 	Ledger::pointer peekPreviousLedger()	{ return mPreviousLedger; }
 	Ledger::pointer peekCurrentLedger()		{ return mCurrentLedger; }
@@ -103,6 +112,7 @@ public:
 	bool peerHasSet(Peer::pointer peer, const std::vector<uint256>& sets);
 	bool peerGaveNodes(Peer::pointer peer, const uint256& setHash,
 		const std::list<SHAMapNode>& nodeIDs, const std::list< std::vector<unsigned char> >& nodeData);
+	int timerEntry(void);
 };
 
 

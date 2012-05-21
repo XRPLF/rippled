@@ -70,10 +70,14 @@ public:
 	bool getAccountStateNodes(uint32 ledgerSeq, const uint256& myNodeId,
 		const std::vector<unsigned char>& myNode, std::list<std::vector<unsigned char> >& newNodes);
 
+	// ledger proposal/close functions
+	bool proposeLedger(uint32 closingSeq, uint32 proposeSeq, const uint256& prevHash, const uint256& proposeHash,
+		const std::string& pubKey, const std::string& signature);
+
 	// network state machine
 	void checkState(const boost::system::error_code& result);
 	void switchLastClosedLedger(Ledger::pointer newLedger); // Used for the "jump" case
-	void beginConsensus(Ledger::pointer closingLedger);
+	int beginConsensus(Ledger::pointer closingLedger);
 	void setStateTimer(int seconds);
 
 };
