@@ -401,7 +401,7 @@ Json::Value RPCServer::doSend(Json::Value& params)
 	{
 		return JSONRPCError(500, "bad dst amount/currency");
 	}
-	else if (!saSrcAmount.setValue(params[5u].asString(), sSrcCurrency))
+	else if (params.size() >= 6 && !saSrcAmount.setValue(params[5u].asString(), sSrcCurrency))
 	{
 		return JSONRPCError(500, "bad src amount/currency");
 	}
@@ -417,9 +417,11 @@ Json::Value RPCServer::doSend(Json::Value& params)
 
 		if (!obj.empty())
 		{
-			std::cerr << "Auth Error" << std::endl;
 			return obj;
 		}
+
+		if (params.size() < 6)
+			saSrcAmount	= saDstAmount;
 
 		STAmount						saSrcBalance	= sleSrc->getIValueFieldAmount(sfBalance);
 
@@ -452,9 +454,9 @@ Json::Value RPCServer::doSend(Json::Value& params)
 			obj["srcISO"]			= saSrcAmount.getCurrencyHuman();
 			obj["dstAmount"]		= saDstAmount.getText();
 			obj["dstISO"]			= saDstAmount.getCurrencyHuman();
-		}
 
-		return obj;
+			return obj;
+		}
 	}
 }
 
@@ -737,10 +739,9 @@ Json::Value RPCServer::doWalletCreate(Json::Value& params)
 		STAmount						saSrcBalance	= sleSrc->getIValueFieldAmount(sfBalance);
 		STAmount						saInitialFunds	= (params.size() < 4) ? 0 : boost::lexical_cast<uint64>(params[3u].asString());
 
-
-		if (!obj.isNull())
+		if (!obj.empty())
 		{
-			nothing();
+			return obj;
 		}
 		else if (saSrcBalance < theConfig.FEE_CREATE + saInitialFunds)
 		{
@@ -761,9 +762,9 @@ Json::Value RPCServer::doWalletCreate(Json::Value& params)
 
 			obj["transaction"]		= trans->getSTransaction()->getJson(0);
 			obj["status"]			= trans->getStatus();
-		}
 
-		return obj;
+			return obj;
+		}
 	}
 }
 
