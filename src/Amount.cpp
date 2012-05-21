@@ -35,9 +35,7 @@ bool STAmount::currencyFromString(uint160& uDstCurrency, const std::string& sCur
 		s.addZeros(16/8);
 		s.addZeros(24/8);
 
-		SerializerIterator	sit(s);
-
-		uDstCurrency	= sit.get160();
+		s.get160(uDstCurrency, 0);
 	}
 	else
 	{
@@ -57,8 +55,8 @@ std::string STAmount::getCurrencyHuman()
 	}
 	else
 	{
-		uint160	uReserved	= mCurrency;
-		Serializer s(160/20);
+		uint160		uReserved	= mCurrency;
+		Serializer	s(160/8);
 
 		s.add160(mCurrency);
 
