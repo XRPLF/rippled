@@ -9,3 +9,4 @@ Hanko::Hanko()
 {
 }
 
+// vim:ts=4
