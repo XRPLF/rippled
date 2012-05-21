@@ -17,7 +17,7 @@ enum SerializedTypeID
 	// standard types
 	STI_OBJECT=1, STI_UINT8=2, STI_UINT16=3, STI_UINT32=4, STI_UINT64=5,
 	STI_HASH128=6, STI_HASH160=7, STI_HASH256=8, STI_VL=9, STI_TL=10,
-	STI_AMOUNT=11, STI_PATH=12,
+	STI_AMOUNT=11, STI_PATHSET=12,
 
 	// high level types
 	STI_ACCOUNT=100, STI_TRANSACTION=101, STI_LEDGERENTRY=102
@@ -436,28 +436,62 @@ public:
 class STPathElement
 {
 public:
-	static const int typeEnd		= 0;
-	static const int typeAccount	= 1;	// Rippling through an account
-	static const int typeOffer		= 2;	// Claiming an offer
+	static const int typeEnd		= 0x00;
+	static const int typeAccount	= 0x01;	// Rippling through an account
+	static const int typeOffer		= 0x02;	// Claiming an offer
+	static const int typeBoundary   = 0xFF; // boundary between alternate paths
 
+protected:
 	int mType;
 	uint160 mNode;
+
+public:
+	STPathElement(int type, const uint160& node) : mType(type), mNode(node) { ; }
+	int getNodeType() const			{ return mType; }
+	bool isAccount() const			{ return mType == typeAccount; }
+	bool isOffer() const			{ return mType == typeOffer;   }
+	const uint160& getNode() const	{ return mNode; }
+
+	void setType(int type)			{ mType = type; }
+	void setNode(const uint160& n)	{ mNode = n; }
 };
 
-class STPath : public SerializedType
+class STPath
 {
 protected:
-	std::vector<STPathElement> value;
+	std::vector<STPathElement> mPath;
 
-	STPath* duplicate() const { return new STPath(name, value); }
-	static STPath* construct(SerializerIterator&, const char* name = NULL);
+public:
+	STPath()		{ ; }
+	STPath(const std::vector<STPathElement>& p) : mPath(p) { ; }
+
+	int getElementCount() const							{ return mPath.size(); }
+	bool isEmpty() const								{ return mPath.empty(); }
+	const STPathElement& getElement(int offset) const	{ return mPath[offset]; }
+	const STPathElement& getElemet(int offset)			{ return mPath[offset]; }
+	void addElement(const STPathElement& e) 			{ mPath.push_back(e); }
+	void clear() 										{ mPath.clear(); }
+	int getSerializeSize() const						{ return 1 + mPath.size() * 21; }
+	std::string getText() const;
+	Json::Value getJson(int) const;
+	std::vector<STPathElement>::const_iterator begin() const	{ return mPath.begin(); }
+	std::vector<STPathElement>::const_iterator end() const		{ return mPath.end(); }
+};
+
+class STPathSet : public SerializedType
+{ // A set of zero or more payment paths
+protected:
+	std::vector<STPath> value;
+
+	STPathSet* duplicate() const { return new STPathSet(name, value); }
+	static STPathSet* construct(SerializerIterator&, const char* name = NULL);
 
 public:
 
-	STPath() { ; }
-	STPath(const char* n) : SerializedType(n) { ; }
-	STPath(const std::vector<STPathElement>& v) : value(v) { ; }
-	STPath(const char* n, const std::vector<STPathElement>& v) : SerializedType(n), value(v) { ; }
+	STPathSet() { ; }
+	STPathSet(const char* n) : SerializedType(n) { ; }
+	STPathSet(const std::vector<STPath>& v) : value(v) { ; }
+	STPathSet(const char* n, const std::vector<STPath>& v) : SerializedType(n), value(v) { ; }
 	static std::auto_ptr<SerializedType> deserialize(SerializerIterator& sit, const char* name)
 	{ return std::auto_ptr<SerializedType>(construct(sit, name)); }
 
@@ -466,12 +500,16 @@ public:
 	void add(Serializer& s) const;
 	virtual Json::Value getJson(int) const;
 
-	SerializedTypeID getSType() const				{ return STI_PATH; }
-	int getPathLength() const 						{ return value.size(); }
-	const STPathElement& getElement(int off) const	{ return value[off]; }
-	STPathElement& peekElement(int off)				{ return value[off]; }
-	void emptyPath() 								{ value.empty(); }
-	void addPathElement(const STPathElement& e)		{ value.push_back(e); }
+	SerializedTypeID getSType() const				{ return STI_PATHSET; }
+	int getPathCount() const 						{ return value.size(); }
+	const STPath& getPath(int off) const			{ return value[off]; }
+	STPath& peekPath(int off)						{ return value[off]; }
+	bool isEmpty() const							{ return value.empty(); }
+	void clear()									{ value.clear(); }
+	void addPath(const STPath& e)					{ value.push_back(e); }
+
+	std::vector<STPath>::const_iterator begin() const	{ return value.begin(); }
+	std::vector<STPath>::const_iterator end() const		{ return value.end(); }
 };
 
 class STTaggedList : public SerializedType
