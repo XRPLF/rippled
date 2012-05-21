@@ -469,8 +469,8 @@ public:
 	bool isEmpty() const								{ return mPath.empty(); }
 	const STPathElement& getElement(int offset) const	{ return mPath[offset]; }
 	const STPathElement& getElemet(int offset)			{ return mPath[offset]; }
-	void addElement(const STPathElement& e) 			{ mPath.push_back(e); }
-	void clear() 										{ mPath.clear(); }
+	void addElement(const STPathElement& e)				{ mPath.push_back(e); }
+	void clear()										{ mPath.clear(); }
 	int getSerializeSize() const						{ return 1 + mPath.size() * 21; }
 	std::string getText() const;
 	Json::Value getJson(int) const;

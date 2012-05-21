@@ -564,12 +564,12 @@ void STObject::setValueFieldAmount(SOE_Field field, const STAmount &v)
 	(*cf) = v;
 }
 
-void STObject::setValueFieldPath(SOE_Field field, const STPath &v)
+void STObject::setValueFieldPathSet(SOE_Field field, const STPathSet &v)
 {
 	SerializedType* rf = getPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
 	if (rf->getSType() == STI_NOTPRESENT) rf = makeFieldPresent(field);
-	STPath* cf = dynamic_cast<STPath*>(rf);
+	STPathSet* cf = dynamic_cast<STPathSet*>(rf);
 	if (!cf) throw std::runtime_error("Wrong field type");
 	(*cf) = v;
 }

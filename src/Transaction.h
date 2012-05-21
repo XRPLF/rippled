@@ -62,7 +62,7 @@ private:
 		const NewcoinAddress&	toAccount,
 		const STAmount&			saAmount,
 		const STAmount&			saSendMax,
-		const STPath&			spPaths);
+		const STPathSet&		spPaths);
 
 public:
 	Transaction(const SerializedTransaction::pointer st, bool bValidate);
@@ -106,7 +106,7 @@ public:
 		const NewcoinAddress&	toAccount,
 		const STAmount&			saAmount,
 		const STAmount&			saSendMax,
-		const STPath&			saPaths);
+		const STPathSet&		saPaths);
 
 	bool sign(const NewcoinAddress& naAccountPrivate);
 	bool checkSign() const;

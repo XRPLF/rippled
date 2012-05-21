@@ -191,21 +191,19 @@ Transaction::pointer Transaction::setPayment(
 	const NewcoinAddress&	toAccount,
 	const STAmount&			saAmount,
 	const STAmount&			saSendMax,
-	const STPath&			spPaths)
+	const STPathSet&		spPaths)
 {
 	mTransaction->setITFieldAccount(sfDestination, toAccount);
 	mTransaction->setITFieldAmount(sfAmount, saAmount);
 
 	if (saAmount != saSendMax)
 	{
-		mTransaction->makeITFieldPresent(sfSendMax);
 		mTransaction->setITFieldAmount(sfSendMax, saSendMax);
 	}
 
-	if (!spPaths.emptyPath())
+	if (spPaths.getPathCount())
 	{
-		mTransaction->makeITFieldPresent(sfPaths);
-		mTransaction->setITFieldPath(sfPaths, spPaths);
+		mTransaction->setITFieldPathSet(sfPaths, spPaths);
 	}
 
 	sign(naPrivateKey);
@@ -222,7 +220,7 @@ Transaction::pointer Transaction::sharedPayment(
 	const NewcoinAddress&	toAccount,
 	const STAmount&			saAmount,
 	const STAmount&			saSendMax,
-	const STPath&			saPaths)
+	const STPathSet&		saPaths)
 {
 	pointer	tResult	= boost::make_shared<Transaction>(ttPAYMENT,
 						naPublicKey, naSourceAccount,

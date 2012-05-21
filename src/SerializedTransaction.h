@@ -101,8 +101,8 @@ public:
 		{ return mInnerTxn.setValueFieldAccount(field, v); }
 	void setITFieldAmount(SOE_Field field, const STAmount& v)
 		{ return mInnerTxn.setValueFieldAmount(field, v); }
-	void setITFieldPath(SOE_Field field, const STPath& v)
-		{ return mInnerTxn.setValueFieldPath(field, v); }
+	void setITFieldPathSet(SOE_Field field, const STPathSet& v)
+		{ return mInnerTxn.setValueFieldPathSet(field, v); }
 
 	// optional field functions
 	bool getITFieldPresent(SOE_Field field) const;

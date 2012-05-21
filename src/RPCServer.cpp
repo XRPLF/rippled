@@ -429,7 +429,7 @@ Json::Value RPCServer::doSend(Json::Value& params)
 		}
 		else
 		{
-			STPath					spPaths;
+			STPathSet				spPaths;
 			Transaction::pointer	trans	= Transaction::sharedPayment(
 				naAccountPublic, naAccountPrivate,
 				naSrcAccountID,

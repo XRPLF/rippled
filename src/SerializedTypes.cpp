@@ -406,3 +406,4 @@ void STPathSet::add(Serializer& s) const
 	}
 	s.add8(STPathElement::typeEnd);
 }
+// vim:ts=4

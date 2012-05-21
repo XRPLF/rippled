@@ -161,7 +161,7 @@ public:
 	void setValueFieldAccount(SOE_Field field, const NewcoinAddress& addr)
 	{ setValueFieldAccount(field, addr.getAccountID()); }
 	void setValueFieldAmount(SOE_Field field, const STAmount&);
-	void setValueFieldPath(SOE_Field field, const STPath&);
+	void setValueFieldPathSet(SOE_Field field, const STPathSet&);
 
 	bool isFieldPresent(SOE_Field field) const;
 	SerializedType* makeFieldPresent(SOE_Field field);
