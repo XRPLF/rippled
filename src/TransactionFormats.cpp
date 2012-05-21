@@ -9,8 +9,10 @@ TransactionFormat InnerTxnFormats[]=
 		{ S_FIELD(Flags),        STI_UINT32,  SOE_FLAGS,    0 },
 		{ S_FIELD(Destination),  STI_ACCOUNT, SOE_REQUIRED, 0 },
 		{ S_FIELD(Amount),       STI_AMOUNT,  SOE_REQUIRED, 0 },
-		{ S_FIELD(SourceTag),    STI_UINT32,  SOE_IFFLAG,   1 },
-		{ S_FIELD(InvoiceID),    STI_HASH256, SOE_IFFLAG,   2 },
+		{ S_FIELD(SendMax),		 STI_AMOUNT,  SOE_IFFLAG,   1 },
+		{ S_FIELD(Paths),		 STI_PATH,	  SOE_IFFLAG,   2 },
+		{ S_FIELD(SourceTag),    STI_UINT32,  SOE_IFFLAG,   4 },
+		{ S_FIELD(InvoiceID),    STI_HASH256, SOE_IFFLAG,   8 },
 		{ S_FIELD(Extensions),   STI_TL,      SOE_IFFLAG,   0x02000000 },
 		{ sfInvalid, NULL,       STI_DONE,    SOE_NEVER,    -1 } }
 	},

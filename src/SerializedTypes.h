@@ -467,10 +467,10 @@ public:
 	virtual Json::Value getJson(int) const;
 
 	SerializedTypeID getSType() const				{ return STI_PATH; }
-	int getPathLength() const 						{ return value.size(); }
+	int getPathLength() const						{ return value.size(); }
 	const STPathElement& getElement(int off) const	{ return value[off]; }
 	STPathElement& peekElement(int off)				{ return value[off]; }
-	void emptyPath() 								{ value.empty(); }
+	bool emptyPath() const							{ return value.empty(); }
 	void addPathElement(const STPathElement& e)		{ value.push_back(e); }
 };
 

@@ -47,20 +47,22 @@ private:
 	SerializedTransaction::pointer mTransaction;
 
 	Transaction::pointer setClaim(
-		const NewcoinAddress& naPrivateKey,
-		const std::vector<unsigned char>& vucGenerator,
-		const std::vector<unsigned char>& vucPubKey,
-		const std::vector<unsigned char>& vucSignature);
+		const NewcoinAddress&				naPrivateKey,
+		const std::vector<unsigned char>&	vucGenerator,
+		const std::vector<unsigned char>&	vucPubKey,
+		const std::vector<unsigned char>&	vucSignature);
 
 	Transaction::pointer setCreate(
-		const NewcoinAddress& naPrivateKey,
-		const NewcoinAddress& naCreateAccountID,
-		STAmount uFund);
+		const NewcoinAddress&	naPrivateKey,
+		const NewcoinAddress&	naCreateAccountID,
+		const STAmount&			uFund);
 
 	Transaction::pointer setPayment(
-		const NewcoinAddress& naPrivateKey,
-		const NewcoinAddress& toAccount,
-		STAmount saAmount);
+		const NewcoinAddress&	naPrivateKey,
+		const NewcoinAddress&	toAccount,
+		const STAmount&			saAmount,
+		const STAmount&			saSendMax,
+		const STPath&			spPaths);
 
 public:
 	Transaction(const SerializedTransaction::pointer st, bool bValidate);
@@ -69,41 +71,42 @@ public:
 
 	Transaction(
 		TransactionType ttKind,
-		const NewcoinAddress& naPublicKey,		// To prove transaction is consistent and authorized.
-		const NewcoinAddress& naSourceAccount,	// To identify the paying account.
-		uint32 uSeq,							// To order transactions.
-		STAmount saFee,							// Transaction fee.
-		uint32 uSourceTag);						// User call back value.
+		const NewcoinAddress&	naPublicKey,		// To prove transaction is consistent and authorized.
+		const NewcoinAddress&	naSourceAccount,	// To identify the paying account.
+		uint32					uSeq,				// To order transactions.
+		const STAmount&			saFee,				// Transaction fee.
+		uint32					uSourceTag);		// User call back value.
 
 	// Claim a wallet.
 	static Transaction::pointer sharedClaim(
 		const NewcoinAddress& naPublicKey, const NewcoinAddress& naPrivateKey,
-		const NewcoinAddress& naSourceAccount,
-		uint32 uSourceTag,
-		const std::vector<unsigned char>& vucGenerator,
-		const std::vector<unsigned char>& vucPubKey,
-		const std::vector<unsigned char>& vucSignature);
+		const NewcoinAddress&				naSourceAccount,
+		uint32								uSourceTag,
+		const std::vector<unsigned char>&	vucGenerator,
+		const std::vector<unsigned char>&	vucPubKey,
+		const std::vector<unsigned char>&	vucSignature);
 
 	// Create an account.
 	static Transaction::pointer sharedCreate(
 		const NewcoinAddress& naPublicKey, const NewcoinAddress& naPrivateKey,
-		const NewcoinAddress& naSourceAccount,
-		uint32 uSeq,
-		STAmount saFee,
-		uint32 uSourceTag,
-		const NewcoinAddress& naCreateAccountID,	// Account to create.
-		STAmount uFund);								// Initial funds in XNC.
+		const NewcoinAddress&	naSourceAccount,
+		uint32					uSeq,
+		const STAmount&			saFee,
+		uint32					uSourceTag,
+		const NewcoinAddress&	naCreateAccountID,	// Account to create.
+		const STAmount&			uFund);				// Initial funds in XNC.
 
 	// Make a payment.
 	static Transaction::pointer sharedPayment(
 		const NewcoinAddress& naPublicKey, const NewcoinAddress& naPrivateKey,
-		const NewcoinAddress& naSourceAccount,
-		uint32 uSeq,
-		STAmount saFee,
-		uint32 uSourceTag,
-		const NewcoinAddress& toAccount,
-		STAmount saAmount,
-		STAmount saSendMax);
+		const NewcoinAddress&	naSourceAccount,
+		uint32					uSeq,
+		const STAmount&			saFee,
+		uint32					uSourceTag,
+		const NewcoinAddress&	toAccount,
+		const STAmount&			saAmount,
+		const STAmount&			saSendMax,
+		const STPath&			saPaths);
 
 	bool sign(const NewcoinAddress& naAccountPrivate);
 	bool checkSign() const;

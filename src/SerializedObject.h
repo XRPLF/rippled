@@ -57,8 +57,10 @@ enum SOE_Field
 	sfNextRateLgr,
 	sfNickname,
 	sfOfferCurrency,
+	sfPaths,
 	sfPubKey,
 	sfRateLock,
+	sfSendMax,
 	sfSequence,
 	sfSignature,
 	sfSigningKey,
@@ -159,6 +161,7 @@ public:
 	void setValueFieldAccount(SOE_Field field, const NewcoinAddress& addr)
 	{ setValueFieldAccount(field, addr.getAccountID()); }
 	void setValueFieldAmount(SOE_Field field, const STAmount&);
+	void setValueFieldPath(SOE_Field field, const STPath&);
 
 	bool isFieldPresent(SOE_Field field) const;
 	SerializedType* makeFieldPresent(SOE_Field field);

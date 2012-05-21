@@ -232,9 +232,7 @@ Json::Value RPCServer::authorize(const NewcoinAddress& naSeed, const NewcoinAddr
 		return JSONRPCError(500, "wrong password (changed)");
 	}
 
-	Json::Value obj(Json::objectValue);
-
-	return obj;
+	return Json::Value(Json::objectValue);
 }
 
 // account_info <account>|<nickname>|<account_public_key>
@@ -417,18 +415,21 @@ Json::Value RPCServer::doSend(Json::Value& params)
 	    SerializedLedgerEntry::pointer	sleSrc;
 		Json::Value						obj				= authorize(naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate, sleSrc);
 
+		if (!obj.empty())
+		{
+			std::cerr << "Auth Error" << std::endl;
+			return obj;
+		}
+
 		STAmount						saSrcBalance	= sleSrc->getIValueFieldAmount(sfBalance);
 
-		if (!obj.isNull())
-		{
-			nothing();
-		}
-		else if (saSrcBalance < theConfig.FEE_DEFAULT)
+		if (saSrcBalance < theConfig.FEE_DEFAULT)
 		{
 			return JSONRPCError(500, "insufficent funds");
 		}
 		else
 		{
+			STPath					spPaths;
 			Transaction::pointer	trans	= Transaction::sharedPayment(
 				naAccountPublic, naAccountPrivate,
 				naSrcAccountID,
@@ -437,7 +438,8 @@ Json::Value RPCServer::doSend(Json::Value& params)
 				0,											// YYY No source tag
 				naDstAccountID,
 				saDstAmount,
-				saSrcAmount);
+				saSrcAmount,
+				spPaths);
 
 			(void) theApp->getOPs().processTransaction(trans);
 

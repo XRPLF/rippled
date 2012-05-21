@@ -331,6 +331,7 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 		std::cerr << "doPayment: Invalid transaction: Payment destination account not specifed." << std::endl;
 		return tenINVALID;
 	}
+	// XXX Only bad if no currency conversion in between through other people's offer.
 	else if (srcAccountID == dstAccountID)
 	{
 		std::cerr << "doPayment: Invalid transaction: Source account is the same as destination." << std::endl;

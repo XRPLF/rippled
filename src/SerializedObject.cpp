@@ -564,6 +564,16 @@ void STObject::setValueFieldAmount(SOE_Field field, const STAmount &v)
 	(*cf) = v;
 }
 
+void STObject::setValueFieldPath(SOE_Field field, const STPath &v)
+{
+	SerializedType* rf = getPField(field);
+	if (!rf) throw std::runtime_error("Field not found");
+	if (rf->getSType() == STI_NOTPRESENT) rf = makeFieldPresent(field);
+	STPath* cf = dynamic_cast<STPath*>(rf);
+	if (!cf) throw std::runtime_error("Wrong field type");
+	(*cf) = v;
+}
+
 Json::Value STObject::getJson(int options) const
 {
 	Json::Value ret(Json::objectValue);
