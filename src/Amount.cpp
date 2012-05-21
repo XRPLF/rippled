@@ -401,6 +401,50 @@ STAmount& STAmount::operator-=(uint64 v)
 	return *this;
 }
 
+bool STAmount::operator<(uint64 v) const
+{
+	if (!mIsNative)
+		throw std::runtime_error("operation not legal no non-native currency");
+	return mValue < v;
+}
+
+bool STAmount::operator>(uint64 v) const
+{
+	if (!mIsNative)
+		throw std::runtime_error("operation not legal no non-native currency");
+	return mValue > v;
+}
+
+bool STAmount::operator<=(uint64 v) const
+{
+	if (!mIsNative)
+		throw std::runtime_error("operation not legal no non-native currency");
+	return mValue <= v;
+}
+
+bool STAmount::operator>=(uint64 v) const
+{
+	if (!mIsNative)
+		throw std::runtime_error("operation not legal no non-native currency");
+	return mValue >= v;
+}
+
+STAmount STAmount::operator+(uint64 v) const
+{
+	if (!mIsNative)
+		throw std::runtime_error("operation not legal no non-native currency");
+	return STAmount(true, mValue + v);
+}
+
+STAmount STAmount::operator-(uint64 v) const
+{
+	if (!mIsNative)
+		throw std::runtime_error("operation not legal no non-native currency");
+	if (mValue < v)
+		throw std::runtime_error("native currency underflow");
+	return STAmount(true, mValue - v);
+}
+
 STAmount::operator double() const
 { // Does not keep the precise value. Not recommended
 	if (!mValue)

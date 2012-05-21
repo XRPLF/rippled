@@ -200,6 +200,7 @@ protected:
 	void canonicalize();
 	STAmount* duplicate() const { return new STAmount(name, mCurrency, mValue, mOffset); }
 	static STAmount* construct(SerializerIterator&, const char* name = NULL);
+	STAmount(bool, uint64 value) : mValue(value), mOffset(0), mIsNative(true) { ; }
 
 	static const int cMinOffset = -96, cMaxOffset = 80;
 	static const uint64 cMinValue = 1000000000000000ull, cMaxValue = 9999999999999999ull;
@@ -249,6 +250,14 @@ public:
 	bool operator>=(const STAmount&) const;
 	bool isComparable(const STAmount&) const;
 	void throwComparable(const STAmount&) const;
+
+	// native currency only
+	bool operator<(uint64) const;
+	bool operator>(uint64) const;
+	bool operator<=(uint64) const;
+	bool operator>=(uint64) const;
+	STAmount operator+(uint64) const;
+	STAmount operator-(uint64) const;
 
 	STAmount& operator+=(const STAmount&);
 	STAmount& operator-=(const STAmount&);
