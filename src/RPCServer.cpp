@@ -743,7 +743,7 @@ Json::Value RPCServer::doWalletCreate(Json::Value& params)
 		{
 			return obj;
 		}
-		else if (saSrcBalance < theConfig.FEE_CREATE + saInitialFunds)
+		else if (saSrcBalance < (saInitialFunds + theConfig.FEE_CREATE))
 		{
 			return JSONRPCError(500, "insufficent funds");
 		}
