@@ -42,8 +42,8 @@ std::auto_ptr<SerializedType> STObject::makeDefaultObject(SerializedTypeID id, c
 		case STI_ACCOUNT:
 			return std::auto_ptr<SerializedType>(new STAccount(name));
 
-		case STI_PATH:
-			return std::auto_ptr<SerializedType>(new STPath(name));
+		case STI_PATHSET:
+			return std::auto_ptr<SerializedType>(new STPathSet(name));
 
 		default:
 			throw std::runtime_error("Unknown object type");
@@ -88,8 +88,8 @@ std::auto_ptr<SerializedType> STObject::makeDeserializedObject(SerializedTypeID 
 		case STI_ACCOUNT:
 			return STAccount::deserialize(sit, name);
 
-		case STI_PATH:
-			return STPath::deserialize(sit, name);
+		case STI_PATHSET:
+			return STPathSet::deserialize(sit, name);
 
 		default:
 			throw std::runtime_error("Unknown object type");
