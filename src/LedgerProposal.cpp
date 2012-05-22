@@ -6,8 +6,8 @@
 #include "key.h"
 #include "Application.h"
 
-LedgerProposal::LedgerProposal(uint32 closingSeq, uint32 proposeSeq, const uint256& prevTx, const uint256& proposeTx,
-	const std::string& pubKey) : mPrevHash(prevTx), mCurrentHash(proposeTx),
+LedgerProposal::LedgerProposal(uint32 closingSeq, uint32 proposeSeq, const uint256& proposeTx,
+	const std::string& pubKey) : mCurrentHash(proposeTx),
 	mProposeSeq(proposeSeq), mKey(boost::make_shared<CKey>())
 {
 	if (!mKey->SetPubKey(pubKey))
@@ -25,20 +25,18 @@ LedgerProposal::LedgerProposal(CKey::pointer mPrivateKey, const uint256& prevLgr
 
 LedgerProposal::LedgerProposal(LedgerProposal::pointer previous, const uint256& newp) :
 	mPeerID(previous->mPeerID),	mPreviousLedger(previous->mPreviousLedger),
-	mPrevHash(previous->mCurrentHash), mCurrentHash(newp),
-	mProposeSeq(previous->mProposeSeq + 1), mKey(previous->mKey)
+	mCurrentHash(newp),	mProposeSeq(previous->mProposeSeq + 1), mKey(previous->mKey)
 {
 	;
 }
 
 uint256 LedgerProposal::getSigningHash() const
 {
-	Serializer s(104);
+	Serializer s(72);
 	s.add32(sProposeMagic);
 	s.add32(mProposeSeq);
 	s.add256(mPreviousLedger);
 	s.add256(mCurrentHash);
-	s.add256(mPrevHash);
 	return s.getSHA512Half();
 }
 

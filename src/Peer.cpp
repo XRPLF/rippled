@@ -603,16 +603,15 @@ void Peer::recvTransaction(newcoin::TMTransaction& packet)
 
 void Peer::recvPropose(boost::shared_ptr<newcoin::TMProposeSet> packet)
 {
-	if ((packet->previoustxhash().size() != 32) || (packet->currenttxhash().size() != 32) ||
-		(packet->nodepubkey().size() < 28) || (packet->signature().size() < 56))
+	if ((packet->currenttxhash().size() != 32) || (packet->nodepubkey().size() < 28) ||
+		(packet->signature().size() < 56))
 		return;
 
 	uint32 closingSeq = packet->closingseq(), proposeSeq = packet->proposeseq();
-	uint256 previousTxHash, currentTxHash;
-	memcpy(previousTxHash.begin(), packet->previoustxhash().data(), 32);
+	uint256 currentTxHash;
 	memcpy(currentTxHash.begin(), packet->currenttxhash().data(), 32);
 
-	if(theApp->getOPs().proposeLedger(closingSeq, proposeSeq, previousTxHash, currentTxHash,
+	if(theApp->getOPs().proposeLedger(closingSeq, proposeSeq, currentTxHash,
 		packet->nodepubkey(), packet->signature()))
 	{ // FIXME: Not all nodes will want proposals
 		PackedMessage::pointer message = boost::make_shared<PackedMessage>(packet, newcoin::mtPROPOSE_LEDGER);
@@ -693,6 +692,25 @@ void Peer::recvStatus(newcoin::TMStatusChange& packet)
 
 void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 {
+	if (packet.itype() == newcoin::liTS_CANDIDATE)
+	{
+		Ledger::pointer ledger;
+		if ((!packet.has_ledgerhash() || packet.ledgerhash().size() != 32))
+		{
+			punishPeer(PP_INVALID_REQUEST);
+			return;
+		}
+		uint256 txHash;
+		memcpy(txHash.begin(), packet.ledgerhash().data(), 32);
+		SHAMap::pointer txMap = theApp->getOPs().getTXMap(txHash);
+		if (!txMap)
+		{
+			punishPeer(PP_INVALID_REQUEST);
+			return;
+		}
+		// WRITEME
+	}
+
 	// Figure out what ledger they want
 	Ledger::pointer ledger;
 	if (packet.has_ledgerhash())
@@ -703,7 +721,7 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 			punishPeer(PP_INVALID_REQUEST);
 			return;
 		}
-		memcpy(&ledgerhash, packet.ledgerhash().data(), 32);
+		memcpy(ledgerhash.begin(), packet.ledgerhash().data(), 32);
 		ledger = theApp->getMasterLedger().getLedgerByHash(ledgerhash);
 	}
 	else if (packet.has_ledgerseq())
@@ -750,7 +768,7 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 		SHAMap::pointer map=(packet.itype()==newcoin::liTX_NODE) ? ledger->peekTransactionMap()
 			: ledger->peekAccountStateMap();
 		if(!map) return;
-		if(packet.nodeids_size()==0)
+		if(packet.nodeids_size() == 0)
 		{
 			punishPeer(PP_INVALID_REQUEST);
 			return;

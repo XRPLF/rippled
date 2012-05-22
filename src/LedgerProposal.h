@@ -13,7 +13,7 @@ class LedgerProposal
 {
 protected:
 
-	uint256 mPeerID, mPreviousLedger, mPrevHash, mCurrentHash;
+	uint256 mPeerID, mPreviousLedger, mCurrentHash;
 	uint32 mProposeSeq;
 	CKey::pointer mKey;
 //	std::vector<uint256> mAddedTx, mRemovedTx;
@@ -25,8 +25,7 @@ public:
 	typedef boost::shared_ptr<LedgerProposal> pointer;
 
 	// proposal from peer
-	LedgerProposal(uint32 closingSeq, uint32 proposeSeq, const uint256& prevTx, const uint256& propose,
-		const std::string& pubKey);
+	LedgerProposal(uint32 closingSeq, uint32 proposeSeq, const uint256& propose, const std::string& pubKey);
 
 	// our first proposal
 	LedgerProposal(CKey::pointer privateKey, const uint256& prevLedger, const uint256& position);
@@ -38,7 +37,6 @@ public:
 	bool checkSign(const std::string& signature);
 
 	const uint256& getPeerID() const		{ return mPeerID; }
-	const uint256& getPrevHash() const		{ return mPrevHash; }
 	const uint256& getCurrentHash() const	{ return mCurrentHash; }
 	const uint256& getPrevLedger() const	{ return mPreviousLedger; }
 	uint32 getProposeSeq() const			{ return mProposeSeq; }

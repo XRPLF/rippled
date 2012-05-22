@@ -71,8 +71,9 @@ public:
 		const std::vector<unsigned char>& myNode, std::list<std::vector<unsigned char> >& newNodes);
 
 	// ledger proposal/close functions
-	bool proposeLedger(uint32 closingSeq, uint32 proposeSeq, const uint256& prevHash, const uint256& proposeHash,
+	bool proposeLedger(uint32 closingSeq, uint32 proposeSeq, const uint256& proposeHash,
 		const std::string& pubKey, const std::string& signature);
+	SHAMap::pointer getTXMap(const uint256& hash);
 
 	// network state machine
 	void checkState(const boost::system::error_code& result);
