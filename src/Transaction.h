@@ -55,14 +55,28 @@ private:
 	Transaction::pointer setCreate(
 		const NewcoinAddress&	naPrivateKey,
 		const NewcoinAddress&	naCreateAccountID,
-		const STAmount&			uFund);
+		const STAmount&			saFund);
+
+	Transaction::pointer setCreditSet(
+		const NewcoinAddress&	naPrivateKey,
+		const NewcoinAddress&	naDstAccountID,
+		const STAmount&			saLimitAmount,
+		uint32					uBorrowRate,
+		uint32					uBorrowStart,
+		uint32					uBorrowExpire);
 
 	Transaction::pointer setPayment(
 		const NewcoinAddress&	naPrivateKey,
-		const NewcoinAddress&	toAccount,
+		const NewcoinAddress&	naDstAccountID,
 		const STAmount&			saAmount,
 		const STAmount&			saSendMax,
 		const STPathSet&		spPaths);
+
+	Transaction::pointer setTransitSet(
+		const NewcoinAddress&	naPrivateKey,
+		uint32					uTransitRate,
+		uint32					uTransitStart,
+		uint32					uTransitExpire);
 
 public:
 	Transaction(const SerializedTransaction::pointer st, bool bValidate);
@@ -94,7 +108,20 @@ public:
 		const STAmount&			saFee,
 		uint32					uSourceTag,
 		const NewcoinAddress&	naCreateAccountID,	// Account to create.
-		const STAmount&			uFund);				// Initial funds in XNC.
+		const STAmount&			saFund);			// Initial funds in XNC.
+
+	// Set credit limit and borrow fees.
+	static Transaction::pointer sharedCreditSet(
+		const NewcoinAddress& naPublicKey, const NewcoinAddress& naPrivateKey,
+		const NewcoinAddress&	naSourceAccount,
+		uint32					uSeq,
+		const STAmount&			saFee,
+		uint32					uSourceTag,
+		const NewcoinAddress&	naDstAccountID,
+		const STAmount&			saLimitAmount,
+		uint32					uBorrowRate,
+		uint32					uBorrowStart,
+		uint32					uBorrowExpire);
 
 	// Make a payment.
 	static Transaction::pointer sharedPayment(
@@ -103,10 +130,21 @@ public:
 		uint32					uSeq,
 		const STAmount&			saFee,
 		uint32					uSourceTag,
-		const NewcoinAddress&	toAccount,
+		const NewcoinAddress&	naDstAccountID,
 		const STAmount&			saAmount,
 		const STAmount&			saSendMax,
 		const STPathSet&		saPaths);
+
+	// Set transit fees.
+	static Transaction::pointer sharedTransitSet(
+		const NewcoinAddress& naPublicKey, const NewcoinAddress& naPrivateKey,
+		const NewcoinAddress&	naSourceAccount,
+		uint32					uSeq,
+		const STAmount&			saFee,
+		uint32					uSourceTag,
+		uint32					uTransitRate,
+		uint32					uTransitStart,
+		uint32					uTransitExpire);
 
 	bool sign(const NewcoinAddress& naAccountPrivate);
 	bool checkSign() const;
