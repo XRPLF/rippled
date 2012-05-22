@@ -34,7 +34,7 @@ public:
 
 	SHAMap::pointer getMap()			{ return mMap; }
 
-	bool takeNode(const std::list<SHAMapNode>& IDs, const std::list<std::vector<unsigned char> >& data,
+	bool takeNode(const std::list<SHAMapNode>& IDs, const std::list< std::vector<unsigned char> >& data,
 		Peer::pointer);
 };
 

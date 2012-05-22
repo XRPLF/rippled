@@ -23,7 +23,7 @@ uint160 humanTo160(const std::string& buf)
 	vector<unsigned char> retVec;
 	DecodeBase58(buf,retVec);
 	uint160 ret;
-	memcpy(reinterpret_cast<unsigned char*>(&ret), &retVec[0], ret.GetSerializeSize());
+	memcpy(ret.begin(), &retVec[0], ret.GetSerializeSize());
 
 
 	return(ret);
