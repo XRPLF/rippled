@@ -9,7 +9,9 @@ enum TransactionType
 	ttPAYMENT			= 0,
 	ttCLAIM				= 1,
 	ttINVOICE			= 2,
-	ttEXCHANGE_OFFER	= 3
+	ttOFFER				= 3,
+	ttCREDIT_SET		= 20,
+	ttTRANSIT_SET		= 21,
 };
 
 struct TransactionFormat
@@ -28,8 +30,8 @@ const int TransactionISequence		= 3;
 const int TransactionIType			= 4;
 const int TransactionIFee			= 5;
 
-const int TransactionMinLen=32;
-const int TransactionMaxLen=1048576;
+const int TransactionMinLen			= 32;
+const int TransactionMaxLen			= 1048576;
 
 // Transaction flags.
 const uint32 tfCreateAccount		= 0x00010000;

@@ -52,7 +52,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 			break;
 
 		case ttINVOICE:
-		case ttEXCHANGE_OFFER:
+		case ttOFFER:
 			result = terSUCCESS;
 			break;
 
@@ -171,25 +171,33 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 
 	switch(txn.getTxnType())
 	{
-		case ttINVALID:
-			std::cerr << "applyTransaction: invalid type" << std::endl;
-			result = tenINVALID;
-			break;
-
 		case ttCLAIM:
 			result = doClaim(txn, accounts);
 			break;
 
-		case ttPAYMENT:
-			result = doPayment(txn, accounts, srcAccountID);
+		case ttCREDIT_SET:
+			result = doCreditSet(txn, accounts);
+			break;
+
+		case ttINVALID:
+			std::cerr << "applyTransaction: invalid type" << std::endl;
+			result = tenINVALID;
 			break;
 
 		case ttINVOICE:
 			result = doInvoice(txn, accounts);
 			break;
 
-		case ttEXCHANGE_OFFER:
+		case ttOFFER:
 			result = doOffer(txn, accounts);
+			break;
+
+		case ttPAYMENT:
+			result = doPayment(txn, accounts, srcAccountID);
+			break;
+
+		case ttTRANSIT_SET:
+			result = doTransitSet(txn, accounts);
 			break;
 
 		default:
@@ -226,6 +234,11 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	}
 
 	return result;
+}
+
+TransactionEngineResult TransactionEngine::doCreditSet(const SerializedTransaction&, std::vector<AffectedAccount>&)
+{
+	return tenINVALID;
 }
 
 TransactionEngineResult TransactionEngine::doClaim(const SerializedTransaction& txn,
@@ -412,6 +425,11 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 	return terSUCCESS;
 }
 
+TransactionEngineResult TransactionEngine::doTransitSet(const SerializedTransaction&, std::vector<AffectedAccount>&)
+{
+	return tenINVALID;
+}
+
 TransactionEngineResult TransactionEngine::doInvoice(const SerializedTransaction& txn,
 	std::vector<AffectedAccount>& accounts)
 {
@@ -447,4 +465,5 @@ TransactionEngineResult TransactionEngine::doDelete(const SerializedTransaction&
 {
 	return tenUNKNOWN;
 }
+
 // vim:ts=4

@@ -67,6 +67,7 @@ class TransactionEngine
 protected:
 	Ledger::pointer mLedger;
 
+	TransactionEngineResult doCreditSet(const SerializedTransaction&, std::vector<AffectedAccount>&);
 	TransactionEngineResult doCancel(const SerializedTransaction&, std::vector<AffectedAccount>&);
 	TransactionEngineResult doClaim(const SerializedTransaction&, std::vector<AffectedAccount>&);
 	TransactionEngineResult doDelete(const SerializedTransaction&, std::vector<AffectedAccount>&);
@@ -76,6 +77,7 @@ protected:
 								uint160 srcAccountID);
 	TransactionEngineResult doStore(const SerializedTransaction&, std::vector<AffectedAccount>&);
 	TransactionEngineResult doTake(const SerializedTransaction&, std::vector<AffectedAccount>&);
+	TransactionEngineResult doTransitSet(const SerializedTransaction&, std::vector<AffectedAccount>&);
 
 public:
 	TransactionEngine() { ; }
