@@ -238,12 +238,12 @@ void LedgerAcquire::trigger(Peer::pointer peer)
 		resetTimer();
 }
 
-void LedgerAcquire::sendRequest(boost::shared_ptr<newcoin::TMGetLedger> tmGL, Peer::pointer peer)
+void PeerSet::sendRequest(boost::shared_ptr<newcoin::TMGetLedger> tmGL, Peer::pointer peer)
 {
 	peer->sendPacket(boost::make_shared<PackedMessage>(tmGL, newcoin::mtGET_LEDGER));
 }
 
-void LedgerAcquire::sendRequest(boost::shared_ptr<newcoin::TMGetLedger> tmGL)
+void PeerSet::sendRequest(boost::shared_ptr<newcoin::TMGetLedger> tmGL)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	if (mPeers.empty()) return;
