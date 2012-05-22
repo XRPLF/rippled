@@ -40,10 +40,12 @@ void printHelp(const po::options_description& desc)
 	cout << "     account_info <account>|<nickname>" << endl;
 	cout << "     account_info <seed>|<pass_phrase>|<key> [<index>]" << endl;
 	cout << "     connect <ip> [<port>]" << endl;
+	cout << "     credit_set <seed> <paying_account> <destination_account> <limit_amount> <currency> [<borrow_rate>] [<borrow_start>] [<borrow_expire>]" << endl;
 	cout << "     ledger" << endl;
 	cout << "     peers" << endl;
-	cout << "     send <regular_seed> <paying_account> <account_id> <amount> [<currency>] [<send_max>] [<send_currency>]" << endl;
+	cout << "     send <seed> <paying_account> <account_id> <amount> [<currency>] [<send_max>] [<send_currency>]" << endl;
 	cout << "     stop" << endl;
+	cout << "     transit_set <seed> <paying_account> <transit_rate> <starts> <expires>" << endl;
 	cout << "     tx" << endl;
 	cout << "     unl_add <domain>|<public> [<comment>]" << endl;
 	cout << "     unl_delete <public_key>" << endl;

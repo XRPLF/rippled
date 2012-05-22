@@ -31,6 +31,9 @@ enum SOE_Field
 	sfAmountOut,
 	sfAuthorizedKey,
 	sfBalance,
+	sfBorrowExpire,
+	sfBorrowRate,
+	sfBorrowStart,
 	sfBorrower,
 	sfCurrency,
 	sfCurrencyIn,
@@ -50,6 +53,7 @@ enum SOE_Field
 	sfLedgerHash,
 	sfLender,
 	sfLimit,
+	sfLimitAmount,
 	sfMessageKey,
 	sfMinimumOffer,
 	sfNextRate,
@@ -67,6 +71,9 @@ enum SOE_Field
 	sfSourceTag,
 	sfTarget,
 	sfTargetLedger,
+	sfTransitExpire,
+	sfTransitRate,
+	sfTransitStart,
 	sfWalletLocator,
 
 	// test fields
