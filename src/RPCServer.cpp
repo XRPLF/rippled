@@ -244,7 +244,7 @@ Json::Value RPCServer::doAccountInfo(Json::Value &params)
 		return "invalid params";
 	}
 	else if (!theApp->getOPs().available()) {
-		return "network not available";
+		return JSONRPCError(503, "network not available");
 	}
 	else
 	{
@@ -363,6 +363,104 @@ Json::Value RPCServer::doPeers(Json::Value& params)
 	return theApp->getConnectionPool().getPeersJson();
 }
 
+// credit_set <seed> <paying_account> <destination_account> <limit_amount> <currency> [<borrow_rate>] [<borrow_start>] [<borrow_expire>]
+Json::Value RPCServer::doCreditSet(Json::Value& params)
+{
+	NewcoinAddress	naSeed;
+	NewcoinAddress	naSrcAccountID;
+	NewcoinAddress	naDstAccountID;
+	STAmount		saLimitAmount;
+	std::string		sBorrowRate;
+	std::string		sBorrowStart;
+	std::string		sBorrowExpire;
+	uint32			uBorrowRate;
+	uint32			uBorrowStart;
+	uint32			uBorrowExpire;
+
+	if (params.size() >= 6)
+		sBorrowRate		= params[6u].asString();
+
+	if (params.size() >= 7)
+		sBorrowStart	= params[7u].asString();
+
+	if (params.size() >= 8)
+		sBorrowExpire	= params[8u].asString();
+
+	if (params.size() < 5 || params.size() > 8)
+	{
+		return JSONRPCError(500, "invalid parameters");
+	}
+	else if (!naSeed.setFamilySeedGeneric(params[0u].asString()))
+	{
+		return JSONRPCError(500, "disallowed seed");
+	}
+	else if (!naSrcAccountID.setAccountID(params[1u].asString()))
+	{
+		return JSONRPCError(500, "source account id needed");
+	}
+	else if (!naDstAccountID.setAccountID(params[2u].asString()))
+	{
+		return JSONRPCError(500, "destination account id needed");
+	}
+	else if (!saLimitAmount.setValue(params[5u].asString(), params[6u].asString()))
+	{
+		return JSONRPCError(500, "bad src amount/currency");
+	}
+	else if (!theApp->getOPs().available()) {
+		return JSONRPCError(503, "network not available");
+	}
+	else
+	{
+		NewcoinAddress					naAccountPublic;
+		NewcoinAddress					naAccountPrivate;
+	    SerializedLedgerEntry::pointer	sleSrc;
+		Json::Value						obj				= authorize(naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate, sleSrc);
+
+		if (!obj.empty())
+		{
+			return obj;
+		}
+
+		STAmount						saSrcBalance	= sleSrc->getIValueFieldAmount(sfBalance);
+
+		uBorrowRate			= 0;
+		uBorrowStart		= 0;
+		uBorrowExpire		= 0;
+
+		if (saSrcBalance < theConfig.FEE_DEFAULT)
+		{
+			return JSONRPCError(500, "insufficent funds");
+		}
+		else
+		{
+			Transaction::pointer	trans	= Transaction::sharedCreditSet(
+				naAccountPublic, naAccountPrivate,
+				naSrcAccountID,
+				sleSrc->getIFieldU32(sfSequence),
+				theConfig.FEE_DEFAULT,
+				0,											// YYY No source tag
+				naDstAccountID,
+				saLimitAmount,
+				uBorrowRate,
+				uBorrowStart,
+				uBorrowExpire);
+
+			(void) theApp->getOPs().processTransaction(trans);
+
+			obj["transaction"]		= trans->getSTransaction()->getJson(0);
+			obj["status"]			= trans->getStatus();
+			obj["seed"]				= naSeed.humanFamilySeed();
+			obj["srcAccountID"]		= naSrcAccountID.humanAccountID();
+			obj["dstAccountID"]		= naDstAccountID.humanAccountID();
+			obj["limitAmount"]		= saLimitAmount.getText();
+			obj["borrowRate"]		= uBorrowRate;
+			obj["borrowStart"]		= uBorrowStart;
+			obj["borrowExpire"]		= uBorrowExpire;
+
+			return obj;
+		}
+	}
+}
 
 // send regular_seed paying_account account_id amount [currency] [send_max] [send_currency]
 Json::Value RPCServer::doSend(Json::Value& params)
@@ -406,7 +504,7 @@ Json::Value RPCServer::doSend(Json::Value& params)
 		return JSONRPCError(500, "bad src amount/currency");
 	}
 	else if (!theApp->getOPs().available()) {
-		return "network not available";
+		return JSONRPCError(503, "network not available");
 	}
 	else
 	{
@@ -422,6 +520,8 @@ Json::Value RPCServer::doSend(Json::Value& params)
 
 		if (params.size() < 6)
 			saSrcAmount	= saDstAmount;
+
+		// XXX Confirm saSrcAmount >= saDstAmount.
 
 		STAmount						saSrcBalance	= sleSrc->getIValueFieldAmount(sfBalance);
 
@@ -458,6 +558,92 @@ Json::Value RPCServer::doSend(Json::Value& params)
 			return obj;
 		}
 	}
+}
+
+// transit_set <seed> <paying_account> <transit_rate> <starts> <expires>
+Json::Value RPCServer::doTransitSet(Json::Value& params)
+{
+	NewcoinAddress	naSeed;
+	NewcoinAddress	naSrcAccountID;
+	std::string		sTransitRate;
+	std::string		sTransitStart;
+	std::string		sTransitExpire;
+	uint32			uTransitRate;
+	uint32			uTransitStart;
+	uint32			uTransitExpire;
+
+	if (params.size() >= 6)
+		sTransitRate		= params[6u].asString();
+
+	if (params.size() >= 7)
+		sTransitStart	= params[7u].asString();
+
+	if (params.size() >= 8)
+		sTransitExpire	= params[8u].asString();
+
+	if (params.size() != 5)
+	{
+		return JSONRPCError(500, "invalid parameters");
+	}
+	else if (!naSeed.setFamilySeedGeneric(params[0u].asString()))
+	{
+		return JSONRPCError(500, "disallowed seed");
+	}
+	else if (!naSrcAccountID.setAccountID(params[1u].asString()))
+	{
+		return JSONRPCError(500, "source account id needed");
+	}
+	else if (!theApp->getOPs().available()) {
+		return JSONRPCError(503, "network not available");
+	}
+	else
+	{
+		NewcoinAddress					naAccountPublic;
+		NewcoinAddress					naAccountPrivate;
+	    SerializedLedgerEntry::pointer	sleSrc;
+		Json::Value						obj				= authorize(naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate, sleSrc);
+
+		if (!obj.empty())
+		{
+			return obj;
+		}
+
+		STAmount						saSrcBalance	= sleSrc->getIValueFieldAmount(sfBalance);
+
+		uTransitRate		= 0;
+		uTransitStart		= 0;
+		uTransitExpire		= 0;
+
+		if (saSrcBalance < theConfig.FEE_DEFAULT)
+		{
+			return JSONRPCError(500, "insufficent funds");
+		}
+		else
+		{
+			Transaction::pointer	trans	= Transaction::sharedTransitSet(
+				naAccountPublic, naAccountPrivate,
+				naSrcAccountID,
+				sleSrc->getIFieldU32(sfSequence),
+				theConfig.FEE_DEFAULT,
+				0,											// YYY No source tag
+				uTransitRate,
+				uTransitStart,
+				uTransitExpire);
+
+			(void) theApp->getOPs().processTransaction(trans);
+
+			obj["transaction"]		= trans->getSTransaction()->getJson(0);
+			obj["status"]			= trans->getStatus();
+			obj["seed"]				= naSeed.humanFamilySeed();
+			obj["srcAccountID"]		= naSrcAccountID.humanAccountID();
+			obj["transitRate"]		= uTransitRate;
+			obj["transitStart"]		= uTransitStart;
+			obj["transitExpire"]	= uTransitExpire;
+
+			return obj;
+		}
+	}
+	return "Not implemented.";
 }
 
 Json::Value RPCServer::doTx(Json::Value& params)
@@ -720,7 +906,7 @@ Json::Value RPCServer::doWalletCreate(Json::Value& params)
 	}
 	else if (!theApp->getOPs().available()) {
 		// We require access to the paying account's sequence number and key information.
-		return "network not available";
+		return JSONRPCError(503, "network not available");
 	}
 	else if (theApp->getMasterLedger().getCurrentLedger()->getAccountState(naDstAccountID))
 	{
@@ -965,29 +1151,30 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 {
 	std::cerr << "RPC:" << command << std::endl;
 
-	if (command == "account_info")		return doAccountInfo(params);
-	if (command == "connect")			return doConnect(params);
-	if (command == "peers")				return doPeers(params);
+	if (command == "account_info")			return doAccountInfo(params);
+	if (command == "connect")				return doConnect(params);
+	if (command == "credit_set")			return doCreditSet(params);
+	if (command == "peers")					return doPeers(params);
+	if (command == "send")					return doSend(params);
+	if (command == "stop")					return doStop(params);
+	if (command == "transit_set")			return doTransitSet(params);
 
-	if (command == "send")				return doSend(params);
-	if (command == "stop")				return doStop(params);
+	if (command == "unl_add")				return doUnlAdd(params);
+	if (command == "unl_default")			return doUnlDefault(params);
+	if (command == "unl_delete")			return doUnlDelete(params);
+	if (command == "unl_list")				return doUnlList(params);
+	if (command == "unl_reset")				return doUnlReset(params);
+	if (command == "unl_score")				return doUnlScore(params);
 
-	if (command == "unl_add")			return doUnlAdd(params);
-	if (command == "unl_default")		return doUnlDefault(params);
-	if (command == "unl_delete")		return doUnlDelete(params);
-	if (command == "unl_list")			return doUnlList(params);
-	if (command == "unl_reset")			return doUnlReset(params);
-	if (command == "unl_score")			return doUnlScore(params);
+	if (command == "validation_create")		return doValidatorCreate(params);
 
-	if (command == "validation_create")	return doValidatorCreate(params);
-
-	if (command == "wallet_accounts")	return doWalletAccounts(params);
-	if (command == "wallet_add")		return doWalletAdd(params);
-	if (command == "wallet_claim")		return doWalletClaim(params);
-	if (command == "wallet_create")		return doWalletCreate(params);
-	if (command == "wallet_propose")	return doWalletPropose(params);
-	if (command == "wallet_seed")		return doWalletSeed(params);
-	if (command == "wallet_verify")		return doWalletVerify(params);
+	if (command == "wallet_accounts")		return doWalletAccounts(params);
+	if (command == "wallet_add")			return doWalletAdd(params);
+	if (command == "wallet_claim")			return doWalletClaim(params);
+	if (command == "wallet_create")			return doWalletCreate(params);
+	if (command == "wallet_propose")		return doWalletPropose(params);
+	if (command == "wallet_seed")			return doWalletSeed(params);
+	if (command == "wallet_verify")			return doWalletVerify(params);
 
 	//
 	// Obsolete or need rewrite:
