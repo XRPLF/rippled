@@ -53,6 +53,8 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 
 		case ttINVOICE:
 		case ttOFFER:
+		case ttCREDIT_SET:
+		case ttTRANSIT_SET:
 			result = terSUCCESS;
 			break;
 
@@ -236,11 +238,6 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	return result;
 }
 
-TransactionEngineResult TransactionEngine::doCreditSet(const SerializedTransaction&, std::vector<AffectedAccount>&)
-{
-	return tenINVALID;
-}
-
 TransactionEngineResult TransactionEngine::doClaim(const SerializedTransaction& txn,
 	 std::vector<AffectedAccount>& accounts)
 {
@@ -329,6 +326,11 @@ TransactionEngineResult TransactionEngine::doClaim(const SerializedTransaction& 
 
 	std::cerr << "doClaim<" << std::endl;
 	return terSUCCESS;
+}
+
+TransactionEngineResult TransactionEngine::doCreditSet(const SerializedTransaction&, std::vector<AffectedAccount>&)
+{
+	return tenINVALID;
 }
 
 TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction& txn,
@@ -425,8 +427,141 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 	return terSUCCESS;
 }
 
-TransactionEngineResult TransactionEngine::doTransitSet(const SerializedTransaction&, std::vector<AffectedAccount>&)
+TransactionEngineResult TransactionEngine::doTransitSet(const SerializedTransaction& st, std::vector<AffectedAccount>&)
 {
+	std::cerr << "doTransitSet>" << std::endl;
+
+	SerializedLedgerEntry::pointer	sleSrc	= accounts[0].second;
+
+	bool	bTxnTransitRate			= st->getIFieldPresent(sfTransitRate);
+	bool	bTxnTransitStart		= st->getIFieldPresent(sfTransitStart);
+	bool	bTxnTransitExpire		= st->getIFieldPresent(sfTransitExpire);
+	uint32	uTxnTransitRate			= bTxnTransitRate ? st->getIFieldU32(sfTransitRate) : 0;
+	uint32	uTxnTransitStart		= bTxnTransitStart ? st->getIFieldU32(sfTransitStart) : 0;
+	uint32	uTxnTransitExpire		= bTxnTransitExpire ? st->getIFieldU32(sfTransitExpire) : 0;
+
+	bool	bActTransitRate			= sleSrc->getIFieldPresent(sfTransitRate);
+	bool	bActTransitExpire		= sleSrc->getIFieldPresent(sfTransitExpire);
+	bool	bActNextTransitRate		= sleSrc->getIFieldPresent(sfNextTransitRate);
+	bool	bActNextTransitStart	= sleSrc->getIFieldPresent(sfNextTransitStart);
+	bool	bActNextTransitExpire	= sleSrc->getIFieldPresent(sfNextTransitExpire);
+	uint32	uActTransitRate			= bActTransitRate ? sleSrc->getIFieldU32(sfTransitRate) : 0;
+	uint32	uActTransitExpire		= bActTransitExpire ? sleSrc->getIFieldU32(sfTransitExpire) : 0;
+	uint32	uActNextTransitRate		= bActNextTransitRate ? sleSrc->getIFieldU32(sfNextTransitRate) : 0;
+	uint32	uActNextTransitStart	= bActNextTransitStart ? sleSrc->getIFieldU32(sfNextTransitStart) : 0;
+	uint32	uActNextTransitExpire	= bActNextTransitExpire ? sleSrc->getIFieldU32(sfNextTransitExpire) : 0;
+
+	// Try to overwrite next rate.
+
+	bool	bBetterNextExpire	=
+		(!bTxnTransitExpire									// Txn does not expire (same or extends)
+			|| (bActNextTransitExpire && uTxnTransitExpire >= uActTransitExpire));	// Same or longer the next.
+
+	bool	bBetterNextRate		=
+		!bActNextTransitRate								// No next rate, txn is better.
+			|| (uTxnTransitRate <= uActNextTransitRate);	// Charge is the same or less.
+
+	// Must start at the same time or sooner.
+	bool	bBetterNextStart	=
+
+	// If starting sooner, must be better than current, or current must not protect range.
+
+
+	if (!bActNextTransitRate)
+	{
+		// No next. Overwrite next.
+	}
+	else if (uTxnTransitRate <= uActNextTransitRate && bBetterNextExpire)
+	{
+		// Better than 
+	}
+
+	// True if no rate is active or going to be active;
+	bool	bNoRate	= !bActTransitRate && !bActNextTransitRate;
+
+	bool	bStartNow	= bTxnTransitStart
+							? uTxnTransitStart < uLedger
+							: bActTransitRate
+								? bActTransitExpire
+									?
+									: true	// Current never expires.
+								: true;		// Nothing is running.
+
+	// True if new rate does not apply immediately.
+	boo		bRateIsLater	= bTxnTransitStart
+		? uTxnTransitStart < uLedger
+
+		: bActNextTransitRate && bTxnTransitExpire;
+
+	if (no_rate || rate_is_better || rate_is_later)
+	{
+		// Install.
+		if (starting)
+		{
+			// install now
+		}
+		else
+		{
+			// install next	
+		}
+	}
+	else
+	{
+		return tenTRANSIT_WORSE;
+	}
+		if (no_rate && starting)
+
+		if (!bActTransitRate && !bActNextTransitRate) {
+			// No rate
+			bProtected = false;
+		} if (bActTransitRate && !bTx
+
+	if (bTxnTransitStart && uTxnTransitStart > uLedger)
+	{
+		// Start at a particular time.
+
+	}
+	else
+	{
+		// No start or start in the past, start now.
+		if (!bActTransitRate && !bActNextTransitRate)
+		{
+			// No current or future rate.
+
+			uDstTransitRate			= uTxnTransitRate;
+			uDstTransitExpire		= uTxnTransitExpire;	// 0 for never expire.
+		}
+		else if (bActTransitRate && !bActNextTransitRate)
+		{
+			// Have a current rate and none pending.
+			if (!bActTransitExpire) {
+				// Current rate does not expire
+
+			}
+		}
+		else
+		{
+			// Have a future rate.
+
+		}
+	}
+	if (!bActTransitRate && !bActNextTransitRate)
+	{
+
+	}
+
+	// Set current.
+	uDstTransitRate			= uTxnTransitRate;
+	uDstTransitExpire		= uTxnTransitExpire;	// 0 for never expire.
+
+	// Set future.
+	uDstNextTransitRate		= uTxnTransitRate;
+	uDstNextTransitStart	= uTxnTransitStart;
+	uDstNextTransitExpire	= uTxnTransitExpire;	// 0 for never expire.
+
+	if (txn.getITFieldPresent(sfCurrency))
+
+	std::cerr << "doTransitSet<" << std::endl;
 	return tenINVALID;
 }
 

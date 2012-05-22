@@ -14,14 +14,15 @@ enum TransactionEngineResult
 {
 	// tenCAN_NEVER_SUCCEED = <0
 
-	// Malformed
-	tenGEN_IN_USE  = -300,	// Generator already in use.
+	// Malformed: Fee claimed
+	tenGEN_IN_USE	= -300,	// Generator already in use.
 	tenCREATEXNC,			// Can not specify non XNC for Create.
 	tenEXPLICITXNC,			// XNC is used by default, don't specify it.
 
-	// Not possible due to ledger database.
+	// Not possible due to ledger database: Fee claimed
 	tenCREATED		= -200,	// Can not create a previously created account.
 	tenCLAIMED,				// Can not claim a previously claimed account.
+	tenTRANSIT_WORSE,		// Can not override a better promise.
 
 	// Other
 	tenFAILED		= -100,	// Something broke horribly
@@ -29,7 +30,7 @@ enum TransactionEngineResult
 	tenINSUF_FEE_P,			// fee totally insufficient
 	tenINVALID,				// The transaction is ill-formed
 
-	terSUCCESS     = 0,		// The transaction was applied
+	terSUCCESS		= 0,		// The transaction was applied
 
 	// terFAILED_BUT_COULD_SUCEED = >0
 	terALREADY,				// The transaction was already in the ledger

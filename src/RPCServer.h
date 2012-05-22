@@ -37,7 +37,6 @@ class RPCServer  : public boost::enable_shared_from_this<RPCServer>
 	    SerializedLedgerEntry::pointer& sleSrc);
 
 	Json::Value doAccountInfo(Json::Value& params);
-	Json::Value doBorrowSet(Json::Value& params);
 	Json::Value doConnect(Json::Value& params);
 	Json::Value doCreditSet(Json::Value& params);
 	Json::Value doLedger(Json::Value& params);

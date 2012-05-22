@@ -130,6 +130,16 @@ int RPCServer::getParamCount(const Json::Value& params)
 	return 1;
 }
 
+
+// now, expire, n
+bool RPCServer::parseBorrowRate(const std::string& sBorrowRate)
+{
+	if (!sBorrowRate.compare("expire"))
+		0;
+
+	return true;
+}
+
 bool RPCServer::extractString(std::string& param, const Json::Value& params, int index)
 {
 	if (params.isNull()) return false;

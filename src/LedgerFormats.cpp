@@ -6,18 +6,23 @@
 LedgerEntryFormat LedgerFormats[]=
 {
 	{ "AccountRoot", ltACCOUNT_ROOT, {
-		{ S_FIELD(Flags),        STI_UINT32,  SOE_FLAGS,    0 },
-		{ S_FIELD(Account),      STI_ACCOUNT, SOE_REQUIRED, 0 },
-		{ S_FIELD(Sequence),     STI_UINT32,  SOE_REQUIRED, 0 },
-		{ S_FIELD(Balance),      STI_AMOUNT,  SOE_REQUIRED, 0 },
-		{ S_FIELD(LastReceive),  STI_UINT32,  SOE_REQUIRED, 0 },
-		{ S_FIELD(LastTxn),      STI_UINT32,  SOE_REQUIRED, 0 },
-		{ S_FIELD(AuthorizedKey),STI_HASH160, SOE_IFFLAG,   1 },
-		{ S_FIELD(EmailHash),    STI_HASH128, SOE_IFFLAG,   2 },
-		{ S_FIELD(WalletLocator),STI_HASH256, SOE_IFFLAG,   4 },
-		{ S_FIELD(MessageKey),   STI_VL,      SOE_IFFLAG,   8 },
-		{ S_FIELD(Extensions),   STI_TL,      SOE_IFFLAG,   0x01000000 },
-		{ sfInvalid, NULL,       STI_DONE,    SOE_NEVER,    -1 } }
+		{ S_FIELD(Flags),				STI_UINT32,  SOE_FLAGS,    0 },
+		{ S_FIELD(Account),				STI_ACCOUNT, SOE_REQUIRED, 0 },
+		{ S_FIELD(Sequence),			STI_UINT32,  SOE_REQUIRED, 0 },
+		{ S_FIELD(Balance),				STI_AMOUNT,  SOE_REQUIRED, 0 },
+		{ S_FIELD(LastReceive),			STI_UINT32,  SOE_REQUIRED, 0 },
+		{ S_FIELD(LastTxn),				STI_UINT32,  SOE_REQUIRED, 0 },
+		{ S_FIELD(AuthorizedKey),		STI_HASH160, SOE_IFFLAG,   1 },
+		{ S_FIELD(EmailHash),			STI_HASH128, SOE_IFFLAG,   2 },
+		{ S_FIELD(WalletLocator),		STI_HASH256, SOE_IFFLAG,   4 },
+		{ S_FIELD(MessageKey),			STI_VL,		 SOE_IFFLAG,   8 },
+		{ S_FIELD(TransitRate),			STI_UINT32,  SOE_IFFLAG,  16 },
+		{ S_FIELD(TransitExpire),		STI_UINT32,  SOE_IFFLAG,  32 },
+		{ S_FIELD(NextTransitRate),		STI_UINT32,  SOE_IFFLAG,  64 },
+		{ S_FIELD(NextTransitStart),	STI_UINT32,  SOE_IFFLAG, 128 },
+		{ S_FIELD(NextTransitExpire),	STI_UINT32,  SOE_IFFLAG, 256 },
+		{ S_FIELD(Extensions),			STI_TL,		 SOE_IFFLAG,   0x01000000 },
+		{ sfInvalid, NULL,				STI_DONE,	 SOE_NEVER,    -1 } }
 	},
 	{ "GeneratorMap", ltGENERATOR_MAP, {
 		{ S_FIELD(Flags),        STI_UINT32,  SOE_FLAGS,    0 },
