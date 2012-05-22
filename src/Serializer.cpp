@@ -144,7 +144,7 @@ uint256 Serializer::get256(int offset) const
 {
 	uint256 ret;
 	if ((offset + (256 / 8)) > mData.size()) return ret;
-	memcpy(&ret, &(mData.front()) + offset, (256 / 8));
+	memcpy(ret.begin(), &(mData.front()) + offset, (256 / 8));
 	return ret;
 }
 

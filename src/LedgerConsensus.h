@@ -12,35 +12,31 @@
 #include "LedgerProposal.h"
 #include "Peer.h"
 
-class LCPosition
-{ // A position taken by one of our trusted peers
+class TransactionAcquire : public PeerSet, public boost::enable_shared_from_this<TransactionAcquire>
+{ // A transaction set we are trying to acquire
+public:
+	typedef boost::shared_ptr<TransactionAcquire> pointer;
+
 protected:
-	uint256 mPubKeyHash;
-	CKey::pointer mPubKey;
-	uint256 mPreviousPosition, mCurrentPosition;
-	uint32 mSequence;
+	SHAMap::pointer		mMap;
+	bool				mHaveRoot;
+
+	void onTimer()						{ trigger(Peer::pointer()); }
+	void newPeer(Peer::pointer peer)	{ trigger(peer); }
+
+	void done();
+	void trigger(Peer::pointer);
+	boost::weak_ptr<PeerSet> pmDowncast();
 
 public:
-	typedef boost::shared_ptr<LCPosition> pointer;
 
-	// for remote positions
-	LCPosition(uint32 closingSeq, uint32 proposeSeq, const uint256& previousTxHash,
-		const uint256& currentTxHash, CKey::pointer nodePubKey, const std::string& signature);
+	TransactionAcquire(const uint256& hash);
 
-	// for our initial position
-	LCPosition(CKey::pointer privKey, uint32 ledgerSeq, const uint256& currentPosition);
+	SHAMap::pointer getMap()			{ return mMap; }
 
-	// for our subsequent positions
-	LCPosition(LCPosition::pointer previousPosition, CKey::pointer privKey, const uint256& newPosition);
-
-	const uint256& getPubKeyHash() const		{ return mPubKeyHash; }
-	const uint256& getCurrentPosition() const	{ return mCurrentPosition; }
-	uint32 getSeq() const						{ return mSequence; }
-
-	bool verifySignature(const uint256& hash, const std::vector<unsigned char>& signature) const;
-	void setPosition(const uint256& position, uint32 sequence);
+	bool takeNode(const std::list<SHAMapNode>& IDs, const std::list< std::vector<unsigned char> >& data,
+		Peer::pointer);
 };
-
 
 class LCTransaction
 { // A transaction that may be disputed
@@ -75,19 +71,24 @@ protected:
 	Ledger::pointer mPreviousLedger, mCurrentLedger;
 	LedgerProposal::pointer mCurrentProposal;
 
-	LCPosition::pointer mOurPosition;
+	LedgerProposal::pointer mOurPosition;
 
 	// Convergence tracking, trusted peers indexed by hash of public key
-	boost::unordered_map<uint256, LCPosition::pointer> mPeerPositions;
+	boost::unordered_map<uint256, LedgerProposal::pointer, hash_SMN> mPeerPositions;
 
 	// Transaction Sets, indexed by hash of transaction tree
-	boost::unordered_map<uint256, SHAMap::pointer> mComplete;
-	boost::unordered_map<uint256, TransactionAcquire::pointer> mAcquiring;
+	boost::unordered_map<uint256, SHAMap::pointer, hash_SMN> mComplete;
+	boost::unordered_map<uint256, TransactionAcquire::pointer, hash_SMN> mAcquiring;
 
 	// Peer sets
-	boost::unordered_map<uint256, std::vector< boost::weak_ptr<Peer> > > mPeerData;
+	boost::unordered_map<uint256, std::vector< boost::weak_ptr<Peer> >, hash_SMN> mPeerData;
 
 	void weHave(const uint256& id, Peer::pointer avoidPeer);
+	void startAcquiring(TransactionAcquire::pointer);
+	SHAMap::pointer find(const uint256& hash);
+
+	void addPosition(LedgerProposal&);
+	void removePosition(LedgerProposal&);
 
 public:
 	LedgerConsensus(Ledger::pointer previousLedger, Ledger::pointer currentLedger) :
@@ -98,21 +99,19 @@ public:
 	Ledger::pointer peekPreviousLedger()	{ return mPreviousLedger; }
 	Ledger::pointer peekCurrentLedger()		{ return mCurrentLedger; }
 
-	LCPosition::pointer getCreatePeerPosition(const uint256& pubKeyHash);
-
-	SHAMap::pointer getTransactionTree(const uint256& hash);
+	SHAMap::pointer getTransactionTree(const uint256& hash, bool doAcquire);
 	TransactionAcquire::pointer getAcquiring(const uint256& hash);
 	void acquireComplete(const uint256& hash);
 
-	LCPosition::pointer getPeerPosition(const uint256& peer);
-
-	// high-level functions
 	void abort();
-	bool peerPosition(Peer::pointer peer, const Serializer& report);
+	int timerEntry(void);
+
+	bool peerPosition(LedgerProposal::pointer);
+
 	bool peerHasSet(Peer::pointer peer, const std::vector<uint256>& sets);
+
 	bool peerGaveNodes(Peer::pointer peer, const uint256& setHash,
 		const std::list<SHAMapNode>& nodeIDs, const std::list< std::vector<unsigned char> >& nodeData);
-	int timerEntry(void);
 };
 
 

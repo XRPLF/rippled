@@ -188,7 +188,7 @@ public:
 		return true;
 	}
 
-	CSecret GetSecret() const
+	CSecret GetSecret()
 	{
 		CSecret vchRet;
 		vchRet.resize(32);
@@ -207,7 +207,7 @@ public:
 		return BN_dup(EC_KEY_get0_private_key(pkey));
 	}
 
-	CPrivKey GetPrivKey() const
+	CPrivKey GetPrivKey()
 	{
 		unsigned int nSize = i2d_ECPrivateKey(pkey, NULL);
 		if (!nSize)
@@ -260,7 +260,7 @@ public:
 		vchSig.clear();
 		unsigned char pchSig[10000];
 		unsigned int nSize = 0;
-		if (!ECDSA_sign(0, (unsigned char*)&hash, sizeof(hash), pchSig, &nSize, pkey))
+		if (!ECDSA_sign(0, (unsigned char*)hash.begin(), hash.size(), pchSig, &nSize, pkey))
 			return false;
 
 		vchSig.resize(nSize);
@@ -268,12 +268,22 @@ public:
 		return true;
 	}
 
-	bool Verify(const uint256& hash, const std::vector<unsigned char>& vchSig) const
+	bool Verify(const uint256& hash, const void *sig, size_t sigLen) const
 	{
 		// -1 = error, 0 = bad sig, 1 = good
-		if (ECDSA_verify(0, (unsigned char*)&hash, sizeof(hash), &vchSig[0], vchSig.size(), pkey) != 1)
+		if (ECDSA_verify(0, hash.begin(), hash.size(), (const unsigned char *) sig, sigLen, pkey) != 1)
 			return false;
 		return true;
+	}
+
+	bool Verify(const uint256& hash, const std::vector<unsigned char>& vchSig) const
+	{
+		return Verify(hash, &vchSig[0], vchSig.size());
+	}
+
+	bool Verify(const uint256& hash, const std::string sig) const
+	{
+		return Verify(hash, sig.data(), sig.size());
 	}
 
 	// ECIES functions. These throw on failure

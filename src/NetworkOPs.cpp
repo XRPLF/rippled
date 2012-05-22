@@ -386,18 +386,42 @@ int NetworkOPs::beginConsensus(Ledger::pointer closingLedger)
 	return mConsensus->startup();
 }
 
-bool NetworkOPs::proposeLedger(uint32 closingSeq, uint32 proposeSeq,
-	const uint256& prevHash, const uint256& proposeHash, const std::string& pubKey, const std::string& signature)
+bool NetworkOPs::proposeLedger(uint32 closingSeq, uint32 proposeSeq, const uint256& proposeHash,
+	const std::string& pubKey, const std::string& signature)
 {
-	uint256 nodeID = Serializer::getSHA512Half(pubKey);
+	if (mMode != omFULL)
+		return true;
+
+	LedgerProposal::pointer proposal =
+		boost::make_shared<LedgerProposal>(closingSeq, proposeSeq, proposeHash, pubKey);
+	if (!proposal->checkSign(signature))
+	{
+		std::cerr << "Ledger proposal fails signature check" << std::endl;
+		return false;
+	}
 
 	// Is this node on our UNL?
 	// WRITEME
 
-	// Are we currently closing?
+	Ledger::pointer currentLedger = theApp->getMasterLedger().getCurrentLedger();
 
-	// Yes: Is it an update?
-	// WRITEME
+	if (!mConsensus)
+	{
+		if ((getNetworkTimeNC() + 2) >= currentLedger->getCloseTimeNC())
+			setStateTimer(beginConsensus(currentLedger));
+		if (!mConsensus) return true;
+	}
 
+	return mConsensus->peerPosition(proposal);
+}
+
+SHAMap::pointer NetworkOPs::getTXMap(const uint256& hash)
+{ // WRITEME
+	return SHAMap::pointer();
+}
+
+bool NetworkOPs::gotTXData(boost::shared_ptr<Peer> peer, const uint256& hash,
+	const std::list<SHAMapNode>& nodeIDs, const std::list< std::vector<unsigned char> >& nodeData)
+{ // WRITEME
 	return true;
 }

@@ -603,16 +603,15 @@ void Peer::recvTransaction(newcoin::TMTransaction& packet)
 
 void Peer::recvPropose(boost::shared_ptr<newcoin::TMProposeSet> packet)
 {
-	if ((packet->previoustxhash().size() != 32) || (packet->currenttxhash().size() != 32) ||
-		(packet->nodepubkey().size() < 28) || (packet->signature().size() < 56))
+	if ((packet->currenttxhash().size() != 32) || (packet->nodepubkey().size() < 28) ||
+		(packet->signature().size() < 56))
 		return;
 
 	uint32 closingSeq = packet->closingseq(), proposeSeq = packet->proposeseq();
-	uint256 previousTxHash, currentTxHash;
-	memcpy(previousTxHash.begin(), packet->previoustxhash().data(), 32);
+	uint256 currentTxHash;
 	memcpy(currentTxHash.begin(), packet->currenttxhash().data(), 32);
 
-	if(theApp->getOPs().proposeLedger(closingSeq, proposeSeq, previousTxHash, currentTxHash,
+	if(theApp->getOPs().proposeLedger(closingSeq, proposeSeq, currentTxHash,
 		packet->nodepubkey(), packet->signature()))
 	{ // FIXME: Not all nodes will want proposals
 		PackedMessage::pointer message = boost::make_shared<PackedMessage>(packet, newcoin::mtPROPOSE_LEDGER);
@@ -693,106 +692,161 @@ void Peer::recvStatus(newcoin::TMStatusChange& packet)
 
 void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 {
-	// Figure out what ledger they want
-	Ledger::pointer ledger;
-	if (packet.has_ledgerhash())
-	{
-		uint256 ledgerhash;
-		if (packet.ledgerhash().size() != 32)
+	SHAMap::pointer map;
+	boost::shared_ptr<newcoin::TMLedgerData> reply = boost::make_shared<newcoin::TMLedgerData>();
+
+	if (packet.itype() == newcoin::liTS_CANDIDATE)
+	{ // Request is  for a transaction candidate set
+		Ledger::pointer ledger;
+		if ((!packet.has_ledgerhash() || packet.ledgerhash().size() != 32))
 		{
 			punishPeer(PP_INVALID_REQUEST);
 			return;
 		}
-		memcpy(&ledgerhash, packet.ledgerhash().data(), 32);
-		ledger = theApp->getMasterLedger().getLedgerByHash(ledgerhash);
-	}
-	else if (packet.has_ledgerseq())
-		ledger = theApp->getMasterLedger().getLedgerBySeq(packet.ledgerseq());
-	else if (packet.has_ltype() && (packet.ltype() == newcoin::ltCURRENT))
-		ledger = theApp->getMasterLedger().getCurrentLedger();
-	else if (packet.has_ltype() && (packet.ltype() == newcoin::ltCLOSING))
-	{
-		ledger = theApp->getMasterLedger().getClosedLedger();
-	}
-	else if (packet.has_ltype() && (packet.ltype() == newcoin::ltCLOSED) )
-	{
-		ledger = theApp->getMasterLedger().getClosedLedger();
-		if (ledger && !ledger->isClosed())
-			ledger = theApp->getMasterLedger().getLedgerBySeq(ledger->getLedgerSeq() - 1);
+		uint256 txHash;
+		memcpy(txHash.begin(), packet.ledgerhash().data(), 32);
+		map = theApp->getOPs().getTXMap(txHash);
+		if (!map)
+		{
+			punishPeer(PP_INVALID_REQUEST);
+			return;
+		}
+		reply->set_ledgerhash(txHash.begin(), txHash.size());
+		reply->set_type(newcoin::liTS_CANDIDATE);
 	}
 	else
-	{
-		punishPeer(PP_INVALID_REQUEST);
-		return;
-	}
-
-	if( (!ledger) || (packet.has_ledgerseq() && (packet.ledgerseq()!=ledger->getLedgerSeq())) )
-	{
-		punishPeer(PP_UNKNOWN_REQUEST);
-		return;
-	}
-
-	// Figure out what information they want
-	boost::shared_ptr<newcoin::TMLedgerData> data = boost::make_shared<newcoin::TMLedgerData>();
-	uint256 lHash = ledger->getHash();
-	data->set_ledgerhash(lHash.begin(), lHash.size());
-	data->set_ledgerseq(ledger->getLedgerSeq());
-	data->set_type(packet.itype());
-
-	if(packet.itype() == newcoin::liBASE)
-	{
-		Serializer nData(116);
-		ledger->addRaw(nData);
-		data->add_nodes()->set_nodedata(nData.getDataPtr(), nData.getLength());
-	}
-	else if ( (packet.itype()==newcoin::liTX_NODE) || (packet.itype()==newcoin::liAS_NODE) )
-	{
-		SHAMap::pointer map=(packet.itype()==newcoin::liTX_NODE) ? ledger->peekTransactionMap()
-			: ledger->peekAccountStateMap();
-		if(!map) return;
-		if(packet.nodeids_size()==0)
+	{ // Figure out what ledger they want
+		Ledger::pointer ledger;
+		if (packet.has_ledgerhash())
 		{
-			punishPeer(PP_INVALID_REQUEST);
-			return;
-		}
-		for(int i=0; i<packet.nodeids().size(); i++)
-		{
-			SHAMapNode mn(packet.nodeids(0).data(), packet.nodeids(i).size());
-			if(!mn.isValid())
+			uint256 ledgerhash;
+			if (packet.ledgerhash().size() != 32)
 			{
 				punishPeer(PP_INVALID_REQUEST);
 				return;
 			}
-			std::vector<SHAMapNode> nodeIDs;
-			std::list<std::vector<unsigned char> > rawNodes;
-			if(map->getNodeFat(mn, nodeIDs, rawNodes))
-			{
-				std::vector<SHAMapNode>::iterator nodeIDIterator;
-				std::list<std::vector<unsigned char> >::iterator rawNodeIterator;
-				for(nodeIDIterator = nodeIDs.begin(), rawNodeIterator = rawNodes.begin();
-					nodeIDIterator != nodeIDs.end(); ++nodeIDIterator, ++rawNodeIterator)
-				{
-					Serializer nID(33);
-					nodeIDIterator->addIDRaw(nID);
-					newcoin::TMLedgerNode* node = data->add_nodes();
-					node->set_nodeid(nID.getDataPtr(), nID.getLength());
-					node->set_nodedata(&rawNodeIterator->front(), rawNodeIterator->size());
-				}
-			}
+			memcpy(ledgerhash.begin(), packet.ledgerhash().data(), 32);
+			ledger = theApp->getMasterLedger().getLedgerByHash(ledgerhash);
 		}
+		else if (packet.has_ledgerseq())
+			ledger = theApp->getMasterLedger().getLedgerBySeq(packet.ledgerseq());
+		else if (packet.has_ltype() && (packet.ltype() == newcoin::ltCURRENT))
+			ledger = theApp->getMasterLedger().getCurrentLedger();
+		else if (packet.has_ltype() && (packet.ltype() == newcoin::ltCLOSED) )
+		{
+			ledger = theApp->getMasterLedger().getClosedLedger();
+			if (ledger && !ledger->isClosed())
+				ledger = theApp->getMasterLedger().getLedgerBySeq(ledger->getLedgerSeq() - 1);
+		}
+		else
+		{
+			punishPeer(PP_INVALID_REQUEST);
+			return;
+		}
+
+		if( (!ledger) || (packet.has_ledgerseq() && (packet.ledgerseq()!=ledger->getLedgerSeq())) )
+		{
+			punishPeer(PP_UNKNOWN_REQUEST);
+			return;
+		}
+
+		// Fill out the reply
+		uint256 lHash = ledger->getHash();
+		reply->set_ledgerhash(lHash.begin(), lHash.size());
+		reply->set_ledgerseq(ledger->getLedgerSeq());
+		reply->set_type(packet.itype());
+
+		if(packet.itype() == newcoin::liBASE)
+		{ // they want the ledger base data
+			Serializer nData(128);
+			ledger->addRaw(nData);
+			reply->add_nodes()->set_nodedata(nData.getDataPtr(), nData.getLength());
+			PackedMessage::pointer oPacket = boost::make_shared<PackedMessage>
+				(PackedMessage::MessagePointer(reply), newcoin::mtLEDGER);
+			sendPacket(oPacket);
+			return;
+		}
+
+		if ((packet.itype() == newcoin::liTX_NODE) || (packet.itype() == newcoin::liAS_NODE))
+			map = (packet.itype() == newcoin::liTX_NODE) ?
+				ledger->peekTransactionMap() : ledger->peekAccountStateMap();
 	}
-	else
+
+	if ((!map) || (packet.nodeids_size() == 0))
 	{
 		punishPeer(PP_INVALID_REQUEST);
 		return;
 	}
+
+	for(int i = 0; i<packet.nodeids().size(); ++i)
+	{
+		SHAMapNode mn(packet.nodeids(0).data(), packet.nodeids(i).size());
+		if(!mn.isValid())
+		{
+			punishPeer(PP_INVALID_REQUEST);
+			return;
+		}
+		std::vector<SHAMapNode> nodeIDs;
+		std::list< std::vector<unsigned char> > rawNodes;
+		if(map->getNodeFat(mn, nodeIDs, rawNodes))
+		{
+			std::vector<SHAMapNode>::iterator nodeIDIterator;
+			std::list< std::vector<unsigned char> >::iterator rawNodeIterator;
+			for(nodeIDIterator = nodeIDs.begin(), rawNodeIterator = rawNodes.begin();
+				nodeIDIterator != nodeIDs.end(); ++nodeIDIterator, ++rawNodeIterator)
+			{
+				Serializer nID(33);
+				nodeIDIterator->addIDRaw(nID);
+				newcoin::TMLedgerNode* node = reply->add_nodes();
+				node->set_nodeid(nID.getDataPtr(), nID.getLength());
+				node->set_nodedata(&rawNodeIterator->front(), rawNodeIterator->size());
+			}
+		}
+	}
 	PackedMessage::pointer oPacket = boost::make_shared<PackedMessage>
-		(PackedMessage::MessagePointer(data), newcoin::mtLEDGER);
+		(PackedMessage::MessagePointer(reply), newcoin::mtLEDGER);
 	sendPacket(oPacket);
 }
 
 void Peer::recvLedger(newcoin::TMLedgerData& packet)
 {
+	if (packet.nodes().size() <= 0)
+	{
+		punishPeer(PP_INVALID_REQUEST);
+		return;
+	}
+
+	if (packet.type() == newcoin::liTS_CANDIDATE)
+	{ // got data for a candidate transaction set
+		uint256 hash;
+		if(packet.ledgerhash().size() != 32)
+		{
+			punishPeer(PP_INVALID_REQUEST);
+			return;
+		}
+		memcpy(hash.begin(), packet.ledgerhash().data(), 32);
+
+
+		std::list<SHAMapNode> nodeIDs;
+		std::list< std::vector<unsigned char> > nodeData;
+
+		for (int i = 0; i < packet.nodes().size(); ++i)
+		{
+			const newcoin::TMLedgerNode& node = packet.nodes(i);
+			if (!node.has_nodeid() || !node.has_nodedata())
+			{
+				punishPeer(PP_INVALID_REQUEST);
+				return;
+			}
+
+			nodeIDs.push_back(SHAMapNode(node.nodeid().data(), node.nodeid().size()));
+			nodeData.push_back(std::vector<unsigned char>(node.nodedata().begin(), node.nodedata().end()));
+		}
+		if (!theApp->getOPs().gotTXData(shared_from_this(), hash, nodeIDs, nodeData))
+			punishPeer(PP_UNWANTED_DATA);
+		return;
+	}
+
 	if (!theApp->getMasterLedgerAcquire().gotLedgerData(packet, shared_from_this()))
 		punishPeer(PP_UNWANTED_DATA);
 }
