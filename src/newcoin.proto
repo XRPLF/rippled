@@ -220,13 +220,12 @@ enum TMLedgerInfoType {
 enum TMLedgerType {
 	ltACCEPTED = 0;
 	ltCURRENT  = 1;
-	ltCLOSING  = 2;
-	ltCLOSED   = 3;
+	ltCLOSED   = 2;
 }
 
 message TMGetLedger {
 	optional TMLedgerType ltype		= 1;
-	optional bytes ledgerHash		= 2;
+	optional bytes ledgerHash		= 2;	// Can also be the transaction set hash if liTS_CANDIDATE
 	optional uint32 ledgerSeq		= 3;
 	required TMLedgerInfoType itype	= 4;
 	repeated bytes nodeIDs			= 5;
