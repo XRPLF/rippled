@@ -419,3 +419,9 @@ SHAMap::pointer NetworkOPs::getTXMap(const uint256& hash)
 { // WRITEME
 	return SHAMap::pointer();
 }
+
+bool NetworkOPs::gotTXData(boost::shared_ptr<Peer> peer, const uint256& hash,
+	const std::list<SHAMapNode>& nodeIDs, const std::list< std::vector<unsigned char> >& nodeData)
+{ // WRITEME
+	return true;
+}
