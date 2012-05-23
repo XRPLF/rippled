@@ -439,6 +439,15 @@ void Peer::processReadBuffer()
 
 		case newcoin::mtLEDGER:
 			{
+				newcoin::TMHaveTransactionSet msg;
+				if(msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
+					recvHaveTxSet(msg);
+				else std::cerr << "parse error: " << type << std::endl;
+			}
+			break;
+
+		case newcoin::mtHAVE_SET:
+			{
 				newcoin::TMLedgerData msg;
 				if(msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvLedger(msg);
@@ -619,6 +628,22 @@ void Peer::recvPropose(boost::shared_ptr<newcoin::TMProposeSet> packet)
 	}
 }
 
+void Peer::recvHaveTxSet(newcoin::TMHaveTransactionSet& packet)
+{
+	std::vector<uint256> hashes;
+	for (int i = 0; i < packet.hashes_size(); ++i)
+	{
+		if (packet.hashes(i).size() == 32)
+		{
+			uint256 hash;
+			memcpy(hash.begin(), packet.hashes(i).data(), 32);
+			hashes.push_back(hash);
+		}
+	}
+	if (hashes.empty() || !theApp->getOPs().hasTXSet(shared_from_this(), hashes))
+		punishPeer(PP_UNWANTED_DATA);
+}
+
 void Peer::recvValidation(newcoin::TMValidation& packet)
 {
 }
@@ -778,9 +803,9 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 		return;
 	}
 
-	for(int i = 0; i<packet.nodeids().size(); ++i)
+	for(int i = 0; i < packet.nodeids().size(); ++i)
 	{
-		SHAMapNode mn(packet.nodeids(0).data(), packet.nodeids(i).size());
+		SHAMapNode mn(packet.nodeids(i).data(), packet.nodeids(i).size());
 		if(!mn.isValid())
 		{
 			punishPeer(PP_INVALID_REQUEST);
