@@ -416,12 +416,20 @@ bool NetworkOPs::proposeLedger(uint32 closingSeq, uint32 proposeSeq, const uint2
 }
 
 SHAMap::pointer NetworkOPs::getTXMap(const uint256& hash)
-{ // WRITEME
-	return SHAMap::pointer();
+{
+	if (!mConsensus) return SHAMap::pointer();
+	return mConsensus->getTransactionTree(hash, false);
 }
 
 bool NetworkOPs::gotTXData(boost::shared_ptr<Peer> peer, const uint256& hash,
 	const std::list<SHAMapNode>& nodeIDs, const std::list< std::vector<unsigned char> >& nodeData)
-{ // WRITEME
-	return true;
+{
+	if (!mConsensus) return false;
+	return mConsensus->peerGaveNodes(peer, hash, nodeIDs, nodeData);
+}
+
+bool NetworkOPs::hasTXSet(boost::shared_ptr<Peer> peer, const std::vector<uint256>& sets)
+{
+	if (!mConsensus) return false;
+	return mConsensus->peerHasSet(peer, sets);
 }
