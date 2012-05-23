@@ -28,7 +28,7 @@ void TransactionAcquire::trigger(Peer::pointer peer)
 		tmGL->set_ledgerhash(mHash.begin(), mHash.size());
 		tmGL->set_itype(newcoin::liTS_CANDIDATE);
 		*(tmGL->add_nodeids()) = SHAMapNode().getRawString();
-		sendRequest(tmGL);
+		sendRequest(tmGL, peer);
 	}
 	if (mHaveRoot)
 	{
@@ -62,11 +62,13 @@ void TransactionAcquire::trigger(Peer::pointer peer)
 		resetTimer();
 }
 
-bool TransactionAcquire::takeNode(const std::list<SHAMapNode>& nodeIDs,
+bool TransactionAcquire::takeNodes(const std::list<SHAMapNode>& nodeIDs,
 	const std::list< std::vector<unsigned char> >& data, Peer::pointer peer)
 {
-	if (mComplete || mFailed)
+	if (mComplete)
 		return true;
+	if (mFailed)
+		return false;
 	std::list<SHAMapNode>::const_iterator nodeIDit = nodeIDs.begin();
 	std::list< std::vector<unsigned char> >::const_iterator nodeDatait = data.begin();
 	while (nodeIDit != nodeIDs.end())
@@ -170,13 +172,28 @@ bool LedgerConsensus::peerPosition(LedgerProposal::pointer newPosition)
 
 bool LedgerConsensus::peerHasSet(Peer::pointer peer, const std::vector<uint256>& sets)
 {
-	// WRITEME
+	for (std::vector<uint256>::const_iterator it = sets.begin(), end = sets.end(); it != end; ++it)
+	{
+		std::vector< boost::weak_ptr<Peer> >& set = mPeerData[*it];
+		bool found = false;
+		for (std::vector< boost::weak_ptr<Peer> >::iterator iit = set.begin(), iend = set.end(); iit != iend; ++iit)
+			if (iit->lock() == peer)
+				found = true;
+		if (!found)
+		{
+			set.push_back(peer);
+			boost::unordered_map<uint256, TransactionAcquire::pointer>::iterator acq = mAcquiring.find(*it);
+			if (acq != mAcquiring.end())
+				acq->second->peerHas(peer);
+		}
+	}
 	return true;
 }
 
 bool LedgerConsensus::peerGaveNodes(Peer::pointer peer, const uint256& setHash,
 	const std::list<SHAMapNode>& nodeIDs, const std::list< std::vector<unsigned char> >& nodeData)
 {
-	// WRITEME
-	return true;
+	boost::unordered_map<uint256, TransactionAcquire::pointer>::iterator acq = mAcquiring.find(setHash);
+	if (acq == mAcquiring.end()) return false;
+	return acq->second->takeNodes(nodeIDs, nodeData, peer);
 }
