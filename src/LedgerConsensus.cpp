@@ -167,3 +167,16 @@ bool LedgerConsensus::peerPosition(LedgerProposal::pointer newPosition)
 	addPosition(*currentPosition);
 	return true;
 }
+
+bool LedgerConsensus::peerHasSet(Peer::pointer peer, const std::vector<uint256>& sets)
+{
+	// WRITEME
+	return true;
+}
+
+bool LedgerConsensus::peerGaveNodes(Peer::pointer peer, const uint256& setHash,
+	const std::list<SHAMapNode>& nodeIDs, const std::list< std::vector<unsigned char> >& nodeData)
+{
+	// WRITEME
+	return true;
+}
