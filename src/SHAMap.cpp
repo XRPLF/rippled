@@ -17,6 +17,18 @@ SHAMap::SHAMap(uint32 seq) : mSeq(seq), mState(Modifying)
 	mTNByID[*root] = root;
 }
 
+SHAMap::pointer SHAMap::snapShot()
+{ // Return a new SHAMap that is a snapshot of this one
+  // Initially nodes are shared, but CoW is forced on both ledgers
+	SHAMap::pointer ret = boost::make_shared<SHAMap>();
+	SHAMap& newMap = *ret;
+	newMap.mSeq = ++mSeq;
+	newMap.mTNByID = mTNByID;
+	newMap.root = root;
+	newMap.mState = Immutable;
+	return ret;
+}
+
 std::stack<SHAMapTreeNode::pointer> SHAMap::getStack(const uint256& id, bool include_nonmatching_leaf)
 {
 	// Walk the tree as far as possible to the specified identifier
@@ -142,7 +154,7 @@ void SHAMap::returnNode(SHAMapTreeNode::pointer& node, bool modify)
 { // make sure the node is suitable for the intended operation (copy on write)
 	assert(node->isValid());
 	if (node && modify && (node->getSeq() != mSeq))
-	{
+	{ // have a CoW
 #ifdef DEBUG
 		std::cerr << "returnNode COW" << std::endl;
 #endif
