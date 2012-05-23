@@ -87,6 +87,28 @@ bool TransactionAcquire::takeNodes(const std::list<SHAMapNode>& nodeIDs,
 	return true;
 }
 
+LedgerConsensus::LedgerConsensus(Ledger::pointer previousLedger)
+	:  mState(lcsPRE_CLOSE), mPreviousLedger(previousLedger)
+{
+}
+
+void LedgerConsensus::closeTime(Ledger::pointer& current)
+{
+	if (mState != lcsPRE_CLOSE)
+	{
+		assert(false);
+		return;
+	}
+	CKey::pointer nodePrivKey = boost::make_shared<CKey>();
+	nodePrivKey->MakeNewKey(); // FIXME
+
+	current->updateHash();
+	uint256 txSet = current->getTransHash();
+	mOurPosition = boost::make_shared<LedgerProposal>(nodePrivKey, current->getParentHash(), txSet);
+	mComplete[txSet] = current->peekTransactionMap()->snapShot();
+	// WRITME: Broadcast an IHAVE for this set
+}
+
 void LedgerConsensus::abort()
 {
 }

@@ -64,13 +64,20 @@ public:
 	bool updatePosition(int timePassed);
 };
 
+enum LCState
+{
+	lcsPRE_CLOSE,		// We haven't closed our ledger yet, but others might have
+	lcsESTABLISH,		// Establishing consensus
+	lcsCUTOFF,			// Past the cutoff for consensus
+	lcsFINSHED,			// We have closed on a transaction set
+	lcsACCEPTED,		// We have accepted/validated a new last closed ledger
+};
 
 class LedgerConsensus
 {
 protected:
-	Ledger::pointer mPreviousLedger, mCurrentLedger;
-	LedgerProposal::pointer mCurrentProposal;
-
+	LCState mState;
+	Ledger::pointer mPreviousLedger;
 	LedgerProposal::pointer mOurPosition;
 
 	// Convergence tracking, trusted peers indexed by hash of public key
@@ -91,13 +98,12 @@ protected:
 	void removePosition(LedgerProposal&);
 
 public:
-	LedgerConsensus(Ledger::pointer previousLedger, Ledger::pointer currentLedger) :
-		mPreviousLedger(previousLedger), mCurrentLedger(currentLedger) { ; }
+	LedgerConsensus(Ledger::pointer previousLedger);
+	void closeTime(Ledger::pointer& currentLedger);
 
 	int startup();
 
 	Ledger::pointer peekPreviousLedger()	{ return mPreviousLedger; }
-	Ledger::pointer peekCurrentLedger()		{ return mCurrentLedger; }
 
 	SHAMap::pointer getTransactionTree(const uint256& hash, bool doAcquire);
 	TransactionAcquire::pointer getAcquiring(const uint256& hash);
