@@ -23,6 +23,7 @@ enum MessageType {
 	mtCLOSE_LEDGER=			35;
 	mtSTATUS_CHANGE=		36;
 	mtPEER_POSITION=		37;
+	mtHAVE_SET=				38;
 
 // data replication and synchronization
 	mtGET_VALIDATIONS=		40;
