@@ -33,19 +33,23 @@ void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint2
 		SHAMapTreeNode::pointer node = stack.top();
 		stack.pop();
 
-		for (int i = 0; i < 16; ++i)
-			if (!node->isEmptyBranch(i))
+		int base = rand() % 256;
+		for (int ii = 0; ii < 16; ++ii)
+		{ // traverse in semi-random order
+			int branch = (base + ii) % 16;
+			if (!node->isEmptyBranch(branch))
 			{
-				SHAMapTreeNode::pointer desc = getNode(node->getChildNodeID(i), node->getChildHash(i), false);
-				if (!desc)
+				SHAMapTreeNode::pointer d = getNode(node->getChildNodeID(branch), node->getChildHash(branch), false);
+				if (!d)
 				{
-					nodeIDs.push_back(node->getChildNodeID(i));
+					nodeIDs.push_back(node->getChildNodeID(branch));
 					if (--max <= 0)
 						return;
 				}
-				else if (desc->isInner() && !desc->isFullBelow())
-					stack.push(desc);
+				else if (d->isInner() && !d->isFullBelow())
+					stack.push(d);
 			}
+		}
 	}
 }
 
