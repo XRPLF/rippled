@@ -252,7 +252,7 @@ protected:
 	SHAMapItem::pointer onlyBelow(SHAMapTreeNode::pointer);
 	void eraseChildren(SHAMapTreeNode::pointer);
 
-	bool walkBranch(SHAMapTreeNode::pointer node, SHAMapItem::pointer otherMapItem, bool isFirstMap,
+	bool walkBranch(SHAMapTreeNode* node, SHAMapItem::pointer otherMapItem, bool isFirstMap,
 	    SHAMapDiff& differences, int& maxCount);
 
 public:
