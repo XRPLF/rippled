@@ -239,6 +239,7 @@ protected:
 	void dirtyUp(std::stack<SHAMapTreeNode::pointer>& stack, const uint256& target, uint256 prevHash);
 	std::stack<SHAMapTreeNode::pointer> getStack(const uint256& id, bool include_nonmatching_leaf);
 	SHAMapTreeNode::pointer walkTo(const uint256& id, bool modify);
+	SHAMapTreeNode* walkToPointer(const uint256& id);
 	SHAMapTreeNode::pointer checkCacheNode(const SHAMapNode&);
 	void returnNode(SHAMapTreeNode::pointer&, bool modify);
 
