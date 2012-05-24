@@ -105,12 +105,33 @@ void LedgerConsensus::closeTime(Ledger::pointer& current)
 	current->updateHash();
 	uint256 txSet = current->getTransHash();
 	mOurPosition = boost::make_shared<LedgerProposal>(nodePrivKey, current->getParentHash(), txSet);
-	mComplete[txSet] = current->peekTransactionMap()->snapShot();
+	mapComplete(current->peekTransactionMap()->snapShot());
 	// WRITME: Broadcast an IHAVE for this set
+}
+
+void LedgerConsensus::mapComplete(SHAMap::pointer map)
+{
+	boost::unordered_map<uint256, SHAMap::pointer>::iterator it = mComplete.find(map->getHash());
+	if (it != mComplete.end()) return;
+	if (mOurPosition && (map->getHash() != mOurPosition->getCurrentHash()))
+	{ // this creates disputed transactions
+		boost::unordered_map<uint256, SHAMap::pointer>::iterator it2 = mComplete.find(mOurPosition->getCurrentHash());
+		if (it2 != mComplete.end())
+		{
+			SHAMap::SHAMapDiff differences;
+			it2->second->compare(it->second, differences, 16384);
+			for(SHAMap::SHAMapDiff::iterator pos = differences.begin(), end = differences.end(); pos != end; ++pos)
+			{ // create disputed transactions
+				addDisputedTransaction(pos->first);
+			}
+		}
+	}
+	mComplete[map->getHash()] = map;
 }
 
 void LedgerConsensus::abort()
 {
+	mState = lcsABORTED;
 }
 
 int LedgerConsensus::startup()
@@ -165,14 +186,33 @@ void LedgerConsensus::startAcquiring(TransactionAcquire::pointer acquire)
 	}
 }
 
-void LedgerConsensus::removePosition(LedgerProposal& position)
+void LedgerConsensus::removePosition(LedgerProposal& position, bool ours)
+{
+//	int threshold = getThreshold();
+//	uint256 txSet = position.getCurrentHash();
+
+	// WRITEME
+}
+
+void LedgerConsensus::addPosition(LedgerProposal& position, bool ours)
 {
 	// WRITEME
 }
 
-void LedgerConsensus::addPosition(LedgerProposal& position)
+void LedgerConsensus::addDisputedTransaction(const uint256& txID)
 {
-	// WRITEME
+	boost::unordered_map<uint256, LCTransaction::pointer>::iterator it = mDisputes.find(txID);
+	if (it != mDisputes.end()) return;
+
+	bool ourPosition = false;
+	if (mOurPosition)
+	{
+		boost::unordered_map<uint256, SHAMap::pointer>::iterator mit = mComplete.find(mOurPosition->getCurrentHash());
+		if (mit != mComplete.end())
+			ourPosition = mit->second->hasItem(txID);
+	}
+
+	mDisputes[txID] = boost::make_shared<LCTransaction>(txID, ourPosition);
 }
 
 bool LedgerConsensus::peerPosition(LedgerProposal::pointer newPosition)
@@ -184,11 +224,11 @@ bool LedgerConsensus::peerPosition(LedgerProposal::pointer newPosition)
 			return false;
 
 		// change in position
-		removePosition(*currentPosition);
+		removePosition(*currentPosition, false);
 	}
 
 	currentPosition = newPosition;
-	addPosition(*currentPosition);
+	addPosition(*currentPosition, false);
 	return true;
 }
 

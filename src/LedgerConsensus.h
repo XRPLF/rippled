@@ -45,7 +45,6 @@ protected:
 	int mYays, mNays;
 	bool mOurPosition;
 	boost::unordered_map<uint256, bool> mVotes;
-	Transaction::pointer mTransaction;
 
 public:
 	typedef boost::shared_ptr<LCTransaction> pointer;
@@ -55,9 +54,6 @@ public:
 
 	const uint256& getTransactionID() const	{ return mTransactionID; }
 	bool getOurPosition() const				{ return mOurPosition; }
-
-	bool haveTransaction() const			{ return !!mTransaction; }
-	Transaction::pointer getTransaction()	{ return mTransaction; }
 
 	void setVote(const uint256& peer, bool votesYes);
 
@@ -71,6 +67,7 @@ enum LCState
 	lcsCUTOFF,			// Past the cutoff for consensus
 	lcsFINSHED,			// We have closed on a transaction set
 	lcsACCEPTED,		// We have accepted/validated a new last closed ledger
+	lcsABORTED			// Abandoned
 };
 
 class LedgerConsensus
@@ -90,12 +87,19 @@ protected:
 	// Peer sets
 	boost::unordered_map<uint256, std::vector< boost::weak_ptr<Peer> >, hash_SMN> mPeerData;
 
+	// Disputed transactions
+	boost::unordered_map<uint256, LCTransaction::pointer, hash_SMN> mDisputes;
+
 	void weHave(const uint256& id, Peer::pointer avoidPeer);
 	void startAcquiring(TransactionAcquire::pointer);
 	SHAMap::pointer find(const uint256& hash);
 
-	void addPosition(LedgerProposal&);
-	void removePosition(LedgerProposal&);
+	void mapComplete(SHAMap::pointer map);
+	void addDisputedTransaction(const uint256&);
+
+	void addPosition(LedgerProposal&, bool ours);
+	void removePosition(LedgerProposal&, bool ours);
+	int getThreshold();
 
 public:
 	LedgerConsensus(Ledger::pointer previousLedger);
