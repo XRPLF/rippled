@@ -108,7 +108,6 @@ SHAMapTreeNode::pointer SHAMap::walkTo(const uint256& id, bool modify)
 		int branch = inNode->selectBranch(id);
 		if (inNode->isEmptyBranch(branch)) return inNode;
 		uint256 childHash = inNode->getChildHash(branch);
-		if (childHash.isZero()) return inNode;
 
 		SHAMapTreeNode::pointer nextNode = getNode(inNode->getChildNodeID(branch), childHash, false);
 		if (!nextNode) throw SHAMapException(MissingNode);
@@ -148,6 +147,24 @@ SHAMapTreeNode::pointer SHAMap::getNode(const SHAMapNode& id, const uint256& has
 	if (!mTNByID.insert(std::make_pair(id, node)).second)
 		assert(false);
 	return node;
+}
+
+SHAMapTreeNode* SHAMap::getNodePointer(const SHAMapNode& id, const uint256& hash)
+{ // fast, but you do not hold a reference
+	boost::unordered_map<SHAMapNode, SHAMapTreeNode::pointer>::iterator it = mTNByID.find(id);
+	if (it != mTNByID.end())
+		return &*it->second;
+
+	SHAMapTreeNode::pointer node;
+	std::vector<unsigned char> nodeData;
+	if (!fetchNode(hash, nodeData)) return NULL;
+
+	node = boost::make_shared<SHAMapTreeNode>(id, nodeData, mSeq);
+	if (node->getNodeHash() != hash) throw SHAMapException(InvalidNode);
+
+	if (!mTNByID.insert(std::make_pair(id, node)).second)
+		assert(false);
+	return &*node;
 }
 
 void SHAMap::returnNode(SHAMapTreeNode::pointer& node, bool modify)
@@ -259,7 +276,7 @@ void SHAMap::eraseChildren(SHAMapTreeNode::pointer node)
 		for(int i=0; i<16; i++)
 			if(!node->isEmptyBranch(i))
 			{
-				SHAMapTreeNode::pointer nextNode=getNode(node->getChildNodeID(i), node->getChildHash(i), false);
+				SHAMapTreeNode::pointer nextNode = getNode(node->getChildNodeID(i), node->getChildHash(i), false);
 				if(erase)
 				{
 					returnNode(node, true);
@@ -272,7 +289,7 @@ void SHAMap::eraseChildren(SHAMapTreeNode::pointer node)
 			}
 	}
 	returnNode(node, true);
-	if(mTNByID.erase(*node)==0)
+	if(mTNByID.erase(*node) == 0)
 		assert(false);
 	return;
 }
@@ -293,10 +310,10 @@ SHAMapItem::pointer SHAMap::peekNextItem(const uint256& id)
 { // Get a pointer to the next item in the tree after a given item - item must be in tree
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
-	std::stack<SHAMapTreeNode::pointer> stack=getStack(id, true);
+	std::stack<SHAMapTreeNode::pointer> stack = getStack(id, true);
 	while(!stack.empty())
 	{
-		SHAMapTreeNode::pointer node=stack.top();
+		SHAMapTreeNode::pointer node = stack.top();
 		stack.pop();
 
 		if(node->isLeaf())
@@ -304,13 +321,13 @@ SHAMapItem::pointer SHAMap::peekNextItem(const uint256& id)
 			if(node->peekItem()->getTag()>id)
 				return node->peekItem();
 		}
-		else for(int i=node->selectBranch(id)+1; i<16; i++)
+		else for(int i = node->selectBranch(id) + 1; i < 16; ++i)
 			if(!node->isEmptyBranch(i))
 			{
-				node=getNode(node->getChildNodeID(i), node->getChildHash(i), false);
-				if(!node) throw SHAMapException(MissingNode);
-				SHAMapItem::pointer item=firstBelow(node);
-				if(!item) throw SHAMapException(MissingNode);
+				node = getNode(node->getChildNodeID(i), node->getChildHash(i), false);
+				if (!node) throw SHAMapException(MissingNode);
+				SHAMapItem::pointer item = firstBelow(node);
+				if (!item) throw SHAMapException(MissingNode);
 				return item;
 			}
 	}
@@ -358,11 +375,16 @@ SHAMapItem::pointer SHAMap::peekItem(const uint256& id)
 bool SHAMap::hasItem(const uint256& id)
 { // does the tree have an item with this ID
 	boost::recursive_mutex::scoped_lock sl(mLock); 
-	SHAMapTreeNode::pointer leaf = walkTo(id, false);
-	if (!leaf) return false;
-	SHAMapItem::pointer item = leaf->peekItem();
-	if (!item || item->getTag() != id) return false;
-	return true;
+
+	SHAMapTreeNode* inNode = &*root;
+	while (!inNode->isLeaf())
+	{
+		int branch = inNode->selectBranch(id);
+		if (inNode->isEmptyBranch(branch)) return false;
+		inNode = getNodePointer(inNode->getChildNodeID(branch), inNode->getChildHash(branch));
+		if (!inNode) throw SHAMapException(MissingNode);
+	}
+	return inNode->getTag() == id;
 }
 
 bool SHAMap::delItem(const uint256& id)
