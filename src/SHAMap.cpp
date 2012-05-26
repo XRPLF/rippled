@@ -200,7 +200,7 @@ SHAMapItem::SHAMapItem(const uint256& tag, const std::vector<unsigned char>& dat
 	: mTag(tag), mData(data)
 { ; }
 
-SHAMapItem::pointer SHAMap::firstBelow(SHAMapTreeNode::pointer node)
+SHAMapItem::pointer SHAMap::firstBelow(SHAMapTreeNode* node)
 {
 	// Return the first item below this node
 #ifdef ST_DEBUG
@@ -219,8 +219,7 @@ SHAMapItem::pointer SHAMap::firstBelow(SHAMapTreeNode::pointer node)
 	std::cerr << "  has non-empty branch " << i << " : " <<
 		node->getChildNodeID(i).getString() << ", " << node->getChildHash(i).GetHex() << std::endl;
 #endif
-				node = getNode(node->getChildNodeID(i), node->getChildHash(i), false);
-				if (!node) throw SHAMapException(MissingNode);
+				node = getNodePointer(node->getChildNodeID(i), node->getChildHash(i));
 				foundNode = true;
 				break;
 			}
@@ -228,7 +227,7 @@ SHAMapItem::pointer SHAMap::firstBelow(SHAMapTreeNode::pointer node)
 	} while (1);
 }
 
-SHAMapItem::pointer SHAMap::lastBelow(SHAMapTreeNode::pointer node)
+SHAMapItem::pointer SHAMap::lastBelow(SHAMapTreeNode* node)
 {
 #ifdef DEBUG
 	std::cerr << "lastBelow(" << node->getString() << ")" << std::endl;
@@ -242,8 +241,7 @@ SHAMapItem::pointer SHAMap::lastBelow(SHAMapTreeNode::pointer node)
 		for (int i = 15; i >= 0; ++i)
 			if (!node->isEmptyBranch(i))
 			{
-				node = getNode(node->getChildNodeID(i), node->getChildHash(i), false);
-				if (!node) throw SHAMapException(MissingNode);
+				node = getNodePointer(node->getChildNodeID(i), node->getChildHash(i));
 				foundNode = true;
 				break;
 			}
@@ -251,21 +249,20 @@ SHAMapItem::pointer SHAMap::lastBelow(SHAMapTreeNode::pointer node)
 	} while (1);
 }
 
-SHAMapItem::pointer SHAMap::onlyBelow(SHAMapTreeNode::pointer node)
+SHAMapItem::pointer SHAMap::onlyBelow(SHAMapTreeNode* node)
 {
 	// If there is only one item below this node, return it
 	bool found;
 	while (!node->isLeaf())
 	{
 		found = false;
-		SHAMapTreeNode::pointer nextNode;
+		SHAMapTreeNode* nextNode;
 
 		for (int i = 0; i < 16; ++i)
 			if (!node->isEmptyBranch(i))
 			{
-				if( found) return SHAMapItem::pointer(); // two leaves below
-				nextNode = getNode(node->getChildNodeID(i), node->getChildHash(i), false);
-				if (!nextNode) throw SHAMapException(MissingNode);
+				if (found) return SHAMapItem::pointer(); // two leaves below
+				nextNode = getNodePointer(node->getChildNodeID(i), node->getChildHash(i));
 				found = true;
 			}
 
@@ -310,13 +307,13 @@ void SHAMap::eraseChildren(SHAMapTreeNode::pointer node)
 SHAMapItem::pointer SHAMap::peekFirstItem()
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
-	return firstBelow(root);
+	return firstBelow(&*root);
 }
 
 SHAMapItem::pointer SHAMap::peekLastItem()
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
-	return lastBelow(root);
+	return lastBelow(&*root);
 }
 
 SHAMapItem::pointer SHAMap::peekNextItem(const uint256& id)
@@ -437,7 +434,7 @@ bool SHAMap::delItem(const uint256& id)
 			}
 			else if(bc==1)
 			{ // pull up on the thread
-				SHAMapItem::pointer item=onlyBelow(node);
+				SHAMapItem::pointer item = onlyBelow(&*node);
 				if(item)
 				{
 					eraseChildren(node);
@@ -446,12 +443,12 @@ bool SHAMap::delItem(const uint256& id)
 #endif
 					node->setItem(item, type);
 				}
-				prevHash=node->getNodeHash();
+				prevHash = node->getNodeHash();
 				assert(prevHash.isNonZero());
 			}
 			else
 			{
-				prevHash=node->getNodeHash();
+				prevHash = node->getNodeHash();
 				assert(prevHash.isNonZero());
 			}
 		}
