@@ -81,7 +81,7 @@ public:
 	// network state machine
 	void checkState(const boost::system::error_code& result);
 	void switchLastClosedLedger(Ledger::pointer newLedger); // Used for the "jump" case
-	int beginConsensus(Ledger::pointer closingLedger);
+	int beginConsensus(Ledger::pointer closingLedger, bool isEarly);
 	void setStateTimer(int seconds);
 
 };

@@ -319,7 +319,7 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 	Ledger::pointer currentLedger = theApp->getMasterLedger().getCurrentLedger();
 	if (getNetworkTimeNC() >= currentLedger->getCloseTimeNC())
 	{
-		setStateTimer(beginConsensus(currentLedger));
+		setStateTimer(beginConsensus(currentLedger, false));
 		return;
 	}
 
@@ -351,7 +351,7 @@ void NetworkOPs::switchLastClosedLedger(Ledger::pointer newLedger)
 }
 // vim:ts=4
 
-int NetworkOPs::beginConsensus(Ledger::pointer closingLedger)
+int NetworkOPs::beginConsensus(Ledger::pointer closingLedger, bool isEarly)
 {
 #ifdef DEBUG
 	std::cerr << "Ledger close time for ledger " << closingLedger->getLedgerSeq() << std::endl;
@@ -409,8 +409,8 @@ bool NetworkOPs::proposeLedger(uint32 closingSeq, uint32 proposeSeq, const uint2
 	if (!mConsensus)
 	{
 		if ((getNetworkTimeNC() + 2) >= currentLedger->getCloseTimeNC())
-			setStateTimer(beginConsensus(currentLedger));
-		if (!mConsensus) return true;
+			setStateTimer(beginConsensus(currentLedger, true));
+		if (!mConsensus) return false;
 	}
 
 	return mConsensus->peerPosition(proposal);
