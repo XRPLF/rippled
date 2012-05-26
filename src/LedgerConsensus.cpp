@@ -138,10 +138,10 @@ void LedgerConsensus::closeTime(Ledger::pointer& current)
 void LedgerConsensus::mapComplete(SHAMap::pointer map)
 {
 	boost::unordered_map<uint256, SHAMap::pointer>::iterator it = mComplete.find(map->getHash());
-	if (it != mComplete.end()) return;
+	if (it != mComplete.end()) return; // we already have this map
 
 	if (mOurPosition && (map->getHash() != mOurPosition->getCurrentHash()))
-	{ // this creates disputed transactions
+	{ // this could create disputed transactions
 		boost::unordered_map<uint256, SHAMap::pointer>::iterator it2 = mComplete.find(mOurPosition->getCurrentHash());
 		if (it2 != mComplete.end())
 		{
@@ -235,19 +235,6 @@ void LedgerConsensus::startAcquiring(TransactionAcquire::pointer acquire)
 	}
 }
 
-void LedgerConsensus::removePosition(LedgerProposal& position, bool ours)
-{
-//	int threshold = getThreshold();
-//	uint256 txSet = position.getCurrentHash();
-
-	// WRITEME
-}
-
-void LedgerConsensus::addPosition(LedgerProposal& position, bool ours)
-{
-	// WRITEME
-}
-
 void LedgerConsensus::addDisputedTransaction(const uint256& txID)
 {
 	boost::unordered_map<uint256, LCTransaction::pointer>::iterator it = mDisputes.find(txID);
@@ -259,25 +246,46 @@ void LedgerConsensus::addDisputedTransaction(const uint256& txID)
 		boost::unordered_map<uint256, SHAMap::pointer>::iterator mit = mComplete.find(mOurPosition->getCurrentHash());
 		if (mit != mComplete.end())
 			ourPosition = mit->second->hasItem(txID);
+		else assert(false); // We don't have our own position?
 	}
 
-	mDisputes[txID] = boost::make_shared<LCTransaction>(txID, ourPosition);
+	LCTransaction::pointer txn = boost::make_shared<LCTransaction>(txID, ourPosition);
+	mDisputes[txID] = txn;
+
+	for (boost::unordered_map<uint256, LedgerProposal::pointer>::iterator pit = mPeerPositions.begin(),
+			pend = mPeerPositions.end(); pit != pend; ++pit)
+	{
+		boost::unordered_map<uint256, SHAMap::pointer>::const_iterator cit =
+			mComplete.find(pit->second->getCurrentHash());
+		if (cit != mComplete.end())
+			txn->setVote(pit->first, cit->second->hasItem(txID));
+	}
 }
 
 bool LedgerConsensus::peerPosition(LedgerProposal::pointer newPosition)
 {
 	LedgerProposal::pointer& currentPosition = mPeerPositions[newPosition->getPeerID()];
-	if (!currentPosition)
+	if (currentPosition)
 	{
+		assert(newPosition->getPeerID() == currentPosition->getPeerID());
 		if (newPosition->getProposeSeq() <= currentPosition->getProposeSeq())
 			return false;
-
-		// change in position
-		removePosition(*currentPosition, false);
+		if (newPosition->getCurrentHash() == currentPosition->getCurrentHash())
+		{ // we missed an intermediary change
+			currentPosition = newPosition;
+			return true;
+		}
 	}
 
 	currentPosition = newPosition;
-	addPosition(*currentPosition, false);
+	SHAMap::pointer set = getTransactionTree(newPosition->getCurrentHash(), true);
+	if (set)
+	{
+		for (boost::unordered_map<uint256, LCTransaction::pointer>::iterator it = mDisputes.begin(),
+				end = mDisputes.end(); it != end; ++it)
+			it->second->setVote(newPosition->getPeerID(), set->hasItem(it->first));
+	}
+
 	return true;
 }
 
