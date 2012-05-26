@@ -32,6 +32,10 @@ public:
 	void add(Serializer& s) const { mVersion.add(s); mObject.add(s); }
 	virtual bool isEquivalent(const SerializedType& t) const;
 
+	bool setFlag(uint32 uSet)		{ return mObject.setFlag(uSet); }
+	bool clearFlag(uint32 uClear)	{ return mObject.clearFlag(uClear); }
+	uint32 getFlags() const			{ return mObject.getFlags(); }
+
 	const uint256& getIndex() const { return mIndex; }
 	void setIndex(const uint256& i) { mIndex = i; }
 
@@ -55,6 +59,8 @@ public:
 	std::vector<TaggedListItem> getIFieldTL(SOE_Field field) const { return mObject.getValueFieldTL(field); }
 	NewcoinAddress getIValueFieldAccount(SOE_Field field) const { return mObject.getValueFieldAccount(field); }
 	STAmount getIValueFieldAmount(SOE_Field field) const { return mObject.getValueFieldAmount(field); }
+	STVector256 getIFieldV256(SOE_Field field) { return mObject.getValueFieldV256(field); }
+
 	void setIFieldU8(SOE_Field field, unsigned char v) { return mObject.setValueFieldU8(field, v); }
 	void setIFieldU16(SOE_Field field, uint16 v) { return mObject.setValueFieldU16(field, v); }
 	void setIFieldU32(SOE_Field field, uint32 v) { return mObject.setValueFieldU32(field, v); }
@@ -71,6 +77,7 @@ public:
 		{ return mObject.setValueFieldAccount(field, account); }
 	void setIFieldAmount(SOE_Field field, const STAmount& amount)
 		{ return mObject.setValueFieldAmount(field, amount); }
+	void setIFieldV256(SOE_Field field, const STVector256& v) { return mObject.setValueFieldV256(field, v); }
 
 	bool getIFieldPresent(SOE_Field field) const { return mObject.isFieldPresent(field); }
 	void makeIFieldPresent(SOE_Field field) { mObject.makeFieldPresent(field); }

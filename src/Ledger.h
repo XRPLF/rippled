@@ -18,17 +18,17 @@
 
 enum LedgerStateParms
 {
-	lepNONE = 0,					// no special flags
+	lepNONE			= 0,	// no special flags
 
 	// input flags
-	lepCREATE = 1,					// Create if not present
+	lepCREATE		= 1,	// Create if not present
 
 	// output flags
-	lepOKAY = 2,					// success
-	lepMISSING = 4,					// No node in that slot
-	lepWRONGTYPE = 8,				// Node of different type there
-	lepCREATED = 16,				// Node was created
-	lepERROR = 32,					// error
+	lepOKAY			= 2,	// success
+	lepMISSING		= 4,	// No node in that slot
+	lepWRONGTYPE	= 8,	// Node of different type there
+	lepCREATED		= 16,	// Node was created
+	lepERROR		= 32,	// error
 };
 
 class Ledger : public boost::enable_shared_from_this<Ledger>
@@ -132,8 +132,6 @@ public:
 	SerializedLedgerEntry::pointer getAccountRoot(LedgerStateParms& parms, const NewcoinAddress& naAccountID);
 	SerializedLedgerEntry::pointer getNickname(LedgerStateParms& parms, const std::string& nickname);
 	SerializedLedgerEntry::pointer getNickname(LedgerStateParms& parms, const uint256& nickHash);
-//	SerializedLedgerEntry::pointer getRippleState(LedgerStateParms parms, const uint160& offeror,
-//		const uint160& borrower, const Currency& currency);
 
 	// database functions
 	static void saveAcceptedLedger(Ledger::pointer);
@@ -142,7 +140,7 @@ public:
 
 	// index calculation functions
 	static uint256 getAccountRootIndex(const uint160& account)
-	{ return uint160extend256(account, 0); }		// Index is accountID extended to 256 bits
+	{ return uint160extend256(account, lnsAccounts); }		// Index is accountID extended to 256 bits
 
 	static uint256 getAccountRootIndex(const NewcoinAddress& account)
 	{ return getAccountRootIndex(account.getAccountID()); }
@@ -154,28 +152,48 @@ public:
 	SerializedLedgerEntry::pointer getGenerator(LedgerStateParms& parms, const uint160& uGeneratorID);
 
 	static uint256 getGeneratorIndex(const uint160& uGeneratorID)
-	{ return uint160extend256(uGeneratorID, 1); }	// Index is the generator ID extended to 256 bits in namespace 1
+	{ return uint160extend256(uGeneratorID, lnsGenerator); }	// Index is the generator ID extended to 256 bits in namespace 1
 
 	//
 	// Ripple functions
 	//
 
-	static uint256 getRippleIndex(const uint160& account, const uint160& extendTo, const uint160& currency);
+	static uint256 getRippleStateIndex(const NewcoinAddress& naA, const NewcoinAddress& naB, const uint160& uCurrency);
+	static uint256 getRippleStateIndex(const uint160& uiA, const uint160& uiB, const uint160& uCurrency)
+		{ return getRippleStateIndex(NewcoinAddress::createAccountID(uiA), NewcoinAddress::createAccountID(uiB), uCurrency); }
 
-	static uint256 getRippleIndex(const uint160& account, const uint160& extendTo)
-	{ return getRippleIndex(account, extendTo, uint160()); }
-
-	static uint256 getRippleIndex(const NewcoinAddress& account, const NewcoinAddress& extendTo,
-	 const uint160& currency)
-	{ return getRippleIndex(account.getAccountID(), extendTo.getAccountID(), currency); }
+	static uint256 getRippleStateIndex(const NewcoinAddress& naA, const NewcoinAddress& naB)
+		{ return getRippleStateIndex(naA, naB, uint160()); }
 
 	static uint160 getOfferBase(const uint160& currencyIn, const uint160& accountIn,
 		const uint160& currencyOut, const uint160& accountOut);
+
+	//
+	// Offer functions
+	//
 
 	static uint256 getOfferIndex(const uint160& offerBase, uint64 rate, int skip = 0);
 
 	static int getOfferSkip(const uint256& offerId);
 
+	SerializedLedgerEntry::pointer getRippleState(LedgerStateParms& parms, const NewcoinAddress& naA, const NewcoinAddress& naB, const uint160& uCurrency);
+	SerializedLedgerEntry::pointer getRippleState(LedgerStateParms& parms, const uint160& uiA, const uint160& uiB, const uint160& uCurrency)
+	{
+		return getRippleState(parms, NewcoinAddress::createAccountID(uiA), NewcoinAddress::createAccountID(uiB), uCurrency);
+	}
+
+	//
+	// Directory functions
+	//
+
+	static uint256 getDirIndex(const uint256& uBase, const LedgerEntryType letKind, const uint64 uNodeDir=0);
+
+	SerializedLedgerEntry::pointer getDirRoot(LedgerStateParms& parms, const uint256& uRootIndex);
+	SerializedLedgerEntry::pointer getDirNode(LedgerStateParms& parms, const uint256& uNodeIndex);
+
+	//
+	// Misc
+	//
 	bool isCompatible(boost::shared_ptr<Ledger> other);
 //	bool signLedger(std::vector<unsigned char> &signature, const LocalHanko &hanko);
 

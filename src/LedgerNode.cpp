@@ -137,4 +137,80 @@ SerializedLedgerEntry::pointer Ledger::getGenerator(LedgerStateParms& parms, con
 	}
 }
 
+//
+// Ripple State
+//
+
+SerializedLedgerEntry::pointer Ledger::getRippleState(LedgerStateParms& parms, const NewcoinAddress& naA, const NewcoinAddress& naB, const uint160& uCurrency)
+{
+	uint256 nodeID=getRippleStateIndex(naA, naB, uCurrency);
+
+	ScopedLock l(mAccountStateMap->Lock());
+
+	try
+	{
+		return getASNode(parms, nodeID, ltRIPPLE_STATE);
+	}
+	catch (...)
+	{
+		parms = lepERROR;
+		return SerializedLedgerEntry::pointer();
+	}
+}
+
+//
+// Directory
+//
+
+uint256 Ledger::getDirIndex(const uint256& uBase, const LedgerEntryType letKind, const uint64 uNodeDir)
+{
+	// Indexes are stored in little endian format.
+	// The low bytes are indexed first, so when printed as a hex stream the hex is in byte order.
+	// Therefore, we place uNodeDir in the 8 right most bytes.
+	Serializer	sKey;
+
+	sKey.add256(uBase);
+	sKey.add8(letKind);
+
+	uint256	uResult	= sKey.getSHA512Half();
+
+	Serializer	sNode;	// Put in a fixed byte order: BIG. YYY
+
+	sNode.add64(uNodeDir);
+
+	std::copy(sNode.getData().end()-8, sNode.getData().end(), uResult.begin()+((256-64)/8));
+
+	return uResult;
+}
+
+SerializedLedgerEntry::pointer Ledger::getDirRoot(LedgerStateParms& parms, const uint256& uRootIndex)
+{
+	ScopedLock l(mAccountStateMap->Lock());
+
+	try
+	{
+		return getASNode(parms, uRootIndex, ltDIR_ROOT);
+	}
+	catch (...)
+	{
+		parms = lepERROR;
+		return SerializedLedgerEntry::pointer();
+	}
+}
+
+SerializedLedgerEntry::pointer Ledger::getDirNode(LedgerStateParms& parms, const uint256& uNodeIndex)
+{
+	ScopedLock l(mAccountStateMap->Lock());
+
+	try
+	{
+		return getASNode(parms, uNodeIndex, ltDIR_NODE);
+	}
+	catch (...)
+	{
+		parms = lepERROR;
+		return SerializedLedgerEntry::pointer();
+	}
+}
+
 // vim:ts=4
