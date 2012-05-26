@@ -33,6 +33,9 @@ std::auto_ptr<SerializedType> STObject::makeDefaultObject(SerializedTypeID id, c
 		case STI_HASH256:
 			return std::auto_ptr<SerializedType>(new STHash256(name));
 
+		case STI_VECTOR256:
+			return std::auto_ptr<SerializedType>(new STVector256(name));
+
 		case STI_VL:
 			return std::auto_ptr<SerializedType>(new STVariableLength(name));
 
@@ -78,6 +81,9 @@ std::auto_ptr<SerializedType> STObject::makeDeserializedObject(SerializedTypeID 
 
 		case STI_HASH256:
 			return STHash256::deserialize(sit, name);
+
+		case STI_VECTOR256:
+			return STVector256::deserialize(sit, name);
 
 		case STI_VL:
 			return STVariableLength::deserialize(sit, name);
@@ -464,6 +470,17 @@ STAmount STObject::getValueFieldAmount(SOE_Field field) const
 	return *cf;
 }
 
+STVector256 STObject::getValueFieldV256(SOE_Field field) const
+{
+	const SerializedType* rf = peekAtPField(field);
+	if (!rf) throw std::runtime_error("Field not found");
+	SerializedTypeID id = rf->getSType();
+	if (id == STI_NOTPRESENT) return STVector256(); // optional field not present
+	const STVector256 *cf = dynamic_cast<const STVector256 *>(rf);
+	if (!cf) throw std::runtime_error("Wrong field type");
+	return *cf;
+}
+
 void STObject::setValueFieldU8(SOE_Field field, unsigned char v)
 {
 	SerializedType* rf = getPField(field);
@@ -520,6 +537,16 @@ void STObject::setValueFieldH256(SOE_Field field, const uint256& v)
 	if (!rf) throw std::runtime_error("Field not found");
 	if (rf->getSType() == STI_NOTPRESENT) rf = makeFieldPresent(field);
 	STHash256* cf = dynamic_cast<STHash256*>(rf);
+	if (!cf) throw std::runtime_error("Wrong field type");
+	cf->setValue(v);
+}
+
+void STObject::setValueFieldV256(SOE_Field field, const STVector256& v)
+{
+	SerializedType* rf = getPField(field);
+	if (!rf) throw std::runtime_error("Field not found");
+	if (rf->getSType() == STI_NOTPRESENT) rf = makeFieldPresent(field);
+	STVector256* cf = dynamic_cast<STVector256*>(rf);
 	if (!cf) throw std::runtime_error("Wrong field type");
 	cf->setValue(v);
 }

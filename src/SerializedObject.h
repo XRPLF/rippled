@@ -24,6 +24,9 @@ enum SOE_Field
 	sfGeneric = 0,
 
 	// common fields
+	sfAcceptExpire,
+	sfAcceptRate,
+	sfAcceptStart,
 	sfAccount,
 	sfAccountID,
 	sfAmount,
@@ -38,24 +41,31 @@ enum SOE_Field
 	sfCurrency,
 	sfCurrencyIn,
 	sfCurrencyOut,
-	sfCurrentRate,
 	sfDestination,
 	sfEmailHash,
 	sfExpireLedger,
 	sfExtensions,
+	sfFirstNode,
 	sfFlags,
 	sfGenerator,
 	sfGeneratorID,
+	sfHighID,
+	sfHighLimit,
 	sfIdentifier,
+	sfIndexes,
 	sfInvoiceID,
+	sfLastNode,
 	sfLastReceive,
 	sfLastTxn,
 	sfLedgerHash,
-	sfLender,
-	sfLimit,
 	sfLimitAmount,
+	sfLowID,
+	sfLowLimit,
 	sfMessageKey,
 	sfMinimumOffer,
+	sfNextAcceptExpire,
+	sfNextAcceptRate,
+	sfNextAcceptStart,
 	sfNextTransitExpire,
 	sfNextTransitRate,
 	sfNextTransitStart,
@@ -63,7 +73,6 @@ enum SOE_Field
 	sfOfferCurrency,
 	sfPaths,
 	sfPubKey,
-	sfRateLock,
 	sfSendMax,
 	sfSequence,
 	sfSignature,
@@ -155,6 +164,7 @@ public:
 	std::vector<unsigned char> getValueFieldVL(SOE_Field field) const;
 	std::vector<TaggedListItem> getValueFieldTL(SOE_Field field) const;
 	STAmount getValueFieldAmount(SOE_Field field) const;
+	STVector256 getValueFieldV256(SOE_Field field) const;
 
 	void setValueFieldU8(SOE_Field field, unsigned char);
 	void setValueFieldU16(SOE_Field field, uint16);
@@ -169,6 +179,7 @@ public:
 	{ setValueFieldAccount(field, addr.getAccountID()); }
 	void setValueFieldAmount(SOE_Field field, const STAmount&);
 	void setValueFieldPathSet(SOE_Field field, const STPathSet&);
+	void setValueFieldV256(SOE_Field field, const STVector256& v);
 
 	bool isFieldPresent(SOE_Field field) const;
 	SerializedType* makeFieldPresent(SOE_Field field);
