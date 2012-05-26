@@ -18,11 +18,9 @@ enum TransactionEngineResult
 	tenGEN_IN_USE	= -300,	// Generator already in use.
 	tenCREATEXNC,			// Can not specify non XNC for Create.
 	tenEXPLICITXNC,			// XNC is used by default, don't specify it.
+	tenDST_NEEDED,			// Destination not specified.
+	tenDST_IS_SRC,			// Destination may not be source.
 
-	// Not possible due to ledger database: Fee claimed
-	tenCREATED		= -200,	// Can not create a previously created account.
-	tenCLAIMED,				// Can not claim a previously claimed account.
-	tenTRANSIT_WORSE,		// Can not override a better promise.
 
 	// Other
 	tenFAILED		= -100,	// Something broke horribly
@@ -32,18 +30,27 @@ enum TransactionEngineResult
 
 	terSUCCESS		= 0,		// The transaction was applied
 
-	// terFAILED_BUT_COULD_SUCEED = >0
+	// terFAILED_BUT_COULD_SUCCEED = >0
+	// Conflict with ledger database: Fee claimed
+	// Might succeed if not conflict is not caused by transaction ordering.
 	terALREADY,				// The transaction was already in the ledger
-	terNO_ACCOUNT,			// The source account does not exist
-	terNO_TARGET,			// The destination does not exist
-	terINSUF_FEE_T,			// fee insufficient now (account doesn't exist, network load)
-	terINSUF_FEE_B,			// Account balance can't pay fee
-	terUNFUNDED,			// Source account had insufficient balance for transactin
-	terNO_PATH,				// No path existed or met transaction/balance requirements
-	terPAST_SEQ,			// This sequence number has already past
 	terBAD_SEQ,				// This sequence number should be zero for prepaid transactions.
-	terPRE_SEQ,				// Missing/inapplicable prior transaction
+	terCLAIMED,				// Can not claim a previously claimed account.
+	terCREATED,				// Can not create a previously created account.
+	terDIR_FULL,			// Can not add entry to full dir.
+	terINSUF_FEE_B,			// Account balance can't pay fee
+	terINSUF_FEE_T,			// fee insufficient now (account doesn't exist, network load)
+	terNODE_NOT_FOUND,		// Can not delete a dir node.
+	terNODE_NOT_MENTIONED,
+	terNODE_NO_ROOT,
+	terNO_ACCOUNT,			// The source account does not exist
+	terNO_DST,				// The destination does not exist
+	terNO_PATH,				// No path existed or met transaction/balance requirements
 	terPAST_LEDGER,			// The transaction expired and can't be applied
+	terPAST_SEQ,			// This sequence number has already past
+	terPRE_SEQ,				// Missing/inapplicable prior transaction
+	terUNFUNDED,			// Source account had insufficient balance for transactin
+	terNO_LINE_NO_ZERO,		// Can't zero non-existant line, destination might make it.
 };
 
 enum TransactionEngineParams
@@ -65,17 +72,33 @@ typedef std::pair<TransactionAccountAction, SerializedLedgerEntry::pointer> Affe
 
 class TransactionEngine
 {
+private:
+	TransactionEngineResult dirAdd(
+		std::vector<AffectedAccount>&	accounts,
+		uint64&							uNodeDir,		// Node of entry.
+		const LedgerEntryType			letKind,
+		const uint256&					uBase,
+		const uint256&					uLedgerIndex);
+
+	TransactionEngineResult dirDelete(
+		std::vector<AffectedAccount>&	accounts,
+		const uint64&					uNodeDir,		// Node item is mentioned in.
+		const LedgerEntryType			letKind,
+		const uint256&					uBase,			// Key of item.
+		const uint256&					uLedgerIndex);	// Item being deleted
+
 protected:
 	Ledger::pointer mLedger;
 
-	TransactionEngineResult doCreditSet(const SerializedTransaction&, std::vector<AffectedAccount>&);
 	TransactionEngineResult doCancel(const SerializedTransaction&, std::vector<AffectedAccount>&);
 	TransactionEngineResult doClaim(const SerializedTransaction&, std::vector<AffectedAccount>&);
+	TransactionEngineResult doCreditSet(const SerializedTransaction&, std::vector<AffectedAccount>&,
+								const uint160& srcAccountID);
 	TransactionEngineResult doDelete(const SerializedTransaction&, std::vector<AffectedAccount>&);
 	TransactionEngineResult doInvoice(const SerializedTransaction&, std::vector<AffectedAccount>&);
 	TransactionEngineResult doOffer(const SerializedTransaction&, std::vector<AffectedAccount>&);
 	TransactionEngineResult doPayment(const SerializedTransaction&, std::vector<AffectedAccount>&,
-								uint160 srcAccountID);
+								const uint160& srcAccountID);
 	TransactionEngineResult doStore(const SerializedTransaction&, std::vector<AffectedAccount>&);
 	TransactionEngineResult doTake(const SerializedTransaction&, std::vector<AffectedAccount>&);
 	TransactionEngineResult doTransitSet(const SerializedTransaction&, std::vector<AffectedAccount>&);

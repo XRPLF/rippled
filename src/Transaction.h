@@ -61,9 +61,7 @@ private:
 		const NewcoinAddress&	naPrivateKey,
 		const NewcoinAddress&	naDstAccountID,
 		const STAmount&			saLimitAmount,
-		uint32					uBorrowRate,
-		uint32					uBorrowStart,
-		uint32					uBorrowExpire);
+		uint32					uAcceptRate);
 
 	Transaction::pointer setPayment(
 		const NewcoinAddress&	naPrivateKey,
@@ -119,9 +117,7 @@ public:
 		uint32					uSourceTag,
 		const NewcoinAddress&	naDstAccountID,
 		const STAmount&			saLimitAmount,
-		uint32					uBorrowRate,
-		uint32					uBorrowStart,
-		uint32					uBorrowExpire);
+		uint32					uAcceptRate);
 
 	// Make a payment.
 	static Transaction::pointer sharedPayment(
