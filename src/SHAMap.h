@@ -179,10 +179,14 @@ public:
 	// inner node functions
 	bool isInnerNode() const { return !mItem; }
 	bool setChildHash(int m, const uint256& hash);
-	const uint256& getChildHash(int m) const;
 	bool isEmptyBranch(int m) const { return !mHashes[m]; }
 	int getBranchCount() const;
 	void makeInner();
+	const uint256& getChildHash(int m) const
+	{
+		assert((m >= 0) && (m < 16) && (mType == tnINNER));
+		return mHashes[m];
+	}
 
 	// item node function
 	bool hasItem() const { return !!mItem; }
