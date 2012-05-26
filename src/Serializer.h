@@ -14,13 +14,13 @@ typedef std::pair<int, std::vector<unsigned char> > TaggedListItem;
 
 class Serializer
 {
-	public:
+public:
 	typedef boost::shared_ptr<Serializer> pointer;
 
-	protected:
+protected:
 	std::vector<unsigned char> mData;
 
-	public:
+public:
 	Serializer(int n=256) { mData.reserve(n); }
 	Serializer(const std::vector<unsigned char> &data) : mData(data) { ; }
 	Serializer(const std::string& data) : mData(data.data(), (data.data()) + data.size()) { ; }
