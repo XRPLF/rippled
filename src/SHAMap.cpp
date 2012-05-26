@@ -336,7 +336,7 @@ SHAMapItem::pointer SHAMap::peekNextItem(const uint256& id)
 			{
 				node = getNode(node->getChildNodeID(i), node->getChildHash(i), false);
 				if (!node) throw SHAMapException(MissingNode);
-				SHAMapItem::pointer item = firstBelow(node);
+				SHAMapItem::pointer item = firstBelow(&*node);
 				if (!item) throw SHAMapException(MissingNode);
 				return item;
 			}
@@ -365,7 +365,7 @@ SHAMapItem::pointer SHAMap::peekPrevItem(const uint256& id)
 				{
 					node = getNode(node->getChildNodeID(i), node->getChildHash(i), false);
 					if(!node) throw SHAMapException(MissingNode);
-					SHAMapItem::pointer item = firstBelow(node);
+					SHAMapItem::pointer item = firstBelow(&*node);
 					if (!item) throw SHAMapException(MissingNode);
 					return item;
 				}
