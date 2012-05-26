@@ -164,17 +164,17 @@ public:
 	virtual bool isPopulated() const { return true; }
 
 	// node functions
-	uint32 getSeq() const { return mSeq; }
-	void setSeq(uint32 s) { mSeq = s; }
+	uint32 getSeq() const				{ return mSeq; }
+	void setSeq(uint32 s)				{ mSeq = s; }
 	const uint256& getNodeHash() const	{ return mHash; }
-	TNType getType() const { return mType; }
+	TNType getType() const 				{ return mType; }
 
 	// type functions
-	bool isLeaf() const { return (mType == tnTRANSACTION) || (mType == tnACCOUNT_STATE); }
-	bool isInner() const { return mType == tnINNER; }
-	bool isValid() const { return mType != tnERROR; }
-	bool isTransaction() const { return mType != tnTRANSACTION; }
-	bool isAccountState() const { return mType != tnACCOUNT_STATE; }
+	bool isLeaf() const			{ return (mType == tnTRANSACTION) || (mType == tnACCOUNT_STATE); }
+	bool isInner() const		{ return mType == tnINNER; }
+	bool isValid() const		{ return mType != tnERROR; }
+	bool isTransaction() const	{ return mType != tnTRANSACTION; }
+	bool isAccountState() const	{ return mType != tnACCOUNT_STATE; }
 
 	// inner node functions
 	bool isInnerNode() const { return !mItem; }
@@ -278,8 +278,8 @@ public:
 	bool addItem(const SHAMapItem& i, bool isTransaction);
 	bool updateItem(const SHAMapItem& i, bool isTransaction);
 	SHAMapItem getItem(const uint256& id);
-	uint256 getHash() const { return root->getNodeHash(); }
-	uint256 getHash() { return root->getNodeHash(); }
+	uint256 getHash() const		{ return root->getNodeHash(); }
+	uint256 getHash()			{ return root->getNodeHash(); }
 
 	// save a copy if you have a temporary anyway
 	bool updateGiveItem(SHAMapItem::pointer, bool isTransaction);
@@ -317,8 +317,8 @@ public:
 
 	int flushDirty(int maxNodes, HashedObjectType t, uint32 seq);
 
-	void setSeq(uint32 seq) { mSeq = seq; }
-	uint32 getSeq() { return mSeq; }
+	void setSeq(uint32 seq)		{ mSeq = seq; }
+	uint32 getSeq()				{ return mSeq; }
 
 	// overloads for backed maps
 	bool fetchNode(const uint256& hash, std::vector<unsigned char>& rawNode);
