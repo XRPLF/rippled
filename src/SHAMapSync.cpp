@@ -165,7 +165,7 @@ bool SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigned cha
 	std::stack<SHAMapTreeNode::pointer> stack = getStack(node.getNodeID(), true);
 	if (stack.empty()) return false;
 
-	SHAMapTreeNode::pointer iNode=stack.top();
+	SHAMapTreeNode::pointer iNode = stack.top();
 	if (!iNode)
 	{	// we should always have a root
 		assert(false);
