@@ -44,7 +44,7 @@ protected:
 	uint256 mTransactionID;
 	int mYays, mNays;
 	bool mOurPosition;
-	boost::unordered_map<uint256, bool> mVotes;
+	boost::unordered_map<uint256, bool, hash_SMN> mVotes;
 
 public:
 	typedef boost::shared_ptr<LCTransaction> pointer;
@@ -96,6 +96,7 @@ protected:
 
 	void mapComplete(SHAMap::pointer map);
 	void addDisputedTransaction(const uint256&);
+	void adjustCount(SHAMap::pointer map, const std::vector<uint256>& peers);
 
 	void addPosition(LedgerProposal&, bool ours);
 	void removePosition(LedgerProposal&, bool ours);

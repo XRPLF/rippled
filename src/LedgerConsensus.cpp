@@ -87,6 +87,32 @@ bool TransactionAcquire::takeNodes(const std::list<SHAMapNode>& nodeIDs,
 	return true;
 }
 
+void LCTransaction::setVote(const uint256& peer, bool votesYes)
+{
+	std::pair<boost::unordered_map<uint256, bool>::iterator, bool> res =
+		mVotes.insert(std::make_pair<uint256, bool>(peer, votesYes));
+
+	if (res.second)
+	{ // new vote
+		if (votesYes)
+			++mYays;
+		else
+			++mNays;
+	}
+	else if (votesYes && !res.first->second)
+	{ // changes vote to yes
+		--mNays;
+		++mYays;
+		res.first->second = true;
+	}
+	else if(!votesYes && !res.first->second)
+	{ // changes vote to no
+		++mNays;
+		--mYays;
+		res.first->second = false;
+	}
+}
+
 LedgerConsensus::LedgerConsensus(Ledger::pointer previousLedger)
 	:  mState(lcsPRE_CLOSE), mPreviousLedger(previousLedger)
 {
@@ -113,6 +139,7 @@ void LedgerConsensus::mapComplete(SHAMap::pointer map)
 {
 	boost::unordered_map<uint256, SHAMap::pointer>::iterator it = mComplete.find(map->getHash());
 	if (it != mComplete.end()) return;
+
 	if (mOurPosition && (map->getHash() != mOurPosition->getCurrentHash()))
 	{ // this creates disputed transactions
 		boost::unordered_map<uint256, SHAMap::pointer>::iterator it2 = mComplete.find(mOurPosition->getCurrentHash());
@@ -127,6 +154,28 @@ void LedgerConsensus::mapComplete(SHAMap::pointer map)
 		}
 	}
 	mComplete[map->getHash()] = map;
+
+	// Adjust tracking for each peer that takes this position
+	std::vector<uint256> peers;
+	for (boost::unordered_map<uint256, LedgerProposal::pointer>::iterator it = mPeerPositions.begin(),
+		end = mPeerPositions.end(); it != end; ++it)
+	{
+		if (it->second->getCurrentHash() == map->getHash())
+			peers.push_back(it->second->getPeerID());
+	}
+	if (!peers.empty())
+		adjustCount(map, peers);
+}
+
+void LedgerConsensus::adjustCount(SHAMap::pointer map, const std::vector<uint256>& peers)
+{ // Adjust the counts on all disputed transactions based on the set of peers taking this position
+	for (boost::unordered_map<uint256, LCTransaction::pointer>::iterator it = mDisputes.begin(), end = mDisputes.end();
+		it != end; ++it)
+	{
+		bool setHas = map->hasItem(it->second->getTransactionID());
+		for(std::vector<uint256>::const_iterator pit = peers.begin(), pend = peers.end(); pit != pend; ++pit)
+			it->second->setVote(*pit, setHas);
+	}
 }
 
 void LedgerConsensus::abort()
