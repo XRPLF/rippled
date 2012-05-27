@@ -322,6 +322,15 @@ bool NewcoinAddress::accountPublicVerify(const uint256& uHash, const std::vector
 	return bVerified;
 }
 
+NewcoinAddress NewcoinAddress::createAccountID(const uint160& uiAccountID)
+{
+	NewcoinAddress	na;
+
+	na.setAccountID(uiAccountID);
+
+	return na;
+}
+
 //
 // AccountPrivate
 //

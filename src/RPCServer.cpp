@@ -130,6 +130,17 @@ int RPCServer::getParamCount(const Json::Value& params)
 	return 1;
 }
 
+#if 0
+// now, expire, n
+bool RPCServer::parseAcceptRate(const std::string& sAcceptRate)
+{
+	if (!sAcceptRate.compare("expire"))
+		0;
+
+	return true;
+}
+#endif
+
 bool RPCServer::extractString(std::string& param, const Json::Value& params, int index)
 {
 	if (params.isNull()) return false;
@@ -363,30 +374,16 @@ Json::Value RPCServer::doPeers(Json::Value& params)
 	return theApp->getConnectionPool().getPeersJson();
 }
 
-// credit_set <seed> <paying_account> <destination_account> <limit_amount> <currency> [<borrow_rate>] [<borrow_start>] [<borrow_expire>]
+// credit_set <seed> <paying_account> <destination_account> <limit_amount> [<currency>] [<accept_rate>]
 Json::Value RPCServer::doCreditSet(Json::Value& params)
 {
 	NewcoinAddress	naSeed;
 	NewcoinAddress	naSrcAccountID;
 	NewcoinAddress	naDstAccountID;
 	STAmount		saLimitAmount;
-	std::string		sBorrowRate;
-	std::string		sBorrowStart;
-	std::string		sBorrowExpire;
-	uint32			uBorrowRate;
-	uint32			uBorrowStart;
-	uint32			uBorrowExpire;
+	uint32			uAcceptRate	= params.size() >= 6 ? boost::lexical_cast<uint32>(params[5u].asString()) : 0;
 
-	if (params.size() >= 6)
-		sBorrowRate		= params[6u].asString();
-
-	if (params.size() >= 7)
-		sBorrowStart	= params[7u].asString();
-
-	if (params.size() >= 8)
-		sBorrowExpire	= params[8u].asString();
-
-	if (params.size() < 5 || params.size() > 8)
+	if (params.size() < 4 || params.size() > 6)
 	{
 		return JSONRPCError(500, "invalid parameters");
 	}
@@ -402,7 +399,7 @@ Json::Value RPCServer::doCreditSet(Json::Value& params)
 	{
 		return JSONRPCError(500, "destination account id needed");
 	}
-	else if (!saLimitAmount.setValue(params[5u].asString(), params[6u].asString()))
+	else if (!saLimitAmount.setValue(params[3u].asString(), params.size() >= 5 ? params[4u].asString() : ""))
 	{
 		return JSONRPCError(500, "bad src amount/currency");
 	}
@@ -417,15 +414,9 @@ Json::Value RPCServer::doCreditSet(Json::Value& params)
 		Json::Value						obj				= authorize(naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate, sleSrc);
 
 		if (!obj.empty())
-		{
 			return obj;
-		}
 
 		STAmount						saSrcBalance	= sleSrc->getIValueFieldAmount(sfBalance);
-
-		uBorrowRate			= 0;
-		uBorrowStart		= 0;
-		uBorrowExpire		= 0;
 
 		if (saSrcBalance < theConfig.FEE_DEFAULT)
 		{
@@ -441,9 +432,7 @@ Json::Value RPCServer::doCreditSet(Json::Value& params)
 				0,											// YYY No source tag
 				naDstAccountID,
 				saLimitAmount,
-				uBorrowRate,
-				uBorrowStart,
-				uBorrowExpire);
+				uAcceptRate);
 
 			(void) theApp->getOPs().processTransaction(trans);
 
@@ -453,9 +442,7 @@ Json::Value RPCServer::doCreditSet(Json::Value& params)
 			obj["srcAccountID"]		= naSrcAccountID.humanAccountID();
 			obj["dstAccountID"]		= naDstAccountID.humanAccountID();
 			obj["limitAmount"]		= saLimitAmount.getText();
-			obj["borrowRate"]		= uBorrowRate;
-			obj["borrowStart"]		= uBorrowStart;
-			obj["borrowExpire"]		= uBorrowExpire;
+			obj["acceptRate"]		= uAcceptRate;
 
 			return obj;
 		}

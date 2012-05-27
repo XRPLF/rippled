@@ -2,8 +2,215 @@
 
 #include "Config.h"
 #include "TransactionFormats.h"
+#include "utils.h"
 
 #include <boost/format.hpp>
+
+typedef SerializedLedgerEntry SLE;
+
+#define DIR_NODE_MAX	32
+
+// We return the uNodeDir so that on delete we can quickly know where the element is mentioned in the directory.
+TransactionEngineResult TransactionEngine::dirAdd(
+	std::vector<AffectedAccount>&	accounts,
+	uint64&							uNodeDir,
+	const LedgerEntryType			letKind,
+	const uint256&					uBase,
+	const uint256&					uLedgerIndex)
+{
+	// Get the root.
+	uint256				uRootIndex	= Ledger::getDirIndex(uBase, letKind);
+	LedgerStateParms	lspRoot		= lepNONE;
+	SLE::pointer		sleRoot		= mLedger->getDirRoot(lspRoot, uRootIndex);
+	bool				bRootNew;
+
+	// Get the last node index.
+	if (sleRoot)
+	{
+		bRootNew	= false;
+		uNodeDir	= sleRoot->getIFieldU64(sfLastNode);
+	}
+	else
+	{
+		bRootNew	= true;
+		uNodeDir	= 1;
+
+		sleRoot	= boost::make_shared<SerializedLedgerEntry>(ltDIR_ROOT);
+		sleRoot->setIndex(uRootIndex);
+		sleRoot->setIFieldU64(sfFirstNode, uNodeDir);
+		sleRoot->setIFieldU64(sfLastNode, uNodeDir);
+
+		accounts.push_back(std::make_pair(taaCREATE, sleRoot));
+	}
+
+	// Get the last node.
+	uint256				uNodeIndex	= Ledger::getDirIndex(uBase, letKind, uNodeDir);
+	LedgerStateParms	lspNode		= lepNONE;
+	SLE::pointer		sleNode		= bRootNew ? SLE::pointer() : mLedger->getDirNode(lspNode, uNodeIndex);
+
+	if (sleNode)
+	{
+		STVector256	svIndexes;
+
+		svIndexes	= sleNode->getIFieldV256(sfIndexes);
+		if (DIR_NODE_MAX != svIndexes.peekValue().size())
+		{
+			// Last node is not full, append.
+
+			svIndexes.peekValue().push_back(uLedgerIndex);
+			sleNode->setIFieldV256(sfIndexes, svIndexes);
+
+			accounts.push_back(std::make_pair(taaMODIFY, sleNode));
+		}
+		// Last node is full, add a new node.
+		else if (!++uNodeDir)
+		{
+			return terDIR_FULL;
+		}
+		else
+		{
+			// Record new last node.
+			sleNode	= SLE::pointer();
+
+			sleRoot->setIFieldU64(sfLastNode, uNodeDir);
+			accounts.push_back(std::make_pair(taaMODIFY, sleRoot));
+		}
+	}
+
+	if (!sleNode)
+	{
+		// Add to last node, which is empty.
+		sleNode	= boost::make_shared<SerializedLedgerEntry>(ltDIR_NODE);
+		sleNode->setIndex(uNodeIndex);
+
+		STVector256	svIndexes;
+
+		svIndexes.peekValue().push_back(uLedgerIndex);
+		sleNode->setIFieldV256(sfIndexes, svIndexes);
+
+		accounts.push_back(std::make_pair(taaCREATE, sleNode));
+	}
+
+	return terSUCCESS;
+}
+
+TransactionEngineResult TransactionEngine::dirDelete(
+	std::vector<AffectedAccount>&	accounts,
+	const uint64&					uNodeDir,
+	const LedgerEntryType			letKind,
+	const uint256&					uBase,
+	const uint256&					uLedgerIndex)
+{
+	uint64				uNodeCur	= uNodeDir;
+	uint256				uNodeIndex	= Ledger::getDirIndex(uBase, letKind, uNodeCur);
+	LedgerStateParms	lspNode		= lepNONE;
+	SLE::pointer		sleNode		= mLedger->getDirNode(lspNode, uNodeIndex);
+
+	if (!sleNode)
+	{
+		std::cerr << "dirDelete: no such node" << std::endl;
+		return terNODE_NOT_FOUND;
+	}
+	else
+	{
+		STVector256						svIndexes	= sleNode->getIFieldV256(sfIndexes);
+		std::vector<uint256>&			vuiIndexes	= svIndexes.peekValue();
+		std::vector<uint256>::iterator	it;
+
+		it = std::find(vuiIndexes.begin(), vuiIndexes.end(), uLedgerIndex);
+		if (vuiIndexes.end() == it)
+		{
+			std::cerr << "dirDelete: node not mentioned" << std::endl;
+			return terNODE_NOT_MENTIONED;
+		}
+		else
+		{
+			// Get root information
+			LedgerStateParms	lspRoot		= lepNONE;
+			SLE::pointer		sleRoot		= mLedger->getDirRoot(lspRoot, Ledger::getDirIndex(uBase, letKind));
+
+			if (!sleRoot)
+			{
+				std::cerr << "dirDelete: root node is missing" << std::endl;
+				return terNODE_NO_ROOT;
+			}
+
+			uint64	uFirstNodeOrig	= sleRoot->getIFieldU64(sfFirstNode);
+			uint64	uLastNodeOrig	= sleRoot->getIFieldU64(sfLastNode);
+			uint64	uFirstNode		= uFirstNodeOrig;
+			uint64	uLastNode		= uLastNodeOrig;
+
+			// Remove the element.
+			if (vuiIndexes.size() > 1)
+			{
+				*it = vuiIndexes[vuiIndexes.size()-1];
+			}
+			vuiIndexes.resize(vuiIndexes.size()-1);
+
+			sleNode->setIFieldV256(sfIndexes, svIndexes);
+
+			if (!vuiIndexes.empty() || (uFirstNode != uNodeCur && uLastNode != uNodeCur))
+			{
+				// Node is not being deleted.
+				accounts.push_back(std::make_pair(taaMODIFY, sleNode));
+			}
+
+			while (uFirstNode && svIndexes.peekValue().empty()
+				&& (uFirstNode == uNodeCur || uLastNode == uNodeCur))
+			{
+				// Current node is empty and first or last, delete it.
+				accounts.push_back(std::make_pair(taaDELETE, sleNode));
+
+				if (uFirstNode == uLastNode)
+				{
+					// Complete deletion.
+					uFirstNode	= 0;
+				}
+				else
+				{
+					if (uFirstNode == uNodeCur)
+					{
+						// Advance first node
+						++uNodeCur;
+						++uFirstNode;
+					}
+					else
+					{
+						// Rewind last node
+						--uNodeCur;
+						--uLastNode;
+					}
+
+					// Get replacement node.
+					lspNode		= lepNONE;
+					sleNode		= mLedger->getDirNode(lspNode, Ledger::getDirIndex(uBase, letKind, uNodeCur));
+					svIndexes	= sleNode->getIFieldV256(sfIndexes);
+				}
+			}
+
+			if (uFirstNode == uFirstNodeOrig && uLastNode == uLastNodeOrig)
+			{
+				// Dir is fine.
+				nothing();
+			}
+			else if (uFirstNode)
+			{
+				// Update root's pointer pointers.
+				sleRoot->setIFieldU64(sfFirstNode, uFirstNode);
+				sleRoot->setIFieldU64(sfLastNode, uLastNode);
+
+				accounts.push_back(std::make_pair(taaMODIFY, sleRoot));
+			}
+			else
+			{
+				// Delete the root.
+				accounts.push_back(std::make_pair(taaDELETE, sleRoot));
+			}
+		}
+
+		return terSUCCESS;
+	}
+}
 
 TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTransaction& txn,
 	TransactionEngineParams params)
@@ -53,6 +260,8 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 
 		case ttINVOICE:
 		case ttOFFER:
+		case ttCREDIT_SET:
+		case ttTRANSIT_SET:
 			result = terSUCCESS;
 			break;
 
@@ -104,8 +313,8 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 
 	// find source account
 	// If we are only verifying some transactions, this would be probablistic.
-	LedgerStateParms				qry		= lepNONE;
-	SerializedLedgerEntry::pointer	sleSrc	= mLedger->getAccountRoot(qry, srcAccountID);
+	LedgerStateParms	lspRoot	= lepNONE;
+	SLE::pointer		sleSrc	= mLedger->getAccountRoot(lspRoot, srcAccountID);
 	if (!sleSrc)
 	{
 		std::cerr << str(boost::format("applyTransaction: Delay transaction: source account does not exisit: %s") % txn.getSourceAccount().humanAccountID()) << std::endl;
@@ -176,7 +385,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 			break;
 
 		case ttCREDIT_SET:
-			result = doCreditSet(txn, accounts);
+			result = doCreditSet(txn, accounts, srcAccountID);
 			break;
 
 		case ttINVALID:
@@ -236,11 +445,6 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	return result;
 }
 
-TransactionEngineResult TransactionEngine::doCreditSet(const SerializedTransaction&, std::vector<AffectedAccount>&)
-{
-	return tenINVALID;
-}
-
 TransactionEngineResult TransactionEngine::doClaim(const SerializedTransaction& txn,
 	 std::vector<AffectedAccount>& accounts)
 {
@@ -259,34 +463,34 @@ TransactionEngineResult TransactionEngine::doClaim(const SerializedTransaction& 
 		return tenINVALID;
 	}
 
-	LedgerStateParms				qry				= lepNONE;
-	SerializedLedgerEntry::pointer	dest			= accounts[0].second;
+	LedgerStateParms	qry				= lepNONE;
+	SLE::pointer		sleDst			= accounts[0].second;
 
-	if (!dest)
+	if (!sleDst)
 	{
 		// Source account does not exist.  Could succeed if it was created first.
 		std::cerr << str(boost::format("doClaim: no such account: %s") % txn.getSourceAccount().humanAccountID()) << std::endl;
 		return terNO_ACCOUNT;
 	}
 
-	std::cerr << str(boost::format("doClaim: %s") % dest->getFullText()) << std::endl;
+	std::cerr << str(boost::format("doClaim: %s") % sleDst->getFullText()) << std::endl;
 
-	if (dest->getIFieldPresent(sfAuthorizedKey))
+	if (sleDst->getIFieldPresent(sfAuthorizedKey))
 	{
 		// Source account already claimed.
 		std::cerr << "doClaim: source already claimed" << std::endl;
-		return tenCLAIMED;
+		return terCLAIMED;
 	}
 
 	//
 	// Verify claim is authorized for public key.
 	//
 
-	std::vector<unsigned char>		vucCipher		= txn.getITFieldVL(sfGenerator);
-	std::vector<unsigned char>		vucPubKey		= txn.getITFieldVL(sfPubKey);
-	std::vector<unsigned char>		vucSignature	= txn.getITFieldVL(sfSignature);
+	std::vector<unsigned char>	vucCipher		= txn.getITFieldVL(sfGenerator);
+	std::vector<unsigned char>	vucPubKey		= txn.getITFieldVL(sfPubKey);
+	std::vector<unsigned char>	vucSignature	= txn.getITFieldVL(sfSignature);
 
-	NewcoinAddress					naAccountPublic;
+	NewcoinAddress				naAccountPublic;
 
 	naAccountPublic.setAccountPublic(vucPubKey);
 
@@ -300,11 +504,11 @@ TransactionEngineResult TransactionEngine::doClaim(const SerializedTransaction& 
 	// Verify generator not already in use.
 	//
 
-	uint160							hGeneratorID	= naAccountPublic.getAccountID();
+	uint160			hGeneratorID	= naAccountPublic.getAccountID();
 
-									qry				= lepNONE;
-	SerializedLedgerEntry::pointer	gen				= mLedger->getGenerator(qry, hGeneratorID);
-	if (gen)
+					qry				= lepNONE;
+	SLE::pointer	sleGen			= mLedger->getGenerator(qry, hGeneratorID);
+	if (sleGen)
 	{
 		// Generator is already in use.  Regular passphrases limited to one wallet.
 		std::cerr << "doClaim: generator already in use" << std::endl;
@@ -316,36 +520,132 @@ TransactionEngineResult TransactionEngine::doClaim(const SerializedTransaction& 
 	//
 
 	// Set the public key needed to use the account.
-	dest->setIFieldH160(sfAuthorizedKey, hGeneratorID);
+	sleDst->setIFieldH160(sfAuthorizedKey, hGeneratorID);
 
 	// Construct a generator map entry.
-									gen				= boost::make_shared<SerializedLedgerEntry>(ltGENERATOR_MAP);
+					sleGen				= boost::make_shared<SerializedLedgerEntry>(ltGENERATOR_MAP);
 
-	gen->setIndex(Ledger::getGeneratorIndex(hGeneratorID));
-	gen->setIFieldH160(sfGeneratorID, hGeneratorID);
-	gen->setIFieldVL(sfGenerator, vucCipher);
+	sleGen->setIndex(Ledger::getGeneratorIndex(hGeneratorID));
+	sleGen->setIFieldH160(sfGeneratorID, hGeneratorID);
+	sleGen->setIFieldVL(sfGenerator, vucCipher);
 
-	accounts.push_back(std::make_pair(taaCREATE, gen));
+	accounts.push_back(std::make_pair(taaCREATE, sleGen));
 
 	std::cerr << "doClaim<" << std::endl;
+
 	return terSUCCESS;
+}
+
+TransactionEngineResult TransactionEngine::doCreditSet(const SerializedTransaction& txn,
+	std::vector<AffectedAccount>&accounts,
+	const uint160& uSrcAccountID)
+{
+	TransactionEngineResult	terResult	= terSUCCESS;
+	std::cerr << "doCreditSet>" << std::endl;
+
+	// Check if destination makes sense.
+	uint160				uDstAccountID	= txn.getITFieldAccount(sfDestination);
+
+	if (!uDstAccountID)
+	{
+		std::cerr << "doCreditSet: Invalid transaction: Payment destination account not specifed." << std::endl;
+		return tenDST_NEEDED;
+	}
+	else if (uSrcAccountID == uDstAccountID)
+	{
+		std::cerr << "doCreditSet: Invalid transaction: Source account is the same as destination." << std::endl;
+		return tenDST_IS_SRC;
+	}
+
+	LedgerStateParms	qry				= lepNONE;
+	SLE::pointer		sleDst			= mLedger->getAccountRoot(qry, uDstAccountID);
+	if (!sleDst)
+	{
+		std::cerr << "doCreditSet: Delay transaction: Destination account does not exist." << std::endl;
+
+		return terNO_DST;
+	}
+
+	STAmount			saLimitAmount	= txn.getITFieldAmount(sfLimitAmount);
+	uint160				uCurrency		= saLimitAmount.getCurrency();
+	bool				bSltD			= uSrcAccountID < uDstAccountID;
+	uint32				uFlags			= bSltD ? lsfLowIndexed : lsfHighIndexed;
+	STAmount			saBalance(uCurrency);
+	bool				bAddIndex;
+
+						qry				= lepNONE;
+	SLE::pointer		sleRippleState	= mLedger->getRippleState(qry, uSrcAccountID, uDstAccountID, uCurrency);
+	if (sleRippleState)
+	{
+		std::cerr << "doCreditSet: Modifying ripple line." << std::endl;
+
+						bAddIndex		= !(sleRippleState->getFlags() & uFlags);
+
+		sleRippleState->setIFieldAmount(bSltD ? sfLowLimit : sfHighID, saLimitAmount);
+
+		accounts.push_back(std::make_pair(taaMODIFY, sleRippleState));
+
+		if (bAddIndex)
+			sleRippleState->setFlag(uFlags);
+	}
+	// Line does not exist.
+	else if (!saLimitAmount.getValue())
+	{
+		std::cerr << "doCreditSet: Setting non-existant ripple line to 0." << std::endl;
+
+		return terNO_LINE_NO_ZERO;
+	}
+	else
+	{
+		std::cerr << "doCreditSet: Creating ripple line." << std::endl;
+		STAmount		saZero(uCurrency);
+
+						bAddIndex		= true;
+						sleRippleState	= boost::make_shared<SerializedLedgerEntry>(ltRIPPLE_STATE);
+
+		sleRippleState->setIndex(Ledger::getRippleStateIndex(uSrcAccountID, uDstAccountID, uCurrency));
+
+		sleRippleState->setFlag(uFlags);
+		sleRippleState->setIFieldAmount(sfBalance, saZero);	// Zero balance in currency.
+		sleRippleState->setIFieldAmount(bSltD ? sfLowLimit : sfHighLimit, saLimitAmount);
+		sleRippleState->setIFieldAmount(bSltD ? sfHighLimit : sfLowLimit, saZero);
+		sleRippleState->setIFieldAccount(bSltD ? sfLowID : sfHighID, uSrcAccountID);
+		sleRippleState->setIFieldAccount(bSltD ? sfHighID : sfLowID, uDstAccountID);
+
+		accounts.push_back(std::make_pair(taaCREATE, sleRippleState));
+	}
+
+	if (bAddIndex)
+	{
+		// Add entries so clients can find lines.
+		// - Client needs to be able to walk who account has given credit to and who has account's credit.
+		// - Client doesn't need to know every account who has extended credit but it owed nothing.
+		uint64			uSrcRef;	// Ignored, ripple_state dirs never delete.
+
+		// XXX Verify extend is passing the right bits, not the zero bits.
+		// XXX Make dirAdd more flexiable to take vector.
+		terResult	= dirAdd(accounts, uSrcRef, ltRIPPLE_STATE, uint160extend256(uSrcAccountID, 0), sleRippleState->getIndex());
+	}
+
+	std::cerr << "doCreditSet<" << std::endl;
+
+	return terResult;
 }
 
 TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction& txn,
 	std::vector<AffectedAccount>& accounts,
-	uint160 srcAccountID)
+	const uint160& srcAccountID)
 {
 	uint32	txFlags			= txn.getFlags();
-	uint160 dstAccountID	= txn.getITFieldAccount(sfDestination);
+	uint160 uDstAccountID	= txn.getITFieldAccount(sfDestination);
 
-	// Does the destination account exist?
-	if (!dstAccountID)
+	if (!uDstAccountID)
 	{
 		std::cerr << "doPayment: Invalid transaction: Payment destination account not specifed." << std::endl;
 		return tenINVALID;
 	}
 	// XXX Only bad if no currency conversion in between through other people's offer.
-	else if (srcAccountID == dstAccountID)
+	else if (srcAccountID == uDstAccountID)
 	{
 		std::cerr << "doPayment: Invalid transaction: Source account is the same as destination." << std::endl;
 		return tenINVALID;
@@ -353,24 +653,23 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 
 	bool	bCreate	= !!(txFlags & tfCreateAccount);
 
-	uint160	currency;
+	uint160	uCurrency;
 	if (txn.getITFieldPresent(sfCurrency))
 	{
-		currency = txn.getITFieldH160(sfCurrency);
-		if (!currency)
+		uCurrency = txn.getITFieldH160(sfCurrency);
+		if (!uCurrency)
 		{
-			std::cerr << "doPayment: Invalid transaction: XNC explicitly specified." << std::endl;
+			std::cerr << "doPayment: Invalid transaction: " SYSTEM_CURRENCY_CODE " explicitly specified." << std::endl;
 			return tenEXPLICITXNC;
 		}
 	}
 
-	LedgerStateParms qry = lepNONE;
-
-	SerializedLedgerEntry::pointer dest = mLedger->getAccountRoot(qry, dstAccountID);
-	if (!dest)
+	LedgerStateParms	qry		= lepNONE;
+	SLE::pointer		sleDst	= mLedger->getAccountRoot(qry, uDstAccountID);
+	if (!sleDst)
 	{
 		// Destination account does not exist.
-		if (bCreate && !!currency)
+		if (bCreate && !!uCurrency)
 		{
 			std::cerr << "doPayment: Invalid transaction: Create account may only fund XBC." << std::endl;
 			return tenCREATEXNC;
@@ -378,32 +677,32 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 		else if (!bCreate)
 		{
 			std::cerr << "doPayment: Delay transaction: Destination account does not exist." << std::endl;
-			return terNO_TARGET;
+			return terNO_DST;
 		}
 
 		// Create the account.
-		dest = boost::make_shared<SerializedLedgerEntry>(ltACCOUNT_ROOT);
+		sleDst = boost::make_shared<SerializedLedgerEntry>(ltACCOUNT_ROOT);
 
-		dest->setIndex(Ledger::getAccountRootIndex(dstAccountID));
-		dest->setIFieldAccount(sfAccount, dstAccountID);
-		dest->setIFieldU32(sfSequence, 1);
+		sleDst->setIndex(Ledger::getAccountRootIndex(uDstAccountID));
+		sleDst->setIFieldAccount(sfAccount, uDstAccountID);
+		sleDst->setIFieldU32(sfSequence, 1);
 
-		accounts.push_back(std::make_pair(taaCREATE, dest));
+		accounts.push_back(std::make_pair(taaCREATE, sleDst));
 	}
 	// Destination exists.
 	else if (bCreate)
 	{
 		std::cerr << "doPayment: Invalid transaction: Account already created." << std::endl;
-		return tenCREATED;
+		return terCREATED;
 	}
 	else
 	{
-		accounts.push_back(std::make_pair(taaMODIFY, dest));
+		accounts.push_back(std::make_pair(taaMODIFY, sleDst));
 	}
 
 	STAmount	saAmount = txn.getITFieldAmount(sfAmount);
 
-	if (!currency)
+	if (!uCurrency)
 	{
 		STAmount	saSrcBalance = accounts[0].second->getIValueFieldAmount(sfBalance);
 
@@ -425,8 +724,122 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 	return terSUCCESS;
 }
 
-TransactionEngineResult TransactionEngine::doTransitSet(const SerializedTransaction&, std::vector<AffectedAccount>&)
+TransactionEngineResult TransactionEngine::doTransitSet(const SerializedTransaction& st, std::vector<AffectedAccount>&)
 {
+	std::cerr << "doTransitSet>" << std::endl;
+#if 0
+	SLE::pointer	sleSrc	= accounts[0].second;
+
+	bool	bTxnTransitRate			= st->getIFieldPresent(sfTransitRate);
+	bool	bTxnTransitStart		= st->getIFieldPresent(sfTransitStart);
+	bool	bTxnTransitExpire		= st->getIFieldPresent(sfTransitExpire);
+	uint32	uTxnTransitRate			= bTxnTransitRate ? st->getIFieldU32(sfTransitRate) : 0;
+	uint32	uTxnTransitStart		= bTxnTransitStart ? st->getIFieldU32(sfTransitStart) : 0;
+	uint32	uTxnTransitExpire		= bTxnTransitExpire ? st->getIFieldU32(sfTransitExpire) : 0;
+
+	bool	bActTransitRate			= sleSrc->getIFieldPresent(sfTransitRate);
+	bool	bActTransitExpire		= sleSrc->getIFieldPresent(sfTransitExpire);
+	bool	bActNextTransitRate		= sleSrc->getIFieldPresent(sfNextTransitRate);
+	bool	bActNextTransitStart	= sleSrc->getIFieldPresent(sfNextTransitStart);
+	bool	bActNextTransitExpire	= sleSrc->getIFieldPresent(sfNextTransitExpire);
+	uint32	uActTransitRate			= bActTransitRate ? sleSrc->getIFieldU32(sfTransitRate) : 0;
+	uint32	uActTransitExpire		= bActTransitExpire ? sleSrc->getIFieldU32(sfTransitExpire) : 0;
+	uint32	uActNextTransitRate		= bActNextTransitRate ? sleSrc->getIFieldU32(sfNextTransitRate) : 0;
+	uint32	uActNextTransitStart	= bActNextTransitStart ? sleSrc->getIFieldU32(sfNextTransitStart) : 0;
+	uint32	uActNextTransitExpire	= bActNextTransitExpire ? sleSrc->getIFieldU32(sfNextTransitExpire) : 0;
+
+	//
+	// Update view
+	//
+
+	bool	bNoCurrent		= !bActTransitRate;
+	bool	bCurrentExpired	=
+		bActTransitExpire						// Current can expire
+			&& bActNextTransitStart				// Have a replacement
+			&& uActTransitExpire <= uLedger;	// Current is expired
+
+	// Replace current with next if need.
+	if (bNoCurrent								// No current.
+		&& bActNextTransitRate					// Have next.
+		&& uActNextTransitStart <= uLedger)		// Next has started.
+	{
+		// Make next current.
+		uActTransitRate			= uActNextTransitRate;
+		bActTransitExpire		= bActNextTransitStart;
+		uActTransitExpire		= uActNextTransitExpire;
+
+		// Remove next.
+		uActNextTransitStart	= 0;
+	}
+
+	//
+	// Determine new transaction deposition.
+	//
+
+	bool	bBetterThanCurrent =
+		!no current
+			|| (
+				Expires same or later than current
+				Start before or same as current
+				Fee same or less than current
+			)
+
+	bool	bBetterThanNext =
+		!no next
+			|| (
+				Expires same or later than next
+				Start before or same as next
+				Fee same or less than next
+			)
+
+	bool	bBetterThanBoth =
+		bBetterThanCurrent && bBetterThanNext
+
+	bool	bCurrentBlocks =
+		!bBetterThanCurrent
+		&& overlaps with current
+
+	bool	bNextBlocks =
+		!bBetterThanNext
+		&& overlaps with next
+
+	if (bBetterThanBoth)
+	{
+		// Erase both and install.
+
+		// If not starting now, install as next.
+	}
+	else if (bCurrentBlocks || bNextBlocks)
+	{
+		// Invalid ignore
+	}
+	else if (bBetterThanCurrent)
+	{
+		// Install over current
+	}
+	else if (bBetterThanNext)
+	{
+		// Install over next
+	}
+	else
+	{
+		// Error.
+	}
+
+	return tenTRANSIT_WORSE;
+
+	// Set current.
+	uDstTransitRate			= uTxnTransitRate;
+	uDstTransitExpire		= uTxnTransitExpire;	// 0 for never expire.
+
+	// Set future.
+	uDstNextTransitRate		= uTxnTransitRate;
+	uDstNextTransitStart	= uTxnTransitStart;
+	uDstNextTransitExpire	= uTxnTransitExpire;	// 0 for never expire.
+
+	if (txn.getITFieldPresent(sfCurrency))
+#endif
+	std::cerr << "doTransitSet<" << std::endl;
 	return tenINVALID;
 }
 
