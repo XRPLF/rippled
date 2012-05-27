@@ -1,6 +1,9 @@
 
 #include "LedgerConsensus.h"
 
+#include "Application.h"
+#include "NetworkOPs.h"
+
 TransactionAcquire::TransactionAcquire(const uint256& hash) : PeerSet(hash, 1), mHaveRoot(false)
 {
 	mMap = boost::make_shared<SHAMap>();
@@ -9,8 +12,10 @@ TransactionAcquire::TransactionAcquire(const uint256& hash) : PeerSet(hash, 1), 
 
 void TransactionAcquire::done()
 {
-	// insert SHAMap in finished set (as valid or invalid), remove ourselves from current set
-	// WRITEME
+	if (mFailed)
+		theApp->getOPs().mapComplete(mHash, SHAMap::pointer());
+	else
+		theApp->getOPs().mapComplete(mHash, mMap);
 }
 
 boost::weak_ptr<PeerSet> TransactionAcquire::pmDowncast()
@@ -131,12 +136,19 @@ void LedgerConsensus::closeTime(Ledger::pointer& current)
 	current->updateHash();
 	uint256 txSet = current->getTransHash();
 	mOurPosition = boost::make_shared<LedgerProposal>(nodePrivKey, current->getParentHash(), txSet);
-	mapComplete(current->peekTransactionMap()->snapShot());
-	// WRITME: Broadcast an IHAVE for this set
+	mapComplete(txSet, current->peekTransactionMap()->snapShot());
 }
 
-void LedgerConsensus::mapComplete(SHAMap::pointer map)
+void LedgerConsensus::mapComplete(const uint256& hash, SHAMap::pointer map)
 {
+	if (!map)
+	{ // this is an invalid/corrupt map
+		mComplete[hash] = map;
+		return;
+	}
+
+	mAcquiring.erase(hash);
+
 	boost::unordered_map<uint256, SHAMap::pointer>::iterator it = mComplete.find(map->getHash());
 	if (it != mComplete.end()) return; // we already have this map
 
@@ -165,6 +177,8 @@ void LedgerConsensus::mapComplete(SHAMap::pointer map)
 	}
 	if (!peers.empty())
 		adjustCount(map, peers);
+
+	// WRITEME: broadcast an IHAVE for this set
 }
 
 void LedgerConsensus::adjustCount(SHAMap::pointer map, const std::vector<uint256>& peers)
@@ -257,7 +271,7 @@ void LedgerConsensus::addDisputedTransaction(const uint256& txID)
 	{
 		boost::unordered_map<uint256, SHAMap::pointer>::const_iterator cit =
 			mComplete.find(pit->second->getCurrentHash());
-		if (cit != mComplete.end())
+		if (cit != mComplete.end() && cit->second)
 			txn->setVote(pit->first, cit->second->hasItem(txID));
 	}
 }

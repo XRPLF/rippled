@@ -434,3 +434,9 @@ bool NetworkOPs::hasTXSet(boost::shared_ptr<Peer> peer, const std::vector<uint25
 	if (!mConsensus) return false;
 	return mConsensus->peerHasSet(peer, sets);
 }
+
+void NetworkOPs::mapComplete(const uint256& hash, SHAMap::pointer map)
+{
+	if (mConsensus)
+		mConsensus->mapComplete(hash, map);
+}

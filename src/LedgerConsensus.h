@@ -94,7 +94,6 @@ protected:
 	void startAcquiring(TransactionAcquire::pointer);
 	SHAMap::pointer find(const uint256& hash);
 
-	void mapComplete(SHAMap::pointer map);
 	void addDisputedTransaction(const uint256&);
 	void adjustCount(SHAMap::pointer map, const std::vector<uint256>& peers);
 
@@ -112,7 +111,7 @@ public:
 
 	SHAMap::pointer getTransactionTree(const uint256& hash, bool doAcquire);
 	TransactionAcquire::pointer getAcquiring(const uint256& hash);
-	void acquireComplete(const uint256& hash);
+	void mapComplete(const uint256& hash, SHAMap::pointer map);
 
 	void abort();
 	int timerEntry(void);
