@@ -420,19 +420,37 @@ STAmount& STAmount::operator=(uint64 v)
 }
 
 STAmount& STAmount::operator+=(uint64 v)
-{ // FIXME
-	if (mIsNative) mValue += v;
+{
+	if (mIsNative)
+	{
+		if (mIsNegative)
+			*this += STAmount(v);
+		else mValue += v;
+	}
 	else *this += STAmount(mCurrency, v);
 	return *this;
 }
 
 STAmount& STAmount::operator-=(uint64 v)
-{ // FIXME
+{
 	if (mIsNative)
 	{
-		if (v > mValue)
-			throw std::runtime_error("amount underflow");
-		mValue -= v;
+		if (mIsNegative)
+		{
+			if (v >= mValue)
+			{
+				mIsNegative = false;
+				mValue = v - mValue;
+			}
+			else
+				mValue += v;
+		}
+		else if (v > mValue)
+		{
+			mIsNegative = true;
+			mValue = v - mValue;
+		}
+		else mValue -= v;
 	}
 	else *this -= STAmount(mCurrency, v);
 	return *this;
@@ -470,19 +488,28 @@ bool STAmount::operator>=(uint64 v) const
 }
 
 STAmount STAmount::operator+(uint64 v) const
-{ // FIXME
+{
 	if (!mIsNative)
 		throw std::runtime_error("operation not legal no non-native currency");
-	return STAmount(true, mValue + v);
+	if (mIsNegative)
+	{
+		if (v >= mValue)
+			return STAmount(false, v - mValue); // >=0 result
+		else return STAmount(true, mValue - v); // <0 result
+	}
+	return STAmount(false, mValue + v);
 }
 
 STAmount STAmount::operator-(uint64 v) const
-{ // FIXME
+{
 	if (!mIsNative)
 		throw std::runtime_error("operation not legal no non-native currency");
 	if (mValue < v)
 		throw std::runtime_error("native currency underflow");
-	return STAmount(true, mValue - v);
+	if (mIsNegative)
+		return STAmount(true, mValue + v);
+	else if (v > mValue) return STAmount(true, v - mValue);
+	return STAmount(false, mValue - v);
 }
 
 STAmount::operator double() const
@@ -493,53 +520,89 @@ STAmount::operator double() const
 	return static_cast<double>(mValue) * pow(10.0, mOffset);
 }
 
-STAmount operator+(STAmount v1, STAmount v2)
+STAmount operator+(const STAmount& v1, const STAmount& v2)
 { // We can check for precision loss here (value%10)!=0
 // FIXME
 	v1.throwComparable(v2);
 	if (v1.mIsNative)
-		return STAmount(v1.mValue + v2.mValue);
+	{
+		int64 iv1, iv2, s;
+		if (v1.mIsNegative) iv1 = -v1.mValue;
+		else iv1 = v1.mValue;
+		if (v2.mIsNegative) iv2 = -v2.mValue;
+		else iv2 = v2.mValue;
+		s = iv1 + iv2;
+		if (s >= 0) return STAmount(s, false);
+		else return STAmount(-s, true);
+	}
 
 	if (v1.isZero()) return v2;
 	if (v2.isZero()) return v1;
 
-	while (v1.mOffset < v2.mOffset)
+	int ov1 = v1.mOffset, ov2 = v2.mOffset;
+	int64 vv1 = v1.mValue, vv2 = v2.mValue;
+	if (v1.mIsNegative) vv1 = -vv1;
+	if (v2.mIsNegative) vv2 = -vv2;
+
+	while (ov1 < ov2)
 	{
-		v1.mValue /= 10;
-		++v1.mOffset;
+		vv1 /= 10;
+		++ov1;
 	}
-	while (v2.mOffset < v1.mOffset)
+	while (ov2 < ov1)
 	{
-		v2.mValue /= 10;
-		++v2.mOffset;
+		vv2 /= 10;
+		++ov2;
 	}
-	// this addition cannot overflow a uint64, it can overflow an STAmount and the constructor will throw
-	return STAmount(v1.name, v1.mCurrency, v1.mValue + v2.mValue, v1.mOffset);
+	// this addition cannot overflow an int64, it can overflow an STAmount and the constructor will throw
+
+	int64 fv = vv1 + vv2;
+	if (fv >= 0)
+		return STAmount(v1.name, v1.mCurrency, fv, ov1, false);
+	else
+		return STAmount(v1.name, v1.mCurrency, -fv, ov1, true);
 }
 
-STAmount operator-(STAmount v1, STAmount v2)
+STAmount operator-(const STAmount& v1, const STAmount& v2)
 {
-// FIXME
 	v1.throwComparable(v2);
 	if (v2.mIsNative)
 	{
-		if (v2.mValue > v1.mValue)
-			throw std::runtime_error("amount underflow");
-		return STAmount(v1.mValue - v2.mValue);
+		int64 iv1, iv2, s;
+		if (v1.mIsNegative) iv1 = -v1.mValue;
+		else iv1 = v1.mValue;
+		if (v2.mIsNegative) iv2 = -v2.mValue;
+		else iv2 = v2.mValue;
+		s = iv1 - iv2;
+		if (s >= 0) return STAmount(s, false);
+		else return STAmount(-s, true);
 	}
 	if (v2.isZero()) return v1;
 	if (v1.isZero() || (v2.mOffset > v1.mOffset) )
 		throw std::runtime_error("value underflow");
 
-	while (v1.mOffset > v2.mOffset)
-	{
-		v2.mValue /= 10;
-		++v2.mOffset;
-	}
-	if (v1.mValue < v2.mValue)
-		throw std::runtime_error("value underflow");
+	int ov1 = v1.mOffset, ov2 = v2.mOffset;
+	int64 vv1 = v1.mValue, vv2 = v2.mValue;
+	if (v1.mIsNegative) vv1 = -vv1;
+	if (v2.mIsNegative) vv2 = -vv2;
 
-	return STAmount(v1.name, v1.mCurrency, v1.mValue - v2.mValue, v1.mOffset);
+	while (ov1 < ov2)
+	{
+		vv1 /= 10;
+		++ov1;
+	}
+	while (ov2 < ov1)
+	{
+		vv2 /= 10;
+		++ov2;
+	}
+	// this subtraction cannot overflow an int64, it can overflow an STAmount and the constructor will throw
+
+	int64 fv = vv1 - vv2;
+	if (fv >= 0)
+		return STAmount(v1.name, v1.mCurrency, fv, ov1, false);
+	else
+		return STAmount(v1.name, v1.mCurrency, -fv, ov1, true);
 }
 
 STAmount divide(const STAmount& num, const STAmount& den, const uint160& currencyOut)

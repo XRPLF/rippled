@@ -220,21 +220,17 @@ protected:
 	static const uint64 cNotNative = 0x8000000000000000ull;
 	static const uint64 cPosNative = 0x4000000000000000ull;
 
-	STAmount(bool, uint64 value) : mValue(value), mOffset(0), mIsNative(true), mIsNegative(false) { ; }
+	STAmount(bool isNeg, uint64 value) : mValue(value), mOffset(0), mIsNative(true), mIsNegative(isNeg) { ; }
 
 	STAmount(const char *name, uint64 value, bool isNegative)
 		: SerializedType(name), mValue(value), mOffset(0), mIsNative(true), mIsNegative(isNegative)
 	{ ; }
 
-	STAmount(const char *nm, const uint160& cur, uint64 v, int off, bool isNegative)
-		: SerializedType(nm), mCurrency(cur), mValue(v), mOffset(off), mIsNative(false), mIsNegative(isNegative)
-	{ ; }
-
 	uint64 toUInt64() const;
 
 public:
-	STAmount(uint64 v = 0) : mValue(v), mOffset(0), mIsNative(true), mIsNegative(false)
-	{ ; }
+	STAmount(uint64 v = 0, bool isNeg = false) : mValue(v), mOffset(0), mIsNative(true), mIsNegative(isNeg)
+	{ if (v==0) mIsNegative = false; }
 
 	STAmount(const char* n, uint64 v = 0)
 		: SerializedType(n), mValue(v), mOffset(0), mIsNative(true), mIsNegative(false)
@@ -244,8 +240,8 @@ public:
 		: mCurrency(currency), mValue(v), mOffset(off), mIsNegative(false)
 	{ canonicalize(); }
 
-	STAmount(const char* n, const uint160& currency, uint64 v = 0, int off = 0) : SerializedType(n),
-		mCurrency(currency), mValue(v), mOffset(off), mIsNegative(false)
+	STAmount(const char* n, const uint160& currency, uint64 v = 0, int off = 0, bool isNeg = false) :
+		SerializedType(n), mCurrency(currency), mValue(v), mOffset(off), mIsNegative(isNeg)
 	{ canonicalize(); }
 
 	static std::auto_ptr<SerializedType> deserialize(SerializerIterator& sit, const char* name)
@@ -303,8 +299,8 @@ public:
 
 	operator double() const;
 
-	friend STAmount operator+(STAmount v1, STAmount v2);
-	friend STAmount operator-(STAmount v1, STAmount v2);
+	friend STAmount operator+(const STAmount& v1, const STAmount& v2);
+	friend STAmount operator-(const STAmount& v1, const STAmount& v2);
 
 	friend STAmount divide(const STAmount& v1, const STAmount& v2, const uint160& currencyOut);
 	friend STAmount multiply(const STAmount& v1, const STAmount& v2, const uint160& currencyOut);
