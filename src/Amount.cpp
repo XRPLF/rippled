@@ -164,6 +164,7 @@ void STAmount::canonicalize()
 		if (mValue == 0)
 		{
 			mOffset = 0;
+			mIsNegative = false;
 			return;
 		}
 
@@ -187,6 +188,7 @@ void STAmount::canonicalize()
 	if (mValue == 0)
 	{
 		mOffset = -100;
+		mIsNegative = false;
 		return;
 	}
 
@@ -217,13 +219,16 @@ void STAmount::add(Serializer& s) const
 	if (mIsNative)
 	{
 		assert(mOffset == 0);
-		s.add64(mValue);
+		if (!mIsNegative) s.add64(mValue | cPosNative);
+		else s.add64(mValue);
 		return;
 	}
 	if (isZero())
 		s.add64(cNotNative);
-	else // Adding 396 centers the offset and sets the "not native" flag
-		s.add64(mValue + (static_cast<uint64>(mOffset + 396) << (64 - 9)));
+	else if (mIsNegative) // 512 = not native
+		s.add64(mValue | (static_cast<uint64>(mOffset + 512 + 97) << (64 - 10)));
+	else // 256 = positive
+		s.add64(mValue | (static_cast<uint64>(mOffset + 512 + 256 + 97) << (64 - 10)));
 	s.add160(mCurrency);
 }
 
@@ -232,34 +237,45 @@ STAmount* STAmount::construct(SerializerIterator& sit, const char *name)
 	uint64 value = sit.get64();
 
 	if ((value & cNotNative) == 0)
-		return new STAmount(name, value);
+	{ // native
+		if ((value & cPosNative) != 0)
+			return new STAmount(name, value & ~cPosNative, false); // positive
+		return new STAmount(name, value, true); // negative
+	}
 
 	uint160 currency = sit.get160();
 	if (!currency)
 		throw std::runtime_error("invalid native currency");
 
-	int offset = static_cast<int>(value >> (64-9)); // 9 bits for the offset and "not native" flag
-	value &= ~(1023ull << (64-9));
+	int offset = static_cast<int>(value >> (64 - 10)); // 10 bits for the offset, sign and "not native" flag
+	value &= ~(1023ull << (64-10));
 
 	if (value == 0)
 	{
-		if (offset != 256)
+		if (offset != 512)
 			throw std::runtime_error("invalid currency value");
+		return new STAmount(name, currency);
 	}
-	else
-	{
-		offset -= 396; // center the range and remove the "not native" bit
-		if ((value < cMinValue) || (value > cMaxValue) || (offset < cMinOffset) || (offset > cMaxOffset))
-			throw std::runtime_error("invalid currency value");
-	}
-	return new STAmount(name, currency, value, offset);
+
+	bool isNegative = (offset & 256) == 0;
+	offset = (offset & 255) - 97; // center the range
+	if ((value < cMinValue) || (value > cMaxValue) || (offset < cMinOffset) || (offset > cMaxOffset))
+		throw std::runtime_error("invalid currency value");
+	return new STAmount(name, currency, value, offset, isNegative);
 }
 
 std::string STAmount::getRaw() const
 { // show raw internal form
 	if (mValue == 0) return "0";
-	if (mIsNative) return boost::lexical_cast<std::string>(mValue);
-	return mCurrency.GetHex() + ": " +
+	if (mIsNative)
+	{
+		if (mIsNegative) return std::string("-") + boost::lexical_cast<std::string>(mValue);
+		else return boost::lexical_cast<std::string>(mValue);
+	}
+	if (mIsNegative)
+		return mCurrency.GetHex() + ": -" +
+		boost::lexical_cast<std::string>(mValue) + "e" + boost::lexical_cast<std::string>(mOffset);
+	else return mCurrency.GetHex() + ": " +
 		boost::lexical_cast<std::string>(mValue) + "e" + boost::lexical_cast<std::string>(mOffset);
 }
 
@@ -267,9 +283,19 @@ std::string STAmount::getText() const
 { // keep full internal accuracy, but make more human friendly if posible
 	if (isZero()) return "0";
 	if (mIsNative)
-		return boost::lexical_cast<std::string>(mValue);
+	{
+		if (mIsNegative)
+			return std::string("-") +  boost::lexical_cast<std::string>(mValue);
+		else return boost::lexical_cast<std::string>(mValue);
+	}
 	if ((mOffset < -25) || (mOffset > -5))
-		return boost::lexical_cast<std::string>(mValue) + "e" + boost::lexical_cast<std::string>(mOffset);
+	{
+		if (mIsNegative)
+			return std::string("-") + boost::lexical_cast<std::string>(mValue) +
+				"e" + boost::lexical_cast<std::string>(mOffset);
+		else
+			return boost::lexical_cast<std::string>(mValue) + "e" + boost::lexical_cast<std::string>(mOffset);
+	}
 
 	std::string val = "000000000000000000000000000";
 	val += boost::lexical_cast<std::string>(mValue);
@@ -285,6 +311,9 @@ std::string STAmount::getText() const
 		pre = pre.substr(s_pre);
 
 	size_t s_post = post.find_last_not_of('0');
+
+	if (mIsNegative) pre = std::string("-") + pre;
+
 	if (s_post == std::string::npos)
 		return pre;
 	else
@@ -362,6 +391,12 @@ STAmount& STAmount::operator+=(const STAmount& a)
 STAmount& STAmount::operator-=(const STAmount& a)
 {
 	*this = *this - a;
+	return *this;
+}
+
+STAmount STAmount::operator-(void) const
+{
+	if (mValue == 0) return STAmount(NULL, mValue, mOffset, mIsNative, !mIsNegative);
 	return *this;
 }
 
@@ -778,6 +813,8 @@ BOOST_AUTO_TEST_CASE( CustomCurrency_test )
 {
 	uint160 currency(1);
 	STAmount zero(currency), one(currency, 1), hundred(currency, 100);
+
+	serdes(one).getRaw();
 
 	if (serdes(zero) != zero) BOOST_FAIL("STAmount fail");
 	if (serdes(one) != one) BOOST_FAIL("STAmount fail");

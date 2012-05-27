@@ -208,49 +208,68 @@ protected:
 	uint160 mCurrency;
 	uint64 mValue;
 	int mOffset;
-	bool mIsNative;
+	bool mIsNative, mIsNegative;
 
 	void canonicalize();
-	STAmount* duplicate() const { return new STAmount(name, mCurrency, mValue, mOffset); }
+	STAmount* duplicate() const { return new STAmount(*this); }
 	static STAmount* construct(SerializerIterator&, const char* name = NULL);
-	STAmount(bool, uint64 value) : mValue(value), mOffset(0), mIsNative(true) { ; }
 
 	static const int cMinOffset = -96, cMaxOffset = 80;
 	static const uint64 cMinValue = 1000000000000000ull, cMaxValue = 9999999999999999ull;
 	static const uint64 cMaxNative = 9000000000000000000ull;
 	static const uint64 cNotNative = 0x8000000000000000ull;
+	static const uint64 cPosNative = 0x4000000000000000ull;
+
+	STAmount(bool, uint64 value) : mValue(value), mOffset(0), mIsNative(true), mIsNegative(false) { ; }
+
+	STAmount(const char *name, uint64 value, bool isNegative)
+		: SerializedType(name), mValue(value), mOffset(0), mIsNative(true), mIsNegative(isNegative)
+	{ ; }
+
+	STAmount(const char *nm, const uint160& cur, uint64 v, int off, bool isNegative)
+		: SerializedType(nm), mCurrency(cur), mValue(v), mOffset(off), mIsNative(false), mIsNegative(isNegative)
+	{ ; }
 
 public:
-	STAmount(uint64 v = 0) : mValue(v), mOffset(0), mIsNative(true)
+	STAmount(uint64 v = 0) : mValue(v), mOffset(0), mIsNative(true), mIsNegative(false)
 	{ ; }
 
-	STAmount(const char* n, uint64 v = 0) : SerializedType(n), mValue(v), mOffset(0), mIsNative(true)
+	STAmount(const char* n, uint64 v = 0)
+		: SerializedType(n), mValue(v), mOffset(0), mIsNative(true), mIsNegative(false)
 	{ ; }
 
-	STAmount(const uint160& currency, uint64 v = 0, int off = 0) : mCurrency(currency), mValue(v), mOffset(off)
+	STAmount(const uint160& currency, uint64 v = 0, int off = 0)
+		: mCurrency(currency), mValue(v), mOffset(off), mIsNegative(false)
 	{ canonicalize(); }
 
 	STAmount(const char* n, const uint160& currency, uint64 v = 0, int off = 0) : SerializedType(n),
-		mCurrency(currency), mValue(v), mOffset(off)
+		mCurrency(currency), mValue(v), mOffset(off), mIsNegative(false)
 	{ canonicalize(); }
 
 	static std::auto_ptr<SerializedType> deserialize(SerializerIterator& sit, const char* name)
 	{ return std::auto_ptr<SerializedType>(construct(sit, name)); }
 
-	int getLength() const { return mIsNative ? 8 : 28; }
-	SerializedTypeID getSType() const { return STI_AMOUNT; }
+	int getLength() const				{ return mIsNative ? 8 : 28; }
+	SerializedTypeID getSType() const	{ return STI_AMOUNT; }
 	std::string getText() const;
 	std::string getRaw() const;
 	void add(Serializer& s) const;
 
-	int getOffset() const { return mOffset; }
-	uint64 getValue() const { return mValue; }
-	void setValue(const STAmount& v) { mValue=v; }
+	int getOffset() const				{ return mOffset; }
+	uint64 getValue() const				{ return mValue; }
+	void setValue(const STAmount& v)	{ mValue=v; }
 	std::string getCurrencyHuman();
-	bool isNative() const { return mIsNative; }
+
+	bool isNative() const		{ return mIsNative; }
+	bool isZero() const			{ return mValue == 0; }
+	bool isNegative() const		{ return mIsNegative && !isZero(); }
+	bool isPositive() const		{ return !mIsNegative && !isZero(); }
+	bool isGEZero() const		{ return !mIsNegative; }
+
+	void changeSign()			{ if (!isZero()) mIsNegative = !mIsNegative; }
+	void zero()					{ mOffset = mIsNative ? -100 : 0; mValue = 0; mIsNegative = false; }
+
 	const uint160& getCurrency() const { return mCurrency; }
-	void zero() { mOffset = mIsNative ? -100 : 0; mValue = 0; }
-	bool isZero() const { return mValue == 0; }
 	bool setValue(const std::string& sAmount, const std::string& sCurrency);
 
 	virtual bool isEquivalent(const SerializedType& t) const;
@@ -271,6 +290,7 @@ public:
 	bool operator>=(uint64) const;
 	STAmount operator+(uint64) const;
 	STAmount operator-(uint64) const;
+	STAmount operator-(void) const;
 
 	STAmount& operator+=(const STAmount&);
 	STAmount& operator-=(const STAmount&);
