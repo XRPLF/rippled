@@ -127,7 +127,7 @@ AccountState::pointer Ledger::getAccountState(const NewcoinAddress& accountID)
 #ifdef DEBUG
 //	std::cerr << "Ledger:getAccountState(" << accountID.humanAccountID() << ")" << std::endl;
 #endif
-	ScopedLock l(mTransactionMap->Lock());
+	ScopedLock l(mAccountStateMap->Lock());
 	SHAMapItem::pointer item = mAccountStateMap->peekItem(Ledger::getAccountRootIndex(accountID));
 	if (!item)
 	{
