@@ -232,6 +232,14 @@ void STAmount::add(Serializer& s) const
 	s.add160(mCurrency);
 }
 
+uint64 STAmount::toUInt64() const
+{ // makes them sort easily
+	if (mValue == 0) return 0x4000000000000000ull;
+	if (mIsNegative)
+		return mValue | (static_cast<uint64>(mOffset + 97) << (64 - 10));
+	return mValue | (static_cast<uint64>(mOffset + 256 + 97) << (64 - 10));
+}
+
 STAmount* STAmount::construct(SerializerIterator& sit, const char *name)
 {
 	uint64 value = sit.get64();
@@ -331,7 +339,7 @@ bool STAmount::isEquivalent(const SerializedType& t) const
 {
 	const STAmount* v = dynamic_cast<const STAmount*>(&t);
 	if (!v) return false;
-	return isComparable(*v) && (mValue == v->mValue) && (mOffset == v->mOffset);
+	return isComparable(*v) && (mIsNegative == v->mIsNegative) && (mValue == v->mValue) && (mOffset == v->mOffset);
 }
 
 void STAmount::throwComparable(const STAmount& t) const
@@ -342,44 +350,36 @@ void STAmount::throwComparable(const STAmount& t) const
 
 bool STAmount::operator==(const STAmount& a) const
 {
-	return isComparable(a) && (mOffset == a.mOffset) && (mValue == a.mValue);
+	return isComparable(a) && (mIsNegative == a.mIsNegative) && (mOffset == a.mOffset) && (mValue == a.mValue);
 }
 
 bool STAmount::operator!=(const STAmount& a) const
 {
-	return (mOffset != a.mOffset) || (mValue != a.mValue) || !isComparable(a);
+	return (mOffset != a.mOffset) || (mValue != a.mValue) || (mIsNegative!= a.mIsNegative) || !isComparable(a);
 }
 
 bool STAmount::operator<(const STAmount& a) const
 {
 	throwComparable(a);
-	if (mOffset < a.mOffset) return true;
-	if (a.mOffset < mOffset) return false;
-	return mValue < a.mValue;
+	return toUInt64() < a.toUInt64();
 }
 
 bool STAmount::operator>(const STAmount& a) const
 {
 	throwComparable(a);
-	if (mOffset > a.mOffset) return true;
-	if (a.mOffset > mOffset) return false;
-	return mValue > a.mValue;
+	return toUInt64() > a.toUInt64();
 }
 
 bool STAmount::operator<=(const STAmount& a) const
 {
 	throwComparable(a);
-	if (mOffset < a.mOffset) return true;
-	if (a.mOffset < mOffset) return false;
-	return mValue <= a.mValue;
+	return toUInt64() <= a.toUInt64();
 }
 
 bool STAmount::operator>=(const STAmount& a) const
 {
 	throwComparable(a);
-	if (mOffset > a.mOffset) return true;
-	if (a.mOffset > mOffset) return false;
-	return mValue >= a.mValue;
+	return toUInt64() >= a.toUInt64();
 }
 
 STAmount& STAmount::operator+=(const STAmount& a)
@@ -406,6 +406,7 @@ STAmount& STAmount::operator=(const STAmount& a)
 	mOffset = a.mOffset;
 	mCurrency = a.mCurrency;
 	mIsNative = a.mIsNative;
+	mIsNegative = a.mIsNegative;
 	return *this;
 }
 
@@ -413,19 +414,20 @@ STAmount& STAmount::operator=(uint64 v)
 { // does not copy name, does not change currency type
 	mOffset = 0;
 	mValue = v;
+	mIsNegative = false;
 	if (!mIsNative) canonicalize();
 	return *this;
 }
 
 STAmount& STAmount::operator+=(uint64 v)
-{
+{ // FIXME
 	if (mIsNative) mValue += v;
 	else *this += STAmount(mCurrency, v);
 	return *this;
 }
 
 STAmount& STAmount::operator-=(uint64 v)
-{
+{ // FIXME
 	if (mIsNative)
 	{
 		if (v > mValue)
@@ -440,13 +442,14 @@ bool STAmount::operator<(uint64 v) const
 {
 	if (!mIsNative)
 		throw std::runtime_error("operation not legal no non-native currency");
-	return mValue < v;
+	return mIsNegative || (mValue < v);
 }
 
 bool STAmount::operator>(uint64 v) const
 {
 	if (!mIsNative)
 		throw std::runtime_error("operation not legal no non-native currency");
+	if (mIsNegative) return false;
 	return mValue > v;
 }
 
@@ -454,6 +457,7 @@ bool STAmount::operator<=(uint64 v) const
 {
 	if (!mIsNative)
 		throw std::runtime_error("operation not legal no non-native currency");
+	if (mIsNegative) return true;
 	return mValue <= v;
 }
 
@@ -461,18 +465,19 @@ bool STAmount::operator>=(uint64 v) const
 {
 	if (!mIsNative)
 		throw std::runtime_error("operation not legal no non-native currency");
+	 if (mIsNegative) return false;
 	return mValue >= v;
 }
 
 STAmount STAmount::operator+(uint64 v) const
-{
+{ // FIXME
 	if (!mIsNative)
 		throw std::runtime_error("operation not legal no non-native currency");
 	return STAmount(true, mValue + v);
 }
 
 STAmount STAmount::operator-(uint64 v) const
-{
+{ // FIXME
 	if (!mIsNative)
 		throw std::runtime_error("operation not legal no non-native currency");
 	if (mValue < v)
@@ -484,11 +489,13 @@ STAmount::operator double() const
 { // Does not keep the precise value. Not recommended
 	if (!mValue)
 		return 0.0;
+	if (mIsNegative) return -1.0 * static_cast<double>(mValue) * pow(10.0, mOffset);
 	return static_cast<double>(mValue) * pow(10.0, mOffset);
 }
 
 STAmount operator+(STAmount v1, STAmount v2)
 { // We can check for precision loss here (value%10)!=0
+// FIXME
 	v1.throwComparable(v2);
 	if (v1.mIsNative)
 		return STAmount(v1.mValue + v2.mValue);
@@ -512,6 +519,7 @@ STAmount operator+(STAmount v1, STAmount v2)
 
 STAmount operator-(STAmount v1, STAmount v2)
 {
+// FIXME
 	v1.throwComparable(v2);
 	if (v2.mIsNative)
 	{
@@ -572,7 +580,9 @@ STAmount divide(const STAmount& num, const STAmount& den, const uint160& currenc
 	// 10^15 <= quotient <= 10^17
 	assert(BN_num_bytes(&v) <= 64);
 
-	return STAmount(currencyOut, v.getulong(), numOffset - denOffset - 16);
+	if (num.mIsNegative != den.mIsNegative)
+		return -STAmount(currencyOut, v.getulong(), numOffset - denOffset - 16);
+	else return STAmount(currencyOut, v.getulong(), numOffset - denOffset - 16);
 }
 
 STAmount multiply(const STAmount& v1, const STAmount& v2, const uint160& currencyOut)
@@ -581,7 +591,11 @@ STAmount multiply(const STAmount& v1, const STAmount& v2, const uint160& currenc
 		return STAmount(currencyOut);
 
 	if (v1.mIsNative && v2.mIsNative)
+	{
+		if (v1.mIsNegative != v2.mIsNegative)
+			return -STAmount(currencyOut, v1.mValue * v2.mValue);
 		return STAmount(currencyOut, v1.mValue * v2.mValue);
+	}
 
 	uint64 value1 = v1.mValue, value2 = v2.mValue;
 	int offset1 = v1.mOffset, offset2 = v2.mOffset;
@@ -632,7 +646,9 @@ STAmount multiply(const STAmount& v1, const STAmount& v2, const uint160& currenc
 	// 10^16 <= product <= 10^18
 	assert(BN_num_bytes(&v) <= 64);
 
-	return STAmount(currencyOut, v.getulong(), offset1 + offset2 + 14);
+	if (v1.mIsNegative != v2.mIsNegative)
+		return -STAmount(currencyOut, v.getulong(), offset1 + offset2 + 14);
+	else return STAmount(currencyOut, v.getulong(), offset1 + offset2 + 14);
 }
 
 uint64 getRate(const STAmount& offerOut, const STAmount& offerIn)

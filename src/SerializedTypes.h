@@ -230,6 +230,8 @@ protected:
 		: SerializedType(nm), mCurrency(cur), mValue(v), mOffset(off), mIsNative(false), mIsNegative(isNegative)
 	{ ; }
 
+	uint64 toUInt64() const;
+
 public:
 	STAmount(uint64 v = 0) : mValue(v), mOffset(0), mIsNative(true), mIsNegative(false)
 	{ ; }
