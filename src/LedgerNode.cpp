@@ -178,7 +178,10 @@ uint256 Ledger::getDirIndex(const uint256& uBase, const LedgerEntryType letKind,
 
 	sNode.add64(uNodeDir);
 
-	std::copy(sNode.getData().end()-8, sNode.getData().end(), uResult.begin()+((256-64)/8));
+	// YYY SLOPPY
+	std::vector<unsigned char>	vucData	= sNode.getData();
+
+	std::copy(vucData.begin(), vucData.end(), uResult.end()-(64/8));
 
 	return uResult;
 }

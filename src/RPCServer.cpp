@@ -374,7 +374,7 @@ Json::Value RPCServer::doPeers(Json::Value& params)
 	return theApp->getConnectionPool().getPeersJson();
 }
 
-// credit_set <seed> <paying_account> <destination_account> <limit_amount> <currency> [<accept_rate>]
+// credit_set <seed> <paying_account> <destination_account> <limit_amount> [<currency>] [<accept_rate>]
 Json::Value RPCServer::doCreditSet(Json::Value& params)
 {
 	NewcoinAddress	naSeed;
@@ -383,7 +383,7 @@ Json::Value RPCServer::doCreditSet(Json::Value& params)
 	STAmount		saLimitAmount;
 	uint32			uAcceptRate	= params.size() >= 6 ? boost::lexical_cast<uint32>(params[5u].asString()) : 0;
 
-	if (params.size() < 5 || params.size() > 6)
+	if (params.size() < 4 || params.size() > 6)
 	{
 		return JSONRPCError(500, "invalid parameters");
 	}
@@ -399,7 +399,7 @@ Json::Value RPCServer::doCreditSet(Json::Value& params)
 	{
 		return JSONRPCError(500, "destination account id needed");
 	}
-	else if (!saLimitAmount.setValue(params[3u].asString(), params[4u].asString()))
+	else if (!saLimitAmount.setValue(params[3u].asString(), params.size() >= 5 ? params[4u].asString() : ""))
 	{
 		return JSONRPCError(500, "bad src amount/currency");
 	}
