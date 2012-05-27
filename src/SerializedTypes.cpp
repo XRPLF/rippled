@@ -1,4 +1,5 @@
 
+#include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
 
 #include "SerializedTypes.h"
@@ -173,14 +174,43 @@ std::string STAccount::getText() const
 
 STAccount* STAccount::construct(SerializerIterator& u, const char *name)
 {
-	STAccount *ret = new STAccount(name, u.getVL());
-	if (!ret->isValueH160())
-	{
-		delete ret;
-		throw std::runtime_error("invalid account in transaction");
-	}
-	return ret;
+	return new STAccount(name, u.getVL());
 }
+
+//
+// STVector256
+//
+
+// Return a new object from a SerializerIterator.
+STVector256* STVector256::construct(SerializerIterator& u, const char *name)
+{
+	return new STVector256(name, u.getVL());
+}
+
+void STVector256::add(Serializer& s) const
+{
+	s.add32(mValue.size());
+	BOOST_FOREACH(const uint256& v, mValue)
+	{
+		s.add256(v);
+	}
+}
+
+void STVector256::setValue(const std::vector<unsigned char>& vucData)
+{
+	Serializer			s(vucData);
+	SerializerIterator	it(s);
+	uint64				uSize	= it.get32();
+	uint64				uIndex = 0;
+
+	mValue.resize(uSize);
+	while (uSize--)
+		mValue[uIndex++] = it.get256();
+}
+
+//
+// STAccount
+//
 
 bool STAccount::isValueH160() const
 {

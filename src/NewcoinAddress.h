@@ -65,6 +65,8 @@ public:
 	bool setAccountID(const std::string& strAccountID);
 	void setAccountID(const uint160& hash160In);
 
+	static NewcoinAddress createAccountID(const uint160& uiAccountID);
+
 	//
 	// Accounts Public
 	//

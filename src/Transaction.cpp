@@ -190,18 +190,12 @@ Transaction::pointer Transaction::setCreditSet(
 	const NewcoinAddress&	naPrivateKey,
 	const NewcoinAddress&	naDstAccountID,
 	const STAmount&			saLimitAmount,
-	uint32					uBorrowRate,
-	uint32					uBorrowStart,
-	uint32					uBorrowExpire)
+	uint32					uAcceptRate)
 {
 	mTransaction->setITFieldAccount(sfDestination, naDstAccountID);
 	mTransaction->setITFieldAmount(sfLimitAmount, saLimitAmount);
-	if (uBorrowRate)
-		mTransaction->setITFieldU32(sfBorrowRate, uBorrowRate);
-	if (uBorrowStart)
-		mTransaction->setITFieldU32(sfBorrowStart, uBorrowStart);
-	if (uBorrowExpire)
-		mTransaction->setITFieldU32(sfBorrowExpire, uBorrowExpire);
+	if (uAcceptRate)
+		mTransaction->setITFieldU32(sfAcceptRate, uAcceptRate);
 
 	sign(naPrivateKey);
 
@@ -216,15 +210,13 @@ Transaction::pointer Transaction::sharedCreditSet(
 	uint32					uSourceTag,
 	const NewcoinAddress&	naDstAccountID,
 	const STAmount&			saLimitAmount,
-	uint32					uBorrowRate,
-	uint32					uBorrowStart,
-	uint32					uBorrowExpire)
+	uint32					uAcceptRate)
 {
 	pointer	tResult	= boost::make_shared<Transaction>(ttCREDIT_SET,
 						naPublicKey, naSourceAccount,
 						uSeq, saFee, uSourceTag);
 
-	return tResult->setCreditSet(naPrivateKey, naDstAccountID, saLimitAmount, uBorrowRate, uBorrowStart, uBorrowExpire);
+	return tResult->setCreditSet(naPrivateKey, naDstAccountID, saLimitAmount, uAcceptRate);
 }
 
 //

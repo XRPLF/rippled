@@ -12,15 +12,28 @@
 enum SerializedTypeID
 {
 	// special types
-	STI_DONE=-1, STI_NOTPRESENT=0,
+	STI_DONE		= -1,
+	STI_NOTPRESENT	= 0,
 
 	// standard types
-	STI_OBJECT=1, STI_UINT8=2, STI_UINT16=3, STI_UINT32=4, STI_UINT64=5,
-	STI_HASH128=6, STI_HASH160=7, STI_HASH256=8, STI_VL=9, STI_TL=10,
-	STI_AMOUNT=11, STI_PATHSET=12,
+	STI_OBJECT		= 1,
+	STI_UINT8		= 2,
+	STI_UINT16		= 3,
+	STI_UINT32		= 4,
+	STI_UINT64		= 5,
+	STI_HASH128		= 6,
+	STI_HASH160		= 7,
+	STI_HASH256		= 8,
+	STI_VL			= 9,
+	STI_TL			= 10,
+	STI_AMOUNT		= 11,
+	STI_PATHSET		= 12,
+	STI_VECTOR256	= 13,
 
 	// high level types
-	STI_ACCOUNT=100, STI_TRANSACTION=101, STI_LEDGERENTRY=102
+	STI_ACCOUNT		= 100,
+	STI_TRANSACTION = 101,
+	STI_LEDGERENTRY	= 102
 };
 
 class SerializedType
@@ -559,6 +572,41 @@ public:
 	operator std::vector<TaggedListItem>() const { return value; }
 	STTaggedList& operator=(const std::vector<TaggedListItem>& v) { value=v; return *this; }
 	virtual bool isEquivalent(const SerializedType& t) const;
+};
+
+class STVector256 : public SerializedType
+{
+protected:
+	std::vector<uint256>	mValue;
+
+	STVector256* duplicate() const { return new STVector256(name, mValue); }
+	static STVector256* construct(SerializerIterator&, const char* name = NULL);
+
+public:
+	STVector256() { ; }
+	STVector256(const char* n) : SerializedType(n) { ; }
+	STVector256(const char* n, const std::vector<uint256>& v) : SerializedType(n), mValue(v) { ; }
+	STVector256(const std::vector<uint256>& vector) : mValue(vector) { ; }
+	STVector256(const char* n, const std::vector<unsigned char>& vucSerial) : SerializedType(n)
+		{ setValue(vucSerial); }
+
+	SerializedTypeID getSType() const { return STI_VECTOR256; }
+	int getLength() const { return mValue.size()*(256/8)+(64/8); }
+	void add(Serializer& s) const;
+
+	static std::auto_ptr<SerializedType> deserialize(SerializerIterator& sit, const char* name)
+		{ return std::auto_ptr<SerializedType>(construct(sit, name)); }
+
+	const std::vector<uint256>& peekValue() const { return mValue; }
+	std::vector<uint256>& peekValue() { return mValue; }
+
+	std::vector<uint256> getValue() const { return mValue; }
+
+	bool isEmpty() const { return mValue.empty(); }
+
+	void setValue(const STVector256& v) { mValue = v.mValue; }
+	void setValue(const std::vector<uint256>& v) { mValue = v; }
+	void setValue(const std::vector<unsigned char>& vucData);
 };
 
 #endif

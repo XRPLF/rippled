@@ -1,11 +1,18 @@
 
 #include "Ledger.h"
 
-uint256 Ledger::getRippleIndex(const uint160& accountID, const uint160& extendTo, const uint160& currency)
-{ // Index is 160-bit account credit extended to, 96-bit XOR of extending account and currency
-	uint256 base = getAccountRootIndex(extendTo);
-	memcpy(base.begin() + (160 / 8), (accountID ^ currency).begin(), (256 / 8) - (160 / 8));
-	return base;
+uint256 Ledger::getRippleStateIndex(const NewcoinAddress& naA, const NewcoinAddress& naB, const uint160& uCurrency)
+{
+	uint160		uAID	= naA.getAccountID();
+	uint160		uBID	= naB.getAccountID();
+	bool		bAltB	= uAID < uBID;
+	Serializer	s;
+
+	s.add160(bAltB ? uAID : uBID);
+	s.add160(bAltB ? uBID : uAID);
+	s.add160(uCurrency);
+
+	return s.getSHA512Half();
 }
 
 uint160 Ledger::getOfferBase(const uint160& currencyIn, const uint160& accountIn,
