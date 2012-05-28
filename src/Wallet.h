@@ -25,6 +25,9 @@ private:
 	bool	nodeIdentityLoad();
 	bool	nodeIdentityCreate();
 
+	Wallet(const Wallet&); // no implementation
+	Wallet& operator=(const Wallet&); // no implementation
+
 protected:
 	boost::recursive_mutex mLock;
 

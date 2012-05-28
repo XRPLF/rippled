@@ -11,7 +11,7 @@
 #include "SerializedLedger.h"
 #include "NetworkOPs.h"
 
-class RPCServer  : public boost::enable_shared_from_this<RPCServer>
+class RPCServer : public boost::enable_shared_from_this<RPCServer>
 {
 private:
 	NetworkOPs*	mNetOps;
@@ -24,6 +24,9 @@ private:
 	HttpRequestParser mRequestParser;
 
 	RPCServer(boost::asio::io_service& io_service, NetworkOPs* nopNetwork);
+
+	RPCServer(const RPCServer&); // no implementation
+	RPCServer& operator=(const RPCServer&); // no implementation
 
 	void handle_write(const boost::system::error_code& error);
 
