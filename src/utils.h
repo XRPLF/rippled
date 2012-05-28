@@ -59,7 +59,7 @@ inline const std::string strHex(const std::string& strSrc)
 	return strHex(strSrc.begin(), strSrc.size());
 }
 
-inline std::string strHex(const std::vector<unsigned char> vucData)
+inline std::string strHex(const std::vector<unsigned char>& vucData)
 {
 	return strHex(vucData.begin(), vucData.size());
 }
