@@ -29,8 +29,8 @@ protected:
 	PeerSet(const uint256& hash, int interval);
 	virtual ~PeerSet() { ; }
 
-	void sendRequest(const newcoin::TMGetLedger& message);
-	void sendRequest(const newcoin::TMGetLedger& message, Peer::pointer peer);
+	void sendRequest(boost::shared_ptr<newcoin::TMGetLedger> message);
+	void sendRequest(boost::shared_ptr<newcoin::TMGetLedger> message, Peer::pointer peer);
 
 public:
 	const uint256& getHash() const		{ return mHash; }
