@@ -30,4 +30,8 @@
 
 #endif
 
+#define MIN_CONSENSUS			50
+#define AVG_CONSENSUS			60
+#define MAX_CONSENSUS			70
+
 #endif

@@ -44,16 +44,18 @@ protected:
 	uint256 mTransactionID;
 	int mYays, mNays;
 	bool mOurPosition;
+	std::vector<unsigned char> transaction;
 	boost::unordered_map<uint256, bool, hash_SMN> mVotes;
 
 public:
 	typedef boost::shared_ptr<LCTransaction> pointer;
 
-	LCTransaction(const uint256 &txID, bool ourPosition) : mTransactionID(txID), mYays(0), mNays(0),
-		mOurPosition(ourPosition) { ; }
+	LCTransaction(const uint256 &txID, const std::vector<unsigned char>& tx, bool ourPosition) :
+		mTransactionID(txID), mYays(0), mNays(0), mOurPosition(ourPosition), transaction(tx) { ; }
 
-	const uint256& getTransactionID() const	{ return mTransactionID; }
-	bool getOurPosition() const				{ return mOurPosition; }
+	const uint256& getTransactionID() const				{ return mTransactionID; }
+	bool getOurPosition() const							{ return mOurPosition; }
+	const std::vector<unsigned char>& peekTransaction()	{ return transaction; }
 
 	void setVote(const uint256& peer, bool votesYes);
 
@@ -74,6 +76,7 @@ class LedgerConsensus
 {
 protected:
 	LCState mState;
+	uint32 mCloseTime;
 	Ledger::pointer mPreviousLedger;
 	LedgerProposal::pointer mOurPosition;
 
@@ -94,7 +97,7 @@ protected:
 	void startAcquiring(TransactionAcquire::pointer);
 	SHAMap::pointer find(const uint256& hash);
 
-	void addDisputedTransaction(const uint256&);
+	void addDisputedTransaction(const uint256&, const std::vector<unsigned char>& transaction);
 	void adjustCount(SHAMap::pointer map, const std::vector<uint256>& peers);
 
 	void addPosition(LedgerProposal&, bool ours);
@@ -102,7 +105,7 @@ protected:
 	int getThreshold();
 
 public:
-	LedgerConsensus(Ledger::pointer previousLedger);
+	LedgerConsensus(Ledger::pointer previousLedger, uint32 closeTime);
 	void closeTime(Ledger::pointer& currentLedger);
 
 	int startup();

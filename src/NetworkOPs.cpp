@@ -368,7 +368,8 @@ int NetworkOPs::beginConsensus(Ledger::pointer closingLedger, bool isEarly)
 
 	// Create a consensus object to get consensus on this ledger
 	if (!!mConsensus) mConsensus->abort();
-	mConsensus = boost::make_shared<LedgerConsensus>(prevLedger);
+	mConsensus = boost::make_shared<LedgerConsensus>(prevLedger,
+		theApp->getMasterLedger().getCurrentLedger()->getCloseTimeNC());
 	mConsensus->closeTime(closingLedger); // FIXME: Create consensus a few seconds before close time
 
 #ifdef DEBUG

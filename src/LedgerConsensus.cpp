@@ -3,6 +3,7 @@
 
 #include "Application.h"
 #include "NetworkOPs.h"
+#include "LedgerTiming.h"
 
 TransactionAcquire::TransactionAcquire(const uint256& hash) : PeerSet(hash, 1), mHaveRoot(false)
 {
@@ -118,8 +119,26 @@ void LCTransaction::setVote(const uint256& peer, bool votesYes)
 	}
 }
 
-LedgerConsensus::LedgerConsensus(Ledger::pointer previousLedger)
-	:  mState(lcsPRE_CLOSE), mPreviousLedger(previousLedger)
+bool LCTransaction::updatePosition(int seconds)
+{ // this many seconds after close, should our position change
+
+	if (mOurPosition && (mNays == 0)) return false;
+	if (!mOurPosition && (mYays == 0)) return false;
+
+	int weight = (mYays * 100 + (mOurPosition ? 100 : 0)) / (mNays + mYays + 1);
+
+	bool newPosition;
+	if (seconds <= LEDGER_CONVERGE) newPosition = weight >=  MIN_CONSENSUS;
+	else if (seconds >= LEDGER_FORCE_CONVERGE) newPosition = weight >= MAX_CONSENSUS;
+	else newPosition = weight >= AVG_CONSENSUS;
+
+	if (newPosition == mOurPosition) return false;
+	mOurPosition = newPosition;
+	return true;
+}
+
+LedgerConsensus::LedgerConsensus(Ledger::pointer previousLedger, uint32 closeTime)
+	:  mState(lcsPRE_CLOSE), mCloseTime(closeTime), mPreviousLedger(previousLedger)
 {
 }
 
@@ -130,6 +149,7 @@ void LedgerConsensus::closeTime(Ledger::pointer& current)
 		assert(false);
 		return;
 	}
+
 	CKey::pointer nodePrivKey = boost::make_shared<CKey>();
 	nodePrivKey->MakeNewKey(); // FIXME
 
@@ -160,8 +180,12 @@ void LedgerConsensus::mapComplete(const uint256& hash, SHAMap::pointer map)
 			SHAMap::SHAMapDiff differences;
 			it2->second->compare(it->second, differences, 16384);
 			for(SHAMap::SHAMapDiff::iterator pos = differences.begin(), end = differences.end(); pos != end; ++pos)
-			{ // create disputed transactions
-				addDisputedTransaction(pos->first);
+			{ // create disputed transactions (from the ledger that has them)
+				if (pos->second.first)
+					addDisputedTransaction(pos->first, pos->second.first->peekData());
+				else if(pos->second.second)
+					addDisputedTransaction(pos->first, pos->second.second->peekData());
+				else assert(false);
 			}
 		}
 	}
@@ -204,6 +228,41 @@ int LedgerConsensus::startup()
 
 int LedgerConsensus::timerEntry()
 {
+	int sinceClose = theApp->getOPs().getNetworkTimeNC() - mCloseTime;
+	if ((mState == lcsESTABLISH) || (mState == lcsCUTOFF))
+	{
+		if (sinceClose >= LEDGER_FORCE_CONVERGE)
+		{
+			mState = lcsCUTOFF;
+			sinceClose = LEDGER_FORCE_CONVERGE;
+		}
+
+		bool changes = false;
+		SHAMap::pointer ourPosition;
+
+		for(boost::unordered_map<uint256, LCTransaction::pointer>::iterator it = mDisputes.begin(),
+				end = mDisputes.end(); it != end; ++it)
+		{
+			if (it->second->updatePosition(sinceClose))
+			{
+				if (changes)
+				{
+					ourPosition = mComplete[mOurPosition->getCurrentHash()]->snapShot();
+					changes = true;
+				}
+				if (it->second->getOurPosition()) // now a yes
+					ourPosition->addItem(SHAMapItem(it->first, it->second->peekTransaction()), true);
+				else // now a no
+					ourPosition->delItem(it->first);
+			}
+		}
+
+		if (changes)
+		{
+		 // broadcast IHAVE
+		 // broadcast new proposal
+		}
+	}
 	return 1;
 }
 
@@ -249,7 +308,7 @@ void LedgerConsensus::startAcquiring(TransactionAcquire::pointer acquire)
 	}
 }
 
-void LedgerConsensus::addDisputedTransaction(const uint256& txID)
+void LedgerConsensus::addDisputedTransaction(const uint256& txID, const std::vector<unsigned char>& tx)
 {
 	boost::unordered_map<uint256, LCTransaction::pointer>::iterator it = mDisputes.find(txID);
 	if (it != mDisputes.end()) return;
@@ -263,7 +322,7 @@ void LedgerConsensus::addDisputedTransaction(const uint256& txID)
 		else assert(false); // We don't have our own position?
 	}
 
-	LCTransaction::pointer txn = boost::make_shared<LCTransaction>(txID, ourPosition);
+	LCTransaction::pointer txn = boost::make_shared<LCTransaction>(txID, tx, ourPosition);
 	mDisputes[txID] = txn;
 
 	for (boost::unordered_map<uint256, LedgerProposal::pointer>::iterator pit = mPeerPositions.begin(),
