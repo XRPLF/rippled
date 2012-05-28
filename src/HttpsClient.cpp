@@ -18,7 +18,7 @@ using namespace boost::asio;
 HttpsClient::HttpsClient(
     boost::asio::io_service& io_service,
 	const unsigned short port,
-    const std::string strPath,
+    const std::string& strPath,
     std::size_t responseMax
     ) :
 		mCtx(boost::asio::ssl::context::sslv23),
@@ -337,7 +337,7 @@ void HttpsClient::httpsGet(
 	boost::asio::io_service& io_service,
 	std::deque<std::string> deqSites,
 	const unsigned short port,
-	const std::string strPath,
+	const std::string& strPath,
 	std::size_t responseMax,
 	boost::posix_time::time_duration timeout,
 	boost::function<void(const boost::system::error_code& ecResult, std::string& strData)> complete) {
@@ -351,7 +351,7 @@ void HttpsClient::httpsGet(
 	boost::asio::io_service& io_service,
 	std::string strSite,
 	const unsigned short port,
-	const std::string strPath,
+	const std::string& strPath,
 	std::size_t responseMax,
 	boost::posix_time::time_duration timeout,
 	boost::function<void(const boost::system::error_code& ecResult, std::string& strData)> complete) {
