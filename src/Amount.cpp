@@ -721,9 +721,9 @@ uint64 getRate(const STAmount& offerOut, const STAmount& offerIn)
 	if (offerOut.isZero()) throw std::runtime_error("Worthless offer");
 
 	STAmount r = divide(offerIn, offerOut, uint160(1));
-	assert((r.getOffset() >= -100) && (r.getOffset() <= 155));
-	uint64 ret = r.getOffset() + 100;
-	return (ret << (64 - 8)) | r.getValue();
+	assert((r.getExponent() >= -100) && (r.getExponent() <= 155));
+	uint64 ret = r.getExponent() + 100;
+	return (ret << (64 - 8)) | r.getMantissa();
 }
 
 STAmount getClaimed(STAmount& offerOut, STAmount& offerIn, STAmount& paid)
@@ -786,8 +786,7 @@ static uint64_t muldiv(uint64_t a, uint64_t b, uint64_t c)
 
 uint64 convertToDisplayAmount(const STAmount& internalAmount, uint64_t totalNow, uint64_t totalInit)
 { // Convert an internal ledger/account quantity of native currency to a display amount
-	if (internalAmount.isNative()) throw std::runtime_error("not native curency");
-	return muldiv(internalAmount.getValue(), totalInit, totalNow);
+	return muldiv(internalAmount.getNValue(), totalInit, totalNow);
 }
 
 STAmount convertToInternalAmount(uint64_t displayAmount, uint64_t totalNow, uint64_t totalInit,

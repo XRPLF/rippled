@@ -164,14 +164,14 @@ STAmount SerializedTransaction::getTransactionFee() const
 {
 	const STAmount* v = dynamic_cast<const STAmount*>(mMiddleTxn.peekAtPIndex(TransactionIFee));
 	if (!v) throw std::runtime_error("corrupt transaction");
-	return v->getValue();
+	return v->getNValue();
 }
 
 void SerializedTransaction::setTransactionFee(STAmount saFee)
 {
 	STAmount* v = dynamic_cast<STAmount*>(mMiddleTxn.getPIndex(TransactionIFee));
 	if (!v) throw std::runtime_error("corrupt transaction");
-	v->setValue(saFee);
+	v->setNValue(saFee);
 }
 
 uint32 SerializedTransaction::getSequence() const

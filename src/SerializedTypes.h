@@ -253,9 +253,12 @@ public:
 	std::string getRaw() const;
 	void add(Serializer& s) const;
 
-	int getOffset() const				{ return mOffset; }
-	uint64 getValue() const				{ return mValue; }
-	void setValue(const STAmount& v)	{ mValue=v; }
+	int getExponent() const				{ return mOffset; }
+	uint64 getMantissa() const			{ return mValue; }
+
+	uint64 getNValue() const			{ if (!mIsNative) throw std::runtime_error("not native"); return mValue; }
+	void setNValue(uint64_t v)			{ if (!mIsNative) throw std::runtime_error("not native"); mValue = v; }
+
 	std::string getCurrencyHuman();
 
 	bool isNative() const		{ return mIsNative; }
