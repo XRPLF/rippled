@@ -244,6 +244,8 @@ public:
 		SerializedType(n), mCurrency(currency), mValue(v), mOffset(off), mIsNegative(isNeg)
 	{ canonicalize(); }
 
+	STAmount(const char* n, int64 v);
+
 	static std::auto_ptr<SerializedType> deserialize(SerializerIterator& sit, const char* name)
 	{ return std::auto_ptr<SerializedType>(construct(sit, name)); }
 

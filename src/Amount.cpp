@@ -232,6 +232,20 @@ void STAmount::add(Serializer& s) const
 	s.add160(mCurrency);
 }
 
+STAmount::STAmount(const char* name, int64 value) : SerializedType(name), mOffset(0), mIsNative(true)
+{
+	if (value >= 0)
+	{
+		mIsNegative = false;
+		mValue = value;
+	}
+	else
+	{
+		mIsNegative = true;
+		mValue = -value;
+	}
+}
+
 uint64 STAmount::toUInt64() const
 { // makes them sort easily
 	if (mValue == 0) return 0x4000000000000000ull;
@@ -418,7 +432,7 @@ STAmount& STAmount::operator-=(const STAmount& a)
 
 STAmount STAmount::operator-(void) const
 {
-	if (mValue == 0) return STAmount(NULL, mValue, mOffset, mIsNative, !mIsNegative);
+	if (mValue == 0) return STAmount(name, mValue, mOffset, mIsNative, !mIsNegative);
 	return *this;
 }
 
@@ -444,11 +458,7 @@ STAmount& STAmount::operator=(uint64 v)
 STAmount& STAmount::operator+=(uint64 v)
 {
 	if (mIsNative)
-	{
-		if (mIsNegative)
-			*this += STAmount(v);
-		else mValue += v;
-	}
+		setSNValue(getSNValue() + v);
 	else *this += STAmount(mCurrency, v);
 	return *this;
 }
@@ -456,82 +466,39 @@ STAmount& STAmount::operator+=(uint64 v)
 STAmount& STAmount::operator-=(uint64 v)
 {
 	if (mIsNative)
-	{
-		if (mIsNegative)
-		{
-			if (v >= mValue)
-			{
-				mIsNegative = false;
-				mValue = v - mValue;
-			}
-			else
-				mValue += v;
-		}
-		else if (v > mValue)
-		{
-			mIsNegative = true;
-			mValue = v - mValue;
-		}
-		else mValue -= v;
-	}
+		setSNValue(getSNValue() - v);
 	else *this -= STAmount(mCurrency, v);
 	return *this;
 }
 
 bool STAmount::operator<(uint64 v) const
 {
-	if (!mIsNative)
-		throw std::runtime_error("operation not legal no non-native currency");
-	return mIsNegative || (mValue < v);
+	return getSNValue() < static_cast<int64>(v);
 }
 
 bool STAmount::operator>(uint64 v) const
 {
-	if (!mIsNative)
-		throw std::runtime_error("operation not legal no non-native currency");
-	if (mIsNegative) return false;
-	return mValue > v;
+	return getSNValue() > static_cast<int64>(v);
 }
 
 bool STAmount::operator<=(uint64 v) const
 {
-	if (!mIsNative)
-		throw std::runtime_error("operation not legal no non-native currency");
-	if (mIsNegative) return true;
-	return mValue <= v;
+	return getSNValue() <= static_cast<int64>(v);
 }
 
 bool STAmount::operator>=(uint64 v) const
 {
-	if (!mIsNative)
-		throw std::runtime_error("operation not legal no non-native currency");
-	 if (mIsNegative) return false;
-	return mValue >= v;
+	return getSNValue() >= static_cast<int64>(v);
 }
 
 STAmount STAmount::operator+(uint64 v) const
 {
-	if (!mIsNative)
-		throw std::runtime_error("operation not legal no non-native currency");
-	if (mIsNegative)
-	{
-		if (v >= mValue)
-			return STAmount(false, v - mValue); // >=0 result
-		else return STAmount(true, mValue - v); // <0 result
-	}
-	return STAmount(false, mValue + v);
+	return STAmount(name, getSNValue() + static_cast<int64>(v));
 }
 
 STAmount STAmount::operator-(uint64 v) const
 {
-	if (!mIsNative)
-		throw std::runtime_error("operation not legal no non-native currency");
-	if (mValue < v)
-		throw std::runtime_error("native currency underflow");
-	if (mIsNegative)
-		return STAmount(true, mValue + v);
-	else if (v > mValue) return STAmount(true, v - mValue);
-	return STAmount(false, mValue - v);
+	return STAmount(name, getSNValue() - static_cast<int64>(v));
 }
 
 STAmount::operator double() const
@@ -547,16 +514,7 @@ STAmount operator+(const STAmount& v1, const STAmount& v2)
 // FIXME
 	v1.throwComparable(v2);
 	if (v1.mIsNative)
-	{
-		int64 iv1, iv2, s;
-		if (v1.mIsNegative) iv1 = -v1.mValue;
-		else iv1 = v1.mValue;
-		if (v2.mIsNegative) iv2 = -v2.mValue;
-		else iv2 = v2.mValue;
-		s = iv1 + iv2;
-		if (s >= 0) return STAmount(s, false);
-		else return STAmount(-s, true);
-	}
+		return STAmount(v1.name, v1.getSNValue() + v2.getSNValue());
 
 	if (v1.isZero()) return v2;
 	if (v2.isZero()) return v1;
@@ -589,16 +547,8 @@ STAmount operator-(const STAmount& v1, const STAmount& v2)
 {
 	v1.throwComparable(v2);
 	if (v2.mIsNative)
-	{
-		int64 iv1, iv2, s;
-		if (v1.mIsNegative) iv1 = -v1.mValue;
-		else iv1 = v1.mValue;
-		if (v2.mIsNegative) iv2 = -v2.mValue;
-		else iv2 = v2.mValue;
-		s = iv1 - iv2;
-		if (s >= 0) return STAmount(s, false);
-		else return STAmount(-s, true);
-	}
+		return STAmount(v1.name, v1.getSNValue() - v2.getSNValue());
+
 	if (v2.isZero()) return v1;
 	if (v1.isZero() || (v2.mOffset > v1.mOffset) )
 		throw std::runtime_error("value underflow");
@@ -675,12 +625,8 @@ STAmount multiply(const STAmount& v1, const STAmount& v2, const uint160& currenc
 	if (v1.isZero() || v2.isZero())
 		return STAmount(currencyOut);
 
-	if (v1.mIsNative && v2.mIsNative)
-	{
-		if (v1.mIsNegative != v2.mIsNegative)
-			return -STAmount(currencyOut, v1.mValue * v2.mValue);
-		return STAmount(currencyOut, v1.mValue * v2.mValue);
-	}
+	if (v1.mIsNative && v2.mIsNative) // FIXME: overflow
+		return STAmount(v1.name, v1.getSNValue() * v2.getSNValue());
 
 	uint64 value1 = v1.mValue, value2 = v2.mValue;
 	int offset1 = v1.mOffset, offset2 = v2.mOffset;
