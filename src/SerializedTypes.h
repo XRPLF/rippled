@@ -257,7 +257,9 @@ public:
 	uint64 getMantissa() const			{ return mValue; }
 
 	uint64 getNValue() const			{ if (!mIsNative) throw std::runtime_error("not native"); return mValue; }
-	void setNValue(uint64_t v)			{ if (!mIsNative) throw std::runtime_error("not native"); mValue = v; }
+	void setNValue(uint64 v)			{ if (!mIsNative) throw std::runtime_error("not native"); mValue = v; }
+	int64 getSNValue() const;
+	void setSNValue(int64);
 
 	std::string getCurrencyHuman();
 

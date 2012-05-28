@@ -272,6 +272,28 @@ STAmount* STAmount::construct(SerializerIterator& sit, const char *name)
 	return new STAmount(name, currency, value, offset, isNegative);
 }
 
+int64 STAmount::getSNValue() const
+{ // signed native value
+	if (!mIsNative) throw std::runtime_error("not native");
+	if (mIsNegative) return -mValue;
+	return mValue;
+}
+
+void STAmount::setSNValue(int64 v)
+{
+	if (!mIsNative) throw std::runtime_error("not native");
+	if (v > 0)
+	{
+		mIsNegative = false;
+		mValue = v;
+	}
+	else
+	{
+		mIsNegative = true;
+		mValue = -v;
+	}
+}
+
 std::string STAmount::getRaw() const
 { // show raw internal form
 	if (mValue == 0) return "0";
@@ -771,7 +793,7 @@ STAmount getNeeded(const STAmount& offerOut, const STAmount& offerIn, const STAm
 	return (ret > offerIn) ? offerIn : ret;
 }
 
-static uint64_t muldiv(uint64_t a, uint64_t b, uint64_t c)
+static uint64 muldiv(uint64 a, uint64 b, uint64 c)
 { // computes (a*b)/c rounding up - supports values up to 10^18
 	if (c == 0) throw std::runtime_error("underflow");
 	if ((a == 0) || (b == 0)) return 0;
@@ -784,12 +806,12 @@ static uint64_t muldiv(uint64_t a, uint64_t b, uint64_t c)
 	return v.getulong();
 }
 
-uint64 convertToDisplayAmount(const STAmount& internalAmount, uint64_t totalNow, uint64_t totalInit)
+uint64 convertToDisplayAmount(const STAmount& internalAmount, uint64 totalNow, uint64 totalInit)
 { // Convert an internal ledger/account quantity of native currency to a display amount
 	return muldiv(internalAmount.getNValue(), totalInit, totalNow);
 }
 
-STAmount convertToInternalAmount(uint64_t displayAmount, uint64_t totalNow, uint64_t totalInit,
+STAmount convertToInternalAmount(uint64 displayAmount, uint64 totalNow, uint64 totalInit,
 	const char *name)
 { // Convert a display/request currency amount to an internal amount
 	return STAmount(name, muldiv(displayAmount, totalNow, totalInit));
