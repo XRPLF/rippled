@@ -29,8 +29,8 @@
 Just read from wire until the entire request is in.
 */
 
-RPCServer::RPCServer(boost::asio::io_service& io_service)
-	: mSocket(io_service)
+RPCServer::RPCServer(boost::asio::io_service& io_service , NetworkOPs* nopNetwork)
+	: mNetOps(nopNetwork), mSocket(io_service)
 {
 }
 
@@ -173,10 +173,10 @@ bool RPCServer::extractString(std::string& param, const Json::Value& params, int
 // Given a seed and a source account get the public and private key for authorizing transactions for the account.
 Json::Value RPCServer::authorize(const NewcoinAddress& naSeed, const NewcoinAddress& naSrcAccountID,
 	NewcoinAddress& naAccountPublic, NewcoinAddress& naAccountPrivate,
-	SerializedLedgerEntry::pointer& sleSrc)
+	SLE::pointer& sleSrc)
 {
-	Ledger::pointer					ledger			= theApp->getMasterLedger().getCurrentLedger();
-	LedgerStateParms				qry				= lepNONE;
+	Ledger::pointer		ledger			= theApp->getMasterLedger().getCurrentLedger();
+	LedgerStateParms	qry				= lepNONE;
 
 	sleSrc			= ledger->getAccountRoot(qry, naSrcAccountID);
 	if (!sleSrc)
@@ -189,16 +189,16 @@ Json::Value RPCServer::authorize(const NewcoinAddress& naSeed, const NewcoinAddr
 		return JSONRPCError(500, "source account has not been claimed");
 	}
 
-	NewcoinAddress	naGenerator;
-	NewcoinAddress	na0Public;		// To find the generator index.
-	NewcoinAddress	na0Private;		// To decrypt the master generator's cipher.
+	NewcoinAddress		naGenerator;
+	NewcoinAddress		na0Public;		// To find the generator index.
+	NewcoinAddress		na0Private;		// To decrypt the master generator's cipher.
 
 	naGenerator.setFamilyGenerator(naSeed);
 	na0Public.setAccountPublic(naGenerator, 0);
 	na0Private.setAccountPrivate(naGenerator, naSeed, 0);
 
-									qry				= lepNONE;
-	SerializedLedgerEntry::pointer	sleGen			= ledger->getGenerator(qry, na0Public.getAccountID());
+						qry				= lepNONE;
+	SLE::pointer		sleGen			= ledger->getGenerator(qry, na0Public.getAccountID());
 
 	if (!sleGen)
 	{
@@ -220,8 +220,8 @@ Json::Value RPCServer::authorize(const NewcoinAddress& naSeed, const NewcoinAddr
 	//
 	// Find the index of the account from the master generator, so we can generate the public and private keys.
 	//
-	NewcoinAddress	naMasterAccountPublic;
-	uint			iIndex = -1;	// Compensate for initial increment.
+	NewcoinAddress		naMasterAccountPublic;
+	uint				iIndex = -1;	// Compensate for initial increment.
 
 	// XXX Stop after Config.account_probe_max
 	// Don't look at ledger entries to determine if the account exists.  Don't want to leak to thin server that these accounts are
@@ -246,6 +246,65 @@ Json::Value RPCServer::authorize(const NewcoinAddress& naSeed, const NewcoinAddr
 	return Json::Value(Json::objectValue);
 }
 
+// <-- bIndex: true if iIndex > 0 and used the index.
+Json::Value RPCServer::accountFromString(NewcoinAddress& naAccount, bool& bIndex, const std::string& strIdent, const int iIndex)
+{
+	NewcoinAddress	naSeed;
+
+	if (naAccount.setAccountPublic(strIdent) || naAccount.setAccountID(strIdent))
+	{
+		// Got the account.
+		bIndex	= false;
+	}
+	// Must be a seed.
+	else if (!naSeed.setFamilySeedGeneric(strIdent))
+	{
+		return "disallowed seed";
+	}
+	else
+	{
+		// We allow the use of the seeds to access #0.
+		// This is poor practice and merely for debuging convenience.
+		NewcoinAddress		naGenerator;
+		NewcoinAddress		naRegular0Public;
+		NewcoinAddress		naRegular0Private;
+
+		naGenerator.setFamilyGenerator(naSeed);
+
+		naRegular0Public.setAccountPublic(naGenerator, 0);
+		naRegular0Private.setAccountPrivate(naGenerator, naSeed, 0);
+
+		uint160				uGeneratorID	= naRegular0Public.getAccountID();
+
+		Ledger::pointer		ledger			= theApp->getMasterLedger().getCurrentLedger();
+		LedgerStateParms	qry				= lepNONE;
+		SLE::pointer		sleGen			= ledger->getGenerator(qry, naRegular0Public.getAccountID());
+		if (!sleGen)
+		{
+			// Didn't find a generator map, assume it is a master generator.
+			nothing();
+		}
+		else
+		{
+			// Found master public key.
+			std::vector<unsigned char>	vucCipher				= sleGen->getIFieldVL(sfGenerator);
+			std::vector<unsigned char>	vucMasterGenerator		= naRegular0Private.accountPrivateDecrypt(naRegular0Public, vucCipher);
+			if (vucMasterGenerator.empty())
+			{
+				return "internal error: password failed to decrypt master public generator";
+			}
+
+			naGenerator.setFamilyGenerator(vucMasterGenerator);
+		}
+
+		bIndex	= !iIndex;
+
+		naAccount.setAccountPublic(naGenerator, iIndex);
+	}
+
+	return Json::Value(Json::objectValue);
+}
+
 // account_info <account>|<nickname>|<account_public_key>
 // account_info <seed>|<pass_phrase>|<key> [<index>]
 Json::Value RPCServer::doAccountInfo(Json::Value &params)
@@ -254,73 +313,27 @@ Json::Value RPCServer::doAccountInfo(Json::Value &params)
 	{
 		return "invalid params";
 	}
-	else if (!theApp->getOPs().available()) {
+	else if (!mNetOps->available()) {
 		return JSONRPCError(503, "network not available");
 	}
 	else
 	{
 		std::string		strIdent	= params[0u].asString();
-		bool			bIndex		= 2 == params.size();
-		int				iIndex		= bIndex ? boost::lexical_cast<int>(params[1u].asString()) : 0;
-
+		bool			bIndex;
+		int				iIndex		= 2 == params.size()? boost::lexical_cast<int>(params[1u].asString()) : 0;
 		NewcoinAddress	naAccount;
-		NewcoinAddress	naSeed;
 
-		if (!bIndex && (naAccount.setAccountPublic(strIdent) || naAccount.setAccountID(strIdent)))
-		{
-			// Got the account.
-			nothing();
-		}
-		// Must be a seed.
-		else if (!naSeed.setFamilySeedGeneric(strIdent))
-		{
-			return "disallowed seed";
-		}
-		else
-		{
-			// We allow the use of the seeds to access #0.
-			// This is poor practice and merely for debuging convenience.
-			NewcoinAddress	naGenerator;
-			NewcoinAddress	naRegular0Public;
-			NewcoinAddress	naRegular0Private;
+		Json::Value ret;
 
-			naGenerator.setFamilyGenerator(naSeed);
+		ret	= accountFromString(naAccount, bIndex, strIdent, iIndex);
 
-			naRegular0Public.setAccountPublic(naGenerator, 0);
-			naRegular0Private.setAccountPrivate(naGenerator, naSeed, 0);
-
-			uint160							uGeneratorID	= naRegular0Public.getAccountID();
-
-			Ledger::pointer					ledger			= theApp->getMasterLedger().getCurrentLedger();
-			LedgerStateParms				qry				= lepNONE;
-			SerializedLedgerEntry::pointer	sleGen			= ledger->getGenerator(qry, naRegular0Public.getAccountID());
-			if (!sleGen)
-			{
-				// Didn't find a generator map, assume it is a master generator.
-				nothing();
-			}
-			else
-			{
-				// Found master public key.
-				std::vector<unsigned char>	vucCipher				= sleGen->getIFieldVL(sfGenerator);
-				std::vector<unsigned char>	vucMasterGenerator		= naRegular0Private.accountPrivateDecrypt(naRegular0Public, vucCipher);
-				if (vucMasterGenerator.empty())
-				{
-					return "internal error: password failed to decrypt master public generator";
-				}
-
-				naGenerator.setFamilyGenerator(vucMasterGenerator);
-			}
-
-			bIndex	= true;
-
-			naAccount.setAccountPublic(naGenerator, iIndex);
-		}
+		if (!ret.empty())
+			return ret;
 
 		// Get info on account.
-		Json::Value ret(Json::objectValue);
+		ret	= Json::Value(Json::objectValue);
 
-		AccountState::pointer as=theApp->getMasterLedger().getCurrentLedger()->getAccountState(naAccount);
+		AccountState::pointer as=mNetOps->getAccountState(naAccount);
 		if (as)
 		{
 			as->addJson(ret);
@@ -329,9 +342,102 @@ Json::Value RPCServer::doAccountInfo(Json::Value &params)
 		{
 			ret["account"]	= naAccount.humanAccountID();
 			ret["status"]	= "NotFound";
-			ret["bIndex"]	= bIndex;
 			if (bIndex)
 				ret["index"]	= iIndex;
+		}
+
+		return ret;
+	}
+}
+
+// account_lines <account>|<nickname>|<account_public_key> [<index>]
+Json::Value RPCServer::doAccountLines(Json::Value &params)
+{
+	if (params.size() < 1 || params.size() > 2)
+	{
+		return "invalid params";
+	}
+	else if (!mNetOps->available()) {
+		return JSONRPCError(503, "network not available");
+	}
+	else
+	{
+		std::string		strIdent	= params[0u].asString();
+		bool			bIndex;
+		int				iIndex		= 2 == params.size()? boost::lexical_cast<int>(params[1u].asString()) : 0;
+		NewcoinAddress	naAccount;
+
+		Json::Value ret;
+
+		ret	= accountFromString(naAccount, bIndex, strIdent, iIndex);
+
+		if (!ret.empty())
+			return ret;
+
+		// SHAMap::pointer	smAccounts	= theApp->getMasterLedger().getCurrentLedger()->peekAccountStateMap();
+
+		// Get info on account.
+		ret	= Json::Value(Json::objectValue);
+
+		ret["account"]	= naAccount.humanAccountID();
+		if (bIndex)
+			ret["index"]	= iIndex;
+
+		AccountState::pointer	as			= mNetOps->getAccountState(naAccount);
+		if (as)
+		{
+			ret["account"]	= naAccount.humanAccountID();
+
+			// We access a committed ledger and need not worry about changes.
+			uint64	uDirLineNodeFirst;
+			uint64	uDirLineNodeLast;
+
+			if (!mNetOps->getDirLineInfo(naAccount, uDirLineNodeFirst, uDirLineNodeLast))
+			{
+				ret["lines"]	= Json::Value(Json::objectValue);
+			}
+			else if (uDirLineNodeFirst)
+			{
+				Json::Value	jsonLines = Json::Value(Json::objectValue);
+
+				for (; uDirLineNodeFirst <= uDirLineNodeLast; uDirLineNodeFirst++)
+				{
+					std::vector<uint256>	vuRippleNodes	= mNetOps->getDirLineNode(uDirLineNodeFirst);
+
+					BOOST_FOREACH(uint256& uNode, vuRippleNodes)
+					{
+						NewcoinAddress	naAccountPeer;
+						uint64			uBalance	= 0;
+						// uint160			uCurrency;
+						STAmount		saLimit;
+						STAmount		saLimitPeer;
+#if 0
+						RippleState::pointer	rsLine	= mNetOps->getRippleState(uNode);
+
+						rsLine->setViewAccount(naAccount);
+						rsLine->getAccountPeer(naAccountPeer);
+						// ->getBalance(iBalance);
+						// ->getCurrency(uCurrency);
+						rsLine->getLimit(saLimit)
+						rsLine->getLimitPeer(saPeerLimit);
+#endif
+						Json::Value		jPeer = Json::Value(Json::objectValue);
+
+						jPeer["balance"]	= Json::Value::UInt(uBalance);	// XXX Raw number.
+						jPeer["limit"]		= Json::Value::UInt(saLimit.getValue());
+						jPeer["limit_peer"]	= Json::Value::UInt(saLimitPeer.getValue());
+
+						ret[naAccountPeer.humanAccountID()]	= jPeer;
+					}
+				}
+
+				ret["lines"]	= jsonLines;
+
+			}
+		}
+		else
+		{
+			ret["status"]	= "NotFound";
 		}
 
 		return ret;
@@ -403,20 +509,20 @@ Json::Value RPCServer::doCreditSet(Json::Value& params)
 	{
 		return JSONRPCError(500, "bad src amount/currency");
 	}
-	else if (!theApp->getOPs().available()) {
+	else if (!mNetOps->available()) {
 		return JSONRPCError(503, "network not available");
 	}
 	else
 	{
-		NewcoinAddress					naAccountPublic;
-		NewcoinAddress					naAccountPrivate;
-	    SerializedLedgerEntry::pointer	sleSrc;
-		Json::Value						obj				= authorize(naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate, sleSrc);
+		NewcoinAddress	naAccountPublic;
+		NewcoinAddress	naAccountPrivate;
+	    SLE::pointer	sleSrc;
+		Json::Value		obj				= authorize(naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate, sleSrc);
 
 		if (!obj.empty())
 			return obj;
 
-		STAmount						saSrcBalance	= sleSrc->getIValueFieldAmount(sfBalance);
+		STAmount		saSrcBalance	= sleSrc->getIValueFieldAmount(sfBalance);
 
 		if (saSrcBalance < theConfig.FEE_DEFAULT)
 		{
@@ -434,7 +540,7 @@ Json::Value RPCServer::doCreditSet(Json::Value& params)
 				saLimitAmount,
 				uAcceptRate);
 
-			(void) theApp->getOPs().processTransaction(trans);
+			(void) mNetOps->processTransaction(trans);
 
 			obj["transaction"]		= trans->getSTransaction()->getJson(0);
 			obj["status"]			= trans->getStatus();
@@ -490,15 +596,15 @@ Json::Value RPCServer::doSend(Json::Value& params)
 	{
 		return JSONRPCError(500, "bad src amount/currency");
 	}
-	else if (!theApp->getOPs().available()) {
+	else if (!mNetOps->available()) {
 		return JSONRPCError(503, "network not available");
 	}
 	else
 	{
-		NewcoinAddress					naAccountPublic;
-		NewcoinAddress					naAccountPrivate;
-	    SerializedLedgerEntry::pointer	sleSrc;
-		Json::Value						obj				= authorize(naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate, sleSrc);
+		NewcoinAddress	naAccountPublic;
+		NewcoinAddress	naAccountPrivate;
+	    SLE::pointer	sleSrc;
+		Json::Value		obj				= authorize(naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate, sleSrc);
 
 		if (!obj.empty())
 		{
@@ -530,7 +636,7 @@ Json::Value RPCServer::doSend(Json::Value& params)
 				saSrcAmount,
 				spPaths);
 
-			(void) theApp->getOPs().processTransaction(trans);
+			(void) mNetOps->processTransaction(trans);
 
 			obj["transaction"]		= trans->getSTransaction()->getJson(0);
 			obj["status"]			= trans->getStatus();
@@ -580,22 +686,22 @@ Json::Value RPCServer::doTransitSet(Json::Value& params)
 	{
 		return JSONRPCError(500, "source account id needed");
 	}
-	else if (!theApp->getOPs().available()) {
+	else if (!mNetOps->available()) {
 		return JSONRPCError(503, "network not available");
 	}
 	else
 	{
-		NewcoinAddress					naAccountPublic;
-		NewcoinAddress					naAccountPrivate;
-	    SerializedLedgerEntry::pointer	sleSrc;
-		Json::Value						obj				= authorize(naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate, sleSrc);
+		NewcoinAddress	naAccountPublic;
+		NewcoinAddress	naAccountPrivate;
+	    SLE::pointer	sleSrc;
+		Json::Value		obj				= authorize(naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate, sleSrc);
 
 		if (!obj.empty())
 		{
 			return obj;
 		}
 
-		STAmount						saSrcBalance	= sleSrc->getIValueFieldAmount(sfBalance);
+		STAmount		saSrcBalance	= sleSrc->getIValueFieldAmount(sfBalance);
 
 		uTransitRate		= 0;
 		uTransitStart		= 0;
@@ -617,7 +723,7 @@ Json::Value RPCServer::doTransitSet(Json::Value& params)
 				uTransitStart,
 				uTransitExpire);
 
-			(void) theApp->getOPs().processTransaction(trans);
+			(void) mNetOps->processTransaction(trans);
 
 			obj["transaction"]		= trans->getSTransaction()->getJson(0);
 			obj["status"]			= trans->getStatus();
@@ -843,7 +949,7 @@ Json::Value RPCServer::doWalletClaim(Json::Value& params)
 			naRegular0Public.getAccountPublic(),
 			vucGeneratorSig);
 
-		(void) theApp->getOPs().processTransaction(trns);
+		(void) mNetOps->processTransaction(trns);
 
 		Json::Value obj(Json::objectValue);
 
@@ -891,11 +997,11 @@ Json::Value RPCServer::doWalletCreate(Json::Value& params)
 	{
 		return "create account id needed";
 	}
-	else if (!theApp->getOPs().available()) {
+	else if (!mNetOps->available()) {
 		// We require access to the paying account's sequence number and key information.
 		return JSONRPCError(503, "network not available");
 	}
-	else if (theApp->getMasterLedger().getCurrentLedger()->getAccountState(naDstAccountID))
+	else if (mNetOps->getAccountState(naDstAccountID))
 	{
 		return "account already exists";
 	}
@@ -904,13 +1010,13 @@ Json::Value RPCServer::doWalletCreate(Json::Value& params)
 		// Trying to build:
 		//   peer_wallet_create <paying_account> <paying_signature> <account_id> [<initial_funds>] [<annotation>]
 
-		NewcoinAddress					naAccountPublic;
-		NewcoinAddress					naAccountPrivate;
-	    SerializedLedgerEntry::pointer	sleSrc;
-		Json::Value						obj				= authorize(naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate, sleSrc);
+		NewcoinAddress	naAccountPublic;
+		NewcoinAddress	naAccountPrivate;
+	    SLE::pointer	sleSrc;
+		Json::Value		obj				= authorize(naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate, sleSrc);
 
-		STAmount						saSrcBalance	= sleSrc->getIValueFieldAmount(sfBalance);
-		STAmount						saInitialFunds	= (params.size() < 4) ? 0 : boost::lexical_cast<uint64>(params[3u].asString());
+		STAmount		saSrcBalance	= sleSrc->getIValueFieldAmount(sfBalance);
+		STAmount		saInitialFunds	= (params.size() < 4) ? 0 : boost::lexical_cast<uint64>(params[3u].asString());
 
 		if (!obj.empty())
 		{
@@ -931,7 +1037,7 @@ Json::Value RPCServer::doWalletCreate(Json::Value& params)
 				naDstAccountID,
 				saInitialFunds);							// Initial funds in XNC.
 
-			(void) theApp->getOPs().processTransaction(trans);
+			(void) mNetOps->processTransaction(trans);
 
 			obj["transaction"]		= trans->getSTransaction()->getJson(0);
 			obj["status"]			= trans->getStatus();
@@ -1139,6 +1245,7 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 	std::cerr << "RPC:" << command << std::endl;
 
 	if (command == "account_info")			return doAccountInfo(params);
+	if (command == "account_lines")			return doAccountLines(params);
 	if (command == "connect")				return doConnect(params);
 	if (command == "credit_set")			return doCreditSet(params);
 	if (command == "peers")					return doPeers(params);

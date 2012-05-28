@@ -39,6 +39,7 @@ void printHelp(const po::options_description& desc)
 	cout << "Commands: " << endl;
 	cout << "     account_info <account>|<nickname>" << endl;
 	cout << "     account_info <seed>|<pass_phrase>|<key> [<index>]" << endl;
+	cout << "     account_lines <account>|<nickname>" << endl;
 	cout << "     connect <ip> [<port>]" << endl;
 	cout << "     credit_set <seed> <paying_account> <destination_account> <limit_amount> <currency> [<account_rate>]" << endl;
 	cout << "     ledger" << endl;

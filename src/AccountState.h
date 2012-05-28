@@ -2,7 +2,6 @@
 #define __ACCOUNTSTATE__
 
 // An account's state
-// Used to track information about a local account
 
 #include <vector>
 
