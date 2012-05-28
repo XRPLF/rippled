@@ -102,7 +102,7 @@ std::auto_ptr<SerializedType> STObject::makeDeserializedObject(SerializedTypeID 
 	}
 }
 
-void STObject::set(SOElement* elem)
+void STObject::set(const SOElement* elem)
 {
 	mData.empty();
 	mType.empty();
@@ -120,12 +120,12 @@ void STObject::set(SOElement* elem)
 	}
 }
 
-STObject::STObject(SOElement* elem, const char *name) : SerializedType(name)
+STObject::STObject(const SOElement* elem, const char *name) : SerializedType(name)
 {
 	set(elem);
 }
 
-void STObject::set(SOElement* elem, SerializerIterator& sit)
+void STObject::set(const SOElement* elem, SerializerIterator& sit)
 {
 	mData.empty();
 	mType.empty();
@@ -167,7 +167,8 @@ void STObject::set(SOElement* elem, SerializerIterator& sit)
 	}
 }
 
-STObject::STObject(SOElement* elem, SerializerIterator& sit, const char *name) : SerializedType(name), mFlagIdx(-1)
+STObject::STObject(const SOElement* elem, SerializerIterator& sit, const char *name)
+	: SerializedType(name), mFlagIdx(-1)
 {
 	set(elem, sit);
 }
@@ -244,7 +245,7 @@ bool STObject::isEquivalent(const SerializedType& t) const
 int STObject::getFieldIndex(SOE_Field field) const
 {
 	int i = 0;
-	for (std::vector<SOElement*>::const_iterator it = mType.begin(), end = mType.end(); it != end; ++it, ++i)
+	for (std::vector<const SOElement*>::const_iterator it = mType.begin(), end = mType.end(); it != end; ++it, ++i)
 		if ((*it)->e_field == field) return i;
 	return -1;
 }

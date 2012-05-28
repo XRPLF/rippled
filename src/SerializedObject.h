@@ -103,18 +103,18 @@ class STObject : public SerializedType
 protected:
 	int mFlagIdx; // the offset to the flags object, -1 if none
 	boost::ptr_vector<SerializedType> mData;
-	std::vector<SOElement*> mType;
+	std::vector<const SOElement*> mType;
 
 	STObject* duplicate() const { return new STObject(*this); }
 
 public:
 	STObject(const char *n = NULL) : SerializedType(n), mFlagIdx(-1) { ; }
-	STObject(SOElement *t, const char *n = NULL);
-	STObject(SOElement *t, SerializerIterator& u, const char *n = NULL);
+	STObject(const SOElement *t, const char *n = NULL);
+	STObject(const SOElement *t, SerializerIterator& u, const char *n = NULL);
 	virtual ~STObject() { ; }
 
-	void set(SOElement *t);
-	void set(SOElement *t, SerializerIterator& u);
+	void set(const SOElement* t);
+	void set(const SOElement* t, SerializerIterator& u);
 
 	int getLength() const;
 	virtual SerializedTypeID getSType() const { return STI_OBJECT; }

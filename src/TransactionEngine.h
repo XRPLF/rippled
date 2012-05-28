@@ -3,7 +3,6 @@
 
 #include "Ledger.h"
 #include "Ledger.h"
-#include "Currency.h"
 #include "SerializedTransaction.h"
 #include "SerializedLedger.h"
 

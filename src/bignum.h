@@ -21,6 +21,10 @@ public:
 
 class CAutoBN_CTX
 {
+private:
+	CAutoBN_CTX(const CAutoBN_CTX&); // no implementation
+	CAutoBN_CTX& operator=(const CAutoBN_CTX&); // no implementation
+
 protected:
     BN_CTX* pctx;
     BN_CTX* operator=(BN_CTX* pnew) { return pctx = pnew; }

@@ -15,7 +15,7 @@ protected:
 	LedgerEntryType mType;
 	STUInt16 mVersion;
 	STObject mObject;
-	LedgerEntryFormat* mFormat;
+	const LedgerEntryFormat* mFormat;
 
 	SerializedLedgerEntry* duplicate() const { return new SerializedLedgerEntry(*this); }
 
@@ -41,7 +41,7 @@ public:
 
 	LedgerEntryType getType() const { return mType; }
 	uint16 getVersion() const { return mVersion.getValue(); }
-	LedgerEntryFormat* getFormat() { return mFormat; }
+	const LedgerEntryFormat* getFormat() { return mFormat; }
 
 	int getIFieldIndex(SOE_Field field) const { return mObject.getFieldIndex(field); }
 	int getIFieldCount() const { return mObject.getCount(); }
