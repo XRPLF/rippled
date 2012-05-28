@@ -125,8 +125,10 @@ bool LCTransaction::updatePosition(int seconds)
 	if (mOurPosition && (mNays == 0)) return false;
 	if (!mOurPosition && (mYays == 0)) return false;
 
+	// This is basically the percentage of nodes voting 'yes' (including us)
 	int weight = (mYays * 100 + (mOurPosition ? 100 : 0)) / (mNays + mYays + 1);
 
+	// To prevent avalanche stalls, we increase the needed weight slightly over time
 	bool newPosition;
 	if (seconds <= LEDGER_CONVERGE) newPosition = weight >=  MIN_CONSENSUS;
 	else if (seconds >= LEDGER_FORCE_CONVERGE) newPosition = weight >= MAX_CONSENSUS;
