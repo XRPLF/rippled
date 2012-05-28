@@ -30,10 +30,10 @@ void TransactionAcquire::trigger(Peer::pointer peer)
 		return;
 	if (!mHaveRoot)
 	{
-		boost::shared_ptr<newcoin::TMGetLedger> tmGL = boost::make_shared<newcoin::TMGetLedger>();
-		tmGL->set_ledgerhash(mHash.begin(), mHash.size());
-		tmGL->set_itype(newcoin::liTS_CANDIDATE);
-		*(tmGL->add_nodeids()) = SHAMapNode().getRawString();
+		newcoin::TMGetLedger tmGL;
+		tmGL.set_ledgerhash(mHash.begin(), mHash.size());
+		tmGL.set_itype(newcoin::liTS_CANDIDATE);
+		*(tmGL.add_nodeids()) = SHAMapNode().getRawString();
 		sendRequest(tmGL, peer);
 	}
 	if (mHaveRoot)
@@ -50,11 +50,11 @@ void TransactionAcquire::trigger(Peer::pointer peer)
 		}
 		else
 		{
-			boost::shared_ptr<newcoin::TMGetLedger> tmGL = boost::make_shared<newcoin::TMGetLedger>();
-			tmGL->set_ledgerhash(mHash.begin(), mHash.size());
-			tmGL->set_itype(newcoin::liTS_CANDIDATE);
+			newcoin::TMGetLedger tmGL;
+			tmGL.set_ledgerhash(mHash.begin(), mHash.size());
+			tmGL.set_itype(newcoin::liTS_CANDIDATE);
 			for (std::vector<SHAMapNode>::iterator it = nodeIDs.begin(); it != nodeIDs.end(); ++it)
-				*(tmGL->add_nodeids()) = it->getRawString();
+				*(tmGL.add_nodeids()) = it->getRawString();
 			if (peer)
 				sendRequest(tmGL, peer);
 			else
@@ -204,7 +204,18 @@ void LedgerConsensus::mapComplete(const uint256& hash, SHAMap::pointer map)
 	if (!peers.empty())
 		adjustCount(map, peers);
 
-	// WRITEME: broadcast an IHAVE for this set
+	std::vector<uint256> hashes;
+	hashes.push_back(hash);
+	sendHaveTxSet(hashes);
+}
+
+void LedgerConsensus::sendHaveTxSet(const std::vector<uint256>& hashes)
+{
+	newcoin::TMHaveTransactionSet set;
+	for (std::vector<uint256>::const_iterator it = hashes.begin(), end = hashes.end(); it != end; ++it)
+		set.add_hashes(it->begin(), 256 / 8);
+	PackedMessage::pointer packet = boost::make_shared<PackedMessage>(set, newcoin::mtHAVE_SET);
+	theApp->getConnectionPool().relayMessage(NULL, packet);
 }
 
 void LedgerConsensus::adjustCount(SHAMap::pointer map, const std::vector<uint256>& peers)

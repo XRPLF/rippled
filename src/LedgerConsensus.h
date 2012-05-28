@@ -102,6 +102,7 @@ protected:
 
 	void addPosition(LedgerProposal&, bool ours);
 	void removePosition(LedgerProposal&, bool ours);
+	void sendHaveTxSet(const std::vector<uint256>& txSetHashes);
 	int getThreshold();
 
 public:
