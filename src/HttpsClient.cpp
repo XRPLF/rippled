@@ -363,7 +363,7 @@ void HttpsClient::httpsGet(
 	client->httpsGet(deqSites, timeout, complete);
 }
 
-bool HttpsClient::httpsParseUrl(const std::string strUrl, std::string& strDomain, std::string& strPath)
+bool HttpsClient::httpsParseUrl(const std::string& strUrl, std::string& strDomain, std::string& strPath)
 {
 	static boost::regex	reUrl("(?i)\\`\\s*https://([^/]+)(/.*)\\s*\\'");	// https://DOMAINPATH
 

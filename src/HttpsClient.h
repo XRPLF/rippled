@@ -86,7 +86,7 @@ public:
 		boost::posix_time::time_duration timeout,
 		boost::function<void(const boost::system::error_code& ecResult, std::string& strData)> complete);
 
-	static bool httpsParseUrl(const std::string strUrl, std::string& strDomain, std::string& strPath);
+	static bool httpsParseUrl(const std::string& strUrl, std::string& strDomain, std::string& strPath);
 };
 #endif
 // vim:ts=4
