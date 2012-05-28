@@ -424,8 +424,8 @@ Json::Value RPCServer::doAccountLines(Json::Value &params)
 						Json::Value		jPeer = Json::Value(Json::objectValue);
 
 						jPeer["balance"]	= Json::Value::UInt(uBalance);	// XXX Raw number.
-						jPeer["limit"]		= Json::Value::UInt(saLimit.getValue());
-						jPeer["limit_peer"]	= Json::Value::UInt(saLimitPeer.getValue());
+						jPeer["limit"]		= saLimit.getJson(0);
+						jPeer["limit_peer"]	= saLimitPeer.getJson(0);
 
 						ret[naAccountPeer.humanAccountID()]	= jPeer;
 					}
