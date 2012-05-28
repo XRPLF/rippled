@@ -12,16 +12,15 @@ void PackedMessage::encodeHeader(unsigned size, int type)
 	mBuffer[5] = static_cast<boost::uint8_t>(type & 0xFF);
 }
 
-
-PackedMessage::PackedMessage(MessagePointer msg, int type)	: mMsg(msg)
+PackedMessage::PackedMessage(const ::google::protobuf::Message &message, int type)
 {
-	unsigned msg_size = mMsg->ByteSize();
+	unsigned msg_size = message.ByteSize();
 	assert(msg_size);
 	mBuffer.resize(HEADER_SIZE + msg_size);
 	encodeHeader(msg_size, type);
 	if (msg_size)
 	{
-		mMsg->SerializeToArray(&mBuffer[HEADER_SIZE], msg_size);
+		message.SerializeToArray(&mBuffer[HEADER_SIZE], msg_size);
 #ifdef DEBUG
 		std::cerr << "PackedMessage: type=" << type << ", datalen=" << msg_size << std::endl;
 #endif

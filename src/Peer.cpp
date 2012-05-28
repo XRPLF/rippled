@@ -45,7 +45,7 @@ void Peer::handle_write(const boost::system::error_code& error, size_t bytes_tra
 
 	if (!mSendQ.empty())
 	{
-		PackedMessage::pointer packet=mSendQ.front();
+		PackedMessage::pointer packet = mSendQ.front();
 		if(packet)
 		{
 			sendPacketForce(packet);
@@ -232,7 +232,7 @@ void Peer::connected(const boost::system::error_code& error)
 
 void Peer::sendPacketForce(PackedMessage::pointer packet)
 {
-	mSendingPacket=packet;
+	mSendingPacket = packet;
 	boost::asio::async_write(mSocketSsl, boost::asio::buffer(packet->getBuffer()),
 		boost::bind(&Peer::handle_write, shared_from_this(),
 		boost::asio::placeholders::error,
@@ -419,8 +419,8 @@ void Peer::processReadBuffer()
 
 		case newcoin::mtPROPOSE_LEDGER:
 			{
-				boost::shared_ptr<newcoin::TMProposeSet> msg = boost::make_shared<newcoin::TMProposeSet>();
-				if(msg->ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
+				newcoin::TMProposeSet msg;
+				if(msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvPropose(msg);
 				else std::cerr << "parse error: " << type << std::endl;
 			}
@@ -610,18 +610,18 @@ void Peer::recvTransaction(newcoin::TMTransaction& packet)
 	}
 }
 
-void Peer::recvPropose(boost::shared_ptr<newcoin::TMProposeSet> packet)
+void Peer::recvPropose(newcoin::TMProposeSet& packet)
 {
-	if ((packet->currenttxhash().size() != 32) || (packet->nodepubkey().size() < 28) ||
-		(packet->signature().size() < 56))
+	if ((packet.currenttxhash().size() != 32) || (packet.nodepubkey().size() < 28) ||
+		(packet.signature().size() < 56))
 		return;
 
-	uint32 closingSeq = packet->closingseq(), proposeSeq = packet->proposeseq();
+	uint32 closingSeq = packet.closingseq(), proposeSeq = packet.proposeseq();
 	uint256 currentTxHash;
-	memcpy(currentTxHash.begin(), packet->currenttxhash().data(), 32);
+	memcpy(currentTxHash.begin(), packet.currenttxhash().data(), 32);
 
 	if(theApp->getOPs().proposeLedger(closingSeq, proposeSeq, currentTxHash,
-		packet->nodepubkey(), packet->signature()))
+		packet.nodepubkey(), packet.signature()))
 	{ // FIXME: Not all nodes will want proposals
 		PackedMessage::pointer message = boost::make_shared<PackedMessage>(packet, newcoin::mtPROPOSE_LEDGER);
 		theApp->getConnectionPool().relayMessage(this, message);
@@ -718,7 +718,7 @@ void Peer::recvStatus(newcoin::TMStatusChange& packet)
 void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 {
 	SHAMap::pointer map;
-	boost::shared_ptr<newcoin::TMLedgerData> reply = boost::make_shared<newcoin::TMLedgerData>();
+	newcoin::TMLedgerData reply;
 
 	if (packet.itype() == newcoin::liTS_CANDIDATE)
 	{ // Request is  for a transaction candidate set
@@ -736,8 +736,8 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 			punishPeer(PP_INVALID_REQUEST);
 			return;
 		}
-		reply->set_ledgerhash(txHash.begin(), txHash.size());
-		reply->set_type(newcoin::liTS_CANDIDATE);
+		reply.set_ledgerhash(txHash.begin(), txHash.size());
+		reply.set_type(newcoin::liTS_CANDIDATE);
 	}
 	else
 	{ // Figure out what ledger they want
@@ -777,17 +777,16 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 
 		// Fill out the reply
 		uint256 lHash = ledger->getHash();
-		reply->set_ledgerhash(lHash.begin(), lHash.size());
-		reply->set_ledgerseq(ledger->getLedgerSeq());
-		reply->set_type(packet.itype());
+		reply.set_ledgerhash(lHash.begin(), lHash.size());
+		reply.set_ledgerseq(ledger->getLedgerSeq());
+		reply.set_type(packet.itype());
 
 		if(packet.itype() == newcoin::liBASE)
 		{ // they want the ledger base data
 			Serializer nData(128);
 			ledger->addRaw(nData);
-			reply->add_nodes()->set_nodedata(nData.getDataPtr(), nData.getLength());
-			PackedMessage::pointer oPacket = boost::make_shared<PackedMessage>
-				(PackedMessage::MessagePointer(reply), newcoin::mtLEDGER);
+			reply.add_nodes()->set_nodedata(nData.getDataPtr(), nData.getLength());
+			PackedMessage::pointer oPacket = boost::make_shared<PackedMessage>(reply, newcoin::mtLEDGER);
 			sendPacket(oPacket);
 			return;
 		}
@@ -822,14 +821,13 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 			{
 				Serializer nID(33);
 				nodeIDIterator->addIDRaw(nID);
-				newcoin::TMLedgerNode* node = reply->add_nodes();
+				newcoin::TMLedgerNode* node = reply.add_nodes();
 				node->set_nodeid(nID.getDataPtr(), nID.getLength());
 				node->set_nodedata(&rawNodeIterator->front(), rawNodeIterator->size());
 			}
 		}
 	}
-	PackedMessage::pointer oPacket = boost::make_shared<PackedMessage>
-		(PackedMessage::MessagePointer(reply), newcoin::mtLEDGER);
+	PackedMessage::pointer oPacket = boost::make_shared<PackedMessage>(reply, newcoin::mtLEDGER);
 	sendPacket(oPacket);
 }
 
@@ -915,27 +913,26 @@ void Peer::sendHello()
 
 	theApp->getWallet().getNodePrivate().signNodePrivate(mCookieHash, vchSig);
 
-	boost::shared_ptr<newcoin::TMHello> h = boost::make_shared<newcoin::TMHello>();
+	newcoin::TMHello h;
 
-	h->set_version(theConfig.VERSION);
-	h->set_ledgerindex(theApp->getOPs().getCurrentLedgerID());
-	h->set_nettime(theApp->getOPs().getNetworkTimeNC());
-	h->set_nodepublic(theApp->getWallet().getNodePublic().humanNodePublic());
-	h->set_nodeproof(&vchSig[0], vchSig.size());
-	h->set_ipv4port(theConfig.PEER_PORT);
+	h.set_version(theConfig.VERSION);
+	h.set_ledgerindex(theApp->getOPs().getCurrentLedgerID());
+	h.set_nettime(theApp->getOPs().getNetworkTimeNC());
+	h.set_nodepublic(theApp->getWallet().getNodePublic().humanNodePublic());
+	h.set_nodeproof(&vchSig[0], vchSig.size());
+	h.set_ipv4port(theConfig.PEER_PORT);
 
 	Ledger::pointer closedLedger = theApp->getMasterLedger().getClosedLedger();
 	assert(closedLedger && closedLedger->isClosed());
 	if (closedLedger->isClosed())
 	{
 		uint256 hash = closedLedger->getHash();
-		h->set_closedledger(hash.begin(), hash.GetSerializeSize());
+		h.set_closedledger(hash.begin(), hash.GetSerializeSize());
 		hash = closedLedger->getParentHash();
-		h->set_previousledger(hash.begin(), hash.GetSerializeSize());
+		h.set_previousledger(hash.begin(), hash.GetSerializeSize());
 	}
 
-	PackedMessage::pointer packet = boost::make_shared<PackedMessage>
-		(PackedMessage::MessagePointer(h), newcoin::mtHELLO);
+	PackedMessage::pointer packet = boost::make_shared<PackedMessage>(h, newcoin::mtHELLO);
 	sendPacket(packet);
 }
 

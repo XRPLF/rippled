@@ -39,8 +39,7 @@ public:
     typedef boost::shared_ptr< ::google::protobuf::Message > MessagePointer;
 	typedef boost::shared_ptr<PackedMessage> pointer;
 
-	MessagePointer mMsg;
-    PackedMessage(MessagePointer msg, int type);
+    PackedMessage(const ::google::protobuf::Message& message, int type);
 
 	std::vector<uint8_t>& getBuffer() { return(mBuffer); }
 

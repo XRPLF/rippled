@@ -89,16 +89,15 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 // no cache the account balance information and always get it from the current ledger
 //		theApp->getWallet().applyTransaction(trans);
 
-		boost::shared_ptr<newcoin::TMTransaction> tx = boost::make_shared<newcoin::TMTransaction>();
-
+		newcoin::TMTransaction tx;
 		Serializer s;
 		trans->getSTransaction()->getTransaction(s, false);
-		tx->set_rawtransaction(&s.getData().front(), s.getLength());
-		tx->set_status(newcoin::tsCURRENT);
-		tx->set_receivetimestamp(getNetworkTimeNC());
-		tx->set_ledgerindexpossible(trans->getLedger());
+		tx.set_rawtransaction(&s.getData().front(), s.getLength());
+		tx.set_status(newcoin::tsCURRENT);
+		tx.set_receivetimestamp(getNetworkTimeNC());
+		tx.set_ledgerindexpossible(trans->getLedger());
 
-		PackedMessage::pointer packet(new PackedMessage(PackedMessage::MessagePointer(tx), newcoin::mtTRANSACTION));
+		PackedMessage::pointer packet = boost::make_shared<PackedMessage>(tx, newcoin::mtTRANSACTION);
 		theApp->getConnectionPool().relayMessage(source, packet);
 
 		return trans;
@@ -375,14 +374,13 @@ int NetworkOPs::beginConsensus(Ledger::pointer closingLedger, bool isEarly)
 #ifdef DEBUG
 	std::cerr << "Broadcasting ledger close" << std::endl;
 #endif
-	boost::shared_ptr<newcoin::TMStatusChange> s = boost::make_shared<newcoin::TMStatusChange>();
-	s->set_newevent(newcoin::neCLOSING_LEDGER);
-	s->set_ledgerseq(closingLedger->getLedgerSeq());
-	s->set_networktime(getNetworkTimeNC());
+	newcoin::TMStatusChange s;
+	s.set_newevent(newcoin::neCLOSING_LEDGER);
+	s.set_ledgerseq(closingLedger->getLedgerSeq());
+	s.set_networktime(getNetworkTimeNC());
 	uint256 plhash = closingLedger->getParentHash();
-	s->set_previousledgerhash(plhash.begin(), plhash.size());
-	PackedMessage::pointer packet =
-		boost::make_shared<PackedMessage>(PackedMessage::MessagePointer(s), newcoin::mtSTATUS_CHANGE);
+	s.set_previousledgerhash(plhash.begin(), plhash.size());
+	PackedMessage::pointer packet = boost::make_shared<PackedMessage>(s, newcoin::mtSTATUS_CHANGE);
 	theApp->getConnectionPool().relayMessage(NULL, packet);
 
 	return mConsensus->startup();
