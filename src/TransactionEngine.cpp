@@ -589,7 +589,7 @@ TransactionEngineResult TransactionEngine::doCreditSet(const SerializedTransacti
 			sleRippleState->setFlag(uFlags);
 	}
 	// Line does not exist.
-	else if (!saLimitAmount.getValue())
+	else if (saLimitAmount.isZero())
 	{
 		std::cerr << "doCreditSet: Setting non-existant ripple line to 0." << std::endl;
 
