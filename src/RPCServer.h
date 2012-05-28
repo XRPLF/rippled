@@ -9,9 +9,13 @@
 #include "RequestParser.h"
 #include "NewcoinAddress.h"
 #include "SerializedLedger.h"
+#include "NetworkOPs.h"
 
 class RPCServer  : public boost::enable_shared_from_this<RPCServer>
 {
+private:
+	NetworkOPs*	mNetOps;
+
 	boost::asio::ip::tcp::socket mSocket;
 	boost::array<char, 8192> mReadBuffer;
 	std::string mReplyStr;
@@ -19,7 +23,7 @@ class RPCServer  : public boost::enable_shared_from_this<RPCServer>
 	HttpRequest mIncomingRequest;
 	HttpRequestParser mRequestParser;
 
-	RPCServer(boost::asio::io_service& io_service);
+	RPCServer(boost::asio::io_service& io_service, NetworkOPs* nopNetwork);
 
 	void handle_write(const boost::system::error_code& error);
 
@@ -36,7 +40,10 @@ class RPCServer  : public boost::enable_shared_from_this<RPCServer>
 	    NewcoinAddress& naAccountPublic, NewcoinAddress& naAccountPrivate,
 	    SerializedLedgerEntry::pointer& sleSrc);
 
+	Json::Value accountFromString(NewcoinAddress& naAccount, bool& bIndex, const std::string& strIdent, const int iIndex);
+
 	Json::Value doAccountInfo(Json::Value& params);
+	Json::Value doAccountLines(Json::Value &params);
 	Json::Value doConnect(Json::Value& params);
 	Json::Value doCreditSet(Json::Value& params);
 	Json::Value doLedger(Json::Value& params);
@@ -73,9 +80,9 @@ class RPCServer  : public boost::enable_shared_from_this<RPCServer>
 public:
 	typedef boost::shared_ptr<RPCServer> pointer;
 
-	static pointer create(boost::asio::io_service& io_service)
+	static pointer create(boost::asio::io_service& io_service, NetworkOPs* mNetOps)
 	{
-		return pointer(new RPCServer(io_service));
+		return pointer(new RPCServer(io_service, mNetOps));
 	}
 
 	boost::asio::ip::tcp::socket& getSocket()
@@ -85,3 +92,4 @@ public:
 
 	void connected();
 };
+// vim:ts=4

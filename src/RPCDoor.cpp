@@ -1,4 +1,5 @@
 #include "RPCDoor.h"
+#include "Application.h"
 #include "Config.h"
 #include <boost/bind.hpp>
 //#include <boost/log/trivial.hpp>
@@ -16,7 +17,7 @@ RPCDoor::RPCDoor(boost::asio::io_service& io_service) :
 
 void RPCDoor::startListening()
 {
-	RPCServer::pointer new_connection = RPCServer::create(mAcceptor.get_io_service());
+	RPCServer::pointer new_connection = RPCServer::create(mAcceptor.get_io_service(), &theApp->getOPs());
 	mAcceptor.set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
 
 	mAcceptor.async_accept(new_connection->getSocket(),

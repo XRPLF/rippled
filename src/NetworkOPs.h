@@ -32,7 +32,7 @@ public:
 
 protected:
 	OperatingMode						mMode;
-	boost::asio::deadline_timer 		mNetTimer;
+	boost::asio::deadline_timer			mNetTimer;
 	boost::shared_ptr<LedgerConsensus>	mConsensus;
 
 public:
@@ -56,7 +56,13 @@ public:
 		uint32 startLedgerSeq, uint32 endLedgerSeq, int maxTransactions);
 
 	// account operations
-	AccountState::pointer getAccountState(const NewcoinAddress& accountID);
+	AccountState::pointer	getAccountState(const NewcoinAddress& accountID);
+
+	//
+	// Ripple functions
+	//
+	bool					getDirLineInfo(const NewcoinAddress& naAccount, uint64& uDirLineNodeFirst, uint64& uDirLineNodeLast) { return false; }
+	std::vector<uint256>	getDirLineNode(const uint64 uDirLineNode) { std::vector<uint256> empty; return empty; }
 
 	// raw object operations
 	bool findRawLedger(const uint256& ledgerHash, std::vector<unsigned char>& rawLedger);
