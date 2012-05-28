@@ -129,6 +129,8 @@ SHAMapNode SHAMapNode::getChildNodeID(int m) const
 
 int SHAMapNode::selectBranch(const uint256& hash) const
 { // Which branch would contain the specified hash
+
+#ifdef DEBUG
 	if (mDepth == 63)
 	{
 		assert(false);
@@ -142,6 +144,7 @@ int SHAMapNode::selectBranch(const uint256& hash) const
 		assert(false);
 		return -1;	// does not go under this node
 	}
+#endif
 
 	int branch = *(hash.begin() + (mDepth / 2));
 	if (mDepth % 2) branch >>= 4;
