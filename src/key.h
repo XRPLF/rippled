@@ -281,7 +281,7 @@ public:
 		return Verify(hash, &vchSig[0], vchSig.size());
 	}
 
-	bool Verify(const uint256& hash, const std::string sig) const
+	bool Verify(const uint256& hash, const std::string& sig) const
 	{
 		return Verify(hash, sig.data(), sig.size());
 	}
