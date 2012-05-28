@@ -31,7 +31,7 @@
 
 int static inline EC_KEY_regenerate_key(EC_KEY *eckey, BIGNUM *priv_key)
 {
-	int ok = 0;
+	int okay = 0;
 	BN_CTX *ctx = NULL;
 	EC_POINT *pub_key = NULL;
 
@@ -54,7 +54,7 @@ int static inline EC_KEY_regenerate_key(EC_KEY *eckey, BIGNUM *priv_key)
 	EC_KEY_set_private_key(eckey, priv_key);
 	EC_KEY_set_public_key(eckey, pub_key);
 
-	ok = 1;
+	okay = 1;
 
 err:
 
@@ -63,7 +63,7 @@ err:
 	if (ctx != NULL)
 		BN_CTX_free(ctx);
 
-	return(ok);
+	return (okay);
 }
 
 
