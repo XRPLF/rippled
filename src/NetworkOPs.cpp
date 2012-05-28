@@ -107,7 +107,7 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 #ifdef DEBUG
 	std::cerr << "Status other than success " << r << std::endl;
 #endif
-	
+
 	trans->setStatus(INVALID);
 	return trans;
 }
@@ -125,7 +125,7 @@ int NetworkOPs::findTransactionsBySource(std::list<Transaction::pointer>& txns,
 	if (minSeq > state->getSeq()) return 0;
 	if (maxSeq > state->getSeq()) maxSeq = state->getSeq();
 	if (maxSeq > minSeq) return 0;
-	
+
 	int count = 0;
 	for(int i = minSeq; i <= maxSeq; ++i)
 	{
@@ -434,3 +434,4 @@ bool NetworkOPs::hasTXSet(boost::shared_ptr<Peer> peer, const std::vector<uint25
 	if (!mConsensus) return false;
 	return mConsensus->peerHasSet(peer, sets);
 }
+// vim:ts=4

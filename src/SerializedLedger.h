@@ -84,5 +84,7 @@ public:
 	void makeIFieldAbsent(SOE_Field field) { return mObject.makeFieldAbsent(field); }
 };
 
+typedef SerializedLedgerEntry SLE;
+
 #endif
 // vim:ts=4
