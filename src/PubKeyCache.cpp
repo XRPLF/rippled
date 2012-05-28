@@ -1,7 +1,7 @@
 #include "PubKeyCache.h"
 #include "Application.h"
 
-#include "boost/interprocess/sync/scoped_lock.hpp"
+#include <boost/interprocess/sync/scoped_lock.hpp>
 
 
 CKey::pointer PubKeyCache::locate(const NewcoinAddress& id)

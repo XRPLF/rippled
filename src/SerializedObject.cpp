@@ -1,7 +1,7 @@
 
 #include "SerializedObject.h"
 
-#include "boost/lexical_cast.hpp"
+#include <boost/lexical_cast.hpp>
 
 #include "../json/writer.h"
 
