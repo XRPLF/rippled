@@ -96,7 +96,7 @@ bool STAmount::setValue(const std::string& sAmount, const std::string& sCurrency
 
 	uint64	uValue;
 	int		iOffset;
-	size_t	uDecimal	= sAmount.find_first_of(".,");
+	size_t	uDecimal	= sAmount.find_first_of("^");
 	bool	bInteger	= uDecimal == std::string::npos;
 
 	if (bInteger)
