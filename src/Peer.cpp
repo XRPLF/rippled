@@ -612,15 +612,16 @@ void Peer::recvTransaction(newcoin::TMTransaction& packet)
 
 void Peer::recvPropose(newcoin::TMProposeSet& packet)
 {
-	if ((packet.currenttxhash().size() != 32) || (packet.nodepubkey().size() < 28) ||
-		(packet.signature().size() < 56))
+	if ((packet.currenttxhash().size() != 32) || (packet.prevclosedhash().size() != 32) ||
+		(packet.nodepubkey().size() < 28) || (packet.signature().size() < 56))
 		return;
 
-	uint32 closingSeq = packet.closingseq(), proposeSeq = packet.proposeseq();
-	uint256 currentTxHash;
+	uint32 proposeSeq = packet.proposeseq();
+	uint256 currentTxHash, prevLgrHash;
 	memcpy(currentTxHash.begin(), packet.currenttxhash().data(), 32);
+	memcpy(prevLgrHash.begin(), packet.prevclosedhash().data(), 32);
 
-	if(theApp->getOPs().proposeLedger(closingSeq, proposeSeq, currentTxHash,
+	if(theApp->getOPs().proposeLedger(prevLgrHash, proposeSeq, currentTxHash,
 		packet.nodepubkey(), packet.signature()))
 	{ // FIXME: Not all nodes will want proposals
 		PackedMessage::pointer message = boost::make_shared<PackedMessage>(packet, newcoin::mtPROPOSE_LEDGER);

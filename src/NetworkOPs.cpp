@@ -386,14 +386,14 @@ int NetworkOPs::beginConsensus(Ledger::pointer closingLedger, bool isEarly)
 	return mConsensus->startup();
 }
 
-bool NetworkOPs::proposeLedger(uint32 closingSeq, uint32 proposeSeq, const uint256& proposeHash,
+bool NetworkOPs::proposeLedger(const uint256& prevLgr, uint32 proposeSeq, const uint256& proposeHash,
 	const std::string& pubKey, const std::string& signature)
 {
 	if (mMode != omFULL)
 		return true;
 
 	LedgerProposal::pointer proposal =
-		boost::make_shared<LedgerProposal>(closingSeq, proposeSeq, proposeHash, pubKey);
+		boost::make_shared<LedgerProposal>(prevLgr, proposeSeq, proposeHash, pubKey);
 	if (!proposal->checkSign(signature))
 	{
 		std::cerr << "Ledger proposal fails signature check" << std::endl;
