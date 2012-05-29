@@ -237,12 +237,12 @@ STAmount::STAmount(const char* name, int64 value) : SerializedType(name), mOffse
 	if (value >= 0)
 	{
 		mIsNegative = false;
-		mValue = value;
+		mValue = static_cast<uint64>(value);
 	}
 	else
 	{
 		mIsNegative = true;
-		mValue = -value;
+		mValue = static_cast<uint64>(-value);
 	}
 }
 
@@ -289,8 +289,8 @@ STAmount* STAmount::construct(SerializerIterator& sit, const char *name)
 int64 STAmount::getSNValue() const
 { // signed native value
 	if (!mIsNative) throw std::runtime_error("not native");
-	if (mIsNegative) return -mValue;
-	return mValue;
+	if (mIsNegative) return - static_cast<int64>(mValue);
+	return static_cast<int64>(mValue);
 }
 
 void STAmount::setSNValue(int64 v)
@@ -299,12 +299,12 @@ void STAmount::setSNValue(int64 v)
 	if (v > 0)
 	{
 		mIsNegative = false;
-		mValue = v;
+		mValue = static_cast<uint64>(v);
 	}
 	else
 	{
 		mIsNegative = true;
-		mValue = -v;
+		mValue = static_cast<uint64>(-v);
 	}
 }
 
@@ -432,8 +432,8 @@ STAmount& STAmount::operator-=(const STAmount& a)
 
 STAmount STAmount::operator-(void) const
 {
-	if (mValue == 0) return STAmount(name, mValue, mOffset, mIsNative, !mIsNegative);
-	return *this;
+	if (mValue == 0) return *this;
+	return STAmount(name, mCurrency, mValue, mOffset, mIsNative, !mIsNegative);
 }
 
 STAmount& STAmount::operator=(const STAmount& a)
@@ -458,7 +458,7 @@ STAmount& STAmount::operator=(uint64 v)
 STAmount& STAmount::operator+=(uint64 v)
 {
 	if (mIsNative)
-		setSNValue(getSNValue() + v);
+		setSNValue(getSNValue() + static_cast<int64>(v));
 	else *this += STAmount(mCurrency, v);
 	return *this;
 }
@@ -466,7 +466,7 @@ STAmount& STAmount::operator+=(uint64 v)
 STAmount& STAmount::operator-=(uint64 v)
 {
 	if (mIsNative)
-		setSNValue(getSNValue() - v);
+		setSNValue(getSNValue() - static_cast<int64>(v));
 	else *this -= STAmount(mCurrency, v);
 	return *this;
 }
@@ -520,7 +520,7 @@ STAmount operator+(const STAmount& v1, const STAmount& v2)
 	if (v2.isZero()) return v1;
 
 	int ov1 = v1.mOffset, ov2 = v2.mOffset;
-	int64 vv1 = v1.mValue, vv2 = v2.mValue;
+	int64 vv1 = static_cast<int64>(v1.mValue), vv2 = static_cast<int64>(v2.mValue);
 	if (v1.mIsNegative) vv1 = -vv1;
 	if (v2.mIsNegative) vv2 = -vv2;
 
@@ -554,7 +554,7 @@ STAmount operator-(const STAmount& v1, const STAmount& v2)
 		throw std::runtime_error("value underflow");
 
 	int ov1 = v1.mOffset, ov2 = v2.mOffset;
-	int64 vv1 = v1.mValue, vv2 = v2.mValue;
+	int64 vv1 = static_cast<int64>(v1.mValue), vv2 = static_cast<int64>(v2.mValue);
 	if (v1.mIsNegative) vv1 = -vv1;
 	if (v2.mIsNegative) vv2 = -vv2;
 
@@ -606,8 +606,8 @@ STAmount divide(const STAmount& num, const STAmount& den, const uint160& currenc
 	// Compute (numerator * 10^16) / denominator
 	CBigNum v;
 	if ((BN_add_word(&v, numVal) != 1) ||
-		(BN_mul_word(&v, 10000000000000000ull) != 1) ||
-		(BN_div_word(&v, denVal) == ((BN_ULONG) - 1)))
+		(BN_mul_word(&v, 10000000000000000ul) != 1) ||
+		(BN_div_word(&v, denVal) == ((BN_ULONG) -1)))
 	{
 		throw std::runtime_error("internal bn error");
 	}
@@ -669,7 +669,7 @@ STAmount multiply(const STAmount& v1, const STAmount& v2, const uint160& currenc
 	CBigNum v;
 	if ((BN_add_word(&v, value1) != 1) ||
 		(BN_mul_word(&v, value2) != 1) ||
-		(BN_div_word(&v, 1000000000000000000ull) == ((BN_ULONG) - 1)))
+		(BN_div_word(&v, 1000000000000000000ul) == ((BN_ULONG) -1)))
 	{
 		throw std::runtime_error("internal bn error");
 	}
@@ -720,7 +720,7 @@ STAmount getClaimed(STAmount& offerOut, STAmount& offerIn, STAmount& paid)
 	}
 
 	// partial satisfaction of a normal offer
-	STAmount ret = divide(multiply(paid, offerOut, uint160(1)) , offerIn, offerOut.getCurrency());
+	STAmount ret = divide(multiply(paid, offerOut, uint160(1)), offerIn, offerOut.getCurrency());
 	offerOut -= ret;
 	offerIn -= paid;
 	if (offerOut.isZero() || offerIn.isZero())
@@ -746,7 +746,7 @@ static uint64 muldiv(uint64 a, uint64 b, uint64 c)
 
 	CBigNum v;
 	if ((BN_add_word(&v, a * 10 + 3) != 1) || (BN_mul_word(&v, b * 10 + 3) != 1) ||
-		(BN_div_word(&v, c) == ((BN_ULONG) - 1)) || (BN_div_word(&v, 100) == ((BN_ULONG) - 1)))
+		(BN_div_word(&v, c) == ((BN_ULONG) -1)) || (BN_div_word(&v, 100) == ((BN_ULONG) -1)))
 		throw std::runtime_error("muldiv error");
 
 	return v.getulong();
@@ -786,6 +786,7 @@ BOOST_AUTO_TEST_CASE( NativeCurrency_test )
 {
 	STAmount zero, one(1), hundred(100);
 
+	if (sizeof(BN_ULONG) < (64 / 8)) BOOST_FAIL("BN too small");
 	if (serdes(zero) != zero) BOOST_FAIL("STAmount fail");
 	if (serdes(one) != one) BOOST_FAIL("STAmount fail");
 	if (serdes(hundred) != hundred) BOOST_FAIL("STAmount fail");

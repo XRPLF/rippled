@@ -225,6 +225,9 @@ protected:
 	STAmount(const char *name, uint64 value, bool isNegative)
 		: SerializedType(name), mValue(value), mOffset(0), mIsNative(true), mIsNegative(isNegative)
 	{ ; }
+	STAmount(const char *n, const uint160& cur, uint64 val, int off, bool isNative, bool isNegative)
+		: SerializedType(n), mCurrency(cur), mValue(val), mOffset(off), mIsNative(isNative), mIsNegative(isNegative)
+	{ ; }
 
 	uint64 toUInt64() const;
 
