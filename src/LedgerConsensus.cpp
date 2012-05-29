@@ -130,13 +130,19 @@ bool LCTransaction::updatePosition(int seconds)
 
 	// To prevent avalanche stalls, we increase the needed weight slightly over time
 	bool newPosition;
-	if (seconds <= LEDGER_CONVERGE) newPosition = weight >=  MIN_CONSENSUS;
-	else if (seconds >= LEDGER_FORCE_CONVERGE) newPosition = weight >= MAX_CONSENSUS;
-	else newPosition = weight >= AVG_CONSENSUS;
+	if (seconds <= LEDGER_CONVERGE) newPosition = weight >=  AV_MIN_CONSENSUS;
+	else if (seconds >= LEDGER_FORCE_CONVERGE) newPosition = weight >= AV_MAX_CONSENSUS;
+	else newPosition = weight >= AV_AVG_CONSENSUS;
 
 	if (newPosition == mOurPosition) return false;
 	mOurPosition = newPosition;
 	return true;
+}
+
+int LCTransaction::getAgreeLevel()
+{ // how much do nodes agree with us
+	if (mOurPosition) return (mYays * 100 + 100) / (mYays + mNays + 1);
+	return (mNays * 100 + 100) / (mYays + mNays + 1);
 }
 
 LedgerConsensus::LedgerConsensus(Ledger::pointer previousLedger, uint32 closeTime)
@@ -244,6 +250,7 @@ int LedgerConsensus::startup()
 int LedgerConsensus::timerEntry()
 {
 	int sinceClose = theApp->getOPs().getNetworkTimeNC() - mCloseTime;
+
 	if ((mState == lcsESTABLISH) || (mState == lcsCUTOFF))
 	{
 		if (sinceClose >= LEDGER_FORCE_CONVERGE)
@@ -253,6 +260,7 @@ int LedgerConsensus::timerEntry()
 		}
 
 		bool changes = false;
+		bool stable = true;
 		SHAMap::pointer ourPosition;
 		std::vector<uint256> addedTx, removedTx;
 
@@ -265,6 +273,7 @@ int LedgerConsensus::timerEntry()
 				{
 					ourPosition = mComplete[mOurPosition->getCurrentHash()]->snapShot();
 					changes = true;
+					stable = false;
 				}
 				if (it->second->getOurPosition()) // now a yes
 				{
@@ -277,6 +286,8 @@ int LedgerConsensus::timerEntry()
 					removedTx.push_back(it->first);
 				}
 			}
+			else if (it->second->getAgreeLevel() < AV_PCT_STOP)
+				stable = false;
 		}
 
 		if (changes)
@@ -288,6 +299,8 @@ int LedgerConsensus::timerEntry()
 			hashes.push_back(newHash);
 			sendHaveTxSet(hashes);
 		}
+		else if (stable && (mState == lcsCUTOFF))
+			mState = lcsFINISHED;
 	}
 	return 1;
 }

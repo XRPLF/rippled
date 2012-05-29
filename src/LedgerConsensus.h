@@ -60,14 +60,16 @@ public:
 	void setVote(const uint256& peer, bool votesYes);
 
 	bool updatePosition(int timePassed);
+	int getAgreeLevel();
 };
 
 enum LCState
 {
 	lcsPRE_CLOSE,		// We haven't closed our ledger yet, but others might have
+	lcsPOST_CLOSE,		// Ledger closed, but wobble time
 	lcsESTABLISH,		// Establishing consensus
 	lcsCUTOFF,			// Past the cutoff for consensus
-	lcsFINSHED,			// We have closed on a transaction set
+	lcsFINISHED,		// We have closed on a transaction set
 	lcsACCEPTED,		// We have accepted/validated a new last closed ledger
 	lcsABORTED			// Abandoned
 };
