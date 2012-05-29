@@ -2,13 +2,13 @@ package newcoin;
 
 enum MessageType {
 // core
-	mtHELLO=			1;
-	mtERROR_MSG=		2;
-	mtPING=				3;
+	mtHELLO=				1;
+	mtERROR_MSG=			2;
+	mtPING=					3;
 
 // network presence detection
-	mtGET_CONTACTS=		10;
-	mtCONTACT=			11;
+	mtGET_CONTACTS=			10;
+	mtCONTACT=				11;
 
 // operations for 'small' nodes
 	mtSEARCH_TRANSACTION=	20;
@@ -20,10 +20,8 @@ enum MessageType {
 	mtGET_LEDGER=			31;
 	mtLEDGER=				32;
 	mtPROPOSE_LEDGER=		33;
-	mtCLOSE_LEDGER=			35;
-	mtSTATUS_CHANGE=		36;
-	mtPEER_POSITION=		37;
-	mtHAVE_SET=				38;
+	mtSTATUS_CHANGE=		34;
+	mtHAVE_SET=				35;
 
 // data replication and synchronization
 	mtGET_VALIDATIONS=		40;
