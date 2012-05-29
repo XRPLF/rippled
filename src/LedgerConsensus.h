@@ -99,6 +99,7 @@ protected:
 
 	void addDisputedTransaction(const uint256&, const std::vector<unsigned char>& transaction);
 	void adjustCount(SHAMap::pointer map, const std::vector<uint256>& peers);
+	void propose(const std::vector<uint256>& addedTx, const std::vector<uint256>& removedTx);
 
 	void addPosition(LedgerProposal&, bool ours);
 	void removePosition(LedgerProposal&, bool ours);

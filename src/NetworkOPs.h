@@ -77,7 +77,7 @@ public:
 		const std::vector<unsigned char>& myNode, std::list< std::vector<unsigned char> >& newNodes);
 
 	// ledger proposal/close functions
-	bool proposeLedger(uint32 closingSeq, uint32 proposeSeq, const uint256& proposeHash,
+	bool proposeLedger(const uint256& prevLgrHash, uint32 proposeSeq, const uint256& proposeHash,
 		const std::string& pubKey, const std::string& signature);
 	bool gotTXData(boost::shared_ptr<Peer> peer, const uint256& hash,
 		const std::list<SHAMapNode>& nodeIDs, const std::list< std::vector<unsigned char> >& nodeData);

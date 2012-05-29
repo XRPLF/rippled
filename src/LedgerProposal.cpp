@@ -6,9 +6,8 @@
 #include "key.h"
 #include "Application.h"
 
-LedgerProposal::LedgerProposal(uint32 closingSeq, uint32 proposeSeq, const uint256& proposeTx,
-	const std::string& pubKey) : mCurrentHash(proposeTx),
-	mProposeSeq(proposeSeq), mKey(boost::make_shared<CKey>())
+LedgerProposal::LedgerProposal(const uint256& pLgr, uint32 seq, const uint256& tx, const std::string& pubKey) :
+	mPreviousLedger(pLgr), mCurrentHash(tx), mProposeSeq(seq), mKey(boost::make_shared<CKey>())
 {
 	if (!mKey->SetPubKey(pubKey))
 		throw std::runtime_error("Invalid public key in proposal");
@@ -21,13 +20,6 @@ LedgerProposal::LedgerProposal(CKey::pointer mPrivateKey, const uint256& prevLgr
 	mPreviousLedger(prevLgr), mCurrentHash(position), mProposeSeq(0), mKey(mPrivateKey)
 {
 	mPeerID = Serializer::getSHA512Half(mKey->GetPubKey());
-}
-
-LedgerProposal::LedgerProposal(LedgerProposal::pointer previous, const uint256& newp) :
-	mPeerID(previous->mPeerID),	mPreviousLedger(previous->mPreviousLedger),
-	mCurrentHash(newp),	mProposeSeq(previous->mProposeSeq + 1), mKey(previous->mKey)
-{
-	;
 }
 
 uint256 LedgerProposal::getSigningHash() const
@@ -43,4 +35,18 @@ uint256 LedgerProposal::getSigningHash() const
 bool LedgerProposal::checkSign(const std::string& signature)
 {
 	return mKey->Verify(getSigningHash(), signature);
+}
+
+void LedgerProposal::changePosition(const uint256& newPosition)
+{
+	mCurrentHash = newPosition;
+	++mProposeSeq;
+}
+
+std::vector<unsigned char> LedgerProposal::sign(void)
+{
+	std::vector<unsigned char> ret;
+	if (!mKey->Sign(getSigningHash(), ret))
+		throw std::runtime_error("unable to sign proposal");
+	return ret;
 }

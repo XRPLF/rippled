@@ -163,6 +163,8 @@ void LedgerConsensus::closeTime(Ledger::pointer& current)
 
 void LedgerConsensus::mapComplete(const uint256& hash, SHAMap::pointer map)
 {
+	mAcquiring.erase(hash);
+
 	if (!map)
 	{ // this is an invalid/corrupt map
 		mComplete[hash] = map;
@@ -252,6 +254,7 @@ int LedgerConsensus::timerEntry()
 
 		bool changes = false;
 		SHAMap::pointer ourPosition;
+		std::vector<uint256> addedTx, removedTx;
 
 		for(boost::unordered_map<uint256, LCTransaction::pointer>::iterator it = mDisputes.begin(),
 				end = mDisputes.end(); it != end; ++it)
@@ -264,16 +267,26 @@ int LedgerConsensus::timerEntry()
 					changes = true;
 				}
 				if (it->second->getOurPosition()) // now a yes
+				{
 					ourPosition->addItem(SHAMapItem(it->first, it->second->peekTransaction()), true);
+					addedTx.push_back(it->first);
+				}
 				else // now a no
+				{
 					ourPosition->delItem(it->first);
+					removedTx.push_back(it->first);
+				}
 			}
 		}
 
 		if (changes)
 		{
-		 // broadcast IHAVE
-		 // broadcast new proposal
+			uint256 newHash = ourPosition->getHash();
+			mOurPosition->changePosition(newHash);
+			propose(addedTx, removedTx);
+			std::vector<uint256> hashes;
+			hashes.push_back(newHash);
+			sendHaveTxSet(hashes);
 		}
 	}
 	return 1;
@@ -321,6 +334,20 @@ void LedgerConsensus::startAcquiring(TransactionAcquire::pointer acquire)
 	}
 }
 
+void LedgerConsensus::propose(const std::vector<uint256>& added, const std::vector<uint256>& removed)
+{
+	newcoin::TMProposeSet prop;
+	prop.set_currenttxhash(mOurPosition->getCurrentHash().begin(), 256 / 8);
+	prop.set_prevclosedhash(mOurPosition->getPrevLedger().begin(), 256 / 8);
+	prop.set_proposeseq(mOurPosition->getProposeSeq());
+
+	std::vector<unsigned char> pubKey = mOurPosition->getPubKey();
+	std::vector<unsigned char> sig = mOurPosition->sign();
+	prop.set_nodepubkey(&pubKey[0], pubKey.size());
+	prop.set_signature(&sig[0], sig.size());
+	theApp->getConnectionPool().relayMessage(NULL, boost::make_shared<PackedMessage>(prop, newcoin::mtPROPOSE_LEDGER));
+}
+
 void LedgerConsensus::addDisputedTransaction(const uint256& txID, const std::vector<unsigned char>& tx)
 {
 	boost::unordered_map<uint256, LCTransaction::pointer>::iterator it = mDisputes.find(txID);
@@ -350,6 +377,13 @@ void LedgerConsensus::addDisputedTransaction(const uint256& txID, const std::vec
 
 bool LedgerConsensus::peerPosition(LedgerProposal::pointer newPosition)
 {
+	if (newPosition->getPrevLedger() != mPreviousLedger->getHash())
+	{
+#ifdef DEBUG
+		std::cerr << "Peer sends proposal with wrong previous ledger" << std::endl;
+#endif
+		return false;
+	}
 	LedgerProposal::pointer& currentPosition = mPeerPositions[newPosition->getPeerID()];
 	if (currentPosition)
 	{

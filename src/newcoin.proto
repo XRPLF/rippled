@@ -102,7 +102,7 @@ message TMStatusChange {
 
 // Announce to the network our position on a closing ledger
 message TMProposeSet {
-	required uint32 closingSeq			= 1;
+	required bytes prevClosedHash		= 1;
 	required uint32 proposeSeq			= 2;
 	required bytes currentTxHash		= 3;	// the hash of the ledger we are proposing
 	required bytes nodePubKey			= 4;
