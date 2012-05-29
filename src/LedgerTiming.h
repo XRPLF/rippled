@@ -30,8 +30,12 @@
 
 #endif
 
-#define MIN_CONSENSUS			50
-#define AVG_CONSENSUS			60
-#define MAX_CONSENSUS			70
+// Avalance tuning (percent of UNL voting yes for us to vote yes)
+#define AV_MIN_CONSENSUS			50
+#define AV_AVG_CONSENSUS			60
+#define AV_MAX_CONSENSUS			70
+
+// We consider consensus reached at this percent agreement
+#define AV_PCT_STOP					90
 
 #endif
