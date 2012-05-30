@@ -195,9 +195,7 @@ STVector256* STVector256::construct(SerializerIterator& u, const char *name)
 
 void STVector256::add(Serializer& s) const
 {
-	int size = mValue.size();
-	if (!size) s.addVL(NULL, 0);
-	else s.addVL(mValue[0].begin(), mValue.size() * (256 / 8));
+	s.addVL(mValue.empty() ? NULL : mValue[0].begin(), mValue.size() * (256 / 8));
 }
 
 //
