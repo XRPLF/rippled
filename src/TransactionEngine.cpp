@@ -36,9 +36,15 @@ TransactionEngineResult TransactionEngine::dirAdd(
 		uNodeDir	= 1;
 
 		sleRoot	= boost::make_shared<SerializedLedgerEntry>(ltDIR_ROOT);
+
+
 		sleRoot->setIndex(uRootIndex);
+		std::cerr << "dirAdd: Creating dir index: " << sleRoot->getIndex().ToString() << std::endl;
+
 		sleRoot->setIFieldU64(sfFirstNode, uNodeDir);
 		sleRoot->setIFieldU64(sfLastNode, uNodeDir);
+
+		std::cerr << "dirAdd: first & last: " << strHex(uNodeDir) << std::endl;
 
 		accounts.push_back(std::make_pair(taaCREATE, sleRoot));
 	}
@@ -72,6 +78,8 @@ TransactionEngineResult TransactionEngine::dirAdd(
 			// Record new last node.
 			sleNode	= SLE::pointer();
 
+			std::cerr << "dirAdd:  last: " << strHex(uNodeDir) << std::endl;
+
 			sleRoot->setIFieldU64(sfLastNode, uNodeDir);
 			accounts.push_back(std::make_pair(taaMODIFY, sleRoot));
 		}
@@ -82,6 +90,8 @@ TransactionEngineResult TransactionEngine::dirAdd(
 		// Add to last node, which is empty.
 		sleNode	= boost::make_shared<SerializedLedgerEntry>(ltDIR_NODE);
 		sleNode->setIndex(uNodeIndex);
+
+		std::cerr << "dirAdd: Creating dir node: " << sleNode->getIndex().ToString() << std::endl;
 
 		STVector256	svIndexes;
 
@@ -597,13 +607,15 @@ TransactionEngineResult TransactionEngine::doCreditSet(const SerializedTransacti
 	}
 	else
 	{
-		std::cerr << "doCreditSet: Creating ripple line." << std::endl;
 		STAmount		saZero(uCurrency);
 
 						bAddIndex		= true;
 						sleRippleState	= boost::make_shared<SerializedLedgerEntry>(ltRIPPLE_STATE);
 
 		sleRippleState->setIndex(Ledger::getRippleStateIndex(uSrcAccountID, uDstAccountID, uCurrency));
+		std::cerr << "doCreditSet: Creating ripple line: "
+			<< sleRippleState->getIndex().ToString()
+			<< std::endl;
 
 		sleRippleState->setFlag(uFlags);
 		sleRippleState->setIFieldAmount(sfBalance, saZero);	// Zero balance in currency.

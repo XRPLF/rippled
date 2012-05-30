@@ -182,8 +182,19 @@ bool NetworkOPs::getDirInfo(
 
 	if (sleRoot)
 	{
-		uDirLineNodeFirst	= uRootIndex | sleRoot->getIFieldU64(sfFirstNode);
-		uDirLineNodeLast	= uRootIndex | sleRoot->getIFieldU64(sfLastNode);
+		std::cerr << "getDirInfo: root index: " << uRootIndex.ToString() << std::endl;
+
+		std::cerr << "getDirInfo: first: " << strHex(sleRoot->getIFieldU64(sfFirstNode)) << std::endl;
+		std::cerr << "getDirInfo:  last: " << strHex(sleRoot->getIFieldU64(sfLastNode)) << std::endl;
+		uDirLineNodeFirst	= Ledger::getDirIndex(uBase, letKind, sleRoot->getIFieldU64(sfFirstNode));
+		uDirLineNodeLast	= Ledger::getDirIndex(uBase, letKind, sleRoot->getIFieldU64(sfLastNode));
+
+		std::cerr << "getDirInfo: first: " << uDirLineNodeFirst.ToString() << std::endl;
+		std::cerr << "getDirInfo:  last: " << uDirLineNodeLast.ToString() << std::endl;
+	}
+	else
+	{
+		std::cerr << "getDirInfo: root index: NOT FOUND: " << uRootIndex.ToString() << std::endl;
 	}
 
 	return !!sleRoot;
@@ -197,7 +208,15 @@ STVector256 NetworkOPs::getDirNode(const uint256& uLedger, const uint256& uDirLi
 	SLE::pointer		sleNode		= mLedgerMaster->getLedgerByHash(uLedger)->getDirNode(lspNode, uDirLineNode);
 
 	if (sleNode)
+	{
+		std::cerr << "getDirNode: node index: " << uDirLineNode.ToString() << std::endl;
+
 		svIndexes	= sleNode->getIFieldV256(sfIndexes);
+	}
+	else
+	{
+		std::cerr << "getDirNode: node index: NOT FOUND: " << uDirLineNode.ToString() << std::endl;
+	}
 
 	return svIndexes;
 }

@@ -1,5 +1,6 @@
 
 #include "Ledger.h"
+#include "utils.h"
 
 #include <boost/make_shared.hpp>
 
@@ -45,31 +46,42 @@ LedgerStateParms Ledger::writeBack(LedgerStateParms parms, SerializedLedgerEntry
 SerializedLedgerEntry::pointer Ledger::getASNode(LedgerStateParms& parms, const uint256& nodeID,
  LedgerEntryType let )
 {
+std::cerr << "getASNode>" << nodeID.ToString() << std::endl;
 	SHAMapItem::pointer account = mAccountStateMap->peekItem(nodeID);
+std::cerr << "getASNode: d: " << nodeID.ToString() << std::endl;
 	if (!account)
 	{
 		if ( (parms & lepCREATE) == 0 )
 		{
 			parms = lepMISSING;
+std::cerr << "getASNode: missing: " << nodeID.ToString() << std::endl;
 			return SerializedLedgerEntry::pointer();
 		}
 
+std::cerr << "getASNode: c: " << nodeID.ToString() << std::endl;
 		parms = parms | lepCREATED | lepOKAY;
 		SerializedLedgerEntry::pointer sle=boost::make_shared<SerializedLedgerEntry>(let);
 		sle->setIndex(nodeID);
+
 		return sle;
 	}
 
+std::cerr << "getASNode: a: " << nodeID.ToString() << std::endl;
+std::cerr << "getASNode: e: " << strHex(account->peekSerializer().getData()) << std::endl;
 	SerializedLedgerEntry::pointer sle =
 		boost::make_shared<SerializedLedgerEntry>(account->peekSerializer(), nodeID);
 
+std::cerr << "getASNode: b: " << nodeID.ToString() << std::endl;
 	if(sle->getType() != let)
 	{ // maybe it's a currency or something
+std::cerr << "getASNode: wrong type: " << nodeID.ToString() << std::endl;
 		parms = parms | lepWRONGTYPE;
 		return SerializedLedgerEntry::pointer();
 	}
 
 	parms = parms | lepOKAY;
+std::cerr << "getASNode<" << nodeID.ToString() << std::endl;
+
 	return sle;
 
 }
@@ -203,12 +215,14 @@ SerializedLedgerEntry::pointer Ledger::getDirNode(LedgerStateParms& parms, const
 {
 	ScopedLock l(mAccountStateMap->Lock());
 
+std::cerr << "getDirNode: " << uNodeIndex.ToString() << std::endl;
 	try
 	{
 		return getASNode(parms, uNodeIndex, ltDIR_NODE);
 	}
 	catch (...)
 	{
+std::cerr << "getDirNode: ERROR: " << uNodeIndex.ToString() << std::endl;
 		parms = lepERROR;
 		return SerializedLedgerEntry::pointer();
 	}

@@ -367,13 +367,10 @@ Json::Value RPCServer::doAccountLines(Json::Value &params)
 
 		Json::Value ret;
 
-		// This needs to use a ledger.
 		ret	= accountFromString(uLedger, naAccount, bIndex, strIdent, iIndex);
 
 		if (!ret.empty())
 			return ret;
-
-		// SHAMap::pointer	smAccounts	= theApp->getMasterLedger().getCurrentLedger()->peekAccountStateMap();
 
 		// Get info on account.
 		ret	= Json::Value(Json::objectValue);
@@ -382,13 +379,12 @@ Json::Value RPCServer::doAccountLines(Json::Value &params)
 		if (bIndex)
 			ret["index"]	= iIndex;
 
-		AccountState::pointer	as			= mNetOps->getAccountState(uLedger, naAccount);
+		AccountState::pointer	as		= mNetOps->getAccountState(uLedger, naAccount);
 		if (as)
 		{
 			ret["account"]	= naAccount.humanAccountID();
 
 			// We access a committed ledger and need not worry about changes.
-			// XXX We need to get the ID of the commited ledger for a conistent view.
 			uint256	uDirLineNodeFirst;
 			uint256	uDirLineNodeLast;
 
