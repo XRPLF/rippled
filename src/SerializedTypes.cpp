@@ -187,8 +187,9 @@ STVector256* STVector256::construct(SerializerIterator& u, const char *name)
 	std::vector<unsigned char> data = u.getVL();
 	std::vector<uint256> value;
 	int count = data.size() / (256 / 8);
+	value.reserve(count);
 	for(int i = 0; i < count; i++)
-		value.push_back(uint256(std::vector<unsigned char>(data[i], data[i + (256 / 8)])));
+		value.push_back(uint256(std::vector<unsigned char>(&data[i], &data[i + (256 / 8)])));
 	return new STVector256(name, value);
 }
 
