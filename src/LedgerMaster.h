@@ -51,7 +51,7 @@ public:
 	{
 		if (mCurrentLedger && (mCurrentLedger->getLedgerSeq()==index)) return mCurrentLedger;
 		if (mFinalizedLedger && (mFinalizedLedger->getLedgerSeq()==index)) return mFinalizedLedger;
-		return mLedgerHistory.getLedgerBySeq(index); 
+		return mLedgerHistory.getLedgerBySeq(index);
 	}
 
 	Ledger::pointer getLedgerByHash(const uint256& hash)

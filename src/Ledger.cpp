@@ -142,6 +142,21 @@ AccountState::pointer Ledger::getAccountState(const NewcoinAddress& accountID)
 	return boost::make_shared<AccountState>(sle);
 }
 
+RippleState::pointer Ledger::getRippleState(const uint256& uNode)
+{
+	ScopedLock l(mAccountStateMap->Lock());
+	SHAMapItem::pointer item = mAccountStateMap->peekItem(uNode);
+	if (!item)
+	{
+		return RippleState::pointer();
+	}
+
+	SerializedLedgerEntry::pointer sle =
+		boost::make_shared<SerializedLedgerEntry>(item->peekSerializer(), item->getTag());
+	if (sle->getType() != ltRIPPLE_STATE) return RippleState::pointer();
+	return boost::make_shared<RippleState>(sle);
+}
+
 bool Ledger::addTransaction(Transaction::pointer trans)
 { // low-level - just add to table, debit fee
 	assert(!mAccepted);

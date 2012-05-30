@@ -171,20 +171,18 @@ bool RPCServer::extractString(std::string& param, const Json::Value& params, int
 }
 
 // Given a seed and a source account get the public and private key for authorizing transactions for the account.
-Json::Value RPCServer::authorize(const NewcoinAddress& naSeed, const NewcoinAddress& naSrcAccountID,
+Json::Value RPCServer::authorize(const uint256& uLedger,
+	const NewcoinAddress& naSeed, const NewcoinAddress& naSrcAccountID,
 	NewcoinAddress& naAccountPublic, NewcoinAddress& naAccountPrivate,
-	SLE::pointer& sleSrc)
+	AccountState::pointer& asSrc)
 {
-	Ledger::pointer		ledger			= theApp->getMasterLedger().getCurrentLedger();
-	LedgerStateParms	qry				= lepNONE;
-
-	sleSrc			= ledger->getAccountRoot(qry, naSrcAccountID);
-	if (!sleSrc)
+	asSrc	= mNetOps->getAccountState(uLedger, naSrcAccountID);
+	if (!asSrc)
 	{
 		return JSONRPCError(500, "source account does not exist");
 	}
 
-	if (!sleSrc->getIFieldPresent(sfAuthorizedKey))
+	if (!asSrc->bHaveAuthorizedKey())
 	{
 		return JSONRPCError(500, "source account has not been claimed");
 	}
@@ -197,8 +195,7 @@ Json::Value RPCServer::authorize(const NewcoinAddress& naSeed, const NewcoinAddr
 	na0Public.setAccountPublic(naGenerator, 0);
 	na0Private.setAccountPrivate(naGenerator, naSeed, 0);
 
-						qry				= lepNONE;
-	SLE::pointer		sleGen			= ledger->getGenerator(qry, na0Public.getAccountID());
+	SLE::pointer		sleGen			= mNetOps->getGenerator(uLedger, na0Public.getAccountID());
 
 	if (!sleGen)
 	{
@@ -234,10 +231,10 @@ Json::Value RPCServer::authorize(const NewcoinAddress& naSeed, const NewcoinAddr
 	naAccountPublic.setAccountPublic(naGenerator, iIndex);
 	naAccountPrivate.setAccountPrivate(naGenerator, naSeed, iIndex);
 
-	if (sleSrc->getIFieldH160(sfAuthorizedKey) != naAccountPublic.getAccountID())
+	if (asSrc->getAuthorizedKey() != naAccountPublic.getAccountID())
 	{
 		std::cerr << "iIndex: " << iIndex << std::endl;
-		std::cerr << "sfAuthorizedKey: " << strHex(sleSrc->getIFieldH160(sfAuthorizedKey)) << std::endl;
+		std::cerr << "sfAuthorizedKey: " << strHex(asSrc->getAuthorizedKey()) << std::endl;
 		std::cerr << "naAccountPublic: " << strHex(naAccountPublic.getAccountID()) << std::endl;
 
 		return JSONRPCError(500, "wrong password (changed)");
@@ -247,7 +244,7 @@ Json::Value RPCServer::authorize(const NewcoinAddress& naSeed, const NewcoinAddr
 }
 
 // <-- bIndex: true if iIndex > 0 and used the index.
-Json::Value RPCServer::accountFromString(NewcoinAddress& naAccount, bool& bIndex, const std::string& strIdent, const int iIndex)
+Json::Value RPCServer::accountFromString(const uint256& uLedger, NewcoinAddress& naAccount, bool& bIndex, const std::string& strIdent, const int iIndex)
 {
 	NewcoinAddress	naSeed;
 
@@ -275,10 +272,7 @@ Json::Value RPCServer::accountFromString(NewcoinAddress& naAccount, bool& bIndex
 		naRegular0Private.setAccountPrivate(naGenerator, naSeed, 0);
 
 		uint160				uGeneratorID	= naRegular0Public.getAccountID();
-
-		Ledger::pointer		ledger			= theApp->getMasterLedger().getCurrentLedger();
-		LedgerStateParms	qry				= lepNONE;
-		SLE::pointer		sleGen			= ledger->getGenerator(qry, naRegular0Public.getAccountID());
+		SLE::pointer		sleGen			= mNetOps->getGenerator(uLedger, naRegular0Public.getAccountID());
 		if (!sleGen)
 		{
 			// Didn't find a generator map, assume it is a master generator.
@@ -325,7 +319,9 @@ Json::Value RPCServer::doAccountInfo(Json::Value &params)
 
 		Json::Value ret;
 
-		ret	= accountFromString(naAccount, bIndex, strIdent, iIndex);
+		uint256			uLedger		= mNetOps->getClosedLedger();
+
+		ret	= accountFromString(uLedger, naAccount, bIndex, strIdent, iIndex);
 
 		if (!ret.empty())
 			return ret;
@@ -333,7 +329,7 @@ Json::Value RPCServer::doAccountInfo(Json::Value &params)
 		// Get info on account.
 		ret	= Json::Value(Json::objectValue);
 
-		AccountState::pointer as=mNetOps->getAccountState(naAccount);
+		AccountState::pointer as	= mNetOps->getAccountState(uLedger, naAccount);
 		if (as)
 		{
 			as->addJson(ret);
@@ -365,11 +361,14 @@ Json::Value RPCServer::doAccountLines(Json::Value &params)
 		std::string		strIdent	= params[0u].asString();
 		bool			bIndex;
 		int				iIndex		= 2 == params.size()? boost::lexical_cast<int>(params[1u].asString()) : 0;
+		uint256			uLedger		= mNetOps->getClosedLedger();
+
 		NewcoinAddress	naAccount;
 
 		Json::Value ret;
 
-		ret	= accountFromString(naAccount, bIndex, strIdent, iIndex);
+		// This needs to use a ledger.
+		ret	= accountFromString(uLedger, naAccount, bIndex, strIdent, iIndex);
 
 		if (!ret.empty())
 			return ret;
@@ -383,47 +382,48 @@ Json::Value RPCServer::doAccountLines(Json::Value &params)
 		if (bIndex)
 			ret["index"]	= iIndex;
 
-		AccountState::pointer	as			= mNetOps->getAccountState(naAccount);
+		AccountState::pointer	as			= mNetOps->getAccountState(uLedger, naAccount);
 		if (as)
 		{
 			ret["account"]	= naAccount.humanAccountID();
 
 			// We access a committed ledger and need not worry about changes.
-			uint64	uDirLineNodeFirst;
-			uint64	uDirLineNodeLast;
+			// XXX We need to get the ID of the commited ledger for a conistent view.
+			uint256	uDirLineNodeFirst;
+			uint256	uDirLineNodeLast;
 
-			if (!mNetOps->getDirLineInfo(naAccount, uDirLineNodeFirst, uDirLineNodeLast))
+			if (!mNetOps->getDirLineInfo(uLedger, naAccount, uDirLineNodeFirst, uDirLineNodeLast))
 			{
 				ret["lines"]	= Json::Value(Json::objectValue);
 			}
-			else if (uDirLineNodeFirst)
+			else
 			{
 				Json::Value	jsonLines = Json::Value(Json::objectValue);
 
 				for (; uDirLineNodeFirst <= uDirLineNodeLast; uDirLineNodeFirst++)
 				{
-					std::vector<uint256>	vuRippleNodes	= mNetOps->getDirLineNode(uDirLineNodeFirst);
+					STVector256	svRippleNodes	= mNetOps->getDirNode(uLedger, uDirLineNodeFirst);
 
-					BOOST_FOREACH(uint256& uNode, vuRippleNodes)
+					BOOST_FOREACH(uint256& uNode, svRippleNodes.peekValue())
 					{
 						NewcoinAddress	naAccountPeer;
-						uint64			uBalance	= 0;
-						// uint160			uCurrency;
+						STAmount		saBalance;
 						STAmount		saLimit;
 						STAmount		saLimitPeer;
-#if 0
-						RippleState::pointer	rsLine	= mNetOps->getRippleState(uNode);
+
+						RippleState::pointer	rsLine	= mNetOps->getRippleState(uLedger, uNode);
 
 						rsLine->setViewAccount(naAccount);
-						rsLine->getAccountPeer(naAccountPeer);
-						// ->getBalance(iBalance);
-						// ->getCurrency(uCurrency);
-						rsLine->getLimit(saLimit)
-						rsLine->getLimitPeer(saPeerLimit);
-#endif
+
+						naAccountPeer		= rsLine->getAccountIDPeer();
+						saBalance			= rsLine->getBalance();
+						saLimit				= rsLine->getLimit();
+						saLimitPeer			= rsLine->getLimitPeer();
+
 						Json::Value		jPeer = Json::Value(Json::objectValue);
 
-						jPeer["balance"]	= Json::Value::UInt(uBalance);	// XXX Raw number.
+						jPeer["balance"]	= saBalance.getText();
+						jPeer["currency"]	= saBalance.getCurrencyHuman();
 						jPeer["limit"]		= saLimit.getJson(0);
 						jPeer["limit_peer"]	= saLimitPeer.getJson(0);
 
@@ -514,15 +514,16 @@ Json::Value RPCServer::doCreditSet(Json::Value& params)
 	}
 	else
 	{
-		NewcoinAddress	naAccountPublic;
-		NewcoinAddress	naAccountPrivate;
-	    SLE::pointer	sleSrc;
-		Json::Value		obj				= authorize(naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate, sleSrc);
+		NewcoinAddress			naAccountPublic;
+		NewcoinAddress			naAccountPrivate;
+	    AccountState::pointer	asSrc;
+		uint256					uLedger		= mNetOps->getClosedLedger();
+		Json::Value				obj			= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate, asSrc);
 
 		if (!obj.empty())
 			return obj;
 
-		STAmount		saSrcBalance	= sleSrc->getIValueFieldAmount(sfBalance);
+		STAmount		saSrcBalance	= asSrc->getBalance();
 
 		if (saSrcBalance < theConfig.FEE_DEFAULT)
 		{
@@ -533,7 +534,7 @@ Json::Value RPCServer::doCreditSet(Json::Value& params)
 			Transaction::pointer	trans	= Transaction::sharedCreditSet(
 				naAccountPublic, naAccountPrivate,
 				naSrcAccountID,
-				sleSrc->getIFieldU32(sfSequence),
+				asSrc->getSeq(),
 				theConfig.FEE_DEFAULT,
 				0,											// YYY No source tag
 				naDstAccountID,
@@ -601,10 +602,11 @@ Json::Value RPCServer::doSend(Json::Value& params)
 	}
 	else
 	{
-		NewcoinAddress	naAccountPublic;
-		NewcoinAddress	naAccountPrivate;
-	    SLE::pointer	sleSrc;
-		Json::Value		obj				= authorize(naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate, sleSrc);
+		NewcoinAddress			naAccountPublic;
+		NewcoinAddress			naAccountPrivate;
+	    AccountState::pointer	asSrc;
+		uint256					uLedger		= mNetOps->getClosedLedger();
+		Json::Value				obj			= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate, asSrc);
 
 		if (!obj.empty())
 		{
@@ -616,7 +618,7 @@ Json::Value RPCServer::doSend(Json::Value& params)
 
 		// XXX Confirm saSrcAmount >= saDstAmount.
 
-		STAmount						saSrcBalance	= sleSrc->getIValueFieldAmount(sfBalance);
+		STAmount				saSrcBalance	= asSrc->getBalance();
 
 		if (saSrcBalance < theConfig.FEE_DEFAULT)
 		{
@@ -628,7 +630,7 @@ Json::Value RPCServer::doSend(Json::Value& params)
 			Transaction::pointer	trans	= Transaction::sharedPayment(
 				naAccountPublic, naAccountPrivate,
 				naSrcAccountID,
-				sleSrc->getIFieldU32(sfSequence),
+				asSrc->getSeq(),
 				theConfig.FEE_DEFAULT,
 				0,											// YYY No source tag
 				naDstAccountID,
@@ -691,17 +693,18 @@ Json::Value RPCServer::doTransitSet(Json::Value& params)
 	}
 	else
 	{
-		NewcoinAddress	naAccountPublic;
-		NewcoinAddress	naAccountPrivate;
-	    SLE::pointer	sleSrc;
-		Json::Value		obj				= authorize(naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate, sleSrc);
+		NewcoinAddress			naAccountPublic;
+		NewcoinAddress			naAccountPrivate;
+	    AccountState::pointer	asSrc;
+		uint256					uLedger		= mNetOps->getClosedLedger();
+		Json::Value				obj			= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate, asSrc);
 
 		if (!obj.empty())
 		{
 			return obj;
 		}
 
-		STAmount		saSrcBalance	= sleSrc->getIValueFieldAmount(sfBalance);
+		STAmount		saSrcBalance	= asSrc->getBalance();
 
 		uTransitRate		= 0;
 		uTransitStart		= 0;
@@ -716,7 +719,7 @@ Json::Value RPCServer::doTransitSet(Json::Value& params)
 			Transaction::pointer	trans	= Transaction::sharedTransitSet(
 				naAccountPublic, naAccountPrivate,
 				naSrcAccountID,
-				sleSrc->getIFieldU32(sfSequence),
+				asSrc->getSeq(),
 				theConfig.FEE_DEFAULT,
 				0,											// YYY No source tag
 				uTransitRate,
@@ -980,6 +983,7 @@ Json::Value RPCServer::doWalletCreate(Json::Value& params)
 	NewcoinAddress	naSrcAccountID;
 	NewcoinAddress	naDstAccountID;
 	NewcoinAddress	naSeed;
+	uint256			uLedger;
 
 	if (params.size() < 3 || params.size() > 4)
 	{
@@ -1001,7 +1005,11 @@ Json::Value RPCServer::doWalletCreate(Json::Value& params)
 		// We require access to the paying account's sequence number and key information.
 		return JSONRPCError(503, "network not available");
 	}
-	else if (mNetOps->getAccountState(naDstAccountID))
+	else if ((uLedger = mNetOps->getClosedLedger()).isZero())
+	{
+		return JSONRPCError(503, "no closed ledger");
+	}
+	else if (mNetOps->getAccountState(uLedger, naDstAccountID))
 	{
 		return "account already exists";
 	}
@@ -1010,13 +1018,14 @@ Json::Value RPCServer::doWalletCreate(Json::Value& params)
 		// Trying to build:
 		//   peer_wallet_create <paying_account> <paying_signature> <account_id> [<initial_funds>] [<annotation>]
 
-		NewcoinAddress	naAccountPublic;
-		NewcoinAddress	naAccountPrivate;
-	    SLE::pointer	sleSrc;
-		Json::Value		obj				= authorize(naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate, sleSrc);
+		NewcoinAddress			naAccountPublic;
+		NewcoinAddress			naAccountPrivate;
+	    AccountState::pointer	asSrc;
+		uint256					uLedger			= mNetOps->getClosedLedger();
+		Json::Value				obj				= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate, asSrc);
 
-		STAmount		saSrcBalance	= sleSrc->getIValueFieldAmount(sfBalance);
-		STAmount		saInitialFunds	= (params.size() < 4) ? 0 : boost::lexical_cast<uint64>(params[3u].asString());
+		STAmount				saSrcBalance	= asSrc->getBalance();
+		STAmount				saInitialFunds	= (params.size() < 4) ? 0 : boost::lexical_cast<uint64>(params[3u].asString());
 
 		if (!obj.empty())
 		{
@@ -1031,7 +1040,7 @@ Json::Value RPCServer::doWalletCreate(Json::Value& params)
 			Transaction::pointer	trans	= Transaction::sharedCreate(
 				naAccountPublic, naAccountPrivate,
 				naSrcAccountID,
-				sleSrc->getIFieldU32(sfSequence),
+				asSrc->getSeq(),
 				theConfig.FEE_CREATE,
 				0,											// YYY No source tag
 				naDstAccountID,

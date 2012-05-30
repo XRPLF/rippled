@@ -21,7 +21,10 @@
 // code assumes this node is synched (and will continue to do so until
 // there's a functional network.
 
-NetworkOPs::NetworkOPs(boost::asio::io_service& io_service) : mMode(omDISCONNECTED), mNetTimer(io_service)
+NetworkOPs::NetworkOPs(boost::asio::io_service& io_service, LedgerMaster* pLedgerMaster) :
+	mMode(omDISCONNECTED),
+	mNetTimer(io_service),
+	mLedgerMaster(pLedgerMaster)
 {
 }
 
@@ -37,7 +40,7 @@ uint64 NetworkOPs::getNetworkTimeNC()
 
 uint32 NetworkOPs::getCurrentLedgerID()
 {
-	return theApp->getMasterLedger().getCurrentLedger()->getLedgerSeq();
+	return mLedgerMaster->getCurrentLedger()->getLedgerSeq();
 }
 
 Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, Peer* source)
@@ -54,7 +57,7 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 		return trans;
 	}
 
-	TransactionEngineResult r = theApp->getMasterLedger().doTransaction(*trans->getSTransaction(), tepNONE);
+	TransactionEngineResult r = mLedgerMaster->doTransaction(*trans->getSTransaction(), tepNONE);
 	if (r == tenFAILED) throw Fault(IO_ERROR);
 
 	if (r == terPRE_SEQ)
@@ -64,7 +67,7 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 #endif
 		trans->setStatus(HELD);
 		theApp->getMasterTransaction().canonicalize(trans, true);
-		theApp->getMasterLedger().addHeldTransaction(trans);
+		mLedgerMaster->addHeldTransaction(trans);
 		return trans;
 	}
 	if ((r == terPAST_SEQ) || (r == terPAST_LEDGER))
@@ -116,10 +119,10 @@ Transaction::pointer NetworkOPs::findTransactionByID(const uint256& transactionI
 	return Transaction::load(transactionID);
 }
 
-int NetworkOPs::findTransactionsBySource(std::list<Transaction::pointer>& txns,
+int NetworkOPs::findTransactionsBySource(const uint256& uLedger, std::list<Transaction::pointer>& txns,
 	const NewcoinAddress& sourceAccount, uint32 minSeq, uint32 maxSeq)
 {
-	AccountState::pointer state = getAccountState(sourceAccount);
+	AccountState::pointer state = getAccountState(uLedger, sourceAccount);
 	if (!state) return 0;
 	if (minSeq > state->getSeq()) return 0;
 	if (maxSeq > state->getSeq()) maxSeq = state->getSeq();
@@ -145,14 +148,76 @@ int NetworkOPs::findTransactionsByDestination(std::list<Transaction::pointer>& t
 	return 0;
 }
 
-AccountState::pointer NetworkOPs::getAccountState(const NewcoinAddress& accountID)
+//
+// Account functions
+//
+
+AccountState::pointer NetworkOPs::getAccountState(const uint256& uLedger, const NewcoinAddress& accountID)
 {
-	return theApp->getMasterLedger().getCurrentLedger()->getAccountState(accountID);
+	return mLedgerMaster->getLedgerByHash(uLedger)->getAccountState(accountID);
 }
+
+SLE::pointer NetworkOPs::getGenerator(const uint256& uLedger, const uint160& uGeneratorID)
+{
+	LedgerStateParms	qry				= lepNONE;
+
+	return mLedgerMaster->getLedgerByHash(uLedger)->getGenerator(qry, uGeneratorID);
+}
+
+//
+// Directory functions
+//
+
+// <-- false : no entrieS
+bool NetworkOPs::getDirInfo(
+	const uint256&			uLedger,
+	const uint256&			uBase,
+	const LedgerEntryType	letKind,
+	uint256&				uDirLineNodeFirst,
+	uint256&				uDirLineNodeLast)
+{
+	uint256				uRootIndex	= Ledger::getDirIndex(uBase, letKind);
+	LedgerStateParms	lspRoot		= lepNONE;
+	SLE::pointer		sleRoot		= mLedgerMaster->getLedgerByHash(uLedger)->getDirRoot(lspRoot, uRootIndex);
+
+	if (sleRoot)
+	{
+		uDirLineNodeFirst	= uRootIndex | sleRoot->getIFieldU64(sfFirstNode);
+		uDirLineNodeLast	= uRootIndex | sleRoot->getIFieldU64(sfLastNode);
+	}
+
+	return !!sleRoot;
+}
+
+STVector256 NetworkOPs::getDirNode(const uint256& uLedger, const uint256& uDirLineNode)
+{
+	STVector256	svIndexes;
+
+	LedgerStateParms	lspNode		= lepNONE;
+	SLE::pointer		sleNode		= mLedgerMaster->getLedgerByHash(uLedger)->getDirNode(lspNode, uDirLineNode);
+
+	if (sleNode)
+		svIndexes	= sleNode->getIFieldV256(sfIndexes);
+
+	return svIndexes;
+}
+
+//
+// Ripple functions
+//
+
+RippleState::pointer NetworkOPs::getRippleState(const uint256& uLedger, const uint256& uIndex)
+{
+	return mLedgerMaster->getLedgerByHash(uLedger)->getRippleState(uIndex);
+}
+
+//
+// Other
+//
 
 void NetworkOPs::setStateTimer(int sec)
 { // set timer early if ledger is closing
-	uint64 consensusTime = theApp->getMasterLedger().getCurrentLedger()->getCloseTimeNC() - LEDGER_WOBBLE_TIME;
+	uint64 consensusTime = mLedgerMaster->getCurrentLedger()->getCloseTimeNC() - LEDGER_WOBBLE_TIME;
 	uint64 now = getNetworkTimeNC();
 
 	if ((mMode == omFULL) && !mConsensus)
@@ -235,7 +300,7 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 		}
 	}
 
-	Ledger::pointer currentClosed = theApp->getMasterLedger().getClosedLedger();
+	Ledger::pointer currentClosed = mLedgerMaster->getClosedLedger();
 	uint256 closedLedger = currentClosed->getHash();
 	ValidationCount& vc = ledgers[closedLedger];
 	if ((vc.nodesUsing == 0) || (theApp->getWallet().getNodePublic() > vc.highNode))
@@ -264,7 +329,7 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 		std::cerr << "Net LCL " << closedLedger.GetHex() << std::endl;
 #endif
 		if ((mMode == omTRACKING) || (mMode == omFULL)) mMode = omTRACKING;
-		Ledger::pointer consensus = theApp->getMasterLedger().getLedgerByHash(closedLedger);
+		Ledger::pointer consensus = mLedgerMaster->getLedgerByHash(closedLedger);
 		if (!consensus)
 		{
 #ifdef DEBUG
@@ -334,7 +399,7 @@ void NetworkOPs::switchLastClosedLedger(Ledger::pointer newLedger)
 
 	newLedger->setClosed();
 	Ledger::pointer openLedger = boost::make_shared<Ledger>(newLedger);
-	theApp->getMasterLedger().switchLedgers(newLedger, openLedger);
+	mLedgerMaster->switchLedgers(newLedger, openLedger);
 
 	if (getNetworkTimeNC() > openLedger->getCloseTimeNC())
 	{ // this ledger has already closed
@@ -348,7 +413,7 @@ int NetworkOPs::beginConsensus(Ledger::pointer closingLedger)
 #ifdef DEBUG
 	std::cerr << "Ledger close time for ledger " << closingLedger->getLedgerSeq() << std::endl;
 #endif
-	Ledger::pointer prevLedger = theApp->getMasterLedger().getLedgerByHash(closingLedger->getParentHash());
+	Ledger::pointer prevLedger = mLedgerMaster->getLedgerByHash(closingLedger->getParentHash());
 	if (!prevLedger)
 	{ // this shouldn't happen if we jump ledgers
 		mMode = omTRACKING;
@@ -384,6 +449,7 @@ bool NetworkOPs::recvPropose(const uint256& prevLgr, uint32 proposeSeq, const ui
 	// WRITEME
 
 	if (!mConsensus) return false;
+
 	return mConsensus->peerPosition(proposal);
 }
 
