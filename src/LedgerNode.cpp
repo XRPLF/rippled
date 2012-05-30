@@ -46,19 +46,16 @@ LedgerStateParms Ledger::writeBack(LedgerStateParms parms, SerializedLedgerEntry
 SerializedLedgerEntry::pointer Ledger::getASNode(LedgerStateParms& parms, const uint256& nodeID,
  LedgerEntryType let )
 {
-std::cerr << "getASNode>" << nodeID.ToString() << std::endl;
 	SHAMapItem::pointer account = mAccountStateMap->peekItem(nodeID);
-std::cerr << "getASNode: d: " << nodeID.ToString() << std::endl;
+
 	if (!account)
 	{
 		if ( (parms & lepCREATE) == 0 )
 		{
 			parms = lepMISSING;
-std::cerr << "getASNode: missing: " << nodeID.ToString() << std::endl;
 			return SerializedLedgerEntry::pointer();
 		}
 
-std::cerr << "getASNode: c: " << nodeID.ToString() << std::endl;
 		parms = parms | lepCREATED | lepOKAY;
 		SerializedLedgerEntry::pointer sle=boost::make_shared<SerializedLedgerEntry>(let);
 		sle->setIndex(nodeID);
@@ -66,21 +63,16 @@ std::cerr << "getASNode: c: " << nodeID.ToString() << std::endl;
 		return sle;
 	}
 
-std::cerr << "getASNode: a: " << nodeID.ToString() << std::endl;
-std::cerr << "getASNode: e: " << strHex(account->peekSerializer().getData()) << std::endl;
 	SerializedLedgerEntry::pointer sle =
 		boost::make_shared<SerializedLedgerEntry>(account->peekSerializer(), nodeID);
 
-std::cerr << "getASNode: b: " << nodeID.ToString() << std::endl;
 	if(sle->getType() != let)
 	{ // maybe it's a currency or something
-std::cerr << "getASNode: wrong type: " << nodeID.ToString() << std::endl;
 		parms = parms | lepWRONGTYPE;
 		return SerializedLedgerEntry::pointer();
 	}
 
 	parms = parms | lepOKAY;
-std::cerr << "getASNode<" << nodeID.ToString() << std::endl;
 
 	return sle;
 
@@ -90,17 +82,7 @@ SerializedLedgerEntry::pointer Ledger::getAccountRoot(LedgerStateParms& parms, c
 {
 	uint256 nodeID=getAccountRootIndex(accountID);
 
-	ScopedLock l(mAccountStateMap->Lock());
-
-	try
-	{
-		return getASNode(parms, nodeID, ltACCOUNT_ROOT);
-	}
-	catch (...)
-	{
-		parms = lepERROR;
-		return SerializedLedgerEntry::pointer();
-	}
+	return getASNode(parms, nodeID, ltACCOUNT_ROOT);
 }
 
 SerializedLedgerEntry::pointer Ledger::getAccountRoot(LedgerStateParms& parms, const NewcoinAddress& naAccountID)
@@ -117,15 +99,7 @@ SerializedLedgerEntry::pointer Ledger::getNickname(LedgerStateParms& parms, cons
 {
 	ScopedLock l(mAccountStateMap->Lock());
 
-	try
-	{
-		return getASNode(parms, nickHash, ltNICKNAME);
-	}
-	catch (...)
-	{
-		parms = lepERROR;
-		return SerializedLedgerEntry::pointer();
-	}
+	return getASNode(parms, nickHash, ltNICKNAME);
 }
 
 //
@@ -157,15 +131,7 @@ SerializedLedgerEntry::pointer Ledger::getRippleState(LedgerStateParms& parms, c
 {
 	ScopedLock l(mAccountStateMap->Lock());
 
-	try
-	{
-		return getASNode(parms, uNode, ltRIPPLE_STATE);
-	}
-	catch (...)
-	{
-		parms = lepERROR;
-		return SerializedLedgerEntry::pointer();
-	}
+	return getASNode(parms, uNode, ltRIPPLE_STATE);
 }
 
 //
@@ -200,32 +166,14 @@ SerializedLedgerEntry::pointer Ledger::getDirRoot(LedgerStateParms& parms, const
 {
 	ScopedLock l(mAccountStateMap->Lock());
 
-	try
-	{
-		return getASNode(parms, uRootIndex, ltDIR_ROOT);
-	}
-	catch (...)
-	{
-		parms = lepERROR;
-		return SerializedLedgerEntry::pointer();
-	}
+	return getASNode(parms, uRootIndex, ltDIR_ROOT);
 }
 
 SerializedLedgerEntry::pointer Ledger::getDirNode(LedgerStateParms& parms, const uint256& uNodeIndex)
 {
 	ScopedLock l(mAccountStateMap->Lock());
 
-std::cerr << "getDirNode: " << uNodeIndex.ToString() << std::endl;
-	try
-	{
-		return getASNode(parms, uNodeIndex, ltDIR_NODE);
-	}
-	catch (...)
-	{
-std::cerr << "getDirNode: ERROR: " << uNodeIndex.ToString() << std::endl;
-		parms = lepERROR;
-		return SerializedLedgerEntry::pointer();
-	}
+	return getASNode(parms, uNodeIndex, ltDIR_NODE);
 }
 
 // vim:ts=4

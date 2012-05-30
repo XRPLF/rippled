@@ -382,19 +382,16 @@ Json::Value RPCServer::doAccountLines(Json::Value &params)
 		AccountState::pointer	as		= mNetOps->getAccountState(uLedger, naAccount);
 		if (as)
 		{
+			Json::Value	jsonLines = Json::Value(Json::objectValue);
+
 			ret["account"]	= naAccount.humanAccountID();
 
 			// We access a committed ledger and need not worry about changes.
 			uint256	uDirLineNodeFirst;
 			uint256	uDirLineNodeLast;
 
-			if (!mNetOps->getDirLineInfo(uLedger, naAccount, uDirLineNodeFirst, uDirLineNodeLast))
+			if (mNetOps->getDirLineInfo(uLedger, naAccount, uDirLineNodeFirst, uDirLineNodeLast))
 			{
-				ret["lines"]	= Json::Value(Json::objectValue);
-			}
-			else
-			{
-				Json::Value	jsonLines = Json::Value(Json::objectValue);
 
 				for (; uDirLineNodeFirst <= uDirLineNodeLast; uDirLineNodeFirst++)
 				{
@@ -423,13 +420,12 @@ Json::Value RPCServer::doAccountLines(Json::Value &params)
 						jPeer["limit"]		= saLimit.getJson(0);
 						jPeer["limit_peer"]	= saLimitPeer.getJson(0);
 
-						ret[naAccountPeer.humanAccountID()]	= jPeer;
+						jsonLines[naAccountPeer.humanAccountID()]	= jPeer;
 					}
 				}
 
-				ret["lines"]	= jsonLines;
-
 			}
+			ret["lines"]	= jsonLines;
 		}
 		else
 		{
