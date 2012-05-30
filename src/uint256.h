@@ -11,6 +11,7 @@
 #include <vector>
 #include <cstdio>
 #include <cstring>
+#include <cassert>
 
 #include "types.h"
 
@@ -653,7 +654,10 @@ public:
 		if (vch.size() == sizeof(pn))
 			memcpy(pn, &vch[0], sizeof(pn));
 		else
+		{
+			assert(false);
 			*this = 0;
+		}
 	}
 
 	base_uint160 to160() const;
