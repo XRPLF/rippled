@@ -103,6 +103,7 @@ public:
 
 	// low-level VL length encode/decode functions
 	static std::vector<unsigned char> encodeVL(int length);
+	static int lengthVL(int length) { return length + encodeLengthLength(length); }
 	static int encodeLengthLength(int length); // length to encode length
 	static int decodeLengthLength(int b1);
 	static int decodeVLLength(int b1);
