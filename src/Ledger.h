@@ -92,6 +92,10 @@ public:
 	bool isClosed()		{ return mClosed; }
 	bool isAccepted()	{ return mAccepted; }
 
+	// This ledger has closed, will never be accepted, and is accepting
+	// new transactions to be re-repocessed when do accept a new last-closed ledger
+	void bumpSeq()		{ mClosed = true; mLedgerSeq++; }
+
 	// ledger signature operations
 	void addRaw(Serializer &s);
 
