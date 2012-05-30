@@ -615,8 +615,6 @@ public:
 	STVector256(const char* n) : SerializedType(n) { ; }
 	STVector256(const char* n, const std::vector<uint256>& v) : SerializedType(n), mValue(v) { ; }
 	STVector256(const std::vector<uint256>& vector) : mValue(vector) { ; }
-	STVector256(const char* n, const std::vector<unsigned char>& vucSerial) : SerializedType(n)
-		{ setValue(vucSerial); }
 
 	SerializedTypeID getSType() const { return STI_VECTOR256; }
 	int getLength() const { return mValue.size()*(256/8)+(64/8); }
@@ -634,7 +632,6 @@ public:
 
 	void setValue(const STVector256& v) { mValue = v.mValue; }
 	void setValue(const std::vector<uint256>& v) { mValue = v; }
-	void setValue(const std::vector<unsigned char>& vucData);
 };
 
 #endif

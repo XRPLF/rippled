@@ -184,28 +184,19 @@ STAccount* STAccount::construct(SerializerIterator& u, const char *name)
 // Return a new object from a SerializerIterator.
 STVector256* STVector256::construct(SerializerIterator& u, const char *name)
 {
-	return new STVector256(name, u.getVL());
+	std::vector<unsigned char> data = u.getVL();
+	std::vector<uint256> value;
+	int count = data.size() / (256 / 8);
+	for(int i = 0; i < count; i++)
+		value.push_back(uint256(std::vector<unsigned char>(data[i], data[i + (256 / 8)])));
+	return new STVector256(name, value);
 }
 
 void STVector256::add(Serializer& s) const
 {
-	s.add32(mValue.size());
-	BOOST_FOREACH(const uint256& v, mValue)
-	{
-		s.add256(v);
-	}
-}
-
-void STVector256::setValue(const std::vector<unsigned char>& vucData)
-{
-	Serializer			s(vucData);
-	SerializerIterator	it(s);
-	uint64				uSize	= it.get32();
-	uint64				uIndex = 0;
-
-	mValue.resize(uSize);
-	while (uSize--)
-		mValue[uIndex++] = it.get256();
+	int size = mValue.size();
+	if (!size) s.addVL(NULL, 0);
+	s.addVL(mValue[0].begin(), mValue.size() & (256 / 8));
 }
 
 //
