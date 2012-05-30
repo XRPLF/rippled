@@ -196,7 +196,7 @@ void STVector256::add(Serializer& s) const
 {
 	int size = mValue.size();
 	if (!size) s.addVL(NULL, 0);
-	s.addVL(mValue[0].begin(), mValue.size() & (256 / 8));
+	s.addVL(mValue[0].begin(), mValue.size() * (256 / 8));
 }
 
 //
