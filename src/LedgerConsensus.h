@@ -106,11 +106,18 @@ protected:
 	void addPosition(LedgerProposal&, bool ours);
 	void removePosition(LedgerProposal&, bool ours);
 	void sendHaveTxSet(const std::vector<uint256>& txSetHashes);
+	void closeLedger();
+
+	// manipulating our own position
+	void takeInitialPosition(Ledger::pointer initialLedger);
+	bool updateOurPositions(int sinceClose);
+	void statusChange(newcoin::NodeEvent, Ledger::pointer ledger);
 	int getThreshold();
+	void beginAccept();
+	void endConsensus();
 
 public:
 	LedgerConsensus(Ledger::pointer previousLedger, uint32 closeTime);
-	void closeTime(Ledger::pointer& currentLedger);
 
 	int startup();
 
@@ -121,7 +128,15 @@ public:
 	void mapComplete(const uint256& hash, SHAMap::pointer map);
 
 	void abort();
-	int timerEntry(void);
+	int timerEntry();
+
+	// state handlers
+	int statePreClose(int secondsSinceClose);
+	int statePostClose(int secondsSinceClose);
+	int stateEstablish(int secondsSinceClose);
+	int stateCutoff(int secondsSinceClose);
+	int stateFinished(int secondsSinceClose);
+	int stateAccepted(int secondsSinceClose);
 
 	bool peerPosition(LedgerProposal::pointer);
 

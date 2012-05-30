@@ -8,7 +8,7 @@
 #include "Application.h"
 #include "Transaction.h"
 #include "LedgerConsensus.h"
-
+#include "LedgerTiming.h"
 
 // This is the primary interface into the "client" portion of the program.
 // Code that wants to do normal operations on the network such as
@@ -152,13 +152,13 @@ AccountState::pointer NetworkOPs::getAccountState(const NewcoinAddress& accountI
 
 void NetworkOPs::setStateTimer(int sec)
 { // set timer early if ledger is closing
-	uint64 closedTime = theApp->getMasterLedger().getCurrentLedger()->getCloseTimeNC();
+	uint64 consensusTime = theApp->getMasterLedger().getCurrentLedger()->getCloseTimeNC() - LEDGER_WOBBLE_TIME;
 	uint64 now = getNetworkTimeNC();
 
 	if ((mMode == omFULL) && !mConsensus)
 	{
-		if (now >= closedTime) sec = 0;
-		else if (sec > (closedTime - now)) sec = (closedTime - now);
+		if (now >= consensusTime) sec = 0;
+		else if (sec > (consensusTime - now)) sec = (consensusTime - now);
 	}
 
 	mNetTimer.expires_from_now(boost::posix_time::seconds(sec));
@@ -309,20 +309,13 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 		// check if the ledger is bad enough to go to omTRACKING
 	}
 
+	int secondsToClose = theApp->getMasterLedger().getCurrentLedger()->getCloseTimeNC() -
+		theApp->getOPs().getNetworkTimeNC();
+	if ((!mConsensus) && (secondsToClose < LEDGER_WOBBLE_TIME)) // pre close wobble
+		beginConsensus(theApp->getMasterLedger().getCurrentLedger());
 	if (mConsensus)
-	{
 		setStateTimer(mConsensus->timerEntry());
-		return;
-	}
-
-	Ledger::pointer currentLedger = theApp->getMasterLedger().getCurrentLedger();
-	if (getNetworkTimeNC() >= currentLedger->getCloseTimeNC())
-	{
-		setStateTimer(beginConsensus(currentLedger, false));
-		return;
-	}
-
-	setStateTimer(10);
+	else setStateTimer(10);
 }
 
 void NetworkOPs::switchLastClosedLedger(Ledger::pointer newLedger)
@@ -350,7 +343,7 @@ void NetworkOPs::switchLastClosedLedger(Ledger::pointer newLedger)
 }
 // vim:ts=4
 
-int NetworkOPs::beginConsensus(Ledger::pointer closingLedger, bool isEarly)
+int NetworkOPs::beginConsensus(Ledger::pointer closingLedger)
 {
 #ifdef DEBUG
 	std::cerr << "Ledger close time for ledger " << closingLedger->getLedgerSeq() << std::endl;
@@ -362,34 +355,21 @@ int NetworkOPs::beginConsensus(Ledger::pointer closingLedger, bool isEarly)
 		return 3;
 	}
 
-	// Create a new ledger to be the open ledger
-	theApp->getMasterLedger().pushLedger(boost::make_shared<Ledger>(closingLedger));
-
 	// Create a consensus object to get consensus on this ledger
 	if (!!mConsensus) mConsensus->abort();
-	mConsensus = boost::make_shared<LedgerConsensus>(prevLedger,
-		theApp->getMasterLedger().getCurrentLedger()->getCloseTimeNC());
-	mConsensus->closeTime(closingLedger); // FIXME: Create consensus a few seconds before close time
+	mConsensus = boost::make_shared<LedgerConsensus>
+		(prevLedger, theApp->getMasterLedger().getCurrentLedger()->getCloseTimeNC());
 
 #ifdef DEBUG
 	std::cerr << "Broadcasting ledger close" << std::endl;
 #endif
-	newcoin::TMStatusChange s;
-	s.set_newevent(newcoin::neCLOSING_LEDGER);
-	s.set_ledgerseq(closingLedger->getLedgerSeq());
-	s.set_networktime(getNetworkTimeNC());
-	uint256 plhash = closingLedger->getParentHash();
-	s.set_previousledgerhash(plhash.begin(), plhash.size());
-	PackedMessage::pointer packet = boost::make_shared<PackedMessage>(s, newcoin::mtSTATUS_CHANGE);
-	theApp->getConnectionPool().relayMessage(NULL, packet);
-
 	return mConsensus->startup();
 }
 
-bool NetworkOPs::proposeLedger(const uint256& prevLgr, uint32 proposeSeq, const uint256& proposeHash,
+bool NetworkOPs::recvPropose(const uint256& prevLgr, uint32 proposeSeq, const uint256& proposeHash,
 	const std::string& pubKey, const std::string& signature)
 {
-	if (mMode != omFULL)
+	if (mMode != omFULL) // FIXME: Should we relay?
 		return true;
 
 	LedgerProposal::pointer proposal =
@@ -403,15 +383,7 @@ bool NetworkOPs::proposeLedger(const uint256& prevLgr, uint32 proposeSeq, const 
 	// Is this node on our UNL?
 	// WRITEME
 
-	Ledger::pointer currentLedger = theApp->getMasterLedger().getCurrentLedger();
-
-	if (!mConsensus)
-	{
-		if ((getNetworkTimeNC() + 2) >= currentLedger->getCloseTimeNC())
-			setStateTimer(beginConsensus(currentLedger, true));
-		if (!mConsensus) return false;
-	}
-
+	if (!mConsensus) return false;
 	return mConsensus->peerPosition(proposal);
 }
 
@@ -438,6 +410,11 @@ void NetworkOPs::mapComplete(const uint256& hash, SHAMap::pointer map)
 {
 	if (mConsensus)
 		mConsensus->mapComplete(hash, map);
+}
+
+void NetworkOPs::endConsensus()
+{
+	mConsensus = boost::shared_ptr<LedgerConsensus>();
 }
 
 // vim:ts=4

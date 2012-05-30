@@ -1,4 +1,3 @@
-
 #include "LedgerConsensus.h"
 
 #include "Application.h"
@@ -150,21 +149,16 @@ LedgerConsensus::LedgerConsensus(Ledger::pointer previousLedger, uint32 closeTim
 {
 }
 
-void LedgerConsensus::closeTime(Ledger::pointer& current)
+void LedgerConsensus::takeInitialPosition(Ledger::pointer initialLedger)
 {
-	if (mState != lcsPRE_CLOSE)
-	{
-		assert(false);
-		return;
-	}
-
 	CKey::pointer nodePrivKey = boost::make_shared<CKey>();
 	nodePrivKey->MakeNewKey(); // FIXME
 
-	current->updateHash();
-	uint256 txSet = current->getTransHash();
-	mOurPosition = boost::make_shared<LedgerProposal>(nodePrivKey, current->getParentHash(), txSet);
-	mapComplete(txSet, current->peekTransactionMap()->snapShot());
+	SHAMap::pointer initialSet = initialLedger->peekTransactionMap()->snapShot();
+	uint256 txSet = initialSet->getHash();
+	mOurPosition = boost::make_shared<LedgerProposal>(nodePrivKey, initialLedger->getParentHash(), txSet);
+	mapComplete(txSet, initialSet);
+	propose(std::vector<uint256>(), std::vector<uint256>());
 }
 
 void LedgerConsensus::mapComplete(const uint256& hash, SHAMap::pointer map)
@@ -237,6 +231,18 @@ void LedgerConsensus::adjustCount(SHAMap::pointer map, const std::vector<uint256
 	}
 }
 
+void LedgerConsensus::statusChange(newcoin::NodeEvent event, Ledger::pointer ledger)
+{
+	newcoin::TMStatusChange s;
+	s.set_newevent(event);
+	s.set_ledgerseq(ledger->getLedgerSeq());
+	s.set_networktime(theApp->getOPs().getNetworkTimeNC());
+	uint256 plhash = ledger->getParentHash();
+	s.set_previousledgerhash(plhash.begin(), plhash.size());
+	PackedMessage::pointer packet = boost::make_shared<PackedMessage>(s, newcoin::mtSTATUS_CHANGE);
+	theApp->getConnectionPool().relayMessage(NULL, packet);
+}
+
 void LedgerConsensus::abort()
 {
 	mState = lcsABORTED;
@@ -247,62 +253,117 @@ int LedgerConsensus::startup()
 	return 1;
 }
 
+int LedgerConsensus::statePreClose(int secondsSinceClose)
+{ // it is shortly before ledger close time
+	if (secondsSinceClose >= 0)
+	{ // it is time to close the ledger
+		mState = lcsPOST_CLOSE;
+		closeLedger();
+	}
+	return 1;
+}
+
+int LedgerConsensus::statePostClose(int secondsSinceClose)
+{ // we are in the transaction wobble time
+	if (secondsSinceClose > LEDGER_WOBBLE_TIME)
+		mState = lcsESTABLISH;
+	return 1;
+}
+
+int LedgerConsensus::stateEstablish(int secondsSinceClose)
+{ // we are establishing consensus
+	updateOurPositions(secondsSinceClose);
+	if (secondsSinceClose > LEDGER_CONVERGE)
+		mState = lcsCUTOFF;
+	return 1;
+}
+
+int LedgerConsensus::stateCutoff(int secondsSinceClose)
+{ // we are making sure everyone else agrees
+	bool haveConsensus = updateOurPositions(secondsSinceClose);
+	if (haveConsensus || (secondsSinceClose > LEDGER_FORCE_CONVERGE))
+	{
+		mState = lcsFINISHED;
+		beginAccept();
+	}
+	return 1;
+}
+
+int LedgerConsensus::stateFinished(int secondsSinceClose)
+{ // we are processing the finished ledger
+	// logic of calculating next ledger advances us out of this state
+	return 1;
+}
+
+int LedgerConsensus::stateAccepted(int secondsSinceClose)
+{ // we have accepted a new ledger
+	statusChange(newcoin::neACCEPTED_LEDGER, theApp->getMasterLedger().getClosedLedger());
+	endConsensus();
+	return 4;
+}
+
 int LedgerConsensus::timerEntry()
 {
 	int sinceClose = theApp->getOPs().getNetworkTimeNC() - mCloseTime;
 
-	if ((mState == lcsESTABLISH) || (mState == lcsCUTOFF))
+	switch (mState)
 	{
-		if (sinceClose >= LEDGER_FORCE_CONVERGE)
-		{
-			mState = lcsCUTOFF;
-			sinceClose = LEDGER_FORCE_CONVERGE;
-		}
-
-		bool changes = false;
-		bool stable = true;
-		SHAMap::pointer ourPosition;
-		std::vector<uint256> addedTx, removedTx;
-
-		for(boost::unordered_map<uint256, LCTransaction::pointer>::iterator it = mDisputes.begin(),
-				end = mDisputes.end(); it != end; ++it)
-		{
-			if (it->second->updatePosition(sinceClose))
-			{
-				if (changes)
-				{
-					ourPosition = mComplete[mOurPosition->getCurrentHash()]->snapShot();
-					changes = true;
-					stable = false;
-				}
-				if (it->second->getOurPosition()) // now a yes
-				{
-					ourPosition->addItem(SHAMapItem(it->first, it->second->peekTransaction()), true);
-					addedTx.push_back(it->first);
-				}
-				else // now a no
-				{
-					ourPosition->delItem(it->first);
-					removedTx.push_back(it->first);
-				}
-			}
-			else if (it->second->getAgreeLevel() < AV_PCT_STOP)
-				stable = false;
-		}
-
-		if (changes)
-		{
-			uint256 newHash = ourPosition->getHash();
-			mOurPosition->changePosition(newHash);
-			propose(addedTx, removedTx);
-			std::vector<uint256> hashes;
-			hashes.push_back(newHash);
-			sendHaveTxSet(hashes);
-		}
-		else if (stable && (mState == lcsCUTOFF))
-			mState = lcsFINISHED;
+		case lcsPRE_CLOSE:	return statePreClose(sinceClose);
+		case lcsPOST_CLOSE:	return statePostClose(sinceClose);
+		case lcsESTABLISH:	return stateEstablish(sinceClose);
+		case lcsCUTOFF:		return stateCutoff(sinceClose);
+		case lcsFINISHED:	return stateFinished(sinceClose);
+		case lcsACCEPTED:	return stateAccepted(sinceClose);
+		case lcsABORTED:	return stateAccepted(sinceClose);
 	}
+	assert(false);
 	return 1;
+}
+
+bool LedgerConsensus::updateOurPositions(int sinceClose)
+{ // returns true if the network has consensus
+	bool changes = false;
+	bool stable = true;
+	SHAMap::pointer ourPosition;
+	std::vector<uint256> addedTx, removedTx;
+
+	for(boost::unordered_map<uint256, LCTransaction::pointer>::iterator it = mDisputes.begin(),
+			end = mDisputes.end(); it != end; ++it)
+	{
+		if (it->second->updatePosition(sinceClose))
+		{
+			if (changes)
+			{
+				ourPosition = mComplete[mOurPosition->getCurrentHash()]->snapShot();
+				changes = true;
+				stable = false;
+			}
+			if (it->second->getOurPosition()) // now a yes
+			{
+				ourPosition->addItem(SHAMapItem(it->first, it->second->peekTransaction()), true);
+				addedTx.push_back(it->first);
+			}
+				else // now a no
+			{
+				ourPosition->delItem(it->first);
+				removedTx.push_back(it->first);
+			}
+		}
+		else if (it->second->getAgreeLevel() < AV_PCT_STOP)
+			stable = false;
+	}
+
+	if (changes)
+	{
+		uint256 newHash = ourPosition->getHash();
+		mOurPosition->changePosition(newHash);
+		propose(addedTx, removedTx);
+		std::vector<uint256> hashes;
+		hashes.push_back(newHash);
+		sendHaveTxSet(hashes);
+	}
+
+	return stable;
 }
 
 SHAMap::pointer LedgerConsensus::getTransactionTree(const uint256& hash, bool doAcquire)
@@ -322,6 +383,15 @@ SHAMap::pointer LedgerConsensus::getTransactionTree(const uint256& hash, bool do
 		return SHAMap::pointer();
 	}
 	return it->second;
+}
+
+void LedgerConsensus::closeLedger()
+{
+	Ledger::pointer initial = theApp->getMasterLedger().getCurrentLedger();
+	statusChange(newcoin::neCLOSING_LEDGER, initial);
+	takeInitialPosition(initial);
+	initial->bumpSeq();
+	statusChange(newcoin::neCLOSING_LEDGER, mPreviousLedger);
 }
 
 void LedgerConsensus::startAcquiring(TransactionAcquire::pointer acquire)
@@ -448,4 +518,22 @@ bool LedgerConsensus::peerGaveNodes(Peer::pointer peer, const uint256& setHash,
 	boost::unordered_map<uint256, TransactionAcquire::pointer>::iterator acq = mAcquiring.find(setHash);
 	if (acq == mAcquiring.end()) return false;
 	return acq->second->takeNodes(nodeIDs, nodeData, peer);
+}
+
+void LedgerConsensus::beginAccept()
+{
+	// WRITEME
+	// 1) Extract the consensus transaction set
+	// 2) Snapshot the last closed ledger
+	// 3) Dispatch a thread to:
+	//   A) apply the consensus transaction set in canonical order
+	//   B) Apply the consensus transaction set and replace the last closed ledger
+	//   C) Rebuild the current ledger, applying as many transactions as possible
+	//   D) Send a network state change
+	//   E) Change the consensus state to lcsACCEPTED
+}
+
+void LedgerConsensus::endConsensus()
+{
+	theApp->getOPs().endConsensus();
 }
