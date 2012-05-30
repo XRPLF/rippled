@@ -1,11 +1,11 @@
 #ifndef __NETWORK_OPS__
 #define __NETWORK_OPS__
 
-#include <boost/asio.hpp>
-
-#include "Transaction.h"
+#include "LedgerMaster.h"
 #include "AccountState.h"
-#include "Ledger.h"
+#include "RippleState.h"
+
+// #include <boost/asio.hpp>
 
 // Operations that clients may wish to perform against the network
 // Master operational handler, server sequencer, network tracker
@@ -35,8 +35,10 @@ protected:
 	boost::asio::deadline_timer			mNetTimer;
 	boost::shared_ptr<LedgerConsensus>	mConsensus;
 
+	LedgerMaster*						mLedgerMaster;
+
 public:
-	NetworkOPs(boost::asio::io_service& io_service);
+	NetworkOPs(boost::asio::io_service& io_service, LedgerMaster* pLedgerMaster);
 
 	// network information
 	uint64 getNetworkTimeNC();
@@ -44,25 +46,45 @@ public:
 	uint32 getCurrentLedgerID();
 	OperatingMode getOperatingMode() { return mMode; }
 	inline bool available() {
+		// XXX don't consider network available till have a closed ledger.
 		return omDISCONNECTED != mMode;
 	}
+
+	uint256					getClosedLedger()
+		{ return mLedgerMaster->getClosedLedger()->getHash(); }
 
 	// transaction operations
 	Transaction::pointer processTransaction(Transaction::pointer transaction, Peer* source = NULL);
 	Transaction::pointer findTransactionByID(const uint256& transactionID);
-	int findTransactionsBySource(std::list<Transaction::pointer>&, const NewcoinAddress& sourceAccount,
+	int findTransactionsBySource(const uint256& uLedger, std::list<Transaction::pointer>&, const NewcoinAddress& sourceAccount,
 		uint32 minSeq, uint32 maxSeq);
 	int findTransactionsByDestination(std::list<Transaction::pointer>&, const NewcoinAddress& destinationAccount,
 		uint32 startLedgerSeq, uint32 endLedgerSeq, int maxTransactions);
 
-	// account operations
-	AccountState::pointer	getAccountState(const NewcoinAddress& accountID);
+	//
+	// Account functions
+	//
+
+	AccountState::pointer	getAccountState(const uint256& uLedger, const NewcoinAddress& accountID);
+	SLE::pointer			getGenerator(const uint256& uLedger, const uint160& uGeneratorID);
+
+	//
+	// Directory functions
+	//
+
+	bool					getDirInfo(const uint256& uLedger, const uint256& uBase,
+								const LedgerEntryType	letKind,
+								uint256& uDirNodeFirst, uint256& uDirNodeLast);
+	STVector256				getDirNode(const uint256& uLedger, const uint256& uDirLineNode);
 
 	//
 	// Ripple functions
 	//
-	bool					getDirLineInfo(const NewcoinAddress& naAccount, uint64& uDirLineNodeFirst, uint64& uDirLineNodeLast) { return false; }
-	std::vector<uint256>	getDirLineNode(const uint64 uDirLineNode) { std::vector<uint256> empty; return empty; }
+
+	bool					getDirLineInfo(const uint256& uLedger, const NewcoinAddress& naAccount, uint256& uDirLineNodeFirst, uint256& uDirLineNodeLast)
+		{ return getDirInfo(uLedger, uint160extend256(naAccount.getAccountID(), 0), ltRIPPLE_STATE, uDirLineNodeFirst, uDirLineNodeLast); }
+
+	RippleState::pointer	getRippleState(const uint256& uLedger, const uint256& uIndex);
 
 	// raw object operations
 	bool findRawLedger(const uint256& ledgerHash, std::vector<unsigned char>& rawLedger);

@@ -11,7 +11,6 @@
 #include "PackedMessage.h"
 #include "Ledger.h"
 #include "Transaction.h"
-#include "NetworkOPs.h"
 
 enum PeerPunish
 {

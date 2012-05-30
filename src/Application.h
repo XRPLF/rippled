@@ -1,10 +1,10 @@
 #ifndef __APPLICATION__
 #define __APPLICATION__
 
+#include "LedgerMaster.h"
 #include "UniqueNodeList.h"
 #include "ConnectionPool.h"
 #include "ScopedLock.h"
-#include "LedgerMaster.h"
 #include "LedgerAcquire.h"
 #include "TransactionMaster.h"
 #include "Wallet.h"
@@ -34,12 +34,12 @@ class Application
 {
 	boost::asio::io_service	mIOService;
 
-	NetworkOPs				mNetOps;
 	Wallet					mWallet;
 	UniqueNodeList			mUNL;
 	LedgerMaster			mMasterLedger;
 	LedgerAcquireMaster		mMasterLedgerAcquire;
 	TransactionMaster		mMasterTransaction;
+	NetworkOPs				mNetOps;
 
 	DatabaseCon* mTxnDB, *mLedgerDB, *mWalletDB, *mHashNodeDB, *mNetNodeDB;
 

@@ -1,7 +1,9 @@
 #ifndef __ACCOUNTSTATE__
 #define __ACCOUNTSTATE__
 
-// An account's state
+//
+// Provide abstract access to an account's state, such that access to the serialized format is hidden.
+//
 
 #include <vector>
 
@@ -28,6 +30,16 @@ private:
 public:
 	AccountState(const NewcoinAddress& AccountID);				// For new accounts
 	AccountState(SerializedLedgerEntry::pointer ledgerEntry);	// For accounts in a ledger
+
+	bool	bHaveAuthorizedKey()
+	{
+		return mLedgerEntry->getIFieldPresent(sfAuthorizedKey);
+	}
+
+	uint160	getAuthorizedKey()
+	{
+		return mLedgerEntry->getIFieldH160(sfAuthorizedKey);
+	}
 
 	const NewcoinAddress& getAccountID() const { return mAccountID; }
 	STAmount getBalance() const { return mLedgerEntry->getIValueFieldAmount(sfBalance); }

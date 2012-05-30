@@ -12,6 +12,7 @@
 
 #include "Transaction.h"
 #include "AccountState.h"
+#include "RippleState.h"
 #include "types.h"
 #include "BitcoinUtil.h"
 #include "SHAMap.h"
@@ -75,7 +76,7 @@ protected:
 
 	static Ledger::pointer getSQL(const std::string& sqlStatement);
 
-	SerializedLedgerEntry::pointer getASNode(LedgerStateParms& parms, const uint256& nodeID,
+	SLE::pointer getASNode(LedgerStateParms& parms, const uint256& nodeID,
 	 LedgerEntryType let);
 
 public:
@@ -127,11 +128,11 @@ public:
 
 	// high-level functions
 	AccountState::pointer getAccountState(const NewcoinAddress& acctID);
-	LedgerStateParms writeBack(LedgerStateParms parms, SerializedLedgerEntry::pointer);
-	SerializedLedgerEntry::pointer getAccountRoot(LedgerStateParms& parms, const uint160& accountID);
-	SerializedLedgerEntry::pointer getAccountRoot(LedgerStateParms& parms, const NewcoinAddress& naAccountID);
-	SerializedLedgerEntry::pointer getNickname(LedgerStateParms& parms, const std::string& nickname);
-	SerializedLedgerEntry::pointer getNickname(LedgerStateParms& parms, const uint256& nickHash);
+	LedgerStateParms writeBack(LedgerStateParms parms, SLE::pointer);
+	SLE::pointer getAccountRoot(LedgerStateParms& parms, const uint160& accountID);
+	SLE::pointer getAccountRoot(LedgerStateParms& parms, const NewcoinAddress& naAccountID);
+	SLE::pointer getNickname(LedgerStateParms& parms, const std::string& nickname);
+	SLE::pointer getNickname(LedgerStateParms& parms, const uint256& nickHash);
 
 	// database functions
 	static void saveAcceptedLedger(Ledger::pointer);
@@ -149,7 +150,7 @@ public:
 	// Generator Map functions
 	//
 
-	SerializedLedgerEntry::pointer getGenerator(LedgerStateParms& parms, const uint160& uGeneratorID);
+	SLE::pointer getGenerator(LedgerStateParms& parms, const uint160& uGeneratorID);
 
 	static uint256 getGeneratorIndex(const uint160& uGeneratorID)
 	{ return uint160extend256(uGeneratorID, lnsGenerator); }	// Index is the generator ID extended to 256 bits in namespace 1
@@ -165,22 +166,25 @@ public:
 	static uint256 getRippleStateIndex(const NewcoinAddress& naA, const NewcoinAddress& naB)
 		{ return getRippleStateIndex(naA, naB, uint160()); }
 
-	static uint160 getOfferBase(const uint160& currencyIn, const uint160& accountIn,
-		const uint160& currencyOut, const uint160& accountOut);
+	RippleState::pointer getRippleState(const uint256& uNode);
+	SLE::pointer getRippleState(LedgerStateParms& parms, const uint256& uNode);
+
+	SLE::pointer getRippleState(LedgerStateParms& parms, const NewcoinAddress& naA, const NewcoinAddress& naB, const uint160& uCurrency)
+		{ return getRippleState(parms, getRippleStateIndex(naA, naB, uCurrency)); }
+
+	SLE::pointer getRippleState(LedgerStateParms& parms, const uint160& uiA, const uint160& uiB, const uint160& uCurrency)
+		{ return getRippleState(parms, getRippleStateIndex(NewcoinAddress::createAccountID(uiA), NewcoinAddress::createAccountID(uiB), uCurrency)); }
 
 	//
 	// Offer functions
 	//
 
+	static uint160 getOfferBase(const uint160& currencyIn, const uint160& accountIn,
+		const uint160& currencyOut, const uint160& accountOut);
+
 	static uint256 getOfferIndex(const uint160& offerBase, uint64 rate, int skip = 0);
 
 	static int getOfferSkip(const uint256& offerId);
-
-	SerializedLedgerEntry::pointer getRippleState(LedgerStateParms& parms, const NewcoinAddress& naA, const NewcoinAddress& naB, const uint160& uCurrency);
-	SerializedLedgerEntry::pointer getRippleState(LedgerStateParms& parms, const uint160& uiA, const uint160& uiB, const uint160& uCurrency)
-	{
-		return getRippleState(parms, NewcoinAddress::createAccountID(uiA), NewcoinAddress::createAccountID(uiB), uCurrency);
-	}
 
 	//
 	// Directory functions
@@ -188,8 +192,8 @@ public:
 
 	static uint256 getDirIndex(const uint256& uBase, const LedgerEntryType letKind, const uint64 uNodeDir=0);
 
-	SerializedLedgerEntry::pointer getDirRoot(LedgerStateParms& parms, const uint256& uRootIndex);
-	SerializedLedgerEntry::pointer getDirNode(LedgerStateParms& parms, const uint256& uNodeIndex);
+	SLE::pointer getDirRoot(LedgerStateParms& parms, const uint256& uRootIndex);
+	SLE::pointer getDirNode(LedgerStateParms& parms, const uint256& uNodeIndex);
 
 	//
 	// Misc

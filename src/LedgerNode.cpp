@@ -141,15 +141,13 @@ SerializedLedgerEntry::pointer Ledger::getGenerator(LedgerStateParms& parms, con
 // Ripple State
 //
 
-SerializedLedgerEntry::pointer Ledger::getRippleState(LedgerStateParms& parms, const NewcoinAddress& naA, const NewcoinAddress& naB, const uint160& uCurrency)
+SerializedLedgerEntry::pointer Ledger::getRippleState(LedgerStateParms& parms, const uint256& uNode)
 {
-	uint256 nodeID=getRippleStateIndex(naA, naB, uCurrency);
-
 	ScopedLock l(mAccountStateMap->Lock());
 
 	try
 	{
-		return getASNode(parms, nodeID, ltRIPPLE_STATE);
+		return getASNode(parms, uNode, ltRIPPLE_STATE);
 	}
 	catch (...)
 	{
