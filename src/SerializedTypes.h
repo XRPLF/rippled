@@ -617,7 +617,7 @@ public:
 	STVector256(const std::vector<uint256>& vector) : mValue(vector) { ; }
 
 	SerializedTypeID getSType() const { return STI_VECTOR256; }
-	int getLength() const { return mValue.size()*(256/8)+(64/8); }
+	int getLength() const { return Serializer::lengthVL(mValue.size() * (256 / 8)); }
 	void add(Serializer& s) const;
 
 	static std::auto_ptr<SerializedType> deserialize(SerializerIterator& sit, const char* name)
