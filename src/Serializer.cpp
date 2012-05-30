@@ -279,7 +279,7 @@ int Serializer::addVL(const std::vector<unsigned char>& vector)
 int Serializer::addVL(const void *ptr, int len)
 {
 	int ret = addRaw(encodeVL(len));
-	addRaw(ptr, len);
+	if (len) addRaw(ptr, len);
 	return ret;
 }
 
