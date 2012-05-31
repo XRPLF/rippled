@@ -4,10 +4,6 @@
 #include "Conversion.h"
 #include <boost/foreach.hpp>
 
-LedgerMaster::LedgerMaster() : mIsSynced(false)
-{
-}
-
 uint32 LedgerMaster::getCurrentLedgerIndex()
 {
 	return mCurrentLedger->getLedgerSeq();
@@ -33,6 +29,18 @@ void LedgerMaster::pushLedger(Ledger::pointer newLedger)
 	mFinalizedLedger = mCurrentLedger;
 	mCurrentLedger = newLedger;
 	mEngine.setLedger(newLedger);
+}
+
+void LedgerMaster::pushLedger(Ledger::pointer newLCL, Ledger::pointer newOL)
+{
+	assert(newLCL->isClosed() && newLCL->isAccepted());
+	assert(!newOL->isClosed() && !newOL->isAccepted());
+
+	ScopedLock sl(mLock);
+	mLedgerHistory.addAcceptedLedger(newLCL);
+	mFinalizedLedger = newLCL;
+	mCurrentLedger = newOL;
+	mEngine.setLedger(newOL);
 }
 
 void LedgerMaster::switchLedgers(Ledger::pointer lastClosed, Ledger::pointer current)

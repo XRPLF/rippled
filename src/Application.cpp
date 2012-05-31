@@ -122,7 +122,6 @@ void Application::run()
 	Ledger::pointer secondLedger = boost::make_shared<Ledger>(firstLedger);
 	mMasterLedger.pushLedger(secondLedger);
 	assert(!!secondLedger->getAccountState(rootAddress));
-	mMasterLedger.setSynced();
 	// temporary
 
 	mNetOps.setStateTimer(0);

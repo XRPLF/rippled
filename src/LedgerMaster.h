@@ -15,7 +15,6 @@
 class LedgerMaster
 {
 	boost::recursive_mutex mLock;
-	bool mIsSynced;
 
 	TransactionEngine mEngine;
 
@@ -32,25 +31,28 @@ class LedgerMaster
 
 public:
 
-	LedgerMaster();
+	LedgerMaster()						{ ; }
 
 	uint32 getCurrentLedgerIndex();
-	bool isSynced() { return mIsSynced; }
-	void setSynced() { mIsSynced=true; }
 
-	Ledger::pointer getCurrentLedger() { return mCurrentLedger; }
-	Ledger::pointer getClosedLedger() { return mFinalizedLedger; }
+	ScopedLock getLock()				{ return ScopedLock(mLock); }
+
+	Ledger::pointer getCurrentLedger()	{ return mCurrentLedger; }
+	Ledger::pointer getClosedLedger()	{ return mFinalizedLedger; }
 
 	TransactionEngineResult doTransaction(const SerializedTransaction& txn, TransactionEngineParams params)
 	{ return mEngine.applyTransaction(txn, params); }
 
 	void pushLedger(Ledger::pointer newLedger);
+	void pushLedger(Ledger::pointer newLCL, Ledger::pointer newOL);
 	void switchLedgers(Ledger::pointer lastClosed, Ledger::pointer newCurrent);
 
 	Ledger::pointer getLedgerBySeq(uint32 index)
 	{
-		if (mCurrentLedger && (mCurrentLedger->getLedgerSeq()==index)) return mCurrentLedger;
-		if (mFinalizedLedger && (mFinalizedLedger->getLedgerSeq()==index)) return mFinalizedLedger;
+		if (mCurrentLedger && (mCurrentLedger->getLedgerSeq() == index))
+			return mCurrentLedger;
+		if (mFinalizedLedger && (mFinalizedLedger->getLedgerSeq() == index))
+			return mFinalizedLedger;
 		return mLedgerHistory.getLedgerBySeq(index);
 	}
 
@@ -62,8 +64,6 @@ public:
 	}
 
 	bool addHeldTransaction(Transaction::pointer trans);
-	uint64 getBalance(std::string& strAcctID, const uint160 currency = 0);
-	uint64 getBalance(const NewcoinAddress& acctID, const uint160 currency = 0);
 };
 
 #endif
