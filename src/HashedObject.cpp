@@ -77,7 +77,7 @@ bool HashedObject::store() const
 
 HashedObject::pointer HashedObject::retrieve(const uint256& hash)
 {
-	if (!theApp->getHashNodeDB()) return HashedObject::pointer();
+	if (!theApp || !theApp->getHashNodeDB()) return HashedObject::pointer();
 	std::string sql = "SELECT * from CommitedObjects WHERE Hash='";
 	sql.append(hash.GetHex());
 	sql.append("';");
