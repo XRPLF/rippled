@@ -38,6 +38,7 @@ public:
 	uint32 getProposeSeq() const			{ return mProposeSeq; }
 	std::vector<unsigned char> getPubKey() const { return mKey->GetPubKey(); }
 	std::vector<unsigned char> sign();
+	CKey::pointer peekKey()					{ return mKey; }
 
 	void changePosition(const uint256& newPosition);
 };
