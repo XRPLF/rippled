@@ -27,7 +27,7 @@ public:
 	typedef boost::shared_ptr<SHAMapNode> pointer;
 
 private:
-	static uint256 smMasks[64]; // AND with hash to get node id
+	static uint256 smMasks[65]; // AND with hash to get node id
 
 	uint256	mNodeID;
 	int	mDepth;

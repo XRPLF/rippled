@@ -19,7 +19,7 @@ std::string SHAMapNode::getString() const
 			% mNodeID.GetHex());
 }
 
-uint256 SHAMapNode::smMasks[64];
+uint256 SHAMapNode::smMasks[65];
 
 bool SHAMapNode::operator<(const SHAMapNode &s) const
 {
@@ -76,20 +76,21 @@ void SHAMapNode::ClassInit()
 	{
 		smMasks[i] = selector;
 		*(selector.begin() + (i / 2)) = 0xF0;
-		smMasks[i + 1]=selector;
+		smMasks[i + 1] = selector;
 		*(selector.begin() + (i / 2)) = 0xFF;
 	}
+	smMasks[64] = selector;
 }
 
 uint256 SHAMapNode::getNodeID(int depth, const uint256& hash)
 {
-	assert(depth >= 0 && depth < 64);
+	assert((depth >= 0) && (depth <= 64));
 	return hash & smMasks[depth];
 }
 
 SHAMapNode::SHAMapNode(int depth, const uint256 &hash) : mDepth(depth)
 { // canonicalize the hash to a node ID for this depth
-	assert(depth>=0 && depth<64);
+	assert((depth >= 0) && (depth < 65));
 	mNodeID = getNodeID(depth, hash);
 }
 
@@ -130,7 +131,7 @@ SHAMapNode SHAMapNode::getChildNodeID(int m) const
 int SHAMapNode::selectBranch(const uint256& hash) const
 { // Which branch would contain the specified hash
 #ifdef DEBUG
-	if (mDepth == 63)
+	if (mDepth == 64)
 	{
 		assert(false);
 		return -1;
