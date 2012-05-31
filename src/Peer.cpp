@@ -723,6 +723,7 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 
 	if (packet.itype() == newcoin::liTS_CANDIDATE)
 	{ // Request is  for a transaction candidate set
+		std::cerr << "Received request for TX candidate set data" << std::endl;
 		Ledger::pointer ledger;
 		if ((!packet.has_ledgerhash() || packet.ledgerhash().size() != 32))
 		{
@@ -737,6 +738,7 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 			punishPeer(PP_INVALID_REQUEST);
 			return;
 		}
+		reply.set_ledgerseq(0);
 		reply.set_ledgerhash(txHash.begin(), txHash.size());
 		reply.set_type(newcoin::liTS_CANDIDATE);
 	}
