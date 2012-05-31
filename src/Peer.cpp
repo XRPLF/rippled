@@ -455,16 +455,15 @@ void Peer::processReadBuffer()
 			}
 			break;
 
-#if 0
-		case newcoin::mtCLOSE_LEDGER:
+		case newcoin::mtVALIDATION:
 			{
-				newcoin::TM msg;
+				newcoin::TMValidation msg;
 				if(msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
-					recv(msg);
+					recvValidation(msg);
 				else std::cerr << "parse error: " << type << std::endl;
 			}
 			break;
-
+#if 0
 		case newcoin::mtGET_VALIDATION:
 			{
 				newcoin::TM msg;
@@ -474,14 +473,6 @@ void Peer::processReadBuffer()
 			}
 			break;
 
-		case newcoin::mtVALIDATION:
-			{
-				newcoin::TM msg;
-				if(msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
-					recv(msg);
-				else std::cerr << "parse error: " << type << std::endl;
-			}
-			break;
 #endif
 		case newcoin::mtGET_OBJECT:
 			{
@@ -953,133 +944,4 @@ Json::Value Peer::getJson() {
     return ret;
 }
 
-#if 0
-
-/*
-PackedMessage::pointer Peer::createFullLedger(Ledger::pointer ledger)
-{
-	if(ledger)
-	{
-		// TODO:
-		newcoin::FullLedger* fullLedger=new newcoin::FullLedger();
-		ledger->
-	}
-
-	return(PackedMessage::pointer());
-}*/
-
-PackedMessage::pointer Peer::createValidation(Ledger::pointer ledger)
-{
-	uint256 hash=ledger->getHash();
-	uint256 sig=ledger->getSignature();
-
-	newcoin::Validation* valid=new newcoin::Validation();
-	valid->set_ledgerindex(ledger->getIndex());
-	valid->set_hash(hash.begin(), hash.GetSerializeSize());
-	valid->set_seqnum(ledger->getValidSeqNum());
-	valid->set_sig(sig.begin(), sig.GetSerializeSize());
-	valid->set_hanko(theConfig.HANKO);
-
-	PackedMessage::pointer packet=boost::make_shared<PackedMessage>
-		(PackedMessage::MessagePointer(valid), newcoin::VALIDATION);
-	return(packet);
-}
-
-PackedMessage::pointer Peer::createGetFullLedger(uint256& hash)
-{
-	newcoin::GetFullLedger* gfl=new newcoin::GetFullLedger();
-	gfl->set_hash(hash.begin(), hash.GetSerializeSize());
-
-	PackedMessage::pointer packet=boost::make_shared<PackedMessage>
-		(PackedMessage::MessagePointer(gfl), newcoin::GET_FULL_LEDGER);
-	return(packet);
-}
-
-void Peer::sendLedgerProposal(Ledger::pointer ledger)
-{
-	PackedMessage::pointer packet=Peer::createLedgerProposal(ledger);
-	sendPacket(packet);
-}
-
-void Peer::sendFullLedger(Ledger::pointer ledger)
-{
-	if(ledger)
-	{
-		PackedMessage::pointer packet(
-			new PackedMessage(PackedMessage::MessagePointer(ledger->createFullLedger()), newcoin::FULL_LEDGER));
-		sendPacket(packet);
-	}
-}
-
-void Peer::sendGetFullLedger(uint256& hash)
-{
-	PackedMessage::pointer packet=createGetFullLedger(hash);
-	sendPacket(packet);
-}
-
-void Peer::receiveHello(newcoin::Hello& packet)
-{
-	// TODO:6 add this guy to your KNL
-}
-
-void Peer::receiveGetFullLedger(newcoin::GetFullLedger& gfl)
-{
-	sendFullLedger(theApp->getLedgerMaster().getLedger(protobufTo256(gfl.hash())));
-}
-
-void Peer::receiveValidation(newcoin::Validation& validation)
-{
-	theApp->getValidationCollection().addValidation(validation);
-}
-
-void Peer::receiveGetValidations(newcoin::GetValidations& request)
-{
-	vector<newcoin::Validation> validations;
-	theApp->getValidationCollection().getValidations(request.ledgerindex(), validations);
-	if(validations.size())
-	{
-		BOOST_FOREACH(newcoin::Validation& valid, validations)
-		{
-			PackedMessage::pointer packet=boost::make_shared<PackedMessage>
-				(PackedMessage::MessagePointer(new newcoin::Validation(valid)), newcoin::VALIDATION));
-			sendPacket(packet);
-		}
-	}
-}
-
-void Peer::receiveTransaction(TransactionPtr trans)
-{
-	// add to the correct transaction bundle and relay if we need to
-	if(theApp->getLedgerMaster().addTransaction(trans))
-	{
-		// broadcast it to other Peers
-		ConnectionPool& pool=theApp->getConnectionPool();
-		PackedMessage::pointer packet=boost::make_shread<PackedMessage>
-			(PackedMessage::MessagePointer(new newcoin::Transaction(*(trans.get()))), newcoin::TRANSACTION);
-		pool.relayMessage(this, packet);
-	}
-	else
-	{
-		std::cerr << "Invalid transaction: " << trans->from() << std::endl;
-	}
-}
-
-void Peer::receiveProposeLedger(newcoin::ProposeLedger& packet)
-{
-	theApp->getLedgerMaster().checkLedgerProposal(shared_from_this(), packet);
-}
-
-void Peer::receiveFullLedger(newcoin::FullLedger& packet)
-{
-	theApp->getLedgerMaster().addFullLedger(packet);
-}
-
-void Peer::connectTo(KnownNode& node)
-{
-	tcp::endpoint endpoint( address::from_string(node.mIP), node.mPort);
-	mSocket.async_connect(endpoint,
-		boost::bind(&Peer::connected, this, boost::asio::placeholders::error) );
-}
-
-#endif
 // vim:ts=4
