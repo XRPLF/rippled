@@ -587,6 +587,7 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 	int successes = 0;
 	do
 	{
+		successes = 0;
 		std::deque<SerializedTransaction::pointer>::iterator it = failedTransactions.begin();
 		while (it != failedTransactions.end())
 		{
@@ -611,13 +612,23 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 		}
 	} while (successes > 0);
 
-	// WRITEME
-	//   Rebase off new LCL, create empty current ledger
-	//   reprocess new transactions
-	//	 reprocess held transactions
-	//   Send a network state change
+	newLCL->setAccepted();
+	Ledger::pointer newOL = boost::make_shared<Ledger>(newLCL);
+
+	ScopedLock sl = theApp->getMasterLedger().getLock();
+
+	// take transactions from new open ledger, try to process them WRITEME
+
+	// try one last time to process held transactions WRITEME
+
+	theApp->getMasterLedger().pushLedger(newLCL, newOL);
+
+	//   Send a network state change WRITEME
 	//   Change the consensus state to lcsACCEPTED
-	//   send validations
+
+	sl.unlock();
+
+	//   make and send validations WRITEME
 }
 
 void LedgerConsensus::endConsensus()
