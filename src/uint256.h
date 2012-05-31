@@ -16,8 +16,6 @@
 #include "types.h"
 #include "utils.h"
 
-#include <openssl/bn.h>
-
 #if defined(_MSC_VER) && _MSC_VER < 1300
 #define for  if (false) ; else for
 #endif
@@ -61,8 +59,10 @@ public:
 	const base_uint operator~() const
 	{
 		base_uint ret;
+
 		for (int i = 0; i < WIDTH; i++)
 			ret.pn[i] = ~pn[i];
+
 		return ret;
 	}
 
@@ -80,6 +80,7 @@ public:
 	{
 		for (int i = 0; i < WIDTH; i++)
 			pn[i] ^= b.pn[i];
+
 		return *this;
 	}
 
@@ -87,6 +88,7 @@ public:
 	{
 		for (int i = 0; i < WIDTH; i++)
 			pn[i] &= b.pn[i];
+
 		return *this;
 	}
 
@@ -94,13 +96,13 @@ public:
 	{
 		for (int i = 0; i < WIDTH; i++)
 			pn[i] |= b.pn[i];
+
 		return *this;
 	}
 
 	base_uint& operator++()
 	{
 		// prefix operator
-
 		for (int i = WIDTH-1; ++pn[i] == 0 && i; i--)
 			nothing();
 
@@ -112,13 +114,13 @@ public:
 		// postfix operator
 		const base_uint ret = *this;
 		++(*this);
+
 		return ret;
 	}
 
 	base_uint& operator--()
 	{
 		// prefix operator
-
 		for (int i = WIDTH-1; --pn[i] == (unsigned int) -1 && i; i--)
 			nothing();
 
@@ -130,6 +132,7 @@ public:
 		// postfix operator
 		const base_uint ret = *this;
 		--(*this);
+
 		return ret;
 	}
 
@@ -167,15 +170,12 @@ public:
 
 	friend inline bool operator==(const base_uint& a, const base_uint& b)
 	{
-		for (int i = 0; i < base_uint::WIDTH; i++)
-			if (a.pn[i] != b.pn[i])
-				return false;
-		return true;
+		return !compare(a, b);
 	}
 
 	friend inline bool operator!=(const base_uint& a, const base_uint& b)
 	{
-		return (!(a == b));
+		return !!compare(a, b);
 	}
 
 	std::string GetHex() const
@@ -185,8 +185,7 @@ public:
 
 	void SetHex(const char* psz)
 	{
-		for (int i = 0; i < WIDTH; i++)
-			pn[i] = 0;
+		zero();
 
 		// skip leading spaces
 		while (isspace(*psz))
@@ -196,28 +195,46 @@ public:
 		if (psz[0] == '0' && tolower(psz[1]) == 'x')
 			psz += 2;
 
-		// hex string to uint
-		static char phexdigit[256] = { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-		0,1,2,3,4,5,6,7,8,9,0,0,0,0,0,0, 0,0xa,0xb,0xc,0xd,0xe,0xf,0,0,0,0,0,0,0,0,0,
-		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0xa,0xb,0xc,0xd,0xe,0xf,0,0,0,0,0,0,0,0,0 };
+		// hex char to int
+		static signed char phexdigit[256] = {
+			-1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+			-1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+			-1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+			 0, 1, 2, 3,  4, 5, 6, 7,  8, 9,-1,-1, -1,-1,-1,-1,
 
-		const char* pBegin = psz;
-		while (phexdigit[(int) *psz] || *psz == '0')
-			psz++;
-		psz--;
+			-1,0xa,0xb,0xc, 0xd,0xe,0xf,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+			-1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+			-1,0xa,0xb,0xc, 0xd,0xe,0xf,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+			-1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
 
-		unsigned char* pOut	= begin();
+			-1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+			-1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+			-1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+			-1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
 
-		if (psz-pBegin > 2*size())
-			psz	= pBegin + 2*size();
+			-1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+			-1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+			-1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+			-1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+			};
 
-		while (pBegin != psz)
+		const unsigned char* pEnd	= reinterpret_cast<const unsigned char*>(psz);
+		const unsigned char* pBegin = pEnd;
+
+		while (phexdigit[*pEnd] >= 0)
+			pEnd++;
+
+		if (pEnd-pBegin > 2*size())
+			pBegin = pEnd - 2*size();
+
+		unsigned char* pOut	= end()-((pEnd-pBegin+1)/2);
+
+		while (pBegin != pEnd)
 		{
-			unsigned char	cHigh	= phexdigit[(unsigned char) *pBegin++] << 4;
-			unsigned char	cLow	= pBegin == psz
+			unsigned char	cHigh	= phexdigit[*pBegin++] << 4;
+			unsigned char	cLow	= pBegin == pEnd
 										? 0
-										: phexdigit[(unsigned char) *pBegin++];
+										: phexdigit[*pBegin++];
 			*pOut++	= cHigh | cLow;
 		}
 	}
@@ -306,34 +323,33 @@ public:
 
 	uint128()
 	{
-		for (int i = 0; i < WIDTH; i++)
-			pn[i] = 0;
+		zero();
 	}
 
 	uint128(const basetype& b)
 	{
-		for (int i = 0; i < WIDTH; i++)
-			pn[i] = b.pn[i];
+		*this = b;
 	}
 
 	uint128& operator=(const basetype& b)
 	{
 		for (int i = 0; i < WIDTH; i++)
 			pn[i] = b.pn[i];
+
 		return *this;
 	}
 
-	explicit uint128(const base_uint256 b) {
+	explicit uint128(const base_uint256& b) {
 		for (int i = 0; i < WIDTH; i++)
 			pn[i] = b.pn[i];
 	}
 
 	explicit uint128(const std::vector<unsigned char>& vch)
 	{
-		if (vch.size() == sizeof(pn))
-			memcpy(pn, &vch[0], sizeof(pn));
+		if (vch.size() == size())
+			memcpy(pn, &vch[0], size());
 		else
-			memset(pn, 0, sizeof(pn));
+			zero();
 	}
 
 };
@@ -350,20 +366,19 @@ public:
 
 	uint160()
 	{
-		for (int i = 0; i < WIDTH; i++)
-			pn[i] = 0;
+		zero();
 	}
 
 	uint160(const basetype& b)
 	{
-		for (int i = 0; i < WIDTH; i++)
-			pn[i] = b.pn[i];
+		*this	= b;
 	}
 
 	uint160& operator=(const basetype& b)
 	{
 		for (int i = 0; i < WIDTH; i++)
 			pn[i] = b.pn[i];
+
 		return *this;
 	}
 
@@ -439,20 +454,19 @@ public:
 
 	uint256()
 	{
-		for (int i = 0; i < WIDTH; i++)
-			pn[i] = 0;
+		zero();
 	}
 
 	uint256(const basetype& b)
 	{
-		for (int i = 0; i < WIDTH; i++)
-			pn[i] = b.pn[i];
+		*this	= b;
 	}
 
 	uint256& operator=(const basetype& b)
 	{
 		for (int i = 0; i < WIDTH; i++)
 			pn[i] = b.pn[i];
+
 		return *this;
 	}
 
