@@ -18,7 +18,7 @@ enum MessageType {
 // transaction and ledger processing
 	mtTRANSACTION=			30;
 	mtGET_LEDGER=			31;
-	mtLEDGER=				32;
+	mtLEDGER_DATA=			32;
 	mtPROPOSE_LEDGER=		33;
 	mtSTATUS_CHANGE=		34;
 	mtHAVE_SET=				35;

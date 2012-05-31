@@ -437,20 +437,20 @@ void Peer::processReadBuffer()
 			}
 			break;
 
-		case newcoin::mtLEDGER:
+		case newcoin::mtLEDGER_DATA:
 			{
-				newcoin::TMHaveTransactionSet msg;
+				newcoin::TMLedgerData msg;
 				if(msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
-					recvHaveTxSet(msg);
+					recvLedger(msg);
 				else std::cerr << "parse error: " << type << std::endl;
 			}
 			break;
 
 		case newcoin::mtHAVE_SET:
 			{
-				newcoin::TMLedgerData msg;
+				newcoin::TMHaveTransactionSet msg;
 				if(msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
-					recvLedger(msg);
+					recvHaveTxSet(msg);
 				else std::cerr << "parse error: " << type << std::endl;
 			}
 			break;
@@ -789,7 +789,7 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 			Serializer nData(128);
 			ledger->addRaw(nData);
 			reply.add_nodes()->set_nodedata(nData.getDataPtr(), nData.getLength());
-			PackedMessage::pointer oPacket = boost::make_shared<PackedMessage>(reply, newcoin::mtLEDGER);
+			PackedMessage::pointer oPacket = boost::make_shared<PackedMessage>(reply, newcoin::mtLEDGER_DATA);
 			sendPacket(oPacket);
 			return;
 		}
@@ -830,7 +830,7 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 			}
 		}
 	}
-	PackedMessage::pointer oPacket = boost::make_shared<PackedMessage>(reply, newcoin::mtLEDGER);
+	PackedMessage::pointer oPacket = boost::make_shared<PackedMessage>(reply, newcoin::mtLEDGER_DATA);
 	sendPacket(oPacket);
 }
 
