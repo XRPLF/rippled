@@ -117,8 +117,7 @@ message TMHaveTransactionSet {
 
 // Used to sign a final closed ledger after reprocessing
 message TMValidation {
-	required bytes validation		= 1;		// in SerializedValidation form
-	required bytes signature		= 2;
+	required bytes validation		= 1;		// in SerializedValidation signed form
 }
 
 
