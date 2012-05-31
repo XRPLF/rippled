@@ -1,5 +1,8 @@
 #include "LedgerConsensus.h"
 
+#include <boost/thread.hpp>
+#include <boost/bind.hpp>
+
 #include "Application.h"
 #include "NetworkOPs.h"
 #include "LedgerTiming.h"
@@ -522,15 +525,33 @@ bool LedgerConsensus::peerGaveNodes(Peer::pointer peer, const uint256& setHash,
 
 void LedgerConsensus::beginAccept()
 {
+	SHAMap::pointer consensusSet = mComplete[mOurPosition->getCurrentHash()];
+	if (!consensusSet)
+	{
+		std::cerr << "We don't have our own set" << std::endl;
+		assert(false);
+		abort();
+		return;
+	}
+
+	boost::thread thread(boost::bind(&LedgerConsensus::Saccept, shared_from_this(), consensusSet));
+	thread.detach();
+}
+
+void LedgerConsensus::Saccept(boost::shared_ptr<LedgerConsensus> This, SHAMap::pointer txSet)
+{
+	This->accept(txSet);
+}
+
+void LedgerConsensus::accept(SHAMap::pointer set)
+{
 	// WRITEME
-	// 1) Extract the consensus transaction set
-	// 2) Snapshot the last closed ledger
-	// 3) Dispatch a thread to:
-	//   A) apply the consensus transaction set in canonical order
-	//   B) Apply the consensus transaction set and replace the last closed ledger
-	//   C) Rebuild the current ledger, applying as many transactions as possible
-	//   D) Send a network state change
-	//   E) Change the consensus state to lcsACCEPTED
+	//   A) Snapshot the LCL
+	//   B) apply the consensus transaction set in canonical order
+	//   C) Apply the consensus transaction set and replace the last closed ledger
+	//   D) Rebuild the current ledger, applying as many transactions as possible
+	//   E) Send a network state change
+	//   F) Change the consensus state to lcsACCEPTED
 }
 
 void LedgerConsensus::endConsensus()

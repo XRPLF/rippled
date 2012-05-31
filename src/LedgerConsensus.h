@@ -4,6 +4,7 @@
 #include <list>
 
 #include <boost/weak_ptr.hpp>
+#include <boost/enable_shared_from_this.hpp>
 #include <boost/unordered/unordered_map.hpp>
 
 #include "key.h"
@@ -74,7 +75,7 @@ enum LCState
 	lcsABORTED			// Abandoned
 };
 
-class LedgerConsensus
+class LedgerConsensus : public boost::enable_shared_from_this<LedgerConsensus>
 {
 protected:
 	LCState mState;
@@ -94,6 +95,10 @@ protected:
 
 	// Disputed transactions
 	boost::unordered_map<uint256, LCTransaction::pointer, hash_SMN> mDisputes;
+
+	// final accept logic
+	static void Saccept(boost::shared_ptr<LedgerConsensus> This, SHAMap::pointer txSet);
+	void accept(SHAMap::pointer txSet);
 
 	void weHave(const uint256& id, Peer::pointer avoidPeer);
 	void startAcquiring(TransactionAcquire::pointer);
