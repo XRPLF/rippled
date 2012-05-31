@@ -366,6 +366,7 @@ BOOST_AUTO_TEST_CASE( SHAMapSync_test )
 	unsigned int seed;
 	RAND_pseudo_bytes(reinterpret_cast<unsigned char *>(&seed), sizeof(seed));
 	srand(seed);
+	SHAMapNode::ClassInit();
 
 	SHAMap source, destination;
 

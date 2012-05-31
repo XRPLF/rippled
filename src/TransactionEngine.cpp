@@ -8,7 +8,7 @@
 
 typedef SerializedLedgerEntry SLE;
 
-#define DIR_NODE_MAX	1
+#define DIR_NODE_MAX	32
 
 // We return the uNodeDir so that on delete we can quickly know where the element is mentioned in the directory.
 TransactionEngineResult TransactionEngine::dirAdd(

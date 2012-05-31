@@ -339,8 +339,6 @@ public:
 	static std::vector<unsigned char> checkTrustedPath(const uint256& ledgerHash, const uint256& leafIndex,
 		const std::list<std::vector<unsigned char> >& path);
 
-	static bool TestSHAMap();
-	static bool syncTest();
 	bool deepCompare(SHAMap& other);
 	virtual void dump(bool withHashes = false);
 };
