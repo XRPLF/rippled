@@ -2,6 +2,7 @@
 #include <cstring>
 
 #include <boost/foreach.hpp>
+#include <boost/format.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/smart_ptr/make_shared.hpp>
 
@@ -13,12 +14,9 @@
 
 std::string SHAMapNode::getString() const
 {
-	std::string ret="NodeID(";
-	ret+=boost::lexical_cast<std::string>(mDepth);
-	ret+=",";
-	ret+=mNodeID.GetHex();
-	ret+=")";
-	return ret;
+	return str(boost::format("NodeID(%s,%s)")
+			% boost::lexical_cast<std::string>(mDepth)
+			% mNodeID.GetHex());
 }
 
 uint256 SHAMapNode::smMasks[64];
@@ -77,7 +75,7 @@ void SHAMapNode::ClassInit()
 	for(int i = 0; i < 64; i += 2)
 	{
 		smMasks[i] = selector;
-		*(selector.begin() + (i / 2)) = 0x0F;
+		*(selector.begin() + (i / 2)) = 0xF0;
 		smMasks[i + 1]=selector;
 		*(selector.begin() + (i / 2)) = 0xFF;
 	}
@@ -123,13 +121,14 @@ SHAMapNode SHAMapNode::getChildNodeID(int m) const
 	assert((m >= 0) && (m < 16));
 
 	uint256 child(mNodeID);
-	child.PeekAt(mDepth / 8) |= m << (4 * (mDepth % 8));
+
+	child.begin()[mDepth/2] |= (mDepth & 1) ? m : m << 4;
+
 	return SHAMapNode(mDepth + 1, child);
 }
 
 int SHAMapNode::selectBranch(const uint256& hash) const
 { // Which branch would contain the specified hash
-
 #ifdef DEBUG
 	if (mDepth == 63)
 	{
@@ -147,8 +146,10 @@ int SHAMapNode::selectBranch(const uint256& hash) const
 #endif
 
 	int branch = *(hash.begin() + (mDepth / 2));
-	if (mDepth % 2) branch >>= 4;
-	else branch &= 0xf;
+	if (mDepth & 1)
+		branch &= 0xf;
+	else
+		branch >>= 4;
 
 	assert((branch >= 0) && (branch < 16));
 	return branch;
@@ -259,6 +260,7 @@ void SHAMapTreeNode::addRaw(Serializer &s)
 
 	for (int i = 0; i < 16; ++i)
 		s.add256(mHashes[i]);
+
 	s.add8(2);
 }
 

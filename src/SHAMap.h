@@ -80,9 +80,14 @@ class hash_SMN
 { // These must be randomized for release
 public:
 	std::size_t operator() (const SHAMapNode& mn) const
+#if 0
 	{ return mn.getDepth() ^ static_cast<std::size_t>(mn.getNodeID().GetAt(0)); }
+#else
+	{ return mn.getDepth() ^ *reinterpret_cast<const std::size_t *>(mn.getNodeID().begin()); }
+#endif
+
 	std::size_t operator() (const uint256& u) const
-	{ return static_cast<std::size_t>(u.GetAt(0)); }
+	{ return *reinterpret_cast<const std::size_t *>(u.begin()); }
 };
 
 class SHAMapItem
@@ -109,18 +114,22 @@ public:
 
 	void updateData(const std::vector<unsigned char>& data) { mData=data; }
 
-	bool operator<(const SHAMapItem& i) const		{ return mTag < i.mTag; }
-	bool operator>(const SHAMapItem& i) const		{ return mTag > i.mTag; }
 	bool operator==(const SHAMapItem& i) const		{ return mTag == i.mTag; }
 	bool operator!=(const SHAMapItem& i) const		{ return mTag != i.mTag; }
-	bool operator<=(const SHAMapItem& i) const		{ return mTag <= i.mTag; }
-	bool operator>=(const SHAMapItem& i) const		{ return mTag >= i.mTag; }
-	bool operator<(const uint256& i) const			{ return mTag < i; }
-	bool operator>(const uint256& i) const			{ return mTag > i; }
 	bool operator==(const uint256& i) const			{ return mTag == i; }
 	bool operator!=(const uint256& i) const			{ return mTag != i; }
+#if 0
+	// This code is comment out because it is unused.  It could work.
+	bool operator<(const SHAMapItem& i) const		{ return mTag < i.mTag; }
+	bool operator>(const SHAMapItem& i) const		{ return mTag > i.mTag; }
+	bool operator<=(const SHAMapItem& i) const		{ return mTag <= i.mTag; }
+	bool operator>=(const SHAMapItem& i) const		{ return mTag >= i.mTag; }
+
+	bool operator<(const uint256& i) const			{ return mTag < i; }
+	bool operator>(const uint256& i) const			{ return mTag > i; }
 	bool operator<=(const uint256& i) const			{ return mTag <= i; }
 	bool operator>=(const uint256& i) const			{ return mTag >= i; }
+#endif
 	virtual void dump();
 };
 

@@ -6,7 +6,8 @@
 
 #include <openssl/dh.h>
 
-#include "uint256.h"
+#include "types.h"
+// #include "uint256.h"
 
 #define nothing()   do {} while (0)
 
@@ -64,9 +65,11 @@ inline std::string strHex(const std::vector<unsigned char>& vucData)
 	return strHex(vucData.begin(), vucData.size());
 }
 
-inline const std::string strHex(const uint160& ui)
+inline std::string strHex(const uint64 uiHost)
 {
-	return strHex(ui.begin(), ui.size());
+	uint64_t	uBig	= htobe64(uiHost);
+
+	return strHex((unsigned char*) &uBig, sizeof(uBig));
 }
 
 template<class Iterator>

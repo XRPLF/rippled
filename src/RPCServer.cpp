@@ -382,19 +382,17 @@ Json::Value RPCServer::doAccountLines(Json::Value &params)
 		AccountState::pointer	as		= mNetOps->getAccountState(uLedger, naAccount);
 		if (as)
 		{
+			Json::Value	jsonLines = Json::Value(Json::objectValue);
+
 			ret["account"]	= naAccount.humanAccountID();
 
 			// We access a committed ledger and need not worry about changes.
 			uint256	uDirLineNodeFirst;
 			uint256	uDirLineNodeLast;
+			// Ledger::getDirIndex(uBase, letKind, uNodeDir)
 
-			if (!mNetOps->getDirLineInfo(uLedger, naAccount, uDirLineNodeFirst, uDirLineNodeLast))
+			if (mNetOps->getDirLineInfo(uLedger, naAccount, uDirLineNodeFirst, uDirLineNodeLast))
 			{
-				ret["lines"]	= Json::Value(Json::objectValue);
-			}
-			else
-			{
-				Json::Value	jsonLines = Json::Value(Json::objectValue);
 
 				for (; uDirLineNodeFirst <= uDirLineNodeLast; uDirLineNodeFirst++)
 				{
@@ -409,27 +407,35 @@ Json::Value RPCServer::doAccountLines(Json::Value &params)
 
 						RippleState::pointer	rsLine	= mNetOps->getRippleState(uLedger, uNode);
 
-						rsLine->setViewAccount(naAccount);
+						if (rsLine)
+						{
+							rsLine->setViewAccount(naAccount);
 
-						naAccountPeer		= rsLine->getAccountIDPeer();
-						saBalance			= rsLine->getBalance();
-						saLimit				= rsLine->getLimit();
-						saLimitPeer			= rsLine->getLimitPeer();
+							naAccountPeer		= rsLine->getAccountIDPeer();
+							saBalance			= rsLine->getBalance();
+							saLimit				= rsLine->getLimit();
+							saLimitPeer			= rsLine->getLimitPeer();
 
-						Json::Value		jPeer = Json::Value(Json::objectValue);
+							Json::Value				jPeer	= Json::Value(Json::objectValue);
 
-						jPeer["balance"]	= saBalance.getText();
-						jPeer["currency"]	= saBalance.getCurrencyHuman();
-						jPeer["limit"]		= saLimit.getJson(0);
-						jPeer["limit_peer"]	= saLimitPeer.getJson(0);
+							jPeer["node"]		= uNode.ToString();
 
-						ret[naAccountPeer.humanAccountID()]	= jPeer;
+							jPeer["balance"]	= saBalance.getText();
+							jPeer["currency"]	= saBalance.getCurrencyHuman();
+							jPeer["limit"]		= saLimit.getJson(0);
+							jPeer["limit_peer"]	= saLimitPeer.getJson(0);
+
+							jsonLines[naAccountPeer.humanAccountID()]	= jPeer;
+						}
+						else
+						{
+							std::cerr << "doAccountLines: Bad index: " << uNode.ToString() << std::endl;
+						}
 					}
 				}
 
-				ret["lines"]	= jsonLines;
-
 			}
+			ret["lines"]	= jsonLines;
 		}
 		else
 		{

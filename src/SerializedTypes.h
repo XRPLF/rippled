@@ -330,7 +330,7 @@ public:
 	friend STAmount convertToInternalAmount(uint64 displayAmount, uint64 totalNow, uint64 totalInit,
 		const char* name = NULL);
 
-	static STAmount deSerialize(SerializerIterator&);
+	static STAmount deserialize(SerializerIterator&);
 	static bool currencyFromString(uint160& uDstCurrency, const std::string& sCurrency);
 };
 
