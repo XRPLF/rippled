@@ -6,6 +6,7 @@
 #include "Application.h"
 #include "NetworkOPs.h"
 #include "LedgerTiming.h"
+#include "SerializedValidation.h"
 
 TransactionAcquire::TransactionAcquire(const uint256& hash) : PeerSet(hash, 1), mHaveRoot(false)
 {
@@ -543,13 +544,10 @@ void LedgerConsensus::Saccept(boost::shared_ptr<LedgerConsensus> This, SHAMap::p
 	This->accept(txSet);
 }
 
-void LedgerConsensus::accept(SHAMap::pointer set)
+void LedgerConsensus::applyTransactions(SHAMap::pointer set, Ledger::pointer ledger,
+	std::deque<SerializedTransaction::pointer>& failedTransactions)
 {
-	std::cerr << "Computing new LCL based on network consensus" << std::endl;
-	Ledger::pointer newLCL = boost::make_shared<Ledger>(mPreviousLedger);
-
-	std::deque<SerializedTransaction::pointer> failedTransactions;
-	TransactionEngine engine(newLCL);
+	TransactionEngine engine(ledger);
 
 	SHAMapItem::pointer item = set->peekFirstItem();
 	while (item)
@@ -563,18 +561,18 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 			if (result > 0)
 			{
 				std::cerr << "   retry" << std::endl;
-				assert(!newLCL->hasTransaction(item->getTag()));
+				assert(!ledger->hasTransaction(item->getTag()));
 				failedTransactions.push_back(txn);
 			}
 			else if (result == 0)
 			{
 				std::cerr << "   success" << std::endl;
-				assert(newLCL->hasTransaction(item->getTag()));
+				assert(ledger->hasTransaction(item->getTag()));
 			}
 			else
 			{
 				std::cerr << "   hard fail" << std::endl;
-				assert(!newLCL->hasTransaction(item->getTag()));
+				assert(!ledger->hasTransaction(item->getTag()));
 			}
 		}
 		catch (...)
@@ -611,24 +609,35 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 			}
 		}
 	} while (successes > 0);
+}
 
+void LedgerConsensus::accept(SHAMap::pointer set)
+{
+	std::cerr << "Computing new LCL based on network consensus" << std::endl;
+	Ledger::pointer newLCL = boost::make_shared<Ledger>(mPreviousLedger);
+
+	std::deque<SerializedTransaction::pointer> failedTransactions;
+	applyTransactions(set, newLCL, failedTransactions);
 	newLCL->setAccepted();
+	newLCL->updateHash();
+	uint256 newLCLHash = newLCL->getHash();
+
 	Ledger::pointer newOL = boost::make_shared<Ledger>(newLCL);
 
 	ScopedLock sl = theApp->getMasterLedger().getLock();
 
-	// take transactions from new open ledger, try to process them WRITEME
-
-	// try one last time to process held transactions WRITEME
-
+	applyTransactions(theApp->getMasterLedger().getCurrentLedger()->peekTransactionMap(),
+		newOL, failedTransactions);
 	theApp->getMasterLedger().pushLedger(newLCL, newOL);
-
-	//   Send a network state change WRITEME
-	//   Change the consensus state to lcsACCEPTED
+	mState = lcsACCEPTED;
 
 	sl.unlock();
 
-	//   make and send validations WRITEME
+	SerializedValidation v(newLCLHash, mOurPosition->peekKey(), true);
+	std::vector<unsigned char> validation = v.getSigned();
+	newcoin::TMValidation val;
+	val.set_validation(&validation[0], validation.size());
+	theApp->getConnectionPool().relayMessage(NULL, boost::make_shared<PackedMessage>(val, newcoin::mtVALIDATION));
 }
 
 void LedgerConsensus::endConsensus()
