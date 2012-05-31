@@ -151,6 +151,8 @@ int LCTransaction::getAgreeLevel()
 LedgerConsensus::LedgerConsensus(Ledger::pointer previousLedger, uint32 closeTime)
 	:  mState(lcsPRE_CLOSE), mCloseTime(closeTime), mPreviousLedger(previousLedger)
 {
+	std::cerr << "Creating consensus object" << std::endl;
+	std::cerr << "LCL:" << previousLedger->getHash().GetHex() <<", ct=" << closeTime << std::endl;
 }
 
 void LedgerConsensus::takeInitialPosition(Ledger::pointer initialLedger)
@@ -249,6 +251,7 @@ void LedgerConsensus::statusChange(newcoin::NodeEvent event, Ledger::pointer led
 
 void LedgerConsensus::abort()
 {
+	std::cerr << "consensus aborted" << std::endl;
 	mState = lcsABORTED;
 }
 
@@ -270,7 +273,10 @@ int LedgerConsensus::statePreClose(int secondsSinceClose)
 int LedgerConsensus::statePostClose(int secondsSinceClose)
 { // we are in the transaction wobble time
 	if (secondsSinceClose > LEDGER_WOBBLE_TIME)
+	{
+		std::cerr << "Wobble is over, it's consensus time" << std::endl;
 		mState = lcsESTABLISH;
+	}
 	return 1;
 }
 
@@ -278,7 +284,10 @@ int LedgerConsensus::stateEstablish(int secondsSinceClose)
 { // we are establishing consensus
 	updateOurPositions(secondsSinceClose);
 	if (secondsSinceClose > LEDGER_CONVERGE)
+	{
+		std::cerr << "Converge cutoff" << std::endl;
 		mState = lcsCUTOFF;
+	}
 	return 1;
 }
 
@@ -287,6 +296,7 @@ int LedgerConsensus::stateCutoff(int secondsSinceClose)
 	bool haveConsensus = updateOurPositions(secondsSinceClose);
 	if (haveConsensus || (secondsSinceClose > LEDGER_FORCE_CONVERGE))
 	{
+		std::cerr << "Consensus complete (" << haveConsensus << ")" << std::endl;
 		mState = lcsFINISHED;
 		beginAccept();
 	}
@@ -359,6 +369,7 @@ bool LedgerConsensus::updateOurPositions(int sinceClose)
 
 	if (changes)
 	{
+		std::cerr << "We change our position" << std::endl;
 		uint256 newHash = ourPosition->getHash();
 		mOurPosition->changePosition(newHash);
 		propose(addedTx, removedTx);
@@ -391,6 +402,7 @@ SHAMap::pointer LedgerConsensus::getTransactionTree(const uint256& hash, bool do
 
 void LedgerConsensus::closeLedger()
 {
+	std::cerr << "Closing ledger" << std::endl;
 	Ledger::pointer initial = theApp->getMasterLedger().getCurrentLedger();
 	statusChange(newcoin::neCLOSING_LEDGER, initial);
 	takeInitialPosition(initial);
@@ -423,6 +435,7 @@ void LedgerConsensus::startAcquiring(TransactionAcquire::pointer acquire)
 
 void LedgerConsensus::propose(const std::vector<uint256>& added, const std::vector<uint256>& removed)
 {
+	std::cerr << "We propose: " << mOurPosition->getCurrentHash().GetHex() << std::endl;
 	newcoin::TMProposeSet prop;
 	prop.set_currenttxhash(mOurPosition->getCurrentHash().begin(), 256 / 8);
 	prop.set_prevclosedhash(mOurPosition->getPrevLedger().begin(), 256 / 8);
@@ -483,7 +496,7 @@ bool LedgerConsensus::peerPosition(LedgerProposal::pointer newPosition)
 			return true;
 		}
 	}
-
+	std::cerr << "Peer changes position" << std::endl;
 	currentPosition = newPosition;
 	SHAMap::pointer set = getTransactionTree(newPosition->getCurrentHash(), true);
 	if (set)
@@ -638,6 +651,7 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 	newcoin::TMValidation val;
 	val.set_validation(&validation[0], validation.size());
 	theApp->getConnectionPool().relayMessage(NULL, boost::make_shared<PackedMessage>(val, newcoin::mtVALIDATION));
+	std::cerr << "Validation sent" << std::endl;
 }
 
 void LedgerConsensus::endConsensus()

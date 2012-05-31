@@ -31,8 +31,8 @@ void Peer::handle_write(const boost::system::error_code& error, size_t bytes_tra
 #ifdef DEBUG
 	if(error)
 		std::cerr << "Peer::handle_write Error: " << error << " bytes: " << bytes_transferred << std::endl;
-	else
-		std::cerr << "Peer::handle_write bytes: "<< bytes_transferred << std::endl;
+//	else
+//		std::cerr << "Peer::handle_write bytes: "<< bytes_transferred << std::endl;
 #endif
 
 	mSendingPacket = PackedMessage::pointer();

@@ -339,6 +339,11 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 		}
 	}
 
+	if (mConsensus)
+	{
+		setStateTimer(mConsensus->timerEntry());
+		return;
+	}
 
 	if (switchLedgers)
 	{

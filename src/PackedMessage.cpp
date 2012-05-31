@@ -22,7 +22,7 @@ PackedMessage::PackedMessage(const ::google::protobuf::Message &message, int typ
 	{
 		message.SerializeToArray(&mBuffer[HEADER_SIZE], msg_size);
 #ifdef DEBUG
-		std::cerr << "PackedMessage: type=" << type << ", datalen=" << msg_size << std::endl;
+//		std::cerr << "PackedMessage: type=" << type << ", datalen=" << msg_size << std::endl;
 #endif
 	}
 }
