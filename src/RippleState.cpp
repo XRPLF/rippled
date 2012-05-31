@@ -13,6 +13,8 @@ RippleState::RippleState(SerializedLedgerEntry::pointer ledgerEntry) :
 	mLowLimit	= mLedgerEntry->getIValueFieldAmount(sfLowLimit);
 	mHighLimit	= mLedgerEntry->getIValueFieldAmount(sfHighLimit);
 
+	mBalance	= mLedgerEntry->getIValueFieldAmount(sfBalance);
+
 	// YYY Should never fail.
 	if (mLowID.isValid() && mHighID.isValid())
 		mValid = true;
