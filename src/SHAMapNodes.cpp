@@ -69,7 +69,9 @@ bool SHAMapNode::operator!=(const uint256 &s) const
 	return s!=mNodeID;
 }
 
-void SHAMapNode::ClassInit()
+static bool j = SHAMapNode::ClassInit();
+
+bool SHAMapNode::ClassInit()
 { // set up the depth masks
 	uint256 selector;
 	for(int i = 0; i < 64; i += 2)
@@ -80,6 +82,7 @@ void SHAMapNode::ClassInit()
 		*(selector.begin() + (i / 2)) = 0xFF;
 	}
 	smMasks[64] = selector;
+	return true;
 }
 
 uint256 SHAMapNode::getNodeID(int depth, const uint256& hash)

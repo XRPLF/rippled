@@ -52,7 +52,6 @@ void Application::stop()
 void Application::run()
 {
 	assert(mTxnDB==NULL);
-	SHAMapNode::ClassInit();
 
 	//
 	// Construct databases.

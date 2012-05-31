@@ -66,7 +66,7 @@ public:
 	virtual std::string getString() const;
 	void dump() const;
 
-	static void ClassInit();
+	static bool ClassInit();
 	static uint256 getNodeID(int depth, const uint256& hash);
 
 	// Convert to/from wire format (256-bit nodeID, 1-byte depth)

@@ -670,7 +670,6 @@ BOOST_AUTO_TEST_SUITE(shamap)
 
 BOOST_AUTO_TEST_CASE( SHAMap_test )
 { // h3 and h4 differ only in the leaf, same terminal node (level 19)
-	SHAMapNode::ClassInit();
 	uint256 h1, h2, h3, h4, h5;
 	h1.SetHex("092891fe4ef6cee585fdc6fda0e09eb4d386363158ec3321b8123e5a772c6ca7");
 	h2.SetHex("436ccbac3347baa1f1e53baeef1f43334da88f1f6d70d963b833afd6dfa289fe");
