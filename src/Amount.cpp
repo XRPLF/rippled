@@ -16,7 +16,7 @@ bool STAmount::currencyFromString(uint160& uDstCurrency, const std::string& sCur
 
 	if (sCurrency.empty() || !sCurrency.compare(SYSTEM_CURRENCY_CODE))
 	{
-		uDstCurrency	= 0;
+		uDstCurrency.zero();
 	}
 	else if (3 == sCurrency.size())
 	{

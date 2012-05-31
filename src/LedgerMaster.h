@@ -62,8 +62,8 @@ public:
 	}
 
 	bool addHeldTransaction(Transaction::pointer trans);
-	uint64 getBalance(std::string& strAcctID, const uint160 currency = 0);
-	uint64 getBalance(const NewcoinAddress& acctID, const uint160 currency = 0);
+	uint64 getBalance(std::string& strAcctID, const uint160 currency);
+	uint64 getBalance(const NewcoinAddress& acctID, const uint160 currency);
 };
 
 #endif
