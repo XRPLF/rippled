@@ -545,13 +545,79 @@ void LedgerConsensus::Saccept(boost::shared_ptr<LedgerConsensus> This, SHAMap::p
 
 void LedgerConsensus::accept(SHAMap::pointer set)
 {
+	std::cerr << "Computing new LCL based on network consensus" << std::endl;
+	Ledger::pointer newLCL = boost::make_shared<Ledger>(mPreviousLedger);
+
+	std::deque<SerializedTransaction::pointer> failedTransactions;
+	TransactionEngine engine(newLCL);
+
+	SHAMapItem::pointer item = set->peekFirstItem();
+	while (item)
+	{
+		std::cerr << "Processing candidate transaction: " << item->getTag().GetHex() << std::endl;
+		try
+		{
+			SerializerIterator sit(item->peekSerializer());
+			SerializedTransaction::pointer txn = boost::make_shared<SerializedTransaction>(boost::ref(sit), 0);
+			TransactionEngineResult result = engine.applyTransaction(*txn, tepNO_CHECK_FEE);
+			if (result > 0)
+			{
+				std::cerr << "   retry" << std::endl;
+				assert(!newLCL->hasTransaction(item->getTag()));
+				failedTransactions.push_back(txn);
+			}
+			else if (result == 0)
+			{
+				std::cerr << "   success" << std::endl;
+				assert(newLCL->hasTransaction(item->getTag()));
+			}
+			else
+			{
+				std::cerr << "   hard fail" << std::endl;
+				assert(!newLCL->hasTransaction(item->getTag()));
+			}
+		}
+		catch (...)
+		{
+			std::cerr << "  Throws" << std::endl;
+		}
+		item = set->peekNextItem(item->getTag());
+	}
+
+	int successes = 0;
+	do
+	{
+		std::deque<SerializedTransaction::pointer>::iterator it = failedTransactions.begin();
+		while (it != failedTransactions.end())
+		{
+			try
+			{
+				TransactionEngineResult result = engine.applyTransaction(**it, tepNO_CHECK_FEE);
+				if (result <= 0)
+				{
+					if (result == 0) ++successes;
+					failedTransactions.erase(it++);
+				}
+				else
+				{
+					++it;
+				}
+			}
+			catch (...)
+			{
+				std::cerr << "   Throws" << std::endl;
+				failedTransactions.erase(it++);
+			}
+		}
+	} while (successes > 0);
+
 	// WRITEME
-	//   A) Snapshot the LCL
-	//   B) apply the consensus transaction set in canonical order
-	//   C) Apply the consensus transaction set and replace the last closed ledger
-	//   D) Rebuild the current ledger, applying as many transactions as possible
-	//   E) Send a network state change
-	//   F) Change the consensus state to lcsACCEPTED
+	//   Rebase off new LCL, create empty current ledger
+	//   reprocess new transactions
+	//	 reprocess held transactions
+	//   Send a network state change
+	//   Change the consensus state to lcsACCEPTED
+	//   send validations
 }
 
 void LedgerConsensus::endConsensus()
