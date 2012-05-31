@@ -2,6 +2,7 @@
 #include <stack>
 
 #include <boost/make_shared.hpp>
+#include <boost/test/unit_test.hpp>
 
 #include <openssl/rand.h>
 #include <iostream>
@@ -358,7 +359,9 @@ std::list<std::vector<unsigned char> > SHAMap::getTrustedPath(const uint256& ind
 	return path;
 }
 
-bool SHAMap::syncTest()
+BOOST_AUTO_TEST_SUITE( SHAMapSync )
+
+BOOST_AUTO_TEST_CASE( SHAMapSync_test )
 {
 	unsigned int seed;
 	RAND_pseudo_bytes(reinterpret_cast<unsigned char *>(&seed), sizeof(seed));
@@ -375,7 +378,7 @@ bool SHAMap::syncTest()
 #ifdef DEBUG
 	std::cerr << "Adding items, then removing them" << std::endl;
 #endif
-	if(!confuseMap(source, 500)) return false;
+	if(!confuseMap(source, 500)) BOOST_FAIL("ConfuseMap");
 
 	source.setImmutable();
 
@@ -398,20 +401,17 @@ bool SHAMap::syncTest()
 	if (!source.getNodeFat(SHAMapNode(), nodeIDs, gotNodes))
 	{
 		std::cerr << "GetNodeFat(root) fails" << std::endl;
-		assert(false);
-		return false;
+		BOOST_FAIL("GetNodeFat");
 	}
 	if (gotNodes.size() != 1)
 	{
 		std::cerr << "Didn't get root node " << gotNodes.size() << std::endl;
-		assert(false);
-		return false;
+		BOOST_FAIL("NodeSize");
 	}
 	if (!destination.addRootNode(*gotNodes.begin()))
 	{
 		std::cerr << "AddRootNode fails" << std::endl;
-		assert(false);
-		return false;
+		BOOST_FAIL("AddRootNode");
 	}
 	nodeIDs.clear();
 	gotNodes.clear();
@@ -441,8 +441,7 @@ bool SHAMap::syncTest()
 			if (!source.getNodeFat(*nodeIDIterator, gotNodeIDs, gotNodes))
 			{
 				std::cerr << "GetNodeFat fails" << std::endl;
-				assert(false);
-				return false;
+				BOOST_FAIL("GetNodeFat");
 			}
 		assert(gotNodeIDs.size() == gotNodes.size());
 		nodeIDs.clear();
@@ -451,8 +450,7 @@ bool SHAMap::syncTest()
 		if (gotNodeIDs.empty())
 		{
 			std::cerr << "No nodes gotten" << std::endl;
-			assert(false);
-			return false;
+			BOOST_FAIL("Got Node ID");
 		}
 
 #ifdef SMS_DEBUG
@@ -468,8 +466,7 @@ bool SHAMap::syncTest()
 			if (!destination.addKnownNode(*nodeIDIterator, *rawNodeIterator))
 			{
 				std::cerr << "AddKnownNode fails" << std::endl;
-				assert(false);
-				return false;
+				BOOST_FAIL("AddKnownNode");
 			}
 		}
 		gotNodeIDs.clear();
@@ -487,8 +484,7 @@ bool SHAMap::syncTest()
 	if (!source.deepCompare(destination))
 	{
 		std::cerr << "DeepCompare fails" << std::endl;
-		assert(false);
-		return false;
+		BOOST_FAIL("Deep Compare");
 	}
 
 #ifdef SMS_DEBUG
@@ -496,5 +492,8 @@ bool SHAMap::syncTest()
 		passes << " passes, " << nodes << " nodes" << std::endl;
 #endif
 	
-	return true;
 }
+
+BOOST_AUTO_TEST_SUITE_END();
+
+// vim:ts=4

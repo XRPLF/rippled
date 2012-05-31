@@ -4,6 +4,7 @@
 #include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/smart_ptr/make_shared.hpp>
+#include <boost/test/unit_test.hpp>
 #include <iostream>
 
 #include "Serializer.h"
@@ -665,7 +666,9 @@ static std::vector<unsigned char>IntToVUC(int v)
 	return vuc;
 }
 
-bool SHAMap::TestSHAMap()
+BOOST_AUTO_TEST_SUITE(shamap)
+
+BOOST_AUTO_TEST_CASE( SHAMap_test )
 { // h3 and h4 differ only in the leaf, same terminal node (level 19)
 	uint256 h1, h2, h3, h4, h5;
 	h1.SetHex("092891fe4ef6cee585fdc6fda0e09eb4d386363158ec3321b8123e5a772c6ca7");
@@ -677,16 +680,8 @@ bool SHAMap::TestSHAMap()
 	SHAMap sMap;
 	SHAMapItem i1(h1, IntToVUC(1)), i2(h2, IntToVUC(2)), i3(h3, IntToVUC(3)), i4(h4, IntToVUC(4)), i5(h5, IntToVUC(5));
 
-	if(!sMap.addItem(i2, true))
-	{
-		assert(false);
-		return false;
-	}
-	if(!sMap.addItem(i1, true))
-	{
-		assert(false);
-		return false;
-	}
+	if(!sMap.addItem(i2, true)) BOOST_FAIL("no add");
+	if(!sMap.addItem(i1, true)) BOOST_FAIL("no add");
 
 	SHAMapItem::pointer i;
 
@@ -710,8 +705,8 @@ bool SHAMap::TestSHAMap()
 	i=sMap.peekNextItem(i->getTag());
 	assert(!i);
 
-	if(!syncTest())
-		 return false;
-	return true;
 }
+
+BOOST_AUTO_TEST_SUITE_END();
+
 // vim:ts=4
