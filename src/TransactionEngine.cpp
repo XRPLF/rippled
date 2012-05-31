@@ -8,7 +8,7 @@
 
 typedef SerializedLedgerEntry SLE;
 
-#define DIR_NODE_MAX	32
+#define DIR_NODE_MAX	1
 
 // We return the uNodeDir so that on delete we can quickly know where the element is mentioned in the directory.
 TransactionEngineResult TransactionEngine::dirAdd(
@@ -62,6 +62,10 @@ TransactionEngineResult TransactionEngine::dirAdd(
 		if (DIR_NODE_MAX != svIndexes.peekValue().size())
 		{
 			// Last node is not full, append.
+
+			std::cerr << "dirAdd:  appending: PREV: " << svIndexes.peekValue()[0].ToString() << std::endl;
+			std::cerr << "dirAdd:  appending: Node: " << strHex(uNodeDir) << std::endl;
+			std::cerr << "dirAdd:  appending: Entry: " << uLedgerIndex.ToString() << std::endl;
 
 			svIndexes.peekValue().push_back(uLedgerIndex);
 			sleNode->setIFieldV256(sfIndexes, svIndexes);

@@ -219,17 +219,22 @@ void STAmount::add(Serializer& s) const
 	if (mIsNative)
 	{
 		assert(mOffset == 0);
-		if (!mIsNegative) s.add64(mValue | cPosNative);
-		else s.add64(mValue);
-		return;
+		if (!mIsNegative)
+			s.add64(mValue | cPosNative);
+		else
+			s.add64(mValue);
 	}
-	if (isZero())
-		s.add64(cNotNative);
-	else if (mIsNegative) // 512 = not native
-		s.add64(mValue | (static_cast<uint64>(mOffset + 512 + 97) << (64 - 10)));
-	else // 256 = positive
-		s.add64(mValue | (static_cast<uint64>(mOffset + 512 + 256 + 97) << (64 - 10)));
-	s.add160(mCurrency);
+	else
+	{
+		if (isZero())
+			s.add64(cNotNative);
+		else if (mIsNegative) // 512 = not native
+			s.add64(mValue | (static_cast<uint64>(mOffset + 512 + 97) << (64 - 10)));
+		else // 256 = positive
+			s.add64(mValue | (static_cast<uint64>(mOffset + 512 + 256 + 97) << (64 - 10)));
+
+		s.add160(mCurrency);
+	}
 }
 
 STAmount::STAmount(const char* name, int64 value) : SerializedType(name), mOffset(0), mIsNative(true)
@@ -763,20 +768,25 @@ STAmount convertToInternalAmount(uint64 displayAmount, uint64 totalNow, uint64 t
 	return STAmount(name, muldiv(displayAmount, totalNow, totalInit));
 }
 
-STAmount STAmount::deSerialize(SerializerIterator& it)
+STAmount STAmount::deserialize(SerializerIterator& it)
 {
 	STAmount *s = construct(it);
 	STAmount ret(*s);
+
 	delete s;
+
 	return ret;
 }
 
 static STAmount serdes(const STAmount &s)
 {
 	Serializer ser;
+
 	s.add(ser);
+
 	SerializerIterator sit(ser);
-	return STAmount::deSerialize(sit);
+
+	return STAmount::deserialize(sit);
 }
 
 

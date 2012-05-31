@@ -406,21 +406,30 @@ Json::Value RPCServer::doAccountLines(Json::Value &params)
 
 						RippleState::pointer	rsLine	= mNetOps->getRippleState(uLedger, uNode);
 
-						rsLine->setViewAccount(naAccount);
+						if (rsLine)
+						{
+							rsLine->setViewAccount(naAccount);
 
-						naAccountPeer		= rsLine->getAccountIDPeer();
-						saBalance			= rsLine->getBalance();
-						saLimit				= rsLine->getLimit();
-						saLimitPeer			= rsLine->getLimitPeer();
+							naAccountPeer		= rsLine->getAccountIDPeer();
+							saBalance			= rsLine->getBalance();
+							saLimit				= rsLine->getLimit();
+							saLimitPeer			= rsLine->getLimitPeer();
 
-						Json::Value		jPeer = Json::Value(Json::objectValue);
+							Json::Value				jPeer	= Json::Value(Json::objectValue);
 
-						jPeer["balance"]	= saBalance.getText();
-						jPeer["currency"]	= saBalance.getCurrencyHuman();
-						jPeer["limit"]		= saLimit.getJson(0);
-						jPeer["limit_peer"]	= saLimitPeer.getJson(0);
+							jPeer["node"]		= uNode.ToString();
 
-						jsonLines[naAccountPeer.humanAccountID()]	= jPeer;
+							jPeer["balance"]	= saBalance.getText();
+							jPeer["currency"]	= saBalance.getCurrencyHuman();
+							jPeer["limit"]		= saLimit.getJson(0);
+							jPeer["limit_peer"]	= saLimitPeer.getJson(0);
+
+							jsonLines[naAccountPeer.humanAccountID()]	= jPeer;
+						}
+						else
+						{
+							std::cerr << "doAccountLines: Bad index: " << uNode.ToString() << std::endl;
+						}
 					}
 				}
 
