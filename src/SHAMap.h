@@ -109,18 +109,22 @@ public:
 
 	void updateData(const std::vector<unsigned char>& data) { mData=data; }
 
-	bool operator<(const SHAMapItem& i) const		{ return mTag < i.mTag; }
-	bool operator>(const SHAMapItem& i) const		{ return mTag > i.mTag; }
 	bool operator==(const SHAMapItem& i) const		{ return mTag == i.mTag; }
 	bool operator!=(const SHAMapItem& i) const		{ return mTag != i.mTag; }
-	bool operator<=(const SHAMapItem& i) const		{ return mTag <= i.mTag; }
-	bool operator>=(const SHAMapItem& i) const		{ return mTag >= i.mTag; }
-	bool operator<(const uint256& i) const			{ return mTag < i; }
-	bool operator>(const uint256& i) const			{ return mTag > i; }
 	bool operator==(const uint256& i) const			{ return mTag == i; }
 	bool operator!=(const uint256& i) const			{ return mTag != i; }
+#if 0
+	// This code is comment out because it is unused.  It could work.
+	bool operator<(const SHAMapItem& i) const		{ return mTag < i.mTag; }
+	bool operator>(const SHAMapItem& i) const		{ return mTag > i.mTag; }
+	bool operator<=(const SHAMapItem& i) const		{ return mTag <= i.mTag; }
+	bool operator>=(const SHAMapItem& i) const		{ return mTag >= i.mTag; }
+
+	bool operator<(const uint256& i) const			{ return mTag < i; }
+	bool operator>(const uint256& i) const			{ return mTag > i; }
 	bool operator<=(const uint256& i) const			{ return mTag <= i; }
 	bool operator>=(const uint256& i) const			{ return mTag >= i; }
+#endif
 	virtual void dump();
 };
 
