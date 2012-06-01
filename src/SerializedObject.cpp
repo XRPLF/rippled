@@ -186,9 +186,12 @@ std::string STObject::getFullText() const
 
 	for (boost::ptr_vector<SerializedType>::const_iterator it = mData.begin(), end = mData.end(); it != end; ++it)
 	{
-		if (!first) ret += ", ";
-		else first = false;
-		ret += it->getFullText();
+		if (it->getSType() != STI_NOTPRESENT)
+		{
+			if (!first) ret += ", ";
+			else first = false;
+			ret += it->getFullText();
+		}
 	}
 
 	ret += "}";
@@ -234,8 +237,8 @@ bool STObject::isEquivalent(const SerializedType& t) const
 	boost::ptr_vector<SerializedType>::const_iterator it2 = v->mData.begin(), end2 = v->mData.end();
 	while ((it1 != end1) && (it2 != end2))
 	{
-		if (it1->getSType() != it2->getSType()) return false;
-		if (!it1->isEquivalent(*it2)) return false;
+		if ((it1->getSType() != it2->getSType()) || !it1->isEquivalent(*it2))
+			return false;
 		++it1;
 		++it2;
 	}
