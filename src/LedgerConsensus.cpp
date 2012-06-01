@@ -154,6 +154,9 @@ LedgerConsensus::LedgerConsensus(Ledger::pointer previousLedger, uint32 closeTim
 {
 	Log(lsDEBUG) << "Creating consensus object";
 	Log(lsTRACE) << "LCL:" << previousLedger->getHash().GetHex() <<", ct=" << closeTime;
+
+	// we always have an empty map
+	mComplete[uint256()] = boost::make_shared<SHAMap>();
 }
 
 void LedgerConsensus::takeInitialPosition(Ledger::pointer initialLedger)
