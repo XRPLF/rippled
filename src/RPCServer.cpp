@@ -876,7 +876,34 @@ Json::Value RPCServer::doValidatorCreate(Json::Value& params) {
 	return obj;
 }
 
-// wallet_accounts <regular_seed>
+Json::Value RPCServer::accounts(const uint256& uLedger, const NewcoinAddress& naMasterGenerator)
+{
+	Json::Value jsonAccounts(Json::objectValue);
+
+	// YYY Don't want to leak to thin server that these accounts are related.
+	// YYY Would be best to alternate requests to servers and to cache results.
+	uint	uIndex	= 0;
+
+	do {
+		NewcoinAddress		naAccount;
+
+		naAccount.setAccountPublic(naMasterGenerator, uIndex++);
+
+		AccountState::pointer as	= mNetOps->getAccountState(uLedger, naAccount);
+		if (as)
+		{
+			as->addJson(jsonAccounts);
+		}
+		else
+		{
+			uIndex	= 0;
+		}
+	} while (uIndex);
+
+	return jsonAccounts;
+}
+
+// wallet_accounts <seed>
 Json::Value RPCServer::doWalletAccounts(Json::Value& params)
 {
 	NewcoinAddress	naSeed;
@@ -900,36 +927,32 @@ Json::Value RPCServer::doWalletAccounts(Json::Value& params)
 
 	NewcoinAddress	naMasterGenerator;
 
-	Json::Value	ret	= getGenerator(uLedger, naSeed, naMasterGenerator);
+	// Try the seed as a master seed.
+	naMasterGenerator.setFamilyGenerator(naSeed);
 
-	if (!ret.empty())
+	Json::Value jsonAccounts	= accounts(uLedger, naMasterGenerator);
+
+	if (jsonAccounts.empty())
+	{
+		// No account via seed as master, try seed a regular.
+		Json::Value	ret	= getGenerator(uLedger, naSeed, naMasterGenerator);
+
+		if (!ret.empty())
+			return ret;
+
+		ret["accounts"]	= accounts(uLedger, naMasterGenerator);
+
 		return ret;
+	}
+	else
+	{
+		// Had accounts via seed as master, return them.
+		Json::Value ret(Json::objectValue);
 
-	Json::Value jsonAccounts(Json::objectValue);
+		ret["accounts"]	= jsonAccounts;
 
-	// YYY Don't want to leak to thin server that these accounts are related.
-	// YYY Would be best to alternate requests to servers and to cache results.
-	uint	uIndex	= 0;
-
-	do {
-		NewcoinAddress		naAccount;
-
-		naAccount.setAccountPublic(naMasterGenerator, uIndex++);
-
-		AccountState::pointer as	= mNetOps->getAccountState(uLedger, naAccount);
-		if (as)
-		{
-			as->addJson(jsonAccounts);
-		}
-		else
-		{
-			uIndex	= 0;
-		}
-	} while (uIndex);
-
-	ret["accounts"]	= jsonAccounts;
-
-	return ret;
+		return ret;
+	}
 }
 
 Json::Value RPCServer::doWalletAdd(Json::Value& params)
@@ -1172,11 +1195,6 @@ Json::Value RPCServer::doWalletSeed(Json::Value& params)
 	}
 }
 
-Json::Value RPCServer::doWalletVerify(Json::Value& params)
-{
-	return "not implemented";
-}
-
 void RPCServer::validatorsResponse(const boost::system::error_code& err, std::string strResponse)
 {
 	std::cerr << "Fetch '" VALIDATORS_FILE_NAME "' complete." << std::endl;
@@ -1331,7 +1349,6 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 	if (command == "wallet_create")			return doWalletCreate(params);
 	if (command == "wallet_propose")		return doWalletPropose(params);
 	if (command == "wallet_seed")			return doWalletSeed(params);
-	if (command == "wallet_verify")			return doWalletVerify(params);
 
 	//
 	// Obsolete or need rewrite:
