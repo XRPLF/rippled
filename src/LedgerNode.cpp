@@ -1,8 +1,10 @@
 
 #include "Ledger.h"
-#include "utils.h"
 
 #include <boost/make_shared.hpp>
+
+#include "utils.h"
+#include "Log.h"
 
 LedgerStateParms Ledger::writeBack(LedgerStateParms parms, SerializedLedgerEntry::pointer entry)
 {
@@ -13,9 +15,7 @@ LedgerStateParms Ledger::writeBack(LedgerStateParms parms, SerializedLedgerEntry
 	{
 		if ((parms & lepCREATE) == 0)
 		{
-#ifdef DEBUG
-			std::cerr << "writeBack no create" << std::endl;
-#endif
+			Log(lsERROR) << "WriteBack non-existent node without create";
 			return lepMISSING;
 		}
 		create = true;

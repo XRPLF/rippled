@@ -1,4 +1,6 @@
 
+#include "SHAMap.h"
+
 #include <stack>
 
 #include <boost/foreach.hpp>
@@ -9,7 +11,7 @@
 
 #include "Serializer.h"
 #include "BitcoinUtil.h"
-#include "SHAMap.h"
+#include "Log.h"
 
 SHAMap::SHAMap(uint32 seq) : mSeq(seq), mState(Modifying)
 {
@@ -570,7 +572,11 @@ bool SHAMap::updateGiveItem(SHAMapItem::pointer item, bool isTransaction)
 
 	returnNode(node, true);
 	if (!node->setItem(item, isTransaction ? SHAMapTreeNode::tnTRANSACTION : SHAMapTreeNode::tnACCOUNT_STATE))
+	{
+		Log(lsFATAL) << "SHAMap setItem fails";
+		assert(false);
 		return false;
+	}
 
 	dirtyUp(stack, tag, node->getNodeHash());
 	return true;
