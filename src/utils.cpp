@@ -1,18 +1,6 @@
 #include "utils.h"
 #include "uint256.h"
 
-// XXX Assume little-endian.
-uint256 uint160extend256(const uint160& uSource, uint uNamespace)
-{
-	uint256 uResult;
-
-	// Place right justified: in most significant bits.
-	memcpy(uResult.end() - uSource.size(), uSource.begin(), uSource.size());
-	uResult.begin()[uResult.size() - uSource.size() - 1]	= uNamespace;
-
-	return uResult;
-}
-
 //
 // Time support
 // We have our own epoch.
