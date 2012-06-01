@@ -239,7 +239,7 @@ void LedgerConsensus::adjustCount(SHAMap::pointer map, const std::vector<uint256
 }
 
 void LedgerConsensus::statusChange(newcoin::NodeEvent event, Ledger::pointer ledger)
-{
+{ // Send a node status change message to our peers
 	newcoin::TMStatusChange s;
 	s.set_newevent(event);
 	s.set_ledgerseq(ledger->getLedgerSeq());
@@ -277,6 +277,9 @@ int LedgerConsensus::statePostClose(int secondsSinceClose)
 	{
 		Log(lsINFO) << "Wobble is over, it's consensus time";
 		mState = lcsESTABLISH;
+		Ledger::pointer initial = theApp->getMasterLedger().getCurrentLedger();
+		takeInitialPosition(initial);
+		initial->bumpSeq();
 	}
 	return 1;
 }
@@ -406,8 +409,6 @@ void LedgerConsensus::closeLedger()
 	Log(lsINFO) << "Closing ledger";
 	Ledger::pointer initial = theApp->getMasterLedger().getCurrentLedger();
 	statusChange(newcoin::neCLOSING_LEDGER, initial);
-	takeInitialPosition(initial);
-	initial->bumpSeq();
 	statusChange(newcoin::neCLOSING_LEDGER, mPreviousLedger);
 }
 
