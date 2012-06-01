@@ -294,7 +294,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 		return result;
 
 	STAmount saPaid = txn.getTransactionFee();
-	if ( (params & tepNO_CHECK_FEE) != tepNONE)
+	if ((params & tepNO_CHECK_FEE) == tepNONE)
 	{
 		if (saCost)
 		{
