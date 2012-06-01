@@ -196,6 +196,7 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned 
 	int type = s.removeLastByte();
 	int len = s.getLength();
 	if ((type < 0) || (type > 3)) throw SHAMapException(InvalidNode);
+	assert(len >= 33);
 
 	if (type == 0)
 	{ // transaction

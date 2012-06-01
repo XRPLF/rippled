@@ -440,7 +440,7 @@ bool NetworkOPs::recvPropose(const uint256& prevLgr, uint32 proposeSeq, const ui
 	const std::string& pubKey, const std::string& signature)
 {
 	if (mMode != omFULL) // FIXME: Should we relay?
-		Log(lsWARNING) << "Received proposal when not full" << mMode;
+		Log(lsWARNING) << "Received proposal when not full: " << mMode;
 	if (!mConsensus)
 	{
 		return true;

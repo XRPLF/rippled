@@ -79,22 +79,30 @@ bool TransactionAcquire::takeNodes(const std::list<SHAMapNode>& nodeIDs,
 		return true;
 	if (mFailed)
 		return false;
-	std::list<SHAMapNode>::const_iterator nodeIDit = nodeIDs.begin();
-	std::list< std::vector<unsigned char> >::const_iterator nodeDatait = data.begin();
-	while (nodeIDit != nodeIDs.end())
+	try
 	{
-		if (nodeIDit->isRoot())
+		std::list<SHAMapNode>::const_iterator nodeIDit = nodeIDs.begin();
+		std::list< std::vector<unsigned char> >::const_iterator nodeDatait = data.begin();
+		while (nodeIDit != nodeIDs.end())
 		{
-			if (!mMap->addRootNode(getHash(), *nodeDatait))
+			if (nodeIDit->isRoot())
+			{
+				if (!mMap->addRootNode(getHash(), *nodeDatait))
+					return false;
+			}
+			else if (!mMap->addKnownNode(*nodeIDit, *nodeDatait))
 				return false;
+			++nodeIDit;
+			++nodeDatait;
 		}
-		else if (!mMap->addKnownNode(*nodeIDit, *nodeDatait))
-			return false;
-		++nodeIDit;
-		++nodeDatait;
+		trigger(peer);
+		return true;
 	}
-	trigger(peer);
-	return true;
+	catch (...)
+	{
+		Log(lsERROR) << "Peer sends us junky transaction node data";
+		return false;
+	}
 }
 
 void LCTransaction::setVote(const uint256& peer, bool votesYes)
