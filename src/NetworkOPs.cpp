@@ -366,6 +366,12 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 		switchLastClosedLedger(consensus);
 	}
 
+	// WRITEME: Unless we are in omFULL and in the process of doing a consensus,
+	// we must count how many nodes share our LCL, how many nodes disagree with our LCL,
+	// and how many validations our LCL has. We also want to check timing to make sure
+	// there shouldn't be a newer LCL. We need this information to do the next three
+	// tests.
+
 	if (mMode == omCONNECTED)
 	{ // count number of peers that agree with us and UNL nodes whose validations we have for LCL
 		// if the ledger is good enough, go to omTRACKING - TODO
