@@ -23,12 +23,11 @@ struct TransactionFormat
 
 const int32 TransactionMagic		= 0x54584E00;	// 'TXN'
 
-const int TransactionIVersion		= 0;
-const int TransactionISigningPubKey	= 1;
-const int TransactionISourceID		= 2;
-const int TransactionISequence		= 3;
-const int TransactionIType			= 4;
-const int TransactionIFee			= 5;
+const int TransactionISigningPubKey	= 0;
+const int TransactionISourceID		= 1;
+const int TransactionISequence		= 2;
+const int TransactionIType			= 3;
+const int TransactionIFee			= 4;
 
 const int TransactionMinLen			= 32;
 const int TransactionMaxLen			= 1048576;
