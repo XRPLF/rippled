@@ -432,7 +432,7 @@ int NetworkOPs::beginConsensus(Ledger::pointer closingLedger)
 	mConsensus = boost::make_shared<LedgerConsensus>
 		(prevLedger, theApp->getMasterLedger().getCurrentLedger()->getCloseTimeNC());
 
-	Log(lsDEBUG) << "Broadcasting ledger close";
+	Log(lsDEBUG) << "Pre-close time, initiating consensus engine";
 	return mConsensus->startup();
 }
 
