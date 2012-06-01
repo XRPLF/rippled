@@ -1,12 +1,15 @@
 
+#include "SHAMap.h"
+
 #include <stack>
+#include <iostream>
 
 #include <boost/make_shared.hpp>
 #include <boost/test/unit_test.hpp>
 
 #include <openssl/rand.h>
-#include <iostream>
-#include "SHAMap.h"
+
+#include "Log.h"
 
 void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint256>& hashes, int max)
 {
@@ -22,7 +25,7 @@ void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint2
 
 	if(!root->isInner())
 	{
-		std::cerr << "synching empty tree" << std::endl;
+		Log(lsWARNING) << "synching empty tree";
 		return;
 	}
 
@@ -98,9 +101,7 @@ bool SHAMap::addRootNode(const std::vector<unsigned char>& rootNode)
 	// we already have a root node
 	if (root->getNodeHash().isNonZero())
 	{
-#ifdef DEBUG
-		std::cerr << "got root node, already have one" << std::endl;
-#endif
+		Log(lsTRACE) << "got root node, already have one";
 		return true;
 	}
 
@@ -131,9 +132,7 @@ bool SHAMap::addRootNode(const uint256& hash, const std::vector<unsigned char>& 
 	// we already have a root node
 	if (root->getNodeHash().isNonZero())
 	{
-#ifdef DEBUG
-		std::cerr << "got root node, already have one" << std::endl;
-#endif
+		Log(lsTRACE) << "got root node, already have one";
 		assert(root->getNodeHash() == hash);
 		return true;
 	}
@@ -175,19 +174,15 @@ bool SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigned cha
 
 	if (iNode->isLeaf() || (iNode->getDepth() == node.getDepth()))
 	{
-#ifdef DEBUG
-		std::cerr << "got inner node, already had it (late)" << std::endl;
-#endif
+		Log(lsTRACE) << "got inner node, already had it (late)";
 		return true;
 	}
 
 	if (iNode->getDepth() != (node.getDepth() - 1))
 	{ // Either this node is broken or we didn't request it (yet)
-#ifdef DEBUG
-		std::cerr << "unable to hook node " << node.getString() << std::endl;
-		std::cerr << " stuck at " << iNode->getString() << std::endl;
-		std::cerr << "got depth=" << node.getDepth() << ", walked to= " << iNode->getDepth() << std::endl;
-#endif
+		Log(lsINFO) << "unable to hook node " << node.getString();
+		Log(lsINFO) << " stuck at " << iNode->getString();
+		Log(lsINFO) << "got depth=" << node.getDepth() << ", walked to= " << iNode->getDepth();
 		return false;
 	}
 
@@ -244,18 +239,16 @@ bool SHAMap::deepCompare(SHAMap& other)
 
 		if (!otherNode)
 		{
-			std::cerr << "unable to fetch node" << std::endl;
+			Log(lsINFO) << "unable to fetch node";
 			return false;
 		}
 		else if (otherNode->getNodeHash() != node->getNodeHash())
 		{
-			std::cerr << "node hash mismatch" << std::endl;
+			Log(lsWARNING) << "node hash mismatch";
 			return false;
 		}
 
-#ifdef DC_DEBUG
-		std::cerr << "Comparing inner nodes " << node->getString() << std::endl;
-#endif
+//		Log(lsTRACE) << "Comparing inner nodes " << node->getString();
 
 		if (node->getNodeHash() != otherNode->getNodeHash())
 			return false;
@@ -280,7 +273,7 @@ bool SHAMap::deepCompare(SHAMap& other)
 					SHAMapTreeNode::pointer next = getNode(node->getChildNodeID(i), node->getChildHash(i), false);
 					if (!next)
 					{
-						std::cerr << "unable to fetch inner node" << std::endl;
+						Log(lsWARNING) << "unable to fetch inner node";
 						return false;
 					}
 					stack.push(next);
@@ -316,7 +309,7 @@ static bool confuseMap(SHAMap &map, int count)
 		items.push_back(item->getTag());
 		if (!map.addItem(*item, false))
 		{
-			std::cerr << "Unable to add item to map" << std::endl;
+			Log(lsFATAL) << "Unable to add item to map";
 			return false;
 		}
 	}
@@ -325,14 +318,14 @@ static bool confuseMap(SHAMap &map, int count)
 	{
 		if (!map.delItem(*it))
 		{
-			std::cerr << "Unable to remove item from map" << std::endl;
+			Log(lsFATAL) << "Unable to remove item from map";
 			return false;
 		}
 	}
 
 	if (beforeHash != map.getHash())
 	{
-		std::cerr << "Hashes do not match" << std::endl;
+		Log(lsFATAL) << "Hashes do not match";
 		return false;
 	}
 
@@ -375,16 +368,12 @@ BOOST_AUTO_TEST_CASE( SHAMapSync_test )
 	for (int i = 0; i < items; ++i)
 		source.addItem(*makeRandomAS(), false);
 
-#ifdef DEBUG
-	std::cerr << "Adding items, then removing them" << std::endl;
-#endif
+	Log(lsTRACE) << "Adding items, then removing them";
 	if(!confuseMap(source, 500)) BOOST_FAIL("ConfuseMap");
 
 	source.setImmutable();
 
-#ifdef DEBUG
-	std::cerr << "SOURCE COMPLETE, SYNCHING" << std::endl;
-#endif
+	Log(lsTRACE) << "SOURCE COMPLETE, SYNCHING";
 
 	std::vector<SHAMapNode> nodeIDs, gotNodeIDs;
 	std::list<std::vector<unsigned char> > gotNodes;
@@ -400,25 +389,23 @@ BOOST_AUTO_TEST_CASE( SHAMapSync_test )
 
 	if (!source.getNodeFat(SHAMapNode(), nodeIDs, gotNodes))
 	{
-		std::cerr << "GetNodeFat(root) fails" << std::endl;
+		Log(lsFATAL) << "GetNodeFat(root) fails";
 		BOOST_FAIL("GetNodeFat");
 	}
 	if (gotNodes.size() != 1)
 	{
-		std::cerr << "Didn't get root node " << gotNodes.size() << std::endl;
+		Log(lsFATAL) << "Didn't get root node " << gotNodes.size();
 		BOOST_FAIL("NodeSize");
 	}
 	if (!destination.addRootNode(*gotNodes.begin()))
 	{
-		std::cerr << "AddRootNode fails" << std::endl;
+		Log(lsFATAL) << "AddRootNode fails";
 		BOOST_FAIL("AddRootNode");
 	}
 	nodeIDs.clear();
 	gotNodes.clear();
 
-#ifdef DEBUG
-	std::cerr << "ROOT COMPLETE, INNER SYNCHING" << std::endl;
-#endif
+	Log(lsINFO) << "ROOT COMPLETE, INNER SYNCHING";
 #ifdef SMS_DEBUG
 	int bytes = 0;
 #endif
@@ -432,15 +419,13 @@ BOOST_AUTO_TEST_CASE( SHAMapSync_test )
 		destination.getMissingNodes(nodeIDs, hashes, 2048);
 		if(nodeIDs.empty()) break;
 
-#ifdef SMS_DEBUG
-		std::cerr << nodeIDs.size() << " needed nodes" << std::endl;
-#endif
+		Log(lsINFO) << nodeIDs.size() << " needed nodes";
 		
 		// get as many nodes as possible based on this information
 		for (nodeIDIterator = nodeIDs.begin(); nodeIDIterator != nodeIDs.end(); ++nodeIDIterator)
 			if (!source.getNodeFat(*nodeIDIterator, gotNodeIDs, gotNodes))
 			{
-				std::cerr << "GetNodeFat fails" << std::endl;
+				Log(lsFATAL) << "GetNodeFat fails";
 				BOOST_FAIL("GetNodeFat");
 			}
 		assert(gotNodeIDs.size() == gotNodes.size());
@@ -449,13 +434,11 @@ BOOST_AUTO_TEST_CASE( SHAMapSync_test )
 
 		if (gotNodeIDs.empty())
 		{
-			std::cerr << "No nodes gotten" << std::endl;
+			Log(lsFATAL) << "No nodes gotten";
 			BOOST_FAIL("Got Node ID");
 		}
 
-#ifdef SMS_DEBUG
-		std::cerr << gotNodeIDs.size() << " found nodes" << std::endl;
-#endif
+		Log(lsTRACE) << gotNodeIDs.size() << " found nodes";
 		for (nodeIDIterator = gotNodeIDs.begin(), rawNodeIterator = gotNodes.begin();
 				nodeIDIterator != gotNodeIDs.end(); ++nodeIDIterator, ++rawNodeIterator)
 		{
@@ -465,7 +448,7 @@ BOOST_AUTO_TEST_CASE( SHAMapSync_test )
 #endif
 			if (!destination.addKnownNode(*nodeIDIterator, *rawNodeIterator))
 			{
-				std::cerr << "AddKnownNode fails" << std::endl;
+				Log(lsTRACE) << "AddKnownNode fails";
 				BOOST_FAIL("AddKnownNode");
 			}
 		}
@@ -477,19 +460,19 @@ BOOST_AUTO_TEST_CASE( SHAMapSync_test )
 	destination.clearSynching();
 
 #ifdef SMS_DEBUG
-	std::cerr << "SYNCHING COMPLETE " << items << " items, " << nodes << " nodes, " <<
-		bytes / 1024 << " KB" << std::endl;
+	Log(lsINFO) << "SYNCHING COMPLETE " << items << " items, " << nodes << " nodes, " <<
+		bytes / 1024 << " KB";
 #endif
 
 	if (!source.deepCompare(destination))
 	{
-		std::cerr << "DeepCompare fails" << std::endl;
+		Log(lsFATAL) << "DeepCompare fails";
 		BOOST_FAIL("Deep Compare");
 	}
 
 #ifdef SMS_DEBUG
-	std::cerr << "SHAMapSync test passed: " << items << " items, " <<
-		passes << " passes, " << nodes << " nodes" << std::endl;
+	Log(lsINFO) << "SHAMapSync test passed: " << items << " items, " <<
+		passes << " passes, " << nodes << " nodes";
 #endif
 	
 }

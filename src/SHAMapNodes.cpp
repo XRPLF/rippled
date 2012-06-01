@@ -1,5 +1,8 @@
 
+#include "SHAMap.h"
+
 #include <cstring>
+#include <iostream>
 
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>
@@ -7,10 +10,10 @@
 #include <boost/smart_ptr/make_shared.hpp>
 
 #include <openssl/sha.h>
-#include <iostream>
+
 #include "Serializer.h"
 #include "BitcoinUtil.h"
-#include "SHAMap.h"
+#include "Log.h"
 
 std::string SHAMapNode::getString() const
 {
@@ -161,7 +164,7 @@ int SHAMapNode::selectBranch(const uint256& hash) const
 
 void SHAMapNode::dump() const
 {
-	std::cerr << getString() << std::endl;
+	Log(lsDEBUG) << getString();
 }
 
 SHAMapTreeNode::SHAMapTreeNode(uint32 seq, const SHAMapNode& nodeID) : SHAMapNode(nodeID), mHash(0), mSeq(seq),
@@ -337,7 +340,7 @@ void SHAMapTreeNode::makeInner()
 
 void SHAMapTreeNode::dump()
 {
-	std::cerr << "SHAMapTreeNode(" << getNodeID().GetHex() << ")" << std::endl;
+	Log(lsDEBUG) << "SHAMapTreeNode(" << getNodeID().GetHex() << ")";
 }
 
 std::string SHAMapTreeNode::getString() const
