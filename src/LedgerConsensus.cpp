@@ -341,7 +341,6 @@ int LedgerConsensus::stateFinished(int secondsSinceClose)
 
 int LedgerConsensus::stateAccepted(int secondsSinceClose)
 { // we have accepted a new ledger
-	statusChange(newcoin::neACCEPTED_LEDGER, theApp->getMasterLedger().getClosedLedger());
 	endConsensus();
 	return 4;
 }
