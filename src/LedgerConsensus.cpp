@@ -34,6 +34,7 @@ void TransactionAcquire::trigger(Peer::pointer peer)
 		return;
 	if (!mHaveRoot)
 	{
+		Log(lsTRACE) << "Don't have root";
 		newcoin::TMGetLedger tmGL;
 		tmGL.set_ledgerhash(mHash.begin(), mHash.size());
 		tmGL.set_itype(newcoin::liTS_CANDIDATE);
@@ -42,6 +43,7 @@ void TransactionAcquire::trigger(Peer::pointer peer)
 	}
 	if (mHaveRoot)
 	{
+		Log(lsTRACE) << "Have root";
 		std::vector<SHAMapNode> nodeIDs;
 		std::vector<uint256> nodeHashes;
 		mMap->getMissingNodes(nodeIDs, nodeHashes, 256);
@@ -87,8 +89,14 @@ bool TransactionAcquire::takeNodes(const std::list<SHAMapNode>& nodeIDs,
 		{
 			if (nodeIDit->isRoot())
 			{
+				if (mHaveRoot)
+				{
+					Log(lsWARNING) << "Got root TXS node, already have it";
+					return false;
+				}
 				if (!mMap->addRootNode(getHash(), *nodeDatait))
 					return false;
+				else mHaveRoot = true;
 			}
 			else if (!mMap->addKnownNode(*nodeIDit, *nodeDatait))
 				return false;
@@ -181,6 +189,7 @@ void LedgerConsensus::takeInitialPosition(Ledger::pointer initialLedger)
 
 void LedgerConsensus::mapComplete(const uint256& hash, SHAMap::pointer map)
 {
+	Log(lsINFO) << "We have acquired TXS " << hash.GetHex();
 	mAcquiring.erase(hash);
 
 	if (!map)
@@ -191,16 +200,19 @@ void LedgerConsensus::mapComplete(const uint256& hash, SHAMap::pointer map)
 
 	mAcquiring.erase(hash);
 
-	boost::unordered_map<uint256, SHAMap::pointer>::iterator it = mComplete.find(map->getHash());
-	if (it != mComplete.end()) return; // we already have this map
-
+	if (mComplete.find(hash) != mComplete.end())
+	{
+		Log(lsERROR) << "Which we already had";
+		return; // we already have this map
+	}
 	if (mOurPosition && (map->getHash() != mOurPosition->getCurrentHash()))
 	{ // this could create disputed transactions
 		boost::unordered_map<uint256, SHAMap::pointer>::iterator it2 = mComplete.find(mOurPosition->getCurrentHash());
 		if (it2 != mComplete.end())
 		{
+			assert((it2->first == mOurPosition->getCurrentHash()) && it2->second);
 			SHAMap::SHAMapDiff differences;
-			it2->second->compare(it->second, differences, 16384);
+			it2->second->compare(map, differences, 16384);
 			for(SHAMap::SHAMapDiff::iterator pos = differences.begin(), end = differences.end(); pos != end; ++pos)
 			{ // create disputed transactions (from the ledger that has them)
 				if (pos->second.first)
@@ -210,6 +222,7 @@ void LedgerConsensus::mapComplete(const uint256& hash, SHAMap::pointer map)
 				else assert(false);
 			}
 		}
+		else assert(false); // We don't have our own position?!
 	}
 	mComplete[map->getHash()] = map;
 
