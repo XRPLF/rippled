@@ -30,7 +30,7 @@ protected:
 
 public:
 	Log(LogSeverity s) : mSeverity(s)
-	{ ;	}
+	{ ; }
 
 	~Log();
 
