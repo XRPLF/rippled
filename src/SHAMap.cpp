@@ -588,9 +588,8 @@ bool SHAMap::updateGiveItem(SHAMapItem::pointer item, bool isTransaction)
 	returnNode(node, true);
 	if (!node->setItem(item, isTransaction ? SHAMapTreeNode::tnTRANSACTION : SHAMapTreeNode::tnACCOUNT_STATE))
 	{
-		Log(lsFATAL) << "SHAMap setItem fails";
-		assert(false);
-		return false;
+		Log(lsWARNING) << "SHAMap setItem, no change";
+		return true;
 	}
 
 	dirtyUp(stack, tag, node->getNodeHash());
