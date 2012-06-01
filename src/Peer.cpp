@@ -708,6 +708,11 @@ void Peer::recvStatus(newcoin::TMStatusChange& packet)
 		mClosedLedgerTime = ptFromSeconds(packet.networktime());
 		Log(lsTRACE) << "peer LCL is " << mClosedLedgerHash.GetHex();
 	}
+	else if(packet.has_previousledgerhash() && packet.previousledgerhash().size() == (256 / 8))
+	{
+		memcpy(mClosedLedgerHash.begin(), packet.previousledgerhash().data(), 256 / 8);
+		mClosedLedgerTime = ptFromSeconds(packet.networktime());
+	}
 }
 
 void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
