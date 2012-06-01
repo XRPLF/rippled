@@ -368,7 +368,7 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 
 	if (mMode == omCONNECTED)
 	{ // count number of peers that agree with us and UNL nodes whose validations we have for LCL
-		// if the ledger is good enough, go to omTRACKING
+		// if the ledger is good enough, go to omTRACKING - TODO
 		if (!switchLedgers) setMode(omTRACKING);
 	}
 
@@ -376,7 +376,8 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 	{
 		// check if the ledger is good enough to go to omFULL
 		// Note: Do not go to omFULL if we don't have the previous ledger
-		// check if the ledger is bad enough to go to omCONNECTED
+		// check if the ledger is bad enough to go to omCONNECTED -- TODO
+		if (!switchLedgers) setMode(omFULL);
 	}
 
 	if (mMode == omFULL)
