@@ -5,7 +5,7 @@ uint256 Ledger::getAccountRootIndex(const uint160& uAccountID)
 {
 	Serializer	s;
 
-	s.add8(spaceAccount);
+	s.add16(spaceAccount);
 	s.add160(uAccountID);
 
 	return s.getSHA512Half();
@@ -18,7 +18,7 @@ uint256 Ledger::getRippleStateIndex(const NewcoinAddress& naA, const NewcoinAddr
 	bool		bAltB	= uAID < uBID;
 	Serializer	s;
 
-	s.add8(spaceRipple);
+	s.add16(spaceRipple);
 	s.add160(bAltB ? uAID : uBID);
 	s.add160(bAltB ? uBID : uAID);
 	s.add160(uCurrency);
@@ -30,7 +30,7 @@ uint256 Ledger::getRippleDirIndex(const uint160& uAccountID)
 {
 	Serializer	s;
 
-	s.add8(spaceRippleDir);
+	s.add16(spaceRippleDir);
 	s.add160(uAccountID);
 
 	return s.getSHA512Half();
@@ -40,7 +40,7 @@ uint256 Ledger::getGeneratorIndex(const uint160& uGeneratorID)
 {
 	Serializer	s;
 
-	s.add8(spaceGenerator);
+	s.add16(spaceGenerator);
 	s.add160(uGeneratorID);
 
 	return s.getSHA512Half();
