@@ -23,9 +23,7 @@
 // there's a functional network.
 
 NetworkOPs::NetworkOPs(boost::asio::io_service& io_service, LedgerMaster* pLedgerMaster) :
-	mMode(omDISCONNECTED),
-	mNetTimer(io_service),
-	mLedgerMaster(pLedgerMaster)
+	mMode(omDISCONNECTED),mNetTimer(io_service), mLedgerMaster(pLedgerMaster)
 {
 }
 
@@ -369,8 +367,9 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 	}
 
 	if (mMode == omCONNECTED)
-	{
-		// check if the ledger is good enough to go to omTRACKING
+	{ // count number of peers that agree with us and UNL nodes whose validations we have for LCL
+		// if the ledger is good enough, go to omTRACKING
+		if (!switchLedgers) setMode(omTRACKING);
 	}
 
 	if (mMode == omTRACKING)
