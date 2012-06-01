@@ -73,7 +73,6 @@ public:
 	//
 
 	bool					getDirInfo(const uint256& uLedger, const uint256& uBase,
-								const LedgerEntryType	letKind,
 								uint256& uDirNodeFirst, uint256& uDirNodeLast);
 	STVector256				getDirNode(const uint256& uLedger, const uint256& uDirLineNode);
 
@@ -82,7 +81,7 @@ public:
 	//
 
 	bool					getDirLineInfo(const uint256& uLedger, const NewcoinAddress& naAccount, uint256& uDirLineNodeFirst, uint256& uDirLineNodeLast)
-		{ return getDirInfo(uLedger, uint160extend256(naAccount.getAccountID(), 0), ltRIPPLE_STATE, uDirLineNodeFirst, uDirLineNodeLast); }
+		{ return getDirInfo(uLedger, Ledger::getRippleDirIndex(naAccount.getAccountID()), uDirLineNodeFirst, uDirLineNodeLast); }
 
 	RippleState::pointer	getRippleState(const uint256& uLedger, const uint256& uIndex);
 
