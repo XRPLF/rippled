@@ -39,6 +39,7 @@ private:
 	int getParamCount(const Json::Value& params);
 	bool extractString(std::string& param, const Json::Value& params, int index);
 
+	Json::Value getGenerator(const uint256& uLedger, const NewcoinAddress& naSeed, NewcoinAddress& naMasterGenerator);
 	Json::Value authorize(const uint256& uLedger, const NewcoinAddress& naSeed, const NewcoinAddress& naSrcAccountID,
 	    NewcoinAddress& naAccountPublic, NewcoinAddress& naAccountPrivate,
 	    AccountState::pointer& asSrc);

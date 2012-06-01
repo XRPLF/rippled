@@ -170,23 +170,9 @@ bool RPCServer::extractString(std::string& param, const Json::Value& params, int
 	return true;
 }
 
-// Given a seed and a source account get the public and private key for authorizing transactions for the account.
-Json::Value RPCServer::authorize(const uint256& uLedger,
-	const NewcoinAddress& naSeed, const NewcoinAddress& naSrcAccountID,
-	NewcoinAddress& naAccountPublic, NewcoinAddress& naAccountPrivate,
-	AccountState::pointer& asSrc)
+// Get the generator for a regular seed so we may index source accounts from the master public generator.
+Json::Value RPCServer::getGenerator(const uint256& uLedger, const NewcoinAddress& naSeed, NewcoinAddress& naMasterGenerator)
 {
-	asSrc	= mNetOps->getAccountState(uLedger, naSrcAccountID);
-	if (!asSrc)
-	{
-		return JSONRPCError(500, "source account does not exist");
-	}
-
-	if (!asSrc->bHaveAuthorizedKey())
-	{
-		return JSONRPCError(500, "source account has not been claimed");
-	}
-
 	NewcoinAddress		naGenerator;
 	NewcoinAddress		na0Public;		// To find the generator index.
 	NewcoinAddress		na0Private;		// To decrypt the master generator's cipher.
@@ -210,9 +196,34 @@ Json::Value RPCServer::authorize(const uint256& uLedger,
 		return JSONRPCError(500, "internal error: password failed to decrypt master public generator");
 	}
 
+	naMasterGenerator.setFamilyGenerator(vucMasterGenerator);
+
+	return Json::Value(Json::objectValue);
+}
+
+// Given a seed and a source account get the public and private key for authorizing transactions for the account.
+Json::Value RPCServer::authorize(const uint256& uLedger,
+	const NewcoinAddress& naSeed, const NewcoinAddress& naSrcAccountID,
+	NewcoinAddress& naAccountPublic, NewcoinAddress& naAccountPrivate,
+	AccountState::pointer& asSrc)
+{
+	asSrc	= mNetOps->getAccountState(uLedger, naSrcAccountID);
+	if (!asSrc)
+	{
+		return JSONRPCError(500, "source account does not exist");
+	}
+
+	if (!asSrc->bHaveAuthorizedKey())
+	{
+		return JSONRPCError(500, "source account has not been claimed");
+	}
+
 	NewcoinAddress	naMasterGenerator;
 
-	naMasterGenerator.setFamilyGenerator(vucMasterGenerator);
+	Json::Value	obj	= getGenerator(uLedger, naSeed, naMasterGenerator);
+
+	if (!obj.empty())
+		return obj;
 
 	//
 	// Find the index of the account from the master generator, so we can generate the public and private keys.
@@ -228,6 +239,10 @@ Json::Value RPCServer::authorize(const uint256& uLedger,
 		naMasterAccountPublic.setAccountPublic(naMasterGenerator, iIndex);
 	} while (naSrcAccountID.getAccountID() != naMasterAccountPublic.getAccountID());
 
+	// Use the regular generator to determine the associated public and private keys.
+	NewcoinAddress		naGenerator;
+
+	naGenerator.setFamilyGenerator(naSeed);
 	naAccountPublic.setAccountPublic(naGenerator, iIndex);
 	naAccountPrivate.setAccountPrivate(naGenerator, naSeed, iIndex);
 
@@ -240,7 +255,7 @@ Json::Value RPCServer::authorize(const uint256& uLedger,
 		return JSONRPCError(500, "wrong password (changed)");
 	}
 
-	return Json::Value(Json::objectValue);
+	return obj;
 }
 
 // <-- bIndex: true if iIndex > 0 and used the index.
@@ -745,36 +760,23 @@ Json::Value RPCServer::doTransitSet(Json::Value& params)
 
 Json::Value RPCServer::doTx(Json::Value& params)
 {
-	// tx
 	// tx <txID>
-	// tx <family> <seq>
 	// tx <account>
 
 	std::string param1, param2;
 	if (!extractString(param1, params, 0))
-	{ // all local transactions
-		return "not implemented";
+	{
+		return "bad params";
 	}
 
 	if (Transaction::isHexTxID(param1))
 	{ // transaction by ID
 		Json::Value ret;
 		uint256 txid(param1);
-		// if (theApp->getWallet().getTxJson(txid, ret))
-		//	return ret;
 
 		Transaction::pointer txn=theApp->getMasterTransaction().fetch(txid, true);
 		if (!txn) return JSONRPCError(500, "Transaction not found");
 		return txn->getJson(true);
-	}
-
-	if (extractString(param2, params, 1))
-	{ // family seq
-		return "not implemented";
-	}
-	else
-	{
-		// account
 	}
 
 	return "not implemented";
@@ -874,9 +876,60 @@ Json::Value RPCServer::doValidatorCreate(Json::Value& params) {
 	return obj;
 }
 
+// wallet_accounts <regular_seed>
 Json::Value RPCServer::doWalletAccounts(Json::Value& params)
 {
-	return "not implemented";
+	NewcoinAddress	naSeed;
+	uint256			uLedger;
+
+	if (params.size() != 1)
+	{
+		return "invalid params";
+	}
+	else if (!naSeed.setFamilySeedGeneric(params[0u].asString()))
+	{
+		return "seed expected";
+	}
+	else if (!mNetOps->available()) {
+		return JSONRPCError(503, "network not available");
+	}
+	else if ((uLedger = mNetOps->getClosedLedger()).isZero())
+	{
+		return JSONRPCError(503, "no closed ledger");
+	}
+
+	NewcoinAddress	naMasterGenerator;
+
+	Json::Value	ret	= getGenerator(uLedger, naSeed, naMasterGenerator);
+
+	if (!ret.empty())
+		return ret;
+
+	Json::Value jsonAccounts(Json::objectValue);
+
+	// YYY Don't want to leak to thin server that these accounts are related.
+	// YYY Would be best to alternate requests to servers and to cache results.
+	uint	uIndex	= 0;
+
+	do {
+		NewcoinAddress		naAccount;
+
+		naAccount.setAccountPublic(naMasterGenerator, uIndex++);
+
+		AccountState::pointer as	= mNetOps->getAccountState(uLedger, naAccount);
+		if (as)
+		{
+			as->addJson(jsonAccounts);
+		}
+		else
+		{
+			uIndex	= 0;
+		}
+	} while (uIndex);
+
+	ret["accounts"]	= jsonAccounts;
+
+	return ret;
 }
 
 Json::Value RPCServer::doWalletAdd(Json::Value& params)
