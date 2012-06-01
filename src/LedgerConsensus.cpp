@@ -663,7 +663,7 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 	assert(set->getHash() == mOurPosition->getCurrentHash());
 	Log(lsINFO) << "Computing new LCL based on network consensus";
 	Log(lsDEBUG) << "Consensus " << mOurPosition->getCurrentHash().GetHex();
-	Log(lsDEBUG) << "Previous LCL " << mPreviousLedger->getParentHash().GetHex();
+	Log(lsDEBUG) << "Previous LCL " << mPreviousLedger.GetHex();
 
 	Ledger::pointer newLCL = boost::make_shared<Ledger>(mPreviousLedger);
 
