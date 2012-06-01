@@ -434,7 +434,6 @@ void LedgerConsensus::closeLedger()
 {
 	Log(lsINFO) << "Closing ledger";
 	Ledger::pointer initial = theApp->getMasterLedger().getCurrentLedger();
-	statusChange(newcoin::neCLOSING_LEDGER, initial);
 	statusChange(newcoin::neCLOSING_LEDGER, mPreviousLedger);
 }
 
@@ -692,6 +691,7 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 	val.set_validation(&validation[0], validation.size());
 	theApp->getConnectionPool().relayMessage(NULL, boost::make_shared<PackedMessage>(val, newcoin::mtVALIDATION));
 	Log(lsINFO) << "Validation sent " << newLCL->getHash().GetHex();
+	statusChange(newcoin::neACCEPTED_LEDGER, newOL);
 }
 
 void LedgerConsensus::endConsensus()

@@ -20,7 +20,7 @@ void LedgerMaster::pushLedger(Ledger::pointer newLedger)
 	// Caller should already have properly assembled this ledger into "ready-to-close" form --
 	// all candidate transactions must already be appled
 	ScopedLock sl(mLock);
-	if(!!mFinalizedLedger)
+	if (!!mFinalizedLedger)
 	{
 		mFinalizedLedger->setClosed();
 		mFinalizedLedger->setAccepted();
@@ -37,7 +37,8 @@ void LedgerMaster::pushLedger(Ledger::pointer newLCL, Ledger::pointer newOL)
 	assert(!newOL->isClosed() && !newOL->isAccepted());
 
 	ScopedLock sl(mLock);
-	mLedgerHistory.addAcceptedLedger(newLCL);
+	if (!!mFinalizedLedger)
+		mLedgerHistory.addAcceptedLedger(mFinalizedLedger);
 	mFinalizedLedger = newLCL;
 	mCurrentLedger = newOL;
 	mEngine.setLedger(newOL);
@@ -90,7 +91,7 @@ void LedgerMaster::applyFutureProposals(uint32 ledgerIndex)
 {
 	for(list< pair<Peer::pointer,newcoin::ProposeLedger> >::iterator iter=mFutureProposals.begin(); iter !=mFutureProposals.end(); )
 	{
-		if( (*iter).second.ledgerindex() == ledgerIndex)
+		if ((*iter).second.ledgerindex() == ledgerIndex)
 		{
 			checkLedgerProposal((*iter).first,(*iter).second);
 			mFutureProposals.erase(iter);
