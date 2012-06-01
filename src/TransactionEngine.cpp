@@ -236,7 +236,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	std::cerr << "applyTransaction>" << std::endl;
 
 #ifdef DEBUG
-	if (0)
+	if (1)
 	{
 		Serializer ser;
 		txn.add(ser);
