@@ -387,12 +387,14 @@ public:
 		*this = b;
 	}
 
-	uint160& operator=(uint64 b)
+	uint160& operator=(uint64 uHost)
 	{
+		uint64	uBig	= htobe64(uHost);
+
 		zero();
 
 		// Put in least significant bits.
-		((uint64_t *) end())[-1]	= htobe64(b);
+		memcpy(((uint64_t*)end())-1, &uBig, sizeof(uBig));
 
 		return *this;
 	}
