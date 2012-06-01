@@ -32,7 +32,11 @@ SerializedTransaction::SerializedTransaction(SerializerIterator& sit, int length
 
 	mMiddleTxn.giveObject(new STUInt32("Magic", TransactionMagic));
 	mMiddleTxn.giveObject(new STVariableLength("SigningPubKey", sit.getVL()));
-	mMiddleTxn.giveObject(new STAccount("SourceAccount", sit.getVL()));
+
+	STAccount sa("SourceAccount", sit.getVL());
+	mSourceAccount = sa.getValueNCA();
+	mMiddleTxn.giveObject(new STAccount(sa));
+
 	mMiddleTxn.giveObject(new STUInt32("Sequence", sit.get32()));
 
 	mType = static_cast<TransactionType>(sit.get16());
