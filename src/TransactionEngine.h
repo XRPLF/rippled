@@ -2,7 +2,6 @@
 #define __TRANSACTIONENGINE__
 
 #include "Ledger.h"
-#include "Ledger.h"
 #include "SerializedTransaction.h"
 #include "SerializedLedger.h"
 
@@ -75,14 +74,12 @@ private:
 	TransactionEngineResult dirAdd(
 		std::vector<AffectedAccount>&	accounts,
 		uint64&							uNodeDir,		// Node of entry.
-		const LedgerEntryType			letKind,
 		const uint256&					uBase,
 		const uint256&					uLedgerIndex);
 
 	TransactionEngineResult dirDelete(
 		std::vector<AffectedAccount>&	accounts,
 		const uint64&					uNodeDir,		// Node item is mentioned in.
-		const LedgerEntryType			letKind,
 		const uint256&					uBase,			// Key of item.
 		const uint256&					uLedgerIndex);	// Item being deleted
 

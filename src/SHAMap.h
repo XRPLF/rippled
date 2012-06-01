@@ -77,17 +77,11 @@ public:
 };
 
 class hash_SMN
-{ // These must be randomized for release
+{
 public:
-	std::size_t operator() (const SHAMapNode& mn) const
-#if 0
-	{ return mn.getDepth() ^ static_cast<std::size_t>(mn.getNodeID().GetAt(0)); }
-#else
-	{ return mn.getDepth() ^ *reinterpret_cast<const std::size_t *>(mn.getNodeID().begin()); }
-#endif
+	std::size_t operator() (const SHAMapNode& mn) const;
 
-	std::size_t operator() (const uint256& u) const
-	{ return *reinterpret_cast<const std::size_t *>(u.begin()); }
+	std::size_t operator() (const uint256& u) const;
 };
 
 class SHAMapItem
@@ -176,7 +170,7 @@ public:
 	uint32 getSeq() const				{ return mSeq; }
 	void setSeq(uint32 s)				{ mSeq = s; }
 	const uint256& getNodeHash() const	{ return mHash; }
-	TNType getType() const 				{ return mType; }
+	TNType getType() const				{ return mType; }
 
 	// type functions
 	bool isLeaf() const			{ return (mType == tnTRANSACTION) || (mType == tnACCOUNT_STATE); }

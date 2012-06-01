@@ -163,11 +163,10 @@ SLE::pointer NetworkOPs::getGenerator(const uint256& uLedger, const uint160& uGe
 bool NetworkOPs::getDirInfo(
 	const uint256&			uLedger,
 	const uint256&			uBase,
-	const LedgerEntryType	letKind,
 	uint256&				uDirLineNodeFirst,
 	uint256&				uDirLineNodeLast)
 {
-	uint256				uRootIndex	= Ledger::getDirIndex(uBase, letKind);
+	uint256				uRootIndex	= Ledger::getDirIndex(uBase, 0);
 	LedgerStateParms	lspRoot		= lepNONE;
 	SLE::pointer		sleRoot		= mLedgerMaster->getLedgerByHash(uLedger)->getDirRoot(lspRoot, uRootIndex);
 
@@ -177,8 +176,9 @@ bool NetworkOPs::getDirInfo(
 
 		Log(lsTRACE) << "getDirInfo: first: " << strHex(sleRoot->getIFieldU64(sfFirstNode)) ;
 		Log(lsTRACE) << "getDirInfo:  last: " << strHex(sleRoot->getIFieldU64(sfLastNode)) ;
-		uDirLineNodeFirst	= Ledger::getDirIndex(uBase, letKind, sleRoot->getIFieldU64(sfFirstNode));
-		uDirLineNodeLast	= Ledger::getDirIndex(uBase, letKind, sleRoot->getIFieldU64(sfLastNode));
+
+		uDirLineNodeFirst	= Ledger::getDirIndex(uBase, sleRoot->getIFieldU64(sfFirstNode));
+		uDirLineNodeLast	= Ledger::getDirIndex(uBase, sleRoot->getIFieldU64(sfLastNode));
 
 		Log(lsTRACE) << "getDirInfo: first: " << uDirLineNodeFirst.ToString() ;
 		Log(lsTRACE) << "getDirInfo:  last: " << uDirLineNodeLast.ToString() ;

@@ -3,6 +3,7 @@
 
 #include "SerializedObject.h"
 
+// Used as the type of a transaction or the type of a ledger entry.
 enum LedgerEntryType
 {
 	ltINVALID		= -1,
@@ -14,15 +15,19 @@ enum LedgerEntryType
 	ltNICKNAME
 };
 
-// In the format 160 + namespace + other.
+// Used as a prefix for computing ledger indexes (keys).
 enum LedgerNameSpace
 {
-	lnsGenerator	= -1,
-	lnsAccounts,
-	lnsRipple,
-	lnsBonds,
-	lnsInvoices,
-	lnsMultiSig
+	spaceAccount,
+	spaceGenerator,
+	spaceNickname,
+	spaceRipple,
+	spaceRippleDir,
+	spaceOffer,
+	spaceOfferDir,
+	spaceBond,
+	spaceInvoice,
+	spaceMultiSig,
 };
 
 enum LedgerSpecificFlags

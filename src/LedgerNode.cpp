@@ -138,28 +138,18 @@ SerializedLedgerEntry::pointer Ledger::getRippleState(LedgerStateParms& parms, c
 // Directory
 //
 
-uint256 Ledger::getDirIndex(const uint256& uBase, const LedgerEntryType letKind, const uint64 uNodeDir)
+// For a directory entry put in the 64 bit index or quality.
+uint256 Ledger::getDirIndex(const uint256& uBase, const uint64 uNodeDir)
 {
-	// Indexes are stored in little endian format.
-	// The low bytes are indexed first, so when printed as a hex stream the hex is in byte order.
-	// Therefore, we place uNodeDir in the 8 right most bytes.
-	Serializer	sKey;
+	// Indexes are stored in big endian format: they print as hex as stored.
+	// Most significant bytes are first.  Least significant bytes repesent adjcent entries.
+	// We place uNodeDir in the 8 right most bytes to be adjcent.
+	// Want uNodeDir in big endian format so ++ goes to the next entry for indexes.
+	uint256	uNode(uBase);
 
-	sKey.add256(uBase);
-	sKey.add8(letKind);
+	((uint64*) uNode.end())[-1]	= htobe64(uNodeDir);
 
-	uint256	uResult	= sKey.getSHA512Half();
-
-	Serializer	sNode;	// Put in a fixed byte order: BIG. YYY
-
-	sNode.add64(uNodeDir);
-
-	// YYY SLOPPY
-	std::vector<unsigned char>	vucData	= sNode.getData();
-
-	std::copy(vucData.begin(), vucData.end(), uResult.end()-(64/8));
-
-	return uResult;
+	return uNode;
 }
 
 SerializedLedgerEntry::pointer Ledger::getDirRoot(LedgerStateParms& parms, const uint256& uRootIndex)

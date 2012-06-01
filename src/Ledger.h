@@ -144,8 +144,7 @@ public:
 	static Ledger::pointer loadByHash(const uint256& ledgerHash);
 
 	// index calculation functions
-	static uint256 getAccountRootIndex(const uint160& account)
-	{ return uint160extend256(account, lnsAccounts); }		// Index is accountID extended to 256 bits
+	static uint256 getAccountRootIndex(const uint160& uAccountID);
 
 	static uint256 getAccountRootIndex(const NewcoinAddress& account)
 	{ return getAccountRootIndex(account.getAccountID()); }
@@ -156,8 +155,7 @@ public:
 
 	SLE::pointer getGenerator(LedgerStateParms& parms, const uint160& uGeneratorID);
 
-	static uint256 getGeneratorIndex(const uint160& uGeneratorID)
-	{ return uint160extend256(uGeneratorID, lnsGenerator); }	// Index is the generator ID extended to 256 bits in namespace 1
+	static uint256 getGeneratorIndex(const uint160& uGeneratorID);
 
 	//
 	// Ripple functions
@@ -169,6 +167,7 @@ public:
 
 	static uint256 getRippleStateIndex(const NewcoinAddress& naA, const NewcoinAddress& naB)
 		{ return getRippleStateIndex(naA, naB, uint160()); }
+	static uint256 getRippleDirIndex(const uint160& uAccountID);
 
 	RippleState::pointer getRippleState(const uint256& uNode);
 	SLE::pointer getRippleState(LedgerStateParms& parms, const uint256& uNode);
@@ -194,7 +193,7 @@ public:
 	// Directory functions
 	//
 
-	static uint256 getDirIndex(const uint256& uBase, const LedgerEntryType letKind, const uint64 uNodeDir=0);
+	static uint256 getDirIndex(const uint256& uBase, const uint64 uNodeDir=0);
 
 	SLE::pointer getDirRoot(LedgerStateParms& parms, const uint256& uRootIndex);
 	SLE::pointer getDirNode(LedgerStateParms& parms, const uint256& uNodeIndex);

@@ -387,12 +387,14 @@ public:
 		*this = b;
 	}
 
-	uint160& operator=(uint64 b)
+	uint160& operator=(uint64 uHost)
 	{
+		uint64	uBig	= htobe64(uHost);
+
 		zero();
 
 		// Put in least significant bits.
-		((uint64_t *) end())[-1]	= htobe64(b);
+		memcpy(((uint64_t*)end())-1, &uBig, sizeof(uBig));
 
 		return *this;
 	}
@@ -525,8 +527,6 @@ inline bool operator!=(const uint256& a, const uint256& b)			  { return (base_ui
 inline const uint256 operator^(const uint256& a, const uint256& b)	  { return (base_uint256)a ^  (base_uint256)b; }
 inline const uint256 operator&(const uint256& a, const uint256& b)	  { return (base_uint256)a &  (base_uint256)b; }
 inline const uint256 operator|(const uint256& a, const uint256& b)	  { return (base_uint256)a |  (base_uint256)b; }
-
-uint256 uint160extend256(const uint160& uSource, uint uNamespace);
 
 inline int Testuint256AdHoc(std::vector<std::string> vArg)
 {

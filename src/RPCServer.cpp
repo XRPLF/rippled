@@ -389,7 +389,6 @@ Json::Value RPCServer::doAccountLines(Json::Value &params)
 			// We access a committed ledger and need not worry about changes.
 			uint256	uDirLineNodeFirst;
 			uint256	uDirLineNodeLast;
-			// Ledger::getDirIndex(uBase, letKind, uNodeDir)
 
 			if (mNetOps->getDirLineInfo(uLedger, naAccount, uDirLineNodeFirst, uDirLineNodeLast))
 			{

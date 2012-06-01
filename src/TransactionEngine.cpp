@@ -14,12 +14,11 @@ typedef SerializedLedgerEntry SLE;
 TransactionEngineResult TransactionEngine::dirAdd(
 	std::vector<AffectedAccount>&	accounts,
 	uint64&							uNodeDir,
-	const LedgerEntryType			letKind,
 	const uint256&					uBase,
 	const uint256&					uLedgerIndex)
 {
 	// Get the root.
-	uint256				uRootIndex	= Ledger::getDirIndex(uBase, letKind);
+	uint256				uRootIndex	= Ledger::getDirIndex(uBase, 0);
 	LedgerStateParms	lspRoot		= lepNONE;
 	SLE::pointer		sleRoot		= mLedger->getDirRoot(lspRoot, uRootIndex);
 	bool				bRootNew;
@@ -50,7 +49,7 @@ TransactionEngineResult TransactionEngine::dirAdd(
 	}
 
 	// Get the last node.
-	uint256				uNodeIndex	= Ledger::getDirIndex(uBase, letKind, uNodeDir);
+	uint256				uNodeIndex	= Ledger::getDirIndex(uBase, uNodeDir);
 	LedgerStateParms	lspNode		= lepNONE;
 	SLE::pointer		sleNode		= bRootNew ? SLE::pointer() : mLedger->getDirNode(lspNode, uNodeIndex);
 
@@ -111,12 +110,11 @@ TransactionEngineResult TransactionEngine::dirAdd(
 TransactionEngineResult TransactionEngine::dirDelete(
 	std::vector<AffectedAccount>&	accounts,
 	const uint64&					uNodeDir,
-	const LedgerEntryType			letKind,
 	const uint256&					uBase,
 	const uint256&					uLedgerIndex)
 {
 	uint64				uNodeCur	= uNodeDir;
-	uint256				uNodeIndex	= Ledger::getDirIndex(uBase, letKind, uNodeCur);
+	uint256				uNodeIndex	= Ledger::getDirIndex(uBase, uNodeCur);
 	LedgerStateParms	lspNode		= lepNONE;
 	SLE::pointer		sleNode		= mLedger->getDirNode(lspNode, uNodeIndex);
 
@@ -141,7 +139,7 @@ TransactionEngineResult TransactionEngine::dirDelete(
 		{
 			// Get root information
 			LedgerStateParms	lspRoot		= lepNONE;
-			SLE::pointer		sleRoot		= mLedger->getDirRoot(lspRoot, Ledger::getDirIndex(uBase, letKind));
+			SLE::pointer		sleRoot		= mLedger->getDirRoot(lspRoot, Ledger::getDirIndex(uBase, 0));
 
 			if (!sleRoot)
 			{
@@ -197,7 +195,7 @@ TransactionEngineResult TransactionEngine::dirDelete(
 
 					// Get replacement node.
 					lspNode		= lepNONE;
-					sleNode		= mLedger->getDirNode(lspNode, Ledger::getDirIndex(uBase, letKind, uNodeCur));
+					sleNode		= mLedger->getDirNode(lspNode, Ledger::getDirIndex(uBase, uNodeCur));
 					svIndexes	= sleNode->getIFieldV256(sfIndexes);
 				}
 			}
@@ -595,7 +593,7 @@ TransactionEngineResult TransactionEngine::doCreditSet(const SerializedTransacti
 
 						bAddIndex		= !(sleRippleState->getFlags() & uFlags);
 
-		sleRippleState->setIFieldAmount(bSltD ? sfLowLimit : sfHighID, saLimitAmount);
+		sleRippleState->setIFieldAmount(bSltD ? sfLowLimit : sfHighLimit, saLimitAmount);
 
 		accounts.push_back(std::make_pair(taaMODIFY, sleRippleState));
 
@@ -640,7 +638,7 @@ TransactionEngineResult TransactionEngine::doCreditSet(const SerializedTransacti
 
 		// XXX Verify extend is passing the right bits, not the zero bits.
 		// XXX Make dirAdd more flexiable to take vector.
-		terResult	= dirAdd(accounts, uSrcRef, ltRIPPLE_STATE, uint160extend256(uSrcAccountID, 0), sleRippleState->getIndex());
+		terResult	= dirAdd(accounts, uSrcRef, Ledger::getRippleDirIndex(uSrcAccountID), sleRippleState->getIndex());
 	}
 
 	std::cerr << "doCreditSet<" << std::endl;

@@ -47,6 +47,8 @@ class Application
 	PeerDoor*				mPeerDoor;
 	RPCDoor*				mRPCDoor;
 
+	uint256					mNonce256;
+
 	std::map<std::string, Peer::pointer> mPeerMap;
 	boost::recursive_mutex	mPeerMapLock;
 
@@ -73,8 +75,7 @@ public:
 	DatabaseCon* getHashNodeDB() { return mHashNodeDB; }
 	DatabaseCon* getNetNodeDB() { return mNetNodeDB; }
 
-	//Serializer* getSerializer(){ return(mSerializer); }
-	//void setSerializer(Serializer* ser){ mSerializer=ser; }
+	uint256 getNonce256() { return mNonce256; }
 
 	void run();
 	void stop();

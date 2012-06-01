@@ -36,7 +36,7 @@ Application::Application() :
 	mTxnDB(NULL), mLedgerDB(NULL), mWalletDB(NULL), mHashNodeDB(NULL), mNetNodeDB(NULL),
 	mConnectionPool(mIOService), mPeerDoor(NULL), mRPCDoor(NULL)
 {
-	nothing();
+	RAND_bytes(mNonce256.begin(), mNonce256.size());
 }
 
 extern const char *TxnDBInit[], *LedgerDBInit[], *WalletDBInit[], *HashNodeDBInit[], *NetNodeDBInit[];
