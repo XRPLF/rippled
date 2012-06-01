@@ -84,6 +84,7 @@ TransactionEngineResult TransactionEngine::dirAdd(
 			std::cerr << "dirAdd:  last: " << strHex(uNodeDir) << std::endl;
 
 			sleRoot->setIFieldU64(sfLastNode, uNodeDir);
+
 			accounts.push_back(std::make_pair(taaMODIFY, sleRoot));
 		}
 	}
@@ -589,16 +590,16 @@ TransactionEngineResult TransactionEngine::doCreditSet(const SerializedTransacti
 	SLE::pointer		sleRippleState	= mLedger->getRippleState(qry, uSrcAccountID, uDstAccountID, uCurrency);
 	if (sleRippleState)
 	{
-		std::cerr << "doCreditSet: Modifying ripple line." << std::endl;
-
 						bAddIndex		= !(sleRippleState->getFlags() & uFlags);
+
+		std::cerr << "doCreditSet: Modifying ripple line: bAddIndex=" << bAddIndex << std::endl;
 
 		sleRippleState->setIFieldAmount(bSltD ? sfLowLimit : sfHighLimit, saLimitAmount);
 
-		accounts.push_back(std::make_pair(taaMODIFY, sleRippleState));
-
 		if (bAddIndex)
 			sleRippleState->setFlag(uFlags);
+
+		accounts.push_back(std::make_pair(taaMODIFY, sleRippleState));
 	}
 	// Line does not exist.
 	else if (saLimitAmount.isZero())
