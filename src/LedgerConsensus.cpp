@@ -374,7 +374,7 @@ bool LedgerConsensus::updateOurPositions(int sinceClose)
 	{
 		if (it->second->updatePosition(sinceClose))
 		{
-			if (changes)
+			if (!changes)
 			{
 				ourPosition = mComplete[mOurPosition->getCurrentHash()]->snapShot();
 				changes = true;
@@ -385,7 +385,7 @@ bool LedgerConsensus::updateOurPositions(int sinceClose)
 				ourPosition->addItem(SHAMapItem(it->first, it->second->peekTransaction()), true);
 				addedTx.push_back(it->first);
 			}
-				else // now a no
+			else // now a no
 			{
 				ourPosition->delItem(it->first);
 				removedTx.push_back(it->first);
