@@ -8,14 +8,13 @@ SerializedTransaction::SerializedTransaction(TransactionType type) : mType(type)
 	mFormat = getTxnFormat(type);
 	if (mFormat == NULL) throw std::runtime_error("invalid transaction type");
 
-	mMiddleTxn.giveObject(new STUInt32("Magic", TransactionMagic));
 	mMiddleTxn.giveObject(new STVariableLength("SigningPubKey"));
 	mMiddleTxn.giveObject(new STAccount("SourceAccount"));
 	mMiddleTxn.giveObject(new STUInt32("Sequence"));
 	mMiddleTxn.giveObject(new STUInt16("Type", static_cast<uint16>(type)));
 	mMiddleTxn.giveObject(new STAmount("Fee"));
 
-	mInnerTxn=STObject(mFormat->elements, "InnerTransaction");
+	mInnerTxn = STObject(mFormat->elements, "InnerTransaction");
 }
 
 SerializedTransaction::SerializedTransaction(SerializerIterator& sit, int length)
@@ -27,10 +26,6 @@ SerializedTransaction::SerializedTransaction(SerializerIterator& sit, int length
 
 	mSignature.setValue(sit.getVL());
 
-	if (sit.get32() != TransactionMagic)
-		throw std::runtime_error("Transaction has invalid magic");
-
-	mMiddleTxn.giveObject(new STUInt32("Magic", TransactionMagic));
 	mMiddleTxn.giveObject(new STVariableLength("SigningPubKey", sit.getVL()));
 
 	STAccount sa("SourceAccount", sit.getVL());
@@ -94,14 +89,11 @@ std::vector<NewcoinAddress> SerializedTransaction::getAffectedAccounts() const
 	return accounts;
 }
 
-int SerializedTransaction::getTransaction(Serializer& s, bool include_length) const
+void SerializedTransaction::add(Serializer& s) const
 {
-	int l = getLength();
-	if (include_length) s.add32(l);
 	mSignature.add(s);
 	mMiddleTxn.add(s);
 	mInnerTxn.add(s);
-	return l;
 }
 
 bool SerializedTransaction::isEquivalent(const SerializedType& t) const
@@ -117,6 +109,7 @@ bool SerializedTransaction::isEquivalent(const SerializedType& t) const
 uint256 SerializedTransaction::getSigningHash() const
 {
 	Serializer s;
+	s.add32(TransactionMagic);
 	mMiddleTxn.add(s);
 	mInnerTxn.add(s);
 	return s.getSHA512Half();
@@ -154,20 +147,6 @@ bool SerializedTransaction::checkSign(const NewcoinAddress& naAccountPublic) con
 void SerializedTransaction::setSignature(const std::vector<unsigned char>& sig)
 {
 	mSignature.setValue(sig);
-}
-
-uint32 SerializedTransaction::getVersion() const
-{
-	const STUInt32* v = dynamic_cast<const STUInt32*>(mMiddleTxn.peekAtPIndex(TransactionIVersion));
-	if (!v) throw std::runtime_error("corrupt transaction");
-	return v->getValue();
-}
-
-void SerializedTransaction::setVersion(uint32 ver)
-{
-	STUInt32* v = dynamic_cast<STUInt32*>(mMiddleTxn.getPIndex(TransactionIVersion));
-	if (!v) throw std::runtime_error("corrupt transaction");
-	v->setValue(ver);
 }
 
 STAmount SerializedTransaction::getTransactionFee() const
