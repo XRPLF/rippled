@@ -17,12 +17,14 @@ SerializedTransaction::SerializedTransaction(TransactionType type) : mType(type)
 	mInnerTxn = STObject(mFormat->elements, "InnerTransaction");
 }
 
-SerializedTransaction::SerializedTransaction(SerializerIterator& sit, int length)
+SerializedTransaction::SerializedTransaction(SerializerIterator& sit)
 {
-	if (length == -1) length = sit.getBytesLeft();
-	else if (length == 0) length = sit.get32();
+	int length = sit.getBytesLeft();
 	if ((length < TransactionMinLen) || (length > TransactionMaxLen))
+	{
+		Log(lsERROR) << "Transaction has invalid length: " << length;
 		throw std::runtime_error("Transaction length invalid");
+	}
 
 	mSignature.setValue(sit.getVL());
 

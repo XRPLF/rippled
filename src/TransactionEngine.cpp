@@ -241,7 +241,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 		Serializer ser;
 		txn.add(ser);
 		SerializerIterator sit(ser);
-		SerializedTransaction s2(sit, -1);
+		SerializedTransaction s2(sit);
 		if (!s2.isEquivalent(txn))
 		{
 			std::cerr << "Transaction serdes mismatch" << std::endl;

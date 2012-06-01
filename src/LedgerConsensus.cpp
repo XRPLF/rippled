@@ -9,6 +9,8 @@
 #include "SerializedValidation.h"
 #include "Log.h"
 
+#define TRUST_NETWORK
+
 TransactionAcquire::TransactionAcquire(const uint256& hash) : PeerSet(hash, 1), mHaveRoot(false)
 {
 	mMap = boost::make_shared<SHAMap>();
@@ -525,7 +527,8 @@ bool LedgerConsensus::peerPosition(LedgerProposal::pointer newPosition)
 			return true;
 		}
 	}
-	Log(lsINFO) << "Peer changes position";
+	Log(lsINFO) << "Peer position " << newPosition->getProposeSeq() << "/"
+		<< newPosition->getCurrentHash().GetHex();
 	currentPosition = newPosition;
 	SHAMap::pointer set = getTransactionTree(newPosition->getCurrentHash(), true);
 	if (set)
@@ -595,10 +598,12 @@ void LedgerConsensus::applyTransactions(SHAMap::pointer set, Ledger::pointer led
 	while (item)
 	{
 		Log(lsINFO) << "Processing candidate transaction: " << item->getTag().GetHex();
+#ifndef TRUST_NETWORK
 		try
 		{
+#endif
 			SerializerIterator sit(item->peekSerializer());
-			SerializedTransaction::pointer txn = boost::make_shared<SerializedTransaction>(boost::ref(sit), 0);
+			SerializedTransaction::pointer txn = boost::make_shared<SerializedTransaction>(boost::ref(sit));
 			TransactionEngineResult result = engine.applyTransaction(*txn, tepNO_CHECK_FEE);
 			if (result > 0)
 			{
@@ -616,11 +621,13 @@ void LedgerConsensus::applyTransactions(SHAMap::pointer set, Ledger::pointer led
 				Log(lsINFO) << "   hard fail";
 				assert(!ledger->hasTransaction(item->getTag()));
 			}
+#ifndef TRUST_NETWORK
 		}
 		catch (...)
 		{
 			Log(lsWARNING) << "  Throws";
 		}
+#endif
 		item = set->peekNextItem(item->getTag());
 	}
 

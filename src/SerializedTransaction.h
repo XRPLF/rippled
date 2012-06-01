@@ -26,7 +26,7 @@ protected:
 	SerializedTransaction* duplicate() const { return new SerializedTransaction(*this); }
 
 public:
-	SerializedTransaction(SerializerIterator& sit, int length); // -1=all remaining, 0=get from sit
+	SerializedTransaction(SerializerIterator& sit);
 	SerializedTransaction(TransactionType type);
 
 	// STObject functions
