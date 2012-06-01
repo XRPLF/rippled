@@ -394,7 +394,7 @@ public:
 		zero();
 
 		// Put in least significant bits.
-		memcpy(((uint64_t*)end())-1, &uBig, sizeof(uBig));
+		memcpy(((uint64*)end())-1, &uBig, sizeof(uBig));
 
 		return *this;
 	}
