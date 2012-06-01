@@ -186,9 +186,6 @@ void SHAMap::returnNode(SHAMapTreeNode::pointer& node, bool modify)
 	assert(node->isValid());
 	if (node && modify && (node->getSeq() != mSeq))
 	{ // have a CoW
-#ifdef DEBUG
-		std::cerr << "returnNode COW" << std::endl;
-#endif
 		if (mDirtyNodes) (*mDirtyNodes)[*node] = node;
 		node = boost::make_shared<SHAMapTreeNode>(*node, mSeq);
 		assert(node->isValid());
