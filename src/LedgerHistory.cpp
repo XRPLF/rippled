@@ -12,7 +12,7 @@
 #endif
 
 #ifndef CACHED_LEDGER_AGE
-#define CACHED_LEDGER_AGE 60
+#define CACHED_LEDGER_AGE 600
 #endif
 
 LedgerHistory::LedgerHistory() : mLedgersByHash(CACHED_LEDGER_NUM, CACHED_LEDGER_AGE)
