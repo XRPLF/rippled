@@ -1,6 +1,8 @@
 
 #include "SerializedTransaction.h"
 
+#include "Log.h"
+
 SerializedTransaction::SerializedTransaction(TransactionType type) : mType(type)
 {
 	mFormat = getTxnFormat(type);
@@ -10,7 +12,7 @@ SerializedTransaction::SerializedTransaction(TransactionType type) : mType(type)
 	mMiddleTxn.giveObject(new STVariableLength("SigningPubKey"));
 	mMiddleTxn.giveObject(new STAccount("SourceAccount"));
 	mMiddleTxn.giveObject(new STUInt32("Sequence"));
-	mMiddleTxn.giveObject(new STUInt8("Type", static_cast<unsigned char>(type)));
+	mMiddleTxn.giveObject(new STUInt16("Type", static_cast<uint16>(type)));
 	mMiddleTxn.giveObject(new STAmount("Fee"));
 
 	mInnerTxn=STObject(mFormat->elements, "InnerTransaction");
@@ -18,9 +20,9 @@ SerializedTransaction::SerializedTransaction(TransactionType type) : mType(type)
 
 SerializedTransaction::SerializedTransaction(SerializerIterator& sit, int length)
 {
-	if (length == -1) length=sit.getBytesLeft();
-	else if (length == 0) length=sit.get32();
-	if ( (length < TransactionMinLen) || (length > TransactionMaxLen) )
+	if (length == -1) length = sit.getBytesLeft();
+	else if (length == 0) length = sit.get32();
+	if ((length < TransactionMinLen) || (length > TransactionMaxLen))
 		throw std::runtime_error("Transaction length invalid");
 
 	mSignature.setValue(sit.getVL());
@@ -33,10 +35,14 @@ SerializedTransaction::SerializedTransaction(SerializerIterator& sit, int length
 	mMiddleTxn.giveObject(new STAccount("SourceAccount", sit.getVL()));
 	mMiddleTxn.giveObject(new STUInt32("Sequence", sit.get32()));
 
-	mType = static_cast<TransactionType>(sit.get32());
-	mMiddleTxn.giveObject(new STUInt32("Type", static_cast<uint32>(mType)));
+	mType = static_cast<TransactionType>(sit.get16());
+	mMiddleTxn.giveObject(new STUInt16("Type", static_cast<uint16>(mType)));
 	mFormat = getTxnFormat(mType);
-	if (!mFormat) throw std::runtime_error("Transaction has invalid type");
+	if (!mFormat)
+	{
+		Log(lsERROR) << "Transaction has invalid type";
+		throw std::runtime_error("Transaction has invalid type");
+	}
 	mMiddleTxn.giveObject(new STAmount("Fee", sit.get64()));
 
 	mInnerTxn = STObject(mFormat->elements, sit, "InnerTransaction");
