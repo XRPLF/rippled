@@ -77,13 +77,11 @@ public:
 };
 
 class hash_SMN
-{ // These must be randomized for release
+{
 public:
-	std::size_t operator() (const SHAMapNode& mn) const
-	{ return mn.getDepth() ^ *reinterpret_cast<const std::size_t *>(mn.getNodeID().begin()); }
+	std::size_t operator() (const SHAMapNode& mn) const;
 
-	std::size_t operator() (const uint256& u) const
-	{ return *reinterpret_cast<const std::size_t *>(u.begin()); }
+	std::size_t operator() (const uint256& u) const;
 };
 
 class SHAMapItem
