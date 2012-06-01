@@ -739,6 +739,7 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 	}
 	else
 	{ // Figure out what ledger they want
+		Log(lsINFO) << "Received request for ledger data";
 		Ledger::pointer ledger;
 		if (packet.has_ledgerhash())
 		{
@@ -746,9 +747,11 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 			if (packet.ledgerhash().size() != 32)
 			{
 				punishPeer(PP_INVALID_REQUEST);
+				Log(lsWARNING) << "Invalid request";
 				return;
 			}
 			memcpy(ledgerhash.begin(), packet.ledgerhash().data(), 32);
+			Log(lsINFO) << "Query by hash: " << ledgerhash.GetHex();
 			ledger = theApp->getMasterLedger().getLedgerByHash(ledgerhash);
 		}
 		else if (packet.has_ledgerseq())
@@ -764,12 +767,14 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 		else
 		{
 			punishPeer(PP_INVALID_REQUEST);
+			Log(lsWARNING) << "Can't figure out what ledger they want";
 			return;
 		}
 
-		if( (!ledger) || (packet.has_ledgerseq() && (packet.ledgerseq()!=ledger->getLedgerSeq())) )
+		if ((!ledger) || (packet.has_ledgerseq() && (packet.ledgerseq()!=ledger->getLedgerSeq())))
 		{
 			punishPeer(PP_UNKNOWN_REQUEST);
+			Log(lsWARNING) << "Can't find the ledger they want";
 			return;
 		}
 
@@ -796,6 +801,7 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 
 	if ((!map) || (packet.nodeids_size() == 0))
 	{
+		Log(lsWARNING) << "Can't find map or empty request";
 		punishPeer(PP_INVALID_REQUEST);
 		return;
 	}
@@ -826,6 +832,7 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 		}
 	}
 	PackedMessage::pointer oPacket = boost::make_shared<PackedMessage>(reply, newcoin::mtLEDGER_DATA);
+	Log(lsTRACE) << "sending reply";
 	sendPacket(oPacket);
 }
 
