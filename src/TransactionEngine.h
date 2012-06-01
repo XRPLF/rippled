@@ -2,7 +2,6 @@
 #define __TRANSACTIONENGINE__
 
 #include "Ledger.h"
-#include "Ledger.h"
 #include "SerializedTransaction.h"
 #include "SerializedLedger.h"
 

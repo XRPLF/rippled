@@ -593,7 +593,7 @@ TransactionEngineResult TransactionEngine::doCreditSet(const SerializedTransacti
 
 						bAddIndex		= !(sleRippleState->getFlags() & uFlags);
 
-		sleRippleState->setIFieldAmount(bSltD ? sfLowLimit : sfHighID, saLimitAmount);
+		sleRippleState->setIFieldAmount(bSltD ? sfLowLimit : sfHighLimit, saLimitAmount);
 
 		accounts.push_back(std::make_pair(taaMODIFY, sleRippleState));
 
