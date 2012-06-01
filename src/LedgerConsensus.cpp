@@ -447,7 +447,8 @@ void LedgerConsensus::propose(const std::vector<uint256>& added, const std::vect
 	std::vector<unsigned char> sig = mOurPosition->sign();
 	prop.set_nodepubkey(&pubKey[0], pubKey.size());
 	prop.set_signature(&sig[0], sig.size());
-	theApp->getConnectionPool().relayMessage(NULL, boost::make_shared<PackedMessage>(prop, newcoin::mtPROPOSE_LEDGER));
+	theApp->getConnectionPool().relayMessage(NULL,
+		boost::make_shared<PackedMessage>(prop, newcoin::mtPROPOSE_LEDGER));
 }
 
 void LedgerConsensus::addDisputedTransaction(const uint256& txID, const std::vector<unsigned char>& tx)
@@ -489,9 +490,13 @@ bool LedgerConsensus::peerPosition(LedgerProposal::pointer newPosition)
 	{
 		assert(newPosition->getPeerID() == currentPosition->getPeerID());
 		if (newPosition->getProposeSeq() <= currentPosition->getProposeSeq())
+		{
+			Log(lsINFO) << "Redundant/stale positon";
 			return false;
+		}
 		if (newPosition->getCurrentHash() == currentPosition->getCurrentHash())
 		{ // we missed an intermediary change
+			Log(lsINFO) << "We missed an intermediary position";
 			currentPosition = newPosition;
 			return true;
 		}

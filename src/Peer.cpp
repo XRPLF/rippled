@@ -15,6 +15,10 @@
 #include "Conversion.h"
 #include "SerializedTransaction.h"
 #include "utils.h"
+#include "Log.h"
+
+// Don't try to run past receiving nonsense from a peer
+#define TRUST_NETWORK
 
 // Node has this long to verify its identity from connection accepted or connection attempt.
 #define NODE_VERIFY_SECONDS		15
@@ -426,8 +430,6 @@ void Peer::processReadBuffer()
 			}
 			break;
 
-
-
 		case newcoin::mtGET_LEDGER:
 			{
 				newcoin::TMGetLedger msg;
@@ -571,8 +573,10 @@ void Peer::recvTransaction(newcoin::TMTransaction& packet)
 #endif
 
 	Transaction::pointer tx;
+#ifndef TRUST_NETWORK
 	try
 	{
+#endif
 		std::string rawTx = packet.rawtransaction();
 		Serializer s(std::vector<unsigned char>(rawTx.begin(), rawTx.end()));
 		SerializerIterator sit(s);
@@ -580,6 +584,7 @@ void Peer::recvTransaction(newcoin::TMTransaction& packet)
 
 		tx = boost::make_shared<Transaction>(stx, true);
 		if (tx->getStatus() == INVALID) throw(0);
+#ifndef TRUST_NETWORK
 	}
 	catch (...)
 	{
@@ -590,6 +595,7 @@ void Peer::recvTransaction(newcoin::TMTransaction& packet)
 #endif
 		return;
 	}
+#endif
 
 	tx = theApp->getOPs().processTransaction(tx, this);
 
@@ -603,6 +609,7 @@ void Peer::recvTransaction(newcoin::TMTransaction& packet)
 
 void Peer::recvPropose(newcoin::TMProposeSet& packet)
 {
+	Log(lsINFO) << "Received proposal from peer";
 	if ((packet.currenttxhash().size() != 32) || (packet.prevclosedhash().size() != 32) ||
 		(packet.nodepubkey().size() < 28) || (packet.signature().size() < 56))
 		return;
@@ -686,9 +693,7 @@ void Peer::recvAccount(newcoin::TMAccount& packet)
 
 void Peer::recvStatus(newcoin::TMStatusChange& packet)
 {
-#ifdef DEBUG
-	std::cerr << "Received status change from peer" << std::endl;
-#endif
+	Log(lsTRACE) << "Received status change from peer";
 	if (!packet.has_networktime())
 		packet.set_networktime(theApp->getOPs().getNetworkTimeNC());
 	mLastStatus = packet;
@@ -701,9 +706,7 @@ void Peer::recvStatus(newcoin::TMStatusChange& packet)
 			mPreviousLedgerHash = mClosedLedgerHash;
 		memcpy(mClosedLedgerHash.begin(), packet.ledgerhash().data(), 256 / 8);
 		mClosedLedgerTime = ptFromSeconds(packet.networktime());
-#ifdef DEBUG
-	std::cerr << "peer LCL is " << mClosedLedgerHash.GetHex() << std::endl;
-#endif
+		Log(lsTRACE) << "peer LCL is " << mClosedLedgerHash.GetHex();
 	}
 }
 
