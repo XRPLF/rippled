@@ -271,7 +271,7 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 	{
 		if (mMode != omDISCONNECTED)
 		{
-			mMode = omDISCONNECTED;
+			setMode(omDISCONNECTED);
 			Log(lsWARNING) << "Node count (" << peerList.size() <<
 				") has fallen below quorum (" << theConfig.NETWORK_QUORUM << ").";
 		}
@@ -280,7 +280,7 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 	}
 	if (mMode == omDISCONNECTED)
 	{
-		mMode = omCONNECTED;
+		setMode(omCONNECTED);
 		Log(lsINFO) << "Node count (" << peerList.size() << ") is sufficient.";
 	}
 
@@ -341,7 +341,7 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 		Log(lsWARNING) << "We are not running on the consensus ledger";
 		Log(lsINFO) << "Our LCL " << currentClosed->getHash().GetHex() ;
 		Log(lsINFO) << "Net LCL " << closedLedger.GetHex() ;
-		if ((mMode == omTRACKING) || (mMode == omFULL)) mMode = omTRACKING;
+		if ((mMode == omTRACKING) || (mMode == omFULL)) setMode(omTRACKING);
 		Ledger::pointer consensus = mLedgerMaster->getLedgerByHash(closedLedger);
 		if (!consensus)
 		{
@@ -423,7 +423,7 @@ int NetworkOPs::beginConsensus(Ledger::pointer closingLedger)
 	Ledger::pointer prevLedger = mLedgerMaster->getLedgerByHash(closingLedger->getParentHash());
 	if (!prevLedger)
 	{ // this shouldn't happen if we jump ledgers
-		mMode = omTRACKING;
+		setMode(omTRACKING);
 		return 3;
 	}
 
@@ -440,7 +440,11 @@ bool NetworkOPs::recvPropose(const uint256& prevLgr, uint32 proposeSeq, const ui
 	const std::string& pubKey, const std::string& signature)
 {
 	if (mMode != omFULL) // FIXME: Should we relay?
+		Log(lsWARNING) << "Received proposal when not full" << mMode;
+	if (!mConsensus)
+	{
 		return true;
+	}
 
 	LedgerProposal::pointer proposal =
 		boost::make_shared<LedgerProposal>(prevLgr, proposeSeq, proposeHash, pubKey);
@@ -454,7 +458,6 @@ bool NetworkOPs::recvPropose(const uint256& prevLgr, uint32 proposeSeq, const ui
 	// WRITEME
 
 	if (!mConsensus) return false;
-
 	return mConsensus->peerPosition(proposal);
 }
 
@@ -486,6 +489,17 @@ void NetworkOPs::mapComplete(const uint256& hash, SHAMap::pointer map)
 void NetworkOPs::endConsensus()
 {
 	mConsensus = boost::shared_ptr<LedgerConsensus>();
+}
+
+void NetworkOPs::setMode(OperatingMode om)
+{
+	if (mMode == om) return;
+	Log l((om < mMode) ? lsWARNING : lsINFO);
+	if (om == omDISCONNECTED) l << "STATE->Disonnected";
+	else if (om==omCONNECTED) l << "STATE->Connected";
+	else if (om==omTRACKING) l << "STATE->Tracking";
+	else l << "STATE->Full";
+	mMode = om;
 }
 
 // vim:ts=4

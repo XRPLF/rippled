@@ -37,6 +37,8 @@ protected:
 
 	LedgerMaster*						mLedgerMaster;
 
+	void setMode(OperatingMode);
+
 public:
 	NetworkOPs(boost::asio::io_service& io_service, LedgerMaster* pLedgerMaster);
 
