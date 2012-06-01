@@ -162,7 +162,7 @@ bool Ledger::addTransaction(Transaction::pointer trans)
 	assert(!mAccepted);
 	assert(!!trans->getID());
 	Serializer s;
-	trans->getSTransaction()->getTransaction(s, false);
+	trans->getSTransaction()->add(s);
 	SHAMapItem::pointer item = boost::make_shared<SHAMapItem>(trans->getID(), s.peekData());
 	if (!mTransactionMap->addGiveItem(item, true)) return false;
 	mTotCoins -= trans->getFee();

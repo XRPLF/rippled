@@ -85,7 +85,7 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 
 		newcoin::TMTransaction tx;
 		Serializer s;
-		trans->getSTransaction()->getTransaction(s, false);
+		trans->getSTransaction()->add(s);
 		tx.set_rawtransaction(&s.getData().front(), s.getLength());
 		tx.set_status(newcoin::tsCURRENT);
 		tx.set_receivetimestamp(getNetworkTimeNC());
