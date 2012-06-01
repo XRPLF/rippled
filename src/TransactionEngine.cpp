@@ -1,12 +1,18 @@
+
 #include "TransactionEngine.h"
+
+#include <boost/format.hpp>
+
+#include "../json/writer.h"
 
 #include "Config.h"
 #include "TransactionFormats.h"
 #include "utils.h"
-
-#include <boost/format.hpp>
+#include "Log.h"
 
 typedef SerializedLedgerEntry SLE;
+
+
 
 #define DIR_NODE_MAX	32
 
@@ -228,6 +234,24 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	TransactionEngineParams params)
 {
 	std::cerr << "applyTransaction>" << std::endl;
+
+#ifdef DEBUG
+	if (0)
+	{
+		Serializer ser;
+		txn.add(ser);
+		SerializerIterator sit(ser);
+		SerializedTransaction s2(sit, -1);
+		if (!s2.isEquivalent(txn))
+		{
+			std::cerr << "Transaction serdes mismatch" << std::endl;
+			Json::StyledStreamWriter ssw;
+			ssw.write(Log(lsINFO).ref(), txn.getJson(0));
+			ssw.write(Log(lsFATAL).ref(), s2.getJson(0));
+			assert(false);
+		}
+	}
+#endif
 
 	TransactionEngineResult result = terSUCCESS;
 
