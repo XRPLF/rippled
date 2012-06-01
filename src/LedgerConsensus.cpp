@@ -662,7 +662,11 @@ void LedgerConsensus::applyTransactions(SHAMap::pointer set, Ledger::pointer led
 
 void LedgerConsensus::accept(SHAMap::pointer set)
 {
+	assert(set->getHash() == mOurPosition->getCurrentHash());
 	Log(lsINFO) << "Computing new LCL based on network consensus";
+	Log(lsDEBUG) << "Consensus " << mOurPosition->getCurrentHash().GetHex();
+	Log(lsDEBUG) << "Previous LCL " << mPreviousLedger->getParentHash().GetHex();
+
 	Ledger::pointer newLCL = boost::make_shared<Ledger>(mPreviousLedger);
 
 	std::deque<SerializedTransaction::pointer> failedTransactions;
@@ -687,7 +691,7 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 	newcoin::TMValidation val;
 	val.set_validation(&validation[0], validation.size());
 	theApp->getConnectionPool().relayMessage(NULL, boost::make_shared<PackedMessage>(val, newcoin::mtVALIDATION));
-	Log(lsINFO) << "Validation sent";
+	Log(lsINFO) << "Validation sent " << newLCL->getHash().GetHex();
 }
 
 void LedgerConsensus::endConsensus()
