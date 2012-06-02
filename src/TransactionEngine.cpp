@@ -297,12 +297,13 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 			}
 			break;
 
+		case ttACCOUNT_SET:
+		case ttCREDIT_SET:
 		case ttINVOICE:
 		case ttOFFER:
-		case ttCREDIT_SET:
 		case ttTRANSIT_SET:
 		case ttWALLET_ADD:
-			result = terSUCCESS;
+			nothing();
 			break;
 
 		case ttINVALID:
@@ -455,6 +456,10 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 
 	switch(txn.getTxnType())
 	{
+		case ttACCOUNT_SET:
+			result = doAccountSet(txn, accounts);
+			break;
+
 		case ttCLAIM:
 			result = doClaim(txn, accounts);
 			break;
@@ -525,6 +530,74 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	}
 
 	return result;
+}
+
+TransactionEngineResult TransactionEngine::doAccountSet(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts)
+{
+	std::cerr << "doAccountSet>" << std::endl;
+
+	SLE::pointer		sleSrc			= accounts[0].second;
+	uint32				txFlags			= txn.getFlags();
+
+	//
+	// EmailHash
+	//
+
+	if (txFlags & tfUnsetEmailHash)
+	{
+		std::cerr << "doClaim: unset email hash" << std::endl;
+
+		sleSrc->makeIFieldAbsent(sfEmailHash);
+	}
+	else if (txn.getITFieldPresent(sfEmailHash))
+	{
+		std::cerr << "doClaim: set email hash" << std::endl;
+
+		sleSrc->setIFieldH128(sfEmailHash, txn.getITFieldH128(sfEmailHash));
+	}
+
+	//
+	// WalletLocator
+	//
+
+	if (txFlags & tfUnsetWalletLocator)
+	{
+		std::cerr << "doClaim: unset wallet locator" << std::endl;
+
+		sleSrc->makeIFieldAbsent(sfWalletLocator);
+	}
+	else if (txn.getITFieldPresent(sfWalletLocator))
+	{
+		std::cerr << "doClaim: set wallet locator" << std::endl;
+
+		sleSrc->setIFieldH256(sfWalletLocator, txn.getITFieldH256(sfWalletLocator));
+	}
+
+	//
+	// MessageKey
+	//
+
+	if (!txn.getITFieldPresent(sfMessageKey))
+	{
+		nothing();
+
+	}
+	else if (sleSrc->getIFieldPresent(sfMessageKey))
+	{
+		std::cerr << "doClaim: can not change message key" << std::endl;
+
+		return tenMSG_SET;
+	}
+	else
+	{
+		std::cerr << "doClaim: set message key" << std::endl;
+
+		sleSrc->setIFieldVL(sfMessageKey, txn.getITFieldVL(sfMessageKey));
+	}
+
+	std::cerr << "doAccountSet<" << std::endl;
+
+	return terSUCCESS;
 }
 
 TransactionEngineResult TransactionEngine::doClaim(const SerializedTransaction& txn,

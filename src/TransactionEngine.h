@@ -25,6 +25,7 @@ enum TransactionEngineResult
 	tenUNCLAIMED	= -200,	// Can not use an unclaimed account.
 	tenBAD_AUTH,			// Transaction's public key is not authorized.
 	tenCREATED,				// Can't add an already created account.
+	tenMSG_SET,				// Can't change a message key.
 
 	// Other
 	tenFAILED		= -100,	// Something broke horribly
@@ -93,18 +94,19 @@ private:
 protected:
 	Ledger::pointer mLedger;
 
-	TransactionEngineResult doClaim(const SerializedTransaction&, std::vector<AffectedAccount>&);
-	TransactionEngineResult doCreditSet(const SerializedTransaction&, std::vector<AffectedAccount>&,
+	TransactionEngineResult doAccountSet(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts);
+	TransactionEngineResult doClaim(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts);
+	TransactionEngineResult doCreditSet(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts,
 								const uint160& srcAccountID);
-	TransactionEngineResult doDelete(const SerializedTransaction&, std::vector<AffectedAccount>&);
-	TransactionEngineResult doInvoice(const SerializedTransaction&, std::vector<AffectedAccount>&);
-	TransactionEngineResult doOffer(const SerializedTransaction&, std::vector<AffectedAccount>&);
-	TransactionEngineResult doPayment(const SerializedTransaction&, std::vector<AffectedAccount>&,
+	TransactionEngineResult doDelete(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts);
+	TransactionEngineResult doInvoice(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts);
+	TransactionEngineResult doOffer(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts);
+	TransactionEngineResult doPayment(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts,
 								const uint160& srcAccountID);
-	TransactionEngineResult doStore(const SerializedTransaction&, std::vector<AffectedAccount>&);
-	TransactionEngineResult doTake(const SerializedTransaction&, std::vector<AffectedAccount>&);
-	TransactionEngineResult doTransitSet(const SerializedTransaction&, std::vector<AffectedAccount>&);
-	TransactionEngineResult doWalletAdd(const SerializedTransaction&, std::vector<AffectedAccount>&);
+	TransactionEngineResult doStore(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts);
+	TransactionEngineResult doTake(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts);
+	TransactionEngineResult doTransitSet(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts);
+	TransactionEngineResult doWalletAdd(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts);
 
 public:
 	TransactionEngine() { ; }
