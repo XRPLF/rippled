@@ -602,7 +602,7 @@ void LedgerConsensus::applyTransactions(SHAMap::pointer set, Ledger::pointer led
 #endif
 			SerializerIterator sit(item->peekSerializer());
 			SerializedTransaction::pointer txn = boost::make_shared<SerializedTransaction>(boost::ref(sit));
-			TransactionEngineResult result = engine.applyTransaction(*txn, tepNO_CHECK_FEE);
+			TransactionEngineResult result = engine.applyTransaction(*txn, tepNO_CHECK_FEE | tepUPDATE_TOTAL);
 			if (result > 0)
 			{
 				Log(lsINFO) << "   retry";
@@ -638,7 +638,7 @@ void LedgerConsensus::applyTransactions(SHAMap::pointer set, Ledger::pointer led
 		{
 			try
 			{
-				TransactionEngineResult result = engine.applyTransaction(**it, tepNO_CHECK_FEE);
+				TransactionEngineResult result = engine.applyTransaction(**it, tepNO_CHECK_FEE | tepUPDATE_TOTAL);
 				if (result <= 0)
 				{
 					if (result == 0) ++successes;
@@ -663,7 +663,7 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 	assert(set->getHash() == mOurPosition->getCurrentHash());
 	Log(lsINFO) << "Computing new LCL based on network consensus";
 	Log(lsDEBUG) << "Consensus " << mOurPosition->getCurrentHash().GetHex();
-	Log(lsDEBUG) << "Previous LCL " << mPreviousLedger.GetHex();
+	Log(lsDEBUG) << "Previous LCL " << mPreviousLedger->getHash().GetHex();
 
 	Ledger::pointer newLCL = boost::make_shared<Ledger>(mPreviousLedger);
 
