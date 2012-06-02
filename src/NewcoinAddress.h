@@ -80,6 +80,15 @@ public:
 
 	bool accountPublicVerify(const uint256& uHash, const std::vector<unsigned char>& vucSig) const;
 
+	static NewcoinAddress createAccountPublic(const std::vector<unsigned char>& vPublic)
+		{
+			NewcoinAddress	naNew;
+
+			naNew.setAccountPublic(vPublic);
+
+			return naNew;
+		}
+
 	//
 	// Accounts Private
 	//
