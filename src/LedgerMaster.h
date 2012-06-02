@@ -40,7 +40,8 @@ public:
 	Ledger::pointer getCurrentLedger()	{ return mCurrentLedger; }
 	Ledger::pointer getClosedLedger()	{ return mFinalizedLedger; }
 
-	TransactionEngineResult doTransaction(const SerializedTransaction& txn, TransactionEngineParams params)
+	TransactionEngineResult doTransaction(const SerializedTransaction& txn, uint32 targetLedger,
+		TransactionEngineParams params) // FIXME: wobble
 	{ return mEngine.applyTransaction(txn, params); }
 
 	void pushLedger(Ledger::pointer newLedger);

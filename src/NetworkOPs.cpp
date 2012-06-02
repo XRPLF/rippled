@@ -42,7 +42,7 @@ uint32 NetworkOPs::getCurrentLedgerID()
 	return mLedgerMaster->getCurrentLedger()->getLedgerSeq();
 }
 
-Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, Peer* source)
+Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, uint32 tgtLedger, Peer* source)
 {
 	Transaction::pointer dbtx = theApp->getMasterTransaction().fetch(trans->getID(), true);
 	if (dbtx) return dbtx;
@@ -54,7 +54,7 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 		return trans;
 	}
 
-	TransactionEngineResult r = mLedgerMaster->doTransaction(*trans->getSTransaction(), tepNONE);
+	TransactionEngineResult r = mLedgerMaster->doTransaction(*trans->getSTransaction(), tgtLedger, tepNONE);
 	if (r == tenFAILED) throw Fault(IO_ERROR);
 
 	if (r == terPRE_SEQ)

@@ -597,7 +597,13 @@ void Peer::recvTransaction(newcoin::TMTransaction& packet)
 	}
 #endif
 
-	tx = theApp->getOPs().processTransaction(tx, this);
+	uint32 targetLedger = 0;
+	if (packet.has_ledgerindexfinal())
+		targetLedger = packet.ledgerindexfinal();
+	else if (packet.has_ledgerindexpossible())
+		targetLedger = packet.ledgerindexpossible();
+
+	tx = theApp->getOPs().processTransaction(tx, targetLedger, this);
 
 	if(tx->getStatus() != INCLUDED)
 	{ // transaction wasn't accepted into ledger
