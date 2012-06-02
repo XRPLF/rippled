@@ -46,6 +46,14 @@ private:
 
 	SerializedTransaction::pointer mTransaction;
 
+	Transaction::pointer setAccountSet(
+		const NewcoinAddress&				naPrivateKey,
+		bool								bUnsetEmailHash,
+		const uint128&						uEmailHash,
+		bool								bUnsetWalletLocator,
+		const uint256&						uWalletLocator,
+		const std::vector<unsigned char>&	vucPubKey);
+
 	Transaction::pointer setClaim(
 		const NewcoinAddress&				naPrivateKey,
 		const std::vector<unsigned char>&	vucGenerator,
@@ -95,6 +103,19 @@ public:
 		uint32					uSeq,				// To order transactions.
 		const STAmount&			saFee,				// Transaction fee.
 		uint32					uSourceTag);		// User call back value.
+
+	// Change account settings.
+	static Transaction::pointer sharedAccountSet(
+		const NewcoinAddress& naPublicKey, const NewcoinAddress& naPrivateKey,
+		const NewcoinAddress&				naSourceAccount,
+		uint32								uSeq,
+		const STAmount&						saFee,
+		uint32								uSourceTag,
+		bool								bUnsetEmailHash,
+		const uint128&						uEmailHash,
+		bool								bUnsetWalletLocator,
+		const uint256&						uWalletLocator,
+		const std::vector<unsigned char>&	vucPubKey);
 
 	// Claim a wallet.
 	static Transaction::pointer sharedClaim(

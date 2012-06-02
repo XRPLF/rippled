@@ -113,6 +113,53 @@ bool Transaction::sign(const NewcoinAddress& naAccountPrivate)
 }
 
 //
+// AccountSet
+//
+
+Transaction::pointer Transaction::setAccountSet(
+	const NewcoinAddress& naPrivateKey,
+	bool								bUnsetEmailHash,
+	const uint128&						uEmailHash,
+	bool								bUnsetWalletLocator,
+	const uint256&						uWalletLocator,
+	const std::vector<unsigned char>&	vucPubKey)
+{
+	mTransaction->setITFieldU32(sfFlags,
+		  (bUnsetEmailHash ? tfUnsetEmailHash : 0)
+		| (bUnsetWalletLocator ? tfUnsetWalletLocator : 0));
+
+	if (!bUnsetEmailHash && !!uEmailHash)
+		mTransaction->setITFieldH128(sfEmailHash, uEmailHash);
+
+	if (!bUnsetWalletLocator && !!uWalletLocator)
+		mTransaction->setITFieldH256(sfWalletLocator, uWalletLocator);
+
+	if (!vucPubKey.empty())
+		mTransaction->setITFieldVL(sfMessageKey, vucPubKey);
+
+	sign(naPrivateKey);
+
+	return shared_from_this();
+}
+
+Transaction::pointer Transaction::sharedAccountSet(
+	const NewcoinAddress& naPublicKey, const NewcoinAddress& naPrivateKey,
+	const NewcoinAddress& naSourceAccount,
+	uint32								uSeq,
+	const STAmount&						saFee,
+	uint32								uSourceTag,
+	bool								bUnsetEmailHash,
+	const uint128&						uEmailHash,
+	bool								bUnsetWalletLocator,
+	const uint256&						uWalletLocator,
+	const std::vector<unsigned char>&	vucPubKey)
+{
+	pointer	tResult	= boost::make_shared<Transaction>(ttACCOUNT_SET, naPublicKey, naSourceAccount, uSeq, saFee, uSourceTag);
+
+	return tResult->setAccountSet(naPrivateKey, bUnsetEmailHash, uEmailHash, bUnsetWalletLocator, uWalletLocator, vucPubKey);
+}
+
+//
 // Claim
 //
 
@@ -175,9 +222,7 @@ Transaction::pointer Transaction::sharedCreate(
 	const NewcoinAddress&	naCreateAccountID,
 	const STAmount&			saFund)
 {
-	pointer	tResult	= boost::make_shared<Transaction>(ttPAYMENT,
-						naPublicKey, naSourceAccount,
-						uSeq, saFee, uSourceTag);
+	pointer	tResult	= boost::make_shared<Transaction>(ttPAYMENT, naPublicKey, naSourceAccount, uSeq, saFee, uSourceTag);
 
 	return tResult->setCreate(naPrivateKey, naCreateAccountID, saFund);
 }
@@ -212,9 +257,7 @@ Transaction::pointer Transaction::sharedCreditSet(
 	const STAmount&			saLimitAmount,
 	uint32					uAcceptRate)
 {
-	pointer	tResult	= boost::make_shared<Transaction>(ttCREDIT_SET,
-						naPublicKey, naSourceAccount,
-						uSeq, saFee, uSourceTag);
+	pointer	tResult	= boost::make_shared<Transaction>(ttCREDIT_SET, naPublicKey, naSourceAccount, uSeq, saFee, uSourceTag);
 
 	return tResult->setCreditSet(naPrivateKey, naDstAccountID, saLimitAmount, uAcceptRate);
 }
@@ -259,9 +302,7 @@ Transaction::pointer Transaction::sharedPayment(
 	const STAmount&			saSendMax,
 	const STPathSet&		saPaths)
 {
-	pointer	tResult	= boost::make_shared<Transaction>(ttPAYMENT,
-						naPublicKey, naSourceAccount,
-						uSeq, saFee, uSourceTag);
+	pointer	tResult	= boost::make_shared<Transaction>(ttPAYMENT, naPublicKey, naSourceAccount, uSeq, saFee, uSourceTag);
 
 	return tResult->setPayment(naPrivateKey, naDstAccountID, saAmount, saSendMax, saPaths);
 }
@@ -298,9 +339,7 @@ Transaction::pointer Transaction::sharedTransitSet(
 	uint32					uTransitStart,
 	uint32					uTransitExpire)
 {
-	pointer	tResult	= boost::make_shared<Transaction>(ttTRANSIT_SET,
-						naPublicKey, naSourceAccount,
-						uSeq, saFee, uSourceTag);
+	pointer	tResult	= boost::make_shared<Transaction>(ttTRANSIT_SET, naPublicKey, naSourceAccount, uSeq, saFee, uSourceTag);
 
 	return tResult->setTransitSet(naPrivateKey, uTransitRate, uTransitStart, uTransitExpire);
 }
@@ -337,9 +376,7 @@ Transaction::pointer Transaction::sharedWalletAdd(
 	const NewcoinAddress&				naNewPubKey,
 	const std::vector<unsigned char>&	vucSignature)
 {
-	pointer	tResult	= boost::make_shared<Transaction>(ttWALLET_ADD,
-						naPublicKey, naSourceAccount,
-						uSeq, saFee, uSourceTag);
+	pointer	tResult	= boost::make_shared<Transaction>(ttWALLET_ADD, naPublicKey, naSourceAccount, uSeq, saFee, uSourceTag);
 
 	return tResult->setWalletAdd(naPrivateKey, saAmount, naAuthKeyID, naNewPubKey, vucSignature);
 }
