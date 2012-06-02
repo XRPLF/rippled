@@ -328,33 +328,83 @@ Json::Value RPCServer::accountFromString(const uint256& uLedger, NewcoinAddress&
 // account_email_set <seed> <paying_account> [<email_address>]
 Json::Value RPCServer::doAccountEmailSet(Json::Value &params)
 {
+	NewcoinAddress	naSrcAccountID;
+	NewcoinAddress	naSeed;
+	uint256			uLedger;
+
 	if (params.size() < 2 || params.size() > 3)
 	{
 		return "invalid params";
+	}
+	else if (!naSeed.setFamilySeedGeneric(params[0u].asString()))
+	{
+		return "disallowed seed";
+	}
+	else if (!naSrcAccountID.setAccountID(params[1u].asString()))
+	{
+		return "source account id needed";
 	}
 	else if (!mNetOps->available())
 	{
 		return JSONRPCError(503, "network not available");
 	}
+	else if ((uLedger = mNetOps->getClosedLedger()).isZero())
+	{
+		return JSONRPCError(503, "no closed ledger");
+	}
+
+	NewcoinAddress			naMasterGenerator;
+	NewcoinAddress			naAccountPublic;
+	NewcoinAddress			naAccountPrivate;
+	AccountState::pointer	asSrc;
+	Json::Value				obj				= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate, asSrc, naMasterGenerator);
+
+	STAmount				saSrcBalance	= asSrc->getBalance();
+
+	if (!obj.empty())
+	{
+		return obj;
+	}
+	else if (saSrcBalance < theConfig.FEE_DEFAULT)
+	{
+		return JSONRPCError(500, "insufficent funds");
+	}
 
 	// Hash as per: http://en.gravatar.com/site/implement/hash/
 	std::string					strEmail	= 3 == params.size() ? params[2u].asString() : "";
+		boost::trim(strEmail);
+		boost::to_lower(strEmail);
+
 	std::vector<unsigned char>	vucMD5(128/8, 0);
-	std::string					strMD5Lower;
+		MD5(reinterpret_cast<const unsigned char*>(strEmail.c_str()), strEmail.size(), &vucMD5.front());
 
-	boost::trim(strEmail);
-	boost::to_lower(strEmail);
+	uint128						uEmailHash(vucMD5);
 
-	MD5(reinterpret_cast<const unsigned char*>(strEmail.c_str()), strEmail.size(), &vucMD5.front());
+	Transaction::pointer	trans	= Transaction::sharedAccountSet(
+		naAccountPublic, naAccountPrivate,
+		naSrcAccountID,
+		asSrc->getSeq(),
+		theConfig.FEE_DEFAULT,
+		0,											// YYY No source tag
+		strEmail.empty(),
+		uEmailHash,
+		false,
+		uint256(),
+		std::vector<unsigned char>());
 
-	strMD5Lower	= strHex(vucMD5);
-	boost::to_lower(strMD5Lower);
+	(void) mNetOps->processTransaction(trans);
 
 	Json::Value					ret(Json::objectValue);
 
-	ret["email"]		= strEmail;
-	ret["hash"]			= strHex(vucMD5);
-	ret["url_gravatar"]	= str(boost::format("http://www.gravatar.com/avatar/%s") % strMD5Lower);
+	obj["transaction"]	= trans->getSTransaction()->getJson(0);
+	obj["status"]		= trans->getStatus();
+
+	if (!strEmail.empty())
+	{
+		ret["Email"]		= strEmail;
+		ret["EmailHash"]	= strHex(vucMD5);
+		ret["UrlGravatar"]	= AccountState::createGravatarUrl(uEmailHash);
+	}
 
 	return ret;
 }
@@ -505,6 +555,14 @@ Json::Value RPCServer::doAccountLines(Json::Value &params)
 
 		return ret;
 	}
+}
+
+Json::Value RPCServer::doAccountMessageSet(Json::Value& params) {
+	return "not implemented";
+}
+
+Json::Value RPCServer::doAccountWalletSet(Json::Value& params) {
+	return "not implemented";
 }
 
 Json::Value RPCServer::doConnect(Json::Value& params)
@@ -1263,48 +1321,43 @@ Json::Value RPCServer::doWalletCreate(Json::Value& params)
 	{
 		return "account already exists";
 	}
-	else
+
+	// Trying to build:
+	//   peer_wallet_create <paying_account> <paying_signature> <account_id> [<initial_funds>] [<annotation>]
+
+	NewcoinAddress			naMasterGenerator;
+	NewcoinAddress			naAccountPublic;
+	NewcoinAddress			naAccountPrivate;
+	AccountState::pointer	asSrc;
+	Json::Value				obj				= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate, asSrc, naMasterGenerator);
+
+	STAmount				saSrcBalance	= asSrc->getBalance();
+	STAmount				saInitialFunds	= (params.size() < 4) ? 0 : boost::lexical_cast<uint64>(params[3u].asString());
+
+	if (!obj.empty())
 	{
-		// Trying to build:
-		//   peer_wallet_create <paying_account> <paying_signature> <account_id> [<initial_funds>] [<annotation>]
-
-		NewcoinAddress			naMasterGenerator;
-		NewcoinAddress			naAccountPublic;
-		NewcoinAddress			naAccountPrivate;
-	    AccountState::pointer	asSrc;
-		uint256					uLedger			= mNetOps->getClosedLedger();
-		Json::Value				obj				= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate, asSrc, naMasterGenerator);
-
-		STAmount				saSrcBalance	= asSrc->getBalance();
-		STAmount				saInitialFunds	= (params.size() < 4) ? 0 : boost::lexical_cast<uint64>(params[3u].asString());
-
-		if (!obj.empty())
-		{
-			return obj;
-		}
-		else if (saSrcBalance < (saInitialFunds + theConfig.FEE_CREATE))
-		{
-			return JSONRPCError(500, "insufficent funds");
-		}
-		else
-		{
-			Transaction::pointer	trans	= Transaction::sharedCreate(
-				naAccountPublic, naAccountPrivate,
-				naSrcAccountID,
-				asSrc->getSeq(),
-				theConfig.FEE_CREATE,
-				0,											// YYY No source tag
-				naDstAccountID,
-				saInitialFunds);							// Initial funds in XNC.
-
-			(void) mNetOps->processTransaction(trans);
-
-			obj["transaction"]		= trans->getSTransaction()->getJson(0);
-			obj["status"]			= trans->getStatus();
-
-			return obj;
-		}
+		return obj;
 	}
+	else if (saSrcBalance < (saInitialFunds + theConfig.FEE_CREATE))
+	{
+		return JSONRPCError(500, "insufficent funds");
+	}
+
+	Transaction::pointer	trans	= Transaction::sharedCreate(
+		naAccountPublic, naAccountPrivate,
+		naSrcAccountID,
+		asSrc->getSeq(),
+		theConfig.FEE_CREATE,
+		0,											// YYY No source tag
+		naDstAccountID,
+		saInitialFunds);							// Initial funds in XNC.
+
+	(void) mNetOps->processTransaction(trans);
+
+	obj["transaction"]	= trans->getSTransaction()->getJson(0);
+	obj["status"]		= trans->getStatus();
+
+	return obj;
 }
 
 // wallet_propose
@@ -1502,6 +1555,8 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 	if (command == "account_email_set")		return doAccountEmailSet(params);
 	if (command == "account_info")			return doAccountInfo(params);
 	if (command == "account_lines")			return doAccountLines(params);
+	if (command == "account_message_set")	return doAccountMessageSet(params);
+	if (command == "account_wallet_set")	return doAccountWalletSet(params);
 	if (command == "connect")				return doConnect(params);
 	if (command == "credit_set")			return doCreditSet(params);
 	if (command == "peers")					return doPeers(params);

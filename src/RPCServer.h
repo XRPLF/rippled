@@ -51,6 +51,8 @@ private:
 	Json::Value doAccountEmailSet(Json::Value &params);
 	Json::Value doAccountInfo(Json::Value& params);
 	Json::Value doAccountLines(Json::Value &params);
+	Json::Value doAccountMessageSet(Json::Value &params);
+	Json::Value doAccountWalletSet(Json::Value &params);
 	Json::Value doConnect(Json::Value& params);
 	Json::Value doCreditSet(Json::Value& params);
 	Json::Value doLedger(Json::Value& params);

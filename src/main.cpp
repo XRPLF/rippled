@@ -41,6 +41,8 @@ void printHelp(const po::options_description& desc)
 	cout << "     account_info <account>|<nickname>" << endl;
 	cout << "     account_info <seed>|<pass_phrase>|<key> [<index>]" << endl;
 	cout << "     account_lines <account>|<nickname>" << endl;
+	cout << "     account_message_set <seed> <paying_account> <pub_key>" << endl;
+	cout << "     account_wallet_set <seed> <paying_account> [<wallet_hash>]" << endl;
 	cout << "     connect <ip> [<port>]" << endl;
 	cout << "     credit_set <seed> <paying_account> <destination_account> <limit_amount> <currency> [<account_rate>]" << endl;
 	cout << "     ledger" << endl;
