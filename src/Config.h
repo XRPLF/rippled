@@ -83,3 +83,4 @@ public:
 
 extern Config theConfig;
 #endif
+// vim:ts=4
