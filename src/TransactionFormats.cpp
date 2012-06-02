@@ -69,6 +69,16 @@ TransactionFormat InnerTxnFormats[]=
 		{ S_FIELD(Extensions),   STI_TL,      SOE_IFFLAG,   0x02000000 },
 		{ sfInvalid, NULL,       STI_DONE,    SOE_NEVER,    -1 } }
 	},
+	{ "WalletAdd", ttWALLET_ADD, {
+		{ S_FIELD(Flags),			STI_UINT32,  SOE_FLAGS,    0 },
+		{ S_FIELD(Amount),			STI_AMOUNT,  SOE_REQUIRED, 0 },
+		{ S_FIELD(AuthorizedKey),	STI_ACCOUNT, SOE_REQUIRED, 0 },
+		{ S_FIELD(PubKey),			STI_VL,		 SOE_REQUIRED, 0 },
+		{ S_FIELD(Signature),		STI_VL,		 SOE_REQUIRED, 0 },
+		{ S_FIELD(SourceTag),		STI_UINT32,  SOE_IFFLAG,   1 },
+		{ S_FIELD(Extensions),		STI_TL,		 SOE_IFFLAG,   0x02000000 },
+		{ sfInvalid, NULL,			STI_DONE,	 SOE_NEVER,    -1 } }
+	},
 	{ NULL, ttINVALID }
 };
 
