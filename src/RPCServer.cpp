@@ -945,7 +945,11 @@ Json::Value RPCServer::accounts(const uint256& uLedger, const NewcoinAddress& na
 		AccountState::pointer as	= mNetOps->getAccountState(uLedger, naAccount);
 		if (as)
 		{
-			as->addJson(jsonAccounts);
+			Json::Value	jsonAccount(Json::objectValue);
+
+			as->addJson(jsonAccount);
+
+			jsonAccounts[naAccount.humanAccountID()]	= jsonAccount;
 		}
 		else
 		{
