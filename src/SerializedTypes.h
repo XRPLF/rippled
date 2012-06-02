@@ -280,6 +280,7 @@ public:
 
 	const uint160& getCurrency() const { return mCurrency; }
 	bool setValue(const std::string& sAmount, const std::string& sCurrency);
+	void setValue(const STAmount &);
 
 	virtual bool isEquivalent(const SerializedType& t) const;
 
