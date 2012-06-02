@@ -111,7 +111,7 @@ void Application::run()
 	std::cerr << "Root master seed: " << rootSeedMaster.humanFamilySeed() << std::endl;
 	std::cerr << "Root account: " << rootAddress.humanAccountID() << std::endl;
 
-	Ledger::pointer firstLedger = boost::make_shared<Ledger>(rootAddress, 100000000);
+	Ledger::pointer firstLedger = boost::make_shared<Ledger>(rootAddress, SYSTEM_CURRENCY_START);
 	assert(!!firstLedger->getAccountState(rootAddress));
 	firstLedger->updateHash();
 	firstLedger->setClosed();
