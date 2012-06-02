@@ -520,7 +520,10 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 
 		Serializer s;
 		txn.add(s);
-		mLedger->addTransaction(txID, s, saPaid);
+		if (!mLedger->addTransaction(txID, s))
+			assert(false);
+		if ((params & tepUPDATE_TOTAL) != tepNONE)
+			mLedger->destroyCoins(saPaid.getNValue());
 	}
 
 	return result;
