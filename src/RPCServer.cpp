@@ -390,7 +390,7 @@ Json::Value RPCServer::doAccountEmailSet(Json::Value &params)
 		uEmailHash,
 		false,
 		uint256(),
-		std::vector<unsigned char>());
+		NewcoinAddress());
 
 	(void) mNetOps->processTransaction(trans);
 
@@ -560,6 +560,7 @@ Json::Value RPCServer::doAccountMessageSet(Json::Value& params) {
 	NewcoinAddress	naSrcAccountID;
 	NewcoinAddress	naSeed;
 	uint256			uLedger;
+	NewcoinAddress	naMessagePubKey;
 
 	if (params.size() != 3)
 	{
@@ -572,6 +573,10 @@ Json::Value RPCServer::doAccountMessageSet(Json::Value& params) {
 	else if (!naSrcAccountID.setAccountID(params[1u].asString()))
 	{
 		return "source account id needed";
+	}
+	else if (!naMessagePubKey.setAccountPublic(params[2u].asString()))
+	{
+		return "public key needed";
 	}
 	else if (!mNetOps->available())
 	{
@@ -599,8 +604,6 @@ Json::Value RPCServer::doAccountMessageSet(Json::Value& params) {
 		return JSONRPCError(500, "insufficent funds");
 	}
 
-	std::string				strMessageKey	= params[2u].asString();
-
 	Transaction::pointer	trans	= Transaction::sharedAccountSet(
 		naAccountPublic, naAccountPrivate,
 		naSrcAccountID,
@@ -611,13 +614,13 @@ Json::Value RPCServer::doAccountMessageSet(Json::Value& params) {
 		uint128(),
 		false,
 		uint256(),
-		std::vector<unsigned char>());
+		naMessagePubKey);
 
 	(void) mNetOps->processTransaction(trans);
 
 	obj["transaction"]		= trans->getSTransaction()->getJson(0);
 	obj["status"]			= trans->getStatus();
-	// ret["MessageKey"]		= strHex(vucMessageKey);
+	obj["MessageKey"]		= naMessagePubKey.humanAccountPublic();
 
 	return obj;
 }
@@ -681,7 +684,7 @@ Json::Value RPCServer::doAccountWalletSet(Json::Value& params) {
 		uint128(),
 		strWalletLocator.empty(),
 		uWalletLocator,
-		std::vector<unsigned char>());
+		NewcoinAddress());
 
 	(void) mNetOps->processTransaction(trans);
 
@@ -1506,11 +1509,20 @@ Json::Value RPCServer::doWalletPropose(Json::Value& params)
 		naGenerator.setFamilyGenerator(naSeed);
 		naAccount.setAccountPublic(naGenerator, 0);
 
+		//
+		// Extra functionality: generate a key pair
+		//
+		CKey	key;
+
+		key.MakeNewKey();
+
 		Json::Value obj(Json::objectValue);
 
 		obj["master_seed"]		= naSeed.humanFamilySeed();
 		obj["master_key"]		= naSeed.humanFamilySeed1751();
 		obj["account_id"]		= naAccount.humanAccountID();
+		obj["extra_public"]		= NewcoinAddress::createHumanAccountPublic(key.GetPubKey());
+		obj["extra_private"]	= NewcoinAddress::createHumanAccountPrivate(key.GetSecret());
 
 		return obj;
 	}

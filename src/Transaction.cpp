@@ -122,7 +122,7 @@ Transaction::pointer Transaction::setAccountSet(
 	const uint128&						uEmailHash,
 	bool								bUnsetWalletLocator,
 	const uint256&						uWalletLocator,
-	const std::vector<unsigned char>&	vucPubKey)
+	const NewcoinAddress&				naMessagePublic)
 {
 	mTransaction->setITFieldU32(sfFlags,
 		  (bUnsetEmailHash ? tfUnsetEmailHash : 0)
@@ -134,8 +134,8 @@ Transaction::pointer Transaction::setAccountSet(
 	if (!bUnsetWalletLocator && !!uWalletLocator)
 		mTransaction->setITFieldH256(sfWalletLocator, uWalletLocator);
 
-	if (!vucPubKey.empty())
-		mTransaction->setITFieldVL(sfMessageKey, vucPubKey);
+	if (naMessagePublic.isValid())
+		mTransaction->setITFieldVL(sfMessageKey, naMessagePublic.getAccountPublic());
 
 	sign(naPrivateKey);
 
@@ -152,11 +152,11 @@ Transaction::pointer Transaction::sharedAccountSet(
 	const uint128&						uEmailHash,
 	bool								bUnsetWalletLocator,
 	const uint256&						uWalletLocator,
-	const std::vector<unsigned char>&	vucPubKey)
+	const NewcoinAddress&				naMessagePublic)
 {
 	pointer	tResult	= boost::make_shared<Transaction>(ttACCOUNT_SET, naPublicKey, naSourceAccount, uSeq, saFee, uSourceTag);
 
-	return tResult->setAccountSet(naPrivateKey, bUnsetEmailHash, uEmailHash, bUnsetWalletLocator, uWalletLocator, vucPubKey);
+	return tResult->setAccountSet(naPrivateKey, bUnsetEmailHash, uEmailHash, bUnsetWalletLocator, uWalletLocator, naMessagePublic);
 }
 
 //
