@@ -272,9 +272,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	// without going to disk.  Each transaction also notes a source account id.  This is used to verify that the signing key is
 	// associated with the account.
 	// XXX This could be a lot cleaner to prevent unnecessary copying.
-	NewcoinAddress	naSigningPubKey;
-
-	naSigningPubKey.setAccountPublic(txn.peekSigningPubKey());
+	NewcoinAddress	naSigningPubKey	= NewcoinAddress::createAccountPublic(txn.peekSigningPubKey());
 
 	// Consistency: really signed.
 	if (!txn.checkSign(naSigningPubKey))
@@ -385,7 +383,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 
 				return tenUNCLAIMED;
 			}
-			else if (naSigningPubKey.getAccountID() != sleSrc->getIFieldH160(sfAuthorizedKey))
+			else if (naSigningPubKey.getAccountID() != sleSrc->getIValueFieldAccount(sfAuthorizedKey).getAccountID())
 			{
 				std::cerr << "applyTransaction: Not authorized to use account." << std::endl;
 
@@ -555,10 +553,7 @@ TransactionEngineResult TransactionEngine::doClaim(const SerializedTransaction& 
 	std::vector<unsigned char>	vucCipher		= txn.getITFieldVL(sfGenerator);
 	std::vector<unsigned char>	vucPubKey		= txn.getITFieldVL(sfPubKey);
 	std::vector<unsigned char>	vucSignature	= txn.getITFieldVL(sfSignature);
-
-	NewcoinAddress				naAccountPublic;
-
-	naAccountPublic.setAccountPublic(vucPubKey);
+	NewcoinAddress				naAccountPublic	= NewcoinAddress::createAccountPublic(vucPubKey);
 
 	if (!naAccountPublic.accountPublicVerify(Serializer::getSHA512Half(vucCipher), vucSignature))
 	{
@@ -919,61 +914,59 @@ TransactionEngineResult TransactionEngine::doWalletAdd(const SerializedTransacti
 {
 	std::cerr << "WalletAdd>" << std::endl;
 
-	SLE::pointer		sleDst			= accounts[0].second;
+	std::vector<unsigned char>	vucPubKey		= txn.getITFieldVL(sfPubKey);
+	std::vector<unsigned char>	vucSignature	= txn.getITFieldVL(sfSignature);
+	uint160						uAuthKeyID		= txn.getITFieldAccount(sfAuthorizedKey);
+	NewcoinAddress				naMasterPubKey	= NewcoinAddress::createAccountPublic(vucPubKey);
+	uint160						uDstAccountID	= naMasterPubKey.getAccountID();
+
+	if (!naMasterPubKey.accountPublicVerify(Serializer::getSHA512Half(uAuthKeyID.begin(), uAuthKeyID.size()), vucSignature))
+	{
+		std::cerr << "WalletAdd: unauthorized:  bad signature " << std::endl;
+
+		return tenBAD_ADD_AUTH;
+	}
+
+	LedgerStateParms	qry				= lepNONE;
+	SLE::pointer		sleDst			= mLedger->getAccountRoot(qry, uDstAccountID);
 
 	std::cerr << str(boost::format("WalletAdd: %s") % sleDst->getFullText()) << std::endl;
 
-	// Verify not already claimed.
-	if (sleDst->getIFieldPresent(sfAuthorizedKey))
+	if (sleDst)
 	{
-		std::cerr << "WalletAdd: source already claimed" << std::endl;
+		std::cerr << "WalletAdd: account already created" << std::endl;
 
-		return terCLAIMED;
+		return tenCREATED;
 	}
 
-	//
-	// Generator ID is based on regular account #0 public key.
-	// Verify that submitter knows the private key for the generator.
-	// Otherwise, people could deny access to generators.
-	//
+	SLE::pointer		sleSrc			= accounts[0].second;
+	STAmount			saAmount		= txn.getITFieldAmount(sfAmount);
+	STAmount			saSrcBalance	= sleSrc->getIValueFieldAmount(sfBalance);
 
-	std::vector<unsigned char>	vucCipher		= txn.getITFieldVL(sfGenerator);
-	std::vector<unsigned char>	vucPubKey		= txn.getITFieldVL(sfPubKey);
-	std::vector<unsigned char>	vucSignature	= txn.getITFieldVL(sfSignature);
-
-	NewcoinAddress				naAccountPublic;
-
-	naAccountPublic.setAccountPublic(vucPubKey);
-
-	if (!naAccountPublic.accountPublicVerify(Serializer::getSHA512Half(vucCipher), vucSignature))
+	if (saSrcBalance < saAmount)
 	{
-		std::cerr << "WalletAdd: bad signature unauthorized generator claim" << std::endl;
+		std::cerr
+			<< str(boost::format("WalletAdd: Delay transaction: insufficent balance: balance=%s amount=%s")
+				% saSrcBalance
+				% saAmount)
+			<< std::endl;
 
-		return tenBAD_GEN_AUTH;
+		return terUNFUNDED;
 	}
 
-	//
-	// Verify generator not already in use.
-	//
+	// Deduct initial balance from source account.
+	sleSrc->setIFieldAmount(sfBalance, saSrcBalance-saAmount);
 
-	uint160				hGeneratorID	= naAccountPublic.getAccountID();
+	// Create the account.
+	sleDst = boost::make_shared<SerializedLedgerEntry>(ltACCOUNT_ROOT);
 
-	LedgerStateParms	qry				= lepNONE;
-	SLE::pointer		sleGen			= mLedger->getGenerator(qry, hGeneratorID);
-	if (sleGen)
-	{
-		// Generator is already in use.  Regular passphrases limited to one wallet.
-		std::cerr << "WalletAdd: generator already in use" << std::endl;
+	sleDst->setIndex(Ledger::getAccountRootIndex(uDstAccountID));
+	sleDst->setIFieldAccount(sfAccount, uDstAccountID);
+	sleDst->setIFieldU32(sfSequence, 1);
+	sleDst->setIFieldAmount(sfBalance, saAmount);
+	sleDst->setIFieldAccount(sfAuthorizedKey, uAuthKeyID);
 
-		return tenGEN_IN_USE;
-	}
-
-	//
-	// Claim the account.
-	//
-
-	// Set the public key needed to use the account.
-	sleDst->setIFieldH160(sfAuthorizedKey, hGeneratorID);
+	accounts.push_back(std::make_pair(taaCREATE, sleDst));
 
 	std::cerr << "WalletAdd<" << std::endl;
 

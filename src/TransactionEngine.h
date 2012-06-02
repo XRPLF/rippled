@@ -19,10 +19,12 @@ enum TransactionEngineResult
 	tenDST_NEEDED,			// Destination not specified.
 	tenDST_IS_SRC,			// Destination may not be source.
 	tenBAD_GEN_AUTH,		// Not authorized to claim generator.
+	tenBAD_ADD_AUTH,		// Not authorized to add account.
 
 	// Invalid: Ledger won't allow.
 	tenUNCLAIMED	= -200,	// Can not use an unclaimed account.
 	tenBAD_AUTH,			// Transaction's public key is not authorized.
+	tenCREATED,				// Can't add an already created account.
 
 	// Other
 	tenFAILED		= -100,	// Something broke horribly
@@ -51,7 +53,7 @@ enum TransactionEngineResult
 	terPAST_LEDGER,			// The transaction expired and can't be applied
 	terPAST_SEQ,			// This sequence number has already past
 	terPRE_SEQ,				// Missing/inapplicable prior transaction
-	terUNFUNDED,			// Source account had insufficient balance for transactin
+	terUNFUNDED,			// Source account had insufficient balance for transaction.
 	terNO_LINE_NO_ZERO,		// Can't zero non-existant line, destination might make it.
 };
 

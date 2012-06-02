@@ -12,7 +12,7 @@ LedgerEntryFormat LedgerFormats[]=
 		{ S_FIELD(Balance),				STI_AMOUNT,  SOE_REQUIRED, 0 },
 		{ S_FIELD(LastReceive),			STI_UINT32,  SOE_REQUIRED, 0 },
 		{ S_FIELD(LastTxn),				STI_UINT32,  SOE_REQUIRED, 0 },
-		{ S_FIELD(AuthorizedKey),		STI_HASH160, SOE_IFFLAG,   1 },
+		{ S_FIELD(AuthorizedKey),		STI_ACCOUNT, SOE_IFFLAG,   1 },
 		{ S_FIELD(EmailHash),			STI_HASH128, SOE_IFFLAG,   2 },
 		{ S_FIELD(WalletLocator),		STI_HASH256, SOE_IFFLAG,   4 },
 		{ S_FIELD(MessageKey),			STI_VL,		 SOE_IFFLAG,   8 },
