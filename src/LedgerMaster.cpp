@@ -1,8 +1,12 @@
+
 #include "LedgerMaster.h"
+
+#include <boost/foreach.hpp>
+
 #include "Application.h"
 #include "NewcoinAddress.h"
 #include "Conversion.h"
-#include <boost/foreach.hpp>
+#include "Log.h"
 
 uint32 LedgerMaster::getCurrentLedgerIndex()
 {
@@ -19,12 +23,12 @@ void LedgerMaster::pushLedger(Ledger::pointer newLedger)
 {
 	// Caller should already have properly assembled this ledger into "ready-to-close" form --
 	// all candidate transactions must already be appled
+	Log(lsINFO) << "PushLedger: " << newLedger->getHash().GetHex();
 	ScopedLock sl(mLock);
 	if (!!mFinalizedLedger)
 	{
 		mFinalizedLedger->setClosed();
-		mFinalizedLedger->setAccepted();
-		mLedgerHistory.addAcceptedLedger(mFinalizedLedger);
+		Log(lsTRACE) << "Finalizes: " << mFinalizedLedger->getHash().GetHex();
 	}
 	mFinalizedLedger = mCurrentLedger;
 	mCurrentLedger = newLedger;
@@ -35,10 +39,14 @@ void LedgerMaster::pushLedger(Ledger::pointer newLCL, Ledger::pointer newOL)
 {
 	assert(newLCL->isClosed() && newLCL->isAccepted());
 	assert(!newOL->isClosed() && !newOL->isAccepted());
+	Log(lsINFO) << "PushAccept: " << newLCL->getHash().GetHex();
 
 	ScopedLock sl(mLock);
-	if (!!mFinalizedLedger)
+	if (mFinalizedLedger && mFinalizedLedger->isAccepted())
+	{
 		mLedgerHistory.addAcceptedLedger(mFinalizedLedger);
+		Log(lsINFO) << "StashAccepted: " << mFinalizedLedger->getHash().GetHex();
+	}
 	mFinalizedLedger = newLCL;
 	mCurrentLedger = newOL;
 	mEngine.setLedger(newOL);
@@ -95,18 +103,6 @@ void LedgerMaster::applyFutureProposals(uint32 ledgerIndex)
 		{
 			checkLedgerProposal((*iter).first,(*iter).second);
 			mFutureProposals.erase(iter);
-		}else iter++;
-	}
-}
-
-void LedgerMaster::applyFutureTransactions(uint32 ledgerIndex)
-{
-	for(list<TransactionPtr>::iterator iter=mFutureTransactions.begin(); iter !=mFutureTransactions.end(); )
-	{
-		if( (*iter)->ledgerindex() == ledgerIndex)
-		{
-			addTransaction(*iter);
-			mFutureTransactions.erase(iter);
 		}else iter++;
 	}
 }
