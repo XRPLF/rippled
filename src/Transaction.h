@@ -52,7 +52,7 @@ private:
 		const uint128&						uEmailHash,
 		bool								bUnsetWalletLocator,
 		const uint256&						uWalletLocator,
-		const std::vector<unsigned char>&	vucPubKey);
+		const NewcoinAddress&				naMessagePublic);
 
 	Transaction::pointer setClaim(
 		const NewcoinAddress&				naPrivateKey,
@@ -115,7 +115,7 @@ public:
 		const uint128&						uEmailHash,
 		bool								bUnsetWalletLocator,
 		const uint256&						uWalletLocator,
-		const std::vector<unsigned char>&	vucPubKey);
+		const NewcoinAddress&				naMessagePublic);
 
 	// Claim a wallet.
 	static Transaction::pointer sharedClaim(
