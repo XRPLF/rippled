@@ -37,6 +37,9 @@ const int TransactionMaxLen			= 1048576;
 // Transaction flags.
 const uint32 tfCreateAccount		= 0x00010000;
 
+const uint32 tfUnsetEmailHash		= 0x00010000;
+const uint32 tfUnsetWalletLocator	= 0x00020000;
+
 extern TransactionFormat InnerTxnFormats[];
 extern TransactionFormat* getTxnFormat(TransactionType t);
 #endif
