@@ -44,8 +44,8 @@ public:
 	uint256 getSigningHash() const;
 
 	TransactionType getTxnType() const { return mType; }
-	uint64 getTransactionFee() const;
-	void setTransactionFee(uint64 fee);
+	STAmount getTransactionFee() const;
+	void setTransactionFee(const STAmount& fee);
 
 	const NewcoinAddress& getSourceAccount() const { return mSourceAccount; }
 	std::vector<unsigned char> getSigningPubKey() const;
