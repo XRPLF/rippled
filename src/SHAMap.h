@@ -78,7 +78,12 @@ public:
 
 class hash_SMN
 {
+
 public:
+	static uint256 mNonce;
+
+	static void setNonce(const uint256& nonce) { mNonce = nonce; }
+
 	std::size_t operator() (const SHAMapNode& mn) const;
 
 	std::size_t operator() (const uint256& u) const;

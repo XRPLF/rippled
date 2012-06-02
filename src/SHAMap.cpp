@@ -15,17 +15,19 @@
 #include "SHAMap.h"
 #include "Application.h"
 
+uint256 hash_SMN::mNonce;
+
 std::size_t hash_SMN::operator() (const SHAMapNode& mn) const
 {
 	return mn.getDepth()
 		^ *reinterpret_cast<const std::size_t *>(mn.getNodeID().begin())
-		^ *reinterpret_cast<const std::size_t *>(theApp->getNonce256().begin());
+		^ *reinterpret_cast<const std::size_t *>(mNonce.begin());
 }
 
 std::size_t hash_SMN::operator() (const uint256& u) const
 {
 	return *reinterpret_cast<const std::size_t *>(u.begin())
-		^ *reinterpret_cast<const std::size_t *>(theApp->getNonce256().begin());
+		^ *reinterpret_cast<const std::size_t *>(mNonce.begin());
 }
 
 SHAMap::SHAMap(uint32 seq) : mSeq(seq), mState(Modifying)
