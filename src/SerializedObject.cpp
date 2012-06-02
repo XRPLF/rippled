@@ -401,6 +401,17 @@ uint64 STObject::getValueFieldU64(SOE_Field field) const
 	return cf->getValue();
 }
 
+uint128 STObject::getValueFieldH128(SOE_Field field) const
+{
+	const SerializedType* rf = peekAtPField(field);
+	if (!rf) throw std::runtime_error("Field not found");
+	SerializedTypeID id = rf->getSType();
+	if (id == STI_NOTPRESENT) return uint128(); // optional field not present
+	const STHash128 *cf = dynamic_cast<const STHash128 *>(rf);
+	if (!cf) throw std::runtime_error("Wrong field type");
+	return cf->getValue();
+}
+
 uint160 STObject::getValueFieldH160(SOE_Field field) const
 {
 	const SerializedType* rf = peekAtPField(field);
@@ -521,6 +532,16 @@ void STObject::setValueFieldU64(SOE_Field field, uint64 v)
 	if (!rf) throw std::runtime_error("Field not found");
 	if (rf->getSType() == STI_NOTPRESENT) rf = makeFieldPresent(field);
 	STUInt64* cf = dynamic_cast<STUInt64*>(rf);
+	if (!cf) throw std::runtime_error("Wrong field type");
+	cf->setValue(v);
+}
+
+void STObject::setValueFieldH128(SOE_Field field, const uint128& v)
+{
+	SerializedType* rf = getPField(field);
+	if (!rf) throw std::runtime_error("Field not found");
+	if (rf->getSType() == STI_NOTPRESENT) rf = makeFieldPresent(field);
+	STHash128* cf = dynamic_cast<STHash128*>(rf);
 	if (!cf) throw std::runtime_error("Wrong field type");
 	cf->setValue(v);
 }

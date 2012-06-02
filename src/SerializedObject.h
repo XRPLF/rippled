@@ -159,6 +159,7 @@ public:
 	uint16 getValueFieldU16(SOE_Field field) const;
 	uint32 getValueFieldU32(SOE_Field field) const;
 	uint64 getValueFieldU64(SOE_Field field) const;
+	uint128 getValueFieldH128(SOE_Field field) const;
 	uint160 getValueFieldH160(SOE_Field field) const;
 	uint256 getValueFieldH256(SOE_Field field) const;
 	NewcoinAddress getValueFieldAccount(SOE_Field field) const;
@@ -171,6 +172,7 @@ public:
 	void setValueFieldU16(SOE_Field field, uint16);
 	void setValueFieldU32(SOE_Field field, uint32);
 	void setValueFieldU64(SOE_Field field, uint64);
+	void setValueFieldH128(SOE_Field field, const uint128&);
 	void setValueFieldH160(SOE_Field field, const uint160&);
 	void setValueFieldH256(SOE_Field field, const uint256&);
 	void setValueFieldVL(SOE_Field field, const std::vector<unsigned char>&);

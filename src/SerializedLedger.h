@@ -53,6 +53,7 @@ public:
 	uint16 getIFieldU16(SOE_Field field) const { return mObject.getValueFieldU16(field); }
 	uint32 getIFieldU32(SOE_Field field) const { return mObject.getValueFieldU32(field); }
 	uint64 getIFieldU64(SOE_Field field) const { return mObject.getValueFieldU64(field); }
+	uint128 getIFieldH128(SOE_Field field) const { return mObject.getValueFieldH128(field); }
 	uint160 getIFieldH160(SOE_Field field) const { return mObject.getValueFieldH160(field); }
 	uint256 getIFieldH256(SOE_Field field) const { return mObject.getValueFieldH256(field); }
 	std::vector<unsigned char> getIFieldVL(SOE_Field field) const { return mObject.getValueFieldVL(field); }
@@ -65,6 +66,7 @@ public:
 	void setIFieldU16(SOE_Field field, uint16 v) { return mObject.setValueFieldU16(field, v); }
 	void setIFieldU32(SOE_Field field, uint32 v) { return mObject.setValueFieldU32(field, v); }
 	void setIFieldU64(SOE_Field field, uint32 v) { return mObject.setValueFieldU64(field, v); }
+	void setIFieldH128(SOE_Field field, const uint128& v) { return mObject.setValueFieldH128(field, v); }
 	void setIFieldH160(SOE_Field field, const uint160& v) { return mObject.setValueFieldH160(field, v); }
 	void setIFieldH256(SOE_Field field, const uint256& v) { return mObject.setValueFieldH256(field, v); }
 	void setIFieldVL(SOE_Field field, const std::vector<unsigned char>& v)
