@@ -182,7 +182,7 @@ void LedgerConsensus::takeInitialPosition(Ledger::pointer initialLedger)
 	CKey::pointer nodePrivKey = boost::make_shared<CKey>();
 	nodePrivKey->MakeNewKey(); // FIXME
 
-	SHAMap::pointer initialSet = initialLedger->peekTransactionMap()->snapShot();
+	SHAMap::pointer initialSet = initialLedger->peekTransactionMap()->snapShot(false);
 	uint256 txSet = initialSet->getHash();
 	mOurPosition = boost::make_shared<LedgerProposal>(nodePrivKey, initialLedger->getParentHash(), txSet);
 	mapComplete(txSet, initialSet);
@@ -377,7 +377,7 @@ bool LedgerConsensus::updateOurPositions(int sinceClose)
 		{
 			if (!changes)
 			{
-				ourPosition = mComplete[mOurPosition->getCurrentHash()]->snapShot();
+				ourPosition = mComplete[mOurPosition->getCurrentHash()]->snapShot(true);
 				changes = true;
 				stable = false;
 			}

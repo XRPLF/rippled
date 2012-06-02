@@ -35,15 +35,16 @@ SHAMap::SHAMap(uint32 seq) : mSeq(seq), mState(Modifying)
 	mTNByID[*root] = root;
 }
 
-SHAMap::pointer SHAMap::snapShot()
-{ // Return a new SHAMap that is a snapshot of this one
+SHAMap::pointer SHAMap::snapShot(bool isMutable)
+{ // Return a new SHAMap that is an immutable snapshot of this one
   // Initially nodes are shared, but CoW is forced on both ledgers
 	SHAMap::pointer ret = boost::make_shared<SHAMap>();
 	SHAMap& newMap = *ret;
 	newMap.mSeq = ++mSeq;
 	newMap.mTNByID = mTNByID;
 	newMap.root = root;
-	newMap.mState = Immutable;
+	if (!isMutable)
+		newMap.mState = Immutable;
 	return ret;
 }
 
@@ -201,6 +202,7 @@ SHAMapTreeNode* SHAMap::getNodePointer(const SHAMapNode& id, const uint256& hash
 void SHAMap::returnNode(SHAMapTreeNode::pointer& node, bool modify)
 { // make sure the node is suitable for the intended operation (copy on write)
 	assert(node->isValid());
+	assert(node->getSeq() <= mSeq);
 	if (node && modify && (node->getSeq() != mSeq))
 	{ // have a CoW
 		if (mDirtyNodes) (*mDirtyNodes)[*node] = node;
@@ -408,6 +410,7 @@ bool SHAMap::hasItem(const uint256& id)
 bool SHAMap::delItem(const uint256& id)
 { // delete the item with this ID
 	boost::recursive_mutex::scoped_lock sl(mLock);
+	assert(mState != Immutable);
 
 	std::stack<SHAMapTreeNode::pointer> stack=getStack(id, true);
 	if(stack.empty()) throw SHAMapException(MissingNode);
@@ -482,6 +485,7 @@ bool SHAMap::addGiveItem(SHAMapItem::pointer item, bool isTransaction)
 	SHAMapTreeNode::TNType type = isTransaction ? SHAMapTreeNode::tnTRANSACTION : SHAMapTreeNode::tnACCOUNT_STATE;
 
 	boost::recursive_mutex::scoped_lock sl(mLock);
+	assert(mState != Immutable);
 
 	std::stack<SHAMapTreeNode::pointer> stack = getStack(tag, true);
 	if (stack.empty()) throw SHAMapException(MissingNode);
@@ -572,6 +576,7 @@ bool SHAMap::updateGiveItem(SHAMapItem::pointer item, bool isTransaction)
 	uint256 tag = item->getTag();
 
 	boost::recursive_mutex::scoped_lock sl(mLock);
+	assert(mState != Immutable);
 
 	std::stack<SHAMapTreeNode::pointer> stack = getStack(tag, true);
 	if (stack.empty()) throw SHAMapException(MissingNode);
@@ -683,10 +688,11 @@ static std::vector<unsigned char>IntToVUC(int v)
 	return vuc;
 }
 
-BOOST_AUTO_TEST_SUITE(shamap)
+BOOST_AUTO_TEST_SUITE(SHAMap_suite)
 
 BOOST_AUTO_TEST_CASE( SHAMap_test )
 { // h3 and h4 differ only in the leaf, same terminal node (level 19)
+	Log(lsTRACE) << "SHAMap test";
 	uint256 h1, h2, h3, h4, h5;
 	h1.SetHex("092891fe4ef6cee585fdc6fda0e09eb4d386363158ec3321b8123e5a772c6ca7");
 	h2.SetHex("436ccbac3347baa1f1e53baeef1f43334da88f1f6d70d963b833afd6dfa289fe");
@@ -702,26 +708,34 @@ BOOST_AUTO_TEST_CASE( SHAMap_test )
 
 	SHAMapItem::pointer i;
 
-	i=sMap.peekFirstItem();
-	assert(!!i && (*i==i1));
-	i=sMap.peekNextItem(i->getTag());
-	assert(!!i && (*i==i2));
-	i=sMap.peekNextItem(i->getTag());
-	assert(!i);
+	i = sMap.peekFirstItem();
+	if (!i || (*i != i1)) BOOST_FAIL("bad traverse");
+	i = sMap.peekNextItem(i->getTag());
+	if (!i || (*i != i2)) BOOST_FAIL("bad traverse");
+	i = sMap.peekNextItem(i->getTag());
+	if (i) BOOST_FAIL("bad traverse");
 
 	sMap.addItem(i4, true);
 	sMap.delItem(i2.getTag());
 	sMap.addItem(i3, true);
 
-	i=sMap.peekFirstItem();
-	assert(!!i && (*i==i1));
-	i=sMap.peekNextItem(i->getTag());
-	assert(!!i && (*i==i3));
-	i=sMap.peekNextItem(i->getTag());
-	assert(!!i && (*i==i4));
-	i=sMap.peekNextItem(i->getTag());
-	assert(!i);
+	i = sMap.peekFirstItem();
+	if (!i || (*i != i1)) BOOST_FAIL("bad traverse");
+	i = sMap.peekNextItem(i->getTag());
+	if (!i || (*i != i3)) BOOST_FAIL("bad traverse");
+	i = sMap.peekNextItem(i->getTag());
+	if (!i || (*i != i4)) BOOST_FAIL("bad traverse");
+	i = sMap.peekNextItem(i->getTag());
+	if (i) BOOST_FAIL("bad traverse");
 
+	Log(lsTRACE) << "SHAMap snap test";
+	uint256 mapHash = sMap.getHash();
+	SHAMap::pointer map2 = sMap.snapShot(false);
+	if (sMap.getHash() != mapHash) BOOST_FAIL("bad snapshot");
+	if (map2->getHash() != mapHash) BOOST_FAIL("bad snapshot");
+	if (!sMap.delItem(sMap.peekFirstItem()->getTag())) BOOST_FAIL("bad mod");
+	if (sMap.getHash() == mapHash) BOOST_FAIL("bad snapshot");
+	if (map2->getHash() != mapHash) BOOST_FAIL("bad snapshot");
 }
 
 BOOST_AUTO_TEST_SUITE_END();

@@ -269,7 +269,7 @@ public:
 	SHAMap(uint32 seq = 0);
 
 	// Returns a new map that's a snapshot of this one. Force CoW
-	SHAMap::pointer snapShot();
+	SHAMap::pointer snapShot(bool isMutable);
 
 	// hold the map stable across operations
 	ScopedLock Lock() const { return ScopedLock(mLock); }
