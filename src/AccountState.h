@@ -52,6 +52,8 @@ public:
 	std::vector<unsigned char> getRaw() const;
 	void addJson(Json::Value& value);
 	void dump();
+
+	static std::string createGravatarUrl(uint128 uEmailHash);
 };
 
 #endif
