@@ -25,7 +25,7 @@ void startServer()
 
 bool init_unit_test()
 {
-	nothing();
+	theApp = new Application();
 
     return true;
 }
