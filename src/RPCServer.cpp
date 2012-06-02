@@ -394,19 +394,17 @@ Json::Value RPCServer::doAccountEmailSet(Json::Value &params)
 
 	(void) mNetOps->processTransaction(trans);
 
-	Json::Value					ret(Json::objectValue);
-
 	obj["transaction"]	= trans->getSTransaction()->getJson(0);
 	obj["status"]		= trans->getStatus();
 
 	if (!strEmail.empty())
 	{
-		ret["Email"]		= strEmail;
-		ret["EmailHash"]	= strHex(vucMD5);
-		ret["UrlGravatar"]	= AccountState::createGravatarUrl(uEmailHash);
+		obj["Email"]		= strEmail;
+		obj["EmailHash"]	= strHex(vucMD5);
+		obj["UrlGravatar"]	= AccountState::createGravatarUrl(uEmailHash);
 	}
 
-	return ret;
+	return obj;
 }
 
 // account_info <account>|<nickname>|<account_public_key>
@@ -557,12 +555,143 @@ Json::Value RPCServer::doAccountLines(Json::Value &params)
 	}
 }
 
+// account_message_set <seed> <paying_account> <pub_key>
 Json::Value RPCServer::doAccountMessageSet(Json::Value& params) {
-	return "not implemented";
+	NewcoinAddress	naSrcAccountID;
+	NewcoinAddress	naSeed;
+	uint256			uLedger;
+
+	if (params.size() != 3)
+	{
+		return "invalid params";
+	}
+	else if (!naSeed.setFamilySeedGeneric(params[0u].asString()))
+	{
+		return "disallowed seed";
+	}
+	else if (!naSrcAccountID.setAccountID(params[1u].asString()))
+	{
+		return "source account id needed";
+	}
+	else if (!mNetOps->available())
+	{
+		return JSONRPCError(503, "network not available");
+	}
+	else if ((uLedger = mNetOps->getClosedLedger()).isZero())
+	{
+		return JSONRPCError(503, "no closed ledger");
+	}
+
+	NewcoinAddress			naMasterGenerator;
+	NewcoinAddress			naAccountPublic;
+	NewcoinAddress			naAccountPrivate;
+	AccountState::pointer	asSrc;
+	Json::Value				obj				= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate, asSrc, naMasterGenerator);
+
+	STAmount				saSrcBalance	= asSrc->getBalance();
+
+	if (!obj.empty())
+	{
+		return obj;
+	}
+	else if (saSrcBalance < theConfig.FEE_DEFAULT)
+	{
+		return JSONRPCError(500, "insufficent funds");
+	}
+
+	std::string				strMessageKey	= params[2u].asString();
+
+	Transaction::pointer	trans	= Transaction::sharedAccountSet(
+		naAccountPublic, naAccountPrivate,
+		naSrcAccountID,
+		asSrc->getSeq(),
+		theConfig.FEE_DEFAULT,
+		0,											// YYY No source tag
+		false,
+		uint128(),
+		false,
+		uint256(),
+		std::vector<unsigned char>());
+
+	(void) mNetOps->processTransaction(trans);
+
+	obj["transaction"]		= trans->getSTransaction()->getJson(0);
+	obj["status"]			= trans->getStatus();
+	// ret["MessageKey"]		= strHex(vucMessageKey);
+
+	return obj;
 }
 
+// account_wallet_set <seed> <paying_account> [<wallet_hash>]
 Json::Value RPCServer::doAccountWalletSet(Json::Value& params) {
-	return "not implemented";
+	NewcoinAddress	naSrcAccountID;
+	NewcoinAddress	naSeed;
+	uint256			uLedger;
+
+	if (params.size() < 2 || params.size() > 3)
+	{
+		return "invalid params";
+	}
+	else if (!naSeed.setFamilySeedGeneric(params[0u].asString()))
+	{
+		return "disallowed seed";
+	}
+	else if (!naSrcAccountID.setAccountID(params[1u].asString()))
+	{
+		return "source account id needed";
+	}
+	else if (!mNetOps->available())
+	{
+		return JSONRPCError(503, "network not available");
+	}
+	else if ((uLedger = mNetOps->getClosedLedger()).isZero())
+	{
+		return JSONRPCError(503, "no closed ledger");
+	}
+
+	NewcoinAddress			naMasterGenerator;
+	NewcoinAddress			naAccountPublic;
+	NewcoinAddress			naAccountPrivate;
+	AccountState::pointer	asSrc;
+	Json::Value				obj				= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate, asSrc, naMasterGenerator);
+
+	STAmount				saSrcBalance	= asSrc->getBalance();
+
+	if (!obj.empty())
+	{
+		return obj;
+	}
+	else if (saSrcBalance < theConfig.FEE_DEFAULT)
+	{
+		return JSONRPCError(500, "insufficent funds");
+	}
+
+	std::string				strWalletLocator	= params.size() == 3 ? params[2u].asString() : "";
+	uint256					uWalletLocator;
+
+	uWalletLocator.SetHex(strWalletLocator);
+
+	Transaction::pointer	trans	= Transaction::sharedAccountSet(
+		naAccountPublic, naAccountPrivate,
+		naSrcAccountID,
+		asSrc->getSeq(),
+		theConfig.FEE_DEFAULT,
+		0,											// YYY No source tag
+		false,
+		uint128(),
+		strWalletLocator.empty(),
+		uWalletLocator,
+		std::vector<unsigned char>());
+
+	(void) mNetOps->processTransaction(trans);
+
+	obj["transaction"]		= trans->getSTransaction()->getJson(0);
+	obj["status"]			= trans->getStatus();
+
+	if (!strWalletLocator.empty())
+		obj["WalletLocator"]	= uWalletLocator.GetHex();
+
+	return obj;
 }
 
 Json::Value RPCServer::doConnect(Json::Value& params)
