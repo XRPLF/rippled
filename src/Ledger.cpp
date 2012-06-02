@@ -44,13 +44,13 @@ Ledger::Ledger(const uint256 &parentHash, const uint256 &transHash, const uint25
 	updateHash();
 }
 
-Ledger::Ledger(Ledger::pointer prevLedger) : mParentHash(prevLedger->getHash()), mTotCoins(prevLedger->mTotCoins),
+Ledger::Ledger(Ledger::pointer prevLedger) : mTotCoins(prevLedger->mTotCoins),
 	mLedgerSeq(prevLedger->mLedgerSeq + 1), mLedgerInterval(prevLedger->mLedgerInterval),
 	mClosed(false), mValidHash(false), mAccepted(false), mImmutable(false),
 	mTransactionMap(new SHAMap()), mAccountStateMap(prevLedger->mAccountStateMap)
 {
-	prevLedger->setClosed();
 	prevLedger->updateHash();
+	mParentHash = prevLedger->getHash();
 	mAccountStateMap->setSeq(mLedgerSeq);
 	mCloseTime = prevLedger->getNextLedgerClose();
 }
@@ -158,22 +158,20 @@ RippleState::pointer Ledger::getRippleState(const uint256& uNode)
 }
 
 bool Ledger::addTransaction(Transaction::pointer trans)
-{ // low-level - just add to table, debit fee
+{ // low-level - just add to table
 	assert(!mAccepted);
 	assert(!!trans->getID());
 	Serializer s;
 	trans->getSTransaction()->add(s);
 	SHAMapItem::pointer item = boost::make_shared<SHAMapItem>(trans->getID(), s.peekData());
 	if (!mTransactionMap->addGiveItem(item, true)) return false;
-	mTotCoins -= trans->getFee();
 	return true;
 }
 
-bool Ledger::addTransaction(const uint256& txID, const Serializer& txn, STAmount saPaid)
+bool Ledger::addTransaction(const uint256& txID, const Serializer& txn)
 { // low-level - just add to table
 	SHAMapItem::pointer item = boost::make_shared<SHAMapItem>(txID, txn.peekData());
 	if (!mTransactionMap->addGiveItem(item, true)) return false;
-	mTotCoins -= saPaid;
 	return true;
 }
 
@@ -339,6 +337,7 @@ Ledger::pointer Ledger::switchPreviousLedger(Ledger::pointer oldPrevious, Ledger
 		return Ledger::pointer(); // new previous ledger contains invalid transactions
 
 	// 4) Try to add those transactions to the new ledger.
+#if 0
 	do
 	{
 		count = 0;
@@ -354,7 +353,7 @@ Ledger::pointer Ledger::switchPreviousLedger(Ledger::pointer oldPrevious, Ledger
 			else ++it;
 		}
 	} while (count != 0);
-
+#endif
 	// WRITEME: Handle rejected transactions left in TxnDiff
 
 	// 5) Try to add transactions from this ledger to the new ledger.

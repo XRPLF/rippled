@@ -72,7 +72,7 @@ private:
 protected:
 
 	bool addTransaction(Transaction::pointer);
-	bool addTransaction(const uint256& id, const Serializer& txn, STAmount saPaid);
+	bool addTransaction(const uint256& id, const Serializer& txn);
 
 	static Ledger::pointer getSQL(const std::string& sqlStatement);
 
@@ -105,6 +105,7 @@ public:
 	const uint256& getTransHash() const		{ return mTransHash; }
 	const uint256& getAccountHash() const	{ return mAccountHash; }
 	uint64 getTotalCoins() const			{ return mTotCoins; }
+	void destroyCoins(uint64 fee)			{ mTotCoins -= fee; }
 	uint64 getCloseTimeNC() const			{ return mCloseTime; }
 	uint32 getLedgerSeq() const				{ return mLedgerSeq; }
 	uint16 getInterval() const				{ return mLedgerInterval; }
