@@ -669,6 +669,7 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 
 	std::deque<SerializedTransaction::pointer> failedTransactions;
 	applyTransactions(set, newLCL, failedTransactions);
+	newLCL->setClosed();
 	newLCL->setAccepted();
 	newLCL->updateHash();
 	uint256 newLCLHash = newLCL->getHash();
