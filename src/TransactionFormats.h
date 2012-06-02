@@ -9,8 +9,9 @@ enum TransactionType
 	ttPAYMENT			= 0,
 	ttCLAIM				= 1,
 	ttWALLET_ADD		= 2,
-	ttINVOICE			= 3,
-	ttOFFER				= 4,
+	ttACCOUNT_SET		= 3,
+	ttINVOICE			= 4,
+	ttOFFER				= 5,
 	ttCREDIT_SET		= 20,
 	ttTRANSIT_SET		= 21,
 };

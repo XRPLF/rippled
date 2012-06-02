@@ -37,6 +37,7 @@ void printHelp(const po::options_description& desc)
 	cout << desc << endl;
 
 	cout << "Commands: " << endl;
+	cout << "     account_email_set <seed> <paying_account> [<email_address>]" << endl;
 	cout << "     account_info <account>|<nickname>" << endl;
 	cout << "     account_info <seed>|<pass_phrase>|<key> [<index>]" << endl;
 	cout << "     account_lines <account>|<nickname>" << endl;

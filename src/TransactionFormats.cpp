@@ -5,6 +5,14 @@
 
 TransactionFormat InnerTxnFormats[]=
 {
+	{ "AccountSet", ttACCOUNT_SET, {
+		{ S_FIELD(Flags),			STI_UINT32,	 SOE_FLAGS,    0 },
+		{ S_FIELD(EmailHash),		STI_HASH128, SOE_IFFLAG,   1 },
+		{ S_FIELD(WalletLocator),	STI_HASH256, SOE_IFFLAG,   2 },
+		{ S_FIELD(SourceTag),		STI_UINT32,  SOE_IFFLAG,   4 },
+		{ S_FIELD(Extensions),		STI_TL,		 SOE_IFFLAG,   0x02000000 },
+		{ sfInvalid, NULL,			STI_DONE,	 SOE_NEVER,    -1 } }
+	},
 	{ "Claim", ttCLAIM, {
 		{ S_FIELD(Flags),        STI_UINT32,  SOE_FLAGS,    0 },
 		{ S_FIELD(Generator),    STI_VL,      SOE_REQUIRED, 0 },

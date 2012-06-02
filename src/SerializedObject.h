@@ -49,6 +49,7 @@ enum SOE_Field
 	sfFlags,
 	sfGenerator,
 	sfGeneratorID,
+	sfHash,
 	sfHighID,
 	sfHighLimit,
 	sfIdentifier,

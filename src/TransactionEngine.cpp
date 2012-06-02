@@ -583,7 +583,7 @@ TransactionEngineResult TransactionEngine::doClaim(const SerializedTransaction& 
 	//
 
 	// Set the public key needed to use the account.
-	sleDst->setIFieldH160(sfAuthorizedKey, hGeneratorID);
+	sleDst->setIFieldAccount(sfAuthorizedKey, hGeneratorID);
 
 	// Construct a generator map entry.
 					sleGen				= boost::make_shared<SerializedLedgerEntry>(ltGENERATOR_MAP);
@@ -929,8 +929,6 @@ TransactionEngineResult TransactionEngine::doWalletAdd(const SerializedTransacti
 
 	LedgerStateParms	qry				= lepNONE;
 	SLE::pointer		sleDst			= mLedger->getAccountRoot(qry, uDstAccountID);
-
-	std::cerr << str(boost::format("WalletAdd: %s") % sleDst->getFullText()) << std::endl;
 
 	if (sleDst)
 	{

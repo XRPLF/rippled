@@ -36,9 +36,9 @@ public:
 		return mLedgerEntry->getIFieldPresent(sfAuthorizedKey);
 	}
 
-	uint160	getAuthorizedKey()
+	NewcoinAddress getAuthorizedKey()
 	{
-		return mLedgerEntry->getIFieldH160(sfAuthorizedKey);
+		return mLedgerEntry->getIValueFieldAccount(sfAuthorizedKey);
 	}
 
 	const NewcoinAddress& getAccountID() const { return mAccountID; }

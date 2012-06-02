@@ -5,6 +5,9 @@
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/algorithm/string.hpp>
+
+#include <openssl/md5.h>
 
 #include "../json/reader.h"
 #include "../json/writer.h"
@@ -254,10 +257,10 @@ Json::Value RPCServer::authorize(const uint256& uLedger,
 	naAccountPublic.setAccountPublic(naGenerator, iIndex);
 	naAccountPrivate.setAccountPrivate(naGenerator, naSeed, iIndex);
 
-	if (asSrc->getAuthorizedKey() != naAccountPublic.getAccountID())
+	if (asSrc->getAuthorizedKey().getAccountID() != naAccountPublic.getAccountID())
 	{
 		std::cerr << "iIndex: " << iIndex << std::endl;
-		std::cerr << "sfAuthorizedKey: " << strHex(asSrc->getAuthorizedKey()) << std::endl;
+		std::cerr << "sfAuthorizedKey: " << strHex(asSrc->getAuthorizedKey().getAccountID()) << std::endl;
 		std::cerr << "naAccountPublic: " << strHex(naAccountPublic.getAccountID()) << std::endl;
 
 		return JSONRPCError(500, "wrong password (changed)");
@@ -320,6 +323,40 @@ Json::Value RPCServer::accountFromString(const uint256& uLedger, NewcoinAddress&
 	}
 
 	return Json::Value(Json::objectValue);
+}
+
+// account_email_set <seed> <paying_account> [<email_address>]
+Json::Value RPCServer::doAccountEmailSet(Json::Value &params)
+{
+	if (params.size() < 2 || params.size() > 3)
+	{
+		return "invalid params";
+	}
+	else if (!mNetOps->available())
+	{
+		return JSONRPCError(503, "network not available");
+	}
+
+	// Hash as per: http://en.gravatar.com/site/implement/hash/
+	std::string					strEmail	= 3 == params.size() ? params[2u].asString() : "";
+	std::vector<unsigned char>	vucMD5(128/8, 0);
+	std::string					strMD5Lower;
+
+	boost::trim(strEmail);
+	boost::to_lower(strEmail);
+
+	MD5(reinterpret_cast<const unsigned char*>(strEmail.c_str()), strEmail.size(), &vucMD5.front());
+
+	strMD5Lower	= strHex(vucMD5);
+	boost::to_lower(strMD5Lower);
+
+	Json::Value					ret(Json::objectValue);
+
+	ret["email"]		= strEmail;
+	ret["hash"]			= strHex(vucMD5);
+	ret["url_gravatar"]	= str(boost::format("http://www.gravatar.com/avatar/%s") % strMD5Lower);
+
+	return ret;
 }
 
 // account_info <account>|<nickname>|<account_public_key>
@@ -1458,6 +1495,7 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 {
 	std::cerr << "RPC:" << command << std::endl;
 
+	if (command == "account_email_set")		return doAccountEmailSet(params);
 	if (command == "account_info")			return doAccountInfo(params);
 	if (command == "account_lines")			return doAccountLines(params);
 	if (command == "connect")				return doConnect(params);

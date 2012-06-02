@@ -48,6 +48,7 @@ private:
 
 	Json::Value accountFromString(const uint256& uLedger, NewcoinAddress& naAccount, bool& bIndex, const std::string& strIdent, const int iIndex);
 
+	Json::Value doAccountEmailSet(Json::Value &params);
 	Json::Value doAccountInfo(Json::Value& params);
 	Json::Value doAccountLines(Json::Value &params);
 	Json::Value doConnect(Json::Value& params);
