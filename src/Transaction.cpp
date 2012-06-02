@@ -306,6 +306,45 @@ Transaction::pointer Transaction::sharedTransitSet(
 }
 
 //
+// WalletAdd
+//
+
+Transaction::pointer Transaction::setWalletAdd(
+	const NewcoinAddress&				naPrivateKey,
+	const STAmount&						saAmount,
+	const NewcoinAddress&				naAuthKeyID,
+	const NewcoinAddress&				naNewPubKey,
+	const std::vector<unsigned char>&	vucSignature)
+{
+	mTransaction->setITFieldAmount(sfAmount, saAmount);
+	mTransaction->setITFieldAccount(sfAuthorizedKey, naAuthKeyID);
+	mTransaction->setITFieldVL(sfPubKey, naNewPubKey.getAccountPublic());
+	mTransaction->setITFieldVL(sfSignature, vucSignature);
+
+	sign(naPrivateKey);
+
+	return shared_from_this();
+}
+
+Transaction::pointer Transaction::sharedWalletAdd(
+	const NewcoinAddress& naPublicKey, const NewcoinAddress& naPrivateKey,
+	const NewcoinAddress&				naSourceAccount,
+	uint32								uSeq,
+	const STAmount&						saFee,
+	uint32								uSourceTag,
+	const STAmount&						saAmount,
+	const NewcoinAddress&				naAuthKeyID,
+	const NewcoinAddress&				naNewPubKey,
+	const std::vector<unsigned char>&	vucSignature)
+{
+	pointer	tResult	= boost::make_shared<Transaction>(ttWALLET_ADD,
+						naPublicKey, naSourceAccount,
+						uSeq, saFee, uSourceTag);
+
+	return tResult->setWalletAdd(naPrivateKey, saAmount, naAuthKeyID, naNewPubKey, vucSignature);
+}
+
+//
 // Misc.
 //
 

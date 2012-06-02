@@ -18,7 +18,11 @@ enum TransactionEngineResult
 	tenEXPLICITXNC,			// XNC is used by default, don't specify it.
 	tenDST_NEEDED,			// Destination not specified.
 	tenDST_IS_SRC,			// Destination may not be source.
+	tenBAD_GEN_AUTH,		// Not authorized to claim generator.
 
+	// Invalid: Ledger won't allow.
+	tenUNCLAIMED	= -200,	// Can not use an unclaimed account.
+	tenBAD_AUTH,			// Transaction's public key is not authorized.
 
 	// Other
 	tenFAILED		= -100,	// Something broke horribly
@@ -86,7 +90,6 @@ private:
 protected:
 	Ledger::pointer mLedger;
 
-	TransactionEngineResult doCancel(const SerializedTransaction&, std::vector<AffectedAccount>&);
 	TransactionEngineResult doClaim(const SerializedTransaction&, std::vector<AffectedAccount>&);
 	TransactionEngineResult doCreditSet(const SerializedTransaction&, std::vector<AffectedAccount>&,
 								const uint160& srcAccountID);
@@ -98,6 +101,7 @@ protected:
 	TransactionEngineResult doStore(const SerializedTransaction&, std::vector<AffectedAccount>&);
 	TransactionEngineResult doTake(const SerializedTransaction&, std::vector<AffectedAccount>&);
 	TransactionEngineResult doTransitSet(const SerializedTransaction&, std::vector<AffectedAccount>&);
+	TransactionEngineResult doWalletAdd(const SerializedTransaction&, std::vector<AffectedAccount>&);
 
 public:
 	TransactionEngine() { ; }

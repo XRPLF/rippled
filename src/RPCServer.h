@@ -42,7 +42,8 @@ private:
 	Json::Value getGenerator(const uint256& uLedger, const NewcoinAddress& naSeed, NewcoinAddress& naMasterGenerator);
 	Json::Value authorize(const uint256& uLedger, const NewcoinAddress& naSeed, const NewcoinAddress& naSrcAccountID,
 	    NewcoinAddress& naAccountPublic, NewcoinAddress& naAccountPrivate,
-	    AccountState::pointer& asSrc);
+	    AccountState::pointer& asSrc,
+		const NewcoinAddress& naVerifyGenerator);
 	Json::Value accounts(const uint256& uLedger, const NewcoinAddress& naMasterGenerator);
 
 	Json::Value accountFromString(const uint256& uLedger, NewcoinAddress& naAccount, bool& bIndex, const std::string& strIdent, const int iIndex);
