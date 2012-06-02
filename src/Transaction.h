@@ -76,6 +76,13 @@ private:
 		uint32					uTransitStart,
 		uint32					uTransitExpire);
 
+	Transaction::pointer setWalletAdd(
+		const NewcoinAddress&				naPrivateKey,
+		const STAmount&						saAmount,
+		const NewcoinAddress&				naAuthKeyID,
+		const NewcoinAddress&				naNewPubKey,
+		const std::vector<unsigned char>&	vucSignature);
+
 public:
 	Transaction(const SerializedTransaction::pointer st, bool bValidate);
 
@@ -141,6 +148,18 @@ public:
 		uint32					uTransitRate,
 		uint32					uTransitStart,
 		uint32					uTransitExpire);
+
+	// Add an account to a wallet.
+	static Transaction::pointer sharedWalletAdd(
+		const NewcoinAddress& naPublicKey, const NewcoinAddress& naPrivateKey,
+		const NewcoinAddress&				naSourceAccount,
+		uint32								uSeq,
+		const STAmount&						saFee,
+		uint32								uSourceTag,
+		const STAmount&						saAmount,		// Initial funds in XNC.
+		const NewcoinAddress&				naAuthKeyID,	// ID of regular public to auth.
+		const NewcoinAddress&				naNewPubKey,	// Public key of new account
+		const std::vector<unsigned char>&	vucSignature);	// Proof know new account's private key.
 
 	bool sign(const NewcoinAddress& naAccountPrivate);
 	bool checkSign() const;

@@ -205,7 +205,8 @@ Json::Value RPCServer::getGenerator(const uint256& uLedger, const NewcoinAddress
 Json::Value RPCServer::authorize(const uint256& uLedger,
 	const NewcoinAddress& naSeed, const NewcoinAddress& naSrcAccountID,
 	NewcoinAddress& naAccountPublic, NewcoinAddress& naAccountPrivate,
-	AccountState::pointer& asSrc)
+	AccountState::pointer& asSrc,
+	const NewcoinAddress& naVerifyGenerator)
 {
 	asSrc	= mNetOps->getAccountState(uLedger, naSrcAccountID);
 	if (!asSrc)
@@ -224,6 +225,13 @@ Json::Value RPCServer::authorize(const uint256& uLedger,
 
 	if (!obj.empty())
 		return obj;
+
+	if (naVerifyGenerator.isValid() && naMasterGenerator != naVerifyGenerator)
+	{
+		std::cerr << "naAccountPublic: wrong seed" << std::endl;
+
+		return JSONRPCError(500, "wrong seed");
+	}
 
 	//
 	// Find the index of the account from the master generator, so we can generate the public and private keys.
@@ -322,7 +330,8 @@ Json::Value RPCServer::doAccountInfo(Json::Value &params)
 	{
 		return "invalid params";
 	}
-	else if (!mNetOps->available()) {
+	else if (!mNetOps->available())
+	{
 		return JSONRPCError(503, "network not available");
 	}
 	else
@@ -368,7 +377,8 @@ Json::Value RPCServer::doAccountLines(Json::Value &params)
 	{
 		return "invalid params";
 	}
-	else if (!mNetOps->available()) {
+	else if (!mNetOps->available())
+	{
 		return JSONRPCError(503, "network not available");
 	}
 	else
@@ -525,16 +535,18 @@ Json::Value RPCServer::doCreditSet(Json::Value& params)
 	{
 		return JSONRPCError(500, "bad src amount/currency");
 	}
-	else if (!mNetOps->available()) {
+	else if (!mNetOps->available())
+	{
 		return JSONRPCError(503, "network not available");
 	}
 	else
 	{
+		NewcoinAddress			naMasterGenerator;
 		NewcoinAddress			naAccountPublic;
 		NewcoinAddress			naAccountPrivate;
 	    AccountState::pointer	asSrc;
 		uint256					uLedger		= mNetOps->getClosedLedger();
-		Json::Value				obj			= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate, asSrc);
+		Json::Value				obj			= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate, asSrc, naMasterGenerator);
 
 		if (!obj.empty())
 			return obj;
@@ -613,16 +625,18 @@ Json::Value RPCServer::doSend(Json::Value& params)
 	{
 		return JSONRPCError(500, "bad src amount/currency");
 	}
-	else if (!mNetOps->available()) {
+	else if (!mNetOps->available())
+	{
 		return JSONRPCError(503, "network not available");
 	}
 	else
 	{
+		NewcoinAddress			naMasterGenerator;
 		NewcoinAddress			naAccountPublic;
 		NewcoinAddress			naAccountPrivate;
 	    AccountState::pointer	asSrc;
 		uint256					uLedger		= mNetOps->getClosedLedger();
-		Json::Value				obj			= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate, asSrc);
+		Json::Value				obj			= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate, asSrc, naMasterGenerator);
 
 		if (!obj.empty())
 		{
@@ -704,16 +718,18 @@ Json::Value RPCServer::doTransitSet(Json::Value& params)
 	{
 		return JSONRPCError(500, "source account id needed");
 	}
-	else if (!mNetOps->available()) {
+	else if (!mNetOps->available())
+	{
 		return JSONRPCError(503, "network not available");
 	}
 	else
 	{
+		NewcoinAddress			naMasterGenerator;
 		NewcoinAddress			naAccountPublic;
 		NewcoinAddress			naAccountPrivate;
 	    AccountState::pointer	asSrc;
 		uint256					uLedger		= mNetOps->getClosedLedger();
-		Json::Value				obj			= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate, asSrc);
+		Json::Value				obj			= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate, asSrc, naMasterGenerator);
 
 		if (!obj.empty())
 		{
@@ -917,7 +933,8 @@ Json::Value RPCServer::doWalletAccounts(Json::Value& params)
 	{
 		return "seed expected";
 	}
-	else if (!mNetOps->available()) {
+	else if (!mNetOps->available())
+	{
 		return JSONRPCError(503, "network not available");
 	}
 	else if ((uLedger = mNetOps->getClosedLedger()).isZero())
@@ -955,9 +972,122 @@ Json::Value RPCServer::doWalletAccounts(Json::Value& params)
 	}
 }
 
+// wallet_add <regular_seed> <paying_account> <master_seed> [<initial_funds>] [<account_annotation>]
 Json::Value RPCServer::doWalletAdd(Json::Value& params)
 {
-	return "not implemented";
+	NewcoinAddress	naMasterSeed;
+	NewcoinAddress	naRegularSeed;
+	NewcoinAddress	naSrcAccountID;
+	STAmount		saAmount;
+	std::string		sDstCurrency;
+
+	if (params.size() < 3 || params.size() > 5)
+	{
+		return "invalid params";
+	}
+	else if (!naRegularSeed.setFamilySeedGeneric(params[0u].asString()))
+	{
+		return "regular seed expected";
+	}
+	else if (!naSrcAccountID.setAccountID(params[1u].asString()))
+	{
+		return JSONRPCError(500, "source account id needed");
+	}
+	else if (!naMasterSeed.setFamilySeedGeneric(params[2u].asString()))
+	{
+		return "master seed expected";
+	}
+	else if (params.size() >= 4 && !saAmount.setValue(params[3u].asString(), sDstCurrency))
+	{
+		return JSONRPCError(500, "bad dst amount/currency");
+	}
+	else if (!mNetOps->available())
+	{
+		return JSONRPCError(503, "network not available");
+	}
+	else
+	{
+		NewcoinAddress			naMasterGenerator;
+		NewcoinAddress			naRegularGenerator;
+
+		naMasterGenerator.setFamilyGenerator(naMasterSeed);
+		naRegularGenerator.setFamilyGenerator(naRegularSeed);
+
+		NewcoinAddress			naAccountPublic;
+		NewcoinAddress			naAccountPrivate;
+	    AccountState::pointer	asSrc;
+		uint256					uLedger		= mNetOps->getClosedLedger();
+		Json::Value				obj			= authorize(uLedger, naRegularSeed, naSrcAccountID, naAccountPublic, naAccountPrivate, asSrc, naMasterGenerator);
+
+		if (!obj.empty())
+		{
+			return obj;
+		}
+
+		// XXX Confirm total funds.
+
+		STAmount				saSrcBalance	= asSrc->getBalance();
+
+		if (saSrcBalance < theConfig.FEE_CREATE)
+		{
+			return JSONRPCError(500, "insufficent funds");
+		}
+		else
+		{
+			NewcoinAddress				naNewAccountPublic;
+			NewcoinAddress				naNewAccountPrivate;
+			NewcoinAddress				naAuthKeyID;
+			uint160						uAuthKeyID;
+			AccountState::pointer		asNew;
+			std::vector<unsigned char>	vucSignature;
+			bool						bAgain	= true;
+			int							iIndex	= -1;
+
+			// Find an unmade account.
+			do {
+				++iIndex;
+				naNewAccountPublic.setAccountPublic(naMasterGenerator, iIndex);
+
+				asNew	= mNetOps->getAccountState(uLedger, naNewAccountPublic);
+				if (!asNew)
+					bAgain	= false;
+			} while (bAgain);
+
+			// XXX Have a maximum number of accounts per wallet?
+
+			// Determine corrisponding master private key.
+			naNewAccountPrivate.setAccountPrivate(naMasterGenerator, naMasterSeed, iIndex);
+
+			// Determine new accounts authorized regular key.
+			naAuthKeyID.setAccountPublic(naRegularGenerator, iIndex);
+
+			uAuthKeyID	= naAuthKeyID.getAccountID();
+
+			// Sign anything (naAuthKeyID) to prove we know new master private key.
+			naNewAccountPrivate.accountPrivateSign(Serializer::getSHA512Half(uAuthKeyID.begin(), uAuthKeyID.size()), vucSignature);
+
+			Transaction::pointer	trans	= Transaction::sharedWalletAdd(
+				naAccountPublic, naAccountPrivate,
+				naSrcAccountID,
+				asSrc->getSeq(),
+				theConfig.FEE_CREATE,
+				0,											// YYY No source tag
+				saAmount,
+				naAuthKeyID,
+				naNewAccountPublic,
+				vucSignature);
+
+			(void) mNetOps->processTransaction(trans);
+
+			obj["transaction"]		= trans->getSTransaction()->getJson(0);
+			obj["status"]			= trans->getStatus();
+			obj["srcAccountID"]		= naSrcAccountID.humanAccountID();
+			obj["newAccountID"]		= naNewAccountPublic.humanAccountID();
+			obj["amount"]			= saAmount.getText();
+
+			return obj;
+		}
+	}
 }
 
 // wallet_claim <master_seed> <regular_seed> [<source_tag>] [<account_annotation>]
@@ -1013,12 +1143,13 @@ Json::Value RPCServer::doWalletClaim(Json::Value& params)
 		naRegular0Public.setAccountPublic(naRegularGenerator, 0);
 		naRegular0Private.setAccountPrivate(naRegularGenerator, naRegularSeed, 0);
 
-		// hash of regular account #reserved public key.
+		// Hash of regular account #0 public key.
 		uint160						uGeneratorID		= naRegular0Public.getAccountID();
 		std::vector<unsigned char>	vucGeneratorCipher	= naRegular0Private.accountPrivateEncrypt(naRegular0Public, naMasterGenerator.getFamilyGenerator());
 		std::vector<unsigned char>	vucGeneratorSig;
 
 		// XXX Check result.
+		// Prove that we have the corrisponding private key to the generator id.  So, we can get the generator id.
 		naRegular0Private.accountPrivateSign(Serializer::getSHA512Half(vucGeneratorCipher), vucGeneratorSig);
 
 		Transaction::pointer	trns	= Transaction::sharedClaim(
@@ -1078,7 +1209,8 @@ Json::Value RPCServer::doWalletCreate(Json::Value& params)
 	{
 		return "create account id needed";
 	}
-	else if (!mNetOps->available()) {
+	else if (!mNetOps->available())
+	{
 		// We require access to the paying account's sequence number and key information.
 		return JSONRPCError(503, "network not available");
 	}
@@ -1095,11 +1227,12 @@ Json::Value RPCServer::doWalletCreate(Json::Value& params)
 		// Trying to build:
 		//   peer_wallet_create <paying_account> <paying_signature> <account_id> [<initial_funds>] [<annotation>]
 
+		NewcoinAddress			naMasterGenerator;
 		NewcoinAddress			naAccountPublic;
 		NewcoinAddress			naAccountPrivate;
 	    AccountState::pointer	asSrc;
 		uint256					uLedger			= mNetOps->getClosedLedger();
-		Json::Value				obj				= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate, asSrc);
+		Json::Value				obj				= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate, asSrc, naMasterGenerator);
 
 		STAmount				saSrcBalance	= asSrc->getBalance();
 		STAmount				saInitialFunds	= (params.size() < 4) ? 0 : boost::lexical_cast<uint64>(params[3u].asString());
