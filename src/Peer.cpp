@@ -580,7 +580,7 @@ void Peer::recvTransaction(newcoin::TMTransaction& packet)
 		std::string rawTx = packet.rawtransaction();
 		Serializer s(std::vector<unsigned char>(rawTx.begin(), rawTx.end()));
 		SerializerIterator sit(s);
-		SerializedTransaction::pointer stx = boost::make_shared<SerializedTransaction>(boost::ref(sit), -1);
+		SerializedTransaction::pointer stx = boost::make_shared<SerializedTransaction>(boost::ref(sit));
 
 		tx = boost::make_shared<Transaction>(stx, true);
 		if (tx->getStatus() == INVALID) throw(0);
@@ -707,6 +707,11 @@ void Peer::recvStatus(newcoin::TMStatusChange& packet)
 		memcpy(mClosedLedgerHash.begin(), packet.ledgerhash().data(), 256 / 8);
 		mClosedLedgerTime = ptFromSeconds(packet.networktime());
 		Log(lsTRACE) << "peer LCL is " << mClosedLedgerHash.GetHex();
+	}
+	else if(packet.has_previousledgerhash() && packet.previousledgerhash().size() == (256 / 8))
+	{
+		memcpy(mClosedLedgerHash.begin(), packet.previousledgerhash().data(), 256 / 8);
+		mClosedLedgerTime = ptFromSeconds(packet.networktime());
 	}
 }
 

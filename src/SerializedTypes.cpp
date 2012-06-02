@@ -147,7 +147,7 @@ std::string STVariableLength::getText() const
 
 STVariableLength* STVariableLength::construct(SerializerIterator& u, const char *name)
 {
-	return new STVariableLength(u.getVL());
+	return new STVariableLength(name, u.getVL());
 }
 
 int STVariableLength::getLength() const

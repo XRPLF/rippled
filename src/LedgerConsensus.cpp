@@ -9,6 +9,8 @@
 #include "SerializedValidation.h"
 #include "Log.h"
 
+#define TRUST_NETWORK
+
 TransactionAcquire::TransactionAcquire(const uint256& hash) : PeerSet(hash, 1), mHaveRoot(false)
 {
 	mMap = boost::make_shared<SHAMap>();
@@ -339,7 +341,6 @@ int LedgerConsensus::stateFinished(int secondsSinceClose)
 
 int LedgerConsensus::stateAccepted(int secondsSinceClose)
 { // we have accepted a new ledger
-	statusChange(newcoin::neACCEPTED_LEDGER, theApp->getMasterLedger().getClosedLedger());
 	endConsensus();
 	return 4;
 }
@@ -432,7 +433,6 @@ void LedgerConsensus::closeLedger()
 {
 	Log(lsINFO) << "Closing ledger";
 	Ledger::pointer initial = theApp->getMasterLedger().getCurrentLedger();
-	statusChange(newcoin::neCLOSING_LEDGER, initial);
 	statusChange(newcoin::neCLOSING_LEDGER, mPreviousLedger);
 }
 
@@ -525,7 +525,8 @@ bool LedgerConsensus::peerPosition(LedgerProposal::pointer newPosition)
 			return true;
 		}
 	}
-	Log(lsINFO) << "Peer changes position";
+	Log(lsINFO) << "Peer position " << newPosition->getProposeSeq() << "/"
+		<< newPosition->getCurrentHash().GetHex();
 	currentPosition = newPosition;
 	SHAMap::pointer set = getTransactionTree(newPosition->getCurrentHash(), true);
 	if (set)
@@ -595,10 +596,12 @@ void LedgerConsensus::applyTransactions(SHAMap::pointer set, Ledger::pointer led
 	while (item)
 	{
 		Log(lsINFO) << "Processing candidate transaction: " << item->getTag().GetHex();
+#ifndef TRUST_NETWORK
 		try
 		{
+#endif
 			SerializerIterator sit(item->peekSerializer());
-			SerializedTransaction::pointer txn = boost::make_shared<SerializedTransaction>(boost::ref(sit), 0);
+			SerializedTransaction::pointer txn = boost::make_shared<SerializedTransaction>(boost::ref(sit));
 			TransactionEngineResult result = engine.applyTransaction(*txn, tepNO_CHECK_FEE);
 			if (result > 0)
 			{
@@ -616,11 +619,13 @@ void LedgerConsensus::applyTransactions(SHAMap::pointer set, Ledger::pointer led
 				Log(lsINFO) << "   hard fail";
 				assert(!ledger->hasTransaction(item->getTag()));
 			}
+#ifndef TRUST_NETWORK
 		}
 		catch (...)
 		{
 			Log(lsWARNING) << "  Throws";
 		}
+#endif
 		item = set->peekNextItem(item->getTag());
 	}
 
@@ -655,7 +660,11 @@ void LedgerConsensus::applyTransactions(SHAMap::pointer set, Ledger::pointer led
 
 void LedgerConsensus::accept(SHAMap::pointer set)
 {
+	assert(set->getHash() == mOurPosition->getCurrentHash());
 	Log(lsINFO) << "Computing new LCL based on network consensus";
+	Log(lsDEBUG) << "Consensus " << mOurPosition->getCurrentHash().GetHex();
+	Log(lsDEBUG) << "Previous LCL " << mPreviousLedger->getParentHash().GetHex();
+
 	Ledger::pointer newLCL = boost::make_shared<Ledger>(mPreviousLedger);
 
 	std::deque<SerializedTransaction::pointer> failedTransactions;
@@ -680,7 +689,8 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 	newcoin::TMValidation val;
 	val.set_validation(&validation[0], validation.size());
 	theApp->getConnectionPool().relayMessage(NULL, boost::make_shared<PackedMessage>(val, newcoin::mtVALIDATION));
-	Log(lsINFO) << "Validation sent";
+	Log(lsINFO) << "Validation sent " << newLCL->getHash().GetHex();
+	statusChange(newcoin::neACCEPTED_LEDGER, newOL);
 }
 
 void LedgerConsensus::endConsensus()

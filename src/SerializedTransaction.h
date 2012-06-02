@@ -26,7 +26,7 @@ protected:
 	SerializedTransaction* duplicate() const { return new SerializedTransaction(*this); }
 
 public:
-	SerializedTransaction(SerializerIterator& sit, int length); // -1=all remaining, 0=get from sit
+	SerializedTransaction(SerializerIterator& sit);
 	SerializedTransaction(TransactionType type);
 
 	// STObject functions
@@ -34,7 +34,7 @@ public:
 	SerializedTypeID getSType() const { return STI_TRANSACTION; }
 	std::string getFullText() const;
 	std::string getText() const;
-	void add(Serializer& s) const { getTransaction(s, true); }
+	void add(Serializer& s) const;
 	virtual bool isEquivalent(const SerializedType& t) const;
 
 	// outer transaction functions / signature functions
@@ -43,13 +43,9 @@ public:
 	void setSignature(const std::vector<unsigned char>& s);
 	uint256 getSigningHash() const;
 
-	// middle transaction functions
-	uint32 getVersion() const;
-	void setVersion(uint32);
-
 	TransactionType getTxnType() const { return mType; }
-	STAmount getTransactionFee() const;
-	void setTransactionFee(STAmount saFee);
+	uint64 getTransactionFee() const;
+	void setTransactionFee(uint64 fee);
 
 	const NewcoinAddress& getSourceAccount() const { return mSourceAccount; }
 	std::vector<unsigned char> getSigningPubKey() const;
@@ -111,8 +107,6 @@ public:
 
 	std::vector<NewcoinAddress> getAffectedAccounts() const;
 
-	// whole transaction functions
-	int getTransaction(Serializer& s, bool include_length) const;
 	uint256 getTransactionID() const;
 
 	virtual Json::Value getJson(int options) const;

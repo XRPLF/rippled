@@ -37,7 +37,7 @@ Transaction::pointer Transaction::sharedTransaction(const std::vector<unsigned c
 		Serializer			s(vucTransaction);
 		SerializerIterator	sit(s);
 
-		SerializedTransaction::pointer	st	= boost::make_shared<SerializedTransaction>(boost::ref(sit), -1);
+		SerializedTransaction::pointer	st	= boost::make_shared<SerializedTransaction>(boost::ref(sit));
 
 		return boost::make_shared<Transaction>(st, bValidate);
 	}
@@ -396,7 +396,7 @@ Transaction::pointer Transaction::transactionFromSQL(const std::string& sql)
 
 	Serializer s(rawTxn);
 	SerializerIterator it(s);
-	SerializedTransaction::pointer txn = boost::make_shared<SerializedTransaction>(boost::ref(it), -1);
+	SerializedTransaction::pointer txn = boost::make_shared<SerializedTransaction>(boost::ref(it));
 	Transaction::pointer tr = boost::make_shared<Transaction>(txn, true);
 
 	TransStatus st(INVALID);

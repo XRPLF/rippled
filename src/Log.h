@@ -39,6 +39,11 @@ public:
 		return oss << t;
 	}
 
+	std::ostringstream& ref(void) const
+	{
+		return oss;
+	}
+
 	static void setMinSeverity(LogSeverity);
 };
 
