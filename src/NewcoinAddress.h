@@ -89,6 +89,10 @@ public:
 			return naNew;
 		}
 
+	static std::string createHumanAccountPublic(const std::vector<unsigned char>& vPublic) {
+		return createAccountPublic(vPublic).humanAccountPublic();
+	}
+
 	//
 	// Accounts Private
 	//
@@ -109,6 +113,19 @@ public:
 
 	// Decrypt a message.
 	std::vector<unsigned char> accountPrivateDecrypt(const NewcoinAddress& naPublicFrom, const std::vector<unsigned char>& vucCipherText) const;
+
+	static NewcoinAddress createAccountPrivate(const std::vector<unsigned char>& vPrivate)
+		{
+			NewcoinAddress	naNew;
+
+			naNew.setAccountPrivate(vPrivate);
+
+			return naNew;
+		}
+
+	static std::string createHumanAccountPrivate(const std::vector<unsigned char>& vPrivate) {
+		return createAccountPrivate(vPrivate).humanAccountPrivate();
+	}
 
 	//
 	// Family Generators
