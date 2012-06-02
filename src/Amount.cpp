@@ -251,6 +251,15 @@ STAmount::STAmount(const char* name, int64 value) : SerializedType(name), mOffse
 	}
 }
 
+void STAmount::setValue(const STAmount &a)
+{
+	mCurrency = a.mCurrency;
+	mValue = a.mValue;
+	mOffset = a.mOffset;
+	mIsNative = a.mIsNative;
+	mIsNegative = a.mIsNegative;
+}
+
 uint64 STAmount::toUInt64() const
 { // makes them sort easily
 	if (mValue == 0) return 0x4000000000000000ull;
