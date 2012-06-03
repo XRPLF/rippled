@@ -63,143 +63,33 @@ void LedgerMaster::switchLedgers(Ledger::pointer lastClosed, Ledger::pointer cur
 	mEngine.setLedger(mCurrentLedger);
 }
 
-#if 0
-
-void LedgerMaster::startFinalization()
+Ledger::pointer LedgerMaster::closeTime()
 {
-	mFinalizedLedger=mCurrentLedger;
-	mCurrentLedger=Ledger::pointer(new Ledger(mCurrentLedger->getIndex()+1));
-
-	applyFutureProposals( mFinalizedLedger->getIndex() );
-	applyFutureTransactions( mCurrentLedger->getIndex() );
+	boost::recursive_mutex::scoped_lock sl(mLock);
+	assert(mCurrentLedger && mWobbleLedger);
+	Ledger::pointer ret = mCurrentLedger;
+	mCurrentLedger = mWobbleLedger;
+	mEngine.setLedger(mCurrentLedger);
+	mWobbleLedger = ret;
+	return ret;
 }
 
-void LedgerMaster::sendProposal()
+void LedgerMaster::beginWobble()
 {
-	PackedMessage::pointer packet=Peer::createLedgerProposal(mFinalizedLedger);
-	theApp->getConnectionPool().relayMessage(NULL,packet);
+	boost::recursive_mutex::scoped_lock sl(mLock);
+	assert(!mWobbleLedger);
+	mWobbleLedger = mCurrentLedger;
+	mCurrentLedger = boost::make_shared<Ledger>(mCurrentLedger);
+	mEngine.setLedger(mCurrentLedger);
 }
 
-
-void LedgerMaster::endFinalization()
+Ledger::pointer LedgerMaster::endWobble()
 {
-	mFinalizedLedger->publishValidation();
-	mLedgerHistory.addAcceptedLedger(mFinalizedLedger);
-	mLedgerHistory.addLedger(mFinalizedLedger);
-
-	mFinalizedLedger=Ledger::pointer();
+	boost::recursive_mutex::scoped_lock sl(mLock);
+	assert(mWobbleLedger && mCurrentLedger);
+	Ledger::pointer ret = mWobbleLedger;
+	mWobbleLedger = Ledger::pointer();
+	return ret;
 }
 
-void LedgerMaster::addFutureProposal(Peer::pointer peer,newcoin::ProposeLedger& otherLedger)
-{
-	mFutureProposals.push_front(pair<Peer::pointer,newcoin::ProposeLedger>(peer,otherLedger));
-}
-
-void LedgerMaster::applyFutureProposals(uint32 ledgerIndex)
-{
-	for(list< pair<Peer::pointer,newcoin::ProposeLedger> >::iterator iter=mFutureProposals.begin(); iter !=mFutureProposals.end(); )
-	{
-		if ((*iter).second.ledgerindex() == ledgerIndex)
-		{
-			checkLedgerProposal((*iter).first,(*iter).second);
-			mFutureProposals.erase(iter);
-		}else iter++;
-	}
-}
-
-void LedgerMaster::checkLedgerProposal(Peer::pointer peer, newcoin::ProposeLedger& otherLedger)
-{
-	// see if this matches yours
-	// if you haven't finalized yet save it for when you do
-	// if doesn't match and you have <= transactions ask for the complete ledger
-	// if doesn't match and you have > transactions send your complete ledger
-	
-
-	if(otherLedger.ledgerindex()<mCurrentLedger->getIndex())
-	{
-		if( (!mFinalizedLedger) || 
-			otherLedger.ledgerindex()<mFinalizedLedger->getIndex())
-		{ // you have already closed this ledger
-			Ledger::pointer oldLedger=mLedgerHistory.getAcceptedLedger(otherLedger.ledgerindex());
-			if(oldLedger)
-			{
-				if( (oldLedger->getHash()!=protobufTo256(otherLedger.hash())) &&
-					(oldLedger->getNumTransactions()>=otherLedger.numtransactions()))
-				{
-					peer->sendLedgerProposal(oldLedger);
-				}
-			}
-		}else
-		{ // you guys are on the same page
-			uint256 otherHash=protobufTo256(otherLedger.hash());
-			if(mFinalizedLedger->getHash()!= otherHash)
-			{
-				if( mFinalizedLedger->getNumTransactions()>=otherLedger.numtransactions())
-				{
-					peer->sendLedgerProposal(mFinalizedLedger);
-				}else
-				{
-					peer->sendGetFullLedger(otherHash);
-				}
-			}
-		}
-	}else
-	{ // you haven't started finalizde this one yet save it for when you do
-		addFutureProposal(peer,otherLedger);
-	}
-}
-
-
-// TODO: optimize. this is expensive so limit the amount it is run
-void LedgerMaster::checkConsensus(uint32 ledgerIndex)
-{
-	Ledger::pointer ourAcceptedLedger=mLedgerHistory.getAcceptedLedger(ledgerIndex);
-	if(ourAcceptedLedger)
-	{
-		Ledger::pointer consensusLedger;
-		uint256 consensusHash;
-
-		if( theApp->getValidationCollection().getConsensusLedger(ledgerIndex,ourAcceptedLedger->getHash(), consensusLedger, consensusHash) )
-		{ // our accepted ledger isn't compatible with the consensus
-			if(consensusLedger)
-			{	// switch to this ledger. Re-validate
-				mLedgerHistory.addAcceptedLedger(consensusLedger);
-				consensusLedger->publishValidation();
-			}else
-			{	// we don't know the consensus one. Ask peers for it
-				// TODO: make sure this isn't sent many times before we have a chance to get a reply
-				PackedMessage::pointer msg=Peer::createGetFullLedger(consensusHash);
-				theApp->getConnectionPool().relayMessage(NULL,msg);
-			}
-		}
-	}
-}
-/*
-if( consensusHash && 
-(ourAcceptedLedger->getHash()!= *consensusHash))
-{
-Ledger::pointer consensusLedger=mLedgerHistory.getLedger(*consensusHash);
-if(consensusLedger)
-{ // see if these are compatible
-if(ourAcceptedLedger->isCompatible(consensusLedger))
-{	// try to merge any transactions from the consensus one into ours
-ourAcceptedLedger->mergeIn(consensusLedger);
-// Ledger::pointer child=ourAcceptedLedger->getChild();
-Ledger::pointer child=mLedgerHistory.getAcceptedLedger(ledgerIndex+1);
-if(child) child->recalculate();
-}else
-{ // switch to this ledger. Re-validate
-mLedgerHistory.addAcceptedLedger(consensusLedger);
-consensusLedger->publishValidation();
-}
-
-}else
-{	// we don't know the consensus one. Ask peers for it
-PackedMessage::pointer msg=Peer::createGetFullLedger(*consensusHash);
-theApp->getConnectionPool().relayMessage(NULL,msg);
-}
-}
-*/
-
-#endif
 // vim:ts=4

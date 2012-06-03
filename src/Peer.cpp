@@ -616,17 +616,18 @@ void Peer::recvTransaction(newcoin::TMTransaction& packet)
 void Peer::recvPropose(newcoin::TMProposeSet& packet)
 {
 	Log(lsINFO) << "Received proposal from peer";
-	if ((packet.currenttxhash().size() != 32) || (packet.prevclosedhash().size() != 32) ||
-		(packet.nodepubkey().size() < 28) || (packet.signature().size() < 56))
+	if ((packet.currenttxhash().size() != 32) || (packet.nodepubkey().size() < 28) ||
+		(packet.signature().size() < 56))
+	{
+		Log(lsWARNING) << "Proposal is malformed";
 		return;
+	}
 
 	uint32 proposeSeq = packet.proposeseq();
-	uint256 currentTxHash, prevLgrHash;
+	uint256 currentTxHash;
 	memcpy(currentTxHash.begin(), packet.currenttxhash().data(), 32);
-	memcpy(prevLgrHash.begin(), packet.prevclosedhash().data(), 32);
 
-	if(theApp->getOPs().recvPropose(prevLgrHash, proposeSeq, currentTxHash,
-		packet.nodepubkey(), packet.signature()))
+	if(theApp->getOPs().recvPropose(proposeSeq, currentTxHash, packet.nodepubkey(), packet.signature()))
 	{ // FIXME: Not all nodes will want proposals
 		PackedMessage::pointer message = boost::make_shared<PackedMessage>(packet, newcoin::mtPROPOSE_LEDGER);
 		theApp->getConnectionPool().relayMessage(this, message);

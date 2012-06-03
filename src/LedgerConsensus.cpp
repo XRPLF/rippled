@@ -284,16 +284,18 @@ void LedgerConsensus::abort()
 
 int LedgerConsensus::startup()
 {
+	// create wobble ledger in case peers target transactions to it
+	theApp->getMasterLedger().beginWobble();
 	return 1;
 }
 
 int LedgerConsensus::statePreClose(int secondsSinceClose)
 { // it is shortly before ledger close time
 	if (secondsSinceClose >= 0)
-	{ // it is time to close the ledger
+	{ // it is time to close the ledger (swap default and wobble ledgers)
 		Log(lsINFO) << "Closing ledger";
 		mState = lcsPOST_CLOSE;
-		Ledger::pointer initial = theApp->getMasterLedger().getCurrentLedger();
+		Ledger::pointer initial = theApp->getMasterLedger().closeTime();
 		statusChange(newcoin::neCLOSING_LEDGER, mPreviousLedger);
 	}
 	return 1;
@@ -305,7 +307,7 @@ int LedgerConsensus::statePostClose(int secondsSinceClose)
 	{
 		Log(lsINFO) << "Wobble is over, it's consensus time";
 		mState = lcsESTABLISH;
-		Ledger::pointer initial = theApp->getMasterLedger().getCurrentLedger();
+		Ledger::pointer initial = theApp->getMasterLedger().endWobble();
 		takeInitialPosition(initial);
 		initial->bumpSeq();
 	}
@@ -459,7 +461,6 @@ void LedgerConsensus::propose(const std::vector<uint256>& added, const std::vect
 	Log(lsDEBUG) << "We propose: " << mOurPosition->getCurrentHash().GetHex();
 	newcoin::TMProposeSet prop;
 	prop.set_currenttxhash(mOurPosition->getCurrentHash().begin(), 256 / 8);
-	prop.set_prevclosedhash(mOurPosition->getPrevLedger().begin(), 256 / 8);
 	prop.set_proposeseq(mOurPosition->getProposeSeq());
 
 	std::vector<unsigned char> pubKey = mOurPosition->getPubKey();

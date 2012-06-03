@@ -38,8 +38,13 @@ public:
 
 	ScopedLock getLock()				{ return ScopedLock(mLock); }
 
+	// The current ledger is the ledger we believe new transactions should go in
 	Ledger::pointer getCurrentLedger()	{ return mCurrentLedger; }
+
+	// The wobble ledger is a ledger that new transactions can go in if requested
 	Ledger::pointer getWobbleLedger()	{ return mWobbleLedger; }
+
+	// The finalized ledger is the last closed/accepted ledger
 	Ledger::pointer getClosedLedger()	{ return mFinalizedLedger; }
 
 	TransactionEngineResult doTransaction(const SerializedTransaction& txn, uint32 targetLedger,
@@ -50,6 +55,10 @@ public:
 	void pushLedger(Ledger::pointer newLCL, Ledger::pointer newOL);
 
 	void switchLedgers(Ledger::pointer lastClosed, Ledger::pointer newCurrent);
+
+	Ledger::pointer closeTime();
+	void beginWobble();
+	Ledger::pointer endWobble();
 
 	Ledger::pointer getLedgerBySeq(uint32 index)
 	{

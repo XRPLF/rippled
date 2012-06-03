@@ -442,20 +442,27 @@ int NetworkOPs::beginConsensus(Ledger::pointer closingLedger)
 	return mConsensus->startup();
 }
 
-bool NetworkOPs::recvPropose(const uint256& prevLgr, uint32 proposeSeq, const uint256& proposeHash,
+bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash,
 	const std::string& pubKey, const std::string& signature)
 {
 	if (mMode != omFULL) // FIXME: Should we relay?
-		Log(lsWARNING) << "Received proposal when not full: " << mMode;
-	if (!mConsensus)
 	{
+		Log(lsWARNING) << "Received proposal when not full: " << mMode;
 		return true;
 	}
+	if (!mConsensus)
+	{
+		Log(lsWARNING) << "Received proposal when full but not during consensus window";
+		return false;
+	}
+
+	boost::shared_ptr<LedgerConsensus> consensus = mConsensus;
+	if (!consensus) return false;
 
 	LedgerProposal::pointer proposal =
-		boost::make_shared<LedgerProposal>(prevLgr, proposeSeq, proposeHash, pubKey);
+		boost::make_shared<LedgerProposal>(consensus->getLCL(), proposeSeq, proposeHash, pubKey);
 	if (!proposal->checkSign(signature))
-	{
+	{ // Note that if the LCL is different, the signature check will fail
 		Log(lsWARNING) << "Ledger proposal fails signature check";
 		return false;
 	}
@@ -463,8 +470,7 @@ bool NetworkOPs::recvPropose(const uint256& prevLgr, uint32 proposeSeq, const ui
 	// Is this node on our UNL?
 	// WRITEME
 
-	if (!mConsensus) return false;
-	return mConsensus->peerPosition(proposal);
+	return consensus->peerPosition(proposal);
 }
 
 SHAMap::pointer NetworkOPs::getTXMap(const uint256& hash)

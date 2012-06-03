@@ -100,13 +100,12 @@ message TMStatusChange {
 
 // Announce to the network our position on a closing ledger
 message TMProposeSet {
-	required bytes prevClosedHash		= 1;
-	required uint32 proposeSeq			= 2;
-	required bytes currentTxHash		= 3;	// the hash of the ledger we are proposing
-	required bytes nodePubKey			= 4;
-	required bytes signature			= 5;	// signature of above fields
-	repeated bytes addedTransactions	= 6;	// not required if number is large
-	repeated bytes removedTransactions	= 7;	// not required if number is large
+	required uint32 proposeSeq			= 1;
+	required bytes currentTxHash		= 2;	// the hash of the ledger we are proposing
+	required bytes nodePubKey			= 3;
+	required bytes signature			= 4;	// signature of above fields
+	repeated bytes addedTransactions	= 5;	// not required if number is large
+	repeated bytes removedTransactions	= 6;	// not required if number is large
 }
 
 // Announce to a peer that we have fully acquired a transaction set
