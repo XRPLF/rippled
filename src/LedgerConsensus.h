@@ -112,7 +112,6 @@ protected:
 	void addPosition(LedgerProposal&, bool ours);
 	void removePosition(LedgerProposal&, bool ours);
 	void sendHaveTxSet(const std::vector<uint256>& txSetHashes);
-	void closeLedger();
 	void applyTransactions(SHAMap::pointer transactionSet, Ledger::pointer targetLedger,
 		std::deque<SerializedTransaction::pointer>& failedTransactions);
 

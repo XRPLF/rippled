@@ -92,6 +92,7 @@ private:
 		const uint256&					uLedgerIndex);	// Item being deleted
 
 protected:
+	Ledger::pointer mDefaultLedger, mAlternateLedger;
 	Ledger::pointer mLedger;
 
 	TransactionEngineResult doAccountSet(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts);
@@ -110,12 +111,17 @@ protected:
 
 public:
 	TransactionEngine() { ; }
-	TransactionEngine(Ledger::pointer ledger) : mLedger(ledger) { ; }
+	TransactionEngine(Ledger::pointer ledger) : mDefaultLedger(ledger) { ; }
 
-	Ledger::pointer getLedger() { return mLedger; }
-	void setLedger(Ledger::pointer ledger) { mLedger = ledger; }
+	Ledger::pointer getDefaultLedger()				{ return mDefaultLedger; }
+	void setDefaultLedger(Ledger::pointer ledger)	{ mDefaultLedger = ledger; }
+	Ledger::pointer getAlternateLedger()			{ return mAlternateLedger; }
+	void setAlternateLedger(Ledger::pointer ledger)	{ mDefaultLedger = ledger; }
+	void setLedger(Ledger::pointer ledger)			{ mDefaultLedger = ledger;
+													  mAlternateLedger = Ledger::pointer(); }
 
-	TransactionEngineResult applyTransaction(const SerializedTransaction&, TransactionEngineParams);
+	TransactionEngineResult applyTransaction(const SerializedTransaction&, TransactionEngineParams,
+		uint32 targetLedger);
 };
 
 inline TransactionEngineParams operator|(const TransactionEngineParams& l1, const TransactionEngineParams& l2)

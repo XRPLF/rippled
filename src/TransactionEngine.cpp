@@ -232,9 +232,17 @@ TransactionEngineResult TransactionEngine::dirDelete(
 }
 
 TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTransaction& txn,
-	TransactionEngineParams params)
+	TransactionEngineParams params, uint32 targetLedger)
 {
 	std::cerr << "applyTransaction>" << std::endl;
+
+	mLedger = mDefaultLedger;
+	if (mAlternateLedger && (targetLedger != 0) &&
+		(targetLedger != mLedger->getLedgerSeq()) && (targetLedger == mAlternateLedger->getLedgerSeq()))
+	{
+		Log(lsINFO) << "Transaction goes into wobble ledger";
+		mLedger = mAlternateLedger;
+	}
 
 #ifdef DEBUG
 	if (1)
@@ -260,6 +268,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	if (!txID)
 	{
 		std::cerr << "applyTransaction: invalid transaction id" << std::endl;
+		mLedger = Ledger::pointer();
 		return tenINVALID;
 	}
 
@@ -278,6 +287,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	if (!txn.checkSign(naSigningPubKey))
 	{
 		std::cerr << "applyTransaction: Invalid transaction: bad signature" << std::endl;
+		mLedger = Ledger::pointer();
 		return tenINVALID;
 	}
 
@@ -318,7 +328,10 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	}
 
 	if (terSUCCESS != result)
+	{
+		mLedger = Ledger::pointer();
 		return result;
+	}
 
 	STAmount saPaid = txn.getTransactionFee();
 	if ((params & tepNO_CHECK_FEE) == tepNONE)
@@ -328,6 +341,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 			if (saPaid < saCost)
 			{
 				std::cerr << "applyTransaction: insufficient fee" << std::endl;
+				mLedger = Ledger::pointer();
 				return tenINSUF_FEE_P;
 			}
 		}
@@ -337,6 +351,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 			{
 				// Transaction is malformed.
 				std::cerr << "applyTransaction: fee not allowed" << std::endl;
+				mLedger = Ledger::pointer();
 				return tenINSUF_FEE_P;
 			}
 		}
@@ -359,7 +374,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	if (!sleSrc)
 	{
 		std::cerr << str(boost::format("applyTransaction: Delay transaction: source account does not exisit: %s") % txn.getSourceAccount().humanAccountID()) << std::endl;
-
+		mLedger = Ledger::pointer();
 		return terNO_ACCOUNT;
 	}
 
@@ -372,7 +387,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 				// Signing Pub Key must be for Source Account ID.
 				std::cerr << "sourceAccountID: " << naSigningPubKey.humanAccountID() << std::endl;
 				std::cerr << "txn accountID: " << txn.getSourceAccount().humanAccountID() << std::endl;
-
+				mLedger = Ledger::pointer();
 				return tenINVALID;
 			}
 			break;
@@ -381,13 +396,13 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 			if (!sleSrc->getIFieldPresent(sfAuthorizedKey))
 			{
 				std::cerr << "applyTransaction: Can not use unclaimed account." << std::endl;
-
+				mLedger = Ledger::pointer();
 				return tenUNCLAIMED;
 			}
 			else if (naSigningPubKey.getAccountID() != sleSrc->getIValueFieldAccount(sfAuthorizedKey).getAccountID())
 			{
 				std::cerr << "applyTransaction: Not authorized to use account." << std::endl;
-
+				mLedger = Ledger::pointer();
 				return tenBAD_AUTH;
 			}
 			break;
@@ -406,6 +421,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 					% saSrcBalance
 					% saPaid)
 				<< std::endl;
+			mLedger = Ledger::pointer();
 			return terINSUF_FEE_B;
 		}
 
@@ -425,18 +441,18 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 			if (a_seq < t_seq)
 			{
 				std::cerr << "applyTransaction: future sequence number" << std::endl;
-
+				mLedger = Ledger::pointer();
 				return terPRE_SEQ;
 			}
 			if (mLedger->hasTransaction(txID))
 			{
 				std::cerr << "applyTransaction: duplicate sequence number" << std::endl;
-
+				mLedger = Ledger::pointer();
 				return terALREADY;
 			}
 
 			std::cerr << "applyTransaction: past sequence number" << std::endl;
-
+			mLedger = Ledger::pointer();
 			return terPAST_SEQ;
 		}
 		else sleSrc->setIFieldU32(sfSequence, t_seq);
@@ -446,7 +462,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 		if (t_seq)
 		{
 			std::cerr << "applyTransaction: bad sequence for pre-paid transaction" << std::endl;
-
+			mLedger = Ledger::pointer();
 			return terPAST_SEQ;
 		}
 	}
@@ -528,7 +544,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 		if ((params & tepUPDATE_TOTAL) != tepNONE)
 			mLedger->destroyCoins(saPaid.getNValue());
 	}
-
+	mLedger = Ledger::pointer();
 	return result;
 }
 

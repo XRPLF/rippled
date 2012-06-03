@@ -291,8 +291,10 @@ int LedgerConsensus::statePreClose(int secondsSinceClose)
 { // it is shortly before ledger close time
 	if (secondsSinceClose >= 0)
 	{ // it is time to close the ledger
+		Log(lsINFO) << "Closing ledger";
 		mState = lcsPOST_CLOSE;
-		closeLedger();
+		Ledger::pointer initial = theApp->getMasterLedger().getCurrentLedger();
+		statusChange(newcoin::neCLOSING_LEDGER, mPreviousLedger);
 	}
 	return 1;
 }
@@ -427,13 +429,6 @@ SHAMap::pointer LedgerConsensus::getTransactionTree(const uint256& hash, bool do
 		return SHAMap::pointer();
 	}
 	return it->second;
-}
-
-void LedgerConsensus::closeLedger()
-{
-	Log(lsINFO) << "Closing ledger";
-	Ledger::pointer initial = theApp->getMasterLedger().getCurrentLedger();
-	statusChange(newcoin::neCLOSING_LEDGER, mPreviousLedger);
 }
 
 void LedgerConsensus::startAcquiring(TransactionAcquire::pointer acquire)
@@ -602,7 +597,7 @@ void LedgerConsensus::applyTransactions(SHAMap::pointer set, Ledger::pointer led
 #endif
 			SerializerIterator sit(item->peekSerializer());
 			SerializedTransaction::pointer txn = boost::make_shared<SerializedTransaction>(boost::ref(sit));
-			TransactionEngineResult result = engine.applyTransaction(*txn, tepNO_CHECK_FEE | tepUPDATE_TOTAL);
+			TransactionEngineResult result = engine.applyTransaction(*txn, tepNO_CHECK_FEE | tepUPDATE_TOTAL, 0);
 			if (result > 0)
 			{
 				Log(lsINFO) << "   retry";
@@ -638,7 +633,7 @@ void LedgerConsensus::applyTransactions(SHAMap::pointer set, Ledger::pointer led
 		{
 			try
 			{
-				TransactionEngineResult result = engine.applyTransaction(**it, tepNO_CHECK_FEE | tepUPDATE_TOTAL);
+				TransactionEngineResult result = engine.applyTransaction(**it, tepNO_CHECK_FEE | tepUPDATE_TOTAL, 0);
 				if (result <= 0)
 				{
 					if (result == 0) ++successes;

@@ -19,6 +19,7 @@ class LedgerMaster
 	TransactionEngine mEngine;
 
 	Ledger::pointer mCurrentLedger;		// The ledger we are currently processiong
+	Ledger::pointer mWobbleLedger;		// A ledger past its close time
 	Ledger::pointer mFinalizedLedger;	// The ledger that most recently closed
 
 	LedgerHistory mLedgerHistory;
@@ -38,14 +39,16 @@ public:
 	ScopedLock getLock()				{ return ScopedLock(mLock); }
 
 	Ledger::pointer getCurrentLedger()	{ return mCurrentLedger; }
+	Ledger::pointer getWobbleLedger()	{ return mWobbleLedger; }
 	Ledger::pointer getClosedLedger()	{ return mFinalizedLedger; }
 
 	TransactionEngineResult doTransaction(const SerializedTransaction& txn, uint32 targetLedger,
-		TransactionEngineParams params) // FIXME: wobble
-	{ return mEngine.applyTransaction(txn, params); }
+		TransactionEngineParams params)
+	{ return mEngine.applyTransaction(txn, params, targetLedger); }
 
 	void pushLedger(Ledger::pointer newLedger);
 	void pushLedger(Ledger::pointer newLCL, Ledger::pointer newOL);
+
 	void switchLedgers(Ledger::pointer lastClosed, Ledger::pointer newCurrent);
 
 	Ledger::pointer getLedgerBySeq(uint32 index)
