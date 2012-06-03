@@ -1,4 +1,3 @@
-
 #include <cmath>
 #include <iomanip>
 #include <algorithm>
@@ -107,18 +106,22 @@ bool STAmount::setValue(const std::string& sAmount, const std::string& sCurrency
 	else
 	{
 		// Example size decimal size-decimal offset
-		//    .1      2       0            2     -1
-		// 123.       4       3            1      0
-		//   1.23     4       1            3     -2
+		//    ^1      2       0            2     -1
+		// 123^       4       3            1      0
+		//   1^23     4       1            3     -2
 		iOffset	= -(sAmount.size()-uDecimal-1);
 
+
+		// Issolate integer and fraction.
 		uint64	uInteger	= uDecimal ? boost::lexical_cast<uint64>(sAmount.substr(0, uDecimal)) : 0;
 		uint64	uFraction	= iOffset ? boost::lexical_cast<uint64>(sAmount.substr(uDecimal+1)) : 0;
 
+		// Scale the integer portion to the same offset as the fraction.
 		uValue	= uInteger;
 		for (int i=-iOffset; i--;)
 			uValue	*= 10;
 
+		// Add in the fraction.
 		uValue += uFraction;
 	}
 
@@ -800,6 +803,20 @@ static STAmount serdes(const STAmount &s)
 
 
 BOOST_AUTO_TEST_SUITE(amount)
+
+BOOST_AUTO_TEST_CASE( setValue_test )
+{
+	STAmount	saTmp;
+
+	// Check native floats
+	saTmp.setValue("1^0",""); BOOST_CHECK_MESSAGE(SYSTEM_CURRENCY_PARTS == saTmp.getNValue(), "float integer failed");
+	saTmp.setValue("0^1",""); BOOST_CHECK_MESSAGE(SYSTEM_CURRENCY_PARTS/10 == saTmp.getNValue(), "float fraction failed");
+	saTmp.setValue("0^12",""); BOOST_CHECK_MESSAGE(12*SYSTEM_CURRENCY_PARTS/100 == saTmp.getNValue(), "float fraction failed");
+	saTmp.setValue("1^2",""); BOOST_CHECK_MESSAGE(SYSTEM_CURRENCY_PARTS+(2*SYSTEM_CURRENCY_PARTS/10) == saTmp.getNValue(), "float combined failed");
+
+	// Check native integer
+	saTmp.setValue("1",""); BOOST_CHECK_MESSAGE(1 == saTmp.getNValue(), "integer failed");
+}
 
 BOOST_AUTO_TEST_CASE( NativeCurrency_test )
 {
