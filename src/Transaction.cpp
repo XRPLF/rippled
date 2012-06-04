@@ -269,9 +269,9 @@ Transaction::pointer Transaction::setPasswordFund(
 	const NewcoinAddress&	naPrivateKey,
 	const NewcoinAddress&	naDstAccountID)
 {
-	sign(naPrivateKey);
-
 	mTransaction->setITFieldAccount(sfDestination, naDstAccountID);
+
+	sign(naPrivateKey);
 
 	return shared_from_this();
 }
@@ -300,7 +300,7 @@ Transaction::pointer Transaction::setPasswordSet(
 	const std::vector<unsigned char>&	vucPubKey,
 	const std::vector<unsigned char>&	vucSignature)
 {
-	mTransaction->setITFieldAccount(sfDestination, naAuthKeyID);
+	mTransaction->setITFieldAccount(sfAuthorizedKey, naAuthKeyID);
 	mTransaction->setITFieldVL(sfGenerator, vucGenerator);
 	mTransaction->setITFieldVL(sfPubKey, vucPubKey);
 	mTransaction->setITFieldVL(sfSignature, vucSignature);
@@ -326,6 +326,7 @@ Transaction::pointer Transaction::sharedPasswordSet(
 
 	return tResult->setPasswordSet(naPrivateKey, naAuthKeyID, vucGenerator, vucPubKey, vucSignature);
 }
+
 //
 // Payment
 //
