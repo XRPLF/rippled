@@ -118,7 +118,7 @@ void Application::run()
 	firstLedger->setAccepted();
 	mMasterLedger.pushLedger(firstLedger);
 
-	Ledger::pointer secondLedger = boost::make_shared<Ledger>(firstLedger);
+	Ledger::pointer secondLedger = boost::make_shared<Ledger>(true, boost::ref(*firstLedger));
 	mMasterLedger.pushLedger(secondLedger);
 	assert(!!secondLedger->getAccountState(rootAddress));
 	// temporary
