@@ -219,7 +219,7 @@ bool STAccount::isValueH160() const
 
 void STAccount::setValueH160(const uint160& v)
 {
-	peekValue().empty();
+	peekValue().clear();
 	peekValue().insert(peekValue().end(), v.begin(), v.end());
 	assert(peekValue().size() == (160/8));
 }
