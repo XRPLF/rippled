@@ -48,6 +48,7 @@ class Application
 	RPCDoor*				mRPCDoor;
 
 	uint256					mNonce256;
+	std::size_t				mNonceST;
 
 	std::map<std::string, Peer::pointer> mPeerMap;
 	boost::recursive_mutex	mPeerMapLock;
@@ -69,13 +70,14 @@ public:
 	LedgerAcquireMaster& getMasterLedgerAcquire() { return mMasterLedgerAcquire; }
 	TransactionMaster& getMasterTransaction() { return mMasterTransaction; }
 
-	DatabaseCon* getTxnDB() { return mTxnDB; }
-	DatabaseCon* getLedgerDB() { return mLedgerDB; }
-	DatabaseCon* getWalletDB() { return mWalletDB; }
-	DatabaseCon* getHashNodeDB() { return mHashNodeDB; }
-	DatabaseCon* getNetNodeDB() { return mNetNodeDB; }
+	DatabaseCon* getTxnDB()			{ return mTxnDB; }
+	DatabaseCon* getLedgerDB()		{ return mLedgerDB; }
+	DatabaseCon* getWalletDB()		{ return mWalletDB; }
+	DatabaseCon* getHashNodeDB()	{ return mHashNodeDB; }
+	DatabaseCon* getNetNodeDB() 	{ return mNetNodeDB; }
 
-	uint256 getNonce256() { return mNonce256; }
+	uint256 getNonce256()			{ return mNonce256; }
+	std::size_t getNonceST()		{ return mNonceST; }
 
 	void run();
 	void stop();

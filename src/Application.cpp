@@ -37,6 +37,7 @@ Application::Application() :
 	mConnectionPool(mIOService), mPeerDoor(NULL), mRPCDoor(NULL)
 {
 	RAND_bytes(mNonce256.begin(), mNonce256.size());
+	RAND_bytes(reinterpret_cast<unsigned char *>(&mNonceST), sizeof(mNonceST));
 }
 
 extern const char *TxnDBInit[], *LedgerDBInit[], *WalletDBInit[], *HashNodeDBInit[], *NetNodeDBInit[];

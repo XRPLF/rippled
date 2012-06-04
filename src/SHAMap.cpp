@@ -17,15 +17,15 @@
 
 std::size_t hash_value(const SHAMapNode& mn)
 {
-	return mn.getDepth()
-		^ *reinterpret_cast<const std::size_t *>(mn.getNodeID().begin())
-		^ *reinterpret_cast<const std::size_t *>(theApp->getNonce256().begin());
+	std::size_t seed = theApp->getNonceST();
+	boost::hash_combine(seed, mn.getDepth());
+	return mn.getNodeID().hash_combine(seed);
 }
 
 std::size_t hash_value(const uint256& u)
 {
-	return *reinterpret_cast<const std::size_t *>(u.begin())
-		^ *reinterpret_cast<const std::size_t *>(theApp->getNonce256().begin());
+	std::size_t seed = theApp->getNonceST();
+	return u.hash_combine(seed);
 }
 
 SHAMap::SHAMap(uint32 seq) : mSeq(seq), mState(Modifying)
