@@ -285,7 +285,7 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 	// Do we have sufficient validations for our last closed ledger? Or do sufficient nodes
 	// agree? And do we have no better ledger available?
 	// If so, we are either tracking or full.
-	boost::unordered_map<uint256, ValidationCount, hash_SMN> ledgers;
+	boost::unordered_map<uint256, ValidationCount> ledgers;
 
 	for (std::vector<Peer::pointer>::iterator it = peerList.begin(), end = peerList.end(); it != end; ++it)
 	{

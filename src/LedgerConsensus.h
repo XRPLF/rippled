@@ -47,7 +47,7 @@ protected:
 	int mYays, mNays;
 	bool mOurPosition;
 	std::vector<unsigned char> transaction;
-	boost::unordered_map<uint256, bool, hash_SMN> mVotes;
+	boost::unordered_map<uint256, bool> mVotes;
 
 public:
 	typedef boost::shared_ptr<LCTransaction> pointer;
@@ -85,17 +85,17 @@ protected:
 	LedgerProposal::pointer mOurPosition;
 
 	// Convergence tracking, trusted peers indexed by hash of public key
-	boost::unordered_map<uint256, LedgerProposal::pointer, hash_SMN> mPeerPositions;
+	boost::unordered_map<uint256, LedgerProposal::pointer> mPeerPositions;
 
 	// Transaction Sets, indexed by hash of transaction tree
-	boost::unordered_map<uint256, SHAMap::pointer, hash_SMN> mComplete;
-	boost::unordered_map<uint256, TransactionAcquire::pointer, hash_SMN> mAcquiring;
+	boost::unordered_map<uint256, SHAMap::pointer> mComplete;
+	boost::unordered_map<uint256, TransactionAcquire::pointer> mAcquiring;
 
 	// Peer sets
-	boost::unordered_map<uint256, std::vector< boost::weak_ptr<Peer> >, hash_SMN> mPeerData;
+	boost::unordered_map<uint256, std::vector< boost::weak_ptr<Peer> > > mPeerData;
 
 	// Disputed transactions
-	boost::unordered_map<uint256, LCTransaction::pointer, hash_SMN> mDisputes;
+	boost::unordered_map<uint256, LCTransaction::pointer> mDisputes;
 
 	// final accept logic
 	static void Saccept(boost::shared_ptr<LedgerConsensus> This, SHAMap::pointer txSet);

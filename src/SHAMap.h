@@ -76,14 +76,8 @@ public:
 	SHAMapNode(const void *ptr, int len);
 };
 
-class hash_SMN
-{
-
-public:
-	std::size_t operator() (const SHAMapNode& mn) const;
-
-	std::size_t operator() (const uint256& u) const;
-};
+extern std::size_t hash_value(const SHAMapNode& mn);
+extern std::size_t hash_value(const uint256& u);
 
 class SHAMapItem
 { // an item stored in a SHAMap
@@ -234,7 +228,7 @@ public:
 private:
 	uint32 mSeq;
 	mutable boost::recursive_mutex mLock;
-	boost::unordered_map<SHAMapNode, SHAMapTreeNode::pointer, hash_SMN> mTNByID;
+	boost::unordered_map<SHAMapNode, SHAMapTreeNode::pointer> mTNByID;
 
 	boost::shared_ptr<std::map<SHAMapNode, SHAMapTreeNode::pointer> > mDirtyNodes;
 
@@ -301,7 +295,7 @@ public:
 	// comparison/sync functions
 	void getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint256>& hashes, int max);
 	bool getNodeFat(const SHAMapNode& node, std::vector<SHAMapNode>& nodeIDs,
-	 std::list<std::vector<unsigned char> >& rawNode);
+	 std::list<std::vector<unsigned char> >& rawNode, bool fatLeaves);
 	bool addRootNode(const uint256& hash, const std::vector<unsigned char>& rootNode);
 	bool addRootNode(const std::vector<unsigned char>& rootNode);
 	bool addKnownNode(const SHAMapNode& nodeID, const std::vector<unsigned char>& rawNode);

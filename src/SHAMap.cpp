@@ -15,14 +15,14 @@
 #include "SHAMap.h"
 #include "Application.h"
 
-std::size_t hash_SMN::operator() (const SHAMapNode& mn) const
+std::size_t hash_value(const SHAMapNode& mn)
 {
 	return mn.getDepth()
 		^ *reinterpret_cast<const std::size_t *>(mn.getNodeID().begin())
 		^ *reinterpret_cast<const std::size_t *>(theApp->getNonce256().begin());
 }
 
-std::size_t hash_SMN::operator() (const uint256& u) const
+std::size_t hash_value(const uint256& u)
 {
 	return *reinterpret_cast<const std::size_t *>(u.begin())
 		^ *reinterpret_cast<const std::size_t *>(theApp->getNonce256().begin());
@@ -671,7 +671,7 @@ void SHAMap::dump(bool hash)
 
 	std::cerr << " MAP Contains" << std::endl;
 	boost::recursive_mutex::scoped_lock sl(mLock);
-	for(boost::unordered_map<SHAMapNode, SHAMapTreeNode::pointer, hash_SMN>::iterator it = mTNByID.begin();
+	for(boost::unordered_map<SHAMapNode, SHAMapTreeNode::pointer>::iterator it = mTNByID.begin();
 			it != mTNByID.end(); ++it)
 	{
 		std::cerr << it->second->getString() << std::endl;
