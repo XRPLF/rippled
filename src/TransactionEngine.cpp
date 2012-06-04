@@ -227,7 +227,8 @@ TransactionEngineResult TransactionEngine::dirDelete(
 	}
 }
 
-TransactionEngineResult	TransactionEngine::setAuthorized(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts, bool bSet)
+// Set the authorized public ket for an account.  May also set the generator map.
+TransactionEngineResult	TransactionEngine::setAuthorized(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts, bool bMustSetGenerator)
 {
 	//
 	// Verify that submitter knows the private key for the generator.
@@ -253,6 +254,7 @@ TransactionEngineResult	TransactionEngine::setAuthorized(const SerializedTransac
 	SLE::pointer		sleGen			= mLedger->getGenerator(qry, hGeneratorID);
 	if (!sleGen)
 	{
+		std::cerr << "createGenerator: creating generator" << std::endl;
 		// Create the generator.
 						sleGen			= boost::make_shared<SerializedLedgerEntry>(ltGENERATOR_MAP);
 
@@ -262,7 +264,7 @@ TransactionEngineResult	TransactionEngine::setAuthorized(const SerializedTransac
 
 		accounts.push_back(std::make_pair(taaCREATE, sleGen));
 	}
-	else if (!bSet)
+	else if (bMustSetGenerator)
 	{
 		// Doing a claim.  Must set generator.
 		// Generator is already in use.  Regular passphrases limited to one wallet.
@@ -274,9 +276,9 @@ TransactionEngineResult	TransactionEngine::setAuthorized(const SerializedTransac
 	// Set the public key needed to use the account.
 	SLE::pointer		sleDst			= accounts[0].second;
 
-	uint160				uAuthKeyID		= bSet
-											? hGeneratorID
-											: txn.getITFieldAccount(sfAuthorizedKey);
+	uint160				uAuthKeyID		= bMustSetGenerator
+											? hGeneratorID								// Claim
+											: txn.getITFieldAccount(sfAuthorizedKey);	// PasswordSet
 
 	sleDst->setIFieldAccount(sfAuthorizedKey, uAuthKeyID);
 
@@ -600,16 +602,22 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 		{
 			if (it->first == taaCREATE)
 			{
+				std::cerr << "applyTransaction: taaCREATE: " << it->second->getText() << std::endl;
+
 				if (mLedger->writeBack(lepCREATE, it->second) & lepERROR)
 					assert(false);
 			}
 			else if (it->first == taaMODIFY)
 			{
+				std::cerr << "applyTransaction: taaMODIFY: " << it->second->getText() << std::endl;
+
 				if (mLedger->writeBack(lepNONE, it->second) & lepERROR)
 					assert(false);
 			}
 			else if (it->first == taaDELETE)
 			{
+				std::cerr << "applyTransaction: taaDELETE: " << it->second->getText() << std::endl;
+
 				if (!mLedger->peekAccountStateMap()->delItem(it->second->getIndex()))
 					assert(false);
 			}
@@ -808,6 +816,7 @@ TransactionEngineResult TransactionEngine::doCreditSet(const SerializedTransacti
 TransactionEngineResult TransactionEngine::doPasswordFund(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts, const uint160& uSrcAccountID)
 {
 	std::cerr << "doPasswordFund>" << std::endl;
+
 	uint160				uDstAccountID	= txn.getITFieldAccount(sfDestination);
 	LedgerStateParms	qry				= lepNONE;
 	SLE::pointer		sleDst			= mLedger->getAccountRoot(qry, uDstAccountID);
@@ -819,14 +828,18 @@ TransactionEngineResult TransactionEngine::doPasswordFund(const SerializedTransa
 		return terSET_MISSING_DST;
 	}
 
-	bool	bSpent	= !!(sleDst->getFlags() & lsfPasswordSpent);
-	if (bSpent)
+	if (sleDst->getFlags() & lsfPasswordSpent)
 	{
 		sleDst->clearFlag(lsfPasswordSpent);
 
-		if (uSrcAccountID != uDstAccountID)
+		std::cerr << "doPasswordFund: Clearing spent." << sleDst->getFlags() << std::endl;
+
+		if (uSrcAccountID != uDstAccountID) {
+			std::cerr << "doPasswordFund: Destination modified." << std::endl;
 			accounts.push_back(std::make_pair(taaMODIFY, sleDst));
+		}
 	}
+
 	std::cerr << "doPasswordFund<" << std::endl;
 
 	return terSUCCESS;
@@ -835,6 +848,17 @@ TransactionEngineResult TransactionEngine::doPasswordFund(const SerializedTransa
 TransactionEngineResult TransactionEngine::doPasswordSet(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts)
 {
 	std::cerr << "doPasswordSet>" << std::endl;
+
+	SLE::pointer		sleSrc			= accounts[0].second;
+
+	if (sleSrc->getFlags() & lsfPasswordSpent)
+	{
+		std::cerr << "doPasswordSet: Delay transaction: Funds already spent." << std::endl;
+
+		return terFUNDS_SPENT;
+	}
+
+	sleSrc->setFlag(lsfPasswordSpent);
 
 	TransactionEngineResult	result	= setAuthorized(txn, accounts, false);
 

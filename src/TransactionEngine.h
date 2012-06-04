@@ -59,6 +59,7 @@ enum TransactionEngineResult
 	terUNFUNDED,			// Source account had insufficient balance for transaction.
 	terNO_LINE_NO_ZERO,		// Can't zero non-existant line, destination might make it.
 	terSET_MISSING_DST,		// Can't set password, destination missing.
+	terFUNDS_SPENT,			// Can't set password, password set funds already spent.
 };
 
 enum TransactionEngineParams
@@ -94,7 +95,7 @@ private:
 		const uint256&					uBase,			// Key of item.
 		const uint256&					uLedgerIndex);	// Item being deleted
 
-	TransactionEngineResult	setAuthorized(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts, bool bSet);
+	TransactionEngineResult	setAuthorized(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts, bool bMustSetGenerator);
 
 protected:
 	Ledger::pointer mLedger;
