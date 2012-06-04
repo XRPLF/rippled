@@ -41,7 +41,7 @@ Ledger::Ledger(const uint256 &parentHash, const uint256 &transHash, const uint25
 		mTotCoins(totCoins), mCloseTime(timeStamp), mLedgerSeq(ledgerSeq), mLedgerInterval(LEDGER_INTERVAL),
 		mClosed(false), mValidHash(false), mAccepted(false), mImmutable(false)
 {
-	assert(!!mParentHash);
+	assert(mParentHash.isNonZero());
 	updateHash();
 }
 
@@ -62,7 +62,7 @@ Ledger::Ledger(bool, Ledger& prevLedger) : mTotCoins(prevLedger.mTotCoins),
 { // Create a new ledger that follows this one
 	prevLedger.updateHash();
 	mParentHash = prevLedger.getHash();
-	assert(!!mParentHash);
+	assert(mParentHash.isNonZero());
 	mCloseTime = prevLedger.getNextLedgerClose();
 }
 
@@ -171,7 +171,7 @@ RippleState::pointer Ledger::getRippleState(const uint256& uNode)
 bool Ledger::addTransaction(Transaction::pointer trans)
 { // low-level - just add to table
 	assert(!mAccepted);
-	assert(!!trans->getID());
+	assert(trans->getID().isNonZero());
 	Serializer s;
 	trans->getSTransaction()->add(s);
 	SHAMapItem::pointer item = boost::make_shared<SHAMapItem>(trans->getID(), s.peekData());

@@ -49,8 +49,8 @@ uint256 Ledger::getGeneratorIndex(const uint160& uGeneratorID)
 uint160 Ledger::getOfferBase(const uint160& currencyIn, const uint160& accountIn,
 	const uint160& currencyOut, const uint160& accountOut)
 {
-	bool inNative = !!currencyIn;
-	bool outNative = !!currencyOut;
+	bool inNative = currencyIn.isZero();
+	bool outNative = currencyOut.isZero();
 
 	if (inNative && outNative)
 		throw std::runtime_error("native to native offer");

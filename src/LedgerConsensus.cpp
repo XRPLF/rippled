@@ -420,7 +420,7 @@ SHAMap::pointer LedgerConsensus::getTransactionTree(const uint256& hash, bool do
 {
 	boost::unordered_map<uint256, SHAMap::pointer>::iterator it = mComplete.find(hash);
 	if (it == mComplete.end())
-	{ // we have not completed acuiqiring this ledger
+	{ // we have not completed acquiring this ledger
 		if (doAcquire)
 		{
 			TransactionAcquire::pointer& acquiring = mAcquiring[hash];
