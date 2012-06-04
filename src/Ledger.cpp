@@ -41,18 +41,29 @@ Ledger::Ledger(const uint256 &parentHash, const uint256 &transHash, const uint25
 		mTotCoins(totCoins), mCloseTime(timeStamp), mLedgerSeq(ledgerSeq), mLedgerInterval(LEDGER_INTERVAL),
 		mClosed(false), mValidHash(false), mAccepted(false), mImmutable(false)
 {
+	assert(!!mParentHash);
 	updateHash();
 }
 
-Ledger::Ledger(Ledger::pointer prevLedger) : mTotCoins(prevLedger->mTotCoins),
-	mLedgerSeq(prevLedger->mLedgerSeq + 1), mLedgerInterval(prevLedger->mLedgerInterval),
+Ledger::Ledger(Ledger& ledger, bool isMutable) : mTotCoins(ledger.mTotCoins),
+	mLedgerSeq(ledger.mLedgerSeq), mLedgerInterval(ledger.mLedgerInterval),
+	mClosed(ledger.mClosed), mValidHash(false), mAccepted(ledger.mAccepted), mImmutable(!isMutable),
+	mTransactionMap(ledger.mTransactionMap->snapShot(isMutable)),
+	mAccountStateMap(ledger.mAccountStateMap->snapShot(isMutable))
+{ // Create a new ledger that's a snapshot of this one
+	updateHash();
+}
+
+
+Ledger::Ledger(bool, Ledger& prevLedger) : mTotCoins(prevLedger.mTotCoins),
+	mLedgerSeq(prevLedger.mLedgerSeq + 1), mLedgerInterval(prevLedger.mLedgerInterval),
 	mClosed(false), mValidHash(false), mAccepted(false), mImmutable(false),
-	mTransactionMap(new SHAMap()), mAccountStateMap(prevLedger->mAccountStateMap)
-{
-	prevLedger->updateHash();
-	mParentHash = prevLedger->getHash();
-	mAccountStateMap->setSeq(mLedgerSeq);
-	mCloseTime = prevLedger->getNextLedgerClose();
+	mTransactionMap(new SHAMap()), mAccountStateMap(prevLedger.mAccountStateMap->snapShot(true))
+{ // Create a new ledger that follows this one
+	prevLedger.updateHash();
+	mParentHash = prevLedger.getHash();
+	assert(!!mParentHash);
+	mCloseTime = prevLedger.getNextLedgerClose();
 }
 
 Ledger::Ledger(const std::vector<unsigned char>& rawLedger) : mCloseTime(0),
@@ -311,81 +322,6 @@ void Ledger::addJson(Json::Value& ret)
 	if (mCloseTime != 0)
 		ledger["CloseTime"] = boost::posix_time::to_simple_string(ptFromSeconds(mCloseTime));
 	ret[boost::lexical_cast<std::string>(mLedgerSeq)] = ledger;
-}
-
-Ledger::pointer Ledger::switchPreviousLedger(Ledger::pointer oldPrevious, Ledger::pointer newPrevious, int limit)
-{
-	// Build a new ledger that can replace this ledger as the active ledger,
-	// with a different previous ledger. We assume our ledger is trusted, as is its
-	// previous ledger. We make no assumptions about the new previous ledger.
-
-	int count;
-
-	// 1) Validate sequences and make sure the specified ledger is a valid prior ledger
-	if (newPrevious->getLedgerSeq() != oldPrevious->getLedgerSeq()) return Ledger::pointer();
-
-	// 2) Begin building a new ledger with the specified ledger as previous.
-	Ledger::pointer newLedger = boost::make_shared<Ledger>(newPrevious);
-
-	// 3) For any transactions in our previous ledger but not in the new previous ledger, add them to the set
-	SHAMap::SHAMapDiff mapDifferences;
-	std::map<uint256, std::pair<Transaction::pointer, Transaction::pointer> > TxnDiff;
-	if (!newPrevious->mTransactionMap->compare(oldPrevious->mTransactionMap, mapDifferences, limit))
-		return Ledger::pointer();
-	if (!Transaction::convertToTransactions(oldPrevious->getLedgerSeq(), newPrevious->getLedgerSeq(),
-			false, true, mapDifferences, TxnDiff))
-		return Ledger::pointer(); // new previous ledger contains invalid transactions
-
-	// 4) Try to add those transactions to the new ledger.
-#if 0
-	do
-	{
-		count = 0;
-		std::map<uint256, std::pair<Transaction::pointer, Transaction::pointer> >::iterator it = TxnDiff.begin();
-		while (it != TxnDiff.end())
-		{
-			Transaction::pointer& tx = it->second.second;
-			if (!tx || newLedger->addTransaction(tx)) // FIXME: addTransaction doesn't do checks
-			{
-				++count;
-				TxnDiff.erase(it++);
-			}
-			else ++it;
-		}
-	} while (count != 0);
-#endif
-	// WRITEME: Handle rejected transactions left in TxnDiff
-
-	// 5) Try to add transactions from this ledger to the new ledger.
-	std::map<uint256, Transaction::pointer> txnMap;
-	for (SHAMapItem::pointer mit = peekTransactionMap()->peekFirstItem();
-			!!mit; mit = peekTransactionMap()->peekNextItem(mit->getTag()))
-	{
-		uint256 txnID = mit->getTag();
-		Transaction::pointer tx = theApp->getMasterTransaction().fetch(txnID, false);
-		if(!tx) tx = Transaction::sharedTransaction(mit->peekData(), false);
-		txnMap.insert(std::make_pair(txnID, tx));
-	}
-
-	do
-	{
-		count = 0;
-		std::map<uint256, Transaction::pointer>::iterator it = txnMap.begin();
-		while (it != txnMap.end())
-		{
-			if (newLedger->addTransaction(it->second)) // FIXME: addTransaction doesn't do checks
-			{
-				++count;
-				txnMap.erase(it++);
-			}
-			else ++it;
-		}
-	} while(count != 0);
-
-
-	// WRITEME: Handle rejected transactions left in txnMap
-
-	return Ledger::pointer(newLedger);
 }
 
 void Ledger::setAcquiring(void)
