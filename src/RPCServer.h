@@ -56,6 +56,8 @@ private:
 	Json::Value doConnect(Json::Value& params);
 	Json::Value doCreditSet(Json::Value& params);
 	Json::Value doLedger(Json::Value& params);
+	Json::Value doPasswordFund(Json::Value& params);
+	Json::Value doPasswordSet(Json::Value& params);
 	Json::Value doPeers(Json::Value& params);
 	Json::Value doSend(Json::Value& params);
 	Json::Value doSessionClose(Json::Value& params);

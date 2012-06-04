@@ -727,12 +727,6 @@ Json::Value RPCServer::doConnect(Json::Value& params)
 	return "connecting";
 }
 
-Json::Value RPCServer::doPeers(Json::Value& params)
-{
-	// peers
-	return theApp->getConnectionPool().getPeersJson();
-}
-
 // credit_set <seed> <paying_account> <destination_account> <limit_amount> [<currency>] [<accept_rate>]
 Json::Value RPCServer::doCreditSet(Json::Value& params)
 {
@@ -809,6 +803,177 @@ Json::Value RPCServer::doCreditSet(Json::Value& params)
 			return obj;
 		}
 	}
+}
+
+//  password_fund <seed> <paying_account> [<account>]
+Json::Value RPCServer::doPasswordFund(Json::Value &params)
+{
+	NewcoinAddress	naSrcAccountID;
+	NewcoinAddress	naDstAccountID;
+	NewcoinAddress	naSeed;
+	uint256			uLedger;
+
+	if (params.size() < 2 || params.size() > 3)
+	{
+		return "invalid params";
+	}
+	else if (!naSeed.setFamilySeedGeneric(params[0u].asString()))
+	{
+		return "disallowed seed";
+	}
+	else if (!naSrcAccountID.setAccountID(params[1u].asString()))
+	{
+		return "bad source account id needed";
+	}
+	else if (!naDstAccountID.setAccountID(params[params.size() == 3 ? 2u : 0u].asString()))
+	{
+		return "bad destination account id needed";
+	}
+	else if (!mNetOps->available())
+	{
+		return JSONRPCError(503, "network not available");
+	}
+	else if ((uLedger = mNetOps->getClosedLedger()).isZero())
+	{
+		return JSONRPCError(503, "no closed ledger");
+	}
+
+	NewcoinAddress			naMasterGenerator;
+	NewcoinAddress			naAccountPublic;
+	NewcoinAddress			naAccountPrivate;
+	AccountState::pointer	asSrc;
+	Json::Value				obj				= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate, asSrc, naMasterGenerator);
+
+	STAmount				saSrcBalance	= asSrc->getBalance();
+
+	if (!obj.empty())
+	{
+		return obj;
+	}
+	else if (saSrcBalance < theConfig.FEE_DEFAULT)
+	{
+		return JSONRPCError(500, "insufficent funds");
+	}
+
+	// YYY Could verify dst exists and isn't already funded.
+
+	Transaction::pointer	trans	= Transaction::sharedPasswordFund(
+		naAccountPublic, naAccountPrivate,
+		naSrcAccountID,
+		asSrc->getSeq(),
+		theConfig.FEE_DEFAULT,
+		0,											// YYY No source tag
+		naDstAccountID);
+
+	(void) mNetOps->processTransaction(trans);
+
+	obj["transaction"]	= trans->getSTransaction()->getJson(0);
+	obj["status"]		= trans->getStatus();
+
+	return obj;
+}
+
+// password_set <master_seed> <regular_seed> [<account>]
+Json::Value RPCServer::doPasswordSet(Json::Value& params)
+{
+	NewcoinAddress	naMasterSeed;
+	NewcoinAddress	naRegularSeed;
+	NewcoinAddress	naAccountID;
+
+	if (params.size() < 2 || params.size() > 3)
+	{
+		return "invalid params";
+	}
+	else if (!naMasterSeed.setFamilySeedGeneric(params[0u].asString()))
+	{
+		// Should also not allow account id's as seeds.
+		return "master seed expected";
+	}
+	else if (!naRegularSeed.setFamilySeedGeneric(params[1u].asString()))
+	{
+		// Should also not allow account id's as seeds.
+		return "regular seed expected";
+	}
+	// YYY Might use account from string to be more flexible.
+	else if (params.size() >= 3 && !naAccountID.setAccountID(params[2u].asString()))
+	{
+		return "bad account";
+	}
+	else
+	{
+		NewcoinAddress	naMasterGenerator;
+		NewcoinAddress	naRegularGenerator;
+		NewcoinAddress	naRegular0Public;
+		NewcoinAddress	naRegular0Private;
+
+		NewcoinAddress	naAccountPublic;
+		NewcoinAddress	naAccountPrivate;
+
+		naMasterGenerator.setFamilyGenerator(naMasterSeed);
+		naAccountPublic.setAccountPublic(naMasterGenerator, 0);
+		naAccountPrivate.setAccountPrivate(naMasterGenerator, naMasterSeed, 0);
+
+		naRegularGenerator.setFamilyGenerator(naRegularSeed);
+
+		naRegular0Public.setAccountPublic(naRegularGenerator, 0);
+		naRegular0Private.setAccountPrivate(naRegularGenerator, naRegularSeed, 0);
+
+		// Hash of regular account #0 public key.
+		uint160						uGeneratorID		= naRegular0Public.getAccountID();
+		std::vector<unsigned char>	vucGeneratorCipher	= naRegular0Private.accountPrivateEncrypt(naRegular0Public, naMasterGenerator.getFamilyGenerator());
+		std::vector<unsigned char>	vucGeneratorSig;
+
+		// Prove that we have the corrisponding private key to the generator id.  So, we can get the generator id.
+		// XXX Check result.
+		naRegular0Private.accountPrivateSign(Serializer::getSHA512Half(vucGeneratorCipher), vucGeneratorSig);
+
+		NewcoinAddress		naRegularXPublic;
+		uint				iIndex	= -1;	// Compensate for initial increment.
+		int					iMax	= theConfig.ACCOUNT_PROBE_MAX;
+
+		// YYY Could probe peridoically to see if accounts exists.
+		// YYY Max could be set randomly.
+		// Don't look at ledger entries to determine if the account exists.  Don't want to leak to thin server that these accounts are
+		// related.
+		do {
+			++iIndex;
+			naRegularXPublic.setAccountPublic(naRegularGenerator, iIndex);
+		} while (naAccountID.getAccountID() != naRegularXPublic.getAccountID() && --iMax);
+
+		if (!iMax)
+		{
+			return "account not found";
+		}
+
+		Transaction::pointer	trns	= Transaction::sharedPasswordSet(
+			naAccountPublic, naAccountPrivate,
+			0,
+			naRegularXPublic,
+			vucGeneratorCipher,
+			naRegular0Public.getAccountPublic(),
+			vucGeneratorSig);
+
+		(void) mNetOps->processTransaction(trns);
+
+		Json::Value obj(Json::objectValue);
+
+		// We "echo" the seeds so they can be checked.
+		obj["master_seed"]		= naMasterSeed.humanFamilySeed();
+		obj["master_key"]		= naMasterSeed.humanFamilySeed1751();
+		obj["regular_seed"]		= naRegularSeed.humanFamilySeed();
+		obj["regular_key"]		= naRegularSeed.humanFamilySeed1751();
+
+		obj["transaction"]		= trns->getSTransaction()->getJson(0);
+		obj["status"]			= trns->getStatus();
+
+		return obj;
+	}
+}
+
+Json::Value RPCServer::doPeers(Json::Value& params)
+{
+	// peers
+	return theApp->getConnectionPool().getPeersJson();
 }
 
 // send regular_seed paying_account account_id amount [currency] [send_max] [send_currency]
@@ -1379,13 +1544,12 @@ Json::Value RPCServer::doWalletClaim(Json::Value& params)
 		std::vector<unsigned char>	vucGeneratorCipher	= naRegular0Private.accountPrivateEncrypt(naRegular0Public, naMasterGenerator.getFamilyGenerator());
 		std::vector<unsigned char>	vucGeneratorSig;
 
-		// XXX Check result.
 		// Prove that we have the corrisponding private key to the generator id.  So, we can get the generator id.
+		// XXX Check result.
 		naRegular0Private.accountPrivateSign(Serializer::getSHA512Half(vucGeneratorCipher), vucGeneratorSig);
 
 		Transaction::pointer	trns	= Transaction::sharedClaim(
 			naAccountPublic, naAccountPrivate,
-			naAccountPublic,
 			uSourceTag,
 			vucGeneratorCipher,
 			naRegular0Public.getAccountPublic(),
@@ -1700,6 +1864,8 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 	if (command == "account_wallet_set")	return doAccountWalletSet(params);
 	if (command == "connect")				return doConnect(params);
 	if (command == "credit_set")			return doCreditSet(params);
+	if (command == "password_fund")			return doPasswordFund(params);
+	if (command == "password_set")			return doPasswordSet(params);
 	if (command == "peers")					return doPeers(params);
 	if (command == "send")					return doSend(params);
 	if (command == "stop")					return doStop(params);
