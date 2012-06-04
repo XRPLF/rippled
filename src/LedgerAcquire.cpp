@@ -67,7 +67,7 @@ void PeerSet::TimerEntry(boost::weak_ptr<PeerSet> wptr, const boost::system::err
 }
 
 LedgerAcquire::LedgerAcquire(const uint256& hash) : PeerSet(hash, LEDGER_ACQUIRE_TIMEOUT), 
-	mHaveBase(false), mHaveState(false), mHaveTransactions(false)
+	mFilter(&theApp->getNodeCache()), mHaveBase(false), mHaveState(false), mHaveTransactions(false)
 {
 #ifdef DEBUG
 	std::cerr << "Acquiring ledger " << mHash.GetHex() << std::endl;
@@ -152,7 +152,7 @@ void LedgerAcquire::trigger(Peer::pointer peer)
 		{
 			std::vector<SHAMapNode> nodeIDs;
 			std::vector<uint256> nodeHashes;
-			mLedger->peekTransactionMap()->getMissingNodes(nodeIDs, nodeHashes, 128);
+			mLedger->peekTransactionMap()->getMissingNodes(nodeIDs, nodeHashes, 128, &mFilter);
 			if (nodeIDs.empty())
 			{
 				if (!mLedger->peekTransactionMap()->isValid()) mFailed = true;
@@ -204,7 +204,7 @@ void LedgerAcquire::trigger(Peer::pointer peer)
 		{
 			std::vector<SHAMapNode> nodeIDs;
 			std::vector<uint256> nodeHashes;
-			mLedger->peekAccountStateMap()->getMissingNodes(nodeIDs, nodeHashes, 128);
+			mLedger->peekAccountStateMap()->getMissingNodes(nodeIDs, nodeHashes, 128, &mFilter);
 			if (nodeIDs.empty())
 			{
  				if (!mLedger->peekAccountStateMap()->isValid()) mFailed = true;
@@ -303,7 +303,7 @@ bool LedgerAcquire::takeTxNode(const std::list<SHAMapNode>& nodeIDs,
 			if (!mLedger->peekTransactionMap()->addRootNode(mLedger->getTransHash(), *nodeDatait))
 				return false;
 		}
-		else if (!mLedger->peekTransactionMap()->addKnownNode(*nodeIDit, *nodeDatait))
+		else if (!mLedger->peekTransactionMap()->addKnownNode(*nodeIDit, *nodeDatait, &mFilter))
 			return false;
 		++nodeIDit;
 		++nodeDatait;
@@ -333,7 +333,7 @@ bool LedgerAcquire::takeAsNode(const std::list<SHAMapNode>& nodeIDs,
 			if (!mLedger->peekAccountStateMap()->addRootNode(mLedger->getAccountHash(), *nodeDatait))
 				return false;
 		}
-		else if (!mLedger->peekAccountStateMap()->addKnownNode(*nodeIDit, *nodeDatait))
+		else if (!mLedger->peekAccountStateMap()->addKnownNode(*nodeIDit, *nodeDatait, &mFilter))
 			return false;
 		++nodeIDit;
 		++nodeDatait;

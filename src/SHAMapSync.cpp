@@ -11,19 +11,20 @@
 
 #include "Log.h"
 
-void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint256>& hashes, int max)
+void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint256>& hashes, int max,
+	SHAMapSyncFilter* filter)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
 	assert(root->isValid());
 	
-	if(root->isFullBelow())
+	if (root->isFullBelow())
 	{
 		clearSynching();
 		return;
 	}
 
-	if(!root->isInner())
+	if (!root->isInner())
 	{
 		Log(lsWARNING) << "synching empty tree";
 		return;
@@ -43,7 +44,27 @@ void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint2
 			int branch = (base + ii) % 16;
 			if (!node->isEmptyBranch(branch))
 			{
-				SHAMapTreeNode::pointer d = getNode(node->getChildNodeID(branch), node->getChildHash(branch), false);
+				SHAMapNode childID = node->getChildNodeID(branch);
+				const uint256& childHash = node->getChildHash(branch);
+				SHAMapTreeNode::pointer d = getNode(childID, childHash, false);
+				if ((!d) && (filter != NULL))
+				{
+					std::vector<unsigned char> nodeData;
+					if (filter->haveNode(childID, childHash, nodeData))
+					{
+						d = boost::make_shared<SHAMapTreeNode>(childID, nodeData, mSeq);
+						if (childHash != d->getNodeHash())
+						{
+							Log(lsERROR) << "Wrong hash from cached object";
+							d = SHAMapTreeNode::pointer();
+						}
+						else
+						{
+							Log(lsTRACE) << "Got sync node from cache";
+							mTNByID[*d] = d;
+						}
+					}
+				}
 				if (!d)
 				{
 					nodeIDs.push_back(node->getChildNodeID(branch));
@@ -58,14 +79,14 @@ void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint2
 }
 
 bool SHAMap::getNodeFat(const SHAMapNode& wanted, std::vector<SHAMapNode>& nodeIDs,
-	std::list<std::vector<unsigned char> >& rawNodes)
+	std::list<std::vector<unsigned char> >& rawNodes, bool fatLeaves)
 { // Gets a node and some of its children
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
 	SHAMapTreeNode::pointer node = getNode(wanted);
 	if (!node)
 	{
-		assert(false); // Remove for release, this can happen if we get a bogus request
+		assert(false); // FIXME Remove for release, this can happen if we get a bogus request
 		return false;
 	}
 
@@ -82,7 +103,7 @@ bool SHAMap::getNodeFat(const SHAMapNode& wanted, std::vector<SHAMapNode>& nodeI
 		{
 			SHAMapTreeNode::pointer nextNode = getNode(node->getChildNodeID(i), node->getChildHash(i), false);
 			assert(nextNode);
-			if(nextNode)
+			if (nextNode && (fatLeaves || !nextNode->isLeaf()))
 			{
 				nodeIDs.push_back(*nextNode);
 				Serializer s;
@@ -153,7 +174,8 @@ bool SHAMap::addRootNode(const uint256& hash, const std::vector<unsigned char>& 
 	return true;
 }
 
-bool SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigned char>& rawNode)
+bool SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigned char>& rawNode,
+	SHAMapSyncFilter* filter)
 { // return value: true=okay, false=error
 	assert(!node.isRoot());
 	if (!isSynching()) return false;
@@ -199,6 +221,8 @@ bool SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigned cha
 	if (hash != newNode->getNodeHash()) // these aren't the droids we're looking for
 		return false;
 
+	if (filter) filter->gotNode(node, hash, rawNode, newNode->isLeaf());
+
 	mTNByID[*newNode] = newNode;
 	if (!newNode->isLeaf())
 		return true; // only a leaf can fill a branch
@@ -209,7 +233,7 @@ bool SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigned cha
 		iNode = stack.top();
 		stack.pop();
 		assert(iNode->isInner());
-		for(int i = 0; i < 16; ++i)
+		for (int i = 0; i < 16; ++i)
 			if (!iNode->isEmptyBranch(i))
 			{
 				SHAMapTreeNode::pointer nextNode = getNode(iNode->getChildNodeID(i), iNode->getChildHash(i), false);
@@ -234,7 +258,7 @@ bool SHAMap::deepCompare(SHAMap& other)
 		stack.pop();
 
 		SHAMapTreeNode::pointer otherNode;
-		if(node->isRoot()) otherNode = other.root;
+		if (node->isRoot()) otherNode = other.root;
 		else otherNode = other.getNode(*node, node->getNodeHash(), false);
 
 		if (!otherNode)
@@ -262,11 +286,11 @@ bool SHAMap::deepCompare(SHAMap& other)
 		{
 			if (!otherNode->isInner())
 				return false;
-			for(int i=0; i<16; i++)
+			for (int i = 0; i < 16; ++i)
 			{
-				if(node->isEmptyBranch(i))
+				if (node->isEmptyBranch(i))
 				{
-					if(!otherNode->isEmptyBranch(i)) return false;
+					if (!otherNode->isEmptyBranch(i)) return false;
 				}
 				else
 				{
@@ -290,9 +314,9 @@ bool SHAMap::deepCompare(SHAMap& other)
 
 static SHAMapItem::pointer makeRandomAS()
 {
-		Serializer s;
-		for(int d = 0; d < 3; ++d) s.add32(rand());
-		return boost::make_shared<SHAMapItem>(s.getRIPEMD160().to256(), s.peekData());
+	Serializer s;
+	for (int d = 0; d < 3; ++d) s.add32(rand());
+	return boost::make_shared<SHAMapItem>(s.getRIPEMD160().to256(), s.peekData());
 }
 
 static bool confuseMap(SHAMap &map, int count)
@@ -362,32 +386,31 @@ BOOST_AUTO_TEST_CASE( SHAMapSync_test )
 
 	SHAMap source, destination;
 
-
 	// add random data to the source map
 	int items = 10000;
 	for (int i = 0; i < items; ++i)
 		source.addItem(*makeRandomAS(), false);
 
 	Log(lsTRACE) << "Adding items, then removing them";
-	if(!confuseMap(source, 500)) BOOST_FAIL("ConfuseMap");
+	if (!confuseMap(source, 500)) BOOST_FAIL("ConfuseMap");
 
 	source.setImmutable();
 
 	Log(lsTRACE) << "SOURCE COMPLETE, SYNCHING";
 
 	std::vector<SHAMapNode> nodeIDs, gotNodeIDs;
-	std::list<std::vector<unsigned char> > gotNodes;
+	std::list< std::vector<unsigned char> > gotNodes;
 	std::vector<uint256> hashes;
 
 	std::vector<SHAMapNode>::iterator nodeIDIterator;
-	std::list<std::vector<unsigned char> >::iterator rawNodeIterator;
+	std::list< std::vector<unsigned char> >::iterator rawNodeIterator;
 
 	int passes = 0;
 	int nodes = 0;
 
 	destination.setSynching();
 
-	if (!source.getNodeFat(SHAMapNode(), nodeIDs, gotNodes))
+	if (!source.getNodeFat(SHAMapNode(), nodeIDs, gotNodes, (rand() % 2) == 0))
 	{
 		Log(lsFATAL) << "GetNodeFat(root) fails";
 		BOOST_FAIL("GetNodeFat");
@@ -416,14 +439,14 @@ BOOST_AUTO_TEST_CASE( SHAMapSync_test )
 		hashes.clear();
 
 		// get the list of nodes we know we need
-		destination.getMissingNodes(nodeIDs, hashes, 2048);
-		if(nodeIDs.empty()) break;
+		destination.getMissingNodes(nodeIDs, hashes, 2048, NULL);
+		if (nodeIDs.empty()) break;
 
 		Log(lsINFO) << nodeIDs.size() << " needed nodes";
 		
 		// get as many nodes as possible based on this information
 		for (nodeIDIterator = nodeIDs.begin(); nodeIDIterator != nodeIDs.end(); ++nodeIDIterator)
-			if (!source.getNodeFat(*nodeIDIterator, gotNodeIDs, gotNodes))
+			if (!source.getNodeFat(*nodeIDIterator, gotNodeIDs, gotNodes, (rand() % 2) == 0))
 			{
 				Log(lsFATAL) << "GetNodeFat fails";
 				BOOST_FAIL("GetNodeFat");
@@ -446,7 +469,7 @@ BOOST_AUTO_TEST_CASE( SHAMapSync_test )
 #ifdef SMS_DEBUG
 			bytes += rawNodeIterator->size();
 #endif
-			if (!destination.addKnownNode(*nodeIDIterator, *rawNodeIterator))
+			if (!destination.addKnownNode(*nodeIDIterator, *rawNodeIterator, NULL))
 			{
 				Log(lsTRACE) << "AddKnownNode fails";
 				BOOST_FAIL("AddKnownNode");
