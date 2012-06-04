@@ -174,15 +174,15 @@ bool RPCServer::extractString(std::string& param, const Json::Value& params, int
 }
 
 // Get the generator for a regular seed so we may index source accounts from the master public generator.
-Json::Value RPCServer::getGenerator(const uint256& uLedger, const NewcoinAddress& naSeed, NewcoinAddress& naMasterGenerator)
+Json::Value RPCServer::getMasterGenerator(const uint256& uLedger, const NewcoinAddress& naRegularSeed, NewcoinAddress& naMasterGenerator)
 {
 	NewcoinAddress		naGenerator;
-	NewcoinAddress		na0Public;		// To find the generator index.
+	NewcoinAddress		na0Public;		// To find the generator's index.
 	NewcoinAddress		na0Private;		// To decrypt the master generator's cipher.
 
-	naGenerator.setFamilyGenerator(naSeed);
+	naGenerator.setFamilyGenerator(naRegularSeed);
 	na0Public.setAccountPublic(naGenerator, 0);
-	na0Private.setAccountPrivate(naGenerator, naSeed, 0);
+	na0Private.setAccountPrivate(naGenerator, naRegularSeed, 0);
 
 	SLE::pointer		sleGen			= mNetOps->getGenerator(uLedger, na0Public.getAccountID());
 
@@ -205,18 +205,25 @@ Json::Value RPCServer::getGenerator(const uint256& uLedger, const NewcoinAddress
 }
 
 // Given a seed and a source account get the public and private key for authorizing transactions for the account.
+// --> naRegularSeed : To find the generator
+// --> naSrcAccountID : Account we want the public and private regular keys to.
+// --> naVerifyGenerator : If provided, the found master public generator must match.
+// <-- naAccountPublic : Regular public key for naSrcAccountID
+// <-- naAccountPrivate : Regular private key for naSrcAccountID
 Json::Value RPCServer::authorize(const uint256& uLedger,
-	const NewcoinAddress& naSeed, const NewcoinAddress& naSrcAccountID,
+	const NewcoinAddress& naRegularSeed, const NewcoinAddress& naSrcAccountID,
 	NewcoinAddress& naAccountPublic, NewcoinAddress& naAccountPrivate,
 	AccountState::pointer& asSrc,
 	const NewcoinAddress& naVerifyGenerator)
 {
+	// Source/paying account must exist.
 	asSrc	= mNetOps->getAccountState(uLedger, naSrcAccountID);
 	if (!asSrc)
 	{
 		return JSONRPCError(500, "source account does not exist");
 	}
 
+	// Source must have been claimed.
 	if (!asSrc->bHaveAuthorizedKey())
 	{
 		return JSONRPCError(500, "source account has not been claimed");
@@ -224,11 +231,12 @@ Json::Value RPCServer::authorize(const uint256& uLedger,
 
 	NewcoinAddress	naMasterGenerator;
 
-	Json::Value	obj	= getGenerator(uLedger, naSeed, naMasterGenerator);
+	Json::Value	obj	= getMasterGenerator(uLedger, naRegularSeed, naMasterGenerator);
 
 	if (!obj.empty())
 		return obj;
 
+	// If naVerifyGenerator is provided, make sure it is the master generator.
 	if (naVerifyGenerator.isValid() && naMasterGenerator != naVerifyGenerator)
 	{
 		std::cerr << "naAccountPublic: wrong seed" << std::endl;
@@ -236,9 +244,7 @@ Json::Value RPCServer::authorize(const uint256& uLedger,
 		return JSONRPCError(500, "wrong seed");
 	}
 
-	//
 	// Find the index of the account from the master generator, so we can generate the public and private keys.
-	//
 	NewcoinAddress		naMasterAccountPublic;
 	uint				iIndex = -1;	// Compensate for initial increment.
 
@@ -253,9 +259,9 @@ Json::Value RPCServer::authorize(const uint256& uLedger,
 	// Use the regular generator to determine the associated public and private keys.
 	NewcoinAddress		naGenerator;
 
-	naGenerator.setFamilyGenerator(naSeed);
+	naGenerator.setFamilyGenerator(naRegularSeed);
 	naAccountPublic.setAccountPublic(naGenerator, iIndex);
-	naAccountPrivate.setAccountPrivate(naGenerator, naSeed, iIndex);
+	naAccountPrivate.setAccountPrivate(naGenerator, naRegularSeed, iIndex);
 
 	if (asSrc->getAuthorizedKey().getAccountID() != naAccountPublic.getAccountID())
 	{
@@ -805,7 +811,8 @@ Json::Value RPCServer::doCreditSet(Json::Value& params)
 	}
 }
 
-//  password_fund <seed> <paying_account> [<account>]
+// password_fund <seed> <paying_account> [<account>]
+// YYY Make making account default to first account for seed.
 Json::Value RPCServer::doPasswordFund(Json::Value &params)
 {
 	NewcoinAddress	naSrcAccountID;
@@ -825,7 +832,7 @@ Json::Value RPCServer::doPasswordFund(Json::Value &params)
 	{
 		return "bad source account id needed";
 	}
-	else if (!naDstAccountID.setAccountID(params[params.size() == 3 ? 2u : 0u].asString()))
+	else if (!naDstAccountID.setAccountID(params[params.size() == 3 ? 2u : 1u].asString()))
 	{
 		return "bad destination account id needed";
 	}
@@ -927,6 +934,7 @@ Json::Value RPCServer::doPasswordSet(Json::Value& params)
 		// XXX Check result.
 		naRegular0Private.accountPrivateSign(Serializer::getSHA512Half(vucGeneratorCipher), vucGeneratorSig);
 
+		NewcoinAddress		naMasterXPublic;
 		NewcoinAddress		naRegularXPublic;
 		uint				iIndex	= -1;	// Compensate for initial increment.
 		int					iMax	= theConfig.ACCOUNT_PROBE_MAX;
@@ -937,8 +945,12 @@ Json::Value RPCServer::doPasswordSet(Json::Value& params)
 		// related.
 		do {
 			++iIndex;
+			naMasterXPublic.setAccountPublic(naMasterGenerator, iIndex);
 			naRegularXPublic.setAccountPublic(naRegularGenerator, iIndex);
-		} while (naAccountID.getAccountID() != naRegularXPublic.getAccountID() && --iMax);
+
+			std::cerr << iIndex << ": " << naRegularXPublic.humanAccountID() << std::endl;
+
+		} while (naAccountID.getAccountID() != naMasterXPublic.getAccountID() && --iMax);
 
 		if (!iMax)
 		{
@@ -1348,7 +1360,7 @@ Json::Value RPCServer::doWalletAccounts(Json::Value& params)
 	if (jsonAccounts.empty())
 	{
 		// No account via seed as master, try seed a regular.
-		Json::Value	ret	= getGenerator(uLedger, naSeed, naMasterGenerator);
+		Json::Value	ret	= getMasterGenerator(uLedger, naSeed, naMasterGenerator);
 
 		if (!ret.empty())
 			return ret;
