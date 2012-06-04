@@ -32,8 +32,12 @@ enum LedgerNameSpace
 
 enum LedgerSpecificFlags
 {
-	lsfLowIndexed	= 0x00010000,
-	lsfHighIndexed	= 0x00020000,
+	// ltRIPPLE_STATE
+	lsfLowIndexed		= 0x00010000,
+	lsfHighIndexed		= 0x00020000,
+
+	// ltACCOUNT_ROOT
+	lsfPasswordSpent	= 0x00010000,	// True if password set fee is spent.
 };
 
 struct LedgerEntryFormat

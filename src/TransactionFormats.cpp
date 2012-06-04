@@ -55,6 +55,23 @@ TransactionFormat InnerTxnFormats[]=
 		{ S_FIELD(Extensions),		STI_TL,		 SOE_IFFLAG,   0x02000000 },
 		{ sfInvalid, NULL,			STI_DONE,	 SOE_NEVER,    -1 } }
 	},
+	{ "PasswordFund", ttPASSWORD_FUND, {
+		{ S_FIELD(Flags),			STI_UINT32,  SOE_FLAGS,    0 },
+		{ S_FIELD(Destination),		STI_ACCOUNT, SOE_REQUIRED, 0 },
+		{ S_FIELD(SourceTag),		STI_UINT32,  SOE_IFFLAG,   1 },
+		{ S_FIELD(Extensions),		STI_TL,		 SOE_IFFLAG,   0x02000000 },
+		{ sfInvalid, NULL,			STI_DONE,	 SOE_NEVER,    -1 } }
+	},
+	{ "PasswordSet", ttPASSWORD_SET, {
+		{ S_FIELD(Flags),			STI_UINT32,  SOE_FLAGS,    0 },
+		{ S_FIELD(AuthorizedKey),	STI_ACCOUNT, SOE_REQUIRED, 0 },
+		{ S_FIELD(Generator),		STI_VL,		 SOE_REQUIRED, 0 },
+		{ S_FIELD(PubKey),			STI_VL,		 SOE_REQUIRED, 0 },
+		{ S_FIELD(Signature),		STI_VL,		 SOE_REQUIRED, 0 },
+		{ S_FIELD(SourceTag),		STI_UINT32,  SOE_IFFLAG,   1 },
+		{ S_FIELD(Extensions),		STI_TL,		 SOE_IFFLAG,   0x02000000 },
+		{ sfInvalid, NULL,			STI_DONE,	 SOE_NEVER,    -1 } }
+	},
 	{ "Payment", ttPAYMENT, {
 		{ S_FIELD(Flags),			STI_UINT32,  SOE_FLAGS,    0 },
 		{ S_FIELD(Destination),		STI_ACCOUNT, SOE_REQUIRED, 0 },
