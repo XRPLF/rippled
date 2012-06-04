@@ -58,7 +58,7 @@ void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint2
 }
 
 bool SHAMap::getNodeFat(const SHAMapNode& wanted, std::vector<SHAMapNode>& nodeIDs,
-	std::list<std::vector<unsigned char> >& rawNodes)
+	std::list<std::vector<unsigned char> >& rawNodes, bool fatLeaves)
 { // Gets a node and some of its children
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
@@ -82,7 +82,7 @@ bool SHAMap::getNodeFat(const SHAMapNode& wanted, std::vector<SHAMapNode>& nodeI
 		{
 			SHAMapTreeNode::pointer nextNode = getNode(node->getChildNodeID(i), node->getChildHash(i), false);
 			assert(nextNode);
-			if(nextNode)
+			if (nextNode && (fatLeaves || !nextNode->isLeaf()))
 			{
 				nodeIDs.push_back(*nextNode);
 				Serializer s;
@@ -387,7 +387,7 @@ BOOST_AUTO_TEST_CASE( SHAMapSync_test )
 
 	destination.setSynching();
 
-	if (!source.getNodeFat(SHAMapNode(), nodeIDs, gotNodes))
+	if (!source.getNodeFat(SHAMapNode(), nodeIDs, gotNodes, (rand() % 2) == 0))
 	{
 		Log(lsFATAL) << "GetNodeFat(root) fails";
 		BOOST_FAIL("GetNodeFat");
@@ -423,7 +423,7 @@ BOOST_AUTO_TEST_CASE( SHAMapSync_test )
 		
 		// get as many nodes as possible based on this information
 		for (nodeIDIterator = nodeIDs.begin(); nodeIDIterator != nodeIDs.end(); ++nodeIDIterator)
-			if (!source.getNodeFat(*nodeIDIterator, gotNodeIDs, gotNodes))
+			if (!source.getNodeFat(*nodeIDIterator, gotNodeIDs, gotNodes, (rand() % 2) == 0))
 			{
 				Log(lsFATAL) << "GetNodeFat fails";
 				BOOST_FAIL("GetNodeFat");
