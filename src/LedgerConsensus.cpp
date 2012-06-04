@@ -184,6 +184,8 @@ void LedgerConsensus::takeInitialPosition(Ledger::pointer initialLedger)
 
 	SHAMap::pointer initialSet = initialLedger->peekTransactionMap()->snapShot(false);
 	uint256 txSet = initialSet->getHash();
+	assert (initialLedger->getParentHash() == mPreviousLedger->getHash());
+
 	mOurPosition = boost::make_shared<LedgerProposal>(nodePrivKey, initialLedger->getParentHash(), txSet);
 	mapComplete(txSet, initialSet);
 	propose(std::vector<uint256>(), std::vector<uint256>());
@@ -295,7 +297,7 @@ int LedgerConsensus::statePreClose(int secondsSinceClose)
 	{ // it is time to close the ledger (swap default and wobble ledgers)
 		Log(lsINFO) << "Closing ledger";
 		mState = lcsPOST_CLOSE;
-		Ledger::pointer initial = theApp->getMasterLedger().closeTime();
+		theApp->getMasterLedger().closeTime();
 		statusChange(newcoin::neCLOSING_LEDGER, mPreviousLedger);
 	}
 	return 1;
@@ -308,8 +310,8 @@ int LedgerConsensus::statePostClose(int secondsSinceClose)
 		Log(lsINFO) << "Wobble is over, it's consensus time";
 		mState = lcsESTABLISH;
 		Ledger::pointer initial = theApp->getMasterLedger().endWobble();
+		assert (initial->getParentHash() == mPreviousLedger->getHash());
 		takeInitialPosition(initial);
-		initial->bumpSeq();
 	}
 	return 1;
 }
@@ -500,11 +502,6 @@ void LedgerConsensus::addDisputedTransaction(const uint256& txID, const std::vec
 
 bool LedgerConsensus::peerPosition(LedgerProposal::pointer newPosition)
 {
-	if (newPosition->getPrevLedger() != mPreviousLedger->getHash())
-	{
-		Log(lsWARNING) << "Peer sends proposal with wrong previous ledger";
-		return false;
-	}
 	LedgerProposal::pointer& currentPosition = mPeerPositions[newPosition->getPeerID()];
 	if (currentPosition)
 	{
@@ -661,7 +658,7 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 	Log(lsDEBUG) << "Consensus " << mOurPosition->getCurrentHash().GetHex();
 	Log(lsDEBUG) << "Previous LCL " << mPreviousLedger->getHash().GetHex();
 
-	Ledger::pointer newLCL = boost::make_shared<Ledger>(mPreviousLedger);
+	Ledger::pointer newLCL = boost::make_shared<Ledger>(false, boost::ref(*mPreviousLedger));
 
 	std::deque<SerializedTransaction::pointer> failedTransactions;
 	applyTransactions(set, newLCL, failedTransactions);
@@ -670,7 +667,7 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 	newLCL->updateHash();
 	uint256 newLCLHash = newLCL->getHash();
 
-	Ledger::pointer newOL = boost::make_shared<Ledger>(newLCL);
+	Ledger::pointer newOL = boost::make_shared<Ledger>(true, boost::ref(*newLCL));
 
 	ScopedLock sl = theApp->getMasterLedger().getLock();
 
