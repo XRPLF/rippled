@@ -215,7 +215,7 @@ Json::Value RPCServer::getMasterGenerator(const uint256& uLedger, const NewcoinA
 Json::Value RPCServer::authorize(const uint256& uLedger,
 	const NewcoinAddress& naRegularSeed, const NewcoinAddress& naSrcAccountID,
 	NewcoinAddress& naAccountPublic, NewcoinAddress& naAccountPrivate,
-	AccountState::pointer& asSrc,
+	STAmount& saSrcBalance, uint64 uFee, AccountState::pointer& asSrc,
 	const NewcoinAddress& naVerifyGenerator)
 {
 	// Source/paying account must exist.
@@ -272,6 +272,17 @@ Json::Value RPCServer::authorize(const uint256& uLedger,
 		std::cerr << "naAccountPublic: " << strHex(naAccountPublic.getAccountID()) << std::endl;
 
 		return JSONRPCError(500, "wrong password (changed)");
+	}
+
+	saSrcBalance	= asSrc->getBalance();
+
+	if (saSrcBalance < uFee)
+	{
+		return JSONRPCError(500, "insufficent funds");
+	}
+	else
+	{
+		saSrcBalance -= uFee;
 	}
 
 	return obj;
@@ -366,18 +377,12 @@ Json::Value RPCServer::doAccountEmailSet(Json::Value &params)
 	NewcoinAddress			naAccountPublic;
 	NewcoinAddress			naAccountPrivate;
 	AccountState::pointer	asSrc;
-	Json::Value				obj				= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate, asSrc, naMasterGenerator);
-
-	STAmount				saSrcBalance	= asSrc->getBalance();
+	STAmount				saSrcBalance;
+	Json::Value				obj				= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
+		saSrcBalance, theConfig.FEE_DEFAULT, asSrc, naMasterGenerator);
 
 	if (!obj.empty())
-	{
 		return obj;
-	}
-	else if (saSrcBalance < theConfig.FEE_DEFAULT)
-	{
-		return JSONRPCError(500, "insufficent funds");
-	}
 
 	// Hash as per: http://en.gravatar.com/site/implement/hash/
 	std::string					strEmail	= 3 == params.size() ? params[2u].asString() : "";
@@ -622,18 +627,12 @@ Json::Value RPCServer::doAccountMessageSet(Json::Value& params) {
 	NewcoinAddress			naAccountPublic;
 	NewcoinAddress			naAccountPrivate;
 	AccountState::pointer	asSrc;
-	Json::Value				obj				= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate, asSrc, naMasterGenerator);
-
-	STAmount				saSrcBalance	= asSrc->getBalance();
+	STAmount				saSrcBalance;
+	Json::Value				obj				= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
+		saSrcBalance, theConfig.FEE_DEFAULT, asSrc, naMasterGenerator);
 
 	if (!obj.empty())
-	{
 		return obj;
-	}
-	else if (saSrcBalance < theConfig.FEE_DEFAULT)
-	{
-		return JSONRPCError(500, "insufficent funds");
-	}
 
 	Transaction::pointer	trans	= Transaction::sharedAccountSet(
 		naAccountPublic, naAccountPrivate,
@@ -687,18 +686,12 @@ Json::Value RPCServer::doAccountWalletSet(Json::Value& params) {
 	NewcoinAddress			naAccountPublic;
 	NewcoinAddress			naAccountPrivate;
 	AccountState::pointer	asSrc;
-	Json::Value				obj				= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate, asSrc, naMasterGenerator);
-
-	STAmount				saSrcBalance	= asSrc->getBalance();
+	STAmount				saSrcBalance;
+	Json::Value				obj				= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
+		saSrcBalance, theConfig.FEE_DEFAULT, asSrc, naMasterGenerator);
 
 	if (!obj.empty())
-	{
 		return obj;
-	}
-	else if (saSrcBalance < theConfig.FEE_DEFAULT)
-	{
-		return JSONRPCError(500, "insufficent funds");
-	}
 
 	std::string				strWalletLocator	= params.size() == 3 ? params[2u].asString() : "";
 	uint256					uWalletLocator;
@@ -802,41 +795,34 @@ Json::Value RPCServer::doCreditSet(Json::Value& params)
 		NewcoinAddress			naAccountPublic;
 		NewcoinAddress			naAccountPrivate;
 	    AccountState::pointer	asSrc;
-		Json::Value				obj			= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate, asSrc, naMasterGenerator);
+		STAmount				saSrcBalance;
+		Json::Value				obj			= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
+			saSrcBalance, theConfig.FEE_DEFAULT, asSrc, naMasterGenerator);
 
 		if (!obj.empty())
 			return obj;
 
-		STAmount		saSrcBalance	= asSrc->getBalance();
+		Transaction::pointer	trans	= Transaction::sharedCreditSet(
+			naAccountPublic, naAccountPrivate,
+			naSrcAccountID,
+			asSrc->getSeq(),
+			theConfig.FEE_DEFAULT,
+			0,											// YYY No source tag
+			naDstAccountID,
+			saLimitAmount,
+			uAcceptRate);
 
-		if (saSrcBalance < theConfig.FEE_DEFAULT)
-		{
-			return JSONRPCError(500, "insufficent funds");
-		}
-		else
-		{
-			Transaction::pointer	trans	= Transaction::sharedCreditSet(
-				naAccountPublic, naAccountPrivate,
-				naSrcAccountID,
-				asSrc->getSeq(),
-				theConfig.FEE_DEFAULT,
-				0,											// YYY No source tag
-				naDstAccountID,
-				saLimitAmount,
-				uAcceptRate);
+		(void) mNetOps->processTransaction(trans);
 
-			(void) mNetOps->processTransaction(trans);
+		obj["transaction"]		= trans->getSTransaction()->getJson(0);
+		obj["status"]			= trans->getStatus();
+		obj["seed"]				= naSeed.humanFamilySeed();
+		obj["srcAccountID"]		= naSrcAccountID.humanAccountID();
+		obj["dstAccountID"]		= naDstAccountID.humanAccountID();
+		obj["limitAmount"]		= saLimitAmount.getText();
+		obj["acceptRate"]		= uAcceptRate;
 
-			obj["transaction"]		= trans->getSTransaction()->getJson(0);
-			obj["status"]			= trans->getStatus();
-			obj["seed"]				= naSeed.humanFamilySeed();
-			obj["srcAccountID"]		= naSrcAccountID.humanAccountID();
-			obj["dstAccountID"]		= naDstAccountID.humanAccountID();
-			obj["limitAmount"]		= saLimitAmount.getText();
-			obj["acceptRate"]		= uAcceptRate;
-
-			return obj;
-		}
+		return obj;
 	}
 }
 
@@ -878,18 +864,12 @@ Json::Value RPCServer::doPasswordFund(Json::Value &params)
 	NewcoinAddress			naAccountPublic;
 	NewcoinAddress			naAccountPrivate;
 	AccountState::pointer	asSrc;
-	Json::Value				obj				= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate, asSrc, naMasterGenerator);
-
-	STAmount				saSrcBalance	= asSrc->getBalance();
+	STAmount				saSrcBalance;
+	Json::Value				obj				= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
+		saSrcBalance, theConfig.FEE_DEFAULT, asSrc, naMasterGenerator);
 
 	if (!obj.empty())
-	{
 		return obj;
-	}
-	else if (saSrcBalance < theConfig.FEE_DEFAULT)
-	{
-		return JSONRPCError(500, "insufficent funds");
-	}
 
 	// YYY Could verify dst exists and isn't already funded.
 
@@ -1073,52 +1053,43 @@ Json::Value RPCServer::doSend(Json::Value& params)
 		NewcoinAddress			naAccountPublic;
 		NewcoinAddress			naAccountPrivate;
 	    AccountState::pointer	asSrc;
-		Json::Value				obj			= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate, asSrc, naMasterGenerator);
+		STAmount				saSrcBalance;
+		Json::Value				obj			= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
+			saSrcBalance, theConfig.FEE_DEFAULT, asSrc, naMasterGenerator);
 
 		if (!obj.empty())
-		{
 			return obj;
-		}
 
 		if (params.size() < 6)
 			saSrcAmount	= saDstAmount;
 
 		// XXX Confirm saSrcAmount >= saDstAmount.
 
-		STAmount				saSrcBalance	= asSrc->getBalance();
+		STPathSet				spPaths;
+		Transaction::pointer	trans	= Transaction::sharedPayment(
+			naAccountPublic, naAccountPrivate,
+			naSrcAccountID,
+			asSrc->getSeq(),
+			theConfig.FEE_DEFAULT,
+			0,											// YYY No source tag
+			naDstAccountID,
+			saDstAmount,
+			saSrcAmount,
+			spPaths);
 
-		if (saSrcBalance < theConfig.FEE_DEFAULT)
-		{
-			return JSONRPCError(500, "insufficent funds");
-		}
-		else
-		{
-			STPathSet				spPaths;
-			Transaction::pointer	trans	= Transaction::sharedPayment(
-				naAccountPublic, naAccountPrivate,
-				naSrcAccountID,
-				asSrc->getSeq(),
-				theConfig.FEE_DEFAULT,
-				0,											// YYY No source tag
-				naDstAccountID,
-				saDstAmount,
-				saSrcAmount,
-				spPaths);
+		(void) mNetOps->processTransaction(trans);
 
-			(void) mNetOps->processTransaction(trans);
+		obj["transaction"]		= trans->getSTransaction()->getJson(0);
+		obj["status"]			= trans->getStatus();
+		obj["seed"]				= naSeed.humanFamilySeed();
+		obj["srcAccountID"]		= naSrcAccountID.humanAccountID();
+		obj["dstAccountID"]		= naDstAccountID.humanAccountID();
+		obj["srcAmount"]		= saSrcAmount.getText();
+		obj["srcISO"]			= saSrcAmount.getCurrencyHuman();
+		obj["dstAmount"]		= saDstAmount.getText();
+		obj["dstISO"]			= saDstAmount.getCurrencyHuman();
 
-			obj["transaction"]		= trans->getSTransaction()->getJson(0);
-			obj["status"]			= trans->getStatus();
-			obj["seed"]				= naSeed.humanFamilySeed();
-			obj["srcAccountID"]		= naSrcAccountID.humanAccountID();
-			obj["dstAccountID"]		= naDstAccountID.humanAccountID();
-			obj["srcAmount"]		= saSrcAmount.getText();
-			obj["srcISO"]			= saSrcAmount.getCurrencyHuman();
-			obj["dstAmount"]		= saDstAmount.getText();
-			obj["dstISO"]			= saDstAmount.getCurrencyHuman();
-
-			return obj;
-		}
+		return obj;
 	}
 }
 
@@ -1170,49 +1141,39 @@ Json::Value RPCServer::doTransitSet(Json::Value& params)
 		NewcoinAddress			naAccountPublic;
 		NewcoinAddress			naAccountPrivate;
 	    AccountState::pointer	asSrc;
-		Json::Value				obj			= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate, asSrc, naMasterGenerator);
+		STAmount				saSrcBalance;
+		Json::Value				obj		= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
+			saSrcBalance, theConfig.FEE_DEFAULT, asSrc, naMasterGenerator);
 
 		if (!obj.empty())
-		{
 			return obj;
-		}
-
-		STAmount		saSrcBalance	= asSrc->getBalance();
 
 		uTransitRate		= 0;
 		uTransitStart		= 0;
 		uTransitExpire		= 0;
 
-		if (saSrcBalance < theConfig.FEE_DEFAULT)
-		{
-			return JSONRPCError(500, "insufficent funds");
-		}
-		else
-		{
-			Transaction::pointer	trans	= Transaction::sharedTransitSet(
-				naAccountPublic, naAccountPrivate,
-				naSrcAccountID,
-				asSrc->getSeq(),
-				theConfig.FEE_DEFAULT,
-				0,											// YYY No source tag
-				uTransitRate,
-				uTransitStart,
-				uTransitExpire);
+		Transaction::pointer	trans	= Transaction::sharedTransitSet(
+			naAccountPublic, naAccountPrivate,
+			naSrcAccountID,
+			asSrc->getSeq(),
+			theConfig.FEE_DEFAULT,
+			0,											// YYY No source tag
+			uTransitRate,
+			uTransitStart,
+			uTransitExpire);
 
-			(void) mNetOps->processTransaction(trans);
+		(void) mNetOps->processTransaction(trans);
 
-			obj["transaction"]		= trans->getSTransaction()->getJson(0);
-			obj["status"]			= trans->getStatus();
-			obj["seed"]				= naSeed.humanFamilySeed();
-			obj["srcAccountID"]		= naSrcAccountID.humanAccountID();
-			obj["transitRate"]		= uTransitRate;
-			obj["transitStart"]		= uTransitStart;
-			obj["transitExpire"]	= uTransitExpire;
+		obj["transaction"]		= trans->getSTransaction()->getJson(0);
+		obj["status"]			= trans->getStatus();
+		obj["seed"]				= naSeed.humanFamilySeed();
+		obj["srcAccountID"]		= naSrcAccountID.humanAccountID();
+		obj["transitRate"]		= uTransitRate;
+		obj["transitStart"]		= uTransitStart;
+		obj["transitExpire"]	= uTransitExpire;
 
-			return obj;
-		}
+		return obj;
 	}
-	return "Not implemented.";
 }
 
 Json::Value RPCServer::doTx(Json::Value& params)
@@ -1461,18 +1422,14 @@ Json::Value RPCServer::doWalletAdd(Json::Value& params)
 		NewcoinAddress			naAccountPublic;
 		NewcoinAddress			naAccountPrivate;
 	    AccountState::pointer	asSrc;
-		Json::Value				obj			= authorize(uLedger, naRegularSeed, naSrcAccountID, naAccountPublic, naAccountPrivate, asSrc, naMasterGenerator);
+		STAmount				saSrcBalance;
+		Json::Value				obj			= authorize(uLedger, naRegularSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
+			saSrcBalance, theConfig.FEE_CREATE, asSrc, naMasterGenerator);
 
 		if (!obj.empty())
-		{
 			return obj;
-		}
 
-		// XXX Confirm total funds.
-
-		STAmount				saSrcBalance	= asSrc->getBalance();
-
-		if (saSrcBalance < theConfig.FEE_CREATE)
+		if (saSrcBalance < saAmount)
 		{
 			return JSONRPCError(500, "insufficent funds");
 		}
@@ -1673,19 +1630,17 @@ Json::Value RPCServer::doWalletCreate(Json::Value& params)
 	NewcoinAddress			naAccountPublic;
 	NewcoinAddress			naAccountPrivate;
 	AccountState::pointer	asSrc;
-	Json::Value				obj				= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate, asSrc, naMasterGenerator);
-
-	STAmount				saSrcBalance	= asSrc->getBalance();
-	STAmount				saInitialFunds	= (params.size() < 4) ? 0 : boost::lexical_cast<uint64>(params[3u].asString());
+	STAmount				saSrcBalance;
+	Json::Value				obj				= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
+		saSrcBalance, theConfig.FEE_CREATE, asSrc, naMasterGenerator);
 
 	if (!obj.empty())
-	{
 		return obj;
-	}
-	else if (saSrcBalance < (saInitialFunds + theConfig.FEE_CREATE))
-	{
+
+	STAmount				saInitialFunds	= (params.size() < 4) ? 0 : boost::lexical_cast<uint64>(params[3u].asString());
+
+	if (saSrcBalance < saInitialFunds)
 		return JSONRPCError(500, "insufficent funds");
-	}
 
 	Transaction::pointer	trans	= Transaction::sharedCreate(
 		naAccountPublic, naAccountPrivate,
