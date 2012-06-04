@@ -219,6 +219,17 @@ enum SHAMapState
 	Invalid = 4,		// Map is known not to be valid (usually synching a corrupt ledger)
 };
 
+class SHAMapSyncFilter
+{
+public:
+	SHAMapSyncFilter()				{ ; }
+	virtual ~SHAMapSyncFilter()		{ ; }
+	virtual void gotNode(const uint256& nodeHash, const std::vector<unsigned char>& nodeData, bool isLeaf)
+	{ ; }
+	virtual bool haveNode(const uint256&nodeHash, std::vector<unsigned char>& nodeData)
+	{ return false; }
+};
+
 class SHAMap
 {
 public:
@@ -293,12 +304,14 @@ public:
 	SHAMapItem::pointer peekPrevItem(const uint256&);
 
 	// comparison/sync functions
-	void getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint256>& hashes, int max);
+	void getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint256>& hashes, int max,
+		SHAMapSyncFilter* filter);
 	bool getNodeFat(const SHAMapNode& node, std::vector<SHAMapNode>& nodeIDs,
 	 std::list<std::vector<unsigned char> >& rawNode, bool fatLeaves);
 	bool addRootNode(const uint256& hash, const std::vector<unsigned char>& rootNode);
 	bool addRootNode(const std::vector<unsigned char>& rootNode);
-	bool addKnownNode(const SHAMapNode& nodeID, const std::vector<unsigned char>& rawNode);
+	bool addKnownNode(const SHAMapNode& nodeID, const std::vector<unsigned char>& rawNode,
+		SHAMapSyncFilter* filter);
 
 	// status functions
 	void setImmutable(void)		{ assert(mState != Invalid); mState = Immutable; }

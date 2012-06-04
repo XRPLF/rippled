@@ -11,7 +11,8 @@
 
 #include "Log.h"
 
-void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint256>& hashes, int max)
+void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint256>& hashes, int max,
+	SHAMapSyncFilter* filter)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
@@ -44,6 +45,24 @@ void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint2
 			if (!node->isEmptyBranch(branch))
 			{
 				SHAMapTreeNode::pointer d = getNode(node->getChildNodeID(branch), node->getChildHash(branch), false);
+				if ((!d) && (filter != NULL))
+				{
+					std::vector<unsigned char> nodeData;
+					if (filter->haveNode(node->getChildHash(branch), nodeData))
+					{
+						d = boost::make_shared<SHAMapTreeNode>(node->getChildNodeID(branch), nodeData, mSeq);
+						if (node->getChildHash(branch) != d->getNodeHash())
+						{
+							Log(lsERROR) << "Wrong hash from cached object";
+							d = SHAMapTreeNode::pointer();
+						}
+						else
+						{
+							Log(lsTRACE) << "Got sync node from cache";
+							mTNByID[*d] = d;
+						}
+					}
+				}
 				if (!d)
 				{
 					nodeIDs.push_back(node->getChildNodeID(branch));
@@ -153,7 +172,8 @@ bool SHAMap::addRootNode(const uint256& hash, const std::vector<unsigned char>& 
 	return true;
 }
 
-bool SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigned char>& rawNode)
+bool SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigned char>& rawNode,
+	SHAMapSyncFilter* filter)
 { // return value: true=okay, false=error
 	assert(!node.isRoot());
 	if (!isSynching()) return false;
@@ -198,6 +218,8 @@ bool SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigned cha
 	SHAMapTreeNode::pointer newNode = boost::make_shared<SHAMapTreeNode>(node, rawNode, mSeq);
 	if (hash != newNode->getNodeHash()) // these aren't the droids we're looking for
 		return false;
+
+	if (filter) filter->gotNode(hash, rawNode, newNode->isLeaf());
 
 	mTNByID[*newNode] = newNode;
 	if (!newNode->isLeaf())
@@ -416,7 +438,7 @@ BOOST_AUTO_TEST_CASE( SHAMapSync_test )
 		hashes.clear();
 
 		// get the list of nodes we know we need
-		destination.getMissingNodes(nodeIDs, hashes, 2048);
+		destination.getMissingNodes(nodeIDs, hashes, 2048, NULL);
 		if(nodeIDs.empty()) break;
 
 		Log(lsINFO) << nodeIDs.size() << " needed nodes";
@@ -446,7 +468,7 @@ BOOST_AUTO_TEST_CASE( SHAMapSync_test )
 #ifdef SMS_DEBUG
 			bytes += rawNodeIterator->size();
 #endif
-			if (!destination.addKnownNode(*nodeIDIterator, *rawNodeIterator))
+			if (!destination.addKnownNode(*nodeIDIterator, *rawNodeIterator, NULL))
 			{
 				Log(lsTRACE) << "AddKnownNode fails";
 				BOOST_FAIL("AddKnownNode");
