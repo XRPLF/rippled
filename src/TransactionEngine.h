@@ -20,9 +20,12 @@ enum TransactionEngineResult
 	tenDST_IS_SRC,			// Destination may not be source.
 	tenBAD_GEN_AUTH,		// Not authorized to claim generator.
 	tenBAD_ADD_AUTH,		// Not authorized to add account.
+	tenBAD_CLAIM_ID,		// Malformed.
+	tenBAD_SET_ID,			// Malformed.
 
 	// Invalid: Ledger won't allow.
 	tenUNCLAIMED	= -200,	// Can not use an unclaimed account.
+	tenCLAIMED,				// Can not claim a previously claimed account.
 	tenBAD_AUTH,			// Transaction's public key is not authorized.
 	tenCREATED,				// Can't add an already created account.
 	tenMSG_SET,				// Can't change a message key.
@@ -40,7 +43,6 @@ enum TransactionEngineResult
 	// Might succeed if not conflict is not caused by transaction ordering.
 	terALREADY,				// The transaction was already in the ledger
 	terBAD_SEQ,				// This sequence number should be zero for prepaid transactions.
-	terCLAIMED,				// Can not claim a previously claimed account.
 	terCREATED,				// Can not create a previously created account.
 	terDIR_FULL,			// Can not add entry to full dir.
 	terINSUF_FEE_B,			// Account balance can't pay fee
@@ -56,6 +58,7 @@ enum TransactionEngineResult
 	terPRE_SEQ,				// Missing/inapplicable prior transaction
 	terUNFUNDED,			// Source account had insufficient balance for transaction.
 	terNO_LINE_NO_ZERO,		// Can't zero non-existant line, destination might make it.
+	terSET_MISSING_DST,		// Can't set password, destination missing.
 };
 
 enum TransactionEngineParams
@@ -91,18 +94,23 @@ private:
 		const uint256&					uBase,			// Key of item.
 		const uint256&					uLedgerIndex);	// Item being deleted
 
+	TransactionEngineResult	setAuthorized(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts, bool bSet);
+
 protected:
 	Ledger::pointer mLedger;
 
 	TransactionEngineResult doAccountSet(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts);
 	TransactionEngineResult doClaim(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts);
 	TransactionEngineResult doCreditSet(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts,
-								const uint160& srcAccountID);
+								const uint160& uSrcAccountID);
 	TransactionEngineResult doDelete(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts);
 	TransactionEngineResult doInvoice(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts);
 	TransactionEngineResult doOffer(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts);
+	TransactionEngineResult doPasswordFund(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts,
+								const uint160& uSrcAccountID);
+	TransactionEngineResult doPasswordSet(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts);
 	TransactionEngineResult doPayment(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts,
-								const uint160& srcAccountID);
+								const uint160& uSrcAccountID);
 	TransactionEngineResult doStore(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts);
 	TransactionEngineResult doTake(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts);
 	TransactionEngineResult doTransitSet(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts);
