@@ -61,15 +61,15 @@ private:
 		const std::vector<unsigned char>&	vucSignature);
 
 	Transaction::pointer setCreate(
-		const NewcoinAddress&	naPrivateKey,
-		const NewcoinAddress&	naCreateAccountID,
-		const STAmount&			saFund);
+		const NewcoinAddress&				naPrivateKey,
+		const NewcoinAddress&				naCreateAccountID,
+		const STAmount&						saFund);
 
 	Transaction::pointer setCreditSet(
-		const NewcoinAddress&	naPrivateKey,
-		const NewcoinAddress&	naDstAccountID,
-		const STAmount&			saLimitAmount,
-		uint32					uAcceptRate);
+		const NewcoinAddress&				naPrivateKey,
+		const NewcoinAddress&				naDstAccountID,
+		const STAmount&						saLimitAmount,
+		uint32								uAcceptRate);
 
 	Transaction::pointer setPasswordFund(
 		const NewcoinAddress&				naPrivateKey,
@@ -83,17 +83,17 @@ private:
 		const std::vector<unsigned char>&	vucSignature);
 
 	Transaction::pointer setPayment(
-		const NewcoinAddress&	naPrivateKey,
-		const NewcoinAddress&	naDstAccountID,
-		const STAmount&			saAmount,
-		const STAmount&			saSendMax,
-		const STPathSet&		spPaths);
+		const NewcoinAddress&				naPrivateKey,
+		const NewcoinAddress&				naDstAccountID,
+		const STAmount&						saAmount,
+		const STAmount&						saSendMax,
+		const STPathSet&					spPaths);
 
 	Transaction::pointer setTransitSet(
-		const NewcoinAddress&	naPrivateKey,
-		uint32					uTransitRate,
-		uint32					uTransitStart,
-		uint32					uTransitExpire);
+		const NewcoinAddress&				naPrivateKey,
+		uint32								uTransitRate,
+		uint32								uTransitStart,
+		uint32								uTransitExpire);
 
 	Transaction::pointer setWalletAdd(
 		const NewcoinAddress&				naPrivateKey,
@@ -139,23 +139,23 @@ public:
 	// Create an account.
 	static Transaction::pointer sharedCreate(
 		const NewcoinAddress& naPublicKey, const NewcoinAddress& naPrivateKey,
-		const NewcoinAddress&	naSourceAccount,
-		uint32					uSeq,
-		const STAmount&			saFee,
-		uint32					uSourceTag,
-		const NewcoinAddress&	naCreateAccountID,	// Account to create.
-		const STAmount&			saFund);			// Initial funds in XNC.
+		const NewcoinAddress&				naSourceAccount,
+		uint32								uSeq,
+		const STAmount&						saFee,
+		uint32								uSourceTag,
+		const NewcoinAddress&				naCreateAccountID,	// Account to create.
+		const STAmount&						saFund);			// Initial funds in XNC.
 
 	// Set credit limit and borrow fees.
 	static Transaction::pointer sharedCreditSet(
 		const NewcoinAddress& naPublicKey, const NewcoinAddress& naPrivateKey,
-		const NewcoinAddress&	naSourceAccount,
-		uint32					uSeq,
-		const STAmount&			saFee,
-		uint32					uSourceTag,
-		const NewcoinAddress&	naDstAccountID,
-		const STAmount&			saLimitAmount,
-		uint32					uAcceptRate);
+		const NewcoinAddress&				naSourceAccount,
+		uint32								uSeq,
+		const STAmount&						saFee,
+		uint32								uSourceTag,
+		const NewcoinAddress&				naDstAccountID,
+		const STAmount&						saLimitAmount,
+		uint32								uAcceptRate);
 
 	// Pre-fund password change.
 	static Transaction::pointer sharedPasswordFund(
@@ -178,25 +178,25 @@ public:
 	// Make a payment.
 	static Transaction::pointer sharedPayment(
 		const NewcoinAddress& naPublicKey, const NewcoinAddress& naPrivateKey,
-		const NewcoinAddress&	naSourceAccount,
-		uint32					uSeq,
-		const STAmount&			saFee,
-		uint32					uSourceTag,
-		const NewcoinAddress&	naDstAccountID,
-		const STAmount&			saAmount,
-		const STAmount&			saSendMax,
-		const STPathSet&		saPaths);
+		const NewcoinAddress&				naSourceAccount,
+		uint32								uSeq,
+		const STAmount&						saFee,
+		uint32								uSourceTag,
+		const NewcoinAddress&				naDstAccountID,
+		const STAmount&						saAmount,
+		const STAmount&						saSendMax,
+		const STPathSet&					saPaths);
 
 	// Set transit fees.
 	static Transaction::pointer sharedTransitSet(
 		const NewcoinAddress& naPublicKey, const NewcoinAddress& naPrivateKey,
-		const NewcoinAddress&	naSourceAccount,
-		uint32					uSeq,
-		const STAmount&			saFee,
-		uint32					uSourceTag,
-		uint32					uTransitRate,
-		uint32					uTransitStart,
-		uint32					uTransitExpire);
+		const NewcoinAddress&				naSourceAccount,
+		uint32								uSeq,
+		const STAmount&						saFee,
+		uint32								uSourceTag,
+		uint32								uTransitRate,
+		uint32								uTransitStart,
+		uint32								uTransitExpire);
 
 	// Add an account to a wallet.
 	static Transaction::pointer sharedWalletAdd(
