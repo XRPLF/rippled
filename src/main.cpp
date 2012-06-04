@@ -46,6 +46,8 @@ void printHelp(const po::options_description& desc)
 	cout << "     connect <ip> [<port>]" << endl;
 	cout << "     credit_set <seed> <paying_account> <destination_account> <limit_amount> <currency> [<account_rate>]" << endl;
 	cout << "     ledger" << endl;
+	cout << "     password_fund <seed> <paying_account> [<account>]" << endl;
+	cout << "     password_set <master_seed> <regular_seed> [<account>]" << endl;
 	cout << "     peers" << endl;
 	cout << "     send <seed> <paying_account> <account_id> <amount> [<currency>] [<send_max>] [<send_currency>]" << endl;
 	cout << "     stop" << endl;

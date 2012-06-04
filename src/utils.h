@@ -7,9 +7,9 @@
 #include <openssl/dh.h>
 
 #include "types.h"
-// #include "uint256.h"
 
 #define nothing()   do {} while (0)
+#define fallthru()   do {} while (0)
 
 #ifndef MAX
 #define MAX(x,y) ((x) < (y) ? (y) : (x))

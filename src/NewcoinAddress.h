@@ -67,6 +67,10 @@ public:
 
 	static NewcoinAddress createAccountID(const uint160& uiAccountID);
 
+	static std::string createHumanAccountID(const std::vector<unsigned char>& vPrivate) {
+		return createAccountPrivate(vPrivate).humanAccountID();
+	}
+
 	//
 	// Accounts Public
 	//

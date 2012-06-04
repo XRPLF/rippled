@@ -39,8 +39,8 @@ private:
 	int getParamCount(const Json::Value& params);
 	bool extractString(std::string& param, const Json::Value& params, int index);
 
-	Json::Value getGenerator(const uint256& uLedger, const NewcoinAddress& naSeed, NewcoinAddress& naMasterGenerator);
-	Json::Value authorize(const uint256& uLedger, const NewcoinAddress& naSeed, const NewcoinAddress& naSrcAccountID,
+	Json::Value getMasterGenerator(const uint256& uLedger, const NewcoinAddress& naRegularSeed, NewcoinAddress& naMasterGenerator);
+	Json::Value authorize(const uint256& uLedger, const NewcoinAddress& naRegularSeed, const NewcoinAddress& naSrcAccountID,
 	    NewcoinAddress& naAccountPublic, NewcoinAddress& naAccountPrivate,
 	    AccountState::pointer& asSrc,
 		const NewcoinAddress& naVerifyGenerator);
@@ -56,6 +56,8 @@ private:
 	Json::Value doConnect(Json::Value& params);
 	Json::Value doCreditSet(Json::Value& params);
 	Json::Value doLedger(Json::Value& params);
+	Json::Value doPasswordFund(Json::Value& params);
+	Json::Value doPasswordSet(Json::Value& params);
 	Json::Value doPeers(Json::Value& params);
 	Json::Value doSend(Json::Value& params);
 	Json::Value doSessionClose(Json::Value& params);

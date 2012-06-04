@@ -10,10 +10,12 @@ enum TransactionType
 	ttCLAIM				= 1,
 	ttWALLET_ADD		= 2,
 	ttACCOUNT_SET		= 3,
-	ttINVOICE			= 4,
-	ttOFFER				= 5,
+	ttPASSWORD_FUND		= 4,
+	ttPASSWORD_SET		= 5,
 	ttCREDIT_SET		= 20,
 	ttTRANSIT_SET		= 21,
+	ttINVOICE			= 10,
+	ttOFFER				= 11,
 };
 
 struct TransactionFormat

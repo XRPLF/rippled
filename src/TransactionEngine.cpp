@@ -10,10 +10,6 @@
 #include "utils.h"
 #include "Log.h"
 
-typedef SerializedLedgerEntry SLE;
-
-
-
 #define DIR_NODE_MAX	32
 
 // We return the uNodeDir so that on delete we can quickly know where the element is mentioned in the directory.
@@ -231,6 +227,64 @@ TransactionEngineResult TransactionEngine::dirDelete(
 	}
 }
 
+// Set the authorized public ket for an account.  May also set the generator map.
+TransactionEngineResult	TransactionEngine::setAuthorized(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts, bool bMustSetGenerator)
+{
+	//
+	// Verify that submitter knows the private key for the generator.
+	// Otherwise, people could deny access to generators.
+	//
+
+	std::vector<unsigned char>	vucCipher		= txn.getITFieldVL(sfGenerator);
+	std::vector<unsigned char>	vucPubKey		= txn.getITFieldVL(sfPubKey);
+	std::vector<unsigned char>	vucSignature	= txn.getITFieldVL(sfSignature);
+	NewcoinAddress				naAccountPublic	= NewcoinAddress::createAccountPublic(vucPubKey);
+
+	if (!naAccountPublic.accountPublicVerify(Serializer::getSHA512Half(vucCipher), vucSignature))
+	{
+		std::cerr << "createGenerator: bad signature unauthorized generator claim" << std::endl;
+
+		return tenBAD_GEN_AUTH;
+	}
+
+	// Create generator.
+	uint160				hGeneratorID	= naAccountPublic.getAccountID();
+
+	LedgerStateParms	qry				= lepNONE;
+	SLE::pointer		sleGen			= mLedger->getGenerator(qry, hGeneratorID);
+	if (!sleGen)
+	{
+		std::cerr << "createGenerator: creating generator" << std::endl;
+		// Create the generator.
+						sleGen			= boost::make_shared<SerializedLedgerEntry>(ltGENERATOR_MAP);
+
+		sleGen->setIndex(Ledger::getGeneratorIndex(hGeneratorID));
+		sleGen->setIFieldH160(sfGeneratorID, hGeneratorID);
+		sleGen->setIFieldVL(sfGenerator, vucCipher);
+
+		accounts.push_back(std::make_pair(taaCREATE, sleGen));
+	}
+	else if (bMustSetGenerator)
+	{
+		// Doing a claim.  Must set generator.
+		// Generator is already in use.  Regular passphrases limited to one wallet.
+		std::cerr << "createGenerator: generator already in use" << std::endl;
+
+		return tenGEN_IN_USE;
+	}
+
+	// Set the public key needed to use the account.
+	SLE::pointer		sleDst			= accounts[0].second;
+
+	uint160				uAuthKeyID		= bMustSetGenerator
+											? hGeneratorID								// Claim
+											: txn.getITFieldAccount(sfAuthorizedKey);	// PasswordSet
+
+	sleDst->setIFieldAccount(sfAuthorizedKey, uAuthKeyID);
+
+	return terSUCCESS;
+}
+
 TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTransaction& txn,
 	TransactionEngineParams params, uint32 targetLedger)
 {
@@ -297,6 +351,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	switch(txn.getTxnType())
 	{
 		case ttCLAIM:
+		case ttPASSWORD_SET:
 			saCost	= 0;
 			break;
 
@@ -311,6 +366,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 		case ttCREDIT_SET:
 		case ttINVOICE:
 		case ttOFFER:
+		case ttPASSWORD_FUND:
 		case ttTRANSIT_SET:
 		case ttWALLET_ADD:
 			nothing();
@@ -378,28 +434,64 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 		return terNO_ACCOUNT;
 	}
 
-	// Consistency: Check signature
+	// Check if account cliamed.
 	switch (txn.getTxnType())
 	{
 		case ttCLAIM:
-			if (naSigningPubKey.getAccountID() != srcAccountID)
+			if (sleSrc->getIFieldPresent(sfAuthorizedKey))
 			{
-				// Signing Pub Key must be for Source Account ID.
-				std::cerr << "sourceAccountID: " << naSigningPubKey.humanAccountID() << std::endl;
-				std::cerr << "txn accountID: " << txn.getSourceAccount().humanAccountID() << std::endl;
-				mLedger = Ledger::pointer();
-				return tenINVALID;
+				std::cerr << "applyTransaction: Account already claimed." << std::endl;
+
+				return tenCLAIMED;
 			}
 			break;
 
 		default:
 			if (!sleSrc->getIFieldPresent(sfAuthorizedKey))
 			{
-				std::cerr << "applyTransaction: Can not use unclaimed account." << std::endl;
-				mLedger = Ledger::pointer();
+				std::cerr << "applyTransaction: Souce is an unclaimed account." << std::endl;
+
 				return tenUNCLAIMED;
 			}
-			else if (naSigningPubKey.getAccountID() != sleSrc->getIValueFieldAccount(sfAuthorizedKey).getAccountID())
+			break;
+	}
+
+	// Consistency: Check signature
+	switch (txn.getTxnType())
+	{
+		case ttCLAIM:
+			// Transaction's signing public key must be for the source account.
+			// To prove the master private key made this transaction.
+			if (naSigningPubKey.getAccountID() != srcAccountID)
+			{
+				// Signing Pub Key must be for Source Account ID.
+				std::cerr << "sourceAccountID: " << naSigningPubKey.humanAccountID() << std::endl;
+				std::cerr << "txn accountID: " << txn.getSourceAccount().humanAccountID() << std::endl;
+
+				mLedger = Ledger::pointer();
+
+				return tenBAD_CLAIM_ID;
+			}
+			break;
+
+		case ttPASSWORD_SET:
+			// Transaction's signing public key must be for the source account.
+			// To prove the master private key made this transaction.
+			if (naSigningPubKey.getAccountID() != srcAccountID)
+			{
+				// Signing Pub Key must be for Source Account ID.
+				std::cerr << "sourceAccountID: " << naSigningPubKey.humanAccountID() << std::endl;
+				std::cerr << "txn accountID: " << txn.getSourceAccount().humanAccountID() << std::endl;
+
+				mLedger = Ledger::pointer();
+
+				return tenBAD_SET_ID;
+			}
+			break;
+
+		default:
+			// Verify the transaction's signing public key is the key authorized for signing.
+			if (naSigningPubKey.getAccountID() != sleSrc->getIValueFieldAccount(sfAuthorizedKey).getAccountID())
 			{
 				std::cerr << "applyTransaction: Not authorized to use account." << std::endl;
 				mLedger = Ledger::pointer();
@@ -497,6 +589,14 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 			result = doOffer(txn, accounts);
 			break;
 
+		case ttPASSWORD_FUND:
+			result = doPasswordFund(txn, accounts, srcAccountID);
+			break;
+
+		case ttPASSWORD_SET:
+			result = doPasswordSet(txn, accounts);
+			break;
+
 		case ttPAYMENT:
 			result = doPayment(txn, accounts, srcAccountID);
 			break;
@@ -522,16 +622,22 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 		{
 			if (it->first == taaCREATE)
 			{
+				std::cerr << "applyTransaction: taaCREATE: " << it->second->getText() << std::endl;
+
 				if (mLedger->writeBack(lepCREATE, it->second) & lepERROR)
 					assert(false);
 			}
 			else if (it->first == taaMODIFY)
 			{
+				std::cerr << "applyTransaction: taaMODIFY: " << it->second->getText() << std::endl;
+
 				if (mLedger->writeBack(lepNONE, it->second) & lepERROR)
 					assert(false);
 			}
 			else if (it->first == taaDELETE)
 			{
+				std::cerr << "applyTransaction: taaDELETE: " << it->second->getText() << std::endl;
+
 				if (!mLedger->peekAccountStateMap()->delItem(it->second->getIndex()))
 					assert(false);
 			}
@@ -561,13 +667,13 @@ TransactionEngineResult TransactionEngine::doAccountSet(const SerializedTransact
 
 	if (txFlags & tfUnsetEmailHash)
 	{
-		std::cerr << "doClaim: unset email hash" << std::endl;
+		std::cerr << "doAccountSet: unset email hash" << std::endl;
 
 		sleSrc->makeIFieldAbsent(sfEmailHash);
 	}
 	else if (txn.getITFieldPresent(sfEmailHash))
 	{
-		std::cerr << "doClaim: set email hash" << std::endl;
+		std::cerr << "doAccountSet: set email hash" << std::endl;
 
 		sleSrc->setIFieldH128(sfEmailHash, txn.getITFieldH128(sfEmailHash));
 	}
@@ -578,13 +684,13 @@ TransactionEngineResult TransactionEngine::doAccountSet(const SerializedTransact
 
 	if (txFlags & tfUnsetWalletLocator)
 	{
-		std::cerr << "doClaim: unset wallet locator" << std::endl;
+		std::cerr << "doAccountSet: unset wallet locator" << std::endl;
 
 		sleSrc->makeIFieldAbsent(sfWalletLocator);
 	}
 	else if (txn.getITFieldPresent(sfWalletLocator))
 	{
-		std::cerr << "doClaim: set wallet locator" << std::endl;
+		std::cerr << "doAccountSet: set wallet locator" << std::endl;
 
 		sleSrc->setIFieldH256(sfWalletLocator, txn.getITFieldH256(sfWalletLocator));
 	}
@@ -600,13 +706,13 @@ TransactionEngineResult TransactionEngine::doAccountSet(const SerializedTransact
 	}
 	else if (sleSrc->getIFieldPresent(sfMessageKey))
 	{
-		std::cerr << "doClaim: can not change message key" << std::endl;
+		std::cerr << "doAccountSet: can not change message key" << std::endl;
 
 		return tenMSG_SET;
 	}
 	else
 	{
-		std::cerr << "doClaim: set message key" << std::endl;
+		std::cerr << "doAccountSet: set message key" << std::endl;
 
 		sleSrc->setIFieldVL(sfMessageKey, txn.getITFieldVL(sfMessageKey));
 	}
@@ -621,71 +727,11 @@ TransactionEngineResult TransactionEngine::doClaim(const SerializedTransaction& 
 {
 	std::cerr << "doClaim>" << std::endl;
 
-	SLE::pointer		sleDst			= accounts[0].second;
-
-	std::cerr << str(boost::format("doClaim: %s") % sleDst->getFullText()) << std::endl;
-
-	// Verify not already claimed.
-	if (sleDst->getIFieldPresent(sfAuthorizedKey))
-	{
-		std::cerr << "doClaim: source already claimed" << std::endl;
-
-		return terCLAIMED;
-	}
-
-	//
-	// Generator ID is based on regular account #0 public key.
-	// Verify that submitter knows the private key for the generator.
-	// Otherwise, people could deny access to generators.
-	//
-
-	std::vector<unsigned char>	vucCipher		= txn.getITFieldVL(sfGenerator);
-	std::vector<unsigned char>	vucPubKey		= txn.getITFieldVL(sfPubKey);
-	std::vector<unsigned char>	vucSignature	= txn.getITFieldVL(sfSignature);
-	NewcoinAddress				naAccountPublic	= NewcoinAddress::createAccountPublic(vucPubKey);
-
-	if (!naAccountPublic.accountPublicVerify(Serializer::getSHA512Half(vucCipher), vucSignature))
-	{
-		std::cerr << "doClaim: bad signature unauthorized generator claim" << std::endl;
-
-		return tenBAD_GEN_AUTH;
-	}
-
-	//
-	// Verify generator not already in use.
-	//
-
-	uint160				hGeneratorID	= naAccountPublic.getAccountID();
-
-	LedgerStateParms	qry				= lepNONE;
-	SLE::pointer		sleGen			= mLedger->getGenerator(qry, hGeneratorID);
-	if (sleGen)
-	{
-		// Generator is already in use.  Regular passphrases limited to one wallet.
-		std::cerr << "doClaim: generator already in use" << std::endl;
-
-		return tenGEN_IN_USE;
-	}
-
-	//
-	// Claim the account.
-	//
-
-	// Set the public key needed to use the account.
-	sleDst->setIFieldAccount(sfAuthorizedKey, hGeneratorID);
-
-	// Construct a generator map entry.
-					sleGen				= boost::make_shared<SerializedLedgerEntry>(ltGENERATOR_MAP);
-
-	sleGen->setIndex(Ledger::getGeneratorIndex(hGeneratorID));
-	sleGen->setIFieldH160(sfGeneratorID, hGeneratorID);
-	sleGen->setIFieldVL(sfGenerator, vucCipher);
-
-	accounts.push_back(std::make_pair(taaCREATE, sleGen));
+	TransactionEngineResult	result	= setAuthorized(txn, accounts, true);
 
 	std::cerr << "doClaim<" << std::endl;
 
-	return terSUCCESS;
+	return result;
 }
 
 TransactionEngineResult TransactionEngine::doCreditSet(const SerializedTransaction& txn,
@@ -785,6 +831,60 @@ TransactionEngineResult TransactionEngine::doCreditSet(const SerializedTransacti
 	std::cerr << "doCreditSet<" << std::endl;
 
 	return terResult;
+}
+
+TransactionEngineResult TransactionEngine::doPasswordFund(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts, const uint160& uSrcAccountID)
+{
+	std::cerr << "doPasswordFund>" << std::endl;
+
+	uint160				uDstAccountID	= txn.getITFieldAccount(sfDestination);
+	LedgerStateParms	qry				= lepNONE;
+	SLE::pointer		sleDst			= mLedger->getAccountRoot(qry, uDstAccountID);
+	if (!sleDst)
+	{
+		// Destination account does not exist.
+		std::cerr << "doPasswordFund: Delay transaction: Destination account does not exist." << std::endl;
+
+		return terSET_MISSING_DST;
+	}
+
+	if (sleDst->getFlags() & lsfPasswordSpent)
+	{
+		sleDst->clearFlag(lsfPasswordSpent);
+
+		std::cerr << "doPasswordFund: Clearing spent." << sleDst->getFlags() << std::endl;
+
+		if (uSrcAccountID != uDstAccountID) {
+			std::cerr << "doPasswordFund: Destination modified." << std::endl;
+			accounts.push_back(std::make_pair(taaMODIFY, sleDst));
+		}
+	}
+
+	std::cerr << "doPasswordFund<" << std::endl;
+
+	return terSUCCESS;
+}
+
+TransactionEngineResult TransactionEngine::doPasswordSet(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts)
+{
+	std::cerr << "doPasswordSet>" << std::endl;
+
+	SLE::pointer		sleSrc			= accounts[0].second;
+
+	if (sleSrc->getFlags() & lsfPasswordSpent)
+	{
+		std::cerr << "doPasswordSet: Delay transaction: Funds already spent." << std::endl;
+
+		return terFUNDS_SPENT;
+	}
+
+	sleSrc->setFlag(lsfPasswordSpent);
+
+	TransactionEngineResult	result	= setAuthorized(txn, accounts, false);
+
+	std::cerr << "doPasswordSet<" << std::endl;
+
+	return result;
 }
 
 TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction& txn,

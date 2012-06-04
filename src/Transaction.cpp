@@ -180,14 +180,13 @@ Transaction::pointer Transaction::setClaim(
 
 Transaction::pointer Transaction::sharedClaim(
 	const NewcoinAddress& naPublicKey, const NewcoinAddress& naPrivateKey,
-	const NewcoinAddress& naSourceAccount,
 	uint32 uSourceTag,
 	const std::vector<unsigned char>& vucGenerator,
 	const std::vector<unsigned char>& vucPubKey,
 	const std::vector<unsigned char>& vucSignature)
 {
 	pointer	tResult	= boost::make_shared<Transaction>(ttCLAIM,
-						naPublicKey, naSourceAccount,
+						naPublicKey, naPublicKey,
 						0,		// Sequence of 0.
 						0,		// Free.
 						uSourceTag);
@@ -260,6 +259,72 @@ Transaction::pointer Transaction::sharedCreditSet(
 	pointer	tResult	= boost::make_shared<Transaction>(ttCREDIT_SET, naPublicKey, naSourceAccount, uSeq, saFee, uSourceTag);
 
 	return tResult->setCreditSet(naPrivateKey, naDstAccountID, saLimitAmount, uAcceptRate);
+}
+
+//
+// PasswordFund
+//
+
+Transaction::pointer Transaction::setPasswordFund(
+	const NewcoinAddress&	naPrivateKey,
+	const NewcoinAddress&	naDstAccountID)
+{
+	mTransaction->setITFieldAccount(sfDestination, naDstAccountID);
+
+	sign(naPrivateKey);
+
+	return shared_from_this();
+}
+
+Transaction::pointer Transaction::sharedPasswordFund(
+	const NewcoinAddress& naPublicKey, const NewcoinAddress& naPrivateKey,
+	const NewcoinAddress&	naSourceAccount,
+	uint32					uSeq,
+	const STAmount&			saFee,
+	uint32					uSourceTag,
+	const NewcoinAddress&	naDstAccountID)
+{
+	pointer	tResult	= boost::make_shared<Transaction>(ttPASSWORD_FUND, naPublicKey, naSourceAccount, uSeq, saFee, uSourceTag);
+
+	return tResult->setPasswordFund(naPrivateKey, naDstAccountID);
+}
+
+//
+// PasswordSet
+//
+
+Transaction::pointer Transaction::setPasswordSet(
+	const NewcoinAddress& naPrivateKey,
+	const NewcoinAddress&				naAuthKeyID,
+	const std::vector<unsigned char>&	vucGenerator,
+	const std::vector<unsigned char>&	vucPubKey,
+	const std::vector<unsigned char>&	vucSignature)
+{
+	mTransaction->setITFieldAccount(sfAuthorizedKey, naAuthKeyID);
+	mTransaction->setITFieldVL(sfGenerator, vucGenerator);
+	mTransaction->setITFieldVL(sfPubKey, vucPubKey);
+	mTransaction->setITFieldVL(sfSignature, vucSignature);
+
+	sign(naPrivateKey);
+
+	return shared_from_this();
+}
+
+Transaction::pointer Transaction::sharedPasswordSet(
+	const NewcoinAddress& naPublicKey, const NewcoinAddress& naPrivateKey,
+	uint32								uSourceTag,
+	const NewcoinAddress&				naAuthKeyID,
+	const std::vector<unsigned char>&	vucGenerator,
+	const std::vector<unsigned char>&	vucPubKey,
+	const std::vector<unsigned char>&	vucSignature)
+{
+	pointer	tResult	= boost::make_shared<Transaction>(ttPASSWORD_SET,
+						naPublicKey, naPublicKey,
+						0,		// Sequence of 0.
+						0,		// Free.
+						uSourceTag);
+
+	return tResult->setPasswordSet(naPrivateKey, naAuthKeyID, vucGenerator, vucPubKey, vucSignature);
 }
 
 //

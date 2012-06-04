@@ -26,6 +26,7 @@
 #define SECTION_VALIDATION_QUORUM		"validation_quorum"
 #define SECTION_FEE_CREATE				"fee_create"
 #define SECTION_FEE_DEFAULT				"fee_default"
+#define SECTION_ACCOUNT_PROBE_MAX		"account_probe_max"
 
 Config theConfig;
 
@@ -60,6 +61,8 @@ Config::Config()
 
 	FEE_CREATE				= DEFAULT_FEE_CREATE;
 	FEE_DEFAULT				= DEFAULT_FEE_DEFAULT;
+
+	ACCOUNT_PROBE_MAX		= 10;
 }
 
 void Config::load()
@@ -120,6 +123,9 @@ void Config::load()
 
 			if (sectionSingleB(secConfig, SECTION_FEE_DEFAULT, strTemp))
 				FEE_DEFAULT = boost::lexical_cast<int>(strTemp);
+
+			if (sectionSingleB(secConfig, SECTION_ACCOUNT_PROBE_MAX, strTemp))
+				ACCOUNT_PROBE_MAX = boost::lexical_cast<int>(strTemp);
 		}
 	}
 }
