@@ -11,6 +11,7 @@
 #include "BitcoinUtil.h"
 #include "Serializer.h"
 #include "SerializedTransaction.h"
+#include "Log.h"
 
 Transaction::Transaction(const SerializedTransaction::pointer sit, bool bValidate)
 	: mInLedger(0), mStatus(INVALID), mTransaction(sit)
@@ -43,6 +44,7 @@ Transaction::pointer Transaction::sharedTransaction(const std::vector<unsigned c
 	}
 	catch (...)
 	{
+		Log(lsWARNING) << "Exception constructing transaction";
 		return boost::shared_ptr<Transaction>();
 	}
 }
@@ -66,8 +68,8 @@ Transaction::Transaction(
 
 	mTransaction	= boost::make_shared<SerializedTransaction>(ttKind);
 
-	std::cerr << str(boost::format("Transaction: account: %s") % naSourceAccount.humanAccountID()) << std::endl;
-	std::cerr << str(boost::format("Transaction: mAccountFrom: %s") % mAccountFrom.humanAccountID()) << std::endl;
+	Log(lsINFO) << str(boost::format("Transaction: account: %s") % naSourceAccount.humanAccountID());
+	Log(lsINFO) << str(boost::format("Transaction: mAccountFrom: %s") % mAccountFrom.humanAccountID());
 	mTransaction->setSigningPubKey(mFromPubKey);
 	mTransaction->setSourceAccount(mAccountFrom);
 	mTransaction->setSequence(uSeq);
@@ -86,16 +88,12 @@ bool Transaction::sign(const NewcoinAddress& naAccountPrivate)
 
 	if (!naAccountPrivate.isValid())
 	{
-#ifdef DEBUG
-		std::cerr << "No private key for signing" << std::endl;
-#endif
+		Log(lsWARNING) << "No private key for signing";
 		bResult	= false;
 	}
 	else if (!getSTransaction()->sign(naAccountPrivate))
 	{
-#ifdef DEBUG
-		std::cerr << "Failed to make signature" << std::endl;
-#endif
+		Log(lsWARNING) << "Failed to make signature";
 		assert(false);
 		bResult	= false;
 	}
