@@ -224,9 +224,10 @@ class SHAMapSyncFilter
 public:
 	SHAMapSyncFilter()				{ ; }
 	virtual ~SHAMapSyncFilter()		{ ; }
-	virtual void gotNode(const uint256& nodeHash, const std::vector<unsigned char>& nodeData, bool isLeaf)
+	virtual void gotNode(const SHAMapNode& id, const uint256& nodeHash,
+		const std::vector<unsigned char>& nodeData, bool isLeaf)
 	{ ; }
-	virtual bool haveNode(const uint256&nodeHash, std::vector<unsigned char>& nodeData)
+	virtual bool haveNode(const SHAMapNode& id, const uint256& nodeHash, std::vector<unsigned char>& nodeData)
 	{ return false; }
 };
 

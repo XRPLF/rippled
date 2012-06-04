@@ -44,14 +44,16 @@ void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint2
 			int branch = (base + ii) % 16;
 			if (!node->isEmptyBranch(branch))
 			{
-				SHAMapTreeNode::pointer d = getNode(node->getChildNodeID(branch), node->getChildHash(branch), false);
+				SHAMapNode childID = node->getChildNodeID(branch);
+				const uint256& childHash = node->getChildHash(branch);
+				SHAMapTreeNode::pointer d = getNode(childID, childHash, false);
 				if ((!d) && (filter != NULL))
 				{
 					std::vector<unsigned char> nodeData;
-					if (filter->haveNode(node->getChildHash(branch), nodeData))
+					if (filter->haveNode(childID, childHash, nodeData))
 					{
-						d = boost::make_shared<SHAMapTreeNode>(node->getChildNodeID(branch), nodeData, mSeq);
-						if (node->getChildHash(branch) != d->getNodeHash())
+						d = boost::make_shared<SHAMapTreeNode>(childID, nodeData, mSeq);
+						if (childHash != d->getNodeHash())
 						{
 							Log(lsERROR) << "Wrong hash from cached object";
 							d = SHAMapTreeNode::pointer();
@@ -219,7 +221,7 @@ bool SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigned cha
 	if (hash != newNode->getNodeHash()) // these aren't the droids we're looking for
 		return false;
 
-	if (filter) filter->gotNode(hash, rawNode, newNode->isLeaf());
+	if (filter) filter->gotNode(node, hash, rawNode, newNode->isLeaf());
 
 	mTNByID[*newNode] = newNode;
 	if (!newNode->isLeaf())

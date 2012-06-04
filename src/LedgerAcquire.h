@@ -64,12 +64,13 @@ protected:
 
 public:
 	THSyncFilter(NodeCache* cache) : mCache(cache) { ; }
-	virtual void gotNode(const uint256& nodeHash, const std::vector<unsigned char>& nodeData, bool)
+	virtual void gotNode(const SHAMapNode& id, const uint256& nodeHash,
+		const std::vector<unsigned char>& nodeData, bool)
 	{
 		boost::shared_ptr<VUC> ptr = boost::make_shared<VUC>(nodeData);
 		mCache->canonicalize(nodeHash, ptr);
 	}
-	virtual bool haveNode(const uint256& nodeHash, std::vector<unsigned char>& nodeData)
+	virtual bool haveNode(const SHAMapNode& id, const uint256& nodeHash, std::vector<unsigned char>& nodeData)
 	{
 		boost::shared_ptr<VUC> entry = mCache->fetch(nodeHash);
 		if (!entry) return false;
