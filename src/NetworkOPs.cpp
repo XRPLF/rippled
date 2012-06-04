@@ -403,7 +403,6 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 void NetworkOPs::switchLastClosedLedger(Ledger::pointer newLedger)
 { // set the newledger as our last closed ledger -- this is abnormal code
 
-	assert(false);
 	Log(lsERROR) << "ABNORMAL Switching last closed ledger to " << newLedger->getHash().GetHex() ;
 
 	if (mConsensus)
@@ -413,7 +412,7 @@ void NetworkOPs::switchLastClosedLedger(Ledger::pointer newLedger)
 	}
 
 	newLedger->setClosed();
-	Ledger::pointer openLedger = boost::make_shared<Ledger>(newLedger);
+	Ledger::pointer openLedger = boost::make_shared<Ledger>(false, boost::ref(*newLedger));
 	mLedgerMaster->switchLedgers(newLedger, openLedger);
 
 	if (getNetworkTimeNC() > openLedger->getCloseTimeNC())
@@ -426,15 +425,21 @@ void NetworkOPs::switchLastClosedLedger(Ledger::pointer newLedger)
 int NetworkOPs::beginConsensus(Ledger::pointer closingLedger)
 {
 	Log(lsINFO) << "Ledger close time for ledger " << closingLedger->getLedgerSeq() ;
+	Log(lsINFO) << " LCL is " << closingLedger->getParentHash().GetHex();
+
 	Ledger::pointer prevLedger = mLedgerMaster->getLedgerByHash(closingLedger->getParentHash());
 	if (!prevLedger)
-	{ // this shouldn't happen if we jump ledgers
+	{ // this shouldn't happen unless we jump ledgers
+		Log(lsWARNING) << "Don't have LCL, going to tracking";
 		setMode(omTRACKING);
 		return 3;
 	}
+	assert(prevLedger->getHash() == closingLedger->getParentHash());
+	assert(closingLedger->getParentHash() == mLedgerMaster->getClosedLedger()->getHash());
 
 	// Create a consensus object to get consensus on this ledger
 	if (!!mConsensus) mConsensus->abort();
+	prevLedger->setImmutable();
 	mConsensus = boost::make_shared<LedgerConsensus>
 		(prevLedger, theApp->getMasterLedger().getCurrentLedger()->getCloseTimeNC());
 
