@@ -85,11 +85,13 @@ public:
 		uint64 totCoins, uint64 timeStamp, uint32 ledgerSeq); // used for database ledgers
 	Ledger(const std::vector<unsigned char>& rawLedger);
 	Ledger(const std::string& rawLedger);
-	Ledger(Ledger::pointer previous);	// ledger after this one
+	Ledger(bool fromAccepted, Ledger& previous);	// ledger after this one
+	Ledger(Ledger& target, bool isMutable); // snapshot
 
 	void updateHash();
 	void setClosed()	{ mClosed = true; }
 	void setAccepted()	{ mAccepted = true; }
+	void setImmutable()	{ mImmutable = true; }
 	bool isClosed()		{ return mClosed; }
 	bool isAccepted()	{ return mAccepted; }
 
@@ -118,6 +120,7 @@ public:
 	// low level functions
 	SHAMap::pointer peekTransactionMap() { return mTransactionMap; }
 	SHAMap::pointer peekAccountStateMap() { return mAccountStateMap; }
+	Ledger::pointer snapShot(bool isMutable);
 
 	// ledger sync functions
 	void setAcquiring(void);
@@ -128,8 +131,6 @@ public:
 	// Transaction Functions
 	bool hasTransaction(const uint256& TransID) const;
 	Transaction::pointer getTransaction(const uint256& transID) const;
-
-	Ledger::pointer switchPreviousLedger(Ledger::pointer oldPrevious, Ledger::pointer newPrevious,	int limit);
 
 	// high-level functions
 	AccountState::pointer getAccountState(const NewcoinAddress& acctID);

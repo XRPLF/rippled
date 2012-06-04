@@ -39,7 +39,6 @@ void LedgerMaster::pushLedger(Ledger::pointer newLCL, Ledger::pointer newOL)
 {
 	assert(newLCL->isClosed() && newLCL->isAccepted());
 	assert(!newOL->isClosed() && !newOL->isAccepted());
-	Log(lsINFO) << "PushAccept: " << newLCL->getHash().GetHex();
 
 	ScopedLock sl(mLock);
 	if (mFinalizedLedger && mFinalizedLedger->isAccepted())
@@ -63,24 +62,22 @@ void LedgerMaster::switchLedgers(Ledger::pointer lastClosed, Ledger::pointer cur
 	mEngine.setLedger(mCurrentLedger);
 }
 
-Ledger::pointer LedgerMaster::closeTime()
-{
-	boost::recursive_mutex::scoped_lock sl(mLock);
-	assert(mCurrentLedger && mWobbleLedger);
-	Ledger::pointer ret = mCurrentLedger;
-	mCurrentLedger = mWobbleLedger;
-	mEngine.setLedger(mCurrentLedger);
-	mWobbleLedger = ret;
-	return ret;
-}
-
 void LedgerMaster::beginWobble()
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	assert(!mWobbleLedger);
-	mWobbleLedger = mCurrentLedger;
-	mCurrentLedger = boost::make_shared<Ledger>(mCurrentLedger);
-	mEngine.setLedger(mCurrentLedger);
+	mWobbleLedger = boost::make_shared<Ledger>(boost::ref(*mCurrentLedger), true);
+	mEngine.setDefaultLedger(mCurrentLedger);
+	mEngine.setAlternateLedger(mWobbleLedger);
+}
+
+void LedgerMaster::closeTime()
+{ // swap current and wobble ledgers
+	boost::recursive_mutex::scoped_lock sl(mLock);
+	assert(mCurrentLedger && mWobbleLedger);
+	std::swap(mCurrentLedger, mWobbleLedger);
+	mEngine.setDefaultLedger(mCurrentLedger);
+	mEngine.setAlternateLedger(mWobbleLedger);
 }
 
 Ledger::pointer LedgerMaster::endWobble()
@@ -89,6 +86,7 @@ Ledger::pointer LedgerMaster::endWobble()
 	assert(mWobbleLedger && mCurrentLedger);
 	Ledger::pointer ret = mWobbleLedger;
 	mWobbleLedger = Ledger::pointer();
+	mEngine.setAlternateLedger(Ledger::pointer());
 	return ret;
 }
 
