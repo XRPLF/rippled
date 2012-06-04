@@ -55,6 +55,9 @@ public:
 	uint256					getClosedLedger()
 		{ return mLedgerMaster->getClosedLedger()->getHash(); }
 
+	uint256					getCurrentLedger()
+		{ return mLedgerMaster->getCurrentLedger()->getHash(); }
+
 	// transaction operations
 	Transaction::pointer processTransaction(Transaction::pointer transaction, uint32 targetLedger = 0,
 		Peer* source = NULL);
