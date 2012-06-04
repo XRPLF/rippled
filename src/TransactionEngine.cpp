@@ -237,6 +237,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	std::cerr << "applyTransaction>" << std::endl;
 
 	mLedger = mDefaultLedger;
+	assert(mLedger);
 	if (mAlternateLedger && (targetLedger != 0) &&
 		(targetLedger != mLedger->getLedgerSeq()) && (targetLedger == mAlternateLedger->getLedgerSeq()))
 	{
