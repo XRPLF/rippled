@@ -323,8 +323,8 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	if (!txID)
 	{
 		std::cerr << "applyTransaction: invalid transaction id" << std::endl;
-		mLedger = Ledger::pointer();
-		return tenINVALID;
+
+		result	= tenINVALID;
 	}
 
 	//
@@ -336,70 +336,71 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	// without going to disk.  Each transaction also notes a source account id.  This is used to verify that the signing key is
 	// associated with the account.
 	// XXX This could be a lot cleaner to prevent unnecessary copying.
-	NewcoinAddress	naSigningPubKey	= NewcoinAddress::createAccountPublic(txn.peekSigningPubKey());
+	NewcoinAddress	naSigningPubKey;
+
+	if (terSUCCESS == result)
+		naSigningPubKey	= NewcoinAddress::createAccountPublic(txn.peekSigningPubKey());
 
 	// Consistency: really signed.
-	if (!txn.checkSign(naSigningPubKey))
+	if (terSUCCESS == result && !txn.checkSign(naSigningPubKey))
 	{
 		std::cerr << "applyTransaction: Invalid transaction: bad signature" << std::endl;
-		mLedger = Ledger::pointer();
-		return tenINVALID;
+
+		result	= tenINVALID;
 	}
 
 	STAmount	saCost		= theConfig.FEE_DEFAULT;
 
 	// Customize behavoir based on transaction type.
-	switch(txn.getTxnType())
+	if (terSUCCESS == result)
 	{
-		case ttCLAIM:
-		case ttPASSWORD_SET:
-			saCost	= 0;
-			break;
+		switch (txn.getTxnType())
+		{
+			case ttCLAIM:
+			case ttPASSWORD_SET:
+				saCost	= 0;
+				break;
 
-		case ttPAYMENT:
-			if (txn.getFlags() & tfCreateAccount)
-			{
-				saCost	= theConfig.FEE_CREATE;
-			}
-			break;
+			case ttPAYMENT:
+				if (txn.getFlags() & tfCreateAccount)
+				{
+					saCost	= theConfig.FEE_CREATE;
+				}
+				break;
 
-		case ttACCOUNT_SET:
-		case ttCREDIT_SET:
-		case ttINVOICE:
-		case ttOFFER:
-		case ttPASSWORD_FUND:
-		case ttTRANSIT_SET:
-		case ttWALLET_ADD:
-			nothing();
-			break;
+			case ttACCOUNT_SET:
+			case ttCREDIT_SET:
+			case ttINVOICE:
+			case ttOFFER:
+			case ttPASSWORD_FUND:
+			case ttTRANSIT_SET:
+			case ttWALLET_ADD:
+				nothing();
+				break;
 
-		case ttINVALID:
-			std::cerr << "applyTransaction: Invalid transaction: ttINVALID transaction type" << std::endl;
-			result = tenINVALID;
-			break;
+			case ttINVALID:
+				std::cerr << "applyTransaction: Invalid transaction: ttINVALID transaction type" << std::endl;
+				result = tenINVALID;
+				break;
 
-		default:
-			std::cerr << "applyTransaction: Invalid transaction: unknown transaction type" << std::endl;
-			result = tenUNKNOWN;
-			break;
-	}
-
-	if (terSUCCESS != result)
-	{
-		mLedger = Ledger::pointer();
-		return result;
+			default:
+				std::cerr << "applyTransaction: Invalid transaction: unknown transaction type" << std::endl;
+				result = tenUNKNOWN;
+				break;
+		}
 	}
 
 	STAmount saPaid = txn.getTransactionFee();
-	if ((params & tepNO_CHECK_FEE) == tepNONE)
+
+	if (terSUCCESS == result && (params & tepNO_CHECK_FEE) == tepNONE)
 	{
 		if (saCost)
 		{
 			if (saPaid < saCost)
 			{
 				std::cerr << "applyTransaction: insufficient fee" << std::endl;
-				mLedger = Ledger::pointer();
-				return tenINSUF_FEE_P;
+
+				result	= tenINSUF_FEE_P;
 			}
 		}
 		else
@@ -408,123 +409,146 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 			{
 				// Transaction is malformed.
 				std::cerr << "applyTransaction: fee not allowed" << std::endl;
-				mLedger = Ledger::pointer();
-				return tenINSUF_FEE_P;
+
+				result	= tenINSUF_FEE_P;
 			}
 		}
 	}
 
 	// Get source account ID.
 	uint160 srcAccountID = txn.getSourceAccount().getAccountID();
-	if (!srcAccountID)
+	if (terSUCCESS == result && !srcAccountID)
 	{
 		std::cerr << "applyTransaction: bad source id" << std::endl;
-		return tenINVALID;
+
+		result	= tenINVALID;
+	}
+
+	if (terSUCCESS != result)
+	{
+		// Avoid unnecessary locking.
+		mLedger = Ledger::pointer();
+
+		return result;
 	}
 
 	boost::recursive_mutex::scoped_lock sl(mLedger->mLock);
 
 	// find source account
 	// If are only forwarding, due to resource limitations, we might verifying only some transactions, this would be probablistic.
+
+	STAmount			saSrcBalance;
+	uint32				t_seq	= txn.getSequence();
 	LedgerStateParms	lspRoot	= lepNONE;
 	SLE::pointer		sleSrc	= mLedger->getAccountRoot(lspRoot, srcAccountID);
+
 	if (!sleSrc)
 	{
 		std::cerr << str(boost::format("applyTransaction: Delay transaction: source account does not exisit: %s") % txn.getSourceAccount().humanAccountID()) << std::endl;
-		mLedger = Ledger::pointer();
-		return terNO_ACCOUNT;
+
+		result			= terNO_ACCOUNT;
+	}
+	else
+	{
+		saSrcBalance	= sleSrc->getIValueFieldAmount(sfBalance);
 	}
 
+
 	// Check if account cliamed.
-	switch (txn.getTxnType())
+	if (terSUCCESS == result)
 	{
-		case ttCLAIM:
-			if (sleSrc->getIFieldPresent(sfAuthorizedKey))
-			{
-				std::cerr << "applyTransaction: Account already claimed." << std::endl;
+		switch (txn.getTxnType())
+		{
+			case ttCLAIM:
+				if (sleSrc->getIFieldPresent(sfAuthorizedKey))
+				{
+					std::cerr << "applyTransaction: Account already claimed." << std::endl;
 
-				return tenCLAIMED;
-			}
-			break;
+					result	= tenCLAIMED;
+				}
+				break;
 
-		default:
-			if (!sleSrc->getIFieldPresent(sfAuthorizedKey))
-			{
-				std::cerr << "applyTransaction: Souce is an unclaimed account." << std::endl;
+			default:
+				if (!sleSrc->getIFieldPresent(sfAuthorizedKey))
+				{
+					std::cerr << "applyTransaction: Souce is an unclaimed account." << std::endl;
 
-				return tenUNCLAIMED;
-			}
-			break;
+					result	= tenUNCLAIMED;
+				}
+				break;
+		}
 	}
 
 	// Consistency: Check signature
-	switch (txn.getTxnType())
+	if (terSUCCESS == result)
 	{
-		case ttCLAIM:
-			// Transaction's signing public key must be for the source account.
-			// To prove the master private key made this transaction.
-			if (naSigningPubKey.getAccountID() != srcAccountID)
-			{
-				// Signing Pub Key must be for Source Account ID.
-				std::cerr << "sourceAccountID: " << naSigningPubKey.humanAccountID() << std::endl;
-				std::cerr << "txn accountID: " << txn.getSourceAccount().humanAccountID() << std::endl;
+		switch (txn.getTxnType())
+		{
+			case ttCLAIM:
+				// Transaction's signing public key must be for the source account.
+				// To prove the master private key made this transaction.
+				if (naSigningPubKey.getAccountID() != srcAccountID)
+				{
+					// Signing Pub Key must be for Source Account ID.
+					std::cerr << "sourceAccountID: " << naSigningPubKey.humanAccountID() << std::endl;
+					std::cerr << "txn accountID: " << txn.getSourceAccount().humanAccountID() << std::endl;
 
-				mLedger = Ledger::pointer();
+					result	= tenBAD_CLAIM_ID;
+				}
+				break;
 
-				return tenBAD_CLAIM_ID;
-			}
-			break;
+			case ttPASSWORD_SET:
+				// Transaction's signing public key must be for the source account.
+				// To prove the master private key made this transaction.
+				if (naSigningPubKey.getAccountID() != srcAccountID)
+				{
+					// Signing Pub Key must be for Source Account ID.
+					std::cerr << "sourceAccountID: " << naSigningPubKey.humanAccountID() << std::endl;
+					std::cerr << "txn accountID: " << txn.getSourceAccount().humanAccountID() << std::endl;
 
-		case ttPASSWORD_SET:
-			// Transaction's signing public key must be for the source account.
-			// To prove the master private key made this transaction.
-			if (naSigningPubKey.getAccountID() != srcAccountID)
-			{
-				// Signing Pub Key must be for Source Account ID.
-				std::cerr << "sourceAccountID: " << naSigningPubKey.humanAccountID() << std::endl;
-				std::cerr << "txn accountID: " << txn.getSourceAccount().humanAccountID() << std::endl;
+					result	= tenBAD_SET_ID;
+				}
+				break;
 
-				mLedger = Ledger::pointer();
+			default:
+				// Verify the transaction's signing public key is the key authorized for signing.
+				if (naSigningPubKey.getAccountID() != sleSrc->getIValueFieldAccount(sfAuthorizedKey).getAccountID())
+				{
+					std::cerr << "applyTransaction: Not authorized to use account." << std::endl;
 
-				return tenBAD_SET_ID;
-			}
-			break;
-
-		default:
-			// Verify the transaction's signing public key is the key authorized for signing.
-			if (naSigningPubKey.getAccountID() != sleSrc->getIValueFieldAccount(sfAuthorizedKey).getAccountID())
-			{
-				std::cerr << "applyTransaction: Not authorized to use account." << std::endl;
-				mLedger = Ledger::pointer();
-				return tenBAD_AUTH;
-			}
-			break;
+					result	= tenBAD_AUTH;
+				}
+				break;
+		}
 	}
 
 	// deduct the fee, so it's not available during the transaction
 	// we only write the account back if the transaction succeeds
-	if (!saCost.isZero())
+	if (terSUCCESS != result || saCost.isZero())
 	{
-		STAmount saSrcBalance = sleSrc->getIValueFieldAmount(sfBalance);
+		nothing();
+	}
+	else if (saSrcBalance < saPaid)
+	{
+		std::cerr
+			<< str(boost::format("applyTransaction: Delay transaction: insufficent balance: balance=%s paid=%s")
+				% saSrcBalance
+				% saPaid)
+			<< std::endl;
 
-		if (saSrcBalance < saPaid)
-		{
-			std::cerr
-				<< str(boost::format("applyTransaction: Delay transaction: insufficent balance: balance=%s paid=%s")
-					% saSrcBalance
-					% saPaid)
-				<< std::endl;
-			mLedger = Ledger::pointer();
-			return terINSUF_FEE_B;
-		}
-
+		result	= terINSUF_FEE_B;
+	}
+	else
+	{
 		sleSrc->setIFieldAmount(sfBalance, saSrcBalance - saPaid);
 	}
 
 	// Validate sequence
-	uint32 t_seq = txn.getSequence();
-
-	if (saCost)
+	if (terSUCCESS != result)
+	{
+		nothing();
+	}
+	else if (saCost)
 	{
 		uint32 a_seq = sleSrc->getIFieldU32(sfSequence);
 
@@ -534,88 +558,97 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 			if (a_seq < t_seq)
 			{
 				std::cerr << "applyTransaction: future sequence number" << std::endl;
-				mLedger = Ledger::pointer();
-				return terPRE_SEQ;
+
+				result	= terPRE_SEQ;
 			}
-			if (mLedger->hasTransaction(txID))
+			else if (mLedger->hasTransaction(txID))
 			{
 				std::cerr << "applyTransaction: duplicate sequence number" << std::endl;
-				mLedger = Ledger::pointer();
-				return terALREADY;
-			}
 
-			std::cerr << "applyTransaction: past sequence number" << std::endl;
-			mLedger = Ledger::pointer();
-			return terPAST_SEQ;
+				result	= terALREADY;
+			}
+			else
+			{
+				std::cerr << "applyTransaction: past sequence number" << std::endl;
+
+				result	= terPAST_SEQ;
+			}
 		}
-		else sleSrc->setIFieldU32(sfSequence, t_seq);
+		else
+		{
+			sleSrc->setIFieldU32(sfSequence, t_seq);
+		}
 	}
 	else
 	{
 		if (t_seq)
 		{
 			std::cerr << "applyTransaction: bad sequence for pre-paid transaction" << std::endl;
-			mLedger = Ledger::pointer();
-			return terPAST_SEQ;
+
+			result	= terPAST_SEQ;
 		}
 	}
 
 	std::vector<AffectedAccount> accounts;
-	accounts.push_back(std::make_pair(taaMODIFY, sleSrc));
 
-	switch(txn.getTxnType())
+	if (terSUCCESS == result)
 	{
-		case ttACCOUNT_SET:
-			result = doAccountSet(txn, accounts);
-			break;
+		accounts.push_back(std::make_pair(taaMODIFY, sleSrc));
 
-		case ttCLAIM:
-			result = doClaim(txn, accounts);
-			break;
+		switch(txn.getTxnType())
+		{
+			case ttACCOUNT_SET:
+				result = doAccountSet(txn, accounts);
+				break;
 
-		case ttCREDIT_SET:
-			result = doCreditSet(txn, accounts, srcAccountID);
-			break;
+			case ttCLAIM:
+				result = doClaim(txn, accounts);
+				break;
 
-		case ttINVALID:
-			std::cerr << "applyTransaction: invalid type" << std::endl;
-			result = tenINVALID;
-			break;
+			case ttCREDIT_SET:
+				result = doCreditSet(txn, accounts, srcAccountID);
+				break;
 
-		case ttINVOICE:
-			result = doInvoice(txn, accounts);
-			break;
+			case ttINVALID:
+				std::cerr << "applyTransaction: invalid type" << std::endl;
+				result = tenINVALID;
+				break;
 
-		case ttOFFER:
-			result = doOffer(txn, accounts);
-			break;
+			case ttINVOICE:
+				result = doInvoice(txn, accounts);
+				break;
 
-		case ttPASSWORD_FUND:
-			result = doPasswordFund(txn, accounts, srcAccountID);
-			break;
+			case ttOFFER:
+				result = doOffer(txn, accounts);
+				break;
 
-		case ttPASSWORD_SET:
-			result = doPasswordSet(txn, accounts);
-			break;
+			case ttPASSWORD_FUND:
+				result = doPasswordFund(txn, accounts, srcAccountID);
+				break;
 
-		case ttPAYMENT:
-			result = doPayment(txn, accounts, srcAccountID);
-			break;
+			case ttPASSWORD_SET:
+				result = doPasswordSet(txn, accounts);
+				break;
 
-		case ttTRANSIT_SET:
-			result = doTransitSet(txn, accounts);
-			break;
+			case ttPAYMENT:
+				result = doPayment(txn, accounts, srcAccountID);
+				break;
 
-		case ttWALLET_ADD:
-			result = doWalletAdd(txn, accounts);
-			break;
+			case ttTRANSIT_SET:
+				result = doTransitSet(txn, accounts);
+				break;
 
-		default:
-			result = tenUNKNOWN;
-			break;
+			case ttWALLET_ADD:
+				result = doWalletAdd(txn, accounts);
+				break;
+
+			default:
+				result = tenUNKNOWN;
+				break;
+		}
 	}
 
-	if (result == terSUCCESS)
+	if (terSUCCESS == result)
 	{ // Write back the account states and add the transaction to the ledger
 		// WRITEME: Special case code for changing transaction key
 		for (std::vector<AffectedAccount>::iterator it = accounts.begin(), end = accounts.end();
@@ -651,7 +684,9 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 		if ((params & tepUPDATE_TOTAL) != tepNONE)
 			mLedger->destroyCoins(saPaid.getNValue());
 	}
+
 	mLedger = Ledger::pointer();
+
 	return result;
 }
 
@@ -840,7 +875,10 @@ TransactionEngineResult TransactionEngine::doPasswordFund(const SerializedTransa
 
 	uint160				uDstAccountID	= txn.getITFieldAccount(sfDestination);
 	LedgerStateParms	qry				= lepNONE;
-	SLE::pointer		sleDst			= mLedger->getAccountRoot(qry, uDstAccountID);
+	SLE::pointer		sleSrc			= accounts[0].second;
+	SLE::pointer		sleDst			= uSrcAccountID == uDstAccountID
+											? sleSrc
+											: mLedger->getAccountRoot(qry, uDstAccountID);
 	if (!sleDst)
 	{
 		// Destination account does not exist.
