@@ -78,8 +78,11 @@ public:
 	uint64		FEE_CREATE;			// Fee to create an account
 	uint64		FEE_DEFAULT;		// Default fee.
 
-	// configuration parameters
+	// Configuration parameters
 	std::string DATA_DIR;
+
+	// Client behavior
+	int			ACCOUNT_PROBE_MAX;	// How far to scan for accounts.
 
 	Config();
 
