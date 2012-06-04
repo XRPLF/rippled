@@ -12,8 +12,10 @@
 #include "BitcoinUtil.h"
 #include "key.h"
 #include "utils.h"
+#include "TaggedCache.h"
 
-Application* theApp=NULL;
+
+Application* theApp = NULL;
 
 DatabaseCon::DatabaseCon(const std::string& name, const char *initStrings[], int initCount)
 {
@@ -32,7 +34,7 @@ DatabaseCon::~DatabaseCon()
 
 Application::Application() :
 	mUNL(mIOService),
-	mNetOps(mIOService, &mMasterLedger),
+	mNetOps(mIOService, &mMasterLedger), mNodeCache(16384, 600),
 	mTxnDB(NULL), mLedgerDB(NULL), mWalletDB(NULL), mHashNodeDB(NULL), mNetNodeDB(NULL),
 	mConnectionPool(mIOService), mPeerDoor(NULL), mRPCDoor(NULL)
 {

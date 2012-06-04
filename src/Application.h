@@ -1,6 +1,8 @@
 #ifndef __APPLICATION__
 #define __APPLICATION__
 
+#include <boost/asio.hpp>
+
 #include "LedgerMaster.h"
 #include "UniqueNodeList.h"
 #include "ConnectionPool.h"
@@ -10,12 +12,13 @@
 #include "Wallet.h"
 #include "Peer.h"
 #include "NetworkOPs.h"
+#include "TaggedCache.h"
 #include "../database/database.h"
 
-#include <boost/asio.hpp>
 
 class RPCDoor;
 class PeerDoor;
+typedef TaggedCache< uint256, std::vector<unsigned char> > NodeCache;
 
 class DatabaseCon
 {
@@ -40,6 +43,7 @@ class Application
 	LedgerAcquireMaster		mMasterLedgerAcquire;
 	TransactionMaster		mMasterTransaction;
 	NetworkOPs				mNetOps;
+	NodeCache				mNodeCache;
 
 	DatabaseCon* mTxnDB, *mLedgerDB, *mWalletDB, *mHashNodeDB, *mNetNodeDB;
 
@@ -57,18 +61,19 @@ public:
 	Application();
 	~Application();
 
-	ConnectionPool& getConnectionPool() { return mConnectionPool; }
+	ConnectionPool& getConnectionPool()				{ return mConnectionPool; }
 
-	UniqueNodeList& getUNL() { return mUNL; }
+	UniqueNodeList& getUNL()						{ return mUNL; }
 
-	Wallet& getWallet() { return mWallet ; }
-	NetworkOPs& getOPs() { return mNetOps; }
+	Wallet& getWallet()								{ return mWallet ; }
+	NetworkOPs& getOPs()							{ return mNetOps; }
 
-	boost::asio::io_service& getIOService() { return mIOService; }
+	boost::asio::io_service& getIOService()			{ return mIOService; }
 
-	LedgerMaster& getMasterLedger() { return mMasterLedger; }
-	LedgerAcquireMaster& getMasterLedgerAcquire() { return mMasterLedgerAcquire; }
-	TransactionMaster& getMasterTransaction() { return mMasterTransaction; }
+	LedgerMaster& getMasterLedger()					{ return mMasterLedger; }
+	LedgerAcquireMaster& getMasterLedgerAcquire()	{ return mMasterLedgerAcquire; }
+	TransactionMaster& getMasterTransaction()		{ return mMasterTransaction; }
+	NodeCache& getNodeCache()						{ return mNodeCache; }
 
 	DatabaseCon* getTxnDB()			{ return mTxnDB; }
 	DatabaseCon* getLedgerDB()		{ return mLedgerDB; }
