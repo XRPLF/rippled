@@ -1,5 +1,6 @@
-
 #include "SerializedLedger.h"
+
+#include <boost/format.hpp>
 
 SerializedLedgerEntry::SerializedLedgerEntry(SerializerIterator& sit, const uint256& index)
 	: SerializedType("LedgerEntry"), mIndex(index)
@@ -47,12 +48,10 @@ std::string SerializedLedgerEntry::getFullText() const
 
 std::string SerializedLedgerEntry::getText() const
 {
-	std::string ret = "{";
-	ret += mIndex.GetHex();
-	ret += mVersion.getText();
-	ret += mObject.getText();
-	ret += "}";
-	return ret;
+	return str(boost::format("{ %s, %s, %s }")
+		% mIndex.GetHex()
+		% mVersion.getText()
+		% mObject.getText());
 }
 
 Json::Value SerializedLedgerEntry::getJson(int options) const
