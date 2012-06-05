@@ -335,7 +335,7 @@ void Ledger::addJson(Json::Value& ret, int options)
 		for (SHAMapItem::pointer item = mAccountStateMap->peekFirstItem(); !!item;
 				item = mAccountStateMap->peekNextItem(item->getTag()))
 			state.append(item->getTag().GetHex());
-		ledger["AccounState"] = state;
+		ledger["AccountState"] = state;
 	}
 	ret[boost::lexical_cast<std::string>(mLedgerSeq)] = ledger;
 }
