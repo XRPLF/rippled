@@ -473,7 +473,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 				{
 					std::cerr << "applyTransaction: Source is an unclaimed account." << std::endl;
 
-					result	= tenUNCLAIMED;
+					result	= terUNCLAIMED;
 				}
 				break;
 		}
@@ -514,9 +514,9 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 				// Verify the transaction's signing public key is the key authorized for signing.
 				if (naSigningPubKey.getAccountID() != sleSrc->getIValueFieldAccount(sfAuthorizedKey).getAccountID())
 				{
-					std::cerr << "applyTransaction: Not authorized to use account." << std::endl;
+					std::cerr << "applyTransaction: Delay: Not authorized to use account." << std::endl;
 
-					result	= tenBAD_AUTH;
+					result	= terBAD_AUTH;
 				}
 				break;
 		}
@@ -651,7 +651,6 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 
 	if (terSUCCESS == result)
 	{ // Write back the account states and add the transaction to the ledger
-		// WRITEME: Special case code for changing transaction key
 		for (std::vector<AffectedAccount>::iterator it = accounts.begin(), end = accounts.end();
 			it != end; ++it)
 		{
