@@ -394,7 +394,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 
 	if (terSUCCESS == result && (params & tepNO_CHECK_FEE) == tepNONE)
 	{
-		if (saCost)
+		if (!saCost.isZero())
 		{
 			if (saPaid < saCost)
 			{
@@ -532,8 +532,8 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	{
 		std::cerr
 			<< str(boost::format("applyTransaction: Delay transaction: insufficent balance: balance=%s paid=%s")
-				% saSrcBalance
-				% saPaid)
+				% saSrcBalance.getText()
+				% saPaid.getText())
 			<< std::endl;
 
 		result	= terINSUF_FEE_B;
@@ -548,7 +548,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	{
 		nothing();
 	}
-	else if (saCost)
+	else if (!saCost.isZero())
 	{
 		uint32 a_seq = sleSrc->getIFieldU32(sfSequence);
 
@@ -1173,8 +1173,8 @@ TransactionEngineResult TransactionEngine::doWalletAdd(const SerializedTransacti
 	{
 		std::cerr
 			<< str(boost::format("WalletAdd: Delay transaction: insufficent balance: balance=%s amount=%s")
-				% saSrcBalance
-				% saAmount)
+				% saSrcBalance.getText()
+				% saAmount.getText())
 			<< std::endl;
 
 		return terUNFUNDED;
