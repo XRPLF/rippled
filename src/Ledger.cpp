@@ -302,7 +302,7 @@ Ledger::pointer Ledger::loadByHash(const uint256& ledgerHash)
 	return getSQL(sql);
 }
 
-void Ledger::addJson(Json::Value& ret)
+void Ledger::addJson(Json::Value& ret, int options)
 {
 	Json::Value ledger(Json::objectValue);
 
@@ -321,6 +321,22 @@ void Ledger::addJson(Json::Value& ret)
 	else ledger["Closed"] = false;
 	if (mCloseTime != 0)
 		ledger["CloseTime"] = boost::posix_time::to_simple_string(ptFromSeconds(mCloseTime));
+	if ((options & LEDGER_JSON_DUMP_TXNS) != 0)
+	{
+		Json::Value txns(Json::arrayValue);
+		for (SHAMapItem::pointer item = mTransactionMap->peekFirstItem(); !!item;
+				item = mTransactionMap->peekNextItem(item->getTag()))
+			txns.append(item->getTag().GetHex());
+		ledger["Transactions"] = txns;
+	}
+	if ((options & LEDGER_JSON_DUMP_STATE) != 0)
+	{
+		Json::Value state(Json::arrayValue);
+		for (SHAMapItem::pointer item = mAccountStateMap->peekFirstItem(); !!item;
+				item = mAccountStateMap->peekNextItem(item->getTag()))
+			state.append(item->getTag().GetHex());
+		ledger["AccounState"] = state;
+	}
 	ret[boost::lexical_cast<std::string>(mLedgerSeq)] = ledger;
 }
 

@@ -3,6 +3,8 @@
 #include <boost/thread.hpp>
 #include <boost/bind.hpp>
 
+#include "../json/writer.h"
+
 #include "Application.h"
 #include "NetworkOPs.h"
 #include "LedgerTiming.h"
@@ -661,6 +663,17 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 
 	Ledger::pointer newLCL = boost::make_shared<Ledger>(false, boost::ref(*mPreviousLedger));
 
+#ifdef DEBUG
+	Json::StyledStreamWriter ssw;
+	if (1)
+	{
+		Log(lsTRACE) << "newLCL before transactions";
+		Json::Value p;
+		newLCL->addJson(p, LEDGER_JSON_DUMP_TXNS | LEDGER_JSON_DUMP_STATE);
+		ssw.write(std::cerr, p);
+	}
+#endif
+
 	std::deque<SerializedTransaction::pointer> failedTransactions;
 	applyTransactions(set, newLCL, failedTransactions);
 	newLCL->setClosed();
@@ -668,14 +681,43 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 	newLCL->updateHash();
 	uint256 newLCLHash = newLCL->getHash();
 
+#ifdef DEBUG
+	if (1)
+	{
+		Log(lsTRACE) << "newLCL after transactions";
+		Json::Value p;
+		newLCL->addJson(p, LEDGER_JSON_DUMP_TXNS | LEDGER_JSON_DUMP_STATE);
+		ssw.write(std::cerr, p);
+	}
+#endif
+
 	Ledger::pointer newOL = boost::make_shared<Ledger>(true, boost::ref(*newLCL));
 
+#ifdef DEBUG
+	if (1)
+	{
+		Log(lsTRACE) << "newOL before transactions";
+		Json::Value p;
+		newOL->addJson(p, LEDGER_JSON_DUMP_TXNS | LEDGER_JSON_DUMP_STATE);
+		ssw.write(std::cerr, p);
+	}
+#endif
 	ScopedLock sl = theApp->getMasterLedger().getLock();
 
 	applyTransactions(theApp->getMasterLedger().getCurrentLedger()->peekTransactionMap(),
 		newOL, failedTransactions);
 	theApp->getMasterLedger().pushLedger(newLCL, newOL);
 	mState = lcsACCEPTED;
+
+#ifdef DEBUG
+	if (1)
+	{
+		Log(lsTRACE) << "newOL after transactions";
+		Json::Value p;
+		newOL->addJson(p, LEDGER_JSON_DUMP_TXNS | LEDGER_JSON_DUMP_STATE);
+		ssw.write(std::cerr, p);
+	}
+#endif
 
 	sl.unlock();
 

@@ -1206,8 +1206,8 @@ Json::Value RPCServer::doLedger(Json::Value& params)
 	if (getParamCount(params)== 0)
 	{
 		Json::Value ret(Json::objectValue), current(Json::objectValue), closed(Json::objectValue);
-		theApp->getMasterLedger().getCurrentLedger()->addJson(current);
-		theApp->getMasterLedger().getClosedLedger()->addJson(closed);
+		theApp->getMasterLedger().getCurrentLedger()->addJson(current, 0);
+		theApp->getMasterLedger().getClosedLedger()->addJson(closed, 0);
 		ret["open"] = current;
 		ret["closed"] = closed;
 		return ret;
