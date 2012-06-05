@@ -625,7 +625,7 @@ void LedgerConsensus::applyTransactions(SHAMap::pointer set, Ledger::pointer led
 		item = set->peekNextItem(item->getTag());
 	}
 
-	int successes = 0;
+	int successes;
 	do
 	{
 		successes = 0;
@@ -701,7 +701,15 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 		newOL->addJson(p, LEDGER_JSON_DUMP_TXNS | LEDGER_JSON_DUMP_STATE);
 		ssw.write(std::cerr, p);
 	}
+	if (1)
+	{
+		Log(lsTRACE) << "current ledger";
+		Json::Value p;
+		theApp->getMasterLedger().getCurrentLedger()->addJson(p, LEDGER_JSON_DUMP_TXNS | LEDGER_JSON_DUMP_STATE);
+		ssw.write(std::cerr, p);
+	}
 #endif
+
 	ScopedLock sl = theApp->getMasterLedger().getLock();
 
 	applyTransactions(theApp->getMasterLedger().getCurrentLedger()->peekTransactionMap(),
@@ -712,7 +720,7 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 #ifdef DEBUG
 	if (1)
 	{
-		Log(lsTRACE) << "newOL after transactions";
+		Log(lsTRACE) << "newOL after current ledger transactions";
 		Json::Value p;
 		newOL->addJson(p, LEDGER_JSON_DUMP_TXNS | LEDGER_JSON_DUMP_STATE);
 		ssw.write(std::cerr, p);
