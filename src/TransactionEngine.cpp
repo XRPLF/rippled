@@ -551,7 +551,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	else if (!saCost.isZero())
 	{
 		uint32 a_seq = sleSrc->getIFieldU32(sfSequence);
-
+		Log(lsINFO) << "Aseq=" << a_seq << ", Tseq=" << t_seq;
 		if (t_seq != a_seq)
 		{
 			// WRITEME: Special case code for changing transaction key
@@ -576,11 +576,12 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 		}
 		else
 		{
-			sleSrc->setIFieldU32(sfSequence, t_seq);
+			sleSrc->setIFieldU32(sfSequence, t_seq + 1);
 		}
 	}
 	else
 	{
+		Log(lsINFO) << "Zero cost transaction";
 		if (t_seq)
 		{
 			std::cerr << "applyTransaction: bad sequence for pre-paid transaction" << std::endl;
