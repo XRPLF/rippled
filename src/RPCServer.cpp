@@ -248,7 +248,7 @@ Json::Value RPCServer::authorize(const uint256& uLedger,
 
 	// Find the index of the account from the master generator, so we can generate the public and private keys.
 	NewcoinAddress		naMasterAccountPublic;
-	uint				iIndex = -1;	// Compensate for initial increment.
+	unsigned int		iIndex = -1;	// Compensate for initial increment.
 
 	// XXX Stop after Config.account_probe_max
 	// Don't look at ledger entries to determine if the account exists.  Don't want to leak to thin server that these accounts are
@@ -945,7 +945,7 @@ Json::Value RPCServer::doPasswordSet(Json::Value& params)
 
 		NewcoinAddress		naMasterXPublic;
 		NewcoinAddress		naRegularXPublic;
-		uint				iIndex	= -1;	// Compensate for initial increment.
+		unsigned int		iIndex	= -1;	// Compensate for initial increment.
 		int					iMax	= theConfig.ACCOUNT_PROBE_MAX;
 
 		// YYY Could probe peridoically to see if accounts exists.
@@ -1295,7 +1295,7 @@ Json::Value RPCServer::accounts(const uint256& uLedger, const NewcoinAddress& na
 
 	// YYY Don't want to leak to thin server that these accounts are related.
 	// YYY Would be best to alternate requests to servers and to cache results.
-	uint	uIndex	= 0;
+	unsigned int	uIndex	= 0;
 
 	do {
 		NewcoinAddress		naAccount;

@@ -19,6 +19,10 @@
 #define MIN(x,y) ((x) > (y) ? (y) : (x))
 #endif
 
+#ifdef WIN32
+extern uint64_t htobe64(uint64_t value);
+#endif
+
 boost::posix_time::ptime ptEpoch();
 int iToSeconds(boost::posix_time::ptime ptWhen);
 boost::posix_time::ptime ptFromSeconds(int iSeconds);
