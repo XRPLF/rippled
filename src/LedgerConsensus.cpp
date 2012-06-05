@@ -155,9 +155,9 @@ bool LCTransaction::updatePosition(int seconds)
 
 	// To prevent avalanche stalls, we increase the needed weight slightly over time
 	bool newPosition;
-	if (seconds <= LEDGER_CONVERGE) newPosition = weight >=  AV_MIN_CONSENSUS;
-	else if (seconds >= LEDGER_FORCE_CONVERGE) newPosition = weight >= AV_MAX_CONSENSUS;
-	else newPosition = weight >= AV_AVG_CONSENSUS;
+	if (seconds <= LEDGER_CONVERGE) newPosition = weight >  AV_MIN_CONSENSUS;
+	else if (seconds >= LEDGER_FORCE_CONVERGE) newPosition = weight > AV_MAX_CONSENSUS;
+	else newPosition = weight > AV_AVG_CONSENSUS;
 
 	if (newPosition == mOurPosition) return false;
 	mOurPosition = newPosition;
