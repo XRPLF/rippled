@@ -3,6 +3,7 @@
 
 //
 // A ripple line's state.
+// - Isolate ledger entry format.
 //
 
 #include "SerializedLedger.h"

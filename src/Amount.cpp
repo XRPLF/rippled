@@ -100,7 +100,7 @@ bool STAmount::setValue(const std::string& sAmount, const std::string& sCurrency
 
 	if (bInteger)
 	{
-		uValue	= sAmount.empty() ? 0 : boost::lexical_cast<uint>(sAmount);
+		uValue	= sAmount.empty() ? 0 : boost::lexical_cast<unsigned int>(sAmount);
 		iOffset	= 0;
 	}
 	else

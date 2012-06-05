@@ -24,9 +24,7 @@ enum TransactionEngineResult
 	tenBAD_SET_ID,			// Malformed.
 
 	// Invalid: Ledger won't allow.
-	tenUNCLAIMED	= -200,	// Can not use an unclaimed account.
-	tenCLAIMED,				// Can not claim a previously claimed account.
-	tenBAD_AUTH,			// Transaction's public key is not authorized.
+	tenCLAIMED		= -200,	// Can not claim a previously claimed account.
 	tenCREATED,				// Can't add an already created account.
 	tenMSG_SET,				// Can't change a message key.
 
@@ -60,6 +58,8 @@ enum TransactionEngineResult
 	terNO_LINE_NO_ZERO,		// Can't zero non-existant line, destination might make it.
 	terSET_MISSING_DST,		// Can't set password, destination missing.
 	terFUNDS_SPENT,			// Can't set password, password set funds already spent.
+	terUNCLAIMED,			// Can not use an unclaimed account.
+	terBAD_AUTH,			// Transaction's public key is not authorized.
 };
 
 enum TransactionEngineParams
@@ -108,6 +108,8 @@ protected:
 	TransactionEngineResult doDelete(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts);
 	TransactionEngineResult doInvoice(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts);
 	TransactionEngineResult doOffer(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts);
+	TransactionEngineResult doNicknameSet(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts,
+								const uint160& uSrcAccountID);
 	TransactionEngineResult doPasswordFund(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts,
 								const uint160& uSrcAccountID);
 	TransactionEngineResult doPasswordSet(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts);

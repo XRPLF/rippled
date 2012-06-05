@@ -22,6 +22,7 @@
 #include "Conversion.h"
 #include "NewcoinAddress.h"
 #include "AccountState.h"
+#include "NicknameState.h"
 #include "utils.h"
 
 #define VALIDATORS_FETCH_SECONDS	30
@@ -215,7 +216,7 @@ Json::Value RPCServer::getMasterGenerator(const uint256& uLedger, const NewcoinA
 Json::Value RPCServer::authorize(const uint256& uLedger,
 	const NewcoinAddress& naRegularSeed, const NewcoinAddress& naSrcAccountID,
 	NewcoinAddress& naAccountPublic, NewcoinAddress& naAccountPrivate,
-	STAmount& saSrcBalance, uint64 uFee, AccountState::pointer& asSrc,
+	STAmount& saSrcBalance, const STAmount& saFee, AccountState::pointer& asSrc,
 	const NewcoinAddress& naVerifyGenerator)
 {
 	// Source/paying account must exist.
@@ -248,7 +249,7 @@ Json::Value RPCServer::authorize(const uint256& uLedger,
 
 	// Find the index of the account from the master generator, so we can generate the public and private keys.
 	NewcoinAddress		naMasterAccountPublic;
-	uint				iIndex = -1;	// Compensate for initial increment.
+	unsigned int		iIndex = -1;	// Compensate for initial increment.
 
 	// XXX Stop after Config.account_probe_max
 	// Don't look at ledger entries to determine if the account exists.  Don't want to leak to thin server that these accounts are
@@ -276,13 +277,13 @@ Json::Value RPCServer::authorize(const uint256& uLedger,
 
 	saSrcBalance	= asSrc->getBalance();
 
-	if (saSrcBalance < uFee)
+	if (saSrcBalance < saFee)
 	{
 		return JSONRPCError(500, "insufficent funds");
 	}
 	else
 	{
-		saSrcBalance -= uFee;
+		saSrcBalance -= saFee;
 	}
 
 	return obj;
@@ -779,7 +780,7 @@ Json::Value RPCServer::doCreditSet(Json::Value& params)
 	}
 	else if (!saLimitAmount.setValue(params[3u].asString(), params.size() >= 5 ? params[4u].asString() : ""))
 	{
-		return JSONRPCError(500, "bad src amount/currency");
+		return JSONRPCError(400, "bad src amount/currency");
 	}
 	else if (!mNetOps->available())
 	{
@@ -824,6 +825,144 @@ Json::Value RPCServer::doCreditSet(Json::Value& params)
 
 		return obj;
 	}
+}
+
+// nickname_info <nickname>
+// Note: Nicknames are not automatically looked up by commands as they are advisory and can be changed.
+Json::Value RPCServer::doNicknameInfo(Json::Value& params)
+{
+	uint256			uLedger;
+
+	if (params.size() != 1)
+	{
+		return JSONRPCError(400, "invalid params");
+	}
+
+	std::string	strNickname	= params[0u].asString();
+		boost::trim(strNickname);
+
+	if (strNickname.empty())
+	{
+		return JSONRPCError(400, "invalid nickname (zero length)");
+	}
+	else if (!mNetOps->available())
+	{
+		return JSONRPCError(503, "network not available");
+	}
+	else if ((uLedger = mNetOps->getCurrentLedger()).isZero())
+	{
+		return JSONRPCError(503, "no current ledger");
+	}
+
+	NicknameState::pointer	nsSrc	= mNetOps->getNicknameState(uLedger, strNickname);
+	if (!nsSrc)
+	{
+		return JSONRPCError(500, "nickname does not exist");
+	}
+
+	Json::Value ret(Json::objectValue);
+
+	ret["nickname"]	= strNickname;
+
+	nsSrc->addJson(ret);
+
+	return ret;
+}
+
+// nickname_set <seed> <paying_account> <nickname> [<offer_minimum>] [<authorization>]
+Json::Value RPCServer::doNicknameSet(Json::Value& params)
+{
+	NewcoinAddress	naSrcAccountID;
+	NewcoinAddress	naSeed;
+	uint256			uLedger;
+
+	if (params.size() < 2 || params.size() > 3)
+	{
+		return JSONRPCError(400, "invalid params");
+	}
+	else if (!naSeed.setFamilySeedGeneric(params[0u].asString()))
+	{
+		return "disallowed seed";
+	}
+	else if (!naSrcAccountID.setAccountID(params[1u].asString()))
+	{
+		return "bad source account id needed";
+	}
+
+	STAmount					saMinimumOffer;
+	bool						bSetOffer		= params.size() >= 4;
+	std::string					strOfferCurrency;
+	std::string					strNickname		= params[2u].asString();
+									boost::trim(strNickname);
+	std::vector<unsigned char>	vucSignature;
+
+	if (strNickname.empty())
+	{
+		return JSONRPCError(400, "invalid nickname (zero length)");
+	}
+	else if (params.size() >= 4 && !saMinimumOffer.setValue(params[3u].asString(), strOfferCurrency))
+	{
+		return JSONRPCError(400, "bad dst amount/currency");
+	}
+	else if (!mNetOps->available())
+	{
+		return JSONRPCError(503, "network not available");
+	}
+	else if ((uLedger = mNetOps->getCurrentLedger()).isZero())
+	{
+		return JSONRPCError(503, "no current ledger");
+	}
+
+	STAmount				saFee;
+	NicknameState::pointer	nsSrc	= mNetOps->getNicknameState(uLedger, strNickname);
+
+	if (!nsSrc)
+	{
+		// Creating nickname.
+		saFee	= theConfig.FEE_NICKNAME_CREATE;
+	}
+	else if (naSrcAccountID != nsSrc->getAccountID())
+	{
+		// We don't own the nickname.
+		return JSONRPCError(400, "account does not control nickname");
+	}
+	else
+	{
+		// Setting the minimum offer.
+		saFee	= theConfig.FEE_DEFAULT;
+	}
+
+	NewcoinAddress			naMasterGenerator;
+	NewcoinAddress			naAccountPublic;
+	NewcoinAddress			naAccountPrivate;
+	AccountState::pointer	asSrc;
+	STAmount				saSrcBalance;
+	Json::Value				obj				= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
+		saSrcBalance, saFee, asSrc, naMasterGenerator);
+
+	if (!obj.empty())
+		return obj;
+
+	// YYY Could verify nickname does not exist or points to paying account.
+	// XXX Adjust fee for nickname create.
+
+	Transaction::pointer	trans	= Transaction::sharedNicknameSet(
+		naAccountPublic, naAccountPrivate,
+		naSrcAccountID,
+		asSrc->getSeq(),
+		saFee,
+		0,											// YYY No source tag
+		Ledger::getNicknameHash(strNickname),
+		bSetOffer,
+		saMinimumOffer,
+		vucSignature);
+
+	(void) mNetOps->processTransaction(trans);
+
+	obj["transaction"]	= trans->getSTransaction()->getJson(0);
+	obj["status"]		= trans->getStatus();
+
+	return obj;
 }
 
 // password_fund <seed> <paying_account> [<account>]
@@ -945,7 +1084,7 @@ Json::Value RPCServer::doPasswordSet(Json::Value& params)
 
 		NewcoinAddress		naMasterXPublic;
 		NewcoinAddress		naRegularXPublic;
-		uint				iIndex	= -1;	// Compensate for initial increment.
+		unsigned int		iIndex	= -1;	// Compensate for initial increment.
 		int					iMax	= theConfig.ACCOUNT_PROBE_MAX;
 
 		// YYY Could probe peridoically to see if accounts exists.
@@ -1033,11 +1172,11 @@ Json::Value RPCServer::doSend(Json::Value& params)
 	}
 	else if (!saDstAmount.setValue(params[3u].asString(), sDstCurrency))
 	{
-		return JSONRPCError(500, "bad dst amount/currency");
+		return JSONRPCError(400, "bad dst amount/currency");
 	}
 	else if (params.size() >= 6 && !saSrcAmount.setValue(params[5u].asString(), sSrcCurrency))
 	{
-		return JSONRPCError(500, "bad src amount/currency");
+		return JSONRPCError(400, "bad src amount/currency");
 	}
 	else if (!mNetOps->available())
 	{
@@ -1295,7 +1434,7 @@ Json::Value RPCServer::accounts(const uint256& uLedger, const NewcoinAddress& na
 
 	// YYY Don't want to leak to thin server that these accounts are related.
 	// YYY Would be best to alternate requests to servers and to cache results.
-	uint	uIndex	= 0;
+	unsigned int	uIndex	= 0;
 
 	do {
 		NewcoinAddress		naAccount;
@@ -1401,7 +1540,7 @@ Json::Value RPCServer::doWalletAdd(Json::Value& params)
 	}
 	else if (params.size() >= 4 && !saAmount.setValue(params[3u].asString(), sDstCurrency))
 	{
-		return JSONRPCError(500, "bad dst amount/currency");
+		return JSONRPCError(400, "bad dst amount/currency");
 	}
 	else if (!mNetOps->available())
 	{
@@ -1424,7 +1563,7 @@ Json::Value RPCServer::doWalletAdd(Json::Value& params)
 	    AccountState::pointer	asSrc;
 		STAmount				saSrcBalance;
 		Json::Value				obj			= authorize(uLedger, naRegularSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
-			saSrcBalance, theConfig.FEE_CREATE, asSrc, naMasterGenerator);
+			saSrcBalance, theConfig.FEE_ACCOUNT_CREATE, asSrc, naMasterGenerator);
 
 		if (!obj.empty())
 			return obj;
@@ -1471,7 +1610,7 @@ Json::Value RPCServer::doWalletAdd(Json::Value& params)
 				naAccountPublic, naAccountPrivate,
 				naSrcAccountID,
 				asSrc->getSeq(),
-				theConfig.FEE_CREATE,
+				theConfig.FEE_ACCOUNT_CREATE,
 				0,											// YYY No source tag
 				saAmount,
 				naAuthKeyID,
@@ -1632,7 +1771,7 @@ Json::Value RPCServer::doWalletCreate(Json::Value& params)
 	AccountState::pointer	asSrc;
 	STAmount				saSrcBalance;
 	Json::Value				obj				= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
-		saSrcBalance, theConfig.FEE_CREATE, asSrc, naMasterGenerator);
+		saSrcBalance, theConfig.FEE_ACCOUNT_CREATE, asSrc, naMasterGenerator);
 
 	if (!obj.empty())
 		return obj;
@@ -1646,7 +1785,7 @@ Json::Value RPCServer::doWalletCreate(Json::Value& params)
 		naAccountPublic, naAccountPrivate,
 		naSrcAccountID,
 		asSrc->getSeq(),
-		theConfig.FEE_CREATE,
+		theConfig.FEE_ACCOUNT_CREATE,
 		0,											// YYY No source tag
 		naDstAccountID,
 		saInitialFunds);							// Initial funds in XNC.
@@ -1867,6 +2006,8 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 	if (command == "account_wallet_set")	return doAccountWalletSet(params);
 	if (command == "connect")				return doConnect(params);
 	if (command == "credit_set")			return doCreditSet(params);
+	if (command == "nickname_info")			return doNicknameInfo(params);
+	if (command == "nickname_set")			return doNicknameSet(params);
 	if (command == "password_fund")			return doPasswordFund(params);
 	if (command == "password_set")			return doPasswordSet(params);
 	if (command == "peers")					return doPeers(params);

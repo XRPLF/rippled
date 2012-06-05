@@ -211,6 +211,15 @@ STVector256 NetworkOPs::getDirNode(const uint256& uLedger, const uint256& uDirLi
 }
 
 //
+// Nickname functions
+//
+
+NicknameState::pointer NetworkOPs::getNicknameState(const uint256& uLedger, const std::string& strNickname)
+{
+	return mLedgerMaster->getLedgerByHash(uLedger)->getNicknameState(strNickname);
+}
+
+//
 // Ripple functions
 //
 
