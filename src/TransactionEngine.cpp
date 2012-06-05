@@ -364,7 +364,17 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 			case ttPAYMENT:
 				if (txn.getFlags() & tfCreateAccount)
 				{
-					saCost	= theConfig.FEE_CREATE;
+					saCost	= theConfig.FEE_ACCOUNT_CREATE;
+				}
+				break;
+
+			case ttNICKNAME_SET:
+				{
+					LedgerStateParms	qry				= lepNONE;
+					SLE::pointer		sleNickname		= mLedger->getNickname(qry, txn.getITFieldH256(sfNickname));
+
+					if (!sleNickname)
+						saCost	= theConfig.FEE_NICKNAME_CREATE;
 				}
 				break;
 
@@ -878,7 +888,7 @@ TransactionEngineResult TransactionEngine::doNicknameSet(const SerializedTransac
 
 	SLE::pointer		sleSrc			= accounts[0].second;
 
-	uint256				uNickname		= txn.getITFieldH256(sfWalletLocator);
+	uint256				uNickname		= txn.getITFieldH256(sfNickname);
 	bool				bMinOffer		= txn.getITFieldPresent(sfMinimumOffer);
 	STAmount			saMinOffer		= bMinOffer ? txn.getITFieldAmount(sfAmount) : STAmount();
 
@@ -899,7 +909,7 @@ TransactionEngineResult TransactionEngine::doNicknameSet(const SerializedTransac
 			sleNickname->makeIFieldAbsent(sfMinimumOffer);
 		}
 
-		accounts.push_back(std::make_pair(taaCREATE, sleNickname));
+		accounts.push_back(std::make_pair(taaMODIFY, sleNickname));
 	}
 	else
 	{
