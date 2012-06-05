@@ -471,7 +471,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 			default:
 				if (!sleSrc->getIFieldPresent(sfAuthorizedKey))
 				{
-					std::cerr << "applyTransaction: Souce is an unclaimed account." << std::endl;
+					std::cerr << "applyTransaction: Source is an unclaimed account." << std::endl;
 
 					result	= tenUNCLAIMED;
 				}
