@@ -108,6 +108,8 @@ protected:
 	TransactionEngineResult doDelete(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts);
 	TransactionEngineResult doInvoice(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts);
 	TransactionEngineResult doOffer(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts);
+	TransactionEngineResult doNicknameSet(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts,
+								const uint160& uSrcAccountID);
 	TransactionEngineResult doPasswordFund(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts,
 								const uint160& uSrcAccountID);
 	TransactionEngineResult doPasswordSet(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts);

@@ -259,7 +259,7 @@ TransactionEngineResult	TransactionEngine::setAuthorized(const SerializedTransac
 						sleGen			= boost::make_shared<SerializedLedgerEntry>(ltGENERATOR_MAP);
 
 		sleGen->setIndex(Ledger::getGeneratorIndex(hGeneratorID));
-		sleGen->setIFieldH160(sfGeneratorID, hGeneratorID);
+//		sleGen->setIFieldH160(sfGeneratorID, hGeneratorID);
 		sleGen->setIFieldVL(sfGenerator, vucCipher);
 
 		accounts.push_back(std::make_pair(taaCREATE, sleGen));
@@ -548,7 +548,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	{
 		nothing();
 	}
-	else if (saCost)
+	else if (saCost.isZero())
 	{
 		uint32 a_seq = sleSrc->getIFieldU32(sfSequence);
 
@@ -620,6 +620,10 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 
 			case ttOFFER:
 				result = doOffer(txn, accounts);
+				break;
+
+			case ttNICKNAME_SET:
+				result = doNicknameSet(txn, accounts, srcAccountID);
 				break;
 
 			case ttPASSWORD_FUND:
@@ -867,6 +871,60 @@ TransactionEngineResult TransactionEngine::doCreditSet(const SerializedTransacti
 	std::cerr << "doCreditSet<" << std::endl;
 
 	return terResult;
+}
+
+TransactionEngineResult TransactionEngine::doNicknameSet(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts, const uint160& uSrcAccountID)
+{
+	std::cerr << "doNicknameSet>" << std::endl;
+
+	SLE::pointer		sleSrc			= accounts[0].second;
+
+	uint256				uNickname		= txn.getITFieldH256(sfWalletLocator);
+	bool				bMinOffer		= txn.getITFieldPresent(sfMinimumOffer);
+	STAmount			saMinOffer		= bMinOffer ? txn.getITFieldAmount(sfAmount) : STAmount();
+
+	LedgerStateParms	qry				= lepNONE;
+	SLE::pointer		sleNickname		= mLedger->getNickname(qry, uNickname);
+
+	if (sleNickname)
+	{
+		// Edit old entry.
+		sleNickname->setIFieldAccount(sfAccount, uSrcAccountID);
+
+		if (bMinOffer && !saMinOffer.isZero())
+		{
+			sleNickname->setIFieldAmount(sfMinimumOffer, saMinOffer);
+		}
+		else
+		{
+			sleNickname->makeIFieldAbsent(sfMinimumOffer);
+		}
+
+		accounts.push_back(std::make_pair(taaCREATE, sleNickname));
+	}
+	else
+	{
+		// Make a new entry.
+		// XXX Need to include authorization limiting.
+
+						sleNickname	= boost::make_shared<SerializedLedgerEntry>(ltNICKNAME);
+
+		sleNickname->setIndex(Ledger::getNicknameIndex(uNickname));
+		std::cerr << "doNicknameSet: Creating nickname node: " << sleNickname->getIndex().ToString() << std::endl;
+
+		sleNickname->setIFieldAccount(sfAccount, uSrcAccountID);
+
+		if (bMinOffer && !saMinOffer.isZero())
+			sleNickname->setIFieldAmount(sfMinimumOffer, saMinOffer);
+
+//		sleNickname->setIFieldH256(sfNickname, uNickname);
+
+		accounts.push_back(std::make_pair(taaCREATE, sleNickname));
+	}
+
+	std::cerr << "doNicknameSet<" << std::endl;
+
+	return terSUCCESS;
 }
 
 TransactionEngineResult TransactionEngine::doPasswordFund(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts, const uint160& uSrcAccountID)
