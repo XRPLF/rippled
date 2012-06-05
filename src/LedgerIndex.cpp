@@ -11,6 +11,29 @@ uint256 Ledger::getAccountRootIndex(const uint160& uAccountID)
 	return s.getSHA512Half();
 }
 
+// What is important:
+// --> uNickname: is a Sha256
+// <-- SHA512/2: for consistency and speed in generating indexes.
+uint256 Ledger::getNicknameIndex(const uint256& uNickname)
+{
+	Serializer	s;
+
+	s.add16(spaceNickname);
+	s.add256(uNickname);
+
+	return s.getSHA512Half();
+}
+
+uint256 Ledger::getGeneratorIndex(const uint160& uGeneratorID)
+{
+	Serializer	s;
+
+	s.add16(spaceGenerator);
+	s.add160(uGeneratorID);
+
+	return s.getSHA512Half();
+}
+
 uint256 Ledger::getRippleStateIndex(const NewcoinAddress& naA, const NewcoinAddress& naB, const uint160& uCurrency)
 {
 	uint160		uAID	= naA.getAccountID();
@@ -32,16 +55,6 @@ uint256 Ledger::getRippleDirIndex(const uint160& uAccountID)
 
 	s.add16(spaceRippleDir);
 	s.add160(uAccountID);
-
-	return s.getSHA512Half();
-}
-
-uint256 Ledger::getGeneratorIndex(const uint160& uGeneratorID)
-{
-	Serializer	s;
-
-	s.add16(spaceGenerator);
-	s.add160(uGeneratorID);
 
 	return s.getSHA512Half();
 }

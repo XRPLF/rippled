@@ -12,6 +12,7 @@ enum TransactionType
 	ttACCOUNT_SET		= 3,
 	ttPASSWORD_FUND		= 4,
 	ttPASSWORD_SET		= 5,
+	ttNICKNAME_SET		= 6,
 	ttCREDIT_SET		= 20,
 	ttTRANSIT_SET		= 21,
 	ttINVOICE			= 10,

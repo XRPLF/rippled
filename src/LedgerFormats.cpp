@@ -35,17 +35,16 @@ LedgerEntryFormat LedgerFormats[]=
 	},
 	{ "GeneratorMap", ltGENERATOR_MAP, {
 		{ S_FIELD(Flags),				STI_UINT32,		SOE_FLAGS,	  0 },
-		{ S_FIELD(GeneratorID),			STI_HASH160,	SOE_REQUIRED, 0 },
+//		{ S_FIELD(GeneratorID),			STI_HASH160,	SOE_REQUIRED, 0 },
 		{ S_FIELD(Generator),			STI_VL,			SOE_REQUIRED, 0 },
 		{ S_FIELD(Extensions),			STI_TL,			SOE_IFFLAG,   0x01000000 },
 		{ sfInvalid, NULL,				STI_DONE,		SOE_NEVER,	  -1 } }
 	},
 	{ "Nickname", ltNICKNAME, {
 		{ S_FIELD(Flags),				STI_UINT32,		SOE_FLAGS,	  0 },
-		{ S_FIELD(Nickname),			STI_HASH256,	SOE_REQUIRED, 0 },
+//		{ S_FIELD(Nickname),			STI_HASH256,	SOE_REQUIRED, 0 },
 		{ S_FIELD(Account),				STI_ACCOUNT,	SOE_REQUIRED, 0 },
 		{ S_FIELD(MinimumOffer),		STI_AMOUNT,		SOE_IFFLAG,   1 },
-		{ S_FIELD(OfferCurrency),		STI_HASH160,	SOE_IFFLAG,   2 },
 		{ S_FIELD(Extensions),			STI_TL,			SOE_IFFLAG,   0x01000000 },
 		{ sfInvalid, NULL,				STI_DONE,		SOE_NEVER,	  -1 } }
 	},

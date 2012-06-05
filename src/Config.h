@@ -75,8 +75,9 @@ public:
 	std::string	VALIDATION_KEY;
 
 	// Fees
-	uint64		FEE_CREATE;			// Fee to create an account
-	uint64		FEE_DEFAULT;		// Default fee.
+	uint64		FEE_DEFAULT;			// Default fee.
+	uint64		FEE_ACCOUNT_CREATE;		// Fee to create an account.
+	uint64		FEE_NICKNAME_CREATE;	// Fee to create a nickname.
 
 	// Configuration parameters
 	std::string DATA_DIR;
