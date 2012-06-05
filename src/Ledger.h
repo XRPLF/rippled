@@ -165,7 +165,7 @@ public:
 	// Nickname functions
 	//
 
-	uint256 getNicknameHash(const std::string& strNickname)
+	static uint256 getNicknameHash(const std::string& strNickname)
 	{ Serializer s(strNickname); return s.getSHA256(); }
 
 	NicknameState::pointer getNicknameState(const uint256& uNickname);

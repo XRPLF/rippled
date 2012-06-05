@@ -75,7 +75,8 @@ private:
 		const NewcoinAddress&				naPrivateKey,
 		const uint256&						uNickname,
 		bool								bSetOffer,
-		const STAmount&						saMinimumOffer);
+		const STAmount&						saMinimumOffer,
+		const std::vector<unsigned char>&	vucSignature);
 
 	Transaction::pointer setPasswordFund(
 		const NewcoinAddress&				naPrivateKey,
@@ -172,7 +173,8 @@ public:
 		uint32								uSourceTag,
 		const uint256&						uNickname,
 		bool								bSetOffer,
-		const STAmount&						saMinimumOffer);
+		const STAmount&						saMinimumOffer,
+		const std::vector<unsigned char>&	vucSignature);
 
 	// Pre-fund password change.
 	static Transaction::pointer sharedPasswordFund(

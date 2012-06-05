@@ -267,13 +267,17 @@ Transaction::pointer Transaction::setNicknameSet(
 	const NewcoinAddress&				naPrivateKey,
 	const uint256&						uNickname,
 	bool								bSetOffer,
-	const STAmount&						saMinimumOffer)
+	const STAmount&						saMinimumOffer,
+	const std::vector<unsigned char>&	vucSignature)
 {
 	mTransaction->setITFieldH256(sfNickname, uNickname);
 
 	// XXX Make sure field is present even for 0!
 	if (bSetOffer)
 		mTransaction->setITFieldAmount(sfMinimumOffer, saMinimumOffer);
+
+	if (!vucSignature.empty())
+		mTransaction->setITFieldVL(sfSignature, vucSignature);
 
 	sign(naPrivateKey);
 
@@ -290,11 +294,12 @@ Transaction::pointer Transaction::sharedNicknameSet(
 	uint32								uSourceTag,
 	const uint256&						uNickname,
 	bool								bSetOffer,
-	const STAmount&						saMinimumOffer)
+	const STAmount&						saMinimumOffer,
+	const std::vector<unsigned char>&	vucSignature)
 {
 	pointer	tResult	= boost::make_shared<Transaction>(ttNICKNAME_SET, naPublicKey, naSourceAccount, uSeq, saFee, uSourceTag);
 
-	return tResult->setNicknameSet(naPrivateKey, uNickname, bSetOffer, saMinimumOffer);
+	return tResult->setNicknameSet(naPrivateKey, uNickname, bSetOffer, saMinimumOffer, vucSignature);
 }
 
 //
