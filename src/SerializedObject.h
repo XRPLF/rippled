@@ -72,7 +72,6 @@ enum SOE_Field
 	sfNextTransitStart,
 	sfNickname,
 	sfOfferCurrency,
-	sfOfferMin,
 	sfPaths,
 	sfPubKey,
 	sfSendMax,

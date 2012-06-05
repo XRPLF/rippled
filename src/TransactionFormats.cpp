@@ -47,7 +47,7 @@ TransactionFormat InnerTxnFormats[]=
 	{ "NicknameSet", ttNICKNAME_SET, {
 		{ S_FIELD(Flags),			STI_UINT32,  SOE_FLAGS,    0 },
 		{ S_FIELD(Nickname),		STI_HASH256, SOE_IFFLAG,   8 },
-		{ S_FIELD(OfferMin),		STI_AMOUNT,  SOE_IFFLAG,   1 },
+		{ S_FIELD(MinimumOffer),	STI_AMOUNT,  SOE_IFFLAG,   1 },
 		{ S_FIELD(Signature),		STI_VL,		 SOE_IFFLAG,   2 },
 		{ S_FIELD(SourceTag),		STI_UINT32,  SOE_IFFLAG,   1 },
 		{ S_FIELD(Extensions),		STI_TL,		 SOE_IFFLAG,   0x02000000 },
