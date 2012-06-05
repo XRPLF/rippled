@@ -260,6 +260,44 @@ Transaction::pointer Transaction::sharedCreditSet(
 }
 
 //
+// NicknameSet
+//
+
+Transaction::pointer Transaction::setNicknameSet(
+	const NewcoinAddress&				naPrivateKey,
+	const uint256&						uNickname,
+	bool								bSetOffer,
+	const STAmount&						saMinimumOffer)
+{
+	mTransaction->setITFieldH256(sfNickname, uNickname);
+
+	// XXX Make sure field is present even for 0!
+	if (bSetOffer)
+		mTransaction->setITFieldAmount(sfMinimumOffer, saMinimumOffer);
+
+	sign(naPrivateKey);
+
+	return shared_from_this();
+}
+
+// --> bSetOffer: true, change offer
+// --> saMinimumOffer: 0 to remove.
+Transaction::pointer Transaction::sharedNicknameSet(
+	const NewcoinAddress& naPublicKey, const NewcoinAddress& naPrivateKey,
+	const NewcoinAddress&				naSourceAccount,
+	uint32								uSeq,
+	const STAmount&						saFee,
+	uint32								uSourceTag,
+	const uint256&						uNickname,
+	bool								bSetOffer,
+	const STAmount&						saMinimumOffer)
+{
+	pointer	tResult	= boost::make_shared<Transaction>(ttNICKNAME_SET, naPublicKey, naSourceAccount, uSeq, saFee, uSourceTag);
+
+	return tResult->setNicknameSet(naPrivateKey, uNickname, bSetOffer, saMinimumOffer);
+}
+
+//
 // PasswordFund
 //
 

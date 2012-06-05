@@ -71,6 +71,12 @@ private:
 		const STAmount&						saLimitAmount,
 		uint32								uAcceptRate);
 
+	Transaction::pointer setNicknameSet(
+		const NewcoinAddress&				naPrivateKey,
+		const uint256&						uNickname,
+		bool								bSetOffer,
+		const STAmount&						saMinimumOffer);
+
 	Transaction::pointer setPasswordFund(
 		const NewcoinAddress&				naPrivateKey,
 		const NewcoinAddress&				naDstAccountID);
@@ -156,6 +162,17 @@ public:
 		const NewcoinAddress&				naDstAccountID,
 		const STAmount&						saLimitAmount,
 		uint32								uAcceptRate);
+
+	// Set Nickname
+	static Transaction::pointer sharedNicknameSet(
+		const NewcoinAddress& naPublicKey, const NewcoinAddress& naPrivateKey,
+		const NewcoinAddress&				naSourceAccount,
+		uint32								uSeq,
+		const STAmount&						saFee,
+		uint32								uSourceTag,
+		const uint256&						uNickname,
+		bool								bSetOffer,
+		const STAmount&						saMinimumOffer);
 
 	// Pre-fund password change.
 	static Transaction::pointer sharedPasswordFund(
