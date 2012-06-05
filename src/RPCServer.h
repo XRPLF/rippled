@@ -42,7 +42,7 @@ private:
 	Json::Value getMasterGenerator(const uint256& uLedger, const NewcoinAddress& naRegularSeed, NewcoinAddress& naMasterGenerator);
 	Json::Value authorize(const uint256& uLedger, const NewcoinAddress& naRegularSeed, const NewcoinAddress& naSrcAccountID,
 	    NewcoinAddress& naAccountPublic, NewcoinAddress& naAccountPrivate,
-		STAmount& saSrcBalance, uint64 uFee, AccountState::pointer& asSrc,
+		STAmount& saSrcBalance, const STAmount& saFee, AccountState::pointer& asSrc,
 		const NewcoinAddress& naVerifyGenerator);
 	Json::Value accounts(const uint256& uLedger, const NewcoinAddress& naMasterGenerator);
 
