@@ -2,7 +2,6 @@
 #define __LEDGER_CONSENSUS__
 
 #include <list>
-#include <deque>
 
 #include <boost/weak_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
@@ -114,7 +113,7 @@ protected:
 	void removePosition(LedgerProposal&, bool ours);
 	void sendHaveTxSet(const std::vector<uint256>& txSetHashes);
 	void applyTransactions(SHAMap::pointer transactionSet, Ledger::pointer targetLedger,
-		std::deque<SerializedTransaction::pointer>& failedTransactions);
+		std::list<SerializedTransaction::pointer>& failedTransactions);
 
 	// manipulating our own position
 	void takeInitialPosition(Ledger::pointer initialLedger);

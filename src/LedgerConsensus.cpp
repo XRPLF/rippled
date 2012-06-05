@@ -584,12 +584,11 @@ void LedgerConsensus::Saccept(boost::shared_ptr<LedgerConsensus> This, SHAMap::p
 }
 
 void LedgerConsensus::applyTransactions(SHAMap::pointer set, Ledger::pointer ledger,
-	std::deque<SerializedTransaction::pointer>& failedTransactions)
+	std::list<SerializedTransaction::pointer>& failedTransactions)
 {
 	TransactionEngine engine(ledger);
 
-	SHAMapItem::pointer item = set->peekFirstItem();
-	while (item)
+	for (SHAMapItem::pointer item = set->peekFirstItem(); !!item; item = set->peekNextItem(item->getTag()))
 	{
 		Log(lsINFO) << "Processing candidate transaction: " << item->getTag().GetHex();
 #ifndef TRUST_NETWORK
@@ -622,14 +621,13 @@ void LedgerConsensus::applyTransactions(SHAMap::pointer set, Ledger::pointer led
 			Log(lsWARNING) << "  Throws";
 		}
 #endif
-		item = set->peekNextItem(item->getTag());
 	}
 
 	int successes;
 	do
 	{
 		successes = 0;
-		std::deque<SerializedTransaction::pointer>::iterator it = failedTransactions.begin();
+		std::list<SerializedTransaction::pointer>::iterator it = failedTransactions.begin();
 		while (it != failedTransactions.end())
 		{
 			try
@@ -674,7 +672,7 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 	}
 #endif
 
-	std::deque<SerializedTransaction::pointer> failedTransactions;
+	std::list<SerializedTransaction::pointer> failedTransactions;
 	applyTransactions(set, newLCL, failedTransactions);
 	newLCL->setClosed();
 	newLCL->setAccepted();
