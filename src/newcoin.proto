@@ -203,8 +203,8 @@ message TMObjectByHash
 }
 
 message TMLedgerNode {
-	required bytes nodeid			= 1;
-	required bytes nodedata			= 2;
+	required bytes nodedata			= 1;
+	optional bytes nodeid			= 2;	// missing for ledger base data
 }
 
 enum TMLedgerInfoType {

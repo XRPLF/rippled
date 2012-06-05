@@ -127,7 +127,7 @@ public:
 	Ledger::pointer getDefaultLedger()				{ return mDefaultLedger; }
 	void setDefaultLedger(Ledger::pointer ledger)	{ mDefaultLedger = ledger; }
 	Ledger::pointer getAlternateLedger()			{ return mAlternateLedger; }
-	void setAlternateLedger(Ledger::pointer ledger)	{ mDefaultLedger = ledger; }
+	void setAlternateLedger(Ledger::pointer ledger)	{ mAlternateLedger = ledger; }
 	void setLedger(Ledger::pointer ledger)			{ mDefaultLedger = ledger;
 													  mAlternateLedger = Ledger::pointer(); }
 
