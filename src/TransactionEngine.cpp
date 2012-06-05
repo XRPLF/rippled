@@ -394,7 +394,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 
 	if (terSUCCESS == result && (params & tepNO_CHECK_FEE) == tepNONE)
 	{
-		if (saCost)
+		if (!saCost.isZero())
 		{
 			if (saPaid < saCost)
 			{
@@ -471,9 +471,9 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 			default:
 				if (!sleSrc->getIFieldPresent(sfAuthorizedKey))
 				{
-					std::cerr << "applyTransaction: Souce is an unclaimed account." << std::endl;
+					std::cerr << "applyTransaction: Source is an unclaimed account." << std::endl;
 
-					result	= tenUNCLAIMED;
+					result	= terUNCLAIMED;
 				}
 				break;
 		}
@@ -514,9 +514,9 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 				// Verify the transaction's signing public key is the key authorized for signing.
 				if (naSigningPubKey.getAccountID() != sleSrc->getIValueFieldAccount(sfAuthorizedKey).getAccountID())
 				{
-					std::cerr << "applyTransaction: Not authorized to use account." << std::endl;
+					std::cerr << "applyTransaction: Delay: Not authorized to use account." << std::endl;
 
-					result	= tenBAD_AUTH;
+					result	= terBAD_AUTH;
 				}
 				break;
 		}
@@ -532,8 +532,8 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	{
 		std::cerr
 			<< str(boost::format("applyTransaction: Delay transaction: insufficent balance: balance=%s paid=%s")
-				% saSrcBalance
-				% saPaid)
+				% saSrcBalance.getText()
+				% saPaid.getText())
 			<< std::endl;
 
 		result	= terINSUF_FEE_B;
@@ -548,13 +548,12 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	{
 		nothing();
 	}
-	else if (saCost.isZero())
+	else if (!saCost.isZero())
 	{
 		uint32 a_seq = sleSrc->getIFieldU32(sfSequence);
-
+		Log(lsINFO) << "Aseq=" << a_seq << ", Tseq=" << t_seq;
 		if (t_seq != a_seq)
 		{
-			// WRITEME: Special case code for changing transaction key
 			if (a_seq < t_seq)
 			{
 				std::cerr << "applyTransaction: future sequence number" << std::endl;
@@ -576,11 +575,12 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 		}
 		else
 		{
-			sleSrc->setIFieldU32(sfSequence, t_seq);
+			sleSrc->setIFieldU32(sfSequence, t_seq + 1);
 		}
 	}
 	else
 	{
+		Log(lsINFO) << "Zero cost transaction";
 		if (t_seq)
 		{
 			std::cerr << "applyTransaction: bad sequence for pre-paid transaction" << std::endl;
@@ -654,7 +654,6 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 
 	if (terSUCCESS == result)
 	{ // Write back the account states and add the transaction to the ledger
-		// WRITEME: Special case code for changing transaction key
 		for (std::vector<AffectedAccount>::iterator it = accounts.begin(), end = accounts.end();
 			it != end; ++it)
 		{
@@ -1231,8 +1230,8 @@ TransactionEngineResult TransactionEngine::doWalletAdd(const SerializedTransacti
 	{
 		std::cerr
 			<< str(boost::format("WalletAdd: Delay transaction: insufficent balance: balance=%s amount=%s")
-				% saSrcBalance
-				% saAmount)
+				% saSrcBalance.getText()
+				% saAmount.getText())
 			<< std::endl;
 
 		return terUNFUNDED;

@@ -274,6 +274,7 @@ public:
 	bool isNegative() const		{ return mIsNegative && !isZero(); }
 	bool isPositive() const		{ return !mIsNegative && !isZero(); }
 	bool isGEZero() const		{ return !mIsNegative; }
+	operator bool() const		{ return !isZero(); }
 
 	void changeSign()			{ if (!isZero()) mIsNegative = !mIsNegative; }
 	void zero()					{ mOffset = mIsNative ? -100 : 0; mValue = 0; mIsNegative = false; }

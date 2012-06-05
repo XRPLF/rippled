@@ -33,6 +33,9 @@ enum LedgerStateParms
 	lepERROR		= 32,	// error
 };
 
+#define LEDGER_JSON_DUMP_TXNS	0x10000000
+#define LEDGER_JSON_DUMP_STATE	0x20000000
+
 class Ledger : public boost::enable_shared_from_this<Ledger>
 { // The basic Ledger structure, can be opened, closed, or synching
 	friend class TransactionEngine;
@@ -222,7 +225,7 @@ public:
 	bool isCompatible(boost::shared_ptr<Ledger> other);
 //	bool signLedger(std::vector<unsigned char> &signature, const LocalHanko &hanko);
 
-	void addJson(Json::Value&);
+	void addJson(Json::Value&, int options);
 
 	static bool unitTest();
 };
