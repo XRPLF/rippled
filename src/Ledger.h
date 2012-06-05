@@ -13,6 +13,7 @@
 #include "Transaction.h"
 #include "AccountState.h"
 #include "RippleState.h"
+#include "NicknameState.h"
 #include "types.h"
 #include "BitcoinUtil.h"
 #include "SHAMap.h"
@@ -137,8 +138,6 @@ public:
 	LedgerStateParms writeBack(LedgerStateParms parms, SLE::pointer);
 	SLE::pointer getAccountRoot(LedgerStateParms& parms, const uint160& accountID);
 	SLE::pointer getAccountRoot(LedgerStateParms& parms, const NewcoinAddress& naAccountID);
-	SLE::pointer getNickname(LedgerStateParms& parms, const std::string& nickname);
-	SLE::pointer getNickname(LedgerStateParms& parms, const uint256& nickHash);
 
 	// database functions
 	static void saveAcceptedLedger(Ledger::pointer);
@@ -160,25 +159,21 @@ public:
 	static uint256 getGeneratorIndex(const uint160& uGeneratorID);
 
 	//
-	// Ripple functions
+	// Nickname functions
 	//
 
-	static uint256 getRippleStateIndex(const NewcoinAddress& naA, const NewcoinAddress& naB, const uint160& uCurrency);
-	static uint256 getRippleStateIndex(const uint160& uiA, const uint160& uiB, const uint160& uCurrency)
-		{ return getRippleStateIndex(NewcoinAddress::createAccountID(uiA), NewcoinAddress::createAccountID(uiB), uCurrency); }
+	uint256 getNicknameHash(const std::string& strNickname)
+	{ Serializer s(strNickname); return s.getSHA256(); }
 
-	static uint256 getRippleStateIndex(const NewcoinAddress& naA, const NewcoinAddress& naB)
-		{ return getRippleStateIndex(naA, naB, uint160()); }
-	static uint256 getRippleDirIndex(const uint160& uAccountID);
+	NicknameState::pointer getNicknameState(const uint256& uNickname);
+	NicknameState::pointer getNicknameState(const std::string& strNickname)
+	{ return getNicknameState(getNicknameHash(strNickname)); }
 
-	RippleState::pointer getRippleState(const uint256& uNode);
-	SLE::pointer getRippleState(LedgerStateParms& parms, const uint256& uNode);
+	SLE::pointer getNickname(LedgerStateParms& parms, const uint256& uNickname);
+	SLE::pointer getNickname(LedgerStateParms& parms, const std::string& strNickname)
+	{ return getNickname(parms, getNicknameHash(strNickname)); }
 
-	SLE::pointer getRippleState(LedgerStateParms& parms, const NewcoinAddress& naA, const NewcoinAddress& naB, const uint160& uCurrency)
-		{ return getRippleState(parms, getRippleStateIndex(naA, naB, uCurrency)); }
-
-	SLE::pointer getRippleState(LedgerStateParms& parms, const uint160& uiA, const uint160& uiB, const uint160& uCurrency)
-		{ return getRippleState(parms, getRippleStateIndex(NewcoinAddress::createAccountID(uiA), NewcoinAddress::createAccountID(uiB), uCurrency)); }
+	static uint256 getNicknameIndex(const uint256& uNickname);
 
 	//
 	// Offer functions
@@ -199,6 +194,27 @@ public:
 
 	SLE::pointer getDirRoot(LedgerStateParms& parms, const uint256& uRootIndex);
 	SLE::pointer getDirNode(LedgerStateParms& parms, const uint256& uNodeIndex);
+
+	//
+	// Ripple functions
+	//
+
+	static uint256 getRippleStateIndex(const NewcoinAddress& naA, const NewcoinAddress& naB, const uint160& uCurrency);
+	static uint256 getRippleStateIndex(const uint160& uiA, const uint160& uiB, const uint160& uCurrency)
+		{ return getRippleStateIndex(NewcoinAddress::createAccountID(uiA), NewcoinAddress::createAccountID(uiB), uCurrency); }
+
+	static uint256 getRippleStateIndex(const NewcoinAddress& naA, const NewcoinAddress& naB)
+		{ return getRippleStateIndex(naA, naB, uint160()); }
+	static uint256 getRippleDirIndex(const uint160& uAccountID);
+
+	RippleState::pointer getRippleState(const uint256& uNode);
+	SLE::pointer getRippleState(LedgerStateParms& parms, const uint256& uNode);
+
+	SLE::pointer getRippleState(LedgerStateParms& parms, const NewcoinAddress& naA, const NewcoinAddress& naB, const uint160& uCurrency)
+		{ return getRippleState(parms, getRippleStateIndex(naA, naB, uCurrency)); }
+
+	SLE::pointer getRippleState(LedgerStateParms& parms, const uint160& uiA, const uint160& uiB, const uint160& uCurrency)
+		{ return getRippleState(parms, getRippleStateIndex(NewcoinAddress::createAccountID(uiA), NewcoinAddress::createAccountID(uiB), uCurrency)); }
 
 	//
 	// Misc
