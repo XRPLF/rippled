@@ -22,6 +22,7 @@
 #include "Conversion.h"
 #include "NewcoinAddress.h"
 #include "AccountState.h"
+#include "NicknameState.h"
 #include "utils.h"
 
 #define VALIDATORS_FETCH_SECONDS	30
@@ -824,6 +825,78 @@ Json::Value RPCServer::doCreditSet(Json::Value& params)
 
 		return obj;
 	}
+}
+
+// nickname_info <nickname>
+Json::Value RPCServer::doNicknameInfo(Json::Value& params)
+{
+	uint256			uLedger;
+
+	if (params.size() != 1)
+	{
+		return JSONRPCError(400, "invalid params");
+	}
+
+	std::string	strNickname	= params[0u].asString();
+		boost::trim(strNickname);
+
+	if (strNickname.empty())
+	{
+		return JSONRPCError(400, "invalid nickname (zero length)");
+	}
+	else if (!mNetOps->available())
+	{
+		return JSONRPCError(503, "network not available");
+	}
+	else if ((uLedger = mNetOps->getCurrentLedger()).isZero())
+	{
+		return JSONRPCError(503, "no current ledger");
+	}
+
+	NicknameState::pointer	nsSrc	= mNetOps->getNicknameState(uLedger, strNickname);
+	if (!nsSrc)
+	{
+		return JSONRPCError(500, "nickname does not exist");
+	}
+
+	Json::Value ret(Json::objectValue);
+
+	ret["nickname"]	= strNickname;
+
+	nsSrc->addJson(ret);
+
+	return ret;
+}
+
+// nickname_set <seed> <paying_account> <nickname> [<offer_minimum>] [<authorization>]
+Json::Value RPCServer::doNicknameSet(Json::Value& params)
+{
+	uint256			uLedger;
+
+	if (params.size() < 2 || params.size() > 3)
+	{
+		return JSONRPCError(400, "invalid params");
+	}
+
+	std::string	strNickname	= params[2u].asString();
+		boost::trim(strNickname);
+
+	if (strNickname.empty())
+	{
+		return JSONRPCError(400, "invalid nickname (zero length)");
+	}
+	else if (!mNetOps->available())
+	{
+		return JSONRPCError(503, "network not available");
+	}
+	else if ((uLedger = mNetOps->getCurrentLedger()).isZero())
+	{
+		return JSONRPCError(503, "no current ledger");
+	}
+
+	NicknameState::pointer	nsSrc	= mNetOps->getNicknameState(uLedger, strNickname);
+
+	return "not implemented";
 }
 
 // password_fund <seed> <paying_account> [<account>]
@@ -1867,6 +1940,8 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 	if (command == "account_wallet_set")	return doAccountWalletSet(params);
 	if (command == "connect")				return doConnect(params);
 	if (command == "credit_set")			return doCreditSet(params);
+	if (command == "nickname_info")			return doNicknameInfo(params);
+	if (command == "nickname_set")			return doNicknameSet(params);
 	if (command == "password_fund")			return doPasswordFund(params);
 	if (command == "password_set")			return doPasswordSet(params);
 	if (command == "peers")					return doPeers(params);
