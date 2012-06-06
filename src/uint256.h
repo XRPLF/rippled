@@ -233,7 +233,7 @@ public:
 		while (phexdigit[*pEnd] >= 0)
 			pEnd++;
 
-		if (pEnd-pBegin > 2*size())
+		if ((unsigned int)(pEnd-pBegin) > 2*size())
 			pBegin = pEnd - 2*size();
 
 		unsigned char* pOut	= end()-((pEnd-pBegin+1)/2);

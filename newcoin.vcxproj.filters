@@ -281,9 +281,6 @@
     <ClInclude Include="NetworkThread.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="RPCDoor.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="PeerDoor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -306,9 +303,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="RPCCommands.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RPCServer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="TransactionBundle.h">
@@ -430,6 +424,7 @@
       <Filter>tests\client2</Filter>
     </None>
     <None Include="SConstruct" />
+    <None Include="newcoind.cfg" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="src\newcoin.proto" />

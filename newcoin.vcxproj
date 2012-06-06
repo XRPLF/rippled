@@ -193,9 +193,7 @@
     <ClInclude Include="Peer.h" />
     <ClInclude Include="RequestParser.h" />
     <ClInclude Include="RPC.h" />
-    <ClInclude Include="RPCServer.h" />
     <ClInclude Include="RPCCommands.h" />
-    <ClInclude Include="RPCDoor.h" />
     <ClInclude Include="script.h" />
     <ClInclude Include="SecureAllocator.h" />
     <ClInclude Include="Serializer.h" />
@@ -218,6 +216,7 @@
       <SubType>Designer</SubType>
     </None>
     <None Include="Makefile" />
+    <None Include="newcoind.cfg" />
     <None Include="nodes.xml" />
     <None Include="notes.txt" />
     <CustomBuild Include="src\newcoin.proto">
