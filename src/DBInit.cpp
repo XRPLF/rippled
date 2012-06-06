@@ -68,6 +68,8 @@ const char *WalletDBInit[] = {
 		FetchUpdated	DATETIME					\
 	);",
 
+	// Scoring and other information for domains.
+	//
 	// Domain:
 	//  Domain source for https.
 	// PublicKey:
@@ -104,7 +106,7 @@ const char *WalletDBInit[] = {
 	"CREATE INDEX SeedDomainNext ON SeedDomains (Next);",
 
 	// Table of PublicKeys user has asked to trust.
-	// Fetches are made to the CAS.
+	// Fetches are made to the CAS.  This gets the newcoin.txt so even validators without a web server can publish a newcoin.txt.
 	// Next:
 	//  Time of next fetch attempt.
 	// Scan:
@@ -127,7 +129,8 @@ const char *WalletDBInit[] = {
 	// Allow us to easily find the next SeedNode to fetch.
 	"CREATE INDEX SeedNodeNext ON SeedNodes (Next);",
 
-	// Table of trusted nodes.
+	// Nodes we trust not grossly consipire.  Derived from SeedDomains, SeedNodes, and ValidatorReferrals.
+	//
 	// Score:
 	//  Computed trust score.  Higher is better.
 	// Seen:
