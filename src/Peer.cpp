@@ -800,6 +800,7 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 
 		if(packet.itype() == newcoin::liBASE)
 		{ // they want the ledger base data
+			Log(lsTRACE) << "Want ledger base data";
 			Serializer nData(128);
 			ledger->addRaw(nData);
 			reply.add_nodes()->set_nodedata(nData.getDataPtr(), nData.getLength());
@@ -834,6 +835,7 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 		{
 			std::vector<SHAMapNode>::iterator nodeIDIterator;
 			std::list< std::vector<unsigned char> >::iterator rawNodeIterator;
+			int count = 0;
 			for(nodeIDIterator = nodeIDs.begin(), rawNodeIterator = rawNodes.begin();
 				nodeIDIterator != nodeIDs.end(); ++nodeIDIterator, ++rawNodeIterator)
 			{
@@ -842,7 +844,9 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 				newcoin::TMLedgerNode* node = reply.add_nodes();
 				node->set_nodeid(nID.getDataPtr(), nID.getLength());
 				node->set_nodedata(&rawNodeIterator->front(), rawNodeIterator->size());
+				++count;
 			}
+			Log(lsTRACE) << "GetNodeFat: sending " << count << " nodes";
 		}
 	}
 	PackedMessage::pointer oPacket = boost::make_shared<PackedMessage>(reply, newcoin::mtLEDGER_DATA);
@@ -875,12 +879,12 @@ void Peer::recvLedger(newcoin::TMLedgerData& packet)
 		for (int i = 0; i < packet.nodes().size(); ++i)
 		{
 			const newcoin::TMLedgerNode& node = packet.nodes(i);
-			if (!node.has_nodeid() || !node.has_nodedata())
+			if (!node.has_nodeid() || !node.has_nodedata() || (node.nodeid().size() != 33))
 			{
+				Log(lsWARNING) << "LedgerData request with invalid node ID";
 				punishPeer(PP_INVALID_REQUEST);
 				return;
 			}
-
 			nodeIDs.push_back(SHAMapNode(node.nodeid().data(), node.nodeid().size()));
 			nodeData.push_back(std::vector<unsigned char>(node.nodedata().begin(), node.nodedata().end()));
 		}

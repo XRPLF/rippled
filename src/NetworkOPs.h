@@ -4,6 +4,7 @@
 #include "LedgerMaster.h"
 #include "AccountState.h"
 #include "RippleState.h"
+#include "NicknameState.h"
 
 // #include <boost/asio.hpp>
 
@@ -81,6 +82,12 @@ public:
 	bool					getDirInfo(const uint256& uLedger, const uint256& uBase,
 								uint256& uDirNodeFirst, uint256& uDirNodeLast);
 	STVector256				getDirNode(const uint256& uLedger, const uint256& uDirLineNode);
+
+	//
+	// Nickname functions
+	//
+
+	NicknameState::pointer	getNicknameState(const uint256& uLedger, const std::string& strNickname);
 
 	//
 	// Ripple functions

@@ -79,7 +79,7 @@ public:
 	DatabaseCon* getLedgerDB()		{ return mLedgerDB; }
 	DatabaseCon* getWalletDB()		{ return mWalletDB; }
 	DatabaseCon* getHashNodeDB()	{ return mHashNodeDB; }
-	DatabaseCon* getNetNodeDB() 	{ return mNetNodeDB; }
+	DatabaseCon* getNetNodeDB()		{ return mNetNodeDB; }
 
 	uint256 getNonce256()			{ return mNonce256; }
 	std::size_t getNonceST()		{ return mNonceST; }

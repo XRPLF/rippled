@@ -8,7 +8,8 @@
 #include <boost/lexical_cast.hpp>
 
 // Fees are in XNS raw.
-#define	DEFAULT_FEE_CREATE				1000
+#define	DEFAULT_FEE_ACCOUNT_CREATE		1000
+#define	DEFAULT_FEE_NICKNAME_CREATE		1000
 #define	DEFAULT_FEE_DEFAULT				100
 
 #define CONFIG_FILE_NAME				SYSTEM_NAME "d.cfg"	// newcoind.cfg
@@ -25,7 +26,8 @@
 #define	SECTION_PEER_CONNECT_LOW_WATER	"peer_connect_low_water"
 #define SECTION_NETWORK_QUORUM			"network_quorum"
 #define SECTION_VALIDATION_QUORUM		"validation_quorum"
-#define SECTION_FEE_CREATE				"fee_create"
+#define SECTION_FEE_ACCOUNT_CREATE		"fee_account_create"
+#define SECTION_FEE_NICKNAME_CREATE		"fee_nickname_create"
 #define SECTION_FEE_DEFAULT				"fee_default"
 #define SECTION_ACCOUNT_PROBE_MAX		"account_probe_max"
 
@@ -61,7 +63,8 @@ Config::Config()
 	NETWORK_QUORUM			= 0;	// Don't need to see other nodes
 	VALIDATION_QUORUM		= 1;	// Only need one node to vouch
 
-	FEE_CREATE				= DEFAULT_FEE_CREATE;
+	FEE_ACCOUNT_CREATE		= DEFAULT_FEE_ACCOUNT_CREATE;
+	FEE_NICKNAME_CREATE		= DEFAULT_FEE_NICKNAME_CREATE;
 	FEE_DEFAULT				= DEFAULT_FEE_DEFAULT;
 
 	ACCOUNT_PROBE_MAX		= 10;
@@ -123,8 +126,11 @@ void Config::load()
 			if (sectionSingleB(secConfig, SECTION_VALIDATION_QUORUM, strTemp))
 				VALIDATION_QUORUM = MAX(0, boost::lexical_cast<int>(strTemp));
 
-			if (sectionSingleB(secConfig, SECTION_FEE_CREATE, strTemp))
-				FEE_CREATE = boost::lexical_cast<int>(strTemp);
+			if (sectionSingleB(secConfig, SECTION_FEE_ACCOUNT_CREATE, strTemp))
+				FEE_ACCOUNT_CREATE = boost::lexical_cast<int>(strTemp);
+
+			if (sectionSingleB(secConfig, SECTION_FEE_NICKNAME_CREATE, strTemp))
+				FEE_NICKNAME_CREATE = boost::lexical_cast<int>(strTemp);
 
 			if (sectionSingleB(secConfig, SECTION_FEE_DEFAULT, strTemp))
 				FEE_DEFAULT = boost::lexical_cast<int>(strTemp);

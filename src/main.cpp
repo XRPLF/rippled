@@ -46,6 +46,8 @@ void printHelp(const po::options_description& desc)
 	cout << "     connect <ip> [<port>]" << endl;
 	cout << "     credit_set <seed> <paying_account> <destination_account> <limit_amount> <currency> [<account_rate>]" << endl;
 	cout << "     ledger" << endl;
+	cout << "     nickname_info <nickname>" << endl;
+	cout << "     nickname_set <seed> <paying_account> <nickname> [<offer_minimum>] [<authorization>]" << endl;
 	cout << "     password_fund <seed> <paying_account> [<account>]" << endl;
 	cout << "     password_set <master_seed> <regular_seed> [<account>]" << endl;
 	cout << "     peers" << endl;

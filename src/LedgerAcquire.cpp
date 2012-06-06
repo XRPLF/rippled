@@ -403,7 +403,6 @@ bool LedgerAcquireMaster::gotLedgerData(newcoin::TMLedgerData& packet, Peer::poi
 	{
 		if (packet.nodes_size() != 1) return false;
 		const newcoin::TMLedgerNode& node = packet.nodes(0);
-		if (!node.has_nodedata()) return false;
 		return ledger->takeBase(node.nodedata(), peer);
 	}
 	else if ((packet.type() == newcoin::liTX_NODE) || (packet.type() == newcoin::liAS_NODE))

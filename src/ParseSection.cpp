@@ -6,7 +6,7 @@
 
 #define SECTION_DEFAULT_NAME	""
 
-section ParseSection(const std::string strInput, const bool bTrim)
+section ParseSection(const std::string& strInput, const bool bTrim)
 {
     std::string strData(strInput);
     std::vector<std::string> vLines;
@@ -66,7 +66,7 @@ void PrintSection(section secInput)
     std::cerr << "PrintSection<" << std::endl;
 }
 
-section::mapped_type* sectionEntries(section& secSource, const std::string strSection)
+section::mapped_type* sectionEntries(section& secSource, const std::string& strSection)
 {
 	section::iterator		it;
 	section::mapped_type*	smtResult;
@@ -86,14 +86,14 @@ section::mapped_type* sectionEntries(section& secSource, const std::string strSe
 	return smtResult;
 }
 
-int sectionCount(section& secSource, std::string strSection)
+int sectionCount(section& secSource, const std::string& strSection)
 {
 	section::mapped_type* pmtEntries	= sectionEntries(secSource, strSection);
 
 	return pmtEntries ? -1 : pmtEntries->size();
 }
 
-bool sectionSingleB(section& secSource, const std::string strSection, std::string& strValue)
+bool sectionSingleB(section& secSource, const std::string& strSection, std::string& strValue)
 {
 	section::mapped_type*	pmtEntries	= sectionEntries(secSource, strSection);
 	bool					bSingle		= pmtEntries && 1 == pmtEntries->size();

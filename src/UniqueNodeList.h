@@ -12,6 +12,7 @@
 
 #include <boost/thread/mutex.hpp>
 #include <boost/unordered_map.hpp>
+#include <boost/unordered_set.hpp>
 
 // Guarantees minimum thoughput of 1 node per second.
 #define NODE_FETCH_JOBS			10
@@ -44,6 +45,10 @@ private:
 	boost::posix_time::ptime		mtpScoreUpdated;
 	boost::posix_time::ptime		mtpFetchUpdated;
 
+	boost::recursive_mutex				mUNLLock;
+	// XXX Make this faster, make this the contents vector unsigned char or raw public key.
+	boost::unordered_set<std::string>	mUNL;
+
 	bool	miscLoad();
 	bool	miscSave();
 
@@ -58,6 +63,7 @@ private:
 		std::string					strComment;
 	} seedDomain;
 
+	// Used to distribute scores.
 	typedef struct {
 		int					iScore;
 		int					iRoundScore;
@@ -70,6 +76,8 @@ private:
 	typedef boost::unordered_map<std::string,int> strIndex;
 	typedef std::pair<std::string,int> ipPort;
 	typedef boost::unordered_map<std::pair< std::string, int>, score>	epScore;
+
+	void trustedLoad();
 
 	bool scoreRound(std::vector<scoreNode>& vsnNodes);
 	int iSourceScore(validatorSource vsWhy);
@@ -98,11 +106,11 @@ private:
 
 	void getValidatorsUrl(NewcoinAddress naNodePublic, section secSite);
 	void getIpsUrl(NewcoinAddress naNodePublic, section secSite);
-	void responseIps(const std::string& strSite, NewcoinAddress naNodePublic, const boost::system::error_code& err, const std::string strIpsFile);
+	void responseIps(const std::string& strSite, const NewcoinAddress& naNodePublic, const boost::system::error_code& err, const std::string strIpsFile);
 	void responseValidators(const std::string& strValidatorsUrl, NewcoinAddress naNodePublic, section secSite, const std::string& strSite, const boost::system::error_code& err, const std::string strValidatorsFile);
 
-	void processIps(const std::string& strSite, NewcoinAddress naNodePublic, section::mapped_type* pmtVecStrIps);
-	void processValidators(const std::string& strSite, const std::string& strValidatorsSrc, NewcoinAddress naNodePublic, section::mapped_type* pmtVecStrValidators);
+	void processIps(const std::string& strSite, const NewcoinAddress& naNodePublic, section::mapped_type* pmtVecStrIps);
+	void processValidators(const std::string& strSite, const std::string& strValidatorsSrc, const NewcoinAddress& naNodePublic, section::mapped_type* pmtVecStrValidators);
 
 	void processFile(const std::string strDomain, NewcoinAddress naNodePublic, section secSite);
 
@@ -115,13 +123,15 @@ public:
 	// Begin processing.
 	void start();
 
-	void nodeAddPublic(NewcoinAddress naNodePublic, std::string strComment);
+	void nodeAddPublic(const NewcoinAddress& naNodePublic, const std::string& strComment);
 	void nodeAddDomain(const std::string& strDomain, validatorSource vsWhy, std::string strComment="");
 	void nodeRemove(NewcoinAddress naNodePublic);
-	void nodeDefault(std::string strValidators);
+	void nodeDefault(const std::string& strValidators);
 	void nodeReset();
 
 	void nodeScore();
+
+	bool nodeInUNL(const NewcoinAddress& naNodePublic);
 
 	Json::Value getUnlJson();
 };
