@@ -40,6 +40,8 @@ UniqueNodeList::UniqueNodeList(boost::asio::io_service& io_service) :
 {
 }
 
+// This is called when the application is started.
+// Get update times and start fetching and scoring as needed.
 void UniqueNodeList::start()
 {
 	miscLoad();
@@ -51,6 +53,7 @@ void UniqueNodeList::start()
 	scoreNext(false);		// Start scoring.
 }
 
+// Load information about when we last updated.
 bool UniqueNodeList::miscLoad()
 {
 	ScopedLock sl(theApp->getWalletDB()->getDBLock());
@@ -65,9 +68,12 @@ bool UniqueNodeList::miscLoad()
 
 	db->endIterRows();
 
+	trustedLoad();
+
 	return true;
 }
 
+// Persist update information.
 bool UniqueNodeList::miscSave()
 {
 	Database*	db=theApp->getWalletDB()->getDB();
@@ -80,6 +86,25 @@ bool UniqueNodeList::miscSave()
 	return true;
 }
 
+void UniqueNodeList::trustedLoad()
+{
+	Database*	db=theApp->getWalletDB()->getDB();
+	ScopedLock	sl(theApp->getWalletDB()->getDBLock());
+	ScopedLock	slUNL(mUNLLock);
+
+	mUNL.clear();
+
+	SQL_FOREACH(db, "SELECT PublicKey FROM TrustedNodes WHERE Score != 0;")
+	{
+		std::string	strPublicKey;
+
+		db->getStr("PublicKey", strPublicKey);
+
+		mUNL.insert(strPublicKey);
+	}
+}
+
+// For a round of scoring we destribute points from a node to nodes it refers to.
 // Returns true, iff scores were distributed.
 bool UniqueNodeList::scoreRound(std::vector<scoreNode>& vsnNodes)
 {
@@ -143,6 +168,7 @@ bool UniqueNodeList::scoreRound(std::vector<scoreNode>& vsnNodes)
     return bDist;
 }
 
+// From SeedDomains and ValidatorReferrals compute scores and update TrustedNodes.
 void UniqueNodeList::scoreCompute()
 {
 	strIndex				umPulicIdx;		// Map of public key to index.
@@ -271,6 +297,9 @@ void UniqueNodeList::scoreCompute()
 		}
 	}
 
+	//
+	// Distribute the points from the seeds.
+	//
 	bool	bDist	= true;
 
     for (int i = SCORE_ROUNDS; bDist && i--;)
@@ -289,6 +318,7 @@ void UniqueNodeList::scoreCompute()
 			<< std::endl;
 	}
 
+	// Persist validator scores.
 	ScopedLock sl(theApp->getWalletDB()->getDBLock());
 
 	db->executeSQL("BEGIN;");
@@ -317,9 +347,11 @@ void UniqueNodeList::scoreCompute()
 		}
 	}
 
+	boost::unordered_set<std::string>	usUNL;
+
 	if (vsnNodes.size())
 	{
-		// Update old entries and add new ones.
+		// Update the score old entries and add new entries as needed.
 		std::vector<std::string>	vstrValues;
 
 		vstrValues.resize(vsnNodes.size());
@@ -333,10 +365,18 @@ void UniqueNodeList::scoreCompute()
 				% db->escape(sn.strValidator)
 				% sn.iScore
 				% strSeen);
+
+			usUNL.insert(sn.strValidator);
 		}
 
 		db->executeSQL(str(boost::format("REPLACE INTO TrustedNodes (PublicKey,Score,Seen) VALUES %s;")
 				% strJoin(vstrValues.begin(), vstrValues.end(), ",")));
+	}
+
+	{
+		ScopedLock	sl(mUNLLock);
+
+		mUNL.swap(usUNL);
 	}
 
 	// Score IPs.
@@ -507,7 +547,10 @@ void UniqueNodeList::fetchDirty()
 	scoreNext(false);
 }
 
-void UniqueNodeList::processIps(const std::string& strSite, NewcoinAddress naNodePublic, section::mapped_type* pmtVecStrIps)
+// Persist the IPs refered to by a Validator.
+// --> strSite: source of the IPs (for debugging)
+// --> naNodePublic: public key of the validating node.
+void UniqueNodeList::processIps(const std::string& strSite, const NewcoinAddress& naNodePublic, section::mapped_type* pmtVecStrIps)
 {
 	Database*	db=theApp->getWalletDB()->getDB();
 
@@ -590,7 +633,8 @@ void UniqueNodeList::processIps(const std::string& strSite, NewcoinAddress naNod
 	fetchDirty();
 }
 
-void UniqueNodeList::processValidators(const std::string& strSite, const std::string& strValidatorsSrc, NewcoinAddress naNodePublic, section::mapped_type* pmtVecStrValidators)
+// Persist ValidatorReferrals.
+void UniqueNodeList::processValidators(const std::string& strSite, const std::string& strValidatorsSrc, const NewcoinAddress& naNodePublic, section::mapped_type* pmtVecStrValidators)
 {
 	Database*	db=theApp->getWalletDB()->getDB();
 
@@ -651,7 +695,8 @@ void UniqueNodeList::processValidators(const std::string& strSite, const std::st
 	fetchDirty();
 }
 
-void UniqueNodeList::responseIps(const std::string& strSite, NewcoinAddress naNodePublic, const boost::system::error_code& err, const std::string strIpsFile)
+// Given a section with IPs, parse and persist it for a validator.
+void UniqueNodeList::responseIps(const std::string& strSite, const NewcoinAddress& naNodePublic, const boost::system::error_code& err, const std::string strIpsFile)
 {
 	if (!err)
 	{
@@ -663,9 +708,8 @@ void UniqueNodeList::responseIps(const std::string& strSite, NewcoinAddress naNo
 	fetchFinish();
 }
 
-//
-// Process [ips_url]
-//
+// Process section [ips_url].
+// If we have a section with a single entry, fetch the url and process it.
 void UniqueNodeList::getIpsUrl(NewcoinAddress naNodePublic, section secSite)
 {
 	std::string	strIpsUrl;
@@ -691,6 +735,7 @@ void UniqueNodeList::getIpsUrl(NewcoinAddress naNodePublic, section secSite)
 	}
 }
 
+// Given a section with validators, parse and persist it.
 void UniqueNodeList::responseValidators(const std::string& strValidatorsUrl, NewcoinAddress naNodePublic, section secSite, const std::string& strSite, const boost::system::error_code& err, const std::string strValidatorsFile)
 {
 	if (!err)
@@ -703,9 +748,7 @@ void UniqueNodeList::responseValidators(const std::string& strValidatorsUrl, New
 	getIpsUrl(naNodePublic, secSite);
 }
 
-//
-// Process [validators_url]
-//
+// Process section [validators_url].
 void UniqueNodeList::getValidatorsUrl(NewcoinAddress naNodePublic, section secSite)
 {
 	std::string strValidatorsUrl;
@@ -758,6 +801,7 @@ void UniqueNodeList::processFile(const std::string strDomain, NewcoinAddress naN
 	getValidatorsUrl(naNodePublic, secSite);
 }
 
+// Given a newcoin.txt, process it.
 void UniqueNodeList::responseFetch(const std::string strDomain, const boost::system::error_code& err, const std::string strSiteFile)
 {
 	section				secSite	= ParseSection(strSiteFile, true);
@@ -838,7 +882,7 @@ void UniqueNodeList::responseFetch(const std::string strDomain, const boost::sys
 
 		seedDomain	sdCurrent;
 
-		bool		bFound	= getSeedDomains(strDomain, sdCurrent);
+		bool		bFound		= getSeedDomains(strDomain, sdCurrent);
 
 		assert(bFound);
 
@@ -910,7 +954,7 @@ void UniqueNodeList::fetchTimerHandler(const boost::system::error_code& err)
 	}
 }
 
-// Try to process the next fetch.
+// Try to process the next fetch of a newcoin.txt.
 void UniqueNodeList::fetchNext()
 {
 	bool	bFull;
@@ -999,6 +1043,7 @@ void UniqueNodeList::fetchNext()
 	}
 }
 
+// For each kind of source, have a starting number of points to be distributed.
 int UniqueNodeList::iSourceScore(validatorSource vsWhy)
 {
 	int		iScore	= 0;
@@ -1056,6 +1101,7 @@ void UniqueNodeList::nodeAddDomain(const std::string& strDomain, validatorSource
 		setSeedDomains(sdCurrent, true);
 }
 
+// Retrieve a SeedDomain for DB.
 bool UniqueNodeList::getSeedDomains(const std::string& strDomain, seedDomain& dstSeedDomain)
 {
 	bool		bResult;
@@ -1111,6 +1157,7 @@ bool UniqueNodeList::getSeedDomains(const std::string& strDomain, seedDomain& ds
 	return bResult;
 }
 
+// Persist a SeedDomain.
 void UniqueNodeList::setSeedDomains(const seedDomain& sdSource, bool bNext)
 {
 	Database*	db=theApp->getWalletDB()->getDB();
@@ -1147,34 +1194,60 @@ void UniqueNodeList::setSeedDomains(const seedDomain& sdSource, bool bNext)
 	}
 }
 
+// Add a trusted node.  Called by RPC or other source.
 // XXX allow update of comment.
-void UniqueNodeList::nodeAddPublic(NewcoinAddress naNodePublic, std::string strComment)
+// XXX Broken should opperate on seeds.
+void UniqueNodeList::nodeAddPublic(const NewcoinAddress& naNodePublic, const std::string& strComment)
 {
 	std::string strPublicKey	= naNodePublic.humanNodePublic();
 
-	Database* db=theApp->getWalletDB()->getDB();
-	ScopedLock sl(theApp->getWalletDB()->getDBLock());
+	{
+		Database* db=theApp->getWalletDB()->getDB();
+		ScopedLock sl(theApp->getWalletDB()->getDBLock());
 
-	db->executeSQL(str(boost::format("INSERT INTO TrustedNodes (PublicKey,Comment) values (%s,%s);")
-		% db->escape(strPublicKey) % db->escape(strComment)));
+		db->executeSQL(str(boost::format("INSERT INTO TrustedNodes (PublicKey,Comment) values (%s,%s);")
+			% db->escape(strPublicKey) % db->escape(strComment)));
+	}
+
+	{
+		ScopedLock	slUNL(mUNLLock);
+
+		mUNL.insert(strPublicKey);
+	}
 }
 
+// XXX Broken should opperate on seeds.
 void UniqueNodeList::nodeRemove(NewcoinAddress naNodePublic)
 {
-	std::string strPublic	= naNodePublic.humanNodePublic();
+	std::string strPublicKey	= naNodePublic.humanNodePublic();
 
-	Database* db=theApp->getWalletDB()->getDB();
-	ScopedLock sl(theApp->getWalletDB()->getDBLock());
+	{
+		Database* db=theApp->getWalletDB()->getDB();
+		ScopedLock sl(theApp->getWalletDB()->getDBLock());
 
-	db->executeSQL(str(boost::format("DELETE FROM TrustedNodes where PublicKey=%s") % db->escape(strPublic)));
+		db->executeSQL(str(boost::format("DELETE FROM TrustedNodes where PublicKey=%s") % db->escape(strPublicKey)));
+	}
+	{
+		ScopedLock	slUNL(mUNLLock);
+
+		mUNL.erase(strPublicKey);
+	}
 }
 
+// XXX Broken should opperate on seeds.
 void UniqueNodeList::nodeReset()
 {
-	Database* db=theApp->getWalletDB()->getDB();
+	{
+		Database* db=theApp->getWalletDB()->getDB();
 
-	ScopedLock sl(theApp->getWalletDB()->getDBLock());
-	db->executeSQL("DELETE FROM TrustedNodes");
+		ScopedLock sl(theApp->getWalletDB()->getDBLock());
+		db->executeSQL("DELETE FROM TrustedNodes");
+	}
+	{
+		ScopedLock	slUNL(mUNLLock);
+
+		mUNL.clear();
+	}
 }
 
 Json::Value UniqueNodeList::getUnlJson()
@@ -1203,7 +1276,9 @@ Json::Value UniqueNodeList::getUnlJson()
 	return ret;
 }
 
-void UniqueNodeList::nodeDefault(std::string strValidators) {
+// Process a validators.txt.
+// --> strValidators: a validators.txt
+void UniqueNodeList::nodeDefault(const std::string& strValidators) {
 	section secValidators	= ParseSection(strValidators, true);
 
 	section::mapped_type*	pmtEntries	= sectionEntries(secValidators, SECTION_VALIDATORS);
@@ -1220,4 +1295,10 @@ void UniqueNodeList::nodeDefault(std::string strValidators) {
 	}
 }
 
+bool UniqueNodeList::nodeInUNL(const NewcoinAddress& naNodePublic)
+{
+	ScopedLock	sl(mUNLLock);
+
+	return mUNL.end() != mUNL.find(naNodePublic.humanNodePublic());
+}
 // vim:ts=4

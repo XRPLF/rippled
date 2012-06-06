@@ -1355,7 +1355,7 @@ Json::Value RPCServer::doLedger(Json::Value& params)
 	return "not implemented";
 }
 
-// unl_add <domain><node_public> [<comment>]
+// unl_add <domain>|<node_public> [<comment>]
 Json::Value RPCServer::doUnlAdd(Json::Value& params)
 {
 	if (params.size() == 1 || params.size() == 2)
