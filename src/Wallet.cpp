@@ -43,7 +43,7 @@ bool Wallet::nodeIdentityLoad()
 	ScopedLock	sl(theApp->getWalletDB()->getDBLock());
 	bool		bSuccess	= false;
 
-	if(db->executeSQL("SELECT * FROM NodeIdentity;") && db->startIterRows())
+	if (db->executeSQL("SELECT * FROM NodeIdentity;") && db->startIterRows())
 	{
 		std::string strPublicKey, strPrivateKey;
 
@@ -110,6 +110,55 @@ bool Wallet::nodeIdentityCreate() {
 	std::cerr << "NodeIdentity: Created." << std::endl;
 
 	return true;
+}
+
+bool Wallet::dataDelete(const std::string& strKey)
+{
+	Database* db	= theApp->getWalletDB()->getDB();
+
+	ScopedLock sl(theApp->getWalletDB()->getDBLock());
+
+	return db->executeSQL(str(boost::format("DELETE FROM RPCData WHERE Key=%s;")
+		% db->escape(strKey)));
+}
+
+bool Wallet::dataFetch(const std::string& strKey, std::string& strValue)
+{
+	Database* db	= theApp->getWalletDB()->getDB();
+
+	ScopedLock sl(theApp->getWalletDB()->getDBLock());
+
+	bool		bSuccess	= false;
+
+	if (db->executeSQL(str(boost::format("SELECT Value FROM RPCData WHERE Key=%s;")
+		% db->escape(strKey))) && db->startIterRows())
+	{
+		std::string strPublicKey, strPrivateKey;
+
+		db->getStr("Value", strValue);
+
+		db->endIterRows();
+
+		bSuccess	= true;
+	}
+
+	return bSuccess;
+}
+
+bool Wallet::dataStore(const std::string& strKey, const std::string& strValue)
+{
+	Database* db	= theApp->getWalletDB()->getDB();
+
+	ScopedLock sl(theApp->getWalletDB()->getDBLock());
+
+	bool		bSuccess	= false;
+
+	return (db->executeSQL(str(boost::format("REPLACE INTO RPCData (Key, Value) VALUES (%s,%s);")
+		% db->escape(strKey)
+		% db->escape(strValue)
+		)));
+
+	return bSuccess;
 }
 
 bool Wallet::unitTest()

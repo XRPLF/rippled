@@ -45,6 +45,9 @@ void printHelp(const po::options_description& desc)
 	cout << "     account_wallet_set <seed> <paying_account> [<wallet_hash>]" << endl;
 	cout << "     connect <ip> [<port>]" << endl;
 	cout << "     credit_set <seed> <paying_account> <destination_account> <limit_amount> <currency> [<account_rate>]" << endl;
+	cout << "     data_delete <key>" << endl;
+	cout << "     data_fetch <key>" << endl;
+	cout << "     data_store <key> <value>" << endl;
 	cout << "     ledger" << endl;
 	cout << "     nickname_info <nickname>" << endl;
 	cout << "     nickname_set <seed> <paying_account> <nickname> [<offer_minimum>] [<authorization>]" << endl;
