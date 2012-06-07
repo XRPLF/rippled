@@ -636,17 +636,16 @@ void Peer::recvPropose(newcoin::TMProposeSet& packet)
 
 void Peer::recvHaveTxSet(newcoin::TMHaveTransactionSet& packet)
 {
-	std::vector<uint256> hashes;
-	for (int i = 0; i < packet.hashes_size(); ++i)
+	// FIXME: We should have some limit on the number of HaveTxSet messages a peer can send us
+	// per consensus pass, to keep a peer from running up our memory without limit
+	uint256 hashes;
+	if (packet.hash().size() != (256 / 8))
 	{
-		if (packet.hashes(i).size() == 32)
-		{
-			uint256 hash;
-			memcpy(hash.begin(), packet.hashes(i).data(), 32);
-			hashes.push_back(hash);
-		}
+		punishPeer(PP_INVALID_REQUEST);
+		return;
 	}
-	if (hashes.empty() || !theApp->getOPs().hasTXSet(shared_from_this(), hashes))
+	memcpy(hashes.begin(), packet.hash().data(), 32);
+	if (!theApp->getOPs().hasTXSet(shared_from_this(), hashes, packet.status()))
 		punishPeer(PP_UNWANTED_DATA);
 }
 
@@ -846,9 +845,9 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 				node->set_nodedata(&rawNodeIterator->front(), rawNodeIterator->size());
 				++count;
 			}
-			Log(lsTRACE) << "GetNodeFat: sending " << count << " nodes";
 		}
 	}
+	if (packet.has_requestcookie()) reply.set_requestcookie(packet.requestcookie());
 	PackedMessage::pointer oPacket = boost::make_shared<PackedMessage>(reply, newcoin::mtLEDGER_DATA);
 	Log(lsTRACE) << "sending reply";
 	sendPacket(oPacket);
