@@ -7,16 +7,16 @@
 #ifdef LEDGER_CLOSE_FAST
 
 // Time between one ledger close and the next ledger close
-#	define LEDGER_INTERVAL			45
+#	define LEDGER_INTERVAL			30
 
 // Time before we take a position
-#	define LEDGER_WOBBLE_TIME		2
+#	define LEDGER_WOBBLE_TIME		1
 
 // Time we expect avalanche to finish
-#	define LEDGER_CONVERGE			20
+#	define LEDGER_CONVERGE			14
 
 // Time we forcibly abort avalanche
-#	define LEDGER_FORCE_CONVERGE	25
+#	define LEDGER_FORCE_CONVERGE	18
 
 #endif
 
