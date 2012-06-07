@@ -96,21 +96,27 @@ std::string HTTPReply(int nStatus, const std::string& strMsg)
 	else if (nStatus == 403) strStatus = "Forbidden";
 	else if (nStatus == 404) strStatus = "Not Found";
 	else if (nStatus == 500) strStatus = "Internal Server Error";
+	std::string access;
+	if(theConfig.RPC_ALLOW_REMOTE) access="Access-Control-Allow-Origin: *\r\n";
+	else access="";
+
 	return strprintf(
 			"HTTP/1.1 %d %s\r\n"
 			"Date: %s\r\n"
-			"Connection: close\r\n"
+			"Connection: Keep-Alive\r\n"
+			"%s"
 			"Content-Length: %d\r\n"
-			"Content-Type: application/json\r\n"
+			"Content-Type: application/json; charset=UTF-8\r\n"
 			"Server: coin-json-rpc/%s\r\n"
 			"\r\n"
 			"%s",
 		nStatus,
 		strStatus.c_str(),
 		rfc1123Time().c_str(),
+		access.c_str(),
 		strMsg.size(),
 		theConfig.VERSION_STR.c_str(),
-		strMsg.c_str());
+		strMsg.c_str());	
 }
 
 int ReadHTTPStatus(std::basic_istream<char>& stream)

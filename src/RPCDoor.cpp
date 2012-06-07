@@ -11,7 +11,7 @@ using namespace boost::asio::ip;
 RPCDoor::RPCDoor(boost::asio::io_service& io_service) :
 	mAcceptor(io_service, tcp::endpoint(address::from_string(theConfig.RPC_IP), theConfig.RPC_PORT))
 {
-	cerr << "RPC port: " << theConfig.RPC_IP << " " << theConfig.RPC_PORT << endl;
+	cerr << "RPC port: " << theConfig.RPC_IP << " " << theConfig.RPC_PORT << " allow remote: " << theConfig.RPC_ALLOW_REMOTE << endl;
 	startListening();
 }
 

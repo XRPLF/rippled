@@ -145,6 +145,7 @@ Json::Value callRPC(const std::string& strMethod, const Json::Value& params)
 		throw std::runtime_error("no response from server");
 
 	// Parse reply
+	std::cout << "RPC reply: " << strReply << std::endl;
 	Json::Reader reader;
 	Json::Value valReply;
 	if (!reader.parse(strReply, valReply))

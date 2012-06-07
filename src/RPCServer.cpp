@@ -61,6 +61,7 @@ void RPCServer::handle_read(const boost::system::error_code& e,
 		if (result)
 		{
 			mReplyStr=handleRequest(mIncomingRequest.mBody);
+
 			sendReply();
 		}
 		else if (!result)
@@ -2043,13 +2044,29 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 
 void RPCServer::sendReply()
 {
+	std::cout << "RPC reply: " << mReplyStr << std::endl;
 	boost::asio::async_write(mSocket, boost::asio::buffer(mReplyStr),
 			boost::bind(&RPCServer::handle_write, shared_from_this(),
 			boost::asio::placeholders::error));
 }
 
-void RPCServer::handle_write(const boost::system::error_code& /*error*/)
+
+
+void RPCServer::handle_write(const boost::system::error_code& e)
 {
+	std::cout << "async_write complete " << e << std::endl;
+
+	if(!e)
+	{
+		// Initiate graceful connection closure.
+		boost::system::error_code ignored_ec;
+		mSocket.shutdown(boost::asio::ip::tcp::socket::shutdown_both, ignored_ec);
+	}
+
+	if (e != boost::asio::error::operation_aborted)
+	{
+		//connection_manager_.stop(shared_from_this());
+	}
 }
 
 // vim:ts=4
