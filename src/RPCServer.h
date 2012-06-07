@@ -55,6 +55,9 @@ private:
 	Json::Value doAccountWalletSet(Json::Value &params);
 	Json::Value doConnect(Json::Value& params);
 	Json::Value doCreditSet(Json::Value& params);
+	Json::Value doDataDelete(Json::Value& params);
+	Json::Value doDataFetch(Json::Value& params);
+	Json::Value doDataStore(Json::Value& params);
 	Json::Value doLedger(Json::Value& params);
 	Json::Value doNicknameInfo(Json::Value& params);
 	Json::Value doNicknameSet(Json::Value& params);

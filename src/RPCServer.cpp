@@ -828,6 +828,76 @@ Json::Value RPCServer::doCreditSet(Json::Value& params)
 	}
 }
 
+// data_delete <key>
+Json::Value RPCServer::doDataDelete(Json::Value& params)
+{
+	if (params.size() != 1)
+	{
+		return JSONRPCError(400, "invalid params");
+	}
+
+	std::string	strKey = params[0u].asString();
+
+	Json::Value	ret = Json::Value(Json::objectValue);
+
+	if (theApp->getWallet().dataDelete(strKey))
+	{
+		ret["key"]		= strKey;
+	}
+	else
+	{
+		ret	= JSONRPCError(500, "internal error");
+	}
+
+	return ret;
+}
+
+// data_fetch <key>
+Json::Value RPCServer::doDataFetch(Json::Value& params)
+{
+	if (params.size() != 1)
+	{
+		return JSONRPCError(400, "invalid params");
+	}
+
+	std::string	strKey = params[0u].asString();
+	std::string	strValue;
+
+	Json::Value	ret = Json::Value(Json::objectValue);
+
+	ret["key"]		= strKey;
+	if (theApp->getWallet().dataFetch(strKey, strValue))
+		ret["value"]	= strValue;
+
+	return ret;
+}
+
+// data_store <key> <value>
+Json::Value RPCServer::doDataStore(Json::Value& params)
+{
+	if (params.size() != 2)
+	{
+		return JSONRPCError(400, "invalid params");
+	}
+
+	std::string	strKey		= params[0u].asString();
+	std::string	strValue	= params[1u].asString();
+
+	Json::Value	ret = Json::Value(Json::objectValue);
+
+	if (theApp->getWallet().dataStore(strKey, strValue))
+	{
+		ret["key"]		= strKey;
+		ret["value"]	= strValue;
+	}
+	else
+	{
+		ret	= JSONRPCError(500, "internal error");
+	}
+
+	return ret;
+}
+
 // nickname_info <nickname>
 // Note: Nicknames are not automatically looked up by commands as they are advisory and can be changed.
 Json::Value RPCServer::doNicknameInfo(Json::Value& params)
@@ -1337,7 +1407,7 @@ Json::Value RPCServer::doTx(Json::Value& params)
 		return txn->getJson(true);
 	}
 
-	return "not implemented";
+	return JSONRPCError(501, "not implemented");
 }
 
 // ledger
@@ -1353,7 +1423,7 @@ Json::Value RPCServer::doLedger(Json::Value& params)
 		return ret;
 	}
 
-	return "not implemented";
+	return JSONRPCError(501, "not implemented");
 }
 
 // unl_add <domain>|<node_public> [<comment>]
@@ -2007,6 +2077,9 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 	if (command == "account_wallet_set")	return doAccountWalletSet(params);
 	if (command == "connect")				return doConnect(params);
 	if (command == "credit_set")			return doCreditSet(params);
+	if (command == "data_delete")			return doDataDelete(params);
+	if (command == "data_fetch")			return doDataFetch(params);
+	if (command == "data_store")			return doDataStore(params);
 	if (command == "nickname_info")			return doNicknameInfo(params);
 	if (command == "nickname_set")			return doNicknameSet(params);
 	if (command == "password_fund")			return doPasswordFund(params);

@@ -58,6 +58,12 @@ const char *WalletDBInit[] = {
 		Dh1024			TEXT						\
 	);",
 
+	// Local persistence of the RPC client
+	"CREATE TABLE RPCData (							\
+		Key			TEXT PRIMARY Key,				\
+		Value		TEXT							\
+	);",
+
 	// Miscellaneous persistent information
 	// Integer: 1 : Used to simplify SQL.
 	// ScoreUpdated: when scores was last updated.

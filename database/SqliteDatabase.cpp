@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <iostream>
+
 using namespace std;
 
 SqliteDatabase::SqliteDatabase(const char* host) : Database(host,"","")
@@ -13,8 +14,7 @@ SqliteDatabase::SqliteDatabase(const char* host) : Database(host,"","")
 
 void SqliteDatabase::connect()
 {
-	
-;	int rc = sqlite3_open(mHost.c_str(), &mConnection);
+	int rc = sqlite3_open(mHost.c_str(), &mConnection);
 	if( rc )
 	{
 		cout << "Can't open database: " << mHost << " " << rc << endl;
@@ -153,6 +153,18 @@ int SqliteDatabase::getBinary(int colIndex,unsigned char* buf,int maxSize)
 	if(size<maxSize) maxSize=size;
 	memcpy(buf,blob,maxSize);
 	return(size);
+}
+
+std::vector<unsigned char> SqliteDatabase::getBinary(int colIndex)
+{
+	const unsigned char*		blob	= reinterpret_cast<const unsigned char*>(sqlite3_column_blob(mCurrentStmt, colIndex));
+	size_t						iSize	= sqlite3_column_bytes(mCurrentStmt, colIndex);
+	std::vector<unsigned char>	vucResult;
+
+	vucResult.resize(iSize);
+	std::copy(blob, blob+iSize, vucResult.begin());
+
+	return vucResult;
 }
 
 uint64 SqliteDatabase::getBigInt(int colIndex)

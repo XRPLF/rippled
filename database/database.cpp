@@ -74,6 +74,18 @@ int Database::getBinary(const char* colName,unsigned char* buf,int maxSize)
 	return(0);
 }
 
+std::vector<unsigned char> Database::getBinary(const char* colName)
+{
+	int index;
+
+	if (getColNumber(colName,&index))
+	{
+		return getBinary(index);
+	}
+
+	return std::vector<unsigned char>();
+}
+
 uint64 Database::getBigInt(const char* colName)
 {
 	int index;

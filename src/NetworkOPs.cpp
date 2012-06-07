@@ -500,10 +500,10 @@ bool NetworkOPs::gotTXData(boost::shared_ptr<Peer> peer, const uint256& hash,
 	return mConsensus->peerGaveNodes(peer, hash, nodeIDs, nodeData);
 }
 
-bool NetworkOPs::hasTXSet(boost::shared_ptr<Peer> peer, const std::vector<uint256>& sets)
+bool NetworkOPs::hasTXSet(boost::shared_ptr<Peer> peer, const uint256& set, newcoin::TxSetStatus status)
 {
 	if (!mConsensus) return false;
-	return mConsensus->peerHasSet(peer, sets);
+	return mConsensus->peerHasSet(peer, set, status);
 }
 
 void NetworkOPs::mapComplete(const uint256& hash, SHAMap::pointer map)

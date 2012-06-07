@@ -36,6 +36,7 @@ public:
 	bool getBool(int colIndex);
 	// returns amount stored in buf
 	int getBinary(int colIndex,unsigned char* buf,int maxSize);
+	std::vector<unsigned char> getBinary(int colIndex);
 	uint64 getBigInt(int colIndex);
 
 	void escape(const unsigned char* start,int size,std::string& retStr);

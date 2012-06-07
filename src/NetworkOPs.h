@@ -116,7 +116,7 @@ public:
 	bool gotTXData(boost::shared_ptr<Peer> peer, const uint256& hash,
 		const std::list<SHAMapNode>& nodeIDs, const std::list< std::vector<unsigned char> >& nodeData);
 	SHAMap::pointer getTXMap(const uint256& hash);
-	bool hasTXSet(boost::shared_ptr<Peer> peer, const std::vector<uint256>& sets);
+	bool hasTXSet(boost::shared_ptr<Peer> peer, const uint256& set, newcoin::TxSetStatus status);
 	void mapComplete(const uint256& hash, SHAMap::pointer map);
 
 	// network state machine
