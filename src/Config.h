@@ -69,6 +69,7 @@ public:
 	int			RPC_PORT;
 	std::string	RPC_USER;
 	std::string	RPC_PASSWORD;
+	bool		RPC_ALLOW_REMOTE;
 
 	// Validation
 	std::string	VALIDATION_PASSWORD;

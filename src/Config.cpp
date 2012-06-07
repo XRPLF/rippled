@@ -17,6 +17,7 @@
 #define SECTION_PEER_PORT				"peer_port"
 #define SECTION_RPC_IP					"rpc_ip"
 #define SECTION_RPC_PORT				"rpc_port"
+#define SECTION_RPC_ALLOW_REMOTE		"rpc_allow_remote"
 #define SECTION_VALIDATION_PASSWORD		"validation_password"
 #define SECTION_VALIDATION_KEY			"validation_key"
 #define SECTION_PEER_SSL_CIPHER_LIST	"peer_ssl_cipher_list"
@@ -47,6 +48,7 @@ Config::Config()
 
 	RPC_USER				= "admin";
 	RPC_PASSWORD			= "pass";
+	RPC_ALLOW_REMOTE		= false;
 
 	DATA_DIR				= "db/";
 
@@ -101,6 +103,9 @@ void Config::load()
 
 			if (sectionSingleB(secConfig, SECTION_RPC_PORT, strTemp))
 				RPC_PORT = boost::lexical_cast<int>(strTemp);
+
+			if (sectionSingleB(secConfig, SECTION_RPC_ALLOW_REMOTE, strTemp))
+				RPC_ALLOW_REMOTE = boost::lexical_cast<bool>(strTemp);
 
 			(void) sectionSingleB(secConfig, SECTION_VALIDATION_PASSWORD, VALIDATION_PASSWORD);
 			(void) sectionSingleB(secConfig, SECTION_VALIDATION_KEY, VALIDATION_KEY);

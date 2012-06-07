@@ -111,7 +111,7 @@ protected:
 
 	void addPosition(LedgerProposal&, bool ours);
 	void removePosition(LedgerProposal&, bool ours);
-	void sendHaveTxSet(const std::vector<uint256>& txSetHashes);
+	void sendHaveTxSet(const uint256& set, bool direct);
 	void applyTransactions(SHAMap::pointer transactionSet, Ledger::pointer targetLedger,
 		std::list<SerializedTransaction::pointer>& failedTransactions);
 
@@ -148,7 +148,7 @@ public:
 
 	bool peerPosition(LedgerProposal::pointer);
 
-	bool peerHasSet(Peer::pointer peer, const std::vector<uint256>& sets);
+	bool peerHasSet(Peer::pointer peer, const uint256& set, newcoin::TxSetStatus status);
 
 	bool peerGaveNodes(Peer::pointer peer, const uint256& setHash,
 		const std::list<SHAMapNode>& nodeIDs, const std::list< std::vector<unsigned char> >& nodeData);

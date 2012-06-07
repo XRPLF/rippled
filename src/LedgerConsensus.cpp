@@ -244,17 +244,15 @@ void LedgerConsensus::mapComplete(const uint256& hash, SHAMap::pointer map)
 	if (!peers.empty())
 		adjustCount(map, peers);
 
-	std::vector<uint256> hashes;
-	hashes.push_back(hash);
-	sendHaveTxSet(hashes);
+	sendHaveTxSet(hash, true);
 }
 
-void LedgerConsensus::sendHaveTxSet(const std::vector<uint256>& hashes)
+void LedgerConsensus::sendHaveTxSet(const uint256& hash, bool direct)
 {
-	newcoin::TMHaveTransactionSet set;
-	for (std::vector<uint256>::const_iterator it = hashes.begin(), end = hashes.end(); it != end; ++it)
-		set.add_hashes(it->begin(), 256 / 8);
-	PackedMessage::pointer packet = boost::make_shared<PackedMessage>(set, newcoin::mtHAVE_SET);
+	newcoin::TMHaveTransactionSet msg;
+	msg.set_hash(hash.begin(), 256 / 8);
+	msg.set_status(direct ? newcoin::tsHAVE : newcoin::tsCAN_GET);
+	PackedMessage::pointer packet = boost::make_shared<PackedMessage>(msg, newcoin::mtHAVE_SET);
 	theApp->getConnectionPool().relayMessage(NULL, packet);
 }
 
@@ -411,9 +409,7 @@ bool LedgerConsensus::updateOurPositions(int sinceClose)
 		uint256 newHash = ourPosition->getHash();
 		mOurPosition->changePosition(newHash);
 		propose(addedTx, removedTx);
-		std::vector<uint256> hashes;
-		hashes.push_back(newHash);
-		sendHaveTxSet(hashes);
+		sendHaveTxSet(newHash, true);
 	}
 
 	return stable;
@@ -535,23 +531,20 @@ bool LedgerConsensus::peerPosition(LedgerProposal::pointer newPosition)
 	return true;
 }
 
-bool LedgerConsensus::peerHasSet(Peer::pointer peer, const std::vector<uint256>& sets)
+bool LedgerConsensus::peerHasSet(Peer::pointer peer, const uint256& hashSet, newcoin::TxSetStatus status)
 {
-	for (std::vector<uint256>::const_iterator it = sets.begin(), end = sets.end(); it != end; ++it)
-	{
-		std::vector< boost::weak_ptr<Peer> >& set = mPeerData[*it];
-		bool found = false;
-		for (std::vector< boost::weak_ptr<Peer> >::iterator iit = set.begin(), iend = set.end(); iit != iend; ++iit)
-			if (iit->lock() == peer)
-				found = true;
-		if (!found)
-		{
-			set.push_back(peer);
-			boost::unordered_map<uint256, TransactionAcquire::pointer>::iterator acq = mAcquiring.find(*it);
-			if (acq != mAcquiring.end())
-				acq->second->peerHas(peer);
-		}
-	}
+	if (status != newcoin::tsHAVE) // Indirect requests are for future support
+		return true;
+
+	std::vector< boost::weak_ptr<Peer> >& set = mPeerData[hashSet];
+	for (std::vector< boost::weak_ptr<Peer> >::iterator iit = set.begin(), iend = set.end(); iit != iend; ++iit)
+		if (iit->lock() == peer)
+			return false;
+
+	set.push_back(peer);
+	boost::unordered_map<uint256, TransactionAcquire::pointer>::iterator acq = mAcquiring.find(hashSet);
+	if (acq != mAcquiring.end())
+		acq->second->peerHas(peer);
 	return true;
 }
 

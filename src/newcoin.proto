@@ -108,9 +108,15 @@ message TMProposeSet {
 	repeated bytes removedTransactions	= 6;	// not required if number is large
 }
 
-// Announce to a peer that we have fully acquired a transaction set
+enum TxSetStatus {
+	tsHAVE		= 1;	// We have this set locally
+	tsCAN_GET	= 2;	// We have a peer with this set
+	tsNEED		= 3;	// We need this set and can't get it
+}
+
 message TMHaveTransactionSet {
-	repeated bytes hashes				= 1;
+	required TxSetStatus status		= 1;
+	required bytes hash				= 2;
 }
 
 
@@ -221,11 +227,12 @@ enum TMLedgerType {
 }
 
 message TMGetLedger {
-	optional TMLedgerType ltype		= 1;
-	optional bytes ledgerHash		= 2;	// Can also be the transaction set hash if liTS_CANDIDATE
-	optional uint32 ledgerSeq		= 3;
-	required TMLedgerInfoType itype	= 4;
+	required TMLedgerInfoType itype	= 1;
+	optional TMLedgerType ltype		= 2;
+	optional bytes ledgerHash		= 3;	// Can also be the transaction set hash if liTS_CANDIDATE
+	optional uint32 ledgerSeq		= 4;
 	repeated bytes nodeIDs			= 5;
+	optional uint32 requestCookie	= 6;
 }
 
 message TMLedgerData {
@@ -233,6 +240,7 @@ message TMLedgerData {
 	required uint32 ledgerSeq		= 2;
 	required TMLedgerInfoType type	= 3;
 	repeated TMLedgerNode nodes		= 4;
+	optional uint32 requestCookie	= 5;
 }
 
 
