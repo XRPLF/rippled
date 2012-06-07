@@ -112,12 +112,18 @@ int main(int argc, char* argv[])
 	else
 	{
 		// Parse options, if no error.
-		po::store(po::command_line_parser(argc, argv)
-			.options(desc)											// Parse options.
-			.positional(p)											// Remainder as --parameters.
-			.run(),
-			vm);
-		po::notify(vm);												// Invoke option notify functions.
+		try {
+			po::store(po::command_line_parser(argc, argv)
+				.options(desc)											// Parse options.
+				.positional(p)											// Remainder as --parameters.
+				.run(),
+				vm);
+			po::notify(vm);												// Invoke option notify functions.
+		}
+		catch (...)
+		{
+			iResult	= 1;
+		}
 	}
 
 	if (iResult)
