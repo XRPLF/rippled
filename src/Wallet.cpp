@@ -135,7 +135,8 @@ bool Wallet::dataFetch(const std::string& strKey, std::string& strValue)
 	{
 		std::string strPublicKey, strPrivateKey;
 
-		db->getStr("Value", strValue);
+		std::vector<unsigned char> vucData	= db->getBinary("Value");
+		strValue.assign(vucData.begin(), vucData.end());
 
 		db->endIterRows();
 
