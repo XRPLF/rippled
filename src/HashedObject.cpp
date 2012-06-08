@@ -36,6 +36,10 @@ CREATE TABLE CommittedObjects (					-- used to synch nodes
 CREATE INDEX ObjectLocate ON CommittedObjects(LedgerIndex, ObjType);
 */
 
+// FIXME: Stores should be added to a queue that's services by an auxilliary thread or from an
+// auxilliary thread pool. These should be tied into a cache, since you need one to handle
+// an immedate read back (before the write completes)
+
 bool HashedObject::store(HashedObjectType type, uint32 index, const std::vector<unsigned char>& data,
 	const uint256& hash)
 {
@@ -44,7 +48,7 @@ bool HashedObject::store(HashedObjectType type, uint32 index, const std::vector<
 	Serializer s(data);
 	assert(hash == s.getSHA512Half());
 #endif
-	std::string sql = "INSERT INTO CommitedObjects (Hash,ObjType,LedgerIndex,Object) VALUES ('";
+	std::string sql = "INSERT INTO CommittedObjects (Hash,ObjType,LedgerIndex,Object) VALUES ('";
 	sql.append(hash.GetHex());
 	switch(type)
 	{
@@ -78,7 +82,7 @@ bool HashedObject::store() const
 HashedObject::pointer HashedObject::retrieve(const uint256& hash)
 {
 	if (!theApp || !theApp->getHashNodeDB()) return HashedObject::pointer();
-	std::string sql = "SELECT * from CommitedObjects WHERE Hash='";
+	std::string sql = "SELECT * from CommittedObjects WHERE Hash='";
 	sql.append(hash.GetHex());
 	sql.append("';");
 
