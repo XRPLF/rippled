@@ -149,7 +149,7 @@ public:
 
 	CKey(const uint256& pKey) : fSet(false)
 	{
-		SetPrivateKey(pKey);
+		SetPrivateKeyU(pKey);
 	}
 
 	bool IsNull() const
@@ -210,11 +210,13 @@ public:
 	uint256 GetPrivateKeyU(void)
 	{
 		// WRITEME
+		throw 0;
 	}
 
 	void SetPrivateKeyU(const uint256& key)
 	{
 		// WRITEME
+		throw 0;
 	}
 
 	BIGNUM* GetSecretBN() const
