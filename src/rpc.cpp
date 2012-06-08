@@ -237,8 +237,8 @@ std::string JSONRPCReply(const Json::Value& result, const Json::Value& error, co
 {
 	Json::Value reply(Json::objectValue);
 	reply["result"]=result;
-	reply["error"]=error;
-	reply["id"]=id;
+	//reply["error"]=error;
+	//reply["id"]=id;
 	Json::FastWriter writer;
 	return writer.write(reply) + "\n";
 }

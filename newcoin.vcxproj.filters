@@ -260,9 +260,6 @@
     <ClInclude Include="KnownNodeList.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Config.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Ledger.h">
       <Filter>Header Files</Filter>
     </ClInclude>

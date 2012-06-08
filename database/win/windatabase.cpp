@@ -237,3 +237,10 @@ int WinDatabase::getBinary(int colIndex,unsigned char* buf,int maxSize)
 {
 	return(0);
 }
+
+std::vector<unsigned char> WinDatabase::getBinary(int colIndex)
+{
+	// TODO:
+	std::vector<unsigned char>	vucResult;
+	return vucResult;
+}

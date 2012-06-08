@@ -1501,7 +1501,7 @@ Json::Value RPCServer::doValidatorCreate(Json::Value& params) {
 
 Json::Value RPCServer::accounts(const uint256& uLedger, const NewcoinAddress& naMasterGenerator)
 {
-	Json::Value jsonAccounts(Json::objectValue);
+	Json::Value jsonAccounts(Json::arrayValue);
 
 	// YYY Don't want to leak to thin server that these accounts are related.
 	// YYY Would be best to alternate requests to servers and to cache results.
@@ -1519,7 +1519,7 @@ Json::Value RPCServer::accounts(const uint256& uLedger, const NewcoinAddress& na
 
 			as->addJson(jsonAccount);
 
-			jsonAccounts[naAccount.humanAccountID()]	= jsonAccount;
+			jsonAccounts.append(jsonAccount);
 		}
 		else
 		{

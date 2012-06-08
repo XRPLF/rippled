@@ -161,7 +161,6 @@
     <ClInclude Include="bignum.h" />
     <ClInclude Include="bitcoinUtil.h" />
     <ClInclude Include="CallRPC.h" />
-    <ClInclude Include="Config.h" />
     <ClInclude Include="ConnectionPool.h" />
     <ClInclude Include="Conversion.h" />
     <ClInclude Include="cryptopp\config.h" />

@@ -50,6 +50,7 @@ public:
 	bool getBool(int colIndex);
 	uint64 getBigInt(int colIndex);
 	int getBinary(int colIndex,unsigned char* buf,int maxSize);
+	std::vector<unsigned char> getBinary(int colIndex);
 	bool getNull(int colIndex){ return(true); }
 
 	void escape(const unsigned char* start,int size,std::string& retStr);
