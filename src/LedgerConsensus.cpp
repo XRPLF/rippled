@@ -577,7 +577,7 @@ void LedgerConsensus::Saccept(boost::shared_ptr<LedgerConsensus> This, SHAMap::p
 }
 
 void LedgerConsensus::applyTransactions(SHAMap::pointer set, Ledger::pointer ledger,
-	std::list<SerializedTransaction::pointer>& failedTransactions)
+	CanonicalTXSet& failedTransactions)
 {
 	TransactionEngine engine(ledger);
 
@@ -620,16 +620,17 @@ void LedgerConsensus::applyTransactions(SHAMap::pointer set, Ledger::pointer led
 	do
 	{
 		successes = 0;
-		std::list<SerializedTransaction::pointer>::iterator it = failedTransactions.begin();
+		CanonicalTXSet::iterator it = failedTransactions.begin();
 		while (it != failedTransactions.end())
 		{
 			try
 			{
-				TransactionEngineResult result = engine.applyTransaction(**it, tepNO_CHECK_FEE | tepUPDATE_TOTAL, 0);
+				TransactionEngineResult result =
+					engine.applyTransaction(*it->second, tepNO_CHECK_FEE | tepUPDATE_TOTAL, 0);
 				if (result <= 0)
 				{
 					if (result == 0) ++successes;
-					failedTransactions.erase(it++);
+					failedTransactions.eraseInc(it);
 				}
 				else
 				{
@@ -639,7 +640,7 @@ void LedgerConsensus::applyTransactions(SHAMap::pointer set, Ledger::pointer led
 			catch (...)
 			{
 				Log(lsWARNING) << "   Throws";
-				failedTransactions.erase(it++);
+				failedTransactions.eraseInc(it);
 			}
 		}
 	} while (successes > 0);
@@ -665,7 +666,7 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 	}
 #endif
 
-	std::list<SerializedTransaction::pointer> failedTransactions;
+	CanonicalTXSet failedTransactions(set->getHash());
 	applyTransactions(set, newLCL, failedTransactions);
 	newLCL->setClosed();
 	newLCL->setAccepted();
@@ -703,8 +704,7 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 
 	ScopedLock sl = theApp->getMasterLedger().getLock();
 
-	applyTransactions(theApp->getMasterLedger().getCurrentLedger()->peekTransactionMap(),
-		newOL, failedTransactions);
+	applyTransactions(theApp->getMasterLedger().getCurrentLedger()->peekTransactionMap(), newOL, failedTransactions);
 	theApp->getMasterLedger().pushLedger(newLCL, newOL);
 	mState = lcsACCEPTED;
 

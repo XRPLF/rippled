@@ -12,6 +12,7 @@
 #include "LedgerAcquire.h"
 #include "LedgerProposal.h"
 #include "Peer.h"
+#include "CanonicalTXSet.h"
 
 class TransactionAcquire : public PeerSet, public boost::enable_shared_from_this<TransactionAcquire>
 { // A transaction set we are trying to acquire
@@ -113,7 +114,7 @@ protected:
 	void removePosition(LedgerProposal&, bool ours);
 	void sendHaveTxSet(const uint256& set, bool direct);
 	void applyTransactions(SHAMap::pointer transactionSet, Ledger::pointer targetLedger,
-		std::list<SerializedTransaction::pointer>& failedTransactions);
+		CanonicalTXSet& failedTransactions);
 
 	// manipulating our own position
 	void takeInitialPosition(Ledger::pointer initialLedger);
