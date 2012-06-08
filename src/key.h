@@ -207,21 +207,30 @@ public:
 		return vchRet;
 	}
 
-	uint256 GetPrivateKeyU(void)
+	BIGNUM* GetSecretBN() const
+	{ // DEPRECATED
+		return BN_dup(EC_KEY_get0_private_key(pkey));
+	}
+
+	void GetPrivateKeyU(uint256& privKey)
 	{
-		// WRITEME
-		throw 0;
+		const BIGNUM* bn = EC_KEY_get0_private_key(pkey);
+		if (bn == NULL)
+			throw key_error("CKey::GetPrivateKeyU: EC_KEY_get0_private_key failed");
+		privKey.zero();
+		BN_bn2bin(bn, privKey.begin() + (privKey.size() - BN_num_bytes(bn)));
 	}
 
 	void SetPrivateKeyU(const uint256& key)
 	{
-		// WRITEME
-		throw 0;
-	}
-
-	BIGNUM* GetSecretBN() const
-	{
-		return BN_dup(EC_KEY_get0_private_key(pkey));
+		BIGNUM* bn = BN_bin2bn(key.begin(), key.size(), NULL);
+		if (!EC_KEY_set_private_key(pkey, bn))
+		{
+			BN_free(bn);
+			throw key_error("CKey::SetPrivateKeyU: EC_KEY_set_private_key failed");
+		}
+		fSet = true;
+		BN_free(bn);
 	}
 
 	CPrivKey GetPrivKey()
