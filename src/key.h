@@ -147,6 +147,11 @@ public:
 		assert(pkey);
 	}
 
+	CKey(const uint256& pKey) : fSet(false)
+	{
+		SetPrivateKey(pKey);
+	}
+
 	bool IsNull() const
 	{
 		return !fSet;
@@ -161,7 +166,7 @@ public:
 	}
 
 	bool SetPrivKey(const CPrivKey& vchPrivKey)
-	{
+	{ // DEPRECATED
 		const unsigned char* pbegin = &vchPrivKey[0];
 		if (!d2i_ECPrivateKey(&pkey, &pbegin, vchPrivKey.size()))
 			return false;
@@ -171,7 +176,7 @@ public:
 	}
 
 	bool SetSecret(const CSecret& vchSecret)
-	{
+	{ // DEPRECATED
 		EC_KEY_free(pkey);
 		pkey = EC_KEY_new_by_curve_name(NID_secp256k1);
 		if (pkey == NULL)
@@ -189,7 +194,7 @@ public:
 	}
 
 	CSecret GetSecret()
-	{
+	{ // DEPRECATED
 		CSecret vchRet;
 		vchRet.resize(32);
 		const BIGNUM *bn = EC_KEY_get0_private_key(pkey);
@@ -200,6 +205,16 @@ public:
 		if (n != nBytes) 
 			throw key_error("CKey::GetSecret(): BN_bn2bin failed");
 		return vchRet;
+	}
+
+	uint256 GetPrivateKeyU(void)
+	{
+		// WRITEME
+	}
+
+	void SetPrivateKeyU(const uint256& key)
+	{
+		// WRITEME
 	}
 
 	BIGNUM* GetSecretBN() const
