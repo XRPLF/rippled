@@ -60,7 +60,7 @@ typedef std::vector<unsigned char> VUC;
 class THSyncFilter : public SHAMapSyncFilter
 {
 protected:
-	NodeCache* mCache;
+	NodeCache* mCache; // holds nodes we see during the consensus process
 
 public:
 	THSyncFilter(NodeCache* cache) : mCache(cache) { ; }
