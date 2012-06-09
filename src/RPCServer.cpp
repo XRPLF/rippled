@@ -1261,9 +1261,9 @@ Json::Value RPCServer::doSend(Json::Value& params)
 	}
 	else
 	{
-		AccountState::pointer	asDst	= mNetOps->getAccountState(uLedger, naSrcAccountID);
+		AccountState::pointer	asDst	= mNetOps->getAccountState(uLedger, naDstAccountID);
 		bool					bCreate	= !asDst;
-		STAmount				saFee	= bCreate ? theConfig.FEE_DEFAULT : theConfig.FEE_ACCOUNT_CREATE;
+		STAmount				saFee	= bCreate ? theConfig.FEE_ACCOUNT_CREATE : theConfig.FEE_DEFAULT;
 
 		NewcoinAddress			naMasterGenerator;
 		NewcoinAddress			naAccountPublic;
