@@ -128,28 +128,41 @@ public:
 	static EC_KEY* GenerateRootPubKey(BIGNUM* pubGenerator);
 	static EC_KEY* GeneratePublicDeterministicKey(const NewcoinAddress& generator, int n);
 	static EC_KEY* GeneratePrivateDeterministicKey(const NewcoinAddress& family, const BIGNUM* rootPriv, int n);
+	static EC_KEY* GeneratePrivateDeterministicKey(const NewcoinAddress& family, const uint256& rootPriv, int n);
 
-	CKey(const uint128& passPhrase) : fSet(true)
+	CKey(const uint128& passPhrase) : fSet(false)
 	{
 		pkey = GenerateRootDeterministicKey(passPhrase);
+		fSet = true;
 		assert(pkey);
 	}
 
-	CKey(const NewcoinAddress& generator, int n) : fSet(true)
+	CKey(const NewcoinAddress& generator, int n) : fSet(false)
 	{ // public deterministic key
 		pkey = GeneratePublicDeterministicKey(generator, n);
+		fSet = true;
 		assert(pkey);
 	}
 
-	CKey(const NewcoinAddress& base, const BIGNUM* rootPrivKey, int n) : fSet(true)
+	CKey(const NewcoinAddress& base, const BIGNUM* rootPrivKey, int n) : fSet(false)
 	{ // private deterministic key
 		pkey = GeneratePrivateDeterministicKey(base, rootPrivKey, n);
+		fSet = true;
 		assert(pkey);
 	}
 
-	CKey(const uint256& pKey) : fSet(false)
+	CKey(const uint256& privateKey) : pkey(NULL), fSet(false)
 	{
-		SetPrivateKeyU(pKey);
+		SetPrivateKeyU(privateKey);
+	}
+
+	CKey(const NewcoinAddress& masterKey, int keyNum, bool isPublic) : pkey(NULL), fSet(false)
+	{
+		if (isPublic)
+			SetPubSeq(masterKey, keyNum);
+		else
+			SetPrivSeq(masterKey, keyNum);
+		fSet = true;
 	}
 
 	bool IsNull() const
@@ -231,6 +244,28 @@ public:
 		}
 		fSet = true;
 		BN_free(bn);
+	}
+
+	void SetPubSeq(const NewcoinAddress& masterKey, int keyNum)
+	{
+		EC_KEY* key = GeneratePublicDeterministicKey(masterKey, keyNum);
+		if (key == NULL)
+			throw key_error("CKey::SetPubSeq: GenPubDetKey failed");
+		if (pkey != NULL)
+			EC_KEY_free(pkey);
+		pkey = key;
+		fSet = true;
+	}
+
+	void SetPrivSeq(const NewcoinAddress& masterKey, int keyNum)
+	{
+		uint256 privKey;
+		EC_KEY* key = GeneratePrivateDeterministicKey(masterKey, masterKey.getFamilyGeneratorU(), keyNum);
+		privKey.zero();
+		if (pkey != NULL)
+			EC_KEY_free(pkey);
+		pkey = key;
+		fSet = true;
 	}
 
 	CPrivKey GetPrivKey()

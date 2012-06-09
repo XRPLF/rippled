@@ -135,7 +135,8 @@ public:
 	// Family Generators
 	// Use to generate a master or regular family.
 	//
-	BIGNUM* getFamilyGeneratorBN() const;
+	BIGNUM* getFamilyGeneratorBN() const; // DEPRECATED
+	uint256 getFamilyGeneratorU() const;
 	const std::vector<unsigned char>& getFamilyGenerator() const;
 
 	std::string humanFamilyGenerator() const;
