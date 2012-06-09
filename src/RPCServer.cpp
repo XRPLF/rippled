@@ -2143,12 +2143,13 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 	if (command == "wallet_propose")		return doWalletPropose(params);
 	if (command == "wallet_seed")			return doWalletSeed(params);
 
+	if (command=="ledger")					return doLedger(params);
+
 	//
 	// Obsolete or need rewrite:
 	//
 
 	if (command=="tx") return doTx(params);
-	if (command=="ledger") return doLedger(params);
 
 	return "unknown command";
 }
