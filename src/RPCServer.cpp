@@ -2117,7 +2117,7 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 
 void RPCServer::sendReply()
 {
-	std::cout << "RPC reply: " << mReplyStr << std::endl;
+	//std::cout << "RPC reply: " << mReplyStr << std::endl;
 	boost::asio::async_write(mSocket, boost::asio::buffer(mReplyStr),
 			boost::bind(&RPCServer::handle_write, shared_from_this(),
 			boost::asio::placeholders::error));
@@ -2127,7 +2127,7 @@ void RPCServer::sendReply()
 
 void RPCServer::handle_write(const boost::system::error_code& e)
 {
-	std::cout << "async_write complete " << e << std::endl;
+	//std::cout << "async_write complete " << e << std::endl;
 
 	if(!e)
 	{
