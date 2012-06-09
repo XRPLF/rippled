@@ -503,8 +503,8 @@ BIGNUM* NewcoinAddress::getFamilyGeneratorBN() const
 		throw std::runtime_error(str(boost::format("bad source: %d") % int(nVersion)));
     }
 
-    assert(vchData.size() <= (256 / 8));
-    BIGNUM*	ret	= BN_bin2bn(&vchData[0], vchData.size(), NULL);
+    assert(vchData.size() <= ((256 + 8) / 8));
+    BIGNUM*	ret	= BN_bin2bn(&vchData[1], vchData.size() - 1, NULL);
 	assert(ret);
 
     return ret;
@@ -524,9 +524,9 @@ uint256 NewcoinAddress::getFamilyGeneratorU() const
 		throw std::runtime_error(str(boost::format("bad source: %d") % int(nVersion)));
     }
 
-    assert(vchData.size() <= (256 / 8));
+    assert(vchData.size() <= ((256 + 1) / 8));
     uint256 ret;
-    memcpy(ret.begin() + (ret.size() - vchData.size()), &vchData[0], vchData.size());
+    memcpy(ret.begin() + (ret.size() - (vchData.size() - 1)), &vchData[1], vchData.size() - 1);
     return ret;
 }
 
