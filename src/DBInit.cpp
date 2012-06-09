@@ -20,7 +20,21 @@ const char *TxnDBInit[] = {
 	);"
 };
 
-int TxnDBCount=sizeof(TxnDBInit)/sizeof(const char *);
+int TxnDBCount = sizeof(TxnDBInit) / sizeof(const char *);
+
+const char *AcctTxnDBInit[] = {
+	"CREATE TABLE AccountTransactions (			\
+		TransID		CHARACTER964) PRIMARY KEY	\
+		Account		CHARACTER(64),				\
+		LedgerSeq	BIGINT UNSIGNED,			\
+	);",
+	"CREATE INDEX AcctTxindex ON				\
+		AccountTransactions(Account),			\
+		AccountTransactions(LedgerSeq),			\
+		AccountTransactions(TransID);"
+};
+
+int AcctTxnDBCount = sizeof(AcctTxnDBInit) / sizeof(const char *);
 
 // Ledger database holds ledgers and ledger confirmations
 const char *LedgerDBInit[] = {
@@ -46,7 +60,7 @@ const char *LedgerDBInit[] = {
 #endif
 };
 
-int LedgerDBCount=sizeof(LedgerDBInit)/sizeof(const char *);
+int LedgerDBCount = sizeof(LedgerDBInit) / sizeof(const char *);
 
 // Wallet database holds local accounts and trusted nodes
 const char *WalletDBInit[] = {
@@ -212,7 +226,7 @@ const char *WalletDBInit[] = {
 		PeerIps(ScanNext);"
 };
 
-int WalletDBCount=sizeof(WalletDBInit)/sizeof(const char *);
+int WalletDBCount = sizeof(WalletDBInit) / sizeof(const char *);
 
 // Hash node database holds nodes indexed by hash
 const char *HashNodeDBInit[] = {
@@ -227,7 +241,7 @@ const char *HashNodeDBInit[] = {
 		CommittedObjects(LedgerIndex, ObjType);"
 };
 
-int HashNodeDBCount=sizeof(HashNodeDBInit)/sizeof(const char *);
+int HashNodeDBCount = sizeof(HashNodeDBInit) / sizeof(const char *);
 
 // Net node database holds nodes seen on the network
 // XXX Not really used needs replacement.
@@ -241,6 +255,6 @@ const char *NetNodeDBInit[] = {
 };
 
 
-int NetNodeDBCount=sizeof(NetNodeDBInit)/sizeof(const char *);
+int NetNodeDBCount = sizeof(NetNodeDBInit) / sizeof(const char *);
 
 // vim:ts=4
