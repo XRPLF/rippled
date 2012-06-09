@@ -156,14 +156,16 @@ public:
 		SetPrivateKeyU(privateKey);
 	}
 
+#if 0
 	CKey(const NewcoinAddress& masterKey, int keyNum, bool isPublic) : pkey(NULL), fSet(false)
 	{
 		if (isPublic)
 			SetPubSeq(masterKey, keyNum);
 		else
-			SetPrivSeq(masterKey, keyNum);
+			SetPrivSeq(masterKey, keyNum); // broken, need seed
 		fSet = true;
 	}
+#endif
 
 	bool IsNull() const
 	{
@@ -257,8 +259,9 @@ public:
 		fSet = true;
 	}
 
+#if 0
 	void SetPrivSeq(const NewcoinAddress& masterKey, int keyNum)
-	{
+	{ // broken: Need the seed
 		uint256 privKey;
 		EC_KEY* key = GeneratePrivateDeterministicKey(masterKey, masterKey.getFamilyGeneratorU(), keyNum);
 		privKey.zero();
@@ -267,6 +270,7 @@ public:
 		pkey = key;
 		fSet = true;
 	}
+#endif
 
 	CPrivKey GetPrivKey()
 	{

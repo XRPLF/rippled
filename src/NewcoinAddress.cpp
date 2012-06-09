@@ -490,7 +490,7 @@ std::vector<unsigned char> NewcoinAddress::accountPrivateDecrypt(const NewcoinAd
 //
 
 BIGNUM* NewcoinAddress::getFamilyGeneratorBN() const
-{
+{ // returns the public generator
     switch (nVersion) {
     case VER_NONE:
 		throw std::runtime_error("unset source");
@@ -503,35 +503,13 @@ BIGNUM* NewcoinAddress::getFamilyGeneratorBN() const
 		throw std::runtime_error(str(boost::format("bad source: %d") % int(nVersion)));
     }
 
-    assert(vchData.size() <= (256 / 8));
     BIGNUM*	ret	= BN_bin2bn(&vchData[0], vchData.size(), NULL);
 	assert(ret);
-
-    return ret;
-}
-
-uint256 NewcoinAddress::getFamilyGeneratorU() const
-{
-    switch (nVersion) {
-    case VER_NONE:
-		throw std::runtime_error("unset source");
-
-    case VER_FAMILY_GENERATOR:
-		// Do nothing.
-		break;
-
-    default:
-		throw std::runtime_error(str(boost::format("bad source: %d") % int(nVersion)));
-    }
-
-    assert(vchData.size() <= (256 / 8));
-    uint256 ret;
-    memcpy(ret.begin() + (ret.size() - vchData.size()), &vchData[0], vchData.size());
     return ret;
 }
 
 const std::vector<unsigned char>& NewcoinAddress::getFamilyGenerator() const
-{
+{ // returns the public generator
     switch (nVersion) {
     case VER_NONE:
 		throw std::runtime_error("unset source");

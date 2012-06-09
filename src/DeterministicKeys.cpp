@@ -3,6 +3,7 @@
 #include <openssl/bn.h>
 #include <openssl/ecdsa.h>
 #include <openssl/pem.h>
+#include <openssl/err.h>
 
 // Functions to add CKey support for deterministic EC keys
 
@@ -115,26 +116,32 @@ EC_KEY* CKey::GenerateRootDeterministicKey(const uint128& seed)
 // <-- root public generator in EC format
 EC_KEY* CKey::GenerateRootPubKey(BIGNUM* pubGenerator)
 {
-	if(pubGenerator==NULL) return NULL;
+	if (pubGenerator == NULL)
+	{
+		assert(false);
+		return NULL;
+	}
 
-	EC_KEY* pkey=EC_KEY_new_by_curve_name(NID_secp256k1);
-	if(!pkey)
+	EC_KEY* pkey = EC_KEY_new_by_curve_name(NID_secp256k1);
+	if (!pkey)
 	{
 		BN_free(pubGenerator);
 		return NULL;
 	}
 	EC_KEY_set_conv_form(pkey, POINT_CONVERSION_COMPRESSED);
 
-	EC_POINT* pubPoint=EC_POINT_bn2point(EC_KEY_get0_group(pkey), pubGenerator, NULL, NULL);
+	EC_POINT* pubPoint = EC_POINT_bn2point(EC_KEY_get0_group(pkey), pubGenerator, NULL, NULL);
 	BN_free(pubGenerator);
 	if(!pubPoint)
 	{
+		assert(false);
 		EC_KEY_free(pkey);
 		return NULL;
 	}
 
 	if(!EC_KEY_set_public_key(pkey, pubPoint))
 	{
+		assert(false);
 		EC_POINT_free(pubPoint);
 		EC_KEY_free(pkey);
 		return NULL;

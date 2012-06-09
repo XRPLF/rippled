@@ -336,20 +336,37 @@ void Ledger::addJson(Json::Value& ret, int options)
 	else ledger["Closed"] = false;
 	if (mCloseTime != 0)
 		ledger["CloseTime"] = boost::posix_time::to_simple_string(ptFromSeconds(mCloseTime));
-	if ((options & LEDGER_JSON_DUMP_TXNS) != 0)
+	bool full = (options & LEDGER_JSON_FULL) != 0;
+	if (full || ((options & LEDGER_JSON_DUMP_TXNS) != 0))
 	{
 		Json::Value txns(Json::arrayValue);
 		for (SHAMapItem::pointer item = mTransactionMap->peekFirstItem(); !!item;
 				item = mTransactionMap->peekNextItem(item->getTag()))
-			txns.append(item->getTag().GetHex());
+		{
+			if (full)
+			{
+				SerializerIterator sit(item->peekSerializer());
+				SerializedTransaction txn(sit);
+				txns.append(txn.getJson(0));
+			}
+			else txns.append(item->getTag().GetHex());
+		}
 		ledger["Transactions"] = txns;
 	}
-	if ((options & LEDGER_JSON_DUMP_STATE) != 0)
+	if (full || ((options & LEDGER_JSON_DUMP_STATE) != 0))
 	{
 		Json::Value state(Json::arrayValue);
 		for (SHAMapItem::pointer item = mAccountStateMap->peekFirstItem(); !!item;
 				item = mAccountStateMap->peekNextItem(item->getTag()))
-			state.append(item->getTag().GetHex());
+		{
+			if (full)
+			{
+				SerializerIterator sit(item->peekSerializer());
+				SerializedLedgerEntry sle(sit, item->getTag());
+				state.append(sle.getJson(0));
+			}
+			else state.append(item->getTag().GetHex());
+		}
 		ledger["AccountState"] = state;
 	}
 	ret[boost::lexical_cast<std::string>(mLedgerSeq)] = ledger;

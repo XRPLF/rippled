@@ -1445,10 +1445,20 @@ Json::Value RPCServer::doTx(Json::Value& params)
 	return JSONRPCError(501, "not implemented");
 }
 
-// ledger
+// ledger [id|current|lastclosed] [full]
 Json::Value RPCServer::doLedger(Json::Value& params)
 {
-	if (getParamCount(params)== 0)
+
+	if (params.size() > 2)
+	{
+		return "invalid params";
+	}
+	else if (!mNetOps->available())
+	{
+		return JSONRPCError(503, "network not available");
+	}
+
+	if (getParamCount(params) == 0)
 	{
 		Json::Value ret(Json::objectValue), current(Json::objectValue), closed(Json::objectValue);
 		theApp->getMasterLedger().getCurrentLedger()->addJson(current, 0);
@@ -1458,7 +1468,35 @@ Json::Value RPCServer::doLedger(Json::Value& params)
 		return ret;
 	}
 
-	return JSONRPCError(501, "not implemented");
+	std::string param;
+	if (!extractString(param, params, 0))
+	{
+		return "bad params";
+	}
+
+	Ledger::pointer ledger;
+	if (param == "current")
+		ledger = theApp->getMasterLedger().getCurrentLedger();
+	else if (param == "lastclosed")
+		ledger = theApp->getMasterLedger().getClosedLedger();
+	else if (param.size() > 12)
+		ledger = theApp->getMasterLedger().getLedgerByHash(uint256(param));
+	else
+		ledger = theApp->getMasterLedger().getLedgerBySeq(boost::lexical_cast<uint32>(param));
+
+	if (!ledger)
+		return JSONRPCError(503, "Unable to locate ledger");
+
+	bool full = false;
+	if (extractString(param, params, 1))
+	{
+		if (param == "full")
+			full = true;
+	}
+
+	Json::Value ret(Json::objectValue);
+	ledger->addJson(ret, full ? LEDGER_JSON_FULL : 0);
+	return ret;
 }
 
 // unl_add <domain>|<node_public> [<comment>]
@@ -2140,12 +2178,13 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 	if (command == "wallet_propose")		return doWalletPropose(params);
 	if (command == "wallet_seed")			return doWalletSeed(params);
 
+	if (command=="ledger")					return doLedger(params);
+
 	//
 	// Obsolete or need rewrite:
 	//
 
 	if (command=="tx") return doTx(params);
-	if (command=="ledger") return doLedger(params);
 
 	return "unknown command";
 }
