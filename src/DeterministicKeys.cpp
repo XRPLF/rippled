@@ -78,7 +78,7 @@ EC_KEY* CKey::GenerateRootDeterministicKey(const uint128& seed)
 	{ // set the random point as the private key
 		assert(false);
 		EC_KEY_free(pkey);
-		BN_free(privKey);
+		BN_clear_free(privKey);
 		BN_CTX_free(ctx);
 		return NULL;
 	}
@@ -87,13 +87,13 @@ EC_KEY* CKey::GenerateRootDeterministicKey(const uint128& seed)
 	if(!EC_POINT_mul(EC_KEY_get0_group(pkey), pubKey, privKey, NULL, NULL, ctx))
 	{ // compute the corresponding public key point
 		assert(false);
-		BN_free(privKey);
+		BN_clear_free(privKey);
 		EC_POINT_free(pubKey);
 		EC_KEY_free(pkey);
 		BN_CTX_free(ctx);
 		return NULL;
 	}
-	BN_free(privKey);
+	BN_clear_free(privKey);
 	if(!EC_KEY_set_public_key(pkey, pubKey))
 	{
 		assert(false);
@@ -272,19 +272,19 @@ EC_KEY* CKey::GeneratePrivateDeterministicKey(const NewcoinAddress& pubGen, cons
 	EC_POINT* pubKey=EC_POINT_new(EC_KEY_get0_group(pkey));
 	if(!pubKey)
 	{
-		BN_free(privKey);
+		BN_clear_free(privKey);
 		BN_CTX_free(ctx);
 		EC_KEY_free(pkey);
 		return NULL;
 	}
 	if(EC_POINT_mul(EC_KEY_get0_group(pkey), pubKey, privKey, NULL, NULL, ctx)==0)
 	{
-		BN_free(privKey);
+		BN_clear_free(privKey);
 		BN_CTX_free(ctx);
 		EC_KEY_free(pkey);
 		return NULL;
 	}
-	BN_free(privKey);
+	BN_clear_free(privKey);
 	EC_KEY_set_public_key(pkey, pubKey);
 
 	EC_POINT_free(pubKey);

@@ -239,11 +239,11 @@ public:
 		BIGNUM* bn = BN_bin2bn(key.begin(), key.size(), NULL);
 		if (!EC_KEY_set_private_key(pkey, bn))
 		{
-			BN_free(bn);
+			BN_clear_free(bn);
 			throw key_error("CKey::SetPrivateKeyU: EC_KEY_set_private_key failed");
 		}
 		fSet = true;
-		BN_free(bn);
+		BN_clear_free(bn);
 	}
 
 	void SetPubSeq(const NewcoinAddress& masterKey, int keyNum)
