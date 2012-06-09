@@ -20,11 +20,11 @@ TransactionMaster::TransactionMaster() : mCache(CACHED_TRANSACTION_NUM, CACHED_T
 
 Transaction::pointer TransactionMaster::fetch(const uint256& txnID, bool checkDisk)
 {
-	Transaction::pointer txn=mCache.fetch(txnID);
-	if(!checkDisk || txn) return txn;
+	Transaction::pointer txn = mCache.fetch(txnID);
+	if( !checkDisk || txn) return txn;
 
-	txn=Transaction::load(txnID);
-	if(!txn) return txn;
+	txn = Transaction::load(txnID);
+	if (!txn) return txn;
 
 	mCache.canonicalize(txnID, txn);
 	return txn;
@@ -32,10 +32,10 @@ Transaction::pointer TransactionMaster::fetch(const uint256& txnID, bool checkDi
 
 bool TransactionMaster::canonicalize(Transaction::pointer& txn, bool may_be_new)
 {
-	uint256 tid=txn->getID();
-	if(!tid) return false;
-	if(mCache.canonicalize(tid, txn)) return true;
-	if(may_be_new)
+	uint256 tid = txn->getID();
+	if (!tid) return false;
+	if (mCache.canonicalize(tid, txn)) return true;
+	if (may_be_new) // FIXME: Don't dispatch to main pool
 		theApp->getIOService().post(boost::bind(&Transaction::saveTransaction, txn));
 	return false;
 }

@@ -45,7 +45,7 @@ class Application
 	NetworkOPs				mNetOps;
 	NodeCache				mNodeCache;
 
-	DatabaseCon* mTxnDB, *mLedgerDB, *mWalletDB, *mHashNodeDB, *mNetNodeDB;
+	DatabaseCon *mTxnDB, *mAcctTxnDB, *mLedgerDB, *mWalletDB, *mHashNodeDB, *mNetNodeDB;
 
 	ConnectionPool			mConnectionPool;
 	PeerDoor*				mPeerDoor;
@@ -76,6 +76,7 @@ public:
 	NodeCache& getNodeCache()						{ return mNodeCache; }
 
 	DatabaseCon* getTxnDB()			{ return mTxnDB; }
+	DatabaseCon* getAcctTxnDB()		{ return mAcctTxnDB; }
 	DatabaseCon* getLedgerDB()		{ return mLedgerDB; }
 	DatabaseCon* getWalletDB()		{ return mWalletDB; }
 	DatabaseCon* getHashNodeDB()	{ return mHashNodeDB; }

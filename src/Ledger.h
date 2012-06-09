@@ -35,6 +35,7 @@ enum LedgerStateParms
 
 #define LEDGER_JSON_DUMP_TXNS	0x10000000
 #define LEDGER_JSON_DUMP_STATE	0x20000000
+#define LEDGER_JSON_FULL		0x40000000
 
 class Ledger : public boost::enable_shared_from_this<Ledger>
 { // The basic Ledger structure, can be opened, closed, or synching

@@ -128,24 +128,44 @@ public:
 	static EC_KEY* GenerateRootPubKey(BIGNUM* pubGenerator);
 	static EC_KEY* GeneratePublicDeterministicKey(const NewcoinAddress& generator, int n);
 	static EC_KEY* GeneratePrivateDeterministicKey(const NewcoinAddress& family, const BIGNUM* rootPriv, int n);
+	static EC_KEY* GeneratePrivateDeterministicKey(const NewcoinAddress& family, const uint256& rootPriv, int n);
 
-	CKey(const uint128& passPhrase) : fSet(true)
+	CKey(const uint128& passPhrase) : fSet(false)
 	{
 		pkey = GenerateRootDeterministicKey(passPhrase);
+		fSet = true;
 		assert(pkey);
 	}
 
-	CKey(const NewcoinAddress& generator, int n) : fSet(true)
+	CKey(const NewcoinAddress& generator, int n) : fSet(false)
 	{ // public deterministic key
 		pkey = GeneratePublicDeterministicKey(generator, n);
+		fSet = true;
 		assert(pkey);
 	}
 
-	CKey(const NewcoinAddress& base, const BIGNUM* rootPrivKey, int n) : fSet(true)
+	CKey(const NewcoinAddress& base, const BIGNUM* rootPrivKey, int n) : fSet(false)
 	{ // private deterministic key
 		pkey = GeneratePrivateDeterministicKey(base, rootPrivKey, n);
+		fSet = true;
 		assert(pkey);
 	}
+
+	CKey(const uint256& privateKey) : pkey(NULL), fSet(false)
+	{
+		SetPrivateKeyU(privateKey);
+	}
+
+#if 0
+	CKey(const NewcoinAddress& masterKey, int keyNum, bool isPublic) : pkey(NULL), fSet(false)
+	{
+		if (isPublic)
+			SetPubSeq(masterKey, keyNum);
+		else
+			SetPrivSeq(masterKey, keyNum); // broken, need seed
+		fSet = true;
+	}
+#endif
 
 	bool IsNull() const
 	{
@@ -161,7 +181,7 @@ public:
 	}
 
 	bool SetPrivKey(const CPrivKey& vchPrivKey)
-	{
+	{ // DEPRECATED
 		const unsigned char* pbegin = &vchPrivKey[0];
 		if (!d2i_ECPrivateKey(&pkey, &pbegin, vchPrivKey.size()))
 			return false;
@@ -171,7 +191,7 @@ public:
 	}
 
 	bool SetSecret(const CSecret& vchSecret)
-	{
+	{ // DEPRECATED
 		EC_KEY_free(pkey);
 		pkey = EC_KEY_new_by_curve_name(NID_secp256k1);
 		if (pkey == NULL)
@@ -189,7 +209,7 @@ public:
 	}
 
 	CSecret GetSecret()
-	{
+	{ // DEPRECATED
 		CSecret vchRet;
 		vchRet.resize(32);
 		const BIGNUM *bn = EC_KEY_get0_private_key(pkey);
@@ -203,9 +223,54 @@ public:
 	}
 
 	BIGNUM* GetSecretBN() const
-	{
+	{ // DEPRECATED
 		return BN_dup(EC_KEY_get0_private_key(pkey));
 	}
+
+	void GetPrivateKeyU(uint256& privKey)
+	{
+		const BIGNUM* bn = EC_KEY_get0_private_key(pkey);
+		if (bn == NULL)
+			throw key_error("CKey::GetPrivateKeyU: EC_KEY_get0_private_key failed");
+		privKey.zero();
+		BN_bn2bin(bn, privKey.begin() + (privKey.size() - BN_num_bytes(bn)));
+	}
+
+	void SetPrivateKeyU(const uint256& key)
+	{
+		BIGNUM* bn = BN_bin2bn(key.begin(), key.size(), NULL);
+		if (!EC_KEY_set_private_key(pkey, bn))
+		{
+			BN_clear_free(bn);
+			throw key_error("CKey::SetPrivateKeyU: EC_KEY_set_private_key failed");
+		}
+		fSet = true;
+		BN_clear_free(bn);
+	}
+
+	void SetPubSeq(const NewcoinAddress& masterKey, int keyNum)
+	{
+		EC_KEY* key = GeneratePublicDeterministicKey(masterKey, keyNum);
+		if (key == NULL)
+			throw key_error("CKey::SetPubSeq: GenPubDetKey failed");
+		if (pkey != NULL)
+			EC_KEY_free(pkey);
+		pkey = key;
+		fSet = true;
+	}
+
+#if 0
+	void SetPrivSeq(const NewcoinAddress& masterKey, int keyNum)
+	{ // broken: Need the seed
+		uint256 privKey;
+		EC_KEY* key = GeneratePrivateDeterministicKey(masterKey, masterKey.getFamilyGeneratorU(), keyNum);
+		privKey.zero();
+		if (pkey != NULL)
+			EC_KEY_free(pkey);
+		pkey = key;
+		fSet = true;
+	}
+#endif
 
 	CPrivKey GetPrivKey()
 	{

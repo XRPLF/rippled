@@ -577,7 +577,7 @@ void LedgerConsensus::Saccept(boost::shared_ptr<LedgerConsensus> This, SHAMap::p
 }
 
 void LedgerConsensus::applyTransactions(SHAMap::pointer set, Ledger::pointer ledger,
-	std::list<SerializedTransaction::pointer>& failedTransactions)
+	CanonicalTXSet& failedTransactions)
 {
 	TransactionEngine engine(ledger);
 
@@ -620,16 +620,17 @@ void LedgerConsensus::applyTransactions(SHAMap::pointer set, Ledger::pointer led
 	do
 	{
 		successes = 0;
-		std::list<SerializedTransaction::pointer>::iterator it = failedTransactions.begin();
+		CanonicalTXSet::iterator it = failedTransactions.begin();
 		while (it != failedTransactions.end())
 		{
 			try
 			{
-				TransactionEngineResult result = engine.applyTransaction(**it, tepNO_CHECK_FEE | tepUPDATE_TOTAL, 0);
+				TransactionEngineResult result =
+					engine.applyTransaction(*it->second, tepNO_CHECK_FEE | tepUPDATE_TOTAL, 0);
 				if (result <= 0)
 				{
 					if (result == 0) ++successes;
-					failedTransactions.erase(it++);
+					failedTransactions.eraseInc(it);
 				}
 				else
 				{
@@ -639,7 +640,7 @@ void LedgerConsensus::applyTransactions(SHAMap::pointer set, Ledger::pointer led
 			catch (...)
 			{
 				Log(lsWARNING) << "   Throws";
-				failedTransactions.erase(it++);
+				failedTransactions.eraseInc(it);
 			}
 		}
 	} while (successes > 0);
@@ -653,6 +654,7 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 	Log(lsDEBUG) << "Previous LCL " << mPreviousLedger->getHash().GetHex();
 
 	Ledger::pointer newLCL = boost::make_shared<Ledger>(false, boost::ref(*mPreviousLedger));
+	uint32 newLedgerSeq = newLCL->getLedgerSeq();
 
 #ifdef DEBUG
 	Json::StyledStreamWriter ssw;
@@ -665,7 +667,7 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 	}
 #endif
 
-	std::list<SerializedTransaction::pointer> failedTransactions;
+	CanonicalTXSet failedTransactions(set->getHash());
 	applyTransactions(set, newLCL, failedTransactions);
 	newLCL->setClosed();
 	newLCL->setAccepted();
@@ -703,10 +705,10 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 
 	ScopedLock sl = theApp->getMasterLedger().getLock();
 
-	applyTransactions(theApp->getMasterLedger().getCurrentLedger()->peekTransactionMap(),
-		newOL, failedTransactions);
+	applyTransactions(theApp->getMasterLedger().getCurrentLedger()->peekTransactionMap(), newOL, failedTransactions);
 	theApp->getMasterLedger().pushLedger(newLCL, newOL);
 	mState = lcsACCEPTED;
+	sl.unlock();
 
 #ifdef DEBUG
 	if (1)
@@ -718,8 +720,6 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 	}
 #endif
 
-	sl.unlock();
-
 	SerializedValidation v(newLCLHash, mOurPosition->peekKey(), true);
 	std::vector<unsigned char> validation = v.getSigned();
 	newcoin::TMValidation val;
@@ -727,6 +727,34 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 	theApp->getConnectionPool().relayMessage(NULL, boost::make_shared<PackedMessage>(val, newcoin::mtVALIDATION));
 	Log(lsINFO) << "Validation sent " << newLCL->getHash().GetHex();
 	statusChange(newcoin::neACCEPTED_LEDGER, newOL);
+
+	// Insert the transactions in set into the AcctTxn database
+	Database *db = theApp->getAcctTxnDB()->getDB();
+	ScopedLock dbLock = theApp->getAcctTxnDB()->getDBLock();
+	db->executeSQL("BEGIN TRANSACTION");
+	for (SHAMapItem::pointer item = set->peekFirstItem(); !!item; item = set->peekNextItem(item->getTag()))
+	{
+		SerializerIterator sit(item->peekSerializer());
+		SerializedTransaction txn(sit);
+		std::vector<NewcoinAddress> accts = txn.getAffectedAccounts();
+
+		std::string sql = "INSERT INTO AccountTransactions (TransID,Account,LedgerSeq) VALUES ";
+		bool first = true;
+		for (std::vector<NewcoinAddress>::iterator it = accts.begin(), end = accts.end(); it != end; ++it)
+		{
+			if (!first) sql += ", (";
+			else sql += "(";
+			sql += txn.getTransactionID().GetHex();
+			sql += ",";
+			sql += it->humanAccountID();
+			sql += ",";
+			sql += boost::lexical_cast<std::string>(newLedgerSeq);
+			sql += ")";
+		}
+		sql += ";";
+		db->executeSQL(sql);
+	}
+	db->executeSQL("COMMIT TRANSACTION");
 }
 
 void LedgerConsensus::endConsensus()

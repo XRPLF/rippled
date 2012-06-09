@@ -20,7 +20,7 @@ Application* theApp = NULL;
 DatabaseCon::DatabaseCon(const std::string& name, const char *initStrings[], int initCount)
 {
 	std::string path=strprintf("%s%s", theConfig.DATA_DIR.c_str(), name.c_str());
-	mDatabase=new SqliteDatabase(path.c_str());
+	mDatabase = new SqliteDatabase(path.c_str());
 	mDatabase->connect();
 	for(int i = 0; i < initCount; ++i)
 		mDatabase->executeSQL(initStrings[i], true);
@@ -35,15 +35,16 @@ DatabaseCon::~DatabaseCon()
 Application::Application() :
 	mUNL(mIOService),
 	mNetOps(mIOService, &mMasterLedger), mNodeCache(16384, 600),
-	mTxnDB(NULL), mLedgerDB(NULL), mWalletDB(NULL), mHashNodeDB(NULL), mNetNodeDB(NULL),
+	mTxnDB(NULL), mAcctTxnDB(NULL), mLedgerDB(NULL), mWalletDB(NULL), mHashNodeDB(NULL), mNetNodeDB(NULL),
 	mConnectionPool(mIOService), mPeerDoor(NULL), mRPCDoor(NULL)
 {
 	RAND_bytes(mNonce256.begin(), mNonce256.size());
 	RAND_bytes(reinterpret_cast<unsigned char *>(&mNonceST), sizeof(mNonceST));
 }
 
-extern const char *TxnDBInit[], *LedgerDBInit[], *WalletDBInit[], *HashNodeDBInit[], *NetNodeDBInit[];
-extern int TxnDBCount, LedgerDBCount, WalletDBCount, HashNodeDBCount, NetNodeDBCount;
+extern const char *AcctTxnDBInit[], *TxnDBInit[], *LedgerDBInit[], *WalletDBInit[],
+	*HashNodeDBInit[], *NetNodeDBInit[];
+extern int TxnDBCount, AcctTxnDBCount, LedgerDBCount, WalletDBCount, HashNodeDBCount, NetNodeDBCount;
 
 void Application::stop()
 {
@@ -59,11 +60,12 @@ void Application::run()
 	//
 	// Construct databases.
 	//
-	mTxnDB=new DatabaseCon("transaction.db", TxnDBInit, TxnDBCount);
-	mLedgerDB=new DatabaseCon("ledger.db", LedgerDBInit, LedgerDBCount);
-	mWalletDB=new DatabaseCon("wallet.db", WalletDBInit, WalletDBCount);
-	mHashNodeDB=new DatabaseCon("hashnode.db", HashNodeDBInit, HashNodeDBCount);
-	mNetNodeDB=new DatabaseCon("netnode.db", NetNodeDBInit, NetNodeDBCount);
+	mTxnDB = new DatabaseCon("transaction.db", TxnDBInit, TxnDBCount);
+	mAcctTxnDB = new DatabaseCon("transacct.db", AcctTxnDBInit, AcctTxnDBCount);
+	mLedgerDB = new DatabaseCon("ledger.db", LedgerDBInit, LedgerDBCount);
+	mWalletDB = new DatabaseCon("wallet.db", WalletDBInit, WalletDBCount);
+	mHashNodeDB = new DatabaseCon("hashnode.db", HashNodeDBInit, HashNodeDBCount);
+	mNetNodeDB = new DatabaseCon("netnode.db", NetNodeDBInit, NetNodeDBCount);
 
 	//
 	// Begin validation and ip maintenance.
@@ -76,7 +78,7 @@ void Application::run()
 	//
 	if(!theConfig.PEER_IP.empty() && theConfig.PEER_PORT)
 	{
-		mPeerDoor=new PeerDoor(mIOService);
+		mPeerDoor = new PeerDoor(mIOService);
 	}
 	else
 	{
@@ -88,7 +90,7 @@ void Application::run()
 	//
 	if(!theConfig.RPC_IP.empty() && theConfig.RPC_PORT)
 	{
-		mRPCDoor=new RPCDoor(mIOService);
+		mRPCDoor = new RPCDoor(mIOService);
 	}
 	else
 	{
@@ -138,6 +140,7 @@ void Application::run()
 Application::~Application()
 {
 	delete mTxnDB;
+	delete mAcctTxnDB;
 	delete mLedgerDB;
 	delete mWalletDB;
 	delete mHashNodeDB;

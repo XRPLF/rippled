@@ -3,6 +3,7 @@
 #include <openssl/bn.h>
 #include <openssl/ecdsa.h>
 #include <openssl/pem.h>
+#include <openssl/err.h>
 
 // Functions to add CKey support for deterministic EC keys
 
@@ -78,7 +79,7 @@ EC_KEY* CKey::GenerateRootDeterministicKey(const uint128& seed)
 	{ // set the random point as the private key
 		assert(false);
 		EC_KEY_free(pkey);
-		BN_free(privKey);
+		BN_clear_free(privKey);
 		BN_CTX_free(ctx);
 		return NULL;
 	}
@@ -87,13 +88,13 @@ EC_KEY* CKey::GenerateRootDeterministicKey(const uint128& seed)
 	if(!EC_POINT_mul(EC_KEY_get0_group(pkey), pubKey, privKey, NULL, NULL, ctx))
 	{ // compute the corresponding public key point
 		assert(false);
-		BN_free(privKey);
+		BN_clear_free(privKey);
 		EC_POINT_free(pubKey);
 		EC_KEY_free(pkey);
 		BN_CTX_free(ctx);
 		return NULL;
 	}
-	BN_free(privKey);
+	BN_clear_free(privKey);
 	if(!EC_KEY_set_public_key(pkey, pubKey))
 	{
 		assert(false);
@@ -115,26 +116,32 @@ EC_KEY* CKey::GenerateRootDeterministicKey(const uint128& seed)
 // <-- root public generator in EC format
 EC_KEY* CKey::GenerateRootPubKey(BIGNUM* pubGenerator)
 {
-	if(pubGenerator==NULL) return NULL;
+	if (pubGenerator == NULL)
+	{
+		assert(false);
+		return NULL;
+	}
 
-	EC_KEY* pkey=EC_KEY_new_by_curve_name(NID_secp256k1);
-	if(!pkey)
+	EC_KEY* pkey = EC_KEY_new_by_curve_name(NID_secp256k1);
+	if (!pkey)
 	{
 		BN_free(pubGenerator);
 		return NULL;
 	}
 	EC_KEY_set_conv_form(pkey, POINT_CONVERSION_COMPRESSED);
 
-	EC_POINT* pubPoint=EC_POINT_bn2point(EC_KEY_get0_group(pkey), pubGenerator, NULL, NULL);
+	EC_POINT* pubPoint = EC_POINT_bn2point(EC_KEY_get0_group(pkey), pubGenerator, NULL, NULL);
 	BN_free(pubGenerator);
 	if(!pubPoint)
 	{
+		assert(false);
 		EC_KEY_free(pkey);
 		return NULL;
 	}
 
 	if(!EC_KEY_set_public_key(pkey, pubPoint))
 	{
+		assert(false);
 		EC_POINT_free(pubPoint);
 		EC_KEY_free(pkey);
 		return NULL;
@@ -144,14 +151,14 @@ EC_KEY* CKey::GenerateRootPubKey(BIGNUM* pubGenerator)
 }
 
 // --> public generator
-static BIGNUM* makeHash(const NewcoinAddress& generator, int seq, BIGNUM* order)
+static BIGNUM* makeHash(const NewcoinAddress& pubGen, int seq, BIGNUM* order)
 {
 	int subSeq=0;
 	BIGNUM* ret=NULL;
 	do
 	{
 		Serializer s((33*8+32+32)/8);
-		s.addRaw(generator.getFamilyGenerator());
+		s.addRaw(pubGen.getFamilyGenerator());
 		s.add32(seq);
 		s.add32(subSeq++);
 		uint256 root=s.getSHA512Half();
@@ -164,9 +171,9 @@ static BIGNUM* makeHash(const NewcoinAddress& generator, int seq, BIGNUM* order)
 }
 
 // --> public generator
-EC_KEY* CKey::GeneratePublicDeterministicKey(const NewcoinAddress& generator, int seq)
+EC_KEY* CKey::GeneratePublicDeterministicKey(const NewcoinAddress& pubGen, int seq)
 { // publicKey(n) = rootPublicKey EC_POINT_+ Hash(pubHash|seq)*point
-	EC_KEY*			rootKey		= CKey::GenerateRootPubKey(generator.getFamilyGeneratorBN());
+	EC_KEY*			rootKey		= CKey::GenerateRootPubKey(pubGen.getFamilyGeneratorBN());
 	const EC_POINT*	rootPubKey	= EC_KEY_get0_public_key(rootKey);
 	BN_CTX*			ctx			= BN_CTX_new();
 	EC_KEY*			pkey		= EC_KEY_new_by_curve_name(NID_secp256k1);
@@ -194,7 +201,7 @@ EC_KEY* CKey::GeneratePublicDeterministicKey(const NewcoinAddress& generator, in
 
 	// Calculate the private additional key.
 	if (success) {
-		hash		= makeHash(generator, seq, order);
+		hash		= makeHash(pubGen, seq, order);
 		if(!hash)	success	= false;
 	}
 
@@ -217,8 +224,14 @@ EC_KEY* CKey::GeneratePublicDeterministicKey(const NewcoinAddress& generator, in
 	return success ? pkey : NULL;
 }
 
+EC_KEY* CKey::GeneratePrivateDeterministicKey(const NewcoinAddress& pubGen, const uint256& u, int seq)
+{
+	CBigNum bn(u);
+	return GeneratePrivateDeterministicKey(pubGen, static_cast<BIGNUM*>(&bn), seq);
+}
+
 // --> root private key
-EC_KEY* CKey::GeneratePrivateDeterministicKey(const NewcoinAddress& family, const BIGNUM* rootPrivKey, int seq)
+EC_KEY* CKey::GeneratePrivateDeterministicKey(const NewcoinAddress& pubGen, const BIGNUM* rootPrivKey, int seq)
 { // privateKey(n) = (rootPrivateKey + Hash(pubHash|seq)) % order
 	BN_CTX* ctx=BN_CTX_new();
 	if(ctx==NULL) return NULL;
@@ -248,7 +261,7 @@ EC_KEY* CKey::GeneratePrivateDeterministicKey(const NewcoinAddress& family, cons
 	}
 
 	// calculate the private additional key
-	BIGNUM* privKey=makeHash(family, seq, order);
+	BIGNUM* privKey=makeHash(pubGen, seq, order);
 	if(privKey==NULL)
 	{
 		BN_free(order);
@@ -266,19 +279,19 @@ EC_KEY* CKey::GeneratePrivateDeterministicKey(const NewcoinAddress& family, cons
 	EC_POINT* pubKey=EC_POINT_new(EC_KEY_get0_group(pkey));
 	if(!pubKey)
 	{
-		BN_free(privKey);
+		BN_clear_free(privKey);
 		BN_CTX_free(ctx);
 		EC_KEY_free(pkey);
 		return NULL;
 	}
 	if(EC_POINT_mul(EC_KEY_get0_group(pkey), pubKey, privKey, NULL, NULL, ctx)==0)
 	{
-		BN_free(privKey);
+		BN_clear_free(privKey);
 		BN_CTX_free(ctx);
 		EC_KEY_free(pkey);
 		return NULL;
 	}
-	BN_free(privKey);
+	BN_clear_free(privKey);
 	EC_KEY_set_public_key(pkey, pubKey);
 
 	EC_POINT_free(pubKey);
