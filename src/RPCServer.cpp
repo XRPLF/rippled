@@ -319,7 +319,7 @@ Json::Value RPCServer::accountFromString(const uint256& uLedger, NewcoinAddress&
 		naRegular0Public.setAccountPublic(naGenerator, 0);
 		naRegular0Private.setAccountPrivate(naGenerator, naSeed, 0);
 
-		uint160				uGeneratorID	= naRegular0Public.getAccountID();
+//		uint160				uGeneratorID	= naRegular0Public.getAccountID();
 		SLE::pointer		sleGen			= mNetOps->getGenerator(uLedger, naRegular0Public.getAccountID());
 		if (!sleGen)
 		{
@@ -1145,7 +1145,7 @@ Json::Value RPCServer::doPasswordSet(Json::Value& params)
 		naRegular0Private.setAccountPrivate(naRegularGenerator, naRegularSeed, 0);
 
 		// Hash of regular account #0 public key.
-		uint160						uGeneratorID		= naRegular0Public.getAccountID();
+//		uint160						uGeneratorID		= naRegular0Public.getAccountID();
 		std::vector<unsigned char>	vucGeneratorCipher	= naRegular0Private.accountPrivateEncrypt(naRegular0Public, naMasterGenerator.getFamilyGenerator());
 		std::vector<unsigned char>	vucGeneratorSig;
 
@@ -1418,7 +1418,7 @@ Json::Value RPCServer::doLedger(Json::Value& params)
 	{
 		return "invalid params";
 	}
-	else if (!mNetOps->available())
+	if (!mNetOps->available())
 	{
 		return JSONRPCError(503, "network not available");
 	}
@@ -1462,6 +1462,59 @@ Json::Value RPCServer::doLedger(Json::Value& params)
 	Json::Value ret(Json::objectValue);
 	ledger->addJson(ret, full ? LEDGER_JSON_FULL : 0);
 	return ret;
+}
+
+// account_tx <account> <minledger> <maxledger>
+// account_tx <account> <ledger>
+Json::Value RPCServer::doAccountTransactions(Json::Value& params)
+{
+	std::string param;
+	uint32 minLedger, maxLedger;
+
+	if ((params.size() < 2) || (params.size() > 3) || !extractString(param, params, 0))
+		return "invalid params";
+
+	if (!mNetOps->available())
+	{
+		return JSONRPCError(503, "network not available");
+	}
+
+	NewcoinAddress account;
+	if (!account.setAccountID(param))
+		return JSONRPCError(500, "invalid account");
+
+	if (!extractString(param, params, 1))
+		minLedger = boost::lexical_cast<uint32>(param);
+
+	if ((params.size() == 3) && extractString(param, params, 2))
+		maxLedger = boost::lexical_cast<uint32>(param);
+	else
+		maxLedger = minLedger;
+
+	if ((maxLedger < minLedger) || (minLedger == 0) || (maxLedger == 0))
+		return JSONRPCError(500, "invalid ledger indexes");
+
+	try
+	{
+		std::vector< std::pair<uint32, SerializedLedgerEntry::pointer> > txns =
+			mNetOps->getAffectedAccounts(account, minLedger, maxLedger);
+		Json::Value ret(Json::objectValue);
+		ret["Account"] = account.humanAccountID();
+		Json::Value jtxns(Json::arrayValue);
+		for (std::vector< std::pair<uint32, SerializedLedgerEntry::pointer> >::iterator it = txns.begin(),
+			end = txns.end(); it != end; ++it)
+		{
+			Json::Value txn = it->second->getJson(0);
+			txn["InLedger"] = it->first;
+			jtxns.append(txn);
+		}
+		ret["Transactions"] = jtxns;
+		return ret;
+	}
+	catch (...)
+	{
+		return JSONRPCError(500, "internal error");
+	}
 }
 
 // unl_add <domain>|<node_public> [<comment>]
@@ -2143,13 +2196,13 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 	if (command == "wallet_propose")		return doWalletPropose(params);
 	if (command == "wallet_seed")			return doWalletSeed(params);
 
-	if (command=="ledger")					return doLedger(params);
-
+	if (command == "ledger")				return doLedger(params);
+	if (command == "account_tx")			return doAccountTransactions(params);
 	//
 	// Obsolete or need rewrite:
 	//
 
-	if (command=="tx") return doTx(params);
+	if (command == "tx") return doTx(params);
 
 	return "unknown command";
 }

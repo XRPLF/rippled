@@ -125,6 +125,10 @@ public:
 	int beginConsensus(Ledger::pointer closingLedger);
 	void endConsensus();
 	void setStateTimer(int seconds);
+
+	// client information retrieval functions
+	std::vector< std::pair<uint32, SerializedLedgerEntry::pointer> >
+		getAffectedAccounts(const NewcoinAddress& account, uint32 minLedger, uint32 maxLedger);
 };
 
 #endif

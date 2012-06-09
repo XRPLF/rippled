@@ -528,4 +528,12 @@ void NetworkOPs::setMode(OperatingMode om)
 	mMode = om;
 }
 
+std::vector< std::pair<uint32, SerializedLedgerEntry::pointer> >
+	NetworkOPs::getAffectedAccounts(const NewcoinAddress& account, uint32 minLedger, uint32 maxLedger)
+{
+	// WRITEME
+	std::vector< std::pair<uint32, SerializedLedgerEntry::pointer> > affectedAccounts;
+	return affectedAccounts;
+}
+
 // vim:ts=4
