@@ -209,11 +209,13 @@ Json::Value RPCServer::getMasterGenerator(const uint256& uLedger, const NewcoinA
 }
 
 // Given a seed and a source account get the regular public and private key for authorizing transactions.
+// - Make sure the source account can pay.
 // --> naRegularSeed : To find the generator
 // --> naSrcAccountID : Account we want the public and private regular keys to.
 // --> naVerifyGenerator : If provided, the found master public generator must match.
 // <-- naAccountPublic : Regular public key for naSrcAccountID
 // <-- naAccountPrivate : Regular private key for naSrcAccountID
+// <-- saSrcBalance: Balance minus fee.
 Json::Value RPCServer::authorize(const uint256& uLedger,
 	const NewcoinAddress& naRegularSeed, const NewcoinAddress& naSrcAccountID,
 	NewcoinAddress& naAccountPublic, NewcoinAddress& naAccountPrivate,
@@ -1235,11 +1237,11 @@ Json::Value RPCServer::doSend(Json::Value& params)
 	}
 	else if (!naSrcAccountID.setAccountID(params[1u].asString()))
 	{
-		return JSONRPCError(500, "source account id needed");
+		return JSONRPCError(500, "source account id malformed");
 	}
 	else if (!naDstAccountID.setAccountID(params[2u].asString()))
 	{
-		return JSONRPCError(500, "create account id needed");
+		return JSONRPCError(500, "destination account id malformed");
 	}
 	else if (!saDstAmount.setValue(params[3u].asString(), sDstCurrency))
 	{
@@ -1259,13 +1261,17 @@ Json::Value RPCServer::doSend(Json::Value& params)
 	}
 	else
 	{
+		AccountState::pointer	asDst	= mNetOps->getAccountState(uLedger, naSrcAccountID);
+		bool					bCreate	= !asDst;
+		STAmount				saFee	= bCreate ? theConfig.FEE_DEFAULT : theConfig.FEE_ACCOUNT_CREATE;
+
 		NewcoinAddress			naMasterGenerator;
 		NewcoinAddress			naAccountPublic;
 		NewcoinAddress			naAccountPrivate;
 	    AccountState::pointer	asSrc;
 		STAmount				saSrcBalance;
-		Json::Value				obj			= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
-			saSrcBalance, theConfig.FEE_DEFAULT, asSrc, naMasterGenerator);
+		Json::Value				obj		= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
+			saSrcBalance, saFee, asSrc, naMasterGenerator);
 
 		if (!obj.empty())
 			return obj;
@@ -1273,25 +1279,54 @@ Json::Value RPCServer::doSend(Json::Value& params)
 		if (params.size() < 6)
 			saSrcAmount	= saDstAmount;
 
-		// XXX Confirm saSrcAmount >= saDstAmount.
+		if (saSrcBalance < saDstAmount)
+		{
+			return JSONRPCError(500, "Insufficient funds.");
+		}
 
-		STPathSet				spPaths;
-		Transaction::pointer	trans	= Transaction::sharedPayment(
-			naAccountPublic, naAccountPrivate,
-			naSrcAccountID,
-			asSrc->getSeq(),
-			theConfig.FEE_DEFAULT,
-			0,											// YYY No source tag
-			naDstAccountID,
-			saDstAmount,
-			saSrcAmount,
-			spPaths);
+		Transaction::pointer	trans;
+
+		if (asDst) {
+			// Ordinary send.
+
+			STPathSet				spPaths;
+
+			trans	= Transaction::sharedPayment(
+				naAccountPublic, naAccountPrivate,
+				naSrcAccountID,
+				asSrc->getSeq(),
+				saFee,
+				0,											// YYY No source tag
+				naDstAccountID,
+				saDstAmount,
+				saSrcAmount,
+				spPaths);
+		}
+		else if (!saDstAmount.isNative())
+		{
+			return JSONRPCError(500, "Can only send XNS to accounts which are not created.");
+		}
+		else
+		{
+			// Create and send.
+
+			trans	= Transaction::sharedCreate(
+				naAccountPublic, naAccountPrivate,
+				naSrcAccountID,
+				asSrc->getSeq(),
+				saFee,
+				0,											// YYY No source tag
+				naDstAccountID,
+				saDstAmount);								// Initial funds in XNC.
+		}
 
 		(void) mNetOps->processTransaction(trans);
 
 		obj["transaction"]		= trans->getSTransaction()->getJson(0);
 		obj["status"]			= trans->getStatus();
 		obj["seed"]				= naSeed.humanFamilySeed();
+		obj["fee"]				= saFee.getText();
+		obj["create"]			= bCreate;
 		obj["srcAccountID"]		= naSrcAccountID.humanAccountID();
 		obj["dstAccountID"]		= naDstAccountID.humanAccountID();
 		obj["srcAmount"]		= saSrcAmount.getText();
