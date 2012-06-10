@@ -18,37 +18,48 @@ public:
 		rpcSUCCESS,
 
 		// Networking
-		rpcNO_NETWORK,
 		rpcNO_CLOSED,
 		rpcNO_CURRENT,
+		rpcNO_NETWORK,
 
 		// Ledger state
+		rpcACT_EXISTS,
+		rpcACT_NOT_FOUND,
 		rpcINSUF_FUNDS,
+		rpcLGR_NOT_FOUND,
+		rpcMUST_SEND_XNS,
+		rpcNICKNAME_MISSING,
 		rpcPASSWD_CHANGED,
 		rpcSRC_MISSING,
 		rpcSRC_UNCLAIMED,
+		rpcTXN_NOT_FOUND,
+		rpcWRONG_PASSWORD,
 		rpcWRONG_SEED,
-		rpcNICKNAME_MISSING,
 
 		// Malformed command
 		rpcINVALID_PARAMS,
 		rpcUNKNOWN_COMMAND,
 
 		// Bad paramater
+		rpcACT_MALFORMED,
 		rpcBAD_SEED,
-		rpcSRC_ACT_MALFORMED,
 		rpcDST_ACT_MALFORMED,
-		rpcPUBLIC_MALFORMED,
-		rpcHOST_IP_MALFORMED,
-		rpcSRC_AMT_MALFORMED,
 		rpcDST_AMT_MALFORMED,
+		rpcHOST_IP_MALFORMED,
+		rpcLGR_IDXS_INVALID,
+		rpcLGR_IDX_MALFORMED,
 		rpcNICKNAME_MALFORMED,
 		rpcNICKNAME_PERM,
+		rpcPORT_MALFORMED,
+		rpcPUBLIC_MALFORMED,
+		rpcSRC_ACT_MALFORMED,
+		rpcSRC_AMT_MALFORMED,
 
 		// Internal error (should never happen)
 		rpcINTERNAL,		// Generic internal error.
-		rpcNO_GEN_DECRPYT,
+		rpcFAIL_GEN_DECRPYT,
 		rpcNOT_IMPL,
+		rpcNO_GEN_DECRPYT,
 	};
 
 	Json::Value RPCError(int iError);
