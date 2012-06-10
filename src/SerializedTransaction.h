@@ -14,6 +14,8 @@
 #define TXN_SQL_CONFLICT	'C'
 #define TXN_SQL_HELD		'H'
 #define TXN_SQL_VALIDATED	'V'
+#define TXN_SQL_INCLUDED	'I'
+#define TXN_SQL_UNKNOWN		'U'
 
 class SerializedTransaction : public SerializedType
 {
