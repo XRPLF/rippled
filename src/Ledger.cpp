@@ -262,7 +262,7 @@ void Ledger::saveAcceptedLedger(Ledger::pointer ledger)
 	while(ledger->mAccountStateMap->flushDirty(64, ACCOUNT_NODE, ledger->mLedgerSeq))
 	{ ; }
 
-	SHAMap& txSet = *ledger->peekAccountStateMap();
+	SHAMap& txSet = *ledger->peekTransactionMap();
 	Database *db = theApp->getTxnDB()->getDB();
 	ScopedLock dbLock = theApp->getTxnDB()->getDBLock();
 	db->executeSQL("BEGIN TRANSACTION;");
