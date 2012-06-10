@@ -10,6 +10,11 @@
 #include "TransactionFormats.h"
 #include "NewcoinAddress.h"
 
+#define TXN_SQL_NEW			'N'
+#define TXN_SQL_CONFLICT	'C'
+#define TXN_SQL_HELD		'H'
+#define TXN_SQL_VALIDATED	'V'
+
 class SerializedTransaction : public SerializedType
 {
 public:
@@ -116,6 +121,14 @@ public:
 
 	bool sign(const NewcoinAddress& naAccountPrivate);
 	bool checkSign(const NewcoinAddress& naAccountPublic) const;
+
+	// SQL Functions
+	static std::string getSQLValueHeader();
+	static std::string getSQLInsertHeader();
+	std::string getSQL(std::string& sql, uint32 inLedger, char status) const;
+	std::string getSQL(uint32 inLedger, char status) const;
+	std::string getSQL(Serializer rawTxn, uint32 inLedger, char status) const;
+
 };
 
 #endif

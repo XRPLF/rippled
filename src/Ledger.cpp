@@ -16,6 +16,7 @@
 #include "Wallet.h"
 #include "BinaryFormats.h"
 #include "LedgerTiming.h"
+#include "Log.h"
 
 Ledger::Ledger(const NewcoinAddress& masterID, uint64 startAmount) : mTotCoins(startAmount),
 	mCloseTime(0), mLedgerSeq(0), mLedgerInterval(LEDGER_INTERVAL), mClosed(false), mValidHash(false),
@@ -261,6 +262,41 @@ void Ledger::saveAcceptedLedger(Ledger::pointer ledger)
 	while(ledger->mAccountStateMap->flushDirty(64, ACCOUNT_NODE, ledger->mLedgerSeq))
 	{ ; }
 
+	SHAMap& txSet = *ledger->peekAccountStateMap();
+	Database *db = theApp->getTxnDB()->getDB();
+	ScopedLock dbLock = theApp->getTxnDB()->getDBLock();
+	db->executeSQL("BEGIN TRANSACTION;");
+	for (SHAMapItem::pointer item = txSet.peekFirstItem(); !!item; item = txSet.peekNextItem(item->getTag()))
+	{
+		SerializerIterator sit(item->peekSerializer());
+		SerializedTransaction txn(sit);
+		std::vector<NewcoinAddress> accts = txn.getAffectedAccounts();
+
+		std::string sql = "INSERT INTO AccountTransactions (TransID, Account, LedgerSeq) VALUES ";
+		bool first = true;
+		for (std::vector<NewcoinAddress>::iterator it = accts.begin(), end = accts.end(); it != end; ++it)
+		{
+			if (!first)
+				sql += ", ('";
+			else
+			{
+				sql += "('";
+				first = false;
+			}
+			sql += txn.getTransactionID().GetHex();
+			sql += "','";
+			sql += it->humanAccountID();
+			sql += "',";
+			sql += boost::lexical_cast<std::string>(ledger->getLedgerSeq());
+			sql += ")";
+		}
+		sql += ";";
+		Log(lsTRACE) << "ActTx: " << sql;
+		db->executeSQL(sql);
+		db->executeSQL(txn.getSQLInsertHeader() + txn.getSQL(ledger->getLedgerSeq(), TXN_SQL_VALIDATED) + ";");
+		// FIXME: If above updates no rows, modify seq/status
+	}
+	db->executeSQL("COMMIT TRANSACTION;");
 }
 
 Ledger::pointer Ledger::getSQL(const std::string& sql)

@@ -727,40 +727,6 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 	theApp->getConnectionPool().relayMessage(NULL, boost::make_shared<PackedMessage>(val, newcoin::mtVALIDATION));
 	Log(lsINFO) << "Validation sent " << newLCL->getHash().GetHex();
 	statusChange(newcoin::neACCEPTED_LEDGER, newOL);
-
-	// Insert the transactions in set into the AcctTxn database
-	Database *db = theApp->getAcctTxnDB()->getDB();
-	ScopedLock dbLock = theApp->getAcctTxnDB()->getDBLock();
-	db->executeSQL("BEGIN TRANSACTION;");
-	for (SHAMapItem::pointer item = set->peekFirstItem(); !!item; item = set->peekNextItem(item->getTag()))
-	{
-		SerializerIterator sit(item->peekSerializer());
-		SerializedTransaction txn(sit);
-		std::vector<NewcoinAddress> accts = txn.getAffectedAccounts();
-
-		std::string sql = "INSERT INTO AccountTransactions (TransID, Account, LedgerSeq) VALUES ";
-		bool first = true;
-		for (std::vector<NewcoinAddress>::iterator it = accts.begin(), end = accts.end(); it != end; ++it)
-		{
-			if (!first)
-				sql += ", ('";
-			else
-			{
-				sql += "('";
-				first = false;
-			}
-			sql += txn.getTransactionID().GetHex();
-			sql += "','";
-			sql += it->humanAccountID();
-			sql += "',";
-			sql += boost::lexical_cast<std::string>(newLedgerSeq);
-			sql += ")";
-		}
-		sql += ";";
-		Log(lsTRACE) << "ActTx: " << sql;
-		db->executeSQL(sql);
-	}
-	db->executeSQL("COMMIT TRANSACTION;");
 }
 
 void LedgerConsensus::endConsensus()

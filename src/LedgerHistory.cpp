@@ -2,6 +2,7 @@
 #include <string>
 
 #include <boost/bind.hpp>
+#include <boost/thread.hpp>
 
 #include "LedgerHistory.h"
 #include "Config.h"
@@ -32,7 +33,8 @@ void LedgerHistory::addAcceptedLedger(Ledger::pointer ledger)
 	boost::recursive_mutex::scoped_lock sl(mLedgersByHash.peekMutex());
 	mLedgersByHash.canonicalize(h, ledger);
 	mLedgersByIndex.insert(std::make_pair(ledger->getLedgerSeq(), ledger));
-	theApp->getIOService().post(boost::bind(&Ledger::saveAcceptedLedger, ledger));
+	boost::thread thread(boost::bind(&Ledger::saveAcceptedLedger, ledger));
+	thread.detach();
 }
 
 Ledger::pointer LedgerHistory::getLedgerBySeq(uint32 index)
