@@ -847,6 +847,10 @@ Json::Value RPCServer::doDataFetch(Json::Value& params)
 // data_store <key> <value>
 Json::Value RPCServer::doDataStore(Json::Value& params)
 {
+	params	= Json::Value(Json::arrayValue);
+	params.append(12);
+	params.append(34);
+
 	std::string	strKey		= params[0u].asString();
 	std::string	strValue	= params[1u].asString();
 
@@ -1571,7 +1575,7 @@ Json::Value RPCServer::doWalletAccounts(Json::Value& params)
 
 	if (!naSeed.setFamilySeedGeneric(params[0u].asString()))
 	{
-		return "seed expected";
+		return RPCError(rpcBAD_SEED);
 	}
 
 	NewcoinAddress	naMasterGenerator;
@@ -1616,7 +1620,7 @@ Json::Value RPCServer::doWalletAdd(Json::Value& params)
 
 	if (!naRegularSeed.setFamilySeedGeneric(params[0u].asString()))
 	{
-		return "regular seed expected";
+		return RPCError(rpcBAD_SEED);
 	}
 	else if (!naSrcAccountID.setAccountID(params[1u].asString()))
 	{

@@ -659,7 +659,8 @@ bool NewcoinAddress::setFamilySeedGeneric(const std::string& strText)
 	NewcoinAddress	naTemp;
 	bool			bResult	= true;
 
-	if (naTemp.setAccountID(strText)
+	if (strText.empty()
+		|| naTemp.setAccountID(strText)
 		|| naTemp.setAccountPublic(strText)
 		|| naTemp.setAccountPrivate(strText))
 	{
