@@ -7,34 +7,24 @@ const char *TxnDBInit[] = {
 		TransType	CHARACTER(24)				\
 		FromAcct	CHARACTER(35),				\
 		FromSeq		BIGINT UNSIGNED,			\
-		OtherAcct	CHARACTER(40),				\
-		Amount		BIGINT UNSIGNED,			\
-		FirstSeen	TEXT,						\
-		CommitSeq	BIGINT UNSIGNED,			\
+		LedgerSeq	BIGINT UNSIGNED,			\
 		Status		CHARACTER(1),				\
 		RawTxn		BLOB						\
 	);",
 	"CREATE TABLE PubKeys (						\
 		ID			CHARACTER(35) PRIMARY KEY,	\
 		PubKey		BLOB						\
-	);"
+	);",
+	"CREATE TABLE AccountTransactions (			\
+		TransID		CHARACTER(64),				\
+		Account		CHARACTER(64),				\
+		LedgerSeq	BIGINT UNSIGNED				\
+	);",
+	"CREATE INDEX AcctTxindex ON				\
+		AccountTransactions(Account, LedgerSeq, TransID);"
 };
 
 int TxnDBCount = sizeof(TxnDBInit) / sizeof(const char *);
-
-const char *AcctTxnDBInit[] = {
-	"CREATE TABLE AccountTransactions (			\
-		TransID		CHARACTER964) PRIMARY KEY	\
-		Account		CHARACTER(64),				\
-		LedgerSeq	BIGINT UNSIGNED,			\
-	);",
-	"CREATE INDEX AcctTxindex ON				\
-		AccountTransactions(Account),			\
-		AccountTransactions(LedgerSeq),			\
-		AccountTransactions(TransID);"
-};
-
-int AcctTxnDBCount = sizeof(AcctTxnDBInit) / sizeof(const char *);
 
 // Ledger database holds ledgers and ledger confirmations
 const char *LedgerDBInit[] = {

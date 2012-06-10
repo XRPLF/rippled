@@ -1,5 +1,6 @@
 
 #include "SerializedTransaction.h"
+#include "Application.h"
 
 #include "Log.h"
 
@@ -85,8 +86,22 @@ std::vector<NewcoinAddress> SerializedTransaction::getAffectedAccounts() const
 		end = mInnerTxn.peekData().end(); it != end ; ++it)
 	{
 		const STAccount* sa = dynamic_cast<const STAccount*>(&*it);
-		if (sa != NULL) // FIXME: Should we check for duplicates?
-			accounts.push_back(sa->getValueNCA());
+		if (sa != NULL)
+		{
+			bool found = false;
+			NewcoinAddress na = sa->getValueNCA();
+			for (std::vector<NewcoinAddress>::iterator it = accounts.begin(), end = accounts.end();
+				it != end; ++it)
+			{
+				if (*it == na)
+				{
+					found = true;
+					break;
+				}
+			}
+			if (!found)
+				accounts.push_back(na);
+		}
 	}
 	return accounts;
 }
@@ -283,4 +298,33 @@ Json::Value SerializedTransaction::getJson(int options) const
 	ret["Inner"] = mInnerTxn.getJson(options);
 	return ret;
 }
+
+std::string SerializedTransaction::getSQLValueHeader()
+{
+	return "(TransID, TransType, FromAcct, FromSeq, CommitSeq, Status, RawTxn)";
+}
+
+std::string SerializedTransaction::getSQLInsertHeader()
+{
+	return "INSERT INTO Transactions " + getSQLValueHeader() + " VALUES ";
+}
+
+std::string SerializedTransaction::getSQL(uint32 inLedger, char status) const
+{
+	Serializer s;
+	add(s);
+	return getSQL(s, inLedger, status);
+}
+
+std::string SerializedTransaction::getSQL(Serializer rawTxn, uint32 inLedger, char status) const
+{
+	std::string rTxn;
+	theApp->getTxnDB()->getDB()->escape(
+		reinterpret_cast<const unsigned char *>(rawTxn.getDataPtr()), rawTxn.getLength(), rTxn);
+	return str(boost::format("('%s', '%s', '%s', %d, %d, %c, '%s')")
+		% getTransactionID().GetHex() % getTransactionType() % getSourceAccount().humanAccountID()
+		% getSequence() % inLedger % status % rTxn);
+}
+
+
 // vim:ts=4

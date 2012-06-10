@@ -13,7 +13,65 @@
 
 class RPCServer : public boost::enable_shared_from_this<RPCServer>
 {
+public:
+	enum {
+		rpcSUCCESS,
+
+		// Networking
+		rpcNO_CLOSED,
+		rpcNO_CURRENT,
+		rpcNO_NETWORK,
+
+		// Ledger state
+		rpcACT_EXISTS,
+		rpcACT_NOT_FOUND,
+		rpcINSUF_FUNDS,
+		rpcLGR_NOT_FOUND,
+		rpcMUST_SEND_XNS,
+		rpcNICKNAME_MISSING,
+		rpcPASSWD_CHANGED,
+		rpcSRC_MISSING,
+		rpcSRC_UNCLAIMED,
+		rpcTXN_NOT_FOUND,
+		rpcWRONG_PASSWORD,
+		rpcWRONG_SEED,
+
+		// Malformed command
+		rpcINVALID_PARAMS,
+		rpcUNKNOWN_COMMAND,
+
+		// Bad paramater
+		rpcACT_MALFORMED,
+		rpcBAD_SEED,
+		rpcDST_ACT_MALFORMED,
+		rpcDST_AMT_MALFORMED,
+		rpcHOST_IP_MALFORMED,
+		rpcLGR_IDXS_INVALID,
+		rpcLGR_IDX_MALFORMED,
+		rpcNICKNAME_MALFORMED,
+		rpcNICKNAME_PERM,
+		rpcPORT_MALFORMED,
+		rpcPUBLIC_MALFORMED,
+		rpcSRC_ACT_MALFORMED,
+		rpcSRC_AMT_MALFORMED,
+
+		// Internal error (should never happen)
+		rpcINTERNAL,		// Generic internal error.
+		rpcFAIL_GEN_DECRPYT,
+		rpcNOT_IMPL,
+		rpcNO_GEN_DECRPYT,
+	};
+
+	Json::Value RPCError(int iError);
+
 private:
+	typedef Json::Value (RPCServer::*doFuncPtr)(Json::Value &params);
+	enum {
+		optNetwork	= 1,				// Need network
+		optCurrent	= 2+optNetwork,		// Need current ledger
+		optClosed	= 4+optNetwork,		// Need closed ledger
+	};
+
 	NetworkOPs*	mNetOps;
 
 	boost::asio::ip::tcp::socket mSocket;
@@ -52,6 +110,7 @@ private:
 	Json::Value doAccountInfo(Json::Value& params);
 	Json::Value doAccountLines(Json::Value &params);
 	Json::Value doAccountMessageSet(Json::Value &params);
+	Json::Value doAccountTransactions(Json::Value& params);
 	Json::Value doAccountWalletSet(Json::Value &params);
 	Json::Value doConnect(Json::Value& params);
 	Json::Value doCreditSet(Json::Value& params);
