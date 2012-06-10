@@ -9,7 +9,8 @@
 #include "types.h"
 
 #define nothing()   do {} while (0)
-#define fallthru()   do {} while (0)
+#define fallthru()  do {} while (0)
+#define NUMBER(x)	(sizeof(x)/sizeof((x)[0]))
 
 #ifndef MAX
 #define MAX(x,y) ((x) < (y) ? (y) : (x))
