@@ -40,7 +40,7 @@ RPCServer::RPCServer(boost::asio::io_service& io_service , NetworkOPs* nopNetwor
 
 Json::Value RPCServer::RPCError(int iError)
 {
-	struct {
+	static struct {
 		int			iError;
 		const char*	pToken;
 		const char*	pMessage;
@@ -51,7 +51,7 @@ Json::Value RPCServer::RPCError(int iError)
 		{ rpcHOST_IP_MALFORMED,	"hostIpMalformed",	"Host IP is malformed."	},
 		{ rpcINSUF_FUNDS,		"insufFunds",		"Insufficient funds." },
 		{ rpcINTERNAL,			"internal",			"Internal error."	},
-		{ rpcINVALID_PARAMS,	"invalidParams",	"Invalid paramters." },
+		{ rpcINVALID_PARAMS,	"invalidParams",	"Invalid parameters." },
 		{ rpcNICKNAME_MALFORMED,"nicknameMalformed","Nickname is malformed."	},
 		{ rpcNICKNAME_MISSING,	"nicknameMissing",	"Nickname does not exist."	},
 		{ rpcNICKNAME_PERM,		"nicknamePerm",		"Account does not control nickname."	},
@@ -2022,7 +2022,7 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 {
 	std::cerr << "RPC:" << command << std::endl;
 
-	struct {
+	static struct {
 		const char* pCommand;
 		doFuncPtr	dfpFunc;
 		int			iMinParams;
