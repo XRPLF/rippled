@@ -61,7 +61,7 @@ void Application::run()
 	// Construct databases.
 	//
 	mTxnDB = new DatabaseCon("transaction.db", TxnDBInit, TxnDBCount);
-	mAcctTxnDB = new DatabaseCon("transacct.db", AcctTxnDBInit, AcctTxnDBCount);
+	mAcctTxnDB = new DatabaseCon("accttx.db", AcctTxnDBInit, AcctTxnDBCount);
 	mLedgerDB = new DatabaseCon("ledger.db", LedgerDBInit, LedgerDBCount);
 	mWalletDB = new DatabaseCon("wallet.db", WalletDBInit, WalletDBCount);
 	mHashNodeDB = new DatabaseCon("hashnode.db", HashNodeDBInit, HashNodeDBCount);
