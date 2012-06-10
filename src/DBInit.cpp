@@ -14,12 +14,7 @@ const char *TxnDBInit[] = {
 	"CREATE TABLE PubKeys (						\
 		ID			CHARACTER(35) PRIMARY KEY,	\
 		PubKey		BLOB						\
-	);"
-};
-
-int TxnDBCount = sizeof(TxnDBInit) / sizeof(const char *);
-
-const char *AcctTxnDBInit[] = {
+	);",
 	"CREATE TABLE AccountTransactions (			\
 		TransID		CHARACTER(64),				\
 		Account		CHARACTER(64),				\
@@ -29,7 +24,7 @@ const char *AcctTxnDBInit[] = {
 		AccountTransactions(Account, LedgerSeq, TransID);"
 };
 
-int AcctTxnDBCount = sizeof(AcctTxnDBInit) / sizeof(const char *);
+int TxnDBCount = sizeof(TxnDBInit) / sizeof(const char *);
 
 // Ledger database holds ledgers and ledger confirmations
 const char *LedgerDBInit[] = {

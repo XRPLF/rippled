@@ -10,6 +10,11 @@
 #include "TransactionFormats.h"
 #include "NewcoinAddress.h"
 
+#define TXN_SQL_NEW			'N'
+#define TXN_SQL_CONFLICT	'C'
+#define TXN_SQL_HELD		'H'
+#define TXN_SQL_VALIDATED	'V'
+
 class SerializedTransaction : public SerializedType
 {
 public:

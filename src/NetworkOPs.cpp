@@ -542,8 +542,8 @@ std::vector< std::pair<uint32, uint256> >
 			" WHERE Account = '%s' AND LedgerSeq <= '%d' AND LedgerSeq >= '%d' ORDER BY LedgerSeq LIMIT 1000")
 			% account.humanAccountID() % maxLedger	% minLedger);
 
-	Database *db = theApp->getAcctTxnDB()->getDB();
-	ScopedLock dbLock = theApp->getAcctTxnDB()->getDBLock();
+	Database *db = theApp->getTxnDB()->getDB();
+	ScopedLock dbLock = theApp->getTxnDB()->getDBLock();
 
 	SQL_FOREACH(db, sql)
 	{
