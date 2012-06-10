@@ -45,29 +45,40 @@ Json::Value RPCServer::RPCError(int iError)
 		const char*	pToken;
 		const char*	pMessage;
 	} errorInfoA[] = {
+		{ rpcACT_EXISTS,		"actExists",		"Account already exists." },
+		{ rpcACT_MALFORMED,		"actMalformed",		"Account malformed." },
+		{ rpcACT_NOT_FOUND,		"actNotFound",		"Account not found." },
 		{ rpcBAD_SEED,			"badSeed",			"Disallowed seed." },
 		{ rpcDST_ACT_MALFORMED,	"dstActMalformed",	"Destination account is malformed."	},
 		{ rpcDST_AMT_MALFORMED,	"dstAmtMalformed",	"Destination amount/currency is malformed."	},
+		{ rpcFAIL_GEN_DECRPYT,	"failGenDecrypt",	"Failed to decrypt generator." },
 		{ rpcHOST_IP_MALFORMED,	"hostIpMalformed",	"Host IP is malformed."	},
 		{ rpcINSUF_FUNDS,		"insufFunds",		"Insufficient funds." },
 		{ rpcINTERNAL,			"internal",			"Internal error."	},
 		{ rpcINVALID_PARAMS,	"invalidParams",	"Invalid parameters." },
+		{ rpcLGR_IDXS_INVALID,	"lgrIdxsInvalid",	"Ledger indexes invalid." },
+		{ rpcLGR_IDX_MALFORMED,	"lgrIdxMalformed",	"Ledger index malformed." },
+		{ rpcLGR_NOT_FOUND,		"lgrNotFound",		"Ledger not found." },
+		{ rpcMUST_SEND_XNS,		"mustSendXns",		"Can only send XNS to accounts which are not created." },
 		{ rpcNICKNAME_MALFORMED,"nicknameMalformed","Nickname is malformed."	},
 		{ rpcNICKNAME_MISSING,	"nicknameMissing",	"Nickname does not exist."	},
 		{ rpcNICKNAME_PERM,		"nicknamePerm",		"Account does not control nickname."	},
+		{ rpcNOT_IMPL,			"notImpl",			"Not implemented." },
 		{ rpcNO_CLOSED,			"noClosed",			"Closed ledger is unavailable." },
 		{ rpcNO_CURRENT,		"noCurrent",		"Current ledger is unavailable." },
 		{ rpcNO_GEN_DECRPYT,	"noGenDectypt",		"Password failed to decrypt master public generator."	},
 		{ rpcNO_NETWORK,		"noNetwork",		"Network not available." },
-		{ rpcNOT_IMPL,			"notImpl",			"Not implemented." },
 		{ rpcPASSWD_CHANGED,	"passwdChanged",	"Wrong key, password changed." },
+		{ rpcPORT_MALFORMED,	"portMalformed",	"Port is malformed."	},
 		{ rpcPUBLIC_MALFORMED,	"publicMalformed",	"Public key is malformed."	},
 		{ rpcSRC_ACT_MALFORMED,	"srcActMalformed",	"Source account is malformed."	},
 		{ rpcSRC_AMT_MALFORMED,	"srcAmtMalformed",	"Source amount/currency is malformed."	},
 		{ rpcSRC_MISSING,		"srcMissing",		"Source account does not exist." },
 		{ rpcSRC_UNCLAIMED,		"srcUnclaimed",		"Source account is not claimed." },
 		{ rpcSUCCESS,			"success",			"Success." },
+		{ rpcTXN_NOT_FOUND,		"txnNotFound",		"Transaction not found." },
 		{ rpcUNKNOWN_COMMAND,	"unknownCmd",		"Unknown command." },
+		{ rpcWRONG_PASSWORD,	"wrongPassword",	"Wrong password." },
 		{ rpcWRONG_SEED,		"wrongSeed",		"The regular key does not point as the master key." },
 	};
 
@@ -245,14 +256,14 @@ Json::Value RPCServer::getMasterGenerator(const uint256& uLedger, const NewcoinA
 	if (!sleGen)
 	{
 		// No account has been claimed or has had it password set for seed.
-		return JSONRPCError(500, "wrong password");
+		return RPCError(rpcWRONG_PASSWORD);
 	}
 
 	std::vector<unsigned char>	vucCipher			= sleGen->getIFieldVL(sfGenerator);
 	std::vector<unsigned char>	vucMasterGenerator	= na0Private.accountPrivateDecrypt(na0Public, vucCipher);
 	if (vucMasterGenerator.empty())
 	{
-		return JSONRPCError(500, "internal error: password failed to decrypt master public generator");
+		return RPCError(rpcFAIL_GEN_DECRPYT);
 	}
 
 	naMasterGenerator.setFamilyGenerator(vucMasterGenerator);
@@ -725,7 +736,7 @@ Json::Value RPCServer::doConnect(Json::Value& params)
 
 		// YYY Should make an extract int.
 		if (!extractString(strPort, params, 1))
-			return JSONRPCError(500, "Bad port");
+			return RPCError(rpcPORT_MALFORMED);
 
 		iPort	= boost::lexical_cast<int>(strPort);
 	}
@@ -1028,17 +1039,17 @@ Json::Value RPCServer::doPasswordSet(Json::Value& params)
 	if (!naMasterSeed.setFamilySeedGeneric(params[0u].asString()))
 	{
 		// Should also not allow account id's as seeds.
-		return "master seed expected";
+		return RPCError(rpcBAD_SEED);
 	}
 	else if (!naRegularSeed.setFamilySeedGeneric(params[1u].asString()))
 	{
 		// Should also not allow account id's as seeds.
-		return "regular seed expected";
+		return RPCError(rpcBAD_SEED);
 	}
 	// YYY Might use account from string to be more flexible.
 	else if (params.size() >= 3 && !naAccountID.setAccountID(params[2u].asString()))
 	{
-		return "bad account";
+		return RPCError(rpcACT_MALFORMED);
 	}
 	else
 	{
@@ -1088,7 +1099,7 @@ Json::Value RPCServer::doPasswordSet(Json::Value& params)
 
 		if (!iMax)
 		{
-			return "account not found";
+			return RPCError(rpcACT_NOT_FOUND);
 		}
 
 		Transaction::pointer	trns	= Transaction::sharedPasswordSet(
@@ -1205,7 +1216,7 @@ Json::Value RPCServer::doSend(Json::Value& params)
 		}
 		else if (!saDstAmount.isNative())
 		{
-			return JSONRPCError(500, "Can only send XNS to accounts which are not created.");
+			return RPCError(rpcMUST_SEND_XNS);
 		}
 		else
 		{
@@ -1327,7 +1338,9 @@ Json::Value RPCServer::doTx(Json::Value& params)
 		uint256 txid(param1);
 
 		Transaction::pointer txn=theApp->getMasterTransaction().fetch(txid, true);
-		if (!txn) return JSONRPCError(500, "Transaction not found");
+
+		if (!txn) return RPCError(rpcTXN_NOT_FOUND);
+
 		return txn->getJson(true);
 	}
 
@@ -1364,7 +1377,7 @@ Json::Value RPCServer::doLedger(Json::Value& params)
 		ledger = theApp->getMasterLedger().getLedgerBySeq(boost::lexical_cast<uint32>(param));
 
 	if (!ledger)
-		return JSONRPCError(503, "Unable to locate ledger");
+		return RPCError(rpcLGR_NOT_FOUND);
 
 	bool full = false;
 	if (extractString(param, params, 1))
@@ -1390,10 +1403,11 @@ Json::Value RPCServer::doAccountTransactions(Json::Value& params)
 
 	NewcoinAddress account;
 	if (!account.setAccountID(param))
-		return JSONRPCError(500, "invalid account");
+		return RPCError(rpcACT_MALFORMED);
 
 	if (!extractString(param, params, 1))
-		return JSONRPCError(500, "invalid ledger index");
+		return RPCError(rpcLGR_IDX_MALFORMED);
+
 	minLedger = boost::lexical_cast<uint32>(param);
 
 	if ((params.size() == 3) && extractString(param, params, 2))
@@ -1404,7 +1418,7 @@ Json::Value RPCServer::doAccountTransactions(Json::Value& params)
 	if ((maxLedger < minLedger) || (minLedger == 0) || (maxLedger == 0))
 	{
 		std::cerr << "minL=" << minLedger << ", maxL=" << maxLedger << std::endl;
-		return JSONRPCError(500, "invalid ledger indexes");
+		return RPCError(rpcLGR_IDXS_INVALID);
 	}
 
 #ifndef DEBUG
@@ -1446,7 +1460,7 @@ Json::Value RPCServer::doAccountTransactions(Json::Value& params)
 	}
 	catch (...)
 	{
-		return JSONRPCError(500, "internal error");
+		return RPCError(rpcINTERNAL);
 	}
 #endif
 }
@@ -1606,11 +1620,11 @@ Json::Value RPCServer::doWalletAdd(Json::Value& params)
 	}
 	else if (!naSrcAccountID.setAccountID(params[1u].asString()))
 	{
-		return JSONRPCError(500, "source account id needed");
+		return RPCError(rpcSRC_ACT_MALFORMED);
 	}
 	else if (!naMasterSeed.setFamilySeedGeneric(params[2u].asString()))
 	{
-		return "master seed expected";
+		return RPCError(rpcBAD_SEED);
 	}
 	else if (params.size() >= 4 && !saAmount.setValue(params[3u].asString(), sDstCurrency))
 	{
@@ -1707,12 +1721,12 @@ Json::Value RPCServer::doWalletClaim(Json::Value& params)
 	if (!naMasterSeed.setFamilySeedGeneric(params[0u].asString()))
 	{
 		// Should also not allow account id's as seeds.
-		return "master seed expected";
+		return RPCError(rpcBAD_SEED);
 	}
 	else if (!naRegularSeed.setFamilySeedGeneric(params[1u].asString()))
 	{
 		// Should also not allow account id's as seeds.
-		return "regular seed expected";
+		return RPCError(rpcBAD_SEED);
 	}
 	else
 	{
@@ -1804,11 +1818,11 @@ Json::Value RPCServer::doWalletCreate(Json::Value& params)
 	}
 	else if (!naDstAccountID.setAccountID(params[2u].asString()))
 	{
-		return "create account id needed";
+		return RPCError(rpcDST_ACT_MALFORMED);
 	}
 	else if (mNetOps->getAccountState(uLedger, naDstAccountID))
 	{
-		return "account already exists";
+		return RPCError(rpcACT_EXISTS);
 	}
 
 	// Trying to build:
