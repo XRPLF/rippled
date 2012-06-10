@@ -21,7 +21,7 @@ protected:
 	std::vector<unsigned char> mData;
 
 public:
-	Serializer(int n=256) { mData.reserve(n); }
+	Serializer(int n = 256) { mData.reserve(n); }
 	Serializer(const std::vector<unsigned char> &data) : mData(data) { ; }
 	Serializer(const std::string& data) : mData(data.data(), (data.data()) + data.size()) { ; }
 
@@ -72,23 +72,29 @@ public:
 	static uint256 getSHA512Half(const std::string& strData);
 
 	// totality functions
-	int getLength() const { return mData.size(); }
-	const void* getDataPtr() const { return &mData.front(); }
-	void* getDataPtr() { return &mData.front(); }
+	int getCapacity() const				{ return mData.capacity(); }
+	int getDataLength() const			{ return mData.size(); }
+	const void* getDataPtr() const		{ return &mData.front(); }
+	void* getDataPtr()					{ return &mData.front(); }
+	int getLength()						{ return mData.size(); }
 	const std::vector<unsigned char>& peekData() const { return mData; }
 	std::vector<unsigned char> getData() const { return mData; }
-	std::string getString() const { return std::string(static_cast<const char *>(getDataPtr()), getLength());  }
+	std::string getString() const { return std::string(static_cast<const char *>(getDataPtr()), size());  }
 	void secureErase() { memset(&(mData.front()), 0, mData.size()); erase(); }
 	void erase() { mData.clear(); }
 	int removeLastByte();
 	bool chop(int num);
 
 	// vector-like functions
-	std::vector<unsigned char>::iterator begin() { return mData.begin(); }
-	std::vector<unsigned char>::iterator end() { return mData.end(); }
+	std::vector<unsigned char>::iterator begin()			{ return mData.begin(); }
+	std::vector<unsigned char>::iterator end()				{ return mData.end(); }
 	std::vector<unsigned char>::const_iterator begin() const { return mData.begin(); }
-	std::vector<unsigned char>::const_iterator end() const { return mData.end(); }
-	std::vector<unsigned char>::size_type size() const { return mData.size(); }
+	std::vector<unsigned char>::const_iterator end() const	{ return mData.end(); }
+	std::vector<unsigned char>::size_type size() const		{ return mData.size(); }
+	void reserve(size_t n)									{ mData.reserve(n); }
+	void resize(size_t n)									{ mData.resize(n); }
+	size_t capacity() const									{ return mData.capacity(); }
+	
 
 	bool operator==(const std::vector<unsigned char>& v) { return v == mData; }
 	bool operator!=(const std::vector<unsigned char>& v) { return v != mData; }
