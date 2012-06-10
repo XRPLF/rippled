@@ -402,15 +402,7 @@ void Ledger::addJson(Json::Value& ret, int options)
 				state.append(sle.getJson(0));
 			}
 			else
-			{ // 16-bit namespace, 160-bit tag, 80-bit index
-				const uint256& tag = item->getTag();
-				uint160 account;
-				memcpy(account.begin(), tag.begin() + 4, account.size());
-				NewcoinAddress naAccount;
-				naAccount.setAccountID(account);
-				state.append(strHex(tag.begin(), 4) + ":" + naAccount.humanAccountID() + ":" +
-					strHex(tag.begin() + 4 + account.size(), tag.size() - (account.size() + 4)));
-			}
+				state.append(item->getTag().GetHex());
 		}
 		ledger["AccountState"] = state;
 	}
