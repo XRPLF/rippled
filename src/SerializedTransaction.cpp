@@ -85,8 +85,22 @@ std::vector<NewcoinAddress> SerializedTransaction::getAffectedAccounts() const
 		end = mInnerTxn.peekData().end(); it != end ; ++it)
 	{
 		const STAccount* sa = dynamic_cast<const STAccount*>(&*it);
-		if (sa != NULL) // FIXME: Should we check for duplicates?
-			accounts.push_back(sa->getValueNCA());
+		if (sa != NULL)
+		{
+			bool found = false;
+			NewcoinAddress na = sa->getValueNCA();
+			for (std::vector<NewcoinAddress>::iterator it = accounts.begin(), end = accounts.end();
+				it != end; ++it)
+			{
+				if (*it == na)
+				{
+					found = true;
+					break;
+				}
+			}
+			if (!found)
+				accounts.push_back(na);
+		}
 	}
 	return accounts;
 }
