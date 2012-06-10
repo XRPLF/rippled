@@ -731,7 +731,7 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 	// Insert the transactions in set into the AcctTxn database
 	Database *db = theApp->getAcctTxnDB()->getDB();
 	ScopedLock dbLock = theApp->getAcctTxnDB()->getDBLock();
-	db->executeSQL("BEGIN TRANSACTION");
+	db->executeSQL("BEGIN TRANSACTION;");
 	for (SHAMapItem::pointer item = set->peekFirstItem(); !!item; item = set->peekNextItem(item->getTag()))
 	{
 		SerializerIterator sit(item->peekSerializer());
@@ -742,19 +742,25 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 		bool first = true;
 		for (std::vector<NewcoinAddress>::iterator it = accts.begin(), end = accts.end(); it != end; ++it)
 		{
-			if (!first) sql += ", (";
-			else sql += "(";
+			if (!first)
+				sql += ", (";
+			else
+			{
+				sql += "('";
+				first = false;
+			}
 			sql += txn.getTransactionID().GetHex();
-			sql += ",";
+			sql += "','";
 			sql += it->humanAccountID();
-			sql += ",";
+			sql += "','";
 			sql += boost::lexical_cast<std::string>(newLedgerSeq);
-			sql += ")";
+			sql += "')";
 		}
 		sql += ";";
+		Log(lsTRACE) << "ActTx: " << sql;
 		db->executeSQL(sql);
 	}
-	db->executeSQL("COMMIT TRANSACTION");
+	db->executeSQL("COMMIT TRANSACTION;");
 }
 
 void LedgerConsensus::endConsensus()
