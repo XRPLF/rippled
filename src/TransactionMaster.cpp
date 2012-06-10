@@ -21,7 +21,7 @@ TransactionMaster::TransactionMaster() : mCache(CACHED_TRANSACTION_NUM, CACHED_T
 Transaction::pointer TransactionMaster::fetch(const uint256& txnID, bool checkDisk)
 {
 	Transaction::pointer txn = mCache.fetch(txnID);
-	if( !checkDisk || txn) return txn;
+	if (!checkDisk || txn) return txn;
 
 	txn = Transaction::load(txnID);
 	if (!txn) return txn;

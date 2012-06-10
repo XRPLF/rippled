@@ -1344,7 +1344,7 @@ Json::Value RPCServer::doTx(Json::Value& params)
 		Json::Value ret;
 		uint256 txid(param1);
 
-		Transaction::pointer txn=theApp->getMasterTransaction().fetch(txid, true);
+		Transaction::pointer txn = theApp->getMasterTransaction().fetch(txid, true);
 
 		if (!txn) return RPCError(rpcTXN_NOT_FOUND);
 
