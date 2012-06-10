@@ -1484,7 +1484,8 @@ Json::Value RPCServer::doAccountTransactions(Json::Value& params)
 		return JSONRPCError(500, "invalid account");
 
 	if (!extractString(param, params, 1))
-		minLedger = boost::lexical_cast<uint32>(param);
+		return JSONRPCError(500, "invalid ledger index");
+	minLedger = boost::lexical_cast<uint32>(param);
 
 	if ((params.size() == 3) && extractString(param, params, 2))
 		maxLedger = boost::lexical_cast<uint32>(param);
@@ -1492,10 +1493,15 @@ Json::Value RPCServer::doAccountTransactions(Json::Value& params)
 		maxLedger = minLedger;
 
 	if ((maxLedger < minLedger) || (minLedger == 0) || (maxLedger == 0))
+	{
+		std::cerr << "minL=" << minLedger << ", maxL=" << maxLedger << std::endl;
 		return JSONRPCError(500, "invalid ledger indexes");
+	}
 
+#ifndef DEBUG
 	try
 	{
+#endif
 		std::vector< std::pair<uint32, uint256> > txns =
 			mNetOps->getAffectedAccounts(account, minLedger, maxLedger);
 		Json::Value ret(Json::objectValue);
@@ -1529,11 +1535,13 @@ Json::Value RPCServer::doAccountTransactions(Json::Value& params)
 
 		ret["Ledgers"] = ledgers;
 		return ret;
+#ifndef DEBUG
 	}
 	catch (...)
 	{
 		return JSONRPCError(500, "internal error");
 	}
+#endif
 }
 
 // unl_add <domain>|<node_public> [<comment>]

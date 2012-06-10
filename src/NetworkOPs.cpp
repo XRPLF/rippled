@@ -539,7 +539,7 @@ std::vector< std::pair<uint32, uint256> >
 
 	std::string sql =
 		str(boost::format("SELECT LedgerSeq,TransID FROM AccountTransactions INDEXED BY AcctTxIndex "
-			" WHERE Account = % AND LedgerSeq <= % AND LedgerSeq >= % ORDER BY LedgerSeq LIMIT 1000")
+			" WHERE Account = %s AND LedgerSeq <= %d AND LedgerSeq >= %d ORDER BY LedgerSeq LIMIT 1000")
 			% account.humanAccountID() % minLedger	% maxLedger);
 
 	Database *db = theApp->getAcctTxnDB()->getDB();
