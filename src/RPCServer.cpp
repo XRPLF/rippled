@@ -1520,7 +1520,7 @@ Json::Value RPCServer::doAccountTransactions(Json::Value& params)
 					ledger = Json::objectValue;
 				}
 				currentLedger = it->first;
-				ledger["ID"] = currentLedger;
+				ledger["LedgerSeq"] = currentLedger;
 				jtxns = Json::arrayValue;
 			}
 			jtxns.append(it->second.GetHex());
