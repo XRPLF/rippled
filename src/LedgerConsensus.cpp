@@ -654,7 +654,6 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 	Log(lsDEBUG) << "Previous LCL " << mPreviousLedger->getHash().GetHex();
 
 	Ledger::pointer newLCL = boost::make_shared<Ledger>(false, boost::ref(*mPreviousLedger));
-	uint32 newLedgerSeq = newLCL->getLedgerSeq();
 
 #ifdef DEBUG
 	Json::StyledStreamWriter ssw;
