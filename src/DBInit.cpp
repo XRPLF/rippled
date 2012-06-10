@@ -24,7 +24,7 @@ int TxnDBCount = sizeof(TxnDBInit) / sizeof(const char *);
 
 const char *AcctTxnDBInit[] = {
 	"CREATE TABLE AccountTransactions (			\
-		TransID		CHARACTER(64) PRIMARY KEY,	\
+		TransID		CHARACTER(64),				\
 		Account		CHARACTER(64),				\
 		LedgerSeq	BIGINT UNSIGNED				\
 	);",
