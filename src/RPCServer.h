@@ -91,6 +91,8 @@ private:
 	Json::Value doWalletUnlock(Json::Value& params);
 	Json::Value doWalletVerify(Json::Value& params);
 
+	Json::Value doAccountTransactions(Json::Value& params);
+
 	void validatorsResponse(const boost::system::error_code& err, std::string strResponse);
 
 public:
