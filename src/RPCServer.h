@@ -13,7 +13,54 @@
 
 class RPCServer : public boost::enable_shared_from_this<RPCServer>
 {
+public:
+	enum {
+		rpcSUCCESS,
+
+		// Networking
+		rpcNO_NETWORK,
+		rpcNO_CLOSED,
+		rpcNO_CURRENT,
+
+		// Ledger state
+		rpcINSUF_FUNDS,
+		rpcPASSWD_CHANGED,
+		rpcSRC_MISSING,
+		rpcSRC_UNCLAIMED,
+		rpcWRONG_SEED,
+		rpcNICKNAME_MISSING,
+
+		// Malformed command
+		rpcINVALID_PARAMS,
+		rpcUNKNOWN_COMMAND,
+
+		// Bad paramater
+		rpcBAD_SEED,
+		rpcSRC_ACT_MALFORMED,
+		rpcDST_ACT_MALFORMED,
+		rpcPUBLIC_MALFORMED,
+		rpcHOST_IP_MALFORMED,
+		rpcSRC_AMT_MALFORMED,
+		rpcDST_AMT_MALFORMED,
+		rpcNICKNAME_MALFORMED,
+		rpcNICKNAME_PERM,
+
+		// Internal error (should never happen)
+		rpcINTERNAL,		// Generic internal error.
+		rpcNO_GEN_DECRPYT,
+		rpcNOT_IMPL,
+	};
+
+	Json::Value RPCError(int iError);
+
 private:
+	typedef Json::Value (RPCServer::*doFuncPtr)(Json::Value &params);
+	enum {
+		optNetwork	= 1,				// Need network
+		optCurrent	= 2+optNetwork,		// Need current ledger
+		optClosed	= 4+optNetwork,		// Need closed ledger
+	};
+
 	NetworkOPs*	mNetOps;
 
 	boost::asio::ip::tcp::socket mSocket;
