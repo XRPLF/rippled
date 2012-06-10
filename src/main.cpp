@@ -48,7 +48,7 @@ void printHelp(const po::options_description& desc)
 	cout << "     data_delete <key>" << endl;
 	cout << "     data_fetch <key>" << endl;
 	cout << "     data_store <key> <value>" << endl;
-	cout << "     ledger" << endl;
+	cout << "     ledger [<id>|current|lastclosed] [full]" << endl;
 	cout << "     nickname_info <nickname>" << endl;
 	cout << "     nickname_set <seed> <paying_account> <nickname> [<offer_minimum>] [<authorization>]" << endl;
 	cout << "     password_fund <seed> <paying_account> [<account>]" << endl;
@@ -57,7 +57,7 @@ void printHelp(const po::options_description& desc)
 	cout << "     send <seed> <paying_account> <account_id> <amount> [<currency>] [<send_max>] [<send_currency>]" << endl;
 	cout << "     stop" << endl;
 	cout << "     transit_set <seed> <paying_account> <transit_rate> <starts> <expires>" << endl;
-	cout << "     tx" << endl;
+	cout << "     tx <id>" << endl;
 	cout << "     unl_add <domain>|<public> [<comment>]" << endl;
 	cout << "     unl_delete <public_key>" << endl;
 	cout << "     unl_list" << endl;
