@@ -18,16 +18,16 @@ enum LedgerEntryType
 // Used as a prefix for computing ledger indexes (keys).
 enum LedgerNameSpace
 {
-	spaceAccount,
-	spaceGenerator,
-	spaceNickname,
-	spaceRipple,
-	spaceRippleDir,
-	spaceOffer,
-	spaceOfferDir,
-	spaceBond,
-	spaceInvoice,
-	spaceMultiSig,
+	spaceAccount	= 0,
+	spaceGenerator	= 1,
+	spaceNickname 	= 2,
+	spaceRipple		= 3,
+	spaceRippleDir	= 4,
+	spaceOffer		= 5,
+	spaceOfferDir	= 6,
+	spaceBond		= 7,
+	spaceInvoice	= 8,
+	spaceMultiSig	= 9,
 };
 
 enum LedgerSpecificFlags
