@@ -27,6 +27,7 @@ enum TransactionEngineResult
 	tenCLAIMED		= -200,	// Can not claim a previously claimed account.
 	tenCREATED,				// Can't add an already created account.
 	tenMSG_SET,				// Can't change a message key.
+	tenBAD_AUTH_MASTER,		// Auth for unclaimed account needs correct master key.
 
 	// Other
 	tenFAILED		= -100,	// Something broke horribly

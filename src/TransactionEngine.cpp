@@ -463,6 +463,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 		saSrcBalance	= sleSrc->getIValueFieldAmount(sfBalance);
 	}
 
+	bool				bHaveAuthKey	= sleSrc->getIFieldPresent(sfAuthorizedKey);
 
 	// Check if account cliamed.
 	if (terSUCCESS == result)
@@ -470,7 +471,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 		switch (txn.getTxnType())
 		{
 			case ttCLAIM:
-				if (sleSrc->getIFieldPresent(sfAuthorizedKey))
+				if (bHaveAuthKey)
 				{
 					std::cerr << "applyTransaction: Account already claimed." << std::endl;
 
@@ -479,13 +480,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 				break;
 
 			default:
-				
-				if (!sleSrc->getIFieldPresent(sfAuthorizedKey))
-				{
-					std::cerr << "applyTransaction: Source is an unclaimed account." << std::endl;
-
-					result	= terUNCLAIMED;
-				}
+				nothing();
 				break;
 		}
 	}
@@ -523,18 +518,34 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 
 			default:
 				// Verify the transaction's signing public key is the key authorized for signing.
-				if (naSigningPubKey.getAccountID() != sleSrc->getIValueFieldAccount(sfAuthorizedKey).getAccountID())
+				if (bHaveAuthKey && naSigningPubKey.getAccountID() == sleSrc->getIValueFieldAccount(sfAuthorizedKey).getAccountID())
+				{
+					// Authorized to continue.
+					nothing();
+				}
+				else if (naSigningPubKey.getAccountID() == srcAccountID)
+				{
+					// Authorized to continue.
+					nothing();
+				}
+				else if (bHaveAuthKey)
 				{
 					std::cerr << "applyTransaction: Delay: Not authorized to use account." << std::endl;
 
 					result	= terBAD_AUTH;
 				}
+				else
+				{
+					std::cerr << "applyTransaction: Invalid: Not authorized to use account." << std::endl;
+
+					result	= tenBAD_AUTH_MASTER;
+				}
 				break;
 		}
 	}
 
-	// deduct the fee, so it's not available during the transaction
-	// we only write the account back if the transaction succeeds
+	// Deduct the fee, so it's not available during the transaction.
+	// Will only write the account back, if the transaction succeeds.
 	if (terSUCCESS != result || saCost.isZero())
 	{
 		nothing();
@@ -542,7 +553,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	else if (saSrcBalance < saPaid)
 	{
 		std::cerr
-			<< str(boost::format("applyTransaction: Delay transaction: insufficent balance: balance=%s paid=%s")
+			<< str(boost::format("applyTransaction: Delay: insufficent balance: balance=%s paid=%s")
 				% saSrcBalance.getText()
 				% saPaid.getText())
 			<< std::endl;
