@@ -517,7 +517,7 @@ Json::Value RPCServer::doAccountInfo(Json::Value &params)
 // account_lines <account>|<nickname>|<account_public_key> [<index>]
 Json::Value RPCServer::doAccountLines(Json::Value &params)
 {
-	uint256			uClosed		= mNetOps->getClosedLedger();
+//	uint256			uClosed		= mNetOps->getClosedLedger();
 	uint256			uCurrent	= mNetOps->getCurrentLedger();
 
 	std::string		strIdent	= params[0u].asString();
