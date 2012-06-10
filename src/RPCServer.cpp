@@ -275,10 +275,10 @@ Json::Value RPCServer::getMasterGenerator(const uint256& uLedger, const NewcoinA
 // - Make sure the source account can pay.
 // --> naRegularSeed : To find the generator
 // --> naSrcAccountID : Account we want the public and private regular keys to.
-// --> naVerifyGenerator : If provided, the found master public generator must match.
 // <-- naAccountPublic : Regular public key for naSrcAccountID
 // <-- naAccountPrivate : Regular private key for naSrcAccountID
 // <-- saSrcBalance: Balance minus fee.
+// --> naVerifyGenerator : If provided, the found master public generator must match.
 Json::Value RPCServer::authorize(const uint256& uLedger,
 	const NewcoinAddress& naRegularSeed, const NewcoinAddress& naSrcAccountID,
 	NewcoinAddress& naAccountPublic, NewcoinAddress& naAccountPrivate,
@@ -291,19 +291,21 @@ Json::Value RPCServer::authorize(const uint256& uLedger,
 	{
 		return RPCError(rpcSRC_MISSING);
 	}
-
-	// Source must have been claimed.
-	if (!asSrc->bHaveAuthorizedKey())
-	{
-		return RPCError(rpcSRC_UNCLAIMED);
-	}
-
+	
 	NewcoinAddress	naMasterGenerator;
 
-	Json::Value	obj	= getMasterGenerator(uLedger, naRegularSeed, naMasterGenerator);
+	
+	if(asSrc->bHaveAuthorizedKey())
+	{
+		Json::Value	obj	= getMasterGenerator(uLedger, naRegularSeed, naMasterGenerator);
 
-	if (!obj.empty())
-		return obj;
+		if (!obj.empty())
+			return obj;
+	}else
+	{
+		// Try the seed as a master seed.
+		naMasterGenerator.setFamilyGenerator(naRegularSeed);
+	}
 
 	// If naVerifyGenerator is provided, make sure it is the master generator.
 	if (naVerifyGenerator.isValid() && naMasterGenerator != naVerifyGenerator)
@@ -330,7 +332,7 @@ Json::Value RPCServer::authorize(const uint256& uLedger,
 	naAccountPublic.setAccountPublic(naGenerator, iIndex);
 	naAccountPrivate.setAccountPrivate(naGenerator, naRegularSeed, iIndex);
 
-	if (asSrc->getAuthorizedKey().getAccountID() != naAccountPublic.getAccountID())
+	if (asSrc->bHaveAuthorizedKey() && (asSrc->getAuthorizedKey().getAccountID() != naAccountPublic.getAccountID()))
 	{
 		std::cerr << "iIndex: " << iIndex << std::endl;
 		std::cerr << "sfAuthorizedKey: " << strHex(asSrc->getAuthorizedKey().getAccountID()) << std::endl;
@@ -350,6 +352,7 @@ Json::Value RPCServer::authorize(const uint256& uLedger,
 		saSrcBalance -= saFee;
 	}
 
+	Json::Value	obj;
 	return obj;
 }
 
@@ -426,13 +429,13 @@ Json::Value RPCServer::doAccountEmailSet(Json::Value &params)
 		return RPCError(rpcSRC_ACT_MALFORMED);
 	}
 
-	NewcoinAddress			naMasterGenerator;
+	NewcoinAddress			naVerifyGenerator;
 	NewcoinAddress			naAccountPublic;
 	NewcoinAddress			naAccountPrivate;
 	AccountState::pointer	asSrc;
 	STAmount				saSrcBalance;
 	Json::Value				obj				= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
-		saSrcBalance, theConfig.FEE_DEFAULT, asSrc, naMasterGenerator);
+		saSrcBalance, theConfig.FEE_DEFAULT, asSrc, naVerifyGenerator);
 
 	if (!obj.empty())
 		return obj;
@@ -634,13 +637,13 @@ Json::Value RPCServer::doAccountMessageSet(Json::Value& params) {
 		return RPCError(rpcPUBLIC_MALFORMED);
 	}
 
-	NewcoinAddress			naMasterGenerator;
+	NewcoinAddress			naVerifyGenerator;
 	NewcoinAddress			naAccountPublic;
 	NewcoinAddress			naAccountPrivate;
 	AccountState::pointer	asSrc;
 	STAmount				saSrcBalance;
 	Json::Value				obj				= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
-		saSrcBalance, theConfig.FEE_DEFAULT, asSrc, naMasterGenerator);
+		saSrcBalance, theConfig.FEE_DEFAULT, asSrc, naVerifyGenerator);
 
 	if (!obj.empty())
 		return obj;
@@ -1181,13 +1184,13 @@ Json::Value RPCServer::doSend(Json::Value& params)
 		bool					bCreate	= !asDst;
 		STAmount				saFee	= bCreate ? theConfig.FEE_ACCOUNT_CREATE : theConfig.FEE_DEFAULT;
 
-		NewcoinAddress			naMasterGenerator;
+		NewcoinAddress			naVerifyGenerator;
 		NewcoinAddress			naAccountPublic;
 		NewcoinAddress			naAccountPrivate;
 	    AccountState::pointer	asSrc;
 		STAmount				saSrcBalance;
 		Json::Value				obj		= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
-			saSrcBalance, saFee, asSrc, naMasterGenerator);
+			saSrcBalance, saFee, asSrc, naVerifyGenerator);
 
 		if (!obj.empty())
 			return obj;
@@ -1768,7 +1771,7 @@ Json::Value RPCServer::doWalletClaim(Json::Value& params)
 		std::vector<unsigned char>	vucGeneratorCipher	= naRegular0Private.accountPrivateEncrypt(naRegular0Public, naMasterGenerator.getFamilyGenerator());
 		std::vector<unsigned char>	vucGeneratorSig;
 
-		// Prove that we have the corrisponding private key to the generator id.  So, we can get the generator id.
+		// Prove that we have the corresponding private key to the generator id.  So, we can get the generator id.
 		// XXX Check result.
 		naRegular0Private.accountPrivateSign(Serializer::getSHA512Half(vucGeneratorCipher), vucGeneratorSig);
 
@@ -2119,7 +2122,7 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 
 void RPCServer::sendReply()
 {
-	std::cout << "RPC reply: " << mReplyStr << std::endl;
+	//std::cout << "RPC reply: " << mReplyStr << std::endl;
 	boost::asio::async_write(mSocket, boost::asio::buffer(mReplyStr),
 			boost::bind(&RPCServer::handle_write, shared_from_this(),
 			boost::asio::placeholders::error));
@@ -2129,7 +2132,7 @@ void RPCServer::sendReply()
 
 void RPCServer::handle_write(const boost::system::error_code& e)
 {
-	std::cout << "async_write complete " << e << std::endl;
+	//std::cout << "async_write complete " << e << std::endl;
 
 	if(!e)
 	{
