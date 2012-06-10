@@ -738,12 +738,12 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 		SerializedTransaction txn(sit);
 		std::vector<NewcoinAddress> accts = txn.getAffectedAccounts();
 
-		std::string sql = "INSERT INTO AccountTransactions (TransID,Account,LedgerSeq) VALUES ";
+		std::string sql = "INSERT INTO AccountTransactions (TransID, Account, LedgerSeq) VALUES ";
 		bool first = true;
 		for (std::vector<NewcoinAddress>::iterator it = accts.begin(), end = accts.end(); it != end; ++it)
 		{
 			if (!first)
-				sql += ", (";
+				sql += ", ('";
 			else
 			{
 				sql += "('";
@@ -752,9 +752,9 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 			sql += txn.getTransactionID().GetHex();
 			sql += "','";
 			sql += it->humanAccountID();
-			sql += "','";
+			sql += "',";
 			sql += boost::lexical_cast<std::string>(newLedgerSeq);
-			sql += "')";
+			sql += ")";
 		}
 		sql += ";";
 		Log(lsTRACE) << "ActTx: " << sql;

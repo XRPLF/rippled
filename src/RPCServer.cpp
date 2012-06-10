@@ -1502,19 +1502,17 @@ Json::Value RPCServer::doAccountTransactions(Json::Value& params)
 	try
 	{
 #endif
-		std::vector< std::pair<uint32, uint256> > txns =
-			mNetOps->getAffectedAccounts(account, minLedger, maxLedger);
+		std::vector< std::pair<uint32, uint256> > txns = mNetOps->getAffectedAccounts(account, minLedger, maxLedger);
 		Json::Value ret(Json::objectValue);
 		ret["Account"] = account.humanAccountID();
 		Json::Value ledgers(Json::arrayValue);
 
 		uint32 currentLedger = 0;
 		Json::Value ledger, jtxns;
-		for (std::vector< std::pair<uint32, uint256> >::iterator it = txns.begin(),
-			end = txns.end(); it != end; ++it)
+		for (std::vector< std::pair<uint32, uint256> >::iterator it = txns.begin(), end = txns.end(); it != end; ++it)
 		{
-			if (it->first != currentLedger)
-			{ // new ledger
+			if (it->first != currentLedger) // different/new ledger
+			{
 				if (currentLedger != 0) // add old ledger
 				{
 					ledger["Transactions"] = jtxns;

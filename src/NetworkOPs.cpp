@@ -539,8 +539,8 @@ std::vector< std::pair<uint32, uint256> >
 
 	std::string sql =
 		str(boost::format("SELECT LedgerSeq,TransID FROM AccountTransactions INDEXED BY AcctTxIndex "
-			" WHERE Account = %s AND LedgerSeq <= %d AND LedgerSeq >= %d ORDER BY LedgerSeq LIMIT 1000")
-			% account.humanAccountID() % minLedger	% maxLedger);
+			" WHERE Account = '%s' AND LedgerSeq <= '%d' AND LedgerSeq >= '%d' ORDER BY LedgerSeq LIMIT 1000")
+			% account.humanAccountID() % maxLedger	% minLedger);
 
 	Database *db = theApp->getAcctTxnDB()->getDB();
 	ScopedLock dbLock = theApp->getAcctTxnDB()->getDBLock();
