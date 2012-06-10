@@ -510,6 +510,7 @@ void Transaction::saveTransaction(Transaction::pointer txn)
 
 bool Transaction::save() const
 { // This code needs to be fixed to support new-style transactions - FIXME
+ // This code is going away. It will be handled from SerializedTransaction
 #if 0
 	// Identify minimums fields to write for now.
 	// Also maybe write effected accounts for use later.

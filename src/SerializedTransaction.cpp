@@ -1,5 +1,6 @@
 
 #include "SerializedTransaction.h"
+#include "Application.h"
 
 #include "Log.h"
 
@@ -297,4 +298,33 @@ Json::Value SerializedTransaction::getJson(int options) const
 	ret["Inner"] = mInnerTxn.getJson(options);
 	return ret;
 }
+
+std::string SerializedTransaction::getSQLValueHeader()
+{
+	return "(TransID, TransType, FromAcct, FromSeq, CommitSeq, Status, RawTxn)";
+}
+
+std::string SerializedTransaction::getSQLInsertHeader()
+{
+	return "INSERT INTO Transactions " + getSQLValueHeader() + " VALUES ";
+}
+
+std::string SerializedTransaction::getSQL(uint32 inLedger, char status) const
+{
+	Serializer s;
+	add(s);
+	return getSQL(s, inLedger, status);
+}
+
+std::string SerializedTransaction::getSQL(Serializer rawTxn, uint32 inLedger, char status) const
+{
+	std::string rTxn;
+	theApp->getTxnDB()->getDB()->escape(
+		reinterpret_cast<const unsigned char *>(rawTxn.getDataPtr()), rawTxn.getLength(), rTxn);
+	return str(boost::format("('%s', '%s', '%s', %d, %d, %c, '%s')")
+		% getTransactionID().GetHex() % getTransactionType() % getSourceAccount().humanAccountID()
+		% getSequence() % inLedger % status % rTxn);
+}
+
+
 // vim:ts=4

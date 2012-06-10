@@ -7,10 +7,7 @@ const char *TxnDBInit[] = {
 		TransType	CHARACTER(24)				\
 		FromAcct	CHARACTER(35),				\
 		FromSeq		BIGINT UNSIGNED,			\
-		OtherAcct	CHARACTER(40),				\
-		Amount		BIGINT UNSIGNED,			\
-		FirstSeen	TEXT,						\
-		CommitSeq	BIGINT UNSIGNED,			\
+		LedgerSeq	BIGINT UNSIGNED,			\
 		Status		CHARACTER(1),				\
 		RawTxn		BLOB						\
 	);",
