@@ -1496,19 +1496,38 @@ Json::Value RPCServer::doAccountTransactions(Json::Value& params)
 
 	try
 	{
-		std::vector< std::pair<uint32, SerializedLedgerEntry::pointer> > txns =
+		std::vector< std::pair<uint32, uint256> > txns =
 			mNetOps->getAffectedAccounts(account, minLedger, maxLedger);
 		Json::Value ret(Json::objectValue);
 		ret["Account"] = account.humanAccountID();
-		Json::Value jtxns(Json::arrayValue);
-		for (std::vector< std::pair<uint32, SerializedLedgerEntry::pointer> >::iterator it = txns.begin(),
+		Json::Value ledgers(Json::arrayValue);
+
+		uint32 currentLedger = 0;
+		Json::Value ledger, jtxns;
+		for (std::vector< std::pair<uint32, uint256> >::iterator it = txns.begin(),
 			end = txns.end(); it != end; ++it)
 		{
-			Json::Value txn = it->second->getJson(0);
-			txn["InLedger"] = it->first;
-			jtxns.append(txn);
+			if (it->first != currentLedger)
+			{ // new ledger
+				if (currentLedger != 0) // add old ledger
+				{
+					ledger["Transactions"] = jtxns;
+					ledgers.append(ledger);
+					ledger = Json::objectValue;
+				}
+				currentLedger = it->first;
+				ledger["ID"] = currentLedger;
+				jtxns = Json::arrayValue;
+			}
+			jtxns.append(it->second.GetHex());
 		}
-		ret["Transactions"] = jtxns;
+		if (currentLedger != 0)
+		{
+			ledger["Transactions"] = jtxns;
+			ledgers.append(ledger);
+		}
+
+		ret["Ledgers"] = ledgers;
 		return ret;
 	}
 	catch (...)

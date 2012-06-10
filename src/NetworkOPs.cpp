@@ -528,11 +528,30 @@ void NetworkOPs::setMode(OperatingMode om)
 	mMode = om;
 }
 
-std::vector< std::pair<uint32, SerializedLedgerEntry::pointer> >
+#define SQL_FOREACH(_db, _strQuery)		\
+	if ((_db)->executeSQL(_strQuery))	\
+		for (bool _bMore = (db)->startIterRows(); _bMore; _bMore = (_db)->getNextRow())
+
+std::vector< std::pair<uint32, uint256> >
 	NetworkOPs::getAffectedAccounts(const NewcoinAddress& account, uint32 minLedger, uint32 maxLedger)
 {
-	// WRITEME
-	std::vector< std::pair<uint32, SerializedLedgerEntry::pointer> > affectedAccounts;
+	std::vector< std::pair<uint32, uint256> > affectedAccounts;
+
+	std::string sql =
+		str(boost::format("SELECT LedgerSeq,TransID FROM AccountTransactions INDEXED BY AcctTxIndex "
+			" WHERE Account = % AND LedgerSeq <= % AND LedgerSeq >= % ORDER BY LedgerSeq LIMIT 1000")
+			% account.humanAccountID() % minLedger	% maxLedger);
+
+	Database *db = theApp->getAcctTxnDB()->getDB();
+	ScopedLock dbLock = theApp->getAcctTxnDB()->getDBLock();
+
+	SQL_FOREACH(db, sql)
+	{
+		std::string txID;
+		db->getStr("TransID", txID);
+		affectedAccounts.push_back(std::make_pair<uint32, uint256>(db->getInt("LedgerSeq"), uint256(txID)));
+	}
+
 	return affectedAccounts;
 }
 
