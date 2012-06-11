@@ -850,10 +850,6 @@ Json::Value RPCServer::doDataFetch(Json::Value& params)
 // data_store <key> <value>
 Json::Value RPCServer::doDataStore(Json::Value& params)
 {
-	params	= Json::Value(Json::arrayValue);
-	params.append(12);
-	params.append(34);
-
 	std::string	strKey		= params[0u].asString();
 	std::string	strValue	= params[1u].asString();
 
