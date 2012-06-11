@@ -301,7 +301,7 @@ Json::Value SerializedTransaction::getJson(int options) const
 
 std::string SerializedTransaction::getSQLValueHeader()
 {
-	return "(TransID, TransType, FromAcct, FromSeq, CommitSeq, Status, RawTxn)";
+	return "(TransID, TransType, FromAcct, FromSeq, LedgerSeq, Status, RawTxn)";
 }
 
 std::string SerializedTransaction::getSQLInsertHeader()
@@ -321,7 +321,7 @@ std::string SerializedTransaction::getSQL(Serializer rawTxn, uint32 inLedger, ch
 	std::string rTxn;
 	theApp->getTxnDB()->getDB()->escape(
 		reinterpret_cast<const unsigned char *>(rawTxn.getDataPtr()), rawTxn.getLength(), rTxn);
-	return str(boost::format("('%s', '%s', '%s', %d, %d, %c, '%s')")
+	return str(boost::format("('%s', '%s', '%s', '%d', '%d', '%c', %s)")
 		% getTransactionID().GetHex() % getTransactionType() % getSourceAccount().humanAccountID()
 		% getSequence() % inLedger % status % rTxn);
 }

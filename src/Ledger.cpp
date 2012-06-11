@@ -293,7 +293,13 @@ void Ledger::saveAcceptedLedger(Ledger::pointer ledger)
 		sql += ";";
 		Log(lsTRACE) << "ActTx: " << sql;
 		db->executeSQL(sql);
-		db->executeSQL(txn.getSQLInsertHeader() + txn.getSQL(ledger->getLedgerSeq(), TXN_SQL_VALIDATED) + ";");
+		if (!db->executeSQL(
+			txn.getSQLInsertHeader() + txn.getSQL(ledger->getLedgerSeq(), TXN_SQL_VALIDATED) + ";"), true)
+		{ // transaction already in DB, update
+			db->executeSQL(boost::str(boost::format(
+				"UPDATE Transactions SET LedgerSeq = '%d', Status = '%c' WHERE TransID = '%s';") %
+					ledger->getLedgerSeq() % TXN_SQL_VALIDATED % txn.getTransactionID().GetHex()));
+		}
 		// FIXME: If above updates no rows, modify seq/status (upsert)
 	}
 	db->executeSQL("COMMIT TRANSACTION;");
