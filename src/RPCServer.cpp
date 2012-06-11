@@ -89,14 +89,12 @@ Json::Value RPCServer::RPCError(int iError)
 
 	Json::Value	jsonResult = Json::Value(Json::objectValue);
 
-	jsonResult["error"]			= iError;
-	if (i >= 0) {
+	jsonResult["error"]			= i >= 0 ? errorInfoA[i].pToken : boost::lexical_cast<std::string>(iError);
+	jsonResult["error_message"]	= i >= 0 ? errorInfoA[i].pMessage : boost::lexical_cast<std::string>(iError);
+	jsonResult["error_code"]	= iError;
+	if (i >= 0)
 		std::cerr << "RPCError: "
 			<< errorInfoA[i].pToken << ": " << errorInfoA[i].pMessage << std::endl;
-
-		jsonResult["error_token"]	= errorInfoA[i].pToken;
-		jsonResult["error_message"]	= errorInfoA[i].pMessage;
-	}
 
 	return jsonResult;
 }
