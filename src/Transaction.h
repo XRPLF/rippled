@@ -248,10 +248,11 @@ public:
 
 	void setStatus(TransStatus status, uint32 ledgerSeq);
 	void setStatus(TransStatus status) { mStatus=status; }
+	void setLedger(uint32 ledger) { mInLedger = ledger; }
 
 	// database functions
 	static void saveTransaction(Transaction::pointer);
-	bool save() const;
+	bool save();
 	static Transaction::pointer load(const uint256& id);
 	static Transaction::pointer findFrom(const NewcoinAddress& fromID, uint32 seq);
 

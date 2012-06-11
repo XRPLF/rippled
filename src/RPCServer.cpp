@@ -1340,7 +1340,7 @@ Json::Value RPCServer::doTx(Json::Value& params)
 		Json::Value ret;
 		uint256 txid(param1);
 
-		Transaction::pointer txn=theApp->getMasterTransaction().fetch(txid, true);
+		Transaction::pointer txn = theApp->getMasterTransaction().fetch(txid, true);
 
 		if (!txn) return RPCError(rpcTXN_NOT_FOUND);
 
@@ -1372,7 +1372,7 @@ Json::Value RPCServer::doLedger(Json::Value& params)
 	Ledger::pointer ledger;
 	if (param == "current")
 		ledger = theApp->getMasterLedger().getCurrentLedger();
-	else if (param == "lastclosed")
+	else if ((param == "lastclosed") || (param == "lastaccepted"))
 		ledger = theApp->getMasterLedger().getClosedLedger();
 	else if (param.size() > 12)
 		ledger = theApp->getMasterLedger().getLedgerByHash(uint256(param));
@@ -1382,13 +1382,7 @@ Json::Value RPCServer::doLedger(Json::Value& params)
 	if (!ledger)
 		return RPCError(rpcLGR_NOT_FOUND);
 
-	bool full = false;
-	if (extractString(param, params, 1))
-	{
-		if (param == "full")
-			full = true;
-	}
-
+	bool full = extractString(param, params, 1) && (param == "full");
 	Json::Value ret(Json::objectValue);
 	ledger->addJson(ret, full ? LEDGER_JSON_FULL : 0);
 	return ret;

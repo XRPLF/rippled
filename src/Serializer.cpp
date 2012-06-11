@@ -508,7 +508,7 @@ void Serializer::TestSerializer()
 
 int SerializerIterator::getBytesLeft()
 {
-	return mSerializer.getLength()-mPos;
+	return mSerializer.size() - mPos;
 }
 
 unsigned char SerializerIterator::get8()

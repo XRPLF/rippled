@@ -508,61 +508,34 @@ void Transaction::saveTransaction(Transaction::pointer txn)
 	txn->save();
 }
 
-bool Transaction::save() const
-{ // This code needs to be fixed to support new-style transactions - FIXME
- // This code is going away. It will be handled from SerializedTransaction
-#if 0
-	// Identify minimums fields to write for now.
-	// Also maybe write effected accounts for use later.
+bool Transaction::save()
+{
 	if ((mStatus == INVALID) || (mStatus == REMOVED)) return false;
 
-	std::string sql = "INSERT INTO Transactions "
-		"(TransID,TransType,FromAcct,FromSeq,OtherAcct,Amount,FirstSeen,CommitSeq,Status,RawTxn)"
-		" VALUES ('";
-	sql.append(mTransactionID.GetHex());
-	sql.append("','");
-	sql.append(mTransaction->getTransactionType());
-	sql.append("','");
-	sql.append(mAccountFrom.humanAccountID());
-	sql.append("','");
-	sql.append(boost::lexical_cast<std::string>(mTransaction->getSequence()));
-	sql.append("','");
-	sql.append(mTransaction->getITFieldString(sfDestination));
-	sql.append("','");
-	sql.append(mTransaction->getITFieldString(sfAmount));
-	sql.append("',now(),'");
-	sql.append(boost::lexical_cast<std::string>(mInLedger));
+	char status;
 	switch(mStatus)
 	{
-	 case NEW: sql.append("','N',"); break;
-	 case INCLUDED: sql.append("','A',"); break;
-	 case CONFLICTED: sql.append("','C',"); break;
-	 case COMMITTED: sql.append("','D',"); break;
-	 case HELD: sql.append("','H',"); break;
-	 default: sql.append("','U',"); break;
+	 case NEW:			status = TXN_SQL_NEW;		break;
+	 case INCLUDED:		status = TXN_SQL_INCLUDED;	break;
+	 case CONFLICTED:	status = TXN_SQL_CONFLICT;	break;
+	 case COMMITTED:	status = TXN_SQL_VALIDATED;	break;
+	 case HELD:			status = TXN_SQL_HELD;		break;
+	 default:			status = TXN_SQL_UNKNOWN;
 	}
 
-	Serializer s;
-	mTransaction->getTransaction(s, false);
-
-	std::string rawTxn;
-	theApp->getTxnDB()->getDB()->escape(static_cast<const unsigned char *>(s.getDataPtr()), s.getLength(), rawTxn);
-	sql.append(rawTxn);
-	sql.append(");");
-
-	ScopedLock sl(theApp->getTxnDB()->getDBLock());
-	Database* db = theApp->getTxnDB()->getDB();
-	return db->executeSQL(sql);
-#endif
-	return true;
+	// FIXME: This needs to check if the transaction is already there and not
+	// de-confirm it
+	Database *db = theApp->getTxnDB()->getDB();
+	ScopedLock dbLock = theApp->getTxnDB()->getDBLock();
+	return db->executeSQL(mTransaction->getSQLInsertHeader() + mTransaction->getSQL(getLedger(), status) + ";");
 }
 
 Transaction::pointer Transaction::transactionFromSQL(const std::string& sql)
-{ // This code needs to be fixed to support new-style transactions - FIXME
-	std::vector<unsigned char> rawTxn;
+{
+	Serializer rawTxn(2048);
 	std::string status;
+	uint32 inLedger;
 
-	rawTxn.reserve(2048);
 	{
 		ScopedLock sl(theApp->getTxnDB()->getDBLock());
 		Database* db = theApp->getTxnDB()->getDB();
@@ -571,34 +544,38 @@ Transaction::pointer Transaction::transactionFromSQL(const std::string& sql)
 			return Transaction::pointer();
 
 		db->getStr("Status", status);
-		int txSize = db->getBinary("RawTxn", &(rawTxn.front()), rawTxn.size());
-		rawTxn.resize(txSize);
-		if (txSize>rawTxn.size()) db->getBinary("RawTxn", &(rawTxn.front()), rawTxn.size());
+		inLedger = db->getInt("LedgerSeq");
+		int txSize = db->getBinary("RawTxn", &*rawTxn.begin(), rawTxn.capacity());
+		if (txSize > rawTxn.size())
+		{
+			rawTxn.resize(txSize);
+			db->getBinary("RawTxn", &*rawTxn.begin(), rawTxn.capacity());
+		}
+		else rawTxn.resize(txSize);
 		db->endIterRows();
 	}
 
-	Serializer s(rawTxn);
-	SerializerIterator it(s);
+	SerializerIterator it(rawTxn);
 	SerializedTransaction::pointer txn = boost::make_shared<SerializedTransaction>(boost::ref(it));
 	Transaction::pointer tr = boost::make_shared<Transaction>(txn, true);
 
 	TransStatus st(INVALID);
 	switch (status[0])
 	{
-		case 'N': st = NEW; break;
+		case TXN_SQL_NEW: st = NEW; break;
 		case 'A': st = INCLUDED; break;
 		case 'C': st = CONFLICTED; break;
 		case 'D': st = COMMITTED; break;
 		case 'H': st = HELD; break;
 	}
 	tr->setStatus(st);
-
+	tr->setLedger(inLedger);
 	return tr;
 }
 
 Transaction::pointer Transaction::load(const uint256& id)
 {
-	std::string sql = "SELECT Status,RawTxn FROM Transactions WHERE TransID='";
+	std::string sql = "SELECT LedgerSeq,Status,RawTxn FROM Transactions WHERE TransID='";
 	sql.append(id.GetHex());
 	sql.append("';");
 	return transactionFromSQL(sql);
@@ -606,7 +583,7 @@ Transaction::pointer Transaction::load(const uint256& id)
 
 Transaction::pointer Transaction::findFrom(const NewcoinAddress& fromID, uint32 seq)
 {
-	std::string sql = "SELECT Status,RawTxn FROM Transactions WHERE FromID='";
+	std::string sql = "SELECT LedgerSeq,Status,RawTxn FROM Transactions WHERE FromID='";
 	sql.append(fromID.humanAccountID());
 	sql.append("' AND FromSeq='");
 	sql.append(boost::lexical_cast<std::string>(seq));

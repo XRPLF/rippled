@@ -294,7 +294,7 @@ void Ledger::saveAcceptedLedger(Ledger::pointer ledger)
 		Log(lsTRACE) << "ActTx: " << sql;
 		db->executeSQL(sql);
 		db->executeSQL(txn.getSQLInsertHeader() + txn.getSQL(ledger->getLedgerSeq(), TXN_SQL_VALIDATED) + ";");
-		// FIXME: If above updates no rows, modify seq/status
+		// FIXME: If above updates no rows, modify seq/status (upsert)
 	}
 	db->executeSQL("COMMIT TRANSACTION;");
 }
