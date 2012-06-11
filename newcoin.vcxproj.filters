@@ -248,9 +248,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Application.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="KnownNodeList.h">
       <Filter>Header Files</Filter>
     </ClInclude>

@@ -1133,7 +1133,9 @@ Json::Value RPCServer::doPasswordSet(Json::Value& params)
 Json::Value RPCServer::doPeers(Json::Value& params)
 {
 	// peers
-	return theApp->getConnectionPool().getPeersJson();
+	Json::Value obj(Json::objectValue);
+	obj['peers']=theApp->getConnectionPool().getPeersJson();
+	return obj;
 }
 
 // send regular_seed paying_account account_id amount [currency] [send_max] [send_currency]

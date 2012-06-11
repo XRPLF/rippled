@@ -156,7 +156,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Account.h" />
-    <ClInclude Include="Application.h" />
     <ClInclude Include="bitcoinUtil.h" />
     <ClInclude Include="Conversion.h" />
     <ClInclude Include="cryptopp\config.h" />

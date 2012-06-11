@@ -412,7 +412,8 @@ void Ledger::addJson(Json::Value& ret, int options)
 		}
 		ledger["AccountState"] = state;
 	}
-	ret[boost::lexical_cast<std::string>(mLedgerSeq)] = ledger;
+	ledger["SeqNum"]=boost::lexical_cast<std::string>(mLedgerSeq);
+	ret["ledger"] = ledger;
 }
 
 void Ledger::setAcquiring(void)
