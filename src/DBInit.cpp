@@ -4,7 +4,7 @@
 const char *TxnDBInit[] = {
 	"CREATE TABLE Transactions (				\
 		TransID		CHARACTER(64) PRIMARY KEY,	\
-		TransType	CHARACTER(24)				\
+		TransType	CHARACTER(24),				\
 		FromAcct	CHARACTER(35),				\
 		FromSeq		BIGINT UNSIGNED,			\
 		LedgerSeq	BIGINT UNSIGNED,			\
