@@ -448,9 +448,10 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	// If are only forwarding, due to resource limitations, we might verifying only some transactions, this would be probablistic.
 
 	STAmount			saSrcBalance;
-	uint32				t_seq	= txn.getSequence();
-	LedgerStateParms	lspRoot	= lepNONE;
-	SLE::pointer		sleSrc	= mLedger->getAccountRoot(lspRoot, srcAccountID);
+	uint32				t_seq			= txn.getSequence();
+	LedgerStateParms	lspRoot			= lepNONE;
+	SLE::pointer		sleSrc			= mLedger->getAccountRoot(lspRoot, srcAccountID);
+	bool				bHaveAuthKey	= false;
 
 	if (!sleSrc)
 	{
@@ -461,9 +462,8 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	else
 	{
 		saSrcBalance	= sleSrc->getIValueFieldAmount(sfBalance);
+		bHaveAuthKey	= sleSrc->getIFieldPresent(sfAuthorizedKey);
 	}
-
-	bool				bHaveAuthKey	= sleSrc->getIFieldPresent(sfAuthorizedKey);
 
 	// Check if account cliamed.
 	if (terSUCCESS == result)
