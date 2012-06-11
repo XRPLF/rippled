@@ -32,41 +32,43 @@ void SqliteDatabase::disconnect()
 bool SqliteDatabase::executeSQL(const char* sql, bool fail_ok)
 {
 	sqlite3_finalize(mCurrentStmt);
-	int rc=sqlite3_prepare_v2(mConnection,sql,-1,&mCurrentStmt,NULL);
-	if( rc!=SQLITE_OK )
+	int rc = sqlite3_prepare_v2(mConnection, sql, -1, &mCurrentStmt, NULL);
+	if (rc != SQLITE_OK )
 	{
-		if(!fail_ok)
+		if (!fail_ok)
 		{
+#ifdef DEBUG
 			cout << "SQL Perror:" << rc << endl;
-#ifdef DEBUG
 			cout << "Statement: " << sql << endl;
 			cout << "Error: " << sqlite3_errmsg(mConnection) << endl;
 #endif
 		}
-		return(false);
+		return false;
 	}
-	rc=sqlite3_step(mCurrentStmt);
-	if(rc==SQLITE_ROW)
+	rc = sqlite3_step(mCurrentStmt);
+	if (rc == SQLITE_ROW)
 	{
-		mMoreRows=true;
-	}else if(rc==SQLITE_DONE)
+		mMoreRows = true;
+	}
+	else if (rc == SQLITE_DONE)
 	{
-		mMoreRows=false;
-	}else
+		mMoreRows = false;
+	}
+	else
 	{
-		mMoreRows=false;
-		if(!fail_ok)
+		mMoreRows = false;
+		if (!fail_ok)
 		{
-			cout << "SQL Serror:" << rc << endl;
 #ifdef DEBUG
+			cout << "SQL Serror:" << rc << endl;
 			cout << "Statement: " << sql << endl;
 			cout << "Error: " << sqlite3_errmsg(mConnection) << endl;
 #endif
 		}
-		return(false);
+		return false;
 	}
 
-	return(true);
+	return true;
 }
 
 // tells you how many rows were changed by an update or insert
