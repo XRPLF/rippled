@@ -1132,7 +1132,7 @@ Json::Value RPCServer::doPeers(Json::Value& params)
 {
 	// peers
 	Json::Value obj(Json::objectValue);
-	obj['peers']=theApp->getConnectionPool().getPeersJson();
+	obj["peers"]=theApp->getConnectionPool().getPeersJson();
 	return obj;
 }
 
