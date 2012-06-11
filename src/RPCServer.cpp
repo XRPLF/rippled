@@ -1076,7 +1076,7 @@ Json::Value RPCServer::doPasswordSet(Json::Value& params)
 		std::vector<unsigned char>	vucGeneratorCipher	= naRegular0Private.accountPrivateEncrypt(naRegular0Public, naMasterGenerator.getFamilyGenerator());
 		std::vector<unsigned char>	vucGeneratorSig;
 
-		// Prove that we have the corrisponding private key to the generator id.  So, we can get the generator id.
+		// Prove that we have the corresponding private key to the generator id.  So, we can get the generator id.
 		// XXX Check result.
 		naRegular0Private.accountPrivateSign(Serializer::getSHA512Half(vucGeneratorCipher), vucGeneratorSig);
 
@@ -1085,7 +1085,7 @@ Json::Value RPCServer::doPasswordSet(Json::Value& params)
 		unsigned int		iIndex	= -1;	// Compensate for initial increment.
 		int					iMax	= theConfig.ACCOUNT_PROBE_MAX;
 
-		// YYY Could probe peridoically to see if accounts exists.
+		// YYY Could probe periodically to see if accounts exists.
 		// YYY Max could be set randomly.
 		// Don't look at ledger entries to determine if the account exists.  Don't want to leak to thin server that these accounts are
 		// related.
@@ -1424,7 +1424,7 @@ Json::Value RPCServer::doAccountTransactions(Json::Value& params)
 #endif
 		std::vector< std::pair<uint32, uint256> > txns = mNetOps->getAffectedAccounts(account, minLedger, maxLedger);
 		Json::Value ret(Json::objectValue);
-		ret["Account"] = account.humanAccountID();
+		ret["account"] = account.humanAccountID();
 		Json::Value ledgers(Json::arrayValue);
 
 		uint32 currentLedger = 0;
@@ -1435,23 +1435,23 @@ Json::Value RPCServer::doAccountTransactions(Json::Value& params)
 			{
 				if (currentLedger != 0) // add old ledger
 				{
-					ledger["Transactions"] = jtxns;
+					ledger["transactions"] = jtxns;
 					ledgers.append(ledger);
 					ledger = Json::objectValue;
 				}
 				currentLedger = it->first;
-				ledger["LedgerSeq"] = currentLedger;
+				ledger["ledgerSeq"] = currentLedger;
 				jtxns = Json::arrayValue;
 			}
 			jtxns.append(it->second.GetHex());
 		}
 		if (currentLedger != 0)
 		{
-			ledger["Transactions"] = jtxns;
+			ledger["transactions"] = jtxns;
 			ledgers.append(ledger);
 		}
 
-		ret["Ledgers"] = ledgers;
+		ret["ledgers"] = ledgers;
 		return ret;
 #ifndef DEBUG
 	}

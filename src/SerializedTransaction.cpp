@@ -288,14 +288,14 @@ void SerializedTransaction::makeITFieldAbsent(SOE_Field field)
 Json::Value SerializedTransaction::getJson(int options) const
 {
 	Json::Value ret = Json::objectValue;
-	ret["ID"] = getTransactionID().GetHex();
-	ret["Signature"] = mSignature.getText();
+	ret["id"] = getTransactionID().GetHex();
+	ret["signature"] = mSignature.getText();
 
 	Json::Value middle = mMiddleTxn.getJson(options);
-	middle["Type"] = mFormat->t_name;
-	ret["Middle"] = middle;
+	middle["type"] = mFormat->t_name;
+	ret["middle"] = middle;
 
-	ret["Inner"] = mInnerTxn.getJson(options);
+	ret["inner"] = mInnerTxn.getJson(options);
 	return ret;
 }
 

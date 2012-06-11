@@ -638,21 +638,21 @@ Json::Value Transaction::getJson(bool decorate, bool paid, bool credited) const
 {
 	Json::Value ret(mTransaction->getJson(0));
 
-	if (mInLedger) ret["InLedger"]=mInLedger;
-	if (paid) ret["Paid"]=true;
+	if (mInLedger) ret["inLedger"]=mInLedger;
+	if (paid) ret["paid"]=true;
 
 	switch(mStatus)
 	{
-		case NEW: ret["Status"] = "new"; break;
-		case INVALID: ret["Status"] = "invalid"; break;
-		case INCLUDED: ret["Status"] = "included"; break;
-		case CONFLICTED: ret["Status"] = "conflicted"; break;
-		case COMMITTED: ret["Status"] = "committed"; break;
-		case HELD: ret["Status"] = "held"; break;
-		case REMOVED: ret["Status"] = "removed"; break;
-		case OBSOLETE: ret["Status"] = "obsolete"; break;
-		case INCOMPLETE: ret["Status"] = "incomplete"; break;
-		default: ret["Status"] = "unknown";
+		case NEW: ret["status"] = "new"; break;
+		case INVALID: ret["status"] = "invalid"; break;
+		case INCLUDED: ret["status"] = "included"; break;
+		case CONFLICTED: ret["status"] = "conflicted"; break;
+		case COMMITTED: ret["status"] = "committed"; break;
+		case HELD: ret["status"] = "held"; break;
+		case REMOVED: ret["status"] = "removed"; break;
+		case OBSOLETE: ret["status"] = "obsolete"; break;
+		case INCOMPLETE: ret["status"] = "incomplete"; break;
+		default: ret["status"] = "unknown";
 	}
 
 #if 0

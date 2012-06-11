@@ -344,7 +344,7 @@ Json::Value STPath::getJson(int) const
 				Json::Value elem(Json::objectValue);
 				NewcoinAddress account;
 				account.setAccountID(it->getNode());
-				elem["Account"] = account.humanAccountID();
+				elem["account"] = account.humanAccountID();
 				ret.append(elem);
 				break;
 			}
@@ -352,7 +352,7 @@ Json::Value STPath::getJson(int) const
 			case STPathElement::typeOffer:
 			{
 				Json::Value elem(Json::objectValue);
-				elem["Offer"] = it->getNode().GetHex();
+				elem["offer"] = it->getNode().GetHex();
 				ret.append(elem);
 				break;
 			}
