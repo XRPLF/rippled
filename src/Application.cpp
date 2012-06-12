@@ -17,10 +17,11 @@
 
 Application* theApp = NULL;
 
-DatabaseCon::DatabaseCon(const std::string& name, const char *initStrings[], int initCount)
+DatabaseCon::DatabaseCon(const std::string& strName, const char *initStrings[], int initCount)
 {
-	std::string path=strprintf("%s%s", theConfig.DATA_DIR.c_str(), name.c_str());
-	mDatabase = new SqliteDatabase(path.c_str());
+	boost::filesystem::path	pPath	= theConfig.DATA_DIR / strName;
+
+	mDatabase = new SqliteDatabase(pPath.c_str());
 	mDatabase->connect();
 	for(int i = 0; i < initCount; ++i)
 		mDatabase->executeSQL(initStrings[i], true);

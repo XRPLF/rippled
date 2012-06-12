@@ -35,7 +35,70 @@ Config theConfig;
 
 Config::Config()
 {
+	boost::system::error_code	ec;
+
+	//
+	// Determine the config and data directories.
+	// If the config file is found in the current working directory, use the current working directory as the config directory and
+	// that with "db" as the data directory.
+	//
+
+	CONFIG_DIR				= boost::filesystem::current_path();
+	CONFIG_FILE				= CONFIG_DIR / CONFIG_FILE_NAME;
+
+	if (exists(CONFIG_FILE)
+		|| (!getenv("HOME") && !getenv("XDG_CONFIG_HOME")))
+	{
+		// Current place is fine, put dbs in a subdir.
+		DATA_DIR				= CONFIG_DIR / "db";
+	}
+	else
+	{
+		// Construct XDG config and data home.
+		// http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html
+		std::string	strHome				= strGetEnv("HOME");
+		std::string	strXdgConfigHome	= strGetEnv("XDG_CONFIG_HOME");
+		std::string	strXdgDataHome		= strGetEnv("XDG_DATA_HOME");
+
+		if (strXdgConfigHome.empty())
+		{
+			// $XDG_CONFIG_HOME was not set, use default based on $HOME.
+			strXdgConfigHome	= str(boost::format("%s/.config") % strHome);
+		}
+
+		CONFIG_DIR			= str(boost::format("%s/" SYSTEM_NAME) % strXdgConfigHome);
+
+		boost::filesystem::create_directories(CONFIG_DIR, ec);
+
+		if (ec)
+			throw std::runtime_error(str(boost::format("Can not create %s") % CONFIG_DIR));
+
+		if (strXdgDataHome.empty())
+		{
+			// $XDG_DATA_HOME was not set, use default based on $HOME.
+			strXdgDataHome	= str(boost::format("%s/.local/share") % strHome);
+		}
+
+		DATA_DIR			= str(boost::format("%s/" SYSTEM_NAME) % strXdgDataHome);
+
+	}
+
+	boost::filesystem::create_directories(DATA_DIR, ec);
+
+	if (ec)
+		throw std::runtime_error(str(boost::format("Can not create %s") % DATA_DIR));
+
+	std::cerr << "CONFIG DIR: " << CONFIG_DIR << std::endl;
+	std::cerr << "DATA DIR: " << DATA_DIR << std::endl;
+
+	//
+	// Defaults
+	//
+
 	VERSION					= 1;
+
+	CONFIG_FILE				= CONFIG_DIR;
+	CONFIG_FILE				/= CONFIG_FILE_NAME;
 
 	NETWORK_START_TIME		= 1319844908;
 
@@ -49,8 +112,6 @@ Config::Config()
 	RPC_USER				= "admin";
 	RPC_PASSWORD			= "pass";
 	RPC_ALLOW_REMOTE		= false;
-
-	DATA_DIR				= "db/";
 
 	PEER_SSL_CIPHER_LIST	= DEFAULT_PEER_SSL_CIPHER_LIST;
 	PEER_SCAN_INTERVAL_MIN	= DEFAULT_PEER_SCAN_INTERVAL_MIN;

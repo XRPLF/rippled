@@ -94,6 +94,10 @@ DH* DH_der_load_hex(const std::string& strDer);
 void DH_der_gen(std::string& strDer, int iKeyLength);
 void DH_der_gen_hex(std::string& strDer, int iKeyLength);
 
+inline std::string strGetEnv(const std::string& strKey)
+{
+	return getenv(strKey.c_str()) ? getenv(strKey.c_str()) : "";
+}
 #endif
 
 // vim:ts=4

@@ -5,6 +5,7 @@
 #include "SerializedTypes.h"
 
 #include <string>
+#include <boost/filesystem.hpp>
 
 #define SYSTEM_NAME					"newcoin"
 #define VALIDATORS_SITE				"redstem.com"
@@ -37,6 +38,11 @@ public:
 	// Core software parameters
 	int			VERSION;
 	std::string	VERSION_STR;
+
+	// Configuration parameters
+	boost::filesystem::path	CONFIG_FILE;
+	boost::filesystem::path	CONFIG_DIR;
+	boost::filesystem::path	DATA_DIR;
 
 	// Network parameters
 	int		NETWORK_START_TIME;		// The Unix time we start ledger 0
@@ -79,9 +85,6 @@ public:
 	uint64		FEE_DEFAULT;			// Default fee.
 	uint64		FEE_ACCOUNT_CREATE;		// Fee to create an account.
 	uint64		FEE_NICKNAME_CREATE;	// Fee to create a nickname.
-
-	// Configuration parameters
-	std::string DATA_DIR;
 
 	// Client behavior
 	int			ACCOUNT_PROBE_MAX;	// How far to scan for accounts.

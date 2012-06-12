@@ -82,6 +82,7 @@ int main(int argc, char* argv[])
 	po::options_description desc("Options");
 	desc.add_options()
 		("help,h", "Display this message.")
+		("conf", "Specify the configuration file.")
 		("rpc", "Perform rpc command (default).")
 		("test,t", "Perform unit tests.")
 		("parameters", po::value< vector<string> >(), "Specify comma separated parameters.")
