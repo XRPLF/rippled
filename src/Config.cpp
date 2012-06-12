@@ -33,7 +33,7 @@
 
 Config theConfig;
 
-Config::Config()
+void Config::setup(const std::string& strConf)
 {
 	boost::system::error_code	ec;
 
@@ -45,12 +45,21 @@ Config::Config()
 
 	CONFIG_DIR				= boost::filesystem::current_path();
 	CONFIG_FILE				= CONFIG_DIR / CONFIG_FILE_NAME;
+	DATA_DIR				= CONFIG_DIR / "db";
 
-	if (exists(CONFIG_FILE)
+	if (!strConf.empty())
+	{
+		// --conf=<path> : everything is relative that file.
+		CONFIG_FILE				= strConf;
+		CONFIG_DIR				= CONFIG_FILE;
+			CONFIG_DIR.remove_filename();
+		DATA_DIR				= CONFIG_DIR / "db";
+	}
+	else if (exists(CONFIG_FILE)
 		|| (!getenv("HOME") && !getenv("XDG_CONFIG_HOME")))
 	{
-		// Current place is fine, put dbs in a subdir.
-		DATA_DIR				= CONFIG_DIR / "db";
+		// Current working directory is fine, put dbs in a subdir.
+		nothing();
 	}
 	else
 	{
@@ -66,21 +75,20 @@ Config::Config()
 			strXdgConfigHome	= str(boost::format("%s/.config") % strHome);
 		}
 
-		CONFIG_DIR			= str(boost::format("%s/" SYSTEM_NAME) % strXdgConfigHome);
-
-		boost::filesystem::create_directories(CONFIG_DIR, ec);
-
-		if (ec)
-			throw std::runtime_error(str(boost::format("Can not create %s") % CONFIG_DIR));
-
 		if (strXdgDataHome.empty())
 		{
 			// $XDG_DATA_HOME was not set, use default based on $HOME.
 			strXdgDataHome	= str(boost::format("%s/.local/share") % strHome);
 		}
 
+		CONFIG_DIR			= str(boost::format("%s/" SYSTEM_NAME) % strXdgConfigHome);
+		CONFIG_FILE			= CONFIG_DIR / CONFIG_FILE_NAME;
 		DATA_DIR			= str(boost::format("%s/" SYSTEM_NAME) % strXdgDataHome);
 
+		boost::filesystem::create_directories(CONFIG_DIR, ec);
+
+		if (ec)
+			throw std::runtime_error(str(boost::format("Can not create %s") % CONFIG_DIR));
 	}
 
 	boost::filesystem::create_directories(DATA_DIR, ec);
@@ -88,6 +96,7 @@ Config::Config()
 	if (ec)
 		throw std::runtime_error(str(boost::format("Can not create %s") % DATA_DIR));
 
+	std::cerr << "CONFIG FILE: " << CONFIG_FILE << std::endl;
 	std::cerr << "CONFIG DIR: " << CONFIG_DIR << std::endl;
 	std::cerr << "DATA DIR: " << DATA_DIR << std::endl;
 
@@ -96,8 +105,6 @@ Config::Config()
 	//
 
 	VERSION					= 1;
-
-	CONFIG_FILE				= CONFIG_DIR / CONFIG_FILE_NAME;
 
 	NETWORK_START_TIME		= 1319844908;
 
@@ -128,15 +135,17 @@ Config::Config()
 	FEE_DEFAULT				= DEFAULT_FEE_DEFAULT;
 
 	ACCOUNT_PROBE_MAX		= 10;
+
+	load();
 }
 
 void Config::load()
 {
-	std::ifstream	ifsConfig(CONFIG_FILE_NAME, std::ios::in);
+	std::ifstream	ifsConfig(CONFIG_FILE.c_str(), std::ios::in);
 
 	if (!ifsConfig)
 	{
-		std::cerr << "Failed to open '" CONFIG_FILE_NAME "'." << std::endl;
+		std::cerr << "Failed to open '" << CONFIG_FILE << "'." << std::endl;
 	}
 	else
 	{
@@ -147,7 +156,7 @@ void Config::load()
 
 		if (ifsConfig.bad())
 		{
-			std::cerr << "Failed to read '" CONFIG_FILE_NAME "'." << std::endl;
+			std::cerr << "Failed to read '" << CONFIG_FILE << "'." << std::endl;
 		}
 		else
 		{
