@@ -364,20 +364,20 @@ void Ledger::addJson(Json::Value& ret, int options)
 	Json::Value ledger(Json::objectValue);
 
 	boost::recursive_mutex::scoped_lock sl(mLock);
-	ledger["ParentHash"] = mParentHash.GetHex();
+	ledger["parentHash"] = mParentHash.GetHex();
 
 	if(mClosed)
 	{
-		ledger["Hash"] = mHash.GetHex();
-		ledger["TransactionHash"] = mTransHash.GetHex();
-		ledger["AccountHash"] = mAccountHash.GetHex();
-		ledger["Closed"] = true;
-		ledger["Accepted"] = mAccepted;
-		ledger["TotalCoins"] = boost::lexical_cast<std::string>(mTotCoins);
+		ledger["hash"] = mHash.GetHex();
+		ledger["transactionHash"] = mTransHash.GetHex();
+		ledger["accountHash"] = mAccountHash.GetHex();
+		ledger["closed"] = true;
+		ledger["accepted"] = mAccepted;
+		ledger["totalCoins"] = boost::lexical_cast<std::string>(mTotCoins);
 	}
-	else ledger["Closed"] = false;
+	else ledger["closed"] = false;
 	if (mCloseTime != 0)
-		ledger["CloseTime"] = boost::posix_time::to_simple_string(ptFromSeconds(mCloseTime));
+		ledger["closeTime"] = boost::posix_time::to_simple_string(ptFromSeconds(mCloseTime));
 	bool full = (options & LEDGER_JSON_FULL) != 0;
 	if (full || ((options & LEDGER_JSON_DUMP_TXNS) != 0))
 	{
@@ -393,7 +393,7 @@ void Ledger::addJson(Json::Value& ret, int options)
 			}
 			else txns.append(item->getTag().GetHex());
 		}
-		ledger["Transactions"] = txns;
+		ledger["transactions"] = txns;
 	}
 	if (full || ((options & LEDGER_JSON_DUMP_STATE) != 0))
 	{
@@ -410,9 +410,10 @@ void Ledger::addJson(Json::Value& ret, int options)
 			else
 				state.append(item->getTag().GetHex());
 		}
-		ledger["AccountState"] = state;
+		ledger["accountState"] = state;
 	}
-	ret[boost::lexical_cast<std::string>(mLedgerSeq)] = ledger;
+	ledger["seqNum"]=boost::lexical_cast<std::string>(mLedgerSeq);
+	ret["ledger"] = ledger;
 }
 
 void Ledger::setAcquiring(void)

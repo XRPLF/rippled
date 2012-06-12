@@ -1234,7 +1234,7 @@ void UniqueNodeList::nodeRemove(NewcoinAddress naNodePublic)
 	}
 }
 
-// XXX Broken should opperate on seeds.
+// XXX Broken should operate on seeds.
 void UniqueNodeList::nodeReset()
 {
 	{
@@ -1267,8 +1267,8 @@ Json::Value UniqueNodeList::getUnlJson()
 
 		Json::Value node(Json::objectValue);
 
-		node["PublicKey"]	= strPublicKey;
-		node["Comment"]		= strComment;
+		node["publicKey"]	= strPublicKey;
+		node["comment"]		= strComment;
 
 		ret.append(node);
 	}
