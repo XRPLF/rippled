@@ -43,10 +43,6 @@ void Config::setup(const std::string& strConf)
 	// that with "db" as the data directory.
 	//
 
-	CONFIG_DIR				= boost::filesystem::current_path();
-	CONFIG_FILE				= CONFIG_DIR / CONFIG_FILE_NAME;
-	DATA_DIR				= CONFIG_DIR / "db";
-
 	if (!strConf.empty())
 	{
 		// --conf=<path> : everything is relative that file.
@@ -55,40 +51,48 @@ void Config::setup(const std::string& strConf)
 			CONFIG_DIR.remove_filename();
 		DATA_DIR				= CONFIG_DIR / "db";
 	}
-	else if (exists(CONFIG_FILE)
-		|| (!getenv("HOME") && !getenv("XDG_CONFIG_HOME")))
-	{
-		// Current working directory is fine, put dbs in a subdir.
-		nothing();
-	}
 	else
 	{
-		// Construct XDG config and data home.
-		// http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html
-		std::string	strHome				= strGetEnv("HOME");
-		std::string	strXdgConfigHome	= strGetEnv("XDG_CONFIG_HOME");
-		std::string	strXdgDataHome		= strGetEnv("XDG_DATA_HOME");
+		CONFIG_DIR				= boost::filesystem::current_path();
+		CONFIG_FILE				= CONFIG_DIR / CONFIG_FILE_NAME;
+		DATA_DIR				= CONFIG_DIR / "db";
 
-		if (strXdgConfigHome.empty())
+		if (exists(CONFIG_FILE)
+			// Can we figure out XDG dirs?
+			|| (!getenv("HOME") && (!getenv("XDG_CONFIG_HOME") || !getenv("XDG_DATA_HOME"))))
 		{
-			// $XDG_CONFIG_HOME was not set, use default based on $HOME.
-			strXdgConfigHome	= str(boost::format("%s/.config") % strHome);
+			// Current working directory is fine, put dbs in a subdir.
+			nothing();
 		}
-
-		if (strXdgDataHome.empty())
+		else
 		{
-			// $XDG_DATA_HOME was not set, use default based on $HOME.
-			strXdgDataHome	= str(boost::format("%s/.local/share") % strHome);
+			// Construct XDG config and data home.
+			// http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html
+			std::string	strHome				= strGetEnv("HOME");
+			std::string	strXdgConfigHome	= strGetEnv("XDG_CONFIG_HOME");
+			std::string	strXdgDataHome		= strGetEnv("XDG_DATA_HOME");
+
+			if (strXdgConfigHome.empty())
+			{
+				// $XDG_CONFIG_HOME was not set, use default based on $HOME.
+				strXdgConfigHome	= str(boost::format("%s/.config") % strHome);
+			}
+
+			if (strXdgDataHome.empty())
+			{
+				// $XDG_DATA_HOME was not set, use default based on $HOME.
+				strXdgDataHome	= str(boost::format("%s/.local/share") % strHome);
+			}
+
+			CONFIG_DIR			= str(boost::format("%s/" SYSTEM_NAME) % strXdgConfigHome);
+			CONFIG_FILE			= CONFIG_DIR / CONFIG_FILE_NAME;
+			DATA_DIR			= str(boost::format("%s/" SYSTEM_NAME) % strXdgDataHome);
+
+			boost::filesystem::create_directories(CONFIG_DIR, ec);
+
+			if (ec)
+				throw std::runtime_error(str(boost::format("Can not create %s") % CONFIG_DIR));
 		}
-
-		CONFIG_DIR			= str(boost::format("%s/" SYSTEM_NAME) % strXdgConfigHome);
-		CONFIG_FILE			= CONFIG_DIR / CONFIG_FILE_NAME;
-		DATA_DIR			= str(boost::format("%s/" SYSTEM_NAME) % strXdgDataHome);
-
-		boost::filesystem::create_directories(CONFIG_DIR, ec);
-
-		if (ec)
-			throw std::runtime_error(str(boost::format("Can not create %s") % CONFIG_DIR));
 	}
 
 	boost::filesystem::create_directories(DATA_DIR, ec);
