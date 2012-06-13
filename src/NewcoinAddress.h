@@ -7,6 +7,7 @@
 //
 // Used to hold addresses and parse and produce human formats.
 //
+// XXX This needs to be reworked to store data in uint160 and uint256.  Conversion to CBase58Data should happen as needed.
 class NewcoinAddress : public CBase58Data
 {
 private:
@@ -21,8 +22,6 @@ private:
 	    VER_FAMILY_SEED			= 33,
 	} VersionEncoding;
 
-//	void seedInfo(NewcoinAddress* dstGenerator, BIGNUM** dstPrivateKey) const;
-
 public:
 	NewcoinAddress();
 
@@ -31,8 +30,9 @@ public:
 	void clear();
 
 	//
-	// Node Public
+	// Node Public - Also used for Validators
 	//
+	uint160 getNodeID() const;
 	const std::vector<unsigned char>& getNodePublic() const;
 
 	std::string humanNodePublic() const;
@@ -42,7 +42,8 @@ public:
 	bool verifyNodePublic(const uint256& hash, const std::vector<unsigned char>& vchSig) const;
 	bool verifyNodePublic(const uint256& hash, const std::string& strSig) const;
 
-	static NewcoinAddress createNodePublic(NewcoinAddress& naSeed);
+	static NewcoinAddress createNodePublic(const NewcoinAddress& naSeed);
+	static NewcoinAddress createNodePublic(const std::vector<unsigned char>& vPublic);
 
 	//
 	// Node Private
@@ -57,7 +58,7 @@ public:
 	void setNodePrivate(uint256 hash256);
 	void signNodePrivate(const uint256& hash, std::vector<unsigned char>& vchSig) const;
 
-	static NewcoinAddress createNodePrivate(NewcoinAddress& naSeed);
+	static NewcoinAddress createNodePrivate(const NewcoinAddress& naSeed);
 
 	//
 	// Accounts IDs
@@ -159,7 +160,6 @@ public:
 	// Family Seeds
 	// Clients must disallow reconizable entries from being seeds.
 	uint128 getFamilySeed() const;
-	// BIGNUM*	getFamilyPrivateKey() const;
 
 	std::string humanFamilySeed() const;
 	std::string humanFamilySeed1751() const;

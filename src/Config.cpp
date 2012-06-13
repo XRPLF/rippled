@@ -18,8 +18,7 @@
 #define SECTION_RPC_IP					"rpc_ip"
 #define SECTION_RPC_PORT				"rpc_port"
 #define SECTION_RPC_ALLOW_REMOTE		"rpc_allow_remote"
-#define SECTION_VALIDATION_PASSWORD		"validation_password"
-#define SECTION_VALIDATION_KEY			"validation_key"
+#define SECTION_VALIDATION_SEED			"validation_seed"
 #define SECTION_PEER_SSL_CIPHER_LIST	"peer_ssl_cipher_list"
 #define SECTION_PEER_SCAN_INTERVAL_MIN	"peer_scan_interval_min"
 #define SECTION_PEER_START_MAX			"peer_start_max"
@@ -180,8 +179,8 @@ void Config::load()
 			if (sectionSingleB(secConfig, SECTION_RPC_ALLOW_REMOTE, strTemp))
 				RPC_ALLOW_REMOTE = boost::lexical_cast<bool>(strTemp);
 
-			(void) sectionSingleB(secConfig, SECTION_VALIDATION_PASSWORD, VALIDATION_PASSWORD);
-			(void) sectionSingleB(secConfig, SECTION_VALIDATION_KEY, VALIDATION_KEY);
+			if (sectionSingleB(secConfig, SECTION_VALIDATION_SEED, strTemp))
+				VALIDATION_SEED.setFamilySeedGeneric(strTemp);
 
 			(void) sectionSingleB(secConfig, SECTION_PEER_SSL_CIPHER_LIST, PEER_SSL_CIPHER_LIST);
 			if (sectionSingleB(secConfig, SECTION_PEER_SCAN_INTERVAL_MIN, strTemp))

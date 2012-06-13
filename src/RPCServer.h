@@ -138,7 +138,8 @@ private:
 	Json::Value doUnlReset(Json::Value& params);
 	Json::Value doUnlScore(Json::Value& params);
 
-	Json::Value doValidatorCreate(Json::Value& params);
+	Json::Value doValidationCreate(Json::Value& params);
+	Json::Value doValidationSeed(Json::Value& params);
 
 	Json::Value doWalletAccounts(Json::Value& params);
 	Json::Value doWalletAdd(Json::Value& params);

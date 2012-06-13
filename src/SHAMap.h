@@ -78,6 +78,7 @@ public:
 
 extern std::size_t hash_value(const SHAMapNode& mn);
 extern std::size_t hash_value(const uint256& u);
+extern std::size_t hash_value(const uint160& u);
 
 class SHAMapItem
 { // an item stored in a SHAMap

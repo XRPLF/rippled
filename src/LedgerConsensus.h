@@ -48,7 +48,7 @@ protected:
 	int mYays, mNays;
 	bool mOurPosition;
 	std::vector<unsigned char> transaction;
-	boost::unordered_map<uint256, bool> mVotes;
+	boost::unordered_map<uint160, bool> mVotes;
 
 public:
 	typedef boost::shared_ptr<LCTransaction> pointer;
@@ -60,7 +60,7 @@ public:
 	bool getOurPosition() const							{ return mOurPosition; }
 	const std::vector<unsigned char>& peekTransaction()	{ return transaction; }
 
-	void setVote(const uint256& peer, bool votesYes);
+	void setVote(const uint160& peer, bool votesYes);
 
 	bool updatePosition(int timePassed);
 	int getAgreeLevel();
@@ -86,7 +86,7 @@ protected:
 	LedgerProposal::pointer mOurPosition;
 
 	// Convergence tracking, trusted peers indexed by hash of public key
-	boost::unordered_map<uint256, LedgerProposal::pointer> mPeerPositions;
+	boost::unordered_map<uint160, LedgerProposal::pointer> mPeerPositions;
 
 	// Transaction Sets, indexed by hash of transaction tree
 	boost::unordered_map<uint256, SHAMap::pointer> mComplete;
@@ -107,7 +107,7 @@ protected:
 	SHAMap::pointer find(const uint256& hash);
 
 	void addDisputedTransaction(const uint256&, const std::vector<unsigned char>& transaction);
-	void adjustCount(SHAMap::pointer map, const std::vector<uint256>& peers);
+	void adjustCount(SHAMap::pointer map, const std::vector<uint160>& peers);
 	void propose(const std::vector<uint256>& addedTx, const std::vector<uint256>& removedTx);
 
 	void addPosition(LedgerProposal&, bool ours);

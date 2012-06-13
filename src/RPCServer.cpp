@@ -1479,40 +1479,55 @@ Json::Value RPCServer::doUnlAdd(Json::Value& params)
 	return "invalid params";
 }
 
-// validation_create
-// validation_create <pass_phrase>
-// validation_create <seed>
-// validation_create <seed_key>
+// validation_create [<pass_phrase>|<seed>|<seed_key>]
 //
 // NOTE: It is poor security to specify secret information on the command line.  This information might be saved in the command
 // shell history file (e.g. .bash_history) and it may be leaked via the process status command (i.e. ps).
-Json::Value RPCServer::doValidatorCreate(Json::Value& params) {
-	NewcoinAddress	familySeed;
+Json::Value RPCServer::doValidationCreate(Json::Value& params) {
+	NewcoinAddress	naSeed;
+	Json::Value		obj(Json::objectValue);
 
 	if (params.empty())
 	{
 		std::cerr << "Creating random validation seed." << std::endl;
 
-		familySeed.setFamilySeedRandom();					// Get a random seed.
+		naSeed.setFamilySeedRandom();					// Get a random seed.
 	}
-	else if (!familySeed.setFamilySeedGeneric(params[0u].asString()))
+	else if (!naSeed.setFamilySeedGeneric(params[0u].asString()))
 	{
 		return RPCError(rpcBAD_SEED);
 	}
 
-	// Derive generator from seed.
-	NewcoinAddress	familyGenerator	= NewcoinAddress::createGeneratorPublic(familySeed);
-	NewcoinAddress	nodePublicKey	= NewcoinAddress::createNodePublic(familySeed);
-	NewcoinAddress	nodePrivateKey	= NewcoinAddress::createNodePrivate(familySeed);
+	obj["validation_public_key"]	= NewcoinAddress::createNodePublic(naSeed).humanNodePublic();
+	obj["validation_seed"]			= naSeed.humanFamilySeed();
+	obj["validation_key"]			= naSeed.humanFamilySeed1751();
 
-	// Paranoia
-	assert(1 == familySeed.setFamilySeed1751(familySeed.humanFamilySeed1751()));
+	return obj;
+}
 
+// validation_seed [<pass_phrase>|<seed>|<seed_key>]
+//
+// NOTE: It is poor security to specify secret information on the command line.  This information might be saved in the command
+// shell history file (e.g. .bash_history) and it may be leaked via the process status command (i.e. ps).
+Json::Value RPCServer::doValidationSeed(Json::Value& params) {
 	Json::Value obj(Json::objectValue);
 
-	obj["validation_public_key"]	= nodePublicKey.humanNodePublic();
-	obj["validation_seed"]			= familySeed.humanFamilySeed();
-	obj["validation_key"]			= familySeed.humanFamilySeed1751();
+	if (params.empty())
+	{
+		std::cerr << "Unset validation seed." << std::endl;
+
+		theConfig.VALIDATION_SEED.clear();
+	}
+	else if (!theConfig.VALIDATION_SEED.setFamilySeedGeneric(params[0u].asString()))
+	{
+		return RPCError(rpcBAD_SEED);
+	}
+	else
+	{
+		obj["validation_public_key"]	= NewcoinAddress::createNodePublic(theConfig.VALIDATION_SEED).humanNodePublic();
+		obj["validation_seed"]			= theConfig.VALIDATION_SEED.humanFamilySeed();
+		obj["validation_key"]			= theConfig.VALIDATION_SEED.humanFamilySeed1751();
+	}
 
 	return obj;
 }
@@ -2045,7 +2060,8 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 		{	"unl_reset",			&RPCServer::doUnlReset,				0, 0,  },
 		{	"unl_score",			&RPCServer::doUnlScore,				0, 0,  },
 
-		{	"validation_create",	&RPCServer::doValidatorCreate,		0, 1,  },
+		{	"validation_create",	&RPCServer::doValidationCreate,		0, 1,  },
+		{	"validation_seed",		&RPCServer::doValidationSeed,		0, 1,  },
 
 		{	"wallet_accounts",		&RPCServer::doWalletAccounts,		1, 1,  optCurrent },
 		{	"wallet_add",			&RPCServer::doWalletAdd,			3, 5,  optCurrent },

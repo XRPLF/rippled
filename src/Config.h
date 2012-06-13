@@ -3,6 +3,7 @@
 
 #include "types.h"
 #include "SerializedTypes.h"
+#include "NewcoinAddress.h"
 
 #include <string>
 #include <boost/filesystem.hpp>
@@ -78,8 +79,7 @@ public:
 	bool		RPC_ALLOW_REMOTE;
 
 	// Validation
-	std::string	VALIDATION_PASSWORD;
-	std::string	VALIDATION_KEY;
+	NewcoinAddress	VALIDATION_SEED;
 
 	// Fees
 	uint64		FEE_DEFAULT;			// Default fee.
