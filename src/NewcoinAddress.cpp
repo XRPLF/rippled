@@ -58,7 +58,7 @@ void NewcoinAddress::clear()
 // NodePublic
 //
 
-NewcoinAddress NewcoinAddress::createNodePublic(NewcoinAddress& naSeed)
+NewcoinAddress NewcoinAddress::createNodePublic(const NewcoinAddress& naSeed)
 {
 	CKey			ckSeed(naSeed.getFamilySeed());
 	NewcoinAddress	naNew;
@@ -69,6 +69,29 @@ NewcoinAddress NewcoinAddress::createNodePublic(NewcoinAddress& naSeed)
 	return naNew;
 }
 
+NewcoinAddress NewcoinAddress::createNodePublic(const std::vector<unsigned char>& vPublic)
+{
+	NewcoinAddress	naNew;
+
+	naNew.setNodePublic(vPublic);
+
+	return naNew;
+}
+
+uint160 NewcoinAddress::getNodeID() const
+{
+    switch (nVersion) {
+    case VER_NONE:
+		throw std::runtime_error("unset source");
+
+    case VER_NODE_PUBLIC:
+		// Note, we are encoding the left.
+		return Hash160(vchData);
+
+    default:
+		throw std::runtime_error(str(boost::format("bad source: %d") % int(nVersion)));
+    }
+}
 const std::vector<unsigned char>& NewcoinAddress::getNodePublic() const
 {
     switch (nVersion) {
@@ -136,7 +159,7 @@ bool NewcoinAddress::verifyNodePublic(const uint256& hash, const std::string& st
 // NodePrivate
 //
 
-NewcoinAddress NewcoinAddress::createNodePrivate(NewcoinAddress& naSeed)
+NewcoinAddress NewcoinAddress::createNodePrivate(const NewcoinAddress& naSeed)
 {
 	uint256			uPrivKey;
 	NewcoinAddress	naNew;
@@ -229,7 +252,7 @@ uint160 NewcoinAddress::getAccountID() const
 		return uint160(vchData);
 
     case VER_ACCOUNT_PUBLIC:
-		// Note, we are encoding the left or right.
+		// Note, we are encoding the left.
 		return Hash160(vchData);
 
     default:
@@ -595,13 +618,6 @@ void NewcoinAddress::setFamilyGenerator(const std::vector<unsigned char>& vPubli
     SetData(VER_FAMILY_GENERATOR, vPublic);
 }
 
-#if 0
-void NewcoinAddress::setFamilyGenerator(const NewcoinAddress& seed)
-{
-	seed.seedInfo(this, 0);
-}
-#endif
-
 NewcoinAddress NewcoinAddress::createGeneratorPublic(const NewcoinAddress& naSeed)
 {
 	CKey			ckSeed(naSeed.getFamilySeed());
@@ -616,21 +632,6 @@ NewcoinAddress NewcoinAddress::createGeneratorPublic(const NewcoinAddress& naSee
 // Family Seed
 //
 
-#if 0
-// --> dstGenerator: Set the public generator from our seed.
-void NewcoinAddress::seedInfo(NewcoinAddress* dstGenerator, BIGNUM** dstPrivateKey) const
-{
-	CKey	pubkey	= CKey(getFamilySeed());
-
-    if (dstGenerator) {
-		dstGenerator->setFamilyGenerator(pubkey.GetPubKey());
-	}
-
-	if (dstPrivateKey)
-		*dstPrivateKey	= pubkey.GetSecretBN();
-}
-#endif
-
 uint128 NewcoinAddress::getFamilySeed() const
 {
     switch (nVersion) {
@@ -644,17 +645,6 @@ uint128 NewcoinAddress::getFamilySeed() const
 		throw std::runtime_error(str(boost::format("bad source: %d") % int(nVersion)));
     }
 }
-
-#if 0
-BIGNUM*	NewcoinAddress::getFamilyPrivateKey() const
-{
-	BIGNUM*	ret;
-
-	seedInfo(0, &ret);
-
-	return ret;
-}
-#endif
 
 std::string NewcoinAddress::humanFamilySeed1751() const
 {
