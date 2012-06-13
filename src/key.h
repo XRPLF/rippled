@@ -73,13 +73,11 @@ public:
 	explicit key_error(const std::string& str) : std::runtime_error(str) {}
 };
 
-
-
 //JED: typedef std::vector<unsigned char, secure_allocator<unsigned char> > CPrivKey;
 //typedef std::vector<unsigned char, secure_allocator<unsigned char> > CSecret;
 
-typedef std::vector<unsigned char > CPrivKey;
-typedef std::vector<unsigned char > CSecret;
+typedef std::vector<unsigned char> CPrivKey;
+typedef std::vector<unsigned char> CSecret;
 class CKey
 {
 protected:
@@ -153,6 +151,7 @@ public:
 
 	CKey(const uint256& privateKey) : pkey(NULL), fSet(false)
 	{
+		// XXX Broken pkey is null.
 		SetPrivateKeyU(privateKey);
 	}
 
@@ -180,48 +179,7 @@ public:
 		fSet = true;
 	}
 
-	bool SetPrivKey(const CPrivKey& vchPrivKey)
-	{ // DEPRECATED
-		const unsigned char* pbegin = &vchPrivKey[0];
-		if (!d2i_ECPrivateKey(&pkey, &pbegin, vchPrivKey.size()))
-			return false;
-		EC_KEY_set_conv_form(pkey, POINT_CONVERSION_COMPRESSED);
-		fSet = true;
-		return true;
-	}
-
-	bool SetSecret(const CSecret& vchSecret)
-	{ // DEPRECATED
-		EC_KEY_free(pkey);
-		pkey = EC_KEY_new_by_curve_name(NID_secp256k1);
-		if (pkey == NULL)
-			throw key_error("CKey::SetSecret() : EC_KEY_new_by_curve_name failed");
-		if (vchSecret.size() != 32)
-			throw key_error("CKey::SetSecret() : secret must be 32 bytes");
-		BIGNUM *bn = BN_bin2bn(&vchSecret[0], 32, BN_new());
-		if (bn == NULL) 
-			throw key_error("CKey::SetSecret() : BN_bin2bn failed");
-		if (!EC_KEY_regenerate_key(pkey, bn))
-			throw key_error("CKey::SetSecret() : EC_KEY_regenerate_key failed");
-		BN_clear_free(bn);
-		fSet = true;
-		return true;
-	}
-
-	CSecret GetSecret()
-	{ // DEPRECATED
-		CSecret vchRet;
-		vchRet.resize(32);
-		const BIGNUM *bn = EC_KEY_get0_private_key(pkey);
-		int nBytes = BN_num_bytes(bn);
-		if (bn == NULL)
-			throw key_error("CKey::GetSecret() : EC_KEY_get0_private_key failed");
-		int n=BN_bn2bin(bn, &vchRet[32 - nBytes]);
-		if (n != nBytes) 
-			throw key_error("CKey::GetSecret(): BN_bn2bin failed");
-		return vchRet;
-	}
-
+	// XXX Still used!
 	BIGNUM* GetSecretBN() const
 	{ // DEPRECATED
 		return BN_dup(EC_KEY_get0_private_key(pkey));
@@ -236,54 +194,24 @@ public:
 		BN_bn2bin(bn, privKey.begin() + (privKey.size() - BN_num_bytes(bn)));
 	}
 
-	void SetPrivateKeyU(const uint256& key)
+	bool SetPrivateKeyU(const uint256& key, bool bThrow=false)
 	{
-		BIGNUM* bn = BN_bin2bn(key.begin(), key.size(), NULL);
-		if (!EC_KEY_set_private_key(pkey, bn))
+		// XXX Broken if pkey is not set.
+		BIGNUM* bn			= BN_bin2bn(key.begin(), key.size(), NULL);
+		bool	bSuccess	= !!EC_KEY_set_private_key(pkey, bn);
+
+		BN_clear_free(bn);
+
+		if (bSuccess)
 		{
-			BN_clear_free(bn);
+			fSet = true;
+		}
+		else if (bThrow)
+		{
 			throw key_error("CKey::SetPrivateKeyU: EC_KEY_set_private_key failed");
 		}
-		fSet = true;
-		BN_clear_free(bn);
-	}
 
-	void SetPubSeq(const NewcoinAddress& masterKey, int keyNum)
-	{
-		EC_KEY* key = GeneratePublicDeterministicKey(masterKey, keyNum);
-		if (key == NULL)
-			throw key_error("CKey::SetPubSeq: GenPubDetKey failed");
-		if (pkey != NULL)
-			EC_KEY_free(pkey);
-		pkey = key;
-		fSet = true;
-	}
-
-#if 0
-	void SetPrivSeq(const NewcoinAddress& masterKey, int keyNum)
-	{ // broken: Need the seed
-		uint256 privKey;
-		EC_KEY* key = GeneratePrivateDeterministicKey(masterKey, masterKey.getFamilyGeneratorU(), keyNum);
-		privKey.zero();
-		if (pkey != NULL)
-			EC_KEY_free(pkey);
-		pkey = key;
-		fSet = true;
-	}
-#endif
-
-	CPrivKey GetPrivKey()
-	{
-		unsigned int nSize = i2d_ECPrivateKey(pkey, NULL);
-		if (!nSize)
-			throw key_error("CKey::GetPrivKey() : i2d_ECPrivateKey failed");
-		assert(nSize<=279);
-		CPrivKey vchPrivKey(279, 0);
-		unsigned char* pbegin = &vchPrivKey[0];
-		if (i2d_ECPrivateKey(pkey, &pbegin) != nSize)
-			throw key_error("CKey::GetPrivKey() : i2d_ECPrivateKey returned unexpected size");
-		assert(vchPrivKey.size()<=279);
-		return vchPrivKey;
+		return bSuccess;
 	}
 
 	bool SetPubKey(const void *ptr, size_t len)
@@ -322,14 +250,17 @@ public:
 
 	bool Sign(const uint256& hash, std::vector<unsigned char>& vchSig)
 	{
-		vchSig.clear();
 		unsigned char pchSig[10000];
 		unsigned int nSize = 0;
+
+		vchSig.clear();
+
 		if (!ECDSA_sign(0, (unsigned char*)hash.begin(), hash.size(), pchSig, &nSize, pkey))
 			return false;
 
 		vchSig.resize(nSize);
 		memcpy(&vchSig[0], pchSig, nSize);
+
 		return true;
 	}
 

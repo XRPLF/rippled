@@ -75,15 +75,11 @@ bool Wallet::nodeIdentityCreate() {
 	//
 	// Generate the public and private key
 	//
-	NewcoinAddress	nodePublicKey;
-	NewcoinAddress	nodePrivateKey;
+	NewcoinAddress	naSeed			= NewcoinAddress::createSeedRandom();
+	NewcoinAddress	naNodePublic	= NewcoinAddress::createNodePublic(naSeed);
+	NewcoinAddress	naNodePrivate	= NewcoinAddress::createNodePrivate(naSeed);
 
 	// Make new key.
-	CKey	key;
-
-	key.MakeNewKey();
-	nodePublicKey.setNodePublic(key.GetPubKey());
-	nodePrivateKey.setNodePrivate(key.GetSecret());
 
 	std::string	strDh512, strDh1024;
 
@@ -101,8 +97,8 @@ bool Wallet::nodeIdentityCreate() {
 
 	ScopedLock sl(theApp->getWalletDB()->getDBLock());
 	db->executeSQL(str(boost::format("INSERT INTO NodeIdentity (PublicKey,PrivateKey,Dh512,Dh1024) VALUES (%s,%s,%s,%s);")
-		% db->escape(nodePublicKey.humanNodePublic())
-		% db->escape(nodePrivateKey.humanNodePrivate())
+		% db->escape(naNodePublic.humanNodePublic())
+		% db->escape(naNodePrivate.humanNodePrivate())
 		% db->escape(strDh512)
 		% db->escape(strDh1024)));
 	// XXX Check error result.

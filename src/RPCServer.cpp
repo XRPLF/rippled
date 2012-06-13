@@ -241,11 +241,10 @@ bool RPCServer::extractString(std::string& param, const Json::Value& params, int
 // <-- naMasterGenerator
 Json::Value RPCServer::getMasterGenerator(const uint256& uLedger, const NewcoinAddress& naRegularSeed, NewcoinAddress& naMasterGenerator)
 {
-	NewcoinAddress		naGenerator;
 	NewcoinAddress		na0Public;		// To find the generator's index.
 	NewcoinAddress		na0Private;		// To decrypt the master generator's cipher.
+	NewcoinAddress		naGenerator	= NewcoinAddress::createGeneratorPublic(naRegularSeed);
 
-	naGenerator.setFamilyGenerator(naRegularSeed);
 	na0Public.setAccountPublic(naGenerator, 0);
 	na0Private.setAccountPrivate(naGenerator, naRegularSeed, 0);
 
@@ -289,10 +288,9 @@ Json::Value RPCServer::authorize(const uint256& uLedger,
 	{
 		return RPCError(rpcSRC_MISSING);
 	}
-	
+
 	NewcoinAddress	naMasterGenerator;
 
-	
 	if(asSrc->bHaveAuthorizedKey())
 	{
 		Json::Value	obj	= getMasterGenerator(uLedger, naRegularSeed, naMasterGenerator);
@@ -302,7 +300,7 @@ Json::Value RPCServer::authorize(const uint256& uLedger,
 	}else
 	{
 		// Try the seed as a master seed.
-		naMasterGenerator.setFamilyGenerator(naRegularSeed);
+		naMasterGenerator	= NewcoinAddress::createGeneratorPublic(naRegularSeed);
 	}
 
 	// If naVerifyGenerator is provided, make sure it is the master generator.
@@ -324,9 +322,8 @@ Json::Value RPCServer::authorize(const uint256& uLedger,
 	} while (naSrcAccountID.getAccountID() != naMasterAccountPublic.getAccountID());
 
 	// Use the regular generator to determine the associated public and private keys.
-	NewcoinAddress		naGenerator;
+	NewcoinAddress		naGenerator	= NewcoinAddress::createGeneratorPublic(naRegularSeed);
 
-	naGenerator.setFamilyGenerator(naRegularSeed);
 	naAccountPublic.setAccountPublic(naGenerator, iIndex);
 	naAccountPrivate.setAccountPrivate(naGenerator, naRegularSeed, iIndex);
 
@@ -374,11 +371,10 @@ Json::Value RPCServer::accountFromString(const uint256& uLedger, NewcoinAddress&
 	{
 		// We allow the use of the seeds to access #0.
 		// This is poor practice and merely for debuging convenience.
-		NewcoinAddress		naGenerator;
 		NewcoinAddress		naRegular0Public;
 		NewcoinAddress		naRegular0Private;
 
-		naGenerator.setFamilyGenerator(naSeed);
+		NewcoinAddress		naGenerator		= NewcoinAddress::createGeneratorPublic(naSeed);
 
 		naRegular0Public.setAccountPublic(naGenerator, 0);
 		naRegular0Private.setAccountPrivate(naGenerator, naSeed, 0);
@@ -1054,19 +1050,16 @@ Json::Value RPCServer::doPasswordSet(Json::Value& params)
 	}
 	else
 	{
-		NewcoinAddress	naMasterGenerator;
-		NewcoinAddress	naRegularGenerator;
+		NewcoinAddress	naMasterGenerator	= NewcoinAddress::createGeneratorPublic(naMasterSeed);
+		NewcoinAddress	naRegularGenerator	= NewcoinAddress::createGeneratorPublic(naRegularSeed);
 		NewcoinAddress	naRegular0Public;
 		NewcoinAddress	naRegular0Private;
 
 		NewcoinAddress	naAccountPublic;
 		NewcoinAddress	naAccountPrivate;
 
-		naMasterGenerator.setFamilyGenerator(naMasterSeed);
 		naAccountPublic.setAccountPublic(naMasterGenerator, 0);
 		naAccountPrivate.setAccountPrivate(naMasterGenerator, naMasterSeed, 0);
-
-		naRegularGenerator.setFamilyGenerator(naRegularSeed);
 
 		naRegular0Public.setAccountPublic(naRegularGenerator, 0);
 		naRegular0Private.setAccountPrivate(naRegularGenerator, naRegularSeed, 0);
@@ -1495,9 +1488,6 @@ Json::Value RPCServer::doUnlAdd(Json::Value& params)
 // shell history file (e.g. .bash_history) and it may be leaked via the process status command (i.e. ps).
 Json::Value RPCServer::doValidatorCreate(Json::Value& params) {
 	NewcoinAddress	familySeed;
-	NewcoinAddress	familyGenerator;
-	NewcoinAddress	nodePublicKey;
-	NewcoinAddress	nodePrivateKey;
 
 	if (params.empty())
 	{
@@ -1511,11 +1501,9 @@ Json::Value RPCServer::doValidatorCreate(Json::Value& params) {
 	}
 
 	// Derive generator from seed.
-	familyGenerator.setFamilyGenerator(familySeed);
-
-	// The node public and private is 0th of the sequence.
-	nodePublicKey.setNodePublic(CKey(familyGenerator, 0).GetPubKey());
-	nodePrivateKey.setNodePrivate(CKey(familyGenerator, familySeed.getFamilyPrivateKey(), 0).GetSecret());
+	NewcoinAddress	familyGenerator	= NewcoinAddress::createGeneratorPublic(familySeed);
+	NewcoinAddress	nodePublicKey	= NewcoinAddress::createNodePublic(familySeed);
+	NewcoinAddress	nodePrivateKey	= NewcoinAddress::createNodePrivate(familySeed);
 
 	// Paranoia
 	assert(1 == familySeed.setFamilySeed1751(familySeed.humanFamilySeed1751()));
@@ -1571,10 +1559,8 @@ Json::Value RPCServer::doWalletAccounts(Json::Value& params)
 		return RPCError(rpcBAD_SEED);
 	}
 
-	NewcoinAddress	naMasterGenerator;
-
 	// Try the seed as a master seed.
-	naMasterGenerator.setFamilyGenerator(naSeed);
+	NewcoinAddress	naMasterGenerator	= NewcoinAddress::createGeneratorPublic(naSeed);
 
 	Json::Value jsonAccounts	= accounts(uLedger, naMasterGenerator);
 
@@ -1629,11 +1615,8 @@ Json::Value RPCServer::doWalletAdd(Json::Value& params)
 	}
 	else
 	{
-		NewcoinAddress			naMasterGenerator;
-		NewcoinAddress			naRegularGenerator;
-
-		naMasterGenerator.setFamilyGenerator(naMasterSeed);
-		naRegularGenerator.setFamilyGenerator(naRegularSeed);
+		NewcoinAddress			naMasterGenerator	= NewcoinAddress::createGeneratorPublic(naMasterSeed);
+		NewcoinAddress			naRegularGenerator	= NewcoinAddress::createGeneratorPublic(naRegularSeed);
 
 		NewcoinAddress			naAccountPublic;
 		NewcoinAddress			naAccountPrivate;
@@ -1739,19 +1722,16 @@ Json::Value RPCServer::doWalletClaim(Json::Value& params)
 		// XXX Annotation is ignored.
 		std::string strAnnotation	= (params.size() == 3) ? "" : params[3u].asString();
 
-		NewcoinAddress	naMasterGenerator;
-		NewcoinAddress	naRegularGenerator;
+		NewcoinAddress	naMasterGenerator	= NewcoinAddress::createGeneratorPublic(naMasterSeed);
+		NewcoinAddress	naRegularGenerator	= NewcoinAddress::createGeneratorPublic(naRegularSeed);
 		NewcoinAddress	naRegular0Public;
 		NewcoinAddress	naRegular0Private;
 
 		NewcoinAddress	naAccountPublic;
 		NewcoinAddress	naAccountPrivate;
 
-		naMasterGenerator.setFamilyGenerator(naMasterSeed);
 		naAccountPublic.setAccountPublic(naMasterGenerator, 0);
 		naAccountPrivate.setAccountPrivate(naMasterGenerator, naMasterSeed, 0);
-
-		naRegularGenerator.setFamilyGenerator(naRegularSeed);
 
 		naRegular0Public.setAccountPublic(naRegularGenerator, 0);
 		naRegular0Private.setAccountPrivate(naRegularGenerator, naRegularSeed, 0);
@@ -1862,27 +1842,18 @@ Json::Value RPCServer::doWalletCreate(Json::Value& params)
 Json::Value RPCServer::doWalletPropose(Json::Value& params)
 {
 	NewcoinAddress	naSeed;
-	NewcoinAddress	naGenerator;
 	NewcoinAddress	naAccount;
 
 	naSeed.setFamilySeedRandom();
-	naGenerator.setFamilyGenerator(naSeed);
+
+	NewcoinAddress	naGenerator	= NewcoinAddress::createGeneratorPublic(naSeed);
 	naAccount.setAccountPublic(naGenerator, 0);
-
-	//
-	// Extra functionality: generate a key pair
-	//
-	CKey	key;
-
-	key.MakeNewKey();
 
 	Json::Value obj(Json::objectValue);
 
 	obj["master_seed"]		= naSeed.humanFamilySeed();
 	obj["master_key"]		= naSeed.humanFamilySeed1751();
 	obj["account_id"]		= naAccount.humanAccountID();
-	obj["extra_public"]		= NewcoinAddress::createHumanAccountPublic(key.GetPubKey());
-	obj["extra_private"]	= NewcoinAddress::createHumanAccountPrivate(key.GetSecret());
 
 	return obj;
 }
@@ -1899,14 +1870,15 @@ Json::Value RPCServer::doWalletSeed(Json::Value& params)
 	}
 	else
 	{
-		NewcoinAddress	naGenerator;
 		NewcoinAddress	naAccount;
 
 		if (!params.size())
 		{
 			naSeed.setFamilySeedRandom();
 		}
-		naGenerator.setFamilyGenerator(naSeed);
+
+		NewcoinAddress	naGenerator	= NewcoinAddress::createGeneratorPublic(naSeed);
+
 		naAccount.setAccountPublic(naGenerator, 0);
 
 		Json::Value obj(Json::objectValue);
