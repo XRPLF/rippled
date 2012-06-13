@@ -21,7 +21,7 @@ DatabaseCon::DatabaseCon(const std::string& strName, const char *initStrings[], 
 {
 	boost::filesystem::path	pPath	= theConfig.DATA_DIR / strName;
 
-	mDatabase = new SqliteDatabase((const char*) pPath.c_str());
+	mDatabase = new SqliteDatabase(pPath.string().c_str());
 	mDatabase->connect();
 	for(int i = 0; i < initCount; ++i)
 		mDatabase->executeSQL(initStrings[i], true);

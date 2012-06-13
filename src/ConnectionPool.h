@@ -56,7 +56,7 @@ public:
 	// Peer connectivity notification.
 	//
 	bool getTopNAddrs(int n,std::vector<std::string>& addrs);
-	bool savePeer(const std::string& strIp, int iPort);
+	bool savePeer(const std::string& strIp, int iPort, char code);
 
 	// Inbound connection, false=reject
 	bool peerRegister(Peer::pointer peer, const std::string& strIp, int iPort);

@@ -61,7 +61,7 @@ bool ConnectionPool::getTopNAddrs(int n,std::vector<std::string>& addrs)
 	return true;
 }
 
-bool ConnectionPool::savePeer(const std::string& strIp, int iPort)
+bool ConnectionPool::savePeer(const std::string& strIp, int iPort,char code)
 {
 	Database* db = theApp->getWalletDB()->getDB();
 
@@ -73,7 +73,7 @@ bool ConnectionPool::savePeer(const std::string& strIp, int iPort)
 	{
 		if( db->getInt(0)==0)
 		{
-			db->executeSQL(str(boost::format("INSERT INTO PeerIps (IpPort,Score,Source) values (%s,0,'a');")	% ipPort));
+			db->executeSQL(str(boost::format("INSERT INTO PeerIps (IpPort,Score,Source) values (%s,0,'%c');")	% ipPort % code));
 			return true;
 		}// else we already had this peer
 	}else std::cout << "Error saving Peer" << std::endl;
@@ -285,8 +285,6 @@ bool ConnectionPool::peerConnected(Peer::pointer peer, const NewcoinAddress& na)
 	{
 		mConnectedMap[na]	= peer;
 		bSuccess			= true;
-
-		savePeer(peer->getIP(),peer->getPort());
 	}
 
 

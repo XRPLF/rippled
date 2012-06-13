@@ -199,6 +199,7 @@ const char *WalletDBInit[] = {
 	//  'V' = Validation file
 	//  'M' = Manually added.
 	//  'I' = Inbound connection.
+	//	'T' = Told by other peer
 	//  'O' = Other.
 	// ScanNext:
 	//  When to next scan.  Null=not scanning.

@@ -572,6 +572,9 @@ void Peer::recvHello(newcoin::TMHello& packet)
 			mClosedLedgerTime = boost::posix_time::second_clock::universal_time();
 		}
 
+
+		theApp->getConnectionPool().savePeer(getIP(),packet.ipv4port(),'I');
+
 		bDetach	= false;
 	}
 
@@ -684,28 +687,33 @@ void Peer::recvGetContacts(newcoin::TMGetContacts& packet)
 }
 
 // return a list of your favorite people
+// TODO: filter out all the LAN peers
 void Peer::recvGetPeers(newcoin::TMGetPeers& packet)
 {
 	std::vector<std::string> addrs;
 	theApp->getConnectionPool().getTopNAddrs(30,addrs);
-	newcoin::TMPeers peers;
-
-	for(int n=0; n<addrs.size(); n++)
+	if(addrs.size())
 	{
-		std::string strIP;
-		int port;
-		splitIpPort(addrs[n],strIP,port);
-		newcoin::TMIPv4EndPoint* addr=peers.add_nodes();
-		addr->set_ipv4(inet_addr(strIP.c_str()));
-		addr->set_ipv4port(port);
+		newcoin::TMPeers peers;
 
-		std::cout << "Teaching about: " << strIP << std::endl;
+		for(int n=0; n<addrs.size(); n++)
+		{
+			std::string strIP;
+			int port;
+			splitIpPort(addrs[n],strIP,port);
+			newcoin::TMIPv4EndPoint* addr=peers.add_nodes();
+			addr->set_ipv4(inet_addr(strIP.c_str()));
+			addr->set_ipv4port(port);
+
+			std::cout << "Teaching about: " << strIP << std::endl;
+		}
+
+
+		PackedMessage::pointer message = boost::make_shared<PackedMessage>(peers, newcoin::mtPEERS);
+		sendPacket(message);
 	}
-
-
-	PackedMessage::pointer message = boost::make_shared<PackedMessage>(peers, newcoin::mtPEERS);
-	sendPacket(message);
 }
+// TODO: filter out all the LAN peers
 void Peer::recvPeers(newcoin::TMPeers& packet)
 {
 	for(int i = 0; i < packet.nodes().size(); ++i)
@@ -717,7 +725,7 @@ void Peer::recvPeers(newcoin::TMPeers& packet)
 
 		std::cout << "Learning about: " << strIP << std::endl;
 
-		theApp->getConnectionPool().savePeer(strIP,port);
+		theApp->getConnectionPool().savePeer(strIP,port,'T');
 	}
 
 }
