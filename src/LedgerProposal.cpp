@@ -6,12 +6,10 @@
 #include "key.h"
 #include "Application.h"
 
-LedgerProposal::LedgerProposal(const uint256& pLgr, uint32 seq, const uint256& tx, const std::string& pubKey) :
+LedgerProposal::LedgerProposal(const uint256& pLgr, uint32 seq, const uint256& tx, const NewcoinAddress& naPeerPublic) :
 	mPreviousLedger(pLgr), mCurrentHash(tx), mProposeSeq(seq)
 {
-	// XXX Make caller give us a vuc for pubkey.
-
-	mPublicKey.setNodePublic(strCopy(pubKey));
+	mPublicKey		= naPeerPublic;
 	// XXX Validate key.
 	// if (!mKey->SetPubKey(pubKey))
 	// throw std::runtime_error("Invalid public key in proposal");

@@ -27,7 +27,7 @@ public:
 	typedef boost::shared_ptr<LedgerProposal> pointer;
 
 	// proposal from peer
-	LedgerProposal(const uint256& prevLgr, uint32 proposeSeq, const uint256& propose, const std::string& pubKey);
+	LedgerProposal(const uint256& prevLgr, uint32 proposeSeq, const uint256& propose, const NewcoinAddress& naPeerPublic);
 
 	// our first proposal
 	LedgerProposal(const NewcoinAddress& naSeed, const uint256& prevLedger, const uint256& position);

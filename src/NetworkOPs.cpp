@@ -456,9 +456,14 @@ int NetworkOPs::beginConsensus(Ledger::pointer closingLedger)
 	return mConsensus->startup();
 }
 
+// <-- bool: true to relay
 bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash,
 	const std::string& pubKey, const std::string& signature)
 {
+	// XXX Validate key.
+	// XXX Take a vuc for pubkey.
+	NewcoinAddress	naPeerPublic	= NewcoinAddress::createNodePublic(strCopy(pubKey));
+
 	if (mMode != omFULL) // FIXME: Should we relay?
 	{
 		Log(lsWARNING) << "Received proposal when not full: " << mMode;
@@ -474,7 +479,7 @@ bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash,
 	if (!consensus) return false;
 
 	LedgerProposal::pointer proposal =
-		boost::make_shared<LedgerProposal>(consensus->getLCL(), proposeSeq, proposeHash, pubKey);
+		boost::make_shared<LedgerProposal>(consensus->getLCL(), proposeSeq, proposeHash, naPeerPublic);
 	if (!proposal->checkSign(signature))
 	{ // Note that if the LCL is different, the signature check will fail
 		Log(lsWARNING) << "Ledger proposal fails signature check";
@@ -482,7 +487,9 @@ bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash,
 	}
 
 	// Is this node on our UNL?
-	// WRITEME
+	// XXX Is this right?
+	if (!theApp->getUNL().nodeInUNL(naPeerPublic))
+		return true;
 
 	return consensus->peerPosition(proposal);
 }
