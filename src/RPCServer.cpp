@@ -102,7 +102,7 @@ Json::Value RPCServer::RPCError(int iError)
 void RPCServer::connected()
 {
 	//BOOST_LOG_TRIVIAL(info) << "RPC request";
-	std::cout << "RPC request" << std::endl;
+	//std::cout << "RPC request" << std::endl;
 
 	mSocket.async_read_some(boost::asio::buffer(mReadBuffer),
 		boost::bind(&RPCServer::handle_read, shared_from_this(),
