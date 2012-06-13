@@ -102,6 +102,23 @@ DH* DH_der_load_hex(const std::string& strDer)
 	return DH_der_load(strBuf);
 }
 
+/*
+void intIPtoStr(int ip,std::string& retStr)
+{
+	unsigned char bytes[4];
+	bytes[0] = ip & 0xFF;
+	bytes[1] = (ip >> 8) & 0xFF;
+	bytes[2] = (ip >> 16) & 0xFF;
+	bytes[3] = (ip >> 24) & 0xFF;   
+
+	retStr=str(boost::format("%d.%d.%d.%d") % bytes[3] % bytes[2] % bytes[1] % bytes[0] );
+}
+
+int strIPtoInt(std::string& ipStr)
+{
+
+}
+*/
 #ifdef WIN32
 #define _WINSOCK_
 #include <winsock2.h>

@@ -56,6 +56,8 @@ protected:
 
 	Peer(boost::asio::io_service& io_service, boost::asio::ssl::context& ctx);
 
+	
+
 	void handle_write(const boost::system::error_code& error, size_t bytes_transferred);
 	//void handle_read(const boost::system::error_code& error, size_t bytes_transferred);
 	void handle_read_header(const boost::system::error_code& error);
@@ -74,6 +76,8 @@ protected:
 	void recvGetValidation(newcoin::TMGetValidations& packet);
 	void recvContact(newcoin::TMContact& packet);
 	void recvGetContacts(newcoin::TMGetContacts& packet);
+	void recvGetPeers(newcoin::TMGetPeers& packet);
+	void recvPeers(newcoin::TMPeers& packet);
 	void recvIndexedObject(newcoin::TMIndexedObject& packet);
 	void recvGetObjectByHash(newcoin::TMGetObjectByHash& packet);
 	void recvObjectByHash(newcoin::TMObjectByHash& packet);
@@ -95,6 +99,9 @@ public:
 
 	//bool operator == (const Peer& other);
 
+	std::string& getIP(){ return(mIpPort.first); }
+	int getPort(){ return(mIpPort.second); }
+
 	static pointer create(boost::asio::io_service& io_service, boost::asio::ssl::context& ctx)
 	{
 		return pointer(new Peer(io_service, ctx));
@@ -115,6 +122,7 @@ public:
 	void sendLedgerProposal(Ledger::pointer ledger);
 	void sendFullLedger(Ledger::pointer ledger);
 	void sendGetFullLedger(uint256& hash);
+	void sendGetPeers();
 
 	void punishPeer(PeerPunish pp);
 

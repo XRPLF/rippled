@@ -11,7 +11,11 @@
 #include <boost/format.hpp>
 #include <boost/algorithm/string.hpp>
 
-static void splitIpPort(const std::string& strIpPort, std::string& strIp, int& iPort)
+#define SQL_FOREACH(_db, _strQuery)		\
+	if ((_db)->executeSQL(_strQuery))	\
+	for (bool _bMore = (db)->startIterRows(); _bMore; _bMore = (_db)->getNextRow())
+
+void splitIpPort(const std::string& strIpPort, std::string& strIp, int& iPort)
 {
 	std::vector<std::string>	vIpPort;
 	boost::split(vIpPort, strIpPort, boost::is_any_of(" "));
@@ -41,6 +45,40 @@ void ConnectionPool::start()
 
 	// Start scanning.
 	scanRefresh();
+}
+
+bool ConnectionPool::getTopNAddrs(int n,std::vector<std::string>& addrs)
+{
+	Database* db = theApp->getWalletDB()->getDB();
+	ScopedLock	sl(theApp->getWalletDB()->getDBLock());
+	SQL_FOREACH(db, str(boost::format("SELECT IpPort FROM PeerIps limit %d") % n) )
+	{
+		std::string str;
+		db->getStr(0,str);
+		addrs.push_back(str);
+	}
+
+	return true;
+}
+
+bool ConnectionPool::savePeer(const std::string& strIp, int iPort)
+{
+	Database* db = theApp->getWalletDB()->getDB();
+
+	std::string ipPort=db->escape(str(boost::format("%s %d") % strIp % iPort));
+	
+	ScopedLock	sl(theApp->getWalletDB()->getDBLock());
+	std::string sql=str(boost::format("SELECT count(*) FROM PeerIps WHERE IpPort=%s;") % ipPort);
+	if(db->executeSQL(sql) && db->startIterRows())
+	{
+		if( db->getInt(0)==0)
+		{
+			db->executeSQL(str(boost::format("INSERT INTO PeerIps (IpPort,Score,Source) values (%s,0,'a');")	% ipPort));
+			return true;
+		}// else we already had this peer
+	}else std::cout << "Error saving Peer" << std::endl;
+	
+	return false;
 }
 
 bool ConnectionPool::peerAvailable(std::string& strIp, int& iPort)
@@ -247,7 +285,10 @@ bool ConnectionPool::peerConnected(Peer::pointer peer, const NewcoinAddress& na)
 	{
 		mConnectedMap[na]	= peer;
 		bSuccess			= true;
+
+		savePeer(peer->getIP(),peer->getPort());
 	}
+
 
 	return bSuccess;
 }

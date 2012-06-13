@@ -9,6 +9,8 @@ enum MessageType {
 // network presence detection
 	mtGET_CONTACTS=			10;
 	mtCONTACT=				11;
+	mtGET_PEERS=			12;
+	mtPEERS=				13;
 
 // operations for 'small' nodes
 	mtSEARCH_TRANSACTION=	20;
@@ -148,6 +150,19 @@ message TMContact {
 message TMGetContacts {
 	repeated bytes nodeIDs			=1; // specific nodes we want
 	optional uint32 nodeCount		=2; // get some random nodes
+}
+
+message TMGetPeers {
+	required uint32 doWeNeedThis	=1;  // yes since you are asserting that the packet size isn't 0 in PackedMessage
+}
+
+message TMIPv4EndPoint {
+	required uint32 ipv4				= 1;
+	required uint32 ipv4Port			= 2;
+}
+
+message TMPeers {
+	repeated TMIPv4EndPoint nodes		=1;
 }
 
 

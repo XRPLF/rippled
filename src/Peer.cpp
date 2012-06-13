@@ -155,7 +155,7 @@ void Peer::connect(const std::string strIp, int iPort)
 	}
 }
 
-// We have an ecrypted connection to the peer.
+// We have an encrypted connection to the peer.
 // Have it say who it is so we know to avoid redundant connections.
 // Establish that it really who we are talking to by having it sign a connection detail.
 // Also need to establish no man in the middle attack is in progress.
@@ -202,7 +202,7 @@ void Peer::connected(const boost::system::error_code& error)
 
 	mClientConnect	= false;
 
-	if (iPort == SYSTEM_PEER_PORT)
+	if (iPort == SYSTEM_PEER_PORT)		//TODO: Why are you doing this?
 		iPort	= -1;
 
 	if (error)
@@ -375,6 +375,22 @@ void Peer::processReadBuffer()
 				else std::cerr << "parse error: " << type << std::endl;
 			}
 			break;
+		case newcoin::mtGET_PEERS:
+			{
+				newcoin::TMGetPeers msg;
+				if(msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
+					recvGetPeers(msg);
+				else std::cerr << "parse error: " << type << std::endl;
+			}
+			break;
+		case newcoin::mtPEERS:
+			{
+				newcoin::TMPeers msg;
+				if(msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
+					recvPeers(msg);
+				else std::cerr << "parse error: " << type << std::endl;
+			}
+			break;
 
 		case newcoin::mtSEARCH_TRANSACTION:
 			{
@@ -537,7 +553,7 @@ void Peer::recvHello(newcoin::TMHello& packet)
 		else
 		{
 			// At this point we could add the inbound connection to our IP list.  However, the inbound IP address might be that of
-			// a NAT. It would be best to only add it if and only if we can immediatly verify it.
+			// a NAT. It would be best to only add it if and only if we can immediately verify it.
 			nothing();
 		}
 
@@ -564,6 +580,8 @@ void Peer::recvHello(newcoin::TMHello& packet)
 		mNodePublic.clear();
 		detach("recvh");
 	}
+
+	sendGetPeers();
 }
 
 void Peer::recvTransaction(newcoin::TMTransaction& packet)
@@ -663,6 +681,45 @@ void Peer::recvContact(newcoin::TMContact& packet)
 
 void Peer::recvGetContacts(newcoin::TMGetContacts& packet)
 {
+}
+
+// return a list of your favorite people
+void Peer::recvGetPeers(newcoin::TMGetPeers& packet)
+{
+	std::vector<std::string> addrs;
+	theApp->getConnectionPool().getTopNAddrs(30,addrs);
+	newcoin::TMPeers peers;
+
+	for(int n=0; n<addrs.size(); n++)
+	{
+		std::string strIP;
+		int port;
+		splitIpPort(addrs[n],strIP,port);
+		newcoin::TMIPv4EndPoint* addr=peers.add_nodes();
+		addr->set_ipv4(inet_addr(strIP.c_str()));
+		addr->set_ipv4port(port);
+
+		std::cout << "Teaching about: " << strIP << std::endl;
+	}
+
+
+	PackedMessage::pointer message = boost::make_shared<PackedMessage>(peers, newcoin::mtPEERS);
+	sendPacket(message);
+}
+void Peer::recvPeers(newcoin::TMPeers& packet)
+{
+	for(int i = 0; i < packet.nodes().size(); ++i)
+	{
+		in_addr addr;
+		addr.s_addr=packet.nodes(i).ipv4();
+		std::string strIP( inet_ntoa(addr));
+		int port=packet.nodes(i).ipv4port();
+
+		std::cout << "Learning about: " << strIP << std::endl;
+
+		theApp->getConnectionPool().savePeer(strIP,port);
+	}
+
 }
 
 void Peer::recvIndexedObject(newcoin::TMIndexedObject& packet)
@@ -957,6 +1014,16 @@ void Peer::sendHello()
 	PackedMessage::pointer packet = boost::make_shared<PackedMessage>(h, newcoin::mtHELLO);
 	sendPacket(packet);
 }
+
+void Peer::sendGetPeers()
+{
+	// get other peers this guy knows about
+	newcoin::TMGetPeers getPeers;
+	getPeers.set_doweneedthis(1);
+	PackedMessage::pointer packet = boost::make_shared<PackedMessage>(getPeers, newcoin::mtGET_PEERS);
+	sendPacket(packet);
+}
+
 
 void Peer::punishPeer(PeerPunish)
 {

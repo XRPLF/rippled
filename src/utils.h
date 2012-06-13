@@ -28,6 +28,11 @@ boost::posix_time::ptime ptEpoch();
 int iToSeconds(boost::posix_time::ptime ptWhen);
 boost::posix_time::ptime ptFromSeconds(int iSeconds);
 
+/*
+void intIPtoStr(int ip,std::string& retStr);
+int strIPtoInt(std::string& ipStr);
+*/
+
 template<class Iterator>
 std::string strJoin(Iterator first, Iterator last, std::string strSeperator)
 {

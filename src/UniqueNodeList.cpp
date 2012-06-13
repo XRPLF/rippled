@@ -186,7 +186,7 @@ void UniqueNodeList::scoreCompute()
 		{
 			if (db->getNull("PublicKey"))
 			{
-				nothing();	// We ignore entrys we don't have public keys for.
+				nothing();	// We ignore entries we don't have public keys for.
 			}
 			else
 			{
@@ -401,7 +401,7 @@ void UniqueNodeList::scoreCompute()
 		}
 	}
 
-	// For each validator, get each referal and add its score to ip's score.
+	// For each validator, get each referral and add its score to ip's score.
 	// map of pair<IP,Port> :: score
 	epScore	umScore;
 
@@ -1196,7 +1196,7 @@ void UniqueNodeList::setSeedDomains(const seedDomain& sdSource, bool bNext)
 
 // Add a trusted node.  Called by RPC or other source.
 // XXX allow update of comment.
-// XXX Broken should opperate on seeds.
+// XXX Broken should operate on seeds.
 void UniqueNodeList::nodeAddPublic(const NewcoinAddress& naNodePublic, const std::string& strComment)
 {
 	std::string strPublicKey	= naNodePublic.humanNodePublic();
@@ -1216,7 +1216,7 @@ void UniqueNodeList::nodeAddPublic(const NewcoinAddress& naNodePublic, const std
 	}
 }
 
-// XXX Broken should opperate on seeds.
+// XXX Broken should operate on seeds.
 void UniqueNodeList::nodeRemove(NewcoinAddress naNodePublic)
 {
 	std::string strPublicKey	= naNodePublic.humanNodePublic();
