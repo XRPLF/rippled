@@ -21,7 +21,7 @@ private:
 	    VER_FAMILY_SEED			= 33,
 	} VersionEncoding;
 
-	void seedInfo(NewcoinAddress* dstGenerator, BIGNUM** dstPrivateKey) const;
+//	void seedInfo(NewcoinAddress* dstGenerator, BIGNUM** dstPrivateKey) const;
 
 public:
 	NewcoinAddress();
@@ -113,7 +113,7 @@ public:
 	bool setAccountPrivate(const std::string& strPrivate);
 	void setAccountPrivate(const std::vector<unsigned char>& vPrivate);
 	void setAccountPrivate(uint256 hash256);
-	void setAccountPrivate(const NewcoinAddress& generator, const NewcoinAddress& seed, int seq);
+	void setAccountPrivate(const NewcoinAddress& naGenerator, const NewcoinAddress& naSeed, int seq);
 
 	bool accountPrivateSign(const uint256& uHash, std::vector<unsigned char>& vucSig) const;
 	// bool accountPrivateVerify(const uint256& uHash, const std::vector<unsigned char>& vucSig) const;
@@ -150,7 +150,7 @@ public:
 
 	bool setFamilyGenerator(const std::string& strGenerator);
 	void setFamilyGenerator(const std::vector<unsigned char>& vPublic);
-	void setFamilyGenerator(const NewcoinAddress& seed);
+	// void setFamilyGenerator(const NewcoinAddress& seed);
 
 	// Create generator for making public deterministic keys.
 	static NewcoinAddress createGeneratorPublic(const NewcoinAddress& naSeed);
@@ -159,7 +159,7 @@ public:
 	// Family Seeds
 	// Clients must disallow reconizable entries from being seeds.
 	uint128 getFamilySeed() const;
-	BIGNUM*	getFamilyPrivateKey() const;
+	// BIGNUM*	getFamilyPrivateKey() const;
 
 	std::string humanFamilySeed() const;
 	std::string humanFamilySeed1751() const;
@@ -169,6 +169,8 @@ public:
 	bool setFamilySeedGeneric(const std::string& strText);
 	void setFamilySeed(uint128 hash128);
 	void setFamilySeedRandom();
+
+	static NewcoinAddress createSeedRandom();
 };
 
 #endif

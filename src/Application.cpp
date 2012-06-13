@@ -103,11 +103,11 @@ void Application::run()
 
 	// New stuff.
 	NewcoinAddress	rootSeedMaster;
-	NewcoinAddress	rootGeneratorMaster;
 	NewcoinAddress	rootAddress;
 
 	rootSeedMaster.setFamilySeed(CKey::PassPhraseToKey("masterpassphrase"));
-	rootGeneratorMaster.setFamilyGenerator(rootSeedMaster);
+
+	NewcoinAddress	rootGeneratorMaster	= NewcoinAddress::createGeneratorPublic(rootSeedMaster);
 
 	rootAddress.setAccountPublic(rootGeneratorMaster, 0);
 
