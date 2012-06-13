@@ -18,15 +18,26 @@
 std::size_t hash_value(const SHAMapNode& mn)
 {
 	std::size_t seed = theApp->getNonceST();
+
 	boost::hash_combine(seed, mn.getDepth());
+
 	return mn.getNodeID().hash_combine(seed);
 }
 
 std::size_t hash_value(const uint256& u)
 {
 	std::size_t seed = theApp->getNonceST();
+
 	return u.hash_combine(seed);
 }
+
+std::size_t hash_value(const uint160& u)
+{
+	std::size_t seed = theApp->getNonceST();
+
+	return u.hash_combine(seed);
+}
+
 
 SHAMap::SHAMap(uint32 seq) : mSeq(seq), mState(Modifying)
 {
