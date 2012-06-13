@@ -55,6 +55,42 @@ void strUnHex(std::string& strDst, const std::string& strSrc)
 		strDst[i]	= (charUnHex(strSrc[i*2]) << 4) | charUnHex(strSrc[i*2+1]);
 }
 
+std::vector<unsigned char> strUnHex(const std::string& strSrc)
+{
+	std::string	strTmp;
+
+	strUnHex(strTmp, strSrc);
+
+	return strCopy(strTmp);
+}
+
+//
+// Misc string
+//
+
+std::vector<unsigned char> strCopy(const std::string& strSrc)
+{
+	std::vector<unsigned char> vucDst;
+
+	vucDst.resize(strSrc.size());
+
+	std::copy(strSrc.begin(), strSrc.end(), vucDst.begin());
+
+	return vucDst;
+}
+
+std::string strCopy(const std::vector<unsigned char>& vucSrc)
+{
+	std::string strDst;
+
+	strDst.resize(vucSrc.size());
+
+	std::copy(vucSrc.begin(), vucSrc.end(), strDst.begin());
+
+	return strDst;
+
+}
+
 //
 // DH support
 //
