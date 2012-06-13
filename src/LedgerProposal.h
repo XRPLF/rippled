@@ -5,17 +5,20 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include "uint256.h"
-#include "key.h"
+#include "NewcoinAddress.h"
 #include "Serializer.h"
 
 class LedgerProposal
 {
 protected:
 
-	uint256 mPeerID, mPreviousLedger, mCurrentHash;
+	uint256 mPreviousLedger, mCurrentHash;
 	uint32 mProposeSeq;
-	CKey::pointer mKey;
+
+	uint160			mPeerID;
+	NewcoinAddress	mPublicKey;		// Peer
+	NewcoinAddress	mPrivateKey;	// Our's
+	NewcoinAddress	mSeed;			// Our's
 
 	static const uint32 sProposeMagic = 0x50525000; // PRP
 
@@ -27,20 +30,22 @@ public:
 	LedgerProposal(const uint256& prevLgr, uint32 proposeSeq, const uint256& propose, const std::string& pubKey);
 
 	// our first proposal
-	LedgerProposal(CKey::pointer privateKey, const uint256& prevLedger, const uint256& position);
+	LedgerProposal(const NewcoinAddress& naSeed, const uint256& prevLedger, const uint256& position);
 
 	uint256 getSigningHash() const;
 	bool checkSign(const std::string& signature);
 
-	const uint256& getPeerID() const		{ return mPeerID; }
+	const uint160& getPeerID() const		{ return mPeerID; }
 	const uint256& getCurrentHash() const	{ return mCurrentHash; }
 	const uint256& getPrevLedger() const	{ return mPreviousLedger; }
 	uint32 getProposeSeq() const			{ return mProposeSeq; }
-	CKey::pointer peekKey()					{ return mKey; }
-	std::vector<unsigned char> getPubKey() const { return mKey->GetPubKey(); }
+	const NewcoinAddress& peekSeed() const	{ return mSeed; }
+	std::vector<unsigned char> getPubKey() const { return mPublicKey.getNodePublic(); }
 	std::vector<unsigned char> sign();
 
 	void changePosition(const uint256& newPosition);
 };
 
 #endif
+
+// vim:ts=4

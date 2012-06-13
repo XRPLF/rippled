@@ -2,6 +2,7 @@
 #define __VALIDATION__
 
 #include "SerializedObject.h"
+#include "NewcoinAddress.h"
 
 class SerializedValidation : public STObject
 {
@@ -19,7 +20,7 @@ public:
 	SerializedValidation(SerializerIterator& sit, bool checkSignature = true);
 	SerializedValidation(const Serializer& s, bool checkSignature = true);
 
-	SerializedValidation(const uint256& ledgerHash, CKey::pointer nodeKey, bool isFull);
+	SerializedValidation(const uint256& ledgerHash, const NewcoinAddress& naSeed, bool isFull);
 
 	uint256			getLedgerHash()		const;
 	NewcoinAddress  getSignerPublic()	const;

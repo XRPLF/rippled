@@ -118,10 +118,10 @@ bool TransactionAcquire::takeNodes(const std::list<SHAMapNode>& nodeIDs,
 	}
 }
 
-void LCTransaction::setVote(const uint256& peer, bool votesYes)
+void LCTransaction::setVote(const uint160& peer, bool votesYes)
 {
-	std::pair<boost::unordered_map<uint256, bool>::iterator, bool> res =
-		mVotes.insert(std::make_pair<uint256, bool>(peer, votesYes));
+	std::pair<boost::unordered_map<uint160, bool>::iterator, bool> res =
+		mVotes.insert(std::make_pair<uint160, bool>(peer, votesYes));
 
 	if (res.second)
 	{ // new vote
@@ -182,14 +182,13 @@ LedgerConsensus::LedgerConsensus(Ledger::pointer previousLedger, uint32 closeTim
 
 void LedgerConsensus::takeInitialPosition(Ledger::pointer initialLedger)
 {
-	CKey::pointer nodePrivKey = boost::make_shared<CKey>();
-	nodePrivKey->MakeNewKey(); // FIXME
+	// XXX Don't even start if no VALIDATION_SEED.
 
 	SHAMap::pointer initialSet = initialLedger->peekTransactionMap()->snapShot(false);
 	uint256 txSet = initialSet->getHash();
 	assert (initialLedger->getParentHash() == mPreviousLedger->getHash());
 
-	mOurPosition = boost::make_shared<LedgerProposal>(nodePrivKey, initialLedger->getParentHash(), txSet);
+	mOurPosition = boost::make_shared<LedgerProposal>(theConfig.VALIDATION_SEED, initialLedger->getParentHash(), txSet);
 	mapComplete(txSet, initialSet);
 	propose(std::vector<uint256>(), std::vector<uint256>());
 }
@@ -234,8 +233,8 @@ void LedgerConsensus::mapComplete(const uint256& hash, SHAMap::pointer map)
 	mComplete[map->getHash()] = map;
 
 	// Adjust tracking for each peer that takes this position
-	std::vector<uint256> peers;
-	for (boost::unordered_map<uint256, LedgerProposal::pointer>::iterator it = mPeerPositions.begin(),
+	std::vector<uint160> peers;
+	for (boost::unordered_map<uint160, LedgerProposal::pointer>::iterator it = mPeerPositions.begin(),
 		end = mPeerPositions.end(); it != end; ++it)
 	{
 		if (it->second->getCurrentHash() == map->getHash())
@@ -256,13 +255,13 @@ void LedgerConsensus::sendHaveTxSet(const uint256& hash, bool direct)
 	theApp->getConnectionPool().relayMessage(NULL, packet);
 }
 
-void LedgerConsensus::adjustCount(SHAMap::pointer map, const std::vector<uint256>& peers)
+void LedgerConsensus::adjustCount(SHAMap::pointer map, const std::vector<uint160>& peers)
 { // Adjust the counts on all disputed transactions based on the set of peers taking this position
 	for (boost::unordered_map<uint256, LCTransaction::pointer>::iterator it = mDisputes.begin(), end = mDisputes.end();
 		it != end; ++it)
 	{
 		bool setHas = map->hasItem(it->second->getTransactionID());
-		for(std::vector<uint256>::const_iterator pit = peers.begin(), pend = peers.end(); pit != pend; ++pit)
+		for(std::vector<uint160>::const_iterator pit = peers.begin(), pend = peers.end(); pit != pend; ++pit)
 			it->second->setVote(*pit, setHas);
 	}
 }
@@ -489,7 +488,7 @@ void LedgerConsensus::addDisputedTransaction(const uint256& txID, const std::vec
 	LCTransaction::pointer txn = boost::make_shared<LCTransaction>(txID, tx, ourPosition);
 	mDisputes[txID] = txn;
 
-	for (boost::unordered_map<uint256, LedgerProposal::pointer>::iterator pit = mPeerPositions.begin(),
+	for (boost::unordered_map<uint160, LedgerProposal::pointer>::iterator pit = mPeerPositions.begin(),
 			pend = mPeerPositions.end(); pit != pend; ++pit)
 	{
 		boost::unordered_map<uint256, SHAMap::pointer>::const_iterator cit =
@@ -719,7 +718,7 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 	}
 #endif
 
-	SerializedValidation v(newLCLHash, mOurPosition->peekKey(), true);
+	SerializedValidation v(newLCLHash, mOurPosition->peekSeed(), true);
 	std::vector<unsigned char> validation = v.getSigned();
 	newcoin::TMValidation val;
 	val.set_validation(&validation[0], validation.size());
@@ -732,3 +731,4 @@ void LedgerConsensus::endConsensus()
 {
 	theApp->getOPs().endConsensus();
 }
+// vim:ts=4

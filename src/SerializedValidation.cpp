@@ -18,22 +18,26 @@ SerializedValidation::SerializedValidation(SerializerIterator& sit, bool checkSi
 	if (!isValid()) throw std::runtime_error("Invalid validation");
 }
 
-SerializedValidation::SerializedValidation(const uint256& ledgerHash, CKey::pointer nodeKey, bool isFull)
+SerializedValidation::SerializedValidation(const uint256& ledgerHash, const NewcoinAddress& naSeed, bool isFull)
 	: STObject(sValidationFormat), mSignature("Signature")
 {
 	setValueFieldH256(sfLedgerHash, ledgerHash);
-	setValueFieldVL(sfSigningKey, nodeKey->GetPubKey());
+	setValueFieldVL(sfSigningKey, NewcoinAddress::createNodePublic(naSeed).getNodePublic());
 	if (!isFull) setFlag(sFullFlag);
 
-	if (!nodeKey->Sign(getSigningHash(), mSignature.peekValue()))
-		throw std::runtime_error("Unable to sign validation");
+	NewcoinAddress::createNodePrivate(naSeed).signNodePrivate(getSigningHash(), mSignature.peekValue());
+	// XXX Check if this can fail.
+	// if (!NewcoinAddress::createNodePrivate(naSeed).signNodePrivate(getSigningHash(), mSignature.peekValue()))
+	//	throw std::runtime_error("Unable to sign validation");
 }
 
 uint256 SerializedValidation::getSigningHash() const
 {
 	Serializer s;
+
 	s.add32(sValidationMagic);
 	add(s);
+
 	return s.getSHA512Half();
 }
 
@@ -46,9 +50,9 @@ bool SerializedValidation::isValid() const
 {
 	try
 	{
-		CKey pubKey;
-		return pubKey.SetPubKey(getValueFieldVL(sfSigningKey)) && 
-			pubKey.Verify(getSigningHash(), mSignature.peekValue());
+		NewcoinAddress	naPublicKey	= NewcoinAddress::createNodePublic(getValueFieldVL(sfSigningKey));
+
+		return naPublicKey.isValid() && naPublicKey.verifyNodePublic(getSigningHash(), mSignature.peekValue());
 	}
 	catch (...)
 	{
