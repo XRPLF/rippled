@@ -42,6 +42,8 @@ public:
 	bool verifyNodePublic(const uint256& hash, const std::vector<unsigned char>& vchSig) const;
 	bool verifyNodePublic(const uint256& hash, const std::string& strSig) const;
 
+	static NewcoinAddress createNodePublic(NewcoinAddress& naSeed);
+
 	//
 	// Node Private
 	//
@@ -55,6 +57,8 @@ public:
 	void setNodePrivate(uint256 hash256);
 	void signNodePrivate(const uint256& hash, std::vector<unsigned char>& vchSig) const;
 
+	static NewcoinAddress createNodePrivate(NewcoinAddress& naSeed);
+
 	//
 	// Accounts IDs
 	//
@@ -67,9 +71,8 @@ public:
 
 	static NewcoinAddress createAccountID(const uint160& uiAccountID);
 
-	static std::string createHumanAccountID(const std::vector<unsigned char>& vPrivate) {
-		return createAccountPrivate(vPrivate).humanAccountID();
-	}
+	static std::string createHumanAccountID(const std::vector<unsigned char>& vPrivate)
+	{ return createAccountPrivate(vPrivate).humanAccountID(); }
 
 	//
 	// Accounts Public
@@ -85,22 +88,25 @@ public:
 	bool accountPublicVerify(const uint256& uHash, const std::vector<unsigned char>& vucSig) const;
 
 	static NewcoinAddress createAccountPublic(const std::vector<unsigned char>& vPublic)
-		{
-			NewcoinAddress	naNew;
+	{
+		NewcoinAddress	naNew;
 
-			naNew.setAccountPublic(vPublic);
+		naNew.setAccountPublic(vPublic);
 
-			return naNew;
-		}
+		return naNew;
+	}
 
 	static std::string createHumanAccountPublic(const std::vector<unsigned char>& vPublic) {
 		return createAccountPublic(vPublic).humanAccountPublic();
 	}
 
+	// Create a deterministic public key from a public generator.
+	static NewcoinAddress createAccountPublic(const NewcoinAddress& naGenerator, int iSeq);
+
 	//
 	// Accounts Private
 	//
-	const std::vector<unsigned char>& getAccountPrivate() const;
+	uint256 getAccountPrivate() const;
 
 	std::string humanAccountPrivate() const;
 
@@ -110,7 +116,7 @@ public:
 	void setAccountPrivate(const NewcoinAddress& generator, const NewcoinAddress& seed, int seq);
 
 	bool accountPrivateSign(const uint256& uHash, std::vector<unsigned char>& vucSig) const;
-	bool accountPrivateVerify(const uint256& uHash, const std::vector<unsigned char>& vucSig) const;
+	// bool accountPrivateVerify(const uint256& uHash, const std::vector<unsigned char>& vucSig) const;
 
 	// Encrypt a message.
 	std::vector<unsigned char> accountPrivateEncrypt(const NewcoinAddress& naPublicTo, const std::vector<unsigned char>& vucPlainText) const;
@@ -118,14 +124,16 @@ public:
 	// Decrypt a message.
 	std::vector<unsigned char> accountPrivateDecrypt(const NewcoinAddress& naPublicFrom, const std::vector<unsigned char>& vucCipherText) const;
 
+	static NewcoinAddress createAccountPrivate(const NewcoinAddress& naGenerator, const NewcoinAddress& naSeed, int iSeq);
+
 	static NewcoinAddress createAccountPrivate(const std::vector<unsigned char>& vPrivate)
-		{
-			NewcoinAddress	naNew;
+	{
+		NewcoinAddress	naNew;
 
-			naNew.setAccountPrivate(vPrivate);
+		naNew.setAccountPrivate(vPrivate);
 
-			return naNew;
-		}
+		return naNew;
+	}
 
 	static std::string createHumanAccountPrivate(const std::vector<unsigned char>& vPrivate) {
 		return createAccountPrivate(vPrivate).humanAccountPrivate();
@@ -143,6 +151,9 @@ public:
 	bool setFamilyGenerator(const std::string& strGenerator);
 	void setFamilyGenerator(const std::vector<unsigned char>& vPublic);
 	void setFamilyGenerator(const NewcoinAddress& seed);
+
+	// Create generator for making public deterministic keys.
+	static NewcoinAddress createGeneratorPublic(const NewcoinAddress& naSeed);
 
 	//
 	// Family Seeds

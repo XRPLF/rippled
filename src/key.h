@@ -179,7 +179,7 @@ public:
 		EC_KEY_set_conv_form(pkey, POINT_CONVERSION_COMPRESSED);
 		fSet = true;
 	}
-
+#if 0
 	bool SetPrivKey(const CPrivKey& vchPrivKey)
 	{ // DEPRECATED
 		const unsigned char* pbegin = &vchPrivKey[0];
@@ -189,7 +189,8 @@ public:
 		fSet = true;
 		return true;
 	}
-
+#endif
+#if 1
 	bool SetSecret(const CSecret& vchSecret)
 	{ // DEPRECATED
 		EC_KEY_free(pkey);
@@ -207,7 +208,7 @@ public:
 		fSet = true;
 		return true;
 	}
-
+#endif
 	CSecret GetSecret()
 	{ // DEPRECATED
 		CSecret vchRet;
@@ -236,16 +237,23 @@ public:
 		BN_bn2bin(bn, privKey.begin() + (privKey.size() - BN_num_bytes(bn)));
 	}
 
-	void SetPrivateKeyU(const uint256& key)
+	bool SetPrivateKeyU(const uint256& key, bool bThrow=false)
 	{
-		BIGNUM* bn = BN_bin2bn(key.begin(), key.size(), NULL);
-		if (!EC_KEY_set_private_key(pkey, bn))
+		BIGNUM* bn			= BN_bin2bn(key.begin(), key.size(), NULL);
+		bool	bSuccess	= !!EC_KEY_set_private_key(pkey, bn);
+
+		BN_clear_free(bn);
+
+		if (bSuccess)
 		{
-			BN_clear_free(bn);
+			fSet = true;
+		}
+		else if (bThrow)
+		{
 			throw key_error("CKey::SetPrivateKeyU: EC_KEY_set_private_key failed");
 		}
-		fSet = true;
-		BN_clear_free(bn);
+
+		return bSuccess;
 	}
 
 	void SetPubSeq(const NewcoinAddress& masterKey, int keyNum)

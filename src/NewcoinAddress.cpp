@@ -36,7 +36,7 @@ bool NewcoinAddress::isValid() const
 			break;
 
 		case VER_ACCOUNT_PRIVATE:
-			bValid	= key.SetPrivKey(getAccountPrivate());
+			bValid	= key.SetPrivateKeyU(getAccountPrivate());
 			break;
 
 		default:
@@ -57,6 +57,17 @@ void NewcoinAddress::clear()
 //
 // NodePublic
 //
+
+NewcoinAddress NewcoinAddress::createNodePublic(NewcoinAddress& naSeed)
+{
+	CKey			ckSeed(naSeed.getFamilySeed());
+	NewcoinAddress	naNew;
+
+	// YYY Should there be a GetPubKey() equiv that returns a uint256?
+	naNew.setNodePublic(ckSeed.GetPubKey());
+
+	return naNew;
+}
 
 const std::vector<unsigned char>& NewcoinAddress::getNodePublic() const
 {
@@ -124,6 +135,19 @@ bool NewcoinAddress::verifyNodePublic(const uint256& hash, const std::string& st
 //
 // NodePrivate
 //
+
+NewcoinAddress NewcoinAddress::createNodePrivate(NewcoinAddress& naSeed)
+{
+	uint256			uPrivKey;
+	NewcoinAddress	naNew;
+	CKey			ckSeed(naSeed.getFamilySeed());
+
+	ckSeed.GetPrivateKeyU(uPrivKey);
+
+	naNew.setNodePrivate(uPrivKey);
+
+	return naNew;
+}
 
 const std::vector<unsigned char>& NewcoinAddress::getNodePrivateData() const
 {
@@ -251,6 +275,16 @@ void NewcoinAddress::setAccountID(const uint160& hash160)
 // AccountPublic
 //
 
+NewcoinAddress NewcoinAddress::createAccountPublic(const NewcoinAddress& naGenerator, int iSeq)
+{
+	CKey			ckPub(naGenerator, iSeq);
+	NewcoinAddress	naNew;
+
+	naNew.setAccountPublic(ckPub.GetPubKey());
+
+	return naNew;
+}
+
 const std::vector<unsigned char>& NewcoinAddress::getAccountPublic() const
 {
     switch (nVersion) {
@@ -335,14 +369,23 @@ NewcoinAddress NewcoinAddress::createAccountID(const uint160& uiAccountID)
 // AccountPrivate
 //
 
-const std::vector<unsigned char>& NewcoinAddress::getAccountPrivate() const
+NewcoinAddress NewcoinAddress::createAccountPrivate(const NewcoinAddress& naGenerator, const NewcoinAddress& naSeed, int iSeq)
+{
+	NewcoinAddress	naNew;
+
+	naNew.setAccountPrivate(naGenerator, naSeed, iSeq);
+
+	return naNew;
+}
+
+uint256 NewcoinAddress::getAccountPrivate() const
 {
     switch (nVersion) {
     case VER_NONE:
 		throw std::runtime_error("unset source");
 
     case VER_ACCOUNT_PRIVATE:
-		return vchData;
+		return uint256(vchData);
 
     default:
 		throw std::runtime_error(str(boost::format("bad source: %d") % int(nVersion)));
@@ -380,9 +423,12 @@ void NewcoinAddress::setAccountPrivate(uint256 hash256)
 
 void NewcoinAddress::setAccountPrivate(const NewcoinAddress& generator, const NewcoinAddress& seed, int seq)
 {
-	CKey	privkey	= CKey(generator, seed.getFamilyPrivateKey(), seq);
+	CKey	ckPrivkey	= CKey(generator, seed.getFamilyPrivateKey(), seq);
+	uint256	uPrivKey;
 
-	setAccountPrivate(privkey.GetPrivKey());
+	ckPrivkey.GetPrivateKeyU(uPrivKey);
+
+	setAccountPrivate(uPrivKey);
 }
 
 bool NewcoinAddress::accountPrivateSign(const uint256& uHash, std::vector<unsigned char>& vucSig) const
@@ -390,7 +436,7 @@ bool NewcoinAddress::accountPrivateSign(const uint256& uHash, std::vector<unsign
 	CKey		ckPrivate;
 	bool		bResult;
 
-	if (!ckPrivate.SetPrivKey(getAccountPrivate()))
+	if (!ckPrivate.SetPrivateKeyU(getAccountPrivate()))
 	{
 		// Bad private key.
 		std::cerr << "accountPrivateSign: Bad private key." << std::endl;
@@ -406,12 +452,13 @@ bool NewcoinAddress::accountPrivateSign(const uint256& uHash, std::vector<unsign
 	return bResult;
 }
 
+#if 0
 bool NewcoinAddress::accountPrivateVerify(const uint256& uHash, const std::vector<unsigned char>& vucSig) const
 {
 	CKey		ckPrivate;
 	bool		bVerified;
 
-	if (!ckPrivate.SetPrivKey(getAccountPrivate()))
+	if (!ckPrivate.SetPrivateKeyU(getAccountPrivate()))
 	{
 		// Bad private key.
 		std::cerr << "accountPrivateVerify: Bad private key." << std::endl;
@@ -424,6 +471,7 @@ bool NewcoinAddress::accountPrivateVerify(const uint256& uHash, const std::vecto
 
 	return bVerified;
 }
+#endif
 
 std::vector<unsigned char> NewcoinAddress::accountPrivateEncrypt(const NewcoinAddress& naPublicTo, const std::vector<unsigned char>& vucPlainText) const
 {
@@ -436,7 +484,7 @@ std::vector<unsigned char> NewcoinAddress::accountPrivateEncrypt(const NewcoinAd
 		// Bad public key.
 		std::cerr << "accountPrivateEncrypt: Bad public key." << std::endl;
 	}
-	else if (!ckPrivate.SetPrivKey(getAccountPrivate()))
+	else if (!ckPrivate.SetPrivateKeyU(getAccountPrivate()))
 	{
 		// Bad private key.
 		std::cerr << "accountPrivateEncrypt: Bad private key." << std::endl;
@@ -466,7 +514,7 @@ std::vector<unsigned char> NewcoinAddress::accountPrivateDecrypt(const NewcoinAd
 		// Bad public key.
 		std::cerr << "accountPrivateDecrypt: Bad public key." << std::endl;
 	}
-	else if (!ckPrivate.SetPrivKey(getAccountPrivate()))
+	else if (!ckPrivate.SetPrivateKeyU(getAccountPrivate()))
 	{
 		// Bad private key.
 		std::cerr << "accountPrivateDecrypt: Bad private key." << std::endl;
@@ -550,6 +598,16 @@ void NewcoinAddress::setFamilyGenerator(const std::vector<unsigned char>& vPubli
 void NewcoinAddress::setFamilyGenerator(const NewcoinAddress& seed)
 {
 	seed.seedInfo(this, 0);
+}
+
+NewcoinAddress NewcoinAddress::createGeneratorPublic(const NewcoinAddress& naSeed)
+{
+	CKey			ckSeed(naSeed.getFamilySeed());
+	NewcoinAddress	naNew;
+
+	naNew.setFamilyGenerator(ckSeed.GetPubKey());
+
+	return naNew;
 }
 
 //
@@ -702,7 +760,55 @@ BOOST_AUTO_TEST_SUITE(newcoin_address)
 
 BOOST_AUTO_TEST_CASE( my_test )
 {
-	// BOOST_CHECK( false );
+	NewcoinAddress	naSeed;
+
+	BOOST_CHECK(naSeed.setFamilySeedGeneric("masterpassphrase"));
+	BOOST_CHECK_MESSAGE(naSeed.humanFamilySeed() == "snoPBiXtMeMyMHUVTgbuqAfg1SUTb", naSeed.humanFamilySeed());
+
+	NewcoinAddress	naNodePublic	= NewcoinAddress::createNodePublic(naSeed);
+	NewcoinAddress	naNodePrivate	= NewcoinAddress::createNodePrivate(naSeed);
+
+	BOOST_CHECK_MESSAGE(naNodePublic.humanNodePublic() == "n94a1u4jAz288pZLtw6yFWVbr89YamrC6JBXPVUj5zmExe5fTVg9", naNodePublic.humanNodePublic());
+	BOOST_CHECK_MESSAGE(naNodePrivate.humanNodePrivate() == "pnen77YEeUd4fFKG7rycBWcwKpTaeFRkW2WFostaATy1DSupwXe", naNodePrivate.humanNodePrivate());
+
+	NewcoinAddress	naGenerator;
+
+	naGenerator.setFamilyGenerator(naSeed);
+
+	BOOST_CHECK_MESSAGE(naGenerator.humanFamilyGenerator() == "fhuJKihSDzV2SkjLn9qbwm5AaRmixDPfFsHDCP6yfDZWcxDFz4mt", naGenerator.humanFamilyGenerator());
+
+	NewcoinAddress	naAccountPublic0	= NewcoinAddress::createAccountPublic(naGenerator, 0);
+	NewcoinAddress	naAccountPrivate0	= NewcoinAddress::createAccountPrivate(naGenerator, naSeed, 0);
+
+	BOOST_CHECK_MESSAGE(naAccountPublic0.humanAccountID() == "iHb9CJAWyB4ij91VRWn96DkukG4bwdtyTh", naAccountPublic0.humanAccountID());
+	BOOST_CHECK_MESSAGE(naAccountPublic0.humanAccountPublic() == "aBQG8RQAzjs1eTKFEAQXi2gS4utcDrEC9wmr7pfUPTr27VCahwgw", naAccountPublic0.humanAccountPublic());
+	BOOST_CHECK_MESSAGE(naAccountPrivate0.humanAccountPrivate() == "p9JfM6HHr64m6mvB6v5k7G2b1cXzGmYrCNJf6GHPKvFTWdeRVjh", naAccountPrivate0.humanAccountPrivate());
+
+	NewcoinAddress	naAccountPublic1	= NewcoinAddress::createAccountPublic(naGenerator, 1);
+	NewcoinAddress	naAccountPrivate1	= NewcoinAddress::createAccountPrivate(naGenerator, naSeed, 1);
+
+	BOOST_CHECK_MESSAGE(naAccountPublic1.humanAccountID() == "i4bYF7SLUMD7QgSLLpgJx38WJSY12VrRjP", naAccountPublic1.humanAccountID());
+	BOOST_CHECK_MESSAGE(naAccountPublic1.humanAccountPublic() == "aBPXpTfuLy1Bhk3HnGTTAqnovpKWQ23NpFMNkAF6F1Atg5vDyPiw", naAccountPublic1.humanAccountPublic());
+	BOOST_CHECK_MESSAGE(naAccountPrivate1.humanAccountPrivate() == "p9JEm822LMizJrr1k7TvdphfENTp6G5ji253Xa5ikzUWVi8ogQt", naAccountPrivate1.humanAccountPrivate());
+
+	std::vector<unsigned char> vucTextSrc = strCopy("Hello, nurse!");
+	uint256	uHash	= Serializer::getSHA512Half(vucTextSrc);
+	std::vector<unsigned char> vucTextSig;
+
+	BOOST_CHECK_MESSAGE(naAccountPrivate0.accountPrivateSign(uHash, vucTextSig), "Signing failed.");
+	BOOST_CHECK_MESSAGE(naAccountPublic0.accountPublicVerify(uHash, vucTextSig), "Verify failed.");
+	BOOST_CHECK_MESSAGE(!naAccountPublic1.accountPublicVerify(uHash, vucTextSig), "Anti-verify failed.");
+
+	BOOST_CHECK_MESSAGE(naAccountPrivate1.accountPrivateSign(uHash, vucTextSig), "Signing failed.");
+	BOOST_CHECK_MESSAGE(naAccountPublic1.accountPublicVerify(uHash, vucTextSig), "Verify failed.");
+	BOOST_CHECK_MESSAGE(!naAccountPublic0.accountPublicVerify(uHash, vucTextSig), "Anti-verify failed.");
+
+	std::vector<unsigned char> vucTextCipher
+		= naAccountPrivate0.accountPrivateEncrypt(naAccountPublic1, vucTextSrc);
+	std::vector<unsigned char> vucTextRecovered
+		= naAccountPrivate1.accountPrivateDecrypt(naAccountPublic0, vucTextCipher);
+
+	BOOST_CHECK_MESSAGE(vucTextSrc == vucTextRecovered, "Encrypt-decrypt failed.");
 }
 
 BOOST_AUTO_TEST_SUITE_END()
