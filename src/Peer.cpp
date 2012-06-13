@@ -688,6 +688,7 @@ void Peer::recvGetContacts(newcoin::TMGetContacts& packet)
 
 // return a list of your favorite people
 // TODO: filter out all the LAN peers
+// TODO: filter out the peer you are talking to
 void Peer::recvGetPeers(newcoin::TMGetPeers& packet)
 {
 	std::vector<std::string> addrs;

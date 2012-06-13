@@ -54,7 +54,7 @@ int LedgerDBCount = sizeof(LedgerDBInit) / sizeof(const char *);
 
 // Wallet database holds local accounts and trusted nodes
 const char *WalletDBInit[] = {
-	// Node identity must be persisted for CAS routing and responsibilites.
+	// Node identity must be persisted for CAS routing and responsibilities.
 	"CREATE TABLE NodeIdentity (					\
 		PublicKey		CHARACTER(53),				\
 		PrivateKey		CHARACTER(52),				\
@@ -148,7 +148,8 @@ const char *WalletDBInit[] = {
 	"CREATE TABLE TrustedNodes (							\
 		PublicKey		CHARACTER(53) PRIMARY KEY NOT NULL,	\
 		Score			INTEGER DEFAULT 0 NOT NULL,			\
-		Seen			DATETIME							\
+		Seen			DATETIME,							\
+		Comment			TEXT								\
 	);",
 
 	// List of referrals.

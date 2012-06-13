@@ -1195,7 +1195,6 @@ void UniqueNodeList::setSeedDomains(const seedDomain& sdSource, bool bNext)
 }
 
 // Add a trusted node.  Called by RPC or other source.
-// XXX allow update of comment.
 // XXX Broken should operate on seeds.
 void UniqueNodeList::nodeAddPublic(const NewcoinAddress& naNodePublic, const std::string& strComment)
 {
@@ -1205,8 +1204,17 @@ void UniqueNodeList::nodeAddPublic(const NewcoinAddress& naNodePublic, const std
 		Database* db=theApp->getWalletDB()->getDB();
 		ScopedLock sl(theApp->getWalletDB()->getDBLock());
 
-		db->executeSQL(str(boost::format("INSERT INTO TrustedNodes (PublicKey,Comment) values (%s,%s);")
-			% db->escape(strPublicKey) % db->escape(strComment)));
+		if( db->executeSQL(str(boost::format("SELECT count(*) from TrustedNodes where PublicKey=%s;") % db->escape(strPublicKey))) &&
+			db->startIterRows() && db->getInt(0)==1 )
+		{	// exists. update the comment
+			db->executeSQL(str(boost::format("UPDATE TrustedNodes set Comment=%s where PublicKey=%s;") % db->escape(strComment)	% db->escape(strPublicKey) ));
+		}else
+		{	// new node
+			db->executeSQL(str(boost::format("INSERT INTO TrustedNodes (PublicKey,Comment) values (%s,%s);")
+				% db->escape(strPublicKey) % db->escape(strComment)));
+		}
+
+		
 	}
 
 	{

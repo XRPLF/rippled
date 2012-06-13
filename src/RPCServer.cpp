@@ -1466,7 +1466,7 @@ Json::Value RPCServer::doAccountTransactions(Json::Value& params)
 Json::Value RPCServer::doUnlAdd(Json::Value& params)
 {
 	std::string	strNode		= params[0u].asString();
-	std::string strComment	= (params.size() == 2) ? "" : params[1u].asString();
+	std::string strComment	= (params.size() == 2) ? params[1u].asString() : "";
 
 	NewcoinAddress	nodePublic;
 
@@ -1988,7 +1988,8 @@ Json::Value RPCServer::doUnlDefault(Json::Value& params) {
 }
 
 // unl_delete <public_key>
-Json::Value RPCServer::doUnlDelete(Json::Value& params) {
+Json::Value RPCServer::doUnlDelete(Json::Value& params) 
+{
 	std::string	strNodePublic = params[0u].asString();
 
 	NewcoinAddress	naNodePublic;
@@ -2005,8 +2006,11 @@ Json::Value RPCServer::doUnlDelete(Json::Value& params) {
 	}
 }
 
-Json::Value RPCServer::doUnlList(Json::Value& params) {
-	return theApp->getUNL().getUnlJson();
+Json::Value RPCServer::doUnlList(Json::Value& params) 
+{
+	Json::Value obj(Json::objectValue);
+	obj["unl"]=theApp->getUNL().getUnlJson();
+	return obj;
 }
 
 // unl_reset
