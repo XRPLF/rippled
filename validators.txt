@@ -14,9 +14,4 @@
 #
 
 [validators]
-redstem.com
-alpha.redstem.com
-bravo.redstem.com
-charlie.redstem.com
-delta.redstem.com
-echo.redstem.com
+n9LQC4xFSWXNv1SU1sKtjrW6TZpBZSwp1nRWej8saGs155x42YFZ

@@ -141,36 +141,37 @@ public:
 	}
 
 	//
-	// Family Generators
+	// Generators
 	// Use to generate a master or regular family.
 	//
-	BIGNUM* getFamilyGeneratorBN() const; // DEPRECATED
-	const std::vector<unsigned char>& getFamilyGenerator() const;
+	BIGNUM* getGeneratorBN() const; // DEPRECATED
+	const std::vector<unsigned char>& getGenerator() const;
 
-	std::string humanFamilyGenerator() const;
+	std::string humanGenerator() const;
 
-	bool setFamilyGenerator(const std::string& strGenerator);
-	void setFamilyGenerator(const std::vector<unsigned char>& vPublic);
-	// void setFamilyGenerator(const NewcoinAddress& seed);
+	bool setGenerator(const std::string& strGenerator);
+	void setGenerator(const std::vector<unsigned char>& vPublic);
+	// void setGenerator(const NewcoinAddress& seed);
 
 	// Create generator for making public deterministic keys.
 	static NewcoinAddress createGeneratorPublic(const NewcoinAddress& naSeed);
 
 	//
-	// Family Seeds
+	// Seeds
 	// Clients must disallow reconizable entries from being seeds.
-	uint128 getFamilySeed() const;
+	uint128 getSeed() const;
 
-	std::string humanFamilySeed() const;
-	std::string humanFamilySeed1751() const;
+	std::string humanSeed() const;
+	std::string humanSeed1751() const;
 
-	bool setFamilySeed(const std::string& strSeed);
-	int setFamilySeed1751(const std::string& strHuman1751);
-	bool setFamilySeedGeneric(const std::string& strText);
-	void setFamilySeed(uint128 hash128);
-	void setFamilySeedRandom();
+	bool setSeed(const std::string& strSeed);
+	int setSeed1751(const std::string& strHuman1751);
+	bool setSeedGeneric(const std::string& strText);
+	void setSeed(uint128 hash128);
+	void setSeedRandom();
 
 	static NewcoinAddress createSeedRandom();
+	static NewcoinAddress createSeedGeneric(const std::string& strText);
 };
 
 #endif

@@ -13,7 +13,7 @@
 #include "key.h"
 #include "utils.h"
 #include "TaggedCache.h"
-#include "boost/filesystem.hpp" 
+#include "boost/filesystem.hpp"
 
 Application* theApp = NULL;
 
@@ -102,17 +102,12 @@ void Application::run()
 	mConnectionPool.start();
 
 	// New stuff.
-	NewcoinAddress	rootSeedMaster;
-	NewcoinAddress	rootAddress;
-
-	rootSeedMaster.setFamilySeed(CKey::PassPhraseToKey("masterpassphrase"));
-
+	NewcoinAddress	rootSeedMaster		= NewcoinAddress::createSeedGeneric("masterpassphrase");
 	NewcoinAddress	rootGeneratorMaster	= NewcoinAddress::createGeneratorPublic(rootSeedMaster);
-
-	rootAddress.setAccountPublic(rootGeneratorMaster, 0);
+	NewcoinAddress	rootAddress			= NewcoinAddress::createAccountPublic(rootGeneratorMaster, 0);
 
 	// Print enough information to be able to claim root account.
-	std::cerr << "Root master seed: " << rootSeedMaster.humanFamilySeed() << std::endl;
+	std::cerr << "Root master seed: " << rootSeedMaster.humanSeed() << std::endl;
 	std::cerr << "Root account: " << rootAddress.humanAccountID() << std::endl;
 
 	Ledger::pointer firstLedger = boost::make_shared<Ledger>(rootAddress, SYSTEM_CURRENCY_START);
@@ -132,7 +127,6 @@ void Application::run()
 	// temporary
 	mIOService.run(); // This blocks
 
-	//BOOST_LOG_TRIVIAL(info) << "Done.";
 	std::cout << "Done." << std::endl;
 }
 

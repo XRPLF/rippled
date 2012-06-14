@@ -101,6 +101,7 @@ Json::Value RPCServer::RPCError(int iError)
 
 void RPCServer::connected()
 {
+
 	//BOOST_LOG_TRIVIAL(info) << "RPC request";
 	//std::cout << "RPC request" << std::endl;
 
@@ -263,7 +264,7 @@ Json::Value RPCServer::getMasterGenerator(const uint256& uLedger, const NewcoinA
 		return RPCError(rpcFAIL_GEN_DECRPYT);
 	}
 
-	naMasterGenerator.setFamilyGenerator(vucMasterGenerator);
+	naMasterGenerator.setGenerator(vucMasterGenerator);
 
 	return Json::Value(Json::objectValue);
 }
@@ -363,7 +364,7 @@ Json::Value RPCServer::accountFromString(const uint256& uLedger, NewcoinAddress&
 		bIndex	= false;
 	}
 	// Must be a seed.
-	else if (!naSeed.setFamilySeedGeneric(strIdent))
+	else if (!naSeed.setSeedGeneric(strIdent))
 	{
 		return RPCError(rpcBAD_SEED);
 	}
@@ -396,7 +397,7 @@ Json::Value RPCServer::accountFromString(const uint256& uLedger, NewcoinAddress&
 				RPCError(rpcNO_GEN_DECRPYT);
 			}
 
-			naGenerator.setFamilyGenerator(vucMasterGenerator);
+			naGenerator.setGenerator(vucMasterGenerator);
 		}
 
 		bIndex	= !iIndex;
@@ -414,7 +415,7 @@ Json::Value RPCServer::doAccountEmailSet(Json::Value &params)
 	NewcoinAddress	naSeed;
 	uint256			uLedger	= mNetOps->getCurrentLedger();
 
-	if (!naSeed.setFamilySeedGeneric(params[0u].asString()))
+	if (!naSeed.setSeedGeneric(params[0u].asString()))
 	{
 		return RPCError(rpcBAD_SEED);
 	}
@@ -618,7 +619,7 @@ Json::Value RPCServer::doAccountMessageSet(Json::Value& params) {
 	uint256			uLedger	= mNetOps->getCurrentLedger();
 	NewcoinAddress	naMessagePubKey;
 
-	if (!naSeed.setFamilySeedGeneric(params[0u].asString()))
+	if (!naSeed.setSeedGeneric(params[0u].asString()))
 	{
 		return RPCError(rpcBAD_SEED);
 	}
@@ -669,7 +670,7 @@ Json::Value RPCServer::doAccountWalletSet(Json::Value& params) {
 	NewcoinAddress	naSeed;
 	uint256			uLedger	= mNetOps->getCurrentLedger();
 
-	if (!naSeed.setFamilySeedGeneric(params[0u].asString()))
+	if (!naSeed.setSeedGeneric(params[0u].asString()))
 	{
 		return RPCError(rpcBAD_SEED);
 	}
@@ -754,7 +755,7 @@ Json::Value RPCServer::doCreditSet(Json::Value& params)
 	uint256			uLedger		= mNetOps->getCurrentLedger();
 	uint32			uAcceptRate	= params.size() >= 6 ? boost::lexical_cast<uint32>(params[5u].asString()) : 0;
 
-	if (!naSeed.setFamilySeedGeneric(params[0u].asString()))
+	if (!naSeed.setSeedGeneric(params[0u].asString()))
 	{
 		return RPCError(rpcBAD_SEED);
 	}
@@ -797,7 +798,7 @@ Json::Value RPCServer::doCreditSet(Json::Value& params)
 
 		obj["transaction"]		= trans->getSTransaction()->getJson(0);
 		obj["status"]			= trans->getStatus();
-		obj["seed"]				= naSeed.humanFamilySeed();
+		obj["seed"]				= naSeed.humanSeed();
 		obj["srcAccountID"]		= naSrcAccountID.humanAccountID();
 		obj["dstAccountID"]		= naDstAccountID.humanAccountID();
 		obj["limitAmount"]		= saLimitAmount.getText();
@@ -898,7 +899,7 @@ Json::Value RPCServer::doNicknameSet(Json::Value& params)
 	NewcoinAddress	naSeed;
 	uint256			uLedger		= mNetOps->getCurrentLedger();
 
-	if (!naSeed.setFamilySeedGeneric(params[0u].asString()))
+	if (!naSeed.setSeedGeneric(params[0u].asString()))
 	{
 		return RPCError(rpcBAD_SEED);
 	}
@@ -984,7 +985,7 @@ Json::Value RPCServer::doPasswordFund(Json::Value &params)
 	NewcoinAddress	naSeed;
 	uint256			uLedger		= mNetOps->getCurrentLedger();
 
-	if (!naSeed.setFamilySeedGeneric(params[0u].asString()))
+	if (!naSeed.setSeedGeneric(params[0u].asString()))
 	{
 		return RPCError(rpcBAD_SEED);
 	}
@@ -1033,12 +1034,12 @@ Json::Value RPCServer::doPasswordSet(Json::Value& params)
 	NewcoinAddress	naRegularSeed;
 	NewcoinAddress	naAccountID;
 
-	if (!naMasterSeed.setFamilySeedGeneric(params[0u].asString()))
+	if (!naMasterSeed.setSeedGeneric(params[0u].asString()))
 	{
 		// Should also not allow account id's as seeds.
 		return RPCError(rpcBAD_SEED);
 	}
-	else if (!naRegularSeed.setFamilySeedGeneric(params[1u].asString()))
+	else if (!naRegularSeed.setSeedGeneric(params[1u].asString()))
 	{
 		// Should also not allow account id's as seeds.
 		return RPCError(rpcBAD_SEED);
@@ -1066,7 +1067,7 @@ Json::Value RPCServer::doPasswordSet(Json::Value& params)
 
 		// Hash of regular account #0 public key.
 //		uint160						uGeneratorID		= naRegular0Public.getAccountID();
-		std::vector<unsigned char>	vucGeneratorCipher	= naRegular0Private.accountPrivateEncrypt(naRegular0Public, naMasterGenerator.getFamilyGenerator());
+		std::vector<unsigned char>	vucGeneratorCipher	= naRegular0Private.accountPrivateEncrypt(naRegular0Public, naMasterGenerator.getGenerator());
 		std::vector<unsigned char>	vucGeneratorSig;
 
 		// Prove that we have the corresponding private key to the generator id.  So, we can get the generator id.
@@ -1109,10 +1110,10 @@ Json::Value RPCServer::doPasswordSet(Json::Value& params)
 		Json::Value obj(Json::objectValue);
 
 		// We "echo" the seeds so they can be checked.
-		obj["master_seed"]		= naMasterSeed.humanFamilySeed();
-		obj["master_key"]		= naMasterSeed.humanFamilySeed1751();
-		obj["regular_seed"]		= naRegularSeed.humanFamilySeed();
-		obj["regular_key"]		= naRegularSeed.humanFamilySeed1751();
+		obj["master_seed"]		= naMasterSeed.humanSeed();
+		obj["master_key"]		= naMasterSeed.humanSeed1751();
+		obj["regular_seed"]		= naRegularSeed.humanSeed();
+		obj["regular_key"]		= naRegularSeed.humanSeed1751();
 
 		obj["transaction"]		= trns->getSTransaction()->getJson(0);
 		obj["status"]			= trns->getStatus();
@@ -1147,7 +1148,7 @@ Json::Value RPCServer::doSend(Json::Value& params)
 	if (params.size() >= 7)
 		sSrcCurrency	= params[6u].asString();
 
-	if (!naSeed.setFamilySeedGeneric(params[0u].asString()))
+	if (!naSeed.setSeedGeneric(params[0u].asString()))
 	{
 		return RPCError(rpcBAD_SEED);
 	}
@@ -1232,7 +1233,7 @@ Json::Value RPCServer::doSend(Json::Value& params)
 
 		obj["transaction"]		= trans->getSTransaction()->getJson(0);
 		obj["status"]			= trans->getStatus();
-		obj["seed"]				= naSeed.humanFamilySeed();
+		obj["seed"]				= naSeed.humanSeed();
 		obj["fee"]				= saFee.getText();
 		obj["create"]			= bCreate;
 		obj["srcAccountID"]		= naSrcAccountID.humanAccountID();
@@ -1268,7 +1269,7 @@ Json::Value RPCServer::doTransitSet(Json::Value& params)
 	if (params.size() >= 8)
 		sTransitExpire	= params[8u].asString();
 
-	if (!naSeed.setFamilySeedGeneric(params[0u].asString()))
+	if (!naSeed.setSeedGeneric(params[0u].asString()))
 	{
 		return RPCError(rpcBAD_SEED);
 	}
@@ -1307,7 +1308,7 @@ Json::Value RPCServer::doTransitSet(Json::Value& params)
 
 		obj["transaction"]		= trans->getSTransaction()->getJson(0);
 		obj["status"]			= trans->getStatus();
-		obj["seed"]				= naSeed.humanFamilySeed();
+		obj["seed"]				= naSeed.humanSeed();
 		obj["srcAccountID"]		= naSrcAccountID.humanAccountID();
 		obj["transitRate"]		= uTransitRate;
 		obj["transitStart"]		= uTransitStart;
@@ -1491,16 +1492,16 @@ Json::Value RPCServer::doValidationCreate(Json::Value& params) {
 	{
 		std::cerr << "Creating random validation seed." << std::endl;
 
-		naSeed.setFamilySeedRandom();					// Get a random seed.
+		naSeed.setSeedRandom();					// Get a random seed.
 	}
-	else if (!naSeed.setFamilySeedGeneric(params[0u].asString()))
+	else if (!naSeed.setSeedGeneric(params[0u].asString()))
 	{
 		return RPCError(rpcBAD_SEED);
 	}
 
 	obj["validation_public_key"]	= NewcoinAddress::createNodePublic(naSeed).humanNodePublic();
-	obj["validation_seed"]			= naSeed.humanFamilySeed();
-	obj["validation_key"]			= naSeed.humanFamilySeed1751();
+	obj["validation_seed"]			= naSeed.humanSeed();
+	obj["validation_key"]			= naSeed.humanSeed1751();
 
 	return obj;
 }
@@ -1518,15 +1519,15 @@ Json::Value RPCServer::doValidationSeed(Json::Value& params) {
 
 		theConfig.VALIDATION_SEED.clear();
 	}
-	else if (!theConfig.VALIDATION_SEED.setFamilySeedGeneric(params[0u].asString()))
+	else if (!theConfig.VALIDATION_SEED.setSeedGeneric(params[0u].asString()))
 	{
 		return RPCError(rpcBAD_SEED);
 	}
 	else
 	{
 		obj["validation_public_key"]	= NewcoinAddress::createNodePublic(theConfig.VALIDATION_SEED).humanNodePublic();
-		obj["validation_seed"]			= theConfig.VALIDATION_SEED.humanFamilySeed();
-		obj["validation_key"]			= theConfig.VALIDATION_SEED.humanFamilySeed1751();
+		obj["validation_seed"]			= theConfig.VALIDATION_SEED.humanSeed();
+		obj["validation_key"]			= theConfig.VALIDATION_SEED.humanSeed1751();
 	}
 
 	return obj;
@@ -1569,7 +1570,7 @@ Json::Value RPCServer::doWalletAccounts(Json::Value& params)
 	NewcoinAddress	naSeed;
 	uint256			uLedger		= mNetOps->getCurrentLedger();
 
-	if (!naSeed.setFamilySeedGeneric(params[0u].asString()))
+	if (!naSeed.setSeedGeneric(params[0u].asString()))
 	{
 		return RPCError(rpcBAD_SEED);
 	}
@@ -1612,7 +1613,7 @@ Json::Value RPCServer::doWalletAdd(Json::Value& params)
 	std::string		sDstCurrency;
 	uint256			uLedger		= mNetOps->getCurrentLedger();
 
-	if (!naRegularSeed.setFamilySeedGeneric(params[0u].asString()))
+	if (!naRegularSeed.setSeedGeneric(params[0u].asString()))
 	{
 		return RPCError(rpcBAD_SEED);
 	}
@@ -1620,7 +1621,7 @@ Json::Value RPCServer::doWalletAdd(Json::Value& params)
 	{
 		return RPCError(rpcSRC_ACT_MALFORMED);
 	}
-	else if (!naMasterSeed.setFamilySeedGeneric(params[2u].asString()))
+	else if (!naMasterSeed.setSeedGeneric(params[2u].asString()))
 	{
 		return RPCError(rpcBAD_SEED);
 	}
@@ -1713,12 +1714,12 @@ Json::Value RPCServer::doWalletClaim(Json::Value& params)
 	NewcoinAddress	naMasterSeed;
 	NewcoinAddress	naRegularSeed;
 
-	if (!naMasterSeed.setFamilySeedGeneric(params[0u].asString()))
+	if (!naMasterSeed.setSeedGeneric(params[0u].asString()))
 	{
 		// Should also not allow account id's as seeds.
 		return RPCError(rpcBAD_SEED);
 	}
-	else if (!naRegularSeed.setFamilySeedGeneric(params[1u].asString()))
+	else if (!naRegularSeed.setSeedGeneric(params[1u].asString()))
 	{
 		// Should also not allow account id's as seeds.
 		return RPCError(rpcBAD_SEED);
@@ -1753,7 +1754,7 @@ Json::Value RPCServer::doWalletClaim(Json::Value& params)
 
 		// Hash of regular account #0 public key.
 		uint160						uGeneratorID		= naRegular0Public.getAccountID();
-		std::vector<unsigned char>	vucGeneratorCipher	= naRegular0Private.accountPrivateEncrypt(naRegular0Public, naMasterGenerator.getFamilyGenerator());
+		std::vector<unsigned char>	vucGeneratorCipher	= naRegular0Private.accountPrivateEncrypt(naRegular0Public, naMasterGenerator.getGenerator());
 		std::vector<unsigned char>	vucGeneratorSig;
 
 		// Prove that we have the corresponding private key to the generator id.  So, we can get the generator id.
@@ -1772,10 +1773,10 @@ Json::Value RPCServer::doWalletClaim(Json::Value& params)
 		Json::Value obj(Json::objectValue);
 
 		// We "echo" the seeds so they can be checked.
-		obj["master_seed"]		= naMasterSeed.humanFamilySeed();
-		obj["master_key"]		= naMasterSeed.humanFamilySeed1751();
-		obj["regular_seed"]		= naRegularSeed.humanFamilySeed();
-		obj["regular_key"]		= naRegularSeed.humanFamilySeed1751();
+		obj["master_seed"]		= naMasterSeed.humanSeed();
+		obj["master_key"]		= naMasterSeed.humanSeed1751();
+		obj["regular_seed"]		= naRegularSeed.humanSeed();
+		obj["regular_key"]		= naRegularSeed.humanSeed1751();
 
 		obj["account_id"]		= naAccountPublic.humanAccountID();
 		obj["generator_id"]		= strHex(uGeneratorID);
@@ -1800,7 +1801,7 @@ Json::Value RPCServer::doWalletCreate(Json::Value& params)
 	NewcoinAddress	naSeed;
 	uint256			uLedger		= mNetOps->getCurrentLedger();
 
-	if (!naSeed.setFamilySeedGeneric(params[0u].asString()))
+	if (!naSeed.setSeedGeneric(params[0u].asString()))
 	{
 		return RPCError(rpcBAD_SEED);
 	}
@@ -1859,15 +1860,15 @@ Json::Value RPCServer::doWalletPropose(Json::Value& params)
 	NewcoinAddress	naSeed;
 	NewcoinAddress	naAccount;
 
-	naSeed.setFamilySeedRandom();
+	naSeed.setSeedRandom();
 
 	NewcoinAddress	naGenerator	= NewcoinAddress::createGeneratorPublic(naSeed);
 	naAccount.setAccountPublic(naGenerator, 0);
 
 	Json::Value obj(Json::objectValue);
 
-	obj["master_seed"]		= naSeed.humanFamilySeed();
-	obj["master_key"]		= naSeed.humanFamilySeed1751();
+	obj["master_seed"]		= naSeed.humanSeed();
+	obj["master_key"]		= naSeed.humanSeed1751();
 	obj["account_id"]		= naAccount.humanAccountID();
 
 	return obj;
@@ -1879,7 +1880,7 @@ Json::Value RPCServer::doWalletSeed(Json::Value& params)
 	NewcoinAddress	naSeed;
 
 	if (params.size()
-		&& !naSeed.setFamilySeedGeneric(params[0u].asString()))
+		&& !naSeed.setSeedGeneric(params[0u].asString()))
 	{
 		return RPCError(rpcBAD_SEED);
 	}
@@ -1889,7 +1890,7 @@ Json::Value RPCServer::doWalletSeed(Json::Value& params)
 
 		if (!params.size())
 		{
-			naSeed.setFamilySeedRandom();
+			naSeed.setSeedRandom();
 		}
 
 		NewcoinAddress	naGenerator	= NewcoinAddress::createGeneratorPublic(naSeed);
@@ -1898,8 +1899,8 @@ Json::Value RPCServer::doWalletSeed(Json::Value& params)
 
 		Json::Value obj(Json::objectValue);
 
-		obj["seed"]		= naSeed.humanFamilySeed();
-		obj["key"]		= naSeed.humanFamilySeed1751();
+		obj["seed"]		= naSeed.humanSeed();
+		obj["key"]		= naSeed.humanSeed1751();
 
 		return obj;
 	}

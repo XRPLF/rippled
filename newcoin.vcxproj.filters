@@ -25,9 +25,6 @@
     <Filter Include="html">
       <UniqueIdentifier>{77d2a621-b503-4ce4-aee8-ef0b337c4ee2}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\cryptopp">
-      <UniqueIdentifier>{c3412b4c-4150-48d7-a5f2-24bdb1a39c5b}</UniqueIdentifier>
-    </Filter>
     <Filter Include="tests">
       <UniqueIdentifier>{209ce0bd-b197-4cb2-ad50-f8f43bcd1e03}</UniqueIdentifier>
     </Filter>
@@ -42,12 +39,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="cryptopp\cpu.cpp">
-      <Filter>Source Files\cryptopp</Filter>
-    </ClCompile>
-    <ClCompile Include="cryptopp\sha.cpp">
-      <Filter>Source Files\cryptopp</Filter>
-    </ClCompile>
     <ClCompile Include="database\sqlite3.c">
       <Filter>Header Files\util</Filter>
     </ClCompile>
@@ -265,39 +256,6 @@
     </ClInclude>
     <ClInclude Include="TimingService.h">
       <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="cryptopp\config.h">
-      <Filter>Source Files\cryptopp</Filter>
-    </ClInclude>
-    <ClInclude Include="cryptopp\cpu.h">
-      <Filter>Source Files\cryptopp</Filter>
-    </ClInclude>
-    <ClInclude Include="cryptopp\cryptlib.h">
-      <Filter>Source Files\cryptopp</Filter>
-    </ClInclude>
-    <ClInclude Include="cryptopp\iterhash.h">
-      <Filter>Source Files\cryptopp</Filter>
-    </ClInclude>
-    <ClInclude Include="cryptopp\misc.h">
-      <Filter>Source Files\cryptopp</Filter>
-    </ClInclude>
-    <ClInclude Include="cryptopp\pch.h">
-      <Filter>Source Files\cryptopp</Filter>
-    </ClInclude>
-    <ClInclude Include="cryptopp\secblock.h">
-      <Filter>Source Files\cryptopp</Filter>
-    </ClInclude>
-    <ClInclude Include="cryptopp\sha.h">
-      <Filter>Source Files\cryptopp</Filter>
-    </ClInclude>
-    <ClInclude Include="cryptopp\simple.h">
-      <Filter>Source Files\cryptopp</Filter>
-    </ClInclude>
-    <ClInclude Include="cryptopp\smartptr.h">
-      <Filter>Source Files\cryptopp</Filter>
-    </ClInclude>
-    <ClInclude Include="cryptopp\stdcpp.h">
-      <Filter>Source Files\cryptopp</Filter>
     </ClInclude>
     <ClInclude Include="script.h">
       <Filter>Header Files</Filter>
