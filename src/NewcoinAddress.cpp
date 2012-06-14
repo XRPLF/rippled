@@ -445,8 +445,8 @@ void NewcoinAddress::setAccountPrivate(uint256 hash256)
 
 void NewcoinAddress::setAccountPrivate(const NewcoinAddress& naGenerator, const NewcoinAddress& naSeed, int seq)
 {
-	CKey	pubkey		= CKey(naSeed.getFamilySeed());
-	CKey	ckPrivkey	= CKey(naGenerator, pubkey.GetSecretBN(), seq);
+	CKey	ckPubkey	= CKey(naSeed.getFamilySeed());
+	CKey	ckPrivkey	= CKey(naGenerator, ckPubkey.GetSecretBN(), seq);
 	uint256	uPrivKey;
 
 	ckPrivkey.GetPrivateKeyU(uPrivKey);
@@ -773,7 +773,7 @@ NewcoinAddress NewcoinAddress::createSeedGeneric(const std::string& strText)
 
 BOOST_AUTO_TEST_SUITE(newcoin_address)
 
-BOOST_AUTO_TEST_CASE( my_test )
+BOOST_AUTO_TEST_CASE( check_crypto )
 {
 	// Construct a seed.
 	NewcoinAddress	naSeed;
@@ -836,4 +836,5 @@ BOOST_AUTO_TEST_CASE( my_test )
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
 // vim:ts=4
