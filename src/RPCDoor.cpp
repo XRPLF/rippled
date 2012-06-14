@@ -45,7 +45,7 @@ void RPCDoor::handleConnect(RPCServer::pointer new_connection,
 
 		new_connection->connected();
 	}
-	else cout << "Error: " << error;//BOOST_LOG_TRIVIAL(info) << "Error: " << error;
+	else cout << "Error: " << error;
 
 	startListening();
 }

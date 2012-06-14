@@ -127,7 +127,6 @@ void Application::run()
 	// temporary
 	mIOService.run(); // This blocks
 
-	//BOOST_LOG_TRIVIAL(info) << "Done.";
 	std::cout << "Done." << std::endl;
 }
 

@@ -221,7 +221,6 @@ void Peer::connected(const boost::system::error_code& error)
 		// Not redundant ip and port, add to connection list.
 
 		std::cerr << "Remote peer: accepted: " << strIp << " " << iPort << std::endl;
-		//BOOST_LOG_TRIVIAL(info) << "Connected to Peer.";
 
 		mIpPort		= make_pair(strIp, iPort);
 		assert(!mIpPort.first.empty());
@@ -293,7 +292,7 @@ void Peer::handle_read_header(const boost::system::error_code& error)
 	else
 	{
 		detach("hrh2");
-		std::cerr << "Peer::handle_read_header: Error: " << error << std::endl; //else BOOST_LOG_TRIVIAL(info) << "Error: " << error;
+		std::cerr << "Peer::handle_read_header: Error: " << error << std::endl;
 	}
 }
 
@@ -307,7 +306,7 @@ void Peer::handle_read_body(const boost::system::error_code& error)
 	else
 	{
 		detach("hrb");
-		std::cerr << "Peer::handle_read_body: Error: " << error << std::endl; //else BOOST_LOG_TRIVIAL(info) << "Error: " << error;
+		std::cerr << "Peer::handle_read_body: Error: " << error << std::endl;
 	}
 }
 
@@ -336,7 +335,7 @@ void Peer::processReadBuffer()
 				newcoin::TMHello msg;
 				if(msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvHello(msg);
-				else std::cerr << "parse error: " << type << std::endl; //else BOOST_LOG_TRIVIAL(info) << "Error: " << error;
+				else std::cerr << "parse error: " << type << std::endl;
 			}
 			break;
 
@@ -511,7 +510,7 @@ void Peer::processReadBuffer()
 			break;
 
 		default:
-			std::cerr << "Unknown Msg: " << type << std::endl; //else BOOST_LOG_TRIVIAL(info) << "Error: " << error;
+			std::cerr << "Unknown Msg: " << type << std::endl;
 		}
 	}
 }
