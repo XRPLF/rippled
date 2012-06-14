@@ -158,10 +158,4 @@ bool Wallet::dataStore(const std::string& strKey, const std::string& strValue)
 	return bSuccess;
 }
 
-bool Wallet::unitTest()
-{
-	// Create 100 keys for each of 1,000 families and ensure all keys match
-	return true;
-}
-
 // vim:ts=4

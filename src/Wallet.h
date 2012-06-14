@@ -54,8 +54,6 @@ public:
 	bool		dataDelete(const std::string& strKey);
 	bool		dataFetch(const std::string& strKey, std::string& strValue);
 	bool		dataStore(const std::string& strKey, const std::string& strValue);
-
-	static bool unitTest();
 };
 
 #endif
