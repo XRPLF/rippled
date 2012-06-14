@@ -107,7 +107,7 @@ void Application::run()
 	NewcoinAddress	rootAddress			= NewcoinAddress::createAccountPublic(rootGeneratorMaster, 0);
 
 	// Print enough information to be able to claim root account.
-	std::cerr << "Root master seed: " << rootSeedMaster.humanFamilySeed() << std::endl;
+	std::cerr << "Root master seed: " << rootSeedMaster.humanSeed() << std::endl;
 	std::cerr << "Root account: " << rootAddress.humanAccountID() << std::endl;
 
 	Ledger::pointer firstLedger = boost::make_shared<Ledger>(rootAddress, SYSTEM_CURRENCY_START);

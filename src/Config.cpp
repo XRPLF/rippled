@@ -180,7 +180,7 @@ void Config::load()
 				RPC_ALLOW_REMOTE = boost::lexical_cast<bool>(strTemp);
 
 			if (sectionSingleB(secConfig, SECTION_VALIDATION_SEED, strTemp))
-				VALIDATION_SEED.setFamilySeedGeneric(strTemp);
+				VALIDATION_SEED.setSeedGeneric(strTemp);
 
 			(void) sectionSingleB(secConfig, SECTION_PEER_SSL_CIPHER_LIST, PEER_SSL_CIPHER_LIST);
 			if (sectionSingleB(secConfig, SECTION_PEER_SCAN_INTERVAL_MIN, strTemp))

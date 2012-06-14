@@ -60,7 +60,7 @@ void NewcoinAddress::clear()
 
 NewcoinAddress NewcoinAddress::createNodePublic(const NewcoinAddress& naSeed)
 {
-	CKey			ckSeed(naSeed.getFamilySeed());
+	CKey			ckSeed(naSeed.getSeed());
 	NewcoinAddress	naNew;
 
 	// YYY Should there be a GetPubKey() equiv that returns a uint256?
@@ -163,7 +163,7 @@ NewcoinAddress NewcoinAddress::createNodePrivate(const NewcoinAddress& naSeed)
 {
 	uint256			uPrivKey;
 	NewcoinAddress	naNew;
-	CKey			ckSeed(naSeed.getFamilySeed());
+	CKey			ckSeed(naSeed.getSeed());
 
 	ckSeed.GetPrivateKeyU(uPrivKey);
 
@@ -445,7 +445,7 @@ void NewcoinAddress::setAccountPrivate(uint256 hash256)
 
 void NewcoinAddress::setAccountPrivate(const NewcoinAddress& naGenerator, const NewcoinAddress& naSeed, int seq)
 {
-	CKey	ckPubkey	= CKey(naSeed.getFamilySeed());
+	CKey	ckPubkey	= CKey(naSeed.getSeed());
 	CKey	ckPrivkey	= CKey(naGenerator, ckPubkey.GetSecretBN(), seq);
 	uint256	uPrivKey;
 
@@ -557,10 +557,10 @@ std::vector<unsigned char> NewcoinAddress::accountPrivateDecrypt(const NewcoinAd
 }
 
 //
-// Family Generators
+// Generators
 //
 
-BIGNUM* NewcoinAddress::getFamilyGeneratorBN() const
+BIGNUM* NewcoinAddress::getGeneratorBN() const
 { // returns the public generator
     switch (nVersion) {
     case VER_NONE:
@@ -579,7 +579,7 @@ BIGNUM* NewcoinAddress::getFamilyGeneratorBN() const
     return ret;
 }
 
-const std::vector<unsigned char>& NewcoinAddress::getFamilyGenerator() const
+const std::vector<unsigned char>& NewcoinAddress::getGenerator() const
 { // returns the public generator
     switch (nVersion) {
     case VER_NONE:
@@ -594,7 +594,7 @@ const std::vector<unsigned char>& NewcoinAddress::getFamilyGenerator() const
     }
 }
 
-std::string NewcoinAddress::humanFamilyGenerator() const
+std::string NewcoinAddress::humanGenerator() const
 {
     switch (nVersion) {
     case VER_NONE:
@@ -608,31 +608,31 @@ std::string NewcoinAddress::humanFamilyGenerator() const
     }
 }
 
-bool NewcoinAddress::setFamilyGenerator(const std::string& strGenerator)
+bool NewcoinAddress::setGenerator(const std::string& strGenerator)
 {
     return SetString(strGenerator.c_str(), VER_FAMILY_GENERATOR);
 }
 
-void NewcoinAddress::setFamilyGenerator(const std::vector<unsigned char>& vPublic)
+void NewcoinAddress::setGenerator(const std::vector<unsigned char>& vPublic)
 {
     SetData(VER_FAMILY_GENERATOR, vPublic);
 }
 
 NewcoinAddress NewcoinAddress::createGeneratorPublic(const NewcoinAddress& naSeed)
 {
-	CKey			ckSeed(naSeed.getFamilySeed());
+	CKey			ckSeed(naSeed.getSeed());
 	NewcoinAddress	naNew;
 
-	naNew.setFamilyGenerator(ckSeed.GetPubKey());
+	naNew.setGenerator(ckSeed.GetPubKey());
 
 	return naNew;
 }
 
 //
-// Family Seed
+// Seed
 //
 
-uint128 NewcoinAddress::getFamilySeed() const
+uint128 NewcoinAddress::getSeed() const
 {
     switch (nVersion) {
     case VER_NONE:
@@ -646,7 +646,7 @@ uint128 NewcoinAddress::getFamilySeed() const
     }
 }
 
-std::string NewcoinAddress::humanFamilySeed1751() const
+std::string NewcoinAddress::humanSeed1751() const
 {
     switch (nVersion) {
     case VER_NONE:
@@ -657,7 +657,7 @@ std::string NewcoinAddress::humanFamilySeed1751() const
 			std::string strHuman;
 			std::string strLittle;
 			std::string strBig;
-			uint128 uSeed	= getFamilySeed();
+			uint128 uSeed	= getSeed();
 
 			strLittle.assign(uSeed.begin(), uSeed.end());
 
@@ -673,7 +673,7 @@ std::string NewcoinAddress::humanFamilySeed1751() const
     }
 }
 
-std::string NewcoinAddress::humanFamilySeed() const
+std::string NewcoinAddress::humanSeed() const
 {
     switch (nVersion) {
     case VER_NONE:
@@ -687,7 +687,7 @@ std::string NewcoinAddress::humanFamilySeed() const
     }
 }
 
-int NewcoinAddress::setFamilySeed1751(const std::string& strHuman1751)
+int NewcoinAddress::setSeed1751(const std::string& strHuman1751)
 {
 	std::string strKey;
 	int			iResult	= eng2key(strKey, strHuman1751);
@@ -697,18 +697,18 @@ int NewcoinAddress::setFamilySeed1751(const std::string& strHuman1751)
 		std::vector<unsigned char>	vchLittle(strKey.rbegin(), strKey.rend());
 		uint128		uSeed(vchLittle);
 
-		setFamilySeed(uSeed);
+		setSeed(uSeed);
 	}
 
 	return iResult;
 }
 
-bool NewcoinAddress::setFamilySeed(const std::string& strSeed)
+bool NewcoinAddress::setSeed(const std::string& strSeed)
 {
     return SetString(strSeed.c_str(), VER_FAMILY_SEED);
 }
 
-bool NewcoinAddress::setFamilySeedGeneric(const std::string& strText)
+bool NewcoinAddress::setSeedGeneric(const std::string& strText)
 {
 	NewcoinAddress	naTemp;
 	bool			bResult	= true;
@@ -720,12 +720,12 @@ bool NewcoinAddress::setFamilySeedGeneric(const std::string& strText)
 	{
 		bResult	= false;
 	}
-	else if (setFamilySeed(strText))
+	else if (setSeed(strText))
 	{
 		// std::cerr << "Recognized seed." << std::endl;
 		nothing();
 	}
-	else if (1 == setFamilySeed1751(strText))
+	else if (1 == setSeed1751(strText))
 	{
 		// std::cerr << "Recognized 1751 seed." << std::endl;
 		nothing();
@@ -733,31 +733,31 @@ bool NewcoinAddress::setFamilySeedGeneric(const std::string& strText)
 	else
 	{
 		// std::cerr << "Creating seed from pass phrase." << std::endl;
-		setFamilySeed(CKey::PassPhraseToKey(strText));
+		setSeed(CKey::PassPhraseToKey(strText));
 	}
 
 	return bResult;
 }
 
-void NewcoinAddress::setFamilySeed(uint128 hash128) {
+void NewcoinAddress::setSeed(uint128 hash128) {
     SetData(VER_FAMILY_SEED, hash128.begin(), 16);
 }
 
-void NewcoinAddress::setFamilySeedRandom()
+void NewcoinAddress::setSeedRandom()
 {
 	// XXX Maybe we should call MakeNewKey
 	uint128 key;
 
 	RAND_bytes((unsigned char *) &key, sizeof(key));
 
-	NewcoinAddress::setFamilySeed(key);
+	NewcoinAddress::setSeed(key);
 }
 
 NewcoinAddress NewcoinAddress::createSeedRandom()
 {
 	NewcoinAddress	naNew;
 
-	naNew.setFamilySeedRandom();
+	naNew.setSeedRandom();
 
 	return naNew;
 }
@@ -766,7 +766,7 @@ NewcoinAddress NewcoinAddress::createSeedGeneric(const std::string& strText)
 {
 	NewcoinAddress	naNew;
 
-	naNew.setFamilySeedGeneric(strText);
+	naNew.setSeedGeneric(strText);
 
 	return naNew;
 }
@@ -778,8 +778,8 @@ BOOST_AUTO_TEST_CASE( check_crypto )
 	// Construct a seed.
 	NewcoinAddress	naSeed;
 
-	BOOST_CHECK(naSeed.setFamilySeedGeneric("masterpassphrase"));
-	BOOST_CHECK_MESSAGE(naSeed.humanFamilySeed() == "snoPBiXtMeMyMHUVTgbuqAfg1SUTb", naSeed.humanFamilySeed());
+	BOOST_CHECK(naSeed.setSeedGeneric("masterpassphrase"));
+	BOOST_CHECK_MESSAGE(naSeed.humanSeed() == "snoPBiXtMeMyMHUVTgbuqAfg1SUTb", naSeed.humanSeed());
 
 	// Create node public/private key pair
 	NewcoinAddress	naNodePublic	= NewcoinAddress::createNodePublic(naSeed);
@@ -799,7 +799,7 @@ BOOST_AUTO_TEST_CASE( check_crypto )
 	// Construct a public generator from the seed.
 	NewcoinAddress	naGenerator		= NewcoinAddress::createGeneratorPublic(naSeed);
 
-	BOOST_CHECK_MESSAGE(naGenerator.humanFamilyGenerator() == "fhuJKihSDzV2SkjLn9qbwm5AaRmixDPfFsHDCP6yfDZWcxDFz4mt", naGenerator.humanFamilyGenerator());
+	BOOST_CHECK_MESSAGE(naGenerator.humanGenerator() == "fhuJKihSDzV2SkjLn9qbwm5AaRmixDPfFsHDCP6yfDZWcxDFz4mt", naGenerator.humanGenerator());
 
 	// Create account #0 public/private key pair.
 	NewcoinAddress	naAccountPublic0	= NewcoinAddress::createAccountPublic(naGenerator, 0);

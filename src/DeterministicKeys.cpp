@@ -158,7 +158,7 @@ static BIGNUM* makeHash(const NewcoinAddress& pubGen, int seq, BIGNUM* order)
 	do
 	{
 		Serializer s((33*8+32+32)/8);
-		s.addRaw(pubGen.getFamilyGenerator());
+		s.addRaw(pubGen.getGenerator());
 		s.add32(seq);
 		s.add32(subSeq++);
 		uint256 root=s.getSHA512Half();
@@ -173,7 +173,7 @@ static BIGNUM* makeHash(const NewcoinAddress& pubGen, int seq, BIGNUM* order)
 // --> public generator
 EC_KEY* CKey::GeneratePublicDeterministicKey(const NewcoinAddress& pubGen, int seq)
 { // publicKey(n) = rootPublicKey EC_POINT_+ Hash(pubHash|seq)*point
-	EC_KEY*			rootKey		= CKey::GenerateRootPubKey(pubGen.getFamilyGeneratorBN());
+	EC_KEY*			rootKey		= CKey::GenerateRootPubKey(pubGen.getGeneratorBN());
 	const EC_POINT*	rootPubKey	= EC_KEY_get0_public_key(rootKey);
 	BN_CTX*			ctx			= BN_CTX_new();
 	EC_KEY*			pkey		= EC_KEY_new_by_curve_name(NID_secp256k1);
