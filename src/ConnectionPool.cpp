@@ -66,18 +66,22 @@ bool ConnectionPool::savePeer(const std::string& strIp, int iPort,char code)
 	Database* db = theApp->getWalletDB()->getDB();
 
 	std::string ipPort=db->escape(str(boost::format("%s %d") % strIp % iPort));
-	
+
 	ScopedLock	sl(theApp->getWalletDB()->getDBLock());
 	std::string sql=str(boost::format("SELECT count(*) FROM PeerIps WHERE IpPort=%s;") % ipPort);
-	if(db->executeSQL(sql) && db->startIterRows())
+	if (db->executeSQL(sql) && db->startIterRows())
 	{
-		if( db->getInt(0)==0)
+		if ( db->getInt(0)==0)
 		{
 			db->executeSQL(str(boost::format("INSERT INTO PeerIps (IpPort,Score,Source) values (%s,0,'%c');")	% ipPort % code));
 			return true;
 		}// else we already had this peer
-	}else std::cout << "Error saving Peer" << std::endl;
-	
+	}
+	else
+	{
+		std::cout << "Error saving Peer" << std::endl;
+	}
+
 	return false;
 }
 
@@ -86,15 +90,19 @@ bool ConnectionPool::peerAvailable(std::string& strIp, int& iPort)
 	Database*					db = theApp->getWalletDB()->getDB();
 	std::vector<std::string>	vstrIpPort;
 
-	vstrIpPort.reserve(mIpMap.size());
-
-	pipPeer		ipPeer;
-	BOOST_FOREACH(ipPeer, mIpMap)
 	{
-		std::string&	strIp	= ipPeer.first.first;
-		int				iPort	= ipPeer.first.second;
+		boost::mutex::scoped_lock	sl(mPeerLock);
+		pipPeer						ipPeer;
 
-		vstrIpPort.push_back(db->escape(str(boost::format("%s %d") % strIp % iPort)));
+		vstrIpPort.reserve(mIpMap.size());
+
+		BOOST_FOREACH(ipPeer, mIpMap)
+		{
+			std::string&	strIp	= ipPeer.first.first;
+			int				iPort	= ipPeer.first.second;
+
+			vstrIpPort.push_back(db->escape(str(boost::format("%s %d") % strIp % iPort)));
+		}
 	}
 
 	std::string strIpPort;
@@ -158,6 +166,8 @@ void ConnectionPool::policyEnforce()
 // XXX Broken: also don't send a message to a peer if we got it from the peer.
 void ConnectionPool::relayMessage(Peer* fromPeer, PackedMessage::pointer msg)
 {
+	boost::mutex::scoped_lock sl(mPeerLock);
+
 	BOOST_FOREACH(naPeer pair, mConnectedMap)
 	{
 		Peer::pointer peer	= pair.second;
@@ -244,6 +254,8 @@ Json::Value ConnectionPool::getPeersJson()
 {
     Json::Value ret(Json::arrayValue);
 
+	boost::mutex::scoped_lock sl(mPeerLock);
+
 	BOOST_FOREACH(naPeer pair, mConnectedMap)
 	{
 		Peer::pointer peer	= pair.second;
@@ -258,6 +270,9 @@ Json::Value ConnectionPool::getPeersJson()
 std::vector<Peer::pointer> ConnectionPool::getPeerVector()
 {
 	std::vector<Peer::pointer> ret;
+
+	boost::mutex::scoped_lock sl(mPeerLock);
+
 	ret.reserve(mConnectedMap.size());
 
 	BOOST_FOREACH(naPeer pair, mConnectedMap)
@@ -283,6 +298,8 @@ bool ConnectionPool::peerConnected(Peer::pointer peer, const NewcoinAddress& na)
 	}
 	else
 	{
+		boost::mutex::scoped_lock sl(mPeerLock);
+
 		mConnectedMap[na]	= peer;
 		bSuccess			= true;
 	}

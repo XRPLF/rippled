@@ -5,7 +5,6 @@
 #include <boost/foreach.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/ref.hpp>
-//#include <boost/log/trivial.hpp>
 
 #include "../json/writer.h"
 
