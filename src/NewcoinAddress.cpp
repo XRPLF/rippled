@@ -762,6 +762,15 @@ NewcoinAddress NewcoinAddress::createSeedRandom()
 	return naNew;
 }
 
+NewcoinAddress NewcoinAddress::createSeedGeneric(const std::string& strText)
+{
+	NewcoinAddress	naNew;
+
+	naNew.setFamilySeedGeneric(strText);
+
+	return naNew;
+}
+
 BOOST_AUTO_TEST_SUITE(newcoin_address)
 
 BOOST_AUTO_TEST_CASE( my_test )

@@ -171,6 +171,7 @@ public:
 	void setFamilySeedRandom();
 
 	static NewcoinAddress createSeedRandom();
+	static NewcoinAddress createSeedGeneric(const std::string& strText);
 };
 
 #endif
