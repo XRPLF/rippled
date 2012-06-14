@@ -2,7 +2,6 @@
 #include "Application.h"
 #include "Config.h"
 #include <boost/bind.hpp>
-//#include <boost/log/trivial.hpp>
 #include <iostream>
 
 using namespace std;

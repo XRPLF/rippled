@@ -5,7 +5,6 @@
 
 #include <boost/bind.hpp>
 #include <boost/mem_fn.hpp>
-//#include <boost/log/trivial.hpp>
 
 #include "Application.h"
 #include "Config.h"
