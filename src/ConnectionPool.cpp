@@ -13,7 +13,7 @@
 
 #define SQL_FOREACH(_db, _strQuery)		\
 	if ((_db)->executeSQL(_strQuery))	\
-	for (bool _bMore = (db)->startIterRows(); _bMore; _bMore = (_db)->getNextRow())
+	for (bool _bMore = (_db)->startIterRows(); _bMore; _bMore = (_db)->getNextRow())
 
 void splitIpPort(const std::string& strIpPort, std::string& strIp, int& iPort)
 {
