@@ -5,6 +5,10 @@
 #include <vector>
 #include "../src/types.h"
 
+#define SQL_FOREACH(_db, _strQuery)		\
+	if ((_db)->executeSQL(_strQuery))	\
+	for (bool _bMore = (_db)->startIterRows(); _bMore; _bMore = (_db)->getNextRow())
+
 /*
 	this maintains the connection to the database
 */
@@ -76,6 +80,6 @@ public:
 	// char* getSingleDBValueStr(const char* sql, std::string& retStr);
 };
 
-
 #endif
 
+// vim:ts=4
