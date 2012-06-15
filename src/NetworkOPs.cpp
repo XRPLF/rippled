@@ -535,10 +535,6 @@ void NetworkOPs::setMode(OperatingMode om)
 	mMode = om;
 }
 
-#define SQL_FOREACH(_db, _strQuery)		\
-	if ((_db)->executeSQL(_strQuery))	\
-		for (bool _bMore = (_db)->startIterRows(); _bMore; _bMore = (_db)->getNextRow())
-
 std::vector< std::pair<uint32, uint256> >
 	NetworkOPs::getAffectedAccounts(const NewcoinAddress& account, uint32 minLedger, uint32 maxLedger)
 {

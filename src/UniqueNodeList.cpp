@@ -29,10 +29,6 @@
 #define REFERRAL_VALIDATORS_MAX	50
 #define REFERRAL_IPS_MAX		50
 
-#define SQL_FOREACH(_db, _strQuery) \
-	if ((_db)->executeSQL(_strQuery))	\
-		for (bool _bMore = (_db)->startIterRows(); _bMore; _bMore = (_db)->getNextRow())
-
 UniqueNodeList::UniqueNodeList(boost::asio::io_service& io_service) :
 	mdtScoreTimer(io_service),
 	mFetchActive(0),
@@ -452,9 +448,10 @@ void UniqueNodeList::scoreCompute()
 			std::string	strIpPort	= str(boost::format("%s %d") % ipEndpoint.first % ipEndpoint.second);
 			score		iPoints		= ipScore.second;
 
-			vstrValues.push_back(str(boost::format("(%s,%d,'V')")
+			vstrValues.push_back(str(boost::format("(%s,%d,'%c')")
 				% db->escape(strIpPort)
-				% iPoints));
+				% iPoints
+				% vsValidator));
 		}
 
 		// Set scores for each IP.
