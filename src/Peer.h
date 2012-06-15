@@ -14,9 +14,9 @@
 
 enum PeerPunish
 {
-	PP_INVALID_REQUEST = 1,	// The peer sent a request that makes no sense
-	PP_UNKNOWN_REQUEST = 2,	// The peer sent a request that might be garbage
-	PP_UNWANTED_DATA = 3,		// The peer sent us data we didn't want/need
+	PP_INVALID_REQUEST	= 1,	// The peer sent a request that makes no sense
+	PP_UNKNOWN_REQUEST	= 2,	// The peer sent a request that might be garbage
+	PP_UNWANTED_DATA	= 3,	// The peer sent us data we didn't want/need
 };
 
 typedef std::pair<std::string,int> ipPort;
@@ -56,10 +56,7 @@ protected:
 
 	Peer(boost::asio::io_service& io_service, boost::asio::ssl::context& ctx);
 
-	
-
 	void handle_write(const boost::system::error_code& error, size_t bytes_transferred);
-	//void handle_read(const boost::system::error_code& error, size_t bytes_transferred);
 	void handle_read_header(const boost::system::error_code& error);
 	void handle_read_body(const boost::system::error_code& error);
 	void processReadBuffer();
