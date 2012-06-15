@@ -248,16 +248,12 @@ bool ConnectionPool::connectTo(const std::string& strIp, int iPort)
 
 Json::Value ConnectionPool::getPeersJson()
 {
-    Json::Value ret(Json::arrayValue);
+    Json::Value					ret(Json::arrayValue);
+	std::vector<Peer::pointer>	vppPeers	= getPeerVector();
 
-	boost::mutex::scoped_lock sl(mPeerLock);
-
-	BOOST_FOREACH(naPeer pair, mConnectedMap)
+	BOOST_FOREACH(Peer::pointer peer, vppPeers)
 	{
-		Peer::pointer peer	= pair.second;
-		if (!peer)
-			std::cerr << "CP::GPH null peer" << std::endl;
-		else ret.append(peer->getJson());
+		ret.append(peer->getJson());
     }
 
     return ret;
@@ -285,7 +281,9 @@ bool ConnectionPool::peerConnected(Peer::pointer peer, const NewcoinAddress& na)
 {
 	bool	bSuccess;
 
-	std::cerr << "ConnectionPool::peerConnected: " << na.humanNodePublic() << std::endl;
+	std::cerr << "ConnectionPool::peerConnected: " << na.humanNodePublic()
+		<< " " << peer->getIP() << " " << peer->getPort()
+		<< std::endl;
 	assert(!!peer);
 	if (na == theApp->getWallet().getNodePublic())
 	{
