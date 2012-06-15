@@ -82,6 +82,11 @@ inline std::string strHex(const uint64 uiHost)
 	return strHex((unsigned char*) &uBig, sizeof(uBig));
 }
 
+inline static std::string sqlEscape(const std::string& strSrc)
+{
+	return str(boost::format("X'%s'") % strHex(strSrc));
+}
+
 template<class Iterator>
 bool isZero(Iterator first, int iSize)
 {
