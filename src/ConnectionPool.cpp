@@ -81,26 +81,27 @@ bool ConnectionPool::savePeer(const std::string& strIp, int iPort,char code)
 	return false;
 }
 
+// <-- true, if a peer is available to connect to
 bool ConnectionPool::peerAvailable(std::string& strIp, int& iPort)
 {
 	Database*					db = theApp->getWalletDB()->getDB();
 	std::vector<std::string>	vstrIpPort;
 
+	// Convert mIpMap (list of open connections) to a vector of "<ip> <port>".
 	{
 		boost::mutex::scoped_lock	sl(mPeerLock);
-		pipPeer						ipPeer;
-
 		vstrIpPort.reserve(mIpMap.size());
 
-		BOOST_FOREACH(ipPeer, mIpMap)
+		BOOST_FOREACH(pipPeer ipPeer, mIpMap)
 		{
-			std::string&	strIp	= ipPeer.first.first;
-			int				iPort	= ipPeer.first.second;
+			const std::string&	strIp	= ipPeer.first.first;
+			int					iPort	= ipPeer.first.second;
 
 			vstrIpPort.push_back(db->escape(str(boost::format("%s %d") % strIp % iPort)));
 		}
 	}
 
+	// Get the first IpPort entry which is not in vector and which is not scheduled for scanning.
 	std::string strIpPort;
 
 	ScopedLock	sl(theApp->getWalletDB()->getDBLock());
