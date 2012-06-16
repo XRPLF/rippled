@@ -59,7 +59,7 @@ void printHelp(const po::options_description& desc)
 	cout << "     transit_set <seed> <paying_account> <transit_rate> <starts> <expires>" << endl;
 	cout << "     tx <id>" << endl;
 	cout << "     unl_add <domain>|<public> [<comment>]" << endl;
-	cout << "     unl_delete <public_key>" << endl;
+	cout << "     unl_delete <domain>|<public_key>" << endl;
 	cout << "     unl_list" << endl;
 	cout << "     unl_reset" << endl;
 	cout << "     validation_create [<seed>|<pass_phrase>|<key>]" << endl;
