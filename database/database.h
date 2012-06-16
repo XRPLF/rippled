@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include "../src/types.h"
+#include "../src/utils.h"
 
 #define SQL_FOREACH(_db, _strQuery)		\
 	if ((_db)->executeSQL(_strQuery))	\
@@ -58,12 +59,15 @@ public:
 	// get Data from the current row
 	bool getNull(const char* colName);
 	char* getStr(const char* colName,std::string& retStr);
+	std::string getStrBinary(const std::string& strColName);
 	int32 getInt(const char* colName);
 	float getFloat(const char* colName);
 	bool getBool(const char* colName);
+
 	// returns amount stored in buf
-	int getBinary(const char* colName,unsigned char* buf,int maxSize);
-	std::vector<unsigned char> getBinary(const char* colName);
+	int getBinary(const char* colName, unsigned char* buf, int maxSize);
+	std::vector<unsigned char> getBinary(const std::string& strColName);
+
 	uint64 getBigInt(const char* colName);
 
 	virtual bool getNull(int colIndex)=0;
