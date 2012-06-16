@@ -61,6 +61,8 @@ void printHelp(const po::options_description& desc)
 	cout << "     unl_add <domain>|<public> [<comment>]" << endl;
 	cout << "     unl_delete <domain>|<public_key>" << endl;
 	cout << "     unl_list" << endl;
+	cout << "     unl_load" << endl;
+	cout << "     unl_network" << endl;
 	cout << "     unl_reset" << endl;
 	cout << "     validation_create [<seed>|<pass_phrase>|<key>]" << endl;
 	cout << "     validation_seed [<seed>|<pass_phrase>|<key>]" << endl;

@@ -17,6 +17,13 @@
 #include <boost/mem_fn.hpp>
 #include <boost/regex.hpp>
 
+#include <fstream>
+#include <iostream>
+
+#define VALIDATORS_FETCH_SECONDS	30
+#define VALIDATORS_FILE_PATH		"/" VALIDATORS_FILE_NAME
+#define VALIDATORS_FILE_BYTES_MAX	(50 << 10)
+
 // Gather string constants.
 #define SECTION_CURRENCIES		"currencies"
 #define SECTION_DOMAIN			"domain"
@@ -1407,6 +1414,116 @@ Json::Value UniqueNodeList::getUnlJson()
 	}
 
 	return ret;
+}
+
+bool UniqueNodeList::nodeLoad()
+{
+	if (theConfig.UNL_DEFAULT.empty())
+	{
+		std::cerr << "UNL_DEFAULT not specified." << std::endl;
+
+		return false;
+	}
+
+	if (!boost::filesystem::exists(theConfig.UNL_DEFAULT))
+	{
+		std::cerr << str(boost::format("UNL_DEFAULT not found: '%s'") % theConfig.UNL_DEFAULT) << std::endl;
+
+		return false;
+	}
+
+	if (!boost::filesystem::is_regular_file(theConfig.UNL_DEFAULT))
+	{
+		std::cerr << str(boost::format("UNL_DEFAULT not regular file: '%s'") % theConfig.UNL_DEFAULT) << std::endl;
+
+		return false;
+	}
+
+	std::ifstream	ifsDefault(theConfig.UNL_DEFAULT.native().c_str(), std::ios::in);
+
+	if (!ifsDefault)
+	{
+		std::cerr << str(boost::format("Failed to open: '%s'") % theConfig.UNL_DEFAULT) << std::endl;
+
+		return false;
+	}
+
+	std::string		strValidators;
+
+	strValidators.assign((std::istreambuf_iterator<char>(ifsDefault)),
+		std::istreambuf_iterator<char>());
+
+	if (ifsDefault.bad())
+	{
+		std::cerr << str(boost::format("Failed to read: '%s'") % theConfig.UNL_DEFAULT) << std::endl;
+
+		return false;
+	}
+
+	nodeDefault(strValidators);
+
+	std::cerr << str(boost::format("Processing: '%s'") % theConfig.UNL_DEFAULT) << std::endl;
+
+	return true;
+}
+
+void UniqueNodeList::validatorsResponse(const boost::system::error_code& err, std::string strResponse)
+{
+	std::cerr << "Fetch '" VALIDATORS_FILE_NAME "' complete." << std::endl;
+
+	if (!err)
+	{
+		nodeDefault(strResponse);
+	}
+	else
+	{
+		std::cerr << "Error: " << err.message() << std::endl;
+	}
+}
+
+void UniqueNodeList::nodeNetwork()
+{
+	HttpsClient::httpsGet(
+		theApp->getIOService(),
+		VALIDATORS_SITE,
+		443,
+		VALIDATORS_FILE_PATH,
+		VALIDATORS_FILE_BYTES_MAX,
+		boost::posix_time::seconds(VALIDATORS_FETCH_SECONDS),
+		boost::bind(&UniqueNodeList::validatorsResponse, this, _1, _2));
+}
+
+void UniqueNodeList::nodeBootstrap()
+{
+	int		iDomains	= 0;
+	int		iNodes		= 0;
+
+	{
+		Database* db=theApp->getWalletDB()->getDB();
+
+		ScopedLock sl(theApp->getWalletDB()->getDBLock());
+
+		if (db->executeSQL("SELECT COUNT(*) AS Count FROM SeedDomains;") && db->startIterRows())
+			iDomains	= db->getInt("Count");
+
+		if (db->executeSQL("SELECT COUNT(*) AS Count FROM SeedNodes;") && db->startIterRows())
+			iNodes		= db->getInt("Count");
+	}
+
+	bool	bLoaded	= iDomains || iNodes;
+
+	if (!bLoaded && !theConfig.UNL_DEFAULT.empty())
+	{
+		std::cerr << "Bootstrapping UNL: loading from file." << std::endl;
+
+		bLoaded	= nodeLoad();
+	}
+
+	if (!bLoaded)
+	{
+		std::cerr << "Bootstrapping UNL: loading from " VALIDATORS_SITE "." << std::endl;
+		nodeNetwork();
+	}
 }
 
 // Process a validators.txt.

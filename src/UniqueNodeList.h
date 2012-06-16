@@ -131,6 +131,8 @@ private:
 	bool getSeedNodes(const NewcoinAddress& naNodePublic, seedNode& dstSeedNode);
 	void setSeedNodes(const seedNode& snSource, bool bNext);
 
+	void validatorsResponse(const boost::system::error_code& err, std::string strResponse);
+
 public:
 	UniqueNodeList(boost::asio::io_service& io_service);
 
@@ -147,6 +149,10 @@ public:
 	void nodeScore();
 
 	bool nodeInUNL(const NewcoinAddress& naNodePublic);
+
+	void nodeBootstrap();
+	bool nodeLoad();
+	void nodeNetwork();
 
 	Json::Value getUnlJson();
 };

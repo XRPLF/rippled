@@ -1,5 +1,4 @@
 
-#include <fstream>
 #include <iostream>
 
 #include <boost/bind.hpp>
@@ -24,14 +23,6 @@
 #include "AccountState.h"
 #include "NicknameState.h"
 #include "utils.h"
-
-#define VALIDATORS_FETCH_SECONDS	30
-#define VALIDATORS_FILE_PATH		"/" VALIDATORS_FILE_NAME
-#define VALIDATORS_FILE_BYTES_MAX	(50 << 10)
-
-/*
-Just read from wire until the entire request is in.
-*/
 
 RPCServer::RPCServer(boost::asio::io_service& io_service , NetworkOPs* nopNetwork)
 	: mNetOps(nopNetwork), mSocket(io_service)
@@ -1902,77 +1893,8 @@ Json::Value RPCServer::doWalletSeed(Json::Value& params)
 	}
 }
 
-void RPCServer::validatorsResponse(const boost::system::error_code& err, std::string strResponse)
-{
-	std::cerr << "Fetch '" VALIDATORS_FILE_NAME "' complete." << std::endl;
-
-	if (!err)
-	{
-		theApp->getUNL().nodeDefault(strResponse);
-	}
-	else
-	{
-		std::cerr << "Error: " << err.message() << std::endl;
-	}
-}
-
-// Populate the UNL from a validators.txt file.
-Json::Value RPCServer::doUnlDefault(Json::Value& params) {
-	if (!params.size() || (1==params.size() && !params[0u].compare("network")))
-	{
-		bool			bNetwork	= 1 == params.size();
-		std::string		strValidators;
-
-		if (!bNetwork)
-		{
-			std::ifstream	ifsDefault(VALIDATORS_FILE_NAME, std::ios::in);
-
-			if (!ifsDefault)
-			{
-				std::cerr << "Failed to open '" VALIDATORS_FILE_NAME "'." << std::endl;
-
-				bNetwork	= true;
-			}
-			else
-			{
-				strValidators.assign((std::istreambuf_iterator<char>(ifsDefault)),
-					std::istreambuf_iterator<char>());
-
-				if (ifsDefault.bad())
-				{
-					std::cerr << "Failed to read '" VALIDATORS_FILE_NAME "'." << std::endl;
-
-					bNetwork	= true;
-				}
-			}
-		}
-
-		if (bNetwork)
-		{
-			HttpsClient::httpsGet(
-				theApp->getIOService(),
-				VALIDATORS_SITE,
-				443,
-				VALIDATORS_FILE_PATH,
-				VALIDATORS_FILE_BYTES_MAX,
-				boost::posix_time::seconds(VALIDATORS_FETCH_SECONDS),
-				boost::bind(&RPCServer::validatorsResponse, this, _1, _2));
-
-			return "fetching " VALIDATORS_FILE_NAME;
-		}
-		else
-		{
-			theApp->getUNL().nodeDefault(strValidators);
-
-			return "processing " VALIDATORS_FILE_NAME;
-		}
-	}
-	else
-		return RPCError(rpcINVALID_PARAMS);
-}
-
 // unl_delete <domain>|<public_key>
-Json::Value RPCServer::doUnlDelete(Json::Value& params) 
+Json::Value RPCServer::doUnlDelete(Json::Value& params)
 {
 	std::string	strNode		= params[0u].asString();
 
@@ -1992,22 +1914,45 @@ Json::Value RPCServer::doUnlDelete(Json::Value& params)
 	}
 }
 
-Json::Value RPCServer::doUnlList(Json::Value& params) 
+Json::Value RPCServer::doUnlList(Json::Value& params)
 {
 	Json::Value obj(Json::objectValue);
+
 	obj["unl"]=theApp->getUNL().getUnlJson();
+
 	return obj;
 }
 
+// Populate the UNL from a local validators.txt file.
+Json::Value RPCServer::doUnlLoad(Json::Value& params)
+{
+	if (!theApp->getUNL().nodeLoad())
+	{
+		return RPCError(rpcLOAD_FAILED);
+	}
+
+	return "loading";
+}
+
+// Populate the UNL from newcoin.org's validators.txt file.
+Json::Value RPCServer::doUnlNetwork(Json::Value& params)
+{
+	theApp->getUNL().nodeNetwork();
+
+	return "fetching";
+}
+
 // unl_reset
-Json::Value RPCServer::doUnlReset(Json::Value& params) {
+Json::Value RPCServer::doUnlReset(Json::Value& params)
+{
 	theApp->getUNL().nodeReset();
 
 	return "removing nodes";
 }
 
 // unl_score
-Json::Value RPCServer::doUnlScore(Json::Value& params) {
+Json::Value RPCServer::doUnlScore(Json::Value& params)
+{
 	theApp->getUNL().nodeScore();
 
 	return "scoring requested";
@@ -2053,9 +1998,10 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 		{	"tx",					&RPCServer::doTx,					1, 1,  },
 
 		{	"unl_add",				&RPCServer::doUnlAdd,				1, 2,  },
-		{	"unl_default",			&RPCServer::doUnlDefault,			0, 1,  },
 		{	"unl_delete",			&RPCServer::doUnlDelete,			1, 1,  },
 		{	"unl_list",				&RPCServer::doUnlList,				0, 0,  },
+		{	"unl_load",				&RPCServer::doUnlLoad,				0, 0,  },
+		{	"unl_network",			&RPCServer::doUnlNetwork,			0, 0,  },
 		{	"unl_reset",			&RPCServer::doUnlReset,				0, 0,  },
 		{	"unl_score",			&RPCServer::doUnlScore,				0, 0,  },
 
