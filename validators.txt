@@ -9,8 +9,14 @@
 # All other lines should be domain names.
 #
 # [validators]:
-#   To acquire a UNL, newcoind will probe for https web servers at the domains
-#   listed below in the following order: newcoin.DOMAIN, www.DOMAIN, DOMAIN
+#   List of nodes to accept as validators speficied by public key or domain.
+#
+#   For domains, newcoind will probe for https web servers at the specied
+#   domain in the following order: newcoin.DOMAIN, www.DOMAIN, DOMAIN
+#
+#   Examples: redstem.com
+#             n9KorY8QtTdRx7TVDpwnG9NvyxsDwHUKUEeDLY3AkiGncVaSXZi5
+#             n9MqiExBcoG19UXwoLjBJnhsxEhAZMuWwJDRdkyDz1EkEkwzQTNt John Doe
 #
 
 [validators]
