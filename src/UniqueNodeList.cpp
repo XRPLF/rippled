@@ -1427,14 +1427,14 @@ bool UniqueNodeList::nodeLoad()
 
 	if (!boost::filesystem::exists(theConfig.UNL_DEFAULT))
 	{
-		std::cerr << str(boost::format("UNL_DEFAULT not found: '%s'") % theConfig.UNL_DEFAULT) << std::endl;
+		std::cerr << str(boost::format("UNL_DEFAULT not found: %s") % theConfig.UNL_DEFAULT) << std::endl;
 
 		return false;
 	}
 
 	if (!boost::filesystem::is_regular_file(theConfig.UNL_DEFAULT))
 	{
-		std::cerr << str(boost::format("UNL_DEFAULT not regular file: '%s'") % theConfig.UNL_DEFAULT) << std::endl;
+		std::cerr << str(boost::format("UNL_DEFAULT not regular file: %s") % theConfig.UNL_DEFAULT) << std::endl;
 
 		return false;
 	}
@@ -1443,7 +1443,7 @@ bool UniqueNodeList::nodeLoad()
 
 	if (!ifsDefault)
 	{
-		std::cerr << str(boost::format("Failed to open: '%s'") % theConfig.UNL_DEFAULT) << std::endl;
+		std::cerr << str(boost::format("Failed to open: %s") % theConfig.UNL_DEFAULT) << std::endl;
 
 		return false;
 	}
@@ -1455,14 +1455,14 @@ bool UniqueNodeList::nodeLoad()
 
 	if (ifsDefault.bad())
 	{
-		std::cerr << str(boost::format("Failed to read: '%s'") % theConfig.UNL_DEFAULT) << std::endl;
+		std::cerr << str(boost::format("Failed to read: %s") % theConfig.UNL_DEFAULT) << std::endl;
 
 		return false;
 	}
 
 	nodeDefault(strValidators);
 
-	std::cerr << str(boost::format("Processing: '%s'") % theConfig.UNL_DEFAULT) << std::endl;
+	std::cerr << str(boost::format("Processing: %s") % theConfig.UNL_DEFAULT) << std::endl;
 
 	return true;
 }
