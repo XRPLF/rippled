@@ -1503,10 +1503,10 @@ void UniqueNodeList::nodeBootstrap()
 
 		ScopedLock sl(theApp->getWalletDB()->getDBLock());
 
-		if (db->executeSQL("SELECT COUNT(*) AS Count FROM SeedDomains;") && db->startIterRows())
+		if (db->executeSQL(str(boost::format("SELECT COUNT(*) AS Count FROM SeedDomains WHERE Source='%s' OR Source='%c';") % vsManual % vsValidator)) && db->startIterRows())
 			iDomains	= db->getInt("Count");
 
-		if (db->executeSQL("SELECT COUNT(*) AS Count FROM SeedNodes;") && db->startIterRows())
+		if (db->executeSQL(str(boost::format("SELECT COUNT(*) AS Count FROM SeedNodes WHERE Source='%s' OR Source='%c';") % vsManual % vsValidator)) && db->startIterRows())
 			iNodes		= db->getInt("Count");
 	}
 

@@ -71,6 +71,11 @@ void Application::run()
 	mWallet.start();
 
 	//
+	// Set up UNL.
+	//
+	getUNL().nodeBootstrap();
+
+	//
 	// Allow peer connections.
 	//
 	if (!theConfig.PEER_IP.empty() && theConfig.PEER_PORT)
@@ -121,8 +126,6 @@ void Application::run()
 	// temporary
 
 	mNetOps.setStateTimer(0);
-
-	getUNL().nodeBootstrap();
 
 	mIOService.run(); // This blocks
 
