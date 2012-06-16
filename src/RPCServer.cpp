@@ -1460,11 +1460,11 @@ Json::Value RPCServer::doUnlAdd(Json::Value& params)
 	std::string	strNode		= params[0u].asString();
 	std::string strComment	= (params.size() == 2) ? params[1u].asString() : "";
 
-	NewcoinAddress	nodePublic;
+	NewcoinAddress	naNodePublic;
 
-	if (nodePublic.setNodePublic(strNode))
+	if (naNodePublic.setNodePublic(strNode))
 	{
-		theApp->getUNL().nodeAddPublic(nodePublic, strComment);
+		theApp->getUNL().nodeAddPublic(naNodePublic, UniqueNodeList::vsManual, strComment);
 
 		return "adding node by public key";
 	}
@@ -1474,8 +1474,6 @@ Json::Value RPCServer::doUnlAdd(Json::Value& params)
 
 		return "adding node by domain";
 	}
-
-	return "invalid params";
 }
 
 // validation_create [<pass_phrase>|<seed>|<seed_key>]
@@ -1973,22 +1971,24 @@ Json::Value RPCServer::doUnlDefault(Json::Value& params) {
 		return RPCError(rpcINVALID_PARAMS);
 }
 
-// unl_delete <public_key>
+// unl_delete <domain>|<public_key>
 Json::Value RPCServer::doUnlDelete(Json::Value& params) 
 {
-	std::string	strNodePublic = params[0u].asString();
+	std::string	strNode		= params[0u].asString();
 
 	NewcoinAddress	naNodePublic;
 
-	if (naNodePublic.setNodePublic(strNodePublic))
+	if (naNodePublic.setNodePublic(strNode))
 	{
-		theApp->getUNL().nodeRemove(naNodePublic);
+		theApp->getUNL().nodeRemovePublic(naNodePublic);
 
-		return "removing node";
+		return "removing node by public key";
 	}
 	else
 	{
-		return "invalid public key";
+		theApp->getUNL().nodeRemoveDomain(strNode);
+
+		return "removing node by domain";
 	}
 }
 

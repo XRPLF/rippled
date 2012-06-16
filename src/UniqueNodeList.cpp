@@ -9,6 +9,7 @@
 #include "UniqueNodeList.h"
 #include "utils.h"
 
+#include <boost/algorithm/string.hpp>
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
@@ -26,6 +27,7 @@
 #define SECTION_VALIDATORS_URL	"validators_url"
 
 // Limit pollution of database.
+// YYY Move to config file.
 #define REFERRAL_VALIDATORS_MAX	50
 #define REFERRAL_IPS_MAX		50
 
@@ -90,13 +92,10 @@ void UniqueNodeList::trustedLoad()
 
 	mUNL.clear();
 
+	// XXX Needs to limit by quanity and quality.
 	SQL_FOREACH(db, "SELECT PublicKey FROM TrustedNodes WHERE Score != 0;")
 	{
-		std::string	strPublicKey;
-
-		db->getStr("PublicKey", strPublicKey);
-
-		mUNL.insert(strPublicKey);
+		mUNL.insert(db->getStrBinary("PublicKey"));
 	}
 }
 
@@ -169,12 +168,14 @@ void UniqueNodeList::scoreCompute()
 {
 	strIndex				umPulicIdx;		// Map of public key to index.
 	strIndex				umDomainIdx;	// Map of domain to index.
-	std::vector<scoreNode>	vsnNodes;
+	std::vector<scoreNode>	vsnNodes;		// Index to scoring node.
 
 	Database*	db=theApp->getWalletDB()->getDB();
 
 	std::string strSql;
 
+	// For each entry in SeedDomains with a PublicKey:
+	// - Add an entry in umPulicIdx, umDomainIdx, and vsnNodes.
 	{
 		ScopedLock	sl(theApp->getWalletDB()->getDBLock());
 
@@ -186,13 +187,9 @@ void UniqueNodeList::scoreCompute()
 			}
 			else
 			{
-				std::string	strDomain;
-				std::string	strPublicKey;
-				std::string	strSource;
-
-				db->getStr("Domain", strDomain);
-				db->getStr("PublicKey", strPublicKey);
-				db->getStr("Source", strSource);
+				std::string	strDomain		= db->getStrBinary("Domain");
+				std::string	strPublicKey	= db->getStrBinary("PublicKey");
+				std::string	strSource		= db->getStrBinary("Source");
 
 				int			iNode		= vsnNodes.size();
 
@@ -212,6 +209,7 @@ void UniqueNodeList::scoreCompute()
 		}
 	}
 
+	// For debugging, print out initial scores.
 	BOOST_FOREACH(scoreNode& sn, vsnNodes)
 	{
 		std::cerr << str(boost::format("%s| %d, %d, %d")
@@ -227,6 +225,7 @@ void UniqueNodeList::scoreCompute()
 	// std::cerr << str(boost::format("vsnNodes.size=%d") % vsnNodes.size()) << std::endl;
 
 	// Step through growing list of nodes adding each validation list.
+	// - Each validator may have provided referals.  Add those referals as validators.
 	for (int iNode=0; iNode != vsnNodes.size(); iNode++)
 	{
 		scoreNode&			sn				= vsnNodes[iNode];
@@ -238,10 +237,8 @@ void UniqueNodeList::scoreCompute()
 		SQL_FOREACH(db, str(boost::format("SELECT Referral FROM ValidatorReferrals WHERE Validator=%s ORDER BY Entry;")
 					% db->escape(strValidator)))
 		{
-			std::string	strReferral;
+			std::string	strReferral	= db->getStrBinary("Referral");
 			int			iReferral;
-
-			db->getStr("Referral", strReferral);
 
 			strIndex::iterator	itEntry;
 
@@ -335,11 +332,7 @@ void UniqueNodeList::scoreCompute()
 		SQL_FOREACH(db, str(boost::format("SELECT PublicKey,Seen FROM TrustedNodes WHERE PublicKey IN (%s);")
 				% strJoin(vstrPublicKeys.begin(), vstrPublicKeys.end(), ",")))
 		{
-			std::string	strPublicKey;
-
-			db->getStr("PublicKey", strPublicKey);
-
-			vsnNodes[umPulicIdx[strPublicKey]].iSeen	= db->getNull("Seen") ? -1 : db->getInt("Seen");
+			vsnNodes[umPulicIdx[db->getStrBinary("PublicKey")]].iSeen	= db->getNull("Seen") ? -1 : db->getInt("Seen");
 		}
 	}
 
@@ -358,7 +351,7 @@ void UniqueNodeList::scoreCompute()
 			std::string	strSeen	= sn.iSeen >= 0 ? str(boost::format("%d") % sn.iSeen) : "NULL";
 
 			vstrValues[iNode]	= str(boost::format("(%s,%s,%s)")
-				% db->escape(sn.strValidator)
+				% sqlEscape(sn.strValidator)
 				% sn.iScore
 				% strSeen);
 
@@ -372,6 +365,7 @@ void UniqueNodeList::scoreCompute()
 	{
 		ScopedLock	sl(mUNLLock);
 
+		// XXX Should limit to scores above a certain minimum and limit to a certain number.
 		mUNL.swap(usUNL);
 	}
 
@@ -387,11 +381,7 @@ void UniqueNodeList::scoreCompute()
 		// For every IpReferral add a score for the IP and PORT.
 		SQL_FOREACH(db, "SELECT Validator,COUNT(*) AS Count FROM IpReferrals GROUP BY Validator;")
 		{
-			std::string	strValidator;
-
-			db->getStr("Validator", strValidator);
-
-			umValidators[strValidator]	= db->getInt("Count");
+			umValidators[db->getStrBinary("Validator")]	= db->getInt("Count");
 
 			// std::cerr << strValidator << ":" << db->getInt("Count") << std::endl;
 		}
@@ -418,13 +408,11 @@ void UniqueNodeList::scoreCompute()
 				% db->escape(strValidator)))
 			{
 				score		iPoints	= iBase * (iEntries - iEntry) / iEntries;
-				std::string	strIP;
 				int			iPort;
 
-				db->getStr("IP", strIP);
 				iPort		= db->getNull("Port") ? -1 : db->getInt("Port");
 
-				std::pair< std::string, int>	ep	= std::make_pair(strIP, iPort);
+				std::pair< std::string, int>	ep	= std::make_pair(db->getStrBinary("IP"), iPort);
 
 				epScore::iterator	itEp	= umScore.find(ep);
 
@@ -491,6 +479,7 @@ void UniqueNodeList::scoreTimerHandler(const boost::system::error_code& err)
 }
 
 // Start a timer to update scores.
+// <-- bNow: true, to force scoring for debugging.
 void UniqueNodeList::scoreNext(bool bNow)
 {
 	// std::cerr << str(boost::format("scoreNext: mtpFetchUpdated=%s mtpScoreStart=%s mtpScoreUpdated=%s mtpScoreNext=%s") % mtpFetchUpdated % mtpScoreStart % mtpScoreUpdated % mtpScoreNext)  << std::endl;
@@ -534,6 +523,7 @@ void UniqueNodeList::fetchFinish()
 	fetchNext();
 }
 
+// Called when we need to update scores.
 void UniqueNodeList::fetchDirty()
 {
 	// Note update.
@@ -633,9 +623,8 @@ void UniqueNodeList::processIps(const std::string& strSite, const NewcoinAddress
 // Persist ValidatorReferrals.
 void UniqueNodeList::processValidators(const std::string& strSite, const std::string& strValidatorsSrc, const NewcoinAddress& naNodePublic, section::mapped_type* pmtVecStrValidators)
 {
-	Database*	db=theApp->getWalletDB()->getDB();
-
-	std::string strEscNodePublic	= db->escape(naNodePublic.humanNodePublic());
+	Database*	db				= theApp->getWalletDB()->getDB();
+	std::string strNodePublic	= naNodePublic.humanNodePublic();
 
 	std::cerr
 		<< str(boost::format("Validator: '%s' : '%s' : processing %d validators.")
@@ -647,7 +636,8 @@ void UniqueNodeList::processValidators(const std::string& strSite, const std::st
 	// Remove all current Validator's entries in ValidatorReferrals
 	{
 		ScopedLock	sl(theApp->getWalletDB()->getDBLock());
-		db->executeSQL(str(boost::format("DELETE FROM ValidatorReferrals WHERE Validator=%s;") % strEscNodePublic));
+
+		db->executeSQL(str(boost::format("DELETE FROM ValidatorReferrals WHERE Validator='%s';") % strNodePublic));
 		// XXX Check result.
 	}
 
@@ -655,28 +645,53 @@ void UniqueNodeList::processValidators(const std::string& strSite, const std::st
 	if (pmtVecStrValidators && pmtVecStrValidators->size()) {
 		std::vector<std::string> vstrValues;
 
-		vstrValues.resize(MIN(pmtVecStrValidators->size(), REFERRAL_VALIDATORS_MAX));
+		vstrValues.reserve(MIN(pmtVecStrValidators->size(), REFERRAL_VALIDATORS_MAX));
 
-		int	i = 0;
+		int	iValues = 0;
 		BOOST_FOREACH(std::string strReferral, *pmtVecStrValidators)
 		{
-			if (i == REFERRAL_VALIDATORS_MAX)
+			if (iValues == REFERRAL_VALIDATORS_MAX)
 				break;
 
-			vstrValues[i]	= str(boost::format("(%s,%d,%s)") % strEscNodePublic % i % db->escape(strReferral));
-			i++;
+			boost::smatch	smMatch;
+			std::string		strIP;
 
-			NewcoinAddress	naValidator;
+			// domain comment?
+			// public_key comment?
+			static boost::regex	reReferral("\\`\\s*(\\S+)(?:\\s+(\\d+))?\\s*\\'");
 
-			if (naValidator.setNodePublic(strReferral))
+			if (!boost::regex_match(strReferral, smMatch, reReferral))
 			{
-				// A public key.
-				// XXX Schedule for CAS lookup.
+				std::cerr
+					<< str(boost::format("Validator: '%s' ["SECTION_VALIDATORS"]: rejecting '%s'")
+						% strSite % strReferral)
+					<< std::endl;
 			}
 			else
 			{
-				// A domain: need to look it up.
-				nodeAddDomain(strReferral, vsReferral);
+				std::string		strRefered	= smMatch[1];
+				std::string		strComment	= smMatch[2];
+				NewcoinAddress	naValidator;
+
+				if (naValidator.setNodePublic(strRefered))
+				{
+					// A public key.
+					// XXX Schedule for CAS lookup.
+					nodeAddPublic(naValidator, vsReferral, strComment);
+
+					vstrValues.push_back(str(boost::format("('%s',%d,'%s')") % strNodePublic % iValues % naValidator.humanNodePublic()));
+				}
+				else
+				{
+					// A domain: need to look it up.
+					boost::trim(strRefered);
+					boost::to_lower(strRefered);
+					nodeAddDomain(strRefered, vsReferral, strComment);
+
+					vstrValues.push_back(str(boost::format("('%s',%d,%s)") % strNodePublic % iValues % sqlEscape(strRefered)));
+				}
+
+				iValues++;
 			}
 		}
 
@@ -707,7 +722,7 @@ void UniqueNodeList::responseIps(const std::string& strSite, const NewcoinAddres
 
 // Process section [ips_url].
 // If we have a section with a single entry, fetch the url and process it.
-void UniqueNodeList::getIpsUrl(NewcoinAddress naNodePublic, section secSite)
+void UniqueNodeList::getIpsUrl(const NewcoinAddress& naNodePublic, section secSite)
 {
 	std::string	strIpsUrl;
 	std::string	strDomain;
@@ -733,7 +748,7 @@ void UniqueNodeList::getIpsUrl(NewcoinAddress naNodePublic, section secSite)
 }
 
 // Given a section with validators, parse and persist it.
-void UniqueNodeList::responseValidators(const std::string& strValidatorsUrl, NewcoinAddress naNodePublic, section secSite, const std::string& strSite, const boost::system::error_code& err, const std::string strValidatorsFile)
+void UniqueNodeList::responseValidators(const std::string& strValidatorsUrl, const NewcoinAddress& naNodePublic, section secSite, const std::string& strSite, const boost::system::error_code& err, const std::string strValidatorsFile)
 {
 	if (!err)
 	{
@@ -746,7 +761,7 @@ void UniqueNodeList::responseValidators(const std::string& strValidatorsUrl, New
 }
 
 // Process section [validators_url].
-void UniqueNodeList::getValidatorsUrl(NewcoinAddress naNodePublic, section secSite)
+void UniqueNodeList::getValidatorsUrl(const NewcoinAddress& naNodePublic, section secSite)
 {
 	std::string strValidatorsUrl;
 	std::string	strDomain;
@@ -772,7 +787,7 @@ void UniqueNodeList::getValidatorsUrl(NewcoinAddress naNodePublic, section secSi
 }
 
 // Process a newcoin.txt.
-void UniqueNodeList::processFile(const std::string strDomain, NewcoinAddress naNodePublic, section secSite)
+void UniqueNodeList::processFile(const std::string strDomain, const NewcoinAddress& naNodePublic, section secSite)
 {
 	//
 	// Process Validators
@@ -981,7 +996,7 @@ void UniqueNodeList::fetchNext()
 			tpNow	= boost::posix_time::second_clock::universal_time();
 
 			std::cerr << str(boost::format("fetchNext: iNext=%s tpNext=%s tpNow=%s") % iNext % tpNext % tpNow) << std::endl;
-			db->getStr("Domain", strDomain);
+			strDomain	= db->getStrBinary("Domain");
 
 			db->endIterRows();
 		}
@@ -1057,48 +1072,7 @@ int UniqueNodeList::iSourceScore(validatorSource vsWhy)
 	return iScore;
 }
 
-// Queue a domain for a single attempt fetch a newcoin.txt.
-// --> strComment: only used on vsManual
-// YYY As a lot of these may happen at once, would be nice to wrap multiple calls in a transaction.
-void UniqueNodeList::nodeAddDomain(const std::string& strDomain, validatorSource vsWhy, std::string strComment)
-{
-	// YYY Would be best to verify strDomain is a valid domain.
-	// std::cerr << str(boost::format("nodeAddDomain: '%s' %c '%s'")
-	//	% strDomain
-	//	% vsWhy
-	//	% strComment) << std::endl;
-
-	seedDomain	sdCurrent;
-
-	bool		bFound		= getSeedDomains(strDomain, sdCurrent);
-	bool		bChanged	= false;
-
-	if (!bFound)
-	{
-		sdCurrent.strDomain	= strDomain;
-		sdCurrent.tpNext	= boost::posix_time::second_clock::universal_time();
-	}
-
-	// Promote source, if needed.
-	if (!bFound || iSourceScore(vsWhy) >= iSourceScore(sdCurrent.vsSource))
-	{
-		sdCurrent.vsSource	= vsWhy;
-		bChanged			= true;
-	}
-
-	if (vsManual == vsWhy)
-	{
-		// A manual add forces immediate scan.
-		sdCurrent.tpNext		= boost::posix_time::second_clock::universal_time();
-		sdCurrent.strComment	= strComment;
-		bChanged				= true;
-	}
-
-	if (bChanged)
-		setSeedDomains(sdCurrent, true);
-}
-
-// Retrieve a SeedDomain for DB.
+// Retrieve a SeedDomain from DB.
 bool UniqueNodeList::getSeedDomains(const std::string& strDomain, seedDomain& dstSeedDomain)
 {
 	bool		bResult;
@@ -1113,13 +1087,12 @@ bool UniqueNodeList::getSeedDomains(const std::string& strDomain, seedDomain& ds
 	if (bResult)
 	{
 		std::string		strPublicKey;
-		std::string		strSource;
 		int				iNext;
 		int				iScan;
 		int				iFetch;
 		std::string		strSha256;
 
-		db->getStr("Domain", dstSeedDomain.strDomain);
+		dstSeedDomain.strDomain	= db->getStrBinary("Domain");
 
 		if (!db->getNull("PublicKey") && db->getStr("PublicKey", strPublicKey))
 		{
@@ -1130,14 +1103,16 @@ bool UniqueNodeList::getSeedDomains(const std::string& strDomain, seedDomain& ds
 			dstSeedDomain.naPublicKey.clear();
 		}
 
-		db->getStr("Source", strSource);
+		std::string		strSource	= db->getStrBinary("Source");
 			dstSeedDomain.vsSource	= static_cast<validatorSource>(strSource[0]);
+
 		iNext	= db->getInt("Next");
 			dstSeedDomain.tpNext	= ptFromSeconds(iNext);
 		iScan	= db->getInt("Scan");
 			dstSeedDomain.tpScan	= ptFromSeconds(iScan);
 		iFetch	= db->getInt("Fetch");
 			dstSeedDomain.tpFetch	= ptFromSeconds(iFetch);
+
 		if (!db->getNull("Sha256") && db->getStr("Sha256", strSha256))
 		{
 			dstSeedDomain.iSha256.SetHex(strSha256);
@@ -1146,7 +1121,7 @@ bool UniqueNodeList::getSeedDomains(const std::string& strDomain, seedDomain& ds
 		{
 			dstSeedDomain.iSha256.zero();
 		}
-		db->getStr("Comment", dstSeedDomain.strComment);
+		dstSeedDomain.strComment	= db->getStrBinary("Comment");
 
 		db->endIterRows();
 	}
@@ -1191,68 +1166,227 @@ void UniqueNodeList::setSeedDomains(const seedDomain& sdSource, bool bNext)
 	}
 }
 
-// Add a trusted node.  Called by RPC or other source.
-// XXX Broken should operate on seeds.
-void UniqueNodeList::nodeAddPublic(const NewcoinAddress& naNodePublic, const std::string& strComment)
+// Queue a domain for a single attempt fetch a newcoin.txt.
+// --> strComment: only used on vsManual
+// YYY As a lot of these may happen at once, would be nice to wrap multiple calls in a transaction.
+void UniqueNodeList::nodeAddDomain(std::string strDomain, validatorSource vsWhy, const std::string& strComment)
 {
-	std::string strPublicKey	= naNodePublic.humanNodePublic();
+	boost::trim(strDomain);
+	boost::to_lower(strDomain);
 
+	// YYY Would be best to verify strDomain is a valid domain.
+	// std::cerr << str(boost::format("nodeAddDomain: '%s' %c '%s'")
+	//	% strDomain
+	//	% vsWhy
+	//	% strComment) << std::endl;
+
+	seedDomain	sdCurrent;
+
+	bool		bFound		= getSeedDomains(strDomain, sdCurrent);
+	bool		bChanged	= false;
+
+	if (!bFound)
 	{
-		Database* db=theApp->getWalletDB()->getDB();
-		ScopedLock sl(theApp->getWalletDB()->getDBLock());
+		sdCurrent.strDomain	= strDomain;
+		sdCurrent.tpNext	= boost::posix_time::second_clock::universal_time();
+	}
 
-		if( db->executeSQL(str(boost::format("SELECT count(*) from TrustedNodes where PublicKey=%s;") % db->escape(strPublicKey))) &&
-			db->startIterRows() && db->getInt(0)==1 )
-		{	// exists. update the comment
-			db->executeSQL(str(boost::format("UPDATE TrustedNodes set Comment=%s where PublicKey=%s;") % db->escape(strComment)	% db->escape(strPublicKey) ));
-		}else
-		{	// new node
-			db->executeSQL(str(boost::format("INSERT INTO TrustedNodes (PublicKey,Comment) values (%s,%s);")
-				% db->escape(strPublicKey) % db->escape(strComment)));
+	// Promote source, if needed.
+	if (!bFound || iSourceScore(vsWhy) >= iSourceScore(sdCurrent.vsSource))
+	{
+		sdCurrent.vsSource	= vsWhy;
+		bChanged			= true;
+	}
+
+	if (vsManual == vsWhy)
+	{
+		// A manual add forces immediate scan.
+		sdCurrent.tpNext		= boost::posix_time::second_clock::universal_time();
+		sdCurrent.strComment	= strComment;
+		bChanged				= true;
+	}
+
+	if (bChanged)
+		setSeedDomains(sdCurrent, true);
+}
+
+// Retrieve a SeedNode from DB.
+bool UniqueNodeList::getSeedNodes(const NewcoinAddress& naNodePublic, seedNode& dstSeedNode)
+{
+	bool		bResult;
+	Database*	db=theApp->getWalletDB()->getDB();
+
+	std::string strSql	= str(boost::format("SELECT * FROM SeedNodes WHERE PublicKey='%s';")
+		% naNodePublic.humanNodePublic());
+
+	ScopedLock	sl(theApp->getWalletDB()->getDBLock());
+
+	bResult	= db->executeSQL(strSql) && db->startIterRows();
+	if (bResult)
+	{
+		std::string		strPublicKey;
+		std::string		strSource;
+		int				iNext;
+		int				iScan;
+		int				iFetch;
+		std::string		strSha256;
+
+		if (!db->getNull("PublicKey") && db->getStr("PublicKey", strPublicKey))
+		{
+			dstSeedNode.naPublicKey.setNodePublic(strPublicKey);
+		}
+		else
+		{
+			dstSeedNode.naPublicKey.clear();
 		}
 
-		
+		strSource	= db->getStrBinary("Source");
+			dstSeedNode.vsSource	= static_cast<validatorSource>(strSource[0]);
+
+		iNext	= db->getInt("Next");
+			dstSeedNode.tpNext	= ptFromSeconds(iNext);
+		iScan	= db->getInt("Scan");
+			dstSeedNode.tpScan	= ptFromSeconds(iScan);
+		iFetch	= db->getInt("Fetch");
+			dstSeedNode.tpFetch	= ptFromSeconds(iFetch);
+
+		if (!db->getNull("Sha256") && db->getStr("Sha256", strSha256))
+		{
+			dstSeedNode.iSha256.SetHex(strSha256);
+		}
+		else
+		{
+			dstSeedNode.iSha256.zero();
+		}
+		dstSeedNode.strComment	= db->getStrBinary("Comment");
+
+		db->endIterRows();
 	}
 
-	{
-		ScopedLock	slUNL(mUNLLock);
-
-		mUNL.insert(strPublicKey);
-	}
+	return bResult;
 }
 
-// XXX Broken should operate on seeds.
-void UniqueNodeList::nodeRemove(NewcoinAddress naNodePublic)
+// Persist a SeedNode.
+// <-- bNext: true, to do fetching if needed.
+void UniqueNodeList::setSeedNodes(const seedNode& snSource, bool bNext)
 {
-	std::string strPublicKey	= naNodePublic.humanNodePublic();
+	Database*	db=theApp->getWalletDB()->getDB();
+
+	int		iNext	= iToSeconds(snSource.tpNext);
+	int		iScan	= iToSeconds(snSource.tpScan);
+	int		iFetch	= iToSeconds(snSource.tpFetch);
+
+	// std::cerr << str(boost::format("setSeedNodes: iNext=%s tpNext=%s") % iNext % sdSource.tpNext) << std::endl;
+
+	assert(snSource.naPublicKey.isValid());
+
+	std::string strSql	= str(boost::format("REPLACE INTO SeedNodes (PublicKey,Source,Next,Scan,Fetch,Sha256,Comment) VALUES ('%s', '%c', %d, %d, %d, '%s', %s);")
+		% snSource.naPublicKey.humanNodePublic()
+		% static_cast<char>(snSource.vsSource)
+		% iNext
+		% iScan
+		% iFetch
+		% snSource.iSha256.GetHex()
+		% sqlEscape(snSource.strComment)
+		);
+
+	{
+		ScopedLock	sl(theApp->getWalletDB()->getDBLock());
+
+		if (!db->executeSQL(strSql))
+		{
+			// XXX Check result.
+			std::cerr << "setSeedNodes: failed." << std::endl;
+		}
+	}
+
+#if 0
+	// YYY When we have a cas schedule lookups similar to this.
+	if (bNext && (mtpFetchNext.is_not_a_date_time() || mtpFetchNext > snSource.tpNext))
+	{
+		// Schedule earlier wake up.
+		fetchNext();
+	}
+#else
+	fetchDirty();
+#endif
+}
+
+// Add a trusted node.  Called by RPC or other source.
+void UniqueNodeList::nodeAddPublic(const NewcoinAddress& naNodePublic, validatorSource vsWhy, const std::string& strComment)
+{
+	seedNode	snCurrent;
+
+	bool		bFound		= getSeedNodes(naNodePublic, snCurrent);
+	bool		bChanged	= false;
+
+	if (!bFound)
+	{
+		snCurrent.naPublicKey	= naNodePublic;
+		snCurrent.tpNext		= boost::posix_time::second_clock::universal_time();
+	}
+
+	// Promote source, if needed.
+	if (!bFound || iSourceScore(vsWhy) >= iSourceScore(snCurrent.vsSource))
+	{
+		snCurrent.vsSource	= vsWhy;
+		bChanged			= true;
+	}
+
+	if (vsManual == vsWhy)
+	{
+		// A manual add forces immediate scan.
+		snCurrent.tpNext		= boost::posix_time::second_clock::universal_time();
+		snCurrent.strComment	= strComment;
+		bChanged				= true;
+	}
+
+	if (bChanged)
+		setSeedNodes(snCurrent, true);
+}
+
+void UniqueNodeList::nodeRemovePublic(const NewcoinAddress& naNodePublic)
+{
+	{
+		Database* db=theApp->getWalletDB()->getDB();
+		ScopedLock sl(theApp->getWalletDB()->getDBLock());
+
+		db->executeSQL(str(boost::format("DELETE FROM SeedNodes WHERE PublicKey=%s") % naNodePublic.humanNodePublic()));
+	}
+
+	// YYY Only dirty on successful delete.
+	fetchDirty();
+}
+
+void UniqueNodeList::nodeRemoveDomain(std::string strDomain)
+{
+	boost::trim(strDomain);
+	boost::to_lower(strDomain);
 
 	{
 		Database* db=theApp->getWalletDB()->getDB();
 		ScopedLock sl(theApp->getWalletDB()->getDBLock());
 
-		db->executeSQL(str(boost::format("DELETE FROM TrustedNodes where PublicKey=%s") % db->escape(strPublicKey)));
+		db->executeSQL(str(boost::format("DELETE FROM SeedDomains WHERE Domain=%s") % sqlEscape(strDomain)));
 	}
-	{
-		ScopedLock	slUNL(mUNLLock);
 
-		mUNL.erase(strPublicKey);
-	}
+	// YYY Only dirty on successful delete.
+	fetchDirty();
 }
 
-// XXX Broken should operate on seeds.
 void UniqueNodeList::nodeReset()
 {
 	{
 		Database* db=theApp->getWalletDB()->getDB();
 
 		ScopedLock sl(theApp->getWalletDB()->getDBLock());
-		db->executeSQL("DELETE FROM TrustedNodes");
-	}
-	{
-		ScopedLock	slUNL(mUNLLock);
 
-		mUNL.clear();
+		// XXX Check results.
+		db->executeSQL("DELETE FROM SeedDomains");
+		db->executeSQL("DELETE FROM SeedNodes");
 	}
+
+	fetchDirty();
 }
 
 Json::Value UniqueNodeList::getUnlJson()
@@ -1264,16 +1398,10 @@ Json::Value UniqueNodeList::getUnlJson()
 	ScopedLock sl(theApp->getWalletDB()->getDBLock());
 	SQL_FOREACH(db, "SELECT * FROM TrustedNodes;")
 	{
-		std::string	strPublicKey;
-		std::string	strComment;
-
-		db->getStr("PublicKey", strPublicKey);
-		db->getStr("Comment", strComment);
-
 		Json::Value node(Json::objectValue);
 
-		node["publicKey"]	= strPublicKey;
-		node["comment"]		= strComment;
+		node["publicKey"]	= db->getStrBinary("PublicKey");
+		node["comment"]		= db->getStrBinary("Comment");
 
 		ret.append(node);
 	}
