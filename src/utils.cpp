@@ -95,10 +95,11 @@ std::string strCopy(const std::vector<unsigned char>& vucSrc)
 // DH support
 //
 
-void DH_der_gen(std::string& strDer, int iKeyLength)
+std::string DH_der_gen(int iKeyLength)
 {
-	DH*	dh	= 0;
-	int	iCodes;
+	DH*			dh	= 0;
+	int			iCodes;
+	std::string strDer;
 
 	do {
 		dh	= DH_generate_parameters(iKeyLength, DH_GENERATOR_5, NULL, NULL);
@@ -111,15 +112,8 @@ void DH_der_gen(std::string& strDer, int iKeyLength)
 	unsigned char* next	= reinterpret_cast<unsigned char *>(&strDer[0]);
 
 	(void) i2d_DHparams(dh, &next);
-}
 
-void DH_der_gen_hex(std::string& strDer, int iKeyLength)
-{
-	std::string	strBuf;
-
-	DH_der_gen(strBuf, iKeyLength);
-
-	strDer	= strHex(strBuf);
+	return strDer;
 }
 
 DH* DH_der_load(const std::string& strDer)
@@ -127,15 +121,6 @@ DH* DH_der_load(const std::string& strDer)
 	const unsigned char *pbuf	= reinterpret_cast<const unsigned char *>(&strDer[0]);
 
 	return d2i_DHparams(NULL, &pbuf, strDer.size());
-}
-
-DH* DH_der_load_hex(const std::string& strDer)
-{
-	std::string	strBuf;
-
-	strUnHex(strBuf, strDer);
-
-	return DH_der_load(strBuf);
 }
 
 /*
