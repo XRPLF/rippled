@@ -3,33 +3,36 @@
 #include "ParseSection.h"
 #include "utils.h"
 
-#include <iostream>
-#include <fstream>
 #include <boost/lexical_cast.hpp>
-
-// Fees are in XNS raw.
-#define	DEFAULT_FEE_ACCOUNT_CREATE		1000
-#define	DEFAULT_FEE_NICKNAME_CREATE		1000
-#define	DEFAULT_FEE_DEFAULT				100
+#include <fstream>
+#include <iostream>
 
 #define CONFIG_FILE_NAME				SYSTEM_NAME "d.cfg"	// newcoind.cfg
+
+#define SECTION_ACCOUNT_PROBE_MAX		"account_probe_max"
+#define SECTION_FEE_ACCOUNT_CREATE		"fee_account_create"
+#define SECTION_FEE_DEFAULT				"fee_default"
+#define SECTION_FEE_NICKNAME_CREATE		"fee_nickname_create"
+#define SECTION_NETWORK_QUORUM			"network_quorum"
+#define SECTION_PEER_CONNECT_LOW_WATER	"peer_connect_low_water"
 #define SECTION_PEER_IP					"peer_ip"
 #define SECTION_PEER_PORT				"peer_port"
+#define SECTION_PEER_SCAN_INTERVAL_MIN	"peer_scan_interval_min"
+#define SECTION_PEER_SSL_CIPHER_LIST	"peer_ssl_cipher_list"
+#define SECTION_PEER_START_MAX			"peer_start_max"
+#define SECTION_RPC_ALLOW_REMOTE		"rpc_allow_remote"
 #define SECTION_RPC_IP					"rpc_ip"
 #define SECTION_RPC_PORT				"rpc_port"
-#define SECTION_RPC_ALLOW_REMOTE		"rpc_allow_remote"
-#define SECTION_VALIDATION_SEED			"validation_seed"
-#define SECTION_PEER_SSL_CIPHER_LIST	"peer_ssl_cipher_list"
-#define SECTION_PEER_SCAN_INTERVAL_MIN	"peer_scan_interval_min"
-#define SECTION_PEER_START_MAX			"peer_start_max"
-#define	SECTION_PEER_CONNECT_LOW_WATER	"peer_connect_low_water"
-#define SECTION_NETWORK_QUORUM			"network_quorum"
-#define SECTION_VALIDATION_QUORUM		"validation_quorum"
-#define SECTION_FEE_ACCOUNT_CREATE		"fee_account_create"
-#define SECTION_FEE_NICKNAME_CREATE		"fee_nickname_create"
-#define SECTION_FEE_DEFAULT				"fee_default"
-#define SECTION_ACCOUNT_PROBE_MAX		"account_probe_max"
 #define SECTION_UNL_DEFAULT				"unl_default"
+#define SECTION_VALIDATION_QUORUM		"validation_quorum"
+#define SECTION_VALIDATION_SEED			"validation_seed"
+#define SECTION_WEBSOCKET_IP			"websocket_ip"
+#define SECTION_WEBSOCKET_PORT			"websocket_port"
+
+// Fees are in XNB.
+#define DEFAULT_FEE_ACCOUNT_CREATE		1000
+#define DEFAULT_FEE_NICKNAME_CREATE		1000
+#define DEFAULT_FEE_DEFAULT				100
 
 Config theConfig;
 
@@ -179,6 +182,11 @@ void Config::load()
 
 			if (sectionSingleB(secConfig, SECTION_RPC_ALLOW_REMOTE, strTemp))
 				RPC_ALLOW_REMOTE	= boost::lexical_cast<bool>(strTemp);
+
+			(void) sectionSingleB(secConfig, SECTION_WEBSOCKET_IP, WEBSOCKET_IP);
+
+			if (sectionSingleB(secConfig, SECTION_WEBSOCKET_PORT, strTemp))
+				WEBSOCKET_PORT		= boost::lexical_cast<int>(strTemp);
 
 			if (sectionSingleB(secConfig, SECTION_VALIDATION_SEED, strTemp))
 				VALIDATION_SEED.setSeedGeneric(strTemp);

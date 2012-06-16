@@ -47,30 +47,28 @@ public:
 	boost::filesystem::path	UNL_DEFAULT;
 
 	// Network parameters
-	int		NETWORK_START_TIME;		// The Unix time we start ledger 0
-	int		TRANSACTION_FEE_BASE;
-	int		LEDGER_SECONDS;
-	int		LEDGER_PROPOSAL_DELAY_SECONDS;
-	int		LEDGER_AVALANCHE_SECONDS;
+	int			NETWORK_START_TIME;		// The Unix time we start ledger 0
+	int			TRANSACTION_FEE_BASE;
+	int			LEDGER_SECONDS;
+	int			LEDGER_PROPOSAL_DELAY_SECONDS;
+	int			LEDGER_AVALANCHE_SECONDS;
 
 	// Note: The following parameters do not relate to the UNL or trust at all
-	int		NETWORK_QUORUM;		// Minimum number of nodes to consider the network present
-	int		VALIDATION_QUORUM;		// Minimum validations to consider ledger authoritative
+	int			NETWORK_QUORUM;			// Minimum number of nodes to consider the network present
+	int			VALIDATION_QUORUM;		// Minimum validations to consider ledger authoritative
 
 	// Peer networking parameters
 	std::string PEER_IP;
-	int		PEER_PORT;
-	int		NUMBER_CONNECTIONS;
+	int			PEER_PORT;
+	int			NUMBER_CONNECTIONS;
 	std::string PEER_SSL_CIPHER_LIST;
-	int		PEER_SCAN_INTERVAL_MIN;
-	int		PEER_START_MAX;
-	int		PEER_CONNECT_LOW_WATER;
+	int			PEER_SCAN_INTERVAL_MIN;
+	int			PEER_START_MAX;
+	int			PEER_CONNECT_LOW_WATER;
 
-//	bool	    NODE_INBOUND;		// We accept inbound connections
-//	bool	    NODE_DATABASE;		// We offer historical data services
-//	bool	    NODE_PUBLIC;		// We do not attempt to hide our identity
-//	bool	    NODE_DUMB;			// We are a 'dumb' client
-//	bool	    NODE_SMART;			// We offer services to 'dumb' clients
+	// Client networking parameters
+	std::string WEBSOCKET_IP;
+	int			WEBSOCKET_PORT;
 
 	// RPC parameters
 	std::string	RPC_IP;
@@ -96,4 +94,5 @@ public:
 
 extern Config theConfig;
 #endif
+
 // vim:ts=4
