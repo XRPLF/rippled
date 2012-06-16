@@ -628,10 +628,14 @@ void UniqueNodeList::processIps(const std::string& strSite, const NewcoinAddress
 }
 
 // Persist ValidatorReferrals.
-void UniqueNodeList::processValidators(const std::string& strSite, const std::string& strValidatorsSrc, const NewcoinAddress& naNodePublic, section::mapped_type* pmtVecStrValidators)
+// --> strSite: source site for display
+// --> strValidatorsSrc: source details for display
+// --> naNodePublic: remote source public key - not valid for local
+// --> vsWhy: reason for adding validator to SeedDomains or SeedNodes.
+void UniqueNodeList::processValidators(const std::string& strSite, const std::string& strValidatorsSrc, const NewcoinAddress& naNodePublic, validatorSource vsWhy, section::mapped_type* pmtVecStrValidators)
 {
 	Database*	db				= theApp->getWalletDB()->getDB();
-	std::string strNodePublic	= naNodePublic.humanNodePublic();
+	std::string strNodePublic	= naNodePublic.isValid() ? naNodePublic.humanNodePublic() : "local";
 
 	std::cerr
 		<< str(boost::format("Validator: '%s' : '%s' : processing %d validators.")
@@ -665,7 +669,7 @@ void UniqueNodeList::processValidators(const std::string& strSite, const std::st
 
 			// domain comment?
 			// public_key comment?
-			static boost::regex	reReferral("\\`\\s*(\\S+)(?:\\s+(\\d+))?\\s*\\'");
+			static boost::regex	reReferral("\\`\\s*(\\S+)(?:\\s+(.+))?\\s*\\'");
 
 			if (!boost::regex_match(strReferral, smMatch, reReferral))
 			{
@@ -680,35 +684,40 @@ void UniqueNodeList::processValidators(const std::string& strSite, const std::st
 				std::string		strComment	= smMatch[2];
 				NewcoinAddress	naValidator;
 
+				// std::cerr << str(boost::format("Validator: '%s' : '%s'") % strRefered % strComment) << std::endl;
+
 				if (naValidator.setNodePublic(strRefered))
 				{
 					// A public key.
 					// XXX Schedule for CAS lookup.
-					nodeAddPublic(naValidator, vsReferral, strComment);
+					nodeAddPublic(naValidator, vsWhy, strComment);
 
-					vstrValues.push_back(str(boost::format("('%s',%d,'%s')") % strNodePublic % iValues % naValidator.humanNodePublic()));
+					if (naNodePublic.isValid())
+						vstrValues.push_back(str(boost::format("('%s',%d,'%s')") % strNodePublic % iValues % naValidator.humanNodePublic()));
 				}
 				else
 				{
 					// A domain: need to look it up.
-					boost::trim(strRefered);
-					boost::to_lower(strRefered);
-					nodeAddDomain(strRefered, vsReferral, strComment);
+					nodeAddDomain(strRefered, vsWhy, strComment);
 
-					vstrValues.push_back(str(boost::format("('%s',%d,%s)") % strNodePublic % iValues % sqlEscape(strRefered)));
+					if (naNodePublic.isValid())
+						vstrValues.push_back(str(boost::format("('%s',%d,%s)") % strNodePublic % iValues % sqlEscape(strRefered)));
 				}
 
 				iValues++;
 			}
 		}
 
-		std::string strSql	= str(boost::format("INSERT INTO ValidatorReferrals (Validator,Entry,Referral) VALUES %s;")
-			% strJoin(vstrValues.begin(), vstrValues.end(), ","));
+		if (!vstrValues.empty())
+		{
+			std::string strSql	= str(boost::format("INSERT INTO ValidatorReferrals (Validator,Entry,Referral) VALUES %s;")
+				% strJoin(vstrValues.begin(), vstrValues.end(), ","));
 
-		ScopedLock sl(theApp->getWalletDB()->getDBLock());
+			ScopedLock sl(theApp->getWalletDB()->getDBLock());
 
-		db->executeSQL(strSql);
-		// XXX Check result.
+			db->executeSQL(strSql);
+			// XXX Check result.
+		}
 	}
 
 	fetchDirty();
@@ -761,7 +770,7 @@ void UniqueNodeList::responseValidators(const std::string& strValidatorsUrl, con
 	{
 		section		secFile		= ParseSection(strValidatorsFile, true);
 
-		processValidators(strSite, strValidatorsUrl, naNodePublic, sectionEntries(secFile, SECTION_VALIDATORS));
+		processValidators(strSite, strValidatorsUrl, naNodePublic, vsValidator, sectionEntries(secFile, SECTION_VALIDATORS));
 	}
 
 	getIpsUrl(naNodePublic, secSite);
@@ -799,7 +808,7 @@ void UniqueNodeList::processFile(const std::string strDomain, const NewcoinAddre
 	//
 	// Process Validators
 	//
-	processValidators(strDomain, NODE_FILE_NAME, naNodePublic, sectionEntries(secSite, SECTION_VALIDATORS));
+	processValidators(strDomain, NODE_FILE_NAME, naNodePublic, vsReferral, sectionEntries(secSite, SECTION_VALIDATORS));
 
 	//
 	// Process ips
@@ -1336,15 +1345,15 @@ void UniqueNodeList::nodeAddPublic(const NewcoinAddress& naNodePublic, validator
 	// Promote source, if needed.
 	if (!bFound || iSourceScore(vsWhy) >= iSourceScore(snCurrent.vsSource))
 	{
-		snCurrent.vsSource	= vsWhy;
-		bChanged			= true;
+		snCurrent.vsSource		= vsWhy;
+		snCurrent.strComment	= strComment;
+		bChanged				= true;
 	}
 
 	if (vsManual == vsWhy)
 	{
 		// A manual add forces immediate scan.
 		snCurrent.tpNext		= boost::posix_time::second_clock::universal_time();
-		snCurrent.strComment	= strComment;
 		bChanged				= true;
 	}
 
@@ -1460,7 +1469,7 @@ bool UniqueNodeList::nodeLoad()
 		return false;
 	}
 
-	nodeDefault(strValidators);
+	nodeDefault(strValidators, theConfig.UNL_DEFAULT.native());
 
 	std::cerr << str(boost::format("Processing: %s") % theConfig.UNL_DEFAULT) << std::endl;
 
@@ -1473,7 +1482,7 @@ void UniqueNodeList::validatorsResponse(const boost::system::error_code& err, st
 
 	if (!err)
 	{
-		nodeDefault(strResponse);
+		nodeDefault(strResponse, VALIDATORS_SITE);
 	}
 	else
 	{
@@ -1527,17 +1536,17 @@ void UniqueNodeList::nodeBootstrap()
 }
 
 // Process a validators.txt.
-// --> strValidators: a validators.txt
-void UniqueNodeList::nodeDefault(const std::string& strValidators) {
+// --> strValidators: contents of a validators.txt
+void UniqueNodeList::nodeDefault(const std::string& strValidators, const std::string& strSource) {
 	section secValidators	= ParseSection(strValidators, true);
 
 	section::mapped_type*	pmtEntries	= sectionEntries(secValidators, SECTION_VALIDATORS);
 	if (pmtEntries)
 	{
-		BOOST_FOREACH(std::string strValidator, *pmtEntries)
-		{
-			nodeAddDomain(strValidator, vsValidator);
-		}
+		NewcoinAddress	naInvalid;	// Don't want a referrer on added entries.
+
+		// YYY Unspecified might be bootstrap or rpc command
+		processValidators("unspecified", strSource, naInvalid, vsValidator, pmtEntries);
 	}
 	else
 	{

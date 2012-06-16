@@ -121,7 +121,7 @@ private:
 	void responseValidators(const std::string& strValidatorsUrl, const NewcoinAddress& naNodePublic, section secSite, const std::string& strSite, const boost::system::error_code& err, const std::string strValidatorsFile);
 
 	void processIps(const std::string& strSite, const NewcoinAddress& naNodePublic, section::mapped_type* pmtVecStrIps);
-	void processValidators(const std::string& strSite, const std::string& strValidatorsSrc, const NewcoinAddress& naNodePublic, section::mapped_type* pmtVecStrValidators);
+	void processValidators(const std::string& strSite, const std::string& strValidatorsSrc, const NewcoinAddress& naNodePublic, validatorSource vsWhy, section::mapped_type* pmtVecStrValidators);
 
 	void processFile(const std::string strDomain, const NewcoinAddress& naNodePublic, section secSite);
 
@@ -132,6 +132,7 @@ private:
 	void setSeedNodes(const seedNode& snSource, bool bNext);
 
 	void validatorsResponse(const boost::system::error_code& err, std::string strResponse);
+	void nodeDefault(const std::string& strValidators, const std::string& strSource);
 
 public:
 	UniqueNodeList(boost::asio::io_service& io_service);
@@ -143,7 +144,6 @@ public:
 	void nodeAddDomain(std::string strDomain, validatorSource vsWhy, const std::string& strComment="");
 	void nodeRemovePublic(const NewcoinAddress& naNodePublic);
 	void nodeRemoveDomain(std::string strDomain);
-	void nodeDefault(const std::string& strValidators);
 	void nodeReset();
 
 	void nodeScore();
