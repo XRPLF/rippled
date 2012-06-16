@@ -197,21 +197,83 @@ void UniqueNodeList::scoreCompute()
 				std::string	strDomain		= db->getStrBinary("Domain");
 				std::string	strPublicKey	= db->getStrBinary("PublicKey");
 				std::string	strSource		= db->getStrBinary("Source");
+				int			iScore			= iSourceScore(static_cast<validatorSource>(strSource[0]));
+				strIndex::iterator	siOld	= umPulicIdx.find(strPublicKey);
 
+				if (siOld == umPulicIdx.end())
+				{
+					// New node
+					int			iNode		= vsnNodes.size();
+
+					umPulicIdx[strPublicKey]	= iNode;
+					umDomainIdx[strDomain]		= iNode;
+
+					scoreNode	snCurrent;
+
+					snCurrent.strValidator	= strPublicKey;
+					snCurrent.iScore		= iScore;
+					snCurrent.iRoundSeed	= snCurrent.iScore;
+					snCurrent.iRoundScore	= 0;
+					snCurrent.iSeen			= -1;
+
+					vsnNodes.push_back(snCurrent);
+				}
+				else
+				{
+					scoreNode&	snOld	= vsnNodes[siOld->second];
+
+					if (snOld.iScore < iScore)
+					{
+						// Update old node
+
+						snOld.iScore		= iScore;
+						snOld.iRoundSeed	= snOld.iScore;
+					}
+				}
+			}
+		}
+	}
+
+	// For each entry in SeedNodes:
+	// - Add an entry in umPulicIdx, umDomainIdx, and vsnNodes.
+	{
+		ScopedLock	sl(theApp->getWalletDB()->getDBLock());
+
+		SQL_FOREACH(db, "SELECT PublicKey,Source FROM SeedNodes;")
+		{
+			std::string	strPublicKey	= db->getStrBinary("PublicKey");
+			std::string	strSource		= db->getStrBinary("Source");
+			int			iScore			= iSourceScore(static_cast<validatorSource>(strSource[0]));
+			strIndex::iterator	siOld	= umPulicIdx.find(strPublicKey);
+
+			if (siOld == umPulicIdx.end())
+			{
+				// New node
 				int			iNode		= vsnNodes.size();
 
 				umPulicIdx[strPublicKey]	= iNode;
-				umDomainIdx[strDomain]		= iNode;
 
 				scoreNode	snCurrent;
 
 				snCurrent.strValidator	= strPublicKey;
-				snCurrent.iScore		= iSourceScore(static_cast<validatorSource>(strSource[0]));
+				snCurrent.iScore		= iScore;
 				snCurrent.iRoundSeed	= snCurrent.iScore;
 				snCurrent.iRoundScore	= 0;
 				snCurrent.iSeen			= -1;
 
 				vsnNodes.push_back(snCurrent);
+			}
+			else
+			{
+				scoreNode&	snOld	= vsnNodes[siOld->second];
+
+				if (snOld.iScore < iScore)
+				{
+					// Update old node
+
+					snOld.iScore		= iScore;
+					snOld.iRoundSeed	= snOld.iScore;
+				}
 			}
 		}
 	}
@@ -226,8 +288,6 @@ void UniqueNodeList::scoreCompute()
 			% sn.iRoundSeed)
 			<< std::endl;
 	}
-
-	// XXX When we have a CAS do SeedNodes here.
 
 	// std::cerr << str(boost::format("vsnNodes.size=%d") % vsnNodes.size()) << std::endl;
 
@@ -1203,22 +1263,22 @@ void UniqueNodeList::nodeAddDomain(std::string strDomain, validatorSource vsWhy,
 
 	if (!bFound)
 	{
-		sdCurrent.strDomain	= strDomain;
-		sdCurrent.tpNext	= boost::posix_time::second_clock::universal_time();
+		sdCurrent.strDomain		= strDomain;
+		sdCurrent.tpNext		= boost::posix_time::second_clock::universal_time();
 	}
 
 	// Promote source, if needed.
 	if (!bFound || iSourceScore(vsWhy) >= iSourceScore(sdCurrent.vsSource))
 	{
-		sdCurrent.vsSource	= vsWhy;
-		bChanged			= true;
+		sdCurrent.vsSource		= vsWhy;
+		sdCurrent.strComment	= strComment;
+		bChanged				= true;
 	}
 
 	if (vsManual == vsWhy)
 	{
 		// A manual add forces immediate scan.
 		sdCurrent.tpNext		= boost::posix_time::second_clock::universal_time();
-		sdCurrent.strComment	= strComment;
 		bChanged				= true;
 	}
 
