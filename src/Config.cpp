@@ -29,6 +29,7 @@
 #define SECTION_FEE_NICKNAME_CREATE		"fee_nickname_create"
 #define SECTION_FEE_DEFAULT				"fee_default"
 #define SECTION_ACCOUNT_PROBE_MAX		"account_probe_max"
+#define SECTION_UNL_DEFAULT				"unl_default"
 
 Config theConfig;
 
@@ -169,7 +170,7 @@ void Config::load()
 			(void) sectionSingleB(secConfig, SECTION_PEER_IP, PEER_IP);
 
 			if (sectionSingleB(secConfig, SECTION_PEER_PORT, strTemp))
-				PEER_PORT = boost::lexical_cast<int>(strTemp);
+				PEER_PORT			= boost::lexical_cast<int>(strTemp);
 
 			(void) sectionSingleB(secConfig, SECTION_RPC_IP, RPC_IP);
 
@@ -177,7 +178,7 @@ void Config::load()
 				RPC_PORT = boost::lexical_cast<int>(strTemp);
 
 			if (sectionSingleB(secConfig, SECTION_RPC_ALLOW_REMOTE, strTemp))
-				RPC_ALLOW_REMOTE = boost::lexical_cast<bool>(strTemp);
+				RPC_ALLOW_REMOTE	= boost::lexical_cast<bool>(strTemp);
 
 			if (sectionSingleB(secConfig, SECTION_VALIDATION_SEED, strTemp))
 				VALIDATION_SEED.setSeedGeneric(strTemp);
@@ -187,28 +188,31 @@ void Config::load()
 				PEER_SCAN_INTERVAL_MIN = MAX(60, boost::lexical_cast<int>(strTemp));
 
 			if (sectionSingleB(secConfig, SECTION_PEER_START_MAX, strTemp))
-				PEER_START_MAX = MAX(1, boost::lexical_cast<int>(strTemp));
+				PEER_START_MAX		= MAX(1, boost::lexical_cast<int>(strTemp));
 
 			if (sectionSingleB(secConfig, SECTION_PEER_CONNECT_LOW_WATER, strTemp))
 				PEER_CONNECT_LOW_WATER = MAX(1, boost::lexical_cast<int>(strTemp));
 
 			if (sectionSingleB(secConfig, SECTION_NETWORK_QUORUM, strTemp))
-				NETWORK_QUORUM = MAX(0, boost::lexical_cast<int>(strTemp));
+				NETWORK_QUORUM		= MAX(0, boost::lexical_cast<int>(strTemp));
 
 			if (sectionSingleB(secConfig, SECTION_VALIDATION_QUORUM, strTemp))
-				VALIDATION_QUORUM = MAX(0, boost::lexical_cast<int>(strTemp));
+				VALIDATION_QUORUM	= MAX(0, boost::lexical_cast<int>(strTemp));
 
 			if (sectionSingleB(secConfig, SECTION_FEE_ACCOUNT_CREATE, strTemp))
-				FEE_ACCOUNT_CREATE = boost::lexical_cast<int>(strTemp);
+				FEE_ACCOUNT_CREATE	= boost::lexical_cast<int>(strTemp);
 
 			if (sectionSingleB(secConfig, SECTION_FEE_NICKNAME_CREATE, strTemp))
-				FEE_NICKNAME_CREATE = boost::lexical_cast<int>(strTemp);
+				FEE_NICKNAME_CREATE	= boost::lexical_cast<int>(strTemp);
 
 			if (sectionSingleB(secConfig, SECTION_FEE_DEFAULT, strTemp))
-				FEE_DEFAULT = boost::lexical_cast<int>(strTemp);
+				FEE_DEFAULT			= boost::lexical_cast<int>(strTemp);
 
 			if (sectionSingleB(secConfig, SECTION_ACCOUNT_PROBE_MAX, strTemp))
-				ACCOUNT_PROBE_MAX = boost::lexical_cast<int>(strTemp);
+				ACCOUNT_PROBE_MAX	= boost::lexical_cast<int>(strTemp);
+
+			if (sectionSingleB(secConfig, SECTION_UNL_DEFAULT, strTemp))
+				UNL_DEFAULT			= strTemp;
 		}
 	}
 }

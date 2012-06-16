@@ -44,6 +44,7 @@ public:
 	boost::filesystem::path	CONFIG_FILE;
 	boost::filesystem::path	CONFIG_DIR;
 	boost::filesystem::path	DATA_DIR;
+	boost::filesystem::path	UNL_DEFAULT;
 
 	// Network parameters
 	int		NETWORK_START_TIME;		// The Unix time we start ledger 0
