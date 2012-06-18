@@ -227,7 +227,6 @@ void LedgerConsensus::createDisputes(SHAMap::pointer m1, SHAMap::pointer m2)
 	m1->compare(m2, differences, 16384);
 	for(SHAMap::SHAMapDiff::iterator pos = differences.begin(), end = differences.end(); pos != end; ++pos)
 	{ // create disputed transactions (from the ledger that has them)
-		Log(lsTRACE) << "Transaction now in dispute: " << pos->first.GetHex();
 		if (pos->second.first)
 		{
 			assert(!pos->second.second);
@@ -521,7 +520,7 @@ void LedgerConsensus::propose(const std::vector<uint256>& added, const std::vect
 
 void LedgerConsensus::addDisputedTransaction(const uint256& txID, const std::vector<unsigned char>& tx)
 {
-	Log(lsTRACE) << "Transacstion " << txID.GetHex() << " is disputed";
+	Log(lsTRACE) << "Transaction " << txID.GetHex() << " is disputed";
 	boost::unordered_map<uint256, LCTransaction::pointer>::iterator it = mDisputes.find(txID);
 	if (it != mDisputes.end()) return;
 
@@ -649,7 +648,6 @@ void LedgerConsensus::applyTransaction(TransactionEngine& engine, SerializedTran
 		else
 		{
 			Log(lsINFO) << "   hard fail";
-			assert(!ledger->hasTransaction(txn->getTransactionID()));
 		}
 #ifndef TRUST_NETWORK
 	}

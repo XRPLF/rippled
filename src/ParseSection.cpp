@@ -1,4 +1,5 @@
 #include "ParseSection.h"
+#include "utils.h"
 
 #include <iostream>
 #include <boost/algorithm/string.hpp>
@@ -32,6 +33,8 @@ section ParseSection(const std::string& strInput, const bool bTrim)
 		if (strValue.empty() || strValue[0] == '#')
 		{
 			// Blank line or comment, do nothing.
+
+			nothing();
 		}
 		else if (strValue[0] == '[' && strValue[strValue.length()-1] == ']') {
 			// New section.
@@ -41,29 +44,37 @@ section ParseSection(const std::string& strInput, const bool bTrim)
 		}
 		else
 		{
-			// Another line in a section.
+			// Another line for section.
 			if (bTrim)
 				boost::algorithm::trim(strValue);
 
-			secResult[strSection].push_back(strValue);
+			if (!strValue.empty())
+				secResult[strSection].push_back(strValue);
 		}
     }
 
     return secResult;
 }
 
-void PrintSection(section secInput)
+void sectionEntriesPrint(std::vector<std::string>* vspEntries, const std::string& strSection)
 {
-    std::cerr << "PrintSection>" << std::endl;
+	std::cerr << "[" << strSection << "]" << std::endl;
+
+	if (vspEntries)
+	{
+		BOOST_FOREACH(std::string& strValue, *vspEntries)
+		{
+			std::cerr << strValue << std::endl;
+		}
+	}
+}
+
+void sectionPrint(section secInput)
+{
     BOOST_FOREACH(section::value_type& pairSection, secInput)
     {
-		std::cerr << "[" << pairSection.first << "]" << std::endl;
-		BOOST_FOREACH(std::string& value, pairSection.second)
-		{
-			std::cerr << value << std::endl;
-		}
+		sectionEntriesPrint(&pairSection.second, pairSection.first);
     }
-    std::cerr << "PrintSection<" << std::endl;
 }
 
 section::mapped_type* sectionEntries(section& secSource, const std::string& strSection)
