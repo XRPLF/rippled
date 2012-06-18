@@ -227,7 +227,6 @@ void LedgerConsensus::createDisputes(SHAMap::pointer m1, SHAMap::pointer m2)
 	m1->compare(m2, differences, 16384);
 	for(SHAMap::SHAMapDiff::iterator pos = differences.begin(), end = differences.end(); pos != end; ++pos)
 	{ // create disputed transactions (from the ledger that has them)
-		Log(lsTRACE) << "Transaction now in dispute: " << pos->first.GetHex();
 		if (pos->second.first)
 		{
 			assert(!pos->second.second);
