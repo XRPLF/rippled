@@ -281,7 +281,7 @@ void LedgerConsensus::mapComplete(const uint256& hash, SHAMap::pointer map)
 	}
 	if (!peers.empty())
 		adjustCount(map, peers);
-	else if (hash)
+	else if (!hash)
 		Log(lsWARNING) << "By the time we got the map, no peers were proposing it";
 
 	sendHaveTxSet(hash, true);
