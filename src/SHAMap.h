@@ -93,6 +93,7 @@ public:
 
 	SHAMapItem(const uint256& tag) : mTag(tag) { ; }
 	SHAMapItem(const uint256& tag, const std::vector<unsigned char>& data);
+	SHAMapItem(const uint256& tag, const Serializer& s);
 	SHAMapItem(const std::vector<unsigned char>& data); // tag by hash
 
 	const uint256& getTag() const				{ return mTag; }

@@ -60,7 +60,7 @@ void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint2
 						}
 						else
 						{
-							Log(lsTRACE) << "Got sync node from cache";
+							Log(lsTRACE) << "Got sync node from cache: " << d->getString();
 							mTNByID[*d] = d;
 						}
 					}

@@ -184,7 +184,6 @@ void Peer::handleConnect(const boost::system::error_code& error, boost::asio::ip
 	{
 		std::cerr << "Connect peer: success." << std::endl;
 
-		mSocketSsl.lowest_layer().set_option(boost::asio::ip::tcp::no_delay(true));
 		mSocketSsl.set_verify_mode(boost::asio::ssl::verify_none);
 
 		mSocketSsl.async_handshake(boost::asio::ssl::stream<boost::asio::ip::tcp::socket>::client,
@@ -224,7 +223,6 @@ void Peer::connected(const boost::system::error_code& error)
 		mIpPort		= make_pair(strIp, iPort);
 		assert(!mIpPort.first.empty());
 
-		mSocketSsl.lowest_layer().set_option(boost::asio::ip::tcp::no_delay(true));
 		mSocketSsl.set_verify_mode(boost::asio::ssl::verify_none);
 
 		mSocketSsl.async_handshake(boost::asio::ssl::stream<boost::asio::ip::tcp::socket>::server,
@@ -828,7 +826,6 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 				return;
 			}
 			memcpy(ledgerhash.begin(), packet.ledgerhash().data(), 32);
-			Log(lsINFO) << "Query by hash: " << ledgerhash.GetHex();
 			ledger = theApp->getMasterLedger().getLedgerByHash(ledgerhash);
 		}
 		else if (packet.has_ledgerseq())
@@ -913,7 +910,6 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 	}
 	if (packet.has_requestcookie()) reply.set_requestcookie(packet.requestcookie());
 	PackedMessage::pointer oPacket = boost::make_shared<PackedMessage>(reply, newcoin::mtLEDGER_DATA);
-	Log(lsTRACE) << "sending reply";
 	sendPacket(oPacket);
 }
 

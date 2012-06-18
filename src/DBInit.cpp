@@ -228,7 +228,7 @@ int WalletDBCount = sizeof(WalletDBInit) / sizeof(const char *);
 
 // Hash node database holds nodes indexed by hash
 const char *HashNodeDBInit[] = {
-	"CREATE TABLE CommittedObjects 					\
+	"CREATE TABLE CommittedObjects (				\
 		Hash		CHARACTER(64) PRIMARY KEY,		\
 		ObjType		CHAR(1)	NOT	NULL,				\
 		LedgerIndex	BIGINT UNSIGNED,				\

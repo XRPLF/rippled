@@ -392,7 +392,7 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 		// check if the ledger is good enough to go to omFULL
 		// Note: Do not go to omFULL if we don't have the previous ledger
 		// check if the ledger is bad enough to go to omCONNECTED -- TODO
-		if (!switchLedgers) setMode(omFULL);
+		if ((!switchLedgers) && theConfig.VALIDATION_SEED.isValid()) setMode(omFULL);
 	}
 
 	if (mMode == omFULL)
@@ -489,7 +489,11 @@ bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash,
 	// Is this node on our UNL?
 	// XXX Is this right?
 	if (!theApp->getUNL().nodeInUNL(naPeerPublic))
+	{
+		Log(lsINFO) << "Relay, but no process peer proposal " << proposal->getProposeSeq() << "/"
+			<< proposal->getCurrentHash().GetHex();
 		return true;
+	}
 
 	return consensus->peerPosition(proposal);
 }
