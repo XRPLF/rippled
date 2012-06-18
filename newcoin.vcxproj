@@ -85,8 +85,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="cryptopp\cpu.cpp" />
-    <ClCompile Include="cryptopp\sha.cpp" />
     <ClCompile Include="database\database.cpp" />
     <ClCompile Include="database\sqlite3.c" />
     <ClCompile Include="database\SqliteDatabase.cpp" />
@@ -158,17 +156,6 @@
     <ClInclude Include="Account.h" />
     <ClInclude Include="bitcoinUtil.h" />
     <ClInclude Include="Conversion.h" />
-    <ClInclude Include="cryptopp\config.h" />
-    <ClInclude Include="cryptopp\cpu.h" />
-    <ClInclude Include="cryptopp\cryptlib.h" />
-    <ClInclude Include="cryptopp\iterhash.h" />
-    <ClInclude Include="cryptopp\misc.h" />
-    <ClInclude Include="cryptopp\pch.h" />
-    <ClInclude Include="cryptopp\secblock.h" />
-    <ClInclude Include="cryptopp\sha.h" />
-    <ClInclude Include="cryptopp\simple.h" />
-    <ClInclude Include="cryptopp\smartptr.h" />
-    <ClInclude Include="cryptopp\stdcpp.h" />
     <ClInclude Include="database\database.h" />
     <ClInclude Include="database\sqlite3.h" />
     <ClInclude Include="database\sqlite3ext.h" />
@@ -264,6 +251,7 @@
     </None>
     <None Include="todo.txt" />
     <None Include="unl.xml" />
+    <None Include="validators.txt" />
     <None Include="wallet.xml" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

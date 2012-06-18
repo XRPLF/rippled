@@ -6,7 +6,7 @@
 #
 # This file is UTF-8 with Dos, UNIX, or Mac style end of lines.
 # Blank lines and lines starting with a '#' are ignored.
-# All other lines should be domain names.
+# All other lines should be hankos or domain names.
 #
 # [validators]:
 #   List of nodes to accept as validators speficied by public key or domain.
@@ -20,9 +20,6 @@
 #
 
 [validators]
-redstem.com
-alpha.redstem.com
-bravo.redstem.com
-charlie.redstem.com
-delta.redstem.com
-echo.redstem.com
+n9LQC4xFSWXNv1SU1sKtjrW6TZpBZSwp1nRWej8saGs155x42YFZ 	first
+n9LFzWuhKNvXStHAuemfRKFVECLApowncMAM5chSCL9R5ECHGN4V 	second
+n9KXAZxiHkWuVGxDEE8boW7WmcycpZNmWei4vxVaywLZ391Nbuqx	third

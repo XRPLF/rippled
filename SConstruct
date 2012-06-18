@@ -88,3 +88,4 @@ newcoind    = env.Program('newcoind', NEWCOIN_OBJS)
 tags	    = env.CTags('obj/tags', NEWCOIN_SRCS)
 
 Default(newcoind, tags)
+
