@@ -12,11 +12,15 @@
 // Time before we take a position
 #	define LEDGER_WOBBLE_TIME		1
 
-// Time we expect avalanche to finish
+// Time we acceleratet avalanche
+#	define LEDGER_ACCEL_CONVERGE	10
+
+// Time we permit avalanche to finish
 #	define LEDGER_CONVERGE			14
 
-// Time we forcibly abort avalanche
-#	define LEDGER_FORCE_CONVERGE	18
+// Maximum converge time
+#	define LEDGER_MAX_CONVERGE		22
+
 
 #endif
 
@@ -24,9 +28,10 @@
 
 #	define LEDGER_INTERVAL			1800
 
-#	define LEDGER_CONVERGE			180
+#	define LEDGER_FORCE_CONVERGE	180
 
-#	define LEDGER_FORCE_CONVERGE	240
+#	define LEDGER_CONVERGE			240
+
 
 // Time a transaction must be unconflicted before we consider it protected
 #	define LEDGER_PROTECT		90
