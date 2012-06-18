@@ -692,10 +692,11 @@ void UniqueNodeList::processIps(const std::string& strSite, const NewcoinAddress
 // --> strValidatorsSrc: source details for display
 // --> naNodePublic: remote source public key - not valid for local
 // --> vsWhy: reason for adding validator to SeedDomains or SeedNodes.
-void UniqueNodeList::processValidators(const std::string& strSite, const std::string& strValidatorsSrc, const NewcoinAddress& naNodePublic, validatorSource vsWhy, section::mapped_type* pmtVecStrValidators)
+int UniqueNodeList::processValidators(const std::string& strSite, const std::string& strValidatorsSrc, const NewcoinAddress& naNodePublic, validatorSource vsWhy, section::mapped_type* pmtVecStrValidators)
 {
 	Database*	db				= theApp->getWalletDB()->getDB();
-	std::string strNodePublic	= naNodePublic.isValid() ? naNodePublic.humanNodePublic() : "local";
+	std::string strNodePublic	= naNodePublic.isValid() ? naNodePublic.humanNodePublic() : strValidatorsSrc;
+	int			iValues			= 0;
 
 	std::cerr
 		<< str(boost::format("Validator: '%s' : '%s' : processing %d validators.")
@@ -718,7 +719,6 @@ void UniqueNodeList::processValidators(const std::string& strSite, const std::st
 
 		vstrValues.reserve(MIN(pmtVecStrValidators->size(), REFERRAL_VALIDATORS_MAX));
 
-		int	iValues = 0;
 		BOOST_FOREACH(std::string strReferral, *pmtVecStrValidators)
 		{
 			if (iValues == REFERRAL_VALIDATORS_MAX)
@@ -734,7 +734,7 @@ void UniqueNodeList::processValidators(const std::string& strSite, const std::st
 			if (!boost::regex_match(strReferral, smMatch, reReferral))
 			{
 				std::cerr
-					<< str(boost::format("Validator: '%s' ["SECTION_VALIDATORS"]: rejecting '%s'")
+					<< str(boost::format("Validator: '%s' ["SECTION_VALIDATORS"]: rejecting line: '%s'")
 						% strSite % strReferral)
 					<< std::endl;
 			}
@@ -744,7 +744,7 @@ void UniqueNodeList::processValidators(const std::string& strSite, const std::st
 				std::string		strComment	= smMatch[2];
 				NewcoinAddress	naValidator;
 
-				// std::cerr << str(boost::format("Validator: '%s' : '%s'") % strRefered % strComment) << std::endl;
+				std::cerr << str(boost::format("Validator='%s', Comment='%s'") % strRefered % strComment) << std::endl;
 
 				if (naValidator.setNodePublic(strRefered))
 				{
@@ -781,6 +781,8 @@ void UniqueNodeList::processValidators(const std::string& strSite, const std::st
 	}
 
 	fetchDirty();
+
+	return iValues;
 }
 
 // Given a section with IPs, parse and persist it for a validator.
@@ -823,7 +825,7 @@ void UniqueNodeList::getIpsUrl(const NewcoinAddress& naNodePublic, section secSi
 	}
 }
 
-// Given a section with validators, parse and persist it.
+// After fetching a newcoin.txt from a web site, given a section with validators, parse and persist it.
 void UniqueNodeList::responseValidators(const std::string& strValidatorsUrl, const NewcoinAddress& naNodePublic, section secSite, const std::string& strSite, const boost::system::error_code& err, const std::string strValidatorsFile)
 {
 	if (!err)
@@ -1137,10 +1139,11 @@ int UniqueNodeList::iSourceScore(validatorSource vsWhy)
 	int		iScore	= 0;
 
 	switch (vsWhy) {
+	case vsConfig:		iScore	= 1500; break;
 	case vsManual:		iScore	= 1500; break;
+	case vsReferral:	iScore	=    0; break;
 	case vsValidator:	iScore	= 1000; break;
 	case vsWeb:			iScore	=  200; break;
-	case vsReferral:	iScore	=    0; break;
 	default:
 		throw std::runtime_error("Internal error: bad validatorSource.");
 	}
@@ -1485,34 +1488,34 @@ Json::Value UniqueNodeList::getUnlJson()
 	return ret;
 }
 
-bool UniqueNodeList::nodeLoad()
+bool UniqueNodeList::nodeLoad(boost::filesystem::path pConfig)
 {
-	if (theConfig.UNL_DEFAULT.empty())
+	if (pConfig.empty())
 	{
-		std::cerr << "UNL_DEFAULT not specified." << std::endl;
+		std::cerr << VALIDATORS_FILE_NAME " path not specified." << std::endl;
 
 		return false;
 	}
 
-	if (!boost::filesystem::exists(theConfig.UNL_DEFAULT))
+	if (!boost::filesystem::exists(pConfig))
 	{
-		std::cerr << str(boost::format("UNL_DEFAULT not found: %s") % theConfig.UNL_DEFAULT) << std::endl;
+		std::cerr << str(boost::format(VALIDATORS_FILE_NAME " not found: %s") % pConfig) << std::endl;
 
 		return false;
 	}
 
-	if (!boost::filesystem::is_regular_file(theConfig.UNL_DEFAULT))
+	if (!boost::filesystem::is_regular_file(pConfig))
 	{
-		std::cerr << str(boost::format("UNL_DEFAULT not regular file: %s") % theConfig.UNL_DEFAULT) << std::endl;
+		std::cerr << str(boost::format(VALIDATORS_FILE_NAME " not regular file: %s") % pConfig) << std::endl;
 
 		return false;
 	}
 
-	std::ifstream	ifsDefault(theConfig.UNL_DEFAULT.native().c_str(), std::ios::in);
+	std::ifstream	ifsDefault(pConfig.native().c_str(), std::ios::in);
 
 	if (!ifsDefault)
 	{
-		std::cerr << str(boost::format("Failed to open: %s") % theConfig.UNL_DEFAULT) << std::endl;
+		std::cerr << str(boost::format(VALIDATORS_FILE_NAME " failed to open: %s") % pConfig) << std::endl;
 
 		return false;
 	}
@@ -1524,14 +1527,14 @@ bool UniqueNodeList::nodeLoad()
 
 	if (ifsDefault.bad())
 	{
-		std::cerr << str(boost::format("Failed to read: %s") % theConfig.UNL_DEFAULT) << std::endl;
+		std::cerr << str(boost::format("Failed to read: %s") % pConfig) << std::endl;
 
 		return false;
 	}
 
-	nodeDefault(strValidators, theConfig.UNL_DEFAULT.native());
+	nodeProcess("local", strValidators, pConfig.string());
 
-	std::cerr << str(boost::format("Processing: %s") % theConfig.UNL_DEFAULT) << std::endl;
+	std::cerr << str(boost::format("Processing: %s") % pConfig) << std::endl;
 
 	return true;
 }
@@ -1542,7 +1545,7 @@ void UniqueNodeList::validatorsResponse(const boost::system::error_code& err, st
 
 	if (!err)
 	{
-		nodeDefault(strResponse, VALIDATORS_SITE);
+		nodeProcess("network", strResponse, theConfig.VALIDATORS_SITE);
 	}
 	else
 	{
@@ -1554,7 +1557,7 @@ void UniqueNodeList::nodeNetwork()
 {
 	HttpsClient::httpsGet(
 		theApp->getIOService(),
-		VALIDATORS_SITE,
+		theConfig.VALIDATORS_SITE,
 		443,
 		VALIDATORS_FILE_PATH,
 		VALIDATORS_FILE_BYTES_MAX,
@@ -1581,23 +1584,45 @@ void UniqueNodeList::nodeBootstrap()
 
 	bool	bLoaded	= iDomains || iNodes;
 
-	if (!bLoaded && !theConfig.UNL_DEFAULT.empty())
+	// Always merge in the file specified in the config.
+	if (!theConfig.UNL_DEFAULT.empty())
 	{
-		std::cerr << "Bootstrapping UNL: loading from file." << std::endl;
+		std::cerr << "Bootstrapping UNL: loading from unl_default." << std::endl;
 
-		bLoaded	= nodeLoad();
+		bLoaded	= nodeLoad(theConfig.UNL_DEFAULT);
+	}
+
+	// If never loaded anything try the current directory.
+	if (!bLoaded && theConfig.UNL_DEFAULT.empty())
+	{
+		std::cerr << "Bootstrapping UNL: loading from '" VALIDATORS_FILE_NAME "'." << std::endl;
+
+		bLoaded	= nodeLoad(VALIDATORS_FILE_NAME);
+	}
+
+	// Always load from newcoind.cfg
+	if (!theConfig.VALIDATORS.empty())
+	{
+		NewcoinAddress	naInvalid;	// Don't want a referrer on added entries.
+
+		std::cerr << "Bootstrapping UNL: loading from " CONFIG_FILE_NAME "." << std::endl;
+
+		if (processValidators("local", CONFIG_FILE_NAME, naInvalid, vsConfig, &theConfig.VALIDATORS))
+			bLoaded	= true;
 	}
 
 	if (!bLoaded)
 	{
-		std::cerr << "Bootstrapping UNL: loading from " VALIDATORS_SITE "." << std::endl;
+		std::cerr << "Bootstrapping UNL: loading from " << theConfig.VALIDATORS_SITE << "." << std::endl;
+
 		nodeNetwork();
 	}
 }
 
 // Process a validators.txt.
+// --> strSite: source of validators
 // --> strValidators: contents of a validators.txt
-void UniqueNodeList::nodeDefault(const std::string& strValidators, const std::string& strSource) {
+void UniqueNodeList::nodeProcess(const std::string& strSite, const std::string& strValidators, const std::string& strSource) {
 	section secValidators	= ParseSection(strValidators, true);
 
 	section::mapped_type*	pmtEntries	= sectionEntries(secValidators, SECTION_VALIDATORS);
@@ -1606,7 +1631,7 @@ void UniqueNodeList::nodeDefault(const std::string& strValidators, const std::st
 		NewcoinAddress	naInvalid;	// Don't want a referrer on added entries.
 
 		// YYY Unspecified might be bootstrap or rpc command
-		processValidators("unspecified", strSource, naInvalid, vsValidator, pmtEntries);
+		processValidators(strSite, strSource, naInvalid, vsValidator, pmtEntries);
 	}
 	else
 	{

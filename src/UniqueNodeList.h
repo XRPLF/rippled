@@ -32,10 +32,11 @@ class UniqueNodeList
 {
 public:
 	typedef enum {
+		vsConfig	= 'C',	// newcoind.cfg
 		vsManual	= 'M',
+		vsReferral	= 'R',
 		vsValidator	= 'V',	// validators.txt
 		vsWeb		= 'W',
-		vsReferral	= 'R',
 	} validatorSource;
 
 	typedef long score;
@@ -121,7 +122,7 @@ private:
 	void responseValidators(const std::string& strValidatorsUrl, const NewcoinAddress& naNodePublic, section secSite, const std::string& strSite, const boost::system::error_code& err, const std::string strValidatorsFile);
 
 	void processIps(const std::string& strSite, const NewcoinAddress& naNodePublic, section::mapped_type* pmtVecStrIps);
-	void processValidators(const std::string& strSite, const std::string& strValidatorsSrc, const NewcoinAddress& naNodePublic, validatorSource vsWhy, section::mapped_type* pmtVecStrValidators);
+	int processValidators(const std::string& strSite, const std::string& strValidatorsSrc, const NewcoinAddress& naNodePublic, validatorSource vsWhy, section::mapped_type* pmtVecStrValidators);
 
 	void processFile(const std::string strDomain, const NewcoinAddress& naNodePublic, section secSite);
 
@@ -132,7 +133,7 @@ private:
 	void setSeedNodes(const seedNode& snSource, bool bNext);
 
 	void validatorsResponse(const boost::system::error_code& err, std::string strResponse);
-	void nodeDefault(const std::string& strValidators, const std::string& strSource);
+	void nodeProcess(const std::string& strSite, const std::string& strValidators, const std::string& strSource);
 
 public:
 	UniqueNodeList(boost::asio::io_service& io_service);
@@ -151,7 +152,7 @@ public:
 	bool nodeInUNL(const NewcoinAddress& naNodePublic);
 
 	void nodeBootstrap();
-	bool nodeLoad();
+	bool nodeLoad(boost::filesystem::path pConfig);
 	void nodeNetwork();
 
 	Json::Value getUnlJson();
