@@ -28,6 +28,7 @@
 #define SECTION_VALIDATION_SEED			"validation_seed"
 #define SECTION_WEBSOCKET_IP			"websocket_ip"
 #define SECTION_WEBSOCKET_PORT			"websocket_port"
+#define SECTION_VALIDATORS_SITE			"validators_site"
 
 // Fees are in XNB.
 #define DEFAULT_FEE_ACCOUNT_CREATE		1000
@@ -143,6 +144,8 @@ void Config::setup(const std::string& strConf)
 
 	ACCOUNT_PROBE_MAX		= 10;
 
+	VALIDATORS_SITE			= DEFAULT_VALIDATORS_SITE;
+
 	load();
 }
 
@@ -169,6 +172,8 @@ void Config::load()
 		{
 			section		secConfig	= ParseSection(strConfigFile, true);
 			std::string	strTemp;
+
+			(void) sectionSingleB(secConfig, SECTION_VALIDATORS_SITE, VALIDATORS_SITE);
 
 			(void) sectionSingleB(secConfig, SECTION_PEER_IP, PEER_IP);
 

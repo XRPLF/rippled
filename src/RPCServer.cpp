@@ -1926,7 +1926,7 @@ Json::Value RPCServer::doUnlList(Json::Value& params)
 // Populate the UNL from a local validators.txt file.
 Json::Value RPCServer::doUnlLoad(Json::Value& params)
 {
-	if (!theApp->getUNL().nodeLoad())
+	if (theConfig.UNL_DEFAULT.empty() || !theApp->getUNL().nodeLoad(theConfig.UNL_DEFAULT))
 	{
 		return RPCError(rpcLOAD_FAILED);
 	}

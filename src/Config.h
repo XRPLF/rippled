@@ -9,7 +9,6 @@
 #include <boost/filesystem.hpp>
 
 #define SYSTEM_NAME					"newcoin"
-#define VALIDATORS_SITE				"redstem.com"
 #define SYSTEM_CURRENCY_CODE		"XNS"
 #define SYSTEM_CURRENCY_PRECISION	6
 
@@ -18,6 +17,7 @@
 #define SYSTEM_CURRENCY_PARTS		1000000ull		// 10^SYSTEM_CURRENCY_PRECISION
 #define SYSTEM_CURRENCY_START		(SYSTEM_CURRENCY_GIFT*SYSTEM_CURRENCY_USERS*SYSTEM_CURRENCY_PARTS)
 
+#define DEFAULT_VALIDATORS_SITE		"redstem.com"
 #define VALIDATORS_FILE_NAME		"validators.txt"
 const int SYSTEM_PEER_PORT = 6561;
 
@@ -45,6 +45,9 @@ public:
 	boost::filesystem::path	CONFIG_DIR;
 	boost::filesystem::path	DATA_DIR;
 	boost::filesystem::path	UNL_DEFAULT;
+
+	// Where to find validators.txt on the Internet.
+	std::string	VALIDATORS_SITE;
 
 	// Network parameters
 	int			NETWORK_START_TIME;		// The Unix time we start ledger 0

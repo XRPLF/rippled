@@ -151,7 +151,7 @@ public:
 	bool nodeInUNL(const NewcoinAddress& naNodePublic);
 
 	void nodeBootstrap();
-	bool nodeLoad();
+	bool nodeLoad(boost::filesystem::path pConfig);
 	void nodeNetwork();
 
 	Json::Value getUnlJson();

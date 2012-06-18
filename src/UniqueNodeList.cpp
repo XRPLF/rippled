@@ -1485,34 +1485,34 @@ Json::Value UniqueNodeList::getUnlJson()
 	return ret;
 }
 
-bool UniqueNodeList::nodeLoad()
+bool UniqueNodeList::nodeLoad(boost::filesystem::path pConfig)
 {
-	if (theConfig.UNL_DEFAULT.empty())
+	if (pConfig.empty())
 	{
-		std::cerr << "UNL_DEFAULT not specified." << std::endl;
+		std::cerr << VALIDATORS_FILE_NAME " path not specified." << std::endl;
 
 		return false;
 	}
 
-	if (!boost::filesystem::exists(theConfig.UNL_DEFAULT))
+	if (!boost::filesystem::exists(pConfig))
 	{
-		std::cerr << str(boost::format("UNL_DEFAULT not found: %s") % theConfig.UNL_DEFAULT) << std::endl;
+		std::cerr << str(boost::format(VALIDATORS_FILE_NAME " not found: %s") % pConfig) << std::endl;
 
 		return false;
 	}
 
-	if (!boost::filesystem::is_regular_file(theConfig.UNL_DEFAULT))
+	if (!boost::filesystem::is_regular_file(pConfig))
 	{
-		std::cerr << str(boost::format("UNL_DEFAULT not regular file: %s") % theConfig.UNL_DEFAULT) << std::endl;
+		std::cerr << str(boost::format(VALIDATORS_FILE_NAME " not regular file: %s") % pConfig) << std::endl;
 
 		return false;
 	}
 
-	std::ifstream	ifsDefault(theConfig.UNL_DEFAULT.native().c_str(), std::ios::in);
+	std::ifstream	ifsDefault(pConfig.native().c_str(), std::ios::in);
 
 	if (!ifsDefault)
 	{
-		std::cerr << str(boost::format("Failed to open: %s") % theConfig.UNL_DEFAULT) << std::endl;
+		std::cerr << str(boost::format(VALIDATORS_FILE_NAME " failed to open: %s") % pConfig) << std::endl;
 
 		return false;
 	}
@@ -1524,14 +1524,14 @@ bool UniqueNodeList::nodeLoad()
 
 	if (ifsDefault.bad())
 	{
-		std::cerr << str(boost::format("Failed to read: %s") % theConfig.UNL_DEFAULT) << std::endl;
+		std::cerr << str(boost::format("Failed to read: %s") % pConfig) << std::endl;
 
 		return false;
 	}
 
-	nodeDefault(strValidators, theConfig.UNL_DEFAULT.native());
+	nodeDefault(strValidators, pConfig.native());
 
-	std::cerr << str(boost::format("Processing: %s") % theConfig.UNL_DEFAULT) << std::endl;
+	std::cerr << str(boost::format("Processing: %s") % pConfig) << std::endl;
 
 	return true;
 }
@@ -1542,7 +1542,7 @@ void UniqueNodeList::validatorsResponse(const boost::system::error_code& err, st
 
 	if (!err)
 	{
-		nodeDefault(strResponse, VALIDATORS_SITE);
+		nodeDefault(strResponse, theConfig.VALIDATORS_SITE);
 	}
 	else
 	{
@@ -1554,7 +1554,7 @@ void UniqueNodeList::nodeNetwork()
 {
 	HttpsClient::httpsGet(
 		theApp->getIOService(),
-		VALIDATORS_SITE,
+		theConfig.VALIDATORS_SITE,
 		443,
 		VALIDATORS_FILE_PATH,
 		VALIDATORS_FILE_BYTES_MAX,
@@ -1581,16 +1581,26 @@ void UniqueNodeList::nodeBootstrap()
 
 	bool	bLoaded	= iDomains || iNodes;
 
-	if (!bLoaded && !theConfig.UNL_DEFAULT.empty())
+	// Always merge in the file specified in the config.
+	if (!theConfig.UNL_DEFAULT.empty())
 	{
-		std::cerr << "Bootstrapping UNL: loading from file." << std::endl;
+		std::cerr << "Bootstrapping UNL: loading from unl_default." << std::endl;
 
-		bLoaded	= nodeLoad();
+		bLoaded	= nodeLoad(theConfig.UNL_DEFAULT);
+	}
+
+	// If never loaded anything try the current directory.
+	if (!bLoaded && theConfig.UNL_DEFAULT.empty())
+	{
+		std::cerr << "Bootstrapping UNL: loading from '" VALIDATORS_FILE_NAME "'." << std::endl;
+
+		bLoaded	= nodeLoad(VALIDATORS_FILE_NAME);
 	}
 
 	if (!bLoaded)
 	{
-		std::cerr << "Bootstrapping UNL: loading from " VALIDATORS_SITE "." << std::endl;
+		std::cerr << "Bootstrapping UNL: loading from " << theConfig.VALIDATORS_SITE << "." << std::endl;
+
 		nodeNetwork();
 	}
 }
