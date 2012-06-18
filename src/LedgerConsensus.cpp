@@ -2,6 +2,7 @@
 
 #include <boost/thread.hpp>
 #include <boost/bind.hpp>
+#include <boost/unordered_set.hpp>
 
 #include "../json/writer.h"
 
@@ -143,7 +144,7 @@ void LCTransaction::setVote(const uint160& peer, bool votesYes)
 		++mYays;
 		res.first->second = true;
 	}
-	else if(!votesYes && !res.first->second)
+	else if(!votesYes && res.first->second)
 	{ // changes vote to no
 		Log(lsTRACE) << "Peer " << peer.GetHex() << " now votes NO on " << mTransactionID.GetHex();
 		++mNays;
@@ -178,13 +179,14 @@ bool LCTransaction::updatePosition(int seconds)
 	// To prevent avalanche stalls, we increase the needed weight slightly over time
 	bool newPosition;
 	if (seconds <= LEDGER_ACCEL_CONVERGE) newPosition = weight >  AV_MIN_CONSENSUS;
-	else if (seconds >= LEDGER_CONVERGE) newPosition = weight > AV_MAX_CONSENSUS;
-	else newPosition = weight > AV_AVG_CONSENSUS;
+	else if (seconds >= LEDGER_CONVERGE) newPosition = weight > AV_AVG_CONSENSUS;
+	else newPosition = weight > AV_MAX_CONSENSUS;
 
 	if (newPosition == mOurPosition)
 	{
 #ifdef LC_DEBUG
-		Log(lsTRACE) << "No change: weight " << weight;
+		Log(lsTRACE) << "No change (" << (mOurPosition ? "YES" : "NO") << ") : weight "
+			<< weight << ", seconds " << seconds;
 #endif
 		return false;
 	}
@@ -204,22 +206,53 @@ LedgerConsensus::LedgerConsensus(Ledger::pointer previousLedger, uint32 closeTim
 {
 	Log(lsDEBUG) << "Creating consensus object";
 	Log(lsTRACE) << "LCL:" << previousLedger->getHash().GetHex() <<", ct=" << closeTime;
-
-	// we always have an empty map
-	mComplete[uint256()] = boost::make_shared<SHAMap>();
 }
 
 void LedgerConsensus::takeInitialPosition(Ledger::pointer initialLedger)
 {
-	// XXX Don't even start if no VALIDATION_SEED.
-
 	SHAMap::pointer initialSet = initialLedger->peekTransactionMap()->snapShot(false);
 	uint256 txSet = initialSet->getHash();
 	assert (initialLedger->getParentHash() == mPreviousLedger->getHash());
 
-	mOurPosition = boost::make_shared<LedgerProposal>(theConfig.VALIDATION_SEED, initialLedger->getParentHash(), txSet);
+	// if any peers have taken a contrary position, process disputes
+	boost::unordered_set<uint256> found;
+	for(boost::unordered_map<uint160, LedgerProposal::pointer>::iterator it = mPeerPositions.begin(),
+		end = mPeerPositions.end(); it != end; ++it)
+	{
+		uint256 set = it->second->getCurrentHash();
+		if (found.insert(set).second)
+		{
+			boost::unordered_map<uint256, SHAMap::pointer>::iterator it = mComplete.find(set);
+			if (it != mComplete.end())
+				createDisputes(initialSet, it->second);
+		}
+	}
+
+	mOurPosition = boost::make_shared<LedgerProposal>
+		(theConfig.VALIDATION_SEED, initialLedger->getParentHash(), txSet);
 	mapComplete(txSet, initialSet);
 	propose(std::vector<uint256>(), std::vector<uint256>());
+}
+
+void LedgerConsensus::createDisputes(SHAMap::pointer m1, SHAMap::pointer m2)
+{
+	SHAMap::SHAMapDiff differences;
+	m1->compare(m2, differences, 16384);
+	for(SHAMap::SHAMapDiff::iterator pos = differences.begin(), end = differences.end(); pos != end; ++pos)
+	{ // create disputed transactions (from the ledger that has them)
+		Log(lsTRACE) << "Transaction now in dispute: " << pos->first.GetHex();
+		if (pos->second.first)
+		{
+			assert(!pos->second.second);
+			addDisputedTransaction(pos->first, pos->second.first->peekData());
+		}
+		else if(pos->second.second)
+		{
+			assert(!pos->second.first);
+			addDisputedTransaction(pos->first, pos->second.second->peekData());
+		}
+		else assert(false);
+	}
 }
 
 void LedgerConsensus::mapComplete(const uint256& hash, SHAMap::pointer map)
@@ -246,23 +279,7 @@ void LedgerConsensus::mapComplete(const uint256& hash, SHAMap::pointer map)
 		if (it2 != mComplete.end())
 		{
 			assert((it2->first == mOurPosition->getCurrentHash()) && it2->second);
-			SHAMap::SHAMapDiff differences;
-			it2->second->compare(map, differences, 16384);
-			for(SHAMap::SHAMapDiff::iterator pos = differences.begin(), end = differences.end(); pos != end; ++pos)
-			{ // create disputed transactions (from the ledger that has them)
-				Log(lsTRACE) << "Transaction now in dispute: " << pos->first.GetHex();
-				if (pos->second.first)
-				{
-					assert(!pos->second.second);
-					addDisputedTransaction(pos->first, pos->second.first->peekData());
-				}
-				else if(pos->second.second)
-				{
-					assert(!pos->second.first);
-					addDisputedTransaction(pos->first, pos->second.second->peekData());
-				}
-				else assert(false);
-			}
+			createDisputes(it2->second, map);
 		}
 		else assert(false); // We don't have our own position?!
 	}
@@ -449,7 +466,7 @@ bool LedgerConsensus::updateOurPositions(int sinceClose)
 		uint256 newHash = ourPosition->getHash();
 		mOurPosition->changePosition(newHash);
 		propose(addedTx, removedTx);
-		sendHaveTxSet(newHash, true); // FIXME: This may be redundant
+		mapComplete(newHash, ourPosition);
 		Log(lsINFO) << "We change our position to " << newHash.GetHex();
 	}
 
@@ -466,6 +483,12 @@ SHAMap::pointer LedgerConsensus::getTransactionTree(const uint256& hash, bool do
 			TransactionAcquire::pointer& acquiring = mAcquiring[hash];
 			if (!acquiring)
 			{
+				if (!hash)
+				{
+					SHAMap::pointer empty = boost::make_shared<SHAMap>();
+					mapComplete(hash, empty);
+					return empty;
+				}
 				acquiring = boost::make_shared<TransactionAcquire>(hash);
 				startAcquiring(acquiring);
 			}
@@ -565,10 +588,12 @@ bool LedgerConsensus::peerPosition(LedgerProposal::pointer newPosition)
 	SHAMap::pointer set = getTransactionTree(newPosition->getCurrentHash(), true);
 	if (set)
 	{
+		Log(lsTRACE) << "Have that set";
 		for (boost::unordered_map<uint256, LCTransaction::pointer>::iterator it = mDisputes.begin(),
 				end = mDisputes.end(); it != end; ++it)
 			it->second->setVote(newPosition->getPeerID(), set->hasItem(it->first));
 	}
+	else Log(lsTRACE) << "Don't have that set";
 
 	return true;
 }
@@ -746,6 +771,7 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 
 	ScopedLock sl = theApp->getMasterLedger().getLock();
 	applyTransactions(theApp->getMasterLedger().getCurrentLedger()->peekTransactionMap(), newOL, failedTransactions);
+	// FIXME: Apply disputed transactions not voted into the candidate set
 	theApp->getMasterLedger().pushLedger(newLCL, newOL);
 	mState = lcsACCEPTED;
 	sl.unlock();
