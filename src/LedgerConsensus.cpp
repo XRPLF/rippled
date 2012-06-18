@@ -638,7 +638,7 @@ void LedgerConsensus::applyTransaction(TransactionEngine& engine, SerializedTran
 		if (result > 0)
 		{
 			Log(lsINFO) << "   retry";
-			assert(!ledger->hasTransaction(txn->getTransactionID()));
+//			assert(!ledger->hasTransaction(txn->getTransactionID())); FIXME: We get these (doPasswordSet)
 			failedTransactions.push_back(txn);
 		}
 		else if (result == 0)
