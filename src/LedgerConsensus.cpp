@@ -125,25 +125,25 @@ void LCTransaction::setVote(const uint160& peer, bool votesYes)
 	{ // new vote
 		if (votesYes)
 		{
-			Log(lsTRACE) << "Peer " << peer.GetHex() << "votes YES on " << mTransactionID.GetHex();
+			Log(lsTRACE) << "Peer " << peer.GetHex() << " votes YES on " << mTransactionID.GetHex();
 			++mYays;
 		}
 		else
 		{
-			Log(lsTRACE) << "Peer " << peer.GetHex() << "votes NO on " << mTransactionID.GetHex();
+			Log(lsTRACE) << "Peer " << peer.GetHex() << " votes NO on " << mTransactionID.GetHex();
 			++mNays;
 		}
 	}
 	else if (votesYes && !res.first->second)
 	{ // changes vote to yes
-		Log(lsTRACE) << "Peer " << peer.GetHex() << "now votes YES on " << mTransactionID.GetHex();
+		Log(lsTRACE) << "Peer " << peer.GetHex() << " now votes YES on " << mTransactionID.GetHex();
 		--mNays;
 		++mYays;
 		res.first->second = true;
 	}
 	else if(!votesYes && !res.first->second)
 	{ // changes vote to no
-		Log(lsTRACE) << "Peer " << peer.GetHex() << "now votes NO on " << mTransactionID.GetHex();
+		Log(lsTRACE) << "Peer " << peer.GetHex() << " now votes NO on " << mTransactionID.GetHex();
 		++mNays;
 		--mYays;
 		res.first->second = false;
