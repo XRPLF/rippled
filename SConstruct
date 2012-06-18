@@ -68,7 +68,7 @@ PROTO_SRCS	    = env.Protoc([], 'src/newcoin.proto', PROTOCOUTDIR='obj', PROTOCP
 env.Clean(PROTO_SRCS, 'site_scons/site_tools/protoc.pyc')
 
 # Remove unused source files.
-UNUSED_SRCS	= ['src/HttpReply.cpp', 'src/ValidationCollection.cpp']
+UNUSED_SRCS	= ['src/HttpReply.cpp']
 
 for file in UNUSED_SRCS:
     NEWCOIN_SRCS.remove(file)

@@ -13,13 +13,13 @@ const uint32 SerializedValidation::sFullFlag		= 0x00010000;
 const uint32 SerializedValidation::sValidationMagic	= 0x4c575200; // "LGR"
 
 SerializedValidation::SerializedValidation(SerializerIterator& sit, bool checkSignature)
-	: STObject(sValidationFormat, sit), mSignature(sit, "Signature")
+	: STObject(sValidationFormat, sit), mSignature(sit, "Signature"), mTrusted(false)
 {
 	if (!isValid()) throw std::runtime_error("Invalid validation");
 }
 
 SerializedValidation::SerializedValidation(const uint256& ledgerHash, const NewcoinAddress& naSeed, bool isFull)
-	: STObject(sValidationFormat), mSignature("Signature")
+	: STObject(sValidationFormat), mSignature("Signature"), mTrusted(false)
 {
 	setValueFieldH256(sfLedgerHash, ledgerHash);
 	setValueFieldVL(sfSigningKey, NewcoinAddress::createNodePublic(naSeed).getNodePublic());
