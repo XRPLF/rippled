@@ -523,10 +523,14 @@ bool Transaction::save()
 	 default:			status = TXN_SQL_UNKNOWN;
 	}
 
+	std::string exists = boost::str(boost::format("SELECT Status FROM Transactions WHERE TransID = '%s';")
+		% mTransaction->getTransactionID().GetHex());
+
 	Database *db = theApp->getTxnDB()->getDB();
 	ScopedLock dbLock = theApp->getTxnDB()->getDBLock();
+	if (!SQL_EXISTS(db, exists)) return false;
 	return
-		db->executeSQL(mTransaction->getSQLInsertHeader() + mTransaction->getSQL(getLedger(), status) + ";", true);
+		db->executeSQL(mTransaction->getSQLInsertHeader() + mTransaction->getSQL(getLedger(), status) + ";");
 }
 
 Transaction::pointer Transaction::transactionFromSQL(const std::string& sql)
