@@ -525,7 +525,8 @@ bool Transaction::save()
 
 	Database *db = theApp->getTxnDB()->getDB();
 	ScopedLock dbLock = theApp->getTxnDB()->getDBLock();
-	return db->executeSQL(mTransaction->getSQLInsertHeader() + mTransaction->getSQL(getLedger(), status) + ";");
+	return
+		db->executeSQL(mTransaction->getSQLInsertHeader() + mTransaction->getSQL(getLedger(), status) + ";", true);
 }
 
 Transaction::pointer Transaction::transactionFromSQL(const std::string& sql)

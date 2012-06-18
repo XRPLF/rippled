@@ -292,7 +292,7 @@ void Ledger::saveAcceptedLedger(Ledger::pointer ledger)
 		}
 		sql += ";";
 		Log(lsTRACE) << "ActTx: " << sql;
-		db->executeSQL(sql);
+		db->executeSQL(sql, true); // may already be in there
 		if (!db->executeSQL(
 			txn.getSQLInsertHeader() + txn.getSQL(ledger->getLedgerSeq(), TXN_SQL_VALIDATED) + ";"), true)
 		{ // transaction already in DB, update
