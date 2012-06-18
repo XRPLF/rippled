@@ -1529,7 +1529,7 @@ bool UniqueNodeList::nodeLoad()
 		return false;
 	}
 
-	nodeDefault(strValidators, theConfig.UNL_DEFAULT.native());
+	nodeDefault(strValidators, theConfig.UNL_DEFAULT.string());
 
 	std::cerr << str(boost::format("Processing: %s") % theConfig.UNL_DEFAULT) << std::endl;
 
