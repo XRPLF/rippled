@@ -1,4 +1,5 @@
 #include "ParseSection.h"
+#include "utils.h"
 
 #include <iostream>
 #include <boost/algorithm/string.hpp>
@@ -32,6 +33,8 @@ section ParseSection(const std::string& strInput, const bool bTrim)
 		if (strValue.empty() || strValue[0] == '#')
 		{
 			// Blank line or comment, do nothing.
+
+			nothing();
 		}
 		else if (strValue[0] == '[' && strValue[strValue.length()-1] == ']') {
 			// New section.
@@ -41,11 +44,12 @@ section ParseSection(const std::string& strInput, const bool bTrim)
 		}
 		else
 		{
-			// Another line in a section.
+			// Another line for section.
 			if (bTrim)
 				boost::algorithm::trim(strValue);
 
-			secResult[strSection].push_back(strValue);
+			if (!strValue.empty())
+				secResult[strSection].push_back(strValue);
 		}
     }
 
