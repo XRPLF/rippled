@@ -513,7 +513,7 @@ bool Transaction::save()
 	if ((mStatus == INVALID) || (mStatus == REMOVED)) return false;
 
 	char status;
-	switch(mStatus)
+	switch (mStatus)
 	{
 	 case NEW:			status = TXN_SQL_NEW;		break;
 	 case INCLUDED:		status = TXN_SQL_INCLUDED;	break;
@@ -523,8 +523,6 @@ bool Transaction::save()
 	 default:			status = TXN_SQL_UNKNOWN;
 	}
 
-	// FIXME: This needs to check if the transaction is already there and not
-	// de-confirm it
 	Database *db = theApp->getTxnDB()->getDB();
 	ScopedLock dbLock = theApp->getTxnDB()->getDBLock();
 	return db->executeSQL(mTransaction->getSQLInsertHeader() + mTransaction->getSQL(getLedger(), status) + ";");
