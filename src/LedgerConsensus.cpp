@@ -415,7 +415,9 @@ bool LedgerConsensus::updateOurPositions(int sinceClose)
 	std::vector<uint256> addedTx, removedTx;
 
 
+#ifdef LC_DEBUG
 	Log(lsTRACE) << "updating our positions";
+#endif
 	for(boost::unordered_map<uint256, LCTransaction::pointer>::iterator it = mDisputes.begin(),
 			end = mDisputes.end(); it != end; ++it)
 	{
