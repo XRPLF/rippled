@@ -6,7 +6,7 @@
 #
 # This file is UTF-8 with Dos, UNIX, or Mac style end of lines.
 # Blank lines and lines starting with a '#' are ignored.
-# All other lines should be domain names.
+# All other lines should be hankos or domain names.
 #
 # [validators]:
 #   To acquire a UNL, newcoind will probe for https web servers at the domains
@@ -14,4 +14,6 @@
 #
 
 [validators]
-n9LQC4xFSWXNv1SU1sKtjrW6TZpBZSwp1nRWej8saGs155x42YFZ
+n9LQC4xFSWXNv1SU1sKtjrW6TZpBZSwp1nRWej8saGs155x42YFZ 	first
+n9LFzWuhKNvXStHAuemfRKFVECLApowncMAM5chSCL9R5ECHGN4V 	second
+n9KXAZxiHkWuVGxDEE8boW7WmcycpZNmWei4vxVaywLZ391Nbuqx	third

@@ -27,7 +27,7 @@ Log::~Log()
 	boost::recursive_mutex::scoped_lock sl(sLock);
 	if (mSeverity >= sMinSeverity)
 	{
-		// TEMP std::cerr << logMsg << std::endl;
+		std::cerr << logMsg << std::endl;
 	}
 }
 
