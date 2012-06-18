@@ -13,6 +13,8 @@
 
 #define TRUST_NETWORK
 
+// #define LC_DEBUG
+
 TransactionAcquire::TransactionAcquire(const uint256& hash)
 	: PeerSet(hash, 1), mFilter(&theApp->getNodeCache()), mHaveRoot(false)
 {
@@ -152,20 +154,40 @@ void LCTransaction::setVote(const uint160& peer, bool votesYes)
 
 bool LCTransaction::updatePosition(int seconds)
 { // this many seconds after close, should our position change
-
-	if (mOurPosition && (mNays == 0)) return false;
-	if (!mOurPosition && (mYays == 0)) return false;
+#ifdef LC_DEBUG
+	Log(lsTRACE) << "Checking our position on " << mTransactionID.GetHex();
+#endif
+	if (mOurPosition && (mNays == 0))
+	{
+#ifdef LC_DEBUG
+		Log(lsTRACE) << "YES and no NOs";
+#endif
+		return false;
+	}
+	if (!mOurPosition && (mYays == 0))
+	{
+#ifdef LC_DEBUG
+		Log(lsTRACE) << "NO and no YESes";
+#endif
+		return false;
+	}
 
 	// This is basically the percentage of nodes voting 'yes' (including us)
 	int weight = (mYays * 100 + (mOurPosition ? 100 : 0)) / (mNays + mYays + 1);
 
 	// To prevent avalanche stalls, we increase the needed weight slightly over time
 	bool newPosition;
-	if (seconds <= LEDGER_CONVERGE) newPosition = weight >  AV_MIN_CONSENSUS;
-	else if (seconds >= LEDGER_FORCE_CONVERGE) newPosition = weight > AV_MAX_CONSENSUS;
+	if (seconds <= LEDGER_ACCEL_CONVERGE) newPosition = weight >  AV_MIN_CONSENSUS;
+	else if (seconds >= LEDGER_CONVERGE) newPosition = weight > AV_MAX_CONSENSUS;
 	else newPosition = weight > AV_AVG_CONSENSUS;
 
-	if (newPosition == mOurPosition) return false;
+	if (newPosition == mOurPosition)
+	{
+#ifdef LC_DEBUG
+		Log(lsTRACE) << "No change: weight " << weight;
+#endif
+		return false;
+	}
 	mOurPosition = newPosition;
 	Log(lsTRACE) << "We now vote " << (mOurPosition ? "YES" : "NO") << " on " << mTransactionID.GetHex();
 	return true;
@@ -228,10 +250,17 @@ void LedgerConsensus::mapComplete(const uint256& hash, SHAMap::pointer map)
 			it2->second->compare(map, differences, 16384);
 			for(SHAMap::SHAMapDiff::iterator pos = differences.begin(), end = differences.end(); pos != end; ++pos)
 			{ // create disputed transactions (from the ledger that has them)
+				Log(lsTRACE) << "Transaction now in dispute: " << pos->first.GetHex();
 				if (pos->second.first)
+				{
+					assert(!pos->second.second);
 					addDisputedTransaction(pos->first, pos->second.first->peekData());
+				}
 				else if(pos->second.second)
+				{
+					assert(!pos->second.first);
 					addDisputedTransaction(pos->first, pos->second.second->peekData());
+				}
 				else assert(false);
 			}
 		}
@@ -328,7 +357,7 @@ int LedgerConsensus::statePostClose(int secondsSinceClose)
 int LedgerConsensus::stateEstablish(int secondsSinceClose)
 { // we are establishing consensus
 	updateOurPositions(secondsSinceClose);
-	if (secondsSinceClose > LEDGER_CONVERGE)
+	if (secondsSinceClose > LEDGER_MAX_CONVERGE)
 	{
 		Log(lsINFO) << "Converge cutoff";
 		mState = lcsCUTOFF;
@@ -339,7 +368,7 @@ int LedgerConsensus::stateEstablish(int secondsSinceClose)
 int LedgerConsensus::stateCutoff(int secondsSinceClose)
 { // we are making sure everyone else agrees
 	bool haveConsensus = updateOurPositions(secondsSinceClose);
-	if (haveConsensus || (secondsSinceClose > LEDGER_FORCE_CONVERGE))
+	if (haveConsensus || (secondsSinceClose > LEDGER_CONVERGE))
 	{
 		Log(lsINFO) << "Consensus complete (" << haveConsensus << ")";
 		mState = lcsFINISHED;
@@ -385,6 +414,8 @@ bool LedgerConsensus::updateOurPositions(int sinceClose)
 	SHAMap::pointer ourPosition;
 	std::vector<uint256> addedTx, removedTx;
 
+
+	Log(lsTRACE) << "updating our positions";
 	for(boost::unordered_map<uint256, LCTransaction::pointer>::iterator it = mDisputes.begin(),
 			end = mDisputes.end(); it != end; ++it)
 	{
@@ -413,11 +444,11 @@ bool LedgerConsensus::updateOurPositions(int sinceClose)
 
 	if (changes)
 	{
-		Log(lsINFO) << "We change our position";
 		uint256 newHash = ourPosition->getHash();
 		mOurPosition->changePosition(newHash);
 		propose(addedTx, removedTx);
-		sendHaveTxSet(newHash, true);
+		sendHaveTxSet(newHash, true); // FIXME: This may be redundant
+		Log(lsINFO) << "We change our position to " << newHash.GetHex();
 	}
 
 	return stable;
@@ -482,6 +513,7 @@ void LedgerConsensus::propose(const std::vector<uint256>& added, const std::vect
 
 void LedgerConsensus::addDisputedTransaction(const uint256& txID, const std::vector<unsigned char>& tx)
 {
+	Log(lsTRACE) << "Transacstion " << txID.GetHex() << " is disputed";
 	boost::unordered_map<uint256, LCTransaction::pointer>::iterator it = mDisputes.find(txID);
 	if (it != mDisputes.end()) return;
 
