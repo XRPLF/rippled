@@ -649,7 +649,6 @@ void LedgerConsensus::applyTransaction(TransactionEngine& engine, SerializedTran
 		else
 		{
 			Log(lsINFO) << "   hard fail";
-			assert(!ledger->hasTransaction(txn->getTransactionID()));
 		}
 #ifndef TRUST_NETWORK
 	}
