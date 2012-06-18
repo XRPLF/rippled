@@ -155,23 +155,10 @@ void LCTransaction::setVote(const uint160& peer, bool votesYes)
 
 bool LCTransaction::updatePosition(int seconds)
 { // this many seconds after close, should our position change
-#ifdef LC_DEBUG
-	Log(lsTRACE) << "Checking our position on " << mTransactionID.GetHex();
-#endif
 	if (mOurPosition && (mNays == 0))
-	{
-#ifdef LC_DEBUG
-		Log(lsTRACE) << "YES and no NOs";
-#endif
 		return false;
-	}
 	if (!mOurPosition && (mYays == 0))
-	{
-#ifdef LC_DEBUG
-		Log(lsTRACE) << "NO and no YESes";
-#endif
 		return false;
-	}
 
 	// This is basically the percentage of nodes voting 'yes' (including us)
 	int weight = (mYays * 100 + (mOurPosition ? 100 : 0)) / (mNays + mYays + 1);
@@ -431,10 +418,6 @@ bool LedgerConsensus::updateOurPositions(int sinceClose)
 	SHAMap::pointer ourPosition;
 	std::vector<uint256> addedTx, removedTx;
 
-
-#ifdef LC_DEBUG
-	Log(lsTRACE) << "updating our positions";
-#endif
 	for(boost::unordered_map<uint256, LCTransaction::pointer>::iterator it = mDisputes.begin(),
 			end = mDisputes.end(); it != end; ++it)
 	{
@@ -643,9 +626,44 @@ void LedgerConsensus::Saccept(boost::shared_ptr<LedgerConsensus> This, SHAMap::p
 	This->accept(txSet);
 }
 
-void LedgerConsensus::applyTransactions(SHAMap::pointer set, Ledger::pointer ledger,
-	CanonicalTXSet& failedTransactions)
+void LedgerConsensus::applyTransaction(TransactionEngine& engine, SerializedTransaction::pointer txn,
+	Ledger::pointer ledger,	CanonicalTXSet& failedTransactions, bool final)
 {
+	TransactionEngineParams parms = final ? (tepNO_CHECK_FEE | tepUPDATE_TOTAL) : tepNONE;
+#ifndef TRUST_NETWORK
+	try
+	{
+#endif
+		TransactionEngineResult result = engine.applyTransaction(*txn, parms, 0);
+		if (result > 0)
+		{
+			Log(lsINFO) << "   retry";
+			assert(!ledger->hasTransaction(txn->getTransactionID()));
+			failedTransactions.push_back(txn);
+		}
+		else if (result == 0)
+		{
+			Log(lsDEBUG) << "   success";
+			assert(ledger->hasTransaction(txn->getTransactionID()));
+		}
+		else
+		{
+			Log(lsINFO) << "   hard fail";
+			assert(!ledger->hasTransaction(txn->getTransactionID()));
+		}
+#ifndef TRUST_NETWORK
+	}
+	catch (...)
+	{
+		Log(lsWARNING) << "  Throws";
+	}
+#endif
+}
+
+void LedgerConsensus::applyTransactions(SHAMap::pointer set, Ledger::pointer ledger,
+	CanonicalTXSet& failedTransactions, bool final)
+{
+	TransactionEngineParams parms = final ? (tepNO_CHECK_FEE | tepUPDATE_TOTAL) : tepNONE;
 	TransactionEngine engine(ledger);
 
 	for (SHAMapItem::pointer item = set->peekFirstItem(); !!item; item = set->peekNextItem(item->getTag()))
@@ -657,23 +675,7 @@ void LedgerConsensus::applyTransactions(SHAMap::pointer set, Ledger::pointer led
 #endif
 			SerializerIterator sit(item->peekSerializer());
 			SerializedTransaction::pointer txn = boost::make_shared<SerializedTransaction>(boost::ref(sit));
-			TransactionEngineResult result = engine.applyTransaction(*txn, tepNO_CHECK_FEE | tepUPDATE_TOTAL, 0);
-			if (result > 0)
-			{
-				Log(lsINFO) << "   retry";
-				assert(!ledger->hasTransaction(item->getTag()));
-				failedTransactions.push_back(txn);
-			}
-			else if (result == 0)
-			{
-				Log(lsDEBUG) << "   success";
-				assert(ledger->hasTransaction(item->getTag()));
-			}
-			else
-			{
-				Log(lsINFO) << "   hard fail";
-				assert(!ledger->hasTransaction(item->getTag()));
-			}
+			applyTransaction(engine, txn, ledger, failedTransactions, final);
 #ifndef TRUST_NETWORK
 		}
 		catch (...)
@@ -692,8 +694,7 @@ void LedgerConsensus::applyTransactions(SHAMap::pointer set, Ledger::pointer led
 		{
 			try
 			{
-				TransactionEngineResult result =
-					engine.applyTransaction(*it->second, tepNO_CHECK_FEE | tepUPDATE_TOTAL, 0);
+				TransactionEngineResult result = engine.applyTransaction(*it->second, parms, 0);
 				if (result <= 0)
 				{
 					if (result == 0) ++successes;
@@ -734,11 +735,12 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 #endif
 
 	CanonicalTXSet failedTransactions(set->getHash());
-	applyTransactions(set, newLCL, failedTransactions);
+	applyTransactions(set, newLCL, failedTransactions, true);
 	newLCL->setClosed();
 	newLCL->setAccepted();
 	newLCL->updateHash();
 	uint256 newLCLHash = newLCL->getHash();
+	Log(lsTRACE) << "newLCL " << newLCLHash.GetHex();
 
 #ifdef DEBUG
 	if (1)
@@ -770,8 +772,29 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 #endif
 
 	ScopedLock sl = theApp->getMasterLedger().getLock();
-	applyTransactions(theApp->getMasterLedger().getCurrentLedger()->peekTransactionMap(), newOL, failedTransactions);
-	// FIXME: Apply disputed transactions not voted into the candidate set
+
+	// Apply disputed transactions that didn't get in
+	TransactionEngine engine(newOL);
+	for (boost::unordered_map<uint256, LCTransaction::pointer>::iterator it = mDisputes.begin(),
+			end = mDisputes.end(); it != end; ++it)
+	{
+		if (!it->second->getOurPosition())
+		{ // we voted NO
+			try
+			{
+				SerializerIterator sit(it->second->peekTransaction());
+				SerializedTransaction::pointer txn = boost::make_shared<SerializedTransaction>(boost::ref(sit));
+				applyTransaction(engine, txn, newOL, failedTransactions, false);
+			}
+			catch (...)
+			{
+				Log(lsINFO) << "Failed to apply transaction we voted NO on";
+			}
+		}
+	}
+
+	applyTransactions(theApp->getMasterLedger().getCurrentLedger()->peekTransactionMap(), newOL,
+		failedTransactions, false);
 	theApp->getMasterLedger().pushLedger(newLCL, newOL);
 	mState = lcsACCEPTED;
 	sl.unlock();
