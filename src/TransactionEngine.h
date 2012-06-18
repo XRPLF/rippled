@@ -14,20 +14,23 @@ enum TransactionEngineResult
 
 	// Malformed: Fee claimed
 	tenGEN_IN_USE	= -300,	// Generator already in use.
-	tenCREATEXNC,			// Can not specify non XNC for Create.
-	tenEXPLICITXNC,			// XNC is used by default, don't specify it.
+	tenCREATEXNS,			// Can not specify non XNS for Create.
+	tenEXPLICITXNS,			// XNS is used by default, don't specify it.
 	tenDST_NEEDED,			// Destination not specified.
 	tenDST_IS_SRC,			// Destination may not be source.
 	tenBAD_GEN_AUTH,		// Not authorized to claim generator.
 	tenBAD_ADD_AUTH,		// Not authorized to add account.
 	tenBAD_CLAIM_ID,		// Malformed.
 	tenBAD_SET_ID,			// Malformed.
+	tenDIRECT_XNS_ONLY,		// Direct payments are non-ripple XNS only.
+	tenRIPPLE_EMPTY,		// PathSet with no paths.
 
 	// Invalid: Ledger won't allow.
 	tenCLAIMED		= -200,	// Can not claim a previously claimed account.
 	tenCREATED,				// Can't add an already created account.
 	tenMSG_SET,				// Can't change a message key.
 	tenBAD_AUTH_MASTER,		// Auth for unclaimed account needs correct master key.
+	tenBAD_RIPPLE,			// Ledger prevents ripple from succeeding.
 
 	// Other
 	tenFAILED		= -100,	// Something broke horribly
@@ -61,6 +64,7 @@ enum TransactionEngineResult
 	terFUNDS_SPENT,			// Can't set password, password set funds already spent.
 	terUNCLAIMED,			// Can not use an unclaimed account.
 	terBAD_AUTH,			// Transaction's public key is not authorized.
+	terBAD_RIPPLE,			// No ripple path can be satisfied.
 };
 
 enum TransactionEngineParams

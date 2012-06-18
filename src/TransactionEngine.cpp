@@ -1,6 +1,11 @@
+//
+// XXX Should make sure all fields and are recognized on a transactions.
+// XXX Make sure fee is claimed for failed transactions.
+//
 
 #include "TransactionEngine.h"
 
+#include <boost/foreach.hpp>
 #include <boost/format.hpp>
 
 #include "../json/writer.h"
@@ -1007,10 +1012,15 @@ TransactionEngineResult TransactionEngine::doPasswordSet(const SerializedTransac
 
 TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction& txn,
 	std::vector<AffectedAccount>& accounts,
-	const uint160& srcAccountID)
+	const uint160& uSrcAccountID)
 {
-	uint32	txFlags			= txn.getFlags();
-	uint160 uDstAccountID	= txn.getITFieldAccount(sfDestination);
+	uint32		txFlags			= txn.getFlags();
+	uint160		uDstAccountID	= txn.getITFieldAccount(sfDestination);
+	// XXX Could also be ripple if direct credit lines.
+	bool		bRipple			= txn.getITFieldPresent(sfPaths);
+	bool		bCreate			= !!(txFlags & tfCreateAccount);
+	STAmount	saAmount		= txn.getITFieldAmount(sfAmount);
+	STAmount	saSrcBalance	= accounts[0].second->getIValueFieldAmount(sfBalance);
 
 	if (!uDstAccountID)
 	{
@@ -1018,38 +1028,30 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 		return tenINVALID;
 	}
 	// XXX Only bad if no currency conversion in between through other people's offer.
-	else if (srcAccountID == uDstAccountID)
+	else if (uSrcAccountID == uDstAccountID)
 	{
 		std::cerr << "doPayment: Invalid transaction: Source account is the same as destination." << std::endl;
 		return tenINVALID;
 	}
 
-	bool	bCreate	= !!(txFlags & tfCreateAccount);
-
-	uint160	uCurrency;
-	if (txn.getITFieldPresent(sfCurrency))
-	{
-		uCurrency = txn.getITFieldH160(sfCurrency);
-		if (!uCurrency)
-		{
-			std::cerr << "doPayment: Invalid transaction: " SYSTEM_CURRENCY_CODE " explicitly specified." << std::endl;
-			return tenEXPLICITXNC;
-		}
-	}
+	// XXX Allow ripple to create.
 
 	LedgerStateParms	qry		= lepNONE;
 	SLE::pointer		sleDst	= mLedger->getAccountRoot(qry, uDstAccountID);
 	if (!sleDst)
 	{
 		// Destination account does not exist.
-		if (bCreate && !!uCurrency)
+		// XXX Also make sure non-ripple dest if creating.
+		if (bCreate && !saAmount.isNative())
 		{
-			std::cerr << "doPayment: Invalid transaction: Create account may only fund XBC." << std::endl;
-			return tenCREATEXNC;
+			std::cerr << "doPayment: Invalid transaction: Create account may only fund XNS." << std::endl;
+
+			return tenCREATEXNS;
 		}
 		else if (!bCreate)
 		{
 			std::cerr << "doPayment: Delay transaction: Destination account does not exist." << std::endl;
+
 			return terNO_DST;
 		}
 
@@ -1066,6 +1068,7 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 	else if (bCreate)
 	{
 		std::cerr << "doPayment: Invalid transaction: Account already created." << std::endl;
+
 		return terCREATED;
 	}
 	else
@@ -1073,28 +1076,68 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 		accounts.push_back(std::make_pair(taaMODIFY, sleDst));
 	}
 
-	STAmount	saAmount = txn.getITFieldAmount(sfAmount);
-
-	if (!uCurrency)
+	if (!bRipple)
 	{
-		STAmount	saSrcBalance = accounts[0].second->getIValueFieldAmount(sfBalance);
+		// Direct XNS payment.
+		if (!saAmount.isNative())
+		{
+			std::cerr << "doPayment: Invalid transaction: direct " SYSTEM_CURRENCY_CODE " required." << std::endl;
+
+			return tenDIRECT_XNS_ONLY;
+		}
 
 		if (saSrcBalance < saAmount)
 		{
 			std::cerr << "doPayment: Delay transaction: Insufficent funds." << std::endl;
+
 			return terUNFUNDED;
 		}
 
 		accounts[0].second->setIFieldAmount(sfBalance, saSrcBalance - saAmount);
 		accounts[1].second->setIFieldAmount(sfBalance, accounts[1].second->getIValueFieldAmount(sfBalance) + saAmount);
-	}
-	else
-	{
-		// WRITEME: Handle non-native currencies, paths
-		return tenUNKNOWN;
+
+		return terSUCCESS;
 	}
 
-	return terSUCCESS;
+	//
+	// Try direct ripple first.
+	//
+
+	uint160	uDstCurrency	= saAmount.getCurrency();
+
+						qry				= lepNONE;
+	SLE::pointer		sleRippleState	= mLedger->getRippleState(qry, uSrcAccountID, uDstAccountID, uDstCurrency);
+
+	if (sleRippleState)
+	{
+		// There is a direct relationship.
+
+	}
+
+	STPathSet	spsPaths = txn.getITFieldPathSet(sfPaths);
+
+	// XXX If we are parsing for determing forwarding check maximum path count.
+	if (!spsPaths.getPathCount())
+	{
+		std::cerr << "doPayment: Invalid transaction: No paths." << std::endl;
+
+		return tenRIPPLE_EMPTY;
+	}
+#if 0
+	std::vector<STPath> spPath;
+
+	BOOST_FOREACH(std::vector<STPath>& spPath, spsPaths)
+	{
+
+		std::cerr << "doPayment: Implementation error: Not implemented." << std::endl;
+
+		return tenUNKNOWN;
+	}
+#endif
+
+	std::cerr << "doPayment: Delay transaction: No ripple paths could be satisfied." << std::endl;
+
+	return terBAD_RIPPLE;
 }
 
 TransactionEngineResult TransactionEngine::doTransitSet(const SerializedTransaction& st, std::vector<AffectedAccount>&)
