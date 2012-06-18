@@ -47,6 +47,7 @@ private:
 
 	boost::recursive_mutex				mUNLLock;
 	// XXX Make this faster, make this the contents vector unsigned char or raw public key.
+	// XXX Contents needs to based on score.
 	boost::unordered_set<std::string>	mUNL;
 
 	bool	miscLoad();
@@ -62,6 +63,16 @@ private:
 		uint256						iSha256;
 		std::string					strComment;
 	} seedDomain;
+
+	typedef struct {
+		NewcoinAddress				naPublicKey;
+		validatorSource				vsSource;
+		boost::posix_time::ptime	tpNext;
+		boost::posix_time::ptime	tpScan;
+		boost::posix_time::ptime	tpFetch;
+		uint256						iSha256;
+		std::string					strComment;
+	} seedNode;
 
 	// Used to distribute scores.
 	typedef struct {
@@ -104,18 +115,24 @@ private:
 	void fetchProcess(std::string strDomain);
 	void fetchTimerHandler(const boost::system::error_code& err);
 
-	void getValidatorsUrl(NewcoinAddress naNodePublic, section secSite);
-	void getIpsUrl(NewcoinAddress naNodePublic, section secSite);
+	void getValidatorsUrl(const NewcoinAddress& naNodePublic, section secSite);
+	void getIpsUrl(const NewcoinAddress& naNodePublic, section secSite);
 	void responseIps(const std::string& strSite, const NewcoinAddress& naNodePublic, const boost::system::error_code& err, const std::string strIpsFile);
-	void responseValidators(const std::string& strValidatorsUrl, NewcoinAddress naNodePublic, section secSite, const std::string& strSite, const boost::system::error_code& err, const std::string strValidatorsFile);
+	void responseValidators(const std::string& strValidatorsUrl, const NewcoinAddress& naNodePublic, section secSite, const std::string& strSite, const boost::system::error_code& err, const std::string strValidatorsFile);
 
 	void processIps(const std::string& strSite, const NewcoinAddress& naNodePublic, section::mapped_type* pmtVecStrIps);
-	void processValidators(const std::string& strSite, const std::string& strValidatorsSrc, const NewcoinAddress& naNodePublic, section::mapped_type* pmtVecStrValidators);
+	void processValidators(const std::string& strSite, const std::string& strValidatorsSrc, const NewcoinAddress& naNodePublic, validatorSource vsWhy, section::mapped_type* pmtVecStrValidators);
 
-	void processFile(const std::string strDomain, NewcoinAddress naNodePublic, section secSite);
+	void processFile(const std::string strDomain, const NewcoinAddress& naNodePublic, section secSite);
 
 	bool getSeedDomains(const std::string& strDomain, seedDomain& dstSeedDomain);
 	void setSeedDomains(const seedDomain& dstSeedDomain, bool bNext);
+
+	bool getSeedNodes(const NewcoinAddress& naNodePublic, seedNode& dstSeedNode);
+	void setSeedNodes(const seedNode& snSource, bool bNext);
+
+	void validatorsResponse(const boost::system::error_code& err, std::string strResponse);
+	void nodeDefault(const std::string& strValidators, const std::string& strSource);
 
 public:
 	UniqueNodeList(boost::asio::io_service& io_service);
@@ -123,15 +140,19 @@ public:
 	// Begin processing.
 	void start();
 
-	void nodeAddPublic(const NewcoinAddress& naNodePublic, const std::string& strComment);
-	void nodeAddDomain(const std::string& strDomain, validatorSource vsWhy, std::string strComment="");
-	void nodeRemove(NewcoinAddress naNodePublic);
-	void nodeDefault(const std::string& strValidators);
+	void nodeAddPublic(const NewcoinAddress& naNodePublic, validatorSource vsWhy, const std::string& strComment);
+	void nodeAddDomain(std::string strDomain, validatorSource vsWhy, const std::string& strComment="");
+	void nodeRemovePublic(const NewcoinAddress& naNodePublic);
+	void nodeRemoveDomain(std::string strDomain);
 	void nodeReset();
 
 	void nodeScore();
 
 	bool nodeInUNL(const NewcoinAddress& naNodePublic);
+
+	void nodeBootstrap();
+	bool nodeLoad();
+	void nodeNetwork();
 
 	Json::Value getUnlJson();
 };

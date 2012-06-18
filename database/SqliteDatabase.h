@@ -40,5 +40,6 @@ public:
 	uint64 getBigInt(int colIndex);
 
 	void escape(const unsigned char* start,int size,std::string& retStr);
-
 };
+
+// vim:ts=4

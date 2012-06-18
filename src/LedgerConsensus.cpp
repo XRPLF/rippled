@@ -363,7 +363,7 @@ int LedgerConsensus::timerEntry()
 		case lcsCUTOFF:		return stateCutoff(sinceClose);
 		case lcsFINISHED:	return stateFinished(sinceClose);
 		case lcsACCEPTED:	return stateAccepted(sinceClose);
-		case lcsABORTED:	return stateAccepted(sinceClose);
+		case lcsABORTED:	return 1;
 	}
 	assert(false);
 	return 1;
@@ -702,7 +702,6 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 #endif
 
 	ScopedLock sl = theApp->getMasterLedger().getLock();
-
 	applyTransactions(theApp->getMasterLedger().getCurrentLedger()->peekTransactionMap(), newOL, failedTransactions);
 	theApp->getMasterLedger().pushLedger(newLCL, newOL);
 	mState = lcsACCEPTED;

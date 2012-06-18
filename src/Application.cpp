@@ -58,11 +58,11 @@ void Application::run()
 	//
 	// Construct databases.
 	//
-	mTxnDB = new DatabaseCon("transaction.db", TxnDBInit, TxnDBCount);
-	mLedgerDB = new DatabaseCon("ledger.db", LedgerDBInit, LedgerDBCount);
-	mWalletDB = new DatabaseCon("wallet.db", WalletDBInit, WalletDBCount);
-	mHashNodeDB = new DatabaseCon("hashnode.db", HashNodeDBInit, HashNodeDBCount);
-	mNetNodeDB = new DatabaseCon("netnode.db", NetNodeDBInit, NetNodeDBCount);
+	mTxnDB		= new DatabaseCon("transaction.db", TxnDBInit, TxnDBCount);
+	mLedgerDB	= new DatabaseCon("ledger.db", LedgerDBInit, LedgerDBCount);
+	mWalletDB	= new DatabaseCon("wallet.db", WalletDBInit, WalletDBCount);
+	mHashNodeDB	= new DatabaseCon("hashnode.db", HashNodeDBInit, HashNodeDBCount);
+	mNetNodeDB	= new DatabaseCon("netnode.db", NetNodeDBInit, NetNodeDBCount);
 
 	//
 	// Begin validation and ip maintenance.
@@ -71,9 +71,14 @@ void Application::run()
 	mWallet.start();
 
 	//
+	// Set up UNL.
+	//
+	getUNL().nodeBootstrap();
+
+	//
 	// Allow peer connections.
 	//
-	if(!theConfig.PEER_IP.empty() && theConfig.PEER_PORT)
+	if (!theConfig.PEER_IP.empty() && theConfig.PEER_PORT)
 	{
 		mPeerDoor = new PeerDoor(mIOService);
 	}
@@ -85,7 +90,7 @@ void Application::run()
 	//
 	// Allow RPC connections.
 	//
-	if(!theConfig.RPC_IP.empty() && theConfig.RPC_PORT)
+	if (!theConfig.RPC_IP.empty() && theConfig.RPC_PORT)
 	{
 		mRPCDoor = new RPCDoor(mIOService);
 	}
@@ -122,7 +127,6 @@ void Application::run()
 
 	mNetOps.setStateTimer(0);
 
-	// temporary
 	mIOService.run(); // This blocks
 
 	std::cout << "Done." << std::endl;

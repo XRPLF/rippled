@@ -82,6 +82,11 @@ inline std::string strHex(const uint64 uiHost)
 	return strHex((unsigned char*) &uBig, sizeof(uBig));
 }
 
+inline static std::string sqlEscape(const std::string& strSrc)
+{
+	return str(boost::format("X'%s'") % strHex(strSrc));
+}
+
 template<class Iterator>
 bool isZero(Iterator first, int iSize)
 {
@@ -100,9 +105,7 @@ std::vector<unsigned char> strCopy(const std::string& strSrc);
 std::string strCopy(const std::vector<unsigned char>& vucSrc);
 
 DH* DH_der_load(const std::string& strDer);
-DH* DH_der_load_hex(const std::string& strDer);
-void DH_der_gen(std::string& strDer, int iKeyLength);
-void DH_der_gen_hex(std::string& strDer, int iKeyLength);
+std::string DH_der_gen(int iKeyLength);
 
 inline std::string strGetEnv(const std::string& strKey)
 {

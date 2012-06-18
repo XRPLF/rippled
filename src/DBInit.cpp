@@ -117,6 +117,11 @@ const char *WalletDBInit[] = {
 
 	// Table of PublicKeys user has asked to trust.
 	// Fetches are made to the CAS.  This gets the newcoin.txt so even validators without a web server can publish a newcoin.txt.
+	// Source:
+	//  'M' = Manually added.	: 1500
+	//  'V' = validators.txt	: 1000
+	//  'W' = Web browsing.		:  200
+	//  'R' = Referral			:    0
 	// Next:
 	//  Time of next fetch attempt.
 	// Scan:
@@ -129,6 +134,7 @@ const char *WalletDBInit[] = {
 	//  User supplied comment.
 	"CREATE TABLE SeedNodes (						\
 		PublicKey		CHARACTER(53) PRIMARY KEY NOT NULL,		\
+		Source			CHARACTER(1) NOT NULL,		\
 		Next			DATETIME,					\
 		Scan			DATETIME,					\
 		Fetch			DATETIME,					\
@@ -139,7 +145,7 @@ const char *WalletDBInit[] = {
 	// Allow us to easily find the next SeedNode to fetch.
 	"CREATE INDEX SeedNodeNext ON SeedNodes (Next);",
 
-	// Nodes we trust not grossly consipire.  Derived from SeedDomains, SeedNodes, and ValidatorReferrals.
+	// Nodes we trust to not grossly collude against us.  Derived from SeedDomains, SeedNodes, and ValidatorReferrals.
 	//
 	// Score:
 	//  Computed trust score.  Higher is better.

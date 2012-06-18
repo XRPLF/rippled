@@ -17,6 +17,9 @@ public:
 	enum {
 		rpcSUCCESS,
 
+		// Misc failure
+		rpcLOAD_FAILED,
+
 		// Networking
 		rpcNO_CLOSED,
 		rpcNO_CURRENT,
@@ -40,7 +43,7 @@ public:
 		rpcINVALID_PARAMS,
 		rpcUNKNOWN_COMMAND,
 
-		// Bad paramater
+		// Bad parameter
 		rpcACT_MALFORMED,
 		rpcBAD_SEED,
 		rpcDST_ACT_MALFORMED,
@@ -131,10 +134,11 @@ private:
 	Json::Value doTx(Json::Value& params);
 
 	Json::Value doUnlAdd(Json::Value& params);
-	Json::Value doUnlDefault(Json::Value& params);
 	Json::Value doUnlDelete(Json::Value& params);
 	Json::Value doUnlFetch(Json::Value& params);
 	Json::Value doUnlList(Json::Value& params);
+	Json::Value doUnlLoad(Json::Value& params);
+	Json::Value doUnlNetwork(Json::Value& params);
 	Json::Value doUnlReset(Json::Value& params);
 	Json::Value doUnlScore(Json::Value& params);
 
@@ -150,8 +154,6 @@ private:
 	Json::Value doWalletSeed(Json::Value& params);
 	Json::Value doWalletUnlock(Json::Value& params);
 	Json::Value doWalletVerify(Json::Value& params);
-
-	void validatorsResponse(const boost::system::error_code& err, std::string strResponse);
 
 public:
 	typedef boost::shared_ptr<RPCServer> pointer;
