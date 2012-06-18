@@ -169,7 +169,6 @@ void HttpsClient::handleConnect(const boost::system::error_code& ecResult)
 	{
 		// std::cerr << "Connected." << std::endl;
 
-	    mSocketSsl.lowest_layer().set_option(boost::asio::ip::tcp::no_delay(true));
 	    mSocketSsl.set_verify_mode(boost::asio::ssl::verify_peer);
 
 		// XXX Verify semantics of RFC 2818 are what we want.
