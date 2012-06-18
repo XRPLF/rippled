@@ -521,7 +521,7 @@ void LedgerConsensus::propose(const std::vector<uint256>& added, const std::vect
 
 void LedgerConsensus::addDisputedTransaction(const uint256& txID, const std::vector<unsigned char>& tx)
 {
-	Log(lsTRACE) << "Transacstion " << txID.GetHex() << " is disputed";
+	Log(lsTRACE) << "Transaction " << txID.GetHex() << " is disputed";
 	boost::unordered_map<uint256, LCTransaction::pointer>::iterator it = mDisputes.find(txID);
 	if (it != mDisputes.end()) return;
 
