@@ -1,3 +1,6 @@
+#ifndef __PEERDOOR__
+#define __PEERDOOR__
+
 #include <map>
 #include <set>
 
@@ -22,4 +25,7 @@ private:
 public:
 	PeerDoor(boost::asio::io_service& io_service);
 };
+
+#endif
+
 // vim:ts=4
