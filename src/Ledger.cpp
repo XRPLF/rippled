@@ -300,7 +300,6 @@ void Ledger::saveAcceptedLedger(Ledger::pointer ledger)
 				"UPDATE Transactions SET LedgerSeq = '%d', Status = '%c' WHERE TransID = '%s';") %
 					ledger->getLedgerSeq() % TXN_SQL_VALIDATED % txn.getTransactionID().GetHex()));
 		}
-		// FIXME: If above updates no rows, modify seq/status (upsert)
 	}
 	db->executeSQL("COMMIT TRANSACTION;");
 }
