@@ -39,7 +39,6 @@ void TransactionAcquire::trigger(Peer::pointer peer)
 		return;
 	if (!mHaveRoot)
 	{
-		Log(lsTRACE) << "Don't have root";
 		newcoin::TMGetLedger tmGL;
 		tmGL.set_ledgerhash(mHash.begin(), mHash.size());
 		tmGL.set_itype(newcoin::liTS_CANDIDATE);
@@ -125,18 +124,26 @@ void LCTransaction::setVote(const uint160& peer, bool votesYes)
 	if (res.second)
 	{ // new vote
 		if (votesYes)
+		{
+			Log(lsTRACE) << "Peer " << peer.GetHex() << "votes YES on " << mTransactionID.GetHex();
 			++mYays;
+		}
 		else
+		{
+			Log(lsTRACE) << "Peer " << peer.GetHex() << "votes NO on " << mTransactionID.GetHex();
 			++mNays;
+		}
 	}
 	else if (votesYes && !res.first->second)
 	{ // changes vote to yes
+		Log(lsTRACE) << "Peer " << peer.GetHex() << "now votes YES on " << mTransactionID.GetHex();
 		--mNays;
 		++mYays;
 		res.first->second = true;
 	}
 	else if(!votesYes && !res.first->second)
 	{ // changes vote to no
+		Log(lsTRACE) << "Peer " << peer.GetHex() << "now votes NO on " << mTransactionID.GetHex();
 		++mNays;
 		--mYays;
 		res.first->second = false;
@@ -160,6 +167,7 @@ bool LCTransaction::updatePosition(int seconds)
 
 	if (newPosition == mOurPosition) return false;
 	mOurPosition = newPosition;
+	Log(lsTRACE) << "We now vote " << (mOurPosition ? "YES" : "NO") << " on " << mTransactionID.GetHex();
 	return true;
 }
 
@@ -200,16 +208,16 @@ void LedgerConsensus::mapComplete(const uint256& hash, SHAMap::pointer map)
 	if (!map)
 	{ // this is an invalid/corrupt map
 		mComplete[hash] = map;
+		Log(lsWARNING) << "A trusted node directed us to acquire an invalid TXN map";
 		return;
 	}
-
-	mAcquiring.erase(hash);
 
 	if (mComplete.find(hash) != mComplete.end())
 	{
 		Log(lsERROR) << "Which we already had";
 		return; // we already have this map
 	}
+
 	if (mOurPosition && (map->getHash() != mOurPosition->getCurrentHash()))
 	{ // this could create disputed transactions
 		boost::unordered_map<uint256, SHAMap::pointer>::iterator it2 = mComplete.find(mOurPosition->getCurrentHash());
@@ -241,6 +249,8 @@ void LedgerConsensus::mapComplete(const uint256& hash, SHAMap::pointer map)
 	}
 	if (!peers.empty())
 		adjustCount(map, peers);
+	else
+		Log(lsWARNING) << "By the time we got the map, no peers were proposing it";
 
 	sendHaveTxSet(hash, true);
 }
