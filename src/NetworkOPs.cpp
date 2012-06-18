@@ -489,7 +489,11 @@ bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash,
 	// Is this node on our UNL?
 	// XXX Is this right?
 	if (!theApp->getUNL().nodeInUNL(naPeerPublic))
+	{
+		Log(lsINFO) << "Relay, but no process peer proposal " << proposal->getProposeSeq() << "/"
+			<< proposal->getCurrentHash().GetHex();
 		return true;
+	}
 
 	return consensus->peerPosition(proposal);
 }

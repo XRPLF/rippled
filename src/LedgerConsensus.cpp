@@ -516,7 +516,7 @@ bool LedgerConsensus::peerPosition(LedgerProposal::pointer newPosition)
 			return true;
 		}
 	}
-	Log(lsINFO) << "Peer position " << newPosition->getProposeSeq() << "/"
+	Log(lsINFO) << "Processing peer proposal " << newPosition->getProposeSeq() << "/"
 		<< newPosition->getCurrentHash().GetHex();
 	currentPosition = newPosition;
 	SHAMap::pointer set = getTransactionTree(newPosition->getCurrentHash(), true);
