@@ -236,6 +236,7 @@ uint256 Ledger::getHash()
 
 void Ledger::saveAcceptedLedger(Ledger::pointer ledger)
 {
+
 	std::string sql="INSERT INTO Ledgers "
 		"(LedgerHash,LedgerSeq,PrevHash,TotalCoins,ClosingTime,AccountSetHash,TransSetHash) VALUES ('";
 	sql.append(ledger->getHash().GetHex());
@@ -254,6 +255,13 @@ void Ledger::saveAcceptedLedger(Ledger::pointer ledger)
 	sql.append("');");
 
 	ScopedLock sl(theApp->getLedgerDB()->getDBLock());
+	if (SQL_EXISTS(theApp->getLedgerDB()->getDB(),
+		boost::str(boost::format("SELECT LedgerSeq FROM Ledgers where LedgerSeq = '%d';") % ledger->mLedgerSeq)
+			))
+	{
+		theApp->getLedgerDB()->getDB()->executeSQL(
+			boost::str(boost::format("DELETE FROM Ledgers WHERE LedgerSeq = '%d';") % ledger->mLedgerSeq));
+	}
 	theApp->getLedgerDB()->getDB()->executeSQL(sql);
 
 	// write out dirty nodes
