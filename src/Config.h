@@ -2,8 +2,9 @@
 #define __CONFIG__
 
 #include "types.h"
-#include "SerializedTypes.h"
 #include "NewcoinAddress.h"
+#include "ParseSection.h"
+#include "SerializedTypes.h"
 
 #include <string>
 #include <boost/filesystem.hpp>
@@ -16,6 +17,8 @@
 #define SYSTEM_CURRENCY_USERS		100000000ull
 #define SYSTEM_CURRENCY_PARTS		1000000ull		// 10^SYSTEM_CURRENCY_PRECISION
 #define SYSTEM_CURRENCY_START		(SYSTEM_CURRENCY_GIFT*SYSTEM_CURRENCY_USERS*SYSTEM_CURRENCY_PARTS)
+
+#define CONFIG_FILE_NAME				SYSTEM_NAME "d.cfg"	// newcoind.cfg
 
 #define DEFAULT_VALIDATORS_SITE		"redstem.com"
 #define VALIDATORS_FILE_NAME		"validators.txt"
@@ -46,8 +49,8 @@ public:
 	boost::filesystem::path	DATA_DIR;
 	boost::filesystem::path	UNL_DEFAULT;
 
-	// Where to find validators.txt on the Internet.
-	std::string	VALIDATORS_SITE;
+	std::string					VALIDATORS_SITE;	// Where to find validators.txt on the Internet.
+	std::vector<std::string>	VALIDATORS;			// Validators from newcoind.cfg
 
 	// Network parameters
 	int			NETWORK_START_TIME;		// The Unix time we start ledger 0

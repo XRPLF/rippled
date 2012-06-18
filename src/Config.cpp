@@ -1,13 +1,10 @@
 #include "Config.h"
 
-#include "ParseSection.h"
 #include "utils.h"
 
 #include <boost/lexical_cast.hpp>
 #include <fstream>
 #include <iostream>
-
-#define CONFIG_FILE_NAME				SYSTEM_NAME "d.cfg"	// newcoind.cfg
 
 #define SECTION_ACCOUNT_PROBE_MAX		"account_probe_max"
 #define SECTION_FEE_ACCOUNT_CREATE		"fee_account_create"
@@ -28,6 +25,7 @@
 #define SECTION_VALIDATION_SEED			"validation_seed"
 #define SECTION_WEBSOCKET_IP			"websocket_ip"
 #define SECTION_WEBSOCKET_PORT			"websocket_port"
+#define SECTION_VALIDATORS				"validators"
 #define SECTION_VALIDATORS_SITE			"validators_site"
 
 // Fees are in XNB.
@@ -172,6 +170,15 @@ void Config::load()
 		{
 			section		secConfig	= ParseSection(strConfigFile, true);
 			std::string	strTemp;
+
+			section::mapped_type*	smtTmp;
+
+			smtTmp	= sectionEntries(secConfig, SECTION_VALIDATORS);
+			if (smtTmp)
+			{
+				VALIDATORS	= *smtTmp;
+				sectionEntriesPrint(&VALIDATORS, SECTION_VALIDATORS);
+			}
 
 			(void) sectionSingleB(secConfig, SECTION_VALIDATORS_SITE, VALIDATORS_SITE);
 

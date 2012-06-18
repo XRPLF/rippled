@@ -56,18 +56,25 @@ section ParseSection(const std::string& strInput, const bool bTrim)
     return secResult;
 }
 
-void PrintSection(section secInput)
+void sectionEntriesPrint(std::vector<std::string>* vspEntries, const std::string& strSection)
 {
-    std::cerr << "PrintSection>" << std::endl;
+	std::cerr << "[" << strSection << "]" << std::endl;
+
+	if (vspEntries)
+	{
+		BOOST_FOREACH(std::string& strValue, *vspEntries)
+		{
+			std::cerr << strValue << std::endl;
+		}
+	}
+}
+
+void sectionPrint(section secInput)
+{
     BOOST_FOREACH(section::value_type& pairSection, secInput)
     {
-		std::cerr << "[" << pairSection.first << "]" << std::endl;
-		BOOST_FOREACH(std::string& value, pairSection.second)
-		{
-			std::cerr << value << std::endl;
-		}
+		sectionEntriesPrint(&pairSection.second, pairSection.first);
     }
-    std::cerr << "PrintSection<" << std::endl;
 }
 
 section::mapped_type* sectionEntries(section& secSource, const std::string& strSection)
