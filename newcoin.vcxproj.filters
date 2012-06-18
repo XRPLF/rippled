@@ -485,6 +485,7 @@
     </None>
     <None Include="SConstruct" />
     <None Include="newcoind.cfg" />
+    <None Include="validators.txt" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="src\newcoin.proto" />

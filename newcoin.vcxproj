@@ -251,6 +251,7 @@
     </None>
     <None Include="todo.txt" />
     <None Include="unl.xml" />
+    <None Include="validators.txt" />
     <None Include="wallet.xml" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
