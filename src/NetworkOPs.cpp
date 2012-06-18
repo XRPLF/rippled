@@ -392,7 +392,7 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 		// check if the ledger is good enough to go to omFULL
 		// Note: Do not go to omFULL if we don't have the previous ledger
 		// check if the ledger is bad enough to go to omCONNECTED -- TODO
-		if (!switchLedgers) setMode(omFULL);
+		if ((!switchLedgers) && theConfig.VALIDATION_SEED.isValid()) setMode(omFULL);
 	}
 
 	if (mMode == omFULL)
