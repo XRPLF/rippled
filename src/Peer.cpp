@@ -826,7 +826,6 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 				return;
 			}
 			memcpy(ledgerhash.begin(), packet.ledgerhash().data(), 32);
-			Log(lsINFO) << "Query by hash: " << ledgerhash.GetHex();
 			ledger = theApp->getMasterLedger().getLedgerByHash(ledgerhash);
 		}
 		else if (packet.has_ledgerseq())
@@ -911,7 +910,6 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 	}
 	if (packet.has_requestcookie()) reply.set_requestcookie(packet.requestcookie());
 	PackedMessage::pointer oPacket = boost::make_shared<PackedMessage>(reply, newcoin::mtLEDGER_DATA);
-	Log(lsTRACE) << "sending reply";
 	sendPacket(oPacket);
 }
 
