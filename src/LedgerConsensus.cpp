@@ -48,7 +48,6 @@ void TransactionAcquire::trigger(Peer::pointer peer)
 	}
 	if (mHaveRoot)
 	{
-		Log(lsTRACE) << "Have root";
 		std::vector<SHAMapNode> nodeIDs;
 		std::vector<uint256> nodeHashes;
 		mMap->getMissingNodes(nodeIDs, nodeHashes, 256, &mFilter);
