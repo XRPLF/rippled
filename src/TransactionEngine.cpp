@@ -455,7 +455,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 
 	if (!sleSrc)
 	{
-		std::cerr << str(boost::format("applyTransaction: Delay transaction: source account does not exisit: %s") % txn.getSourceAccount().humanAccountID()) << std::endl;
+		std::cerr << str(boost::format("applyTransaction: Delay transaction: source account does not exist: %s") % txn.getSourceAccount().humanAccountID()) << std::endl;
 
 		result			= terNO_ACCOUNT;
 	}
