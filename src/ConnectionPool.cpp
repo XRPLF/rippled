@@ -163,7 +163,7 @@ void ConnectionPool::policyEnforce()
 {
 	boost::posix_time::ptime	tpNow	= boost::posix_time::second_clock::universal_time();
 
-	std::cerr << "policyEnforce: begin: " << tpNow << std::endl;
+	//std::cerr << "policyEnforce: begin: " << tpNow << std::endl;
 
 	// Cancel any in progrss timer.
 	(void) mPolicyTimer.cancel();
@@ -176,7 +176,7 @@ void ConnectionPool::policyEnforce()
 
 	tpNext	= boost::posix_time::second_clock::universal_time()+boost::posix_time::seconds(POLICY_INTERVAL_SECONDS);
 
-	std::cerr << "policyEnforce: schedule : " << tpNext << std::endl;
+	//std::cerr << "policyEnforce: schedule : " << tpNext << std::endl;
 
 	mPolicyTimer.expires_at(tpNext);
 	mPolicyTimer.async_wait(boost::bind(&ConnectionPool::policyHandler, this, _1));
