@@ -27,8 +27,10 @@ const int SYSTEM_PEER_PORT = 6561;
 // Allow anonymous DH.
 #define DEFAULT_PEER_SSL_CIPHER_LIST	"ALL:!LOW:!EXP:!MD5:@STRENGTH"
 
-// 1 hour.
-#define DEFAULT_PEER_SCAN_INTERVAL_MIN	(60*60)
+// Normal, recommend 1 hour.
+// #define DEFAULT_PEER_SCAN_INTERVAL_MIN	(60*60)
+// Testing, recommend 1 minute.
+#define DEFAULT_PEER_SCAN_INTERVAL_MIN	(60)
 
 // Maximum number of peers to try to connect to as client at once.
 #define DEFAULT_PEER_START_MAX			5

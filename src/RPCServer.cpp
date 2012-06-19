@@ -723,8 +723,8 @@ Json::Value RPCServer::doConnect(Json::Value& params)
 		iPort	= boost::lexical_cast<int>(strPort);
 	}
 
-	if (!theApp->getConnectionPool().connectTo(strIp, iPort))
-		return "connected";
+	// XXX Validate legal IP and port
+	theApp->getConnectionPool().connectTo(strIp, iPort);
 
 	return "connecting";
 }

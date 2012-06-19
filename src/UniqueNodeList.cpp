@@ -904,7 +904,7 @@ void UniqueNodeList::responseFetch(const std::string strDomain, const boost::sys
 	else
 	{
 		std::cerr
-			<< boost::format("Validator: '%s' unabile to retrieve " NODE_FILE_NAME ": %s")
+			<< boost::format("Validator: '%s' unable to retrieve " NODE_FILE_NAME ": %s")
 				% strDomain
 				% err.message()
 			<< std::endl;
