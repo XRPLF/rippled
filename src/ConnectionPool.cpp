@@ -1,15 +1,18 @@
 
 #include "ConnectionPool.h"
-#include "Config.h"
-#include "Peer.h"
-#include "Application.h"
-#include "utils.h"
 
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>
 #include <boost/algorithm/string.hpp>
+
+#include "Config.h"
+#include "Peer.h"
+#include "Application.h"
+#include "utils.h"
+#include "Log.h"
+
 
 // How often to enforce policies.
 #define POLICY_INTERVAL_SECONDS	5
@@ -174,7 +177,7 @@ void ConnectionPool::policyEnforce()
 {
 	boost::posix_time::ptime	tpNow	= boost::posix_time::second_clock::universal_time();
 
-	std::cerr << "policyEnforce: begin: " << tpNow << std::endl;
+	Log(lsTRACE) << "policyEnforce: begin: " << tpNow;
 
 	// Cancel any in progrss timer.
 	(void) mPolicyTimer.cancel();
@@ -187,7 +190,7 @@ void ConnectionPool::policyEnforce()
 
 	tpNext	= boost::posix_time::second_clock::universal_time()+boost::posix_time::seconds(POLICY_INTERVAL_SECONDS);
 
-	std::cerr << "policyEnforce: schedule : " << tpNext << std::endl;
+	Log(lsTRACE) << "policyEnforce: schedule : " << tpNext;
 
 	mPolicyTimer.expires_at(tpNext);
 	mPolicyTimer.async_wait(boost::bind(&ConnectionPool::policyHandler, this, _1));
@@ -218,7 +221,7 @@ void ConnectionPool::relayMessage(Peer* fromPeer, PackedMessage::pointer msg)
 		Peer::pointer peer	= pair.second;
 		if (!peer)
 			std::cerr << "CP::RM null peer in list" << std::endl;
-		else if (!fromPeer || !(peer.get() == fromPeer))
+		else if ((!fromPeer || !(peer.get() == fromPeer)) && peer->isConnected())
 			peer->sendPacket(msg);
 	}
 }

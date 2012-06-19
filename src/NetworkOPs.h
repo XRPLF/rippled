@@ -127,6 +127,7 @@ public:
 	int beginConsensus(Ledger::pointer closingLedger);
 	void endConsensus();
 	void setStateTimer(int seconds);
+	Json::Value getServerInfo();
 
 	// client information retrieval functions
 	std::vector< std::pair<uint32, uint256> >

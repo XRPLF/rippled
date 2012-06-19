@@ -7,7 +7,7 @@
 
 boost::recursive_mutex Log::sLock;
 
-LogSeverity Log::sMinSeverity = lsWARNING;
+LogSeverity Log::sMinSeverity = lsINFO;
 
 std::ofstream* Log::outStream = NULL;
 

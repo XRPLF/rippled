@@ -127,6 +127,7 @@ private:
 	Json::Value doPasswordSet(Json::Value& params);
 	Json::Value doPeers(Json::Value& params);
 	Json::Value doSend(Json::Value& params);
+	Json::Value doServerInfo(Json::Value& params);
 	Json::Value doSessionClose(Json::Value& params);
 	Json::Value doSessionOpen(Json::Value& params);
 	Json::Value doStop(Json::Value& params);

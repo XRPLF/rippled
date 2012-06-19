@@ -98,6 +98,18 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 	}
 
 	Log(lsDEBUG) << "Status other than success " << r ;
+	if ((mMode != omFULL) && (theApp->suppress(trans->getID())))
+	{
+		newcoin::TMTransaction tx;
+		Serializer s;
+		trans->getSTransaction()->add(s);
+		tx.set_rawtransaction(&s.getData().front(), s.getLength());
+		tx.set_status(newcoin::tsCURRENT);
+		tx.set_receivetimestamp(getNetworkTimeNC());
+		tx.set_ledgerindexpossible(tgtLedger);
+		PackedMessage::pointer packet = boost::make_shared<PackedMessage>(tx, newcoin::mtTRANSACTION);
+		theApp->getConnectionPool().relayMessage(source, packet);
+	}
 
 	trans->setStatus(INVALID);
 	return trans;
@@ -234,15 +246,17 @@ RippleState::pointer NetworkOPs::getRippleState(const uint256& uLedger, const ui
 
 void NetworkOPs::setStateTimer(int sec)
 { // set timer early if ledger is closing
-	uint64 consensusTime = mLedgerMaster->getCurrentLedger()->getCloseTimeNC() - LEDGER_WOBBLE_TIME;
-	uint64 now = getNetworkTimeNC();
-
-	if ((mMode == omFULL) && !mConsensus)
+	if (!mConsensus && ((mMode == omFULL) || (mMode == omTRACKING)))
 	{
-		if (now >= consensusTime) sec = 0;
-		else if (sec > (consensusTime - now)) sec = (consensusTime - now);
-	}
+		uint64 consensusTime = mLedgerMaster->getCurrentLedger()->getCloseTimeNC() - LEDGER_WOBBLE_TIME;
+		uint64 now = getNetworkTimeNC();
 
+		if ((mMode == omFULL) && !mConsensus)
+		{
+			if (now >= consensusTime) sec = 0;
+			else if (sec > (consensusTime - now)) sec = (consensusTime - now);
+		}
+	}
 	mNetTimer.expires_from_now(boost::posix_time::seconds(sec));
 	mNetTimer.async_wait(boost::bind(&NetworkOPs::checkState, this, boost::asio::placeholders::error));
 }
@@ -354,9 +368,9 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 	if (switchLedgers)
 	{
 		Log(lsWARNING) << "We are not running on the consensus ledger";
-		Log(lsINFO) << "Our LCL " << currentClosed->getHash().GetHex() ;
-		Log(lsINFO) << "Net LCL " << closedLedger.GetHex() ;
-		if ((mMode == omTRACKING) || (mMode == omFULL)) setMode(omTRACKING);
+		Log(lsINFO) << "Our LCL " << currentClosed->getHash().GetHex();
+		Log(lsINFO) << "Net LCL " << closedLedger.GetHex();
+		if ((mMode == omTRACKING) || (mMode == omFULL)) setMode(omCONNECTED);
 		Ledger::pointer consensus = mLedgerMaster->getLedgerByHash(closedLedger);
 		if (!consensus)
 		{
@@ -400,12 +414,25 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 		// check if the ledger is good enough to go to omFULL
 		// Note: Do not go to omFULL if we don't have the previous ledger
 		// check if the ledger is bad enough to go to omCONNECTED -- TODO
-		if ((!switchLedgers) && theConfig.VALIDATION_SEED.isValid()) setMode(omFULL);
+		if ((!switchLedgers) && theConfig.VALIDATION_SEED.isValid())
+		{
+			if (theApp->getOPs().getNetworkTimeNC() <
+					(theApp->getMasterLedger().getCurrentLedger()->getCloseTimeNC() + 4))
+				setMode(omFULL);
+			else
+				Log(lsWARNING) << "Too late to go to full, try next ledger";
+		}
 	}
 
 	if (mMode == omFULL)
 	{
 		// check if the ledger is bad enough to go to omTRACKING
+	}
+
+	if (mMode != omFULL)
+	{
+		setStateTimer(4);
+		return;
 	}
 
 	int secondsToClose = theApp->getMasterLedger().getCurrentLedger()->getCloseTimeNC() -
@@ -432,12 +459,15 @@ void NetworkOPs::switchLastClosedLedger(Ledger::pointer newLedger)
 	Ledger::pointer openLedger = boost::make_shared<Ledger>(false, boost::ref(*newLedger));
 	mLedgerMaster->switchLedgers(newLedger, openLedger);
 
-	if (getNetworkTimeNC() > openLedger->getCloseTimeNC())
-	{ // this ledger has already closed
-	}
-
+	newcoin::TMStatusChange s;
+	s.set_newevent(newcoin::neSWITCHED_LEDGER);
+	s.set_ledgerseq(newLedger->getLedgerSeq());
+	s.set_networktime(theApp->getOPs().getNetworkTimeNC());
+	uint256 plhash = newLedger->getParentHash();
+	s.set_previousledgerhash(plhash.begin(), plhash.size());
+	PackedMessage::pointer packet = boost::make_shared<PackedMessage>(s, newcoin::mtSTATUS_CHANGE);
+	theApp->getConnectionPool().relayMessage(NULL, packet);
 }
-// vim:ts=4
 
 int NetworkOPs::beginConsensus(Ledger::pointer closingLedger)
 {
@@ -472,10 +502,11 @@ bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash,
 	// XXX Take a vuc for pubkey.
 	NewcoinAddress	naPeerPublic	= NewcoinAddress::createNodePublic(strCopy(pubKey));
 
-	if (mMode != omFULL) // FIXME: Should we relay?
+	if (mMode != omFULL)
 	{
 		Log(lsINFO) << "Received proposal when not full: " << mMode;
-		return false; // FIXME: Need suppression table
+		Serializer s(signature);
+		return theApp->suppress(s.getSHA512Half());
 	}
 	if (!mConsensus)
 	{
@@ -528,7 +559,7 @@ bool NetworkOPs::hasTXSet(boost::shared_ptr<Peer> peer, const uint256& set, newc
 void NetworkOPs::mapComplete(const uint256& hash, SHAMap::pointer map)
 {
 	if (mConsensus)
-		mConsensus->mapComplete(hash, map);
+		mConsensus->mapComplete(hash, map, true);
 }
 
 void NetworkOPs::endConsensus()
@@ -581,6 +612,25 @@ std::vector< std::pair<uint32, uint256> >
 bool NetworkOPs::recvValidation(SerializedValidation::pointer val)
 {
 	return theApp->getValidations().addValidation(val);
+}
+
+Json::Value NetworkOPs::getServerInfo()
+{
+	Json::Value info = Json::objectValue;
+
+	switch (mMode)
+	{
+		case omDISCONNECTED: info["network_state"] = "disconected"; break;
+		case omCONNECTED: info["network_state"] = "connected"; break;
+		case omTRACKING: info["network_state"] = "tracking"; break;
+		case omFULL: info["network_state"] = "validating"; break;
+		default: info["network_state"] = "unknown";
+	}
+
+	if (!theConfig.VALIDATION_SEED.isValid()) info["validation_seed"] = "none";
+	else info["validation_seed"] = NewcoinAddress::createNodePublic(theConfig.VALIDATION_SEED).humanNodePublic();
+
+	return info;
 }
 
 // vim:ts=4

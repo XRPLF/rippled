@@ -217,7 +217,7 @@ void LedgerConsensus::takeInitialPosition(Ledger::pointer initialLedger)
 
 	mOurPosition = boost::make_shared<LedgerProposal>
 		(theConfig.VALIDATION_SEED, initialLedger->getParentHash(), txSet);
-	mapComplete(txSet, initialSet);
+	mapComplete(txSet, initialSet, false);
 	propose(std::vector<uint256>(), std::vector<uint256>());
 }
 
@@ -241,9 +241,10 @@ void LedgerConsensus::createDisputes(SHAMap::pointer m1, SHAMap::pointer m2)
 	}
 }
 
-void LedgerConsensus::mapComplete(const uint256& hash, SHAMap::pointer map)
+void LedgerConsensus::mapComplete(const uint256& hash, SHAMap::pointer map, bool acquired)
 {
-	Log(lsINFO) << "We have acquired TXS " << hash.GetHex();
+	if (acquired)
+		Log(lsINFO) << "We have acquired TXS " << hash.GetHex();
 	mAcquiring.erase(hash);
 
 	if (!map)
@@ -254,10 +255,7 @@ void LedgerConsensus::mapComplete(const uint256& hash, SHAMap::pointer map)
 	}
 
 	if (mComplete.find(hash) != mComplete.end())
-	{
-		Log(lsERROR) << "Which we already had";
 		return; // we already have this map
-	}
 
 	if (mOurPosition && (map->getHash() != mOurPosition->getCurrentHash()))
 	{ // this could create disputed transactions
@@ -281,8 +279,8 @@ void LedgerConsensus::mapComplete(const uint256& hash, SHAMap::pointer map)
 	}
 	if (!peers.empty())
 		adjustCount(map, peers);
-	else if (!hash)
-		Log(lsWARNING) << "By the time we got the map, no peers were proposing it";
+	else if (acquired)
+		Log(lsWARNING) << "By the time we got the map " << hash.GetHex() << " no peers were proposing it";
 
 	sendHaveTxSet(hash, true);
 }
@@ -448,7 +446,7 @@ bool LedgerConsensus::updateOurPositions(int sinceClose)
 		uint256 newHash = ourPosition->getHash();
 		mOurPosition->changePosition(newHash);
 		propose(addedTx, removedTx);
-		mapComplete(newHash, ourPosition);
+		mapComplete(newHash, ourPosition, false);
 		Log(lsINFO) << "We change our position to " << newHash.GetHex();
 	}
 
@@ -468,7 +466,7 @@ SHAMap::pointer LedgerConsensus::getTransactionTree(const uint256& hash, bool do
 				if (!hash)
 				{
 					SHAMap::pointer empty = boost::make_shared<SHAMap>();
-					mapComplete(hash, empty);
+					mapComplete(hash, empty, false);
 					return empty;
 				}
 				acquiring = boost::make_shared<TransactionAcquire>(hash);
@@ -505,7 +503,7 @@ void LedgerConsensus::startAcquiring(TransactionAcquire::pointer acquire)
 
 void LedgerConsensus::propose(const std::vector<uint256>& added, const std::vector<uint256>& removed)
 {
-	Log(lsDEBUG) << "We propose: " << mOurPosition->getCurrentHash().GetHex();
+	Log(lsTRACE) << "We propose: " << mOurPosition->getCurrentHash().GetHex();
 	newcoin::TMProposeSet prop;
 	prop.set_currenttxhash(mOurPosition->getCurrentHash().begin(), 256 / 8);
 	prop.set_proposeseq(mOurPosition->getProposeSeq());
@@ -642,7 +640,7 @@ void LedgerConsensus::applyTransaction(TransactionEngine& engine, SerializedTran
 		}
 		else if (result == 0)
 		{
-			Log(lsDEBUG) << "   success";
+			Log(lsTRACE) << "   success";
 			assert(ledger->hasTransaction(txn->getTransactionID()));
 		}
 		else
@@ -696,7 +694,7 @@ void LedgerConsensus::applyTransactions(SHAMap::pointer set, Ledger::pointer led
 				if (result <= 0)
 				{
 					if (result == 0) ++successes;
-					failedTransactions.eraseInc(it);
+					it = failedTransactions.erase(it);
 				}
 				else
 				{
@@ -706,7 +704,7 @@ void LedgerConsensus::applyTransactions(SHAMap::pointer set, Ledger::pointer led
 			catch (...)
 			{
 				Log(lsWARNING) << "   Throws";
-				failedTransactions.eraseInc(it);
+				it = failedTransactions.erase(it);
 			}
 		}
 	} while (successes > 0);
@@ -728,7 +726,7 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 		Log(lsTRACE) << "newLCL before transactions";
 		Json::Value p;
 		newLCL->addJson(p, LEDGER_JSON_DUMP_TXNS | LEDGER_JSON_DUMP_STATE);
-		ssw.write(std::cerr, p);
+		ssw.write(Log(lsTRACE).ref(), p);
 	}
 #endif
 
@@ -746,7 +744,7 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 		Log(lsTRACE) << "newLCL after transactions";
 		Json::Value p;
 		newLCL->addJson(p, LEDGER_JSON_DUMP_TXNS | LEDGER_JSON_DUMP_STATE);
-		ssw.write(std::cerr, p);
+		ssw.write(Log(lsTRACE).ref(), p);
 	}
 #endif
 
@@ -758,14 +756,14 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 		Log(lsTRACE) << "newOL before transactions";
 		Json::Value p;
 		newOL->addJson(p, LEDGER_JSON_DUMP_TXNS | LEDGER_JSON_DUMP_STATE);
-		ssw.write(std::cerr, p);
+		ssw.write(Log(lsTRACE).ref(), p);
 	}
 	if (1)
 	{
 		Log(lsTRACE) << "current ledger";
 		Json::Value p;
 		theApp->getMasterLedger().getCurrentLedger()->addJson(p, LEDGER_JSON_DUMP_TXNS | LEDGER_JSON_DUMP_STATE);
-		ssw.write(std::cerr, p);
+		ssw.write(Log(lsTRACE).ref(), p);
 	}
 #endif
 
@@ -803,7 +801,7 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 		Log(lsTRACE) << "newOL after current ledger transactions";
 		Json::Value p;
 		newOL->addJson(p, LEDGER_JSON_DUMP_TXNS | LEDGER_JSON_DUMP_STATE);
-		ssw.write(std::cerr, p);
+		ssw.write(Log(lsTRACE).ref(), p);
 	}
 #endif
 
