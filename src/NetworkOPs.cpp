@@ -544,7 +544,7 @@ void NetworkOPs::setMode(OperatingMode om)
 		if (mConsensus)
 		{
 			mConsensus->abort();
-			mConsensus = LedgerConsensus::pointer();
+			mConsensus = boost::shared_ptr<LedgerConsensus>();
 		}
 	}
 	Log l((om < mMode) ? lsWARNING : lsINFO);
