@@ -251,11 +251,8 @@ void NetworkOPs::setStateTimer(int sec)
 		uint64 consensusTime = mLedgerMaster->getCurrentLedger()->getCloseTimeNC() - LEDGER_WOBBLE_TIME;
 		uint64 now = getNetworkTimeNC();
 
-		if ((mMode == omFULL) && !mConsensus)
-		{
-			if (now >= consensusTime) sec = 0;
-			else if (sec > (consensusTime - now)) sec = (consensusTime - now);
-		}
+		if (now >= consensusTime) sec = 0;
+		else if (sec > (consensusTime - now)) sec = (consensusTime - now);
 	}
 	mNetTimer.expires_from_now(boost::posix_time::seconds(sec));
 	mNetTimer.async_wait(boost::bind(&NetworkOPs::checkState, this, boost::asio::placeholders::error));
@@ -429,19 +426,13 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 		// check if the ledger is bad enough to go to omTRACKING
 	}
 
-	if (mMode != omFULL)
-	{
-		setStateTimer(4);
-		return;
-	}
-
 	int secondsToClose = theApp->getMasterLedger().getCurrentLedger()->getCloseTimeNC() -
 		theApp->getOPs().getNetworkTimeNC();
 	if ((!mConsensus) && (secondsToClose < LEDGER_WOBBLE_TIME)) // pre close wobble
 		beginConsensus(theApp->getMasterLedger().getCurrentLedger());
 	if (mConsensus)
 		setStateTimer(mConsensus->timerEntry());
-	else setStateTimer(10);
+	else setStateTimer(4);
 }
 
 void NetworkOPs::switchLastClosedLedger(Ledger::pointer newLedger)
