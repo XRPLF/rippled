@@ -511,8 +511,6 @@ public:
 			zero();
 		}
 	}
-
-	base_uint160 to160() const;
 };
 
 
