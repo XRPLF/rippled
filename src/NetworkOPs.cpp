@@ -599,7 +599,8 @@ bool NetworkOPs::recvValidation(SerializedValidation::pointer val)
 Json::Value NetworkOPs::getServerInfo()
 {
 	Json::Value info = Json::objectValue;
-	switch(mMode)
+
+	switch (mMode)
 	{
 		case omDISCONNECTED: info["network_state"] = "disconected"; break;
 		case omCONNECTED: info["network_state"] = "connected"; break;
@@ -609,7 +610,7 @@ Json::Value NetworkOPs::getServerInfo()
 	}
 
 	if (!theConfig.VALIDATION_SEED.isValid()) info["validation_seed"] = "none";
-	else info["validation_seed"] = theConfig.VALIDATION_SEED.humanNodePublic();
+	else info["validation_seed"] = NewcoinAddress::createNodePublic(theConfig.VALIDATION_SEED).humanNodePublic();
 
 	return info;
 }
