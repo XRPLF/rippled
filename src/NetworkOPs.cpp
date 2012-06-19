@@ -308,12 +308,64 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 		return;
 	}
 
+
+	// FIXME: Don't check unless last closed ledger is at least some seconds old
+	// If full or tracking, check only at wobble time!
+	if (checkLastClosedLedger(peerList))
+	{
+		setStateTimer(3);
+		return;
+	}
+
+	// WRITEME: Unless we are in omFULL and in the process of doing a consensus,
+	// we must count how many nodes share our LCL, how many nodes disagree with our LCL,
+	// and how many validations our LCL has. We also want to check timing to make sure
+	// there shouldn't be a newer LCL. We need this information to do the next three
+	// tests.
+
+	if (mMode == omCONNECTED)
+	{ // count number of peers that agree with us and UNL nodes whose validations we have for LCL
+		// if the ledger is good enough, go to omTRACKING - TODO
+		setMode(omTRACKING);
+	}
+
+	if (mMode == omTRACKING)
+	{
+		// check if the ledger is good enough to go to omFULL
+		// Note: Do not go to omFULL if we don't have the previous ledger
+		// check if the ledger is bad enough to go to omCONNECTED -- TODO
+		if (theConfig.VALIDATION_SEED.isValid())
+		{
+			if (theApp->getOPs().getNetworkTimeNC() <
+					(theApp->getMasterLedger().getCurrentLedger()->getCloseTimeNC() + 4))
+				setMode(omFULL);
+			else
+				Log(lsWARNING) << "Too late to go to full, try next ledger";
+		}
+	}
+
+	if (mMode == omFULL)
+	{
+		// check if the ledger is bad enough to go to omTRACKING
+	}
+
+	int secondsToClose = theApp->getMasterLedger().getCurrentLedger()->getCloseTimeNC() -
+		theApp->getOPs().getNetworkTimeNC();
+	if ((!mConsensus) && (secondsToClose < LEDGER_WOBBLE_TIME)) // pre close wobble
+		beginConsensus(theApp->getMasterLedger().getCurrentLedger());
+	if (mConsensus)
+		setStateTimer(mConsensus->timerEntry());
+	else setStateTimer(4);
+}
+
+bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerList)
+{ // Returns true if there's an *abnormal* ledger issue, normal changing in TRACKING mode should return false
 	// Do we have sufficient validations for our last closed ledger? Or do sufficient nodes
 	// agree? And do we have no better ledger available?
 	// If so, we are either tracking or full.
 	boost::unordered_map<uint256, ValidationCount> ledgers;
 
-	for (std::vector<Peer::pointer>::iterator it = peerList.begin(), end = peerList.end(); it != end; ++it)
+	for (std::vector<Peer::pointer>::const_iterator it = peerList.begin(), end = peerList.end(); it != end; ++it)
 	{
 		if (!*it)
 		{
@@ -361,78 +413,39 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 		}
 	}
 
+	if (!switchLedgers)
+		return false;
 
-	if (switchLedgers)
+	Log(lsWARNING) << "We are not running on the consensus ledger";
+	Log(lsINFO) << "Our LCL " << currentClosed->getHash().GetHex();
+	Log(lsINFO) << "Net LCL " << closedLedger.GetHex();
+	if ((mMode == omTRACKING) || (mMode == omFULL)) setMode(omCONNECTED);
+	Ledger::pointer consensus = mLedgerMaster->getLedgerByHash(closedLedger);
+	if (!consensus)
 	{
-		Log(lsWARNING) << "We are not running on the consensus ledger";
-		Log(lsINFO) << "Our LCL " << currentClosed->getHash().GetHex();
-		Log(lsINFO) << "Net LCL " << closedLedger.GetHex();
-		if ((mMode == omTRACKING) || (mMode == omFULL)) setMode(omCONNECTED);
-		Ledger::pointer consensus = mLedgerMaster->getLedgerByHash(closedLedger);
-		if (!consensus)
+		Log(lsINFO) << "Acquiring consensus ledger";
+		LedgerAcquire::pointer acq = theApp->getMasterLedgerAcquire().findCreate(closedLedger);
+		if (!acq || acq->isFailed())
 		{
-			Log(lsINFO) << "Acquiring consensus ledger";
-			LedgerAcquire::pointer acq = theApp->getMasterLedgerAcquire().findCreate(closedLedger);
-			if (!acq || acq->isFailed())
+			theApp->getMasterLedgerAcquire().dropLedger(closedLedger);
+			Log(lsERROR) << "Network ledger cannot be acquired";
+			return true;
+		}
+		if (!acq->isComplete())
+		{ // add more peers
+			// FIXME: A peer may not have a ledger just because it accepts it as the network's consensus
+			for (std::vector<Peer::pointer>::const_iterator it = peerList.begin(), end = peerList.end();
+					it != end; ++it)
 			{
-				theApp->getMasterLedgerAcquire().dropLedger(closedLedger);
-				Log(lsERROR) << "Network ledger cannot be acquired";
-				setStateTimer(10);
-				return;
+				if ((*it)->getClosedLedgerHash() == closedLedger)
+					acq->peerHas(*it);
 			}
-			if (!acq->isComplete())
-			{ // add more peers
-				// FIXME: A peer may not have a ledger just because it accepts it as the network's consensus
-				for (std::vector<Peer::pointer>::iterator it = peerList.begin(), end = peerList.end(); it != end; ++it)
-					if ((*it)->getClosedLedgerHash() == closedLedger)
-						acq->peerHas(*it);
-				setStateTimer(5);
-				return;
-			}
-			consensus = acq->getLedger();
+			return true;
 		}
-		switchLastClosedLedger(consensus);
+		consensus = acq->getLedger();
 	}
-
-	// WRITEME: Unless we are in omFULL and in the process of doing a consensus,
-	// we must count how many nodes share our LCL, how many nodes disagree with our LCL,
-	// and how many validations our LCL has. We also want to check timing to make sure
-	// there shouldn't be a newer LCL. We need this information to do the next three
-	// tests.
-
-	if (mMode == omCONNECTED)
-	{ // count number of peers that agree with us and UNL nodes whose validations we have for LCL
-		// if the ledger is good enough, go to omTRACKING - TODO
-		if (!switchLedgers) setMode(omTRACKING);
-	}
-
-	if (mMode == omTRACKING)
-	{
-		// check if the ledger is good enough to go to omFULL
-		// Note: Do not go to omFULL if we don't have the previous ledger
-		// check if the ledger is bad enough to go to omCONNECTED -- TODO
-		if ((!switchLedgers) && theConfig.VALIDATION_SEED.isValid())
-		{
-			if (theApp->getOPs().getNetworkTimeNC() <
-					(theApp->getMasterLedger().getCurrentLedger()->getCloseTimeNC() + 4))
-				setMode(omFULL);
-			else
-				Log(lsWARNING) << "Too late to go to full, try next ledger";
-		}
-	}
-
-	if (mMode == omFULL)
-	{
-		// check if the ledger is bad enough to go to omTRACKING
-	}
-
-	int secondsToClose = theApp->getMasterLedger().getCurrentLedger()->getCloseTimeNC() -
-		theApp->getOPs().getNetworkTimeNC();
-	if ((!mConsensus) && (secondsToClose < LEDGER_WOBBLE_TIME)) // pre close wobble
-		beginConsensus(theApp->getMasterLedger().getCurrentLedger());
-	if (mConsensus)
-		setStateTimer(mConsensus->timerEntry());
-	else setStateTimer(4);
+	switchLastClosedLedger(consensus);
+	return true;
 }
 
 void NetworkOPs::switchLastClosedLedger(Ledger::pointer newLedger)
