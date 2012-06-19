@@ -144,12 +144,14 @@
     <ClCompile Include="src\SHAMapDiff.cpp" />
     <ClCompile Include="src\SHAMapNodes.cpp" />
     <ClCompile Include="src\SHAMapSync.cpp" />
+    <ClCompile Include="src\Suppression.cpp" />
     <ClCompile Include="src\Transaction.cpp" />
     <ClCompile Include="src\TransactionEngine.cpp" />
     <ClCompile Include="src\TransactionFormats.cpp" />
     <ClCompile Include="src\TransactionMaster.cpp" />
     <ClCompile Include="src\UniqueNodeList.cpp" />
     <ClCompile Include="src\utils.cpp" />
+    <ClCompile Include="src\ValidationCollection.cpp" />
     <ClCompile Include="src\Wallet.cpp" />
   </ItemGroup>
   <ItemGroup>

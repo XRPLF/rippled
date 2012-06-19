@@ -1233,7 +1233,9 @@ Json::Value RPCServer::doSend(Json::Value& params)
 
 Json::Value RPCServer::doServerInfo(Json::Value& params)
 {
-	return theApp->getOPs().getServerInfo();
+	Json::Value ret(Json::objectValue);
+	ret["info"]=theApp->getOPs().getServerInfo();
+	return ret;
 }
 
 // transit_set <seed> <paying_account> <transit_rate> <starts> <expires>

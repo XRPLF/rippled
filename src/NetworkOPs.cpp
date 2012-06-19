@@ -611,15 +611,15 @@ Json::Value NetworkOPs::getServerInfo()
 
 	switch (mMode)
 	{
-		case omDISCONNECTED: info["network_state"] = "disconected"; break;
-		case omCONNECTED: info["network_state"] = "connected"; break;
-		case omTRACKING: info["network_state"] = "tracking"; break;
-		case omFULL: info["network_state"] = "validating"; break;
-		default: info["network_state"] = "unknown";
+		case omDISCONNECTED: info["serverState"] = "disconnected"; break;
+		case omCONNECTED: info["serverState"] = "connected"; break;
+		case omTRACKING: info["serverState"] = "tracking"; break;
+		case omFULL: info["serverState"] = "validating"; break;
+		default: info["serverState"] = "unknown";
 	}
 
-	if (!theConfig.VALIDATION_SEED.isValid()) info["validation_seed"] = "none";
-	else info["validation_seed"] = NewcoinAddress::createNodePublic(theConfig.VALIDATION_SEED).humanNodePublic();
+	if (!theConfig.VALIDATION_SEED.isValid()) info["serverState"] = "none";
+	else info["validationPKey"] = NewcoinAddress::createNodePublic(theConfig.VALIDATION_SEED).humanNodePublic();
 
 	return info;
 }
