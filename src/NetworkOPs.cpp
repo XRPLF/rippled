@@ -474,8 +474,8 @@ bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash,
 
 	if (mMode != omFULL) // FIXME: Should we relay?
 	{
-		Log(lsWARNING) << "Received proposal when not full: " << mMode;
-		return true;
+		Log(lsINFO) << "Received proposal when not full: " << mMode;
+		return false; // FIXME: Need suppression table
 	}
 	if (!mConsensus)
 	{
