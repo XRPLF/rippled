@@ -632,11 +632,10 @@ void Peer::recvTransaction(newcoin::TMTransaction& packet)
 
 void Peer::recvPropose(newcoin::TMProposeSet& packet)
 {
-	Log(lsINFO) << "Received proposal from peer";
 	if ((packet.currenttxhash().size() != 32) || (packet.nodepubkey().size() < 28) ||
 		(packet.signature().size() < 56))
 	{
-		Log(lsWARNING) << "Proposal is malformed";
+		Log(lsWARNING) << "Received proposal is malformed";
 		return;
 	}
 
