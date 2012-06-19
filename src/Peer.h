@@ -124,6 +124,7 @@ public:
 	void punishPeer(PeerPunish pp);
 
 	Json::Value getJson();
+	bool isConnected() const { return mConnected; }
 
 	//static PackedMessage::pointer createFullLedger(Ledger::pointer ledger);
 	static PackedMessage::pointer createLedgerProposal(Ledger::pointer ledger);

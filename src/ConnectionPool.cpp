@@ -211,7 +211,7 @@ void ConnectionPool::relayMessage(Peer* fromPeer, PackedMessage::pointer msg)
 		Peer::pointer peer	= pair.second;
 		if (!peer)
 			std::cerr << "CP::RM null peer in list" << std::endl;
-		else if (!fromPeer || !(peer.get() == fromPeer))
+		else if ((!fromPeer || !(peer.get() == fromPeer)) && peer->isConnected())
 			peer->sendPacket(msg);
 	}
 }
