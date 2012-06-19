@@ -47,6 +47,7 @@ public:
 	boost::filesystem::path	CONFIG_FILE;
 	boost::filesystem::path	CONFIG_DIR;
 	boost::filesystem::path	DATA_DIR;
+	boost::filesystem::path DEBUG_LOGFILE;
 	boost::filesystem::path	UNL_DEFAULT;
 
 	std::string					VALIDATORS_SITE;	// Where to find validators.txt on the Internet.

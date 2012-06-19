@@ -12,6 +12,7 @@
 #include "utils.h"
 #include "TaggedCache.h"
 #include "boost/filesystem.hpp"
+#include "Log.h"
 
 Application* theApp = NULL;
 
@@ -53,7 +54,9 @@ void Application::stop()
 
 void Application::run()
 {
-	assert(mTxnDB==NULL);
+	assert(mTxnDB == NULL);
+	if (!theConfig.DEBUG_LOGFILE.empty())
+		Log::setLogFile(theConfig.DEBUG_LOGFILE);
 
 	//
 	// Construct databases.

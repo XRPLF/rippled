@@ -4,6 +4,7 @@
 #include <sstream>
 
 #include <boost/thread/recursive_mutex.hpp>
+#include <boost/filesystem.hpp>
 
 enum LogSeverity
 {
@@ -24,6 +25,7 @@ private:
 protected:
 	static boost::recursive_mutex sLock;
 	static LogSeverity sMinSeverity;
+	static std::ofstream* outStream;
 
 	mutable std::ostringstream oss;
 	LogSeverity mSeverity;
@@ -45,6 +47,7 @@ public:
 	}
 
 	static void setMinSeverity(LogSeverity);
+	static void setLogFile(boost::filesystem::path);
 };
 
 #endif
