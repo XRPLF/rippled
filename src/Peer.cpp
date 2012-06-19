@@ -60,7 +60,7 @@ void Peer::handle_write(const boost::system::error_code& error, size_t bytes_tra
 void Peer::detach(const char *rsn)
 {
 #ifdef DEBUG
-	Log(lsTRACE) << "DETACHING PEER: " << rsn;
+	Log(lsTRACE) << "DETACHING PEER: " << rsn
 		<< ": "
 		<< (mNodePublic.isValid() ? mNodePublic.humanNodePublic() : "-")
 		<< " " << getIP() << " " << getPort() << std::endl;
