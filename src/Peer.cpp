@@ -508,6 +508,7 @@ void Peer::processReadBuffer()
 
 		default:
 			std::cerr << "Unknown Msg: " << type << std::endl;
+			std::cerr << strHex(&mReadbuf[0], mReadbuf.size());
 		}
 	}
 }
