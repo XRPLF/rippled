@@ -40,13 +40,14 @@ void LedgerMaster::pushLedger(Ledger::pointer newLCL, Ledger::pointer newOL)
 	assert(newLCL->isClosed() && newLCL->isAccepted());
 	assert(!newOL->isClosed() && !newOL->isAccepted());
 
-	ScopedLock sl(mLock);
-	if (mFinalizedLedger && mFinalizedLedger->isAccepted())
+	if (newLCL->isAccepted())
 	{
 		mLedgerHistory.addAcceptedLedger(mFinalizedLedger);
 		Log(lsINFO) << "StashAccepted: " << mFinalizedLedger->getHash().GetHex();
 	}
+
 	mFinalizedLedger = newLCL;
+	ScopedLock sl(mLock);
 	mCurrentLedger = newOL;
 	mEngine.setLedger(newOL);
 }
