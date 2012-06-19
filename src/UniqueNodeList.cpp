@@ -1532,7 +1532,7 @@ bool UniqueNodeList::nodeLoad(boost::filesystem::path pConfig)
 		return false;
 	}
 
-	nodeProcess("local", strValidators, pConfig.native());
+	nodeProcess("local", strValidators, pConfig.string());
 
 	std::cerr << str(boost::format("Processing: %s") % pConfig) << std::endl;
 

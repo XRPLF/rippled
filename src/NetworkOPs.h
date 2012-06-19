@@ -5,6 +5,7 @@
 #include "AccountState.h"
 #include "RippleState.h"
 #include "NicknameState.h"
+#include "SerializedValidation.h"
 
 // #include <boost/asio.hpp>
 
@@ -115,6 +116,7 @@ public:
 		const std::string& pubKey, const std::string& signature);
 	bool gotTXData(boost::shared_ptr<Peer> peer, const uint256& hash,
 		const std::list<SHAMapNode>& nodeIDs, const std::list< std::vector<unsigned char> >& nodeData);
+	bool recvValidation(SerializedValidation::pointer val);
 	SHAMap::pointer getTXMap(const uint256& hash);
 	bool hasTXSet(boost::shared_ptr<Peer> peer, const uint256& set, newcoin::TxSetStatus status);
 	void mapComplete(const uint256& hash, SHAMap::pointer map);

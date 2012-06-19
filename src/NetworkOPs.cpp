@@ -308,11 +308,18 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 			if (!!peerLedger)
 			{
 				// FIXME: If we have this ledger, don't count it if it's too far past its close time
+				bool isNew = ledgers.find(peerLedger) == ledgers.end();
 				ValidationCount& vc = ledgers[peerLedger];
+				if (isNew)
+				{
+					theApp->getValidations().getValidationCount(peerLedger,
+						vc.trustedValidations, vc.untrustedValidations);
+					Log(lsTRACE) << peerLedger.GetHex() << " has " << vc.trustedValidations <<
+						" trusted validations and " << vc.untrustedValidations << " untrusted";
+				}
 				if ((vc.nodesUsing == 0) || ((*it)->getNodePublic() > vc.highNode))
 					vc.highNode = (*it)->getNodePublic();
 				++vc.nodesUsing;
-				// WRITEME: Validations, trusted peers
 			}
 		}
 	}
@@ -533,8 +540,8 @@ void NetworkOPs::setMode(OperatingMode om)
 	if (mMode == om) return;
 	Log l((om < mMode) ? lsWARNING : lsINFO);
 	if (om == omDISCONNECTED) l << "STATE->Disonnected";
-	else if (om==omCONNECTED) l << "STATE->Connected";
-	else if (om==omTRACKING) l << "STATE->Tracking";
+	else if (om == omCONNECTED) l << "STATE->Connected";
+	else if (om == omTRACKING) l << "STATE->Tracking";
 	else l << "STATE->Full";
 	mMode = om;
 }
@@ -560,6 +567,11 @@ std::vector< std::pair<uint32, uint256> >
 	}
 
 	return affectedAccounts;
+}
+
+bool NetworkOPs::recvValidation(SerializedValidation::pointer val)
+{
+	return theApp->getValidations().addValidation(val);
 }
 
 // vim:ts=4

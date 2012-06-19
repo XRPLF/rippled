@@ -595,7 +595,7 @@ void Peer::recvTransaction(newcoin::TMTransaction& packet)
 	{
 #endif
 		std::string rawTx = packet.rawtransaction();
-		Serializer s(std::vector<unsigned char>(rawTx.begin(), rawTx.end()));
+		Serializer s(rawTx);
 		SerializerIterator sit(s);
 		SerializedTransaction::pointer stx = boost::make_shared<SerializedTransaction>(boost::ref(sit));
 
@@ -668,6 +668,31 @@ void Peer::recvHaveTxSet(newcoin::TMHaveTransactionSet& packet)
 
 void Peer::recvValidation(newcoin::TMValidation& packet)
 {
+	if (packet.validation().size() < 50)
+	{
+		punishPeer(PP_UNKNOWN_REQUEST);
+		return;
+	}
+	try
+	{
+		Serializer s(packet.validation());
+		SerializerIterator sit(s);
+		SerializedValidation::pointer val = boost::make_shared<SerializedValidation>(boost::ref(sit));
+		if (!val->isValid())
+		{
+			punishPeer(PP_UNKNOWN_REQUEST);
+			return;
+		}
+		if (theApp->getOPs().recvValidation(val))
+		{
+			PackedMessage::pointer message = boost::make_shared<PackedMessage>(packet, newcoin::mtVALIDATION);
+			theApp->getConnectionPool().relayMessage(this, message);
+		}
+	}
+	catch (...)
+	{
+		punishPeer(PP_UNKNOWN_REQUEST);
+	}
 }
 
 void Peer::recvGetValidation(newcoin::TMGetValidations& packet)

@@ -281,7 +281,7 @@ void LedgerConsensus::mapComplete(const uint256& hash, SHAMap::pointer map)
 	}
 	if (!peers.empty())
 		adjustCount(map, peers);
-	else
+	else if (!hash)
 		Log(lsWARNING) << "By the time we got the map, no peers were proposing it";
 
 	sendHaveTxSet(hash, true);
@@ -807,8 +807,11 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 	}
 #endif
 
-	SerializedValidation v(newLCLHash, mOurPosition->peekSeed(), true);
-	std::vector<unsigned char> validation = v.getSigned();
+	SerializedValidation::pointer v = boost::make_shared<SerializedValidation>
+		(newLCLHash, mOurPosition->peekSeed(), true);
+	v->setTrusted();
+	theApp->getValidations().addValidation(v);
+	std::vector<unsigned char> validation = v->getSigned();
 	newcoin::TMValidation val;
 	val.set_validation(&validation[0], validation.size());
 	theApp->getConnectionPool().relayMessage(NULL, boost::make_shared<PackedMessage>(val, newcoin::mtVALIDATION));
