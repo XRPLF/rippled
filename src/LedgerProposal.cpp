@@ -28,6 +28,12 @@ LedgerProposal::LedgerProposal(const NewcoinAddress& naSeed, const uint256& prev
 	mPeerID		= mPublicKey.getNodeID();
 }
 
+LedgerProposal::LedgerProposal(const uint256& prevLgr, const uint256& position) :
+	mPreviousLedger(prevLgr), mCurrentHash(position), mProposeSeq(0)
+{
+	;
+}
+
 uint256 LedgerProposal::getSigningHash() const
 {
 	Serializer s(72);

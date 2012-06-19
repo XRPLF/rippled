@@ -85,6 +85,7 @@ protected:
 	uint32 mCloseTime;
 	Ledger::pointer mPreviousLedger;
 	LedgerProposal::pointer mOurPosition;
+	bool mProposing, mValidating;
 
 	// Convergence tracking, trusted peers indexed by hash of public key
 	boost::unordered_map<uint160, LedgerProposal::pointer> mPeerPositions;

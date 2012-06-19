@@ -193,6 +193,12 @@ LedgerConsensus::LedgerConsensus(Ledger::pointer previousLedger, uint32 closeTim
 {
 	Log(lsDEBUG) << "Creating consensus object";
 	Log(lsTRACE) << "LCL:" << previousLedger->getHash().GetHex() <<", ct=" << closeTime;
+	if (theConfig.VALIDATION_SEED.isValid())
+	{
+		mValidating = true;
+		mProposing = theApp->getOPs().getOperatingMode() == NetworkOPs::omFULL;
+	}
+	else mProposing = mValidating = false;
 }
 
 void LedgerConsensus::takeInitialPosition(Ledger::pointer initialLedger)
@@ -215,10 +221,13 @@ void LedgerConsensus::takeInitialPosition(Ledger::pointer initialLedger)
 		}
 	}
 
-	mOurPosition = boost::make_shared<LedgerProposal>
-		(theConfig.VALIDATION_SEED, initialLedger->getParentHash(), txSet);
+	if (mProposing)
+		mOurPosition = boost::make_shared<LedgerProposal>
+			(theConfig.VALIDATION_SEED, initialLedger->getParentHash(), txSet);
+	else
+		mOurPosition = boost::make_shared<LedgerProposal>(initialLedger->getParentHash(), txSet);
 	mapComplete(txSet, initialSet, false);
-	propose(std::vector<uint256>(), std::vector<uint256>());
+	if (mProposing) propose(std::vector<uint256>(), std::vector<uint256>());
 }
 
 void LedgerConsensus::createDisputes(SHAMap::pointer m1, SHAMap::pointer m2)
@@ -357,7 +366,8 @@ int LedgerConsensus::statePostClose(int secondsSinceClose)
 
 int LedgerConsensus::stateEstablish(int secondsSinceClose)
 { // we are establishing consensus
-	updateOurPositions(secondsSinceClose);
+	if (mProposing)
+		updateOurPositions(secondsSinceClose);
 	if (secondsSinceClose > LEDGER_MAX_CONVERGE)
 	{
 		Log(lsINFO) << "Converge cutoff";
@@ -445,7 +455,7 @@ bool LedgerConsensus::updateOurPositions(int sinceClose)
 	{
 		uint256 newHash = ourPosition->getHash();
 		mOurPosition->changePosition(newHash);
-		propose(addedTx, removedTx);
+		if (mProposing) propose(addedTx, removedTx);
 		mapComplete(newHash, ourPosition, false);
 		Log(lsINFO) << "We change our position to " << newHash.GetHex();
 	}
@@ -608,8 +618,7 @@ void LedgerConsensus::beginAccept()
 	SHAMap::pointer consensusSet = mComplete[mOurPosition->getCurrentHash()];
 	if (!consensusSet)
 	{
-		Log(lsFATAL) << "We don't have our own set";
-		assert(false);
+		Log(lsFATAL) << "We don't have a consensus set";
 		abort();
 		return;
 	}
@@ -805,15 +814,19 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 	}
 #endif
 
-	SerializedValidation::pointer v = boost::make_shared<SerializedValidation>
-		(newLCLHash, mOurPosition->peekSeed(), true);
-	v->setTrusted();
-	theApp->getValidations().addValidation(v);
-	std::vector<unsigned char> validation = v->getSigned();
-	newcoin::TMValidation val;
-	val.set_validation(&validation[0], validation.size());
-	theApp->getConnectionPool().relayMessage(NULL, boost::make_shared<PackedMessage>(val, newcoin::mtVALIDATION));
-	Log(lsINFO) << "Validation sent " << newLCL->getHash().GetHex();
+	if (mValidating)
+	{
+		SerializedValidation::pointer v = boost::make_shared<SerializedValidation>
+			(newLCLHash, mOurPosition->peekSeed(), true);
+		v->setTrusted();
+		// FIXME: If not proposing, set not full
+		theApp->getValidations().addValidation(v);
+		std::vector<unsigned char> validation = v->getSigned();
+		newcoin::TMValidation val;
+		val.set_validation(&validation[0], validation.size());
+		theApp->getConnectionPool().relayMessage(NULL, boost::make_shared<PackedMessage>(val, newcoin::mtVALIDATION));
+		Log(lsINFO) << "Validation sent " << newLCL->getHash().GetHex();
+	}
 	statusChange(newcoin::neACCEPTED_LEDGER, newOL);
 }
 
