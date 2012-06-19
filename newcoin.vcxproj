@@ -144,6 +144,7 @@
     <ClCompile Include="src\SHAMapDiff.cpp" />
     <ClCompile Include="src\SHAMapNodes.cpp" />
     <ClCompile Include="src\SHAMapSync.cpp" />
+    <ClCompile Include="src\Suppression.cpp" />
     <ClCompile Include="src\Transaction.cpp" />
     <ClCompile Include="src\TransactionEngine.cpp" />
     <ClCompile Include="src\TransactionFormats.cpp" />
