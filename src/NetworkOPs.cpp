@@ -291,6 +291,12 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 		Log(lsINFO) << "Node count (" << peerList.size() << ") is sufficient.";
 	}
 
+	if (mConsensus)
+	{
+		setStateTimer(mConsensus->timerEntry());
+		return;
+	}
+
 	// Do we have sufficient validations for our last closed ledger? Or do sufficient nodes
 	// agree? And do we have no better ledger available?
 	// If so, we are either tracking or full.
@@ -344,11 +350,6 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 		}
 	}
 
-	if (mConsensus)
-	{
-		setStateTimer(mConsensus->timerEntry());
-		return;
-	}
 
 	if (switchLedgers)
 	{
@@ -538,6 +539,14 @@ void NetworkOPs::endConsensus()
 void NetworkOPs::setMode(OperatingMode om)
 {
 	if (mMode == om) return;
+	if (mMode == omFULL)
+	{
+		if (mConsensus)
+		{
+			mConsensus->abort();
+			mConsensus = boost::shared_ptr<LedgerConsensus>();
+		}
+	}
 	Log l((om < mMode) ? lsWARNING : lsINFO);
 	if (om == omDISCONNECTED) l << "STATE->Disonnected";
 	else if (om == omCONNECTED) l << "STATE->Connected";

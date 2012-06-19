@@ -42,7 +42,6 @@ Ledger::Ledger(const uint256 &parentHash, const uint256 &transHash, const uint25
 		mTotCoins(totCoins), mCloseTime(timeStamp), mLedgerSeq(ledgerSeq), mLedgerInterval(LEDGER_INTERVAL),
 		mClosed(false), mValidHash(false), mAccepted(false), mImmutable(false)
 {
-	assert(mParentHash.isNonZero());
 	updateHash();
 }
 
