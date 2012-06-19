@@ -541,7 +541,7 @@ bool NetworkOPs::hasTXSet(boost::shared_ptr<Peer> peer, const uint256& set, newc
 void NetworkOPs::mapComplete(const uint256& hash, SHAMap::pointer map)
 {
 	if (mConsensus)
-		mConsensus->mapComplete(hash, map);
+		mConsensus->mapComplete(hash, map, true);
 }
 
 void NetworkOPs::endConsensus()
