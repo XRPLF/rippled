@@ -96,7 +96,7 @@ public:
 	void updateHash();
 	void setClosed()	{ mClosed = true; }
 	void setAccepted()	{ mAccepted = true; }
-	void setImmutable()	{ mImmutable = true; }
+	void setImmutable()	{ updateHash(); mImmutable = true; }
 	bool isClosed()		{ return mClosed; }
 	bool isAccepted()	{ return mAccepted; }
 

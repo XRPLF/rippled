@@ -7,6 +7,7 @@
 #include <iostream>
 
 #define SECTION_ACCOUNT_PROBE_MAX		"account_probe_max"
+#define SECTION_DEBUG_LOGFILE			"debug_logfile"
 #define SECTION_FEE_ACCOUNT_CREATE		"fee_account_create"
 #define SECTION_FEE_DEFAULT				"fee_default"
 #define SECTION_FEE_NICKNAME_CREATE		"fee_nickname_create"
@@ -233,6 +234,9 @@ void Config::load()
 
 			if (sectionSingleB(secConfig, SECTION_UNL_DEFAULT, strTemp))
 				UNL_DEFAULT			= strTemp;
+
+			if (sectionSingleB(secConfig, SECTION_DEBUG_LOGFILE, strTemp))
+				DEBUG_LOGFILE		= strTemp;
 		}
 	}
 }
