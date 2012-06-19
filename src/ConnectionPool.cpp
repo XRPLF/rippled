@@ -11,6 +11,9 @@
 #include <boost/format.hpp>
 #include <boost/algorithm/string.hpp>
 
+// How often to enforce policies.
+#define POLICY_INTERVAL_SECONDS	5
+
 void splitIpPort(const std::string& strIpPort, std::string& strIp, int& iPort)
 {
 	std::vector<std::string>	vIpPort;
@@ -23,7 +26,8 @@ void splitIpPort(const std::string& strIpPort, std::string& strIp, int& iPort)
 ConnectionPool::ConnectionPool(boost::asio::io_service& io_service) :
 	mCtx(boost::asio::ssl::context::sslv23),
 	bScanning(false),
-	mScanTimer(io_service)
+	mScanTimer(io_service),
+	mPolicyTimer(io_service)
 {
 	mCtx.set_options(
 		boost::asio::ssl::context::default_workarounds
@@ -36,7 +40,7 @@ ConnectionPool::ConnectionPool(boost::asio::io_service& io_service) :
 
 void ConnectionPool::start()
 {
-	// XXX Start running policy.
+	// Start running policy.
 	policyEnforce();
 
 	// Start scanning.
@@ -157,7 +161,41 @@ void ConnectionPool::policyLowWater()
 
 void ConnectionPool::policyEnforce()
 {
+	boost::posix_time::ptime	tpNow	= boost::posix_time::second_clock::universal_time();
+
+	std::cerr << "policyEnforce: begin: " << tpNow << std::endl;
+
+	// Cancel any in progrss timer.
+	(void) mPolicyTimer.cancel();
+
+	// Enforce policies.
 	policyLowWater();
+
+	// Schedule next enforcement.
+	boost::posix_time::ptime	tpNext;
+
+	tpNext	= boost::posix_time::second_clock::universal_time()+boost::posix_time::seconds(POLICY_INTERVAL_SECONDS);
+
+	std::cerr << "policyEnforce: schedule : " << tpNext << std::endl;
+
+	mPolicyTimer.expires_at(tpNext);
+	mPolicyTimer.async_wait(boost::bind(&ConnectionPool::policyHandler, this, _1));
+}
+
+void ConnectionPool::policyHandler(const boost::system::error_code& ecResult)
+{
+	if (ecResult == boost::asio::error::operation_aborted)
+	{
+		nothing();
+	}
+	else if (!ecResult)
+	{
+		policyEnforce();
+	}
+	else
+	{
+		throw std::runtime_error("Internal error: unexpected deadline error.");
+	}
 }
 
 // XXX Broken: also don't send a message to a peer if we got it from the peer.
