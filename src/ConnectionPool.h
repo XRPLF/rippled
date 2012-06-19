@@ -34,6 +34,10 @@ private:
 
 	void		scanHandler(const boost::system::error_code& ecResult);
 
+	boost::asio::deadline_timer							mPolicyTimer;
+
+	void		policyHandler(const boost::system::error_code& ecResult);
+
 	// Peers we are establishing a connection with as a client.
 	// int												miConnectStarting;
 
