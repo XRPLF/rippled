@@ -99,6 +99,7 @@ public:
 	void setImmutable()	{ updateHash(); mImmutable = true; }
 	bool isClosed()		{ return mClosed; }
 	bool isAccepted()	{ return mAccepted; }
+	bool isImmutable()	{ return mImmutable; }
 
 	// This ledger has closed, will never be accepted, and is accepting
 	// new transactions to be re-repocessed when do accept a new last-closed ledger

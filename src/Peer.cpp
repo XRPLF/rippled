@@ -60,7 +60,7 @@ void Peer::handle_write(const boost::system::error_code& error, size_t bytes_tra
 void Peer::detach(const char *rsn)
 {
 #ifdef DEBUG
-	std::cerr << "DETACHING PEER: " << rsn << std::endl;
+	Log(lsTRACE) << "DETACHING PEER: " << rsn;
 #endif
 	boost::system::error_code ecCancel;
 
@@ -508,6 +508,7 @@ void Peer::processReadBuffer()
 
 		default:
 			std::cerr << "Unknown Msg: " << type << std::endl;
+			std::cerr << strHex(&mReadbuf[0], mReadbuf.size());
 		}
 	}
 }

@@ -255,10 +255,7 @@ void LedgerConsensus::mapComplete(const uint256& hash, SHAMap::pointer map, bool
 	}
 
 	if (mComplete.find(hash) != mComplete.end())
-	{
-		Log(lsERROR) << "Which we already had";
 		return; // we already have this map
-	}
 
 	if (mOurPosition && (map->getHash() != mOurPosition->getCurrentHash()))
 	{ // this could create disputed transactions
@@ -506,7 +503,7 @@ void LedgerConsensus::startAcquiring(TransactionAcquire::pointer acquire)
 
 void LedgerConsensus::propose(const std::vector<uint256>& added, const std::vector<uint256>& removed)
 {
-	Log(lsDEBUG) << "We propose: " << mOurPosition->getCurrentHash().GetHex();
+	Log(lsTRACE) << "We propose: " << mOurPosition->getCurrentHash().GetHex();
 	newcoin::TMProposeSet prop;
 	prop.set_currenttxhash(mOurPosition->getCurrentHash().begin(), 256 / 8);
 	prop.set_proposeseq(mOurPosition->getProposeSeq());
@@ -643,7 +640,7 @@ void LedgerConsensus::applyTransaction(TransactionEngine& engine, SerializedTran
 		}
 		else if (result == 0)
 		{
-			Log(lsDEBUG) << "   success";
+			Log(lsTRACE) << "   success";
 			assert(ledger->hasTransaction(txn->getTransactionID()));
 		}
 		else
@@ -729,7 +726,7 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 		Log(lsTRACE) << "newLCL before transactions";
 		Json::Value p;
 		newLCL->addJson(p, LEDGER_JSON_DUMP_TXNS | LEDGER_JSON_DUMP_STATE);
-		ssw.write(std::cerr, p);
+		ssw.write(Log(lsTRACE).ref(), p);
 	}
 #endif
 
@@ -747,7 +744,7 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 		Log(lsTRACE) << "newLCL after transactions";
 		Json::Value p;
 		newLCL->addJson(p, LEDGER_JSON_DUMP_TXNS | LEDGER_JSON_DUMP_STATE);
-		ssw.write(std::cerr, p);
+		ssw.write(Log(lsTRACE).ref(), p);
 	}
 #endif
 
@@ -759,14 +756,14 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 		Log(lsTRACE) << "newOL before transactions";
 		Json::Value p;
 		newOL->addJson(p, LEDGER_JSON_DUMP_TXNS | LEDGER_JSON_DUMP_STATE);
-		ssw.write(std::cerr, p);
+		ssw.write(Log(lsTRACE).ref(), p);
 	}
 	if (1)
 	{
 		Log(lsTRACE) << "current ledger";
 		Json::Value p;
 		theApp->getMasterLedger().getCurrentLedger()->addJson(p, LEDGER_JSON_DUMP_TXNS | LEDGER_JSON_DUMP_STATE);
-		ssw.write(std::cerr, p);
+		ssw.write(Log(lsTRACE).ref(), p);
 	}
 #endif
 
@@ -804,7 +801,7 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 		Log(lsTRACE) << "newOL after current ledger transactions";
 		Json::Value p;
 		newOL->addJson(p, LEDGER_JSON_DUMP_TXNS | LEDGER_JSON_DUMP_STATE);
-		ssw.write(std::cerr, p);
+		ssw.write(Log(lsTRACE).ref(), p);
 	}
 #endif
 

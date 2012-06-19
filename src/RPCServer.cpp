@@ -23,6 +23,7 @@
 #include "AccountState.h"
 #include "NicknameState.h"
 #include "utils.h"
+#include "Log.h"
 
 RPCServer::RPCServer(boost::asio::io_service& io_service , NetworkOPs* nopNetwork)
 	: mNetOps(nopNetwork), mSocket(io_service)
@@ -162,16 +163,10 @@ std::string RPCServer::handleRequest(const std::string& requestStr)
 	else if (!valParams.isArray())
 		return(HTTPReply(400, ""));
 
-#ifdef DEBUG
 	Json::StyledStreamWriter w;
-	w.write(std::cerr, valParams);
-#endif
-
+	w.write(Log(lsTRACE).ref(), valParams);
 	Json::Value result(doCommand(strMethod, valParams));
-
-#ifdef DEBUG
-	w.write(std::cerr, result);
-#endif
+	w.write(Log(lsTRACE).ref(), result);
 
 	std::string strReply = JSONRPCReply(result, Json::Value(), id);
 	return( HTTPReply(200, strReply) );
@@ -1966,7 +1961,7 @@ Json::Value RPCServer::doStop(Json::Value& params) {
 
 Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params)
 {
-	std::cerr << "RPC:" << command << std::endl;
+	Log(lsTRACE) << "RPC:" << command;
 
 	static struct {
 		const char* pCommand;
