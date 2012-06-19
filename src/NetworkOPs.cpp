@@ -98,6 +98,18 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 	}
 
 	Log(lsDEBUG) << "Status other than success " << r ;
+	if ((mMode != omFULL) && (theApp->suppress(trans->getID())))
+	{
+		newcoin::TMTransaction tx;
+		Serializer s;
+		trans->getSTransaction()->add(s);
+		tx.set_rawtransaction(&s.getData().front(), s.getLength());
+		tx.set_status(newcoin::tsCURRENT);
+		tx.set_receivetimestamp(getNetworkTimeNC());
+		tx.set_ledgerindexpossible(tgtLedger);
+		PackedMessage::pointer packet = boost::make_shared<PackedMessage>(tx, newcoin::mtTRANSACTION);
+		theApp->getConnectionPool().relayMessage(source, packet);
+	}
 
 	trans->setStatus(INVALID);
 	return trans;
@@ -472,10 +484,11 @@ bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash,
 	// XXX Take a vuc for pubkey.
 	NewcoinAddress	naPeerPublic	= NewcoinAddress::createNodePublic(strCopy(pubKey));
 
-	if (mMode != omFULL) // FIXME: Should we relay?
+	if (mMode != omFULL)
 	{
 		Log(lsINFO) << "Received proposal when not full: " << mMode;
-		return false; // FIXME: Need suppression table
+		Serializer s(signature);
+		return theApp->suppress(s.getSHA512Half());
 	}
 	if (!mConsensus)
 	{
