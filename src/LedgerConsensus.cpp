@@ -255,10 +255,7 @@ void LedgerConsensus::mapComplete(const uint256& hash, SHAMap::pointer map, bool
 	}
 
 	if (mComplete.find(hash) != mComplete.end())
-	{
-		Log(lsERROR) << "Got TXS we already had " << hash.GetHex();
 		return; // we already have this map
-	}
 
 	if (mOurPosition && (map->getHash() != mOurPosition->getCurrentHash()))
 	{ // this could create disputed transactions
