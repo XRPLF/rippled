@@ -96,8 +96,10 @@ public:
 
 	//bool operator == (const Peer& other);
 
-	std::string& getIP(){ return(mIpPort.first); }
-	int getPort(){ return(mIpPort.second); }
+	std::string& getIP() { return mIpPort.first; }
+	int getPort() { return mIpPort.second; }
+
+	void peerIpPort(const std::string& strIP, int iPort) { mIpPort = make_pair(strIP, iPort); }
 
 	static pointer create(boost::asio::io_service& io_service, boost::asio::ssl::context& ctx)
 	{
