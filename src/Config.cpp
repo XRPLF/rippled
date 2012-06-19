@@ -11,6 +11,7 @@
 #define SECTION_FEE_ACCOUNT_CREATE		"fee_account_create"
 #define SECTION_FEE_DEFAULT				"fee_default"
 #define SECTION_FEE_NICKNAME_CREATE		"fee_nickname_create"
+#define SECTION_IPS						"ips"
 #define SECTION_NETWORK_QUORUM			"network_quorum"
 #define SECTION_PEER_CONNECT_LOW_WATER	"peer_connect_low_water"
 #define SECTION_PEER_IP					"peer_ip"
@@ -172,13 +173,21 @@ void Config::load()
 			section		secConfig	= ParseSection(strConfigFile, true);
 			std::string	strTemp;
 
+			// XXX Leak
 			section::mapped_type*	smtTmp;
 
 			smtTmp	= sectionEntries(secConfig, SECTION_VALIDATORS);
 			if (smtTmp)
 			{
 				VALIDATORS	= *smtTmp;
-				sectionEntriesPrint(&VALIDATORS, SECTION_VALIDATORS);
+				// sectionEntriesPrint(&VALIDATORS, SECTION_VALIDATORS);
+			}
+
+			smtTmp	= sectionEntries(secConfig, SECTION_IPS);
+			if (smtTmp)
+			{
+				IPS	= *smtTmp;
+				sectionEntriesPrint(&IPS, SECTION_IPS);
 			}
 
 			(void) sectionSingleB(secConfig, SECTION_VALIDATORS_SITE, VALIDATORS_SITE);
