@@ -92,7 +92,6 @@ private:
 	void trustedLoad();
 
 	bool scoreRound(std::vector<scoreNode>& vsnNodes);
-	int iSourceScore(validatorSource vsWhy);
 
 	void responseFetch(const std::string strDomain, const boost::system::error_code& err, const std::string strSiteFile);
 
@@ -156,6 +155,8 @@ public:
 	void nodeNetwork();
 
 	Json::Value getUnlJson();
+
+	int iSourceScore(validatorSource vsWhy);
 };
 
 #endif
