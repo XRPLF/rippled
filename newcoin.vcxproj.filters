@@ -237,6 +237,9 @@
     <ClCompile Include="src\CanonicalTXSet.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\ValidationCollection.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="KnownNodeList.h">

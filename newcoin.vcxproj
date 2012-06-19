@@ -150,6 +150,7 @@
     <ClCompile Include="src\TransactionMaster.cpp" />
     <ClCompile Include="src\UniqueNodeList.cpp" />
     <ClCompile Include="src\utils.cpp" />
+    <ClCompile Include="src\ValidationCollection.cpp" />
     <ClCompile Include="src\Wallet.cpp" />
   </ItemGroup>
   <ItemGroup>
