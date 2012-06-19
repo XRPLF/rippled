@@ -15,10 +15,10 @@ bool SuppressionTable::addSuppression(const uint160& suppression)
 	{
 		if ((it->first + mHoldTime) < now)
 		{
-			for (std::list<uint160>::iterator lit = it->second.begin(), end = it->second.end();
+			for (std::list<uint160>::iterator lit = it->second.begin(), end = it->second.end(); 
 					lit != end; ++lit)
 				mSuppressionMap.erase(*lit);
-			mSuppressionTimes.erase(it++);
+			it=mSuppressionTimes.erase(it);
 		}
 		else ++it;
 	}

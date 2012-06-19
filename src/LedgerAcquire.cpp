@@ -254,7 +254,7 @@ void PeerSet::sendRequest(const newcoin::TMGetLedger& tmGL)
 	while (it != mPeers.end())
 	{
 		if (it->expired())
-			mPeers.erase(it++);
+			it=mPeers.erase(it);
 		else
 		{
 			// FIXME: Track last peer sent to and time sent
