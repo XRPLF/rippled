@@ -217,7 +217,7 @@ void LedgerConsensus::takeInitialPosition(Ledger::pointer initialLedger)
 
 	mOurPosition = boost::make_shared<LedgerProposal>
 		(theConfig.VALIDATION_SEED, initialLedger->getParentHash(), txSet);
-	mapComplete(txSet, initialSet);
+	mapComplete(txSet, initialSet, false);
 	propose(std::vector<uint256>(), std::vector<uint256>());
 }
 
@@ -241,9 +241,10 @@ void LedgerConsensus::createDisputes(SHAMap::pointer m1, SHAMap::pointer m2)
 	}
 }
 
-void LedgerConsensus::mapComplete(const uint256& hash, SHAMap::pointer map)
+void LedgerConsensus::mapComplete(const uint256& hash, SHAMap::pointer map, bool acquired)
 {
-	Log(lsINFO) << "We have acquired TXS " << hash.GetHex();
+	if (acquired)
+		Log(lsINFO) << "We have acquired TXS " << hash.GetHex();
 	mAcquiring.erase(hash);
 
 	if (!map)
@@ -281,8 +282,8 @@ void LedgerConsensus::mapComplete(const uint256& hash, SHAMap::pointer map)
 	}
 	if (!peers.empty())
 		adjustCount(map, peers);
-	else if (!hash)
-		Log(lsWARNING) << "By the time we got the map, no peers were proposing it";
+	else if (acquired)
+		Log(lsWARNING) << "By the time we got the map " << hash.GetHex() << " no peers were proposing it";
 
 	sendHaveTxSet(hash, true);
 }
@@ -448,7 +449,7 @@ bool LedgerConsensus::updateOurPositions(int sinceClose)
 		uint256 newHash = ourPosition->getHash();
 		mOurPosition->changePosition(newHash);
 		propose(addedTx, removedTx);
-		mapComplete(newHash, ourPosition);
+		mapComplete(newHash, ourPosition, false);
 		Log(lsINFO) << "We change our position to " << newHash.GetHex();
 	}
 
@@ -468,7 +469,7 @@ SHAMap::pointer LedgerConsensus::getTransactionTree(const uint256& hash, bool do
 				if (!hash)
 				{
 					SHAMap::pointer empty = boost::make_shared<SHAMap>();
-					mapComplete(hash, empty);
+					mapComplete(hash, empty, false);
 					return empty;
 				}
 				acquiring = boost::make_shared<TransactionAcquire>(hash);
