@@ -352,9 +352,7 @@ void ConnectionPool::peerDisconnected(Peer::pointer peer, const ipPort& ipPeer, 
 
 	if (naPeer.isValid())
 	{
-		boost::unordered_map<NewcoinAddress, Peer::pointer>::iterator itCm;
-
-		itCm	= mConnectedMap.find(naPeer);
+		boost::unordered_map<NewcoinAddress, Peer::pointer>::iterator itCm = mConnectedMap.find(naPeer);
 
 		if (itCm == mConnectedMap.end())
 		{
@@ -369,9 +367,7 @@ void ConnectionPool::peerDisconnected(Peer::pointer peer, const ipPort& ipPeer, 
 		}
 	}
 
-    boost::unordered_map<ipPort, Peer::pointer>::iterator	itIp;
-
-	itIp	= mIpMap.find(ipPeer);
+    boost::unordered_map<ipPort, Peer::pointer>::iterator	itIp = mIpMap.find(ipPeer);
 
 	if (itIp == mIpMap.end())
 	{

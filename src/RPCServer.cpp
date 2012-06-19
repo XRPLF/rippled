@@ -1231,6 +1231,11 @@ Json::Value RPCServer::doSend(Json::Value& params)
 	}
 }
 
+Json::Value RPCServer::doServerInfo(Json::Value& params)
+{
+	return theApp->getOPs().getServerInfo();
+}
+
 // transit_set <seed> <paying_account> <transit_rate> <starts> <expires>
 Json::Value RPCServer::doTransitSet(Json::Value& params)
 {
@@ -1988,6 +1993,7 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 		{	"password_set",			&RPCServer::doPasswordSet,			2, 3, optNetwork },
 		{	"peers",				&RPCServer::doPeers,				0, 0,  },
 		{	"send",					&RPCServer::doSend,					3, 7, optCurrent },
+		{	"server_info",			&RPCServer::doServerInfo,			0, 0,  },
 		{	"stop",					&RPCServer::doStop,					0, 0,  },
 		{	"transit_set",			&RPCServer::doTransitSet,			5, 5, optCurrent },
 		{	"tx",					&RPCServer::doTx,					1, 1,  },

@@ -128,7 +128,7 @@ public:
 	LedgerAcquire::pointer findCreate(const uint256& hash);
 	LedgerAcquire::pointer find(const uint256& hash);
 	bool hasLedger(const uint256& ledgerHash);
-	bool dropLedger(const uint256& ledgerHash);
+	void dropLedger(const uint256& ledgerHash);
 	bool gotLedgerData(newcoin::TMLedgerData& packet, Peer::pointer);
 };
 
