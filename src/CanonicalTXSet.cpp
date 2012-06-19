@@ -44,10 +44,12 @@ void CanonicalTXSet::push_back(SerializedTransaction::pointer txn)
 	mMap.insert(std::make_pair(CanonicalTXKey(effectiveAccount, txn->getSequence(), txn->getTransactionID()), txn));
 }
 
-void CanonicalTXSet::eraseInc(iterator& it)
+CanonicalTXSet::iterator CanonicalTXSet::erase(const iterator& it)
 {
-	iterator tmp = it++;
-	mMap.erase(tmp);
+	iterator tmp = it;
+	++tmp;
+	mMap.erase(it);
+	return tmp;
 }
 
 

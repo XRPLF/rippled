@@ -694,7 +694,7 @@ void LedgerConsensus::applyTransactions(SHAMap::pointer set, Ledger::pointer led
 				if (result <= 0)
 				{
 					if (result == 0) ++successes;
-					failedTransactions.eraseInc(it);
+					it = failedTransactions.erase(it);
 				}
 				else
 				{
@@ -704,7 +704,7 @@ void LedgerConsensus::applyTransactions(SHAMap::pointer set, Ledger::pointer led
 			catch (...)
 			{
 				Log(lsWARNING) << "   Throws";
-				failedTransactions.eraseInc(it);
+				it = failedTransactions.erase(it);
 			}
 		}
 	} while (successes > 0);
