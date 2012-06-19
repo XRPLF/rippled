@@ -596,4 +596,22 @@ bool NetworkOPs::recvValidation(SerializedValidation::pointer val)
 	return theApp->getValidations().addValidation(val);
 }
 
+Json::Value NetworkOPs::getServerInfo()
+{
+	Json::Value info = Json::objectValue;
+	switch(mMode)
+	{
+		case omDISCONNECTED: info["network_state"] = "disconected"; break;
+		case omCONNECTED: info["network_state"] = "connected"; break;
+		case omTRACKING: info["network_state"] = "tracking"; break;
+		case omFULL: info["network_state"] = "validating"; break;
+		default: info["network_state"] = "unknown";
+	}
+
+	if (!theConfig.VALIDATION_SEED.isValid()) info["validation_seed"] = "none";
+	else info["validation_seed"] = theConfig.VALIDATION_SEED.humanNodePublic();
+
+	return info;
+}
+
 // vim:ts=4
