@@ -246,15 +246,17 @@ RippleState::pointer NetworkOPs::getRippleState(const uint256& uLedger, const ui
 
 void NetworkOPs::setStateTimer(int sec)
 { // set timer early if ledger is closing
-	uint64 consensusTime = mLedgerMaster->getCurrentLedger()->getCloseTimeNC() - LEDGER_WOBBLE_TIME;
-	uint64 now = getNetworkTimeNC();
-
-	if ((mMode == omFULL) && !mConsensus)
+	if (!mConsensus && ((mMode == omFULL) || (mMode == omTRACKING)))
 	{
-		if (now >= consensusTime) sec = 0;
-		else if (sec > (consensusTime - now)) sec = (consensusTime - now);
-	}
+		uint64 consensusTime = mLedgerMaster->getCurrentLedger()->getCloseTimeNC() - LEDGER_WOBBLE_TIME;
+		uint64 now = getNetworkTimeNC();
 
+		if ((mMode == omFULL) && !mConsensus)
+		{
+			if (now >= consensusTime) sec = 0;
+			else if (sec > (consensusTime - now)) sec = (consensusTime - now);
+		}
+	}
 	mNetTimer.expires_from_now(boost::posix_time::seconds(sec));
 	mNetTimer.async_wait(boost::bind(&NetworkOPs::checkState, this, boost::asio::placeholders::error));
 }
@@ -366,9 +368,9 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 	if (switchLedgers)
 	{
 		Log(lsWARNING) << "We are not running on the consensus ledger";
-		Log(lsINFO) << "Our LCL " << currentClosed->getHash().GetHex() ;
-		Log(lsINFO) << "Net LCL " << closedLedger.GetHex() ;
-		if ((mMode == omTRACKING) || (mMode == omFULL)) setMode(omTRACKING);
+		Log(lsINFO) << "Our LCL " << currentClosed->getHash().GetHex();
+		Log(lsINFO) << "Net LCL " << closedLedger.GetHex();
+		if ((mMode == omTRACKING) || (mMode == omFULL)) setMode(omCONNECTED);
 		Ledger::pointer consensus = mLedgerMaster->getLedgerByHash(closedLedger);
 		if (!consensus)
 		{
@@ -412,7 +414,14 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 		// check if the ledger is good enough to go to omFULL
 		// Note: Do not go to omFULL if we don't have the previous ledger
 		// check if the ledger is bad enough to go to omCONNECTED -- TODO
-		if ((!switchLedgers) && theConfig.VALIDATION_SEED.isValid()) setMode(omFULL);
+		if ((!switchLedgers) && theConfig.VALIDATION_SEED.isValid())
+		{
+			if (theApp->getOPs().getNetworkTimeNC() <
+					(theApp->getMasterLedger().getCurrentLedger()->getCloseTimeNC() + 4))
+				setMode(omFULL);
+			else
+				Log(lsWARNING) << "Too late to go to full, try next ledger";
+		}
 	}
 
 	if (mMode == omFULL)
