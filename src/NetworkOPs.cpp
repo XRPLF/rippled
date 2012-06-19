@@ -420,6 +420,12 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 		// check if the ledger is bad enough to go to omTRACKING
 	}
 
+	if (mMode != omFULL)
+	{
+		setStateTimer(4);
+		return;
+	}
+
 	int secondsToClose = theApp->getMasterLedger().getCurrentLedger()->getCloseTimeNC() -
 		theApp->getOPs().getNetworkTimeNC();
 	if ((!mConsensus) && (secondsToClose < LEDGER_WOBBLE_TIME)) // pre close wobble
@@ -444,12 +450,15 @@ void NetworkOPs::switchLastClosedLedger(Ledger::pointer newLedger)
 	Ledger::pointer openLedger = boost::make_shared<Ledger>(false, boost::ref(*newLedger));
 	mLedgerMaster->switchLedgers(newLedger, openLedger);
 
-	if (getNetworkTimeNC() > openLedger->getCloseTimeNC())
-	{ // this ledger has already closed
-	}
-
+	newcoin::TMStatusChange s;
+	s.set_newevent(newcoin::neSWITCHED_LEDGER);
+	s.set_ledgerseq(newLedger->getLedgerSeq());
+	s.set_networktime(theApp->getOPs().getNetworkTimeNC());
+	uint256 plhash = newLedger->getParentHash();
+	s.set_previousledgerhash(plhash.begin(), plhash.size());
+	PackedMessage::pointer packet = boost::make_shared<PackedMessage>(s, newcoin::mtSTATUS_CHANGE);
+	theApp->getConnectionPool().relayMessage(NULL, packet);
 }
-// vim:ts=4
 
 int NetworkOPs::beginConsensus(Ledger::pointer closingLedger)
 {
