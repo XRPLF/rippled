@@ -22,7 +22,9 @@ SerializedValidation::SerializedValidation(const uint256& ledgerHash, const Newc
 	: STObject(sValidationFormat), mSignature("Signature"), mTrusted(false)
 {
 	setValueFieldH256(sfLedgerHash, ledgerHash);
-	setValueFieldVL(sfSigningKey, NewcoinAddress::createNodePublic(naSeed).getNodePublic());
+	NewcoinAddress na(NewcoinAddress::createNodePublic(naSeed));
+	if (na.isValid())
+		setValueFieldVL(sfSigningKey, na.getNodePublic());
 	if (!isFull) setFlag(sFullFlag);
 
 	NewcoinAddress::createNodePrivate(naSeed).signNodePrivate(getSigningHash(), mSignature.peekValue());

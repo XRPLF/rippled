@@ -226,7 +226,7 @@ void LedgerConsensus::takeInitialPosition(Ledger::pointer initialLedger)
 
 	if (mProposing)
 		mOurPosition = boost::make_shared<LedgerProposal>
-			(theConfig.VALIDATION_SEED, initialLedger->getParentHash(), txSet);
+			(mValSeed, initialLedger->getParentHash(), txSet);
 	else
 		mOurPosition = boost::make_shared<LedgerProposal>(initialLedger->getParentHash(), txSet);
 	mapComplete(txSet, initialSet, false);
