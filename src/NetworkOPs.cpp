@@ -269,8 +269,6 @@ public:
 	{
 		if (trustedValidations > v.trustedValidations) return true;
 		if (trustedValidations < v.trustedValidations) return false;
-		if (untrustedValidations > v.untrustedValidations) return true;
-		if (untrustedValidations < v.untrustedValidations) return false;
 		if (nodesUsing > v.nodesUsing) return true;
 		if (nodesUsing < v.nodesUsing) return false;
 		return highNode > v.highNode;
@@ -379,7 +377,7 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 				ValidationCount& vc = ledgers[peerLedger];
 				if (vc.nodesUsing == 0)
 				{
-					theApp->getValidations().getValidationCount(peerLedger,
+					theApp->getValidations().getValidationCount(peerLedger, true,
 						vc.trustedValidations, vc.untrustedValidations);
 					Log(lsTRACE) << peerLedger.GetHex() << " has " << vc.trustedValidations <<
 						" trusted validations and " << vc.untrustedValidations << " untrusted";
@@ -397,7 +395,7 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 	if (ourVC.nodesUsing == 0)
 	{
 		ourVC.highNode = theApp->getWallet().getNodePublic();
-		theApp->getValidations().getValidationCount(closedLedger,
+		theApp->getValidations().getValidationCount(closedLedger, true,
 			ourVC.trustedValidations, ourVC.untrustedValidations);
 	}
 	++ourVC.nodesUsing;

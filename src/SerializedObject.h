@@ -38,6 +38,7 @@ enum SOE_Field
 	sfBorrowRate,
 	sfBorrowStart,
 	sfBorrower,
+	sfCloseTime,
 	sfCurrency,
 	sfCurrencyIn,
 	sfCurrencyOut,

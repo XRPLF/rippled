@@ -825,7 +825,7 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 	if (mValidating)
 	{
 		SerializedValidation::pointer v = boost::make_shared<SerializedValidation>
-			(newLCLHash, mOurPosition->peekSeed(), true);
+			(newLCLHash, newLCL->getCloseTimeNC(), mOurPosition->peekSeed(), true);
 		v->setTrusted();
 		// FIXME: If not proposing, set not full
 		theApp->getValidations().addValidation(v);
@@ -833,7 +833,7 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 		newcoin::TMValidation val;
 		val.set_validation(&validation[0], validation.size());
 		theApp->getConnectionPool().relayMessage(NULL, boost::make_shared<PackedMessage>(val, newcoin::mtVALIDATION));
-		Log(lsINFO) << "Validation sent " << newLCL->getHash().GetHex();
+		Log(lsINFO) << "Validation sent " << newLCLHash.GetHex();
 	}
 	else Log(lsWARNING) << "Not validating";
 	statusChange(newcoin::neACCEPTED_LEDGER, newLCL);
