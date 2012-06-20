@@ -716,7 +716,9 @@ bool NewcoinAddress::setSeedGeneric(const std::string& strText)
 	if (strText.empty()
 		|| naTemp.setAccountID(strText)
 		|| naTemp.setAccountPublic(strText)
-		|| naTemp.setAccountPrivate(strText))
+		|| naTemp.setAccountPrivate(strText)
+		|| naTemp.setNodePublic(strText)
+		|| naTemp.setNodePrivate(strText))
 	{
 		bResult	= false;
 	}
