@@ -816,9 +816,9 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 		newOL->addJson(p, LEDGER_JSON_DUMP_TXNS | LEDGER_JSON_DUMP_STATE);
 		ssw.write(Log(lsTRACE).ref(), p);
 		Log(lsINFO) << "newLCL after transactions";
-		Json::Value p;
-		newLCL->addJson(p, LEDGER_JSON_DUMP_TXNS | LEDGER_JSON_DUMP_STATE);
-		ssw.write(Log(lsTRACE).ref(), p);
+		Json::Value p2;
+		newLCL->addJson(p2, LEDGER_JSON_DUMP_TXNS | LEDGER_JSON_DUMP_STATE);
+		ssw.write(Log(lsTRACE).ref(), p2);
 	}
 #endif
 
