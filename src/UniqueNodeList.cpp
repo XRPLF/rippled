@@ -4,6 +4,7 @@
 #include "Application.h"
 #include "Conversion.h"
 #include "HttpsClient.h"
+#include "Log.h"
 #include "ParseSection.h"
 #include "Serializer.h"
 #include "UniqueNodeList.h"
@@ -608,12 +609,11 @@ void UniqueNodeList::processIps(const std::string& strSite, const NewcoinAddress
 {
 	Database*	db=theApp->getWalletDB()->getDB();
 
-	std::string strEscNodePublic	= db->escape(naNodePublic.humanNodePublic());
+	std::string strEscNodePublic	= sqlEscape(naNodePublic.humanNodePublic());
 
-	std::cerr
+	Log(lsINFO)
 		<< str(boost::format("Validator: '%s' processing %d ips.")
-			% strSite % ( pmtVecStrIps ? pmtVecStrIps->size() : 0))
-		<< std::endl;
+			% strSite % ( pmtVecStrIps ? pmtVecStrIps->size() : 0));
 
 	// Remove all current Validator's entries in IpReferrals
 	{
@@ -631,32 +631,15 @@ void UniqueNodeList::processIps(const std::string& strSite, const NewcoinAddress
 		int	iValues = 0;
 		BOOST_FOREACH(std::string strReferral, *pmtVecStrIps)
 		{
-			boost::smatch	smMatch;
-			std::string		strIP;
-			int				iPort;
-			bool			bValid	= false;
-
 			if (iValues == REFERRAL_VALIDATORS_MAX)
 				break;
 
-			static boost::regex	reEndpoint("\\`\\s*(\\S+)(?:\\s+(\\d+))?\\s*\\'");
+			std::string		strIP;
+			int				iPort;
+			bool			bValid	= parseIpPort(strReferral, strIP, iPort);
 
 			// XXX Filter out private network ips.
 			// XXX http://en.wikipedia.org/wiki/Private_network
-			if (boost::regex_match(strReferral, smMatch, reEndpoint))
-			{
-				boost::system::error_code	err;
-				std::string					strIPRaw	= smMatch[1];
-				std::string					strPortRaw	= smMatch[2];
-
-				iPort		= strPortRaw.empty() ? -1 : boost::lexical_cast<int>(strPortRaw);
-
-				boost::asio::ip::address	addrIP		= boost::asio::ip::address::from_string(strIPRaw, err);
-
-				bValid	= !err;
-				if (bValid)
-					strIP	= addrIP.to_string();
-			}
 
 			if (bValid)
 			{
@@ -733,10 +716,7 @@ int UniqueNodeList::processValidators(const std::string& strSite, const std::str
 
 			if (!boost::regex_match(strReferral, smMatch, reReferral))
 			{
-				std::cerr
-					<< str(boost::format("Validator: '%s' ["SECTION_VALIDATORS"]: rejecting line: '%s'")
-						% strSite % strReferral)
-					<< std::endl;
+				Log(lsWARNING) << str(boost::format("Bad validator: syntax error: %s: %s") % strSite % strReferral);
 			}
 			else
 			{
@@ -744,27 +724,36 @@ int UniqueNodeList::processValidators(const std::string& strSite, const std::str
 				std::string		strComment	= smMatch[2];
 				NewcoinAddress	naValidator;
 
-				std::cerr << str(boost::format("Validator='%s', Comment='%s'") % strRefered % strComment) << std::endl;
+				if (naValidator.setSeedGeneric(strRefered))
+				{
 
-				if (naValidator.setNodePublic(strRefered))
+					Log(lsWARNING) << str(boost::format("Bad validator: domain or public key required: %s %s") % strRefered % strComment);
+				}
+				else if (naValidator.setNodePublic(strRefered))
 				{
 					// A public key.
 					// XXX Schedule for CAS lookup.
 					nodeAddPublic(naValidator, vsWhy, strComment);
 
+					Log(lsINFO) << str(boost::format("Node Public: %s %s") % strRefered % strComment);
+
 					if (naNodePublic.isValid())
 						vstrValues.push_back(str(boost::format("('%s',%d,'%s')") % strNodePublic % iValues % naValidator.humanNodePublic()));
+
+					iValues++;
 				}
 				else
 				{
 					// A domain: need to look it up.
 					nodeAddDomain(strRefered, vsWhy, strComment);
 
+					Log(lsINFO) << str(boost::format("Node Domain: %s %s") % strRefered % strComment);
+
 					if (naNodePublic.isValid())
 						vstrValues.push_back(str(boost::format("('%s',%d,%s)") % strNodePublic % iValues % sqlEscape(strRefered)));
-				}
 
-				iValues++;
+					iValues++;
+				}
 			}
 		}
 
@@ -1140,8 +1129,10 @@ int UniqueNodeList::iSourceScore(validatorSource vsWhy)
 
 	switch (vsWhy) {
 	case vsConfig:		iScore	= 1500; break;
+	case vsInbound:		iScore	=    0; break;
 	case vsManual:		iScore	= 1500; break;
 	case vsReferral:	iScore	=    0; break;
+	case vsTold:		iScore	=    0; break;
 	case vsValidator:	iScore	= 1000; break;
 	case vsWeb:			iScore	=  200; break;
 	default:
@@ -1222,7 +1213,7 @@ void UniqueNodeList::setSeedDomains(const seedDomain& sdSource, bool bNext)
 	std::string strSql	= str(boost::format("REPLACE INTO SeedDomains (Domain,PublicKey,Source,Next,Scan,Fetch,Sha256,Comment) VALUES (%s, %s, %s, %d, %d, %d, '%s', %s);")
 		% db->escape(sdSource.strDomain)
 		% (sdSource.naPublicKey.isValid() ? db->escape(sdSource.naPublicKey.humanNodePublic()) : "NULL")
-		% db->escape(std::string(1, static_cast<char>(sdSource.vsSource)))
+		% sqlEscape(std::string(1, static_cast<char>(sdSource.vsSource)))
 		% iNext
 		% iScan
 		% iFetch
@@ -1567,12 +1558,11 @@ void UniqueNodeList::nodeNetwork()
 
 void UniqueNodeList::nodeBootstrap()
 {
-	int		iDomains	= 0;
-	int		iNodes		= 0;
+	int			iDomains	= 0;
+	int			iNodes		= 0;
+	Database*	db			= theApp->getWalletDB()->getDB();
 
 	{
-		Database* db=theApp->getWalletDB()->getDB();
-
 		ScopedLock sl(theApp->getWalletDB()->getDBLock());
 
 		if (db->executeSQL(str(boost::format("SELECT COUNT(*) AS Count FROM SeedDomains WHERE Source='%s' OR Source='%c';") % vsManual % vsValidator)) && db->startIterRows())
@@ -1587,7 +1577,7 @@ void UniqueNodeList::nodeBootstrap()
 	// Always merge in the file specified in the config.
 	if (!theConfig.UNL_DEFAULT.empty())
 	{
-		std::cerr << "Bootstrapping UNL: loading from unl_default." << std::endl;
+		Log(lsINFO) << "Bootstrapping UNL: loading from unl_default.";
 
 		bLoaded	= nodeLoad(theConfig.UNL_DEFAULT);
 	}
@@ -1595,7 +1585,7 @@ void UniqueNodeList::nodeBootstrap()
 	// If never loaded anything try the current directory.
 	if (!bLoaded && theConfig.UNL_DEFAULT.empty())
 	{
-		std::cerr << "Bootstrapping UNL: loading from '" VALIDATORS_FILE_NAME "'." << std::endl;
+		Log(lsINFO) << "Bootstrapping UNL: loading from '" VALIDATORS_FILE_NAME "'.";
 
 		bLoaded	= nodeLoad(VALIDATORS_FILE_NAME);
 	}
@@ -1605,7 +1595,7 @@ void UniqueNodeList::nodeBootstrap()
 	{
 		NewcoinAddress	naInvalid;	// Don't want a referrer on added entries.
 
-		std::cerr << "Bootstrapping UNL: loading from " CONFIG_FILE_NAME "." << std::endl;
+		Log(lsINFO) << "Bootstrapping UNL: loading from " CONFIG_FILE_NAME ".";
 
 		if (processValidators("local", CONFIG_FILE_NAME, naInvalid, vsConfig, &theConfig.VALIDATORS))
 			bLoaded	= true;
@@ -1613,9 +1603,39 @@ void UniqueNodeList::nodeBootstrap()
 
 	if (!bLoaded)
 	{
-		std::cerr << "Bootstrapping UNL: loading from " << theConfig.VALIDATORS_SITE << "." << std::endl;
+		Log(lsINFO) << "Bootstrapping UNL: loading from " << theConfig.VALIDATORS_SITE << ".";
 
 		nodeNetwork();
+	}
+
+	if (!theConfig.IPS.empty())
+	{
+		std::vector<std::string>	vstrValues;
+
+		vstrValues.reserve(theConfig.IPS.size());
+
+		BOOST_FOREACH(const std::string& strPeer, theConfig.IPS)
+		{
+			std::string		strIP;
+			int				iPort;
+
+			if (parseIpPort(strPeer, strIP, iPort))
+			{
+				vstrValues.push_back(str(boost::format("(%s,'%c')")
+					% sqlEscape(str(boost::format("%s %d") % strIP % iPort))
+					% static_cast<char>(vsConfig)));
+			}
+		}
+
+		if (!vstrValues.empty())
+		{
+			ScopedLock sl(theApp->getWalletDB()->getDBLock());
+
+			db->executeSQL(str(boost::format("REPLACE INTO PeerIps (IpPort,Source) VALUES %s;")
+					% strJoin(vstrValues.begin(), vstrValues.end(), ",")));
+		}
+
+		fetchDirty();
 	}
 }
 
