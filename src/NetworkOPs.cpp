@@ -491,8 +491,9 @@ int NetworkOPs::beginConsensus(Ledger::pointer closingLedger)
 	// Create a consensus object to get consensus on this ledger
 	if (!!mConsensus) mConsensus->abort();
 	prevLedger->setImmutable();
-	mConsensus = boost::make_shared<LedgerConsensus>
-		(prevLedger, theApp->getMasterLedger().getCurrentLedger()->getCloseTimeNC());
+	mConsensus = boost::make_shared<LedgerConsensus>(
+		prevLedger->getHash(), // FIXME: Only do this if the previous ledger is the consensus previous ledger
+		prevLedger, theApp->getMasterLedger().getCurrentLedger()->getCloseTimeNC());
 
 	Log(lsDEBUG) << "Pre-close time, initiating consensus engine";
 	return mConsensus->startup();

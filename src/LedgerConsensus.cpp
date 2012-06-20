@@ -188,12 +188,15 @@ int LCTransaction::getAgreeLevel()
 	return (mNays * 100 + 100) / (mYays + mNays + 1);
 }
 
-LedgerConsensus::LedgerConsensus(Ledger::pointer previousLedger, uint32 closeTime)
-	:  mState(lcsPRE_CLOSE), mCloseTime(closeTime), mPreviousLedger(previousLedger)
+LedgerConsensus::LedgerConsensus(const uint256& prevLCLHash, Ledger::pointer previousLedger, uint32 closeTime)
+	:  mState(lcsPRE_CLOSE), mCloseTime(closeTime), mPrevLedgerHash(prevLCLHash), mPreviousLedger(previousLedger)
 {
+	mValSeed = theConfig.VALIDATION_SEED;
 	Log(lsDEBUG) << "Creating consensus object";
 	Log(lsTRACE) << "LCL:" << previousLedger->getHash().GetHex() <<", ct=" << closeTime;
-	if (theConfig.VALIDATION_SEED.isValid())
+	if (previousLedger->getHash() != prevLCLHash)
+		mHaveCorrectLCL = mProposing = mValidating = false;
+	else if (mValSeed.isValid())
 	{
 		mValidating = true;
 		mProposing = theApp->getOPs().getOperatingMode() == NetworkOPs::omFULL;
@@ -205,7 +208,7 @@ void LedgerConsensus::takeInitialPosition(Ledger::pointer initialLedger)
 {
 	SHAMap::pointer initialSet = initialLedger->peekTransactionMap()->snapShot(false);
 	uint256 txSet = initialSet->getHash();
-	assert (initialLedger->getParentHash() == mPreviousLedger->getHash());
+	assert (!mHaveCorrectLCL || (initialLedger->getParentHash() == mPreviousLedger->getHash()));
 
 	// if any peers have taken a contrary position, process disputes
 	boost::unordered_set<uint256> found;
@@ -316,6 +319,7 @@ void LedgerConsensus::adjustCount(SHAMap::pointer map, const std::vector<uint160
 
 void LedgerConsensus::statusChange(newcoin::NodeEvent event, Ledger::pointer ledger)
 { // Send a node status change message to our peers
+	if (!mHaveCorrectLCL) return;
 	newcoin::TMStatusChange s;
 	s.set_newevent(event);
 	s.set_ledgerseq(ledger->getLedgerSeq());
@@ -724,7 +728,7 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 	assert(set->getHash() == mOurPosition->getCurrentHash());
 	Log(lsINFO) << "Computing new LCL based on network consensus";
 	Log(lsDEBUG) << "Consensus " << mOurPosition->getCurrentHash().GetHex();
-	Log(lsDEBUG) << "Previous LCL " << mPreviousLedger->getHash().GetHex();
+	Log(lsDEBUG) << "Previous LCL " << mPrevLedgerHash.GetHex();
 
 	Ledger::pointer newLCL = boost::make_shared<Ledger>(false, boost::ref(*mPreviousLedger));
 

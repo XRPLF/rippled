@@ -83,9 +83,11 @@ class LedgerConsensus : public boost::enable_shared_from_this<LedgerConsensus>
 protected:
 	LCState mState;
 	uint32 mCloseTime;
+	uint256 mPrevLedgerHash;
 	Ledger::pointer mPreviousLedger;
 	LedgerProposal::pointer mOurPosition;
-	bool mProposing, mValidating;
+	NewcoinAddress mValSeed;
+	bool mProposing, mValidating, mHaveCorrectLCL;
 
 	// Convergence tracking, trusted peers indexed by hash of public key
 	boost::unordered_map<uint160, LedgerProposal::pointer> mPeerPositions;
@@ -130,7 +132,7 @@ protected:
 	void endConsensus();
 
 public:
-	LedgerConsensus(Ledger::pointer previousLedger, uint32 closeTime);
+	LedgerConsensus(const uint256& prevLCLHash, Ledger::pointer previousLedger, uint32 closeTime);
 
 	int startup();
 
