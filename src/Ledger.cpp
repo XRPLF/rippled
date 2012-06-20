@@ -463,12 +463,18 @@ void Ledger::setCloseTime(boost::posix_time::ptime ptm)
 	mCloseTime = iToSeconds(ptm);
 }
 
+uint64 Ledger::sGenesisClose = 0;
+
 uint64 Ledger::getNextLedgerClose() const
 {
 	if (mCloseTime == 0)
 	{
-		uint64 closeTime = theApp->getOPs().getNetworkTimeNC() + mLedgerInterval - 1;
-		return closeTime - (closeTime % mLedgerInterval);
+		if (sGenesisClose == 0)
+		{
+			uint64 closeTime = theApp->getOPs().getNetworkTimeNC() + mLedgerInterval - 1;
+			sGenesisClose = closeTime - (closeTime % mLedgerInterval);
+		}
+		return sGenesisClose;
 	}
 	return mCloseTime + mLedgerInterval;
 }

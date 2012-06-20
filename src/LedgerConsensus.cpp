@@ -824,6 +824,7 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 
 	if (mValidating)
 	{
+		assert (theApp->getOPs().getNetworkTimeNC() > newLCL->getCloseTimeNC());
 		SerializedValidation::pointer v = boost::make_shared<SerializedValidation>
 			(newLCLHash, newLCL->getCloseTimeNC(), mOurPosition->peekSeed(), true);
 		v->setTrusted();
