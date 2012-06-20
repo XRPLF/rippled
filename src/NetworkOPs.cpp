@@ -251,7 +251,7 @@ void NetworkOPs::setStateTimer(int sec)
 		uint64 consensusTime = mLedgerMaster->getCurrentLedger()->getCloseTimeNC() - LEDGER_WOBBLE_TIME;
 		uint64 now = getNetworkTimeNC();
 
-		if (now >= consensusTime) sec = 0;
+		if (now >= consensusTime) sec = 1;
 		else if (sec > (consensusTime - now)) sec = (consensusTime - now);
 	}
 	mNetTimer.expires_from_now(boost::posix_time::seconds(sec));
@@ -307,7 +307,6 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 		setStateTimer(mConsensus->timerEntry());
 		return;
 	}
-
 
 	// FIXME: Don't check unless last closed ledger is at least some seconds old
 	// If full or tracking, check only at wobble time!
@@ -374,9 +373,8 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 			if (!!peerLedger)
 			{
 				// FIXME: If we have this ledger, don't count it if it's too far past its close time
-				bool isNew = ledgers.find(peerLedger) == ledgers.end();
 				ValidationCount& vc = ledgers[peerLedger];
-				if (isNew)
+				if (vc.nodesUsing == 0)
 				{
 					theApp->getValidations().getValidationCount(peerLedger,
 						vc.trustedValidations, vc.untrustedValidations);
@@ -392,19 +390,27 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 
 	Ledger::pointer currentClosed = mLedgerMaster->getClosedLedger();
 	uint256 closedLedger = currentClosed->getHash();
-	ValidationCount& vc = ledgers[closedLedger];
-	if ((vc.nodesUsing == 0) || (theApp->getWallet().getNodePublic() > vc.highNode))
-		vc.highNode = theApp->getWallet().getNodePublic();
-	++ledgers[closedLedger].nodesUsing;
+	ValidationCount& ourVC = ledgers[closedLedger];
+	if (ourVC.nodesUsing == 0)
+	{
+		ourVC.highNode = theApp->getWallet().getNodePublic();
+		theApp->getValidations().getValidationCount(closedLedger,
+			ourVC.trustedValidations, ourVC.untrustedValidations);
+	}
+	++ourVC.nodesUsing;
+	ValidationCount bestVC = ourVC;
 
 	// 3) Is there a network ledger we'd like to switch to? If so, do we have it?
 	bool switchLedgers = false;
 	for(boost::unordered_map<uint256, ValidationCount>::iterator it = ledgers.begin(), end = ledgers.end();
 		it != end; ++it)
 	{
-		if (it->second > vc)
+		Log(lsTRACE) << "L: " << it->first.GetHex() <<
+			"  t=" << it->second.trustedValidations << ", u=" << it->second.untrustedValidations <<
+			", n=" << it->second.nodesUsing;
+		if (it->second > bestVC)
 		{
-			vc = it->second;
+			bestVC = it->second;
 			closedLedger = it->first;
 			switchLedgers = true;
 		}
@@ -464,8 +470,10 @@ void NetworkOPs::switchLastClosedLedger(Ledger::pointer newLedger)
 	s.set_newevent(newcoin::neSWITCHED_LEDGER);
 	s.set_ledgerseq(newLedger->getLedgerSeq());
 	s.set_networktime(theApp->getOPs().getNetworkTimeNC());
-	uint256 plhash = newLedger->getParentHash();
-	s.set_previousledgerhash(plhash.begin(), plhash.size());
+	uint256 hash = newLedger->getParentHash();
+	s.set_previousledgerhash(hash.begin(), hash.size());
+	hash = newLedger->getHash();
+	s.set_ledgerhash(hash.begin(), hash.size());
 	PackedMessage::pointer packet = boost::make_shared<PackedMessage>(s, newcoin::mtSTATUS_CHANGE);
 	theApp->getConnectionPool().relayMessage(NULL, packet);
 }
@@ -566,6 +574,12 @@ void NetworkOPs::mapComplete(const uint256& hash, SHAMap::pointer map)
 
 void NetworkOPs::endConsensus()
 {
+	uint256 deadLedger = theApp->getMasterLedger().getClosedLedger()->getParentHash();
+	Log(lsTRACE) << "Ledger " << deadLedger.GetHex() << " is now dead";
+	std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
+	for (std::vector<Peer::pointer>::const_iterator it = peerList.begin(), end = peerList.end(); it != end; ++it)
+	if (*it && ((*it)->getClosedLedgerHash() == deadLedger))
+		(*it)->cycleStatus();
 	mConsensus = boost::shared_ptr<LedgerConsensus>();
 }
 
