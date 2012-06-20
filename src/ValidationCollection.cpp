@@ -7,15 +7,16 @@
 
 bool ValidationCollection::addValidation(SerializedValidation::pointer val)
 {
-	bool isTrusted = false;
+	bool isCurrent = false;
 	if (theApp->getUNL().nodeInUNL(val->getSignerPublic()))
 	{
+		val->setTrusted();
 		uint64 now = theApp->getOPs().getNetworkTimeNC();
 		uint64 valClose = val->getCloseTime();
 		if ((now > valClose) && (now < (valClose + 2 * LEDGER_INTERVAL)))
-			isTrusted = true;
+			isCurrent = true;
 		else
-		Log(lsWARNING) << "Received stale validation now=" << now << ", close=" << valClose;
+			Log(lsWARNING) << "Received stale validation now=" << now << ", close=" << valClose;
 	}
 
 	uint256 hash = val->getLedgerHash();
@@ -25,7 +26,7 @@ bool ValidationCollection::addValidation(SerializedValidation::pointer val)
 		boost::mutex::scoped_lock sl(mValidationLock);
 		if (!mValidations[hash].insert(std::make_pair(node, val)).second)
 			return false;
-		if (isTrusted)
+		if (isCurrent)
 		{
 			boost::unordered_map<uint160, SerializedValidation::pointer>::iterator it = mCurrentValidations.find(node);
 			if ((it == mCurrentValidations.end()) || (val->getCloseTime() >= it->second->getCloseTime()))
@@ -33,8 +34,8 @@ bool ValidationCollection::addValidation(SerializedValidation::pointer val)
 		}
 	}
 
-	Log(lsINFO) << "Val for " << hash.GetHex() << " from " << node.GetHex() << " added " <<
-		(val->isTrusted() ? "trusted" : "UNtrusted");
+	Log(lsINFO) << "Val for " << hash.GetHex() << " from " << val->getSignerPublic().humanNodePublic()
+		<< " added " << (val->isTrusted() ? "trusted" : "UNtrusted");
 	return true;
 }
 
