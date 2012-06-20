@@ -9,9 +9,9 @@
 # All other lines should be hankos or domain names.
 #
 # [validators]:
-#   List of nodes to accept as validators speficied by public key or domain.
+#   List of nodes to accept as validators specified by public key or domain.
 #
-#   For domains, newcoind will probe for https web servers at the specied
+#   For domains, newcoind will probe for https web servers at the specified
 #   domain in the following order: newcoin.DOMAIN, www.DOMAIN, DOMAIN
 #
 #   Examples: redstem.com
@@ -23,3 +23,4 @@
 n9LQC4xFSWXNv1SU1sKtjrW6TZpBZSwp1nRWej8saGs155x42YFZ 	first
 n9LFzWuhKNvXStHAuemfRKFVECLApowncMAM5chSCL9R5ECHGN4V 	second
 n9KXAZxiHkWuVGxDEE8boW7WmcycpZNmWei4vxVaywLZ391Nbuqx	third
+n94365hzFKikgCULeJwczs3kwzpir3KVHkfhUWGT4MjmbEbC5xBy
