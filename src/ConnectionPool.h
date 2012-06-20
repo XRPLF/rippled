@@ -32,24 +32,24 @@ private:
 
     boost::asio::ssl::context							mCtx;
 
-	bool												bScanning;
+	Peer::pointer										mScanning;
 	boost::asio::deadline_timer							mScanTimer;
 	std::string											mScanIp;
 	int													mScanPort;
 
-	void		scanHandler(const boost::system::error_code& ecResult);
+	void			scanHandler(const boost::system::error_code& ecResult);
 
 	boost::asio::deadline_timer							mPolicyTimer;
 
-	void		policyHandler(const boost::system::error_code& ecResult);
+	void			policyHandler(const boost::system::error_code& ecResult);
 
 	// Peers we are establishing a connection with as a client.
 	// int												miConnectStarting;
 
-	bool		peerAvailable(std::string& strIp, int& iPort);
-	void		peerScanSet(const std::string& strIp, int iPort);
+	bool			peerAvailable(std::string& strIp, int& iPort);
+	bool			peerScanSet(const std::string& strIp, int iPort);
 
-	bool		peerConnect(const std::string& strIp, int iPort);
+	Peer::pointer	peerConnect(const std::string& strIp, int iPort);
 
 public:
 	ConnectionPool(boost::asio::io_service& io_service);
@@ -78,10 +78,10 @@ public:
 	void peerDisconnected(Peer::pointer peer, const NewcoinAddress& naPeer);
 
 	// As client accepted.
-	void peerVerified(const std::string& strIp, int iPort);
+	void peerVerified(Peer::pointer peer);
 
 	// As client failed connect and be accepted.
-	void peerFailed(const std::string& strIp, int iPort);
+	void peerClosed(Peer::pointer peer, const std::string& strIp, int iPort);
 
 	Json::Value getPeersJson();
 	std::vector<Peer::pointer> getPeerVector();

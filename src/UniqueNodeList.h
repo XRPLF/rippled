@@ -33,8 +33,10 @@ class UniqueNodeList
 public:
 	typedef enum {
 		vsConfig	= 'C',	// newcoind.cfg
+		vsInbound	= 'I',
 		vsManual	= 'M',
 		vsReferral	= 'R',
+		vsTold		= 'T',
 		vsValidator	= 'V',	// validators.txt
 		vsWeb		= 'W',
 	} validatorSource;

@@ -67,6 +67,8 @@ private:
 	uint16		mLedgerInterval;
 	bool		mClosed, mValidHash, mAccepted, mImmutable;
 
+	static uint64 sGenesisClose;
+
 	SHAMap::pointer mTransactionMap, mAccountStateMap;
 
 	mutable boost::recursive_mutex mLock;

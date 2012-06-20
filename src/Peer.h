@@ -32,8 +32,10 @@ public:
 private:
 	bool			mClientConnect;		// In process of connecting as client.
 	bool			mConnected;			// True, if hello accepted.
+	bool			mDetaching;			// True, if detaching.
 	NewcoinAddress	mNodePublic;		// Node public key of peer.
 	ipPort			mIpPort;
+	ipPort			mIpPortConnect;
 	uint256			mCookieHash;
 
 	// network state information
@@ -99,7 +101,7 @@ public:
 	std::string& getIP() { return mIpPort.first; }
 	int getPort() { return mIpPort.second; }
 
-	void peerIpPort(const std::string& strIP, int iPort) { mIpPort = make_pair(strIP, iPort); }
+	void setIpPort(const std::string& strIP, int iPort);
 
 	static pointer create(boost::asio::io_service& io_service, boost::asio::ssl::context& ctx)
 	{
