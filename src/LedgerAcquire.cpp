@@ -105,7 +105,7 @@ void LedgerAcquire::addOnComplete(boost::function<void (LedgerAcquire::pointer)>
 
 void LedgerAcquire::trigger(Peer::pointer peer)
 {
-#ifdef DEBUG
+#ifdef LA_DEBUG
 	std::cerr << "Trigger acquiring ledger " << mHash.GetHex() << std::endl;
 	std::cerr << "complete=" << mComplete << " failed=" << mFailed << std::endl;
 	std::cerr << "base=" << mHaveBase << " tx=" << mHaveTransactions << " as=" << mHaveState << std::endl;
@@ -114,7 +114,7 @@ void LedgerAcquire::trigger(Peer::pointer peer)
 		return;
 	if (!mHaveBase)
 	{
-#ifdef DEBUG
+#ifdef LA_DEBUG
 		std::cerr << "need base" << std::endl;
 #endif
 		newcoin::TMGetLedger tmGL;
@@ -130,7 +130,7 @@ void LedgerAcquire::trigger(Peer::pointer peer)
 
 	if (mHaveBase && !mHaveTransactions)
 	{
-#ifdef DEBUG
+#ifdef LA_DEBUG
 		std::cerr << "need tx" << std::endl;
 #endif
 		assert(mLedger);
@@ -182,7 +182,7 @@ void LedgerAcquire::trigger(Peer::pointer peer)
 
 	if (mHaveBase && !mHaveState)
 	{
-#ifdef DEBUG
+#ifdef LA_DEBUG
 		std::cerr << "need as" << std::endl;
 #endif
 		assert(mLedger);
@@ -254,7 +254,7 @@ void PeerSet::sendRequest(const newcoin::TMGetLedger& tmGL)
 	while (it != mPeers.end())
 	{
 		if (it->expired())
-			mPeers.erase(it++);
+			it = mPeers.erase(it);
 		else
 		{
 			// FIXME: Track last peer sent to and time sent
@@ -267,7 +267,7 @@ void PeerSet::sendRequest(const newcoin::TMGetLedger& tmGL)
 
 bool LedgerAcquire::takeBase(const std::string& data, Peer::pointer peer)
 { // Return value: true=normal, false=bad data
-#ifdef DEBUG
+#ifdef LA_DEBUG
 	std::cerr << "got base acquiring ledger " << mHash.GetHex() << std::endl;
 #endif
 	boost::recursive_mutex::scoped_lock sl(mLock);
@@ -275,10 +275,8 @@ bool LedgerAcquire::takeBase(const std::string& data, Peer::pointer peer)
 	mLedger = boost::make_shared<Ledger>(data);
 	if (mLedger->getHash() != mHash)
 	{
-#ifdef DEBUG
 		std::cerr << "Acquire hash mismatch" << std::endl;
 		std::cerr << mLedger->getHash().GetHex() << "!=" << mHash.GetHex() << std::endl;
-#endif
 		mLedger = Ledger::pointer();
 		return false;
 	}
@@ -320,7 +318,7 @@ bool LedgerAcquire::takeTxNode(const std::list<SHAMapNode>& nodeIDs,
 bool LedgerAcquire::takeAsNode(const std::list<SHAMapNode>& nodeIDs,
 	const std::list< std::vector<unsigned char> >& data, Peer::pointer peer)
 {
-#ifdef DEBUG
+#ifdef LA_DEBUG
 	std::cerr << "got ASdata acquiring ledger " << mHash.GetHex() << std::endl;
 #endif
 	if (!mHaveBase) return false;
@@ -372,27 +370,25 @@ bool LedgerAcquireMaster::hasLedger(const uint256& hash)
 	return mLedgers.find(hash) != mLedgers.end();
 }
 
-bool LedgerAcquireMaster::dropLedger(const uint256& hash)
+void LedgerAcquireMaster::dropLedger(const uint256& hash)
 {
 	boost::mutex::scoped_lock sl(mLock);
-	return mLedgers.erase(hash);
+	mLedgers.erase(hash);
 }
 
 bool LedgerAcquireMaster::gotLedgerData(newcoin::TMLedgerData& packet, Peer::pointer peer)
 {
-#ifdef DEBUG
+#ifdef LA_DEBUG
 	std::cerr << "got data for acquiring ledger ";
 #endif
 	uint256 hash;
 	if (packet.ledgerhash().size() != 32)
 	{
-#ifdef DEBUG
-		std::cerr << "error" << std::endl;
-#endif
+		std::cerr << "Acquire error" << std::endl;
 		return false;
 	}
 	memcpy(hash.begin(), packet.ledgerhash().data(), 32);
-#ifdef DEBUG
+#ifdef LA_DEBUG
 	std::cerr << hash.GetHex() << std::endl;
 #endif
 

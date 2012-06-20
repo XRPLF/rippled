@@ -228,6 +228,10 @@ SHAMapItem::SHAMapItem(const uint256& tag, const std::vector<unsigned char>& dat
 	: mTag(tag), mData(data)
 { ; }
 
+SHAMapItem::SHAMapItem(const uint256& tag, const Serializer& data)
+	: mTag(tag), mData(data.peekData())
+{ ; }
+
 SHAMapItem::pointer SHAMap::firstBelow(SHAMapTreeNode* node)
 {
 	// Return the first item below this node

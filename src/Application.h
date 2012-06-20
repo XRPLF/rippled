@@ -13,6 +13,8 @@
 #include "Peer.h"
 #include "NetworkOPs.h"
 #include "TaggedCache.h"
+#include "ValidationCollection.h"
+#include "Suppression.h"
 #include "../database/database.h"
 
 
@@ -44,6 +46,8 @@ class Application
 	TransactionMaster		mMasterTransaction;
 	NetworkOPs				mNetOps;
 	NodeCache				mNodeCache;
+	ValidationCollection	mValidations;
+	SuppressionTable		mSuppressions;
 
 	DatabaseCon				*mTxnDB, *mLedgerDB, *mWalletDB, *mHashNodeDB, *mNetNodeDB;
 
@@ -74,6 +78,9 @@ public:
 	LedgerAcquireMaster& getMasterLedgerAcquire()	{ return mMasterLedgerAcquire; }
 	TransactionMaster& getMasterTransaction()		{ return mMasterTransaction; }
 	NodeCache& getNodeCache()						{ return mNodeCache; }
+	ValidationCollection& getValidations()			{ return mValidations; }
+	bool suppress(const uint256& s)					{ return mSuppressions.addSuppression(s); }
+	bool suppress(const uint160& s)					{ return mSuppressions.addSuppression(s); }
 
 	DatabaseCon* getTxnDB()			{ return mTxnDB; }
 	DatabaseCon* getLedgerDB()		{ return mLedgerDB; }

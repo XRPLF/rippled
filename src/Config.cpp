@@ -1,18 +1,17 @@
 #include "Config.h"
 
-#include "ParseSection.h"
 #include "utils.h"
 
 #include <boost/lexical_cast.hpp>
 #include <fstream>
 #include <iostream>
 
-#define CONFIG_FILE_NAME				SYSTEM_NAME "d.cfg"	// newcoind.cfg
-
 #define SECTION_ACCOUNT_PROBE_MAX		"account_probe_max"
+#define SECTION_DEBUG_LOGFILE			"debug_logfile"
 #define SECTION_FEE_ACCOUNT_CREATE		"fee_account_create"
 #define SECTION_FEE_DEFAULT				"fee_default"
 #define SECTION_FEE_NICKNAME_CREATE		"fee_nickname_create"
+#define SECTION_IPS						"ips"
 #define SECTION_NETWORK_QUORUM			"network_quorum"
 #define SECTION_PEER_CONNECT_LOW_WATER	"peer_connect_low_water"
 #define SECTION_PEER_IP					"peer_ip"
@@ -28,6 +27,8 @@
 #define SECTION_VALIDATION_SEED			"validation_seed"
 #define SECTION_WEBSOCKET_IP			"websocket_ip"
 #define SECTION_WEBSOCKET_PORT			"websocket_port"
+#define SECTION_VALIDATORS				"validators"
+#define SECTION_VALIDATORS_SITE			"validators_site"
 
 // Fees are in XNB.
 #define DEFAULT_FEE_ACCOUNT_CREATE		1000
@@ -143,6 +144,8 @@ void Config::setup(const std::string& strConf)
 
 	ACCOUNT_PROBE_MAX		= 10;
 
+	VALIDATORS_SITE			= DEFAULT_VALIDATORS_SITE;
+
 	load();
 }
 
@@ -170,6 +173,25 @@ void Config::load()
 			section		secConfig	= ParseSection(strConfigFile, true);
 			std::string	strTemp;
 
+			// XXX Leak
+			section::mapped_type*	smtTmp;
+
+			smtTmp	= sectionEntries(secConfig, SECTION_VALIDATORS);
+			if (smtTmp)
+			{
+				VALIDATORS	= *smtTmp;
+				// sectionEntriesPrint(&VALIDATORS, SECTION_VALIDATORS);
+			}
+
+			smtTmp	= sectionEntries(secConfig, SECTION_IPS);
+			if (smtTmp)
+			{
+				IPS	= *smtTmp;
+				sectionEntriesPrint(&IPS, SECTION_IPS);
+			}
+
+			(void) sectionSingleB(secConfig, SECTION_VALIDATORS_SITE, VALIDATORS_SITE);
+
 			(void) sectionSingleB(secConfig, SECTION_PEER_IP, PEER_IP);
 
 			if (sectionSingleB(secConfig, SECTION_PEER_PORT, strTemp))
@@ -192,7 +214,9 @@ void Config::load()
 				VALIDATION_SEED.setSeedGeneric(strTemp);
 
 			(void) sectionSingleB(secConfig, SECTION_PEER_SSL_CIPHER_LIST, PEER_SSL_CIPHER_LIST);
+
 			if (sectionSingleB(secConfig, SECTION_PEER_SCAN_INTERVAL_MIN, strTemp))
+				// Minimum for min is 60 seconds.
 				PEER_SCAN_INTERVAL_MIN = MAX(60, boost::lexical_cast<int>(strTemp));
 
 			if (sectionSingleB(secConfig, SECTION_PEER_START_MAX, strTemp))
@@ -221,6 +245,9 @@ void Config::load()
 
 			if (sectionSingleB(secConfig, SECTION_UNL_DEFAULT, strTemp))
 				UNL_DEFAULT			= strTemp;
+
+			if (sectionSingleB(secConfig, SECTION_DEBUG_LOGFILE, strTemp))
+				DEBUG_LOGFILE		= strTemp;
 		}
 	}
 }

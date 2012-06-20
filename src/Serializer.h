@@ -24,6 +24,10 @@ public:
 	Serializer(int n = 256) { mData.reserve(n); }
 	Serializer(const std::vector<unsigned char> &data) : mData(data) { ; }
 	Serializer(const std::string& data) : mData(data.data(), (data.data()) + data.size()) { ; }
+	Serializer(std::vector<unsigned char>::iterator begin, std::vector<unsigned char>::iterator end) :
+		mData(begin, end) { ; }
+	Serializer(std::vector<unsigned char>::const_iterator begin, std::vector<unsigned char>::const_iterator end) :
+		mData(begin, end) { ; }
 
 	// assemble functions
 	int add8(unsigned char byte);

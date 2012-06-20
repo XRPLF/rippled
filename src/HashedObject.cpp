@@ -1,10 +1,11 @@
 
+#include "HashedObject.h"
+
 #include <boost/lexical_cast.hpp>
 
-#include "HashedObject.h"
 #include "Serializer.h"
 #include "Application.h"
-
+#include "Log.h"
 
 
 bool HashedObject::checkHash() const
@@ -25,16 +26,6 @@ void HashedObject::setHash()
 {
 	mHash = Serializer::getSHA512Half(mData);
 }
-
-/*
-CREATE TABLE CommittedObjects (					-- used to synch nodes
-        Hash            BLOB PRIMARY KEY,
-        ObjType         CHAR(1) NOT NULL,		-- (L)edger, (T)ransaction, (A)ccount node, transaction (N)ode
-        LedgerIndex     BIGINT UNSIGNED,		-- 0 if none
-        Object          BLOB
-);
-CREATE INDEX ObjectLocate ON CommittedObjects(LedgerIndex, ObjType);
-*/
 
 // FIXME: Stores should be added to a queue that's services by an auxilliary thread or from an
 // auxilliary thread pool. These should be tied into a cache, since you need one to handle
@@ -117,6 +108,9 @@ HashedObject::pointer HashedObject::retrieve(const uint256& hash)
 		case 'T': htype = TRANSACTION; break;
 		case 'A': htype = ACCOUNT_NODE; break;
 		case 'N': htype = TRANSACTION_NODE; break;
+		default:
+			Log(lsERROR) << "Invalid hashed object";
+			return HashedObject::pointer();
 	}
 
 	HashedObject::pointer obj = boost::make_shared<HashedObject>(htype, index, data);

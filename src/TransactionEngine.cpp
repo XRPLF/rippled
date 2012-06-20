@@ -45,12 +45,12 @@ TransactionEngineResult TransactionEngine::dirAdd(
 
 
 		sleRoot->setIndex(uRootIndex);
-		std::cerr << "dirAdd: Creating dir index: " << sleRoot->getIndex().ToString() << std::endl;
+		Log(lsTRACE) << "dirAdd: Creating dir index: " << sleRoot->getIndex().ToString();
 
 		sleRoot->setIFieldU64(sfFirstNode, uNodeDir);
 		sleRoot->setIFieldU64(sfLastNode, uNodeDir);
 
-		std::cerr << "dirAdd: first & last: " << strHex(uNodeDir) << std::endl;
+		Log(lsTRACE) << "dirAdd: first & last: " << strHex(uNodeDir);
 
 		accounts.push_back(std::make_pair(taaCREATE, sleRoot));
 	}
@@ -69,9 +69,9 @@ TransactionEngineResult TransactionEngine::dirAdd(
 		{
 			// Last node is not full, append.
 
-			std::cerr << "dirAdd:  appending: PREV: " << svIndexes.peekValue()[0].ToString() << std::endl;
-			std::cerr << "dirAdd:  appending: Node: " << strHex(uNodeDir) << std::endl;
-			std::cerr << "dirAdd:  appending: Entry: " << uLedgerIndex.ToString() << std::endl;
+			Log(lsTRACE) << "dirAdd:  appending: PREV: " << svIndexes.peekValue()[0].ToString();
+			Log(lsTRACE) << "dirAdd:  appending: Node: " << strHex(uNodeDir);
+			Log(lsTRACE) << "dirAdd:  appending: Entry: " << uLedgerIndex.ToString();
 
 			svIndexes.peekValue().push_back(uLedgerIndex);
 			sleNode->setIFieldV256(sfIndexes, svIndexes);
@@ -88,7 +88,7 @@ TransactionEngineResult TransactionEngine::dirAdd(
 			// Record new last node.
 			sleNode	= SLE::pointer();
 
-			std::cerr << "dirAdd:  last: " << strHex(uNodeDir) << std::endl;
+			Log(lsTRACE) << "dirAdd:  last: " << strHex(uNodeDir);
 
 			sleRoot->setIFieldU64(sfLastNode, uNodeDir);
 
@@ -102,7 +102,7 @@ TransactionEngineResult TransactionEngine::dirAdd(
 		sleNode	= boost::make_shared<SerializedLedgerEntry>(ltDIR_NODE);
 		sleNode->setIndex(uNodeIndex);
 
-		std::cerr << "dirAdd: Creating dir node: " << sleNode->getIndex().ToString() << std::endl;
+		Log(lsTRACE) << "dirAdd: Creating dir node: " << sleNode->getIndex().ToString();
 
 		STVector256	svIndexes;
 
@@ -128,7 +128,7 @@ TransactionEngineResult TransactionEngine::dirDelete(
 
 	if (!sleNode)
 	{
-		std::cerr << "dirDelete: no such node" << std::endl;
+		Log(lsWARNING) << "dirDelete: no such node";
 		return terNODE_NOT_FOUND;
 	}
 	else
@@ -140,7 +140,7 @@ TransactionEngineResult TransactionEngine::dirDelete(
 		it = std::find(vuiIndexes.begin(), vuiIndexes.end(), uLedgerIndex);
 		if (vuiIndexes.end() == it)
 		{
-			std::cerr << "dirDelete: node not mentioned" << std::endl;
+			Log(lsWARNING) << "dirDelete: node not mentioned";
 			return terNODE_NOT_MENTIONED;
 		}
 		else
@@ -151,7 +151,7 @@ TransactionEngineResult TransactionEngine::dirDelete(
 
 			if (!sleRoot)
 			{
-				std::cerr << "dirDelete: root node is missing" << std::endl;
+				Log(lsWARNING) << "dirDelete: root node is missing";
 				return terNODE_NO_ROOT;
 			}
 
@@ -247,7 +247,7 @@ TransactionEngineResult	TransactionEngine::setAuthorized(const SerializedTransac
 
 	if (!naAccountPublic.accountPublicVerify(Serializer::getSHA512Half(vucCipher), vucSignature))
 	{
-		std::cerr << "createGenerator: bad signature unauthorized generator claim" << std::endl;
+		Log(lsWARNING) << "createGenerator: bad signature unauthorized generator claim";
 
 		return tenBAD_GEN_AUTH;
 	}
@@ -259,7 +259,7 @@ TransactionEngineResult	TransactionEngine::setAuthorized(const SerializedTransac
 	SLE::pointer		sleGen			= mLedger->getGenerator(qry, hGeneratorID);
 	if (!sleGen)
 	{
-		std::cerr << "createGenerator: creating generator" << std::endl;
+		Log(lsTRACE) << "createGenerator: creating generator";
 		// Create the generator.
 						sleGen			= boost::make_shared<SerializedLedgerEntry>(ltGENERATOR_MAP);
 
@@ -273,7 +273,7 @@ TransactionEngineResult	TransactionEngine::setAuthorized(const SerializedTransac
 	{
 		// Doing a claim.  Must set generator.
 		// Generator is already in use.  Regular passphrases limited to one wallet.
-		std::cerr << "createGenerator: generator already in use" << std::endl;
+		Log(lsWARNING) << "createGenerator: generator already in use";
 
 		return tenGEN_IN_USE;
 	}
@@ -293,7 +293,7 @@ TransactionEngineResult	TransactionEngine::setAuthorized(const SerializedTransac
 TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTransaction& txn,
 	TransactionEngineParams params, uint32 targetLedger)
 {
-	std::cerr << "applyTransaction>" << std::endl;
+	Log(lsTRACE) << "applyTransaction>";
 
 	mLedger = mDefaultLedger;
 	assert(mLedger);
@@ -313,7 +313,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 		SerializedTransaction s2(sit);
 		if (!s2.isEquivalent(txn))
 		{
-			std::cerr << "Transaction serdes mismatch" << std::endl;
+			Log(lsFATAL) << "Transaction serdes mismatch";
 			Json::StyledStreamWriter ssw;
 			ssw.write(Log(lsINFO).ref(), txn.getJson(0));
 			ssw.write(Log(lsFATAL).ref(), s2.getJson(0));
@@ -327,7 +327,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	uint256 txID = txn.getTransactionID();
 	if (!txID)
 	{
-		std::cerr << "applyTransaction: invalid transaction id" << std::endl;
+		Log(lsWARNING) << "applyTransaction: invalid transaction id";
 
 		result	= tenINVALID;
 	}
@@ -349,7 +349,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	// Consistency: really signed.
 	if (terSUCCESS == result && !txn.checkSign(naSigningPubKey))
 	{
-		std::cerr << "applyTransaction: Invalid transaction: bad signature" << std::endl;
+		Log(lsWARNING) << "applyTransaction: Invalid transaction: bad signature";
 
 		result	= tenINVALID;
 	}
@@ -394,12 +394,12 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 				break;
 
 			case ttINVALID:
-				std::cerr << "applyTransaction: Invalid transaction: ttINVALID transaction type" << std::endl;
+				Log(lsWARNING) << "applyTransaction: Invalid transaction: ttINVALID transaction type";
 				result = tenINVALID;
 				break;
 
 			default:
-				std::cerr << "applyTransaction: Invalid transaction: unknown transaction type" << std::endl;
+				Log(lsWARNING) << "applyTransaction: Invalid transaction: unknown transaction type";
 				result = tenUNKNOWN;
 				break;
 		}
@@ -413,7 +413,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 		{
 			if (saPaid < saCost)
 			{
-				std::cerr << "applyTransaction: insufficient fee" << std::endl;
+				Log(lsINFO) << "applyTransaction: insufficient fee";
 
 				result	= tenINSUF_FEE_P;
 			}
@@ -423,7 +423,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 			if (!saPaid.isZero())
 			{
 				// Transaction is malformed.
-				std::cerr << "applyTransaction: fee not allowed" << std::endl;
+				Log(lsWARNING) << "applyTransaction: fee not allowed";
 
 				result	= tenINSUF_FEE_P;
 			}
@@ -434,7 +434,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	uint160 srcAccountID = txn.getSourceAccount().getAccountID();
 	if (terSUCCESS == result && !srcAccountID)
 	{
-		std::cerr << "applyTransaction: bad source id" << std::endl;
+		Log(lsWARNING) << "applyTransaction: bad source id";
 
 		result	= tenINVALID;
 	}
@@ -460,7 +460,8 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 
 	if (!sleSrc)
 	{
-		std::cerr << str(boost::format("applyTransaction: Delay transaction: source account does not exisit: %s") % txn.getSourceAccount().humanAccountID()) << std::endl;
+		Log(lsTRACE) << str(boost::format("applyTransaction: Delay transaction: source account does not exist: %s") %
+			txn.getSourceAccount().humanAccountID());
 
 		result			= terNO_ACCOUNT;
 	}
@@ -478,7 +479,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 			case ttCLAIM:
 				if (bHaveAuthKey)
 				{
-					std::cerr << "applyTransaction: Account already claimed." << std::endl;
+					Log(lsWARNING) << "applyTransaction: Account already claimed.";
 
 					result	= tenCLAIMED;
 				}
@@ -501,8 +502,8 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 				if (naSigningPubKey.getAccountID() != srcAccountID)
 				{
 					// Signing Pub Key must be for Source Account ID.
-					std::cerr << "sourceAccountID: " << naSigningPubKey.humanAccountID() << std::endl;
-					std::cerr << "txn accountID: " << txn.getSourceAccount().humanAccountID() << std::endl;
+					Log(lsWARNING) << "sourceAccountID: " << naSigningPubKey.humanAccountID();
+					Log(lsWARNING) << "txn accountID: " << txn.getSourceAccount().humanAccountID();
 
 					result	= tenBAD_CLAIM_ID;
 				}
@@ -514,8 +515,8 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 				if (naSigningPubKey.getAccountID() != srcAccountID)
 				{
 					// Signing Pub Key must be for Source Account ID.
-					std::cerr << "sourceAccountID: " << naSigningPubKey.humanAccountID() << std::endl;
-					std::cerr << "txn accountID: " << txn.getSourceAccount().humanAccountID() << std::endl;
+					Log(lsWARNING) << "sourceAccountID: " << naSigningPubKey.humanAccountID();
+					Log(lsWARNING) << "txn accountID: " << txn.getSourceAccount().humanAccountID();
 
 					result	= tenBAD_SET_ID;
 				}
@@ -578,12 +579,12 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	else if (!saCost.isZero())
 	{
 		uint32 a_seq = sleSrc->getIFieldU32(sfSequence);
-		Log(lsINFO) << "Aseq=" << a_seq << ", Tseq=" << t_seq;
+		Log(lsTRACE) << "Aseq=" << a_seq << ", Tseq=" << t_seq;
 		if (t_seq != a_seq)
 		{
 			if (a_seq < t_seq)
 			{
-				std::cerr << "applyTransaction: future sequence number" << std::endl;
+				Log(lsTRACE) << "applyTransaction: future sequence number";
 
 				result	= terPRE_SEQ;
 			}

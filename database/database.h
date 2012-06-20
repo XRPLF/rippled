@@ -10,6 +10,9 @@
 	if ((_db)->executeSQL(_strQuery))	\
 	for (bool _bMore = (_db)->startIterRows(); _bMore; _bMore = (_db)->getNextRow())
 
+#define SQL_EXISTS(_db, _strQuery)     \
+    ((_db)->executeSQL(_strQuery) && (_db)->startIterRows())
+
 /*
 	this maintains the connection to the database
 */

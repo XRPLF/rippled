@@ -13,6 +13,7 @@
 #include "LedgerProposal.h"
 #include "Peer.h"
 #include "CanonicalTXSet.h"
+#include "TransactionEngine.h"
 
 class TransactionAcquire : public PeerSet, public boost::enable_shared_from_this<TransactionAcquire>
 { // A transaction set we are trying to acquire
@@ -47,7 +48,7 @@ protected:
 	uint256 mTransactionID;
 	int mYays, mNays;
 	bool mOurPosition;
-	std::vector<unsigned char> transaction;
+	Serializer transaction;
 	boost::unordered_map<uint160, bool> mVotes;
 
 public:
@@ -58,7 +59,7 @@ public:
 
 	const uint256& getTransactionID() const				{ return mTransactionID; }
 	bool getOurPosition() const							{ return mOurPosition; }
-	const std::vector<unsigned char>& peekTransaction()	{ return transaction; }
+	Serializer& peekTransaction()						{ return transaction; }
 
 	void setVote(const uint160& peer, bool votesYes);
 
@@ -82,8 +83,11 @@ class LedgerConsensus : public boost::enable_shared_from_this<LedgerConsensus>
 protected:
 	LCState mState;
 	uint32 mCloseTime;
+	uint256 mPrevLedgerHash;
 	Ledger::pointer mPreviousLedger;
 	LedgerProposal::pointer mOurPosition;
+	NewcoinAddress mValSeed;
+	bool mProposing, mValidating, mHaveCorrectLCL;
 
 	// Convergence tracking, trusted peers indexed by hash of public key
 	boost::unordered_map<uint160, LedgerProposal::pointer> mPeerPositions;
@@ -106,6 +110,7 @@ protected:
 	void startAcquiring(TransactionAcquire::pointer);
 	SHAMap::pointer find(const uint256& hash);
 
+	void createDisputes(SHAMap::pointer, SHAMap::pointer);
 	void addDisputedTransaction(const uint256&, const std::vector<unsigned char>& transaction);
 	void adjustCount(SHAMap::pointer map, const std::vector<uint160>& peers);
 	void propose(const std::vector<uint256>& addedTx, const std::vector<uint256>& removedTx);
@@ -114,7 +119,9 @@ protected:
 	void removePosition(LedgerProposal&, bool ours);
 	void sendHaveTxSet(const uint256& set, bool direct);
 	void applyTransactions(SHAMap::pointer transactionSet, Ledger::pointer targetLedger,
-		CanonicalTXSet& failedTransactions);
+		CanonicalTXSet& failedTransactions, bool final);
+	void applyTransaction(TransactionEngine& engine, SerializedTransaction::pointer txn, Ledger::pointer targetLedger,
+		CanonicalTXSet& failedTransactions, bool final);
 
 	// manipulating our own position
 	void takeInitialPosition(Ledger::pointer initialLedger);
@@ -125,7 +132,7 @@ protected:
 	void endConsensus();
 
 public:
-	LedgerConsensus(Ledger::pointer previousLedger, uint32 closeTime);
+	LedgerConsensus(const uint256& prevLCLHash, Ledger::pointer previousLedger, uint32 closeTime);
 
 	int startup();
 
@@ -134,7 +141,7 @@ public:
 
 	SHAMap::pointer getTransactionTree(const uint256& hash, bool doAcquire);
 	TransactionAcquire::pointer getAcquiring(const uint256& hash);
-	void mapComplete(const uint256& hash, SHAMap::pointer map);
+	void mapComplete(const uint256& hash, SHAMap::pointer map, bool acquired);
 
 	void abort();
 	int timerEntry();

@@ -31,7 +31,7 @@
 #   Example: google.com
 #
 # [ips]:
-#   Only valid in "newcoin.txt" and the referered [ips_url].
+#   Only valid in "newcoind.cfg", "newcoin.txt", and the referered [ips_url].
 #   List of ips where the Newcoin protocol is avialable.
 #   One ipv4 or ipv6 address per line.
 #   A port may optionally be specified after adding a space to the address.
@@ -43,12 +43,16 @@
 #    2001:0db8:0100:f101:0210:a4ff:fee3:9566
 #
 # [validators]:
-#   Only valid in "newcoin.txt" and the referered [validators_url].
+#   Only valid in "newcoind.cfg", "newcoin.txt", and the referered [validators_url].
 #   List of Newcoin validators this node recommends.
 #
+#   For domains, newcoind will probe for https web servers at the specied
+#   domain in the following order: newcoin.DOMAIN, www.DOMAIN, DOMAIN
+#
 #   Examples:
-#    amazon.com
-#    newegg.com
+#    redstem.com
+#    n9KorY8QtTdRx7TVDpwnG9NvyxsDwHUKUEeDLY3AkiGncVaSXZi5
+#    n9MqiExBcoG19UXwoLjBJnhsxEhAZMuWwJDRdkyDz1EkEkwzQTNt John Doe
 #
 # [ips_url]:
 #   Only valid in "newcoin.txt".

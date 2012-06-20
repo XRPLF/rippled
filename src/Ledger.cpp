@@ -42,7 +42,6 @@ Ledger::Ledger(const uint256 &parentHash, const uint256 &transHash, const uint25
 		mTotCoins(totCoins), mCloseTime(timeStamp), mLedgerSeq(ledgerSeq), mLedgerInterval(LEDGER_INTERVAL),
 		mClosed(false), mValidHash(false), mAccepted(false), mImmutable(false)
 {
-	assert(mParentHash.isNonZero());
 	updateHash();
 }
 
@@ -109,7 +108,7 @@ Ledger::Ledger(const std::string& rawLedger) : mCloseTime(0),
 
 void Ledger::updateHash()
 {
-	if(!mImmutable)
+	if (!mImmutable)
 	{
 		if (mTransactionMap) mTransHash = mTransactionMap->getHash();
 		else mTransHash.zero();
@@ -254,6 +253,13 @@ void Ledger::saveAcceptedLedger(Ledger::pointer ledger)
 	sql.append("');");
 
 	ScopedLock sl(theApp->getLedgerDB()->getDBLock());
+	if (SQL_EXISTS(theApp->getLedgerDB()->getDB(),
+		boost::str(boost::format("SELECT LedgerSeq FROM Ledgers where LedgerSeq = '%d';") % ledger->mLedgerSeq)
+			))
+	{
+		theApp->getLedgerDB()->getDB()->executeSQL(
+			boost::str(boost::format("DELETE FROM Ledgers WHERE LedgerSeq = '%d';") % ledger->mLedgerSeq));
+	}
 	theApp->getLedgerDB()->getDB()->executeSQL(sql);
 
 	// write out dirty nodes
@@ -270,37 +276,46 @@ void Ledger::saveAcceptedLedger(Ledger::pointer ledger)
 	{
 		SerializerIterator sit(item->peekSerializer());
 		SerializedTransaction txn(sit);
-		std::vector<NewcoinAddress> accts = txn.getAffectedAccounts();
-
-		std::string sql = "INSERT INTO AccountTransactions (TransID, Account, LedgerSeq) VALUES ";
-		bool first = true;
-		for (std::vector<NewcoinAddress>::iterator it = accts.begin(), end = accts.end(); it != end; ++it)
+		if (!SQL_EXISTS(db,
+			boost::str(boost::format("SELECT LedgerSeq FROM AccountTransactions WHERE TransId = '%s';")
+				% item->getTag().GetHex())))
 		{
-			if (!first)
-				sql += ", ('";
-			else
+			std::vector<NewcoinAddress> accts = txn.getAffectedAccounts();
+
+			std::string sql = "INSERT INTO AccountTransactions (TransID, Account, LedgerSeq) VALUES ";
+			bool first = true;
+			for (std::vector<NewcoinAddress>::iterator it = accts.begin(), end = accts.end(); it != end; ++it)
 			{
-				sql += "('";
-				first = false;
+				if (!first)
+					sql += ", ('";
+				else
+				{
+					sql += "('";
+					first = false;
+				}
+				sql += txn.getTransactionID().GetHex();
+				sql += "','";
+				sql += it->humanAccountID();
+				sql += "',";
+				sql += boost::lexical_cast<std::string>(ledger->getLedgerSeq());
+				sql += ")";
 			}
-			sql += txn.getTransactionID().GetHex();
-			sql += "','";
-			sql += it->humanAccountID();
-			sql += "',";
-			sql += boost::lexical_cast<std::string>(ledger->getLedgerSeq());
-			sql += ")";
+			sql += ";";
+			Log(lsTRACE) << "ActTx: " << sql;
+			db->executeSQL(sql); // may already be in there
 		}
-		sql += ";";
-		Log(lsTRACE) << "ActTx: " << sql;
-		db->executeSQL(sql);
-		if (!db->executeSQL(
-			txn.getSQLInsertHeader() + txn.getSQL(ledger->getLedgerSeq(), TXN_SQL_VALIDATED) + ";"), true)
-		{ // transaction already in DB, update
-			db->executeSQL(boost::str(boost::format(
-				"UPDATE Transactions SET LedgerSeq = '%d', Status = '%c' WHERE TransID = '%s';") %
+		if (SQL_EXISTS(db, boost::str(boost::format("SELECT Status from Transactions where TransID = '%s';") %
+				txn.getTransactionID().GetHex())))
+		{
+			db->executeSQL(boost::str(
+				boost::format("UPDATE Transactions SET LedgerSeq = '%d', Status = '%c' WHERE TransID = '%s';") %
 					ledger->getLedgerSeq() % TXN_SQL_VALIDATED % txn.getTransactionID().GetHex()));
 		}
-		// FIXME: If above updates no rows, modify seq/status (upsert)
+		else
+		{
+			db->executeSQL(
+				txn.getSQLInsertHeader() + txn.getSQL(ledger->getLedgerSeq(), TXN_SQL_VALIDATED) + ";");
+		}
 	}
 	db->executeSQL("COMMIT TRANSACTION;");
 }
@@ -312,10 +327,9 @@ Ledger::pointer Ledger::getSQL(const std::string& sql)
 	uint32 ledgerSeq;
 	std::string hash;
 
-	if(1)
 	{
-		ScopedLock sl(theApp->getLedgerDB()->getDBLock());
 		Database *db = theApp->getLedgerDB()->getDB();
+		ScopedLock sl(theApp->getLedgerDB()->getDBLock());
 
 		if (!db->executeSQL(sql) || !db->startIterRows())
 			 return Ledger::pointer();
@@ -334,7 +348,8 @@ Ledger::pointer Ledger::getSQL(const std::string& sql)
 		db->endIterRows();
 	}
 
-	Ledger::pointer ret=boost::make_shared<Ledger>(prevHash, transHash, accountHash, totCoins, closingTime, ledgerSeq);
+	Ledger::pointer ret =
+		boost::make_shared<Ledger>(prevHash, transHash, accountHash, totCoins, closingTime, ledgerSeq);
 	if (ret->getHash() != ledgerHash)
 	{
 		assert(false);
@@ -448,12 +463,18 @@ void Ledger::setCloseTime(boost::posix_time::ptime ptm)
 	mCloseTime = iToSeconds(ptm);
 }
 
+uint64 Ledger::sGenesisClose = 0;
+
 uint64 Ledger::getNextLedgerClose() const
 {
 	if (mCloseTime == 0)
 	{
-		uint64 closeTime = theApp->getOPs().getNetworkTimeNC() + mLedgerInterval - 1;
-		return closeTime - (closeTime % mLedgerInterval);
+		if (sGenesisClose == 0)
+		{
+			uint64 closeTime = theApp->getOPs().getNetworkTimeNC() + mLedgerInterval - 1;
+			sGenesisClose = closeTime - (closeTime % mLedgerInterval);
+		}
+		return sGenesisClose;
 	}
 	return mCloseTime + mLedgerInterval;
 }
