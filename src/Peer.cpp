@@ -823,21 +823,23 @@ void Peer::recvStatus(newcoin::TMStatusChange& packet)
 		packet.set_networktime(theApp->getOPs().getNetworkTimeNC());
 	mLastStatus = packet;
 
+	if (packet.newevent() == newcoin::neLOST_SYNC)
+	{
+		mPreviousLedgerHash.zero();
+		mClosedLedgerHash.zero();
+	}
 	if (packet.has_ledgerhash() && (packet.ledgerhash().size() == (256 / 8)))
 	{ // a peer has changed ledgers
-		if (packet.has_previousledgerhash() && (packet.previousledgerhash().size() == (256 / 8)))
-			memcpy(mPreviousLedgerHash.begin(), packet.previousledgerhash().data(), 256 / 8);
-		else
-			mPreviousLedgerHash = mClosedLedgerHash;
 		memcpy(mClosedLedgerHash.begin(), packet.ledgerhash().data(), 256 / 8);
 		mClosedLedgerTime = ptFromSeconds(packet.networktime());
 		Log(lsTRACE) << "peer LCL is " << mClosedLedgerHash.GetHex();
 	}
-	else if(packet.has_previousledgerhash() && packet.previousledgerhash().size() == (256 / 8))
+	else mClosedLedgerHash.zero();
+	if (packet.has_previousledgerhash() && packet.previousledgerhash().size() == (256 / 8))
 	{
-		memcpy(mClosedLedgerHash.begin(), packet.previousledgerhash().data(), 256 / 8);
-		mClosedLedgerTime = ptFromSeconds(packet.networktime());
+		memcpy(mPreviousLedgerHash.begin(), packet.previousledgerhash().data(), 256 / 8);
 	}
+	else mPreviousLedgerHash.zero();
 }
 
 void Peer::recvGetLedger(newcoin::TMGetLedger& packet)

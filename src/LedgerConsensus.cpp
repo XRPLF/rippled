@@ -16,6 +16,8 @@
 
 // #define LC_DEBUG
 
+// TODO: If we don't have the previousLCL, check if we got it. If so, change modes
+
 TransactionAcquire::TransactionAcquire(const uint256& hash)
 	: PeerSet(hash, 1), mFilter(&theApp->getNodeCache()), mHaveRoot(false)
 {
@@ -188,12 +190,15 @@ int LCTransaction::getAgreeLevel()
 	return (mNays * 100 + 100) / (mYays + mNays + 1);
 }
 
-LedgerConsensus::LedgerConsensus(Ledger::pointer previousLedger, uint32 closeTime)
-	:  mState(lcsPRE_CLOSE), mCloseTime(closeTime), mPreviousLedger(previousLedger)
+LedgerConsensus::LedgerConsensus(const uint256& prevLCLHash, Ledger::pointer previousLedger, uint32 closeTime)
+	:  mState(lcsPRE_CLOSE), mCloseTime(closeTime), mPrevLedgerHash(prevLCLHash), mPreviousLedger(previousLedger)
 {
+	mValSeed = theConfig.VALIDATION_SEED;
 	Log(lsDEBUG) << "Creating consensus object";
 	Log(lsTRACE) << "LCL:" << previousLedger->getHash().GetHex() <<", ct=" << closeTime;
-	if (theConfig.VALIDATION_SEED.isValid())
+	if (previousLedger->getHash() != prevLCLHash)
+		mHaveCorrectLCL = mProposing = mValidating = false;
+	else if (mValSeed.isValid())
 	{
 		mValidating = true;
 		mProposing = theApp->getOPs().getOperatingMode() == NetworkOPs::omFULL;
@@ -205,7 +210,7 @@ void LedgerConsensus::takeInitialPosition(Ledger::pointer initialLedger)
 {
 	SHAMap::pointer initialSet = initialLedger->peekTransactionMap()->snapShot(false);
 	uint256 txSet = initialSet->getHash();
-	assert (initialLedger->getParentHash() == mPreviousLedger->getHash());
+	assert (!mHaveCorrectLCL || (initialLedger->getParentHash() == mPreviousLedger->getHash()));
 
 	// if any peers have taken a contrary position, process disputes
 	boost::unordered_set<uint256> found;
@@ -221,9 +226,9 @@ void LedgerConsensus::takeInitialPosition(Ledger::pointer initialLedger)
 		}
 	}
 
-	if (mProposing)
+	if (mValidating)
 		mOurPosition = boost::make_shared<LedgerProposal>
-			(theConfig.VALIDATION_SEED, initialLedger->getParentHash(), txSet);
+			(mValSeed, initialLedger->getParentHash(), txSet);
 	else
 		mOurPosition = boost::make_shared<LedgerProposal>(initialLedger->getParentHash(), txSet);
 	mapComplete(txSet, initialSet, false);
@@ -317,13 +322,21 @@ void LedgerConsensus::adjustCount(SHAMap::pointer map, const std::vector<uint160
 void LedgerConsensus::statusChange(newcoin::NodeEvent event, Ledger::pointer ledger)
 { // Send a node status change message to our peers
 	newcoin::TMStatusChange s;
-	s.set_newevent(event);
-	s.set_ledgerseq(ledger->getLedgerSeq());
-	s.set_networktime(theApp->getOPs().getNetworkTimeNC());
-	uint256 plhash = ledger->getParentHash();
-	s.set_previousledgerhash(plhash.begin(), plhash.size());
+	if (!mHaveCorrectLCL)
+		s.set_newevent(newcoin::neLOST_SYNC);
+	else
+	{
+		s.set_newevent(event);
+		s.set_ledgerseq(ledger->getLedgerSeq());
+		s.set_networktime(theApp->getOPs().getNetworkTimeNC());
+		uint256 hash = ledger->getParentHash();
+		s.set_previousledgerhash(hash.begin(), hash.size());
+		hash = ledger->getHash();
+		s.set_ledgerhash(hash.begin(), hash.size());
+	}
 	PackedMessage::pointer packet = boost::make_shared<PackedMessage>(s, newcoin::mtSTATUS_CHANGE);
 	theApp->getConnectionPool().relayMessage(NULL, packet);
+	Log(lsINFO) << "send status change to peer";
 }
 
 void LedgerConsensus::abort()
@@ -724,7 +737,7 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 	assert(set->getHash() == mOurPosition->getCurrentHash());
 	Log(lsINFO) << "Computing new LCL based on network consensus";
 	Log(lsDEBUG) << "Consensus " << mOurPosition->getCurrentHash().GetHex();
-	Log(lsDEBUG) << "Previous LCL " << mPreviousLedger->getHash().GetHex();
+	Log(lsDEBUG) << "Previous LCL " << mPrevLedgerHash.GetHex();
 
 	Ledger::pointer newLCL = boost::make_shared<Ledger>(false, boost::ref(*mPreviousLedger));
 
@@ -747,15 +760,6 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 	uint256 newLCLHash = newLCL->getHash();
 	Log(lsTRACE) << "newLCL " << newLCLHash.GetHex();
 
-#ifdef DEBUG
-	if (1)
-	{
-		Log(lsTRACE) << "newLCL after transactions";
-		Json::Value p;
-		newLCL->addJson(p, LEDGER_JSON_DUMP_TXNS | LEDGER_JSON_DUMP_STATE);
-		ssw.write(Log(lsTRACE).ref(), p);
-	}
-#endif
 
 	Ledger::pointer newOL = boost::make_shared<Ledger>(true, boost::ref(*newLCL));
 
@@ -811,13 +815,17 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 		Json::Value p;
 		newOL->addJson(p, LEDGER_JSON_DUMP_TXNS | LEDGER_JSON_DUMP_STATE);
 		ssw.write(Log(lsTRACE).ref(), p);
+		Log(lsINFO) << "newLCL after transactions";
+		Json::Value p2;
+		newLCL->addJson(p2, LEDGER_JSON_DUMP_TXNS | LEDGER_JSON_DUMP_STATE);
+		ssw.write(Log(lsTRACE).ref(), p2);
 	}
 #endif
 
 	if (mValidating)
 	{
 		SerializedValidation::pointer v = boost::make_shared<SerializedValidation>
-			(newLCLHash, mOurPosition->peekSeed(), true);
+			(newLCLHash, newLCL->getCloseTimeNC(), mOurPosition->peekSeed(), true);
 		v->setTrusted();
 		// FIXME: If not proposing, set not full
 		theApp->getValidations().addValidation(v);
@@ -825,9 +833,10 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 		newcoin::TMValidation val;
 		val.set_validation(&validation[0], validation.size());
 		theApp->getConnectionPool().relayMessage(NULL, boost::make_shared<PackedMessage>(val, newcoin::mtVALIDATION));
-		Log(lsINFO) << "Validation sent " << newLCL->getHash().GetHex();
+		Log(lsINFO) << "Validation sent " << newLCLHash.GetHex();
 	}
-	statusChange(newcoin::neACCEPTED_LEDGER, newOL);
+	else Log(lsWARNING) << "Not validating";
+	statusChange(newcoin::neACCEPTED_LEDGER, newLCL);
 }
 
 void LedgerConsensus::endConsensus()

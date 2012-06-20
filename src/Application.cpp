@@ -1,6 +1,9 @@
 
 #include <iostream>
 
+#include <boost/thread.hpp>
+#include <boost/bind.hpp>
+
 #include "../database/SqliteDatabase.h"
 
 #include "Application.h"
@@ -52,6 +55,11 @@ void Application::stop()
 	std::cerr << "Stopped: " << mIOService.stopped() << std::endl;
 }
 
+static void InitDB(DatabaseCon** dbCon, const char *fileName, const char *dbInit[], int dbCount)
+{
+	*dbCon = new DatabaseCon(fileName, dbInit, dbCount);
+}
+
 void Application::run()
 {
 	assert(mTxnDB == NULL);
@@ -61,11 +69,12 @@ void Application::run()
 	//
 	// Construct databases.
 	//
-	mTxnDB		= new DatabaseCon("transaction.db", TxnDBInit, TxnDBCount);
-	mLedgerDB	= new DatabaseCon("ledger.db", LedgerDBInit, LedgerDBCount);
-	mWalletDB	= new DatabaseCon("wallet.db", WalletDBInit, WalletDBCount);
-	mHashNodeDB	= new DatabaseCon("hashnode.db", HashNodeDBInit, HashNodeDBCount);
-	mNetNodeDB	= new DatabaseCon("netnode.db", NetNodeDBInit, NetNodeDBCount);
+	boost::thread t1(boost::bind(&InitDB, &mTxnDB, "transaction.db", TxnDBInit, TxnDBCount));
+	boost::thread t2(boost::bind(&InitDB, &mLedgerDB, "ledger.db", LedgerDBInit, LedgerDBCount));
+	boost::thread t3(boost::bind(&InitDB, &mWalletDB, "wallet.db", WalletDBInit, WalletDBCount));
+	boost::thread t4(boost::bind(&InitDB, &mHashNodeDB, "hashnode.db", HashNodeDBInit, HashNodeDBCount));
+	boost::thread t5(boost::bind(&InitDB, &mNetNodeDB, "netnode.db", NetNodeDBInit, NetNodeDBCount));
+	t1.join(); t2.join(); t3.join(); t4.join(); t5.join();
 
 	//
 	// Begin validation and ip maintenance.

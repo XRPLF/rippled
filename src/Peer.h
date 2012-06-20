@@ -136,6 +136,7 @@ public:
 
 	uint256 getClosedLedgerHash() const { return mClosedLedgerHash; }
 	NewcoinAddress getNodePublic() const { return mNodePublic; }
+	void cycleStatus() { mPreviousLedgerHash = mClosedLedgerHash; mClosedLedgerHash.zero(); }
 };
 
 #endif
