@@ -334,14 +334,11 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 		// check if the ledger is good enough to go to omFULL
 		// Note: Do not go to omFULL if we don't have the previous ledger
 		// check if the ledger is bad enough to go to omCONNECTED -- TODO
-		if (theConfig.VALIDATION_SEED.isValid())
-		{
-			if (theApp->getOPs().getNetworkTimeNC() <
-					(theApp->getMasterLedger().getCurrentLedger()->getCloseTimeNC() + 4))
-				setMode(omFULL);
-			else
-				Log(lsWARNING) << "Too late to go to full, try next ledger";
-		}
+		if (theApp->getOPs().getNetworkTimeNC() <
+				(theApp->getMasterLedger().getCurrentLedger()->getCloseTimeNC() + 4))
+			setMode(omFULL);
+		else
+			Log(lsWARNING) << "Too late to go to full, will try in consensus window";
 	}
 
 	if (mMode == omFULL)
