@@ -15,7 +15,7 @@ bool ValidationCollection::addValidation(SerializedValidation::pointer val)
 		if ((now > valClose) && (now < (valClose + 2 * LEDGER_INTERVAL)))
 			isTrusted = true;
 		else
-		Log(lsWARNING) << "Received stale validation";
+		Log(lsWARNING) << "Received stale validation now=" << now << ", close=" << valClose;
 	}
 
 	uint256 hash = val->getLedgerHash();
