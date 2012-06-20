@@ -628,10 +628,10 @@ void ConnectionPool::scanRefresh()
 
 			tpNext		= tpNow + boost::posix_time::seconds(iInterval);
 
-			iInterval	*= 2;
-
 			Log(lsINFO) << str(boost::format("Pool: Scan: Now: %s %s (next %s, delay=%s)")
 				% mScanIp % mScanPort % tpNext % iInterval);
+
+			iInterval	*= 2;
 
 			{
 				ScopedLock sl(theApp->getWalletDB()->getDBLock());
