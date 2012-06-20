@@ -27,14 +27,15 @@ Peer::Peer(boost::asio::io_service& io_service, boost::asio::ssl::context& ctx) 
 	mSocketSsl(io_service, ctx),
 	mVerifyTimer(io_service)
 {
+	// Log(lsDEBUG) << "CREATING PEER: " << ADDRESS(this);
 }
 
 void Peer::handle_write(const boost::system::error_code& error, size_t bytes_transferred)
 {
+	if (error)
+		Log(lsINFO) << "Peer: Write: Error: " << ADDRESS(this) << ": bytes=" << bytes_transferred << ": " << error.category().name() << ": " << error.message() << ": " << error;
 #ifdef DEBUG
-	if(error)
-		std::cerr << "Peer::handle_write Error: " << error << " bytes: " << bytes_transferred << std::endl;
-//	else
+//	if (!error)
 //		std::cerr << "Peer::handle_write bytes: "<< bytes_transferred << std::endl;
 #endif
 
@@ -57,20 +58,33 @@ void Peer::handle_write(const boost::system::error_code& error, size_t bytes_tra
 	}
 }
 
+void Peer::setIpPort(const std::string& strIP, int iPort)
+{
+	mIpPort = make_pair(strIP, iPort);
+
+	Log(lsDEBUG) << "Peer: Set: "
+		<< ADDRESS(this) << "> "
+		<< (mNodePublic.isValid() ? mNodePublic.humanNodePublic() : "-") << " " << getIP() << " " << getPort();
+}
+
 void Peer::detach(const char *rsn)
 {
-#ifdef DEBUG
-	Log(lsTRACE) << "DETACHING PEER: " << rsn
-		<< ": "
-		<< (mNodePublic.isValid() ? mNodePublic.humanNodePublic() : "-")
-		<< " " << getIP() << " " << getPort() << std::endl;
-#endif
+	Log(lsDEBUG) << "Peer: Detach: "
+		<< ADDRESS(this) << "> "
+		<< rsn << ": "
+		<< (mNodePublic.isValid() ? mNodePublic.humanNodePublic() : "-") << " " << getIP() << " " << getPort();
 
 	boost::system::error_code ecCancel;
 
 	(void) mVerifyTimer.cancel();
 
 	mSendQ.clear();
+
+	// We may close more than once.
+	boost::system::error_code ecShutdown;
+	getSocket().shutdown(boost::asio::ip::tcp::socket::shutdown_both, ecShutdown);
+
+	getSocket().close();
 
 	if (mNodePublic.isValid())
 	{
@@ -82,11 +96,16 @@ void Peer::detach(const char *rsn)
 	if (!mIpPort.first.empty())
 	{
 		// Connection might be part of scanning.  Inform connect failed.
-		// Might need to scan. Inform connection disconnected.
-		theApp->getConnectionPool().peerFailed(mIpPort.first, mIpPort.second);
+		// Might need to scan. Inform connection closed.
+		theApp->getConnectionPool().peerClosed(shared_from_this(), mIpPort.first, mIpPort.second);
 
-		mIpPort.first.empty();		// Be idompotent.
+		mIpPort.first.clear();		// Be idompotent.
 	}
+
+	Log(lsDEBUG) << "Peer: Detach: "
+		<< ADDRESS(this) << "< "
+		<< rsn << ": "
+		<< (mNodePublic.isValid() ? mNodePublic.humanNodePublic() : "-") << " " << getIP() << " " << getPort();
 }
 
 void Peer::handleVerifyTimer(const boost::system::error_code& ecResult)
@@ -100,14 +119,15 @@ void Peer::handleVerifyTimer(const boost::system::error_code& ecResult)
 	}
 	else if (ecResult)
 	{
-		std::cerr << "Peer verify timer error: " << std::endl;
+		Log(lsINFO) << "Peer verify timer error";
 
 		// Can't do anything sound.
 		abort();
 	}
 	else
 	{
-		std::cerr << "Peer failed to verify in time." << std::endl;
+		Log(lsINFO) << "Peer: Verify: Peer failed to verify in time.";
+
 		detach("hvt");
 	}
 }
@@ -120,8 +140,8 @@ void Peer::connect(const std::string strIp, int iPort)
 
 	mClientConnect	= true;
 
-	std::cerr << "Peer::connect: " << strIp << " " << iPort << std::endl;
-	mIpPort		= make_pair(strIp, iPort);
+	mIpPort			= make_pair(strIp, iPort);
+	mIpPortConnect	= mIpPort;
 	assert(!mIpPort.first.empty());
 
 	boost::asio::ip::tcp::resolver::query	query(strIp, boost::lexical_cast<std::string>(iPortAct),
@@ -132,7 +152,7 @@ void Peer::connect(const std::string strIp, int iPort)
 
 	if (err || itrEndpoint == boost::asio::ip::tcp::resolver::iterator())
 	{
-		std::cerr << "Peer::connect: Bad IP" << std::endl;
+		Log(lsWARNING) << "Peer: Connect: Bad IP: " << strIp;
 		detach("c");
 		return;
 	}
@@ -143,7 +163,7 @@ void Peer::connect(const std::string strIp, int iPort)
 
 		if (err)
 		{
-			std::cerr << "Peer::connect: Failed to set timer." << std::endl;
+			Log(lsWARNING) << "Peer: Connect: Failed to set timer.";
 			detach("c2");
 			return;
 		}
@@ -151,10 +171,10 @@ void Peer::connect(const std::string strIp, int iPort)
 
 	if (!err)
 	{
-		std::cerr << "Peer::connect: Connecting: " << mIpPort.first << " " << mIpPort.second << std::endl;
+		Log(lsINFO) << "Peer: Connect: Outbound: " << ADDRESS(this) << ": " << mIpPort.first << " " << mIpPort.second;
 
 		boost::asio::async_connect(
-			mSocketSsl.lowest_layer(),
+			getSocket(),
 			itrEndpoint,
 			boost::bind(
 				&Peer::handleConnect,
@@ -172,7 +192,7 @@ void Peer::handleStart(const boost::system::error_code& error)
 {
 	if (error)
 	{
-		std::cerr << "Peer::handleStart: failed:" << error << std::endl;
+		Log(lsINFO) << "Peer: Handshake: Error: " << error.category().name() << ": " << error.message() << ": " << error;
 		detach("hs");
 	}
 	else
@@ -187,7 +207,7 @@ void Peer::handleConnect(const boost::system::error_code& error, boost::asio::ip
 {
 	if (error)
 	{
-		std::cerr << "Connect peer: failed:" << error << std::endl;
+		Log(lsINFO) << "Peer: Connect: Error: " << error.category().name() << ": " << error.message() << ": " << error;
 		detach("hc");
 	}
 	else
@@ -205,25 +225,26 @@ void Peer::handleConnect(const boost::system::error_code& error, boost::asio::ip
 // - We don't bother remembering the inbound IP or port.  Only useful for debugging.
 void Peer::connected(const boost::system::error_code& error)
 {
-	boost::asio::ip::tcp::endpoint	ep		= mSocketSsl.lowest_layer().remote_endpoint();
+	boost::asio::ip::tcp::endpoint	ep		= getSocket().remote_endpoint();
 	int								iPort	= ep.port();
 	std::string						strIp	= ep.address().to_string();
 
 	mClientConnect	= false;
+	mIpPortConnect	= make_pair(strIp, iPort);
 
 	if (iPort == SYSTEM_PEER_PORT)		//TODO: Why are you doing this?
 		iPort	= -1;
 
 	if (error)
 	{
-		std::cerr << "Remote peer: accept error: " << strIp << " " << iPort << " : " << error << std::endl;
+		Log(lsINFO) << "Peer: Inbound: Error: " << ADDRESS(this) << ": " << strIp << " " << iPort << " : " << error.category().name() << ": " << error.message() << ": " << error;
 		detach("ctd");
 	}
 	else
 	{
-		// Not redundant ip and port, add to connection list.
+		// Not redundant ip and port, handshake, and start.
 
-		std::cerr << "Remote peer: accepted: " << strIp << " " << iPort << std::endl;
+		Log(lsINFO) << "Peer: Inbound: Accepted: " << ADDRESS(this) << ": " << strIp << " " << iPort;
 
 		mSocketSsl.set_verify_mode(boost::asio::ssl::verify_none);
 
@@ -290,8 +311,8 @@ void Peer::handle_read_header(const boost::system::error_code& error)
 	}
 	else
 	{
+		Log(lsINFO) << "Peer: Header: Error: " << ADDRESS(this) << ": " << error.category().name() << ": " << error.message() << ": " << error;
 		detach("hrh2");
-		std::cerr << "Peer::handle_read_header: Error: " << error << std::endl;
 	}
 }
 
@@ -304,8 +325,8 @@ void Peer::handle_read_body(const boost::system::error_code& error)
 	}
 	else
 	{
+		Log(lsINFO) << "Peer: Body: Error: " << ADDRESS(this) << ": " << error.category().name() << ": " << error.message() << ": " << error;
 		detach("hrb");
-		std::cerr << "Peer::handle_read_body: Error: " << error << std::endl;
 	}
 }
 
@@ -517,27 +538,25 @@ void Peer::processReadBuffer()
 void Peer::recvHello(newcoin::TMHello& packet)
 {
 #ifdef DEBUG
-	std::cerr << "Recv(Hello) v=" << packet.version()
-		<< ", index=" << packet.ledgerindex()
-		<< std::endl;
+	Log(lsINFO) << "Recv(Hello) v=" << packet.version() << ", index=" << packet.ledgerindex();
 #endif
 	bool	bDetach	= true;
 
 	if (!mNodePublic.setNodePublic(packet.nodepublic()))
 	{
-		std::cerr << "Recv(Hello): Disconnect: Bad node public key." << std::endl;
+		Log(lsINFO) << "Recv(Hello): Disconnect: Bad node public key.";
 	}
 	else if (!mNodePublic.verifyNodePublic(mCookieHash, packet.nodeproof()))
 	{ // Unable to verify they have private key for claimed public key.
-		std::cerr << "Recv(Hello): Disconnect: Failed to verify session." << std::endl;
+		Log(lsINFO) << "Recv(Hello): Disconnect: Failed to verify session.";
 	}
 	else if (!theApp->getConnectionPool().peerConnected(shared_from_this(), mNodePublic, getIP(), getPort()))
 	{ // Already connected, self, or some other reason.
-		std::cerr << "Recv(Hello): Disconnect: Extraneous connection." << std::endl;
+		Log(lsINFO) << "Recv(Hello): Disconnect: Extraneous connection.";
 	}
 	else
 	{ // Successful connection.
-		std::cerr << "Recv(Hello): Connect: " << mNodePublic.humanNodePublic() << std::endl;
+		Log(lsINFO) << "Recv(Hello): Connect: " << mNodePublic.humanNodePublic();
 
 		// Cancel verification timeout.
 		(void) mVerifyTimer.cancel();
@@ -545,16 +564,18 @@ void Peer::recvHello(newcoin::TMHello& packet)
 		if (mClientConnect)
 		{
 			// If we connected due to scan, no longer need to scan.
-			theApp->getConnectionPool().peerVerified(mIpPort.first, mIpPort.second);
+			theApp->getConnectionPool().peerVerified(shared_from_this());
 
 			// No longer connecting as client.
 			mClientConnect	= false;
 		}
 		else
 		{
-			// At this point we could add the inbound connection to our IP list.  However, the inbound IP address might be that of
-			// a NAT. It would be best to only add it if and only if we can immediately verify it.
-			nothing();
+			// Take a guess at remotes address.
+			std::string	strIP	= getSocket().remote_endpoint().address().to_string();
+			int			iPort	= packet.ipv4port();
+
+			theApp->getConnectionPool().savePeer(strIP, iPort, UniqueNodeList::vsInbound);
 		}
 
 		// Consider us connected.  No longer accepting mtHELLO.
@@ -580,8 +601,10 @@ void Peer::recvHello(newcoin::TMHello& packet)
 		mNodePublic.clear();
 		detach("recvh");
 	}
-
-	sendGetPeers();
+	else
+	{
+		sendGetPeers();
+	}
 }
 
 void Peer::recvTransaction(newcoin::TMTransaction& packet)
@@ -714,26 +737,26 @@ void Peer::recvGetPeers(newcoin::TMGetPeers& packet)
 {
 	std::vector<std::string> addrs;
 
-	theApp->getConnectionPool().getTopNAddrs(30,addrs);
+	theApp->getConnectionPool().getTopNAddrs(30, addrs);
 
-	if (addrs.size())
+	if (!addrs.empty())
 	{
 		newcoin::TMPeers peers;
 
-		for(int n=0; n<addrs.size(); n++)
+		for (int n=0; n<addrs.size(); n++)
 		{
 			std::string strIP;
-			int port;
+			int			iPort;
 
-			splitIpPort(addrs[n], strIP, port);
+			splitIpPort(addrs[n], strIP, iPort);
 
+			// XXX This should also ipv6
 			newcoin::TMIPv4EndPoint* addr=peers.add_nodes();
 			addr->set_ipv4(inet_addr(strIP.c_str()));
-			addr->set_ipv4port(port);
+			addr->set_ipv4port(iPort);
 
-			std::cout << "Teaching about: " << strIP << std::endl;
+			Log(lsINFO) << "Peer: Teaching: " << ADDRESS(this) << ": " << n << ": " << strIP << " " << iPort;
 		}
-
 
 		PackedMessage::pointer message = boost::make_shared<PackedMessage>(peers, newcoin::mtPEERS);
 		sendPacket(message);
@@ -746,20 +769,17 @@ void Peer::recvPeers(newcoin::TMPeers& packet)
 	for (int i = 0; i < packet.nodes().size(); ++i)
 	{
 		in_addr addr;
-		addr.s_addr=packet.nodes(i).ipv4();
-		std::string strIP(inet_ntoa(addr));
-		int port=packet.nodes(i).ipv4port();
 
-		if (strIP == "0.0.0.0")
+		addr.s_addr	= packet.nodes(i).ipv4();
+
+		std::string	strIP(inet_ntoa(addr));
+		int			iPort	= packet.nodes(i).ipv4port();
+
+		if (strIP != "0.0.0.0" && strIP != "127.0.0.1")
 		{
-			strIP	= mSocketSsl.lowest_layer().remote_endpoint().address().to_string();
-		}
+			Log(lsINFO) << "Peer: Learning: " << ADDRESS(this) << ": " << i << ": " << strIP << " " << iPort;
 
-		// if (strIP != "127.0.0.1")
-		{
-			std::cout << "Learning about: " << strIP << std::endl;
-
-			theApp->getConnectionPool().savePeer(strIP, port, 'T');
+			theApp->getConnectionPool().savePeer(strIP, iPort, UniqueNodeList::vsTold);
 		}
 	}
 }
@@ -1059,11 +1079,13 @@ void Peer::sendGetPeers()
 {
 	// get other peers this guy knows about
 	newcoin::TMGetPeers getPeers;
+
 	getPeers.set_doweneedthis(1);
+
 	PackedMessage::pointer packet = boost::make_shared<PackedMessage>(getPeers, newcoin::mtGET_PEERS);
+
 	sendPacket(packet);
 }
-
 
 void Peer::punishPeer(PeerPunish)
 {
@@ -1072,9 +1094,16 @@ void Peer::punishPeer(PeerPunish)
 Json::Value Peer::getJson() {
     Json::Value ret(Json::objectValue);
 
-    ret["ip"]			= mIpPort.first;
-    ret["port"]			= mIpPort.second;
+    ret["this"]			= ADDRESS(this);
     ret["public_key"]	= mNodePublic.ToString();
+    ret["ip"]			= mIpPortConnect.first;
+    ret["port"]			= mIpPortConnect.second;
+
+	if (!mIpPort.first.empty())
+	{
+		ret["verified_ip"]		= mIpPort.first;
+		ret["verified_port"]	= mIpPort.second;
+	}
 
     return ret;
 }
