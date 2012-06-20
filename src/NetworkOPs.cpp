@@ -359,8 +359,11 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 	// Do we have sufficient validations for our last closed ledger? Or do sufficient nodes
 	// agree? And do we have no better ledger available?
 	// If so, we are either tracking or full.
-	boost::unordered_map<uint256, ValidationCount> ledgers;
 
+	// FIXME: We may have a ledger with many recent validations but that no directly-connected
+	// node is using. THis is kind of fundamental.
+
+	boost::unordered_map<uint256, ValidationCount> ledgers;
 	for (std::vector<Peer::pointer>::const_iterator it = peerList.begin(), end = peerList.end(); it != end; ++it)
 	{
 		if (!*it)
