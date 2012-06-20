@@ -731,7 +731,7 @@ void Peer::recvGetPeers(newcoin::TMGetPeers& packet)
 			addr->set_ipv4(inet_addr(strIP.c_str()));
 			addr->set_ipv4port(port);
 
-			std::cout << "Teaching about: " << strIP << std::endl;
+			//std::cout << "Teaching about: " << strIP << std::endl;
 		}
 
 
@@ -757,7 +757,7 @@ void Peer::recvPeers(newcoin::TMPeers& packet)
 
 		// if (strIP != "127.0.0.1")
 		{
-			std::cout << "Learning about: " << strIP << std::endl;
+			//std::cout << "Learning about: " << strIP << std::endl;
 
 			theApp->getConnectionPool().savePeer(strIP, port, 'T');
 		}
