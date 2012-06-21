@@ -291,11 +291,11 @@ Peer::pointer ConnectionPool::peerConnect(const std::string& strIp, int iPort)
 
 	if (ppResult)
 	{
-		Log(lsINFO) << "Pool: Connecting: " << ADDRESS_SHARED(ppResult) << ": " << strIp << " " << iPort;
+		//Log(lsINFO) << "Pool: Connecting: " << ADDRESS_SHARED(ppResult) << ": " << strIp << " " << iPort;
 	}
 	else
 	{
-		Log(lsINFO) << "Pool: Already connected: " << strIp << " " << iPort;
+		//Log(lsINFO) << "Pool: Already connected: " << strIp << " " << iPort;
 	}
 
 	return ppResult;
@@ -352,7 +352,7 @@ bool ConnectionPool::peerConnected(Peer::pointer peer, const NewcoinAddress& naP
 		if (itCm == mConnectedMap.end())
 		{
 			// New connection.
-			Log(lsINFO) << "Pool: Connected: new: " << ADDRESS_SHARED(peer) << ": " << naPeer.humanNodePublic() << " " << strIP << " " << iPort;
+			//Log(lsINFO) << "Pool: Connected: new: " << ADDRESS_SHARED(peer) << ": " << naPeer.humanNodePublic() << " " << strIP << " " << iPort;
 
 			mConnectedMap[naPeer]	= peer;
 			bNew					= true;
@@ -365,7 +365,7 @@ bool ConnectionPool::peerConnected(Peer::pointer peer, const NewcoinAddress& naP
 			if (itCm->second->getIP().empty())
 			{
 				// Old peer did not know it's IP.
-				Log(lsINFO) << "Pool: Connected: redundant: outbound: " << ADDRESS_SHARED(peer) << " discovered: " << ADDRESS_SHARED(itCm->second) << ": " << strIP << " " << iPort;
+				//Log(lsINFO) << "Pool: Connected: redundant: outbound: " << ADDRESS_SHARED(peer) << " discovered: " << ADDRESS_SHARED(itCm->second) << ": " << strIP << " " << iPort;
 
 				itCm->second->setIpPort(strIP, iPort);
 
@@ -375,14 +375,14 @@ bool ConnectionPool::peerConnected(Peer::pointer peer, const NewcoinAddress& naP
 			else
 			{
 				// Old peer knew its IP.  Do nothing.
-				Log(lsINFO) << "Pool: Connected: redundant: outbound: rediscovered: " << ADDRESS_SHARED(peer) << " " << strIP << " " << iPort;
+				//Log(lsINFO) << "Pool: Connected: redundant: outbound: rediscovered: " << ADDRESS_SHARED(peer) << " " << strIP << " " << iPort;
 
 				nothing();
 			}
 		}
 		else
 		{
-			Log(lsINFO) << "Pool: Connected: redundant: inbound: " << ADDRESS_SHARED(peer) << " " << strIP << " " << iPort;
+			//Log(lsINFO) << "Pool: Connected: redundant: inbound: " << ADDRESS_SHARED(peer) << " " << strIP << " " << iPort;
 
 			nothing();
 		}
@@ -419,12 +419,12 @@ void ConnectionPool::peerDisconnected(Peer::pointer peer, const NewcoinAddress& 
 			// Found it. Delete it.
 			mConnectedMap.erase(itCm);
 
-			Log(lsINFO) << "Pool: disconnected: " << naPeer.humanNodePublic() << " " << peer->getIP() << " " << peer->getPort();
+			//Log(lsINFO) << "Pool: disconnected: " << naPeer.humanNodePublic() << " " << peer->getIP() << " " << peer->getPort();
 		}
 	}
 	else
 	{
-		Log(lsINFO) << "Pool: disconnected: anonymous: " << peer->getIP() << " " << peer->getPort();
+		//Log(lsINFO) << "Pool: disconnected: anonymous: " << peer->getIP() << " " << peer->getPort();
 	}
 }
 
@@ -450,8 +450,8 @@ bool ConnectionPool::peerScanSet(const std::string& strIp, int iPort)
 			boost::posix_time::ptime	tpNow		= boost::posix_time::second_clock::universal_time();
 			boost::posix_time::ptime	tpNext		= tpNow + boost::posix_time::seconds(iInterval);
 
-			Log(lsINFO) << str(boost::format("Pool: Scan: schedule create: %s %s (next %s, delay=%d)")
-				% mScanIp % mScanPort % tpNext % (tpNext-tpNow).total_seconds());
+			//Log(lsINFO) << str(boost::format("Pool: Scan: schedule create: %s %s (next %s, delay=%d)")
+			//	% mScanIp % mScanPort % tpNext % (tpNext-tpNow).total_seconds());
 
 			db->executeSQL(str(boost::format("UPDATE PeerIps SET ScanNext=%d,ScanInterval=%d WHERE IpPort=%s;")
 				% iToSeconds(tpNext)
@@ -466,13 +466,13 @@ bool ConnectionPool::peerScanSet(const std::string& strIp, int iPort)
 			boost::posix_time::ptime	tpNow		= boost::posix_time::second_clock::universal_time();
 			boost::posix_time::ptime	tpNext		= ptFromSeconds(db->getInt("ScanNext"));
 
-			Log(lsINFO) << str(boost::format("Pool: Scan: schedule exists: %s %s (next %s, delay=%d)")
-				% mScanIp % mScanPort % tpNext % (tpNext-tpNow).total_seconds());
+			//Log(lsINFO) << str(boost::format("Pool: Scan: schedule exists: %s %s (next %s, delay=%d)")
+			//	% mScanIp % mScanPort % tpNext % (tpNext-tpNow).total_seconds());
 		}
 	}
 	else
 	{
-		Log(lsWARNING) << "Pool: Scan: peer wasn't in PeerIps: " << strIp << " " << iPort;
+		//Log(lsWARNING) << "Pool: Scan: peer wasn't in PeerIps: " << strIp << " " << iPort;
 	}
 
 	return bScanDirty;
@@ -487,7 +487,7 @@ void ConnectionPool::peerClosed(Peer::pointer peer, const std::string& strIp, in
 	// If the connection was our scan, we are no longer scanning.
 	if (mScanning && mScanning == peer)
 	{
-		Log(lsINFO) << "Pool: Scan: scan fail: " << strIp << " " << iPort;
+		//Log(lsINFO) << "Pool: Scan: scan fail: " << strIp << " " << iPort;
 
 		mScanning		= Peer::pointer();	// No longer scanning.
 		bScanRefresh	= true;				// Look for more to scan.
@@ -510,7 +510,7 @@ void ConnectionPool::peerClosed(Peer::pointer peer, const std::string& strIp, in
 		else if (mIpMap[ipPeer] == peer)
 		{
 			// We were the identified connection.
-			Log(lsINFO) << "Pool: Closed: identified: " << ADDRESS_SHARED(peer) << ": " << strIp << " " << iPort;
+			//Log(lsINFO) << "Pool: Closed: identified: " << ADDRESS_SHARED(peer) << ": " << strIp << " " << iPort;
 
 			// Delete our entry.
 			mIpMap.erase(itIp);
@@ -519,8 +519,8 @@ void ConnectionPool::peerClosed(Peer::pointer peer, const std::string& strIp, in
 		}
 		else
 		{
-			// Found it.  But, we were redundent.
-			Log(lsINFO) << "Pool: Closed: redundant: " << ADDRESS_SHARED(peer) << ": " << strIp << " " << iPort;
+			// Found it.  But, we were redundant.
+			//Log(lsINFO) << "Pool: Closed: redundant: " << ADDRESS_SHARED(peer) << ": " << strIp << " " << iPort;
 		}
 	}
 

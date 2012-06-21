@@ -360,6 +360,7 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 
 	// FIXME: We may have a ledger with many recent validations but that no directly-connected
 	// node is using. THis is kind of fundamental.
+	Log(lsTRACE) << "NetworkOPs::checkLastClosedLedger";
 
 	boost::unordered_map<uint256, ValidationCount> ledgers;
 
@@ -391,7 +392,7 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 					vc.highNode = (*it)->getNodePublic();
 				++vc.nodesUsing;
 			}
-			else Log(lsTRACE) << "Connected peer announces no LCL";
+			else Log(lsTRACE) << "Connected peer announces no LCL " << (*it)->getIP();
 		}
 	}
 
@@ -432,13 +433,26 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 		}
 		if (!acq->isComplete())
 		{ // add more peers
+			//JED: seems like you need to do something here so it knows in beginConsensus that it isn't on the the right ledger
+			// switch to an empty ledger so we won't keep going
+			//Ledger::pointer emptyLedger(new Ledger());
+			//switchLastClosedLedger(emptyLedger);
+
+			// JED: just ask everyone
+			std::vector<Peer::pointer> peers=theApp->getConnectionPool().getPeerVector();
+			for(int n=0; n<peers.size(); n++)
+			{
+				if(peers[n]->isConnected()) acq->peerHas(peers[n]);
+			}
+
+			/* JED  this wasn't adding any peers. This is also an optimization so we can do this later
 			// FIXME: A peer may not have a ledger just because it accepts it as the network's consensus
 			for (std::vector<Peer::pointer>::const_iterator it = peerList.begin(), end = peerList.end();
 					it != end; ++it)
 			{
 				if ((*it)->getClosedLedgerHash() == closedLedger)
 					acq->peerHas(*it);
-			}
+			}*/
 			return true;
 		}
 		consensus = acq->getLedger();
@@ -504,6 +518,8 @@ int NetworkOPs::beginConsensus(Ledger::pointer closingLedger)
 bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash,
 	const std::string& pubKey, const std::string& signature)
 {
+	// JED: does mConsensus need to be locked?
+
 	// XXX Validate key.
 	// XXX Take a vuc for pubkey.
 	NewcoinAddress	naPeerPublic	= NewcoinAddress::createNodePublic(strCopy(pubKey));
@@ -520,11 +536,8 @@ bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash,
 		return false;
 	}
 
-	boost::shared_ptr<LedgerConsensus> consensus = mConsensus;
-	if (!consensus) return false;
-
 	LedgerProposal::pointer proposal =
-		boost::make_shared<LedgerProposal>(consensus->getLCL(), proposeSeq, proposeHash, naPeerPublic);
+		boost::make_shared<LedgerProposal>(mConsensus->getLCL(), proposeSeq, proposeHash, naPeerPublic);
 	if (!proposal->checkSign(signature))
 	{ // Note that if the LCL is different, the signature check will fail
 		Log(lsWARNING) << "Ledger proposal fails signature check";
@@ -540,7 +553,8 @@ bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash,
 		return true;
 	}
 
-	return consensus->peerPosition(proposal);
+	return mConsensus->peerPosition(proposal);
+	
 }
 
 SHAMap::pointer NetworkOPs::getTXMap(const uint256& hash)
@@ -626,6 +640,8 @@ std::vector< std::pair<uint32, uint256> >
 
 bool NetworkOPs::recvValidation(SerializedValidation::pointer val)
 {
+	Log(lsINFO) << "recvValidation " << val->getLedgerHash().GetHex();
+
 	return theApp->getValidations().addValidation(val);
 }
 

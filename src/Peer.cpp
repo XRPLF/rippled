@@ -77,11 +77,12 @@ void Peer::detach(const char *rsn)
 	if (!mDetaching)
 	{
 		mDetaching	= true;			// Race is ok.
-
+		/*
 		Log(lsDEBUG) << "Peer: Detach: "
 			<< ADDRESS(this) << "> "
 			<< rsn << ": "
 			<< (mNodePublic.isValid() ? mNodePublic.humanNodePublic() : "-") << " " << getIP() << " " << getPort();
+			*/
 
 		mSendQ.clear();
 
@@ -92,7 +93,7 @@ void Peer::detach(const char *rsn)
 		{
 			theApp->getConnectionPool().peerDisconnected(shared_from_this(), mNodePublic);
 
-			mNodePublic.clear();		// Be idompotent.
+			mNodePublic.clear();		// Be idempotent.
 		}
 
 		if (!mIpPort.first.empty())
@@ -101,13 +102,14 @@ void Peer::detach(const char *rsn)
 			// Might need to scan. Inform connection closed.
 			theApp->getConnectionPool().peerClosed(shared_from_this(), mIpPort.first, mIpPort.second);
 
-			mIpPort.first.clear();		// Be idompotent.
+			mIpPort.first.clear();		// Be idempotent.
 		}
-
+		/*
 		Log(lsDEBUG) << "Peer: Detach: "
 			<< ADDRESS(this) << "< "
 			<< rsn << ": "
 			<< (mNodePublic.isValid() ? mNodePublic.humanNodePublic() : "-") << " " << getIP() << " " << getPort();
+			*/
 	}
 }
 
@@ -129,7 +131,7 @@ void Peer::handleVerifyTimer(const boost::system::error_code& ecResult)
 	}
 	else
 	{
-		Log(lsINFO) << "Peer: Verify: Peer failed to verify in time.";
+		//Log(lsINFO) << "Peer: Verify: Peer failed to verify in time.";
 
 		detach("hvt");
 	}
@@ -787,7 +789,7 @@ void Peer::recvGetPeers(newcoin::TMGetPeers& packet)
 			addr->set_ipv4(inet_addr(strIP.c_str()));
 			addr->set_ipv4port(iPort);
 
-			Log(lsINFO) << "Peer: Teaching: " << ADDRESS(this) << ": " << n << ": " << strIP << " " << iPort;
+			//Log(lsINFO) << "Peer: Teaching: " << ADDRESS(this) << ": " << n << ": " << strIP << " " << iPort;
 		}
 
 		PackedMessage::pointer message = boost::make_shared<PackedMessage>(peers, newcoin::mtPEERS);
@@ -809,7 +811,7 @@ void Peer::recvPeers(newcoin::TMPeers& packet)
 
 		if (strIP != "0.0.0.0" && strIP != "127.0.0.1")
 		{
-			Log(lsINFO) << "Peer: Learning: " << ADDRESS(this) << ": " << i << ": " << strIP << " " << iPort;
+			//Log(lsINFO) << "Peer: Learning: " << ADDRESS(this) << ": " << i << ": " << strIP << " " << iPort;
 
 			theApp->getConnectionPool().savePeer(strIP, iPort, UniqueNodeList::vsTold);
 		}
@@ -850,14 +852,14 @@ void Peer::recvAccount(newcoin::TMAccount& packet)
 
 void Peer::recvStatus(newcoin::TMStatusChange& packet)
 {
-	Log(lsTRACE) << "Received status change from peer";
+	Log(lsTRACE) << "Received status change from peer" << getIP();
 	if (!packet.has_networktime())
 		packet.set_networktime(theApp->getOPs().getNetworkTimeNC());
 	mLastStatus = packet;
 
 	if (packet.newevent() == newcoin::neLOST_SYNC)
 	{
-		Log(lsTRACE) << "peer has lost sync";
+		Log(lsTRACE) << "peer has lost sync" << getIP();
 		mPreviousLedgerHash.zero();
 		mClosedLedgerHash.zero();
 		return;
@@ -866,11 +868,11 @@ void Peer::recvStatus(newcoin::TMStatusChange& packet)
 	{ // a peer has changed ledgers
 		memcpy(mClosedLedgerHash.begin(), packet.ledgerhash().data(), 256 / 8);
 		mClosedLedgerTime = ptFromSeconds(packet.networktime());
-		Log(lsTRACE) << "peer LCL is " << mClosedLedgerHash.GetHex();
+		Log(lsTRACE) << "peer LCL is " << mClosedLedgerHash.GetHex() << " " << getIP();
 	}
 	else
 	{
-		Log(lsTRACE) << "peer has no ledger hash";
+		Log(lsTRACE) << "peer has no ledger hash" << getIP();
 		mClosedLedgerHash.zero();
 	}
 
@@ -889,7 +891,7 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 
 	if (packet.itype() == newcoin::liTS_CANDIDATE)
 	{ // Request is  for a transaction candidate set
-		Log(lsINFO) << "Received request for TX candidate set data";
+		Log(lsINFO) << "Received request for TX candidate set data " << getIP();
 		Ledger::pointer ledger;
 		if ((!packet.has_ledgerhash() || packet.ledgerhash().size() != 32))
 		{
@@ -912,7 +914,7 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 	}
 	else
 	{ // Figure out what ledger they want
-		Log(lsINFO) << "Received request for ledger data";
+		Log(lsINFO) << "Received request for ledger data " << getIP();
 		Ledger::pointer ledger;
 		if (packet.has_ledgerhash())
 		{
