@@ -74,3 +74,26 @@ void ValidationCollection::getValidationCount(const uint256& ledger, bool curren
 		}
 	}
 }
+
+boost::unordered_map<uint256, int> ValidationCollection::getCurrentValidations()
+{
+    uint64 now = theApp->getOPs().getNetworkTimeNC();
+	boost::unordered_map<uint256, int> ret;
+
+	{
+		boost::mutex::scoped_lock sl(mValidationLock);
+		boost::unordered_map<uint160, SerializedValidation::pointer>::iterator it = mCurrentValidations.begin();
+		while (it != mCurrentValidations.end())
+		{
+			if (now > (it->second->getCloseTime() + 2 * LEDGER_INTERVAL))
+				it = mCurrentValidations.erase(it);
+			else
+			{
+				++ret[it->second->getLedgerHash()];
+				++it;
+			}
+		}
+	}
+
+	return ret;
+}
