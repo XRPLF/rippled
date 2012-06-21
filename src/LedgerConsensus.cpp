@@ -323,20 +323,15 @@ void LedgerConsensus::statusChange(newcoin::NodeEvent event, Ledger::pointer led
 { // Send a node status change message to our peers
 	newcoin::TMStatusChange s;
 	if (!mHaveCorrectLCL)
-	{
-		Log(lsTRACE) << "Telling peers we have lost sync";
 		s.set_newevent(newcoin::neLOST_SYNC);
-	}
 	else
-	{
 		s.set_newevent(event);
-		s.set_ledgerseq(ledger->getLedgerSeq());
-		s.set_networktime(theApp->getOPs().getNetworkTimeNC());
-		uint256 hash = ledger->getParentHash();
-		s.set_previousledgerhash(hash.begin(), hash.size());
-		hash = ledger->getHash();
-		s.set_ledgerhash(hash.begin(), hash.size());
-	}
+	s.set_ledgerseq(ledger->getLedgerSeq());
+	s.set_networktime(theApp->getOPs().getNetworkTimeNC());
+	uint256 hash = ledger->getParentHash();
+	s.set_previousledgerhash(hash.begin(), hash.size());
+	hash = ledger->getHash();
+	s.set_ledgerhash(hash.begin(), hash.size());
 	PackedMessage::pointer packet = boost::make_shared<PackedMessage>(s, newcoin::mtSTATUS_CHANGE);
 	theApp->getConnectionPool().relayMessage(NULL, packet);
 	Log(lsINFO) << "send status change to peer";
