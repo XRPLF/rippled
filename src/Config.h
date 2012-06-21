@@ -29,8 +29,10 @@ const int SYSTEM_WEBSOCKET_PORT		= 6562;
 // Allow anonymous DH.
 #define DEFAULT_PEER_SSL_CIPHER_LIST	"ALL:!LOW:!EXP:!MD5:@STRENGTH"
 
-// 1 hour.
-#define DEFAULT_PEER_SCAN_INTERVAL_MIN	(60*60)
+// Normal, recommend 1 hour.
+// #define DEFAULT_PEER_SCAN_INTERVAL_MIN	(60*60)
+// Testing, recommend 1 minute.
+#define DEFAULT_PEER_SCAN_INTERVAL_MIN	(60)
 
 // Maximum number of peers to try to connect to as client at once.
 #define DEFAULT_PEER_START_MAX			5
@@ -49,13 +51,15 @@ public:
 	boost::filesystem::path		CONFIG_FILE;
 	boost::filesystem::path		CONFIG_DIR;
 	boost::filesystem::path		DATA_DIR;
+	boost::filesystem::path		DEBUG_LOGFILE;
 	boost::filesystem::path		UNL_DEFAULT;
 
 	std::string					VALIDATORS_SITE;		// Where to find validators.txt on the Internet.
-	std::vector<std::string>	VALIDATORS;				// Validators from newcoind.cfg
+	std::vector<std::string>	VALIDATORS;				// Validators from newcoind.cfg.
+	std::vector<std::string>	IPS;					// Peer IPs from newcoind.cfg.
 
 	// Network parameters
-	int							NETWORK_START_TIME;		// The Unix time we start ledger 0
+	int							NETWORK_START_TIME;		// The Unix time we start ledger 0.
 	int							TRANSACTION_FEE_BASE;
 	int							LEDGER_SECONDS;
 	int							LEDGER_PROPOSAL_DELAY_SECONDS;

@@ -89,6 +89,7 @@ public:
 	std::vector<unsigned char> getITFieldVL(SOE_Field field) const { return mInnerTxn.getValueFieldVL(field); }
 	std::vector<TaggedListItem> getITFieldTL(SOE_Field field) const { return mInnerTxn.getValueFieldTL(field); }
 	STAmount getITFieldAmount(SOE_Field field) const { return mInnerTxn.getValueFieldAmount(field); }
+	STPathSet getITFieldPathSet(SOE_Field field) const { return mInnerTxn.getValueFieldPathSet(field); }
 
 	void setITFieldU8(SOE_Field field, unsigned char v) { return mInnerTxn.setValueFieldU8(field, v); }
 	void setITFieldU16(SOE_Field field, uint16 v) { return mInnerTxn.setValueFieldU16(field, v); }

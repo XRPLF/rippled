@@ -72,7 +72,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>BOOST_TEST_NO_MAIN;_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0501;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>BOOST_TEST_ALTERNATIVE_INIT_API;BOOST_TEST_NO_MAIN;_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0501;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\OpenSSL\include;..\boost_1_47_0;..\protobuf-2.4.1\src</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -144,12 +144,14 @@
     <ClCompile Include="src\SHAMapDiff.cpp" />
     <ClCompile Include="src\SHAMapNodes.cpp" />
     <ClCompile Include="src\SHAMapSync.cpp" />
+    <ClCompile Include="src\Suppression.cpp" />
     <ClCompile Include="src\Transaction.cpp" />
     <ClCompile Include="src\TransactionEngine.cpp" />
     <ClCompile Include="src\TransactionFormats.cpp" />
     <ClCompile Include="src\TransactionMaster.cpp" />
     <ClCompile Include="src\UniqueNodeList.cpp" />
     <ClCompile Include="src\utils.cpp" />
+    <ClCompile Include="src\ValidationCollection.cpp" />
     <ClCompile Include="src\Wallet.cpp" />
   </ItemGroup>
   <ItemGroup>

@@ -1,6 +1,9 @@
 #include "utils.h"
 #include "uint256.h"
 
+#include <boost/asio.hpp>
+#include <boost/regex.hpp>
+
 //
 // Time support
 // We have our own epoch.
@@ -123,6 +126,36 @@ DH* DH_der_load(const std::string& strDer)
 	return d2i_DHparams(NULL, &pbuf, strDer.size());
 }
 
+//
+// IP Port parsing
+//
+// <-- iPort: "" = -1
+bool parseIpPort(const std::string& strSource, std::string& strIP, int& iPort)
+{
+	boost::smatch	smMatch;
+	bool			bValid	= false;
+
+	static boost::regex	reEndpoint("\\`\\s*(\\S+)(?:\\s+(\\d+))?\\s*\\'");
+
+	if (boost::regex_match(strSource, smMatch, reEndpoint))
+	{
+		boost::system::error_code	err;
+		std::string					strIPRaw	= smMatch[1];
+		std::string					strPortRaw	= smMatch[2];
+
+		boost::asio::ip::address	addrIP		= boost::asio::ip::address::from_string(strIPRaw, err);
+
+		bValid	= !err;
+		if (bValid)
+		{
+			strIP	= addrIP.to_string();
+			iPort	= strPortRaw.empty() ? -1 : boost::lexical_cast<int>(strPortRaw);
+		}
+	}
+
+	return bValid;
+}
+
 /*
 void intIPtoStr(int ip,std::string& retStr)
 {
@@ -130,7 +163,7 @@ void intIPtoStr(int ip,std::string& retStr)
 	bytes[0] = ip & 0xFF;
 	bytes[1] = (ip >> 8) & 0xFF;
 	bytes[2] = (ip >> 16) & 0xFF;
-	bytes[3] = (ip >> 24) & 0xFF;   
+	bytes[3] = (ip >> 24) & 0xFF;
 
 	retStr=str(boost::format("%d.%d.%d.%d") % bytes[3] % bytes[2] % bytes[1] % bytes[0] );
 }
@@ -145,7 +178,7 @@ int strIPtoInt(std::string& ipStr)
 #include <winsock2.h>
 
 //#include "Winsock2.h"
-//#include <windows.h> 
+//#include <windows.h>
 // from: http://stackoverflow.com/questions/3022552/is-there-any-standard-htonl-like-function-for-64-bits-integers-in-c
 // but we don't need to check the endianness
 uint64_t htobe64(uint64_t value)

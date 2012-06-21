@@ -8,9 +8,11 @@
 
 #include "types.h"
 
-#define nothing()   do {} while (0)
-#define fallthru()  do {} while (0)
-#define NUMBER(x)	(sizeof(x)/sizeof((x)[0]))
+#define nothing()			do {} while (0)
+#define fallthru()			do {} while (0)
+#define NUMBER(x)			(sizeof(x)/sizeof((x)[0]))
+#define ADDRESS(p)			strHex(uint64( ((char*) p) - ((char*) 0)))
+#define ADDRESS_SHARED(p)	strHex(uint64( ((char*) (p).get()) - ((char*) 0)))
 
 #ifndef MAX
 #define MAX(x,y) ((x) < (y) ? (y) : (x))
@@ -36,7 +38,7 @@ int strIPtoInt(std::string& ipStr);
 template<class Iterator>
 std::string strJoin(Iterator first, Iterator last, std::string strSeperator)
 {
-	std::ostringstream  ossValues;
+	std::ostringstream	ossValues;
 
 	for (Iterator start = first; first != last; first++)
 	{
@@ -103,6 +105,8 @@ std::vector<unsigned char> strUnHex(const std::string& strSrc);
 
 std::vector<unsigned char> strCopy(const std::string& strSrc);
 std::string strCopy(const std::vector<unsigned char>& vucSrc);
+
+bool parseIpPort(const std::string& strSource, std::string& strIP, int& iPort);
 
 DH* DH_der_load(const std::string& strDer);
 std::string DH_der_gen(int iKeyLength);

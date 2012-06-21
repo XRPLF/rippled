@@ -16,13 +16,15 @@ class ValidationCollection
 
 	boost::mutex mValidationLock;
 	boost::unordered_map<uint256, ValidationSet> mValidations;
+	boost::unordered_map<uint160, SerializedValidation::pointer> mCurrentValidations;
 
 public:
 	ValidationCollection() { ; }
 
 	bool addValidation(SerializedValidation::pointer);
 	ValidationSet getValidations(const uint256& ledger);
-	void getValidationCount(const uint256& ledger, int& trusted, int& untrusted);
+	void getValidationCount(const uint256& ledger, bool currentOnly, int& trusted, int& untrusted);
+	boost::unordered_map<uint256, int> getCurrentValidations();
 };
 
 #endif

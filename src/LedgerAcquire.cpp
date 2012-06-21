@@ -254,7 +254,7 @@ void PeerSet::sendRequest(const newcoin::TMGetLedger& tmGL)
 	while (it != mPeers.end())
 	{
 		if (it->expired())
-			mPeers.erase(it++);
+			it = mPeers.erase(it);
 		else
 		{
 			// FIXME: Track last peer sent to and time sent
@@ -370,10 +370,10 @@ bool LedgerAcquireMaster::hasLedger(const uint256& hash)
 	return mLedgers.find(hash) != mLedgers.end();
 }
 
-bool LedgerAcquireMaster::dropLedger(const uint256& hash)
+void LedgerAcquireMaster::dropLedger(const uint256& hash)
 {
 	boost::mutex::scoped_lock sl(mLock);
-	return mLedgers.erase(hash);
+	mLedgers.erase(hash);
 }
 
 bool LedgerAcquireMaster::gotLedgerData(newcoin::TMLedgerData& packet, Peer::pointer peer)

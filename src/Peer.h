@@ -31,9 +31,11 @@ public:
 
 private:
 	bool			mClientConnect;		// In process of connecting as client.
-	bool			mConnected;			// True, if hello accepted.
+	bool			mHelloed;			// True, if hello accepted.
+	bool			mDetaching;			// True, if detaching.
 	NewcoinAddress	mNodePublic;		// Node public key of peer.
 	ipPort			mIpPort;
+	ipPort			mIpPortConnect;
 	uint256			mCookieHash;
 
 	// network state information
@@ -55,6 +57,8 @@ protected:
 	newcoin::TMStatusChange mLastStatus;
 
 	Peer(boost::asio::io_service& io_service, boost::asio::ssl::context& ctx);
+
+	void handleShutdown(const boost::system::error_code& error) { ; }
 
 	void handle_write(const boost::system::error_code& error, size_t bytes_transferred);
 	void handle_read_header(const boost::system::error_code& error);
@@ -96,8 +100,10 @@ public:
 
 	//bool operator == (const Peer& other);
 
-	std::string& getIP(){ return(mIpPort.first); }
-	int getPort(){ return(mIpPort.second); }
+	std::string& getIP() { return mIpPort.first; }
+	int getPort() { return mIpPort.second; }
+
+	void setIpPort(const std::string& strIP, int iPort);
 
 	static pointer create(boost::asio::io_service& io_service, boost::asio::ssl::context& ctx)
 	{
@@ -124,6 +130,7 @@ public:
 	void punishPeer(PeerPunish pp);
 
 	Json::Value getJson();
+	bool isConnected() const { return mHelloed && !mDetaching; }
 
 	//static PackedMessage::pointer createFullLedger(Ledger::pointer ledger);
 	static PackedMessage::pointer createLedgerProposal(Ledger::pointer ledger);
@@ -132,6 +139,7 @@ public:
 
 	uint256 getClosedLedgerHash() const { return mClosedLedgerHash; }
 	NewcoinAddress getNodePublic() const { return mNodePublic; }
+	void cycleStatus() { mPreviousLedgerHash = mClosedLedgerHash; mClosedLedgerHash.zero(); }
 };
 
 #endif

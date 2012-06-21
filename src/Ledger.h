@@ -67,6 +67,8 @@ private:
 	uint16		mLedgerInterval;
 	bool		mClosed, mValidHash, mAccepted, mImmutable;
 
+	static uint64 sGenesisClose;
+
 	SHAMap::pointer mTransactionMap, mAccountStateMap;
 
 	mutable boost::recursive_mutex mLock;
@@ -96,9 +98,10 @@ public:
 	void updateHash();
 	void setClosed()	{ mClosed = true; }
 	void setAccepted()	{ mAccepted = true; }
-	void setImmutable()	{ mImmutable = true; }
+	void setImmutable()	{ updateHash(); mImmutable = true; }
 	bool isClosed()		{ return mClosed; }
 	bool isAccepted()	{ return mAccepted; }
+	bool isImmutable()	{ return mImmutable; }
 
 	// This ledger has closed, will never be accepted, and is accepting
 	// new transactions to be re-repocessed when do accept a new last-closed ledger

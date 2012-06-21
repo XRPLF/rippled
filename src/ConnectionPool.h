@@ -20,28 +20,36 @@ private:
 	typedef std::pair<ipPort, Peer::pointer>			pipPeer;
 
 	// Peers we are connecting with and non-thin peers we are connected to.
+	// Only peers we know the connection ip for are listed.
+	// We know the ip and port for:
+	// - All outbound connections
+	// - Some inbound connections (which we figured out).
     boost::unordered_map<ipPort, Peer::pointer>			mIpMap;
 
 	// Non-thin peers which we are connected to.
+	// Peers we have the public key for.
     boost::unordered_map<NewcoinAddress, Peer::pointer>	mConnectedMap;
 
     boost::asio::ssl::context							mCtx;
 
-	bool												bScanning;
+	Peer::pointer										mScanning;
 	boost::asio::deadline_timer							mScanTimer;
 	std::string											mScanIp;
 	int													mScanPort;
 
-	void		scanHandler(const boost::system::error_code& ecResult);
+	void			scanHandler(const boost::system::error_code& ecResult);
 
 	boost::asio::deadline_timer							mPolicyTimer;
 
-	void		policyHandler(const boost::system::error_code& ecResult);
+	void			policyHandler(const boost::system::error_code& ecResult);
 
 	// Peers we are establishing a connection with as a client.
 	// int												miConnectStarting;
 
-	bool												peerAvailable(std::string& strIp, int& iPort);
+	bool			peerAvailable(std::string& strIp, int& iPort);
+	bool			peerScanSet(const std::string& strIp, int iPort);
+
+	Peer::pointer	peerConnect(const std::string& strIp, int iPort);
 
 public:
 	ConnectionPool(boost::asio::io_service& io_service);
@@ -54,7 +62,7 @@ public:
 
 	// Manual connection request.
 	// Queue for immediate scanning.
-	bool connectTo(const std::string& strIp, int iPort);
+	void connectTo(const std::string& strIp, int iPort);
 
 	//
 	// Peer connectivity notification.
@@ -62,20 +70,18 @@ public:
 	bool getTopNAddrs(int n,std::vector<std::string>& addrs);
 	bool savePeer(const std::string& strIp, int iPort, char code);
 
-	// Inbound connection, false=reject
-	bool peerRegister(Peer::pointer peer, const std::string& strIp, int iPort);
-
-	// We know peers node public key.  false=reject
-	bool peerConnected(Peer::pointer peer, const NewcoinAddress& na);
+	// We know peers node public key.
+	// <-- bool: false=reject
+	bool peerConnected(Peer::pointer peer, const NewcoinAddress& naPeer, const std::string& strIP, int iPort);
 
 	// No longer connected.
-	void peerDisconnected(Peer::pointer peer, const ipPort& ipPeer, const NewcoinAddress& naPeer);
+	void peerDisconnected(Peer::pointer peer, const NewcoinAddress& naPeer);
 
 	// As client accepted.
-	void peerVerified(const std::string& strIp, int iPort);
+	void peerVerified(Peer::pointer peer);
 
 	// As client failed connect and be accepted.
-	void peerFailed(const std::string& strIp, int iPort);
+	void peerClosed(Peer::pointer peer, const std::string& strIp, int iPort);
 
 	Json::Value getPeersJson();
 	std::vector<Peer::pointer> getPeerVector();

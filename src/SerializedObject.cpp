@@ -485,6 +485,17 @@ STAmount STObject::getValueFieldAmount(SOE_Field field) const
 	return *cf;
 }
 
+STPathSet STObject::getValueFieldPathSet(SOE_Field field) const
+{
+	const SerializedType* rf = peekAtPField(field);
+	if (!rf) throw std::runtime_error("Field not found");
+	SerializedTypeID id = rf->getSType();
+	if (id == STI_NOTPRESENT) return STPathSet(); // optional field not present
+	const STPathSet *cf = dynamic_cast<const STPathSet *>(rf);
+	if (!cf) throw std::runtime_error("Wrong field type");
+	return *cf;
+}
+
 STVector256 STObject::getValueFieldV256(SOE_Field field) const
 {
 	const SerializedType* rf = peekAtPField(field);

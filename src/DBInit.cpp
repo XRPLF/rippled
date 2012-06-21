@@ -2,6 +2,8 @@
 
 // Transaction database holds transactions and public keys
 const char *TxnDBInit[] = {
+	"BEGIN TRANSACTION;",
+
 	"CREATE TABLE Transactions (				\
 		TransID		CHARACTER(64) PRIMARY KEY,	\
 		TransType	CHARACTER(24),				\
@@ -21,13 +23,17 @@ const char *TxnDBInit[] = {
 		LedgerSeq	BIGINT UNSIGNED				\
 	);",
 	"CREATE INDEX AcctTxindex ON				\
-		AccountTransactions(Account, LedgerSeq, TransID);"
+		AccountTransactions(Account, LedgerSeq, TransID);",
+
+	"END TRANSACTION;"
 };
 
 int TxnDBCount = sizeof(TxnDBInit) / sizeof(const char *);
 
 // Ledger database holds ledgers and ledger confirmations
 const char *LedgerDBInit[] = {
+	"BEGIN TRANSACTION;",
+
 	"CREATE TABLE Ledgers (							\
 		LedgerHash		CHARACTER(64) PRIMARY KEY,	\
 		LedgerSeq		BIGINT UNSIGNED,			\
@@ -46,8 +52,9 @@ const char *LedgerDBInit[] = {
 		Signature	BLOB							\
 	);",
 	"CREATE INDEX LedgerConfByHash ON				\
-		LedgerConfirmations(LedgerHash)"
+		LedgerConfirmations(LedgerHash)",
 #endif
+	"END TRANSACTION;"
 };
 
 int LedgerDBCount = sizeof(LedgerDBInit) / sizeof(const char *);
@@ -55,6 +62,8 @@ int LedgerDBCount = sizeof(LedgerDBInit) / sizeof(const char *);
 // Wallet database holds local accounts and trusted nodes
 const char *WalletDBInit[] = {
 	// Node identity must be persisted for CAS routing and responsibilities.
+	"BEGIN TRANSACTION;",
+
 	"CREATE TABLE NodeIdentity (					\
 		PublicKey		CHARACTER(53),				\
 		PrivateKey		CHARACTER(52),				\
@@ -214,20 +223,24 @@ const char *WalletDBInit[] = {
 	//  Delay between scans.
 	"CREATE TABLE PeerIps (								\
 		IpPort			TEXT NOT NULL PRIMARY KEY,		\
-		Score			INTEGER NOT NULL,				\
+		Score			INTEGER NOT NULL DEFAULT 0,		\
 		Source			CHARACTER(1) NOT NULL,			\
 		ScanNext		DATETIME DEFAULT 0,				\
 		ScanInterval	INTEGER NOT NULL DEFAULT 0		\
 	);",
 
 	"CREATE INDEX PeerScanIndex ON						\
-		PeerIps(ScanNext);"
+		PeerIps(ScanNext);",
+
+	"END TRANSACTION;"
 };
 
 int WalletDBCount = sizeof(WalletDBInit) / sizeof(const char *);
 
 // Hash node database holds nodes indexed by hash
 const char *HashNodeDBInit[] = {
+	"BEGIN TRANSACTION;",
+
 	"CREATE TABLE CommittedObjects (				\
 		Hash		CHARACTER(64) PRIMARY KEY,		\
 		ObjType		CHAR(1)	NOT	NULL,				\
@@ -236,7 +249,9 @@ const char *HashNodeDBInit[] = {
 	);",
 
 	"CREATE INDEX ObjectLocate ON					\
-		CommittedObjects(LedgerIndex, ObjType);"
+		CommittedObjects(LedgerIndex, ObjType);",
+
+	"END TRANSACTION;"
 };
 
 int HashNodeDBCount = sizeof(HashNodeDBInit) / sizeof(const char *);

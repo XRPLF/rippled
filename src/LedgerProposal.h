@@ -32,6 +32,9 @@ public:
 	// our first proposal
 	LedgerProposal(const NewcoinAddress& naSeed, const uint256& prevLedger, const uint256& position);
 
+	// an unsigned proposal
+	LedgerProposal(const uint256& prevLedger, const uint256& position);
+
 	uint256 getSigningHash() const;
 	bool checkSign(const std::string& signature);
 

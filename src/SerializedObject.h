@@ -38,6 +38,7 @@ enum SOE_Field
 	sfBorrowRate,
 	sfBorrowStart,
 	sfBorrower,
+	sfCloseTime,
 	sfCurrency,
 	sfCurrencyIn,
 	sfCurrencyOut,
@@ -166,6 +167,7 @@ public:
 	std::vector<unsigned char> getValueFieldVL(SOE_Field field) const;
 	std::vector<TaggedListItem> getValueFieldTL(SOE_Field field) const;
 	STAmount getValueFieldAmount(SOE_Field field) const;
+	STPathSet getValueFieldPathSet(SOE_Field field) const;
 	STVector256 getValueFieldV256(SOE_Field field) const;
 
 	void setValueFieldU8(SOE_Field field, unsigned char);

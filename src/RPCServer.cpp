@@ -23,6 +23,7 @@
 #include "AccountState.h"
 #include "NicknameState.h"
 #include "utils.h"
+#include "Log.h"
 
 RPCServer::RPCServer(boost::asio::io_service& io_service , NetworkOPs* nopNetwork)
 	: mNetOps(nopNetwork), mSocket(io_service)
@@ -162,16 +163,10 @@ std::string RPCServer::handleRequest(const std::string& requestStr)
 	else if (!valParams.isArray())
 		return(HTTPReply(400, ""));
 
-#ifdef DEBUG
 	Json::StyledStreamWriter w;
-	w.write(std::cerr, valParams);
-#endif
-
+	w.write(Log(lsTRACE).ref(), valParams);
 	Json::Value result(doCommand(strMethod, valParams));
-
-#ifdef DEBUG
-	w.write(std::cerr, result);
-#endif
+	w.write(Log(lsTRACE).ref(), result);
 
 	std::string strReply = JSONRPCReply(result, Json::Value(), id);
 	return( HTTPReply(200, strReply) );
@@ -728,8 +723,8 @@ Json::Value RPCServer::doConnect(Json::Value& params)
 		iPort	= boost::lexical_cast<int>(strPort);
 	}
 
-	if (!theApp->getConnectionPool().connectTo(strIp, iPort))
-		return "connected";
+	// XXX Validate legal IP and port
+	theApp->getConnectionPool().connectTo(strIp, iPort);
 
 	return "connecting";
 }
@@ -1234,6 +1229,13 @@ Json::Value RPCServer::doSend(Json::Value& params)
 
 		return obj;
 	}
+}
+
+Json::Value RPCServer::doServerInfo(Json::Value& params)
+{
+	Json::Value ret(Json::objectValue);
+	ret["info"]=theApp->getOPs().getServerInfo();
+	return ret;
 }
 
 // transit_set <seed> <paying_account> <transit_rate> <starts> <expires>
@@ -1966,7 +1968,7 @@ Json::Value RPCServer::doStop(Json::Value& params) {
 
 Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params)
 {
-	std::cerr << "RPC:" << command << std::endl;
+	Log(lsTRACE) << "RPC:" << command;
 
 	static struct {
 		const char* pCommand;
@@ -1993,6 +1995,7 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 		{	"password_set",			&RPCServer::doPasswordSet,			2, 3, optNetwork },
 		{	"peers",				&RPCServer::doPeers,				0, 0,  },
 		{	"send",					&RPCServer::doSend,					3, 7, optCurrent },
+		{	"server_info",			&RPCServer::doServerInfo,			0, 0,  },
 		{	"stop",					&RPCServer::doStop,					0, 0,  },
 		{	"transit_set",			&RPCServer::doTransitSet,			5, 5, optCurrent },
 		{	"tx",					&RPCServer::doTx,					1, 1,  },

@@ -42,13 +42,6 @@ bool u160ToHuman(uint160& buf, std::string& retStr)
 
 #endif
 
-base_uint160 uint256::to160() const
-{
- uint160 m;
- memcpy(m.begin(), begin(), m.size());
- return m;
-}
-
 base_uint256 uint160::to256() const
 {
  uint256 m;

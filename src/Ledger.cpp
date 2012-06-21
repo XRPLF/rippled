@@ -42,7 +42,6 @@ Ledger::Ledger(const uint256 &parentHash, const uint256 &transHash, const uint25
 		mTotCoins(totCoins), mCloseTime(timeStamp), mLedgerSeq(ledgerSeq), mLedgerInterval(LEDGER_INTERVAL),
 		mClosed(false), mValidHash(false), mAccepted(false), mImmutable(false)
 {
-	assert(mParentHash.isNonZero());
 	updateHash();
 }
 
@@ -109,7 +108,7 @@ Ledger::Ledger(const std::string& rawLedger) : mCloseTime(0),
 
 void Ledger::updateHash()
 {
-	if(!mImmutable)
+	if (!mImmutable)
 	{
 		if (mTransactionMap) mTransHash = mTransactionMap->getHash();
 		else mTransHash.zero();
@@ -236,7 +235,6 @@ uint256 Ledger::getHash()
 
 void Ledger::saveAcceptedLedger(Ledger::pointer ledger)
 {
-
 	std::string sql="INSERT INTO Ledgers "
 		"(LedgerHash,LedgerSeq,PrevHash,TotalCoins,ClosingTime,AccountSetHash,TransSetHash) VALUES ('";
 	sql.append(ledger->getHash().GetHex());
@@ -329,10 +327,9 @@ Ledger::pointer Ledger::getSQL(const std::string& sql)
 	uint32 ledgerSeq;
 	std::string hash;
 
-	if(1)
 	{
-		ScopedLock sl(theApp->getLedgerDB()->getDBLock());
 		Database *db = theApp->getLedgerDB()->getDB();
+		ScopedLock sl(theApp->getLedgerDB()->getDBLock());
 
 		if (!db->executeSQL(sql) || !db->startIterRows())
 			 return Ledger::pointer();
@@ -351,7 +348,8 @@ Ledger::pointer Ledger::getSQL(const std::string& sql)
 		db->endIterRows();
 	}
 
-	Ledger::pointer ret=boost::make_shared<Ledger>(prevHash, transHash, accountHash, totCoins, closingTime, ledgerSeq);
+	Ledger::pointer ret =
+		boost::make_shared<Ledger>(prevHash, transHash, accountHash, totCoins, closingTime, ledgerSeq);
 	if (ret->getHash() != ledgerHash)
 	{
 		assert(false);
@@ -465,12 +463,18 @@ void Ledger::setCloseTime(boost::posix_time::ptime ptm)
 	mCloseTime = iToSeconds(ptm);
 }
 
+uint64 Ledger::sGenesisClose = 0;
+
 uint64 Ledger::getNextLedgerClose() const
 {
 	if (mCloseTime == 0)
 	{
-		uint64 closeTime = theApp->getOPs().getNetworkTimeNC() + mLedgerInterval - 1;
-		return closeTime - (closeTime % mLedgerInterval);
+		if (sGenesisClose == 0)
+		{
+			uint64 closeTime = theApp->getOPs().getNetworkTimeNC() + mLedgerInterval - 1;
+			sGenesisClose = closeTime - (closeTime % mLedgerInterval);
+		}
+		return sGenesisClose;
 	}
 	return mCloseTime + mLedgerInterval;
 }
