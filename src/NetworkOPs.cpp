@@ -372,8 +372,11 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 	Ledger::pointer currentClosed = mLedgerMaster->getClosedLedger();
 	uint256 closedLedger = currentClosed->getHash();
 	ValidationCount& ourVC = ledgers[closedLedger];
-	++ourVC.nodesUsing;
-	ourVC.highNode = theApp->getWallet().getNodePublic();
+	if (mHaveLCL)
+	{
+		++ourVC.nodesUsing;
+		ourVC.highNode = theApp->getWallet().getNodePublic();
+	}
 
 	for (std::vector<Peer::pointer>::const_iterator it = peerList.begin(), end = peerList.end(); it != end; ++it)
 	{
@@ -575,7 +578,10 @@ void NetworkOPs::endConsensus()
 	std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
 	for (std::vector<Peer::pointer>::const_iterator it = peerList.begin(), end = peerList.end(); it != end; ++it)
 	if (*it && ((*it)->getClosedLedgerHash() == deadLedger))
+	{
+		Log(lsTRACE) << "Killing obsolete peer status";
 		(*it)->cycleStatus();
+	}
 	mConsensus = boost::shared_ptr<LedgerConsensus>();
 }
 

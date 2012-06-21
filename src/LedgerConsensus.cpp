@@ -323,7 +323,10 @@ void LedgerConsensus::statusChange(newcoin::NodeEvent event, Ledger::pointer led
 { // Send a node status change message to our peers
 	newcoin::TMStatusChange s;
 	if (!mHaveCorrectLCL)
+	{
+		Log(lsTRACE) << "Telling peers we have lost sync";
 		s.set_newevent(newcoin::neLOST_SYNC);
+	}
 	else
 	{
 		s.set_newevent(event);

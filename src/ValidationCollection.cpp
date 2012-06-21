@@ -87,8 +87,8 @@ boost::unordered_map<uint256, int> ValidationCollection::getCurrentValidations()
 		{
 			if (now > (it->second->getCloseTime() + LEDGER_INTERVAL))
 			{
-				it = mCurrentValidations.erase(it);
 				Log(lsTRACE) << "Erasing validation for " << it->second->getLedgerHash().GetHex();
+				it = mCurrentValidations.erase(it);
 			}
 			else
 			{
