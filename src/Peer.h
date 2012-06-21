@@ -31,7 +31,7 @@ public:
 
 private:
 	bool			mClientConnect;		// In process of connecting as client.
-	bool			mConnected;			// True, if hello accepted.
+	bool			mHelloed;			// True, if hello accepted.
 	bool			mDetaching;			// True, if detaching.
 	NewcoinAddress	mNodePublic;		// Node public key of peer.
 	ipPort			mIpPort;
@@ -57,6 +57,8 @@ protected:
 	newcoin::TMStatusChange mLastStatus;
 
 	Peer(boost::asio::io_service& io_service, boost::asio::ssl::context& ctx);
+
+	void handleShutdown(const boost::system::error_code& error) { ; }
 
 	void handle_write(const boost::system::error_code& error, size_t bytes_transferred);
 	void handle_read_header(const boost::system::error_code& error);
@@ -128,7 +130,7 @@ public:
 	void punishPeer(PeerPunish pp);
 
 	Json::Value getJson();
-	bool isConnected() const { return mConnected; }
+	bool isConnected() const { return mHelloed && !mDetaching; }
 
 	//static PackedMessage::pointer createFullLedger(Ledger::pointer ledger);
 	static PackedMessage::pointer createLedgerProposal(Ledger::pointer ledger);

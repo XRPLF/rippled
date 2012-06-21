@@ -261,10 +261,10 @@ void NetworkOPs::setStateTimer(int sec)
 class ValidationCount
 {
 public:
-	int trustedValidations, untrustedValidations, nodesUsing;
+	int trustedValidations, nodesUsing;
 	NewcoinAddress highNode;
 
-	ValidationCount() : trustedValidations(0), untrustedValidations(0), nodesUsing(0) { ; }
+	ValidationCount() : trustedValidations(0), nodesUsing(0) { ; }
 	bool operator>(const ValidationCount& v)
 	{
 		if (trustedValidations > v.trustedValidations) return true;
@@ -362,44 +362,40 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 	// node is using. THis is kind of fundamental.
 
 	boost::unordered_map<uint256, ValidationCount> ledgers;
+
+	{
+		boost::unordered_map<uint256, int> current = theApp->getValidations().getCurrentValidations();
+		for (boost::unordered_map<uint256, int>::iterator it = current.begin(), end = current.end(); it != end; ++it)
+			ledgers[it->first].trustedValidations += it->second;
+	}
+
+	Ledger::pointer currentClosed = mLedgerMaster->getClosedLedger();
+	uint256 closedLedger = currentClosed->getHash();
+	ValidationCount& ourVC = ledgers[closedLedger];
+	++ourVC.nodesUsing;
+	ourVC.highNode = theApp->getWallet().getNodePublic();
+
 	for (std::vector<Peer::pointer>::const_iterator it = peerList.begin(), end = peerList.end(); it != end; ++it)
 	{
 		if (!*it)
 		{
 			Log(lsDEBUG) << "NOP::CS Dead pointer in peer list";
 		}
-		else
+		else if ((*it)->isConnected())
 		{
 			uint256 peerLedger = (*it)->getClosedLedgerHash();
 			if (!!peerLedger)
 			{
-				// FIXME: If we have this ledger, don't count it if it's too far past its close time
 				ValidationCount& vc = ledgers[peerLedger];
-				if (vc.nodesUsing == 0)
-				{
-					theApp->getValidations().getValidationCount(peerLedger, true,
-						vc.trustedValidations, vc.untrustedValidations);
-					Log(lsTRACE) << peerLedger.GetHex() << " has " << vc.trustedValidations <<
-						" trusted validations and " << vc.untrustedValidations << " untrusted";
-				}
 				if ((vc.nodesUsing == 0) || ((*it)->getNodePublic() > vc.highNode))
 					vc.highNode = (*it)->getNodePublic();
 				++vc.nodesUsing;
 			}
+			else Log(lsTRACE) << "Connected peer announces no LCL";
 		}
 	}
 
-	Ledger::pointer currentClosed = mLedgerMaster->getClosedLedger();
-	uint256 closedLedger = currentClosed->getHash();
-	ValidationCount& ourVC = ledgers[closedLedger];
-	if (ourVC.nodesUsing == 0)
-	{
-		ourVC.highNode = theApp->getWallet().getNodePublic();
-		theApp->getValidations().getValidationCount(closedLedger, true,
-			ourVC.trustedValidations, ourVC.untrustedValidations);
-	}
-	++ourVC.nodesUsing;
-	ValidationCount bestVC = ourVC;
+	ValidationCount bestVC = ledgers[closedLedger];
 
 	// 3) Is there a network ledger we'd like to switch to? If so, do we have it?
 	bool switchLedgers = false;
@@ -407,8 +403,7 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 		it != end; ++it)
 	{
 		Log(lsTRACE) << "L: " << it->first.GetHex() <<
-			"  t=" << it->second.trustedValidations << ", u=" << it->second.untrustedValidations <<
-			", n=" << it->second.nodesUsing;
+			"  t=" << it->second.trustedValidations << 	", n=" << it->second.nodesUsing;
 		if (it->second > bestVC)
 		{
 			bestVC = it->second;
@@ -580,7 +575,10 @@ void NetworkOPs::endConsensus()
 	std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
 	for (std::vector<Peer::pointer>::const_iterator it = peerList.begin(), end = peerList.end(); it != end; ++it)
 	if (*it && ((*it)->getClosedLedgerHash() == deadLedger))
+	{
+		Log(lsTRACE) << "Killing obsolete peer status";
 		(*it)->cycleStatus();
+	}
 	mConsensus = boost::shared_ptr<LedgerConsensus>();
 }
 

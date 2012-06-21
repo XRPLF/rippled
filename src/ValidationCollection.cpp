@@ -13,7 +13,7 @@ bool ValidationCollection::addValidation(SerializedValidation::pointer val)
 		val->setTrusted();
 		uint64 now = theApp->getOPs().getNetworkTimeNC();
 		uint64 valClose = val->getCloseTime();
-		if ((now > valClose) && (now < (valClose + 2 * LEDGER_INTERVAL)))
+		if ((now > valClose) && (now < (valClose + LEDGER_INTERVAL)))
 			isCurrent = true;
 		else
 			Log(lsWARNING) << "Received stale validation now=" << now << ", close=" << valClose;
@@ -73,4 +73,31 @@ void ValidationCollection::getValidationCount(const uint256& ledger, bool curren
 				++untrusted;
 		}
 	}
+}
+
+boost::unordered_map<uint256, int> ValidationCollection::getCurrentValidations()
+{
+    uint64 now = theApp->getOPs().getNetworkTimeNC();
+	boost::unordered_map<uint256, int> ret;
+
+	{
+		boost::mutex::scoped_lock sl(mValidationLock);
+		boost::unordered_map<uint160, SerializedValidation::pointer>::iterator it = mCurrentValidations.begin();
+		while (it != mCurrentValidations.end())
+		{
+			if (now > (it->second->getCloseTime() + LEDGER_INTERVAL))
+			{
+				Log(lsTRACE) << "Erasing validation for " << it->second->getLedgerHash().GetHex();
+				it = mCurrentValidations.erase(it);
+			}
+			else
+			{
+				Log(lsTRACE) << "Counting validation for " << it->second->getLedgerHash().GetHex();
+				++ret[it->second->getLedgerHash()];
+				++it;
+			}
+		}
+	}
+
+	return ret;
 }

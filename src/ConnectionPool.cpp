@@ -83,7 +83,15 @@ bool ConnectionPool::savePeer(const std::string& strIp, int iPort, char code)
 		{
 			db->executeSQL(str(boost::format("INSERT INTO PeerIps (IpPort,Score,Source) values (%s,0,'%c');") % ipPort % code));
 			bNew	= true;
-		}// else we already had this peer
+		}
+		else
+		{
+			// We already had this peer.
+			// We will eventually verify its address if it is possible.
+			// YYY If it is vsInbound, then we might make verification immediate so we can connect back sooner if the connection
+			// is lost.
+			nothing();
+		}
 	}
 	else
 	{
@@ -442,8 +450,8 @@ bool ConnectionPool::peerScanSet(const std::string& strIp, int iPort)
 			boost::posix_time::ptime	tpNow		= boost::posix_time::second_clock::universal_time();
 			boost::posix_time::ptime	tpNext		= tpNow + boost::posix_time::seconds(iInterval);
 
-			Log(lsINFO) << str(boost::format("Pool: Scan: schedule create: %s %s (next %s, delay=%s)")
-				% mScanIp % mScanPort % tpNext % iInterval);
+			Log(lsINFO) << str(boost::format("Pool: Scan: schedule create: %s %s (next %s, delay=%d)")
+				% mScanIp % mScanPort % tpNext % (tpNext-tpNow).total_seconds());
 
 			db->executeSQL(str(boost::format("UPDATE PeerIps SET ScanNext=%d,ScanInterval=%d WHERE IpPort=%s;")
 				% iToSeconds(tpNext)
@@ -457,10 +465,9 @@ bool ConnectionPool::peerScanSet(const std::string& strIp, int iPort)
 			// Scan connection terminated, already scheduled for retry.
 			boost::posix_time::ptime	tpNow		= boost::posix_time::second_clock::universal_time();
 			boost::posix_time::ptime	tpNext		= ptFromSeconds(db->getInt("ScanNext"));
-			int							iInterval	= (tpNext-tpNow).seconds();
 
-			Log(lsINFO) << str(boost::format("Pool: Scan: schedule exists: %s %s (next %s, delay=%s)")
-				% mScanIp % mScanPort % tpNext % iInterval);
+			Log(lsINFO) << str(boost::format("Pool: Scan: schedule exists: %s %s (next %s, delay=%d)")
+				% mScanIp % mScanPort % tpNext % (tpNext-tpNow).total_seconds());
 		}
 	}
 	else
@@ -531,15 +538,23 @@ void ConnectionPool::peerVerified(Peer::pointer peer)
 {
 	if (mScanning && mScanning == peer)
 	{
+		// Scan completed successfully.
 		std::string	strIp	= peer->getIP();
 		int			iPort	= peer->getPort();
 
 		std::string	strIpPort	= str(boost::format("%s %d") % strIp % iPort);
 
-		Log(lsINFO) << str(boost::format("Pool: Scan: connected: %s %s %s (scan off)") % ADDRESS_SHARED(peer) % strIp % iPort);
+		Log(lsINFO) << str(boost::format("Pool: Scan: connected: %s %s %s (scanned)") % ADDRESS_SHARED(peer) % strIp % iPort);
 
-		// Scan completed successfully.
+		if (peer->getNodePublic() == theApp->getWallet().getNodePublic())
 		{
+			// Talking to ourself.  We will just back off.  This lets us maybe advertise our outside address.
+
+			nothing();	// Do nothing, leave scheduled scanning.
+		}
+		else
+		{
+			// Talking with a different peer.
 			ScopedLock sl(theApp->getWalletDB()->getDBLock());
 			Database *db=theApp->getWalletDB()->getDB();
 
@@ -628,10 +643,10 @@ void ConnectionPool::scanRefresh()
 
 			tpNext		= tpNow + boost::posix_time::seconds(iInterval);
 
-			iInterval	*= 2;
+			Log(lsINFO) << str(boost::format("Pool: Scan: Now: %s %s (next %s, delay=%d)")
+				% mScanIp % mScanPort % tpNext % (tpNext-tpNow).total_seconds());
 
-			Log(lsINFO) << str(boost::format("Pool: Scan: Now: %s %s (next %s, delay=%s)")
-				% mScanIp % mScanPort % tpNext % iInterval);
+			iInterval	*= 2;
 
 			{
 				ScopedLock sl(theApp->getWalletDB()->getDBLock());
@@ -653,8 +668,8 @@ void ConnectionPool::scanRefresh()
 		}
 		else
 		{
-			Log(lsINFO) << str(boost::format("Pool: Scan: Next: %s (next %s, delay=%s)")
-				% strIpPort % tpNext % (tpNext-tpNow).seconds());
+			Log(lsINFO) << str(boost::format("Pool: Scan: Next: %s (next %s, delay=%d)")
+				% strIpPort % tpNext % (tpNext-tpNow).total_seconds());
 
 			mScanTimer.expires_at(tpNext);
 			mScanTimer.async_wait(boost::bind(&ConnectionPool::scanHandler, this, _1));
