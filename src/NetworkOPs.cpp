@@ -575,7 +575,10 @@ void NetworkOPs::endConsensus()
 	std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
 	for (std::vector<Peer::pointer>::const_iterator it = peerList.begin(), end = peerList.end(); it != end; ++it)
 	if (*it && ((*it)->getClosedLedgerHash() == deadLedger))
+	{
+		Log(lsTRACE) << "Killing obsolete peer status";
 		(*it)->cycleStatus();
+	}
 	mConsensus = boost::shared_ptr<LedgerConsensus>();
 }
 

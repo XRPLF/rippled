@@ -857,8 +857,10 @@ void Peer::recvStatus(newcoin::TMStatusChange& packet)
 
 	if (packet.newevent() == newcoin::neLOST_SYNC)
 	{
+		Log(lsTRACE) << "peer has lost sync";
 		mPreviousLedgerHash.zero();
 		mClosedLedgerHash.zero();
+		return;
 	}
 	if (packet.has_ledgerhash() && (packet.ledgerhash().size() == (256 / 8)))
 	{ // a peer has changed ledgers
@@ -866,7 +868,12 @@ void Peer::recvStatus(newcoin::TMStatusChange& packet)
 		mClosedLedgerTime = ptFromSeconds(packet.networktime());
 		Log(lsTRACE) << "peer LCL is " << mClosedLedgerHash.GetHex();
 	}
-	else mClosedLedgerHash.zero();
+	else
+	{
+		Log(lsTRACE) << "peer has no ledger hash";
+		mClosedLedgerHash.zero();
+	}
+
 	if (packet.has_previousledgerhash() && packet.previousledgerhash().size() == (256 / 8))
 	{
 		memcpy(mPreviousLedgerHash.begin(), packet.previousledgerhash().data(), 256 / 8);
