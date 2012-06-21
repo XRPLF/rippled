@@ -381,17 +381,17 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 		{
 			Log(lsDEBUG) << "NOP::CS Dead pointer in peer list";
 		}
-		else
+		else if ((*it)->isConnected())
 		{
 			uint256 peerLedger = (*it)->getClosedLedgerHash();
 			if (!!peerLedger)
 			{
-				// FIXME: If we have this ledger, don't count it if it's too far past its close time
 				ValidationCount& vc = ledgers[peerLedger];
 				if ((vc.nodesUsing == 0) || ((*it)->getNodePublic() > vc.highNode))
 					vc.highNode = (*it)->getNodePublic();
 				++vc.nodesUsing;
 			}
+			else Log(lsTRACE) << "Connected peer announces no LCL";
 		}
 	}
 
