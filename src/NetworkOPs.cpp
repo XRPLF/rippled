@@ -310,6 +310,8 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 	// If full or tracking, check only at wobble time!
 	if (checkLastClosedLedger(peerList))
 	{
+		// FIXME: if connected, go to ledger close process if it's time, marking that we have
+		// the wrong LCL
 		setStateTimer(3);
 		return;
 	}
