@@ -450,8 +450,8 @@ bool ConnectionPool::peerScanSet(const std::string& strIp, int iPort)
 			boost::posix_time::ptime	tpNow		= boost::posix_time::second_clock::universal_time();
 			boost::posix_time::ptime	tpNext		= tpNow + boost::posix_time::seconds(iInterval);
 
-			Log(lsINFO) << str(boost::format("Pool: Scan: schedule create: %s %s (next %s, delay=%s)")
-				% mScanIp % mScanPort % tpNext % (tpNext-tpNow).seconds());
+			Log(lsINFO) << str(boost::format("Pool: Scan: schedule create: %s %s (next %s, delay=%d)")
+				% mScanIp % mScanPort % tpNext % (tpNext-tpNow).total_seconds());
 
 			db->executeSQL(str(boost::format("UPDATE PeerIps SET ScanNext=%d,ScanInterval=%d WHERE IpPort=%s;")
 				% iToSeconds(tpNext)
@@ -466,8 +466,8 @@ bool ConnectionPool::peerScanSet(const std::string& strIp, int iPort)
 			boost::posix_time::ptime	tpNow		= boost::posix_time::second_clock::universal_time();
 			boost::posix_time::ptime	tpNext		= ptFromSeconds(db->getInt("ScanNext"));
 
-			Log(lsINFO) << str(boost::format("Pool: Scan: schedule exists: %s %s (next %s, delay=%s)")
-				% mScanIp % mScanPort % tpNext % (tpNext-tpNow).seconds());
+			Log(lsINFO) << str(boost::format("Pool: Scan: schedule exists: %s %s (next %s, delay=%d)")
+				% mScanIp % mScanPort % tpNext % (tpNext-tpNow).total_seconds());
 		}
 	}
 	else
@@ -643,8 +643,8 @@ void ConnectionPool::scanRefresh()
 
 			tpNext		= tpNow + boost::posix_time::seconds(iInterval);
 
-			Log(lsINFO) << str(boost::format("Pool: Scan: Now: %s %s (next %s, delay=%s)")
-				% mScanIp % mScanPort % tpNext % (tpNext-tpNow).seconds());
+			Log(lsINFO) << str(boost::format("Pool: Scan: Now: %s %s (next %s, delay=%d)")
+				% mScanIp % mScanPort % tpNext % (tpNext-tpNow).total_seconds());
 
 			iInterval	*= 2;
 
@@ -668,8 +668,8 @@ void ConnectionPool::scanRefresh()
 		}
 		else
 		{
-			Log(lsINFO) << str(boost::format("Pool: Scan: Next: %s (next %s, delay=%s)")
-				% strIpPort % tpNext % (tpNext-tpNow).seconds());
+			Log(lsINFO) << str(boost::format("Pool: Scan: Next: %s (next %s, delay=%d)")
+				% strIpPort % tpNext % (tpNext-tpNow).total_seconds());
 
 			mScanTimer.expires_at(tpNext);
 			mScanTimer.async_wait(boost::bind(&ConnectionPool::scanHandler, this, _1));
