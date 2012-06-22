@@ -57,8 +57,13 @@ bool HashedObject::store(HashedObjectType type, uint32 index, const std::vector<
 	sql.append(obj);
 	sql.append(");");
 
+	std::string exists =
+		boost::str(boost::format("SELECT ObjType FROM CommittedObject WHERE Hash = '%s';") % hash.GetHex());
+
 	ScopedLock sl(theApp->getHashNodeDB()->getDBLock());
 	Database* db = theApp->getHashNodeDB()->getDB();
+	if (SQL_EXISTS(db, exists))
+		return false;
 	return db->executeSQL(sql);
 }
 
@@ -73,7 +78,7 @@ bool HashedObject::store() const
 HashedObject::pointer HashedObject::retrieve(const uint256& hash)
 {
 	if (!theApp || !theApp->getHashNodeDB()) return HashedObject::pointer();
-	std::string sql = "SELECT * from CommittedObjects WHERE Hash='";
+	std::string sql = "SELECT * FROM CommittedObjects WHERE Hash='";
 	sql.append(hash.GetHex());
 	sql.append("';");
 
