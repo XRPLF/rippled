@@ -1,3 +1,6 @@
+#ifndef __RPCSERVER__
+#define __RPCSERVER__
+
 #include <boost/array.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
@@ -171,4 +174,7 @@ public:
 
 	void connected();
 };
+
+#endif
+
 // vim:ts=4
