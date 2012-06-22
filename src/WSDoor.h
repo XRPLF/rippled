@@ -10,10 +10,16 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/thread.hpp>
 
+#if 1
+#define WSDOOR_SERVER	server
+#else
+#define WSDOOR_SERVER	server_tls
+#endif
+
 class WSDoor
 {
 private:
-	websocketpp::server_tls*		mEndpoint;
+	websocketpp::WSDOOR_SERVER*		mEndpoint;
 	boost::thread*					mThread;
 
 	void		startListening();

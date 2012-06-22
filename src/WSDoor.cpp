@@ -59,8 +59,12 @@ void WSDoor::startListening()
 
 	SSL_CTX_set_tmp_dh_callback(mCtx->native_handle(), handleTmpDh);
 
-	websocketpp::server_tls::handler::ptr	handler(new WSServerHandler<websocketpp::server_tls>(mCtx));
-	mEndpoint		= new websocketpp::server_tls(handler);
+	websocketpp::WSDOOR_SERVER::handler::ptr	handler(new WSServerHandler<websocketpp::WSDOOR_SERVER>(mCtx));
+
+	mEndpoint		= new websocketpp::WSDOOR_SERVER(handler);
+
+	// mEndpoint->alog().unset_level(websocketpp::log::alevel::ALL);
+	// mEndpoint->elog().unset_level(websocketpp::log::elevel::ALL);
 
 	Log(lsINFO) << "listening>";
 
