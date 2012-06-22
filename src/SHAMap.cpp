@@ -629,6 +629,12 @@ bool SHAMap::fetchNode(const uint256& hash, std::vector<unsigned char>& data)
 	return true;
 }
 
+void SHAMap::armDirty()
+{ // begin saving dirty nodes
+	++mSeq;
+	mDirtyNodes = boost::make_shared< boost::unordered_map<SHAMapNode, SHAMapTreeNode::pointer> >();
+}
+
 int SHAMap::flushDirty(int maxNodes, HashedObjectType t, uint32 seq)
 {
 	int flushed = 0;
@@ -636,37 +642,45 @@ int SHAMap::flushDirty(int maxNodes, HashedObjectType t, uint32 seq)
 
 	if(mDirtyNodes)
 	{
-		while (!mDirtyNodes->empty())
+		HashedObjectBulkWriter bw;
+		boost::unordered_map<SHAMapNode, SHAMapTreeNode::pointer>& dirtyNodes = *mDirtyNodes;
+		boost::unordered_map<SHAMapNode, SHAMapTreeNode::pointer>::iterator it = dirtyNodes.begin();
+		while (it != dirtyNodes.end())
 		{
-			SHAMapTreeNode::pointer& din = mDirtyNodes->begin()->second;
 			s.erase();
-			din->addRaw(s);
-			HashedObject::store(t, seq, s.peekData(), s.getSHA512Half());
-			mDirtyNodes->erase(mDirtyNodes->begin());
-			if(flushed++>=maxNodes) return flushed;
+			it->second->addRaw(s);
+			bw.store(t, seq, s.peekData(), s.getSHA512Half());
+			if (flushed++ >= maxNodes)
+				return flushed;
+			it = dirtyNodes.erase(it);
 		}
 	}
 
 	return flushed;
 }
 
+void SHAMap::disarmDirty()
+{ // stop saving dirty nodes
+	mDirtyNodes = boost::shared_ptr< boost::unordered_map<SHAMapNode, SHAMapTreeNode::pointer> >();
+}
+
 SHAMapTreeNode::pointer SHAMap::getNode(const SHAMapNode& nodeID)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
-	SHAMapTreeNode::pointer node=checkCacheNode(nodeID);
-	if(node) return node;
+	SHAMapTreeNode::pointer node = checkCacheNode(nodeID);
+	if (node) return node;
 
-	node=root;
-	while(nodeID!=*node)
+	node = root;
+	while (nodeID != *node)
 	{
-		int branch=node->selectBranch(nodeID.getNodeID());
-		assert(branch>=0);
-		if( (branch<0) || (node->isEmptyBranch(branch)) )
+		int branch = node->selectBranch(nodeID.getNodeID());
+		assert(branch >= 0);
+		if ((branch < 0) || node->isEmptyBranch(branch))
 			return SHAMapTreeNode::pointer();
 
-		node=getNode(node->getChildNodeID(branch), node->getChildHash(branch), false);
-		if(!node) throw SHAMapException(MissingNode);
+		node = getNode(node->getChildNodeID(branch), node->getChildHash(branch), false);
+		if (!node) throw SHAMapException(MissingNode);
 	}
 	return node;
 }

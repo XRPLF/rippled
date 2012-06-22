@@ -60,14 +60,14 @@ public:
 
 
 private:
+	static uint64 sGenesisClose;
+
 	uint256		mHash, mParentHash, mTransHash, mAccountHash;
 	uint64		mTotCoins;
 	uint64		mCloseTime; // when this ledger closes
 	uint32		mLedgerSeq;
 	uint16		mLedgerInterval;
 	bool		mClosed, mValidHash, mAccepted, mImmutable;
-
-	static uint64 sGenesisClose;
 
 	SHAMap::pointer mTransactionMap, mAccountStateMap;
 
@@ -102,6 +102,8 @@ public:
 	bool isClosed()		{ return mClosed; }
 	bool isAccepted()	{ return mAccepted; }
 	bool isImmutable()	{ return mImmutable; }
+	void armDirty()		{ mTransactionMap->armDirty();		mAccountStateMap->armDirty(); }
+	void disarmDirty()	{ mTransactionMap->disarmDirty();	mAccountStateMap->disarmDirty(); }
 
 	// This ledger has closed, will never be accepted, and is accepting
 	// new transactions to be re-repocessed when do accept a new last-closed ledger

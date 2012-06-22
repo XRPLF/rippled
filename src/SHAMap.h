@@ -244,7 +244,7 @@ private:
 	mutable boost::recursive_mutex mLock;
 	boost::unordered_map<SHAMapNode, SHAMapTreeNode::pointer> mTNByID;
 
-	boost::shared_ptr<std::map<SHAMapNode, SHAMapTreeNode::pointer> > mDirtyNodes;
+	boost::shared_ptr< boost::unordered_map<SHAMapNode, SHAMapTreeNode::pointer> > mDirtyNodes;
 
 	SHAMapTreeNode::pointer root;
 
@@ -329,7 +329,9 @@ public:
 	// return value: true=successfully completed, false=too different
 	bool compare(SHAMap::pointer otherMap, SHAMapDiff& differences, int maxCount);
 
+	void armDirty();
 	int flushDirty(int maxNodes, HashedObjectType t, uint32 seq);
+	void disarmDirty();
 
 	void setSeq(uint32 seq)		{ mSeq = seq; }
 	uint32 getSeq()				{ return mSeq; }
