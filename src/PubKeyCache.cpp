@@ -17,7 +17,7 @@ CKey::pointer PubKeyCache::locate(const NewcoinAddress& id)
 	sql.append(id.humanAccountID());
 	sql.append("';'");
 	std::vector<unsigned char> data;
-	data.reserve(65); // our public keys are actually 33 bytes
+	data.resize(66); // our public keys are actually 33 bytes
 	int pkSize;
 
 	{ // is it in the database
@@ -25,7 +25,7 @@ CKey::pointer PubKeyCache::locate(const NewcoinAddress& id)
 		Database* db=theApp->getTxnDB()->getDB();
 		if(!db->executeSQL(sql) || !db->startIterRows())
 			return CKey::pointer();
-		pkSize=db->getBinary("PubKey", &(data.front()), data.size());
+		pkSize = db->getBinary("PubKey", &(data.front()), data.size());
 		db->endIterRows();
 	}
 	data.resize(pkSize);

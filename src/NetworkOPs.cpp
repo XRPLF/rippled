@@ -308,11 +308,8 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 
 	// FIXME: Don't check unless last closed ledger is at least some seconds old
 	// If full or tracking, check only at wobble time!
-	if (checkLastClosedLedger(peerList))
-	{
-		setStateTimer(3);
-		return;
-	}
+	uint256 networkClosed;
+	bool ledgerChange = checkLastClosedLedger(peerList, networkClosed);
 
 	// WRITEME: Unless we are in omFULL and in the process of doing a consensus,
 	// we must count how many nodes share our LCL, how many nodes disagree with our LCL,
@@ -320,13 +317,13 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 	// there shouldn't be a newer LCL. We need this information to do the next three
 	// tests.
 
-	if (mMode == omCONNECTED)
+	if ((mMode == omCONNECTED) && !ledgerChange)
 	{ // count number of peers that agree with us and UNL nodes whose validations we have for LCL
 		// if the ledger is good enough, go to omTRACKING - TODO
 		setMode(omTRACKING);
 	}
 
-	if (mMode == omTRACKING)
+	if ((mMode == omTRACKING) && !ledgerChange)
 	{
 		// check if the ledger is good enough to go to omFULL
 		// Note: Do not go to omFULL if we don't have the previous ledger
@@ -346,13 +343,13 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 	int secondsToClose = theApp->getMasterLedger().getCurrentLedger()->getCloseTimeNC() -
 		theApp->getOPs().getNetworkTimeNC();
 	if ((!mConsensus) && (secondsToClose < LEDGER_WOBBLE_TIME)) // pre close wobble
-		beginConsensus(theApp->getMasterLedger().getCurrentLedger());
+		beginConsensus(networkClosed, theApp->getMasterLedger().getCurrentLedger());
 	if (mConsensus)
 		setStateTimer(mConsensus->timerEntry());
 	else setStateTimer(4);
 }
 
-bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerList)
+bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerList, uint256& networkClosed)
 { // Returns true if there's an *abnormal* ledger issue, normal changing in TRACKING mode should return false
 	// Do we have sufficient validations for our last closed ledger? Or do sufficient nodes
 	// agree? And do we have no better ledger available?
@@ -360,6 +357,7 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 
 	// FIXME: We may have a ledger with many recent validations but that no directly-connected
 	// node is using. THis is kind of fundamental.
+	Log(lsTRACE) << "NetworkOPs::checkLastClosedLedger";
 
 	boost::unordered_map<uint256, ValidationCount> ledgers;
 
@@ -369,8 +367,8 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 			ledgers[it->first].trustedValidations += it->second;
 	}
 
-	Ledger::pointer currentClosed = mLedgerMaster->getClosedLedger();
-	uint256 closedLedger = currentClosed->getHash();
+	Ledger::pointer ourClosed = mLedgerMaster->getClosedLedger();
+	uint256 closedLedger = ourClosed->getHash();
 	ValidationCount& ourVC = ledgers[closedLedger];
 	++ourVC.nodesUsing;
 	ourVC.highNode = theApp->getWallet().getNodePublic();
@@ -391,7 +389,7 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 					vc.highNode = (*it)->getNodePublic();
 				++vc.nodesUsing;
 			}
-			else Log(lsTRACE) << "Connected peer announces no LCL";
+			else Log(lsTRACE) << "Connected peer announces no LCL " << (*it)->getIP();
 		}
 	}
 
@@ -411,14 +409,16 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 			switchLedgers = true;
 		}
 	}
+	networkClosed = closedLedger;
 
 	if (!switchLedgers)
 		return false;
 
 	Log(lsWARNING) << "We are not running on the consensus ledger";
-	Log(lsINFO) << "Our LCL " << currentClosed->getHash().GetHex();
+	Log(lsINFO) << "Our LCL " << ourClosed->getHash().GetHex();
 	Log(lsINFO) << "Net LCL " << closedLedger.GetHex();
 	if ((mMode == omTRACKING) || (mMode == omFULL)) setMode(omCONNECTED);
+
 	Ledger::pointer consensus = mLedgerMaster->getLedgerByHash(closedLedger);
 	if (!consensus)
 	{
@@ -432,13 +432,26 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 		}
 		if (!acq->isComplete())
 		{ // add more peers
+			//JED: seems like you need to do something here so it knows in beginConsensus that it isn't on the the right ledger
+			// switch to an empty ledger so we won't keep going
+			//Ledger::pointer emptyLedger(new Ledger());
+			//switchLastClosedLedger(emptyLedger);
+
+			// JED: just ask everyone
+			std::vector<Peer::pointer> peers=theApp->getConnectionPool().getPeerVector();
+			for(int n=0; n<peers.size(); n++)
+			{
+				if(peers[n]->isConnected()) acq->peerHas(peers[n]);
+			}
+
+			/* JED  this wasn't adding any peers. This is also an optimization so we can do this later
 			// FIXME: A peer may not have a ledger just because it accepts it as the network's consensus
 			for (std::vector<Peer::pointer>::const_iterator it = peerList.begin(), end = peerList.end();
 					it != end; ++it)
 			{
 				if ((*it)->getClosedLedgerHash() == closedLedger)
 					acq->peerHas(*it);
-			}
+			}*/
 			return true;
 		}
 		consensus = acq->getLedger();
@@ -474,7 +487,7 @@ void NetworkOPs::switchLastClosedLedger(Ledger::pointer newLedger)
 	theApp->getConnectionPool().relayMessage(NULL, packet);
 }
 
-int NetworkOPs::beginConsensus(Ledger::pointer closingLedger)
+int NetworkOPs::beginConsensus(const uint256& networkClosed, Ledger::pointer closingLedger)
 {
 	Log(lsINFO) << "Ledger close time for ledger " << closingLedger->getLedgerSeq() ;
 	Log(lsINFO) << " LCL is " << closingLedger->getParentHash().GetHex();
@@ -493,7 +506,7 @@ int NetworkOPs::beginConsensus(Ledger::pointer closingLedger)
 	if (!!mConsensus) mConsensus->abort();
 	prevLedger->setImmutable();
 	mConsensus = boost::make_shared<LedgerConsensus>(
-		prevLedger->getHash(), // FIXME: Only do this if the previous ledger is the consensus previous ledger
+		networkClosed,
 		prevLedger, theApp->getMasterLedger().getCurrentLedger()->getCloseTimeNC());
 
 	Log(lsDEBUG) << "Pre-close time, initiating consensus engine";
@@ -504,6 +517,8 @@ int NetworkOPs::beginConsensus(Ledger::pointer closingLedger)
 bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash,
 	const std::string& pubKey, const std::string& signature)
 {
+	// JED: does mConsensus need to be locked?
+
 	// XXX Validate key.
 	// XXX Take a vuc for pubkey.
 	NewcoinAddress	naPeerPublic	= NewcoinAddress::createNodePublic(strCopy(pubKey));
@@ -520,11 +535,8 @@ bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash,
 		return false;
 	}
 
-	boost::shared_ptr<LedgerConsensus> consensus = mConsensus;
-	if (!consensus) return false;
-
 	LedgerProposal::pointer proposal =
-		boost::make_shared<LedgerProposal>(consensus->getLCL(), proposeSeq, proposeHash, naPeerPublic);
+		boost::make_shared<LedgerProposal>(mConsensus->getLCL(), proposeSeq, proposeHash, naPeerPublic);
 	if (!proposal->checkSign(signature))
 	{ // Note that if the LCL is different, the signature check will fail
 		Log(lsWARNING) << "Ledger proposal fails signature check";
@@ -540,7 +552,8 @@ bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash,
 		return true;
 	}
 
-	return consensus->peerPosition(proposal);
+	return mConsensus->peerPosition(proposal);
+	
 }
 
 SHAMap::pointer NetworkOPs::getTXMap(const uint256& hash)
@@ -626,6 +639,8 @@ std::vector< std::pair<uint32, uint256> >
 
 bool NetworkOPs::recvValidation(SerializedValidation::pointer val)
 {
+	Log(lsINFO) << "recvValidation " << val->getLedgerHash().GetHex();
+
 	return theApp->getValidations().addValidation(val);
 }
 

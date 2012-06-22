@@ -323,20 +323,15 @@ void LedgerConsensus::statusChange(newcoin::NodeEvent event, Ledger::pointer led
 { // Send a node status change message to our peers
 	newcoin::TMStatusChange s;
 	if (!mHaveCorrectLCL)
-	{
-		Log(lsTRACE) << "Telling peers we have lost sync";
 		s.set_newevent(newcoin::neLOST_SYNC);
-	}
 	else
-	{
 		s.set_newevent(event);
-		s.set_ledgerseq(ledger->getLedgerSeq());
-		s.set_networktime(theApp->getOPs().getNetworkTimeNC());
-		uint256 hash = ledger->getParentHash();
-		s.set_previousledgerhash(hash.begin(), hash.size());
-		hash = ledger->getHash();
-		s.set_ledgerhash(hash.begin(), hash.size());
-	}
+	s.set_ledgerseq(ledger->getLedgerSeq());
+	s.set_networktime(theApp->getOPs().getNetworkTimeNC());
+	uint256 hash = ledger->getParentHash();
+	s.set_previousledgerhash(hash.begin(), hash.size());
+	hash = ledger->getHash();
+	s.set_ledgerhash(hash.begin(), hash.size());
 	PackedMessage::pointer packet = boost::make_shared<PackedMessage>(s, newcoin::mtSTATUS_CHANGE);
 	theApp->getConnectionPool().relayMessage(NULL, packet);
 	Log(lsINFO) << "send status change to peer";
@@ -418,6 +413,20 @@ int LedgerConsensus::stateAccepted(int secondsSinceClose)
 
 int LedgerConsensus::timerEntry()
 {
+	if (!mHaveCorrectLCL)
+	{
+		Ledger::pointer consensus = theApp->getMasterLedger().getLedgerByHash(mPrevLedgerHash);
+		if (consensus)
+		{
+			Log(lsINFO) << "We have acquired the consensus ledger";
+			if (theApp->getMasterLedger().getClosedLedger()->getHash() != mPrevLedgerHash)
+				theApp->getOPs().switchLastClosedLedger(consensus);
+			mPreviousLedger = consensus;
+			mHaveCorrectLCL = true;
+			// FIXME: We need some kind of idea what the consensus transaction set is
+		}
+	}
+
 	int sinceClose = theApp->getOPs().getNetworkTimeNC() - mCloseTime;
 
 	switch (mState)
@@ -841,6 +850,7 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 	}
 	else Log(lsWARNING) << "Not validating";
 	statusChange(newcoin::neACCEPTED_LEDGER, newLCL);
+	// FIXME: If necessary, change state to TRACKING/FULL
 }
 
 void LedgerConsensus::endConsensus()
