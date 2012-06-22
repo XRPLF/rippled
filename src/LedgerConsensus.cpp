@@ -16,8 +16,6 @@
 
 // #define LC_DEBUG
 
-// TODO: If we don't have the previousLCL, check if we got it. If so, change modes
-
 TransactionAcquire::TransactionAcquire(const uint256& hash)
 	: PeerSet(hash, 1), mFilter(&theApp->getNodeCache()), mHaveRoot(false)
 {
@@ -155,24 +153,26 @@ void LCTransaction::setVote(const uint160& peer, bool votesYes)
 	}
 }
 
-bool LCTransaction::updatePosition(int seconds)
+bool LCTransaction::updatePosition(int seconds, bool proposing)
 { // this many seconds after close, should our position change
 	if (mOurPosition && (mNays == 0))
 		return false;
 	if (!mOurPosition && (mYays == 0))
 		return false;
 
-	// This is basically the percentage of nodes voting 'yes' (including us)
-	int weight = (mYays * 100 + (mOurPosition ? 100 : 0)) / (mNays + mYays + 1);
-
-	// FIXME: must special case when we're muted because otherwise, the two server case breaks.
-	// They accept their transacstions, we don't, no consensus.
-
-	// To prevent avalanche stalls, we increase the needed weight slightly over time
 	bool newPosition;
-	if (seconds <= LEDGER_ACCEL_CONVERGE) newPosition = weight >  AV_MIN_CONSENSUS;
-	else if (seconds >= LEDGER_CONVERGE) newPosition = weight > AV_AVG_CONSENSUS;
-	else newPosition = weight > AV_MAX_CONSENSUS;
+	if (proposing) // give ourselves full weight
+	{
+		// This is basically the percentage of nodes voting 'yes' (including us)
+		int weight = (mYays * 100 + (mOurPosition ? 100 : 0)) / (mNays + mYays + 1);
+
+		// To prevent avalanche stalls, we increase the needed weight slightly over time
+		if (seconds <= LEDGER_ACCEL_CONVERGE) newPosition = weight >  AV_MIN_CONSENSUS;
+		else if (seconds >= LEDGER_CONVERGE) newPosition = weight > AV_AVG_CONSENSUS;
+		else newPosition = weight > AV_MAX_CONSENSUS;
+	}
+	else // don't let us outweight a proposing node, just recognize consensus
+		newPosition = mYays > mNays;
 
 	if (newPosition == mOurPosition)
 	{
@@ -456,7 +456,7 @@ bool LedgerConsensus::updateOurPositions(int sinceClose)
 	for(boost::unordered_map<uint256, LCTransaction::pointer>::iterator it = mDisputes.begin(),
 			end = mDisputes.end(); it != end; ++it)
 	{
-		if (it->second->updatePosition(sinceClose))
+		if (it->second->updatePosition(sinceClose, mProposing))
 		{
 			if (!changes)
 			{

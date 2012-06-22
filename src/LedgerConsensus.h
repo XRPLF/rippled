@@ -63,7 +63,7 @@ public:
 
 	void setVote(const uint160& peer, bool votesYes);
 
-	bool updatePosition(int timePassed);
+	bool updatePosition(int timePassed, bool proposing);
 	int getAgreeLevel();
 };
 
