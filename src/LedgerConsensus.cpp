@@ -165,6 +165,9 @@ bool LCTransaction::updatePosition(int seconds)
 	// This is basically the percentage of nodes voting 'yes' (including us)
 	int weight = (mYays * 100 + (mOurPosition ? 100 : 0)) / (mNays + mYays + 1);
 
+	// FIXME: must special case when we're muted because otherwise, the two server case breaks.
+	// They accept their transacstions, we don't, no consensus.
+
 	// To prevent avalanche stalls, we increase the needed weight slightly over time
 	bool newPosition;
 	if (seconds <= LEDGER_ACCEL_CONVERGE) newPosition = weight >  AV_MIN_CONSENSUS;
