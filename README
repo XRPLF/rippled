@@ -1,0 +1,6 @@
+Dependancies:
+- boost 1.47
+- Google protocol buffers 2.4.1
+- openssl
+- mysql
+- websocketpp
