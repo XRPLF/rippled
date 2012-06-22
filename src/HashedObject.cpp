@@ -80,8 +80,6 @@ HashedObject::pointer HashedObject::retrieve(const uint256& hash)
 	std::string type;
 	uint32 index;
 	std::vector<unsigned char> data;
-	data.reserve(8192);
-
 	{
 		ScopedLock sl(theApp->getHashNodeDB()->getDBLock());
 		Database* db = theApp->getHashNodeDB()->getDB();
