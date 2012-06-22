@@ -119,4 +119,14 @@ HashedObject::pointer HashedObject::retrieve(const uint256& hash)
 	return obj;
 }
 
+HashedObjectBulkWriter::HashedObjectBulkWriter() : sl(theApp->getHashNodeDB()->getDBLock())
+{
+	theApp->getHashNodeDB()->getDB()->executeSQL("BEGIN TRANSACTION;");
+}
+
+HashedObjectBulkWriter::~HashedObjectBulkWriter()
+{
+	theApp->getHashNodeDB()->getDB()->executeSQL("END TRANSACTION;");
+}
+
 // vim:ts=4
