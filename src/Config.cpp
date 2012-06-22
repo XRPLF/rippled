@@ -118,6 +118,7 @@ void Config::setup(const std::string& strConf)
 
 	PEER_PORT				= SYSTEM_PEER_PORT;
 	RPC_PORT				= 5001;
+	WEBSOCKET_PORT			= SYSTEM_WEBSOCKET_PORT;
 	NUMBER_CONNECTIONS		= 30;
 
 	// a new ledger every minute

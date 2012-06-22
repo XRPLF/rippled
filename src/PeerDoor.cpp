@@ -49,7 +49,7 @@ void PeerDoor::startListening()
 void PeerDoor::handleConnect(Peer::pointer new_connection,
 	const boost::system::error_code& error)
 {
-	if(!error)
+	if (!error)
 	{
 		new_connection->connected(error);
 	}
@@ -57,4 +57,5 @@ void PeerDoor::handleConnect(Peer::pointer new_connection,
 
 	startListening();
 }
+
 // vim:ts=4

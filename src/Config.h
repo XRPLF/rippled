@@ -22,7 +22,9 @@
 
 #define DEFAULT_VALIDATORS_SITE		"redstem.com"
 #define VALIDATORS_FILE_NAME		"validators.txt"
-const int SYSTEM_PEER_PORT = 6561;
+
+const int SYSTEM_PEER_PORT			= 6561;
+const int SYSTEM_WEBSOCKET_PORT		= 6562;
 
 // Allow anonymous DH.
 #define DEFAULT_PEER_SSL_CIPHER_LIST	"ALL:!LOW:!EXP:!MD5:@STRENGTH"
@@ -76,7 +78,7 @@ public:
 	int							PEER_START_MAX;
 	int							PEER_CONNECT_LOW_WATER;
 
-	// Client networking parameters
+	// Websocket networking parameters
 	std::string					WEBSOCKET_IP;
 	int							WEBSOCKET_PORT;
 
@@ -96,7 +98,7 @@ public:
 	uint64						FEE_NICKNAME_CREATE;	// Fee to create a nickname.
 
 	// Client behavior
-	int							ACCOUNT_PROBE_MAX;	// How far to scan for accounts.
+	int							ACCOUNT_PROBE_MAX;		// How far to scan for accounts.
 
 	void setup(const std::string& strConf);
 	void load();
