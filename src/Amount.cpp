@@ -594,17 +594,13 @@ STAmount operator-(const STAmount& v1, const STAmount& v2)
 		return STAmount(v1.name, v1.mCurrency, -fv, ov1, true);
 }
 
-STAmount divide(const STAmount& num, const STAmount& den, const uint160& currencyOut)
+STAmount STAmount::divide(const STAmount& num, const STAmount& den, const uint160& currencyOut)
 {
 	if (den.isZero()) throw std::runtime_error("division by zero");
 	if (num.isZero()) return STAmount(currencyOut);
 
 	uint64 numVal = num.mValue, denVal = den.mValue;
 	int numOffset = num.mOffset, denOffset = den.mOffset;
-
-	int finOffset = numOffset - denOffset;
-	if ((finOffset > 80) || (finOffset < 22))
-		throw std::runtime_error("division produces out of range result");
 
 	if (num.mIsNative)
 		while (numVal < STAmount::cMinValue)
@@ -620,6 +616,10 @@ STAmount divide(const STAmount& num, const STAmount& den, const uint160& currenc
 			--denOffset;
 		}
 
+	int finOffset = numOffset - denOffset - 16;
+	if ((finOffset > cMaxOffset) || (finOffset < cMinOffset))
+		throw std::runtime_error("division produces out of range result");
+
 	// Compute (numerator * 10^16) / denominator
 	CBigNum v;
 	if ((BN_add_word(&v, numVal) != 1) ||
@@ -633,11 +633,11 @@ STAmount divide(const STAmount& num, const STAmount& den, const uint160& currenc
 	assert(BN_num_bytes(&v) <= 64);
 
 	if (num.mIsNegative != den.mIsNegative)
-		return -STAmount(currencyOut, v.getulong(), numOffset - denOffset - 16);
-	else return STAmount(currencyOut, v.getulong(), numOffset - denOffset - 16);
+		return -STAmount(currencyOut, v.getulong(), finOffset);
+	else return STAmount(currencyOut, v.getulong(), finOffset);
 }
 
-STAmount multiply(const STAmount& v1, const STAmount& v2, const uint160& currencyOut)
+STAmount STAmount::multiply(const STAmount& v1, const STAmount& v2, const uint160& currencyOut)
 {
 	if (v1.isZero() || v2.isZero())
 		return STAmount(currencyOut);
@@ -699,7 +699,7 @@ STAmount multiply(const STAmount& v1, const STAmount& v2, const uint160& currenc
 	else return STAmount(currencyOut, v.getulong(), offset1 + offset2 + 14);
 }
 
-uint64 getRate(const STAmount& offerOut, const STAmount& offerIn)
+uint64 STAmount::getRate(const STAmount& offerOut, const STAmount& offerIn)
 { // Convert an offer into an index amount so they sort (lower is better)
 	// offerOut = how much comes out of the offer, from the offeror to the taker
 	// offerIn = how much goes into the offer, from the taker to the offeror
@@ -711,7 +711,7 @@ uint64 getRate(const STAmount& offerOut, const STAmount& offerIn)
 	return (ret << (64 - 8)) | r.getMantissa();
 }
 
-STAmount getClaimed(STAmount& offerOut, STAmount& offerIn, STAmount& paid)
+STAmount STAmount::getClaimed(STAmount& offerOut, STAmount& offerIn, STAmount& paid)
 { // if someone is offering (offerOut) for (offerIn), and I pay (paid), how much do I get?
 
 	offerIn.throwComparable(paid);
@@ -748,7 +748,7 @@ STAmount getClaimed(STAmount& offerOut, STAmount& offerIn, STAmount& paid)
 	return ret;
 }
 
-STAmount getNeeded(const STAmount& offerOut, const STAmount& offerIn, const STAmount& needed)
+STAmount STAmount::getNeeded(const STAmount& offerOut, const STAmount& offerIn, const STAmount& needed)
 { // Someone wants to get (needed) out of the offer, how much should they pay in?
 	if (offerOut.isZero()) return STAmount(offerIn.getCurrency());
 	if (needed >= offerOut) return needed;
@@ -756,7 +756,7 @@ STAmount getNeeded(const STAmount& offerOut, const STAmount& offerIn, const STAm
 	return (ret > offerIn) ? offerIn : ret;
 }
 
-static uint64 muldiv(uint64 a, uint64 b, uint64 c)
+uint64 STAmount::muldiv(uint64 a, uint64 b, uint64 c)
 { // computes (a*b)/c rounding up - supports values up to 10^18
 	if (c == 0) throw std::runtime_error("underflow");
 	if ((a == 0) || (b == 0)) return 0;
@@ -769,12 +769,12 @@ static uint64 muldiv(uint64 a, uint64 b, uint64 c)
 	return v.getulong();
 }
 
-uint64 convertToDisplayAmount(const STAmount& internalAmount, uint64 totalNow, uint64 totalInit)
+uint64 STAmount::convertToDisplayAmount(const STAmount& internalAmount, uint64 totalNow, uint64 totalInit)
 { // Convert an internal ledger/account quantity of native currency to a display amount
 	return muldiv(internalAmount.getNValue(), totalInit, totalNow);
 }
 
-STAmount convertToInternalAmount(uint64 displayAmount, uint64 totalNow, uint64 totalInit,
+STAmount STAmount::convertToInternalAmount(uint64 displayAmount, uint64 totalNow, uint64 totalInit,
 	const char *name)
 { // Convert a display/request currency amount to an internal amount
 	return STAmount(name, muldiv(displayAmount, totalNow, totalInit));
@@ -968,6 +968,31 @@ BOOST_AUTO_TEST_CASE( CustomCurrency_test )
 	if (STAmount(currency,31,-1).getText() != "3.1") BOOST_FAIL("STAmount fail");
 	if (STAmount(currency,31,-2).getText() != "0.31") BOOST_FAIL("STAmount fail");
 	BOOST_TEST_MESSAGE("Amount CC Complete");
+}
+
+BOOST_AUTO_TEST_CASE( CurrencyMulDivTests )
+{
+	// Test currency multiplication and division operations such as
+	// convertToDisplayAmount, convertToInternalAmount, getRate, getClaimed, and getNeeded
+
+	uint160 c(1);
+	if (STAmount::getRate(STAmount(1), STAmount(10)) != (((100ul-14)<<(64-8))|1000000000000000ul))
+		BOOST_FAIL("STAmount getrate fail");
+	if (STAmount::getRate(STAmount(10), STAmount(1)) != (((100ul-16)<<(64-8))|1000000000000000ul))
+		BOOST_FAIL("STAmount getrate fail");
+	if (STAmount::getRate(STAmount(c, 1), STAmount(c, 10)) != (((100ul-14)<<(64-8))|1000000000000000ul))
+		BOOST_FAIL("STAmount getrate fail");
+	if (STAmount::getRate(STAmount(c, 10), STAmount(c, 1)) != (((100ul-16)<<(64-8))|1000000000000000ul))
+		BOOST_FAIL("STAmount getrate fail");
+	if (STAmount::getRate(STAmount(c, 1), STAmount(10)) != (((100ul-14)<<(64-8))|1000000000000000ul))
+		BOOST_FAIL("STAmount getrate fail");
+	if (STAmount::getRate(STAmount(c, 10), STAmount(1)) != (((100ul-16)<<(64-8))|1000000000000000ul))
+		BOOST_FAIL("STAmount getrate fail");
+	if (STAmount::getRate(STAmount(1), STAmount(c, 10)) != (((100ul-14)<<(64-8))|1000000000000000ul))
+		BOOST_FAIL("STAmount getrate fail");
+	if (STAmount::getRate(STAmount(10), STAmount(c, 1)) != (((100ul-16)<<(64-8))|1000000000000000ul))
+		BOOST_FAIL("STAmount getrate fail");
+
 }
 
 BOOST_AUTO_TEST_SUITE_END()

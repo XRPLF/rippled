@@ -231,6 +231,7 @@ protected:
 	{ ; }
 
 	uint64 toUInt64() const;
+	static uint64 muldiv(uint64, uint64, uint64);
 
 public:
 	STAmount(uint64 v = 0, bool isNeg = false) : mValue(v), mOffset(0), mIsNative(true), mIsNegative(isNeg)
@@ -315,22 +316,22 @@ public:
 	friend STAmount operator+(const STAmount& v1, const STAmount& v2);
 	friend STAmount operator-(const STAmount& v1, const STAmount& v2);
 
-	friend STAmount divide(const STAmount& v1, const STAmount& v2, const uint160& currencyOut);
-	friend STAmount multiply(const STAmount& v1, const STAmount& v2, const uint160& currencyOut);
+	static STAmount divide(const STAmount& v1, const STAmount& v2, const uint160& currencyOut);
+	static STAmount multiply(const STAmount& v1, const STAmount& v2, const uint160& currencyOut);
 
 	// Someone is offering X for Y, what is the rate?
-	friend uint64 getRate(const STAmount& offerOut, const STAmount& offerIn);
+	static uint64 getRate(const STAmount& offerOut, const STAmount& offerIn);
 
 	// Someone is offering X for Y, I try to pay Z, how much do I get?
 	// And what's left of the offer? And how much do I actually pay?
-	friend STAmount getClaimed(STAmount& offerOut, STAmount& offerIn, STAmount& paid);
+	static STAmount getClaimed(STAmount& offerOut, STAmount& offerIn, STAmount& paid);
 
 	// Someone is offering X for Y, I need Z, how much do I pay
-	friend STAmount getNeeded(const STAmount& offerOut, const STAmount& offerIn, const STAmount& needed);
+	static STAmount getNeeded(const STAmount& offerOut, const STAmount& offerIn, const STAmount& needed);
 
 	// Native currency conversions, to/from display format
-	friend uint64 convertToDisplayAmount(const STAmount& internalAmount, uint64 totalNow, uint64 totalInit);
-	friend STAmount convertToInternalAmount(uint64 displayAmount, uint64 totalNow, uint64 totalInit,
+	static uint64 convertToDisplayAmount(const STAmount& internalAmount, uint64 totalNow, uint64 totalInit);
+	static STAmount convertToInternalAmount(uint64 displayAmount, uint64 totalNow, uint64 totalInit,
 		const char* name = NULL);
 
 	static STAmount deserialize(SerializerIterator&);
