@@ -2,7 +2,6 @@
 #define __SCOPEDLOCKHOLDER__
 
 #include <boost/thread/recursive_mutex.hpp>
-#include <boost/interprocess/sync/scoped_lock.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/ref.hpp>
@@ -13,11 +12,11 @@
 class ScopedLock
 {
 protected:
-	mutable boost::shared_ptr<boost::interprocess::scoped_lock<boost::recursive_mutex> > mHolder;
+	mutable boost::shared_ptr<boost::recursive_mutex::scoped_lock> mHolder;
 
 public:
 	ScopedLock(boost::recursive_mutex& mutex) :
-		mHolder(boost::make_shared<boost::interprocess::scoped_lock<boost::recursive_mutex> >(boost::ref(mutex)))
+		mHolder(boost::make_shared<boost::recursive_mutex::scoped_lock>(boost::ref(mutex)))
 	{ ;	}
 	void lock() const
 	{

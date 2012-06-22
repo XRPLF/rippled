@@ -20,11 +20,8 @@
 
 Ledger::Ledger(const NewcoinAddress& masterID, uint64 startAmount) : mTotCoins(startAmount),
 	mCloseTime(0), mLedgerSeq(0), mLedgerInterval(LEDGER_INTERVAL), mClosed(false), mValidHash(false),
-	mAccepted(false), mImmutable(false)
+	mAccepted(false), mImmutable(false), mTransactionMap(new SHAMap()), mAccountStateMap(new SHAMap())
 {
-	mTransactionMap = boost::make_shared<SHAMap>();
-	mAccountStateMap = boost::make_shared<SHAMap>();
-
 	// special case: put coins in root account
 	AccountState::pointer startAccount = boost::make_shared<AccountState>(masterID);
 	startAccount->peekSLE().setIFieldAmount(sfBalance, startAmount);
@@ -263,10 +260,11 @@ void Ledger::saveAcceptedLedger(Ledger::pointer ledger)
 	theApp->getLedgerDB()->getDB()->executeSQL(sql);
 
 	// write out dirty nodes
-	while(ledger->mTransactionMap->flushDirty(64, TRANSACTION_NODE, ledger->mLedgerSeq))
+	while(ledger->mTransactionMap->flushDirty(256, TRANSACTION_NODE, ledger->mLedgerSeq))
 	{ ; }
-	while(ledger->mAccountStateMap->flushDirty(64, ACCOUNT_NODE, ledger->mLedgerSeq))
+	while(ledger->mAccountStateMap->flushDirty(256, ACCOUNT_NODE, ledger->mLedgerSeq))
 	{ ; }
+	ledger->disarmDirty();
 
 	SHAMap& txSet = *ledger->peekTransactionMap();
 	Database *db = theApp->getTxnDB()->getDB();
