@@ -137,7 +137,7 @@ public:
 	int startup();
 
 	Ledger::pointer peekPreviousLedger()	{ return mPreviousLedger; }
-	uint256 getLCL()						{ return mPreviousLedger->getHash(); }
+	uint256 getLCL()						{ return mPrevLedgerHash; }
 
 	SHAMap::pointer getTransactionTree(const uint256& hash, bool doAcquire);
 	TransactionAcquire::pointer getAcquiring(const uint256& hash);

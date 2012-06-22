@@ -413,6 +413,20 @@ int LedgerConsensus::stateAccepted(int secondsSinceClose)
 
 int LedgerConsensus::timerEntry()
 {
+	if (!mHaveCorrectLCL)
+	{
+		Ledger::pointer consensus = theApp->getMasterLedger().getLedgerByHash(mPrevLedgerHash);
+		if (consensus)
+		{
+			Log(lsINFO) << "We have acquired the conensus ledger";
+			if (theApp->getMasterLedger().getClosedLedger()->getHash() != mPrevLedgerHash)
+				theApp->getOPs().switchLastClosedLedger(consensus);
+			mPreviousLedger = consensus;
+			mHaveCorrectLCL = true;
+			// FIXME: We need some kind of idea what the consensus transaction set is
+		}
+	}
+
 	int sinceClose = theApp->getOPs().getNetworkTimeNC() - mCloseTime;
 
 	switch (mState)
@@ -836,6 +850,7 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 	}
 	else Log(lsWARNING) << "Not validating";
 	statusChange(newcoin::neACCEPTED_LEDGER, newLCL);
+	// FIXME: If necessary, change state to TRACKING/FULL
 }
 
 void LedgerConsensus::endConsensus()

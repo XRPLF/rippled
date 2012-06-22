@@ -124,8 +124,8 @@ public:
 	// network state machine
 	void checkState(const boost::system::error_code& result);
 	void switchLastClosedLedger(Ledger::pointer newLedger); // Used for the "jump" case
-	bool checkLastClosedLedger(const std::vector<Peer::pointer> &);
-	int beginConsensus(Ledger::pointer closingLedger);
+	bool checkLastClosedLedger(const std::vector<Peer::pointer>&, uint256& networkClosed);
+	int beginConsensus(const uint256& networkClosed, Ledger::pointer closingLedger);
 	void endConsensus();
 	void setStateTimer(int seconds);
 	Json::Value getServerInfo();
