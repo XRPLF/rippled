@@ -22,6 +22,7 @@ public:
 
 		// Misc failure
 		rpcLOAD_FAILED,
+		rpcNO_PERMISSION,
 
 		// Networking
 		rpcNO_CLOSED,
@@ -86,6 +87,9 @@ private:
 
 	HttpRequest mIncomingRequest;
 	HttpRequestParser mRequestParser;
+
+	enum { GUEST, USER, ADMIN };
+	int mRole;
 
 	RPCServer(boost::asio::io_service& io_service, NetworkOPs* nopNetwork);
 
@@ -158,6 +162,8 @@ private:
 	Json::Value doWalletSeed(Json::Value& params);
 	Json::Value doWalletUnlock(Json::Value& params);
 	Json::Value doWalletVerify(Json::Value& params);
+
+	Json::Value doLogin(Json::Value& params);
 
 public:
 	typedef boost::shared_ptr<RPCServer> pointer;

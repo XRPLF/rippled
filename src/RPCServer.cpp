@@ -28,6 +28,7 @@
 RPCServer::RPCServer(boost::asio::io_service& io_service , NetworkOPs* nopNetwork)
 	: mNetOps(nopNetwork), mSocket(io_service)
 {
+	mRole=GUEST;
 }
 
 Json::Value RPCServer::RPCError(int iError)
@@ -72,6 +73,8 @@ Json::Value RPCServer::RPCError(int iError)
 		{ rpcUNKNOWN_COMMAND,	"unknownCmd",		"Unknown command." },
 		{ rpcWRONG_PASSWORD,	"wrongPassword",	"Wrong password." },
 		{ rpcWRONG_SEED,		"wrongSeed",		"The regular key does not point as the master key." },
+		{ rpcNO_PERMISSION,		"noPermission",		"You don't have permission for this command." },
+		
 	};
 
 	int		i;
@@ -94,6 +97,8 @@ Json::Value RPCServer::RPCError(int iError)
 void RPCServer::connected()
 {
 	//std::cout << "RPC request" << std::endl;
+	if(mSocket.remote_endpoint().address().to_string()=="127.0.0.1") mRole=ADMIN;
+	else mRole=GUEST;
 
 	mSocket.async_read_some(boost::asio::buffer(mReadBuffer),
 		boost::bind(&RPCServer::handle_read, shared_from_this(),
@@ -1960,10 +1965,29 @@ Json::Value RPCServer::doUnlScore(Json::Value& params)
 	return "scoring requested";
 }
 
-Json::Value RPCServer::doStop(Json::Value& params) {
+Json::Value RPCServer::doStop(Json::Value& params) 
+{
 	theApp->stop();
 
 	return SYSTEM_NAME " server stopping";
+}
+
+// TODO: for now this simply checks if this is the admin account
+// TODO: need to prevent them hammering this over and over
+// TODO: maybe a better way is only allow admin from local host
+Json::Value RPCServer::doLogin(Json::Value& params)
+{
+	std::string	username		= params[0u].asString();
+	std::string	password		= params[1u].asString();
+
+	if(username==theConfig.RPC_USER && password==theConfig.RPC_PASSWORD)
+	{
+		//mRole=ADMIN;
+		return "logged in";
+	}else
+	{
+		return "nope";
+	}
 }
 
 Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params)
@@ -1975,48 +1999,51 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 		doFuncPtr	dfpFunc;
 		int			iMinParams;
 		int			iMaxParams;
+		bool		mAdminRequired;
 		unsigned int	iOptions;
 	} commandsA[] = {
-		{	"account_email_set",	&RPCServer::doAccountEmailSet,		2, 3, optCurrent },
-		{	"account_info",			&RPCServer::doAccountInfo,			1, 2, optCurrent },
-		{	"account_lines",		&RPCServer::doAccountLines,			1, 2, optCurrent|optClosed },
-		{	"account_message_set",	&RPCServer::doAccountMessageSet,	3, 3, optCurrent },
-		{	"account_tx",			&RPCServer::doAccountTransactions,	2, 3, optNetwork },
-		{	"account_wallet_set",	&RPCServer::doAccountWalletSet,		2, 3, optCurrent },
-		{	"connect",				&RPCServer::doConnect,				1, 2,  },
-		{	"credit_set",			&RPCServer::doCreditSet,			4, 6, optCurrent },
-		{	"data_delete",			&RPCServer::doDataDelete,			1, 1,  },
-		{	"data_fetch",			&RPCServer::doDataFetch,			1, 1,  },
-		{	"data_store",			&RPCServer::doDataStore,			2, 2,  },
-		{	"ledger",				&RPCServer::doLedger,				0, 2, optNetwork },
-		{	"nickname_info",		&RPCServer::doNicknameInfo,			1, 1, optCurrent },
-		{	"nickname_set",			&RPCServer::doNicknameSet,			2, 3, optCurrent },
-		{	"password_fund",		&RPCServer::doPasswordFund,			2, 3, optCurrent },
-		{	"password_set",			&RPCServer::doPasswordSet,			2, 3, optNetwork },
-		{	"peers",				&RPCServer::doPeers,				0, 0,  },
-		{	"send",					&RPCServer::doSend,					3, 7, optCurrent },
-		{	"server_info",			&RPCServer::doServerInfo,			0, 0,  },
-		{	"stop",					&RPCServer::doStop,					0, 0,  },
-		{	"transit_set",			&RPCServer::doTransitSet,			5, 5, optCurrent },
-		{	"tx",					&RPCServer::doTx,					1, 1,  },
+		{	"account_email_set",	&RPCServer::doAccountEmailSet,		2, 3, true,optCurrent },
+		{	"account_info",			&RPCServer::doAccountInfo,			1, 2, false,optCurrent },
+		{	"account_lines",		&RPCServer::doAccountLines,			1, 2, true,optCurrent|optClosed },
+		{	"account_message_set",	&RPCServer::doAccountMessageSet,	3, 3, true,optCurrent },
+		{	"account_tx",			&RPCServer::doAccountTransactions,	2, 3, true,optNetwork },
+		{	"account_wallet_set",	&RPCServer::doAccountWalletSet,		2, 3, true,optCurrent },
+		{	"connect",				&RPCServer::doConnect,				1, 2, true  },
+		{	"credit_set",			&RPCServer::doCreditSet,			4, 6, true,optCurrent },
+		{	"data_delete",			&RPCServer::doDataDelete,			1, 1, true },
+		{	"data_fetch",			&RPCServer::doDataFetch,			1, 1, true },
+		{	"data_store",			&RPCServer::doDataStore,			2, 2, true },
+		{	"ledger",				&RPCServer::doLedger,				0, 2, false,optNetwork },
+		{	"nickname_info",		&RPCServer::doNicknameInfo,			1, 1, true,optCurrent },
+		{	"nickname_set",			&RPCServer::doNicknameSet,			2, 3, true,optCurrent },
+		{	"password_fund",		&RPCServer::doPasswordFund,			2, 3, true,optCurrent },
+		{	"password_set",			&RPCServer::doPasswordSet,			2, 3, true,optNetwork },
+		{	"peers",				&RPCServer::doPeers,				0, 0, true },
+		{	"send",					&RPCServer::doSend,					3, 7, false, optCurrent },
+		{	"server_info",			&RPCServer::doServerInfo,			0, 0, true },
+		{	"stop",					&RPCServer::doStop,					0, 0, true },
+		{	"transit_set",			&RPCServer::doTransitSet,			5, 5, true, optCurrent },
+		{	"tx",					&RPCServer::doTx,					1, 1, true },
 
-		{	"unl_add",				&RPCServer::doUnlAdd,				1, 2,  },
-		{	"unl_delete",			&RPCServer::doUnlDelete,			1, 1,  },
-		{	"unl_list",				&RPCServer::doUnlList,				0, 0,  },
-		{	"unl_load",				&RPCServer::doUnlLoad,				0, 0,  },
-		{	"unl_network",			&RPCServer::doUnlNetwork,			0, 0,  },
-		{	"unl_reset",			&RPCServer::doUnlReset,				0, 0,  },
-		{	"unl_score",			&RPCServer::doUnlScore,				0, 0,  },
+		{	"unl_add",				&RPCServer::doUnlAdd,				1, 2, true },
+		{	"unl_delete",			&RPCServer::doUnlDelete,			1, 1, true },
+		{	"unl_list",				&RPCServer::doUnlList,				0, 0, true },
+		{	"unl_load",				&RPCServer::doUnlLoad,				0, 0, true },
+		{	"unl_network",			&RPCServer::doUnlNetwork,			0, 0, true },
+		{	"unl_reset",			&RPCServer::doUnlReset,				0, 0, true },
+		{	"unl_score",			&RPCServer::doUnlScore,				0, 0, true },
 
-		{	"validation_create",	&RPCServer::doValidationCreate,		0, 1,  },
-		{	"validation_seed",		&RPCServer::doValidationSeed,		0, 1,  },
+		{	"validation_create",	&RPCServer::doValidationCreate,		0, 1, false },
+		{	"validation_seed",		&RPCServer::doValidationSeed,		0, 1, false },
 
-		{	"wallet_accounts",		&RPCServer::doWalletAccounts,		1, 1,  optCurrent },
-		{	"wallet_add",			&RPCServer::doWalletAdd,			3, 5,  optCurrent },
-		{	"wallet_claim",			&RPCServer::doWalletClaim,			2, 4,  optNetwork },
-		{	"wallet_create",		&RPCServer::doWalletCreate,			3, 4,  optCurrent },
-		{	"wallet_propose",		&RPCServer::doWalletPropose,		0, 0,  },
-		{	"wallet_seed",			&RPCServer::doWalletSeed,			0, 1,  },
+		{	"wallet_accounts",		&RPCServer::doWalletAccounts,		1, 1, false, optCurrent },
+		{	"wallet_add",			&RPCServer::doWalletAdd,			3, 5, false, optCurrent },
+		{	"wallet_claim",			&RPCServer::doWalletClaim,			2, 4, false, optNetwork },
+		{	"wallet_create",		&RPCServer::doWalletCreate,			3, 4, false, optCurrent },
+		{	"wallet_propose",		&RPCServer::doWalletPropose,		0, 0, false, },
+		{	"wallet_seed",			&RPCServer::doWalletSeed,			0, 1, false, },
+
+		{	"login",				&RPCServer::doLogin,				2, 2, true },
 	};
 
 	int		i = NUMBER(commandsA);
@@ -2027,6 +2054,9 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 	if (i < 0)
 	{
 		return RPCError(rpcUNKNOWN_COMMAND);
+	}else if (commandsA[i].mAdminRequired && mRole!=ADMIN)
+	{
+		return RPCError(rpcNO_PERMISSION);
 	}
 	else if (params.size() < commandsA[i].iMinParams || params.size() > commandsA[i].iMaxParams)
 	{

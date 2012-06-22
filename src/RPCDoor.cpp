@@ -1,6 +1,7 @@
 #include "RPCDoor.h"
 #include "Application.h"
 #include "Config.h"
+#include "Log.h"
 #include <boost/bind.hpp>
 #include <iostream>
 
@@ -10,7 +11,7 @@ using namespace boost::asio::ip;
 RPCDoor::RPCDoor(boost::asio::io_service& io_service) :
 	mAcceptor(io_service, tcp::endpoint(address::from_string(theConfig.RPC_IP), theConfig.RPC_PORT))
 {
-	cerr << "RPC port: " << theConfig.RPC_IP << " " << theConfig.RPC_PORT << " allow remote: " << theConfig.RPC_ALLOW_REMOTE << endl;
+	Log(lsINFO) << "RPC port: " << theConfig.RPC_IP << " " << theConfig.RPC_PORT << " allow remote: " << theConfig.RPC_ALLOW_REMOTE;
 	startListening();
 }
 
@@ -44,7 +45,7 @@ void RPCDoor::handleConnect(RPCServer::pointer new_connection,
 
 		new_connection->connected();
 	}
-	else cout << "Error: " << error;
+	else Log(lsINFO) << "RPCDoor::handleConnect Error: " << error;
 
 	startListening();
 }

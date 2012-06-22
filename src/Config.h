@@ -89,6 +89,7 @@ public:
 	std::string					RPC_PASSWORD;
 	bool						RPC_ALLOW_REMOTE;
 
+
 	// Validation
 	NewcoinAddress				VALIDATION_SEED;
 
