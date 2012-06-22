@@ -12,6 +12,7 @@
 #include "Wallet.h"
 #include "Peer.h"
 #include "NetworkOPs.h"
+#include "WSDoor.h"
 #include "TaggedCache.h"
 #include "ValidationCollection.h"
 #include "Suppression.h"
@@ -54,6 +55,7 @@ class Application
 	ConnectionPool			mConnectionPool;
 	PeerDoor*				mPeerDoor;
 	RPCDoor*				mRPCDoor;
+	WSDoor*					mWSDoor;
 
 	uint256					mNonce256;
 	std::size_t				mNonceST;

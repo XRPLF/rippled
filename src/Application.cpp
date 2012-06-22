@@ -1,11 +1,4 @@
 
-#include <iostream>
-
-#include <boost/thread.hpp>
-#include <boost/bind.hpp>
-
-#include "../database/SqliteDatabase.h"
-
 #include "Application.h"
 #include "Config.h"
 #include "PeerDoor.h"
@@ -14,8 +7,15 @@
 #include "key.h"
 #include "utils.h"
 #include "TaggedCache.h"
-#include "boost/filesystem.hpp"
 #include "Log.h"
+
+#include "../database/SqliteDatabase.h"
+
+#include <iostream>
+
+#include <boost/bind.hpp>
+#include <boost/filesystem.hpp>
+#include <boost/thread.hpp>
 
 Application* theApp = NULL;
 
@@ -52,7 +52,7 @@ void Application::stop()
 {
 	mIOService.stop();
 
-	std::cerr << "Stopped: " << mIOService.stopped() << std::endl;
+	Log(lsINFO) << "Stopped: " << mIOService.stopped();
 }
 
 static void InitDB(DatabaseCon** dbCon, const char *fileName, const char *dbInit[], int dbCount)
@@ -111,6 +111,8 @@ void Application::run()
 		std::cerr << "RPC interface: disabled" << std::endl;
 	}
 
+	mWSDoor		= WSDoor::createWSDoor();
+
 	//
 	// Begin connecting to network.
 	//
@@ -122,8 +124,8 @@ void Application::run()
 	NewcoinAddress	rootAddress			= NewcoinAddress::createAccountPublic(rootGeneratorMaster, 0);
 
 	// Print enough information to be able to claim root account.
-	std::cerr << "Root master seed: " << rootSeedMaster.humanSeed() << std::endl;
-	std::cerr << "Root account: " << rootAddress.humanAccountID() << std::endl;
+	Log(lsINFO) << "Root master seed: " << rootSeedMaster.humanSeed();
+	Log(lsINFO) << "Root account: " << rootAddress.humanAccountID();
 
 	Ledger::pointer firstLedger = boost::make_shared<Ledger>(rootAddress, SYSTEM_CURRENCY_START);
 	assert(!!firstLedger->getAccountState(rootAddress));
@@ -140,6 +142,8 @@ void Application::run()
 	mNetOps.setStateTimer(0);
 
 	mIOService.run(); // This blocks
+
+	mWSDoor->stop();
 
 	std::cout << "Done." << std::endl;
 }
