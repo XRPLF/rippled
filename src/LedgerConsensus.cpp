@@ -418,7 +418,7 @@ int LedgerConsensus::timerEntry()
 		Ledger::pointer consensus = theApp->getMasterLedger().getLedgerByHash(mPrevLedgerHash);
 		if (consensus)
 		{
-			Log(lsINFO) << "We have acquired the conensus ledger";
+			Log(lsINFO) << "We have acquired the consensus ledger";
 			if (theApp->getMasterLedger().getClosedLedger()->getHash() != mPrevLedgerHash)
 				theApp->getOPs().switchLastClosedLedger(consensus);
 			mPreviousLedger = consensus;
