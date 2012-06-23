@@ -432,26 +432,26 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 		}
 		if (!acq->isComplete())
 		{ // add more peers
-			//JED: seems like you need to do something here so it knows in beginConsensus that it isn't on the the right ledger
-			// switch to an empty ledger so we won't keep going
-			//Ledger::pointer emptyLedger(new Ledger());
-			//switchLastClosedLedger(emptyLedger);
-
-			// JED: just ask everyone
+			int count = 0;
 			std::vector<Peer::pointer> peers=theApp->getConnectionPool().getPeerVector();
-			for(int n=0; n<peers.size(); n++)
-			{
-				if(peers[n]->isConnected()) acq->peerHas(peers[n]);
-			}
-
-			/* JED  this wasn't adding any peers. This is also an optimization so we can do this later
-			// FIXME: A peer may not have a ledger just because it accepts it as the network's consensus
 			for (std::vector<Peer::pointer>::const_iterator it = peerList.begin(), end = peerList.end();
 					it != end; ++it)
 			{
 				if ((*it)->getClosedLedgerHash() == closedLedger)
+				{
+					++count;
 					acq->peerHas(*it);
-			}*/
+				}
+			}
+			if (!count)
+			{ // just ask everyone
+				for (std::vector<Peer::pointer>::const_iterator it = peerList.begin(), end = peerList.end();
+						it != end; ++it)
+				{
+					if ((*it)->isConnected())
+						acq->peerHas(*it);
+				}
+			}
 			return true;
 		}
 		consensus = acq->getLedger();
