@@ -2020,7 +2020,7 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 		{	"password_set",			&RPCServer::doPasswordSet,			2, 3, true,optNetwork },
 		{	"peers",				&RPCServer::doPeers,				0, 0, true },
 		{	"send",					&RPCServer::doSend,					3, 7, false, optCurrent },
-		{	"server_info",			&RPCServer::doServerInfo,			0, 0, true },
+		{	"server_info",			&RPCServer::doServerInfo,			0, 0, false },
 		{	"stop",					&RPCServer::doStop,					0, 0, true },
 		{	"transit_set",			&RPCServer::doTransitSet,			5, 5, true, optCurrent },
 		{	"tx",					&RPCServer::doTx,					1, 1, true },
