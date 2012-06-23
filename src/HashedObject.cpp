@@ -58,7 +58,7 @@ bool HashedObject::store(HashedObjectType type, uint32 index, const std::vector<
 	sql.append(");");
 
 	std::string exists =
-		boost::str(boost::format("SELECT ObjType FROM CommittedObject WHERE Hash = '%s';") % hash.GetHex());
+		boost::str(boost::format("SELECT ObjType FROM CommittedObjects WHERE Hash = '%s';") % hash.GetHex());
 
 	ScopedLock sl(theApp->getHashNodeDB()->getDBLock());
 	Database* db = theApp->getHashNodeDB()->getDB();
