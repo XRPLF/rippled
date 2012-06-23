@@ -11,8 +11,8 @@
 #define LA_DEBUG
 #define LEDGER_ACQUIRE_TIMEOUT 2
 
-PeerSet::PeerSet(const uint256& hash, int interval) : mHash(hash), mTimerInterval(interval),
-	mComplete(false), mFailed(false), mTimer(theApp->getIOService())
+PeerSet::PeerSet(const uint256& hash, int interval) : mHash(hash), mTimerInterval(interval), mTimeouts(0),
+	mComplete(false), mFailed(false), mProgress(true), mTimer(theApp->getIOService())
 { ; }
 
 void PeerSet::peerHas(Peer::pointer ptr)
@@ -65,7 +65,12 @@ void PeerSet::TimerEntry(boost::weak_ptr<PeerSet> wptr, const boost::system::err
 {
 	if (result == boost::asio::error::operation_aborted) return;
 	boost::shared_ptr<PeerSet> ptr = wptr.lock();
-	if (!!ptr) ptr->onTimer();
+	if (!ptr) return;
+	if (!ptr->mProgress)
+		++ptr->mTimeouts;
+	else
+		ptr->mProgress = false;
+	ptr->onTimer();
 }
 
 LedgerAcquire::LedgerAcquire(const uint256& hash) : PeerSet(hash, LEDGER_ACQUIRE_TIMEOUT), 
@@ -284,6 +289,7 @@ bool LedgerAcquire::takeBase(const std::string& data, Peer::pointer peer)
 		return false;
 	}
 	mHaveBase = true;
+	progress();
 	if (!mLedger->getTransHash()) mHaveTransactions = true;
 	if (!mLedger->getAccountHash()) mHaveState = true;
 	mLedger->setAcquiring();
@@ -315,6 +321,7 @@ bool LedgerAcquire::takeTxNode(const std::list<SHAMapNode>& nodeIDs,
 		if (mHaveState) mComplete = true;
 	}
 	trigger(peer);
+	progress();
 	return true;
 }
 
@@ -345,6 +352,7 @@ bool LedgerAcquire::takeAsNode(const std::list<SHAMapNode>& nodeIDs,
 		if (mHaveTransactions) mComplete = true;
 	}
 	trigger(peer);
+	progress();
 	return true;
 }
 

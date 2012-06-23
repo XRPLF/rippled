@@ -110,6 +110,7 @@ bool TransactionAcquire::takeNodes(const std::list<SHAMapNode>& nodeIDs,
 			++nodeDatait;
 		}
 		trigger(peer);
+		progress();
 		return true;
 	}
 	catch (...)
