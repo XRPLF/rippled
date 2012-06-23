@@ -61,16 +61,24 @@ void PeerSet::resetTimer()
 	mTimer.async_wait(boost::bind(&PeerSet::TimerEntry, pmDowncast(), boost::asio::placeholders::error));
 }
 
+void PeerSet::invokeOnTimer()
+{
+	if (!mProgress)
+	{
+		++mTimeouts;
+		Log(lsWARNING) << "Timeout " << mTimeouts << " acquiring " << mHash.GetHex();
+	}
+	else
+		mProgress = false;
+	onTimer();
+}
+
 void PeerSet::TimerEntry(boost::weak_ptr<PeerSet> wptr, const boost::system::error_code& result)
 {
 	if (result == boost::asio::error::operation_aborted) return;
 	boost::shared_ptr<PeerSet> ptr = wptr.lock();
 	if (!ptr) return;
-	if (!ptr->mProgress)
-		++ptr->mTimeouts;
-	else
-		ptr->mProgress = false;
-	ptr->onTimer();
+	ptr->invokeOnTimer();
 }
 
 LedgerAcquire::LedgerAcquire(const uint256& hash) : PeerSet(hash, LEDGER_ACQUIRE_TIMEOUT), 

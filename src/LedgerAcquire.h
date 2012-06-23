@@ -52,6 +52,7 @@ protected:
 
 	void setComplete()					{ mComplete = true; }
 	void setFailed()					{ mFailed = true; }
+	void invokeOnTimer();
 
 private:
 	static void TimerEntry(boost::weak_ptr<PeerSet>, const boost::system::error_code& result);
