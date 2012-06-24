@@ -22,7 +22,6 @@ public:
 
 protected:
 	SHAMap::pointer		mMap;
-	THSyncFilter		mFilter; // FIXME: Should use transaction master too
 	bool				mHaveRoot;
 
 	void onTimer()						{ trigger(Peer::pointer()); }

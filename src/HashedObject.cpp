@@ -7,65 +7,80 @@
 #include "Application.h"
 #include "Log.h"
 
-bool HashedObject::checkHash() const
+HashedObjectStore::HashedObjectStore(int cacheSize, int cacheAge) :
+	mCache(cacheSize, cacheAge), mWritePending(false)
 {
-	uint256 hash = Serializer::getSHA512Half(mData);
-	return hash == mHash;
+	mWriteSet.reserve(128);
 }
 
-bool HashedObject::checkFixHash()
-{
-	uint256 hash = Serializer::getSHA512Half(mData);
-	if (hash == mHash) return true;
-	mHash = hash;
-	return false;
-}
-
-void HashedObject::setHash()
-{
-	mHash = Serializer::getSHA512Half(mData);
-}
-
-// FIXME: Stores should be added to a queue that's serviced by an auxilliary thread or from an
-// auxilliary thread pool. These should be tied into a cache, since you need one to handle
-// an immedate read back (before the write completes)
 
 bool HashedObjectStore::store(HashedObjectType type, uint32 index,
 	const std::vector<unsigned char>& data, const uint256& hash)
-{
+{ // return: false=already in cache, true = added to cache
 	if (!theApp->getHashNodeDB()) return true;
-	HashedObject::pointer object = boost::make_shared<HashedObject>(type, index, data);
-	object->setHash();
-	if (object->getHash() != hash)
-		throw std::runtime_error("Object added to store doesn't have valid hash");
-
-	std::string sql = "INSERT INTO CommittedObjects (Hash,ObjType,LedgerIndex,Object) VALUES ('";
-	sql.append(hash.GetHex());
-	switch(type)
+	if (mCache.touch(hash))
 	{
-		case LEDGER: sql.append("','L','"); break;
-		case TRANSACTION: sql.append("','T','"); break;
-		case ACCOUNT_NODE: sql.append("','A','"); break;
-		case TRANSACTION_NODE: sql.append("','N','"); break;
-		default: sql.append("','U','"); break;
+		Log(lsTRACE) << "HOS: " << hash.GetHex() << " store: incache";
+		return false;
 	}
-	sql.append(boost::lexical_cast<std::string>(index));
-	sql.append("',");
-	std::string obj;
-	theApp->getHashNodeDB()->getDB()->escape(&(data.front()), data.size(), obj);
-	sql.append(obj);
-	sql.append(");");
 
-	std::string exists =
-		boost::str(boost::format("SELECT ObjType FROM CommittedObjects WHERE Hash = '%s';") % hash.GetHex());
+	HashedObject::pointer object = boost::make_shared<HashedObject>(type, index, data, hash);
 
-	ScopedLock sl(theApp->getHashNodeDB()->getDBLock());
-	if (mCache.canonicalize(hash, object))
-		return false;
+	{
+		boost::recursive_mutex::scoped_lock sl(mWriteMutex);
+		mWriteSet.push_back(object);
+		if (!mWritePending && (mWriteSet.size() >= 64))
+		{
+			mWritePending = true;
+			boost::thread t(boost::bind(&HashedObjectStore::bulkWrite, this));
+			t.detach();
+		}
+	}
+	Log(lsTRACE) << "HOS: " << hash.GetHex() << " store: deferred";
+	return true;
+}
+
+void HashedObjectStore::bulkWrite()
+{
+	std::vector< boost::shared_ptr<HashedObject> > set;
+	set.reserve(128);
+
+	{
+		boost::recursive_mutex::scoped_lock sl(mWriteMutex);
+		mWriteSet.swap(set);
+		mWritePending = false;
+	}
+	Log(lsINFO) << "HOS: BulkWrite " << set.size();
+
+	boost::format fExists("SELECT ObjType FROM CommittedObjects WHERE Hash = '%s';");
+	boost::format fAdd("INSERT INTO CommittedObjects (Hash,ObjType,LedgerIndex,Object) VALUES ('%s','%c','%u',%s);");
+
 	Database* db = theApp->getHashNodeDB()->getDB();
-	if (SQL_EXISTS(db, exists))
-		return false;
-	return db->executeSQL(sql);
+	ScopedLock sl = theApp->getHashNodeDB()->getDBLock();
+
+	db->executeSQL("BEGIN TRANSACTION;");
+
+	for (std::vector< boost::shared_ptr<HashedObject> >::iterator it = set.begin(), end = set.end(); it != end; ++it)
+	{
+		HashedObject& obj = **it;
+		if (!SQL_EXISTS(db, boost::str(fExists % obj.getHash().GetHex())))
+		{
+			char type;
+			switch(obj.getType())
+			{
+				case LEDGER: type = 'L'; break;
+				case TRANSACTION: type = 'T'; break;
+				case ACCOUNT_NODE: type = 'A'; break;
+				case TRANSACTION_NODE: type = 'N'; break;
+				default: type = 'U';
+			}
+			std::string rawData;
+			db->escape(&(obj.getData().front()), obj.getData().size(), rawData);
+			db->executeSQL(boost::str(fAdd % obj.getHash().GetHex() % type % obj.getIndex() % rawData ));
+		}
+	}
+
+	db->executeSQL("END TRANSACTION;");
 }
 
 HashedObject::pointer HashedObjectStore::retrieve(const uint256& hash)
@@ -74,7 +89,11 @@ HashedObject::pointer HashedObjectStore::retrieve(const uint256& hash)
 	{
 		ScopedLock sl(theApp->getHashNodeDB()->getDBLock());
 		obj = mCache.fetch(hash);
-		if (obj) return obj;
+		if (obj)
+		{
+			Log(lsTRACE) << "HOS: " << hash.GetHex() << " fetch: incache";
+			return obj;
+		}
 	}
 
 	if (!theApp || !theApp->getHashNodeDB()) return HashedObject::pointer();
@@ -90,7 +109,10 @@ HashedObject::pointer HashedObjectStore::retrieve(const uint256& hash)
 		Database* db = theApp->getHashNodeDB()->getDB();
 
 		if (!db->executeSQL(sql) || !db->startIterRows())
+		{
+			Log(lsTRACE) << "HOS: " << hash.GetHex() << " fetch: not in db";
 			return HashedObject::pointer();
+		}
 
 		std::string type;
 		db->getStr("ObjType", type);
@@ -115,26 +137,11 @@ HashedObject::pointer HashedObjectStore::retrieve(const uint256& hash)
 				return HashedObject::pointer();
 		}
 
-		obj = boost::make_shared<HashedObject>(htype, index, data);
-		obj->mHash = hash;
+		obj = boost::make_shared<HashedObject>(htype, index, data, hash);
 		mCache.canonicalize(hash, obj);
 	}
-#ifdef DEBUG
-	assert(obj->checkHash());
-#endif
+	Log(lsTRACE) << "HOS: " << hash.GetHex() << " fetch: in db";
 	return obj;
-}
-
-ScopedLock HashedObjectStore::beginBulk()
-{
-	ScopedLock sl(theApp->getHashNodeDB()->getDBLock());
-	theApp->getHashNodeDB()->getDB()->executeSQL("BEGIN TRANSACTION;");
-	return sl;
-}
-
-void HashedObjectStore::endBulk()
-{
-	theApp->getHashNodeDB()->getDB()->executeSQL("END TRANSACTION;");
 }
 
 // vim:ts=4

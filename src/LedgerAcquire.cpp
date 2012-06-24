@@ -7,6 +7,7 @@
 
 #include "Application.h"
 #include "Log.h"
+#include "SHAMapSync.h"
 
 #define LA_DEBUG
 #define LEDGER_ACQUIRE_TIMEOUT 2
@@ -82,7 +83,7 @@ void PeerSet::TimerEntry(boost::weak_ptr<PeerSet> wptr, const boost::system::err
 }
 
 LedgerAcquire::LedgerAcquire(const uint256& hash) : PeerSet(hash, LEDGER_ACQUIRE_TIMEOUT), 
-	mFilter(&theApp->getNodeCache()), mHaveBase(false), mHaveState(false), mHaveTransactions(false)
+	mHaveBase(false), mHaveState(false), mHaveTransactions(false)
 {
 #ifdef LA_DEBUG
 	Log(lsTRACE) << "Acquiring ledger " << mHash.GetHex();
@@ -168,7 +169,8 @@ void LedgerAcquire::trigger(Peer::pointer peer)
 		{
 			std::vector<SHAMapNode> nodeIDs;
 			std::vector<uint256> nodeHashes;
-			mLedger->peekTransactionMap()->getMissingNodes(nodeIDs, nodeHashes, 128, &mFilter);
+			TransactionStateSF tFilter(mLedger->getHash(), mLedger->getLedgerSeq());
+			mLedger->peekTransactionMap()->getMissingNodes(nodeIDs, nodeHashes, 128, &tFilter);
 			if (nodeIDs.empty())
 			{
 				if (!mLedger->peekTransactionMap()->isValid()) mFailed = true;
@@ -220,7 +222,8 @@ void LedgerAcquire::trigger(Peer::pointer peer)
 		{
 			std::vector<SHAMapNode> nodeIDs;
 			std::vector<uint256> nodeHashes;
-			mLedger->peekAccountStateMap()->getMissingNodes(nodeIDs, nodeHashes, 128, &mFilter);
+			AccountStateSF aFilter(mLedger->getHash(), mLedger->getLedgerSeq());
+			mLedger->peekAccountStateMap()->getMissingNodes(nodeIDs, nodeHashes, 128, &aFilter);
 			if (nodeIDs.empty())
 			{
  				if (!mLedger->peekAccountStateMap()->isValid()) mFailed = true;
@@ -297,6 +300,7 @@ bool LedgerAcquire::takeBase(const std::string& data, Peer::pointer peer)
 		return false;
 	}
 	mHaveBase = true;
+	theApp->getHashedObjectStore().store(LEDGER, mLedger->getLedgerSeq(), strCopy(data), mHash);
 	progress();
 	if (!mLedger->getTransHash()) mHaveTransactions = true;
 	if (!mLedger->getAccountHash()) mHaveState = true;
@@ -311,6 +315,7 @@ bool LedgerAcquire::takeTxNode(const std::list<SHAMapNode>& nodeIDs,
 	if (!mHaveBase) return false;
 	std::list<SHAMapNode>::const_iterator nodeIDit = nodeIDs.begin();
 	std::list< std::vector<unsigned char> >::const_iterator nodeDatait = data.begin();
+	TransactionStateSF tFilter(mLedger->getHash(), mLedger->getLedgerSeq());
 	while (nodeIDit != nodeIDs.end())
 	{
 		if (nodeIDit->isRoot())
@@ -318,7 +323,7 @@ bool LedgerAcquire::takeTxNode(const std::list<SHAMapNode>& nodeIDs,
 			if (!mLedger->peekTransactionMap()->addRootNode(mLedger->getTransHash(), *nodeDatait))
 				return false;
 		}
-		else if (!mLedger->peekTransactionMap()->addKnownNode(*nodeIDit, *nodeDatait, &mFilter))
+		else if (!mLedger->peekTransactionMap()->addKnownNode(*nodeIDit, *nodeDatait, &tFilter))
 			return false;
 		++nodeIDit;
 		++nodeDatait;
@@ -342,6 +347,7 @@ bool LedgerAcquire::takeAsNode(const std::list<SHAMapNode>& nodeIDs,
 	if (!mHaveBase) return false;
 	std::list<SHAMapNode>::const_iterator nodeIDit = nodeIDs.begin();
 	std::list< std::vector<unsigned char> >::const_iterator nodeDatait = data.begin();
+	AccountStateSF tFilter(mLedger->getHash(), mLedger->getLedgerSeq());
 	while (nodeIDit != nodeIDs.end())
 	{
 		if (nodeIDit->isRoot())
@@ -349,7 +355,7 @@ bool LedgerAcquire::takeAsNode(const std::list<SHAMapNode>& nodeIDs,
 			if (!mLedger->peekAccountStateMap()->addRootNode(mLedger->getAccountHash(), *nodeDatait))
 				return false;
 		}
-		else if (!mLedger->peekAccountStateMap()->addKnownNode(*nodeIDit, *nodeDatait, &mFilter))
+		else if (!mLedger->peekAccountStateMap()->addKnownNode(*nodeIDit, *nodeDatait, &tFilter))
 			return false;
 		++nodeIDit;
 		++nodeDatait;

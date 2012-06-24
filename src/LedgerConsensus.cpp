@@ -11,13 +11,13 @@
 #include "LedgerTiming.h"
 #include "SerializedValidation.h"
 #include "Log.h"
+#include "SHAMapSync.h"
 
 #define TRUST_NETWORK
 
 // #define LC_DEBUG
 
-TransactionAcquire::TransactionAcquire(const uint256& hash)
-	: PeerSet(hash, 1), mFilter(&theApp->getNodeCache()), mHaveRoot(false)
+TransactionAcquire::TransactionAcquire(const uint256& hash) : PeerSet(hash, 1), mHaveRoot(false)
 {
 	mMap = boost::make_shared<SHAMap>();
 	mMap->setSynching();
@@ -50,9 +50,9 @@ void TransactionAcquire::trigger(Peer::pointer peer)
 	}
 	if (mHaveRoot)
 	{
-		std::vector<SHAMapNode> nodeIDs;
-		std::vector<uint256> nodeHashes;
-		mMap->getMissingNodes(nodeIDs, nodeHashes, 256, &mFilter);
+		std::vector<SHAMapNode> nodeIDs; std::vector<uint256> nodeHashes;
+		ConsensusTransSetSF sf;
+		mMap->getMissingNodes(nodeIDs, nodeHashes, 256, &sf);
 		if (nodeIDs.empty())
 		{
 			if (mMap->isValid())
@@ -91,6 +91,7 @@ bool TransactionAcquire::takeNodes(const std::list<SHAMapNode>& nodeIDs,
 	{
 		std::list<SHAMapNode>::const_iterator nodeIDit = nodeIDs.begin();
 		std::list< std::vector<unsigned char> >::const_iterator nodeDatait = data.begin();
+		ConsensusTransSetSF sf;
 		while (nodeIDit != nodeIDs.end())
 		{
 			if (nodeIDit->isRoot())
@@ -104,7 +105,7 @@ bool TransactionAcquire::takeNodes(const std::list<SHAMapNode>& nodeIDs,
 					return false;
 				else mHaveRoot = true;
 			}
-			else if (!mMap->addKnownNode(*nodeIDit, *nodeDatait, &mFilter))
+			else if (!mMap->addKnownNode(*nodeIDit, *nodeDatait, &sf))
 				return false;
 			++nodeIDit;
 			++nodeDatait;
