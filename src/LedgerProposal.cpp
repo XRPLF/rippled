@@ -46,9 +46,9 @@ uint256 LedgerProposal::getSigningHash() const
 	return s.getSHA512Half();
 }
 
-bool LedgerProposal::checkSign(const std::string& signature)
+bool LedgerProposal::checkSign(const std::string& signature, const uint256& signingHash)
 {
-	return mPublicKey.verifyNodePublic(getSigningHash(), signature);
+	return mPublicKey.verifyNodePublic(signingHash, signature);
 }
 
 void LedgerProposal::changePosition(const uint256& newPosition)

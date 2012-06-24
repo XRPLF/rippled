@@ -57,11 +57,15 @@ uint64 SerializedValidation::getCloseTime() const
 
 bool SerializedValidation::isValid() const
 {
+	return isValid(getSigningHash());
+}
+
+bool SerializedValidation::isValid(const uint256& signingHash) const
+{
 	try
 	{
 		NewcoinAddress	naPublicKey	= NewcoinAddress::createNodePublic(getValueFieldVL(sfSigningKey));
-
-		return naPublicKey.isValid() && naPublicKey.verifyNodePublic(getSigningHash(), mSignature.peekValue());
+		return naPublicKey.isValid() && naPublicKey.verifyNodePublic(signingHash, mSignature.peekValue());
 	}
 	catch (...)
 	{

@@ -36,7 +36,8 @@ public:
 	LedgerProposal(const uint256& prevLedger, const uint256& position);
 
 	uint256 getSigningHash() const;
-	bool checkSign(const std::string& signature);
+	bool checkSign(const std::string& signature, const uint256& signingHash);
+	bool checkSign(const std::string& signature) { return checkSign(signature, getSigningHash()); }
 
 	const uint160& getPeerID() const		{ return mPeerID; }
 	const uint256& getCurrentHash() const	{ return mCurrentHash; }
