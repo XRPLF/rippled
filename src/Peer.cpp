@@ -8,6 +8,7 @@
 
 #include "../json/writer.h"
 
+#include "Version.h"
 #include "Peer.h"
 #include "Config.h"
 #include "Application.h"
@@ -565,15 +566,20 @@ void Peer::processReadBuffer()
 
 void Peer::recvHello(newcoin::TMHello& packet)
 {
-#ifdef DEBUG
-	Log(lsINFO) << "Recv(Hello) v=" << packet.version() << ", index=" << packet.ledgerindex();
-#endif
+	Log(lsTRACE) << "Recv(Hello) v=" << packet.versionmajor() << "." << packet.versionminor();
 	bool	bDetach	= true;
 
 	// Cancel verification timeout.
 	(void) mVerifyTimer.cancel();
 
-	if (!mNodePublic.setNodePublic(packet.nodepublic()))
+	if ((packet.minprotoversionmajor() > PROTO_VERSION_MAJ) ||
+ 		((packet.minprotoversionmajor() == PROTO_VERSION_MAJ) && (packet.minprotoversionminor() > PROTO_VERSION_MIN)))
+	{
+		Log(lsINFO) << "Recv(Hello): Server requires protocol version " <<
+			packet.minprotoversionmajor() << "." << packet.minprotoversionminor() << " we run " <<
+			PROTO_VERSION_MAJ << "." << PROTO_VERSION_MIN;
+	}
+	else if (!mNodePublic.setNodePublic(packet.nodepublic()))
 	{
 		Log(lsINFO) << "Recv(Hello): Disconnect: Bad node public key.";
 	}
@@ -584,6 +590,14 @@ void Peer::recvHello(newcoin::TMHello& packet)
 	else
 	{ // Successful connection.
 		Log(lsINFO) << "Recv(Hello): Connect: " << mNodePublic.humanNodePublic();
+
+		if ( (packet.versionmajor() != SERVER_VERSION_MAJ) || (packet.versionminor() != SERVER_VERSION_MIN))
+		{
+			if (packet.has_fullversion())
+				Log(lsINFO) << " Peer is running version " << packet.fullversion();
+			else
+				Log(lsINFO) << " Peer is running version " << packet.versionmajor() << "." << packet.versionminor();
+		}
 
 		if (mClientConnect)
 		{
@@ -1104,16 +1118,20 @@ void Peer::sendHello()
 
 	newcoin::TMHello h;
 
-	h.set_version(theConfig.VERSION);
-	h.set_ledgerindex(theApp->getOPs().getCurrentLedgerID());
+	h.set_versionmajor(SERVER_VERSION_MAJ);
+	h.set_versionminor(SERVER_VERSION_MIN);
+	h.set_protoversionmajor(PROTO_VERSION_MAJ);
+	h.set_protoversionminor(PROTO_VERSION_MIN);
+	h.set_minprotoversionminor(MIN_PROTO_MAJ);
+	h.set_minprotoversionmajor(MIN_PROTO_MIN);
+	h.set_fullversion(SERVER_VERSION);
 	h.set_nettime(theApp->getOPs().getNetworkTimeNC());
 	h.set_nodepublic(theApp->getWallet().getNodePublic().humanNodePublic());
 	h.set_nodeproof(&vchSig[0], vchSig.size());
 	h.set_ipv4port(theConfig.PEER_PORT);
 
 	Ledger::pointer closedLedger = theApp->getMasterLedger().getClosedLedger();
-	assert(closedLedger && closedLedger->isClosed());
-	if (closedLedger->isClosed())
+	if (closedLedger && closedLedger->isClosed())
 	{
 		uint256 hash = closedLedger->getHash();
 		h.set_closedledger(hash.begin(), hash.GetSerializeSize());

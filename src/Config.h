@@ -43,10 +43,6 @@ const int SYSTEM_WEBSOCKET_PORT		= 6562;
 class Config
 {
 public:
-	// Core software parameters
-	int							VERSION;
-	std::string					VERSION_STR;
-
 	// Configuration parameters
 	boost::filesystem::path		CONFIG_FILE;
 	boost::filesystem::path		CONFIG_DIR;
