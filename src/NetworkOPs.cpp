@@ -553,7 +553,7 @@ bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash,
 
 	// Is this node on our UNL?
 	// XXX Is this right?
-	if (!theApp->getUNL().nodeInUNL(proposal->peekSeed()))
+	if (!theApp->getUNL().nodeInUNL(proposal->peekPublic()))
 	{
 		Log(lsINFO) << "Untrusted proposal: " << naPeerPublic.humanNodePublic() << " " <<
 			 proposal->getCurrentHash().GetHex();
