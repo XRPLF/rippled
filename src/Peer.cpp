@@ -735,15 +735,18 @@ void Peer::recvValidation(newcoin::TMValidation& packet)
 	{
 		Serializer s(packet.validation());
 		SerializerIterator sit(s);
-		SerializedValidation::pointer val = boost::make_shared<SerializedValidation>(boost::ref(sit));
+		SerializedValidation::pointer val = boost::make_shared<SerializedValidation>(boost::ref(sit), false);
+
 		uint256 signingHash = val->getSigningHash();
 		if (!theApp->isNew(signingHash))
 			return;
+
 		if (!val->isValid(signingHash))
 		{
 			punishPeer(PP_UNKNOWN_REQUEST);
 			return;
 		}
+
 		if (theApp->getOPs().recvValidation(val))
 		{
 			PackedMessage::pointer message = boost::make_shared<PackedMessage>(packet, newcoin::mtVALIDATION);

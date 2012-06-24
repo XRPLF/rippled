@@ -647,7 +647,6 @@ std::vector< std::pair<uint32, uint256> >
 bool NetworkOPs::recvValidation(SerializedValidation::pointer val)
 {
 	Log(lsINFO) << "recvValidation " << val->getLedgerHash().GetHex();
-
 	return theApp->getValidations().addValidation(val);
 }
 

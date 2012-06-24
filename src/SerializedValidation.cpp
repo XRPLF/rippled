@@ -16,7 +16,7 @@ const uint32 SerializedValidation::sValidationMagic	= 0x4c575200; // "LGR"
 SerializedValidation::SerializedValidation(SerializerIterator& sit, bool checkSignature)
 	: STObject(sValidationFormat, sit), mSignature(sit, "Signature"), mTrusted(false)
 {
-	if (!isValid()) throw std::runtime_error("Invalid validation");
+	if  (checkSignature && !isValid()) throw std::runtime_error("Invalid validation");
 }
 
 SerializedValidation::SerializedValidation(const uint256& ledgerHash, uint64 closeTime,
