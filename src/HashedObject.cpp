@@ -7,7 +7,6 @@
 #include "Application.h"
 #include "Log.h"
 
-
 bool HashedObject::checkHash() const
 {
 	uint256 hash = Serializer::getSHA512Half(mData);
@@ -27,18 +26,19 @@ void HashedObject::setHash()
 	mHash = Serializer::getSHA512Half(mData);
 }
 
-// FIXME: Stores should be added to a queue that's services by an auxilliary thread or from an
+// FIXME: Stores should be added to a queue that's serviced by an auxilliary thread or from an
 // auxilliary thread pool. These should be tied into a cache, since you need one to handle
 // an immedate read back (before the write completes)
 
-bool HashedObject::store(HashedObjectType type, uint32 index, const std::vector<unsigned char>& data,
-	const uint256& hash)
+bool HashedObjectStore::store(HashedObjectType type, uint32 index,
+	const std::vector<unsigned char>& data, const uint256& hash)
 {
 	if (!theApp->getHashNodeDB()) return true;
-#ifdef DEBUG
-	Serializer s(data);
-	assert(hash == s.getSHA512Half());
-#endif
+	HashedObject::pointer object = boost::make_shared<HashedObject>(type, index, data);
+	object->setHash();
+	if (object->getHash() != hash)
+		throw std::runtime_error("Object added to store doesn't have valid hash");
+
 	std::string sql = "INSERT INTO CommittedObjects (Hash,ObjType,LedgerIndex,Object) VALUES ('";
 	sql.append(hash.GetHex());
 	switch(type)
@@ -51,7 +51,6 @@ bool HashedObject::store(HashedObjectType type, uint32 index, const std::vector<
 	}
 	sql.append(boost::lexical_cast<std::string>(index));
 	sql.append("',");
-
 	std::string obj;
 	theApp->getHashNodeDB()->getDB()->escape(&(data.front()), data.size(), obj);
 	sql.append(obj);
@@ -61,22 +60,23 @@ bool HashedObject::store(HashedObjectType type, uint32 index, const std::vector<
 		boost::str(boost::format("SELECT ObjType FROM CommittedObjects WHERE Hash = '%s';") % hash.GetHex());
 
 	ScopedLock sl(theApp->getHashNodeDB()->getDBLock());
+	if (mCache.canonicalize(hash, object))
+		return false;
 	Database* db = theApp->getHashNodeDB()->getDB();
 	if (SQL_EXISTS(db, exists))
 		return false;
 	return db->executeSQL(sql);
 }
 
-bool HashedObject::store() const
+HashedObject::pointer HashedObjectStore::retrieve(const uint256& hash)
 {
-#ifdef DEBUG
-	assert(checkHash());
-#endif
-	return store(mType, mLedgerIndex, mData, mHash);
-}
+	HashedObject::pointer obj;
+	{
+		ScopedLock sl(theApp->getHashNodeDB()->getDBLock());
+		obj = mCache.fetch(hash);
+		if (obj) return obj;
+	}
 
-HashedObject::pointer HashedObject::retrieve(const uint256& hash)
-{
 	if (!theApp || !theApp->getHashNodeDB()) return HashedObject::pointer();
 	std::string sql = "SELECT * FROM CommittedObjects WHERE Hash='";
 	sql.append(hash.GetHex());
@@ -102,34 +102,37 @@ HashedObject::pointer HashedObject::retrieve(const uint256& hash)
 		data.resize(size);
 		db->getBinary("Object", &(data.front()), size);
 		db->endIterRows();
-	}
 
-	HashedObjectType htype = UNKNOWN;
-	switch(type[0])
-	{
-		case 'L': htype = LEDGER; break;
-		case 'T': htype = TRANSACTION; break;
-		case 'A': htype = ACCOUNT_NODE; break;
-		case 'N': htype = TRANSACTION_NODE; break;
-		default:
-			Log(lsERROR) << "Invalid hashed object";
-			return HashedObject::pointer();
-	}
+		HashedObjectType htype = UNKNOWN;
+		switch(type[0])
+		{
+			case 'L': htype = LEDGER; break;
+			case 'T': htype = TRANSACTION; break;
+			case 'A': htype = ACCOUNT_NODE; break;
+			case 'N': htype = TRANSACTION_NODE; break;
+			default:
+				Log(lsERROR) << "Invalid hashed object";
+				return HashedObject::pointer();
+		}
 
-	HashedObject::pointer obj = boost::make_shared<HashedObject>(htype, index, data);
-	obj->mHash = hash;
+		obj = boost::make_shared<HashedObject>(htype, index, data);
+		obj->mHash = hash;
+		mCache.canonicalize(hash, obj);
+	}
 #ifdef DEBUG
 	assert(obj->checkHash());
 #endif
 	return obj;
 }
 
-HashedObjectBulkWriter::HashedObjectBulkWriter() : sl(theApp->getHashNodeDB()->getDBLock())
+ScopedLock HashedObjectStore::beginBulk()
 {
+	ScopedLock sl(theApp->getHashNodeDB()->getDBLock());
 	theApp->getHashNodeDB()->getDB()->executeSQL("BEGIN TRANSACTION;");
+	return sl;
 }
 
-HashedObjectBulkWriter::~HashedObjectBulkWriter()
+void HashedObjectStore::endBulk()
 {
 	theApp->getHashNodeDB()->getDB()->executeSQL("END TRANSACTION;");
 }

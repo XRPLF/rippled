@@ -37,7 +37,7 @@ DatabaseCon::~DatabaseCon()
 
 Application::Application() :
 	mUNL(mIOService),
-	mNetOps(mIOService, &mMasterLedger), mNodeCache(16384, 600),
+	mNetOps(mIOService, &mMasterLedger), mNodeCache(16384, 600), mHashedObjectStore(16384, 300),
 	mTxnDB(NULL), mLedgerDB(NULL), mWalletDB(NULL), mHashNodeDB(NULL), mNetNodeDB(NULL),
 	mConnectionPool(mIOService), mPeerDoor(NULL), mRPCDoor(NULL)
 {

@@ -623,7 +623,7 @@ void SHAMapItem::dump()
 
 bool SHAMap::fetchNode(const uint256& hash, std::vector<unsigned char>& data)
 {
-	HashedObject::pointer obj(HashedObject::retrieve(hash));
+	HashedObject::pointer obj(theApp->getHashedObjectStore().retrieve(hash));
 	if(!obj) return false;
 	data = obj->getData();
 	return true;
@@ -642,7 +642,7 @@ int SHAMap::flushDirty(int maxNodes, HashedObjectType t, uint32 seq)
 
 	if(mDirtyNodes)
 	{
-		HashedObjectBulkWriter bw;
+		HashedObjectBulkWriter bw(theApp->getHashedObjectStore());
 		boost::unordered_map<SHAMapNode, SHAMapTreeNode::pointer>& dirtyNodes = *mDirtyNodes;
 		boost::unordered_map<SHAMapNode, SHAMapTreeNode::pointer>::iterator it = dirtyNodes.begin();
 		while (it != dirtyNodes.end())

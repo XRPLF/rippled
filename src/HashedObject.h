@@ -6,6 +6,7 @@
 #include "types.h"
 #include "uint256.h"
 #include "ScopedLock.h"
+#include "TaggedCache.h"
 
 enum HashedObjectType
 {
@@ -34,29 +35,41 @@ public:
 	void setHash();
 
 	const std::vector<unsigned char>& getData() { return mData; }
+	const uint256& getHash() { return mHash; }
+};
 
-	bool store() const;
+class HashedObjectStore
+{
+protected:
+	TaggedCache<uint256, HashedObject> mCache;
 
-	static bool store(HashedObjectType type, uint32 index, const std::vector<unsigned char>& data,
+public:
+
+	HashedObjectStore(int cacheSize, int cacheAge) : mCache(cacheSize, cacheAge) { ; }
+
+	bool store(HashedObjectType type, uint32 index, const std::vector<unsigned char>& data,
 		const uint256& hash);
 
-	static HashedObject::pointer retrieve(const uint256& hash);
+	HashedObject::pointer retrieve(const uint256& hash);
+
+	ScopedLock beginBulk();
+	void endBulk();
 };
 
 class HashedObjectBulkWriter
 {
 protected:
+	HashedObjectStore& mStore;
 	ScopedLock sl;
 
 public:
+	HashedObjectBulkWriter(HashedObjectStore& ostore) : mStore(ostore), sl(mStore.beginBulk()) { ; }
+	~HashedObjectBulkWriter() { mStore.endBulk(); }
 
-	HashedObjectBulkWriter();
-	~HashedObjectBulkWriter();
+	bool store(HashedObjectType type, uint32 index, const std::vector<unsigned char>& data,
+		const uint256& hash) { return mStore.store(type, index, data, hash); }
 
-	bool store(HashedObjectType type, uint32 index, const std::vector<unsigned char>& data, const uint256& hash)
-	{ return HashedObject::store(type, index, data, hash); }
-	HashedObject::pointer retrieve(const uint256& hash)
-	{ return HashedObject::retrieve(hash); }
+	HashedObject::pointer retrieve(const uint256& hash) { return mStore.retrieve(hash); }
 };
 
 #endif
