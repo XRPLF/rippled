@@ -83,8 +83,8 @@ public:
 	NodeCache& getNodeCache()						{ return mNodeCache; }
 	HashedObjectStore& getHashedObjectStore()		{ return mHashedObjectStore; }
 	ValidationCollection& getValidations()			{ return mValidations; }
-	bool suppress(const uint256& s)					{ return mSuppressions.addSuppression(s); }
-	bool suppress(const uint160& s)					{ return mSuppressions.addSuppression(s); }
+	bool isNew(const uint256& s)					{ return mSuppressions.addSuppression(s); }
+	bool isNew(const uint160& s)					{ return mSuppressions.addSuppression(s); }
 
 	DatabaseCon* getTxnDB()			{ return mTxnDB; }
 	DatabaseCon* getLedgerDB()		{ return mLedgerDB; }

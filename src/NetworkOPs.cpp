@@ -98,7 +98,7 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 	}
 
 	Log(lsDEBUG) << "Status other than success " << r ;
-	if ((mMode != omFULL) && (theApp->suppress(trans->getID())))
+	if ((mMode != omFULL) && (theApp->isNew(trans->getID())))
 	{
 		newcoin::TMTransaction tx;
 		Serializer s;
@@ -521,23 +521,27 @@ bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash,
 
 	// XXX Validate key.
 	// XXX Take a vuc for pubkey.
-	NewcoinAddress	naPeerPublic	= NewcoinAddress::createNodePublic(strCopy(pubKey));
+	NewcoinAddress naPeerPublic = NewcoinAddress::createNodePublic(strCopy(pubKey));
+	LedgerProposal::pointer proposal =
+		boost::make_shared<LedgerProposal>(mConsensus->getLCL(), proposeSeq, proposeHash, naPeerPublic);
+	uint256 signingHash = proposal->getSigningHash();
 
-	if (mMode != omFULL)
+	if (!theApp->isNew(signingHash))
+		return false;
+
+	if ((mMode != omFULL) && (mMode != omTRACKING))
 	{
-		Log(lsINFO) << "Received proposal when not full: " << mMode;
-		Serializer s(signature);
-		return theApp->suppress(s.getSHA512Half());
+		Log(lsINFO) << "Received proposal when not full/tracking: " << mMode;
+		return true;
 	}
+
 	if (!mConsensus)
 	{
 		Log(lsWARNING) << "Received proposal when full but not during consensus window";
 		return false;
 	}
 
-	LedgerProposal::pointer proposal =
-		boost::make_shared<LedgerProposal>(mConsensus->getLCL(), proposeSeq, proposeHash, naPeerPublic);
-	if (!proposal->checkSign(signature))
+	if (!proposal->checkSign(signature, signingHash))
 	{ // Note that if the LCL is different, the signature check will fail
 		Log(lsWARNING) << "Ledger proposal fails signature check";
 		return false;
@@ -545,15 +549,14 @@ bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash,
 
 	// Is this node on our UNL?
 	// XXX Is this right?
-	if (!theApp->getUNL().nodeInUNL(naPeerPublic))
+	if (!theApp->getUNL().nodeInUNL(proposal->peekSeed()))
 	{
-		Log(lsINFO) << "Relay, but no process peer proposal " << proposal->getProposeSeq() << "/"
-			<< proposal->getCurrentHash().GetHex();
+		Log(lsINFO) << "Untrusted proposal: " << naPeerPublic.humanNodePublic() << " " <<
+			 proposal->getCurrentHash().GetHex();
 		return true;
 	}
 
 	return mConsensus->peerPosition(proposal);
-	
 }
 
 SHAMap::pointer NetworkOPs::getTXMap(const uint256& hash)
