@@ -60,9 +60,11 @@ Ledger::pointer LedgerHistory::getLedgerByHash(const uint256& hash)
 	Ledger::pointer ret = mLedgersByHash.fetch(hash);
 	if (ret) return ret;
 
-	ret = Ledger::loadByHash(hash);
-	if (!ret) return ret;
-	assert(ret->getHash() == hash);
+//		FIXME: A ledger without SHA maps isn't very useful
+// 		This code will need to build them
+//	ret = Ledger::loadByHash(hash);
+//	if (!ret) return ret;
+//	assert(ret->getHash() == hash);
 
 	boost::recursive_mutex::scoped_lock sl(mLedgersByHash.peekMutex());
 	mLedgersByHash.canonicalize(hash, ret);

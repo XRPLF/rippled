@@ -46,7 +46,7 @@ class Application
 	LedgerAcquireMaster		mMasterLedgerAcquire;
 	TransactionMaster		mMasterTransaction;
 	NetworkOPs				mNetOps;
-	NodeCache				mNodeCache;
+	NodeCache				mTempNodeCache;
 	ValidationCollection	mValidations;
 	SuppressionTable		mSuppressions;
 	HashedObjectStore		mHashedObjectStore;
@@ -80,7 +80,7 @@ public:
 	LedgerMaster& getMasterLedger()					{ return mMasterLedger; }
 	LedgerAcquireMaster& getMasterLedgerAcquire()	{ return mMasterLedgerAcquire; }
 	TransactionMaster& getMasterTransaction()		{ return mMasterTransaction; }
-	NodeCache& getNodeCache()						{ return mNodeCache; }
+	NodeCache& getTempNodeCache()					{ return mTempNodeCache; }
 	HashedObjectStore& getHashedObjectStore()		{ return mHashedObjectStore; }
 	ValidationCollection& getValidations()			{ return mValidations; }
 	bool isNew(const uint256& s)					{ return mSuppressions.addSuppression(s); }

@@ -15,12 +15,12 @@ public:
 		const std::vector<unsigned char>& nodeData, bool isLeaf)
 	{
 		// WRITEME: If 'isLeaf' is true, this is a transaction
-		theApp->getNodeCache().store(nodeHash, nodeData);
+		theApp->getTempNodeCache().store(nodeHash, nodeData);
 	}
 	virtual bool haveNode(const SHAMapNode& id, const uint256& nodeHash, std::vector<unsigned char>& nodeData)
 	{
 		// WRITEME: We could check our own map, we could check transaction tables
-		return theApp->getNodeCache().retrieve(nodeHash, nodeData);
+		return theApp->getTempNodeCache().retrieve(nodeHash, nodeData);
 	}
 };
 
@@ -40,11 +40,8 @@ public:
 		theApp->getHashedObjectStore().store(ACCOUNT_NODE, mLedgerSeq, nodeData, nodeHash);
 	}
 	virtual bool haveNode(const SHAMapNode& id, const uint256& nodeHash, std::vector<unsigned char>& nodeData)
-	{
-		HashedObject::pointer node = theApp->getHashedObjectStore().retrieve(nodeHash);
-		if (!node) return false;
-		nodeData = node->getData();
-		return true;
+	{ // fetchNode already tried
+		return false;
 	}
 };
 
@@ -64,11 +61,8 @@ public:
 		theApp->getHashedObjectStore().store(isLeaf ? TRANSACTION : TRANSACTION_NODE, mLedgerSeq, nodeData, nodeHash);
 	}
 	virtual bool haveNode(const SHAMapNode& id, const uint256& nodeHash, std::vector<unsigned char>& nodeData)
-	{
-		HashedObject::pointer node = theApp->getHashedObjectStore().retrieve(nodeHash);
-		if (!node) return false;
-		nodeData = node->getData();
-		return true;
+	{ // fetchNode already tried
+		return false;
 	}
 };
 
