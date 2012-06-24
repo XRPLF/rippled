@@ -264,7 +264,6 @@ TransactionEngineResult	TransactionEngine::setAuthorized(const SerializedTransac
 						sleGen			= boost::make_shared<SerializedLedgerEntry>(ltGENERATOR_MAP);
 
 		sleGen->setIndex(Ledger::getGeneratorIndex(hGeneratorID));
-//		sleGen->setIFieldH160(sfGeneratorID, hGeneratorID);
 		sleGen->setIFieldVL(sfGenerator, vucCipher);
 
 		accounts.push_back(std::make_pair(taaCREATE, sleGen));
@@ -943,8 +942,6 @@ TransactionEngineResult TransactionEngine::doNicknameSet(const SerializedTransac
 
 		if (bMinOffer && !saMinOffer.isZero())
 			sleNickname->setIFieldAmount(sfMinimumOffer, saMinOffer);
-
-//		sleNickname->setIFieldH256(sfNickname, uNickname);
 
 		accounts.push_back(std::make_pair(taaCREATE, sleNickname));
 	}
