@@ -98,7 +98,7 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 	}
 
 	Log(lsDEBUG) << "Status other than success " << r ;
-	if ((mMode != omFULL) && (theApp->isNew(trans->getID())))
+	if ((mMode != omFULL) && (mMode != omTRACKING) && (theApp->isNew(trans->getID())))
 	{
 		newcoin::TMTransaction tx;
 		Serializer s;
