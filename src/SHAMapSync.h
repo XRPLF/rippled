@@ -24,14 +24,14 @@ public:
 	}
 };
 
-class LedgerAccountStateSF : public SHAMapSyncFilter
+class AccountStateSF : public SHAMapSyncFilter
 { // sync filter for account state nodes during ledger sync
 protected:
 	uint256 mLedgerHash;
 	uint32 mLedgerSeq;
 
 public:
-	LedgerAccountStateSF(const uint256& ledgerHash, uint32 ledgerSeq) : mLedgerHash(ledgerHash), mLedgerSeq(ledgerSeq)
+	AccountStateSF(const uint256& ledgerHash, uint32 ledgerSeq) : mLedgerHash(ledgerHash), mLedgerSeq(ledgerSeq)
 	{ ; }
 
 	virtual void gotNode(const SHAMapNode& id, const uint256& nodeHash,

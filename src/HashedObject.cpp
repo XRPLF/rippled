@@ -37,25 +37,28 @@ bool HashedObjectStore::store(HashedObjectType type, uint32 index,
 	const std::vector<unsigned char>& data, const uint256& hash)
 { // return: false=already in cache, true = added to cache
 	if (!theApp->getHashNodeDB()) return true;
-	if (mCache.touch(hash)) return false;
+	if (mCache.touch(hash))
+	{
+		Log(lsTRACE) << "HOS: " << hash.GetHex() << " store: incache";
+		return false;
+	}
 
 	HashedObject::pointer object = boost::make_shared<HashedObject>(type, index, data);
 	object->setHash();
 	if (object->getHash() != hash)
 		throw std::runtime_error("Object added to store doesn't have valid hash");
 
-	boost::recursive_mutex::scoped_lock sl(mWriteMutex);
-	mWriteSet.push_back(object);
-	if (mWriteSet.size() == 64)
 	{
 		boost::recursive_mutex::scoped_lock sl(mWriteMutex);
-		if (!mWritePending)
+		mWriteSet.push_back(object);
+		if (!mWritePending && (mWriteSet.size() >= 64))
 		{
 			mWritePending = true;
 			boost::thread t(boost::bind(&HashedObjectStore::bulkWrite, this));
 			t.detach();
 		}
 	}
+	Log(lsTRACE) << "HOS: " << hash.GetHex() << " store: deferred";
 	return true;
 }
 
@@ -69,6 +72,7 @@ void HashedObjectStore::bulkWrite()
 		mWriteSet.swap(set);
 		mWritePending = false;
 	}
+	Log(lsINFO) << "HOS: BulkWrite " << set.size();
 
 	boost::format fExists("SELECT ObjType FROM CommittedObjects WHERE Hash = '%s';");
 	boost::format fAdd("INSERT INTO ComittedObject (Hash,ObjType,LedgerIndex,Object) VALUES ('%s','%c','%u','%s');");
