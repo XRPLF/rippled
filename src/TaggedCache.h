@@ -6,6 +6,7 @@
 #include <boost/thread/recursive_mutex.hpp>
 #include <boost/unordered_map.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/make_shared.hpp>
 
 // This class implemented a cache and a map. The cache keeps objects alive
 // in the map. The map allows multiple code paths that reference objects
