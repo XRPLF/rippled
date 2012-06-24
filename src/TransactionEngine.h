@@ -31,6 +31,7 @@ enum TransactionEngineResult
 	tenMSG_SET,				// Can't change a message key.
 	tenBAD_AUTH_MASTER,		// Auth for unclaimed account needs correct master key.
 	tenBAD_RIPPLE,			// Ledger prevents ripple from succeeding.
+	terALREADY,				// The exact transaction was already in this ledger
 
 	// Other
 	tenFAILED		= -100,	// Something broke horribly
@@ -43,7 +44,6 @@ enum TransactionEngineResult
 	// terFAILED_BUT_COULD_SUCCEED = >0
 	// Conflict with ledger database: Fee claimed
 	// Might succeed if not conflict is not caused by transaction ordering.
-	terALREADY,				// The transaction was already in the ledger
 	terBAD_SEQ,				// This sequence number should be zero for prepaid transactions.
 	terCREATED,				// Can not create a previously created account.
 	terDIR_FULL,			// Can not add entry to full dir.
