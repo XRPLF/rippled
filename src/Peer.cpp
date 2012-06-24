@@ -730,16 +730,23 @@ void Peer::recvValidation(newcoin::TMValidation& packet)
 		punishPeer(PP_UNKNOWN_REQUEST);
 		return;
 	}
+
 	try
 	{
 		Serializer s(packet.validation());
 		SerializerIterator sit(s);
-		SerializedValidation::pointer val = boost::make_shared<SerializedValidation>(boost::ref(sit));
-		if (!val->isValid())
+		SerializedValidation::pointer val = boost::make_shared<SerializedValidation>(boost::ref(sit), false);
+
+		uint256 signingHash = val->getSigningHash();
+		if (!theApp->isNew(signingHash))
+			return;
+
+		if (!val->isValid(signingHash))
 		{
 			punishPeer(PP_UNKNOWN_REQUEST);
 			return;
 		}
+
 		if (theApp->getOPs().recvValidation(val))
 		{
 			PackedMessage::pointer message = boost::make_shared<PackedMessage>(packet, newcoin::mtVALIDATION);
@@ -852,7 +859,7 @@ void Peer::recvAccount(newcoin::TMAccount& packet)
 
 void Peer::recvStatus(newcoin::TMStatusChange& packet)
 {
-	Log(lsTRACE) << "Received status change from peer" << getIP();
+	Log(lsTRACE) << "Received status change from peer " << getIP();
 	if (!packet.has_networktime())
 		packet.set_networktime(theApp->getOPs().getNetworkTimeNC());
 	mLastStatus = packet;

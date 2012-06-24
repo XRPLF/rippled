@@ -33,6 +33,7 @@ public:
 	bool			isTrusted()			const	{ return mTrusted; }
 	CKey::pointer	getSigningKey()		const;
 	uint256			getSigningHash()	const;
+	bool			isValid(const uint256&) const;
 
 	void 						setTrusted()				{ mTrusted = true; }
 	void						addSigned(Serializer&)		const;

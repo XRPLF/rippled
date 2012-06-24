@@ -20,8 +20,8 @@ class PeerSet
 {
 protected:
 	uint256 mHash;
-	int mTimerInterval;
-	bool mComplete, mFailed;
+	int mTimerInterval, mTimeouts;
+	bool mComplete, mFailed, mProgress;
 
 	boost::recursive_mutex					mLock;
 	boost::asio::deadline_timer				mTimer;
@@ -37,6 +37,9 @@ public:
 	const uint256& getHash() const		{ return mHash; }
 	bool isComplete() const				{ return mComplete; }
 	bool isFailed() const				{ return mFailed; }
+	int getTimeouts() const				{ return mTimeouts; }
+
+	void progress()						{ mProgress = true; }
 
 	void peerHas(Peer::pointer);
 	void badPeer(Peer::pointer);
@@ -49,6 +52,7 @@ protected:
 
 	void setComplete()					{ mComplete = true; }
 	void setFailed()					{ mFailed = true; }
+	void invokeOnTimer();
 
 private:
 	static void TimerEntry(boost::weak_ptr<PeerSet>, const boost::system::error_code& result);

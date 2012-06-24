@@ -98,7 +98,7 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 	}
 
 	Log(lsDEBUG) << "Status other than success " << r ;
-	if ((mMode != omFULL) && (theApp->suppress(trans->getID())))
+	if ((mMode != omFULL) && (mMode != omTRACKING) && (theApp->isNew(trans->getID())))
 	{
 		newcoin::TMTransaction tx;
 		Serializer s;
@@ -432,26 +432,26 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 		}
 		if (!acq->isComplete())
 		{ // add more peers
-			//JED: seems like you need to do something here so it knows in beginConsensus that it isn't on the the right ledger
-			// switch to an empty ledger so we won't keep going
-			//Ledger::pointer emptyLedger(new Ledger());
-			//switchLastClosedLedger(emptyLedger);
-
-			// JED: just ask everyone
+			int count = 0;
 			std::vector<Peer::pointer> peers=theApp->getConnectionPool().getPeerVector();
-			for(int n=0; n<peers.size(); n++)
-			{
-				if(peers[n]->isConnected()) acq->peerHas(peers[n]);
-			}
-
-			/* JED  this wasn't adding any peers. This is also an optimization so we can do this later
-			// FIXME: A peer may not have a ledger just because it accepts it as the network's consensus
 			for (std::vector<Peer::pointer>::const_iterator it = peerList.begin(), end = peerList.end();
 					it != end; ++it)
 			{
 				if ((*it)->getClosedLedgerHash() == closedLedger)
+				{
+					++count;
 					acq->peerHas(*it);
-			}*/
+				}
+			}
+			if (!count)
+			{ // just ask everyone
+				for (std::vector<Peer::pointer>::const_iterator it = peerList.begin(), end = peerList.end();
+						it != end; ++it)
+				{
+					if ((*it)->isConnected())
+						acq->peerHas(*it);
+				}
+			}
 			return true;
 		}
 		consensus = acq->getLedger();
@@ -521,20 +521,28 @@ bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash,
 
 	// XXX Validate key.
 	// XXX Take a vuc for pubkey.
-	NewcoinAddress	naPeerPublic	= NewcoinAddress::createNodePublic(strCopy(pubKey));
 
-	if (mMode != omFULL)
+	// Get a preliminary hash to use to suppress duplicates
+	Serializer s;
+	s.add32(proposeSeq);
+	s.add32(getCurrentLedgerID());
+	s.addRaw(pubKey);
+	if (!theApp->isNew(s.getSHA512Half()))
+		return false;
+
+	if ((mMode != omFULL) && (mMode != omTRACKING))
 	{
-		Log(lsINFO) << "Received proposal when not full: " << mMode;
-		Serializer s(signature);
-		return theApp->suppress(s.getSHA512Half());
+		Log(lsINFO) << "Received proposal when not full/tracking: " << mMode;
+		return true;
 	}
+
 	if (!mConsensus)
 	{
 		Log(lsWARNING) << "Received proposal when full but not during consensus window";
 		return false;
 	}
 
+	NewcoinAddress naPeerPublic = NewcoinAddress::createNodePublic(strCopy(pubKey));
 	LedgerProposal::pointer proposal =
 		boost::make_shared<LedgerProposal>(mConsensus->getLCL(), proposeSeq, proposeHash, naPeerPublic);
 	if (!proposal->checkSign(signature))
@@ -545,15 +553,14 @@ bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash,
 
 	// Is this node on our UNL?
 	// XXX Is this right?
-	if (!theApp->getUNL().nodeInUNL(naPeerPublic))
+	if (!theApp->getUNL().nodeInUNL(proposal->peekPublic()))
 	{
-		Log(lsINFO) << "Relay, but no process peer proposal " << proposal->getProposeSeq() << "/"
-			<< proposal->getCurrentHash().GetHex();
+		Log(lsINFO) << "Untrusted proposal: " << naPeerPublic.humanNodePublic() << " " <<
+			 proposal->getCurrentHash().GetHex();
 		return true;
 	}
 
 	return mConsensus->peerPosition(proposal);
-	
 }
 
 SHAMap::pointer NetworkOPs::getTXMap(const uint256& hash)
@@ -640,7 +647,6 @@ std::vector< std::pair<uint32, uint256> >
 bool NetworkOPs::recvValidation(SerializedValidation::pointer val)
 {
 	Log(lsINFO) << "recvValidation " << val->getLedgerHash().GetHex();
-
 	return theApp->getValidations().addValidation(val);
 }
 
