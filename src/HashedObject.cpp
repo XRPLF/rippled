@@ -7,25 +7,6 @@
 #include "Application.h"
 #include "Log.h"
 
-bool HashedObject::checkHash() const
-{
-	uint256 hash = Serializer::getSHA512Half(mData);
-	return hash == mHash;
-}
-
-bool HashedObject::checkFixHash()
-{
-	uint256 hash = Serializer::getSHA512Half(mData);
-	if (hash == mHash) return true;
-	mHash = hash;
-	return false;
-}
-
-void HashedObject::setHash()
-{
-	mHash = Serializer::getSHA512Half(mData);
-}
-
 HashedObjectStore::HashedObjectStore(int cacheSize, int cacheAge) :
 	mCache(cacheSize, cacheAge), mWritePending(false)
 {
@@ -43,10 +24,7 @@ bool HashedObjectStore::store(HashedObjectType type, uint32 index,
 		return false;
 	}
 
-	HashedObject::pointer object = boost::make_shared<HashedObject>(type, index, data);
-	object->setHash();
-	if (object->getHash() != hash)
-		throw std::runtime_error("Object added to store doesn't have valid hash");
+	HashedObject::pointer object = boost::make_shared<HashedObject>(type, index, data, hash);
 
 	{
 		boost::recursive_mutex::scoped_lock sl(mWriteMutex);
@@ -159,13 +137,9 @@ HashedObject::pointer HashedObjectStore::retrieve(const uint256& hash)
 				return HashedObject::pointer();
 		}
 
-		obj = boost::make_shared<HashedObject>(htype, index, data);
-		obj->mHash = hash;
+		obj = boost::make_shared<HashedObject>(htype, index, data, hash);
 		mCache.canonicalize(hash, obj);
 	}
-#ifdef DEBUG
-	assert(obj->checkHash());
-#endif
 	Log(lsTRACE) << "HOS: " << hash.GetHex() << " fetch: in db";
 	return obj;
 }

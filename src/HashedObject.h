@@ -27,12 +27,8 @@ public:
 	uint32						mLedgerIndex;
 	std::vector<unsigned char>	mData;
 
-	HashedObject(HashedObjectType type, uint32 index, const std::vector<unsigned char>& data) :
-		mType(type), mLedgerIndex(index), mData(data) { ; }
-
-	bool checkHash() const;
-	bool checkFixHash();
-	void setHash();
+	HashedObject(HashedObjectType type, uint32 index, const std::vector<unsigned char>& data, const uint256& hash) :
+		mType(type), mHash(hash), mLedgerIndex(index), mData(data) { ; }
 
 	const std::vector<unsigned char>& getData()		{ return mData; }
 	const uint256& getHash() 						{ return mHash; }
