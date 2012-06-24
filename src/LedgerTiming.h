@@ -19,7 +19,7 @@
 #	define LEDGER_CONVERGE			14
 
 // Maximum converge time
-#	define LEDGER_MAX_CONVERGE		22
+#	define LEDGER_MAX_CONVERGE		20
 
 
 #endif
