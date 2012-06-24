@@ -427,7 +427,6 @@ int LedgerConsensus::timerEntry()
 				theApp->getOPs().switchLastClosedLedger(consensus);
 			mPreviousLedger = consensus;
 			mHaveCorrectLCL = true;
-			// FIXME: We need some kind of idea what the consensus transaction set is
 		}
 	}
 
@@ -673,7 +672,7 @@ void LedgerConsensus::applyTransaction(TransactionEngine& engine, SerializedTran
 		if (result > 0)
 		{
 			Log(lsINFO) << "   retry";
-//			assert(!ledger->hasTransaction(txn->getTransactionID())); FIXME: We get these (doPasswordSet)
+			assert(!ledger->hasTransaction(txn->getTransactionID()));
 			failedTransactions.push_back(txn);
 		}
 		else if (result == 0)
@@ -843,9 +842,8 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 	{
 		assert (theApp->getOPs().getNetworkTimeNC() > newLCL->getCloseTimeNC());
 		SerializedValidation::pointer v = boost::make_shared<SerializedValidation>
-			(newLCLHash, newLCL->getCloseTimeNC(), mOurPosition->peekSeed(), true);
+			(newLCLHash, newLCL->getCloseTimeNC(), mOurPosition->peekSeed(), mProposing);
 		v->setTrusted();
-		// FIXME: If not proposing, set not full
 		theApp->getValidations().addValidation(v);
 		std::vector<unsigned char> validation = v->getSigned();
 		newcoin::TMValidation val;
