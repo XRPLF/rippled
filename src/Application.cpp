@@ -51,6 +51,7 @@ extern int TxnDBCount, LedgerDBCount, WalletDBCount, HashNodeDBCount, NetNodeDBC
 void Application::stop()
 {
 	mIOService.stop();
+	mHashedObjectStore.bulkWrite();
 
 	Log(lsINFO) << "Stopped: " << mIOService.stopped();
 }

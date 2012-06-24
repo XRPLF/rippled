@@ -34,8 +34,10 @@ public:
 	bool checkFixHash();
 	void setHash();
 
-	const std::vector<unsigned char>& getData() { return mData; }
-	const uint256& getHash() { return mHash; }
+	const std::vector<unsigned char>& getData()		{ return mData; }
+	const uint256& getHash() 						{ return mHash; }
+	HashedObjectType getType()						{ return mType; }
+	uint32 getIndex()								{ return mLedgerIndex; }
 };
 
 class HashedObjectStore
@@ -43,33 +45,20 @@ class HashedObjectStore
 protected:
 	TaggedCache<uint256, HashedObject> mCache;
 
+	boost::recursive_mutex mWriteMutex;
+	std::vector< boost::shared_ptr<HashedObject> > mWriteSet;
+	bool mWritePending;
+
 public:
 
-	HashedObjectStore(int cacheSize, int cacheAge) : mCache(cacheSize, cacheAge) { ; }
+	HashedObjectStore(int cacheSize, int cacheAge);
 
 	bool store(HashedObjectType type, uint32 index, const std::vector<unsigned char>& data,
 		const uint256& hash);
 
 	HashedObject::pointer retrieve(const uint256& hash);
 
-	ScopedLock beginBulk();
-	void endBulk();
-};
-
-class HashedObjectBulkWriter
-{
-protected:
-	HashedObjectStore& mStore;
-	ScopedLock sl;
-
-public:
-	HashedObjectBulkWriter(HashedObjectStore& ostore) : mStore(ostore), sl(mStore.beginBulk()) { ; }
-	~HashedObjectBulkWriter() { mStore.endBulk(); }
-
-	bool store(HashedObjectType type, uint32 index, const std::vector<unsigned char>& data,
-		const uint256& hash) { return mStore.store(type, index, data, hash); }
-
-	HashedObject::pointer retrieve(const uint256& hash) { return mStore.retrieve(hash); }
+	void bulkWrite();
 };
 
 #endif
