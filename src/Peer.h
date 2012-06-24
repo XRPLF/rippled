@@ -55,6 +55,7 @@ protected:
 	std::list<PackedMessage::pointer> mSendQ;
 	PackedMessage::pointer mSendingPacket;
 	newcoin::TMStatusChange mLastStatus;
+	newcoin::TMHello mHello;
 
 	Peer(boost::asio::io_service& io_service, boost::asio::ssl::context& ctx);
 

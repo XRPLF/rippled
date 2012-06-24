@@ -590,6 +590,7 @@ void Peer::recvHello(newcoin::TMHello& packet)
 	else
 	{ // Successful connection.
 		Log(lsINFO) << "Recv(Hello): Connect: " << mNodePublic.humanNodePublic();
+		mHello = packet;
 
 		if ( (packet.versionmajor() != SERVER_VERSION_MAJ) || (packet.versionminor() != SERVER_VERSION_MIN))
 		{
@@ -1159,13 +1160,24 @@ void Peer::punishPeer(PeerPunish)
 {
 }
 
-Json::Value Peer::getJson() {
-    Json::Value ret(Json::objectValue);
+Json::Value Peer::getJson()
+{
+	Json::Value ret(Json::objectValue);
 
-    ret["this"]			= ADDRESS(this);
-    ret["public_key"]	= mNodePublic.ToString();
-    ret["ip"]			= mIpPortConnect.first;
-    ret["port"]			= mIpPortConnect.second;
+	ret["this"]			= ADDRESS(this);
+	ret["public_key"]	= mNodePublic.ToString();
+	ret["ip"]			= mIpPortConnect.first;
+	ret["port"]			= mIpPortConnect.second;
+
+	if (mHello.has_fullversion())
+		ret["version"] = mHello.fullversion();
+	else if (mHello.has_versionminor() && mHello.has_versionmajor())
+		ret["version"] = boost::lexical_cast<std::string>(mHello.versionmajor()) + "." +
+			boost::lexical_cast<std::string>(mHello.versionminor());
+
+	if (mHello.has_protoversionminor() && mHello.has_protoversionmajor())
+		ret["protocol"] = boost::lexical_cast<std::string>(mHello.protoversionmajor()) + "." +
+			boost::lexical_cast<std::string>(mHello.protoversionminor());
 
 	if (!mIpPort.first.empty())
 	{
@@ -1173,7 +1185,7 @@ Json::Value Peer::getJson() {
 		ret["verified_port"]	= mIpPort.second;
 	}
 
-    return ret;
+	return ret;
 }
 
 // vim:ts=4
