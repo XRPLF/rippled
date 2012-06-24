@@ -521,12 +521,13 @@ bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash,
 
 	// XXX Validate key.
 	// XXX Take a vuc for pubkey.
-	NewcoinAddress naPeerPublic = NewcoinAddress::createNodePublic(strCopy(pubKey));
-	LedgerProposal::pointer proposal =
-		boost::make_shared<LedgerProposal>(mConsensus->getLCL(), proposeSeq, proposeHash, naPeerPublic);
-	uint256 signingHash = proposal->getSigningHash();
 
-	if (!theApp->isNew(signingHash))
+	// Get a preliminary hash to use to suppress duplicates
+	Serializer s;
+	s.add32(proposeSeq);
+	s.add32(getCurrentLedgerID());
+	s.addRaw(pubKey);
+	if (!theApp->isNew(s.getSHA512Half()))
 		return false;
 
 	if ((mMode != omFULL) && (mMode != omTRACKING))
@@ -541,7 +542,10 @@ bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash,
 		return false;
 	}
 
-	if (!proposal->checkSign(signature, signingHash))
+	NewcoinAddress naPeerPublic = NewcoinAddress::createNodePublic(strCopy(pubKey));
+	LedgerProposal::pointer proposal =
+		boost::make_shared<LedgerProposal>(mConsensus->getLCL(), proposeSeq, proposeHash, naPeerPublic);
+	if (!proposal->checkSign(signature))
 	{ // Note that if the LCL is different, the signature check will fail
 		Log(lsWARNING) << "Ledger proposal fails signature check";
 		return false;
