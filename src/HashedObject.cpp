@@ -53,7 +53,7 @@ void HashedObjectStore::bulkWrite()
 	Log(lsINFO) << "HOS: BulkWrite " << set.size();
 
 	boost::format fExists("SELECT ObjType FROM CommittedObjects WHERE Hash = '%s';");
-	boost::format fAdd("INSERT INTO ComittedObjects (Hash,ObjType,LedgerIndex,Object) VALUES ('%s','%c','%u',%s);");
+	boost::format fAdd("INSERT INTO CommittedObjects (Hash,ObjType,LedgerIndex,Object) VALUES ('%s','%c','%u',%s);");
 
 	Database* db = theApp->getHashNodeDB()->getDB();
 	ScopedLock sl = theApp->getHashNodeDB()->getDBLock();
