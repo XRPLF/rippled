@@ -121,7 +121,7 @@ template<typename c_Key, typename c_Data> bool TaggedCache<c_Key, c_Data>::touch
 	// Is the object in the map?
 	typename boost::unordered_map<key_type, weak_data_ptr>::iterator mit = mMap.find(key);
 	if (mit == mMap.end()) return false;
-	if (mit->second->expired())
+	if (mit->second.expired())
 	{	// in map, but expired
 		mMap.erase(mit);
 		return false;
@@ -131,12 +131,12 @@ template<typename c_Key, typename c_Data> bool TaggedCache<c_Key, c_Data>::touch
 	typename boost::unordered_map<key_type, cache_entry>::iterator cit = mCache.find(key);
 	if (cit != mCache.end())
 	{ // in both map and cache
-		cit->second->first = time(NULL);
+		cit->second.first = time(NULL);
 		return true;
 	}
 
 	// In map but not cache, put in cache
-	mCache.insert(std::make_pair(key, std::make_pair(time(NULL), weak_data_ptr(cit->second->second))));
+	mCache.insert(std::make_pair(key, std::make_pair(time(NULL), weak_data_ptr(cit->second.second))));
 	return true;
 }
 
