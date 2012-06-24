@@ -36,7 +36,7 @@ bool ValidationCollection::addValidation(SerializedValidation::pointer val)
 
 	Log(lsINFO) << "Val for " << hash.GetHex() << " from " << val->getSignerPublic().humanNodePublic()
 		<< " added " << (val->isTrusted() ? "trusted" : "UNtrusted");
-	return true;
+	return isCurrent;
 }
 
 ValidationSet ValidationCollection::getValidations(const uint256& ledger)
