@@ -852,7 +852,7 @@ void Peer::recvAccount(newcoin::TMAccount& packet)
 
 void Peer::recvStatus(newcoin::TMStatusChange& packet)
 {
-	Log(lsTRACE) << "Received status change from peer" << getIP();
+	Log(lsTRACE) << "Received status change from peer " << getIP();
 	if (!packet.has_networktime())
 		packet.set_networktime(theApp->getOPs().getNetworkTimeNC());
 	mLastStatus = packet;
