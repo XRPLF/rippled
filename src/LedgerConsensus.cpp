@@ -589,10 +589,7 @@ bool LedgerConsensus::peerPosition(LedgerProposal::pointer newPosition)
 	{
 		assert(newPosition->getPeerID() == currentPosition->getPeerID());
 		if (newPosition->getProposeSeq() <= currentPosition->getProposeSeq())
-		{
-			Log(lsINFO) << "Redundant/stale positon";
 			return false;
-		}
 		if (newPosition->getCurrentHash() == currentPosition->getCurrentHash())
 		{ // we missed an intermediary change
 			Log(lsINFO) << "We missed an intermediary position";
