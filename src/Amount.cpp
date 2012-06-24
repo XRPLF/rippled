@@ -527,14 +527,14 @@ STAmount::operator double() const
 }
 
 STAmount operator+(const STAmount& v1, const STAmount& v2)
-{ // We can check for precision loss here (value%10)!=0
-// FIXME
+{
+	if (v1.isZero()) return v2;
+	if (v2.isZero()) return v1;
+
 	v1.throwComparable(v2);
 	if (v1.mIsNative)
 		return STAmount(v1.name, v1.getSNValue() + v2.getSNValue());
 
-	if (v1.isZero()) return v2;
-	if (v2.isZero()) return v1;
 
 	int ov1 = v1.mOffset, ov2 = v2.mOffset;
 	int64 vv1 = static_cast<int64>(v1.mValue), vv2 = static_cast<int64>(v2.mValue);
@@ -562,13 +562,11 @@ STAmount operator+(const STAmount& v1, const STAmount& v2)
 
 STAmount operator-(const STAmount& v1, const STAmount& v2)
 {
+	if (v2.isZero()) return v1;
+
 	v1.throwComparable(v2);
 	if (v2.mIsNative)
 		return STAmount(v1.name, v1.getSNValue() - v2.getSNValue());
-
-	if (v2.isZero()) return v1;
-	if (v1.isZero() || (v2.mOffset > v1.mOffset) )
-		throw std::runtime_error("value underflow");
 
 	int ov1 = v1.mOffset, ov2 = v2.mOffset;
 	int64 vv1 = static_cast<int64>(v1.mValue), vv2 = static_cast<int64>(v2.mValue);
