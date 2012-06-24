@@ -754,17 +754,6 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 	Ledger::pointer newLCL = boost::make_shared<Ledger>(false, boost::ref(*mPreviousLedger));
 	newLCL->armDirty();
 
-#ifdef DEBUG
-	Json::StyledStreamWriter ssw;
-	if (1)
-	{
-		Log(lsTRACE) << "newLCL before transactions";
-		Json::Value p;
-		newLCL->addJson(p, LEDGER_JSON_DUMP_TXNS | LEDGER_JSON_DUMP_STATE);
-		ssw.write(Log(lsTRACE).ref(), p);
-	}
-#endif
-
 	CanonicalTXSet failedTransactions(set->getHash());
 	applyTransactions(set, newLCL, failedTransactions, true);
 	newLCL->setClosed();
@@ -772,27 +761,23 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 	newLCL->updateHash();
 	uint256 newLCLHash = newLCL->getHash();
 	Log(lsTRACE) << "newLCL " << newLCLHash.GetHex();
-
+	statusChange(newcoin::neACCEPTED_LEDGER, newLCL);
+	if (mValidating)
+	{
+		assert (theApp->getOPs().getNetworkTimeNC() > newLCL->getCloseTimeNC());
+		SerializedValidation::pointer v = boost::make_shared<SerializedValidation>
+			(newLCLHash, newLCL->getCloseTimeNC(), mOurPosition->peekSeed(), mProposing);
+		v->setTrusted();
+		theApp->getValidations().addValidation(v);
+		std::vector<unsigned char> validation = v->getSigned();
+		newcoin::TMValidation val;
+		val.set_validation(&validation[0], validation.size());
+		theApp->getConnectionPool().relayMessage(NULL, boost::make_shared<PackedMessage>(val, newcoin::mtVALIDATION));
+		Log(lsINFO) << "Validation sent " << newLCLHash.GetHex();
+	}
+	else Log(lsWARNING) << "Not validating";
 
 	Ledger::pointer newOL = boost::make_shared<Ledger>(true, boost::ref(*newLCL));
-
-#ifdef DEBUG
-	if (1)
-	{
-		Log(lsTRACE) << "newOL before transactions";
-		Json::Value p;
-		newOL->addJson(p, LEDGER_JSON_DUMP_TXNS | LEDGER_JSON_DUMP_STATE);
-		ssw.write(Log(lsTRACE).ref(), p);
-	}
-	if (1)
-	{
-		Log(lsTRACE) << "current ledger";
-		Json::Value p;
-		theApp->getMasterLedger().getCurrentLedger()->addJson(p, LEDGER_JSON_DUMP_TXNS | LEDGER_JSON_DUMP_STATE);
-		ssw.write(Log(lsTRACE).ref(), p);
-	}
-#endif
-
 	ScopedLock sl = theApp->getMasterLedger().getLock();
 
 	// Apply disputed transactions that didn't get in
@@ -822,34 +807,15 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 	sl.unlock();
 
 #ifdef DEBUG
+	Json::StyledStreamWriter ssw;
 	if (1)
 	{
-		Log(lsTRACE) << "newOL after current ledger transactions";
+		Log(lsTRACE) << "newLCL";
 		Json::Value p;
-		newOL->addJson(p, LEDGER_JSON_DUMP_TXNS | LEDGER_JSON_DUMP_STATE);
+		newLCL->addJson(p, LEDGER_JSON_DUMP_TXNS | LEDGER_JSON_DUMP_STATE);
 		ssw.write(Log(lsTRACE).ref(), p);
-		Log(lsINFO) << "newLCL after transactions";
-		Json::Value p2;
-		newLCL->addJson(p2, LEDGER_JSON_DUMP_TXNS | LEDGER_JSON_DUMP_STATE);
-		ssw.write(Log(lsTRACE).ref(), p2);
 	}
 #endif
-
-	if (mValidating)
-	{
-		assert (theApp->getOPs().getNetworkTimeNC() > newLCL->getCloseTimeNC());
-		SerializedValidation::pointer v = boost::make_shared<SerializedValidation>
-			(newLCLHash, newLCL->getCloseTimeNC(), mOurPosition->peekSeed(), mProposing);
-		v->setTrusted();
-		theApp->getValidations().addValidation(v);
-		std::vector<unsigned char> validation = v->getSigned();
-		newcoin::TMValidation val;
-		val.set_validation(&validation[0], validation.size());
-		theApp->getConnectionPool().relayMessage(NULL, boost::make_shared<PackedMessage>(val, newcoin::mtVALIDATION));
-		Log(lsINFO) << "Validation sent " << newLCLHash.GetHex();
-	}
-	else Log(lsWARNING) << "Not validating";
-	statusChange(newcoin::neACCEPTED_LEDGER, newLCL);
 	// FIXME: If necessary, change state to TRACKING/FULL
 }
 
