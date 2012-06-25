@@ -52,7 +52,7 @@ void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint2
 					std::vector<unsigned char> nodeData;
 					if (filter->haveNode(childID, childHash, nodeData))
 					{
-						d = boost::make_shared<SHAMapTreeNode>(childID, nodeData, mSeq);
+						d = boost::make_shared<SHAMapTreeNode>(childID, nodeData, mSeq, STN_ARF_WIRE);
 						if (childHash != d->getNodeHash())
 						{
 							Log(lsERROR) << "Wrong hash from cached object";
@@ -92,7 +92,7 @@ bool SHAMap::getNodeFat(const SHAMapNode& wanted, std::vector<SHAMapNode>& nodeI
 
 	nodeIDs.push_back(*node);
 	Serializer s;
-	node->addRaw(s);
+	node->addRaw(s, STN_ARF_WIRE);
 	rawNodes.push_back(s.peekData());
 
 	if (node->isRoot() || node->isLeaf()) // don't get a fat root, can't get a fat leaf
@@ -107,7 +107,7 @@ bool SHAMap::getNodeFat(const SHAMapNode& wanted, std::vector<SHAMapNode>& nodeI
 			{
 				nodeIDs.push_back(*nextNode);
 				Serializer s;
-				nextNode->addRaw(s);
+				nextNode->addRaw(s, STN_ARF_WIRE);
 				rawNodes.push_back(s.peekData());
 		 	}
 		}
@@ -126,7 +126,7 @@ bool SHAMap::addRootNode(const std::vector<unsigned char>& rootNode)
 		return true;
 	}
 
-	SHAMapTreeNode::pointer node = boost::make_shared<SHAMapTreeNode>(SHAMapNode(), rootNode, 0);
+	SHAMapTreeNode::pointer node = boost::make_shared<SHAMapTreeNode>(SHAMapNode(), rootNode, 0, STN_ARF_WIRE);
 	if (!node) return false;
 
 #ifdef DEBUG
@@ -158,7 +158,7 @@ bool SHAMap::addRootNode(const uint256& hash, const std::vector<unsigned char>& 
 		return true;
 	}
 
-	SHAMapTreeNode::pointer node = boost::make_shared<SHAMapTreeNode>(SHAMapNode(), rootNode, 0);
+	SHAMapTreeNode::pointer node = boost::make_shared<SHAMapTreeNode>(SHAMapNode(), rootNode, 0, STN_ARF_WIRE);
 	if (!node) return false;
 	if (node->getNodeHash() != hash) return false;
 
@@ -217,7 +217,7 @@ bool SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigned cha
 	uint256 hash = iNode->getChildHash(branch);
 	if (!hash) return false;
 
-	SHAMapTreeNode::pointer newNode = boost::make_shared<SHAMapTreeNode>(node, rawNode, mSeq);
+	SHAMapTreeNode::pointer newNode = boost::make_shared<SHAMapTreeNode>(node, rawNode, mSeq, STN_ARF_WIRE);
 	if (hash != newNode->getNodeHash()) // these aren't the droids we're looking for
 		return false;
 
@@ -368,7 +368,7 @@ std::list<std::vector<unsigned char> > SHAMap::getTrustedPath(const uint256& ind
 	Serializer s;
 	while (!stack.empty())
 	{
-		stack.top()->addRaw(s);
+		stack.top()->addRaw(s, STN_ARF_WIRE);
 		path.push_back(s.getData());
 		s.erase();
 		stack.pop();
@@ -380,13 +380,16 @@ BOOST_AUTO_TEST_SUITE( SHAMapSync )
 
 BOOST_AUTO_TEST_CASE( SHAMapSync_test )
 {
+	Log(lsTRACE) << "being sync test";
 	unsigned int seed;
 	RAND_pseudo_bytes(reinterpret_cast<unsigned char *>(&seed), sizeof(seed));
 	srand(seed);
 
+	Log(lsTRACE) << "Constructing maps";
 	SHAMap source, destination;
 
 	// add random data to the source map
+	Log(lsTRACE) << "Adding random data";
 	int items = 10000;
 	for (int i = 0; i < items; ++i)
 		source.addItem(*makeRandomAS(), false);
