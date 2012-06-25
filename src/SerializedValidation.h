@@ -17,7 +17,6 @@ public:
 
 	static SOElement	sValidationFormat[16];
 	static const uint32	sFullFlag;
-	static const uint32 sValidationMagic;
 
 	// These throw if the object is not valid
 	SerializedValidation(SerializerIterator& sit, bool checkSignature = true);

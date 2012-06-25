@@ -1,6 +1,8 @@
 
 #include "SerializedValidation.h"
 
+#include "HashPrefixes.h"
+
 SOElement SerializedValidation::sValidationFormat[] = {
 	{ sfFlags,			"Flags",			STI_UINT32,		SOE_FLAGS,		0 },
 	{ sfLedgerHash,		"LedgerHash",		STI_HASH256,	SOE_REQUIRED,	0 },
@@ -11,7 +13,6 @@ SOElement SerializedValidation::sValidationFormat[] = {
 };
 
 const uint32 SerializedValidation::sFullFlag		= 0x00010000;
-const uint32 SerializedValidation::sValidationMagic	= 0x4c575200; // "LGR"
 
 SerializedValidation::SerializedValidation(SerializerIterator& sit, bool checkSignature)
 	: STObject(sValidationFormat, sit), mSignature(sit, "Signature"), mTrusted(false)
@@ -39,7 +40,7 @@ uint256 SerializedValidation::getSigningHash() const
 {
 	Serializer s;
 
-	s.add32(sValidationMagic);
+	s.add32(sHP_Validation);
 	add(s);
 
 	return s.getSHA512Half();
