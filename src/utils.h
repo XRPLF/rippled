@@ -26,6 +26,49 @@
 extern uint64_t htobe64(uint64_t value);
 #endif
 
+#define vt_f_black          "\033[30m"
+#define vt_f_red            "\033[31m"
+#define vt_f_green          "\033[32m"
+#define vt_f_yellow         "\033[33m"
+#define vt_f_blue           "\033[34m"
+#define vt_f_megenta        "\033[35m"
+#define vt_f_cyan           "\033[36m"
+#define vt_f_white          "\033[37m"
+#define vt_f_default        "\033[39m"
+
+#define vt_b_black          "\033[40m"
+#define vt_b_red            "\033[41m"
+#define vt_b_green          "\033[42m"
+#define vt_b_yellow         "\033[43m"
+#define vt_b_blue           "\033[44m"
+#define vt_b_megenta        "\033[45m"
+#define vt_b_cyan           "\033[46m"
+#define vt_b_white          "\033[47m"
+#define vt_b_default        "\033[49m"
+
+#define vt_f_bold_black    "\033[1m\033[30m"
+#define vt_f_bold_red      "\033[1m\033[31m"
+#define vt_f_bold_green    "\033[1m\033[32m"
+#define vt_f_bold_yellow   "\033[1m\033[33m"
+#define vt_f_bold_blue     "\033[1m\033[34m"
+#define vt_f_bold_megenta  "\033[1m\033[35m"
+#define vt_f_bold_cyan     "\033[1m\033[36m"
+#define vt_f_bold_white    "\033[1m\033[37m"
+#define vt_f_bold_default  "\033[1m\033[39m"
+
+#define vt_bold             "\033[1m"
+#define vt_dim              "\033[2m"     // does not work for xterm
+#define vt_normal           "\033[22m"    // intensity
+
+#define vt_n_enable         "\033[7m"     // negative
+#define vt_n_disable        "\033[27m"
+
+#define vt_u_single         "\033[4m"     // underline
+#define vt_u_double         "\033[21m"    // does not work for xterm
+#define vt_u_disable        "\033[24m"
+
+#define vt_reset    vt_f_default vt_b_default vt_normal vt_n_disable vt_u_disable
+
 boost::posix_time::ptime ptEpoch();
 int iToSeconds(boost::posix_time::ptime ptWhen);
 boost::posix_time::ptime ptFromSeconds(int iSeconds);

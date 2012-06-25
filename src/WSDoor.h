@@ -19,8 +19,8 @@
 class WSDoor
 {
 private:
-	websocketpp::WSDOOR_SERVER*		mEndpoint;
-	boost::thread*					mThread;
+	websocketpp::WSDOOR_SERVER*	mEndpoint;
+	boost::thread*				mThread;
 
 	void		startListening();
 

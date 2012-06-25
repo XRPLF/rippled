@@ -1,19 +1,28 @@
 #ifndef __NETWORK_OPS__
 #define __NETWORK_OPS__
 
-#include "LedgerMaster.h"
 #include "AccountState.h"
-#include "RippleState.h"
+#include "LedgerMaster.h"
 #include "NicknameState.h"
+#include "RippleState.h"
 #include "SerializedValidation.h"
 
-// #include <boost/asio.hpp>
+#include <boost/interprocess/sync/interprocess_upgradable_mutex.hpp>
+#include <boost/interprocess/sync/sharable_lock.hpp>
+#include <boost/unordered_map.hpp>
+#include <boost/unordered_set.hpp>
 
 // Operations that clients may wish to perform against the network
 // Master operational handler, server sequencer, network tracker
 
 class Peer;
 class LedgerConsensus;
+
+class InfoSub
+{
+public:
+	virtual	void send(const Json::Value& jvObj) = 0;
+};
 
 class NetworkOPs
 {
@@ -40,6 +49,12 @@ protected:
 	LedgerMaster*						mLedgerMaster;
 
 	void setMode(OperatingMode);
+
+	typedef boost::unordered_map<NewcoinAddress,boost::unordered_set<InfoSub*> >			subInfoMapType;
+	typedef boost::unordered_map<NewcoinAddress,boost::unordered_set<InfoSub*> >::iterator	subInfoMapIterator;
+
+    boost::interprocess::interprocess_upgradable_mutex	mMonitorLock;
+	subInfoMapType										mSubAccountInfo;
 
 public:
 	NetworkOPs(boost::asio::io_service& io_service, LedgerMaster* pLedgerMaster);
@@ -133,6 +148,23 @@ public:
 	// client information retrieval functions
 	std::vector< std::pair<uint32, uint256> >
 		getAffectedAccounts(const NewcoinAddress& account, uint32 minLedger, uint32 maxLedger);
+
+	//
+	// Monitoring: publisher side
+	//
+
+	void pubAccountInfo(const NewcoinAddress& naAccountID, const Json::Value& jvObj);
+
+	//
+	// Monitoring: subscriber side
+	//
+
+	// --> vnaAddress: empty = all
+	void subAccountInfo(InfoSub* ispListener, const std::vector<NewcoinAddress>& vnaAccountIDs);
+	void unsubAccountInfo(InfoSub* ispListener, const std::vector<NewcoinAddress>& vnaAccountIDs);
+
+	void subAccountChanges(InfoSub* ispListener, const uint256 uLedgerHash);
+	void unsubAccountChanges(InfoSub* ispListener);
 };
 
 #endif
