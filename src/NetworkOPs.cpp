@@ -1,15 +1,16 @@
 
 #include "NetworkOPs.h"
 
-#include <boost/bind.hpp>
-#include <boost/unordered_map.hpp>
-
 #include "utils.h"
 #include "Application.h"
 #include "Transaction.h"
 #include "LedgerConsensus.h"
 #include "LedgerTiming.h"
 #include "Log.h"
+#include "NewcoinAddress.h"
+
+#include <boost/bind.hpp>
+#include <boost/foreach.hpp>
 
 // This is the primary interface into the "client" portion of the program.
 // Code that wants to do normal operations on the network such as
@@ -553,7 +554,6 @@ bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash,
 	}
 
 	return mConsensus->peerPosition(proposal);
-	
 }
 
 SHAMap::pointer NetworkOPs::getTXMap(const uint256& hash)
@@ -662,5 +662,93 @@ Json::Value NetworkOPs::getServerInfo()
 
 	return info;
 }
+
+//
+// Monitoring:: publisher side
+//
+
+void NetworkOPs::pubAccountInfo(const NewcoinAddress& naAccountID, const Json::Value& jvObj)
+{
+	boost::interprocess::sharable_lock<boost::interprocess::interprocess_upgradable_mutex>	sl(mMonitorLock);
+
+	subInfoMapType::iterator	simIterator	= mSubAccountInfo.find(naAccountID);
+
+	if (simIterator == mSubAccountInfo.end())
+	{
+		// Address not found do nothing.
+		nothing();
+	}
+	else
+	{
+		// Found it.
+		BOOST_FOREACH(InfoSub* ispListener, simIterator->second)
+		{
+			ispListener->send(jvObj);
+		}
+	}
+}
+
+//
+// Monitoring
+//
+
+void NetworkOPs::subAccountInfo(InfoSub* ispListener, const std::vector<NewcoinAddress>& vnaAccountIDs)
+{
+	boost::interprocess::scoped_lock<boost::interprocess::interprocess_upgradable_mutex>	sl(mMonitorLock);
+
+	BOOST_FOREACH(NewcoinAddress naAccountID, vnaAccountIDs)
+	{
+		subInfoMapType::iterator	simIterator	= mSubAccountInfo.find(naAccountID);
+		if (simIterator == mSubAccountInfo.end())
+		{
+			// Not found
+			boost::unordered_set<InfoSub*>	usisElement;
+
+			usisElement.insert(ispListener);
+			mSubAccountInfo.insert(simIterator, make_pair(naAccountID, usisElement));
+		}
+		else
+		{
+			// Found
+			simIterator->second.insert(ispListener);
+		}
+	}
+}
+
+void NetworkOPs::unsubAccountInfo(InfoSub* ispListener, const std::vector<NewcoinAddress>& vnaAccountIDs)
+{
+	boost::interprocess::scoped_lock<boost::interprocess::interprocess_upgradable_mutex>	sl(mMonitorLock);
+
+	BOOST_FOREACH(NewcoinAddress naAccountID, vnaAccountIDs)
+	{
+		subInfoMapType::iterator	simIterator	= mSubAccountInfo.find(naAccountID);
+		if (simIterator == mSubAccountInfo.end())
+		{
+			// Not found.  Done.
+			nothing();
+		}
+		else
+		{
+			// Found
+			simIterator->second.erase(ispListener);
+
+			if (simIterator->second.empty())
+			{
+				// Don't need hash entry.
+				mSubAccountInfo.erase(simIterator);
+			}
+		}
+	}
+}
+
+
+void NetworkOPs::subAccountChanges(InfoSub* ispListener, const uint256 uLedgerHash)
+{
+}
+
+void NetworkOPs::unsubAccountChanges(InfoSub* ispListener)
+{
+}
+
 
 // vim:ts=4
