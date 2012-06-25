@@ -112,8 +112,6 @@ void Config::setup(const std::string& strConf)
 	// Defaults
 	//
 
-	VERSION					= 1;
-
 	NETWORK_START_TIME		= 1319844908;
 
 	PEER_PORT				= SYSTEM_PEER_PORT;

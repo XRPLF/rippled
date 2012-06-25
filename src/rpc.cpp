@@ -15,13 +15,10 @@
 #include "BitcoinUtil.h"
 #include "Config.h"
 #include "Log.h"
+#include "Version.h"
 
 using namespace boost;
 using namespace boost::asio;
-
-
-
-
 
 Json::Value JSONRPCError(int code, const std::string& message)
 {
@@ -116,7 +113,7 @@ std::string HTTPReply(int nStatus, const std::string& strMsg)
 		rfc1123Time().c_str(),
 		access.c_str(),
 		strMsg.size(),
-		theConfig.VERSION_STR.c_str(),
+		SERVER_VERSION,
 		strMsg.c_str());	
 }
 
