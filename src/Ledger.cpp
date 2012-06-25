@@ -18,6 +18,7 @@
 #include "Wallet.h"
 #include "BinaryFormats.h"
 #include "LedgerTiming.h"
+#include "HashPrefixes.h"
 #include "Log.h"
 
 Ledger::Ledger(const NewcoinAddress& masterID, uint64 startAmount) : mTotCoins(startAmount),
@@ -116,6 +117,7 @@ void Ledger::updateHash()
 	}
 
 	Serializer s(116);
+	s.add32(sHP_Ledger);
 	addRaw(s);
 	mHash = s.getSHA512Half();
 	mValidHash = true;
@@ -438,7 +440,7 @@ void Ledger::addJson(Json::Value& ret, int options)
 
 void Ledger::setAcquiring(void)
 {
-	if (!mTransactionMap || !mAccountStateMap) throw SHAMapException(InvalidMap);
+	if (!mTransactionMap || !mAccountStateMap) throw std::runtime_error("invalid map");
 	mTransactionMap->setSynching();
 	mAccountStateMap->setSynching();
 }
