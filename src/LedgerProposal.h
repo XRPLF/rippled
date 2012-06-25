@@ -19,8 +19,6 @@ protected:
 	NewcoinAddress	mPublicKey;
 	NewcoinAddress	mPrivateKey;	// If ours
 
-	static const uint32 sProposeMagic = 0x50525000; // PRP
-
 public:
 
 	typedef boost::shared_ptr<LedgerProposal> pointer;
