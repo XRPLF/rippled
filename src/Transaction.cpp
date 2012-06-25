@@ -528,7 +528,7 @@ bool Transaction::save()
 
 	Database *db = theApp->getTxnDB()->getDB();
 	ScopedLock dbLock = theApp->getTxnDB()->getDBLock();
-	if (!SQL_EXISTS(db, exists)) return false;
+	if (SQL_EXISTS(db, exists)) return false;
 	return
 		db->executeSQL(mTransaction->getSQLInsertHeader() + mTransaction->getSQL(getLedger(), status) + ";");
 }
