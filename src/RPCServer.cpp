@@ -1,16 +1,4 @@
 
-#include <iostream>
-
-#include <boost/bind.hpp>
-#include <boost/foreach.hpp>
-#include <boost/lexical_cast.hpp>
-#include <boost/algorithm/string.hpp>
-
-#include <openssl/md5.h>
-
-#include "../json/reader.h"
-#include "../json/writer.h"
-
 #include "RPCServer.h"
 #include "RequestParser.h"
 #include "HttpReply.h"
@@ -24,6 +12,18 @@
 #include "NicknameState.h"
 #include "utils.h"
 #include "Log.h"
+
+#include <iostream>
+
+#include <boost/bind.hpp>
+#include <boost/foreach.hpp>
+#include <boost/lexical_cast.hpp>
+#include <boost/algorithm/string.hpp>
+
+#include <openssl/md5.h>
+
+#include "../json/reader.h"
+#include "../json/writer.h"
 
 RPCServer::RPCServer(boost::asio::io_service& io_service , NetworkOPs* nopNetwork)
 	: mNetOps(nopNetwork), mSocket(io_service)
@@ -74,7 +74,6 @@ Json::Value RPCServer::RPCError(int iError)
 		{ rpcWRONG_PASSWORD,	"wrongPassword",	"Wrong password." },
 		{ rpcWRONG_SEED,		"wrongSeed",		"The regular key does not point as the master key." },
 		{ rpcNO_PERMISSION,		"noPermission",		"You don't have permission for this command." },
-		
 	};
 
 	int		i;
@@ -97,7 +96,7 @@ Json::Value RPCServer::RPCError(int iError)
 void RPCServer::connected()
 {
 	//std::cout << "RPC request" << std::endl;
-	if(mSocket.remote_endpoint().address().to_string()=="127.0.0.1") mRole=ADMIN;
+	if (mSocket.remote_endpoint().address().to_string()=="127.0.0.1") mRole=ADMIN;
 	else mRole=GUEST;
 
 	mSocket.async_read_some(boost::asio::buffer(mReadBuffer),
@@ -281,13 +280,14 @@ Json::Value RPCServer::authorize(const uint256& uLedger,
 
 	NewcoinAddress	naMasterGenerator;
 
-	if(asSrc->bHaveAuthorizedKey())
+	if (asSrc->bHaveAuthorizedKey())
 	{
 		Json::Value	obj	= getMasterGenerator(uLedger, naRegularSeed, naMasterGenerator);
 
 		if (!obj.empty())
 			return obj;
-	}else
+	}
+	else
 	{
 		// Try the seed as a master seed.
 		naMasterGenerator	= NewcoinAddress::createGeneratorPublic(naRegularSeed);
@@ -765,7 +765,7 @@ Json::Value RPCServer::doCreditSet(Json::Value& params)
 		NewcoinAddress			naMasterGenerator;
 		NewcoinAddress			naAccountPublic;
 		NewcoinAddress			naAccountPrivate;
-	    AccountState::pointer	asSrc;
+		AccountState::pointer	asSrc;
 		STAmount				saSrcBalance;
 		Json::Value				obj			= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
 			saSrcBalance, theConfig.FEE_DEFAULT, asSrc, naMasterGenerator);
@@ -1166,7 +1166,7 @@ Json::Value RPCServer::doSend(Json::Value& params)
 		NewcoinAddress			naVerifyGenerator;
 		NewcoinAddress			naAccountPublic;
 		NewcoinAddress			naAccountPrivate;
-	    AccountState::pointer	asSrc;
+		AccountState::pointer	asSrc;
 		STAmount				saSrcBalance;
 		Json::Value				obj		= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
 			saSrcBalance, saFee, asSrc, naVerifyGenerator);
@@ -1278,7 +1278,7 @@ Json::Value RPCServer::doTransitSet(Json::Value& params)
 		NewcoinAddress			naMasterGenerator;
 		NewcoinAddress			naAccountPublic;
 		NewcoinAddress			naAccountPrivate;
-	    AccountState::pointer	asSrc;
+		AccountState::pointer	asSrc;
 		STAmount				saSrcBalance;
 		Json::Value				obj		= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
 			saSrcBalance, theConfig.FEE_DEFAULT, asSrc, naMasterGenerator);
@@ -1630,7 +1630,7 @@ Json::Value RPCServer::doWalletAdd(Json::Value& params)
 
 		NewcoinAddress			naAccountPublic;
 		NewcoinAddress			naAccountPrivate;
-	    AccountState::pointer	asSrc;
+		AccountState::pointer	asSrc;
 		STAmount				saSrcBalance;
 		Json::Value				obj			= authorize(uLedger, naRegularSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
 			saSrcBalance, theConfig.FEE_ACCOUNT_CREATE, asSrc, naMasterGenerator);
@@ -1721,7 +1721,7 @@ Json::Value RPCServer::doWalletClaim(Json::Value& params)
 	else
 	{
 		// Building:
-		//   peer_wallet_claim <account_id> <authorized_key> <encrypted_master_public_generator> <generator_pubkey> <generator_signature>
+		//	 peer_wallet_claim <account_id> <authorized_key> <encrypted_master_public_generator> <generator_pubkey> <generator_signature>
 		//		<source_tag> [<annotation>]
 		//
 		//
@@ -1813,7 +1813,7 @@ Json::Value RPCServer::doWalletCreate(Json::Value& params)
 	}
 
 	// Trying to build:
-	//   peer_wallet_create <paying_account> <paying_signature> <account_id> [<initial_funds>] [<annotation>]
+	//	 peer_wallet_create <paying_account> <paying_signature> <account_id> [<initial_funds>] [<annotation>]
 
 	NewcoinAddress			naMasterGenerator;
 	NewcoinAddress			naAccountPublic;
@@ -1965,7 +1965,7 @@ Json::Value RPCServer::doUnlScore(Json::Value& params)
 	return "scoring requested";
 }
 
-Json::Value RPCServer::doStop(Json::Value& params) 
+Json::Value RPCServer::doStop(Json::Value& params)
 {
 	theApp->stop();
 
@@ -1980,7 +1980,7 @@ Json::Value RPCServer::doLogin(Json::Value& params)
 	std::string	username		= params[0u].asString();
 	std::string	password		= params[1u].asString();
 
-	if(username==theConfig.RPC_USER && password==theConfig.RPC_PASSWORD)
+	if (username==theConfig.RPC_USER && password==theConfig.RPC_PASSWORD)
 	{
 		//mRole=ADMIN;
 		return "logged in";
@@ -2002,48 +2002,48 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 		bool		mAdminRequired;
 		unsigned int	iOptions;
 	} commandsA[] = {
-		{	"account_email_set",	&RPCServer::doAccountEmailSet,		2, 3, true,optCurrent },
-		{	"account_info",			&RPCServer::doAccountInfo,			1, 2, false,optCurrent },
-		{	"account_lines",		&RPCServer::doAccountLines,			1, 2, true,optCurrent|optClosed },
-		{	"account_message_set",	&RPCServer::doAccountMessageSet,	3, 3, true,optCurrent },
-		{	"account_tx",			&RPCServer::doAccountTransactions,	2, 3, true,optNetwork },
-		{	"account_wallet_set",	&RPCServer::doAccountWalletSet,		2, 3, true,optCurrent },
-		{	"connect",				&RPCServer::doConnect,				1, 2, true  },
-		{	"credit_set",			&RPCServer::doCreditSet,			4, 6, true,optCurrent },
-		{	"data_delete",			&RPCServer::doDataDelete,			1, 1, true },
-		{	"data_fetch",			&RPCServer::doDataFetch,			1, 1, true },
-		{	"data_store",			&RPCServer::doDataStore,			2, 2, true },
-		{	"ledger",				&RPCServer::doLedger,				0, 2, false,optNetwork },
-		{	"nickname_info",		&RPCServer::doNicknameInfo,			1, 1, true,optCurrent },
-		{	"nickname_set",			&RPCServer::doNicknameSet,			2, 3, true,optCurrent },
-		{	"password_fund",		&RPCServer::doPasswordFund,			2, 3, true,optCurrent },
-		{	"password_set",			&RPCServer::doPasswordSet,			2, 3, true,optNetwork },
-		{	"peers",				&RPCServer::doPeers,				0, 0, true },
-		{	"send",					&RPCServer::doSend,					3, 7, false, optCurrent },
-		{	"server_info",			&RPCServer::doServerInfo,			0, 0, false },
-		{	"stop",					&RPCServer::doStop,					0, 0, true },
-		{	"transit_set",			&RPCServer::doTransitSet,			5, 5, true, optCurrent },
-		{	"tx",					&RPCServer::doTx,					1, 1, true },
+		{	"account_email_set",	&RPCServer::doAccountEmailSet,		2, 3, true,		optCurrent	},
+		{	"account_info",			&RPCServer::doAccountInfo,			1, 2, false,	optCurrent	},
+		{	"account_lines",		&RPCServer::doAccountLines,			1, 2, true,		optCurrent|optClosed },
+		{	"account_message_set",	&RPCServer::doAccountMessageSet,	3, 3, true,		optCurrent	},
+		{	"account_tx",			&RPCServer::doAccountTransactions,	2, 3, true,		optNetwork	},
+		{	"account_wallet_set",	&RPCServer::doAccountWalletSet,		2, 3, true,		optCurrent	},
+		{	"connect",				&RPCServer::doConnect,				1, 2, true					},
+		{	"credit_set",			&RPCServer::doCreditSet,			4, 6, true,		optCurrent	},
+		{	"data_delete",			&RPCServer::doDataDelete,			1, 1, true					},
+		{	"data_fetch",			&RPCServer::doDataFetch,			1, 1, true					},
+		{	"data_store",			&RPCServer::doDataStore,			2, 2, true					},
+		{	"ledger",				&RPCServer::doLedger,				0, 2, false,	optNetwork	},
+		{	"nickname_info",		&RPCServer::doNicknameInfo,			1, 1, true,		optCurrent	},
+		{	"nickname_set",			&RPCServer::doNicknameSet,			2, 3, true,		optCurrent	},
+		{	"password_fund",		&RPCServer::doPasswordFund,			2, 3, true,		optCurrent	},
+		{	"password_set",			&RPCServer::doPasswordSet,			2, 3, true,		optNetwork	},
+		{	"peers",				&RPCServer::doPeers,				0, 0, true					},
+		{	"send",					&RPCServer::doSend,					3, 7, false,	optCurrent	},
+		{	"server_info",			&RPCServer::doServerInfo,			0, 0, true					},
+		{	"stop",					&RPCServer::doStop,					0, 0, true					},
+		{	"transit_set",			&RPCServer::doTransitSet,			5, 5, true,		optCurrent	},
+		{	"tx",					&RPCServer::doTx,					1, 1, true					},
 
-		{	"unl_add",				&RPCServer::doUnlAdd,				1, 2, true },
-		{	"unl_delete",			&RPCServer::doUnlDelete,			1, 1, true },
-		{	"unl_list",				&RPCServer::doUnlList,				0, 0, true },
-		{	"unl_load",				&RPCServer::doUnlLoad,				0, 0, true },
-		{	"unl_network",			&RPCServer::doUnlNetwork,			0, 0, true },
-		{	"unl_reset",			&RPCServer::doUnlReset,				0, 0, true },
-		{	"unl_score",			&RPCServer::doUnlScore,				0, 0, true },
+		{	"unl_add",				&RPCServer::doUnlAdd,				1, 2, true					},
+		{	"unl_delete",			&RPCServer::doUnlDelete,			1, 1, true					},
+		{	"unl_list",				&RPCServer::doUnlList,				0, 0, true					},
+		{	"unl_load",				&RPCServer::doUnlLoad,				0, 0, true					},
+		{	"unl_network",			&RPCServer::doUnlNetwork,			0, 0, true					},
+		{	"unl_reset",			&RPCServer::doUnlReset,				0, 0, true					},
+		{	"unl_score",			&RPCServer::doUnlScore,				0, 0, true					},
 
-		{	"validation_create",	&RPCServer::doValidationCreate,		0, 1, false },
-		{	"validation_seed",		&RPCServer::doValidationSeed,		0, 1, false },
+		{	"validation_create",	&RPCServer::doValidationCreate,		0, 1, false					},
+		{	"validation_seed",		&RPCServer::doValidationSeed,		0, 1, false					},
 
-		{	"wallet_accounts",		&RPCServer::doWalletAccounts,		1, 1, false, optCurrent },
-		{	"wallet_add",			&RPCServer::doWalletAdd,			3, 5, false, optCurrent },
-		{	"wallet_claim",			&RPCServer::doWalletClaim,			2, 4, false, optNetwork },
-		{	"wallet_create",		&RPCServer::doWalletCreate,			3, 4, false, optCurrent },
-		{	"wallet_propose",		&RPCServer::doWalletPropose,		0, 0, false, },
-		{	"wallet_seed",			&RPCServer::doWalletSeed,			0, 1, false, },
+		{	"wallet_accounts",		&RPCServer::doWalletAccounts,		1, 1, false,	optCurrent	},
+		{	"wallet_add",			&RPCServer::doWalletAdd,			3, 5, false,	optCurrent	},
+		{	"wallet_claim",			&RPCServer::doWalletClaim,			2, 4, false,	optNetwork	},
+		{	"wallet_create",		&RPCServer::doWalletCreate,			3, 4, false,	optCurrent	},
+		{	"wallet_propose",		&RPCServer::doWalletPropose,		0, 0, false,				},
+		{	"wallet_seed",			&RPCServer::doWalletSeed,			0, 1, false,				},
 
-		{	"login",				&RPCServer::doLogin,				2, 2, true },
+		{	"login",				&RPCServer::doLogin,				2, 2, true					},
 	};
 
 	int		i = NUMBER(commandsA);
@@ -2088,13 +2088,11 @@ void RPCServer::sendReply()
 			boost::asio::placeholders::error));
 }
 
-
-
 void RPCServer::handle_write(const boost::system::error_code& e)
 {
 	//std::cout << "async_write complete " << e << std::endl;
 
-	if(!e)
+	if (!e)
 	{
 		// Initiate graceful connection closure.
 		boost::system::error_code ignored_ec;

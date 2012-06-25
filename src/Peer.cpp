@@ -1164,7 +1164,7 @@ Json::Value Peer::getJson()
 {
 	Json::Value ret(Json::objectValue);
 
-	ret["this"]			= ADDRESS(this);
+	//ret["this"]			= ADDRESS(this);
 	ret["public_key"]	= mNodePublic.ToString();
 	ret["ip"]			= mIpPortConnect.first;
 	ret["port"]			= mIpPortConnect.second;
@@ -1178,12 +1178,12 @@ Json::Value Peer::getJson()
 	if (mHello.has_protoversionminor() && mHello.has_protoversionmajor())
 		ret["protocol"] = boost::lexical_cast<std::string>(mHello.protoversionmajor()) + "." +
 			boost::lexical_cast<std::string>(mHello.protoversionminor());
-
+	/*
 	if (!mIpPort.first.empty())
 	{
 		ret["verified_ip"]		= mIpPort.first;
 		ret["verified_port"]	= mIpPort.second;
-	}
+	}*/
 
 	return ret;
 }

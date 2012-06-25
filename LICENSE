@@ -1,0 +1,21 @@
+The accompanying files under various copyrights.
+
+This work contains propritary code.
+Permission is required for distribution.
+
+Some code:
+Copyright (c) 2012 Arthur Britto
+Copyright (c) 2011-2012 David Schwartz
+Copyright (c) 2011-2012 Jed McCaleb
+
+Some code from ASIO examples:
+// Copyright (c) 2003-2011 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+//
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
+Some code from Bitcoin:
+// Copyright (c) 2009-2010 Satoshi Nakamoto
+// Copyright (c) 2011 The Bitcoin developers
+// Distributed under the MIT/X11 software license, see the accompanying
+// file license.txt or http://www.opensource.org/licenses/mit-license.php.
