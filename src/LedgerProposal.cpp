@@ -22,7 +22,6 @@ LedgerProposal::LedgerProposal(const uint256& pLgr, uint32 seq, const uint256& t
 LedgerProposal::LedgerProposal(const NewcoinAddress& naSeed, const uint256& prevLgr, const uint256& position) :
 	mPreviousLedger(prevLgr), mCurrentHash(position), mProposeSeq(0)
 {
-	mSeed		= naSeed;
 	mPublicKey	= NewcoinAddress::createNodePublic(naSeed);
 	mPrivateKey	= NewcoinAddress::createNodePrivate(naSeed);
 	mPeerID		= mPublicKey.getNodeID();
@@ -46,9 +45,9 @@ uint256 LedgerProposal::getSigningHash() const
 	return s.getSHA512Half();
 }
 
-bool LedgerProposal::checkSign(const std::string& signature)
+bool LedgerProposal::checkSign(const std::string& signature, const uint256& signingHash)
 {
-	return mPublicKey.verifyNodePublic(getSigningHash(), signature);
+	return mPublicKey.verifyNodePublic(signingHash, signature);
 }
 
 void LedgerProposal::changePosition(const uint256& newPosition)

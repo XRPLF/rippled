@@ -5,6 +5,8 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/make_shared.hpp>
 
+#include "../json/writer.h"
+
 #include "Application.h"
 #include "Ledger.h"
 #include "utils.h"
@@ -350,6 +352,11 @@ Ledger::pointer Ledger::getSQL(const std::string& sql)
 		boost::make_shared<Ledger>(prevHash, transHash, accountHash, totCoins, closingTime, ledgerSeq);
 	if (ret->getHash() != ledgerHash)
 	{
+		Json::StyledStreamWriter ssw;
+		Log(lsERROR) << "Failed on ledger";
+		Json::Value p;
+		ret->addJson(p, LEDGER_JSON_FULL);
+		ssw.write(Log(lsERROR).ref(), p);
 		assert(false);
 		return Ledger::pointer();
 	}
@@ -379,7 +386,8 @@ void Ledger::addJson(Json::Value& ret, int options)
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	ledger["parentHash"] = mParentHash.GetHex();
 
-	if(mClosed)
+	bool full = (options & LEDGER_JSON_FULL) != 0;
+	if(mClosed || full)
 	{
 		ledger["hash"] = mHash.GetHex();
 		ledger["transactionHash"] = mTransHash.GetHex();
@@ -391,8 +399,7 @@ void Ledger::addJson(Json::Value& ret, int options)
 	else ledger["closed"] = false;
 	if (mCloseTime != 0)
 		ledger["closeTime"] = boost::posix_time::to_simple_string(ptFromSeconds(mCloseTime));
-	bool full = (options & LEDGER_JSON_FULL) != 0;
-	if (full || ((options & LEDGER_JSON_DUMP_TXNS) != 0))
+	if (mTransactionMap && (full || ((options & LEDGER_JSON_DUMP_TXNS) != 0)))
 	{
 		Json::Value txns(Json::arrayValue);
 		for (SHAMapItem::pointer item = mTransactionMap->peekFirstItem(); !!item;
@@ -408,7 +415,7 @@ void Ledger::addJson(Json::Value& ret, int options)
 		}
 		ledger["transactions"] = txns;
 	}
-	if (full || ((options & LEDGER_JSON_DUMP_STATE) != 0))
+	if (mAccountStateMap && (full || ((options & LEDGER_JSON_DUMP_STATE) != 0)))
 	{
 		Json::Value state(Json::arrayValue);
 		for (SHAMapItem::pointer item = mAccountStateMap->peekFirstItem(); !!item;

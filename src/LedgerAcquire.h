@@ -20,8 +20,8 @@ class PeerSet
 {
 protected:
 	uint256 mHash;
-	int mTimerInterval;
-	bool mComplete, mFailed;
+	int mTimerInterval, mTimeouts;
+	bool mComplete, mFailed, mProgress;
 
 	boost::recursive_mutex					mLock;
 	boost::asio::deadline_timer				mTimer;
@@ -37,6 +37,9 @@ public:
 	const uint256& getHash() const		{ return mHash; }
 	bool isComplete() const				{ return mComplete; }
 	bool isFailed() const				{ return mFailed; }
+	int getTimeouts() const				{ return mTimeouts; }
+
+	void progress()						{ mProgress = true; }
 
 	void peerHas(Peer::pointer);
 	void badPeer(Peer::pointer);
@@ -49,34 +52,10 @@ protected:
 
 	void setComplete()					{ mComplete = true; }
 	void setFailed()					{ mFailed = true; }
+	void invokeOnTimer();
 
 private:
 	static void TimerEntry(boost::weak_ptr<PeerSet>, const boost::system::error_code& result);
-};
-
-typedef TaggedCache< uint256, std::vector<unsigned char> > NodeCache;
-typedef std::vector<unsigned char> VUC;
-
-class THSyncFilter : public SHAMapSyncFilter
-{
-protected:
-	NodeCache* mCache; // holds nodes we see during the consensus process
-
-public:
-	THSyncFilter(NodeCache* cache) : mCache(cache) { ; }
-	virtual void gotNode(const SHAMapNode& id, const uint256& nodeHash,
-		const std::vector<unsigned char>& nodeData, bool)
-	{
-		boost::shared_ptr<VUC> ptr = boost::make_shared<VUC>(nodeData);
-		mCache->canonicalize(nodeHash, ptr);
-	}
-	virtual bool haveNode(const SHAMapNode& id, const uint256& nodeHash, std::vector<unsigned char>& nodeData)
-	{
-		boost::shared_ptr<VUC> entry = mCache->fetch(nodeHash);
-		if (!entry) return false;
-		nodeData = *entry;
-		return true;
-	}
 };
 
 class LedgerAcquire : public PeerSet, public boost::enable_shared_from_this<LedgerAcquire>
@@ -86,7 +65,6 @@ public:
 
 protected:
 	Ledger::pointer mLedger;
-	THSyncFilter mFilter;
 	bool mHaveBase, mHaveState, mHaveTransactions;
 
 	std::vector< boost::function<void (LedgerAcquire::pointer)> > mOnComplete;
