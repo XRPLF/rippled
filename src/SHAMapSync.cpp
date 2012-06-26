@@ -46,32 +46,39 @@ void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint2
 			{
 				SHAMapNode childID = node->getChildNodeID(branch);
 				const uint256& childHash = node->getChildHash(branch);
-				SHAMapTreeNode::pointer d = getNode(childID, childHash, false);
-				if ((!d) && (filter != NULL))
+				SHAMapTreeNode::pointer d;
+				try
 				{
-					std::vector<unsigned char> nodeData;
-					if (filter->haveNode(childID, childHash, nodeData))
+					d = getNode(childID, childHash, false);
+				}
+				catch (SHAMapMissingNode& mn)
+				{ // node is not in the map
+					if (filter != NULL)
 					{
-						d = boost::make_shared<SHAMapTreeNode>(childID, nodeData, mSeq, STN_ARF_WIRE);
-						if (childHash != d->getNodeHash())
+						std::vector<unsigned char> nodeData;
+						if (filter->haveNode(childID, childHash, nodeData))
 						{
-							Log(lsERROR) << "Wrong hash from cached object";
-							d = SHAMapTreeNode::pointer();
-						}
-						else
-						{
-							Log(lsTRACE) << "Got sync node from cache: " << d->getString();
-							mTNByID[*d] = d;
+							d = boost::make_shared<SHAMapTreeNode>(childID, nodeData, mSeq, STN_ARF_WIRE);
+							if (childHash != d->getNodeHash())
+							{
+								Log(lsERROR) << "Wrong hash from cached object";
+								d = SHAMapTreeNode::pointer();
+							}
+							else
+							{
+								Log(lsTRACE) << "Got sync node from cache: " << d->getString();
+								mTNByID[*d] = d;
+							}
 						}
 					}
 				}
 				if (!d)
-				{
+				{ // we need this node
 					nodeIDs.push_back(node->getChildNodeID(branch));
 					if (--max <= 0)
 						return;
 				}
-				else if (d->isInner() && !d->isFullBelow())
+				else if (d->isInner() && !d->isFullBelow()) // we might need children of this node
 					stack.push(d);
 			}
 		}
@@ -159,8 +166,10 @@ bool SHAMap::addRootNode(const uint256& hash, const std::vector<unsigned char>& 
 	}
 
 	SHAMapTreeNode::pointer node = boost::make_shared<SHAMapTreeNode>(SHAMapNode(), rootNode, 0, STN_ARF_WIRE);
-	if (!node) return false;
-	if (node->getNodeHash() != hash) return false;
+	if (!node)
+		return false;
+	if (node->getNodeHash() != hash)
+		return false;
 
 	returnNode(root, true);
 	root = node;
@@ -178,14 +187,17 @@ bool SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigned cha
 	SHAMapSyncFilter* filter)
 { // return value: true=okay, false=error
 	assert(!node.isRoot());
-	if (!isSynching()) return false;
+	if (!isSynching())
+		return false;
 
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
-	if (checkCacheNode(node)) return true;
+	if (checkCacheNode(node))
+		return true;
 
-	std::stack<SHAMapTreeNode::pointer> stack = getStack(node.getNodeID(), true);
-	if (stack.empty()) return false;
+	std::stack<SHAMapTreeNode::pointer> stack = getStack(node.getNodeID(), true, true);
+	if (stack.empty())
+		return false;
 
 	SHAMapTreeNode::pointer iNode = stack.top();
 	if (!iNode)
@@ -221,7 +233,8 @@ bool SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigned cha
 	if (hash != newNode->getNodeHash()) // these aren't the droids we're looking for
 		return false;
 
-	if (filter) filter->gotNode(node, hash, rawNode, newNode->isLeaf());
+	if (filter)
+		filter->gotNode(node, hash, rawNode, newNode->isLeaf());
 
 	mTNByID[*newNode] = newNode;
 	if (!newNode->isLeaf())
@@ -236,9 +249,16 @@ bool SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigned cha
 		for (int i = 0; i < 16; ++i)
 			if (!iNode->isEmptyBranch(i))
 			{
-				SHAMapTreeNode::pointer nextNode = getNode(iNode->getChildNodeID(i), iNode->getChildHash(i), false);
-				if (!nextNode) return true;
-				if (nextNode->isInner() && !nextNode->isFullBelow()) return true;
+				try
+				{
+					SHAMapTreeNode::pointer nextNode = getNode(iNode->getChildNodeID(i), iNode->getChildHash(i), false);
+					if (nextNode->isInner() && !nextNode->isFullBelow())
+						return true;
+				}
+				catch (SHAMapMissingNode)
+				{
+					return true;
+				}
 			}
 		iNode->setFullBelow();
 	} while (!stack.empty());
@@ -359,7 +379,7 @@ static bool confuseMap(SHAMap &map, int count)
 std::list<std::vector<unsigned char> > SHAMap::getTrustedPath(const uint256& index)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
-	std::stack<SHAMapTreeNode::pointer> stack = SHAMap::getStack(index, false);
+	std::stack<SHAMapTreeNode::pointer> stack = SHAMap::getStack(index, false, false);
 
 	if (stack.empty() || !stack.top()->isLeaf())
 		throw std::runtime_error("requested leaf not present");
@@ -449,11 +469,13 @@ BOOST_AUTO_TEST_CASE( SHAMapSync_test )
 		
 		// get as many nodes as possible based on this information
 		for (nodeIDIterator = nodeIDs.begin(); nodeIDIterator != nodeIDs.end(); ++nodeIDIterator)
+		{
 			if (!source.getNodeFat(*nodeIDIterator, gotNodeIDs, gotNodes, (rand() % 2) == 0))
 			{
 				Log(lsFATAL) << "GetNodeFat fails";
 				BOOST_FAIL("GetNodeFat");
 			}
+		}
 		assert(gotNodeIDs.size() == gotNodes.size());
 		nodeIDs.clear();
 		hashes.clear();

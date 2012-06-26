@@ -40,7 +40,7 @@ public:
 		theApp->getHashedObjectStore().store(ACCOUNT_NODE, mLedgerSeq, nodeData, nodeHash);
 	}
 	virtual bool haveNode(const SHAMapNode& id, const uint256& nodeHash, std::vector<unsigned char>& nodeData)
-	{ // fetchNode already tried
+	{ // fetchNodeExternal already tried
 		return false;
 	}
 };
@@ -61,7 +61,7 @@ public:
 		theApp->getHashedObjectStore().store(isLeaf ? TRANSACTION : TRANSACTION_NODE, mLedgerSeq, nodeData, nodeHash);
 	}
 	virtual bool haveNode(const SHAMapNode& id, const uint256& nodeHash, std::vector<unsigned char>& nodeData)
-	{ // fetchNode already tried
+	{ // fetchNodeExternal already tried
 		return false;
 	}
 };

@@ -229,6 +229,22 @@ public:
 	{ return false; }
 };
 
+class SHAMapMissingNode : public std::runtime_error
+{
+protected:
+	SHAMapNode mNodeID;
+	uint256 mNodeHash;
+
+public:
+	SHAMapMissingNode(const SHAMapNode& nodeID, const uint256& nodeHash) :
+		std::runtime_error(nodeID.getString()), mNodeID(nodeID), mNodeHash(nodeHash)
+	{ ; }
+	virtual ~SHAMapMissingNode() throw()
+	{ ; }
+	const SHAMapNode& getNodeID() const	{ return mNodeID; }
+	const uint256& getNodeHash() const	{ return mNodeHash; }
+};
+
 class SHAMap
 {
 public:
@@ -249,7 +265,7 @@ private:
 protected:
 
 	void dirtyUp(std::stack<SHAMapTreeNode::pointer>& stack, const uint256& target, uint256 prevHash);
-	std::stack<SHAMapTreeNode::pointer> getStack(const uint256& id, bool include_nonmatching_leaf);
+	std::stack<SHAMapTreeNode::pointer> getStack(const uint256& id, bool include_nonmatching_leaf, bool partialOk);
 	SHAMapTreeNode::pointer walkTo(const uint256& id, bool modify);
 	SHAMapTreeNode* walkToPointer(const uint256& id);
 	SHAMapTreeNode::pointer checkCacheNode(const SHAMapNode&);
@@ -333,7 +349,7 @@ public:
 	uint32 getSeq()				{ return mSeq; }
 
 	// overloads for backed maps
-	boost::shared_ptr<SHAMapTreeNode> fetchNode(const SHAMapNode& id, const uint256& hash);
+	boost::shared_ptr<SHAMapTreeNode> fetchNodeExternal(const SHAMapNode& id, const uint256& hash);
 
 	bool operator==(const SHAMap& s) { return getHash() == s.getHash(); }
 
