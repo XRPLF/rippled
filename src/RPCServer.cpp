@@ -398,7 +398,7 @@ Json::Value RPCServer::accountFromString(const uint256& uLedger, NewcoinAddress&
 }
 
 // account_email_set <seed> <paying_account> [<email_address>]
-Json::Value RPCServer::doAccountEmailSet(Json::Value &params)
+Json::Value RPCServer::doAccountEmailSet(const Json::Value &params)
 {
 	NewcoinAddress	naSrcAccountID;
 	NewcoinAddress	naSeed;
@@ -463,7 +463,7 @@ Json::Value RPCServer::doAccountEmailSet(Json::Value &params)
 
 // account_info <account>|<nickname>|<account_public_key>
 // account_info <seed>|<pass_phrase>|<key> [<index>]
-Json::Value RPCServer::doAccountInfo(Json::Value &params)
+Json::Value RPCServer::doAccountInfo(const Json::Value &params)
 {
 	std::string		strIdent	= params[0u].asString();
 	bool			bIndex;
@@ -513,7 +513,7 @@ Json::Value RPCServer::doAccountInfo(Json::Value &params)
 }
 
 // account_lines <account>|<nickname>|<account_public_key> [<index>]
-Json::Value RPCServer::doAccountLines(Json::Value &params)
+Json::Value RPCServer::doAccountLines(const Json::Value &params)
 {
 //	uint256			uClosed		= mNetOps->getClosedLedger();
 	uint256			uCurrent	= mNetOps->getCurrentLedger();
@@ -602,7 +602,7 @@ Json::Value RPCServer::doAccountLines(Json::Value &params)
 }
 
 // account_message_set <seed> <paying_account> <pub_key>
-Json::Value RPCServer::doAccountMessageSet(Json::Value& params) {
+Json::Value RPCServer::doAccountMessageSet(const Json::Value& params) {
 	NewcoinAddress	naSrcAccountID;
 	NewcoinAddress	naSeed;
 	uint256			uLedger	= mNetOps->getCurrentLedger();
@@ -654,7 +654,7 @@ Json::Value RPCServer::doAccountMessageSet(Json::Value& params) {
 }
 
 // account_wallet_set <seed> <paying_account> [<wallet_hash>]
-Json::Value RPCServer::doAccountWalletSet(Json::Value& params) {
+Json::Value RPCServer::doAccountWalletSet(const Json::Value& params) {
 	NewcoinAddress	naSrcAccountID;
 	NewcoinAddress	naSeed;
 	uint256			uLedger	= mNetOps->getCurrentLedger();
@@ -707,7 +707,7 @@ Json::Value RPCServer::doAccountWalletSet(Json::Value& params) {
 	return obj;
 }
 
-Json::Value RPCServer::doConnect(Json::Value& params)
+Json::Value RPCServer::doConnect(const Json::Value& params)
 {
 	// connect <ip> [port]
 	std::string strIp;
@@ -735,7 +735,7 @@ Json::Value RPCServer::doConnect(Json::Value& params)
 }
 
 // credit_set <seed> <paying_account> <destination_account> <limit_amount> [<currency>] [<accept_rate>]
-Json::Value RPCServer::doCreditSet(Json::Value& params)
+Json::Value RPCServer::doCreditSet(const Json::Value& params)
 {
 	NewcoinAddress	naSeed;
 	NewcoinAddress	naSrcAccountID;
@@ -798,7 +798,7 @@ Json::Value RPCServer::doCreditSet(Json::Value& params)
 }
 
 // data_delete <key>
-Json::Value RPCServer::doDataDelete(Json::Value& params)
+Json::Value RPCServer::doDataDelete(const Json::Value& params)
 {
 	std::string	strKey = params[0u].asString();
 
@@ -817,7 +817,7 @@ Json::Value RPCServer::doDataDelete(Json::Value& params)
 }
 
 // data_fetch <key>
-Json::Value RPCServer::doDataFetch(Json::Value& params)
+Json::Value RPCServer::doDataFetch(const Json::Value& params)
 {
 	std::string	strKey = params[0u].asString();
 	std::string	strValue;
@@ -832,7 +832,7 @@ Json::Value RPCServer::doDataFetch(Json::Value& params)
 }
 
 // data_store <key> <value>
-Json::Value RPCServer::doDataStore(Json::Value& params)
+Json::Value RPCServer::doDataStore(const Json::Value& params)
 {
 	std::string	strKey		= params[0u].asString();
 	std::string	strValue	= params[1u].asString();
@@ -854,7 +854,7 @@ Json::Value RPCServer::doDataStore(Json::Value& params)
 
 // nickname_info <nickname>
 // Note: Nicknames are not automatically looked up by commands as they are advisory and can be changed.
-Json::Value RPCServer::doNicknameInfo(Json::Value& params)
+Json::Value RPCServer::doNicknameInfo(const Json::Value& params)
 {
 	uint256			uLedger	= mNetOps->getCurrentLedger();
 
@@ -882,7 +882,7 @@ Json::Value RPCServer::doNicknameInfo(Json::Value& params)
 }
 
 // nickname_set <seed> <paying_account> <nickname> [<offer_minimum>] [<authorization>]
-Json::Value RPCServer::doNicknameSet(Json::Value& params)
+Json::Value RPCServer::doNicknameSet(const Json::Value& params)
 {
 	NewcoinAddress	naSrcAccountID;
 	NewcoinAddress	naSeed;
@@ -967,7 +967,7 @@ Json::Value RPCServer::doNicknameSet(Json::Value& params)
 
 // password_fund <seed> <paying_account> [<account>]
 // YYY Make making account default to first account for seed.
-Json::Value RPCServer::doPasswordFund(Json::Value &params)
+Json::Value RPCServer::doPasswordFund(const Json::Value &params)
 {
 	NewcoinAddress	naSrcAccountID;
 	NewcoinAddress	naDstAccountID;
@@ -1017,7 +1017,7 @@ Json::Value RPCServer::doPasswordFund(Json::Value &params)
 }
 
 // password_set <master_seed> <regular_seed> [<account>]
-Json::Value RPCServer::doPasswordSet(Json::Value& params)
+Json::Value RPCServer::doPasswordSet(const Json::Value& params)
 {
 	NewcoinAddress	naMasterSeed;
 	NewcoinAddress	naRegularSeed;
@@ -1111,7 +1111,7 @@ Json::Value RPCServer::doPasswordSet(Json::Value& params)
 	}
 }
 
-Json::Value RPCServer::doPeers(Json::Value& params)
+Json::Value RPCServer::doPeers(const Json::Value& params)
 {
 	// peers
 	Json::Value obj(Json::objectValue);
@@ -1120,7 +1120,7 @@ Json::Value RPCServer::doPeers(Json::Value& params)
 }
 
 // send regular_seed paying_account account_id amount [currency] [send_max] [send_currency]
-Json::Value RPCServer::doSend(Json::Value& params)
+Json::Value RPCServer::doSend(const Json::Value& params)
 {
 	NewcoinAddress	naSeed;
 	NewcoinAddress	naSrcAccountID;
@@ -1236,7 +1236,7 @@ Json::Value RPCServer::doSend(Json::Value& params)
 	}
 }
 
-Json::Value RPCServer::doServerInfo(Json::Value& params)
+Json::Value RPCServer::doServerInfo(const Json::Value& params)
 {
 	Json::Value ret(Json::objectValue);
 	ret["info"]=theApp->getOPs().getServerInfo();
@@ -1244,7 +1244,7 @@ Json::Value RPCServer::doServerInfo(Json::Value& params)
 }
 
 // transit_set <seed> <paying_account> <transit_rate> <starts> <expires>
-Json::Value RPCServer::doTransitSet(Json::Value& params)
+Json::Value RPCServer::doTransitSet(const Json::Value& params)
 {
 	NewcoinAddress	naSeed;
 	NewcoinAddress	naSrcAccountID;
@@ -1314,7 +1314,7 @@ Json::Value RPCServer::doTransitSet(Json::Value& params)
 	}
 }
 
-Json::Value RPCServer::doTx(Json::Value& params)
+Json::Value RPCServer::doTx(const Json::Value& params)
 {
 	// tx <txID>
 	// tx <account>
@@ -1341,7 +1341,7 @@ Json::Value RPCServer::doTx(Json::Value& params)
 }
 
 // ledger [id|current|lastclosed] [full]
-Json::Value RPCServer::doLedger(Json::Value& params)
+Json::Value RPCServer::doLedger(const Json::Value& params)
 {
 	if (getParamCount(params) == 0)
 	{
@@ -1380,7 +1380,7 @@ Json::Value RPCServer::doLedger(Json::Value& params)
 
 // account_tx <account> <minledger> <maxledger>
 // account_tx <account> <ledger>
-Json::Value RPCServer::doAccountTransactions(Json::Value& params)
+Json::Value RPCServer::doAccountTransactions(const Json::Value& params)
 {
 	std::string param;
 	uint32 minLedger, maxLedger;
@@ -1453,7 +1453,7 @@ Json::Value RPCServer::doAccountTransactions(Json::Value& params)
 }
 
 // unl_add <domain>|<node_public> [<comment>]
-Json::Value RPCServer::doUnlAdd(Json::Value& params)
+Json::Value RPCServer::doUnlAdd(const Json::Value& params)
 {
 	std::string	strNode		= params[0u].asString();
 	std::string strComment	= (params.size() == 2) ? params[1u].asString() : "";
@@ -1478,7 +1478,7 @@ Json::Value RPCServer::doUnlAdd(Json::Value& params)
 //
 // NOTE: It is poor security to specify secret information on the command line.  This information might be saved in the command
 // shell history file (e.g. .bash_history) and it may be leaked via the process status command (i.e. ps).
-Json::Value RPCServer::doValidationCreate(Json::Value& params) {
+Json::Value RPCServer::doValidationCreate(const Json::Value& params) {
 	NewcoinAddress	naSeed;
 	Json::Value		obj(Json::objectValue);
 
@@ -1504,7 +1504,7 @@ Json::Value RPCServer::doValidationCreate(Json::Value& params) {
 //
 // NOTE: It is poor security to specify secret information on the command line.  This information might be saved in the command
 // shell history file (e.g. .bash_history) and it may be leaked via the process status command (i.e. ps).
-Json::Value RPCServer::doValidationSeed(Json::Value& params) {
+Json::Value RPCServer::doValidationSeed(const Json::Value& params) {
 	Json::Value obj(Json::objectValue);
 
 	if (params.empty())
@@ -1559,7 +1559,7 @@ Json::Value RPCServer::accounts(const uint256& uLedger, const NewcoinAddress& na
 }
 
 // wallet_accounts <seed>
-Json::Value RPCServer::doWalletAccounts(Json::Value& params)
+Json::Value RPCServer::doWalletAccounts(const Json::Value& params)
 {
 	NewcoinAddress	naSeed;
 	uint256			uLedger		= mNetOps->getCurrentLedger();
@@ -1598,7 +1598,7 @@ Json::Value RPCServer::doWalletAccounts(Json::Value& params)
 }
 
 // wallet_add <regular_seed> <paying_account> <master_seed> [<initial_funds>] [<account_annotation>]
-Json::Value RPCServer::doWalletAdd(Json::Value& params)
+Json::Value RPCServer::doWalletAdd(const Json::Value& params)
 {
 	NewcoinAddress	naMasterSeed;
 	NewcoinAddress	naRegularSeed;
@@ -1703,7 +1703,7 @@ Json::Value RPCServer::doWalletAdd(Json::Value& params)
 // wallet_claim <master_seed> <regular_seed> [<source_tag>] [<account_annotation>]
 //
 // To provide an example to client writers, we do everything we expect a client to do here.
-Json::Value RPCServer::doWalletClaim(Json::Value& params)
+Json::Value RPCServer::doWalletClaim(const Json::Value& params)
 {
 	NewcoinAddress	naMasterSeed;
 	NewcoinAddress	naRegularSeed;
@@ -1788,7 +1788,7 @@ Json::Value RPCServer::doWalletClaim(Json::Value& params)
 // We don't allow creating an account_id by default here because we want to make sure the person has a chance to write down the
 // master seed of the account to be created.
 // YYY Need annotation and source tag
-Json::Value RPCServer::doWalletCreate(Json::Value& params)
+Json::Value RPCServer::doWalletCreate(const Json::Value& params)
 {
 	NewcoinAddress	naSrcAccountID;
 	NewcoinAddress	naDstAccountID;
@@ -1849,7 +1849,7 @@ Json::Value RPCServer::doWalletCreate(Json::Value& params)
 }
 
 // wallet_propose
-Json::Value RPCServer::doWalletPropose(Json::Value& params)
+Json::Value RPCServer::doWalletPropose(const Json::Value& params)
 {
 	NewcoinAddress	naSeed;
 	NewcoinAddress	naAccount;
@@ -1869,7 +1869,7 @@ Json::Value RPCServer::doWalletPropose(Json::Value& params)
 }
 
 // wallet_seed [<seed>|<passphrase>|<passkey>]
-Json::Value RPCServer::doWalletSeed(Json::Value& params)
+Json::Value RPCServer::doWalletSeed(const Json::Value& params)
 {
 	NewcoinAddress	naSeed;
 
@@ -1901,7 +1901,7 @@ Json::Value RPCServer::doWalletSeed(Json::Value& params)
 }
 
 // unl_delete <domain>|<public_key>
-Json::Value RPCServer::doUnlDelete(Json::Value& params)
+Json::Value RPCServer::doUnlDelete(const Json::Value& params)
 {
 	std::string	strNode		= params[0u].asString();
 
@@ -1921,7 +1921,7 @@ Json::Value RPCServer::doUnlDelete(Json::Value& params)
 	}
 }
 
-Json::Value RPCServer::doUnlList(Json::Value& params)
+Json::Value RPCServer::doUnlList(const Json::Value& params)
 {
 	Json::Value obj(Json::objectValue);
 
@@ -1931,7 +1931,7 @@ Json::Value RPCServer::doUnlList(Json::Value& params)
 }
 
 // Populate the UNL from a local validators.txt file.
-Json::Value RPCServer::doUnlLoad(Json::Value& params)
+Json::Value RPCServer::doUnlLoad(const Json::Value& params)
 {
 	if (theConfig.UNL_DEFAULT.empty() || !theApp->getUNL().nodeLoad(theConfig.UNL_DEFAULT))
 	{
@@ -1942,7 +1942,7 @@ Json::Value RPCServer::doUnlLoad(Json::Value& params)
 }
 
 // Populate the UNL from newcoin.org's validators.txt file.
-Json::Value RPCServer::doUnlNetwork(Json::Value& params)
+Json::Value RPCServer::doUnlNetwork(const Json::Value& params)
 {
 	theApp->getUNL().nodeNetwork();
 
@@ -1950,7 +1950,7 @@ Json::Value RPCServer::doUnlNetwork(Json::Value& params)
 }
 
 // unl_reset
-Json::Value RPCServer::doUnlReset(Json::Value& params)
+Json::Value RPCServer::doUnlReset(const Json::Value& params)
 {
 	theApp->getUNL().nodeReset();
 
@@ -1958,14 +1958,14 @@ Json::Value RPCServer::doUnlReset(Json::Value& params)
 }
 
 // unl_score
-Json::Value RPCServer::doUnlScore(Json::Value& params)
+Json::Value RPCServer::doUnlScore(const Json::Value& params)
 {
 	theApp->getUNL().nodeScore();
 
 	return "scoring requested";
 }
 
-Json::Value RPCServer::doStop(Json::Value& params)
+Json::Value RPCServer::doStop(const Json::Value& params)
 {
 	theApp->stop();
 
@@ -1975,7 +1975,7 @@ Json::Value RPCServer::doStop(Json::Value& params)
 // TODO: for now this simply checks if this is the admin account
 // TODO: need to prevent them hammering this over and over
 // TODO: maybe a better way is only allow admin from local host
-Json::Value RPCServer::doLogin(Json::Value& params)
+Json::Value RPCServer::doLogin(const Json::Value& params)
 {
 	std::string	username		= params[0u].asString();
 	std::string	password		= params[1u].asString();
@@ -2054,7 +2054,8 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 	if (i < 0)
 	{
 		return RPCError(rpcUNKNOWN_COMMAND);
-	}else if (commandsA[i].mAdminRequired && mRole!=ADMIN)
+	}
+	else if (commandsA[i].mAdminRequired && mRole!=ADMIN)
 	{
 		return RPCError(rpcNO_PERMISSION);
 	}

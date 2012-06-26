@@ -72,7 +72,7 @@ public:
 	Json::Value RPCError(int iError);
 
 private:
-	typedef Json::Value (RPCServer::*doFuncPtr)(Json::Value &params);
+	typedef Json::Value (RPCServer::*doFuncPtr)(const Json::Value &params);
 	enum {
 		optNetwork	= 1,				// Need network
 		optCurrent	= 2+optNetwork,		// Need current ledger
@@ -116,54 +116,54 @@ private:
 
 	Json::Value accountFromString(const uint256& uLedger, NewcoinAddress& naAccount, bool& bIndex, const std::string& strIdent, const int iIndex);
 
-	Json::Value doAccountEmailSet(Json::Value &params);
-	Json::Value doAccountInfo(Json::Value& params);
-	Json::Value doAccountLines(Json::Value &params);
-	Json::Value doAccountMessageSet(Json::Value &params);
-	Json::Value doAccountTransactions(Json::Value& params);
-	Json::Value doAccountWalletSet(Json::Value &params);
-	Json::Value doConnect(Json::Value& params);
-	Json::Value doCreditSet(Json::Value& params);
-	Json::Value doDataDelete(Json::Value& params);
-	Json::Value doDataFetch(Json::Value& params);
-	Json::Value doDataStore(Json::Value& params);
-	Json::Value doLedger(Json::Value& params);
-	Json::Value doNicknameInfo(Json::Value& params);
-	Json::Value doNicknameSet(Json::Value& params);
-	Json::Value doPasswordFund(Json::Value& params);
-	Json::Value doPasswordSet(Json::Value& params);
-	Json::Value doPeers(Json::Value& params);
-	Json::Value doSend(Json::Value& params);
-	Json::Value doServerInfo(Json::Value& params);
-	Json::Value doSessionClose(Json::Value& params);
-	Json::Value doSessionOpen(Json::Value& params);
-	Json::Value doStop(Json::Value& params);
-	Json::Value doTransitSet(Json::Value& params);
-	Json::Value doTx(Json::Value& params);
+	Json::Value doAccountEmailSet(const Json::Value &params);
+	Json::Value doAccountInfo(const Json::Value& params);
+	Json::Value doAccountLines(const Json::Value &params);
+	Json::Value doAccountMessageSet(const Json::Value &params);
+	Json::Value doAccountTransactions(const Json::Value& params);
+	Json::Value doAccountWalletSet(const Json::Value &params);
+	Json::Value doConnect(const Json::Value& params);
+	Json::Value doCreditSet(const Json::Value& params);
+	Json::Value doDataDelete(const Json::Value& params);
+	Json::Value doDataFetch(const Json::Value& params);
+	Json::Value doDataStore(const Json::Value& params);
+	Json::Value doLedger(const Json::Value& params);
+	Json::Value doNicknameInfo(const Json::Value& params);
+	Json::Value doNicknameSet(const Json::Value& params);
+	Json::Value doPasswordFund(const Json::Value& params);
+	Json::Value doPasswordSet(const Json::Value& params);
+	Json::Value doPeers(const Json::Value& params);
+	Json::Value doSend(const Json::Value& params);
+	Json::Value doServerInfo(const Json::Value& params);
+	Json::Value doSessionClose(const Json::Value& params);
+	Json::Value doSessionOpen(const Json::Value& params);
+	Json::Value doStop(const Json::Value& params);
+	Json::Value doTransitSet(const Json::Value& params);
+	Json::Value doTx(const Json::Value& params);
 
-	Json::Value doUnlAdd(Json::Value& params);
-	Json::Value doUnlDelete(Json::Value& params);
-	Json::Value doUnlFetch(Json::Value& params);
-	Json::Value doUnlList(Json::Value& params);
-	Json::Value doUnlLoad(Json::Value& params);
-	Json::Value doUnlNetwork(Json::Value& params);
-	Json::Value doUnlReset(Json::Value& params);
-	Json::Value doUnlScore(Json::Value& params);
+	Json::Value doUnlAdd(const Json::Value& params);
+	Json::Value doUnlDelete(const Json::Value& params);
+	Json::Value doUnlFetch(const Json::Value& params);
+	Json::Value doUnlList(const Json::Value& params);
+	Json::Value doUnlLoad(const Json::Value& params);
+	Json::Value doUnlNetwork(const Json::Value& params);
+	Json::Value doUnlReset(const Json::Value& params);
+	Json::Value doUnlScore(const Json::Value& params);
 
-	Json::Value doValidationCreate(Json::Value& params);
-	Json::Value doValidationSeed(Json::Value& params);
+	Json::Value doValidationCreate(const Json::Value& params);
+	Json::Value doValidationSeed(const Json::Value& params);
 
-	Json::Value doWalletAccounts(Json::Value& params);
-	Json::Value doWalletAdd(Json::Value& params);
-	Json::Value doWalletClaim(Json::Value& params);
-	Json::Value doWalletCreate(Json::Value& params);
-	Json::Value doWalletLock(Json::Value& params);
-	Json::Value doWalletPropose(Json::Value& params);
-	Json::Value doWalletSeed(Json::Value& params);
-	Json::Value doWalletUnlock(Json::Value& params);
-	Json::Value doWalletVerify(Json::Value& params);
+	Json::Value doWalletAccounts(const Json::Value& params);
+	Json::Value doWalletAdd(const Json::Value& params);
+	Json::Value doWalletClaim(const Json::Value& params);
+	Json::Value doWalletCreate(const Json::Value& params);
+	Json::Value doWalletLock(const Json::Value& params);
+	Json::Value doWalletPropose(const Json::Value& params);
+	Json::Value doWalletSeed(const Json::Value& params);
+	Json::Value doWalletUnlock(const Json::Value& params);
+	Json::Value doWalletVerify(const Json::Value& params);
 
-	Json::Value doLogin(Json::Value& params);
+	Json::Value doLogin(const Json::Value& params);
 
 public:
 	typedef boost::shared_ptr<RPCServer> pointer;
