@@ -1,14 +1,15 @@
 
-#include "Application.h"
-#include "CallRPC.h"
-#include "Config.h"
-#include "utils.h"
-
 #include <iostream>
 
 #include <boost/foreach.hpp>
 #include <boost/program_options.hpp>
 #include <boost/test/included/unit_test.hpp>
+
+#include "Application.h"
+#include "CallRPC.h"
+#include "Config.h"
+#include "utils.h"
+#include "Log.h"
 
 namespace po = boost::program_options;
 
@@ -111,6 +112,7 @@ int main(int argc, char* argv[])
 	}
 	else if (argc >= 2 && !strcmp(argv[1], "--test")) {
 		bTest	= true;
+		Log::setMinSeverity(lsTRACE);
 	}
 	else
 	{
