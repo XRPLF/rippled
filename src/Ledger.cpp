@@ -318,6 +318,8 @@ void Ledger::saveAcceptedLedger(Ledger::pointer ledger)
 		}
 	}
 	db->executeSQL("COMMIT TRANSACTION;");
+
+	theApp->getOPs().pubLedger(ledger);
 }
 
 Ledger::pointer Ledger::getSQL(const std::string& sql)

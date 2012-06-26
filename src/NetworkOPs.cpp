@@ -695,15 +695,34 @@ void NetworkOPs::pubAccountInfo(const NewcoinAddress& naAccountID, const Json::V
 	}
 }
 
+void NetworkOPs::pubLedger(const Ledger::pointer& lpAccepted)
+{
+	if (!mSubLedger.empty())
+	{
+		Json::Value	jvObj(Json::objectValue);
+
+		jvObj["type"]	= "ledgerAccepted";
+		jvObj["seq"]	= lpAccepted->getLedgerSeq();
+		jvObj["hash"]	= lpAccepted->getHash().ToString();
+		jvObj["time"]	= Json::Value::UInt(lpAccepted->getCloseTimeNC());
+
+		boost::interprocess::sharable_lock<boost::interprocess::interprocess_upgradable_mutex>	sl(mMonitorLock);
+		BOOST_FOREACH(InfoSub* ispListener, mSubLedger)
+		{
+			ispListener->send(jvObj);
+		}
+	}
+}
+
 //
 // Monitoring
 //
 
-void NetworkOPs::subAccountInfo(InfoSub* ispListener, const std::vector<NewcoinAddress>& vnaAccountIDs)
+void NetworkOPs::subAccountInfo(InfoSub* ispListener, const boost::unordered_set<NewcoinAddress>& vnaAccountIDs)
 {
 	boost::interprocess::scoped_lock<boost::interprocess::interprocess_upgradable_mutex>	sl(mMonitorLock);
 
-	BOOST_FOREACH(NewcoinAddress naAccountID, vnaAccountIDs)
+	BOOST_FOREACH(const NewcoinAddress& naAccountID, vnaAccountIDs)
 	{
 		subInfoMapType::iterator	simIterator	= mSubAccountInfo.find(naAccountID);
 		if (simIterator == mSubAccountInfo.end())
@@ -722,11 +741,11 @@ void NetworkOPs::subAccountInfo(InfoSub* ispListener, const std::vector<NewcoinA
 	}
 }
 
-void NetworkOPs::unsubAccountInfo(InfoSub* ispListener, const std::vector<NewcoinAddress>& vnaAccountIDs)
+void NetworkOPs::unsubAccountInfo(InfoSub* ispListener, const boost::unordered_set<NewcoinAddress>& vnaAccountIDs)
 {
 	boost::interprocess::scoped_lock<boost::interprocess::interprocess_upgradable_mutex>	sl(mMonitorLock);
 
-	BOOST_FOREACH(NewcoinAddress naAccountID, vnaAccountIDs)
+	BOOST_FOREACH(const NewcoinAddress& naAccountID, vnaAccountIDs)
 	{
 		subInfoMapType::iterator	simIterator	= mSubAccountInfo.find(naAccountID);
 		if (simIterator == mSubAccountInfo.end())
@@ -748,7 +767,7 @@ void NetworkOPs::unsubAccountInfo(InfoSub* ispListener, const std::vector<Newcoi
 	}
 }
 
-
+#if 0
 void NetworkOPs::subAccountChanges(InfoSub* ispListener, const uint256 uLedgerHash)
 {
 }
@@ -756,6 +775,18 @@ void NetworkOPs::subAccountChanges(InfoSub* ispListener, const uint256 uLedgerHa
 void NetworkOPs::unsubAccountChanges(InfoSub* ispListener)
 {
 }
+#endif
 
+// <-- bool: true=added, false=already there
+bool NetworkOPs::subLedger(InfoSub* ispListener)
+{
+	return mSubLedger.insert(ispListener).second;
+}
+
+// <-- bool: true=erased, false=was not there
+bool NetworkOPs::unsubLedger(InfoSub* ispListener)
+{
+	return !!mSubLedger.erase(ispListener);
+}
 
 // vim:ts=4

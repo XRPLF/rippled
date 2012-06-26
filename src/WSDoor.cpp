@@ -5,6 +5,7 @@
 #include "Config.h"
 #include "Log.h"
 #include "NetworkOPs.h"
+#include "NetworkOPs.h"
 #include "utils.h"
 
 #include <iostream>
@@ -12,6 +13,7 @@
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 #include <boost/mem_fn.hpp>
+#include <boost/unordered_set.hpp>
 
 #include "../json/reader.h"
 #include "../json/writer.h"
@@ -47,6 +49,11 @@ public:
     typedef typename websocketpp::WSDOOR_SERVER::handler::message_ptr message_ptr;
 
 protected:
+	typedef void (WSConnection::*doFuncPtr)(Json::Value& jvResult, const Json::Value &jvRequest);
+
+    boost::mutex									mLock;
+	boost::unordered_set<NewcoinAddress>			mSubAccountInfo;
+
 	WSServerHandler<websocketpp::WSDOOR_SERVER>*	mHandler;
 	connection_ptr									mConnection;
 
@@ -58,14 +65,20 @@ public:
 	WSConnection(WSServerHandler<websocketpp::WSDOOR_SERVER>* wshpHandler, connection_ptr cpConnection)
 		: mHandler(wshpHandler), mConnection(cpConnection) { ; }
 
-	~WSConnection()
-	{
-		// XXX Unsubscribe.
-		nothing();
-	}
+	virtual ~WSConnection();
 
 	// Implement overriden functions from base class:
 	void send(const Json::Value& jvObj);
+
+	// Utilities
+	Json::Value invokeCommand(const Json::Value& jvRequest);
+	boost::unordered_set<NewcoinAddress> parseAccountIds(const Json::Value& jvArray);
+
+	// Commands
+	void doAccountInfoSubscribe(Json::Value& jvResult, const Json::Value& jvRequest);
+	void doAccountInfoUnsubscribe(Json::Value& jvResult, const Json::Value& jvRequest);
+	void doLedgerSubcribe(Json::Value& jvResult, const Json::Value& jvRequest);
+	void doLedgerUnsubscribe(Json::Value& jvResult, const Json::Value& jvRequest);
 };
 
 
@@ -88,7 +101,8 @@ private:
 
 protected:
     boost::mutex										mMapLock;
-	boost::unordered_map<connection_ptr, WSConnection>	mMap;
+	// For each connection maintain an assoicated object to track subscriptions.
+	boost::unordered_map<connection_ptr, boost::shared_ptr<WSConnection> >	mMap;
 
 public:
 	WSServerHandler(boost::shared_ptr<boost::asio::ssl::context> spCtx) : mCtx(spCtx) {}
@@ -130,7 +144,6 @@ public:
 
 		Log(lsINFO) << "Ws:: Object '" << jfwWriter.write(jvObj) << "'";
 
-
 		send(cpClient, jfwWriter.write(jvObj));
 	}
 
@@ -138,7 +151,7 @@ public:
 	{
 		boost::mutex::scoped_lock	sl(mMapLock);
 
-		mMap[cpClient]	= WSConnection(this, cpClient);
+		mMap[cpClient]	= boost::make_shared<WSConnection>(this, cpClient);
 	}
 
 	void on_close(connection_ptr cpClient)
@@ -174,12 +187,7 @@ public:
 		}
 		else
 		{
-			Json::Value	jvResult(Json::objectValue);
-
-			jvResult["type"]	= "success";
-			jvResult["value"]	= mpMessage->get_payload();
-
-			send(cpClient, jvResult);
+			send(cpClient, mMap[cpClient]->invokeCommand(jvRequest));
 		}
     }
 
@@ -250,9 +258,192 @@ void WSDoor::stop()
 	}
 }
 
+//
+// WSConnection
+//
+
+WSConnection::~WSConnection()
+{
+	theApp->getOPs().unsubLedger(this);
+	theApp->getOPs().unsubAccountInfo(this, mSubAccountInfo);
+}
+
 void WSConnection::send(const Json::Value& jvObj)
 {
 	mHandler->send(mConnection, jvObj);
+}
+
+//
+// Utilities
+//
+
+Json::Value WSConnection::invokeCommand(const Json::Value& jvRequest)
+{
+	static struct {
+		const char* pCommand;
+		doFuncPtr	dfpFunc;
+	} commandsA[] = {
+		{ "account_info_subscribe",		&WSConnection::doAccountInfoSubscribe	},
+		{ "account_info_unsubscribe",	&WSConnection::doAccountInfoUnsubscribe	},
+		{ "ledger_subscribe",			&WSConnection::doLedgerSubcribe		},
+		{ "ledger_unsubscribe",			&WSConnection::doLedgerUnsubscribe	},
+	};
+
+
+	if (!jvRequest.isMember("command"))
+	{
+		Json::Value	jvResult(Json::objectValue);
+
+		jvResult["type"]	= "response";
+		jvResult["result"]	= "error";
+		jvResult["error"]	= "missingCommand";
+		jvResult["command"]	= jvRequest;
+
+		return jvResult;
+	}
+
+	std::string	strCommand	= jvRequest["command"].asString();
+
+	int		i = NUMBER(commandsA);
+
+	while (i-- && strCommand != commandsA[i].pCommand)
+		;
+
+	Json::Value	jvResult(Json::objectValue);
+
+	jvResult["type"]	= "response";
+
+	if (i < 0)
+	{
+		jvResult["error"]	= "unknownCommand";	// Unknown command.
+	}
+	else
+	{
+		(this->*(commandsA[i].dfpFunc))(jvResult, jvRequest);
+	}
+
+	if (jvRequest.isMember("id"))
+	{
+		jvResult["id"]		= jvRequest["id"];
+	}
+
+	if (jvResult.isMember("error"))
+	{
+		jvResult["result"]	= "error";
+		jvResult["request"]	= jvRequest;
+	}
+	else
+	{
+		jvResult["result"]	= "success";
+	}
+
+	return jvResult;
+}
+
+boost::unordered_set<NewcoinAddress> WSConnection::parseAccountIds(const Json::Value& jvArray)
+{
+	boost::unordered_set<NewcoinAddress>	usnaResult;
+
+	for (Json::Value::const_iterator it = jvArray.begin(); it != jvArray.end(); it++)
+	{
+		NewcoinAddress	naString;
+
+		if (!(*it).isString() || !naString.setAccountID((*it).asString()))
+		{
+			usnaResult.clear();
+			break;
+		}
+		else
+		{
+			(void) usnaResult.insert(naString);
+		}
+	}
+
+	return usnaResult;
+}
+
+//
+// Commands
+//
+
+void WSConnection::doAccountInfoSubscribe(Json::Value& jvResult, const Json::Value& jvRequest)
+{
+	if (!jvRequest.isMember("accounts"))
+	{
+		jvResult["error"]	= "missingField";
+	}
+	else if (jvResult["accounts"].empty())
+	{
+		jvResult["error"]	= "emptySet";
+	}
+	else
+	{
+		boost::unordered_set<NewcoinAddress> usnaAccoundIds	= parseAccountIds(jvRequest["accounts"]);
+
+		if (usnaAccoundIds.empty())
+		{
+			jvResult["error"]	= "malformedAccount";
+		}
+		else
+		{
+			boost::mutex::scoped_lock	sl(mLock);
+
+			BOOST_FOREACH(const NewcoinAddress& naAccountID, usnaAccoundIds)
+			{
+				mSubAccountInfo.insert(naAccountID);
+			}
+
+			theApp->getOPs().subAccountInfo(this, usnaAccoundIds);
+		}
+	}
+}
+
+void WSConnection::doAccountInfoUnsubscribe(Json::Value& jvResult, const Json::Value& jvRequest)
+{
+	if (!jvRequest.isMember("accounts"))
+	{
+		jvResult["error"]	= "missingField";
+	}
+	else if (jvResult["accounts"].empty())
+	{
+		jvResult["error"]	= "emptySet";
+	}
+	else
+	{
+		boost::unordered_set<NewcoinAddress> usnaAccoundIds	= parseAccountIds(jvRequest["accounts"]);
+
+		if (usnaAccoundIds.empty())
+		{
+			jvResult["error"]	= "malformedAccount";
+		}
+		else
+		{
+			boost::mutex::scoped_lock	sl(mLock);
+
+			BOOST_FOREACH(const NewcoinAddress& naAccountID, usnaAccoundIds)
+			{
+				mSubAccountInfo.erase(naAccountID);
+			}
+
+			theApp->getOPs().unsubAccountInfo(this, usnaAccoundIds);
+		}
+	}
+}
+
+void WSConnection::doLedgerSubcribe(Json::Value& jvResult, const Json::Value& jvRequest)
+{
+	if (!theApp->getOPs().subLedger(this))
+	{
+		jvResult["error"]	= "ledgerSubscribed";
+	}
+}
+
+void WSConnection::doLedgerUnsubscribe(Json::Value& jvResult, const Json::Value& jvRequest)
+{
+	if (!theApp->getOPs().unsubLedger(this))
+	{
+		jvResult["error"]	= "ledgerNotSubscribed";
+	}
 }
 
 // vim:ts=4
