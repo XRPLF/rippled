@@ -21,6 +21,9 @@ class LedgerConsensus;
 class InfoSub
 {
 public:
+
+	virtual ~InfoSub() { ; }
+
 	virtual	void send(const Json::Value& jvObj) = 0;
 };
 
@@ -55,6 +58,7 @@ protected:
 
     boost::interprocess::interprocess_upgradable_mutex	mMonitorLock;
 	subInfoMapType										mSubAccountInfo;
+	boost::unordered_set<InfoSub*>						mSubLedger;
 
 public:
 	NetworkOPs(boost::asio::io_service& io_service, LedgerMaster* pLedgerMaster);
@@ -65,8 +69,8 @@ public:
 	uint32 getCurrentLedgerID();
 	OperatingMode getOperatingMode() { return mMode; }
 	inline bool available() {
-		// XXX don't consider network available till have a closed ledger.
-		return omDISCONNECTED != mMode;
+		// XXX Later this can be relaxed to omCONNECTED
+		return mMode >= omTRACKING;
 	}
 
 	uint256					getClosedLedger()
@@ -155,17 +159,21 @@ public:
 	//
 
 	void pubAccountInfo(const NewcoinAddress& naAccountID, const Json::Value& jvObj);
+	void pubLedger(const Ledger::pointer& lpAccepted);
 
 	//
 	// Monitoring: subscriber side
 	//
 
 	// --> vnaAddress: empty = all
-	void subAccountInfo(InfoSub* ispListener, const std::vector<NewcoinAddress>& vnaAccountIDs);
-	void unsubAccountInfo(InfoSub* ispListener, const std::vector<NewcoinAddress>& vnaAccountIDs);
+	void subAccountInfo(InfoSub* ispListener, const boost::unordered_set<NewcoinAddress>& vnaAccountIDs);
+	void unsubAccountInfo(InfoSub* ispListener, const boost::unordered_set<NewcoinAddress>& vnaAccountIDs);
 
-	void subAccountChanges(InfoSub* ispListener, const uint256 uLedgerHash);
-	void unsubAccountChanges(InfoSub* ispListener);
+	// void subAccountChanges(InfoSub* ispListener, const uint256 uLedgerHash);
+	// void unsubAccountChanges(InfoSub* ispListener);
+
+	bool subLedger(InfoSub* ispListener);
+	bool unsubLedger(InfoSub* ispListener);
 };
 
 #endif
