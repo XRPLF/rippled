@@ -57,10 +57,12 @@ Json::Value RPCServer::RPCError(int iError)
 		{ rpcNICKNAME_MISSING,	"nicknameMissing",	"Nickname does not exist."	},
 		{ rpcNICKNAME_PERM,		"nicknamePerm",		"Account does not control nickname."	},
 		{ rpcNOT_IMPL,			"notImpl",			"Not implemented." },
+		{ rpcNO_ACCOUNT,		"noAccount",		"No such account." },
 		{ rpcNO_CLOSED,			"noClosed",			"Closed ledger is unavailable." },
 		{ rpcNO_CURRENT,		"noCurrent",		"Current ledger is unavailable." },
 		{ rpcNO_GEN_DECRPYT,	"noGenDectypt",		"Password failed to decrypt master public generator."	},
 		{ rpcNO_NETWORK,		"noNetwork",		"Network not available." },
+		{ rpcNO_PERMISSION,		"noPermission",		"You don't have permission for this command." },
 		{ rpcPASSWD_CHANGED,	"passwdChanged",	"Wrong key, password changed." },
 		{ rpcPORT_MALFORMED,	"portMalformed",	"Port is malformed."	},
 		{ rpcPUBLIC_MALFORMED,	"publicMalformed",	"Public key is malformed."	},
@@ -71,9 +73,7 @@ Json::Value RPCServer::RPCError(int iError)
 		{ rpcSUCCESS,			"success",			"Success." },
 		{ rpcTXN_NOT_FOUND,		"txnNotFound",		"Transaction not found." },
 		{ rpcUNKNOWN_COMMAND,	"unknownCmd",		"Unknown command." },
-		{ rpcWRONG_PASSWORD,	"wrongPassword",	"Wrong password." },
 		{ rpcWRONG_SEED,		"wrongSeed",		"The regular key does not point as the master key." },
-		{ rpcNO_PERMISSION,		"noPermission",		"You don't have permission for this command." },
 	};
 
 	int		i;
@@ -242,7 +242,7 @@ Json::Value RPCServer::getMasterGenerator(const uint256& uLedger, const NewcoinA
 	if (!sleGen)
 	{
 		// No account has been claimed or has had it password set for seed.
-		return RPCError(rpcWRONG_PASSWORD);
+		return RPCError(rpcNO_ACCOUNT);
 	}
 
 	std::vector<unsigned char>	vucCipher			= sleGen->getIFieldVL(sfGenerator);

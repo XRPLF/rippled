@@ -36,11 +36,11 @@ public:
 		rpcLGR_NOT_FOUND,
 		rpcMUST_SEND_XNS,
 		rpcNICKNAME_MISSING,
+		rpcNO_ACCOUNT,
 		rpcPASSWD_CHANGED,
 		rpcSRC_MISSING,
 		rpcSRC_UNCLAIMED,
 		rpcTXN_NOT_FOUND,
-		rpcWRONG_PASSWORD,
 		rpcWRONG_SEED,
 
 		// Malformed command
