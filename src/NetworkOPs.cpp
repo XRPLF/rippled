@@ -638,9 +638,7 @@ std::vector< std::pair<uint32, uint256> >
 
 		SQL_FOREACH(db, sql)
 		{
-			std::string txID;
-			db->getStr("TransID", txID);
-			affectedAccounts.push_back(std::make_pair<uint32, uint256>(db->getInt("LedgerSeq"), uint256(txID)));
+			affectedAccounts.push_back(std::make_pair<uint32, uint256>(db->getInt("LedgerSeq"), uint256(db->getStrBinary("TransID"))));
 		}
 	}
 
@@ -660,9 +658,7 @@ std::vector<NewcoinAddress>
 		ScopedLock dblock = theApp->getTxnDB()->getDBLock();
 		SQL_FOREACH(db, sql)
 		{
-			std::string str;
-			db->getStr("Account", str);
-			if (acct.setAccountID(str))
+			if (acct.setAccountID(db->getStrBinary("Account")))
 				accounts.push_back(acct);
 		}
 	}
@@ -736,6 +732,34 @@ void NetworkOPs::pubLedger(const Ledger::pointer& lpAccepted)
 			ispListener->send(jvObj);
 		}
 	}
+
+	if (!mSubLedgerAccounts.empty())
+	{
+		Json::Value	jvAccounts(Json::arrayValue);
+
+		BOOST_FOREACH(const NewcoinAddress& naAccountID, getAffectedAccounts(lpAccepted->getLedgerSeq()))
+		{
+			jvAccounts.append(Json::Value(naAccountID.humanAccountID()));
+		}
+
+		Json::Value	jvObj(Json::objectValue);
+
+		jvObj["type"]		= "ledgerAcceptedAccounts";
+		jvObj["seq"]		= lpAccepted->getLedgerSeq();
+		jvObj["hash"]		= lpAccepted->getHash().ToString();
+		jvObj["time"]		= Json::Value::UInt(lpAccepted->getCloseTimeNC());
+		jvObj["accounts"]	= jvAccounts;
+
+		boost::interprocess::sharable_lock<boost::interprocess::interprocess_upgradable_mutex>	sl(mMonitorLock);
+		BOOST_FOREACH(InfoSub* ispListener, mSubLedgerAccounts)
+		{
+			ispListener->send(jvObj);
+		}
+	}
+}
+
+void NetworkOPs::pubTransaction(const Ledger::pointer& lpCurrent, const SerializedTransaction& stTxn, TransactionEngineResult terResult, const std::vector<NewcoinAddress>& naAffectedAccountIds)
+{
 }
 
 //
@@ -811,6 +835,18 @@ bool NetworkOPs::subLedger(InfoSub* ispListener)
 bool NetworkOPs::unsubLedger(InfoSub* ispListener)
 {
 	return !!mSubLedger.erase(ispListener);
+}
+
+// <-- bool: true=added, false=already there
+bool NetworkOPs::subLedgerAccounts(InfoSub* ispListener)
+{
+	return mSubLedgerAccounts.insert(ispListener).second;
+}
+
+// <-- bool: true=erased, false=was not there
+bool NetworkOPs::unsubLedgerAccounts(InfoSub* ispListener)
+{
+	return !!mSubLedgerAccounts.erase(ispListener);
 }
 
 // vim:ts=4

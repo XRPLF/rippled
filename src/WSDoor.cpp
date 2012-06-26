@@ -77,8 +77,11 @@ public:
 	// Commands
 	void doAccountInfoSubscribe(Json::Value& jvResult, const Json::Value& jvRequest);
 	void doAccountInfoUnsubscribe(Json::Value& jvResult, const Json::Value& jvRequest);
+
 	void doLedgerSubcribe(Json::Value& jvResult, const Json::Value& jvRequest);
 	void doLedgerUnsubscribe(Json::Value& jvResult, const Json::Value& jvRequest);
+	void doLedgerAccountsSubcribe(Json::Value& jvResult, const Json::Value& jvRequest);
+	void doLedgerAccountsUnsubscribe(Json::Value& jvResult, const Json::Value& jvRequest);
 };
 
 
@@ -265,6 +268,7 @@ void WSDoor::stop()
 WSConnection::~WSConnection()
 {
 	theApp->getOPs().unsubLedger(this);
+	theApp->getOPs().unsubLedgerAccounts(this);
 	theApp->getOPs().unsubAccountInfo(this, mSubAccountInfo);
 }
 
@@ -283,12 +287,13 @@ Json::Value WSConnection::invokeCommand(const Json::Value& jvRequest)
 		const char* pCommand;
 		doFuncPtr	dfpFunc;
 	} commandsA[] = {
-		{ "account_info_subscribe",		&WSConnection::doAccountInfoSubscribe	},
-		{ "account_info_unsubscribe",	&WSConnection::doAccountInfoUnsubscribe	},
-		{ "ledger_subscribe",			&WSConnection::doLedgerSubcribe		},
-		{ "ledger_unsubscribe",			&WSConnection::doLedgerUnsubscribe	},
+		{ "account_info_subscribe",			&WSConnection::doAccountInfoSubscribe	},
+		{ "account_info_unsubscribe",		&WSConnection::doAccountInfoUnsubscribe	},
+		{ "ledger_subscribe",				&WSConnection::doLedgerSubcribe		},
+		{ "ledger_unsubscribe",				&WSConnection::doLedgerUnsubscribe	},
+		{ "ledger_accounts_subscribe",		&WSConnection::doLedgerAccountsSubcribe		},
+		{ "ledger_accounts_unsubscribe",	&WSConnection::doLedgerAccountsUnsubscribe	},
 	};
-
 
 	if (!jvRequest.isMember("command"))
 	{
@@ -443,6 +448,22 @@ void WSConnection::doLedgerUnsubscribe(Json::Value& jvResult, const Json::Value&
 	if (!theApp->getOPs().unsubLedger(this))
 	{
 		jvResult["error"]	= "ledgerNotSubscribed";
+	}
+}
+
+void WSConnection::doLedgerAccountsSubcribe(Json::Value& jvResult, const Json::Value& jvRequest)
+{
+	if (!theApp->getOPs().subLedgerAccounts(this))
+	{
+		jvResult["error"]	= "ledgerAccountsSubscribed";
+	}
+}
+
+void WSConnection::doLedgerAccountsUnsubscribe(Json::Value& jvResult, const Json::Value& jvRequest)
+{
+	if (!theApp->getOPs().unsubLedgerAccounts(this))
+	{
+		jvResult["error"]	= "ledgerAccountsNotSubscribed";
 	}
 }
 

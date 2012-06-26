@@ -58,7 +58,8 @@ protected:
 
     boost::interprocess::interprocess_upgradable_mutex	mMonitorLock;
 	subInfoMapType										mSubAccountInfo;
-	boost::unordered_set<InfoSub*>						mSubLedger;
+	boost::unordered_set<InfoSub*>						mSubLedger;				// ledger accepteds
+	boost::unordered_set<InfoSub*>						mSubLedgerAccounts;		// ledger accepteds + affected accounts
 
 public:
 	NetworkOPs(boost::asio::io_service& io_service, LedgerMaster* pLedgerMaster);
@@ -153,6 +154,7 @@ public:
 	std::vector< std::pair<uint32, uint256> >
 		getAffectedAccounts(const NewcoinAddress& account, uint32 minLedger, uint32 maxLedger);
 	std::vector<NewcoinAddress> getAffectedAccounts(uint32 ledgerSeq);
+	std::vector<SerializedTransaction> getLedgerTransactions(uint32 ledgerSeq);
 
 	//
 	// Monitoring: publisher side
@@ -160,6 +162,7 @@ public:
 
 	void pubAccountInfo(const NewcoinAddress& naAccountID, const Json::Value& jvObj);
 	void pubLedger(const Ledger::pointer& lpAccepted);
+	void pubTransaction(const Ledger::pointer& lpCurrent, const SerializedTransaction& stTxn, TransactionEngineResult terResult, const std::vector<NewcoinAddress>& naAffectedAccountIds);
 
 	//
 	// Monitoring: subscriber side
@@ -174,6 +177,9 @@ public:
 
 	bool subLedger(InfoSub* ispListener);
 	bool unsubLedger(InfoSub* ispListener);
+
+	bool subLedgerAccounts(InfoSub* ispListener);
+	bool unsubLedgerAccounts(InfoSub* ispListener);
 };
 
 #endif
