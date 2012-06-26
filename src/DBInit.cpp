@@ -1,3 +1,5 @@
+#include "utils.h"
+
 #include <string>
 
 // Transaction database holds transactions and public keys
@@ -30,7 +32,7 @@ const char *TxnDBInit[] = {
 	"END TRANSACTION;"
 };
 
-int TxnDBCount = sizeof(TxnDBInit) / sizeof(const char *);
+int TxnDBCount = NUMBER(TxnDBInit);
 
 // Ledger database holds ledgers and ledger confirmations
 const char *LedgerDBInit[] = {
@@ -59,7 +61,19 @@ const char *LedgerDBInit[] = {
 	"END TRANSACTION;"
 };
 
-int LedgerDBCount = sizeof(LedgerDBInit) / sizeof(const char *);
+int LedgerDBCount = NUMBER(LedgerDBInit);
+
+// RPC database holds persistent data for RPC clients.
+const char *RpcDBInit[] = {
+
+	// Local persistence of the RPC client
+	"CREATE TABLE RPCData (							\
+		Key			TEXT PRIMARY Key,				\
+		Value		TEXT							\
+	);",
+};
+
+int RpcDBCount = NUMBER(RpcDBInit);
 
 // Wallet database holds local accounts and trusted nodes
 const char *WalletDBInit[] = {
@@ -71,12 +85,6 @@ const char *WalletDBInit[] = {
 		PrivateKey		CHARACTER(52),				\
 		Dh512			TEXT,						\
 		Dh1024			TEXT						\
-	);",
-
-	// Local persistence of the RPC client
-	"CREATE TABLE RPCData (							\
-		Key			TEXT PRIMARY Key,				\
-		Value		TEXT							\
 	);",
 
 	// Miscellaneous persistent information
@@ -237,7 +245,7 @@ const char *WalletDBInit[] = {
 	"END TRANSACTION;"
 };
 
-int WalletDBCount = sizeof(WalletDBInit) / sizeof(const char *);
+int WalletDBCount = NUMBER(WalletDBInit);
 
 // Hash node database holds nodes indexed by hash
 const char *HashNodeDBInit[] = {
@@ -256,7 +264,7 @@ const char *HashNodeDBInit[] = {
 	"END TRANSACTION;"
 };
 
-int HashNodeDBCount = sizeof(HashNodeDBInit) / sizeof(const char *);
+int HashNodeDBCount = NUMBER(HashNodeDBInit);
 
 // Net node database holds nodes seen on the network
 // XXX Not really used needs replacement.
@@ -270,6 +278,6 @@ const char *NetNodeDBInit[] = {
 };
 
 
-int NetNodeDBCount = sizeof(NetNodeDBInit) / sizeof(const char *);
+int NetNodeDBCount = NUMBER(NetNodeDBInit);
 
 // vim:ts=4

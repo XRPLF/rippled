@@ -117,9 +117,9 @@ bool Wallet::nodeIdentityCreate() {
 
 bool Wallet::dataDelete(const std::string& strKey)
 {
-	Database* db	= theApp->getWalletDB()->getDB();
+	Database* db	= theApp->getRpcDB()->getDB();
 
-	ScopedLock sl(theApp->getWalletDB()->getDBLock());
+	ScopedLock sl(theApp->getRpcDB()->getDBLock());
 
 	return db->executeSQL(str(boost::format("DELETE FROM RPCData WHERE Key=%s;")
 		% db->escape(strKey)));
@@ -127,9 +127,9 @@ bool Wallet::dataDelete(const std::string& strKey)
 
 bool Wallet::dataFetch(const std::string& strKey, std::string& strValue)
 {
-	Database* db	= theApp->getWalletDB()->getDB();
+	Database* db	= theApp->getRpcDB()->getDB();
 
-	ScopedLock sl(theApp->getWalletDB()->getDBLock());
+	ScopedLock sl(theApp->getRpcDB()->getDBLock());
 
 	bool		bSuccess	= false;
 
@@ -151,9 +151,9 @@ bool Wallet::dataFetch(const std::string& strKey, std::string& strValue)
 
 bool Wallet::dataStore(const std::string& strKey, const std::string& strValue)
 {
-	Database* db	= theApp->getWalletDB()->getDB();
+	Database* db	= theApp->getRpcDB()->getDB();
 
-	ScopedLock sl(theApp->getWalletDB()->getDBLock());
+	ScopedLock sl(theApp->getRpcDB()->getDBLock());
 
 	bool		bSuccess	= false;
 

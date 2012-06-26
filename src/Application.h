@@ -51,7 +51,7 @@ class Application
 	SuppressionTable		mSuppressions;
 	HashedObjectStore		mHashedObjectStore;
 
-	DatabaseCon				*mTxnDB, *mLedgerDB, *mWalletDB, *mHashNodeDB, *mNetNodeDB;
+	DatabaseCon				*mRpcDB, *mTxnDB, *mLedgerDB, *mWalletDB, *mHashNodeDB, *mNetNodeDB;
 
 	ConnectionPool			mConnectionPool;
 	PeerDoor*				mPeerDoor;
@@ -87,6 +87,7 @@ public:
 	bool isNew(const uint160& s)					{ return mSuppressions.addSuppression(s); }
 	bool running()									{ return mTxnDB != NULL; }
 
+	DatabaseCon* getRpcDB()			{ return mRpcDB; }
 	DatabaseCon* getTxnDB()			{ return mTxnDB; }
 	DatabaseCon* getLedgerDB()		{ return mLedgerDB; }
 	DatabaseCon* getWalletDB()		{ return mWalletDB; }
