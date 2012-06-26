@@ -26,8 +26,6 @@ struct TransactionFormat
 	SOElement elements[16];
 };
 
-const int32 TransactionMagic		= 0x54584E00;	// 'TXN'
-
 const int TransactionISigningPubKey	= 0;
 const int TransactionISourceID		= 1;
 const int TransactionISequence		= 2;

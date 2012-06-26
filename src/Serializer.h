@@ -67,13 +67,22 @@ public:
 	bool getTaggedList(std::list<TaggedListItem>&, int offset, int& length) const;
 	bool getTaggedList(std::vector<TaggedListItem>&, int offset, int& length) const;
 
-	// hash functions
+	// normal hash functions
 	uint160 getRIPEMD160(int size=-1) const;
 	uint256 getSHA256(int size=-1) const;
 	uint256 getSHA512Half(int size=-1) const;
 	static uint256 getSHA512Half(const std::vector<unsigned char>& data, int size=-1);
 	static uint256 getSHA512Half(const unsigned char *data, int len);
 	static uint256 getSHA512Half(const std::string& strData);
+
+	// prefix hash functions
+	static uint256 getPrefixHash(uint32 prefix, const unsigned char *data, int len);
+	uint256 getPrefixHash(uint32 prefix) const
+		{ return getPrefixHash(prefix, &(mData.front()), mData.size()); }
+	static uint256 getPrefixHash(uint32 prefix, const std::vector<unsigned char>& data)
+		{ return getPrefixHash(prefix, &(data.front()), data.size()); }
+	static uint256 getPrefixHash(uint32 prefix, const std::string& strData)
+		{ return getPrefixHash(prefix, reinterpret_cast<const unsigned char *>(strData.c_str()), strData.size()); }
 
 	// totality functions
 	int getCapacity() const				{ return mData.capacity(); }

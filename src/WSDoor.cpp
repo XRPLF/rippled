@@ -45,8 +45,8 @@ class WSServerHandler;
 class WSConnection : public InfoSub
 {
 public:
-    typedef typename websocketpp::WSDOOR_SERVER::handler::connection_ptr connection_ptr;
-    typedef typename websocketpp::WSDOOR_SERVER::handler::message_ptr message_ptr;
+    typedef websocketpp::WSDOOR_SERVER::handler::connection_ptr connection_ptr;
+    typedef websocketpp::WSDOOR_SERVER::handler::message_ptr message_ptr;
 
 protected:
 	typedef void (WSConnection::*doFuncPtr)(Json::Value& jvResult, const Json::Value &jvRequest);
@@ -67,7 +67,7 @@ public:
 
 	virtual ~WSConnection();
 
-	// Implement overriden functions from base class:
+	// Implement overridden functions from base class:
 	void send(const Json::Value& jvObj);
 
 	// Utilities
@@ -83,7 +83,7 @@ public:
 
 
 // A single instance of this object is made.
-// This instance dispatches all events.  There is no per connection persistency.
+// This instance dispatches all events.  There is no per connection persistence.
 template <typename endpoint_type>
 class WSServerHandler : public endpoint_type::handler
 {

@@ -21,16 +21,18 @@ Page instfiles
 ; The stuff to install
 Section "" ;No components page, name is not important
 
-  ; Set output path to the installation directory.
-  SetOutPath $INSTDIR
+ 	 ; Set output path to the installation directory.
+	SetOutPath $INSTDIR
   
-  ; Put file there
+  	; Put file there
   	File ..\Release\newcoin.exe
 	File ..\*.dll
 	File "start CoinToss.bat"
 	File newcoind.cfg
 	File validators.txt
 	File /r /x .git ..\..\nc-client\*.*
+	
+	CreateDirectory $INSTDIR\db
 	
 
   

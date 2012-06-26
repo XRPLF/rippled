@@ -5,6 +5,7 @@
 
 #include "key.h"
 #include "Application.h"
+#include "HashPrefixes.h"
 
 LedgerProposal::LedgerProposal(const uint256& pLgr, uint32 seq, const uint256& tx, const NewcoinAddress& naPeerPublic) :
 	mPreviousLedger(pLgr), mCurrentHash(tx), mProposeSeq(seq)
@@ -37,7 +38,7 @@ uint256 LedgerProposal::getSigningHash() const
 {
 	Serializer s(72);
 
-	s.add32(sProposeMagic);
+	s.add32(sHP_Proposal);
 	s.add32(mProposeSeq);
 	s.add256(mPreviousLedger);
 	s.add256(mCurrentHash);

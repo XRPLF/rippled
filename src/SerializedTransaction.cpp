@@ -1,8 +1,9 @@
 
 #include "SerializedTransaction.h"
-#include "Application.h"
 
+#include "Application.h"
 #include "Log.h"
+#include "HashPrefixes.h"
 
 SerializedTransaction::SerializedTransaction(TransactionType type) : mType(type)
 {
@@ -126,7 +127,7 @@ bool SerializedTransaction::isEquivalent(const SerializedType& t) const
 uint256 SerializedTransaction::getSigningHash() const
 {
 	Serializer s;
-	s.add32(TransactionMagic);
+	s.add32(sHP_TransactionSign);
 	mMiddleTxn.add(s);
 	mInnerTxn.add(s);
 	return s.getSHA512Half();
@@ -135,6 +136,7 @@ uint256 SerializedTransaction::getSigningHash() const
 uint256 SerializedTransaction::getTransactionID() const
 { // perhaps we should cache this
 	Serializer s;
+	s.add32(sHP_TransactionID);
 	mSignature.add(s);
 	mMiddleTxn.add(s);
 	mInnerTxn.add(s);

@@ -566,18 +566,16 @@ void Peer::processReadBuffer()
 
 void Peer::recvHello(newcoin::TMHello& packet)
 {
-	Log(lsTRACE) << "Recv(Hello) v=" << packet.versionmajor() << "." << packet.versionminor();
 	bool	bDetach	= true;
 
 	// Cancel verification timeout.
 	(void) mVerifyTimer.cancel();
 
-	if ((packet.minprotoversionmajor() > PROTO_VERSION_MAJ) ||
- 		((packet.minprotoversionmajor() == PROTO_VERSION_MAJ) && (packet.minprotoversionminor() > PROTO_VERSION_MIN)))
+	if (packet.protoversionmin() < MAKE_VERSION_INT(MIN_PROTO_MAJOR, MIN_PROTO_MINOR))
 	{
 		Log(lsINFO) << "Recv(Hello): Server requires protocol version " <<
-			packet.minprotoversionmajor() << "." << packet.minprotoversionminor() << " we run " <<
-			PROTO_VERSION_MAJ << "." << PROTO_VERSION_MIN;
+			GET_VERSION_MAJOR(packet.protoversion()) << "." << GET_VERSION_MINOR(packet.protoversion())
+				<< " we run " << PROTO_VERSION_MAJOR << "." << PROTO_VERSION_MINOR;
 	}
 	else if (!mNodePublic.setNodePublic(packet.nodepublic()))
 	{
@@ -590,15 +588,10 @@ void Peer::recvHello(newcoin::TMHello& packet)
 	else
 	{ // Successful connection.
 		Log(lsINFO) << "Recv(Hello): Connect: " << mNodePublic.humanNodePublic();
+		if (packet.protoversion() != MAKE_VERSION_INT(PROTO_VERSION_MAJOR, PROTO_VERSION_MINOR))
+			Log(lsINFO) << "Peer speaks version " <<
+				(packet.protoversion() >> 16) << "." << (packet.protoversion() & 0xFF);
 		mHello = packet;
-
-		if ( (packet.versionmajor() != SERVER_VERSION_MAJ) || (packet.versionminor() != SERVER_VERSION_MIN))
-		{
-			if (packet.has_fullversion())
-				Log(lsINFO) << " Peer is running version " << packet.fullversion();
-			else
-				Log(lsINFO) << " Peer is running version " << packet.versionmajor() << "." << packet.versionminor();
-		}
 
 		if (mClientConnect)
 		{
@@ -1119,12 +1112,8 @@ void Peer::sendHello()
 
 	newcoin::TMHello h;
 
-	h.set_versionmajor(SERVER_VERSION_MAJ);
-	h.set_versionminor(SERVER_VERSION_MIN);
-	h.set_protoversionmajor(PROTO_VERSION_MAJ);
-	h.set_protoversionminor(PROTO_VERSION_MIN);
-	h.set_minprotoversionminor(MIN_PROTO_MAJ);
-	h.set_minprotoversionmajor(MIN_PROTO_MIN);
+	h.set_protoversion(MAKE_VERSION_INT(PROTO_VERSION_MAJOR, PROTO_VERSION_MINOR));
+	h.set_protoversionmin(MAKE_VERSION_INT(MIN_PROTO_MAJOR, MIN_PROTO_MINOR));
 	h.set_fullversion(SERVER_VERSION);
 	h.set_nettime(theApp->getOPs().getNetworkTimeNC());
 	h.set_nodepublic(theApp->getWallet().getNodePublic().humanNodePublic());
@@ -1164,26 +1153,24 @@ Json::Value Peer::getJson()
 {
 	Json::Value ret(Json::objectValue);
 
-	ret["this"]			= ADDRESS(this);
+	//ret["this"]			= ADDRESS(this);
 	ret["public_key"]	= mNodePublic.ToString();
 	ret["ip"]			= mIpPortConnect.first;
 	ret["port"]			= mIpPortConnect.second;
 
 	if (mHello.has_fullversion())
 		ret["version"] = mHello.fullversion();
-	else if (mHello.has_versionminor() && mHello.has_versionmajor())
-		ret["version"] = boost::lexical_cast<std::string>(mHello.versionmajor()) + "." +
-			boost::lexical_cast<std::string>(mHello.versionminor());
 
-	if (mHello.has_protoversionminor() && mHello.has_protoversionmajor())
-		ret["protocol"] = boost::lexical_cast<std::string>(mHello.protoversionmajor()) + "." +
-			boost::lexical_cast<std::string>(mHello.protoversionminor());
-
+	if (mHello.has_protoversion() &&
+			(mHello.protoversion() != MAKE_VERSION_INT(PROTO_VERSION_MAJOR, PROTO_VERSION_MINOR)))
+		ret["protocol"] =  boost::lexical_cast<std::string>(GET_VERSION_MAJOR(mHello.protoversion())) + "." +
+			boost::lexical_cast<std::string>(GET_VERSION_MINOR(mHello.protoversion()));
+	/*
 	if (!mIpPort.first.empty())
 	{
 		ret["verified_ip"]		= mIpPort.first;
 		ret["verified_port"]	= mIpPort.second;
-	}
+	}*/
 
 	return ret;
 }

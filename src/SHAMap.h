@@ -158,8 +158,11 @@ public:
 	SHAMapTreeNode(const SHAMapNode& nodeID, SHAMapItem::pointer item, TNType type, uint32 seq);
 
 	// raw node functions
-	SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned char>& contents, uint32 seq); // raw node
-	void addRaw(Serializer &);
+	SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned char>& contents, uint32 seq, int format);
+
+#define STN_ARF_PREFIXED	1
+#define STN_ARF_WIRE		2
+	void addRaw(Serializer &, int format);
 
 	virtual bool isPopulated() const { return true; }
 
@@ -203,13 +206,6 @@ public:
 
 	virtual void dump();
 	virtual std::string getString() const;
-};
-
-enum SHAMapException
-{
-	MissingNode = 1,
-	InvalidNode = 2,
-	InvalidMap = 3,
 };
 
 enum SHAMapState
@@ -337,7 +333,7 @@ public:
 	uint32 getSeq()				{ return mSeq; }
 
 	// overloads for backed maps
-	bool fetchNode(const uint256& hash, std::vector<unsigned char>& rawNode);
+	boost::shared_ptr<SHAMapTreeNode> fetchNode(const SHAMapNode& id, const uint256& hash);
 
 	bool operator==(const SHAMap& s) { return getHash() == s.getHash(); }
 

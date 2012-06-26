@@ -629,20 +629,44 @@ std::vector< std::pair<uint32, uint256> >
 
 	std::string sql =
 		str(boost::format("SELECT LedgerSeq,TransID FROM AccountTransactions INDEXED BY AcctTxIndex "
-			" WHERE Account = '%s' AND LedgerSeq <= '%d' AND LedgerSeq >= '%d' ORDER BY LedgerSeq LIMIT 1000")
+			" WHERE Account = '%s' AND LedgerSeq <= '%d' AND LedgerSeq >= '%d' ORDER BY LedgerSeq LIMIT 1000;")
 			% account.humanAccountID() % maxLedger	% minLedger);
 
-	Database *db = theApp->getTxnDB()->getDB();
-	ScopedLock dbLock = theApp->getTxnDB()->getDBLock();
-
-	SQL_FOREACH(db, sql)
 	{
-		std::string txID;
-		db->getStr("TransID", txID);
-		affectedAccounts.push_back(std::make_pair<uint32, uint256>(db->getInt("LedgerSeq"), uint256(txID)));
+		Database* db = theApp->getTxnDB()->getDB();
+		ScopedLock dbLock = theApp->getTxnDB()->getDBLock();
+
+		SQL_FOREACH(db, sql)
+		{
+			std::string txID;
+			db->getStr("TransID", txID);
+			affectedAccounts.push_back(std::make_pair<uint32, uint256>(db->getInt("LedgerSeq"), uint256(txID)));
+		}
 	}
 
 	return affectedAccounts;
+}
+
+std::vector<NewcoinAddress>
+	NetworkOPs::getAffectedAccounts(uint32 ledgerSeq)
+{
+	std::vector<NewcoinAddress> accounts;
+	std::string sql = str(boost::format
+		("SELECT DISTINCT Account FROM AccountTransactions INDEXED BY AcctLgrIndex WHERE LedgerSeq = '%d';")
+			 % ledgerSeq);
+	NewcoinAddress acct;
+	{
+		Database* db = theApp->getTxnDB()->getDB();
+		ScopedLock dblock = theApp->getTxnDB()->getDBLock();
+		SQL_FOREACH(db, sql)
+		{
+			std::string str;
+			db->getStr("Account", str);
+			if (acct.setAccountID(str))
+				accounts.push_back(acct);
+		}
+	}
+	return accounts;
 }
 
 bool NetworkOPs::recvValidation(SerializedValidation::pointer val)

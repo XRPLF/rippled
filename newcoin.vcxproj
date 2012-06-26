@@ -153,6 +153,15 @@
     <ClCompile Include="src\utils.cpp" />
     <ClCompile Include="src\ValidationCollection.cpp" />
     <ClCompile Include="src\Wallet.cpp" />
+    <ClCompile Include="src\WSDoor.cpp" />
+    <ClCompile Include="websocketpp\src\base64\base64.cpp" />
+    <ClCompile Include="websocketpp\src\md5\md5.c" />
+    <ClCompile Include="websocketpp\src\messages\data.cpp" />
+    <ClCompile Include="websocketpp\src\network_utilities.cpp" />
+    <ClCompile Include="websocketpp\src\processors\hybi_header.cpp" />
+    <ClCompile Include="websocketpp\src\processors\hybi_util.cpp" />
+    <ClCompile Include="websocketpp\src\sha1\sha1.cpp" />
+    <ClCompile Include="websocketpp\src\uri.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Account.h" />
@@ -233,14 +242,12 @@
     <ClInclude Include="util\pugixml.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="config.xml" />
-    <None Include="db layout.txt" />
     <None Include="html\newcoin.html">
       <SubType>Designer</SubType>
     </None>
+    <None Include="Issues" />
     <None Include="Makefile" />
     <None Include="newcoind.cfg" />
-    <None Include="nodes.xml" />
     <None Include="notes.txt" />
     <CustomBuild Include="src\newcoin.proto">
       <FileType>Document</FileType>
@@ -248,11 +255,7 @@
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">obj\src\newcoin.pb.h</Outputs>
     </CustomBuild>
     <None Include="SConstruct" />
-    <None Include="tests\client2\config.xml">
-      <SubType>Designer</SubType>
-    </None>
     <None Include="todo.txt" />
-    <None Include="unl.xml" />
     <None Include="validators.txt" />
     <None Include="wallet.xml" />
   </ItemGroup>

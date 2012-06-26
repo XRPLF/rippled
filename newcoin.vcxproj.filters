@@ -25,17 +25,11 @@
     <Filter Include="html">
       <UniqueIdentifier>{77d2a621-b503-4ce4-aee8-ef0b337c4ee2}</UniqueIdentifier>
     </Filter>
-    <Filter Include="tests">
-      <UniqueIdentifier>{209ce0bd-b197-4cb2-ad50-f8f43bcd1e03}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="tests\client1">
-      <UniqueIdentifier>{46b84833-f245-4c3d-94b8-472efdb3a040}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="tests\client2">
-      <UniqueIdentifier>{b27b04b8-1c6e-4b20-9364-f18d4682dc00}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\database">
       <UniqueIdentifier>{60c3631e-8855-4a61-bdd3-9892d96242d5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\websocketpp">
+      <UniqueIdentifier>{92775c5f-dc9f-4a97-a9a6-6d4bd4e424b4}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -242,6 +236,33 @@
     </ClCompile>
     <ClCompile Include="src\Suppression.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\WSDoor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="websocketpp\src\base64\base64.cpp">
+      <Filter>Source Files\websocketpp</Filter>
+    </ClCompile>
+    <ClCompile Include="websocketpp\src\md5\md5.c">
+      <Filter>Source Files\websocketpp</Filter>
+    </ClCompile>
+    <ClCompile Include="websocketpp\src\messages\data.cpp">
+      <Filter>Source Files\websocketpp</Filter>
+    </ClCompile>
+    <ClCompile Include="websocketpp\src\network_utilities.cpp">
+      <Filter>Source Files\websocketpp</Filter>
+    </ClCompile>
+    <ClCompile Include="websocketpp\src\processors\hybi_header.cpp">
+      <Filter>Source Files\websocketpp</Filter>
+    </ClCompile>
+    <ClCompile Include="websocketpp\src\processors\hybi_util.cpp">
+      <Filter>Source Files\websocketpp</Filter>
+    </ClCompile>
+    <ClCompile Include="websocketpp\src\uri.cpp">
+      <Filter>Source Files\websocketpp</Filter>
+    </ClCompile>
+    <ClCompile Include="websocketpp\src\sha1\sha1.cpp">
+      <Filter>Source Files\websocketpp</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -475,23 +496,17 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="nodes.xml" />
-    <None Include="config.xml" />
-    <None Include="unl.xml" />
     <None Include="wallet.xml" />
     <None Include="notes.txt" />
     <None Include="html\newcoin.html">
       <Filter>html</Filter>
     </None>
-    <None Include="db layout.txt" />
     <None Include="todo.txt" />
     <None Include="Makefile" />
-    <None Include="tests\client2\config.xml">
-      <Filter>tests\client2</Filter>
-    </None>
     <None Include="SConstruct" />
     <None Include="newcoind.cfg" />
     <None Include="validators.txt" />
+    <None Include="Issues" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="src\newcoin.proto" />

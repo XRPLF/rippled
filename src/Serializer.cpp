@@ -1,8 +1,14 @@
+
 #include "Serializer.h"
-#include "key.h"
+
 #include <cassert>
+
 #include <openssl/ripemd.h>
 #include <openssl/sha.h>
+
+#include <boost/test/unit_test.hpp>
+
+#include "key.h"
 
 int Serializer::addZeros(size_t uBytes)
 {
@@ -236,6 +242,24 @@ uint256 Serializer::getSHA512Half(const unsigned char *data, int len)
 uint256 Serializer::getSHA512Half(const std::string& strData)
 {
 	return getSHA512Half(reinterpret_cast<const unsigned char*>(strData.c_str()), strData.size());
+}
+
+uint256 Serializer::getPrefixHash(uint32 prefix, const unsigned char *data, int len)
+{
+	char be_prefix[4];
+	be_prefix[0] = static_cast<unsigned char>(prefix >> 24);
+	be_prefix[1] = static_cast<unsigned char>((prefix >> 16) & 0xff);
+	be_prefix[2] = static_cast<unsigned char>((prefix >> 8) & 0xff);
+	be_prefix[3] = static_cast<unsigned char>(prefix & 0xff);
+
+	uint256 j[2];
+	SHA512_CTX ctx;
+	SHA512_Init(&ctx);
+	SHA512_Update(&ctx, &be_prefix[0], 4);
+	SHA512_Update(&ctx, data, len);
+	SHA512_Final(reinterpret_cast<unsigned char *>(&j[0]), &ctx);
+
+	return j[0];
 }
 
 bool Serializer::checkSignature(int pubkeyOffset, int signatureOffset) const
@@ -592,5 +616,24 @@ std::vector<unsigned char> SerializerIterator::getRaw(int iLength)
 
 	return mSerializer.getRaw(iPos, iLength);
 }
+
+BOOST_AUTO_TEST_SUITE(Serializer_suite)
+
+BOOST_AUTO_TEST_CASE( Serializer_PrefixHash_test )
+{
+	Serializer s1;
+	s1.add32(3);
+	s1.add256(uint256());
+
+	Serializer s2;
+	s2.add32(0x12345600);
+	s2.addRaw(s1.peekData());
+
+	if (s1.getPrefixHash(0x12345600) != s2.getSHA512Half())
+		BOOST_FAIL("Prefix hash does not work");
+}
+
+
+BOOST_AUTO_TEST_SUITE_END();
 
 // vim:ts=4

@@ -37,20 +37,16 @@ enum MessageType {
 
 
 message TMHello {
-	required uint32 versionMinor			= 1;
-	required uint32 versionMajor			= 2;
-	required uint32 protoVersionMinor		= 3;
-	required uint32 protoVersionMajor		= 4;
-	required uint32 minProtoVersionMinor	= 5;
-	required uint32 minProtoVersionMajor	= 6;
-	required bytes	nodePublic				= 7;
-	required bytes	nodeProof				= 8;
-	optional string fullVersion				= 9;
-	optional uint64 netTime					= 10;
-	optional uint32 ipv4Port				= 11;
-	optional uint32 ledgerIndex				= 12;
-	optional bytes	closedLedger 			= 13; // our last closed ledger
-	optional bytes	previousLedger			= 14; // the ledger before the last closed ledger
+	required uint32 protoVersion			= 1;
+	required uint32 protoVersionMin			= 2;
+	required bytes	nodePublic				= 3;
+	required bytes	nodeProof				= 4;
+	optional string fullVersion				= 5;
+	optional uint64 netTime					= 6;
+	optional uint32 ipv4Port				= 7;
+	optional uint32 ledgerIndex				= 8;
+	optional bytes	closedLedger 			= 9;  // our last closed ledger
+	optional bytes	previousLedger			= 10; // the ledger before the last closed ledger
 }
 
 

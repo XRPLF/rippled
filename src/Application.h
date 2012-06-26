@@ -85,6 +85,7 @@ public:
 	ValidationCollection& getValidations()			{ return mValidations; }
 	bool isNew(const uint256& s)					{ return mSuppressions.addSuppression(s); }
 	bool isNew(const uint160& s)					{ return mSuppressions.addSuppression(s); }
+	bool running()									{ return mTxnDB != NULL; }
 
 	DatabaseCon* getTxnDB()			{ return mTxnDB; }
 	DatabaseCon* getLedgerDB()		{ return mLedgerDB; }

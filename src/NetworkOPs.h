@@ -152,6 +152,7 @@ public:
 	// client information retrieval functions
 	std::vector< std::pair<uint32, uint256> >
 		getAffectedAccounts(const NewcoinAddress& account, uint32 minLedger, uint32 maxLedger);
+	std::vector<NewcoinAddress> getAffectedAccounts(uint32 ledgerSeq);
 
 	//
 	// Monitoring: publisher side
