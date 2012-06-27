@@ -717,49 +717,68 @@ void NetworkOPs::pubAccountInfo(const NewcoinAddress& naAccountID, const Json::V
 
 void NetworkOPs::pubLedger(const Ledger::pointer& lpAccepted)
 {
-	if (!mSubLedger.empty())
 	{
-		Json::Value	jvObj(Json::objectValue);
-
-		jvObj["type"]	= "ledgerAccepted";
-		jvObj["seq"]	= lpAccepted->getLedgerSeq();
-		jvObj["hash"]	= lpAccepted->getHash().ToString();
-		jvObj["time"]	= Json::Value::UInt(lpAccepted->getCloseTimeNC());
-
 		boost::interprocess::sharable_lock<boost::interprocess::interprocess_upgradable_mutex>	sl(mMonitorLock);
-		BOOST_FOREACH(InfoSub* ispListener, mSubLedger)
+
+		if (!mSubLedger.empty())
 		{
-			ispListener->send(jvObj);
+			Json::Value	jvObj(Json::objectValue);
+
+			jvObj["type"]	= "ledgerAccepted";
+			jvObj["seq"]	= lpAccepted->getLedgerSeq();
+			jvObj["hash"]	= lpAccepted->getHash().ToString();
+			jvObj["time"]	= Json::Value::UInt(lpAccepted->getCloseTimeNC());
+
+			BOOST_FOREACH(InfoSub* ispListener, mSubLedger)
+			{
+				ispListener->send(jvObj);
+			}
 		}
 	}
 
-	if (!mSubLedgerAccounts.empty())
 	{
-		Json::Value	jvAccounts(Json::arrayValue);
-
-		BOOST_FOREACH(const NewcoinAddress& naAccountID, getAffectedAccounts(lpAccepted->getLedgerSeq()))
-		{
-			jvAccounts.append(Json::Value(naAccountID.humanAccountID()));
-		}
-
-		Json::Value	jvObj(Json::objectValue);
-
-		jvObj["type"]		= "ledgerAcceptedAccounts";
-		jvObj["seq"]		= lpAccepted->getLedgerSeq();
-		jvObj["hash"]		= lpAccepted->getHash().ToString();
-		jvObj["time"]		= Json::Value::UInt(lpAccepted->getCloseTimeNC());
-		jvObj["accounts"]	= jvAccounts;
-
 		boost::interprocess::sharable_lock<boost::interprocess::interprocess_upgradable_mutex>	sl(mMonitorLock);
-		BOOST_FOREACH(InfoSub* ispListener, mSubLedgerAccounts)
+		if (!mSubLedgerAccounts.empty())
 		{
-			ispListener->send(jvObj);
+			Json::Value	jvAccounts(Json::arrayValue);
+
+			BOOST_FOREACH(const NewcoinAddress& naAccountID, getAffectedAccounts(lpAccepted->getLedgerSeq()))
+			{
+				jvAccounts.append(Json::Value(naAccountID.humanAccountID()));
+			}
+
+			Json::Value	jvObj(Json::objectValue);
+
+			jvObj["type"]		= "ledgerAcceptedAccounts";
+			jvObj["seq"]		= lpAccepted->getLedgerSeq();
+			jvObj["hash"]		= lpAccepted->getHash().ToString();
+			jvObj["time"]		= Json::Value::UInt(lpAccepted->getCloseTimeNC());
+			jvObj["accounts"]	= jvAccounts;
+
+			BOOST_FOREACH(InfoSub* ispListener, mSubLedgerAccounts)
+			{
+				ispListener->send(jvObj);
+			}
 		}
 	}
 }
 
 void NetworkOPs::pubTransaction(const Ledger::pointer& lpCurrent, const SerializedTransaction& stTxn, TransactionEngineResult terResult, const std::vector<NewcoinAddress>& naAffectedAccountIds)
 {
+	boost::interprocess::scoped_lock<boost::interprocess::interprocess_upgradable_mutex>	sl(mMonitorLock);
+	if (!mSubTransaction.empty())
+	{
+		Json::Value	jvObj(Json::objectValue);
+
+		jvObj["type"]			= "transactionProposed";
+		jvObj["seq"]			= lpCurrent->getLedgerSeq();
+		jvObj["transaction"]	= stTxn.getJson(0);	// XXX Verify what options there are.
+
+		BOOST_FOREACH(InfoSub* ispListener, mSubTransaction)
+		{
+			ispListener->send(jvObj);
+		}
+	}
 }
 
 //
@@ -847,6 +866,18 @@ bool NetworkOPs::subLedgerAccounts(InfoSub* ispListener)
 bool NetworkOPs::unsubLedgerAccounts(InfoSub* ispListener)
 {
 	return !!mSubLedgerAccounts.erase(ispListener);
+}
+
+// <-- bool: true=added, false=already there
+bool NetworkOPs::subTransaction(InfoSub* ispListener)
+{
+	return mSubTransaction.insert(ispListener).second;
+}
+
+// <-- bool: true=erased, false=was not there
+bool NetworkOPs::unsubTransaction(InfoSub* ispListener)
+{
+	return !!mSubTransaction.erase(ispListener);
 }
 
 // vim:ts=4

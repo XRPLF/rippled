@@ -56,10 +56,13 @@ protected:
 	typedef boost::unordered_map<NewcoinAddress,boost::unordered_set<InfoSub*> >			subInfoMapType;
 	typedef boost::unordered_map<NewcoinAddress,boost::unordered_set<InfoSub*> >::iterator	subInfoMapIterator;
 
+	// XXX Split into more locks.
     boost::interprocess::interprocess_upgradable_mutex	mMonitorLock;
 	subInfoMapType										mSubAccountInfo;
 	boost::unordered_set<InfoSub*>						mSubLedger;				// ledger accepteds
 	boost::unordered_set<InfoSub*>						mSubLedgerAccounts;		// ledger accepteds + affected accounts
+	boost::unordered_set<InfoSub*>						mSubTransaction;		// all transactions
+	subInfoMapType										mSubTransactionAccounts;
 
 public:
 	NetworkOPs(boost::asio::io_service& io_service, LedgerMaster* pLedgerMaster);
@@ -180,6 +183,9 @@ public:
 
 	bool subLedgerAccounts(InfoSub* ispListener);
 	bool unsubLedgerAccounts(InfoSub* ispListener);
+
+	bool subTransaction(InfoSub* ispListener);
+	bool unsubTransaction(InfoSub* ispListener);
 };
 
 #endif

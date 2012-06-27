@@ -82,8 +82,9 @@ public:
 	void doLedgerUnsubscribe(Json::Value& jvResult, const Json::Value& jvRequest);
 	void doLedgerAccountsSubcribe(Json::Value& jvResult, const Json::Value& jvRequest);
 	void doLedgerAccountsUnsubscribe(Json::Value& jvResult, const Json::Value& jvRequest);
+	void doTransactionSubcribe(Json::Value& jvResult, const Json::Value& jvRequest);
+	void doTransactionUnsubscribe(Json::Value& jvResult, const Json::Value& jvRequest);
 };
-
 
 // A single instance of this object is made.
 // This instance dispatches all events.  There is no per connection persistence.
@@ -267,6 +268,7 @@ void WSDoor::stop()
 
 WSConnection::~WSConnection()
 {
+	theApp->getOPs().unsubTransaction(this);
 	theApp->getOPs().unsubLedger(this);
 	theApp->getOPs().unsubLedgerAccounts(this);
 	theApp->getOPs().unsubAccountInfo(this, mSubAccountInfo);
@@ -287,12 +289,14 @@ Json::Value WSConnection::invokeCommand(const Json::Value& jvRequest)
 		const char* pCommand;
 		doFuncPtr	dfpFunc;
 	} commandsA[] = {
-		{ "account_info_subscribe",			&WSConnection::doAccountInfoSubscribe	},
-		{ "account_info_unsubscribe",		&WSConnection::doAccountInfoUnsubscribe	},
-		{ "ledger_subscribe",				&WSConnection::doLedgerSubcribe		},
-		{ "ledger_unsubscribe",				&WSConnection::doLedgerUnsubscribe	},
+		{ "account_info_subscribe",			&WSConnection::doAccountInfoSubscribe		},
+		{ "account_info_unsubscribe",		&WSConnection::doAccountInfoUnsubscribe		},
+		{ "ledger_subscribe",				&WSConnection::doLedgerSubcribe				},
+		{ "ledger_unsubscribe",				&WSConnection::doLedgerUnsubscribe			},
 		{ "ledger_accounts_subscribe",		&WSConnection::doLedgerAccountsSubcribe		},
 		{ "ledger_accounts_unsubscribe",	&WSConnection::doLedgerAccountsUnsubscribe	},
+		{ "transaction_subscribe",			&WSConnection::doTransactionSubcribe		},
+		{ "transaction_unsubscribe",		&WSConnection::doTransactionUnsubscribe		},
 	};
 
 	if (!jvRequest.isMember("command"))
@@ -464,6 +468,22 @@ void WSConnection::doLedgerAccountsUnsubscribe(Json::Value& jvResult, const Json
 	if (!theApp->getOPs().unsubLedgerAccounts(this))
 	{
 		jvResult["error"]	= "ledgerAccountsNotSubscribed";
+	}
+}
+
+void WSConnection::doTransactionSubcribe(Json::Value& jvResult, const Json::Value& jvRequest)
+{
+	if (!theApp->getOPs().subTransaction(this))
+	{
+		jvResult["error"]	= "TransactionsSubscribed";
+	}
+}
+
+void WSConnection::doTransactionUnsubscribe(Json::Value& jvResult, const Json::Value& jvRequest)
+{
+	if (!theApp->getOPs().unsubTransaction(this))
+	{
+		jvResult["error"]	= "TransactionsNotSubscribed";
 	}
 }
 
