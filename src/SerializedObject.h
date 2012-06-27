@@ -85,6 +85,7 @@ enum SOE_Field
 	sfTransitExpire,
 	sfTransitRate,
 	sfTransitStart,
+	sfVersion,
 	sfWalletLocator,
 
 	// test fields

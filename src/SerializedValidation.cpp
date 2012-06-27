@@ -8,6 +8,7 @@ SOElement SerializedValidation::sValidationFormat[] = {
 	{ sfLedgerHash,		"LedgerHash",		STI_HASH256,	SOE_REQUIRED,	0 },
 	{ sfCloseTime,		"CloseTime",		STI_UINT64,		SOE_REQUIRED,	0 },
 	{ sfSigningKey,		"SigningKey",		STI_VL,			SOE_REQUIRED,	0 },
+	{ sfVersion,		"Version",			STI_UINT32,		SOE_IFFLAG,		1 },
 	{ sfExtensions,		"Extensions",		STI_TL,			SOE_IFFLAG,		0x01000000 },
 	{ sfInvalid,		NULL,				STI_DONE,		SOE_NEVER,		-1 },
 };
