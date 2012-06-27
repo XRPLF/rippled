@@ -116,7 +116,7 @@ void RPCServer::handle_read(const boost::system::error_code& e,
 
 		if (result)
 		{
-			mReplyStr=handleRequest(mIncomingRequest.mBody);
+			mReplyStr = handleRequest(mIncomingRequest.mBody);
 
 			sendReply();
 		}
@@ -147,7 +147,7 @@ std::string RPCServer::handleRequest(const std::string& requestStr)
 	Json::Value valRequest;
 	Json::Reader reader;
 	if (!reader.parse(requestStr, valRequest) || valRequest.isNull() || !valRequest.isObject())
-		return(HTTPReply(400, ""));
+		return(HTTPReply(400, "unable to parse request"));
 
 	// Parse id now so errors from here on will have the id
 	id = valRequest["id"];
@@ -155,9 +155,9 @@ std::string RPCServer::handleRequest(const std::string& requestStr)
 	// Parse method
 	Json::Value valMethod = valRequest["method"];
 	if (valMethod.isNull())
-		return(HTTPReply(400, ""));
+		return(HTTPReply(400, "null method"));
 	if (!valMethod.isString())
-		return(HTTPReply(400, ""));
+		return(HTTPReply(400, "method is not string"));
 	std::string strMethod = valMethod.asString();
 
 	// Parse params
@@ -165,7 +165,7 @@ std::string RPCServer::handleRequest(const std::string& requestStr)
 	if (valParams.isNull())
 		valParams = Json::Value(Json::arrayValue);
 	else if (!valParams.isArray())
-		return(HTTPReply(400, ""));
+		return(HTTPReply(400, "parms unparseable"));
 
 	Json::StyledStreamWriter w;
 	w.write(Log(lsTRACE).ref(), valParams);
@@ -2095,9 +2095,34 @@ void RPCServer::handle_write(const boost::system::error_code& e)
 
 	if (!e)
 	{
-		// Initiate graceful connection closure.
-		boost::system::error_code ignored_ec;
-		mSocket.shutdown(boost::asio::ip::tcp::socket::shutdown_both, ignored_ec);
+		bool keep_alive = (mIncomingRequest.http_version_major == 1) && (mIncomingRequest.http_version_minor >= 1);
+		BOOST_FOREACH(HttpHeader& h, mIncomingRequest.headers)
+		{
+			if (boost::iequals(h.name, "connection"))
+			{
+				if (boost::iequals(h.value, "keep-alive"))
+					keep_alive = true;
+				if (boost::iequals(h.value, "close"))
+					keep_alive = false;
+			}
+		}
+		if (keep_alive)
+		{
+			mIncomingRequest.method.clear();
+			mIncomingRequest.uri.clear();
+			mIncomingRequest.mBody.clear();
+			mIncomingRequest.headers.clear();
+			mRequestParser.reset();
+			mSocket.async_read_some(boost::asio::buffer(mReadBuffer),
+				boost::bind(&RPCServer::handle_read, shared_from_this(),
+				boost::asio::placeholders::error,
+				boost::asio::placeholders::bytes_transferred));
+		}
+		else
+		{
+			boost::system::error_code ignored_ec;
+			mSocket.shutdown(boost::asio::ip::tcp::socket::shutdown_both, ignored_ec);
+		}
 	}
 
 	if (e != boost::asio::error::operation_aborted)

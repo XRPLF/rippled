@@ -107,12 +107,12 @@ std::string HTTPReply(int nStatus, const std::string& strMsg)
 			"Content-Type: application/json; charset=UTF-8\r\n"
 			"Server: coin-json-rpc/%s\r\n"
 			"\r\n"
-			"%s",
+			"%s\r\n",
 		nStatus,
 		strStatus.c_str(),
 		rfc1123Time().c_str(),
 		access.c_str(),
-		strMsg.size(),
+		strMsg.size() + 2,
 		SERVER_VERSION,
 		strMsg.c_str());	
 }
