@@ -236,6 +236,11 @@ uint256 Ledger::getHash()
 
 void Ledger::saveAcceptedLedger(Ledger::pointer ledger)
 {
+	static boost::format ledgerExists("SELECT LedgerSeq FROM Ledgers where LedgerSeq = '%d';");
+	static boost::format deleteLedger("DELETE FROM Ledgers WHERE LedgerSeq = '%d';");
+	static boost::format transExists("SELECT LedgerSeq FROM AccountTransactions WHERE TransId = '%s';");
+	static boost::format updateTx("UPDATE Transactions SET LedgerSeq = '%d', Status = '%c' WHERE TransID = '%s';");
+
 	std::string sql="INSERT INTO Ledgers "
 		"(LedgerHash,LedgerSeq,PrevHash,TotalCoins,ClosingTime,AccountSetHash,TransSetHash) VALUES ('";
 	sql.append(ledger->getHash().GetHex());
@@ -254,13 +259,8 @@ void Ledger::saveAcceptedLedger(Ledger::pointer ledger)
 	sql.append("');");
 
 	ScopedLock sl(theApp->getLedgerDB()->getDBLock());
-	if (SQL_EXISTS(theApp->getLedgerDB()->getDB(),
-		boost::str(boost::format("SELECT LedgerSeq FROM Ledgers where LedgerSeq = '%d';") % ledger->mLedgerSeq)
-			))
-	{
-		theApp->getLedgerDB()->getDB()->executeSQL(
-			boost::str(boost::format("DELETE FROM Ledgers WHERE LedgerSeq = '%d';") % ledger->mLedgerSeq));
-	}
+	if (SQL_EXISTS(theApp->getLedgerDB()->getDB(), boost::str(ledgerExists % ledger->mLedgerSeq)))
+		theApp->getLedgerDB()->getDB()->executeSQL(boost::str(deleteLedger % ledger->mLedgerSeq));
 	theApp->getLedgerDB()->getDB()->executeSQL(sql);
 
 	// write out dirty nodes
@@ -278,9 +278,7 @@ void Ledger::saveAcceptedLedger(Ledger::pointer ledger)
 	{
 		SerializerIterator sit(item->peekSerializer());
 		SerializedTransaction txn(sit);
-		if (!SQL_EXISTS(db,
-			boost::str(boost::format("SELECT LedgerSeq FROM AccountTransactions WHERE TransId = '%s';")
-				% item->getTag().GetHex())))
+		if (!SQL_EXISTS(db, boost::str(transExists % item->getTag().GetHex())))
 		{
 			std::vector<NewcoinAddress> accts = txn.getAffectedAccounts();
 
@@ -308,16 +306,11 @@ void Ledger::saveAcceptedLedger(Ledger::pointer ledger)
 		}
 		if (SQL_EXISTS(db, boost::str(boost::format("SELECT Status from Transactions where TransID = '%s';") %
 				txn.getTransactionID().GetHex())))
-		{
-			db->executeSQL(boost::str(
-				boost::format("UPDATE Transactions SET LedgerSeq = '%d', Status = '%c' WHERE TransID = '%s';") %
-					ledger->getLedgerSeq() % TXN_SQL_VALIDATED % txn.getTransactionID().GetHex()));
-		}
+			db->executeSQL(boost::str(updateTx % ledger->getLedgerSeq() % TXN_SQL_VALIDATED
+				% txn.getTransactionID().GetHex()));
 		else
-		{
 			db->executeSQL(
 				txn.getSQLInsertHeader() + txn.getSQL(ledger->getLedgerSeq(), TXN_SQL_VALIDATED) + ";");
-		}
 	}
 	db->executeSQL("COMMIT TRANSACTION;");
 
