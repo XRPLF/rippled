@@ -268,7 +268,7 @@ public:
 	bool operator<=(const Transaction&) const;
 	bool operator>=(const Transaction&) const;
 
-	Json::Value getJson(bool decorate, bool paid_local=false, bool credited_local=false) const;
+	Json::Value getJson(int options) const;
 
 	static bool isHexTxID(const std::string&);
 

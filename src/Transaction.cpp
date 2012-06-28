@@ -637,12 +637,11 @@ bool Transaction::convertToTransactions(uint32 firstLedgerSeq, uint32 secondLedg
 	return true;
 }
 
-Json::Value Transaction::getJson(bool decorate, bool paid, bool credited) const
+Json::Value Transaction::getJson(int options) const
 {
 	Json::Value ret(mTransaction->getJson(0));
 
 	if (mInLedger) ret["inLedger"]=mInLedger;
-	if (paid) ret["paid"]=true;
 
 	switch(mStatus)
 	{
@@ -657,16 +656,6 @@ Json::Value Transaction::getJson(bool decorate, bool paid, bool credited) const
 		case INCOMPLETE: ret["status"] = "incomplete"; break;
 		default: ret["status"] = "unknown";
 	}
-
-#if 0
-	if(decorate)
-	{
-		LocalAccount::pointer lac = theApp->getWallet().getLocalAccount(mAccountFrom);
-		if (!!lac) source = lac->getJson();
-		lac = theApp->getWallet().getLocalAccount(mAccountTo);
-		if (!!lac) destination = lac->getJson();
-	}
-#endif
 
 	return ret;
 }

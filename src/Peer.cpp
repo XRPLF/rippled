@@ -674,7 +674,7 @@ void Peer::recvTransaction(newcoin::TMTransaction& packet)
 #ifdef DEBUG
 		std::cerr << "Transaction from peer fails validity tests" << std::endl;
 		Json::StyledStreamWriter w;
-		w.write(std::cerr, tx->getJson(true));
+		w.write(std::cerr, tx->getJson(0));
 #endif
 		return;
 	}
