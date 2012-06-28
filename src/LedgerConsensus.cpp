@@ -334,7 +334,7 @@ void LedgerConsensus::statusChange(newcoin::NodeEvent event, Ledger::pointer led
 	s.set_ledgerseq(ledger->getLedgerSeq());
 	s.set_networktime(theApp->getOPs().getNetworkTimeNC());
 	uint256 hash = ledger->getParentHash();
-	s.set_previousledgerhash(hash.begin(), hash.size());
+	s.set_ledgerhashprevious(hash.begin(), hash.size());
 	hash = ledger->getHash();
 	s.set_ledgerhash(hash.begin(), hash.size());
 	PackedMessage::pointer packet = boost::make_shared<PackedMessage>(s, newcoin::mtSTATUS_CHANGE);

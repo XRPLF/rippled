@@ -481,7 +481,7 @@ void NetworkOPs::switchLastClosedLedger(Ledger::pointer newLedger)
 	s.set_ledgerseq(newLedger->getLedgerSeq());
 	s.set_networktime(theApp->getOPs().getNetworkTimeNC());
 	uint256 hash = newLedger->getParentHash();
-	s.set_previousledgerhash(hash.begin(), hash.size());
+	s.set_ledgerhashprevious(hash.begin(), hash.size());
 	hash = newLedger->getHash();
 	s.set_ledgerhash(hash.begin(), hash.size());
 	PackedMessage::pointer packet = boost::make_shared<PackedMessage>(s, newcoin::mtSTATUS_CHANGE);
