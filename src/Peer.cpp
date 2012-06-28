@@ -625,11 +625,11 @@ void Peer::recvHello(newcoin::TMHello& packet)
 			// XXX Set timer: connection is in grace period to be useful.
 			// XXX Set timer: connection idle (idle may vary depending on connection type.)
 
-			if ((packet.has_closedledger()) && (packet.closedledger().size() == (256 / 8)))
+			if ((packet.has_ledgerclosed()) && (packet.ledgerclosed().size() == (256 / 8)))
 			{
-				memcpy(mClosedLedgerHash.begin(), packet.closedledger().data(), 256 / 8);
-				if ((packet.has_previousledger()) && (packet.previousledger().size() == (256 / 8)))
-					memcpy(mPreviousLedgerHash.begin(), packet.previousledger().data(), 256 / 8);
+				memcpy(mClosedLedgerHash.begin(), packet.ledgerclosed().data(), 256 / 8);
+				if ((packet.has_ledgerprevious()) && (packet.ledgerprevious().size() == (256 / 8)))
+					memcpy(mPreviousLedgerHash.begin(), packet.ledgerprevious().data(), 256 / 8);
 				else mPreviousLedgerHash.zero();
 				mClosedLedgerTime = boost::posix_time::second_clock::universal_time();
 			}
@@ -891,9 +891,9 @@ void Peer::recvStatus(newcoin::TMStatusChange& packet)
 		mClosedLedgerHash.zero();
 	}
 
-	if (packet.has_previousledgerhash() && packet.previousledgerhash().size() == (256 / 8))
+	if (packet.has_ledgerhashprevious() && packet.ledgerhashprevious().size() == (256 / 8))
 	{
-		memcpy(mPreviousLedgerHash.begin(), packet.previousledgerhash().data(), 256 / 8);
+		memcpy(mPreviousLedgerHash.begin(), packet.ledgerhashprevious().data(), 256 / 8);
 	}
 	else mPreviousLedgerHash.zero();
 }
@@ -1124,9 +1124,9 @@ void Peer::sendHello()
 	if (closedLedger && closedLedger->isClosed())
 	{
 		uint256 hash = closedLedger->getHash();
-		h.set_closedledger(hash.begin(), hash.GetSerializeSize());
+		h.set_ledgerclosed(hash.begin(), hash.GetSerializeSize());
 		hash = closedLedger->getParentHash();
-		h.set_previousledger(hash.begin(), hash.GetSerializeSize());
+		h.set_ledgerprevious(hash.begin(), hash.GetSerializeSize());
 	}
 
 	PackedMessage::pointer packet = boost::make_shared<PackedMessage>(h, newcoin::mtHELLO);

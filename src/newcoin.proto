@@ -45,8 +45,8 @@ message TMHello {
 	optional uint64 netTime					= 6;
 	optional uint32 ipv4Port				= 7;
 	optional uint32 ledgerIndex				= 8;
-	optional bytes	closedLedger 			= 9;  // our last closed ledger
-	optional bytes	previousLedger			= 10; // the ledger before the last closed ledger
+	optional bytes	ledgerClosed 			= 9;  // our last closed ledger
+	optional bytes	ledgerPrevious			= 10; // the ledger before the last closed ledger
 }
 
 
@@ -95,7 +95,7 @@ message TMStatusChange {
 	optional NodeEvent newEvent			= 2;
 	optional uint32 ledgerSeq			= 3;
 	optional bytes ledgerHash			= 4;
-	optional bytes previousLedgerHash	= 5;
+	optional bytes ledgerHashPrevious	= 5;
 	optional uint64 networkTime			= 6;
 }
 
