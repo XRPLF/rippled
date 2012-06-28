@@ -2,34 +2,34 @@ package newcoin;
 
 enum MessageType {
 // core
-	mtHELLO=				1;
-	mtERROR_MSG=			2;
-	mtPING=					3;
+	mtHELLO					= 1;
+	mtERROR_MSG				= 2;
+	mtPING					= 3;
 
 // network presence detection
-	mtGET_CONTACTS=			10;
-	mtCONTACT=				11;
-	mtGET_PEERS=			12;
-	mtPEERS=				13;
+	mtGET_CONTACTS			= 10;
+	mtCONTACT				= 11;
+	mtGET_PEERS				= 12;
+	mtPEERS					= 13;
 
 // operations for 'small' nodes
-	mtSEARCH_TRANSACTION=	20;
-	mtGET_ACCOUNT=			21;
-	mtACCOUNT=				22;
+	mtSEARCH_TRANSACTION	= 20;
+	mtGET_ACCOUNT			= 21;
+	mtACCOUNT				= 22;
 
 // transaction and ledger processing
-	mtTRANSACTION=			30;
-	mtGET_LEDGER=			31;
-	mtLEDGER_DATA=			32;
-	mtPROPOSE_LEDGER=		33;
-	mtSTATUS_CHANGE=		34;
-	mtHAVE_SET=				35;
+	mtTRANSACTION			= 30;
+	mtGET_LEDGER			= 31;
+	mtLEDGER_DATA			= 32;
+	mtPROPOSE_LEDGER		= 33;
+	mtSTATUS_CHANGE			= 34;
+	mtHAVE_SET				= 35;
 
 // data replication and synchronization
-	mtGET_VALIDATIONS=		40;
-	mtVALIDATION=			41;
-	mtGET_OBJECT=			42;
-	mtOBJECT=				43;
+	mtGET_VALIDATIONS		= 40;
+	mtVALIDATION			= 41;
+	mtGET_OBJECT			= 42;
+	mtOBJECT				= 43;
 }
 
 
@@ -50,11 +50,9 @@ message TMHello {
 }
 
 
-/*
-A transaction can have only one input and one output.
-If you want to send an amount that is greater than any single address of yours
-you must first combine coins from one address to another.
-*/
+// A transaction can have only one input and one output.
+// If you want to send an amount that is greater than any single address of yours
+// you must first combine coins from one address to another.
 
 enum TransactionStatus {
 	tsNEW				= 1;	// origin node did/could not validate
@@ -75,7 +73,6 @@ message TMTransaction {
 	optional uint32 ledgerIndexFinal		= 5;
 	optional bytes conflictingTransaction	= 6;
 }
-
 
 
 enum NodeStatus {
@@ -151,48 +148,48 @@ message TMContact {
 
 // request node information
 message TMGetContacts {
-	repeated bytes nodeIDs			=1; // specific nodes we want
-	optional uint32 nodeCount		=2; // get some random nodes
+	repeated bytes nodeIDs			= 1; // specific nodes we want
+	optional uint32 nodeCount		= 2; // get some random nodes
 }
 
 message TMGetPeers {
-	required uint32 doWeNeedThis	=1;  // yes since you are asserting that the packet size isn't 0 in PackedMessage
+	required uint32 doWeNeedThis	= 1;  // yes since you are asserting that the packet size isn't 0 in PackedMessage
 }
 
 message TMIPv4EndPoint {
-	required uint32 ipv4				= 1;
-	required uint32 ipv4Port			= 2;
+	required uint32 ipv4			= 1;
+	required uint32 ipv4Port		= 2;
 }
 
 message TMPeers {
-	repeated TMIPv4EndPoint nodes		=1;
+	repeated TMIPv4EndPoint nodes	= 1;
 }
 
 
 message TMSearchTransaction {
-	required uint32 maxTrans	=1;
-	optional bytes toAccount	=2;
-	optional bytes fromAccount	=3;
-	optional uint32	minLedger	=4;
-	optional bytes fromAcctSeq	=5;
-	repeated bytes transID		=6;
+	required uint32 maxTrans	= 1;
+	optional bytes toAccount	= 2;
+	optional bytes fromAccount	= 3;
+	optional uint32	minLedger	= 4;
+	optional bytes fromAcctSeq	= 5;
+	repeated bytes transID		= 6;
 }
 
 message TMGetAccount {
-	repeated bytes acctID		=1;
-	optional uint32 seq			=2;
+	repeated bytes acctID		= 1;
+	optional uint32 seq			= 2;
 }
 
 message Account {
-	required bytes accountID	=1;
-	required uint64 balance		=2;
-	required uint32 accountSeq	=3;
-	required uint32 ledgerSeq	=4;
+	required bytes accountID	= 1;
+	required uint64 balance		= 2;
+	required uint32 accountSeq	= 3;
+	required uint32 ledgerSeq	= 4;
 }
 
 message TMAccount{
-	repeated Account accounts	=1;
-	optional uint32 seq			=2;
+	repeated Account accounts	= 1;
+	optional uint32 seq			= 2;
 }
 
 message TMIndexedObject
@@ -232,16 +229,16 @@ message TMLedgerNode {
 }
 
 enum TMLedgerInfoType {
-	liBASE	= 0;		// basic ledger info
-	liTX_NODE = 1;		// transaction node
-	liAS_NODE = 2;		// account state node
-	liTS_CANDIDATE = 3; // candidate transaction set
+	liBASE			= 0;		// basic ledger info
+	liTX_NODE		= 1;		// transaction node
+	liAS_NODE		= 2;		// account state node
+	liTS_CANDIDATE	= 3;		// candidate transaction set
 }
 
 enum TMLedgerType {
-	ltACCEPTED = 0;
-	ltCURRENT  = 1;
-	ltCLOSED   = 2;
+	ltACCEPTED		= 0;
+	ltCURRENT  		= 1;
+	ltCLOSED   		= 2;
 }
 
 message TMGetLedger {
@@ -278,4 +275,5 @@ message TMErrorMsg {
 	optional int32 errorCode	= 1;
 	optional string message		= 2;
 }
+
 // vim:ts=4
