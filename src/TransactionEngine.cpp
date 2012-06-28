@@ -289,19 +289,29 @@ TransactionEngineResult	TransactionEngine::setAuthorized(const SerializedTransac
 	return terSUCCESS;
 }
 
-TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTransaction& txn,
-	TransactionEngineParams params, uint32 targetLedger)
+Ledger::pointer TransactionEngine::getTransactionLedger(uint32 targetLedger)
 {
-	Log(lsTRACE) << "applyTransaction>";
-
-	mLedger = mDefaultLedger;
-	assert(mLedger);
+	Ledger::pointer ledger = mDefaultLedger;
 	if (mAlternateLedger && (targetLedger != 0) &&
 		(targetLedger != mLedger->getLedgerSeq()) && (targetLedger == mAlternateLedger->getLedgerSeq()))
 	{
 		Log(lsINFO) << "Transaction goes into wobble ledger";
-		mLedger = mAlternateLedger;
+		ledger = mAlternateLedger;
 	}
+	return ledger;
+}
+
+TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTransaction& txn,
+	TransactionEngineParams params, uint32 targetLedger)
+{
+	return applyTransaction(txn, params, getTransactionLedger(targetLedger));
+}
+
+TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTransaction& txn,
+	TransactionEngineParams params, Ledger::pointer ledger)
+{
+	Log(lsTRACE) << "applyTransaction>";
+	mLedger = ledger;
 
 #ifdef DEBUG
 	if (1)

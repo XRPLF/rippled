@@ -136,6 +136,9 @@ public:
 	void setLedger(Ledger::pointer ledger)			{ mDefaultLedger = ledger;
 													  mAlternateLedger = Ledger::pointer(); }
 
+	Ledger::pointer getTransactionLedger(uint32 targetLedger);
+	TransactionEngineResult applyTransaction(const SerializedTransaction&, TransactionEngineParams,
+		Ledger::pointer ledger);
 	TransactionEngineResult applyTransaction(const SerializedTransaction&, TransactionEngineParams,
 		uint32 targetLedger);
 };

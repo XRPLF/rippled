@@ -91,4 +91,14 @@ Ledger::pointer LedgerMaster::endWobble()
 	return ret;
 }
 
+TransactionEngineResult LedgerMaster::doTransaction(const SerializedTransaction& txn, uint32 targetLedger,
+	TransactionEngineParams params)
+{
+	Ledger::pointer ledger = mEngine.getTransactionLedger(targetLedger);
+	TransactionEngineResult result = mEngine.applyTransaction(txn, params, ledger);
+	theApp->getOPs().pubTransaction(ledger, txn, result);
+	return result;
+}
+
+
 // vim:ts=4

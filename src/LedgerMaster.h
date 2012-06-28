@@ -48,8 +48,7 @@ public:
 	Ledger::pointer getClosedLedger()	{ return mFinalizedLedger; }
 
 	TransactionEngineResult doTransaction(const SerializedTransaction& txn, uint32 targetLedger,
-		TransactionEngineParams params)
-	{ return mEngine.applyTransaction(txn, params, targetLedger); }
+		TransactionEngineParams params);
 
 	void pushLedger(Ledger::pointer newLedger);
 	void pushLedger(Ledger::pointer newLCL, Ledger::pointer newOL);

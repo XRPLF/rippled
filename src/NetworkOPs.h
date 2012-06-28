@@ -165,7 +165,7 @@ public:
 
 	void pubAccountInfo(const NewcoinAddress& naAccountID, const Json::Value& jvObj);
 	void pubLedger(const Ledger::pointer& lpAccepted);
-	void pubTransaction(const Ledger::pointer& lpCurrent, const SerializedTransaction& stTxn, TransactionEngineResult terResult, const std::vector<NewcoinAddress>& naAffectedAccountIds);
+	void pubTransaction(const Ledger::pointer& lpLedger, const SerializedTransaction& stTxn, TransactionEngineResult terResult);
 
 	//
 	// Monitoring: subscriber side

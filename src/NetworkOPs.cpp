@@ -763,8 +763,9 @@ void NetworkOPs::pubLedger(const Ledger::pointer& lpAccepted)
 	}
 }
 
-void NetworkOPs::pubTransaction(const Ledger::pointer& lpCurrent, const SerializedTransaction& stTxn, TransactionEngineResult terResult, const std::vector<NewcoinAddress>& naAffectedAccountIds)
+void NetworkOPs::pubTransaction(const Ledger::pointer& lpCurrent, const SerializedTransaction& stTxn, TransactionEngineResult terResult)
 {
+	// std::vector<NewcoinAddress> affectedAccounts = stTxn.getAffectedAccounts();
 	boost::interprocess::scoped_lock<boost::interprocess::interprocess_upgradable_mutex>	sl(mMonitorLock);
 	if (!mSubTransaction.empty())
 	{
