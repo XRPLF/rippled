@@ -158,6 +158,31 @@ inline std::string strGetEnv(const std::string& strKey)
 {
 	return getenv(strKey.c_str()) ? getenv(strKey.c_str()) : "";
 }
+
+template<typename T> T lexical_cast_s(const std::string& string)
+{ // lexically cast a string to the selected type. Does not throw
+	try
+	{
+		return boost::lexical_cast<T>(string);
+	}
+	catch (...)
+	{
+		return 0;
+	}
+}
+
+template<typename T> std::string lexical_cast_i(T t)
+{ // lexicaly cast the selected type to a string. Does not throw
+	try
+	{
+		return boost::lexical_cast<std::string>(t);
+	}
+	catch (...)
+	{
+		return "";
+	}
+}
+
 #endif
 
 // vim:ts=4
