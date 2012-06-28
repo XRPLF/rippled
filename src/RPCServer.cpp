@@ -83,8 +83,8 @@ Json::Value RPCServer::RPCError(int iError)
 
 	Json::Value	jsonResult = Json::Value(Json::objectValue);
 
-	jsonResult["error"]			= i >= 0 ? errorInfoA[i].pToken : boost::lexical_cast<std::string>(iError);
-	jsonResult["error_message"]	= i >= 0 ? errorInfoA[i].pMessage : boost::lexical_cast<std::string>(iError);
+	jsonResult["error"]			= i >= 0 ? errorInfoA[i].pToken : lexical_cast_i(iError);
+	jsonResult["error_message"]	= i >= 0 ? errorInfoA[i].pMessage : lexical_cast_i(iError);
 	jsonResult["error_code"]	= iError;
 	if (i >= 0)
 		std::cerr << "RPCError: "
@@ -467,7 +467,7 @@ Json::Value RPCServer::doAccountInfo(const Json::Value &params)
 {
 	std::string		strIdent	= params[0u].asString();
 	bool			bIndex;
-	int				iIndex		= 2 == params.size()? boost::lexical_cast<int>(params[1u].asString()) : 0;
+	int				iIndex		= 2 == params.size()? lexical_cast_s<int>(params[1u].asString()) : 0;
 	NewcoinAddress	naAccount;
 
 	Json::Value		ret;
@@ -520,7 +520,7 @@ Json::Value RPCServer::doAccountLines(const Json::Value &params)
 
 	std::string		strIdent	= params[0u].asString();
 	bool			bIndex;
-	int				iIndex		= 2 == params.size()? boost::lexical_cast<int>(params[1u].asString()) : 0;
+	int				iIndex		= 2 == params.size()? lexical_cast_s<int>(params[1u].asString()) : 0;
 
 	NewcoinAddress	naAccount;
 
@@ -725,7 +725,7 @@ Json::Value RPCServer::doConnect(const Json::Value& params)
 		if (!extractString(strPort, params, 1))
 			return RPCError(rpcPORT_MALFORMED);
 
-		iPort	= boost::lexical_cast<int>(strPort);
+		iPort	= lexical_cast_s<int>(strPort);
 	}
 
 	// XXX Validate legal IP and port
@@ -742,7 +742,7 @@ Json::Value RPCServer::doCreditSet(const Json::Value& params)
 	NewcoinAddress	naDstAccountID;
 	STAmount		saLimitAmount;
 	uint256			uLedger		= mNetOps->getCurrentLedger();
-	uint32			uAcceptRate	= params.size() >= 6 ? boost::lexical_cast<uint32>(params[5u].asString()) : 0;
+	uint32			uAcceptRate	= params.size() >= 6 ? lexical_cast_s<uint32>(params[5u].asString()) : 0;
 
 	if (!naSeed.setSeedGeneric(params[0u].asString()))
 	{
@@ -1334,7 +1334,7 @@ Json::Value RPCServer::doTx(const Json::Value& params)
 
 		if (!txn) return RPCError(rpcTXN_NOT_FOUND);
 
-		return txn->getJson(true);
+		return txn->getJson(0);
 	}
 
 	return RPCError(rpcNOT_IMPL);
@@ -1367,7 +1367,7 @@ Json::Value RPCServer::doLedger(const Json::Value& params)
 	else if (param.size() > 12)
 		ledger = theApp->getMasterLedger().getLedgerByHash(uint256(param));
 	else
-		ledger = theApp->getMasterLedger().getLedgerBySeq(boost::lexical_cast<uint32>(param));
+		ledger = theApp->getMasterLedger().getLedgerBySeq(lexical_cast_s<uint32>(param));
 
 	if (!ledger)
 		return RPCError(rpcLGR_NOT_FOUND);
@@ -1395,10 +1395,10 @@ Json::Value RPCServer::doAccountTransactions(const Json::Value& params)
 	if (!extractString(param, params, 1))
 		return RPCError(rpcLGR_IDX_MALFORMED);
 
-	minLedger = boost::lexical_cast<uint32>(param);
+	minLedger = lexical_cast_s<uint32>(param);
 
 	if ((params.size() == 3) && extractString(param, params, 2))
-		maxLedger = boost::lexical_cast<uint32>(param);
+		maxLedger = lexical_cast_s<uint32>(param);
 	else
 		maxLedger = minLedger;
 
@@ -1433,7 +1433,13 @@ Json::Value RPCServer::doAccountTransactions(const Json::Value& params)
 				ledger["ledgerSeq"] = currentLedger;
 				jtxns = Json::arrayValue;
 			}
-			jtxns.append(it->second.GetHex());
+
+			Transaction::pointer txn = theApp->getMasterTransaction().fetch(it->second, true);
+			if (!txn)
+				jtxns.append(it->second.GetHex());
+			else
+				jtxns.append(txn->getJson(0));
+
 		}
 		if (currentLedger != 0)
 		{
@@ -1728,7 +1734,7 @@ Json::Value RPCServer::doWalletClaim(const Json::Value& params)
 		// Which has no confidential information.
 
 		// XXX Need better parsing.
-		uint32		uSourceTag		= (params.size() == 2) ? 0 : boost::lexical_cast<uint32>(params[2u].asString());
+		uint32		uSourceTag		= (params.size() == 2) ? 0 : lexical_cast_s<uint32>(params[2u].asString());
 		// XXX Annotation is ignored.
 		std::string strAnnotation	= (params.size() == 3) ? "" : params[3u].asString();
 
@@ -1826,7 +1832,7 @@ Json::Value RPCServer::doWalletCreate(const Json::Value& params)
 	if (!obj.empty())
 		return obj;
 
-	STAmount				saInitialFunds	= (params.size() < 4) ? 0 : boost::lexical_cast<uint64>(params[3u].asString());
+	STAmount				saInitialFunds	= (params.size() < 4) ? 0 : lexical_cast_s<uint64>(params[3u].asString());
 
 	if (saSrcBalance < saInitialFunds)
 		return RPCError(rpcINSUF_FUNDS);
