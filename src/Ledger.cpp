@@ -238,7 +238,8 @@ void Ledger::saveAcceptedLedger(Ledger::pointer ledger)
 {
 	static boost::format ledgerExists("SELECT LedgerSeq FROM Ledgers where LedgerSeq = '%d';");
 	static boost::format deleteLedger("DELETE FROM Ledgers WHERE LedgerSeq = '%d';");
-	static boost::format transExists("SELECT LedgerSeq FROM AccountTransactions WHERE TransId = '%s';");
+	static boost::format AcctTransExists("SELECT LedgerSeq FROM AccountTransactions WHERE TransId = '%s';");
+	static boost::format transExists("SELECT Status from Transactions where TransID = '%s';");
 	static boost::format updateTx("UPDATE Transactions SET LedgerSeq = '%d', Status = '%c' WHERE TransID = '%s';");
 
 	std::string sql="INSERT INTO Ledgers "
@@ -276,11 +277,21 @@ void Ledger::saveAcceptedLedger(Ledger::pointer ledger)
 	db->executeSQL("BEGIN TRANSACTION;");
 	for (SHAMapItem::pointer item = txSet.peekFirstItem(); !!item; item = txSet.peekNextItem(item->getTag()))
 	{
-		SerializerIterator sit(item->peekSerializer());
-		SerializedTransaction txn(sit);
-		if (!SQL_EXISTS(db, boost::str(transExists % item->getTag().GetHex())))
+		SerializedTransaction::pointer txn;
+		Transaction::pointer iTx = theApp->getMasterTransaction().fetch(item->getTag(), false);
+		if (!iTx)
 		{
-			std::vector<NewcoinAddress> accts = txn.getAffectedAccounts();
+			SerializerIterator sit(item->peekSerializer());
+			txn = boost::make_shared<SerializedTransaction>(boost::ref(sit));
+		}
+		else
+		{
+			iTx->setStatus(COMMITTED, ledger->mLedgerSeq);
+			txn = iTx->getSTransaction();
+		}
+		if (!SQL_EXISTS(db, boost::str(AcctTransExists % item->getTag().GetHex())))
+		{
+			std::vector<NewcoinAddress> accts = txn->getAffectedAccounts();
 
 			std::string sql = "INSERT INTO AccountTransactions (TransID, Account, LedgerSeq) VALUES ";
 			bool first = true;
@@ -293,7 +304,7 @@ void Ledger::saveAcceptedLedger(Ledger::pointer ledger)
 					sql += "('";
 					first = false;
 				}
-				sql += txn.getTransactionID().GetHex();
+				sql += txn->getTransactionID().GetHex();
 				sql += "','";
 				sql += it->humanAccountID();
 				sql += "',";
@@ -304,13 +315,12 @@ void Ledger::saveAcceptedLedger(Ledger::pointer ledger)
 			Log(lsTRACE) << "ActTx: " << sql;
 			db->executeSQL(sql); // may already be in there
 		}
-		if (SQL_EXISTS(db, boost::str(boost::format("SELECT Status from Transactions where TransID = '%s';") %
-				txn.getTransactionID().GetHex())))
+		if (SQL_EXISTS(db, boost::str(transExists %	txn->getTransactionID().GetHex())))
 			db->executeSQL(boost::str(updateTx % ledger->getLedgerSeq() % TXN_SQL_VALIDATED
-				% txn.getTransactionID().GetHex()));
+				% txn->getTransactionID().GetHex()));
 		else
 			db->executeSQL(
-				txn.getSQLInsertHeader() + txn.getSQL(ledger->getLedgerSeq(), TXN_SQL_VALIDATED) + ";");
+				txn->getSQLInsertHeader() + txn->getSQL(ledger->getLedgerSeq(), TXN_SQL_VALIDATED) + ";");
 	}
 	db->executeSQL("COMMIT TRANSACTION;");
 
