@@ -195,7 +195,7 @@ int LCTransaction::getAgreeLevel()
 	return (mNays * 100 + 100) / (mYays + mNays + 1);
 }
 
-LedgerConsensus::LedgerConsensus(const uint256& prevLCLHash, Ledger::pointer previousLedger, uint32 closeTime)
+LedgerConsensus::LedgerConsensus(const uint256& prevLCLHash, Ledger::pointer previousLedger, uint64 closeTime)
 	:  mState(lcsPRE_CLOSE), mCloseTime(closeTime), mPrevLedgerHash(prevLCLHash), mPreviousLedger(previousLedger)
 {
 	mValSeed = theConfig.VALIDATION_SEED;
@@ -233,9 +233,9 @@ void LedgerConsensus::takeInitialPosition(Ledger::pointer initialLedger)
 
 	if (mValidating)
 		mOurPosition = boost::make_shared<LedgerProposal>
-			(mValSeed, initialLedger->getParentHash(), txSet);
+			(mValSeed, initialLedger->getParentHash(), txSet, mCloseTime);
 	else
-		mOurPosition = boost::make_shared<LedgerProposal>(initialLedger->getParentHash(), txSet);
+		mOurPosition = boost::make_shared<LedgerProposal>(initialLedger->getParentHash(), txSet, mCloseTime);
 	mapComplete(txSet, initialSet, false);
 	if (mProposing) propose(std::vector<uint256>(), std::vector<uint256>());
 }
@@ -483,7 +483,7 @@ bool LedgerConsensus::updateOurPositions(int sinceClose)
 	if (changes)
 	{
 		uint256 newHash = ourPosition->getHash();
-		mOurPosition->changePosition(newHash);
+		mOurPosition->changePosition(newHash, mCloseTime);
 		if (mProposing) propose(addedTx, removedTx);
 		mapComplete(newHash, ourPosition, false);
 		Log(lsINFO) << "We change our position to " << newHash.GetHex();
@@ -546,6 +546,7 @@ void LedgerConsensus::propose(const std::vector<uint256>& added, const std::vect
 	newcoin::TMProposeSet prop;
 	prop.set_currenttxhash(mOurPosition->getCurrentHash().begin(), 256 / 8);
 	prop.set_proposeseq(mOurPosition->getProposeSeq());
+	prop.set_closetime(mOurPosition->getCloseTime());
 
 	std::vector<unsigned char> pubKey = mOurPosition->getPubKey();
 	std::vector<unsigned char> sig = mOurPosition->sign();

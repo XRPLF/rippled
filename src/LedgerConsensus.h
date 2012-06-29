@@ -81,8 +81,9 @@ class LedgerConsensus : public boost::enable_shared_from_this<LedgerConsensus>
 {
 protected:
 	LCState mState;
-	uint32 mCloseTime;
+	uint64 mCloseTime;						// The wall time this ledger closed
 	uint256 mPrevLedgerHash;
+	int previousClose;						// The number of seconds the previous ledger took to close
 	Ledger::pointer mPreviousLedger;
 	LedgerProposal::pointer mOurPosition;
 	NewcoinAddress mValSeed;
@@ -131,7 +132,7 @@ protected:
 	void endConsensus();
 
 public:
-	LedgerConsensus(const uint256& prevLCLHash, Ledger::pointer previousLedger, uint32 closeTime);
+	LedgerConsensus(const uint256& prevLCLHash, Ledger::pointer previousLedger, uint64 closeTime);
 
 	int startup();
 

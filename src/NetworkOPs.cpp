@@ -511,15 +511,14 @@ int NetworkOPs::beginConsensus(const uint256& networkClosed, Ledger::pointer clo
 	if (!!mConsensus) mConsensus->abort();
 	prevLedger->setImmutable();
 	mConsensus = boost::make_shared<LedgerConsensus>(
-		networkClosed,
-		prevLedger, theApp->getMasterLedger().getCurrentLedger()->getCloseTimeNC());
+		networkClosed, prevLedger, theApp->getMasterLedger().getCurrentLedger()->getCloseTimeNC());
 
 	Log(lsDEBUG) << "Pre-close time, initiating consensus engine";
 	return mConsensus->startup();
 }
 
 // <-- bool: true to relay
-bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash,
+bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash, uint64 closeTime,
 	const std::string& pubKey, const std::string& signature)
 {
 	// JED: does mConsensus need to be locked?
@@ -528,7 +527,7 @@ bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash,
 	// XXX Take a vuc for pubkey.
 
 	// Get a preliminary hash to use to suppress duplicates
-	Serializer s;
+	Serializer s(128);
 	s.add32(proposeSeq);
 	s.add32(getCurrentLedgerID());
 	s.addRaw(pubKey);
@@ -549,7 +548,7 @@ bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash,
 
 	NewcoinAddress naPeerPublic = NewcoinAddress::createNodePublic(strCopy(pubKey));
 	LedgerProposal::pointer proposal =
-		boost::make_shared<LedgerProposal>(mConsensus->getLCL(), proposeSeq, proposeHash, naPeerPublic);
+		boost::make_shared<LedgerProposal>(mConsensus->getLCL(), proposeSeq, proposeHash, closeTime, naPeerPublic);
 	if (!proposal->checkSign(signature))
 	{ // Note that if the LCL is different, the signature check will fail
 		Log(lsWARNING) << "Ledger proposal fails signature check";
@@ -557,7 +556,6 @@ bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash,
 	}
 
 	// Is this node on our UNL?
-	// XXX Is this right?
 	if (!theApp->getUNL().nodeInUNL(proposal->peekPublic()))
 	{
 		Log(lsINFO) << "Untrusted proposal: " << naPeerPublic.humanNodePublic() << " " <<
