@@ -2,7 +2,7 @@
 #include "LedgerTiming.h"
 
 
-// Returns the number of seconds the ledger was or should be open
+// Returns the number of seconds the ledger should be be open.
 int ContinuousLedgerTiming::shouldClose(	// How many:
 	bool anyTransactions,
 	int previousProposers,		// proposers there were in the last closing
@@ -12,6 +12,8 @@ int ContinuousLedgerTiming::shouldClose(	// How many:
 {
 	if (!anyTransactions)
 	{ // no transactions so far this interval
+		if (proposersClosed > (previousProposers / 4)) // did we miss a transaction?
+			return currentOpenSeconds;
 		if (previousOpenSeconds > (LEDGER_IDLE_INTERVAL + 2)) // the last ledger was very slow to close
 			return previousOpenSeconds - 1;
 		return LEDGER_IDLE_INTERVAL; // normal idle
@@ -29,6 +31,8 @@ int ContinuousLedgerTiming::shouldClose(	// How many:
 	return currentOpenSeconds; // this ledger should close now
 }
 
+// Returns whether we have a consensus or not. If so, we expect all honest nodes
+// to already have everything they need to accept a consensus. Our vote is 'locked in'.
 bool ContinuousLedgerTiming::haveConsensus(
 	int previousProposers,		// proposers in the last closing (not including us)
 	int currentProposers,		// proposers in this closing so far (not including us)
@@ -55,4 +59,3 @@ bool ContinuousLedgerTiming::haveConsensus(
 
 	return false;
 }
-	
