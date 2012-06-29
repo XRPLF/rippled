@@ -21,30 +21,46 @@
 // Maximum converge time
 #	define LEDGER_MAX_CONVERGE		20
 
+#define AV_PCT_STOP					85
 
 #endif
 
-#ifdef LEDGER_CLOSE_SLOW
-
-#	define LEDGER_INTERVAL			1800
-
-#	define LEDGER_FORCE_CONVERGE	180
-
-#	define LEDGER_CONVERGE			240
 
 
-// Time a transaction must be unconflicted before we consider it protected
-#	define LEDGER_PROTECT		90
+// BEGIN LEDGER_CLOSE_CONTINUOUS
 
-#endif
+// The number of seconds a ledger may remain idle before closing
+#	define LEDGER_IDLE_INTERVAL		15
+
+// How long we wait to transition from inactive to active
+#	define LEDGER_IDLE_SPIN_TIME	2
 
 // Avalance tuning (percent of UNL voting yes for us to vote yes)
-#define AV_MIN_CONSENSUS			50
-#define AV_AVG_CONSENSUS			60
+#define AV_MIN_CONSENSUS			55
+#define AV_AVG_CONSENSUS			65
 #define AV_MAX_CONSENSUS			70
 
-// We consider consensus reached at this percent agreement
-#define AV_PCT_STOP					90
+
+class ContinuousLedgerTiming
+{
+public:
+
+	// Returns the number of seconds the ledger was or should be open
+	// Call when a consensus is reached and when any transaction is relayed to be added
+	static int shouldClose(
+		bool anyTransactions,
+		int previousProposers,		int proposersClosed,
+		int previousOpenSeconds,	int currentOpenSeconds);
+
+	static bool haveConsensus(
+		int previousProposers,		int currentProposers,
+		int currentAgree,			int currentClosed,
+		int previousAgreeTime,		int currentAgreeTime);
+
+};
+
+// END LEDGER_CLOSE_CONTINUOUS
+
 
 
 #endif
