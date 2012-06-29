@@ -565,11 +565,13 @@ Transaction::pointer Transaction::transactionFromSQL(const std::string& sql)
 	TransStatus st(INVALID);
 	switch (status[0])
 	{
-		case TXN_SQL_NEW: st = NEW; break;
-		case 'A': st = INCLUDED; break;
-		case 'C': st = CONFLICTED; break;
-		case 'D': st = COMMITTED; break;
-		case 'H': st = HELD; break;
+		case TXN_SQL_NEW:			st = NEW;			break;
+		case TXN_SQL_CONFLICT:		st = CONFLICTED;	break;
+		case TXN_SQL_HELD:			st = HELD;			break;
+		case TXN_SQL_VALIDATED:		st = COMMITTED;		break;
+		case TXN_SQL_INCLUDED:		st = INCLUDED;		break;
+		case TXN_SQL_UNKNOWN:							break;
+		default: assert(false);
 	}
 	tr->setStatus(st);
 	tr->setLedger(inLedger);
