@@ -457,7 +457,11 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 		}
 		consensus = acq->getLedger();
 	}
+
+	// FIXME: If this rewinds the ledger sequence, or has the same sequence, we should update the status on
+	// any stored transactions in the invalidated ledgers.
 	switchLastClosedLedger(consensus);
+
 	return true;
 }
 
