@@ -1402,7 +1402,7 @@ Json::Value RPCServer::doAccountTransactions(const Json::Value& params)
 	else
 		maxLedger = minLedger;
 
-	if ((maxLedger < minLedger) || (minLedger == 0) || (maxLedger == 0))
+	if ((maxLedger < minLedger) || (minLedger < 0) || (maxLedger == 0))
 	{
 		std::cerr << "minL=" << minLedger << ", maxL=" << maxLedger << std::endl;
 		return RPCError(rpcLGR_IDXS_INVALID);
