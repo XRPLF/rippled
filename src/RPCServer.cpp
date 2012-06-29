@@ -1418,36 +1418,15 @@ Json::Value RPCServer::doAccountTransactions(const Json::Value& params)
 		Json::Value ledgers(Json::arrayValue);
 
 		uint32 currentLedger = 0;
-		Json::Value ledger, jtxns;
 		for (std::vector< std::pair<uint32, uint256> >::iterator it = txns.begin(), end = txns.end(); it != end; ++it)
 		{
-			if (it->first != currentLedger) // different/new ledger
-			{
-				if (currentLedger != 0) // add old ledger
-				{
-					ledger["transactions"] = jtxns;
-					ledgers.append(ledger);
-					ledger = Json::objectValue;
-				}
-				currentLedger = it->first;
-				ledger["ledgerSeq"] = currentLedger;
-				jtxns = Json::arrayValue;
-			}
-
 			Transaction::pointer txn = theApp->getMasterTransaction().fetch(it->second, true);
 			if (!txn)
-				jtxns.append(it->second.GetHex());
+				ret["transactions"].append(it->second.GetHex());
 			else
-				jtxns.append(txn->getJson(0));
+				ret["transactions"].append(txn->getJson(0));
 
 		}
-		if (currentLedger != 0)
-		{
-			ledger["transactions"] = jtxns;
-			ledgers.append(ledger);
-		}
-
-		ret["ledgers"] = ledgers;
 		return ret;
 #ifndef DEBUG
 	}
