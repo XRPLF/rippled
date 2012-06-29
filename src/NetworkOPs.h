@@ -53,16 +53,18 @@ protected:
 
 	void setMode(OperatingMode);
 
-	typedef boost::unordered_map<NewcoinAddress,boost::unordered_set<InfoSub*> >			subInfoMapType;
-	typedef boost::unordered_map<NewcoinAddress,boost::unordered_set<InfoSub*> >::iterator	subInfoMapIterator;
+	typedef boost::unordered_map<uint160,boost::unordered_set<InfoSub*> >			subInfoMapType;
+	typedef boost::unordered_map<uint160,boost::unordered_set<InfoSub*> >::value_type	subInfoMapValue;
+	typedef boost::unordered_map<uint160,boost::unordered_set<InfoSub*> >::iterator	subInfoMapIterator;
 
 	// XXX Split into more locks.
     boost::interprocess::interprocess_upgradable_mutex	mMonitorLock;
 	subInfoMapType										mSubAccountInfo;
+	subInfoMapType										mSubAccountTransaction;
 	boost::unordered_set<InfoSub*>						mSubLedger;				// ledger accepteds
 	boost::unordered_set<InfoSub*>						mSubLedgerAccounts;		// ledger accepteds + affected accounts
 	boost::unordered_set<InfoSub*>						mSubTransaction;		// all transactions
-	subInfoMapType										mSubTransactionAccounts;
+//	subInfoMapType										mSubTransactionAccounts;
 
 public:
 	NetworkOPs(boost::asio::io_service& io_service, LedgerMaster* pLedgerMaster);
@@ -156,7 +158,7 @@ public:
 	// client information retrieval functions
 	std::vector< std::pair<uint32, uint256> >
 		getAffectedAccounts(const NewcoinAddress& account, uint32 minLedger, uint32 maxLedger);
-	std::vector<NewcoinAddress> getAffectedAccounts(uint32 ledgerSeq);
+	std::vector<NewcoinAddress> getLedgerAffectedAccounts(uint32 ledgerSeq);
 	std::vector<SerializedTransaction> getLedgerTransactions(uint32 ledgerSeq);
 
 	//
@@ -174,6 +176,9 @@ public:
 	// --> vnaAddress: empty = all
 	void subAccountInfo(InfoSub* ispListener, const boost::unordered_set<NewcoinAddress>& vnaAccountIDs);
 	void unsubAccountInfo(InfoSub* ispListener, const boost::unordered_set<NewcoinAddress>& vnaAccountIDs);
+
+	void subAccountTransaction(InfoSub* ispListener, const boost::unordered_set<NewcoinAddress>& vnaAccountIDs);
+	void unsubAccountTransaction(InfoSub* ispListener, const boost::unordered_set<NewcoinAddress>& vnaAccountIDs);
 
 	// void subAccountChanges(InfoSub* ispListener, const uint256 uLedgerHash);
 	// void unsubAccountChanges(InfoSub* ispListener);

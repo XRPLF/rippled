@@ -650,7 +650,7 @@ std::vector< std::pair<uint32, uint256> >
 }
 
 std::vector<NewcoinAddress>
-	NetworkOPs::getAffectedAccounts(uint32 ledgerSeq)
+	NetworkOPs::getLedgerAffectedAccounts(uint32 ledgerSeq)
 {
 	std::vector<NewcoinAddress> accounts;
 	std::string sql = str(boost::format
@@ -702,7 +702,7 @@ void NetworkOPs::pubAccountInfo(const NewcoinAddress& naAccountID, const Json::V
 {
 	boost::interprocess::sharable_lock<boost::interprocess::interprocess_upgradable_mutex>	sl(mMonitorLock);
 
-	subInfoMapType::iterator	simIterator	= mSubAccountInfo.find(naAccountID);
+	subInfoMapType::iterator	simIterator	= mSubAccountInfo.find(naAccountID.getAccountID());
 
 	if (simIterator == mSubAccountInfo.end())
 	{
@@ -742,11 +742,11 @@ void NetworkOPs::pubLedger(const Ledger::pointer& lpAccepted)
 
 	{
 		boost::interprocess::sharable_lock<boost::interprocess::interprocess_upgradable_mutex>	sl(mMonitorLock);
-		if (!mSubLedgerAccounts.empty())
+		if (!mSubAccountTransaction.empty())
 		{
 			Json::Value	jvAccounts(Json::arrayValue);
 
-			BOOST_FOREACH(const NewcoinAddress& naAccountID, getAffectedAccounts(lpAccepted->getLedgerSeq()))
+			BOOST_FOREACH(const NewcoinAddress& naAccountID, getLedgerAffectedAccounts(lpAccepted->getLedgerSeq()))
 			{
 				jvAccounts.append(Json::Value(naAccountID.humanAccountID()));
 			}
@@ -769,17 +769,62 @@ void NetworkOPs::pubLedger(const Ledger::pointer& lpAccepted)
 
 void NetworkOPs::pubTransaction(const Ledger::pointer& lpCurrent, const SerializedTransaction& stTxn, TransactionEngineResult terResult)
 {
-	// std::vector<NewcoinAddress> affectedAccounts = stTxn.getAffectedAccounts();
-	boost::interprocess::scoped_lock<boost::interprocess::interprocess_upgradable_mutex>	sl(mMonitorLock);
-	if (!mSubTransaction.empty())
 	{
+		boost::interprocess::sharable_lock<boost::interprocess::interprocess_upgradable_mutex>	sl(mMonitorLock);
+		if (!mSubTransaction.empty())
+		{
+			Json::Value	jvObj(Json::objectValue);
+
+			jvObj["type"]			= "transactionProposed";
+			jvObj["seq"]			= lpCurrent->getLedgerSeq();
+			jvObj["transaction"]	= stTxn.getJson(0);
+
+			BOOST_FOREACH(InfoSub* ispListener, mSubTransaction)
+			{
+				ispListener->send(jvObj);
+			}
+		}
+	}
+
+	boost::unordered_set<InfoSub*>	usisNotify;
+
+	{
+		boost::interprocess::sharable_lock<boost::interprocess::interprocess_upgradable_mutex>	sl(mMonitorLock);
+
+		if (!mSubAccountTransaction.empty())
+		{
+			BOOST_FOREACH(const NewcoinAddress& naAccountPublic, stTxn.getAffectedAccounts())
+			{
+				subInfoMapIterator	simiIt	= mSubAccountTransaction.find(naAccountPublic.getAccountID());
+
+				if (simiIt != mSubAccountTransaction.end())
+				{
+					BOOST_FOREACH(InfoSub* ispListener, simiIt->second)
+					{
+						usisNotify.insert(ispListener);
+					}
+				}
+			}
+		}
+	}
+
+	if (!usisNotify.empty())
+	{
+		Json::Value	jvAccounts(Json::arrayValue);
+
+		BOOST_FOREACH(const NewcoinAddress& naAccountID, stTxn.getAffectedAccounts())
+		{
+			jvAccounts.append(Json::Value(naAccountID.humanAccountID()));
+		}
+
 		Json::Value	jvObj(Json::objectValue);
 
-		jvObj["type"]			= "transactionProposed";
+		jvObj["type"]			= "accountTransactionProposed";
 		jvObj["seq"]			= lpCurrent->getLedgerSeq();
-		jvObj["transaction"]	= stTxn.getJson(0);	// XXX Verify what options there are.
+		jvObj["accounts"]		= jvAccounts;
+		jvObj["transaction"]	= stTxn.getJson(0);
 
-		BOOST_FOREACH(InfoSub* ispListener, mSubTransaction)
+		BOOST_FOREACH(InfoSub* ispListener, usisNotify)
 		{
 			ispListener->send(jvObj);
 		}
@@ -796,14 +841,14 @@ void NetworkOPs::subAccountInfo(InfoSub* ispListener, const boost::unordered_set
 
 	BOOST_FOREACH(const NewcoinAddress& naAccountID, vnaAccountIDs)
 	{
-		subInfoMapType::iterator	simIterator	= mSubAccountInfo.find(naAccountID);
+		subInfoMapType::iterator	simIterator	= mSubAccountInfo.find(naAccountID.getAccountID());
 		if (simIterator == mSubAccountInfo.end())
 		{
 			// Not found
 			boost::unordered_set<InfoSub*>	usisElement;
 
 			usisElement.insert(ispListener);
-			mSubAccountInfo.insert(simIterator, make_pair(naAccountID, usisElement));
+			mSubAccountInfo.insert(simIterator, make_pair(naAccountID.getAccountID(), usisElement));
 		}
 		else
 		{
@@ -819,7 +864,7 @@ void NetworkOPs::unsubAccountInfo(InfoSub* ispListener, const boost::unordered_s
 
 	BOOST_FOREACH(const NewcoinAddress& naAccountID, vnaAccountIDs)
 	{
-		subInfoMapType::iterator	simIterator	= mSubAccountInfo.find(naAccountID);
+		subInfoMapType::iterator	simIterator	= mSubAccountInfo.find(naAccountID.getAccountID());
 		if (simIterator == mSubAccountInfo.end())
 		{
 			// Not found.  Done.
@@ -834,6 +879,55 @@ void NetworkOPs::unsubAccountInfo(InfoSub* ispListener, const boost::unordered_s
 			{
 				// Don't need hash entry.
 				mSubAccountInfo.erase(simIterator);
+			}
+		}
+	}
+}
+
+void NetworkOPs::subAccountTransaction(InfoSub* ispListener, const boost::unordered_set<NewcoinAddress>& vnaAccountIDs)
+{
+	boost::interprocess::scoped_lock<boost::interprocess::interprocess_upgradable_mutex>	sl(mMonitorLock);
+
+	BOOST_FOREACH(const NewcoinAddress& naAccountID, vnaAccountIDs)
+	{
+		subInfoMapType::iterator	simIterator	= mSubAccountTransaction.find(naAccountID.getAccountID());
+		if (simIterator == mSubAccountTransaction.end())
+		{
+			// Not found
+			boost::unordered_set<InfoSub*>	usisElement;
+
+			usisElement.insert(ispListener);
+			mSubAccountTransaction.insert(simIterator, make_pair(naAccountID.getAccountID(), usisElement));
+		}
+		else
+		{
+			// Found
+			simIterator->second.insert(ispListener);
+		}
+	}
+}
+
+void NetworkOPs::unsubAccountTransaction(InfoSub* ispListener, const boost::unordered_set<NewcoinAddress>& vnaAccountIDs)
+{
+	boost::interprocess::scoped_lock<boost::interprocess::interprocess_upgradable_mutex>	sl(mMonitorLock);
+
+	BOOST_FOREACH(const NewcoinAddress& naAccountID, vnaAccountIDs)
+	{
+		subInfoMapType::iterator	simIterator	= mSubAccountTransaction.find(naAccountID.getAccountID());
+		if (simIterator == mSubAccountTransaction.end())
+		{
+			// Not found.  Done.
+			nothing();
+		}
+		else
+		{
+			// Found
+			simIterator->second.erase(ispListener);
+
+			if (simIterator->second.empty())
+			{
+				// Don't need hash entry.
+				mSubAccountTransaction.erase(simIterator);
 			}
 		}
 	}
