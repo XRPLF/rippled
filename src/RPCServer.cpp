@@ -1417,7 +1417,7 @@ Json::Value RPCServer::doAccountTransactions(const Json::Value& params)
 		ret["account"] = account.humanAccountID();
 		Json::Value ledgers(Json::arrayValue);
 
-		uint32 currentLedger = 0;
+//		uint32 currentLedger = 0;
 		for (std::vector< std::pair<uint32, uint256> >::iterator it = txns.begin(), end = txns.end(); it != end; ++it)
 		{
 			Transaction::pointer txn = theApp->getMasterTransaction().fetch(it->second, true);
