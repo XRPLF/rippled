@@ -29,6 +29,8 @@ public:
 	bool isValid() const;
 	void clear();
 
+	std::string humanAddressType() const;
+
 	//
 	// Node Public - Also used for Validators
 	//
