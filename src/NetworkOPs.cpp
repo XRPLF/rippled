@@ -767,17 +767,40 @@ void NetworkOPs::pubLedger(const Ledger::pointer& lpAccepted)
 	}
 }
 
+Json::Value NetworkOPs::transJson(const SerializedTransaction& stTxn, TransactionEngineResult terResult, const std::string& strStatus, int iSeq, const std::string& strType)
+{
+	Json::Value	jvAccounts(Json::arrayValue);
+
+	BOOST_FOREACH(const NewcoinAddress& naAccountID, stTxn.getAffectedAccounts())
+	{
+		jvAccounts.append(Json::Value(naAccountID.humanAccountID()));
+	}
+
+	Json::Value	jvObj(Json::objectValue);
+	std::string	strToken;
+	std::string	strHuman;
+
+	transResultInfo(terResult, strToken, strHuman);
+
+	jvObj["type"]			= strType;
+	jvObj["seq"]			= iSeq;
+	jvObj["accounts"]		= jvAccounts;
+	jvObj["transaction"]	= stTxn.getJson(0);
+	jvObj["status"]			= strStatus;
+	jvObj["result"]			= strToken;
+	jvObj["result_message"]	= strHuman;
+	jvObj["result_code"]	= terResult;
+
+	return jvObj;
+}
+
 void NetworkOPs::pubTransaction(const Ledger::pointer& lpCurrent, const SerializedTransaction& stTxn, TransactionEngineResult terResult)
 {
 	{
 		boost::interprocess::sharable_lock<boost::interprocess::interprocess_upgradable_mutex>	sl(mMonitorLock);
 		if (!mSubTransaction.empty())
 		{
-			Json::Value	jvObj(Json::objectValue);
-
-			jvObj["type"]			= "transactionProposed";
-			jvObj["seq"]			= lpCurrent->getLedgerSeq();
-			jvObj["transaction"]	= stTxn.getJson(0);
+			Json::Value	jvObj	= transJson(stTxn, terResult, "proposed", lpCurrent->getLedgerSeq(), "transaction");
 
 			BOOST_FOREACH(InfoSub* ispListener, mSubTransaction)
 			{
@@ -810,27 +833,7 @@ void NetworkOPs::pubTransaction(const Ledger::pointer& lpCurrent, const Serializ
 
 	if (!usisNotify.empty())
 	{
-		Json::Value	jvAccounts(Json::arrayValue);
-
-		BOOST_FOREACH(const NewcoinAddress& naAccountID, stTxn.getAffectedAccounts())
-		{
-			jvAccounts.append(Json::Value(naAccountID.humanAccountID()));
-		}
-
-		Json::Value	jvObj(Json::objectValue);
-		std::string	strToken;
-		std::string	strHuman;
-
-		transResultInfo(terResult, strToken, strHuman);
-
-		jvObj["type"]			= "accountTransaction";
-		jvObj["seq"]			= lpCurrent->getLedgerSeq();
-		jvObj["accounts"]		= jvAccounts;
-		jvObj["transaction"]	= stTxn.getJson(0);
-		jvObj["status"]			= "proposed";
-		jvObj["result"]			= strToken;
-		jvObj["result_message"]	= strHuman;
-		jvObj["result_code"]	= terResult;
+		Json::Value	jvObj	= transJson(stTxn, terResult, "proposed", lpCurrent->getLedgerSeq(), "account");
 
 		BOOST_FOREACH(InfoSub* ispListener, usisNotify)
 		{
