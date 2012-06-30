@@ -157,11 +157,12 @@ public:
 	SHAMapTreeNode(const SHAMapTreeNode& node, uint32 seq); // copy node from older tree
 	SHAMapTreeNode(const SHAMapNode& nodeID, SHAMapItem::pointer item, TNType type, uint32 seq);
 
-	// raw node functions
-	SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned char>& contents, uint32 seq, int format);
-
+#define STN_ARF_UNKNOWN		0
 #define STN_ARF_PREFIXED	1
 #define STN_ARF_WIRE		2
+
+	// raw node functions
+	SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned char>& contents, uint32 seq, int format);
 	void addRaw(Serializer &, int format);
 
 	virtual bool isPopulated() const { return true; }

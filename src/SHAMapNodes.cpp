@@ -192,6 +192,14 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& node, SHAMapItem::pointer item,
 SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned char>& rawNode, uint32 seq, int format)
 	: SHAMapNode(id), mSeq(seq), mType(tnERROR), mFullBelow(false)
 {
+	if (format == STN_ARF_UNKNOWN)
+	{
+		if ((rawNode.size() < 4) || (rawNode[0] < 10))
+			format = STN_ARF_WIRE;
+		else
+			format = STN_ARF_PREFIXED;
+	}
+
 	if (format == STN_ARF_WIRE)
 	{
 		Serializer s(rawNode);
