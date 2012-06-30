@@ -416,7 +416,7 @@ int LedgerConsensus::stateAccepted(int secondsSinceClose)
 	return 4;
 }
 
-int LedgerConsensus::timerEntry()
+void LedgerConsensus::timerEntry()
 {
 	if (!mHaveCorrectLCL)
 	{
@@ -435,16 +435,15 @@ int LedgerConsensus::timerEntry()
 
 	switch (mState)
 	{
-		case lcsPRE_CLOSE:	return statePreClose(sinceClose);
-		case lcsPOST_CLOSE:	return statePostClose(sinceClose);
-		case lcsESTABLISH:	return stateEstablish(sinceClose);
-		case lcsCUTOFF:		return stateCutoff(sinceClose);
-		case lcsFINISHED:	return stateFinished(sinceClose);
-		case lcsACCEPTED:	return stateAccepted(sinceClose);
-		case lcsABORTED:	return 1;
+		case lcsPRE_CLOSE:	statePreClose(sinceClose);	return;
+		case lcsPOST_CLOSE:	statePostClose(sinceClose);	return;
+		case lcsESTABLISH:	stateEstablish(sinceClose);	return;
+		case lcsCUTOFF:		stateCutoff(sinceClose);	return;
+		case lcsFINISHED:	stateFinished(sinceClose);	return;
+		case lcsACCEPTED:	stateAccepted(sinceClose);	return;
+		case lcsABORTED:	return;
 	}
 	assert(false);
-	return 1;
 }
 
 bool LedgerConsensus::updateOurPositions(int sinceClose)

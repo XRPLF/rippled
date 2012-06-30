@@ -144,7 +144,7 @@ public:
 	void mapComplete(const uint256& hash, SHAMap::pointer map, bool acquired);
 
 	void abort();
-	int timerEntry();
+	void timerEntry();
 
 	// state handlers
 	int statePreClose(int secondsSinceClose);

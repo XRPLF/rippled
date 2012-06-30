@@ -22,7 +22,7 @@
 #include "Log.h"
 
 Ledger::Ledger(const NewcoinAddress& masterID, uint64 startAmount) : mTotCoins(startAmount),
-	mCloseTime(0), mLedgerSeq(0), mLedgerInterval(LEDGER_INTERVAL), mClosed(false), mValidHash(false),
+	mCloseTime(0), mLedgerSeq(0), mClosed(false), mValidHash(false),
 	mAccepted(false), mImmutable(false), mTransactionMap(new SHAMap()), mAccountStateMap(new SHAMap())
 {
 	// special case: put coins in root account
@@ -39,14 +39,13 @@ Ledger::Ledger(const NewcoinAddress& masterID, uint64 startAmount) : mTotCoins(s
 Ledger::Ledger(const uint256 &parentHash, const uint256 &transHash, const uint256 &accountHash,
 	uint64 totCoins, uint64 timeStamp, uint32 ledgerSeq)
 		: mParentHash(parentHash), mTransHash(transHash), mAccountHash(accountHash),
-		mTotCoins(totCoins), mCloseTime(timeStamp), mLedgerSeq(ledgerSeq), mLedgerInterval(LEDGER_INTERVAL),
+		mTotCoins(totCoins), mCloseTime(timeStamp), mLedgerSeq(ledgerSeq),
 		mClosed(false), mValidHash(false), mAccepted(false), mImmutable(false)
 {
 	updateHash();
 }
 
-Ledger::Ledger(Ledger& ledger, bool isMutable) : mTotCoins(ledger.mTotCoins),
-	mLedgerSeq(ledger.mLedgerSeq), mLedgerInterval(ledger.mLedgerInterval),
+Ledger::Ledger(Ledger& ledger, bool isMutable) : mTotCoins(ledger.mTotCoins), mLedgerSeq(ledger.mLedgerSeq),
 	mClosed(ledger.mClosed), mValidHash(false), mAccepted(ledger.mAccepted), mImmutable(!isMutable),
 	mTransactionMap(ledger.mTransactionMap->snapShot(isMutable)),
 	mAccountStateMap(ledger.mAccountStateMap->snapShot(isMutable))
@@ -55,15 +54,14 @@ Ledger::Ledger(Ledger& ledger, bool isMutable) : mTotCoins(ledger.mTotCoins),
 }
 
 
-Ledger::Ledger(bool, Ledger& prevLedger) : mTotCoins(prevLedger.mTotCoins),
-	mLedgerSeq(prevLedger.mLedgerSeq + 1), mLedgerInterval(prevLedger.mLedgerInterval),
+Ledger::Ledger(uint64 closeTime, Ledger& prevLedger) :
+	mTotCoins(prevLedger.mTotCoins), mCloseTime(closeTime), mLedgerSeq(prevLedger.mLedgerSeq + 1),
 	mClosed(false), mValidHash(false), mAccepted(false), mImmutable(false),
 	mTransactionMap(new SHAMap()), mAccountStateMap(prevLedger.mAccountStateMap->snapShot(true))
 { // Create a new ledger that follows this one
 	prevLedger.updateHash();
 	mParentHash = prevLedger.getHash();
 	assert(mParentHash.isNonZero());
-	mCloseTime = prevLedger.getNextLedgerClose();
 }
 
 Ledger::Ledger(const std::vector<unsigned char>& rawLedger) : mCloseTime(0),
@@ -77,7 +75,6 @@ Ledger::Ledger(const std::vector<unsigned char>& rawLedger) : mCloseTime(0),
 	if (!s.get256(mTransHash, BLgPTxT)) return;
 	if (!s.get256(mAccountHash, BLgPAcT)) return;
 	if (!s.get64(mCloseTime, BLgPClTs)) return;
-	if (!s.get16(mLedgerInterval, BLgPNlIn)) return;
 	updateHash();
 	if(mValidHash)
 	{
@@ -97,7 +94,6 @@ Ledger::Ledger(const std::string& rawLedger) : mCloseTime(0),
 	if (!s.get256(mTransHash, BLgPTxT)) return;
 	if (!s.get256(mAccountHash, BLgPAcT)) return;
 	if (!s.get64(mCloseTime, BLgPClTs)) return;
-	if (!s.get16(mLedgerInterval, BLgPNlIn)) return;
 	updateHash();
 	if(mValidHash)
 	{
@@ -131,7 +127,6 @@ void Ledger::addRaw(Serializer &s)
 	s.add256(mTransHash);
 	s.add256(mAccountHash);
 	s.add64(mCloseTime);
-	s.add16(mLedgerInterval);
 }
 
 AccountState::pointer Ledger::getAccountState(const NewcoinAddress& accountID)
@@ -472,23 +467,28 @@ boost::posix_time::ptime Ledger::getCloseTime() const
 
 void Ledger::setCloseTime(boost::posix_time::ptime ptm)
 {
+	assert(!mImmutable);
 	mCloseTime = iToSeconds(ptm);
 }
 
 uint64 Ledger::sGenesisClose = 0;
 
-uint64 Ledger::getNextLedgerClose() const
+uint64 Ledger::getNextLedgerClose(int prevCloseSeconds) const
 {
 	if (mCloseTime == 0)
 	{
 		if (sGenesisClose == 0)
 		{
-			uint64 closeTime = theApp->getOPs().getNetworkTimeNC() + mLedgerInterval - 1;
-			sGenesisClose = closeTime - (closeTime % mLedgerInterval);
+			uint64 closeTime = theApp->getOPs().getNetworkTimeNC() + LEDGER_IDLE_INTERVAL - 1;
+			sGenesisClose = closeTime - (closeTime % LEDGER_IDLE_INTERVAL);
 		}
 		return sGenesisClose;
 	}
-	return mCloseTime + mLedgerInterval;
+	if (prevCloseSeconds < 0)
+		return mCloseTime + LEDGER_IDLE_INTERVAL;
+	if (prevCloseSeconds < 2)
+		return mCloseTime + prevCloseSeconds;
+	return mCloseTime + prevCloseSeconds - 1;
 }
 
 // vim:ts=4

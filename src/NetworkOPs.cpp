@@ -245,17 +245,9 @@ RippleState::pointer NetworkOPs::getRippleState(const uint256& uLedger, const ui
 // Other
 //
 
-void NetworkOPs::setStateTimer(int sec)
+void NetworkOPs::setStateTimer()
 { // set timer early if ledger is closing
-	if (!mConsensus && ((mMode == omFULL) || (mMode == omTRACKING)))
-	{
-		uint64 consensusTime = mLedgerMaster->getCurrentLedger()->getCloseTimeNC() - LEDGER_WOBBLE_TIME;
-		uint64 now = getNetworkTimeNC();
-
-		if (now >= consensusTime) sec = 1;
-		else if (sec > (consensusTime - now)) sec = (consensusTime - now);
-	}
-	mNetTimer.expires_from_now(boost::posix_time::seconds(sec));
+	mNetTimer.expires_from_now(boost::posix_time::seconds(1));
 	mNetTimer.async_wait(boost::bind(&NetworkOPs::checkState, this, boost::asio::placeholders::error));
 }
 
@@ -292,7 +284,7 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 			Log(lsWARNING) << "Node count (" << peerList.size() <<
 				") has fallen below quorum (" << theConfig.NETWORK_QUORUM << ").";
 		}
-		setStateTimer(5);
+		setStateTimer();
 		return;
 	}
 	if (mMode == omDISCONNECTED)
@@ -303,7 +295,8 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 
 	if (mConsensus)
 	{
-		setStateTimer(mConsensus->timerEntry());
+		mConsensus->timerEntry();
+		setStateTimer();
 		return;
 	}
 
@@ -341,13 +334,19 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 		// check if the ledger is bad enough to go to omTRACKING
 	}
 
-	int secondsToClose = theApp->getMasterLedger().getCurrentLedger()->getCloseTimeNC() -
-		theApp->getOPs().getNetworkTimeNC();
-	if ((!mConsensus) && (secondsToClose < LEDGER_WOBBLE_TIME)) // pre close wobble
-		beginConsensus(networkClosed, theApp->getMasterLedger().getCurrentLedger());
+	uint64 defaultClose = theApp->getMasterLedger().getCurrentLedger()->getCloseTimeNC();
+	uint64 now = theApp->getOPs().getNetworkTimeNC();
+	if (!mConsensus)
+	{ // if now is past the ledger's default close time or there are transactions in the current ledger, close
+		if ((theApp->getOPs().getNetworkTimeNC() > theApp->getMasterLedger().getCurrentLedger()->getCloseTimeNC())
+			|| (!!theApp->getMasterLedger().getCurrentLedger()->getTransHash()))
+		{
+			beginConsensus(networkClosed, theApp->getMasterLedger().getCurrentLedger());
+		}
+	}
 	if (mConsensus)
-		setStateTimer(mConsensus->timerEntry());
-	else setStateTimer(4);
+		mConsensus->timerEntry();
+	setStateTimer();
 }
 
 bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerList, uint256& networkClosed)

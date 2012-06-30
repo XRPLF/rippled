@@ -141,7 +141,7 @@ void Application::run()
 	assert(!!secondLedger->getAccountState(rootAddress));
 	// temporary
 
-	mNetOps.setStateTimer(0);
+	mNetOps.setStateTimer();
 
 	mIOService.run(); // This blocks
 

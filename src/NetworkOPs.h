@@ -154,7 +154,7 @@ public:
 	bool checkLastClosedLedger(const std::vector<Peer::pointer>&, uint256& networkClosed);
 	int beginConsensus(const uint256& networkClosed, Ledger::pointer closingLedger);
 	void endConsensus();
-	void setStateTimer(int seconds);
+	void setStateTimer();
 	Json::Value getServerInfo();
 
 	// client information retrieval functions

@@ -64,9 +64,8 @@ private:
 
 	uint256		mHash, mParentHash, mTransHash, mAccountHash;
 	uint64		mTotCoins;
-	uint64		mCloseTime; // when this ledger closes
+	uint64		mCloseTime; // when this ledger should close / did close
 	uint32		mLedgerSeq;
-	uint16		mLedgerInterval;
 	bool		mClosed, mValidHash, mAccepted, mImmutable;
 
 	SHAMap::pointer mTransactionMap, mAccountStateMap;
@@ -92,7 +91,7 @@ public:
 		uint64 totCoins, uint64 timeStamp, uint32 ledgerSeq); // used for database ledgers
 	Ledger(const std::vector<unsigned char>& rawLedger);
 	Ledger(const std::string& rawLedger);
-	Ledger(bool fromAccepted, Ledger& previous);	// ledger after this one
+	Ledger(uint64 defaultCloseTime, Ledger& previous);	// ledger after this one
 	Ledger(Ledger& target, bool isMutable); // snapshot
 
 	void updateHash();
@@ -120,12 +119,12 @@ public:
 	void destroyCoins(uint64 fee)			{ mTotCoins -= fee; }
 	uint64 getCloseTimeNC() const			{ return mCloseTime; }
 	uint32 getLedgerSeq() const				{ return mLedgerSeq; }
-	uint16 getInterval() const				{ return mLedgerInterval; }
 
 	// close time functions
-	boost::posix_time::ptime getCloseTime() const;
+	void setCloseTime(uint64 ct)			{ assert(!mImmutable); mCloseTime = ct; }
 	void setCloseTime(boost::posix_time::ptime);
-	uint64 getNextLedgerClose() const;
+	boost::posix_time::ptime getCloseTime() const;
+	uint64 getNextLedgerClose(int prevCloseSeconds) const;
 
 	// low level functions
 	SHAMap::pointer peekTransactionMap() { return mTransactionMap; }

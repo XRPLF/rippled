@@ -4,8 +4,8 @@
 // The number of seconds a ledger may remain idle before closing
 #	define LEDGER_IDLE_INTERVAL		15
 
-// How long we wait to transition from inactive to active
-#	define LEDGER_IDLE_SPIN_TIME	2
+// The number of seconds a validation remains current
+#	define LEDGER_MAX_INTERVAL		60
 
 // Avalanche tuning
 #define AV_INIT_CONSENSUS_PCT		50	// percentage of nodes on our UNL that must vote yes
