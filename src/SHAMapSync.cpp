@@ -58,7 +58,7 @@ void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint2
 						std::vector<unsigned char> nodeData;
 						if (filter->haveNode(childID, childHash, nodeData))
 						{
-							d = boost::make_shared<SHAMapTreeNode>(childID, nodeData, mSeq, STN_ARF_WIRE);
+							d = boost::make_shared<SHAMapTreeNode>(childID, nodeData, mSeq, STN_ARF_PREFIXED);
 							if (childHash != d->getNodeHash())
 							{
 								Log(lsERROR) << "Wrong hash from cached object";
@@ -133,7 +133,7 @@ bool SHAMap::addRootNode(const std::vector<unsigned char>& rootNode)
 		return true;
 	}
 
-	SHAMapTreeNode::pointer node = boost::make_shared<SHAMapTreeNode>(SHAMapNode(), rootNode, 0, STN_ARF_WIRE);
+	SHAMapTreeNode::pointer node = boost::make_shared<SHAMapTreeNode>(SHAMapNode(), rootNode, 0, STN_ARF_UNKNOWN);
 	if (!node) return false;
 
 #ifdef DEBUG
@@ -165,7 +165,7 @@ bool SHAMap::addRootNode(const uint256& hash, const std::vector<unsigned char>& 
 		return true;
 	}
 
-	SHAMapTreeNode::pointer node = boost::make_shared<SHAMapTreeNode>(SHAMapNode(), rootNode, 0, STN_ARF_WIRE);
+	SHAMapTreeNode::pointer node = boost::make_shared<SHAMapTreeNode>(SHAMapNode(), rootNode, 0, STN_ARF_UNKNOWN);
 	if (!node)
 		return false;
 	if (node->getNodeHash() != hash)
