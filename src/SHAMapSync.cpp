@@ -58,7 +58,7 @@ void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint2
 						std::vector<unsigned char> nodeData;
 						if (filter->haveNode(childID, childHash, nodeData))
 						{
-							d = boost::make_shared<SHAMapTreeNode>(childID, nodeData, mSeq, STN_ARF_WIRE);
+							d = boost::make_shared<SHAMapTreeNode>(childID, nodeData, mSeq, STN_ARF_PREFIXED);
 							if (childHash != d->getNodeHash())
 							{
 								Log(lsERROR) << "Wrong hash from cached object";
@@ -122,7 +122,7 @@ bool SHAMap::getNodeFat(const SHAMapNode& wanted, std::vector<SHAMapNode>& nodeI
 		return true;
 }
 
-bool SHAMap::addRootNode(const std::vector<unsigned char>& rootNode)
+bool SHAMap::addRootNode(const std::vector<unsigned char>& rootNode, int format)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
@@ -133,7 +133,7 @@ bool SHAMap::addRootNode(const std::vector<unsigned char>& rootNode)
 		return true;
 	}
 
-	SHAMapTreeNode::pointer node = boost::make_shared<SHAMapTreeNode>(SHAMapNode(), rootNode, 0, STN_ARF_WIRE);
+	SHAMapTreeNode::pointer node = boost::make_shared<SHAMapTreeNode>(SHAMapNode(), rootNode, 0, format);
 	if (!node) return false;
 
 #ifdef DEBUG
@@ -153,7 +153,7 @@ bool SHAMap::addRootNode(const std::vector<unsigned char>& rootNode)
 	return true;
 }
 
-bool SHAMap::addRootNode(const uint256& hash, const std::vector<unsigned char>& rootNode)
+bool SHAMap::addRootNode(const uint256& hash, const std::vector<unsigned char>& rootNode, int format)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
@@ -165,7 +165,7 @@ bool SHAMap::addRootNode(const uint256& hash, const std::vector<unsigned char>& 
 		return true;
 	}
 
-	SHAMapTreeNode::pointer node = boost::make_shared<SHAMapTreeNode>(SHAMapNode(), rootNode, 0, STN_ARF_WIRE);
+	SHAMapTreeNode::pointer node = boost::make_shared<SHAMapTreeNode>(SHAMapNode(), rootNode, 0, format);
 	if (!node)
 		return false;
 	if (node->getNodeHash() != hash)
@@ -234,7 +234,11 @@ bool SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigned cha
 		return false;
 
 	if (filter)
-		filter->gotNode(node, hash, rawNode, newNode->isLeaf());
+	{
+		Serializer s;
+		newNode->addRaw(s, STN_ARF_PREFIXED);
+		filter->gotNode(node, hash, s.peekData(), newNode->isLeaf());
+	}
 
 	mTNByID[*newNode] = newNode;
 	if (!newNode->isLeaf())
@@ -443,7 +447,7 @@ BOOST_AUTO_TEST_CASE( SHAMapSync_test )
 		Log(lsFATAL) << "Didn't get root node " << gotNodes.size();
 		BOOST_FAIL("NodeSize");
 	}
-	if (!destination.addRootNode(*gotNodes.begin()))
+	if (!destination.addRootNode(*gotNodes.begin(), STN_ARF_WIRE))
 	{
 		Log(lsFATAL) << "AddRootNode fails";
 		BOOST_FAIL("AddRootNode");

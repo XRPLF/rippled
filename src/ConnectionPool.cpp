@@ -544,7 +544,7 @@ void ConnectionPool::peerVerified(Peer::pointer peer)
 
 		std::string	strIpPort	= str(boost::format("%s %d") % strIp % iPort);
 
-		Log(lsINFO) << str(boost::format("Pool: Scan: connected: %s %s %s (scanned)") % ADDRESS_SHARED(peer) % strIp % iPort);
+		//Log(lsINFO) << str(boost::format("Pool: Scan: connected: %s %s %s (scanned)") % ADDRESS_SHARED(peer) % strIp % iPort);
 
 		if (peer->getNodePublic() == theApp->getWallet().getNodePublic())
 		{
@@ -628,7 +628,7 @@ void ConnectionPool::scanRefresh()
 
 		if (tpNow.is_not_a_date_time())
 		{
-			Log(lsINFO) << "Pool: Scan: stop.";
+			//Log(lsINFO) << "Pool: Scan: stop.";
 
 			(void) mScanTimer.cancel();
 		}
@@ -643,8 +643,8 @@ void ConnectionPool::scanRefresh()
 
 			tpNext		= tpNow + boost::posix_time::seconds(iInterval);
 
-			Log(lsINFO) << str(boost::format("Pool: Scan: Now: %s %s (next %s, delay=%d)")
-				% mScanIp % mScanPort % tpNext % (tpNext-tpNow).total_seconds());
+			//Log(lsINFO) << str(boost::format("Pool: Scan: Now: %s %s (next %s, delay=%d)")
+			//	% mScanIp % mScanPort % tpNext % (tpNext-tpNow).total_seconds());
 
 			iInterval	*= 2;
 
@@ -668,8 +668,8 @@ void ConnectionPool::scanRefresh()
 		}
 		else
 		{
-			Log(lsINFO) << str(boost::format("Pool: Scan: Next: %s (next %s, delay=%d)")
-				% strIpPort % tpNext % (tpNext-tpNow).total_seconds());
+			//Log(lsINFO) << str(boost::format("Pool: Scan: Next: %s (next %s, delay=%d)")
+			//	% strIpPort % tpNext % (tpNext-tpNow).total_seconds());
 
 			mScanTimer.expires_at(tpNext);
 			mScanTimer.async_wait(boost::bind(&ConnectionPool::scanHandler, this, _1));

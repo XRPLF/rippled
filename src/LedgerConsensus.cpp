@@ -101,7 +101,7 @@ bool TransactionAcquire::takeNodes(const std::list<SHAMapNode>& nodeIDs,
 					Log(lsWARNING) << "Got root TXS node, already have it";
 					return false;
 				}
-				if (!mMap->addRootNode(getHash(), *nodeDatait))
+				if (!mMap->addRootNode(getHash(), *nodeDatait, STN_ARF_WIRE))
 					return false;
 				else mHaveRoot = true;
 			}
