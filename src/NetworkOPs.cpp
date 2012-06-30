@@ -818,11 +818,19 @@ void NetworkOPs::pubTransaction(const Ledger::pointer& lpCurrent, const Serializ
 		}
 
 		Json::Value	jvObj(Json::objectValue);
+		std::string	strToken;
+		std::string	strHuman;
 
-		jvObj["type"]			= "accountTransactionProposed";
+		transResultInfo(terResult, strToken, strHuman);
+
+		jvObj["type"]			= "accountTransaction";
 		jvObj["seq"]			= lpCurrent->getLedgerSeq();
 		jvObj["accounts"]		= jvAccounts;
 		jvObj["transaction"]	= stTxn.getJson(0);
+		jvObj["status"]			= "proposed";
+		jvObj["result"]			= strToken;
+		jvObj["result_message"]	= strHuman;
+		jvObj["result_code"]	= terResult;
 
 		BOOST_FOREACH(InfoSub* ispListener, usisNotify)
 		{
