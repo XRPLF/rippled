@@ -326,7 +326,7 @@ bool LedgerAcquire::takeTxNode(const std::list<SHAMapNode>& nodeIDs,
 	{
 		if (nodeIDit->isRoot())
 		{
-			if (!mLedger->peekTransactionMap()->addRootNode(mLedger->getTransHash(), *nodeDatait))
+			if (!mLedger->peekTransactionMap()->addRootNode(mLedger->getTransHash(), *nodeDatait, STN_ARF_WIRE))
 				return false;
 		}
 		else if (!mLedger->peekTransactionMap()->addKnownNode(*nodeIDit, *nodeDatait, &tFilter))
@@ -358,7 +358,7 @@ bool LedgerAcquire::takeAsNode(const std::list<SHAMapNode>& nodeIDs,
 	{
 		if (nodeIDit->isRoot())
 		{
-			if (!mLedger->peekAccountStateMap()->addRootNode(mLedger->getAccountHash(), *nodeDatait))
+			if (!mLedger->peekAccountStateMap()->addRootNode(mLedger->getAccountHash(), *nodeDatait, STN_ARF_WIRE))
 				return false;
 		}
 		else if (!mLedger->peekAccountStateMap()->addKnownNode(*nodeIDit, *nodeDatait, &tFilter))

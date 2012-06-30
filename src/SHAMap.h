@@ -157,7 +157,6 @@ public:
 	SHAMapTreeNode(const SHAMapTreeNode& node, uint32 seq); // copy node from older tree
 	SHAMapTreeNode(const SHAMapNode& nodeID, SHAMapItem::pointer item, TNType type, uint32 seq);
 
-#define STN_ARF_UNKNOWN		0
 #define STN_ARF_PREFIXED	1
 #define STN_ARF_WIRE		2
 
@@ -324,8 +323,8 @@ public:
 		SHAMapSyncFilter* filter);
 	bool getNodeFat(const SHAMapNode& node, std::vector<SHAMapNode>& nodeIDs,
 	 std::list<std::vector<unsigned char> >& rawNode, bool fatLeaves);
-	bool addRootNode(const uint256& hash, const std::vector<unsigned char>& rootNode);
-	bool addRootNode(const std::vector<unsigned char>& rootNode);
+	bool addRootNode(const uint256& hash, const std::vector<unsigned char>& rootNode, int format);
+	bool addRootNode(const std::vector<unsigned char>& rootNode, int format);
 	bool addKnownNode(const SHAMapNode& nodeID, const std::vector<unsigned char>& rawNode,
 		SHAMapSyncFilter* filter);
 
