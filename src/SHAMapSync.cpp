@@ -234,7 +234,11 @@ bool SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigned cha
 		return false;
 
 	if (filter)
-		filter->gotNode(node, hash, rawNode, newNode->isLeaf());
+	{
+		Serializer s;
+		newNode->addRaw(s, STN_ARF_PREFIXED);
+		filter->gotNode(node, hash, s.peekData(), newNode->isLeaf());
+	}
 
 	mTNByID[*newNode] = newNode;
 	if (!newNode->isLeaf())

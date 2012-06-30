@@ -8,6 +8,7 @@
 #include "Application.h"
 #include "Log.h"
 #include "SHAMapSync.h"
+#include "HashPrefixes.h"
 
 #define LA_DEBUG
 #define LEDGER_ACQUIRE_TIMEOUT 2
@@ -300,7 +301,12 @@ bool LedgerAcquire::takeBase(const std::string& data, Peer::pointer peer)
 		return false;
 	}
 	mHaveBase = true;
-	theApp->getHashedObjectStore().store(LEDGER, mLedger->getLedgerSeq(), strCopy(data), mHash);
+
+	Serializer s(data.size() + 4);
+	s.add32(sHP_Ledger);
+	s.addRaw(data);
+	theApp->getHashedObjectStore().store(LEDGER, mLedger->getLedgerSeq(), s.peekData(), mHash);
+
 	progress();
 	if (!mLedger->getTransHash()) mHaveTransactions = true;
 	if (!mLedger->getAccountHash()) mHaveState = true;
