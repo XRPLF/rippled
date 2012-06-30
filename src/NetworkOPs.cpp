@@ -769,13 +769,6 @@ void NetworkOPs::pubLedger(const Ledger::pointer& lpAccepted)
 
 Json::Value NetworkOPs::transJson(const SerializedTransaction& stTxn, TransactionEngineResult terResult, const std::string& strStatus, int iSeq, const std::string& strType)
 {
-	Json::Value	jvAccounts(Json::arrayValue);
-
-	BOOST_FOREACH(const NewcoinAddress& naAccountID, stTxn.getAffectedAccounts())
-	{
-		jvAccounts.append(Json::Value(naAccountID.humanAccountID()));
-	}
-
 	Json::Value	jvObj(Json::objectValue);
 	std::string	strToken;
 	std::string	strHuman;
@@ -783,12 +776,10 @@ Json::Value NetworkOPs::transJson(const SerializedTransaction& stTxn, Transactio
 	transResultInfo(terResult, strToken, strHuman);
 
 	jvObj["type"]			= strType;
-	jvObj["seq"]			= iSeq;
-	jvObj["accounts"]		= jvAccounts;
 	jvObj["transaction"]	= stTxn.getJson(0);
-	jvObj["status"]			= strStatus;
+	jvObj["transaction"]["inLedger"] = iSeq;
+	jvObj["transaction"]["status"] = strStatus;
 	jvObj["result"]			= strToken;
-	jvObj["result_message"]	= strHuman;
 	jvObj["result_code"]	= terResult;
 
 	return jvObj;
