@@ -13,59 +13,61 @@ enum TransactionEngineResult
 	// tenCAN_NEVER_SUCCEED = <0
 
 	// Malformed: Fee claimed
-	tenGEN_IN_USE	= -300,	// Generator already in use.
-	tenCREATEXNS,			// Can not specify non XNS for Create.
-	tenEXPLICITXNS,			// XNS is used by default, don't specify it.
-	tenDST_NEEDED,			// Destination not specified.
-	tenDST_IS_SRC,			// Destination may not be source.
-	tenBAD_GEN_AUTH,		// Not authorized to claim generator.
-	tenBAD_ADD_AUTH,		// Not authorized to add account.
-	tenBAD_CLAIM_ID,		// Malformed.
-	tenBAD_SET_ID,			// Malformed.
-	tenDIRECT_XNS_ONLY,		// Direct payments are non-ripple XNS only.
-	tenRIPPLE_EMPTY,		// PathSet with no paths.
+	tenGEN_IN_USE	= -300,
+	tenCREATEXNS,
+	tenEXPLICITXNS,
+	tenDST_NEEDED,
+	tenDST_IS_SRC,
+	tenBAD_GEN_AUTH,
+	tenBAD_ADD_AUTH,
+	tenBAD_CLAIM_ID,
+	tenBAD_SET_ID,
+	tenDIRECT_XNS_ONLY,
+	tenRIPPLE_EMPTY,
 
 	// Invalid: Ledger won't allow.
-	tenCLAIMED		= -200,	// Can not claim a previously claimed account.
-	tenCREATED,				// Can't add an already created account.
-	tenMSG_SET,				// Can't change a message key.
-	tenBAD_AUTH_MASTER,		// Auth for unclaimed account needs correct master key.
-	tenBAD_RIPPLE,			// Ledger prevents ripple from succeeding.
-	terALREADY,				// The exact transaction was already in this ledger
+	tenCLAIMED		= -200,
+	tenCREATED,
+	tenMSG_SET,
+	tenBAD_AUTH_MASTER,
+	tenBAD_RIPPLE,
+	terALREADY,
 
 	// Other
-	tenFAILED		= -100,	// Something broke horribly
-	tenUNKNOWN,				// The transactions requires logic not implemented yet
-	tenINSUF_FEE_P,			// fee totally insufficient
-	tenINVALID,				// The transaction is ill-formed
+	tenFAILED		= -100,
+	tenUNKNOWN,
+	tenINSUF_FEE_P,
+	tenINVALID,
 
-	terSUCCESS		= 0,		// The transaction was applied
+	terSUCCESS		= 0,
 
 	// terFAILED_BUT_COULD_SUCCEED = >0
 	// Conflict with ledger database: Fee claimed
 	// Might succeed if not conflict is not caused by transaction ordering.
-	terBAD_SEQ,				// This sequence number should be zero for prepaid transactions.
-	terCREATED,				// Can not create a previously created account.
-	terDIR_FULL,			// Can not add entry to full dir.
-	terINSUF_FEE_B,			// Account balance can't pay fee
-	terINSUF_FEE_T,			// fee insufficient now (account doesn't exist, network load)
-	terNODE_NOT_FOUND,		// Can not delete a dir node.
+	terBAD_SEQ,
+	terCREATED,
+	terDIR_FULL,
+	terINSUF_FEE_B,
+	terINSUF_FEE_T,
+	terNODE_NOT_FOUND,
 	terNODE_NOT_MENTIONED,
 	terNODE_NO_ROOT,
-	terNO_ACCOUNT,			// The source account does not exist
-	terNO_DST,				// The destination does not exist
-	terNO_PATH,				// No path existed or met transaction/balance requirements
-	terPAST_LEDGER,			// The transaction expired and can't be applied
-	terPAST_SEQ,			// This sequence number has already past
-	terPRE_SEQ,				// Missing/inapplicable prior transaction
-	terUNFUNDED,			// Source account had insufficient balance for transaction.
-	terNO_LINE_NO_ZERO,		// Can't zero non-existant line, destination might make it.
-	terSET_MISSING_DST,		// Can't set password, destination missing.
-	terFUNDS_SPENT,			// Can't set password, password set funds already spent.
-	terUNCLAIMED,			// Can not use an unclaimed account.
-	terBAD_AUTH,			// Transaction's public key is not authorized.
-	terBAD_RIPPLE,			// No ripple path can be satisfied.
+	terNO_ACCOUNT,
+	terNO_DST,
+	terNO_PATH,
+	terPAST_LEDGER,
+	terPAST_SEQ,
+	terPRE_SEQ,
+	terUNFUNDED,
+	terNO_LINE_NO_ZERO,
+	terSET_MISSING_DST,
+	terFUNDS_SPENT,
+	terUNCLAIMED,
+	terBAD_AUTH,
+	terBAD_RIPPLE,
 };
+
+bool transResultInfo(TransactionEngineResult terCode, std::string& strToken, std::string& strHuman);
 
 enum TransactionEngineParams
 {

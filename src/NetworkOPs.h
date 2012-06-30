@@ -66,6 +66,8 @@ protected:
 	boost::unordered_set<InfoSub*>						mSubTransaction;		// all transactions
 //	subInfoMapType										mSubTransactionAccounts;
 
+	Json::Value transJson(const SerializedTransaction& stTxn, TransactionEngineResult terResult, const std::string& strStatus, int iSeq, const std::string& strType);
+
 public:
 	NetworkOPs(boost::asio::io_service& io_service, LedgerMaster* pLedgerMaster);
 
