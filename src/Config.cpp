@@ -121,6 +121,7 @@ void Config::setup(const std::string& strConf)
 
 	// a new ledger every minute
 	LEDGER_SECONDS			= 60;
+	LEDGER_CREATOR			= false;
 
 	RPC_USER				= "admin";
 	RPC_PASSWORD			= "pass";
@@ -200,6 +201,9 @@ void Config::load()
 
 			if (sectionSingleB(secConfig, SECTION_RPC_PORT, strTemp))
 				RPC_PORT = boost::lexical_cast<int>(strTemp);
+
+			if (sectionSingleB(secConfig, "ledger_creator" , strTemp))
+				LEDGER_CREATOR = boost::lexical_cast<bool>(strTemp);
 
 			if (sectionSingleB(secConfig, SECTION_RPC_ALLOW_REMOTE, strTemp))
 				RPC_ALLOW_REMOTE	= boost::lexical_cast<bool>(strTemp);

@@ -369,10 +369,15 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 	}
 
 	Ledger::pointer ourClosed = mLedgerMaster->getClosedLedger();
-	uint256 closedLedger = ourClosed->getHash();
-	ValidationCount& ourVC = ledgers[closedLedger];
-	++ourVC.nodesUsing;
-	ourVC.highNode = theApp->getWallet().getNodePublic();
+	uint256 closedLedger=0;
+	if(theConfig.LEDGER_CREATOR || ourClosed->getLedgerSeq() > 100)
+	{
+		closedLedger = ourClosed->getHash();
+		ValidationCount& ourVC = ledgers[closedLedger];
+		++ourVC.nodesUsing;
+		ourVC.highNode = theApp->getWallet().getNodePublic();
+	}
+	
 
 	for (std::vector<Peer::pointer>::const_iterator it = peerList.begin(), end = peerList.end(); it != end; ++it)
 	{
