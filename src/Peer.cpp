@@ -571,7 +571,14 @@ void Peer::recvHello(newcoin::TMHello& packet)
 	// Cancel verification timeout.
 	(void) mVerifyTimer.cancel();
 
-	if (packet.protoversionmin() < MAKE_VERSION_INT(MIN_PROTO_MAJOR, MIN_PROTO_MINOR))
+	uint64 minTime = theApp->getOPs().getNetworkTimeNC() - 4;
+	uint64 maxTime = minTime + 8;
+
+	if (packet.has_nettime() && ((packet.nettime() < minTime) || (packet.nettime() > maxTime)))
+	{
+		Log(lsINFO) << "Recv(Hello): Disconnect: Clocks are too far off";
+	}
+	else if (packet.protoversionmin() < MAKE_VERSION_INT(MIN_PROTO_MAJOR, MIN_PROTO_MINOR))
 	{
 		Log(lsINFO) << "Recv(Hello): Server requires protocol version " <<
 			GET_VERSION_MAJOR(packet.protoversion()) << "." << GET_VERSION_MINOR(packet.protoversion())
@@ -987,6 +994,31 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 			Serializer nData(128);
 			ledger->addRaw(nData);
 			reply.add_nodes()->set_nodedata(nData.getDataPtr(), nData.getLength());
+
+			if (packet.nodeids().size() != 0)
+			{
+				Log(lsINFO) << "Ledger root w/map roots request";
+				SHAMap::pointer map = ledger->peekAccountStateMap();
+				if (map)
+				{
+					Serializer rootNode(768);
+					if (map->getRootNode(rootNode, STN_ARF_WIRE))
+					{
+						reply.add_nodes()->set_nodedata(rootNode.getDataPtr(), rootNode.getLength());
+						if (ledger->getTransHash().isNonZero())
+						{
+							map = ledger->peekTransactionMap();
+							if (map)
+							{
+								rootNode.resize(0);
+								if (map->getRootNode(rootNode, STN_ARF_WIRE))
+									reply.add_nodes()->set_nodedata(rootNode.getDataPtr(), rootNode.getLength());
+							}
+						}
+					}
+				}
+			}
+
 			PackedMessage::pointer oPacket = boost::make_shared<PackedMessage>(reply, newcoin::mtLEDGER_DATA);
 			sendPacket(oPacket);
 			return;
