@@ -2,13 +2,14 @@
 #include "LedgerTiming.h"
 
 
-// Returns the number of seconds the ledger should be be open.
-int ContinuousLedgerTiming::shouldClose(	// How many:
+// Called when a ledger is open and no close is in progress -- when a transaction is received and no close
+// is in process, or when a close completes. Returns the number of seconds the ledger should be be open.
+int ContinuousLedgerTiming::shouldClose(
 	bool anyTransactions,
-	int previousProposers,		// proposers there were in the last closing
-	int proposersClosed,		// proposers who have currently closed their ledgers
-	int previousOpenSeconds,	// seconds the previous ledger was open
-	int currentOpenSeconds)		// seconds since the previous ledger closed
+	int previousProposers,		// proposers in the last closing
+	int proposersClosed,		// proposers who have currently closed this ledgers
+	int previousSeconds,		// seconds the previous ledger took to reach consensus
+	int currentSeconds)			// seconds since the previous ledger closed
 {
 	if (!anyTransactions)
 	{ // no transactions so far this interval
@@ -41,21 +42,23 @@ bool ContinuousLedgerTiming::haveConsensus(
 	int previousAgreeTime,		// how long it took to agree on the last ledger
 	int currentAgreeTime)		// how long we've been trying to agree
 {
+	if (currentAgreeTime <= LEDGER_MIN_CONSENSUS)
+		return false;
+
 	if (currentProposers < (previousProposers * 3 / 4))
-	{ // Less than 3/4 of the validators are present, slow down
+	{ // Less than 3/4 of the last ledger's proposers are present, we may need more time
 		if (currentAgreeTime < (previousAgreeTime + 2))
 			return false;
 	}
 
 	// If 80% of current proposers (plus us) agree on a set, we have consensus
-	int agreeWeight = (currentAgree * 100 + 100) / (currentProposers + 1);
-	if (agreeWeight > 80)
+	if (((currentAgree * 100 + 100) / (currentProposers + 1)) > 80)
 		return true;
 
 	// If 50% of the nodes on your UNL (minus us) have closed, you should close
-	int closeWeight = (currentClosed * 100 - 100) / (currentProposers + 1);
-	if (closeWeight > 50)
+	if (((currentClosed * 100 - 100) / (currentProposers + 1)) > 50)
 		return true;
 
+	// no consensus yet
 	return false;
 }

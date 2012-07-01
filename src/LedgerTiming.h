@@ -7,6 +7,9 @@
 // The number of seconds a validation remains current
 #	define LEDGER_MAX_INTERVAL		60
 
+// The number of seconds we wait minimum to ensure participation
+#	define LEDGER_MIN_CONSENSUS		2
+
 // Avalanche tuning
 #define AV_INIT_CONSENSUS_PCT		50	// percentage of nodes on our UNL that must vote yes
 
@@ -25,7 +28,7 @@ public:
 	static int shouldClose(
 		bool anyTransactions,
 		int previousProposers,		int proposersClosed,
-		int previousOpenSeconds,	int currentOpenSeconds);
+		int previousSeconds,		int currentSeconds);
 
 	static bool haveConsensus(
 		int previousProposers,		int currentProposers,
