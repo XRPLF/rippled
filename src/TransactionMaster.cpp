@@ -27,6 +27,29 @@ Transaction::pointer TransactionMaster::fetch(const uint256& txnID, bool checkDi
 	if (!txn) return txn;
 
 	mCache.canonicalize(txnID, txn);
+
+	return txn;
+}
+
+SerializedTransaction::pointer TransactionMaster::fetch(const SHAMapItem::pointer& item, bool checkDisk, uint32 uCommitLedger)
+{
+	SerializedTransaction::pointer	txn;
+	Transaction::pointer			iTx = theApp->getMasterTransaction().fetch(item->getTag(), false);
+
+	if (!iTx)
+	{
+		SerializerIterator sit(item->peekSerializer());
+
+		txn = boost::make_shared<SerializedTransaction>(boost::ref(sit));
+	}
+	else
+	{
+		if (uCommitLedger)
+			iTx->setStatus(COMMITTED, uCommitLedger);
+
+		txn = iTx->getSTransaction();
+	}
+
 	return txn;
 }
 

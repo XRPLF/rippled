@@ -15,7 +15,8 @@ public:
 
 	TransactionMaster();
 
-	Transaction::pointer fetch(const uint256&, bool checkDisk);
+	Transaction::pointer			fetch(const uint256&, bool checkDisk);
+	SerializedTransaction::pointer	fetch(const SHAMapItem::pointer& item, bool checkDisk, uint32 uCommitLedger);
 
 	// return value: true = we had the transaction already
 	bool canonicalize(Transaction::pointer& txn, bool maybeNew);
