@@ -630,11 +630,19 @@ SHAMapTreeNode::pointer SHAMap::fetchNodeExternal(const SHAMapNode& id, const ui
 		throw SHAMapMissingNode(id, hash);
 	assert(Serializer::getSHA512Half(obj->getData()) == hash);
 
-	SHAMapTreeNode::pointer ret =  boost::make_shared<SHAMapTreeNode>(id, obj->getData(), mSeq, STN_ARF_PREFIXED);
+	try
+	{
+		SHAMapTreeNode::pointer ret = boost::make_shared<SHAMapTreeNode>(id, obj->getData(), mSeq, STN_ARF_PREFIXED);
 #ifdef DEBUG
-	assert((ret->getNodeHash() == hash) && (id == *ret));
+		assert((ret->getNodeHash() == hash) && (id == *ret));
 #endif
-	return ret;
+		return ret;
+	}
+	catch (...)
+	{
+		Log(lsWARNING) << "fetchNodeExternal gets an invalid node: " << hash.GetHex();
+		throw SHAMapMissingNode(id, hash);
+	}
 }
 
 void SHAMap::armDirty()
