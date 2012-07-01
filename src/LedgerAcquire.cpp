@@ -8,6 +8,7 @@
 #include "Application.h"
 #include "Log.h"
 #include "SHAMapSync.h"
+#include "HashPrefixes.h"
 
 #define LA_DEBUG
 #define LEDGER_ACQUIRE_TIMEOUT 2
@@ -137,6 +138,7 @@ void LedgerAcquire::trigger(Peer::pointer peer)
 		newcoin::TMGetLedger tmGL;
 		tmGL.set_ledgerhash(mHash.begin(), mHash.size());
 		tmGL.set_itype(newcoin::liBASE);
+		*(tmGL.add_nodeids()) = SHAMapNode().getRawString();
 		if (peer)
 		{
 			sendRequest(tmGL, peer);
@@ -284,7 +286,7 @@ void PeerSet::sendRequest(const newcoin::TMGetLedger& tmGL)
 	}
 }
 
-bool LedgerAcquire::takeBase(const std::string& data, Peer::pointer peer)
+bool LedgerAcquire::takeBase(const std::string& data)
 { // Return value: true=normal, false=bad data
 #ifdef LA_DEBUG
 	Log(lsTRACE) << "got base acquiring ledger " << mHash.GetHex();
@@ -300,17 +302,21 @@ bool LedgerAcquire::takeBase(const std::string& data, Peer::pointer peer)
 		return false;
 	}
 	mHaveBase = true;
-	theApp->getHashedObjectStore().store(LEDGER, mLedger->getLedgerSeq(), strCopy(data), mHash);
+
+	Serializer s(data.size() + 4);
+	s.add32(sHP_Ledger);
+	s.addRaw(data);
+	theApp->getHashedObjectStore().store(LEDGER, mLedger->getLedgerSeq(), s.peekData(), mHash);
+
 	progress();
 	if (!mLedger->getTransHash()) mHaveTransactions = true;
 	if (!mLedger->getAccountHash()) mHaveState = true;
 	mLedger->setAcquiring();
-	trigger(peer);
 	return true;
 }
 
 bool LedgerAcquire::takeTxNode(const std::list<SHAMapNode>& nodeIDs,
-	const std::list< std::vector<unsigned char> >& data, Peer::pointer peer)
+	const std::list< std::vector<unsigned char> >& data)
 {
 	if (!mHaveBase) return false;
 	std::list<SHAMapNode>::const_iterator nodeIDit = nodeIDs.begin();
@@ -320,7 +326,7 @@ bool LedgerAcquire::takeTxNode(const std::list<SHAMapNode>& nodeIDs,
 	{
 		if (nodeIDit->isRoot())
 		{
-			if (!mLedger->peekTransactionMap()->addRootNode(mLedger->getTransHash(), *nodeDatait))
+			if (!mLedger->peekTransactionMap()->addRootNode(mLedger->getTransHash(), *nodeDatait, STN_ARF_WIRE))
 				return false;
 		}
 		else if (!mLedger->peekTransactionMap()->addKnownNode(*nodeIDit, *nodeDatait, &tFilter))
@@ -333,13 +339,12 @@ bool LedgerAcquire::takeTxNode(const std::list<SHAMapNode>& nodeIDs,
 		mHaveTransactions = true;
 		if (mHaveState) mComplete = true;
 	}
-	trigger(peer);
 	progress();
 	return true;
 }
 
 bool LedgerAcquire::takeAsNode(const std::list<SHAMapNode>& nodeIDs,
-	const std::list< std::vector<unsigned char> >& data, Peer::pointer peer)
+	const std::list< std::vector<unsigned char> >& data)
 {
 #ifdef LA_DEBUG
 	Log(lsTRACE) << "got ASdata acquiring ledger " << mHash.GetHex();
@@ -352,7 +357,7 @@ bool LedgerAcquire::takeAsNode(const std::list<SHAMapNode>& nodeIDs,
 	{
 		if (nodeIDit->isRoot())
 		{
-			if (!mLedger->peekAccountStateMap()->addRootNode(mLedger->getAccountHash(), *nodeDatait))
+			if (!mLedger->peekAccountStateMap()->addRootNode(mLedger->getAccountHash(), *nodeDatait, STN_ARF_WIRE))
 				return false;
 		}
 		else if (!mLedger->peekAccountStateMap()->addKnownNode(*nodeIDit, *nodeDatait, &tFilter))
@@ -365,9 +370,20 @@ bool LedgerAcquire::takeAsNode(const std::list<SHAMapNode>& nodeIDs,
 		mHaveState = true;
 		if (mHaveTransactions) mComplete = true;
 	}
-	trigger(peer);
 	progress();
 	return true;
+}
+
+bool LedgerAcquire::takeAsRootNode(const std::vector<unsigned char>& data)
+{
+	if (!mHaveBase) return false;
+	return mLedger->peekAccountStateMap()->addRootNode(mLedger->getAccountHash(), data, STN_ARF_WIRE);
+}
+
+bool LedgerAcquire::takeTxRootNode(const std::vector<unsigned char>& data)
+{
+	if (!mHaveBase) return false;
+	return mLedger->peekTransactionMap()->addRootNode(mLedger->getTransHash(), data, STN_ARF_WIRE);
 }
 
 LedgerAcquire::pointer LedgerAcquireMaster::findCreate(const uint256& hash)
@@ -422,11 +438,34 @@ bool LedgerAcquireMaster::gotLedgerData(newcoin::TMLedgerData& packet, Peer::poi
 
 	if (packet.type() == newcoin::liBASE)
 	{
-		if (packet.nodes_size() != 1) return false;
+		if (packet.nodes_size() < 1)
+			return false;
 		const newcoin::TMLedgerNode& node = packet.nodes(0);
-		return ledger->takeBase(node.nodedata(), peer);
+		if (!ledger->takeBase(node.nodedata()))
+			return false;
+		if (packet.nodes_size() == 1)
+		{
+			ledger->trigger(peer);
+			return true;
+		}
+		Log(lsDEBUG) << "liBASE includes ASbase";
+		if (!ledger->takeAsRootNode(strCopy(packet.nodes(1).nodedata())))
+		{
+			Log(lsWARNING) << "Included ASbase invalid";
+		}
+		if (packet.nodes().size() == 2)
+		{
+			ledger->trigger(peer);
+			return true;
+		}
+		Log(lsDEBUG) << "liBASE includes TXbase";
+		if (!ledger->takeTxRootNode(strCopy(packet.nodes(2).nodedata())))
+			Log(lsWARNING) << "Invcluded TXbase invalid";
+		ledger->trigger(peer);
+		return true;
 	}
-	else if ((packet.type() == newcoin::liTX_NODE) || (packet.type() == newcoin::liAS_NODE))
+
+	if ((packet.type() == newcoin::liTX_NODE) || (packet.type() == newcoin::liAS_NODE))
 	{
 		std::list<SHAMapNode> nodeIDs;
 		std::list< std::vector<unsigned char> > nodeData;
@@ -440,8 +479,14 @@ bool LedgerAcquireMaster::gotLedgerData(newcoin::TMLedgerData& packet, Peer::poi
 			nodeIDs.push_back(SHAMapNode(node.nodeid().data(), node.nodeid().size()));
 			nodeData.push_back(std::vector<unsigned char>(node.nodedata().begin(), node.nodedata().end()));
 		}
-		if (packet.type() == newcoin::liTX_NODE) return ledger->takeTxNode(nodeIDs, nodeData, peer);
-		else return ledger->takeAsNode(nodeIDs, nodeData, peer);
+		bool ret;
+		if (packet.type() == newcoin::liTX_NODE)
+			ret = ledger->takeTxNode(nodeIDs, nodeData);
+		else
+			ret = ledger->takeAsNode(nodeIDs, nodeData);
+		if (ret)
+			ledger->trigger(peer);
+		return ret;
 	}
 
 	return false;

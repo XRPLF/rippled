@@ -54,12 +54,15 @@ public:
 	std::vector<std::string>	VALIDATORS;				// Validators from newcoind.cfg.
 	std::vector<std::string>	IPS;					// Peer IPs from newcoind.cfg.
 
+	
+
 	// Network parameters
 	int							NETWORK_START_TIME;		// The Unix time we start ledger 0.
 	int							TRANSACTION_FEE_BASE;
 	int							LEDGER_SECONDS;
 	int							LEDGER_PROPOSAL_DELAY_SECONDS;
 	int							LEDGER_AVALANCHE_SECONDS;
+	bool						LEDGER_CREATOR;     // should be false unless we are starting a new ledger
 
 	// Note: The following parameters do not relate to the UNL or trust at all
 	int							NETWORK_QUORUM;			// Minimum number of nodes to consider the network present

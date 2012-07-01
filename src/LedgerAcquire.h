@@ -73,7 +73,6 @@ protected:
 	void onTimer() { trigger(Peer::pointer()); }
 
 	void newPeer(Peer::pointer peer) { trigger(peer); }
-	void trigger(Peer::pointer);
 
 	boost::weak_ptr<PeerSet> pmDowncast();
 
@@ -87,11 +86,12 @@ public:
 
 	void addOnComplete(boost::function<void (LedgerAcquire::pointer)>);
 
-	bool takeBase(const std::string& data, Peer::pointer);
-	bool takeTxNode(const std::list<SHAMapNode>& IDs, const std::list<std::vector<unsigned char> >& data,
-		Peer::pointer);
-	bool takeAsNode(const std::list<SHAMapNode>& IDs, const std::list<std::vector<unsigned char> >& data,
-		Peer::pointer);
+	bool takeBase(const std::string& data);
+	bool takeTxNode(const std::list<SHAMapNode>& IDs, const std::list<std::vector<unsigned char> >& data);
+	bool takeTxRootNode(const std::vector<unsigned char>& data);
+	bool takeAsNode(const std::list<SHAMapNode>& IDs, const std::list<std::vector<unsigned char> >& data);
+	bool takeAsRootNode(const std::vector<unsigned char>& data);
+	void trigger(Peer::pointer);
 };
 
 class LedgerAcquireMaster

@@ -17,6 +17,7 @@ HashedObjectStore::HashedObjectStore(int cacheSize, int cacheAge) :
 bool HashedObjectStore::store(HashedObjectType type, uint32 index,
 	const std::vector<unsigned char>& data, const uint256& hash)
 { // return: false=already in cache, true = added to cache
+	assert(hash == Serializer::getSHA512Half(data));
 	if (!theApp->getHashNodeDB()) return true;
 	if (mCache.touch(hash))
 	{
@@ -25,7 +26,7 @@ bool HashedObjectStore::store(HashedObjectType type, uint32 index,
 	}
 
 	HashedObject::pointer object = boost::make_shared<HashedObject>(type, index, data, hash);
-
+	if (!mCache.canonicalize(hash, object))
 	{
 		boost::recursive_mutex::scoped_lock sl(mWriteMutex);
 		mWriteSet.push_back(object);
@@ -125,6 +126,8 @@ HashedObject::pointer HashedObjectStore::retrieve(const uint256& hash)
 		data.resize(size);
 		db->getBinary("Object", &(data.front()), size);
 		db->endIterRows();
+
+		assert(Serializer::getSHA512Half(data) == hash);
 
 		HashedObjectType htype = UNKNOWN;
 		switch(type[0])

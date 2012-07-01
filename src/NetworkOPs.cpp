@@ -369,10 +369,15 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 	}
 
 	Ledger::pointer ourClosed = mLedgerMaster->getClosedLedger();
-	uint256 closedLedger = ourClosed->getHash();
-	ValidationCount& ourVC = ledgers[closedLedger];
-	++ourVC.nodesUsing;
-	ourVC.highNode = theApp->getWallet().getNodePublic();
+	uint256 closedLedger=0;
+	if(theConfig.LEDGER_CREATOR || ourClosed->getLedgerSeq() > 100)
+	{
+		closedLedger = ourClosed->getHash();
+		ValidationCount& ourVC = ledgers[closedLedger];
+		++ourVC.nodesUsing;
+		ourVC.highNode = theApp->getWallet().getNodePublic();
+	}
+	
 
 	for (std::vector<Peer::pointer>::const_iterator it = peerList.begin(), end = peerList.end(); it != end; ++it)
 	{
@@ -383,7 +388,7 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 		else if ((*it)->isConnected())
 		{
 			uint256 peerLedger = (*it)->getClosedLedgerHash();
-			if (!!peerLedger)
+			if (peerLedger.isNonZero())
 			{
 				ValidationCount& vc = ledgers[peerLedger];
 				if ((vc.nodesUsing == 0) || ((*it)->getNodePublic() > vc.highNode))
@@ -508,7 +513,8 @@ int NetworkOPs::beginConsensus(const uint256& networkClosed, Ledger::pointer clo
 	assert(closingLedger->getParentHash() == mLedgerMaster->getClosedLedger()->getHash());
 
 	// Create a consensus object to get consensus on this ledger
-	if (!!mConsensus) mConsensus->abort();
+	if (!!mConsensus)
+		mConsensus->abort();
 	prevLedger->setImmutable();
 	mConsensus = boost::make_shared<LedgerConsensus>(
 		networkClosed,
@@ -798,13 +804,6 @@ void NetworkOPs::pubLedger(const Ledger::pointer& lpAccepted)
 
 Json::Value NetworkOPs::transJson(const SerializedTransaction& stTxn, TransactionEngineResult terResult, const std::string& strStatus, int iSeq, const std::string& strType)
 {
-	Json::Value	jvAccounts(Json::arrayValue);
-
-	BOOST_FOREACH(const NewcoinAddress& naAccountID, stTxn.getAffectedAccounts())
-	{
-		jvAccounts.append(Json::Value(naAccountID.humanAccountID()));
-	}
-
 	Json::Value	jvObj(Json::objectValue);
 	std::string	strToken;
 	std::string	strHuman;
@@ -812,12 +811,10 @@ Json::Value NetworkOPs::transJson(const SerializedTransaction& stTxn, Transactio
 	transResultInfo(terResult, strToken, strHuman);
 
 	jvObj["type"]			= strType;
-	jvObj["seq"]			= iSeq;
-	jvObj["accounts"]		= jvAccounts;
 	jvObj["transaction"]	= stTxn.getJson(0);
-	jvObj["status"]			= strStatus;
+	jvObj["transaction"]["inLedger"] = iSeq;
+	jvObj["transaction"]["status"] = strStatus;
 	jvObj["result"]			= strToken;
-	jvObj["result_message"]	= strHuman;
 	jvObj["result_code"]	= terResult;
 
 	return jvObj;
