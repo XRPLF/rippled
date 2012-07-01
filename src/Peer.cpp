@@ -576,9 +576,10 @@ void Peer::recvHello(newcoin::TMHello& packet)
 
 	if (packet.has_nettime() && ((packet.nettime() < minTime) || (packet.nettime() > maxTime)))
 	{
-		Log(lsINFO) << "Recv(Hello): Disconnect: Clocks are too far off";
+		Log(lsINFO) << "Recv(Hello): Disconnect: Clock is far off";
 	}
-	else if (packet.protoversionmin() < MAKE_VERSION_INT(MIN_PROTO_MAJOR, MIN_PROTO_MINOR))
+	
+	if (packet.protoversionmin() < MAKE_VERSION_INT(MIN_PROTO_MAJOR, MIN_PROTO_MINOR))
 	{
 		Log(lsINFO) << "Recv(Hello): Server requires protocol version " <<
 			GET_VERSION_MAJOR(packet.protoversion()) << "." << GET_VERSION_MINOR(packet.protoversion())
