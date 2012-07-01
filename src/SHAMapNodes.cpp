@@ -247,7 +247,10 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned 
 	if (format == STN_ARF_PREFIXED)
 	{
 		if (rawNode.size() < 4)
+		{
+			Log(lsINFO) << "size < 4";
 			throw std::runtime_error("invalid P node");
+		}
 
 		uint32 prefix = rawNode[0]; prefix <<= 8; prefix |= rawNode[1]; prefix <<= 8;
 		prefix |= rawNode[2]; prefix <<= 8; prefix |= rawNode[3];
@@ -255,19 +258,23 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned 
 
 		if (prefix == sHP_TransactionID)
 		{
-			mItem = boost::make_shared<SHAMapItem>(Serializer::getSHA512Half(rawNode), s.peekData());
+			mItem = boost::make_shared<SHAMapItem>(s.getSHA512Half(), s.peekData());
 			mType = tnTRANSACTION;
 		}
-		if (prefix == sHP_LeafNode)
+		else if (prefix == sHP_LeafNode)
 		{
 			uint256 u;
 			s.get256(u, s.getLength() - 32);
-			s.chop(256 / 8);
-			if (u.isZero()) throw std::runtime_error("invalid PLN node");
+			s.chop(32);
+			if (u.isZero())
+			{
+				Log(lsINFO) << "invalid PLN node";
+				throw std::runtime_error("invalid PLN node");
+			}
 			mItem = boost::make_shared<SHAMapItem>(u, s.peekData());
 			mType = tnACCOUNT_STATE;
 		}
-		if (prefix == sHP_InnerNode)
+		else if (prefix == sHP_InnerNode)
 		{
 			if (rawNode.size() != (512 + 4))
 				throw std::runtime_error("invalid PIN node");
@@ -276,7 +283,10 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned 
 			mType = tnINNER;
 		}
 		else
+		{
+			Log(lsINFO) << "Unknown node prefix " << std::hex << prefix << std::dec;
 			throw std::runtime_error("invalid node prefix");
+		}
 	}
 
 	updateHash();

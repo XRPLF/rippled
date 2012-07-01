@@ -387,7 +387,7 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 		else if ((*it)->isConnected())
 		{
 			uint256 peerLedger = (*it)->getClosedLedgerHash();
-			if (!!peerLedger)
+			if (peerLedger.isNonZero())
 			{
 				ValidationCount& vc = ledgers[peerLedger];
 				if ((vc.nodesUsing == 0) || ((*it)->getNodePublic() > vc.highNode))
@@ -512,7 +512,8 @@ int NetworkOPs::beginConsensus(const uint256& networkClosed, Ledger::pointer clo
 	assert(closingLedger->getParentHash() == mLedgerMaster->getClosedLedger()->getHash());
 
 	// Create a consensus object to get consensus on this ledger
-	if (!!mConsensus) mConsensus->abort();
+	if (!!mConsensus)
+		mConsensus->abort();
 	prevLedger->setImmutable();
 	mConsensus = boost::make_shared<LedgerConsensus>(
 		networkClosed, prevLedger, theApp->getMasterLedger().getCurrentLedger()->getCloseTimeNC());

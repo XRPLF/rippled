@@ -571,7 +571,14 @@ void Peer::recvHello(newcoin::TMHello& packet)
 	// Cancel verification timeout.
 	(void) mVerifyTimer.cancel();
 
-	if (packet.protoversionmin() < MAKE_VERSION_INT(MIN_PROTO_MAJOR, MIN_PROTO_MINOR))
+	uint64 minTime = theApp->getOPs().getNetworkTimeNC() - 4;
+	uint64 maxTime = minTime + 8;
+
+	if (packet.has_nettime() && ((packet.nettime() < minTime) || (packet.nettime() > maxTime)))
+	{
+		Log(lsINFO) << "Recv(Hello): Disconnect: Clocks are too far off";
+	}
+	else if (packet.protoversionmin() < MAKE_VERSION_INT(MIN_PROTO_MAJOR, MIN_PROTO_MINOR))
 	{
 		Log(lsINFO) << "Recv(Hello): Server requires protocol version " <<
 			GET_VERSION_MAJOR(packet.protoversion()) << "." << GET_VERSION_MINOR(packet.protoversion())
@@ -871,7 +878,15 @@ void Peer::recvStatus(newcoin::TMStatusChange& packet)
 	Log(lsTRACE) << "Received status change from peer " << getIP();
 	if (!packet.has_networktime())
 		packet.set_networktime(theApp->getOPs().getNetworkTimeNC());
-	mLastStatus = packet;
+
+	if (!mLastStatus.has_newstatus() || packet.has_newstatus())
+		mLastStatus = packet;
+	else
+	{ // preserve old status
+		newcoin::NodeStatus status = mLastStatus.newstatus();
+		mLastStatus = packet;
+		packet.set_newstatus(status);
+	}
 
 	if (packet.newevent() == newcoin::neLOST_SYNC)
 	{
@@ -980,6 +995,31 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 			Serializer nData(128);
 			ledger->addRaw(nData);
 			reply.add_nodes()->set_nodedata(nData.getDataPtr(), nData.getLength());
+
+			if (packet.nodeids().size() != 0)
+			{
+				Log(lsINFO) << "Ledger root w/map roots request";
+				SHAMap::pointer map = ledger->peekAccountStateMap();
+				if (map)
+				{
+					Serializer rootNode(768);
+					if (map->getRootNode(rootNode, STN_ARF_WIRE))
+					{
+						reply.add_nodes()->set_nodedata(rootNode.getDataPtr(), rootNode.getLength());
+						if (ledger->getTransHash().isNonZero())
+						{
+							map = ledger->peekTransactionMap();
+							if (map)
+							{
+								rootNode.resize(0);
+								if (map->getRootNode(rootNode, STN_ARF_WIRE))
+									reply.add_nodes()->set_nodedata(rootNode.getDataPtr(), rootNode.getLength());
+							}
+						}
+					}
+				}
+			}
+
 			PackedMessage::pointer oPacket = boost::make_shared<PackedMessage>(reply, newcoin::mtLEDGER_DATA);
 			sendPacket(oPacket);
 			return;
@@ -1166,6 +1206,23 @@ Json::Value Peer::getJson()
 			(mHello.protoversion() != MAKE_VERSION_INT(PROTO_VERSION_MAJOR, PROTO_VERSION_MINOR)))
 		ret["protocol"] =  boost::lexical_cast<std::string>(GET_VERSION_MAJOR(mHello.protoversion())) + "." +
 			boost::lexical_cast<std::string>(GET_VERSION_MINOR(mHello.protoversion()));
+
+	if (!!mClosedLedgerHash)
+		ret["ledger"] = mClosedLedgerHash.GetHex();
+
+	if (mLastStatus.has_newstatus())
+	{
+		switch (mLastStatus.newstatus())
+		{
+			case newcoin::nsCONNECTING:		ret["status"] = "connecting";	break;
+			case newcoin::nsCONNECTED:		ret["status"] = "connected";	break;
+			case newcoin::nsMONITORING:		ret["status"] = "monitoring";	break;
+			case newcoin::nsVALIDATING:		ret["status"] = "validating";	break;
+			case newcoin::nsSHUTTING:		ret["status"] = "shutting";		break;
+			default:						Log(lsWARNING) << "Peer has unknown status: " << mLastStatus.newstatus();
+		}
+	}
+
 	/*
 	if (!mIpPort.first.empty())
 	{

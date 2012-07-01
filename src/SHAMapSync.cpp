@@ -122,6 +122,13 @@ bool SHAMap::getNodeFat(const SHAMapNode& wanted, std::vector<SHAMapNode>& nodeI
 		return true;
 }
 
+bool SHAMap::getRootNode(Serializer& s, int format)
+{
+	boost::recursive_mutex::scoped_lock sl(mLock);
+	root->addRaw(s, format);
+	return true;
+}
+
 bool SHAMap::addRootNode(const std::vector<unsigned char>& rootNode, int format)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);

@@ -323,6 +323,7 @@ public:
 		SHAMapSyncFilter* filter);
 	bool getNodeFat(const SHAMapNode& node, std::vector<SHAMapNode>& nodeIDs,
 	 std::list<std::vector<unsigned char> >& rawNode, bool fatLeaves);
+	bool getRootNode(Serializer& s, int format);
 	bool addRootNode(const uint256& hash, const std::vector<unsigned char>& rootNode, int format);
 	bool addRootNode(const std::vector<unsigned char>& rootNode, int format);
 	bool addKnownNode(const SHAMapNode& nodeID, const std::vector<unsigned char>& rawNode,
