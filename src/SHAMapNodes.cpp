@@ -255,15 +255,16 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned 
 
 		if (prefix == sHP_TransactionID)
 		{
-			mItem = boost::make_shared<SHAMapItem>(Serializer::getSHA512Half(rawNode), s.peekData());
+			mItem = boost::make_shared<SHAMapItem>(s.getSHA512Half(), s.peekData());
 			mType = tnTRANSACTION;
 		}
 		if (prefix == sHP_LeafNode)
 		{
 			uint256 u;
 			s.get256(u, s.getLength() - 32);
-			s.chop(256 / 8);
-			if (u.isZero()) throw std::runtime_error("invalid PLN node");
+			s.chop(32);
+			if (u.isZero())
+				throw std::runtime_error("invalid PLN node");
 			mItem = boost::make_shared<SHAMapItem>(u, s.peekData());
 			mType = tnACCOUNT_STATE;
 		}
