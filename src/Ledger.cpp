@@ -236,11 +236,11 @@ uint256 Ledger::getHash()
 
 void Ledger::saveAcceptedLedger(Ledger::pointer ledger)
 {
-	static boost::format ledgerExists("SELECT LedgerSeq FROM Ledgers where LedgerSeq = '%d';");
-	static boost::format deleteLedger("DELETE FROM Ledgers WHERE LedgerSeq = '%d';");
+	static boost::format ledgerExists("SELECT LedgerSeq FROM Ledgers where LedgerSeq = %d;");
+	static boost::format deleteLedger("DELETE FROM Ledgers WHERE LedgerSeq = %d;");
 	static boost::format AcctTransExists("SELECT LedgerSeq FROM AccountTransactions WHERE TransId = '%s';");
-	static boost::format transExists("SELECT Status from Transactions where TransID = '%s';");
-	static boost::format updateTx("UPDATE Transactions SET LedgerSeq = '%d', Status = '%c' WHERE TransID = '%s';");
+	static boost::format transExists("SELECT Status FROM Transactions WHERE TransID = '%s';");
+	static boost::format updateTx("UPDATE Transactions SET LedgerSeq = %d, Status = '%c' WHERE TransID = '%s';");
 
 	std::string sql="INSERT INTO Ledgers "
 		"(LedgerHash,LedgerSeq,PrevHash,TotalCoins,ClosingTime,AccountSetHash,TransSetHash) VALUES ('";
@@ -277,20 +277,12 @@ void Ledger::saveAcceptedLedger(Ledger::pointer ledger)
 	db->executeSQL("BEGIN TRANSACTION;");
 	for (SHAMapItem::pointer item = txSet.peekFirstItem(); !!item; item = txSet.peekNextItem(item->getTag()))
 	{
-		SerializedTransaction::pointer txn;
-		Transaction::pointer iTx = theApp->getMasterTransaction().fetch(item->getTag(), false);
-		if (!iTx)
-		{
-			SerializerIterator sit(item->peekSerializer());
-			txn = boost::make_shared<SerializedTransaction>(boost::ref(sit));
-		}
-		else
-		{
-			iTx->setStatus(COMMITTED, ledger->mLedgerSeq);
-			txn = iTx->getSTransaction();
-		}
+		SerializedTransaction::pointer	txn	= theApp->getMasterTransaction().fetch(item, false, ledger->mLedgerSeq);
+
+		// Make sure transaction is in AccountTransactions.
 		if (!SQL_EXISTS(db, boost::str(AcctTransExists % item->getTag().GetHex())))
 		{
+			// Transaction not in AccountTransactions
 			std::vector<NewcoinAddress> accts = txn->getAffectedAccounts();
 
 			std::string sql = "INSERT INTO AccountTransactions (TransID, Account, LedgerSeq) VALUES ";
@@ -315,12 +307,21 @@ void Ledger::saveAcceptedLedger(Ledger::pointer ledger)
 			Log(lsTRACE) << "ActTx: " << sql;
 			db->executeSQL(sql); // may already be in there
 		}
+
 		if (SQL_EXISTS(db, boost::str(transExists %	txn->getTransactionID().GetHex())))
-			db->executeSQL(boost::str(updateTx % ledger->getLedgerSeq() % TXN_SQL_VALIDATED
+		{
+			// In Transactions, update LedgerSeq and Status.
+			db->executeSQL(boost::str(updateTx
+				% ledger->getLedgerSeq()
+				% TXN_SQL_VALIDATED
 				% txn->getTransactionID().GetHex()));
+		}
 		else
+		{
+			// Not in Transactions, insert the whole thing..
 			db->executeSQL(
 				txn->getSQLInsertHeader() + txn->getSQL(ledger->getLedgerSeq(), TXN_SQL_VALIDATED) + ";");
+		}
 	}
 	db->executeSQL("COMMIT TRANSACTION;");
 

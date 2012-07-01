@@ -135,7 +135,7 @@ public:
 	{
 		try
 		{
-			Log(lsINFO) << "Ws:: Sending '" << strMessage << "'";
+			// Log(lsINFO) << "Ws:: Sending '" << strMessage << "'";
 
 			cpClient->send(strMessage);
 		}
@@ -149,7 +149,7 @@ public:
 	{
 		Json::FastWriter	jfwWriter;
 
-		Log(lsINFO) << "Ws:: Object '" << jfwWriter.write(jvObj) << "'";
+		// Log(lsINFO) << "Ws:: Object '" << jfwWriter.write(jvObj) << "'";
 
 		send(cpClient, jfwWriter.write(jvObj));
 	}
