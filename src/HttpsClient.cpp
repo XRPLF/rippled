@@ -67,7 +67,7 @@ void HttpsClient::httpsNext()
 	{
 		mDeadline.async_wait(
 			boost::bind(
-				&HttpsClient::handleDeadline,
+				&HttpsClient::ShandleDeadline,
 				shared_from_this(),
 				boost::asio::placeholders::error));
 	}
@@ -78,7 +78,7 @@ void HttpsClient::httpsNext()
 
 		mResolver.async_resolve(*mQuery,
 			boost::bind(
-				&HttpsClient::handleResolve,
+				&HttpsClient::ShandleResolve,
 				shared_from_this(),
 				boost::asio::placeholders::error,
 				boost::asio::placeholders::iterator));
@@ -149,7 +149,7 @@ void HttpsClient::handleResolve(
 			mSocketSsl.lowest_layer(),
 			itrEndpoint,
 			boost::bind(
-				&HttpsClient::handleConnect,
+				&HttpsClient::ShandleConnect,
 				shared_from_this(),
 				boost::asio::placeholders::error));
     }
@@ -183,7 +183,7 @@ void HttpsClient::handleConnect(const boost::system::error_code& ecResult)
 	if (!mShutdown)
 	{
 	    mSocketSsl.async_handshake(boost::asio::ssl::stream<boost::asio::ip::tcp::socket>::client,
-			boost::bind(&HttpsClient::handleRequest,
+			boost::bind(&HttpsClient::ShandleRequest,
 				shared_from_this(),
 				boost::asio::placeholders::error));
     }
@@ -219,7 +219,7 @@ void HttpsClient::handleRequest(const boost::system::error_code& ecResult)
 		boost::asio::async_write(
 			mSocketSsl,
 			mRequest,
-			boost::bind(&HttpsClient::handleWrite,
+			boost::bind(&HttpsClient::ShandleWrite,
 				shared_from_this(),
 				boost::asio::placeholders::error));
     }
@@ -244,7 +244,7 @@ void HttpsClient::handleWrite(const boost::system::error_code& ecResult)
 			mSocketSsl,
 			mResponse,
 			boost::asio::transfer_all(),
-			boost::bind(&HttpsClient::handleData,
+			boost::bind(&HttpsClient::ShandleData,
 				shared_from_this(),
 				boost::asio::placeholders::error));
     }
