@@ -71,6 +71,8 @@ public:
 
 	Json::Value RPCError(int iError);
 
+	typedef boost::shared_ptr<RPCServer> pointer;
+
 private:
 	typedef Json::Value (RPCServer::*doFuncPtr)(const Json::Value &params);
 	enum {
@@ -96,9 +98,13 @@ private:
 	RPCServer(const RPCServer&); // no implementation
 	RPCServer& operator=(const RPCServer&); // no implementation
 
-	void handle_write(const boost::system::error_code& error);
+	void handle_write(const boost::system::error_code& ec);
+	static void Shandle_write(pointer This, const boost::system::error_code& ec)
+	{ This->handle_write(ec); }
 
-	void handle_read(const boost::system::error_code& e, std::size_t bytes_transferred);
+	void handle_read(const boost::system::error_code& ec, std::size_t bytes_transferred);
+	static void Shandle_read(pointer This, const boost::system::error_code& ec, std::size_t bytes_transferred)
+	{ This->handle_read(ec, bytes_transferred); }
 
 	std::string handleRequest(const std::string& requestStr);
 	void sendReply();
@@ -166,8 +172,6 @@ private:
 	Json::Value doLogin(const Json::Value& params);
 
 public:
-	typedef boost::shared_ptr<RPCServer> pointer;
-
 	static pointer create(boost::asio::io_service& io_service, NetworkOPs* mNetOps)
 	{
 		return pointer(new RPCServer(io_service, mNetOps));

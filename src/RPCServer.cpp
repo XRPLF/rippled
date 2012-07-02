@@ -100,7 +100,7 @@ void RPCServer::connected()
 	else mRole=GUEST;
 
 	mSocket.async_read_some(boost::asio::buffer(mReadBuffer),
-		boost::bind(&RPCServer::handle_read, shared_from_this(),
+		boost::bind(&RPCServer::Shandle_read, shared_from_this(),
 		boost::asio::placeholders::error,
 		boost::asio::placeholders::bytes_transferred));
 }
@@ -127,7 +127,7 @@ void RPCServer::handle_read(const boost::system::error_code& e,
 		else
 		{  // not done keep reading
 			mSocket.async_read_some(boost::asio::buffer(mReadBuffer),
-				boost::bind(&RPCServer::handle_read, shared_from_this(),
+				boost::bind(&RPCServer::Shandle_read, shared_from_this(),
 				boost::asio::placeholders::error,
 				boost::asio::placeholders::bytes_transferred));
 		}
@@ -2070,7 +2070,7 @@ void RPCServer::sendReply()
 {
 	//std::cout << "RPC reply: " << mReplyStr << std::endl;
 	boost::asio::async_write(mSocket, boost::asio::buffer(mReplyStr),
-			boost::bind(&RPCServer::handle_write, shared_from_this(),
+			boost::bind(&RPCServer::Shandle_write, shared_from_this(),
 			boost::asio::placeholders::error));
 }
 
@@ -2099,7 +2099,7 @@ void RPCServer::handle_write(const boost::system::error_code& e)
 			mIncomingRequest.headers.clear();
 			mRequestParser.reset();
 			mSocket.async_read_some(boost::asio::buffer(mReadBuffer),
-				boost::bind(&RPCServer::handle_read, shared_from_this(),
+				boost::bind(&RPCServer::Shandle_read, shared_from_this(),
 				boost::asio::placeholders::error,
 				boost::asio::placeholders::bytes_transferred));
 		}
