@@ -24,31 +24,34 @@ bool transResultInfo(TransactionEngineResult terCode, std::string& strToken, std
 		const char*				cpToken;
 		const char*				cpHuman;
 	} transResultInfoA[] = {
-		{	tenGEN_IN_USE,			"tenGEN_IN_USE",			"Generator already in use."							},
-		{	tenCREATEXNS,			"tenCREATEXNS",				"Can not specify non XNS for Create."				},
-		{	tenEXPLICITXNS,			"tenEXPLICITXNS",			"XNS is used by default, don't specify it."			},
-		{	tenDST_NEEDED,			"tenDST_NEEDED",			"Destination not specified."						},
-		{	tenDST_IS_SRC,			"tenDST_IS_SRC",			"Destination may not be source."					},
-		{	tenBAD_GEN_AUTH,		"tenBAD_GEN_AUTH",			"Not authorized to claim generator."				},
 		{	tenBAD_ADD_AUTH,		"tenBAD_ADD_AUTH",			"Not authorized to add account."					},
+		{	tenBAD_AMOUNT,			"tenBAD_AMOUNT",			"Can only send positive amounts."					},
+		{	tenBAD_AUTH_MASTER,		"tenBAD_AUTH_MASTER",		"Auth for unclaimed account needs correct master key."	},
 		{	tenBAD_CLAIM_ID,		"tenBAD_CLAIM_ID",			"Malformed."										},
+		{	tenBAD_GEN_AUTH,		"tenBAD_GEN_AUTH",			"Not authorized to claim generator."				},
+		{	tenBAD_RIPPLE,			"tenBAD_RIPPLE",			"Ledger prevents ripple from succeeding."			},
 		{	tenBAD_SET_ID,			"tenBAD_SET_ID",			"Malformed."										},
-		{	tenDIRECT_XNS_ONLY,		"tenDIRECT_XNS_ONLY",		"Direct payments are non-ripple XNS only."			},
-		{	tenRIPPLE_EMPTY,		"tenRIPPLE_EMPTY",			"PathSet with no paths."							},
 		{	tenCLAIMED,				"tenCLAIMED",				"Can not claim a previously claimed account."		},
 		{	tenCREATED,				"tenCREATED",				"Can't add an already created account."				},
-		{	tenMSG_SET,				"tenMSG_SET",				"Can't change a message key."						},
-		{	tenBAD_AUTH_MASTER,		"tenBAD_AUTH_MASTER",		"Auth for unclaimed account needs correct master key."	},
-		{	tenBAD_RIPPLE,			"tenBAD_RIPPLE",			"Ledger prevents ripple from succeeding."			},
-		{	terALREADY,				"terALREADY",				"The exact transaction was already in this ledger"	},
+		{	tenCREATEXNS,			"tenCREATEXNS",				"Can not specify non XNS for Create."				},
+		{	tenDST_IS_SRC,			"tenDST_IS_SRC",			"Destination may not be source."					},
+		{	tenDST_NEEDED,			"tenDST_NEEDED",			"Destination not specified."						},
+		{	tenEXPLICITXNS,			"tenEXPLICITXNS",			"XNS is used by default, don't specify it."			},
 		{	tenFAILED,				"tenFAILED",				"Something broke horribly"							},
-		{	tenUNKNOWN,				"tenUNKNOWN",				"The transactions requires logic not implemented yet"	},
+		{	tenGEN_IN_USE,			"tenGEN_IN_USE",			"Generator already in use."							},
 		{	tenINSUF_FEE_P,			"tenINSUF_FEE_P",			"fee totally insufficient"							},
 		{	tenINVALID,				"tenINVALID",				"The transaction is ill-formed"						},
-		{	terSUCCESS,				"terSUCCESS",				"The transaction was applied"						},
+		{	tenMSG_SET,				"tenMSG_SET",				"Can't change a message key."						},
+		{	tenREDUNDANT,			"tenREDUNDANT",				"Sends same currency to self."						},
+		{	tenRIPPLE_EMPTY,		"tenRIPPLE_EMPTY",			"PathSet with no paths."							},
+		{	tenUNKNOWN,				"tenUNKNOWN",				"The transactions requires logic not implemented yet"	},
+		{	terALREADY,				"terALREADY",				"The exact transaction was already in this ledger"	},
+		{	terBAD_AUTH,			"terBAD_AUTH",				"Transaction's public key is not authorized."		},
+		{	terBAD_RIPPLE,			"terBAD_RIPPLE",			"No ripple path can be satisfied."					},
 		{	terBAD_SEQ,				"terBAD_SEQ",				"This sequence number should be zero for prepaid transactions."	},
 		{	terCREATED,				"terCREATED",				"Can not create a previously created account."		},
 		{	terDIR_FULL,			"terDIR_FULL",				"Can not add entry to full dir."					},
+		{	terFUNDS_SPENT,			"terFUNDS_SPENT",			"Can't set password, password set funds already spent."	},
 		{	terINSUF_FEE_B,			"terINSUF_FEE_B",			"Account balance can't pay fee"						},
 		{	terINSUF_FEE_T,			"terINSUF_FEE_T",			"fee insufficient now (account doesn't exist, network load)"	},
 		{	terNODE_NOT_FOUND,		"terNODE_NOT_FOUND",		"Can not delete a dir node."						},
@@ -56,17 +59,16 @@ bool transResultInfo(TransactionEngineResult terCode, std::string& strToken, std
 		{	terNODE_NO_ROOT,        "terNODE_NO_ROOT",			"?"													},
 		{	terNO_ACCOUNT,			"terNO_ACCOUNT",			"The source account does not exist"					},
 		{	terNO_DST,				"terNO_DST",				"The destination does not exist"					},
+		{	terNO_LINE_NO_ZERO,		"terNO_LINE_NO_ZERO",		"Can't zero non-existant line, destination might make it."	},
 		{	terNO_PATH,				"terNO_PATH",				"No path existed or met transaction/balance requirements"	},
+		{	terOVER_LIMIT,			"terOVER_LIMIT",			"Over limit."										},
 		{	terPAST_LEDGER,			"terPAST_LEDGER",			"The transaction expired and can't be applied"		},
 		{	terPAST_SEQ,			"terPAST_SEQ",				"This sequence number has already past"				},
 		{	terPRE_SEQ,				"terPRE_SEQ",				"Missing/inapplicable prior transaction"			},
-		{	terUNFUNDED,			"terUNFUNDED",				"Source account had insufficient balance for transaction."	},
-		{	terNO_LINE_NO_ZERO,		"terNO_LINE_NO_ZERO",		"Can't zero non-existant line, destination might make it."	},
 		{	terSET_MISSING_DST,		"terSET_MISSING_DST",		"Can't set password, destination missing."			},
-		{	terFUNDS_SPENT,			"terFUNDS_SPENT",			"Can't set password, password set funds already spent."	},
+		{	terSUCCESS,				"terSUCCESS",				"The transaction was applied"						},
 		{	terUNCLAIMED,			"terUNCLAIMED",				"Can not use an unclaimed account."					},
-		{	terBAD_AUTH,			"terBAD_AUTH",				"Transaction's public key is not authorized."		},
-		{	terBAD_RIPPLE,			"terBAD_RIPPLE",			"No ripple path can be satisfied."					},
+		{	terUNFUNDED,			"terUNFUNDED",				"Source account had insufficient balance for transaction."	},
 	};
 
 	int	iIndex	= NUMBER(transResultInfoA);
@@ -82,6 +84,7 @@ bool transResultInfo(TransactionEngineResult terCode, std::string& strToken, std
 
 	return iIndex >= 0;
 }
+
 // We return the uNodeDir so that on delete we can quickly know where the element is mentioned in the directory.
 TransactionEngineResult TransactionEngine::dirAdd(
 	std::vector<AffectedAccount>&	accounts,
@@ -1083,47 +1086,57 @@ TransactionEngineResult TransactionEngine::doPasswordSet(const SerializedTransac
 	return result;
 }
 
+// XXX Need to audit for things like setting accountID not having memory.
 TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction& txn,
 	std::vector<AffectedAccount>& accounts,
 	const uint160& uSrcAccountID)
 {
+	// Ripple if source or destination is non-native or if there are paths.
 	uint32		txFlags			= txn.getFlags();
-	uint160		uDstAccountID	= txn.getITFieldAccount(sfDestination);
-	// XXX Could also be ripple if direct credit lines.
-	bool		bRipple			= txn.getITFieldPresent(sfPaths);
 	bool		bCreate			= !!(txFlags & tfCreateAccount);
-	STAmount	saAmount		= txn.getITFieldAmount(sfAmount);
-	STAmount	saSrcBalance	= accounts[0].second->getIValueFieldAmount(sfBalance);
+	bool		bNoRippleDirect	= !!(txFlags & tfNoRippleDirect);
+	bool		bPaths			= txn.getITFieldPresent(sfPaths);
+	bool		bMax			= txn.getITFieldPresent(sfSendMax);
+	uint160		uDstAccountID	= txn.getITFieldAccount(sfDestination);
+	STAmount	saDstAmount		= txn.getITFieldAmount(sfAmount);
+	STAmount	saMaxAmount		= bMax ? txn.getITFieldAmount(sfSendMax) : saDstAmount;
+	uint160		uSrcCurrency	= saMaxAmount.getCurrency();
+	uint160		uDstCurrency	= saDstAmount.getCurrency();
 
 	if (!uDstAccountID)
 	{
-		std::cerr << "doPayment: Invalid transaction: Payment destination account not specifed." << std::endl;
-		return tenINVALID;
-	}
-	// XXX Only bad if no currency conversion in between through other people's offer.
-	else if (uSrcAccountID == uDstAccountID)
-	{
-		std::cerr << "doPayment: Invalid transaction: Source account is the same as destination." << std::endl;
-		return tenINVALID;
-	}
+		Log(lsINFO) << "doPayment: Invalid transaction: Payment destination account not specifed.";
 
-	// XXX Allow ripple to create.
+		return tenDST_NEEDED;
+	}
+	else if (saDstAmount.isPositive())
+	{
+		Log(lsINFO) << "doPayment: Invalid transaction: Redunant transaction.";
+
+		return tenBAD_AMOUNT;
+	}
+	else if (uSrcAccountID == uDstAccountID && uSrcCurrency == uDstCurrency && !bPaths)
+	{
+		Log(lsINFO) << "doPayment: Invalid transaction: Redunant transaction.";
+
+		return tenREDUNDANT;
+	}
 
 	LedgerStateParms	qry		= lepNONE;
 	SLE::pointer		sleDst	= mLedger->getAccountRoot(qry, uDstAccountID);
 	if (!sleDst)
 	{
 		// Destination account does not exist.
-		// XXX Also make sure non-ripple dest if creating.
-		if (bCreate && !saAmount.isNative())
+		if (bCreate && !saDstAmount.isNative())
 		{
-			std::cerr << "doPayment: Invalid transaction: Create account may only fund XNS." << std::endl;
+			// This restriction could be relaxed.
+			Log(lsINFO) << "doPayment: Invalid transaction: Create account may only fund XNS.";
 
 			return tenCREATEXNS;
 		}
 		else if (!bCreate)
 		{
-			std::cerr << "doPayment: Delay transaction: Destination account does not exist." << std::endl;
+			Log(lsINFO) << "doPayment: Delay transaction: Destination account does not exist.";
 
 			return terNO_DST;
 		}
@@ -1140,7 +1153,8 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 	// Destination exists.
 	else if (bCreate)
 	{
-		std::cerr << "doPayment: Invalid transaction: Account already created." << std::endl;
+		// Retryable: if account created this ledger, reordering might allow account to be made by this transaction.
+		Log(lsINFO) << "doPayment: Invalid transaction: Account already created.";
 
 		return terCREATED;
 	}
@@ -1149,42 +1163,78 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 		accounts.push_back(std::make_pair(taaMODIFY, sleDst));
 	}
 
+	bool		bRipple			= bPaths || bMax || !saDstAmount.isNative();
+
 	if (!bRipple)
 	{
 		// Direct XNS payment.
-		if (!saAmount.isNative())
-		{
-			std::cerr << "doPayment: Invalid transaction: direct " SYSTEM_CURRENCY_CODE " required." << std::endl;
+		STAmount	saSrcXNSBalance	= accounts[0].second->getIValueFieldAmount(sfBalance);
 
-			return tenDIRECT_XNS_ONLY;
-		}
-
-		if (saSrcBalance < saAmount)
+		if (saSrcXNSBalance < saDstAmount)
 		{
-			std::cerr << "doPayment: Delay transaction: Insufficent funds." << std::endl;
+			// Transaction might succeed, if applied in a different order.
+			Log(lsINFO) << "doPayment: Delay transaction: Insufficent funds.";
 
 			return terUNFUNDED;
 		}
 
-		accounts[0].second->setIFieldAmount(sfBalance, saSrcBalance - saAmount);
-		accounts[1].second->setIFieldAmount(sfBalance, accounts[1].second->getIValueFieldAmount(sfBalance) + saAmount);
+		accounts[0].second->setIFieldAmount(sfBalance, saSrcXNSBalance - saDstAmount);
+		accounts[1].second->setIFieldAmount(sfBalance, accounts[1].second->getIValueFieldAmount(sfBalance) + saDstAmount);
 
 		return terSUCCESS;
 	}
 
 	//
-	// Try direct ripple first.
+	// Ripple payment
 	//
 
-	uint160	uDstCurrency	= saAmount.getCurrency();
-
-						qry				= lepNONE;
-	SLE::pointer		sleRippleState	= mLedger->getRippleState(qry, uSrcAccountID, uDstAccountID, uDstCurrency);
-
-	if (sleRippleState)
+	// Try direct ripple first.
+	if (!bNoRippleDirect && uSrcAccountID != uDstAccountID && uSrcCurrency == uDstCurrency)
 	{
-		// There is a direct relationship.
+							qry				= lepNONE;
+		SLE::pointer		sleRippleState	= mLedger->getRippleState(qry, uSrcAccountID, uDstAccountID, uDstCurrency);
 
+		if (sleRippleState)
+		{
+			// There is a direct credit-line of some direction.
+			uint160		uLowID			= sleRippleState->getIValueFieldAccount(sfLowID).getAccountID();
+			uint160		uHighID			= sleRippleState->getIValueFieldAccount(sfHighID).getAccountID();
+			bool		bSendHigh		= uLowID == uSrcAccountID && uHighID == uDstAccountID;
+			bool		bSendLow		= uLowID == uDstAccountID && uHighID == uSrcAccountID;
+
+			assert(bSendLow || bSendHigh);
+
+			STAmount	saDstLimit		= sleRippleState->getIValueFieldAmount(bSendLow ? sfLowLimit : sfHighLimit);
+
+			STAmount	saDstBalance	= sleRippleState->getIValueFieldAmount(sfBalance);
+				if (bSendHigh)
+				{
+					// Put balance in dst terms.
+					saDstBalance.negate();
+				}
+
+			saDstBalance += saDstAmount;
+			if (saDstAmount > saDstLimit)
+			{
+				// Would exceed credit limit.
+				// YYY Note: in the future could push out other credits to make payment fit.
+
+				Log(lsINFO) << "doPayment: Delay transaction: Over limit.";
+
+				return terOVER_LIMIT;
+			}
+
+			if (bSendHigh)
+			{
+				// Put balance in low terms.
+				saDstBalance.negate();
+			}
+
+			sleRippleState->setIFieldAmount(sfBalance, saDstBalance);
+			accounts.push_back(std::make_pair(taaMODIFY, sleRippleState));
+
+			return terSUCCESS;
+		}
 	}
 
 	STPathSet	spsPaths = txn.getITFieldPathSet(sfPaths);
@@ -1192,7 +1242,7 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 	// XXX If we are parsing for determing forwarding check maximum path count.
 	if (!spsPaths.getPathCount())
 	{
-		std::cerr << "doPayment: Invalid transaction: No paths." << std::endl;
+		Log(lsINFO) << "doPayment: Invalid transaction: No paths.";
 
 		return tenRIPPLE_EMPTY;
 	}
@@ -1202,13 +1252,13 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 	BOOST_FOREACH(std::vector<STPath>& spPath, spsPaths)
 	{
 
-		std::cerr << "doPayment: Implementation error: Not implemented." << std::endl;
+		Log(lsINFO) << "doPayment: Implementation error: Not implemented.";
 
 		return tenUNKNOWN;
 	}
 #endif
 
-	std::cerr << "doPayment: Delay transaction: No ripple paths could be satisfied." << std::endl;
+	Log(lsINFO) << "doPayment: Delay transaction: No ripple paths could be satisfied.";
 
 	return terBAD_RIPPLE;
 }

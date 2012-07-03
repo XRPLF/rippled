@@ -10,43 +10,49 @@
 
 enum TransactionEngineResult
 {
+	// Note: Numbers are currently unstable.  Use tokens.
+
 	// tenCAN_NEVER_SUCCEED = <0
 
 	// Malformed: Fee claimed
 	tenGEN_IN_USE	= -300,
-	tenCREATEXNS,
-	tenEXPLICITXNS,
-	tenDST_NEEDED,
-	tenDST_IS_SRC,
-	tenBAD_GEN_AUTH,
 	tenBAD_ADD_AUTH,
+	tenBAD_AMOUNT,
 	tenBAD_CLAIM_ID,
+	tenBAD_GEN_AUTH,
 	tenBAD_SET_ID,
-	tenDIRECT_XNS_ONLY,
+	tenCREATEXNS,
+	tenDST_IS_SRC,
+	tenDST_NEEDED,
+	tenEXPLICITXNS,
+	tenREDUNDANT,
 	tenRIPPLE_EMPTY,
 
 	// Invalid: Ledger won't allow.
 	tenCLAIMED		= -200,
-	tenCREATED,
-	tenMSG_SET,
 	tenBAD_AUTH_MASTER,
 	tenBAD_RIPPLE,
+	tenCREATED,
+	tenMSG_SET,
 	terALREADY,
 
 	// Other
 	tenFAILED		= -100,
-	tenUNKNOWN,
 	tenINSUF_FEE_P,
 	tenINVALID,
+	tenUNKNOWN,
 
 	terSUCCESS		= 0,
 
 	// terFAILED_BUT_COULD_SUCCEED = >0
 	// Conflict with ledger database: Fee claimed
 	// Might succeed if not conflict is not caused by transaction ordering.
+	terBAD_AUTH,
+	terBAD_RIPPLE,
 	terBAD_SEQ,
 	terCREATED,
 	terDIR_FULL,
+	terFUNDS_SPENT,
 	terINSUF_FEE_B,
 	terINSUF_FEE_T,
 	terNODE_NOT_FOUND,
@@ -54,17 +60,15 @@ enum TransactionEngineResult
 	terNODE_NO_ROOT,
 	terNO_ACCOUNT,
 	terNO_DST,
+	terNO_LINE_NO_ZERO,
 	terNO_PATH,
+	terOVER_LIMIT,
 	terPAST_LEDGER,
 	terPAST_SEQ,
 	terPRE_SEQ,
-	terUNFUNDED,
-	terNO_LINE_NO_ZERO,
 	terSET_MISSING_DST,
-	terFUNDS_SPENT,
 	terUNCLAIMED,
-	terBAD_AUTH,
-	terBAD_RIPPLE,
+	terUNFUNDED,
 };
 
 bool transResultInfo(TransactionEngineResult terCode, std::string& strToken, std::string& strHuman);
