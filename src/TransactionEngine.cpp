@@ -85,7 +85,10 @@ bool transResultInfo(TransactionEngineResult terCode, std::string& strToken, std
 	return iIndex >= 0;
 }
 
-// We return the uNodeDir so that on delete we can quickly know where the element is mentioned in the directory.
+// <->     accounts: Affected accounts for the transaction.
+// <--     uNodeDir: For deletion, present to make dirDelete efficient.
+// -->        uBase: The index of the base of the directory.  Nodes are based off of this.
+// --> uLedgerIndex: Value to add to directory.
 TransactionEngineResult TransactionEngine::dirAdd(
 	std::vector<AffectedAccount>&	accounts,
 	uint64&							uNodeDir,
@@ -110,7 +113,6 @@ TransactionEngineResult TransactionEngine::dirAdd(
 		uNodeDir	= 1;
 
 		sleRoot	= boost::make_shared<SerializedLedgerEntry>(ltDIR_ROOT);
-
 
 		sleRoot->setIndex(uRootIndex);
 		Log(lsTRACE) << "dirAdd: Creating dir index: " << sleRoot->getIndex().ToString();
@@ -183,6 +185,10 @@ TransactionEngineResult TransactionEngine::dirAdd(
 	return terSUCCESS;
 }
 
+// <->     accounts: Affected accounts for the transaction.
+// -->     uNodeDir: Node containing entry.
+// -->        uBase: The index of the base of the directory.  Nodes are based off of this.
+// --> uLedgerIndex: Value to add to directory.
 TransactionEngineResult TransactionEngine::dirDelete(
 	std::vector<AffectedAccount>&	accounts,
 	const uint64&					uNodeDir,
@@ -883,20 +889,21 @@ TransactionEngineResult TransactionEngine::doCreditSet(const SerializedTransacti
 	const uint160& uSrcAccountID)
 {
 	TransactionEngineResult	terResult	= terSUCCESS;
-	std::cerr << "doCreditSet>" << std::endl;
+	Log(lsINFO) << "doCreditSet>";
 
 	// Check if destination makes sense.
 	uint160				uDstAccountID	= txn.getITFieldAccount(sfDestination);
 
 	if (!uDstAccountID)
 	{
-		std::cerr << "doCreditSet: Invalid transaction: Payment destination account not specifed." << std::endl;
+		Log(lsINFO) << "doCreditSet: Invalid transaction: Destination account not specifed.";
+
 		return tenDST_NEEDED;
 	}
-	// XXX Might make sense for ripple.
 	else if (uSrcAccountID == uDstAccountID)
 	{
-		std::cerr << "doCreditSet: Invalid transaction: Source account is the same as destination." << std::endl;
+		Log(lsINFO) << "doCreditSet: Invalid transaction: Can not extend credit to self.";
+
 		return tenDST_IS_SRC;
 	}
 
@@ -904,7 +911,7 @@ TransactionEngineResult TransactionEngine::doCreditSet(const SerializedTransacti
 	SLE::pointer		sleDst			= mLedger->getAccountRoot(qry, uDstAccountID);
 	if (!sleDst)
 	{
-		std::cerr << "doCreditSet: Delay transaction: Destination account does not exist." << std::endl;
+		Log(lsINFO) << "doCreditSet: Delay transaction: Destination account does not exist.";
 
 		return terNO_DST;
 	}
@@ -914,41 +921,69 @@ TransactionEngineResult TransactionEngine::doCreditSet(const SerializedTransacti
 	bool				bSltD			= uSrcAccountID < uDstAccountID;
 	uint32				uFlags			= bSltD ? lsfLowIndexed : lsfHighIndexed;
 	STAmount			saBalance(uCurrency);
-	bool				bAddIndex;
+	bool				bAddIndex		= false;
+	bool				bDelIndex		= false;
 
 						qry				= lepNONE;
 	SLE::pointer		sleRippleState	= mLedger->getRippleState(qry, uSrcAccountID, uDstAccountID, uCurrency);
 	if (sleRippleState)
 	{
-						bAddIndex		= !(sleRippleState->getFlags() & uFlags);
+		// A line exists in one or more directions.
+#if 0
+		if (saLimitAmount.isZero())
+		{
+			// Zeroing line.
+			uint160		uLowID			= sleRippleState->getIValueFieldAccount(sfLowID).getAccountID();
+			uint160		uHighID			= sleRippleState->getIValueFieldAccount(sfHighID).getAccountID();
+			bool		bLow			= uLowID == uSrcAccountID;
+			bool		bHigh			= uLowID == uDstAccountID;
+			bool		bBalanceZero	= sleRippleState->getIValueFieldAmount(sfBalance).isZero();
+			STAmount	saDstLimit		= sleRippleState->getIValueFieldAmount(bSendLow ? sfLowLimit : sfHighLimit);
+			bool		bDstLimitZero	= saDstLimit.isZero();
 
-		std::cerr << "doCreditSet: Modifying ripple line: bAddIndex=" << bAddIndex << std::endl;
+			assert(bLow || bHigh);
 
-		sleRippleState->setIFieldAmount(bSltD ? sfLowLimit : sfHighLimit, saLimitAmount);
+			if (bBalanceZero && bDstLimitZero)
+			{
+				// Zero balance and eliminating last limit.
 
-		if (bAddIndex)
-			sleRippleState->setFlag(uFlags);
+				bDelIndex	= true;
+				terResult	= dirDelete(accounts, uSrcRef, Ledger::getRippleDirIndex(uSrcAccountID), sleRippleState->getIndex());
+			}
+		}
+#endif
+		if (!bDelIndex)
+		{
+			bAddIndex		= !(sleRippleState->getFlags() & uFlags);
 
-		accounts.push_back(std::make_pair(taaMODIFY, sleRippleState));
+			sleRippleState->setIFieldAmount(bSltD ? sfLowLimit : sfHighLimit, saLimitAmount);
+
+			if (bAddIndex)
+				sleRippleState->setFlag(uFlags);
+
+			accounts.push_back(std::make_pair(taaMODIFY, sleRippleState));
+		}
+
+		Log(lsINFO) << "doCreditSet: Modifying ripple line: bAddIndex=" << bAddIndex << " bDelIndex=" << bDelIndex;
 	}
 	// Line does not exist.
 	else if (saLimitAmount.isZero())
 	{
-		std::cerr << "doCreditSet: Setting non-existant ripple line to 0." << std::endl;
+		Log(lsINFO) << "doCreditSet: Redundant: Setting non-existant ripple line to 0.";
 
 		return terNO_LINE_NO_ZERO;
 	}
 	else
 	{
+		// Create a new ripple line.
 		STAmount		saZero(uCurrency);
 
 						bAddIndex		= true;
 						sleRippleState	= boost::make_shared<SerializedLedgerEntry>(ltRIPPLE_STATE);
 
 		sleRippleState->setIndex(Ledger::getRippleStateIndex(uSrcAccountID, uDstAccountID, uCurrency));
-		std::cerr << "doCreditSet: Creating ripple line: "
-			<< sleRippleState->getIndex().ToString()
-			<< std::endl;
+		Log(lsINFO) << "doCreditSet: Creating ripple line: "
+			<< sleRippleState->getIndex().ToString();
 
 		sleRippleState->setFlag(uFlags);
 		sleRippleState->setIFieldAmount(sfBalance, saZero);	// Zero balance in currency.
@@ -962,17 +997,13 @@ TransactionEngineResult TransactionEngine::doCreditSet(const SerializedTransacti
 
 	if (bAddIndex)
 	{
-		// Add entries so clients can find lines.
-		// - Client needs to be able to walk who account has given credit to and who has account's credit.
-		// - Client doesn't need to know every account who has extended credit but it owed nothing.
 		uint64			uSrcRef;	// Ignored, ripple_state dirs never delete.
 
-		// XXX Verify extend is passing the right bits, not the zero bits.
 		// XXX Make dirAdd more flexiable to take vector.
 		terResult	= dirAdd(accounts, uSrcRef, Ledger::getRippleDirIndex(uSrcAccountID), sleRippleState->getIndex());
 	}
 
-	std::cerr << "doCreditSet<" << std::endl;
+	Log(lsINFO) << "doCreditSet<";
 
 	return terResult;
 }
@@ -1109,15 +1140,19 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 
 		return tenDST_NEEDED;
 	}
-	else if (saDstAmount.isPositive())
+	else if (!saDstAmount.isPositive())
 	{
-		Log(lsINFO) << "doPayment: Invalid transaction: Redunant transaction.";
+		Log(lsINFO) << "doPayment: Invalid transaction: bad amount: " << saDstAmount.getCurrencyHuman() << " " << saDstAmount.getText();
 
 		return tenBAD_AMOUNT;
 	}
 	else if (uSrcAccountID == uDstAccountID && uSrcCurrency == uDstCurrency && !bPaths)
 	{
-		Log(lsINFO) << "doPayment: Invalid transaction: Redunant transaction.";
+		Log(lsINFO) << boost::str(boost::format("doPayment: Invalid transaction: Redunant transaction: src=%s, dst=%s, src_cur=%s, dst_cur=%s")
+			% uSrcAccountID.ToString()
+			% uDstAccountID.ToString()
+			% uSrcCurrency.ToString()
+			% uDstCurrency.ToString());
 
 		return tenREDUNDANT;
 	}
@@ -1197,10 +1232,18 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 		if (sleRippleState)
 		{
 			// There is a direct credit-line of some direction.
+			// - We can always pay IOUs back.
+			// - We can issue IOUs to the limit.
+			// XXX Not implemented:
+			// - Give preference to pushing out IOUs over sender credit limit.
+			// - Give preference to pushing out IOUs to creating them.
+			// - Create IOUs as last resort.
 			uint160		uLowID			= sleRippleState->getIValueFieldAccount(sfLowID).getAccountID();
 			uint160		uHighID			= sleRippleState->getIValueFieldAccount(sfHighID).getAccountID();
 			bool		bSendHigh		= uLowID == uSrcAccountID && uHighID == uDstAccountID;
 			bool		bSendLow		= uLowID == uDstAccountID && uHighID == uSrcAccountID;
+			// Flag we need if we end up owing IOUs.
+			uint32		uFlags			= bSendHigh ? lsfLowIndexed : lsfHighIndexed;
 
 			assert(bSendLow || bSendHigh);
 
@@ -1214,14 +1257,45 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 				}
 
 			saDstBalance += saDstAmount;
-			if (saDstAmount > saDstLimit)
+			if (saDstBalance > saDstLimit)
 			{
 				// Would exceed credit limit.
 				// YYY Note: in the future could push out other credits to make payment fit.
 
-				Log(lsINFO) << "doPayment: Delay transaction: Over limit.";
+				Log(lsINFO) << "doPayment: Delay transaction: Over limit: proposed balance="
+					<< saDstBalance.getText()
+					<< " limit="
+					<< saDstLimit.getText();
 
 				return terOVER_LIMIT;
+			}
+
+			if (saDstBalance.isZero())
+			{
+				// XXX May be able to delete indexes for credit limits which are zero.
+				nothing();
+			}
+			else if (saDstBalance.isNegative())
+			{
+				// dst still has outstanding IOUs, sle already indexed.
+				nothing();
+			}
+			// src has outstanding IOUs, sle should be indexed.
+			else if (! (sleRippleState->getFlags() & uFlags))
+			{
+				// Need to add index.
+				TransactionEngineResult	terResult	= terSUCCESS;
+				uint64					uSrcRef;					// Ignored, ripple_state dirs never delete.
+
+				terResult	= dirAdd(accounts,
+					uSrcRef,
+					Ledger::getRippleDirIndex(uSrcAccountID),		// The source ended up owing.
+					sleRippleState->getIndex());					// Adding current entry.
+
+				if (terSUCCESS != terResult)
+					return terResult;
+
+				sleRippleState->setFlag(uFlags);					// Note now indexed.
 			}
 
 			if (bSendHigh)
