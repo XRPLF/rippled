@@ -506,6 +506,8 @@ public:
 	int getNodeType() const			{ return mType; }
 	bool isAccount() const			{ return mType == typeAccount; }
 	bool isOffer() const			{ return mType == typeOffer;   }
+
+	// Nodes are either an account ID or a offer prefix. Offer prefixs denote a class of offers.
 	const uint160& getNode() const	{ return mNode; }
 
 	void setType(int type)			{ mType = type; }
