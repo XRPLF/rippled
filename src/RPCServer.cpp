@@ -52,7 +52,6 @@ Json::Value RPCServer::RPCError(int iError)
 		{ rpcLGR_IDXS_INVALID,	"lgrIdxsInvalid",	"Ledger indexes invalid." },
 		{ rpcLGR_IDX_MALFORMED,	"lgrIdxMalformed",	"Ledger index malformed." },
 		{ rpcLGR_NOT_FOUND,		"lgrNotFound",		"Ledger not found." },
-		{ rpcMUST_SEND_XNS,		"mustSendXns",		"Can only send XNS to accounts which are not created." },
 		{ rpcNICKNAME_MALFORMED,"nicknameMalformed","Nickname is malformed."	},
 		{ rpcNICKNAME_MISSING,	"nicknameMissing",	"Nickname does not exist."	},
 		{ rpcNICKNAME_PERM,		"nicknamePerm",		"Account does not control nickname."	},
@@ -301,15 +300,27 @@ Json::Value RPCServer::authorize(const uint256& uLedger,
 
 	// Find the index of the account from the master generator, so we can generate the public and private keys.
 	NewcoinAddress		naMasterAccountPublic;
-	unsigned int		iIndex = -1;	// Compensate for initial increment.
+	unsigned int		iIndex	= 0;	// Compensate for initial increment.
+	bool				bFound	= false;
 
 	// XXX Stop after Config.account_probe_max
 	// Don't look at ledger entries to determine if the account exists.  Don't want to leak to thin server that these accounts are
 	// related.
-	do {
-		++iIndex;
+	while (!bFound && iIndex != theConfig.ACCOUNT_PROBE_MAX)
+	{
 		naMasterAccountPublic.setAccountPublic(naMasterGenerator, iIndex);
-	} while (naSrcAccountID.getAccountID() != naMasterAccountPublic.getAccountID());
+
+		Log(lsINFO) << "authorize: " << iIndex << " : " << naMasterAccountPublic.humanAccountID() << " : " << naSrcAccountID.humanAccountID();
+
+		bFound	= naSrcAccountID.getAccountID() == naMasterAccountPublic.getAccountID();
+		if (!bFound)
+			++iIndex;
+	}
+
+	if (!bFound)
+	{
+		return RPCError(rpcACT_NOT_FOUND);
+	}
 
 	// Use the regular generator to determine the associated public and private keys.
 	NewcoinAddress		naGenerator	= NewcoinAddress::createGeneratorPublic(naRegularSeed);
@@ -319,9 +330,9 @@ Json::Value RPCServer::authorize(const uint256& uLedger,
 
 	if (asSrc->bHaveAuthorizedKey() && (asSrc->getAuthorizedKey().getAccountID() != naAccountPublic.getAccountID()))
 	{
-		std::cerr << "iIndex: " << iIndex << std::endl;
-		std::cerr << "sfAuthorizedKey: " << strHex(asSrc->getAuthorizedKey().getAccountID()) << std::endl;
-		std::cerr << "naAccountPublic: " << strHex(naAccountPublic.getAccountID()) << std::endl;
+		// std::cerr << "iIndex: " << iIndex << std::endl;
+		// std::cerr << "sfAuthorizedKey: " << strHex(asSrc->getAuthorizedKey().getAccountID()) << std::endl;
+		// std::cerr << "naAccountPublic: " << strHex(naAccountPublic.getAccountID()) << std::endl;
 
 		return RPCError(rpcPASSWD_CHANGED);
 	}
@@ -330,6 +341,8 @@ Json::Value RPCServer::authorize(const uint256& uLedger,
 
 	if (saSrcBalance < saFee)
 	{
+		Log(lsINFO) << "authorize: Insufficent funds for fees: fee=" << saFee.getText() << " balance=" << saSrcBalance.getText();
+
 		return RPCError(rpcINSUF_FUNDS);
 	}
 	else
@@ -1177,15 +1190,33 @@ Json::Value RPCServer::doSend(const Json::Value& params)
 		if (params.size() < 6)
 			saSrcAmount	= saDstAmount;
 
-		if (saSrcBalance < saDstAmount)
+		// Do a few simple checks.
+		if (!saSrcAmount.isNative())
 		{
+			Log(lsINFO) << "doSend: Ripple";
+
+			nothing();
+		}
+		else if (!saSrcBalance.isPositive())
+		{
+			// No native currency to send.
+			Log(lsINFO) << "doSend: No native currency to send: " << saSrcBalance.getText();
+
+			return RPCError(rpcINSUF_FUNDS);
+		}
+		else if (saDstAmount.isNative() && saSrcAmount < saDstAmount)
+		{
+			// Not enough native currency.
+
+			Log(lsINFO) << "doSend: Insufficent funds: src=" << saSrcAmount.getText() << " dst=" << saDstAmount.getText();
+
 			return RPCError(rpcINSUF_FUNDS);
 		}
 
 		Transaction::pointer	trans;
 
 		if (asDst) {
-			// Ordinary send.
+			// Destination exists, ordinary send.
 
 			STPathSet				spPaths;
 
@@ -1200,13 +1231,9 @@ Json::Value RPCServer::doSend(const Json::Value& params)
 				saSrcAmount,
 				spPaths);
 		}
-		else if (!saDstAmount.isNative())
-		{
-			return RPCError(rpcMUST_SEND_XNS);
-		}
 		else
 		{
-			// Create and send.
+			// Create destination and send.
 
 			trans	= Transaction::sharedCreate(
 				naAccountPublic, naAccountPrivate,
@@ -1215,7 +1242,7 @@ Json::Value RPCServer::doSend(const Json::Value& params)
 				saFee,
 				0,											// YYY No source tag
 				naDstAccountID,
-				saDstAmount);								// Initial funds in XNC.
+				saDstAmount);								// Initial funds in XNS.
 		}
 
 		(void) mNetOps->processTransaction(trans);

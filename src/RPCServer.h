@@ -34,7 +34,6 @@ public:
 		rpcACT_NOT_FOUND,
 		rpcINSUF_FUNDS,
 		rpcLGR_NOT_FOUND,
-		rpcMUST_SEND_XNS,
 		rpcNICKNAME_MISSING,
 		rpcNO_ACCOUNT,
 		rpcPASSWD_CHANGED,
