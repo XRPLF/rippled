@@ -300,7 +300,7 @@ Json::Value RPCServer::authorize(const uint256& uLedger,
 
 	// Find the index of the account from the master generator, so we can generate the public and private keys.
 	NewcoinAddress		naMasterAccountPublic;
-	unsigned int		iIndex	= 0;	// Compensate for initial increment.
+	unsigned int		iIndex	= 0;
 	bool				bFound	= false;
 
 	// XXX Stop after Config.account_probe_max
@@ -978,6 +978,16 @@ Json::Value RPCServer::doNicknameSet(const Json::Value& params)
 	return obj;
 }
 
+Json::Value RPCServer::doOffer(const Json::Value &params)
+{
+	return RPCError(rpcNOT_IMPL);
+}
+
+Json::Value RPCServer::doOfferCancel(const Json::Value &params)
+{
+	return RPCError(rpcNOT_IMPL);
+}
+
 // password_fund <seed> <paying_account> [<account>]
 // YYY Make making account default to first account for seed.
 Json::Value RPCServer::doPasswordFund(const Json::Value &params)
@@ -1266,7 +1276,9 @@ Json::Value RPCServer::doSend(const Json::Value& params)
 Json::Value RPCServer::doServerInfo(const Json::Value& params)
 {
 	Json::Value ret(Json::objectValue);
-	ret["info"]=theApp->getOPs().getServerInfo();
+
+	ret["info"]	= theApp->getOPs().getServerInfo();
+
 	return ret;
 }
 
@@ -1992,11 +2004,12 @@ Json::Value RPCServer::doLogin(const Json::Value& params)
 	std::string	username		= params[0u].asString();
 	std::string	password		= params[1u].asString();
 
-	if (username==theConfig.RPC_USER && password==theConfig.RPC_PASSWORD)
+	if (username == theConfig.RPC_USER && password == theConfig.RPC_PASSWORD)
 	{
 		//mRole=ADMIN;
 		return "logged in";
-	}else
+	}
+	else
 	{
 		return "nope";
 	}
@@ -2014,22 +2027,24 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 		bool		mAdminRequired;
 		unsigned int	iOptions;
 	} commandsA[] = {
-		{	"account_email_set",	&RPCServer::doAccountEmailSet,		2, 3, true,		optCurrent	},
+		{	"account_email_set",	&RPCServer::doAccountEmailSet,		2, 3, false,	optCurrent	},
 		{	"account_info",			&RPCServer::doAccountInfo,			1, 2, false,	optCurrent	},
-		{	"account_lines",		&RPCServer::doAccountLines,			1, 2, true,		optCurrent|optClosed },
-		{	"account_message_set",	&RPCServer::doAccountMessageSet,	3, 3, true,		optCurrent	},
-		{	"account_tx",			&RPCServer::doAccountTransactions,	2, 3, true,		optNetwork	},
-		{	"account_wallet_set",	&RPCServer::doAccountWalletSet,		2, 3, true,		optCurrent	},
+		{	"account_lines",		&RPCServer::doAccountLines,			1, 2, false,	optCurrent|optClosed },
+		{	"account_message_set",	&RPCServer::doAccountMessageSet,	3, 3, false,	optCurrent	},
+		{	"account_tx",			&RPCServer::doAccountTransactions,	2, 3, false,	optNetwork	},
+		{	"account_wallet_set",	&RPCServer::doAccountWalletSet,		2, 3, false,	optCurrent	},
 		{	"connect",				&RPCServer::doConnect,				1, 2, true					},
-		{	"credit_set",			&RPCServer::doCreditSet,			4, 6, true,		optCurrent	},
+		{	"credit_set",			&RPCServer::doCreditSet,			4, 6, false,	optCurrent	},
 		{	"data_delete",			&RPCServer::doDataDelete,			1, 1, true					},
 		{	"data_fetch",			&RPCServer::doDataFetch,			1, 1, true					},
 		{	"data_store",			&RPCServer::doDataStore,			2, 2, true					},
 		{	"ledger",				&RPCServer::doLedger,				0, 2, false,	optNetwork	},
-		{	"nickname_info",		&RPCServer::doNicknameInfo,			1, 1, true,		optCurrent	},
-		{	"nickname_set",			&RPCServer::doNicknameSet,			2, 3, true,		optCurrent	},
-		{	"password_fund",		&RPCServer::doPasswordFund,			2, 3, true,		optCurrent	},
-		{	"password_set",			&RPCServer::doPasswordSet,			2, 3, true,		optNetwork	},
+		{	"nickname_info",		&RPCServer::doNicknameInfo,			1, 1, false,	optCurrent	},
+		{	"nickname_set",			&RPCServer::doNicknameSet,			2, 3, false,	optCurrent	},
+		{	"offer",				&RPCServer::doOffer,				7, 8, false,	optCurrent	},
+		{	"offer_cancel",			&RPCServer::doOfferCancel,			3, 3, false,	optCurrent	},
+		{	"password_fund",		&RPCServer::doPasswordFund,			2, 3, false,	optCurrent	},
+		{	"password_set",			&RPCServer::doPasswordSet,			2, 3, false,	optNetwork	},
 		{	"peers",				&RPCServer::doPeers,				0, 0, true					},
 		{	"send",					&RPCServer::doSend,					3, 7, false,	optCurrent	},
 		{	"server_info",			&RPCServer::doServerInfo,			0, 0, true					},
@@ -2067,7 +2082,7 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 	{
 		return RPCError(rpcUNKNOWN_COMMAND);
 	}
-	else if (commandsA[i].mAdminRequired && mRole!=ADMIN)
+	else if (commandsA[i].mAdminRequired && mRole != ADMIN)
 	{
 		return RPCError(rpcNO_PERMISSION);
 	}
