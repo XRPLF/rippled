@@ -14,22 +14,22 @@ int ContinuousLedgerTiming::shouldClose(
 	if (!anyTransactions)
 	{ // no transactions so far this interval
 		if (proposersClosed > (previousProposers / 4)) // did we miss a transaction?
-			return currentOpenSeconds;
-		if (previousOpenSeconds > (LEDGER_IDLE_INTERVAL + 2)) // the last ledger was very slow to close
-			return previousOpenSeconds - 1;
+			return currentSeconds;
+		if (previousSeconds > (LEDGER_IDLE_INTERVAL + 2)) // the last ledger was very slow to close
+			return previousSeconds - 1;
 		return LEDGER_IDLE_INTERVAL; // normal idle
 	}
 
-	if (previousOpenSeconds == LEDGER_IDLE_INTERVAL) // coming out of idle, close now
-		return currentOpenSeconds;
+	if (previousSeconds == LEDGER_IDLE_INTERVAL) // coming out of idle, close now
+		return currentSeconds;
 
 	// If the network is slow, try to synchronize close times
-	if (previousOpenSeconds > 8)
-		return (currentOpenSeconds - currentOpenSeconds % 4);
-	else if (previousOpenSeconds > 4)
-		return (currentOpenSeconds - currentOpenSeconds % 2);
+	if (previousSeconds > 8)
+		return (currentSeconds - currentSeconds % 4);
+	else if (previousSeconds > 4)
+		return (currentSeconds - currentSeconds % 2);
 
-	return currentOpenSeconds; // this ledger should close now
+	return currentSeconds; // this ledger should close now
 }
 
 // Returns whether we have a consensus or not. If so, we expect all honest nodes
