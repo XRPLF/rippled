@@ -158,7 +158,7 @@ SHAMapTreeNode::pointer SHAMap::walkTo(const uint256& id, bool modify)
 
 SHAMapTreeNode* SHAMap::walkToPointer(const uint256& id)
 {
-	SHAMapTreeNode* inNode = &*root;
+	SHAMapTreeNode* inNode = root.get();
 	while (!inNode->isLeaf())
 	{
 		int branch = inNode->selectBranch(id);
@@ -201,12 +201,12 @@ SHAMapTreeNode* SHAMap::getNodePointer(const SHAMapNode& id, const uint256& hash
 { // fast, but you do not hold a reference
 	boost::unordered_map<SHAMapNode, SHAMapTreeNode::pointer>::iterator it = mTNByID.find(id);
 	if (it != mTNByID.end())
-		return &*it->second;
+		return it->second.get();
 
 	SHAMapTreeNode::pointer node = fetchNodeExternal(id, hash);
 	if (!mTNByID.insert(std::make_pair(id, node)).second)
 		assert(false);
-	return &*node;
+	return node.get();
 }
 
 void SHAMap::returnNode(SHAMapTreeNode::pointer& node, bool modify)
@@ -338,13 +338,13 @@ void SHAMap::eraseChildren(SHAMapTreeNode::pointer node)
 SHAMapItem::pointer SHAMap::peekFirstItem()
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
-	return firstBelow(&*root);
+	return firstBelow(root.get());
 }
 
 SHAMapItem::pointer SHAMap::peekLastItem()
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
-	return lastBelow(&*root);
+	return lastBelow(root.get());
 }
 
 SHAMapItem::pointer SHAMap::peekNextItem(const uint256& id)
@@ -366,7 +366,7 @@ SHAMapItem::pointer SHAMap::peekNextItem(const uint256& id)
 			if(!node->isEmptyBranch(i))
 			{
 				node = getNode(node->getChildNodeID(i), node->getChildHash(i), false);
-				SHAMapItem::pointer item = firstBelow(&*node);
+				SHAMapItem::pointer item = firstBelow(node.get());
 				if (!item) throw std::runtime_error("missing node");
 				return item;
 			}
@@ -394,7 +394,7 @@ SHAMapItem::pointer SHAMap::peekPrevItem(const uint256& id)
 				if(!node->isEmptyBranch(i))
 				{
 					node = getNode(node->getChildNodeID(i), node->getChildHash(i), false);
-					SHAMapItem::pointer item = firstBelow(&*node);
+					SHAMapItem::pointer item = firstBelow(node.get());
 					if (!item) throw std::runtime_error("missing node");
 					return item;
 				}
@@ -465,7 +465,7 @@ bool SHAMap::delItem(const uint256& id)
 			}
 			else if(bc==1)
 			{ // pull up on the thread
-				SHAMapItem::pointer item = onlyBelow(&*node);
+				SHAMapItem::pointer item = onlyBelow(node.get());
 				if(item)
 				{
 					eraseChildren(node);
