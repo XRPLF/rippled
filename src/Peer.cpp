@@ -326,7 +326,7 @@ void Peer::handle_read_header(const boost::system::error_code& error)
 	{
 		unsigned msg_len = PackedMessage::getLength(mReadbuf);
 		// WRITEME: Compare to maximum message length, abort if too large
-		if (msg_len>(32*1024*1024))
+		if ((msg_len > (32 * 1024 * 1024)) || (msg_len == 0))
 		{
 			detach("hrh");
 			return;
