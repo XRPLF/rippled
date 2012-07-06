@@ -24,10 +24,15 @@ typedef std::pair<std::string,int> ipPort;
 class Peer : public boost::enable_shared_from_this<Peer>
 {
 public:
+	typedef boost::shared_ptr<Peer> pointer;
+
 	static const int psbGotHello = 0, psbSentHello = 1, psbInMap = 2, psbTrusted = 3;
 	static const int psbNoLedgers = 4, psbNoTransactions = 5, psbDownLevel = 6;
 
 	void			handleConnect(const boost::system::error_code& error, boost::asio::ip::tcp::resolver::iterator it);
+	static void		sHandleConnect(Peer::pointer ptr, const boost::system::error_code& error,
+		boost::asio::ip::tcp::resolver::iterator it)
+	{ ptr->handleConnect(error, it); }
 
 private:
 	bool			mClientConnect;		// In process of connecting as client.
@@ -47,7 +52,12 @@ private:
 	boost::asio::deadline_timer									mVerifyTimer;
 
 	void			handleStart(const boost::system::error_code& ecResult);
+	static void		sHandleStart(Peer::pointer ptr, const boost::system::error_code& ecResult)
+	{ ptr->handleStart(ecResult); }
+
 	void			handleVerifyTimer(const boost::system::error_code& ecResult);
+	static void		sHandleVerifyTimer(Peer::pointer ptr, const boost::system::error_code& ecResult)
+	{ ptr->handleVerifyTimer(ecResult); }
 
 protected:
 
@@ -60,10 +70,21 @@ protected:
 	Peer(boost::asio::io_service& io_service, boost::asio::ssl::context& ctx);
 
 	void handleShutdown(const boost::system::error_code& error) { ; }
+	static void sHandleShutdown(Peer::pointer ptr, const boost::system::error_code& error)
+	{ ptr->handleShutdown(error); }
 
 	void handle_write(const boost::system::error_code& error, size_t bytes_transferred);
+	static void sHandle_write(Peer::pointer ptr, const boost::system::error_code& error, size_t bytes_transferred)
+	{ ptr->handle_write(error, bytes_transferred); }
+
 	void handle_read_header(const boost::system::error_code& error);
+	static void sHandle_read_header(Peer::pointer ptr, const boost::system::error_code& error)
+	{ ptr->handle_read_header(error); }
+
 	void handle_read_body(const boost::system::error_code& error);
+	static void sHandle_read_body(Peer::pointer ptr, const boost::system::error_code& error)
+	{ ptr->handle_read_body(error); }
+
 	void processReadBuffer();
 	void start_read_header();
 	void start_read_body(unsigned msg_len);
@@ -97,7 +118,6 @@ protected:
 	void getSessionCookie(std::string& strDst);
 
 public:
-	typedef boost::shared_ptr<Peer> pointer;
 
 	//bool operator == (const Peer& other);
 

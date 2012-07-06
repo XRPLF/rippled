@@ -206,10 +206,12 @@ class STAmount : public SerializedType
 	// Low 56 bits are value, legal range is 10^15 to (10^16 - 1) inclusive
 
 protected:
-	uint160 mCurrency;
-	uint64 mValue;
-	int mOffset;
-	bool mIsNative, mIsNegative;
+	uint160	mCurrency;
+
+	uint64	mValue;
+	int		mOffset;
+	bool	mIsNative;		// True for native stamps, ripple stamps are not native.
+	bool	mIsNegative;
 
 	void canonicalize();
 	STAmount* duplicate() const { return new STAmount(*this); }
@@ -277,7 +279,7 @@ public:
 	bool isGEZero() const		{ return !mIsNegative; }
 	operator bool() const		{ return !isZero(); }
 
-	void changeSign()			{ if (!isZero()) mIsNegative = !mIsNegative; }
+	void negate()				{ if (!isZero()) mIsNegative = !mIsNegative; }
 	void zero()					{ mOffset = mIsNative ? -100 : 0; mValue = 0; mIsNegative = false; }
 
 	const uint160& getCurrency() const { return mCurrency; }
@@ -504,6 +506,8 @@ public:
 	int getNodeType() const			{ return mType; }
 	bool isAccount() const			{ return mType == typeAccount; }
 	bool isOffer() const			{ return mType == typeOffer;   }
+
+	// Nodes are either an account ID or a offer prefix. Offer prefixs denote a class of offers.
 	const uint160& getNode() const	{ return mNode; }
 
 	void setType(int type)			{ mType = type; }

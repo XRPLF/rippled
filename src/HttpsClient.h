@@ -19,6 +19,8 @@
 class HttpsClient : public boost::enable_shared_from_this<HttpsClient>
 {
 private:
+	typedef boost::shared_ptr<HttpsClient> pointer;
+
     boost::asio::ssl::context									mCtx;
     boost::asio::ip::tcp::resolver								mResolver;
 	boost::shared_ptr<boost::asio::ip::tcp::resolver::query>	mQuery;
@@ -38,16 +40,28 @@ private:
 	boost::posix_time::time_duration							mTimeout;
 
 	void handleDeadline(const boost::system::error_code& ecResult);
+	static void ShandleDeadline(pointer This, const boost::system::error_code& ecResult)
+	{ This->handleDeadline(ecResult); }
 
-    void handleResolve(
-		const boost::system::error_code& ecResult,
-		boost::asio::ip::tcp::resolver::iterator endpoint_iterator
-		);
+    void handleResolve(const boost::system::error_code& ecResult, boost::asio::ip::tcp::resolver::iterator endpoint_iterator);
+    static void ShandleResolve(pointer This, const boost::system::error_code& ecResult, boost::asio::ip::tcp::resolver::iterator endpoint_iterator)
+    { This->handleResolve(ecResult, endpoint_iterator); }
 
     void handleConnect(const boost::system::error_code& ecResult);
+    static void ShandleConnect(pointer This, const boost::system::error_code& ecResult)
+	{ This->handleConnect(ecResult); }
+
 	void handleRequest(const boost::system::error_code& ecResult);
+	static void ShandleRequest(pointer This, const boost::system::error_code& ecResult)
+	{ This->handleRequest(ecResult); }
+
     void handleWrite(const boost::system::error_code& ecResult);
+    static void ShandleWrite(pointer This, const boost::system::error_code& ecResult)
+	{ This->handleWrite(ecResult); }
+
     void handleData(const boost::system::error_code& ecResult);
+    static void ShandleData(pointer This, const boost::system::error_code& ecResult)
+	{ This->handleData(ecResult); }
 
 	void parseData();
 	void httpsNext();

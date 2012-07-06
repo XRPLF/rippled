@@ -12,6 +12,7 @@
 #define SYSTEM_NAME					"newcoin"
 #define SYSTEM_CURRENCY_CODE		"XNS"
 #define SYSTEM_CURRENCY_PRECISION	6
+#define SYSTEM_CURRENCY_CODE_RIPPLE	"XNR"
 
 #define SYSTEM_CURRENCY_GIFT		1000ull
 #define SYSTEM_CURRENCY_USERS		100000000ull
@@ -54,8 +55,6 @@ public:
 	std::vector<std::string>	VALIDATORS;				// Validators from newcoind.cfg.
 	std::vector<std::string>	IPS;					// Peer IPs from newcoind.cfg.
 
-	
-
 	// Network parameters
 	int							NETWORK_START_TIME;		// The Unix time we start ledger 0.
 	int							TRANSACTION_FEE_BASE;
@@ -87,7 +86,6 @@ public:
 	std::string					RPC_USER;
 	std::string					RPC_PASSWORD;
 	bool						RPC_ALLOW_REMOTE;
-
 
 	// Validation
 	NewcoinAddress				VALIDATION_SEED;

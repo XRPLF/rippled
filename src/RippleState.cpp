@@ -15,9 +15,7 @@ RippleState::RippleState(SerializedLedgerEntry::pointer ledgerEntry) :
 
 	mBalance	= mLedgerEntry->getIValueFieldAmount(sfBalance);
 
-	// YYY Should never fail.
-	if (mLowID.isValid() && mHighID.isValid())
-		mValid = true;
+	mValid		= true;
 }
 
 void RippleState::setViewAccount(const NewcoinAddress& naView)
@@ -27,7 +25,7 @@ void RippleState::setViewAccount(const NewcoinAddress& naView)
 	if (bViewLowestNew != mViewLowest)
 	{
 		mViewLowest	= bViewLowestNew;
-		mBalance.changeSign();
+		mBalance.negate();
 	}
 }
 
