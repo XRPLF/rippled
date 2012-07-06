@@ -270,7 +270,7 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned 
 
 		if (prefix == sHP_TransactionID)
 		{
-			mItem = boost::make_shared<SHAMapItem>(s.getSHA512Half(), s.peekData());
+			mItem = boost::make_shared<SHAMapItem>(Serializer::getSHA512Half(rawNode), s.peekData());
 			mType = tnTRANSACTION_NM;
 		}
 		else if (prefix == sHP_LeafNode)
@@ -329,7 +329,7 @@ bool SHAMapTreeNode::updateHash()
 	}
 	else if (mType == tnACCOUNT_STATE)
 	{
-		Serializer s;
+		Serializer s((256 + 32) / 8 + mItem->peekData().size());
 		s.add32(sHP_LeafNode);
 		mItem->addRaw(s);
 		s.add256(mItem->getTag());
@@ -421,11 +421,12 @@ void SHAMapTreeNode::addRaw(Serializer& s, int format)
 		else
 		{
 			mItem->addRaw(s);
-			mItem->add256(mItem->getTag());
+			s.add256(mItem->getTag());
 			s.add8(4);
 		}
 	}
-	else assert(false);
+	else
+		assert(false);
 }
 
 bool SHAMapTreeNode::setItem(SHAMapItem::pointer& i, TNType type)
