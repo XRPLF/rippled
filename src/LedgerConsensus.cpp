@@ -466,7 +466,7 @@ bool LedgerConsensus::updateOurPositions(int sinceClose)
 			}
 			if (it->second->getOurPosition()) // now a yes
 			{
-				ourPosition->addItem(SHAMapItem(it->first, it->second->peekTransaction()), true);
+				ourPosition->addItem(SHAMapItem(it->first, it->second->peekTransaction()), true, false);
 				addedTx.push_back(it->first);
 			}
 			else // now a no

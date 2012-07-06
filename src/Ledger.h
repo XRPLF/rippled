@@ -65,6 +65,7 @@ private:
 	uint256		mHash, mParentHash, mTransHash, mAccountHash;
 	uint64		mTotCoins;
 	uint64		mCloseTime; // when this ledger should close / did close
+	uint64		mPrevClose; // when the previous ledger closed
 	uint32		mLedgerSeq;
 	bool		mClosed, mValidHash, mAccepted, mImmutable;
 
@@ -82,8 +83,7 @@ protected:
 
 	static Ledger::pointer getSQL(const std::string& sqlStatement);
 
-	SLE::pointer getASNode(LedgerStateParms& parms, const uint256& nodeID,
-	 LedgerEntryType let);
+	SLE::pointer getASNode(LedgerStateParms& parms, const uint256& nodeID, LedgerEntryType let);
 
 public:
 	Ledger(const NewcoinAddress& masterID, uint64 startAmount); // used for the starting bootstrap ledger
