@@ -217,7 +217,7 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned 
 			if (len < (256 / 8))
 				throw std::runtime_error("short AS node");
 			uint256 u;
-			s.get256(u, len - 32);
+			s.get256(u, len - (256 / 8));
 			s.chop(256 / 8);
 			if (u.isZero()) throw std::runtime_error("invalid AS node");
 			mItem = boost::make_shared<SHAMapItem>(u, s.peekData());
@@ -244,7 +244,14 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned 
 		}
 		else if (type == 4)
 		{ // transaction with metadata
-			mItem = boost::make_shared<SHAMapItem>(s.getPrefixHash(sHP_TransactionNode), s.peekData());
+			if (len < (256 / 8))
+				throw std::runtime_error("short TM node");
+			uint256 u;
+			s.get256(u, len - (256 / 8));
+			s.chop(256 / 8);
+			if (u.isZero())
+				throw std::runtime_error("invalid TM node");
+			mItem = boost::make_shared<SHAMapItem>(u, s.peekData());
 			mType = tnTRANSACTION_MD;
 		}
 	}
@@ -412,6 +419,7 @@ void SHAMapTreeNode::addRaw(Serializer& s, int format)
 		else
 		{
 			mItem->addRaw(s);
+			mItem->add256(mItem->getTag());
 			s.add8(4);
 		}
 	}
