@@ -186,14 +186,16 @@ bool Ledger::addTransaction(Transaction::pointer trans)
 	Serializer s;
 	trans->getSTransaction()->add(s);
 	SHAMapItem::pointer item = boost::make_shared<SHAMapItem>(trans->getID(), s.peekData());
-	if (!mTransactionMap->addGiveItem(item, true)) return false;
+	if (!mTransactionMap->addGiveItem(item, true, false)) // FIXME: TX metadata
+		return false;
 	return true;
 }
 
 bool Ledger::addTransaction(const uint256& txID, const Serializer& txn)
 { // low-level - just add to table
 	SHAMapItem::pointer item = boost::make_shared<SHAMapItem>(txID, txn.peekData());
-	if (!mTransactionMap->addGiveItem(item, true)) return false;
+	if (!mTransactionMap->addGiveItem(item, true, false)) // FIXME: TX metadata
+		return false;
 	return true;
 }
 

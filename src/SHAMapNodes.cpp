@@ -197,7 +197,7 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned 
 		Serializer s(rawNode);
 		int type = s.removeLastByte();
 		int len = s.getLength();
-		if ((type < 0) || (type > 3))
+		if ((type < 0) || (type > 4))
 		{
 #ifdef DEBUG
 			std::cerr << "Invalid wire format node" << std::endl;
@@ -210,7 +210,7 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned 
 		if (type == 0)
 		{ // transaction
 			mItem = boost::make_shared<SHAMapItem>(s.getPrefixHash(sHP_TransactionID), s.peekData());
-			mType = tnTRANSACTION;
+			mType = tnTRANSACTION_NM;
 		}
 		else if (type == 1)
 		{ // account state
@@ -242,6 +242,11 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned 
 			}
 			mType = tnINNER;
 		}
+		else if (type == 4)
+		{ // transaction with metadata
+			mItem = boost::make_shared<SHAMapItem>(s.getPrefixHash(sHP_TransactionNode), s.peekData());
+			mType = tnTRANSACTION_MD;
+		}
 	}
 
 	if (format == STN_ARF_PREFIXED)
@@ -259,7 +264,7 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned 
 		if (prefix == sHP_TransactionID)
 		{
 			mItem = boost::make_shared<SHAMapItem>(s.getSHA512Half(), s.peekData());
-			mType = tnTRANSACTION;
+			mType = tnTRANSACTION_NM;
 		}
 		else if (prefix == sHP_LeafNode)
 		{
@@ -271,7 +276,7 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned 
 				Log(lsINFO) << "invalid PLN node";
 				throw std::runtime_error("invalid PLN node");
 			}
-			mItem = boost::make_shared<SHAMapItem>(u, s.peekData());
+			mItem = boost::make_shared<SHAMapItem>(u, s.peekData()); 
 			mType = tnACCOUNT_STATE;
 		}
 		else if (prefix == sHP_InnerNode)
@@ -281,6 +286,11 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned 
 			for (int i = 0; i < 16; ++i)
 				s.get256(mHashes[i] , i * 32);
 			mType = tnINNER;
+		}
+		else if (prefix == sHP_TransactionNode)
+		{
+			mItem = boost::make_shared<SHAMapItem>(s.getPrefixHash(sHP_TransactionNode), s.peekData());
+			mType = tnTRANSACTION_MD;
 		}
 		else
 		{
@@ -316,9 +326,13 @@ bool SHAMapTreeNode::updateHash()
 		s.add256(mItem->getTag());
 		nh = s.getSHA512Half();
 	}
-	else if (mType == tnTRANSACTION)
+	else if (mType == tnTRANSACTION_NM)
 	{
 		nh = Serializer::getPrefixHash(sHP_TransactionID, mItem->peekData());
+	}
+	else if (mType == tnTRANSACTION_MD)
+	{
+		nh = Serializer::getPrefixHash(sHP_TransactionNode, mItem->peekData());
 	}
 	else assert(false);
 
@@ -375,7 +389,7 @@ void SHAMapTreeNode::addRaw(Serializer& s, int format)
 			s.add8(1);
 		}
 	}
-	else if (mType == tnTRANSACTION)
+	else if (mType == tnTRANSACTION_NM)
 	{
 		if (format == STN_ARF_PREFIXED)
 		{
@@ -386,6 +400,19 @@ void SHAMapTreeNode::addRaw(Serializer& s, int format)
 		{
 			mItem->addRaw(s);
 			s.add8(0);
+		}
+	}
+	else if (mType == tnTRANSACTION_MD)
+	{
+		if (format == STN_ARF_PREFIXED)
+		{
+			s.add32(sHP_TransactionNode);
+			mItem->addRaw(s);
+		}
+		else
+		{
+			mItem->addRaw(s);
+			s.add8(4);
 		}
 	}
 	else assert(false);
