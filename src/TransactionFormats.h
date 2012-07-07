@@ -13,10 +13,11 @@ enum TransactionType
 	ttPASSWORD_FUND		= 4,
 	ttPASSWORD_SET		= 5,
 	ttNICKNAME_SET		= 6,
+	ttOFFER				= 7,
+	ttOFFER_CANCEL		= 8,
 	ttCREDIT_SET		= 20,
 	ttTRANSIT_SET		= 21,
 	ttINVOICE			= 10,
-	ttOFFER				= 11,
 };
 
 struct TransactionFormat
@@ -38,6 +39,8 @@ const int TransactionMaxLen			= 1048576;
 // Transaction flags.
 const uint32 tfCreateAccount		= 0x00010000;
 const uint32 tfNoRippleDirect		= 0x00020000;
+
+const uint32 tfPassive				= 0x00010000;
 
 const uint32 tfUnsetEmailHash		= 0x00010000;
 const uint32 tfUnsetWalletLocator	= 0x00020000;

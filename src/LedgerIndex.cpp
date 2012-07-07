@@ -59,55 +59,47 @@ uint256 Ledger::getRippleDirIndex(const uint160& uAccountID)
 	return s.getSHA512Half();
 }
 
-uint160 Ledger::getOfferBase(const uint160& currencyIn, const uint160& accountIn,
-	const uint160& currencyOut, const uint160& accountOut)
+uint256 Ledger::getBookBase(const uint160& uCurrencyIn, const uint160& uAccountIn,
+	const uint160& uCurrencyOut, const uint160& uAccountOut)
 {
-	bool inNative = currencyIn.isZero();
-	bool outNative = currencyOut.isZero();
+	bool		bInNative	= uCurrencyIn.isZero();
+	bool		bOutNative	= uCurrencyOut.isZero();
 
-	if (inNative && outNative)
-		throw std::runtime_error("native to native offer");
+	assert(!bInNative || !bOutNative);									// Stamps to stamps not allowed.
+	assert(bInNative == !uAccountIn.isZero());							// Make sure issuer is specified as needed.
+	assert(bOutNative == !uAccountOut.isZero());						// Make sure issuer is specified as needed.
+	assert(uCurrencyIn != uCurrencyOut || uAccountIn != uAccountOut);	// Currencies or accounts must differ.
 
-	Serializer s(80);
+	Serializer	s(82);
 
-	if (inNative)
-	{
-		if (!currencyIn) throw std::runtime_error("native currencies are untied");
-		s.add32(0); // prevent collisions by ensuring different lengths
-	}
-	else
-	{
-		if (!!currencyIn) throw std::runtime_error("national currencies must be tied");
-		s.add160(currencyIn);
-		s.add160(accountIn);
-	}
+	s.add16(spaceBookDir);		//  2
+	s.add160(uCurrencyIn);		// 20
+	s.add160(uCurrencyOut);		// 20
+	s.add160(uAccountIn);		// 20
+	s.add160(uAccountOut);		// 20
 
-	if (outNative)
-	{
-		if (!currencyOut) throw std::runtime_error("native currencies are untied");
-	}
-	else
-	{
-		if (!!currencyOut) throw std::runtime_error("national currencies must be tied");
-		s.add160(currencyOut);
-		s.add160(accountOut);
-	}
-
-	return s.getRIPEMD160();
+	return getDirIndex(s.getSHA512Half());	// Return with index 0.
 }
 
-uint256 Ledger::getOfferIndex(const uint160& offerBase, uint64 rate, int skip)
-{ // the node for an offer index
-	Serializer s;
-	s.add160(offerBase);
-	s.add64(rate);
-	s.add32(skip);
-	return s.get256(0);
+uint256 Ledger::getOfferIndex(const uint160& uAccountID, uint32 uSequence)
+{
+	Serializer	s;
+
+	s.add16(spaceOffer);
+	s.add160(uAccountID);
+	s.add32(uSequence);
+
+	return s.getSHA512Half();
 }
 
-int Ledger::getOfferSkip(const uint256& offerId)
-{ // how far ahead we skip if an index node is full
-	return *offerId.begin();
+uint256 Ledger::getOfferDirIndex(const uint160& uAccountID)
+{
+	Serializer	s;
+
+	s.add16(spaceOfferDir);
+	s.add160(uAccountID);
+
+	return s.getSHA512Half();
 }
 
 // vim:ts=4

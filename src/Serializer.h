@@ -107,7 +107,6 @@ public:
 	void reserve(size_t n)									{ mData.reserve(n); }
 	void resize(size_t n)									{ mData.resize(n); }
 	size_t capacity() const									{ return mData.capacity(); }
-	
 
 	bool operator==(const std::vector<unsigned char>& v) { return v == mData; }
 	bool operator!=(const std::vector<unsigned char>& v) { return v != mData; }

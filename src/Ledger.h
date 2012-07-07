@@ -185,15 +185,25 @@ public:
 	static uint256 getNicknameIndex(const uint256& uNickname);
 
 	//
+	// Order book functions
+	//
+
+	// Order book dirs have a base so we can use next to step through them in quality order.
+	static uint256 getBookBase(const uint160& uCurrencyIn, const uint160& uAccountIn,
+		const uint160& uCurrencyOut, const uint160& uAccountOut);
+
+	//
 	// Offer functions
 	//
 
-	static uint160 getOfferBase(const uint160& currencyIn, const uint160& accountIn,
-		const uint160& currencyOut, const uint160& accountOut);
+	SLE::pointer getOffer(LedgerStateParms& parms, const uint256& uIndex);
+	SLE::pointer getOffer(LedgerStateParms& parms, const uint160& uAccountID, uint32 uSequence)
+	{ return getOffer(parms, getOfferIndex(uAccountID, uSequence)); }
 
-	static uint256 getOfferIndex(const uint160& offerBase, uint64 rate, int skip = 0);
 
-	static int getOfferSkip(const uint256& offerId);
+	static uint256 getOfferIndex(const uint160& uAccountID, uint32 uSequence);
+
+	static uint256 getOfferDirIndex(const uint160& uAccountID);
 
 	//
 	// Directory functions
@@ -205,7 +215,7 @@ public:
 	SLE::pointer getDirNode(LedgerStateParms& parms, const uint256& uNodeIndex);
 
 	//
-	// Ripple functions
+	// Ripple functions : credit lines
 	//
 
 	static uint256 getRippleStateIndex(const NewcoinAddress& naA, const NewcoinAddress& naB, const uint160& uCurrency);

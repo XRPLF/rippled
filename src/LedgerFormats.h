@@ -6,38 +6,42 @@
 // Used as the type of a transaction or the type of a ledger entry.
 enum LedgerEntryType
 {
-	ltINVALID		= -1,
-	ltACCOUNT_ROOT,
-	ltDIR_ROOT,
-	ltDIR_NODE,
-	ltGENERATOR_MAP,
-	ltRIPPLE_STATE,
-	ltNICKNAME
+	ltINVALID			= -1,
+	ltACCOUNT_ROOT		= 'a',
+	ltDIR_ROOT			= 'D',
+	ltDIR_NODE			= 'd',
+	ltGENERATOR_MAP		= 'g',
+	ltRIPPLE_STATE		= 'r',
+	ltNICKNAME			= 'n',
+	ltOFFER				= 'o',
 };
 
 // Used as a prefix for computing ledger indexes (keys).
 enum LedgerNameSpace
 {
-	spaceAccount	= 0,
-	spaceGenerator	= 1,
-	spaceNickname 	= 2,
-	spaceRipple		= 3,
-	spaceRippleDir	= 4,
-	spaceOffer		= 5,
-	spaceOfferDir	= 6,
-	spaceBond		= 7,
-	spaceInvoice	= 8,
-	spaceMultiSig	= 9,
+	spaceAccount		= 'a',
+	spaceGenerator		= 'g',
+	spaceNickname		= 'n',
+	spaceRipple			= 'r',
+	spaceRippleDir		= 'R',
+	spaceOffer			= 'o',	// Entry for an offer.
+	spaceOfferDir		= 'O',	// Directory of an account's offers.
+	spaceBookDir		= 'B',	// Directory of order books.
+	spaceBond			= 'b',
+	spaceInvoice		= 'i',
 };
 
 enum LedgerSpecificFlags
 {
+	// ltACCOUNT_ROOT
+	lsfPasswordSpent	= 0x00010000,	// True if password set fee is spent.
+
+	// ltOFFER
+	lsfPassive			= 0x00010000,
+
 	// ltRIPPLE_STATE
 	lsfLowIndexed		= 0x00010000,
 	lsfHighIndexed		= 0x00020000,
-
-	// ltACCOUNT_ROOT
-	lsfPasswordSpent	= 0x00010000,	// True if password set fee is spent.
 };
 
 struct LedgerEntryFormat

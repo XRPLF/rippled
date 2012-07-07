@@ -28,7 +28,10 @@ bool transResultInfo(TransactionEngineResult terCode, std::string& strToken, std
 		{	tenBAD_AMOUNT,			"tenBAD_AMOUNT",			"Can only send positive amounts."					},
 		{	tenBAD_AUTH_MASTER,		"tenBAD_AUTH_MASTER",		"Auth for unclaimed account needs correct master key."	},
 		{	tenBAD_CLAIM_ID,		"tenBAD_CLAIM_ID",			"Malformed."										},
+		{	tenBAD_EXPIRATION,		"tenBAD_EXPIRATION",		"Malformed."										},
 		{	tenBAD_GEN_AUTH,		"tenBAD_GEN_AUTH",			"Not authorized to claim generator."				},
+		{	tenBAD_OFFER,			"tenBAD_OFFER",				"Malformed."										},
+		{	tenBAD_ISSUER,			"tenBAD_ISSUER",			"Malformed."										},
 		{	tenBAD_RIPPLE,			"tenBAD_RIPPLE",			"Ledger prevents ripple from succeeding."			},
 		{	tenBAD_SET_ID,			"tenBAD_SET_ID",			"Malformed."										},
 		{	tenCLAIMED,				"tenCLAIMED",				"Can not claim a previously claimed account."		},
@@ -36,6 +39,7 @@ bool transResultInfo(TransactionEngineResult terCode, std::string& strToken, std
 		{	tenCREATEXNS,			"tenCREATEXNS",				"Can not specify non XNS for Create."				},
 		{	tenDST_IS_SRC,			"tenDST_IS_SRC",			"Destination may not be source."					},
 		{	tenDST_NEEDED,			"tenDST_NEEDED",			"Destination not specified."						},
+		{	tenEXPIRED,				"tenEXPIRED",				"Won't add an expired offer."						},
 		{	tenEXPLICITXNS,			"tenEXPLICITXNS",			"XNS is used by default, don't specify it."			},
 		{	tenFAILED,				"tenFAILED",				"Something broke horribly"							},
 		{	tenGEN_IN_USE,			"tenGEN_IN_USE",			"Generator already in use."							},
@@ -61,6 +65,7 @@ bool transResultInfo(TransactionEngineResult terCode, std::string& strToken, std
 		{	terNO_DST,				"terNO_DST",				"The destination does not exist"					},
 		{	terNO_LINE_NO_ZERO,		"terNO_LINE_NO_ZERO",		"Can't zero non-existant line, destination might make it."	},
 		{	terNO_PATH,				"terNO_PATH",				"No path existed or met transaction/balance requirements"	},
+		{	terOFFER_NOT_FOUND,		"terOFFER_NOT_FOUND",		"Can not cancel offer."						},
 		{	terOVER_LIMIT,			"terOVER_LIMIT",			"Over limit."										},
 		{	terPAST_LEDGER,			"terPAST_LEDGER",			"The transaction expired and can't be applied"		},
 		{	terPAST_SEQ,			"terPAST_SEQ",				"This sequence number has already past"				},
@@ -470,6 +475,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 			case ttCREDIT_SET:
 			case ttINVOICE:
 			case ttOFFER:
+			case ttOFFER_CANCEL:
 			case ttPASSWORD_FUND:
 			case ttTRANSIT_SET:
 			case ttWALLET_ADD:
@@ -730,7 +736,11 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 				break;
 
 			case ttOFFER:
-				result = doOffer(txn, accounts);
+				result = doOffer(txn, accounts, srcAccountID);
+				break;
+
+			case ttOFFER_CANCEL:
+				result = doOfferCancel(txn, accounts, srcAccountID);
 				break;
 
 			case ttNICKNAME_SET:
@@ -1116,6 +1126,146 @@ TransactionEngineResult TransactionEngine::doPasswordSet(const SerializedTransac
 
 	return result;
 }
+
+#ifdef WORK_IN_PROGRESS
+TransactionEngineResult calcOfferFill(SAAmount& saSrc, paymentNode& pnSrc, paymentNode& pnDst)
+{
+	TransactionEngineResult	terResult;
+
+	if (!saSrc.isZero())
+	{
+
+	}
+
+	return bSuccess;
+}
+
+// Find offers to satisfy pnDst.
+// --> pnDst.saWanted: currency and amount wanted
+// --> pnSrc.saIOURedeem.mCurrency: use this before saIOUIssue, limit to use.
+// --> pnSrc.saIOUIssue.mCurrency: use this after saIOURedeem, limit to use.
+// <-- pnDst.saReceive
+// <-- pnDst.saIOUForgive
+// <-- pnDst.saIOUAccept
+// <-- terResult : terSUCCESS = no error and if !bAllowPartial complelely satisfied wanted.
+// <-> usOffersDeleteAlways:
+// <-> usOffersDeleteOnSuccess:
+TransactionEngineResult calcOfferFill(paymentNode& pnSrc, paymentNode& pnDst, bool bAllowPartial)
+{
+	TransactionEngineResult	terResult;
+
+	terResult	= calcOfferFill(pnSrc.saIOURedeem, pnSrc, pnDst, bAllowPartial);
+
+	if (terSUCCESS == terResult)
+	{
+		terResult	= calcOfferFill(pnSrc.saIOUIssue, pnSrc, pnDst, bAllowPartial)
+	}
+
+	if (terSUCCESS == terResult && !bAllowPartial)
+	{
+		STAmount	saTotal	= pnSrc.saIOURedeem;
+		saTotal	+= pnSrc.saIOUIssue;
+
+		if (saTotal != saWanted)
+			terResult	= terINSUF_PATH;
+	}
+
+	return terResult;
+}
+
+// From the destination work towards the source calculating how much must be asked for.
+// --> bAllowPartial: If false, can fail if can't meet requirements.
+// <-- bSuccess: true=success, false=insufficient funds.
+// <-> pnNodes:
+//     --> [end]saWanted.mAmount
+//     --> [all]saWanted.mCurrency
+//     --> [all]saAccount
+//     <-> [0]saWanted.mAmount : --> limit, <-- actual
+bool calcPaymentReverse(std::vector<paymentNode>& pnNodes, bool bAllowPartial)
+{
+	bool	bDone		= false;
+	bool	bSuccess	= false;
+
+	// path: dst .. src
+
+	while (!bDone)
+	{
+		if (cur->saWanted.isZero())
+		{
+			// Must want something.
+			terResult	= terINVALID;
+			bDone		= true;
+		}
+		else if (cur->saWanted.isNative())
+		{
+			if (prv->how == direct)
+			{
+				// Stamp transfer desired.
+				if (prv->prev())
+				{
+					// More entries before stamp transfer.
+					terResult	= terINVALID;
+					bDone		= true;
+				}
+				else if (prv->account->saBalance() >= cur->saWanted)
+				{
+					// Transfer stamps.
+					prv->saSend = cur->saWanted;
+					bDone		= true;
+					bSuccess	= true;
+				}
+				else
+				{
+					// Insufficient funds for transfer
+					bDone		= true;
+				}
+			}
+			else
+			{
+				// Must convert to stamps via offer.
+				if (calcOfferFill(prv, cur, bAllowPartial))
+				{
+
+				}
+				else
+				{
+					bDone	= false;
+				}
+			}
+		}
+		else
+		{
+			// Rippling.
+
+		}
+	}
+}
+
+// From the source work toward the destination calculate how much is transfered at each step and finally.
+// <-> pnNodes:
+//     --> [0]saWanted.mAmount
+//     --> [all]saWanted.saSend
+//     --> [all]saWanted.IOURedeem
+//     --> [all]saWanted.IOUIssue
+//     --> [all]saAccount
+bool calcPaymentForward(std::vector<paymentNode>& pnNodes)
+{
+	cur = src;
+
+	if (!cur->saSend.isZero())
+	{
+		// Sending stamps - always final step.
+		assert(!cur->next);
+		nxt->saReceive	= cur->saSend;
+		bDone			= true;
+	}
+	else
+	{
+		// Rippling.
+
+	}
+}
+#endif
 
 // XXX Need to audit for things like setting accountID not having memory.
 TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction& txn,
@@ -1524,10 +1674,152 @@ TransactionEngineResult TransactionEngine::doInvoice(const SerializedTransaction
 	return tenUNKNOWN;
 }
 
-TransactionEngineResult TransactionEngine::doOffer(const SerializedTransaction& txn,
-	std::vector<AffectedAccount>& accounts)
+// XXX Needs to take offers.
+// XXX Use bPassive when taking.
+// XXX Also use quality when rippling a take.
+TransactionEngineResult TransactionEngine::doOffer(
+	const SerializedTransaction& txn,
+	std::vector<AffectedAccount>& accounts,
+	const uint160& uSrcAccountID)
 {
-	return tenUNKNOWN;
+	uint32					txFlags			= txn.getFlags();
+	bool					bPassive		= !!(txFlags & tfPassive);
+	STAmount				saAmountIn		= txn.getITFieldAmount(sfAmountIn);
+	STAmount				saAmountOut		= txn.getITFieldAmount(sfAmountOut);
+	uint160					uIssuerIn		= txn.getITFieldAccount(sfIssuerIn);
+	uint160					uIssuerOut		= txn.getITFieldAccount(sfIssuerOut);
+	uint32					uExpiration		= txn.getITFieldU32(sfExpiration);
+	bool					bHaveExpiration	= txn.getITFieldPresent(sfExpiration);
+	uint32					uSequence		= txn.getSequence();
+
+	// LedgerStateParms		qry				= lepNONE;
+	SLE::pointer			sleOffer		= boost::make_shared<SerializedLedgerEntry>(ltOFFER);
+
+	uint256					uLedgerIndex	= Ledger::getOfferIndex(uSrcAccountID, uSequence);
+	Log(lsINFO) << "doOffer: Creating offer node: " << uLedgerIndex.ToString();
+
+	uint160					uCurrencyIn		= saAmountIn.getCurrency();
+	uint160					uCurrencyOut	= saAmountOut.getCurrency();
+
+	TransactionEngineResult	terResult;
+	uint64					uOwnerNode;		// Delete hint.
+	uint64					uOfferNode;		// Delete hint.
+	// uint64					uBookNode;		// Delete hint.
+
+	uint32					uPrevLedgerTime	= 0;	// XXX Need previous
+
+	if (!bHaveExpiration || !uExpiration)
+	{
+		Log(lsWARNING) << "doOffer: Malformed offer: bad expiration";
+
+		terResult	= tenBAD_EXPIRATION;
+	}
+	else if (!bHaveExpiration || uPrevLedgerTime >= uExpiration)
+	{
+		Log(lsWARNING) << "doOffer: Expired transaction: offer expired";
+
+		terResult	= tenEXPIRED;
+	}
+	else if (saAmountIn.isNative() && saAmountOut.isNative())
+	{
+		Log(lsWARNING) << "doOffer: Malformed offer: stamps for stamps";
+
+		terResult	= tenBAD_OFFER;
+	}
+	else if (saAmountIn.isZero() || saAmountOut.isZero())
+	{
+		Log(lsWARNING) << "doOffer: Malformed offer: bad amount";
+
+		terResult	= tenBAD_OFFER;
+	}
+	else if (uCurrencyIn == uCurrencyOut && uIssuerIn == uIssuerOut)
+	{
+		Log(lsWARNING) << "doOffer: Malformed offer: no conversion";
+
+		terResult	= tenREDUNDANT;
+	}
+	else if (uCurrencyIn.isZero() == uIssuerIn.isZero() && uCurrencyOut.isZero() == uIssuerOut.isZero())
+	{
+		Log(lsWARNING) << "doOffer: Malformed offer: bad issuer";
+
+		terResult	= tenBAD_ISSUER;
+	}
+
+	// XXX check currencies and accounts
+	// XXX check funded
+	// XXX check output credit line exists
+	// XXX when deleting a credit line, delete outstanding offers
+
+	// XXX Only place the offer if a portion is not filled.
+
+	if (terSUCCESS == terResult)
+		terResult	= dirAdd(accounts, uOwnerNode, Ledger::getOfferDirIndex(uSrcAccountID), uLedgerIndex);
+
+	if (terSUCCESS == terResult)
+	{
+		terResult	= dirAdd(accounts, uOfferNode,
+			Ledger::getDirIndex(
+				Ledger::getBookBase(uCurrencyIn, uIssuerIn, uCurrencyOut, uIssuerOut),
+				STAmount::getRate(saAmountOut, saAmountIn)),
+			uLedgerIndex);
+	}
+
+	if (terSUCCESS == terResult)
+	{
+		sleOffer->setIndex(uLedgerIndex);
+
+		sleOffer->setIFieldAccount(sfAccount, uSrcAccountID);
+		sleOffer->setIFieldU32(sfSequence, uSequence);
+		sleOffer->setIFieldAmount(sfAmountIn, saAmountIn);
+		sleOffer->setIFieldAmount(sfAmountOut, saAmountOut);
+		sleOffer->setIFieldU64(sfOwnerNode, uOwnerNode);
+		sleOffer->setIFieldU64(sfOfferNode, uOfferNode);
+		sleOffer->setIFieldU32(sfExpiration, uExpiration);
+
+		if (bPassive)
+			sleOffer->setFlag(lsfPassive);
+
+		accounts.push_back(std::make_pair(taaCREATE, sleOffer));
+	}
+
+	return terResult;
+}
+
+TransactionEngineResult TransactionEngine::doOfferCancel(
+	const SerializedTransaction& txn,
+	std::vector<AffectedAccount>& accounts,
+	const uint160& uSrcAccountID)
+{
+	uint32					uSequence		= txn.getITFieldU32(sfSequence);
+	uint256					uLedgerIndex	= Ledger::getOfferIndex(uSrcAccountID, uSequence);
+
+	LedgerStateParms		qry				= lepNONE;
+	SLE::pointer			sleOffer		= mLedger->getOffer(qry, uLedgerIndex);
+	TransactionEngineResult	terResult;
+
+	if (sleOffer)
+	{
+
+		terResult	= tenUNKNOWN;
+#if 0
+		uint64	uOwnerNode		= sleOffer->getIFieldU64(sfOwnerNode);
+		uint64	uOwnerNode		= sleOffer->getIFieldU64(sfOfferNode);
+
+		terResult	= dirDelete(accounts, uOwnerNode, ___, uLedgerIndex);
+
+		if (terSUCCESS == terResult)
+		{
+			terResult	= dirDelete(accounts, uOfferNode, ___, uLedgerIndex);
+		}
+#endif
+		accounts.push_back(std::make_pair(taaDELETE, sleOffer));
+	}
+	else
+	{
+		terResult	= terOFFER_NOT_FOUND;
+	}
+
+	return terResult;
 }
 
 TransactionEngineResult TransactionEngine::doTake(const SerializedTransaction& txn,

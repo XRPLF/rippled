@@ -59,8 +59,14 @@ TransactionFormat InnerTxnFormats[]=
 		{ S_FIELD(AmountOut),		STI_AMOUNT,  SOE_REQUIRED, 0 },
 		{ S_FIELD(SourceTag),		STI_UINT32,  SOE_IFFLAG,   1 },
 		{ S_FIELD(Destination),		STI_ACCOUNT, SOE_IFFLAG,   2 },
-		{ S_FIELD(ExpireLedger),	STI_UINT32,  SOE_IFFLAG,   4 },
-		{ S_FIELD(Identifier),		STI_VL,		 SOE_IFFLAG,   8 },
+		{ S_FIELD(Expiration),		STI_UINT32,  SOE_IFFLAG,   4 },
+		{ S_FIELD(Extensions),		STI_TL,		 SOE_IFFLAG,   0x02000000 },
+		{ sfInvalid, NULL,			STI_DONE,	 SOE_NEVER,    -1 } }
+	},
+	{ "OfferCancel", ttOFFER, {
+		{ S_FIELD(Flags),			STI_UINT32,  SOE_FLAGS,    0 },
+		{ S_FIELD(OfferSequence),	STI_UINT32,  SOE_REQUIRED, 0 },
+		{ S_FIELD(SourceTag),		STI_UINT32,  SOE_IFFLAG,   1 },
 		{ S_FIELD(Extensions),		STI_TL,		 SOE_IFFLAG,   0x02000000 },
 		{ sfInvalid, NULL,			STI_DONE,	 SOE_NEVER,    -1 } }
 	},

@@ -6,6 +6,8 @@
 #include "utils.h"
 #include "Log.h"
 
+// XXX Use shared locks where possible?
+
 LedgerStateParms Ledger::writeBack(LedgerStateParms parms, SLE::pointer entry)
 {
 	ScopedLock l(mAccountStateMap->Lock());
@@ -110,6 +112,18 @@ SLE::pointer Ledger::getNickname(LedgerStateParms& parms, const uint256& uNickna
 	ScopedLock l(mAccountStateMap->Lock());
 
 	return getASNode(parms, uNickname, ltNICKNAME);
+}
+
+//
+// Offer
+//
+
+
+SLE::pointer Ledger::getOffer(LedgerStateParms& parms, const uint256& uIndex)
+{
+	ScopedLock l(mAccountStateMap->Lock());
+
+	return getASNode(parms, uIndex, ltOFFER);
 }
 
 //
