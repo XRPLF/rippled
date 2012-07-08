@@ -209,10 +209,15 @@ public:
 	// Directory functions
 	//
 
-	static uint256 getDirIndex(const uint256& uBase, const uint64 uNodeDir=0);
+	static uint256 getDirNodeIndex(const uint256& uDirRoot, const uint64 uNodeIndex=0);
 
-	SLE::pointer getDirRoot(LedgerStateParms& parms, const uint256& uRootIndex);
 	SLE::pointer getDirNode(LedgerStateParms& parms, const uint256& uNodeIndex);
+
+	//
+	// Quality
+	//
+
+	static uint256 getQualityIndex(const uint256& uBase, const uint64 uNodeDir=0);
 
 	//
 	// Ripple functions : credit lines

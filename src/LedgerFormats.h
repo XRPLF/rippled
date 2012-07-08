@@ -8,7 +8,6 @@ enum LedgerEntryType
 {
 	ltINVALID			= -1,
 	ltACCOUNT_ROOT		= 'a',
-	ltDIR_ROOT			= 'D',
 	ltDIR_NODE			= 'd',
 	ltGENERATOR_MAP		= 'g',
 	ltRIPPLE_STATE		= 'r',
@@ -20,6 +19,7 @@ enum LedgerEntryType
 enum LedgerNameSpace
 {
 	spaceAccount		= 'a',
+	spaceDirNode		= 'd',
 	spaceGenerator		= 'g',
 	spaceNickname		= 'n',
 	spaceRipple			= 'r',

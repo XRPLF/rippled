@@ -98,7 +98,7 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 		return trans;
 	}
 
-	Log(lsDEBUG) << "Status other than success " << r ;
+	Log(lsDEBUG) << "Status other than success " << r;
 	if ((mMode != omFULL) && (mMode != omTRACKING) && (theApp->isNew(trans->getID())))
 	{
 		newcoin::TMTransaction tx;
@@ -171,53 +171,32 @@ SLE::pointer NetworkOPs::getGenerator(const uint256& uLedger, const uint160& uGe
 //
 
 // <-- false : no entrieS
-bool NetworkOPs::getDirInfo(
-	const uint256&			uLedger,
-	const uint256&			uBase,
-	uint256&				uDirLineNodeFirst,
-	uint256&				uDirLineNodeLast)
+STVector256 NetworkOPs::getDirNodeInfo(
+	const uint256&		uLedger,
+	const uint256&		uNodeIndex,
+	uint64&				uNodePrevious,
+	uint64&				uNodeNext)
 {
-	uint256				uRootIndex	= Ledger::getDirIndex(uBase, 0);
-	LedgerStateParms	lspRoot		= lepNONE;
-	SLE::pointer		sleRoot		= mLedgerMaster->getLedgerByHash(uLedger)->getDirRoot(lspRoot, uRootIndex);
-
-	if (sleRoot)
-	{
-		Log(lsDEBUG) << "getDirInfo: root index: " << uRootIndex.ToString() ;
-
-		Log(lsTRACE) << "getDirInfo: first: " << strHex(sleRoot->getIFieldU64(sfFirstNode)) ;
-		Log(lsTRACE) << "getDirInfo:  last: " << strHex(sleRoot->getIFieldU64(sfLastNode)) ;
-
-		uDirLineNodeFirst	= Ledger::getDirIndex(uBase, sleRoot->getIFieldU64(sfFirstNode));
-		uDirLineNodeLast	= Ledger::getDirIndex(uBase, sleRoot->getIFieldU64(sfLastNode));
-
-		Log(lsTRACE) << "getDirInfo: first: " << uDirLineNodeFirst.ToString() ;
-		Log(lsTRACE) << "getDirInfo:  last: " << uDirLineNodeLast.ToString() ;
-	}
-	else
-	{
-		Log(lsINFO) << "getDirInfo: root index: NOT FOUND: " << uRootIndex.ToString() ;
-	}
-
-	return !!sleRoot;
-}
-
-STVector256 NetworkOPs::getDirNode(const uint256& uLedger, const uint256& uDirLineNode)
-{
-	STVector256	svIndexes;
-
+	STVector256			svIndexes;
 	LedgerStateParms	lspNode		= lepNONE;
-	SLE::pointer		sleNode		= mLedgerMaster->getLedgerByHash(uLedger)->getDirNode(lspNode, uDirLineNode);
+	SLE::pointer		sleNode		= mLedgerMaster->getLedgerByHash(uLedger)->getDirNode(lspNode, uNodeIndex);
 
 	if (sleNode)
 	{
-		Log(lsWARNING) << "getDirNode: node index: " << uDirLineNode.ToString() ;
+		Log(lsDEBUG) << "getDirNodeInfo: node index: " << uNodeIndex.ToString();
 
-		svIndexes	= sleNode->getIFieldV256(sfIndexes);
+		Log(lsTRACE) << "getDirNodeInfo: first: " << strHex(sleNode->getIFieldU64(sfIndexPrevious));
+		Log(lsTRACE) << "getDirNodeInfo:  last: " << strHex(sleNode->getIFieldU64(sfIndexNext));
+
+		uNodePrevious	= sleNode->getIFieldU64(sfIndexPrevious);
+		uNodeNext		= sleNode->getIFieldU64(sfIndexNext);
+
+		Log(lsTRACE) << "getDirNodeInfo: first: " << strHex(uNodePrevious);
+		Log(lsTRACE) << "getDirNodeInfo:  last: " << strHex(uNodeNext);
 	}
 	else
 	{
-		Log(lsINFO) << "getDirNode: node index: NOT FOUND: " << uDirLineNode.ToString() ;
+		Log(lsINFO) << "getDirNodeInfo: node index: NOT FOUND: " << uNodeIndex.ToString();
 	}
 
 	return svIndexes;
@@ -473,7 +452,7 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 void NetworkOPs::switchLastClosedLedger(Ledger::pointer newLedger)
 { // set the newledger as our last closed ledger -- this is abnormal code
 
-	Log(lsERROR) << "ABNORMAL Switching last closed ledger to " << newLedger->getHash().GetHex() ;
+	Log(lsERROR) << "ABNORMAL Switching last closed ledger to " << newLedger->getHash().GetHex();
 
 	if (mConsensus)
 	{
@@ -499,7 +478,7 @@ void NetworkOPs::switchLastClosedLedger(Ledger::pointer newLedger)
 
 int NetworkOPs::beginConsensus(const uint256& networkClosed, Ledger::pointer closingLedger)
 {
-	Log(lsINFO) << "Ledger close time for ledger " << closingLedger->getLedgerSeq() ;
+	Log(lsINFO) << "Ledger close time for ledger " << closingLedger->getLedgerSeq();
 	Log(lsINFO) << " LCL is " << closingLedger->getParentHash().GetHex();
 
 	Ledger::pointer prevLedger = mLedgerMaster->getLedgerByHash(closingLedger->getParentHash());

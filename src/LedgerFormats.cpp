@@ -20,16 +20,11 @@ LedgerEntryFormat LedgerFormats[]=
 		{ S_FIELD(Extensions),			STI_TL,			SOE_IFFLAG,   0x01000000 },
 		{ sfInvalid, NULL,				STI_DONE,		SOE_NEVER,	  -1 } }
 	},
-	{ "DirectoryRoot", ltDIR_ROOT, {
-		{ S_FIELD(Flags),				STI_UINT32,		SOE_FLAGS,	  0 },
-		{ S_FIELD(FirstNode),			STI_UINT64,		SOE_REQUIRED, 0 },
-		{ S_FIELD(LastNode),			STI_UINT64,		SOE_REQUIRED, 0 },
-		{ S_FIELD(Extensions),			STI_TL,			SOE_IFFLAG,   0x01000000 },
-		{ sfInvalid, NULL,				STI_DONE,		SOE_NEVER,	  -1 } }
-	},
 	{ "DirectoryNode", ltDIR_NODE, {
 		{ S_FIELD(Flags),				STI_UINT32,		SOE_FLAGS,	  0 },
 		{ S_FIELD(Indexes),				STI_VECTOR256,	SOE_REQUIRED, 0 },
+		{ S_FIELD(IndexNext),			STI_UINT64,		SOE_IFFLAG,   1 },
+		{ S_FIELD(IndexPrevious),		STI_UINT64,		SOE_IFFLAG,   2 },
 		{ S_FIELD(Extensions),			STI_TL,			SOE_IFFLAG,   0x01000000 },
 		{ sfInvalid, NULL,				STI_DONE,		SOE_NEVER,	  -1 } }
 	},

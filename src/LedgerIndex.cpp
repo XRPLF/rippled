@@ -1,60 +1,26 @@
 
 #include "Ledger.h"
 
+// For an entry put in the 64 bit index or quality.
+uint256 Ledger::getQualityIndex(const uint256& uBase, const uint64 uNodeDir)
+{
+	// Indexes are stored in big endian format: they print as hex as stored.
+	// Most significant bytes are first.  Least significant bytes repesent adjcent entries.
+	// We place uNodeDir in the 8 right most bytes to be adjcent.
+	// Want uNodeDir in big endian format so ++ goes to the next entry for indexes.
+	uint256	uNode(uBase);
+
+	((uint64*) uNode.end())[-1]	= htobe64(uNodeDir);
+
+	return uNode;
+}
+
 uint256 Ledger::getAccountRootIndex(const uint160& uAccountID)
 {
-	Serializer	s;
+	Serializer	s(22);
 
-	s.add16(spaceAccount);
-	s.add160(uAccountID);
-
-	return s.getSHA512Half();
-}
-
-// What is important:
-// --> uNickname: is a Sha256
-// <-- SHA512/2: for consistency and speed in generating indexes.
-uint256 Ledger::getNicknameIndex(const uint256& uNickname)
-{
-	Serializer	s;
-
-	s.add16(spaceNickname);
-	s.add256(uNickname);
-
-	return s.getSHA512Half();
-}
-
-uint256 Ledger::getGeneratorIndex(const uint160& uGeneratorID)
-{
-	Serializer	s;
-
-	s.add16(spaceGenerator);
-	s.add160(uGeneratorID);
-
-	return s.getSHA512Half();
-}
-
-uint256 Ledger::getRippleStateIndex(const NewcoinAddress& naA, const NewcoinAddress& naB, const uint160& uCurrency)
-{
-	uint160		uAID	= naA.getAccountID();
-	uint160		uBID	= naB.getAccountID();
-	bool		bAltB	= uAID < uBID;
-	Serializer	s;
-
-	s.add16(spaceRipple);
-	s.add160(bAltB ? uAID : uBID);
-	s.add160(bAltB ? uBID : uAID);
-	s.add160(uCurrency);
-
-	return s.getSHA512Half();
-}
-
-uint256 Ledger::getRippleDirIndex(const uint160& uAccountID)
-{
-	Serializer	s;
-
-	s.add16(spaceRippleDir);
-	s.add160(uAccountID);
+	s.add16(spaceAccount);	//  2
+	s.add160(uAccountID);	// 20
 
 	return s.getSHA512Half();
 }
@@ -78,26 +44,92 @@ uint256 Ledger::getBookBase(const uint160& uCurrencyIn, const uint160& uAccountI
 	s.add160(uAccountIn);		// 20
 	s.add160(uAccountOut);		// 20
 
-	return getDirIndex(s.getSHA512Half());	// Return with index 0.
+	return getQualityIndex(s.getSHA512Half());	// Return with quality 0.
+}
+
+uint256 Ledger::getDirNodeIndex(const uint256& uDirRoot, const uint64 uNodeIndex)
+{
+	if (uNodeIndex)
+	{
+		Serializer	s(42);
+
+		s.add16(spaceDirNode);		//  2
+		s.add256(uDirRoot);			// 32
+		s.add64(uNodeIndex);		//  8
+
+		return s.getSHA512Half();
+	}
+	else
+	{
+		return uDirRoot;
+	}
+}
+
+uint256 Ledger::getGeneratorIndex(const uint160& uGeneratorID)
+{
+	Serializer	s(22);
+
+	s.add16(spaceGenerator);	//  2
+	s.add160(uGeneratorID);		// 20
+
+	return s.getSHA512Half();
+}
+
+// What is important:
+// --> uNickname: is a Sha256
+// <-- SHA512/2: for consistency and speed in generating indexes.
+uint256 Ledger::getNicknameIndex(const uint256& uNickname)
+{
+	Serializer	s(34);
+
+	s.add16(spaceNickname);		//  2
+	s.add256(uNickname);		// 32
+
+	return s.getSHA512Half();
 }
 
 uint256 Ledger::getOfferIndex(const uint160& uAccountID, uint32 uSequence)
 {
-	Serializer	s;
+	Serializer	s(26);
 
-	s.add16(spaceOffer);
-	s.add160(uAccountID);
-	s.add32(uSequence);
+	s.add16(spaceOffer);		//  2
+	s.add160(uAccountID);		// 20
+	s.add32(uSequence);			//  4
 
 	return s.getSHA512Half();
 }
 
 uint256 Ledger::getOfferDirIndex(const uint160& uAccountID)
 {
-	Serializer	s;
+	Serializer	s(22);
 
-	s.add16(spaceOfferDir);
-	s.add160(uAccountID);
+	s.add16(spaceOfferDir);		//  2
+	s.add160(uAccountID);		// 20
+
+	return s.getSHA512Half();
+}
+
+uint256 Ledger::getRippleDirIndex(const uint160& uAccountID)
+{
+	Serializer	s(22);
+
+	s.add16(spaceRippleDir);	//  2
+	s.add160(uAccountID);		// 20
+
+	return s.getSHA512Half();
+}
+
+uint256 Ledger::getRippleStateIndex(const NewcoinAddress& naA, const NewcoinAddress& naB, const uint160& uCurrency)
+{
+	uint160		uAID	= naA.getAccountID();
+	uint160		uBID	= naB.getAccountID();
+	bool		bAltB	= uAID < uBID;
+	Serializer	s(62);
+
+	s.add16(spaceRipple);			//  2
+	s.add160(bAltB ? uAID : uBID);	// 20
+	s.add160(bAltB ? uBID : uAID);  // 20
+	s.add160(uCurrency);			// 20
 
 	return s.getSHA512Half();
 }

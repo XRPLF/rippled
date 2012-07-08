@@ -559,14 +559,17 @@ Json::Value RPCServer::doAccountLines(const Json::Value &params)
 		ret["account"]	= naAccount.humanAccountID();
 
 		// We access a committed ledger and need not worry about changes.
-		uint256	uDirLineNodeFirst;
-		uint256	uDirLineNodeLast;
+		uint256	uRootIndex;
 
-		if (mNetOps->getDirLineInfo(uCurrent, naAccount, uDirLineNodeFirst, uDirLineNodeLast))
+		if (mNetOps->getDirLineInfo(uCurrent, naAccount, uRootIndex))
 		{
-			for (; uDirLineNodeFirst <= uDirLineNodeLast; uDirLineNodeFirst++)
+			bool	bDone	= false;
+
+			while (!bDone)
 			{
-				STVector256	svRippleNodes	= mNetOps->getDirNode(uCurrent, uDirLineNodeFirst);
+				uint64		uNodePrevious;
+				uint64		uNodeNext;
+				STVector256	svRippleNodes	= mNetOps->getDirNodeInfo(uCurrent, uRootIndex, uNodePrevious, uNodeNext);
 
 				BOOST_FOREACH(uint256& uNode, svRippleNodes.peekValue())
 				{
@@ -601,6 +604,15 @@ Json::Value RPCServer::doAccountLines(const Json::Value &params)
 					{
 						std::cerr << "doAccountLines: Bad index: " << uNode.ToString() << std::endl;
 					}
+				}
+
+				if (uNodeNext)
+				{
+					uCurrent	= Ledger::getDirNodeIndex(uRootIndex, uNodeNext);
+				}
+				else
+				{
+					bDone	= true;
 				}
 			}
 		}

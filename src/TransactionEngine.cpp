@@ -30,8 +30,8 @@ bool transResultInfo(TransactionEngineResult terCode, std::string& strToken, std
 		{	tenBAD_CLAIM_ID,		"tenBAD_CLAIM_ID",			"Malformed."										},
 		{	tenBAD_EXPIRATION,		"tenBAD_EXPIRATION",		"Malformed."										},
 		{	tenBAD_GEN_AUTH,		"tenBAD_GEN_AUTH",			"Not authorized to claim generator."				},
-		{	tenBAD_OFFER,			"tenBAD_OFFER",				"Malformed."										},
 		{	tenBAD_ISSUER,			"tenBAD_ISSUER",			"Malformed."										},
+		{	tenBAD_OFFER,			"tenBAD_OFFER",				"Malformed."										},
 		{	tenBAD_RIPPLE,			"tenBAD_RIPPLE",			"Ledger prevents ripple from succeeding."			},
 		{	tenBAD_SET_ID,			"tenBAD_SET_ID",			"Malformed."										},
 		{	tenCLAIMED,				"tenCLAIMED",				"Can not claim a previously claimed account."		},
@@ -51,6 +51,7 @@ bool transResultInfo(TransactionEngineResult terCode, std::string& strToken, std
 		{	tenUNKNOWN,				"tenUNKNOWN",				"The transactions requires logic not implemented yet"	},
 		{	terALREADY,				"terALREADY",				"The exact transaction was already in this ledger"	},
 		{	terBAD_AUTH,			"terBAD_AUTH",				"Transaction's public key is not authorized."		},
+		{	terBAD_LEDGER,			"terBAD_LEDGER",			"Ledger in unexpected state."						},
 		{	terBAD_RIPPLE,			"terBAD_RIPPLE",			"No ripple path can be satisfied."					},
 		{	terBAD_SEQ,				"terBAD_SEQ",				"This sequence number should be zero for prepaid transactions."	},
 		{	terCREATED,				"terCREATED",				"Can not create a previously created account."		},
@@ -58,9 +59,9 @@ bool transResultInfo(TransactionEngineResult terCode, std::string& strToken, std
 		{	terFUNDS_SPENT,			"terFUNDS_SPENT",			"Can't set password, password set funds already spent."	},
 		{	terINSUF_FEE_B,			"terINSUF_FEE_B",			"Account balance can't pay fee"						},
 		{	terINSUF_FEE_T,			"terINSUF_FEE_T",			"fee insufficient now (account doesn't exist, network load)"	},
-		{	terNODE_NOT_FOUND,		"terNODE_NOT_FOUND",		"Can not delete a dir node."						},
-		{	terNODE_NOT_MENTIONED,  "terNODE_NOT_MENTIONED",	"?"													},
-		{	terNODE_NO_ROOT,        "terNODE_NO_ROOT",			"?"													},
+		{	terNODE_NOT_FOUND,		"terNODE_NOT_FOUND",		"Can not delete a directory node."					},
+		{	terNODE_NOT_MENTIONED,  "terNODE_NOT_MENTIONED",	"Could not remove node from a directory."			},
+		{	terNODE_NO_ROOT,        "terNODE_NO_ROOT",			"Directory doesn't exist."													},
 		{	terNO_ACCOUNT,			"terNO_ACCOUNT",			"The source account does not exist"					},
 		{	terNO_DST,				"terNO_DST",				"The destination does not exist"					},
 		{	terNO_LINE_NO_ZERO,		"terNO_LINE_NO_ZERO",		"Can't zero non-existant line, destination might make it."	},
@@ -92,123 +93,126 @@ bool transResultInfo(TransactionEngineResult terCode, std::string& strToken, std
 
 // <->     accounts: Affected accounts for the transaction.
 // <--     uNodeDir: For deletion, present to make dirDelete efficient.
-// -->        uBase: The index of the base of the directory.  Nodes are based off of this.
+// -->   uRootIndex: The index of the base of the directory.  Nodes are based off of this.
 // --> uLedgerIndex: Value to add to directory.
+// We only append. This allow for things that watch append only structure to just monitor from the last node on ward.
+// Within a node with no deletions order of elements is sequential.  Otherwise, order of elements is random.
 TransactionEngineResult TransactionEngine::dirAdd(
 	std::vector<AffectedAccount>&	accounts,
 	uint64&							uNodeDir,
-	const uint256&					uBase,
+	const uint256&					uRootIndex,
 	const uint256&					uLedgerIndex)
 {
-	// Get the root.
-	uint256				uRootIndex	= Ledger::getDirIndex(uBase, 0);
+	SLE::pointer		sleNode;
+	STVector256			svIndexes;
 	LedgerStateParms	lspRoot		= lepNONE;
-	SLE::pointer		sleRoot		= mLedger->getDirRoot(lspRoot, uRootIndex);
-	bool				bRootNew;
+	SLE::pointer		sleRoot		= mLedger->getDirNode(lspRoot, uRootIndex);
 
-	// Get the last node index.
-	if (sleRoot)
+	if (!sleRoot)
 	{
-		bRootNew	= false;
-		uNodeDir	= sleRoot->getIFieldU64(sfLastNode);
-	}
-	else
-	{
-		bRootNew	= true;
-		uNodeDir	= 1;
+		// No root, make it.
+		Log(lsTRACE) << "dirAdd: Creating dir root: " << uRootIndex.ToString();
 
-		sleRoot	= boost::make_shared<SerializedLedgerEntry>(ltDIR_ROOT);
+		uNodeDir	= 0;
 
+		sleRoot	= boost::make_shared<SerializedLedgerEntry>(ltDIR_NODE);
 		sleRoot->setIndex(uRootIndex);
-		Log(lsTRACE) << "dirAdd: Creating dir index: " << sleRoot->getIndex().ToString();
 
-		sleRoot->setIFieldU64(sfFirstNode, uNodeDir);
-		sleRoot->setIFieldU64(sfLastNode, uNodeDir);
-
-		Log(lsTRACE) << "dirAdd: first & last: " << strHex(uNodeDir);
+		sleNode	= sleRoot;
 
 		accounts.push_back(std::make_pair(taaCREATE, sleRoot));
 	}
-
-	// Get the last node.
-	uint256				uNodeIndex	= Ledger::getDirIndex(uBase, uNodeDir);
-	LedgerStateParms	lspNode		= lepNONE;
-	SLE::pointer		sleNode		= bRootNew ? SLE::pointer() : mLedger->getDirNode(lspNode, uNodeIndex);
-
-	if (sleNode)
+	else
 	{
-		STVector256	svIndexes;
+		uNodeDir		= sleRoot->getIFieldU64(sfIndexPrevious);
+
+		uint64		uNodePrevious	= uNodeDir;
+		uint256		uNodeIndex;
+
+		if (uNodeDir)
+		{
+			// Try adding to non-root.
+			uNodeIndex	= Ledger::getDirNodeIndex(uRootIndex, uNodeDir);
+			lspRoot		= lepNONE;
+			sleNode		= mLedger->getDirNode(lspRoot, uNodeIndex);
+		}
+		else
+		{
+			// Try adding to root.
+			uNodeIndex		= uRootIndex;
+		}
 
 		svIndexes	= sleNode->getIFieldV256(sfIndexes);
+
 		if (DIR_NODE_MAX != svIndexes.peekValue().size())
 		{
-			// Last node is not full, append.
-
-			Log(lsTRACE) << "dirAdd:  appending: PREV: " << svIndexes.peekValue()[0].ToString();
-			Log(lsTRACE) << "dirAdd:  appending: Node: " << strHex(uNodeDir);
-			Log(lsTRACE) << "dirAdd:  appending: Entry: " << uLedgerIndex.ToString();
-
-			svIndexes.peekValue().push_back(uLedgerIndex);
-			sleNode->setIFieldV256(sfIndexes, svIndexes);
-
+			// Add to current node.
 			accounts.push_back(std::make_pair(taaMODIFY, sleNode));
 		}
-		// Last node is full, add a new node.
+		// Add to new node.
 		else if (!++uNodeDir)
 		{
 			return terDIR_FULL;
 		}
 		else
 		{
-			// Record new last node.
-			sleNode	= SLE::pointer();
-
-			Log(lsTRACE) << "dirAdd:  last: " << strHex(uNodeDir);
-
-			sleRoot->setIFieldU64(sfLastNode, uNodeDir);
-
+			// Have root point to new node.
+			sleRoot->setIFieldU64(sfIndexPrevious, uNodeDir);
 			accounts.push_back(std::make_pair(taaMODIFY, sleRoot));
+
+			// Have old last point to new node, if it was not root.
+			if (uNodePrevious)
+			{
+				// Previous node is not root node.
+				sleNode->setIFieldU64(sfIndexNext, uNodeDir);
+				accounts.push_back(std::make_pair(taaMODIFY, sleNode));
+			}
+
+			// Create the new node.
+			svIndexes	= STVector256();
+			sleNode		= boost::make_shared<SerializedLedgerEntry>(ltDIR_NODE);
+			sleNode->setIndex(uNodeIndex);
+
+			if (uNodePrevious)
+				sleNode->setIFieldU64(sfIndexPrevious, uNodePrevious);
+
+			accounts.push_back(std::make_pair(taaCREATE, sleNode));
 		}
 	}
 
-	if (!sleNode)
-	{
-		// Add to last node, which is empty.
-		sleNode	= boost::make_shared<SerializedLedgerEntry>(ltDIR_NODE);
-		sleNode->setIndex(uNodeIndex);
+	Log(lsTRACE) << "dirAdd:  appending: PREV: " << svIndexes.peekValue()[0].ToString();
+	Log(lsTRACE) << "dirAdd:  appending: Node: " << strHex(uNodeDir);
+	Log(lsTRACE) << "dirAdd:  appending: Entry: " << uLedgerIndex.ToString();
 
-		Log(lsTRACE) << "dirAdd: Creating dir node: " << sleNode->getIndex().ToString();
-
-		STVector256	svIndexes;
-
-		svIndexes.peekValue().push_back(uLedgerIndex);
-		sleNode->setIFieldV256(sfIndexes, svIndexes);
-
-		accounts.push_back(std::make_pair(taaCREATE, sleNode));
-	}
+	svIndexes.peekValue().push_back(uLedgerIndex);	// Append entry.
+	sleNode->setIFieldV256(sfIndexes, svIndexes);	// Save entry.
 
 	return terSUCCESS;
 }
 
 // <->     accounts: Affected accounts for the transaction.
 // -->     uNodeDir: Node containing entry.
-// -->        uBase: The index of the base of the directory.  Nodes are based off of this.
+// -->   uRootIndex: The index of the base of the directory.  Nodes are based off of this.
 // --> uLedgerIndex: Value to add to directory.
+// Ledger must be in a state for this to work.
 TransactionEngineResult TransactionEngine::dirDelete(
 	std::vector<AffectedAccount>&	accounts,
 	const uint64&					uNodeDir,
-	const uint256&					uBase,
+	const uint256&					uRootIndex,
 	const uint256&					uLedgerIndex)
 {
 	uint64				uNodeCur	= uNodeDir;
-	uint256				uNodeIndex	= Ledger::getDirIndex(uBase, uNodeCur);
+	uint256				uNodeIndex	= Ledger::getDirNodeIndex(uRootIndex, uNodeCur);
 	LedgerStateParms	lspNode		= lepNONE;
 	SLE::pointer		sleNode		= mLedger->getDirNode(lspNode, uNodeIndex);
+
+	assert(sleNode);
 
 	if (!sleNode)
 	{
 		Log(lsWARNING) << "dirDelete: no such node";
-		return terNODE_NOT_FOUND;
+
+		return terBAD_LEDGER;
 	}
 	else
 	{
@@ -217,93 +221,151 @@ TransactionEngineResult TransactionEngine::dirDelete(
 		std::vector<uint256>::iterator	it;
 
 		it = std::find(vuiIndexes.begin(), vuiIndexes.end(), uLedgerIndex);
+
+		assert(vuiIndexes.end() != it);
 		if (vuiIndexes.end() == it)
 		{
 			Log(lsWARNING) << "dirDelete: node not mentioned";
-			return terNODE_NOT_MENTIONED;
+
+			return terBAD_LEDGER;
 		}
 		else
 		{
-			// Get root information
-			LedgerStateParms	lspRoot		= lepNONE;
-			SLE::pointer		sleRoot		= mLedger->getDirRoot(lspRoot, Ledger::getDirIndex(uBase, 0));
-
-			if (!sleRoot)
-			{
-				Log(lsWARNING) << "dirDelete: root node is missing";
-				return terNODE_NO_ROOT;
-			}
-
-			uint64	uFirstNodeOrig	= sleRoot->getIFieldU64(sfFirstNode);
-			uint64	uLastNodeOrig	= sleRoot->getIFieldU64(sfLastNode);
-			uint64	uFirstNode		= uFirstNodeOrig;
-			uint64	uLastNode		= uLastNodeOrig;
-
 			// Remove the element.
 			if (vuiIndexes.size() > 1)
-			{
 				*it = vuiIndexes[vuiIndexes.size()-1];
-			}
+
 			vuiIndexes.resize(vuiIndexes.size()-1);
 
-			sleNode->setIFieldV256(sfIndexes, svIndexes);
-
-			if (!vuiIndexes.empty() || (uFirstNode != uNodeCur && uLastNode != uNodeCur))
+			if (vuiIndexes.size() > 0)
 			{
 				// Node is not being deleted.
+				sleNode->setIFieldV256(sfIndexes, svIndexes);
 				accounts.push_back(std::make_pair(taaMODIFY, sleNode));
-			}
-
-			while (uFirstNode && svIndexes.peekValue().empty()
-				&& (uFirstNode == uNodeCur || uLastNode == uNodeCur))
-			{
-				// Current node is empty and first or last, delete it.
-				accounts.push_back(std::make_pair(taaDELETE, sleNode));
-
-				if (uFirstNode == uLastNode)
-				{
-					// Complete deletion.
-					uFirstNode	= 0;
-				}
-				else
-				{
-					if (uFirstNode == uNodeCur)
-					{
-						// Advance first node
-						++uNodeCur;
-						++uFirstNode;
-					}
-					else
-					{
-						// Rewind last node
-						--uNodeCur;
-						--uLastNode;
-					}
-
-					// Get replacement node.
-					lspNode		= lepNONE;
-					sleNode		= mLedger->getDirNode(lspNode, Ledger::getDirIndex(uBase, uNodeCur));
-					svIndexes	= sleNode->getIFieldV256(sfIndexes);
-				}
-			}
-
-			if (uFirstNode == uFirstNodeOrig && uLastNode == uLastNodeOrig)
-			{
-				// Dir is fine.
-				nothing();
-			}
-			else if (uFirstNode)
-			{
-				// Update root's pointer pointers.
-				sleRoot->setIFieldU64(sfFirstNode, uFirstNode);
-				sleRoot->setIFieldU64(sfLastNode, uLastNode);
-
-				accounts.push_back(std::make_pair(taaMODIFY, sleRoot));
 			}
 			else
 			{
-				// Delete the root.
-				accounts.push_back(std::make_pair(taaDELETE, sleRoot));
+				bool			bRootDirty	= false;
+				SLE::pointer	sleRoot;
+
+				// May be able to delete nodes.
+				if (uNodeCur)
+				{
+					uint64	uNodePrevious	= sleNode->getIFieldU64(sfIndexPrevious);
+					uint64	uNodeNext		= sleNode->getIFieldU64(sfIndexNext);
+
+					accounts.push_back(std::make_pair(taaDELETE, sleNode));
+
+					// Fix previous link.
+					if (uNodePrevious)
+					{
+						LedgerStateParms	lspPrevious		= lepNONE;
+						SLE::pointer		slePrevious		= mLedger->getDirNode(lspPrevious, Ledger::getDirNodeIndex(uRootIndex, uNodePrevious));
+
+						assert(slePrevious);
+						if (!slePrevious)
+						{
+							Log(lsWARNING) << "dirDelete: previous node is missing";
+
+							return terBAD_LEDGER;
+						}
+						else if (uNodeNext)
+						{
+							slePrevious->setIFieldU64(sfIndexNext, uNodeNext);
+						}
+						else
+						{
+							slePrevious->makeIFieldAbsent(sfIndexNext);
+						}
+						accounts.push_back(std::make_pair(taaMODIFY, slePrevious));
+					}
+					else
+					{
+						// Read root.
+						bRootDirty	= true;
+
+						sleRoot	= mLedger->getDirNode(lspNode, uRootIndex);
+
+						if (uNodeNext)
+						{
+							sleRoot->setIFieldU64(sfIndexNext, uNodeNext);
+						}
+						else
+						{
+							sleRoot->makeIFieldAbsent(sfIndexNext);
+						}
+					}
+
+					// Fix next link.
+					if (uNodeNext)
+					{
+						LedgerStateParms	lspNext		= lepNONE;
+						SLE::pointer		sleNext		= mLedger->getDirNode(lspNext, Ledger::getDirNodeIndex(uRootIndex, uNodeNext));
+
+						assert(sleNext);
+						if (!sleNext)
+						{
+							Log(lsWARNING) << "dirDelete: next node is missing";
+
+							return terBAD_LEDGER;
+						}
+						else if (uNodeNext)
+						{
+							sleNext->setIFieldU64(sfIndexNext, uNodeNext);
+						}
+						else
+						{
+							sleNext->makeIFieldAbsent(sfIndexNext);
+						}
+						accounts.push_back(std::make_pair(taaMODIFY, sleNext));
+					}
+					else
+					{
+						// Read root.
+						bRootDirty	= true;
+
+						sleRoot	= mLedger->getDirNode(lspNode, uRootIndex);
+
+						if (uNodePrevious)
+						{
+							sleRoot->setIFieldU64(sfIndexPrevious, uNodePrevious);
+						}
+						else
+						{
+							sleRoot->makeIFieldAbsent(sfIndexPrevious);
+						}
+					}
+
+					if (bRootDirty)
+					{
+						// Need to update sleRoot;
+						uNodeCur	= 0;
+
+						// If we might be able to delete root, load it.
+						if (!uNodePrevious && !uNodeNext)
+							vuiIndexes	= svIndexes.peekValue();
+					}
+				}
+				else
+				{
+					bRootDirty	= true;
+				}
+
+				if (!uNodeCur)
+				{
+					// Looking at root node.
+					uint64	uRootPrevious	= sleNode->getIFieldU64(sfIndexPrevious);
+					uint64	uRootNext		= sleNode->getIFieldU64(sfIndexNext);
+
+					if (!uRootPrevious && !uRootNext && vuiIndexes.empty())
+					{
+						accounts.push_back(std::make_pair(taaDELETE, sleRoot));
+					}
+					else if (bRootDirty)
+					{
+						accounts.push_back(std::make_pair(taaMODIFY, sleRoot));
+					}
+				}
 			}
 		}
 
@@ -1758,7 +1820,7 @@ TransactionEngineResult TransactionEngine::doOffer(
 	if (terSUCCESS == terResult)
 	{
 		terResult	= dirAdd(accounts, uOfferNode,
-			Ledger::getDirIndex(
+			Ledger::getQualityIndex(
 				Ledger::getBookBase(uCurrencyIn, uIssuerIn, uCurrencyOut, uIssuerOut),
 				STAmount::getRate(saAmountOut, saAmountIn)),
 			uLedgerIndex);

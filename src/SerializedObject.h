@@ -55,6 +55,8 @@ enum SOE_Field
 	sfHighLimit,
 	sfIdentifier,
 	sfIndexes,
+	sfIndexNext,
+	sfIndexPrevious,
 	sfInvoiceID,
 	sfIssuerIn,
 	sfIssuerOut,

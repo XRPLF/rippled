@@ -52,6 +52,7 @@ enum TransactionEngineResult
 	// Conflict with ledger database: Fee claimed
 	// Might succeed if not conflict is not caused by transaction ordering.
 	terBAD_AUTH,
+	terBAD_LEDGER,
 	terBAD_RIPPLE,
 	terBAD_SEQ,
 	terCREATED,
@@ -102,13 +103,13 @@ private:
 	TransactionEngineResult dirAdd(
 		std::vector<AffectedAccount>&	accounts,
 		uint64&							uNodeDir,		// Node of entry.
-		const uint256&					uBase,
+		const uint256&					uRootIndex,
 		const uint256&					uLedgerIndex);
 
 	TransactionEngineResult dirDelete(
 		std::vector<AffectedAccount>&	accounts,
 		const uint64&					uNodeDir,		// Node item is mentioned in.
-		const uint256&					uBase,			// Key of item.
+		const uint256&					uRootIndex,
 		const uint256&					uLedgerIndex);	// Item being deleted
 
 #ifdef WORK_IN_PROGRESS
