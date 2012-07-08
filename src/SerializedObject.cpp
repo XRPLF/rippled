@@ -1,6 +1,7 @@
 
 #include "SerializedObject.h"
 
+#include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
 
 #include "../json/writer.h"
@@ -651,6 +652,18 @@ Json::Value STObject::getJson(int options) const
 			else ret[it->getName()] = it->getJson(options);
 		}
 	}
+	return ret;
+}
+
+Json::Value STVector256::getJson(int options) const
+{
+	Json::Value ret(Json::arrayValue);
+
+	BOOST_FOREACH(std::vector<uint256>::const_iterator::value_type vEntry, mValue)
+	{
+		ret.append(vEntry.ToString());
+	}
+
 	return ret;
 }
 

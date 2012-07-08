@@ -640,6 +640,8 @@ public:
 
 	void setValue(const STVector256& v) { mValue = v.mValue; }
 	void setValue(const std::vector<uint256>& v) { mValue = v; }
+
+	Json::Value getJson(int) const;
 };
 
 #endif
