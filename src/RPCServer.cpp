@@ -487,18 +487,18 @@ Json::Value RPCServer::doAccountInfo(const Json::Value &params)
 
 	// Get info on account.
 
-	uint256			uClosed		= mNetOps->getClosedLedger();
-	Json::Value		jClosed		= accountFromString(uClosed, naAccount, bIndex, strIdent, iIndex);
+	uint256			uAccepted		= mNetOps->getClosedLedger();
+	Json::Value		jAccepted		= accountFromString(uAccepted, naAccount, bIndex, strIdent, iIndex);
 
-	if (jClosed.empty())
+	if (jAccepted.empty())
 	{
-		AccountState::pointer asClosed	= mNetOps->getAccountState(uClosed, naAccount);
+		AccountState::pointer asAccepted	= mNetOps->getAccountState(uAccepted, naAccount);
 
-		if (asClosed)
-			asClosed->addJson(jClosed);
+		if (asAccepted)
+			asAccepted->addJson(jAccepted);
 	}
 
-	ret["closed"]	= jClosed;
+	ret["accepted"]	= jAccepted;
 
 	uint256			uCurrent	= mNetOps->getCurrentLedger();
 	Json::Value		jCurrent	= accountFromString(uCurrent, naAccount, bIndex, strIdent, iIndex);
@@ -514,7 +514,7 @@ Json::Value RPCServer::doAccountInfo(const Json::Value &params)
 	ret["current"]	= jCurrent;
 
 #if 0
-	if (!jClosed && !asCurrent)
+	if (!jAccepted && !asCurrent)
 	{
 		ret["account"]	= naAccount.humanAccountID();
 		ret["status"]	= "NotFound";
@@ -528,7 +528,7 @@ Json::Value RPCServer::doAccountInfo(const Json::Value &params)
 // account_lines <account>|<nickname>|<account_public_key> [<index>]
 Json::Value RPCServer::doAccountLines(const Json::Value &params)
 {
-//	uint256			uClosed		= mNetOps->getClosedLedger();
+//	uint256			uAccepted	= mNetOps->getClosedLedger();
 	uint256			uCurrent	= mNetOps->getCurrentLedger();
 
 	std::string		strIdent	= params[0u].asString();
