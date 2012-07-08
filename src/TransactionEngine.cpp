@@ -180,12 +180,12 @@ TransactionEngineResult TransactionEngine::dirAdd(
 		}
 	}
 
+	svIndexes.peekValue().push_back(uLedgerIndex);	// Append entry.
+	sleNode->setIFieldV256(sfIndexes, svIndexes);	// Save entry.
+
 	Log(lsTRACE) << "dirAdd:  appending: PREV: " << svIndexes.peekValue()[0].ToString();
 	Log(lsTRACE) << "dirAdd:  appending: Node: " << strHex(uNodeDir);
 	Log(lsTRACE) << "dirAdd:  appending: Entry: " << uLedgerIndex.ToString();
-
-	svIndexes.peekValue().push_back(uLedgerIndex);	// Append entry.
-	sleNode->setIFieldV256(sfIndexes, svIndexes);	// Save entry.
 
 	return terSUCCESS;
 }
