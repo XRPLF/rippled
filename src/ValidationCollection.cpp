@@ -68,7 +68,7 @@ void ValidationCollection::getValidationCount(const uint256& ledger, bool curren
 					trusted = false;
 			}
 			if (trusted)
-				++trusted;
+		 		++trusted;
 			else
 				++untrusted;
 		}
@@ -79,8 +79,8 @@ int ValidationCollection::getTrustedValidationCount(const uint256& ledger)
 {
 	int trusted = 0;
 	boost::mutex::scoped_lock sl(mValidationLock);
-	boost::unordered_map<uint256, ValidationSet>::iterator it = mValidations.find(ledger);
-	if (it != mValidations.end())
+	for (boost::unordered_map<uint256, ValidationSet>::iterator it = mValidations.find(ledger),
+		end = mValidations.end(); it != end; ++it)
 	{
 		for (ValidationSet::iterator vit = it->second.begin(), end = it->second.end(); vit != end; ++vit)
 		{
@@ -88,6 +88,20 @@ int ValidationCollection::getTrustedValidationCount(const uint256& ledger)
 				++trusted;
 		}
 	}
+	return trusted;
+}
+
+int ValidationCollection::getCurrentValidationCount(uint64 afterTime)
+{
+	int count = 0;
+	boost::mutex::scoped_lock sl(mValidationLock);
+	for (boost::unordered_map<uint160, SerializedValidation::pointer>::iterator it = mCurrentValidations.begin(),
+		end = mCurrentValidations.end(); it != end; ++it)
+	{
+		if (it->second->isTrusted() && (it->second->getCloseTime() > afterTime))
+			++count;
+	}
+	return count;
 }
 
 boost::unordered_map<uint256, int> ValidationCollection::getCurrentValidations()
