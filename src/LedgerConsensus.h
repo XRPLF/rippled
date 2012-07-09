@@ -62,14 +62,13 @@ public:
 
 	void setVote(const uint160& peer, bool votesYes);
 
-	bool updatePosition(int timePassed, bool proposing);
+	bool updatePosition(int percentTime, bool proposing);
 	int getAgreeLevel();
 };
 
 enum LCState
 {
 	lcsPRE_CLOSE,		// We haven't closed our ledger yet, but others might have
-	lcsPOST_CLOSE,		// Ledger closed, but wobble time
 	lcsESTABLISH,		// Establishing consensus
 	lcsCUTOFF,			// Past the cutoff for consensus
 	lcsFINISHED,		// We have closed on a transaction set
@@ -83,11 +82,13 @@ protected:
 	LCState mState;
 	uint64 mCloseTime;						// The wall time this ledger closed
 	uint256 mPrevLedgerHash;
-	int previousClose;						// The number of seconds the previous ledger took to close
 	Ledger::pointer mPreviousLedger;
 	LedgerProposal::pointer mOurPosition;
 	NewcoinAddress mValSeed;
 	bool mProposing, mValidating, mHaveCorrectLCL;
+
+	int mPreviousClose;						// The number of seconds the previous ledger took to close
+	int mPreviousValidators;				// The number of validations for the previous ledger
 
 	// Convergence tracking, trusted peers indexed by hash of public key
 	boost::unordered_map<uint160, LedgerProposal::pointer> mPeerPositions;
@@ -125,7 +126,7 @@ protected:
 
 	// manipulating our own position
 	void takeInitialPosition(Ledger::pointer initialLedger);
-	bool updateOurPositions(int sinceClose);
+	bool updateOurPositions(int percentPrevConverge);
 	void statusChange(newcoin::NodeEvent, Ledger::pointer ledger);
 	int getThreshold();
 	void beginAccept();
@@ -147,12 +148,11 @@ public:
 	void timerEntry();
 
 	// state handlers
-	int statePreClose(int secondsSinceClose);
-	int statePostClose(int secondsSinceClose);
-	int stateEstablish(int secondsSinceClose);
-	int stateCutoff(int secondsSinceClose);
-	int stateFinished(int secondsSinceClose);
-	int stateAccepted(int secondsSinceClose);
+	int statePreClose(int currentSeconds);
+	int stateEstablish(int closePercent);
+	int stateCutoff(int closePercent);
+	int stateFinished(int closePercent);
+	int stateAccepted(int closePercent);
 
 	bool peerPosition(LedgerProposal::pointer);
 

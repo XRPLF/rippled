@@ -155,7 +155,7 @@ void LCTransaction::setVote(const uint160& peer, bool votesYes)
 	}
 }
 
-bool LCTransaction::updatePosition(int seconds, bool proposing)
+bool LCTransaction::updatePosition(int percentTime, bool proposing)
 { // this many seconds after close, should our position change
 	if (mOurPosition && (mNays == 0))
 		return false;
@@ -169,9 +169,9 @@ bool LCTransaction::updatePosition(int seconds, bool proposing)
 		int weight = (mYays * 100 + (mOurPosition ? 100 : 0)) / (mNays + mYays + 1);
 
 		// To prevent avalanche stalls, we increase the needed weight slightly over time
-		if (seconds <= LEDGER_ACCEL_CONVERGE) newPosition = weight >  AV_MIN_CONSENSUS;
-		else if (seconds >= LEDGER_CONVERGE) newPosition = weight > AV_AVG_CONSENSUS;
-		else newPosition = weight > AV_MAX_CONSENSUS;
+		if (percentTime < AV_MID_CONSENSUS_TIME) newPosition = weight >  AV_INIT_CONSENSUS_PCT;
+		else if (percentTime < AV_LATE_CONSENSUS_TIME) newPosition = weight > AV_MID_CONSENSUS_PCT;
+		else newPosition = weight > AV_LATE_CONSENSUS_PCT;
 	}
 	else // don't let us outweight a proposing node, just recognize consensus
 		newPosition = mYays > mNays;
@@ -355,24 +355,14 @@ int LedgerConsensus::startup()
 	return 1;
 }
 
-int LedgerConsensus::statePreClose(int secondsSinceClose)
+int LedgerConsensus::statePreClose(int currentSeconds)
 { // it is shortly before ledger close time
-	if (secondsSinceClose >= 0)
+	if (ConinuousLedgerTiming::shouldClose())
 	{ // it is time to close the ledger (swap default and wobble ledgers)
 		Log(lsINFO) << "Closing ledger";
-		mState = lcsPOST_CLOSE;
+		mState = lcsESTABLISH;
 		theApp->getMasterLedger().closeTime();
 		statusChange(newcoin::neCLOSING_LEDGER, mPreviousLedger);
-	}
-	return 1;
-}
-
-int LedgerConsensus::statePostClose(int secondsSinceClose)
-{ // we are in the transaction wobble time
-	if (secondsSinceClose > LEDGER_WOBBLE_TIME)
-	{
-		Log(lsINFO) << "Wobble is over, it's consensus time";
-		mState = lcsESTABLISH;
 		Ledger::pointer initial = theApp->getMasterLedger().endWobble();
 		assert (initial->getParentHash() == mPreviousLedger->getHash());
 		takeInitialPosition(initial);
@@ -380,11 +370,11 @@ int LedgerConsensus::statePostClose(int secondsSinceClose)
 	return 1;
 }
 
-int LedgerConsensus::stateEstablish(int secondsSinceClose)
+int LedgerConsensus::stateEstablish(int closePercent)
 { // we are establishing consensus
 	if (mProposing)
-		updateOurPositions(secondsSinceClose);
-	if (secondsSinceClose > LEDGER_MAX_CONVERGE)
+		updateOurPositions(closePercent);
+	if (closePercent >= LEDGER_MAX_INTERVAL)
 	{
 		Log(lsINFO) << "Converge cutoff";
 		mState = lcsCUTOFF;
@@ -392,10 +382,10 @@ int LedgerConsensus::stateEstablish(int secondsSinceClose)
 	return 1;
 }
 
-int LedgerConsensus::stateCutoff(int secondsSinceClose)
+int LedgerConsensus::stateCutoff(int closePercent)
 { // we are making sure everyone else agrees
-	bool haveConsensus = updateOurPositions(secondsSinceClose);
-	if (haveConsensus || (secondsSinceClose > LEDGER_CONVERGE))
+	bool haveConsensus = updateOurPositions(closePercent);
+	if (haveConsensus || (closePercent > LEDGER_CONVERGE))
 	{
 		Log(lsINFO) << "Consensus complete (" << haveConsensus << ")";
 		mState = lcsFINISHED;
@@ -404,13 +394,13 @@ int LedgerConsensus::stateCutoff(int secondsSinceClose)
 	return 1;
 }
 
-int LedgerConsensus::stateFinished(int secondsSinceClose)
+int LedgerConsensus::stateFinished(int closePercent)
 { // we are processing the finished ledger
 	// logic of calculating next ledger advances us out of this state
 	return 1;
 }
 
-int LedgerConsensus::stateAccepted(int secondsSinceClose)
+int LedgerConsensus::stateAccepted(int closePercent)
 { // we have accepted a new ledger
 	endConsensus();
 	return 4;
@@ -431,22 +421,23 @@ void LedgerConsensus::timerEntry()
 		}
 	}
 
-	int sinceClose = theApp->getOPs().getNetworkTimeNC() - mCloseTime;
+	int currentSeconds = theApp->getOPs().getNetworkTimeNC() - mCloseTime;
+	int closePercent = currentSeconds * 100 / prevCloseTime;
 
 	switch (mState)
 	{
-		case lcsPRE_CLOSE:	statePreClose(sinceClose);	return;
-		case lcsPOST_CLOSE:	statePostClose(sinceClose);	return;
-		case lcsESTABLISH:	stateEstablish(sinceClose);	return;
-		case lcsCUTOFF:		stateCutoff(sinceClose);	return;
-		case lcsFINISHED:	stateFinished(sinceClose);	return;
-		case lcsACCEPTED:	stateAccepted(sinceClose);	return;
+		case lcsPRE_CLOSE:	statePreClose(currentSeconds);	return;
+		case lcsPOST_CLOSE:	statePostClose(closePercent);	return;
+		case lcsESTABLISH:	stateEstablish(closePercent);	return;
+		case lcsCUTOFF:		stateCutoff(closePercent);		return;
+		case lcsFINISHED:	stateFinished(closePercent);	return;
+		case lcsACCEPTED:	stateAccepted(closePercent);	return;
 		case lcsABORTED:	return;
 	}
 	assert(false);
 }
 
-bool LedgerConsensus::updateOurPositions(int sinceClose)
+bool LedgerConsensus::updateOurPositions(int percentPrevConverge)
 { // returns true if the network has consensus
 	bool changes = false;
 	bool stable = true;
