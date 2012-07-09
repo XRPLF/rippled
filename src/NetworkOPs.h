@@ -46,6 +46,7 @@ public:
 
 protected:
 	OperatingMode						mMode;
+	boost::posix_time::ptime			mConnectTime;
 	boost::asio::deadline_timer			mNetTimer;
 	boost::shared_ptr<LedgerConsensus>	mConsensus;
 

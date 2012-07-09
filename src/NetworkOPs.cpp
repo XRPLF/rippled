@@ -334,8 +334,8 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 		// check if the ledger is bad enough to go to omTRACKING
 	}
 
-	uint64 defaultClose = theApp->getMasterLedger().getCurrentLedger()->getCloseTimeNC();
-	uint64 now = theApp->getOPs().getNetworkTimeNC();
+//	uint64 defaultClose = theApp->getMasterLedger().getCurrentLedger()->getCloseTimeNC();
+//	uint64 now = theApp->getOPs().getNetworkTimeNC();
 	if (!mConsensus)
 	{ // if now is past the ledger's default close time or there are transactions in the current ledger, close
 		if ((theApp->getOPs().getNetworkTimeNC() > theApp->getMasterLedger().getCurrentLedger()->getCloseTimeNC())
@@ -613,6 +613,8 @@ void NetworkOPs::endConsensus()
 void NetworkOPs::setMode(OperatingMode om)
 {
 	if (mMode == om) return;
+	if ((om >= omCONNECTED) && (mMode == omDISCONNECTED))
+		mConnectTime = boost::posix_time::second_clock::universal_time();
 	if (mMode == omFULL)
 	{
 		if (mConsensus)
