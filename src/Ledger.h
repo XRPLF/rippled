@@ -152,6 +152,12 @@ public:
 	static Ledger::pointer loadByIndex(uint32 ledgerIndex);
 	static Ledger::pointer loadByHash(const uint256& ledgerHash);
 
+	// next/prev function
+	SLE::pointer getNextSLE(const uint256& hash);						// first node >hash
+	SLE::pointer getNextSLE(const uint256& hash, const uint256& max); 	// first node >hash, <max
+	SLE::pointer getPrevSLE(const uint256& hash);						// last node <hash
+	SLE::pointer getPrevSLE(const uint256& hash, const uint256& min);	// last node <hash, >min
+
 	// index calculation functions
 	static uint256 getAccountRootIndex(const uint160& uAccountID);
 
