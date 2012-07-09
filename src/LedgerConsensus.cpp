@@ -196,7 +196,8 @@ int LCTransaction::getAgreeLevel()
 }
 
 LedgerConsensus::LedgerConsensus(const uint256& prevLCLHash, Ledger::pointer previousLedger, uint64 closeTime)
-	:  mState(lcsPRE_CLOSE), mCloseTime(closeTime), mPrevLedgerHash(prevLCLHash), mPreviousLedger(previousLedger)
+	:  mState(lcsPRE_CLOSE), mCloseTime(closeTime), mPrevLedgerHash(prevLCLHash), mPreviousLedger(previousLedger),
+	mPreviousProposers(0), mPreviousSeconds(0)
 {
 	mValSeed = theConfig.VALIDATION_SEED;
 	Log(lsDEBUG) << "Creating consensus object";
@@ -357,10 +358,15 @@ int LedgerConsensus::startup()
 
 int LedgerConsensus::statePreClose(int currentSeconds)
 { // it is shortly before ledger close time
-	if (ConinuousLedgerTiming::shouldClose())
+	bool anyTransactions = mNetOps->getCurrentLedger()->peekTransactionMap()->getHash().isNonZero();
+	int proposersClosed = mPeerPositions.size();
+
+	if (ContinuousLedgerTiming::shouldClose(anyTransactions, mPreviousProposers, proposersClosed,
+		mPreviousSeconds, currentSeconds))
 	{ // it is time to close the ledger (swap default and wobble ledgers)
 		Log(lsINFO) << "Closing ledger";
 		mState = lcsESTABLISH;
+		mConsensusStartTime = boost::posix_time::second_clock::universal_time();
 		theApp->getMasterLedger().closeTime();
 		statusChange(newcoin::neCLOSING_LEDGER, mPreviousLedger);
 		Ledger::pointer initial = theApp->getMasterLedger().endWobble();
@@ -437,10 +443,9 @@ void LedgerConsensus::timerEntry()
 	assert(false);
 }
 
-bool LedgerConsensus::updateOurPositions(int percentPrevConverge)
-{ // returns true if the network has consensus
+void LedgerConsensus::updateOurPositions(int percentPrevConverge)
+{
 	bool changes = false;
-	bool stable = true;
 	SHAMap::pointer ourPosition;
 	std::vector<uint256> addedTx, removedTx;
 
@@ -480,6 +485,23 @@ bool LedgerConsensus::updateOurPositions(int percentPrevConverge)
 	}
 
 	return stable;
+}
+
+bool LedgerConsensus::haveConsensus(int currentSeconds)
+{
+	int agree = 0, disagree = 0;
+	uint256 ourPosition = mOurPosition->getCurrentHash();
+	for (boost::unordered_map<uint160, LedgerProposal::pointer>::iterator it = mPeerPosition.begin(),
+		end = mPeerPositions.end(); it != end; ++it)
+	{
+		if (it->second->getCurrentHash() == ourPosition)
+			++agree;
+		else
+			++disagree;
+	}
+	int currentValidations = 
+	return ContinuousLedgerTiming::haveConsensus(mPreviousProposers, agree + disagree, agree, currentValidations,
+		prevagreetime, currentSeconds);
 }
 
 SHAMap::pointer LedgerConsensus::getTransactionTree(const uint256& hash, bool doAcquire)

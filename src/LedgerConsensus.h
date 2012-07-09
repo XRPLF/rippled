@@ -87,8 +87,9 @@ protected:
 	NewcoinAddress mValSeed;
 	bool mProposing, mValidating, mHaveCorrectLCL;
 
-	int mPreviousClose;						// The number of seconds the previous ledger took to close
-	int mPreviousValidators;				// The number of validations for the previous ledger
+	boost::posix_time::ptime		mConsensusStartTime;
+	int								mPreviousProposers;
+	int								mPreviousSeconds;
 
 	// Convergence tracking, trusted peers indexed by hash of public key
 	boost::unordered_map<uint160, LedgerProposal::pointer> mPeerPositions;
@@ -126,7 +127,7 @@ protected:
 
 	// manipulating our own position
 	void takeInitialPosition(Ledger::pointer initialLedger);
-	bool updateOurPositions(int percentPrevConverge);
+	void updateOurPositions(int percentPrevConverge);
 	void statusChange(newcoin::NodeEvent, Ledger::pointer ledger);
 	int getThreshold();
 	void beginAccept();
