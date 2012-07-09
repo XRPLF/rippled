@@ -75,6 +75,21 @@ void ValidationCollection::getValidationCount(const uint256& ledger, bool curren
 	}
 }
 
+int ValidationCollection::getTrustedValidationCount(const uint256& ledger)
+{
+	int trusted = 0;
+	boost::mutex::scoped_lock sl(mValidationLock);
+	boost::unordered_map<uint256, ValidationSet>::iterator it = mValidations.find(ledger);
+	if (it != mValidations.end())
+	{
+		for (ValidationSet::iterator vit = it->second.begin(), end = it->second.end(); vit != end; ++vit)
+		{
+			if (vit->second->isTrusted())
+				++trusted;
+		}
+	}
+}
+
 boost::unordered_map<uint256, int> ValidationCollection::getCurrentValidations()
 {
     uint64 now = theApp->getOPs().getNetworkTimeNC();
