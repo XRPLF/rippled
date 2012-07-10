@@ -138,6 +138,20 @@ public:
 		return ret;
 	}
 
+	base_uint& operator+=(const base_uint& b)
+	{
+		uint64 carry = 0;
+
+		for (int i = 0; i < WIDTH; i++)
+		{
+			uint64 n = carry + pn[i] + b.pn[i];
+			pn[i] = n & 0xffffffff;
+			carry = n >> 32;
+		}
+
+		return *this;
+	}
+
 	std::size_t hash_combine(std::size_t& seed) const
 	{
 		for (int i = 0; i < WIDTH; ++i)
