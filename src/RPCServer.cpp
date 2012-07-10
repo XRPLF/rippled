@@ -1082,7 +1082,7 @@ Json::Value RPCServer::doRippleLinesGet(const Json::Value &params)
 	AccountState::pointer	as		= mNetOps->getAccountState(uCurrent, naAccount);
 	if (as)
 	{
-		Json::Value	jsonLines = Json::Value(Json::objectValue);
+		Json::Value	jsonLines(Json::arrayValue);
 
 		ret["account"]	= naAccount.humanAccountID();
 
@@ -1107,11 +1107,6 @@ Json::Value RPCServer::doRippleLinesGet(const Json::Value &params)
 
 				BOOST_FOREACH(uint256& uNode, svRippleNodes.peekValue())
 				{
-					NewcoinAddress	naAccountPeer;
-					STAmount		saBalance;
-					STAmount		saLimit;
-					STAmount		saLimitPeer;
-
 					Log(lsINFO) << "doRippleLinesGet: line index: " << uNode.ToString();
 
 					RippleState::pointer	rsLine	= mNetOps->getRippleState(uCurrent, uNode);
@@ -1120,21 +1115,21 @@ Json::Value RPCServer::doRippleLinesGet(const Json::Value &params)
 					{
 						rsLine->setViewAccount(naAccount);
 
-						naAccountPeer		= rsLine->getAccountIDPeer();
-						saBalance			= rsLine->getBalance();
-						saLimit				= rsLine->getLimit();
-						saLimitPeer			= rsLine->getLimitPeer();
+						STAmount		saBalance	= rsLine->getBalance();
+						STAmount		saLimit		= rsLine->getLimit();
+						STAmount		saLimitPeer	= rsLine->getLimitPeer();
 
-						Json::Value				jPeer	= Json::Value(Json::objectValue);
+						Json::Value			jPeer	= Json::Value(Json::objectValue);
 
 						jPeer["node"]		= uNode.ToString();
 
+						jPeer["account"]	= rsLine->getAccountIDPeer().humanAccountID();
 						jPeer["balance"]	= saBalance.getText();
 						jPeer["currency"]	= saBalance.getCurrencyHuman();
 						jPeer["limit"]		= saLimit.getJson(0);
 						jPeer["limit_peer"]	= saLimitPeer.getJson(0);
 
-						jsonLines[naAccountPeer.humanAccountID()]	= jPeer;
+						jsonLines.append(jPeer);
 					}
 					else
 					{
