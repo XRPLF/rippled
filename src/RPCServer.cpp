@@ -1294,77 +1294,6 @@ Json::Value RPCServer::doServerInfo(const Json::Value& params)
 	return ret;
 }
 
-// transit_set <seed> <paying_account> <transit_rate> <starts> <expires>
-Json::Value RPCServer::doTransitSet(const Json::Value& params)
-{
-	NewcoinAddress	naSeed;
-	NewcoinAddress	naSrcAccountID;
-	std::string		sTransitRate;
-	std::string		sTransitStart;
-	std::string		sTransitExpire;
-	uint32			uTransitRate;
-	uint32			uTransitStart;
-	uint32			uTransitExpire;
-	uint256			uLedger		= mNetOps->getCurrentLedger();
-
-	if (params.size() >= 6)
-		sTransitRate		= params[6u].asString();
-
-	if (params.size() >= 7)
-		sTransitStart	= params[7u].asString();
-
-	if (params.size() >= 8)
-		sTransitExpire	= params[8u].asString();
-
-	if (!naSeed.setSeedGeneric(params[0u].asString()))
-	{
-		return RPCError(rpcBAD_SEED);
-	}
-	else if (!naSrcAccountID.setAccountID(params[1u].asString()))
-	{
-		return RPCError(rpcSRC_ACT_MALFORMED);
-	}
-	else
-	{
-		NewcoinAddress			naMasterGenerator;
-		NewcoinAddress			naAccountPublic;
-		NewcoinAddress			naAccountPrivate;
-		AccountState::pointer	asSrc;
-		STAmount				saSrcBalance;
-		Json::Value				obj		= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
-			saSrcBalance, theConfig.FEE_DEFAULT, asSrc, naMasterGenerator);
-
-		if (!obj.empty())
-			return obj;
-
-		uTransitRate		= 0;
-		uTransitStart		= 0;
-		uTransitExpire		= 0;
-
-		Transaction::pointer	trans	= Transaction::sharedTransitSet(
-			naAccountPublic, naAccountPrivate,
-			naSrcAccountID,
-			asSrc->getSeq(),
-			theConfig.FEE_DEFAULT,
-			0,											// YYY No source tag
-			uTransitRate,
-			uTransitStart,
-			uTransitExpire);
-
-		(void) mNetOps->processTransaction(trans);
-
-		obj["transaction"]		= trans->getSTransaction()->getJson(0);
-		obj["status"]			= trans->getStatus();
-		obj["seed"]				= naSeed.humanSeed();
-		obj["srcAccountID"]		= naSrcAccountID.humanAccountID();
-		obj["transitRate"]		= uTransitRate;
-		obj["transitStart"]		= uTransitStart;
-		obj["transitExpire"]	= uTransitExpire;
-
-		return obj;
-	}
-}
-
 Json::Value RPCServer::doTx(const Json::Value& params)
 {
 	// tx <txID>
@@ -2061,7 +1990,6 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 		{	"send",					&RPCServer::doSend,					3, 7, false,	optCurrent	},
 		{	"server_info",			&RPCServer::doServerInfo,			0, 0, true					},
 		{	"stop",					&RPCServer::doStop,					0, 0, true					},
-		{	"transit_set",			&RPCServer::doTransitSet,			5, 5, true,		optCurrent	},
 		{	"tx",					&RPCServer::doTx,					1, 1, true					},
 
 		{	"unl_add",				&RPCServer::doUnlAdd,				1, 2, true					},

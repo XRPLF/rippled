@@ -96,12 +96,6 @@ private:
 		const STAmount&						saSendMax,
 		const STPathSet&					spPaths);
 
-	Transaction::pointer setTransitSet(
-		const NewcoinAddress&				naPrivateKey,
-		uint32								uTransitRate,
-		uint32								uTransitStart,
-		uint32								uTransitExpire);
-
 	Transaction::pointer setWalletAdd(
 		const NewcoinAddress&				naPrivateKey,
 		const STAmount&						saAmount,
@@ -205,17 +199,6 @@ public:
 		const STAmount&						saAmount,
 		const STAmount&						saSendMax,
 		const STPathSet&					saPaths);
-
-	// Set transit fees.
-	static Transaction::pointer sharedTransitSet(
-		const NewcoinAddress& naPublicKey, const NewcoinAddress& naPrivateKey,
-		const NewcoinAddress&				naSourceAccount,
-		uint32								uSeq,
-		const STAmount&						saFee,
-		uint32								uSourceTag,
-		uint32								uTransitRate,
-		uint32								uTransitStart,
-		uint32								uTransitExpire);
 
 	// Add an account to a wallet.
 	static Transaction::pointer sharedWalletAdd(

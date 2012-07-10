@@ -57,7 +57,6 @@ void printHelp(const po::options_description& desc)
 	cout << "     peers" << endl;
 	cout << "     send <seed> <paying_account> <account_id> <amount> [<currency>] [<send_max>] [<send_currency>]" << endl;
 	cout << "     stop" << endl;
-	cout << "     transit_set <seed> <paying_account> <transit_rate> <starts> <expires>" << endl;
 	cout << "     tx <id>" << endl;
 	cout << "     unl_add <domain>|<public> [<comment>]" << endl;
 	cout << "     unl_delete <domain>|<public_key>" << endl;

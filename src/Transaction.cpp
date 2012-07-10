@@ -414,43 +414,6 @@ Transaction::pointer Transaction::sharedPayment(
 }
 
 //
-// TransitSet
-//
-
-Transaction::pointer Transaction::setTransitSet(
-	const NewcoinAddress&	naPrivateKey,
-	uint32					uTransitRate,
-	uint32					uTransitStart,
-	uint32					uTransitExpire)
-{
-	if (uTransitRate)
-		mTransaction->setITFieldU32(sfTransitRate, uTransitRate);
-	if (uTransitStart)
-		mTransaction->setITFieldU32(sfTransitStart, uTransitStart);
-	if (uTransitExpire)
-		mTransaction->setITFieldU32(sfTransitExpire, uTransitExpire);
-
-	sign(naPrivateKey);
-
-	return shared_from_this();
-}
-
-Transaction::pointer Transaction::sharedTransitSet(
-	const NewcoinAddress& naPublicKey, const NewcoinAddress& naPrivateKey,
-	const NewcoinAddress&	naSourceAccount,
-	uint32					uSeq,
-	const STAmount&			saFee,
-	uint32					uSourceTag,
-	uint32					uTransitRate,
-	uint32					uTransitStart,
-	uint32					uTransitExpire)
-{
-	pointer	tResult	= boost::make_shared<Transaction>(ttTRANSIT_SET, naPublicKey, naSourceAccount, uSeq, saFee, uSourceTag);
-
-	return tResult->setTransitSet(naPrivateKey, uTransitRate, uTransitStart, uTransitExpire);
-}
-
-//
 // WalletAdd
 //
 
