@@ -198,6 +198,9 @@ STVector256 NetworkOPs::getDirNodeInfo(
 	else
 	{
 		Log(lsINFO) << "getDirNodeInfo: node index: NOT FOUND: " << uNodeIndex.ToString();
+
+		uNodePrevious	= 0;
+		uNodeNext		= 0;
 	}
 
 	return svIndexes;
