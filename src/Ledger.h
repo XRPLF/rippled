@@ -65,6 +65,7 @@ private:
 	uint256		mHash, mParentHash, mTransHash, mAccountHash;
 	uint64		mTotCoins;
 	uint64		mCloseTime; // when this ledger closes
+	uint64		mParentCloseTime;
 	uint32		mLedgerSeq;
 	uint16		mLedgerInterval;
 	bool		mClosed, mValidHash, mAccepted, mImmutable;
@@ -119,6 +120,7 @@ public:
 	uint64 getTotalCoins() const			{ return mTotCoins; }
 	void destroyCoins(uint64 fee)			{ mTotCoins -= fee; }
 	uint64 getCloseTimeNC() const			{ return mCloseTime; }
+	uint64 getParentCloseTimeNC() const		{ return mParentCloseTime; }
 	uint32 getLedgerSeq() const				{ return mLedgerSeq; }
 	uint16 getInterval() const				{ return mLedgerInterval; }
 
@@ -200,17 +202,24 @@ public:
 	SLE::pointer getOffer(LedgerStateParms& parms, const uint160& uAccountID, uint32 uSequence)
 	{ return getOffer(parms, getOfferIndex(uAccountID, uSequence)); }
 
-
+	// The index of an offer.
 	static uint256 getOfferIndex(const uint160& uAccountID, uint32 uSequence);
 
-	static uint256 getOfferDirIndex(const uint160& uAccountID);
+	//
+	// Owner functions
+	//
+
+	// All items controlled by an account are here: offers
+	static uint256 getOwnerDirIndex(const uint160& uAccountID);
 
 	//
 	// Directory functions
-	//
+	// Directories are doubly linked lists of nodes.
 
+	// Given a directory root and and index compute the index of a node.
 	static uint256 getDirNodeIndex(const uint256& uDirRoot, const uint64 uNodeIndex=0);
 
+	// Return a node: root or normal
 	SLE::pointer getDirNode(LedgerStateParms& parms, const uint256& uNodeIndex);
 
 	//
@@ -223,12 +232,12 @@ public:
 	// Ripple functions : credit lines
 	//
 
+	// Index of node which is the ripple state between to accounts for a currency.
 	static uint256 getRippleStateIndex(const NewcoinAddress& naA, const NewcoinAddress& naB, const uint160& uCurrency);
 	static uint256 getRippleStateIndex(const uint160& uiA, const uint160& uiB, const uint160& uCurrency)
 		{ return getRippleStateIndex(NewcoinAddress::createAccountID(uiA), NewcoinAddress::createAccountID(uiB), uCurrency); }
 
-	static uint256 getRippleStateIndex(const NewcoinAddress& naA, const NewcoinAddress& naB)
-		{ return getRippleStateIndex(naA, naB, uint160()); }
+	// Directory of lines indexed by an account (not all lines are indexed)
 	static uint256 getRippleDirIndex(const uint160& uAccountID);
 
 	RippleState::pointer getRippleState(const uint256& uNode);

@@ -140,6 +140,7 @@ private:
 protected:
 	Ledger::pointer mDefaultLedger, mAlternateLedger;
 	Ledger::pointer mLedger;
+	uint64			mLedgerParentCloseTime;
 
 	TransactionEngineResult doAccountSet(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts);
 	TransactionEngineResult doClaim(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts);
@@ -147,7 +148,7 @@ protected:
 								const uint160& uSrcAccountID);
 	TransactionEngineResult doDelete(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts);
 	TransactionEngineResult doInvoice(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts);
-	TransactionEngineResult doOffer(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts,
+	TransactionEngineResult doOfferCreate(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts,
 								const uint160& uSrcAccountID);
 	TransactionEngineResult doOfferCancel(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts,
 								const uint160& uSrcAccountID);
@@ -160,7 +161,6 @@ protected:
 								const uint160& uSrcAccountID);
 	TransactionEngineResult doStore(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts);
 	TransactionEngineResult doTake(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts);
-	TransactionEngineResult doTransitSet(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts);
 	TransactionEngineResult doWalletAdd(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts);
 
 public:

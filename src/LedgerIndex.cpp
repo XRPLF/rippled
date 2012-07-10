@@ -99,11 +99,11 @@ uint256 Ledger::getOfferIndex(const uint160& uAccountID, uint32 uSequence)
 	return s.getSHA512Half();
 }
 
-uint256 Ledger::getOfferDirIndex(const uint160& uAccountID)
+uint256 Ledger::getOwnerDirIndex(const uint160& uAccountID)
 {
 	Serializer	s(22);
 
-	s.add16(spaceOfferDir);		//  2
+	s.add16(spaceOwnerDir);		//  2
 	s.add160(uAccountID);		// 20
 
 	return s.getSHA512Half();

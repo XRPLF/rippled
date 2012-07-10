@@ -25,7 +25,7 @@ enum LedgerNameSpace
 	spaceRipple			= 'r',
 	spaceRippleDir		= 'R',
 	spaceOffer			= 'o',	// Entry for an offer.
-	spaceOfferDir		= 'O',	// Directory of an account's offers.
+	spaceOwnerDir		= 'O',	// Directory of things owned by an account.
 	spaceBookDir		= 'B',	// Directory of order books.
 	spaceBond			= 'b',
 	spaceInvoice		= 'i',
