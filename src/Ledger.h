@@ -233,6 +233,7 @@ public:
 	//
 
 	static uint256 getQualityIndex(const uint256& uBase, const uint64 uNodeDir=0);
+	static uint256 getQualityNext(const uint256& uBase);
 
 	//
 	// Ripple functions : credit lines

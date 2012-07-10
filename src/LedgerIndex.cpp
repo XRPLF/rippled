@@ -15,6 +15,17 @@ uint256 Ledger::getQualityIndex(const uint256& uBase, const uint64 uNodeDir)
 	return uNode;
 }
 
+uint256 Ledger::getQualityNext(const uint256& uBase)
+{
+	static	uint256	uNext("10000000000000000");
+
+	uint256	uResult	= uBase;
+
+	uResult += uNext;
+
+	return uResult;
+}
+
 uint256 Ledger::getAccountRootIndex(const uint160& uAccountID)
 {
 	Serializer	s(22);
