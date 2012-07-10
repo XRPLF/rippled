@@ -190,6 +190,7 @@ STVector256 NetworkOPs::getDirNodeInfo(
 
 		uNodePrevious	= sleNode->getIFieldU64(sfIndexPrevious);
 		uNodeNext		= sleNode->getIFieldU64(sfIndexNext);
+		svIndexes		= sleNode->getIFieldV256(sfIndexes);
 
 		Log(lsTRACE) << "getDirNodeInfo: first: " << strHex(uNodePrevious);
 		Log(lsTRACE) << "getDirNodeInfo:  last: " << strHex(uNodeNext);

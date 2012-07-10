@@ -264,6 +264,7 @@ Json::Value RPCServer::getMasterGenerator(const uint256& uLedger, const NewcoinA
 // <-- naAccountPrivate : Regular private key for naSrcAccountID
 // <-- saSrcBalance: Balance minus fee.
 // --> naVerifyGenerator : If provided, the found master public generator must match.
+// XXX Be more lenient, allow use of master generator on claimed accounts.
 Json::Value RPCServer::authorize(const uint256& uLedger,
 	const NewcoinAddress& naRegularSeed, const NewcoinAddress& naSrcAccountID,
 	NewcoinAddress& naAccountPublic, NewcoinAddress& naAccountPrivate,
@@ -303,7 +304,6 @@ Json::Value RPCServer::authorize(const uint256& uLedger,
 	unsigned int		iIndex	= 0;
 	bool				bFound	= false;
 
-	// XXX Stop after Config.account_probe_max
 	// Don't look at ledger entries to determine if the account exists.  Don't want to leak to thin server that these accounts are
 	// related.
 	while (!bFound && iIndex != theConfig.ACCOUNT_PROBE_MAX)
@@ -1086,11 +1086,13 @@ Json::Value RPCServer::doRippleLinesGet(const Json::Value &params)
 
 		ret["account"]	= naAccount.humanAccountID();
 
+		// XXX This is wrong, we do access the current ledger and do need to worry about changes.
 		// We access a committed ledger and need not worry about changes.
 		uint256	uRootIndex;
 
 		if (mNetOps->getDirLineInfo(uCurrent, naAccount, uRootIndex))
 		{
+			Log(lsINFO) << "doRippleLinesGet: dir root index: " << uRootIndex.ToString();
 			bool	bDone	= false;
 
 			while (!bDone)
@@ -1099,12 +1101,18 @@ Json::Value RPCServer::doRippleLinesGet(const Json::Value &params)
 				uint64		uNodeNext;
 				STVector256	svRippleNodes	= mNetOps->getDirNodeInfo(uCurrent, uRootIndex, uNodePrevious, uNodeNext);
 
+				Log(lsINFO) << "doRippleLinesGet: previous: " << strHex(uNodePrevious);
+				Log(lsINFO) << "doRippleLinesGet:     next: " << strHex(uNodeNext);
+				Log(lsINFO) << "doRippleLinesGet:    lines: " << svRippleNodes.peekValue().size();
+
 				BOOST_FOREACH(uint256& uNode, svRippleNodes.peekValue())
 				{
 					NewcoinAddress	naAccountPeer;
 					STAmount		saBalance;
 					STAmount		saLimit;
 					STAmount		saLimitPeer;
+
+					Log(lsINFO) << "doRippleLinesGet: line index: " << uNode.ToString();
 
 					RippleState::pointer	rsLine	= mNetOps->getRippleState(uCurrent, uNode);
 
@@ -1130,7 +1138,7 @@ Json::Value RPCServer::doRippleLinesGet(const Json::Value &params)
 					}
 					else
 					{
-						std::cerr << "doAccountLines: Bad index: " << uNode.ToString() << std::endl;
+						Log(lsWARNING) << "doRippleLinesGet: Bad index: " << uNode.ToString();
 					}
 				}
 
@@ -1144,11 +1152,15 @@ Json::Value RPCServer::doRippleLinesGet(const Json::Value &params)
 				}
 			}
 		}
+		else
+		{
+			Log(lsINFO) << "doRippleLinesGet: no directory: " << uRootIndex.ToString();
+		}
 		ret["lines"]	= jsonLines;
 	}
 	else
 	{
-		ret["status"]	= "NotFound";
+		ret	= RPCError(rpcACT_NOT_FOUND);
 	}
 
 	return ret;
@@ -1234,6 +1246,7 @@ Json::Value RPCServer::doSend(const Json::Value& params)
 
 			return RPCError(rpcINSUF_FUNDS);
 		}
+		// XXX Don't allow send to self of same currency.
 
 		Transaction::pointer	trans;
 
