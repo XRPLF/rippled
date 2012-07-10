@@ -110,9 +110,8 @@ public:
 	// Directory functions
 	//
 
-	bool					getDirInfo(const uint256& uLedger, const uint256& uBase,
-								uint256& uDirNodeFirst, uint256& uDirNodeLast);
-	STVector256				getDirNode(const uint256& uLedger, const uint256& uDirLineNode);
+	STVector256					getDirNodeInfo(const uint256& uLedger, const uint256& uRootIndex,
+									uint64& uNodePrevious, uint64& uNodeNext);
 
 	//
 	// Nickname functions
@@ -124,8 +123,14 @@ public:
 	// Ripple functions
 	//
 
-	bool					getDirLineInfo(const uint256& uLedger, const NewcoinAddress& naAccount, uint256& uDirLineNodeFirst, uint256& uDirLineNodeLast)
-		{ return getDirInfo(uLedger, Ledger::getRippleDirIndex(naAccount.getAccountID()), uDirLineNodeFirst, uDirLineNodeLast); }
+	bool					getDirLineInfo(const uint256& uLedger, const NewcoinAddress& naAccount, uint256& uRootIndex)
+		{
+			LedgerStateParms	lspNode		= lepNONE;
+
+			uRootIndex	= Ledger::getRippleDirIndex(naAccount.getAccountID());
+
+			return !!mLedgerMaster->getLedgerByHash(uLedger)->getDirNode(lspNode, uRootIndex);
+		}
 
 	RippleState::pointer	getRippleState(const uint256& uLedger, const uint256& uIndex);
 

@@ -16,20 +16,16 @@ LedgerEntryFormat LedgerFormats[]=
 		{ S_FIELD(EmailHash),			STI_HASH128,	SOE_IFFLAG,   2 },
 		{ S_FIELD(WalletLocator),		STI_HASH256,	SOE_IFFLAG,   4 },
 		{ S_FIELD(MessageKey),			STI_VL,			SOE_IFFLAG,   8 },
-		{ S_FIELD(TransitRate),			STI_UINT32,		SOE_IFFLAG,  16 },
-		{ S_FIELD(Extensions),			STI_TL,			SOE_IFFLAG,   0x01000000 },
-		{ sfInvalid, NULL,				STI_DONE,		SOE_NEVER,	  -1 } }
-	},
-	{ "DirectoryRoot", ltDIR_ROOT, {
-		{ S_FIELD(Flags),				STI_UINT32,		SOE_FLAGS,	  0 },
-		{ S_FIELD(FirstNode),			STI_UINT64,		SOE_REQUIRED, 0 },
-		{ S_FIELD(LastNode),			STI_UINT64,		SOE_REQUIRED, 0 },
+		{ S_FIELD(TransferRate),		STI_UINT32,		SOE_IFFLAG,  16 },
+		{ S_FIELD(Domain),				STI_VL,			SOE_IFFLAG,  32 },
 		{ S_FIELD(Extensions),			STI_TL,			SOE_IFFLAG,   0x01000000 },
 		{ sfInvalid, NULL,				STI_DONE,		SOE_NEVER,	  -1 } }
 	},
 	{ "DirectoryNode", ltDIR_NODE, {
 		{ S_FIELD(Flags),				STI_UINT32,		SOE_FLAGS,	  0 },
 		{ S_FIELD(Indexes),				STI_VECTOR256,	SOE_REQUIRED, 0 },
+		{ S_FIELD(IndexNext),			STI_UINT64,		SOE_IFFLAG,   1 },
+		{ S_FIELD(IndexPrevious),		STI_UINT64,		SOE_IFFLAG,   2 },
 		{ S_FIELD(Extensions),			STI_TL,			SOE_IFFLAG,   0x01000000 },
 		{ sfInvalid, NULL,				STI_DONE,		SOE_NEVER,	  -1 } }
 	},
@@ -46,6 +42,18 @@ LedgerEntryFormat LedgerFormats[]=
 		{ S_FIELD(Extensions),			STI_TL,			SOE_IFFLAG,   0x01000000 },
 		{ sfInvalid, NULL,				STI_DONE,		SOE_NEVER,	  -1 } }
 	},
+	{ "Offer", ltOFFER, {
+		{ S_FIELD(Flags),				STI_UINT32,		SOE_FLAGS,	  0 },
+		{ S_FIELD(Account),				STI_ACCOUNT,	SOE_REQUIRED, 0 },
+		{ S_FIELD(Sequence),			STI_UINT32,		SOE_REQUIRED, 0 },
+		{ S_FIELD(AmountIn),			STI_AMOUNT,		SOE_REQUIRED, 0 },
+		{ S_FIELD(AmountOut),			STI_AMOUNT,		SOE_REQUIRED, 0 },
+		{ S_FIELD(Expiration),			STI_UINT32,		SOE_REQUIRED, 0 },
+		{ S_FIELD(OwnerNode),			STI_UINT64,		SOE_REQUIRED, 0 },
+		{ S_FIELD(BookNode),			STI_UINT64,		SOE_REQUIRED, 0 },
+		{ S_FIELD(Extensions),			STI_TL,			SOE_IFFLAG,   0x01000000 },
+		{ sfInvalid, NULL,				STI_DONE,		SOE_NEVER,	  -1 } }
+	},
 	{ "RippleState", ltRIPPLE_STATE, {
 		{ S_FIELD(Flags),				STI_UINT32,		SOE_FLAGS,	  0 },
 		{ S_FIELD(Balance),				STI_AMOUNT,		SOE_REQUIRED, 0 },
@@ -53,7 +61,8 @@ LedgerEntryFormat LedgerFormats[]=
 		{ S_FIELD(LowLimit),			STI_AMOUNT,		SOE_REQUIRED, 0 },
 		{ S_FIELD(HighID),				STI_ACCOUNT,	SOE_REQUIRED, 0 },
 		{ S_FIELD(HighLimit),			STI_AMOUNT,		SOE_REQUIRED, 0 },
-		{ S_FIELD(AcceptRate),			STI_UINT32,		SOE_IFFLAG,   1 },
+		{ S_FIELD(QualityIn),			STI_UINT32,		SOE_IFFLAG,   1 },
+		{ S_FIELD(QualityOut),			STI_UINT32,		SOE_IFFLAG,   2 },
 		{ S_FIELD(Extensions),			STI_TL,			SOE_IFFLAG,   0x01000000 },
 		{ sfInvalid, NULL,				STI_DONE,		SOE_NEVER,	  -1 } }
 	},

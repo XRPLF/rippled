@@ -6,6 +6,8 @@
 #include "utils.h"
 #include "Log.h"
 
+// XXX Use shared locks where possible?
+
 LedgerStateParms Ledger::writeBack(LedgerStateParms parms, SLE::pointer entry)
 {
 	ScopedLock l(mAccountStateMap->Lock());
@@ -98,7 +100,7 @@ SLE::pointer Ledger::getASNode(LedgerStateParms& parms, const uint256& nodeID,
 	SLE::pointer sle =
 		boost::make_shared<SLE>(account->peekSerializer(), nodeID);
 
-	if(sle->getType() != let)
+	if (sle->getType() != let)
 	{ // maybe it's a currency or something
 		parms = parms | lepWRONGTYPE;
 		return SLE::pointer();
@@ -120,6 +122,17 @@ SLE::pointer Ledger::getAccountRoot(LedgerStateParms& parms, const uint160& acco
 SLE::pointer Ledger::getAccountRoot(LedgerStateParms& parms, const NewcoinAddress& naAccountID)
 {
 	return getAccountRoot(parms, naAccountID.getAccountID());
+}
+
+//
+// Directory
+//
+
+SLE::pointer Ledger::getDirNode(LedgerStateParms& parms, const uint256& uNodeIndex)
+{
+	ScopedLock l(mAccountStateMap->Lock());
+
+	return getASNode(parms, uNodeIndex, ltDIR_NODE);
 }
 
 //
@@ -145,6 +158,18 @@ SLE::pointer Ledger::getNickname(LedgerStateParms& parms, const uint256& uNickna
 }
 
 //
+// Offer
+//
+
+
+SLE::pointer Ledger::getOffer(LedgerStateParms& parms, const uint256& uIndex)
+{
+	ScopedLock l(mAccountStateMap->Lock());
+
+	return getASNode(parms, uIndex, ltOFFER);
+}
+
+//
 // Ripple State
 //
 
@@ -153,38 +178,6 @@ SLE::pointer Ledger::getRippleState(LedgerStateParms& parms, const uint256& uNod
 	ScopedLock l(mAccountStateMap->Lock());
 
 	return getASNode(parms, uNode, ltRIPPLE_STATE);
-}
-
-//
-// Directory
-//
-
-// For a directory entry put in the 64 bit index or quality.
-uint256 Ledger::getDirIndex(const uint256& uBase, const uint64 uNodeDir)
-{
-	// Indexes are stored in big endian format: they print as hex as stored.
-	// Most significant bytes are first.  Least significant bytes repesent adjcent entries.
-	// We place uNodeDir in the 8 right most bytes to be adjcent.
-	// Want uNodeDir in big endian format so ++ goes to the next entry for indexes.
-	uint256	uNode(uBase);
-
-	((uint64*) uNode.end())[-1]	= htobe64(uNodeDir);
-
-	return uNode;
-}
-
-SLE::pointer Ledger::getDirRoot(LedgerStateParms& parms, const uint256& uRootIndex)
-{
-	ScopedLock l(mAccountStateMap->Lock());
-
-	return getASNode(parms, uRootIndex, ltDIR_ROOT);
-}
-
-SLE::pointer Ledger::getDirNode(LedgerStateParms& parms, const uint256& uNodeIndex)
-{
-	ScopedLock l(mAccountStateMap->Lock());
-
-	return getASNode(parms, uNodeIndex, ltDIR_NODE);
 }
 
 // vim:ts=4

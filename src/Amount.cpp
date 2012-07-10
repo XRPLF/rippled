@@ -256,10 +256,11 @@ STAmount::STAmount(const char* name, int64 value) : SerializedType(name), mOffse
 
 void STAmount::setValue(const STAmount &a)
 {
-	mCurrency = a.mCurrency;
-	mValue = a.mValue;
-	mOffset = a.mOffset;
-	mIsNative = a.mIsNative;
+	mCurrency	= a.mCurrency;
+	mIssuer		= a.mIssuer;
+	mValue		= a.mValue;
+	mOffset		= a.mOffset;
+	mIsNative	= a.mIsNative;
 	mIsNegative = a.mIsNegative;
 }
 
@@ -455,11 +456,13 @@ STAmount STAmount::operator-(void) const
 
 STAmount& STAmount::operator=(const STAmount& a)
 {
-	mValue = a.mValue;
-	mOffset = a.mOffset;
-	mCurrency = a.mCurrency;
-	mIsNative = a.mIsNative;
+	mValue		= a.mValue;
+	mOffset		= a.mOffset;
+	mIssuer		= a.mIssuer;
+	mCurrency	= a.mCurrency;
+	mIsNative	= a.mIsNative;
 	mIsNegative = a.mIsNegative;
+
 	return *this;
 }
 
@@ -469,6 +472,7 @@ STAmount& STAmount::operator=(uint64 v)
 	mValue = v;
 	mIsNegative = false;
 	if (!mIsNative) canonicalize();
+
 	return *this;
 }
 
@@ -477,6 +481,7 @@ STAmount& STAmount::operator+=(uint64 v)
 	if (mIsNative)
 		setSNValue(getSNValue() + static_cast<int64>(v));
 	else *this += STAmount(mCurrency, v);
+
 	return *this;
 }
 
@@ -485,6 +490,7 @@ STAmount& STAmount::operator-=(uint64 v)
 	if (mIsNative)
 		setSNValue(getSNValue() - static_cast<int64>(v));
 	else *this -= STAmount(mCurrency, v);
+
 	return *this;
 }
 
@@ -697,15 +703,24 @@ STAmount STAmount::multiply(const STAmount& v1, const STAmount& v2, const uint16
 	else return STAmount(currencyOut, v.getulong(), offset1 + offset2 + 14);
 }
 
+// Convert an offer into an index amount so they sort by rate.
+// A taker will take the best, lowest, rate first.
+// (e.g. a taker will prefer pay 1 get 3 over pay 1 get 2.
+// --> offerOut: takerGets: How much the offerer is selling to the taker.
+// -->  offerIn: takerPays: How much the offerer is receiving from the taker.
+// <--    uRate: normalize(offerIn/offerOut)
+//             A lower rate is better for the person taking the order.
+//             The taker gets more for less with a lower rate.
 uint64 STAmount::getRate(const STAmount& offerOut, const STAmount& offerIn)
-{ // Convert an offer into an index amount so they sort (lower is better)
-	// offerOut = how much comes out of the offer, from the offeror to the taker
-	// offerIn = how much goes into the offer, from the taker to the offeror
+{
 	if (offerOut.isZero()) throw std::runtime_error("Worthless offer");
 
 	STAmount r = divide(offerIn, offerOut, uint160(1));
+
 	assert((r.getExponent() >= -100) && (r.getExponent() <= 155));
+
 	uint64 ret = r.getExponent() + 100;
+
 	return (ret << (64 - 8)) | r.getMantissa();
 }
 
@@ -746,11 +761,19 @@ STAmount STAmount::getClaimed(STAmount& offerOut, STAmount& offerIn, STAmount& p
 	return ret;
 }
 
-STAmount STAmount::getNeeded(const STAmount& offerOut, const STAmount& offerIn, const STAmount& needed)
+STAmount STAmount::getPay(const STAmount& offerOut, const STAmount& offerIn, const STAmount& needed)
 { // Someone wants to get (needed) out of the offer, how much should they pay in?
-	if (offerOut.isZero()) return STAmount(offerIn.getCurrency());
-	if (needed >= offerOut) return needed;
+	if (offerOut.isZero())
+		return STAmount(offerIn.getCurrency());
+
+	if (needed >= offerOut)
+	{
+		// They need more than offered, pay full amount.
+		return needed;
+	}
+
 	STAmount ret = divide(multiply(needed, offerIn, uint160(1)), offerOut, offerIn.getCurrency());
+
 	return (ret > offerIn) ? offerIn : ret;
 }
 

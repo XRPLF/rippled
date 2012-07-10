@@ -1,12 +1,87 @@
 
 #include "Ledger.h"
 
+// For an entry put in the 64 bit index or quality.
+uint256 Ledger::getQualityIndex(const uint256& uBase, const uint64 uNodeDir)
+{
+	// Indexes are stored in big endian format: they print as hex as stored.
+	// Most significant bytes are first.  Least significant bytes repesent adjcent entries.
+	// We place uNodeDir in the 8 right most bytes to be adjcent.
+	// Want uNodeDir in big endian format so ++ goes to the next entry for indexes.
+	uint256	uNode(uBase);
+
+	((uint64*) uNode.end())[-1]	= htobe64(uNodeDir);
+
+	return uNode;
+}
+
+uint256 Ledger::getQualityNext(const uint256& uBase)
+{
+	static	uint256	uNext("10000000000000000");
+
+	uint256	uResult	= uBase;
+
+	uResult += uNext;
+
+	return uResult;
+}
+
 uint256 Ledger::getAccountRootIndex(const uint160& uAccountID)
 {
-	Serializer	s;
+	Serializer	s(22);
 
-	s.add16(spaceAccount);
-	s.add160(uAccountID);
+	s.add16(spaceAccount);	//  2
+	s.add160(uAccountID);	// 20
+
+	return s.getSHA512Half();
+}
+
+uint256 Ledger::getBookBase(const uint160& uCurrencyIn, const uint160& uAccountIn,
+	const uint160& uCurrencyOut, const uint160& uAccountOut)
+{
+	bool		bInNative	= uCurrencyIn.isZero();
+	bool		bOutNative	= uCurrencyOut.isZero();
+
+	assert(!bInNative || !bOutNative);									// Stamps to stamps not allowed.
+	assert(bInNative == !uAccountIn.isZero());							// Make sure issuer is specified as needed.
+	assert(bOutNative == !uAccountOut.isZero());						// Make sure issuer is specified as needed.
+	assert(uCurrencyIn != uCurrencyOut || uAccountIn != uAccountOut);	// Currencies or accounts must differ.
+
+	Serializer	s(82);
+
+	s.add16(spaceBookDir);		//  2
+	s.add160(uCurrencyIn);		// 20
+	s.add160(uCurrencyOut);		// 20
+	s.add160(uAccountIn);		// 20
+	s.add160(uAccountOut);		// 20
+
+	return getQualityIndex(s.getSHA512Half());	// Return with quality 0.
+}
+
+uint256 Ledger::getDirNodeIndex(const uint256& uDirRoot, const uint64 uNodeIndex)
+{
+	if (uNodeIndex)
+	{
+		Serializer	s(42);
+
+		s.add16(spaceDirNode);		//  2
+		s.add256(uDirRoot);			// 32
+		s.add64(uNodeIndex);		//  8
+
+		return s.getSHA512Half();
+	}
+	else
+	{
+		return uDirRoot;
+	}
+}
+
+uint256 Ledger::getGeneratorIndex(const uint160& uGeneratorID)
+{
+	Serializer	s(22);
+
+	s.add16(spaceGenerator);	//  2
+	s.add160(uGeneratorID);		// 20
 
 	return s.getSHA512Half();
 }
@@ -16,20 +91,41 @@ uint256 Ledger::getAccountRootIndex(const uint160& uAccountID)
 // <-- SHA512/2: for consistency and speed in generating indexes.
 uint256 Ledger::getNicknameIndex(const uint256& uNickname)
 {
-	Serializer	s;
+	Serializer	s(34);
 
-	s.add16(spaceNickname);
-	s.add256(uNickname);
+	s.add16(spaceNickname);		//  2
+	s.add256(uNickname);		// 32
 
 	return s.getSHA512Half();
 }
 
-uint256 Ledger::getGeneratorIndex(const uint160& uGeneratorID)
+uint256 Ledger::getOfferIndex(const uint160& uAccountID, uint32 uSequence)
 {
-	Serializer	s;
+	Serializer	s(26);
 
-	s.add16(spaceGenerator);
-	s.add160(uGeneratorID);
+	s.add16(spaceOffer);		//  2
+	s.add160(uAccountID);		// 20
+	s.add32(uSequence);			//  4
+
+	return s.getSHA512Half();
+}
+
+uint256 Ledger::getOwnerDirIndex(const uint160& uAccountID)
+{
+	Serializer	s(22);
+
+	s.add16(spaceOwnerDir);		//  2
+	s.add160(uAccountID);		// 20
+
+	return s.getSHA512Half();
+}
+
+uint256 Ledger::getRippleDirIndex(const uint160& uAccountID)
+{
+	Serializer	s(22);
+
+	s.add16(spaceRippleDir);	//  2
+	s.add160(uAccountID);		// 20
 
 	return s.getSHA512Half();
 }
@@ -39,75 +135,14 @@ uint256 Ledger::getRippleStateIndex(const NewcoinAddress& naA, const NewcoinAddr
 	uint160		uAID	= naA.getAccountID();
 	uint160		uBID	= naB.getAccountID();
 	bool		bAltB	= uAID < uBID;
-	Serializer	s;
+	Serializer	s(62);
 
-	s.add16(spaceRipple);
-	s.add160(bAltB ? uAID : uBID);
-	s.add160(bAltB ? uBID : uAID);
-	s.add160(uCurrency);
-
-	return s.getSHA512Half();
-}
-
-uint256 Ledger::getRippleDirIndex(const uint160& uAccountID)
-{
-	Serializer	s;
-
-	s.add16(spaceRippleDir);
-	s.add160(uAccountID);
+	s.add16(spaceRipple);			//  2
+	s.add160(bAltB ? uAID : uBID);	// 20
+	s.add160(bAltB ? uBID : uAID);  // 20
+	s.add160(uCurrency);			// 20
 
 	return s.getSHA512Half();
-}
-
-uint160 Ledger::getOfferBase(const uint160& currencyIn, const uint160& accountIn,
-	const uint160& currencyOut, const uint160& accountOut)
-{
-	bool inNative = currencyIn.isZero();
-	bool outNative = currencyOut.isZero();
-
-	if (inNative && outNative)
-		throw std::runtime_error("native to native offer");
-
-	Serializer s(80);
-
-	if (inNative)
-	{
-		if (!currencyIn) throw std::runtime_error("native currencies are untied");
-		s.add32(0); // prevent collisions by ensuring different lengths
-	}
-	else
-	{
-		if (!!currencyIn) throw std::runtime_error("national currencies must be tied");
-		s.add160(currencyIn);
-		s.add160(accountIn);
-	}
-
-	if (outNative)
-	{
-		if (!currencyOut) throw std::runtime_error("native currencies are untied");
-	}
-	else
-	{
-		if (!!currencyOut) throw std::runtime_error("national currencies must be tied");
-		s.add160(currencyOut);
-		s.add160(accountOut);
-	}
-
-	return s.getRIPEMD160();
-}
-
-uint256 Ledger::getOfferIndex(const uint160& offerBase, uint64 rate, int skip)
-{ // the node for an offer index
-	Serializer s;
-	s.add160(offerBase);
-	s.add64(rate);
-	s.add32(skip);
-	return s.get256(0);
-}
-
-int Ledger::getOfferSkip(const uint256& offerId)
-{ // how far ahead we skip if an index node is full
-	return *offerId.begin();
 }
 
 // vim:ts=4

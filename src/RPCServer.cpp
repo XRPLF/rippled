@@ -487,18 +487,18 @@ Json::Value RPCServer::doAccountInfo(const Json::Value &params)
 
 	// Get info on account.
 
-	uint256			uClosed		= mNetOps->getClosedLedger();
-	Json::Value		jClosed		= accountFromString(uClosed, naAccount, bIndex, strIdent, iIndex);
+	uint256			uAccepted		= mNetOps->getClosedLedger();
+	Json::Value		jAccepted		= accountFromString(uAccepted, naAccount, bIndex, strIdent, iIndex);
 
-	if (jClosed.empty())
+	if (jAccepted.empty())
 	{
-		AccountState::pointer asClosed	= mNetOps->getAccountState(uClosed, naAccount);
+		AccountState::pointer asAccepted	= mNetOps->getAccountState(uAccepted, naAccount);
 
-		if (asClosed)
-			asClosed->addJson(jClosed);
+		if (asAccepted)
+			asAccepted->addJson(jAccepted);
 	}
 
-	ret["closed"]	= jClosed;
+	ret["accepted"]	= jAccepted;
 
 	uint256			uCurrent	= mNetOps->getCurrentLedger();
 	Json::Value		jCurrent	= accountFromString(uCurrent, naAccount, bIndex, strIdent, iIndex);
@@ -514,7 +514,7 @@ Json::Value RPCServer::doAccountInfo(const Json::Value &params)
 	ret["current"]	= jCurrent;
 
 #if 0
-	if (!jClosed && !asCurrent)
+	if (!jAccepted && !asCurrent)
 	{
 		ret["account"]	= naAccount.humanAccountID();
 		ret["status"]	= "NotFound";
@@ -522,95 +522,6 @@ Json::Value RPCServer::doAccountInfo(const Json::Value &params)
 			ret["index"]	= iIndex;
 	}
 #endif
-	return ret;
-}
-
-// account_lines <account>|<nickname>|<account_public_key> [<index>]
-Json::Value RPCServer::doAccountLines(const Json::Value &params)
-{
-//	uint256			uClosed		= mNetOps->getClosedLedger();
-	uint256			uCurrent	= mNetOps->getCurrentLedger();
-
-	std::string		strIdent	= params[0u].asString();
-	bool			bIndex;
-	int				iIndex		= 2 == params.size()? lexical_cast_s<int>(params[1u].asString()) : 0;
-
-	NewcoinAddress	naAccount;
-
-	Json::Value ret;
-
-	ret	= accountFromString(uCurrent, naAccount, bIndex, strIdent, iIndex);
-
-	if (!ret.empty())
-		return ret;
-
-	// Get info on account.
-	ret	= Json::Value(Json::objectValue);
-
-	ret["account"]	= naAccount.humanAccountID();
-	if (bIndex)
-		ret["index"]	= iIndex;
-
-	AccountState::pointer	as		= mNetOps->getAccountState(uCurrent, naAccount);
-	if (as)
-	{
-		Json::Value	jsonLines = Json::Value(Json::objectValue);
-
-		ret["account"]	= naAccount.humanAccountID();
-
-		// We access a committed ledger and need not worry about changes.
-		uint256	uDirLineNodeFirst;
-		uint256	uDirLineNodeLast;
-
-		if (mNetOps->getDirLineInfo(uCurrent, naAccount, uDirLineNodeFirst, uDirLineNodeLast))
-		{
-			for (; uDirLineNodeFirst <= uDirLineNodeLast; uDirLineNodeFirst++)
-			{
-				STVector256	svRippleNodes	= mNetOps->getDirNode(uCurrent, uDirLineNodeFirst);
-
-				BOOST_FOREACH(uint256& uNode, svRippleNodes.peekValue())
-				{
-					NewcoinAddress	naAccountPeer;
-					STAmount		saBalance;
-					STAmount		saLimit;
-					STAmount		saLimitPeer;
-
-					RippleState::pointer	rsLine	= mNetOps->getRippleState(uCurrent, uNode);
-
-					if (rsLine)
-					{
-						rsLine->setViewAccount(naAccount);
-
-						naAccountPeer		= rsLine->getAccountIDPeer();
-						saBalance			= rsLine->getBalance();
-						saLimit				= rsLine->getLimit();
-						saLimitPeer			= rsLine->getLimitPeer();
-
-						Json::Value				jPeer	= Json::Value(Json::objectValue);
-
-						jPeer["node"]		= uNode.ToString();
-
-						jPeer["balance"]	= saBalance.getText();
-						jPeer["currency"]	= saBalance.getCurrencyHuman();
-						jPeer["limit"]		= saLimit.getJson(0);
-						jPeer["limit_peer"]	= saLimitPeer.getJson(0);
-
-						jsonLines[naAccountPeer.humanAccountID()]	= jPeer;
-					}
-					else
-					{
-						std::cerr << "doAccountLines: Bad index: " << uNode.ToString() << std::endl;
-					}
-				}
-			}
-		}
-		ret["lines"]	= jsonLines;
-	}
-	else
-	{
-		ret["status"]	= "NotFound";
-	}
-
 	return ret;
 }
 
@@ -745,69 +656,6 @@ Json::Value RPCServer::doConnect(const Json::Value& params)
 	theApp->getConnectionPool().connectTo(strIp, iPort);
 
 	return "connecting";
-}
-
-// credit_set <seed> <paying_account> <destination_account> <limit_amount> [<currency>] [<accept_rate>]
-Json::Value RPCServer::doCreditSet(const Json::Value& params)
-{
-	NewcoinAddress	naSeed;
-	NewcoinAddress	naSrcAccountID;
-	NewcoinAddress	naDstAccountID;
-	STAmount		saLimitAmount;
-	uint256			uLedger		= mNetOps->getCurrentLedger();
-	uint32			uAcceptRate	= params.size() >= 6 ? lexical_cast_s<uint32>(params[5u].asString()) : 0;
-
-	if (!naSeed.setSeedGeneric(params[0u].asString()))
-	{
-		return RPCError(rpcBAD_SEED);
-	}
-	else if (!naSrcAccountID.setAccountID(params[1u].asString()))
-	{
-		return RPCError(rpcSRC_ACT_MALFORMED);
-	}
-	else if (!naDstAccountID.setAccountID(params[2u].asString()))
-	{
-		return RPCError(rpcDST_ACT_MALFORMED);
-	}
-	else if (!saLimitAmount.setValue(params[3u].asString(), params.size() >= 5 ? params[4u].asString() : ""))
-	{
-		return RPCError(rpcSRC_AMT_MALFORMED);
-	}
-	else
-	{
-		NewcoinAddress			naMasterGenerator;
-		NewcoinAddress			naAccountPublic;
-		NewcoinAddress			naAccountPrivate;
-		AccountState::pointer	asSrc;
-		STAmount				saSrcBalance;
-		Json::Value				obj			= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
-			saSrcBalance, theConfig.FEE_DEFAULT, asSrc, naMasterGenerator);
-
-		if (!obj.empty())
-			return obj;
-
-		Transaction::pointer	trans	= Transaction::sharedCreditSet(
-			naAccountPublic, naAccountPrivate,
-			naSrcAccountID,
-			asSrc->getSeq(),
-			theConfig.FEE_DEFAULT,
-			0,											// YYY No source tag
-			naDstAccountID,
-			saLimitAmount,
-			uAcceptRate);
-
-		(void) mNetOps->processTransaction(trans);
-
-		obj["transaction"]		= trans->getSTransaction()->getJson(0);
-		obj["status"]			= trans->getStatus();
-		obj["seed"]				= naSeed.humanSeed();
-		obj["srcAccountID"]		= naSrcAccountID.humanAccountID();
-		obj["dstAccountID"]		= naDstAccountID.humanAccountID();
-		obj["limitAmount"]		= saLimitAmount.getText();
-		obj["acceptRate"]		= uAcceptRate;
-
-		return obj;
-	}
 }
 
 // data_delete <key>
@@ -1142,6 +990,170 @@ Json::Value RPCServer::doPeers(const Json::Value& params)
 	return obj;
 }
 
+// ripple_line_set <seed> <paying_account> <destination_account> <limit_amount> [<currency>] [<accept_rate>]
+Json::Value RPCServer::doRippleLineSet(const Json::Value& params)
+{
+	NewcoinAddress	naSeed;
+	NewcoinAddress	naSrcAccountID;
+	NewcoinAddress	naDstAccountID;
+	STAmount		saLimitAmount;
+	uint256			uLedger		= mNetOps->getCurrentLedger();
+	uint32			uAcceptRate	= params.size() >= 6 ? lexical_cast_s<uint32>(params[5u].asString()) : 0;
+
+	if (!naSeed.setSeedGeneric(params[0u].asString()))
+	{
+		return RPCError(rpcBAD_SEED);
+	}
+	else if (!naSrcAccountID.setAccountID(params[1u].asString()))
+	{
+		return RPCError(rpcSRC_ACT_MALFORMED);
+	}
+	else if (!naDstAccountID.setAccountID(params[2u].asString()))
+	{
+		return RPCError(rpcDST_ACT_MALFORMED);
+	}
+	else if (!saLimitAmount.setValue(params[3u].asString(), params.size() >= 5 ? params[4u].asString() : ""))
+	{
+		return RPCError(rpcSRC_AMT_MALFORMED);
+	}
+	else
+	{
+		NewcoinAddress			naMasterGenerator;
+		NewcoinAddress			naAccountPublic;
+		NewcoinAddress			naAccountPrivate;
+		AccountState::pointer	asSrc;
+		STAmount				saSrcBalance;
+		Json::Value				obj			= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
+			saSrcBalance, theConfig.FEE_DEFAULT, asSrc, naMasterGenerator);
+
+		if (!obj.empty())
+			return obj;
+
+		Transaction::pointer	trans	= Transaction::sharedCreditSet(
+			naAccountPublic, naAccountPrivate,
+			naSrcAccountID,
+			asSrc->getSeq(),
+			theConfig.FEE_DEFAULT,
+			0,											// YYY No source tag
+			naDstAccountID,
+			saLimitAmount,
+			uAcceptRate);
+
+		(void) mNetOps->processTransaction(trans);
+
+		obj["transaction"]		= trans->getSTransaction()->getJson(0);
+		obj["status"]			= trans->getStatus();
+		obj["seed"]				= naSeed.humanSeed();
+		obj["srcAccountID"]		= naSrcAccountID.humanAccountID();
+		obj["dstAccountID"]		= naDstAccountID.humanAccountID();
+		obj["limitAmount"]		= saLimitAmount.getText();
+		obj["acceptRate"]		= uAcceptRate;
+
+		return obj;
+	}
+}
+
+// ripple_lines_get <account>|<nickname>|<account_public_key> [<index>]
+Json::Value RPCServer::doRippleLinesGet(const Json::Value &params)
+{
+//	uint256			uAccepted	= mNetOps->getClosedLedger();
+	uint256			uCurrent	= mNetOps->getCurrentLedger();
+
+	std::string		strIdent	= params[0u].asString();
+	bool			bIndex;
+	int				iIndex		= 2 == params.size()? lexical_cast_s<int>(params[1u].asString()) : 0;
+
+	NewcoinAddress	naAccount;
+
+	Json::Value ret;
+
+	ret	= accountFromString(uCurrent, naAccount, bIndex, strIdent, iIndex);
+
+	if (!ret.empty())
+		return ret;
+
+	// Get info on account.
+	ret	= Json::Value(Json::objectValue);
+
+	ret["account"]	= naAccount.humanAccountID();
+	if (bIndex)
+		ret["index"]	= iIndex;
+
+	AccountState::pointer	as		= mNetOps->getAccountState(uCurrent, naAccount);
+	if (as)
+	{
+		Json::Value	jsonLines = Json::Value(Json::objectValue);
+
+		ret["account"]	= naAccount.humanAccountID();
+
+		// We access a committed ledger and need not worry about changes.
+		uint256	uRootIndex;
+
+		if (mNetOps->getDirLineInfo(uCurrent, naAccount, uRootIndex))
+		{
+			bool	bDone	= false;
+
+			while (!bDone)
+			{
+				uint64		uNodePrevious;
+				uint64		uNodeNext;
+				STVector256	svRippleNodes	= mNetOps->getDirNodeInfo(uCurrent, uRootIndex, uNodePrevious, uNodeNext);
+
+				BOOST_FOREACH(uint256& uNode, svRippleNodes.peekValue())
+				{
+					NewcoinAddress	naAccountPeer;
+					STAmount		saBalance;
+					STAmount		saLimit;
+					STAmount		saLimitPeer;
+
+					RippleState::pointer	rsLine	= mNetOps->getRippleState(uCurrent, uNode);
+
+					if (rsLine)
+					{
+						rsLine->setViewAccount(naAccount);
+
+						naAccountPeer		= rsLine->getAccountIDPeer();
+						saBalance			= rsLine->getBalance();
+						saLimit				= rsLine->getLimit();
+						saLimitPeer			= rsLine->getLimitPeer();
+
+						Json::Value				jPeer	= Json::Value(Json::objectValue);
+
+						jPeer["node"]		= uNode.ToString();
+
+						jPeer["balance"]	= saBalance.getText();
+						jPeer["currency"]	= saBalance.getCurrencyHuman();
+						jPeer["limit"]		= saLimit.getJson(0);
+						jPeer["limit_peer"]	= saLimitPeer.getJson(0);
+
+						jsonLines[naAccountPeer.humanAccountID()]	= jPeer;
+					}
+					else
+					{
+						std::cerr << "doAccountLines: Bad index: " << uNode.ToString() << std::endl;
+					}
+				}
+
+				if (uNodeNext)
+				{
+					uCurrent	= Ledger::getDirNodeIndex(uRootIndex, uNodeNext);
+				}
+				else
+				{
+					bDone	= true;
+				}
+			}
+		}
+		ret["lines"]	= jsonLines;
+	}
+	else
+	{
+		ret["status"]	= "NotFound";
+	}
+
+	return ret;
+}
+
 // send regular_seed paying_account account_id amount [currency] [send_max] [send_currency]
 Json::Value RPCServer::doSend(const Json::Value& params)
 {
@@ -1280,77 +1292,6 @@ Json::Value RPCServer::doServerInfo(const Json::Value& params)
 	ret["info"]	= theApp->getOPs().getServerInfo();
 
 	return ret;
-}
-
-// transit_set <seed> <paying_account> <transit_rate> <starts> <expires>
-Json::Value RPCServer::doTransitSet(const Json::Value& params)
-{
-	NewcoinAddress	naSeed;
-	NewcoinAddress	naSrcAccountID;
-	std::string		sTransitRate;
-	std::string		sTransitStart;
-	std::string		sTransitExpire;
-	uint32			uTransitRate;
-	uint32			uTransitStart;
-	uint32			uTransitExpire;
-	uint256			uLedger		= mNetOps->getCurrentLedger();
-
-	if (params.size() >= 6)
-		sTransitRate		= params[6u].asString();
-
-	if (params.size() >= 7)
-		sTransitStart	= params[7u].asString();
-
-	if (params.size() >= 8)
-		sTransitExpire	= params[8u].asString();
-
-	if (!naSeed.setSeedGeneric(params[0u].asString()))
-	{
-		return RPCError(rpcBAD_SEED);
-	}
-	else if (!naSrcAccountID.setAccountID(params[1u].asString()))
-	{
-		return RPCError(rpcSRC_ACT_MALFORMED);
-	}
-	else
-	{
-		NewcoinAddress			naMasterGenerator;
-		NewcoinAddress			naAccountPublic;
-		NewcoinAddress			naAccountPrivate;
-		AccountState::pointer	asSrc;
-		STAmount				saSrcBalance;
-		Json::Value				obj		= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
-			saSrcBalance, theConfig.FEE_DEFAULT, asSrc, naMasterGenerator);
-
-		if (!obj.empty())
-			return obj;
-
-		uTransitRate		= 0;
-		uTransitStart		= 0;
-		uTransitExpire		= 0;
-
-		Transaction::pointer	trans	= Transaction::sharedTransitSet(
-			naAccountPublic, naAccountPrivate,
-			naSrcAccountID,
-			asSrc->getSeq(),
-			theConfig.FEE_DEFAULT,
-			0,											// YYY No source tag
-			uTransitRate,
-			uTransitStart,
-			uTransitExpire);
-
-		(void) mNetOps->processTransaction(trans);
-
-		obj["transaction"]		= trans->getSTransaction()->getJson(0);
-		obj["status"]			= trans->getStatus();
-		obj["seed"]				= naSeed.humanSeed();
-		obj["srcAccountID"]		= naSrcAccountID.humanAccountID();
-		obj["transitRate"]		= uTransitRate;
-		obj["transitStart"]		= uTransitStart;
-		obj["transitExpire"]	= uTransitExpire;
-
-		return obj;
-	}
 }
 
 Json::Value RPCServer::doTx(const Json::Value& params)
@@ -2029,12 +1970,10 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 	} commandsA[] = {
 		{	"account_email_set",	&RPCServer::doAccountEmailSet,		2, 3, false,	optCurrent	},
 		{	"account_info",			&RPCServer::doAccountInfo,			1, 2, false,	optCurrent	},
-		{	"account_lines",		&RPCServer::doAccountLines,			1, 2, false,	optCurrent|optClosed },
 		{	"account_message_set",	&RPCServer::doAccountMessageSet,	3, 3, false,	optCurrent	},
 		{	"account_tx",			&RPCServer::doAccountTransactions,	2, 3, false,	optNetwork	},
 		{	"account_wallet_set",	&RPCServer::doAccountWalletSet,		2, 3, false,	optCurrent	},
 		{	"connect",				&RPCServer::doConnect,				1, 2, true					},
-		{	"credit_set",			&RPCServer::doCreditSet,			4, 6, false,	optCurrent	},
 		{	"data_delete",			&RPCServer::doDataDelete,			1, 1, true					},
 		{	"data_fetch",			&RPCServer::doDataFetch,			1, 1, true					},
 		{	"data_store",			&RPCServer::doDataStore,			2, 2, true					},
@@ -2046,10 +1985,11 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 		{	"password_fund",		&RPCServer::doPasswordFund,			2, 3, false,	optCurrent	},
 		{	"password_set",			&RPCServer::doPasswordSet,			2, 3, false,	optNetwork	},
 		{	"peers",				&RPCServer::doPeers,				0, 0, true					},
+		{	"ripple_lines_get",		&RPCServer::doRippleLinesGet,		1, 2, false,	optCurrent|optClosed },
+		{	"ripple_line_set",		&RPCServer::doRippleLineSet,		4, 6, false,	optCurrent	},
 		{	"send",					&RPCServer::doSend,					3, 7, false,	optCurrent	},
 		{	"server_info",			&RPCServer::doServerInfo,			0, 0, true					},
 		{	"stop",					&RPCServer::doStop,					0, 0, true					},
-		{	"transit_set",			&RPCServer::doTransitSet,			5, 5, true,		optCurrent	},
 		{	"tx",					&RPCServer::doTx,					1, 1, true					},
 
 		{	"unl_add",				&RPCServer::doUnlAdd,				1, 2, true					},

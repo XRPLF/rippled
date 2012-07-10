@@ -207,6 +207,7 @@ class STAmount : public SerializedType
 
 protected:
 	uint160	mCurrency;
+	uint160	mIssuer;		// Only for access, not compared.
 
 	uint64	mValue;
 	int		mOffset;
@@ -282,7 +283,10 @@ public:
 	void negate()				{ if (!isZero()) mIsNegative = !mIsNegative; }
 	void zero()					{ mOffset = mIsNative ? -100 : 0; mValue = 0; mIsNegative = false; }
 
-	const uint160& getCurrency() const { return mCurrency; }
+	const uint160& getIssuer() const		{ return mIssuer; }
+	void setIssuer(const uint160& uIssuer)	{ mIssuer	= uIssuer; }
+
+	const uint160& getCurrency() const	{ return mCurrency; }
 	bool setValue(const std::string& sAmount, const std::string& sCurrency);
 	void setValue(const STAmount &);
 
@@ -329,7 +333,7 @@ public:
 	static STAmount getClaimed(STAmount& offerOut, STAmount& offerIn, STAmount& paid);
 
 	// Someone is offering X for Y, I need Z, how much do I pay
-	static STAmount getNeeded(const STAmount& offerOut, const STAmount& offerIn, const STAmount& needed);
+	static STAmount getPay(const STAmount& offerOut, const STAmount& offerIn, const STAmount& needed);
 
 	// Native currency conversions, to/from display format
 	static uint64 convertToDisplayAmount(const STAmount& internalAmount, uint64 totalNow, uint64 totalInit);
@@ -640,6 +644,8 @@ public:
 
 	void setValue(const STVector256& v) { mValue = v.mValue; }
 	void setValue(const std::vector<uint256>& v) { mValue = v; }
+
+	Json::Value getJson(int) const;
 };
 
 #endif

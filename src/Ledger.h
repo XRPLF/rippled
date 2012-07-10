@@ -65,7 +65,7 @@ private:
 	uint256		mHash, mParentHash, mTransHash, mAccountHash;
 	uint64		mTotCoins;
 	uint64		mCloseTime; // when this ledger should close / did close
-	uint64		mPrevClose; // when the previous ledger closed
+	uint64		mParentCloseTime;
 	uint32		mLedgerSeq;
 	bool		mClosed, mValidHash, mAccepted, mImmutable;
 
@@ -118,6 +118,7 @@ public:
 	uint64 getTotalCoins() const			{ return mTotCoins; }
 	void destroyCoins(uint64 fee)			{ mTotCoins -= fee; }
 	uint64 getCloseTimeNC() const			{ return mCloseTime; }
+	uint64 getParentCloseTimeNC() const		{ return mParentCloseTime; }
 	uint32 getLedgerSeq() const				{ return mLedgerSeq; }
 
 	// close time functions
@@ -190,35 +191,58 @@ public:
 	static uint256 getNicknameIndex(const uint256& uNickname);
 
 	//
+	// Order book functions
+	//
+
+	// Order book dirs have a base so we can use next to step through them in quality order.
+	static uint256 getBookBase(const uint160& uCurrencyIn, const uint160& uAccountIn,
+		const uint160& uCurrencyOut, const uint160& uAccountOut);
+
+	//
 	// Offer functions
 	//
 
-	static uint160 getOfferBase(const uint160& currencyIn, const uint160& accountIn,
-		const uint160& currencyOut, const uint160& accountOut);
+	SLE::pointer getOffer(LedgerStateParms& parms, const uint256& uIndex);
+	SLE::pointer getOffer(LedgerStateParms& parms, const uint160& uAccountID, uint32 uSequence)
+	{ return getOffer(parms, getOfferIndex(uAccountID, uSequence)); }
 
-	static uint256 getOfferIndex(const uint160& offerBase, uint64 rate, int skip = 0);
+	// The index of an offer.
+	static uint256 getOfferIndex(const uint160& uAccountID, uint32 uSequence);
 
-	static int getOfferSkip(const uint256& offerId);
+	//
+	// Owner functions
+	//
+
+	// All items controlled by an account are here: offers
+	static uint256 getOwnerDirIndex(const uint160& uAccountID);
 
 	//
 	// Directory functions
-	//
+	// Directories are doubly linked lists of nodes.
 
-	static uint256 getDirIndex(const uint256& uBase, const uint64 uNodeDir=0);
+	// Given a directory root and and index compute the index of a node.
+	static uint256 getDirNodeIndex(const uint256& uDirRoot, const uint64 uNodeIndex=0);
 
-	SLE::pointer getDirRoot(LedgerStateParms& parms, const uint256& uRootIndex);
+	// Return a node: root or normal
 	SLE::pointer getDirNode(LedgerStateParms& parms, const uint256& uNodeIndex);
 
 	//
-	// Ripple functions
+	// Quality
 	//
 
+	static uint256 getQualityIndex(const uint256& uBase, const uint64 uNodeDir=0);
+	static uint256 getQualityNext(const uint256& uBase);
+
+	//
+	// Ripple functions : credit lines
+	//
+
+	// Index of node which is the ripple state between to accounts for a currency.
 	static uint256 getRippleStateIndex(const NewcoinAddress& naA, const NewcoinAddress& naB, const uint160& uCurrency);
 	static uint256 getRippleStateIndex(const uint160& uiA, const uint160& uiB, const uint160& uCurrency)
 		{ return getRippleStateIndex(NewcoinAddress::createAccountID(uiA), NewcoinAddress::createAccountID(uiB), uCurrency); }
 
-	static uint256 getRippleStateIndex(const NewcoinAddress& naA, const NewcoinAddress& naB)
-		{ return getRippleStateIndex(naA, naB, uint160()); }
+	// Directory of lines indexed by an account (not all lines are indexed)
 	static uint256 getRippleDirIndex(const uint160& uAccountID);
 
 	RippleState::pointer getRippleState(const uint256& uNode);

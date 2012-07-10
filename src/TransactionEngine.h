@@ -19,7 +19,10 @@ enum TransactionEngineResult
 	tenBAD_ADD_AUTH,
 	tenBAD_AMOUNT,
 	tenBAD_CLAIM_ID,
+	tenBAD_EXPIRATION,
 	tenBAD_GEN_AUTH,
+	tenBAD_ISSUER,
+	tenBAD_OFFER,
 	tenBAD_SET_ID,
 	tenCREATEXNS,
 	tenDST_IS_SRC,
@@ -33,6 +36,7 @@ enum TransactionEngineResult
 	tenBAD_AUTH_MASTER,
 	tenBAD_RIPPLE,
 	tenCREATED,
+	tenEXPIRED,
 	tenMSG_SET,
 	terALREADY,
 
@@ -48,6 +52,7 @@ enum TransactionEngineResult
 	// Conflict with ledger database: Fee claimed
 	// Might succeed if not conflict is not caused by transaction ordering.
 	terBAD_AUTH,
+	terBAD_LEDGER,
 	terBAD_RIPPLE,
 	terBAD_SEQ,
 	terCREATED,
@@ -62,6 +67,7 @@ enum TransactionEngineResult
 	terNO_DST,
 	terNO_LINE_NO_ZERO,
 	terNO_PATH,
+	terOFFER_NOT_FOUND,
 	terOVER_LIMIT,
 	terPAST_LEDGER,
 	terPAST_SEQ,
@@ -97,20 +103,44 @@ private:
 	TransactionEngineResult dirAdd(
 		std::vector<AffectedAccount>&	accounts,
 		uint64&							uNodeDir,		// Node of entry.
-		const uint256&					uBase,
+		const uint256&					uRootIndex,
 		const uint256&					uLedgerIndex);
 
 	TransactionEngineResult dirDelete(
 		std::vector<AffectedAccount>&	accounts,
 		const uint64&					uNodeDir,		// Node item is mentioned in.
-		const uint256&					uBase,			// Key of item.
+		const uint256&					uRootIndex,
 		const uint256&					uLedgerIndex);	// Item being deleted
+
+#ifdef WORK_IN_PROGRESS
+	typedef struct {
+		STAmount						saWanted;		// What this node wants from upstream.
+
+		STAmount						saIOURedeem;	// What this node will redeem downstream.
+		STAmount						saIOUIssue;		// What this node will issue downstream.
+		STAmount						saSend;			// Amount of stamps this node will send.
+
+		STAmount						saIOUForgive;	// Amount of IOUs to forgive.
+		STAmount						saIOUAccept;	// Amount of IOUs to accept.
+		STAmount						saRecieve;		// Amount stamps to receive.
+
+		STAccount						saAccount;
+	} paymentNode;
+
+	typedef struct {
+		boost::unordered_set<....>	offersDeletedAlways;
+		boost::unordered_set<....>	offersDeletedOnSuccess;
+		std::vector<paymentNode>	vpnNodes;
+		bool						bAllowPartial;
+	} paymentGroup;
+#endif
 
 	TransactionEngineResult	setAuthorized(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts, bool bMustSetGenerator);
 
 protected:
 	Ledger::pointer mDefaultLedger, mAlternateLedger;
 	Ledger::pointer mLedger;
+	uint64			mLedgerParentCloseTime;
 
 	TransactionEngineResult doAccountSet(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts);
 	TransactionEngineResult doClaim(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts);
@@ -118,7 +148,10 @@ protected:
 								const uint160& uSrcAccountID);
 	TransactionEngineResult doDelete(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts);
 	TransactionEngineResult doInvoice(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts);
-	TransactionEngineResult doOffer(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts);
+	TransactionEngineResult doOfferCreate(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts,
+								const uint160& uSrcAccountID);
+	TransactionEngineResult doOfferCancel(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts,
+								const uint160& uSrcAccountID);
 	TransactionEngineResult doNicknameSet(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts,
 								const uint160& uSrcAccountID);
 	TransactionEngineResult doPasswordFund(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts,
@@ -128,7 +161,6 @@ protected:
 								const uint160& uSrcAccountID);
 	TransactionEngineResult doStore(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts);
 	TransactionEngineResult doTake(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts);
-	TransactionEngineResult doTransitSet(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts);
 	TransactionEngineResult doWalletAdd(const SerializedTransaction& txn, std::vector<AffectedAccount>& accounts);
 
 public:

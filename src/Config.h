@@ -94,6 +94,7 @@ public:
 	uint64						FEE_DEFAULT;			// Default fee.
 	uint64						FEE_ACCOUNT_CREATE;		// Fee to create an account.
 	uint64						FEE_NICKNAME_CREATE;	// Fee to create a nickname.
+	uint64						FEE_OFFER;				// Rate per day.
 
 	// Client behavior
 	int							ACCOUNT_PROBE_MAX;		// How far to scan for accounts.

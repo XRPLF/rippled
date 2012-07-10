@@ -57,9 +57,11 @@ std::string SerializedLedgerEntry::getText() const
 Json::Value SerializedLedgerEntry::getJson(int options) const
 {
 	Json::Value ret(mObject.getJson(options));
-	ret["type"] = mFormat->t_name;
-	ret["index"] = mIndex.GetHex();
-	ret["version"] = mVersion.getText();
+
+	ret["type"]		= mFormat->t_name;
+	ret["index"]	= mIndex.GetHex();
+	ret["version"]	= std::string(1, mVersion);
+
 	return ret;
 }
 

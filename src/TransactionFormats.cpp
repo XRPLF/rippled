@@ -7,10 +7,11 @@ TransactionFormat InnerTxnFormats[]=
 {
 	{ "AccountSet", ttACCOUNT_SET, {
 		{ S_FIELD(Flags),			STI_UINT32,	 SOE_FLAGS,    0 },
-		{ S_FIELD(EmailHash),		STI_HASH128, SOE_IFFLAG,   1 },
-		{ S_FIELD(WalletLocator),	STI_HASH256, SOE_IFFLAG,   2 },
-		{ S_FIELD(MessageKey),		STI_VL,      SOE_IFFLAG,   4 },
-		{ S_FIELD(SourceTag),		STI_UINT32,  SOE_IFFLAG,   8 },
+		{ S_FIELD(SourceTag),		STI_UINT32,  SOE_IFFLAG,   1 },
+		{ S_FIELD(EmailHash),		STI_HASH128, SOE_IFFLAG,   2 },
+		{ S_FIELD(WalletLocator),	STI_HASH256, SOE_IFFLAG,   4 },
+		{ S_FIELD(MessageKey),		STI_VL,      SOE_IFFLAG,   8 },
+		{ S_FIELD(Domain),			STI_VL,      SOE_IFFLAG,   16 },
 		{ S_FIELD(Extensions),		STI_TL,		 SOE_IFFLAG,   0x02000000 },
 		{ sfInvalid, NULL,			STI_DONE,	 SOE_NEVER,    -1 } }
 	},
@@ -53,14 +54,20 @@ TransactionFormat InnerTxnFormats[]=
 		{ S_FIELD(Extensions),		STI_TL,		 SOE_IFFLAG,   0x02000000 },
 		{ sfInvalid, NULL,			STI_DONE,	 SOE_NEVER,    -1 } }
 	},
-	{ "Offer", ttOFFER, {
+	{ "OfferCreate", ttOFFER_CREATE, {
 		{ S_FIELD(Flags),			STI_UINT32,  SOE_FLAGS,    0 },
 		{ S_FIELD(AmountIn),		STI_AMOUNT,  SOE_REQUIRED, 0 },
 		{ S_FIELD(AmountOut),		STI_AMOUNT,  SOE_REQUIRED, 0 },
 		{ S_FIELD(SourceTag),		STI_UINT32,  SOE_IFFLAG,   1 },
 		{ S_FIELD(Destination),		STI_ACCOUNT, SOE_IFFLAG,   2 },
-		{ S_FIELD(ExpireLedger),	STI_UINT32,  SOE_IFFLAG,   4 },
-		{ S_FIELD(Identifier),		STI_VL,		 SOE_IFFLAG,   8 },
+		{ S_FIELD(Expiration),		STI_UINT32,  SOE_IFFLAG,   4 },
+		{ S_FIELD(Extensions),		STI_TL,		 SOE_IFFLAG,   0x02000000 },
+		{ sfInvalid, NULL,			STI_DONE,	 SOE_NEVER,    -1 } }
+	},
+	{ "OfferCancel", ttOFFER_CANCEL, {
+		{ S_FIELD(Flags),			STI_UINT32,  SOE_FLAGS,    0 },
+		{ S_FIELD(OfferSequence),	STI_UINT32,  SOE_REQUIRED, 0 },
+		{ S_FIELD(SourceTag),		STI_UINT32,  SOE_IFFLAG,   1 },
 		{ S_FIELD(Extensions),		STI_TL,		 SOE_IFFLAG,   0x02000000 },
 		{ sfInvalid, NULL,			STI_DONE,	 SOE_NEVER,    -1 } }
 	},
@@ -89,15 +96,6 @@ TransactionFormat InnerTxnFormats[]=
 		{ S_FIELD(Paths),			STI_PATHSET, SOE_IFFLAG,   2 },
 		{ S_FIELD(SourceTag),		STI_UINT32,  SOE_IFFLAG,   4 },
 		{ S_FIELD(InvoiceID),		STI_HASH256, SOE_IFFLAG,   8 },
-		{ S_FIELD(Extensions),		STI_TL,		 SOE_IFFLAG,   0x02000000 },
-		{ sfInvalid, NULL,			STI_DONE,	 SOE_NEVER,    -1 } }
-	},
-	{ "TransitSet", ttTRANSIT_SET, {
-		{ S_FIELD(Flags),			STI_UINT32,  SOE_FLAGS,    0 },
-		{ S_FIELD(TransitRate),		STI_UINT32,  SOE_IFFLAG,   1 },
-		{ S_FIELD(TransitStart),	STI_UINT32,  SOE_IFFLAG,   2 },
-		{ S_FIELD(TransitExpire),	STI_UINT32,  SOE_IFFLAG,   4 },
-		{ S_FIELD(SourceTag),		STI_UINT32,  SOE_IFFLAG,   8 },
 		{ S_FIELD(Extensions),		STI_TL,		 SOE_IFFLAG,   0x02000000 },
 		{ sfInvalid, NULL,			STI_DONE,	 SOE_NEVER,    -1 } }
 	},
