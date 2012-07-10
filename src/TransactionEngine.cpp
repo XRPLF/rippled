@@ -124,10 +124,10 @@ TransactionEngineResult TransactionEngine::dirAdd(
 	}
 	else
 	{
-		uNodeDir		= sleRoot->getIFieldU64(sfIndexPrevious);
+		uNodeDir		= sleRoot->getIFieldU64(sfIndexPrevious);		// Get index to last directory node.
 
 		uint64		uNodePrevious	= uNodeDir;
-		uint256		uNodeIndex;
+		uint256		uNodeIndex;											// Index of node.
 
 		if (uNodeDir)
 		{
@@ -135,11 +135,14 @@ TransactionEngineResult TransactionEngine::dirAdd(
 			uNodeIndex	= Ledger::getDirNodeIndex(uRootIndex, uNodeDir);
 			lspRoot		= lepNONE;
 			sleNode		= mLedger->getDirNode(lspRoot, uNodeIndex);
+
+			assert(sleNode);
 		}
 		else
 		{
 			// Try adding to root.
-			uNodeIndex		= uRootIndex;
+			uNodeIndex	= uRootIndex;
+			sleNode		= sleRoot;
 		}
 
 		svIndexes	= sleNode->getIFieldV256(sfIndexes);
