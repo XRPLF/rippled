@@ -41,11 +41,9 @@ void printHelp(const po::options_description& desc)
 	cout << "     account_email_set <seed> <paying_account> [<email_address>]" << endl;
 	cout << "     account_info <account>|<nickname>" << endl;
 	cout << "     account_info <seed>|<pass_phrase>|<key> [<index>]" << endl;
-	cout << "     account_lines <account>|<nickname>" << endl;
 	cout << "     account_message_set <seed> <paying_account> <pub_key>" << endl;
 	cout << "     account_wallet_set <seed> <paying_account> [<wallet_hash>]" << endl;
 	cout << "     connect <ip> [<port>]" << endl;
-	cout << "     credit_set <seed> <paying_account> <destination_account> <limit_amount> <currency> [<account_rate>]" << endl;
 	cout << "     data_delete <key>" << endl;
 	cout << "     data_fetch <key>" << endl;
 	cout << "     data_store <key> <value>" << endl;
@@ -55,6 +53,8 @@ void printHelp(const po::options_description& desc)
 	cout << "     password_fund <seed> <paying_account> [<account>]" << endl;
 	cout << "     password_set <master_seed> <regular_seed> [<account>]" << endl;
 	cout << "     peers" << endl;
+	cout << "     ripple_lines_get <account>|<nickname>|<account_public_key> [<index>]" << endl;
+	cout << "     ripple_line_set <seed> <paying_account> <destination_account> <limit_amount> <currency> [<account_rate>]" << endl;
 	cout << "     send <seed> <paying_account> <account_id> <amount> [<currency>] [<send_max>] [<send_currency>]" << endl;
 	cout << "     stop" << endl;
 	cout << "     tx <id>" << endl;

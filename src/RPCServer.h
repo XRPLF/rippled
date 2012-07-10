@@ -123,12 +123,10 @@ private:
 
 	Json::Value doAccountEmailSet(const Json::Value &params);
 	Json::Value doAccountInfo(const Json::Value& params);
-	Json::Value doAccountLines(const Json::Value &params);
 	Json::Value doAccountMessageSet(const Json::Value &params);
 	Json::Value doAccountTransactions(const Json::Value& params);
 	Json::Value doAccountWalletSet(const Json::Value &params);
 	Json::Value doConnect(const Json::Value& params);
-	Json::Value doCreditSet(const Json::Value& params);
 	Json::Value doDataDelete(const Json::Value& params);
 	Json::Value doDataFetch(const Json::Value& params);
 	Json::Value doDataStore(const Json::Value& params);
@@ -140,6 +138,8 @@ private:
 	Json::Value doPasswordFund(const Json::Value& params);
 	Json::Value doPasswordSet(const Json::Value& params);
 	Json::Value doPeers(const Json::Value& params);
+	Json::Value doRippleLinesGet(const Json::Value &params);
+	Json::Value doRippleLineSet(const Json::Value& params);
 	Json::Value doSend(const Json::Value& params);
 	Json::Value doServerInfo(const Json::Value& params);
 	Json::Value doSessionClose(const Json::Value& params);
