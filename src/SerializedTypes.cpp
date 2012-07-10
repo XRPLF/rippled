@@ -195,7 +195,7 @@ STVector256* STVector256::construct(SerializerIterator& u, const char *name)
 	{
 		unsigned int	uEnd	= uStart+(256/8);
 
-		value.push_back(uint256(std::vector<unsigned char>(&data[uStart], &data[uEnd])));
+		value.push_back(uint256(std::vector<unsigned char>(data.begin()+uStart, data.begin()+(uStart+32))));
 
 		uStart	= uEnd;
 	}
