@@ -63,14 +63,12 @@ public:
 	void setVote(const uint160& peer, bool votesYes);
 
 	bool updatePosition(int percentTime, bool proposing);
-	int getAgreeLevel();
 };
 
 enum LCState
 {
 	lcsPRE_CLOSE,		// We haven't closed our ledger yet, but others might have
 	lcsESTABLISH,		// Establishing consensus
-	lcsCUTOFF,			// Past the cutoff for consensus
 	lcsFINISHED,		// We have closed on a transaction set
 	lcsACCEPTED,		// We have accepted/validated a new last closed ledger
 	lcsABORTED			// Abandoned
@@ -86,6 +84,8 @@ protected:
 	LedgerProposal::pointer mOurPosition;
 	NewcoinAddress mValSeed;
 	bool mProposing, mValidating, mHaveCorrectLCL;
+
+	int mCurrentSeconds, mClosePercent;
 
 	boost::posix_time::ptime		mConsensusStartTime;
 	int								mPreviousProposers;
@@ -126,9 +126,9 @@ protected:
 		CanonicalTXSet& failedTransactions, bool final);
 
 	// manipulating our own position
-	void takeInitialPosition(Ledger::pointer initialLedger);
-	void updateOurPositions(int percentPrevConverge);
 	void statusChange(newcoin::NodeEvent, Ledger::pointer ledger);
+	void takeInitialPosition(Ledger::pointer initialLedger);
+	void updateOurPositions();
 	int getThreshold();
 	void beginAccept();
 	void endConsensus();
@@ -149,11 +149,13 @@ public:
 	void timerEntry();
 
 	// state handlers
-	int statePreClose(int currentSeconds);
-	int stateEstablish(int closePercent);
-	int stateCutoff(int closePercent);
-	int stateFinished(int closePercent);
-	int stateAccepted(int closePercent);
+	int statePreClose();
+	int stateEstablish();
+	int stateCutoff();
+	int stateFinished();
+	int stateAccepted();
+
+	bool haveConsensus();
 
 	bool peerPosition(LedgerProposal::pointer);
 
