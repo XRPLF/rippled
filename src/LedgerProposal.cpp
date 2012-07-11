@@ -16,7 +16,6 @@ LedgerProposal::LedgerProposal(const uint256& pLgr, uint32 seq, const uint256& t
 	// if (!mKey->SetPubKey(pubKey))
 	// throw std::runtime_error("Invalid public key in proposal");
 
-	mPreviousLedger	= theApp->getMasterLedger().getClosedLedger()->getHash();
 	mPeerID			= mPublicKey.getNodeID();
 }
 
