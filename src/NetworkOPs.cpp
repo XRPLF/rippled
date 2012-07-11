@@ -191,6 +191,7 @@ STVector256 NetworkOPs::getDirNodeInfo(
 
 		uNodePrevious	= sleNode->getIFieldU64(sfIndexPrevious);
 		uNodeNext		= sleNode->getIFieldU64(sfIndexNext);
+		svIndexes		= sleNode->getIFieldV256(sfIndexes);
 
 		Log(lsTRACE) << "getDirNodeInfo: first: " << strHex(uNodePrevious);
 		Log(lsTRACE) << "getDirNodeInfo:  last: " << strHex(uNodeNext);
@@ -198,6 +199,9 @@ STVector256 NetworkOPs::getDirNodeInfo(
 	else
 	{
 		Log(lsINFO) << "getDirNodeInfo: node index: NOT FOUND: " << uNodeIndex.ToString();
+
+		uNodePrevious	= 0;
+		uNodeNext		= 0;
 	}
 
 	return svIndexes;

@@ -33,7 +33,6 @@ enum TransactionEngineResult
 
 	// Invalid: Ledger won't allow.
 	tenCLAIMED		= -200,
-	tenBAD_AUTH_MASTER,
 	tenBAD_RIPPLE,
 	tenCREATED,
 	tenEXPIRED,
@@ -52,6 +51,7 @@ enum TransactionEngineResult
 	// Conflict with ledger database: Fee claimed
 	// Might succeed if not conflict is not caused by transaction ordering.
 	terBAD_AUTH,
+	terBAD_AUTH_MASTER,
 	terBAD_LEDGER,
 	terBAD_RIPPLE,
 	terBAD_SEQ,

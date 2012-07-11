@@ -26,7 +26,6 @@ bool transResultInfo(TransactionEngineResult terCode, std::string& strToken, std
 	} transResultInfoA[] = {
 		{	tenBAD_ADD_AUTH,		"tenBAD_ADD_AUTH",			"Not authorized to add account."					},
 		{	tenBAD_AMOUNT,			"tenBAD_AMOUNT",			"Can only send positive amounts."					},
-		{	tenBAD_AUTH_MASTER,		"tenBAD_AUTH_MASTER",		"Auth for unclaimed account needs correct master key."	},
 		{	tenBAD_CLAIM_ID,		"tenBAD_CLAIM_ID",			"Malformed."										},
 		{	tenBAD_EXPIRATION,		"tenBAD_EXPIRATION",		"Malformed."										},
 		{	tenBAD_GEN_AUTH,		"tenBAD_GEN_AUTH",			"Not authorized to claim generator."				},
@@ -51,6 +50,7 @@ bool transResultInfo(TransactionEngineResult terCode, std::string& strToken, std
 		{	tenUNKNOWN,				"tenUNKNOWN",				"The transactions requires logic not implemented yet"	},
 		{	terALREADY,				"terALREADY",				"The exact transaction was already in this ledger"	},
 		{	terBAD_AUTH,			"terBAD_AUTH",				"Transaction's public key is not authorized."		},
+		{	terBAD_AUTH_MASTER,		"terBAD_AUTH_MASTER",		"Auth for unclaimed account needs correct master key."	},
 		{	terBAD_LEDGER,			"terBAD_LEDGER",			"Ledger in unexpected state."						},
 		{	terBAD_RIPPLE,			"terBAD_RIPPLE",			"No ripple path can be satisfied."					},
 		{	terBAD_SEQ,				"terBAD_SEQ",				"This sequence number should be zero for prepaid transactions."	},
@@ -124,10 +124,10 @@ TransactionEngineResult TransactionEngine::dirAdd(
 	}
 	else
 	{
-		uNodeDir		= sleRoot->getIFieldU64(sfIndexPrevious);
+		uNodeDir		= sleRoot->getIFieldU64(sfIndexPrevious);		// Get index to last directory node.
 
 		uint64		uNodePrevious	= uNodeDir;
-		uint256		uNodeIndex;
+		uint256		uNodeIndex;											// Index of node.
 
 		if (uNodeDir)
 		{
@@ -135,11 +135,14 @@ TransactionEngineResult TransactionEngine::dirAdd(
 			uNodeIndex	= Ledger::getDirNodeIndex(uRootIndex, uNodeDir);
 			lspRoot		= lepNONE;
 			sleNode		= mLedger->getDirNode(lspRoot, uNodeIndex);
+
+			assert(sleNode);
 		}
 		else
 		{
 			// Try adding to root.
-			uNodeIndex		= uRootIndex;
+			uNodeIndex	= uRootIndex;
+			sleNode		= sleRoot;
 		}
 
 		svIndexes	= sleNode->getIFieldV256(sfIndexes);
@@ -695,7 +698,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 				{
 					std::cerr << "applyTransaction: Invalid: Not authorized to use account." << std::endl;
 
-					result	= tenBAD_AUTH_MASTER;
+					result	= terBAD_AUTH_MASTER;
 				}
 				break;
 		}
