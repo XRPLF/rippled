@@ -44,7 +44,8 @@ bool STAmount::currencyFromString(uint160& uDstCurrency, const std::string& sCur
 	return bSuccess;
 }
 
-std::string STAmount::getCurrencyHuman()
+// XXX Broken for custom currencies?
+std::string STAmount::getCurrencyHuman() const
 {
 	std::string	sCurrency;
 
@@ -88,19 +89,32 @@ std::string STAmount::getCurrencyHuman()
 }
 
 // Not meant to be the ultimate parser.  For use by RPC which is supposed to be sane and trusted.
+// Native has special handling:
+// - Integer values are in base units.
+// - Float values are in float units.
+// - To avoid a mistake float value for native are specified with a "^" in place of a "."
 bool STAmount::setValue(const std::string& sAmount, const std::string& sCurrency)
 {
 	if (!currencyFromString(mCurrency, sCurrency))
 		return false;
 
+	mIsNative	= !mCurrency;
+
 	uint64	uValue;
 	int		iOffset;
-	size_t	uDecimal	= sAmount.find_first_of("^");
+	size_t	uDecimal	= sAmount.find_first_of(mIsNative ? "^" : ".");
 	bool	bInteger	= uDecimal == std::string::npos;
 
 	if (bInteger)
 	{
-		uValue	= sAmount.empty() ? 0 : boost::lexical_cast<uint64>(sAmount);
+		try
+		{
+			uValue	= sAmount.empty() ? 0 : boost::lexical_cast<uint64>(sAmount);
+		}
+		catch (...)
+		{
+			return false;
+		}
 		iOffset	= 0;
 	}
 	else
@@ -125,7 +139,6 @@ bool STAmount::setValue(const std::string& sAmount, const std::string& sCurrency
 		uValue += uFraction;
 	}
 
-	mIsNative	= !mCurrency;
 	if (mIsNative)
 	{
 		if (bInteger)
@@ -811,6 +824,20 @@ STAmount STAmount::deserialize(SerializerIterator& it)
 	return ret;
 }
 
+Json::Value STAmount::getJson(int) const
+{
+	Json::Value elem(Json::objectValue);
+
+	elem["value"]		= getText();
+
+	// This is a hack, many places don't specify a currency.  STAmount is used just as a value.
+	if (!mIsNative)
+		elem["currency"]	= getCurrencyHuman();
+
+	return elem;
+}
+
+// For unit tests:
 static STAmount serdes(const STAmount &s)
 {
 	Serializer ser;
@@ -821,7 +848,6 @@ static STAmount serdes(const STAmount &s)
 
 	return STAmount::deserialize(sit);
 }
-
 
 BOOST_AUTO_TEST_SUITE(amount)
 
