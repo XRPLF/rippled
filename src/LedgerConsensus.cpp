@@ -374,6 +374,8 @@ int LedgerConsensus::statePreClose()
 
 int LedgerConsensus::stateEstablish()
 { // we are establishing consensus
+	if (mCurrentSeconds < LEDGER_MIN_CONSENSUS)
+		return 1;
 	if (mProposing)
 		updateOurPositions();
 	if (haveConsensus())
