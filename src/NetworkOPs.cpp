@@ -24,7 +24,8 @@
 // there's a functional network.
 
 NetworkOPs::NetworkOPs(boost::asio::io_service& io_service, LedgerMaster* pLedgerMaster) :
-	mMode(omDISCONNECTED),mNetTimer(io_service), mLedgerMaster(pLedgerMaster)
+	mMode(omDISCONNECTED),mNetTimer(io_service), mLedgerMaster(pLedgerMaster),
+	mLastCloseProposers(0), mLastCloseConvergeTime(LEDGER_IDLE_INTERVAL)
 {
 }
 
@@ -959,6 +960,14 @@ void NetworkOPs::unsubAccountTransaction(InfoSub* ispListener, const boost::unor
 		}
 	}
 }
+
+void NetworkOPs::newLCL(int proposers, int convergeTime, const uint256& ledgerHash)
+{
+	mLastCloseProposers = proposers;
+	mLastCloseConvergeTime = convergeTime;
+	mLastCloseHash = ledgerHash;
+}
+
 
 #if 0
 void NetworkOPs::subAccountChanges(InfoSub* ispListener, const uint256 uLedgerHash)

@@ -54,9 +54,13 @@ protected:
 
 	void setMode(OperatingMode);
 
-	typedef boost::unordered_map<uint160,boost::unordered_set<InfoSub*> >			subInfoMapType;
+	typedef boost::unordered_map<uint160,boost::unordered_set<InfoSub*> >				subInfoMapType;
 	typedef boost::unordered_map<uint160,boost::unordered_set<InfoSub*> >::value_type	subInfoMapValue;
-	typedef boost::unordered_map<uint160,boost::unordered_set<InfoSub*> >::iterator	subInfoMapIterator;
+	typedef boost::unordered_map<uint160,boost::unordered_set<InfoSub*> >::iterator		subInfoMapIterator;
+
+	// last ledger close
+	int mLastCloseProposers, mLastCloseConvergeTime;
+	uint256 mLastCloseHash;
 
 	// XXX Split into more locks.
     boost::interprocess::interprocess_upgradable_mutex	mMonitorLock;
@@ -163,6 +167,9 @@ public:
 	int beginConsensus(const uint256& networkClosed, Ledger::pointer closingLedger);
 	void endConsensus();
 	void setStateTimer();
+	void newLCL(int proposers, int convergeTime, const uint256& ledgerHash);
+	int getPreviousProposers()	{ return mLastCloseProposers; }
+	int getPreviousSeconds()	{ return mLastCloseConvergeTime; }
 	Json::Value getServerInfo();
 
 	// client information retrieval functions

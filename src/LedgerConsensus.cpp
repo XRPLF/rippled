@@ -191,11 +191,13 @@ bool LCTransaction::updatePosition(int percentTime, bool proposing)
 
 LedgerConsensus::LedgerConsensus(const uint256& prevLCLHash, Ledger::pointer previousLedger, uint64 closeTime)
 	:  mState(lcsPRE_CLOSE), mCloseTime(closeTime), mPrevLedgerHash(prevLCLHash), mPreviousLedger(previousLedger),
-	mCurrentSeconds(0), mClosePercent(0), mPreviousProposers(0), mPreviousSeconds(LEDGER_MAX_INTERVAL)
+	mCurrentSeconds(0), mClosePercent(0)
 {
 	mValSeed = theConfig.VALIDATION_SEED;
 	Log(lsDEBUG) << "Creating consensus object";
 	Log(lsTRACE) << "LCL:" << previousLedger->getHash().GetHex() <<", ct=" << closeTime;
+	mPreviousProposers = theApp->getOPs().getPreviousProposers();
+	mPreviousSeconds = theApp->getOPs().getPreviousSeconds();
 	if (previousLedger->getHash() != prevLCLHash)
 		mHaveCorrectLCL = mProposing = mValidating = false;
 	else if (mValSeed.isValid())
@@ -386,6 +388,12 @@ int LedgerConsensus::stateEstablish()
 int LedgerConsensus::stateFinished()
 { // we are processing the finished ledger
 	// logic of calculating next ledger advances us out of this state
+
+	// CHECKME: Should we count proposers that didn't converge to our consensus set?
+	int convergeTime = (boost::posix_time::second_clock::universal_time() - mConsensusStartTime).seconds();
+	if (convergeTime <= 0) convergeTime = 1;
+	theApp->getOPs().newLCL(mPeerPositions.size(), convergeTime, mNewLedgerHash);
+
 	return 1;
 }
 
@@ -793,6 +801,7 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 	applyTransactions(theApp->getMasterLedger().getCurrentLedger()->peekTransactionMap(), newOL,
 		failedTransactions, false);
 	theApp->getMasterLedger().pushLedger(newLCL, newOL);
+	mNewLedgerHash = newLCL->getHash();
 	mState = lcsACCEPTED;
 	sl.unlock();
 

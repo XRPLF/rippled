@@ -79,7 +79,7 @@ class LedgerConsensus : public boost::enable_shared_from_this<LedgerConsensus>
 protected:
 	LCState mState;
 	uint64 mCloseTime;						// The wall time this ledger closed
-	uint256 mPrevLedgerHash;
+	uint256 mPrevLedgerHash, mNewLedgerHash;
 	Ledger::pointer mPreviousLedger;
 	LedgerProposal::pointer mOurPosition;
 	NewcoinAddress mValSeed;
