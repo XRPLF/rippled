@@ -271,7 +271,7 @@ public:
 	int64 getSNValue() const;
 	void setSNValue(int64);
 
-	std::string getCurrencyHuman();
+	std::string getCurrencyHuman() const;
 
 	bool isNative() const		{ return mIsNative; }
 	bool isZero() const			{ return mValue == 0; }
@@ -342,6 +342,8 @@ public:
 
 	static STAmount deserialize(SerializerIterator&);
 	static bool currencyFromString(uint160& uDstCurrency, const std::string& sCurrency);
+
+	Json::Value getJson(int) const;
 };
 
 class STHash128 : public SerializedType

@@ -44,7 +44,8 @@ bool STAmount::currencyFromString(uint160& uDstCurrency, const std::string& sCur
 	return bSuccess;
 }
 
-std::string STAmount::getCurrencyHuman()
+// XXX Broken for custom currencies?
+std::string STAmount::getCurrencyHuman() const
 {
 	std::string	sCurrency;
 
@@ -823,6 +824,20 @@ STAmount STAmount::deserialize(SerializerIterator& it)
 	return ret;
 }
 
+Json::Value STAmount::getJson(int) const
+{
+	Json::Value elem(Json::objectValue);
+
+	elem["value"]		= getText();
+
+	// This is a hack, many places don't specify a currency.  STAmount is used just as a value.
+	if (!mIsNative)
+		elem["currency"]	= getCurrencyHuman();
+
+	return elem;
+}
+
+// For unit tests:
 static STAmount serdes(const STAmount &s)
 {
 	Serializer ser;
@@ -833,7 +848,6 @@ static STAmount serdes(const STAmount &s)
 
 	return STAmount::deserialize(sit);
 }
-
 
 BOOST_AUTO_TEST_SUITE(amount)
 
