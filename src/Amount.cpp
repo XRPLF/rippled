@@ -88,19 +88,32 @@ std::string STAmount::getCurrencyHuman()
 }
 
 // Not meant to be the ultimate parser.  For use by RPC which is supposed to be sane and trusted.
+// Native has special handling:
+// - Integer values are in base units.
+// - Float values are in float units.
+// - To avoid a mistake float value for native are specified with a "^" in place of a "."
 bool STAmount::setValue(const std::string& sAmount, const std::string& sCurrency)
 {
 	if (!currencyFromString(mCurrency, sCurrency))
 		return false;
 
+	mIsNative	= !mCurrency;
+
 	uint64	uValue;
 	int		iOffset;
-	size_t	uDecimal	= sAmount.find_first_of("^");
+	size_t	uDecimal	= sAmount.find_first_of(mIsNative ? "^" : ".");
 	bool	bInteger	= uDecimal == std::string::npos;
 
 	if (bInteger)
 	{
-		uValue	= sAmount.empty() ? 0 : boost::lexical_cast<uint64>(sAmount);
+		try
+		{
+			uValue	= sAmount.empty() ? 0 : boost::lexical_cast<uint64>(sAmount);
+		}
+		catch (...)
+		{
+			return false;
+		}
 		iOffset	= 0;
 	}
 	else
@@ -125,7 +138,6 @@ bool STAmount::setValue(const std::string& sAmount, const std::string& sCurrency
 		uValue += uFraction;
 	}
 
-	mIsNative	= !mCurrency;
 	if (mIsNative)
 	{
 		if (bInteger)

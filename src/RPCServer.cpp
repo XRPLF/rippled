@@ -1124,6 +1124,8 @@ Json::Value RPCServer::doRippleLinesGet(const Json::Value &params)
 						jPeer["node"]		= uNode.ToString();
 
 						jPeer["account"]	= rsLine->getAccountIDPeer().humanAccountID();
+						// Amount reported is positive if current account hold's other account's IOUs.
+						// Amount reported is negative if other account hold's current account's IOUs.
 						jPeer["balance"]	= saBalance.getText();
 						jPeer["currency"]	= saBalance.getCurrencyHuman();
 						jPeer["limit"]		= saLimit.getJson(0);
