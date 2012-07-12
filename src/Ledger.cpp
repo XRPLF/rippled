@@ -16,14 +16,14 @@
 #include "Conversion.h"
 #include "BitcoinUtil.h"
 #include "Wallet.h"
-#include "BinaryFormats.h"
 #include "LedgerTiming.h"
 #include "HashPrefixes.h"
 #include "Log.h"
 
-Ledger::Ledger(const NewcoinAddress& masterID, uint64 startAmount) : mTotCoins(startAmount),
-	mCloseTime(0), mLedgerSeq(0), mClosed(false), mValidHash(false),
-	mAccepted(false), mImmutable(false), mTransactionMap(new SHAMap()), mAccountStateMap(new SHAMap())
+Ledger::Ledger(const NewcoinAddress& masterID, uint64 startAmount) : mTotCoins(startAmount), mLedgerSeq(0),
+	mCloseTime(0), mParentCloseTime(0), mCloseResolution(LEDGER_TIME_ACCURACY), mCloseFlags(0),
+	mClosed(false), mValidHash(false), mAccepted(false), mImmutable(false),
+	mTransactionMap(new SHAMap()), mAccountStateMap(new SHAMap())
 {
 	// special case: put coins in root account
 	AccountState::pointer startAccount = boost::make_shared<AccountState>(masterID);
@@ -37,15 +37,18 @@ Ledger::Ledger(const NewcoinAddress& masterID, uint64 startAmount) : mTotCoins(s
 }
 
 Ledger::Ledger(const uint256 &parentHash, const uint256 &transHash, const uint256 &accountHash,
-	uint64 totCoins, uint64 timeStamp, uint32 ledgerSeq)
-		: mParentHash(parentHash), mTransHash(transHash), mAccountHash(accountHash),
-		mTotCoins(totCoins), mCloseTime(timeStamp), mLedgerSeq(ledgerSeq),
+	uint64 totCoins, uint32 closeTime, uint32 parentCloseTime, int closeFlags, int closeResolution, uint32 ledgerSeq)
+		: mParentHash(parentHash), mTransHash(transHash), mAccountHash(accountHash), mTotCoins(totCoins),
+		mLedgerSeq(ledgerSeq), mCloseTime(closeTime), mParentCloseTime(parentCloseTime),
+		mCloseResolution(closeResolution), mCloseFlags(closeFlags),
 		mClosed(false), mValidHash(false), mAccepted(false), mImmutable(false)
 {
 	updateHash();
 }
 
 Ledger::Ledger(Ledger& ledger, bool isMutable) : mTotCoins(ledger.mTotCoins), mLedgerSeq(ledger.mLedgerSeq),
+	mCloseTime(ledger.mCloseTime), mParentCloseTime(ledger.mParentCloseTime),
+	mCloseResolution(ledger.mCloseResolution), mCloseFlags(ledger.mCloseFlags),
 	mClosed(ledger.mClosed), mValidHash(false), mAccepted(ledger.mAccepted), mImmutable(!isMutable),
 	mTransactionMap(ledger.mTransactionMap->snapShot(isMutable)),
 	mAccountStateMap(ledger.mAccountStateMap->snapShot(isMutable))
@@ -54,9 +57,10 @@ Ledger::Ledger(Ledger& ledger, bool isMutable) : mTotCoins(ledger.mTotCoins), mL
 }
 
 
-Ledger::Ledger(uint64 closeTime, Ledger& prevLedger) :
-	mTotCoins(prevLedger.mTotCoins), mCloseTime(closeTime), mLedgerSeq(prevLedger.mLedgerSeq + 1),
-	mClosed(false), mValidHash(false), mAccepted(false), mImmutable(false),
+Ledger::Ledger(bool dummy, Ledger& prevLedger) : 
+	mTotCoins(prevLedger.mTotCoins), mLedgerSeq(prevLedger.mLedgerSeq + 1),
+	mCloseTime(0), mParentCloseTime(prevLedger.mCloseTime), mCloseResolution(prevLedger.mCloseResolution),
+	mCloseFlags(0),	mClosed(false), mValidHash(false), mAccepted(false), mImmutable(false),
 	mTransactionMap(new SHAMap()), mAccountStateMap(prevLedger.mAccountStateMap->snapShot(true))
 { // Create a new ledger that follows this one
 	prevLedger.updateHash();
@@ -64,42 +68,16 @@ Ledger::Ledger(uint64 closeTime, Ledger& prevLedger) :
 	assert(mParentHash.isNonZero());
 }
 
-Ledger::Ledger(const std::vector<unsigned char>& rawLedger) : mCloseTime(0),
-	mLedgerSeq(0), mClosed(false), mValidHash(false), mAccepted(false), mImmutable(true)
+Ledger::Ledger(const std::vector<unsigned char>& rawLedger) :
+	mClosed(false), mValidHash(false), mAccepted(false), mImmutable(true)
 {
-	Serializer s(rawLedger);
-	// 32seq, 64fee, 256phash, 256thash, 256ahash, 64ts
-	if (!s.get32(mLedgerSeq, BLgPIndex)) return;
-	if (!s.get64(mTotCoins, BLgPTotCoins)) return;
-	if (!s.get256(mParentHash, BLgPPrevLg)) return;
-	if (!s.get256(mTransHash, BLgPTxT)) return;
-	if (!s.get256(mAccountHash, BLgPAcT)) return;
-	if (!s.get64(mCloseTime, BLgPClTs)) return;
-	updateHash();
-	if(mValidHash)
-	{
-		mTransactionMap = boost::make_shared<SHAMap>();
-		mAccountStateMap = boost::make_shared<SHAMap>();
-	}
+	setRaw(Serializer(rawLedger));
 }
 
-Ledger::Ledger(const std::string& rawLedger) : mCloseTime(0),
-	mLedgerSeq(0), mClosed(false), mValidHash(false), mAccepted(false), mImmutable(true)
+Ledger::Ledger(const std::string& rawLedger) :
+	mClosed(false), mValidHash(false), mAccepted(false), mImmutable(true)
 {
-	Serializer s(rawLedger);
-	// 32seq, 64fee, 256phash, 256thash, 256ahash, 64ts
-	if (!s.get32(mLedgerSeq, BLgPIndex)) return;
-	if (!s.get64(mTotCoins, BLgPTotCoins)) return;
-	if (!s.get256(mParentHash, BLgPPrevLg)) return;
-	if (!s.get256(mTransHash, BLgPTxT)) return;
-	if (!s.get256(mAccountHash, BLgPAcT)) return;
-	if (!s.get64(mCloseTime, BLgPClTs)) return;
-	updateHash();
-	if(mValidHash)
-	{
-		mTransactionMap = boost::make_shared<SHAMap>();
-		mAccountStateMap = boost::make_shared<SHAMap>();
-	}
+	setRaw(Serializer(rawLedger));
 }
 
 void Ledger::updateHash()
@@ -112,21 +90,62 @@ void Ledger::updateHash()
 		else mAccountHash.zero();
 	}
 
-	Serializer s(116);
+	Serializer s(118);
 	s.add32(sHP_Ledger);
 	addRaw(s);
 	mHash = s.getSHA512Half();
 	mValidHash = true;
 }
 
-void Ledger::addRaw(Serializer &s)
+void Ledger::setRaw(const Serializer &s)
+{
+	SerializerIterator sit(s);
+	mLedgerSeq =		sit.get32();
+	mTotCoins =			sit.get64();
+	mParentHash =		sit.get256();
+	mTransHash =		sit.get256();
+	mAccountHash =		sit.get256();
+	mCloseTime =		sit.get32();
+	mCloseResolution =	sit.get8();
+	mCloseFlags =		sit.get8();
+	updateHash();
+	if(mValidHash)
+	{
+		mTransactionMap = boost::make_shared<SHAMap>(mTransHash);
+		mAccountStateMap = boost::make_shared<SHAMap>(mAccountHash);
+	}
+}
+
+void Ledger::addRaw(Serializer &s) const
 {
 	s.add32(mLedgerSeq);
 	s.add64(mTotCoins);
 	s.add256(mParentHash);
 	s.add256(mTransHash);
 	s.add256(mAccountHash);
-	s.add64(mCloseTime);
+	s.add32(mParentCloseTime);
+	s.add32(mCloseTime);
+	s.add8(mCloseResolution);
+	s.add8(mCloseFlags);
+}
+
+void Ledger::setAccepted(uint32 closeTime, int closeResolution, bool correctCloseTime)
+{ // used when we witnessed the consensus
+	assert(mClosed && !mAccepted);
+	mCloseTime = closeTime;
+	mCloseResolution = closeResolution;
+	mCloseFlags = correctCloseTime ? 0 : sLCF_NoConsensusTime;
+	updateHash();
+	mAccepted = true;
+	mImmutable = true;
+}
+
+void Ledger::setAccepted()
+{ // used when we acquired the ledger
+	assert(mClosed && !mAccepted && (mCloseResolution != 0));
+	updateHash();
+	mAccepted = true;
+	mImmutable = true;
 }
 
 AccountState::pointer Ledger::getAccountState(const NewcoinAddress& accountID)
@@ -238,28 +257,18 @@ void Ledger::saveAcceptedLedger(Ledger::pointer ledger)
 	static boost::format AcctTransExists("SELECT LedgerSeq FROM AccountTransactions WHERE TransId = '%s';");
 	static boost::format transExists("SELECT Status FROM Transactions WHERE TransID = '%s';");
 	static boost::format updateTx("UPDATE Transactions SET LedgerSeq = %d, Status = '%c' WHERE TransID = '%s';");
-
-	std::string sql="INSERT INTO Ledgers "
-		"(LedgerHash,LedgerSeq,PrevHash,TotalCoins,ClosingTime,AccountSetHash,TransSetHash) VALUES ('";
-	sql.append(ledger->getHash().GetHex());
-	sql.append("','");
-	sql.append(boost::lexical_cast<std::string>(ledger->mLedgerSeq));
-	sql.append("','");
-	sql.append(ledger->mParentHash.GetHex());
-	sql.append("','");
-	sql.append(boost::lexical_cast<std::string>(ledger->mTotCoins));
-	sql.append("','");
-	sql.append(boost::lexical_cast<std::string>(ledger->mCloseTime));
-	sql.append("','");
-	sql.append(ledger->mAccountHash.GetHex());
-	sql.append("','");
-	sql.append(ledger->mTransHash.GetHex());
-	sql.append("');");
+	static boost::format addLedger("INSERT INTO Ledgers "
+		"(LedgerHash,LedgerSeq,PrevHash,TotalCoins,ClosingTime,PrevClosingTime,CloseTimeRes,CloseFlags,"
+		"AccountSetHash,TranSetHash) VALUES ('%s','%u','%s','%s','%u','%u','%d','%u','%s','%s');");
 
 	ScopedLock sl(theApp->getLedgerDB()->getDBLock());
 	if (SQL_EXISTS(theApp->getLedgerDB()->getDB(), boost::str(ledgerExists % ledger->mLedgerSeq)))
 		theApp->getLedgerDB()->getDB()->executeSQL(boost::str(deleteLedger % ledger->mLedgerSeq));
-	theApp->getLedgerDB()->getDB()->executeSQL(sql);
+	theApp->getLedgerDB()->getDB()->executeSQL(boost::str(addLedger %
+		ledger->getHash().GetHex() % ledger->mLedgerSeq % ledger->mParentHash.GetHex() %
+		boost::lexical_cast<std::string>(ledger->mTotCoins) % ledger->mCloseTime % ledger->mParentCloseTime %
+		ledger->mCloseResolution % ledger->mCloseFlags %
+		ledger->mAccountHash.GetHex() % ledger->mTransHash.GetHex()));
 
 	// write out dirty nodes
 	while(ledger->mTransactionMap->flushDirty(256, TRANSACTION_NODE, ledger->mLedgerSeq))
@@ -328,8 +337,10 @@ void Ledger::saveAcceptedLedger(Ledger::pointer ledger)
 Ledger::pointer Ledger::getSQL(const std::string& sql)
 {
 	uint256 ledgerHash, prevHash, accountHash, transHash;
-	uint64 totCoins, closingTime;
-	uint32 ledgerSeq;
+	uint64 totCoins;
+	uint32 closingTime, prevClosingTime, ledgerSeq;
+	int closeResolution;
+	unsigned closeFlags;
 	std::string hash;
 
 	{
@@ -349,12 +360,16 @@ Ledger::pointer Ledger::getSQL(const std::string& sql)
 		transHash.SetHex(hash);
 		totCoins = db->getBigInt("TotalCoins");
 		closingTime = db->getBigInt("ClosingTime");
+		prevClosingTime = db->getBigInt("PrevClosingTime");
+		closeResolution = db->getBigInt("CloseTimeRes");
+		closeFlags = db->getBigInt("CloseFlags");
 		ledgerSeq = db->getBigInt("LedgerSeq");
 		db->endIterRows();
 	}
 
 	Ledger::pointer ret =
-		boost::make_shared<Ledger>(prevHash, transHash, accountHash, totCoins, closingTime, ledgerSeq);
+		boost::make_shared<Ledger>(prevHash, transHash, accountHash, totCoins, closingTime, prevClosingTime,
+			closeFlags, closeResolution, ledgerSeq);
 	if (ret->getHash() != ledgerHash)
 	{
 		Json::StyledStreamWriter ssw;
@@ -472,26 +487,6 @@ void Ledger::setCloseTime(boost::posix_time::ptime ptm)
 {
 	assert(!mImmutable);
 	mCloseTime = iToSeconds(ptm);
-}
-
-uint64 Ledger::sGenesisClose = 0;
-
-uint64 Ledger::getNextLedgerClose(int prevCloseSeconds) const
-{
-	if (mCloseTime == 0)
-	{
-		if (sGenesisClose == 0)
-		{
-			uint64 closeTime = theApp->getOPs().getNetworkTimeNC() + LEDGER_IDLE_INTERVAL - 1;
-			sGenesisClose = closeTime - (closeTime % LEDGER_IDLE_INTERVAL);
-		}
-		return sGenesisClose;
-	}
-	if (prevCloseSeconds < 0)
-		return mCloseTime + LEDGER_IDLE_INTERVAL;
-	if (prevCloseSeconds < 2)
-		return mCloseTime + prevCloseSeconds;
-	return mCloseTime + prevCloseSeconds - 1;
 }
 
 // vim:ts=4

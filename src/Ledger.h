@@ -58,15 +58,18 @@ public:
 		TR_TOOSMALL = 9, // amount is less than Tx fee
 	};
 
+	// ledger close flags
+	static const uint32 sLCF_NoConsensusTime = 1;
 
 private:
-	static uint64 sGenesisClose;
 
 	uint256		mHash, mParentHash, mTransHash, mAccountHash;
 	uint64		mTotCoins;
-	uint64		mCloseTime; // when this ledger should close / did close
-	uint64		mParentCloseTime;
 	uint32		mLedgerSeq;
+	uint32		mCloseTime;			// when this ledger closed
+	uint32		mParentCloseTime;	// when the previous ledger closed
+	int			mCloseResolution;	// the resolution for this ledger close time (2-120 seconds)
+	uint32		mCloseFlags;		// flags indicating how this ledger close took place
 	bool		mClosed, mValidHash, mAccepted, mImmutable;
 
 	SHAMap::pointer mTransactionMap, mAccountStateMap;
@@ -87,16 +90,23 @@ protected:
 
 public:
 	Ledger(const NewcoinAddress& masterID, uint64 startAmount); // used for the starting bootstrap ledger
+
 	Ledger(const uint256 &parentHash, const uint256 &transHash, const uint256 &accountHash,
-		uint64 totCoins, uint64 timeStamp, uint32 ledgerSeq); // used for database ledgers
+		uint64 totCoins, uint32 closeTime, uint32 parentCloseTime, int closeFlags, int closeResolution,
+		uint32 ledgerSeq); // used for database ledgers
+
 	Ledger(const std::vector<unsigned char>& rawLedger);
+
 	Ledger(const std::string& rawLedger);
-	Ledger(uint64 defaultCloseTime, Ledger& previous);	// ledger after this one
+
+	Ledger(bool dummy, Ledger& previous);	// ledger after this one
+
 	Ledger(Ledger& target, bool isMutable); // snapshot
 
 	void updateHash();
 	void setClosed()	{ mClosed = true; }
-	void setAccepted()	{ mAccepted = true; }
+	void setAccepted(uint32 closeTime, int closeResolution, bool correctCloseTime);
+	void setAccepted();
 	void setImmutable()	{ updateHash(); mImmutable = true; }
 	bool isClosed()		{ return mClosed; }
 	bool isAccepted()	{ return mAccepted; }
@@ -109,7 +119,8 @@ public:
 	void bumpSeq()		{ mClosed = true; mLedgerSeq++; }
 
 	// ledger signature operations
-	void addRaw(Serializer &s);
+	void addRaw(Serializer &s) const;
+	void setRaw(const Serializer& s);
 
 	uint256 getHash();
 	const uint256& getParentHash() const	{ return mParentHash; }
@@ -117,15 +128,14 @@ public:
 	const uint256& getAccountHash() const	{ return mAccountHash; }
 	uint64 getTotalCoins() const			{ return mTotCoins; }
 	void destroyCoins(uint64 fee)			{ mTotCoins -= fee; }
-	uint64 getCloseTimeNC() const			{ return mCloseTime; }
-	uint64 getParentCloseTimeNC() const		{ return mParentCloseTime; }
+	uint32 getCloseTimeNC() const			{ return mCloseTime; }
+	uint32 getParentCloseTimeNC() const		{ return mParentCloseTime; }
 	uint32 getLedgerSeq() const				{ return mLedgerSeq; }
 
 	// close time functions
-	void setCloseTime(uint64 ct)			{ assert(!mImmutable); mCloseTime = ct; }
+	void setCloseTime(uint32 ct)			{ assert(!mImmutable); mCloseTime = ct; }
 	void setCloseTime(boost::posix_time::ptime);
 	boost::posix_time::ptime getCloseTime() const;
-	uint64 getNextLedgerClose(int prevCloseSeconds) const;
 
 	// low level functions
 	SHAMap::pointer peekTransactionMap() { return mTransactionMap; }
