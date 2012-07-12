@@ -3,8 +3,8 @@
 
 #include <cassert>
 
-// NOTE: Last time must be repeated
-int ContinuousLedgerTiming::LedgerTimeResolution[] = { 10, 20, 30, 60, 90, 120, 120 };
+// NOTE: First and last times must be repeated
+int ContinuousLedgerTiming::LedgerTimeResolution[] = { 10, 10, 20, 30, 60, 90, 120, 120 };
 
 // Called when a ledger is open and no close is in progress -- when a transaction is received and no close
 // is in process, or when a close completes. Returns the number of seconds the ledger should be be open.
@@ -72,15 +72,15 @@ int ContinuousLedgerTiming::getNextLedgerTimeResolution(int previousResolution, 
 	assert(ledgerSeq);
 	if ((!previousAgree) && ((ledgerSeq % LEDGER_RES_DECREASE) == 0))
 	{ // reduce resolution
-		int i = 0;
+		int i = 1;
 		while (LedgerTimeResolution[i] != previousResolution)
 			++i;
-		return LedgerTimeResolution[(i != 0) ? (i - 1) : i];
+		return LedgerTimeResolution[i - 1];
 	}
 
 	if ((previousAgree) && ((ledgerSeq % LEDGER_RES_INCREASE) == 0))
 	{ // increase resolution
-		int i = 0;
+		int i = 1;
 		while (LedgerTimeResolution[i] != previousResolution)
 			++i;
 		return LedgerTimeResolution[i + 1];
