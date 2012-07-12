@@ -757,7 +757,7 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 	CanonicalTXSet failedTransactions(set->getHash());
 	applyTransactions(set, newLCL, failedTransactions, true);
 	newLCL->setClosed();
-	newLCL->setAccepted();
+	newLCL->setAccepted(); // FIXME: Must call other setAccepted
 	newLCL->updateHash();
 	uint256 newLCLHash = newLCL->getHash();
 	Log(lsTRACE) << "newLCL " << newLCLHash.GetHex();
