@@ -1,6 +1,10 @@
 
 #include "LedgerTiming.h"
 
+#include <cassert>
+
+// NOTE: Last time must be repeated
+int ContinuousLedgerTiming::LedgerTimeResolution[] = { 10, 20, 30, 60, 90, 120, 120 };
 
 // Called when a ledger is open and no close is in progress -- when a transaction is received and no close
 // is in process, or when a close completes. Returns the number of seconds the ledger should be be open.
@@ -61,4 +65,26 @@ bool ContinuousLedgerTiming::haveConsensus(
 
 	// no consensus yet
 	return false;
+}
+
+int ContinuousLedgerTiming::getNextLedgerTimeResolution(int previousResolution, bool previousAgree, int ledgerSeq)
+{
+	assert(ledgerSeq);
+	if ((!previousAgree) && ((ledgerSeq % LEDGER_RES_DECREASE) == 0))
+	{ // reduce resolution
+		int i = 0;
+		while (LedgerTimeResolution[i] != previousResolution)
+			++i;
+		return LedgerTimeResolution[(i != 0) ? (i - 1) : i];
+	}
+
+	if ((previousAgree) && ((ledgerSeq % LEDGER_RES_INCREASE) == 0))
+	{ // increase resolution
+		int i = 0;
+		while (LedgerTimeResolution[i] != previousResolution)
+			++i;
+		return LedgerTimeResolution[i + 1];
+	}
+
+	return previousResolution;
 }
