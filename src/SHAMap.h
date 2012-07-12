@@ -290,6 +290,7 @@ public:
 
 	// build new map
 	SHAMap(uint32 seq = 0);
+	SHAMap(const uint256& hash);
 
 	// Returns a new map that's a snapshot of this one. Force CoW
 	SHAMap::pointer snapShot(bool isMutable);

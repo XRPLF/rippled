@@ -46,6 +46,13 @@ SHAMap::SHAMap(uint32 seq) : mSeq(seq), mState(Modifying)
 	mTNByID[*root] = root;
 }
 
+SHAMap::SHAMap(const uint256& hash) : mSeq(0), mState(Synching)
+{ // FIXME: Need to acquire root node
+	root = boost::make_shared<SHAMapTreeNode>(mSeq, SHAMapNode(0, uint256()));
+	root->makeInner();
+	mTNByID[*root] = root;
+}
+
 SHAMap::pointer SHAMap::snapShot(bool isMutable)
 { // Return a new SHAMap that is an immutable snapshot of this one
   // Initially nodes are shared, but CoW is forced on both ledgers
