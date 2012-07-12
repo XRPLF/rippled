@@ -2,6 +2,7 @@
 #define __LEDGER_CONSENSUS__
 
 #include <list>
+#include <map>
 
 #include <boost/weak_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
@@ -78,7 +79,7 @@ class LedgerConsensus : public boost::enable_shared_from_this<LedgerConsensus>
 {
 protected:
 	LCState mState;
-	uint64 mCloseTime;						// The wall time this ledger closed
+	uint32 mCloseTime;						// The wall time this ledger closed
 	uint256 mPrevLedgerHash, mNewLedgerHash;
 	Ledger::pointer mPreviousLedger;
 	LedgerProposal::pointer mOurPosition;
@@ -103,6 +104,9 @@ protected:
 
 	// Disputed transactions
 	boost::unordered_map<uint256, LCTransaction::pointer> mDisputes;
+
+	// Close time estimates
+	std::map<uint32, int> mCloseTimes;
 
 	// final accept logic
 	static void Saccept(boost::shared_ptr<LedgerConsensus> This, SHAMap::pointer txSet);
@@ -134,7 +138,7 @@ protected:
 	void endConsensus();
 
 public:
-	LedgerConsensus(const uint256& prevLCLHash, Ledger::pointer previousLedger, uint64 closeTime);
+	LedgerConsensus(const uint256& prevLCLHash, Ledger::pointer previousLedger, uint32 closeTime);
 
 	int startup();
 
