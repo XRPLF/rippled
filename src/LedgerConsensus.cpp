@@ -189,7 +189,7 @@ bool LCTransaction::updatePosition(int percentTime, bool proposing)
 	return true;
 }
 
-LedgerConsensus::LedgerConsensus(const uint256& prevLCLHash, Ledger::pointer previousLedger, uint64 closeTime)
+LedgerConsensus::LedgerConsensus(const uint256& prevLCLHash, Ledger::pointer previousLedger, uint32 closeTime)
 	:  mState(lcsPRE_CLOSE), mCloseTime(closeTime), mPrevLedgerHash(prevLCLHash), mPreviousLedger(previousLedger),
 	mCurrentSeconds(0), mClosePercent(0)
 {
@@ -364,6 +364,7 @@ int LedgerConsensus::statePreClose()
 		mState = lcsESTABLISH;
 		mConsensusStartTime = boost::posix_time::second_clock::universal_time();
 		theApp->getMasterLedger().closeTime();
+		mCloseTime = theApp->getOPs().getNetworkTimeNC();
 		statusChange(newcoin::neCLOSING_LEDGER, mPreviousLedger);
 		Ledger::pointer initial = theApp->getMasterLedger().endWobble();
 		assert (initial->getParentHash() == mPreviousLedger->getHash());
@@ -462,6 +463,8 @@ void LedgerConsensus::updateOurPositions()
 			}
 		}
 	}
+
+	// WRITEME: update close time
 
 	if (changes)
 	{
@@ -585,6 +588,7 @@ void LedgerConsensus::addDisputedTransaction(const uint256& txID, const std::vec
 bool LedgerConsensus::peerPosition(LedgerProposal::pointer newPosition)
 {
 	LedgerProposal::pointer& currentPosition = mPeerPositions[newPosition->getPeerID()];
+
 	if (currentPosition)
 	{
 		assert(newPosition->getPeerID() == currentPosition->getPeerID());
@@ -596,6 +600,10 @@ bool LedgerConsensus::peerPosition(LedgerProposal::pointer newPosition)
 			currentPosition = newPosition;
 			return true;
 		}
+	}
+	else if (newPosition->getProposeSeq() == 0)
+	{ // new initial close time estimate
+		++mCloseTimes[newPosition->getCloseTime()];
 	}
 	Log(lsINFO) << "Processing peer proposal " << newPosition->getProposeSeq() << "/"
 		<< newPosition->getCurrentHash().GetHex();
