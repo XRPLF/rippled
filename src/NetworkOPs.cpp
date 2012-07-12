@@ -34,7 +34,7 @@ boost::posix_time::ptime NetworkOPs::getNetworkTimePT()
 	return boost::posix_time::second_clock::universal_time();
 }
 
-uint64 NetworkOPs::getNetworkTimeNC()
+uint32 NetworkOPs::getNetworkTimeNC()
 {
 	return iToSeconds(getNetworkTimePT());
 }
@@ -318,8 +318,8 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 		// check if the ledger is bad enough to go to omTRACKING
 	}
 
-//	uint64 defaultClose = theApp->getMasterLedger().getCurrentLedger()->getCloseTimeNC();
-//	uint64 now = theApp->getOPs().getNetworkTimeNC();
+//	uint32 defaultClose = theApp->getMasterLedger().getCurrentLedger()->getCloseTimeNC();
+//	uint32 now = theApp->getOPs().getNetworkTimeNC();
 	if (!mConsensus)
 	{ // if now is past the ledger's default close time or there are transactions in the current ledger, close
 		if ((theApp->getOPs().getNetworkTimeNC() > theApp->getMasterLedger().getCurrentLedger()->getCloseTimeNC())
@@ -507,7 +507,7 @@ int NetworkOPs::beginConsensus(const uint256& networkClosed, Ledger::pointer clo
 }
 
 // <-- bool: true to relay
-bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash, uint64 closeTime,
+bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash, uint32 closeTime,
 	const std::string& pubKey, const std::string& signature)
 {
 	// JED: does mConsensus need to be locked?
@@ -530,7 +530,7 @@ bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash, uint
 	}
 
 	if (!mConsensus)
-	{
+	{ // FIXME: CLC
 		Log(lsWARNING) << "Received proposal when full but not during consensus window";
 		return false;
 	}
