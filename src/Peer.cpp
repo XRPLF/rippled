@@ -571,8 +571,8 @@ void Peer::recvHello(newcoin::TMHello& packet)
 	// Cancel verification timeout.
 	(void) mVerifyTimer.cancel();
 
-	uint64 minTime = theApp->getOPs().getNetworkTimeNC() - 4;
-	uint64 maxTime = minTime + 8;
+	uint32 minTime = theApp->getOPs().getNetworkTimeNC() - 4;
+	uint32 maxTime = minTime + 8;
 
 	if (packet.has_nettime() && ((packet.nettime() < minTime) || (packet.nettime() > maxTime)))
 	{

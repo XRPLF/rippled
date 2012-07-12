@@ -11,8 +11,8 @@ bool ValidationCollection::addValidation(SerializedValidation::pointer val)
 	if (theApp->getUNL().nodeInUNL(val->getSignerPublic()))
 	{
 		val->setTrusted();
-		uint64 now = theApp->getOPs().getNetworkTimeNC();
-		uint64 valClose = val->getCloseTime();
+		uint32 now = theApp->getOPs().getNetworkTimeNC();
+		uint32 valClose = val->getCloseTime();
 		if ((now > valClose) && (now < (valClose + LEDGER_MAX_INTERVAL)))
 			isCurrent = true;
 		else
@@ -55,7 +55,7 @@ void ValidationCollection::getValidationCount(const uint256& ledger, bool curren
 	trusted = untrusted = 0;
 	boost::mutex::scoped_lock sl(mValidationLock);
 	boost::unordered_map<uint256, ValidationSet>::iterator it = mValidations.find(ledger);
-	uint64 now = theApp->getOPs().getNetworkTimeNC();
+	uint32 now = theApp->getOPs().getNetworkTimeNC();
 	if (it != mValidations.end())
 	{
 		for (ValidationSet::iterator vit = it->second.begin(), end = it->second.end(); vit != end; ++vit)
@@ -63,7 +63,7 @@ void ValidationCollection::getValidationCount(const uint256& ledger, bool curren
 			bool trusted = vit->second->isTrusted();
 			if (trusted && currentOnly)
 			{
-				uint64 closeTime = vit->second->getCloseTime();
+				uint32 closeTime = vit->second->getCloseTime();
 				if ((now < closeTime) || (now > (closeTime + 2 * LEDGER_MAX_INTERVAL)))
 					trusted = false;
 			}
@@ -91,7 +91,7 @@ int ValidationCollection::getTrustedValidationCount(const uint256& ledger)
 	return trusted;
 }
 
-int ValidationCollection::getCurrentValidationCount(uint64 afterTime)
+int ValidationCollection::getCurrentValidationCount(uint32 afterTime)
 {
 	int count = 0;
 	boost::mutex::scoped_lock sl(mValidationLock);
@@ -106,7 +106,7 @@ int ValidationCollection::getCurrentValidationCount(uint64 afterTime)
 
 boost::unordered_map<uint256, int> ValidationCollection::getCurrentValidations()
 {
-    uint64 now = theApp->getOPs().getNetworkTimeNC();
+    uint32 now = theApp->getOPs().getNetworkTimeNC();
 	boost::unordered_map<uint256, int> ret;
 
 	{

@@ -79,7 +79,7 @@ public:
 	NetworkOPs(boost::asio::io_service& io_service, LedgerMaster* pLedgerMaster);
 
 	// network information
-	uint64 getNetworkTimeNC();
+	uint32 getNetworkTimeNC();
 	boost::posix_time::ptime getNetworkTimePT();
 	uint32 getCurrentLedgerID();
 	OperatingMode getOperatingMode() { return mMode; }
@@ -151,7 +151,7 @@ public:
 		const std::vector<unsigned char>& myNode, std::list< std::vector<unsigned char> >& newNodes);
 
 	// ledger proposal/close functions
-	bool recvPropose(uint32 proposeSeq, const uint256& proposeHash, uint64 closeTime,
+	bool recvPropose(uint32 proposeSeq, const uint256& proposeHash, uint32 closeTime,
 		const std::string& pubKey, const std::string& signature);
 	bool gotTXData(boost::shared_ptr<Peer> peer, const uint256& hash,
 		const std::list<SHAMapNode>& nodeIDs, const std::list< std::vector<unsigned char> >& nodeData);
