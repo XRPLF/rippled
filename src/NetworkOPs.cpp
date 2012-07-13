@@ -401,7 +401,15 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 	networkClosed = closedLedger;
 
 	if (!switchLedgers)
+	{
+		if (mAcquiringLedger)
+		{
+			mAcquiringLedger->abort();
+			theApp->getMasterLedgerAcquire().dropLedger(mAcquiringLedger->getHash());
+			mAcquiringLedger = LedgerAcquire::pointer();
+		}
 		return false;
+	}
 
 	Log(lsWARNING) << "We are not running on the consensus ledger";
 	Log(lsINFO) << "Our LCL " << ourClosed->getHash().GetHex();
@@ -412,14 +420,14 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 	if (!consensus)
 	{
 		Log(lsINFO) << "Acquiring consensus ledger";
-		LedgerAcquire::pointer acq = theApp->getMasterLedgerAcquire().findCreate(closedLedger);
-		if (!acq || acq->isFailed())
+		LedgerAcquire::pointer mAcquiringLedger = theApp->getMasterLedgerAcquire().findCreate(closedLedger);
+		if (!mAcquiringLedger || mAcquiringLedger->isFailed())
 		{
 			theApp->getMasterLedgerAcquire().dropLedger(closedLedger);
 			Log(lsERROR) << "Network ledger cannot be acquired";
 			return true;
 		}
-		if (!acq->isComplete())
+		if (!mAcquiringLedger->isComplete())
 		{ // add more peers
 			int count = 0;
 			std::vector<Peer::pointer> peers=theApp->getConnectionPool().getPeerVector();
@@ -429,7 +437,7 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 				if ((*it)->getClosedLedgerHash() == closedLedger)
 				{
 					++count;
-					acq->peerHas(*it);
+					mAcquiringLedger->peerHas(*it);
 				}
 			}
 			if (!count)
@@ -438,12 +446,12 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 						it != end; ++it)
 				{
 					if ((*it)->isConnected())
-						acq->peerHas(*it);
+						mAcquiringLedger->peerHas(*it);
 				}
 			}
 			return true;
 		}
-		consensus = acq->getLedger();
+		consensus = mAcquiringLedger->getLedger();
 	}
 
 	// FIXME: If this rewinds the ledger sequence, or has the same sequence, we should update the status on

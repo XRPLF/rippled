@@ -6,6 +6,7 @@
 #include "NicknameState.h"
 #include "RippleState.h"
 #include "SerializedValidation.h"
+#include "LedgerAcquire.h"
 
 #include <boost/interprocess/sync/interprocess_upgradable_mutex.hpp>
 #include <boost/interprocess/sync/sharable_lock.hpp>
@@ -51,6 +52,7 @@ protected:
 	boost::shared_ptr<LedgerConsensus>	mConsensus;
 
 	LedgerMaster*						mLedgerMaster;
+	LedgerAcquire::pointer				mAcquiringLedger;
 
 	void setMode(OperatingMode);
 

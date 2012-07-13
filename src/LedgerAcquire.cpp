@@ -84,7 +84,7 @@ void PeerSet::TimerEntry(boost::weak_ptr<PeerSet> wptr, const boost::system::err
 }
 
 LedgerAcquire::LedgerAcquire(const uint256& hash) : PeerSet(hash, LEDGER_ACQUIRE_TIMEOUT), 
-	mHaveBase(false), mHaveState(false), mHaveTransactions(false)
+	mHaveBase(false), mHaveState(false), mHaveTransactions(false), mAborted(false)
 {
 #ifdef LA_DEBUG
 	Log(lsTRACE) << "Acquiring ledger " << mHash.GetHex();
@@ -122,6 +122,8 @@ void LedgerAcquire::addOnComplete(boost::function<void (LedgerAcquire::pointer)>
 
 void LedgerAcquire::trigger(Peer::pointer peer)
 {
+	if (mAborted)
+		return;
 #ifdef LA_DEBUG
 	if(peer) Log(lsTRACE) <<  "Trigger acquiring ledger " << mHash.GetHex() << " from " << peer->getIP();
 	else Log(lsTRACE) <<  "Trigger acquiring ledger " << mHash.GetHex();
