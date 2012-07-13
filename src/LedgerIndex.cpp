@@ -15,6 +15,11 @@ uint256 Ledger::getQualityIndex(const uint256& uBase, const uint64 uNodeDir)
 	return uNode;
 }
 
+uint64 Ledger::getQuality(const uint256& uBase)
+{
+	return be64toh(((uint64*) uBase.end())[-1]);
+}
+
 uint256 Ledger::getQualityNext(const uint256& uBase)
 {
 	static	uint256	uNext("10000000000000000");

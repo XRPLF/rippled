@@ -330,7 +330,11 @@ public:
 
 	// Someone is offering X for Y, I try to pay Z, how much do I get?
 	// And what's left of the offer? And how much do I actually pay?
-	static STAmount getClaimed(STAmount& offerOut, STAmount& offerIn, STAmount& paid);
+	static bool applyOffer(
+		const STAmount& saOfferFunds, const STAmount& saTakerFunds,
+		const STAmount& saOfferPays, const STAmount& saOfferGets,
+		const STAmount& saTakerPays, const STAmount& saTakerGets,
+		STAmount& saTakerPaid, STAmount& saTakerGot);
 
 	// Someone is offering X for Y, I need Z, how much do I pay
 	static STAmount getPay(const STAmount& offerOut, const STAmount& offerIn, const STAmount& needed);
