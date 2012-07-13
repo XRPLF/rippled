@@ -303,6 +303,75 @@ Transaction::pointer Transaction::sharedNicknameSet(
 }
 
 //
+// OfferCreate
+//
+
+Transaction::pointer Transaction::setOfferCreate(
+	const NewcoinAddress&				naPrivateKey,
+	bool								bPassive,
+	const STAmount&						saTakerPays,
+	const STAmount&						saTakerGets,
+	uint32								uExpiration)
+{
+	if (bPassive)
+		mTransaction->setITFieldU32(sfFlags, tfPassive);
+
+	mTransaction->setITFieldAmount(sfTakerPays, saTakerPays);
+	mTransaction->setITFieldAmount(sfTakerGets, saTakerGets);
+	mTransaction->setITFieldAccount(sfPaysIssuer, saTakerPays.getIssuer());
+	mTransaction->setITFieldAccount(sfGetsIssuer, saTakerGets.getIssuer());
+	mTransaction->setITFieldU32(sfExpiration, uExpiration);
+
+	sign(naPrivateKey);
+
+	return shared_from_this();
+}
+
+Transaction::pointer Transaction::sharedOfferCreate(
+	const NewcoinAddress& naPublicKey, const NewcoinAddress& naPrivateKey,
+	const NewcoinAddress&				naSourceAccount,
+	uint32								uSeq,
+	const STAmount&						saFee,
+	uint32								uSourceTag,
+	bool								bPassive,
+	const STAmount&						saTakerPays,
+	const STAmount&						saTakerGets,
+	uint32								uExpiration)
+{
+	pointer	tResult	= boost::make_shared<Transaction>(ttOFFER_CREATE, naPublicKey, naSourceAccount, uSeq, saFee, uSourceTag);
+
+	return tResult->setOfferCreate(naPrivateKey, bPassive, saTakerPays, saTakerGets, uExpiration);
+}
+
+//
+// OfferCancel
+//
+
+Transaction::pointer Transaction::setOfferCancel(
+	const NewcoinAddress&				naPrivateKey,
+	uint32								uSequence)
+{
+	mTransaction->setITFieldU32(sfSequence, uSequence);
+
+	sign(naPrivateKey);
+
+	return shared_from_this();
+}
+
+Transaction::pointer Transaction::sharedOfferCancel(
+	const NewcoinAddress& naPublicKey, const NewcoinAddress& naPrivateKey,
+	const NewcoinAddress&				naSourceAccount,
+	uint32								uSeq,
+	const STAmount&						saFee,
+	uint32								uSourceTag,
+	uint32								uSequence)
+{
+	pointer	tResult	= boost::make_shared<Transaction>(ttOFFER_CANCEL, naPublicKey, naSourceAccount, uSeq, saFee, uSourceTag);
+
+	return tResult->setOfferCancel(naPrivateKey, uSequence);
+}
+
+//
 // PasswordFund
 //
 
