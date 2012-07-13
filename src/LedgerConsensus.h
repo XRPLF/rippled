@@ -86,7 +86,8 @@ protected:
 	NewcoinAddress mValSeed;
 	bool mProposing, mValidating, mHaveCorrectLCL;
 
-	int mCurrentSeconds, mClosePercent;
+	int mCurrentSeconds, mClosePercent, mCloseResolution;
+	bool mHaveCloseTimeConsensus;
 
 	boost::posix_time::ptime		mConsensusStartTime;
 	int								mPreviousProposers;
