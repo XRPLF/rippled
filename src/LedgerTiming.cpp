@@ -19,6 +19,8 @@ int ContinuousLedgerTiming::shouldClose(
 	int previousSeconds,		// seconds the previous ledger took to reach consensus
 	int currentSeconds)			// seconds since the previous ledger closed
 {
+	assert((previousSeconds > 0) && (previousSeconds < 600));
+	assert((currentSeconds >= 0) && (currentSeconds < 600));
 	Log(lsTRACE) << boost::str(boost::format("CLC::shouldClose Trans=%s, Prop: %d/%d, Secs: %d/%d") %
 		(anyTransactions ? "yes" : "no") % previousProposers % proposersClosed % previousSeconds % currentSeconds);
 

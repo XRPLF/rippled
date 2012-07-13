@@ -361,8 +361,10 @@ int LedgerConsensus::statePreClose()
 	bool anyTransactions = theApp->getMasterLedger().getCurrentLedger()->peekTransactionMap()->getHash().isNonZero();
 	int proposersClosed = mPeerPositions.size();
 
+	int sinceClose = theApp->getOPs().getNetworkTimeNC() - mPreviousLedger->getCloseTimeNC();
+
 	if (ContinuousLedgerTiming::shouldClose(anyTransactions, mPreviousProposers, proposersClosed,
-		mPreviousSeconds, mCurrentSeconds))
+		mPreviousSeconds, sinceClose))
 	{ // it is time to close the ledger (swap default and wobble ledgers)
 		Log(lsINFO) << "Closing ledger";
 		mState = lcsESTABLISH;
@@ -428,7 +430,7 @@ void LedgerConsensus::timerEntry()
 		}
 	}
 
-	mCurrentSeconds = theApp->getOPs().getNetworkTimeNC() - mCloseTime;
+	mCurrentSeconds = (mCloseTime != 0) ? (theApp->getOPs().getNetworkTimeNC() - mCloseTime) : 0;
 	mClosePercent = mCurrentSeconds * 100 / mPreviousSeconds;
 
 	switch (mState)
