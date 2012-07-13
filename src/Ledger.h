@@ -131,6 +131,8 @@ public:
 	uint32 getCloseTimeNC() const			{ return mCloseTime; }
 	uint32 getParentCloseTimeNC() const		{ return mParentCloseTime; }
 	uint32 getLedgerSeq() const				{ return mLedgerSeq; }
+	int getCloseResolution() const			{ return mCloseResolution; }
+	bool getCloseAgree() const				{ return (mCloseFlags & sLCF_NoConsensusTime) == 0; }
 
 	// close time functions
 	void setCloseTime(uint32 ct)			{ assert(!mImmutable); mCloseTime = ct; }
