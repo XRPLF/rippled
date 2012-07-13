@@ -56,8 +56,8 @@ TransactionFormat InnerTxnFormats[]=
 	},
 	{ "OfferCreate", ttOFFER_CREATE, {
 		{ S_FIELD(Flags),			STI_UINT32,  SOE_FLAGS,    0 },
-		{ S_FIELD(AmountIn),		STI_AMOUNT,  SOE_REQUIRED, 0 },
-		{ S_FIELD(AmountOut),		STI_AMOUNT,  SOE_REQUIRED, 0 },
+		{ S_FIELD(TakerPays),		STI_AMOUNT,  SOE_REQUIRED, 0 },
+		{ S_FIELD(TakerGets),		STI_AMOUNT,  SOE_REQUIRED, 0 },
 		{ S_FIELD(SourceTag),		STI_UINT32,  SOE_IFFLAG,   1 },
 		{ S_FIELD(Destination),		STI_ACCOUNT, SOE_IFFLAG,   2 },
 		{ S_FIELD(Expiration),		STI_UINT32,  SOE_IFFLAG,   4 },
