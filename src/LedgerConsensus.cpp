@@ -381,9 +381,12 @@ int LedgerConsensus::stateEstablish()
 { // we are establishing consensus
 	if (mCurrentSeconds < LEDGER_MIN_CONSENSUS)
 		return 1;
-	if (mProposing)
-		updateOurPositions();
-	if (haveConsensus() && mHaveCloseTimeConsensus)
+	updateOurPositions();
+	if (!mHaveCloseTimeConsensus)
+	{
+		Log(lsINFO) << "No close time consensus";
+	}
+	else if (haveConsensus())
 	{
 		Log(lsINFO) << "Converge cutoff";
 		mState = lcsFINISHED;
@@ -441,6 +444,7 @@ void LedgerConsensus::timerEntry()
 
 void LedgerConsensus::updateOurPositions()
 {
+	Log(lsINFO) << "Updating our positions";
 	bool changes = false;
 	SHAMap::pointer ourPosition;
 	std::vector<uint256> addedTx, removedTx;
