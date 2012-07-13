@@ -482,7 +482,7 @@ void NetworkOPs::switchLastClosedLedger(Ledger::pointer newLedger)
 
 int NetworkOPs::beginConsensus(const uint256& networkClosed, Ledger::pointer closingLedger)
 {
-	Log(lsINFO) << "Ledger close time for ledger " << closingLedger->getLedgerSeq();
+	Log(lsINFO) << "Consensus time for ledger " << closingLedger->getLedgerSeq();
 	Log(lsINFO) << " LCL is " << closingLedger->getParentHash().GetHex();
 
 	Ledger::pointer prevLedger = mLedgerMaster->getLedgerByHash(closingLedger->getParentHash());
@@ -502,7 +502,7 @@ int NetworkOPs::beginConsensus(const uint256& networkClosed, Ledger::pointer clo
 	mConsensus = boost::make_shared<LedgerConsensus>(
 		networkClosed, prevLedger, theApp->getMasterLedger().getCurrentLedger()->getCloseTimeNC());
 
-	Log(lsDEBUG) << "Pre-close time, initiating consensus engine";
+	Log(lsDEBUG) << "Initiating consensus engine";
 	return mConsensus->startup();
 }
 
