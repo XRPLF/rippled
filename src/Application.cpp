@@ -143,7 +143,7 @@ void Application::run()
 			ledger->setClosed();
 			ledger->setAccepted();
 			mMasterLedger.pushLedger(ledger);
-			assert(!!secondLedger->getAccountState(rootAddress));
+			assert(!!ledger->getAccountState(rootAddress));
 		}
 	}
 
