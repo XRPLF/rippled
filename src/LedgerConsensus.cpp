@@ -206,10 +206,10 @@ LedgerConsensus::LedgerConsensus(const uint256& prevLCLHash, Ledger::pointer pre
 	{
 		mHaveCorrectLCL = mProposing = mValidating = false;
 		mAcquiringLedger = theApp->getMasterLedgerAcquire().findCreate(prevLCLHash);
-		std::vector<Peer::pointer> peers=theApp->getConnectionPool().getPeerVector();
+		std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
 		for (std::vector<Peer::pointer>::const_iterator it = peerList.begin(), end = peerList.end(); it != end; ++it)
-			if (((*it)->hasLedger(closedLedger))
-				mAcquiringLedger->peerHash(*it);
+			if ((*it)->hasLedger(prevLCLHash))
+				mAcquiringLedger->peerHas(*it);
 	}
 	else if (mValSeed.isValid())
 	{
