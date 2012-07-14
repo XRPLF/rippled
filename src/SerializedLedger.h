@@ -65,7 +65,7 @@ public:
 	void setIFieldU8(SOE_Field field, unsigned char v) { return mObject.setValueFieldU8(field, v); }
 	void setIFieldU16(SOE_Field field, uint16 v) { return mObject.setValueFieldU16(field, v); }
 	void setIFieldU32(SOE_Field field, uint32 v) { return mObject.setValueFieldU32(field, v); }
-	void setIFieldU64(SOE_Field field, uint32 v) { return mObject.setValueFieldU64(field, v); }
+	void setIFieldU64(SOE_Field field, uint64 v) { return mObject.setValueFieldU64(field, v); }
 	void setIFieldH128(SOE_Field field, const uint128& v) { return mObject.setValueFieldH128(field, v); }
 	void setIFieldH160(SOE_Field field, const uint160& v) { return mObject.setValueFieldH160(field, v); }
 	void setIFieldH256(SOE_Field field, const uint256& v) { return mObject.setValueFieldH256(field, v); }

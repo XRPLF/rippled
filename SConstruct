@@ -14,6 +14,10 @@ env = Environment(
     tools = ['default', 'protoc']    
     )
 
+# Use clang
+#env.Replace(CC = 'clang')
+#env.Replace(CXX = 'clang++')
+
 #
 # Builder for CTags
 #
