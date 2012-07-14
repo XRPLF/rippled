@@ -1113,6 +1113,11 @@ void Peer::recvLedger(newcoin::TMLedgerData& packet)
 		punishPeer(PP_UNWANTED_DATA);
 }
 
+bool Peer::hasLedger(const uint256& hash) const
+{
+	return (hash == mClosedLedgerHash) || (hash == mPreviousLedgerHash);
+}
+
 // Get session information we can sign to prevent man in the middle attack.
 // (both sides get the same information, neither side controls it)
 void Peer::getSessionCookie(std::string& strDst)
