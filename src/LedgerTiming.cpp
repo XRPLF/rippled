@@ -22,7 +22,7 @@ int ContinuousLedgerTiming::shouldClose(
 	assert((previousSeconds > 0) && (previousSeconds < 600));
 	assert((currentSeconds >= 0) && (currentSeconds < 600));
 	Log(lsTRACE) << boost::str(boost::format("CLC::shouldClose Trans=%s, Prop: %d/%d, Secs: %d/%d") %
-		(anyTransactions ? "yes" : "no") % previousProposers % proposersClosed % previousSeconds % currentSeconds);
+		(anyTransactions ? "yes" : "no") % previousProposers % proposersClosed % currentSeconds % previousSeconds);
 
 	if (!anyTransactions)
 	{ // no transactions so far this interval
@@ -61,7 +61,7 @@ bool ContinuousLedgerTiming::haveConsensus(
 	int currentAgreeTime)		// how long we've been trying to agree
 {
 	Log(lsTRACE) << boost::str(boost::format("CLC::haveConsensus: prop=%d/%d agree=%d closed=%d time=%d/%d") %
-		previousProposers % currentProposers % currentAgree % currentClosed % previousAgreeTime % currentAgreeTime);
+		currentProposers % previousProposers % currentAgree % currentClosed % currentAgreeTime % previousAgreeTime);
 
 	if (currentAgreeTime <= LEDGER_MIN_CONSENSUS)
 	{
