@@ -153,7 +153,7 @@ void Ledger::setAccepted(uint32 closeTime, int closeResolution, bool correctClos
 
 void Ledger::setAccepted()
 { // used when we acquired the ledger
-	assert(mClosed && !mAccepted && (mCloseResolution != 0) && (mCloseResolution != 0));
+	assert(mClosed && (mCloseResolution != 0) && (mCloseResolution != 0));
 	updateHash();
 	mAccepted = true;
 	mImmutable = true;
