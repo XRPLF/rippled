@@ -891,7 +891,7 @@ void Peer::recvStatus(newcoin::TMStatusChange& packet)
 
 	if (packet.newevent() == newcoin::neLOST_SYNC)
 	{
-		Log(lsTRACE) << "peer has lost sync" << getIP();
+		Log(lsTRACE) << "peer has lost sync " << getIP();
 		mPreviousLedgerHash.zero();
 		mClosedLedgerHash.zero();
 		return;
