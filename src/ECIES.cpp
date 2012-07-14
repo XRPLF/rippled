@@ -138,7 +138,7 @@ std::vector<unsigned char> CKey::encryptECIES(CKey& otherKey, const std::vector<
 	secret.zero();
 
 	std::vector<unsigned char> out(plaintext.size() + ECIES_HMAC_SIZE + ECIES_ENC_KEY_SIZE + ECIES_ENC_BLK_SIZE, 0);
-	unsigned int len = 0, bytesWritten;
+	int len = 0, bytesWritten;
 
 	// output IV
 	memcpy(&(out.front()), iv.begin(), ECIES_ENC_BLK_SIZE);
