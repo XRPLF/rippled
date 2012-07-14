@@ -363,9 +363,9 @@ int LedgerConsensus::statePreClose()
 
 	int sinceClose = theApp->getOPs().getNetworkTimeNC() - mPreviousLedger->getCloseTimeNC();
 
-	Log(lsINFO) << "CLC:: pre close";
+	Log(lsINFO) << "CLC:: pre close: sinceClose=" << sinceClose;
 	if (ContinuousLedgerTiming::shouldClose(anyTransactions, mPreviousProposers, proposersClosed,
-		mPreviousSeconds, sinceClose) >= sinceClose)
+		mPreviousSeconds, sinceClose) <= sinceClose)
 	{ // it is time to close the ledger (swap default and wobble ledgers)
 		Log(lsINFO) << "CLC:: closing ledger";
 		mState = lcsESTABLISH;
