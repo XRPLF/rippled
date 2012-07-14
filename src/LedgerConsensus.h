@@ -82,6 +82,7 @@ protected:
 	uint32 mCloseTime;						// The wall time this ledger closed
 	uint256 mPrevLedgerHash, mNewLedgerHash;
 	Ledger::pointer mPreviousLedger;
+	LedgerAcquire::pointer mAcquiringLedger;
 	LedgerProposal::pointer mOurPosition;
 	NewcoinAddress mValSeed;
 	bool mProposing, mValidating, mHaveCorrectLCL;

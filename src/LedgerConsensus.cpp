@@ -203,7 +203,14 @@ LedgerConsensus::LedgerConsensus(const uint256& prevLCLHash, Ledger::pointer pre
 		previousLedger->getCloseResolution(), previousLedger->getCloseAgree(), previousLedger->getLedgerSeq() + 1);
 
 	if (previousLedger->getHash() != prevLCLHash)
+	{
 		mHaveCorrectLCL = mProposing = mValidating = false;
+		mAcquiringLedger = theApp->getMasterLedgerAcquire().findCreate(prevLCLHash);
+		std::vector<Peer::pointer> peers=theApp->getConnectionPool().getPeerVector();
+		for (std::vector<Peer::pointer>::const_iterator it = peerList.begin(), end = peerList.end(); it != end; ++it)
+			if (((*it)->hasLedger(closedLedger))
+				mAcquiringLedger->peerHash(*it);
+	}
 	else if (mValSeed.isValid())
 	{
 		mValidating = true;
@@ -421,6 +428,7 @@ void LedgerConsensus::timerEntry()
 {
 	if (!mHaveCorrectLCL)
 	{
+		Log(lsINFO) << "Checking if we have the consensus ledger";
 		Ledger::pointer consensus = theApp->getMasterLedger().getLedgerByHash(mPrevLedgerHash);
 		if (consensus)
 		{
@@ -430,6 +438,7 @@ void LedgerConsensus::timerEntry()
 			mPreviousLedger = consensus;
 			mHaveCorrectLCL = true;
 		}
+		else Log(lsINFO) << "We still don't have it";
 	}
 
 	mCurrentSeconds = (mCloseTime != 0) ? (theApp->getOPs().getNetworkTimeNC() - mCloseTime) : 0;
