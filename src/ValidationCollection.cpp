@@ -68,7 +68,7 @@ void ValidationCollection::getValidationCount(const uint256& ledger, bool curren
 					trusted = false;
 			}
 			if (trusted)
-		 		++trusted;
+				++trusted;
 			else
 				++untrusted;
 		}
