@@ -98,6 +98,8 @@ enum TransactionAccountAction
 
 typedef std::pair<TransactionAccountAction, SerializedLedgerEntry::pointer> AffectedAccount;
 
+// One instance per ledger.
+// Only one transaction applied at a time.
 class TransactionEngine
 {
 private:
@@ -107,13 +109,11 @@ private:
 	typedef boost::unordered_map<SLE::pointer, TransactionAccountAction>::iterator::value_type	entryMap_value_type;
 
 	TransactionEngineResult dirAdd(
-		entryMap&						emEntries,
 		uint64&							uNodeDir,		// Node of entry.
 		const uint256&					uRootIndex,
 		const uint256&					uLedgerIndex);
 
 	TransactionEngineResult dirDelete(
-		entryMap&						emEntries,
 		const uint64&					uNodeDir,		// Node item is mentioned in.
 		const uint256&					uRootIndex,
 		const uint256&					uLedgerIndex);	// Item being deleted
@@ -141,10 +141,9 @@ private:
 	} paymentGroup;
 #endif
 
-	TransactionEngineResult	setAuthorized(const SerializedTransaction& txn, entryMap& emEntries, SLE::pointer sleSrc, bool bMustSetGenerator);
+	TransactionEngineResult	setAuthorized(const SerializedTransaction& txn, SLE::pointer sleSrc, bool bMustSetGenerator);
 
 	TransactionEngineResult takeOffers(
-		entryMap&		emEntries,
 		bool			bPassive,
 		const uint256&	uBookBase,
 		const uint160&	uTakerAccountID,
@@ -161,7 +160,7 @@ protected:
 
 	entryMap		mEntries;
 
-	SLE::pointer	entryCreate(LedgerEntryType letType);
+	SLE::pointer	entryCreate(LedgerEntryType letType, const uint256& uIndex);
 	void			entryDelete(SLE::pointer sleEntry);
 	void			entryModify(SLE::pointer sleEntry);
 	void			entryUnfunded(SLE::pointer sleEntry);
@@ -169,23 +168,23 @@ protected:
 
 	STAmount	rippleBalance(const uint160& uAccountID, const uint160& uIssuerAccountID, const uint160& uCurrency);
 
-	void		rippleCredit(entryMap& emEntries, const uint160& uAccountID, const uint160& uIssuerAccountID, const uint160& uCurrency, const STAmount& saCredit);
-	void		rippleDebit(entryMap& emEntries, const uint160& uAccountID, const uint160& uIssuerAccountID, const uint160& uCurrency, const STAmount& saDebit);
+	void		rippleCredit(const uint160& uAccountID, const uint160& uIssuerAccountID, const uint160& uCurrency, const STAmount& saCredit);
+	void		rippleDebit(const uint160& uAccountID, const uint160& uIssuerAccountID, const uint160& uCurrency, const STAmount& saDebit);
 
-	TransactionEngineResult doAccountSet(const SerializedTransaction& txn, entryMap& emEntries, SLE::pointer sleSrc);
-	TransactionEngineResult doClaim(const SerializedTransaction& txn, entryMap& emEntries, SLE::pointer sleSrc);
-	TransactionEngineResult doCreditSet(const SerializedTransaction& txn, entryMap& emEntries, const uint160& uSrcAccountID);
-	TransactionEngineResult doDelete(const SerializedTransaction& txn, entryMap& emEntries);
-	TransactionEngineResult doInvoice(const SerializedTransaction& txn, entryMap& emEntries);
-	TransactionEngineResult doOfferCreate(const SerializedTransaction& txn, entryMap& emEntries, SLE::pointer sleSrc, const uint160& uSrcAccountID);
-	TransactionEngineResult doOfferCancel(const SerializedTransaction& txn, entryMap& emEntries, const uint160& uSrcAccountID);
-	TransactionEngineResult doNicknameSet(const SerializedTransaction& txn, entryMap& emEntries, SLE::pointer sleSrc, const uint160& uSrcAccountID);
-	TransactionEngineResult doPasswordFund(const SerializedTransaction& txn, entryMap& emEntries, SLE::pointer sleSrc, const uint160& uSrcAccountID);
-	TransactionEngineResult doPasswordSet(const SerializedTransaction& txn, entryMap& emEntries, SLE::pointer sleSrc);
-	TransactionEngineResult doPayment(const SerializedTransaction& txn, entryMap& emEntries, SLE::pointer sleSrc, const uint160& uSrcAccountID);
-	TransactionEngineResult doStore(const SerializedTransaction& txn, entryMap& emEntries);
-	TransactionEngineResult doTake(const SerializedTransaction& txn, entryMap& emEntries);
-	TransactionEngineResult doWalletAdd(const SerializedTransaction& txn, entryMap& emEntries, SLE::pointer sleSrc);
+	TransactionEngineResult doAccountSet(const SerializedTransaction& txn, SLE::pointer sleSrc);
+	TransactionEngineResult doClaim(const SerializedTransaction& txn, SLE::pointer sleSrc);
+	TransactionEngineResult doCreditSet(const SerializedTransaction& txn, const uint160& uSrcAccountID);
+	TransactionEngineResult doDelete(const SerializedTransaction& txn);
+	TransactionEngineResult doInvoice(const SerializedTransaction& txn);
+	TransactionEngineResult doOfferCreate(const SerializedTransaction& txn, SLE::pointer sleSrc, const uint160& uSrcAccountID);
+	TransactionEngineResult doOfferCancel(const SerializedTransaction& txn, const uint160& uSrcAccountID);
+	TransactionEngineResult doNicknameSet(const SerializedTransaction& txn, SLE::pointer sleSrc, const uint160& uSrcAccountID);
+	TransactionEngineResult doPasswordFund(const SerializedTransaction& txn, SLE::pointer sleSrc, const uint160& uSrcAccountID);
+	TransactionEngineResult doPasswordSet(const SerializedTransaction& txn, SLE::pointer sleSrc);
+	TransactionEngineResult doPayment(const SerializedTransaction& txn, SLE::pointer sleSrc, const uint160& uSrcAccountID);
+	TransactionEngineResult doStore(const SerializedTransaction& txn);
+	TransactionEngineResult doTake(const SerializedTransaction& txn);
+	TransactionEngineResult doWalletAdd(const SerializedTransaction& txn, SLE::pointer sleSrc);
 
 public:
 	TransactionEngine() { ; }

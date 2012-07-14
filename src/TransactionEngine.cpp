@@ -103,7 +103,7 @@ STAmount TransactionEngine::rippleBalance(const uint160& uAccountID, const uint1
 	return saBalance;
 }
 
-void TransactionEngine::rippleCredit(entryMap& emEntries, const uint160& uAccountID, const uint160& uIssuerAccountID, const uint160& uCurrency, const STAmount& saCredit)
+void TransactionEngine::rippleCredit(const uint160& uAccountID, const uint160& uIssuerAccountID, const uint160& uCurrency, const STAmount& saCredit)
 {
 	uint256				uIndex			= Ledger::getRippleStateIndex(uAccountID, uIssuerAccountID, uCurrency);
 	LedgerStateParms	qry				= lepNONE;
@@ -114,7 +114,9 @@ void TransactionEngine::rippleCredit(entryMap& emEntries, const uint160& uAccoun
 	{
 		STAmount	saBalance	= saCredit;
 
-		sleRippleState	= entryCreate(ltRIPPLE_STATE);
+		sleRippleState	= entryCreate(ltRIPPLE_STATE, uIndex);
+
+		Log(lsINFO) << "rippleCredit: Creating ripple line: " << uIndex.ToString();
 
 		if (!bFlipped)
 			saBalance.negate();
@@ -141,23 +143,21 @@ void TransactionEngine::rippleCredit(entryMap& emEntries, const uint160& uAccoun
 	}
 }
 
-void TransactionEngine::rippleDebit(entryMap& emEntries, const uint160& uAccountID, const uint160& uIssuerAccountID, const uint160& uCurrency, const STAmount& saDebit)
+void TransactionEngine::rippleDebit(const uint160& uAccountID, const uint160& uIssuerAccountID, const uint160& uCurrency, const STAmount& saDebit)
 {
 	STAmount	saCredit	= saDebit;
 
 	saCredit.negate();
 
-	rippleCredit(emEntries, uAccountID, uIssuerAccountID, uCurrency, saCredit);
+	rippleCredit(uAccountID, uIssuerAccountID, uCurrency, saCredit);
 }
 
-// <->    emEntries: Affected accounts for the transaction.
 // <--     uNodeDir: For deletion, present to make dirDelete efficient.
 // -->   uRootIndex: The index of the base of the directory.  Nodes are based off of this.
 // --> uLedgerIndex: Value to add to directory.
 // We only append. This allow for things that watch append only structure to just monitor from the last node on ward.
 // Within a node with no deletions order of elements is sequential.  Otherwise, order of elements is random.
 TransactionEngineResult TransactionEngine::dirAdd(
-	entryMap&						emEntries,
 	uint64&							uNodeDir,
 	const uint256&					uRootIndex,
 	const uint256&					uLedgerIndex)
@@ -170,12 +170,9 @@ TransactionEngineResult TransactionEngine::dirAdd(
 	if (!sleRoot)
 	{
 		// No root, make it.
-		Log(lsTRACE) << "dirAdd: Creating dir root: " << uRootIndex.ToString();
-
 		uNodeDir	= 0;
 
-		sleRoot	= entryCreate(ltDIR_NODE);
-		sleRoot->setIndex(uRootIndex);
+		sleRoot	= entryCreate(ltDIR_NODE, uRootIndex);
 
 		sleNode	= sleRoot;
 	}
@@ -230,8 +227,7 @@ TransactionEngineResult TransactionEngine::dirAdd(
 
 			// Create the new node.
 			svIndexes	= STVector256();
-			sleNode		= entryCreate(ltDIR_NODE);
-			sleNode->setIndex(uNodeIndex);
+			sleNode		= entryCreate(ltDIR_NODE, uNodeIndex);
 
 			if (uNodePrevious)
 				sleNode->setIFieldU64(sfIndexPrevious, uNodePrevious);
@@ -241,20 +237,19 @@ TransactionEngineResult TransactionEngine::dirAdd(
 	svIndexes.peekValue().push_back(uLedgerIndex);	// Append entry.
 	sleNode->setIFieldV256(sfIndexes, svIndexes);	// Save entry.
 
-	Log(lsTRACE) << "dirAdd:  appending: PREV: " << svIndexes.peekValue()[0].ToString();
-	Log(lsTRACE) << "dirAdd:  appending: Node: " << strHex(uNodeDir);
-	Log(lsTRACE) << "dirAdd:  appending: Entry: " << uLedgerIndex.ToString();
+	Log(lsINFO) << "dirAdd:   creating: root: " << uRootIndex.ToString();
+	Log(lsINFO) << "dirAdd:  appending: Entry: " << uLedgerIndex.ToString();
+	Log(lsINFO) << "dirAdd:  appending: Node: " << strHex(uNodeDir);
+	// Log(lsINFO) << "dirAdd:  appending: PREV: " << svIndexes.peekValue()[0].ToString();
 
 	return terSUCCESS;
 }
 
-// <->    emEntries: Affected accounts for the transaction.
 // -->     uNodeDir: Node containing entry.
 // -->   uRootIndex: The index of the base of the directory.  Nodes are based off of this.
 // --> uLedgerIndex: Value to add to directory.
 // Ledger must be in a state for this to work.
 TransactionEngineResult TransactionEngine::dirDelete(
-	entryMap&						emEntries,
 	const uint64&					uNodeDir,
 	const uint256&					uRootIndex,
 	const uint256&					uLedgerIndex)
@@ -432,7 +427,7 @@ TransactionEngineResult TransactionEngine::dirDelete(
 }
 
 // Set the authorized public ket for an account.  May also set the generator map.
-TransactionEngineResult	TransactionEngine::setAuthorized(const SerializedTransaction& txn, entryMap& emEntries, SLE::pointer sleSrc, bool bMustSetGenerator)
+TransactionEngineResult	TransactionEngine::setAuthorized(const SerializedTransaction& txn, SLE::pointer sleSrc, bool bMustSetGenerator)
 {
 	//
 	// Verify that submitter knows the private key for the generator.
@@ -458,11 +453,11 @@ TransactionEngineResult	TransactionEngine::setAuthorized(const SerializedTransac
 	SLE::pointer		sleGen			= mLedger->getGenerator(qry, hGeneratorID);
 	if (!sleGen)
 	{
-		Log(lsTRACE) << "createGenerator: creating generator";
 		// Create the generator.
-						sleGen			= entryCreate(ltGENERATOR_MAP);
+		Log(lsTRACE) << "createGenerator: creating generator";
 
-		sleGen->setIndex(Ledger::getGeneratorIndex(hGeneratorID));
+		sleGen			= entryCreate(ltGENERATOR_MAP, Ledger::getGeneratorIndex(hGeneratorID));
+
 		sleGen->setIFieldVL(sfGenerator, vucCipher);
 	}
 	else if (bMustSetGenerator)
@@ -501,9 +496,11 @@ bool TransactionEngine::entryExists(SLE::pointer sleEntry)
 	return mEntries.find(sleEntry) != mEntries.end();
 }
 
-SLE::pointer TransactionEngine::entryCreate(LedgerEntryType letType)
+SLE::pointer TransactionEngine::entryCreate(LedgerEntryType letType, const uint256& uIndex)
 {
 	SLE::pointer	sleNew	= boost::make_shared<SerializedLedgerEntry>(letType);
+
+	sleNew->setIndex(uIndex);
 
 	mEntries[sleNew]	= taaCREATE;
 
@@ -607,14 +604,14 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	}
 #endif
 
-	TransactionEngineResult result = terSUCCESS;
+	TransactionEngineResult terResult = terSUCCESS;
 
 	uint256 txID = txn.getTransactionID();
 	if (!txID)
 	{
 		Log(lsWARNING) << "applyTransaction: invalid transaction id";
 
-		result	= tenINVALID;
+		terResult	= tenINVALID;
 	}
 
 	//
@@ -628,21 +625,21 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	// XXX This could be a lot cleaner to prevent unnecessary copying.
 	NewcoinAddress	naSigningPubKey;
 
-	if (terSUCCESS == result)
+	if (terSUCCESS == terResult)
 		naSigningPubKey	= NewcoinAddress::createAccountPublic(txn.peekSigningPubKey());
 
 	// Consistency: really signed.
-	if (terSUCCESS == result && !txn.checkSign(naSigningPubKey))
+	if (terSUCCESS == terResult && !txn.checkSign(naSigningPubKey))
 	{
 		Log(lsWARNING) << "applyTransaction: Invalid transaction: bad signature";
 
-		result	= tenINVALID;
+		terResult	= tenINVALID;
 	}
 
 	STAmount	saCost		= theConfig.FEE_DEFAULT;
 
 	// Customize behavoir based on transaction type.
-	if (terSUCCESS == result)
+	if (terSUCCESS == terResult)
 	{
 		switch (txn.getTxnType())
 		{
@@ -680,19 +677,19 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 
 			case ttINVALID:
 				Log(lsWARNING) << "applyTransaction: Invalid transaction: ttINVALID transaction type";
-				result = tenINVALID;
+				terResult = tenINVALID;
 				break;
 
 			default:
 				Log(lsWARNING) << "applyTransaction: Invalid transaction: unknown transaction type";
-				result = tenUNKNOWN;
+				terResult = tenUNKNOWN;
 				break;
 		}
 	}
 
 	STAmount saPaid = txn.getTransactionFee();
 
-	if (terSUCCESS == result && (params & tepNO_CHECK_FEE) == tepNONE)
+	if (terSUCCESS == terResult && (params & tepNO_CHECK_FEE) == tepNONE)
 	{
 		if (!saCost.isZero())
 		{
@@ -700,7 +697,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 			{
 				Log(lsINFO) << "applyTransaction: insufficient fee";
 
-				result	= tenINSUF_FEE_P;
+				terResult	= tenINSUF_FEE_P;
 			}
 		}
 		else
@@ -710,26 +707,26 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 				// Transaction is malformed.
 				Log(lsWARNING) << "applyTransaction: fee not allowed";
 
-				result	= tenINSUF_FEE_P;
+				terResult	= tenINSUF_FEE_P;
 			}
 		}
 	}
 
 	// Get source account ID.
 	uint160 srcAccountID = txn.getSourceAccount().getAccountID();
-	if (terSUCCESS == result && !srcAccountID)
+	if (terSUCCESS == terResult && !srcAccountID)
 	{
 		Log(lsWARNING) << "applyTransaction: bad source id";
 
-		result	= tenINVALID;
+		terResult	= tenINVALID;
 	}
 
-	if (terSUCCESS != result)
+	if (terSUCCESS != terResult)
 	{
 		// Avoid unnecessary locking.
 		mLedger = Ledger::pointer();
 
-		return result;
+		return terResult;
 	}
 
 	boost::recursive_mutex::scoped_lock sl(mLedger->mLock);
@@ -748,7 +745,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 		Log(lsTRACE) << str(boost::format("applyTransaction: Delay transaction: source account does not exist: %s") %
 			txn.getSourceAccount().humanAccountID());
 
-		result			= terNO_ACCOUNT;
+		terResult			= terNO_ACCOUNT;
 	}
 	else
 	{
@@ -757,7 +754,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	}
 
 	// Check if account cliamed.
-	if (terSUCCESS == result)
+	if (terSUCCESS == terResult)
 	{
 		switch (txn.getTxnType())
 		{
@@ -766,7 +763,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 				{
 					Log(lsWARNING) << "applyTransaction: Account already claimed.";
 
-					result	= tenCLAIMED;
+					terResult	= tenCLAIMED;
 				}
 				break;
 
@@ -777,7 +774,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	}
 
 	// Consistency: Check signature
-	if (terSUCCESS == result)
+	if (terSUCCESS == terResult)
 	{
 		switch (txn.getTxnType())
 		{
@@ -790,7 +787,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 					Log(lsWARNING) << "sourceAccountID: " << naSigningPubKey.humanAccountID();
 					Log(lsWARNING) << "txn accountID: " << txn.getSourceAccount().humanAccountID();
 
-					result	= tenBAD_CLAIM_ID;
+					terResult	= tenBAD_CLAIM_ID;
 				}
 				break;
 
@@ -803,7 +800,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 					Log(lsWARNING) << "sourceAccountID: " << naSigningPubKey.humanAccountID();
 					Log(lsWARNING) << "txn accountID: " << txn.getSourceAccount().humanAccountID();
 
-					result	= tenBAD_SET_ID;
+					terResult	= tenBAD_SET_ID;
 				}
 				break;
 
@@ -823,13 +820,13 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 				{
 					std::cerr << "applyTransaction: Delay: Not authorized to use account." << std::endl;
 
-					result	= terBAD_AUTH;
+					terResult	= terBAD_AUTH;
 				}
 				else
 				{
 					std::cerr << "applyTransaction: Invalid: Not authorized to use account." << std::endl;
 
-					result	= terBAD_AUTH_MASTER;
+					terResult	= terBAD_AUTH_MASTER;
 				}
 				break;
 		}
@@ -837,7 +834,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 
 	// Deduct the fee, so it's not available during the transaction.
 	// Will only write the account back, if the transaction succeeds.
-	if (terSUCCESS != result || saCost.isZero())
+	if (terSUCCESS != terResult || saCost.isZero())
 	{
 		nothing();
 	}
@@ -849,7 +846,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 				% saPaid.getText())
 			<< std::endl;
 
-		result	= terINSUF_FEE_B;
+		terResult	= terINSUF_FEE_B;
 	}
 	else
 	{
@@ -857,33 +854,35 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	}
 
 	// Validate sequence
-	if (terSUCCESS != result)
+	if (terSUCCESS != terResult)
 	{
 		nothing();
 	}
 	else if (!saCost.isZero())
 	{
 		uint32 a_seq = sleSrc->getIFieldU32(sfSequence);
+
 		Log(lsTRACE) << "Aseq=" << a_seq << ", Tseq=" << t_seq;
+
 		if (t_seq != a_seq)
 		{
 			if (a_seq < t_seq)
 			{
-				Log(lsTRACE) << "applyTransaction: future sequence number";
+				Log(lsINFO) << "applyTransaction: future sequence number";
 
-				result	= terPRE_SEQ;
+				terResult	= terPRE_SEQ;
 			}
 			else if (mLedger->hasTransaction(txID))
 			{
-				std::cerr << "applyTransaction: duplicate sequence number" << std::endl;
+				Log(lsWARNING) << "applyTransaction: duplicate sequence number";
 
-				result	= terALREADY;
+				terResult	= terALREADY;
 			}
 			else
 			{
-				std::cerr << "applyTransaction: past sequence number" << std::endl;
+				Log(lsWARNING) << "applyTransaction: past sequence number";
 
-				result	= terPAST_SEQ;
+				terResult	= terPAST_SEQ;
 			}
 		}
 		else
@@ -893,81 +892,87 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	}
 	else
 	{
-		Log(lsINFO) << "Zero cost transaction";
+		Log(lsINFO) << "applyTransaction: Zero cost transaction";
+
 		if (t_seq)
 		{
 			std::cerr << "applyTransaction: bad sequence for pre-paid transaction" << std::endl;
 
-			result	= terPAST_SEQ;
+			terResult	= terPAST_SEQ;
 		}
 	}
 
-	entryMap emEntries;
-
-	if (terSUCCESS == result)
+	if (terSUCCESS == terResult)
 	{
 		entryModify(sleSrc);
 
 		switch(txn.getTxnType())
 		{
 			case ttACCOUNT_SET:
-				result = doAccountSet(txn, emEntries, sleSrc);
+				terResult = doAccountSet(txn, sleSrc);
 				break;
 
 			case ttCLAIM:
-				result = doClaim(txn, emEntries, sleSrc);
+				terResult = doClaim(txn, sleSrc);
 				break;
 
 			case ttCREDIT_SET:
-				result = doCreditSet(txn, emEntries, srcAccountID);
+				terResult = doCreditSet(txn, srcAccountID);
 				break;
 
 			case ttINVALID:
 				std::cerr << "applyTransaction: invalid type" << std::endl;
-				result = tenINVALID;
+				terResult = tenINVALID;
 				break;
 
 			case ttINVOICE:
-				result = doInvoice(txn, emEntries);
+				terResult = doInvoice(txn);
 				break;
 
 			case ttOFFER_CREATE:
-				result = doOfferCreate(txn, emEntries, sleSrc, srcAccountID);
+				terResult = doOfferCreate(txn, sleSrc, srcAccountID);
 				break;
 
 			case ttOFFER_CANCEL:
-				result = doOfferCancel(txn, emEntries, srcAccountID);
+				terResult = doOfferCancel(txn, srcAccountID);
 				break;
 
 			case ttNICKNAME_SET:
-				result = doNicknameSet(txn, emEntries, sleSrc, srcAccountID);
+				terResult = doNicknameSet(txn, sleSrc, srcAccountID);
 				break;
 
 			case ttPASSWORD_FUND:
-				result = doPasswordFund(txn, emEntries, sleSrc, srcAccountID);
+				terResult = doPasswordFund(txn, sleSrc, srcAccountID);
 				break;
 
 			case ttPASSWORD_SET:
-				result = doPasswordSet(txn, emEntries, sleSrc);
+				terResult = doPasswordSet(txn, sleSrc);
 				break;
 
 			case ttPAYMENT:
-				result = doPayment(txn, emEntries, sleSrc, srcAccountID);
+				terResult = doPayment(txn, sleSrc, srcAccountID);
 				break;
 
 			case ttWALLET_ADD:
-				result = doWalletAdd(txn, emEntries, sleSrc);
+				terResult = doWalletAdd(txn, sleSrc);
 				break;
 
 			default:
-				result = tenUNKNOWN;
+				terResult = tenUNKNOWN;
 				break;
 		}
 	}
 
+	std::string	strToken;
+	std::string	strHuman;
+
+	transResultInfo(terResult, strToken, strHuman);
+
+	Log(lsINFO) << "applyTransaction: terResult=" << strToken << " : " << terResult << " : " << strHuman;
+
 	bool	bWrite	= false;
 
-	if (terSUCCESS != result)
+	if (terSUCCESS != terResult)
 	{
 		BOOST_FOREACH(entryMap_value_type it, mEntries)
 		{
@@ -999,7 +1004,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 		}
 	}
 
-	if (terSUCCESS == result)
+	if (terSUCCESS == terResult)
 	{ // Write back the account states and add the transaction to the ledger
 		bWrite	= true;
 
@@ -1066,11 +1071,12 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	}
 
 	mLedger = Ledger::pointer();
+	mEntries.clear();
 
-	return result;
+	return terResult;
 }
 
-TransactionEngineResult TransactionEngine::doAccountSet(const SerializedTransaction& txn, entryMap& emEntries, SLE::pointer sleSrc)
+TransactionEngineResult TransactionEngine::doAccountSet(const SerializedTransaction& txn, SLE::pointer sleSrc)
 {
 	std::cerr << "doAccountSet>" << std::endl;
 
@@ -1137,21 +1143,18 @@ TransactionEngineResult TransactionEngine::doAccountSet(const SerializedTransact
 	return terSUCCESS;
 }
 
-TransactionEngineResult TransactionEngine::doClaim(const SerializedTransaction& txn,
-	 entryMap& emEntries, SLE::pointer sleSrc)
+TransactionEngineResult TransactionEngine::doClaim(const SerializedTransaction& txn, SLE::pointer sleSrc)
 {
 	std::cerr << "doClaim>" << std::endl;
 
-	TransactionEngineResult	result	= setAuthorized(txn, emEntries, sleSrc, true);
+	TransactionEngineResult	terResult	= setAuthorized(txn, sleSrc, true);
 
 	std::cerr << "doClaim<" << std::endl;
 
-	return result;
+	return terResult;
 }
 
-TransactionEngineResult TransactionEngine::doCreditSet(const SerializedTransaction& txn,
-	entryMap& emEntries,
-	const uint160& uSrcAccountID)
+TransactionEngineResult TransactionEngine::doCreditSet(const SerializedTransaction& txn, const uint160& uSrcAccountID)
 {
 	TransactionEngineResult	terResult	= terSUCCESS;
 	Log(lsINFO) << "doCreditSet>";
@@ -1213,7 +1216,7 @@ TransactionEngineResult TransactionEngine::doCreditSet(const SerializedTransacti
 				// Zero balance and eliminating last limit.
 
 				bDelIndex	= true;
-				terResult	= dirDelete(emEntries, uSrcRef, Ledger::getRippleDirIndex(uSrcAccountID), sleRippleState->getIndex());
+				terResult	= dirDelete(uSrcRef, Ledger::getRippleDirIndex(uSrcAccountID), sleRippleState->getIndex());
 			}
 		}
 #endif
@@ -1243,12 +1246,10 @@ TransactionEngineResult TransactionEngine::doCreditSet(const SerializedTransacti
 		// Create a new ripple line.
 		STAmount		saZero(uCurrency);
 
-						bAddIndex		= true;
-						sleRippleState	= entryCreate(ltRIPPLE_STATE);
+		bAddIndex		= true;
+		sleRippleState	= entryCreate(ltRIPPLE_STATE, Ledger::getRippleStateIndex(uSrcAccountID, uDstAccountID, uCurrency));
 
-		sleRippleState->setIndex(Ledger::getRippleStateIndex(uSrcAccountID, uDstAccountID, uCurrency));
-		Log(lsINFO) << "doCreditSet: Creating ripple line: "
-			<< sleRippleState->getIndex().ToString();
+		Log(lsINFO) << "doCreditSet: Creating ripple line: " << sleRippleState->getIndex().ToString();
 
 		sleRippleState->setFlag(uFlags);
 		sleRippleState->setIFieldAmount(sfBalance, saZero);	// Zero balance in currency.
@@ -1263,7 +1264,7 @@ TransactionEngineResult TransactionEngine::doCreditSet(const SerializedTransacti
 		uint64			uSrcRef;	// Ignored, ripple_state dirs never delete.
 
 		// XXX Make dirAdd more flexiable to take vector.
-		terResult	= dirAdd(emEntries, uSrcRef, Ledger::getRippleDirIndex(uSrcAccountID), sleRippleState->getIndex());
+		terResult	= dirAdd(uSrcRef, Ledger::getRippleDirIndex(uSrcAccountID), sleRippleState->getIndex());
 	}
 
 	Log(lsINFO) << "doCreditSet<";
@@ -1271,7 +1272,7 @@ TransactionEngineResult TransactionEngine::doCreditSet(const SerializedTransacti
 	return terResult;
 }
 
-TransactionEngineResult TransactionEngine::doNicknameSet(const SerializedTransaction& txn, entryMap& emEntries, SLE::pointer sleSrc, const uint160& uSrcAccountID)
+TransactionEngineResult TransactionEngine::doNicknameSet(const SerializedTransaction& txn, SLE::pointer sleSrc, const uint160& uSrcAccountID)
 {
 	std::cerr << "doNicknameSet>" << std::endl;
 
@@ -1303,9 +1304,8 @@ TransactionEngineResult TransactionEngine::doNicknameSet(const SerializedTransac
 		// Make a new entry.
 		// XXX Need to include authorization limiting for first year.
 
-						sleNickname	= entryCreate(ltNICKNAME);
+		sleNickname	= entryCreate(ltNICKNAME, Ledger::getNicknameIndex(uNickname));
 
-		sleNickname->setIndex(Ledger::getNicknameIndex(uNickname));
 		std::cerr << "doNicknameSet: Creating nickname node: " << sleNickname->getIndex().ToString() << std::endl;
 
 		sleNickname->setIFieldAccount(sfAccount, uSrcAccountID);
@@ -1319,7 +1319,7 @@ TransactionEngineResult TransactionEngine::doNicknameSet(const SerializedTransac
 	return terSUCCESS;
 }
 
-TransactionEngineResult TransactionEngine::doPasswordFund(const SerializedTransaction& txn, entryMap& emEntries, SLE::pointer sleSrc, const uint160& uSrcAccountID)
+TransactionEngineResult TransactionEngine::doPasswordFund(const SerializedTransaction& txn, SLE::pointer sleSrc, const uint160& uSrcAccountID)
 {
 	std::cerr << "doPasswordFund>" << std::endl;
 
@@ -1354,7 +1354,7 @@ TransactionEngineResult TransactionEngine::doPasswordFund(const SerializedTransa
 	return terSUCCESS;
 }
 
-TransactionEngineResult TransactionEngine::doPasswordSet(const SerializedTransaction& txn, entryMap& emEntries, SLE::pointer sleSrc)
+TransactionEngineResult TransactionEngine::doPasswordSet(const SerializedTransaction& txn, SLE::pointer sleSrc)
 {
 	std::cerr << "doPasswordSet>" << std::endl;
 
@@ -1367,11 +1367,11 @@ TransactionEngineResult TransactionEngine::doPasswordSet(const SerializedTransac
 
 	sleSrc->setFlag(lsfPasswordSpent);
 
-	TransactionEngineResult	result	= setAuthorized(txn, emEntries, sleSrc, false);
+	TransactionEngineResult	terResult	= setAuthorized(txn, sleSrc, false);
 
 	std::cerr << "doPasswordSet<" << std::endl;
 
-	return result;
+	return terResult;
 }
 
 #ifdef WORK_IN_PROGRESS
@@ -1516,7 +1516,7 @@ bool calcPaymentForward(std::vector<paymentNode>& pnNodes)
 
 // XXX Need to audit for things like setting accountID not having memory.
 TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction& txn,
-	entryMap& emEntries, SLE::pointer sleSrc,
+	SLE::pointer sleSrc,
 	const uint160& uSrcAccountID)
 {
 	// Ripple if source or destination is non-native or if there are paths.
@@ -1574,9 +1574,8 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 		}
 
 		// Create the account.
-		sleDst = entryCreate(ltACCOUNT_ROOT);
+		sleDst	= entryCreate(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uDstAccountID));
 
-		sleDst->setIndex(Ledger::getAccountRootIndex(uDstAccountID));
 		sleDst->setIFieldAccount(sfAccount, uDstAccountID);
 		sleDst->setIFieldU32(sfSequence, 1);
 	}
@@ -1683,7 +1682,7 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 				TransactionEngineResult	terResult	= terSUCCESS;
 				uint64					uSrcRef;					// Ignored, ripple_state dirs never delete.
 
-				terResult	= dirAdd(emEntries,
+				terResult	= dirAdd(
 					uSrcRef,
 					Ledger::getRippleDirIndex(uSrcAccountID),		// The source ended up owing.
 					sleRippleState->getIndex());					// Adding current entry.
@@ -1733,8 +1732,7 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 	return terBAD_RIPPLE;
 }
 
-TransactionEngineResult TransactionEngine::doWalletAdd(const SerializedTransaction& txn,
-	 entryMap& emEntries, SLE::pointer sleSrc)
+TransactionEngineResult TransactionEngine::doWalletAdd(const SerializedTransaction& txn, SLE::pointer sleSrc)
 {
 	std::cerr << "WalletAdd>" << std::endl;
 
@@ -1779,9 +1777,8 @@ TransactionEngineResult TransactionEngine::doWalletAdd(const SerializedTransacti
 	sleSrc->setIFieldAmount(sfBalance, saSrcBalance-saAmount);
 
 	// Create the account.
-	sleDst = entryCreate(ltACCOUNT_ROOT);
+	sleDst	= entryCreate(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uDstAccountID));
 
-	sleDst->setIndex(Ledger::getAccountRootIndex(uDstAccountID));
 	sleDst->setIFieldAccount(sfAccount, uDstAccountID);
 	sleDst->setIFieldU32(sfSequence, 1);
 	sleDst->setIFieldAmount(sfBalance, saAmount);
@@ -1792,8 +1789,7 @@ TransactionEngineResult TransactionEngine::doWalletAdd(const SerializedTransacti
 	return terSUCCESS;
 }
 
-TransactionEngineResult TransactionEngine::doInvoice(const SerializedTransaction& txn,
-	entryMap& emEntries)
+TransactionEngineResult TransactionEngine::doInvoice(const SerializedTransaction& txn)
 {
 	return tenUNKNOWN;
 }
@@ -1806,7 +1802,6 @@ TransactionEngineResult TransactionEngine::doInvoice(const SerializedTransaction
 // <-- saTakerPaid: What taker actually paid
 // <--  saTakerGot: What taker actually got
 TransactionEngineResult TransactionEngine::takeOffers(
-	entryMap&		emEntries,
 	bool			bPassive,
 	const uint256&	uBookBase,
 	const uint160&	uTakerAccountID,
@@ -1839,8 +1834,11 @@ TransactionEngineResult TransactionEngine::takeOffers(
 		{
 			// Taker has needs.
 			sleOffer		= mLedger->getNextSLE(uTipIndex, uBookEnd);
-			uTipIndex		= sleOffer->getIndex();
-			uTipQuality		= Ledger::getQuality(uTipIndex);
+			if (sleOffer)
+			{
+				uTipIndex		= sleOffer->getIndex();
+				uTipQuality		= Ledger::getQuality(uTipIndex);
+			}
 		}
 
 		if (!sleOffer || uTakeQuality < uTipQuality || (bPassive && uTakeQuality == uTipQuality))
@@ -1952,7 +1950,7 @@ TransactionEngineResult TransactionEngine::takeOffers(
 					}
 					else
 					{
-						rippleDebit(emEntries, uOfferAccountID, uTakerGetsAccountID, uTakerGetsCurrency, saSubTakerGot);
+						rippleDebit(uOfferAccountID, uTakerGetsAccountID, uTakerGetsCurrency, saSubTakerGot);
 					}
 					saTakerGot	+= saSubTakerGot;
 
@@ -1966,7 +1964,7 @@ TransactionEngineResult TransactionEngine::takeOffers(
 					}
 					else
 					{
-						rippleCredit(emEntries, uOfferAccountID, uTakerPaysAccountID, uTakerPaysCurrency, saSubTakerPaid);
+						rippleCredit(uOfferAccountID, uTakerPaysAccountID, uTakerPaysCurrency, saSubTakerPaid);
 					}
 					saTakerPaid	+= saSubTakerPaid;
 				}
@@ -1989,10 +1987,7 @@ TransactionEngineResult TransactionEngine::takeOffers(
 	return terResult;
 }
 
-TransactionEngineResult TransactionEngine::doOfferCreate(
-	const SerializedTransaction& txn,
-	entryMap& emEntries, SLE::pointer sleSrc,
-	const uint160& uSrcAccountID)
+TransactionEngineResult TransactionEngine::doOfferCreate(const SerializedTransaction& txn, SLE::pointer sleSrc, const uint160& uSrcAccountID)
 {
 	uint32					txFlags			= txn.getFlags();
 	bool					bPassive		= !!(txFlags & tfPassive);
@@ -2005,27 +2000,28 @@ TransactionEngineResult TransactionEngine::doOfferCreate(
 	uint32					uSequence		= txn.getSequence();
 
 	// LedgerStateParms		qry				= lepNONE;
-	SLE::pointer			sleOffer		= entryCreate(ltOFFER);
-
 	uint256					uLedgerIndex	= Ledger::getOfferIndex(uSrcAccountID, uSequence);
-	Log(lsINFO) << "doOfferCreate: Creating offer node: " << uLedgerIndex.ToString();
+	SLE::pointer			sleOffer		= entryCreate(ltOFFER, uLedgerIndex);
+
+	Log(lsINFO) << "doOfferCreate: Creating offer node: " << uLedgerIndex.ToString() << " uSequence=" << uSequence;
 
 	uint160					uPaysCurrency	= saTakerPays.getCurrency();
 	uint160					uGetsCurrency	= saTakerGets.getCurrency();
 	uint64					uRate			= STAmount::getRate(saTakerGets, saTakerPays);
 
 	TransactionEngineResult	terResult		= terSUCCESS;
-	uint64					uOwnerNode;		// Delete hint.
-	uint64					uBookNode;		// Delete hint.
 	STAmount				saOfferFunds;
+	uint256					uDirectory;		// Delete hints.
+	uint64					uOwnerNode;
+	uint64					uBookNode;
 
-	if (!bHaveExpiration || !uExpiration)
+	if (bHaveExpiration && !uExpiration)
 	{
 		Log(lsWARNING) << "doOfferCreate: Malformed offer: bad expiration";
 
 		terResult	= tenBAD_EXPIRATION;
 	}
-	else if (!bHaveExpiration || mLedger->getParentCloseTimeNC() >= uExpiration)
+	else if (bHaveExpiration && mLedger->getParentCloseTimeNC() >= uExpiration)
 	{
 		Log(lsWARNING) << "doOfferCreate: Expired transaction: offer expired";
 
@@ -2033,7 +2029,7 @@ TransactionEngineResult TransactionEngine::doOfferCreate(
 	}
 	else if (saTakerPays.isNative() && saTakerGets.isNative())
 	{
-		Log(lsWARNING) << "doOfferCreate: Malformed offer: stamps for stamps";
+		Log(lsWARNING) << "doOfferCreate: Malformed offer: XNS for XNS";
 
 		terResult	= tenBAD_OFFER;
 	}
@@ -2045,7 +2041,7 @@ TransactionEngineResult TransactionEngine::doOfferCreate(
 	}
 	else if (uPaysCurrency == uGetsCurrency && uPaysIssuerID == uGetsIssuerID)
 	{
-		Log(lsWARNING) << "doOfferCreate: Malformed offer: no conversion";
+		Log(lsWARNING) << "doOfferCreate: Malformed offer: redundant offer";
 
 		terResult	= tenREDUNDANT;
 	}
@@ -2058,14 +2054,18 @@ TransactionEngineResult TransactionEngine::doOfferCreate(
 	else if (!saTakerGets.isNative() && uGetsIssuerID == uSrcAccountID)
 	{
 		// Delivering self issued IOUs.
-		nothing();
+
+		saOfferFunds	= saTakerGets;
 	}
 	else
 	{
 		// Make sure signer has funds.
 		saOfferFunds	= saTakerGets.isNative()
-			? sleSrc->getIValueFieldAmount(sfBalance)
-			: rippleBalance(uSrcAccountID, uGetsIssuerID, uGetsCurrency);
+							? sleSrc->getIValueFieldAmount(sfBalance)
+							: rippleBalance(uSrcAccountID, uGetsIssuerID, uGetsCurrency);
+
+		Log(lsWARNING) << "doOfferCreate: takeOffers: saTakerGets.isNative()=" << saTakerGets.isNative();
+		Log(lsWARNING) << "doOfferCreate: takeOffers: saOfferFunds=" << saOfferFunds.getText();
 
 		if (!saOfferFunds.isPositive())
 		{
@@ -2075,13 +2075,16 @@ TransactionEngineResult TransactionEngine::doOfferCreate(
 		}
 	}
 
-	if (terSUCCESS == terResult)
+	Log(lsWARNING) << "doOfferCreate: takeOffers: saOfferFunds=" << saOfferFunds.getText();
+
+	if (terSUCCESS == terResult && !saTakerPays.isNative())
 	{
-		LedgerStateParms	qry			= lepNONE;
-		SLE::pointer		sleRippleIn	= mLedger->getAccountRoot(qry, uPaysIssuerID);
-		if (!sleRippleIn)
+		LedgerStateParms	qry				= lepNONE;
+		SLE::pointer		sleTakerPays	= mLedger->getAccountRoot(qry, uPaysIssuerID);
+
+		if (!sleTakerPays)
 		{
-			Log(lsWARNING) << "doOfferCreate: delay: can't receive IOUs from non-existant issuer";
+			Log(lsWARNING) << "doOfferCreate: delay: can't receive IOUs from non-existant issuer: " << NewcoinAddress::createHumanAccountID(uPaysIssuerID);
 
 			terResult	= terNO_ACCOUNT;
 		}
@@ -2094,7 +2097,6 @@ TransactionEngineResult TransactionEngine::doOfferCreate(
 
 		// Take using the parameters of the offer.
 		terResult	= takeOffers(
-						emEntries,
 						bPassive,
 						Ledger::getBookBase(uGetsCurrency, uGetsIssuerID, uPaysCurrency, uPaysIssuerID),
 						uSrcAccountID,
@@ -2105,6 +2107,8 @@ TransactionEngineResult TransactionEngine::doOfferCreate(
 						saOfferGot		// How much was got.
 					);
 
+		Log(lsWARNING) << "doOfferCreate: takeOffers=" << terResult;
+
 		if (terSUCCESS == terResult)
 		{
 			saOfferFunds	-= saOfferPaid;				// Reduce balance.
@@ -2113,11 +2117,13 @@ TransactionEngineResult TransactionEngine::doOfferCreate(
 			saTakerPays		-= saOfferGot;				// Reduce payin from takers by what offer just got.
 
 			// Adjust funding source.
-			if (!saOfferPaid.isZero())
+			if (saOfferPaid.isZero())
 			{
+				Log(lsWARNING) << "doOfferCreate: takeOffers: none paid.";
+
 				nothing();
 			}
-			if (!saTakerGets.isNative() && uGetsIssuerID == uSrcAccountID)
+			else if (!saTakerGets.isNative() && uGetsIssuerID == uSrcAccountID)
 			{
 				// Delivering self-issued IOUs.
 				nothing();
@@ -2128,15 +2134,17 @@ TransactionEngineResult TransactionEngine::doOfferCreate(
 			}
 			else
 			{
-				rippleDebit(emEntries, uSrcAccountID, uGetsIssuerID, uGetsCurrency, saOfferPaid);
+				rippleDebit(uSrcAccountID, uGetsIssuerID, uGetsCurrency, saOfferPaid);
 			}
 
 			// Adjust payout target.
-			if (!saOfferGot.isZero())
+			if (saOfferGot.isZero())
 			{
+				Log(lsWARNING) << "doOfferCreate: takeOffers: none got.";
+
 				nothing();
 			}
-			if (!saTakerPays.isNative() && uPaysIssuerID == uSrcAccountID)
+			else if (!saTakerPays.isNative() && uPaysIssuerID == uSrcAccountID)
 			{
 				// Destroying self-issued IOUs.
 				nothing();
@@ -2147,10 +2155,16 @@ TransactionEngineResult TransactionEngine::doOfferCreate(
 			}
 			else
 			{
-				rippleCredit(emEntries, uSrcAccountID, uPaysIssuerID, uPaysCurrency, saOfferGot);
+				rippleCredit(uSrcAccountID, uPaysIssuerID, uPaysCurrency, saOfferGot);
 			}
 		}
 	}
+
+	// Log(lsWARNING) << "doOfferCreate: takeOffers:  saOfferFunds=" << saOfferFunds.getText();
+	// Log(lsWARNING) << "doOfferCreate: takeOffers:   saTakerPays=" << saTakerPays.getText();
+	// Log(lsWARNING) << "doOfferCreate: takeOffers:   saTakerGets=" << saTakerGets.getText();
+	// Log(lsWARNING) << "doOfferCreate: takeOffers: uPaysIssuerID=" << NewcoinAddress::createHumanAccountID(uPaysIssuerID);
+	// Log(lsWARNING) << "doOfferCreate: takeOffers: uGetsIssuerID=" << NewcoinAddress::createHumanAccountID(uGetsIssuerID);
 
 	if (terSUCCESS == terResult
 		&& !saOfferFunds.isZero()						// Still funded.
@@ -2160,30 +2174,41 @@ TransactionEngineResult TransactionEngine::doOfferCreate(
 		// We need to place the remainder of the offer into its order book.
 
 		// Add offer to owner's directory.
-		terResult	= dirAdd(emEntries, uOwnerNode, Ledger::getOwnerDirIndex(uSrcAccountID), uLedgerIndex);
+		terResult	= dirAdd(uOwnerNode, Ledger::getOwnerDirIndex(uSrcAccountID), uLedgerIndex);
 
 		if (terSUCCESS == terResult)
 		{
-			// Add offer to order book.
-			terResult	= dirAdd(
-							emEntries,
-							uBookNode,
-							Ledger::getQualityIndex(
+			uDirectory	= Ledger::getQualityIndex(
 								Ledger::getBookBase(uPaysCurrency, uPaysIssuerID, uGetsCurrency, uGetsIssuerID),
-								uRate),					// Use original rate.
-							uLedgerIndex);
+								uRate);					// Use original rate.
+
+			// Add offer to order book.
+			terResult	= dirAdd(uBookNode, uDirectory, uLedgerIndex);
 		}
 
 		if (terSUCCESS == terResult)
 		{
-			sleOffer->setIndex(uLedgerIndex);
+			// Log(lsWARNING) << "doOfferCreate: uPaysIssuerID=" << NewcoinAddress::createHumanAccountID(uPaysIssuerID);
+			// Log(lsWARNING) << "doOfferCreate: uGetsIssuerID=" << NewcoinAddress::createHumanAccountID(uGetsIssuerID);
+			// Log(lsWARNING) << "doOfferCreate: saTakerPays.isNative()=" << saTakerPays.isNative();
+			// Log(lsWARNING) << "doOfferCreate: saTakerGets.isNative()=" << saTakerGets.isNative();
+			// Log(lsWARNING) << "doOfferCreate: uPaysCurrency=" << saTakerPays.getCurrencyHuman();
+			// Log(lsWARNING) << "doOfferCreate: uGetsCurrency=" << saTakerGets.getCurrencyHuman();
 
 			sleOffer->setIFieldAccount(sfAccount, uSrcAccountID);
 			sleOffer->setIFieldU32(sfSequence, uSequence);
+			sleOffer->setIFieldH256(sfDirectory, uDirectory);
 			sleOffer->setIFieldAmount(sfTakerPays, saTakerPays);
 			sleOffer->setIFieldAmount(sfTakerGets, saTakerGets);
 			sleOffer->setIFieldU64(sfOwnerNode, uOwnerNode);
 			sleOffer->setIFieldU64(sfBookNode, uBookNode);
+
+			if (!saTakerPays.isNative())
+				sleOffer->setIFieldAccount(sfPaysIssuer, uPaysIssuerID);
+
+			if (!saTakerGets.isNative())
+				sleOffer->setIFieldAccount(sfGetsIssuer, uGetsIssuerID);
+
 			sleOffer->setIFieldU32(sfExpiration, uExpiration);
 
 			if (bPassive)
@@ -2194,12 +2219,9 @@ TransactionEngineResult TransactionEngine::doOfferCreate(
 	return terResult;
 }
 
-TransactionEngineResult TransactionEngine::doOfferCancel(
-	const SerializedTransaction& txn,
-	entryMap& emEntries,
-	const uint160& uSrcAccountID)
+TransactionEngineResult TransactionEngine::doOfferCancel(const SerializedTransaction& txn, const uint160& uSrcAccountID)
 {
-	uint32					uSequence		= txn.getITFieldU32(sfSequence);
+	uint32					uSequence		= txn.getITFieldU32(sfOfferSequence);
 	uint256					uLedgerIndex	= Ledger::getOfferIndex(uSrcAccountID, uSequence);
 
 	LedgerStateParms		qry				= lepNONE;
@@ -2208,43 +2230,45 @@ TransactionEngineResult TransactionEngine::doOfferCancel(
 
 	if (sleOffer)
 	{
+		Log(lsWARNING) << "doOfferCancel: uSequence=" << uSequence;
 
-		terResult	= tenUNKNOWN;
-#if 0
-		uint64	uOwnerNode		= sleOffer->getIFieldU64(sfOwnerNode);
-		uint64	uOwnerNode		= sleOffer->getIFieldU64(sfOfferNode);
+		uint64		uOwnerNode	= sleOffer->getIFieldU64(sfOwnerNode);
+		uint64		uBookNode	= sleOffer->getIFieldU64(sfBookNode);
+		uint256		uDirectory	= sleOffer->getIFieldH256(sfDirectory);
 
-		terResult	= dirDelete(emEntries, uOwnerNode, ___, uLedgerIndex);
+		terResult	= dirDelete(uOwnerNode, Ledger::getOwnerDirIndex(uSrcAccountID), uLedgerIndex);
 
-		if (terSUCCESS == terResult)
-		{
-			terResult	= dirDelete(emEntries, uOfferNode, ___, uLedgerIndex);
-		}
-#endif
+//		if (terSUCCESS == terResult)
+//		{
+//			terResult	= dirDelete(uBookNode, uDirectory, uLedgerIndex);
+//		}
+
 		entryDelete(sleOffer);
 	}
 	else
 	{
+		Log(lsWARNING) << "doOfferCancel: offer not found: "
+			<< NewcoinAddress::createHumanAccountID(uSrcAccountID)
+			<< " : " << uSequence
+			<< " : " << uLedgerIndex.ToString();
+
 		terResult	= terOFFER_NOT_FOUND;
 	}
 
 	return terResult;
 }
 
-TransactionEngineResult TransactionEngine::doTake(const SerializedTransaction& txn,
-	entryMap& emEntries)
+TransactionEngineResult TransactionEngine::doTake(const SerializedTransaction& txn)
 {
 	return tenUNKNOWN;
 }
 
-TransactionEngineResult TransactionEngine::doStore(const SerializedTransaction& txn,
-	entryMap& emEntries)
+TransactionEngineResult TransactionEngine::doStore(const SerializedTransaction& txn)
 {
 	return tenUNKNOWN;
 }
 
-TransactionEngineResult TransactionEngine::doDelete(const SerializedTransaction& txn,
-	entryMap& emEntries)
+TransactionEngineResult TransactionEngine::doDelete(const SerializedTransaction& txn)
 {
 	return tenUNKNOWN;
 }

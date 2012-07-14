@@ -47,10 +47,10 @@ TransactionFormat InnerTxnFormats[]=
 	},
 	{ "NicknameSet", ttNICKNAME_SET, {
 		{ S_FIELD(Flags),			STI_UINT32,  SOE_FLAGS,    0 },
-		{ S_FIELD(Nickname),		STI_HASH256, SOE_IFFLAG,   8 },
+		{ S_FIELD(Nickname),		STI_HASH256, SOE_REQUIRED, 0 },
 		{ S_FIELD(MinimumOffer),	STI_AMOUNT,  SOE_IFFLAG,   1 },
 		{ S_FIELD(Signature),		STI_VL,		 SOE_IFFLAG,   2 },
-		{ S_FIELD(SourceTag),		STI_UINT32,  SOE_IFFLAG,   1 },
+		{ S_FIELD(SourceTag),		STI_UINT32,  SOE_IFFLAG,   4 },
 		{ S_FIELD(Extensions),		STI_TL,		 SOE_IFFLAG,   0x02000000 },
 		{ sfInvalid, NULL,			STI_DONE,	 SOE_NEVER,    -1 } }
 	},
@@ -59,8 +59,9 @@ TransactionFormat InnerTxnFormats[]=
 		{ S_FIELD(TakerPays),		STI_AMOUNT,  SOE_REQUIRED, 0 },
 		{ S_FIELD(TakerGets),		STI_AMOUNT,  SOE_REQUIRED, 0 },
 		{ S_FIELD(SourceTag),		STI_UINT32,  SOE_IFFLAG,   1 },
-		{ S_FIELD(Destination),		STI_ACCOUNT, SOE_IFFLAG,   2 },
-		{ S_FIELD(Expiration),		STI_UINT32,  SOE_IFFLAG,   4 },
+		{ S_FIELD(PaysIssuer),		STI_ACCOUNT, SOE_IFFLAG,   2 },
+		{ S_FIELD(GetsIssuer),		STI_ACCOUNT, SOE_IFFLAG,   4 },
+		{ S_FIELD(Expiration),		STI_UINT32,  SOE_IFFLAG,   8 },
 		{ S_FIELD(Extensions),		STI_TL,		 SOE_IFFLAG,   0x02000000 },
 		{ sfInvalid, NULL,			STI_DONE,	 SOE_NEVER,    -1 } }
 	},

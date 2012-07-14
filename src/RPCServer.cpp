@@ -910,7 +910,7 @@ Json::Value RPCServer::doOfferCancel(const Json::Value &params)
 {
 	NewcoinAddress	naSeed;
 	NewcoinAddress	naSrcAccountID;
-	uint32			uSequence	= lexical_cast_s<int>(params[1u].asString());
+	uint32			uSequence	= lexical_cast_s<int>(params[2u].asString());
 
 	if (!naSeed.setSeedGeneric(params[0u].asString()))
 	{

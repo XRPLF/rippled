@@ -318,9 +318,15 @@ Transaction::pointer Transaction::setOfferCreate(
 
 	mTransaction->setITFieldAmount(sfTakerPays, saTakerPays);
 	mTransaction->setITFieldAmount(sfTakerGets, saTakerGets);
-	mTransaction->setITFieldAccount(sfPaysIssuer, saTakerPays.getIssuer());
-	mTransaction->setITFieldAccount(sfGetsIssuer, saTakerGets.getIssuer());
-	mTransaction->setITFieldU32(sfExpiration, uExpiration);
+
+	if (!saTakerPays.isNative())
+		mTransaction->setITFieldAccount(sfPaysIssuer, saTakerPays.getIssuer());
+
+	if (!saTakerGets.isNative())
+		mTransaction->setITFieldAccount(sfGetsIssuer, saTakerGets.getIssuer());
+
+	if (uExpiration)
+		mTransaction->setITFieldU32(sfExpiration, uExpiration);
 
 	sign(naPrivateKey);
 
@@ -351,7 +357,7 @@ Transaction::pointer Transaction::setOfferCancel(
 	const NewcoinAddress&				naPrivateKey,
 	uint32								uSequence)
 {
-	mTransaction->setITFieldU32(sfSequence, uSequence);
+	mTransaction->setITFieldU32(sfOfferSequence, uSequence);
 
 	sign(naPrivateKey);
 

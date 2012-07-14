@@ -42,6 +42,7 @@ enum SOE_Field
 	sfCurrencyIn,
 	sfCurrencyOut,
 	sfDestination,
+	sfDirectory,
 	sfDomain,
 	sfEmailHash,
 	sfExpiration,
