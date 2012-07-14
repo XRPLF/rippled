@@ -310,7 +310,7 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 				(theApp->getMasterLedger().getCurrentLedger()->getCloseTimeNC() + 4))
 			setMode(omFULL);
 		else
-			Log(lsWARNING) << "Too late to go to full, will try in consensus window";
+			Log(lsINFO) << "Will try to go to FULL in consensus window";
 	}
 
 	if (mMode == omFULL)

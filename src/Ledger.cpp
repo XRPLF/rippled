@@ -59,13 +59,23 @@ Ledger::Ledger(Ledger& ledger, bool isMutable) : mTotCoins(ledger.mTotCoins), mL
 
 Ledger::Ledger(bool dummy, Ledger& prevLedger) : 
 	mTotCoins(prevLedger.mTotCoins), mLedgerSeq(prevLedger.mLedgerSeq + 1),
-	mCloseTime(0), mParentCloseTime(prevLedger.mCloseTime), mCloseResolution(prevLedger.mCloseResolution),
+	mParentCloseTime(prevLedger.mCloseTime), mCloseResolution(prevLedger.mCloseResolution),
 	mCloseFlags(0),	mClosed(false), mValidHash(false), mAccepted(false), mImmutable(false),
 	mTransactionMap(new SHAMap()), mAccountStateMap(prevLedger.mAccountStateMap->snapShot(true))
 { // Create a new ledger that follows this one
 	prevLedger.updateHash();
 	mParentHash = prevLedger.getHash();
 	assert(mParentHash.isNonZero());
+
+	mCloseResolution = ContinuousLedgerTiming::getNextLedgerTimeResolution(prevLedger.mCloseResolution,
+		prevLedger.getCloseAgree(), mLedgerSeq);
+	if (prevLedger.mCloseTime == 0)
+	{
+		mCloseTime = theApp->getOPs().getNetworkTimeNC();
+		mCloseTime -= (mCloseTime % mCloseResolution);
+	}
+	else
+		mCloseTime = prevLedger.mCloseTime + mCloseResolution;
 }
 
 Ledger::Ledger(const std::vector<unsigned char>& rawLedger) :
@@ -142,7 +152,7 @@ void Ledger::setAccepted(uint32 closeTime, int closeResolution, bool correctClos
 
 void Ledger::setAccepted()
 { // used when we acquired the ledger
-	assert(mClosed && !mAccepted && (mCloseResolution != 0));
+	assert(mClosed && !mAccepted && (mCloseResolution != 0) && (mCloseResolution != 0));
 	updateHash();
 	mAccepted = true;
 	mImmutable = true;

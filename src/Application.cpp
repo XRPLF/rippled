@@ -129,17 +129,23 @@ void Application::run()
 	Log(lsINFO) << "Root master seed: " << rootSeedMaster.humanSeed();
 	Log(lsINFO) << "Root account: " << rootAddress.humanAccountID();
 
-	Ledger::pointer firstLedger = boost::make_shared<Ledger>(rootAddress, SYSTEM_CURRENCY_START);
-	assert(!!firstLedger->getAccountState(rootAddress));
-	firstLedger->updateHash();
-	firstLedger->setClosed();
-	firstLedger->setAccepted();
-	mMasterLedger.pushLedger(firstLedger);
+	{
+		Ledger::pointer ledger = boost::make_shared<Ledger>(rootAddress, SYSTEM_CURRENCY_START);
+		assert(!!ledger->getAccountState(rootAddress));
+		ledger->updateHash();
+		ledger->setClosed();
+		ledger->setAccepted();
+		mMasterLedger.pushLedger(ledger);
 
-	Ledger::pointer secondLedger = boost::make_shared<Ledger>(true, boost::ref(*firstLedger));
-	mMasterLedger.pushLedger(secondLedger);
-	assert(!!secondLedger->getAccountState(rootAddress));
-	// temporary
+		for (int i = 0; i < 2; ++i)
+		{
+			ledger = boost::make_shared<Ledger>(true, boost::ref(*ledger));
+			ledger->setClosed();
+			ledger->setAccepted();
+			mMasterLedger.pushLedger(ledger);
+			assert(!!secondLedger->getAccountState(rootAddress));
+		}
+	}
 
 	mNetOps.setStateTimer();
 
