@@ -269,7 +269,7 @@ void Ledger::saveAcceptedLedger(Ledger::pointer ledger)
 	static boost::format updateTx("UPDATE Transactions SET LedgerSeq = %d, Status = '%c' WHERE TransID = '%s';");
 	static boost::format addLedger("INSERT INTO Ledgers "
 		"(LedgerHash,LedgerSeq,PrevHash,TotalCoins,ClosingTime,PrevClosingTime,CloseTimeRes,CloseFlags,"
-		"AccountSetHash,TranSetHash) VALUES ('%s','%u','%s','%s','%u','%u','%d','%u','%s','%s');");
+		"AccountSetHash,TransSetHash) VALUES ('%s','%u','%s','%s','%u','%u','%d','%u','%s','%s');");
 
 	ScopedLock sl(theApp->getLedgerDB()->getDBLock());
 	if (SQL_EXISTS(theApp->getLedgerDB()->getDB(), boost::str(ledgerExists % ledger->mLedgerSeq)))
