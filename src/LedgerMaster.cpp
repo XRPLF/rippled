@@ -42,8 +42,8 @@ void LedgerMaster::pushLedger(Ledger::pointer newLCL, Ledger::pointer newOL)
 
 	if (newLCL->isAccepted())
 	{
-		mLedgerHistory.addAcceptedLedger(mFinalizedLedger);
-		Log(lsINFO) << "StashAccepted: " << mFinalizedLedger->getHash().GetHex();
+		mLedgerHistory.addAcceptedLedger(newLCL);
+		Log(lsINFO) << "StashAccepted: " << newLCL->getHash().GetHex();
 	}
 
 	mFinalizedLedger = newLCL;
