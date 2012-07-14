@@ -55,7 +55,6 @@ std::string STAmount::getCurrencyHuman() const
 	}
 	else
 	{
-		uint160		uReserved	= mCurrency;
 		Serializer	s(160/8);
 
 		s.add160(mCurrency);
@@ -123,7 +122,7 @@ bool STAmount::setValue(const std::string& sAmount, const std::string& sCurrency
 		//    ^1      2       0            2     -1
 		// 123^       4       3            1      0
 		//   1^23     4       1            3     -2
-		iOffset	= -(sAmount.size()-uDecimal-1);
+		iOffset	= -int(sAmount.size()-uDecimal-1);
 
 
 		// Issolate integer and fraction.

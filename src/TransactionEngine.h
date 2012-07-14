@@ -114,6 +114,7 @@ private:
 		const uint256&					uLedgerIndex);
 
 	TransactionEngineResult dirDelete(
+		bool							bKeepRoot,
 		const uint64&					uNodeDir,		// Node item is mentioned in.
 		const uint256&					uRootIndex,
 		const uint256&					uLedgerIndex);	// Item being deleted
