@@ -12,6 +12,7 @@
 
 #define LA_DEBUG
 #define LEDGER_ACQUIRE_TIMEOUT 2
+#define TRUST_NETWORK
 
 PeerSet::PeerSet(const uint256& hash, int interval) : mHash(hash), mTimerInterval(interval), mTimeouts(0),
 	mComplete(false), mFailed(false), mProgress(true), mTimer(theApp->getIOService())
@@ -301,6 +302,9 @@ bool LedgerAcquire::takeBase(const std::string& data)
 		Log(lsWARNING) << "Acquire hash mismatch";
 		Log(lsWARNING) << mLedger->getHash().GetHex() << "!=" << mHash.GetHex();
 		mLedger = Ledger::pointer();
+#ifdef TRUST_NETWORK
+		assert(false);
+#endif
 		return false;
 	}
 	mHaveBase = true;
