@@ -60,14 +60,14 @@ void ValidationCollection::getValidationCount(const uint256& ledger, bool curren
 	{
 		for (ValidationSet::iterator vit = it->second.begin(), end = it->second.end(); vit != end; ++vit)
 		{
-			bool trusted = vit->second->isTrusted();
-			if (trusted && currentOnly)
+			bool isTrusted = vit->second->isTrusted();
+			if (isTrusted && currentOnly)
 			{
 				uint32 closeTime = vit->second->getCloseTime();
 				if ((now < closeTime) || (now > (closeTime + 2 * LEDGER_MAX_INTERVAL)))
 					trusted = false;
 			}
-			if (trusted)
+			if (isTrusted)
 				++trusted;
 			else
 				++untrusted;
