@@ -5,8 +5,8 @@
 uint256 Ledger::getQualityIndex(const uint256& uBase, const uint64 uNodeDir)
 {
 	// Indexes are stored in big endian format: they print as hex as stored.
-	// Most significant bytes are first.  Least significant bytes repesent adjcent entries.
-	// We place uNodeDir in the 8 right most bytes to be adjcent.
+	// Most significant bytes are first.  Least significant bytes represent adjacent entries.
+	// We place uNodeDir in the 8 right most bytes to be adjacent.
 	// Want uNodeDir in big endian format so ++ goes to the next entry for indexes.
 	uint256	uNode(uBase);
 

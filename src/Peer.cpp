@@ -799,7 +799,7 @@ void Peer::recvGetPeers(newcoin::TMGetPeers& packet)
 	{
 		newcoin::TMPeers peers;
 
-		for (int n=0; n<addrs.size(); n++)
+		for (unsigned int n=0; n<addrs.size(); n++)
 		{
 			std::string strIP;
 			int			iPort;

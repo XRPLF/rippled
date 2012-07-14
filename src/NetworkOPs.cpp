@@ -131,7 +131,7 @@ int NetworkOPs::findTransactionsBySource(const uint256& uLedger, std::list<Trans
 	if (maxSeq > minSeq) return 0;
 
 	int count = 0;
-	for(int i = minSeq; i <= maxSeq; ++i)
+	for(unsigned int i = minSeq; i <= maxSeq; ++i)
 	{
 		Transaction::pointer txn = Transaction::findFrom(sourceAccount, i);
 		if(txn)

@@ -194,7 +194,7 @@ public:
 	uint256 getuint256()
 	{
 		uint256 ret;
-		int size = BN_num_bytes(this);
+		unsigned int size = BN_num_bytes(this);
 		if (size > ret.size())
 			return ret;
 		BN_bn2bin(this, ret.begin() + (ret.size() - BN_num_bytes(this)));

@@ -51,7 +51,7 @@ void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint2
 				{
 					d = getNode(childID, childHash, false);
 				}
-				catch (SHAMapMissingNode& mn)
+				catch (SHAMapMissingNode& )
 				{ // node is not in the map
 					if (filter != NULL)
 					{

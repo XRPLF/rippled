@@ -64,7 +64,7 @@ public:
 	bool						LEDGER_CREATOR;     // should be false unless we are starting a new ledger
 
 	// Note: The following parameters do not relate to the UNL or trust at all
-	int							NETWORK_QUORUM;			// Minimum number of nodes to consider the network present
+	unsigned int				NETWORK_QUORUM;			// Minimum number of nodes to consider the network present
 	int							VALIDATION_QUORUM;		// Minimum validations to consider ledger authoritative
 
 	// Peer networking parameters
@@ -74,7 +74,7 @@ public:
 	std::string					PEER_SSL_CIPHER_LIST;
 	int							PEER_SCAN_INTERVAL_MIN;
 	int							PEER_START_MAX;
-	int							PEER_CONNECT_LOW_WATER;
+	unsigned int				PEER_CONNECT_LOW_WATER;
 
 	// Websocket networking parameters
 	std::string					WEBSOCKET_IP;

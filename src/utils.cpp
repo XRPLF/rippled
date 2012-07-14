@@ -199,6 +199,11 @@ uint64_t htobe64(uint64_t value)
 	//}
 }
 
+uint64_t be64toh(uint64_t value)
+{
+	return(value);
+}
+
 #endif
 
 // vim:ts=4

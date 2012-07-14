@@ -109,7 +109,7 @@ void LedgerAcquire::done()
 	mOnComplete.empty();
 	mLock.unlock();
 
-	for (int i = 0; i < triggers.size(); ++i)
+	for (unsigned int i = 0; i < triggers.size(); ++i)
 		triggers[i](shared_from_this());
 }
 
