@@ -2239,10 +2239,10 @@ TransactionEngineResult TransactionEngine::doOfferCancel(const SerializedTransac
 
 		terResult	= dirDelete(true, uOwnerNode, Ledger::getOwnerDirIndex(uSrcAccountID), uLedgerIndex);
 
-//		if (terSUCCESS == terResult)
-//		{
-//			terResult	= dirDelete(false, uBookNode, uDirectory, uLedgerIndex);
-//		}
+		if (terSUCCESS == terResult)
+		{
+			terResult	= dirDelete(false, uBookNode, uDirectory, uLedgerIndex);
+		}
 
 		entryDelete(sleOffer);
 	}
