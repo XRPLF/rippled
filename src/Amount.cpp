@@ -737,41 +737,50 @@ uint64 STAmount::getRate(const STAmount& offerOut, const STAmount& offerIn)
 	return (ret << (64 - 8)) | r.getMantissa();
 }
 
-STAmount STAmount::getClaimed(STAmount& offerOut, STAmount& offerIn, STAmount& paid)
-{ // if someone is offering (offerOut) for (offerIn), and I pay (paid), how much do I get?
+// Taker gets all taker can pay for with saTakerFunds, limited by saOfferPays and saOfferFunds.
+// -->  saOfferFunds: Limit for saOfferPays
+// -->  saTakerFunds: Limit for saOfferGets
+// -->   saOfferPays: Request : this should be reduced as the offer is fullfilled.
+// -->   saOfferGets: Request : this should be reduced as the offer is fullfilled.
+// -->   saTakerPays: Total : Used to know the approximate ratio of the exchange.
+// -->   saTakerGets: Total : Used to know the approximate ratio of the exchange.
+// <--   saTakerPaid: Actual
+// <--    saTakerGot: Actual
+// <--       bRemove: remove offer it is either fullfilled or unfunded
+bool STAmount::applyOffer(
+	const STAmount& saOfferFunds, const STAmount& saTakerFunds,
+	const STAmount& saOfferPays, const STAmount& saOfferGets,
+	const STAmount& saTakerPays, const STAmount& saTakerGets,
+	STAmount& saTakerPaid, STAmount& saTakerGot)
+{
+	saOfferGets.throwComparable(saTakerPays);
 
-	offerIn.throwComparable(paid);
+	assert(!saOfferFunds.isZero() && !saTakerFunds.isZero());	// Must have funds.
+	assert(!saOfferGets.isZero() && !saOfferPays.isZero());		// Must not be a null offer.
 
-	if (offerIn.isZero() || offerOut.isZero())
-	{ // If the offer is invalid or empty, you pay nothing and get nothing and the offer is dead
-		offerIn.zero();
-		offerOut.zero();
-		paid.zero();
-		return STAmount();
-	}
+	// Amount offer can pay out, limited by offer and funds.
+	STAmount	saOfferPaysAvailable	= saOfferFunds < saOfferPays ? saOfferFunds : saOfferPays;
 
-	// If you pay nothing, you get nothing. Offer is untouched
-	if (paid.isZero()) return STAmount();
+	// Amount offer needs to get to be complete, limited by offer funds.
+	STAmount	saOfferGetsAvailable =
+		saOfferFunds == saOfferPays
+			? saOfferGets	// Offer was fully funded, avoid shenanigans.
+			: divide(multiply(saTakerPays, saOfferPaysAvailable, uint160(1)), saTakerGets, saOfferGets.getCurrency());
 
-	if (paid >= offerIn)
-	{ // If you pay equal to or more than the offer amount, you get the whole offer and pay its input
-		STAmount ret(offerOut);
-		paid = offerIn;
-		offerOut.zero();
-		offerIn.zero();
-		return ret;
-	}
-
-	// partial satisfaction of a normal offer
-	STAmount ret = divide(multiply(paid, offerOut, uint160(1)), offerIn, offerOut.getCurrency());
-	offerOut -= ret;
-	offerIn -= paid;
-	if (offerOut.isZero() || offerIn.isZero())
+	if (saTakerFunds >= saOfferGetsAvailable)
 	{
-		offerIn.zero();
-		offerOut.zero();
+		// Taker gets all of offer available.
+		saTakerPaid	= saOfferGetsAvailable;		// Taker paid what offer could get.
+		saTakerGot	= saOfferPaysAvailable;		// Taker got what offer could pay.
+
+		return true;	// No left over offer.
 	}
-	return ret;
+
+	// Taker only get's a portion of offer.
+	saTakerPaid	= saTakerFunds;					// Taker paid all he had.
+	saTakerGot	= divide(multiply(saTakerFunds, saOfferPaysAvailable, uint160(1)), saOfferGetsAvailable, saOfferPays.getCurrency());
+
+	return saTakerGot >= saOfferPaysAvailable;
 }
 
 STAmount STAmount::getPay(const STAmount& offerOut, const STAmount& offerIn, const STAmount& needed)

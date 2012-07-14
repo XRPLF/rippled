@@ -78,6 +78,17 @@ private:
 		const STAmount&						saMinimumOffer,
 		const std::vector<unsigned char>&	vucSignature);
 
+	Transaction::pointer setOfferCreate(
+		const NewcoinAddress&				naPrivateKey,
+		bool								bPassive,
+		const STAmount&						saTakerPays,
+		const STAmount&						saTakerGets,
+		uint32								uExpiration);
+
+	Transaction::pointer setOfferCancel(
+		const NewcoinAddress&				naPrivateKey,
+		uint32								uSequence);
+
 	Transaction::pointer setPasswordFund(
 		const NewcoinAddress&				naPrivateKey,
 		const NewcoinAddress&				naDstAccountID);
@@ -199,6 +210,27 @@ public:
 		const STAmount&						saAmount,
 		const STAmount&						saSendMax,
 		const STPathSet&					saPaths);
+
+	// Place an offer.
+	static Transaction::pointer sharedOfferCreate(
+		const NewcoinAddress& naPublicKey, const NewcoinAddress& naPrivateKey,
+		const NewcoinAddress&				naSourceAccount,
+		uint32								uSeq,
+		const STAmount&						saFee,
+		uint32								uSourceTag,
+		bool								bPassive,
+		const STAmount&						saTakerPays,
+		const STAmount&						saTakerGets,
+		uint32								uExpiration);
+
+	// Cancel an offer
+	static Transaction::pointer sharedOfferCancel(
+		const NewcoinAddress& naPublicKey, const NewcoinAddress& naPrivateKey,
+		const NewcoinAddress&				naSourceAccount,
+		uint32								uSeq,
+		const STAmount&						saFee,
+		uint32								uSourceTag,
+		uint32								uSequence);
 
 	// Add an account to a wallet.
 	static Transaction::pointer sharedWalletAdd(

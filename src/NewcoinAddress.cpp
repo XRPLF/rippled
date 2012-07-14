@@ -302,7 +302,16 @@ std::string NewcoinAddress::humanAccountID() const
 
 bool NewcoinAddress::setAccountID(const std::string& strAccountID)
 {
-    return SetString(strAccountID.c_str(), VER_ACCOUNT_ID);
+    if (strAccountID == "none")
+	{
+		SetData(VER_ACCOUNT_ID, std::vector<unsigned char>());
+
+		return true;
+	}
+	else
+	{
+		return SetString(strAccountID.c_str(), VER_ACCOUNT_ID);
+	}
 }
 
 void NewcoinAddress::setAccountID(const uint160& hash160)

@@ -51,11 +51,15 @@ public:
 		rpcBAD_SEED,
 		rpcDST_ACT_MALFORMED,
 		rpcDST_AMT_MALFORMED,
+		rpcGETS_ACT_MALFORMED,
+		rpcGETS_AMT_MALFORMED,
 		rpcHOST_IP_MALFORMED,
 		rpcLGR_IDXS_INVALID,
 		rpcLGR_IDX_MALFORMED,
 		rpcNICKNAME_MALFORMED,
 		rpcNICKNAME_PERM,
+		rpcPAYS_ACT_MALFORMED,
+		rpcPAYS_AMT_MALFORMED,
 		rpcPORT_MALFORMED,
 		rpcPUBLIC_MALFORMED,
 		rpcSRC_ACT_MALFORMED,
@@ -133,7 +137,7 @@ private:
 	Json::Value doLedger(const Json::Value& params);
 	Json::Value doNicknameInfo(const Json::Value& params);
 	Json::Value doNicknameSet(const Json::Value& params);
-	Json::Value doOffer(const Json::Value& params);
+	Json::Value doOfferCreate(const Json::Value& params);
 	Json::Value doOfferCancel(const Json::Value& params);
 	Json::Value doPasswordFund(const Json::Value& params);
 	Json::Value doPasswordSet(const Json::Value& params);

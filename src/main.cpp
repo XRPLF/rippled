@@ -50,6 +50,8 @@ void printHelp(const po::options_description& desc)
 	cout << "     ledger [<id>|current|lastclosed] [full]" << endl;
 	cout << "     nickname_info <nickname>" << endl;
 	cout << "     nickname_set <seed> <paying_account> <nickname> [<offer_minimum>] [<authorization>]" << endl;
+	cout << "     offer_create <seed> <paying_account> <taker_pays_amount> <taker_pays_currency> <taker_pays_issuer> <takers_gets_amount> <takers_gets_currency> <takers_gets_issuer> <expires> [passive]" << endl;
+	cout << "     offer_cancel <seed> <paying_account> <sequence>" << endl;
 	cout << "     password_fund <seed> <paying_account> [<account>]" << endl;
 	cout << "     password_set <master_seed> <regular_seed> [<account>]" << endl;
 	cout << "     peers" << endl;

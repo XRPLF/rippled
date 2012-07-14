@@ -260,6 +260,7 @@ std::string STTaggedList::getText() const
 Json::Value STTaggedList::getJson(int) const
 {
 	Json::Value ret(Json::arrayValue);
+
 	for (std::vector<TaggedListItem>::const_iterator it=value.begin(); it!=value.end(); ++it)
 	{
 		Json::Value elem(Json::arrayValue);
@@ -267,6 +268,7 @@ Json::Value STTaggedList::getJson(int) const
 		elem.append(strHex(it->second));
 		ret.append(elem);
 	}
+
 	return ret;
 }
 

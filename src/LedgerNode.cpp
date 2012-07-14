@@ -45,34 +45,34 @@ LedgerStateParms Ledger::writeBack(LedgerStateParms parms, SLE::pointer entry)
 	return lepOKAY;
 }
 
-SLE::pointer Ledger::getNextSLE(const uint256& hash)
+SLE::pointer Ledger::getNextSLE(const uint256& uHash)
 {
-	SHAMapItem::pointer node = mAccountStateMap->peekNextItem(hash);
+	SHAMapItem::pointer node = mAccountStateMap->peekNextItem(uHash);
 	if (!node)
 		return SLE::pointer();
 	return boost::make_shared<SLE>(node->peekSerializer(), node->getTag());
 }
 
-SLE::pointer Ledger::getNextSLE(const uint256& hash, const uint256& max)
+SLE::pointer Ledger::getNextSLE(const uint256& uHash, const uint256& uEnd)
 {
-	SHAMapItem::pointer node = mAccountStateMap->peekNextItem(hash);
-	if ((!node) || (node->getTag() > max))
+	SHAMapItem::pointer node = mAccountStateMap->peekNextItem(uHash);
+	if ((!node) || (node->getTag() > uEnd))
 		return SLE::pointer();
 	return boost::make_shared<SLE>(node->peekSerializer(), node->getTag());
 }
 
-SLE::pointer Ledger::getPrevSLE(const uint256& hash)
+SLE::pointer Ledger::getPrevSLE(const uint256& uHash)
 {
-	SHAMapItem::pointer node = mAccountStateMap->peekPrevItem(hash);
+	SHAMapItem::pointer node = mAccountStateMap->peekPrevItem(uHash);
 	if (!node)
 		return SLE::pointer();
 	return boost::make_shared<SLE>(node->peekSerializer(), node->getTag());
 }
 
-SLE::pointer Ledger::getPrevSLE(const uint256& hash, const uint256& min)
+SLE::pointer Ledger::getPrevSLE(const uint256& uHash, const uint256& uBegin)
 {
-	SHAMapItem::pointer node = mAccountStateMap->peekNextItem(hash);
-	if ((!node) || (node->getTag() < min))
+	SHAMapItem::pointer node = mAccountStateMap->peekNextItem(uHash);
+	if ((!node) || (node->getTag() < uBegin))
 		return SLE::pointer();
 	return boost::make_shared<SLE>(node->peekSerializer(), node->getTag());
 }

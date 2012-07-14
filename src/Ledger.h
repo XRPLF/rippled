@@ -166,10 +166,10 @@ public:
 	static Ledger::pointer loadByHash(const uint256& ledgerHash);
 
 	// next/prev function
-	SLE::pointer getNextSLE(const uint256& hash);						// first node >hash
-	SLE::pointer getNextSLE(const uint256& hash, const uint256& max); 	// first node >hash, <max
-	SLE::pointer getPrevSLE(const uint256& hash);						// last node <hash
-	SLE::pointer getPrevSLE(const uint256& hash, const uint256& min);	// last node <hash, >min
+	SLE::pointer getNextSLE(const uint256& uHash);							// first node >hash
+	SLE::pointer getNextSLE(const uint256& uHash, const uint256& uEnd);		// first node >hash, <end
+	SLE::pointer getPrevSLE(const uint256& uHash);							// last node <hash
+	SLE::pointer getPrevSLE(const uint256& uHash, const uint256& uBegin);	// last node <hash, >begin
 
 	// index calculation functions
 	static uint256 getAccountRootIndex(const uint160& uAccountID);
@@ -242,8 +242,9 @@ public:
 	// Quality
 	//
 
-	static uint256 getQualityIndex(const uint256& uBase, const uint64 uNodeDir=0);
-	static uint256 getQualityNext(const uint256& uBase);
+	static uint256	getQualityIndex(const uint256& uBase, const uint64 uNodeDir=0);
+	static uint256	getQualityNext(const uint256& uBase);
+	static uint64	getQuality(const uint256& uBase);
 
 	//
 	// Ripple functions : credit lines

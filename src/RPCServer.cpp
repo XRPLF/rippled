@@ -38,41 +38,45 @@ Json::Value RPCServer::RPCError(int iError)
 		const char*	pToken;
 		const char*	pMessage;
 	} errorInfoA[] = {
-		{ rpcACT_EXISTS,		"actExists",		"Account already exists." },
-		{ rpcACT_MALFORMED,		"actMalformed",		"Account malformed." },
-		{ rpcACT_NOT_FOUND,		"actNotFound",		"Account not found." },
-		{ rpcBAD_SEED,			"badSeed",			"Disallowed seed." },
-		{ rpcDST_ACT_MALFORMED,	"dstActMalformed",	"Destination account is malformed."	},
-		{ rpcDST_AMT_MALFORMED,	"dstAmtMalformed",	"Destination amount/currency is malformed."	},
-		{ rpcFAIL_GEN_DECRPYT,	"failGenDecrypt",	"Failed to decrypt generator." },
-		{ rpcHOST_IP_MALFORMED,	"hostIpMalformed",	"Host IP is malformed."	},
-		{ rpcINSUF_FUNDS,		"insufFunds",		"Insufficient funds." },
-		{ rpcINTERNAL,			"internal",			"Internal error."	},
-		{ rpcINVALID_PARAMS,	"invalidParams",	"Invalid parameters." },
-		{ rpcLGR_IDXS_INVALID,	"lgrIdxsInvalid",	"Ledger indexes invalid." },
-		{ rpcLGR_IDX_MALFORMED,	"lgrIdxMalformed",	"Ledger index malformed." },
-		{ rpcLGR_NOT_FOUND,		"lgrNotFound",		"Ledger not found." },
-		{ rpcNICKNAME_MALFORMED,"nicknameMalformed","Nickname is malformed."	},
-		{ rpcNICKNAME_MISSING,	"nicknameMissing",	"Nickname does not exist."	},
-		{ rpcNICKNAME_PERM,		"nicknamePerm",		"Account does not control nickname."	},
-		{ rpcNOT_IMPL,			"notImpl",			"Not implemented." },
-		{ rpcNO_ACCOUNT,		"noAccount",		"No such account." },
-		{ rpcNO_CLOSED,			"noClosed",			"Closed ledger is unavailable." },
-		{ rpcNO_CURRENT,		"noCurrent",		"Current ledger is unavailable." },
-		{ rpcNO_GEN_DECRPYT,	"noGenDectypt",		"Password failed to decrypt master public generator."	},
-		{ rpcNO_NETWORK,		"noNetwork",		"Network not available." },
-		{ rpcNO_PERMISSION,		"noPermission",		"You don't have permission for this command." },
-		{ rpcPASSWD_CHANGED,	"passwdChanged",	"Wrong key, password changed." },
-		{ rpcPORT_MALFORMED,	"portMalformed",	"Port is malformed."	},
-		{ rpcPUBLIC_MALFORMED,	"publicMalformed",	"Public key is malformed."	},
-		{ rpcSRC_ACT_MALFORMED,	"srcActMalformed",	"Source account is malformed."	},
-		{ rpcSRC_AMT_MALFORMED,	"srcAmtMalformed",	"Source amount/currency is malformed."	},
-		{ rpcSRC_MISSING,		"srcMissing",		"Source account does not exist." },
-		{ rpcSRC_UNCLAIMED,		"srcUnclaimed",		"Source account is not claimed." },
-		{ rpcSUCCESS,			"success",			"Success." },
-		{ rpcTXN_NOT_FOUND,		"txnNotFound",		"Transaction not found." },
-		{ rpcUNKNOWN_COMMAND,	"unknownCmd",		"Unknown command." },
-		{ rpcWRONG_SEED,		"wrongSeed",		"The regular key does not point as the master key." },
+		{ rpcACT_EXISTS,			"actExists",		"Account already exists."								},
+		{ rpcACT_MALFORMED,			"actMalformed",		"Account malformed."									},
+		{ rpcACT_NOT_FOUND,			"actNotFound",		"Account not found."									},
+		{ rpcBAD_SEED,				"badSeed",			"Disallowed seed."										},
+		{ rpcDST_ACT_MALFORMED,		"dstActMalformed",	"Destination account is malformed."						},
+		{ rpcDST_AMT_MALFORMED,		"dstAmtMalformed",	"Destination amount/currency is malformed."				},
+		{ rpcFAIL_GEN_DECRPYT,		"failGenDecrypt",	"Failed to decrypt generator."							},
+		{ rpcGETS_ACT_MALFORMED,	"getsActMalformed",	"Gets account malformed."								},
+		{ rpcGETS_AMT_MALFORMED,	"getsAmtMalformed",	"Gets ammount malformed."								},
+		{ rpcHOST_IP_MALFORMED,		"hostIpMalformed",	"Host IP is malformed."									},
+		{ rpcINSUF_FUNDS,			"insufFunds",		"Insufficient funds."									},
+		{ rpcINTERNAL,				"internal",			"Internal error."										},
+		{ rpcINVALID_PARAMS,		"invalidParams",	"Invalid parameters."									},
+		{ rpcLGR_IDXS_INVALID,		"lgrIdxsInvalid",	"Ledger indexes invalid."								},
+		{ rpcLGR_IDX_MALFORMED,		"lgrIdxMalformed",	"Ledger index malformed."								},
+		{ rpcLGR_NOT_FOUND,			"lgrNotFound",		"Ledger not found."										},
+		{ rpcNICKNAME_MALFORMED,	"nicknameMalformed","Nickname is malformed."								},
+		{ rpcNICKNAME_MISSING,		"nicknameMissing",	"Nickname does not exist."								},
+		{ rpcNICKNAME_PERM,			"nicknamePerm",		"Account does not control nickname."					},
+		{ rpcNOT_IMPL,				"notImpl",			"Not implemented."										},
+		{ rpcNO_ACCOUNT,			"noAccount",		"No such account."										},
+		{ rpcNO_CLOSED,				"noClosed",			"Closed ledger is unavailable."							},
+		{ rpcNO_CURRENT,			"noCurrent",		"Current ledger is unavailable."						},
+		{ rpcNO_GEN_DECRPYT,		"noGenDectypt",		"Password failed to decrypt master public generator."	},
+		{ rpcNO_NETWORK,			"noNetwork",		"Network not available."								},
+		{ rpcNO_PERMISSION,			"noPermission",		"You don't have permission for this command."			},
+		{ rpcPASSWD_CHANGED,		"passwdChanged",	"Wrong key, password changed."							},
+		{ rpcPAYS_ACT_MALFORMED,	"paysActMalformed",	"Pays account malformed."								},
+		{ rpcPAYS_AMT_MALFORMED,	"paysAmtMalformed",	"Pays amount malformed."								},
+		{ rpcPORT_MALFORMED,		"portMalformed",	"Port is malformed."									},
+		{ rpcPUBLIC_MALFORMED,		"publicMalformed",	"Public key is malformed."								},
+		{ rpcSRC_ACT_MALFORMED,		"srcActMalformed",	"Source account is malformed."							},
+		{ rpcSRC_AMT_MALFORMED,		"srcAmtMalformed",	"Source amount/currency is malformed."					},
+		{ rpcSRC_MISSING,			"srcMissing",		"Source account does not exist."						},
+		{ rpcSRC_UNCLAIMED,			"srcUnclaimed",		"Source account is not claimed."						},
+		{ rpcSUCCESS,				"success",			"Success."												},
+		{ rpcTXN_NOT_FOUND,			"txnNotFound",		"Transaction not found."								},
+		{ rpcUNKNOWN_COMMAND,		"unknownCmd",		"Unknown command."										},
+		{ rpcWRONG_SEED,			"wrongSeed",		"The regular key does not point as the master key."		},
 	};
 
 	int		i;
@@ -826,14 +830,122 @@ Json::Value RPCServer::doNicknameSet(const Json::Value& params)
 	return obj;
 }
 
-Json::Value RPCServer::doOffer(const Json::Value &params)
+// offer_create <seed> <paying_account> <taker_pays_amount> <taker_pays_currency> <taker_pays_issuer> <takers_gets_amount> <takers_gets_currency> <takers_gets_issuer> <expires> [passive]
+Json::Value RPCServer::doOfferCreate(const Json::Value &params)
 {
-	return RPCError(rpcNOT_IMPL);
+	NewcoinAddress	naSeed;
+	NewcoinAddress	naSrcAccountID;
+	STAmount		saTakerPays;
+	STAmount		saTakerGets;
+	NewcoinAddress	naTakerPaysID;
+	NewcoinAddress	naTakerGetsID;
+
+	if (!naSeed.setSeedGeneric(params[0u].asString()))
+	{
+		return RPCError(rpcBAD_SEED);
+	}
+	else if (!naSrcAccountID.setAccountID(params[1u].asString()))
+	{
+		return RPCError(rpcSRC_ACT_MALFORMED);
+	}
+	else if (!saTakerPays.setValue(params[2u].asString(), params[3u].asString()))
+	{
+		return RPCError(rpcPAYS_AMT_MALFORMED);
+	}
+	else if (!naTakerPaysID.setAccountID(params[4u].asString()))
+	{
+		return RPCError(rpcPAYS_ACT_MALFORMED);
+	}
+	else if (!saTakerGets.setValue(params[5u].asString(), params[6u].asString()))
+	{
+		return RPCError(rpcGETS_AMT_MALFORMED);
+	}
+	else if (!naTakerGetsID.setAccountID(params[7u].asString()))
+	{
+		return RPCError(rpcGETS_ACT_MALFORMED);
+	}
+	else if (params.size() == 10 && params[9u].asString() != "passive")
+	{
+		return RPCError(rpcINVALID_PARAMS);
+	}
+
+	uint32					uExpiration	= lexical_cast_s<int>(params[8u].asString());
+	bool					bPassive	= params.size() == 10;
+
+	saTakerPays.setIssuer(naTakerPaysID.getAccountID());
+	saTakerGets.setIssuer(naTakerGetsID.getAccountID());
+
+	NewcoinAddress			naMasterGenerator;
+	NewcoinAddress			naAccountPublic;
+	NewcoinAddress			naAccountPrivate;
+	AccountState::pointer	asSrc;
+	STAmount				saSrcBalance;
+	Json::Value				obj				= authorize(mNetOps->getCurrentLedger(), naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
+		saSrcBalance, theConfig.FEE_DEFAULT, asSrc, naMasterGenerator);
+
+	if (!obj.empty())
+		return obj;
+
+	Transaction::pointer trans	= Transaction::sharedOfferCreate(
+		naAccountPublic, naAccountPrivate,
+		naSrcAccountID,
+		asSrc->getSeq(),
+		theConfig.FEE_DEFAULT,
+		0,											// YYY No source tag
+		bPassive,
+		saTakerPays,
+		saTakerGets,
+		uExpiration);
+
+	(void) mNetOps->processTransaction(trans);
+
+	obj["transaction"]	= trans->getSTransaction()->getJson(0);
+	obj["status"]		= trans->getStatus();
+
+	return obj;
 }
 
+// offer_cancel <seed> <paying_account> <sequence>
 Json::Value RPCServer::doOfferCancel(const Json::Value &params)
 {
-	return RPCError(rpcNOT_IMPL);
+	NewcoinAddress	naSeed;
+	NewcoinAddress	naSrcAccountID;
+	uint32			uSequence	= lexical_cast_s<int>(params[2u].asString());
+
+	if (!naSeed.setSeedGeneric(params[0u].asString()))
+	{
+		return RPCError(rpcBAD_SEED);
+	}
+	else if (!naSrcAccountID.setAccountID(params[1u].asString()))
+	{
+		return RPCError(rpcSRC_ACT_MALFORMED);
+	}
+
+	NewcoinAddress			naMasterGenerator;
+	NewcoinAddress			naAccountPublic;
+	NewcoinAddress			naAccountPrivate;
+	AccountState::pointer	asSrc;
+	STAmount				saSrcBalance;
+	Json::Value				obj				= authorize(mNetOps->getCurrentLedger(), naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
+		saSrcBalance, theConfig.FEE_DEFAULT, asSrc, naMasterGenerator);
+
+	if (!obj.empty())
+		return obj;
+
+	Transaction::pointer trans	= Transaction::sharedOfferCancel(
+		naAccountPublic, naAccountPrivate,
+		naSrcAccountID,
+		asSrc->getSeq(),
+		theConfig.FEE_DEFAULT,
+		0,											// YYY No source tag
+		uSequence);
+
+	(void) mNetOps->processTransaction(trans);
+
+	obj["transaction"]	= trans->getSTransaction()->getJson(0);
+	obj["status"]		= trans->getStatus();
+
+	return obj;
 }
 
 // password_fund <seed> <paying_account> [<account>]
@@ -1978,49 +2090,49 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 		bool		mAdminRequired;
 		unsigned int	iOptions;
 	} commandsA[] = {
-		{	"account_email_set",	&RPCServer::doAccountEmailSet,		2, 3, false,	optCurrent	},
-		{	"account_info",			&RPCServer::doAccountInfo,			1, 2, false,	optCurrent	},
-		{	"account_message_set",	&RPCServer::doAccountMessageSet,	3, 3, false,	optCurrent	},
-		{	"account_tx",			&RPCServer::doAccountTransactions,	2, 3, false,	optNetwork	},
-		{	"account_wallet_set",	&RPCServer::doAccountWalletSet,		2, 3, false,	optCurrent	},
-		{	"connect",				&RPCServer::doConnect,				1, 2, true					},
-		{	"data_delete",			&RPCServer::doDataDelete,			1, 1, true					},
-		{	"data_fetch",			&RPCServer::doDataFetch,			1, 1, true					},
-		{	"data_store",			&RPCServer::doDataStore,			2, 2, true					},
-		{	"ledger",				&RPCServer::doLedger,				0, 2, false,	optNetwork	},
-		{	"nickname_info",		&RPCServer::doNicknameInfo,			1, 1, false,	optCurrent	},
-		{	"nickname_set",			&RPCServer::doNicknameSet,			2, 3, false,	optCurrent	},
-		{	"offer",				&RPCServer::doOffer,				7, 8, false,	optCurrent	},
-		{	"offer_cancel",			&RPCServer::doOfferCancel,			3, 3, false,	optCurrent	},
-		{	"password_fund",		&RPCServer::doPasswordFund,			2, 3, false,	optCurrent	},
-		{	"password_set",			&RPCServer::doPasswordSet,			2, 3, false,	optNetwork	},
-		{	"peers",				&RPCServer::doPeers,				0, 0, true					},
-		{	"ripple_lines_get",		&RPCServer::doRippleLinesGet,		1, 2, false,	optCurrent|optClosed },
-		{	"ripple_line_set",		&RPCServer::doRippleLineSet,		4, 6, false,	optCurrent	},
-		{	"send",					&RPCServer::doSend,					3, 7, false,	optCurrent	},
-		{	"server_info",			&RPCServer::doServerInfo,			0, 0, true					},
-		{	"stop",					&RPCServer::doStop,					0, 0, true					},
-		{	"tx",					&RPCServer::doTx,					1, 1, true					},
+		{	"account_email_set",	&RPCServer::doAccountEmailSet,		2,  3, false,	optCurrent	},
+		{	"account_info",			&RPCServer::doAccountInfo,			1,  2, false,	optCurrent	},
+		{	"account_message_set",	&RPCServer::doAccountMessageSet,	3,  3, false,	optCurrent	},
+		{	"account_tx",			&RPCServer::doAccountTransactions,	2,  3, false,	optNetwork	},
+		{	"account_wallet_set",	&RPCServer::doAccountWalletSet,		2,  3, false,	optCurrent	},
+		{	"connect",				&RPCServer::doConnect,				1,  2, true					},
+		{	"data_delete",			&RPCServer::doDataDelete,			1,  1, true					},
+		{	"data_fetch",			&RPCServer::doDataFetch,			1,  1, true					},
+		{	"data_store",			&RPCServer::doDataStore,			2,  2, true					},
+		{	"ledger",				&RPCServer::doLedger,				0,  2, false,	optNetwork	},
+		{	"nickname_info",		&RPCServer::doNicknameInfo,			1,  1, false,	optCurrent	},
+		{	"nickname_set",			&RPCServer::doNicknameSet,			2,  3, false,	optCurrent	},
+		{	"offer_create",			&RPCServer::doOfferCreate,			9, 10, false,	optCurrent	},
+		{	"offer_cancel",			&RPCServer::doOfferCancel,			3,  3, false,	optCurrent	},
+		{	"password_fund",		&RPCServer::doPasswordFund,			2,  3, false,	optCurrent	},
+		{	"password_set",			&RPCServer::doPasswordSet,			2,  3, false,	optNetwork	},
+		{	"peers",				&RPCServer::doPeers,				0,  0, true					},
+		{	"ripple_lines_get",		&RPCServer::doRippleLinesGet,		1,  2, false,	optCurrent|optClosed },
+		{	"ripple_line_set",		&RPCServer::doRippleLineSet,		4,  6, false,	optCurrent	},
+		{	"send",					&RPCServer::doSend,					3,  7, false,	optCurrent	},
+		{	"server_info",			&RPCServer::doServerInfo,			0,  0, true					},
+		{	"stop",					&RPCServer::doStop,					0,  0, true					},
+		{	"tx",					&RPCServer::doTx,					1,  1, true					},
 
-		{	"unl_add",				&RPCServer::doUnlAdd,				1, 2, true					},
-		{	"unl_delete",			&RPCServer::doUnlDelete,			1, 1, true					},
-		{	"unl_list",				&RPCServer::doUnlList,				0, 0, true					},
-		{	"unl_load",				&RPCServer::doUnlLoad,				0, 0, true					},
-		{	"unl_network",			&RPCServer::doUnlNetwork,			0, 0, true					},
-		{	"unl_reset",			&RPCServer::doUnlReset,				0, 0, true					},
-		{	"unl_score",			&RPCServer::doUnlScore,				0, 0, true					},
+		{	"unl_add",				&RPCServer::doUnlAdd,				1,  2, true					},
+		{	"unl_delete",			&RPCServer::doUnlDelete,			1,  1, true					},
+		{	"unl_list",				&RPCServer::doUnlList,				0,  0, true					},
+		{	"unl_load",				&RPCServer::doUnlLoad,				0,  0, true					},
+		{	"unl_network",			&RPCServer::doUnlNetwork,			0,  0, true					},
+		{	"unl_reset",			&RPCServer::doUnlReset,				0,  0, true					},
+		{	"unl_score",			&RPCServer::doUnlScore,				0,  0, true					},
 
-		{	"validation_create",	&RPCServer::doValidationCreate,		0, 1, false					},
-		{	"validation_seed",		&RPCServer::doValidationSeed,		0, 1, false					},
+		{	"validation_create",	&RPCServer::doValidationCreate,		0,  1, false				},
+		{	"validation_seed",		&RPCServer::doValidationSeed,		0,  1, false				},
 
-		{	"wallet_accounts",		&RPCServer::doWalletAccounts,		1, 1, false,	optCurrent	},
-		{	"wallet_add",			&RPCServer::doWalletAdd,			3, 5, false,	optCurrent	},
-		{	"wallet_claim",			&RPCServer::doWalletClaim,			2, 4, false,	optNetwork	},
-		{	"wallet_create",		&RPCServer::doWalletCreate,			3, 4, false,	optCurrent	},
-		{	"wallet_propose",		&RPCServer::doWalletPropose,		0, 0, false,				},
-		{	"wallet_seed",			&RPCServer::doWalletSeed,			0, 1, false,				},
+		{	"wallet_accounts",		&RPCServer::doWalletAccounts,		1,  1, false,	optCurrent	},
+		{	"wallet_add",			&RPCServer::doWalletAdd,			3,  5, false,	optCurrent	},
+		{	"wallet_claim",			&RPCServer::doWalletClaim,			2,  4, false,	optNetwork	},
+		{	"wallet_create",		&RPCServer::doWalletCreate,			3,  4, false,	optCurrent	},
+		{	"wallet_propose",		&RPCServer::doWalletPropose,		0,  0, false,				},
+		{	"wallet_seed",			&RPCServer::doWalletSeed,			0,  1, false,				},
 
-		{	"login",				&RPCServer::doLogin,				2, 2, true					},
+		{	"login",				&RPCServer::doLogin,				2,  2, true					},
 	};
 
 	int		i = NUMBER(commandsA);
