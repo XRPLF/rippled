@@ -115,6 +115,7 @@ void Ledger::setRaw(const Serializer &s)
 	mParentHash =		sit.get256();
 	mTransHash =		sit.get256();
 	mAccountHash =		sit.get256();
+	mParentCloseTime =	sit.get32();
 	mCloseTime =		sit.get32();
 	mCloseResolution =	sit.get8();
 	mCloseFlags =		sit.get8();
