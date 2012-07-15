@@ -423,9 +423,16 @@ void Ledger::addJson(Json::Value& ret, int options)
 		ledger["hash"] = mHash.GetHex();
 		ledger["transactionHash"] = mTransHash.GetHex();
 		ledger["accountHash"] = mAccountHash.GetHex();
-		ledger["closed"] = true;
+		if (mClosed) ledger["closed"] = true;
 		ledger["accepted"] = mAccepted;
 		ledger["totalCoins"] = boost::lexical_cast<std::string>(mTotCoins);
+		if ((mCloseFlags & sLCF_NoConsensusTime) != 0)
+			ledger["closeTimeEstimate"] = mCloseTime;
+		else
+		{
+			ledger["closeTime"] = mCloseTime;
+			ledger["closeTimeResolution"] = mCloseResolution;
+		}
 	}
 	else ledger["closed"] = false;
 	if (mCloseTime != 0)
