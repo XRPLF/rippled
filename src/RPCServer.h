@@ -139,6 +139,7 @@ private:
 	Json::Value doNicknameSet(const Json::Value& params);
 	Json::Value doOfferCreate(const Json::Value& params);
 	Json::Value doOfferCancel(const Json::Value& params);
+	Json::Value doOwnerInfo(const Json::Value& params);
 	Json::Value doPasswordFund(const Json::Value& params);
 	Json::Value doPasswordSet(const Json::Value& params);
 	Json::Value doPeers(const Json::Value& params);

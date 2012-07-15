@@ -948,6 +948,40 @@ Json::Value RPCServer::doOfferCancel(const Json::Value &params)
 	return obj;
 }
 
+// owner_info <account>|<nickname>|<account_public_key>
+Json::Value RPCServer::doOwnerInfo(const Json::Value& params)
+{
+	std::string		strIdent	= params[0u].asString();
+	bool			bIndex;
+	int				iIndex		= 2 == params.size()? lexical_cast_s<int>(params[1u].asString()) : 0;
+	NewcoinAddress	naAccount;
+
+	Json::Value		ret;
+
+	// Get info on account.
+
+	uint256			uAccepted	= mNetOps->getClosedLedger();
+	Json::Value		jAccepted	= accountFromString(uAccepted, naAccount, bIndex, strIdent, iIndex);
+
+	if (jAccepted.empty())
+	{
+		jAccepted["offers"]	= mNetOps->getOwnerInfo(uAccepted, naAccount);
+	}
+
+	ret["accepted"]	= jAccepted;
+
+	uint256			uCurrent	= mNetOps->getCurrentLedger();
+	Json::Value		jCurrent	= accountFromString(uCurrent, naAccount, bIndex, strIdent, iIndex);
+
+	if (jCurrent.empty())
+	{
+		jCurrent["offers"]	= mNetOps->getOwnerInfo(uCurrent, naAccount);
+	}
+
+	ret["current"]	= jCurrent;
+
+	return ret;
+}
 // password_fund <seed> <paying_account> [<account>]
 // YYY Make making account default to first account for seed.
 Json::Value RPCServer::doPasswordFund(const Json::Value &params)
@@ -1504,9 +1538,10 @@ Json::Value RPCServer::doAccountTransactions(const Json::Value& params)
 	else
 		maxLedger = minLedger;
 
-	if ((maxLedger < minLedger) || (minLedger < 0) || (maxLedger == 0))
+	if ((maxLedger < minLedger) || (maxLedger == 0))
 	{
 		std::cerr << "minL=" << minLedger << ", maxL=" << maxLedger << std::endl;
+
 		return RPCError(rpcLGR_IDXS_INVALID);
 	}
 
@@ -2104,6 +2139,7 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 		{	"nickname_set",			&RPCServer::doNicknameSet,			2,  3, false,	optCurrent	},
 		{	"offer_create",			&RPCServer::doOfferCreate,			9, 10, false,	optCurrent	},
 		{	"offer_cancel",			&RPCServer::doOfferCancel,			3,  3, false,	optCurrent	},
+		{	"owner_info",			&RPCServer::doOwnerInfo,			1,  2, false,	optCurrent	},
 		{	"password_fund",		&RPCServer::doPasswordFund,			2,  3, false,	optCurrent	},
 		{	"password_set",			&RPCServer::doPasswordSet,			2,  3, false,	optNetwork	},
 		{	"peers",				&RPCServer::doPeers,				0,  0, true					},

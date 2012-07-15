@@ -49,7 +49,7 @@ uint256 Ledger::getBookBase(const uint160& uCurrencyIn, const uint160& uAccountI
 
 	assert(!bInNative || !bOutNative);									// Stamps to stamps not allowed.
 	assert(bInNative == uAccountIn.isZero());							// Make sure issuer is specified as needed.
-	assert(bOutNative == uAccountOut.isZero());						// Make sure issuer is specified as needed.
+	assert(bOutNative == uAccountOut.isZero());							// Make sure issuer is specified as needed.
 	assert(uCurrencyIn != uCurrencyOut || uAccountIn != uAccountOut);	// Currencies or accounts must differ.
 
 	Serializer	s(82);

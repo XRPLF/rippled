@@ -15,7 +15,8 @@
 #include "utils.h"
 #include "Log.h"
 
-#define DIR_NODE_MAX	32
+// Small for testing, should likely be 32 or 64.
+#define DIR_NODE_MAX	2
 
 bool transResultInfo(TransactionEngineResult terCode, std::string& strToken, std::string& strHuman)
 {
@@ -170,32 +171,26 @@ TransactionEngineResult TransactionEngine::dirAdd(
 	if (!sleRoot)
 	{
 		// No root, make it.
+		sleRoot		= entryCreate(ltDIR_NODE, uRootIndex);
+
+		sleNode		= sleRoot;
 		uNodeDir	= 0;
-
-		sleRoot	= entryCreate(ltDIR_NODE, uRootIndex);
-
-		sleNode	= sleRoot;
 	}
 	else
 	{
 		uNodeDir		= sleRoot->getIFieldU64(sfIndexPrevious);		// Get index to last directory node.
 
-		uint64		uNodePrevious	= uNodeDir;
-		uint256		uNodeIndex;											// Index of node.
-
 		if (uNodeDir)
 		{
 			// Try adding to non-root.
-			uNodeIndex	= Ledger::getDirNodeIndex(uRootIndex, uNodeDir);
 			lspRoot		= lepNONE;
-			sleNode		= mLedger->getDirNode(lspRoot, uNodeIndex);
+			sleNode		= mLedger->getDirNode(lspRoot, Ledger::getDirNodeIndex(uRootIndex, uNodeDir));
 
 			assert(sleNode);
 		}
 		else
 		{
-			// Try adding to root.
-			uNodeIndex	= uRootIndex;
+			// Try adding to root.  Didn't have a previous set.
 			sleNode		= sleRoot;
 		}
 
@@ -213,24 +208,33 @@ TransactionEngineResult TransactionEngine::dirAdd(
 		}
 		else
 		{
+			// Have old last point to new node, if it was not root.
+			if (uNodeDir == 1)
+			{
+				// Previous node is root node.
+
+				sleRoot->setIFieldU64(sfIndexNext, uNodeDir);
+			}
+			else
+			{
+				// Previous node is not root node.
+
+								lspRoot		= lepNONE;
+				SLE::pointer	slePrevious	= mLedger->getDirNode(lspRoot, Ledger::getDirNodeIndex(uRootIndex, uNodeDir-1));
+
+				slePrevious->setIFieldU64(sfIndexNext, uNodeDir);
+				entryModify(slePrevious);
+
+				sleNode->setIFieldU64(sfIndexPrevious, uNodeDir-1);
+			}
+
 			// Have root point to new node.
 			sleRoot->setIFieldU64(sfIndexPrevious, uNodeDir);
 			entryModify(sleRoot);
 
-			// Have old last point to new node, if it was not root.
-			if (uNodePrevious)
-			{
-				// Previous node is not root node.
-				sleNode->setIFieldU64(sfIndexNext, uNodeDir);
-				entryModify(sleNode);
-			}
-
 			// Create the new node.
+			sleNode		= entryCreate(ltDIR_NODE, Ledger::getDirNodeIndex(uRootIndex, uNodeDir));
 			svIndexes	= STVector256();
-			sleNode		= entryCreate(ltDIR_NODE, uNodeIndex);
-
-			if (uNodePrevious)
-				sleNode->setIFieldU64(sfIndexPrevious, uNodePrevious);
 		}
 	}
 
@@ -245,19 +249,20 @@ TransactionEngineResult TransactionEngine::dirAdd(
 	return terSUCCESS;
 }
 
+// -->    bKeepRoot: True, if we never completely clean up, after we overflow the root node.
 // -->     uNodeDir: Node containing entry.
 // -->   uRootIndex: The index of the base of the directory.  Nodes are based off of this.
 // --> uLedgerIndex: Value to add to directory.
 // Ledger must be in a state for this to work.
 TransactionEngineResult TransactionEngine::dirDelete(
+	bool							bKeepRoot,
 	const uint64&					uNodeDir,
 	const uint256&					uRootIndex,
 	const uint256&					uLedgerIndex)
 {
 	uint64				uNodeCur	= uNodeDir;
-	uint256				uNodeIndex	= Ledger::getDirNodeIndex(uRootIndex, uNodeCur);
 	LedgerStateParms	lspNode		= lepNONE;
-	SLE::pointer		sleNode		= mLedger->getDirNode(lspNode, uNodeIndex);
+	SLE::pointer		sleNode		= mLedger->getDirNode(lspNode, uNodeCur ? Ledger::getDirNodeIndex(uRootIndex, uNodeCur) : uRootIndex);
 
 	assert(sleNode);
 
@@ -267,163 +272,154 @@ TransactionEngineResult TransactionEngine::dirDelete(
 
 		return terBAD_LEDGER;
 	}
-	else
+
+	STVector256						svIndexes	= sleNode->getIFieldV256(sfIndexes);
+	std::vector<uint256>&			vuiIndexes	= svIndexes.peekValue();
+	std::vector<uint256>::iterator	it;
+
+	it = std::find(vuiIndexes.begin(), vuiIndexes.end(), uLedgerIndex);
+
+	assert(vuiIndexes.end() != it);
+	if (vuiIndexes.end() == it)
 	{
-		STVector256						svIndexes	= sleNode->getIFieldV256(sfIndexes);
-		std::vector<uint256>&			vuiIndexes	= svIndexes.peekValue();
-		std::vector<uint256>::iterator	it;
+		assert(false);
 
-		it = std::find(vuiIndexes.begin(), vuiIndexes.end(), uLedgerIndex);
+		Log(lsWARNING) << "dirDelete: node not mentioned";
 
-		assert(vuiIndexes.end() != it);
-		if (vuiIndexes.end() == it)
+		return terBAD_LEDGER;
+	}
+
+	// Remove the element.
+	if (vuiIndexes.size() > 1)
+		*it = vuiIndexes[vuiIndexes.size()-1];
+
+	vuiIndexes.resize(vuiIndexes.size()-1);
+
+	sleNode->setIFieldV256(sfIndexes, svIndexes);
+	entryModify(sleNode);
+
+	if (vuiIndexes.empty())
+	{
+		// May be able to delete nodes.
+		uint64				uNodePrevious	= sleNode->getIFieldU64(sfIndexPrevious);
+		uint64				uNodeNext		= sleNode->getIFieldU64(sfIndexNext);
+
+		if (!uNodeCur)
 		{
-			Log(lsWARNING) << "dirDelete: node not mentioned";
+			// Just emptied root node.
 
-			return terBAD_LEDGER;
-		}
-		else
-		{
-			// Remove the element.
-			if (vuiIndexes.size() > 1)
-				*it = vuiIndexes[vuiIndexes.size()-1];
-
-			vuiIndexes.resize(vuiIndexes.size()-1);
-
-			if (vuiIndexes.size() > 0)
+			if (!uNodePrevious)
 			{
-				// Node is not being deleted.
-				sleNode->setIFieldV256(sfIndexes, svIndexes);
-				entryModify(sleNode);
+				// Never overflowed the root node.  Delete it.
+				entryDelete(sleNode);
+			}
+			// Root overflowed.
+			else if (bKeepRoot)
+			{
+				// Not allowed to delete root node, if it ever overflowed.
+
+				nothing();
+			}
+			else if (uNodePrevious != uNodeNext)
+			{
+				// Have multiple other nodes.  Can't delete root node.
+
+				nothing();
 			}
 			else
 			{
-				bool			bRootDirty	= false;
-				SLE::pointer	sleRoot;
+				// Have only a root node and a last node.
+				LedgerStateParms		lspLast	= lepNONE;
+				SLE::pointer			sleLast	= mLedger->getDirNode(lspLast, Ledger::getDirNodeIndex(uRootIndex, uNodeNext));
 
-				// May be able to delete nodes.
-				if (uNodeCur)
+				assert(sleLast);
+
+				if (sleLast->getIFieldV256(sfIndexes).peekValue().empty())
 				{
-					uint64	uNodePrevious	= sleNode->getIFieldU64(sfIndexPrevious);
-					uint64	uNodeNext		= sleNode->getIFieldU64(sfIndexNext);
+					// Both nodes are empty.
 
-					entryDelete(sleNode);
-
-					// Fix previous link.
-					if (uNodePrevious)
-					{
-						LedgerStateParms	lspPrevious		= lepNONE;
-						SLE::pointer		slePrevious		= mLedger->getDirNode(lspPrevious, Ledger::getDirNodeIndex(uRootIndex, uNodePrevious));
-
-						assert(slePrevious);
-						if (!slePrevious)
-						{
-							Log(lsWARNING) << "dirDelete: previous node is missing";
-
-							return terBAD_LEDGER;
-						}
-						else if (uNodeNext)
-						{
-							slePrevious->setIFieldU64(sfIndexNext, uNodeNext);
-						}
-						else
-						{
-							slePrevious->makeIFieldAbsent(sfIndexNext);
-						}
-						entryModify(slePrevious);
-					}
-					else
-					{
-						// Read root.
-						bRootDirty	= true;
-
-						sleRoot	= mLedger->getDirNode(lspNode, uRootIndex);
-
-						if (uNodeNext)
-						{
-							sleRoot->setIFieldU64(sfIndexNext, uNodeNext);
-						}
-						else
-						{
-							sleRoot->makeIFieldAbsent(sfIndexNext);
-						}
-					}
-
-					// Fix next link.
-					if (uNodeNext)
-					{
-						LedgerStateParms	lspNext		= lepNONE;
-						SLE::pointer		sleNext		= mLedger->getDirNode(lspNext, Ledger::getDirNodeIndex(uRootIndex, uNodeNext));
-
-						assert(sleNext);
-						if (!sleNext)
-						{
-							Log(lsWARNING) << "dirDelete: next node is missing";
-
-							return terBAD_LEDGER;
-						}
-						else if (uNodeNext)
-						{
-							sleNext->setIFieldU64(sfIndexNext, uNodeNext);
-						}
-						else
-						{
-							sleNext->makeIFieldAbsent(sfIndexNext);
-						}
-						entryModify(sleNext);
-					}
-					else
-					{
-						// Read root.
-						bRootDirty	= true;
-
-						sleRoot	= mLedger->getDirNode(lspNode, uRootIndex);
-
-						if (uNodePrevious)
-						{
-							sleRoot->setIFieldU64(sfIndexPrevious, uNodePrevious);
-						}
-						else
-						{
-							sleRoot->makeIFieldAbsent(sfIndexPrevious);
-						}
-					}
-
-					if (bRootDirty)
-					{
-						// Need to update sleRoot;
-						uNodeCur	= 0;
-
-						// If we might be able to delete root, load it.
-						if (!uNodePrevious && !uNodeNext)
-							vuiIndexes	= svIndexes.peekValue();
-					}
+					entryDelete(sleNode);	// Delete root.
+					entryDelete(sleLast);	// Delete last.
 				}
 				else
 				{
-					bRootDirty	= true;
-				}
+					// Have an entry, can't delete.
 
-				if (!uNodeCur)
-				{
-					// Looking at root node.
-					uint64	uRootPrevious	= sleNode->getIFieldU64(sfIndexPrevious);
-					uint64	uRootNext		= sleNode->getIFieldU64(sfIndexNext);
-
-					if (!uRootPrevious && !uRootNext && vuiIndexes.empty())
-					{
-						entryDelete(sleRoot);
-					}
-					else if (bRootDirty)
-					{
-						entryModify(sleRoot);
-					}
+					nothing();
 				}
 			}
 		}
+		// Just emptied a non-root node.
+		else if (uNodeNext)
+		{
+			// Not root and not last node. Can delete node.
 
-		return terSUCCESS;
+			LedgerStateParms	lspPrevious	= lepNONE;
+			SLE::pointer		slePrevious	= mLedger->getDirNode(lspPrevious, uNodePrevious ? Ledger::getDirNodeIndex(uRootIndex, uNodePrevious) : uRootIndex);
+
+			assert(slePrevious);
+
+			LedgerStateParms	lspNext		= lepNONE;
+			SLE::pointer		sleNext		= mLedger->getDirNode(lspNext, uNodeNext ? Ledger::getDirNodeIndex(uRootIndex, uNodeNext) : uRootIndex);
+
+			assert(sleNext);
+
+			if (!slePrevious)
+			{
+				Log(lsWARNING) << "dirDelete: previous node is missing";
+
+				return terBAD_LEDGER;
+			}
+
+			assert(sleNext);
+			if (!sleNext)
+			{
+				Log(lsWARNING) << "dirDelete: next node is missing";
+
+				return terBAD_LEDGER;
+			}
+
+			// Fix previous to point to its new next.
+			slePrevious->setIFieldU64(sfIndexNext, uNodeNext);
+			entryModify(slePrevious);
+
+			// Fix next to point to its new previous.
+			sleNext->setIFieldU64(sfIndexPrevious, uNodePrevious);
+			entryModify(sleNext);
+		}
+		// Last node.
+		else if (bKeepRoot || uNodePrevious)
+		{
+			// Not allowed to delete last node as root was overflowed.
+			// Or, have pervious entries preventing complete delete.
+
+			nothing();
+		}
+		else
+		{
+			// Last and only node besides the root.
+			LedgerStateParms		lspRoot	= lepNONE;
+			SLE::pointer			sleRoot	= mLedger->getDirNode(lspRoot, uRootIndex);
+
+			assert(sleRoot);
+
+			if (sleRoot->getIFieldV256(sfIndexes).peekValue().empty())
+			{
+				// Both nodes are empty.
+
+				entryDelete(sleRoot);	// Delete root.
+				entryDelete(sleNode);	// Delete last.
+			}
+			else
+			{
+				// Root has an entry, can't delete.
+
+				nothing();
+			}
+		}
 	}
+
+	return terSUCCESS;
 }
 
 // Set the authorized public ket for an account.  May also set the generator map.
@@ -498,6 +494,8 @@ bool TransactionEngine::entryExists(SLE::pointer sleEntry)
 
 SLE::pointer TransactionEngine::entryCreate(LedgerEntryType letType, const uint256& uIndex)
 {
+	assert(!uIndex.isZero());
+
 	SLE::pointer	sleNew	= boost::make_shared<SerializedLedgerEntry>(letType);
 
 	sleNew->setIndex(uIndex);
@@ -509,6 +507,7 @@ SLE::pointer TransactionEngine::entryCreate(LedgerEntryType letType, const uint2
 
 void TransactionEngine::entryDelete(SLE::pointer sleEntry)
 {
+	assert(sleEntry);
 	entryMap::const_iterator	it	= mEntries.find(sleEntry);
 
 	switch (it == mEntries.end() ? taaNONE : it->second)
@@ -531,6 +530,7 @@ void TransactionEngine::entryDelete(SLE::pointer sleEntry)
 
 void TransactionEngine::entryModify(SLE::pointer sleEntry)
 {
+	assert(sleEntry);
 	entryMap::const_iterator	it	= mEntries.find(sleEntry);
 
 	switch (it == mEntries.end() ? taaNONE : it->second)
@@ -553,6 +553,7 @@ void TransactionEngine::entryModify(SLE::pointer sleEntry)
 
 void TransactionEngine::entryUnfunded(SLE::pointer sleEntry)
 {
+	assert(sleEntry);
 	entryMap::const_iterator	it	= mEntries.find(sleEntry);
 
 	switch (it == mEntries.end() ? taaNONE : it->second)
@@ -1216,7 +1217,7 @@ TransactionEngineResult TransactionEngine::doCreditSet(const SerializedTransacti
 				// Zero balance and eliminating last limit.
 
 				bDelIndex	= true;
-				terResult	= dirDelete(uSrcRef, Ledger::getRippleDirIndex(uSrcAccountID), sleRippleState->getIndex());
+				terResult	= dirDelete(true, uSrcRef, Ledger::getRippleDirIndex(uSrcAccountID), sleRippleState->getIndex());
 			}
 		}
 #endif
@@ -2236,12 +2237,12 @@ TransactionEngineResult TransactionEngine::doOfferCancel(const SerializedTransac
 		uint64		uBookNode	= sleOffer->getIFieldU64(sfBookNode);
 		uint256		uDirectory	= sleOffer->getIFieldH256(sfDirectory);
 
-		terResult	= dirDelete(uOwnerNode, Ledger::getOwnerDirIndex(uSrcAccountID), uLedgerIndex);
+		terResult	= dirDelete(true, uOwnerNode, Ledger::getOwnerDirIndex(uSrcAccountID), uLedgerIndex);
 
-//		if (terSUCCESS == terResult)
-//		{
-//			terResult	= dirDelete(uBookNode, uDirectory, uLedgerIndex);
-//		}
+		if (terSUCCESS == terResult)
+		{
+			terResult	= dirDelete(false, uBookNode, uDirectory, uLedgerIndex);
+		}
 
 		entryDelete(sleOffer);
 	}

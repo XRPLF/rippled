@@ -139,7 +139,7 @@ std::string NewcoinAddress::humanNodePublic() const
 
 bool NewcoinAddress::setNodePublic(const std::string& strPublic)
 {
-    return SetString(strPublic.c_str(), VER_NODE_PUBLIC);
+	return SetString(strPublic.c_str(), VER_NODE_PUBLIC);
 }
 
 void NewcoinAddress::setNodePublic(const std::vector<unsigned char>& vPublic)
@@ -302,9 +302,9 @@ std::string NewcoinAddress::humanAccountID() const
 
 bool NewcoinAddress::setAccountID(const std::string& strAccountID)
 {
-    if (strAccountID == "none")
+	if (strAccountID.empty())
 	{
-		SetData(VER_ACCOUNT_ID, std::vector<unsigned char>());
+		setAccountID(uint160());
 
 		return true;
 	}

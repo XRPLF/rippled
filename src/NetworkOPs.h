@@ -119,6 +119,12 @@ public:
 	NicknameState::pointer	getNicknameState(const uint256& uLedger, const std::string& strNickname);
 
 	//
+	// Owner functions
+	//
+
+	Json::Value getOwnerInfo(const uint256& uLedger, const NewcoinAddress& naAccount);
+
+	//
 	// Ripple functions
 	//
 
