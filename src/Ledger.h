@@ -156,6 +156,9 @@ public:
 	static Ledger::pointer loadByHash(const uint256& ledgerHash);
 
 	// next/prev function
+	SLE::pointer getSLE(const uint256& uHash);
+	SLE::pointer getFirstSLE();
+	SLE::pointer getLastSLE();
 	SLE::pointer getNextSLE(const uint256& uHash);							// first node >hash
 	SLE::pointer getNextSLE(const uint256& uHash, const uint256& uEnd);		// first node >hash, <end
 	SLE::pointer getPrevSLE(const uint256& uHash);							// last node <hash
