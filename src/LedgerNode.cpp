@@ -48,7 +48,7 @@ LedgerStateParms Ledger::writeBack(LedgerStateParms parms, SLE::pointer entry)
 
 SLE::pointer Ledger::getSLE(const uint256& uHash)
 {
-	SHAMapItem::pointer node = mAccountStateMap->peekItem();
+	SHAMapItem::pointer node = mAccountStateMap->peekItem(uHash);
 	if (!node)
 		return SLE::pointer();
 	return boost::make_shared<SLE>(node->peekSerializer(), node->getTag());
