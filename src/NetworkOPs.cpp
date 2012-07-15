@@ -221,9 +221,13 @@ NicknameState::pointer NetworkOPs::getNicknameState(const uint256& uLedger, cons
 
 Json::Value NetworkOPs::getOwnerInfo(const uint256& uLedger, const NewcoinAddress& naAccount)
 {
+	return getOwnerInfo(mLedgerMaster->getLedgerByHash(uLedger), naAccount);
+}
+
+Json::Value NetworkOPs::getOwnerInfo(Ledger::pointer lpLedger, const NewcoinAddress& naAccount)
+{
 	Json::Value	jvObjects(Json::arrayValue);
 
-	Ledger::pointer		lpLedger	= mLedgerMaster->getLedgerByHash(uLedger);
 	uint256				uRootIndex	= lpLedger->getOwnerDirIndex(naAccount.getAccountID());
 
 	LedgerStateParms	lspNode		= lepNONE;
@@ -236,9 +240,9 @@ Json::Value NetworkOPs::getOwnerInfo(const uint256& uLedger, const NewcoinAddres
 		do
 		{
 			STVector256				svIndexes	= sleNode->getIFieldV256(sfIndexes);
-			std::vector<uint256>&	vuiIndexes	= svIndexes.peekValue();
+			const std::vector<uint256>&	vuiIndexes	= svIndexes.peekValue();
 
-			BOOST_FOREACH(uint256& uDirEntry, vuiIndexes)
+			BOOST_FOREACH(const uint256& uDirEntry, vuiIndexes)
 			{
 				LedgerStateParms	lspOffer	= lepNONE;
 				SLE::pointer		sleOffer	= lpLedger->getOffer(lspOffer, uDirEntry);
@@ -728,8 +732,22 @@ Json::Value NetworkOPs::getServerInfo()
 }
 
 //
-// Monitoring:: publisher side
+// Monitoring: publisher side
 //
+
+Json::Value NetworkOPs::pubBootstrapAccountInfo(const Ledger::pointer& lpAccepted, const NewcoinAddress& naAccountID)
+{
+	Json::Value			jvObj(Json::objectValue);
+
+	jvObj["type"]		= "accountInfoBootstrap";
+	jvObj["account"]	= naAccountID.humanAccountID();
+	jvObj["owner"]		= getOwnerInfo(lpAccepted, naAccountID);
+	jvObj["seq"]		= lpAccepted->getLedgerSeq();
+	jvObj["hash"]		= lpAccepted->getHash().ToString();
+	jvObj["time"]		= Json::Value::UInt(lpAccepted->getCloseTimeNC());
+
+	return jvObj;
+}
 
 void NetworkOPs::pubAccountInfo(const NewcoinAddress& naAccountID, const Json::Value& jvObj)
 {
@@ -827,6 +845,24 @@ void NetworkOPs::pubLedger(const Ledger::pointer& lpAccepted)
 			}
 		}
 	}
+
+	// Publish bootsrap information for accounts.
+	{
+		boost::interprocess::scoped_lock<boost::interprocess::interprocess_upgradable_mutex>	sl(mMonitorLock);
+
+		BOOST_FOREACH(const subInfoMapType::iterator::value_type& it, mBootAccountInfo)
+		{
+			Json::Value	jvObj	= pubBootstrapAccountInfo(lpAccepted, NewcoinAddress::createAccountID(it.first));
+
+			BOOST_FOREACH(InfoSub* ispListener, it.second)
+			{
+				ispListener->send(jvObj);
+			}
+		}
+		mBootAccountInfo.clear();
+	}
+
+	// XXX Publish delta information for accounts.
 }
 
 Json::Value NetworkOPs::transJson(const SerializedTransaction& stTxn, TransactionEngineResult terResult, const std::string& strStatus, int iSeq, const std::string& strType)
@@ -917,7 +953,26 @@ void NetworkOPs::subAccountInfo(InfoSub* ispListener, const boost::unordered_set
 
 	BOOST_FOREACH(const NewcoinAddress& naAccountID, vnaAccountIDs)
 	{
-		subInfoMapType::iterator	simIterator	= mSubAccountInfo.find(naAccountID.getAccountID());
+		// Register for bootstrap info.
+		subInfoMapType::iterator	simIterator;
+
+		simIterator	= mBootAccountInfo.find(naAccountID.getAccountID());
+		if (simIterator == mBootAccountInfo.end())
+		{
+			// Not found
+			boost::unordered_set<InfoSub*>	usisElement;
+
+			usisElement.insert(ispListener);
+			mBootAccountInfo.insert(simIterator, make_pair(naAccountID.getAccountID(), usisElement));
+		}
+		else
+		{
+			// Found
+			simIterator->second.insert(ispListener);
+		}
+
+		// Register for messages.
+		simIterator	= mSubAccountInfo.find(naAccountID.getAccountID());
 		if (simIterator == mSubAccountInfo.end())
 		{
 			// Not found

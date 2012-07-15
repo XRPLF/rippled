@@ -53,12 +53,13 @@ protected:
 
 	void setMode(OperatingMode);
 
-	typedef boost::unordered_map<uint160,boost::unordered_set<InfoSub*> >			subInfoMapType;
+	typedef boost::unordered_map<uint160,boost::unordered_set<InfoSub*> >				subInfoMapType;
 	typedef boost::unordered_map<uint160,boost::unordered_set<InfoSub*> >::value_type	subInfoMapValue;
-	typedef boost::unordered_map<uint160,boost::unordered_set<InfoSub*> >::iterator	subInfoMapIterator;
+	typedef boost::unordered_map<uint160,boost::unordered_set<InfoSub*> >::iterator		subInfoMapIterator;
 
 	// XXX Split into more locks.
     boost::interprocess::interprocess_upgradable_mutex	mMonitorLock;
+	subInfoMapType										mBootAccountInfo;
 	subInfoMapType										mSubAccountInfo;
 	subInfoMapType										mSubAccountTransaction;
 	boost::unordered_set<InfoSub*>						mSubLedger;				// ledger accepteds
@@ -69,6 +70,8 @@ protected:
 	Json::Value transJson(const SerializedTransaction& stTxn, TransactionEngineResult terResult, const std::string& strStatus, int iSeq, const std::string& strType);
 	void pubTransactionAll(const Ledger::pointer& lpCurrent, const SerializedTransaction& stTxn, TransactionEngineResult terResult, const char* pState);
 	void pubTransactionAccounts(const Ledger::pointer& lpCurrent, const SerializedTransaction& stTxn, TransactionEngineResult terResult, const char* pState);
+
+	Json::Value pubBootstrapAccountInfo(const Ledger::pointer& lpAccepted, const NewcoinAddress& naAccountID);
 
 public:
 	NetworkOPs(boost::asio::io_service& io_service, LedgerMaster* pLedgerMaster);
@@ -123,6 +126,7 @@ public:
 	//
 
 	Json::Value getOwnerInfo(const uint256& uLedger, const NewcoinAddress& naAccount);
+	Json::Value getOwnerInfo(Ledger::pointer lpLedger, const NewcoinAddress& naAccount);
 
 	//
 	// Ripple functions
