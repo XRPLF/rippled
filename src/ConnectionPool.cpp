@@ -463,8 +463,8 @@ bool ConnectionPool::peerScanSet(const std::string& strIp, int iPort)
 		else
 		{
 			// Scan connection terminated, already scheduled for retry.
-			boost::posix_time::ptime	tpNow		= boost::posix_time::second_clock::universal_time();
-			boost::posix_time::ptime	tpNext		= ptFromSeconds(db->getInt("ScanNext"));
+			// boost::posix_time::ptime	tpNow		= boost::posix_time::second_clock::universal_time();
+			// boost::posix_time::ptime	tpNext		= ptFromSeconds(db->getInt("ScanNext"));
 
 			//Log(lsINFO) << str(boost::format("Pool: Scan: schedule exists: %s %s (next %s, delay=%d)")
 			//	% mScanIp % mScanPort % tpNext % (tpNext-tpNow).total_seconds());

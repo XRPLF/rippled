@@ -216,6 +216,51 @@ NicknameState::pointer NetworkOPs::getNicknameState(const uint256& uLedger, cons
 }
 
 //
+// Owner functions
+//
+
+Json::Value NetworkOPs::getOwnerInfo(const uint256& uLedger, const NewcoinAddress& naAccount)
+{
+	Json::Value	jvObjects(Json::arrayValue);
+
+	Ledger::pointer		lpLedger	= mLedgerMaster->getLedgerByHash(uLedger);
+	uint256				uRootIndex	= lpLedger->getOwnerDirIndex(naAccount.getAccountID());
+
+	LedgerStateParms	lspNode		= lepNONE;
+	SLE::pointer		sleNode		= lpLedger->getDirNode(lspNode, uRootIndex);
+
+	if (sleNode)
+	{
+		uint64	uNodeDir;
+
+		do
+		{
+			STVector256				svIndexes	= sleNode->getIFieldV256(sfIndexes);
+			std::vector<uint256>&	vuiIndexes	= svIndexes.peekValue();
+
+			BOOST_FOREACH(uint256& uDirEntry, vuiIndexes)
+			{
+				LedgerStateParms	lspOffer	= lepNONE;
+				SLE::pointer		sleOffer	= lpLedger->getOffer(lspOffer, uDirEntry);
+
+				jvObjects.append(sleOffer->getJson(0));
+			}
+
+			uNodeDir		= sleNode->getIFieldU64(sfIndexNext);
+			if (uNodeDir)
+			{
+				lspNode	= lepNONE;
+				sleNode	= lpLedger->getDirNode(lspNode, Ledger::getDirNodeIndex(uRootIndex, uNodeDir));
+
+				assert(sleNode);
+			}
+		} while (uNodeDir);
+	}
+
+	return jvObjects;
+}
+
+//
 // Ripple functions
 //
 
