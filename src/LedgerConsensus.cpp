@@ -202,7 +202,9 @@ LedgerConsensus::LedgerConsensus(const uint256& prevLCLHash, Ledger::pointer pre
 	mCloseResolution = ContinuousLedgerTiming::getNextLedgerTimeResolution(
 		previousLedger->getCloseResolution(), previousLedger->getCloseAgree(), previousLedger->getLedgerSeq() + 1);
 
-	if (previousLedger->getHash() != prevLCLHash)
+	mHaveCorrectLCL = previousLedger->getHash() == prevLCLHash;
+
+	if (!mHaveCorrectLCL)
 	{
 		mHaveCorrectLCL = mProposing = mValidating = false;
 		mAcquiringLedger = theApp->getMasterLedgerAcquire().findCreate(prevLCLHash);
@@ -213,10 +215,14 @@ LedgerConsensus::LedgerConsensus(const uint256& prevLCLHash, Ledger::pointer pre
 	}
 	else if (mValSeed.isValid())
 	{
-		mValidating = true;
+		mHaveCorrectLCL = mValidating = true;
 		mProposing = theApp->getOPs().getOperatingMode() == NetworkOPs::omFULL;
 	}
-	else mProposing = mValidating = false;
+	else
+	{
+		mHaveCorrectLCL = true;
+		mProposing = mValidating = false;
+	}
 }
 
 void LedgerConsensus::takeInitialPosition(Ledger::pointer initialLedger)
