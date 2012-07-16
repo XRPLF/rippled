@@ -99,12 +99,13 @@ bool ContinuousLedgerTiming::haveConsensus(
 int ContinuousLedgerTiming::getNextLedgerTimeResolution(int previousResolution, bool previousAgree, int ledgerSeq)
 {
 	assert(ledgerSeq);
+	assert(previousAgree); // TEMPORARY
 	if ((!previousAgree) && ((ledgerSeq % LEDGER_RES_DECREASE) == 0))
 	{ // reduce resolution
 		int i = 1;
 		while (LedgerTimeResolution[i] != previousResolution)
 			++i;
-		return LedgerTimeResolution[i - 1];
+		return LedgerTimeResolution[i + 1];
 	}
 
 	if ((previousAgree) && ((ledgerSeq % LEDGER_RES_INCREASE) == 0))
@@ -112,7 +113,7 @@ int ContinuousLedgerTiming::getNextLedgerTimeResolution(int previousResolution, 
 		int i = 1;
 		while (LedgerTimeResolution[i] != previousResolution)
 			++i;
-		return LedgerTimeResolution[i + 1];
+		return LedgerTimeResolution[i - 1];
 	}
 
 	return previousResolution;
