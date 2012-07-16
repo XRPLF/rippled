@@ -19,7 +19,6 @@ class LedgerMaster
 	TransactionEngine mEngine;
 
 	Ledger::pointer mCurrentLedger;		// The ledger we are currently processiong
-	Ledger::pointer mWobbleLedger;		// A ledger past its close time
 	Ledger::pointer mFinalizedLedger;	// The ledger that most recently closed
 
 	LedgerHistory mLedgerHistory;
@@ -40,9 +39,6 @@ public:
 
 	// The current ledger is the ledger we believe new transactions should go in
 	Ledger::pointer getCurrentLedger()	{ return mCurrentLedger; }
-
-	// The wobble ledger is a ledger that new transactions can go in if requested
-	Ledger::pointer getWobbleLedger()	{ return mWobbleLedger; }
 
 	// The finalized ledger is the last closed/accepted ledger
 	Ledger::pointer getClosedLedger()	{ return mFinalizedLedger; }
