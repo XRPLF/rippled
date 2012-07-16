@@ -359,8 +359,6 @@ void LedgerConsensus::statusChange(newcoin::NodeEvent event, Ledger::pointer led
 
 int LedgerConsensus::startup()
 {
-	// create wobble ledger in case peers target transactions to it
-	theApp->getMasterLedger().beginWobble();
 	return 1;
 }
 
@@ -377,6 +375,7 @@ int LedgerConsensus::statePreClose()
 		Log(lsINFO) << "CLC:: closing ledger";
 		mState = lcsESTABLISH;
 		mConsensusStartTime = boost::posix_time::second_clock::universal_time();
+		theApp->getMasterLedger().beginWobble();
 		theApp->getMasterLedger().closeTime();
 		mCloseTime = theApp->getOPs().getNetworkTimeNC();
 		theApp->getOPs().setLastCloseNetTime(mCloseTime);
