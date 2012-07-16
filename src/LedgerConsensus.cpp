@@ -362,7 +362,7 @@ int LedgerConsensus::startup()
 	return 1;
 }
 
-int LedgerConsensus::statePreClose()
+void LedgerConsensus::statePreClose()
 { // it is shortly before ledger close time
 	bool anyTransactions = theApp->getMasterLedger().getCurrentLedger()->peekTransactionMap()->getHash().isNonZero();
 	int proposersClosed = mPeerPositions.size();
@@ -382,13 +382,12 @@ int LedgerConsensus::statePreClose()
 		assert (initial->getParentHash() == mPreviousLedger->getHash());
 		takeInitialPosition(initial);
 	}
-	return 1;
 }
 
-int LedgerConsensus::stateEstablish()
+void LedgerConsensus::stateEstablish()
 { // we are establishing consensus
 	if (mCurrentSeconds < LEDGER_MIN_CONSENSUS)
-		return 1;
+		return;
 	updateOurPositions();
 	if (!mHaveCloseTimeConsensus)
 	{
@@ -400,10 +399,9 @@ int LedgerConsensus::stateEstablish()
 		mState = lcsFINISHED;
 		beginAccept();
 	}
-	return 1;
 }
 
-int LedgerConsensus::stateFinished()
+void LedgerConsensus::stateFinished()
 { // we are processing the finished ledger
 	// logic of calculating next ledger advances us out of this state
 
@@ -411,14 +409,11 @@ int LedgerConsensus::stateFinished()
 	int convergeTime = (boost::posix_time::second_clock::universal_time() - mConsensusStartTime).seconds();
 	if (convergeTime <= 0) convergeTime = 1;
 	theApp->getOPs().newLCL(mPeerPositions.size(), convergeTime, mNewLedgerHash);
-
-	return 1;
 }
 
-int LedgerConsensus::stateAccepted()
+void LedgerConsensus::stateAccepted()
 { // we have accepted a new ledger
 	endConsensus();
-	return 4;
 }
 
 void LedgerConsensus::timerEntry()

@@ -153,11 +153,11 @@ public:
 	void timerEntry();
 
 	// state handlers
-	int statePreClose();
-	int stateEstablish();
-	int stateCutoff();
-	int stateFinished();
-	int stateAccepted();
+	void statePreClose();
+	void stateEstablish();
+	void stateCutoff();
+	void stateFinished();
+	void stateAccepted();
 
 	bool haveConsensus();
 
