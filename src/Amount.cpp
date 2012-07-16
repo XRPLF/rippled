@@ -1031,7 +1031,7 @@ BOOST_AUTO_TEST_CASE( CurrencyMulDivTests )
 	// convertToDisplayAmount, convertToInternalAmount, getRate, getClaimed, and getNeeded
 
 	uint160 c(1);
-	if (STAmount::getRate(STAmount(1), STAmount(10)) != (((100ul-14)<<(64-8))|1000000000000000ull))
+	if (STAmount::getRate(STAmount(1), STAmount(10)) != (((100ul-14)<<(64-8))|1000000000000000ul))
 		BOOST_FAIL("STAmount getrate fail");
 	if (STAmount::getRate(STAmount(10), STAmount(1)) != (((100ul-16)<<(64-8))|1000000000000000ul))
 		BOOST_FAIL("STAmount getrate fail");
