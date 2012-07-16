@@ -492,7 +492,7 @@ void LedgerConsensus::updateOurPositions()
 	std::map<uint32, int> closeTimes;
 	for (boost::unordered_map<uint160, LedgerProposal::pointer>::iterator it = mPeerPositions.begin(),
 			end = mPeerPositions.end(); it != end; ++it)
-		++closeTimes[it->second->getCloseTime() - (it->second->getCloseTime % mCloseResolution)];
+		++closeTimes[it->second->getCloseTime() - (it->second->getCloseTime() % mCloseResolution)];
 	++closeTimes[mOurPosition->getCloseTime() - (mOurPosition->getCloseTime() % mCloseResolution)];
 
 
