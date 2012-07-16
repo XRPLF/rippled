@@ -375,12 +375,10 @@ int LedgerConsensus::statePreClose()
 		Log(lsINFO) << "CLC:: closing ledger";
 		mState = lcsESTABLISH;
 		mConsensusStartTime = boost::posix_time::second_clock::universal_time();
-		theApp->getMasterLedger().beginWobble();
-		theApp->getMasterLedger().closeTime();
 		mCloseTime = theApp->getOPs().getNetworkTimeNC();
 		theApp->getOPs().setLastCloseNetTime(mCloseTime);
 		statusChange(newcoin::neCLOSING_LEDGER, mPreviousLedger);
-		Ledger::pointer initial = theApp->getMasterLedger().endWobble();
+		Ledger::pointer initial = theApp->getMasterLedger().closeLedger();
 		assert (initial->getParentHash() == mPreviousLedger->getHash());
 		takeInitialPosition(initial);
 	}

@@ -56,9 +56,7 @@ public:
 
 	void switchLedgers(Ledger::pointer lastClosed, Ledger::pointer newCurrent);
 
-	void closeTime();
-	void beginWobble();
-	Ledger::pointer endWobble();
+	Ledger::pointer closeLedger();
 
 	Ledger::pointer getLedgerBySeq(uint32 index)
 	{
