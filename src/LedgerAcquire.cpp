@@ -29,7 +29,8 @@ void PeerSet::peerHas(Peer::pointer ptr)
 			it = mPeers.erase(it);
 		else
 		{
-			if (pr->samePeer(ptr)) return;	// we already have this peer
+			if (pr->samePeer(ptr))
+				return;	// we already have this peer
 			++it;
 		}
 	}
@@ -78,9 +79,11 @@ void PeerSet::invokeOnTimer()
 
 void PeerSet::TimerEntry(boost::weak_ptr<PeerSet> wptr, const boost::system::error_code& result)
 {
-	if (result == boost::asio::error::operation_aborted) return;
+	if (result == boost::asio::error::operation_aborted)
+		return;
 	boost::shared_ptr<PeerSet> ptr = wptr.lock();
-	if (!ptr) return;
+	if (!ptr)
+		return;
 	ptr->invokeOnTimer();
 }
 
@@ -109,6 +112,8 @@ void LedgerAcquire::done()
 	triggers = mOnComplete;
 	mOnComplete.empty();
 	mLock.unlock();
+
+	theApp->getMasterLedger().storeLedger(mLedger);
 
 	for (int i = 0; i < triggers.size(); ++i)
 		triggers[i](shared_from_this());
