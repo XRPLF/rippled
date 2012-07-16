@@ -36,7 +36,6 @@ int ContinuousLedgerTiming::shouldClose(
 			Log(lsTRACE) << "slow to close";
 			return previousSeconds - 1;
 		}
-		Log(lsTRACE) << "normal idle";
 		return LEDGER_IDLE_INTERVAL; // normal idle
 	}
 
