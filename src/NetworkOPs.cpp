@@ -347,8 +347,12 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 	Ledger::pointer ourClosed = mLedgerMaster->getClosedLedger();
 	uint256 closedLedger = ourClosed->getHash();
 	ValidationCount& ourVC = ledgers[closedLedger];
-	++ourVC.nodesUsing;
-	ourVC.highNode = theApp->getWallet().getNodePublic();
+
+	if ((theConfig.LEDGER_CREATOR) && (mMode >= omTRACKING)
+	{
+		++ourVC.nodesUsing;
+		ourVC.highNode = theApp->getWallet().getNodePublic();
+	}
 
 	for (std::vector<Peer::pointer>::const_iterator it = peerList.begin(), end = peerList.end(); it != end; ++it)
 	{
@@ -402,12 +406,13 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 	Log(lsWARNING) << "We are not running on the consensus ledger";
 	Log(lsINFO) << "Our LCL " << ourClosed->getHash().GetHex();
 	Log(lsINFO) << "Net LCL " << closedLedger.GetHex();
-	if ((mMode == omTRACKING) || (mMode == omFULL)) setMode(omCONNECTED);
+	if ((mMode == omTRACKING) || (mMode == omFULL))
+		setMode(omCONNECTED);
 
 	Ledger::pointer consensus = mLedgerMaster->getLedgerByHash(closedLedger);
 	if (!consensus)
 	{
-		Log(lsINFO) << "Acquiring consensus ledger";
+		Log(lsINFO) << "Acquiring consensus ledger " << closedLedger.GetHex();
 		LedgerAcquire::pointer mAcquiringLedger = theApp->getMasterLedgerAcquire().findCreate(closedLedger);
 		if (!mAcquiringLedger || mAcquiringLedger->isFailed())
 		{
