@@ -7,39 +7,41 @@
 #include "Application.h"
 #include "HashPrefixes.h"
 
-LedgerProposal::LedgerProposal(const uint256& pLgr, uint32 seq, const uint256& tx, const NewcoinAddress& naPeerPublic) :
-	mPreviousLedger(pLgr), mCurrentHash(tx), mProposeSeq(seq)
+LedgerProposal::LedgerProposal(const uint256& pLgr, uint32 seq, const uint256& tx, uint32 closeTime,
+		const NewcoinAddress& naPeerPublic) :
+	mPreviousLedger(pLgr), mCurrentHash(tx), mCloseTime(closeTime), mProposeSeq(seq)
 {
 	mPublicKey		= naPeerPublic;
 	// XXX Validate key.
 	// if (!mKey->SetPubKey(pubKey))
 	// throw std::runtime_error("Invalid public key in proposal");
 
-	mPreviousLedger	= theApp->getMasterLedger().getClosedLedger()->getHash();
 	mPeerID			= mPublicKey.getNodeID();
 }
 
 
-LedgerProposal::LedgerProposal(const NewcoinAddress& naSeed, const uint256& prevLgr, const uint256& position) :
-	mPreviousLedger(prevLgr), mCurrentHash(position), mProposeSeq(0)
+LedgerProposal::LedgerProposal(const NewcoinAddress& naSeed, const uint256& prevLgr,
+		const uint256& position, uint32 closeTime) :
+	mPreviousLedger(prevLgr), mCurrentHash(position), mCloseTime(closeTime), mProposeSeq(0)
 {
 	mPublicKey	= NewcoinAddress::createNodePublic(naSeed);
 	mPrivateKey	= NewcoinAddress::createNodePrivate(naSeed);
 	mPeerID		= mPublicKey.getNodeID();
 }
 
-LedgerProposal::LedgerProposal(const uint256& prevLgr, const uint256& position) :
-	mPreviousLedger(prevLgr), mCurrentHash(position), mProposeSeq(0)
+LedgerProposal::LedgerProposal(const uint256& prevLgr, const uint256& position, uint32 closeTime) :
+	mPreviousLedger(prevLgr), mCurrentHash(position), mCloseTime(closeTime), mProposeSeq(0)
 {
 	;
 }
 
 uint256 LedgerProposal::getSigningHash() const
 {
-	Serializer s(72);
+	Serializer s((32 + 32 + 32 + 256 + 256) / 8);
 
 	s.add32(sHP_Proposal);
 	s.add32(mProposeSeq);
+	s.add32(mCloseTime);
 	s.add256(mPreviousLedger);
 	s.add256(mCurrentHash);
 
@@ -51,9 +53,10 @@ bool LedgerProposal::checkSign(const std::string& signature, const uint256& sign
 	return mPublicKey.verifyNodePublic(signingHash, signature);
 }
 
-void LedgerProposal::changePosition(const uint256& newPosition)
+void LedgerProposal::changePosition(const uint256& newPosition, uint32 closeTime)
 {
 	mCurrentHash = newPosition;
+	mCloseTime = closeTime;
 	++mProposeSeq;
 }
 

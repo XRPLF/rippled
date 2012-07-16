@@ -571,14 +571,15 @@ void Peer::recvHello(newcoin::TMHello& packet)
 	// Cancel verification timeout.
 	(void) mVerifyTimer.cancel();
 
-	uint64 minTime = theApp->getOPs().getNetworkTimeNC() - 4;
-	uint64 maxTime = minTime + 8;
+	uint32 minTime = theApp->getOPs().getNetworkTimeNC() - 4;
+	uint32 maxTime = minTime + 8;
 
 	if (packet.has_nettime() && ((packet.nettime() < minTime) || (packet.nettime() > maxTime)))
 	{
-		Log(lsINFO) << "Recv(Hello): Disconnect: Clocks are too far off";
+		Log(lsINFO) << "Recv(Hello): Disconnect: Clock is far off";
 	}
-	else if (packet.protoversionmin() < MAKE_VERSION_INT(MIN_PROTO_MAJOR, MIN_PROTO_MINOR))
+	
+	if (packet.protoversionmin() < MAKE_VERSION_INT(MIN_PROTO_MAJOR, MIN_PROTO_MINOR))
 	{
 		Log(lsINFO) << "Recv(Hello): Server requires protocol version " <<
 			GET_VERSION_MAJOR(packet.protoversion()) << "." << GET_VERSION_MINOR(packet.protoversion())
@@ -716,7 +717,8 @@ void Peer::recvPropose(newcoin::TMProposeSet& packet)
 	uint256 currentTxHash;
 	memcpy(currentTxHash.begin(), packet.currenttxhash().data(), 32);
 
-	if(theApp->getOPs().recvPropose(proposeSeq, currentTxHash, packet.nodepubkey(), packet.signature()))
+	if(theApp->getOPs().recvPropose(proposeSeq, currentTxHash, packet.closetime(),
+		packet.nodepubkey(), packet.signature()))
 	{ // FIXME: Not all nodes will want proposals 
 		PackedMessage::pointer message = boost::make_shared<PackedMessage>(packet, newcoin::mtPROPOSE_LEDGER);
 		theApp->getConnectionPool().relayMessage(this, message);
@@ -889,7 +891,7 @@ void Peer::recvStatus(newcoin::TMStatusChange& packet)
 
 	if (packet.newevent() == newcoin::neLOST_SYNC)
 	{
-		Log(lsTRACE) << "peer has lost sync" << getIP();
+		Log(lsTRACE) << "peer has lost sync " << getIP();
 		mPreviousLedgerHash.zero();
 		mClosedLedgerHash.zero();
 		return;
@@ -1109,6 +1111,11 @@ void Peer::recvLedger(newcoin::TMLedgerData& packet)
 
 	if (!theApp->getMasterLedgerAcquire().gotLedgerData(packet, shared_from_this()))
 		punishPeer(PP_UNWANTED_DATA);
+}
+
+bool Peer::hasLedger(const uint256& hash) const
+{
+	return (hash == mClosedLedgerHash) || (hash == mPreviousLedgerHash);
 }
 
 // Get session information we can sign to prevent man in the middle attack.

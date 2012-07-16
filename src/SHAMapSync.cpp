@@ -362,7 +362,7 @@ static bool confuseMap(SHAMap &map, int count)
 	{
 		SHAMapItem::pointer item = makeRandomAS();
 		items.push_back(item->getTag());
-		if (!map.addItem(*item, false))
+		if (!map.addItem(*item, false, false))
 		{
 			Log(lsFATAL) << "Unable to add item to map";
 			return false;
@@ -423,7 +423,7 @@ BOOST_AUTO_TEST_CASE( SHAMapSync_test )
 	Log(lsTRACE) << "Adding random data";
 	int items = 10000;
 	for (int i = 0; i < items; ++i)
-		source.addItem(*makeRandomAS(), false);
+		source.addItem(*makeRandomAS(), false, false);
 
 	Log(lsTRACE) << "Adding items, then removing them";
 	if (!confuseMap(source, 500)) BOOST_FAIL("ConfuseMap");

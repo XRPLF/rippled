@@ -129,19 +129,23 @@ void Application::run()
 	Log(lsINFO) << "Root master seed: " << rootSeedMaster.humanSeed();
 	Log(lsINFO) << "Root account: " << rootAddress.humanAccountID();
 
-	Ledger::pointer firstLedger = boost::make_shared<Ledger>(rootAddress, SYSTEM_CURRENCY_START);
-	assert(!!firstLedger->getAccountState(rootAddress));
-	firstLedger->updateHash();
-	firstLedger->setClosed();
-	firstLedger->setAccepted();
-	mMasterLedger.pushLedger(firstLedger);
+	{
+		Ledger::pointer firstLedger = boost::make_shared<Ledger>(rootAddress, SYSTEM_CURRENCY_START);
+		assert(!!firstLedger->getAccountState(rootAddress));
+		firstLedger->updateHash();
+		firstLedger->setClosed();
+		firstLedger->setAccepted();
+		mMasterLedger.pushLedger(firstLedger);
 
-	Ledger::pointer secondLedger = boost::make_shared<Ledger>(true, boost::ref(*firstLedger));
-	mMasterLedger.pushLedger(secondLedger);
-	assert(!!secondLedger->getAccountState(rootAddress));
-	// temporary
+		Ledger::pointer secondLedger = boost::make_shared<Ledger>(true, boost::ref(*firstLedger));
+		secondLedger->setClosed();
+		secondLedger->setAccepted();
+		mMasterLedger.pushLedger(secondLedger, boost::make_shared<Ledger>(true, boost::ref(*secondLedger)));
+		assert(!!secondLedger->getAccountState(rootAddress));
+		mNetOps.setLastCloseNetTime(secondLedger->getCloseTimeNC());
+	}
 
-	mNetOps.setStateTimer(0);
+	mNetOps.setStateTimer();
 
 	mIOService.run(); // This blocks
 

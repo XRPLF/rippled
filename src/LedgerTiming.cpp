@@ -1,34 +1,55 @@
 
 #include "LedgerTiming.h"
 
+#include <cassert>
 
-// Returns the number of seconds the ledger should be be open.
-int ContinuousLedgerTiming::shouldClose(	// How many:
+#include <boost/format.hpp>
+
+#include "Log.h"
+
+// NOTE: First and last times must be repeated
+int ContinuousLedgerTiming::LedgerTimeResolution[] = { 10, 10, 20, 30, 60, 90, 120, 120 };
+
+// Called when a ledger is open and no close is in progress -- when a transaction is received and no close
+// is in process, or when a close completes. Returns the number of seconds the ledger should be be open.
+int ContinuousLedgerTiming::shouldClose(
 	bool anyTransactions,
-	int previousProposers,		// proposers there were in the last closing
-	int proposersClosed,		// proposers who have currently closed their ledgers
-	int previousOpenSeconds,	// seconds the previous ledger was open
-	int currentOpenSeconds)		// seconds since the previous ledger closed
+	int previousProposers,		// proposers in the last closing
+	int proposersClosed,		// proposers who have currently closed this ledgers
+	int previousSeconds,		// seconds the previous ledger took to reach consensus
+	int currentSeconds)			// seconds since the previous ledger closed
 {
+	assert((previousSeconds > 0) && (previousSeconds < 600));
+	assert((currentSeconds >= 0) && (currentSeconds < 600));
+
+#if 0
+	Log(lsTRACE) << boost::str(boost::format("CLC::shouldClose Trans=%s, Prop: %d/%d, Secs: %d (last:%d)") %
+		(anyTransactions ? "yes" : "no") % previousProposers % proposersClosed % currentSeconds % previousSeconds);
+#endif
+
 	if (!anyTransactions)
 	{ // no transactions so far this interval
 		if (proposersClosed > (previousProposers / 4)) // did we miss a transaction?
-			return currentOpenSeconds;
-		if (previousOpenSeconds > (LEDGER_IDLE_INTERVAL + 2)) // the last ledger was very slow to close
-			return previousOpenSeconds - 1;
+		{
+			Log(lsTRACE) << "no transactions, many proposers: now";
+			return currentSeconds;
+		}
+		if (previousSeconds > (LEDGER_IDLE_INTERVAL + 2)) // the last ledger was very slow to close
+		{
+			Log(lsTRACE) << "slow to close";
+			return previousSeconds - 1;
+		}
 		return LEDGER_IDLE_INTERVAL; // normal idle
 	}
 
-	if (previousOpenSeconds == LEDGER_IDLE_INTERVAL) // coming out of idle, close now
-		return currentOpenSeconds;
+	if (previousSeconds == LEDGER_IDLE_INTERVAL) // coming out of idle, close now
+	{
+		Log(lsTRACE) << "leaving idle, close now";
+		return currentSeconds;
+	}
 
-	// If the network is slow, try to synchronize close times
-	if (previousOpenSeconds > 8)
-		return (currentOpenSeconds - currentOpenSeconds % 4);
-	else if (previousOpenSeconds > 4)
-		return (currentOpenSeconds - currentOpenSeconds % 2);
-
-	return currentOpenSeconds; // this ledger should close now
+	Log(lsTRACE) << "close now";
+	return currentSeconds; // this ledger should close now
 }
 
 // Returns whether we have a consensus or not. If so, we expect all honest nodes
@@ -41,21 +62,59 @@ bool ContinuousLedgerTiming::haveConsensus(
 	int previousAgreeTime,		// how long it took to agree on the last ledger
 	int currentAgreeTime)		// how long we've been trying to agree
 {
+	Log(lsTRACE) << boost::str(boost::format("CLC::haveConsensus: prop=%d/%d agree=%d closed=%d time=%d/%d") %
+		currentProposers % previousProposers % currentAgree % currentClosed % currentAgreeTime % previousAgreeTime);
+
+	if (currentAgreeTime <= LEDGER_MIN_CONSENSUS)
+		return false;
+
 	if (currentProposers < (previousProposers * 3 / 4))
-	{ // Less than 3/4 of the validators are present, slow down
+	{ // Less than 3/4 of the last ledger's proposers are present, we may need more time
 		if (currentAgreeTime < (previousAgreeTime + 2))
+		{
+			Log(lsTRACE) << "too fast, not enough proposers";
 			return false;
+		}
 	}
 
 	// If 80% of current proposers (plus us) agree on a set, we have consensus
-	int agreeWeight = (currentAgree * 100 + 100) / (currentProposers + 1);
-	if (agreeWeight > 80)
+	if (((currentAgree * 100 + 100) / (currentProposers + 1)) > 80)
+	{
+		Log(lsTRACE) << "normal consensus";
 		return true;
+	}
 
 	// If 50% of the nodes on your UNL (minus us) have closed, you should close
-	int closeWeight = (currentClosed * 100 - 100) / (currentProposers + 1);
-	if (closeWeight > 50)
+	if (((currentClosed * 100 - 100) / (currentProposers + 1)) > 50)
+	{
+		Log(lsTRACE) << "many closers";
 		return true;
+	}
 
+	// no consensus yet
+	Log(lsTRACE) << "no consensus";
 	return false;
+}
+
+int ContinuousLedgerTiming::getNextLedgerTimeResolution(int previousResolution, bool previousAgree, int ledgerSeq)
+{
+	assert(ledgerSeq);
+	assert(previousAgree); // TEMPORARY
+	if ((!previousAgree) && ((ledgerSeq % LEDGER_RES_DECREASE) == 0))
+	{ // reduce resolution
+		int i = 1;
+		while (LedgerTimeResolution[i] != previousResolution)
+			++i;
+		return LedgerTimeResolution[i + 1];
+	}
+
+	if ((previousAgree) && ((ledgerSeq % LEDGER_RES_INCREASE) == 0))
+	{ // increase resolution
+		int i = 1;
+		while (LedgerTimeResolution[i] != previousResolution)
+			++i;
+		return LedgerTimeResolution[i - 1];
+	}
+
+	return previousResolution;
 }

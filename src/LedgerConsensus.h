@@ -2,6 +2,7 @@
 #define __LEDGER_CONSENSUS__
 
 #include <list>
+#include <map>
 
 #include <boost/weak_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
@@ -62,31 +63,35 @@ public:
 
 	void setVote(const uint160& peer, bool votesYes);
 
-	bool updatePosition(int timePassed, bool proposing);
-	int getAgreeLevel();
+	bool updatePosition(int percentTime, bool proposing);
 };
 
 enum LCState
 {
 	lcsPRE_CLOSE,		// We haven't closed our ledger yet, but others might have
-	lcsPOST_CLOSE,		// Ledger closed, but wobble time
 	lcsESTABLISH,		// Establishing consensus
-	lcsCUTOFF,			// Past the cutoff for consensus
 	lcsFINISHED,		// We have closed on a transaction set
 	lcsACCEPTED,		// We have accepted/validated a new last closed ledger
-	lcsABORTED			// Abandoned
 };
 
 class LedgerConsensus : public boost::enable_shared_from_this<LedgerConsensus>
 {
 protected:
 	LCState mState;
-	uint32 mCloseTime;
-	uint256 mPrevLedgerHash;
+	uint32 mCloseTime;						// The wall time this ledger closed
+	uint256 mPrevLedgerHash, mNewLedgerHash;
 	Ledger::pointer mPreviousLedger;
+	LedgerAcquire::pointer mAcquiringLedger;
 	LedgerProposal::pointer mOurPosition;
 	NewcoinAddress mValSeed;
 	bool mProposing, mValidating, mHaveCorrectLCL;
+
+	int mCurrentSeconds, mClosePercent, mCloseResolution;
+	bool mHaveCloseTimeConsensus;
+
+	boost::posix_time::ptime		mConsensusStartTime;
+	int								mPreviousProposers;
+	int								mPreviousSeconds;
 
 	// Convergence tracking, trusted peers indexed by hash of public key
 	boost::unordered_map<uint160, LedgerProposal::pointer> mPeerPositions;
@@ -100,6 +105,9 @@ protected:
 
 	// Disputed transactions
 	boost::unordered_map<uint256, LCTransaction::pointer> mDisputes;
+
+	// Close time estimates
+	std::map<uint32, int> mCloseTimes;
 
 	// final accept logic
 	static void Saccept(boost::shared_ptr<LedgerConsensus> This, SHAMap::pointer txSet);
@@ -123,9 +131,9 @@ protected:
 		CanonicalTXSet& failedTransactions, bool final);
 
 	// manipulating our own position
-	void takeInitialPosition(Ledger::pointer initialLedger);
-	bool updateOurPositions(int sinceClose);
 	void statusChange(newcoin::NodeEvent, Ledger::pointer ledger);
+	void takeInitialPosition(Ledger::pointer initialLedger);
+	void updateOurPositions();
 	int getThreshold();
 	void beginAccept();
 	void endConsensus();
@@ -142,16 +150,16 @@ public:
 	TransactionAcquire::pointer getAcquiring(const uint256& hash);
 	void mapComplete(const uint256& hash, SHAMap::pointer map, bool acquired);
 
-	void abort();
-	int timerEntry();
+	void timerEntry();
 
 	// state handlers
-	int statePreClose(int secondsSinceClose);
-	int statePostClose(int secondsSinceClose);
-	int stateEstablish(int secondsSinceClose);
-	int stateCutoff(int secondsSinceClose);
-	int stateFinished(int secondsSinceClose);
-	int stateAccepted(int secondsSinceClose);
+	void statePreClose();
+	void stateEstablish();
+	void stateCutoff();
+	void stateFinished();
+	void stateAccepted();
+
+	bool haveConsensus();
 
 	bool peerPosition(LedgerProposal::pointer);
 

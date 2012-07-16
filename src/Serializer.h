@@ -32,8 +32,8 @@ public:
 	// assemble functions
 	int add8(unsigned char byte);
 	int add16(uint16);
-	int add32(uint32);				// ledger indexes, account sequence
-	int add64(uint64);				// timestamps, amounts
+	int add32(uint32);				// ledger indexes, account sequence, timestamps
+	int add64(uint64);				// native currency amounts
 	int add128(const uint128&);		// private key generators
 	int add160(const uint160&);		// account names, hankos
 	int add256(const uint256&);		// transaction and ledger hashes

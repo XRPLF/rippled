@@ -91,6 +91,7 @@ int main(int argc, char* argv[])
 		("rpc", "Perform rpc command (default).")
 		("test,t", "Perform unit tests.")
 		("parameters", po::value< vector<string> >(), "Specify comma separated parameters.")
+		("verbose,v", "Increase log level")
 	;
 
 	// Interpret positional arguments as --parameters.
@@ -130,6 +131,11 @@ int main(int argc, char* argv[])
 		{
 			iResult	= 1;
 		}
+	}
+
+	if (vm.count("verbose"))
+	{
+		Log::setMinSeverity(lsTRACE);
 	}
 
 	if (!iResult)

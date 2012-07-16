@@ -24,6 +24,8 @@ public:
 	bool addValidation(SerializedValidation::pointer);
 	ValidationSet getValidations(const uint256& ledger);
 	void getValidationCount(const uint256& ledger, bool currentOnly, int& trusted, int& untrusted);
+	int getTrustedValidationCount(const uint256& ledger);
+	int getCurrentValidationCount(uint32 afterTime);
 	boost::unordered_map<uint256, int> getCurrentValidations();
 };
 

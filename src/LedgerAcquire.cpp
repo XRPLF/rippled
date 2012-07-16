@@ -12,6 +12,7 @@
 
 #define LA_DEBUG
 #define LEDGER_ACQUIRE_TIMEOUT 2
+#define TRUST_NETWORK
 
 PeerSet::PeerSet(const uint256& hash, int interval) : mHash(hash), mTimerInterval(interval), mTimeouts(0),
 	mComplete(false), mFailed(false), mProgress(true), mTimer(theApp->getIOService())
@@ -28,7 +29,8 @@ void PeerSet::peerHas(Peer::pointer ptr)
 			it = mPeers.erase(it);
 		else
 		{
-			if (pr->samePeer(ptr)) return;	// we already have this peer
+			if (pr->samePeer(ptr))
+				return;	// we already have this peer
 			++it;
 		}
 	}
@@ -77,14 +79,16 @@ void PeerSet::invokeOnTimer()
 
 void PeerSet::TimerEntry(boost::weak_ptr<PeerSet> wptr, const boost::system::error_code& result)
 {
-	if (result == boost::asio::error::operation_aborted) return;
+	if (result == boost::asio::error::operation_aborted)
+		return;
 	boost::shared_ptr<PeerSet> ptr = wptr.lock();
-	if (!ptr) return;
+	if (!ptr)
+		return;
 	ptr->invokeOnTimer();
 }
 
 LedgerAcquire::LedgerAcquire(const uint256& hash) : PeerSet(hash, LEDGER_ACQUIRE_TIMEOUT), 
-	mHaveBase(false), mHaveState(false), mHaveTransactions(false)
+	mHaveBase(false), mHaveState(false), mHaveTransactions(false), mAborted(false)
 {
 #ifdef LA_DEBUG
 	Log(lsTRACE) << "Acquiring ledger " << mHash.GetHex();
@@ -109,7 +113,9 @@ void LedgerAcquire::done()
 	mOnComplete.empty();
 	mLock.unlock();
 
-	for (unsigned int i = 0; i < triggers.size(); ++i)
+	theApp->getMasterLedger().storeLedger(mLedger);
+
+	for (int i = 0; i < triggers.size(); ++i)
 		triggers[i](shared_from_this());
 }
 
@@ -122,6 +128,8 @@ void LedgerAcquire::addOnComplete(boost::function<void (LedgerAcquire::pointer)>
 
 void LedgerAcquire::trigger(Peer::pointer peer)
 {
+	if (mAborted)
+		return;
 #ifdef LA_DEBUG
 	if(peer) Log(lsTRACE) <<  "Trigger acquiring ledger " << mHash.GetHex() << " from " << peer->getIP();
 	else Log(lsTRACE) <<  "Trigger acquiring ledger " << mHash.GetHex();
@@ -299,6 +307,9 @@ bool LedgerAcquire::takeBase(const std::string& data)
 		Log(lsWARNING) << "Acquire hash mismatch";
 		Log(lsWARNING) << mLedger->getHash().GetHex() << "!=" << mHash.GetHex();
 		mLedger = Ledger::pointer();
+#ifdef TRUST_NETWORK
+		assert(false);
+#endif
 		return false;
 	}
 	mHaveBase = true;
@@ -337,7 +348,11 @@ bool LedgerAcquire::takeTxNode(const std::list<SHAMapNode>& nodeIDs,
 	if (!mLedger->peekTransactionMap()->isSynching())
 	{
 		mHaveTransactions = true;
-		if (mHaveState) mComplete = true;
+		if (mHaveState)
+		{
+			mComplete = true;
+			done();
+		}
 	}
 	progress();
 	return true;
@@ -368,7 +383,11 @@ bool LedgerAcquire::takeAsNode(const std::list<SHAMapNode>& nodeIDs,
 	if (!mLedger->peekAccountStateMap()->isSynching())
 	{
 		mHaveState = true;
-		if (mHaveTransactions) mComplete = true;
+		if (mHaveTransactions)
+		{
+			mComplete = true;
+			done();
+		}
 	}
 	progress();
 	return true;
@@ -388,6 +407,7 @@ bool LedgerAcquire::takeTxRootNode(const std::vector<unsigned char>& data)
 
 LedgerAcquire::pointer LedgerAcquireMaster::findCreate(const uint256& hash)
 {
+	assert(hash.isNonZero());
 	boost::mutex::scoped_lock sl(mLock);
 	LedgerAcquire::pointer& ptr = mLedgers[hash];
 	if (ptr) return ptr;
@@ -399,6 +419,7 @@ LedgerAcquire::pointer LedgerAcquireMaster::findCreate(const uint256& hash)
 
 LedgerAcquire::pointer LedgerAcquireMaster::find(const uint256& hash)
 {
+	assert(hash.isNonZero());
 	boost::mutex::scoped_lock sl(mLock);
 	std::map<uint256, LedgerAcquire::pointer>::iterator it = mLedgers.find(hash);
 	if (it != mLedgers.end()) return it->second;
@@ -407,13 +428,15 @@ LedgerAcquire::pointer LedgerAcquireMaster::find(const uint256& hash)
 
 bool LedgerAcquireMaster::hasLedger(const uint256& hash)
 {
+	assert(hash.isNonZero());
 	boost::mutex::scoped_lock sl(mLock);
 	return mLedgers.find(hash) != mLedgers.end();
 }
 
 void LedgerAcquireMaster::dropLedger(const uint256& hash)
 {
-	boost::mutex::scoped_lock sl(mLock);
+	assert(hash.isNonZero());
+	 boost::mutex::scoped_lock sl(mLock);
 	mLedgers.erase(hash);
 }
 
