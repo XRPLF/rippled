@@ -63,6 +63,7 @@ protected:
 	// last ledger close
 	int mLastCloseProposers, mLastCloseConvergeTime;
 	uint256 mLastCloseHash;
+	uint32 mLastCloseNetTime;
 
 	// XXX Split into more locks.
     boost::interprocess::interprocess_upgradable_mutex	mMonitorLock;
@@ -170,8 +171,10 @@ public:
 	void endConsensus();
 	void setStateTimer();
 	void newLCL(int proposers, int convergeTime, const uint256& ledgerHash);
-	int getPreviousProposers()	{ return mLastCloseProposers; }
-	int getPreviousSeconds()	{ return mLastCloseConvergeTime; }
+	int getPreviousProposers()			{ return mLastCloseProposers; }
+	int getPreviousSeconds()			{ return mLastCloseConvergeTime; }
+	uint32 getLastCloseNetTime()		{ return mLastCloseNetTime; }
+	void setLastCloseNetTime(uint32 t)	{ mLastCloseNetTime = t; }
 	Json::Value getServerInfo();
 
 	// client information retrieval functions

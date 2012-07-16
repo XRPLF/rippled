@@ -374,16 +374,17 @@ int LedgerConsensus::statePreClose()
 	bool anyTransactions = theApp->getMasterLedger().getCurrentLedger()->peekTransactionMap()->getHash().isNonZero();
 	int proposersClosed = mPeerPositions.size();
 
-	int sinceClose = theApp->getOPs().getNetworkTimeNC() - mPreviousLedger->getCloseTimeNC();
+	int sinceClose = theApp->getOPs().getNetworkTimeNC() - theApp->getOPs().getLastCloseNetTime();
 
-	if (ContinuousLedgerTiming::shouldClose(anyTransactions, mPreviousProposers, proposersClosed,
-		mPreviousSeconds, sinceClose) <= sinceClose)
+	if (sinceClose >= ContinuousLedgerTiming::shouldClose(anyTransactions, mPreviousProposers, proposersClosed,
+		mPreviousSeconds, sinceClose))
 	{ // it is time to close the ledger (swap default and wobble ledgers)
 		Log(lsINFO) << "CLC:: closing ledger";
 		mState = lcsESTABLISH;
 		mConsensusStartTime = boost::posix_time::second_clock::universal_time();
 		theApp->getMasterLedger().closeTime();
 		mCloseTime = theApp->getOPs().getNetworkTimeNC();
+		theApp->getOPs().setLastCloseNetTime(mCloseTime);
 		statusChange(newcoin::neCLOSING_LEDGER, mPreviousLedger);
 		Ledger::pointer initial = theApp->getMasterLedger().endWobble();
 		assert (initial->getParentHash() == mPreviousLedger->getHash());

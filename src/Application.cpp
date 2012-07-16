@@ -142,6 +142,7 @@ void Application::run()
 		secondLedger->setAccepted();
 		mMasterLedger.pushLedger(secondLedger, boost::make_shared<Ledger>(true, boost::ref(*secondLedger)));
 		assert(!!secondLedger->getAccountState(rootAddress));
+		mNetOps.setLastCloseNetTime(secondLedger->getCloseTimeNC());
 	}
 
 	mNetOps.setStateTimer();
