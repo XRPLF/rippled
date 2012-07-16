@@ -143,7 +143,7 @@ void Ledger::addRaw(Serializer &s) const
 void Ledger::setAccepted(uint32 closeTime, int closeResolution, bool correctCloseTime)
 { // used when we witnessed the consensus
 	assert(mClosed && !mAccepted);
-	mCloseTime = closeTime;
+	mCloseTime = closeTime - (closeTime % closeResolution);
 	mCloseResolution = closeResolution;
 	mCloseFlags = correctCloseTime ? 0 : sLCF_NoConsensusTime;
 	updateHash();
