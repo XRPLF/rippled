@@ -394,6 +394,7 @@ bool LedgerAcquire::takeTxRootNode(const std::vector<unsigned char>& data)
 
 LedgerAcquire::pointer LedgerAcquireMaster::findCreate(const uint256& hash)
 {
+	assert(hash.isNonZero());
 	boost::mutex::scoped_lock sl(mLock);
 	LedgerAcquire::pointer& ptr = mLedgers[hash];
 	if (ptr) return ptr;
@@ -405,6 +406,7 @@ LedgerAcquire::pointer LedgerAcquireMaster::findCreate(const uint256& hash)
 
 LedgerAcquire::pointer LedgerAcquireMaster::find(const uint256& hash)
 {
+	assert(hash.isNonZero());
 	boost::mutex::scoped_lock sl(mLock);
 	std::map<uint256, LedgerAcquire::pointer>::iterator it = mLedgers.find(hash);
 	if (it != mLedgers.end()) return it->second;
@@ -413,13 +415,15 @@ LedgerAcquire::pointer LedgerAcquireMaster::find(const uint256& hash)
 
 bool LedgerAcquireMaster::hasLedger(const uint256& hash)
 {
+	assert(hash.isNonZero());
 	boost::mutex::scoped_lock sl(mLock);
 	return mLedgers.find(hash) != mLedgers.end();
 }
 
 void LedgerAcquireMaster::dropLedger(const uint256& hash)
 {
-	boost::mutex::scoped_lock sl(mLock);
+	assert(hash.isNonZero());
+	 boost::mutex::scoped_lock sl(mLock);
 	mLedgers.erase(hash);
 }
 
