@@ -155,7 +155,6 @@ private:
 		STAmount&		saTakerGot);
 
 protected:
-	Ledger::pointer mDefaultLedger, mAlternateLedger;
 	Ledger::pointer mLedger;
 	uint64			mLedgerParentCloseTime;
 
@@ -189,20 +188,12 @@ protected:
 
 public:
 	TransactionEngine() { ; }
-	TransactionEngine(Ledger::pointer ledger) : mDefaultLedger(ledger) { ; }
+	TransactionEngine(Ledger::pointer ledger) : mLedger(ledger) { ; }
 
-	Ledger::pointer getDefaultLedger()				{ return mDefaultLedger; }
-	void setDefaultLedger(Ledger::pointer ledger)	{ mDefaultLedger = ledger; }
-	Ledger::pointer getAlternateLedger()			{ return mAlternateLedger; }
-	void setAlternateLedger(Ledger::pointer ledger)	{ mAlternateLedger = ledger; }
-	void setLedger(Ledger::pointer ledger)			{ mDefaultLedger = ledger;
-													  mAlternateLedger = Ledger::pointer(); }
+	Ledger::pointer getLedger()						{ return mLedger; }
+	void setLedger(Ledger::pointer ledger)			{ assert(ledger); mLedger = ledger; }
 
-	Ledger::pointer getTransactionLedger(uint32 targetLedger);
-	TransactionEngineResult applyTransaction(const SerializedTransaction&, TransactionEngineParams,
-		Ledger::pointer ledger);
-	TransactionEngineResult applyTransaction(const SerializedTransaction&, TransactionEngineParams,
-		uint32 targetLedger);
+	TransactionEngineResult applyTransaction(const SerializedTransaction&, TransactionEngineParams);
 };
 
 inline TransactionEngineParams operator|(const TransactionEngineParams& l1, const TransactionEngineParams& l2)

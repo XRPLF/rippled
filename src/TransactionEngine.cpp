@@ -1,6 +1,7 @@
 //
 // XXX Should make sure all fields and are recognized on a transactions.
 // XXX Make sure fee is claimed for failed transactions.
+// XXX Might uses an unordered set for vector.
 //
 
 #include "TransactionEngine.h"
@@ -182,7 +183,7 @@ TransactionEngineResult TransactionEngine::dirAdd(
 
 		if (uNodeDir)
 		{
-			// Try adding to non-root.
+			// Try adding to last node.
 			lspRoot		= lepNONE;
 			sleNode		= mLedger->getDirNode(lspRoot, Ledger::getDirNodeIndex(uRootIndex, uNodeDir));
 
@@ -190,7 +191,7 @@ TransactionEngineResult TransactionEngine::dirAdd(
 		}
 		else
 		{
-			// Try adding to root.  Didn't have a previous set.
+			// Try adding to root.  Didn't have a previous set to the last node.
 			sleNode		= sleRoot;
 		}
 
@@ -284,7 +285,7 @@ TransactionEngineResult TransactionEngine::dirDelete(
 	{
 		assert(false);
 
-		Log(lsWARNING) << "dirDelete: node not mentioned";
+		Log(lsWARNING) << "dirDelete: no such entry";
 
 		return terBAD_LEDGER;
 	}
@@ -316,13 +317,13 @@ TransactionEngineResult TransactionEngine::dirDelete(
 			// Root overflowed.
 			else if (bKeepRoot)
 			{
-				// Not allowed to delete root node, if it ever overflowed.
+				// If root overflowed and not allowed to delete overflowed root node.
 
 				nothing();
 			}
 			else if (uNodePrevious != uNodeNext)
 			{
-				// Have multiple other nodes.  Can't delete root node.
+				// Have more than 2 nodes.  Can't delete root node.
 
 				nothing();
 			}
@@ -343,7 +344,7 @@ TransactionEngineResult TransactionEngine::dirDelete(
 				}
 				else
 				{
-					// Have an entry, can't delete.
+					// Have an entry, can't delete root node.
 
 					nothing();
 				}
@@ -362,6 +363,7 @@ TransactionEngineResult TransactionEngine::dirDelete(
 			LedgerStateParms	lspNext		= lepNONE;
 			SLE::pointer		sleNext		= mLedger->getDirNode(lspNext, uNodeNext ? Ledger::getDirNodeIndex(uRootIndex, uNodeNext) : uRootIndex);
 
+			assert(slePrevious);
 			assert(sleNext);
 
 			if (!slePrevious)
@@ -371,7 +373,6 @@ TransactionEngineResult TransactionEngine::dirDelete(
 				return terBAD_LEDGER;
 			}
 
-			assert(sleNext);
 			if (!sleNext)
 			{
 				Log(lsWARNING) << "dirDelete: next node is missing";
@@ -475,18 +476,6 @@ TransactionEngineResult	TransactionEngine::setAuthorized(const SerializedTransac
 	return terSUCCESS;
 }
 
-Ledger::pointer TransactionEngine::getTransactionLedger(uint32 targetLedger)
-{
-	Ledger::pointer ledger = mDefaultLedger;
-	if (mAlternateLedger && (targetLedger != 0) &&
-		(targetLedger != mLedger->getLedgerSeq()) && (targetLedger == mAlternateLedger->getLedgerSeq()))
-	{
-		Log(lsINFO) << "Transaction goes into wobble ledger";
-		ledger = mAlternateLedger;
-	}
-	return ledger;
-}
-
 bool TransactionEngine::entryExists(SLE::pointer sleEntry)
 {
 	return mEntries.find(sleEntry) != mEntries.end();
@@ -519,7 +508,7 @@ void TransactionEngine::entryDelete(SLE::pointer sleEntry)
 
 		case taaMODIFY:
 		case taaNONE:
-			mEntries[sleEntry]	= taaDELETE;	// Upgrade
+			mEntries[sleEntry]	= taaDELETE;	// Upgrade.
 			break;
 
 		case taaDELETE:
@@ -541,7 +530,7 @@ void TransactionEngine::entryModify(SLE::pointer sleEntry)
 			break;
 
 		case taaNONE:
-			mEntries[sleEntry]	= taaMODIFY;	// Upgrade
+			mEntries[sleEntry]	= taaMODIFY;	// Upgrade.
 			break;
 
 		case taaCREATE:
@@ -565,7 +554,7 @@ void TransactionEngine::entryUnfunded(SLE::pointer sleEntry)
 			break;
 
 		case taaNONE:
-			mEntries[sleEntry]	= taaUNFUNDED;	// Upgrade
+			mEntries[sleEntry]	= taaUNFUNDED;	// Upgrade.
 			break;
 
 		case taaUNFUNDED:
@@ -575,16 +564,10 @@ void TransactionEngine::entryUnfunded(SLE::pointer sleEntry)
 }
 
 TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTransaction& txn,
-	TransactionEngineParams params, uint32 targetLedger)
-{
-	return applyTransaction(txn, params, getTransactionLedger(targetLedger));
-}
-
-TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTransaction& txn,
-	TransactionEngineParams params, Ledger::pointer ledger)
+	TransactionEngineParams params)
 {
 	Log(lsTRACE) << "applyTransaction>";
-	mLedger					= ledger;
+	assert(mLedger);
 	mLedgerParentCloseTime	= mLedger->getParentCloseTimeNC();
 
 #ifdef DEBUG
@@ -723,12 +706,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	}
 
 	if (terSUCCESS != terResult)
-	{
-		// Avoid unnecessary locking.
-		mLedger = Ledger::pointer();
-
 		return terResult;
-	}
 
 	boost::recursive_mutex::scoped_lock sl(mLedger->mLock);
 
@@ -1071,7 +1049,6 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 			mLedger->destroyCoins(saPaid.getNValue());
 	}
 
-	mLedger = Ledger::pointer();
 	mEntries.clear();
 
 	return terResult;
@@ -2234,13 +2211,14 @@ TransactionEngineResult TransactionEngine::doOfferCancel(const SerializedTransac
 		Log(lsWARNING) << "doOfferCancel: uSequence=" << uSequence;
 
 		uint64		uOwnerNode	= sleOffer->getIFieldU64(sfOwnerNode);
-		uint64		uBookNode	= sleOffer->getIFieldU64(sfBookNode);
-		uint256		uDirectory	= sleOffer->getIFieldH256(sfDirectory);
 
 		terResult	= dirDelete(true, uOwnerNode, Ledger::getOwnerDirIndex(uSrcAccountID), uLedgerIndex);
 
 		if (terSUCCESS == terResult)
 		{
+			uint256		uDirectory	= sleOffer->getIFieldH256(sfDirectory);
+			uint64		uBookNode	= sleOffer->getIFieldU64(sfBookNode);
+
 			terResult	= dirDelete(false, uBookNode, uDirectory, uLedgerIndex);
 		}
 

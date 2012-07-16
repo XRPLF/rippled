@@ -4,11 +4,10 @@
 // Versions
 //
 
-// Version of this software:
-#define SERVER_VERSION_MAJOR		0
-#define SERVER_VERSION_MINOR		1
-#define SERVER_VERSION_SUB			"-a"
-#define SERVER_NAME					"NewCoin"
+#define SERVER_VERSION_MAJOR	0
+#define SERVER_VERSION_MINOR	3
+#define SERVER_VERSION_SUB	"-a"
+#define SERVER_NAME			"NewCoin"
 
 #define SV_STRINGIZE(x)				SV_STRINGIZE2(x)
 #define SV_STRINGIZE2(x)			#x
@@ -17,11 +16,11 @@
 
 // Version we prefer to speak:
 #define PROTO_VERSION_MAJOR			0
-#define PROTO_VERSION_MINOR			2
+#define PROTO_VERSION_MINOR			3
 
 // Version we wil speak to:
 #define MIN_PROTO_MAJOR				0
-#define MIN_PROTO_MINOR				2
+#define MIN_PROTO_MINOR				3
 
 #define MAKE_VERSION_INT(maj,min)	((maj << 16) | min)
 #define GET_VERSION_MAJOR(ver)		(ver >> 16)

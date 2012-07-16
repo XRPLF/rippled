@@ -43,7 +43,10 @@ const char *LedgerDBInit[] = {
 		LedgerSeq		BIGINT UNSIGNED,			\
 		PrevHash		CHARACTER(64),				\
 		TotalCoins		BIGINT UNSIGNED,			\
-		ClosingTime		BIGINT UNSINGED,			\
+		ClosingTime		BIGINT UNSIGNED,			\
+		PrevClosingTime	BIGINT UNSIGNED,			\
+		CloseTimeRes	BIGINT UNSIGNED,			\
+		CloseFlags,		BIGINT UNSIGNED,			\
 		AccountSetHash	CHARACTER(64),				\
 		TransSetHash	CHARACTER(64)				\
 	);",

@@ -61,7 +61,7 @@ public:
 	bool operator!=(const uint256&) const;
 	bool operator<=(const SHAMapNode&) const;
 	bool operator>=(const SHAMapNode&) const;
-	bool isRoot() const { return mDepth==0; }
+	bool isRoot() const { return mDepth == 0; }
 
 	virtual std::string getString() const;
 	void dump() const;
@@ -133,10 +133,11 @@ public:
 
 	enum TNType
 	{
-		tnERROR			= 0,
-		tnINNER			= 1,
-		tnTRANSACTION	= 2,
-		tnACCOUNT_STATE	= 3
+		tnERROR				= 0,
+		tnINNER				= 1,
+		tnTRANSACTION_NM	= 2, // transaction, no metadata
+		tnTRANSACTION_MD	= 3, // transaction, with metadata
+		tnACCOUNT_STATE		= 4
 	};
 
 private:
@@ -173,11 +174,13 @@ public:
 	TNType getType() const				{ return mType; }
 
 	// type functions
-	bool isLeaf() const			{ return (mType == tnTRANSACTION) || (mType == tnACCOUNT_STATE); }
+	bool isLeaf() const			{ return (mType == tnTRANSACTION_NM) || (mType == tnTRANSACTION_MD) ||
+									(mType == tnACCOUNT_STATE); }
 	bool isInner() const		{ return mType == tnINNER; }
 	bool isValid() const		{ return mType != tnERROR; }
-	bool isTransaction() const	{ return mType != tnTRANSACTION; }
-	bool isAccountState() const	{ return mType != tnACCOUNT_STATE; }
+	bool isTransaction() const	{ return (mType == tnTRANSACTION_NM) || (mType == tnTRANSACTION_MD); }
+	bool hasMetaData() const	{ return mType == tnTRANSACTION_MD; }
+	bool isAccountState() const	{ return mType == tnACCOUNT_STATE; }
 
 	// inner node functions
 	bool isInnerNode() const { return !mItem; }
@@ -287,6 +290,7 @@ public:
 
 	// build new map
 	SHAMap(uint32 seq = 0);
+	SHAMap(const uint256& hash);
 
 	// Returns a new map that's a snapshot of this one. Force CoW
 	SHAMap::pointer snapShot(bool isMutable);
@@ -299,15 +303,15 @@ public:
 	// normal hash access functions
 	bool hasItem(const uint256& id);
 	bool delItem(const uint256& id);
-	bool addItem(const SHAMapItem& i, bool isTransaction);
-	bool updateItem(const SHAMapItem& i, bool isTransaction);
+	bool addItem(const SHAMapItem& i, bool isTransaction, bool hasMeta);
+	bool updateItem(const SHAMapItem& i, bool isTransaction, bool hasMeta);
 	SHAMapItem getItem(const uint256& id);
 	uint256 getHash() const		{ return root->getNodeHash(); }
 	uint256 getHash()			{ return root->getNodeHash(); }
 
 	// save a copy if you have a temporary anyway
-	bool updateGiveItem(SHAMapItem::pointer, bool isTransaction);
-	bool addGiveItem(SHAMapItem::pointer, bool isTransaction);
+	bool updateGiveItem(SHAMapItem::pointer, bool isTransaction, bool hasMeta);
+	bool addGiveItem(SHAMapItem::pointer, bool isTransaction, bool hasMeta);
 
 	// save a copy if you only need a temporary
 	SHAMapItem::pointer peekItem(const uint256& id);

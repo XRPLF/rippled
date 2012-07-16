@@ -159,6 +159,7 @@ public:
 	static PackedMessage::pointer createGetFullLedger(uint256& hash);
 
 	uint256 getClosedLedgerHash() const { return mClosedLedgerHash; }
+	bool hasLedger(const uint256& hash) const;
 	NewcoinAddress getNodePublic() const { return mNodePublic; }
 	void cycleStatus() { mPreviousLedgerHash = mClosedLedgerHash; mClosedLedgerHash.zero(); }
 };

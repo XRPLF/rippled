@@ -29,8 +29,7 @@ LedgerStateParms Ledger::writeBack(LedgerStateParms parms, SLE::pointer entry)
 	if (create)
 	{
 		assert(!mAccountStateMap->hasItem(entry->getIndex()));
-
-		if (!mAccountStateMap->addGiveItem(item, false))
+		if(!mAccountStateMap->addGiveItem(item, false, false)) // FIXME: TX metadata
 		{
 			assert(false);
 			return lepERROR;
@@ -38,7 +37,7 @@ LedgerStateParms Ledger::writeBack(LedgerStateParms parms, SLE::pointer entry)
 		return lepCREATED;
 	}
 
-	if (!mAccountStateMap->updateGiveItem(item, false))
+	if (!mAccountStateMap->updateGiveItem(item, false, false)) // FIXME: TX metadata
 	{
 		assert(false);
 		return lepERROR;

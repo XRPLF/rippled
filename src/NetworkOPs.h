@@ -6,6 +6,7 @@
 #include "NicknameState.h"
 #include "RippleState.h"
 #include "SerializedValidation.h"
+#include "LedgerAcquire.h"
 
 #include <boost/interprocess/sync/interprocess_upgradable_mutex.hpp>
 #include <boost/interprocess/sync/sharable_lock.hpp>
@@ -46,19 +47,27 @@ public:
 
 protected:
 	OperatingMode						mMode;
+	boost::posix_time::ptime			mConnectTime;
 	boost::asio::deadline_timer			mNetTimer;
 	boost::shared_ptr<LedgerConsensus>	mConsensus;
 
 	LedgerMaster*						mLedgerMaster;
+	LedgerAcquire::pointer				mAcquiringLedger;
 
 	void setMode(OperatingMode);
 
-	typedef boost::unordered_map<uint160,boost::unordered_set<InfoSub*> >			subInfoMapType;
+	typedef boost::unordered_map<uint160,boost::unordered_set<InfoSub*> >				subInfoMapType;
 	typedef boost::unordered_map<uint160,boost::unordered_set<InfoSub*> >::value_type	subInfoMapValue;
-	typedef boost::unordered_map<uint160,boost::unordered_set<InfoSub*> >::iterator	subInfoMapIterator;
+	typedef boost::unordered_map<uint160,boost::unordered_set<InfoSub*> >::iterator		subInfoMapIterator;
+
+	// last ledger close
+	int mLastCloseProposers, mLastCloseConvergeTime;
+	uint256 mLastCloseHash;
+	uint32 mLastCloseNetTime;
 
 	// XXX Split into more locks.
     boost::interprocess::interprocess_upgradable_mutex	mMonitorLock;
+	subInfoMapType										mBootAccountInfo;
 	subInfoMapType										mSubAccountInfo;
 	subInfoMapType										mSubAccountTransaction;
 	boost::unordered_set<InfoSub*>						mSubLedger;				// ledger accepteds
@@ -70,11 +79,13 @@ protected:
 	void pubTransactionAll(const Ledger::pointer& lpCurrent, const SerializedTransaction& stTxn, TransactionEngineResult terResult, const char* pState);
 	void pubTransactionAccounts(const Ledger::pointer& lpCurrent, const SerializedTransaction& stTxn, TransactionEngineResult terResult, const char* pState);
 
+	Json::Value pubBootstrapAccountInfo(const Ledger::pointer& lpAccepted, const NewcoinAddress& naAccountID);
+
 public:
 	NetworkOPs(boost::asio::io_service& io_service, LedgerMaster* pLedgerMaster);
 
 	// network information
-	uint64 getNetworkTimeNC();
+	uint32 getNetworkTimeNC();
 	boost::posix_time::ptime getNetworkTimePT();
 	uint32 getCurrentLedgerID();
 	OperatingMode getOperatingMode() { return mMode; }
@@ -123,6 +134,7 @@ public:
 	//
 
 	Json::Value getOwnerInfo(const uint256& uLedger, const NewcoinAddress& naAccount);
+	Json::Value getOwnerInfo(Ledger::pointer lpLedger, const NewcoinAddress& naAccount);
 
 	//
 	// Ripple functions
@@ -152,7 +164,7 @@ public:
 		const std::vector<unsigned char>& myNode, std::list< std::vector<unsigned char> >& newNodes);
 
 	// ledger proposal/close functions
-	bool recvPropose(uint32 proposeSeq, const uint256& proposeHash,
+	bool recvPropose(uint32 proposeSeq, const uint256& proposeHash, uint32 closeTime,
 		const std::string& pubKey, const std::string& signature);
 	bool gotTXData(boost::shared_ptr<Peer> peer, const uint256& hash,
 		const std::list<SHAMapNode>& nodeIDs, const std::list< std::vector<unsigned char> >& nodeData);
@@ -167,7 +179,12 @@ public:
 	bool checkLastClosedLedger(const std::vector<Peer::pointer>&, uint256& networkClosed);
 	int beginConsensus(const uint256& networkClosed, Ledger::pointer closingLedger);
 	void endConsensus();
-	void setStateTimer(int seconds);
+	void setStateTimer();
+	void newLCL(int proposers, int convergeTime, const uint256& ledgerHash);
+	int getPreviousProposers()			{ return mLastCloseProposers; }
+	int getPreviousSeconds()			{ return mLastCloseConvergeTime; }
+	uint32 getLastCloseNetTime()		{ return mLastCloseNetTime; }
+	void setLastCloseNetTime(uint32 t)	{ mLastCloseNetTime = t; }
 	Json::Value getServerInfo();
 
 	// client information retrieval functions

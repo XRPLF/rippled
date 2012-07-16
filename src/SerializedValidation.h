@@ -22,10 +22,10 @@ public:
 	SerializedValidation(SerializerIterator& sit, bool checkSignature = true);
 	SerializedValidation(const Serializer& s, bool checkSignature = true);
 
-	SerializedValidation(const uint256& ledgerHash, uint64 closeTime, const NewcoinAddress& naSeed, bool isFull);
+	SerializedValidation(const uint256& ledgerHash, uint32 closeTime, const NewcoinAddress& naSeed, bool isFull);
 
 	uint256			getLedgerHash()		const;
-	uint64			getCloseTime()		const;
+	uint32			getCloseTime()		const;
 	NewcoinAddress  getSignerPublic()	const;
 	bool			isValid()			const;
 	bool			isFull()			const;

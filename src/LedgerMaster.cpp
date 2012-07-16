@@ -42,8 +42,8 @@ void LedgerMaster::pushLedger(Ledger::pointer newLCL, Ledger::pointer newOL)
 
 	if (newLCL->isAccepted())
 	{
-		mLedgerHistory.addAcceptedLedger(mFinalizedLedger);
-		Log(lsINFO) << "StashAccepted: " << mFinalizedLedger->getHash().GetHex();
+		mLedgerHistory.addAcceptedLedger(newLCL);
+		Log(lsINFO) << "StashAccepted: " << newLCL->getHash().GetHex();
 	}
 
 	mFinalizedLedger = newLCL;
@@ -54,6 +54,7 @@ void LedgerMaster::pushLedger(Ledger::pointer newLCL, Ledger::pointer newOL)
 
 void LedgerMaster::switchLedgers(Ledger::pointer lastClosed, Ledger::pointer current)
 {
+	assert(lastClosed && current);
 	mFinalizedLedger = lastClosed;
 	mFinalizedLedger->setClosed();
 	mFinalizedLedger->setAccepted();
@@ -63,40 +64,25 @@ void LedgerMaster::switchLedgers(Ledger::pointer lastClosed, Ledger::pointer cur
 	mEngine.setLedger(mCurrentLedger);
 }
 
-void LedgerMaster::beginWobble()
+void LedgerMaster::storeLedger(Ledger::pointer ledger)
 {
-	boost::recursive_mutex::scoped_lock sl(mLock);
-	assert(!mWobbleLedger);
-	mWobbleLedger = boost::make_shared<Ledger>(boost::ref(*mCurrentLedger), true);
-	mEngine.setDefaultLedger(mCurrentLedger);
-	mEngine.setAlternateLedger(mWobbleLedger);
+	mLedgerHistory.addLedger(ledger);
 }
 
-void LedgerMaster::closeTime()
-{ // swap current and wobble ledgers
-	boost::recursive_mutex::scoped_lock sl(mLock);
-	assert(mCurrentLedger && mWobbleLedger);
-	std::swap(mCurrentLedger, mWobbleLedger);
-	mEngine.setDefaultLedger(mCurrentLedger);
-	mEngine.setAlternateLedger(mWobbleLedger);
-}
-
-Ledger::pointer LedgerMaster::endWobble()
+Ledger::pointer LedgerMaster::closeLedger()
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
-	assert(mWobbleLedger && mCurrentLedger);
-	Ledger::pointer ret = mWobbleLedger;
-	mWobbleLedger = Ledger::pointer();
-	mEngine.setAlternateLedger(Ledger::pointer());
-	return ret;
+	Ledger::pointer closingLedger = mCurrentLedger;
+	mCurrentLedger = boost::make_shared<Ledger>(boost::ref(*closingLedger), true);
+	mEngine.setLedger(mCurrentLedger);
+	return closingLedger;
 }
 
 TransactionEngineResult LedgerMaster::doTransaction(const SerializedTransaction& txn, uint32 targetLedger,
 	TransactionEngineParams params)
 {
-	Ledger::pointer ledger = mEngine.getTransactionLedger(targetLedger);
-	TransactionEngineResult result = mEngine.applyTransaction(txn, params, ledger);
-	theApp->getOPs().pubTransaction(ledger, txn, result);
+	TransactionEngineResult result = mEngine.applyTransaction(txn, params);
+	theApp->getOPs().pubTransaction(mEngine.getLedger(), txn, result);
 	return result;
 }
 

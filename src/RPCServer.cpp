@@ -949,6 +949,7 @@ Json::Value RPCServer::doOfferCancel(const Json::Value &params)
 }
 
 // owner_info <account>|<nickname>|<account_public_key>
+// owner_info <seed>|<pass_phrase>|<key> [<index>]
 Json::Value RPCServer::doOwnerInfo(const Json::Value& params)
 {
 	std::string		strIdent	= params[0u].asString();
