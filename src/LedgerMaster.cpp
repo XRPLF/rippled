@@ -63,6 +63,11 @@ void LedgerMaster::switchLedgers(Ledger::pointer lastClosed, Ledger::pointer cur
 	mEngine.setLedger(mCurrentLedger);
 }
 
+void LedgerMaster::storeLedger(Ledger::pointer ledger)
+{
+	mLedgerHistory.addLedger(ledger);
+}
+
 void LedgerMaster::beginWobble()
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);

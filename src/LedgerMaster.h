@@ -52,6 +52,7 @@ public:
 
 	void pushLedger(Ledger::pointer newLedger);
 	void pushLedger(Ledger::pointer newLCL, Ledger::pointer newOL);
+	void storeLedger(Ledger::pointer);
 
 	void switchLedgers(Ledger::pointer lastClosed, Ledger::pointer newCurrent);
 
