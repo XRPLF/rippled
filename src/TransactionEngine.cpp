@@ -479,18 +479,6 @@ TransactionEngineResult	TransactionEngine::setAuthorized(const SerializedTransac
 	return terSUCCESS;
 }
 
-Ledger::pointer TransactionEngine::getTransactionLedger(uint32 targetLedger)
-{
-	Ledger::pointer ledger = mDefaultLedger;
-	if (mAlternateLedger && (targetLedger != 0) &&
-		(targetLedger != mLedger->getLedgerSeq()) && (targetLedger == mAlternateLedger->getLedgerSeq()))
-	{
-		Log(lsINFO) << "Transaction goes into wobble ledger";
-		ledger = mAlternateLedger;
-	}
-	return ledger;
-}
-
 bool TransactionEngine::entryExists(SLE::pointer sleEntry)
 {
 	return mEntries.find(sleEntry) != mEntries.end();
@@ -576,7 +564,7 @@ void TransactionEngine::entryUnfunded(SLE::pointer sleEntry)
 TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTransaction& txn,
 	TransactionEngineParams params, uint32 targetLedger)
 {
-	return applyTransaction(txn, params, getTransactionLedger(targetLedger));
+	return applyTransaction(txn, params, mLedger);
 }
 
 TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTransaction& txn,

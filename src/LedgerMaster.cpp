@@ -73,14 +73,14 @@ Ledger::pointer LedgerMaster::closeLedger()
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	Ledger::pointer closingLedger = mCurrentLedger;
 	mCurrentLedger = boost::make_shared<Ledger>(boost::ref(*closingLedger), true);
-	mEngine.setDefaultLedger(mCurrentLedger);
+	mEngine.setLedger(mCurrentLedger);
 	return closingLedger;
 }
 
 TransactionEngineResult LedgerMaster::doTransaction(const SerializedTransaction& txn, uint32 targetLedger,
 	TransactionEngineParams params)
 {
-	Ledger::pointer ledger = mEngine.getTransactionLedger(targetLedger);
+	Ledger::pointer ledger = mEngine.getLedger();
 	TransactionEngineResult result = mEngine.applyTransaction(txn, params, ledger);
 	theApp->getOPs().pubTransaction(ledger, txn, result);
 	return result;
