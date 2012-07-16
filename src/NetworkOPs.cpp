@@ -459,12 +459,6 @@ void NetworkOPs::switchLastClosedLedger(Ledger::pointer newLedger)
 
 	Log(lsERROR) << "ABNORMAL Switching last closed ledger to " << newLedger->getHash().GetHex();
 
-	if (mConsensus)
-	{
-		mConsensus->abort();
-		mConsensus = boost::shared_ptr<LedgerConsensus>();
-	}
-
 	newLedger->setClosed();
 	Ledger::pointer openLedger = boost::make_shared<Ledger>(false, boost::ref(*newLedger));
 	mLedgerMaster->switchLedgers(newLedger, openLedger);
@@ -497,8 +491,7 @@ int NetworkOPs::beginConsensus(const uint256& networkClosed, Ledger::pointer clo
 	assert(closingLedger->getParentHash() == mLedgerMaster->getClosedLedger()->getHash());
 
 	// Create a consensus object to get consensus on this ledger
-	if (!!mConsensus)
-		mConsensus->abort();
+	assert(!mConsensus);
 	prevLedger->setImmutable();
 	mConsensus = boost::make_shared<LedgerConsensus>(
 		networkClosed, prevLedger, theApp->getMasterLedger().getCurrentLedger()->getCloseTimeNC());
@@ -600,14 +593,6 @@ void NetworkOPs::setMode(OperatingMode om)
 	if (mMode == om) return;
 	if ((om >= omCONNECTED) && (mMode == omDISCONNECTED))
 		mConnectTime = boost::posix_time::second_clock::universal_time();
-	if (mMode == omFULL)
-	{
-		if (mConsensus)
-		{
-			mConsensus->abort();
-			mConsensus = boost::shared_ptr<LedgerConsensus>();
-		}
-	}
 	Log l((om < mMode) ? lsWARNING : lsINFO);
 	if (om == omDISCONNECTED) l << "STATE->Disonnected";
 	else if (om == omCONNECTED) l << "STATE->Connected";
@@ -968,6 +953,7 @@ void NetworkOPs::unsubAccountTransaction(InfoSub* ispListener, const boost::unor
 
 void NetworkOPs::newLCL(int proposers, int convergeTime, const uint256& ledgerHash)
 {
+	assert(convergeTime);
 	mLastCloseProposers = proposers;
 	mLastCloseConvergeTime = convergeTime;
 	mLastCloseHash = ledgerHash;

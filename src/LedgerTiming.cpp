@@ -23,7 +23,7 @@ int ContinuousLedgerTiming::shouldClose(
 	assert((currentSeconds >= 0) && (currentSeconds < 600));
 
 #if 0
-	Log(lsTRACE) << boost::str(boost::format("CLC::shouldClose Trans=%s, Prop: %d/%d, Secs: %d/%d") %
+	Log(lsTRACE) << boost::str(boost::format("CLC::shouldClose Trans=%s, Prop: %d/%d, Secs: %d (last:%d)") %
 		(anyTransactions ? "yes" : "no") % previousProposers % proposersClosed % currentSeconds % previousSeconds);
 #endif
 

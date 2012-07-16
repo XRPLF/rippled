@@ -72,7 +72,6 @@ enum LCState
 	lcsESTABLISH,		// Establishing consensus
 	lcsFINISHED,		// We have closed on a transaction set
 	lcsACCEPTED,		// We have accepted/validated a new last closed ledger
-	lcsABORTED			// Abandoned
 };
 
 class LedgerConsensus : public boost::enable_shared_from_this<LedgerConsensus>
@@ -151,7 +150,6 @@ public:
 	TransactionAcquire::pointer getAcquiring(const uint256& hash);
 	void mapComplete(const uint256& hash, SHAMap::pointer map, bool acquired);
 
-	void abort();
 	void timerEntry();
 
 	// state handlers

@@ -198,6 +198,7 @@ LedgerConsensus::LedgerConsensus(const uint256& prevLCLHash, Ledger::pointer pre
 	Log(lsTRACE) << "LCL:" << previousLedger->getHash().GetHex() <<", ct=" << closeTime;
 	mPreviousProposers = theApp->getOPs().getPreviousProposers();
 	mPreviousSeconds = theApp->getOPs().getPreviousSeconds();
+	assert(mPreviousSeconds);
 
 	mCloseResolution = ContinuousLedgerTiming::getNextLedgerTimeResolution(
 		previousLedger->getCloseResolution(), previousLedger->getCloseAgree(), previousLedger->getLedgerSeq() + 1);
@@ -356,12 +357,6 @@ void LedgerConsensus::statusChange(newcoin::NodeEvent event, Ledger::pointer led
 	Log(lsINFO) << "send status change to peer";
 }
 
-void LedgerConsensus::abort()
-{
-	Log(lsWARNING) << "consensus aborted";
-	mState = lcsABORTED;
-}
-
 int LedgerConsensus::startup()
 {
 	// create wobble ledger in case peers target transactions to it
@@ -433,7 +428,7 @@ void LedgerConsensus::timerEntry()
 {
 	if (!mHaveCorrectLCL)
 	{
-		Log(lsINFO) << "Checking if we have the consensus ledger";
+		Log(lsINFO) << "Checking for consensus ledger " << mPrevLedgerHash.GetHex();
 		Ledger::pointer consensus = theApp->getMasterLedger().getLedgerByHash(mPrevLedgerHash);
 		if (consensus)
 		{
@@ -455,7 +450,6 @@ void LedgerConsensus::timerEntry()
 		case lcsESTABLISH:	stateEstablish();	return;
 		case lcsFINISHED:	stateFinished();	return;
 		case lcsACCEPTED:	stateAccepted();	return;
-		case lcsABORTED:	return;
 	}
 	assert(false);
 }
