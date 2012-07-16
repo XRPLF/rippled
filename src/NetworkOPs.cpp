@@ -288,6 +288,7 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 	// If full or tracking, check only at wobble time!
 	uint256 networkClosed;
 	bool ledgerChange = checkLastClosedLedger(peerList, networkClosed);
+	assert(networkClosed.isNonZero());
 
 	// WRITEME: Unless we are in omFULL and in the process of doing a consensus,
 	// we must count how many nodes share our LCL, how many nodes disagree with our LCL,
@@ -344,14 +345,10 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 	}
 
 	Ledger::pointer ourClosed = mLedgerMaster->getClosedLedger();
-	uint256 closedLedger=0;
-	if(theConfig.LEDGER_CREATOR || ourClosed->getLedgerSeq() > 100)
-	{
-		closedLedger = ourClosed->getHash();
-		ValidationCount& ourVC = ledgers[closedLedger];
-		++ourVC.nodesUsing;
-		ourVC.highNode = theApp->getWallet().getNodePublic();
-	}
+	uint256 closedLedger = ourClosed->getHash();
+	ValidationCount& ourVC = ledgers[closedLedger];
+	++ourVC.nodesUsing;
+	ourVC.highNode = theApp->getWallet().getNodePublic();
 
 	for (std::vector<Peer::pointer>::const_iterator it = peerList.begin(), end = peerList.end(); it != end; ++it)
 	{
