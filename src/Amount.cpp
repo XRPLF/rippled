@@ -836,11 +836,17 @@ Json::Value STAmount::getJson(int) const
 {
 	Json::Value elem(Json::objectValue);
 
-	elem["value"]		= getText();
+	
 
 	// This is a hack, many places don't specify a currency.  STAmount is used just as a value.
 	if (!mIsNative)
+	{
+		elem["value"]		= getText();
 		elem["currency"]	= getCurrencyHuman();
+	}else
+	{
+		elem=getText();
+	}
 
 	return elem;
 }

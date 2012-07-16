@@ -116,6 +116,7 @@
     <ClCompile Include="src\LedgerMaster.cpp" />
     <ClCompile Include="src\LedgerNode.cpp" />
     <ClCompile Include="src\LedgerProposal.cpp" />
+    <ClCompile Include="src\LedgerTiming.cpp" />
     <ClCompile Include="src\Log.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\NetworkOPs.cpp" />
