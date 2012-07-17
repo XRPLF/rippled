@@ -125,7 +125,7 @@ protected:
 	void addPosition(LedgerProposal&, bool ours);
 	void removePosition(LedgerProposal&, bool ours);
 	void sendHaveTxSet(const uint256& set, bool direct);
-	void applyTransactions(SHAMap::pointer transactionSet, Ledger::pointer targetLedger,
+	void applyTransactions(SHAMap::pointer transactionSet, Ledger::pointer targetLedger, Ledger::pointer checkLedger,
 		CanonicalTXSet& failedTransactions, bool final);
 	void applyTransaction(TransactionEngine& engine, SerializedTransaction::pointer txn, Ledger::pointer targetLedger,
 		CanonicalTXSet& failedTransactions, bool final);

@@ -735,15 +735,15 @@ void LedgerConsensus::applyTransaction(TransactionEngine& engine, SerializedTran
 #endif
 }
 
-void LedgerConsensus::applyTransactions(SHAMap::pointer set, Ledger::pointer ledger,
+void LedgerConsensus::applyTransactions(SHAMap::pointer set, Ledger::pointer applyLedger, Ledger::pointer checkLedger,
 	CanonicalTXSet& failedTransactions, bool final)
 {
 	TransactionEngineParams parms = final ? (tepNO_CHECK_FEE | tepUPDATE_TOTAL) : tepNONE;
-	TransactionEngine engine(ledger);
+	TransactionEngine engine(applyLedger);
 
 	for (SHAMapItem::pointer item = set->peekFirstItem(); !!item; item = set->peekNextItem(item->getTag()))
 	{
-		if (!ledger->hasTransaction(item->getTag()))
+		if (!checkLedger->hasTransaction(item->getTag()))
 		{
 			Log(lsINFO) << "Processing candidate transaction: " << item->getTag().GetHex();
 #ifndef TRUST_NETWORK
@@ -752,7 +752,7 @@ void LedgerConsensus::applyTransactions(SHAMap::pointer set, Ledger::pointer led
 #endif
 				SerializerIterator sit(item->peekSerializer());
 				SerializedTransaction::pointer txn = boost::make_shared<SerializedTransaction>(boost::ref(sit));
-				applyTransaction(engine, txn, ledger, failedTransactions, final);
+				applyTransaction(engine, txn, applyLedger, failedTransactions, final);
 #ifndef TRUST_NETWORK
 			}
 			catch (...)
@@ -803,7 +803,7 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 	newLCL->armDirty();
 
 	CanonicalTXSet failedTransactions(set->getHash());
-	applyTransactions(set, newLCL, failedTransactions, true);
+	applyTransactions(set, newLCL, newLCL, failedTransactions, true);
 	newLCL->setClosed();
 
 	uint32 closeTime = mOurPosition->getCloseTime();
@@ -859,7 +859,7 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 	}
 
 	Log(lsINFO) << "Applying transactions from current ledger";
-	applyTransactions(theApp->getMasterLedger().getCurrentLedger()->peekTransactionMap(), newOL,
+	applyTransactions(theApp->getMasterLedger().getCurrentLedger()->peekTransactionMap(), newOL, newLCL,
 		failedTransactions, false);
 	theApp->getMasterLedger().pushLedger(newLCL, newOL);
 	mNewLedgerHash = newLCL->getHash();
