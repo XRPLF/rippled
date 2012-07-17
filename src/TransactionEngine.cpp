@@ -630,11 +630,6 @@ TransactionEngineResult	TransactionEngine::setAuthorized(const SerializedTransac
 	return terSUCCESS;
 }
 
-bool TransactionEngine::entryExists(SLE::pointer sleEntry)
-{
-	return mEntries.find(sleEntry) != mEntries.end();
-}
-
 SLE::pointer TransactionEngine::entryCreate(LedgerEntryType letType, const uint256& uIndex)
 {
 	assert(!uIndex.isZero());
@@ -643,29 +638,31 @@ SLE::pointer TransactionEngine::entryCreate(LedgerEntryType letType, const uint2
 
 	sleNew->setIndex(uIndex);
 
-	mEntries[sleNew]	= taaCREATE;
+	mEntries[uIndex]	= std::make_pair(sleNew, taaCREATE);
 
 	return sleNew;
 }
 
+
 void TransactionEngine::entryDelete(SLE::pointer sleEntry)
 {
 	assert(sleEntry);
-	entryMap::const_iterator	it	= mEntries.find(sleEntry);
+	const uint256&				uIndex	= sleEntry->getIndex();
+	entryMap::const_iterator	it		= mEntries.find(uIndex);
 
-	switch (it == mEntries.end() ? taaNONE : it->second)
+	switch (it == mEntries.end() ? taaNONE : it->second.second)
 	{
 		case taaCREATE:
-			assert(false);						// Unexpected case.
+			assert(false);															// Unexpected case.
 			break;
 
 		case taaMODIFY:
 		case taaNONE:
-			mEntries[sleEntry]	= taaDELETE;	// Upgrade.
+			mEntries[uIndex]	= std::make_pair(sleEntry, taaDELETE);	// Upgrade.
 			break;
 
 		case taaDELETE:
-			nothing();							// No change.
+			nothing();																// No change.
 			break;
 	}
 }
@@ -673,21 +670,22 @@ void TransactionEngine::entryDelete(SLE::pointer sleEntry)
 void TransactionEngine::entryModify(SLE::pointer sleEntry)
 {
 	assert(sleEntry);
-	entryMap::const_iterator	it	= mEntries.find(sleEntry);
+	const uint256&				uIndex	= sleEntry->getIndex();
+	entryMap::const_iterator	it		= mEntries.find(uIndex);
 
-	switch (it == mEntries.end() ? taaNONE : it->second)
+	switch (it == mEntries.end() ? taaNONE : it->second.second)
 	{
 		case taaDELETE:
-			assert(false);						// Unexpected case.
+			assert(false);															// Unexpected case.
 			break;
 
 		case taaNONE:
-			mEntries[sleEntry]	= taaMODIFY;	// Upgrade.
+			mEntries[uIndex]	= std::make_pair(sleEntry, taaMODIFY);	// Upgrade.
 			break;
 
 		case taaCREATE:
 		case taaMODIFY:
-			nothing();							// No change.
+			nothing();																// No change.
 			break;
 	}
 }
@@ -697,9 +695,9 @@ void TransactionEngine::txnWrite()
 	// Write back the account states and add the transaction to the ledger
 	BOOST_FOREACH(entryMap_value_type it, mEntries)
 	{
-		const SLE::pointer&	sleEntry	= it.first;
+		const SLE::pointer&	sleEntry	= it.second.first;
 
-		switch (it.second)
+		switch (it.second.second)
 		{
 			case taaNONE:
 				assert(false);
@@ -727,7 +725,7 @@ void TransactionEngine::txnWrite()
 				{
 					Log(lsINFO) << "applyTransaction: taaDELETE: " << sleEntry->getText();
 
-					if (!mLedger->peekAccountStateMap()->delItem(sleEntry->getIndex()))
+					if (!mLedger->peekAccountStateMap()->delItem(it.first))
 						assert(false);
 				}
 				break;

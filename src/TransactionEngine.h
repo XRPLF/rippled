@@ -105,10 +105,10 @@ typedef std::pair<TransactionAccountAction, SerializedLedgerEntry::pointer> Affe
 class TransactionEngine
 {
 private:
-	typedef boost::unordered_map<SLE::pointer, TransactionAccountAction>					entryMap;
-	typedef boost::unordered_map<SLE::pointer, TransactionAccountAction>::iterator			entryMap_iterator;
-	typedef boost::unordered_map<SLE::pointer, TransactionAccountAction>::const_iterator	entryMap_const_iterator;
-	typedef boost::unordered_map<SLE::pointer, TransactionAccountAction>::iterator::value_type	entryMap_value_type;
+	typedef boost::unordered_map<uint256, std::pair<SLE::pointer, TransactionAccountAction> >		entryMap;
+	typedef entryMap::iterator				entryMap_iterator;
+	typedef entryMap::const_iterator		entryMap_const_iterator;
+	typedef entryMap::iterator::value_type	entryMap_value_type;
 
 	TransactionEngineResult dirAdd(
 		uint64&							uNodeDir,		// Node of entry.
@@ -169,7 +169,6 @@ protected:
 	SLE::pointer	entryCreate(LedgerEntryType letType, const uint256& uIndex);
 	void			entryDelete(SLE::pointer sleEntry);
 	void			entryModify(SLE::pointer sleEntry);
-	bool			entryExists(SLE::pointer sleEntry);
 
 	STAmount	rippleHolds(const uint160& uAccountID, const uint160& uCurrency, const uint160& uIssuerID);
 	STAmount	rippleTransit(const uint160& uSenderID, const uint160& uReceiverID, const uint160& uIssuerID, const STAmount& saAmount);
