@@ -26,11 +26,11 @@ public:
 
 	uint256			getLedgerHash()		const;
 	uint32			getCloseTime()		const;
+	uint32			getFlags()			const;
 	NewcoinAddress  getSignerPublic()	const;
 	bool			isValid()			const;
 	bool			isFull()			const;
 	bool			isTrusted()			const	{ return mTrusted; }
-	CKey::pointer	getSigningKey()		const;
 	uint256			getSigningHash()	const;
 	bool			isValid(const uint256&) const;
 

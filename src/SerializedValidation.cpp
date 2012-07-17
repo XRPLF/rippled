@@ -55,6 +55,11 @@ uint32 SerializedValidation::getCloseTime() const
 	return getValueFieldU32(sfCloseTime);
 }
 
+uint32 SerializedValidation::getFlags() const
+{
+	return getValueFieldU32(sfFlags);
+}
+
 bool SerializedValidation::isValid() const
 {
 	return isValid(getSigningHash());

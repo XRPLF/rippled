@@ -26,7 +26,7 @@ const char *TxnDBInit[] = {
 	);",
 	"CREATE INDEX AcctTxindex ON				\
 		AccountTransactions(Account, LedgerSeq, TransID);",
-	"CREATE INDEX AcctLgrIndex ON               \
+	"CREATE INDEX AcctLgrIndex ON				\
 		AccountTransactions(LedgerSeq, Account, TransID);",
 
 	"END TRANSACTION;"
@@ -46,21 +46,22 @@ const char *LedgerDBInit[] = {
 		ClosingTime		BIGINT UNSIGNED,			\
 		PrevClosingTime	BIGINT UNSIGNED,			\
 		CloseTimeRes	BIGINT UNSIGNED,			\
-		CloseFlags,		BIGINT UNSIGNED,			\
+		CloseFlags		BIGINT UNSIGNED,			\
 		AccountSetHash	CHARACTER(64),				\
 		TransSetHash	CHARACTER(64)				\
 	);",
 	"CREATE INDEX SeqLedger ON Ledgers(LedgerSeq);",
-#if 0
-	"CREATE TABLE LedgerConfirmations	(			\
-		LedgerSeq	BIGINT UNSIGNED,				\
+
+	"CREATE TABLE LedgerValidations	(				\
 		LedgerHash	CHARACTER(64),					\
-		Hanko		CHARACTER(35),					\
+		NodePubKey	CHARACTER(56),					\
+		Flags		BIGINT UNSIGNED,				\
+		CloseTime	BIGINT UNSIGNED,				\
 		Signature	BLOB							\
 	);",
-	"CREATE INDEX LedgerConfByHash ON				\
-		LedgerConfirmations(LedgerHash)",
-#endif
+	"CREATE INDEX ValidationByHash ON				\
+		LedgerValidations(LedgerHash);",
+
 	"END TRANSACTION;"
 };
 

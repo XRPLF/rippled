@@ -52,6 +52,7 @@ void Application::stop()
 {
 	mIOService.stop();
 	mHashedObjectStore.bulkWrite();
+	mValidations.flush();
 
 	Log(lsINFO) << "Stopped: " << mIOService.stopped();
 }

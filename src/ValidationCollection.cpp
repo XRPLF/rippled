@@ -30,7 +30,11 @@ bool ValidationCollection::addValidation(SerializedValidation::pointer val)
 		{
 			boost::unordered_map<uint160, SerializedValidation::pointer>::iterator it = mCurrentValidations.find(node);
 			if ((it == mCurrentValidations.end()) || (val->getCloseTime() >= it->second->getCloseTime()))
+			{
+				mStaleValidations.push_back(it->second);
 				mCurrentValidations[node] = val;
+				condWrite();
+			}
 		}
 	}
 
@@ -112,17 +116,85 @@ boost::unordered_map<uint256, int> ValidationCollection::getCurrentValidations()
 	{
 		boost::mutex::scoped_lock sl(mValidationLock);
 		boost::unordered_map<uint160, SerializedValidation::pointer>::iterator it = mCurrentValidations.begin();
+		bool anyNew = false;
 		while (it != mCurrentValidations.end())
 		{
 			if (now > (it->second->getCloseTime() + LEDGER_MAX_INTERVAL))
+			{
+				mStaleValidations.push_back(it->second);
 				it = mCurrentValidations.erase(it);
+				anyNew = true;
+			}
 			else
 			{
 				++ret[it->second->getLedgerHash()];
 				++it;
 			}
 		}
+		if (anyNew)
+			condWrite();
 	}
 
 	return ret;
+}
+
+void ValidationCollection::flush()
+{
+		boost::mutex::scoped_lock sl(mValidationLock);
+		boost::unordered_map<uint160, SerializedValidation::pointer>::iterator it = mCurrentValidations.begin();
+		bool anyNew = false;
+		while (it != mCurrentValidations.end())
+		{
+			mStaleValidations.push_back(it->second);
+			++it;
+			anyNew = true;
+		}
+		mCurrentValidations.clear();
+		if (anyNew)
+			condWrite();
+		while (mWriting)
+		{
+			sl.unlock();
+			boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+			sl.lock();
+		}
+}
+
+void ValidationCollection::condWrite()
+{
+	if (mWriting)
+		return;
+	mWriting = true;
+	boost::thread(boost::bind(&ValidationCollection::doWrite, this));
+	thread.detach();
+}
+
+void ValidationCollection::doWrite()
+{
+	static boost::format insVal("INSERT INTO LedgerValidations "
+		"(LedgerHash,NodePubKey,Flags,CloseTime,Signature) VALUES "
+		"('%s','%s','%u','%u',%s);");
+
+	boost::mutex::scoped_lock sl(mValidationLock);
+	assert(mWriting);
+	while (!mStaleValidations.empty())
+	{
+		std::vector<SerializedValidation::pointer> vector;
+		mStaleValidations.swap(vector);
+		sl.unlock();
+
+		{
+			ScopedLock dbl(theApp->getLedgerDB()->getDBLock());
+			Database *db = theApp->getLedgerDB()->getDB();
+			db->executeSQL("BEGIN TRANSACTION;");
+			for (std::vector<SerializedValidation::pointer>::iterator it = vector.begin(); it != vector.end(); ++it)
+				db->executeSQL(boost::str(insVal % (*it)->getLedgerHash().GetHex()
+					% (*it)->getSignerPublic().humanNodePublic() % (*it)->getFlags() % (*it)->getCloseTime()
+					% db->escape(strCopy((*it)->getSignature()))));
+			db->executeSQL("END TRANSACTION;");
+		}
+
+		sl.lock();
+	}
+	mWriting = false;
 }
