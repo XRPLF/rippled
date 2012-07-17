@@ -15,6 +15,7 @@ uint256 Ledger::getQualityIndex(const uint256& uBase, const uint64 uNodeDir)
 	return uNode;
 }
 
+// Return the last 64 bits.
 uint64 Ledger::getQuality(const uint256& uBase)
 {
 	return be64toh(((uint64*) uBase.end())[-1]);
@@ -41,24 +42,24 @@ uint256 Ledger::getAccountRootIndex(const uint160& uAccountID)
 	return s.getSHA512Half();
 }
 
-uint256 Ledger::getBookBase(const uint160& uCurrencyIn, const uint160& uAccountIn,
-	const uint160& uCurrencyOut, const uint160& uAccountOut)
+uint256 Ledger::getBookBase(const uint160& uTakerPaysCurrency, const uint160& uTakerPaysIssuerID,
+	const uint160& uTakerGetsCurrency, const uint160& uTakerGetsIssuerID)
 {
-	bool		bInNative	= uCurrencyIn.isZero();
-	bool		bOutNative	= uCurrencyOut.isZero();
+	bool		bInNative	= uTakerPaysCurrency.isZero();
+	bool		bOutNative	= uTakerGetsCurrency.isZero();
 
-	assert(!bInNative || !bOutNative);									// Stamps to stamps not allowed.
-	assert(bInNative == uAccountIn.isZero());							// Make sure issuer is specified as needed.
-	assert(bOutNative == uAccountOut.isZero());							// Make sure issuer is specified as needed.
-	assert(uCurrencyIn != uCurrencyOut || uAccountIn != uAccountOut);	// Currencies or accounts must differ.
+	assert(!bInNative || !bOutNative);						// Stamps to stamps not allowed.
+	assert(bInNative == uTakerPaysIssuerID.isZero());		// Make sure issuer is specified as needed.
+	assert(bOutNative == uTakerGetsIssuerID.isZero());		// Make sure issuer is specified as needed.
+	assert(uTakerPaysCurrency != uTakerGetsCurrency || uTakerPaysIssuerID != uTakerGetsIssuerID);	// Currencies or accounts must differ.
 
 	Serializer	s(82);
 
-	s.add16(spaceBookDir);		//  2
-	s.add160(uCurrencyIn);		// 20
-	s.add160(uCurrencyOut);		// 20
-	s.add160(uAccountIn);		// 20
-	s.add160(uAccountOut);		// 20
+	s.add16(spaceBookDir);			//  2
+	s.add160(uTakerPaysCurrency);	// 20
+	s.add160(uTakerGetsCurrency);	// 20
+	s.add160(uTakerPaysIssuerID);	// 20
+	s.add160(uTakerGetsIssuerID);	// 20
 
 	return getQualityIndex(s.getSHA512Half());	// Return with quality 0.
 }

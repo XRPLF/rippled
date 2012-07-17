@@ -195,7 +195,7 @@ NicknameState::pointer Ledger::getNicknameState(const uint256& uNickname)
 	return boost::make_shared<NicknameState>(sle);
 }
 
-RippleState::pointer Ledger::getRippleState(const uint256& uNode)
+RippleState::pointer Ledger::accessRippleState(const uint256& uNode)
 {
 	ScopedLock l(mAccountStateMap->Lock());
 	SHAMapItem::pointer item = mAccountStateMap->peekItem(uNode);

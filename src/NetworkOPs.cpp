@@ -269,9 +269,9 @@ Json::Value NetworkOPs::getOwnerInfo(Ledger::pointer lpLedger, const NewcoinAddr
 // Ripple functions
 //
 
-RippleState::pointer NetworkOPs::getRippleState(const uint256& uLedger, const uint256& uIndex)
+RippleState::pointer NetworkOPs::accessRippleState(const uint256& uLedger, const uint256& uIndex)
 {
-	return mLedgerMaster->getLedgerByHash(uLedger)->getRippleState(uIndex);
+	return mLedgerMaster->getLedgerByHash(uLedger)->accessRippleState(uIndex);
 }
 
 //

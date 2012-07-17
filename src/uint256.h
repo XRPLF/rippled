@@ -68,12 +68,12 @@ public:
 		return ret;
 	}
 
-	base_uint& operator=(uint64 b)
+	base_uint& operator=(uint64 uHost)
 	{
 		zero();
 
 		// Put in least significant bits.
-		((uint64_t *) end())[-1]	= htobe64(b);
+		((uint64_t *) end())[-1]	= htobe64(uHost);
 
 		return *this;
 	}
@@ -105,8 +105,10 @@ public:
 	base_uint& operator++()
 	{
 		// prefix operator
-		for (int i = WIDTH-1; ++pn[i] == 0 && i; i--)
-			nothing();
+		int		i = WIDTH;
+
+		while (i-- && !++pn[i])
+			;
 
 		return *this;
 	}
@@ -122,9 +124,10 @@ public:
 
 	base_uint& operator--()
 	{
-		// prefix operator
-		for (int i = WIDTH-1; --pn[i] == (unsigned int) -1 && i; i--)
-			nothing();
+		int		i = WIDTH;
+
+		while (i-- && !pn[i]--)
+			;
 
 		return *this;
 	}
@@ -142,10 +145,11 @@ public:
 	{
 		uint64 carry = 0;
 
-		for (int i = 0; i < WIDTH; i++)
+		for (int i = WIDTH; i--;)
 		{
-			uint64 n = carry + pn[i] + b.pn[i];
-			pn[i] = n & 0xffffffff;
+			uint64 n = carry + be32toh(pn[i]) + be32toh(b.pn[i]);
+
+			pn[i] = htobe32(n & 0xffffffff);
 			carry = n >> 32;
 		}
 
@@ -208,8 +212,6 @@ public:
 
 	void SetHex(const char* psz)
 	{
-		zero();
-
 		// skip leading spaces
 		while (isspace(*psz))
 			psz++;
@@ -244,13 +246,20 @@ public:
 		const unsigned char* pEnd	= reinterpret_cast<const unsigned char*>(psz);
 		const unsigned char* pBegin = pEnd;
 
+		// Find end.
 		while (phexdigit[*pEnd] >= 0)
 			pEnd++;
 
+		// Take only last digits of over long string.
 		if ((unsigned int)(pEnd-pBegin) > 2*size())
 			pBegin = pEnd - 2*size();
 
 		unsigned char* pOut	= end()-((pEnd-pBegin+1)/2);
+
+		zero();
+
+		if ((pEnd-pBegin) & 1)
+			*pOut++	= phexdigit[*pBegin++];
 
 		while (pBegin != pEnd)
 		{
@@ -412,12 +421,10 @@ public:
 
 	uint160& operator=(uint64 uHost)
 	{
-		uint64	uBig	= htobe64(uHost);
-
 		zero();
 
 		// Put in least significant bits.
-		memcpy(((uint64*)end())-1, &uBig, sizeof(uBig));
+		((uint64_t *) end())[-1]	= htobe64(uHost);
 
 		return *this;
 	}
@@ -500,12 +507,12 @@ public:
 		*this = b;
 	}
 
-	uint256& operator=(uint64 b)
+	uint256& operator=(uint64 uHost)
 	{
 		zero();
 
 		// Put in least significant bits.
-		((uint64_t *) end())[-1]	= htobe64(b);
+		((uint64_t *) end())[-1]	= htobe64(uHost);
 
 		return *this;
 	}

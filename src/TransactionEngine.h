@@ -1,6 +1,9 @@
 #ifndef __TRANSACTIONENGINE__
 #define __TRANSACTIONENGINE__
 
+#include <boost/unordered_set.hpp>
+#include <boost/unordered_map.hpp>
+
 #include "Ledger.h"
 #include "SerializedTransaction.h"
 #include "SerializedLedger.h"
@@ -93,7 +96,6 @@ enum TransactionAccountAction
 	taaCREATE,
 	taaMODIFY,
 	taaDELETE,
-	taaUNFUNDED,
 };
 
 typedef std::pair<TransactionAccountAction, SerializedLedgerEntry::pointer> AffectedAccount;
@@ -119,6 +121,8 @@ private:
 		const uint256&					uRootIndex,
 		const uint256&					uLedgerIndex);	// Item being deleted
 
+	void dirFirst(const uint256& uRootIndex, uint256& uEntryIndex, uint64& uEntryNode);
+
 #ifdef WORK_IN_PROGRESS
 	typedef struct {
 		STAmount						saWanted;		// What this node wants from upstream.
@@ -135,56 +139,64 @@ private:
 	} paymentNode;
 
 	typedef struct {
-		boost::unordered_set<....>	offersDeletedAlways;
-		boost::unordered_set<....>	offersDeletedOnSuccess;
 		std::vector<paymentNode>	vpnNodes;
 		bool						bAllowPartial;
 	} paymentGroup;
 #endif
 
-	TransactionEngineResult	setAuthorized(const SerializedTransaction& txn, SLE::pointer sleSrc, bool bMustSetGenerator);
+	TransactionEngineResult	setAuthorized(const SerializedTransaction& txn, bool bMustSetGenerator);
 
 	TransactionEngineResult takeOffers(
-		bool			bPassive,
-		const uint256&	uBookBase,
-		const uint160&	uTakerAccountID,
-		const STAmount&	saTakerPays,
-		const STAmount&	saTakerGets,
-		const STAmount&	saTakerFunds,
-		STAmount&		saTakerPaid,
-		STAmount&		saTakerGot);
+		bool				bPassive,
+		const uint256&		uBookBase,
+		const uint160&		uTakerAccountID,
+		const SLE::pointer&	sleTakerAccount,
+		const STAmount&		saTakerPays,
+		const STAmount&		saTakerGets,
+		STAmount&			saTakerPaid,
+		STAmount&			saTakerGot);
 
 protected:
 	Ledger::pointer mLedger;
 	uint64			mLedgerParentCloseTime;
 
+	uint160			mTxnAccountID;
+	SLE::pointer	mTxnAccount;
+
 	entryMap		mEntries;
+	boost::unordered_set<uint256>	mUnfunded;	// Indexes that were found unfunded.
 
 	SLE::pointer	entryCreate(LedgerEntryType letType, const uint256& uIndex);
 	void			entryDelete(SLE::pointer sleEntry);
 	void			entryModify(SLE::pointer sleEntry);
-	void			entryUnfunded(SLE::pointer sleEntry);
 	bool			entryExists(SLE::pointer sleEntry);
 
-	STAmount	rippleBalance(const uint160& uAccountID, const uint160& uIssuerAccountID, const uint160& uCurrency);
+	STAmount	rippleHolds(const uint160& uAccountID, const uint160& uCurrency, const uint160& uIssuerID);
+	STAmount	rippleTransit(const uint160& uSenderID, const uint160& uReceiverID, const uint160& uIssuerID, const STAmount& saAmount);
+	STAmount	rippleSend(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount);
 
-	void		rippleCredit(const uint160& uAccountID, const uint160& uIssuerAccountID, const uint160& uCurrency, const STAmount& saCredit);
-	void		rippleDebit(const uint160& uAccountID, const uint160& uIssuerAccountID, const uint160& uCurrency, const STAmount& saDebit);
+	STAmount	accountHolds(const uint160& uAccountID, const uint160& uCurrency, const uint160& uIssuerID);
+	STAmount	accountSend(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount);
+	STAmount	accountFunds(const uint160& uAccountID, const STAmount& saDefault);
 
-	TransactionEngineResult doAccountSet(const SerializedTransaction& txn, SLE::pointer sleSrc);
-	TransactionEngineResult doClaim(const SerializedTransaction& txn, SLE::pointer sleSrc);
-	TransactionEngineResult doCreditSet(const SerializedTransaction& txn, const uint160& uSrcAccountID);
+	void		txnWrite();
+
+	TransactionEngineResult offerDelete(const SLE::pointer& sleOffer, const uint256& uOfferIndex, const uint160& uOwnerID);
+
+	TransactionEngineResult doAccountSet(const SerializedTransaction& txn);
+	TransactionEngineResult doClaim(const SerializedTransaction& txn);
+	TransactionEngineResult doCreditSet(const SerializedTransaction& txn);
 	TransactionEngineResult doDelete(const SerializedTransaction& txn);
 	TransactionEngineResult doInvoice(const SerializedTransaction& txn);
-	TransactionEngineResult doOfferCreate(const SerializedTransaction& txn, SLE::pointer sleSrc, const uint160& uSrcAccountID);
-	TransactionEngineResult doOfferCancel(const SerializedTransaction& txn, const uint160& uSrcAccountID);
-	TransactionEngineResult doNicknameSet(const SerializedTransaction& txn, SLE::pointer sleSrc, const uint160& uSrcAccountID);
-	TransactionEngineResult doPasswordFund(const SerializedTransaction& txn, SLE::pointer sleSrc, const uint160& uSrcAccountID);
-	TransactionEngineResult doPasswordSet(const SerializedTransaction& txn, SLE::pointer sleSrc);
-	TransactionEngineResult doPayment(const SerializedTransaction& txn, SLE::pointer sleSrc, const uint160& uSrcAccountID);
+	TransactionEngineResult doOfferCreate(const SerializedTransaction& txn);
+	TransactionEngineResult doOfferCancel(const SerializedTransaction& txn);
+	TransactionEngineResult doNicknameSet(const SerializedTransaction& txn);
+	TransactionEngineResult doPasswordFund(const SerializedTransaction& txn);
+	TransactionEngineResult doPasswordSet(const SerializedTransaction& txn);
+	TransactionEngineResult doPayment(const SerializedTransaction& txn);
 	TransactionEngineResult doStore(const SerializedTransaction& txn);
 	TransactionEngineResult doTake(const SerializedTransaction& txn);
-	TransactionEngineResult doWalletAdd(const SerializedTransaction& txn, SLE::pointer sleSrc);
+	TransactionEngineResult doWalletAdd(const SerializedTransaction& txn);
 
 public:
 	TransactionEngine() { ; }

@@ -1256,7 +1256,7 @@ Json::Value RPCServer::doRippleLinesGet(const Json::Value &params)
 				{
 					Log(lsINFO) << "doRippleLinesGet: line index: " << uNode.ToString();
 
-					RippleState::pointer	rsLine	= mNetOps->getRippleState(uCurrent, uNode);
+					RippleState::pointer	rsLine	= mNetOps->accessRippleState(uCurrent, uNode);
 
 					if (rsLine)
 					{

@@ -157,8 +157,8 @@ public:
 	// high-level functions
 	AccountState::pointer getAccountState(const NewcoinAddress& acctID);
 	LedgerStateParms writeBack(LedgerStateParms parms, SLE::pointer);
-	SLE::pointer getAccountRoot(LedgerStateParms& parms, const uint160& accountID);
-	SLE::pointer getAccountRoot(LedgerStateParms& parms, const NewcoinAddress& naAccountID);
+	SLE::pointer getAccountRoot(const uint160& accountID);
+	SLE::pointer getAccountRoot(const NewcoinAddress& naAccountID);
 
 	// database functions
 	static void saveAcceptedLedger(Ledger::pointer);
@@ -210,14 +210,21 @@ public:
 	//
 
 	// Order book dirs have a base so we can use next to step through them in quality order.
-	static uint256 getBookBase(const uint160& uCurrencyIn, const uint160& uAccountIn,
-		const uint160& uCurrencyOut, const uint160& uAccountOut);
+	static uint256 getBookBase(const uint160& uTakerPaysCurrency, const uint160& uTakerPaysIssuerID,
+		const uint160& uTakerGetsCurrency, const uint160& uTakerGetsIssuerID);
 
 	//
 	// Offer functions
 	//
 
 	SLE::pointer getOffer(LedgerStateParms& parms, const uint256& uIndex);
+
+	SLE::pointer getOffer(const uint256& uIndex)
+	{
+		LedgerStateParms	qry				= lepNONE;
+		return getOffer(qry, uIndex);
+	}
+
 	SLE::pointer getOffer(LedgerStateParms& parms, const uint160& uAccountID, uint32 uSequence)
 	{ return getOffer(parms, getOfferIndex(uAccountID, uSequence)); }
 
@@ -261,14 +268,21 @@ public:
 	// Directory of lines indexed by an account (not all lines are indexed)
 	static uint256 getRippleDirIndex(const uint160& uAccountID);
 
-	RippleState::pointer getRippleState(const uint256& uNode);
+	RippleState::pointer accessRippleState(const uint256& uNode);
+
 	SLE::pointer getRippleState(LedgerStateParms& parms, const uint256& uNode);
 
-	SLE::pointer getRippleState(LedgerStateParms& parms, const NewcoinAddress& naA, const NewcoinAddress& naB, const uint160& uCurrency)
-		{ return getRippleState(parms, getRippleStateIndex(naA, naB, uCurrency)); }
+	SLE::pointer getRippleState(const uint256& uNode)
+		{
+			LedgerStateParms	qry				= lepNONE;
+			return getRippleState(qry, uNode);
+		}
 
-	SLE::pointer getRippleState(LedgerStateParms& parms, const uint160& uiA, const uint160& uiB, const uint160& uCurrency)
-		{ return getRippleState(parms, getRippleStateIndex(NewcoinAddress::createAccountID(uiA), NewcoinAddress::createAccountID(uiB), uCurrency)); }
+	SLE::pointer getRippleState(const NewcoinAddress& naA, const NewcoinAddress& naB, const uint160& uCurrency)
+		{ return getRippleState(getRippleStateIndex(naA, naB, uCurrency)); }
+
+	SLE::pointer getRippleState(const uint160& uiA, const uint160& uiB, const uint160& uCurrency)
+		{ return getRippleState(getRippleStateIndex(NewcoinAddress::createAccountID(uiA), NewcoinAddress::createAccountID(uiB), uCurrency)); }
 
 	//
 	// Misc
