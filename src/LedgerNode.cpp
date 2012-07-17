@@ -134,19 +134,20 @@ SLE::pointer Ledger::getASNode(LedgerStateParms& parms, const uint256& nodeID,
 	parms = parms | lepOKAY;
 
 	return sle;
-
 }
 
-SLE::pointer Ledger::getAccountRoot(LedgerStateParms& parms, const uint160& accountID)
+SLE::pointer Ledger::getAccountRoot(const uint160& accountID)
 {
-	uint256 nodeID=getAccountRootIndex(accountID);
+	LedgerStateParms	qry			= lepNONE;
 
-	return getASNode(parms, nodeID, ltACCOUNT_ROOT);
+	return getASNode(qry, getAccountRootIndex(accountID), ltACCOUNT_ROOT);
 }
 
-SLE::pointer Ledger::getAccountRoot(LedgerStateParms& parms, const NewcoinAddress& naAccountID)
+SLE::pointer Ledger::getAccountRoot(const NewcoinAddress& naAccountID)
 {
-	return getAccountRoot(parms, naAccountID.getAccountID());
+	LedgerStateParms	qry			= lepNONE;
+
+	return getASNode(qry, getAccountRootIndex(naAccountID.getAccountID()), ltACCOUNT_ROOT);
 }
 
 //

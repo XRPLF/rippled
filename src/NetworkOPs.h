@@ -141,7 +141,7 @@ public:
 			return !!mLedgerMaster->getLedgerByHash(uLedger)->getDirNode(lspNode, uRootIndex);
 		}
 
-	RippleState::pointer	getRippleState(const uint256& uLedger, const uint256& uIndex);
+	RippleState::pointer	accessRippleState(const uint256& uLedger, const uint256& uIndex);
 
 	// raw object operations
 	bool findRawLedger(const uint256& ledgerHash, std::vector<unsigned char>& rawLedger);
