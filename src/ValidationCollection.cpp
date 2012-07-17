@@ -165,7 +165,7 @@ void ValidationCollection::condWrite()
 	if (mWriting)
 		return;
 	mWriting = true;
-	boost::thread(boost::bind(&ValidationCollection::doWrite, this));
+	boost::thread thread(boost::bind(&ValidationCollection::doWrite, this));
 	thread.detach();
 }
 
