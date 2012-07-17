@@ -31,7 +31,8 @@ bool ValidationCollection::addValidation(SerializedValidation::pointer val)
 			boost::unordered_map<uint160, SerializedValidation::pointer>::iterator it = mCurrentValidations.find(node);
 			if ((it == mCurrentValidations.end()) || (val->getCloseTime() >= it->second->getCloseTime()))
 			{
-				mStaleValidations.push_back(it->second);
+				if (it != mCurrentValidations.end())
+					mStaleValidations.push_back(it->second);
 				mCurrentValidations[node] = val;
 				condWrite();
 			}
