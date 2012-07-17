@@ -170,15 +170,17 @@ protected:
 	void			entryDelete(SLE::pointer sleEntry);
 	void			entryModify(SLE::pointer sleEntry);
 
-	STAmount	rippleHolds(const uint160& uAccountID, const uint160& uCurrency, const uint160& uIssuerID);
-	STAmount	rippleTransit(const uint160& uSenderID, const uint160& uReceiverID, const uint160& uIssuerID, const STAmount& saAmount);
-	STAmount	rippleSend(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount);
+	void			entryReset(const SerializedTransaction& txn);
 
-	STAmount	accountHolds(const uint160& uAccountID, const uint160& uCurrency, const uint160& uIssuerID);
-	STAmount	accountSend(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount);
-	STAmount	accountFunds(const uint160& uAccountID, const STAmount& saDefault);
+	STAmount		rippleHolds(const uint160& uAccountID, const uint160& uCurrency, const uint160& uIssuerID);
+	STAmount		rippleTransit(const uint160& uSenderID, const uint160& uReceiverID, const uint160& uIssuerID, const STAmount& saAmount);
+	STAmount		rippleSend(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount);
 
-	void		txnWrite();
+	STAmount		accountHolds(const uint160& uAccountID, const uint160& uCurrency, const uint160& uIssuerID);
+	STAmount		accountSend(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount);
+	STAmount		accountFunds(const uint160& uAccountID, const STAmount& saDefault);
+
+	void			txnWrite();
 
 	TransactionEngineResult offerDelete(const SLE::pointer& sleOffer, const uint256& uOfferIndex, const uint160& uOwnerID);
 

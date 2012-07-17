@@ -733,6 +733,21 @@ void TransactionEngine::txnWrite()
 	}
 }
 
+// This is for when a transaction fails from the issuer's point of view and the current changes need to be cleared so other
+// actions can be applied to the ledger.
+void TransactionEngine::entryReset(const SerializedTransaction& txn)
+{
+	mEntries.clear();														// Lose old SLE modifications.
+	mTxnAccount					= mLedger->getAccountRoot(mTxnAccountID);	// Get new SLE.
+
+	entryModify(mTxnAccount);
+
+	STAmount	saPaid			= txn.getTransactionFee();
+	STAmount	saSrcBalance	= mTxnAccount->getIValueFieldAmount(sfBalance);
+
+	mTxnAccount->setIFieldAmount(sfBalance, saSrcBalance - saPaid);
+}
+
 TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTransaction& txn,
 	TransactionEngineParams params)
 {
@@ -1117,28 +1132,6 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	transResultInfo(terResult, strToken, strHuman);
 
 	Log(lsINFO) << "applyTransaction: terResult=" << strToken << " : " << terResult << " : " << strHuman;
-
-#if 0
-	if (terSUCCESS == terResult)
-	{
-		// Transaction failed.  Process possible unfunded offers.
-		// XXX Make sure this stop changed cached entries:
-		mEntries.clear();	// Drop old modifications.
-
-		BOOST_FOREACH(const uint256& uOfferIndex, mUnfunded)
-		{
-			SLE::pointer	sleOffer		= mLedger->getOffer(uOfferIndex);
-			uint160			uOfferID		= sleOffer->getIValueFieldAccount(sfAccount).getAccountID();
-			STAmount		saOfferFunds	= sleOffer->getIValueFieldAmount(sfTakerGets);
-
-			if (!accountFunds(uOfferID, saOfferFunds).isPositive())
-			{
-				offerDelete(sleOffer, uOfferIndex, uOfferID);
-				bWrite	= true;
-			}
-		}
-	}
-#endif
 
 	if (terSUCCESS == terResult)
 	{
@@ -1804,6 +1797,28 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 	}
 #endif
 
+#if 0
+// XXX Or additionally queue unfundeds for removal on failure.
+	if (terSUCCESS == terResult)
+	{
+		// Transaction failed.  Process possible unfunded offers.
+		entryReset(txn);
+
+		BOOST_FOREACH(const uint256& uOfferIndex, mUnfunded)
+		{
+			SLE::pointer	sleOffer		= mLedger->getOffer(uOfferIndex);
+			uint160			uOfferID		= sleOffer->getIValueFieldAccount(sfAccount).getAccountID();
+			STAmount		saOfferFunds	= sleOffer->getIValueFieldAmount(sfTakerGets);
+
+			if (!accountFunds(uOfferID, saOfferFunds).isPositive())
+			{
+				offerDelete(sleOffer, uOfferIndex, uOfferID);
+				bWrite	= true;
+			}
+		}
+	}
+#endif
+
 	Log(lsINFO) << "doPayment: Delay transaction: No ripple paths could be satisfied.";
 
 	return terBAD_RIPPLE;
@@ -1879,8 +1894,6 @@ TransactionEngineResult TransactionEngine::doInvoice(const SerializedTransaction
 // <--  saTakerGot: What taker got not including fees. To reduce an offer.
 // <--   terResult: terSUCCESS or terNO_ACCOUNT
 // Note: All SLE modifications must always occur even on failure.
-// XXX The tricky part - make sure all adjusted balances should stick for the errors found or make an undo.
-// XXX Or additionally queue unfundeds for removal on failure.
 TransactionEngineResult TransactionEngine::takeOffers(
 	bool				bPassive,
 	const uint256&		uBookBase,
