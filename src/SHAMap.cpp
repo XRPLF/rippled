@@ -170,7 +170,7 @@ SHAMapTreeNode* SHAMap::walkToPointer(const uint256& id)
 	{
 		int branch = inNode->selectBranch(id);
 		const uint256& nextHash = inNode->getChildHash(branch);
-		if (!nextHash) return NULL;
+		if (nextHash.isZero()) return NULL;
 		inNode = getNodePointer(inNode->getChildNodeID(branch), nextHash);
 		if (!inNode)
 			throw SHAMapMissingNode(inNode->getChildNodeID(branch), nextHash);
@@ -437,7 +437,7 @@ bool SHAMap::delItem(const uint256& id)
 
 	SHAMapTreeNode::pointer leaf=stack.top();
 	stack.pop();
-	if( !leaf || !leaf->hasItem() || (leaf->peekItem()->getTag()!=id) )
+	if (!leaf || !leaf->hasItem() || (leaf->peekItem()->getTag() != id))
 		return false;
 
 	SHAMapTreeNode::TNType type=leaf->getType();
@@ -446,19 +446,19 @@ bool SHAMap::delItem(const uint256& id)
 		assert(false);
 
 	uint256 prevHash;
-	while(!stack.empty())
+	while (!stack.empty())
 	{
 		SHAMapTreeNode::pointer node=stack.top();
 		stack.pop();
 		returnNode(node, true);
 		assert(node->isInner());
 
-		if(!node->setChildHash(node->selectBranch(id), prevHash))
+		if (!node->setChildHash(node->selectBranch(id), prevHash))
 		{
 			assert(false);
 			return true;
 		}
-		if(!node->isRoot())
+		if (!node->isRoot())
 		{ // we may have made this a node with 1 or 0 children
 			int bc=node->getBranchCount();
 			if(bc==0)
@@ -467,7 +467,7 @@ bool SHAMap::delItem(const uint256& id)
 				std::cerr << "delItem makes empty node" << std::endl;
 #endif
 				prevHash=uint256();
-				if(!mTNByID.erase(*node))
+				if (!mTNByID.erase(*node))
 					assert(false);
 			}
 			else if(bc==1)

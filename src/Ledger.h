@@ -151,7 +151,7 @@ public:
 	bool isAcquiringAS(void);
 
 	// Transaction Functions
-	bool hasTransaction(const uint256& TransID) const;
+	bool hasTransaction(const uint256& TransID) const { return mTransactionMap->hasItem(TransID); }
 	Transaction::pointer getTransaction(const uint256& transID) const;
 
 	// high-level functions
