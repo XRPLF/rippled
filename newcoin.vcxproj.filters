@@ -264,6 +264,9 @@
     <ClCompile Include="websocketpp\src\sha1\sha1.cpp">
       <Filter>Source Files\websocketpp</Filter>
     </ClCompile>
+    <ClCompile Include="src\LedgerTiming.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="KnownNodeList.h">

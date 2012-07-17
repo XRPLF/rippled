@@ -1386,7 +1386,7 @@ Json::Value RPCServer::doSend(const Json::Value& params)
 		{
 			// Not enough native currency.
 
-			Log(lsINFO) << "doSend: Insufficent funds: src=" << saSrcAmount.getText() << " dst=" << saDstAmount.getText();
+			Log(lsINFO) << "doSend: Insufficient funds: src=" << saSrcAmount.getText() << " dst=" << saDstAmount.getText();
 
 			return RPCError(rpcINSUF_FUNDS);
 		}
