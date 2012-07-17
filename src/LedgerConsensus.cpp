@@ -743,21 +743,24 @@ void LedgerConsensus::applyTransactions(SHAMap::pointer set, Ledger::pointer led
 
 	for (SHAMapItem::pointer item = set->peekFirstItem(); !!item; item = set->peekNextItem(item->getTag()))
 	{
-		Log(lsINFO) << "Processing candidate transaction: " << item->getTag().GetHex();
-#ifndef TRUST_NETWORK
-		try
+		if (!ledger->hasTransaction(item->getTag()))
 		{
-#endif
-			SerializerIterator sit(item->peekSerializer());
-			SerializedTransaction::pointer txn = boost::make_shared<SerializedTransaction>(boost::ref(sit));
-			applyTransaction(engine, txn, ledger, failedTransactions, final);
+			Log(lsINFO) << "Processing candidate transaction: " << item->getTag().GetHex();
 #ifndef TRUST_NETWORK
-		}
-		catch (...)
-		{
-			Log(lsWARNING) << "  Throws";
-		}
+			try
+			{
 #endif
+				SerializerIterator sit(item->peekSerializer());
+				SerializedTransaction::pointer txn = boost::make_shared<SerializedTransaction>(boost::ref(sit));
+				applyTransaction(engine, txn, ledger, failedTransactions, final);
+#ifndef TRUST_NETWORK
+			}
+			catch (...)
+			{
+				Log(lsWARNING) << "  Throws";
+			}
+#endif
+		}
 	}
 
 	int successes;
@@ -843,6 +846,7 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 		{ // we voted NO
 			try
 			{
+				Log(lsINFO) << "Test applying disputed transaction that did not get in";
 				SerializerIterator sit(it->second->peekTransaction());
 				SerializedTransaction::pointer txn = boost::make_shared<SerializedTransaction>(boost::ref(sit));
 				applyTransaction(engine, txn, newOL, failedTransactions, false);
@@ -854,6 +858,7 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 		}
 	}
 
+	Log(lsINFO) << "Applying transactions from current ledger";
 	applyTransactions(theApp->getMasterLedger().getCurrentLedger()->peekTransactionMap(), newOL,
 		failedTransactions, false);
 	theApp->getMasterLedger().pushLedger(newLCL, newOL);
