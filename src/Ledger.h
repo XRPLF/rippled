@@ -167,12 +167,12 @@ public:
 
 	// next/prev function
 	SLE::pointer getSLE(const uint256& uHash);
-	SLE::pointer getFirstSLE();
-	SLE::pointer getLastSLE();
-	SLE::pointer getNextSLE(const uint256& uHash);							// first node >hash
-	SLE::pointer getNextSLE(const uint256& uHash, const uint256& uEnd);		// first node >hash, <end
-	SLE::pointer getPrevSLE(const uint256& uHash);							// last node <hash
-	SLE::pointer getPrevSLE(const uint256& uHash, const uint256& uBegin);	// last node <hash, >begin
+	uint256 getFirstLedgerID();
+	uint256 getLastLedgerID();
+	uint256 getNextLedgerID(const uint256& uHash);							// first node >hash
+	uint256 getNextLedgerID(const uint256& uHash, const uint256& uEnd);		// first node >hash, <end
+	uint256 getPrevLedgerID(const uint256& uHash);							// last node <hash
+	uint256 getPrevLedgerID(const uint256& uHash, const uint256& uBegin);	// last node <hash, >begin
 
 	// index calculation functions
 	static uint256 getAccountRootIndex(const uint160& uAccountID);
