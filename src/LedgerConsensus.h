@@ -131,8 +131,8 @@ protected:
 		CanonicalTXSet& failedTransactions, bool final);
 
 	// manipulating our own position
-	void statusChange(newcoin::NodeEvent, Ledger::pointer ledger);
-	void takeInitialPosition(Ledger::pointer initialLedger);
+	void statusChange(newcoin::NodeEvent, Ledger& ledger);
+	void takeInitialPosition(Ledger& initialLedger);
 	void updateOurPositions();
 	int getThreshold();
 	void beginAccept();

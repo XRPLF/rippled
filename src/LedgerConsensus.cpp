@@ -226,11 +226,11 @@ LedgerConsensus::LedgerConsensus(const uint256& prevLCLHash, Ledger::pointer pre
 	}
 }
 
-void LedgerConsensus::takeInitialPosition(Ledger::pointer initialLedger)
+void LedgerConsensus::takeInitialPosition(Ledger& initialLedger)
 {
-	SHAMap::pointer initialSet = initialLedger->peekTransactionMap()->snapShot(false);
+	SHAMap::pointer initialSet = initialLedger.peekTransactionMap()->snapShot(false);
 	uint256 txSet = initialSet->getHash();
-	assert (!mHaveCorrectLCL || (initialLedger->getParentHash() == mPreviousLedger->getHash()));
+	assert (!mHaveCorrectLCL || (initialLedger.getParentHash() == mPreviousLedger->getHash()));
 
 	// if any peers have taken a contrary position, process disputes
 	boost::unordered_set<uint256> found;
@@ -248,11 +248,12 @@ void LedgerConsensus::takeInitialPosition(Ledger::pointer initialLedger)
 
 	if (mValidating)
 		mOurPosition = boost::make_shared<LedgerProposal>
-			(mValSeed, initialLedger->getParentHash(), txSet, mCloseTime);
+			(mValSeed, initialLedger.getParentHash(), txSet, mCloseTime);
 	else
-		mOurPosition = boost::make_shared<LedgerProposal>(initialLedger->getParentHash(), txSet, mCloseTime);
+		mOurPosition = boost::make_shared<LedgerProposal>(initialLedger.getParentHash(), txSet, mCloseTime);
 	mapComplete(txSet, initialSet, false);
-	if (mProposing) propose(std::vector<uint256>(), std::vector<uint256>());
+	if (mProposing)
+		propose(std::vector<uint256>(), std::vector<uint256>());
 }
 
 void LedgerConsensus::createDisputes(SHAMap::pointer m1, SHAMap::pointer m2)
@@ -339,18 +340,18 @@ void LedgerConsensus::adjustCount(SHAMap::pointer map, const std::vector<uint160
 	}
 }
 
-void LedgerConsensus::statusChange(newcoin::NodeEvent event, Ledger::pointer ledger)
+void LedgerConsensus::statusChange(newcoin::NodeEvent event, Ledger& ledger)
 { // Send a node status change message to our peers
 	newcoin::TMStatusChange s;
 	if (!mHaveCorrectLCL)
 		s.set_newevent(newcoin::neLOST_SYNC);
 	else
 		s.set_newevent(event);
-	s.set_ledgerseq(ledger->getLedgerSeq());
+	s.set_ledgerseq(ledger.getLedgerSeq());
 	s.set_networktime(theApp->getOPs().getNetworkTimeNC());
-	uint256 hash = ledger->getParentHash();
+	uint256 hash = ledger.getParentHash();
 	s.set_ledgerhashprevious(hash.begin(), hash.size());
-	hash = ledger->getHash();
+	hash = ledger.getHash();
 	s.set_ledgerhash(hash.begin(), hash.size());
 	PackedMessage::pointer packet = boost::make_shared<PackedMessage>(s, newcoin::mtSTATUS_CHANGE);
 	theApp->getConnectionPool().relayMessage(NULL, packet);
@@ -372,16 +373,14 @@ void LedgerConsensus::statePreClose()
 
 	if (sinceClose >= ContinuousLedgerTiming::shouldClose(anyTransactions, mPreviousProposers, proposersClosed,
 		mPreviousMSeconds, sinceClose))
-	{ // it is time to close the ledger (swap default and wobble ledgers)
-		Log(lsINFO) << "CLC:: closing ledger";
+	{ // it is time to close the ledger
+		Log(lsINFO) << "CLC: closing ledger";
 		mState = lcsESTABLISH;
 		mConsensusStartTime = boost::posix_time::second_clock::universal_time();
 		mCloseTime = theApp->getOPs().getNetworkTimeNC();
 		theApp->getOPs().setLastCloseNetTime(mCloseTime);
-		statusChange(newcoin::neCLOSING_LEDGER, mPreviousLedger);
-		Ledger::pointer initial = theApp->getMasterLedger().closeLedger();
-		assert (initial->getParentHash() == mPreviousLedger->getHash());
-		takeInitialPosition(initial);
+		statusChange(newcoin::neCLOSING_LEDGER, *mPreviousLedger);
+		takeInitialPosition(*theApp->getMasterLedger().closeLedger());
 	}
 }
 
@@ -535,6 +534,19 @@ SHAMap::pointer LedgerConsensus::getTransactionTree(const uint256& hash, bool do
 	boost::unordered_map<uint256, SHAMap::pointer>::iterator it = mComplete.find(hash);
 	if (it == mComplete.end())
 	{ // we have not completed acquiring this ledger
+
+		if (mState == lcsPRE_CLOSE)
+		{
+			SHAMap::pointer currentMap = theApp->getMasterLedger().getCurrentLedger()->peekTransactionMap();
+			if (currentMap->getHash() == hash)
+			{
+				Log(lsINFO) << "node proposes our open transaction set";
+				currentMap = currentMap->snapShot(false);
+				mapComplete(hash, currentMap, false);
+				return currentMap;
+			}
+		}
+
 		if (doAcquire)
 		{
 			TransactionAcquire::pointer& acquiring = mAcquiring[hash];
@@ -818,7 +830,7 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 	newLCL->updateHash();
 	uint256 newLCLHash = newLCL->getHash();
 	Log(lsTRACE) << "newLCL " << newLCLHash.GetHex();
-	statusChange(newcoin::neACCEPTED_LEDGER, newLCL);
+	statusChange(newcoin::neACCEPTED_LEDGER, *newLCL);
 	if (mValidating)
 	{
 		assert (theApp->getOPs().getNetworkTimeNC() > newLCL->getCloseTimeNC());
