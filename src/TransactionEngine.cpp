@@ -2123,7 +2123,7 @@ TransactionEngineResult TransactionEngine::doOfferCreate(const SerializedTransac
 
 		terResult	= tenBAD_ISSUER;
 	}
-	else if (!accountFunds(mTxnAccountID, saTakerPays).isPositive())
+	else if (!accountFunds(mTxnAccountID, saTakerGets).isPositive())
 	{
 		Log(lsWARNING) << "doOfferCreate: delay: offers must be funded";
 
@@ -2168,6 +2168,8 @@ TransactionEngineResult TransactionEngine::doOfferCreate(const SerializedTransac
 					);
 
 		Log(lsWARNING) << "doOfferCreate: takeOffers=" << terResult;
+		Log(lsWARNING) << "doOfferCreate: takeOffers: saOfferPaid=" << saOfferPaid.getText();
+		Log(lsWARNING) << "doOfferCreate: takeOffers:  saOfferGot=" << saOfferGot.getText();
 
 		if (terSUCCESS == terResult)
 		{
@@ -2176,14 +2178,18 @@ TransactionEngineResult TransactionEngine::doOfferCreate(const SerializedTransac
 		}
 	}
 
-	// Log(lsWARNING) << "doOfferCreate: takeOffers:   saTakerPays=" << saTakerPays.getText();
-	// Log(lsWARNING) << "doOfferCreate: takeOffers:   saTakerGets=" << saTakerGets.getText();
+	Log(lsWARNING) << "doOfferCreate: takeOffers:   saTakerPays=" << saTakerPays.getText();
+	Log(lsWARNING) << "doOfferCreate: takeOffers:   saTakerGets=" << saTakerGets.getJson(0);
+	Log(lsWARNING) << "doOfferCreate: takeOffers:   saTakerGets=" << NewcoinAddress::createHumanAccountID(saTakerGets.getIssuer());
+	Log(lsWARNING) << "doOfferCreate: takeOffers: mTxnAccountID=" << NewcoinAddress::createHumanAccountID(mTxnAccountID);
+	Log(lsWARNING) << "doOfferCreate: takeOffers:         funds=" << accountFunds(mTxnAccountID, saTakerGets).getText();
+
 	// Log(lsWARNING) << "doOfferCreate: takeOffers: uPaysIssuerID=" << NewcoinAddress::createHumanAccountID(uPaysIssuerID);
 	// Log(lsWARNING) << "doOfferCreate: takeOffers: uGetsIssuerID=" << NewcoinAddress::createHumanAccountID(uGetsIssuerID);
 
 	if (terSUCCESS == terResult
-		&& !saTakerGets.isZero()						// Still offering something.
 		&& !saTakerPays.isZero()						// Still wanting something.
+		&& !saTakerGets.isZero()						// Still offering something.
 		&& accountFunds(mTxnAccountID, saTakerGets).isPositive())	// Still funded.
 	{
 		// We need to place the remainder of the offer into its order book.
