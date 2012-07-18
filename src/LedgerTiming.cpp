@@ -16,15 +16,15 @@ int ContinuousLedgerTiming::shouldClose(
 	bool anyTransactions,
 	int previousProposers,		// proposers in the last closing
 	int proposersClosed,		// proposers who have currently closed this ledgers
-	int previousSeconds,		// seconds the previous ledger took to reach consensus
-	int currentSeconds)			// seconds since the previous ledger closed
+	int previousMSeconds,		// seconds the previous ledger took to reach consensus
+	int currentMSeconds)			// seconds since the previous ledger closed
 {
-	assert((previousSeconds > 0) && (previousSeconds < 600));
-	assert((currentSeconds >= 0) && (currentSeconds < 600));
+	assert((previousMSeconds > 0) && (previousMSeconds < 600000));
+	assert((currentMSeconds >= 0) && (currentMSeconds < 600000));
 
 #if 0
 	Log(lsTRACE) << boost::str(boost::format("CLC::shouldClose Trans=%s, Prop: %d/%d, Secs: %d (last:%d)") %
-		(anyTransactions ? "yes" : "no") % previousProposers % proposersClosed % currentSeconds % previousSeconds);
+		(anyTransactions ? "yes" : "no") % previousProposers % proposersClosed % currentMSeconds % previousMSeconds);
 #endif
 
 	if (!anyTransactions)
@@ -32,24 +32,26 @@ int ContinuousLedgerTiming::shouldClose(
 		if (proposersClosed > (previousProposers / 4)) // did we miss a transaction?
 		{
 			Log(lsTRACE) << "no transactions, many proposers: now";
-			return currentSeconds;
+			return currentMSeconds;
 		}
-		if (previousSeconds > (LEDGER_IDLE_INTERVAL + 2)) // the last ledger was very slow to close
+		if (previousMSeconds > (1000 * (LEDGER_IDLE_INTERVAL + 2))) // the last ledger was very slow to close
 		{
 			Log(lsTRACE) << "slow to close";
-			return previousSeconds - 1;
+			if (previousMSeconds < 2000)
+				return previousMSeconds;
+			return previousMSeconds - 1000;
 		}
-		return LEDGER_IDLE_INTERVAL; // normal idle
+		return LEDGER_IDLE_INTERVAL * 1000; // normal idle
 	}
 
-	if (previousSeconds == LEDGER_IDLE_INTERVAL) // coming out of idle, close now
+	if (previousMSeconds == (1000 * LEDGER_IDLE_INTERVAL)) // coming out of idle, close now
 	{
 		Log(lsTRACE) << "leaving idle, close now";
-		return currentSeconds;
+		return currentMSeconds;
 	}
 
 	Log(lsTRACE) << "close now";
-	return currentSeconds; // this ledger should close now
+	return currentMSeconds; // this ledger should close now
 }
 
 // Returns whether we have a consensus or not. If so, we expect all honest nodes
@@ -70,7 +72,7 @@ bool ContinuousLedgerTiming::haveConsensus(
 
 	if (currentProposers < (previousProposers * 3 / 4))
 	{ // Less than 3/4 of the last ledger's proposers are present, we may need more time
-		if (currentAgreeTime < (previousAgreeTime + 2))
+		if (currentAgreeTime < (previousAgreeTime + LEDGER_MIN_CONSENSUS))
 		{
 			Log(lsTRACE) << "too fast, not enough proposers";
 			return false;

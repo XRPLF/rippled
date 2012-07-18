@@ -180,7 +180,7 @@ bool LCTransaction::updatePosition(int percentTime, bool proposing)
 	{
 #ifdef LC_DEBUG
 		Log(lsTRACE) << "No change (" << (mOurPosition ? "YES" : "NO") << ") : weight "
-			<< weight << ", seconds " << seconds;
+			<< weight << ", percent " << percentTime;
 #endif
 		return false;
 	}
@@ -191,14 +191,14 @@ bool LCTransaction::updatePosition(int percentTime, bool proposing)
 
 LedgerConsensus::LedgerConsensus(const uint256& prevLCLHash, Ledger::pointer previousLedger, uint32 closeTime)
 	:  mState(lcsPRE_CLOSE), mCloseTime(closeTime), mPrevLedgerHash(prevLCLHash), mPreviousLedger(previousLedger),
-	mCurrentSeconds(0), mClosePercent(0), mHaveCloseTimeConsensus(false)
+	mCurrentMSeconds(0), mClosePercent(0), mHaveCloseTimeConsensus(false)
 {
 	mValSeed = theConfig.VALIDATION_SEED;
 	Log(lsDEBUG) << "Creating consensus object";
 	Log(lsTRACE) << "LCL:" << previousLedger->getHash().GetHex() <<", ct=" << closeTime;
 	mPreviousProposers = theApp->getOPs().getPreviousProposers();
-	mPreviousSeconds = theApp->getOPs().getPreviousSeconds();
-	assert(mPreviousSeconds);
+	mPreviousMSeconds = theApp->getOPs().getPreviousConvergeTime();
+	assert(mPreviousMSeconds);
 
 	mCloseResolution = ContinuousLedgerTiming::getNextLedgerTimeResolution(
 		previousLedger->getCloseResolution(), previousLedger->getCloseAgree(), previousLedger->getLedgerSeq() + 1);
@@ -367,10 +367,11 @@ void LedgerConsensus::statePreClose()
 	bool anyTransactions = theApp->getMasterLedger().getCurrentLedger()->peekTransactionMap()->getHash().isNonZero();
 	int proposersClosed = mPeerPositions.size();
 
-	int sinceClose = theApp->getOPs().getNetworkTimeNC() - theApp->getOPs().getLastCloseNetTime();
+	// This ledger is open. This computes how long since the last ledger closed
+	int sinceClose = 1000 * (theApp->getOPs().getNetworkTimeNC() - theApp->getOPs().getLastCloseNetTime());
 
 	if (sinceClose >= ContinuousLedgerTiming::shouldClose(anyTransactions, mPreviousProposers, proposersClosed,
-		mPreviousSeconds, sinceClose))
+		mPreviousMSeconds, sinceClose))
 	{ // it is time to close the ledger (swap default and wobble ledgers)
 		Log(lsINFO) << "CLC:: closing ledger";
 		mState = lcsESTABLISH;
@@ -386,7 +387,7 @@ void LedgerConsensus::statePreClose()
 
 void LedgerConsensus::stateEstablish()
 { // we are establishing consensus
-	if (mCurrentSeconds < LEDGER_MIN_CONSENSUS)
+	if (mCurrentMSeconds < LEDGER_MIN_CONSENSUS)
 		return;
 	updateOurPositions();
 	if (!mHaveCloseTimeConsensus)
@@ -406,9 +407,7 @@ void LedgerConsensus::stateFinished()
 	// logic of calculating next ledger advances us out of this state
 
 	// CHECKME: Should we count proposers that didn't converge to our consensus set?
-	int convergeTime = (boost::posix_time::second_clock::universal_time() - mConsensusStartTime).seconds();
-	if (convergeTime <= 0) convergeTime = 1;
-	theApp->getOPs().newLCL(mPeerPositions.size(), convergeTime, mNewLedgerHash);
+	theApp->getOPs().newLCL(mPeerPositions.size(), mCurrentMSeconds, mNewLedgerHash);
 }
 
 void LedgerConsensus::stateAccepted()
@@ -433,14 +432,15 @@ void LedgerConsensus::timerEntry()
 		else Log(lsINFO) << "We still don't have it";
 	}
 
-	mCurrentSeconds = (mCloseTime != 0) ? (theApp->getOPs().getNetworkTimeNC() - mCloseTime) : 0;
-	mClosePercent = mCurrentSeconds * 100 / mPreviousSeconds;
+	mCurrentMSeconds = (mCloseTime == 0) ? 0 :
+			(boost::posix_time::second_clock::universal_time() - mConsensusStartTime).total_milliseconds();
+	mClosePercent = mCurrentMSeconds * 100 / mPreviousMSeconds;
 
 	switch (mState)
 	{
-		case lcsPRE_CLOSE:	statePreClose();	return;
-		case lcsESTABLISH:	stateEstablish();	return;
-		case lcsFINISHED:	stateFinished();	return;
+		case lcsPRE_CLOSE:	statePreClose();	if (mState != lcsESTABLISH) return;
+		case lcsESTABLISH:	stateEstablish();	if (mState != lcsFINISHED) return;
+		case lcsFINISHED:	stateFinished();	if (mState != lcsACCEPTED) return;
 		case lcsACCEPTED:	stateAccepted();	return;
 	}
 	assert(false);
@@ -527,7 +527,7 @@ bool LedgerConsensus::haveConsensus()
 	}
 	int currentValidations = theApp->getValidations().getCurrentValidationCount(mPreviousLedger->getCloseTimeNC());
 	return ContinuousLedgerTiming::haveConsensus(mPreviousProposers, agree + disagree, agree, currentValidations,
-		mPreviousSeconds, mCurrentSeconds);
+		mPreviousMSeconds, mCurrentMSeconds);
 }
 
 SHAMap::pointer LedgerConsensus::getTransactionTree(const uint256& hash, bool doAcquire)

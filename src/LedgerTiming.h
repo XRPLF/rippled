@@ -7,8 +7,8 @@
 // The number of seconds a validation remains current
 #	define LEDGER_MAX_INTERVAL		60
 
-// The number of seconds we wait minimum to ensure participation
-#	define LEDGER_MIN_CONSENSUS		2
+// The number of milliseconds we wait minimum to ensure participation
+#	define LEDGER_MIN_CONSENSUS		2000
 
 // Initial resolution of ledger close time
 #	define LEDGER_TIME_ACCURACY		30
@@ -18,6 +18,9 @@
 
 // How often to decrease resolution
 #	define LEDGER_RES_DECREASE		1
+
+// How often we check state or change positions (in milliseconds)
+#	define LEDGER_GRANULARITY		1000
 
 // Avalanche tuning
 #define AV_INIT_CONSENSUS_PCT		50	// percentage of nodes on our UNL that must vote yes

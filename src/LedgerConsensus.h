@@ -86,12 +86,12 @@ protected:
 	NewcoinAddress mValSeed;
 	bool mProposing, mValidating, mHaveCorrectLCL;
 
-	int mCurrentSeconds, mClosePercent, mCloseResolution;
+	int mCurrentMSeconds, mClosePercent, mCloseResolution;
 	bool mHaveCloseTimeConsensus;
 
 	boost::posix_time::ptime		mConsensusStartTime;
 	int								mPreviousProposers;
-	int								mPreviousSeconds;
+	int								mPreviousMSeconds;
 
 	// Convergence tracking, trusted peers indexed by hash of public key
 	boost::unordered_map<uint160, LedgerProposal::pointer> mPeerPositions;
