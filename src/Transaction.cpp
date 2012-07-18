@@ -70,6 +70,7 @@ Transaction::Transaction(
 
 	Log(lsINFO) << str(boost::format("Transaction: account: %s") % naSourceAccount.humanAccountID());
 	Log(lsINFO) << str(boost::format("Transaction: mAccountFrom: %s") % mAccountFrom.humanAccountID());
+
 	mTransaction->setSigningPubKey(mFromPubKey);
 	mTransaction->setSourceAccount(mAccountFrom);
 	mTransaction->setSequence(uSeq);

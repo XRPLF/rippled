@@ -271,7 +271,7 @@ public:
 	int64 getSNValue() const;
 	void setSNValue(int64);
 
-	std::string getCurrencyHuman() const;
+	std::string getHumanCurrency() const;
 
 	bool isNative() const		{ return mIsNative; }
 	bool isZero() const			{ return mValue == 0; }
@@ -344,6 +344,7 @@ public:
 	static STAmount convertToInternalAmount(uint64 displayAmount, uint64 totalNow, uint64 totalInit,
 		const char* name = NULL);
 
+	static std::string createHumanCurrency(const uint160& uCurrency);
 	static STAmount deserialize(SerializerIterator&);
 	static bool currencyFromString(uint160& uDstCurrency, const std::string& sCurrency);
 

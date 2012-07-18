@@ -45,11 +45,16 @@ bool STAmount::currencyFromString(uint160& uDstCurrency, const std::string& sCur
 }
 
 // XXX Broken for custom currencies?
-std::string STAmount::getCurrencyHuman() const
+std::string STAmount::getHumanCurrency() const
+{
+	return createHumanCurrency(mCurrency);
+}
+
+std::string STAmount::createHumanCurrency(const uint160& uCurrency)
 {
 	std::string	sCurrency;
 
-	if (mIsNative)
+	if (uCurrency.isZero())
 	{
 		return SYSTEM_CURRENCY_CODE;
 	}
@@ -57,7 +62,7 @@ std::string STAmount::getCurrencyHuman() const
 	{
 		Serializer	s(160/8);
 
-		s.add160(mCurrency);
+		s.add160(uCurrency);
 
 		SerializerIterator	sit(s);
 
@@ -836,13 +841,15 @@ Json::Value STAmount::getJson(int) const
 {
 	Json::Value elem(Json::objectValue);
 
-	
-
 	// This is a hack, many places don't specify a currency.  STAmount is used just as a value.
 	if (!mIsNative)
 	{
 		elem["value"]		= getText();
-		elem["currency"]	= getCurrencyHuman();
+		elem["currency"]	= getHumanCurrency();
+
+		if (!mIssuer.isZero())
+			elem["issuer"]	= NewcoinAddress::createHumanAccountID(mIssuer);
+
 	}else
 	{
 		elem=getText();

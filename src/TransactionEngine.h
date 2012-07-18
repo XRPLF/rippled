@@ -93,9 +93,10 @@ enum TransactionEngineParams
 enum TransactionAccountAction
 {
 	taaNONE,
-	taaCREATE,
-	taaMODIFY,
-	taaDELETE,
+	taaCACHED,				// Unmodified.
+	taaMODIFY,				// Modifed, must have previously been taaCACHED.
+	taaDELETE,				// Delete, must have previously been taaDELETE or taaMODIFY.
+	taaCREATE,				// Newly created.
 };
 
 typedef std::pair<TransactionAccountAction, SerializedLedgerEntry::pointer> AffectedAccount;
@@ -167,6 +168,7 @@ protected:
 	boost::unordered_set<uint256>	mUnfunded;	// Indexes that were found unfunded.
 
 	SLE::pointer	entryCreate(LedgerEntryType letType, const uint256& uIndex);
+	SLE::pointer	entryCache(LedgerEntryType letType, const uint256& uIndex);
 	void			entryDelete(SLE::pointer sleEntry);
 	void			entryModify(SLE::pointer sleEntry);
 
