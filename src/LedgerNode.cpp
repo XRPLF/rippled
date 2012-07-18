@@ -53,25 +53,25 @@ SLE::pointer Ledger::getSLE(const uint256& uHash)
 	return boost::make_shared<SLE>(node->peekSerializer(), node->getTag());
 }
 
-uint256 Ledger::getFirstLedgerID()
+uint256 Ledger::getFirstLedgerIndex()
 {
 	SHAMapItem::pointer node = mAccountStateMap->peekFirstItem();
 	return node ? node->getTag() : uint256();
 }
 
-uint256 Ledger::getLastLedgerID()
+uint256 Ledger::getLastLedgerIndex()
 {
 	SHAMapItem::pointer node = mAccountStateMap->peekLastItem();
 	return node ? node->getTag() : uint256();
 }
 
-uint256 Ledger::getNextLedgerID(const uint256& uHash)
+uint256 Ledger::getNextLedgerIndex(const uint256& uHash)
 {
 	SHAMapItem::pointer node = mAccountStateMap->peekNextItem(uHash);
 	return node ? node->getTag() : uint256();
 }
 
-uint256 Ledger::getNextLedgerID(const uint256& uHash, const uint256& uEnd)
+uint256 Ledger::getNextLedgerIndex(const uint256& uHash, const uint256& uEnd)
 {
 	SHAMapItem::pointer node = mAccountStateMap->peekNextItem(uHash);
 	if ((!node) || (node->getTag() > uEnd))
@@ -79,13 +79,13 @@ uint256 Ledger::getNextLedgerID(const uint256& uHash, const uint256& uEnd)
 	return node->getTag();
 }
 
-uint256 Ledger::getPrevLedgerID(const uint256& uHash)
+uint256 Ledger::getPrevLedgerIndex(const uint256& uHash)
 {
 	SHAMapItem::pointer node = mAccountStateMap->peekPrevItem(uHash);
 	return node ? node->getTag() : uint256();
 }
 
-uint256 Ledger::getPrevLedgerID(const uint256& uHash, const uint256& uBegin)
+uint256 Ledger::getPrevLedgerIndex(const uint256& uHash, const uint256& uBegin)
 {
 	SHAMapItem::pointer node = mAccountStateMap->peekNextItem(uHash);
 	if ((!node) || (node->getTag() < uBegin))
