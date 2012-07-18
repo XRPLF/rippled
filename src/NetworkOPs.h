@@ -100,7 +100,11 @@ public:
 	uint256					getCurrentLedger()
 		{ return mLedgerMaster->getCurrentLedger()->getHash(); }
 
-	// transaction operations
+	//
+	// Transaction operations
+	//
+	void submitTransaction(Transaction::pointer tpTrans);
+
 	Transaction::pointer processTransaction(Transaction::pointer transaction, uint32 targetLedger = 0,
 		Peer* source = NULL);
 	Transaction::pointer findTransactionByID(const uint256& transactionID);
