@@ -204,6 +204,13 @@ uint64_t be64toh(uint64_t value)
 	return(value);
 }
 
+uint32_t htobe32(uint32_t value)
+{
+	return(htonl(value));
+}
+
+uint32_t be32toh(uint32_t value){ return(value); }
+
 #endif
 
 // vim:ts=4
