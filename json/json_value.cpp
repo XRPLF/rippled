@@ -9,6 +9,9 @@
 # include <cpptl/conststring.h>
 #endif
 #include <cstddef>    // size_t
+
+#include <boost/lexical_cast.hpp>
+
 #ifndef JSON_USE_SIMPLE_INTERNAL_ALLOCATOR
 # include "json_batchallocator.h"
 #endif // #ifndef JSON_USE_SIMPLE_INTERNAL_ALLOCATOR
@@ -693,6 +696,7 @@ Value::asString() const
    case booleanValue:
       return value_.bool_ ? "true" : "false";
    case intValue:
+      return boost::lexical_cast<std::string>(value_.int_);
    case uintValue:
    case realValue:
    case arrayValue:
