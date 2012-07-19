@@ -6,6 +6,7 @@
 #include <boost/test/unit_test.hpp>
 
 #include "Config.h"
+#include "Log.h"
 #include "SerializedTypes.h"
 #include "utils.h"
 
@@ -744,7 +745,7 @@ uint64 STAmount::getRate(const STAmount& offerOut, const STAmount& offerIn)
 
 // Taker gets all taker can pay for with saTakerFunds, limited by saOfferPays and saOfferFunds.
 // -->  saOfferFunds: Limit for saOfferPays
-// -->  saTakerFunds: Limit for saOfferGets
+// -->  saTakerFunds: Limit for saOfferGets : How much taker really wants. : Driver
 // -->   saOfferPays: Request : this should be reduced as the offer is fullfilled.
 // -->   saOfferGets: Request : this should be reduced as the offer is fullfilled.
 // -->   saTakerPays: Total : Used to know the approximate ratio of the exchange.
@@ -766,26 +767,39 @@ bool STAmount::applyOffer(
 	// Amount offer can pay out, limited by offer and funds.
 	STAmount	saOfferPaysAvailable	= saOfferFunds < saOfferPays ? saOfferFunds : saOfferPays;
 
-	// Amount offer needs to get to be complete, limited by offer funds.
+	// Amount offer can get in proportion, limited by offer funds.
 	STAmount	saOfferGetsAvailable =
 		saOfferFunds == saOfferPays
 			? saOfferGets	// Offer was fully funded, avoid shenanigans.
 			: divide(multiply(saTakerPays, saOfferPaysAvailable, uint160(1)), saTakerGets, saOfferGets.getCurrency());
 
-	if (saTakerFunds >= saOfferGetsAvailable)
+	if (saOfferGets == saOfferGetsAvailable && saTakerFunds >= saOfferGets)
+	{
+		// Taker gets all of offer available.
+		saTakerPaid	= saOfferGets;		// Taker paid what offer could get.
+		saTakerGot	= saOfferPays;		// Taker got what offer could pay.
+
+		Log(lsINFO) << "applyOffer: took all outright";
+	}
+	else if (saTakerFunds >= saOfferGetsAvailable)
 	{
 		// Taker gets all of offer available.
 		saTakerPaid	= saOfferGetsAvailable;		// Taker paid what offer could get.
 		saTakerGot	= saOfferPaysAvailable;		// Taker got what offer could pay.
 
-		return true;	// No left over offer.
+		Log(lsINFO) << "applyOffer: took all available";
+	}
+	else
+	{
+		// Taker only get's a portion of offer.
+		saTakerPaid	= saTakerFunds;					// Taker paid all he had.
+		saTakerGot	= divide(multiply(saTakerFunds, saOfferPaysAvailable, uint160(1)), saOfferGetsAvailable, saOfferPays.getCurrency());
+
+		Log(lsINFO) << "applyOffer: saTakerGot=" << saTakerGot.getFullText();
+		Log(lsINFO) << "applyOffer: saOfferPaysAvailable=" << saOfferPaysAvailable.getFullText();
 	}
 
-	// Taker only get's a portion of offer.
-	saTakerPaid	= saTakerFunds;					// Taker paid all he had.
-	saTakerGot	= divide(multiply(saTakerFunds, saOfferPaysAvailable, uint160(1)), saOfferGetsAvailable, saOfferPays.getCurrency());
-
-	return saTakerGot >= saOfferPaysAvailable;
+	return saTakerGot >= saOfferPays;
 }
 
 STAmount STAmount::getPay(const STAmount& offerOut, const STAmount& offerIn, const STAmount& needed)
@@ -838,6 +852,23 @@ STAmount STAmount::deserialize(SerializerIterator& it)
 	return ret;
 }
 
+std::string STAmount::getFullText() const
+{
+	if (mIsNative)
+	{
+		return str(boost::format("%s " SYSTEM_CURRENCY_CODE) % getText());
+	}
+	else
+	{
+		return str(boost::format("%s %s/%s %dE%d" )
+			% getText()
+			% getHumanCurrency()
+			% NewcoinAddress::createHumanAccountID(mIssuer)
+			% getMantissa()
+			% getExponent());
+	}
+}
+
 Json::Value STAmount::getJson(int) const
 {
 	Json::Value elem(Json::objectValue);
@@ -851,7 +882,8 @@ Json::Value STAmount::getJson(int) const
 		if (!mIssuer.isZero())
 			elem["issuer"]	= NewcoinAddress::createHumanAccountID(mIssuer);
 
-	}else
+	}
+	else
 	{
 		elem=getText();
 	}
@@ -1037,10 +1069,22 @@ BOOST_AUTO_TEST_CASE( CustomCurrency_test )
 	if (STAmount(currency,31,-1).getText() != "3.1") BOOST_FAIL("STAmount fail");
 	if (STAmount(currency,31,-2).getText() != "0.31") BOOST_FAIL("STAmount fail");
 
-	if (STAmount::multiply(STAmount(currency, 20) , STAmount(3), currency).getText() != "60")
+	if (STAmount::multiply(STAmount(currency, 20), STAmount(3), currency).getText() != "60")
 		BOOST_FAIL("STAmount multiply fail");
-	if (STAmount::multiply(STAmount(currency, 20) , STAmount(3), uint160()).getText() != "60")
+	if (STAmount::multiply(STAmount(currency, 20), STAmount(3), uint160()).getText() != "60")
 		BOOST_FAIL("STAmount multiply fail");
+	if (STAmount::multiply(STAmount(20), STAmount(3), currency).getText() != "60")
+		BOOST_FAIL("STAmount multiply fail");
+	if (STAmount::multiply(STAmount(20), STAmount(3), uint160()).getText() != "60")
+		BOOST_FAIL("STAmount multiply fail");
+	if (STAmount::divide(STAmount(currency, 60) , STAmount(3), currency).getText() != "20")
+		BOOST_FAIL("STAmount divide fail");
+	if (STAmount::divide(STAmount(currency, 60) , STAmount(3), uint160()).getText() != "20")
+		BOOST_FAIL("STAmount divide fail");
+	if (STAmount::divide(STAmount(currency, 60) , STAmount(currency, 3), currency).getText() != "20")
+		BOOST_FAIL("STAmount divide fail");
+	if (STAmount::divide(STAmount(currency, 60) , STAmount(currency, 3), uint160()).getText() != "20")
+		BOOST_FAIL("STAmount divide fail");
 
 	BOOST_TEST_MESSAGE("Amount CC Complete");
 }

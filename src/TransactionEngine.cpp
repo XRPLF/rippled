@@ -12,9 +12,9 @@
 #include "../json/writer.h"
 
 #include "Config.h"
+#include "Log.h"
 #include "TransactionFormats.h"
 #include "utils.h"
-#include "Log.h"
 
 // Small for testing, should likely be 32 or 64.
 #define DIR_NODE_MAX	2
@@ -128,7 +128,7 @@ STAmount TransactionEngine::accountHolds(const uint160& uAccountID, const uint16
 		saAmount	= rippleHolds(uAccountID, uCurrency, uIssuerID);
 
 		Log(lsINFO) << "accountHolds: "
-			<< saAmount.getText()
+			<< saAmount.getFullText()
 			<< " : "
 			<< STAmount::createHumanCurrency(uCurrency)
 			<< "/"
@@ -273,8 +273,25 @@ STAmount TransactionEngine::accountSend(const uint160& uSenderID, const uint160&
 		SLE::pointer		sleSender	= entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uSenderID));
 		SLE::pointer		sleReceiver	= entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uReceiverID));
 
+		Log(lsINFO) << str(boost::format("accountSend> %s (%s) -> %s (%s) : %s")
+			% NewcoinAddress::createHumanAccountID(uSenderID)
+			% (sleSender->getIValueFieldAmount(sfBalance)).getFullText()
+			% NewcoinAddress::createHumanAccountID(uReceiverID)
+			% (sleReceiver->getIValueFieldAmount(sfBalance)).getFullText()
+			% saAmount.getFullText());
+
 		sleSender->setIFieldAmount(sfBalance, sleSender->getIValueFieldAmount(sfBalance) - saAmount);
 		sleReceiver->setIFieldAmount(sfBalance, sleReceiver->getIValueFieldAmount(sfBalance) + saAmount);
+
+		Log(lsINFO) << str(boost::format("accountSend< %s (%s) -> %s (%s) : %s")
+			% NewcoinAddress::createHumanAccountID(uSenderID)
+			% (sleSender->getIValueFieldAmount(sfBalance)).getFullText()
+			% NewcoinAddress::createHumanAccountID(uReceiverID)
+			% (sleReceiver->getIValueFieldAmount(sfBalance)).getFullText()
+			% saAmount.getFullText());
+
+		entryModify(sleSender);
+		entryModify(sleReceiver);
 
 		saActualCost	= saAmount;
 	}
@@ -1930,11 +1947,10 @@ TransactionEngineResult TransactionEngine::doInvoice(const SerializedTransaction
 	return tenUNKNOWN;
 }
 
-// Take as much as possible. Adjusts account balances.
+// Take as much as possible. Adjusts account balances. Charges fees on top to taker.
 // -->   uBookBase: The order book to take against.
-// --> saTakerPays: What the taker wanted (w/ issuer)
+// --> saTakerPays: What the taker offers (w/ issuer)
 // --> saTakerGets: What the taker wanted (w/ issuer)
-// --> saTakerFund: What taker can afford
 // <-- saTakerPaid: What taker paid not including fees. To reduce an offer.
 // <--  saTakerGot: What taker got not including fees. To reduce an offer.
 // <--   terResult: terSUCCESS or terNO_ACCOUNT
@@ -2017,6 +2033,12 @@ TransactionEngineResult TransactionEngine::takeOffers(
 			STAmount		saOfferPays		= sleOffer->getIValueFieldAmount(sfTakerGets);
 			STAmount		saOfferGets		= sleOffer->getIValueFieldAmount(sfTakerPays);
 
+			if (sleOffer->getIFieldPresent(sfGetsIssuer))
+				saOfferPays.setIssuer(sleOffer->getIValueFieldAccount(sfGetsIssuer).getAccountID());
+
+			if (sleOffer->getIFieldPresent(sfPaysIssuer))
+				saOfferGets.setIssuer(sleOffer->getIValueFieldAccount(sfPaysIssuer).getAccountID());
+
 			if (sleOffer->getIFieldPresent(sfExpiration) && sleOffer->getIFieldU32(sfExpiration) <= mLedger->getParentCloseTimeNC())
 			{
 				// Offer is expired. Delete it.
@@ -2037,8 +2059,7 @@ TransactionEngineResult TransactionEngine::takeOffers(
 			{
 				// Get offer funds available.
 
-				if (sleOffer->getIFieldPresent(sfPaysIssuer))
-					saOfferPays.setIssuer(sleOffer->getIValueFieldAccount(sfPaysIssuer).getAccountID());
+				Log(lsINFO) << "takeOffers: saOfferPays=" << saOfferPays.getJson(0);
 
 				STAmount		saOfferFunds	= accountFunds(uOfferOwnerID, saOfferPays);
 				STAmount		saTakerFunds	= accountFunds(uTakerAccountID, saTakerPays);
@@ -2055,14 +2076,34 @@ TransactionEngineResult TransactionEngine::takeOffers(
 				}
 				else
 				{
+					STAmount	saPay		= saTakerPays - saTakerPaid;
+						if (saTakerFunds < saPay)
+							saPay	= saTakerFunds;
 					STAmount	saSubTakerPaid;
 					STAmount	saSubTakerGot;
 
+					Log(lsINFO) << "takeOffers: applyOffer:    saTakerPays: " << saTakerPays.getFullText();
+					Log(lsINFO) << "takeOffers: applyOffer:    saTakerPaid: " << saTakerPaid.getFullText();
+					Log(lsINFO) << "takeOffers: applyOffer:   saTakerFunds: " << saTakerFunds.getFullText();
+					Log(lsINFO) << "takeOffers: applyOffer:   saOfferFunds: " << saOfferFunds.getFullText();
+					Log(lsINFO) << "takeOffers: applyOffer:          saPay: " << saPay.getFullText();
+					Log(lsINFO) << "takeOffers: applyOffer:    saOfferPays: " << saOfferPays.getFullText();
+					Log(lsINFO) << "takeOffers: applyOffer:    saOfferGets: " << saOfferGets.getFullText();
+					Log(lsINFO) << "takeOffers: applyOffer:    saTakerPays: " << saTakerPays.getFullText();
+					Log(lsINFO) << "takeOffers: applyOffer:    saTakerGets: " << saTakerGets.getFullText();
+
 					bool	bOfferDelete	= STAmount::applyOffer(
-						saOfferFunds, saTakerFunds,
-						saOfferPays, saOfferGets,
-						saTakerPays, saTakerGets,
-						saSubTakerPaid, saSubTakerGot);
+						saOfferFunds,
+						saPay,				// Driver XXX need to account for fees.
+						saOfferPays,
+						saOfferGets,
+						saTakerPays,
+						saTakerGets,
+						saSubTakerPaid,
+						saSubTakerGot);
+
+					Log(lsINFO) << "takeOffers: applyOffer: saSubTakerPaid: " << saSubTakerPaid.getFullText();
+					Log(lsINFO) << "takeOffers: applyOffer:  saSubTakerGot: " << saSubTakerGot.getFullText();
 
 					// Adjust offer
 					if (bOfferDelete)
@@ -2115,10 +2156,10 @@ Log(lsWARNING) << "doOfferCreate> " << txn.getJson(0);
 	uint160					uGetsIssuerID	= txn.getITFieldAccount(sfGetsIssuer);
 	STAmount				saTakerPays		= txn.getITFieldAmount(sfTakerPays);
 		saTakerPays.setIssuer(uPaysIssuerID);
-Log(lsWARNING) << "doOfferCreate: saTakerPays=" << saTakerPays.getJson(0);
+Log(lsWARNING) << "doOfferCreate: saTakerPays=" << saTakerPays.getFullText();
 	STAmount				saTakerGets		= txn.getITFieldAmount(sfTakerGets);
 		saTakerGets.setIssuer(uGetsIssuerID);
-Log(lsWARNING) << "doOfferCreate: saTakerGets=" << saTakerGets.getJson(0);
+Log(lsWARNING) << "doOfferCreate: saTakerGets=" << saTakerGets.getFullText();
 	uint32					uExpiration		= txn.getITFieldU32(sfExpiration);
 	bool					bHaveExpiration	= txn.getITFieldPresent(sfExpiration);
 	uint32					uSequence		= txn.getSequence();
@@ -2218,21 +2259,23 @@ Log(lsWARNING) << "doOfferCreate: saTakerGets=" << saTakerGets.getJson(0);
 					);
 
 		Log(lsWARNING) << "doOfferCreate: takeOffers=" << terResult;
-		Log(lsWARNING) << "doOfferCreate: takeOffers: saOfferPaid=" << saOfferPaid.getText();
-		Log(lsWARNING) << "doOfferCreate: takeOffers:  saOfferGot=" << saOfferGot.getText();
+		Log(lsWARNING) << "doOfferCreate: takeOffers: saOfferPaid=" << saOfferPaid.getFullText();
+		Log(lsWARNING) << "doOfferCreate: takeOffers:  saOfferGot=" << saOfferGot.getFullText();
+		Log(lsWARNING) << "doOfferCreate: takeOffers: saTakerPays=" << saTakerPays.getFullText();
+		Log(lsWARNING) << "doOfferCreate: takeOffers: saTakerGets=" << saTakerGets.getFullText();
 
 		if (terSUCCESS == terResult)
 		{
-			saTakerGets		-= saOfferPaid;				// Reduce payout to takers by what srcAccount just paid.
 			saTakerPays		-= saOfferGot;				// Reduce payin from takers by what offer just got.
+			saTakerGets		-= saOfferPaid;				// Reduce payout to takers by what srcAccount just paid.
 		}
 	}
 
-	Log(lsWARNING) << "doOfferCreate: takeOffers:   saTakerPays=" << saTakerPays.getText();
-	Log(lsWARNING) << "doOfferCreate: takeOffers:   saTakerGets=" << saTakerGets.getJson(0);
-	Log(lsWARNING) << "doOfferCreate: takeOffers:   saTakerGets=" << NewcoinAddress::createHumanAccountID(saTakerGets.getIssuer());
+	Log(lsWARNING) << "doOfferCreate: takeOffers: saTakerPays=" << saTakerPays.getFullText();
+	Log(lsWARNING) << "doOfferCreate: takeOffers: saTakerGets=" << saTakerGets.getFullText();
+	Log(lsWARNING) << "doOfferCreate: takeOffers: saTakerGets=" << NewcoinAddress::createHumanAccountID(saTakerGets.getIssuer());
 	Log(lsWARNING) << "doOfferCreate: takeOffers: mTxnAccountID=" << NewcoinAddress::createHumanAccountID(mTxnAccountID);
-	Log(lsWARNING) << "doOfferCreate: takeOffers:         funds=" << accountFunds(mTxnAccountID, saTakerGets).getText();
+	Log(lsWARNING) << "doOfferCreate: takeOffers:         funds=" << accountFunds(mTxnAccountID, saTakerGets).getFullText();
 
 	// Log(lsWARNING) << "doOfferCreate: takeOffers: uPaysIssuerID=" << NewcoinAddress::createHumanAccountID(uPaysIssuerID);
 	// Log(lsWARNING) << "doOfferCreate: takeOffers: uGetsIssuerID=" << NewcoinAddress::createHumanAccountID(uGetsIssuerID);
