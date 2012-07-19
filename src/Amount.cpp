@@ -6,6 +6,7 @@
 #include <boost/test/unit_test.hpp>
 
 #include "Config.h"
+#include "Log.h"
 #include "SerializedTypes.h"
 #include "utils.h"
 
@@ -766,26 +767,39 @@ bool STAmount::applyOffer(
 	// Amount offer can pay out, limited by offer and funds.
 	STAmount	saOfferPaysAvailable	= saOfferFunds < saOfferPays ? saOfferFunds : saOfferPays;
 
-	// Amount offer needs to get to be complete, limited by offer funds.
+	// Amount offer can get in proportion, limited by offer funds.
 	STAmount	saOfferGetsAvailable =
 		saOfferFunds == saOfferPays
 			? saOfferGets	// Offer was fully funded, avoid shenanigans.
 			: divide(multiply(saTakerPays, saOfferPaysAvailable, uint160(1)), saTakerGets, saOfferGets.getCurrency());
 
-	if (saTakerFunds >= saOfferGetsAvailable)
+	if (saOfferGets == saOfferGetsAvailable && saTakerFunds >= saOfferGets)
+	{
+		// Taker gets all of offer available.
+		saTakerPaid	= saOfferGets;		// Taker paid what offer could get.
+		saTakerGot	= saOfferPays;		// Taker got what offer could pay.
+
+		Log(lsINFO) << "applyOffer: took all outright";
+	}
+	else if (saTakerFunds >= saOfferGetsAvailable)
 	{
 		// Taker gets all of offer available.
 		saTakerPaid	= saOfferGetsAvailable;		// Taker paid what offer could get.
 		saTakerGot	= saOfferPaysAvailable;		// Taker got what offer could pay.
 
-		return true;	// No left over offer.
+		Log(lsINFO) << "applyOffer: took all available";
+	}
+	else
+	{
+		// Taker only get's a portion of offer.
+		saTakerPaid	= saTakerFunds;					// Taker paid all he had.
+		saTakerGot	= divide(multiply(saTakerFunds, saOfferPaysAvailable, uint160(1)), saOfferGetsAvailable, saOfferPays.getCurrency());
+
+		Log(lsINFO) << "applyOffer: saTakerGot=" << saTakerGot.getFullText();
+		Log(lsINFO) << "applyOffer: saOfferPaysAvailable=" << saOfferPaysAvailable.getFullText();
 	}
 
-	// Taker only get's a portion of offer.
-	saTakerPaid	= saTakerFunds;					// Taker paid all he had.
-	saTakerGot	= divide(multiply(saTakerFunds, saOfferPaysAvailable, uint160(1)), saOfferGetsAvailable, saOfferPays.getCurrency());
-
-	return saTakerGot >= saOfferPaysAvailable;
+	return saTakerGot >= saOfferPays;
 }
 
 STAmount STAmount::getPay(const STAmount& offerOut, const STAmount& offerIn, const STAmount& needed)
