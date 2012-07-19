@@ -830,7 +830,8 @@ Json::Value RPCServer::doNicknameSet(const Json::Value& params)
 	return obj;
 }
 
-// offer_create <seed> <paying_account> <taker_pays_amount> <taker_pays_currency> <taker_pays_issuer> <takers_gets_amount> <takers_gets_currency> <takers_gets_issuer> <expires> [passive]
+// offer_create <seed> <paying_account> <takers_gets_amount> <takers_gets_currency> <takers_gets_issuer> <taker_pays_amount> <taker_pays_currency> <taker_pays_issuer> <expires> [passive]
+// *offering* for *wants*
 Json::Value RPCServer::doOfferCreate(const Json::Value &params)
 {
 	NewcoinAddress	naSeed;
@@ -848,21 +849,21 @@ Json::Value RPCServer::doOfferCreate(const Json::Value &params)
 	{
 		return RPCError(rpcSRC_ACT_MALFORMED);
 	}
-	else if (!saTakerPays.setValue(params[2u].asString(), params[3u].asString()))
-	{
-		return RPCError(rpcPAYS_AMT_MALFORMED);
-	}
-	else if (!naTakerPaysID.setAccountID(params[4u].asString()))
-	{
-		return RPCError(rpcPAYS_ACT_MALFORMED);
-	}
-	else if (!saTakerGets.setValue(params[5u].asString(), params[6u].asString()))
+	else if (!saTakerGets.setValue(params[2u].asString(), params[3u].asString()))
 	{
 		return RPCError(rpcGETS_AMT_MALFORMED);
 	}
-	else if (!naTakerGetsID.setAccountID(params[7u].asString()))
+	else if (!naTakerGetsID.setAccountID(params[4u].asString()))
 	{
 		return RPCError(rpcGETS_ACT_MALFORMED);
+	}
+	else if (!saTakerPays.setValue(params[5u].asString(), params[6u].asString()))
+	{
+		return RPCError(rpcPAYS_AMT_MALFORMED);
+	}
+	else if (!naTakerPaysID.setAccountID(params[7u].asString()))
+	{
+		return RPCError(rpcPAYS_ACT_MALFORMED);
 	}
 	else if (params.size() == 10 && params[9u].asString() != "passive")
 	{

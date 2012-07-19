@@ -261,6 +261,7 @@ public:
 	SerializedTypeID getSType() const	{ return STI_AMOUNT; }
 	std::string getText() const;
 	std::string getRaw() const;
+	std::string getFullText() const;
 	void add(Serializer& s) const;
 
 	int getExponent() const				{ return mOffset; }

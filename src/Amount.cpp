@@ -743,7 +743,7 @@ uint64 STAmount::getRate(const STAmount& offerOut, const STAmount& offerIn)
 
 // Taker gets all taker can pay for with saTakerFunds, limited by saOfferPays and saOfferFunds.
 // -->  saOfferFunds: Limit for saOfferPays
-// -->  saTakerFunds: Limit for saOfferGets
+// -->  saTakerFunds: Limit for saOfferGets : How much taker really wants. : Driver
 // -->   saOfferPays: Request : this should be reduced as the offer is fullfilled.
 // -->   saOfferGets: Request : this should be reduced as the offer is fullfilled.
 // -->   saTakerPays: Total : Used to know the approximate ratio of the exchange.
@@ -837,6 +837,23 @@ STAmount STAmount::deserialize(SerializerIterator& it)
 	return ret;
 }
 
+std::string STAmount::getFullText() const
+{
+	if (mIsNative)
+	{
+		return str(boost::format("%s " SYSTEM_CURRENCY_CODE) % getText());
+	}
+	else
+	{
+		return str(boost::format("%s %s/%s %dE%d" )
+			% getText()
+			% getHumanCurrency()
+			% NewcoinAddress::createHumanAccountID(mIssuer)
+			% getMantissa()
+			% getExponent());
+	}
+}
+
 Json::Value STAmount::getJson(int) const
 {
 	Json::Value elem(Json::objectValue);
@@ -850,7 +867,8 @@ Json::Value STAmount::getJson(int) const
 		if (!mIssuer.isZero())
 			elem["issuer"]	= NewcoinAddress::createHumanAccountID(mIssuer);
 
-	}else
+	}
+	else
 	{
 		elem=getText();
 	}
