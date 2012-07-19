@@ -1069,10 +1069,22 @@ BOOST_AUTO_TEST_CASE( CustomCurrency_test )
 	if (STAmount(currency,31,-1).getText() != "3.1") BOOST_FAIL("STAmount fail");
 	if (STAmount(currency,31,-2).getText() != "0.31") BOOST_FAIL("STAmount fail");
 
-	if (STAmount::multiply(STAmount(currency, 20) , STAmount(3), currency).getText() != "60")
+	if (STAmount::multiply(STAmount(currency, 20), STAmount(3), currency).getText() != "60")
 		BOOST_FAIL("STAmount multiply fail");
-	if (STAmount::multiply(STAmount(currency, 20) , STAmount(3), uint160()).getText() != "60")
+	if (STAmount::multiply(STAmount(currency, 20), STAmount(3), uint160()).getText() != "60")
 		BOOST_FAIL("STAmount multiply fail");
+	if (STAmount::multiply(STAmount(20), STAmount(3), currency).getText() != "60")
+		BOOST_FAIL("STAmount multiply fail");
+	if (STAmount::multiply(STAmount(20), STAmount(3), uint160()).getText() != "60")
+		BOOST_FAIL("STAmount multiply fail");
+	if (STAmount::divide(STAmount(currency, 60) , STAmount(3), currency).getText() != "20")
+		BOOST_FAIL("STAmount divide fail");
+	if (STAmount::divide(STAmount(currency, 60) , STAmount(3), uint160()).getText() != "20")
+		BOOST_FAIL("STAmount divide fail");
+	if (STAmount::divide(STAmount(currency, 60) , STAmount(currency, 3), currency).getText() != "20")
+		BOOST_FAIL("STAmount divide fail");
+	if (STAmount::divide(STAmount(currency, 60) , STAmount(currency, 3), uint160()).getText() != "20")
+		BOOST_FAIL("STAmount divide fail");
 
 	BOOST_TEST_MESSAGE("Amount CC Complete");
 }
