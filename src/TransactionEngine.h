@@ -93,9 +93,10 @@ enum TransactionEngineParams
 enum TransactionAccountAction
 {
 	taaNONE,
-	taaCREATE,
-	taaMODIFY,
-	taaDELETE,
+	taaCACHED,				// Unmodified.
+	taaMODIFY,				// Modifed, must have previously been taaCACHED.
+	taaDELETE,				// Delete, must have previously been taaDELETE or taaMODIFY.
+	taaCREATE,				// Newly created.
 };
 
 typedef std::pair<TransactionAccountAction, SerializedLedgerEntry::pointer> AffectedAccount;
@@ -167,18 +168,21 @@ protected:
 	boost::unordered_set<uint256>	mUnfunded;	// Indexes that were found unfunded.
 
 	SLE::pointer	entryCreate(LedgerEntryType letType, const uint256& uIndex);
+	SLE::pointer	entryCache(LedgerEntryType letType, const uint256& uIndex);
 	void			entryDelete(SLE::pointer sleEntry);
 	void			entryModify(SLE::pointer sleEntry);
 
-	STAmount	rippleHolds(const uint160& uAccountID, const uint160& uCurrency, const uint160& uIssuerID);
-	STAmount	rippleTransit(const uint160& uSenderID, const uint160& uReceiverID, const uint160& uIssuerID, const STAmount& saAmount);
-	STAmount	rippleSend(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount);
+	void			entryReset(const SerializedTransaction& txn);
 
-	STAmount	accountHolds(const uint160& uAccountID, const uint160& uCurrency, const uint160& uIssuerID);
-	STAmount	accountSend(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount);
-	STAmount	accountFunds(const uint160& uAccountID, const STAmount& saDefault);
+	STAmount		rippleHolds(const uint160& uAccountID, const uint160& uCurrency, const uint160& uIssuerID);
+	STAmount		rippleTransit(const uint160& uSenderID, const uint160& uReceiverID, const uint160& uIssuerID, const STAmount& saAmount);
+	STAmount		rippleSend(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount);
 
-	void		txnWrite();
+	STAmount		accountHolds(const uint160& uAccountID, const uint160& uCurrency, const uint160& uIssuerID);
+	STAmount		accountSend(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount);
+	STAmount		accountFunds(const uint160& uAccountID, const STAmount& saDefault);
+
+	void			txnWrite();
 
 	TransactionEngineResult offerDelete(const SLE::pointer& sleOffer, const uint256& uOfferIndex, const uint160& uOwnerID);
 

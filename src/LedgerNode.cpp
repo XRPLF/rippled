@@ -53,52 +53,44 @@ SLE::pointer Ledger::getSLE(const uint256& uHash)
 	return boost::make_shared<SLE>(node->peekSerializer(), node->getTag());
 }
 
-SLE::pointer Ledger::getFirstSLE()
+uint256 Ledger::getFirstLedgerIndex()
 {
 	SHAMapItem::pointer node = mAccountStateMap->peekFirstItem();
-	if (!node)
-		return SLE::pointer();
-	return boost::make_shared<SLE>(node->peekSerializer(), node->getTag());
+	return node ? node->getTag() : uint256();
 }
 
-SLE::pointer Ledger::getLastSLE()
+uint256 Ledger::getLastLedgerIndex()
 {
 	SHAMapItem::pointer node = mAccountStateMap->peekLastItem();
-	if (!node)
-		return SLE::pointer();
-	return boost::make_shared<SLE>(node->peekSerializer(), node->getTag());
+	return node ? node->getTag() : uint256();
 }
 
-SLE::pointer Ledger::getNextSLE(const uint256& uHash)
+uint256 Ledger::getNextLedgerIndex(const uint256& uHash)
 {
 	SHAMapItem::pointer node = mAccountStateMap->peekNextItem(uHash);
-	if (!node)
-		return SLE::pointer();
-	return boost::make_shared<SLE>(node->peekSerializer(), node->getTag());
+	return node ? node->getTag() : uint256();
 }
 
-SLE::pointer Ledger::getNextSLE(const uint256& uHash, const uint256& uEnd)
+uint256 Ledger::getNextLedgerIndex(const uint256& uHash, const uint256& uEnd)
 {
 	SHAMapItem::pointer node = mAccountStateMap->peekNextItem(uHash);
 	if ((!node) || (node->getTag() > uEnd))
-		return SLE::pointer();
-	return boost::make_shared<SLE>(node->peekSerializer(), node->getTag());
+		return uint256();
+	return node->getTag();
 }
 
-SLE::pointer Ledger::getPrevSLE(const uint256& uHash)
+uint256 Ledger::getPrevLedgerIndex(const uint256& uHash)
 {
 	SHAMapItem::pointer node = mAccountStateMap->peekPrevItem(uHash);
-	if (!node)
-		return SLE::pointer();
-	return boost::make_shared<SLE>(node->peekSerializer(), node->getTag());
+	return node ? node->getTag() : uint256();
 }
 
-SLE::pointer Ledger::getPrevSLE(const uint256& uHash, const uint256& uBegin)
+uint256 Ledger::getPrevLedgerIndex(const uint256& uHash, const uint256& uBegin)
 {
 	SHAMapItem::pointer node = mAccountStateMap->peekNextItem(uHash);
 	if ((!node) || (node->getTag() < uBegin))
-		return SLE::pointer();
-	return boost::make_shared<SLE>(node->peekSerializer(), node->getTag());
+		return uint256();
+	return node->getTag();
 }
 
 SLE::pointer Ledger::getASNode(LedgerStateParms& parms, const uint256& nodeID,

@@ -230,11 +230,6 @@ bool Ledger::addTransaction(const uint256& txID, const Serializer& txn)
 	return true;
 }
 
-bool Ledger::hasTransaction(const uint256& transID) const
-{
-	return mTransactionMap->hasItem(transID);
-}
-
 Transaction::pointer Ledger::getTransaction(const uint256& transID) const
 {
 	SHAMapItem::pointer item = mTransactionMap->peekItem(transID);

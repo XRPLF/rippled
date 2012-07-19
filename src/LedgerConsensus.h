@@ -86,12 +86,12 @@ protected:
 	NewcoinAddress mValSeed;
 	bool mProposing, mValidating, mHaveCorrectLCL;
 
-	int mCurrentSeconds, mClosePercent, mCloseResolution;
+	int mCurrentMSeconds, mClosePercent, mCloseResolution;
 	bool mHaveCloseTimeConsensus;
 
 	boost::posix_time::ptime		mConsensusStartTime;
 	int								mPreviousProposers;
-	int								mPreviousSeconds;
+	int								mPreviousMSeconds;
 
 	// Convergence tracking, trusted peers indexed by hash of public key
 	boost::unordered_map<uint160, LedgerProposal::pointer> mPeerPositions;
@@ -125,14 +125,14 @@ protected:
 	void addPosition(LedgerProposal&, bool ours);
 	void removePosition(LedgerProposal&, bool ours);
 	void sendHaveTxSet(const uint256& set, bool direct);
-	void applyTransactions(SHAMap::pointer transactionSet, Ledger::pointer targetLedger,
+	void applyTransactions(SHAMap::pointer transactionSet, Ledger::pointer targetLedger, Ledger::pointer checkLedger,
 		CanonicalTXSet& failedTransactions, bool final);
 	void applyTransaction(TransactionEngine& engine, SerializedTransaction::pointer txn, Ledger::pointer targetLedger,
 		CanonicalTXSet& failedTransactions, bool final);
 
 	// manipulating our own position
-	void statusChange(newcoin::NodeEvent, Ledger::pointer ledger);
-	void takeInitialPosition(Ledger::pointer initialLedger);
+	void statusChange(newcoin::NodeEvent, Ledger& ledger);
+	void takeInitialPosition(Ledger& initialLedger);
 	void updateOurPositions();
 	int getThreshold();
 	void beginAccept();

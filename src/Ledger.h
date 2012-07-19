@@ -151,7 +151,7 @@ public:
 	bool isAcquiringAS(void);
 
 	// Transaction Functions
-	bool hasTransaction(const uint256& TransID) const;
+	bool hasTransaction(const uint256& TransID) const { return mTransactionMap->hasItem(TransID); }
 	Transaction::pointer getTransaction(const uint256& transID) const;
 
 	// high-level functions
@@ -167,12 +167,12 @@ public:
 
 	// next/prev function
 	SLE::pointer getSLE(const uint256& uHash);
-	SLE::pointer getFirstSLE();
-	SLE::pointer getLastSLE();
-	SLE::pointer getNextSLE(const uint256& uHash);							// first node >hash
-	SLE::pointer getNextSLE(const uint256& uHash, const uint256& uEnd);		// first node >hash, <end
-	SLE::pointer getPrevSLE(const uint256& uHash);							// last node <hash
-	SLE::pointer getPrevSLE(const uint256& uHash, const uint256& uBegin);	// last node <hash, >begin
+	uint256 getFirstLedgerIndex();
+	uint256 getLastLedgerIndex();
+	uint256 getNextLedgerIndex(const uint256& uHash);							// first node >hash
+	uint256 getNextLedgerIndex(const uint256& uHash, const uint256& uEnd);		// first node >hash, <end
+	uint256 getPrevLedgerIndex(const uint256& uHash);							// last node <hash
+	uint256 getPrevLedgerIndex(const uint256& uHash, const uint256& uBegin);	// last node <hash, >begin
 
 	// index calculation functions
 	static uint256 getAccountRootIndex(const uint160& uAccountID);

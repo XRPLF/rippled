@@ -100,7 +100,11 @@ public:
 	uint256					getCurrentLedger()
 		{ return mLedgerMaster->getCurrentLedger()->getHash(); }
 
-	// transaction operations
+	//
+	// Transaction operations
+	//
+	void submitTransaction(Transaction::pointer tpTrans);
+
 	Transaction::pointer processTransaction(Transaction::pointer transaction, uint32 targetLedger = 0,
 		Peer* source = NULL);
 	Transaction::pointer findTransactionByID(const uint256& transactionID);
@@ -182,7 +186,7 @@ public:
 	void setStateTimer();
 	void newLCL(int proposers, int convergeTime, const uint256& ledgerHash);
 	int getPreviousProposers()			{ return mLastCloseProposers; }
-	int getPreviousSeconds()			{ return mLastCloseConvergeTime; }
+	int getPreviousConvergeTime()		{ return mLastCloseConvergeTime; }
 	uint32 getLastCloseNetTime()		{ return mLastCloseNetTime; }
 	void setLastCloseNetTime(uint32 t)	{ mLastCloseNetTime = t; }
 	Json::Value getServerInfo();

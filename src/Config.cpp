@@ -106,9 +106,9 @@ void Config::setup(const std::string& strConf)
 	if (ec)
 		throw std::runtime_error(str(boost::format("Can not create %s") % DATA_DIR));
 
-	std::cerr << "CONFIG FILE: " << CONFIG_FILE << std::endl;
-	std::cerr << "CONFIG DIR: " << CONFIG_DIR << std::endl;
-	std::cerr << "DATA DIR: " << DATA_DIR << std::endl;
+	// std::cerr << "CONFIG FILE: " << CONFIG_FILE << std::endl;
+	// std::cerr << "CONFIG DIR: " << CONFIG_DIR << std::endl;
+	// std::cerr << "DATA DIR: " << DATA_DIR << std::endl;
 
 	//
 	// Defaults
@@ -190,7 +190,7 @@ void Config::load()
 			if (smtTmp)
 			{
 				IPS	= *smtTmp;
-				sectionEntriesPrint(&IPS, SECTION_IPS);
+				// sectionEntriesPrint(&IPS, SECTION_IPS);
 			}
 
 			(void) sectionSingleB(secConfig, SECTION_VALIDATORS_SITE, VALIDATORS_SITE);

@@ -131,7 +131,7 @@ Json::Value callRPC(const std::string& strMethod, const Json::Value& params)
 	std::string strPost = createHTTPPost(strRequest, mapRequestHeaders);
 	stream << strPost << std::flush;
 
-	std::cout << "post  " << strPost << std::endl;
+	// std::cout << "post  " << strPost << std::endl;
 
 	// Receive reply
 	std::map<std::string, std::string> mapHeaders;

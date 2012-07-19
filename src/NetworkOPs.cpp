@@ -44,6 +44,24 @@ uint32 NetworkOPs::getCurrentLedgerID()
 	return mLedgerMaster->getCurrentLedger()->getLedgerSeq();
 }
 
+// Sterilize transaction through serialization.
+void NetworkOPs::submitTransaction(Transaction::pointer tpTrans)
+{
+	Serializer s;
+
+	tpTrans->getSTransaction()->add(s);
+
+	std::vector<unsigned char>	vucTransaction	= s.getData();
+
+	SerializerIterator		sit(s);
+
+	Transaction::pointer	tpTransNew	= Transaction::sharedTransaction(s.getData(), true);
+
+	assert(tpTransNew);
+
+	(void) NetworkOPs::processTransaction(tpTransNew);
+}
+
 Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, uint32 tgtLedger, Peer* source)
 {
 	Transaction::pointer dbtx = theApp->getMasterTransaction().fetch(trans->getID(), true);
@@ -280,7 +298,7 @@ RippleState::pointer NetworkOPs::accessRippleState(const uint256& uLedger, const
 
 void NetworkOPs::setStateTimer()
 { // set timer early if ledger is closing
-	mNetTimer.expires_from_now(boost::posix_time::seconds(1));
+	mNetTimer.expires_from_now(boost::posix_time::milliseconds(LEDGER_GRANULARITY));
 	mNetTimer.async_wait(boost::bind(&NetworkOPs::checkState, this, boost::asio::placeholders::error));
 }
 

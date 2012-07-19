@@ -463,7 +463,7 @@ Json::Value RPCServer::doAccountEmailSet(const Json::Value &params)
 		uint256(),
 		NewcoinAddress());
 
-	(void) mNetOps->processTransaction(trans);
+	(void) mNetOps->submitTransaction(trans);
 
 	obj["transaction"]	= trans->getSTransaction()->getJson(0);
 	obj["status"]		= trans->getStatus();
@@ -572,7 +572,7 @@ Json::Value RPCServer::doAccountMessageSet(const Json::Value& params) {
 		uint256(),
 		naMessagePubKey);
 
-	(void) mNetOps->processTransaction(trans);
+	(void) mNetOps->submitTransaction(trans);
 
 	obj["transaction"]		= trans->getSTransaction()->getJson(0);
 	obj["status"]			= trans->getStatus();
@@ -624,7 +624,7 @@ Json::Value RPCServer::doAccountWalletSet(const Json::Value& params) {
 		uWalletLocator,
 		NewcoinAddress());
 
-	(void) mNetOps->processTransaction(trans);
+	(void) mNetOps->submitTransaction(trans);
 
 	obj["transaction"]		= trans->getSTransaction()->getJson(0);
 	obj["status"]			= trans->getStatus();
@@ -822,7 +822,7 @@ Json::Value RPCServer::doNicknameSet(const Json::Value& params)
 		saMinimumOffer,
 		vucSignature);
 
-	(void) mNetOps->processTransaction(trans);
+	(void) mNetOps->submitTransaction(trans);
 
 	obj["transaction"]	= trans->getSTransaction()->getJson(0);
 	obj["status"]		= trans->getStatus();
@@ -897,7 +897,7 @@ Json::Value RPCServer::doOfferCreate(const Json::Value &params)
 		saTakerGets,
 		uExpiration);
 
-	(void) mNetOps->processTransaction(trans);
+	(void) mNetOps->submitTransaction(trans);
 
 	obj["transaction"]	= trans->getSTransaction()->getJson(0);
 	obj["status"]		= trans->getStatus();
@@ -940,7 +940,7 @@ Json::Value RPCServer::doOfferCancel(const Json::Value &params)
 		0,											// YYY No source tag
 		uSequence);
 
-	(void) mNetOps->processTransaction(trans);
+	(void) mNetOps->submitTransaction(trans);
 
 	obj["transaction"]	= trans->getSTransaction()->getJson(0);
 	obj["status"]		= trans->getStatus();
@@ -1026,7 +1026,7 @@ Json::Value RPCServer::doPasswordFund(const Json::Value &params)
 		0,											// YYY No source tag
 		naDstAccountID);
 
-	(void) mNetOps->processTransaction(trans);
+	(void) mNetOps->submitTransaction(trans);
 
 	obj["transaction"]	= trans->getSTransaction()->getJson(0);
 	obj["status"]		= trans->getStatus();
@@ -1112,7 +1112,7 @@ Json::Value RPCServer::doPasswordSet(const Json::Value& params)
 			naRegular0Public.getAccountPublic(),
 			vucGeneratorSig);
 
-		(void) mNetOps->processTransaction(trns);
+		(void) mNetOps->submitTransaction(trns);
 
 		Json::Value obj(Json::objectValue);
 
@@ -1186,7 +1186,7 @@ Json::Value RPCServer::doRippleLineSet(const Json::Value& params)
 			saLimitAmount,
 			uAcceptRate);
 
-		(void) mNetOps->processTransaction(trans);
+		(void) mNetOps->submitTransaction(trans);
 
 		obj["transaction"]		= trans->getSTransaction()->getJson(0);
 		obj["status"]			= trans->getStatus();
@@ -1274,7 +1274,7 @@ Json::Value RPCServer::doRippleLinesGet(const Json::Value &params)
 						// Amount reported is positive if current account hold's other account's IOUs.
 						// Amount reported is negative if other account hold's current account's IOUs.
 						jPeer["balance"]	= saBalance.getText();
-						jPeer["currency"]	= saBalance.getCurrencyHuman();
+						jPeer["currency"]	= saBalance.getHumanCurrency();
 						jPeer["limit"]		= saLimit.getText();
 						jPeer["limit_peer"]	= saLimitPeer.getText();
 
@@ -1424,7 +1424,7 @@ Json::Value RPCServer::doSend(const Json::Value& params)
 				saDstAmount);								// Initial funds in XNS.
 		}
 
-		(void) mNetOps->processTransaction(trans);
+		(void) mNetOps->submitTransaction(trans);
 
 		obj["transaction"]		= trans->getSTransaction()->getJson(0);
 		obj["status"]			= trans->getStatus();
@@ -1434,9 +1434,9 @@ Json::Value RPCServer::doSend(const Json::Value& params)
 		obj["srcAccountID"]		= naSrcAccountID.humanAccountID();
 		obj["dstAccountID"]		= naDstAccountID.humanAccountID();
 		obj["srcAmount"]		= saSrcAmount.getText();
-		obj["srcISO"]			= saSrcAmount.getCurrencyHuman();
+		obj["srcISO"]			= saSrcAmount.getHumanCurrency();
 		obj["dstAmount"]		= saDstAmount.getText();
-		obj["dstISO"]			= saDstAmount.getCurrencyHuman();
+		obj["dstISO"]			= saDstAmount.getHumanCurrency();
 
 		return obj;
 	}
@@ -1810,7 +1810,7 @@ Json::Value RPCServer::doWalletAdd(const Json::Value& params)
 				naNewAccountPublic,
 				vucSignature);
 
-			(void) mNetOps->processTransaction(trans);
+			(void) mNetOps->submitTransaction(trans);
 
 			obj["transaction"]		= trans->getSTransaction()->getJson(0);
 			obj["status"]			= trans->getStatus();
@@ -1885,7 +1885,7 @@ Json::Value RPCServer::doWalletClaim(const Json::Value& params)
 			naRegular0Public.getAccountPublic(),
 			vucGeneratorSig);
 
-		(void) mNetOps->processTransaction(trns);
+		(void) mNetOps->submitTransaction(trns);
 
 		Json::Value obj(Json::objectValue);
 
@@ -1963,7 +1963,7 @@ Json::Value RPCServer::doWalletCreate(const Json::Value& params)
 		naDstAccountID,
 		saInitialFunds);							// Initial funds in XNC.
 
-	(void) mNetOps->processTransaction(trans);
+	(void) mNetOps->submitTransaction(trans);
 
 	obj["transaction"]	= trans->getSTransaction()->getJson(0);
 	obj["status"]		= trans->getStatus();
