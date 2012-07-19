@@ -12,9 +12,9 @@
 #include "../json/writer.h"
 
 #include "Config.h"
+#include "Log.h"
 #include "TransactionFormats.h"
 #include "utils.h"
-#include "Log.h"
 
 // Small for testing, should likely be 32 or 64.
 #define DIR_NODE_MAX	2
@@ -273,8 +273,25 @@ STAmount TransactionEngine::accountSend(const uint160& uSenderID, const uint160&
 		SLE::pointer		sleSender	= entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uSenderID));
 		SLE::pointer		sleReceiver	= entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uReceiverID));
 
+		Log(lsINFO) << str(boost::format("accountSend> %s (%s) -> %s (%s) : %s")
+			% NewcoinAddress::createHumanAccountID(uSenderID)
+			% (sleSender->getIValueFieldAmount(sfBalance)).getFullText()
+			% NewcoinAddress::createHumanAccountID(uReceiverID)
+			% (sleReceiver->getIValueFieldAmount(sfBalance)).getFullText()
+			% saAmount.getFullText());
+
 		sleSender->setIFieldAmount(sfBalance, sleSender->getIValueFieldAmount(sfBalance) - saAmount);
 		sleReceiver->setIFieldAmount(sfBalance, sleReceiver->getIValueFieldAmount(sfBalance) + saAmount);
+
+		Log(lsINFO) << str(boost::format("accountSend< %s (%s) -> %s (%s) : %s")
+			% NewcoinAddress::createHumanAccountID(uSenderID)
+			% (sleSender->getIValueFieldAmount(sfBalance)).getFullText()
+			% NewcoinAddress::createHumanAccountID(uReceiverID)
+			% (sleReceiver->getIValueFieldAmount(sfBalance)).getFullText()
+			% saAmount.getFullText());
+
+		entryModify(sleSender);
+		entryModify(sleReceiver);
 
 		saActualCost	= saAmount;
 	}
