@@ -669,9 +669,6 @@ STAmount STAmount::multiply(const STAmount& v1, const STAmount& v2, const uint16
 	uint64 value1 = v1.mValue, value2 = v2.mValue;
 	int offset1 = v1.mOffset, offset2 = v2.mOffset;
 
-	int finOffset = offset1 + offset2;
-	if ((finOffset > 80) || (finOffset < 22))
-		throw std::runtime_error("multiplication produces out of range result");
 
 	if (v1.mIsNative)
 	{
@@ -703,11 +700,15 @@ STAmount STAmount::multiply(const STAmount& v1, const STAmount& v2, const uint16
 		--offset2;
 	}
 
+	int finOffset = offset1 + offset2;
+	if ((finOffset > 80) || (finOffset < -96))
+		throw std::runtime_error("multiplication produces out of range result");
+
 	// Compute (numerator*10 * denominator*10) / 10^18 with rounding
 	CBigNum v;
 	if ((BN_add_word(&v, value1) != 1) ||
 		(BN_mul_word(&v, value2) != 1) ||
-		(BN_div_word(&v, 1000000000000000000ul) == ((BN_ULONG) -1)))
+		(BN_div_word(&v, 100000000000000ul) == ((BN_ULONG) -1)))
 	{
 		throw std::runtime_error("internal bn error");
 	}
@@ -1053,6 +1054,12 @@ BOOST_AUTO_TEST_CASE( CustomCurrency_test )
 	if (STAmount(currency,31,1).getText() != "310") BOOST_FAIL("STAmount fail");
 	if (STAmount(currency,31,-1).getText() != "3.1") BOOST_FAIL("STAmount fail");
 	if (STAmount(currency,31,-2).getText() != "0.31") BOOST_FAIL("STAmount fail");
+
+	if (STAmount::multiply(STAmount(currency, 20) , STAmount(3), currency).getText() != "60")
+		BOOST_FAIL("STAmount multiply fail");
+	if (STAmount::multiply(STAmount(currency, 20) , STAmount(3), uint160()).getText() != "60")
+		BOOST_FAIL("STAmount multiply fail");
+
 	BOOST_TEST_MESSAGE("Amount CC Complete");
 }
 
