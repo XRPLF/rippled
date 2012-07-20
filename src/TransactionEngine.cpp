@@ -864,7 +864,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 		naSigningPubKey	= NewcoinAddress::createAccountPublic(txn.peekSigningPubKey());
 
 	// Consistency: really signed.
-	if (terSUCCESS == terResult && !txn.checkSign(naSigningPubKey))
+	if ((terSUCCESS == terResult) && ((params & tepNO_CHECK_SIGN) == 0) && !txn.checkSign(naSigningPubKey))
 	{
 		Log(lsWARNING) << "applyTransaction: Invalid transaction: bad signature";
 
