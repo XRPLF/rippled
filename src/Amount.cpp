@@ -281,13 +281,13 @@ STAmount::STAmount(const char* name, int64 value) : SerializedType(name), mOffse
 {
 	if (value >= 0)
 	{
-		mIsNegative = false;
-		mValue = static_cast<uint64>(value);
+		mIsNegative	= false;
+		mValue		= static_cast<uint64>(value);
 	}
 	else
 	{
-		mIsNegative = true;
-		mValue = static_cast<uint64>(-value);
+		mIsNegative	= true;
+		mValue		= static_cast<uint64>(-value);
 	}
 }
 
