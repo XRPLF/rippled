@@ -25,6 +25,8 @@
 #ifdef WIN32
 extern uint64_t htobe64(uint64_t value);
 extern uint64_t be64toh(uint64_t value);
+extern uint32_t htobe32(uint32_t value);
+extern uint32_t be32toh(uint32_t value);
 #endif
 
 #define vt_f_black          "\033[30m"
