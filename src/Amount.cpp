@@ -98,12 +98,31 @@ std::string STAmount::createHumanCurrency(const uint160& uCurrency)
 // - Integer values are in base units.
 // - Float values are in float units.
 // - To avoid a mistake float value for native are specified with a "^" in place of a "."
-bool STAmount::setValue(const std::string& sAmount, const std::string& sCurrency)
+// <-- bValid: true = valid
+bool STAmount::setFullValue(const std::string& sAmount, const std::string& sCurrency, const std::string& sIssuer)
 {
+	//
+	// Figure out the currency.
+	//
 	if (!currencyFromString(mCurrency, sCurrency))
 		return false;
 
 	mIsNative	= !mCurrency;
+
+	//
+	// Figure out the issuer.
+	//
+	NewcoinAddress	naIssuerID;
+
+	// Issuer must be "" or a valid account string.
+	if (!naIssuerID.setAccountID(sIssuer))
+		return false;
+
+	mIssuer	= naIssuerID.getAccountID();
+
+	// Stamps not must have an issuer.
+	if (mIsNative && !mIssuer.isZero())
+		return false;
 
 	uint64	uValue;
 	int		iOffset;
@@ -910,13 +929,13 @@ BOOST_AUTO_TEST_CASE( setValue_test )
 	STAmount	saTmp;
 
 	// Check native floats
-	saTmp.setValue("1^0",""); BOOST_CHECK_MESSAGE(SYSTEM_CURRENCY_PARTS == saTmp.getNValue(), "float integer failed");
-	saTmp.setValue("0^1",""); BOOST_CHECK_MESSAGE(SYSTEM_CURRENCY_PARTS/10 == saTmp.getNValue(), "float fraction failed");
-	saTmp.setValue("0^12",""); BOOST_CHECK_MESSAGE(12*SYSTEM_CURRENCY_PARTS/100 == saTmp.getNValue(), "float fraction failed");
-	saTmp.setValue("1^2",""); BOOST_CHECK_MESSAGE(SYSTEM_CURRENCY_PARTS+(2*SYSTEM_CURRENCY_PARTS/10) == saTmp.getNValue(), "float combined failed");
+	saTmp.setFullValue("1^0"); BOOST_CHECK_MESSAGE(SYSTEM_CURRENCY_PARTS == saTmp.getNValue(), "float integer failed");
+	saTmp.setFullValue("0^1"); BOOST_CHECK_MESSAGE(SYSTEM_CURRENCY_PARTS/10 == saTmp.getNValue(), "float fraction failed");
+	saTmp.setFullValue("0^12"); BOOST_CHECK_MESSAGE(12*SYSTEM_CURRENCY_PARTS/100 == saTmp.getNValue(), "float fraction failed");
+	saTmp.setFullValue("1^2"); BOOST_CHECK_MESSAGE(SYSTEM_CURRENCY_PARTS+(2*SYSTEM_CURRENCY_PARTS/10) == saTmp.getNValue(), "float combined failed");
 
 	// Check native integer
-	saTmp.setValue("1",""); BOOST_CHECK_MESSAGE(1 == saTmp.getNValue(), "integer failed");
+	saTmp.setFullValue("1"); BOOST_CHECK_MESSAGE(1 == saTmp.getNValue(), "integer failed");
 }
 
 BOOST_AUTO_TEST_CASE( NativeCurrency_test )

@@ -45,7 +45,7 @@ uint32 NetworkOPs::getCurrentLedgerID()
 }
 
 // Sterilize transaction through serialization.
-void NetworkOPs::submitTransaction(Transaction::pointer tpTrans)
+Transaction::pointer NetworkOPs::submitTransaction(Transaction::pointer tpTrans)
 {
 	Serializer s;
 
@@ -60,6 +60,8 @@ void NetworkOPs::submitTransaction(Transaction::pointer tpTrans)
 	assert(tpTransNew);
 
 	(void) NetworkOPs::processTransaction(tpTransNew);
+
+	return tpTransNew;
 }
 
 Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, uint32 tgtLedger, Peer* source)
