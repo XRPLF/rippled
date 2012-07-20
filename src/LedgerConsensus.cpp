@@ -717,7 +717,7 @@ void LedgerConsensus::Saccept(boost::shared_ptr<LedgerConsensus> This, SHAMap::p
 void LedgerConsensus::applyTransaction(TransactionEngine& engine, SerializedTransaction::pointer txn,
 	Ledger::pointer ledger,	CanonicalTXSet& failedTransactions, bool final)
 {
-	TransactionEngineParams parms = final ? (tepNO_CHECK_FEE | tepUPDATE_TOTAL) : tepNONE;
+	TransactionEngineParams parms = final ? (tepNO_CHECK_FEE | tepUPDATE_TOTAL | tepMETADATA) : tepNONE;
 #ifndef TRUST_NETWORK
 	try
 	{

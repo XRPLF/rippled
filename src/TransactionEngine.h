@@ -88,6 +88,7 @@ enum TransactionEngineParams
 	tepNO_CHECK_SIGN = 1,	// Signature already checked
 	tepNO_CHECK_FEE  = 2,	// It was voted into a ledger anyway
 	tepUPDATE_TOTAL  = 4,	// Update the total coins
+	tepMETADATA      = 5,   // put metadata in tree, not transaction
 };
 
 enum TransactionAccountAction
