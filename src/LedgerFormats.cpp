@@ -48,7 +48,7 @@ LedgerEntryFormat LedgerFormats[]=
 		{ S_FIELD(Sequence),			STI_UINT32,		SOE_REQUIRED, 0 },
 		{ S_FIELD(TakerPays),			STI_AMOUNT,		SOE_REQUIRED, 0 },
 		{ S_FIELD(TakerGets),			STI_AMOUNT,		SOE_REQUIRED, 0 },
-		{ S_FIELD(Directory),			STI_HASH256,	SOE_REQUIRED, 0 },
+		{ S_FIELD(BookDirectory),		STI_HASH256,	SOE_REQUIRED, 0 },
 		{ S_FIELD(BookNode),			STI_UINT64,		SOE_REQUIRED, 0 },
 		{ S_FIELD(OwnerNode),			STI_UINT64,		SOE_REQUIRED, 0 },
 		{ S_FIELD(PaysIssuer),			STI_ACCOUNT,	SOE_IFFLAG,   1 },

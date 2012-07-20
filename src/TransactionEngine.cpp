@@ -306,11 +306,11 @@ STAmount TransactionEngine::accountSend(const uint160& uSenderID, const uint160&
 TransactionEngineResult TransactionEngine::offerDelete(const SLE::pointer& sleOffer, const uint256& uOfferIndex, const uint160& uOwnerID)
 {
 	uint64					uOwnerNode	= sleOffer->getIFieldU64(sfOwnerNode);
-	TransactionEngineResult	terResult	= dirDelete(true, uOwnerNode, Ledger::getOwnerDirIndex(uOwnerID), uOfferIndex);
+	TransactionEngineResult	terResult	= dirDelete(false, uOwnerNode, Ledger::getOwnerDirIndex(uOwnerID), uOfferIndex);
 
 	if (terSUCCESS == terResult)
 	{
-		uint256		uDirectory	= sleOffer->getIFieldH256(sfDirectory);
+		uint256		uDirectory	= sleOffer->getIFieldH256(sfBookDirectory);
 		uint64		uBookNode	= sleOffer->getIFieldU64(sfBookNode);
 
 		terResult	= dirDelete(false, uBookNode, uDirectory, uOfferIndex);
@@ -1360,7 +1360,7 @@ TransactionEngineResult TransactionEngine::doCreditSet(const SerializedTransacti
 				// Zero balance and eliminating last limit.
 
 				bDelIndex	= true;
-				terResult	= dirDelete(true, uSrcRef, Ledger::getRippleDirIndex(mTxnAccountID), sleRippleState->getIndex());
+				terResult	= dirDelete(false, uSrcRef, Ledger::getRippleDirIndex(mTxnAccountID), sleRippleState->getIndex());
 			}
 		}
 #endif
@@ -1957,6 +1957,7 @@ TransactionEngineResult TransactionEngine::doInvoice(const SerializedTransaction
 // <--  saTakerGot: What taker got not including fees. To reduce an offer.
 // <--   terResult: terSUCCESS or terNO_ACCOUNT
 // Note: All SLE modifications must always occur even on failure.
+// XXX: Fees should be paid by the source of the currency.
 TransactionEngineResult TransactionEngine::takeOffers(
 	bool				bPassive,
 	const uint256&		uBookBase,
@@ -2320,7 +2321,7 @@ Log(lsWARNING) << "doOfferCreate: saTakerGets=" << saTakerGets.getFullText();
 
 			sleOffer->setIFieldAccount(sfAccount, mTxnAccountID);
 			sleOffer->setIFieldU32(sfSequence, uSequence);
-			sleOffer->setIFieldH256(sfDirectory, uDirectory);
+			sleOffer->setIFieldH256(sfBookDirectory, uDirectory);
 			sleOffer->setIFieldAmount(sfTakerPays, saTakerPays);
 			sleOffer->setIFieldAmount(sfTakerGets, saTakerGets);
 			sleOffer->setIFieldU64(sfOwnerNode, uOwnerNode);
