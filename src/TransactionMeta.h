@@ -27,7 +27,7 @@ public:
 
 	int getType() const { return mType; }
 	virtual Json::Value getJson(int) const = 0;
-	virtual int compare(const TransactionMetaNodeEntry&) = 0;
+	virtual int compare(const TransactionMetaNodeEntry&) const = 0;
 
 	bool operator<(const TransactionMetaNodeEntry&) const;
 	bool operator<=(const TransactionMetaNodeEntry&) const;
@@ -40,9 +40,8 @@ class TMNEBalance : public TransactionMetaNodeEntry
 public:
 
 	static const int TMBTwoAmounts 	= 0x001;
-	static const int TMBReverse		= 0x010;
-	static const int TMBDestroyed	= 0x020;
-	static const int TMBPaidFee		= 0x040;
+	static const int TMBDestroyed	= 0x010;
+	static const int TMBPaidFee		= 0x020;
 	static const int TMBRipple		= 0x100;
 	static const int TMBOffer		= 0x200;
 
