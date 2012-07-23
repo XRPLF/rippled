@@ -810,6 +810,8 @@ void TransactionEngine::entryReset(const SerializedTransaction& txn)
 	STAmount	saSrcBalance	= mTxnAccount->getIValueFieldAmount(sfBalance);
 
 	mTxnAccount->setIFieldAmount(sfBalance, saSrcBalance - saPaid);
+
+	// XXX Bump sequence too.
 }
 
 TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTransaction& txn,
@@ -2059,7 +2061,7 @@ TransactionEngineResult TransactionEngine::takeOffers(
 			{
 				// Get offer funds available.
 
-				Log(lsINFO) << "takeOffers: saOfferPays=" << saOfferPays.getJson(0);
+				Log(lsINFO) << "takeOffers: saOfferPays=" << saOfferPays.getFullText();
 
 				STAmount		saOfferFunds	= accountFunds(uOfferOwnerID, saOfferPays);
 				STAmount		saTakerFunds	= accountFunds(uTakerAccountID, saTakerPays);

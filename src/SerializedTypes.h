@@ -288,7 +288,7 @@ public:
 	void setIssuer(const uint160& uIssuer)	{ mIssuer	= uIssuer; }
 
 	const uint160& getCurrency() const	{ return mCurrency; }
-	bool setValue(const std::string& sAmount, const std::string& sCurrency);
+	bool setFullValue(const std::string& sAmount, const std::string& sCurrency = "", const std::string& sIssuer = "");
 	void setValue(const STAmount &);
 
 	virtual bool isEquivalent(const SerializedType& t) const;
