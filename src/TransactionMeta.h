@@ -10,6 +10,7 @@
 #include "../json/value.h"
 
 #include "uint256.h"
+#include "Serializer.h"
 #include "SerializedTypes.h"
 
 
@@ -27,6 +28,7 @@ public:
 
 	int getType() const { return mType; }
 	virtual Json::Value getJson(int) const = 0;
+	virtual void addRaw(Serializer&) const = 0;
 	virtual int compare(const TransactionMetaNodeEntry&) const = 0;
 
 	bool operator<(const TransactionMetaNodeEntry&) const;
@@ -52,6 +54,9 @@ protected:
 public:
 	TMNEBalance() : TransactionMetaNodeEntry(TMNChangedBalance), mFlags(0) { ; }
 
+	TMNEBalance(SerializerIterator&);
+	virtual void addRaw(Serializer&) const;
+
 	unsigned getFlags() const				{ return mFlags; }
 	const STAmount& getFirstAmount() const	{ return mFirstAmount; }
 	const STAmount& getSecondAmount() const	{ return mSecondAmount; }
@@ -66,6 +71,9 @@ public:
 
 class TransactionMetaNode
 { // a node that has been affected by a transaction
+public:
+	typedef boost::shared_ptr<TransactionMetaNode> pointer;
+
 protected:
 	uint256 mNode;
 	uint256 mPreviousTransaction;
@@ -80,10 +88,13 @@ public:
 	uint32 getPreviousLedger() const											{ return mPreviousLedger; }
 	const std::list<TransactionMetaNodeEntry::pointer>& peekEntries() const		{ return mEntries; }
 
-	bool operator<(const TransactionMetaNode& n) const { return mNode < n.mNode; }
-	bool operator<=(const TransactionMetaNode& n) const { return mNode <= n.mNode; }
-	bool operator>(const TransactionMetaNode& n) const { return mNode > n.mNode; }
-	bool operator>=(const TransactionMetaNode& n) const { return mNode >= n.mNode; }
+	bool operator<(const TransactionMetaNode& n) const	{ return mNode < n.mNode; }
+	bool operator<=(const TransactionMetaNode& n) const	{ return mNode <= n.mNode; }
+	bool operator>(const TransactionMetaNode& n) const	{ return mNode > n.mNode; }
+	bool operator>=(const TransactionMetaNode& n) const	{ return mNode >= n.mNode; }
+
+	TransactionMetaNode(const uint256&node, SerializerIterator&);
+	void addRaw(Serializer&) const;
 };
 
 class TransactionMetaSet
@@ -91,7 +102,7 @@ class TransactionMetaSet
 protected:
 	uint256 mTransactionID;
 	uint32 mLedger;
-	std::set<TransactionMetaNode> mEntries;
+	std::set<TransactionMetaNode> mNodes;
 
 public:
 	TransactionMetaSet(const uint256& txID, uint32 ledger) : mTransactionID(txID), mLedger(ledger)
