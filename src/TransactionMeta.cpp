@@ -99,7 +99,7 @@ TransactionMetaNode::TransactionMetaNode(const uint256& node, SerializerIterator
 	{
 		type = sit.get8();
 		if (type == TransactionMetaNodeEntry::TMNChangedBalance)
-			mEntries.push_back(boost::shared_ptr<TransactionMetaNodeEntry>(new TMNEBalance(sit)));
+			mEntries.insert(boost::shared_ptr<TransactionMetaNodeEntry>(new TMNEBalance(sit)));
 		else if (type != TransactionMetaNodeEntry::TMNEndOfMetadata)
 			throw std::runtime_error("Unparseable metadata");
 	} while (type != TransactionMetaNodeEntry::TMNEndOfMetadata);
@@ -110,10 +110,26 @@ void TransactionMetaNode::addRaw(Serializer& s) const
 	s.add256(mNode);
 	s.add256(mPreviousTransaction);
 	s.add32(mPreviousLedger);
-	for (std::list<TransactionMetaNodeEntry::pointer>::const_iterator it = mEntries.begin(), end = mEntries.end();
+	for (std::set<TransactionMetaNodeEntry::pointer>::const_iterator it = mEntries.begin(), end = mEntries.end();
 			it != end; ++it)
 		(*it)->addRaw(s);
 	s.add8(TransactionMetaNodeEntry::TMNEndOfMetadata);
+}
+
+Json::Value TransactionMetaNode::getJson(int v) const
+{
+	Json::Value ret = Json::objectValue;
+	ret["node"] = mNode.GetHex();
+	ret["previous_transaction"] = mPreviousTransaction.GetHex();
+	ret["previous_ledger"] = mPreviousLedger;
+
+	Json::Value e = Json::arrayValue;
+	for (std::set<TransactionMetaNodeEntry::pointer>::const_iterator it = mEntries.begin(), end = mEntries.end();
+			it != end; ++it)
+		e.append((*it)->getJson(v));
+	ret["entries"] = e;
+
+	return ret;
 }
 
 TransactionMetaSet::TransactionMetaSet(uint32 ledger, const std::vector<unsigned char>& vec) : mLedger(ledger)
@@ -139,4 +155,20 @@ void TransactionMetaSet::addRaw(Serializer& s) const
 			it != end; ++it)
 		it->addRaw(s);
 	s.add256(uint256());
+}
+
+Json::Value TransactionMetaSet::getJson(int v) const
+{
+	Json::Value ret = Json::objectValue;
+
+	ret["transaction_id"] = mTransactionID.GetHex();
+	ret["ledger"] = mLedger;
+
+	Json::Value e = Json::arrayValue;
+	for (std::set<TransactionMetaNode>::const_iterator it = mNodes.begin(), end = mNodes.end();
+			it != end; ++it)
+			e.append(it->getJson(v));
+	ret["nodes_affected"] = e;
+
+	return ret;
 }

@@ -2,7 +2,6 @@
 #define __TRANSACTIONMETA__
 
 #include <vector>
-#include <list>
 #include <set>
 
 #include <boost/shared_ptr.hpp>
@@ -78,7 +77,7 @@ protected:
 	uint256 mNode;
 	uint256 mPreviousTransaction;
 	uint32 mPreviousLedger;
-	std::list<TransactionMetaNodeEntry::pointer> mEntries;
+	std::set<TransactionMetaNodeEntry::pointer> mEntries;
 
 public:
 	TransactionMetaNode(const uint256 &node) : mNode(node) { ; }
@@ -86,7 +85,7 @@ public:
 	const uint256& getNode() const												{ return mNode; }
 	const uint256& getPreviousTransaction() const								{ return mPreviousTransaction; }
 	uint32 getPreviousLedger() const											{ return mPreviousLedger; }
-	const std::list<TransactionMetaNodeEntry::pointer>& peekEntries() const		{ return mEntries; }
+	const std::set<TransactionMetaNodeEntry::pointer>& peekEntries() const		{ return mEntries; }
 
 	bool operator<(const TransactionMetaNode& n) const	{ return mNode < n.mNode; }
 	bool operator<=(const TransactionMetaNode& n) const	{ return mNode <= n.mNode; }
@@ -95,6 +94,7 @@ public:
 
 	TransactionMetaNode(const uint256&node, SerializerIterator&);
 	void addRaw(Serializer&) const;
+	Json::Value getJson(int) const;
 };
 
 class TransactionMetaSet
