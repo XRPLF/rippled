@@ -64,8 +64,10 @@ LedgerEntryFormat LedgerFormats[]=
 		{ S_FIELD(LowLimit),			STI_AMOUNT,		SOE_REQUIRED, 0 },
 		{ S_FIELD(HighID),				STI_ACCOUNT,	SOE_REQUIRED, 0 },
 		{ S_FIELD(HighLimit),			STI_AMOUNT,		SOE_REQUIRED, 0 },
-		{ S_FIELD(QualityIn),			STI_UINT32,		SOE_IFFLAG,   1 },
-		{ S_FIELD(QualityOut),			STI_UINT32,		SOE_IFFLAG,   2 },
+		{ S_FIELD(LowQualityIn),		STI_UINT32,		SOE_IFFLAG,   1 },
+		{ S_FIELD(LowQualityOut),		STI_UINT32,		SOE_IFFLAG,   2 },
+		{ S_FIELD(HighQualityIn),		STI_UINT32,		SOE_IFFLAG,   4 },
+		{ S_FIELD(HighQualityOut),		STI_UINT32,		SOE_IFFLAG,   8 },
 		{ S_FIELD(Extensions),			STI_TL,			SOE_IFFLAG,   0x01000000 },
 		{ sfInvalid, NULL,				STI_DONE,		SOE_NEVER,	  -1 } }
 	},
@@ -75,9 +77,9 @@ LedgerEntryFormat LedgerFormats[]=
 LedgerEntryFormat* getLgrFormat(LedgerEntryType t)
 {
 	LedgerEntryFormat* f = LedgerFormats;
-	while(f->t_name != NULL)
+	while (f->t_name != NULL)
 	{
-		if(f->t_type == t) return f;
+		if (f->t_type == t) return f;
 		++f;
 	}
 	return NULL;

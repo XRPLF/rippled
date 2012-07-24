@@ -111,6 +111,7 @@ STAmount TransactionEngine::rippleHolds(const uint160& uAccountID, const uint160
 	return saBalance;
 }
 
+// <-- saAmount: amount of uCurrency held by uAccountID. May be negative.
 STAmount TransactionEngine::accountHolds(const uint160& uAccountID, const uint160& uCurrency, const uint160& uIssuerID)
 {
 	STAmount	saAmount;
@@ -138,7 +139,11 @@ STAmount TransactionEngine::accountHolds(const uint160& uAccountID, const uint16
 	return saAmount;
 }
 
+// Returns the funds available for uAccountID for a currency/issuer.
+// Use when you need a default for rippling uAccountID's currency.
 // --> saDefault/currency/issuer
+// <-- saFunds: Funds available. May be negative.
+//              If the issuer is the same as uAccountID, result is Default.
 STAmount TransactionEngine::accountFunds(const uint160& uAccountID, const STAmount& saDefault)
 {
 	STAmount	saFunds;
@@ -582,28 +587,53 @@ TransactionEngineResult TransactionEngine::dirDelete(
 	return terSUCCESS;
 }
 
-// --> uRootIndex
-// <-- uEntryIndex
-// <-- uEntryNode
-void TransactionEngine::dirFirst(const uint256& uRootIndex, uint256& uEntryIndex, uint64& uEntryNode)
+// <-- true, if had a next entry.
+bool TransactionEngine::dirFirst(
+	const uint256& uRootIndex,	// --> Root of directory.
+	SLE::pointer& sleNode,		// <-> current node
+	unsigned int& uDirEntry,	// <-- next entry
+	uint256& uEntryIndex)		// <-- The entry, if available. Otherwise, zero.
 {
-	SLE::pointer			sleRoot		= entryCache(ltDIR_NODE, uRootIndex);
+	sleNode		= entryCache(ltDIR_NODE, uRootIndex);
+	uDirEntry	= 0;
 
-	STVector256				svIndexes	= sleRoot->getIFieldV256(sfIndexes);
+	assert(sleNode);			// We never probe for directories.
+
+	return TransactionEngine::dirNext(uRootIndex, sleNode, uDirEntry, uEntryIndex);
+}
+
+// <-- true, if had a next entry.
+bool TransactionEngine::dirNext(
+	const uint256& uRootIndex,	// --> Root of directory
+	SLE::pointer& sleNode,		// <-> current node
+	unsigned int& uDirEntry,	// <-> next entry
+	uint256& uEntryIndex)		// <-- The entry, if available. Otherwise, zero.
+{
+	STVector256				svIndexes	= sleNode->getIFieldV256(sfIndexes);
 	std::vector<uint256>&	vuiIndexes	= svIndexes.peekValue();
 
-	if (vuiIndexes.empty())
+	if (uDirEntry == vuiIndexes.size())
 	{
-		uEntryNode	= sleRoot->getIFieldU64(sfIndexNext);
+		uint64				uNodeNext	= sleNode->getIFieldU64(sfIndexNext);
 
-		SLE::pointer			sleNext		= entryCache(ltDIR_NODE, Ledger::getDirNodeIndex(uRootIndex, uEntryNode));
-		uEntryIndex	= sleNext->getIFieldV256(sfIndexes).peekValue()[0];
+		if (!uNodeNext)
+		{
+			uEntryIndex.zero();
+
+			return false;
+		}
+		else
+		{
+			sleNode		= entryCache(ltDIR_NODE, Ledger::getDirNodeIndex(uRootIndex, uNodeNext));
+			uDirEntry	= 0;
+
+			return dirNext(uRootIndex, sleNode, uDirEntry, uEntryIndex);
+		}
 	}
-	else
-	{
-		uEntryIndex	= vuiIndexes[0];
-		uEntryNode	= 0;
-	}
+
+	uEntryIndex	= vuiIndexes[uDirEntry++];
+
+	return true;
 }
 
 // Set the authorized public key for an account.  May also set the generator map.
@@ -1329,10 +1359,15 @@ TransactionEngineResult TransactionEngine::doCreditSet(const SerializedTransacti
 		return terNO_DST;
 	}
 
-	STAmount			saLimitAmount	= txn.getITFieldAmount(sfLimitAmount);
-	uint160				uCurrency		= saLimitAmount.getCurrency();
 	bool				bFlipped		= mTxnAccountID > uDstAccountID;
 	uint32				uFlags			= bFlipped ? lsfLowIndexed : lsfHighIndexed;
+	bool				bLimitAmount	= txn.getITFieldPresent(sfLimitAmount);
+	STAmount			saLimitAmount	= bLimitAmount ? txn.getITFieldAmount(sfLimitAmount) : STAmount();
+	bool				bQualityIn		= txn.getITFieldPresent(sfQualityIn);
+	uint32				uQualityIn		= bQualityIn ? txn.getITFieldU32(sfQualityIn) : 0;
+	bool				bQualityOut		= txn.getITFieldPresent(sfQualityOut);
+	uint32				uQualityOut		= bQualityIn ? txn.getITFieldU32(sfQualityOut) : 0;
+	uint160				uCurrency		= saLimitAmount.getCurrency();
 	STAmount			saBalance(uCurrency);
 	bool				bAddIndex		= false;
 	bool				bDelIndex		= false;
@@ -1364,11 +1399,39 @@ TransactionEngineResult TransactionEngine::doCreditSet(const SerializedTransacti
 			}
 		}
 #endif
+
 		if (!bDelIndex)
 		{
-			bAddIndex		= !(sleRippleState->getFlags() & uFlags);
+			if (bLimitAmount)
+				sleRippleState->setIFieldAmount(bFlipped ? sfHighLimit: sfLowLimit , saLimitAmount);
 
-			sleRippleState->setIFieldAmount(bFlipped ? sfHighLimit: sfLowLimit , saLimitAmount);
+			if (!bQualityIn)
+			{
+				nothing();
+			}
+			else if (uQualityIn)
+			{
+				sleRippleState->setIFieldU32(bFlipped ? sfLowQualityIn : sfHighQualityIn, uQualityIn);
+			}
+			else
+			{
+				sleRippleState->makeIFieldAbsent(bFlipped ? sfLowQualityIn : sfHighQualityIn);
+			}
+
+			if (!bQualityOut)
+			{
+				nothing();
+			}
+			else if (uQualityOut)
+			{
+				sleRippleState->setIFieldU32(bFlipped ? sfLowQualityOut : sfHighQualityOut, uQualityOut);
+			}
+			else
+			{
+				sleRippleState->makeIFieldAbsent(bFlipped ? sfLowQualityOut : sfHighQualityOut);
+			}
+
+			bAddIndex		= !(sleRippleState->getFlags() & uFlags);
 
 			if (bAddIndex)
 				sleRippleState->setFlag(uFlags);
@@ -1401,6 +1464,10 @@ TransactionEngineResult TransactionEngine::doCreditSet(const SerializedTransacti
 		sleRippleState->setIFieldAmount(bFlipped ? sfLowLimit : sfHighLimit, saZero);
 		sleRippleState->setIFieldAccount(bFlipped ? sfHighID : sfLowID, mTxnAccountID);
 		sleRippleState->setIFieldAccount(bFlipped ? sfLowID : sfHighID, uDstAccountID);
+		if (uQualityIn)
+			sleRippleState->setIFieldU32(bFlipped ? sfLowQualityIn : sfHighQualityIn, uQualityIn);
+		if (uQualityOut)
+			sleRippleState->setIFieldU32(bFlipped ? sfLowQualityOut : sfHighQualityOut, uQualityOut);
 	}
 
 	if (bAddIndex)
@@ -1517,19 +1584,9 @@ TransactionEngineResult TransactionEngine::doPasswordSet(const SerializedTransac
 }
 
 #ifdef WORK_IN_PROGRESS
-TransactionEngineResult calcOfferFill(SAAmount& saSrc, paymentNode& pnSrc, paymentNode& pnDst)
-{
-	TransactionEngineResult	terResult;
-
-	if (!saSrc.isZero())
-	{
-
-	}
-
-	return bSuccess;
-}
-
+// XXX Need to adjust for fees.
 // Find offers to satisfy pnDst.
+// - Does not adjust any balances as there is at least a forward pass to come.
 // --> pnDst.saWanted: currency and amount wanted
 // --> pnSrc.saIOURedeem.mCurrency: use this before saIOUIssue, limit to use.
 // --> pnSrc.saIOUIssue.mCurrency: use this after saIOURedeem, limit to use.
@@ -1543,23 +1600,387 @@ TransactionEngineResult calcOfferFill(paymentNode& pnSrc, paymentNode& pnDst, bo
 {
 	TransactionEngineResult	terResult;
 
-	terResult	= calcOfferFill(pnSrc.saIOURedeem, pnSrc, pnDst, bAllowPartial);
-
-	if (terSUCCESS == terResult)
+	if (pnDst.saWanted.isNative())
 	{
-		terResult	= calcOfferFill(pnSrc.saIOUIssue, pnSrc, pnDst, bAllowPartial)
-	}
+		// Transfer stamps.
 
-	if (terSUCCESS == terResult && !bAllowPartial)
-	{
-		STAmount	saTotal	= pnSrc.saIOURedeem;
-		saTotal	+= pnSrc.saIOUIssue;
+		STAmount	saSrcFunds	= pnSrc.saAccount->accountHolds(pnSrc.saAccount, uint160(0), uint160(0));
 
-		if (saTotal != saWanted)
+		if (saSrcFunds && (bAllowPartial || saSrcFunds > pnDst.saWanted))
+		{
+			pnSrc.saSend	= min(saSrcFunds, pnDst.saWanted);
+			pnDst.saReceive	= pnSrc.saSend;
+		}
+		else
+		{
 			terResult	= terINSUF_PATH;
+		}
+	}
+	else
+	{
+		// Ripple funds.
+				{
+					prv->saSend = min(prv->account->saBalance(), cur->saWanted);
+		// Redeem to limit.
+		terResult	= calcOfferFill(
+			accountHolds(pnSrc.saAccount, pnDst.saWanted.getCurrency(), pnDst.saWanted.getIssuer()),
+			pnSrc.saIOURedeem,
+			pnDst.saIOUForgive,
+			bAllowPartial);
+
+		if (terSUCCESS == terResult)
+		{
+			// Issue to wanted.
+			terResult	= calcOfferFill(
+				pnDst.saWanted,		// As much as wanted is available, limited by credit limit.
+				pnSrc.saIOUIssue,
+				pnDst.saIOUAccept,
+				bAllowPartial);
+		}
+
+		if (terSUCCESS == terResult && !bAllowPartial)
+		{
+			STAmount	saTotal	= pnDst.saIOUForgive	+ pnSrc.saIOUAccept;
+
+			if (saTotal != saWanted)
+				terResult	= terINSUF_PATH;
+		}
 	}
 
 	return terResult;
+}
+
+// Get the next offer limited by funding.
+// - Stop when becomes unfunded.
+void TransactionEngine::calcOfferBridgeNext(
+	const uint256&		uBookRoot,		// --> Which order book to look in.
+	const uint256&		uBookEnd,		// --> Limit of how far to look.
+	uint256&			uBookDirIndex,	// <-> Current directory. <-- 0 = no offer available.
+	uint64&				uBookDirNode,	// <-> Which node. 0 = first.
+	unsigned int&		uBookDirEntry,	// <-> Entry in node. 0 = first.
+	STAmount&			saOfferIn,		// <-- How much to pay in, fee inclusive, to get saOfferOut out.
+	STAmount&			saOfferOut		// <-- How much offer pays out.
+	)
+{
+	saOfferIn		= 0;	// XXX currency & issuer
+	saOfferOut		= 0;	// XXX currency & issuer
+
+	bool			bDone	= false;
+
+	while (!bDone)
+	{
+		uint256			uOfferIndex;
+
+		// Get uOfferIndex.
+		dirNext(uBookRoot, uBookEnd, uBookDirIndex, uBookDirNode, uBookDirEntry, uOfferIndex);
+
+		SLE::pointer	sleOffer		= entryCache(ltOFFER, uOfferIndex);
+
+		uint160			uOfferOwnerID	= sleOffer->getIValueFieldAccount(sfAccount).getAccountID();
+		STAmount		saOfferPays		= sleOffer->getIValueFieldAmount(sfTakerGets);
+		STAmount		saOfferGets		= sleOffer->getIValueFieldAmount(sfTakerPays);
+
+		if (sleOffer->getIFieldPresent(sfGetsIssuer))
+			saOfferPays.setIssuer(sleOffer->getIValueFieldAccount(sfGetsIssuer).getAccountID());
+
+		if (sleOffer->getIFieldPresent(sfPaysIssuer))
+			saOfferGets.setIssuer(sleOffer->getIValueFieldAccount(sfPaysIssuer).getAccountID());
+
+		if (sleOffer->getIFieldPresent(sfExpiration) && sleOffer->getIFieldU32(sfExpiration) <= mLedger->getParentCloseTimeNC())
+		{
+			// Offer is expired.
+			Log(lsINFO) << "calcOfferFirst: encountered expired offer";
+		}
+		else
+		{
+			STAmount		saOfferFunds	= accountFunds(uOfferOwnerID, saOfferPays);
+			// Outbound fees are paid by offer owner.
+			// XXX Calculate outbound fee rate.
+
+			if (saOfferPays.isNative())
+			{
+				// No additional fees for stamps.
+
+				nothing();
+			}
+			else if (saOfferPays.getIssuer() == uOfferOwnerID)
+			{
+				// Offerer is issue own IOUs.
+				// No fees at this exact point, XXX receiving node may charge a fee.
+				// XXX Make sure has a credit line with receiver, limit by credit line.
+
+				nothing();
+				// XXX Broken - could be issuing or redeeming or both.
+			}
+			else
+			{
+				// Offer must be redeeming IOUs.
+
+				// No additional 
+				// XXX Broken
+			}
+
+			if (!saOfferFunds.isPositive())
+			{
+				// Offer is unfunded.
+				Log(lsINFO) << "calcOfferFirst: offer unfunded: delete";
+			}
+			else if (saOfferFunds >= saOfferPays)
+			{
+				// Offer fully funded.
+
+				// Account transfering funds in to offer always pays inbound fees.
+				// 
+				saOfferIn	= saOfferGets;	// XXX Add in fees?
+
+				saOfferOut	= saOfferPays;
+
+				bDone		= true;
+			}
+			else
+			{
+				// Offer partially funded.
+
+				// saOfferIn/saOfferFunds = saOfferGets/saOfferPays
+				// XXX Round such that all saOffer funds are exhausted.
+				saOfferIn	= (saOfferFunds*saOfferGets)/saOfferPays; // XXX Add in fees?
+				saOfferOut	= saOfferFunds;
+
+				bDone		= true;
+			}
+		}
+
+		if (!bDone)
+		{
+			// mUnfunded.insert(uOfferIndex);
+		}
+	}
+	while (bNext);
+}
+
+// If either currency is not stamps, then also calculates vs stamp bridge.
+// --> saWanted: Limit of how much is wanted out.
+// <-- saPay: How much to pay into the offer.
+// <-- saGot: How much to the offer pays out.  Never more than saWanted.
+void TransactionEngine::calcNodeOfferReverse(
+	const uint160& uPayCurrency,
+	const uint160& uPayIssuerID,
+	const STAmount& saWanted,	// Driver
+
+	STAmount& saPay,
+	STAmount& saGot
+	) const
+{
+	TransactionEngineResult	terResult	= tenUNKNOWN;
+
+	bool			bDirectNext	= true;		// True, if need to load.
+	uint256			uDirectQuality;
+	uint256			uDirectTip	= Ledger::getBookBase(uGetsCurrency, uGetsIssuerID, uPaysCurrency, uPaysIssuerID);
+	uint256			uDirectEnd	= Ledger::getQualityNext(uDirectTip);
+
+	bool			bBridge		= true;		// True, if bridging active. False, missing an offer.
+	uint256			uBridgeQuality;
+	STAmount		saBridgeIn;				// Amount available.
+	STAmount		saBridgeOut;
+
+	bool			bInNext		= true;		// True, if need to load.
+	STAmount		saInIn;					// Amount available. Consumed in loop. Limited by offer funding.
+	STAmount		saInOut;
+	uint256			uInTip;					// Current entry.
+	uint256			uInEnd;
+	unsigned int	uInEntry;
+
+	bool			bOutNext	= true;
+	STAmount		saOutIn;
+	STAmount		saOutOut;
+	uint256			uOutTip;
+	uint256			uOutEnd;
+	unsigned int	uOutEntry;
+
+	saPay.zero();
+	saPay.setCurrency(uPayCurrency);
+	saPay.setIssuer(uPayIssuerID);
+
+	saNeed	= saWanted;
+
+	if (!saWanted.isNative() && !uTakerCurrency.isZero())
+	{
+		// Bridging
+		uInTip		= Ledger::getBookBase(uPayCurrency, uPayIssuerID, uint160(0), uint160(0));
+		uInEnd		= Ledger::getQualityNext(uInTip);
+		uOutTip		= Ledger::getBookBase(uint160(0), uint160(0), saWanted.getCurrency(), saWanted.getIssuer());
+		uOutEnd		= Ledger::getQualityNext(uInTip);
+	}
+
+	while (tenUNKNOWN == terResult)
+	{
+		if (saNeed == saWanted)
+		{
+			// Got all.
+			saGot		= saWanted;
+			terResult	= terSUCCESS;
+		}
+		else
+		{
+			// Calculate next tips, if needed.
+
+			if (bDirectNext)
+			{
+				// Find next direct offer.
+				uDirectTip		= mLedger->getNextLedgerIndex(uDirectTip, uDirectEnd);
+				if (!!uDirectTip)
+				{
+					sleDirectDir	= entryCache(ltDIR_NODE, uDirectTip);
+
+					// XXX Need to calculate the real quality: including fees.
+					uDirectQuality	= STAmount::getQualityNext(uDirectTip);
+				}
+
+				bDirectNext	= false;
+			}
+
+			if (bBridge && (bInNext || bOutNext))
+			{
+				// Bridging and need to calculate next bridge rate.
+				// A bridge can consist of multiple offers. As offer's are consumed, the effective rate changes.
+
+				if (bInNext)
+				{
+//					sleInDir	= entryCache(ltDIR_NODE, mLedger->getNextLedgerIndex(uInIndex, uInEnd));
+					// Get the next funded offer.
+					offerBridgeNext(uInIndex, uInEnd, uInEntry, saInIn, saInOut);	// Get offer limited by funding.
+					bInNext		= false;
+				}
+
+				if (bOutNext)
+				{
+//					sleOutDir	= entryCache(ltDIR_NODE, mLedger->getNextLedgerIndex(uOutIndex, uOutEnd));
+					offerNext(uOutIndex, uOutEnd, uOutEntry, saOutIn, saOutOut);
+					bOutNext	= false;
+				}
+
+				if (!uInIndex || !uOutIndex)
+				{
+					bBridge	= false;	// No more offers to bridge.
+				}
+				else
+				{
+					// Have bridge in and out entries.
+					// Calculate bridge rate.  Out offer pay ripple fee.  In offer fee is added to in cost.
+
+					saBridgeOut.zero();
+
+					if (saInOut < saOutIn)
+					{
+						// Limit by in.
+
+						// XXX Need to include fees in saBridgeIn.
+						saBridgeIn	= saInIn;	// All of in
+						// Limit bridge out: saInOut/saBridgeOut = saOutIn/saOutOut
+						// Round such that we would take all of in offer, otherwise would have leftovers.
+						saBridgeOut	= (saInOut * saOutOut) / saOutIn;
+					}
+					else if (saInOut > saOutIn)
+					{
+						// Limit by out, if at all.
+
+						// XXX Need to include fees in saBridgeIn.
+						// Limit bridge in:saInIn/saInOuts = aBridgeIn/saOutIn
+						// Round such that would take all of out offer.
+						saBridgeIn	= (saInIn * saOutIn) / saInOuts;
+						saBridgeOut	= saOutOut;		// All of out.
+					}
+					else
+					{
+						// Entries match,
+
+						// XXX Need to include fees in saBridgeIn.
+						saBridgeIn	= saInIn;	// All of in
+						saBridgeOut	= saOutOut;	// All of out.
+					}
+
+					uBridgeQuality	= STAmount::getRate(saBridgeIn, saBridgeOut);	// Inclusive of fees.
+				}
+			}
+
+			if (bBridge)
+			{
+				bUseBridge	= !uDirectTip || (uBridgeQuality < uDirectQuality)
+			}
+			else if (!!uDirectTip)
+			{
+				bUseBridge	= false
+			}
+			else
+			{
+				// No more offers. Declare success, even if none returned.
+				saGot		= saWanted-saNeed;
+				terResult	= terSUCCESS;
+			}
+
+			if (terSUCCESS != terResult)
+			{
+				STAmount&	saAvailIn	= bUseBridge ? saBridgeIn : saDirectIn;
+				STAmount&	saAvailOut	= bUseBridge ? saBridgeOut : saDirectOut;
+
+				if (saAvailOut > saNeed)
+				{
+					// Consume part of offer. Done.
+
+					saNeed	= 0;
+					saPay	+= (saNeed*saAvailIn)/saAvailOut; // Round up, prefer to pay more.
+				}
+				else
+				{
+					// Consume entire offer.
+
+					saNeed	-= saAvailOut;
+					saPay	+= saAvailIn;
+
+					if (bUseBridge)
+					{
+						// Consume bridge out.
+						if (saOutOut == saAvailOut)
+						{
+							// Consume all.
+							saOutOut	= 0;
+							saOutIn		= 0;
+							bOutNext	= true;
+						}
+						else
+						{
+							// Consume portion of bridge out, must be consuming all of bridge in.
+							// saOutIn/saOutOut = saSpent/saAvailOut
+							// Round?
+							saOutIn		-= (saOutIn*saAvailOut)/saOutOut;
+							saOutOut	-= saAvailOut;
+						}
+
+						// Consume bridge in.
+						if (saOutIn == saAvailIn)
+						{
+							// Consume all.
+							saInOut		= 0;
+							saInIn		= 0;
+							bInNext		= true;
+						}
+						else
+						{
+							// Consume portion of bridge in, must be consuming all of bridge out.
+							// saInIn/saInOut = saAvailIn/saPay
+							// Round?
+							saInOut	-= (saInOut*saAvailIn)/saInIn;
+							saInIn	-= saAvailIn;
+						}
+					}
+					else
+					{
+						bDirectNext	= true;
+					}
+				}
+			}
+		}
+	}
 }
 
 // From the destination work towards the source calculating how much must be asked for.
@@ -1570,63 +1991,112 @@ TransactionEngineResult calcOfferFill(paymentNode& pnSrc, paymentNode& pnDst, bo
 //     --> [all]saWanted.mCurrency
 //     --> [all]saAccount
 //     <-> [0]saWanted.mAmount : --> limit, <-- actual
+// XXX Disallow looping.
+// XXX With multiple path and due to offers, must consider consumed.
 bool calcPaymentReverse(std::vector<paymentNode>& pnNodes, bool bAllowPartial)
 {
-	bool	bDone		= false;
-	bool	bSuccess	= false;
+	TransactionEngineResult	terResult	= tenUNKNOWN;
 
-	// path: dst .. src
+	uIndex	= pnNodes.size();
 
-	while (!bDone)
+	while (tenUNKNOWN == terResult && uIndex--)
 	{
-		if (cur->saWanted.isZero())
+		// Calculate (1) sending by fullfilling next wants and (2) setting current wants.
+
+		paymentNode&	curPN	= pnNodes[uIndex];
+		paymentNode&	prvPN	= pnNodes[uIndex-1];
+		paymentNode&	nxtPN	= pnNodes[uIndex+1];
+
+		if (!(uFlags & (PF_REDEEM|PF_ISSUE)))
+		{
+			// Redeem IOUs
+			terResult	= tenBAD_PATH;
+		}
+		else if (curPN.saWanted.isZero())
 		{
 			// Must want something.
-			terResult	= terINVALID;
-			bDone		= true;
+			terResult	= tenBAD_AMOUNT;
 		}
-		else if (cur->saWanted.isNative())
+		else if (curPN->uFlags & PF_ACCOUNT)
 		{
-			if (prv->how == direct)
+			// Account node.
+			// Rippling through this accounts balances.
+			// No currency change.
+			// Issuer change possible.
+
+			SLE::pointer	sleRippleCur	= ;
+			SLE::pointer	sleRippleNxt	= ;
+			STAmount		saBalanceCur	= ;
+
+			if ((uFlags & PF_REDEEM) && saBalanceCur.isPositive())
 			{
-				// Stamp transfer desired.
-				if (prv->prev())
-				{
-					// Stamp transfer can not have previous entries. Only stamp ripple can.
-					terResult	= terINVALID;
-					bDone		= true;
-				}
-				else if (prv->account->saBalance() >= cur->saWanted)
-				{
-					// Transfer stamps.
-					prv->saSend = cur->saWanted;
-					bDone		= true;
-					bSuccess	= true;
-				}
-				else
-				{
-					// Insufficient funds for transfer
-					bDone		= true;
-				}
+				// Redeem IOUs
+
+				// XXX
+				curPN.saWanted	+= ___;
+
+				bSent	= true;
+			}
+
+			if ((uFlags & PF_ISSUE)				// Allowed to issue.
+				&& !saWantedNxt.isZero()		// Need to issue.
+				&& !saBalanceCur.isPositive())	// Can issue.
+			{
+				// Issue IOUs
+
+				// XXX
+				curPN.saWanted	+= ___;
+				bSent	= true;
+			}
+
+		}
+		else if (curPN->uFlags & PF_OFFER)
+		{
+			// Offer node.
+			// Ripple or transfering from previous node through this offer to next node.
+			// Current node has a credit line with next node.
+			// Next node will receive either its own IOUs or this nodes IOUs.
+			// We limit what this node sends by this nodes redeem and issue max.
+			// This allows path lists to be strictly redeem.
+			// XXX Make sure offer book was not previously mentioned.
+
+			uint160	uPrvCurrency	= curPN->uFlags & PF_WANTED_CURRENCY
+										? curPN->saWanted.getCurrency()
+										: saSendMax.getCurrency();
+
+			uint160	uPrvIssuer		= curPN->uFlags & PF_WANTED_ISSUER
+										? curPN->saWanted.getIssuer()
+										: saSendMax.getIssuer();
+
+			calcNodeOfferReverse(
+				uTakerCurrency,
+				uTakerIssuer,
+				nxtPN->saWanted,	// Driver.
+
+				uTakerPaid,
+				uTakerGot,
+				uOwnerPaid,
+				uOwnerGot,
+				);
+
+			if (uOwnerPaid.isZero())
+			{
+				terResult	= terZERO;			// Path contributes nothing.
 			}
 			else
 			{
-				// Must convert to stamps via offer.
-				if (calcOfferFill(prv, cur, bAllowPartial))
-				{
+				// Update wanted.
 
-				}
-				else
-				{
-					bDone	= false;
-				}
+				// Save sent amount
 			}
 		}
 		else
 		{
-			// Rippling.
-
+			assert(false);
 		}
+
+		if (tenUNKNOWN == terResult == curPN.saWanted.isZero())
+			terResult	= terZERO;			// Path contributes nothing.
 	}
 }
 
@@ -1850,6 +2320,8 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 		return tenRIPPLE_EMPTY;
 	}
 #if 0
+	// 1) Calc payment in reverse: do not modify sles.
+	// 2) Calc payment forward: do modify sles.
 	std::vector<STPath> spPath;
 
 	BOOST_FOREACH(std::vector<STPath>& spPath, spsPaths)
@@ -2023,10 +2495,11 @@ TransactionEngineResult TransactionEngine::takeOffers(
 			// Have an offer to consider.
 			Log(lsINFO) << "takeOffers: considering dir : " << sleOfferDir->getJson(0);
 
+			SLE::pointer	sleBookNode;
+			unsigned int	uBookEntry;
 			uint256			uOfferIndex;
-			uint64			uOfferNode;
 
-			dirFirst(uTipIndex, uOfferIndex, uOfferNode);
+			dirFirst(uTipIndex, sleBookNode, uBookEntry, uOfferIndex);
 
 			SLE::pointer	sleOffer		= entryCache(ltOFFER, uOfferIndex);
 
