@@ -1,6 +1,8 @@
 #ifndef __LEDGERENTRYSET__
 #define __LEDGERENTRYSET__
 
+#include <boost/unordered_map.hpp>
+
 #include "SerializedLedger.h"
 
 enum LedgerEntryAction
@@ -10,7 +12,8 @@ enum LedgerEntryAction
 	taaMODIFY,	// Modifed, must have previously been taaCACHED.
 	taaDELETE,	// Delete, must have previously been taaDELETE or taaMODIFY.
 	taaCREATE,	// Newly created.
-}
+};
+
 
 class LedgerEntrySetEntry
 {
@@ -18,14 +21,16 @@ public:
 	SLE::pointer		mEntry;
 	LedgerEntryAction	mAction;
 	int					mSeq;
-
 };
+
 
 class LedgerEntrySet
 {
 protected:
 	boost::unordered_map<uint256, LedgerEntrySetEntry>	mEntries;
 	int mSeq;
+
+	LedgerEntrySet(const boost::unordered_map<uint256, LedgerEntrySetEntry> &e, int m) : mEntries(e), mSeq(m) { ; }
 
 public:
 	LedgerEntrySet() : mSeq(0) { ; }
@@ -34,6 +39,9 @@ public:
 	LedgerEntrySet duplicate();			// Make a duplicate of this set
 	void setTo(LedgerEntrySet&);		// Set this set to have the same contents as another
 	void swapWith(LedgerEntrySet&);		// Swap the contents of two sets
+
+	int getSeq() const			{ return mSeq; }
+	void bumpSeq()				{ ++mSeq; }
 
 	// basic entry functions
 	SLE::pointer getEntry(const uint256& index, LedgerEntryAction&);
@@ -44,11 +52,13 @@ public:
 	void entryModify(SLE::pointer);		// This entry will be modified
 
 	// iterator functions
-	bool isEmpty() const;
-	boost::unordered_map<uint256, LedgerEntrySetEntry>::const_iterator begin() const;
-	boost::unordered_map<uint256, LedgerEntrySetEntry>::const_iterator end() const;
-	boost::unordered_map<uint256, LedgerEntrySetEntry>::iterator begin();
-	boost::unordered_map<uint256, LedgerEntrySetEntry>::iterator end();
+	bool isEmpty() const { return mEntries.empty(); }
+	boost::unordered_map<uint256, LedgerEntrySetEntry>::const_iterator begin() const	{ return mEntries.begin(); }
+	boost::unordered_map<uint256, LedgerEntrySetEntry>::const_iterator end() const		{ return mEntries.end(); }
+	boost::unordered_map<uint256, LedgerEntrySetEntry>::iterator begin()				{ return mEntries.begin(); }
+	boost::unordered_map<uint256, LedgerEntrySetEntry>::iterator end()					{ return mEntries.end(); }
 };
 
 #endif
+
+// vim:ts=4
