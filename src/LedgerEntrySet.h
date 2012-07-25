@@ -21,6 +21,8 @@ public:
 	SLE::pointer		mEntry;
 	LedgerEntryAction	mAction;
 	int					mSeq;
+
+	LedgerEntrySetEntry(SLE::pointer e, LedgerEntryAction a, int s) : mEntry(e), mAction(a), mSeq(s) { ; }
 };
 
 
