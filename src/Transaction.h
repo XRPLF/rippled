@@ -68,8 +68,12 @@ private:
 	Transaction::pointer setCreditSet(
 		const NewcoinAddress&				naPrivateKey,
 		const NewcoinAddress&				naDstAccountID,
+		bool								bLimitAmount,
 		const STAmount&						saLimitAmount,
-		uint32								uAcceptRate);
+		bool								bQualityIn,
+		uint32								uQualityIn,
+		bool								bQualityOut,
+		uint32								uQualityOut);
 
 	Transaction::pointer setNicknameSet(
 		const NewcoinAddress&				naPrivateKey,
@@ -166,8 +170,12 @@ public:
 		const STAmount&						saFee,
 		uint32								uSourceTag,
 		const NewcoinAddress&				naDstAccountID,
+		bool								bLimitAmount,
 		const STAmount&						saLimitAmount,
-		uint32								uAcceptRate);
+		bool								bQualityIn,
+		uint32								uQualityIn,
+		bool								bQualityOut,
+		uint32								uQualityOut);
 
 	// Set Nickname
 	static Transaction::pointer sharedNicknameSet(

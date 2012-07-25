@@ -27,11 +27,10 @@ TransactionFormat InnerTxnFormats[]=
 	{ "CreditSet", ttCREDIT_SET, {
 		{ S_FIELD(Flags),			STI_UINT32,  SOE_FLAGS,    0 },
 		{ S_FIELD(Destination),		STI_ACCOUNT, SOE_REQUIRED, 0 },
-		{ S_FIELD(LimitAmount),		STI_AMOUNT,  SOE_REQUIRED, 0 },
-		{ S_FIELD(AcceptRate),		STI_UINT32,  SOE_IFFLAG,   1 },
-		{ S_FIELD(AcceptStart),		STI_UINT32,  SOE_IFFLAG,   2 },
-		{ S_FIELD(AcceptExpire),	STI_UINT32,  SOE_IFFLAG,   4 },
-		{ S_FIELD(SourceTag),		STI_UINT32,  SOE_IFFLAG,   8 },
+		{ S_FIELD(SourceTag),		STI_UINT32,  SOE_IFFLAG,   1 },
+		{ S_FIELD(LimitAmount),		STI_AMOUNT,  SOE_IFFLAG,   2 },
+		{ S_FIELD(QualityIn),		STI_UINT32,  SOE_IFFLAG,   4 },
+		{ S_FIELD(QualityOut),		STI_UINT32,  SOE_IFFLAG,   8 },
 		{ S_FIELD(Extensions),		STI_TL,		 SOE_IFFLAG,   0x02000000 },
 		{ sfInvalid, NULL,			STI_DONE,	 SOE_NEVER,    -1 } }
 	},

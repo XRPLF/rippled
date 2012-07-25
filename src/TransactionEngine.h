@@ -26,6 +26,7 @@ enum TransactionEngineResult
 	tenBAD_GEN_AUTH,
 	tenBAD_ISSUER,
 	tenBAD_OFFER,
+	tenBAD_PATH_COUNT,
 	tenBAD_SET_ID,
 	tenCREATEXNS,
 	tenDST_IS_SRC,
@@ -78,6 +79,11 @@ enum TransactionEngineResult
 	terSET_MISSING_DST,
 	terUNCLAIMED,
 	terUNFUNDED,
+
+	// Might succeed in different order.
+	// XXX claim fee and try to delete unfunded.
+	terPATH_EMPTY,
+	terPATH_PARTIAL,
 };
 
 bool transResultInfo(TransactionEngineResult terCode, std::string& strToken, std::string& strHuman);
@@ -102,6 +108,22 @@ enum TransactionAccountAction
 
 typedef std::pair<TransactionAccountAction, SerializedLedgerEntry::pointer> AffectedAccount;
 
+// Hold a path state under incremental application.
+class PathState
+{
+public:
+	typedef boost::shared_ptr<PathState> pointer;
+
+	int			mIndex;
+	uint64		uQuality;		// 0 = none.
+	STAmount	saIn;
+	STAmount	saOut;
+
+	PathState(int iIndex) : mIndex(iIndex) { ; };
+
+	static PathState::pointer createPathState(int iIndex) { return boost::make_shared<PathState>(iIndex); };
+};
+
 // One instance per ledger.
 // Only one transaction applied at a time.
 class TransactionEngine
@@ -123,21 +145,28 @@ private:
 		const uint256&					uRootIndex,
 		const uint256&					uLedgerIndex);	// Item being deleted
 
-	void dirFirst(const uint256& uRootIndex, uint256& uEntryIndex, uint64& uEntryNode);
+	bool dirFirst(const uint256& uRootIndex, SLE::pointer& sleNode, unsigned int& uDirEntry, uint256& uEntryIndex);
+	bool dirNext(const uint256& uRootIndex, SLE::pointer& sleNode, unsigned int& uDirEntry, uint256& uEntryIndex);
 
 #ifdef WORK_IN_PROGRESS
 	typedef struct {
-		STAmount						saWanted;		// What this node wants from upstream.
+		uint16							uFlags;			// --> from path
 
-		STAmount						saIOURedeem;	// What this node will redeem downstream.
-		STAmount						saIOUIssue;		// What this node will issue downstream.
-		STAmount						saSend;			// Amount of stamps this node will send.
+		STAccount						saAccount;		// --> recieving/sending account
 
-		STAmount						saIOUForgive;	// Amount of IOUs to forgive.
-		STAmount						saIOUAccept;	// Amount of IOUs to accept.
+		STAmount						saWanted;		// --> What this node wants from upstream.
+
+		// Maybe this should just be a bool:
+		STAmount						saIOURedeemMax;	// --> Max amount of IOUs to redeem downstream.
+		// Maybe this should just be a bool:
+		STAmount						saIOUIssueMax;	// --> Max Amount of IOUs to issue downstream.
+
+		STAmount						saIOURedeem;	// <-- What this node will redeem downstream.
+		STAmount						saIOUIssue;		// <-- What this node will issue downstream.
+		STAmount						saSend;			// <-- Stamps this node will send downstream.
+
 		STAmount						saRecieve;		// Amount stamps to receive.
 
-		STAccount						saAccount;
 	} paymentNode;
 
 	typedef struct {
@@ -182,6 +211,10 @@ protected:
 	STAmount		accountHolds(const uint160& uAccountID, const uint160& uCurrency, const uint160& uIssuerID);
 	STAmount		accountSend(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount);
 	STAmount		accountFunds(const uint160& uAccountID, const STAmount& saDefault);
+
+	PathState::pointer	pathCreate(const STPath& spPath);
+	void				pathApply(PathState::pointer pspCur);
+	void				pathNext(PathState::pointer pspCur);
 
 	void			txnWrite();
 

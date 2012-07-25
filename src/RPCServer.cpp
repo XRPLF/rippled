@@ -1125,15 +1125,19 @@ Json::Value RPCServer::doPeers(const Json::Value& params)
 	return obj;
 }
 
-// ripple_line_set <seed> <paying_account> <destination_account> <limit_amount> [<currency>] [<accept_rate>]
+// ripple_line_set <seed> <paying_account> <destination_account> <limit_amount> [<currency>] [<quality_in>] [<quality_out>]
 Json::Value RPCServer::doRippleLineSet(const Json::Value& params)
 {
 	NewcoinAddress	naSeed;
 	NewcoinAddress	naSrcAccountID;
 	NewcoinAddress	naDstAccountID;
 	STAmount		saLimitAmount;
-	uint256			uLedger		= mNetOps->getCurrentLedger();
-	uint32			uAcceptRate	= params.size() >= 6 ? lexical_cast_s<uint32>(params[5u].asString()) : 0;
+	uint256			uLedger			= mNetOps->getCurrentLedger();
+	bool			bLimitAmount	= true;
+	bool			bQualityIn		= params.size() >= 6;
+	bool			bQualityOut		= params.size() >= 7;
+	uint32			uQualityIn		= bQualityIn ? lexical_cast_s<uint32>(params[5u].asString()) : 0;
+	uint32			uQualityOut		= bQualityOut ? lexical_cast_s<uint32>(params[6u].asString()) : 0;
 
 	if (!naSeed.setSeedGeneric(params[0u].asString()))
 	{
@@ -1171,8 +1175,9 @@ Json::Value RPCServer::doRippleLineSet(const Json::Value& params)
 			theConfig.FEE_DEFAULT,
 			0,											// YYY No source tag
 			naDstAccountID,
-			saLimitAmount,
-			uAcceptRate);
+			bLimitAmount, saLimitAmount,
+			bQualityIn, uQualityIn,
+			bQualityOut, uQualityOut);
 
 		trans	= mNetOps->submitTransaction(trans);
 
@@ -1181,8 +1186,6 @@ Json::Value RPCServer::doRippleLineSet(const Json::Value& params)
 		obj["seed"]				= naSeed.humanSeed();
 		obj["srcAccountID"]		= naSrcAccountID.humanAccountID();
 		obj["dstAccountID"]		= naDstAccountID.humanAccountID();
-		obj["limitAmount"]		= saLimitAmount.getText();
-		obj["acceptRate"]		= uAcceptRate;
 
 		return obj;
 	}
@@ -2133,7 +2136,7 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 		{	"password_set",			&RPCServer::doPasswordSet,			2,  3, false,	optNetwork	},
 		{	"peers",				&RPCServer::doPeers,				0,  0, true					},
 		{	"ripple_lines_get",		&RPCServer::doRippleLinesGet,		1,  2, false,	optCurrent|optClosed },
-		{	"ripple_line_set",		&RPCServer::doRippleLineSet,		4,  6, false,	optCurrent	},
+		{	"ripple_line_set",		&RPCServer::doRippleLineSet,		4,  7, false,	optCurrent	},
 		{	"send",					&RPCServer::doSend,					3,  7, false,	optCurrent	},
 		{	"server_info",			&RPCServer::doServerInfo,			0,  0, true					},
 		{	"stop",					&RPCServer::doStop,					0,  0, true					},

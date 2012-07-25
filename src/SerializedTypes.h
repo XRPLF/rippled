@@ -36,6 +36,20 @@ enum SerializedTypeID
 	STI_LEDGERENTRY	= 102
 };
 
+enum PathFlags
+{
+	PF_END				= 0x00,		// End of current path & path list.
+	PF_BOUNDRY			= 0xFF,		// End of current path & new path follows.
+
+	PF_ACCOUNT			= 0x01,
+	PF_OFFER			= 0x02,
+
+	PF_WANTED_CURRENCY	= 0x10,
+	PF_WANTED_ISSUER	= 0x20,
+	PF_REDEEM			= 0x40,
+	PF_ISSUE			= 0x80,
+};
+
 class SerializedType
 {
 protected:

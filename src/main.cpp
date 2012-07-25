@@ -56,7 +56,7 @@ void printHelp(const po::options_description& desc)
 	cout << "     password_set <master_seed> <regular_seed> [<account>]" << endl;
 	cout << "     peers" << endl;
 	cout << "     ripple_lines_get <account>|<nickname>|<account_public_key> [<index>]" << endl;
-	cout << "     ripple_line_set <seed> <paying_account> <destination_account> <limit_amount> <currency> [<account_rate>]" << endl;
+	cout << "     ripple_line_set <seed> <paying_account> <destination_account> <limit_amount> <currency> [<quality_in>] [<quality_out>]" << endl;
 	cout << "     send <seed> <paying_account> <account_id> <amount> [<currency>] [<send_max>] [<send_currency>]" << endl;
 	cout << "     stop" << endl;
 	cout << "     tx <id>" << endl;
