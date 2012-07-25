@@ -110,8 +110,8 @@ public:
 	TransactionMetaSet(uint32 ledger, const std::vector<unsigned char>&);
 
 	bool isNodeAffected(const uint256&) const;
-	TransactionMetaNode getAffectedAccount(const uint256&) const;
-	const TransactionMetaNode& peekAffectedAccount(const uint256&) const;
+	TransactionMetaNode getAffectedNode(const uint256&);
+	const TransactionMetaNode& peekAffectedNode(const uint256&) const;
 
 	Json::Value getJson(int) const;
 	void addRaw(Serializer&) const;

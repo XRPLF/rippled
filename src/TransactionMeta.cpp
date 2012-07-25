@@ -172,3 +172,30 @@ Json::Value TransactionMetaSet::getJson(int v) const
 
 	return ret;
 }
+
+bool TransactionMetaSet::isNodeAffected(const uint256& node) const
+{
+	for (std::set<TransactionMetaNode>::const_iterator it = mNodes.begin(), end = mNodes.end();
+			it != end; ++it)
+		if (it->getNode() == node)
+			return true;
+	return false;
+}
+
+TransactionMetaNode TransactionMetaSet::getAffectedNode(const uint256& node)
+{
+	for (std::set<TransactionMetaNode>::const_iterator it = mNodes.begin(), end = mNodes.end();
+			it != end; ++it)
+		if (it->getNode() == node)
+			return *it;
+	return TransactionMetaNode(uint256());
+}
+
+const TransactionMetaNode& TransactionMetaSet::peekAffectedNode(const uint256& node) const
+{
+	for (std::set<TransactionMetaNode>::const_iterator it = mNodes.begin(), end = mNodes.end();
+			it != end; ++it)
+		if (it->getNode() == node)
+			return *it;
+	throw std::runtime_error("Affected node not found");
+}
