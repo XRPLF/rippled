@@ -117,10 +117,9 @@ public:
 	void addRaw(Serializer&) const;
 
 	void threadNode(const uint256& node, const uint256& previousTransaction, uint32 previousLedger);
-	bool signedBy(const uint256& node);
+	bool signedBy(const uint256& node, const STAmount& fee);
 	bool adjustBalance(const uint256& node, unsigned flags, const STAmount &amount);
 	bool adjustBalances(const uint256& node, unsigned flags, const STAmount &firstAmt, const STAmount &secondAmt);
-
 };
 
 #endif
