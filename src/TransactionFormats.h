@@ -35,14 +35,21 @@ const int TransactionIFee			= 4;
 const int TransactionMinLen			= 32;
 const int TransactionMaxLen			= 1048576;
 
+//
 // Transaction flags.
-const uint32 tfCreateAccount		= 0x00010000;
-const uint32 tfNoRippleDirect		= 0x00020000;
+//
 
-const uint32 tfPassive				= 0x00010000;
-
+// AccountSet flags:
 const uint32 tfUnsetEmailHash		= 0x00010000;
 const uint32 tfUnsetWalletLocator	= 0x00020000;
+
+// OfferCreate flags:
+const uint32 tfPassive				= 0x00010000;
+
+// Payment flags:
+const uint32 tfCreateAccount		= 0x00010000;
+const uint32 tfPartialPayment		= 0x00020000;
+const uint32 tfNoRippleDirect		= 0x00040000;
 
 extern TransactionFormat InnerTxnFormats[];
 extern TransactionFormat* getTxnFormat(TransactionType t);

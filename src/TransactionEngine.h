@@ -26,6 +26,7 @@ enum TransactionEngineResult
 	tenBAD_GEN_AUTH,
 	tenBAD_ISSUER,
 	tenBAD_OFFER,
+	tenBAD_PATH_COUNT,
 	tenBAD_SET_ID,
 	tenCREATEXNS,
 	tenDST_IS_SRC,
@@ -78,6 +79,11 @@ enum TransactionEngineResult
 	terSET_MISSING_DST,
 	terUNCLAIMED,
 	terUNFUNDED,
+
+	// Might succeed in different order.
+	// XXX claim fee and try to delete unfunded.
+	terPATH_EMPTY,
+	terPATH_PARTIAL,
 };
 
 bool transResultInfo(TransactionEngineResult terCode, std::string& strToken, std::string& strHuman);
@@ -101,6 +107,22 @@ enum TransactionAccountAction
 };
 
 typedef std::pair<TransactionAccountAction, SerializedLedgerEntry::pointer> AffectedAccount;
+
+// Hold a path state under incremental application.
+class PathState
+{
+public:
+	typedef boost::shared_ptr<PathState> pointer;
+
+	int			mIndex;
+	uint64		uQuality;		// 0 = none.
+	STAmount	saIn;
+	STAmount	saOut;
+
+	PathState(int iIndex) : mIndex(iIndex) { ; };
+
+	static PathState::pointer createPathState(int iIndex) { return boost::make_shared<PathState>(iIndex); };
+};
 
 // One instance per ledger.
 // Only one transaction applied at a time.
@@ -189,6 +211,10 @@ protected:
 	STAmount		accountHolds(const uint160& uAccountID, const uint160& uCurrency, const uint160& uIssuerID);
 	STAmount		accountSend(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount);
 	STAmount		accountFunds(const uint160& uAccountID, const STAmount& saDefault);
+
+	PathState::pointer	pathCreate(const STPath& spPath);
+	void				pathApply(PathState::pointer pspCur);
+	void				pathNext(PathState::pointer pspCur);
 
 	void			txnWrite();
 

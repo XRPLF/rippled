@@ -8,6 +8,7 @@
 
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>
+#include <queue>
 
 #include "../json/writer.h"
 
@@ -17,7 +18,8 @@
 #include "utils.h"
 
 // Small for testing, should likely be 32 or 64.
-#define DIR_NODE_MAX	2
+#define DIR_NODE_MAX		2
+#define RIPPLE_PATHS_MAX	3
 
 bool transResultInfo(TransactionEngineResult terCode, std::string& strToken, std::string& strHuman)
 {
@@ -33,6 +35,7 @@ bool transResultInfo(TransactionEngineResult terCode, std::string& strToken, std
 		{	tenBAD_GEN_AUTH,		"tenBAD_GEN_AUTH",			"Not authorized to claim generator."				},
 		{	tenBAD_ISSUER,			"tenBAD_ISSUER",			"Malformed."										},
 		{	tenBAD_OFFER,			"tenBAD_OFFER",				"Malformed."										},
+		{	tenBAD_PATH_COUNT,		"tenBAD_PATH_COUNT",		"Malformed: too many paths."						},
 		{	tenBAD_RIPPLE,			"tenBAD_RIPPLE",			"Ledger prevents ripple from succeeding."			},
 		{	tenBAD_SET_ID,			"tenBAD_SET_ID",			"Malformed."										},
 		{	tenCLAIMED,				"tenCLAIMED",				"Can not claim a previously claimed account."		},
@@ -72,6 +75,8 @@ bool transResultInfo(TransactionEngineResult terCode, std::string& strToken, std
 		{	terOVER_LIMIT,			"terOVER_LIMIT",			"Over limit."										},
 		{	terPAST_LEDGER,			"terPAST_LEDGER",			"The transaction expired and can't be applied"		},
 		{	terPAST_SEQ,			"terPAST_SEQ",				"This sequence number has already past"				},
+		{	terPATH_EMPTY,			"terPATH_EMPTY",			"Path could not send partial amount."				},
+		{	terPATH_PARTIAL,		"terPATH_PARTIAL",			"Path could not send full amount."					},
 		{	terPRE_SEQ,				"terPRE_SEQ",				"Missing/inapplicable prior transaction"			},
 		{	terSET_MISSING_DST,		"terSET_MISSING_DST",		"Can't set password, destination missing."			},
 		{	terSUCCESS,				"terSUCCESS",				"The transaction was applied"						},
@@ -2126,6 +2131,44 @@ bool calcPaymentForward(std::vector<paymentNode>& pnNodes)
 }
 #endif
 
+// Ensure sort order is complelely deterministic.
+class PathStateCompare
+{
+public:
+	bool operator()(const PathState::pointer& lhs, const PathState::pointer& rhs)
+	{
+		// Return true, iff lhs has less priority than rhs.
+
+		if (lhs->uQuality != rhs->uQuality)
+			return lhs->uQuality > rhs->uQuality;	// Bigger is worse.
+
+		// Best quanity is second rank.
+		if (lhs->saOut != rhs->saOut)
+			return lhs->saOut < rhs->saOut;			// Smaller is worse.
+
+		// Path index is third rank.
+		return lhs->mIndex > rhs->mIndex;			// Bigger is worse.
+	}
+};
+
+PathState::pointer TransactionEngine::pathCreate(const STPath& spPath)
+{
+	return PathState::pointer();
+}
+
+// Calcuate the next increment of a path.
+void TransactionEngine::pathNext(PathState::pointer pspCur)
+{
+
+}
+
+// Apply an increment of the path, then calculate the next increment.
+void TransactionEngine::pathApply(PathState::pointer pspCur)
+{
+
+	pathNext(pspCur);
+}
+
 // XXX Need to audit for things like setting accountID not having memory.
 TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction& txn)
 {
@@ -2313,47 +2356,72 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 	STPathSet	spsPaths = txn.getITFieldPathSet(sfPaths);
 
 	// XXX If we are parsing for determing forwarding check maximum path count.
-	if (!spsPaths.getPathCount())
+	if (!spsPaths.isEmpty())
 	{
 		Log(lsINFO) << "doPayment: Invalid transaction: No paths.";
 
 		return tenRIPPLE_EMPTY;
 	}
-#if 0
-	// 1) Calc payment in reverse: do not modify sles.
-	// 2) Calc payment forward: do modify sles.
-	std::vector<STPath> spPath;
-
-	BOOST_FOREACH(std::vector<STPath>& spPath, spsPaths)
+	else if (spsPaths.getPathCount() > RIPPLE_PATHS_MAX)
 	{
+		return tenBAD_PATH_COUNT;
+	}
 
-		Log(lsINFO) << "doPayment: Implementation error: Not implemented.";
+	// Incrementally search paths.
+	std::priority_queue<PathState::pointer, std::vector<PathState::pointer>, PathStateCompare>	pqPaths;
+#if 0
+	BOOST_FOREACH(std::vector<STPath>::const_iterator::value_type spPath, spsPaths)
+	{
+		PathState::pointer	pspCur	= pathCreate(spPath);
 
-		return tenUNKNOWN;
+		pqPaths.push(pspCur);
 	}
 #endif
+	TransactionEngineResult	terResult;
+	STAmount				saPaid;
+	STAmount				saWanted;
+	uint32					uFlags			= txn.getFlags();	// XXX Redundant.
 
-#if 0
-// XXX Or additionally queue unfundeds for removal on failure.
-	if (terSUCCESS == terResult)
+	terResult	= tenUNKNOWN;
+	while (tenUNKNOWN == terResult)
 	{
-		// Transaction failed.  Process possible unfunded offers.
-		entryReset(txn);
-
-		BOOST_FOREACH(const uint256& uOfferIndex, mUnfunded)
+		if (!pqPaths.empty())
 		{
-			SLE::pointer	sleOffer		= mLedger->getOffer(uOfferIndex);
-			uint160			uOfferID		= sleOffer->getIValueFieldAccount(sfAccount).getAccountID();
-			STAmount		saOfferFunds	= sleOffer->getIValueFieldAmount(sfTakerGets);
+			// Have a path to contribute.
+			PathState::pointer	pspCur		= pqPaths.top();
 
-			if (!accountFunds(uOfferID, saOfferFunds).isPositive())
+			pqPaths.pop();
+
+			pathApply(pspCur);
+
+			if (tenUNKNOWN == terResult && saPaid == saWanted)
 			{
-				offerDelete(sleOffer, uOfferIndex, uOfferID);
-				bWrite	= true;
+				terResult	= terSUCCESS;
+			}
+
+			if (tenUNKNOWN == terResult && pspCur->uQuality)
+			{
+				// Current path still has something to contribute.
+				pqPaths.push(pspCur);
 			}
 		}
+		// Ran out of paths.
+		else if ((!uFlags & tfPartialPayment))
+		{
+			// Partial payment not allowed.
+			terResult	= terPATH_PARTIAL;		// XXX No effect, except unfunded and charge fee.
+		}
+		else if (saPaid.isZero())
+		{
+			// Nothing claimed.
+			terResult	= terPATH_EMPTY;	// XXX No effect except unfundeds and charge fee.
+			// XXX
+		}
+		else
+		{
+			terResult	= terSUCCESS;
+		}
 	}
-#endif
 
 	Log(lsINFO) << "doPayment: Delay transaction: No ripple paths could be satisfied.";
 
