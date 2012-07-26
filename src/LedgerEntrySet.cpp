@@ -50,41 +50,82 @@ void LedgerEntrySet::entryCache(SLE::pointer sle)
 {
 	boost::unordered_map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find(sle->getIndex());
 	if (it == mEntries.end())
-		mEntries.insert(std::make_pair(sle->getIndex(), LedgerEntrySetEntry(sle, taaCACHED, mSeq)));
-	else if (it->second.mAction == taaCACHED)
 	{
-		it->second.mSeq	    = mSeq;
-		it->second.mEntry   = sle;
+		mEntries.insert(std::make_pair(sle->getIndex(), LedgerEntrySetEntry(sle, taaCACHED, mSeq)));
+		return;
 	}
-	else
-		throw std::runtime_error("Cache after modify/delete");
+
+	switch (it->second.mAction)
+	{
+		case taaCACHE:
+			it->second.mSeq	    = mSeq;
+			it->second.mEntry   = sle;
+			return;
+
+		default:
+			throw std::runtime_error("Cache after modify/delete/create");
+	}
 }
 
 void LedgerEntrySet::entryCreate(SLE::pointer sle)
 {
 	boost::unordered_map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find(sle->getIndex());
 	if (it == mEntries.end())
+	{
 		mEntries.insert(std::make_pair(sle->getIndex(), LedgerEntrySetEntry(sle, taaCREATE, mSeq)));
-	else if (it->second.mAction == taaDELETE)
-		throw std::runtime_error("Create after delete"); // We could make this a modify
-	else if (it->second.mAction == taaMODIFY)
-		throw std::runtime_error("Create after modify");
-	else
-		throw std::runtime_error("Create after cache");
+		return;
+	}
+
+	switch (it->second.mAction)
+	{
+		case taaMODIFY:
+			throw std::runtime_error("Create after modify");
+
+		case taaDELETE:
+			throw std::runtime_error("Create after delete"); // We could make this a modify
+
+		case taaCREATE:
+			throw std::runtime_error("Create after create"); // We could make this work
+
+		case taaCACHED:
+			it->second.mSeq = mSeq;
+			it->second.mEntry = sle;
+			it->second.mAction = taaCREATE;
+			break;
+
+		default:
+			throw std::runtime_error("Unknown taa");
+	}
 }
 
 void LedgerEntrySet::entryModify(SLE::pointer sle)
 {
 	boost::unordered_map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find(sle->getIndex());
 	if (it == mEntries.end())
-		mEntries.insert(std::make_pair(sle->getIndex(), LedgerEntrySetEntry(sle, taaMODIFY, mSeq)));
-	else if (it->second.mAction == taaDELETE)
-		throw std::runtime_error("Modify after delete");
-	else
 	{
-		it->second.mSeq	    = mSeq;
-		it->second.mEntry   = sle;
-		it->second.mAction  = (it->second.mAction == taaCREATE) ? taaCREATE : taaMODIFY;
+		mEntries.insert(std::make_pair(sle->getIndex(), LedgerEntrySetEntry(sle, taaMODIFY, mSeq)));
+		return;
+	}
+
+	switch (it->second.mAction)
+	{
+		case taaCACHED:
+		case taaMODIFY:
+			it->second.mSeq	    = mSeq;
+			it->second.mEntry   = sle;
+			it->second.mAction  = taaMODIFY;
+			break;
+
+		case taaDELETE:
+			throw std::runtime_error("Modify after delete");
+
+		case taaCREATE:
+			it->second.mSeq	    = mSeq;
+			it->second.mEntry   = sle;
+			break;
+
+		default:
+			throw std::runtime_error("Unknown taa");
 	}
 }
 
@@ -92,14 +133,29 @@ void LedgerEntrySet::entryDelete(SLE::pointer sle)
 {
 	boost::unordered_map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find(sle->getIndex());
 	if (it == mEntries.end())
-		mEntries.insert(std::make_pair(sle->getIndex(), LedgerEntrySetEntry(sle, taaDELETE, mSeq)));
-	else if (it->second.mAction == taaCREATE) // We support delete after create
-		mEntries.erase(it);
-	else
 	{
-		it->second.mSeq	    = mSeq;
-		it->second.mEntry   = sle;
-		it->second.mAction  = taaDELETE;
+		mEntries.insert(std::make_pair(sle->getIndex(), LedgerEntrySetEntry(sle, taaDELETE, mSeq)));
+		return;
+	}
+
+	switch (it->second.mAction)
+	{
+		case taaCACHED:
+		case taaMODIFY:
+			it->second.mSeq	    = mSeq;
+			it->second.mEntry   = sle;
+			it->second.mAction  = taaDELETE;
+			break;
+
+		case taaCREATE:
+			mEntries.erase(it);
+			break;
+
+		case taaDELETE:
+			break;
+
+		default:
+			throw std::runtime_error("Unknown taa");
 	}
 }
 
