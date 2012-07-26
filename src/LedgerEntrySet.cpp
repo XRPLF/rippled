@@ -57,7 +57,7 @@ void LedgerEntrySet::entryCache(SLE::pointer sle)
 
 	switch (it->second.mAction)
 	{
-		case taaCACHE:
+		case taaCACHED:
 			it->second.mSeq	    = mSeq;
 			it->second.mEntry   = sle;
 			return;
@@ -75,6 +75,8 @@ void LedgerEntrySet::entryCreate(SLE::pointer sle)
 		mEntries.insert(std::make_pair(sle->getIndex(), LedgerEntrySetEntry(sle, taaCREATE, mSeq)));
 		return;
 	}
+
+	assert(it->second.mSeq == mSeq);
 
 	switch (it->second.mAction)
 	{
@@ -104,13 +106,17 @@ void LedgerEntrySet::entryModify(SLE::pointer sle)
 		return;
 	}
 
+	assert(it->second.mSeq == mSeq);
+	assert(*it->second.mEntry == *sle);
+
 	switch (it->second.mAction)
 	{
 		case taaCACHED:
+			it->second.mAction  = taaMODIFY;
+			fallthru();
 		case taaMODIFY:
 			it->second.mSeq	    = mSeq;
 			it->second.mEntry   = sle;
-			it->second.mAction  = taaMODIFY;
 			break;
 
 		case taaDELETE:
@@ -124,7 +130,7 @@ void LedgerEntrySet::entryModify(SLE::pointer sle)
 		default:
 			throw std::runtime_error("Unknown taa");
 	}
-}
+ }
 
 void LedgerEntrySet::entryDelete(SLE::pointer sle)
 {
@@ -134,6 +140,9 @@ void LedgerEntrySet::entryDelete(SLE::pointer sle)
 		mEntries.insert(std::make_pair(sle->getIndex(), LedgerEntrySetEntry(sle, taaDELETE, mSeq)));
 		return;
 	}
+
+	assert(it->second.mSeq == mSeq);
+	assert(*it->second.mEntry == *sle);
 
 	switch (it->second.mAction)
 	{
