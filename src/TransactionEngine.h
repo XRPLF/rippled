@@ -7,6 +7,7 @@
 #include "Ledger.h"
 #include "SerializedTransaction.h"
 #include "SerializedLedger.h"
+#include "LedgerEntrySet.h"
 
 // A TransactionEngine applies serialized transactions to a ledger
 // It can also, verify signatures, verify fees, and give rejection reasons
@@ -97,17 +98,6 @@ enum TransactionEngineParams
 	tepMETADATA      = 5,   // put metadata in tree, not transaction
 };
 
-enum TransactionAccountAction
-{
-	taaNONE,
-	taaCACHED,				// Unmodified.
-	taaMODIFY,				// Modifed, must have previously been taaCACHED.
-	taaDELETE,				// Delete, must have previously been taaDELETE or taaMODIFY.
-	taaCREATE,				// Newly created.
-};
-
-typedef std::pair<TransactionAccountAction, SerializedLedgerEntry::pointer> AffectedAccount;
-
 // Hold a path state under incremental application.
 class PathState
 {
@@ -129,10 +119,7 @@ public:
 class TransactionEngine
 {
 private:
-	typedef boost::unordered_map<uint256, std::pair<SLE::pointer, TransactionAccountAction> >		entryMap;
-	typedef entryMap::iterator				entryMap_iterator;
-	typedef entryMap::const_iterator		entryMap_const_iterator;
-	typedef entryMap::iterator::value_type	entryMap_value_type;
+	LedgerEntrySet						mNodes, mOrigNodes;
 
 	TransactionEngineResult dirAdd(
 		uint64&							uNodeDir,		// Node of entry.
@@ -194,7 +181,6 @@ protected:
 	uint160			mTxnAccountID;
 	SLE::pointer	mTxnAccount;
 
-	entryMap		mEntries;
 	boost::unordered_set<uint256>	mUnfunded;	// Indexes that were found unfunded.
 
 	SLE::pointer	entryCreate(LedgerEntryType letType, const uint256& uIndex);
@@ -202,7 +188,7 @@ protected:
 	void			entryDelete(SLE::pointer sleEntry);
 	void			entryModify(SLE::pointer sleEntry);
 
-	void			entryReset(const SerializedTransaction& txn);
+	void			entryReset();
 
 	STAmount		rippleHolds(const uint160& uAccountID, const uint160& uCurrency, const uint160& uIssuerID);
 	STAmount		rippleTransit(const uint160& uSenderID, const uint160& uReceiverID, const uint160& uIssuerID, const STAmount& saAmount);
