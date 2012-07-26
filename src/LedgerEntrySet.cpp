@@ -46,7 +46,7 @@ LedgerEntryAction LedgerEntrySet::hasEntry(const uint256& index) const
 	return it->second.mAction;
 }
 
-void LedgerEntrySet::entryCache(SLE::pointer sle)
+void LedgerEntrySet::entryCache(SLE::pointer& sle)
 {
 	boost::unordered_map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find(sle->getIndex());
 	if (it == mEntries.end())
@@ -67,7 +67,7 @@ void LedgerEntrySet::entryCache(SLE::pointer sle)
 	}
 }
 
-void LedgerEntrySet::entryCreate(SLE::pointer sle)
+void LedgerEntrySet::entryCreate(SLE::pointer& sle)
 {
 	boost::unordered_map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find(sle->getIndex());
 	if (it == mEntries.end())
@@ -97,7 +97,7 @@ void LedgerEntrySet::entryCreate(SLE::pointer sle)
 	}
 }
 
-void LedgerEntrySet::entryModify(SLE::pointer sle)
+void LedgerEntrySet::entryModify(SLE::pointer& sle)
 {
 	boost::unordered_map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find(sle->getIndex());
 	if (it == mEntries.end())
@@ -132,7 +132,7 @@ void LedgerEntrySet::entryModify(SLE::pointer sle)
 	}
  }
 
-void LedgerEntrySet::entryDelete(SLE::pointer sle)
+void LedgerEntrySet::entryDelete(SLE::pointer& sle)
 {
 	boost::unordered_map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find(sle->getIndex());
 	if (it == mEntries.end())

@@ -49,10 +49,10 @@ public:
 	// basic entry functions
 	SLE::pointer getEntry(const uint256& index, LedgerEntryAction&);
 	LedgerEntryAction hasEntry(const uint256& index) const;
-	void entryCache(SLE::pointer);		// Add this entry to the cache
-	void entryCreate(SLE::pointer);		// This entry will be created
-	void entryDelete(SLE::pointer);		// This entry will be deleted
-	void entryModify(SLE::pointer);		// This entry will be modified
+	void entryCache(SLE::pointer&);			// Add this entry to the cache
+	void entryCreate(SLE::pointer&);		// This entry will be created
+	void entryDelete(SLE::pointer&);		// This entry will be deleted
+	void entryModify(SLE::pointer&);		// This entry will be modified
 
 	// iterator functions
 	bool isEmpty() const { return mEntries.empty(); }
