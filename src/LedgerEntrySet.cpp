@@ -88,10 +88,7 @@ void LedgerEntrySet::entryCreate(SLE::pointer sle)
 			throw std::runtime_error("Create after create"); // We could make this work
 
 		case taaCACHED:
-			it->second.mSeq = mSeq;
-			it->second.mEntry = sle;
-			it->second.mAction = taaCREATE;
-			break;
+			throw std::runtime_error("Create after cache");
 
 		default:
 			throw std::runtime_error("Unknown taa");
