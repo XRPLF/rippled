@@ -44,6 +44,7 @@ public:
 
 	int getSeq() const			{ return mSeq; }
 	void bumpSeq()				{ ++mSeq; }
+	void clear()				{ mEntries.empty(); mSeq = 0; }
 
 	// basic entry functions
 	SLE::pointer getEntry(const uint256& index, LedgerEntryAction&);

@@ -64,7 +64,7 @@ void LedgerEntrySet::entryCreate(SLE::pointer sle)
 	if (it == mEntries.end())
 		mEntries.insert(std::make_pair(sle->getIndex(), LedgerEntrySetEntry(sle, taaDELETE, mSeq)));
 	else if (it->second.mAction == taaDELETE)
-		throw std::runtime_error("Create after delete");
+		throw std::runtime_error("Create after delete"); // We could make this a modify
 	else if (it->second.mAction == taaMODIFY)
 		throw std::runtime_error("Create after modify");
 	else
@@ -87,5 +87,20 @@ void LedgerEntrySet::entryModify(SLE::pointer sle)
 		it->second.mSeq = mSeq;
 		it->second.mEntry = sle;
 		it->second.mAction = (it->second.mAction == taaCREATE) ? taaCREATE : taaDELETE;
+	}
+}
+
+void LedgerEntrySet::entryDelete(SLE::pointer sle)
+{
+	boost::unordered_map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find(sle->getIndex());
+	if (it == mEntries.end())
+		mEntries.insert(std::make_pair(sle->getIndex(), LedgerEntrySetEntry(sle, taaDELETE, mSeq)));
+	else if (it->second.mAction == taaCREATE) // We support delete after create
+		mEntries.erase(it);
+	else
+	{
+		it->second.mSeq = mSeq;
+		it->second.mEntry = sle;
+		it->second.mAction = taaDELETE;
 	}
 }

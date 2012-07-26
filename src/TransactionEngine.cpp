@@ -699,26 +699,16 @@ SLE::pointer TransactionEngine::entryCache(LedgerEntryType letType, const uint25
 
 	if (!uIndex.isZero())
 	{
-		entryMap::const_iterator	it		= mEntries.find(uIndex);
-
-		switch (it == mEntries.end() ? taaNONE : it->second.second)
+		LedgerEntryAction action;
+		sleEntry = mNodes.getEntry(uIndex, action);
+		if (!sleEntry)
 		{
-			case taaNONE:
-				sleEntry			= mLedger->getSLE(uIndex);
-				if (sleEntry)
-					mEntries[uIndex]	= std::make_pair(sleEntry, taaCACHED);	// Add to cache.
-				break;
-
-			case taaCREATE:
-			case taaCACHED:
-			case taaMODIFY:
-				sleEntry			= it->second.first;							// Get from cache.
-				break;
-
-			case taaDELETE:
-				assert(false);													// Unexpected case.
-				break;
+			sleEntry = mLedger->getSLE(uIndex);
+			if (sleEntry)
+				mNodes.entryCache(sleEntry);
 		}
+		else if(action == taaDELETE)
+			assert(false);
 	}
 
 	return sleEntry;
@@ -729,10 +719,8 @@ SLE::pointer TransactionEngine::entryCreate(LedgerEntryType letType, const uint2
 	assert(!uIndex.isZero());
 
 	SLE::pointer	sleNew	= boost::make_shared<SerializedLedgerEntry>(letType);
-
 	sleNew->setIndex(uIndex);
-
-	mEntries[uIndex]	= std::make_pair(sleNew, taaCREATE);
+	mNodes.entryCreate(sleNew);
 
 	return sleNew;
 }
@@ -740,60 +728,23 @@ SLE::pointer TransactionEngine::entryCreate(LedgerEntryType letType, const uint2
 
 void TransactionEngine::entryDelete(SLE::pointer sleEntry)
 {
-	assert(sleEntry);
-	const uint256&				uIndex	= sleEntry->getIndex();
-	entryMap::const_iterator	it		= mEntries.find(uIndex);
-
-	switch (it == mEntries.end() ? taaNONE : it->second.second)
-	{
-		case taaCREATE:
-			assert(false);												// Unexpected case.
-			break;
-
-		case taaCACHED:
-		case taaMODIFY:
-		case taaNONE:
-			mEntries[uIndex]	= std::make_pair(sleEntry, taaDELETE);	// Upgrade.
-			break;
-
-		case taaDELETE:
-			nothing();													// No change.
-			break;
-	}
+	mNodes.entryDelete(sleEntry);
 }
 
 void TransactionEngine::entryModify(SLE::pointer sleEntry)
 {
-	assert(sleEntry);
-	const uint256&				uIndex	= sleEntry->getIndex();
-	entryMap::const_iterator	it		= mEntries.find(uIndex);
-
-	switch (it == mEntries.end() ? taaNONE : it->second.second)
-	{
-		case taaDELETE:
-			assert(false);												// Unexpected case.
-			break;
-
-		case taaCACHED:
-		case taaNONE:
-			mEntries[uIndex]	= std::make_pair(sleEntry, taaMODIFY);	// Upgrade.
-			break;
-
-		case taaCREATE:
-		case taaMODIFY:
-			nothing();													// No change.
-			break;
-	}
+	mNodes.entryModify(sleEntry);
 }
 
 void TransactionEngine::txnWrite()
 {
 	// Write back the account states and add the transaction to the ledger
-	BOOST_FOREACH(entryMap_value_type it, mEntries)
+	for (boost::unordered_map<uint256, LedgerEntrySetEntry>::iterator it = mNodes.begin(), end = mNodes.end();
+			it != end; ++it)
 	{
-		const SLE::pointer&	sleEntry	= it.second.first;
+		const SLE::pointer&	sleEntry	= it->second.mEntry;
 
-		switch (it.second.second)
+		switch (it->second.mAction)
 		{
 			case taaNONE:
 				assert(false);
@@ -824,7 +775,7 @@ void TransactionEngine::txnWrite()
 				{
 					Log(lsINFO) << "applyTransaction: taaDELETE: " << sleEntry->getText();
 
-					if (!mLedger->peekAccountStateMap()->delItem(it.first))
+					if (!mLedger->peekAccountStateMap()->delItem(it->first))
 						assert(false);
 				}
 				break;
@@ -836,17 +787,7 @@ void TransactionEngine::txnWrite()
 // actions can be applied to the ledger.
 void TransactionEngine::entryReset(const SerializedTransaction& txn)
 {
-	mEntries.clear();															// Lose old SLE modifications.
-	mTxnAccount					= entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(mTxnAccountID));	// Get new SLE.
-
-	entryModify(mTxnAccount);
-
-	STAmount	saPaid			= txn.getTransactionFee();
-	STAmount	saSrcBalance	= mTxnAccount->getIValueFieldAmount(sfBalance);
-
-	mTxnAccount->setIFieldAmount(sfBalance, saSrcBalance - saPaid);
-
-	// XXX Bump sequence too.
+	mNodes.setTo(mOrigNodes);
 }
 
 TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTransaction& txn,
@@ -855,6 +796,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	Log(lsTRACE) << "applyTransaction>";
 	assert(mLedger);
 	mLedgerParentCloseTime	= mLedger->getParentCloseTimeNC();
+	mNodes.clear();
 
 #ifdef DEBUG
 	if (1)
@@ -1017,7 +959,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 		bHaveAuthKey	= mTxnAccount->getIFieldPresent(sfAuthorizedKey);
 	}
 
-	// Check if account cliamed.
+	// Check if account claimed.
 	if (terSUCCESS == terResult)
 	{
 		switch (txn.getTxnType())
@@ -1168,6 +1110,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	if (terSUCCESS == terResult)
 	{
 		entryModify(mTxnAccount);
+		mOrigNodes = mNodes.duplicate();
 
 		switch (txn.getTxnType())
 		{
@@ -1251,7 +1194,8 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	}
 
 	mTxnAccount	= SLE::pointer();
-	mEntries.clear();
+	mNodes.clear();
+	mOrigNodes.clear();
 	mUnfunded.clear();
 
 	return terResult;
