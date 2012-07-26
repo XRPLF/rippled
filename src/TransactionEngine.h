@@ -188,7 +188,7 @@ protected:
 	void			entryDelete(SLE::pointer sleEntry);
 	void			entryModify(SLE::pointer sleEntry);
 
-	void			entryReset(const SerializedTransaction& txn);
+	void			entryReset();
 
 	STAmount		rippleHolds(const uint160& uAccountID, const uint160& uCurrency, const uint160& uIssuerID);
 	STAmount		rippleTransit(const uint160& uSenderID, const uint160& uReceiverID, const uint160& uIssuerID, const STAmount& saAmount);

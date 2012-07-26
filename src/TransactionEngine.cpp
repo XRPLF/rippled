@@ -785,7 +785,7 @@ void TransactionEngine::txnWrite()
 
 // This is for when a transaction fails from the issuer's point of view and the current changes need to be cleared so other
 // actions can be applied to the ledger.
-void TransactionEngine::entryReset(const SerializedTransaction& txn)
+void TransactionEngine::entryReset()
 {
 	mNodes.setTo(mOrigNodes);
 }
