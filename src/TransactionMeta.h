@@ -21,6 +21,7 @@ public:
 
 	static const int TMNEndOfMetadata =	0;
 	static const int TMNChangedBalance = 1;
+	static const int TMNDeleteUnfunded = 2;
 
 	int mType;
 	TransactionMetaNodeEntry(int type) : mType(type) { ; }
@@ -64,6 +65,15 @@ public:
 	void adjustSecondAmount(const STAmount&);
 	void setFlags(unsigned flags);
 
+	virtual Json::Value getJson(int) const;
+	virtual int compare(const TransactionMetaNodeEntry&) const;
+};
+
+class TMNEUnfunded : public TransactionMetaNodeEntry
+{ // node was deleted because it was unfunded
+public:
+	TMNEUnfunded() : TransactionMetaNodeEntry(TMNDeleteUnfunded) { ; }
+	virtual void addRaw(Serializer&) const;
 	virtual Json::Value getJson(int) const;
 	virtual int compare(const TransactionMetaNodeEntry&) const;
 };
@@ -118,6 +128,7 @@ public:
 
 	void threadNode(const uint256& node, const uint256& previousTransaction, uint32 previousLedger);
 	bool signedBy(const uint256& node, const STAmount& fee);
+	bool deleteUnfunded(const uint256& node);
 	bool adjustBalance(const uint256& node, unsigned flags, const STAmount &amount);
 	bool adjustBalances(const uint256& node, unsigned flags, const STAmount &firstAmt, const STAmount &secondAmt);
 };

@@ -89,6 +89,22 @@ Json::Value TMNEBalance::getJson(int p) const
 	return ret;
 }
 
+void TMNEUnfunded::addRaw(Serializer& sit) const
+{
+	sit.add8(mType);
+}
+
+Json::Value TMNEUnfunded::getJson(int) const
+{
+	return Json::Value("delete_unfunded");
+}
+
+int TMNEUnfunded::compare(const TransactionMetaNodeEntry&) const
+{
+	assert(false); // Can't be two deletes for same node
+	return 0;
+}
+
 TransactionMetaNode::TransactionMetaNode(const uint256& node, SerializerIterator& sit) : mNode(node)
 {
 	mNode = sit.get256();
@@ -100,6 +116,8 @@ TransactionMetaNode::TransactionMetaNode(const uint256& node, SerializerIterator
 		type = sit.get8();
 		if (type == TransactionMetaNodeEntry::TMNChangedBalance)
 			mEntries.insert(boost::shared_ptr<TransactionMetaNodeEntry>(new TMNEBalance(sit)));
+		if (type == TransactionMetaNodeEntry::TMNDeleteUnfunded)
+			mEntries.insert(boost::shared_ptr<TransactionMetaNodeEntry>(new TMNEUnfunded()));
 		else if (type != TransactionMetaNodeEntry::TMNEndOfMetadata)
 			throw std::runtime_error("Unparseable metadata");
 	} while (type != TransactionMetaNodeEntry::TMNEndOfMetadata);
