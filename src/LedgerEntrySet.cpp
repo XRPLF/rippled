@@ -19,6 +19,8 @@ void LedgerEntrySet::swapWith(LedgerEntrySet& e)
 	mEntries.swap(e.mEntries);
 }
 
+// Find an entry in the set.  If it has the wrong sequence number, copy it and update the sequence number.
+// This is basically: copy-on-read.
 SLE::pointer LedgerEntrySet::getEntry(const uint256& index, LedgerEntryAction& action)
 {
 	boost::unordered_map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find(index);
@@ -51,8 +53,8 @@ void LedgerEntrySet::entryCache(SLE::pointer sle)
 		mEntries.insert(std::make_pair(sle->getIndex(), LedgerEntrySetEntry(sle, taaCACHED, mSeq)));
 	else if (it->second.mAction == taaCACHED)
 	{
-		it->second.mSeq = mSeq;
-		it->second.mEntry = sle;
+		it->second.mSeq	    = mSeq;
+		it->second.mEntry   = sle;
 	}
 	else
 		throw std::runtime_error("Cache after modify/delete");
@@ -62,17 +64,13 @@ void LedgerEntrySet::entryCreate(SLE::pointer sle)
 {
 	boost::unordered_map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find(sle->getIndex());
 	if (it == mEntries.end())
-		mEntries.insert(std::make_pair(sle->getIndex(), LedgerEntrySetEntry(sle, taaDELETE, mSeq)));
+		mEntries.insert(std::make_pair(sle->getIndex(), LedgerEntrySetEntry(sle, taaCREATE, mSeq)));
 	else if (it->second.mAction == taaDELETE)
 		throw std::runtime_error("Create after delete"); // We could make this a modify
 	else if (it->second.mAction == taaMODIFY)
 		throw std::runtime_error("Create after modify");
 	else
-	{
-		it->second.mSeq = mSeq;
-		it->second.mEntry = sle;
-		it->second.mAction = taaDELETE;
-	}
+		throw std::runtime_error("Create after cache");
 }
 
 void LedgerEntrySet::entryModify(SLE::pointer sle)
@@ -84,9 +82,9 @@ void LedgerEntrySet::entryModify(SLE::pointer sle)
 		throw std::runtime_error("Modify after delete");
 	else
 	{
-		it->second.mSeq = mSeq;
-		it->second.mEntry = sle;
-		it->second.mAction = (it->second.mAction == taaCREATE) ? taaCREATE : taaDELETE;
+		it->second.mSeq	    = mSeq;
+		it->second.mEntry   = sle;
+		it->second.mAction  = (it->second.mAction == taaCREATE) ? taaCREATE : taaMODIFY;
 	}
 }
 
@@ -99,8 +97,10 @@ void LedgerEntrySet::entryDelete(SLE::pointer sle)
 		mEntries.erase(it);
 	else
 	{
-		it->second.mSeq = mSeq;
-		it->second.mEntry = sle;
-		it->second.mAction = taaDELETE;
+		it->second.mSeq	    = mSeq;
+		it->second.mEntry   = sle;
+		it->second.mAction  = taaDELETE;
 	}
 }
+
+// vim:ts=4
