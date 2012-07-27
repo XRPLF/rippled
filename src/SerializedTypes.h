@@ -584,17 +584,54 @@ public:
 	void add(Serializer& s) const;
 	virtual Json::Value getJson(int) const;
 
-	SerializedTypeID getSType() const				{ return STI_PATHSET; }
-	int getPathCount() const						{ return value.size(); }
-	const STPath& getPath(int off) const			{ return value[off]; }
-	STPath& peekPath(int off)						{ return value[off]; }
-	bool isEmpty() const							{ return value.empty(); }
-	void clear()									{ value.clear(); }
-	void addPath(const STPath& e)					{ value.push_back(e); }
+	SerializedTypeID getSType() const					{ return STI_PATHSET; }
+	int getPathCount() const							{ return value.size(); }
+	const STPath& getPath(int off) const				{ return value[off]; }
+	STPath& peekPath(int off)							{ return value[off]; }
+	bool isEmpty() const								{ return value.empty(); }
+	void clear()										{ value.clear(); }
+	void addPath(const STPath& e)						{ value.push_back(e); }
 
+	std::vector<STPath>::iterator begin()				{ return value.begin(); }
+	std::vector<STPath>::iterator end()					{ return value.end(); }
 	std::vector<STPath>::const_iterator begin() const	{ return value.begin(); }
 	std::vector<STPath>::const_iterator end() const		{ return value.end(); }
 };
+
+inline std::vector<STPath>::iterator range_begin(STPathSet & x)
+{
+	return x.begin();
+}
+
+inline std::vector<STPath>::iterator range_end(STPathSet & x)
+{
+	return x.end();
+}
+
+inline std::vector<STPath>::const_iterator range_begin(const STPathSet& x)
+{
+	return x.begin();
+}
+
+inline std::vector<STPath>::const_iterator range_end(const STPathSet& x)
+{
+	return x.end();
+}
+
+namespace boost
+{
+    template<>
+	struct range_mutable_iterator< STPathSet >
+	{
+		typedef std::vector<STPath>::iterator type;
+	};
+
+	template<>
+	struct range_const_iterator< STPathSet >
+	{
+		typedef std::vector<STPath>::const_iterator type;
+	};
+}
 
 class STTaggedList : public SerializedType
 {
