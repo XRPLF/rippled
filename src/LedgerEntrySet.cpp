@@ -2,20 +2,35 @@
 
 #include <boost/make_shared.hpp>
 
+void LedgerEntrySet::init(const uint256& transactionID, uint32 ledgerID)
+{
+	mEntries.clear();
+	mSet.init(transactionID, ledgerID);
+	mSeq = 0;
+}
+
+void LedgerEntrySet::clear()
+{
+	mEntries.clear();
+	mSet.clear();
+}
+
 LedgerEntrySet LedgerEntrySet::duplicate()
 {
-	return LedgerEntrySet(mEntries, mSeq + 1);
+	return LedgerEntrySet(mEntries, mSet, mSeq + 1);
 }
 
 void LedgerEntrySet::setTo(LedgerEntrySet& e)
 {
 	mEntries = e.mEntries;
+	mSet = e.mSet;
 	mSeq = e.mSeq;
 }
 
 void LedgerEntrySet::swapWith(LedgerEntrySet& e)
 {
 	std::swap(mSeq, e.mSeq);
+	mSet.swap(e.mSet);
 	mEntries.swap(e.mEntries);
 }
 
