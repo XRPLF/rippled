@@ -414,6 +414,60 @@ Json::Value RPCServer::accountFromString(const uint256& uLedger, NewcoinAddress&
 	return Json::Value(Json::objectValue);
 }
 
+// account_domain_set <seed> <paying_account> [<domain>]
+Json::Value RPCServer::doAccountDomainSet(const Json::Value &params)
+{
+	NewcoinAddress	naSrcAccountID;
+	NewcoinAddress	naSeed;
+	uint256			uLedger	= mNetOps->getCurrentLedger();
+
+	if (!naSeed.setSeedGeneric(params[0u].asString()))
+	{
+		return RPCError(rpcBAD_SEED);
+	}
+	else if (!naSrcAccountID.setAccountID(params[1u].asString()))
+	{
+		return RPCError(rpcSRC_ACT_MALFORMED);
+	}
+
+	NewcoinAddress			naVerifyGenerator;
+	NewcoinAddress			naAccountPublic;
+	NewcoinAddress			naAccountPrivate;
+	AccountState::pointer	asSrc;
+	STAmount				saSrcBalance;
+	Json::Value				obj				= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
+		saSrcBalance, theConfig.FEE_DEFAULT, asSrc, naVerifyGenerator);
+
+	if (!obj.empty())
+		return obj;
+
+	Transaction::pointer	trans	= Transaction::sharedAccountSet(
+		naAccountPublic, naAccountPrivate,
+		naSrcAccountID,
+		asSrc->getSeq(),
+		theConfig.FEE_DEFAULT,
+		0,											// YYY No source tag
+		false,
+		uint128(),
+		false,
+		0,
+		NewcoinAddress(),
+		true,
+		strCopy(params[2u].asString()),
+		false,
+		0,
+		false,
+		uint256(),
+		0);
+
+	trans	= mNetOps->submitTransaction(trans);
+
+	obj["transaction"]		= trans->getSTransaction()->getJson(0);
+	obj["status"]			= trans->getStatus();
+
+	return Json::Value(Json::objectValue);
+}
+
 // account_email_set <seed> <paying_account> [<email_address>]
 Json::Value RPCServer::doAccountEmailSet(const Json::Value &params)
 {
@@ -450,6 +504,7 @@ Json::Value RPCServer::doAccountEmailSet(const Json::Value &params)
 		MD5(reinterpret_cast<const unsigned char*>(strEmail.c_str()), strEmail.size(), &vucMD5.front());
 
 	uint128						uEmailHash(vucMD5);
+	std::vector<unsigned char>	vucDomain;
 
 	Transaction::pointer	trans	= Transaction::sharedAccountSet(
 		naAccountPublic, naAccountPrivate,
@@ -457,11 +512,18 @@ Json::Value RPCServer::doAccountEmailSet(const Json::Value &params)
 		asSrc->getSeq(),
 		theConfig.FEE_DEFAULT,
 		0,											// YYY No source tag
-		strEmail.empty(),
-		uEmailHash,
+		true,
+		strEmail.empty() ? uint128() : uEmailHash,
 		false,
 		uint256(),
-		NewcoinAddress());
+		NewcoinAddress(),
+		false,
+		vucDomain,
+		false,
+		0,
+		false,
+		uint256(),
+		0);
 
 	trans	= mNetOps->submitTransaction(trans);
 
@@ -549,6 +611,62 @@ Json::Value RPCServer::doAccountMessageSet(const Json::Value& params) {
 		return RPCError(rpcPUBLIC_MALFORMED);
 	}
 
+	NewcoinAddress				naVerifyGenerator;
+	NewcoinAddress				naAccountPublic;
+	NewcoinAddress				naAccountPrivate;
+	AccountState::pointer		asSrc;
+	STAmount					saSrcBalance;
+	Json::Value					obj				= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
+		saSrcBalance, theConfig.FEE_DEFAULT, asSrc, naVerifyGenerator);
+	std::vector<unsigned char>	vucDomain;
+
+	if (!obj.empty())
+		return obj;
+
+	Transaction::pointer		trans	= Transaction::sharedAccountSet(
+		naAccountPublic, naAccountPrivate,
+		naSrcAccountID,
+		asSrc->getSeq(),
+		theConfig.FEE_DEFAULT,
+		0,											// YYY No source tag
+		false,
+		uint128(),
+		false,
+		uint256(),
+		naMessagePubKey,
+		false,
+		vucDomain,
+		false,
+		0,
+		false,
+		uint256(),
+		0);
+
+	trans	= mNetOps->submitTransaction(trans);
+
+	obj["transaction"]		= trans->getSTransaction()->getJson(0);
+	obj["status"]			= trans->getStatus();
+	obj["MessageKey"]		= naMessagePubKey.humanAccountPublic();
+
+	return obj;
+}
+
+// account_publish_set <seed> <paying_account> <hash> <size>
+Json::Value RPCServer::doAccountPublishSet(const Json::Value &params)
+{
+	NewcoinAddress	naSrcAccountID;
+	NewcoinAddress	naSeed;
+	uint256			uLedger	= mNetOps->getCurrentLedger();
+
+	if (!naSeed.setSeedGeneric(params[0u].asString()))
+	{
+		return RPCError(rpcBAD_SEED);
+	}
+	else if (!naSrcAccountID.setAccountID(params[1u].asString()))
+	{
+		return RPCError(rpcSRC_ACT_MALFORMED);
+	}
+
 	NewcoinAddress			naVerifyGenerator;
 	NewcoinAddress			naAccountPublic;
 	NewcoinAddress			naAccountPrivate;
@@ -560,6 +678,10 @@ Json::Value RPCServer::doAccountMessageSet(const Json::Value& params) {
 	if (!obj.empty())
 		return obj;
 
+	uint256						uPublishHash(params[2u].asString());
+	uint32						uPublishSize	= lexical_cast_s<int>(params[3u].asString());
+	std::vector<unsigned char>	vucDomain;
+
 	Transaction::pointer	trans	= Transaction::sharedAccountSet(
 		naAccountPublic, naAccountPrivate,
 		naSrcAccountID,
@@ -569,16 +691,79 @@ Json::Value RPCServer::doAccountMessageSet(const Json::Value& params) {
 		false,
 		uint128(),
 		false,
-		uint256(),
-		naMessagePubKey);
+		0,
+		NewcoinAddress(),
+		false,
+		vucDomain,
+		false,
+		0,
+		true,
+		uPublishHash,
+		uPublishSize);
 
 	trans	= mNetOps->submitTransaction(trans);
 
 	obj["transaction"]		= trans->getSTransaction()->getJson(0);
 	obj["status"]			= trans->getStatus();
-	obj["MessageKey"]		= naMessagePubKey.humanAccountPublic();
 
-	return obj;
+	return Json::Value(Json::objectValue);
+}
+
+// account_rate_set <seed> <paying_account> <rate>
+Json::Value RPCServer::doAccountRateSet(const Json::Value &params)
+{
+	NewcoinAddress	naSrcAccountID;
+	NewcoinAddress	naSeed;
+	uint256			uLedger	= mNetOps->getCurrentLedger();
+
+	if (!naSeed.setSeedGeneric(params[0u].asString()))
+	{
+		return RPCError(rpcBAD_SEED);
+	}
+	else if (!naSrcAccountID.setAccountID(params[1u].asString()))
+	{
+		return RPCError(rpcSRC_ACT_MALFORMED);
+	}
+
+	NewcoinAddress			naVerifyGenerator;
+	NewcoinAddress			naAccountPublic;
+	NewcoinAddress			naAccountPrivate;
+	AccountState::pointer	asSrc;
+	STAmount				saSrcBalance;
+	Json::Value				obj				= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
+		saSrcBalance, theConfig.FEE_DEFAULT, asSrc, naVerifyGenerator);
+
+	if (!obj.empty())
+		return obj;
+
+	uint32						uRate	= lexical_cast_s<int>(params[2u].asString());
+	std::vector<unsigned char>	vucDomain;
+
+	Transaction::pointer	trans	= Transaction::sharedAccountSet(
+		naAccountPublic, naAccountPrivate,
+		naSrcAccountID,
+		asSrc->getSeq(),
+		theConfig.FEE_DEFAULT,
+		0,											// YYY No source tag
+		false,
+		uint128(),
+		false,
+		0,
+		NewcoinAddress(),
+		false,
+		vucDomain,
+		true,
+		uRate,
+		false,
+		uint256(),
+		0);
+
+	trans	= mNetOps->submitTransaction(trans);
+
+	obj["transaction"]		= trans->getSTransaction()->getJson(0);
+	obj["status"]			= trans->getStatus();
+
+	return Json::Value(Json::objectValue);
 }
 
 // account_wallet_set <seed> <paying_account> [<wallet_hash>]
@@ -596,21 +781,23 @@ Json::Value RPCServer::doAccountWalletSet(const Json::Value& params) {
 		return RPCError(rpcSRC_ACT_MALFORMED);
 	}
 
-	NewcoinAddress			naMasterGenerator;
-	NewcoinAddress			naAccountPublic;
-	NewcoinAddress			naAccountPrivate;
-	AccountState::pointer	asSrc;
-	STAmount				saSrcBalance;
-	Json::Value				obj				= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
+	NewcoinAddress				naMasterGenerator;
+	NewcoinAddress				naAccountPublic;
+	NewcoinAddress				naAccountPrivate;
+	AccountState::pointer		asSrc;
+	STAmount					saSrcBalance;
+	Json::Value					obj					= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
 		saSrcBalance, theConfig.FEE_DEFAULT, asSrc, naMasterGenerator);
+	std::vector<unsigned char>	vucDomain;
 
 	if (!obj.empty())
 		return obj;
 
-	std::string				strWalletLocator	= params.size() == 3 ? params[2u].asString() : "";
-	uint256					uWalletLocator;
+	std::string					strWalletLocator	= params.size() == 3 ? params[2u].asString() : "";
+	uint256						uWalletLocator;
 
-	uWalletLocator.SetHex(strWalletLocator);
+	if (!strWalletLocator.empty())
+		uWalletLocator.SetHex(strWalletLocator);
 
 	Transaction::pointer	trans	= Transaction::sharedAccountSet(
 		naAccountPublic, naAccountPrivate,
@@ -620,9 +807,16 @@ Json::Value RPCServer::doAccountWalletSet(const Json::Value& params) {
 		0,											// YYY No source tag
 		false,
 		uint128(),
-		strWalletLocator.empty(),
+		true,
 		uWalletLocator,
-		NewcoinAddress());
+		NewcoinAddress(),
+		false,
+		vucDomain,
+		false,
+		0,
+		false,
+		uint256(),
+		0);
 
 	trans	= mNetOps->submitTransaction(trans);
 
@@ -942,7 +1136,7 @@ Json::Value RPCServer::doOwnerInfo(const Json::Value& params)
 {
 	std::string		strIdent	= params[0u].asString();
 	bool			bIndex;
-	int				iIndex		= 2 == params.size()? lexical_cast_s<int>(params[1u].asString()) : 0;
+	int				iIndex		= 2 == params.size() ? lexical_cast_s<int>(params[1u].asString()) : 0;
 	NewcoinAddress	naAccount;
 
 	Json::Value		ret;
@@ -2117,9 +2311,12 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 		bool		mAdminRequired;
 		unsigned int	iOptions;
 	} commandsA[] = {
+		{	"account_domain_set",	&RPCServer::doAccountDomainSet,		2,  3, false,	optCurrent	},
 		{	"account_email_set",	&RPCServer::doAccountEmailSet,		2,  3, false,	optCurrent	},
 		{	"account_info",			&RPCServer::doAccountInfo,			1,  2, false,	optCurrent	},
 		{	"account_message_set",	&RPCServer::doAccountMessageSet,	3,  3, false,	optCurrent	},
+		{	"account_publish_set",	&RPCServer::doAccountPublishSet,	4,  4, false,	optCurrent	},
+		{	"account_rate_set",		&RPCServer::doAccountRateSet,		3,  3, false,	optCurrent	},
 		{	"account_tx",			&RPCServer::doAccountTransactions,	2,  3, false,	optNetwork	},
 		{	"account_wallet_set",	&RPCServer::doAccountWalletSet,		2,  3, false,	optCurrent	},
 		{	"connect",				&RPCServer::doConnect,				1,  2, true					},

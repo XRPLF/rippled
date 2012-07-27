@@ -125,9 +125,12 @@ private:
 
 	Json::Value accountFromString(const uint256& uLedger, NewcoinAddress& naAccount, bool& bIndex, const std::string& strIdent, const int iIndex);
 
+	Json::Value doAccountDomainSet(const Json::Value &params);
 	Json::Value doAccountEmailSet(const Json::Value &params);
 	Json::Value doAccountInfo(const Json::Value& params);
 	Json::Value doAccountMessageSet(const Json::Value &params);
+	Json::Value doAccountPublishSet(const Json::Value &params);
+	Json::Value doAccountRateSet(const Json::Value &params);
 	Json::Value doAccountTransactions(const Json::Value& params);
 	Json::Value doAccountWalletSet(const Json::Value &params);
 	Json::Value doConnect(const Json::Value& params);
