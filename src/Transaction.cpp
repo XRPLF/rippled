@@ -117,24 +117,40 @@ bool Transaction::sign(const NewcoinAddress& naAccountPrivate)
 
 Transaction::pointer Transaction::setAccountSet(
 	const NewcoinAddress& naPrivateKey,
-	bool								bUnsetEmailHash,
+	bool								bEmailHash,
 	const uint128&						uEmailHash,
-	bool								bUnsetWalletLocator,
+	bool								bWalletLocator,
 	const uint256&						uWalletLocator,
-	const NewcoinAddress&				naMessagePublic)
+	const NewcoinAddress&				naMessagePublic,
+	bool								bDomain,
+	const std::vector<unsigned char>&	vucDomain,
+	bool								bTransferRate,
+	const uint32						uTransferRate,
+	bool								bPublish,
+	const uint256&						uPublishHash,
+	const uint32						uPublishSize
+	)
 {
-	mTransaction->setITFieldU32(sfFlags,
-		  (bUnsetEmailHash ? tfUnsetEmailHash : 0)
-		| (bUnsetWalletLocator ? tfUnsetWalletLocator : 0));
-
-	if (!bUnsetEmailHash && !!uEmailHash)
+	if (!bEmailHash)
 		mTransaction->setITFieldH128(sfEmailHash, uEmailHash);
 
-	if (!bUnsetWalletLocator && !!uWalletLocator)
+	if (!bWalletLocator)
 		mTransaction->setITFieldH256(sfWalletLocator, uWalletLocator);
 
 	if (naMessagePublic.isValid())
 		mTransaction->setITFieldVL(sfMessageKey, naMessagePublic.getAccountPublic());
+
+	if (bDomain)
+		mTransaction->setITFieldVL(sfDomain, vucDomain);
+
+	if (bTransferRate)
+		mTransaction->setITFieldU32(sfTransferRate, uTransferRate);
+
+	if (bPublish)
+	{
+		mTransaction->setITFieldH256(sfPublishHash, uPublishHash);
+		mTransaction->setITFieldU32(sfPublishSize, uPublishSize);
+	}
 
 	sign(naPrivateKey);
 
@@ -147,15 +163,24 @@ Transaction::pointer Transaction::sharedAccountSet(
 	uint32								uSeq,
 	const STAmount&						saFee,
 	uint32								uSourceTag,
-	bool								bUnsetEmailHash,
+	bool								bEmailHash,
 	const uint128&						uEmailHash,
-	bool								bUnsetWalletLocator,
+	bool								bWalletLocator,
 	const uint256&						uWalletLocator,
-	const NewcoinAddress&				naMessagePublic)
+	const NewcoinAddress&				naMessagePublic,
+	bool								bDomain,
+	const std::vector<unsigned char>&	vucDomain,
+	bool								bTransferRate,
+	const uint32						uTransferRate,
+	bool								bPublish,
+	const uint256&						uPublishHash,
+	const uint32						uPublishSize)
 {
 	pointer	tResult	= boost::make_shared<Transaction>(ttACCOUNT_SET, naPublicKey, naSourceAccount, uSeq, saFee, uSourceTag);
 
-	return tResult->setAccountSet(naPrivateKey, bUnsetEmailHash, uEmailHash, bUnsetWalletLocator, uWalletLocator, naMessagePublic);
+	return tResult->setAccountSet(naPrivateKey, bEmailHash, uEmailHash, bWalletLocator, uWalletLocator,
+		naMessagePublic,
+		bDomain, vucDomain, bTransferRate, uTransferRate, bPublish, uPublishHash, uPublishSize);
 }
 
 //

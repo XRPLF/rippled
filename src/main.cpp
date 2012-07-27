@@ -38,10 +38,13 @@ void printHelp(const po::options_description& desc)
 	cout << desc << endl;
 
 	cout << "Commands: " << endl;
+	cout << "     account_domain_set <seed> <paying_account> [<domain>]" << endl;
 	cout << "     account_email_set <seed> <paying_account> [<email_address>]" << endl;
 	cout << "     account_info <account>|<nickname>" << endl;
 	cout << "     account_info <seed>|<pass_phrase>|<key> [<index>]" << endl;
 	cout << "     account_message_set <seed> <paying_account> <pub_key>" << endl;
+	cout << "     account_publish_set <seed> <paying_account> <hash> <size>" << endl;
+	cout << "     account_rate_set <seed> <paying_account> <rate>" << endl;
 	cout << "     account_wallet_set <seed> <paying_account> [<wallet_hash>]" << endl;
 	cout << "     connect <ip> [<port>]" << endl;
 	cout << "     data_delete <key>" << endl;

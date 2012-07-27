@@ -39,10 +39,6 @@ const int TransactionMaxLen			= 1048576;
 // Transaction flags.
 //
 
-// AccountSet flags:
-const uint32 tfUnsetEmailHash		= 0x00010000;
-const uint32 tfUnsetWalletLocator	= 0x00020000;
-
 // OfferCreate flags:
 const uint32 tfPassive				= 0x00010000;
 

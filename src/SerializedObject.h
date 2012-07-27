@@ -85,6 +85,8 @@ enum SOE_Field
 	sfPaths,
 	sfPaysIssuer,
 	sfPubKey,
+	sfPublishHash,
+	sfPublishSize,
 	sfQualityIn,
 	sfQualityOut,
 	sfSendMax,

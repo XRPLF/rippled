@@ -48,11 +48,18 @@ private:
 
 	Transaction::pointer setAccountSet(
 		const NewcoinAddress&				naPrivateKey,
-		bool								bUnsetEmailHash,
+		bool								bEmailHash,
 		const uint128&						uEmailHash,
-		bool								bUnsetWalletLocator,
+		bool								bWalletLocator,
 		const uint256&						uWalletLocator,
-		const NewcoinAddress&				naMessagePublic);
+		const NewcoinAddress&				naMessagePublic,
+		bool								bDomain,
+		const std::vector<unsigned char>&	vucDomain,
+		bool								bTransferRate,
+		const uint32						uTransferRate,
+		bool								bPublish,
+		const uint256&						uPublishHash,
+		const uint32						uPublishSize);
 
 	Transaction::pointer setClaim(
 		const NewcoinAddress&				naPrivateKey,
@@ -138,11 +145,18 @@ public:
 		uint32								uSeq,
 		const STAmount&						saFee,
 		uint32								uSourceTag,
-		bool								bUnsetEmailHash,
+		bool								bEmailHash,
 		const uint128&						uEmailHash,
-		bool								bUnsetWalletLocator,
+		bool								bWalletLocator,
 		const uint256&						uWalletLocator,
-		const NewcoinAddress&				naMessagePublic);
+		const NewcoinAddress&				naMessagePublic,
+		bool								bDomain,
+		const std::vector<unsigned char>&	vucDomain,
+		bool								bTransferRate,
+		const uint32						uTransferRate,
+		bool								bPublish,
+		const uint256&						uPublishHash,
+		const uint32						uPublishSize);
 
 	// Claim a wallet.
 	static Transaction::pointer sharedClaim(

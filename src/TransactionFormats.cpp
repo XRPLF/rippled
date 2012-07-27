@@ -12,6 +12,9 @@ TransactionFormat InnerTxnFormats[]=
 		{ S_FIELD(WalletLocator),	STI_HASH256, SOE_IFFLAG,   4 },
 		{ S_FIELD(MessageKey),		STI_VL,      SOE_IFFLAG,   8 },
 		{ S_FIELD(Domain),			STI_VL,      SOE_IFFLAG,   16 },
+		{ S_FIELD(TransferRate),	STI_UINT32,	 SOE_IFFLAG,   32 },
+		{ S_FIELD(PublishHash),		STI_HASH256, SOE_IFFLAG,   64 },
+		{ S_FIELD(PublishSize),		STI_UINT32,	 SOE_IFFLAG,   128 },
 		{ S_FIELD(Extensions),		STI_TL,		 SOE_IFFLAG,   0x02000000 },
 		{ sfInvalid, NULL,			STI_DONE,	 SOE_NEVER,    -1 } }
 	},

@@ -36,6 +36,7 @@ bool transResultInfo(TransactionEngineResult terCode, std::string& strToken, std
 		{	tenBAD_ISSUER,			"tenBAD_ISSUER",			"Malformed."										},
 		{	tenBAD_OFFER,			"tenBAD_OFFER",				"Malformed."										},
 		{	tenBAD_PATH_COUNT,		"tenBAD_PATH_COUNT",		"Malformed: too many paths."						},
+		{	tenBAD_PUBLISH,			"tenBAD_PUBLISH",			"Malformed: bad publish."							},
 		{	tenBAD_RIPPLE,			"tenBAD_RIPPLE",			"Ledger prevents ripple from succeeding."			},
 		{	tenBAD_SET_ID,			"tenBAD_SET_ID",			"Malformed."										},
 		{	tenCLAIMED,				"tenCLAIMED",				"Can not claim a previously claimed account."		},
@@ -1203,42 +1204,50 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 
 TransactionEngineResult TransactionEngine::doAccountSet(const SerializedTransaction& txn)
 {
-	std::cerr << "doAccountSet>" << std::endl;
-
-	uint32				txFlags			= txn.getFlags();
+	Log(lsINFO) << "doAccountSet>";
 
 	//
 	// EmailHash
 	//
 
-	if (txFlags & tfUnsetEmailHash)
+	if (txn.getITFieldPresent(sfEmailHash))
 	{
-		std::cerr << "doAccountSet: unset email hash" << std::endl;
+		uint128		uHash	= txn.getITFieldH128(sfEmailHash);
 
-		mTxnAccount->makeIFieldAbsent(sfEmailHash);
-	}
-	else if (txn.getITFieldPresent(sfEmailHash))
-	{
-		std::cerr << "doAccountSet: set email hash" << std::endl;
+		if (uHash.isZero())
+		{
+			Log(lsINFO) << "doAccountSet: unset email hash";
 
-		mTxnAccount->setIFieldH128(sfEmailHash, txn.getITFieldH128(sfEmailHash));
+			mTxnAccount->makeIFieldAbsent(sfEmailHash);
+		}
+		else
+		{
+			Log(lsINFO) << "doAccountSet: set email hash";
+
+			mTxnAccount->setIFieldH128(sfEmailHash, uHash);
+		}
 	}
 
 	//
 	// WalletLocator
 	//
 
-	if (txFlags & tfUnsetWalletLocator)
+	if (txn.getITFieldPresent(sfWalletLocator))
 	{
-		std::cerr << "doAccountSet: unset wallet locator" << std::endl;
+		uint256		uHash	= txn.getITFieldH256(sfWalletLocator);
 
-		mTxnAccount->makeIFieldAbsent(sfWalletLocator);
-	}
-	else if (txn.getITFieldPresent(sfWalletLocator))
-	{
-		std::cerr << "doAccountSet: set wallet locator" << std::endl;
+		if (uHash.isZero())
+		{
+			Log(lsINFO) << "doAccountSet: unset wallet locator";
 
-		mTxnAccount->setIFieldH256(sfWalletLocator, txn.getITFieldH256(sfWalletLocator));
+			mTxnAccount->makeIFieldAbsent(sfEmailHash);
+		}
+		else
+		{
+			Log(lsINFO) << "doAccountSet: set wallet locator";
+
+			mTxnAccount->setIFieldH256(sfWalletLocator, uHash);
+		}
 	}
 
 	//
@@ -1248,33 +1257,110 @@ TransactionEngineResult TransactionEngine::doAccountSet(const SerializedTransact
 	if (!txn.getITFieldPresent(sfMessageKey))
 	{
 		nothing();
-
 	}
 	else if (mTxnAccount->getIFieldPresent(sfMessageKey))
 	{
-		std::cerr << "doAccountSet: can not change message key" << std::endl;
+		Log(lsINFO) << "doAccountSet: can not change message key";
 
 		return tenMSG_SET;
 	}
 	else
 	{
-		std::cerr << "doAccountSet: set message key" << std::endl;
+		Log(lsINFO) << "doAccountSet: set message key";
 
 		mTxnAccount->setIFieldVL(sfMessageKey, txn.getITFieldVL(sfMessageKey));
 	}
 
-	std::cerr << "doAccountSet<" << std::endl;
+	//
+	// Domain
+	//
+
+	if (txn.getITFieldPresent(sfDomain))
+	{
+		std::vector<unsigned char>	vucDomain	= txn.getITFieldVL(sfDomain);
+
+		if (vucDomain.empty())
+		{
+			Log(lsINFO) << "doAccountSet: unset domain";
+
+			mTxnAccount->makeIFieldAbsent(sfDomain);
+		}
+		else
+		{
+			Log(lsINFO) << "doAccountSet: set domain";
+
+			mTxnAccount->setIFieldVL(sfDomain, vucDomain);
+		}
+	}
+
+	//
+	// TransferRate
+	//
+
+	if (txn.getITFieldPresent(sfTransferRate))
+	{
+		uint32		uRate	= txn.getITFieldU32(sfTransferRate);
+
+		if (!uRate)
+		{
+			Log(lsINFO) << "doAccountSet: unset transfer rate";
+
+			mTxnAccount->makeIFieldAbsent(sfTransferRate);
+		}
+		else
+		{
+			Log(lsINFO) << "doAccountSet: set transfer rate";
+
+			mTxnAccount->setIFieldU32(sfTransferRate, uRate);
+		}
+	}
+
+	//
+	// PublishHash && PublishSize
+	//
+
+	bool	bPublishHash	= txn.getITFieldPresent(sfPublishHash);
+	bool	bPublishSize	= txn.getITFieldPresent(sfPublishSize);
+
+	if (bPublishHash ^ bPublishSize)
+	{
+		Log(lsINFO) << "doAccountSet: bad publish";
+
+		return tenBAD_PUBLISH;
+	}
+	else if (bPublishHash && bPublishSize)
+	{
+		uint256		uHash	= txn.getITFieldH256(sfPublishHash);
+		uint32		uSize	= txn.getITFieldU32(sfPublishSize);
+
+		if (uHash.isZero())
+		{
+			Log(lsINFO) << "doAccountSet: unset publish";
+
+			mTxnAccount->makeIFieldAbsent(sfPublishHash);
+			mTxnAccount->makeIFieldAbsent(sfPublishSize);
+		}
+		else
+		{
+			Log(lsINFO) << "doAccountSet: set publish";
+
+			mTxnAccount->setIFieldH256(sfPublishHash, uHash);
+			mTxnAccount->setIFieldU32(sfPublishSize, uSize);
+		}
+	}
+
+	Log(lsINFO) << "doAccountSet<";
 
 	return terSUCCESS;
 }
 
 TransactionEngineResult TransactionEngine::doClaim(const SerializedTransaction& txn)
 {
-	std::cerr << "doClaim>" << std::endl;
+	Log(lsINFO) << "doClaim>";
 
 	TransactionEngineResult	terResult	= setAuthorized(txn, true);
 
-	std::cerr << "doClaim<" << std::endl;
+	Log(lsINFO) << "doClaim<";
 
 	return terResult;
 }

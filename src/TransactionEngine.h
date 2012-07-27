@@ -28,6 +28,7 @@ enum TransactionEngineResult
 	tenBAD_ISSUER,
 	tenBAD_OFFER,
 	tenBAD_PATH_COUNT,
+	tenBAD_PUBLISH,
 	tenBAD_SET_ID,
 	tenCREATEXNS,
 	tenDST_IS_SRC,
