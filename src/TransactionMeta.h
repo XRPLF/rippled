@@ -115,9 +115,13 @@ protected:
 	std::set<TransactionMetaNode> mNodes;
 
 public:
-	TransactionMetaSet(const uint256& txID, uint32 ledger) : mTransactionID(txID), mLedger(ledger)
-	{ ; }
+	TransactionMetaSet() : mLedger(0) { ; }
+	TransactionMetaSet(const uint256& txID, uint32 ledger) : mTransactionID(txID), mLedger(ledger) { ; }
 	TransactionMetaSet(uint32 ledger, const std::vector<unsigned char>&);
+
+	void init(const uint256& transactionID, uint32 ledger);
+	void clear() { mNodes.clear(); }
+	void swap(TransactionMetaSet&);
 
 	bool isNodeAffected(const uint256&) const;
 	TransactionMetaNode getAffectedNode(const uint256&);

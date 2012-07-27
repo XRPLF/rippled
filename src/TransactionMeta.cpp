@@ -217,3 +217,16 @@ const TransactionMetaNode& TransactionMetaSet::peekAffectedNode(const uint256& n
 			return *it;
 	throw std::runtime_error("Affected node not found");
 }
+
+void TransactionMetaSet::init(const uint256& id, uint32 ledger)
+{
+	mTransactionID = id;
+	mLedger = ledger;
+	mNodes.clear();
+}
+
+void TransactionMetaSet::swap(TransactionMetaSet& s)
+{
+	assert((mTransactionID == s.mTransactionID) && (mLedger == s.mLedger));
+	mNodes.swap(s.mNodes);
+}

@@ -4,6 +4,7 @@
 #include <boost/unordered_map.hpp>
 
 #include "SerializedLedger.h"
+#include "TransactionMeta.h"
 
 enum LedgerEntryAction
 {
@@ -30,9 +31,11 @@ class LedgerEntrySet
 {
 protected:
 	boost::unordered_map<uint256, LedgerEntrySetEntry>	mEntries;
+	TransactionMetaSet mSet;
 	int mSeq;
 
-	LedgerEntrySet(const boost::unordered_map<uint256, LedgerEntrySetEntry> &e, int m) : mEntries(e), mSeq(m) { ; }
+	LedgerEntrySet(const boost::unordered_map<uint256, LedgerEntrySetEntry> &e, TransactionMetaSet& s, int m) :
+		mEntries(e), mSet(s), mSeq(m) { ; }
 
 public:
 	LedgerEntrySet() : mSeq(0) { ; }
@@ -44,7 +47,8 @@ public:
 
 	int getSeq() const			{ return mSeq; }
 	void bumpSeq()				{ ++mSeq; }
-	void clear()				{ mEntries.empty(); mSeq = 0; }
+	void init(const uint256& transactionID, uint32 ledgerID);
+	void clear();
 
 	// basic entry functions
 	SLE::pointer getEntry(const uint256& index, LedgerEntryAction&);

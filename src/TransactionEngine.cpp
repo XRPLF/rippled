@@ -796,7 +796,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	Log(lsTRACE) << "applyTransaction>";
 	assert(mLedger);
 	mLedgerParentCloseTime	= mLedger->getParentCloseTimeNC();
-	mNodes.clear();
+	mNodes.init(txn.getTransactionID(), mLedger->getLedgerSeq());
 
 #ifdef DEBUG
 	if (1)
