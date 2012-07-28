@@ -230,3 +230,9 @@ void TransactionMetaSet::swap(TransactionMetaSet& s)
 	assert((mTransactionID == s.mTransactionID) && (mLedger == s.mLedger));
 	mNodes.swap(s.mNodes);
 }
+
+bool TransactionMetaSet::deleteUnfunded(const uint256& node, const STAmount& firstBalance, const STAmount &secondBalance)
+{
+	// WRITEME
+	return true;
+}

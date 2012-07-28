@@ -186,7 +186,7 @@ protected:
 
 	SLE::pointer	entryCreate(LedgerEntryType letType, const uint256& uIndex);
 	SLE::pointer	entryCache(LedgerEntryType letType, const uint256& uIndex);
-	void			entryDelete(SLE::pointer sleEntry);
+	void			entryDelete(SLE::pointer sleEntry, bool unfunded = false);
 	void			entryModify(SLE::pointer sleEntry);
 
 	void			entryReset();

@@ -71,8 +71,12 @@ public:
 
 class TMNEUnfunded : public TransactionMetaNodeEntry
 { // node was deleted because it was unfunded
+protected:
+	STAmount firstAmount, secondAmount; // Amounts left when declared unfunded
 public:
 	TMNEUnfunded() : TransactionMetaNodeEntry(TMNDeleteUnfunded) { ; }
+	TMNEUnfunded(const STAmount& f, const STAmount& s) :
+		TransactionMetaNodeEntry(TMNDeleteUnfunded), firstAmount(f), secondAmount(s) { ; }
 	virtual void addRaw(Serializer&) const;
 	virtual Json::Value getJson(int) const;
 	virtual int compare(const TransactionMetaNodeEntry&) const;
@@ -132,7 +136,7 @@ public:
 
 	void threadNode(const uint256& node, const uint256& previousTransaction, uint32 previousLedger);
 	bool signedBy(const uint256& node, const STAmount& fee);
-	bool deleteUnfunded(const uint256& node);
+	bool deleteUnfunded(const uint256& node, const STAmount& firstBalance, const STAmount& secondBalance);
 	bool adjustBalance(const uint256& node, unsigned flags, const STAmount &amount);
 	bool adjustBalances(const uint256& node, unsigned flags, const STAmount &firstAmt, const STAmount &secondAmt);
 };

@@ -55,7 +55,7 @@ public:
 	LedgerEntryAction hasEntry(const uint256& index) const;
 	void entryCache(SLE::pointer&);			// Add this entry to the cache
 	void entryCreate(SLE::pointer&);		// This entry will be created
-	void entryDelete(SLE::pointer&);		// This entry will be deleted
+	void entryDelete(SLE::pointer&, bool unfunded);
 	void entryModify(SLE::pointer&);		// This entry will be modified
 
 	// iterator functions
