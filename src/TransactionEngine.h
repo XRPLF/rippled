@@ -105,14 +105,60 @@ class PathState
 public:
 	typedef boost::shared_ptr<PathState> pointer;
 
-	int			mIndex;
-	uint64		uQuality;		// 0 = none.
-	STAmount	saIn;
-	STAmount	saOut;
+	typedef struct {
+		bool							bPartialPayment;	// -->
+		uint16							uFlags;				// --> from path
 
-	PathState(int iIndex) : mIndex(iIndex) { ; };
+		uint160							uAccount;			// --> recieving/sending account
 
-	static PathState::pointer createPathState(int iIndex) { return boost::make_shared<PathState>(iIndex); };
+		STAmount						saWanted;			// --> What this node wants from upstream.
+
+		// Maybe this should just be a bool:
+		// STAmount						saIOURedeemMax;		// --> Max amount of IOUs to redeem downstream.
+		// Maybe this should just be a bool:
+		// STAmount						saIOUIssueMax;		// --> Max Amount of IOUs to issue downstream.
+
+		STAmount						saIOURedeem;		// <-- What this node will redeem downstream.
+		STAmount						saIOUIssue;			// <-- What this node will issue downstream.
+		STAmount						saSend;				// <-- Stamps this node will send downstream.
+
+		STAmount						saRecieve;			// Amount stamps to receive.
+
+	} paymentNode;
+
+	std::vector<paymentNode>	vpnNodes;
+	LedgerEntrySet				lesEntries;
+
+	int							mIndex;
+	uint64						uQuality;		// 0 = none.
+	STAmount					saIn;
+	STAmount					saOut;
+	bool						bDirty;			// Path not computed.
+
+	PathState(
+		int						iIndex,
+		const LedgerEntrySet&	lesSource,
+		const STPath&			spSourcePath,
+		uint160					uReceiverID,
+		uint160					uSenderID,
+		STAmount				saSend,
+		STAmount				saSendMax,
+		bool					bPartialPayment
+		);
+
+	static PathState::pointer createPathState(
+		int						iIndex,
+		const LedgerEntrySet&	lesSource,
+		const STPath&			spSourcePath,
+		uint160					uReceiverID,
+		uint160					uSenderID,
+		STAmount				saSend,
+		STAmount				saSendMax,
+		bool					bPartialPayment
+		)
+	{ return boost::make_shared<PathState>(iIndex, lesSource, spSourcePath, uReceiverID, uSenderID, saSend, saSendMax, bPartialPayment); };
+
+	static bool less(const PathState::pointer& lhs, const PathState::pointer& rhs);
 };
 
 // One instance per ledger.
@@ -137,25 +183,6 @@ private:
 	bool dirNext(const uint256& uRootIndex, SLE::pointer& sleNode, unsigned int& uDirEntry, uint256& uEntryIndex);
 
 #ifdef WORK_IN_PROGRESS
-	typedef struct {
-		uint16							uFlags;			// --> from path
-
-		STAccount						saAccount;		// --> recieving/sending account
-
-		STAmount						saWanted;		// --> What this node wants from upstream.
-
-		// Maybe this should just be a bool:
-		STAmount						saIOURedeemMax;	// --> Max amount of IOUs to redeem downstream.
-		// Maybe this should just be a bool:
-		STAmount						saIOUIssueMax;	// --> Max Amount of IOUs to issue downstream.
-
-		STAmount						saIOURedeem;	// <-- What this node will redeem downstream.
-		STAmount						saIOUIssue;		// <-- What this node will issue downstream.
-		STAmount						saSend;			// <-- Stamps this node will send downstream.
-
-		STAmount						saRecieve;		// Amount stamps to receive.
-
-	} paymentNode;
 
 	typedef struct {
 		std::vector<paymentNode>	vpnNodes;

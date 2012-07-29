@@ -464,13 +464,13 @@ void STPathSet::add(Serializer& s) const
 
 			s.add8(iType);
 
-			if (iType && STPathElement::typeAccount)
+			if (iType & STPathElement::typeAccount)
 				s.add160(speElement.getAccountID());
 
-			if (iType && STPathElement::typeCurrency)
+			if (iType & STPathElement::typeCurrency)
 				s.add160(speElement.getCurrency());
 
-			if (iType && STPathElement::typeIssuer)
+			if (iType & STPathElement::typeIssuer)
 				s.add160(speElement.getIssuerID());
 		}
 	}

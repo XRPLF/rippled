@@ -2161,51 +2161,67 @@ bool calcPaymentForward(std::vector<paymentNode>& pnNodes)
 }
 #endif
 
-// Ensure sort order is complelely deterministic.
-class PathStateCompare
+bool PathState::less(const PathState::pointer& lhs, const PathState::pointer& rhs)
 {
-public:
-	bool operator()(const PathState::pointer& lhs, const PathState::pointer& rhs)
-	{
-		// Return true, iff lhs has less priority than rhs.
+	// Return true, iff lhs has less priority than rhs.
 
-		if (lhs->uQuality != rhs->uQuality)
-			return lhs->uQuality > rhs->uQuality;	// Bigger is worse.
+	if (lhs->uQuality != rhs->uQuality)
+		return lhs->uQuality > rhs->uQuality;	// Bigger is worse.
 
-		// Best quanity is second rank.
-		if (lhs->saOut != rhs->saOut)
-			return lhs->saOut < rhs->saOut;			// Smaller is worse.
+	// Best quanity is second rank.
+	if (lhs->saOut != rhs->saOut)
+		return lhs->saOut < rhs->saOut;			// Smaller is worse.
 
-		// Path index is third rank.
-		return lhs->mIndex > rhs->mIndex;			// Bigger is worse.
-	}
-};
-
-PathState::pointer TransactionEngine::pathCreate(const STPath& spPath)
-{
-	return PathState::pointer();
+	// Path index is third rank.
+	return lhs->mIndex > rhs->mIndex;			// Bigger is worse.
 }
 
-// Calcuate the next increment of a path.
+PathState::PathState(
+	int						iIndex,
+	const LedgerEntrySet&	lesSource,
+	const STPath&			spSourcePath,
+	uint160					uReceiverID,
+	uint160					uSenderID,
+	STAmount				saSend,
+	STAmount				saSendMax,
+	bool					bPartialPayment
+	)
+	: mIndex(iIndex), uQuality(0), bDirty(true)
+{
+	lesEntries				= lesSource.duplicate();
+
+	paymentNode	pnFirst;
+	paymentNode	pnLast;
+
+	pnLast.bPartialPayment	= bPartialPayment;
+	pnLast.uAccount			= uReceiverID;
+	pnLast.saWanted			= saSend;
+
+	pnFirst.uAccount		= uSenderID;
+	pnFirst.saWanted		= saSendMax;
+
+	vpnNodes.push_back(pnFirst);
+	vpnNodes.push_back(pnLast);
+}
+
+// Calculate the next increment of a path.
 void TransactionEngine::pathNext(PathState::pointer pspCur)
 {
-
 }
 
 // Apply an increment of the path, then calculate the next increment.
 void TransactionEngine::pathApply(PathState::pointer pspCur)
 {
-
-	pathNext(pspCur);
 }
 
 // XXX Need to audit for things like setting accountID not having memory.
 TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction& txn)
 {
 	// Ripple if source or destination is non-native or if there are paths.
-	uint32		txFlags			= txn.getFlags();
-	bool		bCreate			= !!(txFlags & tfCreateAccount);
-	bool		bNoRippleDirect	= !!(txFlags & tfNoRippleDirect);
+	uint32		uTxFlags		= txn.getFlags();
+	bool		bCreate			= !!(uTxFlags & tfCreateAccount);
+	bool		bNoRippleDirect	= !!(uTxFlags & tfNoRippleDirect);
+	bool		bPartialPayment	= !!(uTxFlags & tfPartialPayment);
 	bool		bPaths			= txn.getITFieldPresent(sfPaths);
 	bool		bMax			= txn.getITFieldPresent(sfSendMax);
 	uint160		uDstAccountID	= txn.getITFieldAccount(sfDestination);
@@ -2385,7 +2401,6 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 
 	STPathSet	spsPaths = txn.getITFieldPathSet(sfPaths);
 
-	// XXX If we are parsing for determing forwarding check maximum path count.
 	if (!spsPaths.isEmpty())
 	{
 		Log(lsINFO) << "doPayment: Invalid transaction: No paths.";
@@ -2398,45 +2413,80 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 	}
 
 	// Incrementally search paths.
-	std::priority_queue<PathState::pointer, std::vector<PathState::pointer>, PathStateCompare>	pqPaths;
-#if 0
-	BOOST_FOREACH(std::vector<STPath>::const_iterator::value_type spPath, spsPaths)
-	{
-		PathState::pointer	pspCur	= pathCreate(spPath);
+	std::vector<PathState::pointer>	vpsPaths;
 
-		pqPaths.push(pspCur);
+	BOOST_FOREACH(const STPath& spPath, spsPaths)
+	{
+		vpsPaths.push_back(PathState::createPathState(
+			vpsPaths.size(),
+			mNodes,
+			spPath,
+			uDstAccountID,
+			mTxnAccountID,
+			saDstAmount,
+			saMaxAmount,
+			bPartialPayment
+			));
 	}
-#endif
+
 	TransactionEngineResult	terResult;
 	STAmount				saPaid;
 	STAmount				saWanted;
-	uint32					uFlags			= txn.getFlags();	// XXX Redundant.
 
 	terResult	= tenUNKNOWN;
 	while (tenUNKNOWN == terResult)
 	{
-		if (!pqPaths.empty())
+		PathState::pointer	pspBest;
+
+		// Find the best path.
+		BOOST_FOREACH(PathState::pointer pspCur, vpsPaths)
 		{
-			// Have a path to contribute.
-			PathState::pointer	pspCur		= pqPaths.top();
+			if (pspCur->bDirty)
+			{
+				pspCur->bDirty		= false;
+				pspCur->lesEntries	= mNodes.duplicate();
 
-			pqPaths.pop();
+				// XXX Compute increment
+				pathNext(pspCur);
+			}
 
-			pathApply(pspCur);
+			if (!pspBest || (pspCur->uQuality && PathState::less(pspBest, pspCur)))
+				pspBest	= pspCur;
+		}
 
+		if (!pspBest)
+		{
+			//
+			// Apply path.
+			//
+
+			// Install changes for path.
+			mNodes.swapWith(pspBest->lesEntries);
+
+			// Mark that path as dirty.
+			pspBest->bDirty	= true;
+
+			// Mark as dirty any other path that intersected.
+			BOOST_FOREACH(PathState::pointer& pspOther, vpsPaths)
+			{
+				// Look for intersection of best and the others.
+				// - Will forget the intersection applied.
+				//   - Anything left will not interfere with it.
+				// - Will remember the non-intersection non-applied for future consideration.
+				if (!pspOther->bDirty
+					&& pspOther->uQuality
+					&& LedgerEntrySet::intersect(pspBest->lesEntries, pspOther->lesEntries))
+					pspOther->bDirty	= true;
+			}
+
+			// Figure out if done.
 			if (tenUNKNOWN == terResult && saPaid == saWanted)
 			{
 				terResult	= terSUCCESS;
 			}
-
-			if (tenUNKNOWN == terResult && pspCur->uQuality)
-			{
-				// Current path still has something to contribute.
-				pqPaths.push(pspCur);
-			}
 		}
 		// Ran out of paths.
-		else if ((!uFlags & tfPartialPayment))
+		else if (!bPartialPayment)
 		{
 			// Partial payment not allowed.
 			terResult	= terPATH_PARTIAL;		// XXX No effect, except unfunded and charge fee.
