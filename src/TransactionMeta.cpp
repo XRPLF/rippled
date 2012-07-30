@@ -134,6 +134,14 @@ void TransactionMetaNode::addRaw(Serializer& s) const
 	s.add8(TransactionMetaNodeEntry::TMNEndOfMetadata);
 }
 
+void TransactionMetaNode::thread(const uint256& prevTx, uint32 prevLgr)
+{
+	assert((mPreviousLedger == 0) || (mPreviousLedger == prevLgr));
+	assert(mPreviousTransaction.isZero() || (mPreviousTransaction == prevTx));
+	mPreviousTransaction = prevTx;
+	mPreviousLedger = prevLgr;
+}
+
 Json::Value TransactionMetaNode::getJson(int v) const
 {
 	Json::Value ret = Json::objectValue;
@@ -162,16 +170,16 @@ TransactionMetaSet::TransactionMetaSet(uint32 ledger, const std::vector<unsigned
 		uint256 node = sit.get256();
 		if (node.isZero())
 			break;
-		mNodes.insert(TransactionMetaNode(node, sit));
+		mNodes.insert(std::make_pair(node, TransactionMetaNode(node, sit)));
 	} while(1);
 }
 
 void TransactionMetaSet::addRaw(Serializer& s) const
 {
 	s.add256(mTransactionID);
-	for (std::set<TransactionMetaNode>::const_iterator it = mNodes.begin(), end = mNodes.end();
+	for (std::map<uint256, TransactionMetaNode>::const_iterator it = mNodes.begin(), end = mNodes.end();
 			it != end; ++it)
-		it->addRaw(s);
+		it->second.addRaw(s);
 	s.add256(uint256());
 }
 
@@ -183,9 +191,9 @@ Json::Value TransactionMetaSet::getJson(int v) const
 	ret["ledger"] = mLedger;
 
 	Json::Value e = Json::arrayValue;
-	for (std::set<TransactionMetaNode>::const_iterator it = mNodes.begin(), end = mNodes.end();
+	for (std::map<uint256, TransactionMetaNode>::const_iterator it = mNodes.begin(), end = mNodes.end();
 			it != end; ++it)
-			e.append(it->getJson(v));
+		e.append(it->second.getJson(v));
 	ret["nodes_affected"] = e;
 
 	return ret;
@@ -193,28 +201,14 @@ Json::Value TransactionMetaSet::getJson(int v) const
 
 bool TransactionMetaSet::isNodeAffected(const uint256& node) const
 {
-	for (std::set<TransactionMetaNode>::const_iterator it = mNodes.begin(), end = mNodes.end();
-			it != end; ++it)
-		if (it->getNode() == node)
-			return true;
-	return false;
-}
-
-TransactionMetaNode TransactionMetaSet::getAffectedNode(const uint256& node)
-{
-	for (std::set<TransactionMetaNode>::const_iterator it = mNodes.begin(), end = mNodes.end();
-			it != end; ++it)
-		if (it->getNode() == node)
-			return *it;
-	return TransactionMetaNode(uint256());
+	return mNodes.find(node) != mNodes.end();
 }
 
 const TransactionMetaNode& TransactionMetaSet::peekAffectedNode(const uint256& node) const
 {
-	for (std::set<TransactionMetaNode>::const_iterator it = mNodes.begin(), end = mNodes.end();
-			it != end; ++it)
-		if (it->getNode() == node)
-			return *it;
+	std::map<uint256, TransactionMetaNode>::const_iterator it = mNodes.find(node);
+	if (it != mNodes.end())
+		return it->second;
 	throw std::runtime_error("Affected node not found");
 }
 
@@ -229,6 +223,19 @@ void TransactionMetaSet::swap(TransactionMetaSet& s)
 {
 	assert((mTransactionID == s.mTransactionID) && (mLedger == s.mLedger));
 	mNodes.swap(s.mNodes);
+}
+
+TransactionMetaNode& TransactionMetaSet::modifyNode(const uint256& node)
+{
+	std::map<uint256, TransactionMetaNode>::iterator it = mNodes.find(node);
+	if (it != mNodes.end())
+		return it->second;
+	return mNodes.insert(std::make_pair(node, TransactionMetaNode(node))).first->second;
+}
+
+void TransactionMetaSet::threadNode(const uint256& node, const uint256& prevTx, uint32 prevLgr)
+{
+	modifyNode(node).thread(prevTx, prevLgr);
 }
 
 bool TransactionMetaSet::deleteUnfunded(const uint256& node, const STAmount& firstBalance, const STAmount &secondBalance)

@@ -106,6 +106,8 @@ public:
 	bool operator>(const TransactionMetaNode& n) const	{ return mNode > n.mNode; }
 	bool operator>=(const TransactionMetaNode& n) const	{ return mNode >= n.mNode; }
 
+	void thread(const uint256& prevTx, uint32 prevLgr);
+
 	TransactionMetaNode(const uint256&node, SerializerIterator&);
 	void addRaw(Serializer&) const;
 	Json::Value getJson(int) const;
@@ -116,7 +118,9 @@ class TransactionMetaSet
 protected:
 	uint256 mTransactionID;
 	uint32 mLedger;
-	std::set<TransactionMetaNode> mNodes;
+	std::map<uint256, TransactionMetaNode> mNodes;
+
+	TransactionMetaNode& modifyNode(const uint256&);
 
 public:
 	TransactionMetaSet() : mLedger(0) { ; }
@@ -128,7 +132,6 @@ public:
 	void swap(TransactionMetaSet&);
 
 	bool isNodeAffected(const uint256&) const;
-	TransactionMetaNode getAffectedNode(const uint256&);
 	const TransactionMetaNode& peekAffectedNode(const uint256&) const;
 
 	Json::Value getJson(int) const;
