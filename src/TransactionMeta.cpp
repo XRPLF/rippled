@@ -1,5 +1,7 @@
 #include "TransactionMeta.h"
 
+#include <algorithm>
+
 #include <boost/make_shared.hpp>
 #include <boost/bind.hpp>
 
@@ -115,22 +117,23 @@ TransactionMetaNode::TransactionMetaNode(const uint256& node, SerializerIterator
 	{
 		type = sit.get8();
 		if (type == TransactionMetaNodeEntry::TMNChangedBalance)
-			mEntries.insert(boost::shared_ptr<TransactionMetaNodeEntry>(new TMNEBalance(sit)));
+			mEntries.push_back(new TMNEBalance(sit));
 		if (type == TransactionMetaNodeEntry::TMNDeleteUnfunded)
-			mEntries.insert(boost::shared_ptr<TransactionMetaNodeEntry>(new TMNEUnfunded()));
+			mEntries.push_back(new TMNEUnfunded());
 		else if (type != TransactionMetaNodeEntry::TMNEndOfMetadata)
 			throw std::runtime_error("Unparseable metadata");
 	} while (type != TransactionMetaNodeEntry::TMNEndOfMetadata);
 }
 
-void TransactionMetaNode::addRaw(Serializer& s) const
+void TransactionMetaNode::addRaw(Serializer& s)
 {
 	s.add256(mNode);
 	s.add256(mPreviousTransaction);
 	s.add32(mPreviousLedger);
-	for (std::set<TransactionMetaNodeEntry::pointer>::const_iterator it = mEntries.begin(), end = mEntries.end();
+	mEntries.sort();
+	for (boost::ptr_vector<TransactionMetaNodeEntry>::const_iterator it = mEntries.begin(), end = mEntries.end();
 			it != end; ++it)
-		(*it)->addRaw(s);
+		it->addRaw(s);
 	s.add8(TransactionMetaNodeEntry::TMNEndOfMetadata);
 }
 
@@ -150,9 +153,9 @@ Json::Value TransactionMetaNode::getJson(int v) const
 	ret["previous_ledger"] = mPreviousLedger;
 
 	Json::Value e = Json::arrayValue;
-	for (std::set<TransactionMetaNodeEntry::pointer>::const_iterator it = mEntries.begin(), end = mEntries.end();
+	for (boost::ptr_vector<TransactionMetaNodeEntry>::const_iterator it = mEntries.begin(), end = mEntries.end();
 			it != end; ++it)
-		e.append((*it)->getJson(v));
+		e.append(it->getJson(v));
 	ret["entries"] = e;
 
 	return ret;
@@ -174,10 +177,10 @@ TransactionMetaSet::TransactionMetaSet(uint32 ledger, const std::vector<unsigned
 	} while(1);
 }
 
-void TransactionMetaSet::addRaw(Serializer& s) const
+void TransactionMetaSet::addRaw(Serializer& s)
 {
 	s.add256(mTransactionID);
-	for (std::map<uint256, TransactionMetaNode>::const_iterator it = mNodes.begin(), end = mNodes.end();
+	for (std::map<uint256, TransactionMetaNode>::iterator it = mNodes.begin(), end = mNodes.end();
 			it != end; ++it)
 		it->second.addRaw(s);
 	s.add256(uint256());

@@ -2,9 +2,9 @@
 #define __TRANSACTIONMETA__
 
 #include <vector>
-#include <set>
 
 #include <boost/shared_ptr.hpp>
+#include <boost/ptr_container/ptr_vector.hpp>
 
 #include "../json/value.h"
 
@@ -35,6 +35,12 @@ public:
 	bool operator<=(const TransactionMetaNodeEntry&) const;
 	bool operator>(const TransactionMetaNodeEntry&) const;
 	bool operator>=(const TransactionMetaNodeEntry&) const;
+
+	std::auto_ptr<TransactionMetaNodeEntry> clone() const
+	{ return std::auto_ptr<TransactionMetaNodeEntry>(clone()); }
+
+protected:
+	virtual TransactionMetaNodeEntry* clone(void) = 0;
 };
 
 class TMNEBalance : public TransactionMetaNodeEntry
@@ -67,6 +73,7 @@ public:
 
 	virtual Json::Value getJson(int) const;
 	virtual int compare(const TransactionMetaNodeEntry&) const;
+	virtual TransactionMetaNodeEntry* clone(void) { return new TMNEBalance(*this); }
 };
 
 class TMNEUnfunded : public TransactionMetaNodeEntry
@@ -80,7 +87,11 @@ public:
 	virtual void addRaw(Serializer&) const;
 	virtual Json::Value getJson(int) const;
 	virtual int compare(const TransactionMetaNodeEntry&) const;
+	virtual TransactionMetaNodeEntry* clone(void) { return new TMNEUnfunded(*this); }
 };
+
+inline TransactionMetaNodeEntry* new_clone(const TransactionMetaNodeEntry& s)	{ return s.clone().release(); }
+inline void delete_clone(const TransactionMetaNodeEntry* s)						{ boost::checked_delete(s); }
 
 class TransactionMetaNode
 { // a node that has been affected by a transaction
@@ -91,7 +102,7 @@ protected:
 	uint256 mNode;
 	uint256 mPreviousTransaction;
 	uint32 mPreviousLedger;
-	std::set<TransactionMetaNodeEntry::pointer> mEntries;
+	boost::ptr_vector<TransactionMetaNodeEntry> mEntries;
 
 public:
 	TransactionMetaNode(const uint256 &node) : mNode(node) { ; }
@@ -99,7 +110,7 @@ public:
 	const uint256& getNode() const												{ return mNode; }
 	const uint256& getPreviousTransaction() const								{ return mPreviousTransaction; }
 	uint32 getPreviousLedger() const											{ return mPreviousLedger; }
-	const std::set<TransactionMetaNodeEntry::pointer>& peekEntries() const		{ return mEntries; }
+	const boost::ptr_vector<TransactionMetaNodeEntry>& peekEntries() const		{ return mEntries; }
 
 	bool operator<(const TransactionMetaNode& n) const	{ return mNode < n.mNode; }
 	bool operator<=(const TransactionMetaNode& n) const	{ return mNode <= n.mNode; }
@@ -109,9 +120,10 @@ public:
 	void thread(const uint256& prevTx, uint32 prevLgr);
 
 	TransactionMetaNode(const uint256&node, SerializerIterator&);
-	void addRaw(Serializer&) const;
+	void addRaw(Serializer&);
 	Json::Value getJson(int) const;
 };
+
 
 class TransactionMetaSet
 {
@@ -135,7 +147,7 @@ public:
 	const TransactionMetaNode& peekAffectedNode(const uint256&) const;
 
 	Json::Value getJson(int) const;
-	void addRaw(Serializer&) const;
+	void addRaw(Serializer&);
 
 	void threadNode(const uint256& node, const uint256& previousTransaction, uint32 previousLedger);
 	bool signedBy(const uint256& node, const STAmount& fee);
