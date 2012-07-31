@@ -84,6 +84,7 @@ public:
 	TMNEUnfunded() : TransactionMetaNodeEntry(TMNDeleteUnfunded) { ; }
 	TMNEUnfunded(const STAmount& f, const STAmount& s) :
 		TransactionMetaNodeEntry(TMNDeleteUnfunded), firstAmount(f), secondAmount(s) { ; }
+	void setBalances(const STAmount& firstBalance, const STAmount& secondBalance);
 	virtual void addRaw(Serializer&) const;
 	virtual Json::Value getJson(int) const;
 	virtual int compare(const TransactionMetaNodeEntry&) const;
@@ -111,6 +112,9 @@ public:
 	const uint256& getPreviousTransaction() const								{ return mPreviousTransaction; }
 	uint32 getPreviousLedger() const											{ return mPreviousLedger; }
 	const boost::ptr_vector<TransactionMetaNodeEntry>& peekEntries() const		{ return mEntries; }
+
+	TransactionMetaNodeEntry* findEntry(int nodeType);
+	void addNode(TransactionMetaNodeEntry*);
 
 	bool operator<(const TransactionMetaNode& n) const	{ return mNode < n.mNode; }
 	bool operator<=(const TransactionMetaNode& n) const	{ return mNode <= n.mNode; }

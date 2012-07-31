@@ -101,6 +101,12 @@ Json::Value TMNEUnfunded::getJson(int) const
 	return Json::Value("delete_unfunded");
 }
 
+void TMNEUnfunded::setBalances(const STAmount& first, const STAmount& second)
+{
+	firstAmount = first;
+	secondAmount = second;
+}
+
 int TMNEUnfunded::compare(const TransactionMetaNodeEntry&) const
 {
 	assert(false); // Can't be two deletes for same node
@@ -135,6 +141,20 @@ void TransactionMetaNode::addRaw(Serializer& s)
 			it != end; ++it)
 		it->addRaw(s);
 	s.add8(TransactionMetaNodeEntry::TMNEndOfMetadata);
+}
+
+TransactionMetaNodeEntry* TransactionMetaNode::findEntry(int nodeType)
+{
+	for (boost::ptr_vector<TransactionMetaNodeEntry>::iterator it = mEntries.begin(), end = mEntries.end();
+			it != end; ++it)
+		if (it->getType() == nodeType)
+			return &*it;
+	return NULL;
+}
+
+void TransactionMetaNode::addNode(TransactionMetaNodeEntry* node)
+{
+	mEntries.push_back(node);
 }
 
 void TransactionMetaNode::thread(const uint256& prevTx, uint32 prevLgr)
@@ -241,8 +261,14 @@ void TransactionMetaSet::threadNode(const uint256& node, const uint256& prevTx, 
 	modifyNode(node).thread(prevTx, prevLgr);
 }
 
-bool TransactionMetaSet::deleteUnfunded(const uint256& node, const STAmount& firstBalance, const STAmount &secondBalance)
+bool TransactionMetaSet::deleteUnfunded(const uint256& nodeID,
+	const STAmount& firstBalance, const STAmount &secondBalance)
 {
-	// WRITEME
-	return true;
+	TransactionMetaNode& node = modifyNode(nodeID);
+	TMNEUnfunded* entry = dynamic_cast<TMNEUnfunded*>(node.findEntry(TransactionMetaNodeEntry::TMNDeleteUnfunded));
+	if (entry)
+		entry->setBalances(firstBalance, secondBalance);
+	else
+		node.addNode(new TMNEUnfunded(firstBalance, secondBalance));
+	return	true;
 }
