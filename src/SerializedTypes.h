@@ -83,7 +83,7 @@ public:
 	virtual void add(Serializer& s) const { return; }
 
 	virtual bool isEquivalent(const SerializedType& t) const
-	{ assert(getSType() == STI_NOTPRESENT); return t.getSType() == STI_NOTPRESENT; }
+	{ std::cerr << getSType() << std::endl; assert(getSType() == STI_NOTPRESENT); return t.getSType() == STI_NOTPRESENT; }
 
 	bool operator==(const SerializedType& t) const
 	{ return (getSType() == t.getSType()) && isEquivalent(t); }
@@ -748,6 +748,7 @@ public:
 
 	const std::vector<uint256>& peekValue() const { return mValue; }
 	std::vector<uint256>& peekValue() { return mValue; }
+	virtual bool isEquivalent(const SerializedType& t) const;
 
 	std::vector<uint256> getValue() const { return mValue; }
 

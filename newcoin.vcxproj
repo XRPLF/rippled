@@ -110,6 +110,7 @@
     <ClCompile Include="src\Ledger.cpp" />
     <ClCompile Include="src\LedgerAcquire.cpp" />
     <ClCompile Include="src\LedgerConsensus.cpp" />
+    <ClCompile Include="src\LedgerEntrySet.cpp" />
     <ClCompile Include="src\LedgerFormats.cpp" />
     <ClCompile Include="src\LedgerHistory.cpp" />
     <ClCompile Include="src\LedgerIndex.cpp" />
@@ -150,6 +151,7 @@
     <ClCompile Include="src\TransactionEngine.cpp" />
     <ClCompile Include="src\TransactionFormats.cpp" />
     <ClCompile Include="src\TransactionMaster.cpp" />
+    <ClCompile Include="src\TransactionMeta.cpp" />
     <ClCompile Include="src\UniqueNodeList.cpp" />
     <ClCompile Include="src\utils.cpp" />
     <ClCompile Include="src\ValidationCollection.cpp" />

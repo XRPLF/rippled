@@ -706,7 +706,10 @@ SLE::pointer TransactionEngine::entryCache(LedgerEntryType letType, const uint25
 		{
 			sleEntry = mLedger->getSLE(uIndex);
 			if (sleEntry)
+			{
 				mNodes.entryCache(sleEntry);
+				mOrigNodes.entryCache(sleEntry); // So the metadata code can compare to the original
+			}
 		}
 		else if(action == taaDELETE)
 			assert(false);
@@ -727,9 +730,9 @@ SLE::pointer TransactionEngine::entryCreate(LedgerEntryType letType, const uint2
 }
 
 
-void TransactionEngine::entryDelete(SLE::pointer sleEntry)
+void TransactionEngine::entryDelete(SLE::pointer sleEntry, bool unfunded)
 {
-	mNodes.entryDelete(sleEntry);
+	mNodes.entryDelete(sleEntry, unfunded);
 }
 
 void TransactionEngine::entryModify(SLE::pointer sleEntry)

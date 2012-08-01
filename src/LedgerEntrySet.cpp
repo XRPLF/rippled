@@ -147,7 +147,7 @@ void LedgerEntrySet::entryModify(SLE::pointer& sle)
 	}
  }
 
-void LedgerEntrySet::entryDelete(SLE::pointer& sle)
+void LedgerEntrySet::entryDelete(SLE::pointer& sle, bool unfunded)
 {
 	boost::unordered_map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find(sle->getIndex());
 	if (it == mEntries.end())
@@ -166,6 +166,13 @@ void LedgerEntrySet::entryDelete(SLE::pointer& sle)
 			it->second.mSeq	    = mSeq;
 			it->second.mEntry   = sle;
 			it->second.mAction  = taaDELETE;
+			if (unfunded)
+			{
+				assert(sle->getType() == ltOFFER); // only offers can be unfunded
+				mSet.deleteUnfunded(sle->getIndex(),
+					sle->getIValueFieldAmount(sfTakerPays),
+					sle->getIValueFieldAmount(sfTakerGets));
+			}
 			break;
 
 		case taaCREATE:

@@ -1,5 +1,7 @@
 #include "TransactionMeta.h"
 
+#include <algorithm>
+
 #include <boost/make_shared.hpp>
 #include <boost/bind.hpp>
 
@@ -99,6 +101,12 @@ Json::Value TMNEUnfunded::getJson(int) const
 	return Json::Value("delete_unfunded");
 }
 
+void TMNEUnfunded::setBalances(const STAmount& first, const STAmount& second)
+{
+	firstAmount = first;
+	secondAmount = second;
+}
+
 int TMNEUnfunded::compare(const TransactionMetaNodeEntry&) const
 {
 	assert(false); // Can't be two deletes for same node
@@ -115,23 +123,46 @@ TransactionMetaNode::TransactionMetaNode(const uint256& node, SerializerIterator
 	{
 		type = sit.get8();
 		if (type == TransactionMetaNodeEntry::TMNChangedBalance)
-			mEntries.insert(boost::shared_ptr<TransactionMetaNodeEntry>(new TMNEBalance(sit)));
+			mEntries.push_back(new TMNEBalance(sit));
 		if (type == TransactionMetaNodeEntry::TMNDeleteUnfunded)
-			mEntries.insert(boost::shared_ptr<TransactionMetaNodeEntry>(new TMNEUnfunded()));
+			mEntries.push_back(new TMNEUnfunded());
 		else if (type != TransactionMetaNodeEntry::TMNEndOfMetadata)
 			throw std::runtime_error("Unparseable metadata");
 	} while (type != TransactionMetaNodeEntry::TMNEndOfMetadata);
 }
 
-void TransactionMetaNode::addRaw(Serializer& s) const
+void TransactionMetaNode::addRaw(Serializer& s)
 {
 	s.add256(mNode);
 	s.add256(mPreviousTransaction);
 	s.add32(mPreviousLedger);
-	for (std::set<TransactionMetaNodeEntry::pointer>::const_iterator it = mEntries.begin(), end = mEntries.end();
+	mEntries.sort();
+	for (boost::ptr_vector<TransactionMetaNodeEntry>::const_iterator it = mEntries.begin(), end = mEntries.end();
 			it != end; ++it)
-		(*it)->addRaw(s);
+		it->addRaw(s);
 	s.add8(TransactionMetaNodeEntry::TMNEndOfMetadata);
+}
+
+TransactionMetaNodeEntry* TransactionMetaNode::findEntry(int nodeType)
+{
+	for (boost::ptr_vector<TransactionMetaNodeEntry>::iterator it = mEntries.begin(), end = mEntries.end();
+			it != end; ++it)
+		if (it->getType() == nodeType)
+			return &*it;
+	return NULL;
+}
+
+void TransactionMetaNode::addNode(TransactionMetaNodeEntry* node)
+{
+	mEntries.push_back(node);
+}
+
+void TransactionMetaNode::thread(const uint256& prevTx, uint32 prevLgr)
+{
+	assert((mPreviousLedger == 0) || (mPreviousLedger == prevLgr));
+	assert(mPreviousTransaction.isZero() || (mPreviousTransaction == prevTx));
+	mPreviousTransaction = prevTx;
+	mPreviousLedger = prevLgr;
 }
 
 Json::Value TransactionMetaNode::getJson(int v) const
@@ -142,9 +173,9 @@ Json::Value TransactionMetaNode::getJson(int v) const
 	ret["previous_ledger"] = mPreviousLedger;
 
 	Json::Value e = Json::arrayValue;
-	for (std::set<TransactionMetaNodeEntry::pointer>::const_iterator it = mEntries.begin(), end = mEntries.end();
+	for (boost::ptr_vector<TransactionMetaNodeEntry>::const_iterator it = mEntries.begin(), end = mEntries.end();
 			it != end; ++it)
-		e.append((*it)->getJson(v));
+		e.append(it->getJson(v));
 	ret["entries"] = e;
 
 	return ret;
@@ -162,16 +193,16 @@ TransactionMetaSet::TransactionMetaSet(uint32 ledger, const std::vector<unsigned
 		uint256 node = sit.get256();
 		if (node.isZero())
 			break;
-		mNodes.insert(TransactionMetaNode(node, sit));
+		mNodes.insert(std::make_pair(node, TransactionMetaNode(node, sit)));
 	} while(1);
 }
 
-void TransactionMetaSet::addRaw(Serializer& s) const
+void TransactionMetaSet::addRaw(Serializer& s)
 {
 	s.add256(mTransactionID);
-	for (std::set<TransactionMetaNode>::const_iterator it = mNodes.begin(), end = mNodes.end();
+	for (std::map<uint256, TransactionMetaNode>::iterator it = mNodes.begin(), end = mNodes.end();
 			it != end; ++it)
-		it->addRaw(s);
+		it->second.addRaw(s);
 	s.add256(uint256());
 }
 
@@ -183,9 +214,9 @@ Json::Value TransactionMetaSet::getJson(int v) const
 	ret["ledger"] = mLedger;
 
 	Json::Value e = Json::arrayValue;
-	for (std::set<TransactionMetaNode>::const_iterator it = mNodes.begin(), end = mNodes.end();
+	for (std::map<uint256, TransactionMetaNode>::const_iterator it = mNodes.begin(), end = mNodes.end();
 			it != end; ++it)
-			e.append(it->getJson(v));
+		e.append(it->second.getJson(v));
 	ret["nodes_affected"] = e;
 
 	return ret;
@@ -193,28 +224,14 @@ Json::Value TransactionMetaSet::getJson(int v) const
 
 bool TransactionMetaSet::isNodeAffected(const uint256& node) const
 {
-	for (std::set<TransactionMetaNode>::const_iterator it = mNodes.begin(), end = mNodes.end();
-			it != end; ++it)
-		if (it->getNode() == node)
-			return true;
-	return false;
-}
-
-TransactionMetaNode TransactionMetaSet::getAffectedNode(const uint256& node)
-{
-	for (std::set<TransactionMetaNode>::const_iterator it = mNodes.begin(), end = mNodes.end();
-			it != end; ++it)
-		if (it->getNode() == node)
-			return *it;
-	return TransactionMetaNode(uint256());
+	return mNodes.find(node) != mNodes.end();
 }
 
 const TransactionMetaNode& TransactionMetaSet::peekAffectedNode(const uint256& node) const
 {
-	for (std::set<TransactionMetaNode>::const_iterator it = mNodes.begin(), end = mNodes.end();
-			it != end; ++it)
-		if (it->getNode() == node)
-			return *it;
+	std::map<uint256, TransactionMetaNode>::const_iterator it = mNodes.find(node);
+	if (it != mNodes.end())
+		return it->second;
 	throw std::runtime_error("Affected node not found");
 }
 
@@ -229,4 +246,29 @@ void TransactionMetaSet::swap(TransactionMetaSet& s)
 {
 	assert((mTransactionID == s.mTransactionID) && (mLedger == s.mLedger));
 	mNodes.swap(s.mNodes);
+}
+
+TransactionMetaNode& TransactionMetaSet::modifyNode(const uint256& node)
+{
+	std::map<uint256, TransactionMetaNode>::iterator it = mNodes.find(node);
+	if (it != mNodes.end())
+		return it->second;
+	return mNodes.insert(std::make_pair(node, TransactionMetaNode(node))).first->second;
+}
+
+void TransactionMetaSet::threadNode(const uint256& node, const uint256& prevTx, uint32 prevLgr)
+{
+	modifyNode(node).thread(prevTx, prevLgr);
+}
+
+bool TransactionMetaSet::deleteUnfunded(const uint256& nodeID,
+	const STAmount& firstBalance, const STAmount &secondBalance)
+{
+	TransactionMetaNode& node = modifyNode(nodeID);
+	TMNEUnfunded* entry = dynamic_cast<TMNEUnfunded*>(node.findEntry(TransactionMetaNodeEntry::TMNDeleteUnfunded));
+	if (entry)
+		entry->setBalances(firstBalance, secondBalance);
+	else
+		node.addNode(new TMNEUnfunded(firstBalance, secondBalance));
+	return	true;
 }
