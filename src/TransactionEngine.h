@@ -99,32 +99,33 @@ enum TransactionEngineParams
 	tepMETADATA      = 5,   // put metadata in tree, not transaction
 };
 
+typedef struct {
+	bool							bPartialPayment;	// -->
+	uint16							uFlags;				// --> from path
+
+	uint160							uAccount;			// --> recieving/sending account
+
+	STAmount						saSendMax;			// --> First node: most to send.
+	STAmount						saRecieve;			// <-- Last node: Value received (minus fees) from upstream.
+
+	STAmount						saRevRedeem;		// <-- Computed amount node needs at most redeem.
+	STAmount						saRevIssue;			// <-- Computed amount node ____
+	STAmount						saCurRedeem;		// <-- Amount node will redeem to next.
+	STAmount						saCurIssue;			// <-- Amount node will issue to next.
+
+	STAmount						saWanted;			// <-- What this node wants from upstream.
+
+	STAmount						saSend;				// <-- Stamps this node will send downstream.
+
+	STAmount						saXNSRecieve;		// Amount stamps to receive.
+} paymentNode;
+
 // Hold a path state under incremental application.
 class PathState
 {
 public:
 	typedef boost::shared_ptr<PathState> pointer;
 
-	typedef struct {
-		bool							bPartialPayment;	// -->
-		uint16							uFlags;				// --> from path
-
-		uint160							uAccount;			// --> recieving/sending account
-
-		STAmount						saWanted;			// --> What this node wants from upstream.
-
-		// Maybe this should just be a bool:
-		// STAmount						saIOURedeemMax;		// --> Max amount of IOUs to redeem downstream.
-		// Maybe this should just be a bool:
-		// STAmount						saIOUIssueMax;		// --> Max Amount of IOUs to issue downstream.
-
-		STAmount						saIOURedeem;		// <-- What this node will redeem downstream.
-		STAmount						saIOUIssue;			// <-- What this node will issue downstream.
-		STAmount						saSend;				// <-- Stamps this node will send downstream.
-
-		STAmount						saRecieve;			// Amount stamps to receive.
-
-	} paymentNode;
 
 	std::vector<paymentNode>	vpnNodes;
 	LedgerEntrySet				lesEntries;
@@ -229,6 +230,11 @@ protected:
 	PathState::pointer	pathCreate(const STPath& spPath);
 	void				pathApply(PathState::pointer pspCur);
 	void				pathNext(PathState::pointer pspCur);
+	void				calcNodeFwd(const uint32 uQualityIn, const uint32 uQualityOut,
+							const STAmount& saPrvReq, const STAmount& saCurReq,
+							STAmount& saPrvAct, STAmount& saCurAct);
+	bool				calcPathReverse(PathState::pointer pspCur);
+	void				calcPathForward(PathState::pointer pspCur);
 
 	void			txnWrite();
 

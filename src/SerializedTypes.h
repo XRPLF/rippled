@@ -520,12 +520,13 @@ class STPathElement
 public:
 	enum {
 		typeEnd			= 0x00,
-		typeAccount		= 0x01,	// Rippling through an account
-		typeOffer		= 0x02,	// Claiming an offer
-		typeCurrency	= 0x10,	// Currency follows
-		typeIssuer		= 0x20,	// Issuer follows
-		typeBoundary	= 0xFF, // boundary between alternate paths
-		typeStrayBits	= 0xCC,	// Bits that must be zero.
+		typeAccount		= 0x01,	// Rippling through an account (vs taking an offer).
+		typeRedeem		= 0x04,	// Redeem IOUs.
+		typeIssue		= 0x08,	// Issue IOUs.
+		typeCurrency	= 0x10,	// Currency follows.
+		typeIssuer		= 0x20,	// Issuer follows.
+		typeBoundary	= 0xFF, // Boundary between alternate paths.
+		typeStrayBits	= 0xC0,	// Bits that must be zero.
 	};
 
 protected:
@@ -539,7 +540,7 @@ public:
 		: mAccountID(uAccountID), mCurrency(uCurrency), mIssuerID(uIssuerID)
 	{
 		mType	=
-			(uAccountID.isZero() ? STPathElement::typeOffer : STPathElement::typeAccount)
+			(uAccountID.isZero() ? 0 : STPathElement::typeAccount)
 			| (uCurrency.isZero() ? 0 : STPathElement::typeCurrency)
 			| (uIssuerID.isZero() ? 0 : STPathElement::typeIssuer);
 	}

@@ -318,15 +318,9 @@ STPathSet* STPathSet::construct(SerializerIterator& s, const char *name)
 		}
 		else
 		{
-			bool	bAccount	= !!(iType & STPathElement::typeAccount);
-			bool	bOffer		= !!(iType & STPathElement::typeOffer);
+			bool	bAccount		= !!(iType & STPathElement::typeAccount);
 			bool	bCurrency	= !!(iType & STPathElement::typeCurrency);
 			bool	bIssuer		= !!(iType & STPathElement::typeIssuer);
-
-			if (!bAccount && !bOffer)
-			{
-				throw std::runtime_error("bad path element");
-			}
 
 			uint160	uAccountID;
 			uint160	uCurrency;

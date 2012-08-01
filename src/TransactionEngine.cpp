@@ -2017,6 +2017,7 @@ void TransactionEngine::calcNodeOfferReverse(
 		}
 	}
 }
+#endif
 
 // From the destination work towards the source calculating how much must be asked for.
 // --> bAllowPartial: If false, fail if can't meet requirements.
@@ -2028,64 +2029,31 @@ void TransactionEngine::calcNodeOfferReverse(
 //     <-> [0]saWanted.mAmount : --> limit, <-- actual
 // XXX Disallow looping.
 // XXX With multiple path and due to offers, must consider consumed.
-bool calcPaymentReverse(std::vector<paymentNode>& pnNodes, bool bAllowPartial)
+bool TransactionEngine::calcPathReverse(PathState::pointer pspCur)
 {
+	bool					bSent		= true;
+#if 0
 	TransactionEngineResult	terResult	= tenUNKNOWN;
 
-	uIndex	= pnNodes.size();
+	unsigned int	uIndex	= pspCur->vpnNodes.size() - 1;
 
-	while (tenUNKNOWN == terResult && uIndex--)
+	while (bSent && tenUNKNOWN == terResult && uIndex--)
 	{
 		// Calculate (1) sending by fullfilling next wants and (2) setting current wants.
 
+		paymentNode&	prvPN	= uIndex ? pnNodes[uIndex-1] : pnNodes[0];
 		paymentNode&	curPN	= pnNodes[uIndex];
-		paymentNode&	prvPN	= pnNodes[uIndex-1];
 		paymentNode&	nxtPN	= pnNodes[uIndex+1];
+		bool			bRedeem	= !!(curPN.uFlags & STPathElement::typeRedeem);
+		bool			bIssue	= !!(curPN.uFlags & STPathElement::typeIssue);
+		bool			bOffer	= !!(curPN.uFlags & STPathElement::typeOffer);
 
-		if (!(uFlags & (PF_REDEEM|PF_ISSUE)))
-		{
-			// Redeem IOUs
-			terResult	= tenBAD_PATH;
-		}
-		else if (curPN.saWanted.isZero())
+		if (curPN.saWanted.isZero())
 		{
 			// Must want something.
 			terResult	= tenBAD_AMOUNT;
 		}
-		else if (curPN->uFlags & PF_ACCOUNT)
-		{
-			// Account node.
-			// Rippling through this accounts balances.
-			// No currency change.
-			// Issuer change possible.
-
-			SLE::pointer	sleRippleCur	= ;
-			SLE::pointer	sleRippleNxt	= ;
-			STAmount		saBalanceCur	= ;
-
-			if ((uFlags & PF_REDEEM) && saBalanceCur.isPositive())
-			{
-				// Redeem IOUs
-
-				// XXX
-				curPN.saWanted	+= ___;
-
-				bSent	= true;
-			}
-
-			if ((uFlags & PF_ISSUE)				// Allowed to issue.
-				&& !saWantedNxt.isZero()		// Need to issue.
-				&& !saBalanceCur.isPositive())	// Can issue.
-			{
-				// Issue IOUs
-
-				// XXX
-				curPN.saWanted	+= ___;
-				bSent	= true;
-			}
-
-		}
-		else if (curPN->uFlags & PF_OFFER)
+		else if (bOffer)
 		{
 			// Offer node.
 			// Ripple or transfering from previous node through this offer to next node.
@@ -2125,13 +2093,91 @@ bool calcPaymentReverse(std::vector<paymentNode>& pnNodes, bool bAllowPartial)
 				// Save sent amount
 			}
 		}
+		// Account node.
+		else if (!bIssue && !bOffer)
+		{
+			terResult	= tenBAD_PATH;
+		}
 		else
 		{
-			assert(false);
-		}
+			// Rippling through this accounts balances.
+			// No currency change.
+			// Issuer change possible.
+			// Figuring out want current account should redeem and send.
 
-		if (tenUNKNOWN == terResult == curPN.saWanted.isZero())
-			terResult	= terZERO;			// Path contributes nothing.
+			SLE::pointer	sleRippleCur	= ;
+			SLE::pointer	sleRippleNxt	= ;
+			STAmount		saBalance		= peekBalance(curPN.uAccountID, nxtPN.uAccountID);
+			STAmount		saLimit			= peekLimit(curPN.uAccountID, nxtPN.uAccountID);
+			STAmount		saWanted		= nxtPN.saWanted;
+
+			curPN.saWanted.zero();
+
+			if (bRedeem && saBalance.isPositive())
+			{
+				// Allowed to redeem and have IOUs.
+				curPN.saIOURedeem	= min(saBalance, saWanted);
+				curPN.saWanted		= curPN.saIOURedeem;					// XXX Assumes we want 1::1
+				saWanted			-= curPN.saIOURedeem;
+			}
+			else
+			{
+				curPN.saIOURedeem.zero();
+			}
+
+			if (bIssue							// Allowed to issue.
+				&& !saWanted.isZero()			// Need to issue.
+				&& !saBalance.isPositive())		// Can issue. (Can't if must redeem).
+			{
+				curPN.saIOUIssue	= min(saLimit+saBalance, saWanted);
+				curPN.saWanted		+= curPN.saIOUIssue;					// XXX Assumes we want 1::1
+			}
+			else
+			{
+				curPN.saIOUIssue.zero();
+			}
+
+			bSent	= !curPN.saIOURedeem.isZero() || !curPN.saIOUIssue.isZero();
+		}
+	}
+#endif
+	return bSent;
+}
+
+// Cur is the driver and will be filled exactly.
+void TransactionEngine::calcNodeFwd(const uint32 uQualityIn, const uint32 uQualityOut,
+	const STAmount& saPrvReq, const STAmount& saCurReq,
+	STAmount& saPrvAct, STAmount& saCurAct)
+{
+	if (uQualityIn >= uQualityOut)
+	{
+		// No fee.
+		STAmount	saTransfer	= MIN(saPrvReq-saPrvAct, saCurReq-saCurAct);
+
+		saPrvAct	+= saTransfer;
+		saCurAct	+= saTransfer;
+	}
+	else
+	{
+		// Fee.
+		STAmount	saPrv	= saPrvReq-saPrvAct;
+		STAmount	saCur	= saCurReq-saCurAct;
+		STAmount	saCurIn	= STAmount::divide(STAmount::multiply(saCur, uQualityIn, uint160(1)), uQualityOut, uint160(1));
+
+		if (saCurIn >= saPrv)
+		{
+			// All of cur. Some amount of prv.
+			saCurAct	= saCurReq;
+			saPrvAct	+= saCurIn;
+		}
+		else
+		{
+			// A part of cur. All of prv.
+			STAmount	saCurOut	= STAmount::divide(STAmount::multiply(saPrv, uQualityOut, uint160(1)), uQualityIn, uint160(1));
+
+			saCurAct	+= saCurOut;
+			saPrvAct	= saPrvReq;
+		}
 	}
 }
 
@@ -2142,24 +2188,130 @@ bool calcPaymentReverse(std::vector<paymentNode>& pnNodes, bool bAllowPartial)
 //     --> [all]saWanted.IOURedeem
 //     --> [all]saWanted.IOUIssue
 //     --> [all]saAccount
-bool calcPaymentForward(std::vector<paymentNode>& pnNodes)
+// XXX This path becomes dirty if saSendMaxFirst must be changed.
+void TransactionEngine::calcPathForward(PathState::pointer pspCur)
 {
-	cur = src;
+#if 0
+	TransactionEngineResult	terResult	= tenUNKNOWN;
+	unsigned int			uIndex	= 0;
 
-	if (!cur->saSend.isZero())
-	{
-		// Sending stamps - always final step.
-		assert(!cur->next);
-		nxt->saReceive	= cur->saSend;
-		bDone			= true;
-	}
-	else
-	{
-		// Rippling.
+	unsigned int			uEnd	= pspCur->vpnNodes.size();
+	unsigned int			uLast	= uEnd - 1;
 
+	while (tenUNKNOWN == terResult && uIndex != uEnd)
+	{
+		// Calculate (1) sending by fullfilling next wants and (2) setting current wants.
+
+		paymentNode&	prvPN	= uIndex ? pnNodes[uIndex-1] : pnNodes[0];
+		paymentNode&	curPN	= pnNodes[uIndex];
+
+		// XXX Assume rippling.
+
+		if (!uIndex)
+		{
+			// First node, calculate amount to send.
+			STAmount&	saCurRedeemReq	= curPN.saRevRedeem;
+			STAmount&	saCurRedeemAct	= curPN.saFwdRedeem;
+			STAmount&	saCurIssueReq	= curPN.saRevIssue;
+			STAmount&	saCurIssueAct	= curPN.saFwdIssue;
+
+			STAmount&	saCurSendMaxReq	= curPN.saSendMax;
+			STAmount	saCurSendMaxAct;
+
+			if (saCurRedeemReq)
+			{
+				// Redeem requested.
+				saCurRedeemAct	= MIN(saCurRedeemAct, saCurSendMaxReq);
+				saCurSendMaxAct	= saCurRedeemAct;
+			}
+
+			if (saCurIssueReq && saCurSendMaxReq != saCurRedeemAct)
+			{
+				// Issue requested and not over budget.
+				saCurIssueAct	= MIN(saCurSendMaxReq-saCurRedeemAct, saCurIssueReq);
+				// saCurSendMaxAct	+= saCurIssueReq; // Not needed.
+			}
+		}
+		else if (uIndex == uLast)
+		{
+			// Last node.  Accept all funds.  Calculate amount actually to credit.
+			uint32		uQualityIn		= peekQualityIn(curPN.uAccountID, prvPN.uAccountID);
+			STAmount&	saPrvRedeemReq	= prvPN.saFwdRedeem;
+			STAmount&	saPrvIssueReq	= prvPN.saFwdIssue;
+			STAmount	saPrvIssueAct	= uQualityIn >= QUALITY_ONE
+											? saPrvIssueReq								// No fee.
+											: multiply(saPrvIssueReq, uQualityIn, _);	// Fee.
+			STAmount&	saCurReceive	= curPN.saReceive;
+
+			// Amount to credit.
+			saCurReceive	= saPrvRedeemReq+saPrvIssueAct;
+
+			// Actually receive.
+			rippleCredit(curPN.uAccountID, prvPN.uAccountID, saPrvRedeemReq + saPrvIssueReq);
+		}
+		else
+		{
+			// Handle middle node.
+			// The previous nodes tells want it wants to push through to current.
+			// The current node know what it woud push through next.
+			// Determine for the current node:
+			// - Output to next node minus fees.
+			// Perform balance adjustment with previous.
+			// All of previous output is consumed.
+
+			STAmount	saSrcRedeem;	// To start, redeeming none.
+			STAmount	saSrcIssue;		// To start, issuing none.
+			STAmount	saDstRedeem;
+
+			// Have funds in previous node to transfer.
+			uint32	uQualityIn	= peekQualityIn(curPN.uAccountID, prvPN.uAccountID);
+			uint32	uQualityOut	= peekQualityOut(curPN.uAccountID, nxtPN.uAccountID);
+
+			STAmount&	saPrvRedeemReq	= prvPN.saFwdRedeem;
+			STAmount	saPrvRedeemAct;
+			STAmount&	saCurRedeemReq	= curPN.saRevRedeem;
+			STAmount&	saCurRedeemAct	= curPN.saFwdRedeem;
+			STAmount&	saPrvIssueReq	= prvPN.saFwdIssue;
+			STAmount	saPrvIssueAct;
+
+			// Previous redeem part 1: redeem -> redeem
+			if (saPrvRedeemReq != saPrvRedeemAct)			// Previous wants to redeem. To next must be ok.
+			{
+				// Rate : 1.0 : quality out
+				calcNodeFwd(QUALITY_ONE, uQualityOut, saPrvRedeemReq, saCurRedeemReq, saPrvRedeemAct, saCurRedeemAct);
+			}
+
+			// Previous redeem part 2: redeem -> issue.
+			// wants to redeem and current would and can issue.
+			// If redeeming cur to next is done, this implies can issue.
+			if (saPrvRedeemReq != saPrvRedeemAct			// Previous still wants to redeem.
+				&& saCurRedeemReq == saCurRedeemAct)		// Current has more to redeem to next.
+			{
+				// Rate : 1.0 : 1.0 + transfer_rate
+				calcNodeFwd(QUALITY_ONE, QUALITY_ONE+peekTransfer(curPN.uAccountID), saPrvRedeemReq, saCurIssueReq, saPrvRedeemAct, saCurIssueAct);
+			}
+
+			// Previous issue part 1: issue -> redeem
+			if (saPrvIssueReq != saPrvIssueAct				// Previous wants to issue.
+				&& saCurRedeemReq == saCurRedeemAct)		// Current has more to redeem to next.
+			{
+				// Rate: quality in : quality out
+				calcNodeFwd(uQualityIn, uQualityOut, saPrvIssueReq, saCurRedeemReq, saPrvIssueAct, saCurRedeemAct);
+			}
+
+			// Previous issue part 2 : issue -> issue
+			if (saPrvIssueReq != saPrvIssueAct)				// Previous wants to issue. To next must be ok.
+			{
+				// Rate: quality in : 1.0
+				calcNodeFwd(uQualityIn, QUALITY_ONE, saPrvIssueReq, saCurIssueReq, saPrvIssueAct, saCurIssueAct);
+			}
+
+			// Adjust prv --> cur balance : take all inbound
+			rippleCredit(cur, prv, saPrvRedeemReq + saPrvIssueReq);
+		}
 	}
-}
 #endif
+}
 
 bool PathState::less(const PathState::pointer& lhs, const PathState::pointer& rhs)
 {
@@ -2207,6 +2359,19 @@ PathState::PathState(
 // Calculate the next increment of a path.
 void TransactionEngine::pathNext(PathState::pointer pspCur)
 {
+	// The next state is what is available in preference order.
+	// This is calculated when referenced accounts changed.
+
+	if (calcPathReverse(pspCur))
+	{
+		calcPathForward(pspCur);
+	}
+	else
+	{
+		// Mark path as inactive.
+		pspCur->uQuality	= 0;
+		pspCur->bDirty		= false;
+	}
 }
 
 // Apply an increment of the path, then calculate the next increment.
