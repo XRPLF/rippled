@@ -888,11 +888,10 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 		ssw.write(Log(lsTRACE).ref(), p);
 	}
 #endif
-	// FIXME: If necessary, change state to TRACKING/FULL
 }
 
 void LedgerConsensus::endConsensus()
 {
-	theApp->getOPs().endConsensus();
+	theApp->getOPs().endConsensus(mHaveCorrectLCL);
 }
 // vim:ts=4

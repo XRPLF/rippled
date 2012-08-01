@@ -643,7 +643,7 @@ void NetworkOPs::mapComplete(const uint256& hash, SHAMap::pointer map)
 		mConsensus->mapComplete(hash, map, true);
 }
 
-void NetworkOPs::endConsensus()
+void NetworkOPs::endConsensus(bool correctLCL)
 {
 	uint256 deadLedger = theApp->getMasterLedger().getClosedLedger()->getParentHash();
 	Log(lsTRACE) << "Ledger " << deadLedger.GetHex() << " is now dead";
@@ -655,6 +655,8 @@ void NetworkOPs::endConsensus()
 		(*it)->cycleStatus();
 	}
 	mConsensus = boost::shared_ptr<LedgerConsensus>();
+	if (correctLCL && (mMode == omCONNECTED))
+		setMode(omTRACKING);
 }
 
 void NetworkOPs::setMode(OperatingMode om)
