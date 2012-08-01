@@ -226,6 +226,38 @@ LedgerConsensus::LedgerConsensus(const uint256& prevLCLHash, Ledger::pointer pre
 	}
 }
 
+void LedgerConsensus::checkLCL()
+{
+	uint256 netLgr;
+	int netLgrCount = 0;
+	{
+		boost::unordered_map<uint256, int> vals = theApp->getValidations().getCurrentValidations();
+		for (boost::unordered_map<uint256, int>::iterator it = vals.begin(), end = vals.end(); it != end; ++it)
+			if (it->second > netLgrCount)
+			{
+				netLgr = it->first;
+				netLgrCount = it->second;
+			}
+	}
+	if ((netLgrCount > 0) && (netLgr != mPrevLedgerHash))
+	{ // LCL change
+		Log(lsWARNING) << "View of consensus changed during consensus";
+		mPrevLedgerHash = netLgr;
+		mAcquiringLedger = theApp->getMasterLedgerAcquire().findCreate(mPrevLedgerHash);
+		std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
+		bool found = false;
+		for (std::vector<Peer::pointer>::const_iterator it = peerList.begin(), end = peerList.end(); it != end; ++it)
+			if ((*it)->hasLedger(mPrevLedgerHash))
+			{
+				found = true;
+				mAcquiringLedger->peerHas(*it);
+			}
+		if (!found)
+			for (std::vector<Peer::pointer>::const_iterator it = peerList.begin(), end = peerList.end(); it != end; ++it)
+				mAcquiringLedger->peerHas(*it);
+	}
+}
+
 void LedgerConsensus::takeInitialPosition(Ledger& initialLedger)
 {
 	SHAMap::pointer initialSet = initialLedger.peekTransactionMap()->snapShot(false);
@@ -418,6 +450,7 @@ void LedgerConsensus::timerEntry()
 {
 	if (!mHaveCorrectLCL)
 	{
+		checkLCL();
 		Log(lsINFO) << "Checking for consensus ledger " << mPrevLedgerHash.GetHex();
 		Ledger::pointer consensus = theApp->getMasterLedger().getLedgerByHash(mPrevLedgerHash);
 		if (consensus)

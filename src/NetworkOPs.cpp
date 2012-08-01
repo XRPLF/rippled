@@ -655,8 +655,6 @@ void NetworkOPs::endConsensus(bool correctLCL)
 		(*it)->cycleStatus();
 	}
 	mConsensus = boost::shared_ptr<LedgerConsensus>();
-	if (correctLCL && (mMode == omCONNECTED))
-		setMode(omTRACKING);
 }
 
 void NetworkOPs::setMode(OperatingMode om)
