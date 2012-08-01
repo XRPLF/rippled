@@ -208,6 +208,12 @@ void STVector256::add(Serializer& s) const
 	s.addVL(mValue.empty() ? NULL : mValue[0].begin(), mValue.size() * (256 / 8));
 }
 
+bool STVector256::isEquivalent(const SerializedType& t) const
+{
+	const STVector256* v = dynamic_cast<const STVector256*>(&t);
+	return v && (mValue == v->mValue);
+}
+
 //
 // STAccount
 //
