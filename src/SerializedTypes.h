@@ -83,7 +83,7 @@ public:
 	virtual void add(Serializer& s) const { return; }
 
 	virtual bool isEquivalent(const SerializedType& t) const
-	{ std::cerr << getSType() << std::endl; assert(getSType() == STI_NOTPRESENT); return t.getSType() == STI_NOTPRESENT; }
+	{ assert(getSType() == STI_NOTPRESENT); return t.getSType() == STI_NOTPRESENT; }
 
 	bool operator==(const SerializedType& t) const
 	{ return (getSType() == t.getSType()) && isEquivalent(t); }
