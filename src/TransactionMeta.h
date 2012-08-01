@@ -36,11 +36,11 @@ public:
 	bool operator>(const TransactionMetaNodeEntry&) const;
 	bool operator>=(const TransactionMetaNodeEntry&) const;
 
-	std::auto_ptr<TransactionMetaNodeEntry> clone() const
-	{ return std::auto_ptr<TransactionMetaNodeEntry>(clone()); }
+	virtual std::auto_ptr<TransactionMetaNodeEntry> clone() const
+	{ return std::auto_ptr<TransactionMetaNodeEntry>(duplicate()); }
 
 protected:
-	virtual TransactionMetaNodeEntry* clone(void) = 0;
+	virtual TransactionMetaNodeEntry* duplicate(void) const = 0;
 };
 
 class TMNEBalance : public TransactionMetaNodeEntry
@@ -73,7 +73,7 @@ public:
 
 	virtual Json::Value getJson(int) const;
 	virtual int compare(const TransactionMetaNodeEntry&) const;
-	virtual TransactionMetaNodeEntry* clone(void) { return new TMNEBalance(*this); }
+	virtual TransactionMetaNodeEntry* duplicate(void) const { return new TMNEBalance(*this); }
 };
 
 class TMNEUnfunded : public TransactionMetaNodeEntry
@@ -88,7 +88,7 @@ public:
 	virtual void addRaw(Serializer&) const;
 	virtual Json::Value getJson(int) const;
 	virtual int compare(const TransactionMetaNodeEntry&) const;
-	virtual TransactionMetaNodeEntry* clone(void) { return new TMNEUnfunded(*this); }
+	virtual TransactionMetaNodeEntry* duplicate(void) const { return new TMNEUnfunded(*this); }
 };
 
 inline TransactionMetaNodeEntry* new_clone(const TransactionMetaNodeEntry& s)	{ return s.clone().release(); }
