@@ -123,7 +123,8 @@ void LedgerAcquire::done()
 	mOnComplete.empty();
 	mLock.unlock();
 
-	theApp->getMasterLedger().storeLedger(mLedger);
+	if (mLedger)
+		theApp->getMasterLedger().storeLedger(mLedger);
 
 	for (int i = 0; i < triggers.size(); ++i)
 		triggers[i](shared_from_this());
