@@ -95,6 +95,16 @@ LedgerAcquire::LedgerAcquire(const uint256& hash) : PeerSet(hash, LEDGER_ACQUIRE
 #endif
 }
 
+void LedgerAcquire::onTimer()
+{
+	if (getTimeouts() > 6)
+	{
+		setFailed();
+		done();
+	}
+	else trigger(Peer::pointer());
+}
+
 boost::weak_ptr<PeerSet> LedgerAcquire::pmDowncast()
 {
 	return boost::shared_polymorphic_downcast<PeerSet, LedgerAcquire>(shared_from_this());

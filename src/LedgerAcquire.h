@@ -70,7 +70,7 @@ protected:
 	std::vector< boost::function<void (LedgerAcquire::pointer)> > mOnComplete;
 
 	void done();
-	void onTimer() { trigger(Peer::pointer()); }
+	void onTimer();
 
 	void newPeer(Peer::pointer peer) { trigger(peer); }
 
