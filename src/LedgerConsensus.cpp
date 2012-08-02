@@ -207,6 +207,7 @@ LedgerConsensus::LedgerConsensus(const uint256& prevLCLHash, Ledger::pointer pre
 
 	if (!mHaveCorrectLCL)
 	{
+		Log(lsINFO) << "Entering consensus process without correct LCL";
 		mHaveCorrectLCL = mProposing = mValidating = false;
 		mAcquiringLedger = theApp->getMasterLedgerAcquire().findCreate(prevLCLHash);
 		std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
@@ -216,11 +217,13 @@ LedgerConsensus::LedgerConsensus(const uint256& prevLCLHash, Ledger::pointer pre
 	}
 	else if (mValSeed.isValid())
 	{
+		Log(lsINFO) << "Entering consensus process, validating";
 		mHaveCorrectLCL = mValidating = true;
 		mProposing = theApp->getOPs().getOperatingMode() == NetworkOPs::omFULL;
 	}
 	else
 	{
+		Log(lsINFO) << "Entering consensus process, proposing";
 		mHaveCorrectLCL = true;
 		mProposing = mValidating = false;
 	}
@@ -457,7 +460,7 @@ void LedgerConsensus::timerEntry()
 		{
 			Log(lsINFO) << "We have acquired the consensus ledger";
 			if (theApp->getMasterLedger().getClosedLedger()->getHash() != mPrevLedgerHash)
-				theApp->getOPs().switchLastClosedLedger(consensus);
+				theApp->getOPs().switchLastClosedLedger(consensus, true);
 			mPreviousLedger = consensus;
 			mHaveCorrectLCL = true;
 		}

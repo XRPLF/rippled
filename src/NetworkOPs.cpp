@@ -518,15 +518,15 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 
 	// FIXME: If this rewinds the ledger sequence, or has the same sequence, we should update the status on
 	// any stored transactions in the invalidated ledgers.
-	switchLastClosedLedger(consensus);
+	switchLastClosedLedger(consensus, false);
 
 	return true;
 }
 
-void NetworkOPs::switchLastClosedLedger(Ledger::pointer newLedger)
+void NetworkOPs::switchLastClosedLedger(Ledger::pointer newLedger, bool duringConsensus)
 { // set the newledger as our last closed ledger -- this is abnormal code
 
-	Log(lsERROR) << "ABNORMAL Switching last closed ledger to " << newLedger->getHash().GetHex();
+	Log(lsERROR) << "JUMP last closed ledger to " << newLedger->getHash().GetHex();
 
 	newLedger->setClosed();
 	Ledger::pointer openLedger = boost::make_shared<Ledger>(false, boost::ref(*newLedger));
