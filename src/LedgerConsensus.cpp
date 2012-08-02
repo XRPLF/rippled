@@ -533,7 +533,10 @@ void LedgerConsensus::updateOurPositions()
 		}
 	}
 	if (closeTime != (mOurPosition->getCloseTime() - (mOurPosition->getCloseTime() % mCloseResolution)))
+	{
+		ourPosition = mComplete[mOurPosition->getCurrentHash()]->snapShot(true);
 		changes = true;
+	}
 
 	if (changes)
 	{
