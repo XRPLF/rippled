@@ -19,6 +19,7 @@ bool ValidationCollection::addValidation(SerializedValidation::pointer val)
 		else
 			Log(lsWARNING) << "Received stale validation now=" << now << ", close=" << valClose;
 	}
+	else Log(lsINFO) << "Node " << signer.humanNodePublic() << " not in UNL";
 
 	uint256 hash = val->getLedgerHash();
 	uint160 node = signer.getNodeID();
@@ -29,13 +30,22 @@ bool ValidationCollection::addValidation(SerializedValidation::pointer val)
 			return false;
 		if (isCurrent)
 		{
-			boost::unordered_map<uint160, SerializedValidation::pointer>::iterator it = mCurrentValidations.find(node);
-			if ((it == mCurrentValidations.end()) || (val->getCloseTime() >= it->second->getCloseTime()))
+			boost::unordered_map<uint160, ValidationPair>::iterator it = mCurrentValidations.find(node);
+			if ((it == mCurrentValidations.end()) || (!it->second.newest) ||
+				(val->getCloseTime() > it->second.newest->getCloseTime()))
 			{
 				if (it != mCurrentValidations.end())
-					mStaleValidations.push_back(it->second);
-				mCurrentValidations[node] = val;
-				condWrite();
+				{
+					if  (it->second.oldest)
+					{
+						mStaleValidations.push_back(it->second.oldest);
+						condWrite();
+					}
+					it->second.oldest = it->second.newest;
+					it->second.newest = val;
+				}
+				else
+					mCurrentValidations.insert(std::make_pair(node, ValidationPair(val)));
 			}
 		}
 	}
@@ -102,10 +112,10 @@ int ValidationCollection::getCurrentValidationCount(uint32 afterTime)
 {
 	int count = 0;
 	boost::mutex::scoped_lock sl(mValidationLock);
-	for (boost::unordered_map<uint160, SerializedValidation::pointer>::iterator it = mCurrentValidations.begin(),
+	for (boost::unordered_map<uint160, ValidationPair>::iterator it = mCurrentValidations.begin(),
 		end = mCurrentValidations.end(); it != end; ++it)
 	{
-		if (it->second->isTrusted() && (it->second->getCloseTime() > afterTime))
+		if (it->second.newest->isTrusted() && (it->second.newest->getCloseTime() > afterTime))
 			++count;
 	}
 	return count;
@@ -118,19 +128,32 @@ boost::unordered_map<uint256, int> ValidationCollection::getCurrentValidations()
 
 	{
 		boost::mutex::scoped_lock sl(mValidationLock);
-		boost::unordered_map<uint160, SerializedValidation::pointer>::iterator it = mCurrentValidations.begin();
+		boost::unordered_map<uint160, ValidationPair>::iterator it = mCurrentValidations.begin();
 		bool anyNew = false;
 		while (it != mCurrentValidations.end())
 		{
-			if (now > (it->second->getCloseTime() + LEDGER_MAX_INTERVAL))
+			ValidationPair& pair = it->second;
+
+			if (pair.oldest && (now > (pair.oldest->getCloseTime() + LEDGER_MAX_INTERVAL)))
 			{
-				mStaleValidations.push_back(it->second);
-				it = mCurrentValidations.erase(it);
+				mStaleValidations.push_back(pair.oldest);
+				pair.oldest = SerializedValidation::pointer();
 				anyNew = true;
 			}
+			if (pair.newest && (now > (pair.newest->getCloseTime() + LEDGER_MAX_INTERVAL)))
+			{
+				mStaleValidations.push_back(pair.newest);
+				pair.newest = SerializedValidation::pointer();
+				anyNew = true;
+			}
+			if (!pair.newest && !pair.oldest)
+				it = mCurrentValidations.erase(it);
 			else
 			{
-				++ret[it->second->getLedgerHash()];
+				if (pair.newest)
+					++ret[pair.newest->getLedgerHash()];
+				if (pair.oldest)
+					++ret[pair.oldest->getLedgerHash()];
 				++it;
 			}
 		}
@@ -144,11 +167,14 @@ boost::unordered_map<uint256, int> ValidationCollection::getCurrentValidations()
 void ValidationCollection::flush()
 {
 		boost::mutex::scoped_lock sl(mValidationLock);
-		boost::unordered_map<uint160, SerializedValidation::pointer>::iterator it = mCurrentValidations.begin();
+		boost::unordered_map<uint160, ValidationPair>::iterator it = mCurrentValidations.begin();
 		bool anyNew = false;
 		while (it != mCurrentValidations.end())
 		{
-			mStaleValidations.push_back(it->second);
+			if (it->second.oldest)
+				mStaleValidations.push_back(it->second.oldest);
+			if (it->second.newest)
+				mStaleValidations.push_back(it->second.newest);
 			++it;
 			anyNew = true;
 		}

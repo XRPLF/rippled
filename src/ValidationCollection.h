@@ -12,13 +12,21 @@
 
 typedef boost::unordered_map<uint160, SerializedValidation::pointer> ValidationSet;
 
+class ValidationPair
+{
+public:
+	SerializedValidation::pointer oldest, newest;
+
+	ValidationPair(SerializedValidation::pointer v) : newest(v) { ; }
+};
+
 class ValidationCollection
 {
 protected:
 
 	boost::mutex mValidationLock;
 	boost::unordered_map<uint256, ValidationSet> mValidations;
-	boost::unordered_map<uint160, SerializedValidation::pointer> mCurrentValidations;
+	boost::unordered_map<uint160, ValidationPair> mCurrentValidations;
 	std::vector<SerializedValidation::pointer> mStaleValidations;
 	bool mWriting;
 
