@@ -415,6 +415,7 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 
 	Ledger::pointer ourClosed = mLedgerMaster->getClosedLedger();
 	uint256 closedLedger = ourClosed->getHash();
+	uint256 prevClosedLedger = ourClosed->getParentHash();
 	ValidationCount& ourVC = ledgers[closedLedger];
 
 	if ((theConfig.LEDGER_CREATOR) && (mMode >= omTRACKING))
@@ -459,7 +460,14 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 			switchLedgers = true;
 		}
 	}
-	networkClosed = closedLedger;
+
+	if (switchLedger && (closedLedger == prevClosedLedger))
+	{ // don't switch to our own previous ledger
+		NetworkClosed = ourClosed->getHash();
+		switchLedgers = false;
+	}
+	else
+		networkClosed = closedLedger;
 
 	if (!switchLedgers)
 	{
