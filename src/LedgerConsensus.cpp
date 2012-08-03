@@ -917,6 +917,23 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 	mState = lcsACCEPTED;
 	sl.unlock();
 
+	{
+		Log(lsINFO) << "We closed at " << boost::lexical_cast<std::string>(mCloseTime);
+		uint64 closeTotal = mCloseTime;
+		int closeCount = 1;
+		for(std::map<uint32, int>::iterator it = mCloseTimes.begin(), end = mCloseTimes.end(); it != end; ++it)
+		{
+			Log(lsINFO) << boost::lexical_cast<std::string>(it->second) << " time votes for "
+				<< boost::lexical_cast<std::string>(it->first);
+			closeCount += it->second;
+			closeTotal += static_cast<uint64>(it->first) * static_cast<uint64>(it->second);
+		}
+		closeTotal += (closeCount / 2);
+		closeTotal /= closeCount;
+		int offset = static_cast<int>(closeTotal) - static_cast<int>(mCloseTime);
+		Log(lsINFO) << "Our clock offset is estimated at " << offset;
+	}
+
 #ifdef DEBUG
 	Json::StyledStreamWriter ssw;
 	if (1)
