@@ -614,6 +614,7 @@ namespace boost
 		typedef std::vector<STPathElement>::const_iterator type;
 	};
 }
+
 class STPathSet : public SerializedType
 { // A set of zero or more payment paths
 protected:

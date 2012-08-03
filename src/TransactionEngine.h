@@ -27,6 +27,7 @@ enum TransactionEngineResult
 	tenBAD_GEN_AUTH,
 	tenBAD_ISSUER,
 	tenBAD_OFFER,
+	tenBAD_PATH,
 	tenBAD_PATH_COUNT,
 	tenBAD_PUBLISH,
 	tenBAD_SET_ID,
@@ -100,24 +101,19 @@ enum TransactionEngineParams
 };
 
 typedef struct {
-	bool							bPartialPayment;	// -->
 	uint16							uFlags;				// --> from path
 
-	uint160							uAccount;			// --> recieving/sending account
+	uint160							uAccountID;			// --> recieving/sending account
+	uint160							uCurrencyID;		// --> currency to recieve
 
-	STAmount						saSendMax;			// --> First node: most to send.
-	STAmount						saRecieve;			// <-- Last node: Value received (minus fees) from upstream.
+	// Computed by Reverse.
+	STAmount						saRevRedeem;		// <-- Amount to redeem to next.
+	STAmount						saRevIssue;			// <-- Amount to issue to next limited by credit and outstanding IOUs.
+	// ? STAmount						saSend;				// <-- Stamps this node will send downstream.
 
-	STAmount						saRevRedeem;		// <-- Computed amount node needs at most redeem.
-	STAmount						saRevIssue;			// <-- Computed amount node ____
-	STAmount						saCurRedeem;		// <-- Amount node will redeem to next.
-	STAmount						saCurIssue;			// <-- Amount node will issue to next.
-
-	STAmount						saWanted;			// <-- What this node wants from upstream.
-
-	STAmount						saSend;				// <-- Stamps this node will send downstream.
-
-	STAmount						saXNSRecieve;		// Amount stamps to receive.
+	// Computed by forward.
+	STAmount						saFwdRedeem;		// <-- Amount node will redeem to next.
+	STAmount						saFwdIssue;			// <-- Amount node will issue to next.
 } paymentNode;
 
 // Hold a path state under incremental application.
@@ -132,8 +128,10 @@ public:
 
 	int							mIndex;
 	uint64						uQuality;		// 0 = none.
-	STAmount					saIn;
-	STAmount					saOut;
+	STAmount					saInReq;		// Max amount to spend by sender
+	STAmount					saInAct;		// Amount spent by sender (calc output)
+	STAmount					saOutReq;		// Amount to send (calc input)
+	STAmount					saOutAct;		// Amount actually sent (calc output).
 	bool						bDirty;			// Path not computed.
 
 	PathState(
@@ -204,39 +202,46 @@ private:
 		STAmount&			saTakerGot);
 
 protected:
-	Ledger::pointer mLedger;
-	uint64			mLedgerParentCloseTime;
+	Ledger::pointer		mLedger;
+	uint64				mLedgerParentCloseTime;
 
-	uint160			mTxnAccountID;
-	SLE::pointer	mTxnAccount;
+	uint160				mTxnAccountID;
+	SLE::pointer		mTxnAccount;
 
 	boost::unordered_set<uint256>	mUnfunded;	// Indexes that were found unfunded.
 
-	SLE::pointer	entryCreate(LedgerEntryType letType, const uint256& uIndex);
-	SLE::pointer	entryCache(LedgerEntryType letType, const uint256& uIndex);
-	void			entryDelete(SLE::pointer sleEntry, bool unfunded = false);
-	void			entryModify(SLE::pointer sleEntry);
+	SLE::pointer		entryCreate(LedgerEntryType letType, const uint256& uIndex);
+	SLE::pointer		entryCache(LedgerEntryType letType, const uint256& uIndex);
+	void				entryDelete(SLE::pointer sleEntry, bool unfunded = false);
+	void				entryModify(SLE::pointer sleEntry);
 
-	void			entryReset();
+	void				entryReset();
 
-	STAmount		rippleHolds(const uint160& uAccountID, const uint160& uCurrency, const uint160& uIssuerID);
-	STAmount		rippleTransit(const uint160& uSenderID, const uint160& uReceiverID, const uint160& uIssuerID, const STAmount& saAmount);
-	STAmount		rippleSend(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount);
+	uint32				rippleTransfer(const uint160& uIssuerID);
+	STAmount			rippleBalance(const uint160& uToAccountID, const uint160& uFromAccountID, const uint160& uCurrencyID);
+	STAmount			rippleLimit(const uint160& uToAccountID, const uint160& uFromAccountID, const uint160& uCurrencyID);
+	uint32				rippleQualityIn(const uint160& uToAccountID, const uint160& uFromAccountID, const uint160& uCurrencyID);
+	uint32				rippleQualityOut(const uint160& uToAccountID, const uint160& uFromAccountID, const uint160& uCurrencyID);
 
-	STAmount		accountHolds(const uint160& uAccountID, const uint160& uCurrency, const uint160& uIssuerID);
-	STAmount		accountSend(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount);
-	STAmount		accountFunds(const uint160& uAccountID, const STAmount& saDefault);
+	STAmount			rippleHolds(const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID);
+	STAmount			rippleTransit(const uint160& uSenderID, const uint160& uReceiverID, const uint160& uIssuerID, const STAmount& saAmount);
+	void				rippleCredit(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount);
+	STAmount			rippleSend(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount);
+
+	STAmount			accountHolds(const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID);
+	STAmount			accountSend(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount);
+	STAmount			accountFunds(const uint160& uAccountID, const STAmount& saDefault);
 
 	PathState::pointer	pathCreate(const STPath& spPath);
 	void				pathApply(PathState::pointer pspCur);
 	void				pathNext(PathState::pointer pspCur);
-	void				calcNodeFwd(const uint32 uQualityIn, const uint32 uQualityOut,
+	void				calcNodeRipple(const uint32 uQualityIn, const uint32 uQualityOut,
 							const STAmount& saPrvReq, const STAmount& saCurReq,
 							STAmount& saPrvAct, STAmount& saCurAct);
 	bool				calcPathReverse(PathState::pointer pspCur);
 	void				calcPathForward(PathState::pointer pspCur);
 
-	void			txnWrite();
+	void				txnWrite();
 
 	TransactionEngineResult offerDelete(const SLE::pointer& sleOffer, const uint256& uOfferIndex, const uint160& uOwnerID);
 

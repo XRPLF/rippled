@@ -21,6 +21,11 @@
 #define DIR_NODE_MAX		2
 #define RIPPLE_PATHS_MAX	3
 
+#define QUALITY_ONE			100000000	// 10e9
+#define CURRENCY_ONE		uint160(1)
+
+// static STAmount saOne(CURRENCY_ONE, 1, 0);
+
 bool transResultInfo(TransactionEngineResult terCode, std::string& strToken, std::string& strHuman)
 {
 	static struct {
@@ -35,6 +40,7 @@ bool transResultInfo(TransactionEngineResult terCode, std::string& strToken, std
 		{	tenBAD_GEN_AUTH,		"tenBAD_GEN_AUTH",			"Not authorized to claim generator."				},
 		{	tenBAD_ISSUER,			"tenBAD_ISSUER",			"Malformed."										},
 		{	tenBAD_OFFER,			"tenBAD_OFFER",				"Malformed."										},
+		{	tenBAD_PATH,			"tenBAD_PATH",				"Malformed: path."									},
 		{	tenBAD_PATH_COUNT,		"tenBAD_PATH_COUNT",		"Malformed: too many paths."						},
 		{	tenBAD_PUBLISH,			"tenBAD_PUBLISH",			"Malformed: bad publish."							},
 		{	tenBAD_RIPPLE,			"tenBAD_RIPPLE",			"Ledger prevents ripple from succeeding."			},
@@ -99,12 +105,92 @@ bool transResultInfo(TransactionEngineResult terCode, std::string& strToken, std
 	return iIndex >= 0;
 }
 
-// Return how much of uIssuerID's uCurrency IOUs that uAccountID holds.  May be negative.
+STAmount TransactionEngine::rippleBalance(const uint160& uToAccountID, const uint160& uFromAccountID, const uint160& uCurrencyID)
+{
+	STAmount		saBalance;
+	SLE::pointer	sleRippleState	= entryCache(ltRIPPLE_STATE, Ledger::getRippleStateIndex(uToAccountID, uFromAccountID, uCurrencyID));
+
+	assert(sleRippleState);
+	if (sleRippleState)
+	{
+		saBalance	= sleRippleState->getIValueFieldAmount(sfBalance);
+		if (uToAccountID < uFromAccountID)
+			saBalance.negate();
+	}
+
+	return saBalance;
+
+}
+
+STAmount TransactionEngine::rippleLimit(const uint160& uToAccountID, const uint160& uFromAccountID, const uint160& uCurrencyID)
+{
+	STAmount		saLimit;
+	SLE::pointer	sleRippleState	= entryCache(ltRIPPLE_STATE, Ledger::getRippleStateIndex(uToAccountID, uFromAccountID, uCurrencyID));
+
+	assert(sleRippleState);
+	if (sleRippleState)
+	{
+		saLimit	= sleRippleState->getIValueFieldAmount(uToAccountID < uFromAccountID ? sfLowLimit : sfHighLimit);
+	}
+
+	return saLimit;
+
+}
+
+uint32 TransactionEngine::rippleTransfer(const uint160& uIssuerID)
+{
+	SLE::pointer	sleAccount	= entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uIssuerID));
+
+	return sleAccount->getIFieldPresent(sfTransferRate)
+		? sleAccount->getIFieldU32(sfTransferRate)
+		: QUALITY_ONE;
+}
+
+// XXX Might not need this, might store in nodes on calc reverse.
+uint32 TransactionEngine::rippleQualityIn(const uint160& uToAccountID, const uint160& uFromAccountID, const uint160& uCurrencyID)
+{
+	uint32			uQualityIn;
+
+	SLE::pointer	sleRippleState	= entryCache(ltRIPPLE_STATE, Ledger::getRippleStateIndex(uToAccountID, uFromAccountID, uCurrencyID));
+
+	if (sleRippleState)
+	{
+		uQualityIn	= sleRippleState->getIFieldU32(uToAccountID < uFromAccountID ? sfLowQualityIn : sfHighQualityIn);
+	}
+	else
+	{
+		assert(false);
+		uQualityIn	= QUALITY_ONE;
+	}
+
+	return uQualityIn;
+}
+
+uint32 TransactionEngine::rippleQualityOut(const uint160& uToAccountID, const uint160& uFromAccountID, const uint160& uCurrencyID)
+{
+	uint32			uQualityOut;
+
+	SLE::pointer	sleRippleState	= entryCache(ltRIPPLE_STATE, Ledger::getRippleStateIndex(uToAccountID, uFromAccountID, uCurrencyID));
+
+	if (sleRippleState)
+	{
+		uQualityOut	= sleRippleState->getIFieldU32(uToAccountID < uFromAccountID ? sfLowQualityOut : sfHighQualityOut);
+	}
+	else
+	{
+		assert(false);
+		uQualityOut	= QUALITY_ONE;
+	}
+
+	return uQualityOut;
+}
+
+// Return how much of uIssuerID's uCurrencyID IOUs that uAccountID holds.  May be negative.
 // <-- IOU's uAccountID has of uIssuerID
-STAmount TransactionEngine::rippleHolds(const uint160& uAccountID, const uint160& uCurrency, const uint160& uIssuerID)
+STAmount TransactionEngine::rippleHolds(const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID)
 {
 	STAmount			saBalance;
-	SLE::pointer		sleRippleState	= entryCache(ltRIPPLE_STATE, Ledger::getRippleStateIndex(uAccountID, uIssuerID, uCurrency));
+	SLE::pointer		sleRippleState	= entryCache(ltRIPPLE_STATE, Ledger::getRippleStateIndex(uAccountID, uIssuerID, uCurrencyID));
 
 	if (sleRippleState)
 	{
@@ -117,12 +203,12 @@ STAmount TransactionEngine::rippleHolds(const uint160& uAccountID, const uint160
 	return saBalance;
 }
 
-// <-- saAmount: amount of uCurrency held by uAccountID. May be negative.
-STAmount TransactionEngine::accountHolds(const uint160& uAccountID, const uint160& uCurrency, const uint160& uIssuerID)
+// <-- saAmount: amount of uCurrencyID held by uAccountID. May be negative.
+STAmount TransactionEngine::accountHolds(const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID)
 {
 	STAmount	saAmount;
 
-	if (uCurrency.isZero())
+	if (uCurrencyID.isZero())
 	{
 		SLE::pointer		sleAccount	= entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uAccountID));
 
@@ -132,12 +218,12 @@ STAmount TransactionEngine::accountHolds(const uint160& uAccountID, const uint16
 	}
 	else
 	{
-		saAmount	= rippleHolds(uAccountID, uCurrency, uIssuerID);
+		saAmount	= rippleHolds(uAccountID, uCurrencyID, uIssuerID);
 
 		Log(lsINFO) << "accountHolds: "
 			<< saAmount.getFullText()
 			<< " : "
-			<< STAmount::createHumanCurrency(uCurrency)
+			<< STAmount::createHumanCurrency(uCurrencyID)
 			<< "/"
 			<< NewcoinAddress::createHumanAccountID(uIssuerID);
 	}
@@ -190,22 +276,61 @@ STAmount TransactionEngine::rippleTransit(const uint160& uSenderID, const uint16
 
 	if (uSenderID != uIssuerID && uReceiverID != uIssuerID)
 	{
-		SLE::pointer		sleIssuerAccount	= entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uIssuerID));
-		uint32				uTransitRate;
+		uint32		uTransitRate	= rippleTransfer(uIssuerID);
 
-		if (sleIssuerAccount->getIFieldPresent(sfTransferRate))
-			uTransitRate	= sleIssuerAccount->getIFieldU32(sfTransferRate);
-
-		if (uTransitRate)
+		if (QUALITY_ONE != uTransitRate)
 		{
-
-			STAmount		saTransitRate(uint160(1), uTransitRate, -9);
+			STAmount		saTransitRate(CURRENCY_ONE, uTransitRate, -9);
 
 			saTransitFee	= STAmount::multiply(saAmount, saTransitRate, saAmount.getCurrency());
 		}
 	}
 
 	return saTransitFee;
+}
+
+// Direct send w/o fees: redeeming IOUs and/or sending own IOUs.
+void TransactionEngine::rippleCredit(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount)
+{
+	uint160				uIssuerID		= saAmount.getIssuer();
+
+	assert(uSenderID == uIssuerID || uReceiverID == uIssuerID);
+
+	bool				bFlipped		= uSenderID > uReceiverID;
+	uint256				uIndex			= Ledger::getRippleStateIndex(uSenderID, uReceiverID, saAmount.getCurrency());
+	SLE::pointer		sleRippleState	= entryCache(ltRIPPLE_STATE, uIndex);
+
+	if (!sleRippleState)
+	{
+		Log(lsINFO) << "rippleCredit: Creating ripple line: " << uIndex.ToString();
+
+		STAmount	saBalance	= saAmount;
+
+		sleRippleState	= entryCreate(ltRIPPLE_STATE, uIndex);
+
+		if (!bFlipped)
+			saBalance.negate();
+
+		sleRippleState->setIFieldAmount(sfBalance, saBalance);
+		sleRippleState->setIFieldAccount(bFlipped ? sfHighID : sfLowID, uSenderID);
+		sleRippleState->setIFieldAccount(bFlipped ? sfLowID : sfHighID, uReceiverID);
+	}
+	else
+	{
+		STAmount	saBalance	= sleRippleState->getIValueFieldAmount(sfBalance);
+
+		if (!bFlipped)
+			saBalance.negate();		// Put balance in low terms.
+
+		saBalance	+= saAmount;
+
+		if (!bFlipped)
+			saBalance.negate();
+
+		sleRippleState->setIFieldAmount(sfBalance, saBalance);
+
+		entryModify(sleRippleState);
+	}
 }
 
 // Send regardless of limits.
@@ -219,42 +344,7 @@ STAmount TransactionEngine::rippleSend(const uint160& uSenderID, const uint160& 
 	if (uSenderID == uIssuerID || uReceiverID == uIssuerID)
 	{
 		// Direct send: redeeming IOUs and/or sending own IOUs.
-
-		bool				bFlipped		= uSenderID > uReceiverID;
-		uint256				uIndex			= Ledger::getRippleStateIndex(uSenderID, uReceiverID, saAmount.getCurrency());
-		SLE::pointer		sleRippleState	= entryCache(ltRIPPLE_STATE, uIndex);
-
-		if (!sleRippleState)
-		{
-			Log(lsINFO) << "rippleSend: Creating ripple line: " << uIndex.ToString();
-
-			STAmount	saBalance	= saAmount;
-
-			sleRippleState	= entryCreate(ltRIPPLE_STATE, uIndex);
-
-			if (!bFlipped)
-				saBalance.negate();
-
-			sleRippleState->setIFieldAmount(sfBalance, saBalance);
-			sleRippleState->setIFieldAccount(bFlipped ? sfHighID : sfLowID, uSenderID);
-			sleRippleState->setIFieldAccount(bFlipped ? sfLowID : sfHighID, uReceiverID);
-		}
-		else
-		{
-			STAmount	saBalance	= sleRippleState->getIValueFieldAmount(sfBalance);
-
-			if (!bFlipped)
-				saBalance.negate();		// Put balance in low terms.
-
-			saBalance	+= saAmount;
-
-			if (!bFlipped)
-				saBalance.negate();
-
-			sleRippleState->setIFieldAmount(sfBalance, saBalance);
-
-			entryModify(sleRippleState);
-		}
+		rippleCredit(uSenderID, uReceiverID, saAmount);
 
 		saActual	= saAmount;
 	}
@@ -268,8 +358,8 @@ STAmount TransactionEngine::rippleSend(const uint160& uSenderID, const uint160& 
 
 		saActual.setIssuer(uIssuerID);	// XXX Make sure this done in + above.
 
-		rippleSend(uIssuerID, uReceiverID, saAmount);
-		rippleSend(uSenderID, uIssuerID, saActual);
+		rippleCredit(uIssuerID, uReceiverID, saAmount);
+		rippleCredit(uSenderID, uIssuerID, saActual);
 	}
 
 	return saActual;
@@ -1405,12 +1495,12 @@ TransactionEngineResult TransactionEngine::doCreditSet(const SerializedTransacti
 	uint32				uQualityIn		= bQualityIn ? txn.getITFieldU32(sfQualityIn) : 0;
 	bool				bQualityOut		= txn.getITFieldPresent(sfQualityOut);
 	uint32				uQualityOut		= bQualityIn ? txn.getITFieldU32(sfQualityOut) : 0;
-	uint160				uCurrency		= saLimitAmount.getCurrency();
-	STAmount			saBalance(uCurrency);
+	uint160				uCurrencyID		= saLimitAmount.getCurrency();
+	STAmount			saBalance(uCurrencyID);
 	bool				bAddIndex		= false;
 	bool				bDelIndex		= false;
 
-	SLE::pointer		sleRippleState	= entryCache(ltRIPPLE_STATE, Ledger::getRippleStateIndex(mTxnAccountID, uDstAccountID, uCurrency));
+	SLE::pointer		sleRippleState	= entryCache(ltRIPPLE_STATE, Ledger::getRippleStateIndex(mTxnAccountID, uDstAccountID, uCurrencyID));
 	if (sleRippleState)
 	{
 		// A line exists in one or more directions.
@@ -1489,10 +1579,10 @@ TransactionEngineResult TransactionEngine::doCreditSet(const SerializedTransacti
 	else
 	{
 		// Create a new ripple line.
-		STAmount		saZero(uCurrency);
+		STAmount		saZero(uCurrencyID);
 
 		bAddIndex		= true;
-		sleRippleState	= entryCreate(ltRIPPLE_STATE, Ledger::getRippleStateIndex(mTxnAccountID, uDstAccountID, uCurrency));
+		sleRippleState	= entryCreate(ltRIPPLE_STATE, Ledger::getRippleStateIndex(mTxnAccountID, uDstAccountID, uCurrencyID));
 
 		Log(lsINFO) << "doCreditSet: Creating ripple line: " << sleRippleState->getIndex().ToString();
 
@@ -2024,7 +2114,7 @@ void TransactionEngine::calcNodeOfferReverse(
 
 // From the destination work towards the source calculating how much must be asked for.
 // --> bAllowPartial: If false, fail if can't meet requirements.
-// <-- bSuccess: true=success, false=insufficient funds.
+// <-- bSuccess: true=success, false=insufficient funds / liqudity.
 // <-> pnNodes:
 //     --> [end]saWanted.mAmount
 //     --> [all]saWanted.mCurrency
@@ -2034,29 +2124,70 @@ void TransactionEngine::calcNodeOfferReverse(
 // XXX With multiple path and due to offers, must consider consumed.
 bool TransactionEngine::calcPathReverse(PathState::pointer pspCur)
 {
-	bool					bSent		= true;
-#if 0
 	TransactionEngineResult	terResult	= tenUNKNOWN;
 
-	unsigned int	uIndex	= pspCur->vpnNodes.size() - 1;
+	unsigned int	uLast	= pspCur->vpnNodes.size() - 1;
+	unsigned int	uIndex	= pspCur->vpnNodes.size();
 
-	while (bSent && tenUNKNOWN == terResult && uIndex--)
+	while (tenUNKNOWN == terResult && uIndex--)
 	{
-		// Calculate (1) sending by fullfilling next wants and (2) setting current wants.
+		// Calculate:
+		// (1) saPrvRedeem & saPrvIssue from saCurRevRedeem & saCurRevIssue.
+		// (2) saCurWanted by summing saRevRedeem & saRevIssue. <-- XXX might not need this as it can be infered.
+		// XXX We might not need to do 0.
 
-		paymentNode&	prvPN	= uIndex ? pnNodes[uIndex-1] : pnNodes[0];
-		paymentNode&	curPN	= pnNodes[uIndex];
-		paymentNode&	nxtPN	= pnNodes[uIndex+1];
-		bool			bRedeem	= !!(curPN.uFlags & STPathElement::typeRedeem);
-		bool			bIssue	= !!(curPN.uFlags & STPathElement::typeIssue);
-		bool			bOffer	= !!(curPN.uFlags & STPathElement::typeOffer);
+		paymentNode&	prvPN			= uIndex ? pspCur->vpnNodes[uIndex-1] : pspCur->vpnNodes[0];
+		paymentNode&	curPN			= pspCur->vpnNodes[uIndex];
+		paymentNode&	nxtPN			= uIndex == uLast ? pspCur->vpnNodes[uLast] : pspCur->vpnNodes[uIndex+1];
+		bool			bAccount		= !!(curPN.uFlags & STPathElement::typeAccount);
+		bool			bRedeem			= !!(curPN.uFlags & STPathElement::typeRedeem);
+		bool			bIssue			= !!(curPN.uFlags & STPathElement::typeIssue);
+		uint160&		uPrvAccountID	= prvPN.uAccountID;
+		uint160&		uCurAccountID	= curPN.uAccountID;
+		uint160&		uNxtAccountID	= nxtPN.uAccountID;
+		uint160&		uCurrencyID		= curPN.uCurrencyID;
 
-		if (curPN.saWanted.isZero())
+		if (uIndex == uLast)
 		{
-			// Must want something.
-			terResult	= tenBAD_AMOUNT;
+			// saCurWanted set by caller.
+			uint32		uQualityIn		= rippleQualityIn(uCurAccountID, uPrvAccountID, uCurrencyID);
+			STAmount	saPrvBalance	= rippleBalance(uCurAccountID, uPrvAccountID, uCurrencyID);
+			STAmount	saPrvLimit		= rippleLimit(uCurAccountID, uPrvAccountID, uCurAccountID);
+
+			STAmount	saPrvRedeemReq	= saPrvBalance.isNative() ? -saPrvBalance : STAmount(uCurrencyID, 0);
+			STAmount&	saPrvRedeemAct	= prvPN.saRevRedeem;	// What previous should redeem with cur.
+
+			STAmount&	saPrvIssueAct	= prvPN.saRevIssue;
+			STAmount	saPrvIssueReq	= saPrvBalance.isPositive() ? saPrvLimit - saPrvBalance : saPrvLimit;
+
+			STAmount	saCurWantedReq	= pspCur->saOutReq;
+			STAmount	saCurWantedAct;
+
+			// Calculate redeem
+			if (bRedeem
+				&& saPrvRedeemReq)								// Previous has IOUs to redeem.
+			{
+				// Redeem at 1:1
+				saCurWantedAct		= MIN(saPrvRedeemReq, saCurWantedReq);
+				saPrvRedeemAct		= saCurWantedAct;
+			}
+
+			// Calculate issuing.
+			if (bIssue
+				&& saCurWantedReq != saCurWantedAct			// Need more.
+				&& saPrvIssueReq)							// Will accept IOUs.
+			{
+				// Rate: quality in : 1.0
+				calcNodeRipple(uQualityIn, QUALITY_ONE, saPrvIssueReq, saCurWantedReq, saPrvIssueAct, saCurWantedAct);
+			}
+
+			if (!saCurWantedAct)
+			{
+				// Must have processed something.
+				terResult	= tenBAD_AMOUNT;
+			}
 		}
-		else if (bOffer)
+		else if (!bAccount)
 		{
 			// Offer node.
 			// Ripple or transfering from previous node through this offer to next node.
@@ -2065,12 +2196,12 @@ bool TransactionEngine::calcPathReverse(PathState::pointer pspCur)
 			// We limit what this node sends by this nodes redeem and issue max.
 			// This allows path lists to be strictly redeem.
 			// XXX Make sure offer book was not previously mentioned.
-
-			uint160	uPrvCurrency	= curPN->uFlags & PF_WANTED_CURRENCY
+#if 0
+			uint160	uPrvCurrency	= curPN.uFlags & PF_WANTED_CURRENCY
 										? curPN->saWanted.getCurrency()
 										: saSendMax.getCurrency();
 
-			uint160	uPrvIssuer		= curPN->uFlags & PF_WANTED_ISSUER
+			uint160	uPrvIssuer		= curPN.uFlags & PF_WANTED_ISSUER
 										? curPN->saWanted.getIssuer()
 										: saSendMax.getIssuer();
 
@@ -2095,67 +2226,114 @@ bool TransactionEngine::calcPathReverse(PathState::pointer pspCur)
 
 				// Save sent amount
 			}
+#endif
 		}
-		// Account node.
-		else if (!bIssue && !bOffer)
+		// Ripple through account.
+		else if (!bIssue && !bRedeem)
 		{
-			terResult	= tenBAD_PATH;
+			// XXX This might be checked sooner.
+			terResult	= tenBAD_PATH;			// Must be able to redeem and issue.
+		}
+		else if (!uIndex)
+		{
+			// Done. No previous. We know what we would like to redeem and issue.
+			nothing();
 		}
 		else
 		{
 			// Rippling through this accounts balances.
 			// No currency change.
-			// Issuer change possible.
-			// Figuring out want current account should redeem and send.
+			// Given saCurRedeem & saCurIssue figure out saPrvRedeem & saPrvIssue.
 
-			SLE::pointer	sleRippleCur	= ;
-			SLE::pointer	sleRippleNxt	= ;
-			STAmount		saBalance		= peekBalance(curPN.uAccountID, nxtPN.uAccountID);
-			STAmount		saLimit			= peekLimit(curPN.uAccountID, nxtPN.uAccountID);
-			STAmount		saWanted		= nxtPN.saWanted;
+			uint32			uQualityIn		= rippleQualityIn(uCurAccountID, uPrvAccountID, uCurrencyID);
+			uint32			uQualityOut		= rippleQualityOut(uCurAccountID, uNxtAccountID, uCurrencyID);
+			STAmount		saPrvBalance	= rippleBalance(uCurAccountID, uPrvAccountID, uCurrencyID);
+			STAmount		saPrvLimit		= rippleLimit(uCurAccountID, uPrvAccountID, uCurrencyID);
 
-			curPN.saWanted.zero();
+			STAmount		saPrvRedeemReq	= saPrvBalance.isNegative() ? -saPrvBalance : STAmount(uCurrencyID, 0);
+			STAmount&		saPrvRedeemAct	= prvPN.saRevRedeem;
 
-			if (bRedeem && saBalance.isPositive())
-			{
-				// Allowed to redeem and have IOUs.
-				curPN.saIOURedeem	= min(saBalance, saWanted);
-				curPN.saWanted		= curPN.saIOURedeem;					// XXX Assumes we want 1::1
-				saWanted			-= curPN.saIOURedeem;
-			}
-			else
-			{
-				curPN.saIOURedeem.zero();
-			}
+			STAmount		saPrvIssueReq	= saPrvLimit - saPrvBalance;
+			STAmount&		saPrvIssueAct	= prvPN.saRevIssue;
 
-			if (bIssue							// Allowed to issue.
-				&& !saWanted.isZero()			// Need to issue.
-				&& !saBalance.isPositive())		// Can issue. (Can't if must redeem).
+			const STAmount&	saCurRedeemReq	= curPN.saRevRedeem;
+			STAmount		saCurRedeemAct;
+
+			const STAmount&	saCurIssueReq	= curPN.saRevIssue;
+			STAmount		saCurIssueAct;									// Track progess.
+
+
+			// Previous redeem part 1: redeem -> redeem
+			if (bRedeem
+				&& saCurRedeemReq					// Next wants us to redeem.
+				&& saPrvBalance.isNegative())	// Previous has IOUs to redeem.
 			{
-				curPN.saIOUIssue	= min(saLimit+saBalance, saWanted);
-				curPN.saWanted		+= curPN.saIOUIssue;					// XXX Assumes we want 1::1
-			}
-			else
-			{
-				curPN.saIOUIssue.zero();
+				// Rate : 1.0 : quality out
+
+				calcNodeRipple(QUALITY_ONE, uQualityOut, saPrvRedeemReq, saCurRedeemReq, saPrvRedeemAct, saCurRedeemAct);
 			}
 
-			bSent	= !curPN.saIOURedeem.isZero() || !curPN.saIOUIssue.isZero();
+			// Previous redeem part 2: redeem -> issue.
+			if (bIssue
+				&& saCurRedeemReq != saCurRedeemAct		// Can only if issue if more can not be redeemed.
+				&& saPrvBalance.isNegative()			// Previous still has IOUs.
+				&& saCurIssueReq)						// Need some issued.
+			{
+				// Rate : 1.0 : transfer_rate
+				calcNodeRipple(QUALITY_ONE, rippleTransfer(uCurAccountID), saPrvRedeemReq, saCurIssueReq, saPrvRedeemAct, saCurIssueAct);
+			}
+
+			// Previous issue part 1: issue -> redeem
+			if (bRedeem
+				&& saCurRedeemReq != saCurRedeemAct		// Can only redeem if more to be redeemed.
+				&& !saPrvBalance.isNegative())			// Previous has no IOUs.
+			{
+				// Rate: quality in : quality out
+				calcNodeRipple(uQualityIn, uQualityOut, saPrvIssueReq, saCurRedeemReq, saPrvIssueAct, saCurRedeemAct);
+			}
+
+			// Previous issue part 2 : issue -> issue
+			if (bIssue
+				&& saCurRedeemReq != saCurRedeemAct		// Can only if issue if more can not be redeemed.
+				&& !saPrvBalance.isNegative()			// Previous has no IOUs.
+				&& saCurIssueReq != saCurIssueAct)		// Need some issued.
+			{
+				// Rate: quality in : 1.0
+				calcNodeRipple(uQualityIn, QUALITY_ONE, saPrvIssueReq, saCurIssueReq, saPrvIssueAct, saCurIssueAct);
+			}
+
+			if (!saCurRedeemAct && !saCurIssueAct)
+			{
+				// Must want something.
+				terResult	= tenBAD_AMOUNT;
+			}
 		}
 	}
-#endif
-	return bSent;
+
+	return tenUNKNOWN == terResult;
 }
 
 // Cur is the driver and will be filled exactly.
-void TransactionEngine::calcNodeFwd(const uint32 uQualityIn, const uint32 uQualityOut,
-	const STAmount& saPrvReq, const STAmount& saCurReq,
-	STAmount& saPrvAct, STAmount& saCurAct)
+// uQualityIn -> uQualityOut
+//   saPrvReq -> saCurReq
+//   sqPrvAct -> saCurAct
+// This routine works backwards as it calculates previous wants based on previous credit limits and current wants.
+// This routine works forwards as it calculates current deliver based on previous delivery limits and current wants.
+void TransactionEngine::calcNodeRipple(
+	const uint32 uQualityIn,
+	const uint32 uQualityOut,
+	const STAmount& saPrvReq,	// --> in limit including fees
+	const STAmount& saCurReq,	// --> out limit (driver)
+	STAmount& saPrvAct,			// <-> in limit including achieved
+	STAmount& saCurAct)			// <-> out limit achieved.
 {
+	STAmount	saPrv	= saPrvReq-saPrvAct;
+	STAmount	saCur	= saCurReq-saCurAct;
+
 	if (uQualityIn >= uQualityOut)
 	{
 		// No fee.
-		STAmount	saTransfer	= MIN(saPrvReq-saPrvAct, saCurReq-saCurAct);
+		STAmount	saTransfer	= MIN(saPrv, saCur);
 
 		saPrvAct	+= saTransfer;
 		saCurAct	+= saTransfer;
@@ -2163,9 +2341,7 @@ void TransactionEngine::calcNodeFwd(const uint32 uQualityIn, const uint32 uQuali
 	else
 	{
 		// Fee.
-		STAmount	saPrv	= saPrvReq-saPrvAct;
-		STAmount	saCur	= saCurReq-saCurAct;
-		STAmount	saCurIn	= STAmount::divide(STAmount::multiply(saCur, uQualityIn, uint160(1)), uQualityOut, uint160(1));
+		STAmount	saCurIn	= STAmount::divide(STAmount::multiply(saCur, uQualityOut, CURRENCY_ONE), uQualityIn, CURRENCY_ONE);
 
 		if (saCurIn >= saPrv)
 		{
@@ -2175,8 +2351,8 @@ void TransactionEngine::calcNodeFwd(const uint32 uQualityIn, const uint32 uQuali
 		}
 		else
 		{
-			// A part of cur. All of prv.
-			STAmount	saCurOut	= STAmount::divide(STAmount::multiply(saPrv, uQualityOut, uint160(1)), uQualityIn, uint160(1));
+			// A part of cur. All of prv. (cur as driver)
+			STAmount	saCurOut	= STAmount::divide(STAmount::multiply(saPrv, uQualityIn, CURRENCY_ONE), uQualityOut, CURRENCY_ONE);
 
 			saCurAct	+= saCurOut;
 			saPrvAct	= saPrvReq;
@@ -2191,22 +2367,20 @@ void TransactionEngine::calcNodeFwd(const uint32 uQualityIn, const uint32 uQuali
 //     --> [all]saWanted.IOURedeem
 //     --> [all]saWanted.IOUIssue
 //     --> [all]saAccount
-// XXX This path becomes dirty if saSendMaxFirst must be changed.
 void TransactionEngine::calcPathForward(PathState::pointer pspCur)
 {
-#if 0
-	TransactionEngineResult	terResult	= tenUNKNOWN;
 	unsigned int			uIndex	= 0;
 
 	unsigned int			uEnd	= pspCur->vpnNodes.size();
 	unsigned int			uLast	= uEnd - 1;
 
-	while (tenUNKNOWN == terResult && uIndex != uEnd)
+	while (uIndex != uEnd)
 	{
 		// Calculate (1) sending by fullfilling next wants and (2) setting current wants.
 
-		paymentNode&	prvPN	= uIndex ? pnNodes[uIndex-1] : pnNodes[0];
-		paymentNode&	curPN	= pnNodes[uIndex];
+		paymentNode&	prvPN	= uIndex ? pspCur->vpnNodes[uIndex-1] : pspCur->vpnNodes[0];
+		paymentNode&	curPN	= pspCur->vpnNodes[uIndex];
+		paymentNode&	nxtPN	= uIndex == uLast ? pspCur->vpnNodes[uLast] : pspCur->vpnNodes[uIndex+1];
 
 		// XXX Assume rippling.
 
@@ -2218,8 +2392,8 @@ void TransactionEngine::calcPathForward(PathState::pointer pspCur)
 			STAmount&	saCurIssueReq	= curPN.saRevIssue;
 			STAmount&	saCurIssueAct	= curPN.saFwdIssue;
 
-			STAmount&	saCurSendMaxReq	= curPN.saSendMax;
-			STAmount	saCurSendMaxAct;
+			STAmount&	saCurSendMaxReq	= pspCur->saInReq;
+			STAmount&	saCurSendMaxAct = pspCur->saInAct;
 
 			if (saCurRedeemReq)
 			{
@@ -2238,50 +2412,55 @@ void TransactionEngine::calcPathForward(PathState::pointer pspCur)
 		else if (uIndex == uLast)
 		{
 			// Last node.  Accept all funds.  Calculate amount actually to credit.
-			uint32		uQualityIn		= peekQualityIn(curPN.uAccountID, prvPN.uAccountID);
+			uint32		uQualityIn		= rippleQualityIn(curPN.uAccountID, prvPN.uAccountID, curPN.uCurrencyID);
 			STAmount&	saPrvRedeemReq	= prvPN.saFwdRedeem;
 			STAmount&	saPrvIssueReq	= prvPN.saFwdIssue;
 			STAmount	saPrvIssueAct	= uQualityIn >= QUALITY_ONE
-											? saPrvIssueReq								// No fee.
-											: multiply(saPrvIssueReq, uQualityIn, _);	// Fee.
-			STAmount&	saCurReceive	= curPN.saReceive;
+											? saPrvIssueReq														// No fee.
+											: STAmount::multiply(saPrvIssueReq, uQualityIn, curPN.uCurrencyID);	// Fee.
+			STAmount&	saCurReceive	= pspCur->saOutAct;
 
 			// Amount to credit.
 			saCurReceive	= saPrvRedeemReq+saPrvIssueAct;
 
 			// Actually receive.
-			rippleCredit(curPN.uAccountID, prvPN.uAccountID, saPrvRedeemReq + saPrvIssueReq);
+			rippleCredit(curPN.uAccountID, prvPN.uAccountID, saCurReceive);
 		}
 		else
 		{
 			// Handle middle node.
 			// The previous nodes tells want it wants to push through to current.
-			// The current node know what it woud push through next.
+			// The current node know what it would push through next.
 			// Determine for the current node:
 			// - Output to next node minus fees.
 			// Perform balance adjustment with previous.
 			// All of previous output is consumed.
 
-			STAmount	saSrcRedeem;	// To start, redeeming none.
-			STAmount	saSrcIssue;		// To start, issuing none.
-			STAmount	saDstRedeem;
+			uint160&	uCurrencyID		= curPN.uCurrencyID;
 
-			// Have funds in previous node to transfer.
-			uint32	uQualityIn	= peekQualityIn(curPN.uAccountID, prvPN.uAccountID);
-			uint32	uQualityOut	= peekQualityOut(curPN.uAccountID, nxtPN.uAccountID);
+			uint160&	uPrvAccountID	= prvPN.uAccountID;
+			uint160&	uCurAccountID	= curPN.uAccountID;
+			uint160&	uNxtAccountID	= nxtPN.uAccountID;
 
 			STAmount&	saPrvRedeemReq	= prvPN.saFwdRedeem;
 			STAmount	saPrvRedeemAct;
-			STAmount&	saCurRedeemReq	= curPN.saRevRedeem;
-			STAmount&	saCurRedeemAct	= curPN.saFwdRedeem;
 			STAmount&	saPrvIssueReq	= prvPN.saFwdIssue;
 			STAmount	saPrvIssueAct;
+
+			STAmount&	saCurRedeemReq	= curPN.saRevRedeem;
+			STAmount&	saCurRedeemAct	= curPN.saFwdRedeem;
+			STAmount&	saCurIssueReq	= curPN.saRevIssue;
+			STAmount&	saCurIssueAct	= curPN.saFwdIssue;
+
+			// Have funds in previous node to transfer.
+			uint32		uQualityIn		= rippleQualityIn(uCurAccountID, uPrvAccountID, uCurrencyID);
+			uint32		uQualityOut		= rippleQualityOut(uCurAccountID, uNxtAccountID, uCurrencyID);
 
 			// Previous redeem part 1: redeem -> redeem
 			if (saPrvRedeemReq != saPrvRedeemAct)			// Previous wants to redeem. To next must be ok.
 			{
 				// Rate : 1.0 : quality out
-				calcNodeFwd(QUALITY_ONE, uQualityOut, saPrvRedeemReq, saCurRedeemReq, saPrvRedeemAct, saCurRedeemAct);
+				calcNodeRipple(QUALITY_ONE, uQualityOut, saPrvRedeemReq, saCurRedeemReq, saPrvRedeemAct, saCurRedeemAct);
 			}
 
 			// Previous redeem part 2: redeem -> issue.
@@ -2290,8 +2469,8 @@ void TransactionEngine::calcPathForward(PathState::pointer pspCur)
 			if (saPrvRedeemReq != saPrvRedeemAct			// Previous still wants to redeem.
 				&& saCurRedeemReq == saCurRedeemAct)		// Current has more to redeem to next.
 			{
-				// Rate : 1.0 : 1.0 + transfer_rate
-				calcNodeFwd(QUALITY_ONE, QUALITY_ONE+peekTransfer(curPN.uAccountID), saPrvRedeemReq, saCurIssueReq, saPrvRedeemAct, saCurIssueAct);
+				// Rate : 1.0 : transfer_rate
+				calcNodeRipple(QUALITY_ONE, rippleTransfer(uCurAccountID), saPrvRedeemReq, saCurIssueReq, saPrvRedeemAct, saCurIssueAct);
 			}
 
 			// Previous issue part 1: issue -> redeem
@@ -2299,21 +2478,21 @@ void TransactionEngine::calcPathForward(PathState::pointer pspCur)
 				&& saCurRedeemReq == saCurRedeemAct)		// Current has more to redeem to next.
 			{
 				// Rate: quality in : quality out
-				calcNodeFwd(uQualityIn, uQualityOut, saPrvIssueReq, saCurRedeemReq, saPrvIssueAct, saCurRedeemAct);
+				calcNodeRipple(uQualityIn, uQualityOut, saPrvIssueReq, saCurRedeemReq, saPrvIssueAct, saCurRedeemAct);
 			}
 
 			// Previous issue part 2 : issue -> issue
 			if (saPrvIssueReq != saPrvIssueAct)				// Previous wants to issue. To next must be ok.
 			{
 				// Rate: quality in : 1.0
-				calcNodeFwd(uQualityIn, QUALITY_ONE, saPrvIssueReq, saCurIssueReq, saPrvIssueAct, saCurIssueAct);
+				calcNodeRipple(uQualityIn, QUALITY_ONE, saPrvIssueReq, saCurIssueReq, saPrvIssueAct, saCurIssueAct);
 			}
 
 			// Adjust prv --> cur balance : take all inbound
-			rippleCredit(cur, prv, saPrvRedeemReq + saPrvIssueReq);
+			// XXX Currency must be in amount.
+			rippleCredit(uCurAccountID, uPrvAccountID, saPrvRedeemReq + saPrvIssueReq);
 		}
 	}
-#endif
 }
 
 bool PathState::less(const PathState::pointer& lhs, const PathState::pointer& rhs)
@@ -2324,8 +2503,8 @@ bool PathState::less(const PathState::pointer& lhs, const PathState::pointer& rh
 		return lhs->uQuality > rhs->uQuality;	// Bigger is worse.
 
 	// Best quanity is second rank.
-	if (lhs->saOut != rhs->saOut)
-		return lhs->saOut < rhs->saOut;			// Smaller is worse.
+	if (lhs->saOutAct != rhs->saOutAct)
+		return lhs->saOutAct < rhs->saOutAct;	// Smaller is worse.
 
 	// Path index is third rank.
 	return lhs->mIndex > rhs->mIndex;			// Bigger is worse.
@@ -2345,15 +2524,17 @@ PathState::PathState(
 {
 	lesEntries				= lesSource.duplicate();
 
+	saOutReq				= saSend;
+	saInReq					= saSendMax;
+
 	paymentNode	pnFirst;
 	paymentNode	pnLast;
 
-	pnLast.bPartialPayment	= bPartialPayment;
-	pnLast.uAccount			= uReceiverID;
-	pnLast.saWanted			= saSend;
+	pnLast.uAccountID	= uReceiverID;
+	pnLast.uCurrencyID	= saOutReq.getCurrency();
 
-	pnFirst.uAccount		= uSenderID;
-	pnFirst.saWanted		= saSendMax;
+	pnFirst.uAccountID	= uSenderID;
+	pnFirst.uCurrencyID	= saSendMax.getCurrency();
 
 	vpnNodes.push_back(pnFirst);
 	vpnNodes.push_back(pnLast);
