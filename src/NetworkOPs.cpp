@@ -461,9 +461,9 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 		}
 	}
 
-	if (switchLedger && (closedLedger == prevClosedLedger))
+	if (switchLedgers && (closedLedger == prevClosedLedger))
 	{ // don't switch to our own previous ledger
-		NetworkClosed = ourClosed->getHash();
+		networkClosed = ourClosed->getHash();
 		switchLedgers = false;
 	}
 	else
