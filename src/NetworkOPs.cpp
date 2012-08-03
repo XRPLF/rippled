@@ -526,7 +526,10 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 void NetworkOPs::switchLastClosedLedger(Ledger::pointer newLedger, bool duringConsensus)
 { // set the newledger as our last closed ledger -- this is abnormal code
 
-	Log(lsERROR) << "JUMP last closed ledger to " << newLedger->getHash().GetHex();
+	if (duringConsensus)
+		Log(lsERROR) << "JUMPdc last closed ledger to " << newLedger->getHash().GetHex();
+	else
+		Log(lsERROR) << "JUMP last closed ledger to " << newLedger->getHash().GetHex();
 
 	newLedger->setClosed();
 	Ledger::pointer openLedger = boost::make_shared<Ledger>(false, boost::ref(*newLedger));
