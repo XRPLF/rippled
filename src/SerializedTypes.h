@@ -526,7 +526,7 @@ public:
 		typeCurrency	= 0x10,	// Currency follows.
 		typeIssuer		= 0x20,	// Issuer follows.
 		typeBoundary	= 0xFF, // Boundary between alternate paths.
-		typeStrayBits	= 0xC0,	// Bits that must be zero.
+		typeValidBits	= 0x3E,	// Bits that may be non-zero.
 	};
 
 protected:

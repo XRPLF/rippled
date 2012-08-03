@@ -101,10 +101,12 @@ enum TransactionEngineParams
 };
 
 typedef struct {
-	uint16							uFlags;				// --> from path
+	uint16							uFlags;				// --> From path.
 
-	uint160							uAccountID;			// --> recieving/sending account
-	uint160							uCurrencyID;		// --> currency to recieve
+	uint160							uAccountID;			// --> Recieving/sending account.
+	uint160							uCurrencyID;		// --> Currency to recieve.
+														// --- For offer's next has currency out.
+	uint160							uIssuerID;			// --> Currency's issuer
 
 	// Computed by Reverse.
 	STAmount						saRevRedeem;		// <-- Amount to redeem to next.
@@ -119,9 +121,11 @@ typedef struct {
 // Hold a path state under incremental application.
 class PathState
 {
+protected:
+	bool pushNode(int iType, uint160 uAccountID, uint160 uCurrencyID, uint160 uIssuerID);
+
 public:
 	typedef boost::shared_ptr<PathState> pointer;
-
 
 	std::vector<paymentNode>	vpnNodes;
 	LedgerEntrySet				lesEntries;

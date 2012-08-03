@@ -22,7 +22,8 @@
 #define RIPPLE_PATHS_MAX	3
 
 #define QUALITY_ONE			100000000	// 10e9
-#define CURRENCY_ONE		uint160(1)
+#define CURRENCY_ONE		uint160(1)	// Used as a place holder
+#define ACCOUNT_ONE			uint160(1)	// Used as a place holder
 
 // static STAmount saOne(CURRENCY_ONE, 1, 0);
 
@@ -2510,6 +2511,85 @@ bool PathState::less(const PathState::pointer& lhs, const PathState::pointer& rh
 	return lhs->mIndex > rhs->mIndex;			// Bigger is worse.
 }
 
+// <-- bValid: true, if node is valid.
+bool PathState::pushNode(int iType, uint160 uAccountID, uint160 uCurrencyID, uint160 uIssuerID)
+{
+			paymentNode		pnCur;
+			bool			bFirst		= vpnNodes.empty();
+	const	paymentNode&	pnPrv		= bFirst ? paymentNode() : vpnNodes.back();
+			bool			bAccount	= !!(iType & STPathElement::typeAccount);
+			bool			bCurrency	= !!(iType & STPathElement::typeCurrency);
+			bool			bIssuer		= !!(iType & STPathElement::typeIssuer);
+			bool			bRedeem		= !!(iType & STPathElement::typeRedeem);
+			bool			bIssue		= !!(iType & STPathElement::typeIssue);
+			bool			bValid		= true;
+
+	pnCur.uFlags		= iType;
+
+	if (iType & ~STPathElement::typeValidBits)
+	{
+		bValid	= false;
+	}
+	else if (bAccount)
+	{
+		if (bRedeem || bIssue)
+		{
+			// Account link
+
+			pnCur.uAccountID	= uAccountID;
+			pnCur.uCurrencyID	= bCurrency ? uCurrencyID : pnPrv.uCurrencyID;
+			pnCur.uIssuerID		= bIssuer ? uIssuerID : uAccountID;
+
+			// An intermediate node may be implied.
+
+			// An offer may be implied
+			if (uCurrencyID != pnPrv.uCurrencyID)
+			{
+				// Implied preceeding offer.
+
+				bValid	= pushNode(
+					0,
+					ACCOUNT_ONE,
+					CURRENCY_ONE,	// Inherit from previous
+					ACCOUNT_ONE);	// Inherit from previous
+			}
+			else if (uIssuerID != pnPrv.uIssuerID)
+			{
+				// Implied preceeding account.
+
+				bValid	= pushNode(
+					STPathElement::typeAccount
+						| STPathElement::typeRedeem
+						| STPathElement::typeIssue,
+					uIssuerID,
+					CURRENCY_ONE,	// Inherit from previous
+					ACCOUNT_ONE);	// Default same as account.
+			}
+		}
+		else
+		{
+			bValid	= false;
+		}
+	}
+	else
+	{
+		// Offer link
+		if (bRedeem || bIssue)
+		{
+			bValid	= false;
+		}
+		else
+		{
+			pnCur.uCurrencyID	= bCurrency ? uCurrencyID : pnPrv.uCurrencyID;
+			pnCur.uIssuerID		= bIssuer ? uIssuerID : uAccountID;
+		}
+	}
+
+	vpnNodes.push_back(pnCur);
+
+	return bValid;
+}
+
 PathState::PathState(
 	int						iIndex,
 	const LedgerEntrySet&	lesSource,
@@ -2527,17 +2607,14 @@ PathState::PathState(
 	saOutReq				= saSend;
 	saInReq					= saSendMax;
 
-	paymentNode	pnFirst;
-	paymentNode	pnLast;
+	pushNode(STPathElement::typeAccount, uSenderID, saSendMax.getCurrency(), saSendMax.getIssuer());
 
-	pnLast.uAccountID	= uReceiverID;
-	pnLast.uCurrencyID	= saOutReq.getCurrency();
+	BOOST_FOREACH(const STPathElement& speElement, spSourcePath)
+	{
+		pushNode(speElement.getNodeType(), speElement.getAccountID(), speElement.getCurrency(), speElement.getIssuerID());
+	}
 
-	pnFirst.uAccountID	= uSenderID;
-	pnFirst.uCurrencyID	= saSendMax.getCurrency();
-
-	vpnNodes.push_back(pnFirst);
-	vpnNodes.push_back(pnLast);
+	pushNode(STPathElement::typeAccount, uReceiverID, saOutReq.getCurrency(), saOutReq.getIssuer());
 }
 
 // Calculate the next increment of a path.

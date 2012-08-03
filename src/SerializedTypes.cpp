@@ -318,13 +318,13 @@ STPathSet* STPathSet::construct(SerializerIterator& s, const char *name)
 				return new STPathSet(name, paths);
 			}
 		}
-		else if (iType & STPathElement::typeStrayBits)
+		else if (iType & ~STPathElement::typeValidBits)
 		{
 			throw std::runtime_error("bad path element");
 		}
 		else
 		{
-			bool	bAccount		= !!(iType & STPathElement::typeAccount);
+			bool	bAccount	= !!(iType & STPathElement::typeAccount);
 			bool	bCurrency	= !!(iType & STPathElement::typeCurrency);
 			bool	bIssuer		= !!(iType & STPathElement::typeIssuer);
 
