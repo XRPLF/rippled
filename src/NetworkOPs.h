@@ -46,6 +46,10 @@ public:
 	};
 
 protected:
+	typedef boost::unordered_map<uint160,boost::unordered_set<InfoSub*> >				subInfoMapType;
+	typedef boost::unordered_map<uint160,boost::unordered_set<InfoSub*> >::value_type	subInfoMapValue;
+	typedef boost::unordered_map<uint160,boost::unordered_set<InfoSub*> >::iterator		subInfoMapIterator;
+
 	OperatingMode						mMode;
 	boost::posix_time::ptime			mConnectTime;
 	boost::asio::deadline_timer			mNetTimer;
@@ -54,16 +58,12 @@ protected:
 	LedgerMaster*						mLedgerMaster;
 	LedgerAcquire::pointer				mAcquiringLedger;
 
-	void setMode(OperatingMode);
-
-	typedef boost::unordered_map<uint160,boost::unordered_set<InfoSub*> >				subInfoMapType;
-	typedef boost::unordered_map<uint160,boost::unordered_set<InfoSub*> >::value_type	subInfoMapValue;
-	typedef boost::unordered_map<uint160,boost::unordered_set<InfoSub*> >::iterator		subInfoMapIterator;
+	int									mTimeOffset;
 
 	// last ledger close
-	int mLastCloseProposers, mLastCloseConvergeTime;
-	uint256 mLastCloseHash;
-	uint32 mLastCloseNetTime;
+	int									mLastCloseProposers, mLastCloseConvergeTime;
+	uint256								mLastCloseHash;
+	uint32								mLastCloseNetTime;
 
 	// XXX Split into more locks.
     boost::interprocess::interprocess_upgradable_mutex	mMonitorLock;
@@ -74,6 +74,8 @@ protected:
 	boost::unordered_set<InfoSub*>						mSubLedgerAccounts;		// ledger accepteds + affected accounts
 	boost::unordered_set<InfoSub*>						mSubTransaction;		// all transactions
 //	subInfoMapType										mSubTransactionAccounts;
+
+	void setMode(OperatingMode);
 
 	Json::Value transJson(const SerializedTransaction& stTxn, TransactionEngineResult terResult, const std::string& strStatus, int iSeq, const std::string& strType);
 	void pubTransactionAll(const Ledger::pointer& lpCurrent, const SerializedTransaction& stTxn, TransactionEngineResult terResult, const char* pState);
