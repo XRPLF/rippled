@@ -150,10 +150,18 @@ boost::unordered_map<uint256, int> ValidationCollection::getCurrentValidations()
 				it = mCurrentValidations.erase(it);
 			else
 			{
-				if (pair.newest)
-					++ret[pair.newest->getLedgerHash()];
 				if (pair.oldest)
+				{
+					Log(lsTRACE) << "OLD " << pair.oldest->getLedgerHash().GetHex() << " " <<
+						boost::lexical_cast<std::string>(pair.oldest->getCloseTime());
 					++ret[pair.oldest->getLedgerHash()];
+				}
+				if (pair.newest)
+				{
+					Log(lsTRACE) << "NEW " << pair.newest->getLedgerHash().GetHex() << " " <<
+						boost::lexical_cast<std::string>(pair.newest->getCloseTime());
+					++ret[pair.newest->getLedgerHash()];
+				}
 				++it;
 			}
 		}
