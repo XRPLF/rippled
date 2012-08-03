@@ -7,8 +7,9 @@
 
 bool ValidationCollection::addValidation(SerializedValidation::pointer val)
 {
+	NewcoinAddress signer = val->getSignerPublic();
 	bool isCurrent = false;
-	if (theApp->getUNL().nodeInUNL(val->getSignerPublic()))
+	if (theApp->getUNL().nodeInUNL(signer))
 	{
 		val->setTrusted();
 		uint32 now = theApp->getOPs().getNetworkTimeNC();
@@ -20,7 +21,7 @@ bool ValidationCollection::addValidation(SerializedValidation::pointer val)
 	}
 
 	uint256 hash = val->getLedgerHash();
-	uint160 node = val->getSignerPublic().getNodeID();
+	uint160 node = signer.getNodeID();
 
 	{
 		boost::mutex::scoped_lock sl(mValidationLock);
@@ -39,7 +40,7 @@ bool ValidationCollection::addValidation(SerializedValidation::pointer val)
 		}
 	}
 
-	Log(lsINFO) << "Val for " << hash.GetHex() << " from " << val->getSignerPublic().humanNodePublic()
+	Log(lsINFO) << "Val for " << hash.GetHex() << " from " << signer.humanNodePublic()
 		<< " added " << (val->isTrusted() ? "trusted" : "UNtrusted");
 	return isCurrent;
 }
@@ -50,7 +51,8 @@ ValidationSet ValidationCollection::getValidations(const uint256& ledger)
 	{
 		boost::mutex::scoped_lock sl(mValidationLock);
 		boost::unordered_map<uint256, ValidationSet>::iterator it = mValidations.find(ledger);
-		if (it != mValidations.end()) ret = it->second;
+		if (it != mValidations.end())
+			ret = it->second;
 	}
 	return ret;
 }
@@ -70,7 +72,7 @@ void ValidationCollection::getValidationCount(const uint256& ledger, bool curren
 			{
 				uint32 closeTime = vit->second->getCloseTime();
 				if ((now < closeTime) || (now > (closeTime + 2 * LEDGER_MAX_INTERVAL)))
-					trusted = false;
+					isTrusted = false;
 			}
 			if (isTrusted)
 				++trusted;
