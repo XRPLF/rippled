@@ -114,6 +114,7 @@ public:
 	const boost::ptr_vector<TransactionMetaNodeEntry>& peekEntries() const		{ return mEntries; }
 
 	TransactionMetaNodeEntry* findEntry(int nodeType);
+	TMNEBalance* findBalance();
 	void addNode(TransactionMetaNodeEntry*);
 
 	bool operator<(const TransactionMetaNode& n) const	{ return mNode < n.mNode; }
@@ -126,6 +127,11 @@ public:
 	TransactionMetaNode(const uint256&node, SerializerIterator&);
 	void addRaw(Serializer&);
 	Json::Value getJson(int) const;
+
+	void threadNode(const uint256& previousTransaction, uint32 previousLedger);
+	void deleteUnfunded(const STAmount& firstBalance, const STAmount& secondBalance);
+	void adjustBalance(unsigned flags, const STAmount &amount, bool signedBy);
+	void adjustBalances(unsigned flags, const STAmount &firstAmt, const STAmount &secondAmt);
 };
 
 
@@ -148,16 +154,11 @@ public:
 	void swap(TransactionMetaSet&);
 
 	bool isNodeAffected(const uint256&) const;
+	TransactionMetaNode& getAffectedNode(const uint256&);
 	const TransactionMetaNode& peekAffectedNode(const uint256&) const;
 
 	Json::Value getJson(int) const;
 	void addRaw(Serializer&);
-
-	void threadNode(const uint256& node, const uint256& previousTransaction, uint32 previousLedger);
-	bool signedBy(const uint256& node, const STAmount& fee);
-	bool deleteUnfunded(const uint256& node, const STAmount& firstBalance, const STAmount& secondBalance);
-	bool adjustBalance(const uint256& node, unsigned flags, const STAmount &amount);
-	bool adjustBalances(const uint256& node, unsigned flags, const STAmount &firstAmt, const STAmount &secondAmt);
 };
 
 #endif

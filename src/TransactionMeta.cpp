@@ -152,6 +152,17 @@ TransactionMetaNodeEntry* TransactionMetaNode::findEntry(int nodeType)
 	return NULL;
 }
 
+TMNEBalance* TransactionMetaNode::findBalance()
+{
+	for (boost::ptr_vector<TransactionMetaNodeEntry>::iterator it = mEntries.begin(), end = mEntries.end();
+			it != end; ++it)
+		if (it->getType() == TransactionMetaNodeEntry::TMNChangedBalance)
+			return dynamic_cast<TMNEBalance *>(&*it);
+	TMNEBalance* node = new TMNEBalance();
+	mEntries.push_back(node);
+	return node;
+}
+
 void TransactionMetaNode::addNode(TransactionMetaNodeEntry* node)
 {
 	mEntries.push_back(node);
@@ -261,7 +272,7 @@ void TransactionMetaSet::threadNode(const uint256& node, const uint256& prevTx, 
 	modifyNode(node).thread(prevTx, prevLgr);
 }
 
-bool TransactionMetaSet::deleteUnfunded(const uint256& nodeID,
+void TransactionMetaSet::deleteUnfunded(const uint256& nodeID,
 	const STAmount& firstBalance, const STAmount &secondBalance)
 {
 	TransactionMetaNode& node = modifyNode(nodeID);
@@ -270,5 +281,4 @@ bool TransactionMetaSet::deleteUnfunded(const uint256& nodeID,
 		entry->setBalances(firstBalance, secondBalance);
 	else
 		node.addNode(new TMNEUnfunded(firstBalance, secondBalance));
-	return	true;
 }
