@@ -485,7 +485,6 @@ bool LedgerAcquireMaster::gotLedgerData(newcoin::TMLedgerData& packet, Peer::poi
 			ledger->trigger(peer);
 			return true;
 		}
-		Log(lsDEBUG) << "liBASE includes ASbase";
 		if (!ledger->takeAsRootNode(strCopy(packet.nodes(1).nodedata())))
 		{
 			Log(lsWARNING) << "Included ASbase invalid";
@@ -495,7 +494,6 @@ bool LedgerAcquireMaster::gotLedgerData(newcoin::TMLedgerData& packet, Peer::poi
 			ledger->trigger(peer);
 			return true;
 		}
-		Log(lsDEBUG) << "liBASE includes TXbase";
 		if (!ledger->takeTxRootNode(strCopy(packet.nodes(2).nodedata())))
 			Log(lsWARNING) << "Invcluded TXbase invalid";
 		ledger->trigger(peer);
