@@ -267,6 +267,7 @@ TransactionMetaNode& TransactionMetaSet::modifyNode(const uint256& node)
 	return mNodes.insert(std::make_pair(node, TransactionMetaNode(node))).first->second;
 }
 
+#if 0
 void TransactionMetaSet::threadNode(const uint256& node, const uint256& prevTx, uint32 prevLgr)
 {
 	modifyNode(node).thread(prevTx, prevLgr);
@@ -282,3 +283,4 @@ void TransactionMetaSet::deleteUnfunded(const uint256& nodeID,
 	else
 		node.addNode(new TMNEUnfunded(firstBalance, secondBalance));
 }
+#endif 
