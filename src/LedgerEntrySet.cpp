@@ -169,9 +169,11 @@ void LedgerEntrySet::entryDelete(SLE::pointer& sle, bool unfunded)
 			if (unfunded)
 			{
 				assert(sle->getType() == ltOFFER); // only offers can be unfunded
+#if 0
 				mSet.deleteUnfunded(sle->getIndex(),
 					sle->getIValueFieldAmount(sfTakerPays),
 					sle->getIValueFieldAmount(sfTakerGets));
+#endif
 			}
 			break;
 
