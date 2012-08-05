@@ -13,6 +13,7 @@ class SNTPQuery
 public:
 	bool				mReceivedReply;
 	time_t				mLocalTimeSent;
+	int					mQueryMagic;
 
 	SNTPQuery(time_t j = (time_t) -1)	: mReceivedReply(false), mLocalTimeSent(j) { ; }
 };
