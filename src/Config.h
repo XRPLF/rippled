@@ -54,6 +54,7 @@ public:
 	std::string					VALIDATORS_SITE;		// Where to find validators.txt on the Internet.
 	std::vector<std::string>	VALIDATORS;				// Validators from newcoind.cfg.
 	std::vector<std::string>	IPS;					// Peer IPs from newcoind.cfg.
+	std::vector<std::string>	SNTP_SERVERS;			// SNTP servers from newcoind.cfg.
 
 	// Network parameters
 	int							NETWORK_START_TIME;		// The Unix time we start ledger 0.

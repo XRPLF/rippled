@@ -16,6 +16,7 @@
 #include "TaggedCache.h"
 #include "ValidationCollection.h"
 #include "Suppression.h"
+#include "SNTPClient.h"
 #include "../database/database.h"
 
 
@@ -50,6 +51,7 @@ class Application
 	ValidationCollection	mValidations;
 	SuppressionTable		mSuppressions;
 	HashedObjectStore		mHashedObjectStore;
+	SNTPClient				mSNTPClient;
 
 	DatabaseCon				*mRpcDB, *mTxnDB, *mLedgerDB, *mWalletDB, *mHashNodeDB, *mNetNodeDB;
 

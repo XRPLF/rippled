@@ -23,6 +23,7 @@
 #define SECTION_RPC_ALLOW_REMOTE		"rpc_allow_remote"
 #define SECTION_RPC_IP					"rpc_ip"
 #define SECTION_RPC_PORT				"rpc_port"
+#define SECTION_SNTP					"sntp_servers"
 #define SECTION_UNL_DEFAULT				"unl_default"
 #define SECTION_VALIDATION_QUORUM		"validation_quorum"
 #define SECTION_VALIDATION_SEED			"validation_seed"
@@ -191,6 +192,12 @@ void Config::load()
 			{
 				IPS	= *smtTmp;
 				// sectionEntriesPrint(&IPS, SECTION_IPS);
+			}
+
+			smtTmp = sectionEntries(secConfig, SECTION_SNTP);
+			if (smtTmp)
+			{
+				SNTP_SERVERS = *smtTmp;
 			}
 
 			(void) sectionSingleB(secConfig, SECTION_VALIDATORS_SITE, VALIDATORS_SITE);

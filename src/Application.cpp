@@ -38,7 +38,8 @@ DatabaseCon::~DatabaseCon()
 Application::Application() :
 	mUNL(mIOService),
 	mNetOps(mIOService, &mMasterLedger), mTempNodeCache(16384, 90), mHashedObjectStore(16384, 300),
-	mRpcDB(NULL), mTxnDB(NULL), mLedgerDB(NULL), mWalletDB(NULL), mHashNodeDB(NULL), mNetNodeDB(NULL),
+	mSNTPClient(mIOService), mRpcDB(NULL), mTxnDB(NULL), mLedgerDB(NULL), mWalletDB(NULL),
+	mHashNodeDB(NULL), mNetNodeDB(NULL),
 	mConnectionPool(mIOService), mPeerDoor(NULL), mRPCDoor(NULL)
 {
 	RAND_bytes(mNonce256.begin(), mNonce256.size());
@@ -67,6 +68,8 @@ void Application::run()
 	assert(mTxnDB == NULL);
 	if (!theConfig.DEBUG_LOGFILE.empty())
 		Log::setLogFile(theConfig.DEBUG_LOGFILE);
+
+	mSNTPClient.init(theConfig.SNTP_SERVERS);
 
 	//
 	// Construct databases.
