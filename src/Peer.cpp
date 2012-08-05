@@ -571,15 +571,22 @@ void Peer::recvHello(newcoin::TMHello& packet)
 	// Cancel verification timeout.
 	(void) mVerifyTimer.cancel();
 
-	uint32 minTime = theApp->getOPs().getNetworkTimeNC() - 20;
-	uint32 maxTime = minTime + 20;
+	uint32 ourTime = theApp->getOPs().getNetworkTimeNC();
+	uint32 minTime = ourTime - 10;
+	uint32 maxTime = ourTime + 10;
+
+	if (packet.has_nettime())
+	{
+		int64 to = ourTime;
+		to -= packet.nettime();
+		Log(lsTRACE) << "Connect: time error " << to;
+	}
 
 	if (packet.has_nettime() && ((packet.nettime() < minTime) || (packet.nettime() > maxTime)))
 	{
 		Log(lsINFO) << "Recv(Hello): Disconnect: Clock is far off";
 	}
-	
-	if (packet.protoversionmin() < MAKE_VERSION_INT(MIN_PROTO_MAJOR, MIN_PROTO_MINOR))
+	else if (packet.protoversionmin() < MAKE_VERSION_INT(MIN_PROTO_MAJOR, MIN_PROTO_MINOR))
 	{
 		Log(lsINFO) << "Recv(Hello): Server requires protocol version " <<
 			GET_VERSION_MAJOR(packet.protoversion()) << "." << GET_VERSION_MINOR(packet.protoversion())

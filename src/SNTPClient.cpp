@@ -40,7 +40,7 @@ void SNTPClient::resolveComplete(const boost::system::error_code& error, boost::
 			time_t now = time(NULL);
 			if ((query.mLocalTimeSent == now) || ((query.mLocalTimeSent + 1) == now))
 			{
-				Log(lsINFO) << "SNTP: Redundant query suppressed";
+				Log(lsTRACE) << "SNTP: Redundant query suppressed";
 				return;
 			}
 			query.mReceivedReply = false;
@@ -57,20 +57,20 @@ void SNTPClient::receivePacket(const boost::system::error_code& error, std::size
 	if (!error)
 	{
 		boost::mutex::scoped_lock sl(mLock);
-		Log(lsINFO) << "SNTP: Packet from " << mReceiveEndpoint;
+		Log(lsTRACE) << "SNTP: Packet from " << mReceiveEndpoint;
 		std::map<boost::asio::ip::udp::endpoint, SNTPQuery>::iterator query = mQueries.find(mReceiveEndpoint);
 		if (query == mQueries.end())
-			Log(lsINFO) << "SNTP: Reply found without matching query";
+			Log(lsDEBUG) << "SNTP: Reply found without matching query";
 		else if (query->second.mReceivedReply)
-			Log(lsINFO) << "SNTP: Duplicate response to query";
+			Log(lsDEBUG) << "SNTP: Duplicate response to query";
 		else
 		{
 			query->second.mReceivedReply = true;
 			if (time(NULL) > (query->second.mLocalTimeSent + 1))
-				Log(lsINFO) << "SNTP: Late response";
+				Log(lsWARNING) << "SNTP: Late response";
 			else
 				if (bytes_xferd < 48)
-					Log(lsINFO) << "SNTP: Short reply (" << bytes_xferd << ") " << mReceiveBuffer.size();
+					Log(lsWARNING) << "SNTP: Short reply (" << bytes_xferd << ") " << mReceiveBuffer.size();
 				else
 					processReply();
 		}
@@ -84,7 +84,7 @@ void SNTPClient::receivePacket(const boost::system::error_code& error, std::size
 void SNTPClient::sendComplete(const boost::system::error_code& error, std::size_t)
 {
 	if (error)
-		Log(lsINFO) << "SNTP: Send error";
+		Log(lsWARNING) << "SNTP: Send error";
 }
 
 void SNTPClient::processReply()
@@ -107,11 +107,17 @@ void SNTPClient::processReply()
 		return;
 	}
 
-	timev -= time(NULL);
+	time_t now = time(NULL);
+	timev -= now;
 	timev -= 0x83AA7E80ULL;
-	Log(lsINFO) << "SNTP: Offset is " << timev;	
+	Log(lsTRACE) << "SNTP: Offset is " << timev;
 
-	// WRITEME
+	if ((mLastOffsetUpdate == (time_t) -1) || (mLastOffsetUpdate < (now - 180)))
+		mOffset = timev;
+	else
+		mOffset = ((mOffset * 7) + timev) / 8;
+	mLastOffsetUpdate = now;
+	Log(lsTRACE) << "SNTP: Offset is " << timev << ", new system offset is " << timev;
 }
 
 void SNTPClient::timerEntry(const boost::system::error_code& error)
@@ -148,6 +154,15 @@ void SNTPClient::queryAll()
 {
 	while(doQuery())
 		nothing();
+}
+
+bool SNTPClient::getOffset(int& offset)
+{
+	boost::mutex::scoped_lock sl(mLock);
+	if ((mLastOffsetUpdate == (time_t) -1) || ((mLastOffsetUpdate + 90) < time(NULL)))
+		return false;
+	offset = mOffset;
+	return true;
 }
 
 bool SNTPClient::doQuery()

@@ -31,7 +31,12 @@ NetworkOPs::NetworkOPs(boost::asio::io_service& io_service, LedgerMaster* pLedge
 
 boost::posix_time::ptime NetworkOPs::getNetworkTimePT()
 {
-	return boost::posix_time::second_clock::universal_time() + boost::posix_time::seconds(mTimeOffset);
+	int offset;
+	if (theApp->getSystemTimeOffset(offset))
+		offset += mTimeOffset;
+	else
+		offset = mTimeOffset;
+	return boost::posix_time::second_clock::universal_time() + boost::posix_time::seconds(offset);
 }
 
 uint32 NetworkOPs::getNetworkTimeNC()

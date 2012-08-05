@@ -69,8 +69,6 @@ void Application::run()
 	if (!theConfig.DEBUG_LOGFILE.empty())
 		Log::setLogFile(theConfig.DEBUG_LOGFILE);
 
-	mSNTPClient.init(theConfig.SNTP_SERVERS);
-
 	//
 	// Construct databases.
 	//
@@ -148,6 +146,8 @@ void Application::run()
 		assert(!!secondLedger->getAccountState(rootAddress));
 		mNetOps.setLastCloseNetTime(secondLedger->getCloseTimeNC());
 	}
+
+	mSNTPClient.init(theConfig.SNTP_SERVERS);
 
 	mNetOps.setStateTimer();
 
