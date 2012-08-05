@@ -134,14 +134,16 @@ void SNTPClient::processReply()
 	time_t now = time(NULL);
 	timev -= now;
 	timev -= NTP_UNIX_OFFSET;
-	Log(lsTRACE) << "SNTP: Offset is " << timev;
+
+	if ((timev == -1) || (timev == 1)) // small corrections likely do more harm than good
+		timev = 0;
 
 	if ((mLastOffsetUpdate == (time_t) -1) || (mLastOffsetUpdate < (now - 180)))
 		mOffset = timev;
 	else
 		mOffset = ((mOffset * 7) + timev) / 8;
 	mLastOffsetUpdate = now;
-	Log(lsTRACE) << "SNTP: Offset is " << timev << ", new system offset is " << timev;
+	Log(lsTRACE) << "SNTP: Offset is " << timev << ", new system offset is " << mOffset;
 }
 
 void SNTPClient::timerEntry(const boost::system::error_code& error)
