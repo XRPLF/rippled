@@ -3,6 +3,8 @@
 #include <boost/bind.hpp>
 #include <boost/make_shared.hpp>
 
+#include <openssl/rand.h>
+
 #include "utils.h"
 #include "Log.h"
 
@@ -63,9 +65,9 @@ void SNTPClient::resolveComplete(const boost::system::error_code& error, boost::
 			}
 			query.mReceivedReply = false;
 			query.mLocalTimeSent = now;
-			query.mQueryMagic = rand();
+			RAND_bytes(reinterpret_cast<unsigned char *>(&query.mQueryNonce), sizeof(query.mQueryNonce));
 			reinterpret_cast<uint32*>(SNTPQueryData)[NTP_OFF_XMITTS_INT] = time(NULL) + NTP_UNIX_OFFSET;
-			reinterpret_cast<uint32*>(SNTPQueryData)[NTP_OFF_XMITTS_FRAC] = query.mQueryMagic;
+			reinterpret_cast<uint32*>(SNTPQueryData)[NTP_OFF_XMITTS_FRAC] = query.mQueryNonce;
 			mSocket.async_send_to(boost::asio::buffer(SNTPQueryData, 48), *sel,
 				boost::bind(&SNTPClient::sendComplete, this,
 					boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
@@ -91,8 +93,8 @@ void SNTPClient::receivePacket(const boost::system::error_code& error, std::size
 				Log(lsWARNING) << "SNTP: Late response";
 			else if (bytes_xferd < 48)
 				Log(lsWARNING) << "SNTP: Short reply (" << bytes_xferd << ") " << mReceiveBuffer.size();
-			else if (reinterpret_cast<uint32*>(&mReceiveBuffer[0])[NTP_OFF_ORGTS_FRAC] != query->second.mQueryMagic)
-				Log(lsWARNING) << "SNTP: Reply had wrong magic number";
+			else if (reinterpret_cast<uint32*>(&mReceiveBuffer[0])[NTP_OFF_ORGTS_FRAC] != query->second.mQueryNonce)
+				Log(lsWARNING) << "SNTP: Reply had wrong nonce";
 			else
 				processReply();
 		}
