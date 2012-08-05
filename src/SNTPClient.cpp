@@ -13,6 +13,9 @@ static uint8_t SNTPQueryData[48] = {
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 };
 
+// NTP query frequency - 5 minutes
+#define NTP_QUERY_FREQUENCY		(5 * 60)
+
 // NTP timestamp constant
 #define NTP_UNIX_OFFSET			0x83AA7E80
 
@@ -40,7 +43,7 @@ SNTPClient::SNTPClient(boost::asio::io_service& service) :
 		boost::bind(&SNTPClient::receivePacket, this, boost::asio::placeholders::error,
 			boost::asio::placeholders::bytes_transferred));
 	
-	mTimer.expires_from_now(boost::posix_time::seconds(1));
+	mTimer.expires_from_now(boost::posix_time::seconds(NTP_QUERY_FREQUENCY));
 	mTimer.async_wait(boost::bind(&SNTPClient::timerEntry, this, boost::asio::placeholders::error));
 }
 
@@ -138,11 +141,13 @@ void SNTPClient::processReply()
 	if ((timev == -1) || (timev == 1)) // small corrections likely do more harm than good
 		timev = 0;
 
+	// FIXME: We really should use the median of all recent valid offsets
 	if ((mLastOffsetUpdate == (time_t) -1) || (mLastOffsetUpdate < (now - 180)))
 		mOffset = timev;
 	else
 		mOffset = ((mOffset * 7) + timev) / 8;
 	mLastOffsetUpdate = now;
+
 	Log(lsTRACE) << "SNTP: Offset is " << timev << ", new system offset is " << mOffset;
 }
 
@@ -151,7 +156,7 @@ void SNTPClient::timerEntry(const boost::system::error_code& error)
 	if (!error)
 	{
 		doQuery();
-		mTimer.expires_from_now(boost::posix_time::seconds(10));
+		mTimer.expires_from_now(boost::posix_time::seconds(NTP_QUERY_FREQUENCY));
 		mTimer.async_wait(boost::bind(&SNTPClient::timerEntry, this, boost::asio::placeholders::error));
 	}
 }

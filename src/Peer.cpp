@@ -575,12 +575,14 @@ void Peer::recvHello(newcoin::TMHello& packet)
 	uint32 minTime = ourTime - 10;
 	uint32 maxTime = ourTime + 10;
 
+#ifdef DEBUG
 	if (packet.has_nettime())
 	{
 		int64 to = ourTime;
 		to -= packet.nettime();
-		Log(lsTRACE) << "Connect: time error " << to;
+		Log(lsDEBUG) << "Connect: time offset " << to;
 	}
+#endif
 
 	if (packet.has_nettime() && ((packet.nettime() < minTime) || (packet.nettime() > maxTime)))
 	{
