@@ -541,10 +541,12 @@ void LedgerConsensus::updateOurPositions()
 		Log(lsINFO) << "CCTime: " << it->first << " has " << it->second << " out of " << thresh;
 		if (it->second > thresh)
 		{
+			Log(lsINFO) << "Close time consensus reached: " << closeTime;
 			mHaveCloseTimeConsensus = true;
 			closeTime = it->first;
 		}
 	}
+
 	if (closeTime != (mOurPosition->getCloseTime() - (mOurPosition->getCloseTime() % mCloseResolution)))
 	{
 		ourPosition = mComplete[mOurPosition->getCurrentHash()]->snapShot(true);
@@ -558,6 +560,7 @@ void LedgerConsensus::updateOurPositions()
 		if (mProposing) propose(addedTx, removedTx);
 		mapComplete(newHash, ourPosition, false);
 		Log(lsINFO) << "We change our position to " << newHash.GetHex();
+		Log(lsINFO) << " Close time " << closeTime;
 	}
 }
 
