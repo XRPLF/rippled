@@ -8,6 +8,8 @@
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/unordered/unordered_map.hpp>
 
+#include "../json/value.h"
+
 #include "key.h"
 #include "Transaction.h"
 #include "LedgerAcquire.h"
@@ -142,6 +144,7 @@ public:
 	LedgerConsensus(const uint256& prevLCLHash, Ledger::pointer previousLedger, uint32 closeTime);
 
 	int startup();
+	Json::Value getJson();
 
 	Ledger::pointer peekPreviousLedger()	{ return mPreviousLedger; }
 	uint256 getLCL()						{ return mPrevLedgerHash; }

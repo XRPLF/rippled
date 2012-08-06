@@ -956,4 +956,12 @@ void LedgerConsensus::endConsensus()
 {
 	theApp->getOPs().endConsensus(mHaveCorrectLCL);
 }
+
+Json::Value LedgerConsensus::getJson()
+{
+	Json::Value ret(Json::objectValue);
+
+	return ret;
+}
+
 // vim:ts=4

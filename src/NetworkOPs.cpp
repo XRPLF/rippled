@@ -604,12 +604,6 @@ bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash, uint
 	if (!theApp->isNew(s.getSHA512Half()))
 		return false;
 
-	if ((mMode != omFULL) && (mMode != omTRACKING))
-	{
-		Log(lsINFO) << "Received proposal when not full/tracking: " << mMode;
-		return true;
-	}
-
 	if (!mConsensus)
 	{ // FIXME: CLC
 		Log(lsWARNING) << "Received proposal when full but not during consensus window";
@@ -753,6 +747,9 @@ Json::Value NetworkOPs::getServerInfo()
 
 	if (!theConfig.VALIDATION_SEED.isValid()) info["serverState"] = "none";
 	else info["validationPKey"] = NewcoinAddress::createNodePublic(theConfig.VALIDATION_SEED).humanNodePublic();
+
+	if (mConsensus)
+		info["consensus"] = mConsensus->getJson();
 
 	return info;
 }
