@@ -201,7 +201,7 @@ LedgerConsensus::LedgerConsensus(const uint256& prevLCLHash, Ledger::pointer pre
 	assert(mPreviousMSeconds);
 
 	mCloseResolution = ContinuousLedgerTiming::getNextLedgerTimeResolution(
-		previousLedger->getCloseResolution(), previousLedger->getCloseAgree(), previousLedger->getLedgerSeq() + 1);
+		mPreviousLedger->getCloseResolution(), mPreviousLedger->getCloseAgree(), previousLedger->getLedgerSeq() + 1);
 
 	mHaveCorrectLCL = previousLedger->getHash() == prevLCLHash;
 
@@ -464,6 +464,9 @@ void LedgerConsensus::timerEntry()
 				theApp->getOPs().switchLastClosedLedger(consensus, true);
 			mPreviousLedger = consensus;
 			mHaveCorrectLCL = true;
+			mCloseResolution = ContinuousLedgerTiming::getNextLedgerTimeResolution(
+				mPreviousLedger->getCloseResolution(), mPreviousLedger->getCloseAgree(),
+				mPreviousLedger->getLedgerSeq() + 1);
 		}
 		else Log(lsINFO) << "We still don't have it";
 	}
@@ -962,8 +965,16 @@ Json::Value LedgerConsensus::getJson()
 	Json::Value ret(Json::objectValue);
 	ret["proposing"] = mProposing ? "yes" : "no";
 	ret["validating"] = mValidating ? "yes" : "no";
-	ret["synched"] = mHaveCorrectLCL ? "yes" : "no";
 	ret["proposers"] = static_cast<int>(mPeerPositions.size());
+
+	if (mHaveCorrectLCL)
+	{
+		ret["synched"] = "yes";
+		ret["ledger_seq"] = mPreviousLedger->getLedgerSeq() + 1;
+		ret["close_granularity"] = mCloseResolution;
+	}
+	else
+		ret["synched"] = "no";
 
 	switch (mState)
 	{
