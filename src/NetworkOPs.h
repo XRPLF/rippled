@@ -58,7 +58,7 @@ protected:
 	LedgerMaster*						mLedgerMaster;
 	LedgerAcquire::pointer				mAcquiringLedger;
 
-	int									mTimeOffset;
+	int									mCloseTimeOffset;
 
 	// last ledger close
 	int									mLastCloseProposers, mLastCloseConvergeTime;
@@ -88,6 +88,7 @@ public:
 
 	// network information
 	uint32 getNetworkTimeNC();
+	uint32 getCloseTimeNC();
 	boost::posix_time::ptime getNetworkTimePT();
 	uint32 getCurrentLedgerID();
 	OperatingMode getOperatingMode() { return mMode; }

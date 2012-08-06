@@ -5,7 +5,7 @@
 #	define LEDGER_IDLE_INTERVAL		15
 
 // The number of seconds a validation remains current
-#	define LEDGER_MAX_INTERVAL		60
+#	define LEDGER_MAX_INTERVAL		(LEDGER_IDLE_INTERVAL * 4)
 
 // The number of milliseconds we wait minimum to ensure participation
 #	define LEDGER_MIN_CONSENSUS		2000

@@ -404,7 +404,7 @@ void LedgerConsensus::statePreClose()
 	int proposersClosed = mPeerPositions.size();
 
 	// This ledger is open. This computes how long since the last ledger closed
-	int sinceClose = 1000 * (theApp->getOPs().getNetworkTimeNC() - theApp->getOPs().getLastCloseNetTime());
+	int sinceClose = 1000 * (theApp->getOPs().getCloseTimeNC() - theApp->getOPs().getLastCloseNetTime());
 
 	if (sinceClose >= ContinuousLedgerTiming::shouldClose(anyTransactions, mPreviousProposers, proposersClosed,
 		mPreviousMSeconds, sinceClose))
@@ -412,7 +412,7 @@ void LedgerConsensus::statePreClose()
 		Log(lsINFO) << "CLC: closing ledger";
 		mState = lcsESTABLISH;
 		mConsensusStartTime = boost::posix_time::second_clock::universal_time();
-		mCloseTime = theApp->getOPs().getNetworkTimeNC();
+		mCloseTime = theApp->getOPs().getCloseTimeNC();
 		theApp->getOPs().setLastCloseNetTime(mCloseTime);
 		statusChange(newcoin::neCLOSING_LEDGER, *mPreviousLedger);
 		takeInitialPosition(*theApp->getMasterLedger().closeLedger());
@@ -930,7 +930,7 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 		closeTotal += (closeCount / 2);
 		closeTotal /= closeCount;
 		int offset = static_cast<int>(closeTotal) - static_cast<int>(mCloseTime);
-		Log(lsINFO) << "Our clock offset is estimated at " << offset;
+		Log(lsINFO) << "Our close offset is estimated at " << offset << " (" << closeCount << ")";
 	}
 
 #ifdef DEBUG

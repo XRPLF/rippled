@@ -24,24 +24,26 @@
 // there's a functional network.
 
 NetworkOPs::NetworkOPs(boost::asio::io_service& io_service, LedgerMaster* pLedgerMaster) :
-	mMode(omDISCONNECTED),mNetTimer(io_service), mLedgerMaster(pLedgerMaster), mTimeOffset(0),
+	mMode(omDISCONNECTED),mNetTimer(io_service), mLedgerMaster(pLedgerMaster), mCloseTimeOffset(0),
 	mLastCloseProposers(0), mLastCloseConvergeTime(LEDGER_IDLE_INTERVAL)
 {
 }
 
 boost::posix_time::ptime NetworkOPs::getNetworkTimePT()
 {
-	int offset;
-	if (theApp->getSystemTimeOffset(offset))
-		offset += mTimeOffset;
-	else
-		offset = mTimeOffset;
+	int offset = 0;
+	theApp->getSystemTimeOffset(offset);
 	return boost::posix_time::second_clock::universal_time() + boost::posix_time::seconds(offset);
 }
 
 uint32 NetworkOPs::getNetworkTimeNC()
 {
 	return iToSeconds(getNetworkTimePT());
+}
+
+uint32 NetworkOPs::getCloseTimeNC()
+{
+	return iToSeconds(getNetworkTimePT() + boost::posix_time::seconds(mCloseTimeOffset));
 }
 
 uint32 NetworkOPs::getCurrentLedgerID()
