@@ -960,6 +960,25 @@ void LedgerConsensus::endConsensus()
 Json::Value LedgerConsensus::getJson()
 {
 	Json::Value ret(Json::objectValue);
+	ret["proposing"] = mProposing ? "yes" : "no";
+	ret["validating"] = mValidating ? "yes" : "no";
+	ret["synched"] = mHaveCorrectLCL ? "yes" : "no";
+	ret["proposers"] = static_cast<int>(mPeerPositions.size());
+
+	switch (mState)
+	{
+		case lcsPRE_CLOSE:	ret["state"] = "open";			break;
+		case lcsESTABLISH:	ret["state"] = "consensus";		break;
+		case lcsFINISHED:	ret["state"] = "finished";		break;
+		case lcsACCEPTED:	ret["state"] = "accepted";		break;
+	}
+
+	int v = mDisputes.size();
+	if (v != 0)
+		ret["disputes"] = v;
+
+	if (mOurPosition)
+		ret["our_position"] = mOurPosition->getJson();
 
 	return ret;
 }
