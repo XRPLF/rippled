@@ -174,6 +174,9 @@ boost::unordered_map<uint256, int> ValidationCollection::getCurrentValidations()
 
 void ValidationCollection::addDeadLedger(const uint256& ledger)
 {
+	for (std::list<uint256>::iterator it = mDeadLedgers.begin(), end = mDeadLedgers.end(); it != end; ++it)
+		if (*it == ledger)
+			return;
 	mDeadLedgers.push_back(ledger);
 	if (mDeadLedgers.size() >= 128)
 		mDeadLedgers.pop_front();
