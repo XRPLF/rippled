@@ -172,6 +172,13 @@ boost::unordered_map<uint256, int> ValidationCollection::getCurrentValidations()
 	return ret;
 }
 
+void ValidationCollection::addDeadLedger(const uint256& ledger)
+{
+	mDeadLedgers.push_back(ledger);
+	if (mDeadLedgers.size() >= 128)
+		mDeadLedgers.pop_front();
+}
+
 void ValidationCollection::flush()
 {
 		boost::mutex::scoped_lock sl(mValidationLock);

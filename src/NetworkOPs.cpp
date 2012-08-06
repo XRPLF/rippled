@@ -455,16 +455,27 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 
 	// 3) Is there a network ledger we'd like to switch to? If so, do we have it?
 	bool switchLedgers = false;
-	for(boost::unordered_map<uint256, ValidationCount>::iterator it = ledgers.begin(), end = ledgers.end();
+	std::list<uint256> deadLedgers = theApp->getValidations().getDeadLedgers();
+	for (boost::unordered_map<uint256, ValidationCount>::iterator it = ledgers.begin(), end = ledgers.end();
 		it != end; ++it)
 	{
 		Log(lsTRACE) << "L: " << it->first.GetHex() <<
 			"  t=" << it->second.trustedValidations << 	", n=" << it->second.nodesUsing;
 		if (it->second > bestVC)
 		{
-			bestVC = it->second;
-			closedLedger = it->first;
-			switchLedgers = true;
+			bool dead = false;
+			for (std::list<uint256>::iterator dit = deadLedgers.begin(), end = deadLedgers.end(); dit != end; ++it)
+				if (*dit == it->first)
+				{
+					dead = true;
+					break;
+				}
+			if (!dead)
+			{
+				bestVC = it->second;
+				closedLedger = it->first;
+				switchLedgers = true;
+			}
 		}
 	}
 
@@ -665,6 +676,7 @@ void NetworkOPs::endConsensus(bool correctLCL)
 {
 	uint256 deadLedger = theApp->getMasterLedger().getClosedLedger()->getParentHash();
 	Log(lsTRACE) << "Ledger " << deadLedger.GetHex() << " is now dead";
+	theApp->getValidations().addDeadLedger(deadLedger);
 	std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
 	for (std::vector<Peer::pointer>::const_iterator it = peerList.begin(), end = peerList.end(); it != end; ++it)
 	if (*it && ((*it)->getClosedLedgerHash() == deadLedger))
