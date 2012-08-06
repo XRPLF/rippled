@@ -698,6 +698,7 @@ bool LedgerConsensus::peerPosition(LedgerProposal::pointer newPosition)
 	}
 	else if (newPosition->getProposeSeq() == 0)
 	{ // new initial close time estimate
+		Log(lsTRACE) << "Peer reports close time as " << newPosition->getCloseTime();
 		++mCloseTimes[newPosition->getCloseTime()];
 	}
 	Log(lsINFO) << "Processing peer proposal " << newPosition->getProposeSeq() << "/"
