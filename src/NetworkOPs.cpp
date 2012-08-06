@@ -455,27 +455,16 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 
 	// 3) Is there a network ledger we'd like to switch to? If so, do we have it?
 	bool switchLedgers = false;
-	std::list<uint256> deadLedgers = theApp->getValidations().getDeadLedgers();
 	for (boost::unordered_map<uint256, ValidationCount>::iterator it = ledgers.begin(), end = ledgers.end();
 		it != end; ++it)
 	{
 		Log(lsTRACE) << "L: " << it->first.GetHex() <<
 			"  t=" << it->second.trustedValidations << 	", n=" << it->second.nodesUsing;
-		if (it->second > bestVC)
+		if ((it->second > bestVC) && !theApp->getValidations().isDeadLedger(it->first))
 		{
-			bool dead = false;
-			for (std::list<uint256>::iterator dit = deadLedgers.begin(), end = deadLedgers.end(); dit != end; ++dit)
-				if (*dit == it->first)
-				{
-					dead = true;
-					break;
-				}
-			if (!dead)
-			{
-				bestVC = it->second;
-				closedLedger = it->first;
-				switchLedgers = true;
-			}
+			bestVC = it->second;
+			closedLedger = it->first;
+			switchLedgers = true;
 		}
 	}
 
