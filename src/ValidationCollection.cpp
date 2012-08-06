@@ -14,7 +14,7 @@ bool ValidationCollection::addValidation(SerializedValidation::pointer val)
 		val->setTrusted();
 		uint32 now = theApp->getOPs().getCloseTimeNC();
 		uint32 valClose = val->getCloseTime();
-		if ((now > valClose) && (now < (valClose + LEDGER_MAX_INTERVAL)))
+		if ((now > (valClose - 4)) && (now < (valClose + LEDGER_MAX_INTERVAL)))
 			isCurrent = true;
 		else
 			Log(lsWARNING) << "Received stale validation now=" << now << ", close=" << valClose;
@@ -172,11 +172,19 @@ boost::unordered_map<uint256, int> ValidationCollection::getCurrentValidations()
 	return ret;
 }
 
-void ValidationCollection::addDeadLedger(const uint256& ledger)
+bool ValidationCollection::isDeadLedger(const uint256& ledger)
 {
 	for (std::list<uint256>::iterator it = mDeadLedgers.begin(), end = mDeadLedgers.end(); it != end; ++it)
 		if (*it == ledger)
-			return;
+			return true;
+	return false;
+}
+
+void ValidationCollection::addDeadLedger(const uint256& ledger)
+{
+	if (isDeadLedger(ledger))
+		return;
+
 	mDeadLedgers.push_back(ledger);
 	if (mDeadLedgers.size() >= 128)
 		mDeadLedgers.pop_front();

@@ -48,6 +48,7 @@ public:
 	boost::unordered_map<uint256, int> getCurrentValidations();
 
 	void addDeadLedger(const uint256&);
+	bool isDeadLedger(const uint256&);
 	std::list<uint256> getDeadLedgers() { return mDeadLedgers; }
 
 	void flush();
