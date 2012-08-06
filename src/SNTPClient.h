@@ -4,6 +4,7 @@
 #include <string>
 #include <map>
 #include <vector>
+#include <list>
 
 #include <boost/thread/mutex.hpp>
 #include <boost/asio.hpp>
@@ -33,8 +34,10 @@ protected:
 	boost::asio::ip::udp::resolver		mResolver;
 
 	std::vector< std::pair<std::string, time_t> >	mServers;
+
 	int												mOffset;
 	time_t											mLastOffsetUpdate;
+	std::list<int>									mOffsetList;
 
 	std::vector<uint8_t>				mReceiveBuffer;
 	boost::asio::ip::udp::endpoint		mReceiveEndpoint;

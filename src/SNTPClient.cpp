@@ -16,6 +16,9 @@ static uint8_t SNTPQueryData[48] = {
 // NTP query frequency - 5 minutes
 #define NTP_QUERY_FREQUENCY		(5 * 60)
 
+// NTP sample window (should be odd)
+#define NTP_SAMPLE_WINDOW		9
+
 // NTP timestamp constant
 #define NTP_UNIX_OFFSET			0x83AA7E80
 
@@ -138,15 +141,25 @@ void SNTPClient::processReply()
 	timev -= now;
 	timev -= NTP_UNIX_OFFSET;
 
-	if ((timev == -1) || (timev == 1)) // small corrections likely do more harm than good
-		timev = 0;
-
-	// FIXME: We really should use the median of all recent valid offsets
-	if ((mLastOffsetUpdate == (time_t) -1) || (mLastOffsetUpdate < (now - 180)))
-		mOffset = timev;
-	else
-		mOffset = ((mOffset * 7) + timev) / 8;
+	// add offset to list, replacing oldest one if appropriate
+	mOffsetList.push_back(timev);
+	if (mOffsetList.size() >= NTP_SAMPLE_WINDOW)
+		mOffsetList.pop_front();
 	mLastOffsetUpdate = now;
+
+	// select median time
+	std::list<int> offsetList = mOffsetList;
+	offsetList.sort();
+	int j = offsetList.size();
+	std::list<int>::iterator it = offsetList.begin();
+	for (int i = 0; i < (j / 2); ++i)
+		++it;
+	mOffset = *it;
+	if ((j % 2) == 0)
+		mOffset = (mOffset + (*--it)) / 2;
+
+	if ((mOffset == -1) || (mOffset == 1)) // small corrections likely do more harm than good
+		mOffset = 0;
 
 	Log(lsTRACE) << "SNTP: Offset is " << timev << ", new system offset is " << mOffset;
 }
