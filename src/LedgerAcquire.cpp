@@ -10,7 +10,7 @@
 #include "SHAMapSync.h"
 #include "HashPrefixes.h"
 
-#define LA_DEBUG
+// #define LA_DEBUG
 #define LEDGER_ACQUIRE_TIMEOUT 2
 #define TRUST_NETWORK
 
@@ -142,7 +142,7 @@ void LedgerAcquire::addOnComplete(boost::function<void (LedgerAcquire::pointer)>
 
 void LedgerAcquire::trigger(Peer::pointer peer)
 {
-	if (mAborted)
+	if (mAborted || mComplete || mFailed)
 		return;
 #ifdef LA_DEBUG
 	if(peer) Log(lsTRACE) <<  "Trigger acquiring ledger " << mHash.GetHex() << " from " << peer->getIP();
@@ -150,8 +150,6 @@ void LedgerAcquire::trigger(Peer::pointer peer)
 	Log(lsTRACE) <<  "complete=" << mComplete << " failed=" << mFailed;
 	Log(lsTRACE) <<  "base=" << mHaveBase << " tx=" << mHaveTransactions << " as=" << mHaveState;
 #endif
-	if (mComplete || mFailed)
-		return;
 	if (!mHaveBase)
 	{
 #ifdef LA_DEBUG
