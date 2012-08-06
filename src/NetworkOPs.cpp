@@ -464,7 +464,7 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 		if (it->second > bestVC)
 		{
 			bool dead = false;
-			for (std::list<uint256>::iterator dit = deadLedgers.begin(), end = deadLedgers.end(); dit != end; ++it)
+			for (std::list<uint256>::iterator dit = deadLedgers.begin(), end = deadLedgers.end(); dit != end; ++dit)
 				if (*dit == it->first)
 				{
 					dead = true;
