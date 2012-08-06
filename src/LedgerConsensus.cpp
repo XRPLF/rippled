@@ -536,6 +536,7 @@ void LedgerConsensus::updateOurPositions()
 	thresh = thresh * neededWeight / 100;
 
 	uint32 closeTime = 0;
+	mHaveCloseTimeConsensus = false;
 	for (std::map<uint32, int>::iterator it = closeTimes.begin(), end = closeTimes.end(); it != end; ++it)
 	{
 		Log(lsINFO) << "CCTime: " << it->first << " has " << it->second << " out of " << thresh;
