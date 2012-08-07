@@ -72,7 +72,7 @@ protected:
 	void done();
 	void onTimer();
 
-	void newPeer(Peer::pointer peer) { trigger(peer); }
+	void newPeer(Peer::pointer peer) { trigger(peer, false); }
 
 	boost::weak_ptr<PeerSet> pmDowncast();
 
@@ -92,7 +92,7 @@ public:
 	bool takeTxRootNode(const std::vector<unsigned char>& data);
 	bool takeAsNode(const std::list<SHAMapNode>& IDs, const std::list<std::vector<unsigned char> >& data);
 	bool takeAsRootNode(const std::vector<unsigned char>& data);
-	void trigger(Peer::pointer);
+	void trigger(Peer::pointer, bool timer);
 };
 
 class LedgerAcquireMaster

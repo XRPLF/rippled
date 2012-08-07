@@ -102,7 +102,7 @@ void LedgerAcquire::onTimer()
 		setFailed();
 		done();
 	}
-	else trigger(Peer::pointer());
+	else trigger(Peer::pointer(), true);
 }
 
 boost::weak_ptr<PeerSet> LedgerAcquire::pmDowncast()
@@ -140,7 +140,7 @@ void LedgerAcquire::addOnComplete(boost::function<void (LedgerAcquire::pointer)>
 	mLock.unlock();
 }
 
-void LedgerAcquire::trigger(Peer::pointer peer)
+void LedgerAcquire::trigger(Peer::pointer peer, bool timer)
 {
 	if (mAborted || mComplete || mFailed)
 		return;
@@ -159,10 +159,9 @@ void LedgerAcquire::trigger(Peer::pointer peer)
 		tmGL.set_itype(newcoin::liBASE);
 		*(tmGL.add_nodeids()) = SHAMapNode().getRawString();
 		sendRequest(tmGL, peer);
-		return; // Cannot go on without base
 	}
 
-	if (!mHaveTransactions)
+	if (mHaveBase && !mHaveTransactions)
 	{
 #ifdef LA_DEBUG
 		Log(lsTRACE) <<  "need tx";
@@ -206,7 +205,7 @@ void LedgerAcquire::trigger(Peer::pointer peer)
 		}
 	}
 
-	if (!mHaveState)
+	if (mHaveBase && !mHaveState)
 	{
 #ifdef LA_DEBUG
 		Log(lsTRACE) <<  "need as";
@@ -252,7 +251,7 @@ void LedgerAcquire::trigger(Peer::pointer peer)
 
 	if (mComplete || mFailed)
 		done();
-	else
+	else if (timer)
 		resetTimer();
 }
 
@@ -460,7 +459,7 @@ bool LedgerAcquireMaster::gotLedgerData(newcoin::TMLedgerData& packet, Peer::poi
 			return false;
 		if (packet.nodes_size() == 1)
 		{
-			ledger->trigger(peer);
+			ledger->trigger(peer, false);
 			return true;
 		}
 		if (!ledger->takeAsRootNode(strCopy(packet.nodes(1).nodedata())))
@@ -469,12 +468,12 @@ bool LedgerAcquireMaster::gotLedgerData(newcoin::TMLedgerData& packet, Peer::poi
 		}
 		if (packet.nodes().size() == 2)
 		{
-			ledger->trigger(peer);
+			ledger->trigger(peer, false);
 			return true;
 		}
 		if (!ledger->takeTxRootNode(strCopy(packet.nodes(2).nodedata())))
 			Log(lsWARNING) << "Invcluded TXbase invalid";
-		ledger->trigger(peer);
+		ledger->trigger(peer, false);
 		return true;
 	}
 
@@ -498,7 +497,7 @@ bool LedgerAcquireMaster::gotLedgerData(newcoin::TMLedgerData& packet, Peer::poi
 		else
 			ret = ledger->takeAsNode(nodeIDs, nodeData);
 		if (ret)
-			ledger->trigger(peer);
+			ledger->trigger(peer, false);
 		return ret;
 	}
 
