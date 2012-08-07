@@ -872,13 +872,15 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 	applyTransactions(set, newLCL, newLCL, failedTransactions, true);
 	newLCL->setClosed();
 
-	uint32 closeTime = mOurPosition->getCloseTime();
+	uint32 closeTime = mOurPosition->getCloseTime() - (mOurPosition->getCloseTime() & mCloseResolution);
 	bool closeTimeCorrect = true;
 	if (closeTime == 0)
-	{ // we didn't agree
+	{ // we agreed to disagree
 		closeTimeCorrect = false;
 		closeTime = mPreviousLedger->getCloseTimeNC() + 1;
+		Log(lsINFO) << "Consensus close time (good) " << closeTime;
 	}
+	else Log(lsINFO) << "Consensus close time (bad) " << closeTime;
 
 	newLCL->setAccepted(closeTime, mCloseResolution, closeTimeCorrect);
 	newLCL->updateHash();
