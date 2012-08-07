@@ -8,6 +8,8 @@
 #include "utils.h"
 #include "Log.h"
 
+// #define SNTP_DEBUG
+
 static uint8_t SNTPQueryData[48] = {
 	0x1B,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
@@ -86,21 +88,24 @@ void SNTPClient::receivePacket(const boost::system::error_code& error, std::size
 	if (!error)
 	{
 		boost::mutex::scoped_lock sl(mLock);
+#ifdef SNTP_DEBUG
 		Log(lsTRACE) << "SNTP: Packet from " << mReceiveEndpoint;
+#endif
 		std::map<boost::asio::ip::udp::endpoint, SNTPQuery>::iterator query = mQueries.find(mReceiveEndpoint);
 		if (query == mQueries.end())
-			Log(lsDEBUG) << "SNTP: Reply found without matching query";
+			Log(lsDEBUG) << "SNTP: Reply from " << mReceiveEndpoint << " found without matching query";
 		else if (query->second.mReceivedReply)
-			Log(lsDEBUG) << "SNTP: Duplicate response to query";
+			Log(lsDEBUG) << "SNTP: Duplicate response from " << mReceiveEndpoint;
 		else
 		{
 			query->second.mReceivedReply = true;
 			if (time(NULL) > (query->second.mLocalTimeSent + 1))
-				Log(lsWARNING) << "SNTP: Late response";
+				Log(lsWARNING) << "SNTP: Late response from " << mReceiveEndpoint;
 			else if (bytes_xferd < 48)
-				Log(lsWARNING) << "SNTP: Short reply (" << bytes_xferd << ") " << mReceiveBuffer.size();
+				Log(lsWARNING) << "SNTP: Short reply from " << mReceiveEndpoint
+					<< " (" << bytes_xferd << ") " << mReceiveBuffer.size();
 			else if (reinterpret_cast<uint32*>(&mReceiveBuffer[0])[NTP_OFF_ORGTS_FRAC] != query->second.mQueryNonce)
-				Log(lsWARNING) << "SNTP: Reply had wrong nonce";
+				Log(lsWARNING) << "SNTP: Reply from " << mReceiveEndpoint << "had wrong nonce";
 			else
 				processReply();
 		}
@@ -128,12 +133,12 @@ void SNTPClient::processReply()
 
 	if ((info >> 30) == 3)
 	{
-		Log(lsINFO) << "SNTP: Alarm condition";
+		Log(lsINFO) << "SNTP: Alarm condition " << mReceiveEndpoint;
 		return;
 	}
 	if ((stratum == 0) || (stratum > 14))
 	{
-		Log(lsINFO) << "SNTP: Unreasonable stratum";
+		Log(lsINFO) << "SNTP: Unreasonable stratum (" << stratum << ") from " << mReceiveEndpoint;
 		return;
 	}
 
@@ -161,7 +166,8 @@ void SNTPClient::processReply()
 	if ((mOffset == -1) || (mOffset == 1)) // small corrections likely do more harm than good
 		mOffset = 0;
 
-	Log(lsTRACE) << "SNTP: Offset is " << timev << ", new system offset is " << mOffset;
+	if (timev || mOffset)
+		Log(lsTRACE) << "SNTP: Offset is " << timev << ", new system offset is " << mOffset;
 }
 
 void SNTPClient::timerEntry(const boost::system::error_code& error)
@@ -234,6 +240,8 @@ bool SNTPClient::doQuery()
 	mResolver.async_resolve(query,
 		boost::bind(&SNTPClient::resolveComplete, this,
 		boost::asio::placeholders::error, boost::asio::placeholders::iterator));
+#ifdef SNTP_DEBUG
 	Log(lsTRACE) << "SNTP: Resolve pending for " << best->first;
+#endif
 	return true;
 }

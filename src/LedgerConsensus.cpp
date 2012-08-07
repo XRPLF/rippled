@@ -427,9 +427,10 @@ void LedgerConsensus::stateEstablish()
 	updateOurPositions();
 	if (!mHaveCloseTimeConsensus)
 	{
-		Log(lsINFO) << "No close time consensus";
+		if (haveConsensus())
+			Log(lsINFO) << "We have TX consensus but not CT consensus";
 	}
-	else if (haveConsensus())
+	if (haveConsensus())
 	{
 		Log(lsINFO) << "Converge cutoff";
 		mState = lcsFINISHED;
@@ -455,11 +456,10 @@ void LedgerConsensus::timerEntry()
 	if (!mHaveCorrectLCL)
 	{
 		checkLCL();
-		Log(lsINFO) << "Checking for consensus ledger " << mPrevLedgerHash.GetHex();
 		Ledger::pointer consensus = theApp->getMasterLedger().getLedgerByHash(mPrevLedgerHash);
 		if (consensus)
 		{
-			Log(lsINFO) << "We have acquired the consensus ledger";
+			Log(lsINFO) << "Acquired the consensus ledger " << mPrevLedgerHash.GetHex();
 			if (theApp->getMasterLedger().getClosedLedger()->getHash() != mPrevLedgerHash)
 				theApp->getOPs().switchLastClosedLedger(consensus, true);
 			mPreviousLedger = consensus;
@@ -468,7 +468,8 @@ void LedgerConsensus::timerEntry()
 				mPreviousLedger->getCloseResolution(), mPreviousLedger->getCloseAgree(),
 				mPreviousLedger->getLedgerSeq() + 1);
 		}
-		else Log(lsINFO) << "We still don't have it";
+		else
+			Log(lsINFO) << "Need consensus ledger " << mPrevLedgerHash.GetHex();
 	}
 
 	mCurrentMSeconds = (mCloseTime == 0) ? 0 :
@@ -487,7 +488,6 @@ void LedgerConsensus::timerEntry()
 
 void LedgerConsensus::updateOurPositions()
 {
-	Log(lsINFO) << "Updating our positions";
 	bool changes = false;
 	SHAMap::pointer ourPosition;
 	std::vector<uint256> addedTx, removedTx;
@@ -566,8 +566,7 @@ void LedgerConsensus::updateOurPositions()
 		mOurPosition->changePosition(newHash, closeTime);
 		if (mProposing) propose(addedTx, removedTx);
 		mapComplete(newHash, ourPosition, false);
-		Log(lsINFO) << "We change our position to " << newHash.GetHex();
-		Log(lsINFO) << " Close time " << closeTime;
+		Log(lsINFO) << "Position change: CTime " << closeTime << ", tx " << newHash.GetHex();
 	}
 }
 

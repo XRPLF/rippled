@@ -147,27 +147,22 @@ void LedgerAcquire::trigger(Peer::pointer peer)
 #ifdef LA_DEBUG
 	if(peer) Log(lsTRACE) <<  "Trigger acquiring ledger " << mHash.GetHex() << " from " << peer->getIP();
 	else Log(lsTRACE) <<  "Trigger acquiring ledger " << mHash.GetHex();
-	Log(lsTRACE) <<  "complete=" << mComplete << " failed=" << mFailed;
-	Log(lsTRACE) <<  "base=" << mHaveBase << " tx=" << mHaveTransactions << " as=" << mHaveState;
+	if (mComplete || mFailed)
+		Log(lsTRACE) <<  "complete=" << mComplete << " failed=" << mFailed;
+	else
+		Log(lsTRACE) <<  "base=" << mHaveBase << " tx=" << mHaveTransactions << " as=" << mHaveState;
 #endif
 	if (!mHaveBase)
 	{
-#ifdef LA_DEBUG
-		Log(lsTRACE) <<  "need base";
-#endif
 		newcoin::TMGetLedger tmGL;
 		tmGL.set_ledgerhash(mHash.begin(), mHash.size());
 		tmGL.set_itype(newcoin::liBASE);
 		*(tmGL.add_nodeids()) = SHAMapNode().getRawString();
-		if (peer)
-		{
-			sendRequest(tmGL, peer);
-			return;
-		}
-		else sendRequest(tmGL);
+		sendRequest(tmGL, peer);
+		return; // Cannot go on without base
 	}
 
-	if (mHaveBase && !mHaveTransactions)
+	if (!mHaveTransactions)
 	{
 #ifdef LA_DEBUG
 		Log(lsTRACE) <<  "need tx";
@@ -180,12 +175,7 @@ void LedgerAcquire::trigger(Peer::pointer peer)
 			tmGL.set_ledgerseq(mLedger->getLedgerSeq());
 			tmGL.set_itype(newcoin::liTX_NODE);
 			*(tmGL.add_nodeids()) = SHAMapNode().getRawString();
-			if (peer)
-			{
-				sendRequest(tmGL, peer);
-				return;
-			}
-			sendRequest(tmGL);
+			sendRequest(tmGL, peer);
 		}
 		else
 		{
@@ -199,7 +189,8 @@ void LedgerAcquire::trigger(Peer::pointer peer)
 				else
 				{
 					mHaveTransactions = true;
-					if (mHaveState) mComplete = true;
+					if (mHaveState)
+						mComplete = true;
 				}
 			}
 			else
@@ -210,17 +201,12 @@ void LedgerAcquire::trigger(Peer::pointer peer)
 				tmGL.set_itype(newcoin::liTX_NODE);
 				for (std::vector<SHAMapNode>::iterator it = nodeIDs.begin(); it != nodeIDs.end(); ++it)
 					*(tmGL.add_nodeids()) = it->getRawString();
-				if (peer)
-				{
-					sendRequest(tmGL, peer);
-					return;
-				}
-				sendRequest(tmGL);
+				sendRequest(tmGL, peer);
 			}
 		}
 	}
 
-	if (mHaveBase && !mHaveState)
+	if (!mHaveState)
 	{
 #ifdef LA_DEBUG
 		Log(lsTRACE) <<  "need as";
@@ -233,12 +219,7 @@ void LedgerAcquire::trigger(Peer::pointer peer)
 			tmGL.set_ledgerseq(mLedger->getLedgerSeq());
 			tmGL.set_itype(newcoin::liAS_NODE);
 			*(tmGL.add_nodeids()) = SHAMapNode().getRawString();
-			if (peer)
-			{
-				sendRequest(tmGL, peer);
-				return;
-			}
-			sendRequest(tmGL);
+			sendRequest(tmGL, peer);
 		}
 		else
 		{
@@ -252,7 +233,8 @@ void LedgerAcquire::trigger(Peer::pointer peer)
 				else
 				{
 					mHaveState = true;
-					if (mHaveTransactions) mComplete = true;
+					if (mHaveTransactions)
+						mComplete = true;
 				}
 			}
 			else
@@ -263,12 +245,7 @@ void LedgerAcquire::trigger(Peer::pointer peer)
 				tmGL.set_itype(newcoin::liAS_NODE);
 				for (std::vector<SHAMapNode>::iterator it = nodeIDs.begin(); it != nodeIDs.end(); ++it)
 					*(tmGL.add_nodeids()) = it->getRawString();
-				if (peer)
-				{
-					sendRequest(tmGL, peer);
-					return;
-				}
-				sendRequest(tmGL);
+				sendRequest(tmGL, peer);
 			}
 		}
 	}
@@ -281,7 +258,10 @@ void LedgerAcquire::trigger(Peer::pointer peer)
 
 void PeerSet::sendRequest(const newcoin::TMGetLedger& tmGL, Peer::pointer peer)
 {
-	peer->sendPacket(boost::make_shared<PackedMessage>(tmGL, newcoin::mtGET_LEDGER));
+	if (!peer)
+		sendRequest(tmGL);
+	else
+		peer->sendPacket(boost::make_shared<PackedMessage>(tmGL, newcoin::mtGET_LEDGER));
 }
 
 void PeerSet::sendRequest(const newcoin::TMGetLedger& tmGL)

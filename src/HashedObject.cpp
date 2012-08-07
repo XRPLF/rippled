@@ -37,7 +37,6 @@ bool HashedObjectStore::store(HashedObjectType type, uint32 index,
 			t.detach();
 		}
 	}
-	Log(lsTRACE) << "HOS: " << hash.GetHex() << " store: deferred";
 	return true;
 }
 
