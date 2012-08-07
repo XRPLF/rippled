@@ -527,7 +527,15 @@ void LedgerConsensus::updateOurPositions()
 		neededWeight = AV_MID_CONSENSUS_PCT;
 	else neededWeight = AV_LATE_CONSENSUS_PCT;
 
+	uint32 closeTime = 0;
+	mHaveCloseTimeConsensus = false;
+
 	int thresh = mPeerPositions.size();
+	if (thresh == 0)
+	{ // no other times
+		mHaveCloseTimeConsensus = true;
+		closeTime = mOurPosition->getCloseTime() - (mOurPosition->getCloseTime() % mCloseResolution);
+	}
 	if (mProposing)
 	{
 		++closeTimes[mOurPosition->getCloseTime() - (mOurPosition->getCloseTime() % mCloseResolution)];
@@ -535,8 +543,6 @@ void LedgerConsensus::updateOurPositions()
 	}
 	thresh = thresh * neededWeight / 100;
 
-	uint32 closeTime = 0;
-	mHaveCloseTimeConsensus = false;
 	for (std::map<uint32, int>::iterator it = closeTimes.begin(), end = closeTimes.end(); it != end; ++it)
 	{
 		Log(lsINFO) << "CCTime: " << it->first << " has " << it->second << " out of " << thresh;
