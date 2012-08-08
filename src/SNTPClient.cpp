@@ -166,7 +166,9 @@ void SNTPClient::processReply()
 	if ((mOffset == -1) || (mOffset == 1)) // small corrections likely do more harm than good
 		mOffset = 0;
 
+#ifndef SNTP_DEBUG
 	if (timev || mOffset)
+#endif
 		Log(lsTRACE) << "SNTP: Offset is " << timev << ", new system offset is " << mOffset;
 }
 

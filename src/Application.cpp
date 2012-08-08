@@ -38,7 +38,7 @@ DatabaseCon::~DatabaseCon()
 Application::Application() :
 	mUNL(mIOService),
 	mNetOps(mIOService, &mMasterLedger), mTempNodeCache(16384, 90), mHashedObjectStore(16384, 300),
-	mSNTPClient(mIOService), mRpcDB(NULL), mTxnDB(NULL), mLedgerDB(NULL), mWalletDB(NULL),
+	mSNTPClient(mAuxService), mRpcDB(NULL), mTxnDB(NULL), mLedgerDB(NULL), mWalletDB(NULL),
 	mHashNodeDB(NULL), mNetNodeDB(NULL),
 	mConnectionPool(mIOService), mPeerDoor(NULL), mRPCDoor(NULL)
 {
@@ -51,6 +51,7 @@ extern int RpcDBCount, TxnDBCount, LedgerDBCount, WalletDBCount, HashNodeDBCount
 
 void Application::stop()
 {
+	mAuxService.stop();
 	mIOService.stop();
 	mHashedObjectStore.bulkWrite();
 	mValidations.flush();
@@ -68,6 +69,11 @@ void Application::run()
 	assert(mTxnDB == NULL);
 	if (!theConfig.DEBUG_LOGFILE.empty())
 		Log::setLogFile(theConfig.DEBUG_LOGFILE);
+
+	mSNTPClient.init(theConfig.SNTP_SERVERS);
+
+	boost::thread auxThread(boost::bind(&boost::asio::io_service::run, &mAuxService));
+	auxThread.detach();
 
 	//
 	// Construct databases.
@@ -90,6 +96,7 @@ void Application::run()
 	// Set up UNL.
 	//
 	getUNL().nodeBootstrap();
+
 
 	//
 	// Allow peer connections.
@@ -147,7 +154,6 @@ void Application::run()
 		mNetOps.setLastCloseNetTime(secondLedger->getCloseTimeNC());
 	}
 
-	mSNTPClient.init(theConfig.SNTP_SERVERS);
 
 	mNetOps.setStateTimer();
 

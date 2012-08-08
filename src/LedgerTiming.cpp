@@ -19,8 +19,8 @@ int ContinuousLedgerTiming::shouldClose(
 	int previousMSeconds,		// seconds the previous ledger took to reach consensus
 	int currentMSeconds)			// seconds since the previous ledger closed
 {
-	assert((previousMSeconds > 0) && (previousMSeconds < 600000));
-	assert((currentMSeconds >= 0) && (currentMSeconds < 600000));
+	assert((previousMSeconds > -1000) && (previousMSeconds < 600000));
+	assert((currentMSeconds >= -1000) && (currentMSeconds < 600000));
 
 #if 0
 	Log(lsTRACE) << boost::str(boost::format("CLC::shouldClose Trans=%s, Prop: %d/%d, Secs: %d (last:%d)") %
@@ -42,12 +42,6 @@ int ContinuousLedgerTiming::shouldClose(
 			return previousMSeconds - 1000;
 		}
 		return LEDGER_IDLE_INTERVAL * 1000; // normal idle
-	}
-
-	if (previousMSeconds == (1000 * LEDGER_IDLE_INTERVAL)) // coming out of idle, close now
-	{
-		Log(lsTRACE) << "leaving idle, close now";
-		return currentMSeconds;
 	}
 
 	Log(lsTRACE) << "close now";

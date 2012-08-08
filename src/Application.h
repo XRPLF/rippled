@@ -39,7 +39,7 @@ public:
 
 class Application
 {
-	boost::asio::io_service	mIOService;
+	boost::asio::io_service	mIOService, mAuxService;
 
 	Wallet					mWallet;
 	UniqueNodeList			mUNL;
