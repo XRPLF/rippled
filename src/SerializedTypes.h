@@ -290,6 +290,7 @@ public:
 
 	bool isNative() const		{ return mIsNative; }
 	bool isZero() const			{ return mValue == 0; }
+	bool isNonZero() const 		{ return mValue != 0; }
 	bool isNegative() const		{ return mIsNegative && !isZero(); }
 	bool isPositive() const		{ return !mIsNegative && !isZero(); }
 	bool isGEZero() const		{ return !mIsNegative; }
