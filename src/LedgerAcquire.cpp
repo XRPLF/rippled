@@ -311,8 +311,10 @@ bool LedgerAcquire::takeBase(const std::string& data)
 	theApp->getHashedObjectStore().store(LEDGER, mLedger->getLedgerSeq(), s.peekData(), mHash);
 
 	progress();
-	if (!mLedger->getTransHash()) mHaveTransactions = true;
-	if (!mLedger->getAccountHash()) mHaveState = true;
+	if (!mLedger->getTransHash())
+		mHaveTransactions = true;
+	if (!mLedger->getAccountHash())
+		mHaveState = true;
 	mLedger->setAcquiring();
 	return true;
 }
@@ -328,7 +330,7 @@ bool LedgerAcquire::takeTxNode(const std::list<SHAMapNode>& nodeIDs,
 	{
 		if (nodeIDit->isRoot())
 		{
-			if (!mLedger->peekTransactionMap()->addRootNode(mLedger->getTransHash(), *nodeDatait, STN_ARF_WIRE))
+			if (!mLedger->peekTransactionMap()->addRootNode(mLedger->getTransHash(), *nodeDatait, snfWIRE))
 				return false;
 		}
 		else if (!mLedger->peekTransactionMap()->addKnownNode(*nodeIDit, *nodeDatait, &tFilter))
@@ -363,7 +365,7 @@ bool LedgerAcquire::takeAsNode(const std::list<SHAMapNode>& nodeIDs,
 	{
 		if (nodeIDit->isRoot())
 		{
-			if (!mLedger->peekAccountStateMap()->addRootNode(mLedger->getAccountHash(), *nodeDatait, STN_ARF_WIRE))
+			if (!mLedger->peekAccountStateMap()->addRootNode(mLedger->getAccountHash(), *nodeDatait, snfWIRE))
 				return false;
 		}
 		else if (!mLedger->peekAccountStateMap()->addKnownNode(*nodeIDit, *nodeDatait, &tFilter))
@@ -387,13 +389,13 @@ bool LedgerAcquire::takeAsNode(const std::list<SHAMapNode>& nodeIDs,
 bool LedgerAcquire::takeAsRootNode(const std::vector<unsigned char>& data)
 {
 	if (!mHaveBase) return false;
-	return mLedger->peekAccountStateMap()->addRootNode(mLedger->getAccountHash(), data, STN_ARF_WIRE);
+	return mLedger->peekAccountStateMap()->addRootNode(mLedger->getAccountHash(), data, snfWIRE);
 }
 
 bool LedgerAcquire::takeTxRootNode(const std::vector<unsigned char>& data)
 {
 	if (!mHaveBase) return false;
-	return mLedger->peekTransactionMap()->addRootNode(mLedger->getTransHash(), data, STN_ARF_WIRE);
+	return mLedger->peekTransactionMap()->addRootNode(mLedger->getTransHash(), data, snfWIRE);
 }
 
 LedgerAcquire::pointer LedgerAcquireMaster::findCreate(const uint256& hash)

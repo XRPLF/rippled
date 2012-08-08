@@ -189,10 +189,10 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& node, SHAMapItem::pointer item,
 	updateHash();
 }
 
-SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned char>& rawNode, uint32 seq, int format)
-	: SHAMapNode(id), mSeq(seq), mType(tnERROR), mFullBelow(false)
+SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned char>& rawNode, uint32 seq,
+	SHANodeFormat format) : SHAMapNode(id), mSeq(seq), mType(tnERROR), mFullBelow(false)
 {
-	if (format == STN_ARF_WIRE)
+	if (format == snfWIRE)
 	{
 		Serializer s(rawNode);
 		int type = s.removeLastByte();
@@ -256,7 +256,7 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned 
 		}
 	}
 
-	if (format == STN_ARF_PREFIXED)
+	if (format == snfPREFIX)
 	{
 		if (rawNode.size() < 4)
 		{
@@ -350,14 +350,14 @@ bool SHAMapTreeNode::updateHash()
 	return true;
 }
 
-void SHAMapTreeNode::addRaw(Serializer& s, int format)
+void SHAMapTreeNode::addRaw(Serializer& s, SHANodeFormat format)
 {
-	assert((format == STN_ARF_PREFIXED) || (format == STN_ARF_WIRE));
+	assert((format == snfPREFIX) || (format == snfWIRE));
 	if (mType == tnERROR) throw std::runtime_error("invalid I node type");
 
 	if (mType == tnINNER)
 	{
-		if (format == STN_ARF_PREFIXED)
+		if (format == snfPREFIX)
 		{
 			s.add32(sHP_InnerNode);
 			for (int i = 0; i < 16; ++i)
@@ -385,7 +385,7 @@ void SHAMapTreeNode::addRaw(Serializer& s, int format)
 	}
 	else if (mType == tnACCOUNT_STATE)
 	{
-		if (format == STN_ARF_PREFIXED)
+		if (format == snfPREFIX)
 		{
 			s.add32(sHP_LeafNode);
 			mItem->addRaw(s);
@@ -400,7 +400,7 @@ void SHAMapTreeNode::addRaw(Serializer& s, int format)
 	}
 	else if (mType == tnTRANSACTION_NM)
 	{
-		if (format == STN_ARF_PREFIXED)
+		if (format == snfPREFIX)
 		{
 			s.add32(sHP_TransactionID);
 			mItem->addRaw(s);
@@ -413,7 +413,7 @@ void SHAMapTreeNode::addRaw(Serializer& s, int format)
 	}
 	else if (mType == tnTRANSACTION_MD)
 	{
-		if (format == STN_ARF_PREFIXED)
+		if (format == snfPREFIX)
 		{
 			s.add32(sHP_TransactionNode);
 			mItem->addRaw(s);

@@ -641,7 +641,7 @@ SHAMapTreeNode::pointer SHAMap::fetchNodeExternal(const SHAMapNode& id, const ui
 
 	try
 	{
-		SHAMapTreeNode::pointer ret = boost::make_shared<SHAMapTreeNode>(id, obj->getData(), mSeq, STN_ARF_PREFIXED);
+		SHAMapTreeNode::pointer ret = boost::make_shared<SHAMapTreeNode>(id, obj->getData(), mSeq, snfPREFIX);
 #ifdef DEBUG
 		assert((ret->getNodeHash() == hash) && (id == *ret));
 #endif
@@ -672,7 +672,7 @@ int SHAMap::flushDirty(int maxNodes, HashedObjectType t, uint32 seq)
 		while (it != dirtyNodes.end())
 		{
 			s.erase();
-			it->second->addRaw(s, STN_ARF_PREFIXED);
+			it->second->addRaw(s, snfPREFIX);
 			theApp->getHashedObjectStore().store(t, seq, s.peekData(), s.getSHA512Half());
 			if (flushed++ >= maxNodes)
 				return flushed;
