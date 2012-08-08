@@ -937,7 +937,8 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 	mState = lcsACCEPTED;
 	sl.unlock();
 
-	{
+	if (mValidating && mOurPosition->getCurrentHash().isNonZero())
+	{ // see how close our close time is to other node's close time reports
 		Log(lsINFO) << "We closed at " << boost::lexical_cast<std::string>(mCloseTime);
 		uint64 closeTotal = mCloseTime;
 		int closeCount = 1;
