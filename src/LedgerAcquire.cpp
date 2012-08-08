@@ -129,7 +129,7 @@ void LedgerAcquire::done()
 	if (mLedger)
 		theApp->getMasterLedger().storeLedger(mLedger);
 
-	for (int i = 0; i < triggers.size(); ++i)
+	for (unsigned int i = 0; i < triggers.size(); ++i)
 		triggers[i](shared_from_this());
 }
 
