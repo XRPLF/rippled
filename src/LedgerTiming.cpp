@@ -101,7 +101,6 @@ bool ContinuousLedgerTiming::haveConsensus(
 int ContinuousLedgerTiming::getNextLedgerTimeResolution(int previousResolution, bool previousAgree, int ledgerSeq)
 {
 	assert(ledgerSeq);
-	assert(previousAgree); // TEMPORARY
 	if ((!previousAgree) && ((ledgerSeq % LEDGER_RES_DECREASE) == 0))
 	{ // reduce resolution
 		int i = 1;
