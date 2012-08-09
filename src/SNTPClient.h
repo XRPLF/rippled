@@ -21,14 +21,10 @@ public:
 
 class SNTPClient
 {
-public:
-	typedef boost::shared_ptr<SNTPClient> pointer;
-
 protected:
 	std::map<boost::asio::ip::udp::endpoint, SNTPQuery>	mQueries;
 	boost::mutex						mLock;
 
-	boost::asio::io_service&			mIOService;
 	boost::asio::ip::udp::socket		mSocket;
 	boost::asio::deadline_timer			mTimer;
 	boost::asio::ip::udp::resolver		mResolver;

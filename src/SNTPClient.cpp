@@ -10,13 +10,14 @@
 
 // #define SNTP_DEBUG
 
-static uint8_t SNTPQueryData[48] = {
-	0x1B,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-};
+static uint8_t SNTPQueryData[48] =
+{ 0x1B,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
 
 // NTP query frequency - 5 minutes
 #define NTP_QUERY_FREQUENCY		(5 * 60)
+
+// NTP minimum interval to query same servers - 3 minutes
+#define NTP_MIN_QUERY			(3 * 60)
 
 // NTP sample window (should be odd)
 #define NTP_SAMPLE_WINDOW		9
@@ -39,8 +40,7 @@ static uint8_t SNTPQueryData[48] = {
 #define NTP_OFF_XMITTS_FRAC		11
 
 
-SNTPClient::SNTPClient(boost::asio::io_service& service) :
-		mIOService(service), mSocket(service), mTimer(service), mResolver(service),
+SNTPClient::SNTPClient(boost::asio::io_service& service) : mSocket(service), mTimer(service), mResolver(service),
 		mOffset(0), mLastOffsetUpdate((time_t) -1), mReceiveBuffer(256)
 {
 	mSocket.open(boost::asio::ip::udp::v4());
@@ -67,7 +67,7 @@ void SNTPClient::resolveComplete(const boost::system::error_code& error, boost::
 			SNTPQuery& query = mQueries[*sel];
 			time_t now = time(NULL);
 			if ((query.mLocalTimeSent == now) || ((query.mLocalTimeSent + 1) == now))
-			{
+			{ // This can happen if the same IP address is reached through multiple names
 				Log(lsTRACE) << "SNTP: Redundant query suppressed";
 				return;
 			}
@@ -231,7 +231,7 @@ bool SNTPClient::doQuery()
 		return false;
 	}
 	time_t now = time(NULL);
-	if ((best->second == now) || (best->second == (now - 1)))
+	if ((best->second != (time_t) -1) && ((best->second + NTP_MIN_QUERY) >= now))
 	{
 		Log(lsTRACE) << "SNTP: All servers recently queried";
 		return false;
