@@ -446,7 +446,7 @@ bool STAmount::operator==(const STAmount& a) const
 
 bool STAmount::operator!=(const STAmount& a) const
 {
-	return (mOffset != a.mOffset) || (mValue != a.mValue) || (mIsNegative!= a.mIsNegative) || !isComparable(a);
+	return (mOffset != a.mOffset) || (mValue != a.mValue) || (mIsNegative != a.mIsNegative) || !isComparable(a);
 }
 
 bool STAmount::operator<(const STAmount& a) const
@@ -760,6 +760,14 @@ uint64 STAmount::getRate(const STAmount& offerOut, const STAmount& offerIn)
 	uint64 ret = r.getExponent() + 100;
 
 	return (ret << (64 - 8)) | r.getMantissa();
+}
+
+STAmount STAmount::setRate(uint64 rate, const uint160& currencyOut)
+{
+	uint64 mantissa = rate & ~(255ull << (64 - 8));
+	int exponent = static_cast<int>(rate >> (64 - 8)) - 100;
+
+	return STAmount(currencyOut, mantissa, exponent);
 }
 
 // Taker gets all taker can pay for with saTakerFunds, limited by saOfferPays and saOfferFunds.
@@ -1105,6 +1113,12 @@ BOOST_AUTO_TEST_CASE( CustomCurrency_test )
 	if (STAmount::divide(STAmount(currency, 60) , STAmount(currency, 3), uint160()).getText() != "20")
 		BOOST_FAIL("STAmount divide fail");
 
+	STAmount a1(currency, 60), a2 (currency, 10, -1);
+	if(STAmount::divide(a2, a1, currency) != STAmount::setRate(STAmount::getRate(a1, a2), currency))
+		BOOST_FAIL("STAmount setRate(getRate) fail");
+	if(STAmount::divide(a1, a2, currency) != STAmount::setRate(STAmount::getRate(a2, a1), currency))
+		BOOST_FAIL("STAmount setRate(getRate) fail");
+
 	BOOST_TEST_MESSAGE("Amount CC Complete");
 }
 
@@ -1115,21 +1129,21 @@ BOOST_AUTO_TEST_CASE( CurrencyMulDivTests )
 
 	uint160 c(1);
 	if (STAmount::getRate(STAmount(1), STAmount(10)) != (((100ul-14)<<(64-8))|1000000000000000ul))
-		BOOST_FAIL("STAmount getrate fail");
+		BOOST_FAIL("STAmount getRate fail");
 	if (STAmount::getRate(STAmount(10), STAmount(1)) != (((100ul-16)<<(64-8))|1000000000000000ul))
-		BOOST_FAIL("STAmount getrate fail");
+		BOOST_FAIL("STAmount getRate fail");
 	if (STAmount::getRate(STAmount(c, 1), STAmount(c, 10)) != (((100ul-14)<<(64-8))|1000000000000000ul))
-		BOOST_FAIL("STAmount getrate fail");
+		BOOST_FAIL("STAmount getRate fail");
 	if (STAmount::getRate(STAmount(c, 10), STAmount(c, 1)) != (((100ul-16)<<(64-8))|1000000000000000ul))
-		BOOST_FAIL("STAmount getrate fail");
+		BOOST_FAIL("STAmount getRate fail");
 	if (STAmount::getRate(STAmount(c, 1), STAmount(10)) != (((100ul-14)<<(64-8))|1000000000000000ul))
-		BOOST_FAIL("STAmount getrate fail");
+		BOOST_FAIL("STAmount getRate fail");
 	if (STAmount::getRate(STAmount(c, 10), STAmount(1)) != (((100ul-16)<<(64-8))|1000000000000000ul))
-		BOOST_FAIL("STAmount getrate fail");
+		BOOST_FAIL("STAmount getRate fail");
 	if (STAmount::getRate(STAmount(1), STAmount(c, 10)) != (((100ul-14)<<(64-8))|1000000000000000ul))
-		BOOST_FAIL("STAmount getrate fail");
+		BOOST_FAIL("STAmount getRate fail");
 	if (STAmount::getRate(STAmount(10), STAmount(c, 1)) != (((100ul-16)<<(64-8))|1000000000000000ul))
-		BOOST_FAIL("STAmount getrate fail");
+		BOOST_FAIL("STAmount getRate fail");
 
 }
 

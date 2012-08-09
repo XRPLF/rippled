@@ -343,6 +343,7 @@ public:
 
 	// Someone is offering X for Y, what is the rate?
 	static uint64 getRate(const STAmount& offerOut, const STAmount& offerIn);
+	static STAmount setRate(uint64 rate, const uint160& currencyOut);
 
 	// Someone is offering X for Y, I try to pay Z, how much do I get?
 	// And what's left of the offer? And how much do I actually pay?
