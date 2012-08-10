@@ -71,7 +71,7 @@ Ledger::Ledger(bool dummy, Ledger& prevLedger) :
 		prevLedger.getCloseAgree(), mLedgerSeq);
 	if (prevLedger.mCloseTime == 0)
 	{
-		mCloseTime = theApp->getOPs().getCloseTimeNC();
+		mCloseTime = theApp->getOPs().getCloseTimeNC() - mCloseResolution;
 		mCloseTime -= (mCloseTime % mCloseResolution);
 	}
 	else
