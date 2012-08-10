@@ -6,7 +6,6 @@
 
 CKey::pointer PubKeyCache::locate(const NewcoinAddress& id)
 {
-	if(1)
 	{ // is it in cache
 		boost::mutex::scoped_lock sl(mLock);
 		std::map<NewcoinAddress, CKey::pointer>::iterator it(mCache.find(id));

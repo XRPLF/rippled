@@ -205,7 +205,7 @@ TransactionMetaSet::TransactionMetaSet(uint32 ledger, const std::vector<unsigned
 		if (node.isZero())
 			break;
 		mNodes.insert(std::make_pair(node, TransactionMetaNode(node, sit)));
-	} while(1);
+	} while (true);
 }
 
 void TransactionMetaSet::addRaw(Serializer& s)

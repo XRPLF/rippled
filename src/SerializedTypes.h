@@ -655,7 +655,7 @@ public:
 	int getLength() const;
 	SerializedTypeID getSType() const { return STI_TL; }
 	std::string getText() const;
-	void add(Serializer& s) const { if(s.addTaggedList(value)<0) throw(0); }
+	void add(Serializer& s) const { if (s.addTaggedList(value) < 0) throw(0); }
 
 	const std::vector<TaggedListItem>& peekValue() const { return value; }
 	std::vector<TaggedListItem>& peekValue() { return value; }

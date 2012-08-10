@@ -1114,9 +1114,9 @@ BOOST_AUTO_TEST_CASE( CustomCurrency_test )
 		BOOST_FAIL("STAmount divide fail");
 
 	STAmount a1(currency, 60), a2 (currency, 10, -1);
-	if(STAmount::divide(a2, a1, currency) != STAmount::setRate(STAmount::getRate(a1, a2), currency))
+	if (STAmount::divide(a2, a1, currency) != STAmount::setRate(STAmount::getRate(a1, a2), currency))
 		BOOST_FAIL("STAmount setRate(getRate) fail");
-	if(STAmount::divide(a1, a2, currency) != STAmount::setRate(STAmount::getRate(a2, a1), currency))
+	if (STAmount::divide(a1, a2, currency) != STAmount::setRate(STAmount::getRate(a2, a1), currency))
 		BOOST_FAIL("STAmount setRate(getRate) fail");
 
 	BOOST_TEST_MESSAGE("Amount CC Complete");

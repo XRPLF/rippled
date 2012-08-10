@@ -27,50 +27,50 @@ uint256 SHAMapNode::smMasks[65];
 
 bool SHAMapNode::operator<(const SHAMapNode &s) const
 {
-	if(s.mDepth<mDepth) return true;
-	if(s.mDepth>mDepth) return false;
-	return mNodeID<s.mNodeID;
+	if (s.mDepth < mDepth) return true;
+	if (s.mDepth > mDepth) return false;
+	return mNodeID < s.mNodeID;
 }
 
 bool SHAMapNode::operator>(const SHAMapNode &s) const
 {
-	if(s.mDepth<mDepth) return false;
-	if(s.mDepth>mDepth) return true;
-	return mNodeID>s.mNodeID;
+	if (s.mDepth < mDepth) return false;
+	if (s.mDepth > mDepth) return true;
+	return mNodeID > s.mNodeID;
 }
 
 bool SHAMapNode::operator<=(const SHAMapNode &s) const
 {
-	if(s.mDepth<mDepth) return true;
-	if(s.mDepth>mDepth) return false;
-	return mNodeID<=s.mNodeID;
+	if (s.mDepth < mDepth) return true;
+	if (s.mDepth > mDepth) return false;
+	return mNodeID <= s.mNodeID;
 }
 
 bool SHAMapNode::operator>=(const SHAMapNode &s) const
 {
-	if(s.mDepth<mDepth) return false;
-	if(s.mDepth>mDepth) return true;
-	return mNodeID>=s.mNodeID;
+	if (s.mDepth < mDepth) return false;
+	if (s.mDepth > mDepth) return true;
+	return mNodeID >= s.mNodeID;
 }
 
 bool SHAMapNode::operator==(const SHAMapNode &s) const
 {
-	return (s.mDepth==mDepth) && (s.mNodeID==mNodeID);
+	return (s.mDepth == mDepth) && (s.mNodeID == mNodeID);
 }
 
 bool SHAMapNode::operator!=(const SHAMapNode &s) const
 {
-	return (s.mDepth!=mDepth) || (s.mNodeID!=mNodeID);
+	return (s.mDepth != mDepth) || (s.mNodeID != mNodeID);
 }
 
 bool SHAMapNode::operator==(const uint256 &s) const
 {
-	return s==mNodeID;
+	return s == mNodeID;
 }
 
 bool SHAMapNode::operator!=(const uint256 &s) const
 {
-	return s!=mNodeID;
+	return s != mNodeID;
 }
 
 static bool j = SHAMapNode::ClassInit();
@@ -78,7 +78,7 @@ static bool j = SHAMapNode::ClassInit();
 bool SHAMapNode::ClassInit()
 { // set up the depth masks
 	uint256 selector;
-	for(int i = 0; i < 64; i += 2)
+	for (int i = 0; i < 64; i += 2)
 	{
 		smMasks[i] = selector;
 		*(selector.begin() + (i / 2)) = 0xF0;
@@ -476,7 +476,7 @@ std::string SHAMapTreeNode::getString() const
 	ret += ")";
 	if (isInner())
 	{
-		for(int i = 0; i < 16; ++i)
+		for (int i = 0; i < 16; ++i)
 			if (!isEmptyBranch(i))
 			{
 				ret += "\nb";

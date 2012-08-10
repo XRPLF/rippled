@@ -204,7 +204,7 @@ void SNTPClient::init(const std::vector<std::string>& servers)
 
 void SNTPClient::queryAll()
 {
-	while(doQuery())
+	while (doQuery())
 		nothing();
 }
 

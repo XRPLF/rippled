@@ -146,7 +146,7 @@ void LCTransaction::setVote(const uint160& peer, bool votesYes)
 		++mYays;
 		res.first->second = true;
 	}
-	else if(!votesYes && res.first->second)
+	else if (!votesYes && res.first->second)
 	{ // changes vote to no
 		Log(lsTRACE) << "Peer " << peer.GetHex() << " now votes NO on " << mTransactionID.GetHex();
 		++mNays;
@@ -270,7 +270,7 @@ void LedgerConsensus::takeInitialPosition(Ledger& initialLedger)
 
 	// if any peers have taken a contrary position, process disputes
 	boost::unordered_set<uint256> found;
-	for(boost::unordered_map<uint160, LedgerProposal::pointer>::iterator it = mPeerPositions.begin(),
+	for (boost::unordered_map<uint160, LedgerProposal::pointer>::iterator it = mPeerPositions.begin(),
 		end = mPeerPositions.end(); it != end; ++it)
 	{
 		uint256 set = it->second->getCurrentHash();
@@ -296,14 +296,14 @@ void LedgerConsensus::createDisputes(SHAMap::pointer m1, SHAMap::pointer m2)
 {
 	SHAMap::SHAMapDiff differences;
 	m1->compare(m2, differences, 16384);
-	for(SHAMap::SHAMapDiff::iterator pos = differences.begin(), end = differences.end(); pos != end; ++pos)
+	for (SHAMap::SHAMapDiff::iterator pos = differences.begin(), end = differences.end(); pos != end; ++pos)
 	{ // create disputed transactions (from the ledger that has them)
 		if (pos->second.first)
 		{
 			assert(!pos->second.second);
 			addDisputedTransaction(pos->first, pos->second.first->peekData());
 		}
-		else if(pos->second.second)
+		else if (pos->second.second)
 		{
 			assert(!pos->second.first);
 			addDisputedTransaction(pos->first, pos->second.second->peekData());
@@ -371,7 +371,7 @@ void LedgerConsensus::adjustCount(SHAMap::pointer map, const std::vector<uint160
 		it != end; ++it)
 	{
 		bool setHas = map->hasItem(it->second->getTransactionID());
-		for(std::vector<uint160>::const_iterator pit = peers.begin(), pend = peers.end(); pit != pend; ++pit)
+		for (std::vector<uint160>::const_iterator pit = peers.begin(), pend = peers.end(); pit != pend; ++pit)
 			it->second->setVote(*pit, setHas);
 	}
 }
@@ -492,7 +492,7 @@ void LedgerConsensus::updateOurPositions()
 	SHAMap::pointer ourPosition;
 	std::vector<uint256> addedTx, removedTx;
 
-	for(boost::unordered_map<uint256, LCTransaction::pointer>::iterator it = mDisputes.begin(),
+	for (boost::unordered_map<uint256, LCTransaction::pointer>::iterator it = mDisputes.begin(),
 			end = mDisputes.end(); it != end; ++it)
 	{
 		if (it->second->updatePosition(mClosePercent, mProposing))
@@ -942,7 +942,7 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 		Log(lsINFO) << "We closed at " << boost::lexical_cast<std::string>(mCloseTime);
 		uint64 closeTotal = mCloseTime;
 		int closeCount = 1;
-		for(std::map<uint32, int>::iterator it = mCloseTimes.begin(), end = mCloseTimes.end(); it != end; ++it)
+		for (std::map<uint32, int>::iterator it = mCloseTimes.begin(), end = mCloseTimes.end(); it != end; ++it)
 		{
 			Log(lsINFO) << boost::lexical_cast<std::string>(it->second) << " time votes for "
 				<< boost::lexical_cast<std::string>(it->first);
@@ -956,9 +956,8 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 	}
 
 #ifdef DEBUG
-	Json::StyledStreamWriter ssw;
-	if (1)
 	{
+		Json::StyledStreamWriter ssw;
 		Log(lsTRACE) << "newLCL";
 		Json::Value p;
 		newLCL->addJson(p, LEDGER_JSON_DUMP_TXNS | LEDGER_JSON_DUMP_STATE);
