@@ -58,6 +58,9 @@ public:
 	void entryDelete(SLE::pointer&, bool unfunded);
 	void entryModify(SLE::pointer&);		// This entry will be modified
 
+	Json::Value getJson(int) const;
+	void addRawMeta(Serializer&);
+
 	// iterator functions
 	bool isEmpty() const { return mEntries.empty(); }
 	boost::unordered_map<uint256, LedgerEntrySetEntry>::const_iterator begin() const	{ return mEntries.begin(); }
