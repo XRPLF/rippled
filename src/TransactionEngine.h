@@ -111,11 +111,14 @@ typedef struct {
 	// Computed by Reverse.
 	STAmount						saRevRedeem;		// <-- Amount to redeem to next.
 	STAmount						saRevIssue;			// <-- Amount to issue to next limited by credit and outstanding IOUs.
-	// ? STAmount						saSend;				// <-- Stamps this node will send downstream.
+														//     Issue isn't used by offers.
+	STAmount						saRevDeliver;		// <-- Amount to deliver to next regardless of fee.
 
 	// Computed by forward.
 	STAmount						saFwdRedeem;		// <-- Amount node will redeem to next.
 	STAmount						saFwdIssue;			// <-- Amount node will issue to next.
+														//	   Issue isn't used by offers.
+	STAmount						saFwdDeliver;		// <-- Amount to deliver to next regardless of fee.
 } paymentNode;
 
 // Hold a path state under incremental application.
@@ -161,7 +164,7 @@ public:
 		)
 	{ return boost::make_shared<PathState>(iIndex, lesSource, spSourcePath, uReceiverID, uSenderID, saSend, saSendMax, bPartialPayment); };
 
-	static bool less(const PathState::pointer& lhs, const PathState::pointer& rhs);
+	static bool lessPriority(const PathState::pointer& lhs, const PathState::pointer& rhs);
 };
 
 // One instance per ledger.
@@ -228,7 +231,7 @@ protected:
 	uint32				rippleQualityOut(const uint160& uToAccountID, const uint160& uFromAccountID, const uint160& uCurrencyID);
 
 	STAmount			rippleHolds(const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID);
-	STAmount			rippleTransit(const uint160& uSenderID, const uint160& uReceiverID, const uint160& uIssuerID, const STAmount& saAmount);
+	STAmount			rippleTransfer(const uint160& uSenderID, const uint160& uReceiverID, const uint160& uIssuerID, const STAmount& saAmount);
 	void				rippleCredit(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount);
 	STAmount			rippleSend(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount);
 
@@ -238,12 +241,15 @@ protected:
 
 	PathState::pointer	pathCreate(const STPath& spPath);
 	void				pathApply(PathState::pointer pspCur);
-	void				pathNext(PathState::pointer pspCur);
+	void				pathNext(PathState::pointer pspCur, int iPaths);
+	bool				calcNode(unsigned int uIndex, PathState::pointer pspCur, bool bMultiQuality);
+	bool				calcNodeOfferRev(unsigned int uIndex, PathState::pointer pspCur, bool bMultiQuality);
+	bool				calcNodeOfferFwd(unsigned int uIndex, PathState::pointer pspCur, bool bMultiQuality);
+	bool				calcNodeAccountRev(unsigned int uIndex, PathState::pointer pspCur, bool bMultiQuality);
+	bool				calcNodeAccountFwd(unsigned int uIndex, PathState::pointer pspCur, bool bMultiQuality);
 	void				calcNodeRipple(const uint32 uQualityIn, const uint32 uQualityOut,
 							const STAmount& saPrvReq, const STAmount& saCurReq,
 							STAmount& saPrvAct, STAmount& saCurAct);
-	bool				calcPathReverse(PathState::pointer pspCur);
-	void				calcPathForward(PathState::pointer pspCur);
 
 	void				txnWrite();
 
