@@ -19,13 +19,15 @@ int ContinuousLedgerTiming::shouldClose(
 	int previousMSeconds,		// seconds the previous ledger took to reach consensus
 	int currentMSeconds)			// seconds since the previous ledger closed
 {
-	assert((previousMSeconds > 0) && (previousMSeconds < 600000));
-	assert((currentMSeconds >= 0) && (currentMSeconds < 600000));
-
-#if 0
-	Log(lsTRACE) << boost::str(boost::format("CLC::shouldClose Trans=%s, Prop: %d/%d, Secs: %d (last:%d)") %
-		(anyTransactions ? "yes" : "no") % previousProposers % proposersClosed % currentMSeconds % previousMSeconds);
-#endif
+	if ((previousMSeconds < -1000) || (previousMSeconds > 600000) ||
+		(currentMSeconds < -1000) || (currentMSeconds > 600000))
+	{
+		Log(lsFATAL) <<
+			boost::str(boost::format("CLC::shouldClose range error Trans=%s, Prop: %d/%d, Secs: %d (last:%d)")
+			% (anyTransactions ? "yes" : "no") % previousProposers % proposersClosed
+			% currentMSeconds % previousMSeconds);
+		return currentMSeconds;
+	}
 
 	if (!anyTransactions)
 	{ // no transactions so far this interval
@@ -42,12 +44,6 @@ int ContinuousLedgerTiming::shouldClose(
 			return previousMSeconds - 1000;
 		}
 		return LEDGER_IDLE_INTERVAL * 1000; // normal idle
-	}
-
-	if (previousMSeconds == (1000 * LEDGER_IDLE_INTERVAL)) // coming out of idle, close now
-	{
-		Log(lsTRACE) << "leaving idle, close now";
-		return currentMSeconds;
 	}
 
 	Log(lsTRACE) << "close now";
@@ -101,7 +97,6 @@ bool ContinuousLedgerTiming::haveConsensus(
 int ContinuousLedgerTiming::getNextLedgerTimeResolution(int previousResolution, bool previousAgree, int ledgerSeq)
 {
 	assert(ledgerSeq);
-	assert(previousAgree); // TEMPORARY
 	if ((!previousAgree) && ((ledgerSeq % LEDGER_RES_DECREASE) == 0))
 	{ // reduce resolution
 		int i = 1;

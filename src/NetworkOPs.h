@@ -46,6 +46,10 @@ public:
 	};
 
 protected:
+	typedef boost::unordered_map<uint160,boost::unordered_set<InfoSub*> >				subInfoMapType;
+	typedef boost::unordered_map<uint160,boost::unordered_set<InfoSub*> >::value_type	subInfoMapValue;
+	typedef boost::unordered_map<uint160,boost::unordered_set<InfoSub*> >::iterator		subInfoMapIterator;
+
 	OperatingMode						mMode;
 	boost::posix_time::ptime			mConnectTime;
 	boost::asio::deadline_timer			mNetTimer;
@@ -54,16 +58,12 @@ protected:
 	LedgerMaster*						mLedgerMaster;
 	LedgerAcquire::pointer				mAcquiringLedger;
 
-	void setMode(OperatingMode);
-
-	typedef boost::unordered_map<uint160,boost::unordered_set<InfoSub*> >				subInfoMapType;
-	typedef boost::unordered_map<uint160,boost::unordered_set<InfoSub*> >::value_type	subInfoMapValue;
-	typedef boost::unordered_map<uint160,boost::unordered_set<InfoSub*> >::iterator		subInfoMapIterator;
+	int									mCloseTimeOffset;
 
 	// last ledger close
-	int mLastCloseProposers, mLastCloseConvergeTime;
-	uint256 mLastCloseHash;
-	uint32 mLastCloseNetTime;
+	int									mLastCloseProposers, mLastCloseConvergeTime;
+	uint256								mLastCloseHash;
+	uint32								mLastCloseNetTime;
 
 	// XXX Split into more locks.
     boost::interprocess::interprocess_upgradable_mutex	mMonitorLock;
@@ -74,6 +74,8 @@ protected:
 	boost::unordered_set<InfoSub*>						mSubLedgerAccounts;		// ledger accepteds + affected accounts
 	boost::unordered_set<InfoSub*>						mSubTransaction;		// all transactions
 //	subInfoMapType										mSubTransactionAccounts;
+
+	void setMode(OperatingMode);
 
 	Json::Value transJson(const SerializedTransaction& stTxn, TransactionEngineResult terResult, const std::string& strStatus, int iSeq, const std::string& strType);
 	void pubTransactionAll(const Ledger::pointer& lpCurrent, const SerializedTransaction& stTxn, TransactionEngineResult terResult, const char* pState);
@@ -86,6 +88,7 @@ public:
 
 	// network information
 	uint32 getNetworkTimeNC();
+	uint32 getCloseTimeNC();
 	boost::posix_time::ptime getNetworkTimePT();
 	uint32 getCurrentLedgerID();
 	OperatingMode getOperatingMode() { return mMode; }
@@ -181,10 +184,10 @@ public:
 
 	// network state machine
 	void checkState(const boost::system::error_code& result);
-	void switchLastClosedLedger(Ledger::pointer newLedger); // Used for the "jump" case
+	void switchLastClosedLedger(Ledger::pointer newLedger, bool duringConsensus); // Used for the "jump" case
 	bool checkLastClosedLedger(const std::vector<Peer::pointer>&, uint256& networkClosed);
 	int beginConsensus(const uint256& networkClosed, Ledger::pointer closingLedger);
-	void endConsensus();
+	void endConsensus(bool correctLCL);
 	void setStateTimer();
 	void newLCL(int proposers, int convergeTime, const uint256& ledgerHash);
 	int getPreviousProposers()			{ return mLastCloseProposers; }

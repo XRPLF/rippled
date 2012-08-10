@@ -5,6 +5,8 @@
 
 #include <boost/shared_ptr.hpp>
 
+#include "../json/value.h"
+
 #include "NewcoinAddress.h"
 #include "Serializer.h"
 
@@ -48,6 +50,7 @@ public:
 	std::vector<unsigned char> sign();
 
 	void changePosition(const uint256& newPosition, uint32 newCloseTime);
+	Json::Value getJson() const;
 };
 
 #endif

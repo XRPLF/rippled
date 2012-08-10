@@ -65,14 +65,14 @@ public:
 
 protected:
 	Ledger::pointer mLedger;
-	bool mHaveBase, mHaveState, mHaveTransactions, mAborted;
+	bool mHaveBase, mHaveState, mHaveTransactions, mAborted, mSignaled;
 
 	std::vector< boost::function<void (LedgerAcquire::pointer)> > mOnComplete;
 
 	void done();
-	void onTimer() { trigger(Peer::pointer()); }
+	void onTimer();
 
-	void newPeer(Peer::pointer peer) { trigger(peer); }
+	void newPeer(Peer::pointer peer) { trigger(peer, false); }
 
 	boost::weak_ptr<PeerSet> pmDowncast();
 
@@ -92,7 +92,7 @@ public:
 	bool takeTxRootNode(const std::vector<unsigned char>& data);
 	bool takeAsNode(const std::list<SHAMapNode>& IDs, const std::list<std::vector<unsigned char> >& data);
 	bool takeAsRootNode(const std::vector<unsigned char>& data);
-	void trigger(Peer::pointer);
+	void trigger(Peer::pointer, bool timer);
 };
 
 class LedgerAcquireMaster

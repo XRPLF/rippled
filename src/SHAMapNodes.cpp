@@ -27,50 +27,50 @@ uint256 SHAMapNode::smMasks[65];
 
 bool SHAMapNode::operator<(const SHAMapNode &s) const
 {
-	if(s.mDepth<mDepth) return true;
-	if(s.mDepth>mDepth) return false;
-	return mNodeID<s.mNodeID;
+	if (s.mDepth < mDepth) return true;
+	if (s.mDepth > mDepth) return false;
+	return mNodeID < s.mNodeID;
 }
 
 bool SHAMapNode::operator>(const SHAMapNode &s) const
 {
-	if(s.mDepth<mDepth) return false;
-	if(s.mDepth>mDepth) return true;
-	return mNodeID>s.mNodeID;
+	if (s.mDepth < mDepth) return false;
+	if (s.mDepth > mDepth) return true;
+	return mNodeID > s.mNodeID;
 }
 
 bool SHAMapNode::operator<=(const SHAMapNode &s) const
 {
-	if(s.mDepth<mDepth) return true;
-	if(s.mDepth>mDepth) return false;
-	return mNodeID<=s.mNodeID;
+	if (s.mDepth < mDepth) return true;
+	if (s.mDepth > mDepth) return false;
+	return mNodeID <= s.mNodeID;
 }
 
 bool SHAMapNode::operator>=(const SHAMapNode &s) const
 {
-	if(s.mDepth<mDepth) return false;
-	if(s.mDepth>mDepth) return true;
-	return mNodeID>=s.mNodeID;
+	if (s.mDepth < mDepth) return false;
+	if (s.mDepth > mDepth) return true;
+	return mNodeID >= s.mNodeID;
 }
 
 bool SHAMapNode::operator==(const SHAMapNode &s) const
 {
-	return (s.mDepth==mDepth) && (s.mNodeID==mNodeID);
+	return (s.mDepth == mDepth) && (s.mNodeID == mNodeID);
 }
 
 bool SHAMapNode::operator!=(const SHAMapNode &s) const
 {
-	return (s.mDepth!=mDepth) || (s.mNodeID!=mNodeID);
+	return (s.mDepth != mDepth) || (s.mNodeID != mNodeID);
 }
 
 bool SHAMapNode::operator==(const uint256 &s) const
 {
-	return s==mNodeID;
+	return s == mNodeID;
 }
 
 bool SHAMapNode::operator!=(const uint256 &s) const
 {
-	return s!=mNodeID;
+	return s != mNodeID;
 }
 
 static bool j = SHAMapNode::ClassInit();
@@ -78,7 +78,7 @@ static bool j = SHAMapNode::ClassInit();
 bool SHAMapNode::ClassInit()
 { // set up the depth masks
 	uint256 selector;
-	for(int i = 0; i < 64; i += 2)
+	for (int i = 0; i < 64; i += 2)
 	{
 		smMasks[i] = selector;
 		*(selector.begin() + (i / 2)) = 0xF0;
@@ -189,10 +189,10 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& node, SHAMapItem::pointer item,
 	updateHash();
 }
 
-SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned char>& rawNode, uint32 seq, int format)
-	: SHAMapNode(id), mSeq(seq), mType(tnERROR), mFullBelow(false)
+SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned char>& rawNode, uint32 seq,
+	SHANodeFormat format) : SHAMapNode(id), mSeq(seq), mType(tnERROR), mFullBelow(false)
 {
-	if (format == STN_ARF_WIRE)
+	if (format == snfWIRE)
 	{
 		Serializer s(rawNode);
 		int type = s.removeLastByte();
@@ -256,7 +256,7 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned 
 		}
 	}
 
-	if (format == STN_ARF_PREFIXED)
+	if (format == snfPREFIX)
 	{
 		if (rawNode.size() < 4)
 		{
@@ -350,14 +350,14 @@ bool SHAMapTreeNode::updateHash()
 	return true;
 }
 
-void SHAMapTreeNode::addRaw(Serializer& s, int format)
+void SHAMapTreeNode::addRaw(Serializer& s, SHANodeFormat format)
 {
-	assert((format == STN_ARF_PREFIXED) || (format == STN_ARF_WIRE));
+	assert((format == snfPREFIX) || (format == snfWIRE));
 	if (mType == tnERROR) throw std::runtime_error("invalid I node type");
 
 	if (mType == tnINNER)
 	{
-		if (format == STN_ARF_PREFIXED)
+		if (format == snfPREFIX)
 		{
 			s.add32(sHP_InnerNode);
 			for (int i = 0; i < 16; ++i)
@@ -385,7 +385,7 @@ void SHAMapTreeNode::addRaw(Serializer& s, int format)
 	}
 	else if (mType == tnACCOUNT_STATE)
 	{
-		if (format == STN_ARF_PREFIXED)
+		if (format == snfPREFIX)
 		{
 			s.add32(sHP_LeafNode);
 			mItem->addRaw(s);
@@ -400,7 +400,7 @@ void SHAMapTreeNode::addRaw(Serializer& s, int format)
 	}
 	else if (mType == tnTRANSACTION_NM)
 	{
-		if (format == STN_ARF_PREFIXED)
+		if (format == snfPREFIX)
 		{
 			s.add32(sHP_TransactionID);
 			mItem->addRaw(s);
@@ -413,7 +413,7 @@ void SHAMapTreeNode::addRaw(Serializer& s, int format)
 	}
 	else if (mType == tnTRANSACTION_MD)
 	{
-		if (format == STN_ARF_PREFIXED)
+		if (format == snfPREFIX)
 		{
 			s.add32(sHP_TransactionNode);
 			mItem->addRaw(s);
@@ -476,7 +476,7 @@ std::string SHAMapTreeNode::getString() const
 	ret += ")";
 	if (isInner())
 	{
-		for(int i = 0; i < 16; ++i)
+		for (int i = 0; i < 16; ++i)
 			if (!isEmptyBranch(i))
 			{
 				ret += "\nb";

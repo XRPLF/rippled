@@ -58,7 +58,7 @@ void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint2
 						std::vector<unsigned char> nodeData;
 						if (filter->haveNode(childID, childHash, nodeData))
 						{
-							d = boost::make_shared<SHAMapTreeNode>(childID, nodeData, mSeq, STN_ARF_PREFIXED);
+							d = boost::make_shared<SHAMapTreeNode>(childID, nodeData, mSeq, snfPREFIX);
 							if (childHash != d->getNodeHash())
 							{
 								Log(lsERROR) << "Wrong hash from cached object";
@@ -99,7 +99,7 @@ bool SHAMap::getNodeFat(const SHAMapNode& wanted, std::vector<SHAMapNode>& nodeI
 
 	nodeIDs.push_back(*node);
 	Serializer s;
-	node->addRaw(s, STN_ARF_WIRE);
+	node->addRaw(s, snfWIRE);
 	rawNodes.push_back(s.peekData());
 
 	if (node->isRoot() || node->isLeaf()) // don't get a fat root, can't get a fat leaf
@@ -114,7 +114,7 @@ bool SHAMap::getNodeFat(const SHAMapNode& wanted, std::vector<SHAMapNode>& nodeI
 			{
 				nodeIDs.push_back(*nextNode);
 				Serializer s;
-				nextNode->addRaw(s, STN_ARF_WIRE);
+				nextNode->addRaw(s, snfWIRE);
 				rawNodes.push_back(s.peekData());
 		 	}
 		}
@@ -122,14 +122,14 @@ bool SHAMap::getNodeFat(const SHAMapNode& wanted, std::vector<SHAMapNode>& nodeI
 		return true;
 }
 
-bool SHAMap::getRootNode(Serializer& s, int format)
+bool SHAMap::getRootNode(Serializer& s, SHANodeFormat format)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	root->addRaw(s, format);
 	return true;
 }
 
-bool SHAMap::addRootNode(const std::vector<unsigned char>& rootNode, int format)
+bool SHAMap::addRootNode(const std::vector<unsigned char>& rootNode, SHANodeFormat format)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
@@ -160,7 +160,7 @@ bool SHAMap::addRootNode(const std::vector<unsigned char>& rootNode, int format)
 	return true;
 }
 
-bool SHAMap::addRootNode(const uint256& hash, const std::vector<unsigned char>& rootNode, int format)
+bool SHAMap::addRootNode(const uint256& hash, const std::vector<unsigned char>& rootNode, SHANodeFormat format)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
@@ -236,14 +236,14 @@ bool SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigned cha
 	uint256 hash = iNode->getChildHash(branch);
 	if (!hash) return false;
 
-	SHAMapTreeNode::pointer newNode = boost::make_shared<SHAMapTreeNode>(node, rawNode, mSeq, STN_ARF_WIRE);
+	SHAMapTreeNode::pointer newNode = boost::make_shared<SHAMapTreeNode>(node, rawNode, mSeq, snfWIRE);
 	if (hash != newNode->getNodeHash()) // these aren't the droids we're looking for
 		return false;
 
 	if (filter)
 	{
 		Serializer s;
-		newNode->addRaw(s, STN_ARF_PREFIXED);
+		newNode->addRaw(s, snfPREFIX);
 		filter->gotNode(node, hash, s.peekData(), newNode->isLeaf());
 	}
 
@@ -399,7 +399,7 @@ std::list<std::vector<unsigned char> > SHAMap::getTrustedPath(const uint256& ind
 	Serializer s;
 	while (!stack.empty())
 	{
-		stack.top()->addRaw(s, STN_ARF_WIRE);
+		stack.top()->addRaw(s, snfWIRE);
 		path.push_back(s.getData());
 		s.erase();
 		stack.pop();
@@ -454,7 +454,7 @@ BOOST_AUTO_TEST_CASE( SHAMapSync_test )
 		Log(lsFATAL) << "Didn't get root node " << gotNodes.size();
 		BOOST_FAIL("NodeSize");
 	}
-	if (!destination.addRootNode(*gotNodes.begin(), STN_ARF_WIRE))
+	if (!destination.addRootNode(*gotNodes.begin(), snfWIRE))
 	{
 		Log(lsFATAL) << "AddRootNode fails";
 		BOOST_FAIL("AddRootNode");

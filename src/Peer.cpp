@@ -571,15 +571,24 @@ void Peer::recvHello(newcoin::TMHello& packet)
 	// Cancel verification timeout.
 	(void) mVerifyTimer.cancel();
 
-	uint32 minTime = theApp->getOPs().getNetworkTimeNC() - 4;
-	uint32 maxTime = minTime + 8;
+	uint32 ourTime = theApp->getOPs().getNetworkTimeNC();
+	uint32 minTime = ourTime - 10;
+	uint32 maxTime = ourTime + 10;
+
+#ifdef DEBUG
+	if (packet.has_nettime())
+	{
+		int64 to = ourTime;
+		to -= packet.nettime();
+		Log(lsDEBUG) << "Connect: time offset " << to;
+	}
+#endif
 
 	if (packet.has_nettime() && ((packet.nettime() < minTime) || (packet.nettime() > maxTime)))
 	{
 		Log(lsINFO) << "Recv(Hello): Disconnect: Clock is far off";
 	}
-	
-	if (packet.protoversionmin() < MAKE_VERSION_INT(MIN_PROTO_MAJOR, MIN_PROTO_MINOR))
+	else if (packet.protoversionmin() < MAKE_VERSION_INT(MIN_PROTO_MAJOR, MIN_PROTO_MINOR))
 	{
 		Log(lsINFO) << "Recv(Hello): Server requires protocol version " <<
 			GET_VERSION_MAJOR(packet.protoversion()) << "." << GET_VERSION_MINOR(packet.protoversion())
@@ -998,13 +1007,13 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 			reply.add_nodes()->set_nodedata(nData.getDataPtr(), nData.getLength());
 
 			if (packet.nodeids().size() != 0)
-			{
+			{ // new-style root request
 				Log(lsINFO) << "Ledger root w/map roots request";
 				SHAMap::pointer map = ledger->peekAccountStateMap();
 				if (map)
-				{
+				{ // return account state root node if possible
 					Serializer rootNode(768);
-					if (map->getRootNode(rootNode, STN_ARF_WIRE))
+					if (map->getRootNode(rootNode, snfWIRE))
 					{
 						reply.add_nodes()->set_nodedata(rootNode.getDataPtr(), rootNode.getLength());
 						if (ledger->getTransHash().isNonZero())
@@ -1013,7 +1022,7 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 							if (map)
 							{
 								rootNode.resize(0);
-								if (map->getRootNode(rootNode, STN_ARF_WIRE))
+								if (map->getRootNode(rootNode, snfWIRE))
 									reply.add_nodes()->set_nodedata(rootNode.getDataPtr(), rootNode.getLength());
 							}
 						}

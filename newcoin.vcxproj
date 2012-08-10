@@ -146,6 +146,7 @@
     <ClCompile Include="src\SHAMapDiff.cpp" />
     <ClCompile Include="src\SHAMapNodes.cpp" />
     <ClCompile Include="src\SHAMapSync.cpp" />
+    <ClCompile Include="src\SNTPClient.cpp" />
     <ClCompile Include="src\Suppression.cpp" />
     <ClCompile Include="src\Transaction.cpp" />
     <ClCompile Include="src\TransactionEngine.cpp" />
@@ -248,17 +249,13 @@
     <None Include="html\newcoin.html">
       <SubType>Designer</SubType>
     </None>
-    <None Include="Issues" />
-    <None Include="Makefile" />
     <None Include="newcoind.cfg" />
-    <None Include="notes.txt" />
     <CustomBuild Include="src\newcoin.proto">
       <FileType>Document</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\protoc-2.4.1-win32\protoc -I=..\newcoin\src --cpp_out=..\newcoin\obj\src  ..\newcoin\src\newcoin.proto</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">obj\src\newcoin.pb.h</Outputs>
     </CustomBuild>
     <None Include="SConstruct" />
-    <None Include="todo.txt" />
     <None Include="validators.txt" />
     <None Include="wallet.xml" />
   </ItemGroup>

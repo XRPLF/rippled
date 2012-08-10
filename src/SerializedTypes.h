@@ -83,7 +83,7 @@ public:
 	virtual void add(Serializer& s) const { return; }
 
 	virtual bool isEquivalent(const SerializedType& t) const
-	{ std::cerr << getSType() << std::endl; assert(getSType() == STI_NOTPRESENT); return t.getSType() == STI_NOTPRESENT; }
+	{ assert(getSType() == STI_NOTPRESENT); return t.getSType() == STI_NOTPRESENT; }
 
 	bool operator==(const SerializedType& t) const
 	{ return (getSType() == t.getSType()) && isEquivalent(t); }
@@ -290,6 +290,7 @@ public:
 
 	bool isNative() const		{ return mIsNative; }
 	bool isZero() const			{ return mValue == 0; }
+	bool isNonZero() const 		{ return mValue != 0; }
 	bool isNegative() const		{ return mIsNegative && !isZero(); }
 	bool isPositive() const		{ return !mIsNegative && !isZero(); }
 	bool isGEZero() const		{ return !mIsNegative; }
@@ -342,6 +343,7 @@ public:
 
 	// Someone is offering X for Y, what is the rate?
 	static uint64 getRate(const STAmount& offerOut, const STAmount& offerIn);
+	static STAmount setRate(uint64 rate, const uint160& currencyOut);
 
 	// Someone is offering X for Y, I try to pay Z, how much do I get?
 	// And what's left of the offer? And how much do I actually pay?
@@ -706,7 +708,7 @@ public:
 	int getLength() const;
 	SerializedTypeID getSType() const { return STI_TL; }
 	std::string getText() const;
-	void add(Serializer& s) const { if(s.addTaggedList(value)<0) throw(0); }
+	void add(Serializer& s) const { if (s.addTaggedList(value) < 0) throw(0); }
 
 	const std::vector<TaggedListItem>& peekValue() const { return value; }
 	std::vector<TaggedListItem>& peekValue() { return value; }

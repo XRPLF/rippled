@@ -1944,7 +1944,7 @@ bool TransactionEngine::calcNodeOfferRev(
 			// Do a directory.
 			// - Drive on computing saCurDlvAct to derive saPrvDlvAct.
 			SLE::pointer	sleDirectDir	= entryCache(ltDIR_NODE, uDirectTip);
-			STAmount		saOfrRate		= STAmount::setRate(Ledger::getQuality(uDirectTip));	// For correct ratio
+			STAmount		saOfrRate		= STAmount::setRate(Ledger::getQuality(uDirectTip), uCurCurrencyID);	// For correct ratio
 			unsigned int	uEntry			= 0;
 			uint256			uCurIndex;
 
@@ -2027,7 +2027,7 @@ bool TransactionEngine::calcNodeOfferRev(
 							// Do a directory.
 							// - Drive on computing saCurDlvAct to derive saPrvDlvAct.
 							SLE::pointer	sleNxtDir	= entryCache(ltDIR_NODE, uNxtTip);
-// ??? STAmount		saOfrRate		= STAmount::setRate(STAmount::getQuality(uNxtTip));	// For correct ratio
+// ??? STAmount		saOfrRate		= STAmount::setRate(STAmount::getQuality(uNxtTip), uCurCurrencyID);	// For correct ratio
 							unsigned int	uEntry			= 0;
 							uint256			uNxtIndex;
 
@@ -2136,7 +2136,7 @@ bool TransactionEngine::calcNodeOfferFwd(
 			// Do a directory.
 			// - Drive on computing saPrvDlvAct to derive saCurDlvAct.
 			SLE::pointer	sleDirectDir	= entryCache(ltDIR_NODE, uDirectTip);
-			STAmount		saOfrRate		= STAmount::setRate(Ledger::getQuality(uDirectTip));	// For correct ratio
+			STAmount		saOfrRate		= STAmount::setRate(Ledger::getQuality(uDirectTip), uCurCurrencyID);	// For correct ratio
 			unsigned int	uEntry			= 0;
 			uint256			uCurIndex;
 

@@ -8,6 +8,8 @@
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/unordered/unordered_map.hpp>
 
+#include "../json/value.h"
+
 #include "key.h"
 #include "Transaction.h"
 #include "LedgerAcquire.h"
@@ -25,11 +27,11 @@ protected:
 	SHAMap::pointer		mMap;
 	bool				mHaveRoot;
 
-	void onTimer()						{ trigger(Peer::pointer()); }
-	void newPeer(Peer::pointer peer)	{ trigger(peer); }
+	void onTimer()						{ trigger(Peer::pointer(), true); }
+	void newPeer(Peer::pointer peer)	{ trigger(peer, false); }
 
 	void done();
-	void trigger(Peer::pointer);
+	void trigger(Peer::pointer, bool timer);
 	boost::weak_ptr<PeerSet> pmDowncast();
 
 public:
@@ -142,6 +144,7 @@ public:
 	LedgerConsensus(const uint256& prevLCLHash, Ledger::pointer previousLedger, uint32 closeTime);
 
 	int startup();
+	Json::Value getJson();
 
 	Ledger::pointer peekPreviousLedger()	{ return mPreviousLedger; }
 	uint256 getLCL()						{ return mPrevLedgerHash; }
@@ -149,6 +152,7 @@ public:
 	SHAMap::pointer getTransactionTree(const uint256& hash, bool doAcquire);
 	TransactionAcquire::pointer getAcquiring(const uint256& hash);
 	void mapComplete(const uint256& hash, SHAMap::pointer map, bool acquired);
+	void checkLCL();
 
 	void timerEntry();
 

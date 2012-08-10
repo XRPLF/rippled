@@ -273,6 +273,9 @@
     <ClCompile Include="src\TransactionMeta.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\SNTPClient.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="KnownNodeList.h">
@@ -506,16 +509,12 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="wallet.xml" />
-    <None Include="notes.txt" />
     <None Include="html\newcoin.html">
       <Filter>html</Filter>
     </None>
-    <None Include="todo.txt" />
-    <None Include="Makefile" />
     <None Include="SConstruct" />
     <None Include="newcoind.cfg" />
     <None Include="validators.txt" />
-    <None Include="Issues" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="src\newcoin.proto" />

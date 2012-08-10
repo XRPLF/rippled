@@ -16,6 +16,7 @@
 #include "TaggedCache.h"
 #include "ValidationCollection.h"
 #include "Suppression.h"
+#include "SNTPClient.h"
 #include "../database/database.h"
 
 
@@ -38,7 +39,7 @@ public:
 
 class Application
 {
-	boost::asio::io_service	mIOService;
+	boost::asio::io_service	mIOService, mAuxService;
 
 	Wallet					mWallet;
 	UniqueNodeList			mUNL;
@@ -50,6 +51,7 @@ class Application
 	ValidationCollection	mValidations;
 	SuppressionTable		mSuppressions;
 	HashedObjectStore		mHashedObjectStore;
+	SNTPClient				mSNTPClient;
 
 	DatabaseCon				*mRpcDB, *mTxnDB, *mLedgerDB, *mWalletDB, *mHashNodeDB, *mNetNodeDB;
 
@@ -86,6 +88,7 @@ public:
 	bool isNew(const uint256& s)					{ return mSuppressions.addSuppression(s); }
 	bool isNew(const uint160& s)					{ return mSuppressions.addSuppression(s); }
 	bool running()									{ return mTxnDB != NULL; }
+	bool getSystemTimeOffset(int& offset)			{ return mSNTPClient.getOffset(offset); }
 
 	DatabaseCon* getRpcDB()			{ return mRpcDB; }
 	DatabaseCon* getTxnDB()			{ return mTxnDB; }

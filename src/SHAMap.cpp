@@ -262,7 +262,7 @@ SHAMapItem::pointer SHAMap::firstBelow(SHAMapTreeNode* node)
 				break;
 			}
 		if (!foundNode) return SHAMapItem::pointer();
-	} while (1);
+	} while (true);
 }
 
 SHAMapItem::pointer SHAMap::lastBelow(SHAMapTreeNode* node)
@@ -284,7 +284,7 @@ SHAMapItem::pointer SHAMap::lastBelow(SHAMapTreeNode* node)
 				break;
 			}
 		if (!foundNode) return SHAMapItem::pointer();
-	} while (1);
+	} while (true);
 }
 
 SHAMapItem::pointer SHAMap::onlyBelow(SHAMapTreeNode* node)
@@ -359,22 +359,23 @@ SHAMapItem::pointer SHAMap::peekNextItem(const uint256& id)
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
 	std::stack<SHAMapTreeNode::pointer> stack = getStack(id, true, false);
-	while(!stack.empty())
+	while (!stack.empty())
 	{
 		SHAMapTreeNode::pointer node = stack.top();
 		stack.pop();
 
-		if(node->isLeaf())
+		if (node->isLeaf())
 		{
-			if(node->peekItem()->getTag()>id)
+			if (node->peekItem()->getTag() > id)
 				return node->peekItem();
 		}
-		else for(int i = node->selectBranch(id) + 1; i < 16; ++i)
-			if(!node->isEmptyBranch(i))
+		else for (int i = node->selectBranch(id) + 1; i < 16; ++i)
+			if (!node->isEmptyBranch(i))
 			{
 				node = getNode(node->getChildNodeID(i), node->getChildHash(i), false);
 				SHAMapItem::pointer item = firstBelow(node.get());
-				if (!item) throw std::runtime_error("missing node");
+				if (!item)
+					throw std::runtime_error("missing node");
 				return item;
 			}
 	}
@@ -392,17 +393,18 @@ SHAMapItem::pointer SHAMap::peekPrevItem(const uint256& id)
 		SHAMapTreeNode::pointer node = stack.top();
 		stack.pop();
 
-		if(node->isLeaf())
+		if (node->isLeaf())
 		{
-			if(node->peekItem()->getTag()<id)
+			if (node->peekItem()->getTag() < id)
 				return node->peekItem();
 		}
-		else for(int i = node->selectBranch(id) - 1; i >= 0; --i)
-				if(!node->isEmptyBranch(i))
+		else for (int i = node->selectBranch(id) - 1; i >= 0; --i)
+				if (!node->isEmptyBranch(i))
 				{
 					node = getNode(node->getChildNodeID(i), node->getChildHash(i), false);
 					SHAMapItem::pointer item = firstBelow(node.get());
-					if (!item) throw std::runtime_error("missing node");
+					if (!item)
+						throw std::runtime_error("missing node");
 					return item;
 				}
 	}
@@ -414,7 +416,8 @@ SHAMapItem::pointer SHAMap::peekItem(const uint256& id)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	SHAMapTreeNode* leaf = walkToPointer(id);
-	if (!leaf) return SHAMapItem::pointer();
+	if (!leaf)
+		return SHAMapItem::pointer();
 	return leaf->peekItem();
 }
 
@@ -432,7 +435,7 @@ bool SHAMap::delItem(const uint256& id)
 	assert(mState != Immutable);
 
 	std::stack<SHAMapTreeNode::pointer> stack = getStack(id, true, false);
-	if(stack.empty())
+	if (stack.empty())
 		throw std::runtime_error("missing node");
 
 	SHAMapTreeNode::pointer leaf=stack.top();
@@ -442,7 +445,7 @@ bool SHAMap::delItem(const uint256& id)
 
 	SHAMapTreeNode::TNType type=leaf->getType();
 	returnNode(leaf, true);
-	if(mTNByID.erase(*leaf)==0)
+	if (mTNByID.erase(*leaf) == 0)
 		assert(false);
 
 	uint256 prevHash;
@@ -460,8 +463,8 @@ bool SHAMap::delItem(const uint256& id)
 		}
 		if (!node->isRoot())
 		{ // we may have made this a node with 1 or 0 children
-			int bc=node->getBranchCount();
-			if(bc==0)
+			int bc = node->getBranchCount();
+			if (bc == 0)
 			{
 #ifdef DEBUG
 				std::cerr << "delItem makes empty node" << std::endl;
@@ -470,10 +473,10 @@ bool SHAMap::delItem(const uint256& id)
 				if (!mTNByID.erase(*node))
 					assert(false);
 			}
-			else if(bc==1)
+			else if (bc == 1)
 			{ // pull up on the thread
 				SHAMapItem::pointer item = onlyBelow(node.get());
-				if(item)
+				if (item)
 				{
 					eraseChildren(node);
 #ifdef ST_DEBUG
@@ -521,7 +524,7 @@ bool SHAMap::addGiveItem(SHAMapItem::pointer item, bool isTransaction, bool hasM
 	uint256 prevHash;
 	returnNode(node, true);
 
-	if(node->isInner())
+	if (node->isInner())
 	{ // easy case, we end on an inner node
 #ifdef ST_DEBUG
 		std::cerr << "aGI inner " << node->getString() << std::endl;
@@ -530,7 +533,7 @@ bool SHAMap::addGiveItem(SHAMapItem::pointer item, bool isTransaction, bool hasM
 		assert(node->isEmptyBranch(branch));
 		SHAMapTreeNode::pointer newNode =
 			boost::make_shared<SHAMapTreeNode>(node->getChildNodeID(branch), item, type, mSeq);
-		if(!mTNByID.insert(std::make_pair(SHAMapNode(*newNode), newNode)).second)
+		if (!mTNByID.insert(std::make_pair(SHAMapNode(*newNode), newNode)).second)
 		{
 			std::cerr << "Node: " << node->getString() << std::endl;
 			std::cerr << "NewNode: " << newNode->getString() << std::endl;
@@ -562,7 +565,7 @@ bool SHAMap::addGiveItem(SHAMapItem::pointer item, bool isTransaction, bool hasM
 			SHAMapTreeNode::pointer newNode =
 				boost::make_shared<SHAMapTreeNode>(mSeq, node->getChildNodeID(b1));
 			newNode->makeInner();
-			if(!mTNByID.insert(std::make_pair(SHAMapNode(*newNode), newNode)).second)
+			if (!mTNByID.insert(std::make_pair(SHAMapNode(*newNode), newNode)).second)
 				assert(false);
 			stack.push(node);
 			node = newNode;
@@ -579,7 +582,7 @@ bool SHAMap::addGiveItem(SHAMapItem::pointer item, bool isTransaction, bool hasM
 
 		newNode = boost::make_shared<SHAMapTreeNode>(node->getChildNodeID(b2), otherItem, type, mSeq);
 		assert(newNode->isValid() && newNode->isLeaf());
-		if(!mTNByID.insert(std::make_pair(SHAMapNode(*newNode), newNode)).second)
+		if (!mTNByID.insert(std::make_pair(SHAMapNode(*newNode), newNode)).second)
 			assert(false);
 		node->setChildHash(b2, newNode->getNodeHash());
 	}
@@ -635,13 +638,13 @@ SHAMapTreeNode::pointer SHAMap::fetchNodeExternal(const SHAMapNode& id, const ui
 		throw SHAMapMissingNode(id, hash);
 
 	HashedObject::pointer obj(theApp->getHashedObjectStore().retrieve(hash));
-	if(!obj)
+	if (!obj)
 		throw SHAMapMissingNode(id, hash);
 	assert(Serializer::getSHA512Half(obj->getData()) == hash);
 
 	try
 	{
-		SHAMapTreeNode::pointer ret = boost::make_shared<SHAMapTreeNode>(id, obj->getData(), mSeq, STN_ARF_PREFIXED);
+		SHAMapTreeNode::pointer ret = boost::make_shared<SHAMapTreeNode>(id, obj->getData(), mSeq, snfPREFIX);
 #ifdef DEBUG
 		assert((ret->getNodeHash() == hash) && (id == *ret));
 #endif
@@ -665,14 +668,14 @@ int SHAMap::flushDirty(int maxNodes, HashedObjectType t, uint32 seq)
 	int flushed = 0;
 	Serializer s;
 
-	if(mDirtyNodes)
+	if (mDirtyNodes)
 	{
 		boost::unordered_map<SHAMapNode, SHAMapTreeNode::pointer>& dirtyNodes = *mDirtyNodes;
 		boost::unordered_map<SHAMapNode, SHAMapTreeNode::pointer>::iterator it = dirtyNodes.begin();
 		while (it != dirtyNodes.end())
 		{
 			s.erase();
-			it->second->addRaw(s, STN_ARF_PREFIXED);
+			it->second->addRaw(s, snfPREFIX);
 			theApp->getHashedObjectStore().store(t, seq, s.peekData(), s.getSHA512Half());
 			if (flushed++ >= maxNodes)
 				return flushed;
@@ -714,10 +717,10 @@ void SHAMap::dump(bool hash)
 #if 0
 	std::cerr << "SHAMap::dump" << std::endl;
 	SHAMapItem::pointer i=peekFirstItem();
-	while(i)
+	while (i)
 	{
 		std::cerr << "Item: id=" << i->getTag().GetHex() << std::endl;
-		i=peekNextItem(i->getTag());
+		i = peekNextItem(i->getTag());
 	}
 	std::cerr << "SHAMap::dump done" << std::endl;
 #endif
@@ -728,7 +731,8 @@ void SHAMap::dump(bool hash)
 			it != mTNByID.end(); ++it)
 	{
 		std::cerr << it->second->getString() << std::endl;
-		if(hash) std::cerr << "   " << it->second->getNodeHash().GetHex() << std::endl;
+		if (hash)
+			std::cerr << "   " << it->second->getNodeHash().GetHex() << std::endl;
 	}
 
 }
@@ -756,8 +760,8 @@ BOOST_AUTO_TEST_CASE( SHAMap_test )
 	SHAMap sMap;
 	SHAMapItem i1(h1, IntToVUC(1)), i2(h2, IntToVUC(2)), i3(h3, IntToVUC(3)), i4(h4, IntToVUC(4)), i5(h5, IntToVUC(5));
 
-	if(!sMap.addItem(i2, true, false)) BOOST_FAIL("no add");
-	if(!sMap.addItem(i1, true, false)) BOOST_FAIL("no add");
+	if (!sMap.addItem(i2, true, false)) BOOST_FAIL("no add");
+	if (!sMap.addItem(i1, true, false)) BOOST_FAIL("no add");
 
 	SHAMapItem::pointer i;
 

@@ -169,9 +169,11 @@ void LedgerEntrySet::entryDelete(SLE::pointer& sle, bool unfunded)
 			if (unfunded)
 			{
 				assert(sle->getType() == ltOFFER); // only offers can be unfunded
+#if 0
 				mSet.deleteUnfunded(sle->getIndex(),
 					sle->getIValueFieldAmount(sfTakerPays),
 					sle->getIValueFieldAmount(sfTakerGets));
+#endif
 			}
 			break;
 
@@ -190,6 +192,66 @@ void LedgerEntrySet::entryDelete(SLE::pointer& sle, bool unfunded)
 bool LedgerEntrySet::intersect(const LedgerEntrySet& lesLeft, const LedgerEntrySet& lesRight)
 {
 	return true;	// XXX Needs implementation
+}
+
+Json::Value LedgerEntrySet::getJson(int) const
+{
+	Json::Value ret(Json::objectValue);
+
+	Json::Value nodes(Json::arrayValue);
+	for (boost::unordered_map<uint256, LedgerEntrySetEntry>::const_iterator it = mEntries.begin(),
+			end = mEntries.end(); it != end; ++it)
+	{
+		Json::Value entry(Json::objectValue);
+		entry["node"] = it->first.GetHex();
+		switch (it->second.mEntry->getType())
+		{
+			case ltINVALID:			entry["type"] = "invalid"; break;
+			case ltACCOUNT_ROOT:	entry["type"] = "acccount_root"; break;
+			case ltDIR_NODE:		entry["type"] = "dir_node"; break;
+			case ltGENERATOR_MAP:	entry["type"] = "generator_map"; break;
+			case ltRIPPLE_STATE:	entry["type"] = "ripple_state"; break;
+			case ltNICKNAME:		entry["type"] = "nickname"; break;
+			case ltOFFER:			entry["type"] = "offer"; break;
+			default:				assert(false);
+		}
+		switch (it->second.mAction)
+		{
+			case taaCACHED:			entry["action"] = "cache"; break;
+			case taaMODIFY:			entry["action"] = "modify"; break;
+			case taaDELETE:			entry["action"] = "delete"; break;
+			case taaCREATE:			entry["action"] = "create"; break;
+			default:				assert(false);
+		}
+		nodes.append(entry);
+	}
+	ret["nodes" ] = nodes;
+
+	return ret;
+}
+
+void LedgerEntrySet::addRawMeta(Serializer& s)
+{
+	for (boost::unordered_map<uint256, LedgerEntrySetEntry>::const_iterator it = mEntries.begin(),
+			end = mEntries.end(); it != end; ++it)
+	{
+		switch (it->second.mAction)
+		{
+			case taaMODIFY:
+				// WRITEME
+				break;
+			case taaDELETE:
+				// WRITEME
+				break;
+			case taaCREATE:
+				// WRITEME
+				break;
+			default:
+				// ignore these
+				break;
+		}
+	}
+	mSet.addRaw(s);
 }
 
 // vim:ts=4

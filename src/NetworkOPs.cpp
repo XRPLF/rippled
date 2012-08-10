@@ -24,19 +24,26 @@
 // there's a functional network.
 
 NetworkOPs::NetworkOPs(boost::asio::io_service& io_service, LedgerMaster* pLedgerMaster) :
-	mMode(omDISCONNECTED),mNetTimer(io_service), mLedgerMaster(pLedgerMaster),
+	mMode(omDISCONNECTED),mNetTimer(io_service), mLedgerMaster(pLedgerMaster), mCloseTimeOffset(0),
 	mLastCloseProposers(0), mLastCloseConvergeTime(LEDGER_IDLE_INTERVAL)
 {
 }
 
 boost::posix_time::ptime NetworkOPs::getNetworkTimePT()
 {
-	return boost::posix_time::second_clock::universal_time();
+	int offset = 0;
+	theApp->getSystemTimeOffset(offset);
+	return boost::posix_time::second_clock::universal_time() + boost::posix_time::seconds(offset);
 }
 
 uint32 NetworkOPs::getNetworkTimeNC()
 {
 	return iToSeconds(getNetworkTimePT());
+}
+
+uint32 NetworkOPs::getCloseTimeNC()
+{
+	return iToSeconds(getNetworkTimePT() + boost::posix_time::seconds(mCloseTimeOffset));
 }
 
 uint32 NetworkOPs::getCurrentLedgerID()
@@ -415,6 +422,7 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 
 	Ledger::pointer ourClosed = mLedgerMaster->getClosedLedger();
 	uint256 closedLedger = ourClosed->getHash();
+	uint256 prevClosedLedger = ourClosed->getParentHash();
 	ValidationCount& ourVC = ledgers[closedLedger];
 
 	if ((theConfig.LEDGER_CREATOR) && (mMode >= omTRACKING))
@@ -447,19 +455,26 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 
 	// 3) Is there a network ledger we'd like to switch to? If so, do we have it?
 	bool switchLedgers = false;
-	for(boost::unordered_map<uint256, ValidationCount>::iterator it = ledgers.begin(), end = ledgers.end();
+	for (boost::unordered_map<uint256, ValidationCount>::iterator it = ledgers.begin(), end = ledgers.end();
 		it != end; ++it)
 	{
 		Log(lsTRACE) << "L: " << it->first.GetHex() <<
 			"  t=" << it->second.trustedValidations << 	", n=" << it->second.nodesUsing;
-		if (it->second > bestVC)
+		if ((it->second > bestVC) && !theApp->getValidations().isDeadLedger(it->first))
 		{
 			bestVC = it->second;
 			closedLedger = it->first;
 			switchLedgers = true;
 		}
 	}
-	networkClosed = closedLedger;
+
+	if (switchLedgers && (closedLedger == prevClosedLedger))
+	{ // don't switch to our own previous ledger
+		networkClosed = ourClosed->getHash();
+		switchLedgers = false;
+	}
+	else
+		networkClosed = closedLedger;
 
 	if (!switchLedgers)
 	{
@@ -518,15 +533,18 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 
 	// FIXME: If this rewinds the ledger sequence, or has the same sequence, we should update the status on
 	// any stored transactions in the invalidated ledgers.
-	switchLastClosedLedger(consensus);
+	switchLastClosedLedger(consensus, false);
 
 	return true;
 }
 
-void NetworkOPs::switchLastClosedLedger(Ledger::pointer newLedger)
+void NetworkOPs::switchLastClosedLedger(Ledger::pointer newLedger, bool duringConsensus)
 { // set the newledger as our last closed ledger -- this is abnormal code
 
-	Log(lsERROR) << "ABNORMAL Switching last closed ledger to " << newLedger->getHash().GetHex();
+	if (duringConsensus)
+		Log(lsERROR) << "JUMPdc last closed ledger to " << newLedger->getHash().GetHex();
+	else
+		Log(lsERROR) << "JUMP last closed ledger to " << newLedger->getHash().GetHex();
 
 	newLedger->setClosed();
 	Ledger::pointer openLedger = boost::make_shared<Ledger>(false, boost::ref(*newLedger));
@@ -586,12 +604,6 @@ bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash, uint
 	if (!theApp->isNew(s.getSHA512Half()))
 		return false;
 
-	if ((mMode != omFULL) && (mMode != omTRACKING))
-	{
-		Log(lsINFO) << "Received proposal when not full/tracking: " << mMode;
-		return true;
-	}
-
 	if (!mConsensus)
 	{ // FIXME: CLC
 		Log(lsWARNING) << "Received proposal when full but not during consensus window";
@@ -643,10 +655,11 @@ void NetworkOPs::mapComplete(const uint256& hash, SHAMap::pointer map)
 		mConsensus->mapComplete(hash, map, true);
 }
 
-void NetworkOPs::endConsensus()
+void NetworkOPs::endConsensus(bool correctLCL)
 {
 	uint256 deadLedger = theApp->getMasterLedger().getClosedLedger()->getParentHash();
 	Log(lsTRACE) << "Ledger " << deadLedger.GetHex() << " is now dead";
+	theApp->getValidations().addDeadLedger(deadLedger);
 	std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
 	for (std::vector<Peer::pointer>::const_iterator it = peerList.begin(), end = peerList.end(); it != end; ++it)
 	if (*it && ((*it)->getClosedLedgerHash() == deadLedger))
@@ -734,6 +747,9 @@ Json::Value NetworkOPs::getServerInfo()
 
 	if (!theConfig.VALIDATION_SEED.isValid()) info["serverState"] = "none";
 	else info["validationPKey"] = NewcoinAddress::createNodePublic(theConfig.VALIDATION_SEED).humanNodePublic();
+
+	if (mConsensus)
+		info["consensus"] = mConsensus->getJson();
 
 	return info;
 }

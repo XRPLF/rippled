@@ -72,4 +72,18 @@ std::vector<unsigned char> LedgerProposal::sign(void)
 	return ret;
 }
 
+Json::Value LedgerProposal::getJson() const
+{
+	Json::Value ret = Json::objectValue;
+	ret["previous_ledger"] = mPreviousLedger.GetHex();
+	ret["transaction_hash"] = mCurrentHash.GetHex();
+	ret["close_time"] = mCloseTime;
+	ret["propose_seq"] = mProposeSeq;
+
+	if (mPublicKey.isValid())
+		ret["peer_id"] = mPublicKey.humanNodePublic();
+
+	return ret;
+}
+
 // vim:ts=4
