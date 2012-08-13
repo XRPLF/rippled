@@ -876,7 +876,8 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 	if (mHaveCorrectLCL)
 	{
 		Log(lsINFO) << "CNF tx " << mOurPosition->getCurrentHash().GetHex() << ", close " << closeTime;
-		Log(lsINFO) << "CNF oldLCL " << mPrevLedgerHash.GetHex();
+		Log(lsINFO) << "CNF mode " << theApp->getOPs().getOperatingMode()
+			<< ", oldLCL " << mPrevLedgerHash.GetHex();
 	}
 
 	Ledger::pointer newLCL = boost::make_shared<Ledger>(false, boost::ref(*mPreviousLedger));
