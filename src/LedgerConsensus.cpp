@@ -544,6 +544,8 @@ void LedgerConsensus::updateOurPositions()
 			++thresh;
 		}
 		thresh = thresh * neededWeight / 100;
+		if (thresh == 0)
+			thresh = 1;
 
 		for (std::map<uint32, int>::iterator it = closeTimes.begin(), end = closeTimes.end(); it != end; ++it)
 		{
@@ -553,6 +555,7 @@ void LedgerConsensus::updateOurPositions()
 				Log(lsINFO) << "Close time consensus reached: " << closeTime;
 				mHaveCloseTimeConsensus = true;
 				closeTime = it->first;
+				thresh = it->second;
 			}
 		}
 	}
