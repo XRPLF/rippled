@@ -23,7 +23,7 @@ LedgerHistory::LedgerHistory() : mLedgersByHash(CACHED_LEDGER_NUM, CACHED_LEDGER
 
 void LedgerHistory::addLedger(Ledger::pointer ledger)
 {
-	mLedgersByHash.canonicalize(ledger->getHash(), ledger);
+	mLedgersByHash.canonicalize(ledger->getHash(), ledger, true);
 }
 
 void LedgerHistory::addAcceptedLedger(Ledger::pointer ledger)
@@ -31,7 +31,7 @@ void LedgerHistory::addAcceptedLedger(Ledger::pointer ledger)
 	assert(ledger && ledger->isAccepted());
 	uint256 h(ledger->getHash());
 	boost::recursive_mutex::scoped_lock sl(mLedgersByHash.peekMutex());
-	mLedgersByHash.canonicalize(h, ledger);
+	mLedgersByHash.canonicalize(h, ledger, true);
 	assert(ledger);
 	assert(ledger->isAccepted());
 	assert(ledger->isImmutable());
