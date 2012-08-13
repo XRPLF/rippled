@@ -32,7 +32,9 @@ void LedgerHistory::addAcceptedLedger(Ledger::pointer ledger)
 	uint256 h(ledger->getHash());
 	boost::recursive_mutex::scoped_lock sl(mLedgersByHash.peekMutex());
 	mLedgersByHash.canonicalize(h, ledger);
-	assert(ledger && ledger->isAccepted() && ledger->isImmutable());
+	assert(ledger);
+	assert(ledger->isAccepted());
+	assert(ledger->isImmutable());
 	mLedgersByIndex.insert(std::make_pair(ledger->getLedgerSeq(), ledger));
 	boost::thread thread(boost::bind(&Ledger::saveAcceptedLedger, ledger));
 	thread.detach();
