@@ -17,7 +17,7 @@ int ContinuousLedgerTiming::shouldClose(
 	int previousProposers,		// proposers in the last closing
 	int proposersClosed,		// proposers who have currently closed this ledgers
 	int previousMSeconds,		// seconds the previous ledger took to reach consensus
-	int currentMSeconds)			// seconds since the previous ledger closed
+	int currentMSeconds)		// seconds since the previous ledger closed
 {
 	if ((previousMSeconds < -1000) || (previousMSeconds > 600000) ||
 		(currentMSeconds < -1000) || (currentMSeconds > 600000))
