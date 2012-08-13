@@ -869,9 +869,15 @@ void LedgerConsensus::applyTransactions(SHAMap::pointer set, Ledger::pointer app
 void LedgerConsensus::accept(SHAMap::pointer set)
 {
 	assert(set->getHash() == mOurPosition->getCurrentHash());
+
+	uint32 closeTime = mOurPosition->getCloseTime() - (mOurPosition->getCloseTime() & mCloseResolution);
+
 	Log(lsINFO) << "Computing new LCL based on network consensus";
-	Log(lsDEBUG) << "Consensus " << mOurPosition->getCurrentHash().GetHex();
-	Log(lsDEBUG) << "Previous LCL " << mPrevLedgerHash.GetHex();
+	if (mHaveCorrectLCL)
+	{
+		Log(lsINFO) << "CNF tx " << mOurPosition->getCurrentHash().GetHex() << ", close " << closeTime;
+		Log(lsINFO) << "CNF oldLCL " << mPrevLedgerHash.GetHex();
+	}
 
 	Ledger::pointer newLCL = boost::make_shared<Ledger>(false, boost::ref(*mPreviousLedger));
 	newLCL->armDirty();
@@ -880,20 +886,17 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 	applyTransactions(set, newLCL, newLCL, failedTransactions, true);
 	newLCL->setClosed();
 
-	uint32 closeTime = mOurPosition->getCloseTime() - (mOurPosition->getCloseTime() & mCloseResolution);
 	bool closeTimeCorrect = true;
 	if (closeTime == 0)
 	{ // we agreed to disagree
 		closeTimeCorrect = false;
 		closeTime = mPreviousLedger->getCloseTimeNC() + 1;
-		Log(lsINFO) << "Consensus close time (good) " << closeTime;
+		Log(lsINFO) << "CNF badclose " << closeTime;
 	}
-	else Log(lsINFO) << "Consensus close time (bad) " << closeTime;
 
 	newLCL->setAccepted(closeTime, mCloseResolution, closeTimeCorrect);
 	newLCL->updateHash();
 	uint256 newLCLHash = newLCL->getHash();
-	Log(lsTRACE) << "newLCL " << newLCLHash.GetHex();
 	statusChange(newcoin::neACCEPTED_LEDGER, *newLCL);
 	if (mValidating)
 	{
@@ -905,8 +908,10 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 		newcoin::TMValidation val;
 		val.set_validation(&validation[0], validation.size());
 		theApp->getConnectionPool().relayMessage(NULL, boost::make_shared<PackedMessage>(val, newcoin::mtVALIDATION));
-		Log(lsINFO) << "Validation sent " << newLCLHash.GetHex();
+		Log(lsINFO) << "CNF Val " << newLCLHash.GetHex();
 	}
+	else
+		Log(lsINFO) << "CNF newLCL " << newLCLHash.GetHex();
 
 	Ledger::pointer newOL = boost::make_shared<Ledger>(true, boost::ref(*newLCL));
 	ScopedLock sl = theApp->getMasterLedger().getLock();
