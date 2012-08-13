@@ -27,6 +27,7 @@ enum TransactionEngineResult
 	tenBAD_GEN_AUTH,
 	tenBAD_ISSUER,
 	tenBAD_OFFER,
+	tenBAD_PATH,
 	tenBAD_PATH_COUNT,
 	tenBAD_PUBLISH,
 	tenBAD_SET_ID,
@@ -99,20 +100,71 @@ enum TransactionEngineParams
 	tepMETADATA      = 5,   // put metadata in tree, not transaction
 };
 
+typedef struct {
+	uint16							uFlags;				// --> From path.
+
+	uint160							uAccountID;			// --> Recieving/sending account.
+	uint160							uCurrencyID;		// --> Currency to recieve.
+														// --- For offer's next has currency out.
+	uint160							uIssuerID;			// --> Currency's issuer
+
+	// Computed by Reverse.
+	STAmount						saRevRedeem;		// <-- Amount to redeem to next.
+	STAmount						saRevIssue;			// <-- Amount to issue to next limited by credit and outstanding IOUs.
+														//     Issue isn't used by offers.
+	STAmount						saRevDeliver;		// <-- Amount to deliver to next regardless of fee.
+
+	// Computed by forward.
+	STAmount						saFwdRedeem;		// <-- Amount node will redeem to next.
+	STAmount						saFwdIssue;			// <-- Amount node will issue to next.
+														//	   Issue isn't used by offers.
+	STAmount						saFwdDeliver;		// <-- Amount to deliver to next regardless of fee.
+} paymentNode;
+
 // Hold a path state under incremental application.
 class PathState
 {
+protected:
+	bool pushNode(int iType, uint160 uAccountID, uint160 uCurrencyID, uint160 uIssuerID);
+
 public:
 	typedef boost::shared_ptr<PathState> pointer;
 
-	int			mIndex;
-	uint64		uQuality;		// 0 = none.
-	STAmount	saIn;
-	STAmount	saOut;
+	std::vector<paymentNode>	vpnNodes;
+	LedgerEntrySet				lesEntries;
 
-	PathState(int iIndex) : mIndex(iIndex) { ; };
+	int							mIndex;
+	uint64						uQuality;		// 0 = none.
+	STAmount					saInReq;		// Max amount to spend by sender
+	STAmount					saInAct;		// Amount spent by sender (calc output)
+	STAmount					saOutReq;		// Amount to send (calc input)
+	STAmount					saOutAct;		// Amount actually sent (calc output).
+	bool						bDirty;			// Path not computed.
 
-	static PathState::pointer createPathState(int iIndex) { return boost::make_shared<PathState>(iIndex); };
+	PathState(
+		int						iIndex,
+		const LedgerEntrySet&	lesSource,
+		const STPath&			spSourcePath,
+		uint160					uReceiverID,
+		uint160					uSenderID,
+		STAmount				saSend,
+		STAmount				saSendMax,
+		bool					bPartialPayment
+		);
+
+	static PathState::pointer createPathState(
+		int						iIndex,
+		const LedgerEntrySet&	lesSource,
+		const STPath&			spSourcePath,
+		uint160					uReceiverID,
+		uint160					uSenderID,
+		STAmount				saSend,
+		STAmount				saSendMax,
+		bool					bPartialPayment
+		)
+	{ return boost::make_shared<PathState>(iIndex, lesSource, spSourcePath, uReceiverID, uSenderID, saSend, saSendMax, bPartialPayment); };
+
+	static bool lessPriority(const PathState::pointer& lhs, const PathState::pointer& rhs);
 };
 
 // One instance per ledger.
@@ -137,25 +189,6 @@ private:
 	bool dirNext(const uint256& uRootIndex, SLE::pointer& sleNode, unsigned int& uDirEntry, uint256& uEntryIndex);
 
 #ifdef WORK_IN_PROGRESS
-	typedef struct {
-		uint16							uFlags;			// --> from path
-
-		STAccount						saAccount;		// --> recieving/sending account
-
-		STAmount						saWanted;		// --> What this node wants from upstream.
-
-		// Maybe this should just be a bool:
-		STAmount						saIOURedeemMax;	// --> Max amount of IOUs to redeem downstream.
-		// Maybe this should just be a bool:
-		STAmount						saIOUIssueMax;	// --> Max Amount of IOUs to issue downstream.
-
-		STAmount						saIOURedeem;	// <-- What this node will redeem downstream.
-		STAmount						saIOUIssue;		// <-- What this node will issue downstream.
-		STAmount						saSend;			// <-- Stamps this node will send downstream.
-
-		STAmount						saRecieve;		// Amount stamps to receive.
-
-	} paymentNode;
 
 	typedef struct {
 		std::vector<paymentNode>	vpnNodes;
@@ -176,34 +209,49 @@ private:
 		STAmount&			saTakerGot);
 
 protected:
-	Ledger::pointer mLedger;
-	uint64			mLedgerParentCloseTime;
+	Ledger::pointer		mLedger;
+	uint64				mLedgerParentCloseTime;
 
-	uint160			mTxnAccountID;
-	SLE::pointer	mTxnAccount;
+	uint160				mTxnAccountID;
+	SLE::pointer		mTxnAccount;
 
 	boost::unordered_set<uint256>	mUnfunded;	// Indexes that were found unfunded.
 
-	SLE::pointer	entryCreate(LedgerEntryType letType, const uint256& uIndex);
-	SLE::pointer	entryCache(LedgerEntryType letType, const uint256& uIndex);
-	void			entryDelete(SLE::pointer sleEntry, bool unfunded = false);
-	void			entryModify(SLE::pointer sleEntry);
+	SLE::pointer		entryCreate(LedgerEntryType letType, const uint256& uIndex);
+	SLE::pointer		entryCache(LedgerEntryType letType, const uint256& uIndex);
+	void				entryDelete(SLE::pointer sleEntry, bool unfunded = false);
+	void				entryModify(SLE::pointer sleEntry);
 
-	void			entryReset();
+	void				entryReset();
 
-	STAmount		rippleHolds(const uint160& uAccountID, const uint160& uCurrency, const uint160& uIssuerID);
-	STAmount		rippleTransit(const uint160& uSenderID, const uint160& uReceiverID, const uint160& uIssuerID, const STAmount& saAmount);
-	STAmount		rippleSend(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount);
+	uint32				rippleTransfer(const uint160& uIssuerID);
+	STAmount			rippleBalance(const uint160& uToAccountID, const uint160& uFromAccountID, const uint160& uCurrencyID);
+	STAmount			rippleLimit(const uint160& uToAccountID, const uint160& uFromAccountID, const uint160& uCurrencyID);
+	uint32				rippleQualityIn(const uint160& uToAccountID, const uint160& uFromAccountID, const uint160& uCurrencyID);
+	uint32				rippleQualityOut(const uint160& uToAccountID, const uint160& uFromAccountID, const uint160& uCurrencyID);
 
-	STAmount		accountHolds(const uint160& uAccountID, const uint160& uCurrency, const uint160& uIssuerID);
-	STAmount		accountSend(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount);
-	STAmount		accountFunds(const uint160& uAccountID, const STAmount& saDefault);
+	STAmount			rippleHolds(const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID);
+	STAmount			rippleTransfer(const uint160& uSenderID, const uint160& uReceiverID, const uint160& uIssuerID, const STAmount& saAmount);
+	void				rippleCredit(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount);
+	STAmount			rippleSend(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount);
+
+	STAmount			accountHolds(const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID);
+	STAmount			accountSend(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount);
+	STAmount			accountFunds(const uint160& uAccountID, const STAmount& saDefault);
 
 	PathState::pointer	pathCreate(const STPath& spPath);
 	void				pathApply(PathState::pointer pspCur);
-	void				pathNext(PathState::pointer pspCur);
+	void				pathNext(PathState::pointer pspCur, int iPaths);
+	bool				calcNode(unsigned int uIndex, PathState::pointer pspCur, bool bMultiQuality);
+	bool				calcNodeOfferRev(unsigned int uIndex, PathState::pointer pspCur, bool bMultiQuality);
+	bool				calcNodeOfferFwd(unsigned int uIndex, PathState::pointer pspCur, bool bMultiQuality);
+	bool				calcNodeAccountRev(unsigned int uIndex, PathState::pointer pspCur, bool bMultiQuality);
+	bool				calcNodeAccountFwd(unsigned int uIndex, PathState::pointer pspCur, bool bMultiQuality);
+	void				calcNodeRipple(const uint32 uQualityIn, const uint32 uQualityOut,
+							const STAmount& saPrvReq, const STAmount& saCurReq,
+							STAmount& saPrvAct, STAmount& saCurAct);
 
-	void			txnWrite();
+	void				txnWrite();
 
 	TransactionEngineResult offerDelete(const SLE::pointer& sleOffer, const uint256& uOfferIndex, const uint160& uOwnerID);
 

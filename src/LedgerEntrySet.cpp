@@ -15,7 +15,7 @@ void LedgerEntrySet::clear()
 	mSet.clear();
 }
 
-LedgerEntrySet LedgerEntrySet::duplicate()
+LedgerEntrySet LedgerEntrySet::duplicate() const
 {
 	return LedgerEntrySet(mEntries, mSet, mSeq + 1);
 }
@@ -187,6 +187,11 @@ void LedgerEntrySet::entryDelete(SLE::pointer& sle, bool unfunded)
 		default:
 			throw std::runtime_error("Unknown taa");
 	}
+}
+
+bool LedgerEntrySet::intersect(const LedgerEntrySet& lesLeft, const LedgerEntrySet& lesRight)
+{
+	return true;	// XXX Needs implementation
 }
 
 Json::Value LedgerEntrySet::getJson(int) const

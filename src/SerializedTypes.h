@@ -520,26 +520,41 @@ public:
 class STPathElement
 {
 public:
-	static const int typeEnd		= 0x00;
-	static const int typeAccount	= 0x01;	// Rippling through an account
-	static const int typeOffer		= 0x02;	// Claiming an offer
-	static const int typeBoundary   = 0xFF; // boundary between alternate paths
+	enum {
+		typeEnd			= 0x00,
+		typeAccount		= 0x01,	// Rippling through an account (vs taking an offer).
+		typeRedeem		= 0x04,	// Redeem IOUs.
+		typeIssue		= 0x08,	// Issue IOUs.
+		typeCurrency	= 0x10,	// Currency follows.
+		typeIssuer		= 0x20,	// Issuer follows.
+		typeBoundary	= 0xFF, // Boundary between alternate paths.
+		typeValidBits	= 0x3E,	// Bits that may be non-zero.
+	};
 
 protected:
-	int mType;
-	uint160 mNode;
+	int		mType;
+	uint160 mAccountID;
+	uint160 mCurrency;
+	uint160 mIssuerID;
 
 public:
-	STPathElement(int type, const uint160& node) : mType(type), mNode(node) { ; }
-	int getNodeType() const			{ return mType; }
-	bool isAccount() const			{ return mType == typeAccount; }
-	bool isOffer() const			{ return mType == typeOffer;   }
+	STPathElement(const uint160& uAccountID, const uint160& uCurrency, const uint160& uIssuerID)
+		: mAccountID(uAccountID), mCurrency(uCurrency), mIssuerID(uIssuerID)
+	{
+		mType	=
+			(uAccountID.isZero() ? 0 : STPathElement::typeAccount)
+			| (uCurrency.isZero() ? 0 : STPathElement::typeCurrency)
+			| (uIssuerID.isZero() ? 0 : STPathElement::typeIssuer);
+	}
+
+	int getNodeType() const				{ return mType; }
+	bool isOffer() const				{ return mAccountID.isZero(); }
+	bool isAccount() const				{ return !isOffer(); }
 
 	// Nodes are either an account ID or a offer prefix. Offer prefixs denote a class of offers.
-	const uint160& getNode() const	{ return mNode; }
-
-	void setType(int type)			{ mType = type; }
-	void setNode(const uint160& n)	{ mNode = n; }
+	const uint160& getAccountID() const	{ return mAccountID; }
+	const uint160& getCurrency() const	{ return mCurrency; }
+	const uint160& getIssuerID() const	{ return mIssuerID; }
 };
 
 class STPath
@@ -558,11 +573,49 @@ public:
 	void addElement(const STPathElement& e)				{ mPath.push_back(e); }
 	void clear()										{ mPath.clear(); }
 	int getSerializeSize() const						{ return 1 + mPath.size() * 21; }
-	std::string getText() const;
+//	std::string getText() const;
 	Json::Value getJson(int) const;
+
+	std::vector<STPathElement>::iterator begin()				{ return mPath.begin(); }
+	std::vector<STPathElement>::iterator end()					{ return mPath.end(); }
 	std::vector<STPathElement>::const_iterator begin() const	{ return mPath.begin(); }
 	std::vector<STPathElement>::const_iterator end() const		{ return mPath.end(); }
 };
+
+inline std::vector<STPathElement>::iterator range_begin(STPath & x)
+{
+	return x.begin();
+}
+
+inline std::vector<STPathElement>::iterator range_end(STPath & x)
+{
+	return x.end();
+}
+
+inline std::vector<STPathElement>::const_iterator range_begin(const STPath& x)
+{
+	return x.begin();
+}
+
+inline std::vector<STPathElement>::const_iterator range_end(const STPath& x)
+{
+	return x.end();
+}
+
+namespace boost
+{
+    template<>
+	struct range_mutable_iterator< STPath >
+	{
+		typedef std::vector<STPathElement>::iterator type;
+	};
+
+	template<>
+	struct range_const_iterator< STPath >
+	{
+		typedef std::vector<STPathElement>::const_iterator type;
+	};
+}
 
 class STPathSet : public SerializedType
 { // A set of zero or more payment paths
@@ -582,7 +635,7 @@ public:
 	{ return std::auto_ptr<SerializedType>(construct(sit, name)); }
 
 	int getLength() const;
-	std::string getText() const;
+//	std::string getText() const;
 	void add(Serializer& s) const;
 	virtual Json::Value getJson(int) const;
 

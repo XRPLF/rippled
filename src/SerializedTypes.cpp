@@ -300,34 +300,48 @@ STPathSet* STPathSet::construct(SerializerIterator& s, const char *name)
 {
 	std::vector<STPath> paths;
 	std::vector<STPathElement> path;
+
 	do
 	{
-		switch(s.get8())
+		int	iType	= s.get8();
+
+		if (iType == STPathElement::typeEnd || iType == STPathElement::typeBoundary)
 		{
-			case STPathElement::typeEnd:
-				if (path.empty())
-				{
-					if (!paths.empty())
-						throw std::runtime_error("empty last path");
-				}
-				else paths.push_back(path);
+			if (path.empty())
+				throw std::runtime_error("empty path");
+
+			paths.push_back(path);
+			path.clear();
+
+			if (iType == STPathElement::typeEnd)
+			{
 				return new STPathSet(name, paths);
+			}
+		}
+		else if (iType & ~STPathElement::typeValidBits)
+		{
+			throw std::runtime_error("bad path element");
+		}
+		else
+		{
+			bool	bAccount	= !!(iType & STPathElement::typeAccount);
+			bool	bCurrency	= !!(iType & STPathElement::typeCurrency);
+			bool	bIssuer		= !!(iType & STPathElement::typeIssuer);
 
-			case STPathElement::typeBoundary:
-				if (path.empty())
-					throw std::runtime_error("empty path");
-				paths.push_back(path);
-				path.clear();
+			uint160	uAccountID;
+			uint160	uCurrency;
+			uint160	uIssuerID;
 
-			case STPathElement::typeAccount:
-				path.push_back(STPathElement(STPathElement::typeAccount, s.get160()));
-				break;
+			if (bAccount)
+				uAccountID	= s.get160();
 
-			case STPathElement::typeOffer:
-				path.push_back(STPathElement(STPathElement::typeOffer, s.get160()));
-				break;
+			if (bCurrency)
+				uCurrency	= s.get160();
 
-			default: throw std::runtime_error("Unknown path element");
+			if (bIssuer)
+				uIssuerID	= s.get160();
+
+			path.push_back(STPathElement(uAccountID, uCurrency, uIssuerID));
 		}
 	} while(1);
 }
@@ -335,8 +349,10 @@ STPathSet* STPathSet::construct(SerializerIterator& s, const char *name)
 int STPathSet::getLength() const
 {
 	int ret = 0;
+
 	for (std::vector<STPath>::const_iterator it = value.begin(), end = value.end(); it != end; ++it)
 		ret += it->getSerializeSize();
+
 	return (ret != 0) ? ret : (ret + 1);
 }
 
@@ -346,30 +362,22 @@ Json::Value STPath::getJson(int) const
 
 	BOOST_FOREACH(std::vector<STPathElement>::const_iterator::value_type it, mPath)
 	{
-		switch (it.getNodeType())
-		{
-			case STPathElement::typeAccount:
-			{
-				Json::Value elem(Json::objectValue);
+		Json::Value elem(Json::objectValue);
+		int			iType	= it.getNodeType();
 
-				elem["account"] = NewcoinAddress::createHumanAccountID(it.getNode());
+		elem["type"]		= it.getNodeType();
+		elem["type_hex"]	= strHex(it.getNodeType());
 
-				ret.append(elem);
-				break;
-			}
+		if (iType & STPathElement::typeAccount)
+			elem["account"]		= NewcoinAddress::createHumanAccountID(it.getAccountID());
 
-			case STPathElement::typeOffer:
-			{
-				Json::Value elem(Json::objectValue);
+		if (iType & STPathElement::typeCurrency)
+			elem["currency"]	= STAmount::createHumanCurrency(it.getCurrency());
 
-				elem["offer"] = it.getNode().GetHex();
+		if (iType & STPathElement::typeIssuer)
+			elem["issuer"]		= NewcoinAddress::createHumanAccountID(it.getIssuerID());
 
-				ret.append(elem);
-				break;
-			}
-
-			default: throw std::runtime_error("Unknown path element");
-		}
+		ret.append(elem);
 	}
 
 	return ret;
@@ -385,12 +393,13 @@ Json::Value STPathSet::getJson(int options) const
 	return ret;
 }
 
+#if 0
 std::string STPath::getText() const
 {
 	std::string ret("[");
 	bool first = true;
 
-	BOOST_FOREACH(std::vector<STPathElement>::const_iterator::value_type it, mPath)
+	BOOST_FOREACH(const STPathElement& it, mPath)
 	{
 		if (!first) ret += ", ";
 		switch (it.getNodeType())
@@ -416,7 +425,9 @@ std::string STPath::getText() const
 
 	return ret + "]";
 }
+#endif
 
+#if 0
 std::string STPathSet::getText() const
 {
 	std::string ret("{");
@@ -433,23 +444,34 @@ std::string STPathSet::getText() const
 	}
 	return ret + "}";
 }
+#endif
 
 void STPathSet::add(Serializer& s) const
 {
-	bool firstPath = true;
+	bool bFirst = true;
 
-	BOOST_FOREACH(std::vector<STPath>::const_iterator::value_type pit, value)
+	BOOST_FOREACH(const STPath& spPath, value)
 	{
-		if (!firstPath)
+		if (!bFirst)
 		{
 			s.add8(STPathElement::typeBoundary);
-			firstPath = false;
+			bFirst = false;
 		}
 
-		for (std::vector<STPathElement>::const_iterator eit = pit.begin(), eend = pit.end(); eit != eend; ++eit)
+		BOOST_FOREACH(const STPathElement& speElement, spPath)
 		{
-			s.add8(eit->getNodeType());
-			s.add160(eit->getNode());
+			int		iType	= speElement.getNodeType();
+
+			s.add8(iType);
+
+			if (iType & STPathElement::typeAccount)
+				s.add160(speElement.getAccountID());
+
+			if (iType & STPathElement::typeCurrency)
+				s.add160(speElement.getCurrency());
+
+			if (iType & STPathElement::typeIssuer)
+				s.add160(speElement.getIssuerID());
 		}
 	}
 	s.add8(STPathElement::typeEnd);
