@@ -536,35 +536,42 @@ void LedgerConsensus::updateOurPositions()
 		mHaveCloseTimeConsensus = true;
 		closeTime = mOurPosition->getCloseTime() - (mOurPosition->getCloseTime() % mCloseResolution);
 	}
-	if (mProposing)
+	else
 	{
-		++closeTimes[mOurPosition->getCloseTime() - (mOurPosition->getCloseTime() % mCloseResolution)];
-		++thresh;
-	}
-	thresh = thresh * neededWeight / 100;
-
-	for (std::map<uint32, int>::iterator it = closeTimes.begin(), end = closeTimes.end(); it != end; ++it)
-	{
-		Log(lsINFO) << "CCTime: " << it->first << " has " << it->second << " out of " << thresh;
-		if (it->second > thresh)
+		if (mProposing)
 		{
-			Log(lsINFO) << "Close time consensus reached: " << closeTime;
-			mHaveCloseTimeConsensus = true;
-			closeTime = it->first;
+			++closeTimes[mOurPosition->getCloseTime() - (mOurPosition->getCloseTime() % mCloseResolution)];
+			++thresh;
+		}
+		thresh = thresh * neededWeight / 100;
+
+		for (std::map<uint32, int>::iterator it = closeTimes.begin(), end = closeTimes.end(); it != end; ++it)
+		{
+			Log(lsINFO) << "CCTime: " << it->first << " has " << it->second << " out of " << thresh;
+			if (it->second > thresh)
+			{
+				Log(lsINFO) << "Close time consensus reached: " << closeTime;
+				mHaveCloseTimeConsensus = true;
+				closeTime = it->first;
+			}
 		}
 	}
 
 	if (closeTime != (mOurPosition->getCloseTime() - (mOurPosition->getCloseTime() % mCloseResolution)))
 	{
-		ourPosition = mComplete[mOurPosition->getCurrentHash()]->snapShot(true);
-		changes = true;
+		if (!changes)
+		{
+			ourPosition = mComplete[mOurPosition->getCurrentHash()]->snapShot(true);
+			changes = true;
+		}
 	}
 
 	if (changes)
 	{
 		uint256 newHash = ourPosition->getHash();
 		mOurPosition->changePosition(newHash, closeTime);
-		if (mProposing) propose(addedTx, removedTx);
+		if (mProposing)
+			propose(addedTx, removedTx);
 		mapComplete(newHash, ourPosition, false);
 		Log(lsINFO) << "Position change: CTime " << closeTime << ", tx " << newHash.GetHex();
 	}
@@ -701,30 +708,26 @@ bool LedgerConsensus::peerPosition(LedgerProposal::pointer newPosition)
 		assert(newPosition->getPeerID() == currentPosition->getPeerID());
 		if (newPosition->getProposeSeq() <= currentPosition->getProposeSeq())
 			return false;
-		if (newPosition->getCurrentHash() == currentPosition->getCurrentHash())
-		{ // we missed an intermediary change
-			Log(lsINFO) << "We missed an intermediary position";
-			currentPosition = newPosition;
-			return true;
-		}
 	}
-	else if (newPosition->getProposeSeq() == 0)
+
+	if (newPosition->getProposeSeq() == 0)
 	{ // new initial close time estimate
 		Log(lsTRACE) << "Peer reports close time as " << newPosition->getCloseTime();
 		++mCloseTimes[newPosition->getCloseTime()];
 	}
+
 	Log(lsINFO) << "Processing peer proposal " << newPosition->getProposeSeq() << "/"
 		<< newPosition->getCurrentHash().GetHex();
 	currentPosition = newPosition;
 	SHAMap::pointer set = getTransactionTree(newPosition->getCurrentHash(), true);
 	if (set)
 	{
-		Log(lsTRACE) << "Have that set";
 		for (boost::unordered_map<uint256, LCTransaction::pointer>::iterator it = mDisputes.begin(),
 				end = mDisputes.end(); it != end; ++it)
 			it->second->setVote(newPosition->getPeerID(), set->hasItem(it->first));
 	}
-	else Log(lsTRACE) << "Don't have that set";
+	else
+		Log(lsTRACE) << "Don't have that tx set";
 
 	return true;
 }
