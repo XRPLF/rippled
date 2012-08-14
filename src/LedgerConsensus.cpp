@@ -224,7 +224,7 @@ LedgerConsensus::LedgerConsensus(const uint256& prevLCLHash, Ledger::pointer pre
 	}
 	else
 	{
-		Log(lsINFO) << "Entering consensus process, proposing";
+		Log(lsINFO) << "Entering consensus process, watching";
 		mHaveCorrectLCL = true;
 		mProposing = mValidating = false;
 	}
@@ -249,6 +249,9 @@ void LedgerConsensus::checkLCL()
 		mPrevLedgerHash = netLgr;
 		mAcquiringLedger = theApp->getMasterLedgerAcquire().findCreate(mPrevLedgerHash);
 		std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
+		mHaveCorrectLCL = false;
+		mProposing = false;
+		mValidating = false;
 		bool found = false;
 		for (std::vector<Peer::pointer>::const_iterator it = peerList.begin(), end = peerList.end(); it != end; ++it)
 			if ((*it)->hasLedger(mPrevLedgerHash))
@@ -418,6 +421,8 @@ void LedgerConsensus::statePreClose()
 		statusChange(newcoin::neCLOSING_LEDGER, *mPreviousLedger);
 		takeInitialPosition(*theApp->getMasterLedger().closeLedger());
 	}
+	else
+		checkLCL();
 }
 
 void LedgerConsensus::stateEstablish()
