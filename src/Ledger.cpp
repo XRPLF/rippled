@@ -57,7 +57,7 @@ Ledger::Ledger(Ledger& ledger, bool isMutable) : mTotCoins(ledger.mTotCoins), mL
 }
 
 
-Ledger::Ledger(bool dummy, Ledger& prevLedger) : 
+Ledger::Ledger(bool /* dummy */, Ledger& prevLedger) :
 	mTotCoins(prevLedger.mTotCoins), mLedgerSeq(prevLedger.mLedgerSeq + 1),
 	mParentCloseTime(prevLedger.mCloseTime), mCloseResolution(prevLedger.mCloseResolution),
 	mCloseFlags(0),	mClosed(false), mValidHash(false), mAccepted(false), mImmutable(false),
