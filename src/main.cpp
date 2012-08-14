@@ -146,11 +146,11 @@ int main(int argc, char* argv[])
 	if (!iResult)
 	{
 		theConfig.setup(vm.count("conf") ? vm["conf"].as<std::string>() : "");
-	}
 
-	if (vm.count("standalone"))
-	{
-		theConfig.RUN_STANDALONE = true;
+		if (vm.count("standalone"))
+		{
+			theConfig.RUN_STANDALONE = true;
+		}
 	}
 
 	if (iResult)
