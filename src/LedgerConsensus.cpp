@@ -408,7 +408,12 @@ void LedgerConsensus::statePreClose()
 	int proposersClosed = mPeerPositions.size();
 
 	// This ledger is open. This computes how long since the last ledger closed
-	int sinceClose = 1000 * (theApp->getOPs().getCloseTimeNC() - theApp->getOPs().getLastCloseNetTime());
+	int lastCloseTime;
+	if (!anyTransactions && mPreviousLedger->getCloseAgree())
+		lastCloseTime = mPreviousLedger->getCloseTimeNC();
+	else
+		lastCloseTime = theApp->getOPs().getLastCloseNetTime();
+	int sinceClose = 1000 * (theApp->getOPs().getCloseTimeNC() - lastCloseTime);
 
 	if (sinceClose >= ContinuousLedgerTiming::shouldClose(anyTransactions, mPreviousProposers, proposersClosed,
 		mPreviousMSeconds, sinceClose))
@@ -911,12 +916,12 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 		SerializedValidation::pointer v = boost::make_shared<SerializedValidation>
 			(newLCLHash, newLCL->getCloseTimeNC(), mValSeed, mProposing);
 		v->setTrusted();
+		Log(lsINFO) << "CNF Val " << newLCLHash.GetHex();
 		theApp->getValidations().addValidation(v);
 		std::vector<unsigned char> validation = v->getSigned();
 		newcoin::TMValidation val;
 		val.set_validation(&validation[0], validation.size());
 		theApp->getConnectionPool().relayMessage(NULL, boost::make_shared<PackedMessage>(val, newcoin::mtVALIDATION));
-		Log(lsINFO) << "CNF Val " << newLCLHash.GetHex();
 	}
 	else
 		Log(lsINFO) << "CNF newLCL " << newLCLHash.GetHex();
