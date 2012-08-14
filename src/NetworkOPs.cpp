@@ -458,9 +458,10 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 	for (boost::unordered_map<uint256, ValidationCount>::iterator it = ledgers.begin(), end = ledgers.end();
 		it != end; ++it)
 	{
-		Log(lsTRACE) << "L: " << it->first.GetHex() <<
+		bool isDead = theApp->getValidations().isDeadLedger(it->first);
+		Log(lsTRACE) << "L: " << it->first.GetHex() << ((isDead) ? " dead" : " live") <<
 			"  t=" << it->second.trustedValidations << 	", n=" << it->second.nodesUsing;
-		if ((it->second > bestVC) && !theApp->getValidations().isDeadLedger(it->first))
+		if ((it->second > bestVC) && !isDead)
 		{
 			bestVC = it->second;
 			closedLedger = it->first;
