@@ -14,7 +14,7 @@ bool ValidationCollection::addValidation(SerializedValidation::pointer val)
 		val->setTrusted();
 		uint32 now = theApp->getOPs().getCloseTimeNC();
 		uint32 valClose = val->getCloseTime();
-		if ((now > (valClose - 4)) && (now < (valClose + LEDGER_MAX_INTERVAL)))
+		if ((now > (valClose - LEDGER_EARLY_INTERVAL)) && (now < (valClose + LEDGER_MAX_INTERVAL)))
 			isCurrent = true;
 		else
 			Log(lsWARNING) << "Received stale validation now=" << now << ", close=" << valClose;
@@ -81,7 +81,7 @@ void ValidationCollection::getValidationCount(const uint256& ledger, bool curren
 			if (isTrusted && currentOnly)
 			{
 				uint32 closeTime = vit->second->getCloseTime();
-				if ((now < closeTime) || (now > (closeTime + 2 * LEDGER_MAX_INTERVAL)))
+				if ((now < (closeTime - LEDGER_EARLY_INTERVAL)) || (now > (closeTime + LEDGER_MAX_INTERVAL)))
 					isTrusted = false;
 			}
 			if (isTrusted)
@@ -129,7 +129,6 @@ boost::unordered_map<uint256, int> ValidationCollection::getCurrentValidations()
 	{
 		boost::mutex::scoped_lock sl(mValidationLock);
 		boost::unordered_map<uint160, ValidationPair>::iterator it = mCurrentValidations.begin();
-		bool anyNew = false;
 		while (it != mCurrentValidations.end())
 		{
 			ValidationPair& pair = it->second;
@@ -138,13 +137,13 @@ boost::unordered_map<uint256, int> ValidationCollection::getCurrentValidations()
 			{
 				mStaleValidations.push_back(pair.oldest);
 				pair.oldest = SerializedValidation::pointer();
-				anyNew = true;
+				condWrite();
 			}
 			if (pair.newest && (now > (pair.newest->getCloseTime() + LEDGER_MAX_INTERVAL)))
 			{
 				mStaleValidations.push_back(pair.newest);
 				pair.newest = SerializedValidation::pointer();
-				anyNew = true;
+				condWrite();
 			}
 			if (!pair.newest && !pair.oldest)
 				it = mCurrentValidations.erase(it);
@@ -165,8 +164,6 @@ boost::unordered_map<uint256, int> ValidationCollection::getCurrentValidations()
 				++it;
 			}
 		}
-		if (anyNew)
-			condWrite();
 	}
 
 	return ret;
