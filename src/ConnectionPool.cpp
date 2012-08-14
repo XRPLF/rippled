@@ -42,6 +42,9 @@ ConnectionPool::ConnectionPool(boost::asio::io_service& io_service) :
 
 void ConnectionPool::start()
 {
+	if (theConfig.RUN_STANDALONE)
+		return;
+
 	// Start running policy.
 	policyEnforce();
 
@@ -243,6 +246,8 @@ void ConnectionPool::relayMessage(Peer* fromPeer, PackedMessage::pointer msg)
 // Requires sane IP and port.
 void ConnectionPool::connectTo(const std::string& strIp, int iPort)
 {
+	if (theConfig.RUN_STANDALONE)
+		return;
 	{
 		Database*	db	= theApp->getWalletDB()->getDB();
 		ScopedLock	sl(theApp->getWalletDB()->getDBLock());

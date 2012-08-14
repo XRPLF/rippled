@@ -333,7 +333,7 @@ public:
 
 void NetworkOPs::checkState(const boost::system::error_code& result)
 { // Network state machine
-	if (result == boost::asio::error::operation_aborted)
+	if ((result == boost::asio::error::operation_aborted) || theConfig.RUN_STANDALONE)
 		return;
 	setStateTimer();
 
@@ -680,7 +680,7 @@ void NetworkOPs::setMode(OperatingMode om)
 		mConnectTime = boost::posix_time::second_clock::universal_time();
 	Log l((om < mMode) ? lsWARNING : lsINFO);
 	if (om == omDISCONNECTED)
-		l << "STATE->Disonnected";
+		l << "STATE->Disconnected";
 	else if (om == omCONNECTED)
 		l << "STATE->Connected";
 	else if (om == omTRACKING)

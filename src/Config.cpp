@@ -40,6 +40,11 @@
 
 Config theConfig;
 
+void Config::init()
+{
+	RUN_STANDALONE = false;
+}
+
 void Config::setup(const std::string& strConf)
 {
 	boost::system::error_code	ec;
