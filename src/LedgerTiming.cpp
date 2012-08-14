@@ -22,8 +22,8 @@ int ContinuousLedgerTiming::shouldClose(
 	if ((previousMSeconds < -1000) || (previousMSeconds > 600000) ||
 		(currentMSeconds < -1000) || (currentMSeconds > 600000))
 	{
-		Log(lsFATAL) <<
-			boost::str(boost::format("CLC::shouldClose range error Trans=%s, Prop: %d/%d, Secs: %d (last:%d)")
+		Log(lsWARNING) <<
+			boost::str(boost::format("CLC::shouldClose range Trans=%s, Prop: %d/%d, Secs: %d (last:%d)")
 			% (anyTransactions ? "yes" : "no") % previousProposers % proposersClosed
 			% currentMSeconds % previousMSeconds);
 		return currentMSeconds;

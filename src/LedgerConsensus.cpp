@@ -26,7 +26,10 @@ TransactionAcquire::TransactionAcquire(const uint256& hash) : PeerSet(hash, 1), 
 void TransactionAcquire::done()
 {
 	if (mFailed)
+	{
+		Log(lsWARNING) << "Failed to acqiure TXs " << mHash.GetHex();
 		theApp->getOPs().mapComplete(mHash, SHAMap::pointer());
+	}
 	else
 		theApp->getOPs().mapComplete(mHash, mMap);
 }
@@ -48,7 +51,7 @@ void TransactionAcquire::trigger(Peer::pointer peer, bool timer)
 		*(tmGL.add_nodeids()) = SHAMapNode().getRawString();
 		sendRequest(tmGL, peer);
 	}
-	if (mHaveRoot)
+	else
 	{
 		std::vector<SHAMapNode> nodeIDs; std::vector<uint256> nodeHashes;
 		ConsensusTransSetSF sf;
@@ -67,10 +70,7 @@ void TransactionAcquire::trigger(Peer::pointer peer, bool timer)
 			tmGL.set_itype(newcoin::liTS_CANDIDATE);
 			for (std::vector<SHAMapNode>::iterator it = nodeIDs.begin(); it != nodeIDs.end(); ++it)
 				*(tmGL.add_nodeids()) = it->getRawString();
-			if (peer)
-				sendRequest(tmGL, peer);
-			else
-				sendRequest(tmGL);
+			sendRequest(tmGL, peer);
 			return;
 		}
 	}
@@ -224,7 +224,7 @@ LedgerConsensus::LedgerConsensus(const uint256& prevLCLHash, Ledger::pointer pre
 	}
 	else
 	{
-		Log(lsINFO) << "Entering consensus process, proposing";
+		Log(lsINFO) << "Entering consensus process, watching";
 		mHaveCorrectLCL = true;
 		mProposing = mValidating = false;
 	}
@@ -249,6 +249,9 @@ void LedgerConsensus::checkLCL()
 		mPrevLedgerHash = netLgr;
 		mAcquiringLedger = theApp->getMasterLedgerAcquire().findCreate(mPrevLedgerHash);
 		std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
+		mHaveCorrectLCL = false;
+		mProposing = false;
+		mValidating = false;
 		bool found = false;
 		for (std::vector<Peer::pointer>::const_iterator it = peerList.begin(), end = peerList.end(); it != end; ++it)
 			if ((*it)->hasLedger(mPrevLedgerHash))
@@ -405,7 +408,12 @@ void LedgerConsensus::statePreClose()
 	int proposersClosed = mPeerPositions.size();
 
 	// This ledger is open. This computes how long since the last ledger closed
-	int sinceClose = 1000 * (theApp->getOPs().getCloseTimeNC() - theApp->getOPs().getLastCloseNetTime());
+	int lastCloseTime;
+	if (!anyTransactions && mPreviousLedger->getCloseAgree())
+		lastCloseTime = mPreviousLedger->getCloseTimeNC();
+	else
+		lastCloseTime = theApp->getOPs().getLastCloseNetTime();
+	int sinceClose = 1000 * (theApp->getOPs().getCloseTimeNC() - lastCloseTime);
 
 	if (sinceClose >= ContinuousLedgerTiming::shouldClose(anyTransactions, mPreviousProposers, proposersClosed,
 		mPreviousMSeconds, sinceClose))
@@ -418,6 +426,8 @@ void LedgerConsensus::statePreClose()
 		statusChange(newcoin::neCLOSING_LEDGER, *mPreviousLedger);
 		takeInitialPosition(*theApp->getMasterLedger().closeLedger());
 	}
+	else
+		checkLCL();
 }
 
 void LedgerConsensus::stateEstablish()
@@ -441,9 +451,7 @@ void LedgerConsensus::stateEstablish()
 void LedgerConsensus::stateFinished()
 { // we are processing the finished ledger
 	// logic of calculating next ledger advances us out of this state
-
-	// CHECKME: Should we count proposers that didn't converge to our consensus set?
-	theApp->getOPs().newLCL(mPeerPositions.size(), mCurrentMSeconds, mNewLedgerHash);
+	// nothing to do
 }
 
 void LedgerConsensus::stateAccepted()
@@ -770,6 +778,7 @@ void LedgerConsensus::beginAccept()
 		return;
 	}
 
+	theApp->getOPs().newLCL(mPeerPositions.size(), mCurrentMSeconds, mNewLedgerHash);
 	boost::thread thread(boost::bind(&LedgerConsensus::Saccept, shared_from_this(), consensusSet));
 	thread.detach();
 }
@@ -907,12 +916,12 @@ void LedgerConsensus::accept(SHAMap::pointer set)
 		SerializedValidation::pointer v = boost::make_shared<SerializedValidation>
 			(newLCLHash, newLCL->getCloseTimeNC(), mValSeed, mProposing);
 		v->setTrusted();
+		Log(lsINFO) << "CNF Val " << newLCLHash.GetHex();
 		theApp->getValidations().addValidation(v);
 		std::vector<unsigned char> validation = v->getSigned();
 		newcoin::TMValidation val;
 		val.set_validation(&validation[0], validation.size());
 		theApp->getConnectionPool().relayMessage(NULL, boost::make_shared<PackedMessage>(val, newcoin::mtVALIDATION));
-		Log(lsINFO) << "CNF Val " << newLCLHash.GetHex();
 	}
 	else
 		Log(lsINFO) << "CNF newLCL " << newLCLHash.GetHex();

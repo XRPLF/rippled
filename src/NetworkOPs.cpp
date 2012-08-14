@@ -322,16 +322,20 @@ public:
 	{
 		if (trustedValidations > v.trustedValidations) return true;
 		if (trustedValidations < v.trustedValidations) return false;
-		if (nodesUsing > v.nodesUsing) return true;
-		if (nodesUsing < v.nodesUsing) return false;
+		if (trustedValidations == 0)
+		{
+			if (nodesUsing > v.nodesUsing) return true;
+			if (nodesUsing < v.nodesUsing) return false;
+		}
 		return highNode > v.highNode;
 	}
 };
 
 void NetworkOPs::checkState(const boost::system::error_code& result)
 { // Network state machine
-	if (result == boost::asio::error::operation_aborted)
+	if ((result == boost::asio::error::operation_aborted) || theConfig.RUN_STANDALONE)
 		return;
+	setStateTimer();
 
 	std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
 
@@ -344,7 +348,6 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 			Log(lsWARNING) << "Node count (" << peerList.size() <<
 				") has fallen below quorum (" << theConfig.NETWORK_QUORUM << ").";
 		}
-		setStateTimer();
 		return;
 	}
 	if (mMode == omDISCONNECTED)
@@ -356,7 +359,6 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 	if (mConsensus)
 	{
 		mConsensus->timerEntry();
-		setStateTimer();
 		return;
 	}
 
@@ -383,15 +385,13 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 		// check if the ledger is good enough to go to omFULL
 		// Note: Do not go to omFULL if we don't have the previous ledger
 		// check if the ledger is bad enough to go to omCONNECTED -- TODO
-		if (theApp->getOPs().getNetworkTimeNC() <
-				(theApp->getMasterLedger().getCurrentLedger()->getCloseTimeNC() + 4))
+		if (theApp->getOPs().getNetworkTimeNC() < theApp->getMasterLedger().getCurrentLedger()->getCloseTimeNC())
 			setMode(omFULL);
-		else
-			Log(lsINFO) << "Will try to go to FULL in consensus window";
 	}
 
 	if (mMode == omFULL)
 	{
+		// WRITEME
 		// check if the ledger is bad enough to go to omTRACKING
 	}
 
@@ -399,7 +399,6 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 		beginConsensus(networkClosed, theApp->getMasterLedger().getCurrentLedger());
 	if (mConsensus)
 		mConsensus->timerEntry();
-	setStateTimer();
 }
 
 bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerList, uint256& networkClosed)
@@ -458,9 +457,10 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 	for (boost::unordered_map<uint256, ValidationCount>::iterator it = ledgers.begin(), end = ledgers.end();
 		it != end; ++it)
 	{
-		Log(lsTRACE) << "L: " << it->first.GetHex() <<
-			"  t=" << it->second.trustedValidations << 	", n=" << it->second.nodesUsing;
-		if ((it->second > bestVC) && !theApp->getValidations().isDeadLedger(it->first))
+		bool isDead = theApp->getValidations().isDeadLedger(it->first);
+		Log(lsTRACE) << "L: " << it->first.GetHex() << ((isDead) ? " dead" : " live") <<
+			" t=" << it->second.trustedValidations << 	", n=" << it->second.nodesUsing;
+		if ((it->second > bestVC) && !isDead)
 		{
 			bestVC = it->second;
 			closedLedger = it->first;
@@ -632,20 +632,23 @@ bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash, uint
 
 SHAMap::pointer NetworkOPs::getTXMap(const uint256& hash)
 {
-	if (!mConsensus) return SHAMap::pointer();
+	if (!mConsensus)
+		return SHAMap::pointer();
 	return mConsensus->getTransactionTree(hash, false);
 }
 
 bool NetworkOPs::gotTXData(boost::shared_ptr<Peer> peer, const uint256& hash,
 	const std::list<SHAMapNode>& nodeIDs, const std::list< std::vector<unsigned char> >& nodeData)
 {
-	if (!mConsensus) return false;
+	if (!mConsensus)
+		return false;
 	return mConsensus->peerGaveNodes(peer, hash, nodeIDs, nodeData);
 }
 
 bool NetworkOPs::hasTXSet(boost::shared_ptr<Peer> peer, const uint256& set, newcoin::TxSetStatus status)
 {
-	if (!mConsensus) return false;
+	if (!mConsensus)
+		return false;
 	return mConsensus->peerHasSet(peer, set, status);
 }
 
@@ -675,11 +678,15 @@ void NetworkOPs::setMode(OperatingMode om)
 	if (mMode == om) return;
 	if ((om >= omCONNECTED) && (mMode == omDISCONNECTED))
 		mConnectTime = boost::posix_time::second_clock::universal_time();
-	Log l((om < mMode) ? lsWARNING : lsINFO);
-	if (om == omDISCONNECTED) l << "STATE->Disonnected";
-	else if (om == omCONNECTED) l << "STATE->Connected";
-	else if (om == omTRACKING) l << "STATE->Tracking";
-	else l << "STATE->Full";
+	Log lg((om < mMode) ? lsWARNING : lsINFO);
+	if (om == omDISCONNECTED)
+		lg << "STATE->Disconnected";
+	else if (om == omCONNECTED)
+		lg << "STATE->Connected";
+	else if (om == omTRACKING)
+		lg << "STATE->Tracking";
+	else
+		lg << "STATE->Full";
 	mMode = om;
 }
 

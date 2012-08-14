@@ -93,6 +93,7 @@ int main(int argc, char* argv[])
 		("help,h", "Display this message.")
 		("conf", po::value<std::string>(), "Specify the configuration file.")
 		("rpc", "Perform rpc command (default).")
+		("standalone,a", "Run with no peers.")
 		("test,t", "Perform unit tests.")
 		("parameters", po::value< vector<string> >(), "Specify comma separated parameters.")
 		("verbose,v", "Increase log level")
@@ -145,6 +146,11 @@ int main(int argc, char* argv[])
 	if (!iResult)
 	{
 		theConfig.setup(vm.count("conf") ? vm["conf"].as<std::string>() : "");
+
+		if (vm.count("standalone"))
+		{
+			theConfig.RUN_STANDALONE = true;
+		}
 	}
 
 	if (iResult)

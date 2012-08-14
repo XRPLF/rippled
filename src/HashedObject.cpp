@@ -21,7 +21,9 @@ bool HashedObjectStore::store(HashedObjectType type, uint32 index,
 	if (!theApp->getHashNodeDB()) return true;
 	if (mCache.touch(hash))
 	{
+#ifdef HS_DEBUG
 		Log(lsTRACE) << "HOS: " << hash.GetHex() << " store: incache";
+#endif
 		return false;
 	}
 

@@ -11,7 +11,7 @@
 #include "HashPrefixes.h"
 
 // #define LA_DEBUG
-#define LEDGER_ACQUIRE_TIMEOUT 2
+#define LEDGER_ACQUIRE_TIMEOUT 1
 #define TRUST_NETWORK
 
 PeerSet::PeerSet(const uint256& hash, int interval) : mHash(hash), mTimerInterval(interval), mTimeouts(0),

@@ -43,6 +43,8 @@ public:
 	// The finalized ledger is the last closed/accepted ledger
 	Ledger::pointer getClosedLedger()	{ return mFinalizedLedger; }
 
+	void runStandAlone()				{ mFinalizedLedger = mCurrentLedger; }
+
 	TransactionEngineResult doTransaction(const SerializedTransaction& txn, uint32 targetLedger,
 		TransactionEngineParams params);
 

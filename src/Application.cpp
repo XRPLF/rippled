@@ -70,10 +70,10 @@ void Application::run()
 	if (!theConfig.DEBUG_LOGFILE.empty())
 		Log::setLogFile(theConfig.DEBUG_LOGFILE);
 
-	mSNTPClient.init(theConfig.SNTP_SERVERS);
-
 	boost::thread auxThread(boost::bind(&boost::asio::io_service::run, &mAuxService));
 	auxThread.detach();
+
+	mSNTPClient.init(theConfig.SNTP_SERVERS);
 
 	//
 	// Construct databases.
@@ -95,13 +95,14 @@ void Application::run()
 	//
 	// Set up UNL.
 	//
-	getUNL().nodeBootstrap();
+	if (!theConfig.RUN_STANDALONE)
+		getUNL().nodeBootstrap();
 
 
 	//
 	// Allow peer connections.
 	//
-	if (!theConfig.PEER_IP.empty() && theConfig.PEER_PORT)
+	if (!theConfig.RUN_STANDALONE && !theConfig.PEER_IP.empty() && theConfig.PEER_PORT)
 	{
 		mPeerDoor = new PeerDoor(mIOService);
 	}
@@ -127,7 +128,8 @@ void Application::run()
 	//
 	// Begin connecting to network.
 	//
-	mConnectionPool.start();
+	if (!theConfig.RUN_STANDALONE)
+		mConnectionPool.start();
 
 	// New stuff.
 	NewcoinAddress	rootSeedMaster		= NewcoinAddress::createSeedGeneric("masterpassphrase");
@@ -155,7 +157,14 @@ void Application::run()
 	}
 
 
-	mNetOps.setStateTimer();
+	if (theConfig.RUN_STANDALONE)
+	{
+		Log(lsWARNING) << "Running in standalone mode";
+		mNetOps.setStandAlone();
+		mMasterLedger.runStandAlone();
+	}
+	else
+		mNetOps.setStateTimer();
 
 	mIOService.run(); // This blocks
 
