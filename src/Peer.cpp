@@ -1212,7 +1212,8 @@ Json::Value Peer::getJson()
 	//ret["this"]			= ADDRESS(this);
 	ret["public_key"]	= mNodePublic.ToString();
 	ret["ip"]			= mIpPortConnect.first;
-	ret["port"]			= mIpPortConnect.second;
+	//ret["port"]			= mIpPortConnect.second;
+	ret["port"]			= mIpPort.second;
 
 	if (mHello.has_fullversion())
 		ret["version"] = mHello.fullversion();
