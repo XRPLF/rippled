@@ -84,7 +84,6 @@ int main(int argc, char* argv[])
 	int					iResult	= 0;
 	po::variables_map	vm;										// Map of options.
 	bool				bTest	= false;
-	theConfig.init();
 
 	//
 	// Set up option parsing.
@@ -144,14 +143,14 @@ int main(int argc, char* argv[])
 		Log::setMinSeverity(lsTRACE);
 	}
 
-	if (vm.count("standalone"))
-	{
-		theConfig.RUN_STANDALONE = true;
-	}
-
 	if (!iResult)
 	{
 		theConfig.setup(vm.count("conf") ? vm["conf"].as<std::string>() : "");
+	}
+
+	if (vm.count("standalone"))
+	{
+		theConfig.RUN_STANDALONE = true;
 	}
 
 	if (iResult)

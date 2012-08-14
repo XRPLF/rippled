@@ -40,11 +40,6 @@
 
 Config theConfig;
 
-void Config::init()
-{
-	RUN_STANDALONE = false;
-}
-
 void Config::setup(const std::string& strConf)
 {
 	boost::system::error_code	ec;
@@ -154,6 +149,8 @@ void Config::setup(const std::string& strConf)
 	ACCOUNT_PROBE_MAX		= 10;
 
 	VALIDATORS_SITE			= DEFAULT_VALIDATORS_SITE;
+
+	RUN_STANDALONE			= false;
 
 	load();
 }

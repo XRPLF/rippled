@@ -101,7 +101,6 @@ public:
 	// Client behavior
 	int							ACCOUNT_PROBE_MAX;		// How far to scan for accounts.
 
-	void init();
 	void setup(const std::string& strConf);
 	void load();
 };
