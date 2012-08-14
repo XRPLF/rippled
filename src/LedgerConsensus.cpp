@@ -441,9 +441,7 @@ void LedgerConsensus::stateEstablish()
 void LedgerConsensus::stateFinished()
 { // we are processing the finished ledger
 	// logic of calculating next ledger advances us out of this state
-
-	// CHECKME: Should we count proposers that didn't converge to our consensus set?
-	theApp->getOPs().newLCL(mPeerPositions.size(), mCurrentMSeconds, mNewLedgerHash);
+	// nothing to do
 }
 
 void LedgerConsensus::stateAccepted()
@@ -770,6 +768,7 @@ void LedgerConsensus::beginAccept()
 		return;
 	}
 
+	theApp->getOPs().newLCL(mPeerPositions.size(), mCurrentMSeconds, mNewLedgerHash);
 	boost::thread thread(boost::bind(&LedgerConsensus::Saccept, shared_from_this(), consensusSet));
 	thread.detach();
 }
