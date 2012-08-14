@@ -38,7 +38,7 @@ protected:
 public:
 	ValidationCollection() : mWriting(false) { ; }
 
-	bool addValidation(SerializedValidation::pointer);
+	bool addValidation(SerializedValidation::pointer&);
 	ValidationSet getValidations(const uint256& ledger);
 	void getValidationCount(const uint256& ledger, bool currentOnly, int& trusted, int& untrusted);
 
