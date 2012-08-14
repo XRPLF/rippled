@@ -41,7 +41,6 @@ enum TransactionEngineResult
 	// Invalid: Ledger won't allow.
 	tenCLAIMED		= -200,
 	tenBAD_RIPPLE,
-	tenCREATED,
 	tenEXPIRED,
 	tenMSG_SET,
 	terALREADY,

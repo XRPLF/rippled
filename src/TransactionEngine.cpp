@@ -70,7 +70,6 @@ bool transResultInfo(TransactionEngineResult terCode, std::string& strToken, std
 		{	terBAD_LEDGER,			"terBAD_LEDGER",			"Ledger in unexpected state."						},
 		{	terBAD_RIPPLE,			"terBAD_RIPPLE",			"No ripple path can be satisfied."					},
 		{	terBAD_SEQ,				"terBAD_SEQ",				"This sequence number should be zero for prepaid transactions."	},
-		{	terCREATED,				"terCREATED",				"Can not create a previously created account."		},
 		{	terDIR_FULL,			"terDIR_FULL",				"Can not add entry to full dir."					},
 		{	terFUNDS_SPENT,			"terFUNDS_SPENT",			"Can't set password, password set funds already spent."	},
 		{	terINSUF_FEE_B,			"terINSUF_FEE_B",			"Account balance can't pay fee"						},
@@ -3304,14 +3303,6 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 
 		sleDst->setIFieldAccount(sfAccount, uDstAccountID);
 		sleDst->setIFieldU32(sfSequence, 1);
-	}
-	// Destination exists.
-	else if (bCreate)
-	{
-		// Retryable: if account created this ledger, reordering might allow account to be made by this transaction.
-		Log(lsINFO) << "doPayment: Invalid transaction: Account already created.";
-
-		return terCREATED;
 	}
 	else
 	{
