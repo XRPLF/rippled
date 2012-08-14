@@ -290,7 +290,7 @@ public:
 
 	bool isNative() const		{ return mIsNative; }
 	bool isZero() const			{ return mValue == 0; }
-	bool isNonZero() const 		{ return mValue != 0; }
+	bool isNonZero() const		{ return mValue != 0; }
 	bool isNegative() const		{ return mIsNegative && !isZero(); }
 	bool isPositive() const		{ return !mIsNegative && !isZero(); }
 	bool isGEZero() const		{ return !mIsNegative; }
@@ -528,23 +528,31 @@ public:
 		typeCurrency	= 0x10,	// Currency follows.
 		typeIssuer		= 0x20,	// Issuer follows.
 		typeBoundary	= 0xFF, // Boundary between alternate paths.
-		typeValidBits	= 0x3E,	// Bits that may be non-zero.
+		typeValidBits	= (
+			typeAccount
+				| typeRedeem
+				| typeIssue
+				| typeCurrency
+				| typeIssuer
+			),	// Bits that may be non-zero.
 	};
 
 protected:
 	int		mType;
 	uint160 mAccountID;
-	uint160 mCurrency;
+	uint160 mCurrencyID;
 	uint160 mIssuerID;
 
 public:
-	STPathElement(const uint160& uAccountID, const uint160& uCurrency, const uint160& uIssuerID)
-		: mAccountID(uAccountID), mCurrency(uCurrency), mIssuerID(uIssuerID)
+	STPathElement(const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID, bool bRedeem=false, bool bIssue=false)
+		: mAccountID(uAccountID), mCurrencyID(uCurrencyID), mIssuerID(uIssuerID)
 	{
 		mType	=
 			(uAccountID.isZero() ? 0 : STPathElement::typeAccount)
-			| (uCurrency.isZero() ? 0 : STPathElement::typeCurrency)
-			| (uIssuerID.isZero() ? 0 : STPathElement::typeIssuer);
+			| (uCurrencyID.isZero() ? 0 : STPathElement::typeCurrency)
+			| (uIssuerID.isZero() ? 0 : STPathElement::typeIssuer)
+			| (bRedeem ? STPathElement::typeRedeem : 0)
+			| (bIssue ? STPathElement::typeIssue : 0);
 	}
 
 	int getNodeType() const				{ return mType; }
@@ -553,8 +561,11 @@ public:
 
 	// Nodes are either an account ID or a offer prefix. Offer prefixs denote a class of offers.
 	const uint160& getAccountID() const	{ return mAccountID; }
-	const uint160& getCurrency() const	{ return mCurrency; }
+	const uint160& getCurrency() const	{ return mCurrencyID; }
 	const uint160& getIssuerID() const	{ return mIssuerID; }
+
+	bool operator==(const STPathElement& t) const
+	{ return mType == t.mType && mAccountID == t.mAccountID && mCurrencyID == t.mCurrencyID && mIssuerID == mIssuerID; }
 };
 
 class STPath
@@ -580,6 +591,8 @@ public:
 	std::vector<STPathElement>::iterator end()					{ return mPath.end(); }
 	std::vector<STPathElement>::const_iterator begin() const	{ return mPath.begin(); }
 	std::vector<STPathElement>::const_iterator end() const		{ return mPath.end(); }
+
+	bool operator==(const STPath& t) const						{ return mPath == t.mPath; }
 };
 
 inline std::vector<STPathElement>::iterator range_begin(STPath & x)
@@ -646,6 +659,8 @@ public:
 	bool isEmpty() const								{ return value.empty(); }
 	void clear()										{ value.clear(); }
 	void addPath(const STPath& e)						{ value.push_back(e); }
+
+	virtual bool isEquivalent(const SerializedType& t) const;
 
 	std::vector<STPath>::iterator begin()				{ return value.begin(); }
 	std::vector<STPath>::iterator end()					{ return value.end(); }

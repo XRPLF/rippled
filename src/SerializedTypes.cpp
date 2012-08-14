@@ -346,6 +346,12 @@ STPathSet* STPathSet::construct(SerializerIterator& s, const char *name)
 	} while(1);
 }
 
+bool STPathSet::isEquivalent(const SerializedType& t) const
+{
+	const STPathSet* v = dynamic_cast<const STPathSet*>(&t);
+	return v && (value == v->value);
+}
+
 int STPathSet::getLength() const
 {
 	int ret = 0;
