@@ -151,13 +151,13 @@ boost::unordered_map<uint256, int> ValidationCollection::getCurrentValidations()
 			{
 				if (pair.oldest)
 				{
-					Log(lsTRACE) << "OLD " << pair.oldest->getLedgerHash().GetHex() << " " <<
+//					Log(lsTRACE) << "OLD " << pair.oldest->getLedgerHash().GetHex() << " " <<
 						boost::lexical_cast<std::string>(pair.oldest->getCloseTime());
 					++ret[pair.oldest->getLedgerHash()];
 				}
 				if (pair.newest)
 				{
-					Log(lsTRACE) << "NEW " << pair.newest->getLedgerHash().GetHex() << " " <<
+//					Log(lsTRACE) << "NEW " << pair.newest->getLedgerHash().GetHex() << " " <<
 						boost::lexical_cast<std::string>(pair.newest->getCloseTime());
 					++ret[pair.newest->getLedgerHash()];
 				}
