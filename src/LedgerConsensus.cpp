@@ -26,7 +26,10 @@ TransactionAcquire::TransactionAcquire(const uint256& hash) : PeerSet(hash, 1), 
 void TransactionAcquire::done()
 {
 	if (mFailed)
+	{
+		Log(lsWARNING) << "Failed to acqiure TXs " << mHash.GetHex();
 		theApp->getOPs().mapComplete(mHash, SHAMap::pointer());
+	}
 	else
 		theApp->getOPs().mapComplete(mHash, mMap);
 }
@@ -48,7 +51,7 @@ void TransactionAcquire::trigger(Peer::pointer peer, bool timer)
 		*(tmGL.add_nodeids()) = SHAMapNode().getRawString();
 		sendRequest(tmGL, peer);
 	}
-	if (mHaveRoot)
+	else
 	{
 		std::vector<SHAMapNode> nodeIDs; std::vector<uint256> nodeHashes;
 		ConsensusTransSetSF sf;
@@ -67,10 +70,7 @@ void TransactionAcquire::trigger(Peer::pointer peer, bool timer)
 			tmGL.set_itype(newcoin::liTS_CANDIDATE);
 			for (std::vector<SHAMapNode>::iterator it = nodeIDs.begin(); it != nodeIDs.end(); ++it)
 				*(tmGL.add_nodeids()) = it->getRawString();
-			if (peer)
-				sendRequest(tmGL, peer);
-			else
-				sendRequest(tmGL);
+			sendRequest(tmGL, peer);
 			return;
 		}
 	}
