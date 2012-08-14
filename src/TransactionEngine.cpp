@@ -818,7 +818,7 @@ SLE::pointer TransactionEngine::entryCache(LedgerEntryType letType, const uint25
 				mOrigNodes.entryCache(sleEntry); // So the metadata code can compare to the original
 			}
 		}
-		else if(action == taaDELETE)
+		else if (action == taaDELETE)
 			assert(false);
 	}
 
@@ -3165,7 +3165,7 @@ PathState::PathState(
 	STAmount				saSendMax,
 	bool					bPartialPayment
 	)
-	: mIndex(iIndex), uQuality(0), bDirty(true)
+	: mIndex(iIndex), uQuality(0)
 {
 	lesEntries				= lesSource.duplicate();
 
@@ -3228,11 +3228,12 @@ void TransactionEngine::pathNext(PathState::pointer pspCur, int iPaths)
 
 	unsigned int	uLast	= pspCur->vpnNodes.size() - 1;
 
+	pspCur->lesEntries	= mNodes.duplicate();	// Checkpoint state?
+
 	if (!calcNode(uLast, pspCur, iPaths == 1))
 	{
 		// Mark path as inactive.
 		pspCur->uQuality	= 0;
-		pspCur->bDirty		= false;
 	}
 }
 
@@ -3309,7 +3310,6 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 		// Create the account.
 		sleDst	= entryCreate(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uDstAccountID));
 
-		sleDst->setIFieldAccount(sfAccount, uDstAccountID);
 		sleDst->setIFieldU32(sfSequence, 1);
 	}
 	else
@@ -3343,9 +3343,12 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 	// Ripple payment
 	//
 
+#if 0
+// Disabled to make sure full ripple code is correct.
 	// Try direct ripple first.
 	if (!bNoRippleDirect && mTxnAccountID != uDstAccountID && uSrcCurrency == uDstCurrency)
 	{
+		// XXX Does not handle quality.
 		SLE::pointer		sleRippleState	= entryCache(ltRIPPLE_STATE, Ledger::getRippleStateIndex(mTxnAccountID, uDstAccountID, uDstCurrency));
 
 		if (sleRippleState)
@@ -3425,22 +3428,39 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 			return terSUCCESS;
 		}
 	}
+#endif
 
 	STPathSet	spsPaths = txn.getITFieldPathSet(sfPaths);
 
-	if (!spsPaths.isEmpty())
+	if (!bNoRippleDirect && spsPaths.isEmpty())
 	{
-		Log(lsINFO) << "doPayment: Invalid transaction: No paths.";
+		Log(lsINFO) << "doPayment: Invalid transaction: No paths and direct ripple not allowed.";
 
 		return tenRIPPLE_EMPTY;
 	}
-	else if (spsPaths.getPathCount() > RIPPLE_PATHS_MAX)
+
+	if (spsPaths.getPathCount() > RIPPLE_PATHS_MAX)
 	{
 		return tenBAD_PATH_COUNT;
 	}
 
 	// Incrementally search paths.
 	std::vector<PathState::pointer>	vpsPaths;
+
+	if (!bNoRippleDirect)
+	{
+		// Direct path.
+		vpsPaths.push_back(PathState::createPathState(
+			vpsPaths.size(),
+			mNodes,
+			STPath(),
+			uDstAccountID,
+			mTxnAccountID,
+			saDstAmount,
+			saMaxAmount,
+			bPartialPayment
+			));
+	}
 
 	BOOST_FOREACH(const STPath& spPath, spsPaths)
 	{
@@ -3468,14 +3488,7 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 		// Find the best path.
 		BOOST_FOREACH(PathState::pointer pspCur, vpsPaths)
 		{
-			if (pspCur->bDirty)
-			{
-				pspCur->bDirty		= false;
-				pspCur->lesEntries	= mNodes.duplicate();
-
-				// XXX Compute increment
-				pathNext(pspCur, vpsPaths.size());
-			}
+			pathNext(pspCur, vpsPaths.size());			// Compute increment
 
 			if (!pspBest || (pspCur->uQuality && PathState::lessPriority(pspBest, pspCur)))
 				pspBest	= pspCur;
@@ -3489,22 +3502,6 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 
 			// Install changes for path.
 			mNodes.swapWith(pspBest->lesEntries);
-
-			// Mark that path as dirty.
-			pspBest->bDirty	= true;
-
-			// Mark as dirty any other path that intersected.
-			BOOST_FOREACH(PathState::pointer& pspOther, vpsPaths)
-			{
-				// Look for intersection of best and the others.
-				// - Will forget the intersection applied.
-				//   - Anything left will not interfere with it.
-				// - Will remember the non-intersection non-applied for future consideration.
-				if (!pspOther->bDirty
-					&& pspOther->uQuality
-					&& LedgerEntrySet::intersect(pspBest->lesEntries, pspOther->lesEntries))
-					pspOther->bDirty	= true;
-			}
 
 			// Figure out if done.
 			if (tenUNKNOWN == terResult && saPaid == saWanted)
@@ -3581,7 +3578,6 @@ TransactionEngineResult TransactionEngine::doWalletAdd(const SerializedTransacti
 	// Create the account.
 	sleDst	= entryCreate(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uDstAccountID));
 
-	sleDst->setIFieldAccount(sfAccount, uDstAccountID);
 	sleDst->setIFieldU32(sfSequence, 1);
 	sleDst->setIFieldAmount(sfBalance, saAmount);
 	sleDst->setIFieldAccount(sfAuthorizedKey, uAuthKeyID);

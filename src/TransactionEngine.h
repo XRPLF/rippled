@@ -139,7 +139,6 @@ public:
 	STAmount					saInAct;		// Amount spent by sender (calc output)
 	STAmount					saOutReq;		// Amount to send (calc input)
 	STAmount					saOutAct;		// Amount actually sent (calc output).
-	bool						bDirty;			// Path not computed.
 
 	PathState(
 		int						iIndex,
