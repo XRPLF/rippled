@@ -500,7 +500,7 @@ Transaction::pointer Transaction::setPayment(
 	mTransaction->setITFieldAccount(sfDestination, naDstAccountID);
 	mTransaction->setITFieldAmount(sfAmount, saAmount);
 
-	if (saAmount != saSendMax)
+	if (saAmount != saSendMax || saAmount.getCurrency() != saSendMax.getCurrency())
 	{
 		mTransaction->setITFieldAmount(sfSendMax, saSendMax);
 	}

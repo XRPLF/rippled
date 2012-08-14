@@ -3279,6 +3279,14 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 
 		return tenREDUNDANT;
 	}
+	else if (bMax
+		&& ((saMaxAmount == saDstAmount && saMaxAmount.getCurrency() == saDstAmount.getCurrency())
+			|| (saDstAmount.isNative() && saMaxAmount.isNative())))
+	{
+		Log(lsINFO) << "doPayment: Invalid transaction: bad SendMax.";
+
+		return tenINVALID;
+	}
 
 	SLE::pointer		sleDst	= entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uDstAccountID));
 	if (!sleDst)
@@ -3309,6 +3317,7 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 		entryModify(sleDst);
 	}
 
+	// XXX Should bMax be sufficient to imply ripple?
 	bool		bRipple			= bPaths || bMax || !saDstAmount.isNative();
 
 	if (!bRipple)
