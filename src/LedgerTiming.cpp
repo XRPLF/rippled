@@ -17,13 +17,13 @@ int ContinuousLedgerTiming::shouldClose(
 	int previousProposers,		// proposers in the last closing
 	int proposersClosed,		// proposers who have currently closed this ledgers
 	int previousMSeconds,		// seconds the previous ledger took to reach consensus
-	int currentMSeconds)			// seconds since the previous ledger closed
+	int currentMSeconds)		// seconds since the previous ledger closed
 {
 	if ((previousMSeconds < -1000) || (previousMSeconds > 600000) ||
 		(currentMSeconds < -1000) || (currentMSeconds > 600000))
 	{
-		Log(lsFATAL) <<
-			boost::str(boost::format("CLC::shouldClose range error Trans=%s, Prop: %d/%d, Secs: %d (last:%d)")
+		Log(lsWARNING) <<
+			boost::str(boost::format("CLC::shouldClose range Trans=%s, Prop: %d/%d, Secs: %d (last:%d)")
 			% (anyTransactions ? "yes" : "no") % previousProposers % proposersClosed
 			% currentMSeconds % previousMSeconds);
 		return currentMSeconds;

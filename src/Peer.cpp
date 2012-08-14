@@ -928,7 +928,7 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 {
 	SHAMap::pointer map;
 	newcoin::TMLedgerData reply;
-	bool fatLeaves = true;
+	bool fatLeaves = true, fatRoot = false;
 
 	if (packet.itype() == newcoin::liTS_CANDIDATE)
 	{ // Request is  for a transaction candidate set
@@ -952,6 +952,7 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 		reply.set_ledgerhash(txHash.begin(), txHash.size());
 		reply.set_type(newcoin::liTS_CANDIDATE);
 		fatLeaves = false; // We'll already have most transactions
+		fatRoot = true; // Save a pass
 	}
 	else
 	{ // Figure out what ledger they want
@@ -1057,7 +1058,7 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 		}
 		std::vector<SHAMapNode> nodeIDs;
 		std::list< std::vector<unsigned char> > rawNodes;
-		if(map->getNodeFat(mn, nodeIDs, rawNodes, fatLeaves))
+		if(map->getNodeFat(mn, nodeIDs, rawNodes, fatRoot, fatLeaves))
 		{
 			std::vector<SHAMapNode>::iterator nodeIDIterator;
 			std::list< std::vector<unsigned char> >::iterator rawNodeIterator;
@@ -1074,7 +1075,8 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 			}
 		}
 	}
-	if (packet.has_requestcookie()) reply.set_requestcookie(packet.requestcookie());
+	if (packet.has_requestcookie())
+		reply.set_requestcookie(packet.requestcookie());
 	PackedMessage::pointer oPacket = boost::make_shared<PackedMessage>(reply, newcoin::mtLEDGER_DATA);
 	sendPacket(oPacket);
 }

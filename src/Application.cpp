@@ -70,10 +70,10 @@ void Application::run()
 	if (!theConfig.DEBUG_LOGFILE.empty())
 		Log::setLogFile(theConfig.DEBUG_LOGFILE);
 
-	mSNTPClient.init(theConfig.SNTP_SERVERS);
-
 	boost::thread auxThread(boost::bind(&boost::asio::io_service::run, &mAuxService));
 	auxThread.detach();
+
+	mSNTPClient.init(theConfig.SNTP_SERVERS);
 
 	//
 	// Construct databases.

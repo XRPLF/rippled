@@ -50,6 +50,7 @@ public:
 		rpcACT_MALFORMED,
 		rpcBAD_SEED,
 		rpcDST_ACT_MALFORMED,
+		rpcDST_ACT_MISSING,
 		rpcDST_AMT_MALFORMED,
 		rpcGETS_ACT_MALFORMED,
 		rpcGETS_AMT_MALFORMED,
@@ -63,6 +64,7 @@ public:
 		rpcPORT_MALFORMED,
 		rpcPUBLIC_MALFORMED,
 		rpcSRC_ACT_MALFORMED,
+		rpcSRC_ACT_MISSING,
 		rpcSRC_AMT_MALFORMED,
 
 		// Internal error (should never happen)
@@ -146,6 +148,7 @@ private:
 	Json::Value doPasswordFund(const Json::Value& params);
 	Json::Value doPasswordSet(const Json::Value& params);
 	Json::Value doPeers(const Json::Value& params);
+	Json::Value doRipple(const Json::Value &params);
 	Json::Value doRippleLinesGet(const Json::Value &params);
 	Json::Value doRippleLineSet(const Json::Value& params);
 	Json::Value doSend(const Json::Value& params);
