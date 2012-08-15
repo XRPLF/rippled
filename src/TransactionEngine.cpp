@@ -836,7 +836,6 @@ SLE::pointer TransactionEngine::entryCreate(LedgerEntryType letType, const uint2
 	return sleNew;
 }
 
-
 void TransactionEngine::entryDelete(SLE::pointer sleEntry, bool unfunded)
 {
 	mNodes.entryDelete(sleEntry, unfunded);
@@ -3046,16 +3045,86 @@ bool PathState::lessPriority(const PathState::pointer& lhs, const PathState::poi
 	return lhs->mIndex > rhs->mIndex;			// Bigger is worse.
 }
 
-// Add a node and insert any implied nodes.
+// Make sure the path delivers to uAccountID: uCurrencyID from uIssuerID.
+bool PathState::pushImply(uint160 uAccountID, uint160 uCurrencyID, uint160 uIssuerID)
+{
+	const paymentNode&	pnPrv	= vpnNodes.back();
+	bool				bValid	= true;
+
+	Log(lsINFO) << "pushImply> "
+		<< NewcoinAddress::createHumanAccountID(uAccountID)
+		<< " " << STAmount::createHumanCurrency(uCurrencyID)
+		<< " " << NewcoinAddress::createHumanAccountID(uIssuerID);
+
+	if (pnPrv.uCurrencyID != uCurrencyID)
+	{
+		// Need to convert via an offer.
+#if 0
+// XXX Don't know if need this.
+		bool			bPrvAccount	= !!pnPrv.uAccountID;
+
+		if (!bPrvAccount)	// Previous is an offer.
+		{
+			// Direct offer --> offer is not allowed for non-stamps.
+			// Need to ripple through uIssuerID's account.
+
+			bValid	= pushNode(
+						STPathElement::typeAccount
+							| STPathElement::typeIssue,
+						pnPrv.uIssuerID,	// Intermediate account is the needed issuer.
+						CURRENCY_ONE,		// Inherit from previous.
+						ACCOUNT_ONE);		// Default same as account.
+		}
+#endif
+
+		bValid	= pushNode(
+					0,				// Offer
+					ACCOUNT_ONE,	// Placeholder for offers.
+					uCurrencyID,	// The offer's output is what is now wanted.
+					uIssuerID);
+
+	}
+
+	if (bValid
+		&& !!uCurrencyID					// Not stamps.
+		&& (pnPrv.uAccountID != uIssuerID	// Previous is not issuing own IOUs.
+			&& uAccountID != uIssuerID))	// Current is not receiving own IOUs.
+	{
+		// Need to ripple through uIssuerID's account.
+
+		bValid	= pushNode(
+					STPathElement::typeAccount
+						| STPathElement::typeRedeem
+						| STPathElement::typeIssue,
+					uIssuerID,		// Intermediate account is the needed issuer.
+					uCurrencyID,
+					uIssuerID);
+	}
+
+	Log(lsINFO) << "pushImply< " << bValid;
+
+	return bValid;
+}
+
+// Append a node and insert before it any implied nodes.
 // <-- bValid: true, if node is valid. false, if node is malformed.
 bool PathState::pushNode(int iType, uint160 uAccountID, uint160 uCurrencyID, uint160 uIssuerID)
 {
+	Log(lsINFO) << "pushNode> "
+		<< NewcoinAddress::createHumanAccountID(uAccountID)
+		<< " " << STAmount::createHumanCurrency(uCurrencyID)
+		<< " " << NewcoinAddress::createHumanAccountID(uIssuerID);
 			paymentNode		pnCur;
 			bool			bFirst		= vpnNodes.empty();
 	const	paymentNode&	pnPrv		= bFirst ? paymentNode() : vpnNodes.back();
+			// true, iff node is a ripple account. false, iff node is an offer node.
 			bool			bAccount	= !!(iType & STPathElement::typeAccount);
+			// true, iff currency supplied.
+			// Currency is specified for the output of the current node.
 			bool			bCurrency	= !!(iType & STPathElement::typeCurrency);
+			// Issuer is specified for the output of the current node.
 			bool			bIssuer		= !!(iType & STPathElement::typeIssuer);
+			// true, iff account is allowed to redeem it's IOUs to next node.
 			bool			bRedeem		= !!(iType & STPathElement::typeRedeem);
 			bool			bIssue		= !!(iType & STPathElement::typeIssue);
 			bool			bValid		= true;
@@ -3064,6 +3133,8 @@ bool PathState::pushNode(int iType, uint160 uAccountID, uint160 uCurrencyID, uin
 
 	if (iType & ~STPathElement::typeValidBits)
 	{
+		Log(lsINFO) << "pushNode: bad bits.";
+
 		bValid	= false;
 	}
 	else if (bAccount)
@@ -3076,30 +3147,13 @@ bool PathState::pushNode(int iType, uint160 uAccountID, uint160 uCurrencyID, uin
 			pnCur.uCurrencyID	= bCurrency ? uCurrencyID : pnPrv.uCurrencyID;
 			pnCur.uIssuerID		= bIssuer ? uIssuerID : uAccountID;
 
-			// An intermediate node may be implied.
-
-			if (uCurrencyID != pnPrv.uCurrencyID)
+			if (!bFirst)
 			{
-				// Implied preceeding offer.
-
-				bValid	= pushNode(
-							0,
-							ACCOUNT_ONE,
-							CURRENCY_ONE,	// Inherit from previous
-							ACCOUNT_ONE);	// Inherit from previous
-			}
-
-			if (bValid && uIssuerID != pnPrv.uIssuerID)
-			{
-				// Implied preceeding account.
-
-				bValid	= pushNode(
-							STPathElement::typeAccount
-								| STPathElement::typeRedeem
-								| STPathElement::typeIssue,
-							uIssuerID,
-							CURRENCY_ONE,	// Inherit from previous
-							ACCOUNT_ONE);	// Default same as account.
+				// Add required intermediate nodes to deliver to current account.
+				bValid	= pushImply(
+					pnCur.uAccountID,									// Current account.
+					pnCur.uCurrencyID,									// Wanted currency.
+					!!pnCur.uCurrencyID ? uAccountID : ACCOUNT_XNS);	// Account as issuer.
 			}
 
 			if (bValid)
@@ -3107,6 +3161,8 @@ bool PathState::pushNode(int iType, uint160 uAccountID, uint160 uCurrencyID, uin
 		}
 		else
 		{
+			Log(lsINFO) << "pushNode: Account must redeem and/or issue.";
+
 			bValid	= false;
 		}
 	}
@@ -3119,23 +3175,28 @@ bool PathState::pushNode(int iType, uint160 uAccountID, uint160 uCurrencyID, uin
 		}
 		else
 		{
-			pnCur.uAccountID	= uAccountID;
+			// Offers bridge a change in currency & issuer or just a change in issuer.
 			pnCur.uCurrencyID	= bCurrency ? uCurrencyID : pnPrv.uCurrencyID;
 			pnCur.uIssuerID		= bIssuer ? uIssuerID : pnCur.uAccountID;
 
-			if (!!pnPrv.uAccountID							// Previous is an account.
-				&& pnPrv.uAccountID != pnCur.uIssuerID)		// Account is not issuer.
+			if (!!pnPrv.uAccountID)
 			{
-				// Implied preceeding account.
+				// Previous is an account.
 
-				bValid	= pushNode(
-							STPathElement::typeAccount
-								| STPathElement::typeIssue,
-							uIssuerID,
-							CURRENCY_ONE,					// Inherit from previous
-							ACCOUNT_ONE);					// Default same as account.
+				// Insert intermediary account if needed.
+				bValid	= pushImply(
+					!!pnPrv.uCurrencyID ? ACCOUNT_ONE : ACCOUNT_XNS,
+					pnPrv.uCurrencyID,
+					pnPrv.uIssuerID);
 			}
-			else if (bValid)
+			else
+			{
+				// Previous is an offer.
+				// XXX Need code if we don't do offer to offer.
+				nothing();
+			}
+
+			if (bValid)
 			{
 				// Verify that previous account is allowed to issue.
 				const paymentNode&	pnLst		= vpnNodes.back();
@@ -3143,13 +3204,18 @@ bool PathState::pushNode(int iType, uint160 uAccountID, uint160 uCurrencyID, uin
 				bool				bLstIssue	= !!(pnLst.uFlags & STPathElement::typeIssue);
 
 				if (bLstAccount && !bLstIssue)
+				{
+					Log(lsINFO) << "pushNode: previous account must be allowed to issue.";
+
 					bValid	= false;						// Malformed path.
+				}
 			}
 
 			if (bValid)
 				vpnNodes.push_back(pnCur);
 		}
 	}
+	Log(lsINFO) << "pushNode< " << bValid;
 
 	return bValid;
 }
@@ -3167,24 +3233,55 @@ PathState::PathState(
 	)
 	: mIndex(iIndex), uQuality(0)
 {
+	uint160	uInCurrencyID	= saSendMax.getCurrency();
+	uint160	uOutCurrencyID	= saSend.getCurrency();
+	uint160	uInIssuerID		= !!uInCurrencyID ? uSenderID : ACCOUNT_XNS;
+	uint160	uOutIssuerID	= !!uOutCurrencyID ? uReceiverID : ACCOUNT_XNS;
+
 	lesEntries				= lesSource.duplicate();
 
-	saOutReq				= saSend;
 	saInReq					= saSendMax;
+	saOutReq				= saSend;
 
-	pushNode(STPathElement::typeAccount, uSenderID, saSendMax.getCurrency(), saSendMax.getIssuer());
+	bValid	= pushNode(
+		STPathElement::typeAccount
+			| STPathElement::typeRedeem
+			| STPathElement::typeIssue
+			| STPathElement::typeCurrency
+			| STPathElement::typeIssuer,
+		uSenderID,
+		uInCurrencyID,
+		uInIssuerID);
 
 	BOOST_FOREACH(const STPathElement& speElement, spSourcePath)
 	{
-		pushNode(speElement.getNodeType(), speElement.getAccountID(), speElement.getCurrency(), speElement.getIssuerID());
+		if (bValid)
+			bValid	= pushNode(speElement.getNodeType(), speElement.getAccountID(), speElement.getCurrency(), speElement.getIssuerID());
 	}
 
-	pushNode(STPathElement::typeAccount, uReceiverID, saOutReq.getCurrency(), saOutReq.getIssuer());
+	if (bValid)
+	{
+		// Create receiver node.
+
+		bValid	= pushImply(uReceiverID, uOutCurrencyID, uOutIssuerID);
+		if (bValid)
+		{
+			bValid	= pushNode(
+				STPathElement::typeAccount						// Last node is always an account.
+					| STPathElement::typeRedeem					// Does not matter just pass error check.
+					| STPathElement::typeIssue,					// Does not matter just pass error check.
+				uReceiverID,									// Receive to output
+				uOutCurrencyID,									// Desired currency
+				uOutIssuerID);
+		}
+	}
+
+	Log(lsINFO) << "PathState: " << getJson();
 }
 
 Json::Value	PathState::getJson() const
 {
-	Json::Value	jvPathState(Json::arrayValue);
+	Json::Value	jvPathState(Json::objectValue);
 	Json::Value	jvNodes(Json::arrayValue);
 
 	BOOST_FOREACH(const paymentNode& pnNode, vpnNodes)
@@ -3213,14 +3310,14 @@ Json::Value	PathState::getJson() const
 		jvNodes.append(jvNode);
 	}
 
-	jvPathState["nodes"]	= jvNodes;
-
+	jvPathState["valid"]	= bValid;
 	jvPathState["index"]	= mIndex;
+	jvPathState["nodes"]	= jvNodes;
 
 	if (!!saInReq)
 		jvPathState["in_req"]	= saInReq.getJson(0);
 
-	if (!!saOutReq)
+	if (!!saInAct)
 		jvPathState["in_act"]	= saInAct.getJson(0);
 
 	if (!!saOutReq)
@@ -3232,7 +3329,7 @@ Json::Value	PathState::getJson() const
 	if (uQuality)
 		jvPathState["uQuality"]	= Json::Value::UInt(uQuality);
 
-	return jvNodes;
+	return jvPathState;
 }
 
 // Calculate a node and its previous nodes.
@@ -3284,6 +3381,8 @@ void TransactionEngine::pathNext(PathState::pointer pspCur, int iPaths)
 	unsigned int	uLast	= pspCur->vpnNodes.size() - 1;
 
 	Log(lsINFO) << "Path In: " << pspCur->getJson();
+
+	assert(pspCur->vpnNodes.size() >= 2);
 
 	bool	bZero	= !calcNode(uLast, pspCur, iPaths == 1);
 
@@ -3502,6 +3601,7 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 	if (!bNoRippleDirect)
 	{
 		// Direct path.
+		Log(lsINFO) << "doPayment: Build direct:";
 		vpsPaths.push_back(PathState::createPathState(
 			vpsPaths.size(),
 			mNodes,
@@ -3516,6 +3616,7 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 
 	BOOST_FOREACH(const STPath& spPath, spsPaths)
 	{
+		Log(lsINFO) << "doPayment: Build path:";
 		vpsPaths.push_back(PathState::createPathState(
 			vpsPaths.size(),
 			mNodes,
@@ -3536,14 +3637,13 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 	while (tenUNKNOWN == terResult)
 	{
 		PathState::pointer	pspBest;
-		LedgerEntrySet		lesCheckpoint;
-
-		mNodes.swapWith(lesCheckpoint);					// Checkpoint ledger prior to path application.
+		LedgerEntrySet		lesCheckpoint	= mNodes;
 
 		// Find the best path.
 		BOOST_FOREACH(PathState::pointer pspCur, vpsPaths)
 		{
-			mNodes.setTo(lesCheckpoint.duplicate());	// Vary ledger from checkpoint.
+			mNodes	= lesCheckpoint;					// Restore from checkpoint.
+			mNodes.bumpSeq();							// Begin ledger varance.
 
 			pathNext(pspCur, vpsPaths.size());			// Compute increment
 
