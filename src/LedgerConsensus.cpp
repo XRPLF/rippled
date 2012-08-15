@@ -13,11 +13,13 @@
 #include "Log.h"
 #include "SHAMapSync.h"
 
+#define TX_ACQUIRE_TIMEOUT	250
+
 #define TRUST_NETWORK
 
 // #define LC_DEBUG
 
-TransactionAcquire::TransactionAcquire(const uint256& hash) : PeerSet(hash, 1), mHaveRoot(false)
+TransactionAcquire::TransactionAcquire(const uint256& hash) : PeerSet(hash, TX_ACQUIRE_TIMEOUT), mHaveRoot(false)
 {
 	mMap = boost::make_shared<SHAMap>();
 	mMap->setSynching();
@@ -664,6 +666,7 @@ void LedgerConsensus::startAcquiring(TransactionAcquire::pointer acquire)
 			}
 		}
 	}
+	acquire->resetTimer();
 }
 
 void LedgerConsensus::propose(const std::vector<uint256>& added, const std::vector<uint256>& removed)

@@ -11,12 +11,14 @@
 #include "HashPrefixes.h"
 
 // #define LA_DEBUG
-#define LEDGER_ACQUIRE_TIMEOUT 1
+#define LEDGER_ACQUIRE_TIMEOUT 750
 #define TRUST_NETWORK
 
 PeerSet::PeerSet(const uint256& hash, int interval) : mHash(hash), mTimerInterval(interval), mTimeouts(0),
 	mComplete(false), mFailed(false), mProgress(true), mTimer(theApp->getIOService())
-{ ; }
+{
+	assert((mTimerInterval > 10) && (mTimerInterval < 30000));
+}
 
 void PeerSet::peerHas(Peer::pointer ptr)
 {
@@ -61,7 +63,7 @@ void PeerSet::badPeer(Peer::pointer ptr)
 
 void PeerSet::resetTimer()
 {
-	mTimer.expires_from_now(boost::posix_time::seconds(mTimerInterval));
+	mTimer.expires_from_now(boost::posix_time::milliseconds(mTimerInterval));
 	mTimer.async_wait(boost::bind(&PeerSet::TimerEntry, pmDowncast(), boost::asio::placeholders::error));
 }
 
