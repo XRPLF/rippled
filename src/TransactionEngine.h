@@ -151,6 +151,8 @@ public:
 		bool					bPartialPayment
 		);
 
+	Json::Value	getJson() const;
+
 	static PathState::pointer createPathState(
 		int						iIndex,
 		const LedgerEntrySet&	lesSource,
@@ -186,14 +188,6 @@ private:
 
 	bool dirFirst(const uint256& uRootIndex, SLE::pointer& sleNode, unsigned int& uDirEntry, uint256& uEntryIndex);
 	bool dirNext(const uint256& uRootIndex, SLE::pointer& sleNode, unsigned int& uDirEntry, uint256& uEntryIndex);
-
-#ifdef WORK_IN_PROGRESS
-
-	typedef struct {
-		std::vector<paymentNode>	vpnNodes;
-		bool						bAllowPartial;
-	} paymentGroup;
-#endif
 
 	TransactionEngineResult	setAuthorized(const SerializedTransaction& txn, bool bMustSetGenerator);
 

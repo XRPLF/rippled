@@ -3182,6 +3182,59 @@ PathState::PathState(
 	pushNode(STPathElement::typeAccount, uReceiverID, saOutReq.getCurrency(), saOutReq.getIssuer());
 }
 
+Json::Value	PathState::getJson() const
+{
+	Json::Value	jvPathState(Json::arrayValue);
+	Json::Value	jvNodes(Json::arrayValue);
+
+	BOOST_FOREACH(const paymentNode& pnNode, vpnNodes)
+	{
+		Json::Value	jvNode(Json::objectValue);
+
+		Json::Value	jvFlags(Json::objectValue);
+
+		if (pnNode.uFlags & STPathElement::typeRedeem)
+			jvFlags["redeem"]	= 1;
+
+		if (pnNode.uFlags & STPathElement::typeIssue)
+			jvFlags["issue"]	= 1;
+
+		jvNode["flags"]	= jvFlags;
+
+		if (pnNode.uFlags & STPathElement::typeAccount)
+			jvNode["account"]	= NewcoinAddress::createHumanAccountID(pnNode.uAccountID);
+
+		if (!!pnNode.uCurrencyID)
+			jvNode["currency"]	= STAmount::createHumanCurrency(pnNode.uCurrencyID);
+
+		if (!!pnNode.uIssuerID)
+			jvNode["issuer"]	= NewcoinAddress::createHumanAccountID(pnNode.uIssuerID);
+
+		jvNodes.append(jvNode);
+	}
+
+	jvPathState["nodes"]	= jvNodes;
+
+	jvPathState["index"]	= mIndex;
+
+	if (!!saInReq)
+		jvPathState["in_req"]	= saInReq.getJson(0);
+
+	if (!!saOutReq)
+		jvPathState["in_act"]	= saInAct.getJson(0);
+
+	if (!!saOutReq)
+		jvPathState["out_req"]	= saOutReq.getJson(0);
+
+	if (!!saOutAct)
+		jvPathState["out_act"]	= saOutAct.getJson(0);
+
+	if (uQuality)
+		jvPathState["uQuality"]	= Json::Value::UInt(uQuality);
+
+	return jvNodes;
+}
+
 // Calculate a node and its previous nodes.
 // From the destination work towards the source calculating how much must be asked for.
 // --> bAllowPartial: If false, fail if can't meet requirements.
@@ -3230,16 +3283,15 @@ void TransactionEngine::pathNext(PathState::pointer pspCur, int iPaths)
 
 	unsigned int	uLast	= pspCur->vpnNodes.size() - 1;
 
-	if (calcNode(uLast, pspCur, iPaths == 1))
-	{
-		// Calculate relative quality.
-		pspCur->uQuality	= STAmount::getRate(pspCur->saOutAct, pspCur->saInAct);
-	}
-	else
-	{
-		// Mark path as inactive.
-		pspCur->uQuality	= 0;
-	}
+	Log(lsINFO) << "Path In: " << pspCur->getJson();
+
+	bool	bZero	= !calcNode(uLast, pspCur, iPaths == 1);
+
+	pspCur->uQuality	= bZero
+		? STAmount::getRate(pspCur->saOutAct, pspCur->saInAct)	// Calculate relative quality.
+		: 0;													// Mark path as inactive.
+
+	Log(lsINFO) << "Path Out: " << pspCur->getJson();
 }
 
 // XXX Need to audit for things like setting accountID not having memory.
@@ -3432,7 +3484,7 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 
 	STPathSet	spsPaths = txn.getITFieldPathSet(sfPaths);
 
-	if (!bNoRippleDirect && spsPaths.isEmpty())
+	if (bNoRippleDirect && spsPaths.isEmpty())
 	{
 		Log(lsINFO) << "doPayment: Invalid transaction: No paths and direct ripple not allowed.";
 
