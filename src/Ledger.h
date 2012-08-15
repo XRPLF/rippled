@@ -260,7 +260,7 @@ public:
 	// Ripple functions : credit lines
 	//
 
-	// Index of node which is the ripple state between to accounts for a currency.
+	// Index of node which is the ripple state between two accounts for a currency.
 	static uint256 getRippleStateIndex(const NewcoinAddress& naA, const NewcoinAddress& naB, const uint160& uCurrency);
 	static uint256 getRippleStateIndex(const uint160& uiA, const uint160& uiB, const uint160& uCurrency)
 		{ return getRippleStateIndex(NewcoinAddress::createAccountID(uiA), NewcoinAddress::createAccountID(uiB), uCurrency); }

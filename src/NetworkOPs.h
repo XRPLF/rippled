@@ -145,21 +145,7 @@ public:
 	Json::Value getOwnerInfo(const uint256& uLedger, const NewcoinAddress& naAccount);
 	Json::Value getOwnerInfo(Ledger::pointer lpLedger, const NewcoinAddress& naAccount);
 
-	//
-	// Ripple functions
-	//
-
-	bool					getDirLineInfo(const uint256& uLedger, const NewcoinAddress& naAccount, uint256& uRootIndex)
-		{
-			LedgerStateParms	lspNode		= lepNONE;
-
-			uRootIndex	= Ledger::getRippleDirIndex(naAccount.getAccountID());
-
-			return !!mLedgerMaster->getLedgerByHash(uLedger)->getDirNode(lspNode, uRootIndex);
-		}
-
-	RippleState::pointer	accessRippleState(const uint256& uLedger, const uint256& uIndex);
-
+	
 	// raw object operations
 	bool findRawLedger(const uint256& ledgerHash, std::vector<unsigned char>& rawLedger);
 	bool findRawTransaction(const uint256& transactionHash, std::vector<unsigned char>& rawTransaction);

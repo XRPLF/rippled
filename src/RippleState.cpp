@@ -18,9 +18,9 @@ RippleState::RippleState(SerializedLedgerEntry::pointer ledgerEntry) :
 	mValid		= true;
 }
 
-void RippleState::setViewAccount(const NewcoinAddress& naView)
+void RippleState::setViewAccount(const uint160& accountID)
 {
-	bool	bViewLowestNew	= mLowID.getAccountID() == naView.getAccountID();
+	bool	bViewLowestNew	= mLowID.getAccountID() == accountID;
 
 	if (bViewLowestNew != mViewLowest)
 	{
