@@ -260,7 +260,7 @@ void Peer::connected(const boost::system::error_code& error)
 	}
 }
 
-void Peer::sendPacketForce(PackedMessage::pointer packet)
+void Peer::sendPacketForce(const PackedMessage::pointer& packet)
 {
 	if (!mDetaching)
 	{
@@ -273,7 +273,7 @@ void Peer::sendPacketForce(PackedMessage::pointer packet)
 	}
 }
 
-void Peer::sendPacket(PackedMessage::pointer packet)
+void Peer::sendPacket(const PackedMessage::pointer& packet)
 {
 	if (packet)
 	{
@@ -1214,7 +1214,8 @@ Json::Value Peer::getJson()
 	//ret["this"]			= ADDRESS(this);
 	ret["public_key"]	= mNodePublic.ToString();
 	ret["ip"]			= mIpPortConnect.first;
-	ret["port"]			= mIpPortConnect.second;
+	//ret["port"]			= mIpPortConnect.second;
+	ret["port"]			= mIpPort.second;
 
 	if (mHello.has_fullversion())
 		ret["version"] = mHello.fullversion();

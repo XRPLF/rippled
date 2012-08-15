@@ -12,6 +12,7 @@
 #include "NicknameState.h"
 #include "utils.h"
 #include "Log.h"
+#include "RippleLines.h"
 
 #include <iostream>
 
@@ -1657,70 +1658,27 @@ Json::Value RPCServer::doRippleLinesGet(const Json::Value &params)
 
 		// XXX This is wrong, we do access the current ledger and do need to worry about changes.
 		// We access a committed ledger and need not worry about changes.
-		uint256	uRootIndex;
 
-		if (mNetOps->getDirLineInfo(uCurrent, naAccount, uRootIndex))
+		RippleLines rippleLines(naAccount.getAccountID());
+		BOOST_FOREACH(RippleState::pointer line,rippleLines.getLines())
 		{
-			Log(lsINFO) << "doRippleLinesGet: dir root index: " << uRootIndex.ToString();
-			bool	bDone	= false;
+			STAmount		saBalance	= line->getBalance();
+			STAmount		saLimit		= line->getLimit();
+			STAmount		saLimitPeer	= line->getLimitPeer();
 
-			while (!bDone)
-			{
-				uint64		uNodePrevious;
-				uint64		uNodeNext;
-				STVector256	svRippleNodes	= mNetOps->getDirNodeInfo(uCurrent, uRootIndex, uNodePrevious, uNodeNext);
+			Json::Value			jPeer	= Json::Value(Json::objectValue);
 
-				Log(lsINFO) << "doRippleLinesGet: previous: " << strHex(uNodePrevious);
-				Log(lsINFO) << "doRippleLinesGet:     next: " << strHex(uNodeNext);
-				Log(lsINFO) << "doRippleLinesGet:    lines: " << svRippleNodes.peekValue().size();
+			//jPeer["node"]		= uNode.ToString();
 
-				BOOST_FOREACH(uint256& uNode, svRippleNodes.peekValue())
-				{
-					Log(lsINFO) << "doRippleLinesGet: line index: " << uNode.ToString();
+			jPeer["account"]	= line->getAccountIDPeer().humanAccountID();
+			// Amount reported is positive if current account holds other account's IOUs.
+			// Amount reported is negative if other account holds current account's IOUs.
+			jPeer["balance"]	= saBalance.getText();
+			jPeer["currency"]	= saBalance.getHumanCurrency();
+			jPeer["limit"]		= saLimit.getText();
+			jPeer["limit_peer"]	= saLimitPeer.getText();
 
-					RippleState::pointer	rsLine	= mNetOps->accessRippleState(uCurrent, uNode);
-
-					if (rsLine)
-					{
-						rsLine->setViewAccount(naAccount);
-
-						STAmount		saBalance	= rsLine->getBalance();
-						STAmount		saLimit		= rsLine->getLimit();
-						STAmount		saLimitPeer	= rsLine->getLimitPeer();
-
-						Json::Value			jPeer	= Json::Value(Json::objectValue);
-
-						jPeer["node"]		= uNode.ToString();
-
-						jPeer["account"]	= rsLine->getAccountIDPeer().humanAccountID();
-						// Amount reported is positive if current account hold's other account's IOUs.
-						// Amount reported is negative if other account hold's current account's IOUs.
-						jPeer["balance"]	= saBalance.getText();
-						jPeer["currency"]	= saBalance.getHumanCurrency();
-						jPeer["limit"]		= saLimit.getText();
-						jPeer["limit_peer"]	= saLimitPeer.getText();
-
-						jsonLines.append(jPeer);
-					}
-					else
-					{
-						Log(lsWARNING) << "doRippleLinesGet: Bad index: " << uNode.ToString();
-					}
-				}
-
-				if (uNodeNext)
-				{
-					uCurrent	= Ledger::getDirNodeIndex(uRootIndex, uNodeNext);
-				}
-				else
-				{
-					bDone	= true;
-				}
-			}
-		}
-		else
-		{
-			Log(lsINFO) << "doRippleLinesGet: no directory: " << uRootIndex.ToString();
+			jsonLines.append(jPeer);
 		}
 		ret["lines"]	= jsonLines;
 	}

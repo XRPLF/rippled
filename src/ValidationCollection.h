@@ -17,7 +17,7 @@ class ValidationPair
 public:
 	SerializedValidation::pointer oldest, newest;
 
-	ValidationPair(SerializedValidation::pointer v) : newest(v) { ; }
+	ValidationPair(const SerializedValidation::pointer& v) : newest(v) { ; }
 };
 
 class ValidationCollection
@@ -38,7 +38,7 @@ protected:
 public:
 	ValidationCollection() : mWriting(false) { ; }
 
-	bool addValidation(SerializedValidation::pointer&);
+	bool addValidation(const SerializedValidation::pointer&);
 	ValidationSet getValidations(const uint256& ledger);
 	void getValidationCount(const uint256& ledger, bool currentOnly, int& trusted, int& untrusted);
 

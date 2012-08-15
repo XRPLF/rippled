@@ -276,6 +276,12 @@
     <ClCompile Include="src\SNTPClient.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\Pathfinder.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\RippleLines.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="KnownNodeList.h">
@@ -504,6 +510,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\Wallet.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Pathfinder.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\RippleLines.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

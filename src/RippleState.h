@@ -32,7 +32,7 @@ private:
 public:
 	RippleState(SerializedLedgerEntry::pointer ledgerEntry);	// For accounts in a ledger
 
-	void					setViewAccount(const NewcoinAddress& naView);
+	void					setViewAccount(const uint160& accountID);
 
 	const NewcoinAddress	getAccountID() const		{ return mViewLowest ? mLowID : mHighID; }
 	const NewcoinAddress	getAccountIDPeer() const	{ return mViewLowest ? mHighID : mLowID; }

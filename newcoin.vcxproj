@@ -50,6 +50,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>BOOST_TEST_ALTERNATIVE_INIT_API;BOOST_TEST_NO_MAIN;_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0501;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\OpenSSL\include;..\boost_1_47_0;..\protobuf-2.4.1\src\</AdditionalIncludeDirectories>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -125,12 +126,14 @@
     <ClCompile Include="src\NicknameState.cpp" />
     <ClCompile Include="src\PackedMessage.cpp" />
     <ClCompile Include="src\ParseSection.cpp" />
+    <ClCompile Include="src\Pathfinder.cpp" />
     <ClCompile Include="src\Peer.cpp" />
     <ClCompile Include="src\PeerDoor.cpp" />
     <ClCompile Include="src\PlatRand.cpp" />
     <ClCompile Include="src\PubKeyCache.cpp" />
     <ClCompile Include="src\RequestParser.cpp" />
     <ClCompile Include="src\rfc1751.cpp" />
+    <ClCompile Include="src\RippleLines.cpp" />
     <ClCompile Include="src\RippleState.cpp" />
     <ClCompile Include="src\rpc.cpp" />
     <ClCompile Include="src\RPCCommands.cpp" />
@@ -210,11 +213,13 @@
     <ClInclude Include="src\NicknameState.h" />
     <ClInclude Include="src\PackedMessage.h" />
     <ClInclude Include="src\ParseSection.h" />
+    <ClInclude Include="src\Pathfinder.h" />
     <ClInclude Include="src\Peer.h" />
     <ClInclude Include="src\PeerDoor.h" />
     <ClInclude Include="src\PubKeyCache.h" />
     <ClInclude Include="src\RequestParser.h" />
     <ClInclude Include="src\rfc1751.h" />
+    <ClInclude Include="src\RippleLines.h" />
     <ClInclude Include="src\RippleState.h" />
     <ClInclude Include="src\RPC.h" />
     <ClInclude Include="src\RPCCommands.h" />
@@ -258,6 +263,13 @@
     <None Include="SConstruct" />
     <None Include="validators.txt" />
     <None Include="wallet.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
