@@ -126,10 +126,12 @@ class PathState
 {
 protected:
 	bool pushNode(int iType, uint160 uAccountID, uint160 uCurrencyID, uint160 uIssuerID);
+	bool pushImply(uint160 uAccountID, uint160 uCurrencyID, uint160 uIssuerID);
 
 public:
 	typedef boost::shared_ptr<PathState> pointer;
 
+	bool						bValid;
 	std::vector<paymentNode>	vpnNodes;
 	LedgerEntrySet				lesEntries;
 
