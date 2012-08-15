@@ -15,13 +15,12 @@ RippleLines::RippleLines(const uint160& accountID )
 
 void RippleLines::fillLines(const uint160& accountID, Ledger::pointer ledger)
 {
-	uint256 rootIndex	= Ledger::getRippleDirIndex(accountID);
+	uint256 rootIndex = Ledger::getRippleDirIndex(accountID);
 	uint256 currentIndex=rootIndex;
-
-	LedgerStateParms	lspNode		= lepNONE;
 
 	while(1)
 	{
+		LedgerStateParms lspNode=lepNONE;
 		SerializedLedgerEntry::pointer rippleDir=ledger->getDirNode(lspNode,currentIndex);
 		if(!rippleDir) return;
 
