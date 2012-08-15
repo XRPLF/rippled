@@ -20,7 +20,7 @@ LedgerEntrySet LedgerEntrySet::duplicate() const
 	return LedgerEntrySet(mEntries, mSet, mSeq + 1);
 }
 
-void LedgerEntrySet::setTo(LedgerEntrySet& e)
+void LedgerEntrySet::setTo(const LedgerEntrySet& e)
 {
 	mEntries = e.mEntries;
 	mSet = e.mSet;

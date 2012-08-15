@@ -3221,6 +3221,8 @@ bool TransactionEngine::calcNode(unsigned int uIndex, PathState::pointer pspCur,
 }
 
 // Calculate the next increment of a path.
+// The increment is what can satisfy a portion or all of the requested output at the best quality.
+// <-- pspCur->uQuality
 void TransactionEngine::pathNext(PathState::pointer pspCur, int iPaths)
 {
 	// The next state is what is available in preference order.
@@ -3228,18 +3230,16 @@ void TransactionEngine::pathNext(PathState::pointer pspCur, int iPaths)
 
 	unsigned int	uLast	= pspCur->vpnNodes.size() - 1;
 
-	pspCur->lesEntries	= mNodes.duplicate();	// Checkpoint state?
-
-	if (!calcNode(uLast, pspCur, iPaths == 1))
+	if (calcNode(uLast, pspCur, iPaths == 1))
+	{
+		// Calculate relative quality.
+		pspCur->uQuality	= STAmount::getRate(pspCur->saOutAct, pspCur->saInAct);
+	}
+	else
 	{
 		// Mark path as inactive.
 		pspCur->uQuality	= 0;
 	}
-}
-
-// Apply an increment of the path, then calculate the next increment.
-void TransactionEngine::pathApply(PathState::pointer pspCur)
-{
 }
 
 // XXX Need to audit for things like setting accountID not having memory.
@@ -3484,23 +3484,28 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 	while (tenUNKNOWN == terResult)
 	{
 		PathState::pointer	pspBest;
+		LedgerEntrySet		lesCheckpoint;
+
+		mNodes.swapWith(lesCheckpoint);					// Checkpoint ledger prior to path application.
 
 		// Find the best path.
 		BOOST_FOREACH(PathState::pointer pspCur, vpsPaths)
 		{
+			mNodes.setTo(lesCheckpoint.duplicate());	// Vary ledger from checkpoint.
+
 			pathNext(pspCur, vpsPaths.size());			// Compute increment
+
+			mNodes.swapWith(pspCur->lesEntries);		// For the path, save ledger state.
 
 			if (!pspBest || (pspCur->uQuality && PathState::lessPriority(pspBest, pspCur)))
 				pspBest	= pspCur;
 		}
 
-		if (!pspBest)
+		if (pspBest)
 		{
-			//
-			// Apply path.
-			//
+			// Apply best path.
 
-			// Install changes for path.
+			// Install ledger for best past.
 			mNodes.swapWith(pspBest->lesEntries);
 
 			// Figure out if done.
@@ -3518,8 +3523,7 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 		else if (saPaid.isZero())
 		{
 			// Nothing claimed.
-			terResult	= terPATH_EMPTY;	// XXX No effect except unfundeds and charge fee.
-			// XXX
+			terResult	= terPATH_EMPTY;		// XXX No effect except unfundeds and charge fee.
 		}
 		else
 		{

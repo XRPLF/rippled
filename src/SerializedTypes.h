@@ -342,6 +342,7 @@ public:
 	static STAmount multiply(const STAmount& v1, const STAmount& v2, const uint160& currencyOut);
 
 	// Someone is offering X for Y, what is the rate?
+	// Rate: smaller is better, the taker wants the most out: in/out
 	static uint64 getRate(const STAmount& offerOut, const STAmount& offerIn);
 	static STAmount setRate(uint64 rate, const uint160& currencyOut);
 

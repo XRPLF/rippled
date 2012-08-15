@@ -239,7 +239,6 @@ protected:
 	STAmount			accountFunds(const uint160& uAccountID, const STAmount& saDefault);
 
 	PathState::pointer	pathCreate(const STPath& spPath);
-	void				pathApply(PathState::pointer pspCur);
 	void				pathNext(PathState::pointer pspCur, int iPaths);
 	bool				calcNode(unsigned int uIndex, PathState::pointer pspCur, bool bMultiQuality);
 	bool				calcNodeOfferRev(unsigned int uIndex, PathState::pointer pspCur, bool bMultiQuality);

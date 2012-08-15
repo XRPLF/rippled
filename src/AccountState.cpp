@@ -10,12 +10,12 @@
 #include "Ledger.h"
 #include "Serializer.h"
 
-AccountState::AccountState(const NewcoinAddress& id) : mAccountID(id), mValid(false)
+AccountState::AccountState(const NewcoinAddress& id) : mValid(false)
 {
 	if (!id.isValid()) return;
 	mLedgerEntry = boost::make_shared<SerializedLedgerEntry>(ltACCOUNT_ROOT);
 	mLedgerEntry->setIndex(Ledger::getAccountRootIndex(id));
-	mLedgerEntry->setIFieldAccount(sfAccount, id);
+
 	mValid = true;
 }
 
@@ -23,9 +23,8 @@ AccountState::AccountState(SerializedLedgerEntry::pointer ledgerEntry) : mLedger
 {
 	if (!mLedgerEntry) return;
 	if (mLedgerEntry->getType() != ltACCOUNT_ROOT) return;
-	mAccountID = mLedgerEntry->getIValueFieldAccount(sfAccount);
-	if (mAccountID.isValid())
-		mValid = true;
+
+	mValid = true;
 }
 
 std::string AccountState::createGravatarUrl(uint128 uEmailHash)
