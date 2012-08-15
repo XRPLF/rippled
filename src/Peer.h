@@ -30,7 +30,7 @@ public:
 	static const int psbNoLedgers = 4, psbNoTransactions = 5, psbDownLevel = 6;
 
 	void			handleConnect(const boost::system::error_code& error, boost::asio::ip::tcp::resolver::iterator it);
-	static void		sHandleConnect(Peer::pointer ptr, const boost::system::error_code& error,
+	static void		sHandleConnect(const Peer::pointer& ptr, const boost::system::error_code& error,
 		boost::asio::ip::tcp::resolver::iterator it)
 	{ ptr->handleConnect(error, it); }
 
@@ -52,11 +52,11 @@ private:
 	boost::asio::deadline_timer									mVerifyTimer;
 
 	void			handleStart(const boost::system::error_code& ecResult);
-	static void		sHandleStart(Peer::pointer ptr, const boost::system::error_code& ecResult)
+	static void		sHandleStart(const Peer::pointer& ptr, const boost::system::error_code& ecResult)
 	{ ptr->handleStart(ecResult); }
 
 	void			handleVerifyTimer(const boost::system::error_code& ecResult);
-	static void		sHandleVerifyTimer(Peer::pointer ptr, const boost::system::error_code& ecResult)
+	static void		sHandleVerifyTimer(const Peer::pointer& ptr, const boost::system::error_code& ecResult)
 	{ ptr->handleVerifyTimer(ecResult); }
 
 protected:
@@ -70,26 +70,26 @@ protected:
 	Peer(boost::asio::io_service& io_service, boost::asio::ssl::context& ctx);
 
 	void handleShutdown(const boost::system::error_code& error) { ; }
-	static void sHandleShutdown(Peer::pointer ptr, const boost::system::error_code& error)
+	static void sHandleShutdown(const Peer::pointer& ptr, const boost::system::error_code& error)
 	{ ptr->handleShutdown(error); }
 
 	void handle_write(const boost::system::error_code& error, size_t bytes_transferred);
-	static void sHandle_write(Peer::pointer ptr, const boost::system::error_code& error, size_t bytes_transferred)
+	static void sHandle_write(const Peer::pointer& ptr, const boost::system::error_code& error, size_t bytes_transferred)
 	{ ptr->handle_write(error, bytes_transferred); }
 
 	void handle_read_header(const boost::system::error_code& error);
-	static void sHandle_read_header(Peer::pointer ptr, const boost::system::error_code& error)
+	static void sHandle_read_header(const Peer::pointer& ptr, const boost::system::error_code& error)
 	{ ptr->handle_read_header(error); }
 
 	void handle_read_body(const boost::system::error_code& error);
-	static void sHandle_read_body(Peer::pointer ptr, const boost::system::error_code& error)
+	static void sHandle_read_body(const Peer::pointer& ptr, const boost::system::error_code& error)
 	{ ptr->handle_read_body(error); }
 
 	void processReadBuffer();
 	void start_read_header();
 	void start_read_body(unsigned msg_len);
 
-	void sendPacketForce(PackedMessage::pointer packet);
+	void sendPacketForce(const PackedMessage::pointer& packet);
 
 	void sendHello();
 
@@ -139,12 +139,12 @@ public:
 	void connect(const std::string strIp, int iPort);
 	void connected(const boost::system::error_code& error);
 	void detach(const char *);
-	bool samePeer(Peer::pointer p) { return samePeer(*p); }
-	bool samePeer(const Peer& p) { return this == &p; }
+	bool samePeer(const Peer::pointer& p)	{ return samePeer(*p); }
+	bool samePeer(const Peer& p)			{ return this == &p; }
 
-	void sendPacket(PackedMessage::pointer packet);
-	void sendLedgerProposal(Ledger::pointer ledger);
-	void sendFullLedger(Ledger::pointer ledger);
+	void sendPacket(const PackedMessage::pointer& packet);
+	void sendLedgerProposal(const Ledger::pointer& ledger);
+	void sendFullLedger(const Ledger::pointer& ledger);
 	void sendGetFullLedger(uint256& hash);
 	void sendGetPeers();
 
@@ -152,11 +152,6 @@ public:
 
 	Json::Value getJson();
 	bool isConnected() const { return mHelloed && !mDetaching; }
-
-	//static PackedMessage::pointer createFullLedger(Ledger::pointer ledger);
-	static PackedMessage::pointer createLedgerProposal(Ledger::pointer ledger);
-	static PackedMessage::pointer createValidation(Ledger::pointer ledger);
-	static PackedMessage::pointer createGetFullLedger(uint256& hash);
 
 	uint256 getClosedLedgerHash() const { return mClosedLedgerHash; }
 	bool hasLedger(const uint256& hash) const;
