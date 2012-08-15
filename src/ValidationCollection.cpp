@@ -7,7 +7,7 @@
 
 // #define VC_DEBUG
 
-bool ValidationCollection::addValidation(SerializedValidation::pointer& val)
+bool ValidationCollection::addValidation(const SerializedValidation::pointer& val)
 {
 	NewcoinAddress signer = val->getSignerPublic();
 	bool isCurrent = false;

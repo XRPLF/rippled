@@ -21,7 +21,6 @@ public:
 	typedef boost::shared_ptr<AccountState> pointer;
 
 private:
-	NewcoinAddress					mAccountID;
 	NewcoinAddress					mAuthorizedKey;
 	SerializedLedgerEntry::pointer	mLedgerEntry;
 
@@ -41,7 +40,6 @@ public:
 		return mLedgerEntry->getIValueFieldAccount(sfAuthorizedKey);
 	}
 
-	const NewcoinAddress& getAccountID() const { return mAccountID; }
 	STAmount getBalance() const { return mLedgerEntry->getIValueFieldAmount(sfBalance); }
 	uint32 getSeq() const { return mLedgerEntry->getIFieldU32(sfSequence); }
 

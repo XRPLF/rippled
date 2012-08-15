@@ -833,6 +833,9 @@ Json::Value RPCServer::doAccountWalletSet(const Json::Value& params) {
 
 Json::Value RPCServer::doConnect(const Json::Value& params)
 {
+	if (theConfig.RUN_STANDALONE)
+		return "cannot connect in standalone mode";
+
 	// connect <ip> [port]
 	std::string strIp;
 	int			iPort	= -1;

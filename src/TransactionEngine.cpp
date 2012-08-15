@@ -70,7 +70,6 @@ bool transResultInfo(TransactionEngineResult terCode, std::string& strToken, std
 		{	terBAD_LEDGER,			"terBAD_LEDGER",			"Ledger in unexpected state."						},
 		{	terBAD_RIPPLE,			"terBAD_RIPPLE",			"No ripple path can be satisfied."					},
 		{	terBAD_SEQ,				"terBAD_SEQ",				"This sequence number should be zero for prepaid transactions."	},
-		{	terCREATED,				"terCREATED",				"Can not create a previously created account."		},
 		{	terDIR_FULL,			"terDIR_FULL",				"Can not add entry to full dir."					},
 		{	terFUNDS_SPENT,			"terFUNDS_SPENT",			"Can't set password, password set funds already spent."	},
 		{	terINSUF_FEE_B,			"terINSUF_FEE_B",			"Account balance can't pay fee"						},
@@ -819,7 +818,7 @@ SLE::pointer TransactionEngine::entryCache(LedgerEntryType letType, const uint25
 				mOrigNodes.entryCache(sleEntry); // So the metadata code can compare to the original
 			}
 		}
-		else if(action == taaDELETE)
+		else if (action == taaDELETE)
 			assert(false);
 	}
 
@@ -3166,7 +3165,7 @@ PathState::PathState(
 	STAmount				saSendMax,
 	bool					bPartialPayment
 	)
-	: mIndex(iIndex), uQuality(0), bDirty(true)
+	: mIndex(iIndex), uQuality(0)
 {
 	lesEntries				= lesSource.duplicate();
 
@@ -3181,6 +3180,59 @@ PathState::PathState(
 	}
 
 	pushNode(STPathElement::typeAccount, uReceiverID, saOutReq.getCurrency(), saOutReq.getIssuer());
+}
+
+Json::Value	PathState::getJson() const
+{
+	Json::Value	jvPathState(Json::arrayValue);
+	Json::Value	jvNodes(Json::arrayValue);
+
+	BOOST_FOREACH(const paymentNode& pnNode, vpnNodes)
+	{
+		Json::Value	jvNode(Json::objectValue);
+
+		Json::Value	jvFlags(Json::objectValue);
+
+		if (pnNode.uFlags & STPathElement::typeRedeem)
+			jvFlags["redeem"]	= 1;
+
+		if (pnNode.uFlags & STPathElement::typeIssue)
+			jvFlags["issue"]	= 1;
+
+		jvNode["flags"]	= jvFlags;
+
+		if (pnNode.uFlags & STPathElement::typeAccount)
+			jvNode["account"]	= NewcoinAddress::createHumanAccountID(pnNode.uAccountID);
+
+		if (!!pnNode.uCurrencyID)
+			jvNode["currency"]	= STAmount::createHumanCurrency(pnNode.uCurrencyID);
+
+		if (!!pnNode.uIssuerID)
+			jvNode["issuer"]	= NewcoinAddress::createHumanAccountID(pnNode.uIssuerID);
+
+		jvNodes.append(jvNode);
+	}
+
+	jvPathState["nodes"]	= jvNodes;
+
+	jvPathState["index"]	= mIndex;
+
+	if (!!saInReq)
+		jvPathState["in_req"]	= saInReq.getJson(0);
+
+	if (!!saOutReq)
+		jvPathState["in_act"]	= saInAct.getJson(0);
+
+	if (!!saOutReq)
+		jvPathState["out_req"]	= saOutReq.getJson(0);
+
+	if (!!saOutAct)
+		jvPathState["out_act"]	= saOutAct.getJson(0);
+
+	if (uQuality)
+		jvPathState["uQuality"]	= Json::Value::UInt(uQuality);
+
+	return jvNodes;
 }
 
 // Calculate a node and its previous nodes.
@@ -3222,6 +3274,8 @@ bool TransactionEngine::calcNode(unsigned int uIndex, PathState::pointer pspCur,
 }
 
 // Calculate the next increment of a path.
+// The increment is what can satisfy a portion or all of the requested output at the best quality.
+// <-- pspCur->uQuality
 void TransactionEngine::pathNext(PathState::pointer pspCur, int iPaths)
 {
 	// The next state is what is available in preference order.
@@ -3229,17 +3283,15 @@ void TransactionEngine::pathNext(PathState::pointer pspCur, int iPaths)
 
 	unsigned int	uLast	= pspCur->vpnNodes.size() - 1;
 
-	if (!calcNode(uLast, pspCur, iPaths == 1))
-	{
-		// Mark path as inactive.
-		pspCur->uQuality	= 0;
-		pspCur->bDirty		= false;
-	}
-}
+	Log(lsINFO) << "Path In: " << pspCur->getJson();
 
-// Apply an increment of the path, then calculate the next increment.
-void TransactionEngine::pathApply(PathState::pointer pspCur)
-{
+	bool	bZero	= !calcNode(uLast, pspCur, iPaths == 1);
+
+	pspCur->uQuality	= bZero
+		? STAmount::getRate(pspCur->saOutAct, pspCur->saInAct)	// Calculate relative quality.
+		: 0;													// Mark path as inactive.
+
+	Log(lsINFO) << "Path Out: " << pspCur->getJson();
 }
 
 // XXX Need to audit for things like setting accountID not having memory.
@@ -3280,6 +3332,14 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 
 		return tenREDUNDANT;
 	}
+	else if (bMax
+		&& ((saMaxAmount == saDstAmount && saMaxAmount.getCurrency() == saDstAmount.getCurrency())
+			|| (saDstAmount.isNative() && saMaxAmount.isNative())))
+	{
+		Log(lsINFO) << "doPayment: Invalid transaction: bad SendMax.";
+
+		return tenINVALID;
+	}
 
 	SLE::pointer		sleDst	= entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uDstAccountID));
 	if (!sleDst)
@@ -3302,22 +3362,14 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 		// Create the account.
 		sleDst	= entryCreate(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uDstAccountID));
 
-		sleDst->setIFieldAccount(sfAccount, uDstAccountID);
 		sleDst->setIFieldU32(sfSequence, 1);
-	}
-	// Destination exists.
-	else if (bCreate)
-	{
-		// Retryable: if account created this ledger, reordering might allow account to be made by this transaction.
-		Log(lsINFO) << "doPayment: Invalid transaction: Account already created.";
-
-		return terCREATED;
 	}
 	else
 	{
 		entryModify(sleDst);
 	}
 
+	// XXX Should bMax be sufficient to imply ripple?
 	bool		bRipple			= bPaths || bMax || !saDstAmount.isNative();
 
 	if (!bRipple)
@@ -3343,9 +3395,12 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 	// Ripple payment
 	//
 
+#if 0
+// Disabled to make sure full ripple code is correct.
 	// Try direct ripple first.
 	if (!bNoRippleDirect && mTxnAccountID != uDstAccountID && uSrcCurrency == uDstCurrency)
 	{
+		// XXX Does not handle quality.
 		SLE::pointer		sleRippleState	= entryCache(ltRIPPLE_STATE, Ledger::getRippleStateIndex(mTxnAccountID, uDstAccountID, uDstCurrency));
 
 		if (sleRippleState)
@@ -3425,22 +3480,39 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 			return terSUCCESS;
 		}
 	}
+#endif
 
 	STPathSet	spsPaths = txn.getITFieldPathSet(sfPaths);
 
-	if (!spsPaths.isEmpty())
+	if (bNoRippleDirect && spsPaths.isEmpty())
 	{
-		Log(lsINFO) << "doPayment: Invalid transaction: No paths.";
+		Log(lsINFO) << "doPayment: Invalid transaction: No paths and direct ripple not allowed.";
 
 		return tenRIPPLE_EMPTY;
 	}
-	else if (spsPaths.getPathCount() > RIPPLE_PATHS_MAX)
+
+	if (spsPaths.getPathCount() > RIPPLE_PATHS_MAX)
 	{
 		return tenBAD_PATH_COUNT;
 	}
 
 	// Incrementally search paths.
 	std::vector<PathState::pointer>	vpsPaths;
+
+	if (!bNoRippleDirect)
+	{
+		// Direct path.
+		vpsPaths.push_back(PathState::createPathState(
+			vpsPaths.size(),
+			mNodes,
+			STPath(),
+			uDstAccountID,
+			mTxnAccountID,
+			saDstAmount,
+			saMaxAmount,
+			bPartialPayment
+			));
+	}
 
 	BOOST_FOREACH(const STPath& spPath, spsPaths)
 	{
@@ -3464,47 +3536,29 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 	while (tenUNKNOWN == terResult)
 	{
 		PathState::pointer	pspBest;
+		LedgerEntrySet		lesCheckpoint;
+
+		mNodes.swapWith(lesCheckpoint);					// Checkpoint ledger prior to path application.
 
 		// Find the best path.
 		BOOST_FOREACH(PathState::pointer pspCur, vpsPaths)
 		{
-			if (pspCur->bDirty)
-			{
-				pspCur->bDirty		= false;
-				pspCur->lesEntries	= mNodes.duplicate();
+			mNodes.setTo(lesCheckpoint.duplicate());	// Vary ledger from checkpoint.
 
-				// XXX Compute increment
-				pathNext(pspCur, vpsPaths.size());
-			}
+			pathNext(pspCur, vpsPaths.size());			// Compute increment
+
+			mNodes.swapWith(pspCur->lesEntries);		// For the path, save ledger state.
 
 			if (!pspBest || (pspCur->uQuality && PathState::lessPriority(pspBest, pspCur)))
 				pspBest	= pspCur;
 		}
 
-		if (!pspBest)
+		if (pspBest)
 		{
-			//
-			// Apply path.
-			//
+			// Apply best path.
 
-			// Install changes for path.
+			// Install ledger for best past.
 			mNodes.swapWith(pspBest->lesEntries);
-
-			// Mark that path as dirty.
-			pspBest->bDirty	= true;
-
-			// Mark as dirty any other path that intersected.
-			BOOST_FOREACH(PathState::pointer& pspOther, vpsPaths)
-			{
-				// Look for intersection of best and the others.
-				// - Will forget the intersection applied.
-				//   - Anything left will not interfere with it.
-				// - Will remember the non-intersection non-applied for future consideration.
-				if (!pspOther->bDirty
-					&& pspOther->uQuality
-					&& LedgerEntrySet::intersect(pspBest->lesEntries, pspOther->lesEntries))
-					pspOther->bDirty	= true;
-			}
 
 			// Figure out if done.
 			if (tenUNKNOWN == terResult && saPaid == saWanted)
@@ -3521,8 +3575,7 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 		else if (saPaid.isZero())
 		{
 			// Nothing claimed.
-			terResult	= terPATH_EMPTY;	// XXX No effect except unfundeds and charge fee.
-			// XXX
+			terResult	= terPATH_EMPTY;		// XXX No effect except unfundeds and charge fee.
 		}
 		else
 		{
@@ -3581,7 +3634,6 @@ TransactionEngineResult TransactionEngine::doWalletAdd(const SerializedTransacti
 	// Create the account.
 	sleDst	= entryCreate(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uDstAccountID));
 
-	sleDst->setIFieldAccount(sfAccount, uDstAccountID);
 	sleDst->setIFieldU32(sfSequence, 1);
 	sleDst->setIFieldAmount(sfBalance, saAmount);
 	sleDst->setIFieldAccount(sfAuthorizedKey, uAuthKeyID);

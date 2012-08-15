@@ -27,11 +27,11 @@ protected:
 	SHAMap::pointer		mMap;
 	bool				mHaveRoot;
 
-	void onTimer()						{ trigger(Peer::pointer(), true); }
-	void newPeer(Peer::pointer peer)	{ trigger(peer, false); }
+	void onTimer()							{ trigger(Peer::pointer(), true); }
+	void newPeer(const Peer::pointer& peer)	{ trigger(peer, false); }
 
 	void done();
-	void trigger(Peer::pointer, bool timer);
+	void trigger(const Peer::pointer&, bool timer);
 	boost::weak_ptr<PeerSet> pmDowncast();
 
 public:

@@ -41,12 +41,12 @@ public:
 
 	void progress()						{ mProgress = true; }
 
-	void peerHas(Peer::pointer);
-	void badPeer(Peer::pointer);
+	void peerHas(const Peer::pointer&);
+	void badPeer(const Peer::pointer&);
 	void resetTimer();
 
 protected:
-	virtual void newPeer(Peer::pointer) = 0;
+	virtual void newPeer(const Peer::pointer&) = 0;
 	virtual void onTimer(void) = 0;
 	virtual boost::weak_ptr<PeerSet> pmDowncast() = 0;
 
@@ -72,7 +72,7 @@ protected:
 	void done();
 	void onTimer();
 
-	void newPeer(Peer::pointer peer) { trigger(peer, false); }
+	void newPeer(const Peer::pointer& peer) { trigger(peer, false); }
 
 	boost::weak_ptr<PeerSet> pmDowncast();
 
@@ -92,7 +92,7 @@ public:
 	bool takeTxRootNode(const std::vector<unsigned char>& data);
 	bool takeAsNode(const std::list<SHAMapNode>& IDs, const std::list<std::vector<unsigned char> >& data);
 	bool takeAsRootNode(const std::vector<unsigned char>& data);
-	void trigger(Peer::pointer, bool timer);
+	void trigger(const Peer::pointer&, bool timer);
 };
 
 class LedgerAcquireMaster
@@ -108,7 +108,7 @@ public:
 	LedgerAcquire::pointer find(const uint256& hash);
 	bool hasLedger(const uint256& ledgerHash);
 	void dropLedger(const uint256& ledgerHash);
-	bool gotLedgerData(newcoin::TMLedgerData& packet, Peer::pointer);
+	bool gotLedgerData(newcoin::TMLedgerData& packet, const Peer::pointer&);
 };
 
 #endif

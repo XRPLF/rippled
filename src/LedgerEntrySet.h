@@ -23,7 +23,7 @@ public:
 	LedgerEntryAction	mAction;
 	int					mSeq;
 
-	LedgerEntrySetEntry(SLE::pointer e, LedgerEntryAction a, int s) : mEntry(e), mAction(a), mSeq(s) { ; }
+	LedgerEntrySetEntry(const SLE::pointer& e, LedgerEntryAction a, int s) : mEntry(e), mAction(a), mSeq(s) { ; }
 };
 
 
@@ -42,7 +42,7 @@ public:
 
 	// set functions
 	LedgerEntrySet duplicate() const;	// Make a duplicate of this set
-	void setTo(LedgerEntrySet&);		// Set this set to have the same contents as another
+	void setTo(const LedgerEntrySet&);		// Set this set to have the same contents as another
 	void swapWith(LedgerEntrySet&);		// Swap the contents of two sets
 
 	int getSeq() const			{ return mSeq; }
@@ -53,10 +53,10 @@ public:
 	// basic entry functions
 	SLE::pointer getEntry(const uint256& index, LedgerEntryAction&);
 	LedgerEntryAction hasEntry(const uint256& index) const;
-	void entryCache(SLE::pointer&);			// Add this entry to the cache
-	void entryCreate(SLE::pointer&);		// This entry will be created
-	void entryDelete(SLE::pointer&, bool unfunded);
-	void entryModify(SLE::pointer&);		// This entry will be modified
+	void entryCache(const SLE::pointer&);		// Add this entry to the cache
+	void entryCreate(const SLE::pointer&);		// This entry will be created
+	void entryDelete(const SLE::pointer&, bool unfunded);
+	void entryModify(const SLE::pointer&);		// This entry will be modified
 
 	Json::Value getJson(int) const;
 	void addRawMeta(Serializer&);

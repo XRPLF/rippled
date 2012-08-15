@@ -139,7 +139,6 @@ public:
 	STAmount					saInAct;		// Amount spent by sender (calc output)
 	STAmount					saOutReq;		// Amount to send (calc input)
 	STAmount					saOutAct;		// Amount actually sent (calc output).
-	bool						bDirty;			// Path not computed.
 
 	PathState(
 		int						iIndex,
@@ -151,6 +150,8 @@ public:
 		STAmount				saSendMax,
 		bool					bPartialPayment
 		);
+
+	Json::Value	getJson() const;
 
 	static PathState::pointer createPathState(
 		int						iIndex,
@@ -187,14 +188,6 @@ private:
 
 	bool dirFirst(const uint256& uRootIndex, SLE::pointer& sleNode, unsigned int& uDirEntry, uint256& uEntryIndex);
 	bool dirNext(const uint256& uRootIndex, SLE::pointer& sleNode, unsigned int& uDirEntry, uint256& uEntryIndex);
-
-#ifdef WORK_IN_PROGRESS
-
-	typedef struct {
-		std::vector<paymentNode>	vpnNodes;
-		bool						bAllowPartial;
-	} paymentGroup;
-#endif
 
 	TransactionEngineResult	setAuthorized(const SerializedTransaction& txn, bool bMustSetGenerator);
 
@@ -240,7 +233,6 @@ protected:
 	STAmount			accountFunds(const uint160& uAccountID, const STAmount& saDefault);
 
 	PathState::pointer	pathCreate(const STPath& spPath);
-	void				pathApply(PathState::pointer pspCur);
 	void				pathNext(PathState::pointer pspCur, int iPaths);
 	bool				calcNode(unsigned int uIndex, PathState::pointer pspCur, bool bMultiQuality);
 	bool				calcNodeOfferRev(unsigned int uIndex, PathState::pointer pspCur, bool bMultiQuality);

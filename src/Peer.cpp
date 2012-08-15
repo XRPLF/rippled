@@ -260,7 +260,7 @@ void Peer::connected(const boost::system::error_code& error)
 	}
 }
 
-void Peer::sendPacketForce(PackedMessage::pointer packet)
+void Peer::sendPacketForce(const PackedMessage::pointer& packet)
 {
 	if (!mDetaching)
 	{
@@ -273,7 +273,7 @@ void Peer::sendPacketForce(PackedMessage::pointer packet)
 	}
 }
 
-void Peer::sendPacket(PackedMessage::pointer packet)
+void Peer::sendPacket(const PackedMessage::pointer& packet)
 {
 	if (packet)
 	{

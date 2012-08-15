@@ -7,7 +7,6 @@ LedgerEntryFormat LedgerFormats[]=
 {
 	{ "AccountRoot", ltACCOUNT_ROOT, {
 		{ S_FIELD(Flags),				STI_UINT32,		SOE_FLAGS,	  0 },
-		{ S_FIELD(Account),				STI_ACCOUNT,	SOE_REQUIRED, 0 },
 		{ S_FIELD(Sequence),			STI_UINT32,		SOE_REQUIRED, 0 },
 		{ S_FIELD(Balance),				STI_AMOUNT,		SOE_REQUIRED, 0 },
 		{ S_FIELD(LastReceive),			STI_UINT32,		SOE_REQUIRED, 0 },

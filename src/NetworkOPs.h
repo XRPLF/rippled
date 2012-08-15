@@ -174,6 +174,7 @@ public:
 	bool checkLastClosedLedger(const std::vector<Peer::pointer>&, uint256& networkClosed);
 	int beginConsensus(const uint256& networkClosed, Ledger::pointer closingLedger);
 	void endConsensus(bool correctLCL);
+	void setStandAlone()				{ setMode(omFULL); }
 	void setStateTimer();
 	void newLCL(int proposers, int convergeTime, const uint256& ledgerHash);
 	int getPreviousProposers()			{ return mLastCloseProposers; }
