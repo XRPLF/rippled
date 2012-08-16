@@ -47,7 +47,7 @@ SNTPClient::SNTPClient(boost::asio::io_service& service) : mSocket(service), mTi
 	mSocket.async_receive_from(boost::asio::buffer(mReceiveBuffer, 256), mReceiveEndpoint,
 		boost::bind(&SNTPClient::receivePacket, this, boost::asio::placeholders::error,
 			boost::asio::placeholders::bytes_transferred));
-	
+
 	mTimer.expires_from_now(boost::posix_time::seconds(NTP_QUERY_FREQUENCY));
 	mTimer.async_wait(boost::bind(&SNTPClient::timerEntry, this, boost::asio::placeholders::error));
 }
@@ -247,3 +247,4 @@ bool SNTPClient::doQuery()
 #endif
 	return true;
 }
+// vim:ts=4
