@@ -572,8 +572,8 @@ void Peer::recvHello(newcoin::TMHello& packet)
 	(void) mVerifyTimer.cancel();
 
 	uint32 ourTime = theApp->getOPs().getNetworkTimeNC();
-	uint32 minTime = ourTime - 10;
-	uint32 maxTime = ourTime + 10;
+	uint32 minTime = ourTime - 20;
+	uint32 maxTime = ourTime + 20;
 
 #ifdef DEBUG
 	if (packet.has_nettime())

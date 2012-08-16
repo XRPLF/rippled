@@ -813,10 +813,7 @@ SLE::pointer TransactionEngine::entryCache(LedgerEntryType letType, const uint25
 		{
 			sleEntry = mLedger->getSLE(uIndex);
 			if (sleEntry)
-			{
 				mNodes.entryCache(sleEntry);
-				mOrigNodes.entryCache(sleEntry); // So the metadata code can compare to the original
-			}
 		}
 		else if (action == taaDELETE)
 			assert(false);
@@ -891,13 +888,6 @@ void TransactionEngine::txnWrite()
 				break;
 		}
 	}
-}
-
-// This is for when a transaction fails from the issuer's point of view and the current changes need to be cleared so other
-// actions can be applied to the ledger.
-void TransactionEngine::entryReset()
-{
-	mNodes.setTo(mOrigNodes);
 }
 
 TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTransaction& txn,
@@ -1220,7 +1210,6 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	if (terSUCCESS == terResult)
 	{
 		entryModify(mTxnAccount);
-		mOrigNodes = mNodes.duplicate();
 
 		switch (txn.getTxnType())
 		{
@@ -1305,7 +1294,6 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 
 	mTxnAccount	= SLE::pointer();
 	mNodes.clear();
-	mOrigNodes.clear();
 	mUnfunded.clear();
 
 	return terResult;

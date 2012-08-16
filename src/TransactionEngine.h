@@ -175,7 +175,7 @@ public:
 class TransactionEngine
 {
 private:
-	LedgerEntrySet						mNodes, mOrigNodes;
+	LedgerEntrySet						mNodes;
 
 	TransactionEngineResult dirAdd(
 		uint64&							uNodeDir,		// Node of entry.
@@ -216,8 +216,6 @@ protected:
 	SLE::pointer		entryCache(LedgerEntryType letType, const uint256& uIndex);
 	void				entryDelete(SLE::pointer sleEntry, bool unfunded = false);
 	void				entryModify(SLE::pointer sleEntry);
-
-	void				entryReset();
 
 	uint32				rippleTransfer(const uint160& uIssuerID);
 	STAmount			rippleBalance(const uint160& uToAccountID, const uint160& uFromAccountID, const uint160& uCurrencyID);
