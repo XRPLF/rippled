@@ -125,6 +125,8 @@ typedef struct {
 class PathState
 {
 protected:
+	Ledger::pointer				mLedger;
+
 	bool pushNode(int iType, uint160 uAccountID, uint160 uCurrencyID, uint160 uIssuerID);
 	bool pushImply(uint160 uAccountID, uint160 uCurrencyID, uint160 uIssuerID);
 
@@ -143,6 +145,7 @@ public:
 	STAmount					saOutAct;		// Amount actually sent (calc output).
 
 	PathState(
+		Ledger::pointer			lpLedger,
 		int						iIndex,
 		const LedgerEntrySet&	lesSource,
 		const STPath&			spSourcePath,
@@ -156,6 +159,7 @@ public:
 	Json::Value	getJson() const;
 
 	static PathState::pointer createPathState(
+		Ledger::pointer			lpLedger,
 		int						iIndex,
 		const LedgerEntrySet&	lesSource,
 		const STPath&			spSourcePath,
@@ -165,7 +169,7 @@ public:
 		STAmount				saSendMax,
 		bool					bPartialPayment
 		)
-	{ return boost::make_shared<PathState>(iIndex, lesSource, spSourcePath, uReceiverID, uSenderID, saSend, saSendMax, bPartialPayment); };
+	{ return boost::make_shared<PathState>(lpLedger, iIndex, lesSource, spSourcePath, uReceiverID, uSenderID, saSend, saSendMax, bPartialPayment); };
 
 	static bool lessPriority(const PathState::pointer& lhs, const PathState::pointer& rhs);
 };
