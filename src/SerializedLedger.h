@@ -62,6 +62,12 @@ public:
 	STAmount getIValueFieldAmount(SOE_Field field) const { return mObject.getValueFieldAmount(field); }
 	STVector256 getIFieldV256(SOE_Field field) { return mObject.getValueFieldV256(field); }
 
+	bool isThreadedType();	// is this a ledger entry that can be threaded
+	bool isThreaded();		// is this ledger entry actually threaded
+	uint256 getThreadedTransaction();
+	uint32 getThreadedLedger();
+	void thread(const uint256& txID, uint32 ledgerSeq, uint256& prevTxID, uint32& prevLedgerID);
+
 	void setIFieldU8(SOE_Field field, unsigned char v) { return mObject.setValueFieldU8(field, v); }
 	void setIFieldU16(SOE_Field field, uint16 v) { return mObject.setValueFieldU16(field, v); }
 	void setIFieldU32(SOE_Field field, uint32 v) { return mObject.setValueFieldU32(field, v); }

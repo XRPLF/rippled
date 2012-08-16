@@ -73,4 +73,34 @@ bool SerializedLedgerEntry::isEquivalent(const SerializedType& t) const
 	if (mObject != v->mObject) return false;
 	return true;
 }
+
+bool SerializedLedgerEntry::isThreadedType()
+{
+	return getIFieldIndex(sfLastTxnID) != -1;
+}
+
+bool SerializedLedgerEntry::isThreaded()
+{
+	return getIFieldPresent(sfLastTxnID);
+}
+
+uint256 SerializedLedgerEntry::getThreadedTransaction()
+{
+	return getIFieldH256(sfLastTxnID);
+}
+
+uint32 SerializedLedgerEntry::getThreadedLedger()
+{
+	return getIFieldU32(sfLastTxnSeq);
+}
+
+void SerializedLedgerEntry::thread(const uint256& txID, uint32 ledgerSeq, uint256& prevTxID, uint32& prevLedgerID)
+{
+	prevTxID = getIFieldH256(sfLastTxnID);
+	prevLedgerID = getIFieldU32(sfLastTxnID);
+	assert(prevTxID != txID);
+	setIFieldH256(sfLastTxnID, txID);
+	setIFieldU32(sfLastTxnSeq, ledgerSeq);
+}
+
 // vim:ts=4
