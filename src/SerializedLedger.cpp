@@ -2,6 +2,8 @@
 
 #include <boost/format.hpp>
 
+#include "Ledger.h"
+
 SerializedLedgerEntry::SerializedLedgerEntry(SerializerIterator& sit, const uint256& index)
 	: SerializedType("LedgerEntry"), mIndex(index)
 {
@@ -101,6 +103,32 @@ void SerializedLedgerEntry::thread(const uint256& txID, uint32 ledgerSeq, uint25
 	assert(prevTxID != txID);
 	setIFieldH256(sfLastTxnID, txID);
 	setIFieldU32(sfLastTxnSeq, ledgerSeq);
+}
+
+std::vector<uint256> SerializedLedgerEntry::getOwners()
+{
+	std::vector<uint256> owners;
+	uint160 account;
+
+	for (int i = 0, fields = getIFieldCount(); i < fields; ++i)
+	{
+		switch (getIFieldSType(i))
+		{
+			case sfAccount:
+			case sfLowID:
+			case sfHighID:
+			{
+				const STAccount* entry = dynamic_cast<const STAccount *>(mObject.peekAtPIndex(i));
+				if ((entry != NULL) && entry->getValueH160(account))
+					owners.push_back(Ledger::getAccountRootIndex(account));
+			}
+
+			default:
+				nothing();
+		}
+	}
+
+	return owners;
 }
 
 // vim:ts=4

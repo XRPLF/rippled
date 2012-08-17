@@ -257,35 +257,45 @@ int STObject::getFieldIndex(SOE_Field field) const
 const SerializedType& STObject::peekAtField(SOE_Field field) const
 {
 	int index = getFieldIndex(field);
-	if (index == -1) throw std::runtime_error("Field not found");
+	if (index == -1)
+		throw std::runtime_error("Field not found");
 	return peekAtIndex(index);
 }
 
 SerializedType& STObject::getField(SOE_Field field)
 {
 	int index = getFieldIndex(field);
-	if (index==-1) throw std::runtime_error("Field not found");
+	if (index == -1)
+		throw std::runtime_error("Field not found");
 	return getIndex(index);
+}
+
+SOE_Field STObject::getFieldSType(int index) const
+{
+	return mType[index]->e_field;
 }
 
 const SerializedType* STObject::peekAtPField(SOE_Field field) const
 {
 	int index = getFieldIndex(field);
-	if (index == -1) return NULL;
+	if (index == -1)
+		return NULL;
 	return peekAtPIndex(index);
 }
 
 SerializedType* STObject::getPField(SOE_Field field)
 {
 	int index = getFieldIndex(field);
-	if (index == -1) return NULL;
+	if (index == -1)
+		return NULL;
 	return getPIndex(index);
 }
 
 bool STObject::isFieldPresent(SOE_Field field) const
 {
 	int index = getFieldIndex(field);
-	if (index == -1) return false;
+	if (index == -1)
+		return false;
 	return peekAtIndex(index).getSType() != STI_NOTPRESENT;
 }
 
@@ -318,7 +328,8 @@ uint32 STObject::getFlags(void) const
 SerializedType* STObject::makeFieldPresent(SOE_Field field)
 {
 	int index = getFieldIndex(field);
-	if (index == -1) throw std::runtime_error("Field not found");
+	if (index == -1)
+		throw std::runtime_error("Field not found");
 	if ((mType[index]->e_type != SOE_IFFLAG) && (mType[index]->e_type != SOE_IFNFLAG))
 		throw std::runtime_error("field is not optional");
 
@@ -338,7 +349,8 @@ SerializedType* STObject::makeFieldPresent(SOE_Field field)
 void STObject::makeFieldAbsent(SOE_Field field)
 {
 	int index = getFieldIndex(field);
-	if (index == -1) throw std::runtime_error("Field not found");
+	if (index == -1)
+		throw std::runtime_error("Field not found");
 	if ((mType[index]->e_type != SOE_IFFLAG) && (mType[index]->e_type != SOE_IFNFLAG))
 		throw std::runtime_error("field is not optional");
 

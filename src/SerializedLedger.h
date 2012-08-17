@@ -47,6 +47,7 @@ public:
 	int getIFieldCount() const { return mObject.getCount(); }
 	const SerializedType& peekIField(SOE_Field field) const { return mObject.peekAtField(field); }
 	SerializedType& getIField(SOE_Field field) { return mObject.getField(field); }
+	SOE_Field getIFieldSType(int index) { return mObject.getFieldSType(index); }
 
 	std::string getIFieldString(SOE_Field field) const { return mObject.getFieldString(field); }
 	unsigned char getIFieldU8(SOE_Field field) const { return mObject.getValueFieldU8(field); }
@@ -67,6 +68,7 @@ public:
 	uint256 getThreadedTransaction();
 	uint32 getThreadedLedger();
 	void thread(const uint256& txID, uint32 ledgerSeq, uint256& prevTxID, uint32& prevLedgerID);
+	std::vector<uint256> getOwners();	// nodes notified if this node is deleted
 
 	void setIFieldU8(SOE_Field field, unsigned char v) { return mObject.setValueFieldU8(field, v); }
 	void setIFieldU16(SOE_Field field, uint16 v) { return mObject.setValueFieldU16(field, v); }
