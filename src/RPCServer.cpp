@@ -1314,73 +1314,6 @@ Json::Value RPCServer::doPeers(const Json::Value& params)
 	return obj;
 }
 
-// ripple_line_set <seed> <paying_account> <destination_account> <limit_amount> [<currency>] [<quality_in>] [<quality_out>]
-Json::Value RPCServer::doRippleLineSet(const Json::Value& params)
-{
-	NewcoinAddress	naSeed;
-	NewcoinAddress	naSrcAccountID;
-	NewcoinAddress	naDstAccountID;
-	STAmount		saLimitAmount;
-	uint256			uLedger			= mNetOps->getCurrentLedger();
-	bool			bLimitAmount	= true;
-	bool			bQualityIn		= params.size() >= 6;
-	bool			bQualityOut		= params.size() >= 7;
-	uint32			uQualityIn		= bQualityIn ? lexical_cast_s<uint32>(params[5u].asString()) : 0;
-	uint32			uQualityOut		= bQualityOut ? lexical_cast_s<uint32>(params[6u].asString()) : 0;
-
-	if (!naSeed.setSeedGeneric(params[0u].asString()))
-	{
-		return RPCError(rpcBAD_SEED);
-	}
-	else if (!naSrcAccountID.setAccountID(params[1u].asString()))
-	{
-		return RPCError(rpcSRC_ACT_MALFORMED);
-	}
-	else if (!naDstAccountID.setAccountID(params[2u].asString()))
-	{
-		return RPCError(rpcDST_ACT_MALFORMED);
-	}
-	else if (!saLimitAmount.setFullValue(params[3u].asString(), params.size() >= 5 ? params[4u].asString() : ""))
-	{
-		return RPCError(rpcSRC_AMT_MALFORMED);
-	}
-	else
-	{
-		NewcoinAddress			naMasterGenerator;
-		NewcoinAddress			naAccountPublic;
-		NewcoinAddress			naAccountPrivate;
-		AccountState::pointer	asSrc;
-		STAmount				saSrcBalance;
-		Json::Value				obj			= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
-			saSrcBalance, theConfig.FEE_DEFAULT, asSrc, naMasterGenerator);
-
-		if (!obj.empty())
-			return obj;
-
-		Transaction::pointer	trans	= Transaction::sharedCreditSet(
-			naAccountPublic, naAccountPrivate,
-			naSrcAccountID,
-			asSrc->getSeq(),
-			theConfig.FEE_DEFAULT,
-			0,											// YYY No source tag
-			naDstAccountID,
-			bLimitAmount, saLimitAmount,
-			bQualityIn, uQualityIn,
-			bQualityOut, uQualityOut);
-
-		trans	= mNetOps->submitTransaction(trans);
-
-		obj["transaction"]		= trans->getSTransaction()->getJson(0);
-		obj["status"]			= trans->getStatus();
-		obj["seed"]				= naSeed.humanSeed();
-		obj["srcAccountID"]		= naSrcAccountID.humanAccountID();
-		obj["dstAccountID"]		= naDstAccountID.humanAccountID();
-
-		return obj;
-	}
-}
-
-
 // ripple <regular_seed> <paying_account>
 //	 <source_max> <source_currency> <source_issuerID> [noredeem] [noissue]
 //   <path>+
@@ -1611,6 +1544,72 @@ Json::Value RPCServer::doRipple(const Json::Value &params)
 	obj["paths"]			= spsPaths.getText();
 
 	return obj;
+}
+
+// ripple_line_set <seed> <paying_account> <destination_account> <limit_amount> [<currency>] [<quality_in>] [<quality_out>]
+Json::Value RPCServer::doRippleLineSet(const Json::Value& params)
+{
+	NewcoinAddress	naSeed;
+	NewcoinAddress	naSrcAccountID;
+	NewcoinAddress	naDstAccountID;
+	STAmount		saLimitAmount;
+	uint256			uLedger			= mNetOps->getCurrentLedger();
+	bool			bLimitAmount	= true;
+	bool			bQualityIn		= params.size() >= 6;
+	bool			bQualityOut		= params.size() >= 7;
+	uint32			uQualityIn		= bQualityIn ? lexical_cast_s<uint32>(params[5u].asString()) : 0;
+	uint32			uQualityOut		= bQualityOut ? lexical_cast_s<uint32>(params[6u].asString()) : 0;
+
+	if (!naSeed.setSeedGeneric(params[0u].asString()))
+	{
+		return RPCError(rpcBAD_SEED);
+	}
+	else if (!naSrcAccountID.setAccountID(params[1u].asString()))
+	{
+		return RPCError(rpcSRC_ACT_MALFORMED);
+	}
+	else if (!naDstAccountID.setAccountID(params[2u].asString()))
+	{
+		return RPCError(rpcDST_ACT_MALFORMED);
+	}
+	else if (!saLimitAmount.setFullValue(params[3u].asString(), params.size() >= 5 ? params[4u].asString() : ""))
+	{
+		return RPCError(rpcSRC_AMT_MALFORMED);
+	}
+	else
+	{
+		NewcoinAddress			naMasterGenerator;
+		NewcoinAddress			naAccountPublic;
+		NewcoinAddress			naAccountPrivate;
+		AccountState::pointer	asSrc;
+		STAmount				saSrcBalance;
+		Json::Value				obj			= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
+			saSrcBalance, theConfig.FEE_DEFAULT, asSrc, naMasterGenerator);
+
+		if (!obj.empty())
+			return obj;
+
+		Transaction::pointer	trans	= Transaction::sharedCreditSet(
+			naAccountPublic, naAccountPrivate,
+			naSrcAccountID,
+			asSrc->getSeq(),
+			theConfig.FEE_DEFAULT,
+			0,											// YYY No source tag
+			naDstAccountID,
+			bLimitAmount, saLimitAmount,
+			bQualityIn, uQualityIn,
+			bQualityOut, uQualityOut);
+
+		trans	= mNetOps->submitTransaction(trans);
+
+		obj["transaction"]		= trans->getSTransaction()->getJson(0);
+		obj["status"]			= trans->getStatus();
+		obj["seed"]				= naSeed.humanSeed();
+		obj["srcAccountID"]		= naSrcAccountID.humanAccountID();
+		obj["dstAccountID"]		= naDstAccountID.humanAccountID();
+
+		return obj;
+	}
 }
 
 // ripple_lines_get <account>|<nickname>|<account_public_key> [<index>]
