@@ -28,7 +28,6 @@ enum SOE_Field
 	sfAcceptRate,
 	sfAcceptStart,
 	sfAccount,
-	sfAccountID,
 	sfAmount,
 	sfAuthorizedKey,
 	sfBalance,
@@ -162,6 +161,7 @@ public:
 	SerializedType* getPIndex(int offset) { return &(mData[offset]); }
 
 	int getFieldIndex(SOE_Field field) const;
+	SOE_Field getFieldSType(int index) const;
 
 	const SerializedType& peekAtField(SOE_Field field) const;
 	SerializedType& getField(SOE_Field field);
