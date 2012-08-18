@@ -24,6 +24,11 @@ private:
 	STAmount						mLowLimit;
 	STAmount						mHighLimit;
 
+	uint64							mLowQualityIn;
+	uint64							mLowQualityOut;
+	uint64							mHighQualityIn;
+	uint64							mHighQualityOut;
+
 	STAmount						mBalance;
 
 	bool							mValid;
@@ -41,6 +46,9 @@ public:
 
 	STAmount				getLimit() const			{ return mViewLowest ? mLowLimit : mHighLimit; }
 	STAmount				getLimitPeer() const		{ return mViewLowest ? mHighLimit : mLowLimit; }
+
+	uint32					getQualityIn() const		{ return mViewLowest ? mLowQualityIn : mHighQualityIn; }
+	uint32					getQualityOut() const		{ return mViewLowest ? mLowQualityOut : mHighQualityOut; }
 
 	SerializedLedgerEntry::pointer getSLE() { return mLedgerEntry; }
 	const SerializedLedgerEntry& peekSLE() const { return *mLedgerEntry; }

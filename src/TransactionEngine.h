@@ -221,14 +221,14 @@ protected:
 	void				entryDelete(SLE::pointer sleEntry, bool unfunded = false);
 	void				entryModify(SLE::pointer sleEntry);
 
-	uint32				rippleTransfer(const uint160& uIssuerID);
+	uint32				rippleTransferRate(const uint160& uIssuerID);
 	STAmount			rippleBalance(const uint160& uToAccountID, const uint160& uFromAccountID, const uint160& uCurrencyID);
 	STAmount			rippleLimit(const uint160& uToAccountID, const uint160& uFromAccountID, const uint160& uCurrencyID);
 	uint32				rippleQualityIn(const uint160& uToAccountID, const uint160& uFromAccountID, const uint160& uCurrencyID);
 	uint32				rippleQualityOut(const uint160& uToAccountID, const uint160& uFromAccountID, const uint160& uCurrencyID);
 
 	STAmount			rippleHolds(const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID);
-	STAmount			rippleTransfer(const uint160& uSenderID, const uint160& uReceiverID, const uint160& uIssuerID, const STAmount& saAmount);
+	STAmount			rippleTransferFee(const uint160& uSenderID, const uint160& uReceiverID, const uint160& uIssuerID, const STAmount& saAmount);
 	void				rippleCredit(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount, bool bCheckIssuer=true);
 	STAmount			rippleSend(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount);
 

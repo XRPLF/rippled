@@ -23,7 +23,6 @@ enum LedgerNameSpace
 	spaceGenerator		= 'g',
 	spaceNickname		= 'n',
 	spaceRipple			= 'r',
-	spaceRippleDir		= 'R',
 	spaceOffer			= 'o',	// Entry for an offer.
 	spaceOwnerDir		= 'O',	// Directory of things owned by an account.
 	spaceBookDir		= 'B',	// Directory of order books.
@@ -38,10 +37,6 @@ enum LedgerSpecificFlags
 
 	// ltOFFER
 	lsfPassive			= 0x00010000,
-
-	// ltRIPPLE_STATE
-	lsfLowIndexed		= 0x00010000,
-	lsfHighIndexed		= 0x00020000,
 };
 
 struct LedgerEntryFormat

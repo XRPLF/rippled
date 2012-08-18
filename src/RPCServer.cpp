@@ -1151,22 +1151,12 @@ Json::Value RPCServer::doOwnerInfo(const Json::Value& params)
 	uint256			uAccepted	= mNetOps->getClosedLedger();
 	Json::Value		jAccepted	= accountFromString(uAccepted, naAccount, bIndex, strIdent, iIndex);
 
-	if (jAccepted.empty())
-	{
-		jAccepted["offers"]	= mNetOps->getOwnerInfo(uAccepted, naAccount);
-	}
-
-	ret["accepted"]	= jAccepted;
+	ret["accepted"]	= jAccepted.empty() ? mNetOps->getOwnerInfo(uAccepted, naAccount) : jAccepted;
 
 	uint256			uCurrent	= mNetOps->getCurrentLedger();
 	Json::Value		jCurrent	= accountFromString(uCurrent, naAccount, bIndex, strIdent, iIndex);
 
-	if (jCurrent.empty())
-	{
-		jCurrent["offers"]	= mNetOps->getOwnerInfo(uCurrent, naAccount);
-	}
-
-	ret["current"]	= jCurrent;
+	ret["current"]	= jCurrent.empty() ? mNetOps->getOwnerInfo(uCurrent, naAccount) : jCurrent;
 
 	return ret;
 }
@@ -1660,7 +1650,7 @@ Json::Value RPCServer::doRippleLinesGet(const Json::Value &params)
 		// We access a committed ledger and need not worry about changes.
 
 		RippleLines rippleLines(naAccount.getAccountID());
-		BOOST_FOREACH(RippleState::pointer line,rippleLines.getLines())
+		BOOST_FOREACH(RippleState::pointer line, rippleLines.getLines())
 		{
 			STAmount		saBalance	= line->getBalance();
 			STAmount		saLimit		= line->getLimit();
@@ -1668,15 +1658,17 @@ Json::Value RPCServer::doRippleLinesGet(const Json::Value &params)
 
 			Json::Value			jPeer	= Json::Value(Json::objectValue);
 
-			//jPeer["node"]		= uNode.ToString();
+			//jPeer["node"]			= uNode.ToString();
 
-			jPeer["account"]	= line->getAccountIDPeer().humanAccountID();
+			jPeer["account"]		= line->getAccountIDPeer().humanAccountID();
 			// Amount reported is positive if current account holds other account's IOUs.
 			// Amount reported is negative if other account holds current account's IOUs.
-			jPeer["balance"]	= saBalance.getText();
-			jPeer["currency"]	= saBalance.getHumanCurrency();
-			jPeer["limit"]		= saLimit.getText();
-			jPeer["limit_peer"]	= saLimitPeer.getText();
+			jPeer["balance"]		= saBalance.getText();
+			jPeer["currency"]		= saBalance.getHumanCurrency();
+			jPeer["limit"]			= saLimit.getText();
+			jPeer["limit_peer"]		= saLimitPeer.getText();
+			jPeer["quality_in"]		= static_cast<Json::UInt>(line->getQualityIn());
+			jPeer["quality_out"]	= static_cast<Json::UInt>(line->getQualityOut());
 
 			jsonLines.append(jPeer);
 		}

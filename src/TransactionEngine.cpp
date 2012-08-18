@@ -145,7 +145,7 @@ STAmount TransactionEngine::rippleLimit(const uint160& uToAccountID, const uint1
 
 }
 
-uint32 TransactionEngine::rippleTransfer(const uint160& uIssuerID)
+uint32 TransactionEngine::rippleTransferRate(const uint160& uIssuerID)
 {
 	SLE::pointer	sleAccount	= entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uIssuerID));
 
@@ -298,13 +298,13 @@ STAmount TransactionEngine::accountFunds(const uint160& uAccountID, const STAmou
 }
 
 // Calculate transit fee.
-STAmount TransactionEngine::rippleTransfer(const uint160& uSenderID, const uint160& uReceiverID, const uint160& uIssuerID, const STAmount& saAmount)
+STAmount TransactionEngine::rippleTransferFee(const uint160& uSenderID, const uint160& uReceiverID, const uint160& uIssuerID, const STAmount& saAmount)
 {
 	STAmount	saTransitFee;
 
 	if (uSenderID != uIssuerID && uReceiverID != uIssuerID)
 	{
-		uint32		uTransitRate	= rippleTransfer(uIssuerID);
+		uint32		uTransitRate	= rippleTransferRate(uIssuerID);
 
 		if (QUALITY_ONE != uTransitRate)
 		{
@@ -380,7 +380,7 @@ STAmount TransactionEngine::rippleSend(const uint160& uSenderID, const uint160& 
 	{
 		// Sending 3rd party IOUs: transit.
 
-		STAmount		saTransitFee	= rippleTransfer(uSenderID, uReceiverID, uIssuerID, saAmount);
+		STAmount		saTransitFee	= rippleTransferFee(uSenderID, uReceiverID, uIssuerID, saAmount);
 
 		saActual	= saTransitFee.isZero() ? saAmount : saAmount+saTransitFee;
 
@@ -1505,7 +1505,6 @@ TransactionEngineResult TransactionEngine::doCreditSet(const SerializedTransacti
 	}
 
 	bool				bFlipped		= mTxnAccountID > uDstAccountID;
-	uint32				uFlags			= bFlipped ? lsfLowIndexed : lsfHighIndexed;
 	bool				bLimitAmount	= txn.getITFieldPresent(sfLimitAmount);
 	STAmount			saLimitAmount	= bLimitAmount ? txn.getITFieldAmount(sfLimitAmount) : STAmount();
 	bool				bQualityIn		= txn.getITFieldPresent(sfQualityIn);
@@ -1514,7 +1513,6 @@ TransactionEngineResult TransactionEngine::doCreditSet(const SerializedTransacti
 	uint32				uQualityOut		= bQualityIn ? txn.getITFieldU32(sfQualityOut) : 0;
 	uint160				uCurrencyID		= saLimitAmount.getCurrency();
 	STAmount			saBalance(uCurrencyID);
-	bool				bAddIndex		= false;
 	bool				bDelIndex		= false;
 
 	SLE::pointer		sleRippleState	= entryCache(ltRIPPLE_STATE, Ledger::getRippleStateIndex(mTxnAccountID, uDstAccountID, uCurrencyID));
@@ -1540,7 +1538,7 @@ TransactionEngineResult TransactionEngine::doCreditSet(const SerializedTransacti
 				// Zero balance and eliminating last limit.
 
 				bDelIndex	= true;
-				terResult	= dirDelete(false, uSrcRef, Ledger::getRippleDirIndex(mTxnAccountID), sleRippleState->getIndex());
+				terResult	= dirDelete(false, uSrcRef, Ledger::getOwnerDirIndex(mTxnAccountID), sleRippleState->getIndex());
 			}
 		}
 #endif
@@ -1576,15 +1574,10 @@ TransactionEngineResult TransactionEngine::doCreditSet(const SerializedTransacti
 				sleRippleState->makeIFieldAbsent(bFlipped ? sfLowQualityOut : sfHighQualityOut);
 			}
 
-			bAddIndex		= !(sleRippleState->getFlags() & uFlags);
-
-			if (bAddIndex)
-				sleRippleState->setFlag(uFlags);
-
 			entryModify(sleRippleState);
 		}
 
-		Log(lsINFO) << "doCreditSet: Modifying ripple line: bAddIndex=" << bAddIndex << " bDelIndex=" << bDelIndex;
+		Log(lsINFO) << "doCreditSet: Modifying ripple line: bDelIndex=" << bDelIndex;
 	}
 	// Line does not exist.
 	else if (saLimitAmount.isZero())
@@ -1598,12 +1591,10 @@ TransactionEngineResult TransactionEngine::doCreditSet(const SerializedTransacti
 		// Create a new ripple line.
 		STAmount		saZero(uCurrencyID);
 
-		bAddIndex		= true;
 		sleRippleState	= entryCreate(ltRIPPLE_STATE, Ledger::getRippleStateIndex(mTxnAccountID, uDstAccountID, uCurrencyID));
 
 		Log(lsINFO) << "doCreditSet: Creating ripple line: " << sleRippleState->getIndex().ToString();
 
-		sleRippleState->setFlag(uFlags);
 		sleRippleState->setIFieldAmount(sfBalance, saZero);	// Zero balance in currency.
 		sleRippleState->setIFieldAmount(bFlipped ? sfHighLimit : sfLowLimit, saLimitAmount);
 		sleRippleState->setIFieldAmount(bFlipped ? sfLowLimit : sfHighLimit, saZero);
@@ -1613,14 +1604,13 @@ TransactionEngineResult TransactionEngine::doCreditSet(const SerializedTransacti
 			sleRippleState->setIFieldU32(bFlipped ? sfLowQualityIn : sfHighQualityIn, uQualityIn);
 		if (uQualityOut)
 			sleRippleState->setIFieldU32(bFlipped ? sfLowQualityOut : sfHighQualityOut, uQualityOut);
-	}
 
-	if (bAddIndex)
-	{
-		uint64			uSrcRef;	// Ignored, ripple_state dirs never delete.
+		uint64			uSrcRef;							// Ignored, dirs never delete.
 
-		// XXX Make dirAdd more flexiable to take vector.
-		terResult	= dirAdd(uSrcRef, Ledger::getRippleDirIndex(mTxnAccountID), sleRippleState->getIndex());
+		terResult	= dirAdd(uSrcRef, Ledger::getOwnerDirIndex(mTxnAccountID), sleRippleState->getIndex());
+
+		if (terSUCCESS == terResult)
+			terResult	= dirAdd(uSrcRef, Ledger::getOwnerDirIndex(uDstAccountID), sleRippleState->getIndex());
 	}
 
 	Log(lsINFO) << "doCreditSet<";
@@ -1927,16 +1917,16 @@ bool TransactionEngine::calcNodeOfferRev(
 	uint160&		uNxtIssuerID	= nxtPN.uIssuerID;
 	uint160&		uNxtAccountID	= nxtPN.uAccountID;
 
-	STAmount		saTransferRate	= STAmount(CURRENCY_ONE, rippleTransfer(uCurIssuerID), -9);
+	STAmount		saTransferRate	= STAmount(CURRENCY_ONE, rippleTransferRate(uCurIssuerID), -9);
 
 	uint256			uDirectTip		= Ledger::getBookBase(uPrvCurrencyID, uPrvIssuerID, uCurCurrencyID, uCurIssuerID);
 	uint256			uDirectEnd		= Ledger::getQualityNext(uDirectTip);
 	bool			bAdvance		= !entryCache(ltDIR_NODE, uDirectTip);
 
-	STAmount&		saPrvDlvReq		= prvPN.saRevDeliver;
+	STAmount&		saPrvDlvReq		= prvPN.saRevDeliver;	// To be adjusted.
 	STAmount		saPrvDlvAct;
 
-	STAmount&		saCurDlvReq		= curPN.saRevDeliver;	// Reverse driver.
+	const STAmount&	saCurDlvReq		= curPN.saRevDeliver;	// Reverse driver.
 	STAmount		saCurDlvAct;
 
 	while (!!uDirectTip	// Have a quality.
@@ -2119,7 +2109,7 @@ bool TransactionEngine::calcNodeOfferFwd(
 	uint160&		uNxtIssuerID	= nxtPN.uIssuerID;
 
 	uint160&		uNxtAccountID	= nxtPN.uAccountID;
-	STAmount		saTransferRate	= STAmount(CURRENCY_ONE, rippleTransfer(uCurIssuerID), -9);
+	STAmount		saTransferRate	= STAmount(CURRENCY_ONE, rippleTransferRate(uCurIssuerID), -9);
 
 	uint256			uDirectTip		= Ledger::getBookBase(uPrvCurrencyID, uPrvIssuerID, uCurCurrencyID, uCurIssuerID);
 	uint256			uDirectEnd		= Ledger::getQualityNext(uDirectTip);
@@ -2730,7 +2720,7 @@ bool TransactionEngine::calcNodeAccountRev(unsigned int uIndex, PathState::point
 				// Rate : 1.0 : transfer_rate
 				Log(lsINFO) << str(boost::format("calcNodeAccountRev: Rate : 1.0 : transfer_rate"));
 
-				calcNodeRipple(QUALITY_ONE, rippleTransfer(uCurAccountID), saPrvRedeemReq, saCurIssueReq, saPrvRedeemAct, saCurIssueAct);
+				calcNodeRipple(QUALITY_ONE, rippleTransferRate(uCurAccountID), saPrvRedeemReq, saCurIssueReq, saPrvRedeemAct, saCurIssueAct);
 			}
 
 			// issue (part 1)-> redeem
@@ -2789,7 +2779,7 @@ bool TransactionEngine::calcNodeAccountRev(unsigned int uIndex, PathState::point
 			&& saCurDeliverReq)						// Need some issued.
 		{
 			// Rate : 1.0 : transfer_rate
-			calcNodeRipple(QUALITY_ONE, rippleTransfer(uCurAccountID), saPrvRedeemReq, saCurDeliverReq, saPrvRedeemAct, saCurDeliverAct);
+			calcNodeRipple(QUALITY_ONE, rippleTransferRate(uCurAccountID), saPrvRedeemReq, saCurDeliverReq, saPrvRedeemAct, saCurDeliverAct);
 		}
 
 		// issue -> deliver/issue
@@ -2848,7 +2838,7 @@ bool TransactionEngine::calcNodeAccountRev(unsigned int uIndex, PathState::point
 				&& saCurIssueReq)						// Need some issued.
 			{
 				// Rate : 1.0 : transfer_rate
-				calcNodeRipple(QUALITY_ONE, rippleTransfer(uCurAccountID), saPrvDeliverReq, saCurIssueReq, saPrvDeliverAct, saCurIssueAct);
+				calcNodeRipple(QUALITY_ONE, rippleTransferRate(uCurAccountID), saPrvDeliverReq, saCurIssueReq, saPrvDeliverAct, saCurIssueAct);
 			}
 
 			if (!saCurDeliverAct && !saCurIssueAct)
@@ -2869,7 +2859,7 @@ bool TransactionEngine::calcNodeAccountRev(unsigned int uIndex, PathState::point
 			&& saCurDeliverReq != saCurDeliverAct)	// Can only if issue if more can not be redeemed.
 		{
 			// Rate : 1.0 : transfer_rate
-			calcNodeRipple(QUALITY_ONE, rippleTransfer(uCurAccountID), saPrvDeliverReq, saCurDeliverReq, saPrvDeliverAct, saCurDeliverAct);
+			calcNodeRipple(QUALITY_ONE, rippleTransferRate(uCurAccountID), saPrvDeliverReq, saCurDeliverReq, saPrvDeliverAct, saCurDeliverAct);
 		}
 
 		if (!saCurDeliverAct)
@@ -3041,7 +3031,7 @@ bool TransactionEngine::calcNodeAccountFwd(unsigned int uIndex, PathState::point
 				&& saCurIssueReq)
 			{
 				// Rate : 1.0 : transfer_rate
-				calcNodeRipple(QUALITY_ONE, rippleTransfer(uCurAccountID), saPrvRedeemReq, saCurIssueReq, saPrvRedeemAct, saCurIssueAct);
+				calcNodeRipple(QUALITY_ONE, rippleTransferRate(uCurAccountID), saPrvRedeemReq, saCurIssueReq, saPrvRedeemAct, saCurIssueAct);
 			}
 
 			// Previous issue part 1: issue -> redeem
@@ -3077,7 +3067,7 @@ bool TransactionEngine::calcNodeAccountFwd(unsigned int uIndex, PathState::point
 		if (saPrvRedeemReq)								// Previous wants to redeem.
 		{
 			// Rate : 1.0 : transfer_rate
-			calcNodeRipple(QUALITY_ONE, rippleTransfer(uCurAccountID), saPrvRedeemReq, saCurDeliverReq, saPrvRedeemAct, saCurDeliverAct);
+			calcNodeRipple(QUALITY_ONE, rippleTransferRate(uCurAccountID), saPrvRedeemReq, saCurDeliverReq, saPrvRedeemAct, saCurDeliverAct);
 		}
 
 		// issue -> issue
@@ -3125,7 +3115,7 @@ bool TransactionEngine::calcNodeAccountFwd(unsigned int uIndex, PathState::point
 				&& saCurIssueReq)							// Current wants issue.
 			{
 				// Rate : 1.0 : transfer_rate
-				calcNodeRipple(QUALITY_ONE, rippleTransfer(uCurAccountID), saPrvRedeemReq, saCurIssueReq, saPrvRedeemAct, saCurIssueAct);
+				calcNodeRipple(QUALITY_ONE, rippleTransferRate(uCurAccountID), saPrvRedeemReq, saCurIssueReq, saPrvRedeemAct, saCurIssueAct);
 			}
 
 			// No income balance adjustments necessary.  The paying side inside the offer paid and the next link will receive.
@@ -3142,7 +3132,7 @@ bool TransactionEngine::calcNodeAccountFwd(unsigned int uIndex, PathState::point
 			&& saCurIssueReq)								// Current wants issue.
 		{
 			// Rate : 1.0 : transfer_rate
-			calcNodeRipple(QUALITY_ONE, rippleTransfer(uCurAccountID), saPrvDeliverReq, saCurDeliverReq, saPrvDeliverAct, saCurDeliverAct);
+			calcNodeRipple(QUALITY_ONE, rippleTransferRate(uCurAccountID), saPrvDeliverReq, saCurDeliverReq, saPrvDeliverAct, saCurDeliverAct);
 		}
 
 		// No income balance adjustments necessary.  The paying side inside the offer paid and the next link will receive.
@@ -3742,7 +3732,7 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 
 				terResult	= dirAdd(
 					uSrcRef,
-					Ledger::getRippleDirIndex(mTxnAccountID),		// The source ended up owing.
+					Ledger::getOwnerDirIndex(mTxnAccountID),		// The source ended up owing.
 					sleRippleState->getIndex());					// Adding current entry.
 
 				if (terSUCCESS != terResult)
