@@ -281,6 +281,7 @@ public:
 	int getExponent() const				{ return mOffset; }
 	uint64 getMantissa() const			{ return mValue; }
 
+	// When the currency is XNS, the value in raw units. S=signed
 	uint64 getNValue() const			{ if (!mIsNative) throw std::runtime_error("not native"); return mValue; }
 	void setNValue(uint64 v)			{ if (!mIsNative) throw std::runtime_error("not native"); mValue = v; }
 	int64 getSNValue() const;

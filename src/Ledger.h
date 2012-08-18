@@ -115,7 +115,7 @@ public:
 	void disarmDirty()	{ mTransactionMap->disarmDirty();	mAccountStateMap->disarmDirty(); }
 
 	// This ledger has closed, will never be accepted, and is accepting
-	// new transactions to be re-repocessed when do accept a new last-closed ledger
+	// new transactions to be re-reprocessed when do accept a new last-closed ledger
 	void bumpSeq()		{ mClosed = true; mLedgerSeq++; }
 
 	// ledger signature operations
