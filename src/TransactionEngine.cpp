@@ -1504,7 +1504,7 @@ TransactionEngineResult TransactionEngine::doCreditSet(const SerializedTransacti
 		return terNO_DST;
 	}
 
-	bool				bFlipped		= mTxnAccountID > uDstAccountID;
+	bool				bFlipped		= mTxnAccountID > uDstAccountID;		// true, iff current is not lowest.
 	bool				bLimitAmount	= txn.getITFieldPresent(sfLimitAmount);
 	STAmount			saLimitAmount	= bLimitAmount ? txn.getITFieldAmount(sfLimitAmount) : STAmount();
 	bool				bQualityIn		= txn.getITFieldPresent(sfQualityIn);
@@ -1589,21 +1589,19 @@ TransactionEngineResult TransactionEngine::doCreditSet(const SerializedTransacti
 	else
 	{
 		// Create a new ripple line.
-		STAmount		saZero(uCurrencyID);
-
 		sleRippleState	= entryCreate(ltRIPPLE_STATE, Ledger::getRippleStateIndex(mTxnAccountID, uDstAccountID, uCurrencyID));
 
 		Log(lsINFO) << "doCreditSet: Creating ripple line: " << sleRippleState->getIndex().ToString();
 
-		sleRippleState->setIFieldAmount(sfBalance, saZero);	// Zero balance in currency.
+		sleRippleState->setIFieldAmount(sfBalance, STAmount(uCurrencyID));	// Zero balance in currency.
 		sleRippleState->setIFieldAmount(bFlipped ? sfHighLimit : sfLowLimit, saLimitAmount);
-		sleRippleState->setIFieldAmount(bFlipped ? sfLowLimit : sfHighLimit, saZero);
+		sleRippleState->setIFieldAmount(bFlipped ? sfLowLimit : sfHighLimit, STAmount(uCurrencyID));
 		sleRippleState->setIFieldAccount(bFlipped ? sfHighID : sfLowID, mTxnAccountID);
 		sleRippleState->setIFieldAccount(bFlipped ? sfLowID : sfHighID, uDstAccountID);
 		if (uQualityIn)
-			sleRippleState->setIFieldU32(bFlipped ? sfLowQualityIn : sfHighQualityIn, uQualityIn);
+			sleRippleState->setIFieldU32(bFlipped ? sfHighQualityIn : sfLowQualityIn, uQualityIn);
 		if (uQualityOut)
-			sleRippleState->setIFieldU32(bFlipped ? sfLowQualityOut : sfHighQualityOut, uQualityOut);
+			sleRippleState->setIFieldU32(bFlipped ? sfHighQualityOut : sfLowQualityOut, uQualityOut);
 
 		uint64			uSrcRef;							// Ignored, dirs never delete.
 
@@ -2531,8 +2529,6 @@ void TransactionEngine::calcNodeRipple(
 	STAmount	saPrv			= bPrvUnlimited ? STAmount(saPrvReq) : saPrvReq-saPrvAct;
 	STAmount	saCur			= saCurReq-saCurAct;
 
-	Log(lsINFO) << str(boost::format("calcNodeRipple:1: saCurReq=%s") % saCurReq.getFullText());
-
 #if 0
 	Log(lsINFO) << str(boost::format("calcNodeRipple: bPrvUnlimited=%d saPrv=%s saCur=%s")
 		% bPrvUnlimited
@@ -2543,6 +2539,8 @@ void TransactionEngine::calcNodeRipple(
 	if (uQualityIn >= uQualityOut)
 	{
 		// No fee.
+		Log(lsINFO) << str(boost::format("calcNodeRipple: No fees"));
+
 		STAmount	saTransfer	= bPrvUnlimited ? saCur : MIN(saPrv, saCur);
 
 		saPrvAct	+= saTransfer;
@@ -2551,15 +2549,16 @@ void TransactionEngine::calcNodeRipple(
 	else
 	{
 		// Fee.
+		Log(lsINFO) << str(boost::format("calcNodeRipple: Fee"));
+
 		uint160		uCurrencyID	= saCur.getCurrency();
 		STAmount	saCurIn		= STAmount::divide(STAmount::multiply(saCur, uQualityOut, uCurrencyID), uQualityIn, uCurrencyID);
-Log(lsINFO) << str(boost::format("calcNodeRipple:2: saCurReq=%s") % saCurReq.getFullText());
 
-		if (bPrvUnlimited || saCurIn >= saPrv)
+Log(lsINFO) << str(boost::format("calcNodeRipple: bPrvUnlimited=%d saPrv=%s saCurIn=%s") % bPrvUnlimited % saPrv.getFullText() % saCurIn.getFullText());
+		if (bPrvUnlimited || saCurIn <= saPrv)
 		{
 			// All of cur. Some amount of prv.
-Log(lsINFO) << str(boost::format("calcNodeRipple:3a: saCurReq=%s") % saCurReq.getFullText());
-			saCurAct	= saCurReq;
+			saCurAct	+= saCur;
 			saPrvAct	+= saCurIn;
 Log(lsINFO) << str(boost::format("calcNodeRipple:3c: saCurReq=%s saPrvAct=%s") % saCurReq.getFullText() % saPrvAct.getFullText());
 		}

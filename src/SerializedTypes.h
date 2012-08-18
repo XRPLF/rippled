@@ -50,7 +50,7 @@ enum PathFlags
 	PF_ISSUE			= 0x80,
 };
 
-#define QUALITY_ONE			100000000	// 10e9
+#define QUALITY_ONE			1000000000	// 10e9
 #define CURRENCY_XNS		uint160(0)
 #define CURRENCY_ONE		uint160(1)	// Used as a place holder
 #define ACCOUNT_XNS			uint160(0)
