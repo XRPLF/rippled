@@ -104,7 +104,7 @@ typedef struct {
 	uint16							uFlags;				// --> From path.
 
 	uint160							uAccountID;			// --> Recieving/sending account.
-	uint160							uCurrencyID;		// --> Currency to recieve.
+	uint160							uCurrencyID;		// --> Accounts: receive and send, Offers: send.
 														// --- For offer's next has currency out.
 	uint160							uIssuerID;			// --> Currency's issuer
 
@@ -125,6 +125,8 @@ typedef struct {
 class PathState
 {
 protected:
+	Ledger::pointer				mLedger;
+
 	bool pushNode(int iType, uint160 uAccountID, uint160 uCurrencyID, uint160 uIssuerID);
 	bool pushImply(uint160 uAccountID, uint160 uCurrencyID, uint160 uIssuerID);
 
@@ -143,6 +145,7 @@ public:
 	STAmount					saOutAct;		// Amount actually sent (calc output).
 
 	PathState(
+		Ledger::pointer			lpLedger,
 		int						iIndex,
 		const LedgerEntrySet&	lesSource,
 		const STPath&			spSourcePath,
@@ -156,6 +159,7 @@ public:
 	Json::Value	getJson() const;
 
 	static PathState::pointer createPathState(
+		Ledger::pointer			lpLedger,
 		int						iIndex,
 		const LedgerEntrySet&	lesSource,
 		const STPath&			spSourcePath,
@@ -165,7 +169,7 @@ public:
 		STAmount				saSendMax,
 		bool					bPartialPayment
 		)
-	{ return boost::make_shared<PathState>(iIndex, lesSource, spSourcePath, uReceiverID, uSenderID, saSend, saSendMax, bPartialPayment); };
+	{ return boost::make_shared<PathState>(lpLedger, iIndex, lesSource, spSourcePath, uReceiverID, uSenderID, saSend, saSendMax, bPartialPayment); };
 
 	static bool lessPriority(const PathState::pointer& lhs, const PathState::pointer& rhs);
 };
@@ -225,7 +229,7 @@ protected:
 
 	STAmount			rippleHolds(const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID);
 	STAmount			rippleTransfer(const uint160& uSenderID, const uint160& uReceiverID, const uint160& uIssuerID, const STAmount& saAmount);
-	void				rippleCredit(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount);
+	void				rippleCredit(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount, bool bCheckIssuer=true);
 	STAmount			rippleSend(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount);
 
 	STAmount			accountHolds(const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID);

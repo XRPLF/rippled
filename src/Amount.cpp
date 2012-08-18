@@ -883,11 +883,35 @@ std::string STAmount::getFullText() const
 {
 	if (mIsNative)
 	{
+		return str(boost::format("%s/" SYSTEM_CURRENCY_CODE) % getText());
+	}
+	else if (!mIssuer)
+	{
+		return str(boost::format("%s/%s/0") % getText() % getHumanCurrency());
+	}
+	else if (mIssuer == ACCOUNT_ONE)
+	{
+		return str(boost::format("%s/%s/1") % getText() % getHumanCurrency());
+	}
+	else
+	{
+		return str(boost::format("%s/%s/%s")
+			% getText()
+			% getHumanCurrency()
+			% NewcoinAddress::createHumanAccountID(mIssuer));
+	}
+}
+
+#if 0
+std::string STAmount::getExtendedText() const
+{
+	if (mIsNative)
+	{
 		return str(boost::format("%s " SYSTEM_CURRENCY_CODE) % getText());
 	}
 	else
 	{
-		return str(boost::format("%s %s/%s %dE%d" )
+		return str(boost::format("%s/%s/%s %dE%d" )
 			% getText()
 			% getHumanCurrency()
 			% NewcoinAddress::createHumanAccountID(mIssuer)
@@ -895,6 +919,7 @@ std::string STAmount::getFullText() const
 			% getExponent());
 	}
 }
+#endif
 
 Json::Value STAmount::getJson(int) const
 {

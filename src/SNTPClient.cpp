@@ -6,6 +6,7 @@
 #include <openssl/rand.h>
 
 #include "utils.h"
+#include "Config.h"
 #include "Log.h"
 
 // #define SNTP_DEBUG
@@ -43,13 +44,16 @@ static uint8_t SNTPQueryData[48] =
 SNTPClient::SNTPClient(boost::asio::io_service& service) : mSocket(service), mTimer(service), mResolver(service),
 		mOffset(0), mLastOffsetUpdate((time_t) -1), mReceiveBuffer(256)
 {
-	mSocket.open(boost::asio::ip::udp::v4());
-	mSocket.async_receive_from(boost::asio::buffer(mReceiveBuffer, 256), mReceiveEndpoint,
-		boost::bind(&SNTPClient::receivePacket, this, boost::asio::placeholders::error,
-			boost::asio::placeholders::bytes_transferred));
-	
-	mTimer.expires_from_now(boost::posix_time::seconds(NTP_QUERY_FREQUENCY));
-	mTimer.async_wait(boost::bind(&SNTPClient::timerEntry, this, boost::asio::placeholders::error));
+	if (!theConfig.RUN_STANDALONE)
+	{
+		mSocket.open(boost::asio::ip::udp::v4());
+		mSocket.async_receive_from(boost::asio::buffer(mReceiveBuffer, 256), mReceiveEndpoint,
+			boost::bind(&SNTPClient::receivePacket, this, boost::asio::placeholders::error,
+				boost::asio::placeholders::bytes_transferred));
+
+		mTimer.expires_from_now(boost::posix_time::seconds(NTP_QUERY_FREQUENCY));
+		mTimer.async_wait(boost::bind(&SNTPClient::timerEntry, this, boost::asio::placeholders::error));
+	}
 }
 
 void SNTPClient::resolveComplete(const boost::system::error_code& error, boost::asio::ip::udp::resolver::iterator it)
@@ -247,3 +251,4 @@ bool SNTPClient::doQuery()
 #endif
 	return true;
 }
+// vim:ts=4
