@@ -104,7 +104,7 @@ typedef struct {
 	uint16							uFlags;				// --> From path.
 
 	uint160							uAccountID;			// --> Recieving/sending account.
-	uint160							uCurrencyID;		// --> Currency to recieve.
+	uint160							uCurrencyID;		// --> Accounts: receive and send, Offers: send.
 														// --- For offer's next has currency out.
 	uint160							uIssuerID;			// --> Currency's issuer
 
@@ -231,7 +231,7 @@ protected:
 
 	STAmount			rippleHolds(const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID);
 	STAmount			rippleTransfer(const uint160& uSenderID, const uint160& uReceiverID, const uint160& uIssuerID, const STAmount& saAmount);
-	void				rippleCredit(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount);
+	void				rippleCredit(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount, bool bCheckIssuer=true);
 	STAmount			rippleSend(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount);
 
 	STAmount			accountHolds(const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID);

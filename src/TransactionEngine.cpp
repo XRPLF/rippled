@@ -21,12 +21,6 @@
 #define DIR_NODE_MAX		2
 #define RIPPLE_PATHS_MAX	3
 
-#define QUALITY_ONE			100000000	// 10e9
-#define CURRENCY_XNS		uint160(0)
-#define CURRENCY_ONE		uint160(1)	// Used as a place holder
-#define ACCOUNT_XNS			uint160(0)
-#define ACCOUNT_ONE			uint160(1)	// Used as a place holder
-
 static STAmount saZero(CURRENCY_ONE, 0, 0);
 static STAmount saOne(CURRENCY_ONE, 1, 0);
 
@@ -324,11 +318,11 @@ STAmount TransactionEngine::rippleTransfer(const uint160& uSenderID, const uint1
 }
 
 // Direct send w/o fees: redeeming IOUs and/or sending own IOUs.
-void TransactionEngine::rippleCredit(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount)
+void TransactionEngine::rippleCredit(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount, bool bCheckIssuer)
 {
 	uint160				uIssuerID		= saAmount.getIssuer();
 
-	assert(uSenderID == uIssuerID || uReceiverID == uIssuerID);
+	assert(!bCheckIssuer || uSenderID == uIssuerID || uReceiverID == uIssuerID);
 
 	bool				bFlipped		= uSenderID > uReceiverID;
 	uint256				uIndex			= Ledger::getRippleStateIndex(uSenderID, uReceiverID, saAmount.getCurrency());
@@ -2545,19 +2539,28 @@ void TransactionEngine::calcNodeRipple(
 	STAmount& saPrvAct,			// <-> in limit including achieved
 	STAmount& saCurAct)			// <-> out limit achieved.
 {
-	Log(lsINFO) << str(boost::format("calcNodeRipple> uQualityIn=%d uQualityOut=%d saPrvReq=%s/%s saCurReq=%s/%s")
+	Log(lsINFO) << str(boost::format("calcNodeRipple> uQualityIn=%d uQualityOut=%d saPrvReq=%s saCurReq=%s saPrvAct=%s saCurAct=%s")
 		% uQualityIn
 		% uQualityOut
-		% saPrvReq.getText()
-		% saPrvReq.getHumanCurrency()
-		% saCurReq.getText()
-		% saCurReq.getHumanCurrency());
+		% saPrvReq.getFullText()
+		% saCurReq.getFullText()
+		% saPrvAct.getFullText()
+		% saCurAct.getFullText());
 
 	assert(saPrvReq.getCurrency() == saCurReq.getCurrency());
 
 	bool		bPrvUnlimited	= saPrvReq.isNegative();
 	STAmount	saPrv			= bPrvUnlimited ? STAmount(saPrvReq) : saPrvReq-saPrvAct;
 	STAmount	saCur			= saCurReq-saCurAct;
+
+	Log(lsINFO) << str(boost::format("calcNodeRipple:1: saCurReq=%s") % saCurReq.getFullText());
+
+#if 0
+	Log(lsINFO) << str(boost::format("calcNodeRipple: bPrvUnlimited=%d saPrv=%s saCur=%s")
+		% bPrvUnlimited
+		% saPrv.getFullText()
+		% saCur.getFullText());
+#endif
 
 	if (uQualityIn >= uQualityOut)
 	{
@@ -2570,23 +2573,37 @@ void TransactionEngine::calcNodeRipple(
 	else
 	{
 		// Fee.
-		STAmount	saCurIn	= STAmount::divide(STAmount::multiply(saCur, uQualityOut, CURRENCY_ONE), uQualityIn, CURRENCY_ONE);
+		uint160		uCurrencyID	= saCur.getCurrency();
+		STAmount	saCurIn		= STAmount::divide(STAmount::multiply(saCur, uQualityOut, uCurrencyID), uQualityIn, uCurrencyID);
+Log(lsINFO) << str(boost::format("calcNodeRipple:2: saCurReq=%s") % saCurReq.getFullText());
 
 		if (bPrvUnlimited || saCurIn >= saPrv)
 		{
 			// All of cur. Some amount of prv.
+Log(lsINFO) << str(boost::format("calcNodeRipple:3a: saCurReq=%s") % saCurReq.getFullText());
 			saCurAct	= saCurReq;
 			saPrvAct	+= saCurIn;
+Log(lsINFO) << str(boost::format("calcNodeRipple:3c: saCurReq=%s saPrvAct=%s") % saCurReq.getFullText() % saPrvAct.getFullText());
 		}
 		else
 		{
 			// A part of cur. All of prv. (cur as driver)
-			STAmount	saCurOut	= STAmount::divide(STAmount::multiply(saPrv, uQualityIn, CURRENCY_ONE), uQualityOut, CURRENCY_ONE);
+			uint160		uCurrencyID	= saPrv.getCurrency();
+			STAmount	saCurOut	= STAmount::divide(STAmount::multiply(saPrv, uQualityIn, uCurrencyID), uQualityOut, uCurrencyID);
+Log(lsINFO) << str(boost::format("calcNodeRipple:4: saCurReq=%s") % saCurReq.getFullText());
 
 			saCurAct	+= saCurOut;
 			saPrvAct	= saPrvReq;
 		}
 	}
+
+	Log(lsINFO) << str(boost::format("calcNodeRipple< uQualityIn=%d uQualityOut=%d saPrvReq=%s saCurReq=%s saPrvAct=%s saCurAct=%s")
+		% uQualityIn
+		% uQualityOut
+		% saPrvReq.getFullText()
+		% saCurReq.getFullText()
+		% saPrvAct.getFullText()
+		% saCurAct.getFullText());
 }
 
 // Calculate saPrvRedeemReq, saPrvIssueReq, saPrvDeliver;
@@ -2603,30 +2620,30 @@ bool TransactionEngine::calcNodeAccountRev(unsigned int uIndex, PathState::point
 	bool			bPrvRedeem		= !!(prvPN.uFlags & STPathElement::typeRedeem);
 	bool			bIssue			= !!(curPN.uFlags & STPathElement::typeIssue);
 	bool			bPrvIssue		= !!(prvPN.uFlags & STPathElement::typeIssue);
-	bool			bPrvAccount		= uIndex && !!(prvPN.uFlags & STPathElement::typeAccount);
-	bool			bNxtAccount		= uIndex != uLast && !!(nxtPN.uFlags & STPathElement::typeAccount);
+	bool			bPrvAccount		= !uIndex || !!(prvPN.uFlags & STPathElement::typeAccount);
+	bool			bNxtAccount		= uIndex == uLast || !!(nxtPN.uFlags & STPathElement::typeAccount);
 
-	uint160&		uPrvAccountID	= prvPN.uAccountID;
-	uint160&		uCurAccountID	= curPN.uAccountID;
-	uint160&		uNxtAccountID	= bNxtAccount ? nxtPN.uAccountID : uCurAccountID;	// Offers are always issue.
+	const uint160&	uPrvAccountID	= prvPN.uAccountID;
+	const uint160&	uCurAccountID	= curPN.uAccountID;
+	const uint160&	uNxtAccountID	= bNxtAccount ? nxtPN.uAccountID : uCurAccountID;	// Offers are always issue.
 
-	uint160&		uCurrencyID		= curPN.uCurrencyID;
+	const uint160&	uCurrencyID		= curPN.uCurrencyID;
 
-	uint32			uQualityIn		= uIndex ? rippleQualityIn(uCurAccountID, uPrvAccountID, uCurrencyID) : 0;
-	uint32			uQualityOut		= uIndex != uLast ? rippleQualityOut(uCurAccountID, uNxtAccountID, uCurrencyID) : 0;
+	const uint32	uQualityIn		= uIndex ? rippleQualityIn(uCurAccountID, uPrvAccountID, uCurrencyID) : 1;
+	const uint32	uQualityOut		= uIndex != uLast ? rippleQualityOut(uCurAccountID, uNxtAccountID, uCurrencyID) : 1;
 
 	// For bPrvAccount
-	STAmount		saPrvBalance	= bPrvAccount ? rippleBalance(uCurAccountID, uPrvAccountID, uCurrencyID) : STAmount(uCurrencyID);
-	STAmount		saPrvLimit		= bPrvAccount ? rippleLimit(uCurAccountID, uPrvAccountID, uCurrencyID) : STAmount(uCurrencyID);
+	const STAmount	saPrvBalance	= uIndex && bPrvAccount ? rippleBalance(uCurAccountID, uPrvAccountID, uCurrencyID) : STAmount(uCurrencyID);
+	const STAmount	saPrvLimit		= uIndex && bPrvAccount ? rippleLimit(uCurAccountID, uPrvAccountID, uCurrencyID) : STAmount(uCurrencyID);
 
-	STAmount		saPrvRedeemReq	= bPrvRedeem && saPrvBalance.isNegative() ? -saPrvBalance : STAmount(uCurrencyID, 0);
+	const STAmount	saPrvRedeemReq	= bPrvRedeem && saPrvBalance.isNegative() ? -saPrvBalance : STAmount(uCurrencyID, 0);
 	STAmount&		saPrvRedeemAct	= prvPN.saRevRedeem;
 
-	STAmount		saPrvIssueReq	= bPrvIssue ? saPrvLimit - saPrvBalance : STAmount(uCurrencyID);
+	const STAmount	saPrvIssueReq	= bPrvIssue ? saPrvLimit - saPrvBalance : STAmount(uCurrencyID);
 	STAmount&		saPrvIssueAct	= prvPN.saRevIssue;
 
 	// For !bPrvAccount
-	STAmount		saPrvDeliverReq	= STAmount(uCurrencyID, -1);	// Unlimited.
+	const STAmount	saPrvDeliverReq	= STAmount(uCurrencyID, -1);	// Unlimited.
 	STAmount&		saPrvDeliverAct	= prvPN.saRevDeliver;
 
 	// For bNxtAccount
@@ -2645,23 +2662,38 @@ bool TransactionEngine::calcNodeAccountRev(unsigned int uIndex, PathState::point
 	// STAmount		saPrvDeliverReq	= saPrvBalance.isPositive() ? saPrvLimit - saPrvBalance : saPrvLimit;
 	STAmount		saCurWantedAct(saCurWantedReq.getCurrency());
 
-	Log(lsINFO) << str(boost::format("calcNodeAccountRev> saPrvRedeemReq=%s/%s saCurWantedAct=%s/%s")
+	Log(lsINFO) << str(boost::format("calcNodeAccountRev> uIndex=%d/%d saPrvRedeemReq=%s/%s saPrvIssueReq=%s/%s saCurWantedReq=%s/%s")
+		% uIndex
+		% uLast
 		% saPrvRedeemReq.getText()
 		% saPrvRedeemReq.getHumanCurrency()
-		% saCurWantedAct.getText()
-		% saCurWantedAct.getHumanCurrency());
+		% saPrvIssueReq.getText()
+		% saPrvIssueReq.getHumanCurrency()
+		% saCurWantedReq.getText()
+		% saCurWantedReq.getHumanCurrency());
+
+	Log(lsINFO) << pspCur->getJson();
 
 	if (bPrvAccount && bNxtAccount)
 	{
-		if (uIndex == uLast)
+		if (!uIndex)
+		{
+			// ^ --> ACCOUNT -->  account|offer
+			// Nothing to do, there is no previous to adjust.
+			nothing();
+		}
+		else if (uIndex == uLast)
 		{
 			// account --> ACCOUNT --> $
+			Log(lsINFO) << str(boost::format("calcNodeAccountRev: account --> ACCOUNT --> $"));
 
 			// Calculate redeem
 			if (bRedeem
 				&& saPrvRedeemReq)								// Previous has IOUs to redeem.
 			{
 				// Redeem at 1:1
+				Log(lsINFO) << str(boost::format("calcNodeAccountRev: Redeem at 1:1"));
+
 				saCurWantedAct		= MIN(saPrvRedeemReq, saCurWantedReq);
 				saPrvRedeemAct		= saCurWantedAct;
 			}
@@ -2672,6 +2704,8 @@ bool TransactionEngine::calcNodeAccountRev(unsigned int uIndex, PathState::point
 				&& saPrvIssueReq)								// Will accept IOUs.
 			{
 				// Rate: quality in : 1.0
+				Log(lsINFO) << str(boost::format("calcNodeAccountRev: Rate: quality in : 1.0"));
+
 				calcNodeRipple(uQualityIn, QUALITY_ONE, saPrvIssueReq, saCurWantedReq, saPrvIssueAct, saCurWantedAct);
 			}
 
@@ -2684,7 +2718,7 @@ bool TransactionEngine::calcNodeAccountRev(unsigned int uIndex, PathState::point
 		}
 		else
 		{
-			// account --> ACCOUNT --> account
+			// ^|account --> ACCOUNT --> account
 
 			// redeem (part 1) -> redeem
 			if (bPrvRedeem
@@ -2693,6 +2727,8 @@ bool TransactionEngine::calcNodeAccountRev(unsigned int uIndex, PathState::point
 				&& saPrvBalance.isNegative())			// Previous has IOUs to redeem.
 			{
 				// Rate : 1.0 : quality out
+				Log(lsINFO) << str(boost::format("calcNodeAccountRev: Rate : 1.0 : quality out"));
+
 				calcNodeRipple(QUALITY_ONE, uQualityOut, saPrvRedeemReq, saCurRedeemReq, saPrvRedeemAct, saCurRedeemAct);
 			}
 
@@ -2704,6 +2740,8 @@ bool TransactionEngine::calcNodeAccountRev(unsigned int uIndex, PathState::point
 				&& saCurIssueReq)						// Need some issued.
 			{
 				// Rate : 1.0 : transfer_rate
+				Log(lsINFO) << str(boost::format("calcNodeAccountRev: Rate : 1.0 : transfer_rate"));
+
 				calcNodeRipple(QUALITY_ONE, rippleTransfer(uCurAccountID), saPrvRedeemReq, saCurIssueReq, saPrvRedeemAct, saCurIssueAct);
 			}
 
@@ -2714,17 +2752,21 @@ bool TransactionEngine::calcNodeAccountRev(unsigned int uIndex, PathState::point
 				&& !saPrvBalance.isNegative())			// Previous has no IOUs.
 			{
 				// Rate: quality in : quality out
+				Log(lsINFO) << str(boost::format("calcNodeAccountRev: Rate: quality in : quality out"));
+
 				calcNodeRipple(uQualityIn, uQualityOut, saPrvIssueReq, saCurRedeemReq, saPrvIssueAct, saCurRedeemAct);
 			}
 
 			// issue (part 2) -> issue
 			if (bPrvIssue
 				&& bIssue								// Allowed to issue.
-				&& saCurRedeemReq != saCurRedeemAct		// Can only if issue if more can not be redeemed.
+				&& saCurRedeemReq == saCurRedeemAct		// Can only if issue if more can not be redeemed.
 				&& !saPrvBalance.isNegative()			// Previous has no IOUs.
 				&& saCurIssueReq != saCurIssueAct)		// Need some issued.
 			{
 				// Rate: quality in : 1.0
+				Log(lsINFO) << str(boost::format("calcNodeAccountRev: Rate: quality in : 1.0"));
+
 				calcNodeRipple(uQualityIn, QUALITY_ONE, saPrvIssueReq, saCurIssueReq, saPrvIssueAct, saCurIssueAct);
 			}
 
@@ -2734,12 +2776,23 @@ bool TransactionEngine::calcNodeAccountRev(unsigned int uIndex, PathState::point
 				// terResult	= tenBAD_AMOUNT;
 				bSuccess	= false;
 			}
+			Log(lsINFO) << str(boost::format("calcNodeAccountRev: ^|account --> ACCOUNT --> account : bPrvRedeem=%d bPrvIssue=%d bRedeem=%d bIssue=%d saCurRedeemReq=%s saCurIssueReq=%s saPrvBalance=%s saCurRedeemAct=%s saCurIssueAct=%s")
+				% bPrvRedeem
+				% bPrvIssue
+				% bRedeem
+				% bIssue
+				% saCurRedeemReq.getFullText()
+				% saCurIssueReq.getFullText()
+				% saPrvBalance.getFullText()
+				% saCurRedeemAct.getFullText()
+				% saCurIssueAct.getFullText());
 		}
 	}
 	else if (bPrvAccount && !bNxtAccount)
 	{
 		// account --> ACCOUNT --> offer
 		// Note: deliver is always issue as ACCOUNT is the issuer for the offer input.
+		Log(lsINFO) << str(boost::format("calcNodeAccountRev: account --> ACCOUNT --> offer"));
 
 		// redeem -> deliver/issue.
 		if (bPrvRedeem
@@ -2773,6 +2826,7 @@ bool TransactionEngine::calcNodeAccountRev(unsigned int uIndex, PathState::point
 		if (uIndex == uLast)
 		{
 			// offer --> ACCOUNT --> $
+			Log(lsINFO) << str(boost::format("calcNodeAccountRev: offer --> ACCOUNT --> $"));
 
 			// Rate: quality in : 1.0
 			calcNodeRipple(uQualityIn, QUALITY_ONE, saPrvDeliverReq, saCurWantedReq, saPrvDeliverAct, saCurWantedAct);
@@ -2788,6 +2842,7 @@ bool TransactionEngine::calcNodeAccountRev(unsigned int uIndex, PathState::point
 		{
 			// offer --> ACCOUNT --> account
 			// Note: offer is always deliver/redeeming as account is issuer.
+			Log(lsINFO) << str(boost::format("calcNodeAccountRev: offer --> ACCOUNT --> account"));
 
 			// deliver -> redeem
 			if (bRedeem									// Allowed to redeem.
@@ -2820,6 +2875,8 @@ bool TransactionEngine::calcNodeAccountRev(unsigned int uIndex, PathState::point
 	{
 		// offer --> ACCOUNT --> offer
 		// deliver/redeem -> deliver/issue.
+		Log(lsINFO) << str(boost::format("calcNodeAccountRev: offer --> ACCOUNT --> offer"));
+
 		if (bIssue									// Allowed to issue.
 			&& saCurDeliverReq != saCurDeliverAct)	// Can only if issue if more can not be redeemed.
 		{
@@ -2869,14 +2926,14 @@ bool TransactionEngine::calcNodeAccountFwd(unsigned int uIndex, PathState::point
 
 	// For bNxtAccount
 	const STAmount&	saPrvRedeemReq	= prvPN.saFwdRedeem;
-	STAmount		saPrvRedeemAct;
+	STAmount		saPrvRedeemAct(saPrvRedeemReq.getCurrency());
 
 	const STAmount&	saPrvIssueReq	= prvPN.saFwdIssue;
-	STAmount		saPrvIssueAct;
+	STAmount		saPrvIssueAct(saPrvIssueReq.getCurrency());
 
 	// For !bPrvAccount
 	const STAmount&	saPrvDeliverReq	= prvPN.saRevDeliver;
-	STAmount		saPrvDeliverAct;
+	STAmount		saPrvDeliverAct(saPrvDeliverReq.getCurrency());
 
 	// For bNxtAccount
 	const STAmount&	saCurRedeemReq	= curPN.saRevRedeem;
@@ -2890,6 +2947,16 @@ bool TransactionEngine::calcNodeAccountFwd(unsigned int uIndex, PathState::point
 	STAmount&		saCurDeliverAct	= curPN.saFwdDeliver;
 
 	STAmount&		saCurReceive	= pspCur->saOutAct;
+
+	Log(lsINFO) << str(boost::format("calcNodeAccountFwd> uIndex=%d/%d saCurRedeemReq=%s/%s saCurIssueReq=%s/%s saCurDeliverReq=%s/%s")
+		% uIndex
+		% uLast
+		% saCurRedeemReq.getText()
+		% saCurRedeemReq.getHumanCurrency()
+		% saCurIssueReq.getText()
+		% saCurIssueReq.getHumanCurrency()
+		% saCurDeliverReq.getText()
+		% saCurDeliverReq.getHumanCurrency());
 
 	// Ripple through account.
 
@@ -2908,26 +2975,49 @@ bool TransactionEngine::calcNodeAccountFwd(unsigned int uIndex, PathState::point
 			STAmount&		saCurIssueReq	= curPN.saRevIssue;
 			STAmount&		saCurIssueAct	= curPN.saFwdIssue;
 
-			STAmount&		saCurSendMaxReq	= pspCur->saInReq;
-			STAmount&		saCurSendMaxAct = pspCur->saInAct;
+			STAmount&		saCurSendMaxReq	= pspCur->saInReq;	// Negative for no limit, doing a calculation.
+			STAmount&		saCurSendMaxAct = pspCur->saInAct;	// Report to user how much this sends.
 
 			if (saCurRedeemReq)
 			{
 				// Redeem requested.
-				saCurRedeemAct	= MIN(saCurRedeemAct, saCurSendMaxReq);
-				saCurSendMaxAct	= saCurRedeemAct;
+				saCurRedeemAct	= saCurRedeemReq.isNegative()
+									? saCurRedeemReq
+									: MIN(saCurRedeemReq, saCurSendMaxReq);
 			}
+			else
+			{
+				saCurRedeemAct	= STAmount(saCurRedeemReq);
+			}
+			saCurSendMaxAct	= saCurRedeemAct;
 
-			if (saCurIssueReq && saCurSendMaxReq != saCurRedeemAct)
+			if (saCurIssueReq && (saCurSendMaxReq.isNegative() || saCurSendMaxReq != saCurRedeemAct))
 			{
 				// Issue requested and not over budget.
-				saCurIssueAct	= MIN(saCurSendMaxReq-saCurRedeemAct, saCurIssueReq);
-				// saCurSendMaxAct	+= saCurIssueReq; // Not needed.
+				saCurIssueAct	= saCurSendMaxReq.isNegative()
+									? saCurIssueReq
+									: MIN(saCurSendMaxReq-saCurRedeemAct, saCurIssueReq);
 			}
+			else
+			{
+				saCurIssueAct	= STAmount(saCurIssueReq);
+			}
+			saCurSendMaxAct	+= saCurIssueAct;
+
+			Log(lsINFO) << str(boost::format("calcNodeAccountFwd: ^ --> ACCOUNT --> account : saCurSendMaxReq=%s saCurRedeemAct=%s saCurIssueReq=%s saCurIssueAct=%s")
+				% saCurSendMaxReq.getFullText()
+				% saCurRedeemAct.getFullText()
+				% saCurIssueReq.getFullText()
+				% saCurIssueAct.getFullText());
 		}
 		else if (uIndex == uLast)
 		{
 			// account --> ACCOUNT --> $
+			Log(lsINFO) << str(boost::format("calcNodeAccountFwd: account --> ACCOUNT --> $ : uPrvAccountID=%s uCurAccountID=%s saPrvRedeemReq=%s saPrvIssueReq=%s")
+				% NewcoinAddress::createHumanAccountID(uPrvAccountID)
+				% NewcoinAddress::createHumanAccountID(uCurAccountID)
+				% saPrvRedeemReq.getFullText()
+				% saPrvIssueReq.getFullText());
 
 			// Last node.  Accept all funds.  Calculate amount actually to credit.
 
@@ -2939,11 +3029,12 @@ bool TransactionEngine::calcNodeAccountFwd(unsigned int uIndex, PathState::point
 			saCurReceive	= saPrvRedeemReq+saIssueCrd;
 
 			// Actually receive.
-			rippleCredit(uPrvAccountID, uCurAccountID, saPrvRedeemReq+saPrvIssueReq);
+			rippleCredit(uPrvAccountID, uCurAccountID, saPrvRedeemReq+saPrvIssueReq, false);
 		}
 		else
 		{
 			// account --> ACCOUNT --> account
+			Log(lsINFO) << str(boost::format("calcNodeAccountFwd: account --> ACCOUNT --> account"));
 
 			// Previous redeem part 1: redeem -> redeem
 			if (bRedeem										// Can redeem.
@@ -2984,12 +3075,13 @@ bool TransactionEngine::calcNodeAccountFwd(unsigned int uIndex, PathState::point
 
 			// Adjust prv --> cur balance : take all inbound
 			// XXX Currency must be in amount.
-			rippleCredit(uPrvAccountID, uCurAccountID, saPrvRedeemReq + saPrvIssueReq);
+			rippleCredit(uPrvAccountID, uCurAccountID, saPrvRedeemReq + saPrvIssueReq, false);
 		}
 	}
 	else if (bPrvAccount && !bNxtAccount)
 	{
 		// account --> ACCOUNT --> offer
+		Log(lsINFO) << str(boost::format("calcNodeAccountFwd: account --> ACCOUNT --> offer"));
 
 		// redeem -> issue.
 		// wants to redeem and current would and can issue.
@@ -3010,13 +3102,14 @@ bool TransactionEngine::calcNodeAccountFwd(unsigned int uIndex, PathState::point
 
 		// Adjust prv --> cur balance : take all inbound
 		// XXX Currency must be in amount.
-		rippleCredit(uPrvAccountID, uCurAccountID, saPrvRedeemReq + saPrvIssueReq);
+		rippleCredit(uPrvAccountID, uCurAccountID, saPrvRedeemReq + saPrvIssueReq, false);
 	}
 	else if (!bPrvAccount && bNxtAccount)
 	{
 		if (uIndex == uLast)
 		{
 			// offer --> ACCOUNT --> $
+			Log(lsINFO) << str(boost::format("calcNodeAccountFwd: offer --> ACCOUNT --> $"));
 
 			// Amount to credit.
 			saCurReceive	= saPrvDeliverAct;
@@ -3026,6 +3119,7 @@ bool TransactionEngine::calcNodeAccountFwd(unsigned int uIndex, PathState::point
 		else
 		{
 			// offer --> ACCOUNT --> account
+			Log(lsINFO) << str(boost::format("calcNodeAccountFwd: offer --> ACCOUNT --> account"));
 
 			// deliver -> redeem
 			if (bRedeem										// Allowed to redeem.
@@ -3053,6 +3147,8 @@ bool TransactionEngine::calcNodeAccountFwd(unsigned int uIndex, PathState::point
 	{
 		// offer --> ACCOUNT --> offer
 		// deliver/redeem -> deliver/issue.
+		Log(lsINFO) << str(boost::format("calcNodeAccountFwd: offer --> ACCOUNT --> offer"));
+
 		if (bIssue											// Allowed to issue.
 			&& saPrvDeliverReq								// Previous wants to deliver
 			&& saCurIssueReq)								// Current wants issue.
@@ -3182,6 +3278,8 @@ bool PathState::pushNode(int iType, uint160 uAccountID, uint160 uCurrencyID, uin
 			pnCur.uAccountID	= uAccountID;
 			pnCur.uCurrencyID	= bCurrency ? uCurrencyID : pnPrv.uCurrencyID;
 			pnCur.uIssuerID		= bIssuer ? uIssuerID : uAccountID;
+			pnCur.saRevRedeem	= STAmount(uCurrencyID);
+			pnCur.saRevIssue	= STAmount(uCurrencyID);
 
 			if (!bFirst)
 			{
@@ -3314,6 +3412,7 @@ PathState::PathState(
 	saInReq					= saSendMax;
 	saOutReq				= saSend;
 
+	// Push sending node.
 	bValid	= pushNode(
 		STPathElement::typeAccount
 			| STPathElement::typeRedeem
@@ -3359,13 +3458,16 @@ Json::Value	PathState::getJson() const
 	{
 		Json::Value	jvNode(Json::objectValue);
 
-		Json::Value	jvFlags(Json::objectValue);
+		Json::Value	jvFlags(Json::arrayValue);
+
+		if (pnNode.uFlags & STPathElement::typeAccount)
+			jvFlags.append("account");
 
 		if (pnNode.uFlags & STPathElement::typeRedeem)
-			jvFlags["redeem"]	= 1;
+			jvFlags.append("redeem");
 
 		if (pnNode.uFlags & STPathElement::typeIssue)
-			jvFlags["issue"]	= 1;
+			jvFlags.append("issue");
 
 		jvNode["flags"]	= jvFlags;
 
@@ -3377,6 +3479,24 @@ Json::Value	PathState::getJson() const
 
 		if (!!pnNode.uIssuerID)
 			jvNode["issuer"]	= NewcoinAddress::createHumanAccountID(pnNode.uIssuerID);
+
+		// if (!!pnNode.saRevRedeem)
+			jvNode["rev_redeem"]	= pnNode.saRevRedeem.getFullText();
+
+		// if (!!pnNode.saRevIssue)
+			jvNode["rev_issue"]		= pnNode.saRevIssue.getFullText();
+
+		// if (!!pnNode.saRevDeliver)
+			jvNode["rev_deliver"]	= pnNode.saRevDeliver.getFullText();
+
+		// if (!!pnNode.saFwdRedeem)
+			jvNode["fwd_redeem"]	= pnNode.saFwdRedeem.getFullText();
+
+		// if (!!pnNode.saFwdIssue)
+			jvNode["fwd_issue"]		= pnNode.saFwdIssue.getFullText();
+
+		// if (!!pnNode.saFwdDeliver)
+			jvNode["fwd_deliver"]	= pnNode.saFwdDeliver.getFullText();
 
 		jvNodes.append(jvNode);
 	}
@@ -3761,9 +3881,19 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 		}
 	}
 
-	Log(lsINFO) << "doPayment: Delay transaction: No ripple paths could be satisfied.";
+	std::string	strToken;
+	std::string	strHuman;
 
-	return terBAD_RIPPLE;
+	if (transResultInfo(terResult, strToken, strHuman))
+	{
+		Log(lsINFO) << str(boost::format("doPayment: %s: %s") % strToken % strHuman);
+	}
+	else
+	{
+		assert(false);
+	}
+
+	return terResult;
 }
 
 TransactionEngineResult TransactionEngine::doWalletAdd(const SerializedTransaction& txn)
