@@ -1903,17 +1903,17 @@ bool TransactionEngine::calcNodeOfferRev(
 {
 	bool			bSuccess		= false;
 
-	paymentNode&	prvPN			= pspCur->vpnNodes[uIndex-1];
-	paymentNode&	curPN			= pspCur->vpnNodes[uIndex];
-	paymentNode&	nxtPN			= pspCur->vpnNodes[uIndex+1];
+	paymentNode&	pnPrv			= pspCur->vpnNodes[uIndex-1];
+	paymentNode&	pnCur			= pspCur->vpnNodes[uIndex];
+	paymentNode&	pnNxt			= pspCur->vpnNodes[uIndex+1];
 
-	uint160&		uPrvCurrencyID	= prvPN.uCurrencyID;
-	uint160&		uPrvIssuerID	= prvPN.uIssuerID;
-	uint160&		uCurCurrencyID	= curPN.uCurrencyID;
-	uint160&		uCurIssuerID	= curPN.uIssuerID;
-	uint160&		uNxtCurrencyID	= nxtPN.uCurrencyID;
-	uint160&		uNxtIssuerID	= nxtPN.uIssuerID;
-	uint160&		uNxtAccountID	= nxtPN.uAccountID;
+	uint160&		uPrvCurrencyID	= pnPrv.uCurrencyID;
+	uint160&		uPrvIssuerID	= pnPrv.uIssuerID;
+	uint160&		uCurCurrencyID	= pnCur.uCurrencyID;
+	uint160&		uCurIssuerID	= pnCur.uIssuerID;
+	uint160&		uNxtCurrencyID	= pnNxt.uCurrencyID;
+	uint160&		uNxtIssuerID	= pnNxt.uIssuerID;
+	uint160&		uNxtAccountID	= pnNxt.uAccountID;
 
 	STAmount		saTransferRate	= STAmount(CURRENCY_ONE, rippleTransferRate(uCurIssuerID), -9);
 
@@ -1921,10 +1921,10 @@ bool TransactionEngine::calcNodeOfferRev(
 	uint256			uDirectEnd		= Ledger::getQualityNext(uDirectTip);
 	bool			bAdvance		= !entryCache(ltDIR_NODE, uDirectTip);
 
-	STAmount&		saPrvDlvReq		= prvPN.saRevDeliver;	// To be adjusted.
+	STAmount&		saPrvDlvReq		= pnPrv.saRevDeliver;	// To be adjusted.
 	STAmount		saPrvDlvAct;
 
-	const STAmount&	saCurDlvReq		= curPN.saRevDeliver;	// Reverse driver.
+	const STAmount&	saCurDlvReq		= pnCur.saRevDeliver;	// Reverse driver.
 	STAmount		saCurDlvAct;
 
 	while (!!uDirectTip	// Have a quality.
@@ -1944,6 +1944,7 @@ bool TransactionEngine::calcNodeOfferRev(
 		{
 			// Do a directory.
 			// - Drive on computing saCurDlvAct to derive saPrvDlvAct.
+			// XXX Behave well, if entry type is wrong (someone beat us to using the hash)
 			SLE::pointer	sleDirectDir	= entryCache(ltDIR_NODE, uDirectTip);
 			STAmount		saOfrRate		= STAmount::setRate(Ledger::getQuality(uDirectTip), uCurCurrencyID);	// For correct ratio
 			unsigned int	uEntry			= 0;
@@ -2095,28 +2096,28 @@ bool TransactionEngine::calcNodeOfferFwd(
 {
 	bool			bSuccess		= false;
 
-	paymentNode&	prvPN			= pspCur->vpnNodes[uIndex-1];
-	paymentNode&	curPN			= pspCur->vpnNodes[uIndex];
-	paymentNode&	nxtPN			= pspCur->vpnNodes[uIndex+1];
+	paymentNode&	pnPrv			= pspCur->vpnNodes[uIndex-1];
+	paymentNode&	pnCur			= pspCur->vpnNodes[uIndex];
+	paymentNode&	pnNxt			= pspCur->vpnNodes[uIndex+1];
 
-	uint160&		uPrvCurrencyID	= prvPN.uCurrencyID;
-	uint160&		uPrvIssuerID	= prvPN.uIssuerID;
-	uint160&		uCurCurrencyID	= curPN.uCurrencyID;
-	uint160&		uCurIssuerID	= curPN.uIssuerID;
-	uint160&		uNxtCurrencyID	= nxtPN.uCurrencyID;
-	uint160&		uNxtIssuerID	= nxtPN.uIssuerID;
+	uint160&		uPrvCurrencyID	= pnPrv.uCurrencyID;
+	uint160&		uPrvIssuerID	= pnPrv.uIssuerID;
+	uint160&		uCurCurrencyID	= pnCur.uCurrencyID;
+	uint160&		uCurIssuerID	= pnCur.uIssuerID;
+	uint160&		uNxtCurrencyID	= pnNxt.uCurrencyID;
+	uint160&		uNxtIssuerID	= pnNxt.uIssuerID;
 
-	uint160&		uNxtAccountID	= nxtPN.uAccountID;
+	uint160&		uNxtAccountID	= pnNxt.uAccountID;
 	STAmount		saTransferRate	= STAmount(CURRENCY_ONE, rippleTransferRate(uCurIssuerID), -9);
 
 	uint256			uDirectTip		= Ledger::getBookBase(uPrvCurrencyID, uPrvIssuerID, uCurCurrencyID, uCurIssuerID);
 	uint256			uDirectEnd		= Ledger::getQualityNext(uDirectTip);
 	bool			bAdvance		= !entryCache(ltDIR_NODE, uDirectTip);
 
-	STAmount&		saPrvDlvReq		= prvPN.saFwdDeliver;	// Forward driver.
+	STAmount&		saPrvDlvReq		= pnPrv.saFwdDeliver;	// Forward driver.
 	STAmount		saPrvDlvAct;
 
-	STAmount&		saCurDlvReq		= curPN.saFwdDeliver;
+	STAmount&		saCurDlvReq		= pnCur.saFwdDeliver;
 	STAmount		saCurDlvAct;
 
 	while (!!uDirectTip										// Have a quality.
@@ -2589,22 +2590,22 @@ bool TransactionEngine::calcNodeAccountRev(unsigned int uIndex, PathState::point
 	bool			bSuccess		= true;
 	unsigned int	uLast			= pspCur->vpnNodes.size() - 1;
 
-	paymentNode&	prvPN			= pspCur->vpnNodes[uIndex ? uIndex-1 : 0];
-	paymentNode&	curPN			= pspCur->vpnNodes[uIndex];
-	paymentNode&	nxtPN			= pspCur->vpnNodes[uIndex == uLast ? uLast : uIndex+1];
+	paymentNode&	pnPrv			= pspCur->vpnNodes[uIndex ? uIndex-1 : 0];
+	paymentNode&	pnCur			= pspCur->vpnNodes[uIndex];
+	paymentNode&	pnNxt			= pspCur->vpnNodes[uIndex == uLast ? uLast : uIndex+1];
 
-	bool			bRedeem			= !!(curPN.uFlags & STPathElement::typeRedeem);
-	bool			bPrvRedeem		= !!(prvPN.uFlags & STPathElement::typeRedeem);
-	bool			bIssue			= !!(curPN.uFlags & STPathElement::typeIssue);
-	bool			bPrvIssue		= !!(prvPN.uFlags & STPathElement::typeIssue);
-	bool			bPrvAccount		= !uIndex || !!(prvPN.uFlags & STPathElement::typeAccount);
-	bool			bNxtAccount		= uIndex == uLast || !!(nxtPN.uFlags & STPathElement::typeAccount);
+	bool			bRedeem			= !!(pnCur.uFlags & STPathElement::typeRedeem);
+	bool			bPrvRedeem		= !!(pnPrv.uFlags & STPathElement::typeRedeem);
+	bool			bIssue			= !!(pnCur.uFlags & STPathElement::typeIssue);
+	bool			bPrvIssue		= !!(pnPrv.uFlags & STPathElement::typeIssue);
+	bool			bPrvAccount		= !uIndex || !!(pnPrv.uFlags & STPathElement::typeAccount);
+	bool			bNxtAccount		= uIndex == uLast || !!(pnNxt.uFlags & STPathElement::typeAccount);
 
-	const uint160&	uPrvAccountID	= prvPN.uAccountID;
-	const uint160&	uCurAccountID	= curPN.uAccountID;
-	const uint160&	uNxtAccountID	= bNxtAccount ? nxtPN.uAccountID : uCurAccountID;	// Offers are always issue.
+	const uint160&	uPrvAccountID	= pnPrv.uAccountID;
+	const uint160&	uCurAccountID	= pnCur.uAccountID;
+	const uint160&	uNxtAccountID	= bNxtAccount ? pnNxt.uAccountID : uCurAccountID;	// Offers are always issue.
 
-	const uint160&	uCurrencyID		= curPN.uCurrencyID;
+	const uint160&	uCurrencyID		= pnCur.uCurrencyID;
 
 	const uint32	uQualityIn		= uIndex ? rippleQualityIn(uCurAccountID, uPrvAccountID, uCurrencyID) : 1;
 	const uint32	uQualityOut		= uIndex != uLast ? rippleQualityOut(uCurAccountID, uNxtAccountID, uCurrencyID) : 1;
@@ -2614,24 +2615,24 @@ bool TransactionEngine::calcNodeAccountRev(unsigned int uIndex, PathState::point
 	const STAmount	saPrvLimit		= uIndex && bPrvAccount ? rippleLimit(uCurAccountID, uPrvAccountID, uCurrencyID) : STAmount(uCurrencyID);
 
 	const STAmount	saPrvRedeemReq	= bPrvRedeem && saPrvBalance.isNegative() ? -saPrvBalance : STAmount(uCurrencyID, 0);
-	STAmount&		saPrvRedeemAct	= prvPN.saRevRedeem;
+	STAmount&		saPrvRedeemAct	= pnPrv.saRevRedeem;
 
 	const STAmount	saPrvIssueReq	= bPrvIssue ? saPrvLimit - saPrvBalance : STAmount(uCurrencyID);
-	STAmount&		saPrvIssueAct	= prvPN.saRevIssue;
+	STAmount&		saPrvIssueAct	= pnPrv.saRevIssue;
 
 	// For !bPrvAccount
 	const STAmount	saPrvDeliverReq	= STAmount(uCurrencyID, -1);	// Unlimited.
-	STAmount&		saPrvDeliverAct	= prvPN.saRevDeliver;
+	STAmount&		saPrvDeliverAct	= pnPrv.saRevDeliver;
 
 	// For bNxtAccount
-	const STAmount&	saCurRedeemReq	= curPN.saRevRedeem;
+	const STAmount&	saCurRedeemReq	= pnCur.saRevRedeem;
 	STAmount		saCurRedeemAct(saCurRedeemReq.getCurrency());
 
-	const STAmount&	saCurIssueReq	= curPN.saRevIssue;
+	const STAmount&	saCurIssueReq	= pnCur.saRevIssue;
 	STAmount		saCurIssueAct(saCurIssueReq.getCurrency());		// Track progress.
 
 	// For !bNxtAccount
-	const STAmount&	saCurDeliverReq	= curPN.saRevDeliver;
+	const STAmount&	saCurDeliverReq	= pnCur.saRevDeliver;
 	STAmount		saCurDeliverAct(saCurDeliverReq.getCurrency());
 
 	// For uIndex == uLast
@@ -2883,45 +2884,45 @@ bool TransactionEngine::calcNodeAccountFwd(unsigned int uIndex, PathState::point
 	bool			bSuccess		= true;
 	unsigned int	uLast			= pspCur->vpnNodes.size() - 1;
 
-	paymentNode&	prvPN			= pspCur->vpnNodes[uIndex ? uIndex-1 : 0];
-	paymentNode&	curPN			= pspCur->vpnNodes[uIndex];
-	paymentNode&	nxtPN			= pspCur->vpnNodes[uIndex == uLast ? uLast : uIndex+1];
+	paymentNode&	pnPrv			= pspCur->vpnNodes[uIndex ? uIndex-1 : 0];
+	paymentNode&	pnCur			= pspCur->vpnNodes[uIndex];
+	paymentNode&	pnNxt			= pspCur->vpnNodes[uIndex == uLast ? uLast : uIndex+1];
 
-	bool			bRedeem			= !!(curPN.uFlags & STPathElement::typeRedeem);
-	bool			bIssue			= !!(curPN.uFlags & STPathElement::typeIssue);
-	bool			bPrvAccount		= !!(prvPN.uFlags & STPathElement::typeAccount);
-	bool			bNxtAccount		= !!(nxtPN.uFlags & STPathElement::typeAccount);
+	bool			bRedeem			= !!(pnCur.uFlags & STPathElement::typeRedeem);
+	bool			bIssue			= !!(pnCur.uFlags & STPathElement::typeIssue);
+	bool			bPrvAccount		= !!(pnPrv.uFlags & STPathElement::typeAccount);
+	bool			bNxtAccount		= !!(pnNxt.uFlags & STPathElement::typeAccount);
 
-	uint160&		uPrvAccountID	= prvPN.uAccountID;
-	uint160&		uCurAccountID	= curPN.uAccountID;
-	uint160&		uNxtAccountID	= bNxtAccount ? nxtPN.uAccountID : uCurAccountID;	// Offers are always issue.
+	uint160&		uPrvAccountID	= pnPrv.uAccountID;
+	uint160&		uCurAccountID	= pnCur.uAccountID;
+	uint160&		uNxtAccountID	= bNxtAccount ? pnNxt.uAccountID : uCurAccountID;	// Offers are always issue.
 
-	uint160&		uCurrencyID		= curPN.uCurrencyID;
+	uint160&		uCurrencyID		= pnCur.uCurrencyID;
 
 	uint32			uQualityIn		= rippleQualityIn(uCurAccountID, uPrvAccountID, uCurrencyID);
 	uint32			uQualityOut		= rippleQualityOut(uCurAccountID, uNxtAccountID, uCurrencyID);
 
 	// For bNxtAccount
-	const STAmount&	saPrvRedeemReq	= prvPN.saFwdRedeem;
+	const STAmount&	saPrvRedeemReq	= pnPrv.saFwdRedeem;
 	STAmount		saPrvRedeemAct(saPrvRedeemReq.getCurrency());
 
-	const STAmount&	saPrvIssueReq	= prvPN.saFwdIssue;
+	const STAmount&	saPrvIssueReq	= pnPrv.saFwdIssue;
 	STAmount		saPrvIssueAct(saPrvIssueReq.getCurrency());
 
 	// For !bPrvAccount
-	const STAmount&	saPrvDeliverReq	= prvPN.saRevDeliver;
+	const STAmount&	saPrvDeliverReq	= pnPrv.saRevDeliver;
 	STAmount		saPrvDeliverAct(saPrvDeliverReq.getCurrency());
 
 	// For bNxtAccount
-	const STAmount&	saCurRedeemReq	= curPN.saRevRedeem;
-	STAmount&		saCurRedeemAct	= curPN.saFwdRedeem;
+	const STAmount&	saCurRedeemReq	= pnCur.saRevRedeem;
+	STAmount&		saCurRedeemAct	= pnCur.saFwdRedeem;
 
-	const STAmount&	saCurIssueReq	= curPN.saRevIssue;
-	STAmount&		saCurIssueAct	= curPN.saFwdIssue;
+	const STAmount&	saCurIssueReq	= pnCur.saRevIssue;
+	STAmount&		saCurIssueAct	= pnCur.saFwdIssue;
 
 	// For !bNxtAccount
-	const STAmount&	saCurDeliverReq	= curPN.saRevDeliver;
-	STAmount&		saCurDeliverAct	= curPN.saFwdDeliver;
+	const STAmount&	saCurDeliverReq	= pnCur.saRevDeliver;
+	STAmount&		saCurDeliverAct	= pnCur.saFwdDeliver;
 
 	STAmount&		saCurReceive	= pspCur->saOutAct;
 
@@ -2945,12 +2946,12 @@ bool TransactionEngine::calcNodeAccountFwd(unsigned int uIndex, PathState::point
 
 			// First node, calculate amount to send.
 			// XXX Use stamp/ripple balance
-			paymentNode&	curPN			= pspCur->vpnNodes[uIndex];
+			paymentNode&	pnCur			= pspCur->vpnNodes[uIndex];
 
-			STAmount&		saCurRedeemReq	= curPN.saRevRedeem;
-			STAmount&		saCurRedeemAct	= curPN.saFwdRedeem;
-			STAmount&		saCurIssueReq	= curPN.saRevIssue;
-			STAmount&		saCurIssueAct	= curPN.saFwdIssue;
+			STAmount&		saCurRedeemReq	= pnCur.saRevRedeem;
+			STAmount&		saCurRedeemAct	= pnCur.saFwdRedeem;
+			STAmount&		saCurIssueReq	= pnCur.saRevIssue;
+			STAmount&		saCurIssueAct	= pnCur.saFwdIssue;
 
 			STAmount&		saCurSendMaxReq	= pspCur->saInReq;	// Negative for no limit, doing a calculation.
 			STAmount&		saCurSendMaxAct = pspCur->saInAct;	// Report to user how much this sends.
@@ -3512,8 +3513,8 @@ Json::Value	PathState::getJson() const
 // XXX Disallow looping.
 bool TransactionEngine::calcNode(unsigned int uIndex, PathState::pointer pspCur, bool bMultiQuality)
 {
-	paymentNode&	curPN		= pspCur->vpnNodes[uIndex];
-	bool			bCurAccount	= !!(curPN.uFlags & STPathElement::typeAccount);
+	paymentNode&	pnCur		= pspCur->vpnNodes[uIndex];
+	bool			bCurAccount	= !!(pnCur.uFlags & STPathElement::typeAccount);
 	bool			bValid;
 
 	// Do current node reverse.
