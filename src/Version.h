@@ -16,11 +16,11 @@
 
 // Version we prefer to speak:
 #define PROTO_VERSION_MAJOR			0
-#define PROTO_VERSION_MINOR			4
+#define PROTO_VERSION_MINOR			5
 
 // Version we wil speak to:
 #define MIN_PROTO_MAJOR				0
-#define MIN_PROTO_MINOR				4
+#define MIN_PROTO_MINOR				5
 
 #define MAKE_VERSION_INT(maj,min)	((maj << 16) | min)
 #define GET_VERSION_MAJOR(ver)		(ver >> 16)
