@@ -105,7 +105,11 @@ bool STAmount::setFullValue(const std::string& sAmount, const std::string& sCurr
 	// Figure out the currency.
 	//
 	if (!currencyFromString(mCurrency, sCurrency))
+	{
+		Log(lsINFO) << "Currency malformed: " << sCurrency;
+
 		return false;
+	}
 
 	mIsNative	= !mCurrency;
 
@@ -116,13 +120,21 @@ bool STAmount::setFullValue(const std::string& sAmount, const std::string& sCurr
 
 	// Issuer must be "" or a valid account string.
 	if (!naIssuerID.setAccountID(sIssuer))
+	{
+		Log(lsINFO) << "Issuer malformed: " << sIssuer;
+
 		return false;
+	}
 
 	mIssuer	= naIssuerID.getAccountID();
 
 	// Stamps not must have an issuer.
 	if (mIsNative && !mIssuer.isZero())
+	{
+		Log(lsINFO) << "Issuer specified for stamps: " << sIssuer;
+
 		return false;
+	}
 
 	uint64	uValue;
 	int		iOffset;
@@ -137,6 +149,8 @@ bool STAmount::setFullValue(const std::string& sAmount, const std::string& sCurr
 		}
 		catch (...)
 		{
+			Log(lsINFO) << "Bad integer amount: " << sAmount;
+
 			return false;
 		}
 		iOffset	= 0;

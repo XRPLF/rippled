@@ -48,7 +48,7 @@ Json::Value RPCServer::RPCError(int iError)
 		{ rpcDST_AMT_MALFORMED,		"dstAmtMalformed",	"Destination amount/currency is malformed."				},
 		{ rpcFAIL_GEN_DECRPYT,		"failGenDecrypt",	"Failed to decrypt generator."							},
 		{ rpcGETS_ACT_MALFORMED,	"getsActMalformed",	"Gets account malformed."								},
-		{ rpcGETS_AMT_MALFORMED,	"getsAmtMalformed",	"Gets ammount malformed."								},
+		{ rpcGETS_AMT_MALFORMED,	"getsAmtMalformed",	"Gets amount malformed."								},
 		{ rpcHOST_IP_MALFORMED,		"hostIpMalformed",	"Host IP is malformed."									},
 		{ rpcINSUF_FUNDS,			"insufFunds",		"Insufficient funds."									},
 		{ rpcINTERNAL,				"internal",			"Internal error."										},

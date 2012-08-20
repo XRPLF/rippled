@@ -224,8 +224,8 @@ STAmount TransactionEngine::rippleHolds(const uint160& uAccountID, const uint160
 	{
 		saBalance	= sleRippleState->getIValueFieldAmount(sfBalance);
 
-		if (uAccountID < uIssuerID)
-			saBalance.negate();		// Put balance in low terms.
+		if (uAccountID > uIssuerID)
+			saBalance.negate();		// Put balance in uAccountID terms.
 	}
 
 	return saBalance;
@@ -4213,7 +4213,7 @@ Log(lsWARNING) << "doOfferCreate: saTakerGets=" << saTakerGets.getFullText();
 	}
 	else if (!accountFunds(mTxnAccountID, saTakerGets).isPositive())
 	{
-		Log(lsWARNING) << "doOfferCreate: delay: offers must be funded";
+		Log(lsWARNING) << "doOfferCreate: delay: Offers must be at least partially funded.";
 
 		terResult	= terUNFUNDED;
 	}
