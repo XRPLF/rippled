@@ -7,11 +7,17 @@ RippleState::RippleState(SerializedLedgerEntry::pointer ledgerEntry) :
 {
 	if (!mLedgerEntry || mLedgerEntry->getType() != ltRIPPLE_STATE) return;
 
-	mLowID		= mLedgerEntry->getIValueFieldAccount(sfLowID);
-	mHighID		= mLedgerEntry->getIValueFieldAccount(sfHighID);
+	mLowID			= mLedgerEntry->getIValueFieldAccount(sfLowID);
+	mHighID			= mLedgerEntry->getIValueFieldAccount(sfHighID);
 
-	mLowLimit	= mLedgerEntry->getIValueFieldAmount(sfLowLimit);
-	mHighLimit	= mLedgerEntry->getIValueFieldAmount(sfHighLimit);
+	mLowLimit		= mLedgerEntry->getIValueFieldAmount(sfLowLimit);
+	mHighLimit		= mLedgerEntry->getIValueFieldAmount(sfHighLimit);
+
+	mLowQualityIn	= mLedgerEntry->getIFieldU32(sfLowQualityIn);
+	mLowQualityOut	= mLedgerEntry->getIFieldU32(sfLowQualityOut);
+
+	mHighQualityIn	= mLedgerEntry->getIFieldU32(sfHighQualityIn);
+	mHighQualityOut	= mLedgerEntry->getIFieldU32(sfHighQualityOut);
 
 	mBalance	= mLedgerEntry->getIValueFieldAmount(sfBalance);
 

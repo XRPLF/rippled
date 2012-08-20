@@ -254,7 +254,7 @@ Json::Value NetworkOPs::getOwnerInfo(const uint256& uLedger, const NewcoinAddres
 
 Json::Value NetworkOPs::getOwnerInfo(Ledger::pointer lpLedger, const NewcoinAddress& naAccount)
 {
-	Json::Value	jvObjects(Json::arrayValue);
+	Json::Value	jvObjects(Json::objectValue);
 
 	uint256				uRootIndex	= lpLedger->getOwnerDirIndex(naAccount.getAccountID());
 
@@ -267,15 +267,37 @@ Json::Value NetworkOPs::getOwnerInfo(Ledger::pointer lpLedger, const NewcoinAddr
 
 		do
 		{
-			STVector256				svIndexes	= sleNode->getIFieldV256(sfIndexes);
+			STVector256					svIndexes	= sleNode->getIFieldV256(sfIndexes);
 			const std::vector<uint256>&	vuiIndexes	= svIndexes.peekValue();
 
 			BOOST_FOREACH(const uint256& uDirEntry, vuiIndexes)
 			{
-				LedgerStateParms	lspOffer	= lepNONE;
-				SLE::pointer		sleOffer	= lpLedger->getOffer(lspOffer, uDirEntry);
+				SLE::pointer		sleCur		= lpLedger->getSLE(uDirEntry);
 
-				jvObjects.append(sleOffer->getJson(0));
+				switch (sleCur->getType())
+				{
+					case ltOFFER:
+						if (!jvObjects.isMember("offers"))
+							jvObjects["offers"]			= Json::Value(Json::arrayValue);
+
+						jvObjects["offers"].append(sleCur->getJson(0));
+						break;
+
+					case ltRIPPLE_STATE:
+						if (!jvObjects.isMember("ripple_lines"))
+							jvObjects["ripple_lines"]	= Json::Value(Json::arrayValue);
+
+						jvObjects["ripple_lines"].append(sleCur->getJson(0));
+						break;
+
+					case ltACCOUNT_ROOT:
+					case ltDIR_NODE:
+					case ltGENERATOR_MAP:
+					case ltNICKNAME:
+					default:
+						assert(false);
+						break;
+				}
 			}
 
 			uNodeDir		= sleNode->getIFieldU64(sfIndexNext);

@@ -270,10 +270,10 @@ Transaction::pointer Transaction::setCreditSet(
 		mTransaction->setITFieldAmount(sfLimitAmount, saLimitAmount);
 
 	if (bQualityIn)
-		mTransaction->setITFieldU32(sfAcceptRate, uQualityIn);
+		mTransaction->setITFieldU32(sfQualityIn, uQualityIn);
 
 	if (bQualityOut)
-		mTransaction->setITFieldU32(sfAcceptRate, uQualityOut);
+		mTransaction->setITFieldU32(sfQualityOut, uQualityOut);
 
 	sign(naPrivateKey);
 

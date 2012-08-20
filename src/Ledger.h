@@ -265,9 +265,6 @@ public:
 	static uint256 getRippleStateIndex(const uint160& uiA, const uint160& uiB, const uint160& uCurrency)
 		{ return getRippleStateIndex(NewcoinAddress::createAccountID(uiA), NewcoinAddress::createAccountID(uiB), uCurrency); }
 
-	// Directory of lines indexed by an account (not all lines are indexed)
-	static uint256 getRippleDirIndex(const uint160& uAccountID);
-
 	RippleState::pointer accessRippleState(const uint256& uNode);
 
 	SLE::pointer getRippleState(LedgerStateParms& parms, const uint256& uNode);

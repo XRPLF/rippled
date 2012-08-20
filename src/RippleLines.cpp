@@ -15,33 +15,40 @@ RippleLines::RippleLines(const uint160& accountID )
 
 void RippleLines::fillLines(const uint160& accountID, Ledger::pointer ledger)
 {
-	uint256 rootIndex = Ledger::getRippleDirIndex(accountID);
-	uint256 currentIndex=rootIndex;
+	uint256 rootIndex		= Ledger::getOwnerDirIndex(accountID);
+	uint256 currentIndex	= rootIndex;
 
-	while(1)
+	LedgerStateParms	lspNode		= lepNONE;
+
+	while (1)
 	{
-		LedgerStateParms lspNode=lepNONE;
-		SerializedLedgerEntry::pointer rippleDir=ledger->getDirNode(lspNode,currentIndex);
-		if(!rippleDir) return;
+		SLE::pointer rippleDir=ledger->getDirNode(lspNode, currentIndex);
+		if (!rippleDir) return;
 
-		STVector256 svRippleNodes		= rippleDir->getIFieldV256(sfIndexes);
-		BOOST_FOREACH(uint256& uNode, svRippleNodes.peekValue())
+		STVector256 svOwnerNodes		= rippleDir->getIFieldV256(sfIndexes);
+		BOOST_FOREACH(uint256& uNode, svOwnerNodes.peekValue())
 		{
-			RippleState::pointer	rsLine	= ledger->accessRippleState(uNode);
-			if (rsLine)
+			SLE::pointer	sleCur	= ledger->getSLE(uNode);
+
+			if (ltRIPPLE_STATE == sleCur->getType())
 			{
-				rsLine->setViewAccount(accountID);
-				mLines.push_back(rsLine);
-			}
-			else
-			{
-				Log(lsWARNING) << "doRippleLinesGet: Bad index: " << uNode.ToString();
+				RippleState::pointer	rsLine	= ledger->accessRippleState(uNode);
+				if (rsLine)
+				{
+					rsLine->setViewAccount(accountID);
+					mLines.push_back(rsLine);
+				}
+				else
+				{
+					Log(lsWARNING) << "doRippleLinesGet: Bad index: " << uNode.ToString();
+				}
 			}
 		}
 
-		uint64 uNodeNext		= rippleDir->getIFieldU64(sfIndexNext);
-		if(!uNodeNext) return;
+		uint64 uNodeNext	= rippleDir->getIFieldU64(sfIndexNext);
+		if (!uNodeNext) return;
 
 		currentIndex	= Ledger::getDirNodeIndex(rootIndex, uNodeNext);
 	}
 }
+// vim:ts=4

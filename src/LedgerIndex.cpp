@@ -126,16 +126,6 @@ uint256 Ledger::getOwnerDirIndex(const uint160& uAccountID)
 	return s.getSHA512Half();
 }
 
-uint256 Ledger::getRippleDirIndex(const uint160& uAccountID)
-{
-	Serializer	s(22);
-
-	s.add16(spaceRippleDir);	//  2
-	s.add160(uAccountID);		// 20
-
-	return s.getSHA512Half();
-}
-
 uint256 Ledger::getRippleStateIndex(const NewcoinAddress& naA, const NewcoinAddress& naB, const uint160& uCurrency)
 {
 	uint160		uAID	= naA.getAccountID();
