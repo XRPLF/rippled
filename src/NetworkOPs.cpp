@@ -650,7 +650,7 @@ SHAMap::pointer NetworkOPs::getTXMap(const uint256& hash)
 	return mConsensus->getTransactionTree(hash, false);
 }
 
-bool NetworkOPs::gotTXData(boost::shared_ptr<Peer> peer, const uint256& hash,
+bool NetworkOPs::gotTXData(const boost::shared_ptr<Peer>& peer, const uint256& hash,
 	const std::list<SHAMapNode>& nodeIDs, const std::list< std::vector<unsigned char> >& nodeData)
 {
 	if (!mConsensus)
@@ -658,14 +658,14 @@ bool NetworkOPs::gotTXData(boost::shared_ptr<Peer> peer, const uint256& hash,
 	return mConsensus->peerGaveNodes(peer, hash, nodeIDs, nodeData);
 }
 
-bool NetworkOPs::hasTXSet(boost::shared_ptr<Peer> peer, const uint256& set, newcoin::TxSetStatus status)
+bool NetworkOPs::hasTXSet(const boost::shared_ptr<Peer>& peer, const uint256& set, newcoin::TxSetStatus status)
 {
 	if (!mConsensus)
 		return false;
 	return mConsensus->peerHasSet(peer, set, status);
 }
 
-void NetworkOPs::mapComplete(const uint256& hash, SHAMap::pointer map)
+void NetworkOPs::mapComplete(const uint256& hash, const SHAMap::pointer& map)
 {
 	if (mConsensus)
 		mConsensus->mapComplete(hash, map, true);
@@ -746,7 +746,7 @@ std::vector<NewcoinAddress>
 	return accounts;
 }
 
-bool NetworkOPs::recvValidation(SerializedValidation::pointer val)
+bool NetworkOPs::recvValidation(const SerializedValidation::pointer& val)
 {
 	Log(lsINFO) << "recvValidation " << val->getLedgerHash().GetHex();
 	return theApp->getValidations().addValidation(val);

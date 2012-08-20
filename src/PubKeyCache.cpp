@@ -42,7 +42,7 @@ CKey::pointer PubKeyCache::locate(const NewcoinAddress& id)
 	return ckp;
 }
 
-CKey::pointer PubKeyCache::store(const NewcoinAddress& id, CKey::pointer key)
+CKey::pointer PubKeyCache::store(const NewcoinAddress& id, const CKey::pointer& key)
 { // stored if needed, returns cached copy (possibly the original)
 	{
 		boost::mutex::scoped_lock sl(mLock);
@@ -51,14 +51,14 @@ CKey::pointer PubKeyCache::store(const NewcoinAddress& id, CKey::pointer key)
 			return pit.first->second;
 	}
 
-	std::vector<unsigned char> pk=key->GetPubKey();
+	std::vector<unsigned char> pk = key->GetPubKey();
 	std::string encodedPK;
 	theApp->getTxnDB()->getDB()->escape(&(pk.front()), pk.size(), encodedPK);
 
-	std::string sql="INSERT INTO PubKeys (ID,PubKey) VALUES ('";
-	sql+=id.humanAccountID();
-	sql+="',";
-	sql+=encodedPK;
+	std::string sql = "INSERT INTO PubKeys (ID,PubKey) VALUES ('";
+	sql += id.humanAccountID();
+	sql += "',";
+	sql += encodedPK;
 	sql.append(");");
 
 	ScopedLock dbl(theApp->getTxnDB()->getDBLock());

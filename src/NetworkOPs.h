@@ -161,12 +161,12 @@ public:
 	// ledger proposal/close functions
 	bool recvPropose(uint32 proposeSeq, const uint256& proposeHash, uint32 closeTime,
 		const std::string& pubKey, const std::string& signature);
-	bool gotTXData(boost::shared_ptr<Peer> peer, const uint256& hash,
+	bool gotTXData(const boost::shared_ptr<Peer>& peer, const uint256& hash,
 		const std::list<SHAMapNode>& nodeIDs, const std::list< std::vector<unsigned char> >& nodeData);
-	bool recvValidation(SerializedValidation::pointer val);
+	bool recvValidation(const SerializedValidation::pointer& val);
 	SHAMap::pointer getTXMap(const uint256& hash);
-	bool hasTXSet(boost::shared_ptr<Peer> peer, const uint256& set, newcoin::TxSetStatus status);
-	void mapComplete(const uint256& hash, SHAMap::pointer map);
+	bool hasTXSet(const boost::shared_ptr<Peer>& peer, const uint256& set, newcoin::TxSetStatus status);
+	void mapComplete(const uint256& hash, const SHAMap::pointer& map);
 
 	// network state machine
 	void checkState(const boost::system::error_code& result);

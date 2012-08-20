@@ -281,12 +281,6 @@ public:
 	SLE::pointer getRippleState(const uint160& uiA, const uint160& uiB, const uint160& uCurrency)
 		{ return getRippleState(getRippleStateIndex(NewcoinAddress::createAccountID(uiA), NewcoinAddress::createAccountID(uiB), uCurrency)); }
 
-	//
-	// Misc
-	//
-	bool isCompatible(boost::shared_ptr<Ledger> other);
-//	bool signLedger(std::vector<unsigned char> &signature, const LocalHanko &hanko);
-
 	void addJson(Json::Value&, int options);
 
 	static bool unitTest();
