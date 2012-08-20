@@ -1315,9 +1315,9 @@ Json::Value RPCServer::doPeers(const Json::Value& params)
 }
 
 // ripple <regular_seed> <paying_account>
-//	 <source_max> <source_currency> <source_issuerID> [noredeem] [noissue]
+//	 <source_max> <source_currency> [<source_issuerID>] // XXX [noredeem] [noissue]
 //   <path>+
-//   full|partial <dest_account> <dest_amount> <dest_currency> <dest_issuerID>
+//   full|partial <dest_account> <dest_amount> <dest_currency> [<dest_issuerID>]
 //
 //   path:
 //     path <path_element>+
@@ -1331,6 +1331,7 @@ Json::Value RPCServer::doRipple(const Json::Value &params)
 	STAmount		saSrcAmountMax;
 	uint160			uSrcCurrencyID;
 	NewcoinAddress	naSrcAccountID;
+	NewcoinAddress	naSrcIssuerID;
 	bool			bSrcRedeem		= true;
 	bool			bSrcIssue		= true;
 	bool			bPartial;
@@ -1338,10 +1339,11 @@ Json::Value RPCServer::doRipple(const Json::Value &params)
 	NewcoinAddress	naDstAccountID;
 	STAmount		saDstAmount;
 	uint160			uDstCurrencyID;
-	NewcoinAddress	naDstIssuerID;
 
 	std::vector<paymentNode>	vpnPath;
 	STPathSet		spsPaths;
+
+	naSrcIssuerID.setAccountID(params[4u].asString());							// <source_issuerID>
 
 	if (!naSeed.setSeedGeneric(params[0u].asString()))							// <regular_seed>
 	{
@@ -1351,13 +1353,18 @@ Json::Value RPCServer::doRipple(const Json::Value &params)
 	{
 		return RPCError(rpcSRC_ACT_MALFORMED);
 	}
-	// <source_max> <source_currency> <source_issuerID>
-	else if (!saSrcAmountMax.setFullValue(params[2u].asString(), params[3u].asString(), params[4u].asString()))
+	// <source_max> <source_currency> [<source_issuerID>]
+	else if (!saSrcAmountMax.setFullValue(params[2u].asString(), params[3u].asString(), params[naSrcIssuerID.isValid() ? 4u : 1u].asString()))
 	{
+		// Log(lsINFO) << "naSrcIssuerID.isValid(): " << naSrcIssuerID.isValid();
+		// Log(lsINFO) << "source_max: " << params[2u].asString();
+		// Log(lsINFO) << "source_currency: " << params[3u].asString();
+		// Log(lsINFO) << "source_issuer: " << params[naSrcIssuerID.isValid() ? 4u : 2u].asString();
+
 		return RPCError(rpcSRC_AMT_MALFORMED);
 	}
 
-	int		iArg	= 5;
+	int		iArg	= 4 + naSrcIssuerID.isValid();
 
 	if (params[iArg].asString() == "noredeem")									// [noredeem]
 	{
@@ -1483,14 +1490,21 @@ Json::Value RPCServer::doRipple(const Json::Value &params)
 	{
 		return RPCError(rpcDST_ACT_MALFORMED);
 	}
+
+	const unsigned int uDstIssuer	= params.size() == iArg + 3 ? iArg+2 : iArg-1;
+
 	// <dest_amount> <dest_currency> <dest_issuerID>
-	else if (params.size() != iArg + 3 || !saDstAmount.setFullValue(params[iArg].asString(), params[iArg+1].asString(), params[iArg+2].asString()))
+	if (params.size() != iArg + 2 && params.size() != iArg + 3)
 	{
-		Log(lsINFO) << "params.size(): " << params.size();
-		Log(lsINFO) << "    iArg: " << iArg;
-		Log(lsINFO) << "  Amount: " << params[iArg].asString();
-		Log(lsINFO) << "Currency: " << params[iArg+1].asString();
-		Log(lsINFO) << "  Issuer: " << params[iArg+2].asString();
+		// Log(lsINFO) << "params.size(): " << params.size();
+
+		return RPCError(rpcDST_AMT_MALFORMED);
+	}
+	else if (!saDstAmount.setFullValue(params[iArg].asString(), params[iArg+1].asString(), params[uDstIssuer].asString()))
+	{
+		// Log(lsINFO) << "  Amount: " << params[iArg].asString();
+		// Log(lsINFO) << "Currency: " << params[iArg+1].asString();
+		// Log(lsINFO) << "  Issuer: " << params[uDstIssuer].asString();
 
 		return RPCError(rpcDST_AMT_MALFORMED);
 	}
@@ -1515,6 +1529,8 @@ Json::Value RPCServer::doRipple(const Json::Value &params)
 	// YYY Limit paths length and count.
 	if (!asDst)
 	{
+		Log(lsINFO) << "naDstAccountID: " << naDstAccountID.humanAccountID();
+
 		return RPCError(rpcDST_ACT_MISSING);
 	}
 
@@ -2526,7 +2542,7 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 		{	"password_fund",		&RPCServer::doPasswordFund,			2,  3, false,	optCurrent	},
 		{	"password_set",			&RPCServer::doPasswordSet,			2,  3, false,	optNetwork	},
 		{	"peers",				&RPCServer::doPeers,				0,  0, true					},
-		{	"ripple",				&RPCServer::doRipple,				10, -1, false,	optCurrent|optClosed },
+		{	"ripple",				&RPCServer::doRipple,				8, -1, false,	optCurrent|optClosed },
 		{	"ripple_lines_get",		&RPCServer::doRippleLinesGet,		1,  2, false,	optCurrent	},
 		{	"ripple_line_set",		&RPCServer::doRippleLineSet,		4,  7, false,	optCurrent	},
 		{	"send",					&RPCServer::doSend,					3,  7, false,	optCurrent	},
