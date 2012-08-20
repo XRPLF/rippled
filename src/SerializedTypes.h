@@ -668,6 +668,7 @@ public:
 	void addPath(const STPath& e)						{ value.push_back(e); }
 
 	virtual bool isEquivalent(const SerializedType& t) const;
+	STPathSet& operator=(const STPathSet&);
 
 	std::vector<STPath>::iterator begin()				{ return value.begin(); }
 	std::vector<STPath>::iterator end()					{ return value.end(); }
