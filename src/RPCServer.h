@@ -48,6 +48,7 @@ public:
 
 		// Bad parameter
 		rpcACT_MALFORMED,
+		rpcQUALITY_MALFORMED,
 		rpcBAD_SEED,
 		rpcDST_ACT_MALFORMED,
 		rpcDST_ACT_MISSING,

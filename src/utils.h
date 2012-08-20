@@ -8,6 +8,8 @@
 
 #include "types.h"
 
+#define QUALITY_ONE			1000000000	// 10e9
+
 #define nothing()			do {} while (0)
 #define fallthru()			do {} while (0)
 #define NUMBER(x)			(sizeof(x)/sizeof((x)[0]))
@@ -153,6 +155,7 @@ std::vector<unsigned char> strCopy(const std::string& strSrc);
 std::string strCopy(const std::vector<unsigned char>& vucSrc);
 
 bool parseIpPort(const std::string& strSource, std::string& strIP, int& iPort);
+bool parseQuality(const std::string& strSource, uint32& uQuality);
 
 DH* DH_der_load(const std::string& strDer);
 std::string DH_der_gen(int iKeyLength);

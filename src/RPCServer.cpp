@@ -44,8 +44,8 @@ Json::Value RPCServer::RPCError(int iError)
 		{ rpcACT_NOT_FOUND,			"actNotFound",		"Account not found."									},
 		{ rpcBAD_SEED,				"badSeed",			"Disallowed seed."										},
 		{ rpcDST_ACT_MALFORMED,		"dstActMalformed",	"Destination account is malformed."						},
-		{ rpcDST_AMT_MALFORMED,		"dstAmtMalformed",	"Destination amount/currency is malformed."				},
 		{ rpcDST_ACT_MISSING,		"dstActMissing",	"Destination account does not exists."					},
+		{ rpcDST_AMT_MALFORMED,		"dstAmtMalformed",	"Destination amount/currency is malformed."				},
 		{ rpcFAIL_GEN_DECRPYT,		"failGenDecrypt",	"Failed to decrypt generator."							},
 		{ rpcGETS_ACT_MALFORMED,	"getsActMalformed",	"Gets account malformed."								},
 		{ rpcGETS_AMT_MALFORMED,	"getsAmtMalformed",	"Gets ammount malformed."								},
@@ -71,6 +71,7 @@ Json::Value RPCServer::RPCError(int iError)
 		{ rpcPAYS_AMT_MALFORMED,	"paysAmtMalformed",	"Pays amount malformed."								},
 		{ rpcPORT_MALFORMED,		"portMalformed",	"Port is malformed."									},
 		{ rpcPUBLIC_MALFORMED,		"publicMalformed",	"Public key is malformed."								},
+		{ rpcQUALITY_MALFORMED,		"qualityMalformed",	"Quality malformed."									},
 		{ rpcSRC_ACT_MALFORMED,		"srcActMalformed",	"Source account is malformed."							},
 		{ rpcSRC_ACT_MISSING,		"srcActMissing",	"Source account does not exist."						},
 		{ rpcSRC_AMT_MALFORMED,		"srcAmtMalformed",	"Source amount/currency is malformed."					},
@@ -1573,8 +1574,8 @@ Json::Value RPCServer::doRippleLineSet(const Json::Value& params)
 	bool			bLimitAmount	= true;
 	bool			bQualityIn		= params.size() >= 6;
 	bool			bQualityOut		= params.size() >= 7;
-	uint32			uQualityIn		= bQualityIn ? lexical_cast_s<uint32>(params[5u].asString()) : 0;
-	uint32			uQualityOut		= bQualityOut ? lexical_cast_s<uint32>(params[6u].asString()) : 0;
+	uint32			uQualityIn		= 0;
+	uint32			uQualityOut		= 0;
 
 	if (!naSeed.setSeedGeneric(params[0u].asString()))
 	{
@@ -1591,6 +1592,14 @@ Json::Value RPCServer::doRippleLineSet(const Json::Value& params)
 	else if (!saLimitAmount.setFullValue(params[3u].asString(), params.size() >= 5 ? params[4u].asString() : ""))
 	{
 		return RPCError(rpcSRC_AMT_MALFORMED);
+	}
+	else if (bQualityIn && !parseQuality(params[5u].asString(), uQualityIn))
+	{
+		return RPCError(rpcQUALITY_MALFORMED);
+	}
+	else if (bQualityOut && !parseQuality(params[6u].asString(), uQualityOut))
+	{
+		return RPCError(rpcQUALITY_MALFORMED);
 	}
 	else
 	{
