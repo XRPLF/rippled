@@ -114,9 +114,7 @@
     <ClCompile Include="src\LedgerEntrySet.cpp" />
     <ClCompile Include="src\LedgerFormats.cpp" />
     <ClCompile Include="src\LedgerHistory.cpp" />
-    <ClCompile Include="src\LedgerIndex.cpp" />
     <ClCompile Include="src\LedgerMaster.cpp" />
-    <ClCompile Include="src\LedgerNode.cpp" />
     <ClCompile Include="src\LedgerProposal.cpp" />
     <ClCompile Include="src\LedgerTiming.cpp" />
     <ClCompile Include="src\Log.cpp" />

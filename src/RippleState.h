@@ -47,8 +47,8 @@ public:
 	STAmount				getLimit() const			{ return mViewLowest ? mLowLimit : mHighLimit; }
 	STAmount				getLimitPeer() const		{ return mViewLowest ? mHighLimit : mLowLimit; }
 
-	uint32					getQualityIn() const		{ return mViewLowest ? mLowQualityIn : mHighQualityIn; }
-	uint32					getQualityOut() const		{ return mViewLowest ? mLowQualityOut : mHighQualityOut; }
+	uint32					getQualityIn() const		{ return((uint32) (mViewLowest ? mLowQualityIn : mHighQualityIn)); }
+	uint32					getQualityOut() const		{ return((uint32) (mViewLowest ? mLowQualityOut : mHighQualityOut)); }
 
 	SerializedLedgerEntry::pointer getSLE() { return mLedgerEntry; }
 	const SerializedLedgerEntry& peekSLE() const { return *mLedgerEntry; }
