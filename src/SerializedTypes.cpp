@@ -463,14 +463,6 @@ std::string STPathSet::getText() const
 }
 #endif
 
-STPathSet& STPathSet::operator=(const STPathSet& p)
-{
-	if (name == NULL)
-		name = p.name;
-	value = p.value;
-	return *this;
-}
-
 void STPathSet::add(Serializer& s) const
 {
 	bool bFirst = true;
