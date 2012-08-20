@@ -332,6 +332,8 @@ STPathSet* STPathSet::construct(SerializerIterator& s, const char *name)
 		else
 		{
 			const bool	bAccount	= !!(iType & STPathElement::typeAccount);
+			const bool	bRedeem		= !!(iType & STPathElement::typeRedeem);
+			const bool	bIssue		= !!(iType & STPathElement::typeIssue);
 			const bool	bCurrency	= !!(iType & STPathElement::typeCurrency);
 			const bool	bIssuer		= !!(iType & STPathElement::typeIssuer);
 
@@ -348,7 +350,7 @@ STPathSet* STPathSet::construct(SerializerIterator& s, const char *name)
 			if (bIssuer)
 				uIssuerID	= s.get160();
 
-			path.push_back(STPathElement(uAccountID, uCurrency, uIssuerID));
+			path.push_back(STPathElement(uAccountID, uCurrency, uIssuerID, bRedeem, bIssue));
 		}
 	} while(1);
 }
@@ -361,6 +363,8 @@ bool STPathSet::isEquivalent(const SerializedType& t) const
 
 int STPathSet::getLength() const
 {
+	// XXX This code is broken?
+	assert(false);
 	int ret = 0;
 
 	for (std::vector<STPath>::const_iterator it = value.begin(), end = value.end(); it != end; ++it)
