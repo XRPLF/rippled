@@ -65,6 +65,7 @@ Transaction::pointer NetworkOPs::submitTransaction(const Transaction::pointer& t
 	Transaction::pointer	tpTransNew	= Transaction::sharedTransaction(s.getData(), true);
 
 	assert(tpTransNew);
+	assert(tpTransNew->getSTransaction()->isEquivalent(*tpTrans->getSTransaction()));
 
 	(void) NetworkOPs::processTransaction(tpTransNew);
 
