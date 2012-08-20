@@ -1969,14 +1969,14 @@ bool TransactionEngine::calcNodeOfferRev(
 				if (!saCurOfrFunds)
 				{
 					// Offer is unfunded.
-					Log(lsINFO) << "calcNodeOffer: encountered unfunded offer";
+					Log(lsINFO) << "calcNodeOfferRev: encountered unfunded offer";
 
 					// XXX Mark unfunded.
 				}
 				else if (sleCurOfr->getIFieldPresent(sfExpiration) && sleCurOfr->getIFieldU32(sfExpiration) <= mLedger->getParentCloseTimeNC())
 				{
 					// Offer is expired.
-					Log(lsINFO) << "calcNodeOffer: encountered expired offer";
+					Log(lsINFO) << "calcNodeOfferRev: encountered expired offer";
 
 					// XXX Mark unfunded.
 				}
@@ -3774,8 +3774,10 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 	if (!bNoRippleDirect)
 	{
 		// Direct path.
+		// XXX Might also make a stamp bridge by default.
 		Log(lsINFO) << "doPayment: Build direct:";
-		vpsPaths.push_back(PathState::createPathState(
+
+		PathState::pointer	pspDirect	= PathState::createPathState(
 			mLedger,
 			vpsPaths.size(),
 			mNodes,
@@ -3784,14 +3786,19 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 			mTxnAccountID,
 			saDstAmount,
 			saMaxAmount,
-			bPartialPayment
-			));
+			bPartialPayment);
+
+		if (pspDirect)
+			vpsPaths.push_back(pspDirect);
 	}
+
+	Log(lsINFO) << "doPayment: Paths: " << spsPaths.getPathCount();
 
 	BOOST_FOREACH(const STPath& spPath, spsPaths)
 	{
 		Log(lsINFO) << "doPayment: Build path:";
-		vpsPaths.push_back(PathState::createPathState(
+
+		PathState::pointer	pspExpanded	= PathState::createPathState(
 			mLedger,
 			vpsPaths.size(),
 			mNodes,
@@ -3800,8 +3807,10 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 			mTxnAccountID,
 			saDstAmount,
 			saMaxAmount,
-			bPartialPayment
-			));
+			bPartialPayment);
+
+		if (pspExpanded)
+			vpsPaths.push_back(pspExpanded);
 	}
 
 	TransactionEngineResult	terResult;
@@ -3885,7 +3894,7 @@ TransactionEngineResult TransactionEngine::doWalletAdd(const SerializedTransacti
 
 	if (!naMasterPubKey.accountPublicVerify(Serializer::getSHA512Half(uAuthKeyID.begin(), uAuthKeyID.size()), vucSignature))
 	{
-		std::cerr << "WalletAdd: unauthorized:  bad signature " << std::endl;
+		std::cerr << "WalletAdd: unauthorized: bad signature " << std::endl;
 
 		return tenBAD_ADD_AUTH;
 	}
