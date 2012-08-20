@@ -96,13 +96,17 @@ uint32 SerializedLedgerEntry::getThreadedLedger()
 	return getIFieldU32(sfLastTxnSeq);
 }
 
-void SerializedLedgerEntry::thread(const uint256& txID, uint32 ledgerSeq, uint256& prevTxID, uint32& prevLedgerID)
+bool SerializedLedgerEntry::thread(const uint256& txID, uint32 ledgerSeq, uint256& prevTxID, uint32& prevLedgerID)
 {
-	prevTxID = getIFieldH256(sfLastTxnID);
+	uint256 oldPrevTxID = getIFieldH256(sfLastTxnID);
+	if (oldPrevTxID == txID)
+		return false;
+	prevTxID = oldPrevTxID;
 	prevLedgerID = getIFieldU32(sfLastTxnID);
 	assert(prevTxID != txID);
 	setIFieldH256(sfLastTxnID, txID);
 	setIFieldU32(sfLastTxnSeq, ledgerSeq);
+	return true;
 }
 
 std::vector<uint256> SerializedLedgerEntry::getOwners()

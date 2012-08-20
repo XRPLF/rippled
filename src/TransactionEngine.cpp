@@ -1219,6 +1219,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 			terResult	= terPAST_SEQ;
 		}
 	}
+	mTxnAccount->setIFieldU32(sfLastSignedSeq, mLedger->getLedgerSeq());
 
 	if (terSUCCESS == terResult)
 	{

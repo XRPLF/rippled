@@ -67,7 +67,7 @@ public:
 	bool isThreaded();		// is this ledger entry actually threaded
 	uint256 getThreadedTransaction();
 	uint32 getThreadedLedger();
-	void thread(const uint256& txID, uint32 ledgerSeq, uint256& prevTxID, uint32& prevLedgerID);
+	bool thread(const uint256& txID, uint32 ledgerSeq, uint256& prevTxID, uint32& prevLedgerID);
 	std::vector<uint256> getOwners();	// nodes notified if this node is deleted
 
 	void setIFieldU8(SOE_Field field, unsigned char v) { return mObject.setValueFieldU8(field, v); }
