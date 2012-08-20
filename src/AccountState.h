@@ -21,13 +21,14 @@ public:
 	typedef boost::shared_ptr<AccountState> pointer;
 
 private:
+	NewcoinAddress					mAccountID;
 	NewcoinAddress					mAuthorizedKey;
 	SerializedLedgerEntry::pointer	mLedgerEntry;
 
 	bool							mValid;
 
 public:
-	AccountState(const NewcoinAddress& AccountID);						// For new accounts
+	AccountState(const NewcoinAddress& naAccountID);						// For new accounts
 	AccountState(const SerializedLedgerEntry::pointer& ledgerEntry);	// For accounts in a ledger
 
 	bool	bHaveAuthorizedKey()

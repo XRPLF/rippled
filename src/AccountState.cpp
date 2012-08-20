@@ -10,11 +10,12 @@
 #include "Ledger.h"
 #include "Serializer.h"
 
-AccountState::AccountState(const NewcoinAddress& id) : mValid(false)
+AccountState::AccountState(const NewcoinAddress& naAccountID) : mAccountID(naAccountID), mValid(false)
 {
-	if (!id.isValid()) return;
+	if (!naAccountID.isValid()) return;
+
 	mLedgerEntry = boost::make_shared<SerializedLedgerEntry>(ltACCOUNT_ROOT);
-	mLedgerEntry->setIndex(Ledger::getAccountRootIndex(id));
+	mLedgerEntry->setIndex(Ledger::getAccountRootIndex(naAccountID));
 
 	mValid = true;
 }
@@ -41,10 +42,17 @@ void AccountState::addJson(Json::Value& val)
 {
 	val = mLedgerEntry->getJson(0);
 
-	if (!mValid) val["Invalid"] = true;
+	if (mValid)
+	{
+		val["AccountID"]	= mAccountID.humanAccountID();
 
-	if (mLedgerEntry->getIFieldPresent(sfEmailHash))
-		val["UrlGravatar"]	= createGravatarUrl(mLedgerEntry->getIFieldH128(sfEmailHash));
+		if (mLedgerEntry->getIFieldPresent(sfEmailHash))
+			val["UrlGravatar"]	= createGravatarUrl(mLedgerEntry->getIFieldH128(sfEmailHash));
+	}
+	else
+	{
+		val["Invalid"] = true;
+	}
 }
 
 void AccountState::dump()
