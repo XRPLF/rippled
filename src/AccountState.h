@@ -27,8 +27,8 @@ private:
 	bool							mValid;
 
 public:
-	AccountState(const NewcoinAddress& AccountID);				// For new accounts
-	AccountState(SerializedLedgerEntry::pointer ledgerEntry);	// For accounts in a ledger
+	AccountState(const NewcoinAddress& AccountID);						// For new accounts
+	AccountState(const SerializedLedgerEntry::pointer& ledgerEntry);	// For accounts in a ledger
 
 	bool	bHaveAuthorizedKey()
 	{

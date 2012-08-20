@@ -26,8 +26,8 @@ class LedgerMaster
 	std::map<uint256, Transaction::pointer> mHeldTransactionsByID;
 
 	void applyFutureTransactions(uint32 ledgerIndex);
-	bool isValidTransaction(Transaction::pointer trans);
-	bool isTransactionOnFutureList(Transaction::pointer trans);
+	bool isValidTransaction(const Transaction::pointer& trans);
+	bool isTransactionOnFutureList(const Transaction::pointer& trans);
 
 public:
 
@@ -48,11 +48,11 @@ public:
 	TransactionEngineResult doTransaction(const SerializedTransaction& txn, uint32 targetLedger,
 		TransactionEngineParams params);
 
-	void pushLedger(Ledger::pointer newLedger);
-	void pushLedger(Ledger::pointer newLCL, Ledger::pointer newOL);
-	void storeLedger(Ledger::pointer);
+	void pushLedger(const Ledger::pointer& newLedger);
+	void pushLedger(const Ledger::pointer& newLCL, const Ledger::pointer& newOL);
+	void storeLedger(const Ledger::pointer&);
 
-	void switchLedgers(Ledger::pointer lastClosed, Ledger::pointer newCurrent);
+	void switchLedgers(const Ledger::pointer& lastClosed, const Ledger::pointer& newCurrent);
 
 	Ledger::pointer closeLedger();
 
@@ -74,7 +74,7 @@ public:
 		return mLedgerHistory.getLedgerByHash(hash);
 	}
 
-	bool addHeldTransaction(Transaction::pointer trans);
+	bool addHeldTransaction(const Transaction::pointer& trans);
 };
 
 #endif

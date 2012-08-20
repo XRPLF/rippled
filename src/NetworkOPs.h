@@ -108,7 +108,7 @@ public:
 	//
 	// Transaction operations
 	//
-	Transaction::pointer submitTransaction(Transaction::pointer tpTrans);
+	Transaction::pointer submitTransaction(const Transaction::pointer& tpTrans);
 
 	Transaction::pointer processTransaction(Transaction::pointer transaction, uint32 targetLedger = 0,
 		Peer* source = NULL);

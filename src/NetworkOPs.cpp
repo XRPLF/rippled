@@ -52,7 +52,7 @@ uint32 NetworkOPs::getCurrentLedgerID()
 }
 
 // Sterilize transaction through serialization.
-Transaction::pointer NetworkOPs::submitTransaction(Transaction::pointer tpTrans)
+Transaction::pointer NetworkOPs::submitTransaction(const Transaction::pointer& tpTrans)
 {
 	Serializer s;
 

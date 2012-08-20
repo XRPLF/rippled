@@ -19,7 +19,8 @@ AccountState::AccountState(const NewcoinAddress& id) : mValid(false)
 	mValid = true;
 }
 
-AccountState::AccountState(SerializedLedgerEntry::pointer ledgerEntry) : mLedgerEntry(ledgerEntry), mValid(false)
+AccountState::AccountState(const SerializedLedgerEntry::pointer& ledgerEntry) :
+	mLedgerEntry(ledgerEntry), mValid(false)
 {
 	if (!mLedgerEntry) return;
 	if (mLedgerEntry->getType() != ltACCOUNT_ROOT) return;
