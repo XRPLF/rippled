@@ -361,16 +361,41 @@ bool STPathSet::isEquivalent(const SerializedType& t) const
 	return v && (value == v->value);
 }
 
+int STPath::getSerializeSize() const
+{
+	int iBytes = 0;
+
+	BOOST_FOREACH(const STPathElement& speElement, mPath)
+	{
+		int	iType	= speElement.getNodeType();
+
+		iBytes	+= 1;	// mType
+
+		if (iType & STPathElement::typeAccount)
+			iBytes	+= 160/8;
+
+		if (iType & STPathElement::typeCurrency)
+			iBytes	+= 160/8;
+
+		if (iType & STPathElement::typeIssuer)
+			iBytes	+= 160/8;
+	}
+
+	iBytes	+= 1;	// typeBoundary | typeEnd
+
+	return iBytes;
+}
+
 int STPathSet::getLength() const
 {
-	// XXX This code is broken?
-	assert(false);
-	int ret = 0;
+	int iBytes = 0;
 
-	for (std::vector<STPath>::const_iterator it = value.begin(), end = value.end(); it != end; ++it)
-		ret += it->getSerializeSize();
+	BOOST_FOREACH(const STPath& spPath, value)
+	{
+		iBytes += spPath.getSerializeSize();
+	}
 
-	return (ret != 0) ? ret : (ret + 1);
+	return iBytes ? iBytes : 1;
 }
 
 Json::Value STPath::getJson(int) const
