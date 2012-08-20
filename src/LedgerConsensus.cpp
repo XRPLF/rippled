@@ -83,7 +83,7 @@ void TransactionAcquire::trigger(const Peer::pointer& peer, bool timer)
 }
 
 bool TransactionAcquire::takeNodes(const std::list<SHAMapNode>& nodeIDs,
-	const std::list< std::vector<unsigned char> >& data, Peer::pointer peer)
+	const std::list< std::vector<unsigned char> >& data, const Peer::pointer& peer)
 {
 	if (mComplete)
 		return true;
@@ -191,7 +191,7 @@ bool LCTransaction::updatePosition(int percentTime, bool proposing)
 	return true;
 }
 
-LedgerConsensus::LedgerConsensus(const uint256& prevLCLHash, Ledger::pointer previousLedger, uint32 closeTime)
+LedgerConsensus::LedgerConsensus(const uint256& prevLCLHash, const Ledger::pointer& previousLedger, uint32 closeTime)
 	:  mState(lcsPRE_CLOSE), mCloseTime(closeTime), mPrevLedgerHash(prevLCLHash), mPreviousLedger(previousLedger),
 	mCurrentMSeconds(0), mClosePercent(0), mHaveCloseTimeConsensus(false)
 {
@@ -297,7 +297,7 @@ void LedgerConsensus::takeInitialPosition(Ledger& initialLedger)
 		propose(std::vector<uint256>(), std::vector<uint256>());
 }
 
-void LedgerConsensus::createDisputes(SHAMap::pointer m1, SHAMap::pointer m2)
+void LedgerConsensus::createDisputes(const SHAMap::pointer& m1, const SHAMap::pointer& m2)
 {
 	SHAMap::SHAMapDiff differences;
 	m1->compare(m2, differences, 16384);
@@ -317,7 +317,7 @@ void LedgerConsensus::createDisputes(SHAMap::pointer m1, SHAMap::pointer m2)
 	}
 }
 
-void LedgerConsensus::mapComplete(const uint256& hash, SHAMap::pointer map, bool acquired)
+void LedgerConsensus::mapComplete(const uint256& hash, const SHAMap::pointer& map, bool acquired)
 {
 	if (acquired)
 		Log(lsINFO) << "We have acquired TXS " << hash.GetHex();
@@ -370,7 +370,7 @@ void LedgerConsensus::sendHaveTxSet(const uint256& hash, bool direct)
 	theApp->getConnectionPool().relayMessage(NULL, packet);
 }
 
-void LedgerConsensus::adjustCount(SHAMap::pointer map, const std::vector<uint160>& peers)
+void LedgerConsensus::adjustCount(const SHAMap::pointer& map, const std::vector<uint160>& peers)
 { // Adjust the counts on all disputed transactions based on the set of peers taking this position
 	for (boost::unordered_map<uint256, LCTransaction::pointer>::iterator it = mDisputes.begin(), end = mDisputes.end();
 		it != end; ++it)
@@ -645,7 +645,7 @@ SHAMap::pointer LedgerConsensus::getTransactionTree(const uint256& hash, bool do
 	return it->second;
 }
 
-void LedgerConsensus::startAcquiring(TransactionAcquire::pointer acquire)
+void LedgerConsensus::startAcquiring(const TransactionAcquire::pointer& acquire)
 {
 	boost::unordered_map< uint256, std::vector< boost::weak_ptr<Peer> > >::iterator it =
 		mPeerData.find(acquire->getHash());
@@ -713,7 +713,7 @@ void LedgerConsensus::addDisputedTransaction(const uint256& txID, const std::vec
 	}
 }
 
-bool LedgerConsensus::peerPosition(LedgerProposal::pointer newPosition)
+bool LedgerConsensus::peerPosition(const LedgerProposal::pointer& newPosition)
 {
 	LedgerProposal::pointer& currentPosition = mPeerPositions[newPosition->getPeerID()];
 
@@ -746,7 +746,7 @@ bool LedgerConsensus::peerPosition(LedgerProposal::pointer newPosition)
 	return true;
 }
 
-bool LedgerConsensus::peerHasSet(Peer::pointer peer, const uint256& hashSet, newcoin::TxSetStatus status)
+bool LedgerConsensus::peerHasSet(const Peer::pointer& peer, const uint256& hashSet, newcoin::TxSetStatus status)
 {
 	if (status != newcoin::tsHAVE) // Indirect requests are for future support
 		return true;
@@ -763,7 +763,7 @@ bool LedgerConsensus::peerHasSet(Peer::pointer peer, const uint256& hashSet, new
 	return true;
 }
 
-bool LedgerConsensus::peerGaveNodes(Peer::pointer peer, const uint256& setHash,
+bool LedgerConsensus::peerGaveNodes(const Peer::pointer& peer, const uint256& setHash,
 	const std::list<SHAMapNode>& nodeIDs, const std::list< std::vector<unsigned char> >& nodeData)
 {
 	boost::unordered_map<uint256, TransactionAcquire::pointer>::iterator acq = mAcquiring.find(setHash);
@@ -791,8 +791,8 @@ void LedgerConsensus::Saccept(boost::shared_ptr<LedgerConsensus> This, SHAMap::p
 	This->accept(txSet);
 }
 
-void LedgerConsensus::applyTransaction(TransactionEngine& engine, SerializedTransaction::pointer txn,
-	Ledger::pointer ledger,	CanonicalTXSet& failedTransactions, bool final)
+void LedgerConsensus::applyTransaction(TransactionEngine& engine, const SerializedTransaction::pointer& txn,
+	const Ledger::pointer& ledger, CanonicalTXSet& failedTransactions, bool final)
 {
 	TransactionEngineParams parms = final ? (tepNO_CHECK_FEE | tepUPDATE_TOTAL | tepMETADATA) : tepNONE;
 #ifndef TRUST_NETWORK
@@ -824,8 +824,8 @@ void LedgerConsensus::applyTransaction(TransactionEngine& engine, SerializedTran
 #endif
 }
 
-void LedgerConsensus::applyTransactions(SHAMap::pointer set, Ledger::pointer applyLedger, Ledger::pointer checkLedger,
-	CanonicalTXSet& failedTransactions, bool final)
+void LedgerConsensus::applyTransactions(const SHAMap::pointer& set, const Ledger::pointer& applyLedger,
+	const Ledger::pointer& checkLedger,	CanonicalTXSet& failedTransactions, bool final)
 {
 	TransactionEngineParams parms = final ? (tepNO_CHECK_FEE | tepUPDATE_TOTAL) : tepNONE;
 	TransactionEngine engine(applyLedger);
@@ -881,7 +881,7 @@ void LedgerConsensus::applyTransactions(SHAMap::pointer set, Ledger::pointer app
 	} while (successes > 0);
 }
 
-void LedgerConsensus::accept(SHAMap::pointer set)
+void LedgerConsensus::accept(const SHAMap::pointer& set)
 {
 	assert(set->getHash() == mOurPosition->getCurrentHash());
 

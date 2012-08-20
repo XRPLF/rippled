@@ -450,7 +450,7 @@ BOOST_AUTO_TEST_CASE( SHAMapSync_test )
 		Log(lsFATAL) << "GetNodeFat(root) fails";
 		BOOST_FAIL("GetNodeFat");
 	}
-	if (gotNodes.size() != 1)
+	if (gotNodes.size() < 1)
 	{
 		Log(lsFATAL) << "Didn't get root node " << gotNodes.size();
 		BOOST_FAIL("NodeSize");

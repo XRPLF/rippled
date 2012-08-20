@@ -91,6 +91,8 @@ public:
 	virtual bool isEquivalent(const SerializedType& t) const
 	{ assert(getSType() == STI_NOTPRESENT); return t.getSType() == STI_NOTPRESENT; }
 
+	SerializedType& operator=(const SerializedType& t)
+	{ name = (name == NULL) ? t.name : name; return *this; }
 	bool operator==(const SerializedType& t) const
 	{ return (getSType() == t.getSType()) && isEquivalent(t); }
 	bool operator!=(const SerializedType& t) const
@@ -124,7 +126,6 @@ public:
 	void setValue(unsigned char v) { value=v; }
 
 	operator unsigned char() const { return value; }
-	STUInt8& operator=(unsigned char v) { value=v; return *this; }
 	virtual bool isEquivalent(const SerializedType& t) const;
 };
 
@@ -152,7 +153,6 @@ public:
 	void setValue(uint16 v) { value=v; }
 
 	operator uint16() const { return value; }
-	STUInt16& operator=(uint16 v) { value=v; return *this; }
 	virtual bool isEquivalent(const SerializedType& t) const;
 };
 
@@ -180,7 +180,6 @@ public:
 	void setValue(uint32 v) { value=v; }
 
 	operator uint32() const { return value; }
-	STUInt32& operator=(uint32 v) { value=v; return *this; }
 	virtual bool isEquivalent(const SerializedType& t) const;
 };
 
@@ -208,7 +207,6 @@ public:
 	void setValue(uint64 v) { value=v; }
 
 	operator uint64() const { return value; }
-	STUInt64& operator=(uint64 v) { value=v; return *this; }
 	virtual bool isEquivalent(const SerializedType& t) const;
 };
 
@@ -335,7 +333,6 @@ public:
 
 	STAmount& operator+=(const STAmount&);
 	STAmount& operator-=(const STAmount&);
-	STAmount& operator=(const STAmount&);
 	STAmount& operator+=(uint64);
 	STAmount& operator-=(uint64);
 	STAmount& operator=(uint64);
@@ -402,7 +399,6 @@ public:
 	void setValue(const uint128& v) { value=v; }
 
 	operator uint128() const { return value; }
-	STHash128& operator=(const uint128& v) { value=v; return *this; }
 	virtual bool isEquivalent(const SerializedType& t) const;
 };
 
@@ -432,7 +428,6 @@ public:
 	void setValue(const uint160& v) { value=v; }
 
 	operator uint160() const { return value; }
-	STHash160& operator=(const uint160& v) { value=v; return *this; }
 	virtual bool isEquivalent(const SerializedType& t) const;
 };
 
@@ -462,7 +457,6 @@ public:
 	void setValue(const uint256& v) { value=v; }
 
 	operator uint256() const { return value; }
-	STHash256& operator=(const uint256& v) { value=v; return *this; }
 	virtual bool isEquivalent(const SerializedType& t) const;
 };
 
@@ -495,7 +489,6 @@ public:
 	void setValue(const std::vector<unsigned char>& v) { value=v; }
 
 	operator std::vector<unsigned char>() const { return value; }
-	STVariableLength& operator=(const std::vector<unsigned char>& v) { value=v; return *this; }
 	virtual bool isEquivalent(const SerializedType& t) const;
 };
 
@@ -747,7 +740,6 @@ public:
 	void addItem(const TaggedListItem& v) { value.push_back(v); }
 
 	operator std::vector<TaggedListItem>() const { return value; }
-	STTaggedList& operator=(const std::vector<TaggedListItem>& v) { value=v; return *this; }
 	virtual bool isEquivalent(const SerializedType& t) const;
 };
 

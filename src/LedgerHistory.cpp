@@ -90,7 +90,8 @@ Ledger::pointer LedgerHistory::canonicalizeLedger(Ledger::pointer ledger, bool s
 	if (!save)
 	{ // return input ledger if not in map, otherwise, return corresponding map ledger
 		Ledger::pointer ret = mLedgersByHash.fetch(h);
-		if (ret) return ret;
+		if (ret)
+			return ret;
 		return ledger;
 	}
 

@@ -41,7 +41,7 @@ public:
 	SHAMap::pointer getMap()			{ return mMap; }
 
 	bool takeNodes(const std::list<SHAMapNode>& IDs, const std::list< std::vector<unsigned char> >& data,
-		Peer::pointer);
+		const Peer::pointer&);
 };
 
 class LCTransaction
@@ -113,24 +113,24 @@ protected:
 
 	// final accept logic
 	static void Saccept(boost::shared_ptr<LedgerConsensus> This, SHAMap::pointer txSet);
-	void accept(SHAMap::pointer txSet);
+	void accept(const SHAMap::pointer& txSet);
 
-	void weHave(const uint256& id, Peer::pointer avoidPeer);
-	void startAcquiring(TransactionAcquire::pointer);
+	void weHave(const uint256& id, const Peer::pointer& avoidPeer);
+	void startAcquiring(const TransactionAcquire::pointer&);
 	SHAMap::pointer find(const uint256& hash);
 
-	void createDisputes(SHAMap::pointer, SHAMap::pointer);
+	void createDisputes(const SHAMap::pointer&, const SHAMap::pointer&);
 	void addDisputedTransaction(const uint256&, const std::vector<unsigned char>& transaction);
-	void adjustCount(SHAMap::pointer map, const std::vector<uint160>& peers);
+	void adjustCount(const SHAMap::pointer& map, const std::vector<uint160>& peers);
 	void propose(const std::vector<uint256>& addedTx, const std::vector<uint256>& removedTx);
 
 	void addPosition(LedgerProposal&, bool ours);
 	void removePosition(LedgerProposal&, bool ours);
 	void sendHaveTxSet(const uint256& set, bool direct);
-	void applyTransactions(SHAMap::pointer transactionSet, Ledger::pointer targetLedger, Ledger::pointer checkLedger,
-		CanonicalTXSet& failedTransactions, bool final);
-	void applyTransaction(TransactionEngine& engine, SerializedTransaction::pointer txn, Ledger::pointer targetLedger,
-		CanonicalTXSet& failedTransactions, bool final);
+	void applyTransactions(const SHAMap::pointer& transactionSet, const Ledger::pointer& targetLedger,
+		const Ledger::pointer& checkLedger,	CanonicalTXSet& failedTransactions, bool final);
+	void applyTransaction(TransactionEngine& engine, const SerializedTransaction::pointer& txn,
+		const Ledger::pointer& targetLedger, CanonicalTXSet& failedTransactions, bool final);
 
 	// manipulating our own position
 	void statusChange(newcoin::NodeEvent, Ledger& ledger);
@@ -141,7 +141,7 @@ protected:
 	void endConsensus();
 
 public:
-	LedgerConsensus(const uint256& prevLCLHash, Ledger::pointer previousLedger, uint32 closeTime);
+	LedgerConsensus(const uint256& prevLCLHash, const Ledger::pointer& previousLedger, uint32 closeTime);
 
 	int startup();
 	Json::Value getJson();
@@ -151,7 +151,7 @@ public:
 
 	SHAMap::pointer getTransactionTree(const uint256& hash, bool doAcquire);
 	TransactionAcquire::pointer getAcquiring(const uint256& hash);
-	void mapComplete(const uint256& hash, SHAMap::pointer map, bool acquired);
+	void mapComplete(const uint256& hash, const SHAMap::pointer& map, bool acquired);
 	void checkLCL();
 
 	void timerEntry();
@@ -165,11 +165,11 @@ public:
 
 	bool haveConsensus();
 
-	bool peerPosition(LedgerProposal::pointer);
+	bool peerPosition(const LedgerProposal::pointer&);
 
-	bool peerHasSet(Peer::pointer peer, const uint256& set, newcoin::TxSetStatus status);
+	bool peerHasSet(const Peer::pointer& peer, const uint256& set, newcoin::TxSetStatus status);
 
-	bool peerGaveNodes(Peer::pointer peer, const uint256& setHash,
+	bool peerGaveNodes(const Peer::pointer& peer, const uint256& setHash,
 		const std::list<SHAMapNode>& nodeIDs, const std::list< std::vector<unsigned char> >& nodeData);
 };
 

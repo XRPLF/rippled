@@ -160,7 +160,7 @@ private:
 public:
 	SHAMapTreeNode(uint32 seq, const SHAMapNode& nodeID); // empty node
 	SHAMapTreeNode(const SHAMapTreeNode& node, uint32 seq); // copy node from older tree
-	SHAMapTreeNode(const SHAMapNode& nodeID, SHAMapItem::pointer item, TNType type, uint32 seq);
+	SHAMapTreeNode(const SHAMapNode& nodeID, const SHAMapItem::pointer& item, TNType type, uint32 seq);
 
 	// raw node functions
 	SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned char>& data, uint32 seq, SHANodeFormat format);
@@ -199,7 +199,7 @@ public:
 	bool hasItem() const { return !!mItem; }
 	SHAMapItem::pointer peekItem() { return mItem; }
 	SHAMapItem::pointer getItem() const;
-	bool setItem(SHAMapItem::pointer& i, TNType type);
+	bool setItem(const SHAMapItem::pointer& i, TNType type);
 	const uint256& getTag() const { return mItem->getTag(); }
 	const std::vector<unsigned char>& peekData() { return mItem->peekData(); }
 	std::vector<unsigned char> getData() const { return mItem->getData(); }
@@ -311,8 +311,8 @@ public:
 	uint256 getHash()			{ return root->getNodeHash(); }
 
 	// save a copy if you have a temporary anyway
-	bool updateGiveItem(SHAMapItem::pointer, bool isTransaction, bool hasMeta);
-	bool addGiveItem(SHAMapItem::pointer, bool isTransaction, bool hasMeta);
+	bool updateGiveItem(const SHAMapItem::pointer&, bool isTransaction, bool hasMeta);
+	bool addGiveItem(const SHAMapItem::pointer&, bool isTransaction, bool hasMeta);
 
 	// save a copy if you only need a temporary
 	SHAMapItem::pointer peekItem(const uint256& id);
@@ -345,7 +345,7 @@ public:
 
 	// caution: otherMap must be accessed only by this function
 	// return value: true=successfully completed, false=too different
-	bool compare(SHAMap::pointer otherMap, SHAMapDiff& differences, int maxCount);
+	bool compare(const SHAMap::pointer& otherMap, SHAMapDiff& differences, int maxCount);
 
 	void armDirty();
 	int flushDirty(int maxNodes, HashedObjectType t, uint32 seq);

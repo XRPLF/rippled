@@ -169,7 +169,11 @@ public:
 		STAmount				saSendMax,
 		bool					bPartialPayment
 		)
-	{ return boost::make_shared<PathState>(lpLedger, iIndex, lesSource, spSourcePath, uReceiverID, uSenderID, saSend, saSendMax, bPartialPayment); };
+	{
+		PathState::pointer	pspNew = boost::make_shared<PathState>(lpLedger, iIndex, lesSource, spSourcePath, uReceiverID, uSenderID, saSend, saSendMax, bPartialPayment);
+
+		return pspNew && pspNew->bValid ? pspNew : PathState::pointer();
+	}
 
 	static bool lessPriority(const PathState::pointer& lhs, const PathState::pointer& rhs);
 };
@@ -268,10 +272,10 @@ protected:
 
 public:
 	TransactionEngine() { ; }
-	TransactionEngine(Ledger::pointer ledger) : mLedger(ledger) { ; }
+	TransactionEngine(const Ledger::pointer& ledger) : mLedger(ledger) { ; }
 
 	Ledger::pointer getLedger()						{ return mLedger; }
-	void setLedger(Ledger::pointer ledger)			{ assert(ledger); mLedger = ledger; }
+	void setLedger(const Ledger::pointer& ledger)	{ assert(ledger); mLedger = ledger; }
 
 	TransactionEngineResult applyTransaction(const SerializedTransaction&, TransactionEngineParams);
 };

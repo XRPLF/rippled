@@ -226,7 +226,7 @@ void ConnectionPool::policyHandler(const boost::system::error_code& ecResult)
 
 // YYY: Should probably do this in the background.
 // YYY: Might end up sending to disconnected peer?
-void ConnectionPool::relayMessage(Peer* fromPeer, PackedMessage::pointer msg)
+void ConnectionPool::relayMessage(Peer* fromPeer, const PackedMessage::pointer& msg)
 {
 	boost::mutex::scoped_lock sl(mPeerLock);
 
@@ -339,7 +339,8 @@ std::vector<Peer::pointer> ConnectionPool::getPeerVector()
 
 // Now know peer's node public key.  Determine if we want to stay connected.
 // <-- bNew: false = redundant
-bool ConnectionPool::peerConnected(Peer::pointer peer, const NewcoinAddress& naPeer, const std::string& strIP, int iPort)
+bool ConnectionPool::peerConnected(const Peer::pointer& peer, const NewcoinAddress& naPeer,
+	const std::string& strIP, int iPort)
 {
 	bool	bNew	= false;
 
@@ -397,7 +398,7 @@ bool ConnectionPool::peerConnected(Peer::pointer peer, const NewcoinAddress& naP
 }
 
 // We maintain a map of public key to peer for connected and verified peers.  Maintain it.
-void ConnectionPool::peerDisconnected(Peer::pointer peer, const NewcoinAddress& naPeer)
+void ConnectionPool::peerDisconnected(const Peer::pointer& peer, const NewcoinAddress& naPeer)
 {
 	if (naPeer.isValid())
 	{
@@ -484,7 +485,7 @@ bool ConnectionPool::peerScanSet(const std::string& strIp, int iPort)
 }
 
 // --> strIp: not empty
-void ConnectionPool::peerClosed(Peer::pointer peer, const std::string& strIp, int iPort)
+void ConnectionPool::peerClosed(const Peer::pointer& peer, const std::string& strIp, int iPort)
 {
 	ipPort		ipPeer			= make_pair(strIp, iPort);
 	bool		bScanRefresh	= false;
@@ -539,7 +540,7 @@ void ConnectionPool::peerClosed(Peer::pointer peer, const std::string& strIp, in
 		scanRefresh();
 }
 
-void ConnectionPool::peerVerified(Peer::pointer peer)
+void ConnectionPool::peerVerified(const Peer::pointer& peer)
 {
 	if (mScanning && mScanning == peer)
 	{

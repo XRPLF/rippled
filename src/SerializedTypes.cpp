@@ -5,6 +5,7 @@
 #include "SerializedTypes.h"
 #include "SerializedObject.h"
 #include "TransactionFormats.h"
+#include "Log.h"
 #include "NewcoinAddress.h"
 #include "utils.h"
 
@@ -308,7 +309,11 @@ STPathSet* STPathSet::construct(SerializerIterator& s, const char *name)
 		if (iType == STPathElement::typeEnd || iType == STPathElement::typeBoundary)
 		{
 			if (path.empty())
+			{
+				Log(lsINFO) << "STPathSet: Empty path.";
+
 				throw std::runtime_error("empty path");
+			}
 
 			paths.push_back(path);
 			path.clear();
@@ -320,13 +325,17 @@ STPathSet* STPathSet::construct(SerializerIterator& s, const char *name)
 		}
 		else if (iType & ~STPathElement::typeValidBits)
 		{
+			Log(lsINFO) << "STPathSet: Bad path element: " << iType;
+
 			throw std::runtime_error("bad path element");
 		}
 		else
 		{
-			bool	bAccount	= !!(iType & STPathElement::typeAccount);
-			bool	bCurrency	= !!(iType & STPathElement::typeCurrency);
-			bool	bIssuer		= !!(iType & STPathElement::typeIssuer);
+			const bool	bAccount	= !!(iType & STPathElement::typeAccount);
+			const bool	bRedeem		= !!(iType & STPathElement::typeRedeem);
+			const bool	bIssue		= !!(iType & STPathElement::typeIssue);
+			const bool	bCurrency	= !!(iType & STPathElement::typeCurrency);
+			const bool	bIssuer		= !!(iType & STPathElement::typeIssuer);
 
 			uint160	uAccountID;
 			uint160	uCurrency;
@@ -341,7 +350,7 @@ STPathSet* STPathSet::construct(SerializerIterator& s, const char *name)
 			if (bIssuer)
 				uIssuerID	= s.get160();
 
-			path.push_back(STPathElement(uAccountID, uCurrency, uIssuerID));
+			path.push_back(STPathElement(uAccountID, uCurrency, uIssuerID, bRedeem, bIssue));
 		}
 	} while(1);
 }
@@ -354,6 +363,8 @@ bool STPathSet::isEquivalent(const SerializedType& t) const
 
 int STPathSet::getLength() const
 {
+	// XXX This code is broken?
+	assert(false);
 	int ret = 0;
 
 	for (std::vector<STPath>::const_iterator it = value.begin(), end = value.end(); it != end; ++it)

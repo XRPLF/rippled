@@ -13,13 +13,13 @@ uint32 LedgerMaster::getCurrentLedgerIndex()
 	return mCurrentLedger->getLedgerSeq();
 }
 
-bool LedgerMaster::addHeldTransaction(Transaction::pointer transaction)
+bool LedgerMaster::addHeldTransaction(const Transaction::pointer& transaction)
 { // returns true if transaction was added
 	boost::recursive_mutex::scoped_lock ml(mLock);
 	return mHeldTransactionsByID.insert(std::make_pair(transaction->getID(), transaction)).second;
 }
 
-void LedgerMaster::pushLedger(Ledger::pointer newLedger)
+void LedgerMaster::pushLedger(const Ledger::pointer& newLedger)
 {
 	// Caller should already have properly assembled this ledger into "ready-to-close" form --
 	// all candidate transactions must already be appled
@@ -35,7 +35,7 @@ void LedgerMaster::pushLedger(Ledger::pointer newLedger)
 	mEngine.setLedger(newLedger);
 }
 
-void LedgerMaster::pushLedger(Ledger::pointer newLCL, Ledger::pointer newOL)
+void LedgerMaster::pushLedger(const Ledger::pointer& newLCL, const Ledger::pointer& newOL)
 {
 	assert(newLCL->isClosed() && newLCL->isAccepted());
 	assert(!newOL->isClosed() && !newOL->isAccepted());
@@ -54,7 +54,7 @@ void LedgerMaster::pushLedger(Ledger::pointer newLCL, Ledger::pointer newOL)
 	mEngine.setLedger(newOL);
 }
 
-void LedgerMaster::switchLedgers(Ledger::pointer lastClosed, Ledger::pointer current)
+void LedgerMaster::switchLedgers(const Ledger::pointer& lastClosed, const Ledger::pointer& current)
 {
 	assert(lastClosed && current);
 	mFinalizedLedger = lastClosed;
@@ -66,7 +66,7 @@ void LedgerMaster::switchLedgers(Ledger::pointer lastClosed, Ledger::pointer cur
 	mEngine.setLedger(mCurrentLedger);
 }
 
-void LedgerMaster::storeLedger(Ledger::pointer ledger)
+void LedgerMaster::storeLedger(const Ledger::pointer& ledger)
 {
 	mLedgerHistory.addLedger(ledger);
 }

@@ -58,7 +58,7 @@ public:
 	void start();
 
 	// Send message to network.
-	void relayMessage(Peer* fromPeer, PackedMessage::pointer msg);
+	void relayMessage(Peer* fromPeer, const PackedMessage::pointer& msg);
 
 	// Manual connection request.
 	// Queue for immediate scanning.
@@ -72,16 +72,16 @@ public:
 
 	// We know peers node public key.
 	// <-- bool: false=reject
-	bool peerConnected(Peer::pointer peer, const NewcoinAddress& naPeer, const std::string& strIP, int iPort);
+	bool peerConnected(const Peer::pointer& peer, const NewcoinAddress& naPeer, const std::string& strIP, int iPort);
 
 	// No longer connected.
-	void peerDisconnected(Peer::pointer peer, const NewcoinAddress& naPeer);
+	void peerDisconnected(const Peer::pointer& peer, const NewcoinAddress& naPeer);
 
 	// As client accepted.
-	void peerVerified(Peer::pointer peer);
+	void peerVerified(const Peer::pointer& peer);
 
 	// As client failed connect and be accepted.
-	void peerClosed(Peer::pointer peer, const std::string& strIp, int iPort);
+	void peerClosed(const Peer::pointer& peer, const std::string& strIp, int iPort);
 
 	Json::Value getPeersJson();
 	std::vector<Peer::pointer> getPeerVector();
@@ -98,11 +98,6 @@ public:
 	void policyLowWater();
 	void policyEnforce();
 
-#if 0
-	//std::vector<std::pair<PackedMessage::pointer,int> > mBroadcastMessages;
-
-	bool isMessageKnown(PackedMessage::pointer msg);
-#endif
 };
 
 extern void splitIpPort(const std::string& strIpPort, std::string& strIp, int& iPort);

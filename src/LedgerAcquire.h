@@ -31,7 +31,7 @@ protected:
 	virtual ~PeerSet() { ; }
 
 	void sendRequest(const newcoin::TMGetLedger& message);
-	void sendRequest(const newcoin::TMGetLedger& message, Peer::pointer peer);
+	void sendRequest(const newcoin::TMGetLedger& message, const Peer::pointer& peer);
 
 public:
 	const uint256& getHash() const		{ return mHash; }

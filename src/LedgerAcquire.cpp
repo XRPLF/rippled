@@ -257,7 +257,7 @@ void LedgerAcquire::trigger(const Peer::pointer& peer, bool timer)
 		resetTimer();
 }
 
-void PeerSet::sendRequest(const newcoin::TMGetLedger& tmGL, Peer::pointer peer)
+void PeerSet::sendRequest(const newcoin::TMGetLedger& tmGL, const Peer::pointer& peer)
 {
 	if (!peer)
 		sendRequest(tmGL);

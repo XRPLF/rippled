@@ -491,18 +491,6 @@ STAmount STAmount::operator-(void) const
 	return STAmount(name, mCurrency, mValue, mOffset, mIsNative, !mIsNegative);
 }
 
-STAmount& STAmount::operator=(const STAmount& a)
-{
-	mValue		= a.mValue;
-	mOffset		= a.mOffset;
-	mIssuer		= a.mIssuer;
-	mCurrency	= a.mCurrency;
-	mIsNative	= a.mIsNative;
-	mIsNegative = a.mIsNegative;
-
-	return *this;
-}
-
 STAmount& STAmount::operator=(uint64 v)
 { // does not copy name, does not change currency type
 	mOffset = 0;
