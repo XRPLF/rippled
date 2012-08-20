@@ -13,7 +13,7 @@
 #include "SerializedTransaction.h"
 #include "Log.h"
 
-Transaction::Transaction(const SerializedTransaction::pointer sit, bool bValidate)
+Transaction::Transaction(const SerializedTransaction::pointer& sit, bool bValidate)
 	: mInLedger(0), mStatus(INVALID), mTransaction(sit)
 {
 	try
@@ -584,7 +584,7 @@ void Transaction::setStatus(TransStatus ts, uint32 lseq)
 	mInLedger	= lseq;
 }
 
-void Transaction::saveTransaction(Transaction::pointer txn)
+void Transaction::saveTransaction(const Transaction::pointer& txn)
 {
 	txn->save();
 }

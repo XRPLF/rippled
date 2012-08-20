@@ -8,7 +8,7 @@
 
 // XXX Use shared locks where possible?
 
-LedgerStateParms Ledger::writeBack(LedgerStateParms parms, SLE::pointer entry)
+LedgerStateParms Ledger::writeBack(LedgerStateParms parms, const SLE::pointer& entry)
 {
 	ScopedLock l(mAccountStateMap->Lock());
 	bool create = false;

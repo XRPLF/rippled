@@ -126,7 +126,7 @@ private:
 		const std::vector<unsigned char>&	vucSignature);
 
 public:
-	Transaction(const SerializedTransaction::pointer st, bool bValidate);
+	Transaction(const SerializedTransaction::pointer& st, bool bValidate);
 
 	static Transaction::pointer sharedTransaction(const std::vector<unsigned char>&vucTransaction, bool bValidate);
 
@@ -288,7 +288,7 @@ public:
 	void setLedger(uint32 ledger) { mInLedger = ledger; }
 
 	// database functions
-	static void saveTransaction(Transaction::pointer);
+	static void saveTransaction(const Transaction::pointer&);
 	bool save();
 	static Transaction::pointer load(const uint256& id);
 	static Transaction::pointer findFrom(const NewcoinAddress& fromID, uint32 seq);

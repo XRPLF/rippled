@@ -210,7 +210,7 @@ RippleState::pointer Ledger::accessRippleState(const uint256& uNode)
 	return boost::make_shared<RippleState>(sle);
 }
 
-bool Ledger::addTransaction(Transaction::pointer trans)
+bool Ledger::addTransaction(const Transaction::pointer& trans)
 { // low-level - just add to table
 	assert(!mAccepted);
 	assert(trans->getID().isNonZero());
@@ -257,7 +257,7 @@ uint256 Ledger::getHash()
 	return(mHash);
 }
 
-void Ledger::saveAcceptedLedger(Ledger::pointer ledger)
+void Ledger::saveAcceptedLedger(const Ledger::pointer& ledger)
 {
 	static boost::format ledgerExists("SELECT LedgerSeq FROM Ledgers where LedgerSeq = %d;");
 	static boost::format deleteLedger("DELETE FROM Ledgers WHERE LedgerSeq = %d;");

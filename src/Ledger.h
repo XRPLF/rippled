@@ -81,7 +81,7 @@ private:
 
 protected:
 
-	bool addTransaction(Transaction::pointer);
+	bool addTransaction(const Transaction::pointer&);
 	bool addTransaction(const uint256& id, const Serializer& txn);
 
 	static Ledger::pointer getSQL(const std::string& sqlStatement);
@@ -156,12 +156,12 @@ public:
 
 	// high-level functions
 	AccountState::pointer getAccountState(const NewcoinAddress& acctID);
-	LedgerStateParms writeBack(LedgerStateParms parms, SLE::pointer);
+	LedgerStateParms writeBack(LedgerStateParms parms, const SLE::pointer&);
 	SLE::pointer getAccountRoot(const uint160& accountID);
 	SLE::pointer getAccountRoot(const NewcoinAddress& naAccountID);
 
 	// database functions
-	static void saveAcceptedLedger(Ledger::pointer);
+	static void saveAcceptedLedger(const Ledger::pointer&);
 	static Ledger::pointer loadByIndex(uint32 ledgerIndex);
 	static Ledger::pointer loadByHash(const uint256& ledgerHash);
 

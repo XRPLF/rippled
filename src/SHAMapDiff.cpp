@@ -91,7 +91,7 @@ bool SHAMap::walkBranch(SHAMapTreeNode* node, SHAMapItem::pointer otherMapItem, 
 	return true;
 }
 
-bool SHAMap::compare(SHAMap::pointer otherMap, SHAMapDiff& differences, int maxCount)
+bool SHAMap::compare(const SHAMap::pointer& otherMap, SHAMapDiff& differences, int maxCount)
 {   // compare two hash trees, add up to maxCount differences to the difference table
 	// return value: true=complete table of differences given, false=too many differences
 	// throws on corrupt tables or missing nodes

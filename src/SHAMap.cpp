@@ -498,7 +498,7 @@ bool SHAMap::delItem(const uint256& id)
 	return true;
 }
 
-bool SHAMap::addGiveItem(SHAMapItem::pointer item, bool isTransaction, bool hasMeta)
+bool SHAMap::addGiveItem(const SHAMapItem::pointer& item, bool isTransaction, bool hasMeta)
 { // add the specified item, does not update
 #ifdef ST_DEBUG
 	std::cerr << "aGI " << item->getTag().GetHex() << std::endl;
@@ -596,7 +596,7 @@ bool SHAMap::addItem(const SHAMapItem& i, bool isTransaction, bool hasMetaData)
 	return addGiveItem(boost::make_shared<SHAMapItem>(i), isTransaction, hasMetaData);
 }
 
-bool SHAMap::updateGiveItem(SHAMapItem::pointer item, bool isTransaction, bool hasMeta)
+bool SHAMap::updateGiveItem(const SHAMapItem::pointer& item, bool isTransaction, bool hasMeta)
 { // can't change the tag but can change the hash
 	uint256 tag = item->getTag();
 
