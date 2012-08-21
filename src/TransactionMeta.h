@@ -12,18 +12,36 @@
 #include "Serializer.h"
 #include "SerializedTypes.h"
 
+// master record types
+static const int TMNEndOfMetadata		= 0x00;
+static const int TMNCreatedNode			= 0x10;	// This transaction created this node
+static const int TMNDeletedNode			= 0x11;
+static const int TMNModifiedNode		= 0x12;
+
+// sub record types - special
+static const int TMSEndOfNode			= 0x00;
+static const int TMSThread				= 0x01; // Holds previous TxID and LgrSeq for threading
+
+// sub record types - containing an amount
+static const int TMSPrevBalance			= 0x11; // Balances prior to the transaction
+static const int TMSPrevTakerPays		= 0x12;
+static const int TMSPrevTakerGets		= 0x13;
+static const int TMSFinalTakerPays		= 0x14; // Balances at node deletion time
+static const int TMSFinalTakerGets		= 0x15;
+
+// sub record types - containing an account (for example, for when a nickname is transferred)
+static const int TMSPrevAccount		= 0x20;
+
 
 class TransactionMetaNodeEntry
 { // a way that a transaction has affected a node
 public:
-
 	typedef boost::shared_ptr<TransactionMetaNodeEntry> pointer;
 
-	static const int TMNEndOfMetadata =	0;
-	static const int TMNChangedBalance = 1;
-	static const int TMNDeleteUnfunded = 2;
-
+protected:
 	int mType;
+
+public:
 	TransactionMetaNodeEntry(int type) : mType(type) { ; }
 
 	int getType() const { return mType; }
@@ -43,52 +61,53 @@ protected:
 	virtual TransactionMetaNodeEntry* duplicate(void) const = 0;
 };
 
-class TMNEBalance : public TransactionMetaNodeEntry
-{ // a transaction affected the balance of a node
-public:
-
-	static const int TMBTwoAmounts 	= 0x001;
-	static const int TMBDestroyed	= 0x010;
-	static const int TMBPaidFee		= 0x020;
-	static const int TMBRipple		= 0x100;
-	static const int TMBOffer		= 0x200;
-
+class TMNEThread : public TransactionMetaNodeEntry
+{
 protected:
-	unsigned mFlags;
-	STAmount mFirstAmount, mSecondAmount;
+	uint256 mPrevTxID;
+	uint32 mPrevLgrSeq;
 
 public:
-	TMNEBalance() : TransactionMetaNodeEntry(TMNChangedBalance), mFlags(0) { ; }
+	TMNEThread() : TransactionMetaNodeEntry(TMSThread) { ; }
+	TMNEThread(SerializerIterator&);
 
-	TMNEBalance(SerializerIterator&);
 	virtual void addRaw(Serializer&) const;
-
-	unsigned getFlags() const				{ return mFlags; }
-	const STAmount& getFirstAmount() const	{ return mFirstAmount; }
-	const STAmount& getSecondAmount() const	{ return mSecondAmount; }
-
-	void adjustFirstAmount(const STAmount&);
-	void adjustSecondAmount(const STAmount&);
-	void setFlags(unsigned flags);
-
 	virtual Json::Value getJson(int) const;
 	virtual int compare(const TransactionMetaNodeEntry&) const;
-	virtual TransactionMetaNodeEntry* duplicate(void) const { return new TMNEBalance(*this); }
+	virtual TransactionMetaNodeEntry* duplicate(void) const { return new TMNEThread(*this); }
 };
 
-class TMNEUnfunded : public TransactionMetaNodeEntry
+class TMNEAmount : public TransactionMetaNodeEntry
+{ // a transaction affected the balance of a node
+protected:
+	STAmount mPrevAmount;
+
+public:
+	TMNEAmount(int type) : TransactionMetaNodeEntry(type) { ; }
+
+	TMNEAmount(int type, SerializerIterator&);
+	virtual void addRaw(Serializer&) const;
+
+	const STAmount& getAmount() const	{ return mPrevAmount; }
+	void setAmount(const STAmount& a)	{ mPrevAmount = a; }
+
+	virtual Json::Value getJson(int) const;
+	virtual int compare(const TransactionMetaNodeEntry&) const;
+	virtual TransactionMetaNodeEntry* duplicate(void) const { return new TMNEAmount(*this); }
+};
+
+class TMNEAccount : public TransactionMetaNodeEntry
 { // node was deleted because it was unfunded
 protected:
-	STAmount firstAmount, secondAmount; // Amounts left when declared unfunded
+	uint256 mPrevAccount;
+
 public:
-	TMNEUnfunded() : TransactionMetaNodeEntry(TMNDeleteUnfunded) { ; }
-	TMNEUnfunded(const STAmount& f, const STAmount& s) :
-		TransactionMetaNodeEntry(TMNDeleteUnfunded), firstAmount(f), secondAmount(s) { ; }
-	void setBalances(const STAmount& firstBalance, const STAmount& secondBalance);
+	TMNEAccount(int type, uint256 prev) : TransactionMetaNodeEntry(type), mPrevAccount(prev) { ; }
+	TMNEAccount(int type, SerializerIterator&);
 	virtual void addRaw(Serializer&) const;
 	virtual Json::Value getJson(int) const;
 	virtual int compare(const TransactionMetaNodeEntry&) const;
-	virtual TransactionMetaNodeEntry* duplicate(void) const { return new TMNEUnfunded(*this); }
+	virtual TransactionMetaNodeEntry* duplicate(void) const { return new TMNEAccount(*this); }
 };
 
 inline TransactionMetaNodeEntry* new_clone(const TransactionMetaNodeEntry& s)	{ return s.clone().release(); }
@@ -100,21 +119,17 @@ public:
 	typedef boost::shared_ptr<TransactionMetaNode> pointer;
 
 protected:
+	int mType;
 	uint256 mNode;
-	uint256 mPreviousTransaction;
-	uint32 mPreviousLedger;
 	boost::ptr_vector<TransactionMetaNodeEntry> mEntries;
 
 public:
 	TransactionMetaNode(const uint256 &node) : mNode(node) { ; }
 
 	const uint256& getNode() const												{ return mNode; }
-	const uint256& getPreviousTransaction() const								{ return mPreviousTransaction; }
-	uint32 getPreviousLedger() const											{ return mPreviousLedger; }
 	const boost::ptr_vector<TransactionMetaNodeEntry>& peekEntries() const		{ return mEntries; }
 
 	TransactionMetaNodeEntry* findEntry(int nodeType);
-	TMNEBalance* findBalance();
 	void addNode(TransactionMetaNodeEntry*);
 
 	bool operator<(const TransactionMetaNode& n) const	{ return mNode < n.mNode; }
@@ -124,14 +139,11 @@ public:
 
 	void thread(const uint256& prevTx, uint32 prevLgr);
 
-	TransactionMetaNode(const uint256&node, SerializerIterator&);
+	TransactionMetaNode(int type, const uint256& node, SerializerIterator&);
 	void addRaw(Serializer&);
 	Json::Value getJson(int) const;
 
-	void threadNode(const uint256& previousTransaction, uint32 previousLedger);
-	void deleteUnfunded(const STAmount& firstBalance, const STAmount& secondBalance);
-	void adjustBalance(unsigned flags, const STAmount &amount, bool signedBy);
-	void adjustBalances(unsigned flags, const STAmount &firstAmt, const STAmount &secondAmt);
+	TMNEAmount* findAmount(int nodeType);
 };
 
 

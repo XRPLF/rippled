@@ -33,114 +33,119 @@ bool TransactionMetaNodeEntry::operator>=(const TransactionMetaNodeEntry& e) con
 	return compare(e) >= 0;
 }
 
-TMNEBalance::TMNEBalance(SerializerIterator& sit) : TransactionMetaNodeEntry(TMNChangedBalance)
+TMNEThread::TMNEThread(SerializerIterator& sit) : TransactionMetaNodeEntry(TMSThread)
 {
-	mFlags = sit.get32();
-	mFirstAmount = * dynamic_cast<STAmount*>(STAmount::deserialize(sit, "FirstAmount").get());
-	if ((mFlags & TMBTwoAmounts) != 0)
-		mSecondAmount = * dynamic_cast<STAmount*>(STAmount::deserialize(sit, "SecondAmount").get());
+	mPrevTxID = sit.get256();
+	mPrevLgrSeq = sit.get32();
 }
 
-void TMNEBalance::addRaw(Serializer& sit) const
+void TMNEThread::addRaw(Serializer& sit) const
 {
 	sit.add8(mType);
-	sit.add32(mFlags);
-	mFirstAmount.add(sit);
-	if ((mFlags & TMBTwoAmounts) != 0)
-		mSecondAmount.add(sit);
+	sit.add256(mPrevTxID);
+	sit.add32(mPrevLgrSeq);
 }
 
-void TMNEBalance::adjustFirstAmount(const STAmount& a)
+int TMNEThread::compare(const TransactionMetaNodeEntry&) const
 {
-	mFirstAmount += a;
-}
-
-void TMNEBalance::adjustSecondAmount(const STAmount& a)
-{
-	mSecondAmount += a;
-	mFlags |= TMBTwoAmounts;
-}
-
-int TMNEBalance::compare(const TransactionMetaNodeEntry&) const
-{
-	assert(false); // should never be two TMNEBalance entries for the same node (as of now)
+	assert(false); // should never be two entries for the same node (as of now)
 	return 0;
 }
 
-Json::Value TMNEBalance::getJson(int p) const
+Json::Value TMNEThread::getJson(int) const
 {
-	Json::Value ret(Json::objectValue);
+	Json::Value inner(Json::objectValue);
+	inner["prev_transaction"] = mPrevTxID.GetHex();
+	inner["prev_ledger_seq"] = mPrevLgrSeq;
 
-	if ((mFlags & TMBDestroyed) != 0)
-		ret["destroyed"] = "true";
-	if ((mFlags & TMBPaidFee) != 0)
-		ret["transaction_fee"] = "true";
-
-	if ((mFlags & TMBRipple) != 0)
-		ret["type"] = "ripple";
-	else if ((mFlags & TMBOffer) != 0)
-		ret["type"] = "offer";
-	else
-		ret["type"] = "account";
-
-	if (!mFirstAmount.isZero())
-		ret["amount"] = mFirstAmount.getJson(p);
-	if (!mSecondAmount.isZero())
-		ret["second_amount"] = mSecondAmount.getJson(p);
-
-	return ret;
+	Json::Value outer(Json::objectValue);
+	outer["thread"] = inner;
+	return outer;
 }
 
-void TMNEUnfunded::addRaw(Serializer& sit) const
+TMNEAmount::TMNEAmount(int type, SerializerIterator& sit) : TransactionMetaNodeEntry(type)
 {
-	sit.add8(mType);
+	mPrevAmount = *dynamic_cast<STAmount*>(STAmount::deserialize(sit, NULL).get()); // Ouch
 }
 
-Json::Value TMNEUnfunded::getJson(int) const
+void TMNEAmount::addRaw(Serializer& s) const
 {
-	return Json::Value("delete_unfunded");
+	s.add8(mType);
+	mPrevAmount.add(s);
 }
 
-void TMNEUnfunded::setBalances(const STAmount& first, const STAmount& second)
+Json::Value TMNEAmount::getJson(int v) const
 {
-	firstAmount = first;
-	secondAmount = second;
-}
-
-int TMNEUnfunded::compare(const TransactionMetaNodeEntry&) const
-{
-	assert(false); // Can't be two deletes for same node
-	return 0;
-}
-
-TransactionMetaNode::TransactionMetaNode(const uint256& node, SerializerIterator& sit) : mNode(node)
-{
-	mNode = sit.get256();
-	mPreviousTransaction = sit.get256();
-	mPreviousLedger = sit.get32();
-	int type;
-	do
+	Json::Value outer(Json::objectValue);
+	switch (mType)
 	{
-		type = sit.get8();
-		if (type == TransactionMetaNodeEntry::TMNChangedBalance)
-			mEntries.push_back(new TMNEBalance(sit));
-		if (type == TransactionMetaNodeEntry::TMNDeleteUnfunded)
-			mEntries.push_back(new TMNEUnfunded());
-		else if (type != TransactionMetaNodeEntry::TMNEndOfMetadata)
-			throw std::runtime_error("Unparseable metadata");
-	} while (type != TransactionMetaNodeEntry::TMNEndOfMetadata);
+		case TMSPrevBalance:		outer["prev_balance"] = mPrevAmount.getJson(v); break;
+		case TMSPrevTakerPays:		outer["prev_taker_pays"] = mPrevAmount.getJson(v); break;
+		case TMSPrevTakerGets:		outer["prev_taker_gets"] = mPrevAmount.getJson(v); break;
+		case TMSFinalTakerPays:		outer["final_taker_pays"] = mPrevAmount.getJson(v); break;
+		case TMSFinalTakerGets:		outer["final_taker_gets"] = mPrevAmount.getJson(v); break;
+		default: assert(false);
+	}
+	return outer;
+}
+
+void TMNEAccount::addRaw(Serializer& sit) const
+{
+	sit.add8(mType);
+	sit.add256(mPrevAccount);
+}
+
+Json::Value TMNEAccount::getJson(int) const
+{
+	Json::Value outer(Json::objectValue);
+	outer["prev_account"] = mPrevAccount.GetHex();
+	return outer;
+}
+
+int TMNEAccount::compare(const TransactionMetaNodeEntry&) const
+{
+	assert(false); // Can't be two modified accounts of same type for same node
+	return 0;
+}
+
+TransactionMetaNode::TransactionMetaNode(int type, const uint256& node, SerializerIterator& sit)
+		: mType(type), mNode(node)
+{
+	while (1)
+	{
+		int nType = sit.get8();
+		switch (nType)
+		{
+			case TMSEndOfNode:
+				return;
+
+			case TMSThread:
+				mEntries.push_back(new TMNEThread(sit));
+				break;
+
+			// Nodes that contain an amount
+			case TMSPrevBalance:
+			case TMSPrevTakerPays:
+			case TMSPrevTakerGets:
+			case TMSFinalTakerPays:
+			case TMSFinalTakerGets:
+				mEntries.push_back(new TMNEAmount(nType, sit));
+
+			case TMSPrevAccount:
+				mEntries.push_back(new TMNEAccount(nType, sit));
+		}
+	}
 }
 
 void TransactionMetaNode::addRaw(Serializer& s)
 {
+	s.add8(mType);
 	s.add256(mNode);
-	s.add256(mPreviousTransaction);
-	s.add32(mPreviousLedger);
 	mEntries.sort();
 	for (boost::ptr_vector<TransactionMetaNodeEntry>::const_iterator it = mEntries.begin(), end = mEntries.end();
 			it != end; ++it)
 		it->addRaw(s);
-	s.add8(TransactionMetaNodeEntry::TMNEndOfMetadata);
+	s.add8(TMSEndOfNode);
 }
 
 TransactionMetaNodeEntry* TransactionMetaNode::findEntry(int nodeType)
@@ -152,13 +157,13 @@ TransactionMetaNodeEntry* TransactionMetaNode::findEntry(int nodeType)
 	return NULL;
 }
 
-TMNEBalance* TransactionMetaNode::findBalance()
+TMNEAmount* TransactionMetaNode::findAmount(int nType)
 {
 	for (boost::ptr_vector<TransactionMetaNodeEntry>::iterator it = mEntries.begin(), end = mEntries.end();
 			it != end; ++it)
-		if (it->getType() == TransactionMetaNodeEntry::TMNChangedBalance)
-			return dynamic_cast<TMNEBalance *>(&*it);
-	TMNEBalance* node = new TMNEBalance();
+		if (it->getType() == nType)
+			return dynamic_cast<TMNEAmount *>(&*it);
+	TMNEAmount* node = new TMNEAmount(nType);
 	mEntries.push_back(node);
 	return node;
 }
@@ -170,18 +175,23 @@ void TransactionMetaNode::addNode(TransactionMetaNodeEntry* node)
 
 void TransactionMetaNode::thread(const uint256& prevTx, uint32 prevLgr)
 {
-	assert((mPreviousLedger == 0) || (mPreviousLedger == prevLgr));
-	assert(mPreviousTransaction.isZero() || (mPreviousTransaction == prevTx));
-	mPreviousTransaction = prevTx;
-	mPreviousLedger = prevLgr;
+	// WRITEME
 }
 
 Json::Value TransactionMetaNode::getJson(int v) const
 {
 	Json::Value ret = Json::objectValue;
+
+	switch (mType)
+	{
+		case TMNCreatedNode:	ret["action"] = "create"; break;
+		case TMNDeletedNode:	ret["action"] = "delete"; break;
+		case TMNModifiedNode:	ret["action"] = "modify"; break;
+		default:
+			assert(false);
+	}
+
 	ret["node"] = mNode.GetHex();
-	ret["previous_transaction"] = mPreviousTransaction.GetHex();
-	ret["previous_ledger"] = mPreviousLedger;
 
 	Json::Value e = Json::arrayValue;
 	for (boost::ptr_vector<TransactionMetaNodeEntry>::const_iterator it = mEntries.begin(), end = mEntries.end();
@@ -199,13 +209,12 @@ TransactionMetaSet::TransactionMetaSet(uint32 ledger, const std::vector<unsigned
 
 	mTransactionID = sit.get256();
 
-	do
+	int type;
+	while ((type = sit.get8()) != TMNEndOfMetadata)
 	{
 		uint256 node = sit.get256();
-		if (node.isZero())
-			break;
-		mNodes.insert(std::make_pair(node, TransactionMetaNode(node, sit)));
-	} while (true);
+		mNodes.insert(std::make_pair(node, TransactionMetaNode(type, node, sit)));
+	}
 }
 
 void TransactionMetaSet::addRaw(Serializer& s)
@@ -214,7 +223,7 @@ void TransactionMetaSet::addRaw(Serializer& s)
 	for (std::map<uint256, TransactionMetaNode>::iterator it = mNodes.begin(), end = mNodes.end();
 			it != end; ++it)
 		it->second.addRaw(s);
-	s.add256(uint256());
+	s.add8(TMNEndOfMetadata);
 }
 
 Json::Value TransactionMetaSet::getJson(int v) const
