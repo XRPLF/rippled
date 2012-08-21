@@ -169,7 +169,7 @@ bool parseQuality(const std::string& strSource, uint32& uQuality)
 		float	fQuality	= lexical_cast_s<float>(strSource);
 
 		if (fQuality)
-			uQuality	= QUALITY_ONE*fQuality;
+			uQuality	= (uint32)(QUALITY_ONE*fQuality);
 	}
 
 	return !!uQuality;

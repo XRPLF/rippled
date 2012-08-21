@@ -178,7 +178,7 @@ AccountState::pointer Ledger::getAccountState(const NewcoinAddress& accountID)
 	SerializedLedgerEntry::pointer sle =
 		boost::make_shared<SerializedLedgerEntry>(item->peekSerializer(), item->getTag());
 	if (sle->getType() != ltACCOUNT_ROOT) return AccountState::pointer();
-	return boost::make_shared<AccountState>(sle);
+	return boost::make_shared<AccountState>(sle,accountID);
 }
 
 NicknameState::pointer Ledger::getNicknameState(const uint256& uNickname)

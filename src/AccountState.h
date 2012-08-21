@@ -29,7 +29,7 @@ private:
 
 public:
 	AccountState(const NewcoinAddress& naAccountID);						// For new accounts
-	AccountState(const SerializedLedgerEntry::pointer& ledgerEntry);	// For accounts in a ledger
+	AccountState(const SerializedLedgerEntry::pointer& ledgerEntry,const NewcoinAddress& naAccountI);	// For accounts in a ledger
 
 	bool	bHaveAuthorizedKey()
 	{

@@ -20,8 +20,8 @@ AccountState::AccountState(const NewcoinAddress& naAccountID) : mAccountID(naAcc
 	mValid = true;
 }
 
-AccountState::AccountState(const SerializedLedgerEntry::pointer& ledgerEntry) :
-	mLedgerEntry(ledgerEntry), mValid(false)
+AccountState::AccountState(const SerializedLedgerEntry::pointer& ledgerEntry,const NewcoinAddress& naAccountID) :
+	mLedgerEntry(ledgerEntry), mValid(false), mAccountID(naAccountID)
 {
 	if (!mLedgerEntry) return;
 	if (mLedgerEntry->getType() != ltACCOUNT_ROOT) return;
@@ -44,7 +44,7 @@ void AccountState::addJson(Json::Value& val)
 
 	if (mValid)
 	{
-		val["AccountID"]	= mAccountID.humanAccountID();
+		val["Account"]	= mAccountID.humanAccountID();
 
 		if (mLedgerEntry->getIFieldPresent(sfEmailHash))
 			val["UrlGravatar"]	= createGravatarUrl(mLedgerEntry->getIFieldH128(sfEmailHash));
