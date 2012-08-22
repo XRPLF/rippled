@@ -21,10 +21,12 @@ AccountState::AccountState(const NewcoinAddress& naAccountID) : mAccountID(naAcc
 }
 
 AccountState::AccountState(const SerializedLedgerEntry::pointer& ledgerEntry,const NewcoinAddress& naAccountID) :
-	mLedgerEntry(ledgerEntry), mValid(false), mAccountID(naAccountID)
+	mAccountID(naAccountID), mLedgerEntry(ledgerEntry), mValid(false)
 {
-	if (!mLedgerEntry) return;
-	if (mLedgerEntry->getType() != ltACCOUNT_ROOT) return;
+	if (!mLedgerEntry)
+		return;
+	if (mLedgerEntry->getType() != ltACCOUNT_ROOT)
+		return;
 
 	mValid = true;
 }
