@@ -3635,6 +3635,7 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 		// Create the account.
 		sleDst	= entryCreate(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uDstAccountID));
 
+		sleDst->setIFieldAccount(sfAccount, uDstAccountID);
 		sleDst->setIFieldU32(sfSequence, 1);
 	}
 	else
@@ -3929,6 +3930,7 @@ TransactionEngineResult TransactionEngine::doWalletAdd(const SerializedTransacti
 	// Create the account.
 	sleDst	= entryCreate(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uDstAccountID));
 
+	sleDst->setIFieldAccount(sfAccount, uDstAccountID);
 	sleDst->setIFieldU32(sfSequence, 1);
 	sleDst->setIFieldAmount(sfBalance, saAmount);
 	sleDst->setIFieldAccount(sfAuthorizedKey, uAuthKeyID);
