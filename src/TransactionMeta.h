@@ -69,6 +69,9 @@ protected:
 
 public:
 	TMNEThread() : TransactionMetaNodeEntry(TMSThread) { ; }
+	TMNEThread(uint256 prevTx, uint32 prevLgrSeq)
+		: TransactionMetaNodeEntry(TMSThread), mPrevTxID(prevTx), mPrevLgrSeq(prevLgrSeq)
+	{ ; }
 	TMNEThread(SerializerIterator&);
 
 	virtual void addRaw(Serializer&) const;
@@ -143,7 +146,7 @@ public:
 	bool operator>(const TransactionMetaNode& n) const	{ return mNode > n.mNode; }
 	bool operator>=(const TransactionMetaNode& n) const	{ return mNode >= n.mNode; }
 
-	void thread(const uint256& prevTx, uint32 prevLgr);
+	bool thread(const uint256& prevTx, uint32 prevLgr);
 
 	TransactionMetaNode(int type, const uint256& node, SerializerIterator&);
 	void addRaw(Serializer&);

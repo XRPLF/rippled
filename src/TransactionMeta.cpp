@@ -95,10 +95,9 @@ int TMNEAmount::compare(const TransactionMetaNodeEntry& e) const
 	return 0;
 }
 
-TMNEAccount::TMNEAccount(int type, SerializerIterator& sit) : TransactionMetaNodeEntry(type)
-{
-	mPrevAccount = sit.get256();
-}
+TMNEAccount::TMNEAccount(int type, SerializerIterator& sit)
+	: TransactionMetaNodeEntry(type), mPrevAccount(sit.get256())
+{ ; }
 
 void TMNEAccount::addRaw(Serializer& sit) const
 {
@@ -184,9 +183,14 @@ void TransactionMetaNode::addNode(TransactionMetaNodeEntry* node)
 	mEntries.push_back(node);
 }
 
-void TransactionMetaNode::thread(const uint256& prevTx, uint32 prevLgr)
+bool TransactionMetaNode::thread(const uint256& prevTx, uint32 prevLgr)
 {
-	// WRITEME
+	for (boost::ptr_vector<TransactionMetaNodeEntry>::iterator it = mEntries.begin(), end = mEntries.end();
+			it != end; ++it)
+		if (it->getType() == TMSThread)
+			return false;
+	addNode(new TMNEThread(prevTx, prevLgr));
+	return true;
 }
 
 Json::Value TransactionMetaNode::getJson(int v) const
