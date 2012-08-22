@@ -91,8 +91,8 @@ Json::Value TMNEAmount::getJson(int v) const
 
 int TMNEAmount::compare(const TransactionMetaNodeEntry& e) const
 {
-	assert(getType() != e.getType());
-	return getType() - e.getType();
+	assert(false); // can't be two changed amounts of same type
+	return 0;
 }
 
 TMNEAccount::TMNEAccount(int type, SerializerIterator& sit) : TransactionMetaNodeEntry(type)
