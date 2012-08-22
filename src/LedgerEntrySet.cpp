@@ -230,25 +230,35 @@ Json::Value LedgerEntrySet::getJson(int) const
 	return ret;
 }
 
-void LedgerEntrySet::addRawMeta(Serializer& s)
+void LedgerEntrySet::addRawMeta(Serializer& s, Ledger::pointer origLedger)
 {
 	for (boost::unordered_map<uint256, LedgerEntrySetEntry>::const_iterator it = mEntries.begin(),
 			end = mEntries.end(); it != end; ++it)
 	{
+		int nType = TMNEndOfMetadata;
+
 		switch (it->second.mAction)
 		{
 			case taaMODIFY:
-				// WRITEME
+				nType = TMNModifiedNode;
 				break;
 			case taaDELETE:
-				// WRITEME
+				nType = TMNDeletedNode;
 				break;
 			case taaCREATE:
-				// WRITEME
+				nType = TMNCreatedNode;
 				break;
 			default:
 				// ignore these
 				break;
+		}
+		if (nType != TMNEndOfMetadata)
+		{
+			SLE::pointer origNode = origLedger->getSLE(it->first);
+			SLE::pointer curNode = it->second.mEntry;
+
+			// FINISH
+
 		}
 	}
 	mSet.addRaw(s);

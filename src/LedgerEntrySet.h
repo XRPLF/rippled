@@ -5,6 +5,7 @@
 
 #include "SerializedLedger.h"
 #include "TransactionMeta.h"
+#include "Ledger.h"
 
 enum LedgerEntryAction
 {
@@ -42,7 +43,7 @@ public:
 
 	// set functions
 	LedgerEntrySet duplicate() const;	// Make a duplicate of this set
-	void setTo(const LedgerEntrySet&);		// Set this set to have the same contents as another
+	void setTo(const LedgerEntrySet&);	// Set this set to have the same contents as another
 	void swapWith(LedgerEntrySet&);		// Swap the contents of two sets
 
 	int getSeq() const			{ return mSeq; }
@@ -59,7 +60,7 @@ public:
 	void entryModify(const SLE::pointer&);		// This entry will be modified
 
 	Json::Value getJson(int) const;
-	void addRawMeta(Serializer&);
+	void addRawMeta(Serializer&, Ledger::pointer originalLedger);
 
 	// iterator functions
 	bool isEmpty() const { return mEntries.empty(); }

@@ -175,7 +175,7 @@ public:
 	void swap(TransactionMetaSet&);
 
 	bool isNodeAffected(const uint256&) const;
-	TransactionMetaNode& getAffectedNode(const uint256&);
+	TransactionMetaNode& getAffectedNode(const uint256&, int type);
 	const TransactionMetaNode& peekAffectedNode(const uint256&) const;
 
 	Json::Value getJson(int) const;
