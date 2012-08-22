@@ -89,6 +89,17 @@ Json::Value TMNEAmount::getJson(int v) const
 	return outer;
 }
 
+int TMNEAmount::compare(const TransactionMetaNodeEntry& e) const
+{
+	assert(getType() != e.getType());
+	return getType() - e.getType();
+}
+
+TMNEAccount::TMNEAccount(int type, SerializerIterator& sit) : TransactionMetaNodeEntry(type)
+{
+	mPrevAccount = sit.get256();
+}
+
 void TMNEAccount::addRaw(Serializer& sit) const
 {
 	sit.add8(mType);
