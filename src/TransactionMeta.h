@@ -47,7 +47,6 @@ public:
 	int getType() const { return mType; }
 	virtual Json::Value getJson(int) const = 0;
 	virtual void addRaw(Serializer&) const = 0;
-	virtual int compare(const TransactionMetaNodeEntry&) const = 0;
 
 	bool operator<(const TransactionMetaNodeEntry&) const;
 	bool operator<=(const TransactionMetaNodeEntry&) const;
@@ -58,6 +57,7 @@ public:
 	{ return std::auto_ptr<TransactionMetaNodeEntry>(duplicate()); }
 
 protected:
+	virtual int compare(const TransactionMetaNodeEntry&) const = 0;
 	virtual TransactionMetaNodeEntry* duplicate(void) const = 0;
 };
 
@@ -73,8 +73,10 @@ public:
 
 	virtual void addRaw(Serializer&) const;
 	virtual Json::Value getJson(int) const;
-	virtual int compare(const TransactionMetaNodeEntry&) const;
+
+protected:
 	virtual TransactionMetaNodeEntry* duplicate(void) const { return new TMNEThread(*this); }
+	virtual int compare(const TransactionMetaNodeEntry&) const;
 };
 
 class TMNEAmount : public TransactionMetaNodeEntry
@@ -92,8 +94,10 @@ public:
 	void setAmount(const STAmount& a)	{ mPrevAmount = a; }
 
 	virtual Json::Value getJson(int) const;
-	virtual int compare(const TransactionMetaNodeEntry&) const;
+
+protected:
 	virtual TransactionMetaNodeEntry* duplicate(void) const { return new TMNEAmount(*this); }
+	virtual int compare(const TransactionMetaNodeEntry&) const;
 };
 
 class TMNEAccount : public TransactionMetaNodeEntry
@@ -106,8 +110,10 @@ public:
 	TMNEAccount(int type, SerializerIterator&);
 	virtual void addRaw(Serializer&) const;
 	virtual Json::Value getJson(int) const;
-	virtual int compare(const TransactionMetaNodeEntry&) const;
+
+protected:
 	virtual TransactionMetaNodeEntry* duplicate(void) const { return new TMNEAccount(*this); }
+	virtual int compare(const TransactionMetaNodeEntry&) const;
 };
 
 inline TransactionMetaNodeEntry* new_clone(const TransactionMetaNodeEntry& s)	{ return s.clone().release(); }
