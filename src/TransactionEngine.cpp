@@ -149,15 +149,25 @@ uint32 TransactionEngine::rippleTransferRate(const uint160& uIssuerID)
 {
 	SLE::pointer	sleAccount	= entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uIssuerID));
 
-	return sleAccount->getIFieldPresent(sfTransferRate)
-		? sleAccount->getIFieldU32(sfTransferRate)
-		: QUALITY_ONE;
+	uint32			uQuality	= sleAccount && sleAccount->getIFieldPresent(sfTransferRate)
+									? sleAccount->getIFieldU32(sfTransferRate)
+									: QUALITY_ONE;
+
+	Log(lsINFO) << str(boost::format("rippleTransferRate: uIssuerID=%s account_exists=%d transfer_rate=%f")
+		% NewcoinAddress::createHumanAccountID(uIssuerID)
+		% !!sleAccount
+		% (uQuality/1000000000.0));
+
+	assert(sleAccount);
+
+	return uQuality;
 }
 
 // XXX Might not need this, might store in nodes on calc reverse.
 uint32 TransactionEngine::rippleQualityIn(const uint160& uToAccountID, const uint160& uFromAccountID, const uint160& uCurrencyID)
 {
-	uint32		uQualityIn	= QUALITY_ONE;
+	uint32			uQualityIn		= QUALITY_ONE;
+	SLE::pointer	sleRippleState;
 
 	if (uToAccountID == uFromAccountID)
 	{
@@ -165,7 +175,7 @@ uint32 TransactionEngine::rippleQualityIn(const uint160& uToAccountID, const uin
 	}
 	else
 	{
-		SLE::pointer	sleRippleState	= entryCache(ltRIPPLE_STATE, Ledger::getRippleStateIndex(uToAccountID, uFromAccountID, uCurrencyID));
+		sleRippleState	= entryCache(ltRIPPLE_STATE, Ledger::getRippleStateIndex(uToAccountID, uFromAccountID, uCurrencyID));
 
 		if (sleRippleState)
 		{
@@ -177,11 +187,16 @@ uint32 TransactionEngine::rippleQualityIn(const uint160& uToAccountID, const uin
 			if (!uQualityIn)
 				uQualityIn	= 1;
 		}
-		else
-		{
-			assert(false);
-		}
 	}
+
+	Log(lsINFO) << str(boost::format("rippleQualityIn: uToAccountID=%s uFromAccountID=%s uCurrencyID=%s bLine=%d uQualityIn=%f")
+		% NewcoinAddress::createHumanAccountID(uToAccountID)
+		% NewcoinAddress::createHumanAccountID(uFromAccountID)
+		% STAmount::createHumanCurrency(uCurrencyID)
+		% !!sleRippleState
+		% (uQualityIn/1000000000.0));
+
+	assert(uToAccountID == uFromAccountID || !!sleRippleState);
 
 	return uQualityIn;
 }
@@ -1915,17 +1930,29 @@ bool TransactionEngine::calcNodeOfferRev(
 	const uint160&	uNxtIssuerID	= pnNxt.uIssuerID;
 	const uint160&	uNxtAccountID	= pnNxt.uAccountID;
 
-	const STAmount	saTransferRate	= STAmount(CURRENCY_ONE, rippleTransferRate(uCurIssuerID), -9);
+	const STAmount	saTransferRate	= STAmount::saFromRate(rippleTransferRate(uCurIssuerID));
 
 	uint256			uDirectTip		= Ledger::getBookBase(uPrvCurrencyID, uPrvIssuerID, uCurCurrencyID, uCurIssuerID);
 	const uint256	uDirectEnd		= Ledger::getQualityNext(uDirectTip);
 	bool			bAdvance		= !entryCache(ltDIR_NODE, uDirectTip);
+
+	Log(lsINFO) << str(boost::format("calcNodeOfferRev> uIndex=%d prv=%s/%s cur=%s/%s nxt=%s/%s saTransferRate=%s")
+		% uIndex
+		% STAmount::createHumanCurrency(uPrvCurrencyID)
+		% NewcoinAddress::createHumanAccountID(uPrvIssuerID)
+		% STAmount::createHumanCurrency(uCurCurrencyID)
+		% NewcoinAddress::createHumanAccountID(uCurIssuerID)
+		% STAmount::createHumanCurrency(uNxtCurrencyID)
+		% NewcoinAddress::createHumanAccountID(uNxtIssuerID)
+		% saTransferRate.getText());
 
 	STAmount&		saPrvDlvReq		= pnPrv.saRevDeliver;	// To be adjusted.
 	STAmount		saPrvDlvAct;
 
 	const STAmount&	saCurDlvReq		= pnCur.saRevDeliver;	// Reverse driver.
 	STAmount		saCurDlvAct;
+
+	Log(lsINFO) << str(boost::format("calcNodeOfferRev: uDirectTip=%s") % uDirectTip.ToString());
 
 	while (!!uDirectTip	// Have a quality.
 		&& saCurDlvAct != saCurDlvReq)
@@ -1934,6 +1961,8 @@ bool TransactionEngine::calcNodeOfferRev(
 		if (bAdvance)
 		{
 			uDirectTip		= mLedger->getNextLedgerIndex(uDirectTip, uDirectEnd);
+
+			Log(lsINFO) << str(boost::format("calcNodeOfferRev: uDirectTip=%s") % uDirectTip.ToString());
 		}
 		else
 		{
@@ -1953,6 +1982,8 @@ bool TransactionEngine::calcNodeOfferRev(
 			while (saCurDlvReq != saCurDlvAct	// Have not met request.
 				&& dirNext(uDirectTip, sleDirectDir, uEntry, uCurIndex))
 			{
+				Log(lsINFO) << str(boost::format("calcNodeOfferRev: uCurIndex=%s") % uCurIndex.ToString());
+
 				SLE::pointer	sleCurOfr			= entryCache(ltOFFER, uCurIndex);
 				uint160			uCurOfrAccountID	= sleCurOfr->getIValueFieldAccount(sfAccount).getAccountID();
 				STAmount		saCurOfrOutReq		= sleCurOfr->getIValueFieldAmount(sfTakerGets);
@@ -2085,6 +2116,11 @@ bool TransactionEngine::calcNodeOfferRev(
 		bSuccess	= true;
 	}
 
+	Log(lsINFO) << str(boost::format("calcNodeOfferRev< uIndex=%d saPrvDlvReq=%s bSuccess=%d")
+		% uIndex
+		% saPrvDlvReq.getText()
+		% bSuccess);
+
 	return bSuccess;
 }
 
@@ -2108,7 +2144,7 @@ bool TransactionEngine::calcNodeOfferFwd(
 	const uint160&	uNxtIssuerID	= pnNxt.uIssuerID;
 
 	const uint160&	uNxtAccountID	= pnNxt.uAccountID;
-	const STAmount	saTransferRate	= STAmount(CURRENCY_ONE, rippleTransferRate(uCurIssuerID), -9);
+	const STAmount	saTransferRate	= STAmount::saFromRate(rippleTransferRate(uCurIssuerID));
 
 	uint256			uDirectTip		= Ledger::getBookBase(uPrvCurrencyID, uPrvIssuerID, uCurCurrencyID, uCurIssuerID);
 	const uint256	uDirectEnd		= Ledger::getQualityNext(uDirectTip);
@@ -2601,8 +2637,8 @@ bool TransactionEngine::calcNodeAccountRev(unsigned int uIndex, PathState::point
 	const bool		bPrvAccount		= !uIndex || !!(pnPrv.uFlags & STPathElement::typeAccount);
 	const bool		bNxtAccount		= uIndex == uLast || !!(pnNxt.uFlags & STPathElement::typeAccount);
 
-	const uint160&	uPrvAccountID	= pnPrv.uAccountID;
 	const uint160&	uCurAccountID	= pnCur.uAccountID;
+	const uint160&	uPrvAccountID	= bPrvAccount ? pnPrv.uAccountID : uCurAccountID;
 	const uint160&	uNxtAccountID	= bNxtAccount ? pnNxt.uAccountID : uCurAccountID;	// Offers are always issue.
 
 	const uint160&	uCurrencyID		= pnCur.uCurrencyID;
@@ -2614,6 +2650,18 @@ bool TransactionEngine::calcNodeAccountRev(unsigned int uIndex, PathState::point
 	const STAmount	saPrvBalance	= uIndex && bPrvAccount ? rippleBalance(uCurAccountID, uPrvAccountID, uCurrencyID) : STAmount(uCurrencyID);
 	const STAmount	saPrvLimit		= uIndex && bPrvAccount ? rippleLimit(uCurAccountID, uPrvAccountID, uCurrencyID) : STAmount(uCurrencyID);
 
+	Log(lsINFO) << str(boost::format("calcNodeAccountRev> uIndex=%d/%d uPrvAccountID=%s uCurAccountID=%s uNxtAccountID=%s uCurrencyID=%s uQualityIn=%d uQualityOut=%d saPrvBalance=%s saPrvLimit=%s")
+		% uIndex
+		% uLast
+		% NewcoinAddress::createHumanAccountID(uPrvAccountID)
+		% NewcoinAddress::createHumanAccountID(uCurAccountID)
+		% NewcoinAddress::createHumanAccountID(uNxtAccountID)
+		% STAmount::createHumanCurrency(uCurrencyID)
+		% uQualityIn
+		% uQualityOut
+		% saPrvBalance.getText()
+		% saPrvLimit.getText());
+
 	const STAmount	saPrvRedeemReq	= bPrvRedeem && saPrvBalance.isNegative() ? -saPrvBalance : STAmount(uCurrencyID, 0);
 	STAmount&		saPrvRedeemAct	= pnPrv.saRevRedeem;
 
@@ -2621,7 +2669,7 @@ bool TransactionEngine::calcNodeAccountRev(unsigned int uIndex, PathState::point
 	STAmount&		saPrvIssueAct	= pnPrv.saRevIssue;
 
 	// For !bPrvAccount
-	const STAmount	saPrvDeliverReq	= STAmount(uCurrencyID, -1);	// Unlimited.
+	const STAmount	saPrvDeliverReq	= STAmount::saFromSigned(uCurrencyID, -1);	// Unlimited.
 	STAmount&		saPrvDeliverAct	= pnPrv.saRevDeliver;
 
 	// For bNxtAccount
@@ -2629,20 +2677,18 @@ bool TransactionEngine::calcNodeAccountRev(unsigned int uIndex, PathState::point
 	STAmount		saCurRedeemAct(saCurRedeemReq.getCurrency());
 
 	const STAmount&	saCurIssueReq	= pnCur.saRevIssue;
-	STAmount		saCurIssueAct(saCurIssueReq.getCurrency());		// Track progress.
+	STAmount		saCurIssueAct(saCurIssueReq.getCurrency());					// Track progress.
 
 	// For !bNxtAccount
 	const STAmount&	saCurDeliverReq	= pnCur.saRevDeliver;
 	STAmount		saCurDeliverAct(saCurDeliverReq.getCurrency());
 
 	// For uIndex == uLast
-	const STAmount&	saCurWantedReq	= pspCur->saOutReq;				// XXX Credit limits?
+	const STAmount&	saCurWantedReq	= pspCur->saOutReq;							// XXX Credit limits?
 	// STAmount		saPrvDeliverReq	= saPrvBalance.isPositive() ? saPrvLimit - saPrvBalance : saPrvLimit;
 	STAmount		saCurWantedAct(saCurWantedReq.getCurrency());
 
-	Log(lsINFO) << str(boost::format("calcNodeAccountRev> uIndex=%d/%d saPrvRedeemReq=%s/%s saPrvIssueReq=%s/%s saCurWantedReq=%s/%s")
-		% uIndex
-		% uLast
+	Log(lsINFO) << str(boost::format("calcNodeAccountRev: saPrvRedeemReq=%s/%s saPrvIssueReq=%s/%s saCurWantedReq=%s/%s")
 		% saPrvRedeemReq.getText()
 		% saPrvRedeemReq.getHumanCurrency()
 		% saPrvIssueReq.getText()
@@ -3188,7 +3234,8 @@ bool PathState::pushImply(uint160 uAccountID, uint160 uCurrencyID, uint160 uIssu
 #endif
 
 		bValid	= pushNode(
-					0,				// Offer
+					STPathElement::typeCurrency		// Offer.
+					 | STPathElement::typeIssuer,
 					ACCOUNT_ONE,	// Placeholder for offers.
 					uCurrencyID,	// The offer's output is what is now wanted.
 					uIssuerID);
@@ -3417,14 +3464,21 @@ PathState::PathState(
 			bValid	= pushNode(
 				STPathElement::typeAccount						// Last node is always an account.
 					| STPathElement::typeRedeem					// Does not matter just pass error check.
-					| STPathElement::typeIssue,					// Does not matter just pass error check.
+					| STPathElement::typeIssue					// Does not matter just pass error check.
+					| STPathElement::typeCurrency
+					| STPathElement::typeIssuer,
 				uReceiverID,									// Receive to output
 				uOutCurrencyID,									// Desired currency
 				uOutIssuerID);
 		}
 	}
 
-	Log(lsINFO) << "PathState: " << getJson();
+	Log(lsINFO) << str(boost::format("PathState: in=%s/%s out=%s/%s %s")
+		% STAmount::createHumanCurrency(uInCurrencyID)
+		% NewcoinAddress::createHumanAccountID(uInIssuerID)
+		% STAmount::createHumanCurrency(uOutCurrencyID)
+		% NewcoinAddress::createHumanAccountID(uOutIssuerID)
+		% getJson());
 }
 
 Json::Value	PathState::getJson() const
@@ -3517,6 +3571,8 @@ bool TransactionEngine::calcNode(unsigned int uIndex, PathState::pointer pspCur,
 	const bool			bCurAccount	= !!(pnCur.uFlags & STPathElement::typeAccount);
 	bool				bValid;
 
+	Log(lsINFO) << str(boost::format("calcNode> uIndex=%d") % uIndex);
+
 	// Do current node reverse.
 	bValid	= bCurAccount
 				? calcNodeAccountRev(uIndex, pspCur, bMultiQuality)
@@ -3536,6 +3592,8 @@ bool TransactionEngine::calcNode(unsigned int uIndex, PathState::pointer pspCur,
 					: calcNodeOfferFwd(uIndex, pspCur, bMultiQuality);
 	}
 
+	Log(lsINFO) << str(boost::format("calcNode< uIndex=%d bValid=%d") % uIndex % bValid);
+
 	return bValid;
 }
 
@@ -3553,14 +3611,14 @@ void TransactionEngine::pathNext(PathState::pointer pspCur, int iPaths)
 
 	assert(pspCur->vpnNodes.size() >= 2);
 
-	bool	bValid	= calcNode(uLast, pspCur, iPaths == 1);
+	pspCur->bValid	= calcNode(uLast, pspCur, iPaths == 1);
 
 	Log(lsINFO) << "pathNext: bValid="
-		<< bValid
+		<< pspCur->bValid
 		<< " saOutAct=" << pspCur->saOutAct.getText()
 		<< " saInAct=" << pspCur->saInAct.getText();
 
-	pspCur->uQuality	= bValid
+	pspCur->uQuality	= pspCur->bValid
 		? STAmount::getRate(pspCur->saOutAct, pspCur->saInAct)	// Calculate relative quality.
 		: 0;													// Mark path as inactive.
 
@@ -3614,7 +3672,7 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 		return tenINVALID;
 	}
 
-	SLE::pointer		sleDst	= entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uDstAccountID));
+	SLE::pointer	sleDst	= entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uDstAccountID));
 	if (!sleDst)
 	{
 		// Destination account does not exist.
@@ -3644,7 +3702,7 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 	}
 
 	// XXX Should bMax be sufficient to imply ripple?
-	bool		bRipple			= bPaths || bMax || !saDstAmount.isNative();
+	bool			bRipple	= bPaths || bMax || !saDstAmount.isNative();
 
 	if (!bRipple)
 	{

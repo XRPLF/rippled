@@ -261,8 +261,8 @@ public:
 		: SerializedType(n), mValue(v), mOffset(0), mIsNative(true), mIsNegative(false)
 	{ ; }
 
-	STAmount(const uint160& currency, uint64 v = 0, int off = 0)
-		: mCurrency(currency), mValue(v), mOffset(off), mIsNegative(false)
+	STAmount(const uint160& uCurrency, uint64 uV=0, int iOff=0, bool bNegative=false)
+		: mCurrency(uCurrency), mValue(uV), mOffset(iOff), mIsNegative(bNegative)
 	{ canonicalize(); }
 
 	STAmount(const char* n, const uint160& currency, uint64 v = 0, int off = 0, bool isNeg = false) :
@@ -273,6 +273,16 @@ public:
 
 	static std::auto_ptr<SerializedType> deserialize(SerializerIterator& sit, const char* name)
 	{ return std::auto_ptr<SerializedType>(construct(sit, name)); }
+
+	static STAmount saFromRate(uint64 uV = 0)
+	{
+		return STAmount(CURRENCY_ONE, uV, -9, false);
+	}
+
+	static STAmount saFromSigned(const uint160& uCurrency, int64 iV=0, int iOff=0)
+	{
+		return STAmount(uCurrency, iV < 0 ? -iV : iV, iOff, iV < 0);
+	}
 
 	int getLength() const				{ return mIsNative ? 8 : 28; }
 	SerializedTypeID getSType() const	{ return STI_AMOUNT; }
