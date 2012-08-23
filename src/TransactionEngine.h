@@ -145,29 +145,29 @@ public:
 	STAmount					saOutAct;		// Amount actually sent (calc output).
 
 	PathState(
-		Ledger::pointer			lpLedger,
-		int						iIndex,
+		const Ledger::pointer&	lpLedger,
+		const int				iIndex,
 		const LedgerEntrySet&	lesSource,
 		const STPath&			spSourcePath,
-		uint160					uReceiverID,
-		uint160					uSenderID,
-		STAmount				saSend,
-		STAmount				saSendMax,
-		bool					bPartialPayment
+		const uint160&			uReceiverID,
+		const uint160&			uSenderID,
+		const STAmount&			saSend,
+		const STAmount&			saSendMax,
+		const bool				bPartialPayment
 		);
 
 	Json::Value	getJson() const;
 
 	static PathState::pointer createPathState(
-		Ledger::pointer			lpLedger,
-		int						iIndex,
+		const Ledger::pointer&	lpLedger,
+		const int				iIndex,
 		const LedgerEntrySet&	lesSource,
 		const STPath&			spSourcePath,
-		uint160					uReceiverID,
-		uint160					uSenderID,
-		STAmount				saSend,
-		STAmount				saSendMax,
-		bool					bPartialPayment
+		const uint160&			uReceiverID,
+		const uint160&			uSenderID,
+		const STAmount&			saSend,
+		const STAmount&			saSendMax,
+		const bool				bPartialPayment
 		)
 	{
 		PathState::pointer	pspNew = boost::make_shared<PathState>(lpLedger, iIndex, lesSource, spSourcePath, uReceiverID, uSenderID, saSend, saSendMax, bPartialPayment);
