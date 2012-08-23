@@ -362,12 +362,6 @@ Transaction::pointer Transaction::setOfferCreate(
 	mTransaction->setITFieldAmount(sfTakerPays, saTakerPays);
 	mTransaction->setITFieldAmount(sfTakerGets, saTakerGets);
 
-	if (!saTakerPays.isNative())
-		mTransaction->setITFieldAccount(sfPaysIssuer, saTakerPays.getIssuer());
-
-	if (!saTakerGets.isNative())
-		mTransaction->setITFieldAccount(sfGetsIssuer, saTakerGets.getIssuer());
-
 	if (uExpiration)
 		mTransaction->setITFieldU32(sfExpiration, uExpiration);
 

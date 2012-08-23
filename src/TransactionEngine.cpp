@@ -251,7 +251,7 @@ STAmount TransactionEngine::accountHolds(const uint160& uAccountID, const uint16
 {
 	STAmount	saAmount;
 
-	if (uCurrencyID.isZero())
+	if (!uCurrencyID)
 	{
 		SLE::pointer		sleAccount	= entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uAccountID));
 
@@ -397,7 +397,7 @@ STAmount TransactionEngine::rippleSend(const uint160& uSenderID, const uint160& 
 
 		STAmount		saTransitFee	= rippleTransferFee(uSenderID, uReceiverID, uIssuerID, saAmount);
 
-		saActual	= saTransitFee.isZero() ? saAmount : saAmount+saTransitFee;
+		saActual	= !saTransitFee ? saAmount : saAmount+saTransitFee;
 
 		saActual.setIssuer(uIssuerID);	// XXX Make sure this done in + above.
 
@@ -833,7 +833,7 @@ SLE::pointer TransactionEngine::entryCache(LedgerEntryType letType, const uint25
 {
 	SLE::pointer				sleEntry;
 
-	if (!uIndex.isZero())
+	if (!!uIndex)
 	{
 		LedgerEntryAction action;
 		sleEntry = mNodes.getEntry(uIndex, action);
@@ -852,7 +852,7 @@ SLE::pointer TransactionEngine::entryCache(LedgerEntryType letType, const uint25
 
 SLE::pointer TransactionEngine::entryCreate(LedgerEntryType letType, const uint256& uIndex)
 {
-	assert(!uIndex.isZero());
+	assert(!!uIndex);
 
 	SLE::pointer	sleNew	= boost::make_shared<SerializedLedgerEntry>(letType);
 	sleNew->setIndex(uIndex);
@@ -1030,7 +1030,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 
 	if (terSUCCESS == terResult && (params & tepNO_CHECK_FEE) == tepNONE)
 	{
-		if (!saCost.isZero())
+		if (!!saCost)
 		{
 			if (saPaid < saCost)
 			{
@@ -1041,7 +1041,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 		}
 		else
 		{
-			if (!saPaid.isZero())
+			if (!!saPaid)
 			{
 				// Transaction is malformed.
 				Log(lsWARNING) << "applyTransaction: fee not allowed";
@@ -1168,7 +1168,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 
 	// Deduct the fee, so it's not available during the transaction.
 	// Will only write the account back, if the transaction succeeds.
-	if (terSUCCESS != terResult || saCost.isZero())
+	if (terSUCCESS != terResult || !saCost)
 	{
 		nothing();
 	}
@@ -1191,7 +1191,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	{
 		nothing();
 	}
-	else if (!saCost.isZero())
+	else if (!!saCost)
 	{
 		uint32 a_seq = mTxnAccount->getIFieldU32(sfSequence);
 
@@ -1340,7 +1340,7 @@ TransactionEngineResult TransactionEngine::doAccountSet(const SerializedTransact
 	{
 		uint128		uHash	= txn.getITFieldH128(sfEmailHash);
 
-		if (uHash.isZero())
+		if (!uHash)
 		{
 			Log(lsINFO) << "doAccountSet: unset email hash";
 
@@ -1362,7 +1362,7 @@ TransactionEngineResult TransactionEngine::doAccountSet(const SerializedTransact
 	{
 		uint256		uHash	= txn.getITFieldH256(sfWalletLocator);
 
-		if (uHash.isZero())
+		if (!uHash)
 		{
 			Log(lsINFO) << "doAccountSet: unset wallet locator";
 
@@ -1459,7 +1459,7 @@ TransactionEngineResult TransactionEngine::doAccountSet(const SerializedTransact
 		uint256		uHash	= txn.getITFieldH256(sfPublishHash);
 		uint32		uSize	= txn.getITFieldU32(sfPublishSize);
 
-		if (uHash.isZero())
+		if (!uHash)
 		{
 			Log(lsINFO) << "doAccountSet: unset publish";
 
@@ -1535,16 +1535,16 @@ TransactionEngineResult TransactionEngine::doCreditSet(const SerializedTransacti
 	{
 		// A line exists in one or more directions.
 #if 0
-		if (saLimitAmount.isZero())
+		if (!saLimitAmount)
 		{
 			// Zeroing line.
 			uint160		uLowID			= sleRippleState->getIValueFieldAccount(sfLowID).getAccountID();
 			uint160		uHighID			= sleRippleState->getIValueFieldAccount(sfHighID).getAccountID();
 			bool		bLow			= uLowID == uSrcAccountID;
 			bool		bHigh			= uLowID == uDstAccountID;
-			bool		bBalanceZero	= sleRippleState->getIValueFieldAmount(sfBalance).isZero();
+			bool		bBalanceZero	= !sleRippleState->getIValueFieldAmount(sfBalance);
 			STAmount	saDstLimit		= sleRippleState->getIValueFieldAmount(bSendLow ? sfLowLimit : sfHighLimit);
-			bool		bDstLimitZero	= saDstLimit.isZero();
+			bool		bDstLimitZero	= !saDstLimit;
 
 			assert(bLow || bHigh);
 
@@ -1595,7 +1595,7 @@ TransactionEngineResult TransactionEngine::doCreditSet(const SerializedTransacti
 		Log(lsINFO) << "doCreditSet: Modifying ripple line: bDelIndex=" << bDelIndex;
 	}
 	// Line does not exist.
-	else if (saLimitAmount.isZero())
+	else if (!saLimitAmount)
 	{
 		Log(lsINFO) << "doCreditSet: Redundant: Setting non-existant ripple line to 0.";
 
@@ -1829,12 +1829,6 @@ void TransactionEngine::calcOfferBridgeNext(
 		STAmount		saOfferPays		= sleOffer->getIValueFieldAmount(sfTakerGets);
 		STAmount		saOfferGets		= sleOffer->getIValueFieldAmount(sfTakerPays);
 
-		if (sleOffer->getIFieldPresent(sfGetsIssuer))
-			saOfferPays.setIssuer(sleOffer->getIValueFieldAccount(sfGetsIssuer).getAccountID());
-
-		if (sleOffer->getIFieldPresent(sfPaysIssuer))
-			saOfferGets.setIssuer(sleOffer->getIValueFieldAccount(sfPaysIssuer).getAccountID());
-
 		if (sleOffer->getIFieldPresent(sfExpiration) && sleOffer->getIFieldU32(sfExpiration) <= mLedger->getParentCloseTimeNC())
 		{
 			// Offer is expired.
@@ -1986,14 +1980,8 @@ bool TransactionEngine::calcNodeOfferRev(
 
 				SLE::pointer	sleCurOfr			= entryCache(ltOFFER, uCurIndex);
 				uint160			uCurOfrAccountID	= sleCurOfr->getIValueFieldAccount(sfAccount).getAccountID();
-				STAmount		saCurOfrOutReq		= sleCurOfr->getIValueFieldAmount(sfTakerGets);
-				STAmount		saCurOfrIn			= sleCurOfr->getIValueFieldAmount(sfTakerPays);
-					// XXX Move issuer into STAmount
-					if (sleCurOfr->getIFieldPresent(sfGetsIssuer))
-						saCurOfrOutReq.setIssuer(sleCurOfr->getIValueFieldAccount(sfGetsIssuer).getAccountID());
-
-					if (sleCurOfr->getIFieldPresent(sfPaysIssuer))
-						saCurOfrIn.setIssuer(sleCurOfr->getIValueFieldAccount(sfPaysIssuer).getAccountID());
+				const STAmount&	saCurOfrOutReq		= sleCurOfr->getIValueFieldAmount(sfTakerGets);
+				// UNUSED? const STAmount&	saCurOfrIn			= sleCurOfr->getIValueFieldAmount(sfTakerPays);
 
 				STAmount		saCurOfrFunds		= accountFunds(uCurOfrAccountID, saCurOfrOutReq);	// Funds left.
 
@@ -2070,10 +2058,7 @@ bool TransactionEngine::calcNodeOfferRev(
 								// YYY This could combine offers with the same fee before doing math.
 								SLE::pointer	sleNxtOfr			= entryCache(ltOFFER, uNxtIndex);
 								uint160			uNxtOfrAccountID	= sleNxtOfr->getIValueFieldAccount(sfAccount).getAccountID();
-								STAmount		saNxtOfrIn			= sleNxtOfr->getIValueFieldAmount(sfTakerPays);
-									// XXX Move issuer into STAmount
-									if (sleNxtOfr->getIFieldPresent(sfPaysIssuer))
-										saNxtOfrIn.setIssuer(sleCurOfr->getIValueFieldAccount(sfPaysIssuer).getAccountID());
+								const STAmount&	saNxtOfrIn			= sleNxtOfr->getIValueFieldAmount(sfTakerPays);
 
 								STAmount	saFeeRate	= uCurOfrAccountID == uCurIssuerID || uNxtOfrAccountID == uCurIssuerID
 															? saOne
@@ -2183,18 +2168,11 @@ bool TransactionEngine::calcNodeOfferFwd(
 			{
 				SLE::pointer	sleCurOfr			= entryCache(ltOFFER, uCurIndex);
 				uint160			uCurOfrAccountID	= sleCurOfr->getIValueFieldAccount(sfAccount).getAccountID();
-				STAmount		saCurOfrOutReq		= sleCurOfr->getIValueFieldAmount(sfTakerGets);
-				STAmount		saCurOfrInReq		= sleCurOfr->getIValueFieldAmount(sfTakerPays);
-					// XXX Move issuer into STAmount
-					if (sleCurOfr->getIFieldPresent(sfGetsIssuer))
-						saCurOfrOutReq.setIssuer(sleCurOfr->getIValueFieldAccount(sfGetsIssuer).getAccountID());
-
-					if (sleCurOfr->getIFieldPresent(sfPaysIssuer))
-						saCurOfrInReq.setIssuer(sleCurOfr->getIValueFieldAccount(sfPaysIssuer).getAccountID());
+				const STAmount&	saCurOfrOutReq		= sleCurOfr->getIValueFieldAmount(sfTakerGets);
+				const STAmount&	saCurOfrInReq		= sleCurOfr->getIValueFieldAmount(sfTakerPays);
 				STAmount		saCurOfrInAct;
 				STAmount		saCurOfrFunds		= accountFunds(uCurOfrAccountID, saCurOfrOutReq);	// Funds left.
-
-				saCurOfrInReq	= MIN(saCurOfrInReq, saPrvDlvReq-saPrvDlvAct);
+				STAmount		saCurOfrInMax		= MIN(saCurOfrInReq, saPrvDlvReq-saPrvDlvAct);
 
 				if (!!uNxtAccountID)
 				{
@@ -2202,10 +2180,10 @@ bool TransactionEngine::calcNodeOfferFwd(
 
 					const STAmount	saFeeRate	= uCurOfrAccountID == uCurIssuerID || uNxtAccountID == uCurIssuerID
 													? saOne
-						 							: saTransferRate;
+													: saTransferRate;
 					const bool		bFee		= saFeeRate != saOne;
 
-					const STAmount	saOutPass	= STAmount::divide(saCurOfrInReq, saOfrRate, uCurCurrencyID);
+					const STAmount	saOutPass	= STAmount::divide(saCurOfrInMax, saOfrRate, uCurCurrencyID);
 					const STAmount	saOutBase	= MIN(saCurOfrOutReq, saOutPass);				// Limit offer out by needed.
 					const STAmount	saOutCost	= MIN(
 													bFee
@@ -2255,17 +2233,14 @@ bool TransactionEngine::calcNodeOfferFwd(
 								// YYY This could combine offers with the same fee before doing math.
 								SLE::pointer	sleNxtOfr			= entryCache(ltOFFER, uNxtIndex);
 								const uint160	uNxtOfrAccountID	= sleNxtOfr->getIValueFieldAccount(sfAccount).getAccountID();
-								STAmount		saNxtOfrIn			= sleNxtOfr->getIValueFieldAmount(sfTakerPays);
-									// XXX Move issuer into STAmount
-									if (sleNxtOfr->getIFieldPresent(sfPaysIssuer))
-										saNxtOfrIn.setIssuer(sleCurOfr->getIValueFieldAccount(sfPaysIssuer).getAccountID());
+								const STAmount&	saNxtOfrIn			= sleNxtOfr->getIValueFieldAmount(sfTakerPays);
 
 								const STAmount	saFeeRate	= uCurOfrAccountID == uCurIssuerID || uNxtOfrAccountID == uCurIssuerID
 																? saOne
 																: saTransferRate;
 								const bool		bFee		= saFeeRate != saOne;
 
-								const STAmount	saInBase	= saCurOfrInReq-saCurOfrInAct;
+								const STAmount	saInBase	= saCurOfrInMax-saCurOfrInAct;
 								const STAmount	saOutPass	= STAmount::divide(saInBase, saOfrRate, uCurCurrencyID);
 								STAmount		saOutBase	= MIN(saCurOfrOutReq, saOutPass);				// Limit offer out by needed.
 												saOutBase	= MIN(saOutBase, saNxtOfrIn);					// Limit offer out by supplying offer.
@@ -3772,7 +3747,7 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 				return terOVER_LIMIT;
 			}
 
-			if (saDstBalance.isZero())
+			if (!saDstBalance)
 			{
 				// XXX May be able to delete indexes for credit limits which are zero.
 				nothing();
@@ -3916,7 +3891,7 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 			// Partial payment not allowed.
 			terResult	= terPATH_PARTIAL;		// XXX No effect, except unfunded and charge fee.
 		}
-		else if (saPaid.isZero())
+		else if (!saPaid)
 		{
 			// Nothing claimed.
 			terResult	= terPATH_EMPTY;		// XXX No effect except unfundeds and charge fee.
@@ -4022,7 +3997,7 @@ TransactionEngineResult TransactionEngine::takeOffers(
 	STAmount&			saTakerPaid,
 	STAmount&			saTakerGot)
 {
-	assert(!saTakerPays.isZero() && !saTakerGets.isZero());
+	assert(!!saTakerPays && !!saTakerGets);
 
 	Log(lsINFO) << "takeOffers: against book: " << uBookBase.ToString();
 
@@ -4090,12 +4065,6 @@ TransactionEngineResult TransactionEngine::takeOffers(
 			const uint160	uOfferOwnerID	= sleOffer->getIValueFieldAccount(sfAccount).getAccountID();
 			STAmount		saOfferPays		= sleOffer->getIValueFieldAmount(sfTakerGets);
 			STAmount		saOfferGets		= sleOffer->getIValueFieldAmount(sfTakerPays);
-
-			if (sleOffer->getIFieldPresent(sfGetsIssuer))
-				saOfferPays.setIssuer(sleOffer->getIValueFieldAccount(sfGetsIssuer).getAccountID());
-
-			if (sleOffer->getIFieldPresent(sfPaysIssuer))
-				saOfferGets.setIssuer(sleOffer->getIValueFieldAccount(sfPaysIssuer).getAccountID());
 
 			if (sleOffer->getIFieldPresent(sfExpiration) && sleOffer->getIFieldU32(sfExpiration) <= mLedger->getParentCloseTimeNC())
 			{
@@ -4210,14 +4179,12 @@ TransactionEngineResult TransactionEngine::doOfferCreate(const SerializedTransac
 Log(lsWARNING) << "doOfferCreate> " << txn.getJson(0);
 	const uint32			txFlags			= txn.getFlags();
 	const bool				bPassive		= !!(txFlags & tfPassive);
-	const uint160			uPaysIssuerID	= txn.getITFieldAccount(sfPaysIssuer);
-	const uint160			uGetsIssuerID	= txn.getITFieldAccount(sfGetsIssuer);
-	STAmount			saTakerPays		= txn.getITFieldAmount(sfTakerPays);
-		saTakerPays.setIssuer(uPaysIssuerID);
-Log(lsWARNING) << "doOfferCreate: saTakerPays=" << saTakerPays.getFullText();
+	STAmount				saTakerPays		= txn.getITFieldAmount(sfTakerPays);
 	STAmount				saTakerGets		= txn.getITFieldAmount(sfTakerGets);
-		saTakerGets.setIssuer(uGetsIssuerID);
+Log(lsWARNING) << "doOfferCreate: saTakerPays=" << saTakerPays.getFullText();
 Log(lsWARNING) << "doOfferCreate: saTakerGets=" << saTakerGets.getFullText();
+	const uint160			uPaysIssuerID	= saTakerPays.getIssuer();
+	const uint160			uGetsIssuerID	= saTakerGets.getIssuer();
 	const uint32			uExpiration		= txn.getITFieldU32(sfExpiration);
 	const bool				bHaveExpiration	= txn.getITFieldPresent(sfExpiration);
 	const uint32			uSequence		= txn.getSequence();
@@ -4254,7 +4221,7 @@ Log(lsWARNING) << "doOfferCreate: saTakerGets=" << saTakerGets.getFullText();
 
 		terResult	= tenBAD_OFFER;
 	}
-	else if (saTakerPays.isZero() || saTakerGets.isZero())
+	else if (!saTakerPays || !saTakerGets)
 	{
 		Log(lsWARNING) << "doOfferCreate: Malformed offer: bad amount";
 
@@ -4266,7 +4233,7 @@ Log(lsWARNING) << "doOfferCreate: saTakerGets=" << saTakerGets.getFullText();
 
 		terResult	= tenREDUNDANT;
 	}
-	else if (saTakerPays.isNative() != uPaysIssuerID.isZero() || saTakerGets.isNative() != uGetsIssuerID.isZero())
+	else if (saTakerPays.isNative() != !uPaysIssuerID || saTakerGets.isNative() != !uGetsIssuerID)
 	{
 		Log(lsWARNING) << "doOfferCreate: Malformed offer: bad issuer";
 
@@ -4339,8 +4306,8 @@ Log(lsWARNING) << "doOfferCreate: saTakerGets=" << saTakerGets.getFullText();
 	// Log(lsWARNING) << "doOfferCreate: takeOffers: uGetsIssuerID=" << NewcoinAddress::createHumanAccountID(uGetsIssuerID);
 
 	if (terSUCCESS == terResult
-		&& !saTakerPays.isZero()						// Still wanting something.
-		&& !saTakerGets.isZero()						// Still offering something.
+		&& !!saTakerPays								// Still wanting something.
+		&& !!saTakerGets								// Still offering something.
 		&& accountFunds(mTxnAccountID, saTakerGets).isPositive())	// Still funded.
 	{
 		// We need to place the remainder of the offer into its order book.
@@ -4381,12 +4348,6 @@ Log(lsWARNING) << "doOfferCreate: saTakerGets=" << saTakerGets.getFullText();
 			sleOffer->setIFieldAmount(sfTakerGets, saTakerGets);
 			sleOffer->setIFieldU64(sfOwnerNode, uOwnerNode);
 			sleOffer->setIFieldU64(sfBookNode, uBookNode);
-
-			if (!saTakerPays.isNative())
-				sleOffer->setIFieldAccount(sfPaysIssuer, uPaysIssuerID);
-
-			if (!saTakerGets.isNative())
-				sleOffer->setIFieldAccount(sfGetsIssuer, uGetsIssuerID);
 
 			if (uExpiration)
 				sleOffer->setIFieldU32(sfExpiration, uExpiration);

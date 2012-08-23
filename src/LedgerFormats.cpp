@@ -57,9 +57,7 @@ LedgerEntryFormat LedgerFormats[]=
 		{ S_FIELD(OwnerNode),			STI_UINT64,		SOE_REQUIRED, 0 },
 		{ S_FIELD(LastTxnID),			STI_HASH256,	SOE_REQUIRED, 0 },
 		{ S_FIELD(LastTxnSeq),			STI_UINT32,		SOE_REQUIRED, 0 },
-		{ S_FIELD(PaysIssuer),			STI_ACCOUNT,	SOE_IFFLAG,   1 },
-		{ S_FIELD(GetsIssuer),			STI_ACCOUNT,	SOE_IFFLAG,   2 },
-		{ S_FIELD(Expiration),			STI_UINT32,		SOE_IFFLAG,   4 },
+		{ S_FIELD(Expiration),			STI_UINT32,		SOE_IFFLAG,   1 },
 		{ S_FIELD(Extensions),			STI_TL,			SOE_IFFLAG,   0x01000000 },
 		{ sfInvalid, NULL,				STI_DONE,		SOE_NEVER,	  -1 } }
 	},
