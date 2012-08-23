@@ -524,6 +524,9 @@
     <ClInclude Include="src\OrderBook.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\Contract.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="wallet.xml" />

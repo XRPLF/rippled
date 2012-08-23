@@ -17,7 +17,8 @@ class OrderBook
 public:
 	typedef boost::shared_ptr<OrderBook> pointer;
 
-	// returns NULL if ledgerEntry doesn't point to an orderbook
+	// returns NULL if ledgerEntry doesn't point to an order
+	// if ledgerEntry is an Order it creates the OrderBook this order would live in
 	static OrderBook::pointer newOrderBook(SerializedLedgerEntry::pointer ledgerEntry);
 
 	uint256& getBookBase(){ return(mBookBase); }

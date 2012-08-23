@@ -192,6 +192,7 @@
     <ClInclude Include="src\CanonicalTXSet.h" />
     <ClInclude Include="src\Config.h" />
     <ClInclude Include="src\ConnectionPool.h" />
+    <ClInclude Include="src\Contract.h" />
     <ClInclude Include="src\Conversion.h" />
     <ClInclude Include="src\HashedObject.h" />
     <ClInclude Include="src\HttpReply.h" />
