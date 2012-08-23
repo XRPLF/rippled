@@ -4,16 +4,20 @@
 OrderBook::pointer OrderBook::newOrderBook(SerializedLedgerEntry::pointer ledgerEntry)
 {
 	if(ledgerEntry->getType() != ltOFFER) return( OrderBook::pointer());
-	
+
 	return( OrderBook::pointer(new OrderBook(ledgerEntry)));
 }
 
 OrderBook::OrderBook(SerializedLedgerEntry::pointer ledgerEntry)
 {
-	mCurrencyIn=ledgerEntry->getIValueFieldAmount(sfTakerGets).getCurrency();
-	mCurrencyOut=ledgerEntry->getIValueFieldAmount(sfTakerPays).getCurrency();
-	mIssuerIn=ledgerEntry->getIValueFieldAccount(sfGetsIssuer).getAccountID();
-	mIssuerOut=ledgerEntry->getIValueFieldAccount(sfPaysIssuer).getAccountID();
+	const STAmount	saTakerGets	= ledgerEntry->getIValueFieldAmount(sfTakerGets);
+	const STAmount	saTakerPays	= ledgerEntry->getIValueFieldAmount(sfTakerPays);
+
+	mCurrencyIn		= saTakerGets.getCurrency();
+	mCurrencyOut	= saTakerPays.getCurrency();
+	mIssuerIn		= saTakerGets.getIssuer();
+	mIssuerOut		= saTakerPays.getIssuer();
 
 	mBookBase=Ledger::getBookBase(mCurrencyOut,mIssuerOut,mCurrencyIn,mIssuerIn);
 }
+// vim:ts=4
