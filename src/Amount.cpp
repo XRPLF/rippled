@@ -288,6 +288,7 @@ void STAmount::add(Serializer& s) const
 			s.add64(mValue | (static_cast<uint64>(mOffset + 512 + 256 + 97) << (64 - 10)));
 
 		s.add160(mCurrency);
+		s.add160(mIssuer);
 	}
 }
 
@@ -334,25 +335,38 @@ STAmount* STAmount::construct(SerializerIterator& sit, const char *name)
 		return new STAmount(name, value, true); // negative
 	}
 
-	uint160 currency = sit.get160();
-	if (!currency)
+	uint160 uCurrencyID = sit.get160();
+	if (!uCurrencyID)
 		throw std::runtime_error("invalid native currency");
+
+	uint160	uIssuerID = sit.get160();
 
 	int offset = static_cast<int>(value >> (64 - 10)); // 10 bits for the offset, sign and "not native" flag
 	value &= ~(1023ull << (64-10));
 
-	if (value == 0)
+	STAmount*	sapResult;
+
+	if (value)
+	{
+		bool isNegative = (offset & 256) == 0;
+		offset = (offset & 255) - 97; // center the range
+		if ((value < cMinValue) || (value > cMaxValue) || (offset < cMinOffset) || (offset > cMaxOffset))
+			throw std::runtime_error("invalid currency value");
+
+		sapResult	= new STAmount(name, uCurrencyID, value, offset, isNegative);
+	}
+	else
 	{
 		if (offset != 512)
 			throw std::runtime_error("invalid currency value");
-		return new STAmount(name, currency);
+
+		sapResult	= new STAmount(name, uCurrencyID);
 	}
 
-	bool isNegative = (offset & 256) == 0;
-	offset = (offset & 255) - 97; // center the range
-	if ((value < cMinValue) || (value > cMaxValue) || (offset < cMinOffset) || (offset > cMaxOffset))
-		throw std::runtime_error("invalid currency value");
-	return new STAmount(name, currency, value, offset, isNegative);
+	if (sapResult)
+		sapResult->setIssuer(uIssuerID);
+
+	return sapResult;
 }
 
 int64 STAmount::getSNValue() const

@@ -754,7 +754,16 @@ uint256 Ledger::getBookBase(const uint160& uTakerPaysCurrency, const uint160& uT
 	s.add160(uTakerPaysIssuerID);	// 20
 	s.add160(uTakerGetsIssuerID);	// 20
 
-	return getQualityIndex(s.getSHA512Half());	// Return with quality 0.
+	uint256	uBaseIndex	= getQualityIndex(s.getSHA512Half());	// Return with quality 0.
+
+	Log(lsINFO) << str(boost::format("getBookBase(%s,%s,%s,%s) = %s")
+		% STAmount::createHumanCurrency(uTakerPaysCurrency)
+		% NewcoinAddress::createHumanAccountID(uTakerPaysIssuerID)
+		% STAmount::createHumanCurrency(uTakerGetsCurrency)
+		% NewcoinAddress::createHumanAccountID(uTakerGetsIssuerID)
+		% uBaseIndex.ToString());
+
+	return uBaseIndex;
 }
 
 uint256 Ledger::getDirNodeIndex(const uint256& uDirRoot, const uint64 uNodeIndex)
