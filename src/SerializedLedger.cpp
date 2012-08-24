@@ -109,6 +109,31 @@ bool SerializedLedgerEntry::thread(const uint256& txID, uint32 ledgerSeq, uint25
 	return true;
 }
 
+bool SerializedLedgerEntry::hasOneOwner()
+{
+	return (mType != ltACCOUNT_ROOT) && (getIFieldIndex(sfAccount) != -1);
+}
+
+bool SerializedLedgerEntry::hasTwoOwners()
+{
+	return mType == ltRIPPLE_STATE;
+}
+
+NewcoinAddress SerializedLedgerEntry::getOwner()
+{
+	return getIValueFieldAccount(sfAccount);
+}
+
+NewcoinAddress SerializedLedgerEntry::getFirstOwner()
+{
+	return getIValueFieldAccount(sfLowID);
+}
+
+NewcoinAddress SerializedLedgerEntry::getSecondOwner()
+{
+	return getIValueFieldAccount(sfHighID);
+}
+
 std::vector<uint256> SerializedLedgerEntry::getOwners()
 {
 	std::vector<uint256> owners;
