@@ -2618,8 +2618,8 @@ bool TransactionEngine::calcNodeAccountRev(unsigned int uIndex, PathState::point
 
 	const uint160&	uCurrencyID		= pnCur.uCurrencyID;
 
-	const uint32	uQualityIn		= uIndex ? rippleQualityIn(uCurAccountID, uPrvAccountID, uCurrencyID) : 1;
-	const uint32	uQualityOut		= uIndex != uLast ? rippleQualityOut(uCurAccountID, uNxtAccountID, uCurrencyID) : 1;
+	const uint32	uQualityIn		= uIndex ? rippleQualityIn(uCurAccountID, uPrvAccountID, uCurrencyID) : QUALITY_ONE;
+	const uint32	uQualityOut		= uIndex != uLast ? rippleQualityOut(uCurAccountID, uNxtAccountID, uCurrencyID) : QUALITY_ONE;
 
 	// For bPrvAccount
 	const STAmount	saPrvBalance	= uIndex && bPrvAccount ? rippleBalance(uCurAccountID, uPrvAccountID, uCurrencyID) : STAmount(uCurrencyID);
