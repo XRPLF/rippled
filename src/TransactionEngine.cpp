@@ -153,7 +153,7 @@ uint32 TransactionEngine::rippleTransferRate(const uint160& uIssuerID)
 									? sleAccount->getIFieldU32(sfTransferRate)
 									: QUALITY_ONE;
 
-	Log(lsINFO) << str(boost::format("rippleTransferRate: uIssuerID=%s account_exists=%d transfer_rate=%f")
+	Log(lsINFO) << boost::str(boost::format("rippleTransferRate: uIssuerID=%s account_exists=%d transfer_rate=%f")
 		% NewcoinAddress::createHumanAccountID(uIssuerID)
 		% !!sleAccount
 		% (uQuality/1000000000.0));
@@ -189,7 +189,7 @@ uint32 TransactionEngine::rippleQualityIn(const uint160& uToAccountID, const uin
 		}
 	}
 
-	Log(lsINFO) << str(boost::format("rippleQualityIn: uToAccountID=%s uFromAccountID=%s uCurrencyID=%s bLine=%d uQualityIn=%f")
+	Log(lsINFO) << boost::str(boost::format("rippleQualityIn: uToAccountID=%s uFromAccountID=%s uCurrencyID=%s bLine=%d uQualityIn=%f")
 		% NewcoinAddress::createHumanAccountID(uToAccountID)
 		% NewcoinAddress::createHumanAccountID(uFromAccountID)
 		% STAmount::createHumanCurrency(uCurrencyID)
@@ -417,7 +417,7 @@ STAmount TransactionEngine::accountSend(const uint160& uSenderID, const uint160&
 		SLE::pointer		sleSender	= entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uSenderID));
 		SLE::pointer		sleReceiver	= entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uReceiverID));
 
-		Log(lsINFO) << str(boost::format("accountSend> %s (%s) -> %s (%s) : %s")
+		Log(lsINFO) << boost::str(boost::format("accountSend> %s (%s) -> %s (%s) : %s")
 			% NewcoinAddress::createHumanAccountID(uSenderID)
 			% (sleSender->getIValueFieldAmount(sfBalance)).getFullText()
 			% NewcoinAddress::createHumanAccountID(uReceiverID)
@@ -427,7 +427,7 @@ STAmount TransactionEngine::accountSend(const uint160& uSenderID, const uint160&
 		sleSender->setIFieldAmount(sfBalance, sleSender->getIValueFieldAmount(sfBalance) - saAmount);
 		sleReceiver->setIFieldAmount(sfBalance, sleReceiver->getIValueFieldAmount(sfBalance) + saAmount);
 
-		Log(lsINFO) << str(boost::format("accountSend< %s (%s) -> %s (%s) : %s")
+		Log(lsINFO) << boost::str(boost::format("accountSend< %s (%s) -> %s (%s) : %s")
 			% NewcoinAddress::createHumanAccountID(uSenderID)
 			% (sleSender->getIValueFieldAmount(sfBalance)).getFullText()
 			% NewcoinAddress::createHumanAccountID(uReceiverID)
@@ -1076,7 +1076,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 
 	if (!mTxnAccount)
 	{
-		Log(lsTRACE) << str(boost::format("applyTransaction: Delay transaction: source account does not exist: %s") %
+		Log(lsTRACE) << boost::str(boost::format("applyTransaction: Delay transaction: source account does not exist: %s") %
 			txn.getSourceAccount().humanAccountID());
 
 		terResult			= terNO_ACCOUNT;
@@ -1175,7 +1175,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	else if (saSrcBalance < saPaid)
 	{
 		Log(lsINFO)
-			<< str(boost::format("applyTransaction: Delay: insufficent balance: balance=%s paid=%s")
+			<< boost::str(boost::format("applyTransaction: Delay: insufficent balance: balance=%s paid=%s")
 				% saSrcBalance.getText()
 				% saPaid.getText());
 
@@ -1930,7 +1930,7 @@ bool TransactionEngine::calcNodeOfferRev(
 	const uint256	uDirectEnd		= Ledger::getQualityNext(uDirectTip);
 	bool			bAdvance		= !entryCache(ltDIR_NODE, uDirectTip);
 
-	Log(lsINFO) << str(boost::format("calcNodeOfferRev> uIndex=%d prv=%s/%s cur=%s/%s nxt=%s/%s saTransferRate=%s")
+	Log(lsINFO) << boost::str(boost::format("calcNodeOfferRev> uIndex=%d prv=%s/%s cur=%s/%s nxt=%s/%s saTransferRate=%s")
 		% uIndex
 		% STAmount::createHumanCurrency(uPrvCurrencyID)
 		% NewcoinAddress::createHumanAccountID(uPrvIssuerID)
@@ -1946,7 +1946,7 @@ bool TransactionEngine::calcNodeOfferRev(
 	const STAmount&	saCurDlvReq		= pnCur.saRevDeliver;	// Reverse driver.
 	STAmount		saCurDlvAct;
 
-	Log(lsINFO) << str(boost::format("calcNodeOfferRev: uDirectTip=%s") % uDirectTip.ToString());
+	Log(lsINFO) << boost::str(boost::format("calcNodeOfferRev: uDirectTip=%s") % uDirectTip.ToString());
 
 	while (!!uDirectTip	// Have a quality.
 		&& saCurDlvAct != saCurDlvReq)
@@ -1956,7 +1956,7 @@ bool TransactionEngine::calcNodeOfferRev(
 		{
 			uDirectTip		= mLedger->getNextLedgerIndex(uDirectTip, uDirectEnd);
 
-			Log(lsINFO) << str(boost::format("calcNodeOfferRev: uDirectTip=%s") % uDirectTip.ToString());
+			Log(lsINFO) << boost::str(boost::format("calcNodeOfferRev: uDirectTip=%s") % uDirectTip.ToString());
 		}
 		else
 		{
@@ -1976,7 +1976,7 @@ bool TransactionEngine::calcNodeOfferRev(
 			while (saCurDlvReq != saCurDlvAct	// Have not met request.
 				&& dirNext(uDirectTip, sleDirectDir, uEntry, uCurIndex))
 			{
-				Log(lsINFO) << str(boost::format("calcNodeOfferRev: uCurIndex=%s") % uCurIndex.ToString());
+				Log(lsINFO) << boost::str(boost::format("calcNodeOfferRev: uCurIndex=%s") % uCurIndex.ToString());
 
 				SLE::pointer	sleCurOfr			= entryCache(ltOFFER, uCurIndex);
 				uint160			uCurOfrAccountID	= sleCurOfr->getIValueFieldAccount(sfAccount).getAccountID();
@@ -2101,7 +2101,7 @@ bool TransactionEngine::calcNodeOfferRev(
 		bSuccess	= true;
 	}
 
-	Log(lsINFO) << str(boost::format("calcNodeOfferRev< uIndex=%d saPrvDlvReq=%s bSuccess=%d")
+	Log(lsINFO) << boost::str(boost::format("calcNodeOfferRev< uIndex=%d saPrvDlvReq=%s bSuccess=%d")
 		% uIndex
 		% saPrvDlvReq.getText()
 		% bSuccess);
@@ -2527,7 +2527,7 @@ void TransactionEngine::calcNodeRipple(
 	STAmount& saPrvAct,			// <-> in limit including achieved
 	STAmount& saCurAct)			// <-> out limit achieved.
 {
-	Log(lsINFO) << str(boost::format("calcNodeRipple> uQualityIn=%d uQualityOut=%d saPrvReq=%s saCurReq=%s saPrvAct=%s saCurAct=%s")
+	Log(lsINFO) << boost::str(boost::format("calcNodeRipple> uQualityIn=%d uQualityOut=%d saPrvReq=%s saCurReq=%s saPrvAct=%s saCurAct=%s")
 		% uQualityIn
 		% uQualityOut
 		% saPrvReq.getFullText()
@@ -2542,7 +2542,7 @@ void TransactionEngine::calcNodeRipple(
 	const STAmount	saCur			= saCurReq-saCurAct;
 
 #if 0
-	Log(lsINFO) << str(boost::format("calcNodeRipple: bPrvUnlimited=%d saPrv=%s saCur=%s")
+	Log(lsINFO) << boost::str(boost::format("calcNodeRipple: bPrvUnlimited=%d saPrv=%s saCur=%s")
 		% bPrvUnlimited
 		% saPrv.getFullText()
 		% saCur.getFullText());
@@ -2551,7 +2551,7 @@ void TransactionEngine::calcNodeRipple(
 	if (uQualityIn >= uQualityOut)
 	{
 		// No fee.
-		Log(lsINFO) << str(boost::format("calcNodeRipple: No fees"));
+		Log(lsINFO) << boost::str(boost::format("calcNodeRipple: No fees"));
 
 		STAmount	saTransfer	= bPrvUnlimited ? saCur : MIN(saPrv, saCur);
 
@@ -2561,32 +2561,32 @@ void TransactionEngine::calcNodeRipple(
 	else
 	{
 		// Fee.
-		Log(lsINFO) << str(boost::format("calcNodeRipple: Fee"));
+		Log(lsINFO) << boost::str(boost::format("calcNodeRipple: Fee"));
 
 		uint160		uCurrencyID	= saCur.getCurrency();
 		STAmount	saCurIn		= STAmount::divide(STAmount::multiply(saCur, uQualityOut, uCurrencyID), uQualityIn, uCurrencyID);
 
-Log(lsINFO) << str(boost::format("calcNodeRipple: bPrvUnlimited=%d saPrv=%s saCurIn=%s") % bPrvUnlimited % saPrv.getFullText() % saCurIn.getFullText());
+Log(lsINFO) << boost::str(boost::format("calcNodeRipple: bPrvUnlimited=%d saPrv=%s saCurIn=%s") % bPrvUnlimited % saPrv.getFullText() % saCurIn.getFullText());
 		if (bPrvUnlimited || saCurIn <= saPrv)
 		{
 			// All of cur. Some amount of prv.
 			saCurAct	+= saCur;
 			saPrvAct	+= saCurIn;
-Log(lsINFO) << str(boost::format("calcNodeRipple:3c: saCurReq=%s saPrvAct=%s") % saCurReq.getFullText() % saPrvAct.getFullText());
+Log(lsINFO) << boost::str(boost::format("calcNodeRipple:3c: saCurReq=%s saPrvAct=%s") % saCurReq.getFullText() % saPrvAct.getFullText());
 		}
 		else
 		{
 			// A part of cur. All of prv. (cur as driver)
 			uint160		uCurrencyID	= saPrv.getCurrency();
 			STAmount	saCurOut	= STAmount::divide(STAmount::multiply(saPrv, uQualityIn, uCurrencyID), uQualityOut, uCurrencyID);
-Log(lsINFO) << str(boost::format("calcNodeRipple:4: saCurReq=%s") % saCurReq.getFullText());
+Log(lsINFO) << boost::str(boost::format("calcNodeRipple:4: saCurReq=%s") % saCurReq.getFullText());
 
 			saCurAct	+= saCurOut;
 			saPrvAct	= saPrvReq;
 		}
 	}
 
-	Log(lsINFO) << str(boost::format("calcNodeRipple< uQualityIn=%d uQualityOut=%d saPrvReq=%s saCurReq=%s saPrvAct=%s saCurAct=%s")
+	Log(lsINFO) << boost::str(boost::format("calcNodeRipple< uQualityIn=%d uQualityOut=%d saPrvReq=%s saCurReq=%s saPrvAct=%s saCurAct=%s")
 		% uQualityIn
 		% uQualityOut
 		% saPrvReq.getFullText()
@@ -2625,7 +2625,7 @@ bool TransactionEngine::calcNodeAccountRev(unsigned int uIndex, PathState::point
 	const STAmount	saPrvBalance	= uIndex && bPrvAccount ? rippleBalance(uCurAccountID, uPrvAccountID, uCurrencyID) : STAmount(uCurrencyID);
 	const STAmount	saPrvLimit		= uIndex && bPrvAccount ? rippleLimit(uCurAccountID, uPrvAccountID, uCurrencyID) : STAmount(uCurrencyID);
 
-	Log(lsINFO) << str(boost::format("calcNodeAccountRev> uIndex=%d/%d uPrvAccountID=%s uCurAccountID=%s uNxtAccountID=%s uCurrencyID=%s uQualityIn=%d uQualityOut=%d saPrvBalance=%s saPrvLimit=%s")
+	Log(lsINFO) << boost::str(boost::format("calcNodeAccountRev> uIndex=%d/%d uPrvAccountID=%s uCurAccountID=%s uNxtAccountID=%s uCurrencyID=%s uQualityIn=%d uQualityOut=%d saPrvBalance=%s saPrvLimit=%s")
 		% uIndex
 		% uLast
 		% NewcoinAddress::createHumanAccountID(uPrvAccountID)
@@ -2663,7 +2663,7 @@ bool TransactionEngine::calcNodeAccountRev(unsigned int uIndex, PathState::point
 	// STAmount		saPrvDeliverReq	= saPrvBalance.isPositive() ? saPrvLimit - saPrvBalance : saPrvLimit;
 	STAmount		saCurWantedAct(saCurWantedReq.getCurrency());
 
-	Log(lsINFO) << str(boost::format("calcNodeAccountRev: saPrvRedeemReq=%s/%s saPrvIssueReq=%s/%s saCurWantedReq=%s/%s")
+	Log(lsINFO) << boost::str(boost::format("calcNodeAccountRev: saPrvRedeemReq=%s/%s saPrvIssueReq=%s/%s saCurWantedReq=%s/%s")
 		% saPrvRedeemReq.getText()
 		% saPrvRedeemReq.getHumanCurrency()
 		% saPrvIssueReq.getText()
@@ -2684,14 +2684,14 @@ bool TransactionEngine::calcNodeAccountRev(unsigned int uIndex, PathState::point
 		else if (uIndex == uLast)
 		{
 			// account --> ACCOUNT --> $
-			Log(lsINFO) << str(boost::format("calcNodeAccountRev: account --> ACCOUNT --> $"));
+			Log(lsINFO) << boost::str(boost::format("calcNodeAccountRev: account --> ACCOUNT --> $"));
 
 			// Calculate redeem
 			if (bRedeem
 				&& saPrvRedeemReq)								// Previous has IOUs to redeem.
 			{
 				// Redeem at 1:1
-				Log(lsINFO) << str(boost::format("calcNodeAccountRev: Redeem at 1:1"));
+				Log(lsINFO) << boost::str(boost::format("calcNodeAccountRev: Redeem at 1:1"));
 
 				saCurWantedAct		= MIN(saPrvRedeemReq, saCurWantedReq);
 				saPrvRedeemAct		= saCurWantedAct;
@@ -2703,7 +2703,7 @@ bool TransactionEngine::calcNodeAccountRev(unsigned int uIndex, PathState::point
 				&& saPrvIssueReq)								// Will accept IOUs.
 			{
 				// Rate: quality in : 1.0
-				Log(lsINFO) << str(boost::format("calcNodeAccountRev: Rate: quality in : 1.0"));
+				Log(lsINFO) << boost::str(boost::format("calcNodeAccountRev: Rate: quality in : 1.0"));
 
 				calcNodeRipple(uQualityIn, QUALITY_ONE, saPrvIssueReq, saCurWantedReq, saPrvIssueAct, saCurWantedAct);
 			}
@@ -2726,7 +2726,7 @@ bool TransactionEngine::calcNodeAccountRev(unsigned int uIndex, PathState::point
 				&& saPrvBalance.isNegative())			// Previous has IOUs to redeem.
 			{
 				// Rate : 1.0 : quality out
-				Log(lsINFO) << str(boost::format("calcNodeAccountRev: Rate : 1.0 : quality out"));
+				Log(lsINFO) << boost::str(boost::format("calcNodeAccountRev: Rate : 1.0 : quality out"));
 
 				calcNodeRipple(QUALITY_ONE, uQualityOut, saPrvRedeemReq, saCurRedeemReq, saPrvRedeemAct, saCurRedeemAct);
 			}
@@ -2739,7 +2739,7 @@ bool TransactionEngine::calcNodeAccountRev(unsigned int uIndex, PathState::point
 				&& saCurIssueReq)						// Need some issued.
 			{
 				// Rate : 1.0 : transfer_rate
-				Log(lsINFO) << str(boost::format("calcNodeAccountRev: Rate : 1.0 : transfer_rate"));
+				Log(lsINFO) << boost::str(boost::format("calcNodeAccountRev: Rate : 1.0 : transfer_rate"));
 
 				calcNodeRipple(QUALITY_ONE, rippleTransferRate(uCurAccountID), saPrvRedeemReq, saCurIssueReq, saPrvRedeemAct, saCurIssueAct);
 			}
@@ -2751,7 +2751,7 @@ bool TransactionEngine::calcNodeAccountRev(unsigned int uIndex, PathState::point
 				&& !saPrvBalance.isNegative())			// Previous has no IOUs.
 			{
 				// Rate: quality in : quality out
-				Log(lsINFO) << str(boost::format("calcNodeAccountRev: Rate: quality in : quality out"));
+				Log(lsINFO) << boost::str(boost::format("calcNodeAccountRev: Rate: quality in : quality out"));
 
 				calcNodeRipple(uQualityIn, uQualityOut, saPrvIssueReq, saCurRedeemReq, saPrvIssueAct, saCurRedeemAct);
 			}
@@ -2764,7 +2764,7 @@ bool TransactionEngine::calcNodeAccountRev(unsigned int uIndex, PathState::point
 				&& saCurIssueReq != saCurIssueAct)		// Need some issued.
 			{
 				// Rate: quality in : 1.0
-				Log(lsINFO) << str(boost::format("calcNodeAccountRev: Rate: quality in : 1.0"));
+				Log(lsINFO) << boost::str(boost::format("calcNodeAccountRev: Rate: quality in : 1.0"));
 
 				calcNodeRipple(uQualityIn, QUALITY_ONE, saPrvIssueReq, saCurIssueReq, saPrvIssueAct, saCurIssueAct);
 			}
@@ -2775,7 +2775,7 @@ bool TransactionEngine::calcNodeAccountRev(unsigned int uIndex, PathState::point
 				// terResult	= tenBAD_AMOUNT;
 				bSuccess	= false;
 			}
-			Log(lsINFO) << str(boost::format("calcNodeAccountRev: ^|account --> ACCOUNT --> account : bPrvRedeem=%d bPrvIssue=%d bRedeem=%d bIssue=%d saCurRedeemReq=%s saCurIssueReq=%s saPrvBalance=%s saCurRedeemAct=%s saCurIssueAct=%s")
+			Log(lsINFO) << boost::str(boost::format("calcNodeAccountRev: ^|account --> ACCOUNT --> account : bPrvRedeem=%d bPrvIssue=%d bRedeem=%d bIssue=%d saCurRedeemReq=%s saCurIssueReq=%s saPrvBalance=%s saCurRedeemAct=%s saCurIssueAct=%s")
 				% bPrvRedeem
 				% bPrvIssue
 				% bRedeem
@@ -2791,7 +2791,7 @@ bool TransactionEngine::calcNodeAccountRev(unsigned int uIndex, PathState::point
 	{
 		// account --> ACCOUNT --> offer
 		// Note: deliver is always issue as ACCOUNT is the issuer for the offer input.
-		Log(lsINFO) << str(boost::format("calcNodeAccountRev: account --> ACCOUNT --> offer"));
+		Log(lsINFO) << boost::str(boost::format("calcNodeAccountRev: account --> ACCOUNT --> offer"));
 
 		// redeem -> deliver/issue.
 		if (bPrvRedeem
@@ -2825,7 +2825,7 @@ bool TransactionEngine::calcNodeAccountRev(unsigned int uIndex, PathState::point
 		if (uIndex == uLast)
 		{
 			// offer --> ACCOUNT --> $
-			Log(lsINFO) << str(boost::format("calcNodeAccountRev: offer --> ACCOUNT --> $"));
+			Log(lsINFO) << boost::str(boost::format("calcNodeAccountRev: offer --> ACCOUNT --> $"));
 
 			// Rate: quality in : 1.0
 			calcNodeRipple(uQualityIn, QUALITY_ONE, saPrvDeliverReq, saCurWantedReq, saPrvDeliverAct, saCurWantedAct);
@@ -2841,7 +2841,7 @@ bool TransactionEngine::calcNodeAccountRev(unsigned int uIndex, PathState::point
 		{
 			// offer --> ACCOUNT --> account
 			// Note: offer is always deliver/redeeming as account is issuer.
-			Log(lsINFO) << str(boost::format("calcNodeAccountRev: offer --> ACCOUNT --> account"));
+			Log(lsINFO) << boost::str(boost::format("calcNodeAccountRev: offer --> ACCOUNT --> account"));
 
 			// deliver -> redeem
 			if (bRedeem									// Allowed to redeem.
@@ -2874,7 +2874,7 @@ bool TransactionEngine::calcNodeAccountRev(unsigned int uIndex, PathState::point
 	{
 		// offer --> ACCOUNT --> offer
 		// deliver/redeem -> deliver/issue.
-		Log(lsINFO) << str(boost::format("calcNodeAccountRev: offer --> ACCOUNT --> offer"));
+		Log(lsINFO) << boost::str(boost::format("calcNodeAccountRev: offer --> ACCOUNT --> offer"));
 
 		if (bIssue									// Allowed to issue.
 			&& saCurDeliverReq != saCurDeliverAct)	// Can only if issue if more can not be redeemed.
@@ -2947,7 +2947,7 @@ bool TransactionEngine::calcNodeAccountFwd(unsigned int uIndex, PathState::point
 
 	STAmount&		saCurReceive	= pspCur->saOutAct;
 
-	Log(lsINFO) << str(boost::format("calcNodeAccountFwd> uIndex=%d/%d saCurRedeemReq=%s/%s saCurIssueReq=%s/%s saCurDeliverReq=%s/%s")
+	Log(lsINFO) << boost::str(boost::format("calcNodeAccountFwd> uIndex=%d/%d saCurRedeemReq=%s/%s saCurIssueReq=%s/%s saCurDeliverReq=%s/%s")
 		% uIndex
 		% uLast
 		% saCurRedeemReq.getText()
@@ -3003,7 +3003,7 @@ bool TransactionEngine::calcNodeAccountFwd(unsigned int uIndex, PathState::point
 			}
 			saCurSendMaxAct	+= saCurIssueAct;
 
-			Log(lsINFO) << str(boost::format("calcNodeAccountFwd: ^ --> ACCOUNT --> account : saCurSendMaxReq=%s saCurRedeemAct=%s saCurIssueReq=%s saCurIssueAct=%s")
+			Log(lsINFO) << boost::str(boost::format("calcNodeAccountFwd: ^ --> ACCOUNT --> account : saCurSendMaxReq=%s saCurRedeemAct=%s saCurIssueReq=%s saCurIssueAct=%s")
 				% saCurSendMaxReq.getFullText()
 				% saCurRedeemAct.getFullText()
 				% saCurIssueReq.getFullText()
@@ -3012,7 +3012,7 @@ bool TransactionEngine::calcNodeAccountFwd(unsigned int uIndex, PathState::point
 		else if (uIndex == uLast)
 		{
 			// account --> ACCOUNT --> $
-			Log(lsINFO) << str(boost::format("calcNodeAccountFwd: account --> ACCOUNT --> $ : uPrvAccountID=%s uCurAccountID=%s saPrvRedeemReq=%s saPrvIssueReq=%s")
+			Log(lsINFO) << boost::str(boost::format("calcNodeAccountFwd: account --> ACCOUNT --> $ : uPrvAccountID=%s uCurAccountID=%s saPrvRedeemReq=%s saPrvIssueReq=%s")
 				% NewcoinAddress::createHumanAccountID(uPrvAccountID)
 				% NewcoinAddress::createHumanAccountID(uCurAccountID)
 				% saPrvRedeemReq.getFullText()
@@ -3033,7 +3033,7 @@ bool TransactionEngine::calcNodeAccountFwd(unsigned int uIndex, PathState::point
 		else
 		{
 			// account --> ACCOUNT --> account
-			Log(lsINFO) << str(boost::format("calcNodeAccountFwd: account --> ACCOUNT --> account"));
+			Log(lsINFO) << boost::str(boost::format("calcNodeAccountFwd: account --> ACCOUNT --> account"));
 
 			// Previous redeem part 1: redeem -> redeem
 			if (bRedeem										// Can redeem.
@@ -3080,7 +3080,7 @@ bool TransactionEngine::calcNodeAccountFwd(unsigned int uIndex, PathState::point
 	else if (bPrvAccount && !bNxtAccount)
 	{
 		// account --> ACCOUNT --> offer
-		Log(lsINFO) << str(boost::format("calcNodeAccountFwd: account --> ACCOUNT --> offer"));
+		Log(lsINFO) << boost::str(boost::format("calcNodeAccountFwd: account --> ACCOUNT --> offer"));
 
 		// redeem -> issue.
 		// wants to redeem and current would and can issue.
@@ -3108,7 +3108,7 @@ bool TransactionEngine::calcNodeAccountFwd(unsigned int uIndex, PathState::point
 		if (uIndex == uLast)
 		{
 			// offer --> ACCOUNT --> $
-			Log(lsINFO) << str(boost::format("calcNodeAccountFwd: offer --> ACCOUNT --> $"));
+			Log(lsINFO) << boost::str(boost::format("calcNodeAccountFwd: offer --> ACCOUNT --> $"));
 
 			// Amount to credit.
 			saCurReceive	= saPrvDeliverAct;
@@ -3118,7 +3118,7 @@ bool TransactionEngine::calcNodeAccountFwd(unsigned int uIndex, PathState::point
 		else
 		{
 			// offer --> ACCOUNT --> account
-			Log(lsINFO) << str(boost::format("calcNodeAccountFwd: offer --> ACCOUNT --> account"));
+			Log(lsINFO) << boost::str(boost::format("calcNodeAccountFwd: offer --> ACCOUNT --> account"));
 
 			// deliver -> redeem
 			if (bRedeem										// Allowed to redeem.
@@ -3146,7 +3146,7 @@ bool TransactionEngine::calcNodeAccountFwd(unsigned int uIndex, PathState::point
 	{
 		// offer --> ACCOUNT --> offer
 		// deliver/redeem -> deliver/issue.
-		Log(lsINFO) << str(boost::format("calcNodeAccountFwd: offer --> ACCOUNT --> offer"));
+		Log(lsINFO) << boost::str(boost::format("calcNodeAccountFwd: offer --> ACCOUNT --> offer"));
 
 		if (bIssue											// Allowed to issue.
 			&& saPrvDeliverReq								// Previous wants to deliver
@@ -3390,22 +3390,22 @@ bool PathState::pushNode(int iType, uint160 uAccountID, uint160 uCurrencyID, uin
 
 // XXX Disallow loops in ripple paths
 PathState::PathState(
-	Ledger::pointer			lpLedger,
-	int						iIndex,
+	const Ledger::pointer&	lpLedger,
+	const int				iIndex,
 	const LedgerEntrySet&	lesSource,
 	const STPath&			spSourcePath,
-	uint160					uReceiverID,
-	uint160					uSenderID,
-	STAmount				saSend,
-	STAmount				saSendMax,
-	bool					bPartialPayment
+	const uint160&			uReceiverID,
+	const uint160&			uSenderID,
+	const STAmount&			saSend,
+	const STAmount&			saSendMax,
+	const bool				bPartialPayment
 	)
 	: mLedger(lpLedger), mIndex(iIndex), uQuality(0)
 {
 	const uint160	uInCurrencyID	= saSendMax.getCurrency();
 	const uint160	uOutCurrencyID	= saSend.getCurrency();
-	const uint160	uInIssuerID		= !!uInCurrencyID ? uSenderID : ACCOUNT_XNS;
-	const uint160	uOutIssuerID	= !!uOutCurrencyID ? uReceiverID : ACCOUNT_XNS;
+	const uint160	uInIssuerID		= !!uInCurrencyID ? saSendMax.getIssuer() : ACCOUNT_XNS;
+	const uint160	uOutIssuerID	= !!uOutCurrencyID ? saSend.getIssuer() : ACCOUNT_XNS;
 
 	lesEntries				= lesSource.duplicate();
 
@@ -3448,7 +3448,7 @@ PathState::PathState(
 		}
 	}
 
-	Log(lsINFO) << str(boost::format("PathState: in=%s/%s out=%s/%s %s")
+	Log(lsINFO) << boost::str(boost::format("PathState: in=%s/%s out=%s/%s %s")
 		% STAmount::createHumanCurrency(uInCurrencyID)
 		% NewcoinAddress::createHumanAccountID(uInIssuerID)
 		% STAmount::createHumanCurrency(uOutCurrencyID)
@@ -3546,7 +3546,7 @@ bool TransactionEngine::calcNode(unsigned int uIndex, PathState::pointer pspCur,
 	const bool			bCurAccount	= !!(pnCur.uFlags & STPathElement::typeAccount);
 	bool				bValid;
 
-	Log(lsINFO) << str(boost::format("calcNode> uIndex=%d") % uIndex);
+	Log(lsINFO) << boost::str(boost::format("calcNode> uIndex=%d") % uIndex);
 
 	// Do current node reverse.
 	bValid	= bCurAccount
@@ -3567,7 +3567,7 @@ bool TransactionEngine::calcNode(unsigned int uIndex, PathState::pointer pspCur,
 					: calcNodeOfferFwd(uIndex, pspCur, bMultiQuality);
 	}
 
-	Log(lsINFO) << str(boost::format("calcNode< uIndex=%d bValid=%d") % uIndex % bValid);
+	Log(lsINFO) << boost::str(boost::format("calcNode< uIndex=%d bValid=%d") % uIndex % bValid);
 
 	return bValid;
 }
@@ -3615,6 +3615,10 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 	const STAmount	saMaxAmount		= bMax ? txn.getITFieldAmount(sfSendMax) : saDstAmount;
 	const uint160	uSrcCurrency	= saMaxAmount.getCurrency();
 	const uint160	uDstCurrency	= saDstAmount.getCurrency();
+
+	Log(lsINFO) << boost::str(boost::format("doPayment> saMaxAmount=%s saDstAmount=%s")
+		% saMaxAmount.getFullText()
+		% saDstAmount.getFullText());
 
 	if (!uDstAccountID)
 	{
@@ -3907,7 +3911,7 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 
 	if (transResultInfo(terResult, strToken, strHuman))
 	{
-		Log(lsINFO) << str(boost::format("doPayment: %s: %s") % strToken % strHuman);
+		Log(lsINFO) << boost::str(boost::format("doPayment: %s: %s") % strToken % strHuman);
 	}
 	else
 	{
@@ -3949,7 +3953,7 @@ TransactionEngineResult TransactionEngine::doWalletAdd(const SerializedTransacti
 	if (saSrcBalance < saAmount)
 	{
 		std::cerr
-			<< str(boost::format("WalletAdd: Delay transaction: insufficent balance: balance=%s amount=%s")
+			<< boost::str(boost::format("WalletAdd: Delay transaction: insufficent balance: balance=%s amount=%s")
 				% saSrcBalance.getText()
 				% saAmount.getText())
 			<< std::endl;
@@ -4264,7 +4268,7 @@ Log(lsWARNING) << "doOfferCreate: saTakerGets=" << saTakerGets.getFullText();
 		STAmount		saOfferGot;
 		const uint256	uTakeBookBase	= Ledger::getBookBase(uGetsCurrency, uGetsIssuerID, uPaysCurrency, uPaysIssuerID);
 
-		Log(lsINFO) << str(boost::format("doOfferCreate: take against book: %s : %s/%s -> %s/%s")
+		Log(lsINFO) << boost::str(boost::format("doOfferCreate: take against book: %s : %s/%s -> %s/%s")
 			% uTakeBookBase.ToString()
 			% saTakerGets.getHumanCurrency()
 			% NewcoinAddress::createHumanAccountID(saTakerGets.getIssuer())
@@ -4319,7 +4323,7 @@ Log(lsWARNING) << "doOfferCreate: saTakerGets=" << saTakerGets.getFullText();
 		{
 			uint256	uBookBase	= Ledger::getBookBase(uPaysCurrency, uPaysIssuerID, uGetsCurrency, uGetsIssuerID);
 
-			Log(lsINFO) << str(boost::format("doOfferCreate: adding to book: %s : %s/%s -> %s/%s")
+			Log(lsINFO) << boost::str(boost::format("doOfferCreate: adding to book: %s : %s/%s -> %s/%s")
 				% uBookBase.ToString()
 				% saTakerPays.getHumanCurrency()
 				% NewcoinAddress::createHumanAccountID(saTakerPays.getIssuer())
