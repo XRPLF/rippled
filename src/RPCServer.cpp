@@ -45,7 +45,7 @@ Json::Value RPCServer::RPCError(int iError)
 		{ rpcBAD_SEED,				"badSeed",			"Disallowed seed."										},
 		{ rpcDST_ACT_MALFORMED,		"dstActMalformed",	"Destination account is malformed."						},
 		{ rpcDST_ACT_MISSING,		"dstActMissing",	"Destination account does not exists."					},
-		{ rpcDST_AMT_MALFORMED,		"dstAmtMalformed",	"Destination amount/currency is malformed."				},
+		{ rpcDST_AMT_MALFORMED,		"dstAmtMalformed",	"Destination amount/currency/issuer is malformed."		},
 		{ rpcFAIL_GEN_DECRPYT,		"failGenDecrypt",	"Failed to decrypt generator."							},
 		{ rpcGETS_ACT_MALFORMED,	"getsActMalformed",	"Gets account malformed."								},
 		{ rpcGETS_AMT_MALFORMED,	"getsAmtMalformed",	"Gets amount malformed."								},
@@ -74,7 +74,7 @@ Json::Value RPCServer::RPCError(int iError)
 		{ rpcQUALITY_MALFORMED,		"qualityMalformed",	"Quality malformed."									},
 		{ rpcSRC_ACT_MALFORMED,		"srcActMalformed",	"Source account is malformed."							},
 		{ rpcSRC_ACT_MISSING,		"srcActMissing",	"Source account does not exist."						},
-		{ rpcSRC_AMT_MALFORMED,		"srcAmtMalformed",	"Source amount/currency is malformed."					},
+		{ rpcSRC_AMT_MALFORMED,		"srcAmtMalformed",	"Source amount/currency/issuer is malformed."			},
 		{ rpcSRC_UNCLAIMED,			"srcUnclaimed",		"Source account is not claimed."						},
 		{ rpcSUCCESS,				"success",			"Success."												},
 		{ rpcTXN_NOT_FOUND,			"txnNotFound",		"Transaction not found."								},
@@ -1706,7 +1706,7 @@ Json::Value RPCServer::doRippleLinesGet(const Json::Value &params)
 	return ret;
 }
 
-// send regular_seed paying_account account_id amount [currency] [send_max] [send_currency]
+// send regular_seed paying_account account_id amount [currency] [issuer] [send_max] [send_currency] [send_issuer]
 Json::Value RPCServer::doSend(const Json::Value& params)
 {
 	NewcoinAddress	naSeed;
@@ -1716,12 +1716,20 @@ Json::Value RPCServer::doSend(const Json::Value& params)
 	STAmount		saDstAmount;
 	std::string		sSrcCurrency;
 	std::string		sDstCurrency;
+	std::string		sSrcIssuer;
+	std::string		sDstIssuer;
 
 	if (params.size() >= 5)
 		sDstCurrency	= params[4u].asString();
 
+	if (params.size() >= 6)
+		sDstIssuer		= params[5u].asString();
+
 	if (params.size() >= 7)
 		sSrcCurrency	= params[6u].asString();
+
+	if (params.size() >= 8)
+		sSrcIssuer		= params[7u].asString();
 
 	if (!naSeed.setSeedGeneric(params[0u].asString()))
 	{
@@ -1735,11 +1743,11 @@ Json::Value RPCServer::doSend(const Json::Value& params)
 	{
 		return RPCError(rpcDST_ACT_MALFORMED);
 	}
-	else if (!saDstAmount.setFullValue(params[3u].asString(), sDstCurrency))
+	else if (!saDstAmount.setFullValue(params[3u].asString(), sDstCurrency, sDstIssuer))
 	{
 		return RPCError(rpcDST_AMT_MALFORMED);
 	}
-	else if (params.size() >= 6 && !saSrcAmountMax.setFullValue(params[5u].asString(), sSrcCurrency))
+	else if (params.size() >= 7 && !saSrcAmountMax.setFullValue(params[5u].asString(), sSrcCurrency, sSrcIssuer))
 	{
 		return RPCError(rpcSRC_AMT_MALFORMED);
 	}
@@ -1758,10 +1766,16 @@ Json::Value RPCServer::doSend(const Json::Value& params)
 		Json::Value				obj		= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
 			saSrcBalance, saFee, asSrc, naVerifyGenerator);
 
+		// Log(lsINFO) << boost::str(boost::format("doSend: sSrcIssuer=%s sDstIssuer=%s saSrcAmountMax=%s saDstAmount=%s")
+		//	% sSrcIssuer
+		//	% sDstIssuer
+		//	% saSrcAmountMax.getFullText()
+		//	% saDstAmount.getFullText());
+
 		if (!obj.empty())
 			return obj;
 
-		if (params.size() < 6)
+		if (params.size() < 7)
 			saSrcAmountMax	= saDstAmount;
 
 		// Do a few simple checks.
@@ -2554,7 +2568,7 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 		{	"ripple",				&RPCServer::doRipple,				8, -1, false,	optCurrent|optClosed },
 		{	"ripple_lines_get",		&RPCServer::doRippleLinesGet,		1,  2, false,	optCurrent	},
 		{	"ripple_line_set",		&RPCServer::doRippleLineSet,		4,  7, false,	optCurrent	},
-		{	"send",					&RPCServer::doSend,					3,  7, false,	optCurrent	},
+		{	"send",					&RPCServer::doSend,					3,  9, false,	optCurrent	},
 		{	"server_info",			&RPCServer::doServerInfo,			0,  0, true					},
 		{	"stop",					&RPCServer::doStop,					0,  0, true					},
 		{	"tx",					&RPCServer::doTx,					1,  1, true					},
