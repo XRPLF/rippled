@@ -164,9 +164,9 @@ uint32 TransactionEngine::rippleTransferRate(const uint160& uIssuerID)
 }
 
 // XXX Might not need this, might store in nodes on calc reverse.
-uint32 TransactionEngine::rippleQualityIn(const uint160& uToAccountID, const uint160& uFromAccountID, const uint160& uCurrencyID)
+uint32 TransactionEngine::rippleQualityIn(const uint160& uToAccountID, const uint160& uFromAccountID, const uint160& uCurrencyID, const SOE_Field sfLow, const SOE_Field sfHigh)
 {
-	uint32			uQualityIn		= QUALITY_ONE;
+	uint32			uQuality		= QUALITY_ONE;
 	SLE::pointer	sleRippleState;
 
 	if (uToAccountID == uFromAccountID)
@@ -179,53 +179,28 @@ uint32 TransactionEngine::rippleQualityIn(const uint160& uToAccountID, const uin
 
 		if (sleRippleState)
 		{
-			SOE_Field	sfField	= uToAccountID < uFromAccountID ? sfLowQualityIn : sfHighQualityIn;
+			SOE_Field	sfField	= uToAccountID < uFromAccountID ? sfLow: sfHigh;
 
-			uQualityIn	= sleRippleState->getIFieldPresent(sfField)
+			uQuality	= sleRippleState->getIFieldPresent(sfField)
 							? sleRippleState->getIFieldU32(sfField)
 							: QUALITY_ONE;
-			if (!uQualityIn)
-				uQualityIn	= 1;
+
+			if (!uQuality)
+				uQuality	= 1;	// Avoid divide by zero.
 		}
 	}
 
-	Log(lsINFO) << boost::str(boost::format("rippleQualityIn: uToAccountID=%s uFromAccountID=%s uCurrencyID=%s bLine=%d uQualityIn=%f")
+	Log(lsINFO) << boost::str(boost::format("rippleQuality: %s uToAccountID=%s uFromAccountID=%s uCurrencyID=%s bLine=%d uQuality=%f")
+		% (sfLow == sfLowQualityIn ? "in" : "out")
 		% NewcoinAddress::createHumanAccountID(uToAccountID)
 		% NewcoinAddress::createHumanAccountID(uFromAccountID)
 		% STAmount::createHumanCurrency(uCurrencyID)
 		% !!sleRippleState
-		% (uQualityIn/1000000000.0));
+		% (uQuality/1000000000.0));
 
 	assert(uToAccountID == uFromAccountID || !!sleRippleState);
 
-	return uQualityIn;
-}
-
-uint32 TransactionEngine::rippleQualityOut(const uint160& uToAccountID, const uint160& uFromAccountID, const uint160& uCurrencyID)
-{
-	uint32		uQualityOut	= QUALITY_ONE;
-
-	if (uToAccountID == uFromAccountID)
-	{
-		nothing();
-	}
-	else
-	{
-		SLE::pointer	sleRippleState	= entryCache(ltRIPPLE_STATE, Ledger::getRippleStateIndex(uToAccountID, uFromAccountID, uCurrencyID));
-
-		if (sleRippleState)
-		{
-			uQualityOut	= sleRippleState->getIFieldU32(uToAccountID < uFromAccountID ? sfLowQualityOut : sfHighQualityOut);
-			if (!uQualityOut)
-				uQualityOut	= 1;
-		}
-		else
-		{
-			assert(false);
-		}
-	}
-
-	return uQualityOut;
+	return uQuality;
 }
 
 // Return how much of uIssuerID's uCurrencyID IOUs that uAccountID holds.  May be negative.
@@ -2840,13 +2815,12 @@ bool TransactionEngine::calcNodeAccountRev(unsigned int uIndex, PathState::point
 		else
 		{
 			// offer --> ACCOUNT --> account
-			// Note: offer is always deliver/redeeming as account is issuer.
+			// Note: offer is always delivering(redeeming) as account is issuer.
 			Log(lsINFO) << boost::str(boost::format("calcNodeAccountRev: offer --> ACCOUNT --> account"));
 
 			// deliver -> redeem
 			if (bRedeem									// Allowed to redeem.
-				&& saCurRedeemReq						// Next wants us to redeem.
-				&& saPrvBalance.isNegative())			// Previous has IOUs to redeem.
+				&& saCurRedeemReq)						// Next wants us to redeem.
 			{
 				// Rate : 1.0 : quality out
 				calcNodeRipple(QUALITY_ONE, uQualityOut, saPrvDeliverReq, saCurRedeemReq, saPrvDeliverAct, saCurRedeemAct);
@@ -2854,15 +2828,22 @@ bool TransactionEngine::calcNodeAccountRev(unsigned int uIndex, PathState::point
 
 			// deliver -> issue.
 			if (bIssue									// Allowed to issue.
-				&& saCurRedeemReq != saCurRedeemAct		// Can only if issue if more can not be redeemed.
-				&& saPrvBalance.isNegative()			// Previous still has IOUs.
+				&& saCurRedeemReq == saCurRedeemAct		// Can only if issue if more can not be redeemed.
 				&& saCurIssueReq)						// Need some issued.
 			{
 				// Rate : 1.0 : transfer_rate
 				calcNodeRipple(QUALITY_ONE, rippleTransferRate(uCurAccountID), saPrvDeliverReq, saCurIssueReq, saPrvDeliverAct, saCurIssueAct);
 			}
 
-			if (!saCurDeliverAct && !saCurIssueAct)
+			Log(lsINFO) << boost::str(boost::format("calcNodeAccountRev: bRedeem=%d saCurRedeemReq=%s saCurIssueAct=%s bIssue=%d saCurIssueReq=%s saPrvDeliverAct=%s")
+				% bRedeem
+				% saCurRedeemReq.getFullText()
+				% saCurRedeemAct.getFullText()
+				% bIssue
+				% saCurIssueReq.getFullText()
+				% saPrvDeliverAct.getFullText());
+
+			if (!saPrvDeliverAct)
 			{
 				// Must want something.
 				// terResult	= tenBAD_AMOUNT;
