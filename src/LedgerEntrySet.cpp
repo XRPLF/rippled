@@ -230,8 +230,70 @@ Json::Value LedgerEntrySet::getJson(int) const
 	return ret;
 }
 
-void LedgerEntrySet::addRawMeta(Serializer& s, Ledger::pointer origLedger)
+SLE::pointer LedgerEntrySet::getForMod(const uint256& node, Ledger::pointer& ledger,
+	boost::unordered_map<uint256, SLE::pointer>& newMods)
 {
+	boost::unordered_map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find(node);
+	if (it != mEntries.end())
+	{
+		if (it->second.mAction == taaDELETE)
+			return SLE::pointer();
+		if (it->second.mAction == taaCACHED)
+			it->second.mAction = taaMODIFY;
+		if (it->second.mSeq != mSeq)
+		{
+			it->second.mEntry = boost::make_shared<SerializedLedgerEntry>(*it->second.mEntry);
+			it->second.mSeq = mSeq;
+		}
+		return it->second.mEntry;
+	}
+
+	boost::unordered_map<uint256, SLE::pointer>::iterator me = newMods.find(node);
+	if (me != newMods.end())
+		return me->second;
+
+	SLE::pointer ret = ledger->getSLE(node);
+	if (ret)
+		newMods.insert(std::make_pair(node, ret));
+	return ret;
+
+}
+
+bool LedgerEntrySet::threadNode(SLE::pointer& node, const NewcoinAddress& threadTo, Ledger::pointer& ledger,
+	boost::unordered_map<uint256, SLE::pointer>& newMods)
+{
+	SLE::pointer sle = getForMod(Ledger::getAccountRootIndex(threadTo.getAccountID()), ledger, newMods);
+	if ((!sle) || (sle->getIndex() == node->getIndex())) // do not self-thread
+		return false;
+	return threadNode(node, sle, ledger, newMods);
+}
+
+bool LedgerEntrySet::threadNode(SLE::pointer& node, SLE::pointer& threadTo, Ledger::pointer& ledger,
+	boost::unordered_map<uint256, SLE::pointer>& newMods)
+{
+	// WRITEME
+	return false;
+}
+
+bool LedgerEntrySet::threadOwners(SLE::pointer& node, Ledger::pointer& ledger,
+	boost::unordered_map<uint256, SLE::pointer>& newMods)
+{ // thread new or modified node to owner or owners
+	if (node->hasOneOwner()) // thread to owner's account
+		return threadNode(node, node->getOwner(), ledger, newMods);
+	else if (node->hasTwoOwners()) // thread to owner's accounts
+		return
+			threadNode(node, node->getFirstOwner(), ledger, newMods) ||
+			threadNode(node, node->getSecondOwner(), ledger, newMods);
+	else
+		return false;
+}
+
+void LedgerEntrySet::calcRawMeta(Serializer& s, Ledger::pointer& origLedger)
+{ // calculate the raw meta data and return it. This must be called before the set is committed
+
+	// Entries modified only as a result of building the transaction metadata
+	boost::unordered_map<uint256, SLE::pointer> newMod;
+
 	for (boost::unordered_map<uint256, LedgerEntrySetEntry>::const_iterator it = mEntries.begin(),
 			end = mEntries.end(); it != end; ++it)
 	{
@@ -257,10 +319,38 @@ void LedgerEntrySet::addRawMeta(Serializer& s, Ledger::pointer origLedger)
 			SLE::pointer origNode = origLedger->getSLE(it->first);
 			SLE::pointer curNode = it->second.mEntry;
 
-			// FINISH
+			if (nType == TMNDeletedNode)
+			{
+				threadOwners(origNode, origLedger, newMod);
 
+				if (origNode->getType() == ltOFFER)
+				{ // check for non-zero balances
+					// WRITEME
+				}
+			}
+
+			if ((nType == TMNCreatedNode) || (nType == TMNModifiedNode))
+			{
+				if (nType == TMNCreatedNode) // if created, thread to owner(s)
+					threadOwners(curNode, origLedger, newMod);
+
+				if (curNode->isThreadedType()) // always thread to self
+					threadNode(curNode, curNode, origLedger, newMod);
+
+				if (nType == TMNModifiedNode)
+				{
+					// analyze changes WRITEME
+				}
+
+			}
 		}
 	}
+
+	// add any new modified nodes to the modification set
+	for (boost::unordered_map<uint256, SLE::pointer>::iterator it = newMod.begin(), end = newMod.end();
+			it != end; ++it)
+		entryCache(it->second);
+
 	mSet.addRaw(s);
 }
 
