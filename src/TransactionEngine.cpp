@@ -102,7 +102,9 @@ bool transResultInfo(TransactionEngineResult terCode, std::string& strToken, std
 	return iIndex >= 0;
 }
 
-STAmount TransactionEngine::rippleBalance(const uint160& uToAccountID, const uint160& uFromAccountID, const uint160& uCurrencyID)
+// Returns amount owed by uToAccountID to uFromAccountID.
+// <-- $owed/uCurrencyID/uToAccountID: positive: uFromAccountID holds IOUs., negative: uFromAccountID owes IOUs.
+STAmount TransactionEngine::rippleOwed(const uint160& uToAccountID, const uint160& uFromAccountID, const uint160& uCurrencyID)
 {
 	STAmount		saBalance;
 	SLE::pointer	sleRippleState	= entryCache(ltRIPPLE_STATE, Ledger::getRippleStateIndex(uToAccountID, uFromAccountID, uCurrencyID));
@@ -112,10 +114,11 @@ STAmount TransactionEngine::rippleBalance(const uint160& uToAccountID, const uin
 		saBalance	= sleRippleState->getIValueFieldAmount(sfBalance);
 		if (uToAccountID < uFromAccountID)
 			saBalance.negate();
+		saBalance.setIssuer(uToAccountID);
 	}
 	else
 	{
-		Log(lsINFO) << "rippleBalance: No credit line between "
+		Log(lsINFO) << "rippleOwed: No credit line between "
 			<< NewcoinAddress::createHumanAccountID(uFromAccountID)
 			<< " and "
 			<< NewcoinAddress::createHumanAccountID(uToAccountID)
@@ -130,6 +133,8 @@ STAmount TransactionEngine::rippleBalance(const uint160& uToAccountID, const uin
 
 }
 
+// Maximum amount of IOUs uToAccountID will hold from uFromAccountID.
+// <-- $amount/uCurrencyID/uToAccountID.
 STAmount TransactionEngine::rippleLimit(const uint160& uToAccountID, const uint160& uFromAccountID, const uint160& uCurrencyID)
 {
 	STAmount		saLimit;
@@ -139,6 +144,7 @@ STAmount TransactionEngine::rippleLimit(const uint160& uToAccountID, const uint1
 	if (sleRippleState)
 	{
 		saLimit	= sleRippleState->getIValueFieldAmount(uToAccountID < uFromAccountID ? sfLowLimit : sfHighLimit);
+		saLimit.setIssuer(uToAccountID);
 	}
 
 	return saLimit;
@@ -300,7 +306,7 @@ STAmount TransactionEngine::rippleTransferFee(const uint160& uSenderID, const ui
 		{
 			STAmount		saTransitRate(CURRENCY_ONE, uTransitRate, -9);
 
-			saTransitFee	= STAmount::multiply(saAmount, saTransitRate, saAmount.getCurrency());
+			saTransitFee	= STAmount::multiply(saAmount, saTransitRate, saAmount.getCurrency(), saAmount.getIssuer());
 		}
 	}
 
@@ -1583,9 +1589,9 @@ TransactionEngineResult TransactionEngine::doCreditSet(const SerializedTransacti
 
 		Log(lsINFO) << "doCreditSet: Creating ripple line: " << sleRippleState->getIndex().ToString();
 
-		sleRippleState->setIFieldAmount(sfBalance, STAmount(uCurrencyID));	// Zero balance in currency.
+		sleRippleState->setIFieldAmount(sfBalance, STAmount(uCurrencyID, ACCOUNT_ONE));	// Zero balance in currency.
 		sleRippleState->setIFieldAmount(bFlipped ? sfHighLimit : sfLowLimit, saLimitAmount);
-		sleRippleState->setIFieldAmount(bFlipped ? sfLowLimit : sfHighLimit, STAmount(uCurrencyID));
+		sleRippleState->setIFieldAmount(bFlipped ? sfLowLimit : sfHighLimit, STAmount(uCurrencyID, ACCOUNT_ONE));
 		sleRippleState->setIFieldAccount(bFlipped ? sfHighID : sfLowID, mTxnAccountID);
 		sleRippleState->setIFieldAccount(bFlipped ? sfLowID : sfHighID, uDstAccountID);
 		if (uQualityIn)
@@ -1944,7 +1950,7 @@ bool TransactionEngine::calcNodeOfferRev(
 			// - Drive on computing saCurDlvAct to derive saPrvDlvAct.
 			// XXX Behave well, if entry type is wrong (someone beat us to using the hash)
 			SLE::pointer	sleDirectDir	= entryCache(ltDIR_NODE, uDirectTip);
-			STAmount		saOfrRate		= STAmount::setRate(Ledger::getQuality(uDirectTip), uCurCurrencyID);	// For correct ratio
+			STAmount		saOfrRate		= STAmount::setRate(Ledger::getQuality(uDirectTip));	// For correct ratio
 			unsigned int	uEntry			= 0;
 			uint256			uCurIndex;
 
@@ -1987,13 +1993,13 @@ bool TransactionEngine::calcNodeOfferRev(
 					STAmount	saOutBase	= MIN(saCurOfrOutReq, saCurDlvReq-saCurDlvAct);	// Limit offer out by needed.
 					STAmount	saOutCost	= MIN(
 												bFee
-													? STAmount::multiply(saOutBase, saFeeRate, uCurCurrencyID)
+													? STAmount::multiply(saOutBase, saFeeRate, uCurCurrencyID, uCurIssuerID)
 													: saOutBase,
 												saCurOfrFunds);								// Limit cost by fees & funds.
 					STAmount	saOutDlvAct	= bFee
-													? STAmount::divide(saOutCost, saFeeRate, uCurCurrencyID)
+													? STAmount::divide(saOutCost, saFeeRate, uCurCurrencyID, uCurIssuerID)
 													: saOutCost;							// Out amount after fees.
-					STAmount	saInDlvAct	= STAmount::multiply(saOutDlvAct, saOfrRate, uPrvCurrencyID);	// Compute input w/o fees required.
+					STAmount	saInDlvAct	= STAmount::multiply(saOutDlvAct, saOfrRate, uPrvCurrencyID, uCurIssuerID);	// Compute input w/o fees required.
 
 					saCurDlvAct				+= saOutDlvAct;									// Portion of driver served.
 					saPrvDlvAct				+= saInDlvAct;									// Portion needed in previous.
@@ -2044,13 +2050,14 @@ bool TransactionEngine::calcNodeOfferRev(
 											saOutBase	= MIN(saOutBase, saNxtOfrIn);					// Limit offer out by supplying offer.
 								STAmount	saOutCost	= MIN(
 															bFee
-																? STAmount::multiply(saOutBase, saFeeRate, uCurCurrencyID)
+																? STAmount::multiply(saOutBase, saFeeRate, uCurCurrencyID, uCurIssuerID)
 																: saOutBase,
 															saCurOfrFunds);								// Limit cost by fees & funds.
 								STAmount	saOutDlvAct	= bFee
-															? STAmount::divide(saOutCost, saFeeRate, uCurCurrencyID)
+															? STAmount::divide(saOutCost, saFeeRate, uCurCurrencyID, uCurIssuerID)
 															: saOutCost;								// Out amount after fees.
-								STAmount	saInDlvAct	= STAmount::multiply(saOutDlvAct, saOfrRate, uPrvCurrencyID);	// Compute input w/o fees required.
+								// Compute input w/o fees required.
+								STAmount	saInDlvAct	= STAmount::multiply(saOutDlvAct, saOfrRate, uPrvCurrencyID, uCurIssuerID);
 
 								saCurDlvAct				+= saOutDlvAct;									// Portion of driver served.
 								saPrvDlvAct				+= saInDlvAct;									// Portion needed in previous.
@@ -2078,7 +2085,7 @@ bool TransactionEngine::calcNodeOfferRev(
 
 	Log(lsINFO) << boost::str(boost::format("calcNodeOfferRev< uIndex=%d saPrvDlvReq=%s bSuccess=%d")
 		% uIndex
-		% saPrvDlvReq.getText()
+		% saPrvDlvReq.getFullText()
 		% bSuccess);
 
 	return bSuccess;
@@ -2134,7 +2141,7 @@ bool TransactionEngine::calcNodeOfferFwd(
 			// Do a directory.
 			// - Drive on computing saPrvDlvAct to derive saCurDlvAct.
 			SLE::pointer	sleDirectDir	= entryCache(ltDIR_NODE, uDirectTip);
-			STAmount		saOfrRate		= STAmount::setRate(Ledger::getQuality(uDirectTip), uCurCurrencyID);	// For correct ratio
+			STAmount		saOfrRate		= STAmount::setRate(Ledger::getQuality(uDirectTip));	// For correct ratio
 			unsigned int	uEntry			= 0;
 			uint256			uCurIndex;
 
@@ -2158,17 +2165,18 @@ bool TransactionEngine::calcNodeOfferFwd(
 													: saTransferRate;
 					const bool		bFee		= saFeeRate != saOne;
 
-					const STAmount	saOutPass	= STAmount::divide(saCurOfrInMax, saOfrRate, uCurCurrencyID);
+					const STAmount	saOutPass	= STAmount::divide(saCurOfrInMax, saOfrRate, uCurCurrencyID, uCurIssuerID);
 					const STAmount	saOutBase	= MIN(saCurOfrOutReq, saOutPass);				// Limit offer out by needed.
 					const STAmount	saOutCost	= MIN(
 													bFee
-														? STAmount::multiply(saOutBase, saFeeRate, uCurCurrencyID)
+														? STAmount::multiply(saOutBase, saFeeRate, uCurCurrencyID, uCurIssuerID)
 														: saOutBase,
 													saCurOfrFunds);								// Limit cost by fees & funds.
 					const STAmount	saOutDlvAct	= bFee
-														? STAmount::divide(saOutCost, saFeeRate, uCurCurrencyID)
+														? STAmount::divide(saOutCost, saFeeRate, uCurCurrencyID, uCurIssuerID)
 														: saOutCost;		// Out amount after fees.
-					const STAmount	saInDlvAct	= STAmount::multiply(saOutDlvAct, saOfrRate, uCurCurrencyID);	// Compute input w/o fees required.
+					// Compute input w/o fees required.
+					const STAmount	saInDlvAct	= STAmount::multiply(saOutDlvAct, saOfrRate, uCurCurrencyID, uCurIssuerID);
 
 					saCurDlvAct				+= saOutDlvAct;									// Portion of driver served.
 					saPrvDlvAct				+= saInDlvAct;									// Portion needed in previous.
@@ -2216,18 +2224,18 @@ bool TransactionEngine::calcNodeOfferFwd(
 								const bool		bFee		= saFeeRate != saOne;
 
 								const STAmount	saInBase	= saCurOfrInMax-saCurOfrInAct;
-								const STAmount	saOutPass	= STAmount::divide(saInBase, saOfrRate, uCurCurrencyID);
+								const STAmount	saOutPass	= STAmount::divide(saInBase, saOfrRate, uCurCurrencyID, uCurIssuerID);
 								STAmount		saOutBase	= MIN(saCurOfrOutReq, saOutPass);				// Limit offer out by needed.
 												saOutBase	= MIN(saOutBase, saNxtOfrIn);					// Limit offer out by supplying offer.
 								const STAmount	saOutCost	= MIN(
 															bFee
-																? STAmount::multiply(saOutBase, saFeeRate, uCurCurrencyID)
+																? STAmount::multiply(saOutBase, saFeeRate, uCurCurrencyID, uCurIssuerID)
 																: saOutBase,
 															saCurOfrFunds);								// Limit cost by fees & funds.
 								const STAmount	saOutDlvAct	= bFee
-																? STAmount::divide(saOutCost, saFeeRate, uCurCurrencyID)
+																? STAmount::divide(saOutCost, saFeeRate, uCurCurrencyID, uCurIssuerID)
 																: saOutCost;							// Out amount after fees.
-								const STAmount	saInDlvAct	= STAmount::multiply(saOutDlvAct, saOfrRate, uPrvCurrencyID);	// Compute input w/o fees required.
+								const STAmount	saInDlvAct	= STAmount::multiply(saOutDlvAct, saOfrRate, uPrvCurrencyID, uCurIssuerID);	// Compute input w/o fees required.
 
 								saCurOfrInAct			+= saOutDlvAct;									// Portion of driver served.
 								saPrvDlvAct				+= saOutDlvAct;									// Portion needed in previous.
@@ -2538,8 +2546,11 @@ void TransactionEngine::calcNodeRipple(
 		// Fee.
 		Log(lsINFO) << boost::str(boost::format("calcNodeRipple: Fee"));
 
-		uint160		uCurrencyID	= saCur.getCurrency();
-		STAmount	saCurIn		= STAmount::divide(STAmount::multiply(saCur, uQualityOut, uCurrencyID), uQualityIn, uCurrencyID);
+		const uint160		uCurrencyID		= saCur.getCurrency();
+		const uint160		uCurIssuerID	= saCur.getIssuer();
+		const uint160		uPrvIssuerID	= saPrv.getIssuer();
+
+		STAmount	saCurIn		= STAmount::divide(STAmount::multiply(saCur, uQualityOut, uCurrencyID, uCurIssuerID), uQualityIn, uCurrencyID, uCurIssuerID);
 
 Log(lsINFO) << boost::str(boost::format("calcNodeRipple: bPrvUnlimited=%d saPrv=%s saCurIn=%s") % bPrvUnlimited % saPrv.getFullText() % saCurIn.getFullText());
 		if (bPrvUnlimited || saCurIn <= saPrv)
@@ -2552,8 +2563,7 @@ Log(lsINFO) << boost::str(boost::format("calcNodeRipple:3c: saCurReq=%s saPrvAct
 		else
 		{
 			// A part of cur. All of prv. (cur as driver)
-			uint160		uCurrencyID	= saPrv.getCurrency();
-			STAmount	saCurOut	= STAmount::divide(STAmount::multiply(saPrv, uQualityIn, uCurrencyID), uQualityOut, uCurrencyID);
+			STAmount	saCurOut	= STAmount::divide(STAmount::multiply(saPrv, uQualityIn, uCurrencyID, uCurIssuerID), uQualityOut, uCurrencyID, uCurIssuerID);
 Log(lsINFO) << boost::str(boost::format("calcNodeRipple:4: saCurReq=%s") % saCurReq.getFullText());
 
 			saCurAct	+= saCurOut;
@@ -2597,25 +2607,32 @@ bool TransactionEngine::calcNodeAccountRev(unsigned int uIndex, PathState::point
 	const uint32	uQualityOut		= uIndex != uLast ? rippleQualityOut(uCurAccountID, uNxtAccountID, uCurrencyID) : QUALITY_ONE;
 
 	// For bPrvAccount
-	const STAmount	saPrvBalance	= uIndex && bPrvAccount ? rippleBalance(uCurAccountID, uPrvAccountID, uCurrencyID) : STAmount(uCurrencyID);
-	const STAmount	saPrvLimit		= uIndex && bPrvAccount ? rippleLimit(uCurAccountID, uPrvAccountID, uCurrencyID) : STAmount(uCurrencyID);
+	const STAmount	saPrvOwed	= uIndex && bPrvAccount								// Previous account is owed.
+										? rippleOwed(uCurAccountID, uPrvAccountID, uCurrencyID)
+										: STAmount(uCurrencyID, uCurAccountID);
+	const STAmount	saPrvLimit		= uIndex && bPrvAccount							// Previous account may owe.
+										? rippleLimit(uCurAccountID, uPrvAccountID, uCurrencyID)
+										: STAmount(uCurrencyID, uCurAccountID);
 
-	Log(lsINFO) << boost::str(boost::format("calcNodeAccountRev> uIndex=%d/%d uPrvAccountID=%s uCurAccountID=%s uNxtAccountID=%s uCurrencyID=%s uQualityIn=%d uQualityOut=%d saPrvBalance=%s saPrvLimit=%s")
+	Log(lsINFO) << boost::str(boost::format("calcNodeAccountRev> uIndex=%d/%d bPrvIssue=%d uPrvAccountID=%s uCurAccountID=%s uNxtAccountID=%s uCurrencyID=%s uQualityIn=%d uQualityOut=%d saPrvOwed=%s saPrvLimit=%s")
 		% uIndex
 		% uLast
+		% bPrvIssue
 		% NewcoinAddress::createHumanAccountID(uPrvAccountID)
 		% NewcoinAddress::createHumanAccountID(uCurAccountID)
 		% NewcoinAddress::createHumanAccountID(uNxtAccountID)
 		% STAmount::createHumanCurrency(uCurrencyID)
 		% uQualityIn
 		% uQualityOut
-		% saPrvBalance.getText()
-		% saPrvLimit.getText());
+		% saPrvOwed.getFullText()
+		% saPrvLimit.getFullText());
 
-	const STAmount	saPrvRedeemReq	= bPrvRedeem && saPrvBalance.isNegative() ? -saPrvBalance : STAmount(uCurrencyID, 0);
+	// Previous can redeem the owed IOUs it holds.
+	const STAmount	saPrvRedeemReq	= bPrvRedeem && saPrvOwed.isPositive() ? saPrvOwed : STAmount(uCurrencyID, 0);
 	STAmount&		saPrvRedeemAct	= pnPrv.saRevRedeem;
 
-	const STAmount	saPrvIssueReq	= bPrvIssue ? saPrvLimit - saPrvBalance : STAmount(uCurrencyID);
+	// Previous can issue up to limit minus whatever portion of limit already used (not including redeemable amount).
+	const STAmount	saPrvIssueReq	= bPrvIssue && saPrvOwed.isNegative() ? saPrvLimit+saPrvOwed : saPrvLimit;
 	STAmount&		saPrvIssueAct	= pnPrv.saRevIssue;
 
 	// For !bPrvAccount
@@ -2624,27 +2641,25 @@ bool TransactionEngine::calcNodeAccountRev(unsigned int uIndex, PathState::point
 
 	// For bNxtAccount
 	const STAmount&	saCurRedeemReq	= pnCur.saRevRedeem;
-	STAmount		saCurRedeemAct(saCurRedeemReq.getCurrency());
+	STAmount		saCurRedeemAct(saCurRedeemReq.getCurrency(), saCurRedeemReq.getIssuer());
 
 	const STAmount&	saCurIssueReq	= pnCur.saRevIssue;
-	STAmount		saCurIssueAct(saCurIssueReq.getCurrency());					// Track progress.
+	STAmount		saCurIssueAct(saCurIssueReq.getCurrency(), saCurIssueReq.getIssuer());					// Track progress.
 
 	// For !bNxtAccount
 	const STAmount&	saCurDeliverReq	= pnCur.saRevDeliver;
-	STAmount		saCurDeliverAct(saCurDeliverReq.getCurrency());
+	STAmount		saCurDeliverAct(saCurDeliverReq.getCurrency(), saCurDeliverReq.getIssuer());
 
-	// For uIndex == uLast
-	const STAmount&	saCurWantedReq	= pspCur->saOutReq;							// XXX Credit limits?
-	// STAmount		saPrvDeliverReq	= saPrvBalance.isPositive() ? saPrvLimit - saPrvBalance : saPrvLimit;
-	STAmount		saCurWantedAct(saCurWantedReq.getCurrency());
+	// For uIndex == uLast, over all deliverable.
+	const STAmount&	saCurWantedReq	= bPrvAccount
+										? MIN(pspCur->saOutReq, saPrvLimit+saPrvOwed)	// If previous is an account, limit.
+										: pspCur->saOutReq;						// Previous is an offer, no limit: redeem own IOUs.
+	STAmount		saCurWantedAct(saCurWantedReq.getCurrency(), saCurWantedReq.getIssuer());
 
-	Log(lsINFO) << boost::str(boost::format("calcNodeAccountRev: saPrvRedeemReq=%s/%s saPrvIssueReq=%s/%s saCurWantedReq=%s/%s")
-		% saPrvRedeemReq.getText()
-		% saPrvRedeemReq.getHumanCurrency()
-		% saPrvIssueReq.getText()
-		% saPrvIssueReq.getHumanCurrency()
-		% saCurWantedReq.getText()
-		% saCurWantedReq.getHumanCurrency());
+	Log(lsINFO) << boost::str(boost::format("calcNodeAccountRev: saPrvRedeemReq=%s saPrvIssueReq=%s saCurWantedReq=%s")
+		% saPrvRedeemReq.getFullText()
+		% saPrvIssueReq.getFullText()
+		% saCurWantedReq.getFullText());
 
 	Log(lsINFO) << pspCur->getJson();
 
@@ -2698,7 +2713,7 @@ bool TransactionEngine::calcNodeAccountRev(unsigned int uIndex, PathState::point
 			if (bPrvRedeem
 				&& bRedeem								// Allowed to redeem.
 				&& saCurRedeemReq						// Next wants us to redeem.
-				&& saPrvBalance.isNegative())			// Previous has IOUs to redeem.
+				&& saPrvOwed)							// Previous has IOUs to redeem.
 			{
 				// Rate : 1.0 : quality out
 				Log(lsINFO) << boost::str(boost::format("calcNodeAccountRev: Rate : 1.0 : quality out"));
@@ -2710,7 +2725,7 @@ bool TransactionEngine::calcNodeAccountRev(unsigned int uIndex, PathState::point
 			if (bPrvRedeem
 				&& bIssue								// Allowed to issue.
 				&& saCurRedeemReq != saCurRedeemAct		// Can only if issue if more can not be redeemed.
-				&& saPrvBalance.isNegative()			// Previous still has IOUs.
+				&& saPrvOwed							// Previous still has IOUs.
 				&& saCurIssueReq)						// Need some issued.
 			{
 				// Rate : 1.0 : transfer_rate
@@ -2723,7 +2738,7 @@ bool TransactionEngine::calcNodeAccountRev(unsigned int uIndex, PathState::point
 			if (bPrvIssue
 				&& bRedeem								// Allowed to redeem.
 				&& saCurRedeemReq != saCurRedeemAct		// Can only redeem if more to be redeemed.
-				&& !saPrvBalance.isNegative())			// Previous has no IOUs.
+				&& !saPrvOwed.isPositive())				// Previous has no IOUs.
 			{
 				// Rate: quality in : quality out
 				Log(lsINFO) << boost::str(boost::format("calcNodeAccountRev: Rate: quality in : quality out"));
@@ -2735,7 +2750,7 @@ bool TransactionEngine::calcNodeAccountRev(unsigned int uIndex, PathState::point
 			if (bPrvIssue
 				&& bIssue								// Allowed to issue.
 				&& saCurRedeemReq == saCurRedeemAct		// Can only if issue if more can not be redeemed.
-				&& !saPrvBalance.isNegative()			// Previous has no IOUs.
+				&& !saPrvOwed.isPositive()				// Previous has no IOUs.
 				&& saCurIssueReq != saCurIssueAct)		// Need some issued.
 			{
 				// Rate: quality in : 1.0
@@ -2750,14 +2765,15 @@ bool TransactionEngine::calcNodeAccountRev(unsigned int uIndex, PathState::point
 				// terResult	= tenBAD_AMOUNT;
 				bSuccess	= false;
 			}
-			Log(lsINFO) << boost::str(boost::format("calcNodeAccountRev: ^|account --> ACCOUNT --> account : bPrvRedeem=%d bPrvIssue=%d bRedeem=%d bIssue=%d saCurRedeemReq=%s saCurIssueReq=%s saPrvBalance=%s saCurRedeemAct=%s saCurIssueAct=%s")
+
+			Log(lsINFO) << boost::str(boost::format("calcNodeAccountRev: ^|account --> ACCOUNT --> account : bPrvRedeem=%d bPrvIssue=%d bRedeem=%d bIssue=%d saCurRedeemReq=%s saCurIssueReq=%s saPrvOwed=%s saCurRedeemAct=%s saCurIssueAct=%s")
 				% bPrvRedeem
 				% bPrvIssue
 				% bRedeem
 				% bIssue
 				% saCurRedeemReq.getFullText()
 				% saCurIssueReq.getFullText()
-				% saPrvBalance.getFullText()
+				% saPrvOwed.getFullText()
 				% saCurRedeemAct.getFullText()
 				% saCurIssueAct.getFullText());
 		}
@@ -2771,7 +2787,7 @@ bool TransactionEngine::calcNodeAccountRev(unsigned int uIndex, PathState::point
 		// redeem -> deliver/issue.
 		if (bPrvRedeem
 			&& bIssue								// Allowed to issue.
-			&& saPrvBalance.isNegative()			// Previous redeeming: Previous still has IOUs.
+			&& saPrvOwed.isPositive()				// Previous redeeming: Previous still has IOUs.
 			&& saCurDeliverReq)						// Need some issued.
 		{
 			// Rate : 1.0 : transfer_rate
@@ -2781,7 +2797,8 @@ bool TransactionEngine::calcNodeAccountRev(unsigned int uIndex, PathState::point
 		// issue -> deliver/issue
 		if (bPrvIssue
 			&& bIssue								// Allowed to issue.
-			&& !saPrvBalance.isNegative()			// Previous issuing: Previous has no IOUs.
+			&& (!saPrvOwed.isPositive()				// Previous issuing: Never had IOUs.
+				|| saPrvOwed == saPrvRedeemAct)		// Previous issuing: Previous has no IOUs left after redeeming.
 			&& saCurDeliverReq != saCurDeliverAct)	// Need some issued.
 		{
 			// Rate: quality in : 1.0
@@ -2794,6 +2811,15 @@ bool TransactionEngine::calcNodeAccountRev(unsigned int uIndex, PathState::point
 			// terResult	= tenBAD_AMOUNT;
 			bSuccess	= false;
 		}
+
+		Log(lsINFO) << boost::str(boost::format("calcNodeAccountRev: bPrvRedeem=%d bPrvIssue=%d bRedeem=%d bIssue=%d saCurDeliverReq=%s saCurDeliverAct=%s saPrvOwed=%s")
+			% bPrvRedeem
+			% bPrvIssue
+			% bRedeem
+			% bIssue
+			% saCurDeliverReq.getFullText()
+			% saCurDeliverAct.getFullText()
+			% saPrvOwed.getFullText());
 	}
 	else if (!bPrvAccount && bNxtAccount)
 	{
@@ -2906,14 +2932,14 @@ bool TransactionEngine::calcNodeAccountFwd(unsigned int uIndex, PathState::point
 
 	// For bNxtAccount
 	const STAmount&	saPrvRedeemReq	= pnPrv.saFwdRedeem;
-	STAmount		saPrvRedeemAct(saPrvRedeemReq.getCurrency());
+	STAmount		saPrvRedeemAct(saPrvRedeemReq.getCurrency(), saPrvRedeemReq.getIssuer());
 
 	const STAmount&	saPrvIssueReq	= pnPrv.saFwdIssue;
-	STAmount		saPrvIssueAct(saPrvIssueReq.getCurrency());
+	STAmount		saPrvIssueAct(saPrvIssueReq.getCurrency(), saPrvIssueReq.getIssuer());
 
 	// For !bPrvAccount
 	const STAmount&	saPrvDeliverReq	= pnPrv.saRevDeliver;
-	STAmount		saPrvDeliverAct(saPrvDeliverReq.getCurrency());
+	STAmount		saPrvDeliverAct(saPrvDeliverReq.getCurrency(), saPrvDeliverReq.getIssuer());
 
 	// For bNxtAccount
 	const STAmount&	saCurRedeemReq	= pnCur.saRevRedeem;
@@ -3003,7 +3029,7 @@ bool TransactionEngine::calcNodeAccountFwd(unsigned int uIndex, PathState::point
 
 			STAmount	saIssueCrd	= uQualityIn >= QUALITY_ONE
 											? saPrvIssueReq													// No fee.
-											: STAmount::multiply(saPrvIssueReq, uQualityIn, uCurrencyID);	// Fee.
+											: STAmount::multiply(saPrvIssueReq, uQualityIn, uCurrencyID, saPrvIssueReq.getIssuer());	// Fee.
 
 			// Amount to credit.
 			saCurReceive	= saPrvRedeemReq+saIssueCrd;
@@ -3259,8 +3285,8 @@ bool PathState::pushNode(int iType, uint160 uAccountID, uint160 uCurrencyID, uin
 			pnCur.uAccountID	= uAccountID;
 			pnCur.uCurrencyID	= bCurrency ? uCurrencyID : pnPrv.uCurrencyID;
 			pnCur.uIssuerID		= bIssuer ? uIssuerID : uAccountID;
-			pnCur.saRevRedeem	= STAmount(uCurrencyID);
-			pnCur.saRevIssue	= STAmount(uCurrencyID);
+			pnCur.saRevRedeem	= STAmount(uCurrencyID, uAccountID);
+			pnCur.saRevIssue	= STAmount(uCurrencyID, uAccountID);
 
 			if (!bFirst)
 			{

@@ -261,10 +261,11 @@ public:
 		: SerializedType(n), mValue(v), mOffset(0), mIsNative(true), mIsNegative(false)
 	{ ; }
 
-	STAmount(const uint160& uCurrency, uint64 uV=0, int iOff=0, bool bNegative=false)
-		: mCurrency(uCurrency), mValue(uV), mOffset(iOff), mIsNegative(bNegative)
+	STAmount(const uint160& uCurrencyID, const uint160& uIssuerID, uint64 uV=0, int iOff=0, bool bNegative=false)
+		: mCurrency(uCurrencyID), mIssuer(uIssuerID), mValue(uV), mOffset(iOff), mIsNegative(bNegative)
 	{ canonicalize(); }
 
+	// YYY This should probably require issuer too.
 	STAmount(const char* n, const uint160& currency, uint64 v = 0, int off = 0, bool isNeg = false) :
 		SerializedType(n), mCurrency(currency), mValue(v), mOffset(off), mIsNegative(isNeg)
 	{ canonicalize(); }
@@ -274,14 +275,14 @@ public:
 	static std::auto_ptr<SerializedType> deserialize(SerializerIterator& sit, const char* name)
 	{ return std::auto_ptr<SerializedType>(construct(sit, name)); }
 
-	static STAmount saFromRate(uint64 uV = 0)
+	static STAmount saFromRate(uint64 uRate = 0)
 	{
-		return STAmount(CURRENCY_ONE, uV, -9, false);
+		return STAmount(CURRENCY_ONE, ACCOUNT_ONE, uRate, -9, false);
 	}
 
-	static STAmount saFromSigned(const uint160& uCurrency, int64 iV=0, int iOff=0)
+	static STAmount saFromSigned(const uint160& uCurrencyID, const uint160& uIssuerID, int64 iV=0, int iOff=0)
 	{
-		return STAmount(uCurrency, iV < 0 ? -iV : iV, iOff, iV < 0);
+		return STAmount(uCurrencyID, uIssuerID, iV < 0 ? -iV : iV, iOff, iV < 0);
 	}
 
 	int getLength() const				{ return mIsNative ? 8 : 28; }
@@ -351,13 +352,13 @@ public:
 	friend STAmount operator+(const STAmount& v1, const STAmount& v2);
 	friend STAmount operator-(const STAmount& v1, const STAmount& v2);
 
-	static STAmount divide(const STAmount& v1, const STAmount& v2, const uint160& currencyOut);
-	static STAmount multiply(const STAmount& v1, const STAmount& v2, const uint160& currencyOut);
+	static STAmount divide(const STAmount& v1, const STAmount& v2, const uint160& uCurrencyID, const uint160& uIssuerID);
+	static STAmount multiply(const STAmount& v1, const STAmount& v2, const uint160& uCurrencyID, const uint160& uIssuerID);
 
 	// Someone is offering X for Y, what is the rate?
 	// Rate: smaller is better, the taker wants the most out: in/out
 	static uint64 getRate(const STAmount& offerOut, const STAmount& offerIn);
-	static STAmount setRate(uint64 rate, const uint160& currencyOut);
+	static STAmount setRate(uint64 rate);
 
 	// Someone is offering X for Y, I try to pay Z, how much do I get?
 	// And what's left of the offer? And how much do I actually pay?
