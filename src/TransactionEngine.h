@@ -40,6 +40,7 @@ enum TransactionEngineResult
 	temINVALID,
 	temREDUNDANT,
 	temRIPPLE_EMPTY,
+	temUNCERTAIN,
 	temUNKNOWN,
 
 	// -199 .. -100: F Failure (sequence number previously used)
@@ -77,12 +78,9 @@ enum TransactionEngineResult
 
 	// 100 .. P Partial success (SR) (ripple transaction with no good paths, pay to non-existent account)
 	// Transaction can be applied, can charge fee, forwarded, but does not achieve optimal result.
-	tesPARITAL		= 100,
-
-	// Might succeed in different order.
-	// XXX claim fee and try to delete unfunded.
-	terPATH_EMPTY,
-	terPATH_PARTIAL,
+	tepPARITAL		= 100,
+	tepPATH_DRY,
+	tepPATH_PARTIAL,
 };
 
 bool transResultInfo(TransactionEngineResult terCode, std::string& strToken, std::string& strHuman);
@@ -131,9 +129,6 @@ public:
 
 	bool							bValid;
 	std::vector<paymentNode>		vpnNodes;
-
-	// If the transaction fails to meet some constraint, still need to delete unfunded offers.
-	boost::unordered_set<uint256>	usUnfundedFound;	// Offers that were found unfunded.
 
 	// When processing, don't want to complicate directory walking with deletion.
 	std::vector<uint256>			vUnfundedBecame;	// Offers that became unfunded.
@@ -224,12 +219,22 @@ protected:
 	uint160				mTxnAccountID;
 	SLE::pointer		mTxnAccount;
 
-	boost::unordered_set<uint256>	mUnfunded;	// Indexes that were found unfunded.
+	// First time working in reverse a funding source was mentioned.  Source may only be used there.
+	boost::unordered_map<std::pair<uint160, uint160>, int>	mumSource;	// Map of currency, issuer to node index.
+
+	// When processing, don't want to complicate directory walking with deletion.
+	std::vector<uint256>			mvUnfundedBecame;	// Offers that became unfunded.
+
+	// If the transaction fails to meet some constraint, still need to delete unfunded offers.
+	boost::unordered_set<uint256>	musUnfundedFound;	// Offers that were found unfunded.
 
 	SLE::pointer		entryCreate(LedgerEntryType letType, const uint256& uIndex);
 	SLE::pointer		entryCache(LedgerEntryType letType, const uint256& uIndex);
 	void				entryDelete(SLE::pointer sleEntry, bool bUnfunded = false);
 	void				entryModify(SLE::pointer sleEntry);
+
+	TransactionEngineResult offerDelete(const uint256& uOfferIndex);
+	TransactionEngineResult offerDelete(const SLE::pointer& sleOffer, const uint256& uOfferIndex, const uint160& uOwnerID);
 
 	uint32				rippleTransferRate(const uint160& uIssuerID);
 	STAmount			rippleOwed(const uint160& uToAccountID, const uint160& uFromAccountID, const uint160& uCurrencyID);
@@ -259,8 +264,6 @@ protected:
 							STAmount& saPrvAct, STAmount& saCurAct);
 
 	void				txnWrite();
-
-	TransactionEngineResult offerDelete(const SLE::pointer& sleOffer, const uint256& uOfferIndex, const uint160& uOwnerID);
 
 	TransactionEngineResult doAccountSet(const SerializedTransaction& txn);
 	TransactionEngineResult doClaim(const SerializedTransaction& txn);
