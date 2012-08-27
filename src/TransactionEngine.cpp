@@ -422,14 +422,14 @@ STAmount TransactionEngine::accountSend(const uint160& uSenderID, const uint160&
 TransactionEngineResult TransactionEngine::offerDelete(const SLE::pointer& sleOffer, const uint256& uOfferIndex, const uint160& uOwnerID)
 {
 	uint64					uOwnerNode	= sleOffer->getIFieldU64(sfOwnerNode);
-	TransactionEngineResult	terResult	= dirDelete(false, uOwnerNode, Ledger::getOwnerDirIndex(uOwnerID), uOfferIndex);
+	TransactionEngineResult	terResult	= dirDelete(false, uOwnerNode, Ledger::getOwnerDirIndex(uOwnerID), uOfferIndex, false);
 
 	if (tesSUCCESS == terResult)
 	{
 		uint256		uDirectory	= sleOffer->getIFieldH256(sfBookDirectory);
 		uint64		uBookNode	= sleOffer->getIFieldU64(sfBookNode);
 
-		terResult	= dirDelete(false, uBookNode, uDirectory, uOfferIndex);
+		terResult	= dirDelete(false, uBookNode, uDirectory, uOfferIndex, true);
 	}
 
 	entryDelete(sleOffer);
@@ -538,16 +538,13 @@ TransactionEngineResult TransactionEngine::dirAdd(
 	return tesSUCCESS;
 }
 
-// -->    bKeepRoot: True, if we never completely clean up, after we overflow the root node.
-// -->     uNodeDir: Node containing entry.
-// -->   uRootIndex: The index of the base of the directory.  Nodes are based off of this.
-// --> uLedgerIndex: Value to add to directory.
 // Ledger must be in a state for this to work.
 TransactionEngineResult TransactionEngine::dirDelete(
-	bool							bKeepRoot,
-	const uint64&					uNodeDir,
-	const uint256&					uRootIndex,
-	const uint256&					uLedgerIndex)
+	const bool						bKeepRoot,		// --> True, if we never completely clean up, after we overflow the root node.
+	const uint64&					uNodeDir,		// --> Node containing entry.
+	const uint256&					uRootIndex,		// --> The index of the base of the directory.  Nodes are based off of this.
+	const uint256&					uLedgerIndex,	// --> Value to add to directory.
+	const bool						bStable)		// --> True, not to change relative order of entries.
 {
 	uint64				uNodeCur	= uNodeDir;
 	SLE::pointer		sleNode		= entryCache(ltDIR_NODE, uNodeCur ? Ledger::getDirNodeIndex(uRootIndex, uNodeCur) : uRootIndex);
@@ -579,9 +576,21 @@ TransactionEngineResult TransactionEngine::dirDelete(
 
 	// Remove the element.
 	if (vuiIndexes.size() > 1)
-		*it = vuiIndexes[vuiIndexes.size()-1];
-
-	vuiIndexes.resize(vuiIndexes.size()-1);
+	{
+		if (bStable)
+		{
+			vuiIndexes.erase(it);
+		}
+		else
+		{
+			*it = vuiIndexes[vuiIndexes.size()-1];
+			vuiIndexes.resize(vuiIndexes.size()-1);
+		}
+	}
+	else
+	{
+		vuiIndexes.clear();
+	}
 
 	sleNode->setIFieldV256(sfIndexes, svIndexes);
 	entryModify(sleNode);
@@ -1528,7 +1537,7 @@ TransactionEngineResult TransactionEngine::doCreditSet(const SerializedTransacti
 				// Zero balance and eliminating last limit.
 
 				bDelIndex	= true;
-				terResult	= dirDelete(false, uSrcRef, Ledger::getOwnerDirIndex(mTxnAccountID), sleRippleState->getIndex());
+				terResult	= dirDelete(false, uSrcRef, Ledger::getOwnerDirIndex(mTxnAccountID), sleRippleState->getIndex(), false);
 			}
 		}
 #endif
@@ -3995,12 +4004,16 @@ TransactionEngineResult TransactionEngine::takeOffers(
 	const uint160			uTakerPaysCurrency	= saTakerPays.getCurrency();
 	const uint160			uTakerGetsAccountID	= saTakerGets.getIssuer();
 	const uint160			uTakerGetsCurrency	= saTakerGets.getCurrency();
-	TransactionEngineResult	terResult			= temUNKNOWN;
+	TransactionEngineResult	terResult			= temUNCERTAIN;
+
+	boost::unordered_set<uint256>	usOfferUnfundedFound;	// Offers found unfunded.
+	boost::unordered_set<uint256>	usOfferUnfundedBecame;	// Offers that became unfunded.
+	boost::unordered_set<uint160>	usAccountTouched;		// Accounts touched.
 
 	saTakerPaid	= 0;
 	saTakerGot	= 0;
 
-	while (temUNKNOWN == terResult)
+	while (temUNCERTAIN == terResult)
 	{
 		SLE::pointer	sleOfferDir;
 		uint64			uTipQuality;
@@ -4027,7 +4040,9 @@ TransactionEngineResult TransactionEngine::takeOffers(
 			}
 		}
 
-		if (!sleOfferDir || uTakeQuality < uTipQuality || (bPassive && uTakeQuality == uTipQuality))
+		if (!sleOfferDir									// No offer directory to take.
+			|| uTakeQuality < uTipQuality					// No offer's of sufficient quality available.
+			|| (bPassive && uTakeQuality == uTipQuality))
 		{
 			// Done.
 			Log(lsINFO) << "takeOffers: done";
@@ -4036,7 +4051,7 @@ TransactionEngineResult TransactionEngine::takeOffers(
 		}
 		else
 		{
-			// Have an offer to consider.
+			// Have an offer directory to consider.
 			Log(lsINFO) << "takeOffers: considering dir : " << sleOfferDir->getJson(0);
 
 			SLE::pointer	sleBookNode;
@@ -4055,19 +4070,17 @@ TransactionEngineResult TransactionEngine::takeOffers(
 
 			if (sleOffer->getIFieldPresent(sfExpiration) && sleOffer->getIFieldU32(sfExpiration) <= mLedger->getParentCloseTimeNC())
 			{
-				// Offer is expired. Delete it.
+				// Offer is expired. Expired offers are considered unfunded. Delete it.
 				Log(lsINFO) << "takeOffers: encountered expired offer";
 
-				offerDelete(sleOffer, uOfferIndex, uOfferOwnerID);
-
-				musUnfundedFound.insert(uOfferIndex);
+				usOfferUnfundedFound.insert(uOfferIndex);
 			}
 			else if (uOfferOwnerID == uTakerAccountID)
 			{
-				// Would take own offer. Consider old offer unfunded.
+				// Would take own offer. Consider old offer expired. Delete it.
 				Log(lsINFO) << "takeOffers: encountered taker's own old offer";
 
-				offerDelete(sleOffer, uOfferIndex, uOfferOwnerID);
+				usOfferUnfundedFound.insert(uOfferIndex);
 			}
 			else
 			{
@@ -4084,9 +4097,17 @@ TransactionEngineResult TransactionEngine::takeOffers(
 					// Offer is unfunded, possibly due to previous balance action.
 					Log(lsINFO) << "takeOffers: offer unfunded: delete";
 
-					offerDelete(sleOffer, uOfferIndex, uOfferOwnerID);
-
-					musUnfundedFound.insert(uOfferIndex);
+					boost::unordered_set<uint160>::iterator	account	= usAccountTouched.find(uOfferOwnerID);
+					if (account != usAccountTouched.end())
+					{
+						// Previously touched account.
+						usOfferUnfundedBecame.insert(uOfferIndex);	// Delete unfunded offer on success.
+					}
+					else
+					{
+						// Never touched source account.
+						usOfferUnfundedFound.insert(uOfferIndex);	// Delete found unfunded offer when possible.
+					}
 				}
 				else
 				{
@@ -4120,24 +4141,28 @@ TransactionEngineResult TransactionEngine::takeOffers(
 					Log(lsINFO) << "takeOffers: applyOffer:  saSubTakerGot: " << saSubTakerGot.getFullText();
 
 					// Adjust offer
+
+					// Offer owner will pay less.  Subtract what taker just got.
+					sleOffer->setIFieldAmount(sfTakerGets, saOfferPays -= saSubTakerGot);
+
+					// Offer owner will get less.  Subtract what owner just paid.
+					sleOffer->setIFieldAmount(sfTakerPays, saOfferGets -= saSubTakerPaid);
+
+					entryModify(sleOffer);
+
 					if (bOfferDelete)
 					{
 						// Offer now fully claimed or now unfunded.
 						Log(lsINFO) << "takeOffers: offer claimed: delete";
 
-						offerDelete(sleOffer, uOfferIndex, uOfferOwnerID);
+						usOfferUnfundedBecame.insert(uOfferIndex);	// Delete unfunded offer on success.
+
+						// Offer owner's account is no longer pristine.
+						usAccountTouched.insert(uOfferOwnerID);
 					}
 					else
 					{
-						Log(lsINFO) << "takeOffers: offer partial claim: modify";
-
-						// Offer owner will pay less.  Subtract what taker just got.
-						sleOffer->setIFieldAmount(sfTakerGets, saOfferPays -= saSubTakerGot);
-
-						// Offer owner will get less.  Subtract what owner just paid.
-						sleOffer->setIFieldAmount(sfTakerPays, saOfferGets -= saSubTakerPaid);
-
-						entryModify(sleOffer);
+						Log(lsINFO) << "takeOffers: offer partial claim.";
 					}
 
 					// Offer owner pays taker.
@@ -4155,6 +4180,40 @@ TransactionEngineResult TransactionEngine::takeOffers(
 					saTakerPaid	+= saSubTakerPaid;
 				}
 			}
+		}
+	}
+
+	// On storing meta data, delete offers that were found unfunded to prevent encountering them in future.
+	switch (terResult)
+	{
+		case tesSUCCESS:
+		case tepPATH_DRY:
+		case tepPATH_PARTIAL:
+			BOOST_FOREACH(const uint256& uOfferIndex, usOfferUnfundedFound)
+			{
+				TransactionEngineResult	terDelete = offerDelete(uOfferIndex);
+
+				if (tesSUCCESS != terDelete)
+					terResult	= terDelete;
+					break;
+			}
+			break;
+
+		default:
+			nothing();
+			break;
+	}
+
+	if (tesSUCCESS == terResult)
+	{
+		// On success, delete offers that became unfunded.
+		BOOST_FOREACH(const uint256& uOfferIndex, usOfferUnfundedBecame)
+		{
+			TransactionEngineResult	terDelete = offerDelete(uOfferIndex);
+
+			if (tesSUCCESS != terDelete)
+				terResult	= terDelete;
+				break;
 		}
 	}
 

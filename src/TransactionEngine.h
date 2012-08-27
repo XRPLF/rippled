@@ -192,10 +192,11 @@ private:
 		const uint256&					uLedgerIndex);
 
 	TransactionEngineResult dirDelete(
-		bool							bKeepRoot,
+		const bool						bKeepRoot,
 		const uint64&					uNodeDir,		// Node item is mentioned in.
 		const uint256&					uRootIndex,
-		const uint256&					uLedgerIndex);	// Item being deleted
+		const uint256&					uLedgerIndex,	// Item being deleted
+		const bool						bStable);
 
 	bool dirFirst(const uint256& uRootIndex, SLE::pointer& sleNode, unsigned int& uDirEntry, uint256& uEntryIndex);
 	bool dirNext(const uint256& uRootIndex, SLE::pointer& sleNode, unsigned int& uDirEntry, uint256& uEntryIndex);
