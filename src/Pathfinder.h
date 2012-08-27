@@ -33,7 +33,6 @@ class Pathfinder
 	OrderBookDB mOrderBook;
 	Ledger::pointer mLedger;
 
-	
 	std::list<PathOption::pointer> mBuildingPaths;
 	std::list<PathOption::pointer> mCompletePaths;
 
@@ -50,3 +49,4 @@ public:
 	// returns false if there is no path. otherwise fills out retPath
 	bool findPaths(int maxSearchSteps, int maxPay, STPathSet& retPathSet);
 };
+// vim:ts=4

@@ -21,9 +21,9 @@ TODO: what is a good way to come up with multiple paths?
 
 
 OrderDB:
-	getXNSOffers(); 
-	
-	// return list of all orderbooks that want XNS 
+	getXNSOffers();
+
+	// return list of all orderbooks that want XNS
 	// return list of all orderbooks that want IssuerID
 	// return list of all orderbooks that want this issuerID and currencyID
 */
@@ -49,7 +49,7 @@ bool sortPathOptions(PathOption::pointer first, PathOption::pointer second)
 {
 	if(first->mTotalCost<second->mTotalCost) return(true);
 	if(first->mTotalCost>second->mTotalCost) return(false);
-	
+
 	if(first->mCorrectCurrency && !second->mCorrectCurrency) return(true);
 	if(!first->mCorrectCurrency && second->mCorrectCurrency) return(false);
 
@@ -57,7 +57,7 @@ bool sortPathOptions(PathOption::pointer first, PathOption::pointer second)
 	if(first->mPath.getElementCount()>second->mPath.getElementCount()) return(false);
 
 	if(first->mMinWidth<second->mMinWidth) return true;
-	
+
 	return false;
 }
 
@@ -77,7 +77,7 @@ PathOption::PathOption(PathOption::pointer other)
 
 
 Pathfinder::Pathfinder(NewcoinAddress& srcAccountID, NewcoinAddress& dstAccountID, uint160& srcCurrencyID, STAmount dstAmount) : 
-	mSrcAccountID(srcAccountID.getAccountID()) , mDstAccountID(dstAccountID.getAccountID()), mSrcCurrencyID(srcCurrencyID) , mDstAmount(dstAmount), mOrderBook(theApp->getMasterLedger().getCurrentLedger())
+	mSrcAccountID(srcAccountID.getAccountID()), mDstAccountID(dstAccountID.getAccountID()), mDstAmount(dstAmount), mSrcCurrencyID(srcCurrencyID), mOrderBook(theApp->getMasterLedger().getCurrentLedger())
 {
 	mLedger=theApp->getMasterLedger().getCurrentLedger();
 }
@@ -99,9 +99,8 @@ bool Pathfinder::findPaths(int maxSearchSteps, int maxPay, STPathSet& retPathSet
 			}
 			if(checkComplete(retPathSet)) return(true);
 		}
-		
 	}
-	
+
 	return(false);
 }
 
@@ -125,8 +124,8 @@ bool Pathfinder::checkComplete(STPathSet& retPathSet)
 // get all the options from this accountID
 //   if source is XNS
 //		every offer that wants XNS
-//   else 
-//		every ripple line that starts with the source currency 
+//   else
+//		every ripple line that starts with the source currency
 //		every offer that we can take that wants the source currency
 
 void Pathfinder::addOptions(PathOption::pointer tail)
@@ -150,7 +149,7 @@ void Pathfinder::addOptions(PathOption::pointer tail)
 		BOOST_FOREACH(RippleState::pointer line,rippleLines.getLines())
 		{
 			// TODO: make sure we can move in the correct direction
-			STAmount balance=line->getBalance();  
+			STAmount balance=line->getBalance(); 
 			if(balance.getCurrency()==tail->mCurrencyID)
 			{  // we have a ripple line from the tail to somewhere else
 				PathOption::pointer pathOption(new PathOption(tail));
@@ -161,7 +160,7 @@ void Pathfinder::addOptions(PathOption::pointer tail)
 
 				pathOption->mCurrentAccount=line->getAccountIDPeer().getAccountID();
 				addPathOption(pathOption);
-			}	
+			}
 		}
 
 		// every offer that wants the source currency
@@ -184,7 +183,7 @@ void Pathfinder::addOptions(PathOption::pointer tail)
 
 void Pathfinder::addPathOption(PathOption::pointer pathOption)
 {
-	if(pathOption->mCurrencyID==mDstAmount.getCurrency()) 
+	if(pathOption->mCurrencyID==mDstAmount.getCurrency())
 	{
 		pathOption->mCorrectCurrency=true;
 
@@ -192,11 +191,11 @@ void Pathfinder::addPathOption(PathOption::pointer pathOption)
 		{ // this path is complete
 			mCompletePaths.push_back(pathOption);
 		}else mBuildingPaths.push_back(pathOption);
-	}else 
+	}
+	else
 	{
 		pathOption->mCorrectCurrency=false;
 		mBuildingPaths.push_back(pathOption);
 	}
 }
-
-
+// vim:ts=4

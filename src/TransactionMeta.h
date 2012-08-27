@@ -133,7 +133,7 @@ protected:
 	boost::ptr_vector<TransactionMetaNodeEntry> mEntries;
 
 public:
-	TransactionMetaNode(const uint256 &node) : mNode(node) { ; }
+	TransactionMetaNode(const uint256 &node, int type) : mType(type), mNode(node) { ; }
 
 	const uint256& getNode() const												{ return mNode; }
 	const boost::ptr_vector<TransactionMetaNodeEntry>& peekEntries() const		{ return mEntries; }
@@ -163,8 +163,6 @@ protected:
 	uint32 mLedger;
 	std::map<uint256, TransactionMetaNode> mNodes;
 
-	TransactionMetaNode& modifyNode(const uint256&);
-
 public:
 	TransactionMetaSet() : mLedger(0) { ; }
 	TransactionMetaSet(const uint256& txID, uint32 ledger) : mTransactionID(txID), mLedger(ledger) { ; }
@@ -173,6 +171,9 @@ public:
 	void init(const uint256& transactionID, uint32 ledger);
 	void clear() { mNodes.clear(); }
 	void swap(TransactionMetaSet&);
+
+	const uint256& getTxID()	{ return mTransactionID; }
+	uint32 getLgrSeq()			{ return mLedger; }
 
 	bool isNodeAffected(const uint256&) const;
 	TransactionMetaNode& getAffectedNode(const uint256&, int type);

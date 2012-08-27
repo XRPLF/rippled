@@ -38,6 +38,18 @@ protected:
 	LedgerEntrySet(const boost::unordered_map<uint256, LedgerEntrySetEntry> &e, const TransactionMetaSet& s, int m) :
 		mEntries(e), mSet(s), mSeq(m) { ; }
 
+	SLE::pointer getForMod(const uint256& node, Ledger::pointer& ledger,
+		boost::unordered_map<uint256, SLE::pointer>& newMods);
+
+	bool threadTx(TransactionMetaNode& metaNode, const NewcoinAddress& threadTo, Ledger::pointer& ledger,
+		boost::unordered_map<uint256, SLE::pointer>& newMods);
+
+	bool threadTx(TransactionMetaNode& metaNode, SLE::pointer& threadTo, Ledger::pointer& ledger,
+	    boost::unordered_map<uint256, SLE::pointer>& newMods);
+
+	bool threadOwners(TransactionMetaNode& metaNode, SLE::pointer& node, Ledger::pointer& ledger,
+		boost::unordered_map<uint256, SLE::pointer>& newMods);
+
 public:
 	LedgerEntrySet() : mSeq(0) { ; }
 
@@ -60,7 +72,7 @@ public:
 	void entryModify(const SLE::pointer&);		// This entry will be modified
 
 	Json::Value getJson(int) const;
-	void addRawMeta(Serializer&, Ledger::pointer originalLedger);
+	void calcRawMeta(Serializer&, Ledger::pointer& originalLedger);
 
 	// iterator functions
 	bool isEmpty() const { return mEntries.empty(); }

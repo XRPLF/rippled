@@ -14,74 +14,70 @@
 
 enum TransactionEngineResult
 {
-	// Note: Numbers are currently unstable.  Use tokens.
+	// Note: Range is stable.  Exact numbers are currently unstable.  Use tokens.
 
-	// tenCAN_NEVER_SUCCEED = <0
+	// -399 .. -300: L Local error (transaction fee inadequate, exceeds local limit)
+	// Not forwarded, no fee. Only valid during non-consensus processing
+	telLOCAL_ERROR	= -399,
+	telBAD_PATH_COUNT,
+	telINSUF_FEE_P,
 
-	// Malformed: Fee claimed
-	tenGEN_IN_USE	= -300,
-	tenBAD_ADD_AUTH,
-	tenBAD_AMOUNT,
-	tenBAD_CLAIM_ID,
-	tenBAD_EXPIRATION,
-	tenBAD_GEN_AUTH,
-	tenBAD_ISSUER,
-	tenBAD_OFFER,
-	tenBAD_PATH,
-	tenBAD_PATH_COUNT,
-	tenBAD_PUBLISH,
-	tenBAD_SET_ID,
-	tenCREATEXNS,
-	tenDST_IS_SRC,
-	tenDST_NEEDED,
-	tenEXPLICITXNS,
-	tenREDUNDANT,
-	tenRIPPLE_EMPTY,
+	// -299 .. -200: M Malformed (bad signature)
+	// Transaction corrupt, not forwarded, cannot charge fee, reject
+	// Never can succeed in any ledger
+	temMALFORMED	= -299,
+	temBAD_AMOUNT,
+	temBAD_AUTH_MASTER,
+	temBAD_EXPIRATION,
+	temBAD_ISSUER,
+	temBAD_OFFER,
+	temBAD_PUBLISH,
+	temBAD_SET_ID,
+	temCREATEXNS,
+	temDST_IS_SRC,
+	temDST_NEEDED,
+	temINSUF_FEE_P,
+	temINVALID,
+	temREDUNDANT,
+	temRIPPLE_EMPTY,
+	temUNKNOWN,
 
-	// Invalid: Ledger won't allow.
-	tenCLAIMED		= -200,
-	tenBAD_RIPPLE,
-	tenCREATED,
-	tenEXPIRED,
-	tenMSG_SET,
-	terALREADY,
+	// -199 .. -100: F Failure (sequence number previously used)
+	// Transaction cannot succeed because of ledger state, unexpected ledger state, C++ exception, not forwarded, cannot be
+	// applied, Could succeed in an imaginary ledger.
+	tefFAILURE		= -199,
+	tefALREADY,
+	tefBAD_ADD_AUTH,
+	tefBAD_AUTH,
+	tefBAD_CLAIM_ID,
+	tefBAD_GEN_AUTH,
+	tefBAD_LEDGER,
+	tefCLAIMED,
+	tefCREATED,
+	tefGEN_IN_USE,
+	tefPAST_SEQ,
 
-	// Other
-	tenFAILED		= -100,
-	tenINSUF_FEE_P,
-	tenINVALID,
-	tenUNKNOWN,
-
-	terSUCCESS		= 0,
-
-	// terFAILED_BUT_COULD_SUCCEED = >0
-	// Conflict with ledger database: Fee claimed
-	// Might succeed if not conflict is not caused by transaction ordering.
-	terBAD_AUTH,
-	terBAD_AUTH_MASTER,
-	terBAD_LEDGER,
-	terBAD_RIPPLE,
-	terBAD_SEQ,
-	terCREATED,
+	// -99 .. -1: R Retry (sequence too high, no funds for txn fee, originating account non-existent)
+	// Transaction cannot be applied, cannot charge fee, not forwarded, might succeed later, hold
+	terRETRY		= -99,
 	terDIR_FULL,
 	terFUNDS_SPENT,
 	terINSUF_FEE_B,
-	terINSUF_FEE_T,
-	terNODE_NOT_FOUND,
-	terNODE_NOT_MENTIONED,
-	terNODE_NO_ROOT,
 	terNO_ACCOUNT,
 	terNO_DST,
 	terNO_LINE_NO_ZERO,
-	terNO_PATH,
-	terOFFER_NOT_FOUND,
-	terOVER_LIMIT,
-	terPAST_LEDGER,
-	terPAST_SEQ,
+	terOFFER_NOT_FOUND, // XXX If we check sequence first this could be hard failure.
 	terPRE_SEQ,
 	terSET_MISSING_DST,
-	terUNCLAIMED,
 	terUNFUNDED,
+
+	// 0: S Success (success)
+	// Transaction succeeds, can be applied, can charge fee, forwarded
+	tesSUCCESS		= 0,
+
+	// 100 .. P Partial success (SR) (ripple transaction with no good paths, pay to non-existent account)
+	// Transaction can be applied, can charge fee, forwarded, but does not achieve optimal result.
+	tesPARITAL		= 100,
 
 	// Might succeed in different order.
 	// XXX claim fee and try to delete unfunded.
@@ -133,9 +129,19 @@ protected:
 public:
 	typedef boost::shared_ptr<PathState> pointer;
 
-	bool						bValid;
-	std::vector<paymentNode>	vpnNodes;
-	LedgerEntrySet				lesEntries;
+	bool							bValid;
+	std::vector<paymentNode>		vpnNodes;
+
+	// If the transaction fails to meet some constraint, still need to delete unfunded offers.
+	boost::unordered_set<uint256>	usUnfundedFound;	// Offers that were found unfunded.
+
+	// When processing, don't want to complicate directory walking with deletion.
+	std::vector<uint256>			vUnfundedBecame;	// Offers that became unfunded.
+
+	// First time working in reverse a funding source was mentioned.  Source may only be used there.
+	boost::unordered_map<std::pair<uint160, uint160>, int>	umSource;	// Map of currency, issuer to node index.
+
+	LedgerEntrySet					lesEntries;
 
 	int							mIndex;
 	uint64						uQuality;		// 0 = none.
@@ -222,14 +228,15 @@ protected:
 
 	SLE::pointer		entryCreate(LedgerEntryType letType, const uint256& uIndex);
 	SLE::pointer		entryCache(LedgerEntryType letType, const uint256& uIndex);
-	void				entryDelete(SLE::pointer sleEntry, bool unfunded = false);
+	void				entryDelete(SLE::pointer sleEntry, bool bUnfunded = false);
 	void				entryModify(SLE::pointer sleEntry);
 
 	uint32				rippleTransferRate(const uint160& uIssuerID);
-	STAmount			rippleBalance(const uint160& uToAccountID, const uint160& uFromAccountID, const uint160& uCurrencyID);
+	STAmount			rippleOwed(const uint160& uToAccountID, const uint160& uFromAccountID, const uint160& uCurrencyID);
 	STAmount			rippleLimit(const uint160& uToAccountID, const uint160& uFromAccountID, const uint160& uCurrencyID);
-	uint32				rippleQualityIn(const uint160& uToAccountID, const uint160& uFromAccountID, const uint160& uCurrencyID);
-	uint32				rippleQualityOut(const uint160& uToAccountID, const uint160& uFromAccountID, const uint160& uCurrencyID);
+	uint32				rippleQualityIn(const uint160& uToAccountID, const uint160& uFromAccountID, const uint160& uCurrencyID, const SOE_Field sfLow=sfLowQualityIn, const SOE_Field sfHigh=sfHighQualityIn);
+	uint32				rippleQualityOut(const uint160& uToAccountID, const uint160& uFromAccountID, const uint160& uCurrencyID)
+	{ return rippleQualityIn(uToAccountID, uFromAccountID, uCurrencyID, sfLowQualityOut, sfHighQualityOut); }
 
 	STAmount			rippleHolds(const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID);
 	STAmount			rippleTransferFee(const uint160& uSenderID, const uint160& uReceiverID, const uint160& uIssuerID, const STAmount& saAmount);

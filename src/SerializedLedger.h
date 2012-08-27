@@ -65,6 +65,11 @@ public:
 
 	bool isThreadedType();	// is this a ledger entry that can be threaded
 	bool isThreaded();		// is this ledger entry actually threaded
+	bool hasOneOwner();		// This node has one other node that owns it (like nickname)
+	bool hasTwoOwners();	// This node has two nodes that own it (like ripple balance)
+	NewcoinAddress getOwner();
+	NewcoinAddress getFirstOwner();
+	NewcoinAddress getSecondOwner();
 	uint256 getThreadedTransaction();
 	uint32 getThreadedLedger();
 	bool thread(const uint256& txID, uint32 ledgerSeq, uint256& prevTxID, uint32& prevLedgerID);

@@ -651,10 +651,10 @@ STAmount operator-(const STAmount& v1, const STAmount& v2)
 		return STAmount(v1.name, v1.mCurrency, -fv, ov1, true);
 }
 
-STAmount STAmount::divide(const STAmount& num, const STAmount& den, const uint160& currencyOut)
+STAmount STAmount::divide(const STAmount& num, const STAmount& den, const uint160& uCurrencyID, const uint160& uIssuerID)
 {
 	if (den.isZero()) throw std::runtime_error("division by zero");
-	if (num.isZero()) return STAmount(currencyOut);
+	if (num.isZero()) return STAmount(uCurrencyID, uIssuerID);
 
 	uint64 numVal = num.mValue, denVal = den.mValue;
 	int numOffset = num.mOffset, denOffset = den.mOffset;
@@ -690,14 +690,14 @@ STAmount STAmount::divide(const STAmount& num, const STAmount& den, const uint16
 	assert(BN_num_bytes(&v) <= 64);
 
 	if (num.mIsNegative != den.mIsNegative)
-		return -STAmount(currencyOut, v.getulong(), finOffset);
-	else return STAmount(currencyOut, v.getulong(), finOffset);
+		return -STAmount(uCurrencyID, uIssuerID, v.getulong(), finOffset);
+	else return STAmount(uCurrencyID, uIssuerID, v.getulong(), finOffset);
 }
 
-STAmount STAmount::multiply(const STAmount& v1, const STAmount& v2, const uint160& currencyOut)
+STAmount STAmount::multiply(const STAmount& v1, const STAmount& v2, const uint160& uCurrencyID, const uint160& uIssuerID)
 {
 	if (v1.isZero() || v2.isZero())
-		return STAmount(currencyOut);
+		return STAmount(uCurrencyID, uIssuerID);
 
 	if (v1.mIsNative && v2.mIsNative) // FIXME: overflow
 		return STAmount(v1.name, v1.getSNValue() * v2.getSNValue());
@@ -753,8 +753,8 @@ STAmount STAmount::multiply(const STAmount& v1, const STAmount& v2, const uint16
 	assert(BN_num_bytes(&v) <= 64);
 
 	if (v1.mIsNegative != v2.mIsNegative)
-		return -STAmount(currencyOut, v.getulong(), offset1 + offset2 + 14);
-	else return STAmount(currencyOut, v.getulong(), offset1 + offset2 + 14);
+		return -STAmount(uCurrencyID, uIssuerID, v.getulong(), offset1 + offset2 + 14);
+	else return STAmount(uCurrencyID, uIssuerID, v.getulong(), offset1 + offset2 + 14);
 }
 
 // Convert an offer into an index amount so they sort by rate.
@@ -769,7 +769,7 @@ uint64 STAmount::getRate(const STAmount& offerOut, const STAmount& offerIn)
 {
 	if (offerOut.isZero()) throw std::runtime_error("Worthless offer");
 
-	STAmount r = divide(offerIn, offerOut, uint160(1));
+	STAmount r = divide(offerIn, offerOut, CURRENCY_ONE, ACCOUNT_ONE);
 
 	assert((r.getExponent() >= -100) && (r.getExponent() <= 155));
 
@@ -778,12 +778,12 @@ uint64 STAmount::getRate(const STAmount& offerOut, const STAmount& offerIn)
 	return (ret << (64 - 8)) | r.getMantissa();
 }
 
-STAmount STAmount::setRate(uint64 rate, const uint160& currencyOut)
+STAmount STAmount::setRate(uint64 rate)
 {
 	uint64 mantissa = rate & ~(255ull << (64 - 8));
 	int exponent = static_cast<int>(rate >> (64 - 8)) - 100;
 
-	return STAmount(currencyOut, mantissa, exponent);
+	return STAmount(CURRENCY_ONE, ACCOUNT_ONE, mantissa, exponent);
 }
 
 // Taker gets all taker can pay for with saTakerFunds, limited by saOfferPays and saOfferFunds.
@@ -814,7 +814,7 @@ bool STAmount::applyOffer(
 	STAmount	saOfferGetsAvailable =
 		saOfferFunds == saOfferPays
 			? saOfferGets	// Offer was fully funded, avoid shenanigans.
-			: divide(multiply(saTakerPays, saOfferPaysAvailable, uint160(1)), saTakerGets, saOfferGets.getCurrency());
+			: divide(multiply(saTakerPays, saOfferPaysAvailable, CURRENCY_ONE, ACCOUNT_ONE), saTakerGets, saOfferGets.getCurrency(), saOfferGets.getIssuer());
 
 	if (saOfferGets == saOfferGetsAvailable && saTakerFunds >= saOfferGets)
 	{
@@ -836,7 +836,7 @@ bool STAmount::applyOffer(
 	{
 		// Taker only get's a portion of offer.
 		saTakerPaid	= saTakerFunds;					// Taker paid all he had.
-		saTakerGot	= divide(multiply(saTakerFunds, saOfferPaysAvailable, uint160(1)), saOfferGetsAvailable, saOfferPays.getCurrency());
+		saTakerGot	= divide(multiply(saTakerFunds, saOfferPaysAvailable, CURRENCY_ONE, ACCOUNT_ONE), saOfferGetsAvailable, saOfferPays.getCurrency(), saOfferPays.getIssuer());
 
 		Log(lsINFO) << "applyOffer: saTakerGot=" << saTakerGot.getFullText();
 		Log(lsINFO) << "applyOffer: saOfferPaysAvailable=" << saOfferPaysAvailable.getFullText();
@@ -848,7 +848,7 @@ bool STAmount::applyOffer(
 STAmount STAmount::getPay(const STAmount& offerOut, const STAmount& offerIn, const STAmount& needed)
 { // Someone wants to get (needed) out of the offer, how much should they pay in?
 	if (offerOut.isZero())
-		return STAmount(offerIn.getCurrency());
+		return STAmount(offerIn.getCurrency(), offerIn.getIssuer());
 
 	if (needed >= offerOut)
 	{
@@ -856,7 +856,7 @@ STAmount STAmount::getPay(const STAmount& offerOut, const STAmount& offerIn, con
 		return needed;
 	}
 
-	STAmount ret = divide(multiply(needed, offerIn, uint160(1)), offerOut, offerIn.getCurrency());
+	STAmount ret = divide(multiply(needed, offerIn, CURRENCY_ONE, ACCOUNT_ONE), offerOut, offerIn.getCurrency(), offerIn.getIssuer());
 
 	return (ret > offerIn) ? offerIn : ret;
 }
@@ -1063,8 +1063,7 @@ BOOST_AUTO_TEST_CASE( NativeCurrency_test )
 
 BOOST_AUTO_TEST_CASE( CustomCurrency_test )
 {
-	uint160 currency(1);
-	STAmount zero(currency), one(currency, 1), hundred(currency, 100);
+	STAmount zero(CURRENCY_ONE, ACCOUNT_ONE), one(CURRENCY_ONE, ACCOUNT_ONE, 1), hundred(CURRENCY_ONE, ACCOUNT_ONE, 100);
 
 	serdes(one).getRaw();
 
@@ -1131,33 +1130,33 @@ BOOST_AUTO_TEST_CASE( CustomCurrency_test )
 	if (!(hundred != zero)) BOOST_FAIL("STAmount fail");
 	if (!(hundred != one)) BOOST_FAIL("STAmount fail");
 	if ((hundred != hundred)) BOOST_FAIL("STAmount fail");
-	if (STAmount(currency).getText() != "0") BOOST_FAIL("STAmount fail");
-	if (STAmount(currency,31).getText() != "31") BOOST_FAIL("STAmount fail");
-	if (STAmount(currency,31,1).getText() != "310") BOOST_FAIL("STAmount fail");
-	if (STAmount(currency,31,-1).getText() != "3.1") BOOST_FAIL("STAmount fail");
-	if (STAmount(currency,31,-2).getText() != "0.31") BOOST_FAIL("STAmount fail");
+	if (STAmount(CURRENCY_ONE, ACCOUNT_ONE).getText() != "0") BOOST_FAIL("STAmount fail");
+	if (STAmount(CURRENCY_ONE, ACCOUNT_ONE, 31).getText() != "31") BOOST_FAIL("STAmount fail");
+	if (STAmount(CURRENCY_ONE, ACCOUNT_ONE, 31,1).getText() != "310") BOOST_FAIL("STAmount fail");
+	if (STAmount(CURRENCY_ONE, ACCOUNT_ONE, 31,-1).getText() != "3.1") BOOST_FAIL("STAmount fail");
+	if (STAmount(CURRENCY_ONE, ACCOUNT_ONE, 31,-2).getText() != "0.31") BOOST_FAIL("STAmount fail");
 
-	if (STAmount::multiply(STAmount(currency, 20), STAmount(3), currency).getText() != "60")
+	if (STAmount::multiply(STAmount(CURRENCY_ONE, ACCOUNT_ONE, 20), STAmount(3), CURRENCY_ONE, ACCOUNT_ONE).getText() != "60")
 		BOOST_FAIL("STAmount multiply fail");
-	if (STAmount::multiply(STAmount(currency, 20), STAmount(3), uint160()).getText() != "60")
+	if (STAmount::multiply(STAmount(CURRENCY_ONE, ACCOUNT_ONE, 20), STAmount(3), uint160(), ACCOUNT_XNS).getText() != "60")
 		BOOST_FAIL("STAmount multiply fail");
-	if (STAmount::multiply(STAmount(20), STAmount(3), currency).getText() != "60")
+	if (STAmount::multiply(STAmount(20), STAmount(3), CURRENCY_ONE, ACCOUNT_ONE).getText() != "60")
 		BOOST_FAIL("STAmount multiply fail");
-	if (STAmount::multiply(STAmount(20), STAmount(3), uint160()).getText() != "60")
+	if (STAmount::multiply(STAmount(20), STAmount(3), uint160(), ACCOUNT_XNS).getText() != "60")
 		BOOST_FAIL("STAmount multiply fail");
-	if (STAmount::divide(STAmount(currency, 60) , STAmount(3), currency).getText() != "20")
+	if (STAmount::divide(STAmount(CURRENCY_ONE, ACCOUNT_ONE, 60), STAmount(3), CURRENCY_ONE, ACCOUNT_ONE).getText() != "20")
 		BOOST_FAIL("STAmount divide fail");
-	if (STAmount::divide(STAmount(currency, 60) , STAmount(3), uint160()).getText() != "20")
+	if (STAmount::divide(STAmount(CURRENCY_ONE, ACCOUNT_ONE, 60), STAmount(3), uint160(), ACCOUNT_XNS).getText() != "20")
 		BOOST_FAIL("STAmount divide fail");
-	if (STAmount::divide(STAmount(currency, 60) , STAmount(currency, 3), currency).getText() != "20")
+	if (STAmount::divide(STAmount(CURRENCY_ONE, ACCOUNT_ONE, 60), STAmount(CURRENCY_ONE, ACCOUNT_ONE, 3), CURRENCY_ONE, ACCOUNT_ONE).getText() != "20")
 		BOOST_FAIL("STAmount divide fail");
-	if (STAmount::divide(STAmount(currency, 60) , STAmount(currency, 3), uint160()).getText() != "20")
+	if (STAmount::divide(STAmount(CURRENCY_ONE, ACCOUNT_ONE, 60), STAmount(CURRENCY_ONE, ACCOUNT_ONE, 3), uint160(), ACCOUNT_XNS).getText() != "20")
 		BOOST_FAIL("STAmount divide fail");
 
-	STAmount a1(currency, 60), a2 (currency, 10, -1);
-	if (STAmount::divide(a2, a1, currency) != STAmount::setRate(STAmount::getRate(a1, a2), currency))
+	STAmount a1(CURRENCY_ONE, ACCOUNT_ONE, 60), a2 (CURRENCY_ONE, ACCOUNT_ONE, 10, -1);
+	if (STAmount::divide(a2, a1, CURRENCY_ONE, ACCOUNT_ONE) != STAmount::setRate(STAmount::getRate(a1, a2)))
 		BOOST_FAIL("STAmount setRate(getRate) fail");
-	if (STAmount::divide(a1, a2, currency) != STAmount::setRate(STAmount::getRate(a2, a1), currency))
+	if (STAmount::divide(a1, a2, CURRENCY_ONE, ACCOUNT_ONE) != STAmount::setRate(STAmount::getRate(a2, a1)))
 		BOOST_FAIL("STAmount setRate(getRate) fail");
 
 	BOOST_TEST_MESSAGE("Amount CC Complete");
@@ -1168,22 +1167,21 @@ BOOST_AUTO_TEST_CASE( CurrencyMulDivTests )
 	// Test currency multiplication and division operations such as
 	// convertToDisplayAmount, convertToInternalAmount, getRate, getClaimed, and getNeeded
 
-	uint160 c(1);
 	if (STAmount::getRate(STAmount(1), STAmount(10)) != (((100ul-14)<<(64-8))|1000000000000000ul))
 		BOOST_FAIL("STAmount getRate fail");
 	if (STAmount::getRate(STAmount(10), STAmount(1)) != (((100ul-16)<<(64-8))|1000000000000000ul))
 		BOOST_FAIL("STAmount getRate fail");
-	if (STAmount::getRate(STAmount(c, 1), STAmount(c, 10)) != (((100ul-14)<<(64-8))|1000000000000000ul))
+	if (STAmount::getRate(STAmount(CURRENCY_ONE, ACCOUNT_ONE, 1), STAmount(CURRENCY_ONE, ACCOUNT_ONE, 10)) != (((100ul-14)<<(64-8))|1000000000000000ul))
 		BOOST_FAIL("STAmount getRate fail");
-	if (STAmount::getRate(STAmount(c, 10), STAmount(c, 1)) != (((100ul-16)<<(64-8))|1000000000000000ul))
+	if (STAmount::getRate(STAmount(CURRENCY_ONE, ACCOUNT_ONE, 10), STAmount(CURRENCY_ONE, ACCOUNT_ONE, 1)) != (((100ul-16)<<(64-8))|1000000000000000ul))
 		BOOST_FAIL("STAmount getRate fail");
-	if (STAmount::getRate(STAmount(c, 1), STAmount(10)) != (((100ul-14)<<(64-8))|1000000000000000ul))
+	if (STAmount::getRate(STAmount(CURRENCY_ONE, ACCOUNT_ONE, 1), STAmount(10)) != (((100ul-14)<<(64-8))|1000000000000000ul))
 		BOOST_FAIL("STAmount getRate fail");
-	if (STAmount::getRate(STAmount(c, 10), STAmount(1)) != (((100ul-16)<<(64-8))|1000000000000000ul))
+	if (STAmount::getRate(STAmount(CURRENCY_ONE, ACCOUNT_ONE, 10), STAmount(1)) != (((100ul-16)<<(64-8))|1000000000000000ul))
 		BOOST_FAIL("STAmount getRate fail");
-	if (STAmount::getRate(STAmount(1), STAmount(c, 10)) != (((100ul-14)<<(64-8))|1000000000000000ul))
+	if (STAmount::getRate(STAmount(1), STAmount(CURRENCY_ONE, ACCOUNT_ONE, 10)) != (((100ul-14)<<(64-8))|1000000000000000ul))
 		BOOST_FAIL("STAmount getRate fail");
-	if (STAmount::getRate(STAmount(10), STAmount(c, 1)) != (((100ul-16)<<(64-8))|1000000000000000ul))
+	if (STAmount::getRate(STAmount(10), STAmount(CURRENCY_ONE, ACCOUNT_ONE, 1)) != (((100ul-16)<<(64-8))|1000000000000000ul))
 		BOOST_FAIL("STAmount getRate fail");
 
 }
