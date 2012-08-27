@@ -4184,24 +4184,14 @@ TransactionEngineResult TransactionEngine::takeOffers(
 	}
 
 	// On storing meta data, delete offers that were found unfunded to prevent encountering them in future.
-	switch (terResult)
+	if (tesSUCCESS == terResult)
 	{
-		case tesSUCCESS:
-		case tepPATH_DRY:
-		case tepPATH_PARTIAL:
-			BOOST_FOREACH(const uint256& uOfferIndex, usOfferUnfundedFound)
-			{
-				TransactionEngineResult	terDelete = offerDelete(uOfferIndex);
-
-				if (tesSUCCESS != terDelete)
-					terResult	= terDelete;
-					break;
-			}
-			break;
-
-		default:
-			nothing();
-			break;
+		BOOST_FOREACH(const uint256& uOfferIndex, usOfferUnfundedFound)
+		{
+			terResult	= offerDelete(uOfferIndex);
+			if (tesSUCCESS != terResult)
+				break;
+		}
 	}
 
 	if (tesSUCCESS == terResult)
@@ -4209,10 +4199,8 @@ TransactionEngineResult TransactionEngine::takeOffers(
 		// On success, delete offers that became unfunded.
 		BOOST_FOREACH(const uint256& uOfferIndex, usOfferUnfundedBecame)
 		{
-			TransactionEngineResult	terDelete = offerDelete(uOfferIndex);
-
-			if (tesSUCCESS != terDelete)
-				terResult	= terDelete;
+			terResult	= offerDelete(uOfferIndex);
+			if (tesSUCCESS != terResult)
 				break;
 		}
 	}
