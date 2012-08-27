@@ -262,6 +262,14 @@ bool TransactionMetaSet::isNodeAffected(const uint256& node) const
 	return mNodes.find(node) != mNodes.end();
 }
 
+TransactionMetaNode& TransactionMetaSet::getAffectedNode(const uint256& node, int type)
+{
+	std::map<uint256, TransactionMetaNode>::iterator it = mNodes.find(node);
+	if (it != mNodes.end())
+		return it->second;
+	return mNodes.insert(std::make_pair(node, TransactionMetaNode(node, type))).first->second;
+}
+
 const TransactionMetaNode& TransactionMetaSet::peekAffectedNode(const uint256& node) const
 {
 	std::map<uint256, TransactionMetaNode>::const_iterator it = mNodes.find(node);
@@ -283,28 +291,3 @@ void TransactionMetaSet::swap(TransactionMetaSet& s)
 	mNodes.swap(s.mNodes);
 }
 
-TransactionMetaNode& TransactionMetaSet::modifyNode(const uint256& node)
-{
-	std::map<uint256, TransactionMetaNode>::iterator it = mNodes.find(node);
-	if (it != mNodes.end())
-		return it->second;
-	return mNodes.insert(std::make_pair(node, TransactionMetaNode(node))).first->second;
-}
-
-#if 0
-void TransactionMetaSet::threadNode(const uint256& node, const uint256& prevTx, uint32 prevLgr)
-{
-	modifyNode(node).thread(prevTx, prevLgr);
-}
-
-void TransactionMetaSet::deleteUnfunded(const uint256& nodeID,
-	const STAmount& firstBalance, const STAmount &secondBalance)
-{
-	TransactionMetaNode& node = modifyNode(nodeID);
-	TMNEUnfunded* entry = dynamic_cast<TMNEUnfunded*>(node.findEntry(TransactionMetaNodeEntry::TMNDeleteUnfunded));
-	if (entry)
-		entry->setBalances(firstBalance, secondBalance);
-	else
-		node.addNode(new TMNEUnfunded(firstBalance, secondBalance));
-}
-#endif 
