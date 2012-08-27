@@ -31,61 +31,50 @@ bool transResultInfo(TransactionEngineResult terCode, std::string& strToken, std
 		const char*				cpToken;
 		const char*				cpHuman;
 	} transResultInfoA[] = {
-		{	tenBAD_ADD_AUTH,		"tenBAD_ADD_AUTH",			"Not authorized to add account."					},
-		{	tenBAD_AMOUNT,			"tenBAD_AMOUNT",			"Can only send positive amounts."					},
-		{	tenBAD_CLAIM_ID,		"tenBAD_CLAIM_ID",			"Malformed."										},
-		{	tenBAD_EXPIRATION,		"tenBAD_EXPIRATION",		"Malformed."										},
-		{	tenBAD_GEN_AUTH,		"tenBAD_GEN_AUTH",			"Not authorized to claim generator."				},
-		{	tenBAD_ISSUER,			"tenBAD_ISSUER",			"Malformed."										},
-		{	tenBAD_OFFER,			"tenBAD_OFFER",				"Malformed."										},
-		{	tenBAD_PATH,			"tenBAD_PATH",				"Malformed: path."									},
-		{	tenBAD_PATH_COUNT,		"tenBAD_PATH_COUNT",		"Malformed: too many paths."						},
-		{	tenBAD_PUBLISH,			"tenBAD_PUBLISH",			"Malformed: bad publish."							},
-		{	tenBAD_RIPPLE,			"tenBAD_RIPPLE",			"Ledger prevents ripple from succeeding."			},
-		{	tenBAD_SET_ID,			"tenBAD_SET_ID",			"Malformed."										},
-		{	tenCLAIMED,				"tenCLAIMED",				"Can not claim a previously claimed account."		},
-		{	tenCREATED,				"tenCREATED",				"Can't add an already created account."				},
-		{	tenCREATEXNS,			"tenCREATEXNS",				"Can not specify non XNS for Create."				},
-		{	tenDST_IS_SRC,			"tenDST_IS_SRC",			"Destination may not be source."					},
-		{	tenDST_NEEDED,			"tenDST_NEEDED",			"Destination not specified."						},
-		{	tenEXPIRED,				"tenEXPIRED",				"Won't add an expired offer."						},
-		{	tenEXPLICITXNS,			"tenEXPLICITXNS",			"XNS is used by default, don't specify it."			},
-		{	tenFAILED,				"tenFAILED",				"Something broke horribly"							},
-		{	tenGEN_IN_USE,			"tenGEN_IN_USE",			"Generator already in use."							},
-		{	tenINSUF_FEE_P,			"tenINSUF_FEE_P",			"fee totally insufficient"							},
-		{	tenINVALID,				"tenINVALID",				"The transaction is ill-formed"						},
-		{	tenMSG_SET,				"tenMSG_SET",				"Can't change a message key."						},
-		{	tenREDUNDANT,			"tenREDUNDANT",				"Sends same currency to self."						},
-		{	tenRIPPLE_EMPTY,		"tenRIPPLE_EMPTY",			"PathSet with no paths."							},
-		{	tenUNKNOWN,				"tenUNKNOWN",				"The transactions requires logic not implemented yet"	},
-		{	terALREADY,				"terALREADY",				"The exact transaction was already in this ledger"	},
-		{	terBAD_AUTH,			"terBAD_AUTH",				"Transaction's public key is not authorized."		},
-		{	terBAD_AUTH_MASTER,		"terBAD_AUTH_MASTER",		"Auth for unclaimed account needs correct master key."	},
-		{	terBAD_LEDGER,			"terBAD_LEDGER",			"Ledger in unexpected state."						},
-		{	terBAD_RIPPLE,			"terBAD_RIPPLE",			"No ripple path can be satisfied."					},
-		{	terBAD_SEQ,				"terBAD_SEQ",				"This sequence number should be zero for prepaid transactions."	},
+		{	tefALREADY,				"tefALREADY",				"The exact transaction was already in this ledger"	},
+		{	tefBAD_ADD_AUTH,		"tefBAD_ADD_AUTH",			"Not authorized to add account."					},
+		{	tefBAD_AUTH,			"tefBAD_AUTH",				"Transaction's public key is not authorized."		},
+		{	tefBAD_CLAIM_ID,		"tefBAD_CLAIM_ID",			"Malformed."										},
+		{	tefBAD_GEN_AUTH,		"tefBAD_GEN_AUTH",			"Not authorized to claim generator."				},
+		{	tefBAD_LEDGER,			"tefBAD_LEDGER",			"Ledger in unexpected state."						},
+		{	tefCLAIMED,				"tefCLAIMED",				"Can not claim a previously claimed account."		},
+		{	tefCREATED,				"tefCREATED",				"Can't add an already created account."				},
+		{	tefGEN_IN_USE,			"tefGEN_IN_USE",			"Generator already in use."							},
+		{	tefPAST_SEQ,			"tefPAST_SEQ",				"This sequence number has already past"				},
+
+		{	telBAD_PATH_COUNT,		"telBAD_PATH_COUNT",		"Malformed: too many paths."						},
+		{	telINSUF_FEE_P,			"telINSUF_FEE_P",			"Fee insufficient."									},
+
+		{	temBAD_AMOUNT,			"temBAD_AMOUNT",			"Can only send positive amounts."					},
+		{	temBAD_AUTH_MASTER,		"temBAD_AUTH_MASTER",		"Auth for unclaimed account needs correct master key."	},
+		{	temBAD_EXPIRATION,		"temBAD_EXPIRATION",		"Malformed."										},
+		{	temBAD_ISSUER,			"temBAD_ISSUER",			"Malformed."										},
+		{	temBAD_OFFER,			"temBAD_OFFER",				"Malformed."										},
+		{	temBAD_PUBLISH,			"temBAD_PUBLISH",			"Malformed: bad publish."							},
+		{	temBAD_SET_ID,			"temBAD_SET_ID",			"Malformed."										},
+		{	temCREATEXNS,			"temCREATEXNS",				"Can not specify non XNS for Create."				},
+		{	temDST_IS_SRC,			"temDST_IS_SRC",			"Destination may not be source."					},
+		{	temDST_NEEDED,			"temDST_NEEDED",			"Destination not specified."						},
+		{	temINSUF_FEE_P,			"temINSUF_FEE_P",			"Fee not allowed."									},
+		{	temINVALID,				"temINVALID",				"The transaction is ill-formed"						},
+		{	temREDUNDANT,			"temREDUNDANT",				"Sends same currency to self."						},
+		{	temRIPPLE_EMPTY,		"temRIPPLE_EMPTY",			"PathSet with no paths."							},
+		{	temUNKNOWN,				"temUNKNOWN",				"The transactions requires logic not implemented yet"	},
+
 		{	terDIR_FULL,			"terDIR_FULL",				"Can not add entry to full dir."					},
 		{	terFUNDS_SPENT,			"terFUNDS_SPENT",			"Can't set password, password set funds already spent."	},
-		{	terINSUF_FEE_B,			"terINSUF_FEE_B",			"Account balance can't pay fee"						},
-		{	terINSUF_FEE_T,			"terINSUF_FEE_T",			"fee insufficient now (account doesn't exist, network load)"	},
-		{	terNODE_NOT_FOUND,		"terNODE_NOT_FOUND",		"Can not delete a directory node."					},
-		{	terNODE_NOT_MENTIONED,  "terNODE_NOT_MENTIONED",	"Could not remove node from a directory."			},
-		{	terNODE_NO_ROOT,        "terNODE_NO_ROOT",			"Directory doesn't exist."							},
-		{	terNO_ACCOUNT,			"terNO_ACCOUNT",			"The source account does not exist"					},
+		{	terINSUF_FEE_B,			"terINSUF_FEE_B",			"Account balance can't pay fee."					},
+		{	terNO_ACCOUNT,			"terNO_ACCOUNT",			"The source account does not exist."				},
 		{	terNO_DST,				"terNO_DST",				"The destination does not exist"					},
 		{	terNO_LINE_NO_ZERO,		"terNO_LINE_NO_ZERO",		"Can't zero non-existant line, destination might make it."	},
-		{	terNO_PATH,				"terNO_PATH",				"No path existed or met transaction/balance requirements"	},
 		{	terOFFER_NOT_FOUND,		"terOFFER_NOT_FOUND",		"Can not cancel offer."								},
-		{	terOVER_LIMIT,			"terOVER_LIMIT",			"Over limit."										},
-		{	terPAST_LEDGER,			"terPAST_LEDGER",			"The transaction expired and can't be applied"		},
-		{	terPAST_SEQ,			"terPAST_SEQ",				"This sequence number has already past"				},
 		{	terPATH_EMPTY,			"terPATH_EMPTY",			"Path could not send partial amount."				},
 		{	terPATH_PARTIAL,		"terPATH_PARTIAL",			"Path could not send full amount."					},
 		{	terPRE_SEQ,				"terPRE_SEQ",				"Missing/inapplicable prior transaction"			},
 		{	terSET_MISSING_DST,		"terSET_MISSING_DST",		"Can't set password, destination missing."			},
-		{	terSUCCESS,				"terSUCCESS",				"The transaction was applied"						},
-		{	terUNCLAIMED,			"terUNCLAIMED",				"Can not use an unclaimed account."					},
 		{	terUNFUNDED,			"terUNFUNDED",				"Source account had insufficient balance for transaction."	},
+
+		{	tesSUCCESS,				"tesSUCCESS",				"The transaction was applied"						},
 	};
 
 	int	iIndex	= NUMBER(transResultInfoA);
@@ -433,7 +422,7 @@ TransactionEngineResult TransactionEngine::offerDelete(const SLE::pointer& sleOf
 	uint64					uOwnerNode	= sleOffer->getIFieldU64(sfOwnerNode);
 	TransactionEngineResult	terResult	= dirDelete(false, uOwnerNode, Ledger::getOwnerDirIndex(uOwnerID), uOfferIndex);
 
-	if (terSUCCESS == terResult)
+	if (tesSUCCESS == terResult)
 	{
 		uint256		uDirectory	= sleOffer->getIFieldH256(sfBookDirectory);
 		uint64		uBookNode	= sleOffer->getIFieldU64(sfBookNode);
@@ -536,7 +525,7 @@ TransactionEngineResult TransactionEngine::dirAdd(
 	Log(lsINFO) << "dirAdd:  appending: Node: " << strHex(uNodeDir);
 	// Log(lsINFO) << "dirAdd:  appending: PREV: " << svIndexes.peekValue()[0].ToString();
 
-	return terSUCCESS;
+	return tesSUCCESS;
 }
 
 // -->    bKeepRoot: True, if we never completely clean up, after we overflow the root node.
@@ -559,7 +548,7 @@ TransactionEngineResult TransactionEngine::dirDelete(
 	{
 		Log(lsWARNING) << "dirDelete: no such node";
 
-		return terBAD_LEDGER;
+		return tefBAD_LEDGER;
 	}
 
 	STVector256						svIndexes	= sleNode->getIFieldV256(sfIndexes);
@@ -575,7 +564,7 @@ TransactionEngineResult TransactionEngine::dirDelete(
 
 		Log(lsWARNING) << "dirDelete: no such entry";
 
-		return terBAD_LEDGER;
+		return tefBAD_LEDGER;
 	}
 
 	// Remove the element.
@@ -655,14 +644,14 @@ TransactionEngineResult TransactionEngine::dirDelete(
 			{
 				Log(lsWARNING) << "dirDelete: previous node is missing";
 
-				return terBAD_LEDGER;
+				return tefBAD_LEDGER;
 			}
 
 			if (!sleNext)
 			{
 				Log(lsWARNING) << "dirDelete: next node is missing";
 
-				return terBAD_LEDGER;
+				return tefBAD_LEDGER;
 			}
 
 			// Fix previous to point to its new next.
@@ -704,7 +693,7 @@ TransactionEngineResult TransactionEngine::dirDelete(
 		}
 	}
 
-	return terSUCCESS;
+	return tesSUCCESS;
 }
 
 // Return the first entry and advance uDirEntry.
@@ -775,7 +764,7 @@ TransactionEngineResult	TransactionEngine::setAuthorized(const SerializedTransac
 	{
 		Log(lsWARNING) << "createGenerator: bad signature unauthorized generator claim";
 
-		return tenBAD_GEN_AUTH;
+		return tefBAD_GEN_AUTH;
 	}
 
 	// Create generator.
@@ -797,7 +786,7 @@ TransactionEngineResult	TransactionEngine::setAuthorized(const SerializedTransac
 		// Generator is already in use.  Regular passphrases limited to one wallet.
 		Log(lsWARNING) << "createGenerator: generator already in use";
 
-		return tenGEN_IN_USE;
+		return tefGEN_IN_USE;
 	}
 
 	// Set the public key needed to use the account.
@@ -807,7 +796,7 @@ TransactionEngineResult	TransactionEngine::setAuthorized(const SerializedTransac
 
 	mTxnAccount->setIFieldAccount(sfAuthorizedKey, uAuthKeyID);
 
-	return terSUCCESS;
+	return tesSUCCESS;
 }
 
 SLE::pointer TransactionEngine::entryCache(LedgerEntryType letType, const uint256& uIndex)
@@ -842,9 +831,9 @@ SLE::pointer TransactionEngine::entryCreate(LedgerEntryType letType, const uint2
 	return sleNew;
 }
 
-void TransactionEngine::entryDelete(SLE::pointer sleEntry, bool unfunded)
+void TransactionEngine::entryDelete(SLE::pointer sleEntry, bool bUnfunded)
 {
-	mNodes.entryDelete(sleEntry, unfunded);
+	mNodes.entryDelete(sleEntry, bUnfunded);
 }
 
 void TransactionEngine::entryModify(SLE::pointer sleEntry)
@@ -925,14 +914,14 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	}
 #endif
 
-	TransactionEngineResult terResult = terSUCCESS;
+	TransactionEngineResult terResult = tesSUCCESS;
 
 	uint256 txID = txn.getTransactionID();
 	if (!txID)
 	{
 		Log(lsWARNING) << "applyTransaction: invalid transaction id";
 
-		terResult	= tenINVALID;
+		terResult	= temINVALID;
 	}
 
 	//
@@ -946,21 +935,21 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	// XXX This could be a lot cleaner to prevent unnecessary copying.
 	NewcoinAddress	naSigningPubKey;
 
-	if (terSUCCESS == terResult)
+	if (tesSUCCESS == terResult)
 		naSigningPubKey	= NewcoinAddress::createAccountPublic(txn.peekSigningPubKey());
 
 	// Consistency: really signed.
-	if ((terSUCCESS == terResult) && ((params & tepNO_CHECK_SIGN) == 0) && !txn.checkSign(naSigningPubKey))
+	if ((tesSUCCESS == terResult) && ((params & tepNO_CHECK_SIGN) == 0) && !txn.checkSign(naSigningPubKey))
 	{
 		Log(lsWARNING) << "applyTransaction: Invalid transaction: bad signature";
 
-		terResult	= tenINVALID;
+		terResult	= temINVALID;
 	}
 
 	STAmount	saCost		= theConfig.FEE_DEFAULT;
 
 	// Customize behavoir based on transaction type.
-	if (terSUCCESS == terResult)
+	if (tesSUCCESS == terResult)
 	{
 		switch (txn.getTxnType())
 		{
@@ -997,27 +986,28 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 
 			case ttINVALID:
 				Log(lsWARNING) << "applyTransaction: Invalid transaction: ttINVALID transaction type";
-				terResult = tenINVALID;
+				terResult = temINVALID;
 				break;
 
 			default:
 				Log(lsWARNING) << "applyTransaction: Invalid transaction: unknown transaction type";
-				terResult = tenUNKNOWN;
+				terResult = temUNKNOWN;
 				break;
 		}
 	}
 
 	STAmount saPaid = txn.getTransactionFee();
 
-	if (terSUCCESS == terResult && (params & tepNO_CHECK_FEE) == tepNONE)
+	if (tesSUCCESS == terResult && (params & tepNO_CHECK_FEE) == tepNONE)
 	{
 		if (!!saCost)
 		{
+			// XXX DO NOT CHECK ON CONSENSUS PASS
 			if (saPaid < saCost)
 			{
 				Log(lsINFO) << "applyTransaction: insufficient fee";
 
-				terResult	= tenINSUF_FEE_P;
+				terResult	= telINSUF_FEE_P;
 			}
 		}
 		else
@@ -1027,21 +1017,21 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 				// Transaction is malformed.
 				Log(lsWARNING) << "applyTransaction: fee not allowed";
 
-				terResult	= tenINSUF_FEE_P;
+				terResult	= temINSUF_FEE_P;
 			}
 		}
 	}
 
 	// Get source account ID.
 	mTxnAccountID	= txn.getSourceAccount().getAccountID();
-	if (terSUCCESS == terResult && !mTxnAccountID)
+	if (tesSUCCESS == terResult && !mTxnAccountID)
 	{
 		Log(lsWARNING) << "applyTransaction: bad source id";
 
-		terResult	= tenINVALID;
+		terResult	= temINVALID;
 	}
 
-	if (terSUCCESS != terResult)
+	if (tesSUCCESS != terResult)
 		return terResult;
 
 	boost::recursive_mutex::scoped_lock sl(mLedger->mLock);
@@ -1069,7 +1059,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	}
 
 	// Check if account claimed.
-	if (terSUCCESS == terResult)
+	if (tesSUCCESS == terResult)
 	{
 		switch (txn.getTxnType())
 		{
@@ -1078,7 +1068,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 				{
 					Log(lsWARNING) << "applyTransaction: Account already claimed.";
 
-					terResult	= tenCLAIMED;
+					terResult	= tefCLAIMED;
 				}
 				break;
 
@@ -1089,7 +1079,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	}
 
 	// Consistency: Check signature
-	if (terSUCCESS == terResult)
+	if (tesSUCCESS == terResult)
 	{
 		switch (txn.getTxnType())
 		{
@@ -1102,7 +1092,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 					Log(lsWARNING) << "sourceAccountID: " << naSigningPubKey.humanAccountID();
 					Log(lsWARNING) << "txn accountID: " << txn.getSourceAccount().humanAccountID();
 
-					terResult	= tenBAD_CLAIM_ID;
+					terResult	= tefBAD_CLAIM_ID;
 				}
 				break;
 
@@ -1115,7 +1105,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 					Log(lsWARNING) << "sourceAccountID: " << naSigningPubKey.humanAccountID();
 					Log(lsWARNING) << "txn accountID: " << txn.getSourceAccount().humanAccountID();
 
-					terResult	= tenBAD_SET_ID;
+					terResult	= temBAD_SET_ID;
 				}
 				break;
 
@@ -1135,13 +1125,13 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 				{
 					Log(lsINFO) << "applyTransaction: Delay: Not authorized to use account.";
 
-					terResult	= terBAD_AUTH;
+					terResult	= tefBAD_AUTH;
 				}
 				else
 				{
 					Log(lsINFO) << "applyTransaction: Invalid: Not authorized to use account.";
 
-					terResult	= terBAD_AUTH_MASTER;
+					terResult	= temBAD_AUTH_MASTER;
 				}
 				break;
 		}
@@ -1149,7 +1139,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 
 	// Deduct the fee, so it's not available during the transaction.
 	// Will only write the account back, if the transaction succeeds.
-	if (terSUCCESS != terResult || !saCost)
+	if (tesSUCCESS != terResult || !saCost)
 	{
 		nothing();
 	}
@@ -1168,7 +1158,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 	}
 
 	// Validate sequence
-	if (terSUCCESS != terResult)
+	if (tesSUCCESS != terResult)
 	{
 		nothing();
 	}
@@ -1190,13 +1180,13 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 			{
 				Log(lsWARNING) << "applyTransaction: duplicate sequence number";
 
-				terResult	= terALREADY;
+				terResult	= tefALREADY;
 			}
 			else
 			{
 				Log(lsWARNING) << "applyTransaction: past sequence number";
 
-				terResult	= terPAST_SEQ;
+				terResult	= tefPAST_SEQ;
 			}
 		}
 		else
@@ -1212,12 +1202,12 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 		{
 			Log(lsINFO) << "applyTransaction: bad sequence for pre-paid transaction";
 
-			terResult	= terPAST_SEQ;
+			terResult	= tefPAST_SEQ;
 		}
 	}
 	mTxnAccount->setIFieldU32(sfLastSignedSeq, mLedger->getLedgerSeq());
 
-	if (terSUCCESS == terResult)
+	if (tesSUCCESS == terResult)
 	{
 		entryModify(mTxnAccount);
 
@@ -1237,7 +1227,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 
 			case ttINVALID:
 				Log(lsINFO) << "applyTransaction: invalid type";
-				terResult = tenINVALID;
+				terResult = temINVALID;
 				break;
 
 			case ttINVOICE:
@@ -1273,7 +1263,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 				break;
 
 			default:
-				terResult = tenUNKNOWN;
+				terResult = temUNKNOWN;
 				break;
 		}
 	}
@@ -1285,7 +1275,7 @@ TransactionEngineResult TransactionEngine::applyTransaction(const SerializedTran
 
 	Log(lsINFO) << "applyTransaction: terResult=" << strToken << " : " << terResult << " : " << strHuman;
 
-	if (terSUCCESS == terResult)
+	if (tesSUCCESS == terResult)
 	{
 		txnWrite();
 
@@ -1365,12 +1355,6 @@ TransactionEngineResult TransactionEngine::doAccountSet(const SerializedTransact
 	{
 		nothing();
 	}
-	else if (mTxnAccount->getIFieldPresent(sfMessageKey))
-	{
-		Log(lsINFO) << "doAccountSet: can not change message key";
-
-		return tenMSG_SET;
-	}
 	else
 	{
 		Log(lsINFO) << "doAccountSet: set message key";
@@ -1433,7 +1417,7 @@ TransactionEngineResult TransactionEngine::doAccountSet(const SerializedTransact
 	{
 		Log(lsINFO) << "doAccountSet: bad publish";
 
-		return tenBAD_PUBLISH;
+		return temBAD_PUBLISH;
 	}
 	else if (bPublishHash && bPublishSize)
 	{
@@ -1458,7 +1442,7 @@ TransactionEngineResult TransactionEngine::doAccountSet(const SerializedTransact
 
 	Log(lsINFO) << "doAccountSet<";
 
-	return terSUCCESS;
+	return tesSUCCESS;
 }
 
 TransactionEngineResult TransactionEngine::doClaim(const SerializedTransaction& txn)
@@ -1474,7 +1458,7 @@ TransactionEngineResult TransactionEngine::doClaim(const SerializedTransaction& 
 
 TransactionEngineResult TransactionEngine::doCreditSet(const SerializedTransaction& txn)
 {
-	TransactionEngineResult	terResult	= terSUCCESS;
+	TransactionEngineResult	terResult	= tesSUCCESS;
 	Log(lsINFO) << "doCreditSet>";
 
 	// Check if destination makes sense.
@@ -1484,13 +1468,13 @@ TransactionEngineResult TransactionEngine::doCreditSet(const SerializedTransacti
 	{
 		Log(lsINFO) << "doCreditSet: Invalid transaction: Destination account not specifed.";
 
-		return tenDST_NEEDED;
+		return temDST_NEEDED;
 	}
 	else if (mTxnAccountID == uDstAccountID)
 	{
 		Log(lsINFO) << "doCreditSet: Invalid transaction: Can not extend credit to self.";
 
-		return tenDST_IS_SRC;
+		return temDST_IS_SRC;
 	}
 
 	SLE::pointer		sleDst		= entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uDstAccountID));
@@ -1603,7 +1587,7 @@ TransactionEngineResult TransactionEngine::doCreditSet(const SerializedTransacti
 
 		terResult	= dirAdd(uSrcRef, Ledger::getOwnerDirIndex(mTxnAccountID), sleRippleState->getIndex());
 
-		if (terSUCCESS == terResult)
+		if (tesSUCCESS == terResult)
 			terResult	= dirAdd(uSrcRef, Ledger::getOwnerDirIndex(uDstAccountID), sleRippleState->getIndex());
 	}
 
@@ -1655,7 +1639,7 @@ TransactionEngineResult TransactionEngine::doNicknameSet(const SerializedTransac
 
 	std::cerr << "doNicknameSet<" << std::endl;
 
-	return terSUCCESS;
+	return tesSUCCESS;
 }
 
 TransactionEngineResult TransactionEngine::doPasswordFund(const SerializedTransaction& txn)
@@ -1689,7 +1673,7 @@ TransactionEngineResult TransactionEngine::doPasswordFund(const SerializedTransa
 
 	std::cerr << "doPasswordFund<" << std::endl;
 
-	return terSUCCESS;
+	return tesSUCCESS;
 }
 
 TransactionEngineResult TransactionEngine::doPasswordSet(const SerializedTransaction& txn)
@@ -1722,7 +1706,7 @@ TransactionEngineResult TransactionEngine::doPasswordSet(const SerializedTransac
 // <-- pnDst.saReceive
 // <-- pnDst.saIOUForgive
 // <-- pnDst.saIOUAccept
-// <-- terResult : terSUCCESS = no error and if !bAllowPartial complelely satisfied wanted.
+// <-- terResult : tesSUCCESS = no error and if !bAllowPartial complelely satisfied wanted.
 // <-> usOffersDeleteAlways:
 // <-> usOffersDeleteOnSuccess:
 TransactionEngineResult calcOfferFill(paymentNode& pnSrc, paymentNode& pnDst, bool bAllowPartial)
@@ -1756,7 +1740,7 @@ TransactionEngineResult calcOfferFill(paymentNode& pnSrc, paymentNode& pnDst, bo
 			pnDst.saIOUForgive,
 			bAllowPartial);
 
-		if (terSUCCESS == terResult)
+		if (tesSUCCESS == terResult)
 		{
 			// Issue to wanted.
 			terResult	= calcOfferFill(
@@ -1766,7 +1750,7 @@ TransactionEngineResult calcOfferFill(paymentNode& pnSrc, paymentNode& pnDst, bo
 				bAllowPartial);
 		}
 
-		if (terSUCCESS == terResult && !bAllowPartial)
+		if (tesSUCCESS == terResult && !bAllowPartial)
 		{
 			STAmount	saTotal	= pnDst.saIOUForgive	+ pnSrc.saIOUAccept;
 
@@ -2147,6 +2131,7 @@ bool TransactionEngine::calcNodeOfferFwd(
 			while (saPrvDlvReq != saPrvDlvAct	// Have not met request.
 				&& dirNext(uDirectTip, sleDirectDir, uEntry, uCurIndex))
 			{
+				// Have an entry from the directory.
 				SLE::pointer	sleCurOfr			= entryCache(ltOFFER, uCurIndex);
 				uint160			uCurOfrAccountID	= sleCurOfr->getIValueFieldAccount(sfAccount).getAccountID();
 				const STAmount&	saCurOfrOutReq		= sleCurOfr->getIValueFieldAmount(sfTakerGets);
@@ -2155,7 +2140,33 @@ bool TransactionEngine::calcNodeOfferFwd(
 				STAmount		saCurOfrFunds		= accountFunds(uCurOfrAccountID, saCurOfrOutReq);	// Funds left.
 				STAmount		saCurOfrInMax		= MIN(saCurOfrInReq, saPrvDlvReq-saPrvDlvAct);
 
-				if (!!uNxtAccountID)
+				if (!saCurOfrFunds)
+				{
+#ifdef WORK_IN_PROGRESS
+					// Offer is unfunded.
+					 pspCur->usUnfunded.add(uCurIndex);		// Add offer to found unfunded.
+
+					entryDelete(sleCurOfr, true);			// Delete unfunded offer.
+
+					// Delete unfunded offer from owner's directory.
+					const uint64 uOwnerNode	= sleCurOffer->getIFieldU64(sfOwnerNode);
+
+					terResult	= dirDelete(
+									true,		// YYY We don't delete owner directories?
+									uOwnerNode,
+									uDirectTip,
+									uCurIndex);
+
+					// Delete unfunded offer from quality directory.
+					// XXX Need a dir walking version of delete.
+					terResult	= dirDelete(
+									false,	// Don't need to keep root.
+	const uint64&					uNodeDir,
+									uDirectTip,
+									uCurIndex);
+#endif
+				}
+				else if (!!uNxtAccountID)
 				{
 					// Next is an account.
 
@@ -2165,19 +2176,24 @@ bool TransactionEngine::calcNodeOfferFwd(
 					const bool		bFee		= saFeeRate != saOne;
 
 					const STAmount	saOutPass	= STAmount::divide(saCurOfrInMax, saOfrRate, uCurCurrencyID, uCurIssuerID);
-					const STAmount	saOutBase	= MIN(saCurOfrOutReq, saOutPass);				// Limit offer out by needed.
-					const STAmount	saOutCost	= MIN(
-													bFee
-														? STAmount::multiply(saOutBase, saFeeRate, uCurCurrencyID, uCurIssuerID)
-														: saOutBase,
-													saCurOfrFunds);								// Limit cost by fees & funds.
+					const STAmount	saOutBase	= MIN(saCurOfrOutReq, saOutPass);			// Limit offer out by needed.
+					const STAmount	saOutCostRaw= bFee
+													? STAmount::multiply(saOutBase, saFeeRate, uCurCurrencyID, uCurIssuerID)
+													: saOutBase;
+					const STAmount	saOutCost	= MIN(saOutCostRaw, saCurOfrFunds);			// Limit cost by fees & funds.
 					const STAmount	saOutDlvAct	= bFee
 														? STAmount::divide(saOutCost, saFeeRate, uCurCurrencyID, uCurIssuerID)
-														: saOutCost;		// Out amount after fees.
+														: saOutCost;						// Out amount after fees.
 					// Compute input w/o fees required.
 					const STAmount	saInDlvAct	= STAmount::multiply(saOutDlvAct, saOfrRate, uCurCurrencyID, uCurIssuerID);
 
+					// XXX Send from offer owner
+//					accountSend(uCurIssuerID, uNxtAccountID, saOutDlvAct);
+
 					saCurDlvAct				+= saOutDlvAct;									// Portion of driver served.
+
+// XXX				accountCredit(uCurIssuerID, uNxtAccountID, saOutDlvAct);
+
 					saPrvDlvAct				+= saInDlvAct;									// Portion needed in previous.
 				}
 				else
@@ -2298,7 +2314,7 @@ void TransactionEngine::calcNodeOffer(
 	STAmount& saGot
 	) const
 {
-	TransactionEngineResult	terResult	= tenUNKNOWN;
+	TransactionEngineResult	terResult	= temUNKNOWN;
 
 	// Direct: not bridging via XNS
 	bool			bDirectNext	= true;		// True, if need to load.
@@ -2425,10 +2441,10 @@ void TransactionEngine::calcNodeOffer(
 	{
 		// No more offers. Declare success, even if none returned.
 		saGot		= saWanted-saNeed;
-		terResult	= terSUCCESS;
+		terResult	= tesSUCCESS;
 	}
 
-	if (terSUCCESS != terResult)
+	if (tesSUCCESS != terResult)
 	{
 		STAmount&	saAvailIn	= bUseBridge ? saBridgeIn : saDirectIn;
 		STAmount&	saAvailOut	= bUseBridge ? saBridgeOut : saDirectOut;
@@ -2700,7 +2716,7 @@ bool TransactionEngine::calcNodeAccountRev(unsigned int uIndex, PathState::point
 			if (!saCurWantedAct)
 			{
 				// Must have processed something.
-				// terResult	= tenBAD_AMOUNT;
+				// terResult	= temBAD_AMOUNT;
 				bSuccess	= false;
 			}
 		}
@@ -2761,7 +2777,7 @@ bool TransactionEngine::calcNodeAccountRev(unsigned int uIndex, PathState::point
 			if (!saCurRedeemAct && !saCurIssueAct)
 			{
 				// Must want something.
-				// terResult	= tenBAD_AMOUNT;
+				// terResult	= temBAD_AMOUNT;
 				bSuccess	= false;
 			}
 
@@ -2807,7 +2823,7 @@ bool TransactionEngine::calcNodeAccountRev(unsigned int uIndex, PathState::point
 		if (!saCurDeliverAct)
 		{
 			// Must want something.
-			// terResult	= tenBAD_AMOUNT;
+			// terResult	= temBAD_AMOUNT;
 			bSuccess	= false;
 		}
 
@@ -2839,7 +2855,7 @@ bool TransactionEngine::calcNodeAccountRev(unsigned int uIndex, PathState::point
 			if (!saCurWantedAct)
 			{
 				// Must have processed something.
-				// terResult	= tenBAD_AMOUNT;
+				// terResult	= temBAD_AMOUNT;
 				bSuccess	= false;
 			}
 		}
@@ -2877,7 +2893,7 @@ bool TransactionEngine::calcNodeAccountRev(unsigned int uIndex, PathState::point
 			if (!saPrvDeliverAct)
 			{
 				// Must want something.
-				// terResult	= tenBAD_AMOUNT;
+				// terResult	= temBAD_AMOUNT;
 				bSuccess	= false;
 			}
 		}
@@ -2898,7 +2914,7 @@ bool TransactionEngine::calcNodeAccountRev(unsigned int uIndex, PathState::point
 		if (!saCurDeliverAct)
 		{
 			// Must want something.
-			// terResult	= tenBAD_AMOUNT;
+			// terResult	= temBAD_AMOUNT;
 			bSuccess	= false;
 		}
 	}
@@ -3196,6 +3212,12 @@ bool PathState::lessPriority(const PathState::pointer& lhs, const PathState::poi
 }
 
 // Make sure the path delivers to uAccountID: uCurrencyID from uIssuerID.
+//
+// Rules:
+// - Currencies must be converted via an offer.
+// - A node names it's output.
+// - A ripple nodes output issuer must be the node's account or the next node's account.
+// - Offers can only go directly to another offer if the currency and issuer are an exact match.
 bool PathState::pushImply(uint160 uAccountID, uint160 uCurrencyID, uint160 uIssuerID)
 {
 	const paymentNode&	pnPrv	= vpnNodes.back();
@@ -3209,23 +3231,6 @@ bool PathState::pushImply(uint160 uAccountID, uint160 uCurrencyID, uint160 uIssu
 	if (pnPrv.uCurrencyID != uCurrencyID)
 	{
 		// Need to convert via an offer.
-#if 0
-// XXX Don't know if need this.
-		bool			bPrvAccount	= !!pnPrv.uAccountID;
-
-		if (!bPrvAccount)	// Previous is an offer.
-		{
-			// Direct offer --> offer is not allowed for non-stamps.
-			// Need to ripple through uIssuerID's account.
-
-			bValid	= pushNode(
-						STPathElement::typeAccount
-							| STPathElement::typeIssue,
-						pnPrv.uIssuerID,	// Intermediate account is the needed issuer.
-						CURRENCY_ONE,		// Inherit from previous.
-						ACCOUNT_ONE);		// Default same as account.
-		}
-#endif
 
 		bValid	= pushNode(
 					STPathElement::typeCurrency		// Offer.
@@ -3550,7 +3555,8 @@ Json::Value	PathState::getJson() const
 }
 
 // Calculate a node and its previous nodes.
-// From the destination work towards the source calculating how much must be asked for.
+// From the destination work in reverse towards the source calculating how much must be asked for.
+// Then work forward, figuring out how much can actually be delivered.
 // --> bAllowPartial: If false, fail if can't meet requirements.
 // <-- bValid: true=success, false=insufficient funds / liqudity.
 // <-> pnNodes:
@@ -3643,13 +3649,13 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 	{
 		Log(lsINFO) << "doPayment: Invalid transaction: Payment destination account not specifed.";
 
-		return tenDST_NEEDED;
+		return temDST_NEEDED;
 	}
 	else if (!saDstAmount.isPositive())
 	{
 		Log(lsINFO) << "doPayment: Invalid transaction: bad amount: " << saDstAmount.getHumanCurrency() << " " << saDstAmount.getText();
 
-		return tenBAD_AMOUNT;
+		return temBAD_AMOUNT;
 	}
 	else if (mTxnAccountID == uDstAccountID && uSrcCurrency == uDstCurrency && !bPaths)
 	{
@@ -3659,7 +3665,7 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 			% uSrcCurrency.ToString()
 			% uDstCurrency.ToString());
 
-		return tenREDUNDANT;
+		return temREDUNDANT;
 	}
 	else if (bMax
 		&& ((saMaxAmount == saDstAmount && saMaxAmount.getCurrency() == saDstAmount.getCurrency())
@@ -3667,7 +3673,7 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 	{
 		Log(lsINFO) << "doPayment: Invalid transaction: bad SendMax.";
 
-		return tenINVALID;
+		return temINVALID;
 	}
 
 	SLE::pointer	sleDst	= entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uDstAccountID));
@@ -3679,7 +3685,7 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 			// This restriction could be relaxed.
 			Log(lsINFO) << "doPayment: Invalid transaction: Create account may only fund XNS.";
 
-			return tenCREATEXNS;
+			return temCREATEXNS;
 		}
 		else if (!bCreate)
 		{
@@ -3718,99 +3724,12 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 		mTxnAccount->setIFieldAmount(sfBalance, saSrcXNSBalance - saDstAmount);
 		sleDst->setIFieldAmount(sfBalance, sleDst->getIValueFieldAmount(sfBalance) + saDstAmount);
 
-		return terSUCCESS;
+		return tesSUCCESS;
 	}
 
 	//
 	// Ripple payment
 	//
-
-#if 0
-// Disabled to make sure full ripple code is correct.
-	// Try direct ripple first.
-	if (!bNoRippleDirect && mTxnAccountID != uDstAccountID && uSrcCurrency == uDstCurrency)
-	{
-		// XXX Does not handle quality.
-		SLE::pointer		sleRippleState	= entryCache(ltRIPPLE_STATE, Ledger::getRippleStateIndex(mTxnAccountID, uDstAccountID, uDstCurrency));
-
-		if (sleRippleState)
-		{
-			// There is a direct credit-line of some direction.
-			// - We can always pay IOUs back.
-			// - We can issue IOUs to the limit.
-			uint160		uLowID			= sleRippleState->getIValueFieldAccount(sfLowID).getAccountID();
-			uint160		uHighID			= sleRippleState->getIValueFieldAccount(sfHighID).getAccountID();
-			bool		bSendHigh		= uLowID == mTxnAccountID && uHighID == uDstAccountID;
-			bool		bSendLow		= uLowID == uDstAccountID && uHighID == mTxnAccountID;
-			// Flag we need if we end up owing IOUs.
-			uint32		uFlags			= bSendHigh ? lsfLowIndexed : lsfHighIndexed;
-
-			assert(bSendLow || bSendHigh);
-
-			STAmount	saDstLimit		= sleRippleState->getIValueFieldAmount(bSendLow ? sfLowLimit : sfHighLimit);
-
-			STAmount	saDstBalance	= sleRippleState->getIValueFieldAmount(sfBalance);
-				if (bSendHigh)
-				{
-					// Put balance in dst terms.
-					saDstBalance.negate();
-				}
-
-			saDstBalance += saDstAmount;
-			if (saDstBalance > saDstLimit)
-			{
-				// Would exceed credit limit.
-				// YYY Note: in the future could push out other credits to make payment fit.
-
-				Log(lsINFO) << "doPayment: Delay transaction: Over limit: proposed balance="
-					<< saDstBalance.getText()
-					<< " limit="
-					<< saDstLimit.getText();
-
-				return terOVER_LIMIT;
-			}
-
-			if (!saDstBalance)
-			{
-				// XXX May be able to delete indexes for credit limits which are zero.
-				nothing();
-			}
-			else if (saDstBalance.isNegative())
-			{
-				// dst still has outstanding IOUs, sle already indexed.
-				nothing();
-			}
-			// src has outstanding IOUs, sle should be indexed.
-			else if (! (sleRippleState->getFlags() & uFlags))
-			{
-				// Need to add index.
-				TransactionEngineResult	terResult	= terSUCCESS;
-				uint64					uSrcRef;					// Ignored, ripple_state dirs never delete.
-
-				terResult	= dirAdd(
-					uSrcRef,
-					Ledger::getOwnerDirIndex(mTxnAccountID),		// The source ended up owing.
-					sleRippleState->getIndex());					// Adding current entry.
-
-				if (terSUCCESS != terResult)
-					return terResult;
-
-				sleRippleState->setFlag(uFlags);					// Note now indexed.
-			}
-
-			if (bSendHigh)
-			{
-				// Put balance in low terms.
-				saDstBalance.negate();
-			}
-
-			sleRippleState->setIFieldAmount(sfBalance, saDstBalance);
-			entryModify(sleRippleState);
-
-			return terSUCCESS;
-		}
-	}
-#endif
 
 	STPathSet	spsPaths = txn.getITFieldPathSet(sfPaths);
 
@@ -3818,12 +3737,13 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 	{
 		Log(lsINFO) << "doPayment: Invalid transaction: No paths and direct ripple not allowed.";
 
-		return tenRIPPLE_EMPTY;
+		return temRIPPLE_EMPTY;
 	}
 
+	// XXX Skip check if final processing.
 	if (spsPaths.getPathCount() > RIPPLE_PATHS_MAX)
 	{
-		return tenBAD_PATH_COUNT;
+		return telBAD_PATH_COUNT;
 	}
 
 	// Incrementally search paths.
@@ -3874,9 +3794,10 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 	TransactionEngineResult	terResult;
 	STAmount				saPaid;
 	STAmount				saWanted;
+	LedgerEntrySet			lesBase	= mNodes;	// Checkpoint with just fees paid.
 
-	terResult	= tenUNKNOWN;
-	while (tenUNKNOWN == terResult)
+	terResult	= temUNKNOWN;
+	while (temUNKNOWN == terResult)
 	{
 		PathState::pointer	pspBest;
 		LedgerEntrySet		lesCheckpoint	= mNodes;
@@ -3903,25 +3824,29 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 			mNodes.swapWith(pspBest->lesEntries);
 
 			// Figure out if done.
-			if (tenUNKNOWN == terResult && saPaid == saWanted)
+			if (temUNKNOWN == terResult && saPaid == saWanted)
 			{
-				terResult	= terSUCCESS;
+				terResult	= tesSUCCESS;
 			}
 		}
-		// Ran out of paths.
+		// Not done and ran out of paths.
 		else if (!bPartialPayment)
 		{
 			// Partial payment not allowed.
-			terResult	= terPATH_PARTIAL;		// XXX No effect, except unfunded and charge fee.
+			terResult	= terPATH_PARTIAL;
+			mNodes		= lesBase;				// Revert to just fees charged.
 		}
+		// Partial payment ok.
 		else if (!saPaid)
 		{
-			// Nothing claimed.
-			terResult	= terPATH_EMPTY;		// XXX No effect except unfundeds and charge fee.
+			// No payment at all.
+			// XXX Mark for retry?
+			terResult	= terPATH_EMPTY;
+			mNodes		= lesBase;				// Revert to just fees charged.
 		}
 		else
 		{
-			terResult	= terSUCCESS;
+			terResult	= tesSUCCESS;
 		}
 	}
 
@@ -3954,7 +3879,7 @@ TransactionEngineResult TransactionEngine::doWalletAdd(const SerializedTransacti
 	{
 		std::cerr << "WalletAdd: unauthorized: bad signature " << std::endl;
 
-		return tenBAD_ADD_AUTH;
+		return tefBAD_ADD_AUTH;
 	}
 
 	SLE::pointer		sleDst	= entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uDstAccountID));
@@ -3963,7 +3888,7 @@ TransactionEngineResult TransactionEngine::doWalletAdd(const SerializedTransacti
 	{
 		std::cerr << "WalletAdd: account already created" << std::endl;
 
-		return tenCREATED;
+		return tefCREATED;
 	}
 
 	STAmount			saAmount		= txn.getITFieldAmount(sfAmount);
@@ -3993,12 +3918,12 @@ TransactionEngineResult TransactionEngine::doWalletAdd(const SerializedTransacti
 
 	std::cerr << "WalletAdd<" << std::endl;
 
-	return terSUCCESS;
+	return tesSUCCESS;
 }
 
 TransactionEngineResult TransactionEngine::doInvoice(const SerializedTransaction& txn)
 {
-	return tenUNKNOWN;
+	return temUNKNOWN;
 }
 
 // Take as much as possible. Adjusts account balances. Charges fees on top to taker.
@@ -4007,7 +3932,7 @@ TransactionEngineResult TransactionEngine::doInvoice(const SerializedTransaction
 // --> saTakerGets: What the taker wanted (w/ issuer)
 // <-- saTakerPaid: What taker paid not including fees. To reduce an offer.
 // <--  saTakerGot: What taker got not including fees. To reduce an offer.
-// <--   terResult: terSUCCESS or terNO_ACCOUNT
+// <--   terResult: tesSUCCESS or terNO_ACCOUNT
 // Note: All SLE modifications must always occur even on failure.
 // XXX: Fees should be paid by the source of the currency.
 TransactionEngineResult TransactionEngine::takeOffers(
@@ -4031,12 +3956,12 @@ TransactionEngineResult TransactionEngine::takeOffers(
 	const uint160			uTakerPaysCurrency	= saTakerPays.getCurrency();
 	const uint160			uTakerGetsAccountID	= saTakerGets.getIssuer();
 	const uint160			uTakerGetsCurrency	= saTakerGets.getCurrency();
-	TransactionEngineResult	terResult			= tenUNKNOWN;
+	TransactionEngineResult	terResult			= temUNKNOWN;
 
 	saTakerPaid	= 0;
 	saTakerGot	= 0;
 
-	while (tenUNKNOWN == terResult)
+	while (temUNKNOWN == terResult)
 	{
 		SLE::pointer	sleOfferDir;
 		uint64			uTipQuality;
@@ -4068,7 +3993,7 @@ TransactionEngineResult TransactionEngine::takeOffers(
 			// Done.
 			Log(lsINFO) << "takeOffers: done";
 
-			terResult	= terSUCCESS;
+			terResult	= tesSUCCESS;
 		}
 		else
 		{
@@ -4221,7 +4146,7 @@ Log(lsWARNING) << "doOfferCreate: saTakerGets=" << saTakerGets.getFullText();
 	const uint160			uGetsCurrency	= saTakerGets.getCurrency();
 	const uint64			uRate			= STAmount::getRate(saTakerGets, saTakerPays);
 
-	TransactionEngineResult	terResult		= terSUCCESS;
+	TransactionEngineResult	terResult		= tesSUCCESS;
 	uint256					uDirectory;		// Delete hints.
 	uint64					uOwnerNode;
 	uint64					uBookNode;
@@ -4230,37 +4155,38 @@ Log(lsWARNING) << "doOfferCreate: saTakerGets=" << saTakerGets.getFullText();
 	{
 		Log(lsWARNING) << "doOfferCreate: Malformed offer: bad expiration";
 
-		terResult	= tenBAD_EXPIRATION;
+		terResult	= temBAD_EXPIRATION;
 	}
 	else if (bHaveExpiration && mLedger->getParentCloseTimeNC() >= uExpiration)
 	{
 		Log(lsWARNING) << "doOfferCreate: Expired transaction: offer expired";
 
-		terResult	= tenEXPIRED;
+		// XXX CHARGE FEE ONLY.
+		terResult	= tesSUCCESS;
 	}
 	else if (saTakerPays.isNative() && saTakerGets.isNative())
 	{
 		Log(lsWARNING) << "doOfferCreate: Malformed offer: XNS for XNS";
 
-		terResult	= tenBAD_OFFER;
+		terResult	= temBAD_OFFER;
 	}
 	else if (!saTakerPays || !saTakerGets)
 	{
 		Log(lsWARNING) << "doOfferCreate: Malformed offer: bad amount";
 
-		terResult	= tenBAD_OFFER;
+		terResult	= temBAD_OFFER;
 	}
 	else if (uPaysCurrency == uGetsCurrency && uPaysIssuerID == uGetsIssuerID)
 	{
 		Log(lsWARNING) << "doOfferCreate: Malformed offer: redundant offer";
 
-		terResult	= tenREDUNDANT;
+		terResult	= temREDUNDANT;
 	}
 	else if (saTakerPays.isNative() != !uPaysIssuerID || saTakerGets.isNative() != !uGetsIssuerID)
 	{
 		Log(lsWARNING) << "doOfferCreate: Malformed offer: bad issuer";
 
-		terResult	= tenBAD_ISSUER;
+		terResult	= temBAD_ISSUER;
 	}
 	else if (!accountFunds(mTxnAccountID, saTakerGets).isPositive())
 	{
@@ -4269,7 +4195,7 @@ Log(lsWARNING) << "doOfferCreate: saTakerGets=" << saTakerGets.getFullText();
 		terResult	= terUNFUNDED;
 	}
 
-	if (terSUCCESS == terResult && !saTakerPays.isNative())
+	if (tesSUCCESS == terResult && !saTakerPays.isNative())
 	{
 		SLE::pointer		sleTakerPays	= entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uPaysIssuerID));
 
@@ -4281,7 +4207,7 @@ Log(lsWARNING) << "doOfferCreate: saTakerGets=" << saTakerGets.getFullText();
 		}
 	}
 
-	if (terSUCCESS == terResult)
+	if (tesSUCCESS == terResult)
 	{
 		STAmount		saOfferPaid;
 		STAmount		saOfferGot;
@@ -4312,7 +4238,7 @@ Log(lsWARNING) << "doOfferCreate: saTakerGets=" << saTakerGets.getFullText();
 		Log(lsWARNING) << "doOfferCreate: takeOffers: saTakerPays=" << saTakerPays.getFullText();
 		Log(lsWARNING) << "doOfferCreate: takeOffers: saTakerGets=" << saTakerGets.getFullText();
 
-		if (terSUCCESS == terResult)
+		if (tesSUCCESS == terResult)
 		{
 			saTakerPays		-= saOfferGot;				// Reduce payin from takers by what offer just got.
 			saTakerGets		-= saOfferPaid;				// Reduce payout to takers by what srcAccount just paid.
@@ -4328,7 +4254,7 @@ Log(lsWARNING) << "doOfferCreate: saTakerGets=" << saTakerGets.getFullText();
 	// Log(lsWARNING) << "doOfferCreate: takeOffers: uPaysIssuerID=" << NewcoinAddress::createHumanAccountID(uPaysIssuerID);
 	// Log(lsWARNING) << "doOfferCreate: takeOffers: uGetsIssuerID=" << NewcoinAddress::createHumanAccountID(uGetsIssuerID);
 
-	if (terSUCCESS == terResult
+	if (tesSUCCESS == terResult
 		&& !!saTakerPays								// Still wanting something.
 		&& !!saTakerGets								// Still offering something.
 		&& accountFunds(mTxnAccountID, saTakerGets).isPositive())	// Still funded.
@@ -4338,7 +4264,7 @@ Log(lsWARNING) << "doOfferCreate: saTakerGets=" << saTakerGets.getFullText();
 		// Add offer to owner's directory.
 		terResult	= dirAdd(uOwnerNode, Ledger::getOwnerDirIndex(mTxnAccountID), uLedgerIndex);
 
-		if (terSUCCESS == terResult)
+		if (tesSUCCESS == terResult)
 		{
 			uint256	uBookBase	= Ledger::getBookBase(uPaysCurrency, uPaysIssuerID, uGetsCurrency, uGetsIssuerID);
 
@@ -4355,7 +4281,7 @@ Log(lsWARNING) << "doOfferCreate: saTakerGets=" << saTakerGets.getFullText();
 			terResult	= dirAdd(uBookNode, uDirectory, uLedgerIndex);
 		}
 
-		if (terSUCCESS == terResult)
+		if (tesSUCCESS == terResult)
 		{
 			// Log(lsWARNING) << "doOfferCreate: uPaysIssuerID=" << NewcoinAddress::createHumanAccountID(uPaysIssuerID);
 			// Log(lsWARNING) << "doOfferCreate: uGetsIssuerID=" << NewcoinAddress::createHumanAccountID(uGetsIssuerID);
@@ -4411,17 +4337,17 @@ TransactionEngineResult TransactionEngine::doOfferCancel(const SerializedTransac
 
 TransactionEngineResult TransactionEngine::doTake(const SerializedTransaction& txn)
 {
-	return tenUNKNOWN;
+	return temUNKNOWN;
 }
 
 TransactionEngineResult TransactionEngine::doStore(const SerializedTransaction& txn)
 {
-	return tenUNKNOWN;
+	return temUNKNOWN;
 }
 
 TransactionEngineResult TransactionEngine::doDelete(const SerializedTransaction& txn)
 {
-	return tenUNKNOWN;
+	return temUNKNOWN;
 }
 
 // vim:ts=4

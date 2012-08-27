@@ -85,7 +85,7 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 	}
 
 	TransactionEngineResult r = mLedgerMaster->doTransaction(*trans->getSTransaction(), tgtLedger, tepNONE);
-	if (r == tenFAILED) throw Fault(IO_ERROR);
+	if (r == tefFAILURE) throw Fault(IO_ERROR);
 
 	if (r == terPRE_SEQ)
 	{ // transaction should be held
@@ -95,14 +95,14 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 		mLedgerMaster->addHeldTransaction(trans);
 		return trans;
 	}
-	if ((r == terPAST_SEQ) || (r == terPAST_LEDGER))
+	if ((r == tefPAST_SEQ))
 	{ // duplicate or conflict
 		Log(lsINFO) << "Transaction is obsolete";
 		trans->setStatus(OBSOLETE);
 		return trans;
 	}
 
-	if (r == terSUCCESS)
+	if (r == tesSUCCESS)
 	{
 		Log(lsINFO) << "Transaction is now included";
 		trans->setStatus(INCLUDED);
@@ -875,7 +875,7 @@ void NetworkOPs::pubLedger(const Ledger::pointer& lpAccepted)
 				SerializedTransaction::pointer	stTxn = theApp->getMasterTransaction().fetch(item, false, 0);
 				// XXX Need to support other results.
 				// XXX Need to give failures too.
-				TransactionEngineResult	terResult	= terSUCCESS;
+				TransactionEngineResult	terResult	= tesSUCCESS;
 
 				if (bAll)
 				{
