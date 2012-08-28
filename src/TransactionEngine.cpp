@@ -24,6 +24,17 @@
 static STAmount saZero(CURRENCY_ONE, 0, 0);
 static STAmount saOne(CURRENCY_ONE, 1, 0);
 
+std::size_t hash_value(const aciSource& asValue)
+{
+	std::size_t seed = 0;
+
+	asValue.get<0>().hash_combine(seed);
+	asValue.get<1>().hash_combine(seed);
+	asValue.get<2>().hash_combine(seed);
+
+	return seed;
+}
+
 bool transResultInfo(TransactionEngineResult terCode, std::string& strToken, std::string& strHuman)
 {
 	static struct {
@@ -1887,11 +1898,10 @@ void TransactionEngine::calcOfferBridgeNext(
 #endif
 
 // <-- bSuccess: false= no transfer
-// XXX Make sure missing ripple path is addressed cleanly.
 bool TransactionEngine::calcNodeOfferRev(
-	unsigned int		uIndex,				// 0 < uIndex < uLast
-	PathState::pointer	pspCur,
-	bool				bMultiQuality)
+	const unsigned int			uIndex,				// 0 < uIndex < uLast
+	const PathState::pointer&	pspCur,
+	const bool					bMultiQuality)
 {
 	bool				bSuccess		= false;
 
@@ -1950,9 +1960,9 @@ bool TransactionEngine::calcNodeOfferRev(
 		{
 			// Do a directory.
 			// - Drive on computing saCurDlvAct to derive saPrvDlvAct.
-			// XXX Behave well, if entry type is wrong (someone beat us to using the hash)
+			// XXX Behave well, if entry type is not ltDIR_NODE (someone beat us to using the hash)
 			SLE::pointer	sleDirectDir	= entryCache(ltDIR_NODE, uDirectTip);
-			STAmount		saOfrRate		= STAmount::setRate(Ledger::getQuality(uDirectTip));	// For correct ratio
+			const STAmount	saOfrRate		= STAmount::setRate(Ledger::getQuality(uDirectTip));	// For correct ratio
 			unsigned int	uEntry			= 0;
 			uint256			uCurIndex;
 
@@ -1962,28 +1972,55 @@ bool TransactionEngine::calcNodeOfferRev(
 				Log(lsINFO) << boost::str(boost::format("calcNodeOfferRev: uCurIndex=%s") % uCurIndex.ToString());
 
 				SLE::pointer	sleCurOfr			= entryCache(ltOFFER, uCurIndex);
-				uint160			uCurOfrAccountID	= sleCurOfr->getIValueFieldAccount(sfAccount).getAccountID();
+
+				if (sleCurOfr->getIFieldPresent(sfExpiration) && sleCurOfr->getIFieldU32(sfExpiration) <= mLedger->getParentCloseTimeNC())
+				{
+					// Offer is expired.
+					Log(lsINFO) << "calcNodeOfferRev: encountered expired offer";
+
+					musUnfundedFound.insert(uCurIndex);		// Mark offer for always deletion.
+					continue;
+				}
+
+				const uint160	uCurOfrAccountID	= sleCurOfr->getIValueFieldAccount(sfAccount).getAccountID();
+				const aciSource	asLine				= boost::make_tuple(uCurOfrAccountID, uCurCurrencyID, uCurIssuerID);
+
+				// Allowed to access source from this node?
+				curIssuerNodeConstIterator	it	= pspCur->umReverse.find(asLine);
+
+				if (it == pspCur->umReverse.end())
+				{
+					// Temporarily unfunded. ignore in this column.
+
+					nothing();
+					continue;
+				}
+
 				const STAmount&	saCurOfrOutReq		= sleCurOfr->getIValueFieldAmount(sfTakerGets);
 				// UNUSED? const STAmount&	saCurOfrIn			= sleCurOfr->getIValueFieldAmount(sfTakerPays);
 
 				STAmount		saCurOfrFunds		= accountFunds(uCurOfrAccountID, saCurOfrOutReq);	// Funds left.
 
-				// XXX Offer is also unfunded if funding source previously mentioned.
 				if (!saCurOfrFunds)
 				{
 					// Offer is unfunded.
 					Log(lsINFO) << "calcNodeOfferRev: encountered unfunded offer";
 
-					// XXX Mark unfunded.
+					curIssuerNodeConstIterator	itSource = mumSource.find(asLine);
+					if (itSource == mumSource.end())
+					{
+						// Never mentioned before: found unfunded.
+						musUnfundedFound.insert(uCurIndex);				// Mark offer for always deletion.
+					}
+					else
+					{
+						// Mentioned before: source became unfunded.
+						pspCur->vUnfundedBecame.push_back(uCurIndex);	// Mark offer for deletion on use.
+					}
+					continue;
 				}
-				else if (sleCurOfr->getIFieldPresent(sfExpiration) && sleCurOfr->getIFieldU32(sfExpiration) <= mLedger->getParentCloseTimeNC())
-				{
-					// Offer is expired.
-					Log(lsINFO) << "calcNodeOfferRev: encountered expired offer";
 
-					// XXX Mark unfunded.
-				}
-				else if (!!uNxtAccountID)
+				if (!!uNxtAccountID)
 				{
 					// Next is an account.
 
@@ -2094,9 +2131,9 @@ bool TransactionEngine::calcNodeOfferRev(
 }
 
 bool TransactionEngine::calcNodeOfferFwd(
-	unsigned int		uIndex,				// 0 < uIndex < uLast
-	PathState::pointer	pspCur,
-	bool				bMultiQuality
+	const unsigned int			uIndex,				// 0 < uIndex < uLast
+	const PathState::pointer&	pspCur,
+	const bool					bMultiQuality
 	)
 {
 	bool			bSuccess		= false;
@@ -2615,7 +2652,7 @@ Log(lsINFO) << boost::str(boost::format("calcNodeRipple:4: saCurReq=%s") % saCur
 }
 
 // Calculate saPrvRedeemReq, saPrvIssueReq, saPrvDeliver;
-bool TransactionEngine::calcNodeAccountRev(unsigned int uIndex, PathState::pointer pspCur, bool bMultiQuality)
+bool TransactionEngine::calcNodeAccountRev(const unsigned int uIndex, const PathState::pointer& pspCur, const bool bMultiQuality)
 {
 	bool				bSuccess		= true;
 	const unsigned int	uLast			= pspCur->vpnNodes.size() - 1;
@@ -2948,9 +2985,9 @@ bool TransactionEngine::calcNodeAccountRev(unsigned int uIndex, PathState::point
 // - Output to next node minus fees.
 // Perform balance adjustment with previous.
 bool TransactionEngine::calcNodeAccountFwd(
-	unsigned int		uIndex,				// 0 <= uIndex <= uLast
-	PathState::pointer	pspCur,
-	bool				bMultiQuality)
+	const unsigned int			uIndex,				// 0 <= uIndex <= uLast
+	const PathState::pointer&	pspCur,
+	const bool					bMultiQuality)
 {
 	bool				bSuccess		= true;
 	const unsigned int	uLast			= pspCur->vpnNodes.size() - 1;
@@ -3282,7 +3319,8 @@ bool PathState::pushImply(uint160 uAccountID, uint160 uCurrencyID, uint160 uIssu
 }
 
 // Append a node and insert before it any implied nodes.
-// <-- bValid: true, if node is valid. false, if node is malformed.
+// <-- bValid: true, if node is valid. false, if node is malformed or missing credit link.
+// XXX Report missinge credit link distinct from malformed for retry.
 bool PathState::pushNode(int iType, uint160 uAccountID, uint160 uCurrencyID, uint160 uIssuerID)
 {
 	Log(lsINFO) << "pushNode> "
@@ -3431,7 +3469,6 @@ bool PathState::pushNode(int iType, uint160 uAccountID, uint160 uCurrencyID, uin
 	return bValid;
 }
 
-// XXX Disallow loops in ripple paths
 PathState::PathState(
 	const Ledger::pointer&	lpLedger,
 	const int				iIndex,
@@ -3488,6 +3525,33 @@ PathState::PathState(
 				uReceiverID,									// Receive to output
 				uOutCurrencyID,									// Desired currency
 				uOutIssuerID);
+		}
+	}
+
+	if (bValid)
+	{
+		// Look for first mention of source in nodes and detect loops.
+		// Note: The output is not allowed to be a source.
+
+		const unsigned int	uNodes	= vpnNodes.size();
+
+		for (unsigned int uIndex = 0; bValid && uIndex != uNodes; ++uIndex)
+		{
+			const paymentNode&	pnCur	= vpnNodes[uIndex];
+
+			if (!!pnCur.uAccountID)
+			{
+				// Source is a ripple line
+				nothing();
+			}
+			else if (!umForward.insert(std::make_pair(boost::make_tuple(pnCur.uAccountID, pnCur.uCurrencyID, pnCur.uIssuerID), uIndex)).second)
+			{
+				// Failed to insert. Have a loop.
+				Log(lsINFO) << boost::str(boost::format("PathState: loop detected: %s")
+					% getJson());
+
+				bValid	= false;
+			}
 		}
 	}
 
@@ -3583,8 +3647,7 @@ Json::Value	PathState::getJson() const
 //     --> [all]saWanted.mCurrency
 //     --> [all]saAccount
 //     <-> [0]saWanted.mAmount : --> limit, <-- actual
-// XXX Disallow looping.
-bool TransactionEngine::calcNode(unsigned int uIndex, PathState::pointer pspCur, bool bMultiQuality)
+bool TransactionEngine::calcNode(const unsigned int uIndex, const PathState::pointer& pspCur, const bool bMultiQuality)
 {
 	const paymentNode&	pnCur		= pspCur->vpnNodes[uIndex];
 	const bool			bCurAccount	= !!(pnCur.uFlags & STPathElement::typeAccount);
@@ -3619,7 +3682,7 @@ bool TransactionEngine::calcNode(unsigned int uIndex, PathState::pointer pspCur,
 // Calculate the next increment of a path.
 // The increment is what can satisfy a portion or all of the requested output at the best quality.
 // <-- pspCur->uQuality
-void TransactionEngine::pathNext(PathState::pointer pspCur, int iPaths)
+void TransactionEngine::pathNext(const PathState::pointer& pspCur, const int iPaths)
 {
 	// The next state is what is available in preference order.
 	// This is calculated when referenced accounts changed.
@@ -3631,7 +3694,7 @@ void TransactionEngine::pathNext(PathState::pointer pspCur, int iPaths)
 	assert(pspCur->vpnNodes.size() >= 2);
 
 	pspCur->vUnfundedBecame.clear();
-	pspCur->umSource.clear();
+	pspCur->umReverse.clear();
 
 	pspCur->bValid	= calcNode(uLast, pspCur, iPaths == 1);
 
@@ -3857,8 +3920,8 @@ TransactionEngineResult TransactionEngine::doPayment(const SerializedTransaction
 			{
 				// Prepare for next pass.
 
-				// Merge best pass' umSource.
-				mumSource.insert(pspBest->umSource.begin(), pspBest->umSource.end());
+				// Merge best pass' umReverse.
+				mumSource.insert(pspBest->umReverse.begin(), pspBest->umReverse.end());
 			}
 		}
 		// Not done and ran out of paths.
@@ -3981,7 +4044,6 @@ TransactionEngineResult TransactionEngine::doInvoice(const SerializedTransaction
 // <-- saTakerPaid: What taker paid not including fees. To reduce an offer.
 // <--  saTakerGot: What taker got not including fees. To reduce an offer.
 // <--   terResult: tesSUCCESS or terNO_ACCOUNT
-// Note: All SLE modifications must always occur even on failure.
 // XXX: Fees should be paid by the source of the currency.
 TransactionEngineResult TransactionEngine::takeOffers(
 	bool				bPassive,
