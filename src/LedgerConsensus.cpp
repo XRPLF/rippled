@@ -3,6 +3,7 @@
 #include <boost/thread.hpp>
 #include <boost/bind.hpp>
 #include <boost/unordered_set.hpp>
+#include <boost/foreach.hpp>
 
 #include "../json/writer.h"
 
@@ -18,6 +19,9 @@
 #define TRUST_NETWORK
 
 // #define LC_DEBUG
+
+typedef std::pair<const uint160, LedgerProposal::pointer> u160_prop_pair;
+typedef std::pair<const uint256, LCTransaction::pointer> u256_lct_pair;
 
 TransactionAcquire::TransactionAcquire(const uint256& hash) : PeerSet(hash, TX_ACQUIRE_TIMEOUT), mHaveRoot(false)
 {
@@ -214,9 +218,9 @@ LedgerConsensus::LedgerConsensus(const uint256& prevLCLHash, const Ledger::point
 		mHaveCorrectLCL = mProposing = mValidating = false;
 		mAcquiringLedger = theApp->getMasterLedgerAcquire().findCreate(prevLCLHash);
 		std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
-		for (std::vector<Peer::pointer>::const_iterator it = peerList.begin(), end = peerList.end(); it != end; ++it)
-			if ((*it)->hasLedger(prevLCLHash))
-				mAcquiringLedger->peerHas(*it);
+		BOOST_FOREACH(const Peer::pointer& peer, peerList)
+			if (peer->hasLedger(prevLCLHash))
+				mAcquiringLedger->peerHas(peer);
 	}
 	else if (mValSeed.isValid())
 	{
@@ -238,12 +242,16 @@ void LedgerConsensus::checkLCL()
 	int netLgrCount = 0;
 	{
 		boost::unordered_map<uint256, int> vals = theApp->getValidations().getCurrentValidations();
-		for (boost::unordered_map<uint256, int>::iterator it = vals.begin(), end = vals.end(); it != end; ++it)
-			if ((it->second > netLgrCount) && !theApp->getValidations().isDeadLedger(it->first))
+
+		typedef std::pair<const uint256, int> u256_int_pair;
+		BOOST_FOREACH(u256_int_pair& it, vals)
+		{
+			if ((it.second > netLgrCount) && !theApp->getValidations().isDeadLedger(it.first))
 			{
-				netLgr = it->first;
-				netLgrCount = it->second;
+				netLgr = it.first;
+				netLgrCount = it.second;
 			}
+		}
 	}
 	if (netLgr != mPrevLedgerHash)
 	{ // LCL change
@@ -255,15 +263,19 @@ void LedgerConsensus::checkLCL()
 		mProposing = false;
 		mValidating = false;
 		bool found = false;
-		for (std::vector<Peer::pointer>::const_iterator it = peerList.begin(), end = peerList.end(); it != end; ++it)
-			if ((*it)->hasLedger(mPrevLedgerHash))
+		BOOST_FOREACH(Peer::pointer& peer, peerList)
+		{
+			if (peer->hasLedger(mPrevLedgerHash))
 			{
 				found = true;
-				mAcquiringLedger->peerHas(*it);
+				mAcquiringLedger->peerHas(peer);
 			}
+		}
 		if (!found)
-			for (std::vector<Peer::pointer>::const_iterator it = peerList.begin(), end = peerList.end(); it != end; ++it)
-				mAcquiringLedger->peerHas(*it);
+		{
+			BOOST_FOREACH(Peer::pointer& peer, peerList)
+				mAcquiringLedger->peerHas(peer);
+		}
 	}
 }
 
@@ -275,15 +287,14 @@ void LedgerConsensus::takeInitialPosition(Ledger& initialLedger)
 
 	// if any peers have taken a contrary position, process disputes
 	boost::unordered_set<uint256> found;
-	for (boost::unordered_map<uint160, LedgerProposal::pointer>::iterator it = mPeerPositions.begin(),
-		end = mPeerPositions.end(); it != end; ++it)
+	BOOST_FOREACH(u160_prop_pair& it, mPeerPositions)
 	{
-		uint256 set = it->second->getCurrentHash();
+		uint256 set = it.second->getCurrentHash();
 		if (found.insert(set).second)
 		{
-			boost::unordered_map<uint256, SHAMap::pointer>::iterator it = mComplete.find(set);
-			if (it != mComplete.end())
-				createDisputes(initialSet, it->second);
+			boost::unordered_map<uint256, SHAMap::pointer>::iterator iit = mComplete.find(set);
+			if (iit != mComplete.end())
+				createDisputes(initialSet, iit->second);
 		}
 	}
 
@@ -347,11 +358,10 @@ void LedgerConsensus::mapComplete(const uint256& hash, const SHAMap::pointer& ma
 
 	// Adjust tracking for each peer that takes this position
 	std::vector<uint160> peers;
-	for (boost::unordered_map<uint160, LedgerProposal::pointer>::iterator it = mPeerPositions.begin(),
-		end = mPeerPositions.end(); it != end; ++it)
+	BOOST_FOREACH(u160_prop_pair& it, mPeerPositions)
 	{
-		if (it->second->getCurrentHash() == map->getHash())
-			peers.push_back(it->second->getPeerID());
+		if (it.second->getCurrentHash() == map->getHash())
+			peers.push_back(it.second->getPeerID());
 	}
 	if (!peers.empty())
 		adjustCount(map, peers);
@@ -372,12 +382,11 @@ void LedgerConsensus::sendHaveTxSet(const uint256& hash, bool direct)
 
 void LedgerConsensus::adjustCount(const SHAMap::pointer& map, const std::vector<uint160>& peers)
 { // Adjust the counts on all disputed transactions based on the set of peers taking this position
-	for (boost::unordered_map<uint256, LCTransaction::pointer>::iterator it = mDisputes.begin(), end = mDisputes.end();
-		it != end; ++it)
+	BOOST_FOREACH(u256_lct_pair& it, mDisputes)
 	{
-		bool setHas = map->hasItem(it->second->getTransactionID());
-		for (std::vector<uint160>::const_iterator pit = peers.begin(), pend = peers.end(); pit != pend; ++pit)
-			it->second->setVote(*pit, setHas);
+		bool setHas = map->hasItem(it.second->getTransactionID());
+		BOOST_FOREACH(const uint160& pit, peers)
+			it.second->setVote(pit, setHas);
 	}
 }
 
@@ -502,33 +511,32 @@ void LedgerConsensus::updateOurPositions()
 	SHAMap::pointer ourPosition;
 	std::vector<uint256> addedTx, removedTx;
 
-	for (boost::unordered_map<uint256, LCTransaction::pointer>::iterator it = mDisputes.begin(),
-			end = mDisputes.end(); it != end; ++it)
+	BOOST_FOREACH(u256_lct_pair& it, mDisputes)
 	{
-		if (it->second->updatePosition(mClosePercent, mProposing))
+		if (it.second->updatePosition(mClosePercent, mProposing))
 		{
 			if (!changes)
 			{
 				ourPosition = mComplete[mOurPosition->getCurrentHash()]->snapShot(true);
 				changes = true;
 			}
-			if (it->second->getOurPosition()) // now a yes
+			if (it.second->getOurPosition()) // now a yes
 			{
-				ourPosition->addItem(SHAMapItem(it->first, it->second->peekTransaction()), true, false);
-				addedTx.push_back(it->first);
+				ourPosition->addItem(SHAMapItem(it.first, it.second->peekTransaction()), true, false);
+				addedTx.push_back(it.first);
 			}
 			else // now a no
 			{
-				ourPosition->delItem(it->first);
-				removedTx.push_back(it->first);
+				ourPosition->delItem(it.first);
+				removedTx.push_back(it.first);
 			}
 		}
 	}
 
 	std::map<uint32, int> closeTimes;
-	for (boost::unordered_map<uint160, LedgerProposal::pointer>::iterator it = mPeerPositions.begin(),
-			end = mPeerPositions.end(); it != end; ++it)
-		++closeTimes[it->second->getCloseTime() - (it->second->getCloseTime() % mCloseResolution)];
+
+	BOOST_FOREACH(u160_prop_pair& it, mPeerPositions)
+		++closeTimes[it.second->getCloseTime() - (it.second->getCloseTime() % mCloseResolution)];
 
 	int neededWeight;
 	if (mClosePercent < AV_MID_CONSENSUS_TIME)
@@ -594,10 +602,9 @@ bool LedgerConsensus::haveConsensus()
 {
 	int agree = 0, disagree = 0;
 	uint256 ourPosition = mOurPosition->getCurrentHash();
-	for (boost::unordered_map<uint160, LedgerProposal::pointer>::iterator it = mPeerPositions.begin(),
-		end = mPeerPositions.end(); it != end; ++it)
+	BOOST_FOREACH(u160_prop_pair& it, mPeerPositions)
 	{
-		if (it->second->getCurrentHash() == ourPosition)
+		if (it.second->getCurrentHash() == ourPosition)
 			++agree;
 		else
 			++disagree;
@@ -703,13 +710,12 @@ void LedgerConsensus::addDisputedTransaction(const uint256& txID, const std::vec
 	LCTransaction::pointer txn = boost::make_shared<LCTransaction>(txID, tx, ourPosition);
 	mDisputes[txID] = txn;
 
-	for (boost::unordered_map<uint160, LedgerProposal::pointer>::iterator pit = mPeerPositions.begin(),
-			pend = mPeerPositions.end(); pit != pend; ++pit)
+	BOOST_FOREACH(u160_prop_pair& pit, mPeerPositions)
 	{
 		boost::unordered_map<uint256, SHAMap::pointer>::const_iterator cit =
-			mComplete.find(pit->second->getCurrentHash());
+			mComplete.find(pit.second->getCurrentHash());
 		if (cit != mComplete.end() && cit->second)
-			txn->setVote(pit->first, cit->second->hasItem(txID));
+			txn->setVote(pit.first, cit->second->hasItem(txID));
 	}
 }
 
@@ -736,9 +742,8 @@ bool LedgerConsensus::peerPosition(const LedgerProposal::pointer& newPosition)
 	SHAMap::pointer set = getTransactionTree(newPosition->getCurrentHash(), true);
 	if (set)
 	{
-		for (boost::unordered_map<uint256, LCTransaction::pointer>::iterator it = mDisputes.begin(),
-				end = mDisputes.end(); it != end; ++it)
-			it->second->setVote(newPosition->getPeerID(), set->hasItem(it->first));
+		BOOST_FOREACH(u256_lct_pair& it, mDisputes)
+			it.second->setVote(newPosition->getPeerID(), set->hasItem(it.first));
 	}
 	else
 		Log(lsTRACE) << "Don't have that tx set";
@@ -752,8 +757,8 @@ bool LedgerConsensus::peerHasSet(const Peer::pointer& peer, const uint256& hashS
 		return true;
 
 	std::vector< boost::weak_ptr<Peer> >& set = mPeerData[hashSet];
-	for (std::vector< boost::weak_ptr<Peer> >::iterator iit = set.begin(), iend = set.end(); iit != iend; ++iit)
-		if (iit->lock() == peer)
+	BOOST_FOREACH(boost::weak_ptr<Peer>& iit, set)
+		if (iit.lock() == peer)
 			return false;
 
 	set.push_back(peer);
@@ -934,15 +939,14 @@ void LedgerConsensus::accept(const SHAMap::pointer& set)
 
 	// Apply disputed transactions that didn't get in
 	TransactionEngine engine(newOL);
-	for (boost::unordered_map<uint256, LCTransaction::pointer>::iterator it = mDisputes.begin(),
-			end = mDisputes.end(); it != end; ++it)
+	BOOST_FOREACH(u256_lct_pair& it, mDisputes)
 	{
-		if (!it->second->getOurPosition())
+		if (!it.second->getOurPosition())
 		{ // we voted NO
 			try
 			{
 				Log(lsINFO) << "Test applying disputed transaction that did not get in";
-				SerializerIterator sit(it->second->peekTransaction());
+				SerializerIterator sit(it.second->peekTransaction());
 				SerializedTransaction::pointer txn = boost::make_shared<SerializedTransaction>(boost::ref(sit));
 				applyTransaction(engine, txn, newOL, failedTransactions, false);
 			}
@@ -966,7 +970,8 @@ void LedgerConsensus::accept(const SHAMap::pointer& set)
 		Log(lsINFO) << "We closed at " << boost::lexical_cast<std::string>(mCloseTime);
 		uint64 closeTotal = mCloseTime;
 		int closeCount = 1;
-		for (std::map<uint32, int>::iterator it = mCloseTimes.begin(), end = mCloseTimes.end(); it != end; ++it)
+		for (std::map<uint32, int>::iterator it = mCloseTimes.begin(), end =
+		 mCloseTimes.end(); it != end; ++it)
 		{
 			Log(lsINFO) << boost::lexical_cast<std::string>(it->second) << " time votes for "
 				<< boost::lexical_cast<std::string>(it->first);
