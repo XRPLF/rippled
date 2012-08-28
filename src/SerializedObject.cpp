@@ -185,15 +185,13 @@ std::string STObject::getFullText() const
 	}
 	else ret = "{";
 
-	for (boost::ptr_vector<SerializedType>::const_iterator it = mData.begin(), end = mData.end(); it != end; ++it)
-	{
-		if (it->getSType() != STI_NOTPRESENT)
+	BOOST_FOREACH(const SerializedType& it, mData)
+		if (it.getSType() != STI_NOTPRESENT)
 		{
 			if (!first) ret += ", ";
 			else first = false;
-			ret += it->getFullText();
+			ret += it.getFullText();
 		}
-	}
 
 	ret += "}";
 	return ret;
@@ -202,29 +200,29 @@ std::string STObject::getFullText() const
 int STObject::getLength() const
 {
 	int ret = 0;
-	for (boost::ptr_vector<SerializedType>::const_iterator it = mData.begin(), end = mData.end(); it != end; ++it)
-		ret += it->getLength();
+	BOOST_FOREACH(const SerializedType& it, mData)
+		ret += it.getLength();
 	return ret;
 }
 
 void STObject::add(Serializer& s) const
 {
-	for (boost::ptr_vector<SerializedType>::const_iterator it = mData.begin(), end = mData.end(); it != end; ++it)
-		it->add(s);
+	BOOST_FOREACH(const SerializedType& it, mData)
+		it.add(s);
 }
 
 std::string STObject::getText() const
 {
 	std::string ret = "{";
 	bool first = false;
-	for (boost::ptr_vector<SerializedType>::const_iterator it = mData.begin(), end = mData.end(); it != end; ++it)
+	BOOST_FOREACH(const SerializedType& it, mData)
 	{
 		if (!first)
 		{
 			ret += ", ";
 			first = false;
 		}
-		ret += it->getText();
+		ret += it.getText();
 	}
 	ret += "}";
 	return ret;
@@ -654,14 +652,13 @@ Json::Value STObject::getJson(int options) const
 {
 	Json::Value ret(Json::objectValue);
 	int index = 1;
-	for(boost::ptr_vector<SerializedType>::const_iterator it = mData.begin(), end = mData.end(); it != end;
-		++it, ++index)
+	BOOST_FOREACH(const SerializedType& it, mData)
 	{
-		if (it->getSType() != STI_NOTPRESENT)
+		if (it.getSType() != STI_NOTPRESENT)
 		{
-			if (it->getName() == NULL)
-				ret[boost::lexical_cast<std::string>(index)] = it->getJson(options);
-			else ret[it->getName()] = it->getJson(options);
+			if (it.getName() == NULL)
+				ret[boost::lexical_cast<std::string>(index)] = it.getJson(options);
+			else ret[it.getName()] = it.getJson(options);
 		}
 	}
 	return ret;
@@ -672,9 +669,7 @@ Json::Value STVector256::getJson(int options) const
 	Json::Value ret(Json::arrayValue);
 
 	BOOST_FOREACH(std::vector<uint256>::const_iterator::value_type vEntry, mValue)
-	{
 		ret.append(vEntry.ToString());
-	}
 
 	return ret;
 }

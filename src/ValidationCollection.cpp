@@ -1,6 +1,8 @@
 
 #include "ValidationCollection.h"
 
+#include <boost/foreach.hpp>
+
 #include "Application.h"
 #include "LedgerTiming.h"
 #include "Log.h"
@@ -192,8 +194,8 @@ boost::unordered_map<uint256, int> ValidationCollection::getCurrentValidations()
 
 bool ValidationCollection::isDeadLedger(const uint256& ledger)
 {
-	for (std::list<uint256>::iterator it = mDeadLedgers.begin(), end = mDeadLedgers.end(); it != end; ++it)
-		if (*it == ledger)
+	BOOST_FOREACH(const uint256& it, mDeadLedgers)
+		if (it == ledger)
 			return true;
 	return false;
 }
@@ -259,10 +261,12 @@ void ValidationCollection::doWrite()
 			ScopedLock dbl(theApp->getLedgerDB()->getDBLock());
 			Database *db = theApp->getLedgerDB()->getDB();
 			db->executeSQL("BEGIN TRANSACTION;");
-			for (std::vector<SerializedValidation::pointer>::iterator it = vector.begin(); it != vector.end(); ++it)
-				db->executeSQL(boost::str(insVal % (*it)->getLedgerHash().GetHex()
-					% (*it)->getSignerPublic().humanNodePublic() % (*it)->getFlags() % (*it)->getCloseTime()
-					% db->escape(strCopy((*it)->getSignature()))));
+
+
+			BOOST_FOREACH(const SerializedValidation::pointer& it, vector)
+				db->executeSQL(boost::str(insVal % it->getLedgerHash().GetHex()
+					% it->getSignerPublic().humanNodePublic() % it->getFlags() % it->getCloseTime()
+					% db->escape(strCopy(it->getSignature()))));
 			db->executeSQL("END TRANSACTION;");
 		}
 

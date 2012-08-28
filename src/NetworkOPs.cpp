@@ -444,23 +444,23 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 		ourVC.highNode = theApp->getWallet().getNodePublic();
 	}
 
-	for (std::vector<Peer::pointer>::const_iterator it = peerList.begin(), end = peerList.end(); it != end; ++it)
+	BOOST_FOREACH(const Peer::pointer& it, peerList)
 	{
-		if (!*it)
+		if (!it)
 		{
 			Log(lsDEBUG) << "NOP::CS Dead pointer in peer list";
 		}
-		else if ((*it)->isConnected())
+		else if (it->isConnected())
 		{
-			uint256 peerLedger = (*it)->getClosedLedgerHash();
+			uint256 peerLedger = it->getClosedLedgerHash();
 			if (peerLedger.isNonZero())
 			{
 				ValidationCount& vc = ledgers[peerLedger];
-				if ((vc.nodesUsing == 0) || ((*it)->getNodePublic() > vc.highNode))
-					vc.highNode = (*it)->getNodePublic();
+				if ((vc.nodesUsing == 0) || (it->getNodePublic() > vc.highNode))
+					vc.highNode = it->getNodePublic();
 				++vc.nodesUsing;
 			}
-			else Log(lsTRACE) << "Connected peer announces no LCL " << (*it)->getIP();
+			else Log(lsTRACE) << "Connected peer announces no LCL " << it->getIP();
 		}
 	}
 
@@ -522,23 +522,19 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 		{ // add more peers
 			int count = 0;
 			std::vector<Peer::pointer> peers=theApp->getConnectionPool().getPeerVector();
-			for (std::vector<Peer::pointer>::const_iterator it = peerList.begin(), end = peerList.end();
-					it != end; ++it)
+			BOOST_FOREACH(const Peer::pointer& it, peerList)
 			{
-				if ((*it)->getClosedLedgerHash() == closedLedger)
+				if (it->getClosedLedgerHash() == closedLedger)
 				{
 					++count;
-					mAcquiringLedger->peerHas(*it);
+					mAcquiringLedger->peerHas(it);
 				}
 			}
 			if (!count)
 			{ // just ask everyone
-				for (std::vector<Peer::pointer>::const_iterator it = peerList.begin(), end = peerList.end();
-						it != end; ++it)
-				{
-					if ((*it)->isConnected())
-						mAcquiringLedger->peerHas(*it);
-				}
+				BOOST_FOREACH(const Peer::pointer& it, peerList)
+					if (it->isConnected())
+						mAcquiringLedger->peerHas(it);
 			}
 			return true;
 		}
@@ -678,12 +674,12 @@ void NetworkOPs::endConsensus(bool correctLCL)
 	Log(lsTRACE) << "Ledger " << deadLedger.GetHex() << " is now dead";
 	theApp->getValidations().addDeadLedger(deadLedger);
 	std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
-	for (std::vector<Peer::pointer>::const_iterator it = peerList.begin(), end = peerList.end(); it != end; ++it)
-	if (*it && ((*it)->getClosedLedgerHash() == deadLedger))
-	{
-		Log(lsTRACE) << "Killing obsolete peer status";
-		(*it)->cycleStatus();
-	}
+	BOOST_FOREACH(const Peer::pointer& it, peerList)
+		if (it && (it->getClosedLedgerHash() == deadLedger))
+		{
+			Log(lsTRACE) << "Killing obsolete peer status";
+			it->cycleStatus();
+		}
 	mConsensus = boost::shared_ptr<LedgerConsensus>();
 }
 

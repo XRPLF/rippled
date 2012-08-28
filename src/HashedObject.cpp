@@ -2,6 +2,7 @@
 #include "HashedObject.h"
 
 #include <boost/lexical_cast.hpp>
+#include <boost/foreach.hpp>
 
 #include "Serializer.h"
 #include "Application.h"
@@ -63,13 +64,12 @@ void HashedObjectStore::bulkWrite()
 
 	db->executeSQL("BEGIN TRANSACTION;");
 
-	for (std::vector< boost::shared_ptr<HashedObject> >::iterator it = set.begin(), end = set.end(); it != end; ++it)
+	BOOST_FOREACH(const boost::shared_ptr<HashedObject>& it, set)
 	{
-		HashedObject& obj = **it;
-		if (!SQL_EXISTS(db, boost::str(fExists % obj.getHash().GetHex())))
+		if (!SQL_EXISTS(db, boost::str(fExists % it->getHash().GetHex())))
 		{
 			char type;
-			switch(obj.getType())
+			switch(it->getType())
 			{
 				case LEDGER: type = 'L'; break;
 				case TRANSACTION: type = 'T'; break;
@@ -78,8 +78,8 @@ void HashedObjectStore::bulkWrite()
 				default: type = 'U';
 			}
 			std::string rawData;
-			db->escape(&(obj.getData().front()), obj.getData().size(), rawData);
-			db->executeSQL(boost::str(fAdd % obj.getHash().GetHex() % type % obj.getIndex() % rawData ));
+			db->escape(&(it->getData().front()), it->getData().size(), rawData);
+			db->executeSQL(boost::str(fAdd % it->getHash().GetHex() % type % it->getIndex() % rawData ));
 		}
 	}
 

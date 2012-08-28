@@ -8,6 +8,7 @@
 
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>
+#include <boost/tuple/tuple_comparison.hpp>
 #include <queue>
 
 #include "../json/writer.h"
