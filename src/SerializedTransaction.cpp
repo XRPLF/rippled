@@ -1,6 +1,8 @@
 
 #include "SerializedTransaction.h"
 
+#include <boost/foreach.hpp>
+
 #include "Application.h"
 #include "Log.h"
 #include "HashPrefixes.h"
@@ -83,10 +85,9 @@ std::vector<NewcoinAddress> SerializedTransaction::getAffectedAccounts() const
 	std::vector<NewcoinAddress> accounts;
 	accounts.push_back(mSourceAccount);
 
-	for(boost::ptr_vector<SerializedType>::const_iterator it = mInnerTxn.peekData().begin(),
-		end = mInnerTxn.peekData().end(); it != end ; ++it)
+	BOOST_FOREACH(const SerializedType& it, mInnerTxn.peekData())
 	{
-		const STAccount* sa = dynamic_cast<const STAccount*>(&*it);
+		const STAccount* sa = dynamic_cast<const STAccount*>(&it);
 		if (sa != NULL)
 		{
 			bool found = false;

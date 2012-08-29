@@ -311,46 +311,88 @@ void LedgerEntrySet::calcRawMeta(Serializer& s, Ledger::pointer& origLedger)
 			case taaMODIFY:
 				nType = TMNModifiedNode;
 				break;
+
 			case taaDELETE:
 				nType = TMNDeletedNode;
 				break;
+
 			case taaCREATE:
 				nType = TMNCreatedNode;
 				break;
+
 			default:
 				// ignore these
 				break;
 		}
-		if (nType != TMNEndOfMetadata)
+
+		if (nType == TMNEndOfMetadata)
+			continue;
+
+		SLE::pointer origNode = origLedger->getSLE(it->first);
+		SLE::pointer curNode = it->second.mEntry;
+		TransactionMetaNode &metaNode = mSet.getAffectedNode(it->first, nType);
+
+		if (nType == TMNDeletedNode)
 		{
-			SLE::pointer origNode = origLedger->getSLE(it->first);
-			SLE::pointer curNode = it->second.mEntry;
-			TransactionMetaNode &metaNode = mSet.getAffectedNode(it->first, nType);
+			threadOwners(metaNode, origNode, origLedger, newMod);
 
-			if (nType == TMNDeletedNode)
-			{
-				threadOwners(metaNode, origNode, origLedger, newMod);
+			if (origNode->getIFieldPresent(sfAmount))
+			{ // node has an amount, covers ripple state nodes
+				STAmount amount = origNode->getIValueFieldAmount(sfAmount);
+				if (amount.isNonZero())
+					metaNode.addAmount(TMSPrevBalance, amount);
+				amount = curNode->getIValueFieldAmount(sfAmount);
+				if (amount.isNonZero())
+					metaNode.addAmount(TMSFinalBalance, amount);
 
-				if (origNode->getType() == ltOFFER)
-				{ // check for non-zero balances
-					// WRITEME
-				}
-			}
-
-			if ((nType == TMNCreatedNode) || (nType == TMNModifiedNode))
-			{
-				if (nType == TMNCreatedNode) // if created, thread to owner(s)
-					threadOwners(metaNode, curNode, origLedger, newMod);
-
-				if (curNode->isThreadedType()) // always thread to self
-					threadTx(metaNode, curNode, origLedger, newMod);
-
-				if (nType == TMNModifiedNode)
+				if (origNode->getType() == ltRIPPLE_STATE)
 				{
-					// analyze changes WRITEME
+					metaNode.addAccount(TMSLowID, origNode->getIValueFieldAccount(sfLowID));
+					metaNode.addAccount(TMSHighID, origNode->getIValueFieldAccount(sfHighID));
 				}
 
 			}
+
+			if (origNode->getType() == ltOFFER)
+			{ // check for non-zero balances
+				STAmount amount = origNode->getIValueFieldAmount(sfTakerPays);
+				if (amount.isNonZero())
+					metaNode.addAmount(TMSFinalTakerPays, amount);
+				amount = origNode->getIValueFieldAmount(sfTakerGets);
+				if (amount.isNonZero())
+					metaNode.addAmount(TMSFinalTakerGets, amount);
+			}
+
+		}
+
+		if (nType == TMNCreatedNode) // if created, thread to owner(s)
+			threadOwners(metaNode, curNode, origLedger, newMod);
+
+		if ((nType == TMNCreatedNode) || (nType == TMNModifiedNode))
+		{
+			if (curNode->isThreadedType()) // always thread to self
+				threadTx(metaNode, curNode, origLedger, newMod);
+		}
+
+		if (nType == TMNModifiedNode)
+		{
+			if (origNode->getIFieldPresent(sfAmount))
+			{ // node has an amount, covers account root nodes and ripple nodes
+				STAmount amount = origNode->getIValueFieldAmount(sfAmount);
+				if (amount != curNode->getIValueFieldAmount(sfAmount))
+					metaNode.addAmount(TMSPrevBalance, amount);
+			}
+
+			if (origNode->getType() == ltOFFER)
+			{
+				STAmount amount = origNode->getIValueFieldAmount(sfTakerPays);
+				if (amount != curNode->getIValueFieldAmount(sfTakerPays))
+					metaNode.addAmount(TMSPrevTakerPays, amount);
+				amount = origNode->getIValueFieldAmount(sfTakerGets);
+				if (amount != curNode->getIValueFieldAmount(sfTakerGets))
+					metaNode.addAmount(TMSPrevTakerGets, amount);
+			}
+
 		}
 	}
 

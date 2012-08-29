@@ -4,6 +4,7 @@
 
 #include <boost/make_shared.hpp>
 #include <boost/bind.hpp>
+#include <boost/foreach.hpp>
 
 bool TransactionMetaNodeEntry::operator<(const TransactionMetaNodeEntry& e) const
 {
@@ -65,13 +66,13 @@ Json::Value TMNEThread::getJson(int) const
 
 TMNEAmount::TMNEAmount(int type, SerializerIterator& sit) : TransactionMetaNodeEntry(type)
 {
-	mPrevAmount = *dynamic_cast<STAmount*>(STAmount::deserialize(sit, NULL).get()); // Ouch
+	mAmount = *dynamic_cast<STAmount*>(STAmount::deserialize(sit, NULL).get()); // Ouch
 }
 
 void TMNEAmount::addRaw(Serializer& s) const
 {
 	s.add8(mType);
-	mPrevAmount.add(s);
+	mAmount.add(s);
 }
 
 Json::Value TMNEAmount::getJson(int v) const
@@ -79,11 +80,12 @@ Json::Value TMNEAmount::getJson(int v) const
 	Json::Value outer(Json::objectValue);
 	switch (mType)
 	{
-		case TMSPrevBalance:		outer["prev_balance"] = mPrevAmount.getJson(v); break;
-		case TMSPrevTakerPays:		outer["prev_taker_pays"] = mPrevAmount.getJson(v); break;
-		case TMSPrevTakerGets:		outer["prev_taker_gets"] = mPrevAmount.getJson(v); break;
-		case TMSFinalTakerPays:		outer["final_taker_pays"] = mPrevAmount.getJson(v); break;
-		case TMSFinalTakerGets:		outer["final_taker_gets"] = mPrevAmount.getJson(v); break;
+		case TMSPrevBalance:		outer["prev_balance"] = mAmount.getJson(v); break;
+		case TMSFinalBalance:		outer["final_balance"] = mAmount.getJson(v); break;
+		case TMSPrevTakerPays:		outer["prev_taker_pays"] = mAmount.getJson(v); break;
+		case TMSPrevTakerGets:		outer["prev_taker_gets"] = mAmount.getJson(v); break;
+		case TMSFinalTakerPays:		outer["final_taker_pays"] = mAmount.getJson(v); break;
+		case TMSFinalTakerGets:		outer["final_taker_gets"] = mAmount.getJson(v); break;
 		default: assert(false);
 	}
 	return outer;
@@ -96,19 +98,28 @@ int TMNEAmount::compare(const TransactionMetaNodeEntry& e) const
 }
 
 TMNEAccount::TMNEAccount(int type, SerializerIterator& sit)
-	: TransactionMetaNodeEntry(type), mPrevAccount(sit.get256())
+	: TransactionMetaNodeEntry(type), mAccount(STAccount(sit.getVL()).getValueNCA())
 { ; }
 
 void TMNEAccount::addRaw(Serializer& sit) const
 {
 	sit.add8(mType);
-	sit.add256(mPrevAccount);
+
+	STAccount sta;
+	sta.setValueNCA(mAccount);
+	sta.add(sit);
 }
 
 Json::Value TMNEAccount::getJson(int) const
 {
 	Json::Value outer(Json::objectValue);
-	outer["prev_account"] = mPrevAccount.GetHex();
+	switch (mType)
+	{
+		case TMSPrevAccount:	outer["prev_account"] = mAccount.humanAccountID(); break;
+		case TMSLowID:			outer["lowID"] = mAccount.humanAccountID(); break;
+		case TMSHighID:			outer["highID"] = mAccount.humanAccountID(); break;
+		default: assert(false);
+	}
 	return outer;
 }
 
@@ -149,30 +160,32 @@ TransactionMetaNode::TransactionMetaNode(int type, const uint256& node, Serializ
 
 void TransactionMetaNode::addRaw(Serializer& s)
 {
+	if (mEntries.empty())
+	{ // ack, an empty node
+		assert(false);
+		return;
+	}
 	s.add8(mType);
 	s.add256(mNode);
 	mEntries.sort();
-	for (boost::ptr_vector<TransactionMetaNodeEntry>::const_iterator it = mEntries.begin(), end = mEntries.end();
-			it != end; ++it)
-		it->addRaw(s);
+	BOOST_FOREACH(TransactionMetaNodeEntry& it, mEntries)
+		it.addRaw(s);
 	s.add8(TMSEndOfNode);
 }
 
 TransactionMetaNodeEntry* TransactionMetaNode::findEntry(int nodeType)
 {
-	for (boost::ptr_vector<TransactionMetaNodeEntry>::iterator it = mEntries.begin(), end = mEntries.end();
-			it != end; ++it)
-		if (it->getType() == nodeType)
-			return &*it;
+	BOOST_FOREACH(TransactionMetaNodeEntry& it, mEntries)
+		if (it.getType() == nodeType)
+			return &it;
 	return NULL;
 }
 
 TMNEAmount* TransactionMetaNode::findAmount(int nType)
 {
-	for (boost::ptr_vector<TransactionMetaNodeEntry>::iterator it = mEntries.begin(), end = mEntries.end();
-			it != end; ++it)
-		if (it->getType() == nType)
-			return dynamic_cast<TMNEAmount *>(&*it);
+	BOOST_FOREACH(TransactionMetaNodeEntry& it, mEntries)
+		if (it.getType() == nType)
+			return dynamic_cast<TMNEAmount *>(&it);
 	TMNEAmount* node = new TMNEAmount(nType);
 	mEntries.push_back(node);
 	return node;
@@ -185,11 +198,36 @@ void TransactionMetaNode::addNode(TransactionMetaNodeEntry* node)
 
 bool TransactionMetaNode::thread(const uint256& prevTx, uint32 prevLgr)
 {
-	for (boost::ptr_vector<TransactionMetaNodeEntry>::iterator it = mEntries.begin(), end = mEntries.end();
-			it != end; ++it)
-		if (it->getType() == TMSThread)
+	BOOST_FOREACH(TransactionMetaNodeEntry& it, mEntries)
+		if (it.getType() == TMSThread)
 			return false;
 	addNode(new TMNEThread(prevTx, prevLgr));
+	return true;
+}
+
+bool TransactionMetaNode::addAmount(int nodeType, const STAmount& amount)
+{
+	BOOST_FOREACH(TransactionMetaNodeEntry& it, mEntries)
+		if (it.getType() == nodeType)
+		{
+			TMNEAmount* a = dynamic_cast<TMNEAmount *>(&it);
+			assert(a && (a->getAmount() == amount));
+			return false;
+		}
+	addNode(new TMNEAmount(nodeType, amount));
+	return true;
+}
+
+bool TransactionMetaNode::addAccount(int nodeType, const NewcoinAddress& account)
+{
+	BOOST_FOREACH(TransactionMetaNodeEntry& it, mEntries)
+		if (it.getType() == nodeType)
+		{
+			TMNEAccount* a = dynamic_cast<TMNEAccount *>(&it);
+			assert(a && (a->getAccount() == account));
+			return false;
+		}
+	addNode(new TMNEAccount(nodeType, account));
 	return true;
 }
 
@@ -209,9 +247,8 @@ Json::Value TransactionMetaNode::getJson(int v) const
 	ret["node"] = mNode.GetHex();
 
 	Json::Value e = Json::arrayValue;
-	for (boost::ptr_vector<TransactionMetaNodeEntry>::const_iterator it = mEntries.begin(), end = mEntries.end();
-			it != end; ++it)
-		e.append(it->getJson(v));
+	BOOST_FOREACH(const TransactionMetaNodeEntry& it, mEntries)
+		e.append(it.getJson(v));
 	ret["entries"] = e;
 
 	return ret;
