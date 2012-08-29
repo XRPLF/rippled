@@ -534,7 +534,6 @@ void LedgerConsensus::updateOurPositions()
 	}
 
 	std::map<uint32, int> closeTimes;
-
 	BOOST_FOREACH(u160_prop_pair& it, mPeerPositions)
 		++closeTimes[it.second->getCloseTime() - (it.second->getCloseTime() % mCloseResolution)];
 
