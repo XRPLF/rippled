@@ -614,12 +614,6 @@ bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash, uint
 	if (!theApp->isNew(s.getSHA512Half()))
 		return false;
 
-	if (!mConsensus)
-	{ // FIXME: CLC
-		Log(lsWARNING) << "Received proposal when full but not during consensus window";
-		return false;
-	}
-
 	NewcoinAddress naPeerPublic = NewcoinAddress::createNodePublic(strCopy(pubKey));
 	LedgerProposal::pointer proposal =
 		boost::make_shared<LedgerProposal>(mConsensus->getLCL(), proposeSeq, proposeHash, closeTime, naPeerPublic);
@@ -635,6 +629,22 @@ bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash, uint
 		Log(lsINFO) << "Untrusted proposal: " << naPeerPublic.humanNodePublic() << " " <<
 			 proposal->getCurrentHash().GetHex();
 		return true;
+	}
+
+	if ((!mConsensus) && (mMode == omFULL))
+	{
+		uint256 networkClosed;
+		bool ledgerChange = checkLastClosedLedger(peerList, networkClosed);
+		if (!ledgerChange)
+		{
+			Log(lsWARNING) << "Beginning consensus due to proposal from peer";
+			beginConsensus(networkClosed, theApp->getMasterLedger().getCurrentLedger());
+		}
+	}
+	if (!mConsensus)
+	{
+		Log(lsWARNING) << "Received proposal when full but not during consensus window";
+		return false;
 	}
 
 	return mConsensus->peerPosition(proposal);
