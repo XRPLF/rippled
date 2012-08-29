@@ -84,7 +84,7 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 		return trans;
 	}
 
-	TransactionEngineResult r = mLedgerMaster->doTransaction(*trans->getSTransaction(), tgtLedger, tepNONE);
+	TER r = mLedgerMaster->doTransaction(*trans->getSTransaction(), tgtLedger, tepNONE);
 	if (r == tefFAILURE) throw Fault(IO_ERROR);
 
 	if (r == terPRE_SEQ)
@@ -875,7 +875,7 @@ void NetworkOPs::pubLedger(const Ledger::pointer& lpAccepted)
 				SerializedTransaction::pointer	stTxn = theApp->getMasterTransaction().fetch(item, false, 0);
 				// XXX Need to support other results.
 				// XXX Need to give failures too.
-				TransactionEngineResult	terResult	= tesSUCCESS;
+				TER	terResult	= tesSUCCESS;
 
 				if (bAll)
 				{
@@ -909,7 +909,7 @@ void NetworkOPs::pubLedger(const Ledger::pointer& lpAccepted)
 	// XXX Publish delta information for accounts.
 }
 
-Json::Value NetworkOPs::transJson(const SerializedTransaction& stTxn, TransactionEngineResult terResult, const std::string& strStatus, int iSeq, const std::string& strType)
+Json::Value NetworkOPs::transJson(const SerializedTransaction& stTxn, TER terResult, const std::string& strStatus, int iSeq, const std::string& strType)
 {
 	Json::Value	jvObj(Json::objectValue);
 	std::string	strToken;
@@ -927,7 +927,7 @@ Json::Value NetworkOPs::transJson(const SerializedTransaction& stTxn, Transactio
 	return jvObj;
 }
 
-void NetworkOPs::pubTransactionAll(const Ledger::pointer& lpCurrent, const SerializedTransaction& stTxn, TransactionEngineResult terResult, const char* pState)
+void NetworkOPs::pubTransactionAll(const Ledger::pointer& lpCurrent, const SerializedTransaction& stTxn, TER terResult, const char* pState)
 {
 	Json::Value	jvObj	= transJson(stTxn, terResult, pState, lpCurrent->getLedgerSeq(), "transaction");
 
@@ -937,7 +937,7 @@ void NetworkOPs::pubTransactionAll(const Ledger::pointer& lpCurrent, const Seria
 	}
 }
 
-void NetworkOPs::pubTransactionAccounts(const Ledger::pointer& lpCurrent, const SerializedTransaction& stTxn, TransactionEngineResult terResult, const char* pState)
+void NetworkOPs::pubTransactionAccounts(const Ledger::pointer& lpCurrent, const SerializedTransaction& stTxn, TER terResult, const char* pState)
 {
 	boost::unordered_set<InfoSub*>	usisNotify;
 
@@ -972,7 +972,7 @@ void NetworkOPs::pubTransactionAccounts(const Ledger::pointer& lpCurrent, const 
 	}
 }
 
-void NetworkOPs::pubTransaction(const Ledger::pointer& lpCurrent, const SerializedTransaction& stTxn, TransactionEngineResult terResult)
+void NetworkOPs::pubTransaction(const Ledger::pointer& lpCurrent, const SerializedTransaction& stTxn, TER terResult)
 {
 	boost::interprocess::sharable_lock<boost::interprocess::interprocess_upgradable_mutex>	sl(mMonitorLock);
 

@@ -799,7 +799,7 @@ void LedgerConsensus::applyTransaction(TransactionEngine& engine, const Serializ
 	try
 	{
 #endif
-		TransactionEngineResult result = engine.applyTransaction(*txn, parms);
+		TER result = engine.applyTransaction(*txn, parms);
 		if (result > 0)
 		{
 			Log(lsINFO) << "   retry";
@@ -861,7 +861,7 @@ void LedgerConsensus::applyTransactions(const SHAMap::pointer& set, const Ledger
 		{
 			try
 			{
-				TransactionEngineResult result = engine.applyTransaction(*it->second, parms);
+				TER result = engine.applyTransaction(*it->second, parms);
 				if (result <= 0)
 				{
 					if (result == 0) ++successes;
