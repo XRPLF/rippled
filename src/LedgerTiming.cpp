@@ -33,7 +33,8 @@ int ContinuousLedgerTiming::shouldClose(
 	{ // no transactions so far this interval
 		if (proposersClosed > (previousProposers / 4)) // did we miss a transaction?
 		{
-			Log(lsTRACE) << "no transactions, many proposers: now";
+			Log(lsTRACE) << "no transactions, many proposers: now (" << proposersClose << "closed, "
+				<< previousProposers << " before)";
 			return currentMSeconds;
 		}
 		if (previousMSeconds > (1000 * (LEDGER_IDLE_INTERVAL + 2))) // the last ledger was very slow to close
