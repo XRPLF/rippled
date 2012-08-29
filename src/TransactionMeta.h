@@ -24,13 +24,16 @@ static const int TMSThread				= 0x01; // Holds previous TxID and LgrSeq for thre
 
 // sub record types - containing an amount
 static const int TMSPrevBalance			= 0x11; // Balances prior to the transaction
-static const int TMSPrevTakerPays		= 0x12;
-static const int TMSPrevTakerGets		= 0x13;
-static const int TMSFinalTakerPays		= 0x14; // Balances at node deletion time
-static const int TMSFinalTakerGets		= 0x15;
+static const int TMSFinalBalance		= 0x12; // deleted with non-zero balance
+static const int TMSPrevTakerPays		= 0x13;
+static const int TMSPrevTakerGets		= 0x14;
+static const int TMSFinalTakerPays		= 0x15; // Balances at node deletion time
+static const int TMSFinalTakerGets		= 0x16;
 
 // sub record types - containing an account (for example, for when a nickname is transferred)
-static const int TMSPrevAccount		= 0x20;
+static const int TMSPrevAccount			= 0x20;
+static const int TMSLowID				= 0x21;
+static const int TMSHighID				= 0x22;
 
 
 class TransactionMetaNodeEntry
@@ -85,16 +88,17 @@ protected:
 class TMNEAmount : public TransactionMetaNodeEntry
 { // a transaction affected the balance of a node
 protected:
-	STAmount mPrevAmount;
+	STAmount mAmount;
 
 public:
 	TMNEAmount(int type) : TransactionMetaNodeEntry(type) { ; }
+	TMNEAmount(int type, const STAmount &a) : TransactionMetaNodeEntry(type), mAmount(a) { ; }
 
 	TMNEAmount(int type, SerializerIterator&);
 	virtual void addRaw(Serializer&) const;
 
-	const STAmount& getAmount() const	{ return mPrevAmount; }
-	void setAmount(const STAmount& a)	{ mPrevAmount = a; }
+	const STAmount& getAmount() const	{ return mAmount; }
+	void setAmount(const STAmount& a)	{ mAmount = a; }
 
 	virtual Json::Value getJson(int) const;
 
@@ -106,13 +110,16 @@ protected:
 class TMNEAccount : public TransactionMetaNodeEntry
 { // node was deleted because it was unfunded
 protected:
-	uint256 mPrevAccount;
+	NewcoinAddress mAccount;
 
 public:
-	TMNEAccount(int type, uint256 prev) : TransactionMetaNodeEntry(type), mPrevAccount(prev) { ; }
+	TMNEAccount(int type, const NewcoinAddress& acct) : TransactionMetaNodeEntry(type), mAccount(acct) { ; }
 	TMNEAccount(int type, SerializerIterator&);
 	virtual void addRaw(Serializer&) const;
 	virtual Json::Value getJson(int) const;
+
+	const NewcoinAddress& getAccount() const		{ return mAccount; }
+	void setAccount(const NewcoinAddress& a)		{ mAccount = a; }
 
 protected:
 	virtual TransactionMetaNodeEntry* duplicate(void) const { return new TMNEAccount(*this); }
@@ -152,6 +159,8 @@ public:
 	void addRaw(Serializer&);
 	Json::Value getJson(int) const;
 
+	bool addAmount(int nodeType, const STAmount& amount);
+	bool addAccount(int nodeType, const NewcoinAddress& account);
 	TMNEAmount* findAmount(int nodeType);
 };
 
