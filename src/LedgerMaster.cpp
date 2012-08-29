@@ -80,10 +80,10 @@ Ledger::pointer LedgerMaster::closeLedger()
 	return closingLedger;
 }
 
-TransactionEngineResult LedgerMaster::doTransaction(const SerializedTransaction& txn, uint32 targetLedger,
+TER LedgerMaster::doTransaction(const SerializedTransaction& txn, uint32 targetLedger,
 	TransactionEngineParams params)
 {
-	TransactionEngineResult result = mEngine.applyTransaction(txn, params);
+	TER result = mEngine.applyTransaction(txn, params);
 	theApp->getOPs().pubTransaction(mEngine.getLedger(), txn, result);
 	return result;
 }

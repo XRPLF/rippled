@@ -45,7 +45,7 @@ public:
 
 	void runStandAlone()				{ mFinalizedLedger = mCurrentLedger; }
 
-	TransactionEngineResult doTransaction(const SerializedTransaction& txn, uint32 targetLedger,
+	TER doTransaction(const SerializedTransaction& txn, uint32 targetLedger,
 		TransactionEngineParams params);
 
 	void pushLedger(const Ledger::pointer& newLedger);

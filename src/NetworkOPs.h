@@ -77,9 +77,9 @@ protected:
 
 	void setMode(OperatingMode);
 
-	Json::Value transJson(const SerializedTransaction& stTxn, TransactionEngineResult terResult, const std::string& strStatus, int iSeq, const std::string& strType);
-	void pubTransactionAll(const Ledger::pointer& lpCurrent, const SerializedTransaction& stTxn, TransactionEngineResult terResult, const char* pState);
-	void pubTransactionAccounts(const Ledger::pointer& lpCurrent, const SerializedTransaction& stTxn, TransactionEngineResult terResult, const char* pState);
+	Json::Value transJson(const SerializedTransaction& stTxn, TER terResult, const std::string& strStatus, int iSeq, const std::string& strType);
+	void pubTransactionAll(const Ledger::pointer& lpCurrent, const SerializedTransaction& stTxn, TER terResult, const char* pState);
+	void pubTransactionAccounts(const Ledger::pointer& lpCurrent, const SerializedTransaction& stTxn, TER terResult, const char* pState);
 
 	Json::Value pubBootstrapAccountInfo(const Ledger::pointer& lpAccepted, const NewcoinAddress& naAccountID);
 
@@ -195,7 +195,7 @@ public:
 
 	void pubAccountInfo(const NewcoinAddress& naAccountID, const Json::Value& jvObj);
 	void pubLedger(const Ledger::pointer& lpAccepted);
-	void pubTransaction(const Ledger::pointer& lpLedger, const SerializedTransaction& stTxn, TransactionEngineResult terResult);
+	void pubTransaction(const Ledger::pointer& lpLedger, const SerializedTransaction& stTxn, TER terResult);
 
 	//
 	// Monitoring: subscriber side
