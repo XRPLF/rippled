@@ -431,7 +431,7 @@ void LedgerConsensus::statePreClose()
 	{ // it is time to close the ledger
 		Log(lsINFO) << "CLC: closing ledger";
 		mState = lcsESTABLISH;
-		mConsensusStartTime = boost::posix_time::second_clock::universal_time();
+		mConsensusStartTime = boost::posix_time::microsec_clock::universal_time();
 		mCloseTime = theApp->getOPs().getCloseTimeNC();
 		theApp->getOPs().setLastCloseNetTime(mCloseTime);
 		statusChange(newcoin::neCLOSING_LEDGER, *mPreviousLedger);
@@ -492,7 +492,7 @@ void LedgerConsensus::timerEntry()
 	}
 
 	mCurrentMSeconds = (mCloseTime == 0) ? 0 :
-			(boost::posix_time::second_clock::universal_time() - mConsensusStartTime).total_milliseconds();
+			(boost::posix_time::microsec_clock::universal_time() - mConsensusStartTime).total_milliseconds();
 	mClosePercent = mCurrentMSeconds * 100 / mPreviousMSeconds;
 
 	switch (mState)

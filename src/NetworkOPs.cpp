@@ -33,7 +33,7 @@ boost::posix_time::ptime NetworkOPs::getNetworkTimePT()
 {
 	int offset = 0;
 	theApp->getSystemTimeOffset(offset);
-	return boost::posix_time::second_clock::universal_time() + boost::posix_time::seconds(offset);
+	return boost::posix_time::microsec_clock::universal_time() + boost::posix_time::seconds(offset);
 }
 
 uint32 NetworkOPs::getNetworkTimeNC()
@@ -634,6 +634,7 @@ bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash, uint
 	if ((!mConsensus) && (mMode == omFULL))
 	{
 		uint256 networkClosed;
+		std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
 		bool ledgerChange = checkLastClosedLedger(peerList, networkClosed);
 		if (!ledgerChange)
 		{
