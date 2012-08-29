@@ -648,7 +648,6 @@ void Peer::recvHello(newcoin::TMHello& packet)
 				if ((packet.has_ledgerprevious()) && (packet.ledgerprevious().size() == (256 / 8)))
 					memcpy(mPreviousLedgerHash.begin(), packet.ledgerprevious().data(), 256 / 8);
 				else mPreviousLedgerHash.zero();
-				mClosedLedgerTime = boost::posix_time::second_clock::universal_time();
 			}
 
 			bDetach	= false;
@@ -908,7 +907,6 @@ void Peer::recvStatus(newcoin::TMStatusChange& packet)
 	if (packet.has_ledgerhash() && (packet.ledgerhash().size() == (256 / 8)))
 	{ // a peer has changed ledgers
 		memcpy(mClosedLedgerHash.begin(), packet.ledgerhash().data(), 256 / 8);
-		mClosedLedgerTime = ptFromSeconds(packet.networktime());
 		Log(lsTRACE) << "peer LCL is " << mClosedLedgerHash.GetHex() << " " << getIP();
 	}
 	else

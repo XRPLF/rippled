@@ -43,9 +43,7 @@ private:
 	ipPort			mIpPortConnect;
 	uint256			mCookieHash;
 
-	// network state information
 	uint256						mClosedLedgerHash, mPreviousLedgerHash;
-	boost::posix_time::ptime	mClosedLedgerTime;
 
 	boost::asio::ssl::stream<boost::asio::ip::tcp::socket>		mSocketSsl;
 
