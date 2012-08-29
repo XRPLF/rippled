@@ -49,6 +49,7 @@ bool transResultInfo(TER terCode, std::string& strToken, std::string& strHuman)
 		{	tefBAD_GEN_AUTH,		"tefBAD_GEN_AUTH",			"Not authorized to claim generator."				},
 		{	tefBAD_LEDGER,			"tefBAD_LEDGER",			"Ledger in unexpected state."						},
 		{	tefCLAIMED,				"tefCLAIMED",				"Can not claim a previously claimed account."		},
+		{	tefEXCEPTION,			"tefEXCEPTION",				"Unexpected program state."							},
 		{	tefCREATED,				"tefCREATED",				"Can't add an already created account."				},
 		{	tefGEN_IN_USE,			"tefGEN_IN_USE",			"Generator already in use."							},
 		{	tefPAST_SEQ,			"tefPAST_SEQ",				"This sequence number has already past"				},
@@ -61,6 +62,8 @@ bool transResultInfo(TER terCode, std::string& strToken, std::string& strHuman)
 		{	temBAD_EXPIRATION,		"temBAD_EXPIRATION",		"Malformed."										},
 		{	temBAD_ISSUER,			"temBAD_ISSUER",			"Malformed."										},
 		{	temBAD_OFFER,			"temBAD_OFFER",				"Malformed."										},
+		{	temBAD_PATH,			"temBAD_PATH",				"Malformed."										},
+		{	temBAD_PATH_LOOP,		"temBAD_PATH_LOOP",			"Malformed."										},
 		{	temBAD_PUBLISH,			"temBAD_PUBLISH",			"Malformed: bad publish."							},
 		{	temBAD_SET_ID,			"temBAD_SET_ID",			"Malformed."										},
 		{	temCREATEXNS,			"temCREATEXNS",				"Can not specify non XNS for Create."				},
@@ -81,6 +84,7 @@ bool transResultInfo(TER terCode, std::string& strToken, std::string& strHuman)
 		{	terINSUF_FEE_B,			"terINSUF_FEE_B",			"Account balance can't pay fee."					},
 		{	terNO_ACCOUNT,			"terNO_ACCOUNT",			"The source account does not exist."				},
 		{	terNO_DST,				"terNO_DST",				"The destination does not exist"					},
+		{	terNO_LINE,				"terNO_LINE",				"No such line."										},
 		{	terNO_LINE_NO_ZERO,		"terNO_LINE_NO_ZERO",		"Can't zero non-existant line, destination might make it."	},
 		{	terOFFER_NOT_FOUND,		"terOFFER_NOT_FOUND",		"Can not cancel offer."								},
 		{	terPRE_SEQ,				"terPRE_SEQ",				"Missing/inapplicable prior transaction"			},
@@ -3312,10 +3316,10 @@ bool PathState::lessPriority(const PathState::pointer& lhs, const PathState::poi
 // - A node names it's output.
 // - A ripple nodes output issuer must be the node's account or the next node's account.
 // - Offers can only go directly to another offer if the currency and issuer are an exact match.
-bool PathState::pushImply(uint160 uAccountID, uint160 uCurrencyID, uint160 uIssuerID)
+TER PathState::pushImply(uint160 uAccountID, uint160 uCurrencyID, uint160 uIssuerID)
 {
-	const paymentNode&	pnPrv	= vpnNodes.back();
-	bool				bValid	= true;
+	const paymentNode&	pnPrv		= vpnNodes.back();
+	TER					terResult	= tesSUCCESS;
 
 	Log(lsINFO) << "pushImply> "
 		<< NewcoinAddress::createHumanAccountID(uAccountID)
@@ -3326,7 +3330,7 @@ bool PathState::pushImply(uint160 uAccountID, uint160 uCurrencyID, uint160 uIssu
 	{
 		// Need to convert via an offer.
 
-		bValid	= pushNode(
+		terResult	= pushNode(
 					STPathElement::typeCurrency		// Offer.
 					 | STPathElement::typeIssuer,
 					ACCOUNT_ONE,	// Placeholder for offers.
@@ -3335,14 +3339,14 @@ bool PathState::pushImply(uint160 uAccountID, uint160 uCurrencyID, uint160 uIssu
 
 	}
 
-	if (bValid
+	if (tesSUCCESS == terResult
 		&& !!uCurrencyID					// Not stamps.
 		&& (pnPrv.uAccountID != uIssuerID	// Previous is not issuing own IOUs.
 			&& uAccountID != uIssuerID))	// Current is not receiving own IOUs.
 	{
 		// Need to ripple through uIssuerID's account.
 
-		bValid	= pushNode(
+		terResult	= pushNode(
 					STPathElement::typeAccount
 						| STPathElement::typeRedeem
 						| STPathElement::typeIssue,
@@ -3351,15 +3355,14 @@ bool PathState::pushImply(uint160 uAccountID, uint160 uCurrencyID, uint160 uIssu
 					uIssuerID);
 	}
 
-	Log(lsINFO) << "pushImply< " << bValid;
+	Log(lsINFO) << "pushImply< " << terResult;
 
-	return bValid;
+	return terResult;
 }
 
 // Append a node and insert before it any implied nodes.
-// <-- bValid: true, if node is valid. false, if node is malformed or missing credit link.
-// XXX Report missinge credit link distinct from malformed for retry.
-bool PathState::pushNode(int iType, uint160 uAccountID, uint160 uCurrencyID, uint160 uIssuerID)
+// <-- terResult: tesSUCCESS, temBAD_PATH, terNO_LINE
+TER PathState::pushNode(int iType, uint160 uAccountID, uint160 uCurrencyID, uint160 uIssuerID)
 {
 	Log(lsINFO) << "pushNode> "
 		<< NewcoinAddress::createHumanAccountID(uAccountID)
@@ -3378,7 +3381,7 @@ bool PathState::pushNode(int iType, uint160 uAccountID, uint160 uCurrencyID, uin
 	// true, iff account is allowed to redeem it's IOUs to next node.
 	const bool			bRedeem		= !!(iType & STPathElement::typeRedeem);
 	const bool			bIssue		= !!(iType & STPathElement::typeIssue);
-	bool				bValid		= true;
+	TER					terResult	= tesSUCCESS;
 
 	pnCur.uFlags		= iType;
 
@@ -3386,7 +3389,7 @@ bool PathState::pushNode(int iType, uint160 uAccountID, uint160 uCurrencyID, uin
 	{
 		Log(lsINFO) << "pushNode: bad bits.";
 
-		bValid	= false;
+		terResult	= temBAD_PATH;
 	}
 	else if (bAccount)
 	{
@@ -3403,13 +3406,13 @@ bool PathState::pushNode(int iType, uint160 uAccountID, uint160 uCurrencyID, uin
 			if (!bFirst)
 			{
 				// Add required intermediate nodes to deliver to current account.
-				bValid	= pushImply(
+				terResult	= pushImply(
 					pnCur.uAccountID,									// Current account.
 					pnCur.uCurrencyID,									// Wanted currency.
 					!!pnCur.uCurrencyID ? uAccountID : ACCOUNT_XNS);	// Account as issuer.
 			}
 
-			if (bValid && !vpnNodes.empty())
+			if (tesSUCCESS == terResult && !vpnNodes.empty())
 			{
 				const paymentNode&	pnBck		= vpnNodes.back();
 				bool				bBckAccount	= !!(pnBck.uFlags & STPathElement::typeAccount);
@@ -3428,7 +3431,7 @@ bool PathState::pushNode(int iType, uint160 uAccountID, uint160 uCurrencyID, uin
 							<< STAmount::createHumanCurrency(pnPrv.uCurrencyID)
 							<< "." ;
 
-						bValid	= false;
+						terResult	= terNO_LINE;
 					}
 					else
 					{
@@ -3443,14 +3446,14 @@ bool PathState::pushNode(int iType, uint160 uAccountID, uint160 uCurrencyID, uin
 				}
 			}
 
-			if (bValid)
+			if (tesSUCCESS == terResult)
 				vpnNodes.push_back(pnCur);
 		}
 		else
 		{
 			Log(lsINFO) << "pushNode: Account must redeem and/or issue.";
 
-			bValid	= false;
+			terResult	= temBAD_PATH;
 		}
 	}
 	else
@@ -3458,7 +3461,7 @@ bool PathState::pushNode(int iType, uint160 uAccountID, uint160 uCurrencyID, uin
 		// Offer link
 		if (bRedeem || bIssue)
 		{
-			bValid	= false;
+			terResult	= temBAD_PATH;
 		}
 		else
 		{
@@ -3471,7 +3474,7 @@ bool PathState::pushNode(int iType, uint160 uAccountID, uint160 uCurrencyID, uin
 				// Previous is an account.
 
 				// Insert intermediary account if needed.
-				bValid	= pushImply(
+				terResult	= pushImply(
 					!!pnPrv.uCurrencyID ? ACCOUNT_ONE : ACCOUNT_XNS,
 					pnPrv.uCurrencyID,
 					pnPrv.uIssuerID);
@@ -3483,7 +3486,7 @@ bool PathState::pushNode(int iType, uint160 uAccountID, uint160 uCurrencyID, uin
 				nothing();
 			}
 
-			if (bValid)
+			if (tesSUCCESS == terResult)
 			{
 				// Verify that previous account is allowed to issue.
 				const paymentNode&	pnBck		= vpnNodes.back();
@@ -3494,17 +3497,17 @@ bool PathState::pushNode(int iType, uint160 uAccountID, uint160 uCurrencyID, uin
 				{
 					Log(lsINFO) << "pushNode: previous account must be allowed to issue.";
 
-					bValid	= false;						// Malformed path.
+					terResult = temBAD_PATH;
 				}
 			}
 
-			if (bValid)
+			if (tesSUCCESS == terResult)
 				vpnNodes.push_back(pnCur);
 		}
 	}
-	Log(lsINFO) << "pushNode< " << bValid;
+	Log(lsINFO) << "pushNode< " << terResult;
 
-	return bValid;
+	return terResult;
 }
 
 PathState::PathState(
@@ -3531,7 +3534,7 @@ PathState::PathState(
 	saOutReq				= saSend;
 
 	// Push sending node.
-	bValid	= pushNode(
+	terStatus	= pushNode(
 		STPathElement::typeAccount
 			| STPathElement::typeRedeem
 			| STPathElement::typeIssue
@@ -3543,18 +3546,18 @@ PathState::PathState(
 
 	BOOST_FOREACH(const STPathElement& speElement, spSourcePath)
 	{
-		if (bValid)
-			bValid	= pushNode(speElement.getNodeType(), speElement.getAccountID(), speElement.getCurrency(), speElement.getIssuerID());
+		if (tesSUCCESS == terStatus)
+			terStatus	= pushNode(speElement.getNodeType(), speElement.getAccountID(), speElement.getCurrency(), speElement.getIssuerID());
 	}
 
-	if (bValid)
+	if (tesSUCCESS == terStatus)
 	{
 		// Create receiver node.
 
-		bValid	= pushImply(uReceiverID, uOutCurrencyID, uOutIssuerID);
-		if (bValid)
+		terStatus	= pushImply(uReceiverID, uOutCurrencyID, uOutIssuerID);
+		if (tesSUCCESS == terStatus)
 		{
-			bValid	= pushNode(
+			terStatus	= pushNode(
 				STPathElement::typeAccount						// Last node is always an account.
 					| STPathElement::typeRedeem					// Does not matter just pass error check.
 					| STPathElement::typeIssue					// Does not matter just pass error check.
@@ -3566,14 +3569,14 @@ PathState::PathState(
 		}
 	}
 
-	if (bValid)
+	if (tesSUCCESS == terStatus)
 	{
 		// Look for first mention of source in nodes and detect loops.
 		// Note: The output is not allowed to be a source.
 
 		const unsigned int	uNodes	= vpnNodes.size();
 
-		for (unsigned int uIndex = 0; bValid && uIndex != uNodes; ++uIndex)
+		for (unsigned int uIndex = 0; tesSUCCESS == terStatus && uIndex != uNodes; ++uIndex)
 		{
 			const paymentNode&	pnCur	= vpnNodes[uIndex];
 
@@ -3588,7 +3591,7 @@ PathState::PathState(
 				Log(lsINFO) << boost::str(boost::format("PathState: loop detected: %s")
 					% getJson());
 
-				bValid	= false;
+				terStatus	= temBAD_PATH_LOOP;
 			}
 		}
 	}
@@ -3653,7 +3656,7 @@ Json::Value	PathState::getJson() const
 		jvNodes.append(jvNode);
 	}
 
-	jvPathState["valid"]	= bValid;
+	jvPathState["status"]	= terStatus;
 	jvPathState["index"]	= mIndex;
 	jvPathState["nodes"]	= jvNodes;
 
@@ -3733,14 +3736,14 @@ void TransactionEngine::pathNext(const PathState::pointer& pspCur, const int iPa
 	pspCur->vUnfundedBecame.clear();
 	pspCur->umReverse.clear();
 
-	pspCur->bValid	= calcNode(uLast, pspCur, iPaths == 1);
+	pspCur->terStatus	= calcNode(uLast, pspCur, iPaths == 1);
 
-	Log(lsINFO) << "pathNext: bValid="
-		<< pspCur->bValid
+	Log(lsINFO) << "pathNext: terStatus="
+		<< pspCur->terStatus
 		<< " saOutAct=" << pspCur->saOutAct.getText()
 		<< " saInAct=" << pspCur->saInAct.getText();
 
-	pspCur->uQuality	= pspCur->bValid
+	pspCur->uQuality	= tesSUCCESS == pspCur->terStatus
 		? STAmount::getRate(pspCur->saOutAct, pspCur->saInAct)	// Calculate relative quality.
 		: 0;													// Mark path as inactive.
 
@@ -3871,6 +3874,8 @@ TER TransactionEngine::doPayment(const SerializedTransaction& txn)
 	// Incrementally search paths.
 	std::vector<PathState::pointer>	vpsPaths;
 
+	TER				terResult	= temUNCERTAIN;
+
 	if (!bNoRippleDirect)
 	{
 		// Direct path.
@@ -3889,7 +3894,19 @@ TER TransactionEngine::doPayment(const SerializedTransaction& txn)
 			bPartialPayment);
 
 		if (pspDirect)
+		{
+			// Return if malformed.
+			if (pspDirect->terStatus >= temMALFORMED && pspDirect->terStatus < tefFAILURE)
+				return pspDirect->terStatus;
+
+			if (tesSUCCESS == pspDirect->terStatus)
+			{
+				// Had a success.
+				terResult	= tesSUCCESS;
+			}
+
 			vpsPaths.push_back(pspDirect);
+		}
 	}
 
 	Log(lsINFO) << "doPayment: Paths: " << spsPaths.getPathCount();
@@ -3910,15 +3927,40 @@ TER TransactionEngine::doPayment(const SerializedTransaction& txn)
 			bPartialPayment);
 
 		if (pspExpanded)
+		{
+			// Return if malformed.
+			if (pspExpanded->terStatus >= temMALFORMED && pspExpanded->terStatus < tefFAILURE)
+				return pspExpanded->terStatus;
+
+			if (tesSUCCESS == pspExpanded->terStatus)
+			{
+				// Had a success.
+				terResult	= tesSUCCESS;
+			}
+
 			vpsPaths.push_back(pspExpanded);
+		}
 	}
 
-	TER				terResult;
+	if (vpsPaths.empty())
+	{
+		return tefEXCEPTION;
+	}
+	else if (tesSUCCESS != terResult)
+	{
+		// No path successes.
+
+		return vpsPaths[0]->terStatus;
+	}
+	else
+	{
+		terResult	= temUNCERTAIN;
+	}
+
 	STAmount		saPaid;
 	STAmount		saWanted;
-	LedgerEntrySet	lesBase	= mNodes;	// Checkpoint with just fees paid.
+	LedgerEntrySet	lesBase		= mNodes;	// Checkpoint with just fees paid.
 
-	terResult	= temUNCERTAIN;
 	while (temUNCERTAIN == terResult)
 	{
 		PathState::pointer	pspBest;

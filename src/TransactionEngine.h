@@ -33,6 +33,8 @@ enum TER	// aka TransactionEngineResult
 	temBAD_EXPIRATION,
 	temBAD_ISSUER,
 	temBAD_OFFER,
+	temBAD_PATH,
+	temBAD_PATH_LOOP,
 	temBAD_PUBLISH,
 	temBAD_SET_ID,
 	temCREATEXNS,
@@ -57,6 +59,7 @@ enum TER	// aka TransactionEngineResult
 	tefBAD_LEDGER,
 	tefCLAIMED,
 	tefCREATED,
+	tefEXCEPTION,
 	tefGEN_IN_USE,
 	tefPAST_SEQ,
 
@@ -68,6 +71,7 @@ enum TER	// aka TransactionEngineResult
 	terINSUF_FEE_B,
 	terNO_ACCOUNT,
 	terNO_DST,
+	terNO_LINE,
 	terNO_LINE_NO_ZERO,
 	terOFFER_NOT_FOUND, // XXX If we check sequence first this could be hard failure.
 	terPRE_SEQ,
@@ -131,26 +135,26 @@ class PathState
 protected:
 	Ledger::pointer				mLedger;
 
-	bool pushNode(int iType, uint160 uAccountID, uint160 uCurrencyID, uint160 uIssuerID);
-	bool pushImply(uint160 uAccountID, uint160 uCurrencyID, uint160 uIssuerID);
+	TER		pushNode(int iType, uint160 uAccountID, uint160 uCurrencyID, uint160 uIssuerID);
+	TER		pushImply(uint160 uAccountID, uint160 uCurrencyID, uint160 uIssuerID);
 
 public:
 	typedef boost::shared_ptr<PathState> pointer;
 
-	bool							bValid;
-	std::vector<paymentNode>		vpnNodes;
+	TER							terStatus;
+	std::vector<paymentNode>	vpnNodes;
 
 	// When processing, don't want to complicate directory walking with deletion.
-	std::vector<uint256>			vUnfundedBecame;	// Offers that became unfunded.
+	std::vector<uint256>		vUnfundedBecame;	// Offers that became unfunded.
 
 	// First time working foward a funding source was mentioned for accounts. Source may only be used there.
-	curIssuerNode	umForward;	// Map of currency, issuer to node index.
+	curIssuerNode				umForward;	// Map of currency, issuer to node index.
 
 	// First time working in reverse a funding source was used.
 	// Source may only be used there if not mentioned by an account.
-	curIssuerNode	umReverse;	// Map of currency, issuer to node index.
+	curIssuerNode				umReverse;	// Map of currency, issuer to node index.
 
-	LedgerEntrySet					lesEntries;
+	LedgerEntrySet				lesEntries;
 
 	int							mIndex;
 	uint64						uQuality;		// 0 = none.
@@ -185,9 +189,7 @@ public:
 		const bool				bPartialPayment
 		)
 	{
-		PathState::pointer	pspNew = boost::make_shared<PathState>(lpLedger, iIndex, lesSource, spSourcePath, uReceiverID, uSenderID, saSend, saSendMax, bPartialPayment);
-
-		return pspNew && pspNew->bValid ? pspNew : PathState::pointer();
+		return boost::make_shared<PathState>(lpLedger, iIndex, lesSource, spSourcePath, uReceiverID, uSenderID, saSend, saSendMax, bPartialPayment);
 	}
 
 	static bool lessPriority(const PathState::pointer& lhs, const PathState::pointer& rhs);
