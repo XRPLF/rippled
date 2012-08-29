@@ -200,6 +200,8 @@ LedgerConsensus::LedgerConsensus(const uint256& prevLCLHash, const Ledger::point
 	mCurrentMSeconds(0), mClosePercent(0), mHaveCloseTimeConsensus(false)
 {
 	mValSeed = theConfig.VALIDATION_SEED;
+	mConsensusStartTime = boost::posix_time::microsec_clock::universal_time();
+
 	Log(lsDEBUG) << "Creating consensus object";
 	Log(lsTRACE) << "LCL:" << previousLedger->getHash().GetHex() <<", ct=" << closeTime;
 	mPreviousProposers = theApp->getOPs().getPreviousProposers();
@@ -491,8 +493,8 @@ void LedgerConsensus::timerEntry()
 			Log(lsINFO) << "Need consensus ledger " << mPrevLedgerHash.GetHex();
 	}
 
-	mCurrentMSeconds = (mCloseTime == 0) ? 0 :
-			(boost::posix_time::microsec_clock::universal_time() - mConsensusStartTime).total_milliseconds();
+	mCurrentMSeconds =
+		(boost::posix_time::microsec_clock::universal_time() - mConsensusStartTime).total_milliseconds();
 	mClosePercent = mCurrentMSeconds * 100 / mPreviousMSeconds;
 
 	switch (mState)
