@@ -19,14 +19,22 @@ enum TER	// aka TransactionEngineResult
 	// Note: Range is stable.  Exact numbers are currently unstable.  Use tokens.
 
 	// -399 .. -300: L Local error (transaction fee inadequate, exceeds local limit)
-	// Not forwarded, no fee. Only valid during non-consensus processing
+	// Only valid during non-consensus processing.
+	// Implications:
+	// - Not forwarded
+	// - No fee check
 	telLOCAL_ERROR	= -399,
 	telBAD_PATH_COUNT,
 	telINSUF_FEE_P,
 
 	// -299 .. -200: M Malformed (bad signature)
-	// Transaction corrupt, not forwarded, cannot charge fee, reject
-	// Never can succeed in any ledger
+	// Causes:
+	// - Transaction corrupt.
+	// Implications:
+	// - Not applied
+	// - Not forwarded
+	// - Reject
+	// - Can not succeed in any imagined ledger.
 	temMALFORMED	= -299,
 	temBAD_AMOUNT,
 	temBAD_AUTH_MASTER,
@@ -48,8 +56,14 @@ enum TER	// aka TransactionEngineResult
 	temUNKNOWN,
 
 	// -199 .. -100: F Failure (sequence number previously used)
-	// Transaction cannot succeed because of ledger state, unexpected ledger state, C++ exception, not forwarded, cannot be
-	// applied, Could succeed in an imaginary ledger.
+	// Causes:
+	// - Transaction cannot succeed because of ledger state.
+	// - Unexpected ledger state.
+	// - C++ exception.
+	// Implications:
+	// - Not applied
+	// - Not forwarded
+	// - Could succeed in an imaginared ledger.
 	tefFAILURE		= -199,
 	tefALREADY,
 	tefBAD_ADD_AUTH,
@@ -64,7 +78,13 @@ enum TER	// aka TransactionEngineResult
 	tefPAST_SEQ,
 
 	// -99 .. -1: R Retry (sequence too high, no funds for txn fee, originating account non-existent)
-	// Transaction cannot be applied, not forwarded, might succeed later, hold
+	// Causes:
+	// - Priror application of another, possibly non-existant, transaction could allow this transaction to succeed.
+	// Implications:
+	// - Not applied
+	// - Not forwarded
+	// - Might succeed later
+	// - Hold
 	terRETRY		= -99,
 	terDIR_FULL,
 	terFUNDS_SPENT,
@@ -79,14 +99,20 @@ enum TER	// aka TransactionEngineResult
 	terUNFUNDED,
 
 	// 0: S Success (success)
-	// Transaction succeeds, can be applied, can charge fee, forwarded
-	// applyTransaction: addTransaction and destroyCoins
+	// Causes:
+	// - Success.
+	// Implications:
+	// - Applied
+	// - Forwarded
 	tesSUCCESS		= 0,
 
 	// 100 .. P Partial success (SR) (ripple transaction with no good paths, pay to non-existent account)
-	// Transaction can be applied, forwarded, but does not achieve optimal result.
-	// Only allowed as a return code of appliedTransaction when !tapRetry.
-	// applyTransaction: addTransaction and destroyCoins
+	// Causes:
+	// - Success, but does not achieve optimal result.
+	// Implications:
+	// - Applied
+	// - Forwarded
+	// Only allowed as a return code of appliedTransaction when !tapRetry. Otherwise, treated as terRETRY.
 	tepPARTIAL		= 100,
 	tepPATH_DRY,
 	tepPATH_PARTIAL,

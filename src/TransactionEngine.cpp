@@ -2204,6 +2204,7 @@ TER TransactionEngine::calcNodeOfferRev(
 	return terResult;
 }
 
+// Offer input and output is issuer or limbo.
 TER TransactionEngine::calcNodeOfferFwd(
 	const unsigned int			uIndex,				// 0 < uIndex < uLast
 	const PathState::pointer&	pspCur,
@@ -2223,7 +2224,7 @@ TER TransactionEngine::calcNodeOfferFwd(
 	const uint160&	uNxtCurrencyID	= pnNxt.uCurrencyID;
 	const uint160&	uNxtIssuerID	= pnNxt.uIssuerID;
 
-//	const uint160&	uPrvAccountID	= pnPrv.uAccountID;
+	const uint160&	uPrvAccountID	= pnPrv.uAccountID;
 	const uint160&	uNxtAccountID	= pnNxt.uAccountID;
 	const STAmount	saTransferRate	= STAmount::saFromRate(rippleTransferRate(uCurIssuerID));
 
@@ -2234,15 +2235,28 @@ TER TransactionEngine::calcNodeOfferFwd(
 	const STAmount&	saPrvDlvReq		= pnPrv.saFwdDeliver;	// Forward driver.
 	STAmount		saPrvDlvAct;
 
-	STAmount&		saCurDlvReq		= pnCur.saFwdDeliver;
-	STAmount		saCurDlvAct;
+	STAmount&		saCurDlvAct		= pnCur.saFwdDeliver;	// How much current node will deliver.
+		saCurDlvAct;	= 0;
 
-	while (!!uDirectTip										// Have a quality.
-		&& saPrvDlvAct != saPrvDlvReq)
+	bool			bNxtOffer		= !uNxtAccountID;
+	uint256			uNxtTip;
+	uint256			uNxtEnd;
+	bool			bNxtDirAdvance;
+	bool			bNxtSubAdvance;
+
+	if (bNxtOffer)
 	{
-		// Get next quality.
+		uNxtTip			= Ledger::getBookBase(uCurCurrencyID, uCurIssuerID, uNxtCurrencyID, uNxtIssuerID);
+		uNxtEnd			= Ledger::getQualityNext(uNxtTip);
+		bNxtDirAdvance	= !entryCache(ltDIR_NODE, uNxtTip);
+		bNxtSubAdvance	= true;
+	}
+
+	while (!!uDirectTip && saPrvDlvAct != saPrvDlvReq)	// Have a quality and not done.
+	{
 		if (bAdvance)
 		{
+			// Get next quality.
 			uDirectTip		= mLedger->getNextLedgerIndex(uDirectTip, uDirectEnd);
 		}
 		else
@@ -2291,10 +2305,7 @@ TER TransactionEngine::calcNodeOfferFwd(
 				}
 
 				const STAmount&	saCurOfrOutReq		= sleOffer->getIValueFieldAmount(sfTakerGets);
-				const STAmount&	saCurOfrInReq		= sleOffer->getIValueFieldAmount(sfTakerPays);
-				STAmount		saCurOfrInAct;
 				STAmount		saCurOfrFunds		= accountFunds(uCurOfrAccountID, saCurOfrOutReq);	// Funds left.
-				STAmount		saCurOfrInMax		= MIN(saCurOfrInReq, saPrvDlvReq-saPrvDlvAct);
 
 				if (!saCurOfrFunds)
 				{
@@ -2305,6 +2316,12 @@ TER TransactionEngine::calcNodeOfferFwd(
 					nothing();
 					continue;
 				}
+
+				const STAmount&	saCurOfrInReq		= sleOffer->getIValueFieldAmount(sfTakerPays);
+				STAmount		saCurOfrInMax		= MIN(saCurOfrInReq, saPrvDlvReq-saPrvDlvAct);
+				STAmount		saCurOfrInAct;
+
+				STAmount		saInDlvAct;
 
 				if (!!uNxtAccountID)
 				{
@@ -2328,8 +2345,9 @@ TER TransactionEngine::calcNodeOfferFwd(
 					const STAmount	saOutDlvAct	= bFee
 													? STAmount::divide(saOutCost, saFeeRate, uCurCurrencyID, uCurIssuerID)
 													: saOutCost;						// Out amount after fees.
+
 					// Compute input w/o fees required.
-					const STAmount	saInDlvAct	= STAmount::multiply(saOutDlvAct, saOfrRate, uPrvCurrencyID, uPrvIssuerID);
+					saInDlvAct	= STAmount::multiply(saOutDlvAct, saOfrRate, uPrvCurrencyID, uPrvIssuerID);
 
 					// Deliver to output.
 					accountSend(uCurOfrAccountID, uNxtAccountID, saOutDlvAct);
@@ -2341,20 +2359,15 @@ TER TransactionEngine::calcNodeOfferFwd(
 					// Next is an offer node.
 					// Need to step through next offer's nodes to figure out fees.
 
-					uint256			uNxtTip		= Ledger::getBookBase(uCurCurrencyID, uCurIssuerID, uNxtCurrencyID, uNxtIssuerID);
-					const uint256	uNxtEnd		= Ledger::getQualityNext(uNxtTip);
-					bool			bNxtAdvance	= !entryCache(ltDIR_NODE, uNxtTip);
+					STAmount	saOutDlvAct;
 
-					while (!!uNxtTip					// Have a quality.
-						&& saPrvDlvAct != saPrvDlvReq)	// Have more to do.
+					while (!!uNxtTip && saCurOfrInAct != saCurOfrInMax)	// An offer may be available and have more to do.
 					{
-						if (bNxtAdvance)
+						if (bNxtDirAdvance)
 						{
-							uNxtTip		= mLedger->getNextLedgerIndex(uNxtTip, uNxtEnd);
-						}
-						else
-						{
-							bNxtAdvance		= true;
+							uNxtTip			= mLedger->getNextLedgerIndex(uNxtTip, uNxtEnd);
+							bNxtSubAdvance	= true;
+							bNxtDirAdvance	= false;
 						}
 
 						if (!!uNxtTip)
@@ -2366,10 +2379,25 @@ TER TransactionEngine::calcNodeOfferFwd(
 							unsigned int	uEntry			= 0;
 							uint256			uNxtIndex;
 
-							while (saPrvDlvReq != saPrvDlvAct	// Have not met request.
-								&& dirNext(uNxtTip, sleNxtDir, uEntry, uNxtIndex))
+							while (saCurOfrInAct != saCurOfrInMax)	// Have not met request.
 							{
-								// YYY This could combine offers with the same fee before doing math.
+								if (!bNxtSubAdvance)
+								{
+									// Continue with current uNxtIndex.
+									nothing();
+								}
+								else if (dirNext(uNxtTip, sleNxtDir, uEntry, uNxtIndex))
+								{
+									// Found a next uNxtIndex.
+									bNxtSubAdvance	= false;
+								}
+								else
+								{
+									// No more offers in directory.
+									bNxtDirAdvance	= true;
+									break;
+								}
+
 								SLE::pointer	sleNxtOfr			= entryCache(ltOFFER, uNxtIndex);
 								const uint160	uNxtOfrAccountID	= sleNxtOfr->getIValueFieldAccount(sfAccount).getAccountID();
 								const STAmount&	saNxtOfrIn			= sleNxtOfr->getIValueFieldAmount(sfTakerPays);
@@ -2389,14 +2417,19 @@ TER TransactionEngine::calcNodeOfferFwd(
 																? STAmount::multiply(saOutBase, saFeeRate, uCurCurrencyID, uCurIssuerID)
 																: saOutBase,
 															saCurOfrFunds);								// Limit cost by fees & funds.
-								const STAmount	saOutDlvAct	= bFee
+								const STAmount	saOutDlvPass= bFee
 																? STAmount::divide(saOutCost, saFeeRate, uCurCurrencyID, uCurIssuerID)
 																: saOutCost;							// Out amount after fees.
-								const STAmount	saInDlvAct	= STAmount::multiply(saOutDlvAct, saOfrRate, uPrvCurrencyID, uCurIssuerID);	// Compute input w/o fees required.
+								const STAmount	saInDlvPass	= STAmount::multiply(saOutDlvPass, saOfrRate, uPrvCurrencyID, uCurIssuerID);	// Compute input w/o fees required.
 
-								saCurOfrInAct			+= saOutDlvAct;									// Portion of driver served.
-								saPrvDlvAct				+= saOutDlvAct;									// Portion needed in previous.
-								saCurDlvAct				+= saInDlvAct;									// Portion of driver served.
+								saCurOfrInAct			+= saOutDlvPass;								// Portion of driver served.
+								saCurDlvAct				+= saInDlvPass;									// Portion of driver served.
+
+								// Deliver input
+								saInDlvAct	+= saInDlvPass;
+
+								// Deliver output.
+								saOutDlvAct	+= saOutDlvPass;
 							}
 						}
 
@@ -2404,7 +2437,7 @@ TER TransactionEngine::calcNodeOfferFwd(
 						if (!bMultiQuality)
 							uNxtTip	= 0;
 					}
-#if 0
+
 					// Deliver output to limbo or currency issuer.
 					accountSend(
 						uCurOfrAccountID,		// Offer owner pays.
@@ -2412,11 +2445,9 @@ TER TransactionEngine::calcNodeOfferFwd(
 							? uCurIssuerID	// Output is non-XNS send to issuer.
 							: ACCOUNT_XNS,	// Output is XNS send to limbo (ACCOUNT_XNS).
 						saOutDlvAct);
-#endif
 				}
 
 				// Deliver input to offer owner.
-#if 0
 				accountSend(
 					!!uPrvAccountID
 						? uPrvAccountID		// Previous is an account. Source is previous account.
@@ -2427,7 +2458,6 @@ TER TransactionEngine::calcNodeOfferFwd(
 					saInDlvAct);
 
 				saPrvDlvAct				+= saInDlvAct;									// Portion needed in previous.
-#endif
 			}
 		}
 
@@ -2436,13 +2466,7 @@ TER TransactionEngine::calcNodeOfferFwd(
 			uDirectTip	= 0;
 	}
 
-	if (saCurDlvAct)
-	{
-		saCurDlvReq	= saCurDlvAct;	// Adjust request.
-		terResult	= tesSUCCESS;
-	}
-
-	return terResult;
+	return !!saCurDlvAct ? tesSUCCESS : terResult;
 }
 
 #if 0
