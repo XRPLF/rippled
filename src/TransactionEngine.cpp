@@ -372,6 +372,8 @@ STAmount TransactionEngine::rippleSend(const uint160& uSenderID, const uint160& 
 	STAmount		saActual;
 	const uint160	uIssuerID	= saAmount.getIssuer();
 
+	assert(!!uSenderID && !!uReceiverID);
+
 	if (uSenderID == uIssuerID || uReceiverID == uIssuerID)
 	{
 		// Direct send: redeeming IOUs and/or sending own IOUs.
@@ -396,43 +398,53 @@ STAmount TransactionEngine::rippleSend(const uint160& uSenderID, const uint160& 
 	return saActual;
 }
 
-STAmount TransactionEngine::accountSend(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount)
+void TransactionEngine::accountSend(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount)
 {
-	STAmount	saActualCost;
+	assert(!saAmount.isNegative());
 
-	if (saAmount.isNative())
+	if (!saAmount)
 	{
-		SLE::pointer		sleSender	= entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uSenderID));
-		SLE::pointer		sleReceiver	= entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uReceiverID));
+		nothing();
+	}
+	else if (saAmount.isNative())
+	{
+		SLE::pointer		sleSender	= !!uSenderID
+											? entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uSenderID))
+											: SLE::pointer();
+		SLE::pointer		sleReceiver	= !!uReceiverID
+											? entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uReceiverID))
+											: SLE::pointer();
 
 		Log(lsINFO) << boost::str(boost::format("accountSend> %s (%s) -> %s (%s) : %s")
 			% NewcoinAddress::createHumanAccountID(uSenderID)
-			% (sleSender->getIValueFieldAmount(sfBalance)).getFullText()
+			% (sleSender ? (sleSender->getIValueFieldAmount(sfBalance)).getFullText() : "-")
 			% NewcoinAddress::createHumanAccountID(uReceiverID)
-			% (sleReceiver->getIValueFieldAmount(sfBalance)).getFullText()
+			% (sleReceiver ? (sleReceiver->getIValueFieldAmount(sfBalance)).getFullText() : "-")
 			% saAmount.getFullText());
 
-		sleSender->setIFieldAmount(sfBalance, sleSender->getIValueFieldAmount(sfBalance) - saAmount);
-		sleReceiver->setIFieldAmount(sfBalance, sleReceiver->getIValueFieldAmount(sfBalance) + saAmount);
+		if (sleSender)
+		{
+			sleSender->setIFieldAmount(sfBalance, sleSender->getIValueFieldAmount(sfBalance) - saAmount);
+			entryModify(sleSender);
+		}
+
+		if (sleReceiver)
+		{
+			sleReceiver->setIFieldAmount(sfBalance, sleReceiver->getIValueFieldAmount(sfBalance) + saAmount);
+			entryModify(sleReceiver);
+		}
 
 		Log(lsINFO) << boost::str(boost::format("accountSend< %s (%s) -> %s (%s) : %s")
 			% NewcoinAddress::createHumanAccountID(uSenderID)
-			% (sleSender->getIValueFieldAmount(sfBalance)).getFullText()
+			% (sleSender ? (sleSender->getIValueFieldAmount(sfBalance)).getFullText() : "-")
 			% NewcoinAddress::createHumanAccountID(uReceiverID)
-			% (sleReceiver->getIValueFieldAmount(sfBalance)).getFullText()
+			% (sleReceiver ? (sleReceiver->getIValueFieldAmount(sfBalance)).getFullText() : "-")
 			% saAmount.getFullText());
-
-		entryModify(sleSender);
-		entryModify(sleReceiver);
-
-		saActualCost	= saAmount;
 	}
 	else
 	{
-		saActualCost	= rippleSend(uSenderID, uReceiverID, saAmount);
+		rippleSend(uSenderID, uReceiverID, saAmount);
 	}
-
-	return saActualCost;
 }
 
 TER TransactionEngine::offerDelete(const SLE::pointer& sleOffer, const uint256& uOfferIndex, const uint160& uOwnerID)
@@ -973,7 +985,7 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn,
 		naSigningPubKey	= NewcoinAddress::createAccountPublic(txn.peekSigningPubKey());
 
 	// Consistency: really signed.
-	if ((tesSUCCESS == terResult) && ((params & tapNO_CHECK_SIGN) == 0) && !txn.checkSign(naSigningPubKey))
+	if ((tesSUCCESS == terResult) && !isSetBit(params, tapNO_CHECK_SIGN) && !txn.checkSign(naSigningPubKey))
 	{
 		Log(lsWARNING) << "applyTransaction: Invalid transaction: bad signature";
 
@@ -1032,12 +1044,12 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn,
 
 	STAmount saPaid = txn.getTransactionFee();
 
-	if (tesSUCCESS == terResult && (params & tapOPEN_LEDGER) != tapNONE)
-	{ // Applying to open ledger, check fee
+	if (tesSUCCESS == terResult)
+	{
 		if (!!saCost)
 		{
-			// XXX DO NOT CHECK ON CONSENSUS PASS
-			if (saPaid < saCost)
+			// Only check fee is sufficient when the ledger is open.
+			if (isSetBit(params, tapOPEN_LEDGER) && saPaid < saCost)
 			{
 				Log(lsINFO) << "applyTransaction: insufficient fee";
 
@@ -1309,26 +1321,38 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn,
 
 	Log(lsINFO) << "applyTransaction: terResult=" << strToken << " : " << terResult << " : " << strHuman;
 
-	if (tesSUCCESS == terResult)
+	if (terResult >= tepPATH_PARTIAL && isSetBit(params, tapRETRY))
 	{
+		// Partial result and allowed to retry, reclassify as a retry.
+		terResult	= terRETRY;
+	}
+
+	if (tesSUCCESS == terResult || terResult >= tepPATH_PARTIAL)
+	{
+		// Transaction succeeded fully or (retries are not allowed and the transaction succeeded partially).
 		txnWrite();
 
 		Serializer s;
 
 		txn.add(s);
 
-		// XXX add failed status too
-		// XXX do fees as need.
 		if (!mLedger->addTransaction(txID, s))
 			assert(false);
 
-		if ((params & tapOPEN_LEDGER) == tapNONE)
-			mLedger->destroyCoins(saPaid.getNValue());
+		// Charge whatever fee they specified.
+		mLedger->destroyCoins(saPaid.getNValue());
 	}
 
 	mTxnAccount	= SLE::pointer();
 	mNodes.clear();
 	musUnfundedFound.clear();
+
+	if (!isSetBit(params, tapOPEN_LEDGER)
+		&& ((terResult >= temMALFORMED && terResult <= tefFAILURE)
+			|| ((terResult >= tefFAILURE && terResult <= terRETRY))))
+	{
+		// XXX Malformed or failed transaction in closed ledger must bow out.
+	}
 
 	return terResult;
 }
@@ -1995,6 +2019,7 @@ TER TransactionEngine::calcNodeOfferRev(
 				if (bFoundForward || itAllow->second != uIndex)
 				{
 					// Temporarily unfunded. Another node uses this source, ignore in this node.
+					Log(lsINFO) << "calcNodeOfferRev: temporarily unfunded offer";
 
 					nothing();
 					continue;
@@ -2198,6 +2223,7 @@ TER TransactionEngine::calcNodeOfferFwd(
 	const uint160&	uNxtCurrencyID	= pnNxt.uCurrencyID;
 	const uint160&	uNxtIssuerID	= pnNxt.uIssuerID;
 
+//	const uint160&	uPrvAccountID	= pnPrv.uAccountID;
 	const uint160&	uNxtAccountID	= pnNxt.uAccountID;
 	const STAmount	saTransferRate	= STAmount::saFromRate(rippleTransferRate(uCurIssuerID));
 
@@ -2231,50 +2257,63 @@ TER TransactionEngine::calcNodeOfferFwd(
 			SLE::pointer	sleDirectDir	= entryCache(ltDIR_NODE, uDirectTip);
 			STAmount		saOfrRate		= STAmount::setRate(Ledger::getQuality(uDirectTip));	// For correct ratio
 			unsigned int	uEntry			= 0;
-			uint256			uCurIndex;
+			uint256			uOfferIndex;
 
 			while (saPrvDlvReq != saPrvDlvAct	// Have not met request.
-				&& dirNext(uDirectTip, sleDirectDir, uEntry, uCurIndex))
+				&& dirNext(uDirectTip, sleDirectDir, uEntry, uOfferIndex))
 			{
-				// Have an entry from the directory.
-				SLE::pointer	sleCurOfr			= entryCache(ltOFFER, uCurIndex);
-				uint160			uCurOfrAccountID	= sleCurOfr->getIValueFieldAccount(sfAccount).getAccountID();
-				const STAmount&	saCurOfrOutReq		= sleCurOfr->getIValueFieldAmount(sfTakerGets);
-				const STAmount&	saCurOfrInReq		= sleCurOfr->getIValueFieldAmount(sfTakerPays);
+				// Have an offer from the directory.
+				// Handle offers such that there is no need to look back to the previous nodes offers.
+
+				SLE::pointer				sleOffer			= entryCache(ltOFFER, uOfferIndex);
+				const uint160				uCurOfrAccountID	= sleOffer->getIValueFieldAccount(sfAccount).getAccountID();
+				const aciSource				asLine				= boost::make_tuple(uCurOfrAccountID, uCurCurrencyID, uCurIssuerID);
+				if (sleOffer->getIFieldPresent(sfExpiration) && sleOffer->getIFieldU32(sfExpiration) <= mLedger->getParentCloseTimeNC())
+				{
+					// Offer is expired.
+					Log(lsINFO) << "calcNodeOfferFwd: expired offer";
+
+					assert(musUnfundedFound.find(uOfferIndex) != musUnfundedFound.end());
+					continue;
+				}
+
+				// Allowed to access source from this node?
+				curIssuerNodeConstIterator	itAllow				= pspCur->umForward.find(asLine);
+				bool						bFoundForward		= itAllow != pspCur->umForward.end();
+
+				if (bFoundForward || itAllow->second != uIndex)
+				{
+					// Temporarily unfunded. Another node uses this source, ignore in this node.
+					Log(lsINFO) << "calcNodeOfferFwd: temporarily unfunded offer";
+
+					nothing();
+					continue;
+				}
+
+				const STAmount&	saCurOfrOutReq		= sleOffer->getIValueFieldAmount(sfTakerGets);
+				const STAmount&	saCurOfrInReq		= sleOffer->getIValueFieldAmount(sfTakerPays);
 				STAmount		saCurOfrInAct;
 				STAmount		saCurOfrFunds		= accountFunds(uCurOfrAccountID, saCurOfrOutReq);	// Funds left.
 				STAmount		saCurOfrInMax		= MIN(saCurOfrInReq, saPrvDlvReq-saPrvDlvAct);
 
 				if (!saCurOfrFunds)
 				{
-#ifdef WORK_IN_PROGRESS
 					// Offer is unfunded.
-					 pspCur->usUnfunded.add(uCurIndex);		// Add offer to found unfunded.
+					Log(lsINFO) << "calcNodeOfferFwd: unfunded offer";
 
-					entryDelete(sleCurOfr, true);			// Delete unfunded offer.
-
-					// Delete unfunded offer from owner's directory.
-					const uint64 uOwnerNode	= sleCurOffer->getIFieldU64(sfOwnerNode);
-
-					terResult	= dirDelete(
-									true,		// YYY We don't delete owner directories?
-									uOwnerNode,
-									uDirectTip,
-									uCurIndex);
-
-					// Delete unfunded offer from quality directory.
-					// XXX Need a dir walking version of delete.
-					terResult	= dirDelete(
-									false,	// Don't need to keep root.
-	const uint64&					uNodeDir,
-									uDirectTip,
-									uCurIndex);
-#endif
+					// YYY Could verify offer is correct place for unfundeds.
+					nothing();
+					continue;
 				}
-				else if (!!uNxtAccountID)
-				{
-					// Next is an account.
 
+				if (!!uNxtAccountID)
+				{
+					// Next is an account node.
+					// If previous is an account, then inbound funds can be credited offer with no fees or quality.
+					// Transfer fees were previously handled. XXX Verify.
+					// If previous is an offer, then inbound funds are with issuer or in limbo.
+
+					// The only fee ever charged is an output transfer fee.
 					const STAmount	saFeeRate	= uCurOfrAccountID == uCurIssuerID || uNxtAccountID == uCurIssuerID
 													? saOne
 													: saTransferRate;
@@ -2287,29 +2326,26 @@ TER TransactionEngine::calcNodeOfferFwd(
 													: saOutBase;
 					const STAmount	saOutCost	= MIN(saOutCostRaw, saCurOfrFunds);			// Limit cost by fees & funds.
 					const STAmount	saOutDlvAct	= bFee
-														? STAmount::divide(saOutCost, saFeeRate, uCurCurrencyID, uCurIssuerID)
-														: saOutCost;						// Out amount after fees.
+													? STAmount::divide(saOutCost, saFeeRate, uCurCurrencyID, uCurIssuerID)
+													: saOutCost;						// Out amount after fees.
 					// Compute input w/o fees required.
-					const STAmount	saInDlvAct	= STAmount::multiply(saOutDlvAct, saOfrRate, uCurCurrencyID, uCurIssuerID);
+					const STAmount	saInDlvAct	= STAmount::multiply(saOutDlvAct, saOfrRate, uPrvCurrencyID, uPrvIssuerID);
 
-					// XXX Send from offer owner
-//					accountSend(uCurIssuerID, uNxtAccountID, saOutDlvAct);
+					// Deliver to output.
+					accountSend(uCurOfrAccountID, uNxtAccountID, saOutDlvAct);
 
 					saCurDlvAct				+= saOutDlvAct;									// Portion of driver served.
-
-// XXX				accountCredit(uCurIssuerID, uNxtAccountID, saOutDlvAct);
-
-					saPrvDlvAct				+= saInDlvAct;									// Portion needed in previous.
 				}
 				else
 				{
-					// Next is an offer.
+					// Next is an offer node.
+					// Need to step through next offer's nodes to figure out fees.
 
 					uint256			uNxtTip		= Ledger::getBookBase(uCurCurrencyID, uCurIssuerID, uNxtCurrencyID, uNxtIssuerID);
 					const uint256	uNxtEnd		= Ledger::getQualityNext(uNxtTip);
 					bool			bNxtAdvance	= !entryCache(ltDIR_NODE, uNxtTip);
 
-					while (!!uNxtTip						// Have a quality.
+					while (!!uNxtTip					// Have a quality.
 						&& saPrvDlvAct != saPrvDlvReq)	// Have more to do.
 					{
 						if (bNxtAdvance)
@@ -2343,10 +2379,11 @@ TER TransactionEngine::calcNodeOfferFwd(
 																: saTransferRate;
 								const bool		bFee		= saFeeRate != saOne;
 
+// XXX Skip expireds and unfundeds.
 								const STAmount	saInBase	= saCurOfrInMax-saCurOfrInAct;
 								const STAmount	saOutPass	= STAmount::divide(saInBase, saOfrRate, uCurCurrencyID, uCurIssuerID);
-								STAmount		saOutBase	= MIN(saCurOfrOutReq, saOutPass);				// Limit offer out by needed.
-												saOutBase	= MIN(saOutBase, saNxtOfrIn);					// Limit offer out by supplying offer.
+								STAmount		saOutBase	= MIN(saCurOfrOutReq, saOutPass);			// Limit offer out by needed.
+												saOutBase	= MIN(saOutBase, saNxtOfrIn);				// Limit offer out by supplying offer.
 								const STAmount	saOutCost	= MIN(
 															bFee
 																? STAmount::multiply(saOutBase, saFeeRate, uCurCurrencyID, uCurIssuerID)
@@ -2367,7 +2404,30 @@ TER TransactionEngine::calcNodeOfferFwd(
 						if (!bMultiQuality)
 							uNxtTip	= 0;
 					}
+#if 0
+					// Deliver output to limbo or currency issuer.
+					accountSend(
+						uCurOfrAccountID,		// Offer owner pays.
+						!!uCurIssuerID
+							? uCurIssuerID	// Output is non-XNS send to issuer.
+							: ACCOUNT_XNS,	// Output is XNS send to limbo (ACCOUNT_XNS).
+						saOutDlvAct);
+#endif
 				}
+
+				// Deliver input to offer owner.
+#if 0
+				accountSend(
+					!!uPrvAccountID
+						? uPrvAccountID		// Previous is an account. Source is previous account.
+						: !!uPrvIssuerID
+							? ACCOUNT_XNS	// Previous is offer outputing XNS, source is limbo (ACCOUNT_XNS).
+							: uPrvIssuerID,	// Previous is offer outputing non-XNS, source is input issuer.
+					uCurOfrAccountID,		// Offer owner receives.
+					saInDlvAct);
+
+				saPrvDlvAct				+= saInDlvAct;									// Portion needed in previous.
+#endif
 			}
 		}
 

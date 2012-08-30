@@ -64,7 +64,7 @@ enum TER	// aka TransactionEngineResult
 	tefPAST_SEQ,
 
 	// -99 .. -1: R Retry (sequence too high, no funds for txn fee, originating account non-existent)
-	// Transaction cannot be applied, cannot charge fee, not forwarded, might succeed later, hold
+	// Transaction cannot be applied, not forwarded, might succeed later, hold
 	terRETRY		= -99,
 	terDIR_FULL,
 	terFUNDS_SPENT,
@@ -80,10 +80,13 @@ enum TER	// aka TransactionEngineResult
 
 	// 0: S Success (success)
 	// Transaction succeeds, can be applied, can charge fee, forwarded
+	// applyTransaction: addTransaction and destroyCoins
 	tesSUCCESS		= 0,
 
 	// 100 .. P Partial success (SR) (ripple transaction with no good paths, pay to non-existent account)
-	// Transaction can be applied, can charge fee, forwarded, but does not achieve optimal result.
+	// Transaction can be applied, forwarded, but does not achieve optimal result.
+	// Only allowed as a return code of appliedTransaction when !tapRetry.
+	// applyTransaction: addTransaction and destroyCoins
 	tepPARTIAL		= 100,
 	tepPATH_DRY,
 	tepPATH_PARTIAL,
@@ -271,7 +274,7 @@ protected:
 	STAmount			rippleSend(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount);
 
 	STAmount			accountHolds(const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID);
-	STAmount			accountSend(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount);
+	void				accountSend(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount);
 	STAmount			accountFunds(const uint160& uAccountID, const STAmount& saDefault);
 
 	PathState::pointer	pathCreate(const STPath& spPath);
