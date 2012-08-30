@@ -40,7 +40,7 @@ int ContinuousLedgerTiming::shouldClose(
 		}
 		if (previousMSeconds > (1000 * (LEDGER_IDLE_INTERVAL + 2))) // the last ledger was very slow to close
 		{
-			Log(lsTRACE) << "slow to close (p=" << (previousMSeconds) << ")";
+			Log(lsTRACE) << "was slow to converge (p=" << (previousMSeconds) << ")";
 			if (previousMSeconds < 2000)
 				return previousMSeconds;
 			return previousMSeconds - 1000;
