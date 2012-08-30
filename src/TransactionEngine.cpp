@@ -1239,10 +1239,10 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn,
 			terResult	= tefPAST_SEQ;
 		}
 	}
-	mTxnAccount->setIFieldU32(sfLastSignedSeq, mLedger->getLedgerSeq());
 
 	if (tesSUCCESS == terResult)
 	{
+		mTxnAccount->setIFieldU32(sfLastSignedSeq, mLedger->getLedgerSeq());
 		entryModify(mTxnAccount);
 
 		switch (txn.getTxnType())
