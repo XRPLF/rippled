@@ -303,7 +303,6 @@ void LedgerConsensus::takeInitialPosition(Ledger& initialLedger)
 {
 	SHAMap::pointer initialSet = initialLedger.peekTransactionMap()->snapShot(false);
 	uint256 txSet = initialSet->getHash();
-	assert (!mHaveCorrectLCL || (initialLedger.getParentHash() == mPreviousLedger->getHash()));
 
 	// if any peers have taken a contrary position, process disputes
 	boost::unordered_set<uint256> found;
