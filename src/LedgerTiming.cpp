@@ -17,7 +17,8 @@ int ContinuousLedgerTiming::shouldClose(
 	int previousProposers,		// proposers in the last closing
 	int proposersClosed,		// proposers who have currently closed this ledgers
 	int previousMSeconds,		// seconds the previous ledger took to reach consensus
-	int currentMSeconds)		// seconds since the previous ledger closed
+	int currentMSeconds,		// seconds since the previous ledger closed
+	int idleInterval)			// network's desired idle interval
 {
 	if ((previousMSeconds < -1000) || (previousMSeconds > 600000) ||
 		(currentMSeconds < -1000) || (currentMSeconds > 600000))
@@ -44,7 +45,7 @@ int ContinuousLedgerTiming::shouldClose(
 				return previousMSeconds;
 			return previousMSeconds - 1000;
 		}
-		return LEDGER_IDLE_INTERVAL * 1000; // normal idle
+		return idleInterval * 1000; // normal idle
 	}
 
 	Log(lsTRACE) << "close now";

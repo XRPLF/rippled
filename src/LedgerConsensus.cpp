@@ -421,21 +421,32 @@ void LedgerConsensus::statePreClose()
 	int proposersClosed = mPeerPositions.size();
 
 	// This ledger is open. This computes how long since the last ledger closed
-	int lastCloseTime;
-	if (!anyTransactions && mPreviousLedger->getCloseAgree())
+	uint32 lastCloseTime;
+	int ledgerInterval = 0;
+
+	if (mHaveCorrectLCL && mPreviousLedger->getCloseAgree())
+	{ // we can use consensus timing
 		lastCloseTime = mPreviousLedger->getCloseTimeNC();
+		ledgerInterval = 2 * mPreviousLedger->getCloseResolution();
+		if (ledgerInterval < LEDGER_IDLE_INTERVAL)
+			ledgerInterval = LEDGER_IDLE_INTERVAL;
+	}
 	else
-		lastCloseTime = theApp->getOPs().getLastCloseNetTime();
+	{
+		lastCloseTime = theApp->getOPs().getLastCloseTime();
+		ledgerInterval = LEDGER_IDLE_INTERVAL;
+	}
+
 	int sinceClose = 1000 * (theApp->getOPs().getCloseTimeNC() - lastCloseTime);
 
 	if (sinceClose >= ContinuousLedgerTiming::shouldClose(anyTransactions, mPreviousProposers, proposersClosed,
-		mPreviousMSeconds, sinceClose))
+		mPreviousMSeconds, sinceClose, ledgerInterval))
 	{ // it is time to close the ledger
 		Log(lsINFO) << "CLC: closing ledger";
 		mState = lcsESTABLISH;
 		mConsensusStartTime = boost::posix_time::microsec_clock::universal_time();
 		mCloseTime = theApp->getOPs().getCloseTimeNC();
-		theApp->getOPs().setLastCloseNetTime(mCloseTime);
+		theApp->getOPs().setLastCloseTime(mCloseTime);
 		statusChange(newcoin::neCLOSING_LEDGER, *mPreviousLedger);
 		takeInitialPosition(*theApp->getMasterLedger().closeLedger());
 	}

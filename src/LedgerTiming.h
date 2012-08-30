@@ -49,7 +49,8 @@ public:
 	static int shouldClose(
 		bool anyTransactions,
 		int previousProposers,		int proposersClosed,
-		int previousSeconds,		int currentSeconds);
+		int previousSeconds,		int currentSeconds,
+		int idleInterval);
 
 	static bool haveConsensus(
 		int previousProposers,		int currentProposers,
