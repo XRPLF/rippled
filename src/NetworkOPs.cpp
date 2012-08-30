@@ -84,7 +84,7 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 		return trans;
 	}
 
-	TER r = mLedgerMaster->doTransaction(*trans->getSTransaction(), tgtLedger, temOPEN_LEDGER);
+	TER r = mLedgerMaster->doTransaction(*trans->getSTransaction(), tgtLedger, tapOPEN_LEDGER);
 	if (r == tefFAILURE) throw Fault(IO_ERROR);
 
 	if (r == terPRE_SEQ)
@@ -599,7 +599,7 @@ int NetworkOPs::beginConsensus(const uint256& networkClosed, Ledger::pointer clo
 
 // <-- bool: true to relay
 bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash, uint32 closeTime,
-	const std::string& pubKey, const std::string& signature)
+	const std::string& pubKey, const std::string& signature, const NewcoinAddress& nodePublic)
 {
 	// JED: does mConsensus need to be locked?
 
@@ -638,6 +638,8 @@ bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash, uint
 	if (!proposal->checkSign(signature))
 	{ // Note that if the LCL is different, the signature check will fail
 		Log(lsWARNING) << "Ledger proposal fails signature check";
+		if ((mMode != omFULL) && (mMode != omTRACKING) && theApp->getUNL().nodeInUNL(proposal->peekPublic()))
+			mConsensus->deferProposal(proposal, nodePublic);
 		return false;
 	}
 

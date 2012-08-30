@@ -111,6 +111,9 @@ protected:
 	// Close time estimates
 	std::map<uint32, int> mCloseTimes;
 
+	// deferred proposals (node ID -> proposals from that peer)
+	boost::unordered_map< uint160,  std::list<LedgerProposal::pointer> > mDeferredProposals;
+
 	// final accept logic
 	static void Saccept(boost::shared_ptr<LedgerConsensus> This, SHAMap::pointer txSet);
 	void accept(const SHAMap::pointer& txSet);
@@ -136,6 +139,7 @@ protected:
 	void statusChange(newcoin::NodeEvent, Ledger& ledger);
 	void takeInitialPosition(Ledger& initialLedger);
 	void updateOurPositions();
+	void playbackProposals();
 	int getThreshold();
 	void beginAccept();
 	void endConsensus();
@@ -167,6 +171,7 @@ public:
 	bool haveConsensus();
 
 	bool peerPosition(const LedgerProposal::pointer&);
+	void deferProposal(const LedgerProposal::pointer& proposal, const NewcoinAddress& peerPublic);
 
 	bool peerHasSet(const Peer::pointer& peer, const uint256& set, newcoin::TxSetStatus status);
 

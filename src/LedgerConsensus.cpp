@@ -299,6 +299,7 @@ void LedgerConsensus::handleLCL(const uint256& lclHash)
 	mCloseResolution = ContinuousLedgerTiming::getNextLedgerTimeResolution(
 		mPreviousLedger->getCloseResolution(), mPreviousLedger->getCloseAgree(),
 		mPreviousLedger->getLedgerSeq() + 1);
+	playbackProposals();
 }
 
 void LedgerConsensus::takeInitialPosition(Ledger& initialLedger)
@@ -810,10 +811,24 @@ void LedgerConsensus::Saccept(boost::shared_ptr<LedgerConsensus> This, SHAMap::p
 	This->accept(txSet);
 }
 
+void LedgerConsensus::deferProposal(const LedgerProposal::pointer& proposal, const NewcoinAddress& peerPublic)
+{
+	/**/
+}
+
+void LedgerConsensus::playbackProposals()
+{
+	for ( boost::unordered_map< uint160,  std::list<LedgerProposal::pointer> >::iterator
+			it = mDeferredProposals.begin(), end = mDeferredProposals.end(); it != end; ++it)
+	{
+		/**/
+	}
+}
+
 void LedgerConsensus::applyTransaction(TransactionEngine& engine, const SerializedTransaction::pointer& txn,
 	const Ledger::pointer& ledger, CanonicalTXSet& failedTransactions, bool openLedger)
 {
-	TransactionEngineParams parms = openLedger ? temOPEN_LEDGER : temFINAL;
+	TransactionEngineParams parms = openLedger ? tapOPEN_LEDGER : tapNONE;
 #ifndef TRUST_NETWORK
 	try
 	{
@@ -846,7 +861,7 @@ void LedgerConsensus::applyTransaction(TransactionEngine& engine, const Serializ
 void LedgerConsensus::applyTransactions(const SHAMap::pointer& set, const Ledger::pointer& applyLedger,
 	const Ledger::pointer& checkLedger,	CanonicalTXSet& failedTransactions, bool openLgr)
 {
-	TransactionEngineParams parms = openLgr ? temOPEN_LEDGER : temFINAL;
+	TransactionEngineParams parms = openLgr ? tapOPEN_LEDGER : tapNONE;
 	TransactionEngine engine(applyLedger);
 
 	for (SHAMapItem::pointer item = set->peekFirstItem(); !!item; item = set->peekNextItem(item->getTag()))

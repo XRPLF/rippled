@@ -93,11 +93,16 @@ bool transResultInfo(TER terCode, std::string& strToken, std::string& strHuman);
 
 enum TransactionEngineParams
 {
-	temNONE				= 0x00,
-	temNO_CHECK_SIGN	= 0x01,	// Signature already checked
-	temOPEN_LEDGER		= 0x10,	// Transaction is running against an open ledger
-	temRETRY_OK			= 0x20,	// It was voted into a ledger anyway
-	temFINAL			= 0x40,	// This may be the transaction's last pass
+	tapNONE				= 0x00,
+
+	tapNO_CHECK_SIGN	= 0x01,	// Signature already checked
+
+	tapOPEN_LEDGER		= 0x10,	// Transaction is running against an open ledger
+		// true = failures are not forwarded, check transaction fee
+		// false = debit ledger for consumed funds
+
+	tapRETRY			= 0x20,	// This is not the transaction's last pass
+		// Transaction can be retried, soft failures allowed
 };
 
 typedef struct {

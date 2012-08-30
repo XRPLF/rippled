@@ -973,7 +973,7 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn,
 		naSigningPubKey	= NewcoinAddress::createAccountPublic(txn.peekSigningPubKey());
 
 	// Consistency: really signed.
-	if ((tesSUCCESS == terResult) && ((params & temNO_CHECK_SIGN) == 0) && !txn.checkSign(naSigningPubKey))
+	if ((tesSUCCESS == terResult) && ((params & tapNO_CHECK_SIGN) == 0) && !txn.checkSign(naSigningPubKey))
 	{
 		Log(lsWARNING) << "applyTransaction: Invalid transaction: bad signature";
 
@@ -1032,7 +1032,7 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn,
 
 	STAmount saPaid = txn.getTransactionFee();
 
-	if (tesSUCCESS == terResult && (params & temOPEN_LEDGER) != temNONE)
+	if (tesSUCCESS == terResult && (params & tapOPEN_LEDGER) != tapNONE)
 	{ // Applying to open ledger, check fee
 		if (!!saCost)
 		{
@@ -1322,7 +1322,7 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn,
 		if (!mLedger->addTransaction(txID, s))
 			assert(false);
 
-		if ((params & temOPEN_LEDGER) == temNONE)
+		if ((params & tapOPEN_LEDGER) == tapNONE)
 			mLedger->destroyCoins(saPaid.getNValue());
 	}
 
