@@ -153,6 +153,7 @@ public:
 	TransactionAcquire::pointer getAcquiring(const uint256& hash);
 	void mapComplete(const uint256& hash, const SHAMap::pointer& map, bool acquired);
 	void checkLCL();
+	void handleLCL(const uint256& lclHash);
 
 	void timerEntry();
 

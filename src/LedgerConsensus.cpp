@@ -211,30 +211,23 @@ LedgerConsensus::LedgerConsensus(const uint256& prevLCLHash, const Ledger::point
 	mCloseResolution = ContinuousLedgerTiming::getNextLedgerTimeResolution(
 		mPreviousLedger->getCloseResolution(), mPreviousLedger->getCloseAgree(), previousLedger->getLedgerSeq() + 1);
 
-	mHaveCorrectLCL = previousLedger->getHash() == prevLCLHash;
-
-	if (!mHaveCorrectLCL)
-	{
-		Log(lsINFO) << "Entering consensus with: " << previousLedger->getHash().GetHex();
-		Log(lsINFO) << "Correct LCL is: " << prevLCLHash.GetHex();
-		mHaveCorrectLCL = mProposing = mValidating = false;
-		mAcquiringLedger = theApp->getMasterLedgerAcquire().findCreate(prevLCLHash);
-		std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
-		BOOST_FOREACH(const Peer::pointer& peer, peerList)
-			if (peer->hasLedger(prevLCLHash))
-				mAcquiringLedger->peerHas(peer);
-	}
-	else if (mValSeed.isValid())
+	if (mValSeed.isValid())
 	{
 		Log(lsINFO) << "Entering consensus process, validating";
-		mHaveCorrectLCL = mValidating = true;
+		mValidating = true;
 		mProposing = theApp->getOPs().getOperatingMode() == NetworkOPs::omFULL;
 	}
 	else
 	{
 		Log(lsINFO) << "Entering consensus process, watching";
-		mHaveCorrectLCL = true;
 		mProposing = mValidating = false;
+	}
+
+	handleLCL(prevLCLHash);
+	if (!mHaveCorrectLCL)
+	{
+		Log(lsINFO) << "Entering consensus with: " << previousLedger->getHash().GetHex();
+		Log(lsINFO) << "Correct LCL is: " << prevLCLHash.GetHex();
 	}
 }
 
@@ -258,43 +251,52 @@ void LedgerConsensus::checkLCL()
 	if (netLgr != mPrevLedgerHash)
 	{ // LCL change
 		Log(lsWARNING) << "View of consensus changed during consensus (" << netLgrCount << ")";
-		mPrevLedgerHash = netLgr;
-
-		Ledger::pointer newLedger = theApp->getMasterLedger()->getLedgerByHash(netLgr);
-		if (newLedger)
-		{
-			Log(lsINFO) << "Acquired the consensus ledger " << mPrevLedgerHash.GetHex();
-			if (theApp->getMasterLedger().getClosedLedger()->getHash() != mPrevLedgerHash)
-				theApp->getOPs().switchLastClosedLedger(consensus, true);
-			mPreviousLedger = consensus;
-			mHaveCorrectLCL = true;
-			mCloseResolution = ContinuousLedgerTiming::getNextLedgerTimeResolution(
-				mPreviousLedger->getCloseResolution(), mPreviousLedger->getCloseAgree(),
-				mPreviousLedger->getLedgerSeq() + 1);
-		}
-		else
-		{
-			mAcquiringLedger = theApp->getMasterLedgerAcquire().findCreate(mPrevLedgerHash);
-			std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
-			mHaveCorrectLCL = false;
-			mProposing = false;
-			mValidating = false;
-			bool found = false;
-			BOOST_FOREACH(Peer::pointer& peer, peerList)
-			{
-				if (peer->hasLedger(mPrevLedgerHash))
-				{
-					found = true;
-					mAcquiringLedger->peerHas(peer);
-				}
-			}
-			if (!found)
-			{
-				BOOST_FOREACH(Peer::pointer& peer, peerList)
-					mAcquiringLedger->peerHas(peer);
-			}
-		}
+		handleLCL(netLgr);
 	}
+}
+
+void LedgerConsensus::handleLCL(const uint256& lclHash)
+{
+	mPrevLedgerHash = lclHash;
+	if (mPreviousLedger->getHash() == mPrevLedgerHash)
+		return;
+
+	Ledger::pointer newLCL = theApp->getMasterLedger().getLedgerByHash(lclHash);
+	if (newLCL)
+		mPreviousLedger = newLCL;
+	else if (mAcquiringLedger && (mAcquiringLedger->getHash() == mPrevLedgerHash))
+		return;
+	else
+	{
+		Log(lsWARNING) << "Need consensus ledger " << mPrevLedgerHash.GetHex();
+		mAcquiringLedger = theApp->getMasterLedgerAcquire().findCreate(mPrevLedgerHash);
+		std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
+		bool found = false;
+		BOOST_FOREACH(Peer::pointer& peer, peerList)
+		{
+			if (peer->hasLedger(mPrevLedgerHash))
+			{
+				found = true;
+				mAcquiringLedger->peerHas(peer);
+			}
+		}
+		if (!found)
+		{
+			BOOST_FOREACH(Peer::pointer& peer, peerList)
+				mAcquiringLedger->peerHas(peer);
+		}
+		mHaveCorrectLCL = false;
+		mProposing = false;
+		mValidating = false;
+		return;
+	}
+
+	Log(lsINFO) << "Acquired the consensus ledger " << mPrevLedgerHash.GetHex();
+	mHaveCorrectLCL = true;
+	mAcquiringLedger = LedgerAcquire::pointer();
+	mCloseResolution = ContinuousLedgerTiming::getNextLedgerTimeResolution(
+		mPreviousLedger->getCloseResolution(), mPreviousLedger->getCloseAgree(),
+		mPreviousLedger->getLedgerSeq() + 1);
 }
 
 void LedgerConsensus::takeInitialPosition(Ledger& initialLedger)
@@ -502,23 +504,7 @@ void LedgerConsensus::stateAccepted()
 void LedgerConsensus::timerEntry()
 {
 	if (!mHaveCorrectLCL)
-	{
 		checkLCL();
-		Ledger::pointer consensus = theApp->getMasterLedger().getLedgerByHash(mPrevLedgerHash);
-		if (consensus)
-		{
-			Log(lsINFO) << "Acquired the consensus ledger " << mPrevLedgerHash.GetHex();
-			if (theApp->getMasterLedger().getClosedLedger()->getHash() != mPrevLedgerHash)
-				theApp->getOPs().switchLastClosedLedger(consensus, true);
-			mPreviousLedger = consensus;
-			mHaveCorrectLCL = true;
-			mCloseResolution = ContinuousLedgerTiming::getNextLedgerTimeResolution(
-				mPreviousLedger->getCloseResolution(), mPreviousLedger->getCloseAgree(),
-				mPreviousLedger->getLedgerSeq() + 1);
-		}
-		else
-			Log(lsINFO) << "Need consensus ledger " << mPrevLedgerHash.GetHex();
-	}
 
 	mCurrentMSeconds =
 		(boost::posix_time::microsec_clock::universal_time() - mConsensusStartTime).total_milliseconds();
