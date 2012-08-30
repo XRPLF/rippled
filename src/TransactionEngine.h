@@ -84,7 +84,7 @@ enum TER	// aka TransactionEngineResult
 
 	// 100 .. P Partial success (SR) (ripple transaction with no good paths, pay to non-existent account)
 	// Transaction can be applied, can charge fee, forwarded, but does not achieve optimal result.
-	tepPARITAL		= 100,
+	tepPARTIAL		= 100,
 	tepPATH_DRY,
 	tepPATH_PARTIAL,
 };
@@ -93,11 +93,11 @@ bool transResultInfo(TER terCode, std::string& strToken, std::string& strHuman);
 
 enum TransactionEngineParams
 {
-	tepNONE          = 0,
-	tepNO_CHECK_SIGN = 1,	// Signature already checked
-	tepNO_CHECK_FEE  = 2,	// It was voted into a ledger anyway
-	tepUPDATE_TOTAL  = 4,	// Update the total coins
-	tepMETADATA      = 5,   // put metadata in tree, not transaction
+	temNONE				= 0x00,
+	temNO_CHECK_SIGN	= 0x01,	// Signature already checked
+	temOPEN_LEDGER		= 0x10,	// Transaction is running against an open ledger
+	temRETRY_OK			= 0x20,	// It was voted into a ledger anyway
+	temFINAL			= 0x40,	// This may be the transaction's last pass
 };
 
 typedef struct {

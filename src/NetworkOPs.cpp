@@ -84,7 +84,7 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 		return trans;
 	}
 
-	TER r = mLedgerMaster->doTransaction(*trans->getSTransaction(), tgtLedger, tepNONE);
+	TER r = mLedgerMaster->doTransaction(*trans->getSTransaction(), tgtLedger, temOPEN_LEDGER);
 	if (r == tefFAILURE) throw Fault(IO_ERROR);
 
 	if (r == terPRE_SEQ)

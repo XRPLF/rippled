@@ -799,9 +799,9 @@ void LedgerConsensus::Saccept(boost::shared_ptr<LedgerConsensus> This, SHAMap::p
 }
 
 void LedgerConsensus::applyTransaction(TransactionEngine& engine, const SerializedTransaction::pointer& txn,
-	const Ledger::pointer& ledger, CanonicalTXSet& failedTransactions, bool final)
+	const Ledger::pointer& ledger, CanonicalTXSet& failedTransactions, bool openLedger)
 {
-	TransactionEngineParams parms = final ? (tepNO_CHECK_FEE | tepUPDATE_TOTAL | tepMETADATA) : tepNONE;
+	TransactionEngineParams parms = openLedger ? temOPEN_LEDGER : temFINAL;
 #ifndef TRUST_NETWORK
 	try
 	{
@@ -832,9 +832,9 @@ void LedgerConsensus::applyTransaction(TransactionEngine& engine, const Serializ
 }
 
 void LedgerConsensus::applyTransactions(const SHAMap::pointer& set, const Ledger::pointer& applyLedger,
-	const Ledger::pointer& checkLedger,	CanonicalTXSet& failedTransactions, bool final)
+	const Ledger::pointer& checkLedger,	CanonicalTXSet& failedTransactions, bool openLgr)
 {
-	TransactionEngineParams parms = final ? (tepNO_CHECK_FEE | tepUPDATE_TOTAL) : tepNONE;
+	TransactionEngineParams parms = openLgr ? temOPEN_LEDGER : temFINAL;
 	TransactionEngine engine(applyLedger);
 
 	for (SHAMapItem::pointer item = set->peekFirstItem(); !!item; item = set->peekNextItem(item->getTag()))
@@ -848,7 +848,7 @@ void LedgerConsensus::applyTransactions(const SHAMap::pointer& set, const Ledger
 #endif
 				SerializerIterator sit(item->peekSerializer());
 				SerializedTransaction::pointer txn = boost::make_shared<SerializedTransaction>(boost::ref(sit));
-				applyTransaction(engine, txn, applyLedger, failedTransactions, final);
+				applyTransaction(engine, txn, applyLedger, failedTransactions, openLgr);
 #ifndef TRUST_NETWORK
 			}
 			catch (...)
@@ -906,7 +906,7 @@ void LedgerConsensus::accept(const SHAMap::pointer& set)
 	newLCL->armDirty();
 
 	CanonicalTXSet failedTransactions(set->getHash());
-	applyTransactions(set, newLCL, newLCL, failedTransactions, true);
+	applyTransactions(set, newLCL, newLCL, failedTransactions, false);
 	newLCL->setClosed();
 
 	bool closeTimeCorrect = true;
@@ -950,7 +950,7 @@ void LedgerConsensus::accept(const SHAMap::pointer& set)
 				Log(lsINFO) << "Test applying disputed transaction that did not get in";
 				SerializerIterator sit(it.second->peekTransaction());
 				SerializedTransaction::pointer txn = boost::make_shared<SerializedTransaction>(boost::ref(sit));
-				applyTransaction(engine, txn, newOL, failedTransactions, false);
+				applyTransaction(engine, txn, newOL, failedTransactions, true);
 			}
 			catch (...)
 			{
@@ -961,7 +961,7 @@ void LedgerConsensus::accept(const SHAMap::pointer& set)
 
 	Log(lsINFO) << "Applying transactions from current ledger";
 	applyTransactions(theApp->getMasterLedger().getCurrentLedger()->peekTransactionMap(), newOL, newLCL,
-		failedTransactions, false);
+		failedTransactions, true);
 	theApp->getMasterLedger().pushLedger(newLCL, newOL);
 	mNewLedgerHash = newLCL->getHash();
 	mState = lcsACCEPTED;

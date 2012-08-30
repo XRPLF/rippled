@@ -128,9 +128,9 @@ protected:
 	void removePosition(LedgerProposal&, bool ours);
 	void sendHaveTxSet(const uint256& set, bool direct);
 	void applyTransactions(const SHAMap::pointer& transactionSet, const Ledger::pointer& targetLedger,
-		const Ledger::pointer& checkLedger,	CanonicalTXSet& failedTransactions, bool final);
+		const Ledger::pointer& checkLedger,	CanonicalTXSet& failedTransactions, bool openLgr);
 	void applyTransaction(TransactionEngine& engine, const SerializedTransaction::pointer& txn,
-		const Ledger::pointer& targetLedger, CanonicalTXSet& failedTransactions, bool final);
+		const Ledger::pointer& targetLedger, CanonicalTXSet& failedTransactions, bool openLgr);
 
 	// manipulating our own position
 	void statusChange(newcoin::NodeEvent, Ledger& ledger);
