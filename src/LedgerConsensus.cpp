@@ -259,24 +259,40 @@ void LedgerConsensus::checkLCL()
 	{ // LCL change
 		Log(lsWARNING) << "View of consensus changed during consensus (" << netLgrCount << ")";
 		mPrevLedgerHash = netLgr;
-		mAcquiringLedger = theApp->getMasterLedgerAcquire().findCreate(mPrevLedgerHash);
-		std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
-		mHaveCorrectLCL = false;
-		mProposing = false;
-		mValidating = false;
-		bool found = false;
-		BOOST_FOREACH(Peer::pointer& peer, peerList)
+
+		Ledger::pointer newLedger = theApp->getMasterLedger()->getLedgerByHash(netLgr);
+		if (newLedger)
 		{
-			if (peer->hasLedger(mPrevLedgerHash))
-			{
-				found = true;
-				mAcquiringLedger->peerHas(peer);
-			}
+			Log(lsINFO) << "Acquired the consensus ledger " << mPrevLedgerHash.GetHex();
+			if (theApp->getMasterLedger().getClosedLedger()->getHash() != mPrevLedgerHash)
+				theApp->getOPs().switchLastClosedLedger(consensus, true);
+			mPreviousLedger = consensus;
+			mHaveCorrectLCL = true;
+			mCloseResolution = ContinuousLedgerTiming::getNextLedgerTimeResolution(
+				mPreviousLedger->getCloseResolution(), mPreviousLedger->getCloseAgree(),
+				mPreviousLedger->getLedgerSeq() + 1);
 		}
-		if (!found)
+		else
 		{
+			mAcquiringLedger = theApp->getMasterLedgerAcquire().findCreate(mPrevLedgerHash);
+			std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
+			mHaveCorrectLCL = false;
+			mProposing = false;
+			mValidating = false;
+			bool found = false;
 			BOOST_FOREACH(Peer::pointer& peer, peerList)
-				mAcquiringLedger->peerHas(peer);
+			{
+				if (peer->hasLedger(mPrevLedgerHash))
+				{
+					found = true;
+					mAcquiringLedger->peerHas(peer);
+				}
+			}
+			if (!found)
+			{
+				BOOST_FOREACH(Peer::pointer& peer, peerList)
+					mAcquiringLedger->peerHas(peer);
+			}
 		}
 	}
 }
@@ -450,8 +466,8 @@ void LedgerConsensus::statePreClose()
 		statusChange(newcoin::neCLOSING_LEDGER, *mPreviousLedger);
 		takeInitialPosition(*theApp->getMasterLedger().closeLedger());
 	}
-	else
-		checkLCL();
+	else if (mHaveCorrectLCL)
+		checkLCL(); // double check
 }
 
 void LedgerConsensus::stateEstablish()
