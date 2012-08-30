@@ -299,7 +299,7 @@ protected:
 
 public:
 	TransactionEngine() { ; }
-	TransactionEngine(const Ledger::pointer& ledger) : mLedger(ledger) { ; }
+	TransactionEngine(const Ledger::pointer& ledger) : mLedger(ledger) { assert(mLedger); }
 
 	Ledger::pointer getLedger()						{ return mLedger; }
 	void setLedger(const Ledger::pointer& ledger)	{ assert(ledger); mLedger = ledger; }
