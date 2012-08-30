@@ -24,6 +24,8 @@
 #define MIN(x,y) ((x) > (y) ? (y) : (x))
 #endif
 
+#define isSetBit(x,y)		(!!((x) & (y)))
+
 #ifdef WIN32
 extern uint64_t htobe64(uint64_t value);
 extern uint64_t be64toh(uint64_t value);
