@@ -251,6 +251,8 @@ void LedgerConsensus::checkLCL()
 	if (netLgr != mPrevLedgerHash)
 	{ // LCL change
 		Log(lsWARNING) << "View of consensus changed during consensus (" << netLgrCount << ")";
+		if (mHaveCorrectLCL)
+			theApp->getOPs().consensusViewChange();
 		handleLCL(netLgr);
 	}
 }

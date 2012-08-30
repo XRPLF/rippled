@@ -177,6 +177,7 @@ public:
 	void setStandAlone()				{ setMode(omFULL); }
 	void setStateTimer();
 	void newLCL(int proposers, int convergeTime, const uint256& ledgerHash);
+	void consensusViewChange();
 	int getPreviousProposers()			{ return mLastCloseProposers; }
 	int getPreviousConvergeTime()		{ return mLastCloseConvergeTime; }
 	uint32 getLastCloseTime()			{ return mLastCloseTime; }
