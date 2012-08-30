@@ -440,23 +440,21 @@ void LedgerConsensus::statePreClose()
 	int proposersClosed = mPeerPositions.size();
 
 	// This ledger is open. This computes how long since the last ledger closed
-	uint32 lastCloseTime;
+	int sinceClose;
 	int ledgerInterval = 0;
 
 	if (mHaveCorrectLCL && mPreviousLedger->getCloseAgree())
 	{ // we can use consensus timing
-		lastCloseTime = mPreviousLedger->getCloseTimeNC();
+		sinceClose = 1000 * (theApp->getOPs().getCloseTimeNC() - mPreviousLedger->getCloseTimeNC());
 		ledgerInterval = 2 * mPreviousLedger->getCloseResolution();
 		if (ledgerInterval < LEDGER_IDLE_INTERVAL)
 			ledgerInterval = LEDGER_IDLE_INTERVAL;
 	}
 	else
 	{
-		lastCloseTime = theApp->getOPs().getLastCloseTime();
+		sinceClose = theApp->getOPs().getLastCloseTime();
 		ledgerInterval = LEDGER_IDLE_INTERVAL;
 	}
-
-	int sinceClose = 1000 * (theApp->getOPs().getCloseTimeNC() - lastCloseTime);
 
 	if (sinceClose >= ContinuousLedgerTiming::shouldClose(anyTransactions, mPreviousProposers, proposersClosed,
 		mPreviousMSeconds, sinceClose, ledgerInterval))
