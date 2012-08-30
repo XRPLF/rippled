@@ -171,7 +171,7 @@ public:
 	bool haveConsensus();
 
 	bool peerPosition(const LedgerProposal::pointer&);
-	void deferProposal(const LedgerProposal::pointer& proposal, const NewcoinAddress& peerPublic);
+	void deferProposal(const LedgerProposal::pointer& proposal,	const NewcoinAddress& peerPublic);
 
 	bool peerHasSet(const Peer::pointer& peer, const uint256& set, newcoin::TxSetStatus status);
 

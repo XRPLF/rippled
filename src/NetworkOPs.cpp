@@ -639,7 +639,10 @@ bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash, uint
 	{ // Note that if the LCL is different, the signature check will fail
 		Log(lsWARNING) << "Ledger proposal fails signature check";
 		if ((mMode != omFULL) && (mMode != omTRACKING) && theApp->getUNL().nodeInUNL(proposal->peekPublic()))
+		{
+			proposal->setSignature(signature);
 			mConsensus->deferProposal(proposal, nodePublic);
+		}
 		return false;
 	}
 
