@@ -161,6 +161,18 @@ void LCTransaction::setVote(const uint160& peer, bool votesYes)
 	}
 }
 
+void LCTransaction::unVote(const uint160& peer)
+{
+	boost::unordered_map<uint160, bool>::iterator it = mVotes.find(peer);
+	if (it != mVotes.end())
+	{
+		if (it->second)
+			--mYays;
+		else
+			--mNays;
+	}
+}
+
 bool LCTransaction::updatePosition(int percentTime, bool proposing)
 { // this many seconds after close, should our position change
 	if (mOurPosition && (mNays == 0))
@@ -764,6 +776,13 @@ bool LedgerConsensus::peerPosition(const LedgerProposal::pointer& newPosition)
 		Log(lsTRACE) << "Don't have that tx set";
 
 	return true;
+}
+
+void LedgerConsensus::removePeer(const uint160& peerID)
+{
+	mPeerPositions.erase(peerID);
+	BOOST_FOREACH(u256_lct_pair& it, mDisputes)
+		it.second->unVote(peerID);
 }
 
 bool LedgerConsensus::peerHasSet(const Peer::pointer& peer, const uint256& hashSet, newcoin::TxSetStatus status)

@@ -64,6 +64,7 @@ public:
 	Serializer& peekTransaction()						{ return transaction; }
 
 	void setVote(const uint160& peer, bool votesYes);
+	void unVote(const uint160& peer);
 
 	bool updatePosition(int percentTime, bool proposing);
 };
@@ -171,6 +172,7 @@ public:
 	bool haveConsensus();
 
 	bool peerPosition(const LedgerProposal::pointer&);
+	void removePeer(const uint160& peerID);
 	void deferProposal(const LedgerProposal::pointer& proposal,	const NewcoinAddress& peerPublic);
 
 	bool peerHasSet(const Peer::pointer& peer, const uint256& set, newcoin::TxSetStatus status);

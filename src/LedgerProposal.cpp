@@ -9,14 +9,14 @@
 
 LedgerProposal::LedgerProposal(const uint256& pLgr, uint32 seq, const uint256& tx, uint32 closeTime,
 		const NewcoinAddress& naPeerPublic) :
-	mPreviousLedger(pLgr), mCurrentHash(tx), mCloseTime(closeTime), mProposeSeq(seq)
+	mPreviousLedger(pLgr), mCurrentHash(tx), mCloseTime(closeTime), mProposeSeq(seq), mPublicKey(naPeerPublic)
 {
-	mPublicKey		= naPeerPublic;
 	// XXX Validate key.
 	// if (!mKey->SetPubKey(pubKey))
 	// throw std::runtime_error("Invalid public key in proposal");
 
 	mPeerID			= mPublicKey.getNodeID();
+	mTime			= boost::posix_time::second_clock::universal_time();
 }
 
 
@@ -27,12 +27,13 @@ LedgerProposal::LedgerProposal(const NewcoinAddress& naSeed, const uint256& prev
 	mPublicKey	= NewcoinAddress::createNodePublic(naSeed);
 	mPrivateKey	= NewcoinAddress::createNodePrivate(naSeed);
 	mPeerID		= mPublicKey.getNodeID();
+	mTime		= boost::posix_time::second_clock::universal_time();
 }
 
 LedgerProposal::LedgerProposal(const uint256& prevLgr, const uint256& position, uint32 closeTime) :
 	mPreviousLedger(prevLgr), mCurrentHash(position), mCloseTime(closeTime), mProposeSeq(0)
 {
-	;
+	mTime		= boost::posix_time::second_clock::universal_time();
 }
 
 uint256 LedgerProposal::getSigningHash() const
