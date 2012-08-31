@@ -534,9 +534,33 @@ void LedgerConsensus::timerEntry()
 
 void LedgerConsensus::updateOurPositions()
 {
+	boost::posix_time::ptime peerCutoff = boost::posix_time::second_clock::universal_time();
+	boost::posix_time::ptime ourCutoff = peerCutoff - boost::posix_time::seconds(PROPOSE_INTERVAL);
+	peerCutoff -= boost::posix_time::seconds(PROPOSE_FRESHNESS);
+
 	bool changes = false;
 	SHAMap::pointer ourPosition;
 	std::vector<uint256> addedTx, removedTx;
+
+	// Verify freshness of peer positions and compute close times
+	std::map<uint32, int> closeTimes;
+	boost::unordered_map<uint160, LedgerProposal::pointer>::iterator
+		it = mPeerPositions.begin(), end = mPeerPositions.end();
+	while (it != end)
+	{
+		if (it->second->isStale(peerCutoff))
+		{ // proposal is stale
+			uint160 peerID = it->second->getPeerID();
+			BOOST_FOREACH(u256_lct_pair& it, mDisputes)
+				it.second->unVote(peerID);
+			mPeerPositions.erase(it++);
+		}
+		else
+		{ // proposal is still fresh
+			++closeTimes[it->second->getCloseTime() - (it->second->getCloseTime() % mCloseResolution)];
+			++it;
+		}
+	}
 
 	BOOST_FOREACH(u256_lct_pair& it, mDisputes)
 	{
@@ -560,10 +584,6 @@ void LedgerConsensus::updateOurPositions()
 		}
 	}
 
-	std::map<uint32, int> closeTimes;
-
-	BOOST_FOREACH(u160_prop_pair& it, mPeerPositions)
-		++closeTimes[it.second->getCloseTime() - (it.second->getCloseTime() % mCloseResolution)];
 
 	int neededWeight;
 	if (mClosePercent < AV_MID_CONSENSUS_TIME)
@@ -605,13 +625,12 @@ void LedgerConsensus::updateOurPositions()
 		}
 	}
 
-	if (closeTime != (mOurPosition->getCloseTime() - (mOurPosition->getCloseTime() % mCloseResolution)))
-	{
-		if (!changes)
-		{
-			ourPosition = mComplete[mOurPosition->getCurrentHash()]->snapShot(true);
-			changes = true;
-		}
+	if ((!changes) &&
+			((closeTime != (mOurPosition->getCloseTime() - (mOurPosition->getCloseTime() % mCloseResolution))) ||
+			(mOurPosition->isStale(ourCutoff))))
+	{ // close time changed or our position is stale
+		ourPosition = mComplete[mOurPosition->getCurrentHash()]->snapShot(true);
+		changes = true;
 	}
 
 	if (changes)
@@ -776,13 +795,6 @@ bool LedgerConsensus::peerPosition(const LedgerProposal::pointer& newPosition)
 		Log(lsTRACE) << "Don't have that tx set";
 
 	return true;
-}
-
-void LedgerConsensus::removePeer(const uint160& peerID)
-{
-	mPeerPositions.erase(peerID);
-	BOOST_FOREACH(u256_lct_pair& it, mDisputes)
-		it.second->unVote(peerID);
 }
 
 bool LedgerConsensus::peerHasSet(const Peer::pointer& peer, const uint256& hashSet, newcoin::TxSetStatus status)

@@ -56,7 +56,9 @@ public:
 
 	void setPrevLedger(const uint256& prevLedger)	{ mPreviousLedger = prevLedger; }
 	void setSignature(const std::string& signature)	{ mSignature = signature; }
+
 	const boost::posix_time::ptime getCreateTime()	{ return mTime; }
+	bool isStale(boost::posix_time::ptime cutoff)	{ return mTime > cutoff; }
 
 	void changePosition(const uint256& newPosition, uint32 newCloseTime);
 	Json::Value getJson() const;

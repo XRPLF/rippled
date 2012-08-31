@@ -28,6 +28,12 @@
 // How often we check state or change positions (in milliseconds)
 #	define LEDGER_GRANULARITY		1000
 
+// How long we consider a proposal fresh
+#	define PROPOSE_FRESHNESS		20
+
+// How often we force generating a new proposal to keep ours fresh
+#	define PROPOSE_INTERVAL			12
+
 // Avalanche tuning
 #define AV_INIT_CONSENSUS_PCT		50	// percentage of nodes on our UNL that must vote yes
 

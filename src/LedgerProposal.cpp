@@ -56,8 +56,9 @@ bool LedgerProposal::checkSign(const std::string& signature, const uint256& sign
 
 void LedgerProposal::changePosition(const uint256& newPosition, uint32 closeTime)
 {
-	mCurrentHash = newPosition;
-	mCloseTime = closeTime;
+	mCurrentHash 	= newPosition;
+	mCloseTime		= closeTime;
+	mTime			= boost::posix_time::second_clock::universal_time();
 	++mProposeSeq;
 }
 
