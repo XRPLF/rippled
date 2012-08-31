@@ -266,7 +266,7 @@ STAmount TransactionEngine::accountHolds(const uint160& uAccountID, const uint16
 // Use when you need a default for rippling uAccountID's currency.
 // --> saDefault/currency/issuer
 // <-- saFunds: Funds available. May be negative.
-//              If the issuer is the same as uAccountID, result is Default.
+//              If the issuer is the same as uAccountID, funds are unlimited, use result is saDefault.
 STAmount TransactionEngine::accountFunds(const uint160& uAccountID, const STAmount& saDefault)
 {
 	STAmount	saFunds;
@@ -1321,13 +1321,13 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn,
 
 	Log(lsINFO) << "applyTransaction: terResult=" << strToken << " : " << terResult << " : " << strHuman;
 
-	if (terResult >= tepPATH_PARTIAL && isSetBit(params, tapRETRY))
+	if (isTepPartial(terResult) && isSetBit(params, tapRETRY))
 	{
 		// Partial result and allowed to retry, reclassify as a retry.
 		terResult	= terRETRY;
 	}
 
-	if (tesSUCCESS == terResult || terResult >= tepPATH_PARTIAL)
+	if (tesSUCCESS == terResult || isTepPartial(terResult))
 	{
 		// Transaction succeeded fully or (retries are not allowed and the transaction succeeded partially).
 		txnWrite();
@@ -1348,8 +1348,7 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn,
 	musUnfundedFound.clear();
 
 	if (!isSetBit(params, tapOPEN_LEDGER)
-		&& ((terResult >= temMALFORMED && terResult <= tefFAILURE)
-			|| ((terResult >= tefFAILURE && terResult <= terRETRY))))
+		&& (isTemMalformed(terResult) || isTefFailure(terResult)))
 	{
 		// XXX Malformed or failed transaction in closed ledger must bow out.
 	}
@@ -1968,8 +1967,7 @@ TER TransactionEngine::calcNodeOfferRev(
 
 	Log(lsINFO) << boost::str(boost::format("calcNodeOfferRev: uDirectTip=%s") % uDirectTip.ToString());
 
-	while (!!uDirectTip	// Have a quality.
-		&& saCurDlvAct != saCurDlvReq)
+	while (!!uDirectTip && saCurDlvAct != saCurDlvReq) // Have a quality and not done.
 	{
 		// Get next quality.
 		if (bAdvance)
@@ -2033,7 +2031,7 @@ TER TransactionEngine::calcNodeOfferRev(
 				curIssuerNodeConstIterator	itSourcePast		= mumSource.find(asLine);
 				bool						bFoundPast			= itSourcePast != mumSource.end();
 
-				if (!saCurOfrFunds)
+				if (!saCurOfrFunds.isPositive())
 				{
 					// Offer is unfunded.
 					Log(lsINFO) << "calcNodeOfferRev: encountered unfunded offer";
@@ -2047,11 +2045,6 @@ TER TransactionEngine::calcNodeOfferRev(
 					{
 						// Never mentioned before: found unfunded.
 						musUnfundedFound.insert(uOfferIndex);				// Mark offer for always deletion.
-					}
-					else
-					{
-						// Mentioned before: source became unfunded.
-						pspCur->vUnfundedBecame.push_back(uOfferIndex);		// Mark offer for deletion on use of current path state.
 					}
 					continue;
 				}
@@ -2069,8 +2062,8 @@ TER TransactionEngine::calcNodeOfferRev(
 												: saTransferRate;
 					bool		bFee		= saFeeRate != saOne;
 
-					STAmount	saOutBase	= MIN(saCurOfrOutReq, saCurDlvReq-saCurDlvAct);	// Limit offer out by needed.
-					STAmount	saOutCost	= MIN(
+					STAmount	saOutBase	= std::min(saCurOfrOutReq, saCurDlvReq-saCurDlvAct);	// Limit offer out by needed.
+					STAmount	saOutCost	= std::min(
 												bFee
 													? STAmount::multiply(saOutBase, saFeeRate, uCurCurrencyID, uCurIssuerID)
 													: saOutBase,
@@ -2149,9 +2142,9 @@ TER TransactionEngine::calcNodeOfferRev(
 															: saTransferRate;
 								bool		bFee		= saFeeRate != saOne;
 
-								STAmount	saOutBase	= MIN(saCurOfrOutReq, saCurDlvReq-saCurDlvAct);	// Limit offer out by needed.
-											saOutBase	= MIN(saOutBase, saNxtOfrIn);					// Limit offer out by supplying offer.
-								STAmount	saOutCost	= MIN(
+								STAmount	saOutBase	= std::min(saCurOfrOutReq, saCurDlvReq-saCurDlvAct);// Limit offer out by needed.
+											saOutBase	= std::min(saOutBase, saNxtOfrIn);					// Limit offer out by supplying offer.
+								STAmount	saOutCost	= std::min(
 															bFee
 																? STAmount::multiply(saOutBase, saFeeRate, uCurCurrencyID, uCurIssuerID)
 																: saOutBase,
@@ -2236,19 +2229,23 @@ TER TransactionEngine::calcNodeOfferFwd(
 	STAmount		saPrvDlvAct;
 
 	STAmount&		saCurDlvAct		= pnCur.saFwdDeliver;	// How much current node will deliver.
-		saCurDlvAct;	= 0;
+		saCurDlvAct	= 0;
 
 	bool			bNxtOffer		= !uNxtAccountID;
 	uint256			uNxtTip;
 	uint256			uNxtEnd;
 	bool			bNxtDirAdvance;
 	bool			bNxtSubAdvance;
+	unsigned int	uNxtEntry		= 0;
+	uint256			uNxtIndex;
+	SLE::pointer	sleNxtDir;
 
 	if (bNxtOffer)
 	{
 		uNxtTip			= Ledger::getBookBase(uCurCurrencyID, uCurIssuerID, uNxtCurrencyID, uNxtIssuerID);
 		uNxtEnd			= Ledger::getQualityNext(uNxtTip);
-		bNxtDirAdvance	= !entryCache(ltDIR_NODE, uNxtTip);
+		sleNxtDir		= entryCache(ltDIR_NODE, uNxtTip);
+		bNxtDirAdvance	= !sleNxtDir;
 		bNxtSubAdvance	= true;
 	}
 
@@ -2306,8 +2303,9 @@ TER TransactionEngine::calcNodeOfferFwd(
 
 				const STAmount&	saCurOfrOutReq		= sleOffer->getIValueFieldAmount(sfTakerGets);
 				STAmount		saCurOfrFunds		= accountFunds(uCurOfrAccountID, saCurOfrOutReq);	// Funds left.
+				STAmount		saCurOfrSpent;
 
-				if (!saCurOfrFunds)
+				if (!saCurOfrFunds.isPositive())
 				{
 					// Offer is unfunded.
 					Log(lsINFO) << "calcNodeOfferFwd: unfunded offer";
@@ -2318,10 +2316,9 @@ TER TransactionEngine::calcNodeOfferFwd(
 				}
 
 				const STAmount&	saCurOfrInReq		= sleOffer->getIValueFieldAmount(sfTakerPays);
-				STAmount		saCurOfrInMax		= MIN(saCurOfrInReq, saPrvDlvReq-saPrvDlvAct);
+				STAmount		saCurOfrInMax		= std::min(saCurOfrInReq, saPrvDlvReq-saPrvDlvAct);
 				STAmount		saCurOfrInAct;
-
-				STAmount		saInDlvAct;
+				STAmount		saCurOfrOutAct;
 
 				if (!!uNxtAccountID)
 				{
@@ -2337,49 +2334,47 @@ TER TransactionEngine::calcNodeOfferFwd(
 					const bool		bFee		= saFeeRate != saOne;
 
 					const STAmount	saOutPass	= STAmount::divide(saCurOfrInMax, saOfrRate, uCurCurrencyID, uCurIssuerID);
-					const STAmount	saOutBase	= MIN(saCurOfrOutReq, saOutPass);			// Limit offer out by needed.
+					const STAmount	saOutBase	= std::min(saCurOfrOutReq, saOutPass);		// Limit offer out by needed.
 					const STAmount	saOutCostRaw= bFee
 													? STAmount::multiply(saOutBase, saFeeRate, uCurCurrencyID, uCurIssuerID)
 													: saOutBase;
-					const STAmount	saOutCost	= MIN(saOutCostRaw, saCurOfrFunds);			// Limit cost by fees & funds.
-					const STAmount	saOutDlvAct	= bFee
-													? STAmount::divide(saOutCost, saFeeRate, uCurCurrencyID, uCurIssuerID)
-													: saOutCost;						// Out amount after fees.
+					const STAmount	saOutCost	= std::min(saOutCostRaw, saCurOfrFunds);	// Limit cost by fees & funds.
+
+					saCurOfrSpent	= saOutCost;											// XXX Check.
+					saCurOfrOutAct	= bFee
+										? STAmount::divide(saOutCost, saFeeRate, uCurCurrencyID, uCurIssuerID)
+										: saOutCost;										// Out amount after fees.
 
 					// Compute input w/o fees required.
-					saInDlvAct	= STAmount::multiply(saOutDlvAct, saOfrRate, uPrvCurrencyID, uPrvIssuerID);
+					saCurOfrInAct	= STAmount::multiply(saCurOfrOutAct, saOfrRate, uPrvCurrencyID, uPrvIssuerID);
 
 					// Deliver to output.
-					accountSend(uCurOfrAccountID, uNxtAccountID, saOutDlvAct);
-
-					saCurDlvAct				+= saOutDlvAct;									// Portion of driver served.
+					accountSend(uCurOfrAccountID, uNxtAccountID, saCurOfrOutAct);
 				}
 				else
 				{
 					// Next is an offer node.
 					// Need to step through next offer's nodes to figure out fees.
 
-					STAmount	saOutDlvAct;
-
-					while (!!uNxtTip && saCurOfrInAct != saCurOfrInMax)	// An offer may be available and have more to do.
+					while (!!uNxtTip && saCurOfrInAct != saCurOfrInMax)	// A next offer may be available and have more to do.
 					{
 						if (bNxtDirAdvance)
 						{
 							uNxtTip			= mLedger->getNextLedgerIndex(uNxtTip, uNxtEnd);
 							bNxtSubAdvance	= true;
 							bNxtDirAdvance	= false;
+							uNxtEntry		= 0;
+							if (!!uNxtTip)
+								sleNxtDir		= entryCache(ltDIR_NODE, uNxtTip);
 						}
 
 						if (!!uNxtTip)
 						{
 							// Do a directory.
 							// - Drive on computing saCurDlvAct to derive saPrvDlvAct.
-							SLE::pointer	sleNxtDir	= entryCache(ltDIR_NODE, uNxtTip);
 // ??? STAmount		saOfrRate		= STAmount::setRate(STAmount::getQuality(uNxtTip));	// For correct ratio
-							unsigned int	uEntry			= 0;
-							uint256			uNxtIndex;
 
-							while (saCurOfrInAct != saCurOfrInMax)	// Have not met request.
+							while (saCurOfrInAct != saCurOfrInMax)	// Have more to do.
 							{
 								if (!bNxtSubAdvance)
 								{
@@ -2401,35 +2396,53 @@ TER TransactionEngine::calcNodeOfferFwd(
 								SLE::pointer	sleNxtOfr			= entryCache(ltOFFER, uNxtIndex);
 								const uint160	uNxtOfrAccountID	= sleNxtOfr->getIValueFieldAccount(sfAccount).getAccountID();
 								const STAmount&	saNxtOfrIn			= sleNxtOfr->getIValueFieldAmount(sfTakerPays);
+								const STAmount&	saNxtOfrOut			= sleNxtOfr->getIValueFieldAmount(sfTakerGets);
 
-								const STAmount	saFeeRate	= uCurOfrAccountID == uCurIssuerID || uNxtOfrAccountID == uCurIssuerID
-																? saOne
-																: saTransferRate;
-								const bool		bFee		= saFeeRate != saOne;
+								const STAmount	saFeeRate			= uCurOfrAccountID == uCurIssuerID || uNxtOfrAccountID == uCurIssuerID
+																		? saOne
+																		: saTransferRate;
+								const bool		bFee				= saFeeRate != saOne;
 
-// XXX Skip expireds and unfundeds.
-								const STAmount	saInBase	= saCurOfrInMax-saCurOfrInAct;
-								const STAmount	saOutPass	= STAmount::divide(saInBase, saOfrRate, uCurCurrencyID, uCurIssuerID);
-								STAmount		saOutBase	= MIN(saCurOfrOutReq, saOutPass);			// Limit offer out by needed.
-												saOutBase	= MIN(saOutBase, saNxtOfrIn);				// Limit offer out by supplying offer.
-								const STAmount	saOutCost	= MIN(
-															bFee
-																? STAmount::multiply(saOutBase, saFeeRate, uCurCurrencyID, uCurIssuerID)
-																: saOutBase,
-															saCurOfrFunds);								// Limit cost by fees & funds.
-								const STAmount	saOutDlvPass= bFee
-																? STAmount::divide(saOutCost, saFeeRate, uCurCurrencyID, uCurIssuerID)
-																: saOutCost;							// Out amount after fees.
-								const STAmount	saInDlvPass	= STAmount::multiply(saOutDlvPass, saOfrRate, uPrvCurrencyID, uCurIssuerID);	// Compute input w/o fees required.
+								bool			bNxtExpired			= sleNxtOfr->getIFieldPresent(sfExpiration)
+																		&& sleNxtOfr->getIFieldU32(sfExpiration) <= mLedger->getParentCloseTimeNC();
+								STAmount		saNxtOfrFunds		= accountFunds(uNxtOfrAccountID, saNxtOfrOut);	// Funds left.
 
-								saCurOfrInAct			+= saOutDlvPass;								// Portion of driver served.
-								saCurDlvAct				+= saInDlvPass;									// Portion of driver served.
+								if (!bNxtExpired && saNxtOfrFunds.isPositive())
+								{
+									// Offer is not expired and is funded.
+									const STAmount	saInBase	= saCurOfrInMax-saCurOfrInAct;
+									const STAmount	saOutPass	= STAmount::divide(saInBase, saOfrRate, uCurCurrencyID, uCurIssuerID);
+									STAmount		saOutBase	= std::min(saCurOfrOutReq, saOutPass);	// Limit offer out by needed.
+														saOutBase	= std::min(saOutBase, saNxtOfrIn);	// Limit offer out by supplying offer.
+									const STAmount	saOutCost	= std::min(
+																	bFee
+																		? STAmount::multiply(saOutBase, saFeeRate, uCurCurrencyID, uCurIssuerID)
+																		: saOutBase,
+																	saCurOfrFunds);						// Limit cost by fees & funds.
+									const STAmount	saOutDlvPass= bFee
+																	? STAmount::divide(saOutCost, saFeeRate, uCurCurrencyID, uCurIssuerID)
+																	: saOutCost;						// Out amount after fees.
+									const STAmount	saInDlvPass	= STAmount::multiply(saOutDlvPass, saOfrRate, uPrvCurrencyID, uCurIssuerID);	// Compute input w/o fees required.
 
-								// Deliver input
-								saInDlvAct	+= saInDlvPass;
+									// XXX Check fees.
+									sleNxtOfr->setIFieldAmount(sfTakerGets, saNxtOfrIn - saInDlvPass);
+									sleNxtOfr->setIFieldAmount(sfTakerPays, saNxtOfrOut - saOutDlvPass);
 
-								// Deliver output.
-								saOutDlvAct	+= saOutDlvPass;
+									if (saNxtOfrOut == saOutDlvPass) {
+										// Consumed all of offer.
+										Log(lsINFO) << "calcNodeOfferFwd: offer consumed";
+
+										pspCur->vUnfundedBecame.push_back(uNxtIndex);				// Mark offer for deletion on use of current path state.
+
+										bNxtSubAdvance	= true;
+									}
+
+									saCurOfrSpent	+= saOutDlvPass;								// XXX Check.
+
+									saCurOfrInAct	+= saInDlvPass;									// Add to input handled.
+
+									saCurOfrOutAct	+= saOutDlvPass;								// Add to output handled.
+								}
 							}
 						}
 
@@ -2440,11 +2453,11 @@ TER TransactionEngine::calcNodeOfferFwd(
 
 					// Deliver output to limbo or currency issuer.
 					accountSend(
-						uCurOfrAccountID,		// Offer owner pays.
+						uCurOfrAccountID,	// Offer owner pays.
 						!!uCurIssuerID
 							? uCurIssuerID	// Output is non-XNS send to issuer.
 							: ACCOUNT_XNS,	// Output is XNS send to limbo (ACCOUNT_XNS).
-						saOutDlvAct);
+						saCurOfrOutAct);
 				}
 
 				// Deliver input to offer owner.
@@ -2455,9 +2468,16 @@ TER TransactionEngine::calcNodeOfferFwd(
 							? ACCOUNT_XNS	// Previous is offer outputing XNS, source is limbo (ACCOUNT_XNS).
 							: uPrvIssuerID,	// Previous is offer outputing non-XNS, source is input issuer.
 					uCurOfrAccountID,		// Offer owner receives.
-					saInDlvAct);
+					saCurOfrInAct);
 
-				saPrvDlvAct				+= saInDlvAct;									// Portion needed in previous.
+				if (saCurOfrFunds == saCurOfrSpent)
+				{
+					// Offer became unfunded.
+					pspCur->vUnfundedBecame.push_back(uOfferIndex);		// Mark offer for deletion on use of current path state.
+				}
+
+				saPrvDlvAct				+= saCurOfrInAct;								// Portion needed in previous.
+				saCurDlvAct				+= saCurOfrOutAct;								// Portion of driver served.
 			}
 		}
 
@@ -2740,7 +2760,7 @@ void TransactionEngine::calcNodeRipple(
 		// No fee.
 		Log(lsINFO) << boost::str(boost::format("calcNodeRipple: No fees"));
 
-		STAmount	saTransfer	= bPrvUnlimited ? saCur : MIN(saPrv, saCur);
+		STAmount	saTransfer	= bPrvUnlimited ? saCur : std::min(saPrv, saCur);
 
 		saPrvAct	+= saTransfer;
 		saCurAct	+= saTransfer;
@@ -2874,8 +2894,8 @@ TER TransactionEngine::calcNodeAccountRev(const unsigned int uIndex, const PathS
 			// account --> ACCOUNT --> $
 			// Overall deliverable.
 			const STAmount&	saCurWantedReq	= bPrvAccount
-												? MIN(pspCur->saOutReq, saPrvLimit+saPrvOwed)	// If previous is an account, limit.
-												: pspCur->saOutReq;								// Previous is an offer, no limit: redeem own IOUs.
+												? std::min(pspCur->saOutReq, saPrvLimit+saPrvOwed)	// If previous is an account, limit.
+												: pspCur->saOutReq;									// Previous is an offer, no limit: redeem own IOUs.
 			STAmount		saCurWantedAct(saCurWantedReq.getCurrency(), saCurWantedReq.getIssuer());
 
 			Log(lsINFO) << boost::str(boost::format("calcNodeAccountRev: account --> ACCOUNT --> $ : saCurWantedReq=%s")
@@ -2888,7 +2908,7 @@ TER TransactionEngine::calcNodeAccountRev(const unsigned int uIndex, const PathS
 				// Redeem at 1:1
 				Log(lsINFO) << boost::str(boost::format("calcNodeAccountRev: Redeem at 1:1"));
 
-				saCurWantedAct		= MIN(saPrvRedeemReq, saCurWantedReq);
+				saCurWantedAct		= std::min(saPrvRedeemReq, saCurWantedReq);
 				saPrvRedeemAct		= saCurWantedAct;
 			}
 
@@ -3029,7 +3049,7 @@ TER TransactionEngine::calcNodeAccountRev(const unsigned int uIndex, const PathS
 		{
 			// offer --> ACCOUNT --> $
 			const STAmount&	saCurWantedReq	= bPrvAccount
-												? MIN(pspCur->saOutReq, saPrvLimit+saPrvOwed)	// If previous is an account, limit.
+												? std::min(pspCur->saOutReq, saPrvLimit+saPrvOwed)	// If previous is an account, limit.
 												: pspCur->saOutReq;								// Previous is an offer, no limit: redeem own IOUs.
 			STAmount		saCurWantedAct(saCurWantedReq.getCurrency(), saCurWantedReq.getIssuer());
 
@@ -3196,7 +3216,7 @@ TER TransactionEngine::calcNodeAccountFwd(
 				// Redeem requested.
 				saCurRedeemAct	= saCurRedeemReq.isNegative()
 									? saCurRedeemReq
-									: MIN(saCurRedeemReq, saCurSendMaxReq);
+									: std::min(saCurRedeemReq, saCurSendMaxReq);
 			}
 			else
 			{
@@ -3209,7 +3229,7 @@ TER TransactionEngine::calcNodeAccountFwd(
 				// Issue requested and not over budget.
 				saCurIssueAct	= saCurSendMaxReq.isNegative()
 									? saCurIssueReq
-									: MIN(saCurSendMaxReq-saCurRedeemAct, saCurIssueReq);
+									: std::min(saCurSendMaxReq-saCurRedeemAct, saCurIssueReq);
 			}
 			else
 			{

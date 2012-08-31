@@ -118,6 +118,10 @@ enum TER	// aka TransactionEngineResult
 	tepPATH_PARTIAL,
 };
 
+#define isTemMalformed(x)	((x) >= temMALFORMED && (x) < tefFAILURE)
+#define isTefFailure(x)		((x) >= tefFAILURE && (x) < terRETRY)
+#define isTepPartial(x)		((x) >= tepPATH_PARTIAL)
+
 bool transResultInfo(TER terCode, std::string& strToken, std::string& strHuman);
 
 enum TransactionEngineParams
@@ -179,23 +183,23 @@ public:
 	std::vector<paymentNode>	vpnNodes;
 
 	// When processing, don't want to complicate directory walking with deletion.
-	std::vector<uint256>		vUnfundedBecame;	// Offers that became unfunded.
+	std::vector<uint256>		vUnfundedBecame;	// Offers that became unfunded or were completely consumed.
 
 	// First time working foward a funding source was mentioned for accounts. Source may only be used there.
-	curIssuerNode				umForward;	// Map of currency, issuer to node index.
+	curIssuerNode				umForward;			// Map of currency, issuer to node index.
 
 	// First time working in reverse a funding source was used.
 	// Source may only be used there if not mentioned by an account.
-	curIssuerNode				umReverse;	// Map of currency, issuer to node index.
+	curIssuerNode				umReverse;			// Map of currency, issuer to node index.
 
 	LedgerEntrySet				lesEntries;
 
 	int							mIndex;
-	uint64						uQuality;		// 0 = none.
-	STAmount					saInReq;		// Max amount to spend by sender
-	STAmount					saInAct;		// Amount spent by sender (calc output)
-	STAmount					saOutReq;		// Amount to send (calc input)
-	STAmount					saOutAct;		// Amount actually sent (calc output).
+	uint64						uQuality;			// 0 = none.
+	STAmount					saInReq;			// Max amount to spend by sender
+	STAmount					saInAct;			// Amount spent by sender (calc output)
+	STAmount					saOutReq;			// Amount to send (calc input)
+	STAmount					saOutAct;			// Amount actually sent (calc output).
 
 	PathState(
 		const Ledger::pointer&	lpLedger,
