@@ -6,6 +6,7 @@
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>
 #include <boost/algorithm/string.hpp>
+#include <algorithm>
 
 #include "Config.h"
 #include "Peer.h"
@@ -645,7 +646,7 @@ void ConnectionPool::scanRefresh()
 
 			(void) mScanTimer.cancel();
 
-			iInterval	= MAX(iInterval, theConfig.PEER_SCAN_INTERVAL_MIN);
+			iInterval	= std::max(iInterval, theConfig.PEER_SCAN_INTERVAL_MIN);
 
 			tpNext		= tpNow + boost::posix_time::seconds(iInterval);
 
