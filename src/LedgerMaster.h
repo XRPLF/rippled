@@ -48,11 +48,11 @@ public:
 	TER doTransaction(const SerializedTransaction& txn, uint32 targetLedger,
 		TransactionEngineParams params);
 
-	void pushLedger(const Ledger::pointer& newLedger);
-	void pushLedger(const Ledger::pointer& newLCL, const Ledger::pointer& newOL);
-	void storeLedger(const Ledger::pointer&);
+	void pushLedger(Ledger::ref newLedger);
+	void pushLedger(Ledger::ref newLCL, Ledger::ref newOL);
+	void storeLedger(Ledger::ref);
 
-	void switchLedgers(const Ledger::pointer& lastClosed, const Ledger::pointer& newCurrent);
+	void switchLedgers(Ledger::ref lastClosed, Ledger::ref newCurrent);
 
 	Ledger::pointer closeLedger();
 

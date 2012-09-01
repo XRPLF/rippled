@@ -141,19 +141,19 @@ public:
 	bool samePeer(const Peer& p)			{ return this == &p; }
 
 	void sendPacket(const PackedMessage::pointer& packet);
-	void sendLedgerProposal(const Ledger::pointer& ledger);
-	void sendFullLedger(const Ledger::pointer& ledger);
+	void sendLedgerProposal(Ledger::ref ledger);
+	void sendFullLedger(Ledger::ref ledger);
 	void sendGetFullLedger(uint256& hash);
 	void sendGetPeers();
 
 	void punishPeer(PeerPunish pp);
 
 	Json::Value getJson();
-	bool isConnected() const { return mHelloed && !mDetaching; }
+	bool isConnected() const				{ return mHelloed && !mDetaching; }
 
-	uint256 getClosedLedgerHash() const { return mClosedLedgerHash; }
+	uint256 getClosedLedgerHash() const		{ return mClosedLedgerHash; }
 	bool hasLedger(const uint256& hash) const;
-	NewcoinAddress getNodePublic() const { return mNodePublic; }
+	NewcoinAddress getNodePublic() const	{ return mNodePublic; }
 	void cycleStatus() { mPreviousLedgerHash = mClosedLedgerHash; mClosedLedgerHash.zero(); }
 };
 

@@ -19,7 +19,7 @@ bool LedgerMaster::addHeldTransaction(const Transaction::pointer& transaction)
 	return mHeldTransactionsByID.insert(std::make_pair(transaction->getID(), transaction)).second;
 }
 
-void LedgerMaster::pushLedger(const Ledger::pointer& newLedger)
+void LedgerMaster::pushLedger(Ledger::ref newLedger)
 {
 	// Caller should already have properly assembled this ledger into "ready-to-close" form --
 	// all candidate transactions must already be appled
@@ -35,7 +35,7 @@ void LedgerMaster::pushLedger(const Ledger::pointer& newLedger)
 	mEngine.setLedger(newLedger);
 }
 
-void LedgerMaster::pushLedger(const Ledger::pointer& newLCL, const Ledger::pointer& newOL)
+void LedgerMaster::pushLedger(Ledger::ref newLCL, Ledger::ref newOL)
 {
 	assert(newLCL->isClosed() && newLCL->isAccepted());
 	assert(!newOL->isClosed() && !newOL->isAccepted());
@@ -54,7 +54,7 @@ void LedgerMaster::pushLedger(const Ledger::pointer& newLCL, const Ledger::point
 	mEngine.setLedger(newOL);
 }
 
-void LedgerMaster::switchLedgers(const Ledger::pointer& lastClosed, const Ledger::pointer& current)
+void LedgerMaster::switchLedgers(Ledger::ref lastClosed, Ledger::ref current)
 {
 	assert(lastClosed && current);
 	mFinalizedLedger = lastClosed;
@@ -66,7 +66,7 @@ void LedgerMaster::switchLedgers(const Ledger::pointer& lastClosed, const Ledger
 	mEngine.setLedger(mCurrentLedger);
 }
 
-void LedgerMaster::storeLedger(const Ledger::pointer& ledger)
+void LedgerMaster::storeLedger(Ledger::ref ledger)
 {
 	mLedgerHistory.addLedger(ledger);
 }

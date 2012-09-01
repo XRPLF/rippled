@@ -207,7 +207,7 @@ bool LCTransaction::updatePosition(int percentTime, bool proposing)
 	return true;
 }
 
-LedgerConsensus::LedgerConsensus(const uint256& prevLCLHash, const Ledger::pointer& previousLedger, uint32 closeTime)
+LedgerConsensus::LedgerConsensus(const uint256& prevLCLHash, Ledger::ref previousLedger, uint32 closeTime)
 	:  mState(lcsPRE_CLOSE), mCloseTime(closeTime), mPrevLedgerHash(prevLCLHash), mPreviousLedger(previousLedger),
 	mCurrentMSeconds(0), mClosePercent(0), mHaveCloseTimeConsensus(false)
 {
@@ -551,6 +551,7 @@ void LedgerConsensus::updateOurPositions()
 		if (it->second->isStale(peerCutoff))
 		{ // proposal is stale
 			uint160 peerID = it->second->getPeerID();
+			Log(lsWARNING) << "Removing stale proposal from " << peerID.GetHex();
 			BOOST_FOREACH(u256_lct_pair& it, mDisputes)
 				it.second->unVote(peerID);
 			mPeerPositions.erase(it++);
@@ -870,7 +871,7 @@ void LedgerConsensus::playbackProposals()
 }
 
 void LedgerConsensus::applyTransaction(TransactionEngine& engine, const SerializedTransaction::pointer& txn,
-	const Ledger::pointer& ledger, CanonicalTXSet& failedTransactions, bool openLedger)
+	Ledger::ref ledger, CanonicalTXSet& failedTransactions, bool openLedger)
 {
 	TransactionEngineParams parms = openLedger ? tapOPEN_LEDGER : tapNONE;
 #ifndef TRUST_NETWORK
@@ -902,8 +903,8 @@ void LedgerConsensus::applyTransaction(TransactionEngine& engine, const Serializ
 #endif
 }
 
-void LedgerConsensus::applyTransactions(const SHAMap::pointer& set, const Ledger::pointer& applyLedger,
-	const Ledger::pointer& checkLedger,	CanonicalTXSet& failedTransactions, bool openLgr)
+void LedgerConsensus::applyTransactions(const SHAMap::pointer& set, Ledger::ref applyLedger,
+	Ledger::ref checkLedger, CanonicalTXSet& failedTransactions, bool openLgr)
 {
 	TransactionEngineParams parms = openLgr ? tapOPEN_LEDGER : tapNONE;
 	TransactionEngine engine(applyLedger);

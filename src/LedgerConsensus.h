@@ -131,10 +131,10 @@ protected:
 	void addPosition(LedgerProposal&, bool ours);
 	void removePosition(LedgerProposal&, bool ours);
 	void sendHaveTxSet(const uint256& set, bool direct);
-	void applyTransactions(const SHAMap::pointer& transactionSet, const Ledger::pointer& targetLedger,
-		const Ledger::pointer& checkLedger,	CanonicalTXSet& failedTransactions, bool openLgr);
+	void applyTransactions(const SHAMap::pointer& transactionSet, Ledger::ref targetLedger,
+		Ledger::ref checkLedger, CanonicalTXSet& failedTransactions, bool openLgr);
 	void applyTransaction(TransactionEngine& engine, const SerializedTransaction::pointer& txn,
-		const Ledger::pointer& targetLedger, CanonicalTXSet& failedTransactions, bool openLgr);
+		Ledger::ref targetLedger, CanonicalTXSet& failedTransactions, bool openLgr);
 
 	// manipulating our own position
 	void statusChange(newcoin::NodeEvent, Ledger& ledger);
@@ -146,7 +146,7 @@ protected:
 	void endConsensus();
 
 public:
-	LedgerConsensus(const uint256& prevLCLHash, const Ledger::pointer& previousLedger, uint32 closeTime);
+	LedgerConsensus(const uint256& prevLCLHash, Ledger::ref previousLedger, uint32 closeTime);
 
 	int startup();
 	Json::Value getJson();

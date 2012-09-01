@@ -258,7 +258,7 @@ uint256 Ledger::getHash()
 	return(mHash);
 }
 
-void Ledger::saveAcceptedLedger(const Ledger::pointer& ledger)
+void Ledger::saveAcceptedLedger(Ledger::ref ledger)
 {
 	static boost::format ledgerExists("SELECT LedgerSeq FROM Ledgers where LedgerSeq = %d;");
 	static boost::format deleteLedger("DELETE FROM Ledgers WHERE LedgerSeq = %d;");

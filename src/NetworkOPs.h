@@ -78,10 +78,10 @@ protected:
 	void setMode(OperatingMode);
 
 	Json::Value transJson(const SerializedTransaction& stTxn, TER terResult, const std::string& strStatus, int iSeq, const std::string& strType);
-	void pubTransactionAll(const Ledger::pointer& lpCurrent, const SerializedTransaction& stTxn, TER terResult, const char* pState);
-	void pubTransactionAccounts(const Ledger::pointer& lpCurrent, const SerializedTransaction& stTxn, TER terResult, const char* pState);
+	void pubTransactionAll(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult, const char* pState);
+	void pubTransactionAccounts(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult, const char* pState);
 
-	Json::Value pubBootstrapAccountInfo(const Ledger::pointer& lpAccepted, const NewcoinAddress& naAccountID);
+	Json::Value pubBootstrapAccountInfo(Ledger::ref lpAccepted, const NewcoinAddress& naAccountID);
 
 public:
 	NetworkOPs(boost::asio::io_service& io_service, LedgerMaster* pLedgerMaster);
@@ -195,8 +195,8 @@ public:
 	//
 
 	void pubAccountInfo(const NewcoinAddress& naAccountID, const Json::Value& jvObj);
-	void pubLedger(const Ledger::pointer& lpAccepted);
-	void pubTransaction(const Ledger::pointer& lpLedger, const SerializedTransaction& stTxn, TER terResult);
+	void pubLedger(Ledger::ref lpAccepted);
+	void pubTransaction(Ledger::ref lpLedger, const SerializedTransaction& stTxn, TER terResult);
 
 	//
 	// Monitoring: subscriber side

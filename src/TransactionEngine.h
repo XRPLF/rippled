@@ -202,7 +202,7 @@ public:
 	STAmount					saOutAct;			// Amount actually sent (calc output).
 
 	PathState(
-		const Ledger::pointer&	lpLedger,
+		Ledger::ref				lpLedger,
 		const int				iIndex,
 		const LedgerEntrySet&	lesSource,
 		const STPath&			spSourcePath,
@@ -216,7 +216,7 @@ public:
 	Json::Value	getJson() const;
 
 	static PathState::pointer createPathState(
-		const Ledger::pointer&	lpLedger,
+		Ledger::ref				lpLedger,
 		const int				iIndex,
 		const LedgerEntrySet&	lesSource,
 		const STPath&			spSourcePath,
@@ -337,10 +337,10 @@ protected:
 
 public:
 	TransactionEngine() { ; }
-	TransactionEngine(const Ledger::pointer& ledger) : mLedger(ledger) { assert(mLedger); }
+	TransactionEngine(Ledger::ref ledger) : mLedger(ledger) { assert(mLedger); }
 
-	Ledger::pointer getLedger()						{ return mLedger; }
-	void setLedger(const Ledger::pointer& ledger)	{ assert(ledger); mLedger = ledger; }
+	Ledger::pointer getLedger()			{ return mLedger; }
+	void setLedger(Ledger::ref ledger)	{ assert(ledger); mLedger = ledger; }
 
 	TER applyTransaction(const SerializedTransaction&, TransactionEngineParams);
 };

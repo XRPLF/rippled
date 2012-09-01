@@ -798,7 +798,7 @@ Json::Value NetworkOPs::getServerInfo()
 // Monitoring: publisher side
 //
 
-Json::Value NetworkOPs::pubBootstrapAccountInfo(const Ledger::pointer& lpAccepted, const NewcoinAddress& naAccountID)
+Json::Value NetworkOPs::pubBootstrapAccountInfo(Ledger::ref lpAccepted, const NewcoinAddress& naAccountID)
 {
 	Json::Value			jvObj(Json::objectValue);
 
@@ -833,7 +833,7 @@ void NetworkOPs::pubAccountInfo(const NewcoinAddress& naAccountID, const Json::V
 	}
 }
 
-void NetworkOPs::pubLedger(const Ledger::pointer& lpAccepted)
+void NetworkOPs::pubLedger(Ledger::ref lpAccepted)
 {
 	{
 		boost::interprocess::sharable_lock<boost::interprocess::interprocess_upgradable_mutex>	sl(mMonitorLock);
@@ -946,7 +946,7 @@ Json::Value NetworkOPs::transJson(const SerializedTransaction& stTxn, TER terRes
 	return jvObj;
 }
 
-void NetworkOPs::pubTransactionAll(const Ledger::pointer& lpCurrent, const SerializedTransaction& stTxn, TER terResult, const char* pState)
+void NetworkOPs::pubTransactionAll(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult, const char* pState)
 {
 	Json::Value	jvObj	= transJson(stTxn, terResult, pState, lpCurrent->getLedgerSeq(), "transaction");
 
@@ -956,7 +956,7 @@ void NetworkOPs::pubTransactionAll(const Ledger::pointer& lpCurrent, const Seria
 	}
 }
 
-void NetworkOPs::pubTransactionAccounts(const Ledger::pointer& lpCurrent, const SerializedTransaction& stTxn, TER terResult, const char* pState)
+void NetworkOPs::pubTransactionAccounts(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult, const char* pState)
 {
 	boost::unordered_set<InfoSub*>	usisNotify;
 
@@ -991,7 +991,7 @@ void NetworkOPs::pubTransactionAccounts(const Ledger::pointer& lpCurrent, const 
 	}
 }
 
-void NetworkOPs::pubTransaction(const Ledger::pointer& lpCurrent, const SerializedTransaction& stTxn, TER terResult)
+void NetworkOPs::pubTransaction(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult)
 {
 	boost::interprocess::sharable_lock<boost::interprocess::interprocess_upgradable_mutex>	sl(mMonitorLock);
 
