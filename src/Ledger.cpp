@@ -508,7 +508,7 @@ void Ledger::setCloseTime(boost::posix_time::ptime ptm)
 }
 
 // XXX Use shared locks where possible?
-LedgerStateParms Ledger::writeBack(LedgerStateParms parms, const SLE::pointer& entry)
+LedgerStateParms Ledger::writeBack(LedgerStateParms parms, SLE::ref entry)
 {
 	ScopedLock l(mAccountStateMap->Lock());
 	bool create = false;

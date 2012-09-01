@@ -444,7 +444,7 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 		ourVC.highNode = theApp->getWallet().getNodePublic();
 	}
 
-	BOOST_FOREACH(const Peer::pointer& it, peerList)
+	BOOST_FOREACH(Peer::ref it, peerList)
 	{
 		if (!it)
 		{
@@ -522,7 +522,7 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 		{ // add more peers
 			int count = 0;
 			std::vector<Peer::pointer> peers=theApp->getConnectionPool().getPeerVector();
-			BOOST_FOREACH(const Peer::pointer& it, peerList)
+			BOOST_FOREACH(Peer::ref it, peerList)
 			{
 				if (it->getClosedLedgerHash() == closedLedger)
 				{
@@ -532,7 +532,7 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 			}
 			if (!count)
 			{ // just ask everyone
-				BOOST_FOREACH(const Peer::pointer& it, peerList)
+				BOOST_FOREACH(Peer::ref it, peerList)
 					if (it->isConnected())
 						mAcquiringLedger->peerHas(it);
 			}
@@ -691,7 +691,7 @@ void NetworkOPs::endConsensus(bool correctLCL)
 	Log(lsTRACE) << "Ledger " << deadLedger.GetHex() << " is now dead";
 	theApp->getValidations().addDeadLedger(deadLedger);
 	std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
-	BOOST_FOREACH(const Peer::pointer& it, peerList)
+	BOOST_FOREACH(Peer::ref it, peerList)
 		if (it && (it->getClosedLedgerHash() == deadLedger))
 		{
 			Log(lsTRACE) << "Killing obsolete peer status";

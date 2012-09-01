@@ -27,11 +27,11 @@ protected:
 	SHAMap::pointer		mMap;
 	bool				mHaveRoot;
 
-	void onTimer()							{ trigger(Peer::pointer(), true); }
-	void newPeer(const Peer::pointer& peer)	{ trigger(peer, false); }
+	void onTimer()					{ trigger(Peer::pointer(), true); }
+	void newPeer(Peer::ref peer)	{ trigger(peer, false); }
 
 	void done();
-	void trigger(const Peer::pointer&, bool timer);
+	void trigger(Peer::ref, bool timer);
 	boost::weak_ptr<PeerSet> pmDowncast();
 
 public:
@@ -41,7 +41,7 @@ public:
 	SHAMap::pointer getMap()			{ return mMap; }
 
 	bool takeNodes(const std::list<SHAMapNode>& IDs, const std::list< std::vector<unsigned char> >& data,
-		const Peer::pointer&);
+		Peer::ref);
 };
 
 class LCTransaction
@@ -119,7 +119,7 @@ protected:
 	static void Saccept(boost::shared_ptr<LedgerConsensus> This, SHAMap::pointer txSet);
 	void accept(const SHAMap::pointer& txSet);
 
-	void weHave(const uint256& id, const Peer::pointer& avoidPeer);
+	void weHave(const uint256& id, Peer::ref avoidPeer);
 	void startAcquiring(const TransactionAcquire::pointer&);
 	SHAMap::pointer find(const uint256& hash);
 
@@ -174,9 +174,9 @@ public:
 	bool peerPosition(const LedgerProposal::pointer&);
 	void deferProposal(const LedgerProposal::pointer& proposal,	const NewcoinAddress& peerPublic);
 
-	bool peerHasSet(const Peer::pointer& peer, const uint256& set, newcoin::TxSetStatus status);
+	bool peerHasSet(Peer::ref peer, const uint256& set, newcoin::TxSetStatus status);
 
-	bool peerGaveNodes(const Peer::pointer& peer, const uint256& setHash,
+	bool peerGaveNodes(Peer::ref peer, const uint256& setHash,
 		const std::list<SHAMapNode>& nodeIDs, const std::list< std::vector<unsigned char> >& nodeData);
 };
 

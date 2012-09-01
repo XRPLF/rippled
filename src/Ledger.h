@@ -157,7 +157,7 @@ public:
 
 	// high-level functions
 	AccountState::pointer getAccountState(const NewcoinAddress& acctID);
-	LedgerStateParms writeBack(LedgerStateParms parms, const SLE::pointer&);
+	LedgerStateParms writeBack(LedgerStateParms parms, SLE::ref);
 	SLE::pointer getAccountRoot(const uint160& accountID);
 	SLE::pointer getAccountRoot(const NewcoinAddress& naAccountID);
 

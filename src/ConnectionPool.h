@@ -72,16 +72,16 @@ public:
 
 	// We know peers node public key.
 	// <-- bool: false=reject
-	bool peerConnected(const Peer::pointer& peer, const NewcoinAddress& naPeer, const std::string& strIP, int iPort);
+	bool peerConnected(Peer::ref peer, const NewcoinAddress& naPeer, const std::string& strIP, int iPort);
 
 	// No longer connected.
-	void peerDisconnected(const Peer::pointer& peer, const NewcoinAddress& naPeer);
+	void peerDisconnected(Peer::ref peer, const NewcoinAddress& naPeer);
 
 	// As client accepted.
-	void peerVerified(const Peer::pointer& peer);
+	void peerVerified(Peer::ref peer);
 
 	// As client failed connect and be accepted.
-	void peerClosed(const Peer::pointer& peer, const std::string& strIp, int iPort);
+	void peerClosed(Peer::ref peer, const std::string& strIp, int iPort);
 
 	Json::Value getPeersJson();
 	std::vector<Peer::pointer> getPeerVector();

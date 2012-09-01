@@ -24,13 +24,14 @@ typedef std::pair<std::string,int> ipPort;
 class Peer : public boost::enable_shared_from_this<Peer>
 {
 public:
-	typedef boost::shared_ptr<Peer> pointer;
+	typedef boost::shared_ptr<Peer>			pointer;
+	typedef const boost::shared_ptr<Peer>&	ref;
 
 	static const int psbGotHello = 0, psbSentHello = 1, psbInMap = 2, psbTrusted = 3;
 	static const int psbNoLedgers = 4, psbNoTransactions = 5, psbDownLevel = 6;
 
 	void			handleConnect(const boost::system::error_code& error, boost::asio::ip::tcp::resolver::iterator it);
-	static void		sHandleConnect(const Peer::pointer& ptr, const boost::system::error_code& error,
+	static void		sHandleConnect(Peer::ref ptr, const boost::system::error_code& error,
 		boost::asio::ip::tcp::resolver::iterator it)
 	{ ptr->handleConnect(error, it); }
 
@@ -50,11 +51,11 @@ private:
 	boost::asio::deadline_timer									mVerifyTimer;
 
 	void			handleStart(const boost::system::error_code& ecResult);
-	static void		sHandleStart(const Peer::pointer& ptr, const boost::system::error_code& ecResult)
+	static void		sHandleStart(Peer::ref ptr, const boost::system::error_code& ecResult)
 	{ ptr->handleStart(ecResult); }
 
 	void			handleVerifyTimer(const boost::system::error_code& ecResult);
-	static void		sHandleVerifyTimer(const Peer::pointer& ptr, const boost::system::error_code& ecResult)
+	static void		sHandleVerifyTimer(Peer::ref ptr, const boost::system::error_code& ecResult)
 	{ ptr->handleVerifyTimer(ecResult); }
 
 protected:
@@ -68,19 +69,19 @@ protected:
 	Peer(boost::asio::io_service& io_service, boost::asio::ssl::context& ctx);
 
 	void handleShutdown(const boost::system::error_code& error) { ; }
-	static void sHandleShutdown(const Peer::pointer& ptr, const boost::system::error_code& error)
+	static void sHandleShutdown(Peer::ref ptr, const boost::system::error_code& error)
 	{ ptr->handleShutdown(error); }
 
 	void handle_write(const boost::system::error_code& error, size_t bytes_transferred);
-	static void sHandle_write(const Peer::pointer& ptr, const boost::system::error_code& error, size_t bytes_transferred)
+	static void sHandle_write(Peer::ref ptr, const boost::system::error_code& error, size_t bytes_transferred)
 	{ ptr->handle_write(error, bytes_transferred); }
 
 	void handle_read_header(const boost::system::error_code& error);
-	static void sHandle_read_header(const Peer::pointer& ptr, const boost::system::error_code& error)
+	static void sHandle_read_header(Peer::ref ptr, const boost::system::error_code& error)
 	{ ptr->handle_read_header(error); }
 
 	void handle_read_body(const boost::system::error_code& error);
-	static void sHandle_read_body(const Peer::pointer& ptr, const boost::system::error_code& error)
+	static void sHandle_read_body(Peer::ref ptr, const boost::system::error_code& error)
 	{ ptr->handle_read_body(error); }
 
 	void processReadBuffer();
@@ -134,11 +135,11 @@ public:
 		return mSocketSsl.lowest_layer();
 	}
 
-	void connect(const std::string strIp, int iPort);
+	void connect(const std::string& strIp, int iPort);
 	void connected(const boost::system::error_code& error);
 	void detach(const char *);
-	bool samePeer(const Peer::pointer& p)	{ return samePeer(*p); }
-	bool samePeer(const Peer& p)			{ return this == &p; }
+	bool samePeer(Peer::ref p)			{ return samePeer(*p); }
+	bool samePeer(const Peer& p)		{ return this == &p; }
 
 	void sendPacket(const PackedMessage::pointer& packet);
 	void sendLedgerProposal(Ledger::ref ledger);

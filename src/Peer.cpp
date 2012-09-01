@@ -140,7 +140,7 @@ void Peer::handleVerifyTimer(const boost::system::error_code& ecResult)
 
 // Begin trying to connect. We are not connected till we know and accept peer's public key.
 // Only takes IP addresses (not domains).
-void Peer::connect(const std::string strIp, int iPort)
+void Peer::connect(const std::string& strIp, int iPort)
 {
 	int	iPortAct	= (iPort <= 0) ? SYSTEM_PEER_PORT : iPort;
 

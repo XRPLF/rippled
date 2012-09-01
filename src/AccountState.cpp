@@ -21,7 +21,7 @@ AccountState::AccountState(const NewcoinAddress& naAccountID) : mAccountID(naAcc
 	mValid = true;
 }
 
-AccountState::AccountState(const SerializedLedgerEntry::pointer& ledgerEntry, const NewcoinAddress& naAccountID) :
+AccountState::AccountState(SLE::ref ledgerEntry, const NewcoinAddress& naAccountID) :
 	mAccountID(naAccountID), mLedgerEntry(ledgerEntry), mValid(false)
 {
 	if (!mLedgerEntry)

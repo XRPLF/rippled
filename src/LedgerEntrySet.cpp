@@ -61,7 +61,7 @@ LedgerEntryAction LedgerEntrySet::hasEntry(const uint256& index) const
 	return it->second.mAction;
 }
 
-void LedgerEntrySet::entryCache(const SLE::pointer& sle)
+void LedgerEntrySet::entryCache(SLE::ref sle)
 {
 	boost::unordered_map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find(sle->getIndex());
 	if (it == mEntries.end())
@@ -82,7 +82,7 @@ void LedgerEntrySet::entryCache(const SLE::pointer& sle)
 	}
 }
 
-void LedgerEntrySet::entryCreate(const SLE::pointer& sle)
+void LedgerEntrySet::entryCreate(SLE::ref sle)
 {
 	boost::unordered_map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find(sle->getIndex());
 	if (it == mEntries.end())
@@ -112,7 +112,7 @@ void LedgerEntrySet::entryCreate(const SLE::pointer& sle)
 	}
 }
 
-void LedgerEntrySet::entryModify(const SLE::pointer& sle)
+void LedgerEntrySet::entryModify(SLE::ref sle)
 {
 	boost::unordered_map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find(sle->getIndex());
 	if (it == mEntries.end())
@@ -147,7 +147,7 @@ void LedgerEntrySet::entryModify(const SLE::pointer& sle)
 	}
  }
 
-void LedgerEntrySet::entryDelete(const SLE::pointer& sle, bool unfunded)
+void LedgerEntrySet::entryDelete(SLE::ref sle, bool unfunded)
 {
 	boost::unordered_map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find(sle->getIndex());
 	if (it == mEntries.end())
@@ -268,7 +268,7 @@ bool LedgerEntrySet::threadTx(TransactionMetaNode& metaNode, const NewcoinAddres
 	return threadTx(metaNode, sle, ledger, newMods);
 }
 
-bool LedgerEntrySet::threadTx(TransactionMetaNode& metaNode, SLE::pointer& threadTo, Ledger::ref ledger,
+bool LedgerEntrySet::threadTx(TransactionMetaNode& metaNode, SLE::ref threadTo, Ledger::ref ledger,
 	boost::unordered_map<uint256, SLE::pointer>& newMods)
 {  // node = the node that was modified/deleted/created
    // threadTo = the node that needs to know
@@ -282,7 +282,7 @@ bool LedgerEntrySet::threadTx(TransactionMetaNode& metaNode, SLE::pointer& threa
 	return false;
 }
 
-bool LedgerEntrySet::threadOwners(TransactionMetaNode& metaNode, SLE::pointer& node, Ledger::ref ledger,
+bool LedgerEntrySet::threadOwners(TransactionMetaNode& metaNode, SLE::ref node, Ledger::ref ledger,
 	boost::unordered_map<uint256, SLE::pointer>& newMods)
 { // thread new or modified node to owner or owners
 	if (node->hasOneOwner()) // thread to owner's account

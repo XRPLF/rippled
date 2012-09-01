@@ -20,7 +20,7 @@ PeerSet::PeerSet(const uint256& hash, int interval) : mHash(hash), mTimerInterva
 	assert((mTimerInterval > 10) && (mTimerInterval < 30000));
 }
 
-void PeerSet::peerHas(const Peer::pointer& ptr)
+void PeerSet::peerHas(Peer::ref ptr)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	std::vector< boost::weak_ptr<Peer> >::iterator it = mPeers.begin();
@@ -40,7 +40,7 @@ void PeerSet::peerHas(const Peer::pointer& ptr)
 	newPeer(ptr);
 }
 
-void PeerSet::badPeer(const Peer::pointer& ptr)
+void PeerSet::badPeer(Peer::ref ptr)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	std::vector< boost::weak_ptr<Peer> >::iterator it = mPeers.begin();
@@ -142,7 +142,7 @@ void LedgerAcquire::addOnComplete(boost::function<void (LedgerAcquire::pointer)>
 	mLock.unlock();
 }
 
-void LedgerAcquire::trigger(const Peer::pointer& peer, bool timer)
+void LedgerAcquire::trigger(Peer::ref peer, bool timer)
 {
 	if (mAborted || mComplete || mFailed)
 		return;
@@ -257,7 +257,7 @@ void LedgerAcquire::trigger(const Peer::pointer& peer, bool timer)
 		resetTimer();
 }
 
-void PeerSet::sendRequest(const newcoin::TMGetLedger& tmGL, const Peer::pointer& peer)
+void PeerSet::sendRequest(const newcoin::TMGetLedger& tmGL, Peer::ref peer)
 {
 	if (!peer)
 		sendRequest(tmGL);
@@ -435,7 +435,7 @@ void LedgerAcquireMaster::dropLedger(const uint256& hash)
 	mLedgers.erase(hash);
 }
 
-bool LedgerAcquireMaster::gotLedgerData(newcoin::TMLedgerData& packet, const Peer::pointer& peer)
+bool LedgerAcquireMaster::gotLedgerData(newcoin::TMLedgerData& packet, Peer::ref peer)
 {
 #ifdef LA_DEBUG
 	Log(lsTRACE) << "got data for acquiring ledger ";

@@ -45,7 +45,7 @@ boost::weak_ptr<PeerSet> TransactionAcquire::pmDowncast()
 	return boost::shared_polymorphic_downcast<PeerSet, TransactionAcquire>(shared_from_this());
 }
 
-void TransactionAcquire::trigger(const Peer::pointer& peer, bool timer)
+void TransactionAcquire::trigger(Peer::ref peer, bool timer)
 {
 	if (mComplete || mFailed)
 		return;
@@ -87,7 +87,7 @@ void TransactionAcquire::trigger(const Peer::pointer& peer, bool timer)
 }
 
 bool TransactionAcquire::takeNodes(const std::list<SHAMapNode>& nodeIDs,
-	const std::list< std::vector<unsigned char> >& data, const Peer::pointer& peer)
+	const std::list< std::vector<unsigned char> >& data, Peer::ref peer)
 {
 	if (mComplete)
 		return true;
@@ -286,7 +286,7 @@ void LedgerConsensus::handleLCL(const uint256& lclHash)
 		mAcquiringLedger = theApp->getMasterLedgerAcquire().findCreate(mPrevLedgerHash);
 		std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
 		bool found = false;
-		BOOST_FOREACH(Peer::pointer& peer, peerList)
+		BOOST_FOREACH(Peer::ref peer, peerList)
 		{
 			if (peer->hasLedger(mPrevLedgerHash))
 			{
@@ -296,7 +296,7 @@ void LedgerConsensus::handleLCL(const uint256& lclHash)
 		}
 		if (!found)
 		{
-			BOOST_FOREACH(Peer::pointer& peer, peerList)
+			BOOST_FOREACH(Peer::ref peer, peerList)
 				mAcquiringLedger->peerHas(peer);
 		}
 		mHaveCorrectLCL = false;
@@ -798,7 +798,7 @@ bool LedgerConsensus::peerPosition(const LedgerProposal::pointer& newPosition)
 	return true;
 }
 
-bool LedgerConsensus::peerHasSet(const Peer::pointer& peer, const uint256& hashSet, newcoin::TxSetStatus status)
+bool LedgerConsensus::peerHasSet(Peer::ref peer, const uint256& hashSet, newcoin::TxSetStatus status)
 {
 	if (status != newcoin::tsHAVE) // Indirect requests are for future support
 		return true;
@@ -815,7 +815,7 @@ bool LedgerConsensus::peerHasSet(const Peer::pointer& peer, const uint256& hashS
 	return true;
 }
 
-bool LedgerConsensus::peerGaveNodes(const Peer::pointer& peer, const uint256& setHash,
+bool LedgerConsensus::peerGaveNodes(Peer::ref peer, const uint256& setHash,
 	const std::list<SHAMapNode>& nodeIDs, const std::list< std::vector<unsigned char> >& nodeData)
 {
 	boost::unordered_map<uint256, TransactionAcquire::pointer>::iterator acq = mAcquiring.find(setHash);
