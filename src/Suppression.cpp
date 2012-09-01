@@ -1,5 +1,6 @@
-
 #include "Suppression.h"
+
+#include <boost/foreach.hpp>
 
 bool SuppressionTable::addSuppression(const uint160& suppression)
 {
@@ -9,15 +10,16 @@ bool SuppressionTable::addSuppression(const uint160& suppression)
 		return false;
 
 	time_t now = time(NULL);
+	time_t expireTime = now - mHoldTime;
 
-	boost::unordered_map< time_t, std::list<uint160> >::iterator it = mSuppressionTimes.begin();
-	while (it != mSuppressionTimes.end())
+	boost::unordered_map< time_t, std::list<uint160> >::iterator
+		it = mSuppressionTimes.begin(), end = mSuppressionTimes.end();
+	while (it != end)
 	{
-		if ((it->first + mHoldTime) < now)
+		if (it->first <= expireTime)
 		{
-			for (std::list<uint160>::iterator lit = it->second.begin(), end = it->second.end();
-					lit != end; ++lit)
-				mSuppressionMap.erase(*lit);
+			BOOST_FOREACH(const uint160& lit, it->second)
+				mSuppressionMap.erase(lit);
 			it = mSuppressionTimes.erase(it);
 		}
 		else ++it;
