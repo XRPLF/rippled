@@ -607,10 +607,12 @@ bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash, uint
 	// XXX Take a vuc for pubkey.
 
 	// Get a preliminary hash to use to suppress duplicates
-	Serializer s(128);
+	Serializer s(256);
+	s.add256(proposeHash);
 	s.add32(proposeSeq);
-	s.add32(getCurrentLedgerID());
+	s.add32(closeTime);
 	s.addRaw(pubKey);
+	s.addRaw(signature);
 	if (!theApp->isNew(s.getSHA512Half()))
 		return false;
 
