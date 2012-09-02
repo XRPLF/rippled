@@ -1341,7 +1341,6 @@ Json::Value RPCServer::doRipple(const Json::Value &params)
 	STAmount		saDstAmount;
 	uint160			uDstCurrencyID;
 
-	std::vector<paymentNode>	vpnPath;
 	STPathSet		spsPaths;
 
 	naSrcIssuerID.setAccountID(params[4u].asString());							// <source_issuerID>
