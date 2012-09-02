@@ -353,7 +353,16 @@ public:
 	friend STAmount operator-(const STAmount& v1, const STAmount& v2);
 
 	static STAmount divide(const STAmount& v1, const STAmount& v2, const uint160& uCurrencyID, const uint160& uIssuerID);
+	static STAmount divide(const STAmount& v1, const STAmount& v2, const STAmount& saUnit)
+		{ return divide(v1, v2, saUnit.getCurrency(), saUnit.getIssuer()); }
+	static STAmount divide(const STAmount& v1, const STAmount& v2)
+		{ return divide(v1, v2, v1); }
+
 	static STAmount multiply(const STAmount& v1, const STAmount& v2, const uint160& uCurrencyID, const uint160& uIssuerID);
+	static STAmount multiply(const STAmount& v1, const STAmount& v2, const STAmount& saUnit)
+		{ return multiply(v1, v2, saUnit.getCurrency(), saUnit.getIssuer()); }
+	static STAmount multiply(const STAmount& v1, const STAmount& v2)
+		{ return multiply(v1, v2, v1); }
 
 	// Someone is offering X for Y, what is the rate?
 	// Rate: smaller is better, the taker wants the most out: in/out
