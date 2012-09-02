@@ -138,13 +138,19 @@ enum TransactionEngineParams
 		// Transaction can be retried, soft failures allowed
 };
 
-typedef struct {
+class PaymentNode {
+protected:
+	friend class TransactionEngine;
+	friend class PathState;
+
 	uint16							uFlags;				// --> From path.
 
 	uint160							uAccountID;			// --> Accounts: Recieving/sending account.
 	uint160							uCurrencyID;		// --> Accounts: Receive and send, Offers: send.
 														// --- For offer's next has currency out.
 	uint160							uIssuerID;			// --> Currency's issuer
+
+	STAmount						saTransferRate;		// Transfer rate for uIssuerID.
 
 	// Computed by Reverse.
 	STAmount						saRevRedeem;		// <-- Amount to redeem to next.
@@ -157,7 +163,27 @@ typedef struct {
 	STAmount						saFwdIssue;			// <-- Amount node will issue to next.
 														//	   Issue isn't used by offers.
 	STAmount						saFwdDeliver;		// <-- Amount to deliver to next regardless of fee.
-} paymentNode;
+
+	// For offers:
+
+	// Directory
+	uint256							uDirectTip;			// Current directory.
+	uint256							uDirectEnd;			// Next order book.
+	bool							bDirectAdvance;		// Need to advance directory.
+	SLE::pointer					sleDirectDir;
+	STAmount						saOfrRate;			// For correct ratio.
+
+	// Node
+	bool							bEntryAdvance;		// Need to advance entry.
+	unsigned int					uEntry;
+	uint256							uOfferIndex;
+	SLE::pointer					sleOffer;
+	uint160							uOfrOwnerID;
+	bool							bFundsDirty;		// Need to refresh saOfferFunds, saTakerPays, & saTakerGets.
+	STAmount						saOfferFunds;
+	STAmount						saTakerPays;
+	STAmount						saTakerGets;
+};
 
 // account id, currency id, issuer id :: node
 typedef boost::tuple<uint160, uint160, uint160> aciSource;
@@ -165,9 +191,8 @@ typedef boost::unordered_map<aciSource, unsigned int>					curIssuerNode;	// Map 
 typedef boost::unordered_map<aciSource, unsigned int>::const_iterator	curIssuerNodeConstIterator;
 
 extern std::size_t hash_value(const aciSource& asValue);
-// extern std::size_t hash_value(const boost::tuple<uint160, uint160, uint160>& bt);
 
-// Hold a path state under incremental application.
+// Holds a path state under incremental application.
 class PathState
 {
 protected:
@@ -180,12 +205,13 @@ public:
 	typedef boost::shared_ptr<PathState> pointer;
 
 	TER							terStatus;
-	std::vector<paymentNode>	vpnNodes;
+	std::vector<PaymentNode>	vpnNodes;
 
 	// When processing, don't want to complicate directory walking with deletion.
 	std::vector<uint256>		vUnfundedBecame;	// Offers that became unfunded or were completely consumed.
 
-	// First time working foward a funding source was mentioned for accounts. Source may only be used there.
+	// First time scanning foward, as part of path contruction, a funding source was mentioned for accounts. Source may only be
+	// used there.
 	curIssuerNode				umForward;			// Map of currency, issuer to node index.
 
 	// First time working in reverse a funding source was used.
@@ -310,10 +336,23 @@ protected:
 	PathState::pointer	pathCreate(const STPath& spPath);
 	void				pathNext(const PathState::pointer& pspCur, const int iPaths);
 	TER					calcNode(const unsigned int uIndex, const PathState::pointer& pspCur, const bool bMultiQuality);
+	TER					calcNodeRev(const unsigned int uIndex, const PathState::pointer& pspCur, const bool bMultiQuality);
+	TER					calcNodeFwd(const unsigned int uIndex, const PathState::pointer& pspCur, const bool bMultiQuality);
 	TER					calcNodeOfferRev(const unsigned int uIndex, const PathState::pointer& pspCur, const bool bMultiQuality);
 	TER					calcNodeOfferFwd(const unsigned int uIndex, const PathState::pointer& pspCur, const bool bMultiQuality);
 	TER					calcNodeAccountRev(const unsigned int uIndex, const PathState::pointer& pspCur, const bool bMultiQuality);
 	TER					calcNodeAccountFwd(const unsigned int uIndex, const PathState::pointer& pspCur, const bool bMultiQuality);
+	TER					calcNodeAdvance(const unsigned int uIndex, const PathState::pointer& pspCur, const bool bMultiQuality);
+	TER					calcNodeDeliver(
+							const unsigned int			uIndex,
+							const PathState::pointer&	pspCur,
+							const bool					bMultiQuality,
+							const uint160&				uInAccountID,
+							const STAmount&				saInFunds,
+							const STAmount&				saInReq,
+							STAmount&					saInAct,
+							STAmount&					saInFees);
+
 	void				calcNodeRipple(const uint32 uQualityIn, const uint32 uQualityOut,
 							const STAmount& saPrvReq, const STAmount& saCurReq,
 							STAmount& saPrvAct, STAmount& saCurAct);
