@@ -838,8 +838,8 @@ bool STAmount::applyOffer(
 		saTakerPaid	= saTakerFunds;					// Taker paid all he had.
 		saTakerGot	= divide(multiply(saTakerFunds, saOfferPaysAvailable, CURRENCY_ONE, ACCOUNT_ONE), saOfferGetsAvailable, saOfferPays.getCurrency(), saOfferPays.getIssuer());
 
-		Log(lsINFO) << "applyOffer: saTakerGot=" << saTakerGot.getFullText();
-		Log(lsINFO) << "applyOffer: saOfferPaysAvailable=" << saOfferPaysAvailable.getFullText();
+		Log(lsINFO) << "applyOffer: saTakerGot=" << saTakerGot;
+		Log(lsINFO) << "applyOffer: saOfferPaysAvailable=" << saOfferPaysAvailable;
 	}
 
 	return saTakerGot >= saOfferPays;
