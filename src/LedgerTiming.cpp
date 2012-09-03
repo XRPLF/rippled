@@ -34,7 +34,7 @@ bool ContinuousLedgerTiming::shouldClose(
 	{ // no transactions so far this interval
 		if (proposersClosed > (previousProposers / 4)) // did we miss a transaction?
 		{
-			Log(lsTRACE) << "no transactions, many proposers: now (" << proposersClosed << "closed, "
+			Log(lsTRACE) << "no transactions, many proposers: now (" << proposersClosed << " closed, "
 				<< previousProposers << " before)";
 			return true;
 		}
