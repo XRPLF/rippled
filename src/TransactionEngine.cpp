@@ -2780,8 +2780,6 @@ TER TransactionEngine::calcNodeAccountFwd(
 	PaymentNode&	pnCur			= pspCur->vpnNodes[uIndex];
 	PaymentNode&	pnNxt			= pspCur->vpnNodes[uIndex == uLast ? uLast : uIndex+1];
 
-	const bool		bRedeem			= isSetBit(pnCur.uFlags, STPathElement::typeRedeem);
-	const bool		bIssue			= isSetBit(pnCur.uFlags, STPathElement::typeIssue);
 	const bool		bPrvAccount		= isSetBit(pnPrv.uFlags, STPathElement::typeAccount);
 	const bool		bNxtAccount		= isSetBit(pnNxt.uFlags, STPathElement::typeAccount);
 
@@ -2816,11 +2814,9 @@ TER TransactionEngine::calcNodeAccountFwd(
 	const STAmount&	saCurDeliverReq	= pnCur.saRevDeliver;
 	STAmount&		saCurDeliverAct	= pnCur.saFwdDeliver;
 
-	Log(lsINFO) << boost::str(boost::format("calcNodeAccountFwd> uIndex=%d/%d bRedeem=%d bIssue=%d saPrvRedeemReq=%s saPrvIssueReq=%s saPrvDeliverReq=%s saCurRedeemReq=%s saCurIssueReq=%s saCurDeliverReq=%s")
+	Log(lsINFO) << boost::str(boost::format("calcNodeAccountFwd> uIndex=%d/%d saPrvRedeemReq=%s saPrvIssueReq=%s saPrvDeliverReq=%s saCurRedeemReq=%s saCurIssueReq=%s saCurDeliverReq=%s")
 		% uIndex
 		% uLast
-		% bRedeem
-		% bIssue
 		% saPrvRedeemReq.getFullText()
 		% saPrvIssueReq.getFullText()
 		% saPrvDeliverReq.getFullText()
@@ -2909,18 +2905,24 @@ TER TransactionEngine::calcNodeAccountFwd(
 			Log(lsINFO) << boost::str(boost::format("calcNodeAccountFwd: account --> ACCOUNT --> account"));
 
 			// Previous redeem part 1: redeem -> redeem
-			if (bRedeem										// Can redeem.
-				&& saPrvRedeemReq != saPrvRedeemAct)		// Previous wants to redeem. To next must be ok.
+			if (saPrvRedeemReq != saPrvRedeemAct)			// Previous wants to redeem. To next must be ok.
 			{
 				// Rate : 1.0 : quality out
 				calcNodeRipple(QUALITY_ONE, uQualityOut, saPrvRedeemReq, saCurRedeemReq, saPrvRedeemAct, saCurRedeemAct, uRateMax);
 			}
 
+			// Previous issue part 1: issue -> redeem
+			if (saPrvIssueReq != saPrvIssueAct				// Previous wants to issue.
+				&& saCurRedeemReq != saCurRedeemAct)		// Current has more to redeem to next.
+			{
+				// Rate: quality in : quality out
+				calcNodeRipple(uQualityIn, uQualityOut, saPrvIssueReq, saCurRedeemReq, saPrvIssueAct, saCurRedeemAct, uRateMax);
+			}
+
 			// Previous redeem part 2: redeem -> issue.
 			// wants to redeem and current would and can issue.
 			// If redeeming cur to next is done, this implies can issue.
-			if (bIssue										// Can issue.
-				&& saPrvRedeemReq != saPrvRedeemAct			// Previous still wants to redeem.
+			if (saPrvRedeemReq != saPrvRedeemAct			// Previous still wants to redeem.
 				&& saCurRedeemReq == saCurRedeemAct			// Current has no more to redeem to next.
 				&& saCurIssueReq)
 			{
@@ -2928,18 +2930,8 @@ TER TransactionEngine::calcNodeAccountFwd(
 				calcNodeRipple(QUALITY_ONE, rippleTransferRate(uCurAccountID), saPrvRedeemReq, saCurIssueReq, saPrvRedeemAct, saCurIssueAct, uRateMax);
 			}
 
-			// Previous issue part 1: issue -> redeem
-			if (bRedeem										// Can redeem.
-				&& saPrvIssueReq != saPrvIssueAct			// Previous wants to issue.
-				&& saCurRedeemReq != saCurRedeemAct)		// Current has more to redeem to next.
-			{
-				// Rate: quality in : quality out
-				calcNodeRipple(uQualityIn, uQualityOut, saPrvIssueReq, saCurRedeemReq, saPrvIssueAct, saCurRedeemAct, uRateMax);
-			}
-
 			// Previous issue part 2 : issue -> issue
-			if (bIssue										// Can issue.
-				&& saPrvIssueReq != saPrvIssueAct)			// Previous wants to issue. To next must be ok.
+			if (saPrvIssueReq != saPrvIssueAct)				// Previous wants to issue. To next must be ok.
 			{
 				// Rate: quality in : 1.0
 				calcNodeRipple(uQualityIn, QUALITY_ONE, saPrvIssueReq, saCurIssueReq, saPrvIssueAct, saCurIssueAct, uRateMax);
@@ -2996,8 +2988,7 @@ TER TransactionEngine::calcNodeAccountFwd(
 			Log(lsINFO) << boost::str(boost::format("calcNodeAccountFwd: offer --> ACCOUNT --> account"));
 
 			// deliver -> redeem
-			if (bRedeem										// Allowed to redeem.
-				&& saPrvDeliverReq)							// Previous wants to deliver.
+			if (saPrvDeliverReq)							// Previous wants to deliver.
 			{
 				// Rate : 1.0 : quality out
 				calcNodeRipple(QUALITY_ONE, uQualityOut, saPrvDeliverReq, saCurRedeemReq, saPrvDeliverAct, saCurRedeemAct, uRateMax);
@@ -3005,8 +2996,7 @@ TER TransactionEngine::calcNodeAccountFwd(
 
 			// deliver -> issue
 			// Wants to redeem and current would and can issue.
-			if (bIssue										// Allowed to issue.
-				&& saPrvDeliverReq != saPrvDeliverAct		// Previous still wants to deliver.
+			if (saPrvDeliverReq != saPrvDeliverAct			// Previous still wants to deliver.
 				&& saCurRedeemReq == saCurRedeemAct			// Current has more to redeem to next.
 				&& saCurIssueReq)							// Current wants issue.
 			{
@@ -3023,8 +3013,7 @@ TER TransactionEngine::calcNodeAccountFwd(
 		// deliver/redeem -> deliver/issue.
 		Log(lsINFO) << boost::str(boost::format("calcNodeAccountFwd: offer --> ACCOUNT --> offer"));
 
-		if (bIssue											// Allowed to issue.
-			&& saPrvDeliverReq								// Previous wants to deliver
+		if (saPrvDeliverReq									// Previous wants to deliver
 			&& saCurIssueReq)								// Current wants issue.
 		{
 			// Rate : 1.0 : transfer_rate
@@ -3089,9 +3078,7 @@ TER PathState::pushImply(uint160 uAccountID, uint160 uCurrencyID, uint160 uIssue
 		// Need to ripple through uIssuerID's account.
 
 		terResult	= pushNode(
-					STPathElement::typeAccount
-						| STPathElement::typeRedeem
-						| STPathElement::typeIssue,
+					STPathElement::typeAccount,
 					uIssuerID,		// Intermediate account is the needed issuer.
 					uCurrencyID,
 					uIssuerID);
@@ -3120,9 +3107,6 @@ TER PathState::pushNode(int iType, uint160 uAccountID, uint160 uCurrencyID, uint
 	const bool			bCurrency	= isSetBit(iType, STPathElement::typeCurrency);
 	// Issuer is specified for the output of the current node.
 	const bool			bIssuer		= isSetBit(iType, STPathElement::typeIssuer);
-	// true, iff account is allowed to redeem it's IOUs to next node.
-	const bool			bRedeem		= isSetBit(iType, STPathElement::typeRedeem);
-	const bool			bIssue		= isSetBit(iType, STPathElement::typeIssue);
 	TER					terResult	= tesSUCCESS;
 
 	pnCur.uFlags		= iType;
@@ -3135,118 +3119,101 @@ TER PathState::pushNode(int iType, uint160 uAccountID, uint160 uCurrencyID, uint
 	}
 	else if (bAccount)
 	{
-		if (bRedeem || bIssue)
+		// Account link
+
+		pnCur.uAccountID	= uAccountID;
+		pnCur.uCurrencyID	= bCurrency ? uCurrencyID : pnPrv.uCurrencyID;
+		pnCur.uIssuerID		= bIssuer ? uIssuerID : uAccountID;
+		pnCur.saRevRedeem	= STAmount(uCurrencyID, uAccountID);
+		pnCur.saRevIssue	= STAmount(uCurrencyID, uAccountID);
+
+		if (!bFirst)
 		{
-			// Account link
+			// Add required intermediate nodes to deliver to current account.
+			terResult	= pushImply(
+				pnCur.uAccountID,									// Current account.
+				pnCur.uCurrencyID,									// Wanted currency.
+				!!pnCur.uCurrencyID ? uAccountID : ACCOUNT_XNS);	// Account as issuer.
+		}
 
-			pnCur.uAccountID	= uAccountID;
-			pnCur.uCurrencyID	= bCurrency ? uCurrencyID : pnPrv.uCurrencyID;
-			pnCur.uIssuerID		= bIssuer ? uIssuerID : uAccountID;
-			pnCur.saRevRedeem	= STAmount(uCurrencyID, uAccountID);
-			pnCur.saRevIssue	= STAmount(uCurrencyID, uAccountID);
+		if (tesSUCCESS == terResult && !vpnNodes.empty())
+		{
+			const PaymentNode&	pnBck		= vpnNodes.back();
+			bool				bBckAccount	= isSetBit(pnBck.uFlags, STPathElement::typeAccount);
 
-			if (!bFirst)
+			if (bBckAccount)
 			{
-				// Add required intermediate nodes to deliver to current account.
-				terResult	= pushImply(
-					pnCur.uAccountID,									// Current account.
-					pnCur.uCurrencyID,									// Wanted currency.
-					!!pnCur.uCurrencyID ? uAccountID : ACCOUNT_XNS);	// Account as issuer.
-			}
+				SLE::pointer	sleRippleState	= mLedger->getSLE(Ledger::getRippleStateIndex(pnBck.uAccountID, pnCur.uAccountID, pnPrv.uCurrencyID));
 
-			if (tesSUCCESS == terResult && !vpnNodes.empty())
-			{
-				const PaymentNode&	pnBck		= vpnNodes.back();
-				bool				bBckAccount	= isSetBit(pnBck.uFlags, STPathElement::typeAccount);
-
-				if (bBckAccount)
+				if (!sleRippleState)
 				{
-					SLE::pointer	sleRippleState	= mLedger->getSLE(Ledger::getRippleStateIndex(pnBck.uAccountID, pnCur.uAccountID, pnPrv.uCurrencyID));
+					Log(lsINFO) << "pushNode: No credit line between "
+						<< NewcoinAddress::createHumanAccountID(pnBck.uAccountID)
+						<< " and "
+						<< NewcoinAddress::createHumanAccountID(pnCur.uAccountID)
+						<< " for "
+						<< STAmount::createHumanCurrency(pnPrv.uCurrencyID)
+						<< "." ;
 
-					if (!sleRippleState)
-					{
-						Log(lsINFO) << "pushNode: No credit line between "
-							<< NewcoinAddress::createHumanAccountID(pnBck.uAccountID)
-							<< " and "
-							<< NewcoinAddress::createHumanAccountID(pnCur.uAccountID)
-							<< " for "
-							<< STAmount::createHumanCurrency(pnPrv.uCurrencyID)
-							<< "." ;
-
-						terResult	= terNO_LINE;
-					}
-					else
-					{
-						Log(lsINFO) << "pushNode: Credit line found between "
-							<< NewcoinAddress::createHumanAccountID(pnBck.uAccountID)
-							<< " and "
-							<< NewcoinAddress::createHumanAccountID(pnCur.uAccountID)
-							<< " for "
-							<< STAmount::createHumanCurrency(pnPrv.uCurrencyID)
-							<< "." ;
-					}
+					terResult	= terNO_LINE;
+				}
+				else
+				{
+					Log(lsINFO) << "pushNode: Credit line found between "
+						<< NewcoinAddress::createHumanAccountID(pnBck.uAccountID)
+						<< " and "
+						<< NewcoinAddress::createHumanAccountID(pnCur.uAccountID)
+						<< " for "
+						<< STAmount::createHumanCurrency(pnPrv.uCurrencyID)
+						<< "." ;
 				}
 			}
-
-			if (tesSUCCESS == terResult)
-				vpnNodes.push_back(pnCur);
 		}
-		else
-		{
-			Log(lsINFO) << "pushNode: Account must redeem and/or issue.";
 
-			terResult	= temBAD_PATH;
-		}
+		if (tesSUCCESS == terResult)
+			vpnNodes.push_back(pnCur);
 	}
 	else
 	{
 		// Offer link
-		if (bRedeem || bIssue)
+		// Offers bridge a change in currency & issuer or just a change in issuer.
+		pnCur.uCurrencyID	= bCurrency ? uCurrencyID : pnPrv.uCurrencyID;
+		pnCur.uIssuerID		= bIssuer ? uIssuerID : pnCur.uAccountID;
+
+		if (!!pnPrv.uAccountID)
 		{
-			terResult	= temBAD_PATH;
+			// Previous is an account.
+
+			// Insert intermediary account if needed.
+			terResult	= pushImply(
+				!!pnPrv.uCurrencyID ? ACCOUNT_ONE : ACCOUNT_XNS,
+				pnPrv.uCurrencyID,
+				pnPrv.uIssuerID);
 		}
 		else
 		{
-			// Offers bridge a change in currency & issuer or just a change in issuer.
-			pnCur.uCurrencyID	= bCurrency ? uCurrencyID : pnPrv.uCurrencyID;
-			pnCur.uIssuerID		= bIssuer ? uIssuerID : pnCur.uAccountID;
+			// Previous is an offer.
+			// XXX Need code if we don't do offer to offer.
+			nothing();
+		}
 
-			if (!!pnPrv.uAccountID)
+		if (tesSUCCESS == terResult)
+		{
+			// Verify that previous is an account.
+			const PaymentNode&	pnBck		= vpnNodes.back();
+			bool				bBckAccount	= isSetBit(pnBck.uFlags, STPathElement::typeAccount);
+
+			if (bBckAccount)
 			{
-				// Previous is an account.
+				Log(lsINFO) << "pushNode: previous must be account.";
 
-				// Insert intermediary account if needed.
-				terResult	= pushImply(
-					!!pnPrv.uCurrencyID ? ACCOUNT_ONE : ACCOUNT_XNS,
-					pnPrv.uCurrencyID,
-					pnPrv.uIssuerID);
+				terResult = temBAD_PATH;
 			}
-			else
-			{
-				// Previous is an offer.
-				// XXX Need code if we don't do offer to offer.
-				nothing();
-			}
+		}
 
-			if (tesSUCCESS == terResult)
-			{
-				// Verify that previous account is allowed to issue.
-				const PaymentNode&	pnBck		= vpnNodes.back();
-				bool				bBckAccount	= isSetBit(pnBck.uFlags, STPathElement::typeAccount);
-				bool				bBckIssue	= isSetBit(pnBck.uFlags, STPathElement::typeIssue);
-
-				if (bBckAccount && !bBckIssue)
-				{
-					Log(lsINFO) << "pushNode: previous account must be allowed to issue.";
-
-					terResult = temBAD_PATH;
-				}
-			}
-
-			if (tesSUCCESS == terResult)
-			{
-				vpnNodes.push_back(pnCur);
-			}
+		if (tesSUCCESS == terResult)
+		{
+			vpnNodes.push_back(pnCur);
 		}
 	}
 	Log(lsINFO) << "pushNode< " << terResult;
@@ -3279,8 +3246,6 @@ PathState::PathState(
 	// Push sending node.
 	terStatus	= pushNode(
 		STPathElement::typeAccount
-			| STPathElement::typeRedeem
-			| STPathElement::typeIssue
 			| STPathElement::typeCurrency
 			| STPathElement::typeIssuer,
 		uSenderID,
@@ -3302,8 +3267,6 @@ PathState::PathState(
 		{
 			terStatus	= pushNode(
 				STPathElement::typeAccount						// Last node is always an account.
-					| STPathElement::typeRedeem					// Does not matter just pass error check.
-					| STPathElement::typeIssue					// Does not matter just pass error check.
 					| STPathElement::typeCurrency
 					| STPathElement::typeIssuer,
 				uReceiverID,									// Receive to output
@@ -3360,12 +3323,6 @@ Json::Value	PathState::getJson() const
 
 		if (pnNode.uFlags & STPathElement::typeAccount)
 			jvFlags.append("account");
-
-		if (pnNode.uFlags & STPathElement::typeRedeem)
-			jvFlags.append("redeem");
-
-		if (pnNode.uFlags & STPathElement::typeIssue)
-			jvFlags.append("issue");
 
 		jvNode["flags"]	= jvFlags;
 

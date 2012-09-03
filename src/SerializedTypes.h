@@ -545,15 +545,11 @@ public:
 	enum {
 		typeEnd			= 0x00,
 		typeAccount		= 0x01,	// Rippling through an account (vs taking an offer).
-		typeRedeem		= 0x04,	// Redeem IOUs.
-		typeIssue		= 0x08,	// Issue IOUs.
 		typeCurrency	= 0x10,	// Currency follows.
 		typeIssuer		= 0x20,	// Issuer follows.
 		typeBoundary	= 0xFF, // Boundary between alternate paths.
 		typeValidBits	= (
 			typeAccount
-				| typeRedeem
-				| typeIssue
 				| typeCurrency
 				| typeIssuer
 			),	// Bits that may be non-zero.
