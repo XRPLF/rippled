@@ -14,8 +14,8 @@
 static uint8_t SNTPQueryData[48] =
 { 0x1B,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
 
-// NTP query frequency - 5 minutes
-#define NTP_QUERY_FREQUENCY		(5 * 60)
+// NTP query frequency - 4 minutes
+#define NTP_QUERY_FREQUENCY		(4 * 60)
 
 // NTP minimum interval to query same servers - 3 minutes
 #define NTP_MIN_QUERY			(3 * 60)
@@ -25,6 +25,9 @@ static uint8_t SNTPQueryData[48] =
 
 // NTP timestamp constant
 #define NTP_UNIX_OFFSET			0x83AA7E80
+
+// NTP timestamp validity
+#define NTP_TIMESTAMP_VALID		((NTP_QUERY_FREQUENCY + NTP_MIN_QUERY) * 2)
 
 // SNTP packet offsets
 #define NTP_OFF_INFO			0
@@ -215,7 +218,7 @@ void SNTPClient::queryAll()
 bool SNTPClient::getOffset(int& offset)
 {
 	boost::mutex::scoped_lock sl(mLock);
-	if ((mLastOffsetUpdate == (time_t) -1) || ((mLastOffsetUpdate + 90) < time(NULL)))
+	if ((mLastOffsetUpdate == (time_t) -1) || ((mLastOffsetUpdate + NTP_TIMESTAMP_VALID) < time(NULL)))
 		return false;
 	offset = mOffset;
 	return true;
