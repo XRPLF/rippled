@@ -3531,6 +3531,7 @@ TER TransactionEngine::doPayment(const SerializedTransaction& txn)
 	const uint32	uTxFlags		= txn.getFlags();
 	const bool		bCreate			= isSetBit(uTxFlags, tfCreateAccount);
 	const bool		bPartialPayment	= isSetBit(uTxFlags, tfPartialPayment);
+	const bool		bLimitQuality	= isSetBit(uTxFlags, tfLimitQuality);
 	const bool		bNoRippleDirect	= isSetBit(uTxFlags, tfNoRippleDirect);
 	const bool		bPaths			= txn.getITFieldPresent(sfPaths);
 	const bool		bMax			= txn.getITFieldPresent(sfSendMax);
@@ -3731,7 +3732,8 @@ TER TransactionEngine::doPayment(const SerializedTransaction& txn)
 
 	STAmount		saPaid;
 	STAmount		saWanted;
-	LedgerEntrySet	lesBase		= mNodes;	// Checkpoint with just fees paid.
+	LedgerEntrySet	lesBase			= mNodes;	// Checkpoint with just fees paid.
+	uint64			uQualityLimit	= STAmount::getRate(saDstAmount, saMaxAmount);
 
 	while (temUNCERTAIN == terResult)
 	{
@@ -3748,8 +3750,12 @@ TER TransactionEngine::doPayment(const SerializedTransaction& txn)
 
 			mNodes.swapWith(pspCur->lesEntries);		// For the path, save ledger state.
 
-			if (!pspBest || (pspCur->uQuality && PathState::lessPriority(pspBest, pspCur)))
+			if ((!bLimitQuality || pspCur->uQuality <= uQualityLimit)				// Quality is not limted or increment has allowed quality.
+				|| !pspBest															// Best is not yet set.
+				|| (pspCur->uQuality && PathState::lessPriority(pspBest, pspCur)))	// Current is better than set.
+			{
 				pspBest	= pspCur;
+			}
 		}
 
 		if (pspBest)
