@@ -468,7 +468,6 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 					vc.highNode = it->getNodePublic();
 				++vc.nodesUsing;
 			}
-			else Log(lsTRACE) << "Connected peer announces no LCL " << it->getIP();
 		}
 	}
 
