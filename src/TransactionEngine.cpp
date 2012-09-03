@@ -3481,12 +3481,6 @@ TER TransactionEngine::calcNodeRev(const unsigned int uIndex, const PathState::p
 
 		terResult	= calcNodeRev(uIndex-1, pspCur, bMultiQuality);
 	}
-	else
-	{
-		// Do forward.
-
-		terResult	= calcNodeFwd(0, pspCur, bMultiQuality);
-	}
 
 	Log(lsINFO) << boost::str(boost::format("calcNodeRev< uIndex=%d terResult=%d") % uIndex % terResult);
 
@@ -3496,12 +3490,12 @@ TER TransactionEngine::calcNodeRev(const unsigned int uIndex, const PathState::p
 // Calculate the next increment of a path.
 // The increment is what can satisfy a portion or all of the requested output at the best quality.
 // <-- pspCur->uQuality
-void TransactionEngine::pathNext(const PathState::pointer& pspCur, const int iPaths)
+void TransactionEngine::pathNext(const PathState::pointer& pspCur, const int iPaths, const LedgerEntrySet& lesCheckpoint)
 {
 	// The next state is what is available in preference order.
 	// This is calculated when referenced accounts changed.
-
-	unsigned int	uLast	= pspCur->vpnNodes.size() - 1;
+	const bool			bMultiQuality	= iPaths == 1;
+	const unsigned int	uLast			= pspCur->vpnNodes.size() - 1;
 
 	Log(lsINFO) << "Path In: " << pspCur->getJson();
 
@@ -3510,7 +3504,19 @@ void TransactionEngine::pathNext(const PathState::pointer& pspCur, const int iPa
 	pspCur->vUnfundedBecame.clear();
 	pspCur->umReverse.clear();
 
-	pspCur->terStatus	= calcNodeRev(uLast, pspCur, iPaths == 1);
+	mNodes	= lesCheckpoint;					// Restore from checkpoint.
+	mNodes.bumpSeq();							// Begin ledger varance.
+
+	pspCur->terStatus	= calcNodeRev(uLast, pspCur, bMultiQuality);
+
+	if (tesSUCCESS == pspCur->terStatus)
+	{
+		// Do forward.
+		mNodes	= lesCheckpoint;					// Restore from checkpoint.
+		mNodes.bumpSeq();							// Begin ledger varance.
+
+		pspCur->terStatus	= calcNodeFwd(0, pspCur, bMultiQuality);
+	}
 
 	Log(lsINFO) << "pathNext: terStatus="
 		<< pspCur->terStatus
@@ -3518,8 +3524,8 @@ void TransactionEngine::pathNext(const PathState::pointer& pspCur, const int iPa
 		<< " saInAct=" << pspCur->saInAct.getText();
 
 	pspCur->uQuality	= tesSUCCESS == pspCur->terStatus
-		? STAmount::getRate(pspCur->saOutAct, pspCur->saInAct)	// Calculate relative quality.
-		: 0;													// Mark path as inactive.
+							? STAmount::getRate(pspCur->saOutAct, pspCur->saInAct)	// Calculate relative quality.
+							: 0;													// Mark path as inactive.
 
 	Log(lsINFO) << "Path Out: " << pspCur->getJson();
 }
@@ -3732,8 +3738,8 @@ TER TransactionEngine::doPayment(const SerializedTransaction& txn)
 
 	STAmount		saPaid;
 	STAmount		saWanted;
-	LedgerEntrySet	lesBase			= mNodes;	// Checkpoint with just fees paid.
-	uint64			uQualityLimit	= STAmount::getRate(saDstAmount, saMaxAmount);
+	LedgerEntrySet	lesBase			= mNodes;										// Checkpoint with just fees paid.
+	uint64			uQualityLimit	= bLimitQuality ? STAmount::getRate(saDstAmount, saMaxAmount) : 0;
 
 	while (temUNCERTAIN == terResult)
 	{
@@ -3743,17 +3749,13 @@ TER TransactionEngine::doPayment(const SerializedTransaction& txn)
 		// Find the best path.
 		BOOST_FOREACH(PathState::pointer pspCur, vpsPaths)
 		{
-			mNodes	= lesCheckpoint;					// Restore from checkpoint.
-			mNodes.bumpSeq();							// Begin ledger varance.
-
-			pathNext(pspCur, vpsPaths.size());			// Compute increment
-
-			mNodes.swapWith(pspCur->lesEntries);		// For the path, save ledger state.
+			pathNext(pspCur, vpsPaths.size(), lesCheckpoint);						// Compute increment.
 
 			if ((!bLimitQuality || pspCur->uQuality <= uQualityLimit)				// Quality is not limted or increment has allowed quality.
 				|| !pspBest															// Best is not yet set.
 				|| (pspCur->uQuality && PathState::lessPriority(pspBest, pspCur)))	// Current is better than set.
 			{
+				mNodes.swapWith(pspCur->lesEntries);								// For the path, save ledger state.
 				pspBest	= pspCur;
 			}
 		}

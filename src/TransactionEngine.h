@@ -332,7 +332,7 @@ protected:
 	STAmount			accountFunds(const uint160& uAccountID, const STAmount& saDefault);
 
 	PathState::pointer	pathCreate(const STPath& spPath);
-	void				pathNext(const PathState::pointer& pspCur, const int iPaths);
+	void				pathNext(const PathState::pointer& pspCur, const int iPaths, const LedgerEntrySet& lesCheckpoint);
 	TER					calcNode(const unsigned int uIndex, const PathState::pointer& pspCur, const bool bMultiQuality);
 	TER					calcNodeRev(const unsigned int uIndex, const PathState::pointer& pspCur, const bool bMultiQuality);
 	TER					calcNodeFwd(const unsigned int uIndex, const PathState::pointer& pspCur, const bool bMultiQuality);
