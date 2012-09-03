@@ -724,10 +724,13 @@ void Peer::recvPropose(newcoin::TMProposeSet& packet)
 		return;
 	}
 
-	uint256 currentTxHash;
+	uint256 currentTxHash, prevLedger;
 	memcpy(currentTxHash.begin(), packet.currenttxhash().data(), 32);
 
-	if(theApp->getOPs().recvPropose(packet.proposeseq(), currentTxHash, packet.closetime(),
+	if ((packet.has_previousledger()) && (packet.previousledger().size() == 32))
+		memcpy(prevLedger.begin(), packet.previousledger().data(), 32);
+
+	if(theApp->getOPs().recvPropose(packet.proposeseq(), currentTxHash, prevLedger, packet.closetime(),
 		packet.nodepubkey(), packet.signature(), mNodePublic))
 	{ // FIXME: Not all nodes will want proposals 
 		PackedMessage::pointer message = boost::make_shared<PackedMessage>(packet, newcoin::mtPROPOSE_LEDGER);
@@ -969,6 +972,8 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 			}
 			memcpy(ledgerhash.begin(), packet.ledgerhash().data(), 32);
 			ledger = theApp->getMasterLedger().getLedgerByHash(ledgerhash);
+			if (!ledger)
+				Log(lsINFO) << "Don't have ledger " << ledgerhash;
 		}
 		else if (packet.has_ledgerseq())
 			ledger = theApp->getMasterLedger().getLedgerBySeq(packet.ledgerseq());
@@ -987,7 +992,7 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 			return;
 		}
 
-		if ((!ledger) || (packet.has_ledgerseq() && (packet.ledgerseq()!=ledger->getLedgerSeq())))
+		if ((!ledger) || (packet.has_ledgerseq() && (packet.ledgerseq() != ledger->getLedgerSeq())))
 		{
 			punishPeer(PP_UNKNOWN_REQUEST);
 			Log(lsWARNING) << "Can't find the ledger they want";

@@ -518,7 +518,8 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 	if (!consensus)
 	{
 		Log(lsINFO) << "Acquiring consensus ledger " << closedLedger;
-		LedgerAcquire::pointer mAcquiringLedger = theApp->getMasterLedgerAcquire().findCreate(closedLedger);
+		if (!mAcquiringLedger || (mAcquiringLedger->getHash() != closedLedger))
+			mAcquiringLedger = theApp->getMasterLedgerAcquire().findCreate(closedLedger);
 		if (!mAcquiringLedger || mAcquiringLedger->isFailed())
 		{
 			theApp->getMasterLedgerAcquire().dropLedger(closedLedger);
@@ -605,8 +606,8 @@ int NetworkOPs::beginConsensus(const uint256& networkClosed, Ledger::pointer clo
 }
 
 // <-- bool: true to relay
-bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash, uint32 closeTime,
-	const std::string& pubKey, const std::string& signature, const NewcoinAddress& nodePublic)
+bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash, const uint256& prevLedger,
+	uint32 closeTime, const std::string& pubKey, const std::string& signature, const NewcoinAddress& nodePublic)
 {
 	// JED: does mConsensus need to be locked?
 
@@ -616,6 +617,7 @@ bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash, uint
 	// Get a preliminary hash to use to suppress duplicates
 	Serializer s(256);
 	s.add256(proposeHash);
+	s.add256(prevLedger);
 	s.add32(proposeSeq);
 	s.add32(closeTime);
 	s.addRaw(pubKey);
@@ -649,6 +651,21 @@ bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash, uint
 		return true;
 	}
 
+	if (prevLedger.isNonZero())
+	{ // new-style
+		LedgerProposal::pointer proposal =
+			boost::make_shared<LedgerProposal>(prevLedger, proposeSeq, proposeHash, closeTime, naPeerPublic);
+		if (!proposal->checkSign(signature))
+		{
+			Log(lsWARNING) << "New-style ledger proposal fails signature check";
+			return false;
+		}
+		if (prevLedger == mConsensus->getLCL())
+			return mConsensus->peerPosition(proposal);
+		mConsensus->deferProposal(proposal, nodePublic);
+		return false;
+	}
+
 	LedgerProposal::pointer proposal =
 		boost::make_shared<LedgerProposal>(mConsensus->getLCL(), proposeSeq, proposeHash, closeTime, naPeerPublic);
 	if (!proposal->checkSign(signature))
@@ -658,7 +675,6 @@ bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash, uint
 		mConsensus->deferProposal(proposal, nodePublic);
 		return false;
 	}
-
 	return mConsensus->peerPosition(proposal);
 }
 

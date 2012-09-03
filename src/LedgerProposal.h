@@ -56,6 +56,8 @@ public:
 
 	void setPrevLedger(const uint256& prevLedger)	{ mPreviousLedger = prevLedger; }
 	void setSignature(const std::string& signature)	{ mSignature = signature; }
+	bool hasSignature()								{ return !mSignature.empty(); }
+	bool isPrevLedger(const uint256& pl)			{ return mPreviousLedger == pl; }
 
 	const boost::posix_time::ptime getCreateTime()	{ return mTime; }
 	bool isStale(boost::posix_time::ptime cutoff)	{ return mTime > cutoff; }

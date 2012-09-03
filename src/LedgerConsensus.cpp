@@ -860,12 +860,17 @@ void LedgerConsensus::playbackProposals()
 	{
 		BOOST_FOREACH(const LedgerProposal::pointer& proposal, it->second)
 		{
-			proposal->setPrevLedger(mPrevLedgerHash);
-			if (proposal->checkSign())
-			{
-				Log(lsINFO) << "Applying deferred proposal";
-				peerPosition(proposal);
+			if (proposal->hasSignature())
+			{ // old-style
+				proposal->setPrevLedger(mPrevLedgerHash);
+				if (proposal->checkSign())
+				{
+					Log(lsINFO) << "Applying deferred proposal";
+					peerPosition(proposal);
+				}
 			}
+			else if (proposal->isPrevLedger(mPrevLedgerHash))
+				peerPosition(proposal);
 		}
 	}
 }
