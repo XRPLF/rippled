@@ -431,7 +431,7 @@ bool LedgerAcquireMaster::hasLedger(const uint256& hash)
 void LedgerAcquireMaster::dropLedger(const uint256& hash)
 {
 	assert(hash.isNonZero());
-	 boost::mutex::scoped_lock sl(mLock);
+	boost::mutex::scoped_lock sl(mLock);
 	mLedgers.erase(hash);
 }
 
