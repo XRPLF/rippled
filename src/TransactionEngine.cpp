@@ -2770,11 +2770,12 @@ TER TransactionEngine::calcNodeAccountRev(const unsigned int uIndex, const PathS
 	return terResult;
 }
 
-// The previous node: specifies what to push through to current.
+// Perfrom balance adjustments between previous and current node.
+// - The previous node: specifies what to push through to current.
 // - All of previous output is consumed.
-// The current node: specify what to push through to next.
-// - Output to next node minus fees.
-// Perform balance adjustment with previous.
+// Then, compute output for next node.
+// - Current node: specify what to push through to next.
+// - Output to next node is computed as input minus quality or transfer fee.
 TER TransactionEngine::calcNodeAccountFwd(
 	const unsigned int			uIndex,				// 0 <= uIndex <= uLast
 	const PathState::pointer&	pspCur,

@@ -332,8 +332,6 @@ STPathSet* STPathSet::construct(SerializerIterator& s, const char *name)
 		else
 		{
 			const bool	bAccount	= !!(iType & STPathElement::typeAccount);
-			const bool	bRedeem		= !!(iType & STPathElement::typeRedeem);
-			const bool	bIssue		= !!(iType & STPathElement::typeIssue);
 			const bool	bCurrency	= !!(iType & STPathElement::typeCurrency);
 			const bool	bIssuer		= !!(iType & STPathElement::typeIssuer);
 
@@ -350,7 +348,7 @@ STPathSet* STPathSet::construct(SerializerIterator& s, const char *name)
 			if (bIssuer)
 				uIssuerID	= s.get160();
 
-			path.push_back(STPathElement(uAccountID, uCurrency, uIssuerID, bRedeem, bIssue));
+			path.push_back(STPathElement(uAccountID, uCurrency, uIssuerID));
 		}
 	} while(1);
 }

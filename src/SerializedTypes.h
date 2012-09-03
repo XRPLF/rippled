@@ -564,15 +564,13 @@ protected:
 	uint160 mIssuerID;
 
 public:
-	STPathElement(const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID, bool bRedeem=false, bool bIssue=false)
+	STPathElement(const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID)
 		: mAccountID(uAccountID), mCurrencyID(uCurrencyID), mIssuerID(uIssuerID)
 	{
 		mType	=
 			(uAccountID.isZero() ? 0 : STPathElement::typeAccount)
 			| (uCurrencyID.isZero() ? 0 : STPathElement::typeCurrency)
-			| (uIssuerID.isZero() ? 0 : STPathElement::typeIssuer)
-			| (bRedeem ? STPathElement::typeRedeem : 0)
-			| (bIssue ? STPathElement::typeIssue : 0);
+			| (uIssuerID.isZero() ? 0 : STPathElement::typeIssuer);
 	}
 
 	int getNodeType() const				{ return mType; }

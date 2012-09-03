@@ -45,7 +45,8 @@ const uint32 tfPassive				= 0x00010000;
 // Payment flags:
 const uint32 tfCreateAccount		= 0x00010000;
 const uint32 tfPartialPayment		= 0x00020000;
-const uint32 tfNoRippleDirect		= 0x00040000;
+const uint32 tfLimitQuality			= 0x00040000;
+const uint32 tfNoRippleDirect		= 0x00080000;
 
 extern TransactionFormat InnerTxnFormats[];
 extern TransactionFormat* getTxnFormat(TransactionType t);
