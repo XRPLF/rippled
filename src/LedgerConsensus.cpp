@@ -845,17 +845,15 @@ void LedgerConsensus::Saccept(boost::shared_ptr<LedgerConsensus> This, SHAMap::p
 
 void LedgerConsensus::deferProposal(const LedgerProposal::pointer& proposal, const NewcoinAddress& peerPublic)
 {
-	if (!peerPublic.isValid())
-		return;
 	std::list<LedgerProposal::pointer>& props = mDeferredProposals[peerPublic.getNodeID()];
-	if (props.size() > (mPreviousProposers + 10))
+	if (props.size() >= (mPreviousProposers + 10))
 		props.pop_front();
 	props.push_back(proposal);
 }
 
 void LedgerConsensus::playbackProposals()
 {
-	for ( boost::unordered_map< uint160,  std::list<LedgerProposal::pointer> >::iterator
+	for (boost::unordered_map< uint160, std::list<LedgerProposal::pointer> >::iterator
 			it = mDeferredProposals.begin(), end = mDeferredProposals.end(); it != end; ++it)
 	{
 		BOOST_FOREACH(const LedgerProposal::pointer& proposal, it->second)

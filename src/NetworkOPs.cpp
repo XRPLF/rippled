@@ -616,7 +616,7 @@ bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash, uint
 	if (!theApp->isNew(s.getSHA512Half()))
 		return false;
 
-	NewcoinAddress naPeerPublic = NewcoinAddress::createNodePublic(strCopy(pubKey));
+	NewcoinAddress naPeerPublic = NewcoinAddress::createNodePublic(pubKey);
 
 	if ((!mConsensus) && (mMode == omFULL))
 	{
@@ -632,7 +632,14 @@ bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash, uint
 	if (!mConsensus)
 	{
 		Log(lsINFO) << "Received proposal outside consensus window";
-		return (mMode != omFULL);
+		return mMode != omFULL;
+	}
+
+	// Is this node on our UNL?
+	if (!theApp->getUNL().nodeInUNL(naPeerPublic))
+	{
+		Log(lsINFO) << "Untrusted proposal: " << naPeerPublic.humanNodePublic() << " " << proposeHash.GetHex();
+		return true;
 	}
 
 	LedgerProposal::pointer proposal =
@@ -640,20 +647,9 @@ bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash, uint
 	if (!proposal->checkSign(signature))
 	{ // Note that if the LCL is different, the signature check will fail
 		Log(lsWARNING) << "Ledger proposal fails signature check";
-		if ((mMode != omFULL) && (mMode != omTRACKING) && theApp->getUNL().nodeInUNL(proposal->peekPublic()))
-		{
-			proposal->setSignature(signature);
-			mConsensus->deferProposal(proposal, nodePublic);
-		}
+		proposal->setSignature(signature);
+		mConsensus->deferProposal(proposal, nodePublic);
 		return false;
-	}
-
-	// Is this node on our UNL?
-	if (!theApp->getUNL().nodeInUNL(proposal->peekPublic()))
-	{
-		Log(lsINFO) << "Untrusted proposal: " << naPeerPublic.humanNodePublic() << " " <<
-			 proposal->getCurrentHash().GetHex();
-		return true;
 	}
 
 	return mConsensus->peerPosition(proposal);

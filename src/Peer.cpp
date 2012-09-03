@@ -721,11 +721,10 @@ void Peer::recvPropose(newcoin::TMProposeSet& packet)
 		return;
 	}
 
-	uint32 proposeSeq = packet.proposeseq();
 	uint256 currentTxHash;
 	memcpy(currentTxHash.begin(), packet.currenttxhash().data(), 32);
 
-	if(theApp->getOPs().recvPropose(proposeSeq, currentTxHash, packet.closetime(),
+	if(theApp->getOPs().recvPropose(packet.proposeseq(), currentTxHash, packet.closetime(),
 		packet.nodepubkey(), packet.signature(), mNodePublic))
 	{ // FIXME: Not all nodes will want proposals 
 		PackedMessage::pointer message = boost::make_shared<PackedMessage>(packet, newcoin::mtPROPOSE_LEDGER);
