@@ -2037,17 +2037,11 @@ TER TransactionEngine::calcNodeAdvance(
 {
 	PaymentNode&	pnPrv			= pspCur->vpnNodes[uIndex-1];
 	PaymentNode&	pnCur			= pspCur->vpnNodes[uIndex];
-//	PaymentNode&	pnNxt			= pspCur->vpnNodes[uIndex+1];
 
 	const uint160&	uPrvCurrencyID	= pnPrv.uCurrencyID;
 	const uint160&	uPrvIssuerID	= pnPrv.uIssuerID;
 	const uint160&	uCurCurrencyID	= pnCur.uCurrencyID;
 	const uint160&	uCurIssuerID	= pnCur.uIssuerID;
-//	const uint160&	uNxtCurrencyID	= pnNxt.uCurrencyID;
-//	const uint160&	uNxtIssuerID	= pnNxt.uIssuerID;
-
-//	const uint160&	uPrvAccountID	= pnPrv.uAccountID;
-//	const uint160&	uNxtAccountID	= pnNxt.uAccountID;
 
 	uint256&		uDirectTip		= pnCur.uDirectTip;
 	uint256			uDirectEnd		= pnCur.uDirectEnd;
@@ -2425,9 +2419,9 @@ void TransactionEngine::calcNodeRipple(
 
 		if (!uRateMax || uRate <= uRateMax)
 		{
-			const uint160		uCurrencyID		= saCur.getCurrency();
-			const uint160		uCurIssuerID	= saCur.getIssuer();
-			const uint160		uPrvIssuerID	= saPrv.getIssuer();
+			const uint160	uCurrencyID		= saCur.getCurrency();
+			const uint160	uCurIssuerID	= saCur.getIssuer();
+			const uint160	uPrvIssuerID	= saPrv.getIssuer();
 
 			STAmount	saCurIn		= STAmount::divide(STAmount::multiply(saCur, uQualityOut, uCurrencyID, uCurIssuerID), uQualityIn, uCurrencyID, uCurIssuerID);
 
@@ -2472,32 +2466,32 @@ TER TransactionEngine::calcNodeAccountRev(const unsigned int uIndex, const PathS
 
 	uint64				uRateMax		= 0;
 
-	PaymentNode&	pnPrv			= pspCur->vpnNodes[uIndex ? uIndex-1 : 0];
-	PaymentNode&	pnCur			= pspCur->vpnNodes[uIndex];
-	PaymentNode&	pnNxt			= pspCur->vpnNodes[uIndex == uLast ? uLast : uIndex+1];
+	PaymentNode&		pnPrv			= pspCur->vpnNodes[uIndex ? uIndex-1 : 0];
+	PaymentNode&		pnCur			= pspCur->vpnNodes[uIndex];
+	PaymentNode&		pnNxt			= pspCur->vpnNodes[uIndex == uLast ? uLast : uIndex+1];
 
 	// Current is allowed to redeem to next.
-	const bool		bPrvAccount		= !uIndex || isSetBit(pnPrv.uFlags, STPathElement::typeAccount);
-	const bool		bNxtAccount		= uIndex == uLast || isSetBit(pnNxt.uFlags, STPathElement::typeAccount);
+	const bool			bPrvAccount		= !uIndex || isSetBit(pnPrv.uFlags, STPathElement::typeAccount);
+	const bool			bNxtAccount		= uIndex == uLast || isSetBit(pnNxt.uFlags, STPathElement::typeAccount);
 
-	const uint160&	uCurAccountID	= pnCur.uAccountID;
-	const uint160&	uPrvAccountID	= bPrvAccount ? pnPrv.uAccountID : uCurAccountID;
-	const uint160&	uNxtAccountID	= bNxtAccount ? pnNxt.uAccountID : uCurAccountID;	// Offers are always issue.
+	const uint160&		uCurAccountID	= pnCur.uAccountID;
+	const uint160&		uPrvAccountID	= bPrvAccount ? pnPrv.uAccountID : uCurAccountID;
+	const uint160&		uNxtAccountID	= bNxtAccount ? pnNxt.uAccountID : uCurAccountID;	// Offers are always issue.
 
-	const uint160&	uCurrencyID		= pnCur.uCurrencyID;
+	const uint160&		uCurrencyID		= pnCur.uCurrencyID;
 
-	const uint32	uQualityIn		= uIndex ? rippleQualityIn(uCurAccountID, uPrvAccountID, uCurrencyID) : QUALITY_ONE;
-	const uint32	uQualityOut		= uIndex != uLast ? rippleQualityOut(uCurAccountID, uNxtAccountID, uCurrencyID) : QUALITY_ONE;
+	const uint32		uQualityIn		= uIndex ? rippleQualityIn(uCurAccountID, uPrvAccountID, uCurrencyID) : QUALITY_ONE;
+	const uint32		uQualityOut		= uIndex != uLast ? rippleQualityOut(uCurAccountID, uNxtAccountID, uCurrencyID) : QUALITY_ONE;
 
 	// For bPrvAccount
-	const STAmount	saPrvOwed	= uIndex && bPrvAccount								// Previous account is owed.
-										? rippleOwed(uCurAccountID, uPrvAccountID, uCurrencyID)
-										: STAmount(uCurrencyID, uCurAccountID);
-	const STAmount	saPrvLimit		= uIndex && bPrvAccount							// Previous account may owe.
-										? rippleLimit(uCurAccountID, uPrvAccountID, uCurrencyID)
-										: STAmount(uCurrencyID, uCurAccountID);
+	const STAmount		saPrvOwed		= uIndex && bPrvAccount								// Previous account is owed.
+											? rippleOwed(uCurAccountID, uPrvAccountID, uCurrencyID)
+											: STAmount(uCurrencyID, uCurAccountID);
+	const STAmount		saPrvLimit		= uIndex && bPrvAccount								// Previous account may owe.
+											? rippleLimit(uCurAccountID, uPrvAccountID, uCurrencyID)
+											: STAmount(uCurrencyID, uCurAccountID);
 
-	const STAmount	saNxtOwed	= uIndex != uLast && bNxtAccount					// Next account is owed.
+	const STAmount		saNxtOwed		= uIndex != uLast && bNxtAccount					// Next account is owed.
 										? rippleOwed(uCurAccountID, uNxtAccountID, uCurrencyID)
 										: STAmount(uCurrencyID, uCurAccountID);
 
@@ -3335,22 +3329,22 @@ Json::Value	PathState::getJson() const
 		if (!!pnNode.uIssuerID)
 			jvNode["issuer"]	= NewcoinAddress::createHumanAccountID(pnNode.uIssuerID);
 
-		// if (!!pnNode.saRevRedeem)
+		// if (pnNode.saRevRedeem)
 			jvNode["rev_redeem"]	= pnNode.saRevRedeem.getFullText();
 
-		// if (!!pnNode.saRevIssue)
+		// if (pnNode.saRevIssue)
 			jvNode["rev_issue"]		= pnNode.saRevIssue.getFullText();
 
-		// if (!!pnNode.saRevDeliver)
+		// if (pnNode.saRevDeliver)
 			jvNode["rev_deliver"]	= pnNode.saRevDeliver.getFullText();
 
-		// if (!!pnNode.saFwdRedeem)
+		// if (pnNode.saFwdRedeem)
 			jvNode["fwd_redeem"]	= pnNode.saFwdRedeem.getFullText();
 
-		// if (!!pnNode.saFwdIssue)
+		// if (pnNode.saFwdIssue)
 			jvNode["fwd_issue"]		= pnNode.saFwdIssue.getFullText();
 
-		// if (!!pnNode.saFwdDeliver)
+		// if (pnNode.saFwdDeliver)
 			jvNode["fwd_deliver"]	= pnNode.saFwdDeliver.getFullText();
 
 		jvNodes.append(jvNode);
@@ -3569,7 +3563,7 @@ TER TransactionEngine::doPayment(const SerializedTransaction& txn)
 	}
 
 	// XXX Should bMax be sufficient to imply ripple?
-	bool			bRipple	= bPaths || bMax || !saDstAmount.isNative();
+	const bool		bRipple	= bPaths || bMax || !saDstAmount.isNative();
 
 	if (!bRipple)
 	{
@@ -3693,15 +3687,15 @@ TER TransactionEngine::doPayment(const SerializedTransaction& txn)
 		terResult	= temUNCERTAIN;
 	}
 
-	STAmount		saPaid;
-	STAmount		saWanted;
-	LedgerEntrySet	lesBase			= mNodes;										// Checkpoint with just fees paid.
-	uint64			uQualityLimit	= bLimitQuality ? STAmount::getRate(saDstAmount, saMaxAmount) : 0;
+	STAmount				saPaid;
+	STAmount				saWanted;
+	const LedgerEntrySet	lesBase			= mNodes;										// Checkpoint with just fees paid.
+	const uint64			uQualityLimit	= bLimitQuality ? STAmount::getRate(saDstAmount, saMaxAmount) : 0;
 
 	while (temUNCERTAIN == terResult)
 	{
 		PathState::pointer	pspBest;
-		LedgerEntrySet		lesCheckpoint	= mNodes;
+		const LedgerEntrySet		lesCheckpoint	= mNodes;
 
 		// Find the best path.
 		BOOST_FOREACH(PathState::pointer pspCur, vpsPaths)
@@ -4297,21 +4291,6 @@ TER TransactionEngine::doOfferCancel(const SerializedTransaction& txn)
 	}
 
 	return terResult;
-}
-
-TER TransactionEngine::doTake(const SerializedTransaction& txn)
-{
-	return temUNKNOWN;
-}
-
-TER TransactionEngine::doStore(const SerializedTransaction& txn)
-{
-	return temUNKNOWN;
-}
-
-TER TransactionEngine::doDelete(const SerializedTransaction& txn)
-{
-	return temUNKNOWN;
 }
 
 #if 0

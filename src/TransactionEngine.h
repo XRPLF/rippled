@@ -361,7 +361,6 @@ protected:
 	TER					doAccountSet(const SerializedTransaction& txn);
 	TER					doClaim(const SerializedTransaction& txn);
 	TER					doCreditSet(const SerializedTransaction& txn);
-	TER					doDelete(const SerializedTransaction& txn);
 	TER					doInvoice(const SerializedTransaction& txn);
 	TER					doOfferCreate(const SerializedTransaction& txn);
 	TER					doOfferCancel(const SerializedTransaction& txn);
@@ -369,8 +368,6 @@ protected:
 	TER					doPasswordFund(const SerializedTransaction& txn);
 	TER					doPasswordSet(const SerializedTransaction& txn);
 	TER					doPayment(const SerializedTransaction& txn);
-	TER					doStore(const SerializedTransaction& txn);
-	TER					doTake(const SerializedTransaction& txn);
 	TER					doWalletAdd(const SerializedTransaction& txn);
 
 public:
