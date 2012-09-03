@@ -60,7 +60,7 @@ public:
 	bool isPrevLedger(const uint256& pl)			{ return mPreviousLedger == pl; }
 
 	const boost::posix_time::ptime getCreateTime()	{ return mTime; }
-	bool isStale(boost::posix_time::ptime cutoff)	{ return mTime > cutoff; }
+	bool isStale(boost::posix_time::ptime cutoff)	{ return mTime <= cutoff; }
 
 	void changePosition(const uint256& newPosition, uint32 newCloseTime);
 	Json::Value getJson() const;
