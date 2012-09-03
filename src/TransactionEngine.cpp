@@ -1048,7 +1048,7 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn,
 
 	if (tesSUCCESS == terResult)
 	{
-		if (!!saCost)
+		if (saCost)
 		{
 			// Only check fee is sufficient when the ledger is open.
 			if (isSetBit(params, tapOPEN_LEDGER) && saPaid < saCost)
@@ -1060,7 +1060,7 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn,
 		}
 		else
 		{
-			if (!!saPaid)
+			if (saPaid)
 			{
 				// Transaction is malformed.
 				Log(lsWARNING) << "applyTransaction: fee not allowed";
@@ -1210,7 +1210,7 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn,
 	{
 		nothing();
 	}
-	else if (!!saCost)
+	else if (saCost)
 	{
 		uint32 a_seq = mTxnAccount->getIFieldU32(sfSequence);
 
@@ -1670,7 +1670,7 @@ TER TransactionEngine::doNicknameSet(const SerializedTransaction& txn)
 		// Edit old entry.
 		sleNickname->setIFieldAccount(sfAccount, mTxnAccountID);
 
-		if (bMinOffer && !!saMinOffer)
+		if (bMinOffer && saMinOffer)
 		{
 			sleNickname->setIFieldAmount(sfMinimumOffer, saMinOffer);
 		}
@@ -1692,7 +1692,7 @@ TER TransactionEngine::doNicknameSet(const SerializedTransaction& txn)
 
 		sleNickname->setIFieldAccount(sfAccount, mTxnAccountID);
 
-		if (bMinOffer && !!saMinOffer)
+		if (bMinOffer && saMinOffer)
 			sleNickname->setIFieldAmount(sfMinimumOffer, saMinOffer);
 	}
 
@@ -2376,7 +2376,8 @@ void TransactionEngine::calcNodeRipple(
 	const STAmount& saPrvReq,	// --> in limit including fees, <0 = unlimited
 	const STAmount& saCurReq,	// --> out limit (driver)
 	STAmount& saPrvAct,			// <-> in limit including achieved
-	STAmount& saCurAct)			// <-> out limit achieved.
+	STAmount& saCurAct,			// <-> out limit achieved.
+	uint64& uRateMax)
 {
 	Log(lsINFO) << boost::str(boost::format("calcNodeRipple> uQualityIn=%d uQualityOut=%d saPrvReq=%s saCurReq=%s saPrvAct=%s saCurAct=%s")
 		% uQualityIn
@@ -2404,38 +2405,52 @@ void TransactionEngine::calcNodeRipple(
 		// No fee.
 		Log(lsINFO) << boost::str(boost::format("calcNodeRipple: No fees"));
 
-		STAmount	saTransfer	= bPrvUnlimited ? saCur : std::min(saPrv, saCur);
+		if (!uRateMax || STAmount::uRateOne <= uRateMax)
+		{
+			STAmount	saTransfer	= bPrvUnlimited ? saCur : std::min(saPrv, saCur);
 
-		saPrvAct	+= saTransfer;
-		saCurAct	+= saTransfer;
+			saPrvAct	+= saTransfer;
+			saCurAct	+= saTransfer;
+
+			if (!uRateMax)
+				uRateMax	= STAmount::uRateOne;
+		}
 	}
 	else
 	{
 		// Fee.
 		Log(lsINFO) << boost::str(boost::format("calcNodeRipple: Fee"));
 
-		const uint160		uCurrencyID		= saCur.getCurrency();
-		const uint160		uCurIssuerID	= saCur.getIssuer();
-		const uint160		uPrvIssuerID	= saPrv.getIssuer();
+		uint64	uRate	= STAmount::getRate(STAmount(uQualityIn), STAmount(uQualityOut));
 
-		STAmount	saCurIn		= STAmount::divide(STAmount::multiply(saCur, uQualityOut, uCurrencyID, uCurIssuerID), uQualityIn, uCurrencyID, uCurIssuerID);
-
-Log(lsINFO) << boost::str(boost::format("calcNodeRipple: bPrvUnlimited=%d saPrv=%s saCurIn=%s") % bPrvUnlimited % saPrv.getFullText() % saCurIn.getFullText());
-		if (bPrvUnlimited || saCurIn <= saPrv)
+		if (!uRateMax || uRate <= uRateMax)
 		{
-			// All of cur. Some amount of prv.
-			saCurAct	+= saCur;
-			saPrvAct	+= saCurIn;
-Log(lsINFO) << boost::str(boost::format("calcNodeRipple:3c: saCurReq=%s saPrvAct=%s") % saCurReq.getFullText() % saPrvAct.getFullText());
-		}
-		else
-		{
-			// A part of cur. All of prv. (cur as driver)
-			STAmount	saCurOut	= STAmount::divide(STAmount::multiply(saPrv, uQualityIn, uCurrencyID, uCurIssuerID), uQualityOut, uCurrencyID, uCurIssuerID);
-Log(lsINFO) << boost::str(boost::format("calcNodeRipple:4: saCurReq=%s") % saCurReq.getFullText());
+			const uint160		uCurrencyID		= saCur.getCurrency();
+			const uint160		uCurIssuerID	= saCur.getIssuer();
+			const uint160		uPrvIssuerID	= saPrv.getIssuer();
 
-			saCurAct	+= saCurOut;
-			saPrvAct	= saPrvReq;
+			STAmount	saCurIn		= STAmount::divide(STAmount::multiply(saCur, uQualityOut, uCurrencyID, uCurIssuerID), uQualityIn, uCurrencyID, uCurIssuerID);
+
+	Log(lsINFO) << boost::str(boost::format("calcNodeRipple: bPrvUnlimited=%d saPrv=%s saCurIn=%s") % bPrvUnlimited % saPrv.getFullText() % saCurIn.getFullText());
+			if (bPrvUnlimited || saCurIn <= saPrv)
+			{
+				// All of cur. Some amount of prv.
+				saCurAct	+= saCur;
+				saPrvAct	+= saCurIn;
+	Log(lsINFO) << boost::str(boost::format("calcNodeRipple:3c: saCurReq=%s saPrvAct=%s") % saCurReq.getFullText() % saPrvAct.getFullText());
+			}
+			else
+			{
+				// A part of cur. All of prv. (cur as driver)
+				STAmount	saCurOut	= STAmount::divide(STAmount::multiply(saPrv, uQualityIn, uCurrencyID, uCurIssuerID), uQualityOut, uCurrencyID, uCurIssuerID);
+	Log(lsINFO) << boost::str(boost::format("calcNodeRipple:4: saCurReq=%s") % saCurReq.getFullText());
+
+				saCurAct	+= saCurOut;
+				saPrvAct	= saPrvReq;
+
+				if (!uRateMax)
+					uRateMax	= uRate;
+			}
 		}
 	}
 
@@ -2455,14 +2470,13 @@ TER TransactionEngine::calcNodeAccountRev(const unsigned int uIndex, const PathS
 	TER					terResult		= tesSUCCESS;
 	const unsigned int	uLast			= pspCur->vpnNodes.size() - 1;
 
+	uint64				uRateMax		= 0;
+
 	PaymentNode&	pnPrv			= pspCur->vpnNodes[uIndex ? uIndex-1 : 0];
 	PaymentNode&	pnCur			= pspCur->vpnNodes[uIndex];
 	PaymentNode&	pnNxt			= pspCur->vpnNodes[uIndex == uLast ? uLast : uIndex+1];
 
-	const bool		bRedeem			= isSetBit(pnCur.uFlags, STPathElement::typeRedeem);
-	const bool		bPrvRedeem		= isSetBit(pnPrv.uFlags, STPathElement::typeRedeem);
-	const bool		bIssue			= isSetBit(pnCur.uFlags, STPathElement::typeIssue);
-	const bool		bPrvIssue		= isSetBit(pnPrv.uFlags, STPathElement::typeIssue);
+	// Current is allowed to redeem to next.
 	const bool		bPrvAccount		= !uIndex || isSetBit(pnPrv.uFlags, STPathElement::typeAccount);
 	const bool		bNxtAccount		= uIndex == uLast || isSetBit(pnNxt.uFlags, STPathElement::typeAccount);
 
@@ -2483,10 +2497,13 @@ TER TransactionEngine::calcNodeAccountRev(const unsigned int uIndex, const PathS
 										? rippleLimit(uCurAccountID, uPrvAccountID, uCurrencyID)
 										: STAmount(uCurrencyID, uCurAccountID);
 
-	Log(lsINFO) << boost::str(boost::format("calcNodeAccountRev> uIndex=%d/%d bPrvIssue=%d uPrvAccountID=%s uCurAccountID=%s uNxtAccountID=%s uCurrencyID=%s uQualityIn=%d uQualityOut=%d saPrvOwed=%s saPrvLimit=%s")
+	const STAmount	saNxtOwed	= uIndex != uLast && bNxtAccount					// Next account is owed.
+										? rippleOwed(uCurAccountID, uNxtAccountID, uCurrencyID)
+										: STAmount(uCurrencyID, uCurAccountID);
+
+	Log(lsINFO) << boost::str(boost::format("calcNodeAccountRev> uIndex=%d/%d uPrvAccountID=%s uCurAccountID=%s uNxtAccountID=%s uCurrencyID=%s uQualityIn=%d uQualityOut=%d saPrvOwed=%s saPrvLimit=%s")
 		% uIndex
 		% uLast
-		% bPrvIssue
 		% NewcoinAddress::createHumanAccountID(uPrvAccountID)
 		% NewcoinAddress::createHumanAccountID(uCurAccountID)
 		% NewcoinAddress::createHumanAccountID(uNxtAccountID)
@@ -2497,11 +2514,11 @@ TER TransactionEngine::calcNodeAccountRev(const unsigned int uIndex, const PathS
 		% saPrvLimit.getFullText());
 
 	// Previous can redeem the owed IOUs it holds.
-	const STAmount	saPrvRedeemReq	= bPrvRedeem && saPrvOwed.isPositive() ? saPrvOwed : STAmount(uCurrencyID, 0);
+	const STAmount	saPrvRedeemReq	= saPrvOwed.isPositive() ? saPrvOwed : STAmount(uCurrencyID, 0);
 	STAmount&		saPrvRedeemAct	= pnPrv.saRevRedeem;
 
 	// Previous can issue up to limit minus whatever portion of limit already used (not including redeemable amount).
-	const STAmount	saPrvIssueReq	= bPrvIssue && saPrvOwed.isNegative() ? saPrvLimit+saPrvOwed : saPrvLimit;
+	const STAmount	saPrvIssueReq	= saPrvOwed.isNegative() ? saPrvLimit+saPrvOwed : saPrvLimit;
 	STAmount&		saPrvIssueAct	= pnPrv.saRevIssue;
 
 	// For !bPrvAccount
@@ -2546,25 +2563,26 @@ TER TransactionEngine::calcNodeAccountRev(const unsigned int uIndex, const PathS
 				% saCurWantedReq.getFullText());
 
 			// Calculate redeem
-			if (bRedeem
-				&& saPrvRedeemReq)								// Previous has IOUs to redeem.
+			if (saPrvRedeemReq)							// Previous has IOUs to redeem.
 			{
 				// Redeem at 1:1
 				Log(lsINFO) << boost::str(boost::format("calcNodeAccountRev: Redeem at 1:1"));
 
 				saCurWantedAct		= std::min(saPrvRedeemReq, saCurWantedReq);
 				saPrvRedeemAct		= saCurWantedAct;
+
+				uRateMax			= STAmount::uRateOne;
 			}
 
 			// Calculate issuing.
-			if (bIssue
-				&& saCurWantedReq != saCurWantedAct				// Need more.
-				&& saPrvIssueReq)								// Will accept IOUs.
+			if (saCurWantedReq != saCurWantedAct		// Need more.
+				&& saPrvIssueReq)						// Will accept IOUs from prevous.
 			{
 				// Rate: quality in : 1.0
 				Log(lsINFO) << boost::str(boost::format("calcNodeAccountRev: Rate: quality in : 1.0"));
 
-				calcNodeRipple(uQualityIn, QUALITY_ONE, saPrvIssueReq, saCurWantedReq, saPrvIssueAct, saCurWantedAct);
+				// If we previously redeemed and this has a poorer rate, this won't be included the current increment.
+				calcNodeRipple(uQualityIn, QUALITY_ONE, saPrvIssueReq, saCurWantedReq, saPrvIssueAct, saCurWantedAct, uRateMax);
 			}
 
 			if (!saCurWantedAct)
@@ -2578,53 +2596,46 @@ TER TransactionEngine::calcNodeAccountRev(const unsigned int uIndex, const PathS
 			// ^|account --> ACCOUNT --> account
 
 			// redeem (part 1) -> redeem
-			if (bPrvRedeem
-				&& bRedeem								// Allowed to redeem.
-				&& saCurRedeemReq						// Next wants us to redeem.
-				&& saPrvOwed)							// Previous has IOUs to redeem.
+			if (saCurRedeemReq							// Next wants us to redeem.
+				&& saPrvRedeemReq)						// Previous has IOUs to redeem.
 			{
 				// Rate : 1.0 : quality out
 				Log(lsINFO) << boost::str(boost::format("calcNodeAccountRev: Rate : 1.0 : quality out"));
 
-				calcNodeRipple(QUALITY_ONE, uQualityOut, saPrvRedeemReq, saCurRedeemReq, saPrvRedeemAct, saCurRedeemAct);
-			}
-
-			// redeem (part 2) -> issue.
-			if (bPrvRedeem
-				&& bIssue								// Allowed to issue.
-				&& saCurRedeemReq != saCurRedeemAct		// Can only if issue if more can not be redeemed.
-				&& saPrvOwed							// Previous still has IOUs.
-				&& saCurIssueReq)						// Need some issued.
-			{
-				// Rate : 1.0 : transfer_rate
-				Log(lsINFO) << boost::str(boost::format("calcNodeAccountRev: Rate : 1.0 : transfer_rate"));
-
-				calcNodeRipple(QUALITY_ONE, rippleTransferRate(uCurAccountID), saPrvRedeemReq, saCurIssueReq, saPrvRedeemAct, saCurIssueAct);
+				calcNodeRipple(QUALITY_ONE, uQualityOut, saPrvRedeemReq, saCurRedeemReq, saPrvRedeemAct, saCurRedeemAct, uRateMax);
 			}
 
 			// issue (part 1)-> redeem
-			if (bPrvIssue
-				&& bRedeem								// Allowed to redeem.
-				&& saCurRedeemReq != saCurRedeemAct		// Can only redeem if more to be redeemed.
-				&& !saPrvOwed.isPositive())				// Previous has no IOUs.
+			if (saCurRedeemReq != saCurRedeemAct		// More to redeem.
+				&& saPrvRedeemReq == saPrvRedeemAct)	// Previously redeemed all owed IOUs.
 			{
 				// Rate: quality in : quality out
 				Log(lsINFO) << boost::str(boost::format("calcNodeAccountRev: Rate: quality in : quality out"));
 
-				calcNodeRipple(uQualityIn, uQualityOut, saPrvIssueReq, saCurRedeemReq, saPrvIssueAct, saCurRedeemAct);
+				calcNodeRipple(uQualityIn, uQualityOut, saPrvIssueReq, saCurRedeemReq, saPrvIssueAct, saCurRedeemAct, uRateMax);
+			}
+
+			// redeem (part 2) -> issue.
+			if (saCurIssueReq							// Need some issued.
+				&& saCurRedeemAct == saNxtOwed			// Can only issue if previously redeemed all owed.
+				&& saPrvOwed.isPositive()				// Previous has IOUs to redeem.
+				&& saPrvRedeemAct != saPrvOwed)			// Did not previously redeem all IOUs.
+			{
+				// Rate : 1.0 : transfer_rate
+				Log(lsINFO) << boost::str(boost::format("calcNodeAccountRev: Rate : 1.0 : transfer_rate"));
+
+				calcNodeRipple(QUALITY_ONE, rippleTransferRate(uCurAccountID), saPrvRedeemReq, saCurIssueReq, saPrvRedeemAct, saCurIssueAct, uRateMax);
 			}
 
 			// issue (part 2) -> issue
-			if (bPrvIssue
-				&& bIssue								// Allowed to issue.
-				&& saCurRedeemReq == saCurRedeemAct		// Can only if issue if more can not be redeemed.
-				&& !saPrvOwed.isPositive()				// Previous has no IOUs.
-				&& saCurIssueReq != saCurIssueAct)		// Need some issued.
+			if (saCurIssueReq != saCurIssueAct			// Need some issued.
+				&& saCurRedeemAct == saNxtOwed			// Can only issue if previously redeemed all owed.
+				&& saPrvRedeemReq == saPrvRedeemAct)	// Previously redeemed all owed IOUs.
 			{
 				// Rate: quality in : 1.0
 				Log(lsINFO) << boost::str(boost::format("calcNodeAccountRev: Rate: quality in : 1.0"));
 
-				calcNodeRipple(uQualityIn, QUALITY_ONE, saPrvIssueReq, saCurIssueReq, saPrvIssueAct, saCurIssueAct);
+				calcNodeRipple(uQualityIn, QUALITY_ONE, saPrvIssueReq, saCurIssueReq, saPrvIssueAct, saCurIssueAct, uRateMax);
 			}
 
 			if (!saCurRedeemAct && !saCurIssueAct)
@@ -2633,11 +2644,7 @@ TER TransactionEngine::calcNodeAccountRev(const unsigned int uIndex, const PathS
 				terResult	= tepPATH_DRY;
 			}
 
-			Log(lsINFO) << boost::str(boost::format("calcNodeAccountRev: ^|account --> ACCOUNT --> account : bPrvRedeem=%d bPrvIssue=%d bRedeem=%d bIssue=%d saCurRedeemReq=%s saCurIssueReq=%s saPrvOwed=%s saCurRedeemAct=%s saCurIssueAct=%s")
-				% bPrvRedeem
-				% bPrvIssue
-				% bRedeem
-				% bIssue
+			Log(lsINFO) << boost::str(boost::format("calcNodeAccountRev: ^|account --> ACCOUNT --> account : saCurRedeemReq=%s saCurIssueReq=%s saPrvOwed=%s saCurRedeemAct=%s saCurIssueAct=%s")
 				% saCurRedeemReq.getFullText()
 				% saCurIssueReq.getFullText()
 				% saPrvOwed.getFullText()
@@ -2652,24 +2659,19 @@ TER TransactionEngine::calcNodeAccountRev(const unsigned int uIndex, const PathS
 		Log(lsINFO) << boost::str(boost::format("calcNodeAccountRev: account --> ACCOUNT --> offer"));
 
 		// redeem -> deliver/issue.
-		if (bPrvRedeem
-			&& bIssue								// Allowed to issue.
-			&& saPrvOwed.isPositive()				// Previous redeeming: Previous still has IOUs.
+		if (saPrvOwed.isPositive()					// Previous has IOUs to redeem.
 			&& saCurDeliverReq)						// Need some issued.
 		{
 			// Rate : 1.0 : transfer_rate
-			calcNodeRipple(QUALITY_ONE, rippleTransferRate(uCurAccountID), saPrvRedeemReq, saCurDeliverReq, saPrvRedeemAct, saCurDeliverAct);
+			calcNodeRipple(QUALITY_ONE, rippleTransferRate(uCurAccountID), saPrvRedeemReq, saCurDeliverReq, saPrvRedeemAct, saCurDeliverAct, uRateMax);
 		}
 
 		// issue -> deliver/issue
-		if (bPrvIssue
-			&& bIssue								// Allowed to issue.
-			&& (!saPrvOwed.isPositive()				// Previous issuing: Never had IOUs.
-				|| saPrvOwed == saPrvRedeemAct)		// Previous issuing: Previous has no IOUs left after redeeming.
-			&& saCurDeliverReq != saCurDeliverAct)	// Need some issued.
+		if (saPrvRedeemReq == saPrvRedeemAct		// Previously redeemed all owed.
+			&& saCurDeliverReq != saCurDeliverAct)	// Still need some issued.
 		{
 			// Rate: quality in : 1.0
-			calcNodeRipple(uQualityIn, QUALITY_ONE, saPrvIssueReq, saCurDeliverReq, saPrvIssueAct, saCurDeliverAct);
+			calcNodeRipple(uQualityIn, QUALITY_ONE, saPrvIssueReq, saCurDeliverReq, saPrvIssueAct, saCurDeliverAct, uRateMax);
 		}
 
 		if (!saCurDeliverAct)
@@ -2678,11 +2680,7 @@ TER TransactionEngine::calcNodeAccountRev(const unsigned int uIndex, const PathS
 			terResult	= tepPATH_DRY;
 		}
 
-		Log(lsINFO) << boost::str(boost::format("calcNodeAccountRev: bPrvRedeem=%d bPrvIssue=%d bRedeem=%d bIssue=%d saCurDeliverReq=%s saCurDeliverAct=%s saPrvOwed=%s")
-			% bPrvRedeem
-			% bPrvIssue
-			% bRedeem
-			% bIssue
+		Log(lsINFO) << boost::str(boost::format("calcNodeAccountRev: saCurDeliverReq=%s saCurDeliverAct=%s saPrvOwed=%s")
 			% saCurDeliverReq.getFullText()
 			% saCurDeliverAct.getFullText()
 			% saPrvOwed.getFullText());
@@ -2694,14 +2692,14 @@ TER TransactionEngine::calcNodeAccountRev(const unsigned int uIndex, const PathS
 			// offer --> ACCOUNT --> $
 			const STAmount&	saCurWantedReq	= bPrvAccount
 												? std::min(pspCur->saOutReq, saPrvLimit+saPrvOwed)	// If previous is an account, limit.
-												: pspCur->saOutReq;								// Previous is an offer, no limit: redeem own IOUs.
+												: pspCur->saOutReq;									// Previous is an offer, no limit: redeem own IOUs.
 			STAmount		saCurWantedAct(saCurWantedReq.getCurrency(), saCurWantedReq.getIssuer());
 
 			Log(lsINFO) << boost::str(boost::format("calcNodeAccountRev: offer --> ACCOUNT --> $ : saCurWantedReq=%s")
 				% saCurWantedReq.getFullText());
 
 			// Rate: quality in : 1.0
-			calcNodeRipple(uQualityIn, QUALITY_ONE, saPrvDeliverReq, saCurWantedReq, saPrvDeliverAct, saCurWantedAct);
+			calcNodeRipple(uQualityIn, QUALITY_ONE, saPrvDeliverReq, saCurWantedReq, saPrvDeliverAct, saCurWantedAct, uRateMax);
 
 			if (!saCurWantedAct)
 			{
@@ -2716,27 +2714,23 @@ TER TransactionEngine::calcNodeAccountRev(const unsigned int uIndex, const PathS
 			Log(lsINFO) << boost::str(boost::format("calcNodeAccountRev: offer --> ACCOUNT --> account"));
 
 			// deliver -> redeem
-			if (bRedeem									// Allowed to redeem.
-				&& saCurRedeemReq)						// Next wants us to redeem.
+			if (saCurRedeemReq)							// Next wants us to redeem.
 			{
 				// Rate : 1.0 : quality out
-				calcNodeRipple(QUALITY_ONE, uQualityOut, saPrvDeliverReq, saCurRedeemReq, saPrvDeliverAct, saCurRedeemAct);
+				calcNodeRipple(QUALITY_ONE, uQualityOut, saPrvDeliverReq, saCurRedeemReq, saPrvDeliverAct, saCurRedeemAct, uRateMax);
 			}
 
 			// deliver -> issue.
-			if (bIssue									// Allowed to issue.
-				&& saCurRedeemReq == saCurRedeemAct		// Can only if issue if more can not be redeemed.
+			if (saCurRedeemReq == saCurRedeemAct		// Can only issue if previously redeemed all.
 				&& saCurIssueReq)						// Need some issued.
 			{
 				// Rate : 1.0 : transfer_rate
-				calcNodeRipple(QUALITY_ONE, rippleTransferRate(uCurAccountID), saPrvDeliverReq, saCurIssueReq, saPrvDeliverAct, saCurIssueAct);
+				calcNodeRipple(QUALITY_ONE, rippleTransferRate(uCurAccountID), saPrvDeliverReq, saCurIssueReq, saPrvDeliverAct, saCurIssueAct, uRateMax);
 			}
 
-			Log(lsINFO) << boost::str(boost::format("calcNodeAccountRev: bRedeem=%d saCurRedeemReq=%s saCurIssueAct=%s bIssue=%d saCurIssueReq=%s saPrvDeliverAct=%s")
-				% bRedeem
+			Log(lsINFO) << boost::str(boost::format("calcNodeAccountRev: saCurRedeemReq=%s saCurIssueAct=%s saCurIssueReq=%s saPrvDeliverAct=%s")
 				% saCurRedeemReq.getFullText()
 				% saCurRedeemAct.getFullText()
-				% bIssue
 				% saCurIssueReq.getFullText()
 				% saPrvDeliverAct.getFullText());
 
@@ -2753,12 +2747,8 @@ TER TransactionEngine::calcNodeAccountRev(const unsigned int uIndex, const PathS
 		// deliver/redeem -> deliver/issue.
 		Log(lsINFO) << boost::str(boost::format("calcNodeAccountRev: offer --> ACCOUNT --> offer"));
 
-		if (bIssue									// Allowed to issue.
-			&& saCurDeliverReq != saCurDeliverAct)	// Can only if issue if more can not be redeemed.
-		{
-			// Rate : 1.0 : transfer_rate
-			calcNodeRipple(QUALITY_ONE, rippleTransferRate(uCurAccountID), saPrvDeliverReq, saCurDeliverReq, saPrvDeliverAct, saCurDeliverAct);
-		}
+		// Rate : 1.0 : transfer_rate
+		calcNodeRipple(QUALITY_ONE, rippleTransferRate(uCurAccountID), saPrvDeliverReq, saCurDeliverReq, saPrvDeliverAct, saCurDeliverAct, uRateMax);
 
 		if (!saCurDeliverAct)
 		{
@@ -2783,6 +2773,8 @@ TER TransactionEngine::calcNodeAccountFwd(
 {
 	TER					terResult		= tesSUCCESS;
 	const unsigned int	uLast			= pspCur->vpnNodes.size() - 1;
+
+	uint64				uRateMax		= 0;
 
 	PaymentNode&	pnPrv			= pspCur->vpnNodes[uIndex ? uIndex-1 : 0];
 	PaymentNode&	pnCur			= pspCur->vpnNodes[uIndex];
@@ -2921,7 +2913,7 @@ TER TransactionEngine::calcNodeAccountFwd(
 				&& saPrvRedeemReq != saPrvRedeemAct)		// Previous wants to redeem. To next must be ok.
 			{
 				// Rate : 1.0 : quality out
-				calcNodeRipple(QUALITY_ONE, uQualityOut, saPrvRedeemReq, saCurRedeemReq, saPrvRedeemAct, saCurRedeemAct);
+				calcNodeRipple(QUALITY_ONE, uQualityOut, saPrvRedeemReq, saCurRedeemReq, saPrvRedeemAct, saCurRedeemAct, uRateMax);
 			}
 
 			// Previous redeem part 2: redeem -> issue.
@@ -2933,7 +2925,7 @@ TER TransactionEngine::calcNodeAccountFwd(
 				&& saCurIssueReq)
 			{
 				// Rate : 1.0 : transfer_rate
-				calcNodeRipple(QUALITY_ONE, rippleTransferRate(uCurAccountID), saPrvRedeemReq, saCurIssueReq, saPrvRedeemAct, saCurIssueAct);
+				calcNodeRipple(QUALITY_ONE, rippleTransferRate(uCurAccountID), saPrvRedeemReq, saCurIssueReq, saPrvRedeemAct, saCurIssueAct, uRateMax);
 			}
 
 			// Previous issue part 1: issue -> redeem
@@ -2942,7 +2934,7 @@ TER TransactionEngine::calcNodeAccountFwd(
 				&& saCurRedeemReq != saCurRedeemAct)		// Current has more to redeem to next.
 			{
 				// Rate: quality in : quality out
-				calcNodeRipple(uQualityIn, uQualityOut, saPrvIssueReq, saCurRedeemReq, saPrvIssueAct, saCurRedeemAct);
+				calcNodeRipple(uQualityIn, uQualityOut, saPrvIssueReq, saCurRedeemReq, saPrvIssueAct, saCurRedeemAct, uRateMax);
 			}
 
 			// Previous issue part 2 : issue -> issue
@@ -2950,7 +2942,7 @@ TER TransactionEngine::calcNodeAccountFwd(
 				&& saPrvIssueReq != saPrvIssueAct)			// Previous wants to issue. To next must be ok.
 			{
 				// Rate: quality in : 1.0
-				calcNodeRipple(uQualityIn, QUALITY_ONE, saPrvIssueReq, saCurIssueReq, saPrvIssueAct, saCurIssueAct);
+				calcNodeRipple(uQualityIn, QUALITY_ONE, saPrvIssueReq, saCurIssueReq, saPrvIssueAct, saCurIssueAct, uRateMax);
 			}
 
 			// Adjust prv --> cur balance : take all inbound
@@ -2969,7 +2961,7 @@ TER TransactionEngine::calcNodeAccountFwd(
 		if (saPrvRedeemReq)								// Previous wants to redeem.
 		{
 			// Rate : 1.0 : transfer_rate
-			calcNodeRipple(QUALITY_ONE, rippleTransferRate(uCurAccountID), saPrvRedeemReq, saCurDeliverReq, saPrvRedeemAct, saCurDeliverAct);
+			calcNodeRipple(QUALITY_ONE, rippleTransferRate(uCurAccountID), saPrvRedeemReq, saCurDeliverReq, saPrvRedeemAct, saCurDeliverAct, uRateMax);
 		}
 
 		// issue -> issue
@@ -2977,7 +2969,7 @@ TER TransactionEngine::calcNodeAccountFwd(
 			&& saPrvIssueReq)							// Previous wants to issue. To next must be ok.
 		{
 			// Rate: quality in : 1.0
-			calcNodeRipple(uQualityIn, QUALITY_ONE, saPrvIssueReq, saCurDeliverReq, saPrvIssueAct, saCurDeliverAct);
+			calcNodeRipple(uQualityIn, QUALITY_ONE, saPrvIssueReq, saCurDeliverReq, saPrvIssueAct, saCurDeliverAct, uRateMax);
 		}
 
 		// Adjust prv --> cur balance : take all inbound
@@ -3008,7 +3000,7 @@ TER TransactionEngine::calcNodeAccountFwd(
 				&& saPrvDeliverReq)							// Previous wants to deliver.
 			{
 				// Rate : 1.0 : quality out
-				calcNodeRipple(QUALITY_ONE, uQualityOut, saPrvDeliverReq, saCurRedeemReq, saPrvDeliverAct, saCurRedeemAct);
+				calcNodeRipple(QUALITY_ONE, uQualityOut, saPrvDeliverReq, saCurRedeemReq, saPrvDeliverAct, saCurRedeemAct, uRateMax);
 			}
 
 			// deliver -> issue
@@ -3019,7 +3011,7 @@ TER TransactionEngine::calcNodeAccountFwd(
 				&& saCurIssueReq)							// Current wants issue.
 			{
 				// Rate : 1.0 : transfer_rate
-				calcNodeRipple(QUALITY_ONE, rippleTransferRate(uCurAccountID), saPrvDeliverReq, saCurIssueReq, saPrvDeliverAct, saCurIssueAct);
+				calcNodeRipple(QUALITY_ONE, rippleTransferRate(uCurAccountID), saPrvDeliverReq, saCurIssueReq, saPrvDeliverAct, saCurIssueAct, uRateMax);
 			}
 
 			// No income balance adjustments necessary.  The paying side inside the offer paid and the next link will receive.
@@ -3036,7 +3028,7 @@ TER TransactionEngine::calcNodeAccountFwd(
 			&& saCurIssueReq)								// Current wants issue.
 		{
 			// Rate : 1.0 : transfer_rate
-			calcNodeRipple(QUALITY_ONE, rippleTransferRate(uCurAccountID), saPrvDeliverReq, saCurDeliverReq, saPrvDeliverAct, saCurDeliverAct);
+			calcNodeRipple(QUALITY_ONE, rippleTransferRate(uCurAccountID), saPrvDeliverReq, saCurDeliverReq, saPrvDeliverAct, saCurDeliverAct, uRateMax);
 		}
 
 		// No income balance adjustments necessary.  The paying side inside the offer paid and the next link will receive.
@@ -3270,8 +3262,7 @@ PathState::PathState(
 	const uint160&			uReceiverID,
 	const uint160&			uSenderID,
 	const STAmount&			saSend,
-	const STAmount&			saSendMax,
-	const bool				bPartialPayment
+	const STAmount&			saSendMax
 	)
 	: mLedger(lpLedger), mIndex(iIndex), uQuality(0)
 {
@@ -3412,16 +3403,16 @@ Json::Value	PathState::getJson() const
 	jvPathState["index"]	= mIndex;
 	jvPathState["nodes"]	= jvNodes;
 
-	if (!!saInReq)
+	if (saInReq)
 		jvPathState["in_req"]	= saInReq.getJson(0);
 
-	if (!!saInAct)
+	if (saInAct)
 		jvPathState["in_act"]	= saInAct.getJson(0);
 
-	if (!!saOutReq)
+	if (saOutReq)
 		jvPathState["out_req"]	= saOutReq.getJson(0);
 
-	if (!!saOutAct)
+	if (saOutAct)
 		jvPathState["out_act"]	= saOutAct.getJson(0);
 
 	if (uQuality)
@@ -3539,8 +3530,8 @@ TER TransactionEngine::doPayment(const SerializedTransaction& txn)
 	// Ripple if source or destination is non-native or if there are paths.
 	const uint32	uTxFlags		= txn.getFlags();
 	const bool		bCreate			= isSetBit(uTxFlags, tfCreateAccount);
-	const bool		bNoRippleDirect	= isSetBit(uTxFlags, tfNoRippleDirect);
 	const bool		bPartialPayment	= isSetBit(uTxFlags, tfPartialPayment);
+	const bool		bNoRippleDirect	= isSetBit(uTxFlags, tfNoRippleDirect);
 	const bool		bPaths			= txn.getITFieldPresent(sfPaths);
 	const bool		bMax			= txn.getITFieldPresent(sfSendMax);
 	const uint160	uDstAccountID	= txn.getITFieldAccount(sfDestination);
@@ -3673,8 +3664,7 @@ TER TransactionEngine::doPayment(const SerializedTransaction& txn)
 			uDstAccountID,
 			mTxnAccountID,
 			saDstAmount,
-			saMaxAmount,
-			bPartialPayment);
+			saMaxAmount);
 
 		if (pspDirect)
 		{
@@ -3706,8 +3696,7 @@ TER TransactionEngine::doPayment(const SerializedTransaction& txn)
 			uDstAccountID,
 			mTxnAccountID,
 			saDstAmount,
-			saMaxAmount,
-			bPartialPayment);
+			saMaxAmount);
 
 		if (pspExpanded)
 		{
@@ -3917,7 +3906,7 @@ TER TransactionEngine::takeOffers(
 	STAmount&			saTakerPaid,
 	STAmount&			saTakerGot)
 {
-	assert(!!saTakerPays && !!saTakerGets);
+	assert(saTakerPays && saTakerGets);
 
 	Log(lsINFO) << "takeOffers: against book: " << uBookBase.ToString();
 
@@ -4265,8 +4254,8 @@ Log(lsWARNING) << "doOfferCreate: saTakerGets=" << saTakerGets.getFullText();
 	// Log(lsWARNING) << "doOfferCreate: takeOffers: uGetsIssuerID=" << NewcoinAddress::createHumanAccountID(uGetsIssuerID);
 
 	if (tesSUCCESS == terResult
-		&& !!saTakerPays								// Still wanting something.
-		&& !!saTakerGets								// Still offering something.
+		&& saTakerPays												// Still wanting something.
+		&& saTakerGets												// Still offering something.
 		&& accountFunds(mTxnAccountID, saTakerGets).isPositive())	// Still funded.
 	{
 		// We need to place the remainder of the offer into its order book.

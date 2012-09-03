@@ -10,6 +10,8 @@
 #include "SerializedTypes.h"
 #include "utils.h"
 
+uint64	STAmount::uRateOne	= STAmount::getRate(STAmount(1), STAmount(1));
+
 bool STAmount::currencyFromString(uint160& uDstCurrency, const std::string& sCurrency)
 {
 	bool	bSuccess	= true;

@@ -254,6 +254,8 @@ protected:
 	static uint64 muldiv(uint64, uint64, uint64);
 
 public:
+	static uint64	uRateOne;
+
 	STAmount(uint64 v = 0, bool isNeg = false) : mValue(v), mOffset(0), mIsNative(true), mIsNegative(isNeg)
 	{ if (v==0) mIsNegative = false; }
 

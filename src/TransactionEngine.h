@@ -235,8 +235,7 @@ public:
 		const uint160&			uReceiverID,
 		const uint160&			uSenderID,
 		const STAmount&			saSend,
-		const STAmount&			saSendMax,
-		const bool				bPartialPayment
+		const STAmount&			saSendMax
 		);
 
 	Json::Value	getJson() const;
@@ -249,11 +248,10 @@ public:
 		const uint160&			uReceiverID,
 		const uint160&			uSenderID,
 		const STAmount&			saSend,
-		const STAmount&			saSendMax,
-		const bool				bPartialPayment
+		const STAmount&			saSendMax
 		)
 	{
-		return boost::make_shared<PathState>(lpLedger, iIndex, lesSource, spSourcePath, uReceiverID, uSenderID, saSend, saSendMax, bPartialPayment);
+		return boost::make_shared<PathState>(lpLedger, iIndex, lesSource, spSourcePath, uReceiverID, uSenderID, saSend, saSendMax);
 	}
 
 	static bool lessPriority(const PathState::pointer& lhs, const PathState::pointer& rhs);
@@ -355,7 +353,8 @@ protected:
 
 	void				calcNodeRipple(const uint32 uQualityIn, const uint32 uQualityOut,
 							const STAmount& saPrvReq, const STAmount& saCurReq,
-							STAmount& saPrvAct, STAmount& saCurAct);
+							STAmount& saPrvAct, STAmount& saCurAct,
+							uint64& uRateMax);
 
 	void				txnWrite();
 
