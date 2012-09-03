@@ -436,8 +436,9 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 
 	{
 		boost::unordered_map<uint256, int> current = theApp->getValidations().getCurrentValidations();
-		for (boost::unordered_map<uint256, int>::iterator it = current.begin(), end = current.end(); it != end; ++it)
-			ledgers[it->first].trustedValidations += it->second;
+		typedef std::pair<const uint256, int> u256_int_pair;
+		BOOST_FOREACH(u256_int_pair& it, current)
+			ledgers[it.first].trustedValidations += it.second;
 	}
 
 	Ledger::pointer ourClosed = mLedgerMaster->getClosedLedger();
