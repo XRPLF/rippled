@@ -302,6 +302,9 @@ void LedgerConsensus::handleLCL(const uint256& lclHash)
 		mHaveCorrectLCL = false;
 		mProposing = false;
 		mValidating = false;
+		mCloseTimes.clear();
+		mPeerPositions.clear();
+		mDisputes.clear();
 		return;
 	}
 
@@ -318,6 +321,7 @@ void LedgerConsensus::takeInitialPosition(Ledger& initialLedger)
 {
 	SHAMap::pointer initialSet = initialLedger.peekTransactionMap()->snapShot(false);
 	uint256 txSet = initialSet->getHash();
+	Log(lsINFO) << "initial position " << txSet;
 
 	// if any peers have taken a contrary position, process disputes
 	boost::unordered_set<uint256> found;
@@ -454,25 +458,24 @@ void LedgerConsensus::statePreClose()
 
 	// This ledger is open. This computes how long since the last ledger closed
 	int sinceClose;
-	int ledgerInterval = 0;
+	int idleInterval = 0;
 
 	if (mHaveCorrectLCL && mPreviousLedger->getCloseAgree())
 	{ // we can use consensus timing
 		sinceClose = 1000 * (theApp->getOPs().getCloseTimeNC() - mPreviousLedger->getCloseTimeNC());
-		ledgerInterval = 2 * mPreviousLedger->getCloseResolution();
-		if (ledgerInterval < LEDGER_IDLE_INTERVAL)
-			ledgerInterval = LEDGER_IDLE_INTERVAL;
+		idleInterval = 2 * mPreviousLedger->getCloseResolution();
+		if (idleInterval < LEDGER_IDLE_INTERVAL)
+			idleInterval = LEDGER_IDLE_INTERVAL;
 	}
 	else
 	{
 		sinceClose = theApp->getOPs().getLastCloseTime();
-		ledgerInterval = LEDGER_IDLE_INTERVAL;
+		idleInterval = LEDGER_IDLE_INTERVAL;
 	}
 
-	if (sinceClose >= ContinuousLedgerTiming::shouldClose(anyTransactions, mPreviousProposers, proposersClosed,
-		mPreviousMSeconds, sinceClose, ledgerInterval))
+	if (ContinuousLedgerTiming::shouldClose(anyTransactions, mPreviousProposers, proposersClosed,
+			mPreviousMSeconds, sinceClose, idleInterval))
 	{ // it is time to close the ledger
-		Log(lsINFO) << "CLC: closing ledger";
 		mState = lcsESTABLISH;
 		mConsensusStartTime = boost::posix_time::microsec_clock::universal_time();
 		mCloseTime = theApp->getOPs().getCloseTimeNC();
@@ -496,7 +499,7 @@ void LedgerConsensus::stateEstablish()
 	}
 	if (haveConsensus())
 	{
-		Log(lsINFO) << "Converge cutoff";
+		Log(lsINFO) << "Converge cutoff (" << mPeerPositions.size() << " participants)";
 		mState = lcsFINISHED;
 		beginAccept();
 	}
@@ -524,7 +527,7 @@ void LedgerConsensus::timerEntry()
 
 	switch (mState)
 	{
-		case lcsPRE_CLOSE:	statePreClose();	if (mState != lcsESTABLISH) return; fallthru();
+		case lcsPRE_CLOSE:	statePreClose();	return;
 		case lcsESTABLISH:	stateEstablish();	if (mState != lcsFINISHED) return; fallthru();
 		case lcsFINISHED:	stateFinished();	if (mState != lcsACCEPTED) return; fallthru();
 		case lcsACCEPTED:	stateAccepted();	return;
@@ -558,7 +561,7 @@ void LedgerConsensus::updateOurPositions()
 		}
 		else
 		{ // proposal is still fresh
-			++closeTimes[it->second->getCloseTime() - (it->second->getCloseTime() % mCloseResolution)];
+			++closeTimes[roundCloseTime(it->second->getCloseTime())];
 			++it;
 		}
 	}
@@ -600,13 +603,13 @@ void LedgerConsensus::updateOurPositions()
 	if (thresh == 0)
 	{ // no other times
 		mHaveCloseTimeConsensus = true;
-		closeTime = mOurPosition->getCloseTime() - (mOurPosition->getCloseTime() % mCloseResolution);
+		closeTime = roundCloseTime(mOurPosition->getCloseTime());
 	}
 	else
 	{
 		if (mProposing)
 		{
-			++closeTimes[mOurPosition->getCloseTime() - (mOurPosition->getCloseTime() % mCloseResolution)];
+			++closeTimes[roundCloseTime(mOurPosition->getCloseTime())];
 			++thresh;
 		}
 		thresh = thresh * neededWeight / 100;
@@ -627,7 +630,7 @@ void LedgerConsensus::updateOurPositions()
 	}
 
 	if ((!changes) &&
-			((closeTime != (mOurPosition->getCloseTime() - (mOurPosition->getCloseTime() % mCloseResolution))) ||
+			((closeTime != (roundCloseTime(mOurPosition->getCloseTime()))) ||
 			(mOurPosition->isStale(ourCutoff))))
 	{ // close time changed or our position is stale
 		ourPosition = mComplete[mOurPosition->getCurrentHash()]->snapShot(true);
@@ -957,11 +960,16 @@ void LedgerConsensus::applyTransactions(const SHAMap::pointer& set, Ledger::ref 
 	} while (successes > 0);
 }
 
+uint32 LedgerConsensus::roundCloseTime(uint32 closeTime)
+{
+	return closeTime - (closeTime % mCloseResolution);
+}
+
 void LedgerConsensus::accept(const SHAMap::pointer& set)
 {
 	assert(set->getHash() == mOurPosition->getCurrentHash());
 
-	uint32 closeTime = mOurPosition->getCloseTime() - (mOurPosition->getCloseTime() & mCloseResolution);
+	uint32 closeTime = roundCloseTime(mOurPosition->getCloseTime());
 
 	Log(lsINFO) << "Computing new LCL based on network consensus";
 	if (mHaveCorrectLCL)
@@ -1035,14 +1043,13 @@ void LedgerConsensus::accept(const SHAMap::pointer& set)
 	mState = lcsACCEPTED;
 	sl.unlock();
 
-	if (mValidating && mOurPosition->getCurrentHash().isNonZero())
+	if (mValidating)
 	{ // see how close our close time is to other node's close time reports
 		Log(lsINFO) << "We closed at " << boost::lexical_cast<std::string>(mCloseTime);
 		uint64 closeTotal = mCloseTime;
 		int closeCount = 1;
-		for (std::map<uint32, int>::iterator it = mCloseTimes.begin(), end =
-		 mCloseTimes.end(); it != end; ++it)
-		{
+		for (std::map<uint32, int>::iterator it = mCloseTimes.begin(), end = mCloseTimes.end(); it != end; ++it)
+		{ // FIXME: Use median, not average
 			Log(lsINFO) << boost::lexical_cast<std::string>(it->second) << " time votes for "
 				<< boost::lexical_cast<std::string>(it->first);
 			closeCount += it->second;
@@ -1052,6 +1059,7 @@ void LedgerConsensus::accept(const SHAMap::pointer& set)
 		closeTotal /= closeCount;
 		int offset = static_cast<int>(closeTotal) - static_cast<int>(mCloseTime);
 		Log(lsINFO) << "Our close offset is estimated at " << offset << " (" << closeCount << ")";
+		theApp->getOPs().closeTimeOffset(offset);
 	}
 
 #ifdef DEBUG

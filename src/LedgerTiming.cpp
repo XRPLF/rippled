@@ -12,7 +12,7 @@ int ContinuousLedgerTiming::LedgerTimeResolution[] = { 10, 10, 20, 30, 60, 90, 1
 
 // Called when a ledger is open and no close is in progress -- when a transaction is received and no close
 // is in process, or when a close completes. Returns the number of seconds the ledger should be be open.
-int ContinuousLedgerTiming::shouldClose(
+bool ContinuousLedgerTiming::shouldClose(
 	bool anyTransactions,
 	int previousProposers,		// proposers in the last closing
 	int proposersClosed,		// proposers who have currently closed this ledgers
@@ -27,7 +27,7 @@ int ContinuousLedgerTiming::shouldClose(
 			boost::str(boost::format("CLC::shouldClose range Trans=%s, Prop: %d/%d, Secs: %d (last:%d)")
 			% (anyTransactions ? "yes" : "no") % previousProposers % proposersClosed
 			% currentMSeconds % previousMSeconds);
-		return currentMSeconds;
+		return true;;
 	}
 
 	if (!anyTransactions)
@@ -36,7 +36,7 @@ int ContinuousLedgerTiming::shouldClose(
 		{
 			Log(lsTRACE) << "no transactions, many proposers: now (" << proposersClosed << "closed, "
 				<< previousProposers << " before)";
-			return currentMSeconds;
+			return true;
 		}
 #if 0 // This false triggers on the genesis ledger
 		if (previousMSeconds > (1000 * (LEDGER_IDLE_INTERVAL + 2))) // the last ledger was very slow to close
@@ -47,11 +47,10 @@ int ContinuousLedgerTiming::shouldClose(
 			return previousMSeconds - 1000;
 		}
 #endif
-		return idleInterval * 1000; // normal idle
+		return currentMSeconds >= (idleInterval * 1000); // normal idle
 	}
 
-	Log(lsTRACE) << "close now";
-	return currentMSeconds; // this ledger should close now
+	return true; // this ledger should close now
 }
 
 // Returns whether we have a consensus or not. If so, we expect all honest nodes

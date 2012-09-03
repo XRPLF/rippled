@@ -52,7 +52,7 @@ public:
 
 	// Returns the number of seconds the ledger was or should be open
 	// Call when a consensus is reached and when any transaction is relayed to be added
-	static int shouldClose(
+	static bool shouldClose(
 		bool anyTransactions,
 		int previousProposers,		int proposersClosed,
 		int previousSeconds,		int currentSeconds,

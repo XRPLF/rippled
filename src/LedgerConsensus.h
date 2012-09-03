@@ -136,12 +136,15 @@ protected:
 	void applyTransaction(TransactionEngine& engine, const SerializedTransaction::pointer& txn,
 		Ledger::ref targetLedger, CanonicalTXSet& failedTransactions, bool openLgr);
 
+	uint32 roundCloseTime(uint32 closeTime);
+
 	// manipulating our own position
 	void statusChange(newcoin::NodeEvent, Ledger& ledger);
 	void takeInitialPosition(Ledger& initialLedger);
 	void updateOurPositions();
 	void playbackProposals();
 	int getThreshold();
+
 	void beginAccept();
 	void endConsensus();
 
