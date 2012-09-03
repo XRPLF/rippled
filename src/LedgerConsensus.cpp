@@ -519,8 +519,7 @@ void LedgerConsensus::stateAccepted()
 
 void LedgerConsensus::timerEntry()
 {
-	if (!mHaveCorrectLCL)
-		checkLCL();
+	checkLCL();
 
 	mCurrentMSeconds =
 		(boost::posix_time::microsec_clock::universal_time() - mConsensusStartTime).total_milliseconds();
