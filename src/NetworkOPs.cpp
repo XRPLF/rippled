@@ -472,7 +472,7 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 		it != end; ++it)
 	{
 		bool isDead = theApp->getValidations().isDeadLedger(it->first);
-		Log(lsTRACE) << "L: " << it->first.GetHex() << ((isDead) ? " dead" : " live") <<
+		Log(lsTRACE) << "L: " << it->first << ((isDead) ? " dead" : " live") <<
 			" t=" << it->second.trustedValidations << 	", n=" << it->second.nodesUsing;
 		if ((it->second > bestVC) && !isDead)
 		{
@@ -502,15 +502,15 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 	}
 
 	Log(lsWARNING) << "We are not running on the consensus ledger";
-	Log(lsINFO) << "Our LCL " << ourClosed->getHash().GetHex();
-	Log(lsINFO) << "Net LCL " << closedLedger.GetHex();
+	Log(lsINFO) << "Our LCL " << ourClosed->getHash();
+	Log(lsINFO) << "Net LCL " << closedLedger;
 	if ((mMode == omTRACKING) || (mMode == omFULL))
 		setMode(omCONNECTED);
 
 	Ledger::pointer consensus = mLedgerMaster->getLedgerByHash(closedLedger);
 	if (!consensus)
 	{
-		Log(lsINFO) << "Acquiring consensus ledger " << closedLedger.GetHex();
+		Log(lsINFO) << "Acquiring consensus ledger " << closedLedger;
 		LedgerAcquire::pointer mAcquiringLedger = theApp->getMasterLedgerAcquire().findCreate(closedLedger);
 		if (!mAcquiringLedger || mAcquiringLedger->isFailed())
 		{
@@ -552,9 +552,9 @@ void NetworkOPs::switchLastClosedLedger(Ledger::pointer newLedger, bool duringCo
 { // set the newledger as our last closed ledger -- this is abnormal code
 
 	if (duringConsensus)
-		Log(lsERROR) << "JUMPdc last closed ledger to " << newLedger->getHash().GetHex();
+		Log(lsERROR) << "JUMPdc last closed ledger to " << newLedger->getHash();
 	else
-		Log(lsERROR) << "JUMP last closed ledger to " << newLedger->getHash().GetHex();
+		Log(lsERROR) << "JUMP last closed ledger to " << newLedger->getHash();
 
 	newLedger->setClosed();
 	Ledger::pointer openLedger = boost::make_shared<Ledger>(false, boost::ref(*newLedger));
@@ -575,7 +575,7 @@ void NetworkOPs::switchLastClosedLedger(Ledger::pointer newLedger, bool duringCo
 int NetworkOPs::beginConsensus(const uint256& networkClosed, Ledger::pointer closingLedger)
 {
 	Log(lsINFO) << "Consensus time for ledger " << closingLedger->getLedgerSeq();
-	Log(lsINFO) << " LCL is " << closingLedger->getParentHash().GetHex();
+	Log(lsINFO) << " LCL is " << closingLedger->getParentHash();
 
 	Ledger::pointer prevLedger = mLedgerMaster->getLedgerByHash(closingLedger->getParentHash());
 	if (!prevLedger)
@@ -638,7 +638,7 @@ bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash, uint
 	// Is this node on our UNL?
 	if (!theApp->getUNL().nodeInUNL(naPeerPublic))
 	{
-		Log(lsINFO) << "Untrusted proposal: " << naPeerPublic.humanNodePublic() << " " << proposeHash.GetHex();
+		Log(lsINFO) << "Untrusted proposal: " << naPeerPublic.humanNodePublic() << " " << proposeHash;
 		return true;
 	}
 
@@ -686,7 +686,7 @@ void NetworkOPs::mapComplete(const uint256& hash, const SHAMap::pointer& map)
 void NetworkOPs::endConsensus(bool correctLCL)
 {
 	uint256 deadLedger = theApp->getMasterLedger().getClosedLedger()->getParentHash();
-	Log(lsTRACE) << "Ledger " << deadLedger.GetHex() << " is now dead";
+	Log(lsTRACE) << "Ledger " << deadLedger << " is now dead";
 	theApp->getValidations().addDeadLedger(deadLedger);
 	std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
 	BOOST_FOREACH(Peer::ref it, peerList)
@@ -766,7 +766,7 @@ std::vector<NewcoinAddress>
 
 bool NetworkOPs::recvValidation(const SerializedValidation::pointer& val)
 {
-	Log(lsINFO) << "recvValidation " << val->getLedgerHash().GetHex();
+	Log(lsINFO) << "recvValidation " << val->getLedgerHash();
 	return theApp->getValidations().addValidation(val);
 }
 

@@ -23,12 +23,12 @@ void LedgerMaster::pushLedger(Ledger::ref newLedger)
 {
 	// Caller should already have properly assembled this ledger into "ready-to-close" form --
 	// all candidate transactions must already be appled
-	Log(lsINFO) << "PushLedger: " << newLedger->getHash().GetHex();
+	Log(lsINFO) << "PushLedger: " << newLedger->getHash();
 	ScopedLock sl(mLock);
 	if (!!mFinalizedLedger)
 	{
 		mFinalizedLedger->setClosed();
-		Log(lsTRACE) << "Finalizes: " << mFinalizedLedger->getHash().GetHex();
+		Log(lsTRACE) << "Finalizes: " << mFinalizedLedger->getHash();
 	}
 	mFinalizedLedger = mCurrentLedger;
 	mCurrentLedger = newLedger;
@@ -45,7 +45,7 @@ void LedgerMaster::pushLedger(Ledger::ref newLCL, Ledger::ref newOL)
 		assert(newLCL->isClosed());
 		assert(newLCL->isImmutable());
 		mLedgerHistory.addAcceptedLedger(newLCL);
-		Log(lsINFO) << "StashAccepted: " << newLCL->getHash().GetHex();
+		Log(lsINFO) << "StashAccepted: " << newLCL->getHash();
 	}
 
 	mFinalizedLedger = newLCL;

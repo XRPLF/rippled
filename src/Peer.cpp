@@ -906,7 +906,7 @@ void Peer::recvStatus(newcoin::TMStatusChange& packet)
 	if (packet.has_ledgerhash() && (packet.ledgerhash().size() == (256 / 8)))
 	{ // a peer has changed ledgers
 		memcpy(mClosedLedgerHash.begin(), packet.ledgerhash().data(), 256 / 8);
-		Log(lsTRACE) << "peer LCL is " << mClosedLedgerHash.GetHex() << " " << getIP();
+		Log(lsTRACE) << "peer LCL is " << mClosedLedgerHash << " " << getIP();
 	}
 	else
 	{

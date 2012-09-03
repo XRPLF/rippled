@@ -125,7 +125,7 @@ void SHAMap::dirtyUp(std::stack<SHAMapTreeNode::pointer>& stack, const uint256& 
 			return;
 		}
 #ifdef ST_DEBUG
-		std::cerr << "dirtyUp sets branch " << branch << " to " << prevHash.GetHex() << std::endl;
+		std::cerr << "dirtyUp sets branch " << branch << " to " << prevHash << std::endl;
 #endif
 		prevHash = node->getNodeHash();
 		assert(prevHash.isNonZero());
@@ -188,8 +188,8 @@ SHAMapTreeNode::pointer SHAMap::getNode(const SHAMapNode& id, const uint256& has
 		{
 			std::cerr << "Attempt to get node, hash not in tree" << std::endl;
 			std::cerr << "ID: " << id.getString() << std::endl;
-			std::cerr << "TgtHash " << hash.GetHex() << std::endl;
-			std::cerr << "NodHash " << node->getNodeHash().GetHex() << std::endl;
+			std::cerr << "TgtHash " << hash << std::endl;
+			std::cerr << "NodHash " << node->getNodeHash() << std::endl;
 			dump();
 			throw std::runtime_error("invalid node");
 		}
@@ -255,7 +255,7 @@ SHAMapItem::pointer SHAMap::firstBelow(SHAMapTreeNode* node)
 #ifdef ST_DEBUG
 	std::cerr << " FB: node " << node->getString() << std::endl;
 	std::cerr << "  has non-empty branch " << i << " : " <<
-		node->getChildNodeID(i).getString() << ", " << node->getChildHash(i).GetHex() << std::endl;
+		node->getChildNodeID(i).getString() << ", " << node->getChildHash(i) << std::endl;
 #endif
 				node = getNodePointer(node->getChildNodeID(i), node->getChildHash(i));
 				foundNode = true;
@@ -501,7 +501,7 @@ bool SHAMap::delItem(const uint256& id)
 bool SHAMap::addGiveItem(const SHAMapItem::pointer& item, bool isTransaction, bool hasMeta)
 { // add the specified item, does not update
 #ifdef ST_DEBUG
-	std::cerr << "aGI " << item->getTag().GetHex() << std::endl;
+	std::cerr << "aGI " << item->getTag() << std::endl;
 #endif
 
 	uint256 tag = item->getTag();
@@ -547,7 +547,7 @@ bool SHAMap::addGiveItem(const SHAMapItem::pointer& item, bool isTransaction, bo
 	{ // this is a leaf node that has to be made an inner node holding two items
 #ifdef ST_DEBUG
 		std::cerr << "aGI leaf " << node->getString() << std::endl;
-		std::cerr << "Existing: " << node->peekItem()->getTag().GetHex() << std::endl;
+		std::cerr << "Existing: " << node->peekItem()->getTag() << std::endl;
 #endif
 		SHAMapItem::pointer otherItem = node->peekItem();
 		assert(otherItem && (tag != otherItem->getTag()));
@@ -629,7 +629,7 @@ bool SHAMap::updateGiveItem(const SHAMapItem::pointer& item, bool isTransaction,
 
 void SHAMapItem::dump()
 {
-	std::cerr << "SHAMapItem(" << mTag.GetHex() << ") " << mData.size() << "bytes" << std::endl;
+	std::cerr << "SHAMapItem(" << mTag << ") " << mData.size() << "bytes" << std::endl;
 }
 
 SHAMapTreeNode::pointer SHAMap::fetchNodeExternal(const SHAMapNode& id, const uint256& hash)
@@ -652,7 +652,7 @@ SHAMapTreeNode::pointer SHAMap::fetchNodeExternal(const SHAMapNode& id, const ui
 	}
 	catch (...)
 	{
-		Log(lsWARNING) << "fetchNodeExternal gets an invalid node: " << hash.GetHex();
+		Log(lsWARNING) << "fetchNodeExternal gets an invalid node: " << hash;
 		throw SHAMapMissingNode(id, hash);
 	}
 }
@@ -719,7 +719,7 @@ void SHAMap::dump(bool hash)
 	SHAMapItem::pointer i=peekFirstItem();
 	while (i)
 	{
-		std::cerr << "Item: id=" << i->getTag().GetHex() << std::endl;
+		std::cerr << "Item: id=" << i->getTag() << std::endl;
 		i = peekNextItem(i->getTag());
 	}
 	std::cerr << "SHAMap::dump done" << std::endl;
@@ -732,7 +732,7 @@ void SHAMap::dump(bool hash)
 	{
 		std::cerr << it->second->getString() << std::endl;
 		if (hash)
-			std::cerr << "   " << it->second->getNodeHash().GetHex() << std::endl;
+			std::cerr << "   " << it->second->getNodeHash() << std::endl;
 	}
 
 }

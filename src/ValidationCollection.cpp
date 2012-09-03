@@ -54,7 +54,7 @@ bool ValidationCollection::addValidation(const SerializedValidation::pointer& va
 		}
 	}
 
-	Log(lsINFO) << "Val for " << hash.GetHex() << " from " << signer.humanNodePublic()
+	Log(lsINFO) << "Val for " << hash << " from " << signer.humanNodePublic()
 		<< " added " << (val->isTrusted() ? "trusted/" : "UNtrusted/") << (isCurrent ? "current" : "stale");
 	return isCurrent;
 }
@@ -90,7 +90,7 @@ void ValidationCollection::getValidationCount(const uint256& ledger, bool curren
 				else
 				{
 #ifdef VC_DEBUG
-					Log(lsINFO) << "VC: Untrusted due to time " << ledger.GetHex();
+					Log(lsINFO) << "VC: Untrusted due to time " << ledger;
 #endif
 				}
 			}
@@ -101,7 +101,7 @@ void ValidationCollection::getValidationCount(const uint256& ledger, bool curren
 		}
 	}
 #ifdef VC_DEBUG
-	Log(lsINFO) << "VC: " << ledger.GetHex() << "t:" << trusted << " u:" << untrusted;
+	Log(lsINFO) << "VC: " << ledger << "t:" << trusted << " u:" << untrusted;
 #endif
 }
 
@@ -149,7 +149,7 @@ boost::unordered_map<uint256, int> ValidationCollection::getCurrentValidations()
 			if (pair.oldest && (now > (pair.oldest->getCloseTime() + LEDGER_VAL_INTERVAL)))
 			{
 #ifdef VC_DEBUG
-				Log(lsINFO) << "VC: " << it->first.GetHex() << " removeOldestStale";
+				Log(lsINFO) << "VC: " << it->first << " removeOldestStale";
 #endif
 				mStaleValidations.push_back(pair.oldest);
 				pair.oldest = SerializedValidation::pointer();
@@ -158,7 +158,7 @@ boost::unordered_map<uint256, int> ValidationCollection::getCurrentValidations()
 			if (pair.newest && (now > (pair.newest->getCloseTime() + LEDGER_VAL_INTERVAL)))
 			{
 #ifdef VC_DEBUG
-				Log(lsINFO) << "VC: " << it->first.GetHex() << " removeNewestStale";
+				Log(lsINFO) << "VC: " << it->first << " removeNewestStale";
 #endif
 				mStaleValidations.push_back(pair.newest);
 				pair.newest = SerializedValidation::pointer();
@@ -171,7 +171,7 @@ boost::unordered_map<uint256, int> ValidationCollection::getCurrentValidations()
 				if (pair.oldest)
 				{
 #ifdef VC_DEBUG
-					Log(lsTRACE) << "VC: OLD " << pair.oldest->getLedgerHash().GetHex() << " " <<
+					Log(lsTRACE) << "VC: OLD " << pair.oldest->getLedgerHash() << " " <<
 						boost::lexical_cast<std::string>(pair.oldest->getCloseTime());
 #endif
 					++ret[pair.oldest->getLedgerHash()];
@@ -179,7 +179,7 @@ boost::unordered_map<uint256, int> ValidationCollection::getCurrentValidations()
 				if (pair.newest)
 				{
 #ifdef VC_DEBUG
-					Log(lsTRACE) << "VC: NEW " << pair.newest->getLedgerHash().GetHex() << " " <<
+					Log(lsTRACE) << "VC: NEW " << pair.newest->getLedgerHash() << " " <<
 						boost::lexical_cast<std::string>(pair.newest->getCloseTime());
 #endif
 					++ret[pair.newest->getLedgerHash()];
