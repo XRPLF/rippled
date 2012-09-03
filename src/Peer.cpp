@@ -904,9 +904,12 @@ void Peer::recvStatus(newcoin::TMStatusChange& packet)
 
 	if (packet.newevent() == newcoin::neLOST_SYNC)
 	{
-		Log(lsTRACE) << "peer has lost sync " << getIP();
+		if (!mClosedLedgerHash.isZero())
+		{
+			Log(lsTRACE) << "peer has lost sync " << getIP();
+			mClosedLedgerHash.zero();
+		}
 		mPreviousLedgerHash.zero();
-		mClosedLedgerHash.zero();
 		return;
 	}
 	if (packet.has_ledgerhash() && (packet.ledgerhash().size() == (256 / 8)))
