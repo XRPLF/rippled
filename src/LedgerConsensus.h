@@ -126,7 +126,7 @@ protected:
 	void createDisputes(const SHAMap::pointer&, const SHAMap::pointer&);
 	void addDisputedTransaction(const uint256&, const std::vector<unsigned char>& transaction);
 	void adjustCount(const SHAMap::pointer& map, const std::vector<uint160>& peers);
-	void propose(const std::vector<uint256>& addedTx, const std::vector<uint256>& removedTx);
+	void propose();
 
 	void addPosition(LedgerProposal&, bool ours);
 	void removePosition(LedgerProposal&, bool ours);

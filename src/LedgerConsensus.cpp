@@ -170,6 +170,7 @@ void LCTransaction::unVote(const uint160& peer)
 			--mYays;
 		else
 			--mNays;
+		mVotes.erase(it);
 	}
 }
 
@@ -208,8 +209,8 @@ bool LCTransaction::updatePosition(int percentTime, bool proposing)
 }
 
 LedgerConsensus::LedgerConsensus(const uint256& prevLCLHash, Ledger::ref previousLedger, uint32 closeTime)
-	:  mState(lcsPRE_CLOSE), mCloseTime(closeTime), mPrevLedgerHash(prevLCLHash), mPreviousLedger(previousLedger),
-	mCurrentMSeconds(0), mClosePercent(0), mHaveCloseTimeConsensus(false)
+		:  mState(lcsPRE_CLOSE), mCloseTime(closeTime), mPrevLedgerHash(prevLCLHash),
+		mPreviousLedger(previousLedger), mCurrentMSeconds(0), mClosePercent(0), mHaveCloseTimeConsensus(false)
 {
 	mValSeed = theConfig.VALIDATION_SEED;
 	mConsensusStartTime = boost::posix_time::microsec_clock::universal_time();
@@ -343,7 +344,7 @@ void LedgerConsensus::takeInitialPosition(Ledger& initialLedger)
 		mOurPosition = boost::make_shared<LedgerProposal>(initialLedger.getParentHash(), txSet, mCloseTime);
 	mapComplete(txSet, initialSet, false);
 	if (mProposing)
-		propose(std::vector<uint256>(), std::vector<uint256>());
+		propose();
 }
 
 void LedgerConsensus::createDisputes(const SHAMap::pointer& m1, const SHAMap::pointer& m2)
@@ -543,7 +544,7 @@ void LedgerConsensus::updateOurPositions()
 
 	bool changes = false;
 	SHAMap::pointer ourPosition;
-	std::vector<uint256> addedTx, removedTx;
+//	std::vector<uint256> addedTx, removedTx;
 
 	// Verify freshness of peer positions and compute close times
 	std::map<uint32, int> closeTimes;
@@ -578,12 +579,12 @@ void LedgerConsensus::updateOurPositions()
 			if (it.second->getOurPosition()) // now a yes
 			{
 				ourPosition->addItem(SHAMapItem(it.first, it.second->peekTransaction()), true, false);
-				addedTx.push_back(it.first);
+//				addedTx.push_back(it.first);
 			}
 			else // now a no
 			{
 				ourPosition->delItem(it.first);
-				removedTx.push_back(it.first);
+//				removedTx.push_back(it.first);
 			}
 		}
 	}
@@ -642,7 +643,7 @@ void LedgerConsensus::updateOurPositions()
 		uint256 newHash = ourPosition->getHash();
 		mOurPosition->changePosition(newHash, closeTime);
 		if (mProposing)
-			propose(addedTx, removedTx);
+			propose();
 		mapComplete(newHash, ourPosition, false);
 		Log(lsINFO) << "Position change: CTime " << closeTime << ", tx " << newHash;
 	}
@@ -726,7 +727,7 @@ void LedgerConsensus::startAcquiring(const TransactionAcquire::pointer& acquire)
 	acquire->resetTimer();
 }
 
-void LedgerConsensus::propose(const std::vector<uint256>& added, const std::vector<uint256>& removed)
+void LedgerConsensus::propose()
 {
 	Log(lsTRACE) << "We propose: " << mOurPosition->getCurrentHash();
 	newcoin::TMProposeSet prop;
