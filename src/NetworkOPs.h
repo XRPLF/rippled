@@ -89,6 +89,7 @@ public:
 	// network information
 	uint32 getNetworkTimeNC();
 	uint32 getCloseTimeNC();
+	void closeTimeOffset(int);
 	boost::posix_time::ptime getNetworkTimePT();
 	uint32 getCurrentLedgerID();
 	OperatingMode getOperatingMode() { return mMode; }

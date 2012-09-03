@@ -46,6 +46,13 @@ uint32 NetworkOPs::getCloseTimeNC()
 	return iToSeconds(getNetworkTimePT() + boost::posix_time::seconds(mCloseTimeOffset));
 }
 
+void NetworkOPs::closeTimeOffset(int offset)
+{
+	mCloseTimeOffset += offset / 4;
+	if (mCloseTimeOffset)
+		Log(lsINFO) << "Close time offset now " << mCloseTimeOffset;
+}
+
 uint32 NetworkOPs::getCurrentLedgerID()
 {
 	return mLedgerMaster->getCurrentLedger()->getLedgerSeq();
@@ -616,7 +623,7 @@ bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash, uint
 	if (!theApp->isNew(s.getSHA512Half()))
 		return false;
 
-	NewcoinAddress naPeerPublic = NewcoinAddress::createNodePublic(pubKey);
+	NewcoinAddress naPeerPublic = NewcoinAddress::createNodePublic(strCopy(pubKey));
 
 	if ((!mConsensus) && (mMode == omFULL))
 	{
