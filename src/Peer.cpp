@@ -587,9 +587,9 @@ void Peer::recvHello(newcoin::TMHello& packet)
 	if (packet.has_nettime() && ((packet.nettime() < minTime) || (packet.nettime() > maxTime)))
 	{
 		if (packet.nettime() > maxTime)
-			Log(lsINFO) << "Recv(Hello): Disconnect: Clock is far off +" << packet.nettime() - ourTime;
+			Log(lsINFO) << "Recv(Hello): " << getIP() << " :Clock far off +" << packet.nettime() - ourTime;
 		else if(packet.nettime() < minTime)
-			Log(lsINFO) << "Recv(Hello): Disconnect: Clock is far off -" << ourTime - packet.nettime();
+			Log(lsINFO) << "Recv(Hello): " << getIP() << " :Clock far off -" << ourTime - packet.nettime();
 	}
 	else if (packet.protoversionmin() < MAKE_VERSION_INT(MIN_PROTO_MAJOR, MIN_PROTO_MINOR))
 	{
