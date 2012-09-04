@@ -264,6 +264,7 @@ void LedgerConsensus::checkLCL()
 	if (netLgr != mPrevLedgerHash)
 	{ // LCL change
 		Log(lsWARNING) << "View of consensus changed during consensus (" << netLgrCount << ")";
+		Log(lsWARNING) << mPrevLedgerHash << " to " << netLgr;
 		if (mHaveCorrectLCL)
 			theApp->getOPs().consensusViewChange();
 		handleLCL(netLgr);
@@ -519,7 +520,8 @@ void LedgerConsensus::stateAccepted()
 
 void LedgerConsensus::timerEntry()
 {
-	checkLCL();
+	if ((!mHaveCorrectLCL) || (mState == lcsPRE_CLOSE))
+		checkLCL();
 
 	mCurrentMSeconds =
 		(boost::posix_time::microsec_clock::universal_time() - mConsensusStartTime).total_milliseconds();
