@@ -166,6 +166,8 @@ protected:
 
 	// For offers:
 
+	STAmount						saRateMax;			// XXX Should rate be sticky for forward too?
+
 	// Directory
 	uint256							uDirectTip;			// Current directory.
 	uint256							uDirectEnd;			// Next order book.
@@ -340,8 +342,16 @@ protected:
 	TER					calcNodeOfferFwd(const unsigned int uIndex, const PathState::pointer& pspCur, const bool bMultiQuality);
 	TER					calcNodeAccountRev(const unsigned int uIndex, const PathState::pointer& pspCur, const bool bMultiQuality);
 	TER					calcNodeAccountFwd(const unsigned int uIndex, const PathState::pointer& pspCur, const bool bMultiQuality);
-	TER					calcNodeAdvance(const unsigned int uIndex, const PathState::pointer& pspCur, const bool bMultiQuality);
-	TER					calcNodeDeliver(
+	TER					calcNodeAdvance(const unsigned int uIndex, const PathState::pointer& pspCur, const bool bMultiQuality, const bool bReverse);
+	TER					calcNodeDeliverRev(
+							const unsigned int			uIndex,
+							const PathState::pointer&	pspCur,
+							const bool					bMultiQuality,
+							const uint160&				uOutAccountID,
+							const STAmount&				saOutReq,
+							STAmount&					saOutAct);
+
+	TER					calcNodeDeliverFwd(
 							const unsigned int			uIndex,
 							const PathState::pointer&	pspCur,
 							const bool					bMultiQuality,
