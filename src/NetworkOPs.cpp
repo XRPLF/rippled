@@ -49,7 +49,7 @@ uint32 NetworkOPs::getCloseTimeNC()
 uint32 NetworkOPs::getValidationTimeNC()
 {
 	uint32 vt = getNetworkTimeNC();
-	if (vt >= mLastValidationTime)
+	if (vt <= mLastValidationTime)
 		vt = mLastValidationTime + 1;
 	mLastValidationTime = vt;
 	return vt;
