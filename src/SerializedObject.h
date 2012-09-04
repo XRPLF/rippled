@@ -92,6 +92,7 @@ enum SOE_Field
 	sfSequence,
 	sfSignature,
 	sfSigningKey,
+	sfSigningTime,
 	sfSourceTag,
 	sfTakerGets,
 	sfTakerPays,

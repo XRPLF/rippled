@@ -1005,7 +1005,7 @@ void LedgerConsensus::accept(const SHAMap::pointer& set)
 	if (mValidating)
 	{
 		SerializedValidation::pointer v = boost::make_shared<SerializedValidation>
-			(newLCLHash, newLCL->getCloseTimeNC(), mValSeed, mProposing);
+			(newLCLHash, theApp->getOPs().getValidationTimeNC(), mValSeed, mProposing);
 		v->setTrusted();
 		Log(lsINFO) << "CNF Val " << newLCLHash;
 		theApp->getValidations().addValidation(v);

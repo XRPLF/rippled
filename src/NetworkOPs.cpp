@@ -25,7 +25,7 @@
 
 NetworkOPs::NetworkOPs(boost::asio::io_service& io_service, LedgerMaster* pLedgerMaster) :
 	mMode(omDISCONNECTED),mNetTimer(io_service), mLedgerMaster(pLedgerMaster), mCloseTimeOffset(0),
-	mLastCloseProposers(0), mLastCloseConvergeTime(LEDGER_IDLE_INTERVAL)
+	mLastCloseProposers(0), mLastCloseConvergeTime(LEDGER_IDLE_INTERVAL), mLastValidationTime(0)
 {
 }
 
@@ -44,6 +44,15 @@ uint32 NetworkOPs::getNetworkTimeNC()
 uint32 NetworkOPs::getCloseTimeNC()
 {
 	return iToSeconds(getNetworkTimePT() + boost::posix_time::seconds(mCloseTimeOffset));
+}
+
+uint32 NetworkOPs::getValidationTimeNC()
+{
+	uint32 vt = getNetworkTimeNC();
+	if (vt >= mLastValidationTime)
+		vt = mLastValidationTime + 1;
+	mLastValidationTime = vt;
+	return vt;
 }
 
 void NetworkOPs::closeTimeOffset(int offset)

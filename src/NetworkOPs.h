@@ -64,6 +64,7 @@ protected:
 	int									mLastCloseProposers, mLastCloseConvergeTime;
 	uint256								mLastCloseHash;
 	uint32								mLastCloseTime;
+	uint32								mLastValidationTime;
 
 	// XXX Split into more locks.
     boost::interprocess::interprocess_upgradable_mutex	mMonitorLock;
@@ -89,6 +90,7 @@ public:
 	// network information
 	uint32 getNetworkTimeNC();
 	uint32 getCloseTimeNC();
+	uint32 getValidationTimeNC();
 	void closeTimeOffset(int);
 	boost::posix_time::ptime getNetworkTimePT();
 	uint32 getCurrentLedgerID();
