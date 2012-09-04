@@ -73,7 +73,7 @@ bool SHAMapNode::operator!=(const uint256 &s) const
 	return s != mNodeID;
 }
 
-static bool j = SHAMapNode::ClassInit();
+bool SMN_j = SHAMapNode::ClassInit();
 
 bool SHAMapNode::ClassInit()
 { // set up the depth masks
@@ -147,7 +147,7 @@ int SHAMapNode::selectBranch(const uint256& hash) const
 	if ((hash & smMasks[mDepth]) != mNodeID)
 	{
 		std::cerr << "selectBranch(" << getString() << std::endl;
-		std::cerr << "  " << hash.GetHex() << " off branch" << std::endl;
+		std::cerr << "  " << hash << " off branch" << std::endl;
 		assert(false);
 		return -1;	// does not go under this node
 	}
@@ -464,7 +464,7 @@ void SHAMapTreeNode::makeInner()
 
 void SHAMapTreeNode::dump()
 {
-	Log(lsDEBUG) << "SHAMapTreeNode(" << getNodeID().GetHex() << ")";
+	Log(lsDEBUG) << "SHAMapTreeNode(" << getNodeID() << ")";
 }
 
 std::string SHAMapTreeNode::getString() const

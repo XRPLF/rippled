@@ -100,6 +100,7 @@ public:
 
 inline SerializedType* new_clone(const SerializedType& s) { return s.clone().release(); }
 inline void delete_clone(const SerializedType* s) { boost::checked_delete(s); }
+inline std::ostream& operator<<(std::ostream& out, const SerializedType& t) { return out << t.getFullText(); }
 
 class STUInt8 : public SerializedType
 {

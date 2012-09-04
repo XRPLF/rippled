@@ -3155,7 +3155,7 @@ TER PathState::pushNode(int iType, uint160 uAccountID, uint160 uCurrencyID, uint
 }
 
 PathState::PathState(
-	const Ledger::pointer&	lpLedger,
+	Ledger::ref				lpLedger,
 	const int				iIndex,
 	const LedgerEntrySet&	lesSource,
 	const STPath&			spSourcePath,

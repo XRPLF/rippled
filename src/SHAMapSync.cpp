@@ -66,7 +66,7 @@ void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint2
 							}
 							else
 							{
-								Log(lsTRACE) << "Got sync node from cache: " << d->getString();
+								Log(lsTRACE) << "Got sync node from cache: " << *d;
 								mTNByID[*d] = d;
 							}
 						}
@@ -222,8 +222,8 @@ bool SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigned cha
 
 	if (iNode->getDepth() != (node.getDepth() - 1))
 	{ // Either this node is broken or we didn't request it (yet)
-		Log(lsINFO) << "unable to hook node " << node.getString();
-		Log(lsINFO) << " stuck at " << iNode->getString();
+		Log(lsINFO) << "unable to hook node " << node;
+		Log(lsINFO) << " stuck at " << *iNode;
 		Log(lsINFO) << "got depth=" << node.getDepth() << ", walked to= " << iNode->getDepth();
 		return false;
 	}
@@ -304,7 +304,7 @@ bool SHAMap::deepCompare(SHAMap& other)
 			return false;
 		}
 
-//		Log(lsTRACE) << "Comparing inner nodes " << node->getString();
+//		Log(lsTRACE) << "Comparing inner nodes " << *node;
 
 		if (node->getNodeHash() != otherNode->getNodeHash())
 			return false;

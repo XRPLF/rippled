@@ -23,7 +23,7 @@ bool HashedObjectStore::store(HashedObjectType type, uint32 index,
 	if (mCache.touch(hash))
 	{
 #ifdef HS_DEBUG
-		Log(lsTRACE) << "HOS: " << hash.GetHex() << " store: incache";
+		Log(lsTRACE) << "HOS: " << hash << " store: incache";
 #endif
 		return false;
 	}
@@ -94,7 +94,7 @@ HashedObject::pointer HashedObjectStore::retrieve(const uint256& hash)
 		obj = mCache.fetch(hash);
 		if (obj)
 		{
-			Log(lsTRACE) << "HOS: " << hash.GetHex() << " fetch: incache";
+			Log(lsTRACE) << "HOS: " << hash << " fetch: incache";
 			return obj;
 		}
 	}
@@ -113,7 +113,7 @@ HashedObject::pointer HashedObjectStore::retrieve(const uint256& hash)
 
 		if (!db->executeSQL(sql) || !db->startIterRows())
 		{
-			Log(lsTRACE) << "HOS: " << hash.GetHex() << " fetch: not in db";
+			Log(lsTRACE) << "HOS: " << hash << " fetch: not in db";
 			return HashedObject::pointer();
 		}
 
@@ -145,7 +145,7 @@ HashedObject::pointer HashedObjectStore::retrieve(const uint256& hash)
 		obj = boost::make_shared<HashedObject>(htype, index, data, hash);
 		mCache.canonicalize(hash, obj);
 	}
-	Log(lsTRACE) << "HOS: " << hash.GetHex() << " fetch: in db";
+	Log(lsTRACE) << "HOS: " << hash << " fetch: in db";
 	return obj;
 }
 

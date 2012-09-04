@@ -278,7 +278,7 @@ public:
 
 	std::string ToString() const
 	{
-		return (GetHex());
+		return GetHex();
 	}
 
 	unsigned char* begin()
@@ -558,6 +558,11 @@ inline const uint256 operator^(const uint256& a, const uint256& b)	  { return (b
 inline const uint256 operator&(const uint256& a, const uint256& b)	  { return (base_uint256)a &  (base_uint256)b; }
 inline const uint256 operator|(const uint256& a, const uint256& b)	  { return (base_uint256)a |  (base_uint256)b; }
 extern std::size_t hash_value(const uint256&);
+
+template<unsigned int BITS> inline std::ostream& operator<<(std::ostream& out, const base_uint<BITS>& u)
+{
+	return out << u.GetHex();
+}
 
 inline int Testuint256AdHoc(std::vector<std::string> vArg)
 {

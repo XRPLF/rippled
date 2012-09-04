@@ -258,7 +258,7 @@ uint256 Ledger::getHash()
 	return(mHash);
 }
 
-void Ledger::saveAcceptedLedger(const Ledger::pointer& ledger)
+void Ledger::saveAcceptedLedger(Ledger::ref ledger)
 {
 	static boost::format ledgerExists("SELECT LedgerSeq FROM Ledgers where LedgerSeq = %d;");
 	static boost::format deleteLedger("DELETE FROM Ledgers WHERE LedgerSeq = %d;");
@@ -508,7 +508,7 @@ void Ledger::setCloseTime(boost::posix_time::ptime ptm)
 }
 
 // XXX Use shared locks where possible?
-LedgerStateParms Ledger::writeBack(LedgerStateParms parms, const SLE::pointer& entry)
+LedgerStateParms Ledger::writeBack(LedgerStateParms parms, SLE::ref entry)
 {
 	ScopedLock l(mAccountStateMap->Lock());
 	bool create = false;

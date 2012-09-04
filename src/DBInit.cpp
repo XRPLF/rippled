@@ -56,7 +56,7 @@ const char *LedgerDBInit[] = {
 		LedgerHash	CHARACTER(64),					\
 		NodePubKey	CHARACTER(56),					\
 		Flags		BIGINT UNSIGNED,				\
-		CloseTime	BIGINT UNSIGNED,				\
+		SignTime	BIGINT UNSIGNED,				\
 		Signature	BLOB							\
 	);",
 	"CREATE INDEX ValidationByHash ON				\

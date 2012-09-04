@@ -95,6 +95,15 @@ NewcoinAddress NewcoinAddress::createNodePublic(const std::vector<unsigned char>
 	return naNew;
 }
 
+NewcoinAddress NewcoinAddress::createNodePublic(const std::string& strPublic)
+{
+	NewcoinAddress	naNew;
+
+	naNew.setNodePublic(strPublic);
+
+	return naNew;
+}
+
 uint160 NewcoinAddress::getNodeID() const
 {
     switch (nVersion) {

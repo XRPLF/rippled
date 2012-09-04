@@ -41,7 +41,8 @@ class Ledger : public boost::enable_shared_from_this<Ledger>
 { // The basic Ledger structure, can be opened, closed, or synching
 	friend class TransactionEngine;
 public:
-	typedef boost::shared_ptr<Ledger> pointer;
+	typedef boost::shared_ptr<Ledger>			pointer;
+	typedef const boost::shared_ptr<Ledger>&	ref;
 
 	enum TransResult
 	{
@@ -156,12 +157,12 @@ public:
 
 	// high-level functions
 	AccountState::pointer getAccountState(const NewcoinAddress& acctID);
-	LedgerStateParms writeBack(LedgerStateParms parms, const SLE::pointer&);
+	LedgerStateParms writeBack(LedgerStateParms parms, SLE::ref);
 	SLE::pointer getAccountRoot(const uint160& accountID);
 	SLE::pointer getAccountRoot(const NewcoinAddress& naAccountID);
 
 	// database functions
-	static void saveAcceptedLedger(const Ledger::pointer&);
+	static void saveAcceptedLedger(Ledger::ref);
 	static Ledger::pointer loadByIndex(uint32 ledgerIndex);
 	static Ledger::pointer loadByHash(const uint256& ledgerHash);
 

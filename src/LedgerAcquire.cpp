@@ -20,7 +20,7 @@ PeerSet::PeerSet(const uint256& hash, int interval) : mHash(hash), mTimerInterva
 	assert((mTimerInterval > 10) && (mTimerInterval < 30000));
 }
 
-void PeerSet::peerHas(const Peer::pointer& ptr)
+void PeerSet::peerHas(Peer::ref ptr)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	std::vector< boost::weak_ptr<Peer> >::iterator it = mPeers.begin();
@@ -40,7 +40,7 @@ void PeerSet::peerHas(const Peer::pointer& ptr)
 	newPeer(ptr);
 }
 
-void PeerSet::badPeer(const Peer::pointer& ptr)
+void PeerSet::badPeer(Peer::ref ptr)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	std::vector< boost::weak_ptr<Peer> >::iterator it = mPeers.begin();
@@ -72,7 +72,7 @@ void PeerSet::invokeOnTimer()
 	if (!mProgress)
 	{
 		++mTimeouts;
-		Log(lsWARNING) << "Timeout " << mTimeouts << " acquiring " << mHash.GetHex();
+		Log(lsWARNING) << "Timeout " << mTimeouts << " acquiring " << mHash;
 	}
 	else
 		mProgress = false;
@@ -93,7 +93,7 @@ LedgerAcquire::LedgerAcquire(const uint256& hash) : PeerSet(hash, LEDGER_ACQUIRE
 	mHaveBase(false), mHaveState(false), mHaveTransactions(false), mAborted(false), mSignaled(false)
 {
 #ifdef LA_DEBUG
-	Log(lsTRACE) << "Acquiring ledger " << mHash.GetHex();
+	Log(lsTRACE) << "Acquiring ledger " << mHash;
 #endif
 }
 
@@ -118,7 +118,7 @@ void LedgerAcquire::done()
 		return;
 	mSignaled = true;
 #ifdef LA_DEBUG
-	Log(lsTRACE) << "Done acquiring ledger " << mHash.GetHex();
+	Log(lsTRACE) << "Done acquiring ledger " << mHash;
 #endif
 	std::vector< boost::function<void (LedgerAcquire::pointer)> > triggers;
 
@@ -142,13 +142,13 @@ void LedgerAcquire::addOnComplete(boost::function<void (LedgerAcquire::pointer)>
 	mLock.unlock();
 }
 
-void LedgerAcquire::trigger(const Peer::pointer& peer, bool timer)
+void LedgerAcquire::trigger(Peer::ref peer, bool timer)
 {
 	if (mAborted || mComplete || mFailed)
 		return;
 #ifdef LA_DEBUG
-	if(peer) Log(lsTRACE) <<  "Trigger acquiring ledger " << mHash.GetHex() << " from " << peer->getIP();
-	else Log(lsTRACE) <<  "Trigger acquiring ledger " << mHash.GetHex();
+	if(peer) Log(lsTRACE) <<  "Trigger acquiring ledger " << mHash << " from " << peer->getIP();
+	else Log(lsTRACE) <<  "Trigger acquiring ledger " << mHash;
 	if (mComplete || mFailed)
 		Log(lsTRACE) <<  "complete=" << mComplete << " failed=" << mFailed;
 	else
@@ -257,7 +257,7 @@ void LedgerAcquire::trigger(const Peer::pointer& peer, bool timer)
 		resetTimer();
 }
 
-void PeerSet::sendRequest(const newcoin::TMGetLedger& tmGL, const Peer::pointer& peer)
+void PeerSet::sendRequest(const newcoin::TMGetLedger& tmGL, Peer::ref peer)
 {
 	if (!peer)
 		sendRequest(tmGL);
@@ -290,7 +290,7 @@ void PeerSet::sendRequest(const newcoin::TMGetLedger& tmGL)
 bool LedgerAcquire::takeBase(const std::string& data)
 { // Return value: true=normal, false=bad data
 #ifdef LA_DEBUG
-	Log(lsTRACE) << "got base acquiring ledger " << mHash.GetHex();
+	Log(lsTRACE) << "got base acquiring ledger " << mHash;
 #endif
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	if (mHaveBase) return true;
@@ -298,7 +298,7 @@ bool LedgerAcquire::takeBase(const std::string& data)
 	if (mLedger->getHash() != mHash)
 	{
 		Log(lsWARNING) << "Acquire hash mismatch";
-		Log(lsWARNING) << mLedger->getHash().GetHex() << "!=" << mHash.GetHex();
+		Log(lsWARNING) << mLedger->getHash() << "!=" << mHash;
 		mLedger = Ledger::pointer();
 #ifdef TRUST_NETWORK
 		assert(false);
@@ -357,7 +357,7 @@ bool LedgerAcquire::takeAsNode(const std::list<SHAMapNode>& nodeIDs,
 	const std::list< std::vector<unsigned char> >& data)
 {
 #ifdef LA_DEBUG
-	Log(lsTRACE) << "got ASdata acquiring ledger " << mHash.GetHex();
+	Log(lsTRACE) << "got ASdata acquiring ledger " << mHash;
 #endif
 	if (!mHaveBase) return false;
 	std::list<SHAMapNode>::const_iterator nodeIDit = nodeIDs.begin();
@@ -431,11 +431,11 @@ bool LedgerAcquireMaster::hasLedger(const uint256& hash)
 void LedgerAcquireMaster::dropLedger(const uint256& hash)
 {
 	assert(hash.isNonZero());
-	 boost::mutex::scoped_lock sl(mLock);
+	boost::mutex::scoped_lock sl(mLock);
 	mLedgers.erase(hash);
 }
 
-bool LedgerAcquireMaster::gotLedgerData(newcoin::TMLedgerData& packet, const Peer::pointer& peer)
+bool LedgerAcquireMaster::gotLedgerData(newcoin::TMLedgerData& packet, Peer::ref peer)
 {
 #ifdef LA_DEBUG
 	Log(lsTRACE) << "got data for acquiring ledger ";
@@ -448,7 +448,7 @@ bool LedgerAcquireMaster::gotLedgerData(newcoin::TMLedgerData& packet, const Pee
 	}
 	memcpy(hash.begin(), packet.ledgerhash().data(), 32);
 #ifdef LA_DEBUG
-	Log(lsTRACE) << hash.GetHex();
+	Log(lsTRACE) << hash;
 #endif
 
 	LedgerAcquire::pointer ledger = find(hash);

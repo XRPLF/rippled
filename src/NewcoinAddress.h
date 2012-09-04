@@ -46,6 +46,7 @@ public:
 
 	static NewcoinAddress createNodePublic(const NewcoinAddress& naSeed);
 	static NewcoinAddress createNodePublic(const std::vector<unsigned char>& vPublic);
+	static NewcoinAddress createNodePublic(const std::string& strPublic);
 
 	//
 	// Node Private
