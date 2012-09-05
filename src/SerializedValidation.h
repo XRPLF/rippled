@@ -8,6 +8,7 @@ class SerializedValidation : public STObject
 {
 protected:
 	STVariableLength mSignature;
+	uint256	mPreviousHash;
 	bool mTrusted;
 
 	void setNode();
@@ -40,6 +41,11 @@ public:
 	void						addSignature(Serializer&)	const;
 	std::vector<unsigned char>	getSigned()					const;
 	std::vector<unsigned char>	getSignature()				const;
+
+	// The validation this replaced
+	const uint256& getPreviousHash()		{ return mPreviousHash; }
+	bool isPreviousHash(const uint256& h)	{ return mPreviousHash == h; }
+	void setPreviousHash(const uint256& h)	{ mPreviousHash = h; }
 };
 
 #endif
