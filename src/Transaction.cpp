@@ -489,7 +489,9 @@ Transaction::pointer Transaction::setPayment(
 	const NewcoinAddress&	naDstAccountID,
 	const STAmount&			saAmount,
 	const STAmount&			saSendMax,
-	const STPathSet&		spsPaths)
+	const STPathSet&		spsPaths,
+	const bool				bPartial,
+	const bool				bLimit)
 {
 	mTransaction->setITFieldAccount(sfDestination, naDstAccountID);
 	mTransaction->setITFieldAmount(sfAmount, saAmount);
@@ -518,11 +520,13 @@ Transaction::pointer Transaction::sharedPayment(
 	const NewcoinAddress&	naDstAccountID,
 	const STAmount&			saAmount,
 	const STAmount&			saSendMax,
-	const STPathSet&		spsPaths)
+	const STPathSet&		spsPaths,
+	const bool				bPartial,
+	const bool				bLimit)
 {
 	pointer	tResult	= boost::make_shared<Transaction>(ttPAYMENT, naPublicKey, naSourceAccount, uSeq, saFee, uSourceTag);
 
-	return tResult->setPayment(naPrivateKey, naDstAccountID, saAmount, saSendMax, spsPaths);
+	return tResult->setPayment(naPrivateKey, naDstAccountID, saAmount, saSendMax, spsPaths, bPartial, bLimit);
 }
 
 //

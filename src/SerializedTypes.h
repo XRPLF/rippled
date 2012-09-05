@@ -255,6 +255,8 @@ protected:
 	static uint64 muldiv(uint64, uint64, uint64);
 
 public:
+	static uint64	uRateOne;
+
 	STAmount(uint64 v = 0, bool isNeg = false) : mValue(v), mOffset(0), mIsNative(true), mIsNegative(isNeg)
 	{ if (v==0) mIsNegative = false; }
 
@@ -354,7 +356,16 @@ public:
 	friend STAmount operator-(const STAmount& v1, const STAmount& v2);
 
 	static STAmount divide(const STAmount& v1, const STAmount& v2, const uint160& uCurrencyID, const uint160& uIssuerID);
+	static STAmount divide(const STAmount& v1, const STAmount& v2, const STAmount& saUnit)
+		{ return divide(v1, v2, saUnit.getCurrency(), saUnit.getIssuer()); }
+	static STAmount divide(const STAmount& v1, const STAmount& v2)
+		{ return divide(v1, v2, v1); }
+
 	static STAmount multiply(const STAmount& v1, const STAmount& v2, const uint160& uCurrencyID, const uint160& uIssuerID);
+	static STAmount multiply(const STAmount& v1, const STAmount& v2, const STAmount& saUnit)
+		{ return multiply(v1, v2, saUnit.getCurrency(), saUnit.getIssuer()); }
+	static STAmount multiply(const STAmount& v1, const STAmount& v2)
+		{ return multiply(v1, v2, v1); }
 
 	// Someone is offering X for Y, what is the rate?
 	// Rate: smaller is better, the taker wants the most out: in/out
@@ -535,15 +546,11 @@ public:
 	enum {
 		typeEnd			= 0x00,
 		typeAccount		= 0x01,	// Rippling through an account (vs taking an offer).
-		typeRedeem		= 0x04,	// Redeem IOUs.
-		typeIssue		= 0x08,	// Issue IOUs.
 		typeCurrency	= 0x10,	// Currency follows.
 		typeIssuer		= 0x20,	// Issuer follows.
 		typeBoundary	= 0xFF, // Boundary between alternate paths.
 		typeValidBits	= (
 			typeAccount
-				| typeRedeem
-				| typeIssue
 				| typeCurrency
 				| typeIssuer
 			),	// Bits that may be non-zero.
@@ -556,15 +563,13 @@ protected:
 	uint160 mIssuerID;
 
 public:
-	STPathElement(const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID, bool bRedeem=false, bool bIssue=false)
+	STPathElement(const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID)
 		: mAccountID(uAccountID), mCurrencyID(uCurrencyID), mIssuerID(uIssuerID)
 	{
 		mType	=
 			(uAccountID.isZero() ? 0 : STPathElement::typeAccount)
 			| (uCurrencyID.isZero() ? 0 : STPathElement::typeCurrency)
-			| (uIssuerID.isZero() ? 0 : STPathElement::typeIssuer)
-			| (bRedeem ? STPathElement::typeRedeem : 0)
-			| (bIssue ? STPathElement::typeIssue : 0);
+			| (uIssuerID.isZero() ? 0 : STPathElement::typeIssuer);
 	}
 
 	int getNodeType() const				{ return mType; }

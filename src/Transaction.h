@@ -116,7 +116,9 @@ private:
 		const NewcoinAddress&				naDstAccountID,
 		const STAmount&						saAmount,
 		const STAmount&						saSendMax,
-		const STPathSet&					spsPaths);
+		const STPathSet&					spsPaths,
+		const bool							bPartial,
+		const bool							bLimit);
 
 	Transaction::pointer setWalletAdd(
 		const NewcoinAddress&				naPrivateKey,
@@ -231,7 +233,9 @@ public:
 		const NewcoinAddress&				naDstAccountID,
 		const STAmount&						saAmount,
 		const STAmount&						saSendMax,
-		const STPathSet&					spsPaths);
+		const STPathSet&					spsPaths,
+		const bool							bPartial = false,
+		const bool							bLimit = false);
 
 	// Place an offer.
 	static Transaction::pointer sharedOfferCreate(
