@@ -501,8 +501,6 @@ void LedgerConsensus::statePreClose()
 		statusChange(newcoin::neCLOSING_LEDGER, *mPreviousLedger);
 		takeInitialPosition(*theApp->getMasterLedger().closeLedger());
 	}
-	else if (mHaveCorrectLCL)
-		checkLCL(); // double check
 }
 
 void LedgerConsensus::stateEstablish()
@@ -536,7 +534,7 @@ void LedgerConsensus::stateAccepted()
 
 void LedgerConsensus::timerEntry()
 {
-	if ((!mHaveCorrectLCL && (mState != lcsACCEPTED)) || (mState == lcsPRE_CLOSE))
+	if ((mState != lcsFINISHED) && (mState != lcsACCEPTED))
 		checkLCL();
 
 	mCurrentMSeconds =
@@ -639,7 +637,7 @@ void LedgerConsensus::updateOurPositions()
 			Log(lsINFO) << "CCTime: " << it->first << " has " << it->second << " out of " << thresh;
 			if (it->second > thresh)
 			{
-				Log(lsINFO) << "Close time consensus reached: " << closeTime;
+				Log(lsINFO) << "Close time consensus reached: " << it->first;
 				mHaveCloseTimeConsensus = true;
 				closeTime = it->first;
 				thresh = it->second;
