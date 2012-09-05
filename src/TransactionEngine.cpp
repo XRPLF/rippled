@@ -17,6 +17,8 @@
 #include "Log.h"
 #include "TransactionFormats.h"
 #include "utils.h"
+#include "Interpreter.h"
+#include "Contract.h"
 
 // Small for testing, should likely be 32 or 64.
 #define DIR_NODE_MAX		2
@@ -4659,8 +4661,6 @@ void TransactionEngine::calcNodeOffer(
 }
 #endif
 
-#include "Interpreter.h"
-#include "Contract.h"
 
 TER	TransactionEngine::doContractAdd(const SerializedTransaction& txn)
 {
@@ -4693,8 +4693,8 @@ TER	TransactionEngine::doContractAdd(const SerializedTransaction& txn)
 	//if( txn.getSourceAccount() )
 
 	Contract contract;
-	Interpreter interpreter;
-	TER	terResult=interpreter->interpret(&contract,txn,createCode);
+	Script::Interpreter interpreter;
+	TER	terResult=interpreter.interpret(&contract,txn,createCode);
 	if(tesSUCCESS != terResult)
 	{
 
@@ -4705,7 +4705,8 @@ TER	TransactionEngine::doContractAdd(const SerializedTransaction& txn)
 
 TER	TransactionEngine::doContractRemove(const SerializedTransaction& txn)
 {
-
+	// TODO:
+	return(tesSUCCESS);
 }
 
 // vim:ts=4

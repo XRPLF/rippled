@@ -127,7 +127,7 @@ TransactionFormat InnerTxnFormats[]=
 	},
 	{ "Contract", ttCONTRACT_REMOVE, {
 		{ S_FIELD(Flags),			STI_UINT32,  SOE_FLAGS,    0 },
-		{ S_FIELD(ContractID),		STI_ACCOUNT, SOE_REQUIRED, 0 },
+		{ S_FIELD(Target),		STI_ACCOUNT, SOE_REQUIRED, 0 },
 		{ S_FIELD(Extensions),		STI_TL,		 SOE_IFFLAG,   0x02000000 },
 		{ sfInvalid, NULL,			STI_DONE,	 SOE_NEVER,    -1 } }
 	},
