@@ -1316,15 +1316,15 @@ Json::Value RPCServer::doPeers(const Json::Value& params)
 }
 
 // ripple <regular_seed> <paying_account>
-//	 <source_max> <source_currency> [<source_issuerID>] // XXX [noredeem] [noissue]
+//	 <source_max> <source_currency> [<source_issuerID>]
 //   <path>+
-//   full|partial <dest_account> <dest_amount> <dest_currency> [<dest_issuerID>]
+//   full|partial limit|average <dest_account> <dest_amount> <dest_currency> [<dest_issuerID>]
 //
 //   path:
 //     path <path_element>+
 //
 //   path_element:
-//      account <accountID> [<currency>] [<issuerID>] [noredeem] [noissue]
+//      account <accountID> [<currency>] [<issuerID>]
 //      offer <currency> [<issuerID>]
 Json::Value RPCServer::doRipple(const Json::Value &params)
 {
@@ -1333,15 +1333,14 @@ Json::Value RPCServer::doRipple(const Json::Value &params)
 	uint160			uSrcCurrencyID;
 	NewcoinAddress	naSrcAccountID;
 	NewcoinAddress	naSrcIssuerID;
-	bool			bSrcRedeem		= true;
-	bool			bSrcIssue		= true;
 	bool			bPartial;
 	bool			bFull;
+	bool			bLimit;
+	bool			bAverage;
 	NewcoinAddress	naDstAccountID;
 	STAmount		saDstAmount;
 	uint160			uDstCurrencyID;
 
-	std::vector<paymentNode>	vpnPath;
 	STPathSet		spsPaths;
 
 	naSrcIssuerID.setAccountID(params[4u].asString());							// <source_issuerID>
@@ -1366,18 +1365,6 @@ Json::Value RPCServer::doRipple(const Json::Value &params)
 	}
 
 	int		iArg	= 4 + naSrcIssuerID.isValid();
-
-	if (params[iArg].asString() == "noredeem")									// [noredeem]
-	{
-		++iArg;
-		bSrcRedeem	= false;
-	}
-
-	if (params[iArg].asString() == "noissue")									// [noissue]
-	{
-		++iArg;
-		bSrcIssue	= false;
-	}
 
 	// XXX bSrcRedeem & bSrcIssue not used.
 	STPath		spPath;
@@ -1418,8 +1405,6 @@ Json::Value RPCServer::doRipple(const Json::Value &params)
 				NewcoinAddress	naAccountID;
 				uint160			uCurrencyID;
 				NewcoinAddress	naIssuerID;
-				bool			bRedeem		= true;
-				bool			bIssue		= true;
 
 				++iArg;
 
@@ -1438,24 +1423,10 @@ Json::Value RPCServer::doRipple(const Json::Value &params)
 					++iArg;
 				}
 
-				if (params.size() != iArg && params[iArg].asString() == "noredeem")		// [noredeem]
-				{
-					++iArg;
-					bRedeem	= false;
-				}
-
-				if (params.size() != iArg && params[iArg].asString() == "noissue")		// [noissue]
-				{
-					++iArg;
-					bIssue	= false;
-				}
-
 				spPath.addElement(STPathElement(
 					naAccountID.getAccountID(),
 					uCurrencyID,
-					naIssuerID.isValid() ? naIssuerID.getAccountID() : uint160(0),
-					bRedeem,
-					bIssue));
+					naIssuerID.isValid() ? naIssuerID.getAccountID() : uint160(0)));
 			}
 			else
 			{
@@ -1477,6 +1448,19 @@ Json::Value RPCServer::doRipple(const Json::Value &params)
 	// full|partial
 	bPartial	= params.size() != iArg ? params[iArg].asString() == "partial" : false;
 	bFull		= params.size() != iArg ? params[iArg].asString() == "full" : false;
+
+	if (!bPartial && !bFull)
+	{
+		return RPCError(rpcINVALID_PARAMS);
+	}
+	else
+	{
+		++iArg;
+	}
+
+	// limit|average
+	bLimit		= params.size() != iArg ? params[iArg].asString() == "limit" : false;
+	bAverage	= params.size() != iArg ? params[iArg].asString() == "average" : false;
 
 	if (!bPartial && !bFull)
 	{
@@ -1544,7 +1528,9 @@ Json::Value RPCServer::doRipple(const Json::Value &params)
 		naDstAccountID,
 		saDstAmount,
 		saSrcAmountMax,
-		spsPaths);
+		spsPaths,
+		bPartial,
+		bLimit);
 
 	trans	= mNetOps->submitTransaction(trans);
 
@@ -2565,7 +2551,7 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 		{	"password_fund",		&RPCServer::doPasswordFund,			2,  3, false,	optCurrent	},
 		{	"password_set",			&RPCServer::doPasswordSet,			2,  3, false,	optNetwork	},
 		{	"peers",				&RPCServer::doPeers,				0,  0, true					},
-		{	"ripple",				&RPCServer::doRipple,				8, -1, false,	optCurrent|optClosed },
+		{	"ripple",				&RPCServer::doRipple,				9, -1, false,	optCurrent|optClosed },
 		{	"ripple_lines_get",		&RPCServer::doRippleLinesGet,		1,  2, false,	optCurrent	},
 		{	"ripple_line_set",		&RPCServer::doRippleLineSet,		4,  7, false,	optCurrent	},
 		{	"send",					&RPCServer::doSend,					3,  9, false,	optCurrent	},

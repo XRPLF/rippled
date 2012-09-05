@@ -37,7 +37,7 @@ public:
 	int getTrustedValidationCount(const uint256& ledger);
 	int getCurrentValidationCount(uint32 afterTime);
 
-	boost::unordered_map<uint256, int> getCurrentValidations();
+	boost::unordered_map<uint256, int> getCurrentValidations(uint256 currentLedger = uint256());
 
 	void addDeadLedger(const uint256&);
 	bool isDeadLedger(const uint256&);

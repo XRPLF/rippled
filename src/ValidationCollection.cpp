@@ -41,6 +41,7 @@ bool ValidationCollection::addValidation(const SerializedValidation::pointer& va
 				it->second = val;
 			else if (val->getSignTime() > it->second->getSignTime())
 			{
+				val->setPreviousHash(it->second->getLedgerHash());
 				mStaleValidations.push_back(it->second);
 				it->second = val;
 				condWrite();
@@ -128,9 +129,11 @@ int ValidationCollection::getCurrentValidationCount(uint32 afterTime)
 	return count;
 }
 
-boost::unordered_map<uint256, int> ValidationCollection::getCurrentValidations()
+boost::unordered_map<uint256, int> ValidationCollection::getCurrentValidations(uint256 currentLedger)
 {
     uint32 cutoff = theApp->getOPs().getNetworkTimeNC() - LEDGER_VAL_INTERVAL;
+    bool valCurrentLedger = currentLedger.isNonZero();
+
 	boost::unordered_map<uint256, int> ret;
 
 	{
@@ -149,7 +152,10 @@ boost::unordered_map<uint256, int> ValidationCollection::getCurrentValidations()
 			}
 			else
 			{ // contains a live record
-				++ret[it->second->getLedgerHash()];
+				if (valCurrentLedger && it->second->isPreviousHash(currentLedger))
+					++ret[currentLedger]; // count for the favored ledger
+				else
+					++ret[it->second->getLedgerHash()];
 				++it;
 			}
 		}
@@ -160,6 +166,7 @@ boost::unordered_map<uint256, int> ValidationCollection::getCurrentValidations()
 
 bool ValidationCollection::isDeadLedger(const uint256& ledger)
 {
+	boost::mutex::scoped_lock sl(mValidationLock);
 	BOOST_FOREACH(const uint256& it, mDeadLedgers)
 		if (it == ledger)
 			return true;
@@ -168,11 +175,14 @@ bool ValidationCollection::isDeadLedger(const uint256& ledger)
 
 void ValidationCollection::addDeadLedger(const uint256& ledger)
 {
-	if (isDeadLedger(ledger))
-		return;
+	boost::mutex::scoped_lock sl(mValidationLock);
+
+	BOOST_FOREACH(const uint256& it, mDeadLedgers)
+		if (it == ledger)
+			return;
 
 	mDeadLedgers.push_back(ledger);
-	if (mDeadLedgers.size() >= 128)
+	if (mDeadLedgers.size() >= 32)
 		mDeadLedgers.pop_front();
 }
 
@@ -220,13 +230,11 @@ void ValidationCollection::doWrite()
 		std::vector<SerializedValidation::pointer> vector;
 		mStaleValidations.swap(vector);
 		sl.unlock();
-
 		{
-			ScopedLock dbl(theApp->getLedgerDB()->getDBLock());
 			Database *db = theApp->getLedgerDB()->getDB();
+			ScopedLock dbl(theApp->getLedgerDB()->getDBLock());
+
 			db->executeSQL("BEGIN TRANSACTION;");
-
-
 			BOOST_FOREACH(const SerializedValidation::pointer& it, vector)
 				db->executeSQL(boost::str(insVal % it->getLedgerHash().GetHex()
 					% it->getSignerPublic().humanNodePublic() % it->getFlags() % it->getSignTime()
