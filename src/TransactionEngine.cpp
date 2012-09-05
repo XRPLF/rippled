@@ -109,6 +109,24 @@ bool transResultInfo(TER terCode, std::string& strToken, std::string& strHuman)
 	return iIndex >= 0;
 }
 
+static std::string transToken(TER terCode)
+{
+	std::string	strToken;
+	std::string	strHuman;
+
+	return transResultInfo(terCode, strToken, strHuman) ? strToken : "-";
+}
+
+#if 0
+static std::string transHuman(TER terCode)
+{
+	std::string	strToken;
+	std::string	strHuman;
+
+	return transResultInfo(terCode, strToken, strHuman) ? strHuman : "-";
+}
+#endif
+
 // Returns amount owed by uToAccountID to uFromAccountID.
 // <-- $owed/uCurrencyID/uToAccountID: positive: uFromAccountID holds IOUs., negative: uFromAccountID owes IOUs.
 STAmount TransactionEngine::rippleOwed(const uint160& uToAccountID, const uint160& uFromAccountID, const uint160& uCurrencyID)
@@ -1756,6 +1774,8 @@ TER TransactionEngine::doPasswordSet(const SerializedTransaction& txn)
 }
 
 // If needed, advance to next funded offer.
+// - Automatically advances to first offer.
+// - Set bEntryAdvance to advance to next entry.
 TER TransactionEngine::calcNodeAdvance(
 	const unsigned int			uIndex,				// 0 < uIndex < uLast
 	const PathState::pointer&	pspCur,
@@ -2425,13 +2445,14 @@ TER TransactionEngine::calcNodeAccountRev(const unsigned int uIndex, const PathS
 	const STAmount		saPrvOwed		= uIndex && bPrvAccount								// Previous account is owed.
 											? rippleOwed(uCurAccountID, uPrvAccountID, uCurrencyID)
 											: STAmount(uCurrencyID, uCurAccountID);
+
 	const STAmount		saPrvLimit		= uIndex && bPrvAccount								// Previous account may owe.
 											? rippleLimit(uCurAccountID, uPrvAccountID, uCurrencyID)
 											: STAmount(uCurrencyID, uCurAccountID);
 
 	const STAmount		saNxtOwed		= uIndex != uLast && bNxtAccount					// Next account is owed.
-										? rippleOwed(uCurAccountID, uNxtAccountID, uCurrencyID)
-										: STAmount(uCurrencyID, uCurAccountID);
+											? rippleOwed(uCurAccountID, uNxtAccountID, uCurrencyID)
+											: STAmount(uCurrencyID, uCurAccountID);
 
 	Log(lsINFO) << boost::str(boost::format("calcNodeAccountRev> uIndex=%d/%d uPrvAccountID=%s uCurAccountID=%s uNxtAccountID=%s uCurrencyID=%s uQualityIn=%d uQualityOut=%d saPrvOwed=%s saPrvLimit=%s")
 		% uIndex
@@ -2473,6 +2494,9 @@ TER TransactionEngine::calcNodeAccountRev(const unsigned int uIndex, const PathS
 		% saPrvIssueReq.getFullText());
 
 	Log(lsINFO) << pspCur->getJson();
+
+	assert(!saCurRedeemReq || saNxtOwed >= saCurRedeemReq);	// Current redeem req can't be more than IOUs on hand.
+	assert(!saCurIssueReq || !saNxtOwed.isPositive() || saNxtOwed == saCurRedeemReq);	// If issue req, then redeem req must consume all owed.
 
 	if (bPrvAccount && bNxtAccount)
 	{
@@ -2528,7 +2552,7 @@ TER TransactionEngine::calcNodeAccountRev(const unsigned int uIndex, const PathS
 			// ^|account --> ACCOUNT --> account
 
 			// redeem (part 1) -> redeem
-			if (saCurRedeemReq							// Next wants us to redeem.
+			if (saCurRedeemReq							// Next wants IOUs redeemed.
 				&& saPrvRedeemReq)						// Previous has IOUs to redeem.
 			{
 				// Rate : 1.0 : quality out
@@ -2537,9 +2561,9 @@ TER TransactionEngine::calcNodeAccountRev(const unsigned int uIndex, const PathS
 				calcNodeRipple(QUALITY_ONE, uQualityOut, saPrvRedeemReq, saCurRedeemReq, saPrvRedeemAct, saCurRedeemAct, uRateMax);
 			}
 
-			// issue (part 1)-> redeem
-			if (saCurRedeemReq != saCurRedeemAct		// More to redeem.
-				&& saPrvRedeemReq == saPrvRedeemAct)	// Previously redeemed all owed IOUs.
+			// issue (part 1) -> redeem
+			if (saCurRedeemReq != saCurRedeemAct		// Next wants more IOUs redeemed.
+				&& saPrvRedeemAct == saPrvRedeemReq)	// Previous has no IOUs to redeem remaining.
 			{
 				// Rate: quality in : quality out
 				Log(lsINFO) << boost::str(boost::format("calcNodeAccountRev: Rate: quality in : quality out"));
@@ -2548,10 +2572,9 @@ TER TransactionEngine::calcNodeAccountRev(const unsigned int uIndex, const PathS
 			}
 
 			// redeem (part 2) -> issue.
-			if (saCurIssueReq							// Need some issued.
-				&& saCurRedeemAct == saNxtOwed			// Can only issue if previously redeemed all owed.
-				&& saPrvOwed.isPositive()				// Previous has IOUs to redeem.
-				&& saPrvRedeemAct != saPrvOwed)			// Did not previously redeem all IOUs.
+			if (saCurIssueReq							// Next wants IOUs issued.
+				&& saCurRedeemAct == saCurRedeemReq		// Can only issue if completed redeeming.
+				&& saPrvRedeemAct != saPrvRedeemReq)	// Did not complete redeeming previous IOUs.
 			{
 				// Rate : 1.0 : transfer_rate
 				Log(lsINFO) << boost::str(boost::format("calcNodeAccountRev: Rate : 1.0 : transfer_rate"));
@@ -2560,8 +2583,8 @@ TER TransactionEngine::calcNodeAccountRev(const unsigned int uIndex, const PathS
 			}
 
 			// issue (part 2) -> issue
-			if (saCurIssueReq != saCurIssueAct			// Need some issued.
-				&& saCurRedeemAct == saNxtOwed			// Can only issue if previously redeemed all owed.
+			if (saCurIssueReq != saCurIssueAct			// Need wants more IOUs issued.
+				&& saCurRedeemAct == saCurRedeemReq		// Can only issue if completed redeeming.
 				&& saPrvRedeemReq == saPrvRedeemAct)	// Previously redeemed all owed IOUs.
 			{
 				// Rate: quality in : 1.0
@@ -3372,7 +3395,7 @@ TER TransactionEngine::calcNodeRev(const unsigned int uIndex, const PathState::p
 		terResult	= calcNodeRev(uIndex-1, pspCur, bMultiQuality);
 	}
 
-	Log(lsINFO) << boost::str(boost::format("calcNodeRev< uIndex=%d terResult=%d") % uIndex % terResult);
+	Log(lsINFO) << boost::str(boost::format("calcNodeRev< uIndex=%d terResult=%s/%d") % uIndex % transToken(terResult) % terResult);
 
 	return terResult;
 }
@@ -3399,6 +3422,8 @@ void TransactionEngine::pathNext(const PathState::pointer& pspCur, const int iPa
 
 	pspCur->terStatus	= calcNodeRev(uLast, pspCur, bMultiQuality);
 
+	Log(lsINFO) << "Path after reverse: " << pspCur->getJson();
+
 	if (tesSUCCESS == pspCur->terStatus)
 	{
 		// Do forward.
@@ -3406,18 +3431,13 @@ void TransactionEngine::pathNext(const PathState::pointer& pspCur, const int iPa
 		mNodes.bumpSeq();							// Begin ledger varance.
 
 		pspCur->terStatus	= calcNodeFwd(0, pspCur, bMultiQuality);
+
+		pspCur->uQuality	= tesSUCCESS == pspCur->terStatus
+								? STAmount::getRate(pspCur->saOutAct, pspCur->saInAct)	// Calculate relative quality.
+								: 0;													// Mark path as inactive.
+
+		Log(lsINFO) << "Path after forward: " << pspCur->getJson();
 	}
-
-	Log(lsINFO) << "pathNext: terStatus="
-		<< pspCur->terStatus
-		<< " saOutAct=" << pspCur->saOutAct.getText()
-		<< " saInAct=" << pspCur->saInAct.getText();
-
-	pspCur->uQuality	= tesSUCCESS == pspCur->terStatus
-							? STAmount::getRate(pspCur->saOutAct, pspCur->saInAct)	// Calculate relative quality.
-							: 0;													// Mark path as inactive.
-
-	Log(lsINFO) << "Path Out: " << pspCur->getJson();
 }
 
 // XXX Need to audit for things like setting accountID not having memory.
@@ -3573,13 +3593,13 @@ TER TransactionEngine::doPayment(const SerializedTransaction& txn)
 			{
 				// Had a success.
 				terResult	= tesSUCCESS;
-			}
 
-			vpsPaths.push_back(pspDirect);
+				vpsPaths.push_back(pspDirect);
+			}
 		}
 	}
 
-	Log(lsINFO) << "doPayment: Paths: " << spsPaths.getPathCount();
+	Log(lsINFO) << "doPayment: Paths in set: " << spsPaths.getPathCount();
 
 	BOOST_FOREACH(const STPath& spPath, spsPaths)
 	{
@@ -3633,11 +3653,11 @@ TER TransactionEngine::doPayment(const SerializedTransaction& txn)
 
 	while (temUNCERTAIN == terResult)
 	{
-		PathState::pointer	pspBest;
-		const LedgerEntrySet		lesCheckpoint	= mNodes;
+		PathState::pointer		pspBest;
+		const LedgerEntrySet	lesCheckpoint	= mNodes;
 
 		// Find the best path.
-		BOOST_FOREACH(PathState::pointer pspCur, vpsPaths)
+		BOOST_FOREACH(PathState::pointer& pspCur, vpsPaths)
 		{
 			pathNext(pspCur, vpsPaths.size(), lesCheckpoint);						// Compute increment.
 
