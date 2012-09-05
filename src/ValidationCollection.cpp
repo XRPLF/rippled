@@ -177,8 +177,9 @@ void ValidationCollection::addDeadLedger(const uint256& ledger)
 {
 	boost::mutex::scoped_lock sl(mValidationLock);
 
-	if (isDeadLedger(ledger))
-		return;
+	BOOST_FOREACH(const uint256& it, mDeadLedgers)
+		if (it == ledger)
+			return;
 
 	mDeadLedgers.push_back(ledger);
 	if (mDeadLedgers.size() >= 32)
