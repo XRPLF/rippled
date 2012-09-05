@@ -41,7 +41,7 @@ bool ValidationCollection::addValidation(const SerializedValidation::pointer& va
 				it->second = val;
 			else if (val->getSignTime() > it->second->getSignTime())
 			{
-				val->setPreviousHash(it->second->getPreviousHash());
+				val->setPreviousHash(it->second->getLedgerHash());
 				mStaleValidations.push_back(it->second);
 				it->second = val;
 				condWrite();
