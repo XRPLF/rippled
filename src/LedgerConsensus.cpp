@@ -249,7 +249,11 @@ void LedgerConsensus::checkLCL()
 	uint256 netLgr = mPrevLedgerHash;
 	int netLgrCount = 0;
 
-	boost::unordered_map<uint256, int> vals = theApp->getValidations().getCurrentValidations(mPrevLedgerHash);
+	uint256 favorLedger;
+	if (mState != lcsPRE_CLOSE)
+		favorLedger = mPrevLedgerHash;
+	boost::unordered_map<uint256, int> vals = theApp->getValidations().getCurrentValidations(favorLedger);
+
 	typedef std::pair<const uint256, int> u256_int_pair;
 	BOOST_FOREACH(u256_int_pair& it, vals)
 	{
@@ -628,7 +632,7 @@ void LedgerConsensus::updateOurPositions()
 			++closeTimes[roundCloseTime(mOurPosition->getCloseTime())];
 			++thresh;
 		}
-		thresh = thresh * neededWeight / 100;
+		thresh = ((thresh * neededWeight) + (neededWeight / 2)) / 100;
 		if (thresh == 0)
 			thresh = 1;
 
@@ -643,6 +647,9 @@ void LedgerConsensus::updateOurPositions()
 				thresh = it->second;
 			}
 		}
+		if (!mHaveCloseTimeConsensus)
+			Log(lsDEBUG) << "No CT consensus: Proposers:" << mPeerPositions.size() << " Proposing:" <<
+			(mProposing ? "yes" : "no") << " Thresh:" << thresh << " Pos:" << closeTime;
 	}
 
 	if ((!changes) &&
