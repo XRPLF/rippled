@@ -13,6 +13,7 @@ enum LedgerEntryType
 	ltRIPPLE_STATE		= 'r',
 	ltNICKNAME			= 'n',
 	ltOFFER				= 'o',
+	ltCONTRACT			= 'c',
 };
 
 // Used as a prefix for computing ledger indexes (keys).
@@ -26,8 +27,7 @@ enum LedgerNameSpace
 	spaceOffer			= 'o',	// Entry for an offer.
 	spaceOwnerDir		= 'O',	// Directory of things owned by an account.
 	spaceBookDir		= 'B',	// Directory of order books.
-	spaceBond			= 'b',
-	spaceInvoice		= 'i',
+	spaceContract		= 'c',
 };
 
 enum LedgerSpecificFlags

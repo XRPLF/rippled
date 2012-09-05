@@ -18,6 +18,8 @@ enum SOE_Type
 	SOE_IFNFLAG = 3		// present if flag not set
 };
 
+// JED: seems like there would be a better way to do this
+// maybe something that inherits from SerializedTransaction
 enum SOE_Field
 {
 	sfInvalid = -1,
@@ -31,12 +33,14 @@ enum SOE_Field
 	sfAmount,
 	sfAuthorizedKey,
 	sfBalance,
+	sfBondAmount,
 	sfBookDirectory,
 	sfBookNode,
 	sfBorrowExpire,
 	sfBorrowRate,
 	sfBorrowStart,
 	sfBorrower,
+	sfCreateCode,
 	sfCloseTime,
 	sfCurrency,
 	sfCurrencyIn,
@@ -45,9 +49,11 @@ enum SOE_Field
 	sfDomain,
 	sfEmailHash,
 	sfExpiration,
+	sfExpireCode,
 	sfExtensions,
 	sfFirstNode,
 	sfFlags,
+	sfFundCode,
 	sfGenerator,
 	sfGeneratorID,
 	sfHash,
@@ -60,6 +66,7 @@ enum SOE_Field
 	sfIndexNext,
 	sfIndexPrevious,
 	sfInvoiceID,
+	sfIssuer,
 	sfLastNode,
 	sfLastReceive,
 	sfLastSignedSeq,
@@ -81,6 +88,7 @@ enum SOE_Field
 	sfNextTransitStart,
 	sfNickname,
 	sfOfferSequence,
+	sfOwner,
 	sfOwnerNode,
 	sfPaths,
 	sfPubKey,
@@ -88,12 +96,15 @@ enum SOE_Field
 	sfPublishSize,
 	sfQualityIn,
 	sfQualityOut,
+	sfRemoveCode,
+	sfRippleEscrow,
 	sfSendMax,
 	sfSequence,
 	sfSignature,
 	sfSigningKey,
 	sfSigningTime,
 	sfSourceTag,
+	sfStampEscrow,
 	sfTakerGets,
 	sfTakerPays,
 	sfTarget,

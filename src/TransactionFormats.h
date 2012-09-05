@@ -15,8 +15,10 @@ enum TransactionType
 	ttNICKNAME_SET		= 6,
 	ttOFFER_CREATE		= 7,
 	ttOFFER_CANCEL		= 8,
+	ttCONTRACT			= 9,
+	ttCONTRACT_REMOVE	= 10,  // can we use the same msg as offer cancel
+
 	ttCREDIT_SET		= 20,
-	ttINVOICE			= 10,
 };
 
 struct TransactionFormat

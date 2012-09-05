@@ -996,7 +996,7 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn,
 
 	STAmount	saCost		= theConfig.FEE_DEFAULT;
 
-	// Customize behavoir based on transaction type.
+	// Customize behavior based on transaction type.
 	if (tesSUCCESS == terResult)
 	{
 		switch (txn.getTxnType())
@@ -1024,7 +1024,6 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn,
 
 			case ttACCOUNT_SET:
 			case ttCREDIT_SET:
-			case ttINVOICE:
 			case ttOFFER_CREATE:
 			case ttOFFER_CANCEL:
 			case ttPASSWORD_FUND:
@@ -1194,7 +1193,7 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn,
 	else if (saSrcBalance < saPaid)
 	{
 		Log(lsINFO)
-			<< boost::str(boost::format("applyTransaction: Delay: insufficent balance: balance=%s paid=%s")
+			<< boost::str(boost::format("applyTransaction: Delay: insufficient balance: balance=%s paid=%s")
 				% saSrcBalance.getText()
 				% saPaid.getText());
 
@@ -1278,9 +1277,9 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn,
 				terResult = temINVALID;
 				break;
 
-			case ttINVOICE:
-				terResult = doInvoice(txn);
-				break;
+			//case ttINVOICE:
+			//	terResult = doInvoice(txn);
+			//	break;
 
 			case ttOFFER_CREATE:
 				terResult = doOfferCreate(txn);
@@ -1308,6 +1307,13 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn,
 
 			case ttWALLET_ADD:
 				terResult = doWalletAdd(txn);
+				break;
+
+			case ttCONTRACT:
+				terResult= doContractAdd(txn);
+				break;
+			case ttCONTRACT_REMOVE:
+				terResult=doContractRemove(txn);
 				break;
 
 			default:
@@ -1357,6 +1363,8 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn,
 
 	return terResult;
 }
+
+
 
 TER TransactionEngine::doAccountSet(const SerializedTransaction& txn)
 {
@@ -4755,6 +4763,55 @@ TER TransactionEngine::doStore(const SerializedTransaction& txn)
 TER TransactionEngine::doDelete(const SerializedTransaction& txn)
 {
 	return temUNKNOWN;
+}
+
+#include "Interpreter.h"
+#include "Contract.h"
+
+TER	TransactionEngine::doContractAdd(const SerializedTransaction& txn)
+{
+	Log(lsWARNING) << "doContractAdd> " << txn.getJson(0);
+
+	const uint32 expiration		= txn.getITFieldU32(sfExpiration);
+	const uint32 bondAmount		= txn.getITFieldU32(sfBondAmount);
+	const uint32 stampEscrow	= txn.getITFieldU32(sfStampEscrow);
+	STAmount rippleEscrow		= txn.getITFieldAmount(sfRippleEscrow);
+	std::vector<unsigned char>	createCode		= txn.getITFieldVL(sfCreateCode);
+	std::vector<unsigned char>	fundCode		= txn.getITFieldVL(sfFundCode);
+	std::vector<unsigned char>	removeCode		= txn.getITFieldVL(sfRemoveCode);
+	std::vector<unsigned char>	expireCode		= txn.getITFieldVL(sfExpireCode);
+
+	// make sure
+	// expiration hasn't passed
+	// bond amount is enough
+	// they have the stamps for the bond
+
+	// place contract in ledger
+	// run create code
+	
+
+	if (mLedger->getParentCloseTimeNC() >= expiration)
+	{
+		Log(lsWARNING) << "doContractAdd: Expired transaction: offer expired";
+		return(tefALREADY);
+	}
+	//TODO: check bond
+	//if( txn.getSourceAccount() )
+
+	Contract contract;
+	Interpreter interpreter;
+	TER	terResult=interpreter->interpret(&contract,txn,createCode);
+	if(tesSUCCESS != terResult)
+	{
+
+	}
+
+	return(terResult);
+}
+
+TER	TransactionEngine::doContractRemove(const SerializedTransaction& txn)
+{
+
 }
 
 // vim:ts=4

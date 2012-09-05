@@ -288,6 +288,9 @@
     <ClCompile Include="src\Interpreter.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\ScriptData.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="KnownNodeList.h">
@@ -533,8 +536,11 @@
     <ClInclude Include="src\Contract.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\ScriptData.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\Interpreter.h">
-      <Filter>Source Files</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

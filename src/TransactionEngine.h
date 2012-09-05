@@ -63,7 +63,7 @@ enum TER	// aka TransactionEngineResult
 	// Implications:
 	// - Not applied
 	// - Not forwarded
-	// - Could succeed in an imaginared ledger.
+	// - Could succeed in an imagined ledger.
 	tefFAILURE		= -199,
 	tefALREADY,
 	tefBAD_ADD_AUTH,
@@ -334,6 +334,8 @@ protected:
 	TER					doStore(const SerializedTransaction& txn);
 	TER					doTake(const SerializedTransaction& txn);
 	TER					doWalletAdd(const SerializedTransaction& txn);
+	TER					doContractAdd(const SerializedTransaction& txn);
+	TER					doContractRemove(const SerializedTransaction& txn);
 
 public:
 	TransactionEngine() { ; }

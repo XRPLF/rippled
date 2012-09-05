@@ -141,6 +141,7 @@
     <ClCompile Include="src\RPCCommands.cpp" />
     <ClCompile Include="src\RPCDoor.cpp" />
     <ClCompile Include="src\RPCServer.cpp" />
+    <ClCompile Include="src\ScriptData.cpp" />
     <ClCompile Include="src\SerializedLedger.cpp" />
     <ClCompile Include="src\SerializedObject.cpp" />
     <ClCompile Include="src\SerializedTransaction.cpp" />
@@ -232,6 +233,7 @@
     <ClInclude Include="src\RPCDoor.h" />
     <ClInclude Include="src\RPCServer.h" />
     <ClInclude Include="src\ScopedLock.h" />
+    <ClInclude Include="src\ScriptData.h" />
     <ClInclude Include="src\SecureAllocator.h" />
     <ClInclude Include="src\SerializedLedger.h" />
     <ClInclude Include="src\SerializedObject.h" />
