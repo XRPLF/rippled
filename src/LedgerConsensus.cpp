@@ -248,23 +248,39 @@ void LedgerConsensus::checkLCL()
 {
 	uint256 netLgr = mPrevLedgerHash;
 	int netLgrCount = 0;
-	{
-		boost::unordered_map<uint256, int> vals = theApp->getValidations().getCurrentValidations();
 
-		typedef std::pair<const uint256, int> u256_int_pair;
-		BOOST_FOREACH(u256_int_pair& it, vals)
+	boost::unordered_map<uint256, int> vals = theApp->getValidations().getCurrentValidations();
+	typedef std::pair<const uint256, int> u256_int_pair;
+	BOOST_FOREACH(u256_int_pair& it, vals)
+	{
+		if ((it.second > netLgrCount) && !theApp->getValidations().isDeadLedger(it.first))
 		{
-			if ((it.second > netLgrCount) && !theApp->getValidations().isDeadLedger(it.first))
-			{
-				netLgr = it.first;
-				netLgrCount = it.second;
-			}
+			netLgr = it.first;
+			netLgrCount = it.second;
 		}
 	}
+
 	if (netLgr != mPrevLedgerHash)
 	{ // LCL change
-		Log(lsWARNING) << "View of consensus changed during consensus (" << netLgrCount << ")";
+		const char *status;
+		switch (mState)
+		{
+			case lcsPRE_CLOSE: status="PreClose"; break;
+			case lcsESTABLISH: status="Establish"; break;
+			case lcsFINISHED: status="Finised"; break;
+			case lcsACCEPTED: status="Accepted"; break;
+			default: status="unknown";
+		}
+
+		Log(lsWARNING) << "View of consensus changed during consensus (" << netLgrCount << ") status="
+			<< status << ", " << (mHaveCorrectLCL ? "CorrectLCL" : "IncorrectLCL");
 		Log(lsWARNING) << mPrevLedgerHash << " to " << netLgr;
+
+#ifdef DEBUG
+	BOOST_FOREACH(u256_int_pair& it, vals)
+		Log(lsDEBUG) << "V: " << it.first << ", " << it.second;
+#endif
+
 		if (mHaveCorrectLCL)
 			theApp->getOPs().consensusViewChange();
 		handleLCL(netLgr);
@@ -520,7 +536,7 @@ void LedgerConsensus::stateAccepted()
 
 void LedgerConsensus::timerEntry()
 {
-	if ((!mHaveCorrectLCL) || (mState == lcsPRE_CLOSE))
+	if ((!mHaveCorrectLCL && (mState != lcsACCEPTED)) || (mState == lcsPRE_CLOSE))
 		checkLCL();
 
 	mCurrentMSeconds =
