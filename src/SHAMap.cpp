@@ -125,7 +125,7 @@ void SHAMap::dirtyUp(std::stack<SHAMapTreeNode::pointer>& stack, const uint256& 
 			return;
 		}
 #ifdef ST_DEBUG
-		std::cerr << "dirtyUp sets branch " << branch << " to " << prevHash.GetHex() << std::endl;
+		std::cerr << "dirtyUp sets branch " << branch << " to " << prevHash << std::endl;
 #endif
 		prevHash = node->getNodeHash();
 		assert(prevHash.isNonZero());
@@ -187,9 +187,9 @@ SHAMapTreeNode::pointer SHAMap::getNode(const SHAMapNode& id, const uint256& has
 		if (node->getNodeHash() != hash)
 		{
 			std::cerr << "Attempt to get node, hash not in tree" << std::endl;
-			std::cerr << "ID: " << id.getString() << std::endl;
-			std::cerr << "TgtHash " << hash.GetHex() << std::endl;
-			std::cerr << "NodHash " << node->getNodeHash().GetHex() << std::endl;
+			std::cerr << "ID: " << id << std::endl;
+			std::cerr << "TgtHash " << hash << std::endl;
+			std::cerr << "NodHash " << node->getNodeHash() << std::endl;
 			dump();
 			throw std::runtime_error("invalid node");
 		}
@@ -242,7 +242,7 @@ SHAMapItem::pointer SHAMap::firstBelow(SHAMapTreeNode* node)
 {
 	// Return the first item below this node
 #ifdef ST_DEBUG
-	std::cerr << "firstBelow(" << node->getString() << ")" << std::endl;
+	std::cerr << "firstBelow(" << *node << ")" << std::endl;
 #endif
 	do
 	{ // Walk down the tree
@@ -253,9 +253,9 @@ SHAMapItem::pointer SHAMap::firstBelow(SHAMapTreeNode* node)
 			if (!node->isEmptyBranch(i))
 			{
 #ifdef ST_DEBUG
-	std::cerr << " FB: node " << node->getString() << std::endl;
+	std::cerr << " FB: node " << *node << std::endl;
 	std::cerr << "  has non-empty branch " << i << " : " <<
-		node->getChildNodeID(i).getString() << ", " << node->getChildHash(i).GetHex() << std::endl;
+		node->getChildNodeID(i) << ", " << node->getChildHash(i) << std::endl;
 #endif
 				node = getNodePointer(node->getChildNodeID(i), node->getChildHash(i));
 				foundNode = true;
@@ -268,7 +268,7 @@ SHAMapItem::pointer SHAMap::firstBelow(SHAMapTreeNode* node)
 SHAMapItem::pointer SHAMap::lastBelow(SHAMapTreeNode* node)
 {
 #ifdef DEBUG
-	std::cerr << "lastBelow(" << node->getString() << ")" << std::endl;
+	std::cerr << "lastBelow(" << *node << ")" << std::endl;
 #endif
 
 	do
@@ -306,7 +306,7 @@ SHAMapItem::pointer SHAMap::onlyBelow(SHAMapTreeNode* node)
 
 		if (!found)
 		{
-			std::cerr << node->getString() << std::endl;
+			std::cerr << *node << std::endl;
 			assert(false);
 			return SHAMapItem::pointer();
 		}
@@ -480,7 +480,7 @@ bool SHAMap::delItem(const uint256& id)
 				{
 					eraseChildren(node);
 #ifdef ST_DEBUG
-					std::cerr << "Making item node " << node->getString() << std::endl;
+					std::cerr << "Making item node " << *node << std::endl;
 #endif
 					node->setItem(item, type);
 				}
@@ -501,7 +501,7 @@ bool SHAMap::delItem(const uint256& id)
 bool SHAMap::addGiveItem(const SHAMapItem::pointer& item, bool isTransaction, bool hasMeta)
 { // add the specified item, does not update
 #ifdef ST_DEBUG
-	std::cerr << "aGI " << item->getTag().GetHex() << std::endl;
+	std::cerr << "aGI " << item->getTag() << std::endl;
 #endif
 
 	uint256 tag = item->getTag();
@@ -527,7 +527,7 @@ bool SHAMap::addGiveItem(const SHAMapItem::pointer& item, bool isTransaction, bo
 	if (node->isInner())
 	{ // easy case, we end on an inner node
 #ifdef ST_DEBUG
-		std::cerr << "aGI inner " << node->getString() << std::endl;
+		std::cerr << "aGI inner " << *node << std::endl;
 #endif
 		int branch = node->selectBranch(tag);
 		assert(node->isEmptyBranch(branch));
@@ -535,8 +535,8 @@ bool SHAMap::addGiveItem(const SHAMapItem::pointer& item, bool isTransaction, bo
 			boost::make_shared<SHAMapTreeNode>(node->getChildNodeID(branch), item, type, mSeq);
 		if (!mTNByID.insert(std::make_pair(SHAMapNode(*newNode), newNode)).second)
 		{
-			std::cerr << "Node: " << node->getString() << std::endl;
-			std::cerr << "NewNode: " << newNode->getString() << std::endl;
+			std::cerr << "Node: " << *node << std::endl;
+			std::cerr << "NewNode: " << *newNode << std::endl;
 			dump();
 			assert(false);
 			throw std::runtime_error("invalid inner node");
@@ -546,8 +546,8 @@ bool SHAMap::addGiveItem(const SHAMapItem::pointer& item, bool isTransaction, bo
 	else
 	{ // this is a leaf node that has to be made an inner node holding two items
 #ifdef ST_DEBUG
-		std::cerr << "aGI leaf " << node->getString() << std::endl;
-		std::cerr << "Existing: " << node->peekItem()->getTag().GetHex() << std::endl;
+		std::cerr << "aGI leaf " << *node << std::endl;
+		std::cerr << "Existing: " << node->peekItem()->getTag() << std::endl;
 #endif
 		SHAMapItem::pointer otherItem = node->peekItem();
 		assert(otherItem && (tag != otherItem->getTag()));
@@ -629,7 +629,7 @@ bool SHAMap::updateGiveItem(const SHAMapItem::pointer& item, bool isTransaction,
 
 void SHAMapItem::dump()
 {
-	std::cerr << "SHAMapItem(" << mTag.GetHex() << ") " << mData.size() << "bytes" << std::endl;
+	std::cerr << "SHAMapItem(" << mTag << ") " << mData.size() << "bytes" << std::endl;
 }
 
 SHAMapTreeNode::pointer SHAMap::fetchNodeExternal(const SHAMapNode& id, const uint256& hash)
@@ -652,7 +652,7 @@ SHAMapTreeNode::pointer SHAMap::fetchNodeExternal(const SHAMapNode& id, const ui
 	}
 	catch (...)
 	{
-		Log(lsWARNING) << "fetchNodeExternal gets an invalid node: " << hash.GetHex();
+		Log(lsWARNING) << "fetchNodeExternal gets an invalid node: " << hash;
 		throw SHAMapMissingNode(id, hash);
 	}
 }
@@ -719,7 +719,7 @@ void SHAMap::dump(bool hash)
 	SHAMapItem::pointer i=peekFirstItem();
 	while (i)
 	{
-		std::cerr << "Item: id=" << i->getTag().GetHex() << std::endl;
+		std::cerr << "Item: id=" << i->getTag() << std::endl;
 		i = peekNextItem(i->getTag());
 	}
 	std::cerr << "SHAMap::dump done" << std::endl;
@@ -732,7 +732,7 @@ void SHAMap::dump(bool hash)
 	{
 		std::cerr << it->second->getString() << std::endl;
 		if (hash)
-			std::cerr << "   " << it->second->getNodeHash().GetHex() << std::endl;
+			std::cerr << "   " << it->second->getNodeHash() << std::endl;
 	}
 
 }

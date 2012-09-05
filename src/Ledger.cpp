@@ -258,7 +258,7 @@ uint256 Ledger::getHash()
 	return(mHash);
 }
 
-void Ledger::saveAcceptedLedger(const Ledger::pointer& ledger)
+void Ledger::saveAcceptedLedger(Ledger::ref ledger)
 {
 	static boost::format ledgerExists("SELECT LedgerSeq FROM Ledgers where LedgerSeq = %d;");
 	static boost::format deleteLedger("DELETE FROM Ledgers WHERE LedgerSeq = %d;");
@@ -417,23 +417,26 @@ void Ledger::addJson(Json::Value& ret, int options)
 	bool full = (options & LEDGER_JSON_FULL) != 0;
 	if(mClosed || full)
 	{
+		if (mClosed)
+			ledger["closed"] = true;
 		ledger["hash"] = mHash.GetHex();
 		ledger["transactionHash"] = mTransHash.GetHex();
 		ledger["accountHash"] = mAccountHash.GetHex();
-		if (mClosed) ledger["closed"] = true;
 		ledger["accepted"] = mAccepted;
 		ledger["totalCoins"] = boost::lexical_cast<std::string>(mTotCoins);
-		if ((mCloseFlags & sLCF_NoConsensusTime) != 0)
-			ledger["closeTimeEstimate"] = mCloseTime;
-		else
+		if (mCloseTime != 0)
 		{
-			ledger["closeTime"] = mCloseTime;
-			ledger["closeTimeResolution"] = mCloseResolution;
+			if ((mCloseFlags & sLCF_NoConsensusTime) != 0)
+				ledger["closeTimeEstimate"] = boost::posix_time::to_simple_string(ptFromSeconds(mCloseTime));
+			else
+			{
+				ledger["closeTime"] = boost::posix_time::to_simple_string(ptFromSeconds(mCloseTime));
+				ledger["closeTimeResolution"] = mCloseResolution;
+			}
 		}
 	}
-	else ledger["closed"] = false;
-	if (mCloseTime != 0)
-		ledger["closeTime"] = boost::posix_time::to_simple_string(ptFromSeconds(mCloseTime));
+	else
+		ledger["closed"] = false;
 	if (mTransactionMap && (full || ((options & LEDGER_JSON_DUMP_TXNS) != 0)))
 	{
 		Json::Value txns(Json::arrayValue);
@@ -505,7 +508,7 @@ void Ledger::setCloseTime(boost::posix_time::ptime ptm)
 }
 
 // XXX Use shared locks where possible?
-LedgerStateParms Ledger::writeBack(LedgerStateParms parms, const SLE::pointer& entry)
+LedgerStateParms Ledger::writeBack(LedgerStateParms parms, SLE::ref entry)
 {
 	ScopedLock l(mAccountStateMap->Lock());
 	bool create = false;

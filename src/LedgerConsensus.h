@@ -27,11 +27,11 @@ protected:
 	SHAMap::pointer		mMap;
 	bool				mHaveRoot;
 
-	void onTimer()							{ trigger(Peer::pointer(), true); }
-	void newPeer(const Peer::pointer& peer)	{ trigger(peer, false); }
+	void onTimer()					{ trigger(Peer::pointer(), true); }
+	void newPeer(Peer::ref peer)	{ trigger(peer, false); }
 
 	void done();
-	void trigger(const Peer::pointer&, bool timer);
+	void trigger(Peer::ref, bool timer);
 	boost::weak_ptr<PeerSet> pmDowncast();
 
 public:
@@ -41,7 +41,7 @@ public:
 	SHAMap::pointer getMap()			{ return mMap; }
 
 	bool takeNodes(const std::list<SHAMapNode>& IDs, const std::list< std::vector<unsigned char> >& data,
-		const Peer::pointer&);
+		Peer::ref);
 };
 
 class LCTransaction
@@ -64,6 +64,7 @@ public:
 	Serializer& peekTransaction()						{ return transaction; }
 
 	void setVote(const uint160& peer, bool votesYes);
+	void unVote(const uint160& peer);
 
 	bool updatePosition(int percentTime, bool proposing);
 };
@@ -111,37 +112,44 @@ protected:
 	// Close time estimates
 	std::map<uint32, int> mCloseTimes;
 
+	// deferred proposals (node ID -> proposals from that peer)
+	boost::unordered_map< uint160,  std::list<LedgerProposal::pointer> > mDeferredProposals;
+
 	// final accept logic
 	static void Saccept(boost::shared_ptr<LedgerConsensus> This, SHAMap::pointer txSet);
 	void accept(const SHAMap::pointer& txSet);
 
-	void weHave(const uint256& id, const Peer::pointer& avoidPeer);
+	void weHave(const uint256& id, Peer::ref avoidPeer);
 	void startAcquiring(const TransactionAcquire::pointer&);
 	SHAMap::pointer find(const uint256& hash);
 
 	void createDisputes(const SHAMap::pointer&, const SHAMap::pointer&);
 	void addDisputedTransaction(const uint256&, const std::vector<unsigned char>& transaction);
 	void adjustCount(const SHAMap::pointer& map, const std::vector<uint160>& peers);
-	void propose(const std::vector<uint256>& addedTx, const std::vector<uint256>& removedTx);
+	void propose();
 
 	void addPosition(LedgerProposal&, bool ours);
 	void removePosition(LedgerProposal&, bool ours);
 	void sendHaveTxSet(const uint256& set, bool direct);
-	void applyTransactions(const SHAMap::pointer& transactionSet, const Ledger::pointer& targetLedger,
-		const Ledger::pointer& checkLedger,	CanonicalTXSet& failedTransactions, bool final);
+	void applyTransactions(const SHAMap::pointer& transactionSet, Ledger::ref targetLedger,
+		Ledger::ref checkLedger, CanonicalTXSet& failedTransactions, bool openLgr);
 	void applyTransaction(TransactionEngine& engine, const SerializedTransaction::pointer& txn,
-		const Ledger::pointer& targetLedger, CanonicalTXSet& failedTransactions, bool final);
+		Ledger::ref targetLedger, CanonicalTXSet& failedTransactions, bool openLgr);
+
+	uint32 roundCloseTime(uint32 closeTime);
 
 	// manipulating our own position
 	void statusChange(newcoin::NodeEvent, Ledger& ledger);
 	void takeInitialPosition(Ledger& initialLedger);
 	void updateOurPositions();
+	void playbackProposals();
 	int getThreshold();
+
 	void beginAccept();
 	void endConsensus();
 
 public:
-	LedgerConsensus(const uint256& prevLCLHash, const Ledger::pointer& previousLedger, uint32 closeTime);
+	LedgerConsensus(const uint256& prevLCLHash, Ledger::ref previousLedger, uint32 closeTime);
 
 	int startup();
 	Json::Value getJson();
@@ -153,6 +161,7 @@ public:
 	TransactionAcquire::pointer getAcquiring(const uint256& hash);
 	void mapComplete(const uint256& hash, const SHAMap::pointer& map, bool acquired);
 	void checkLCL();
+	void handleLCL(const uint256& lclHash);
 
 	void timerEntry();
 
@@ -166,10 +175,11 @@ public:
 	bool haveConsensus();
 
 	bool peerPosition(const LedgerProposal::pointer&);
+	void deferProposal(const LedgerProposal::pointer& proposal,	const NewcoinAddress& peerPublic);
 
-	bool peerHasSet(const Peer::pointer& peer, const uint256& set, newcoin::TxSetStatus status);
+	bool peerHasSet(Peer::ref peer, const uint256& set, newcoin::TxSetStatus status);
 
-	bool peerGaveNodes(const Peer::pointer& peer, const uint256& setHash,
+	bool peerGaveNodes(Peer::ref peer, const uint256& setHash,
 		const std::list<SHAMapNode>& nodeIDs, const std::list< std::vector<unsigned char> >& nodeData);
 };
 

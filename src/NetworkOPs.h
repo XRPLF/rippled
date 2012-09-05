@@ -63,7 +63,8 @@ protected:
 	// last ledger close
 	int									mLastCloseProposers, mLastCloseConvergeTime;
 	uint256								mLastCloseHash;
-	uint32								mLastCloseNetTime;
+	uint32								mLastCloseTime;
+	uint32								mLastValidationTime;
 
 	// XXX Split into more locks.
     boost::interprocess::interprocess_upgradable_mutex	mMonitorLock;
@@ -77,11 +78,11 @@ protected:
 
 	void setMode(OperatingMode);
 
-	Json::Value transJson(const SerializedTransaction& stTxn, TransactionEngineResult terResult, const std::string& strStatus, int iSeq, const std::string& strType);
-	void pubTransactionAll(const Ledger::pointer& lpCurrent, const SerializedTransaction& stTxn, TransactionEngineResult terResult, const char* pState);
-	void pubTransactionAccounts(const Ledger::pointer& lpCurrent, const SerializedTransaction& stTxn, TransactionEngineResult terResult, const char* pState);
+	Json::Value transJson(const SerializedTransaction& stTxn, TER terResult, const std::string& strStatus, int iSeq, const std::string& strType);
+	void pubTransactionAll(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult, const char* pState);
+	void pubTransactionAccounts(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult, const char* pState);
 
-	Json::Value pubBootstrapAccountInfo(const Ledger::pointer& lpAccepted, const NewcoinAddress& naAccountID);
+	Json::Value pubBootstrapAccountInfo(Ledger::ref lpAccepted, const NewcoinAddress& naAccountID);
 
 public:
 	NetworkOPs(boost::asio::io_service& io_service, LedgerMaster* pLedgerMaster);
@@ -89,6 +90,8 @@ public:
 	// network information
 	uint32 getNetworkTimeNC();
 	uint32 getCloseTimeNC();
+	uint32 getValidationTimeNC();
+	void closeTimeOffset(int);
 	boost::posix_time::ptime getNetworkTimePT();
 	uint32 getCurrentLedgerID();
 	OperatingMode getOperatingMode() { return mMode; }
@@ -159,8 +162,8 @@ public:
 		const std::vector<unsigned char>& myNode, std::list< std::vector<unsigned char> >& newNodes);
 
 	// ledger proposal/close functions
-	bool recvPropose(uint32 proposeSeq, const uint256& proposeHash, uint32 closeTime,
-		const std::string& pubKey, const std::string& signature);
+	bool recvPropose(uint32 proposeSeq, const uint256& proposeHash, const uint256& prevLedger, uint32 closeTime,
+		const std::string& pubKey, const std::string& signature, const NewcoinAddress& nodePublic);
 	bool gotTXData(const boost::shared_ptr<Peer>& peer, const uint256& hash,
 		const std::list<SHAMapNode>& nodeIDs, const std::list< std::vector<unsigned char> >& nodeData);
 	bool recvValidation(const SerializedValidation::pointer& val);
@@ -177,10 +180,11 @@ public:
 	void setStandAlone()				{ setMode(omFULL); }
 	void setStateTimer();
 	void newLCL(int proposers, int convergeTime, const uint256& ledgerHash);
+	void consensusViewChange();
 	int getPreviousProposers()			{ return mLastCloseProposers; }
 	int getPreviousConvergeTime()		{ return mLastCloseConvergeTime; }
-	uint32 getLastCloseNetTime()		{ return mLastCloseNetTime; }
-	void setLastCloseNetTime(uint32 t)	{ mLastCloseNetTime = t; }
+	uint32 getLastCloseTime()			{ return mLastCloseTime; }
+	void setLastCloseTime(uint32 t)		{ mLastCloseTime = t; }
 	Json::Value getServerInfo();
 
 	// client information retrieval functions
@@ -194,8 +198,8 @@ public:
 	//
 
 	void pubAccountInfo(const NewcoinAddress& naAccountID, const Json::Value& jvObj);
-	void pubLedger(const Ledger::pointer& lpAccepted);
-	void pubTransaction(const Ledger::pointer& lpLedger, const SerializedTransaction& stTxn, TransactionEngineResult terResult);
+	void pubLedger(Ledger::ref lpAccepted);
+	void pubTransaction(Ledger::ref lpLedger, const SerializedTransaction& stTxn, TER terResult);
 
 	//
 	// Monitoring: subscriber side

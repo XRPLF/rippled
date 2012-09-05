@@ -8,14 +8,15 @@
 class SerializedLedgerEntry : public SerializedType
 {
 public:
-	typedef boost::shared_ptr<SerializedLedgerEntry> pointer;
+	typedef boost::shared_ptr<SerializedLedgerEntry>		pointer;
+	typedef const boost::shared_ptr<SerializedLedgerEntry>&	ref;
 
 protected:
-	uint256 mIndex;
-	LedgerEntryType mType;
-	STUInt16 mVersion;
-	STObject mObject;
-	const LedgerEntryFormat* mFormat;
+	uint256						mIndex;
+	LedgerEntryType				mType;
+	STUInt16					mVersion;
+	STObject					mObject;
+	const LedgerEntryFormat*	mFormat;
 
 	SerializedLedgerEntry* duplicate() const { return new SerializedLedgerEntry(*this); }
 

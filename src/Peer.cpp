@@ -140,7 +140,7 @@ void Peer::handleVerifyTimer(const boost::system::error_code& ecResult)
 
 // Begin trying to connect. We are not connected till we know and accept peer's public key.
 // Only takes IP addresses (not domains).
-void Peer::connect(const std::string strIp, int iPort)
+void Peer::connect(const std::string& strIp, int iPort)
 {
 	int	iPortAct	= (iPort <= 0) ? SYSTEM_PEER_PORT : iPort;
 
@@ -586,7 +586,10 @@ void Peer::recvHello(newcoin::TMHello& packet)
 
 	if (packet.has_nettime() && ((packet.nettime() < minTime) || (packet.nettime() > maxTime)))
 	{
-		Log(lsINFO) << "Recv(Hello): Disconnect: Clock is far off";
+		if (packet.nettime() > maxTime)
+			Log(lsINFO) << "Recv(Hello): " << getIP() << " :Clock far off +" << packet.nettime() - ourTime;
+		else if(packet.nettime() < minTime)
+			Log(lsINFO) << "Recv(Hello): " << getIP() << " :Clock far off -" << ourTime - packet.nettime();
 	}
 	else if (packet.protoversionmin() < MAKE_VERSION_INT(MIN_PROTO_MAJOR, MIN_PROTO_MINOR))
 	{
@@ -648,7 +651,6 @@ void Peer::recvHello(newcoin::TMHello& packet)
 				if ((packet.has_ledgerprevious()) && (packet.ledgerprevious().size() == (256 / 8)))
 					memcpy(mPreviousLedgerHash.begin(), packet.ledgerprevious().data(), 256 / 8);
 				else mPreviousLedgerHash.zero();
-				mClosedLedgerTime = boost::posix_time::second_clock::universal_time();
 			}
 
 			bDetach	= false;
@@ -722,12 +724,14 @@ void Peer::recvPropose(newcoin::TMProposeSet& packet)
 		return;
 	}
 
-	uint32 proposeSeq = packet.proposeseq();
-	uint256 currentTxHash;
+	uint256 currentTxHash, prevLedger;
 	memcpy(currentTxHash.begin(), packet.currenttxhash().data(), 32);
 
-	if(theApp->getOPs().recvPropose(proposeSeq, currentTxHash, packet.closetime(),
-		packet.nodepubkey(), packet.signature()))
+	if ((packet.has_previousledger()) && (packet.previousledger().size() == 32))
+		memcpy(prevLedger.begin(), packet.previousledger().data(), 32);
+
+	if(theApp->getOPs().recvPropose(packet.proposeseq(), currentTxHash, prevLedger, packet.closetime(),
+		packet.nodepubkey(), packet.signature(), mNodePublic))
 	{ // FIXME: Not all nodes will want proposals 
 		PackedMessage::pointer message = boost::make_shared<PackedMessage>(packet, newcoin::mtPROPOSE_LEDGER);
 		theApp->getConnectionPool().relayMessage(this, message);
@@ -900,16 +904,18 @@ void Peer::recvStatus(newcoin::TMStatusChange& packet)
 
 	if (packet.newevent() == newcoin::neLOST_SYNC)
 	{
-		Log(lsTRACE) << "peer has lost sync " << getIP();
+		if (!mClosedLedgerHash.isZero())
+		{
+			Log(lsTRACE) << "peer has lost sync " << getIP();
+			mClosedLedgerHash.zero();
+		}
 		mPreviousLedgerHash.zero();
-		mClosedLedgerHash.zero();
 		return;
 	}
 	if (packet.has_ledgerhash() && (packet.ledgerhash().size() == (256 / 8)))
 	{ // a peer has changed ledgers
 		memcpy(mClosedLedgerHash.begin(), packet.ledgerhash().data(), 256 / 8);
-		mClosedLedgerTime = ptFromSeconds(packet.networktime());
-		Log(lsTRACE) << "peer LCL is " << mClosedLedgerHash.GetHex() << " " << getIP();
+		Log(lsTRACE) << "peer LCL is " << mClosedLedgerHash << " " << getIP();
 	}
 	else
 	{
@@ -969,6 +975,8 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 			}
 			memcpy(ledgerhash.begin(), packet.ledgerhash().data(), 32);
 			ledger = theApp->getMasterLedger().getLedgerByHash(ledgerhash);
+			if (!ledger)
+				Log(lsINFO) << "Don't have ledger " << ledgerhash;
 		}
 		else if (packet.has_ledgerseq())
 			ledger = theApp->getMasterLedger().getLedgerBySeq(packet.ledgerseq());
@@ -987,7 +995,7 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 			return;
 		}
 
-		if ((!ledger) || (packet.has_ledgerseq() && (packet.ledgerseq()!=ledger->getLedgerSeq())))
+		if ((!ledger) || (packet.has_ledgerseq() && (packet.ledgerseq() != ledger->getLedgerSeq())))
 		{
 			punishPeer(PP_UNKNOWN_REQUEST);
 			Log(lsWARNING) << "Can't find the ledger they want";

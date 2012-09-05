@@ -2,6 +2,7 @@
 #define __TRANSACTIONENGINE__
 
 #include <boost/tuple/tuple.hpp>
+#include <boost/tuple/tuple_comparison.hpp>
 #include <boost/unordered_set.hpp>
 #include <boost/unordered_map.hpp>
 
@@ -13,25 +14,35 @@
 // A TransactionEngine applies serialized transactions to a ledger
 // It can also, verify signatures, verify fees, and give rejection reasons
 
-enum TransactionEngineResult
+enum TER	// aka TransactionEngineResult
 {
 	// Note: Range is stable.  Exact numbers are currently unstable.  Use tokens.
 
 	// -399 .. -300: L Local error (transaction fee inadequate, exceeds local limit)
-	// Not forwarded, no fee. Only valid during non-consensus processing
+	// Only valid during non-consensus processing.
+	// Implications:
+	// - Not forwarded
+	// - No fee check
 	telLOCAL_ERROR	= -399,
 	telBAD_PATH_COUNT,
 	telINSUF_FEE_P,
 
 	// -299 .. -200: M Malformed (bad signature)
-	// Transaction corrupt, not forwarded, cannot charge fee, reject
-	// Never can succeed in any ledger
+	// Causes:
+	// - Transaction corrupt.
+	// Implications:
+	// - Not applied
+	// - Not forwarded
+	// - Reject
+	// - Can not succeed in any imagined ledger.
 	temMALFORMED	= -299,
 	temBAD_AMOUNT,
 	temBAD_AUTH_MASTER,
 	temBAD_EXPIRATION,
 	temBAD_ISSUER,
 	temBAD_OFFER,
+	temBAD_PATH,
+	temBAD_PATH_LOOP,
 	temBAD_PUBLISH,
 	temBAD_SET_ID,
 	temCREATEXNS,
@@ -45,8 +56,14 @@ enum TransactionEngineResult
 	temUNKNOWN,
 
 	// -199 .. -100: F Failure (sequence number previously used)
-	// Transaction cannot succeed because of ledger state, unexpected ledger state, C++ exception, not forwarded, cannot be
-	// applied, Could succeed in an imaginary ledger.
+	// Causes:
+	// - Transaction cannot succeed because of ledger state.
+	// - Unexpected ledger state.
+	// - C++ exception.
+	// Implications:
+	// - Not applied
+	// - Not forwarded
+	// - Could succeed in an imaginared ledger.
 	tefFAILURE		= -199,
 	tefALREADY,
 	tefBAD_ADD_AUTH,
@@ -56,17 +73,25 @@ enum TransactionEngineResult
 	tefBAD_LEDGER,
 	tefCLAIMED,
 	tefCREATED,
+	tefEXCEPTION,
 	tefGEN_IN_USE,
 	tefPAST_SEQ,
 
 	// -99 .. -1: R Retry (sequence too high, no funds for txn fee, originating account non-existent)
-	// Transaction cannot be applied, cannot charge fee, not forwarded, might succeed later, hold
+	// Causes:
+	// - Priror application of another, possibly non-existant, transaction could allow this transaction to succeed.
+	// Implications:
+	// - Not applied
+	// - Not forwarded
+	// - Might succeed later
+	// - Hold
 	terRETRY		= -99,
 	terDIR_FULL,
 	terFUNDS_SPENT,
 	terINSUF_FEE_B,
 	terNO_ACCOUNT,
 	terNO_DST,
+	terNO_LINE,
 	terNO_LINE_NO_ZERO,
 	terOFFER_NOT_FOUND, // XXX If we check sequence first this could be hard failure.
 	terPRE_SEQ,
@@ -74,25 +99,43 @@ enum TransactionEngineResult
 	terUNFUNDED,
 
 	// 0: S Success (success)
-	// Transaction succeeds, can be applied, can charge fee, forwarded
+	// Causes:
+	// - Success.
+	// Implications:
+	// - Applied
+	// - Forwarded
 	tesSUCCESS		= 0,
 
 	// 100 .. P Partial success (SR) (ripple transaction with no good paths, pay to non-existent account)
-	// Transaction can be applied, can charge fee, forwarded, but does not achieve optimal result.
-	tepPARITAL		= 100,
+	// Causes:
+	// - Success, but does not achieve optimal result.
+	// Implications:
+	// - Applied
+	// - Forwarded
+	// Only allowed as a return code of appliedTransaction when !tapRetry. Otherwise, treated as terRETRY.
+	tepPARTIAL		= 100,
 	tepPATH_DRY,
 	tepPATH_PARTIAL,
 };
 
-bool transResultInfo(TransactionEngineResult terCode, std::string& strToken, std::string& strHuman);
+#define isTemMalformed(x)	((x) >= temMALFORMED && (x) < tefFAILURE)
+#define isTefFailure(x)		((x) >= tefFAILURE && (x) < terRETRY)
+#define isTepPartial(x)		((x) >= tepPATH_PARTIAL)
+
+bool transResultInfo(TER terCode, std::string& strToken, std::string& strHuman);
 
 enum TransactionEngineParams
 {
-	tepNONE          = 0,
-	tepNO_CHECK_SIGN = 1,	// Signature already checked
-	tepNO_CHECK_FEE  = 2,	// It was voted into a ledger anyway
-	tepUPDATE_TOTAL  = 4,	// Update the total coins
-	tepMETADATA      = 5,   // put metadata in tree, not transaction
+	tapNONE				= 0x00,
+
+	tapNO_CHECK_SIGN	= 0x01,	// Signature already checked
+
+	tapOPEN_LEDGER		= 0x10,	// Transaction is running against an open ledger
+		// true = failures are not forwarded, check transaction fee
+		// false = debit ledger for consumed funds
+
+	tapRETRY			= 0x20,	// This is not the transaction's last pass
+		// Transaction can be retried, soft failures allowed
 };
 
 typedef struct {
@@ -122,6 +165,7 @@ typedef boost::unordered_map<aciSource, unsigned int>					curIssuerNode;	// Map 
 typedef boost::unordered_map<aciSource, unsigned int>::const_iterator	curIssuerNodeConstIterator;
 
 extern std::size_t hash_value(const aciSource& asValue);
+// extern std::size_t hash_value(const boost::tuple<uint160, uint160, uint160>& bt);
 
 // Hold a path state under incremental application.
 class PathState
@@ -129,36 +173,36 @@ class PathState
 protected:
 	Ledger::pointer				mLedger;
 
-	bool pushNode(int iType, uint160 uAccountID, uint160 uCurrencyID, uint160 uIssuerID);
-	bool pushImply(uint160 uAccountID, uint160 uCurrencyID, uint160 uIssuerID);
+	TER		pushNode(int iType, uint160 uAccountID, uint160 uCurrencyID, uint160 uIssuerID);
+	TER		pushImply(uint160 uAccountID, uint160 uCurrencyID, uint160 uIssuerID);
 
 public:
 	typedef boost::shared_ptr<PathState> pointer;
 
-	bool							bValid;
-	std::vector<paymentNode>		vpnNodes;
+	TER							terStatus;
+	std::vector<paymentNode>	vpnNodes;
 
 	// When processing, don't want to complicate directory walking with deletion.
-	std::vector<uint256>			vUnfundedBecame;	// Offers that became unfunded.
+	std::vector<uint256>		vUnfundedBecame;	// Offers that became unfunded or were completely consumed.
 
 	// First time working foward a funding source was mentioned for accounts. Source may only be used there.
-	curIssuerNode	umForward;	// Map of currency, issuer to node index.
+	curIssuerNode				umForward;			// Map of currency, issuer to node index.
 
 	// First time working in reverse a funding source was used.
 	// Source may only be used there if not mentioned by an account.
-	curIssuerNode	umReverse;	// Map of currency, issuer to node index.
+	curIssuerNode				umReverse;			// Map of currency, issuer to node index.
 
-	LedgerEntrySet					lesEntries;
+	LedgerEntrySet				lesEntries;
 
 	int							mIndex;
-	uint64						uQuality;		// 0 = none.
-	STAmount					saInReq;		// Max amount to spend by sender
-	STAmount					saInAct;		// Amount spent by sender (calc output)
-	STAmount					saOutReq;		// Amount to send (calc input)
-	STAmount					saOutAct;		// Amount actually sent (calc output).
+	uint64						uQuality;			// 0 = none.
+	STAmount					saInReq;			// Max amount to spend by sender
+	STAmount					saInAct;			// Amount spent by sender (calc output)
+	STAmount					saOutReq;			// Amount to send (calc input)
+	STAmount					saOutAct;			// Amount actually sent (calc output).
 
 	PathState(
-		const Ledger::pointer&	lpLedger,
+		Ledger::ref				lpLedger,
 		const int				iIndex,
 		const LedgerEntrySet&	lesSource,
 		const STPath&			spSourcePath,
@@ -172,7 +216,7 @@ public:
 	Json::Value	getJson() const;
 
 	static PathState::pointer createPathState(
-		const Ledger::pointer&	lpLedger,
+		Ledger::ref				lpLedger,
 		const int				iIndex,
 		const LedgerEntrySet&	lesSource,
 		const STPath&			spSourcePath,
@@ -183,9 +227,7 @@ public:
 		const bool				bPartialPayment
 		)
 	{
-		PathState::pointer	pspNew = boost::make_shared<PathState>(lpLedger, iIndex, lesSource, spSourcePath, uReceiverID, uSenderID, saSend, saSendMax, bPartialPayment);
-
-		return pspNew && pspNew->bValid ? pspNew : PathState::pointer();
+		return boost::make_shared<PathState>(lpLedger, iIndex, lesSource, spSourcePath, uReceiverID, uSenderID, saSend, saSendMax, bPartialPayment);
 	}
 
 	static bool lessPriority(const PathState::pointer& lhs, const PathState::pointer& rhs);
@@ -198,12 +240,12 @@ class TransactionEngine
 private:
 	LedgerEntrySet						mNodes;
 
-	TransactionEngineResult dirAdd(
+	TER dirAdd(
 		uint64&							uNodeDir,		// Node of entry.
 		const uint256&					uRootIndex,
 		const uint256&					uLedgerIndex);
 
-	TransactionEngineResult dirDelete(
+	TER dirDelete(
 		const bool						bKeepRoot,
 		const uint64&					uNodeDir,		// Node item is mentioned in.
 		const uint256&					uRootIndex,
@@ -213,9 +255,9 @@ private:
 	bool dirFirst(const uint256& uRootIndex, SLE::pointer& sleNode, unsigned int& uDirEntry, uint256& uEntryIndex);
 	bool dirNext(const uint256& uRootIndex, SLE::pointer& sleNode, unsigned int& uDirEntry, uint256& uEntryIndex);
 
-	TransactionEngineResult	setAuthorized(const SerializedTransaction& txn, bool bMustSetGenerator);
+	TER	setAuthorized(const SerializedTransaction& txn, bool bMustSetGenerator);
 
-	TransactionEngineResult takeOffers(
+	TER takeOffers(
 		bool				bPassive,
 		const uint256&		uBookBase,
 		const uint160&		uTakerAccountID,
@@ -246,8 +288,8 @@ protected:
 	void				entryDelete(SLE::pointer sleEntry, bool bUnfunded = false);
 	void				entryModify(SLE::pointer sleEntry);
 
-	TransactionEngineResult offerDelete(const uint256& uOfferIndex);
-	TransactionEngineResult offerDelete(const SLE::pointer& sleOffer, const uint256& uOfferIndex, const uint160& uOwnerID);
+	TER					offerDelete(const uint256& uOfferIndex);
+	TER					offerDelete(const SLE::pointer& sleOffer, const uint256& uOfferIndex, const uint160& uOwnerID);
 
 	uint32				rippleTransferRate(const uint160& uIssuerID);
 	STAmount			rippleOwed(const uint160& uToAccountID, const uint160& uFromAccountID, const uint160& uCurrencyID);
@@ -262,45 +304,45 @@ protected:
 	STAmount			rippleSend(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount);
 
 	STAmount			accountHolds(const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID);
-	STAmount			accountSend(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount);
+	void				accountSend(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount);
 	STAmount			accountFunds(const uint160& uAccountID, const STAmount& saDefault);
 
 	PathState::pointer	pathCreate(const STPath& spPath);
 	void				pathNext(const PathState::pointer& pspCur, const int iPaths);
-	bool				calcNode(const unsigned int uIndex, const PathState::pointer& pspCur, const bool bMultiQuality);
-	bool				calcNodeOfferRev(const unsigned int uIndex, const PathState::pointer& pspCur, const bool bMultiQuality);
-	bool				calcNodeOfferFwd(const unsigned int uIndex, const PathState::pointer& pspCur, const bool bMultiQuality);
-	bool				calcNodeAccountRev(const unsigned int uIndex, const PathState::pointer& pspCur, const bool bMultiQuality);
-	bool				calcNodeAccountFwd(const unsigned int uIndex, const PathState::pointer& pspCur, const bool bMultiQuality);
+	TER					calcNode(const unsigned int uIndex, const PathState::pointer& pspCur, const bool bMultiQuality);
+	TER					calcNodeOfferRev(const unsigned int uIndex, const PathState::pointer& pspCur, const bool bMultiQuality);
+	TER					calcNodeOfferFwd(const unsigned int uIndex, const PathState::pointer& pspCur, const bool bMultiQuality);
+	TER					calcNodeAccountRev(const unsigned int uIndex, const PathState::pointer& pspCur, const bool bMultiQuality);
+	TER					calcNodeAccountFwd(const unsigned int uIndex, const PathState::pointer& pspCur, const bool bMultiQuality);
 	void				calcNodeRipple(const uint32 uQualityIn, const uint32 uQualityOut,
 							const STAmount& saPrvReq, const STAmount& saCurReq,
 							STAmount& saPrvAct, STAmount& saCurAct);
 
 	void				txnWrite();
 
-	TransactionEngineResult doAccountSet(const SerializedTransaction& txn);
-	TransactionEngineResult doClaim(const SerializedTransaction& txn);
-	TransactionEngineResult doCreditSet(const SerializedTransaction& txn);
-	TransactionEngineResult doDelete(const SerializedTransaction& txn);
-	TransactionEngineResult doInvoice(const SerializedTransaction& txn);
-	TransactionEngineResult doOfferCreate(const SerializedTransaction& txn);
-	TransactionEngineResult doOfferCancel(const SerializedTransaction& txn);
-	TransactionEngineResult doNicknameSet(const SerializedTransaction& txn);
-	TransactionEngineResult doPasswordFund(const SerializedTransaction& txn);
-	TransactionEngineResult doPasswordSet(const SerializedTransaction& txn);
-	TransactionEngineResult doPayment(const SerializedTransaction& txn);
-	TransactionEngineResult doStore(const SerializedTransaction& txn);
-	TransactionEngineResult doTake(const SerializedTransaction& txn);
-	TransactionEngineResult doWalletAdd(const SerializedTransaction& txn);
+	TER					doAccountSet(const SerializedTransaction& txn);
+	TER					doClaim(const SerializedTransaction& txn);
+	TER					doCreditSet(const SerializedTransaction& txn);
+	TER					doDelete(const SerializedTransaction& txn);
+	TER					doInvoice(const SerializedTransaction& txn);
+	TER					doOfferCreate(const SerializedTransaction& txn);
+	TER					doOfferCancel(const SerializedTransaction& txn);
+	TER					doNicknameSet(const SerializedTransaction& txn);
+	TER					doPasswordFund(const SerializedTransaction& txn);
+	TER					doPasswordSet(const SerializedTransaction& txn);
+	TER					doPayment(const SerializedTransaction& txn);
+	TER					doStore(const SerializedTransaction& txn);
+	TER					doTake(const SerializedTransaction& txn);
+	TER					doWalletAdd(const SerializedTransaction& txn);
 
 public:
 	TransactionEngine() { ; }
-	TransactionEngine(const Ledger::pointer& ledger) : mLedger(ledger) { ; }
+	TransactionEngine(Ledger::ref ledger) : mLedger(ledger) { assert(mLedger); }
 
-	Ledger::pointer getLedger()						{ return mLedger; }
-	void setLedger(const Ledger::pointer& ledger)	{ assert(ledger); mLedger = ledger; }
+	Ledger::pointer getLedger()			{ return mLedger; }
+	void setLedger(Ledger::ref ledger)	{ assert(ledger); mLedger = ledger; }
 
-	TransactionEngineResult applyTransaction(const SerializedTransaction&, TransactionEngineParams);
+	TER applyTransaction(const SerializedTransaction&, TransactionEngineParams);
 };
 
 inline TransactionEngineParams operator|(const TransactionEngineParams& l1, const TransactionEngineParams& l2)

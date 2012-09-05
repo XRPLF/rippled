@@ -78,6 +78,8 @@ public:
 
 extern std::size_t hash_value(const SHAMapNode& mn);
 
+inline std::ostream& operator<<(std::ostream& out, const SHAMapNode& node) { return out << node.getString(); }
+
 class SHAMapItem
 { // an item stored in a SHAMap
 public:

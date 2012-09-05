@@ -24,7 +24,7 @@ public:
 	LedgerEntryAction	mAction;
 	int					mSeq;
 
-	LedgerEntrySetEntry(const SLE::pointer& e, LedgerEntryAction a, int s) : mEntry(e), mAction(a), mSeq(s) { ; }
+	LedgerEntrySetEntry(SLE::ref e, LedgerEntryAction a, int s) : mEntry(e), mAction(a), mSeq(s) { ; }
 };
 
 
@@ -38,16 +38,16 @@ protected:
 	LedgerEntrySet(const boost::unordered_map<uint256, LedgerEntrySetEntry> &e, const TransactionMetaSet& s, int m) :
 		mEntries(e), mSet(s), mSeq(m) { ; }
 
-	SLE::pointer getForMod(const uint256& node, Ledger::pointer& ledger,
+	SLE::pointer getForMod(const uint256& node, Ledger::ref ledger,
 		boost::unordered_map<uint256, SLE::pointer>& newMods);
 
-	bool threadTx(TransactionMetaNode& metaNode, const NewcoinAddress& threadTo, Ledger::pointer& ledger,
+	bool threadTx(TransactionMetaNode& metaNode, const NewcoinAddress& threadTo, Ledger::ref ledger,
 		boost::unordered_map<uint256, SLE::pointer>& newMods);
 
-	bool threadTx(TransactionMetaNode& metaNode, SLE::pointer& threadTo, Ledger::pointer& ledger,
+	bool threadTx(TransactionMetaNode& metaNode, SLE::ref threadTo, Ledger::ref ledger,
 	    boost::unordered_map<uint256, SLE::pointer>& newMods);
 
-	bool threadOwners(TransactionMetaNode& metaNode, SLE::pointer& node, Ledger::pointer& ledger,
+	bool threadOwners(TransactionMetaNode& metaNode, SLE::ref node, Ledger::ref ledger,
 		boost::unordered_map<uint256, SLE::pointer>& newMods);
 
 public:
@@ -66,13 +66,13 @@ public:
 	// basic entry functions
 	SLE::pointer getEntry(const uint256& index, LedgerEntryAction&);
 	LedgerEntryAction hasEntry(const uint256& index) const;
-	void entryCache(const SLE::pointer&);		// Add this entry to the cache
-	void entryCreate(const SLE::pointer&);		// This entry will be created
-	void entryDelete(const SLE::pointer&, bool unfunded);
-	void entryModify(const SLE::pointer&);		// This entry will be modified
+	void entryCache(SLE::ref);		// Add this entry to the cache
+	void entryCreate(SLE::ref);		// This entry will be created
+	void entryDelete(SLE::ref, bool unfunded);
+	void entryModify(SLE::ref);		// This entry will be modified
 
 	Json::Value getJson(int) const;
-	void calcRawMeta(Serializer&, Ledger::pointer& originalLedger);
+	void calcRawMeta(Serializer&, Ledger::ref originalLedger);
 
 	// iterator functions
 	bool isEmpty() const { return mEntries.empty(); }

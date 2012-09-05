@@ -16,13 +16,7 @@
 #define ADDRESS(p)			strHex(uint64( ((char*) p) - ((char*) 0)))
 #define ADDRESS_SHARED(p)	strHex(uint64( ((char*) (p).get()) - ((char*) 0)))
 
-#ifndef MAX
-#define MAX(x,y) ((x) < (y) ? (y) : (x))
-#endif
-
-#ifndef MIN
-#define MIN(x,y) ((x) > (y) ? (y) : (x))
-#endif
+#define isSetBit(x,y)		(!!((x) & (y)))
 
 #ifdef WIN32
 extern uint64_t htobe64(uint64_t value);

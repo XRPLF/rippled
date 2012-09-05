@@ -6,6 +6,7 @@
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>
 #include <boost/algorithm/string.hpp>
+#include <algorithm>
 
 #include "Config.h"
 #include "Peer.h"
@@ -339,7 +340,7 @@ std::vector<Peer::pointer> ConnectionPool::getPeerVector()
 
 // Now know peer's node public key.  Determine if we want to stay connected.
 // <-- bNew: false = redundant
-bool ConnectionPool::peerConnected(const Peer::pointer& peer, const NewcoinAddress& naPeer,
+bool ConnectionPool::peerConnected(Peer::ref peer, const NewcoinAddress& naPeer,
 	const std::string& strIP, int iPort)
 {
 	bool	bNew	= false;
@@ -398,7 +399,7 @@ bool ConnectionPool::peerConnected(const Peer::pointer& peer, const NewcoinAddre
 }
 
 // We maintain a map of public key to peer for connected and verified peers.  Maintain it.
-void ConnectionPool::peerDisconnected(const Peer::pointer& peer, const NewcoinAddress& naPeer)
+void ConnectionPool::peerDisconnected(Peer::ref peer, const NewcoinAddress& naPeer)
 {
 	if (naPeer.isValid())
 	{
@@ -485,7 +486,7 @@ bool ConnectionPool::peerScanSet(const std::string& strIp, int iPort)
 }
 
 // --> strIp: not empty
-void ConnectionPool::peerClosed(const Peer::pointer& peer, const std::string& strIp, int iPort)
+void ConnectionPool::peerClosed(Peer::ref peer, const std::string& strIp, int iPort)
 {
 	ipPort		ipPeer			= make_pair(strIp, iPort);
 	bool		bScanRefresh	= false;
@@ -540,7 +541,7 @@ void ConnectionPool::peerClosed(const Peer::pointer& peer, const std::string& st
 		scanRefresh();
 }
 
-void ConnectionPool::peerVerified(const Peer::pointer& peer)
+void ConnectionPool::peerVerified(Peer::ref peer)
 {
 	if (mScanning && mScanning == peer)
 	{
@@ -645,7 +646,7 @@ void ConnectionPool::scanRefresh()
 
 			(void) mScanTimer.cancel();
 
-			iInterval	= MAX(iInterval, theConfig.PEER_SCAN_INTERVAL_MIN);
+			iInterval	= std::max(iInterval, theConfig.PEER_SCAN_INTERVAL_MIN);
 
 			tpNext		= tpNow + boost::posix_time::seconds(iInterval);
 
