@@ -282,6 +282,12 @@
     <ClCompile Include="src\OrderBook.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\Contract.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Interpreter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="KnownNodeList.h">
@@ -526,6 +532,9 @@
     </ClInclude>
     <ClInclude Include="src\Contract.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Interpreter.h">
+      <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -102,12 +102,14 @@
     <ClCompile Include="src\CanonicalTXSet.cpp" />
     <ClCompile Include="src\Config.cpp" />
     <ClCompile Include="src\ConnectionPool.cpp" />
+    <ClCompile Include="src\Contract.cpp" />
     <ClCompile Include="src\Conversion.cpp" />
     <ClCompile Include="src\DBInit.cpp" />
     <ClCompile Include="src\DeterministicKeys.cpp" />
     <ClCompile Include="src\ECIES.cpp" />
     <ClCompile Include="src\HashedObject.cpp" />
     <ClCompile Include="src\HttpsClient.cpp" />
+    <ClCompile Include="src\Interpreter.cpp" />
     <ClCompile Include="src\Ledger.cpp" />
     <ClCompile Include="src\LedgerAcquire.cpp" />
     <ClCompile Include="src\LedgerConsensus.cpp" />
@@ -198,6 +200,7 @@
     <ClInclude Include="src\HttpReply.h" />
     <ClInclude Include="src\HttpRequest.h" />
     <ClInclude Include="src\HttpsClient.h" />
+    <ClInclude Include="src\Interpreter.h" />
     <ClInclude Include="src\key.h" />
     <ClInclude Include="src\Ledger.h" />
     <ClInclude Include="src\LedgerAcquire.h" />

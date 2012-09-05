@@ -12,6 +12,7 @@
 #define SECTION_FEE_DEFAULT				"fee_default"
 #define SECTION_FEE_NICKNAME_CREATE		"fee_nickname_create"
 #define SECTION_FEE_OFFER				"fee_offer"
+#define SECTION_FEE_OPERATION			"fee_operation"
 #define SECTION_IPS						"ips"
 #define SECTION_NETWORK_QUORUM			"network_quorum"
 #define SECTION_PEER_CONNECT_LOW_WATER	"peer_connect_low_water"
@@ -37,6 +38,7 @@
 #define DEFAULT_FEE_ACCOUNT_CREATE		1000
 #define DEFAULT_FEE_NICKNAME_CREATE		1000
 #define DEFAULT_FEE_OFFER				DEFAULT_FEE_DEFAULT
+#define DEFAULT_FEE_OPERATION			1
 
 Config theConfig;
 
@@ -145,6 +147,7 @@ void Config::setup(const std::string& strConf)
 	FEE_NICKNAME_CREATE		= DEFAULT_FEE_NICKNAME_CREATE;
 	FEE_OFFER				= DEFAULT_FEE_OFFER;
 	FEE_DEFAULT				= DEFAULT_FEE_DEFAULT;
+	FEE_CONTRACT_OPERATION  = DEFAULT_FEE_OPERATION;
 
 	ACCOUNT_PROBE_MAX		= 10;
 
@@ -257,6 +260,9 @@ void Config::load()
 
 			if (sectionSingleB(secConfig, SECTION_FEE_DEFAULT, strTemp))
 				FEE_DEFAULT			= boost::lexical_cast<int>(strTemp);
+
+			if (sectionSingleB(secConfig, SECTION_FEE_OPERATION, strTemp))
+				FEE_CONTRACT_OPERATION	= boost::lexical_cast<int>(strTemp);
 
 			if (sectionSingleB(secConfig, SECTION_ACCOUNT_PROBE_MAX, strTemp))
 				ACCOUNT_PROBE_MAX	= boost::lexical_cast<int>(strTemp);
