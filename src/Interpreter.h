@@ -58,7 +58,7 @@ public:
 
 	void stop();
 
-	bool canSign(uint160& signer);
+	bool canSign(const uint160& signer);
 
 	int getInstructionPointer(){ return(mInstructionPointer); }
 	void setInstructionPointer(int n){ mInstructionPointer=n;}
