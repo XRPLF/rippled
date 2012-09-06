@@ -1,5 +1,5 @@
 #ifndef __PROPOSELEDGER__
-#define __PROPOSELEDEGR__
+#define __PROPOSELEDGER__
 
 #include <vector>
 #include <string>
