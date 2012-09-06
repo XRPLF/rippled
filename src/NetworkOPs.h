@@ -1,17 +1,18 @@
 #ifndef __NETWORK_OPS__
 #define __NETWORK_OPS__
 
+#include <boost/interprocess/sync/interprocess_upgradable_mutex.hpp>
+#include <boost/interprocess/sync/sharable_lock.hpp>
+#include <boost/unordered_map.hpp>
+#include <boost/unordered_set.hpp>
+
 #include "AccountState.h"
 #include "LedgerMaster.h"
 #include "NicknameState.h"
 #include "RippleState.h"
 #include "SerializedValidation.h"
 #include "LedgerAcquire.h"
-
-#include <boost/interprocess/sync/interprocess_upgradable_mutex.hpp>
-#include <boost/interprocess/sync/sharable_lock.hpp>
-#include <boost/unordered_map.hpp>
-#include <boost/unordered_set.hpp>
+#include "LedgerProposal.h"
 
 // Operations that clients may wish to perform against the network
 // Master operational handler, server sequencer, network tracker
@@ -54,6 +55,8 @@ protected:
 	boost::posix_time::ptime			mConnectTime;
 	boost::asio::deadline_timer			mNetTimer;
 	boost::shared_ptr<LedgerConsensus>	mConsensus;
+	boost::unordered_map<uint160,
+		std::list<LedgerProposal::pointer> > mDeferredProposals;
 
 	LedgerMaster*						mLedgerMaster;
 	LedgerAcquire::pointer				mAcquiringLedger;

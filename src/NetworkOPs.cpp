@@ -613,6 +613,7 @@ int NetworkOPs::beginConsensus(const uint256& networkClosed, Ledger::pointer clo
 	prevLedger->setImmutable();
 	mConsensus = boost::make_shared<LedgerConsensus>(
 		networkClosed, prevLedger, theApp->getMasterLedger().getCurrentLedger()->getCloseTimeNC());
+	mConsensus->swapDefer(mDeferredProposals);
 
 	Log(lsDEBUG) << "Initiating consensus engine";
 	return mConsensus->startup();
@@ -665,7 +666,7 @@ bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash, cons
 	}
 
 	if (prevLedger.isNonZero())
-	{ // new-style
+	{ // proposal includes a previous ledger
 		LedgerProposal::pointer proposal =
 			boost::make_shared<LedgerProposal>(prevLedger, proposeSeq, proposeHash, closeTime, naPeerPublic);
 		if (!proposal->checkSign(signature))
@@ -729,6 +730,7 @@ void NetworkOPs::endConsensus(bool correctLCL)
 			Log(lsTRACE) << "Killing obsolete peer status";
 			it->cycleStatus();
 		}
+	mConsensus->swapDefer(mDeferredProposals);
 	mConsensus = boost::shared_ptr<LedgerConsensus>();
 }
 

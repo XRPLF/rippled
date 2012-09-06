@@ -181,6 +181,10 @@ public:
 
 	bool peerGaveNodes(Peer::ref peer, const uint256& setHash,
 		const std::list<SHAMapNode>& nodeIDs, const std::list< std::vector<unsigned char> >& nodeData);
+
+	void swapDefer(boost::unordered_map< uint160, std::list<LedgerProposal::pointer> > &n)
+		{ mDeferredProposals.swap(n); }
+
 };
 
 
