@@ -884,7 +884,7 @@ void LedgerConsensus::playbackProposals()
 		BOOST_FOREACH(const LedgerProposal::pointer& proposal, it->second)
 		{
 			if (proposal->hasSignature())
-			{ // old-style
+			{ // we have the signature but don't know the ledger so couldn't verify
 				proposal->setPrevLedger(mPrevLedgerHash);
 				if (proposal->checkSign())
 				{
