@@ -164,28 +164,6 @@ boost::unordered_map<uint256, int> ValidationCollection::getCurrentValidations(u
 	return ret;
 }
 
-bool ValidationCollection::isDeadLedger(const uint256& ledger)
-{
-	boost::mutex::scoped_lock sl(mValidationLock);
-	BOOST_FOREACH(const uint256& it, mDeadLedgers)
-		if (it == ledger)
-			return true;
-	return false;
-}
-
-void ValidationCollection::addDeadLedger(const uint256& ledger)
-{
-	boost::mutex::scoped_lock sl(mValidationLock);
-
-	BOOST_FOREACH(const uint256& it, mDeadLedgers)
-		if (it == ledger)
-			return;
-
-	mDeadLedgers.push_back(ledger);
-	if (mDeadLedgers.size() >= 32)
-		mDeadLedgers.pop_front();
-}
-
 void ValidationCollection::flush()
 {
 		boost::mutex::scoped_lock sl(mValidationLock);

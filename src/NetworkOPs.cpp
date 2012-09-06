@@ -56,8 +56,13 @@ uint32 NetworkOPs::getValidationTimeNC()
 }
 
 void NetworkOPs::closeTimeOffset(int offset)
-{
-	mCloseTimeOffset += offset / 4;
+{ // take large offsets, ignore small offsets, push towards our wall time
+	if (offset > 1)
+		mCloseTimeOffset += (offset + 3) / 4;
+	else if (offset < -1)
+		mCloseTimeOffset += (offset - 3) / 4;
+	else
+		mCloseTimeOffset = (mCloseTimeOffset * 3) / 4;
 	if (mCloseTimeOffset)
 		Log(lsINFO) << "Close time offset now " << mCloseTimeOffset;
 }
@@ -487,10 +492,9 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 	for (boost::unordered_map<uint256, ValidationCount>::iterator it = ledgers.begin(), end = ledgers.end();
 		it != end; ++it)
 	{
-		bool isDead = theApp->getValidations().isDeadLedger(it->first);
-		Log(lsTRACE) << "L: " << it->first << ((isDead) ? " dead" : " live") <<
-			" t=" << it->second.trustedValidations << 	", n=" << it->second.nodesUsing;
-		if ((it->second > bestVC) && !isDead)
+		Log(lsTRACE) << "L: " << it->first << " t=" << it->second.trustedValidations <<
+			", n=" << it->second.nodesUsing;
+		if (it->second > bestVC)
 		{
 			bestVC = it->second;
 			closedLedger = it->first;
@@ -718,8 +722,6 @@ void NetworkOPs::mapComplete(const uint256& hash, const SHAMap::pointer& map)
 void NetworkOPs::endConsensus(bool correctLCL)
 {
 	uint256 deadLedger = theApp->getMasterLedger().getClosedLedger()->getParentHash();
-	Log(lsTRACE) << "Ledger " << deadLedger << " is now dead";
-	theApp->getValidations().addDeadLedger(deadLedger);
 	std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
 	BOOST_FOREACH(Peer::ref it, peerList)
 		if (it && (it->getClosedLedgerHash() == deadLedger))

@@ -257,7 +257,7 @@ void LedgerConsensus::checkLCL()
 	typedef std::pair<const uint256, int> u256_int_pair;
 	BOOST_FOREACH(u256_int_pair& it, vals)
 	{
-		if ((it.second > netLgrCount) && !theApp->getValidations().isDeadLedger(it.first))
+		if (it.second > netLgrCount)
 		{
 			netLgr = it.first;
 			netLgrCount = it.second;

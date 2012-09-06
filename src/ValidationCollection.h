@@ -20,7 +20,6 @@ protected:
 	boost::unordered_map<uint256, ValidationSet> 					mValidations;
 	boost::unordered_map<uint160, SerializedValidation::pointer> 	mCurrentValidations;
 	std::vector<SerializedValidation::pointer> 						mStaleValidations;
-	std::list<uint256>												mDeadLedgers;
 
 	bool mWriting;
 
@@ -38,10 +37,6 @@ public:
 	int getCurrentValidationCount(uint32 afterTime);
 
 	boost::unordered_map<uint256, int> getCurrentValidations(uint256 currentLedger = uint256());
-
-	void addDeadLedger(const uint256&);
-	bool isDeadLedger(const uint256&);
-	std::list<uint256> getDeadLedgers() { return mDeadLedgers; }
 
 	void flush();
 };
