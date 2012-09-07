@@ -839,7 +839,7 @@ bool LedgerConsensus::peerPosition(const LedgerProposal::pointer& newPosition)
 	if (set)
 	{
 		BOOST_FOREACH(u256_lct_pair& it, mDisputes)
-			it.second->setVote(newPosition->getPeerID(), set->hasItem(it.first));
+			it.second->setVote(peerID, set->hasItem(it.first));
 	}
 	else
 		Log(lsTRACE) << "Don't have that tx set";
