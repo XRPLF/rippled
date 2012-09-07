@@ -1,7 +1,5 @@
 //
 // XXX Should make sure all fields and are recognized on a transactions.
-// XXX Make sure fee is claimed for failed transactions.
-// XXX Might uses an unordered set for vector.
 //
 
 #include "TransactionEngine.h"
@@ -1276,7 +1274,6 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn,
 
 	if (tesSUCCESS == terResult)
 	{
-		mTxnAccount->setIFieldU32(sfLastSignedSeq, mLedger->getLedgerSeq());
 		entryModify(mTxnAccount);
 
 		switch (txn.getTxnType())
@@ -2572,15 +2569,15 @@ TER TransactionEngine::calcNodeAccountRev(const unsigned int uIndex, const PathS
 	const uint32		uQualityOut		= uIndex != uLast ? rippleQualityOut(uCurAccountID, uNxtAccountID, uCurrencyID) : QUALITY_ONE;
 
 	// For bPrvAccount
-	const STAmount		saPrvOwed		= uIndex && bPrvAccount								// Previous account is owed.
+	const STAmount		saPrvOwed		= bPrvAccount && uIndex								// Previous account is owed.
 											? rippleOwed(uCurAccountID, uPrvAccountID, uCurrencyID)
 											: STAmount(uCurrencyID, uCurAccountID);
 
-	const STAmount		saPrvLimit		= uIndex && bPrvAccount								// Previous account may owe.
+	const STAmount		saPrvLimit		= bPrvAccount && uIndex								// Previous account may owe.
 											? rippleLimit(uCurAccountID, uPrvAccountID, uCurrencyID)
 											: STAmount(uCurrencyID, uCurAccountID);
 
-	const STAmount		saNxtOwed		= uIndex != uLast && bNxtAccount					// Next account is owed.
+	const STAmount		saNxtOwed		= bNxtAccount && uIndex != uLast					// Next account is owed.
 											? rippleOwed(uCurAccountID, uNxtAccountID, uCurrencyID)
 											: STAmount(uCurrencyID, uCurAccountID);
 

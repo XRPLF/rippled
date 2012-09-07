@@ -10,8 +10,6 @@ LedgerEntryFormat LedgerFormats[]=
 		{ S_FIELD(Account),				STI_ACCOUNT,	SOE_REQUIRED, 0 },
 		{ S_FIELD(Sequence),			STI_UINT32,		SOE_REQUIRED, 0 },
 		{ S_FIELD(Balance),				STI_AMOUNT,		SOE_REQUIRED, 0 },
-		{ S_FIELD(LastReceive),			STI_UINT32,		SOE_REQUIRED, 0 },
-		{ S_FIELD(LastSignedSeq),		STI_UINT32,		SOE_REQUIRED, 0 },
 		{ S_FIELD(LastTxnID),			STI_HASH256,	SOE_REQUIRED, 0 },
 		{ S_FIELD(LastTxnSeq),			STI_UINT32,		SOE_REQUIRED, 0 },
 		{ S_FIELD(AuthorizedKey),		STI_ACCOUNT,	SOE_IFFLAG,   1 },
