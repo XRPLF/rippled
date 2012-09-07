@@ -95,7 +95,7 @@ private:
 
 	bool scoreRound(std::vector<scoreNode>& vsnNodes);
 
-	void responseFetch(const std::string strDomain, const boost::system::error_code& err, const std::string strSiteFile);
+	void responseFetch(const std::string& strDomain, const boost::system::error_code& err, const std::string& strSiteFile);
 
 	boost::posix_time::ptime		mtpScoreNext;		// When to start scoring.
 	boost::posix_time::ptime		mtpScoreStart;		// Time currently started scoring.
@@ -119,13 +119,13 @@ private:
 
 	void getValidatorsUrl(const NewcoinAddress& naNodePublic, section secSite);
 	void getIpsUrl(const NewcoinAddress& naNodePublic, section secSite);
-	void responseIps(const std::string& strSite, const NewcoinAddress& naNodePublic, const boost::system::error_code& err, const std::string strIpsFile);
-	void responseValidators(const std::string& strValidatorsUrl, const NewcoinAddress& naNodePublic, section secSite, const std::string& strSite, const boost::system::error_code& err, const std::string strValidatorsFile);
+	void responseIps(const std::string& strSite, const NewcoinAddress& naNodePublic, const boost::system::error_code& err, const std::string& strIpsFile);
+	void responseValidators(const std::string& strValidatorsUrl, const NewcoinAddress& naNodePublic, section secSite, const std::string& strSite, const boost::system::error_code& err, const std::string& strValidatorsFile);
 
 	void processIps(const std::string& strSite, const NewcoinAddress& naNodePublic, section::mapped_type* pmtVecStrIps);
 	int processValidators(const std::string& strSite, const std::string& strValidatorsSrc, const NewcoinAddress& naNodePublic, validatorSource vsWhy, section::mapped_type* pmtVecStrValidators);
 
-	void processFile(const std::string strDomain, const NewcoinAddress& naNodePublic, section secSite);
+	void processFile(const std::string& strDomain, const NewcoinAddress& naNodePublic, section secSite);
 
 	bool getSeedDomains(const std::string& strDomain, seedDomain& dstSeedDomain);
 	void setSeedDomains(const seedDomain& dstSeedDomain, bool bNext);

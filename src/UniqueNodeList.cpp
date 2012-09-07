@@ -779,7 +779,7 @@ int UniqueNodeList::processValidators(const std::string& strSite, const std::str
 }
 
 // Given a section with IPs, parse and persist it for a validator.
-void UniqueNodeList::responseIps(const std::string& strSite, const NewcoinAddress& naNodePublic, const boost::system::error_code& err, const std::string strIpsFile)
+void UniqueNodeList::responseIps(const std::string& strSite, const NewcoinAddress& naNodePublic, const boost::system::error_code& err, const std::string& strIpsFile)
 {
 	if (!err)
 	{
@@ -819,7 +819,7 @@ void UniqueNodeList::getIpsUrl(const NewcoinAddress& naNodePublic, section secSi
 }
 
 // After fetching a newcoin.txt from a web site, given a section with validators, parse and persist it.
-void UniqueNodeList::responseValidators(const std::string& strValidatorsUrl, const NewcoinAddress& naNodePublic, section secSite, const std::string& strSite, const boost::system::error_code& err, const std::string strValidatorsFile)
+void UniqueNodeList::responseValidators(const std::string& strValidatorsUrl, const NewcoinAddress& naNodePublic, section secSite, const std::string& strSite, const boost::system::error_code& err, const std::string& strValidatorsFile)
 {
 	if (!err)
 	{
@@ -858,7 +858,7 @@ void UniqueNodeList::getValidatorsUrl(const NewcoinAddress& naNodePublic, sectio
 }
 
 // Process a newcoin.txt.
-void UniqueNodeList::processFile(const std::string strDomain, const NewcoinAddress& naNodePublic, section secSite)
+void UniqueNodeList::processFile(const std::string& strDomain, const NewcoinAddress& naNodePublic, section secSite)
 {
 	//
 	// Process Validators
@@ -885,7 +885,7 @@ void UniqueNodeList::processFile(const std::string strDomain, const NewcoinAddre
 }
 
 // Given a newcoin.txt, process it.
-void UniqueNodeList::responseFetch(const std::string strDomain, const boost::system::error_code& err, const std::string strSiteFile)
+void UniqueNodeList::responseFetch(const std::string& strDomain, const boost::system::error_code& err, const std::string& strSiteFile)
 {
 	section				secSite	= ParseSection(strSiteFile, true);
 	bool				bGood	= !err;
