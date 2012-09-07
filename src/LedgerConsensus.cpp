@@ -321,12 +321,19 @@ void LedgerConsensus::handleLCL(const uint256& lclHash)
 			BOOST_FOREACH(Peer::ref peer, peerList)
 				mAcquiringLedger->peerHas(peer);
 		}
+		if (mHaveCorrectLCL && mProposing)
+		{
+			Log(lsINFO) << "Bowing out of consensus";
+			mOurPosition->bowOut();
+			propose();
+		}
 		mHaveCorrectLCL = false;
 		mProposing = false;
 		mValidating = false;
 		mCloseTimes.clear();
 		mPeerPositions.clear();
 		mDisputes.clear();
+		mDeadNodes.clear();
 		return;
 	}
 
@@ -794,11 +801,18 @@ void LedgerConsensus::addDisputedTransaction(const uint256& txID, const std::vec
 
 bool LedgerConsensus::peerPosition(const LedgerProposal::pointer& newPosition)
 {
-	LedgerProposal::pointer& currentPosition = mPeerPositions[newPosition->getPeerID()];
+	uint160 peerID = newPosition->getPeerID();
+	if (mDeadNodes.find(peerID) != mDeadNodes.end())
+	{
+		Log(lsINFO) << "Position from dead node";
+		return false;
+	}
+
+	LedgerProposal::pointer& currentPosition = mPeerPositions[peerID];
 
 	if (currentPosition)
 	{
-		assert(newPosition->getPeerID() == currentPosition->getPeerID());
+		assert(peerID == currentPosition->getPeerID());
 		if (newPosition->getProposeSeq() <= currentPosition->getProposeSeq())
 			return false;
 	}
@@ -808,9 +822,19 @@ bool LedgerConsensus::peerPosition(const LedgerProposal::pointer& newPosition)
 		Log(lsTRACE) << "Peer reports close time as " << newPosition->getCloseTime();
 		++mCloseTimes[newPosition->getCloseTime()];
 	}
+	else if (newPosition->getProposeSeq() == LedgerProposal::seqLeave)
+	{
+		BOOST_FOREACH(u256_lct_pair& it, mDisputes)
+			it.second->unVote(peerID);
+		mPeerPositions.erase(peerID);
+		mDeadNodes.insert(peerID);
+		return true;
+	}
+
 
 	Log(lsINFO) << "Processing peer proposal " << newPosition->getProposeSeq() << "/" << newPosition->getCurrentHash();
 	currentPosition = newPosition;
+
 	SHAMap::pointer set = getTransactionTree(newPosition->getCurrentHash(), true);
 	if (set)
 	{
