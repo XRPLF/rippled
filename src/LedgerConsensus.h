@@ -115,6 +115,9 @@ protected:
 	// deferred proposals (node ID -> proposals from that peer)
 	boost::unordered_map< uint160,  std::list<LedgerProposal::pointer> > mDeferredProposals;
 
+	// nodes that have bowed out of this consensus process
+	boost::unordered_set<uint160> mDeadNodes;
+
 	// final accept logic
 	static void Saccept(boost::shared_ptr<LedgerConsensus> This, SHAMap::pointer txSet);
 	void accept(const SHAMap::pointer& txSet);

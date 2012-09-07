@@ -27,7 +27,7 @@ bool ContinuousLedgerTiming::shouldClose(
 			boost::str(boost::format("CLC::shouldClose range Trans=%s, Prop: %d/%d, Secs: %d (last:%d)")
 			% (anyTransactions ? "yes" : "no") % previousProposers % proposersClosed
 			% currentMSeconds % previousMSeconds);
-		return true;;
+		return true;
 	}
 
 	if (!anyTransactions)

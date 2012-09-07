@@ -26,6 +26,7 @@ protected:
 	boost::posix_time::ptime	mTime;
 
 public:
+	static const uint32 seqLeave = 0xffffffff; // leaving the consensus process
 
 	typedef boost::shared_ptr<LedgerProposal> pointer;
 
@@ -63,6 +64,7 @@ public:
 	bool isStale(boost::posix_time::ptime cutoff)	{ return mTime <= cutoff; }
 
 	void changePosition(const uint256& newPosition, uint32 newCloseTime);
+	void bowOut();
 	Json::Value getJson() const;
 };
 
