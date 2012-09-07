@@ -68,8 +68,6 @@ enum SOE_Field
 	sfInvoiceID,
 	sfIssuer,
 	sfLastNode,
-	sfLastReceive,
-	sfLastSignedSeq,
 	sfLastTxnID,
 	sfLastTxnSeq,
 	sfLedgerHash,
