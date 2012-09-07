@@ -189,7 +189,7 @@ Data::pointer Interpreter::getContractData(int index)
 	return(Data::pointer(new ErrorData()));
 }
 
-bool Interpreter::canSign(uint160& signer)
+bool Interpreter::canSign(const uint160& signer)
 {
 	return(true);
 }
