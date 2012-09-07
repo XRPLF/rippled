@@ -961,7 +961,6 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn,
 {
 	Log(lsTRACE) << "applyTransaction>";
 	assert(mLedger);
-	mLedgerParentCloseTime	= mLedger->getParentCloseTimeNC();
 	mNodes.init(txn.getTransactionID(), mLedger->getLedgerSeq());
 
 #ifdef DEBUG

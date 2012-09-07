@@ -295,7 +295,6 @@ private:
 
 protected:
 	Ledger::pointer		mLedger;
-	uint64				mLedgerParentCloseTime;
 
 	uint160				mTxnAccountID;
 	SLE::pointer		mTxnAccount;

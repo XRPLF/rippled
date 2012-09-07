@@ -582,7 +582,10 @@ public:
 	const uint160& getIssuerID() const	{ return mIssuerID; }
 
 	bool operator==(const STPathElement& t) const
-	{ return mType == t.mType && mAccountID == t.mAccountID && mCurrencyID == t.mCurrencyID && mIssuerID == mIssuerID; }
+	{
+		return mType == t.mType && mAccountID == t.mAccountID && mCurrencyID == t.mCurrencyID &&
+			mIssuerID == t.mIssuerID;
+	}
 };
 
 class STPath

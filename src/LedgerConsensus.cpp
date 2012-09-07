@@ -209,12 +209,10 @@ bool LCTransaction::updatePosition(int percentTime, bool proposing)
 }
 
 LedgerConsensus::LedgerConsensus(const uint256& prevLCLHash, Ledger::ref previousLedger, uint32 closeTime)
-		:  mState(lcsPRE_CLOSE), mCloseTime(closeTime), mPrevLedgerHash(prevLCLHash),
-		mPreviousLedger(previousLedger), mCurrentMSeconds(0), mClosePercent(0), mHaveCloseTimeConsensus(false)
+		:  mState(lcsPRE_CLOSE), mCloseTime(closeTime), mPrevLedgerHash(prevLCLHash), mPreviousLedger(previousLedger),
+		mValSeed(theConfig.VALIDATION_SEED), mCurrentMSeconds(0), mClosePercent(0), mHaveCloseTimeConsensus(false),
+		mConsensusStartTime(boost::posix_time::microsec_clock::universal_time())
 {
-	mValSeed = theConfig.VALIDATION_SEED;
-	mConsensusStartTime = boost::posix_time::microsec_clock::universal_time();
-
 	Log(lsDEBUG) << "Creating consensus object";
 	Log(lsTRACE) << "LCL:" << previousLedger->getHash() <<", ct=" << closeTime;
 	mPreviousProposers = theApp->getOPs().getPreviousProposers();
