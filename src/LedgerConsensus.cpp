@@ -491,7 +491,7 @@ void LedgerConsensus::statePreClose()
 	}
 	else
 	{
-		sinceClose = theApp->getOPs().getLastCloseTime();
+		sinceClose = 1000 * (theApp->getOPs().getCloseTimeNC() - theApp->getOPs().getLastCloseTime());
 		idleInterval = LEDGER_IDLE_INTERVAL;
 	}
 
@@ -517,7 +517,7 @@ void LedgerConsensus::stateEstablish()
 		if (haveConsensus())
 			Log(lsINFO) << "We have TX consensus but not CT consensus";
 	}
-	if (haveConsensus())
+	else if (haveConsensus())
 	{
 		Log(lsINFO) << "Converge cutoff (" << mPeerPositions.size() << " participants)";
 		mState = lcsFINISHED;
@@ -638,7 +638,7 @@ void LedgerConsensus::updateOurPositions()
 
 		for (std::map<uint32, int>::iterator it = closeTimes.begin(), end = closeTimes.end(); it != end; ++it)
 		{
-			Log(lsINFO) << "CCTime: " << it->first << " has " << it->second << " out of " << thresh;
+			Log(lsINFO) << "CCTime: " << it->first << " has " << it->second << ", " << thresh << " required";
 			if (it->second > thresh)
 			{
 				Log(lsINFO) << "Close time consensus reached: " << it->first;
