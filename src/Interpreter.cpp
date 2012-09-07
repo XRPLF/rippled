@@ -1,4 +1,5 @@
 #include "Interpreter.h"
+#include "Operation.h"
 #include "Config.h"
 
 /*
@@ -7,220 +8,6 @@ We also need to charge for each op
 */
 
 namespace Script {
-
-
-//////////////////////////////////////////////////////////////////////////
-/// Operations
-
-int Operation::getFee()
-{
-	return(theConfig.FEE_CONTRACT_OPERATION);
-}
-
-// this is just an Int in the code
-class IntOp : public Operation
-{
-public:
-	bool work(Interpreter* interpreter)
-	{
-		Data::pointer data=interpreter->getIntData();
-		if(data->isInt32()) 
-		{ 
-			interpreter->pushStack( data );
-			return(true);
-		}
-		return(false);
-	}
-};
-
-class FloatOp : public Operation
-{
-public:
-	bool work(Interpreter* interpreter)
-	{
-		Data::pointer data=interpreter->getFloatData();
-		if(data->isFloat()) 
-		{ 
-			interpreter->pushStack( data );
-			return(true);
-		}
-		return(false);
-	}
-};
-
-class Uint160Op : public Operation
-{
-public:
-	bool work(Interpreter* interpreter)
-	{
-		Data::pointer data=interpreter->getUint160Data();
-		if(data->isUint160()) 
-		{ 
-			interpreter->pushStack( data );
-			return(true);
-		}
-		return(false);
-	}
-};
-
-class AddOp : public Operation
-{
-public:
-	bool work(Interpreter* interpreter)
-	{
-		Data::pointer data1=interpreter->popStack();
-		Data::pointer data2=interpreter->popStack();
-		if( (data1->isInt32() || data1->isFloat()) &&
-			(data2->isInt32() || data2->isFloat()) )
-		{
-			if(data1->isFloat() || data2->isFloat()) interpreter->pushStack(Data::pointer(new FloatData(data1->getFloat()+data2->getFloat())));
-			else interpreter->pushStack(Data::pointer(new IntData(data1->getInt()+data2->getInt())));
-			return(true);
-		}else
-		{
-			return(false);
-		}	
-	}
-};
-
-class SubOp : public Operation
-{
-public:
-	bool work(Interpreter* interpreter)
-	{
-		Data::pointer data1=interpreter->popStack();
-		Data::pointer data2=interpreter->popStack();
-		if( (data1->isInt32() || data1->isFloat()) &&
-			(data2->isInt32() || data2->isFloat()) )
-		{
-			if(data1->isFloat() || data2->isFloat()) interpreter->pushStack(Data::pointer(new FloatData(data1->getFloat()-data2->getFloat())));
-			else interpreter->pushStack(Data::pointer(new IntData(data1->getInt()-data2->getInt())));
-			return(true);
-		}else
-		{
-			return(false);
-		}	
-	}
-};
-
-
-class StartBlockOp : public Operation
-{
-public:
-	bool work(Interpreter* interpreter)
-	{
-		Data::pointer offset=interpreter->getIntData();
-		return(interpreter->startBlock(offset->getInt()));
-	}
-};
-
-class EndBlockOp : public Operation
-{
-public:
-	bool work(Interpreter* interpreter)
-	{
-		return(interpreter->endBlock());
-	}
-};
-
-class StopOp : public Operation
-{
-public:
-	bool work(Interpreter* interpreter)
-	{
-		interpreter->stop();
-		return(true);
-	}
-};
-
-class AcceptDataOp : public Operation
-{
-public:
-	bool work(Interpreter* interpreter)
-	{
-		Data::pointer data=interpreter->popStack();
-		if(data->isInt32())
-		{
-			interpreter->pushStack( interpreter->getAcceptData(data->getInt()) );
-			return(true);
-		}
-		return(false);
-	}
-};
-
-class JumpIfOp : public Operation
-{
-public:
-	bool work(Interpreter* interpreter)
-	{
-		Data::pointer offset=interpreter->getIntData();
-		Data::pointer cond=interpreter->popStack();
-		if(cond->isBool() && offset->isInt32())
-		{
-			if(cond->isTrue())
-			{
-				return(interpreter->jumpTo(offset->getInt()));
-			}
-			return(true);
-		}
-		return(false);
-	}
-};
-
-class JumpOp : public Operation
-{
-public:
-	bool work(Interpreter* interpreter)
-	{
-		Data::pointer offset=interpreter->getIntData();
-		if(offset->isInt32())
-		{
-			return(interpreter->jumpTo(offset->getInt()));
-		}
-		return(false);
-	}
-};
-
-class SendXNSOp  : public Operation
-{
-public:
-	bool work(Interpreter* interpreter)
-	{
-		Data::pointer sourceID=interpreter->popStack();
-		Data::pointer destID=interpreter->popStack();
-		Data::pointer amount=interpreter->popStack();
-		if(sourceID->isUint160() && destID->isUint160() && amount->isInt32() && interpreter->canSign(sourceID->getUint160()))
-		{
-			// make sure:
-			// source is either, this contract, issuer, or acceptor
-
-			// TODO do the send
-			//interpreter->pushStack( send result);
-
-			return(true);
-		}
-		
-		return(false);
-	}
-};
-
-class GetDataOp : public Operation
-{
-public:
-	bool work(Interpreter* interpreter)
-	{
-		Data::pointer index=interpreter->popStack();
-		if(index->isInt32()) 
-		{
-			interpreter->pushStack( interpreter->getContractData(index->getInt()));
-			return(true);
-		}
-		
-		return(false);
-	}
-};
-
-//////////////////////////////////////////////////////////////////////////
 
 Interpreter::Interpreter()
 {
@@ -234,14 +21,55 @@ Interpreter::Interpreter()
 	mBlockJump=0;
 
 	mFunctionTable.resize(NUM_OF_OPS);
-
+	/*
 	mFunctionTable[INT_OP]=new IntOp();
 	mFunctionTable[FLOAT_OP]=new FloatOp();
 	mFunctionTable[UINT160_OP]=new Uint160Op();
+	mFunctionTable[BOOL_OP]=new Uint160Op();
+	mFunctionTable[PATH_OP]=new Uint160Op();
 
 	mFunctionTable[ADD_OP]=new AddOp();
 	mFunctionTable[SUB_OP]=new SubOp();
-
+	mFunctionTable[MUL_OP]=new MulOp();
+	mFunctionTable[DIV_OP]=new DivOp();
+	mFunctionTable[MOD_OP]=new ModOp();
+	mFunctionTable[GTR_OP]=new GtrOp();
+	mFunctionTable[LESS_OP]=new LessOp();
+	mFunctionTable[EQUAL_OP]=new SubOp();
+	mFunctionTable[NOT_EQUAL_OP]=new SubOp();
+	mFunctionTable[AND_OP]=new SubOp();
+	mFunctionTable[OR_OP]=new SubOp();
+	mFunctionTable[NOT_OP]=new SubOp();
+	mFunctionTable[JUMP_OP]=new SubOp();
+	mFunctionTable[JUMPIF_OP]=new SubOp();
+	mFunctionTable[STOP_OP]=new SubOp();
+	mFunctionTable[CANCEL_OP]=new SubOp();
+	mFunctionTable[BLOCK_OP]=new SubOp();
+	mFunctionTable[BLOCK_END_OP]=new SubOp();
+	mFunctionTable[SEND_XNS_OP]=new SendXNSOp();
+	mFunctionTable[SEND_OP]=new SendOp();
+	mFunctionTable[REMOVE_CONTRACT_OP]=new SubOp();
+	mFunctionTable[FEE_OP]=new SubOp();
+	mFunctionTable[CHANGE_CONTRACT_OWNER_OP]=new SubOp();
+	mFunctionTable[STOP_REMOVE_OP]=new SubOp();
+	mFunctionTable[SET_DATA_OP]=new SubOp();
+	mFunctionTable[GET_DATA_OP]=new SubOp();
+	mFunctionTable[GET_NUM_DATA_OP]=new SubOp();
+	mFunctionTable[SET_REGISTER_OP]=new SubOp();
+	mFunctionTable[GET_REGISTER_OP]=new SubOp();
+	mFunctionTable[GET_ISSUER_ID_OP]=new SubOp();
+	mFunctionTable[GET_OWNER_ID_OP]=new SubOp();
+	mFunctionTable[GET_LEDGER_TIME_OP]=new SubOp();
+	mFunctionTable[GET_LEDGER_NUM_OP]=new SubOp();
+	mFunctionTable[GET_RAND_FLOAT_OP]=new SubOp();
+	mFunctionTable[GET_XNS_ESCROWED_OP]=new SubOp();
+	mFunctionTable[GET_RIPPLE_ESCROWED_OP]=new SubOp();
+	mFunctionTable[GET_RIPPLE_ESCROWED_CURRENCY_OP]=new SubOp();
+	mFunctionTable[GET_RIPPLE_ESCROWED_ISSUER]=new GetRippleEscrowedIssuerOp();
+	mFunctionTable[GET_ACCEPT_DATA_OP]=new AcceptDataOp();
+	mFunctionTable[GET_ACCEPTOR_ID_OP]=new GetAcceptorIDOp();
+	mFunctionTable[GET_CONTRACT_ID_OP]=new GetContractIDOp();
+	*/
 }
 
 Data::pointer Interpreter::popStack()
@@ -359,6 +187,11 @@ void Interpreter::stop()
 Data::pointer Interpreter::getContractData(int index)
 {
 	return(Data::pointer(new ErrorData()));
+}
+
+bool Interpreter::canSign(uint160& signer)
+{
+	return(true);
 }
 
 

@@ -62,6 +62,13 @@ void LedgerProposal::changePosition(const uint256& newPosition, uint32 closeTime
 	++mProposeSeq;
 }
 
+void LedgerProposal::bowOut()
+{
+	mCurrentHash	= uint256();
+	mTime			= boost::posix_time::second_clock::universal_time();
+	mProposeSeq		= seqLeave;
+}
+
 std::vector<unsigned char> LedgerProposal::sign(void)
 {
 	std::vector<unsigned char> ret;
@@ -78,9 +85,14 @@ Json::Value LedgerProposal::getJson() const
 {
 	Json::Value ret = Json::objectValue;
 	ret["previous_ledger"] = mPreviousLedger.GetHex();
-	ret["transaction_hash"] = mCurrentHash.GetHex();
+
+	if (mProposeSeq != seqLeave)
+	{
+		ret["transaction_hash"] = mCurrentHash.GetHex();
+		ret["propose_seq"] = mProposeSeq;
+	}
+
 	ret["close_time"] = mCloseTime;
-	ret["propose_seq"] = mProposeSeq;
 
 	if (mPublicKey.isValid())
 		ret["peer_id"] = mPublicKey.humanNodePublic();

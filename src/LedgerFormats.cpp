@@ -23,6 +23,23 @@ LedgerEntryFormat LedgerFormats[]=
 		{ S_FIELD(Extensions),			STI_TL,			SOE_IFFLAG,   0x01000000 },
 		{ sfInvalid, NULL,				STI_DONE,		SOE_NEVER,	  -1 } }
 	},
+	{ "Contract", ltCONTRACT, {
+		{ S_FIELD(Flags),				STI_UINT32,		SOE_FLAGS,	  0 },
+		{ S_FIELD(Account),				STI_ACCOUNT,	SOE_REQUIRED, 0 },
+		{ S_FIELD(Balance),				STI_AMOUNT,		SOE_REQUIRED, 0 },
+		{ S_FIELD(LastTxnID),			STI_HASH256,	SOE_REQUIRED, 0 },
+		{ S_FIELD(LastTxnSeq),			STI_UINT32,		SOE_REQUIRED, 0 },
+		{ S_FIELD(Issuer),				STI_ACCOUNT,	SOE_REQUIRED, 0 },
+		{ S_FIELD(Owner),				STI_ACCOUNT,	SOE_REQUIRED, 0 },
+		{ S_FIELD(Expiration),			STI_UINT32,		SOE_REQUIRED, 0 },
+		{ S_FIELD(BondAmount),			STI_UINT32,		SOE_REQUIRED, 0 },
+		{ S_FIELD(CreateCode),			STI_VL,			SOE_REQUIRED, 0 },
+		{ S_FIELD(FundCode),			STI_VL,			SOE_REQUIRED, 0 },
+		{ S_FIELD(RemoveCode),			STI_VL,			SOE_REQUIRED, 0 },
+		{ S_FIELD(ExpireCode),			STI_VL,			SOE_REQUIRED, 0 },
+		{ S_FIELD(Extensions),			STI_TL,			SOE_IFFLAG,   0x01000000 },
+		{ sfInvalid, NULL,				STI_DONE,		SOE_NEVER,	  -1 } }
+	},
 	{ "DirectoryNode", ltDIR_NODE, {
 		{ S_FIELD(Flags),				STI_UINT32,		SOE_FLAGS,	  0 },
 		{ S_FIELD(Indexes),				STI_VECTOR256,	SOE_REQUIRED, 0 },
@@ -72,21 +89,6 @@ LedgerEntryFormat LedgerFormats[]=
 		{ S_FIELD(LowQualityOut),		STI_UINT32,		SOE_IFFLAG,   2 },
 		{ S_FIELD(HighQualityIn),		STI_UINT32,		SOE_IFFLAG,   4 },
 		{ S_FIELD(HighQualityOut),		STI_UINT32,		SOE_IFFLAG,   8 },
-		{ S_FIELD(Extensions),			STI_TL,			SOE_IFFLAG,   0x01000000 },
-		{ sfInvalid, NULL,				STI_DONE,		SOE_NEVER,	  -1 } }
-	},
-	{ "Contract", ltCONTRACT, {
-		{ S_FIELD(Flags),				STI_UINT32,		SOE_FLAGS,	  0 },
-		{ S_FIELD(Issuer),				STI_ACCOUNT,	SOE_REQUIRED, 0 },
-		{ S_FIELD(Owner),				STI_ACCOUNT,	SOE_REQUIRED, 0 },
-		{ S_FIELD(Expiration),			STI_UINT32,		SOE_REQUIRED, 0 },
-		{ S_FIELD(BondAmount),			STI_UINT32,		SOE_REQUIRED, 0 },
-		{ S_FIELD(StampEscrow),			STI_UINT32,		SOE_REQUIRED, 0 },
-		{ S_FIELD(RippleEscrow),		STI_AMOUNT,		SOE_REQUIRED, 0 },
-		{ S_FIELD(CreateCode),			STI_VL,			SOE_REQUIRED, 0 },
-		{ S_FIELD(FundCode),			STI_VL,			SOE_REQUIRED, 0 },
-		{ S_FIELD(RemoveCode),			STI_VL,			SOE_REQUIRED, 0 },
-		{ S_FIELD(ExpireCode),			STI_VL,			SOE_REQUIRED, 0 },
 		{ S_FIELD(Extensions),			STI_TL,			SOE_IFFLAG,   0x01000000 },
 		{ sfInvalid, NULL,				STI_DONE,		SOE_NEVER,	  -1 } }
 	},
