@@ -124,6 +124,7 @@
     <ClCompile Include="src\NetworkOPs.cpp" />
     <ClCompile Include="src\NewcoinAddress.cpp" />
     <ClCompile Include="src\NicknameState.cpp" />
+    <ClCompile Include="src\Operation.cpp" />
     <ClCompile Include="src\OrderBook.cpp" />
     <ClCompile Include="src\OrderBookDB.cpp" />
     <ClCompile Include="src\PackedMessage.cpp" />
@@ -216,6 +217,7 @@
     <ClInclude Include="src\NetworkStatus.h" />
     <ClInclude Include="src\NewcoinAddress.h" />
     <ClInclude Include="src\NicknameState.h" />
+    <ClInclude Include="src\Operation.h" />
     <ClInclude Include="src\OrderBook.h" />
     <ClInclude Include="src\OrderBookDB.h" />
     <ClInclude Include="src\PackedMessage.h" />

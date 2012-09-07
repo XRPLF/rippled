@@ -10,19 +10,8 @@
 
 namespace Script {
 
-class Interpreter;
-
+class Operation;
 // Contracts are non typed  have variable data types
-
-
-class Operation
-{
-public:
-	// returns false if there was an error
-	virtual bool work(Interpreter* interpreter)=0;
-
-	virtual int getFee();
-};
 
 class Interpreter
 {
@@ -42,7 +31,7 @@ class Interpreter
 public:
 
 
-	enum {  INT_OP,FLOAT_OP,UINT160_OP,BOOL_OP,PATH_OP,
+	enum {  INT_OP=1,FLOAT_OP,UINT160_OP,BOOL_OP,PATH_OP,
 			ADD_OP,SUB_OP,MUL_OP,DIV_OP,MOD_OP,
 			GTR_OP,LESS_OP,EQUAL_OP,NOT_EQUAL_OP,
 			AND_OP,OR_OP,NOT_OP,
