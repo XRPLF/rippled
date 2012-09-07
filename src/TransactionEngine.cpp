@@ -3956,9 +3956,7 @@ TER TransactionEngine::takeOffers(
 	const uint256			uBookEnd			= Ledger::getQualityNext(uBookBase);
 	const uint64			uTakeQuality		= STAmount::getRate(saTakerGets, saTakerPays);
 	const uint160			uTakerPaysAccountID	= saTakerPays.getIssuer();
-	const uint160			uTakerPaysCurrency	= saTakerPays.getCurrency();
 	const uint160			uTakerGetsAccountID	= saTakerGets.getIssuer();
-	const uint160			uTakerGetsCurrency	= saTakerGets.getCurrency();
 	TER						terResult			= temUNCERTAIN;
 
 	boost::unordered_set<uint256>	usOfferUnfundedFound;	// Offers found unfunded.
