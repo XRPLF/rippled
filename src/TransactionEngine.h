@@ -200,8 +200,8 @@ class PathState
 protected:
 	Ledger::pointer				mLedger;
 
-	TER		pushNode(int iType, uint160 uAccountID, uint160 uCurrencyID, uint160 uIssuerID);
-	TER		pushImply(uint160 uAccountID, uint160 uCurrencyID, uint160 uIssuerID);
+	TER		pushNode(const int iType, const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID);
+	TER		pushImply(const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID);
 
 public:
 	typedef boost::shared_ptr<PathState> pointer;
