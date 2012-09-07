@@ -238,9 +238,27 @@ Interpreter::Interpreter()
 	mFunctionTable[INT_OP]=new IntOp();
 	mFunctionTable[FLOAT_OP]=new FloatOp();
 	mFunctionTable[UINT160_OP]=new Uint160Op();
+	mFunctionTable[BOOL_OP]=new Uint160Op();
 
 	mFunctionTable[ADD_OP]=new AddOp();
 	mFunctionTable[SUB_OP]=new SubOp();
+
+	/*PATH_OP,
+		ADD_OP,SUB_OP,MUL_OP,DIV_OP,MOD_OP,
+		GTR_OP,LESS_OP,EQUAL_OP,NOT_EQUAL_OP,
+		AND_OP,OR_OP,NOT_OP,
+		JUMP_OP, JUMPIF_OP,
+		STOP_OP, CANCEL_OP,
+
+		BLOCK_OP, BLOCK_END_OP,
+		SEND_XNS_OP,SEND_OP,REMOVE_CONTRACT_OP,FEE_OP,CHANGE_CONTRACT_OWNER_OP, 
+		STOP_REMOVE_OP,
+		SET_DATA_OP,GET_DATA_OP, GET_NUM_DATA_OP,
+		SET_REGISTER_OP,GET_REGISTER_OP,
+		GET_ISSUER_ID_OP, GET_OWNER_ID_OP, GET_LEDGER_TIME_OP,  GET_LEDGER_NUM_OP, GET_RAND_FLOAT_OP,
+		GET_XNS_ESCROWED_OP, GET_RIPPLE_ESCROWED_OP, GET_RIPPLE_ESCROWED_CURRENCY_OP, GET_RIPPLE_ESCROWED_ISSUER,
+		GET_ACCEPT_DATA_OP, GET_ACCEPTOR_ID_OP, GET_CONTRACT_ID_OP,
+		*/
 
 }
 
@@ -359,6 +377,11 @@ void Interpreter::stop()
 Data::pointer Interpreter::getContractData(int index)
 {
 	return(Data::pointer(new ErrorData()));
+}
+
+bool Interpreter::canSign(uint160& signer)
+{
+	return(true);
 }
 
 
