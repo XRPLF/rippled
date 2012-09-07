@@ -319,7 +319,7 @@ void LedgerConsensus::handleLCL(const uint256& lclHash)
 			BOOST_FOREACH(Peer::ref peer, peerList)
 				mAcquiringLedger->peerHas(peer);
 		}
-		if (mHaveCorrectLCL && mProposing)
+		if (mHaveCorrectLCL && mProposing && mOurPosition)
 		{
 			Log(lsINFO) << "Bowing out of consensus";
 			mOurPosition->bowOut();
