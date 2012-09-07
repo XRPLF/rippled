@@ -61,6 +61,10 @@ std::string STAmount::createHumanCurrency(const uint160& uCurrency)
 	{
 		return SYSTEM_CURRENCY_CODE;
 	}
+	else if (uCurrency == CURRENCY_ONE)
+	{
+		return "1";
+	}
 	else
 	{
 		Serializer	s(160/8);
@@ -76,15 +80,15 @@ std::string STAmount::createHumanCurrency(const uint160& uCurrency)
 
 		if (!::isZero(vucZeros.begin(), vucZeros.size()))
 		{
-			throw std::runtime_error("bad currency: zeros");
+			throw std::runtime_error(boost::str(boost::format("bad currency: zeros: %s") % uCurrency));
 		}
 		else if (!::isZero(vucVersion.begin(), vucVersion.size()))
 		{
-			throw std::runtime_error("bad currency: version");
+			throw std::runtime_error(boost::str(boost::format("bad currency: version: %s") % uCurrency));
 		}
 		else if (!::isZero(vucReserved.begin(), vucReserved.size()))
 		{
-			throw std::runtime_error("bad currency: reserved");
+			throw std::runtime_error(boost::str(boost::format("bad currency: reserved: %s") % uCurrency));
 		}
 		else
 		{
