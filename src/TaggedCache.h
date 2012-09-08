@@ -111,7 +111,7 @@ template<typename c_Key, typename c_Data> void TaggedCache<c_Key, c_Data>::sweep
 		if (mit->second->expired())
 		{
 			typename boost::unordered_map<key_type, weak_data_ptr>::iterator tmp = mit++;
-			mMap.erase(mit);
+			mMap.erase(mit++);
 		}
 		else
 			++mit;

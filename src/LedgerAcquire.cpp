@@ -310,7 +310,7 @@ bool LedgerAcquire::takeBase(const std::string& data)
 	Serializer s(data.size() + 4);
 	s.add32(sHP_Ledger);
 	s.addRaw(data);
-	theApp->getHashedObjectStore().store(LEDGER, mLedger->getLedgerSeq(), s.peekData(), mHash);
+	theApp->getHashedObjectStore().store(hotLEDGER, mLedger->getLedgerSeq(), s.peekData(), mHash);
 
 	progress();
 	if (!mLedger->getTransHash())
@@ -405,7 +405,8 @@ LedgerAcquire::pointer LedgerAcquireMaster::findCreate(const uint256& hash)
 	assert(hash.isNonZero());
 	boost::mutex::scoped_lock sl(mLock);
 	LedgerAcquire::pointer& ptr = mLedgers[hash];
-	if (ptr) return ptr;
+	if (ptr)
+		return ptr;
 	ptr = boost::make_shared<LedgerAcquire>(hash);
 	assert(mLedgers[hash] == ptr);
 	ptr->resetTimer(); // Cannot call in constructor
@@ -417,7 +418,8 @@ LedgerAcquire::pointer LedgerAcquireMaster::find(const uint256& hash)
 	assert(hash.isNonZero());
 	boost::mutex::scoped_lock sl(mLock);
 	std::map<uint256, LedgerAcquire::pointer>::iterator it = mLedgers.find(hash);
-	if (it != mLedgers.end()) return it->second;
+	if (it != mLedgers.end())
+		return it->second;
 	return LedgerAcquire::pointer();
 }
 

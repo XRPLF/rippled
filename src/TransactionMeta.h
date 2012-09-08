@@ -71,7 +71,7 @@ protected:
 	uint32 mPrevLgrSeq;
 
 public:
-	TMNEThread() : TransactionMetaNodeEntry(TMSThread) { ; }
+	TMNEThread() : TransactionMetaNodeEntry(TMSThread), mPrevLgrSeq(0) { ; }
 	TMNEThread(uint256 prevTx, uint32 prevLgrSeq)
 		: TransactionMetaNodeEntry(TMSThread), mPrevTxID(prevTx), mPrevLgrSeq(prevLgrSeq)
 	{ ; }
