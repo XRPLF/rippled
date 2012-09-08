@@ -31,12 +31,13 @@ public:
 class LedgerEntrySet
 {
 protected:
+	Ledger::pointer mLedger;
 	boost::unordered_map<uint256, LedgerEntrySetEntry>	mEntries;
 	TransactionMetaSet mSet;
 	int mSeq;
 
-	LedgerEntrySet(const boost::unordered_map<uint256, LedgerEntrySetEntry> &e, const TransactionMetaSet& s, int m) :
-		mEntries(e), mSet(s), mSeq(m) { ; }
+	LedgerEntrySet(Ledger::ref ledger, const boost::unordered_map<uint256, LedgerEntrySetEntry> &e,
+		const TransactionMetaSet& s, int m) : mLedger(ledger), mEntries(e), mSet(s), mSeq(m) { ; }
 
 	SLE::pointer getForMod(const uint256& node, Ledger::ref ledger,
 		boost::unordered_map<uint256, SLE::pointer>& newMods);
@@ -51,6 +52,9 @@ protected:
 		boost::unordered_map<uint256, SLE::pointer>& newMods);
 
 public:
+
+	LedgerEntrySet(Ledger::ref ledger) : mLedger(ledger), mSeq(0) { ; }
+
 	LedgerEntrySet() : mSeq(0) { ; }
 
 	// set functions
@@ -60,7 +64,7 @@ public:
 
 	int getSeq() const			{ return mSeq; }
 	void bumpSeq()				{ ++mSeq; }
-	void init(const uint256& transactionID, uint32 ledgerID);
+	void init(Ledger::ref ledger, const uint256& transactionID, uint32 ledgerID);
 	void clear();
 
 	// basic entry functions
@@ -68,14 +72,18 @@ public:
 	LedgerEntryAction hasEntry(const uint256& index) const;
 	void entryCache(SLE::ref);		// Add this entry to the cache
 	void entryCreate(SLE::ref);		// This entry will be created
-	void entryDelete(SLE::ref, bool unfunded);
+	void entryDelete(SLE::ref);		// This entry will be deleted
 	void entryModify(SLE::ref);		// This entry will be modified
+
+	// higher-level ledger functions
+	SLE::pointer entryCreate(LedgerEntryType letType, const uint256& uIndex);
+	SLE::pointer entryCache(LedgerEntryType letType, const uint256& uIndex);
 
 	Json::Value getJson(int) const;
 	void calcRawMeta(Serializer&, Ledger::ref originalLedger);
 
 	// iterator functions
-	bool isEmpty() const { return mEntries.empty(); }
+	bool isEmpty() const																{ return mEntries.empty(); }
 	boost::unordered_map<uint256, LedgerEntrySetEntry>::const_iterator begin() const	{ return mEntries.begin(); }
 	boost::unordered_map<uint256, LedgerEntrySetEntry>::const_iterator end() const		{ return mEntries.end(); }
 	boost::unordered_map<uint256, LedgerEntrySetEntry>::iterator begin()				{ return mEntries.begin(); }

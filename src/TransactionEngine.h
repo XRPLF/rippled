@@ -308,10 +308,10 @@ protected:
 	// If the transaction fails to meet some constraint, still need to delete unfunded offers.
 	boost::unordered_set<uint256>	musUnfundedFound;	// Offers that were found unfunded.
 
-	SLE::pointer		entryCreate(LedgerEntryType letType, const uint256& uIndex);
-	SLE::pointer		entryCache(LedgerEntryType letType, const uint256& uIndex);
-	void				entryDelete(SLE::pointer sleEntry, bool bUnfunded = false);
-	void				entryModify(SLE::pointer sleEntry);
+	SLE::pointer		entryCreate(LedgerEntryType type, const uint256& index)		{ return mNodes.entryCreate(type, index); }
+	SLE::pointer		entryCache(LedgerEntryType type, const uint256& index)		{ return mNodes.entryCache(type, index); }
+	void				entryDelete(SLE::ref sleEntry)								{ mNodes.entryDelete(sleEntry); }
+	void				entryModify(SLE::ref sleEntry)								{ mNodes.entryModify(sleEntry); }
 
 	TER					offerDelete(const uint256& uOfferIndex);
 	TER					offerDelete(const SLE::pointer& sleOffer, const uint256& uOfferIndex, const uint160& uOwnerID);

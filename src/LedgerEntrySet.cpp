@@ -2,9 +2,10 @@
 
 #include <boost/make_shared.hpp>
 
-void LedgerEntrySet::init(const uint256& transactionID, uint32 ledgerID)
+void LedgerEntrySet::init(Ledger::ref ledger, const uint256& transactionID, uint32 ledgerID)
 {
 	mEntries.clear();
+	mLedger = ledger;
 	mSet.init(transactionID, ledgerID);
 	mSeq = 0;
 }
@@ -17,7 +18,7 @@ void LedgerEntrySet::clear()
 
 LedgerEntrySet LedgerEntrySet::duplicate() const
 {
-	return LedgerEntrySet(mEntries, mSet, mSeq + 1);
+	return LedgerEntrySet(mLedger, mEntries, mSet, mSeq + 1);
 }
 
 void LedgerEntrySet::setTo(const LedgerEntrySet& e)
@@ -25,11 +26,13 @@ void LedgerEntrySet::setTo(const LedgerEntrySet& e)
 	mEntries = e.mEntries;
 	mSet = e.mSet;
 	mSeq = e.mSeq;
+	mLedger = e.mLedger;
 }
 
 void LedgerEntrySet::swapWith(LedgerEntrySet& e)
 {
 	std::swap(mSeq, e.mSeq);
+	std::swap(mLedger, e.mLedger);
 	mSet.swap(e.mSet);
 	mEntries.swap(e.mEntries);
 }
@@ -51,6 +54,36 @@ SLE::pointer LedgerEntrySet::getEntry(const uint256& index, LedgerEntryAction& a
 	}
 	action = it->second.mAction;
 	return it->second.mEntry;
+}
+
+SLE::pointer LedgerEntrySet::entryCreate(LedgerEntryType letType, const uint256& index)
+{
+	assert(index.isNonZero());
+	SLE::pointer sleNew = boost::make_shared<SLE>(letType);
+	sleNew->setIndex(index);
+	entryCreate(sleNew);
+	return sleNew;
+}
+
+SLE::pointer LedgerEntrySet::entryCache(LedgerEntryType letType, const uint256& index)
+{
+	SLE::pointer sleEntry;
+	if (index.isNonZero())
+	{
+		LedgerEntryAction action;
+		sleEntry = getEntry(index, action);
+		if (!sleEntry)
+		{
+			sleEntry = mLedger->getSLE(index);
+			if (sleEntry)
+				entryCache(sleEntry);
+		}
+		else if (action == taaDELETE)
+		{
+			assert(false);
+		}
+	}
+	return sleEntry;
 }
 
 LedgerEntryAction LedgerEntrySet::hasEntry(const uint256& index) const
@@ -147,7 +180,7 @@ void LedgerEntrySet::entryModify(SLE::ref sle)
 	}
  }
 
-void LedgerEntrySet::entryDelete(SLE::ref sle, bool unfunded)
+void LedgerEntrySet::entryDelete(SLE::ref sle)
 {
 	boost::unordered_map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find(sle->getIndex());
 	if (it == mEntries.end())
@@ -166,15 +199,6 @@ void LedgerEntrySet::entryDelete(SLE::ref sle, bool unfunded)
 			it->second.mSeq	    = mSeq;
 			it->second.mEntry   = sle;
 			it->second.mAction  = taaDELETE;
-			if (unfunded)
-			{
-				assert(sle->getType() == ltOFFER); // only offers can be unfunded
-#if 0
-				mSet.deleteUnfunded(sle->getIndex(),
-					sle->getIValueFieldAmount(sfTakerPays),
-					sle->getIValueFieldAmount(sfTakerGets));
-#endif
-			}
 			break;
 
 		case taaCREATE:

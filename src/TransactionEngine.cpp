@@ -865,50 +865,6 @@ TER	TransactionEngine::setAuthorized(const SerializedTransaction& txn, bool bMus
 	return tesSUCCESS;
 }
 
-SLE::pointer TransactionEngine::entryCache(LedgerEntryType letType, const uint256& uIndex)
-{
-	SLE::pointer				sleEntry;
-
-	if (!!uIndex)
-	{
-		LedgerEntryAction action;
-		sleEntry = mNodes.getEntry(uIndex, action);
-		if (!sleEntry)
-		{
-			sleEntry = mLedger->getSLE(uIndex);
-			if (sleEntry)
-				mNodes.entryCache(sleEntry);
-		}
-		else if (action == taaDELETE)
-		{
-			assert(false);
-		}
-	}
-
-	return sleEntry;
-}
-
-SLE::pointer TransactionEngine::entryCreate(LedgerEntryType letType, const uint256& uIndex)
-{
-	assert(!!uIndex);
-
-	SLE::pointer	sleNew	= boost::make_shared<SerializedLedgerEntry>(letType);
-	sleNew->setIndex(uIndex);
-	mNodes.entryCreate(sleNew);
-
-	return sleNew;
-}
-
-void TransactionEngine::entryDelete(SLE::pointer sleEntry, bool bUnfunded)
-{
-	mNodes.entryDelete(sleEntry, bUnfunded);
-}
-
-void TransactionEngine::entryModify(SLE::pointer sleEntry)
-{
-	mNodes.entryModify(sleEntry);
-}
-
 void TransactionEngine::txnWrite()
 {
 	// Write back the account states and add the transaction to the ledger
@@ -956,12 +912,11 @@ void TransactionEngine::txnWrite()
 	}
 }
 
-TER TransactionEngine::applyTransaction(const SerializedTransaction& txn,
-	TransactionEngineParams params)
+TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, TransactionEngineParams params)
 {
 	Log(lsTRACE) << "applyTransaction>";
 	assert(mLedger);
-	mNodes.init(txn.getTransactionID(), mLedger->getLedgerSeq());
+	mNodes.init(mLedger, txn.getTransactionID(), mLedger->getLedgerSeq());
 
 #ifdef DEBUG
 	if (1)
