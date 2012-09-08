@@ -1,6 +1,12 @@
+
 #include "LedgerEntrySet.h"
 
 #include <boost/make_shared.hpp>
+
+#include "Log.h"
+
+// Small for testing, should likely be 32 or 64.
+#define DIR_NODE_MAX		2
 
 void LedgerEntrySet::init(Ledger::ref ledger, const uint256& transactionID, uint32 ledgerID)
 {
@@ -426,6 +432,328 @@ void LedgerEntrySet::calcRawMeta(Serializer& s, Ledger::ref origLedger)
 		entryCache(it->second);
 
 	mSet.addRaw(s);
+}
+
+// <--     uNodeDir: For deletion, present to make dirDelete efficient.
+// -->   uRootIndex: The index of the base of the directory.  Nodes are based off of this.
+// --> uLedgerIndex: Value to add to directory.
+// We only append. This allow for things that watch append only structure to just monitor from the last node on ward.
+// Within a node with no deletions order of elements is sequential.  Otherwise, order of elements is random.
+TER LedgerEntrySet::dirAdd(
+	uint64&							uNodeDir,
+	const uint256&					uRootIndex,
+	const uint256&					uLedgerIndex)
+{
+	SLE::pointer		sleNode;
+	STVector256			svIndexes;
+	SLE::pointer		sleRoot		= entryCache(ltDIR_NODE, uRootIndex);
+
+	if (!sleRoot)
+	{
+		// No root, make it.
+		sleRoot		= entryCreate(ltDIR_NODE, uRootIndex);
+
+		sleNode		= sleRoot;
+		uNodeDir	= 0;
+	}
+	else
+	{
+		uNodeDir	= sleRoot->getIFieldU64(sfIndexPrevious);		// Get index to last directory node.
+
+		if (uNodeDir)
+		{
+			// Try adding to last node.
+			sleNode		= entryCache(ltDIR_NODE, Ledger::getDirNodeIndex(uRootIndex, uNodeDir));
+
+			assert(sleNode);
+		}
+		else
+		{
+			// Try adding to root.  Didn't have a previous set to the last node.
+			sleNode		= sleRoot;
+		}
+
+		svIndexes	= sleNode->getIFieldV256(sfIndexes);
+
+		if (DIR_NODE_MAX != svIndexes.peekValue().size())
+		{
+			// Add to current node.
+			entryModify(sleNode);
+		}
+		// Add to new node.
+		else if (!++uNodeDir)
+		{
+			return terDIR_FULL;
+		}
+		else
+		{
+			// Have old last point to new node, if it was not root.
+			if (uNodeDir == 1)
+			{
+				// Previous node is root node.
+
+				sleRoot->setIFieldU64(sfIndexNext, uNodeDir);
+			}
+			else
+			{
+				// Previous node is not root node.
+
+				SLE::pointer	slePrevious	= entryCache(ltDIR_NODE, Ledger::getDirNodeIndex(uRootIndex, uNodeDir-1));
+
+				slePrevious->setIFieldU64(sfIndexNext, uNodeDir);
+				entryModify(slePrevious);
+
+				sleNode->setIFieldU64(sfIndexPrevious, uNodeDir-1);
+			}
+
+			// Have root point to new node.
+			sleRoot->setIFieldU64(sfIndexPrevious, uNodeDir);
+			entryModify(sleRoot);
+
+			// Create the new node.
+			sleNode		= entryCreate(ltDIR_NODE, Ledger::getDirNodeIndex(uRootIndex, uNodeDir));
+			svIndexes	= STVector256();
+		}
+	}
+
+	svIndexes.peekValue().push_back(uLedgerIndex);	// Append entry.
+	sleNode->setIFieldV256(sfIndexes, svIndexes);	// Save entry.
+
+	Log(lsINFO) << "dirAdd:   creating: root: " << uRootIndex.ToString();
+	Log(lsINFO) << "dirAdd:  appending: Entry: " << uLedgerIndex.ToString();
+	Log(lsINFO) << "dirAdd:  appending: Node: " << strHex(uNodeDir);
+	// Log(lsINFO) << "dirAdd:  appending: PREV: " << svIndexes.peekValue()[0].ToString();
+
+	return tesSUCCESS;
+}
+
+// Ledger must be in a state for this to work.
+TER LedgerEntrySet::dirDelete(
+	const bool						bKeepRoot,		// --> True, if we never completely clean up, after we overflow the root node.
+	const uint64&					uNodeDir,		// --> Node containing entry.
+	const uint256&					uRootIndex,		// --> The index of the base of the directory.  Nodes are based off of this.
+	const uint256&					uLedgerIndex,	// --> Value to add to directory.
+	const bool						bStable)		// --> True, not to change relative order of entries.
+{
+	uint64				uNodeCur	= uNodeDir;
+	SLE::pointer		sleNode		= entryCache(ltDIR_NODE, uNodeCur ? Ledger::getDirNodeIndex(uRootIndex, uNodeCur) : uRootIndex);
+
+	assert(sleNode);
+
+	if (!sleNode)
+	{
+		Log(lsWARNING) << "dirDelete: no such node";
+
+		return tefBAD_LEDGER;
+	}
+
+	STVector256						svIndexes	= sleNode->getIFieldV256(sfIndexes);
+	std::vector<uint256>&			vuiIndexes	= svIndexes.peekValue();
+	std::vector<uint256>::iterator	it;
+
+	it = std::find(vuiIndexes.begin(), vuiIndexes.end(), uLedgerIndex);
+
+	assert(vuiIndexes.end() != it);
+	if (vuiIndexes.end() == it)
+	{
+		assert(false);
+
+		Log(lsWARNING) << "dirDelete: no such entry";
+
+		return tefBAD_LEDGER;
+	}
+
+	// Remove the element.
+	if (vuiIndexes.size() > 1)
+	{
+		if (bStable)
+		{
+			vuiIndexes.erase(it);
+		}
+		else
+		{
+			*it = vuiIndexes[vuiIndexes.size()-1];
+			vuiIndexes.resize(vuiIndexes.size()-1);
+		}
+	}
+	else
+	{
+		vuiIndexes.clear();
+	}
+
+	sleNode->setIFieldV256(sfIndexes, svIndexes);
+	entryModify(sleNode);
+
+	if (vuiIndexes.empty())
+	{
+		// May be able to delete nodes.
+		uint64				uNodePrevious	= sleNode->getIFieldU64(sfIndexPrevious);
+		uint64				uNodeNext		= sleNode->getIFieldU64(sfIndexNext);
+
+		if (!uNodeCur)
+		{
+			// Just emptied root node.
+
+			if (!uNodePrevious)
+			{
+				// Never overflowed the root node.  Delete it.
+				entryDelete(sleNode);
+			}
+			// Root overflowed.
+			else if (bKeepRoot)
+			{
+				// If root overflowed and not allowed to delete overflowed root node.
+
+				nothing();
+			}
+			else if (uNodePrevious != uNodeNext)
+			{
+				// Have more than 2 nodes.  Can't delete root node.
+
+				nothing();
+			}
+			else
+			{
+				// Have only a root node and a last node.
+				SLE::pointer		sleLast	= entryCache(ltDIR_NODE, Ledger::getDirNodeIndex(uRootIndex, uNodeNext));
+
+				assert(sleLast);
+
+				if (sleLast->getIFieldV256(sfIndexes).peekValue().empty())
+				{
+					// Both nodes are empty.
+
+					entryDelete(sleNode);	// Delete root.
+					entryDelete(sleLast);	// Delete last.
+				}
+				else
+				{
+					// Have an entry, can't delete root node.
+
+					nothing();
+				}
+			}
+		}
+		// Just emptied a non-root node.
+		else if (uNodeNext)
+		{
+			// Not root and not last node. Can delete node.
+
+			SLE::pointer		slePrevious	= entryCache(ltDIR_NODE, uNodePrevious ? Ledger::getDirNodeIndex(uRootIndex, uNodePrevious) : uRootIndex);
+
+			assert(slePrevious);
+
+			SLE::pointer		sleNext		= entryCache(ltDIR_NODE, uNodeNext ? Ledger::getDirNodeIndex(uRootIndex, uNodeNext) : uRootIndex);
+
+			assert(slePrevious);
+			assert(sleNext);
+
+			if (!slePrevious)
+			{
+				Log(lsWARNING) << "dirDelete: previous node is missing";
+
+				return tefBAD_LEDGER;
+			}
+
+			if (!sleNext)
+			{
+				Log(lsWARNING) << "dirDelete: next node is missing";
+
+				return tefBAD_LEDGER;
+			}
+
+			// Fix previous to point to its new next.
+			slePrevious->setIFieldU64(sfIndexNext, uNodeNext);
+			entryModify(slePrevious);
+
+			// Fix next to point to its new previous.
+			sleNext->setIFieldU64(sfIndexPrevious, uNodePrevious);
+			entryModify(sleNext);
+		}
+		// Last node.
+		else if (bKeepRoot || uNodePrevious)
+		{
+			// Not allowed to delete last node as root was overflowed.
+			// Or, have pervious entries preventing complete delete.
+
+			nothing();
+		}
+		else
+		{
+			// Last and only node besides the root.
+			SLE::pointer			sleRoot	= entryCache(ltDIR_NODE, uRootIndex);
+
+			assert(sleRoot);
+
+			if (sleRoot->getIFieldV256(sfIndexes).peekValue().empty())
+			{
+				// Both nodes are empty.
+
+				entryDelete(sleRoot);	// Delete root.
+				entryDelete(sleNode);	// Delete last.
+			}
+			else
+			{
+				// Root has an entry, can't delete.
+
+				nothing();
+			}
+		}
+	}
+
+	return tesSUCCESS;
+}
+
+// Return the first entry and advance uDirEntry.
+// <-- true, if had a next entry.
+bool LedgerEntrySet::dirFirst(
+	const uint256& uRootIndex,	// --> Root of directory.
+	SLE::pointer& sleNode,		// <-- current node
+	unsigned int& uDirEntry,	// <-- next entry
+	uint256& uEntryIndex)		// <-- The entry, if available. Otherwise, zero.
+{
+	sleNode		= entryCache(ltDIR_NODE, uRootIndex);
+	uDirEntry	= 0;
+
+	assert(sleNode);			// We never probe for directories.
+
+	return LedgerEntrySet::dirNext(uRootIndex, sleNode, uDirEntry, uEntryIndex);
+}
+
+// Return the current entry and advance uDirEntry.
+// <-- true, if had a next entry.
+bool LedgerEntrySet::dirNext(
+	const uint256& uRootIndex,	// --> Root of directory
+	SLE::pointer& sleNode,		// <-> current node
+	unsigned int& uDirEntry,	// <-> next entry
+	uint256& uEntryIndex)		// <-- The entry, if available. Otherwise, zero.
+{
+	STVector256				svIndexes	= sleNode->getIFieldV256(sfIndexes);
+	std::vector<uint256>&	vuiIndexes	= svIndexes.peekValue();
+
+	if (uDirEntry == vuiIndexes.size())
+	{
+		uint64				uNodeNext	= sleNode->getIFieldU64(sfIndexNext);
+
+		if (!uNodeNext)
+		{
+			uEntryIndex.zero();
+
+			return false;
+		}
+		else
+		{
+			sleNode		= entryCache(ltDIR_NODE, Ledger::getDirNodeIndex(uRootIndex, uNodeNext));
+			uDirEntry	= 0;
+
+			return dirNext(uRootIndex, sleNode, uDirEntry, uEntryIndex);
+		}
+	}
+
+	uEntryIndex	= vuiIndexes[uDirEntry++];
+Log(lsINFO) << boost::str(boost::format("dirNext: uDirEntry=%d uEntryIndex=%s") % uDirEntry % uEntryIndex);
+
+	return true;
 }
 
 // vim:ts=4

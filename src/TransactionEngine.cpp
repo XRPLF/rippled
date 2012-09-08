@@ -18,8 +18,6 @@
 #include "Interpreter.h"
 #include "Contract.h"
 
-// Small for testing, should likely be 32 or 64.
-#define DIR_NODE_MAX		2
 #define RIPPLE_PATHS_MAX	3
 
 static STAmount saZero(CURRENCY_ONE, ACCOUNT_ONE, 0);
@@ -35,97 +33,6 @@ std::size_t hash_value(const aciSource& asValue)
 
 	return seed;
 }
-
-bool transResultInfo(TER terCode, std::string& strToken, std::string& strHuman)
-{
-	static struct {
-		TER				terCode;
-		const char*		cpToken;
-		const char*		cpHuman;
-	} transResultInfoA[] = {
-		{	tefALREADY,				"tefALREADY",				"The exact transaction was already in this ledger"	},
-		{	tefBAD_ADD_AUTH,		"tefBAD_ADD_AUTH",			"Not authorized to add account."					},
-		{	tefBAD_AUTH,			"tefBAD_AUTH",				"Transaction's public key is not authorized."		},
-		{	tefBAD_CLAIM_ID,		"tefBAD_CLAIM_ID",			"Malformed."										},
-		{	tefBAD_GEN_AUTH,		"tefBAD_GEN_AUTH",			"Not authorized to claim generator."				},
-		{	tefBAD_LEDGER,			"tefBAD_LEDGER",			"Ledger in unexpected state."						},
-		{	tefCLAIMED,				"tefCLAIMED",				"Can not claim a previously claimed account."		},
-		{	tefEXCEPTION,			"tefEXCEPTION",				"Unexpected program state."							},
-		{	tefCREATED,				"tefCREATED",				"Can't add an already created account."				},
-		{	tefGEN_IN_USE,			"tefGEN_IN_USE",			"Generator already in use."							},
-		{	tefPAST_SEQ,			"tefPAST_SEQ",				"This sequence number has already past"				},
-
-		{	telBAD_PATH_COUNT,		"telBAD_PATH_COUNT",		"Malformed: too many paths."						},
-		{	telINSUF_FEE_P,			"telINSUF_FEE_P",			"Fee insufficient."									},
-
-		{	temBAD_AMOUNT,			"temBAD_AMOUNT",			"Can only send positive amounts."					},
-		{	temBAD_AUTH_MASTER,		"temBAD_AUTH_MASTER",		"Auth for unclaimed account needs correct master key."	},
-		{	temBAD_EXPIRATION,		"temBAD_EXPIRATION",		"Malformed."										},
-		{	temBAD_ISSUER,			"temBAD_ISSUER",			"Malformed."										},
-		{	temBAD_OFFER,			"temBAD_OFFER",				"Malformed."										},
-		{	temBAD_PATH,			"temBAD_PATH",				"Malformed."										},
-		{	temBAD_PATH_LOOP,		"temBAD_PATH_LOOP",			"Malformed."										},
-		{	temBAD_PUBLISH,			"temBAD_PUBLISH",			"Malformed: bad publish."							},
-		{	temBAD_SET_ID,			"temBAD_SET_ID",			"Malformed."										},
-		{	temCREATEXNS,			"temCREATEXNS",				"Can not specify non XNS for Create."				},
-		{	temDST_IS_SRC,			"temDST_IS_SRC",			"Destination may not be source."					},
-		{	temDST_NEEDED,			"temDST_NEEDED",			"Destination not specified."						},
-		{	temINSUF_FEE_P,			"temINSUF_FEE_P",			"Fee not allowed."									},
-		{	temINVALID,				"temINVALID",				"The transaction is ill-formed"						},
-		{	temREDUNDANT,			"temREDUNDANT",				"Sends same currency to self."						},
-		{	temRIPPLE_EMPTY,		"temRIPPLE_EMPTY",			"PathSet with no paths."							},
-		{	temUNCERTAIN,			"temUNCERTAIN",				"In process of determining result. Never returned."		},
-		{	temUNKNOWN,				"temUNKNOWN",				"The transactions requires logic not implemented yet."	},
-
-		{	tepPATH_DRY,			"tepPATH_DRY",				"Path could not send partial amount."				},
-		{	tepPATH_PARTIAL,		"tepPATH_PARTIAL",			"Path could not send full amount."					},
-
-		{	terDIR_FULL,			"terDIR_FULL",				"Can not add entry to full dir."					},
-		{	terFUNDS_SPENT,			"terFUNDS_SPENT",			"Can't set password, password set funds already spent."	},
-		{	terINSUF_FEE_B,			"terINSUF_FEE_B",			"Account balance can't pay fee."					},
-		{	terNO_ACCOUNT,			"terNO_ACCOUNT",			"The source account does not exist."				},
-		{	terNO_DST,				"terNO_DST",				"The destination does not exist"					},
-		{	terNO_LINE,				"terNO_LINE",				"No such line."										},
-		{	terNO_LINE_NO_ZERO,		"terNO_LINE_NO_ZERO",		"Can't zero non-existant line, destination might make it."	},
-		{	terOFFER_NOT_FOUND,		"terOFFER_NOT_FOUND",		"Can not cancel offer."								},
-		{	terPRE_SEQ,				"terPRE_SEQ",				"Missing/inapplicable prior transaction"			},
-		{	terSET_MISSING_DST,		"terSET_MISSING_DST",		"Can't set password, destination missing."			},
-		{	terUNFUNDED,			"terUNFUNDED",				"Source account had insufficient balance for transaction."	},
-
-		{	tesSUCCESS,				"tesSUCCESS",				"The transaction was applied"						},
-	};
-
-	int	iIndex	= NUMBER(transResultInfoA);
-
-	while (iIndex-- && transResultInfoA[iIndex].terCode != terCode)
-		;
-
-	if (iIndex >= 0)
-	{
-		strToken	= transResultInfoA[iIndex].cpToken;
-		strHuman	= transResultInfoA[iIndex].cpHuman;
-	}
-
-	return iIndex >= 0;
-}
-
-static std::string transToken(TER terCode)
-{
-	std::string	strToken;
-	std::string	strHuman;
-
-	return transResultInfo(terCode, strToken, strHuman) ? strToken : "-";
-}
-
-#if 0
-static std::string transHuman(TER terCode)
-{
-	std::string	strToken;
-	std::string	strHuman;
-
-	return transResultInfo(terCode, strToken, strHuman) ? strHuman : "-";
-}
-#endif
 
 // Returns amount owed by uToAccountID to uFromAccountID.
 // <-- $owed/uCurrencyID/uToAccountID: positive: uFromAccountID holds IOUs., negative: uFromAccountID owes IOUs.
@@ -468,14 +375,14 @@ void TransactionEngine::accountSend(const uint160& uSenderID, const uint160& uRe
 TER TransactionEngine::offerDelete(const SLE::pointer& sleOffer, const uint256& uOfferIndex, const uint160& uOwnerID)
 {
 	uint64	uOwnerNode	= sleOffer->getIFieldU64(sfOwnerNode);
-	TER		terResult	= dirDelete(false, uOwnerNode, Ledger::getOwnerDirIndex(uOwnerID), uOfferIndex, false);
+	TER		terResult	= mNodes.dirDelete(false, uOwnerNode, Ledger::getOwnerDirIndex(uOwnerID), uOfferIndex, false);
 
 	if (tesSUCCESS == terResult)
 	{
 		uint256		uDirectory	= sleOffer->getIFieldH256(sfBookDirectory);
 		uint64		uBookNode	= sleOffer->getIFieldU64(sfBookNode);
 
-		terResult	= dirDelete(false, uBookNode, uDirectory, uOfferIndex, true);
+		terResult	= mNodes.dirDelete(false, uBookNode, uDirectory, uOfferIndex, true);
 	}
 
 	entryDelete(sleOffer);
@@ -489,328 +396,6 @@ TER TransactionEngine::offerDelete(const uint256& uOfferIndex)
 	const uint160	uOwnerID	= sleOffer->getIValueFieldAccount(sfAccount).getAccountID();
 
 	return offerDelete(sleOffer, uOfferIndex, uOwnerID);
-}
-
-// <--     uNodeDir: For deletion, present to make dirDelete efficient.
-// -->   uRootIndex: The index of the base of the directory.  Nodes are based off of this.
-// --> uLedgerIndex: Value to add to directory.
-// We only append. This allow for things that watch append only structure to just monitor from the last node on ward.
-// Within a node with no deletions order of elements is sequential.  Otherwise, order of elements is random.
-TER TransactionEngine::dirAdd(
-	uint64&							uNodeDir,
-	const uint256&					uRootIndex,
-	const uint256&					uLedgerIndex)
-{
-	SLE::pointer		sleNode;
-	STVector256			svIndexes;
-	SLE::pointer		sleRoot		= entryCache(ltDIR_NODE, uRootIndex);
-
-	if (!sleRoot)
-	{
-		// No root, make it.
-		sleRoot		= entryCreate(ltDIR_NODE, uRootIndex);
-
-		sleNode		= sleRoot;
-		uNodeDir	= 0;
-	}
-	else
-	{
-		uNodeDir	= sleRoot->getIFieldU64(sfIndexPrevious);		// Get index to last directory node.
-
-		if (uNodeDir)
-		{
-			// Try adding to last node.
-			sleNode		= entryCache(ltDIR_NODE, Ledger::getDirNodeIndex(uRootIndex, uNodeDir));
-
-			assert(sleNode);
-		}
-		else
-		{
-			// Try adding to root.  Didn't have a previous set to the last node.
-			sleNode		= sleRoot;
-		}
-
-		svIndexes	= sleNode->getIFieldV256(sfIndexes);
-
-		if (DIR_NODE_MAX != svIndexes.peekValue().size())
-		{
-			// Add to current node.
-			entryModify(sleNode);
-		}
-		// Add to new node.
-		else if (!++uNodeDir)
-		{
-			return terDIR_FULL;
-		}
-		else
-		{
-			// Have old last point to new node, if it was not root.
-			if (uNodeDir == 1)
-			{
-				// Previous node is root node.
-
-				sleRoot->setIFieldU64(sfIndexNext, uNodeDir);
-			}
-			else
-			{
-				// Previous node is not root node.
-
-				SLE::pointer	slePrevious	= entryCache(ltDIR_NODE, Ledger::getDirNodeIndex(uRootIndex, uNodeDir-1));
-
-				slePrevious->setIFieldU64(sfIndexNext, uNodeDir);
-				entryModify(slePrevious);
-
-				sleNode->setIFieldU64(sfIndexPrevious, uNodeDir-1);
-			}
-
-			// Have root point to new node.
-			sleRoot->setIFieldU64(sfIndexPrevious, uNodeDir);
-			entryModify(sleRoot);
-
-			// Create the new node.
-			sleNode		= entryCreate(ltDIR_NODE, Ledger::getDirNodeIndex(uRootIndex, uNodeDir));
-			svIndexes	= STVector256();
-		}
-	}
-
-	svIndexes.peekValue().push_back(uLedgerIndex);	// Append entry.
-	sleNode->setIFieldV256(sfIndexes, svIndexes);	// Save entry.
-
-	Log(lsINFO) << "dirAdd:   creating: root: " << uRootIndex.ToString();
-	Log(lsINFO) << "dirAdd:  appending: Entry: " << uLedgerIndex.ToString();
-	Log(lsINFO) << "dirAdd:  appending: Node: " << strHex(uNodeDir);
-	// Log(lsINFO) << "dirAdd:  appending: PREV: " << svIndexes.peekValue()[0].ToString();
-
-	return tesSUCCESS;
-}
-
-// Ledger must be in a state for this to work.
-TER TransactionEngine::dirDelete(
-	const bool						bKeepRoot,		// --> True, if we never completely clean up, after we overflow the root node.
-	const uint64&					uNodeDir,		// --> Node containing entry.
-	const uint256&					uRootIndex,		// --> The index of the base of the directory.  Nodes are based off of this.
-	const uint256&					uLedgerIndex,	// --> Value to add to directory.
-	const bool						bStable)		// --> True, not to change relative order of entries.
-{
-	uint64				uNodeCur	= uNodeDir;
-	SLE::pointer		sleNode		= entryCache(ltDIR_NODE, uNodeCur ? Ledger::getDirNodeIndex(uRootIndex, uNodeCur) : uRootIndex);
-
-	assert(sleNode);
-
-	if (!sleNode)
-	{
-		Log(lsWARNING) << "dirDelete: no such node";
-
-		return tefBAD_LEDGER;
-	}
-
-	STVector256						svIndexes	= sleNode->getIFieldV256(sfIndexes);
-	std::vector<uint256>&			vuiIndexes	= svIndexes.peekValue();
-	std::vector<uint256>::iterator	it;
-
-	it = std::find(vuiIndexes.begin(), vuiIndexes.end(), uLedgerIndex);
-
-	assert(vuiIndexes.end() != it);
-	if (vuiIndexes.end() == it)
-	{
-		assert(false);
-
-		Log(lsWARNING) << "dirDelete: no such entry";
-
-		return tefBAD_LEDGER;
-	}
-
-	// Remove the element.
-	if (vuiIndexes.size() > 1)
-	{
-		if (bStable)
-		{
-			vuiIndexes.erase(it);
-		}
-		else
-		{
-			*it = vuiIndexes[vuiIndexes.size()-1];
-			vuiIndexes.resize(vuiIndexes.size()-1);
-		}
-	}
-	else
-	{
-		vuiIndexes.clear();
-	}
-
-	sleNode->setIFieldV256(sfIndexes, svIndexes);
-	entryModify(sleNode);
-
-	if (vuiIndexes.empty())
-	{
-		// May be able to delete nodes.
-		uint64				uNodePrevious	= sleNode->getIFieldU64(sfIndexPrevious);
-		uint64				uNodeNext		= sleNode->getIFieldU64(sfIndexNext);
-
-		if (!uNodeCur)
-		{
-			// Just emptied root node.
-
-			if (!uNodePrevious)
-			{
-				// Never overflowed the root node.  Delete it.
-				entryDelete(sleNode);
-			}
-			// Root overflowed.
-			else if (bKeepRoot)
-			{
-				// If root overflowed and not allowed to delete overflowed root node.
-
-				nothing();
-			}
-			else if (uNodePrevious != uNodeNext)
-			{
-				// Have more than 2 nodes.  Can't delete root node.
-
-				nothing();
-			}
-			else
-			{
-				// Have only a root node and a last node.
-				SLE::pointer		sleLast	= entryCache(ltDIR_NODE, Ledger::getDirNodeIndex(uRootIndex, uNodeNext));
-
-				assert(sleLast);
-
-				if (sleLast->getIFieldV256(sfIndexes).peekValue().empty())
-				{
-					// Both nodes are empty.
-
-					entryDelete(sleNode);	// Delete root.
-					entryDelete(sleLast);	// Delete last.
-				}
-				else
-				{
-					// Have an entry, can't delete root node.
-
-					nothing();
-				}
-			}
-		}
-		// Just emptied a non-root node.
-		else if (uNodeNext)
-		{
-			// Not root and not last node. Can delete node.
-
-			SLE::pointer		slePrevious	= entryCache(ltDIR_NODE, uNodePrevious ? Ledger::getDirNodeIndex(uRootIndex, uNodePrevious) : uRootIndex);
-
-			assert(slePrevious);
-
-			SLE::pointer		sleNext		= entryCache(ltDIR_NODE, uNodeNext ? Ledger::getDirNodeIndex(uRootIndex, uNodeNext) : uRootIndex);
-
-			assert(slePrevious);
-			assert(sleNext);
-
-			if (!slePrevious)
-			{
-				Log(lsWARNING) << "dirDelete: previous node is missing";
-
-				return tefBAD_LEDGER;
-			}
-
-			if (!sleNext)
-			{
-				Log(lsWARNING) << "dirDelete: next node is missing";
-
-				return tefBAD_LEDGER;
-			}
-
-			// Fix previous to point to its new next.
-			slePrevious->setIFieldU64(sfIndexNext, uNodeNext);
-			entryModify(slePrevious);
-
-			// Fix next to point to its new previous.
-			sleNext->setIFieldU64(sfIndexPrevious, uNodePrevious);
-			entryModify(sleNext);
-		}
-		// Last node.
-		else if (bKeepRoot || uNodePrevious)
-		{
-			// Not allowed to delete last node as root was overflowed.
-			// Or, have pervious entries preventing complete delete.
-
-			nothing();
-		}
-		else
-		{
-			// Last and only node besides the root.
-			SLE::pointer			sleRoot	= entryCache(ltDIR_NODE, uRootIndex);
-
-			assert(sleRoot);
-
-			if (sleRoot->getIFieldV256(sfIndexes).peekValue().empty())
-			{
-				// Both nodes are empty.
-
-				entryDelete(sleRoot);	// Delete root.
-				entryDelete(sleNode);	// Delete last.
-			}
-			else
-			{
-				// Root has an entry, can't delete.
-
-				nothing();
-			}
-		}
-	}
-
-	return tesSUCCESS;
-}
-
-// Return the first entry and advance uDirEntry.
-// <-- true, if had a next entry.
-bool TransactionEngine::dirFirst(
-	const uint256& uRootIndex,	// --> Root of directory.
-	SLE::pointer& sleNode,		// <-- current node
-	unsigned int& uDirEntry,	// <-- next entry
-	uint256& uEntryIndex)		// <-- The entry, if available. Otherwise, zero.
-{
-	sleNode		= entryCache(ltDIR_NODE, uRootIndex);
-	uDirEntry	= 0;
-
-	assert(sleNode);			// We never probe for directories.
-
-	return TransactionEngine::dirNext(uRootIndex, sleNode, uDirEntry, uEntryIndex);
-}
-
-// Return the current entry and advance uDirEntry.
-// <-- true, if had a next entry.
-bool TransactionEngine::dirNext(
-	const uint256& uRootIndex,	// --> Root of directory
-	SLE::pointer& sleNode,		// <-> current node
-	unsigned int& uDirEntry,	// <-> next entry
-	uint256& uEntryIndex)		// <-- The entry, if available. Otherwise, zero.
-{
-	STVector256				svIndexes	= sleNode->getIFieldV256(sfIndexes);
-	std::vector<uint256>&	vuiIndexes	= svIndexes.peekValue();
-
-	if (uDirEntry == vuiIndexes.size())
-	{
-		uint64				uNodeNext	= sleNode->getIFieldU64(sfIndexNext);
-
-		if (!uNodeNext)
-		{
-			uEntryIndex.zero();
-
-			return false;
-		}
-		else
-		{
-			sleNode		= entryCache(ltDIR_NODE, Ledger::getDirNodeIndex(uRootIndex, uNodeNext));
-			uDirEntry	= 0;
-
-			return dirNext(uRootIndex, sleNode, uDirEntry, uEntryIndex);
-		}
-	}
-
-	uEntryIndex	= vuiIndexes[uDirEntry++];
-Log(lsINFO) << boost::str(boost::format("dirNext: uDirEntry=%d uEntryIndex=%s") % uDirEntry % uEntryIndex);
-
-	return true;
 }
 
 // Set the authorized public key for an account.  May also set the generator map.
@@ -1624,10 +1209,10 @@ TER TransactionEngine::doCreditSet(const SerializedTransaction& txn)
 
 		uint64			uSrcRef;							// Ignored, dirs never delete.
 
-		terResult	= dirAdd(uSrcRef, Ledger::getOwnerDirIndex(mTxnAccountID), sleRippleState->getIndex());
+		terResult	= mNodes.dirAdd(uSrcRef, Ledger::getOwnerDirIndex(mTxnAccountID), sleRippleState->getIndex());
 
 		if (tesSUCCESS == terResult)
-			terResult	= dirAdd(uSrcRef, Ledger::getOwnerDirIndex(uDstAccountID), sleRippleState->getIndex());
+			terResult	= mNodes.dirAdd(uSrcRef, Ledger::getOwnerDirIndex(uDstAccountID), sleRippleState->getIndex());
 	}
 
 	Log(lsINFO) << "doCreditSet<";
@@ -1846,7 +1431,7 @@ TER TransactionEngine::calcNodeAdvance(
 				nothing();
 			}
 		}
-		else if (!dirNext(uDirectTip, sleDirectDir, uEntry, uOfferIndex))
+		else if (!mNodes.dirNext(uDirectTip, sleDirectDir, uEntry, uOfferIndex))
 		{
 			// Failed to find an entry in directory.
 
@@ -3965,7 +3550,7 @@ TER TransactionEngine::takeOffers(
 			unsigned int	uBookEntry;
 			uint256			uOfferIndex;
 
-			dirFirst(uTipIndex, sleBookNode, uBookEntry, uOfferIndex);
+			mNodes.dirFirst(uTipIndex, sleBookNode, uBookEntry, uOfferIndex);
 
 			SLE::pointer	sleOffer		= entryCache(ltOFFER, uOfferIndex);
 
@@ -4255,7 +3840,7 @@ Log(lsWARNING) << "doOfferCreate: saTakerGets=" << saTakerGets.getFullText();
 		// We need to place the remainder of the offer into its order book.
 
 		// Add offer to owner's directory.
-		terResult	= dirAdd(uOwnerNode, Ledger::getOwnerDirIndex(mTxnAccountID), uLedgerIndex);
+		terResult	= mNodes.dirAdd(uOwnerNode, Ledger::getOwnerDirIndex(mTxnAccountID), uLedgerIndex);
 
 		if (tesSUCCESS == terResult)
 		{
@@ -4271,7 +3856,7 @@ Log(lsWARNING) << "doOfferCreate: saTakerGets=" << saTakerGets.getFullText();
 			uDirectory	= Ledger::getQualityIndex(uBookBase, uRate);	// Use original rate.
 
 			// Add offer to order book.
-			terResult	= dirAdd(uBookNode, uDirectory, uLedgerIndex);
+			terResult	= mNodes.dirAdd(uBookNode, uDirectory, uLedgerIndex);
 		}
 
 		if (tesSUCCESS == terResult)
@@ -4418,7 +4003,7 @@ void TransactionEngine::calcOfferBridgeNext(
 		uint256			uOfferIndex;
 
 		// Get uOfferIndex.
-		dirNext(uBookRoot, uBookEnd, uBookDirIndex, uBookDirNode, uBookDirEntry, uOfferIndex);
+		mNodes.dirNext(uBookRoot, uBookEnd, uBookDirIndex, uBookDirNode, uBookDirEntry, uOfferIndex);
 
 		SLE::pointer	sleOffer		= entryCache(ltOFFER, uOfferIndex);
 
@@ -4733,8 +4318,8 @@ TER	TransactionEngine::doContractAdd(const SerializedTransaction& txn)
 	Log(lsWARNING) << "doContractAdd> " << txn.getJson(0);
 
 	const uint32 expiration		= txn.getITFieldU32(sfExpiration);
-	const uint32 bondAmount		= txn.getITFieldU32(sfBondAmount);
-	const uint32 stampEscrow	= txn.getITFieldU32(sfStampEscrow);
+//	const uint32 bondAmount		= txn.getITFieldU32(sfBondAmount);
+//	const uint32 stampEscrow	= txn.getITFieldU32(sfStampEscrow);
 	STAmount rippleEscrow		= txn.getITFieldAmount(sfRippleEscrow);
 	std::vector<unsigned char>	createCode		= txn.getITFieldVL(sfCreateCode);
 	std::vector<unsigned char>	fundCode		= txn.getITFieldVL(sfFundCode);

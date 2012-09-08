@@ -6,6 +6,7 @@
 #include "SerializedLedger.h"
 #include "TransactionMeta.h"
 #include "Ledger.h"
+#include "TransactionErr.h"
 
 enum LedgerEntryAction
 {
@@ -78,6 +79,23 @@ public:
 	// higher-level ledger functions
 	SLE::pointer entryCreate(LedgerEntryType letType, const uint256& uIndex);
 	SLE::pointer entryCache(LedgerEntryType letType, const uint256& uIndex);
+
+	// Utility entry functions.
+	TER dirAdd(
+		uint64&							uNodeDir,		// Node of entry.
+		const uint256&					uRootIndex,
+		const uint256&					uLedgerIndex);
+
+	TER dirDelete(
+		const bool						bKeepRoot,
+		const uint64&					uNodeDir,		// Node item is mentioned in.
+		const uint256&					uRootIndex,
+		const uint256&					uLedgerIndex,	// Item being deleted
+		const bool						bStable);
+
+	bool dirFirst(const uint256& uRootIndex, SLE::pointer& sleNode, unsigned int& uDirEntry, uint256& uEntryIndex);
+	bool dirNext(const uint256& uRootIndex, SLE::pointer& sleNode, unsigned int& uDirEntry, uint256& uEntryIndex);
+
 
 	Json::Value getJson(int) const;
 	void calcRawMeta(Serializer&, Ledger::ref originalLedger);
