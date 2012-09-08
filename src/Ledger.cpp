@@ -154,7 +154,7 @@ void Ledger::setAccepted(uint32 closeTime, int closeResolution, bool correctClos
 
 void Ledger::setAccepted()
 { // used when we acquired the ledger
-	assert(mClosed && (mCloseTime != 0) && (mCloseResolution != 0));
+	// FIXME assert(mClosed && (mCloseTime != 0) && (mCloseResolution != 0));
 	mCloseTime -= mCloseTime % mCloseResolution;
 	updateHash();
 	mAccepted = true;
