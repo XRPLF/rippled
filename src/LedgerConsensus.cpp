@@ -247,10 +247,7 @@ void LedgerConsensus::checkLCL()
 	uint256 netLgr = mPrevLedgerHash;
 	int netLgrCount = 0;
 
-	uint256 favorLedger;
-	if (mState != lcsPRE_CLOSE)
-		favorLedger = mPrevLedgerHash;
-	boost::unordered_map<uint256, int> vals = theApp->getValidations().getCurrentValidations(favorLedger);
+	boost::unordered_map<uint256, int> vals = theApp->getValidations().getCurrentValidations(mPrevLedgerHash);
 
 	typedef std::pair<const uint256, int> u256_int_pair;
 	BOOST_FOREACH(u256_int_pair& it, vals)

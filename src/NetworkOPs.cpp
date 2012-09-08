@@ -446,18 +446,18 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 	// node is using. THis is kind of fundamental.
 	Log(lsTRACE) << "NetworkOPs::checkLastClosedLedger";
 
-	boost::unordered_map<uint256, ValidationCount> ledgers;
+	Ledger::pointer ourClosed = mLedgerMaster->getClosedLedger();
+	uint256 closedLedger = ourClosed->getHash();
+	uint256 prevClosedLedger = ourClosed->getParentHash();
 
+	boost::unordered_map<uint256, ValidationCount> ledgers;
 	{
-		boost::unordered_map<uint256, int> current = theApp->getValidations().getCurrentValidations();
+		boost::unordered_map<uint256, int> current = theApp->getValidations().getCurrentValidations(closedLedger);
 		typedef std::pair<const uint256, int> u256_int_pair;
 		BOOST_FOREACH(u256_int_pair& it, current)
 			ledgers[it.first].trustedValidations += it.second;
 	}
 
-	Ledger::pointer ourClosed = mLedgerMaster->getClosedLedger();
-	uint256 closedLedger = ourClosed->getHash();
-	uint256 prevClosedLedger = ourClosed->getParentHash();
 	ValidationCount& ourVC = ledgers[closedLedger];
 
 	if ((theConfig.LEDGER_CREATOR) && (mMode >= omTRACKING))
