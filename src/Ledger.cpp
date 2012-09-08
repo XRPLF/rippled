@@ -279,9 +279,9 @@ void Ledger::saveAcceptedLedger(Ledger::ref ledger)
 		ledger->mAccountHash.GetHex() % ledger->mTransHash.GetHex()));
 
 	// write out dirty nodes
-	while(ledger->mTransactionMap->flushDirty(256, TRANSACTION_NODE, ledger->mLedgerSeq))
+	while(ledger->mTransactionMap->flushDirty(256, hotTRANSACTION_NODE, ledger->mLedgerSeq))
 	{ ; }
-	while(ledger->mAccountStateMap->flushDirty(256, ACCOUNT_NODE, ledger->mLedgerSeq))
+	while(ledger->mAccountStateMap->flushDirty(256, hotACCOUNT_NODE, ledger->mLedgerSeq))
 	{ ; }
 	ledger->disarmDirty();
 

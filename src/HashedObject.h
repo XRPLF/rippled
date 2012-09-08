@@ -10,11 +10,11 @@
 
 enum HashedObjectType
 {
-	UNKNOWN = 0,
-	LEDGER = 1,
-	TRANSACTION = 2,
-	ACCOUNT_NODE = 3,
-	TRANSACTION_NODE = 4
+	hotUNKNOWN = 0,
+	hotLEDGER = 1,
+	hotTRANSACTION = 2,
+	hotACCOUNT_NODE = 3,
+	hotTRANSACTION_NODE = 4
 };
 
 class HashedObject

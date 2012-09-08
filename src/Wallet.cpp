@@ -16,8 +16,8 @@
 #include "Application.h"
 #include "utils.h"
 
-Wallet::Wallet() : mLedger(0) {
-}
+Wallet::Wallet() : mDh512(NULL), mDh1024(NULL), mLedger(0)
+{ ; }
 
 void Wallet::start()
 {
@@ -136,8 +136,6 @@ bool Wallet::dataFetch(const std::string& strKey, std::string& strValue)
 	if (db->executeSQL(str(boost::format("SELECT Value FROM RPCData WHERE Key=%s;")
 		% db->escape(strKey))) && db->startIterRows())
 	{
-		std::string strPublicKey, strPrivateKey;
-
 		std::vector<unsigned char> vucData	= db->getBinary("Value");
 		strValue.assign(vucData.begin(), vucData.end());
 

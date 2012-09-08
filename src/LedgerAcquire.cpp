@@ -310,7 +310,7 @@ bool LedgerAcquire::takeBase(const std::string& data)
 	Serializer s(data.size() + 4);
 	s.add32(sHP_Ledger);
 	s.addRaw(data);
-	theApp->getHashedObjectStore().store(LEDGER, mLedger->getLedgerSeq(), s.peekData(), mHash);
+	theApp->getHashedObjectStore().store(hotLEDGER, mLedger->getLedgerSeq(), s.peekData(), mHash);
 
 	progress();
 	if (!mLedger->getTransHash())

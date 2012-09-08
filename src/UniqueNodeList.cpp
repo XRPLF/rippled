@@ -184,8 +184,6 @@ void UniqueNodeList::scoreCompute()
 
 	Database*	db=theApp->getWalletDB()->getDB();
 
-	std::string strSql;
-
 	// For each entry in SeedDomains with a PublicKey:
 	// - Add an entry in umPulicIdx, umDomainIdx, and vsnNodes.
 	{
@@ -389,7 +387,7 @@ void UniqueNodeList::scoreCompute()
 	db->executeSQL("BEGIN;");
 	db->executeSQL("UPDATE TrustedNodes SET Score = 0 WHERE Score != 0;");
 
-	if (vsnNodes.size())
+	if (!vsnNodes.empty())
 	{
 		// Load existing Seens from DB.
 		std::vector<std::string>	vstrPublicKeys;
@@ -410,7 +408,7 @@ void UniqueNodeList::scoreCompute()
 
 	boost::unordered_set<std::string>	usUNL;
 
-	if (vsnNodes.size())
+	if (!vsnNodes.empty())
 	{
 		// Update the score old entries and add new entries as needed.
 		std::vector<std::string>	vstrValues;
@@ -446,7 +444,7 @@ void UniqueNodeList::scoreCompute()
 
 	boost::unordered_map<std::string, int>	umValidators;
 
-	if (vsnNodes.size())
+	if (!vsnNodes.empty())
 	{
 		std::vector<std::string> vstrPublicKeys;
 
@@ -627,7 +625,7 @@ void UniqueNodeList::processIps(const std::string& strSite, const NewcoinAddress
 	}
 
 	// Add new referral entries.
-	if (pmtVecStrIps && pmtVecStrIps->size()) {
+	if (pmtVecStrIps && !pmtVecStrIps->empty()) {
 		std::vector<std::string> vstrValues;
 
 		vstrValues.resize(MIN(pmtVecStrIps->size(), REFERRAL_IPS_MAX));
@@ -712,7 +710,6 @@ int UniqueNodeList::processValidators(const std::string& strSite, const std::str
 				break;
 
 			boost::smatch	smMatch;
-			std::string		strIP;
 
 			// domain comment?
 			// public_key comment?

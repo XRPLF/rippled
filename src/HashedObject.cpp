@@ -71,11 +71,11 @@ void HashedObjectStore::bulkWrite()
 			char type;
 			switch(it->getType())
 			{
-				case LEDGER: type = 'L'; break;
-				case TRANSACTION: type = 'T'; break;
-				case ACCOUNT_NODE: type = 'A'; break;
-				case TRANSACTION_NODE: type = 'N'; break;
-				default: type = 'U';
+				case hotLEDGER:				type= 'L'; break;
+				case hotTRANSACTION:		type = 'T'; break;
+				case hotACCOUNT_NODE:		type = 'A'; break;
+				case hotTRANSACTION_NODE:	type = 'N'; break;
+				default:					type = 'U';
 			}
 			std::string rawData;
 			db->escape(&(it->getData().front()), it->getData().size(), rawData);
@@ -128,13 +128,13 @@ HashedObject::pointer HashedObjectStore::retrieve(const uint256& hash)
 
 		assert(Serializer::getSHA512Half(data) == hash);
 
-		HashedObjectType htype = UNKNOWN;
+		HashedObjectType htype = hotUNKNOWN;
 		switch (type[0])
 		{
-			case 'L': htype = LEDGER; break;
-			case 'T': htype = TRANSACTION; break;
-			case 'A': htype = ACCOUNT_NODE; break;
-			case 'N': htype = TRANSACTION_NODE; break;
+			case 'L': htype = hotLEDGER; break;
+			case 'T': htype = hotTRANSACTION; break;
+			case 'A': htype = hotACCOUNT_NODE; break;
+			case 'N': htype = hotTRANSACTION_NODE; break;
 			default:
 				Log(lsERROR) << "Invalid hashed object";
 				return HashedObject::pointer();
