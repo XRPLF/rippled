@@ -649,7 +649,10 @@ void Peer::recvHello(newcoin::TMHello& packet)
 			{
 				memcpy(mClosedLedgerHash.begin(), packet.ledgerclosed().data(), 256 / 8);
 				if ((packet.has_ledgerprevious()) && (packet.ledgerprevious().size() == (256 / 8)))
+				{
 					memcpy(mPreviousLedgerHash.begin(), packet.ledgerprevious().data(), 256 / 8);
+					addLedger(mPreviousLedgerHash);
+				}
 				else mPreviousLedgerHash.zero();
 			}
 
@@ -915,6 +918,7 @@ void Peer::recvStatus(newcoin::TMStatusChange& packet)
 	if (packet.has_ledgerhash() && (packet.ledgerhash().size() == (256 / 8)))
 	{ // a peer has changed ledgers
 		memcpy(mClosedLedgerHash.begin(), packet.ledgerhash().data(), 256 / 8);
+		addLedger(mClosedLedgerHash);
 		Log(lsTRACE) << "peer LCL is " << mClosedLedgerHash << " " << getIP();
 	}
 	else
@@ -926,6 +930,7 @@ void Peer::recvStatus(newcoin::TMStatusChange& packet)
 	if (packet.has_ledgerhashprevious() && packet.ledgerhashprevious().size() == (256 / 8))
 	{
 		memcpy(mPreviousLedgerHash.begin(), packet.ledgerhashprevious().data(), 256 / 8);
+		addLedger(mPreviousLedgerHash);
 	}
 	else mPreviousLedgerHash.zero();
 }
@@ -1134,7 +1139,20 @@ void Peer::recvLedger(newcoin::TMLedgerData& packet)
 
 bool Peer::hasLedger(const uint256& hash) const
 {
-	return (hash == mClosedLedgerHash) || (hash == mPreviousLedgerHash);
+	BOOST_FOREACH(const uint256& ledger, mRecentLedgers)
+		if (ledger == hash)
+			return true;
+	return false;
+}
+
+void Peer::addLedger(const uint256& hash)
+{
+	BOOST_FOREACH(const uint256& ledger, mRecentLedgers)
+		if (ledger == hash)
+			return;
+	if (mRecentLedgers.size() == 16)
+		mRecentLedgers.pop_front();
+	mRecentLedgers.push_back(hash);
 }
 
 // Get session information we can sign to prevent man in the middle attack.

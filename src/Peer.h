@@ -44,7 +44,8 @@ private:
 	ipPort			mIpPortConnect;
 	uint256			mCookieHash;
 
-	uint256						mClosedLedgerHash, mPreviousLedgerHash;
+	uint256			mClosedLedgerHash, mPreviousLedgerHash;
+	std::list<uint256>	mRecentLedgers;
 
 	boost::asio::ssl::stream<boost::asio::ip::tcp::socket>		mSocketSsl;
 
@@ -115,6 +116,8 @@ protected:
 	void recvHaveTxSet(newcoin::TMHaveTransactionSet& packet);
 
 	void getSessionCookie(std::string& strDst);
+
+	void addLedger(const uint256& ledger);
 
 public:
 
