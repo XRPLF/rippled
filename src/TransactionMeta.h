@@ -46,6 +46,7 @@ protected:
 
 public:
 	TransactionMetaNodeEntry(int type) : mType(type) { ; }
+	virtual ~TransactionMetaNodeEntry() { ; }
 
 	int getType() const { return mType; }
 	virtual Json::Value getJson(int) const = 0;
