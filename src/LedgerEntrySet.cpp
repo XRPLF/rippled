@@ -756,4 +756,366 @@ Log(lsINFO) << boost::str(boost::format("dirNext: uDirEntry=%d uEntryIndex=%s") 
 	return true;
 }
 
+TER LedgerEntrySet::offerDelete(const SLE::pointer& sleOffer, const uint256& uOfferIndex, const uint160& uOwnerID)
+{
+	uint64	uOwnerNode	= sleOffer->getIFieldU64(sfOwnerNode);
+	TER		terResult	= dirDelete(false, uOwnerNode, Ledger::getOwnerDirIndex(uOwnerID), uOfferIndex, false);
+
+	if (tesSUCCESS == terResult)
+	{
+		uint256		uDirectory	= sleOffer->getIFieldH256(sfBookDirectory);
+		uint64		uBookNode	= sleOffer->getIFieldU64(sfBookNode);
+
+		terResult	= dirDelete(false, uBookNode, uDirectory, uOfferIndex, true);
+	}
+
+	entryDelete(sleOffer);
+
+	return terResult;
+}
+
+TER LedgerEntrySet::offerDelete(const uint256& uOfferIndex)
+{
+	SLE::pointer	sleOffer	= entryCache(ltOFFER, uOfferIndex);
+	const uint160	uOwnerID	= sleOffer->getIValueFieldAccount(sfAccount).getAccountID();
+
+	return offerDelete(sleOffer, uOfferIndex, uOwnerID);
+}
+
+// Returns amount owed by uToAccountID to uFromAccountID.
+// <-- $owed/uCurrencyID/uToAccountID: positive: uFromAccountID holds IOUs., negative: uFromAccountID owes IOUs.
+STAmount LedgerEntrySet::rippleOwed(const uint160& uToAccountID, const uint160& uFromAccountID, const uint160& uCurrencyID)
+{
+	STAmount		saBalance;
+	SLE::pointer	sleRippleState	= entryCache(ltRIPPLE_STATE, Ledger::getRippleStateIndex(uToAccountID, uFromAccountID, uCurrencyID));
+
+	if (sleRippleState)
+	{
+		saBalance	= sleRippleState->getIValueFieldAmount(sfBalance);
+		if (uToAccountID < uFromAccountID)
+			saBalance.negate();
+		saBalance.setIssuer(uToAccountID);
+	}
+	else
+	{
+		Log(lsINFO) << "rippleOwed: No credit line between "
+			<< NewcoinAddress::createHumanAccountID(uFromAccountID)
+			<< " and "
+			<< NewcoinAddress::createHumanAccountID(uToAccountID)
+			<< " for "
+			<< STAmount::createHumanCurrency(uCurrencyID)
+			<< "." ;
+
+		assert(false);
+	}
+
+	return saBalance;
+}
+
+// Maximum amount of IOUs uToAccountID will hold from uFromAccountID.
+// <-- $amount/uCurrencyID/uToAccountID.
+STAmount LedgerEntrySet::rippleLimit(const uint160& uToAccountID, const uint160& uFromAccountID, const uint160& uCurrencyID)
+{
+	STAmount		saLimit;
+	SLE::pointer	sleRippleState	= entryCache(ltRIPPLE_STATE, Ledger::getRippleStateIndex(uToAccountID, uFromAccountID, uCurrencyID));
+
+	assert(sleRippleState);
+	if (sleRippleState)
+	{
+		saLimit	= sleRippleState->getIValueFieldAmount(uToAccountID < uFromAccountID ? sfLowLimit : sfHighLimit);
+		saLimit.setIssuer(uToAccountID);
+	}
+
+	return saLimit;
+
+}
+
+uint32 LedgerEntrySet::rippleTransferRate(const uint160& uIssuerID)
+{
+	SLE::pointer	sleAccount	= entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uIssuerID));
+
+	uint32			uQuality	= sleAccount && sleAccount->getIFieldPresent(sfTransferRate)
+									? sleAccount->getIFieldU32(sfTransferRate)
+									: QUALITY_ONE;
+
+	Log(lsINFO) << boost::str(boost::format("rippleTransferRate: uIssuerID=%s account_exists=%d transfer_rate=%f")
+		% NewcoinAddress::createHumanAccountID(uIssuerID)
+		% !!sleAccount
+		% (uQuality/1000000000.0));
+
+	assert(sleAccount);
+
+	return uQuality;
+}
+
+// XXX Might not need this, might store in nodes on calc reverse.
+uint32 LedgerEntrySet::rippleQualityIn(const uint160& uToAccountID, const uint160& uFromAccountID, const uint160& uCurrencyID, const SOE_Field sfLow, const SOE_Field sfHigh)
+{
+	uint32			uQuality		= QUALITY_ONE;
+	SLE::pointer	sleRippleState;
+
+	if (uToAccountID == uFromAccountID)
+	{
+		nothing();
+	}
+	else
+	{
+		sleRippleState	= entryCache(ltRIPPLE_STATE, Ledger::getRippleStateIndex(uToAccountID, uFromAccountID, uCurrencyID));
+
+		if (sleRippleState)
+		{
+			SOE_Field	sfField	= uToAccountID < uFromAccountID ? sfLow: sfHigh;
+
+			uQuality	= sleRippleState->getIFieldPresent(sfField)
+							? sleRippleState->getIFieldU32(sfField)
+							: QUALITY_ONE;
+
+			if (!uQuality)
+				uQuality	= 1;	// Avoid divide by zero.
+		}
+	}
+
+	Log(lsINFO) << boost::str(boost::format("rippleQuality: %s uToAccountID=%s uFromAccountID=%s uCurrencyID=%s bLine=%d uQuality=%f")
+		% (sfLow == sfLowQualityIn ? "in" : "out")
+		% NewcoinAddress::createHumanAccountID(uToAccountID)
+		% NewcoinAddress::createHumanAccountID(uFromAccountID)
+		% STAmount::createHumanCurrency(uCurrencyID)
+		% !!sleRippleState
+		% (uQuality/1000000000.0));
+
+	assert(uToAccountID == uFromAccountID || !!sleRippleState);
+
+	return uQuality;
+}
+
+// Return how much of uIssuerID's uCurrencyID IOUs that uAccountID holds.  May be negative.
+// <-- IOU's uAccountID has of uIssuerID
+STAmount LedgerEntrySet::rippleHolds(const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID)
+{
+	STAmount			saBalance;
+	SLE::pointer		sleRippleState	= entryCache(ltRIPPLE_STATE, Ledger::getRippleStateIndex(uAccountID, uIssuerID, uCurrencyID));
+
+	if (sleRippleState)
+	{
+		saBalance	= sleRippleState->getIValueFieldAmount(sfBalance);
+
+		if (uAccountID > uIssuerID)
+			saBalance.negate();		// Put balance in uAccountID terms.
+	}
+
+	return saBalance;
+}
+
+// <-- saAmount: amount of uCurrencyID held by uAccountID. May be negative.
+STAmount LedgerEntrySet::accountHolds(const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID)
+{
+	STAmount	saAmount;
+
+	if (!uCurrencyID)
+	{
+		SLE::pointer		sleAccount	= entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uAccountID));
+
+		saAmount	= sleAccount->getIValueFieldAmount(sfBalance);
+
+		Log(lsINFO) << "accountHolds: stamps: " << saAmount.getText();
+	}
+	else
+	{
+		saAmount	= rippleHolds(uAccountID, uCurrencyID, uIssuerID);
+
+		Log(lsINFO) << "accountHolds: "
+			<< saAmount.getFullText()
+			<< " : "
+			<< STAmount::createHumanCurrency(uCurrencyID)
+			<< "/"
+			<< NewcoinAddress::createHumanAccountID(uIssuerID);
+	}
+
+	return saAmount;
+}
+
+// Returns the funds available for uAccountID for a currency/issuer.
+// Use when you need a default for rippling uAccountID's currency.
+// --> saDefault/currency/issuer
+// <-- saFunds: Funds available. May be negative.
+//              If the issuer is the same as uAccountID, funds are unlimited, use result is saDefault.
+STAmount LedgerEntrySet::accountFunds(const uint160& uAccountID, const STAmount& saDefault)
+{
+	STAmount	saFunds;
+
+	Log(lsINFO) << "accountFunds: uAccountID="
+			<< NewcoinAddress::createHumanAccountID(uAccountID);
+	Log(lsINFO) << "accountFunds: saDefault.isNative()=" << saDefault.isNative();
+	Log(lsINFO) << "accountFunds: saDefault.getIssuer()="
+			<< NewcoinAddress::createHumanAccountID(saDefault.getIssuer());
+
+	if (!saDefault.isNative() && saDefault.getIssuer() == uAccountID)
+	{
+		saFunds	= saDefault;
+
+		Log(lsINFO) << "accountFunds: offer funds: ripple self-funded: " << saFunds.getText();
+	}
+	else
+	{
+		saFunds	= accountHolds(uAccountID, saDefault.getCurrency(), saDefault.getIssuer());
+
+		Log(lsINFO) << "accountFunds: offer funds: uAccountID ="
+			<< NewcoinAddress::createHumanAccountID(uAccountID)
+			<< " : "
+			<< saFunds.getText()
+			<< "/"
+			<< saDefault.getHumanCurrency()
+			<< "/"
+			<< NewcoinAddress::createHumanAccountID(saDefault.getIssuer());
+	}
+
+	return saFunds;
+}
+
+// Calculate transit fee.
+STAmount LedgerEntrySet::rippleTransferFee(const uint160& uSenderID, const uint160& uReceiverID, const uint160& uIssuerID, const STAmount& saAmount)
+{
+	STAmount	saTransitFee;
+
+	if (uSenderID != uIssuerID && uReceiverID != uIssuerID)
+	{
+		uint32		uTransitRate	= rippleTransferRate(uIssuerID);
+
+		if (QUALITY_ONE != uTransitRate)
+		{
+			STAmount		saTransitRate(CURRENCY_ONE, uTransitRate, -9);
+
+			saTransitFee	= STAmount::multiply(saAmount, saTransitRate, saAmount.getCurrency(), saAmount.getIssuer());
+		}
+	}
+
+	return saTransitFee;
+}
+
+// Direct send w/o fees: redeeming IOUs and/or sending own IOUs.
+void LedgerEntrySet::rippleCredit(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount, bool bCheckIssuer)
+{
+	uint160				uIssuerID		= saAmount.getIssuer();
+
+	assert(!bCheckIssuer || uSenderID == uIssuerID || uReceiverID == uIssuerID);
+
+	bool				bFlipped		= uSenderID > uReceiverID;
+	uint256				uIndex			= Ledger::getRippleStateIndex(uSenderID, uReceiverID, saAmount.getCurrency());
+	SLE::pointer		sleRippleState	= entryCache(ltRIPPLE_STATE, uIndex);
+
+	if (!sleRippleState)
+	{
+		Log(lsINFO) << "rippleCredit: Creating ripple line: " << uIndex.ToString();
+
+		STAmount	saBalance	= saAmount;
+
+		sleRippleState	= entryCreate(ltRIPPLE_STATE, uIndex);
+
+		if (!bFlipped)
+			saBalance.negate();
+
+		sleRippleState->setIFieldAmount(sfBalance, saBalance);
+		sleRippleState->setIFieldAccount(bFlipped ? sfHighID : sfLowID, uSenderID);
+		sleRippleState->setIFieldAccount(bFlipped ? sfLowID : sfHighID, uReceiverID);
+	}
+	else
+	{
+		STAmount	saBalance	= sleRippleState->getIValueFieldAmount(sfBalance);
+
+		if (!bFlipped)
+			saBalance.negate();		// Put balance in low terms.
+
+		saBalance	+= saAmount;
+
+		if (!bFlipped)
+			saBalance.negate();
+
+		sleRippleState->setIFieldAmount(sfBalance, saBalance);
+
+		entryModify(sleRippleState);
+	}
+}
+
+// Send regardless of limits.
+// --> saAmount: Amount/currency/issuer for receiver to get.
+// <-- saActual: Amount actually sent.  Sender pay's fees.
+STAmount LedgerEntrySet::rippleSend(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount)
+{
+	STAmount		saActual;
+	const uint160	uIssuerID	= saAmount.getIssuer();
+
+	assert(!!uSenderID && !!uReceiverID);
+
+	if (uSenderID == uIssuerID || uReceiverID == uIssuerID)
+	{
+		// Direct send: redeeming IOUs and/or sending own IOUs.
+		rippleCredit(uSenderID, uReceiverID, saAmount);
+
+		saActual	= saAmount;
+	}
+	else
+	{
+		// Sending 3rd party IOUs: transit.
+
+		STAmount		saTransitFee	= rippleTransferFee(uSenderID, uReceiverID, uIssuerID, saAmount);
+
+		saActual	= !saTransitFee ? saAmount : saAmount+saTransitFee;
+
+		saActual.setIssuer(uIssuerID);	// XXX Make sure this done in + above.
+
+		rippleCredit(uIssuerID, uReceiverID, saAmount);
+		rippleCredit(uSenderID, uIssuerID, saActual);
+	}
+
+	return saActual;
+}
+
+void LedgerEntrySet::accountSend(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount)
+{
+	assert(!saAmount.isNegative());
+
+	if (!saAmount)
+	{
+		nothing();
+	}
+	else if (saAmount.isNative())
+	{
+		SLE::pointer		sleSender	= !!uSenderID
+											? entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uSenderID))
+											: SLE::pointer();
+		SLE::pointer		sleReceiver	= !!uReceiverID
+											? entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uReceiverID))
+											: SLE::pointer();
+
+		Log(lsINFO) << boost::str(boost::format("accountSend> %s (%s) -> %s (%s) : %s")
+			% NewcoinAddress::createHumanAccountID(uSenderID)
+			% (sleSender ? (sleSender->getIValueFieldAmount(sfBalance)).getFullText() : "-")
+			% NewcoinAddress::createHumanAccountID(uReceiverID)
+			% (sleReceiver ? (sleReceiver->getIValueFieldAmount(sfBalance)).getFullText() : "-")
+			% saAmount.getFullText());
+
+		if (sleSender)
+		{
+			sleSender->setIFieldAmount(sfBalance, sleSender->getIValueFieldAmount(sfBalance) - saAmount);
+			entryModify(sleSender);
+		}
+
+		if (sleReceiver)
+		{
+			sleReceiver->setIFieldAmount(sfBalance, sleReceiver->getIValueFieldAmount(sfBalance) + saAmount);
+			entryModify(sleReceiver);
+		}
+
+		Log(lsINFO) << boost::str(boost::format("accountSend< %s (%s) -> %s (%s) : %s")
+			% NewcoinAddress::createHumanAccountID(uSenderID)
+			% (sleSender ? (sleSender->getIValueFieldAmount(sfBalance)).getFullText() : "-")
+			% NewcoinAddress::createHumanAccountID(uReceiverID)
+			% (sleReceiver ? (sleReceiver->getIValueFieldAmount(sfBalance)).getFullText() : "-")
+			% saAmount.getFullText());
+	}
+	else
+	{
+		rippleSend(uSenderID, uReceiverID, saAmount);
+	}
+}
 // vim:ts=4

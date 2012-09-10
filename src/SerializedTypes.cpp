@@ -9,6 +9,9 @@
 #include "NewcoinAddress.h"
 #include "utils.h"
 
+STAmount saZero(CURRENCY_ONE, ACCOUNT_ONE, 0);
+STAmount saOne(CURRENCY_ONE, ACCOUNT_ONE, 1);
+
 std::string SerializedType::getFullText() const
 {
 	std::string ret;
