@@ -688,7 +688,7 @@ bool LedgerConsensus::haveConsensus()
 		else
 			++disagree;
 	}
-	int currentValidations = theApp->getValidations().getCurrentValidationCount(mPreviousLedger->getCloseTimeNC());
+	int currentValidations = theApp->getValidations().getNodesAfter(mPrevLedgerHash);
 	return ContinuousLedgerTiming::haveConsensus(mPreviousProposers, agree + disagree, agree, currentValidations,
 		mPreviousMSeconds, mCurrentMSeconds);
 }
