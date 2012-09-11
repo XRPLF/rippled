@@ -296,8 +296,9 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned 
 		}
 		else if (prefix == sHP_TransactionNode)
 		{
-			uint256 txID; // WRITEME: Need code to extract transaction ID from TX+MD
-			assert(false);
+			uint256 txID;
+			s.get256(txID, s.getLength() - 32);
+			s.chop(32);
 			mItem = boost::make_shared<SHAMapItem>(txID, s.peekData());
 			mType = tnTRANSACTION_MD;
 		}
