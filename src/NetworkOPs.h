@@ -116,8 +116,7 @@ public:
 	//
 	Transaction::pointer submitTransaction(const Transaction::pointer& tpTrans);
 
-	Transaction::pointer processTransaction(Transaction::pointer transaction, uint32 targetLedger = 0,
-		Peer* source = NULL);
+	Transaction::pointer processTransaction(Transaction::pointer transaction, Peer* source = NULL);
 	Transaction::pointer findTransactionByID(const uint256& transactionID);
 	int findTransactionsBySource(const uint256& uLedger, std::list<Transaction::pointer>&, const NewcoinAddress& sourceAccount,
 		uint32 minSeq, uint32 maxSeq);
