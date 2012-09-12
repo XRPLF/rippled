@@ -333,6 +333,7 @@ void LedgerConsensus::handleLCL(const uint256& lclHash)
 		mPeerPositions.clear();
 		mDisputes.clear();
 		mDeadNodes.clear();
+		playbackProposals();
 		return;
 	}
 
