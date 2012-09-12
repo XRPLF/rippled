@@ -82,7 +82,6 @@ private:
 
 protected:
 
-	bool addTransaction(const Transaction::pointer&);
 	bool addTransaction(const uint256& id, const Serializer& txn);
 
 	static Ledger::pointer getSQL(const std::string& sqlStatement);

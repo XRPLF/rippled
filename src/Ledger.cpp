@@ -211,18 +211,6 @@ RippleState::pointer Ledger::accessRippleState(const uint256& uNode)
 	return boost::make_shared<RippleState>(sle);
 }
 
-bool Ledger::addTransaction(const Transaction::pointer& trans)
-{ // low-level - just add to table
-	assert(!mAccepted);
-	assert(trans->getID().isNonZero());
-	Serializer s;
-	trans->getSTransaction()->add(s);
-	SHAMapItem::pointer item = boost::make_shared<SHAMapItem>(trans->getID(), s.peekData());
-	if (!mTransactionMap->addGiveItem(item, true, false)) // FIXME: TX metadata
-		return false;
-	return true;
-}
-
 bool Ledger::addTransaction(const uint256& txID, const Serializer& txn)
 { // low-level - just add to table
 	SHAMapItem::pointer item = boost::make_shared<SHAMapItem>(txID, txn.peekData());
