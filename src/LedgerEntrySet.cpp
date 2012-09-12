@@ -350,8 +350,7 @@ void LedgerEntrySet::calcRawMeta(Serializer& s, Ledger::ref origLedger)
 				nType = TMNCreatedNode;
 				break;
 
-			default:
-				// ignore these
+			default: // ignore these
 				break;
 		}
 
@@ -359,6 +358,9 @@ void LedgerEntrySet::calcRawMeta(Serializer& s, Ledger::ref origLedger)
 			continue;
 
 		SLE::pointer origNode = origLedger->getSLE(it->first);
+		if (origNode->getType() == ltDIR_NODE) // No metadata for dir nodes
+			continue;
+
 		SLE::pointer curNode = it->second.mEntry;
 		TransactionMetaNode &metaNode = mSet.getAffectedNode(it->first, nType);
 
