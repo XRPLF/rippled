@@ -232,14 +232,30 @@ bool Ledger::addTransaction(const uint256& txID, const Serializer& txn, const Se
 
 Transaction::pointer Ledger::getTransaction(const uint256& transID) const
 {
-	SHAMapItem::pointer item = mTransactionMap->peekItem(transID);
+	SHAMapTreeNode::TNType type;
+	SHAMapItem::pointer item = mTransactionMap->peekItem(transID, type);
 	if (!item) return Transaction::pointer();
 
 	Transaction::pointer txn = theApp->getMasterTransaction().fetch(transID, false);
 	if (txn)
 		return txn;
 
-	txn = Transaction::sharedTransaction(item->getData(), true);
+	if (type == SHAMapTreeNode::tnTRANSACTION_NM)
+		txn = Transaction::sharedTransaction(item->getData(), true);
+	else if (type == SHAMapTreeNode::tnTRANSACTION_MD)
+	{
+		std::vector<unsigned char> txnData;
+		int txnLength;
+		if (!item->peekSerializer().getVL(txnData, 0, txnLength))
+			return Transaction::pointer();
+		txn = Transaction::sharedTransaction(txnData, false);
+	}
+	else
+	{
+		assert(false);
+		return Transaction::pointer();
+	}
+
 	if (txn->getStatus() == NEW)
 		txn->setStatus(mClosed ? COMMITTED : INCLUDED, mLedgerSeq);
 

@@ -325,7 +325,7 @@ bool LedgerEntrySet::threadOwners(TransactionMetaNode& metaNode, SLE::ref node, 
 		return false;
 }
 
-void LedgerEntrySet::calcRawMeta(Serializer& s, Ledger::ref origLedger)
+void LedgerEntrySet::calcRawMeta(Serializer& s)
 { // calculate the raw meta data and return it. This must be called before the set is committed
 
 	// Entries modified only as a result of building the transaction metadata
@@ -357,7 +357,7 @@ void LedgerEntrySet::calcRawMeta(Serializer& s, Ledger::ref origLedger)
 		if (nType == TMNEndOfMetadata)
 			continue;
 
-		SLE::pointer origNode = origLedger->getSLE(it->first);
+		SLE::pointer origNode = mLedger->getSLE(it->first);
 		if (origNode->getType() == ltDIR_NODE) // No metadata for dir nodes
 			continue;
 
@@ -366,7 +366,7 @@ void LedgerEntrySet::calcRawMeta(Serializer& s, Ledger::ref origLedger)
 
 		if (nType == TMNDeletedNode)
 		{
-			threadOwners(metaNode, origNode, origLedger, newMod);
+			threadOwners(metaNode, origNode, mLedger, newMod);
 
 			if (origNode->getIFieldPresent(sfAmount))
 			{ // node has an amount, covers ripple state nodes
@@ -398,12 +398,12 @@ void LedgerEntrySet::calcRawMeta(Serializer& s, Ledger::ref origLedger)
 		}
 
 		if (nType == TMNCreatedNode) // if created, thread to owner(s)
-			threadOwners(metaNode, curNode, origLedger, newMod);
+			threadOwners(metaNode, curNode, mLedger, newMod);
 
 		if ((nType == TMNCreatedNode) || (nType == TMNModifiedNode))
 		{
 			if (curNode->isThreadedType()) // always thread to self
-				threadTx(metaNode, curNode, origLedger, newMod);
+				threadTx(metaNode, curNode, mLedger, newMod);
 		}
 
 		if (nType == TMNModifiedNode)

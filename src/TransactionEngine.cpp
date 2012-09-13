@@ -430,10 +430,10 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 				break;
 
 			case ttCONTRACT:
-				terResult= doContractAdd(txn);
+				terResult = doContractAdd(txn);
 				break;
 			case ttCONTRACT_REMOVE:
-				terResult=doContractRemove(txn);
+				terResult = doContractRemove(txn);
 				break;
 
 			default:
@@ -461,14 +461,23 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 		txnWrite();
 
 		Serializer s;
-
 		txn.add(s);
 
-		if (!mLedger->addTransaction(txID, s))
-			assert(false);
+		if (isSetBit(params, tapOPEN_LEDGER))
+		{
+			if (!mLedger->addTransaction(txID, s))
+				assert(false);
+		}
+		else
+		{
+			Serializer m;
+			mNodes.calcRawMeta(m);
+			if (!mLedger->addTransaction(txID, s, m))
+				assert(false);
 
-		// Charge whatever fee they specified.
-		mLedger->destroyCoins(saPaid.getNValue());
+			// Charge whatever fee they specified.
+			mLedger->destroyCoins(saPaid.getNValue());
+		}
 	}
 
 	mTxnAccount	= SLE::pointer();
