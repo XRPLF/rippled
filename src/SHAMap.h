@@ -280,9 +280,9 @@ protected:
 	SHAMapTreeNode::pointer getNode(const SHAMapNode& id);
 	SHAMapTreeNode::pointer getNode(const SHAMapNode& id, const uint256& hash, bool modify);
 	SHAMapTreeNode* getNodePointer(const SHAMapNode& id, const uint256& hash);
+	SHAMapTreeNode* firstBelow(SHAMapTreeNode*);
+	SHAMapTreeNode* lastBelow(SHAMapTreeNode*);
 
-	SHAMapItem::pointer firstBelow(SHAMapTreeNode*);
-	SHAMapItem::pointer lastBelow(SHAMapTreeNode*);
 	SHAMapItem::pointer onlyBelow(SHAMapTreeNode*);
 	void eraseChildren(SHAMapTreeNode::pointer);
 
@@ -322,8 +322,10 @@ public:
 
 	// traverse functions
 	SHAMapItem::pointer peekFirstItem();
+	SHAMapItem::pointer peekFirstItem(SHAMapTreeNode::TNType& type);
 	SHAMapItem::pointer peekLastItem();
 	SHAMapItem::pointer peekNextItem(const uint256&);
+	SHAMapItem::pointer peekNextItem(const uint256&, SHAMapTreeNode::TNType& type);
 	SHAMapItem::pointer peekPrevItem(const uint256&);
 
 	// comparison/sync functions

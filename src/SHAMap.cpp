@@ -238,7 +238,7 @@ SHAMapItem::SHAMapItem(const uint256& tag, const Serializer& data)
 	: mTag(tag), mData(data.peekData())
 { ; }
 
-SHAMapItem::pointer SHAMap::firstBelow(SHAMapTreeNode* node)
+SHAMapTreeNode* SHAMap::firstBelow(SHAMapTreeNode* node)
 {
 	// Return the first item below this node
 #ifdef ST_DEBUG
@@ -246,7 +246,7 @@ SHAMapItem::pointer SHAMap::firstBelow(SHAMapTreeNode* node)
 #endif
 	do
 	{ // Walk down the tree
-		if (node->hasItem()) return node->peekItem();
+		if (node->hasItem()) return node;
 
 		bool foundNode = false;
 		for (int i = 0; i < 16; ++i)
@@ -261,11 +261,12 @@ SHAMapItem::pointer SHAMap::firstBelow(SHAMapTreeNode* node)
 				foundNode = true;
 				break;
 			}
-		if (!foundNode) return SHAMapItem::pointer();
+		if (!foundNode)
+			return NULL;
 	} while (true);
 }
 
-SHAMapItem::pointer SHAMap::lastBelow(SHAMapTreeNode* node)
+SHAMapTreeNode* SHAMap::lastBelow(SHAMapTreeNode* node)
 {
 #ifdef DEBUG
 	std::cerr << "lastBelow(" << *node << ")" << std::endl;
@@ -273,7 +274,8 @@ SHAMapItem::pointer SHAMap::lastBelow(SHAMapTreeNode* node)
 
 	do
 	{ // Walk down the tree
-		if (node->hasItem()) return node->peekItem();
+		if (node->hasItem())
+			return node;
 
 		bool foundNode = false;
 		for (int i = 15; i >= 0; ++i)
@@ -283,7 +285,8 @@ SHAMapItem::pointer SHAMap::lastBelow(SHAMapTreeNode* node)
 				foundNode = true;
 				break;
 			}
-		if (!foundNode) return SHAMapItem::pointer();
+		if (!foundNode)
+			return NULL;
 	} while (true);
 }
 
@@ -345,16 +348,39 @@ void SHAMap::eraseChildren(SHAMapTreeNode::pointer node)
 SHAMapItem::pointer SHAMap::peekFirstItem()
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
-	return firstBelow(root.get());
+	SHAMapTreeNode *node = firstBelow(root.get());
+	if (!node)
+		return SHAMapItem::pointer();
+	return node->peekItem();
+}
+
+SHAMapItem::pointer SHAMap::peekFirstItem(SHAMapTreeNode::TNType& type)
+{
+	boost::recursive_mutex::scoped_lock sl(mLock);
+	SHAMapTreeNode *node = firstBelow(root.get());
+	if (!node)
+		return SHAMapItem::pointer();
+	type = node->getType();
+	return node->peekItem();
 }
 
 SHAMapItem::pointer SHAMap::peekLastItem()
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
-	return lastBelow(root.get());
+	SHAMapTreeNode *node = lastBelow(root.get());
+	if (!node)
+		return SHAMapItem::pointer();
+	return node->peekItem();
 }
 
 SHAMapItem::pointer SHAMap::peekNextItem(const uint256& id)
+{
+	SHAMapTreeNode::TNType type;
+	return peekNextItem(id, type);
+}
+
+
+SHAMapItem::pointer SHAMap::peekNextItem(const uint256& id, SHAMapTreeNode::TNType& type)
 { // Get a pointer to the next item in the tree after a given item - item must be in tree
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
@@ -367,17 +393,24 @@ SHAMapItem::pointer SHAMap::peekNextItem(const uint256& id)
 		if (node->isLeaf())
 		{
 			if (node->peekItem()->getTag() > id)
-				return node->peekItem();
-		}
-		else for (int i = node->selectBranch(id) + 1; i < 16; ++i)
-			if (!node->isEmptyBranch(i))
 			{
-				node = getNode(node->getChildNodeID(i), node->getChildHash(i), false);
-				SHAMapItem::pointer item = firstBelow(node.get());
-				if (!item)
-					throw std::runtime_error("missing node");
-				return item;
+				type = node->getType();
+				return node->peekItem();
 			}
+		}
+		else
+			for (int i = node->selectBranch(id) + 1; i < 16; ++i)
+				if (!node->isEmptyBranch(i))
+				{
+					SHAMapTreeNode *firstNode = getNodePointer(node->getChildNodeID(i), node->getChildHash(i));
+					if (!firstNode)
+						throw std::runtime_error("missing node");
+					firstNode = firstBelow(firstNode);
+					if (!firstNode)
+						throw std::runtime_error("missing node");
+					type = firstNode->getType();
+					return firstNode->peekItem();
+				}
 	}
 	// must be last item
 	return SHAMapItem::pointer();
@@ -402,10 +435,10 @@ SHAMapItem::pointer SHAMap::peekPrevItem(const uint256& id)
 				if (!node->isEmptyBranch(i))
 				{
 					node = getNode(node->getChildNodeID(i), node->getChildHash(i), false);
-					SHAMapItem::pointer item = firstBelow(node.get());
+					SHAMapTreeNode* item = firstBelow(node.get());
 					if (!item)
 						throw std::runtime_error("missing node");
-					return item;
+					return item->peekItem();
 				}
 	}
 	// must be last item
