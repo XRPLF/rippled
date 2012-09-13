@@ -95,13 +95,16 @@ bool SHAMap::compare(const SHAMap::pointer& otherMap, SHAMapDiff& differences, i
 {   // compare two hash trees, add up to maxCount differences to the difference table
 	// return value: true=complete table of differences given, false=too many differences
 	// throws on corrupt tables or missing nodes
+	// CAUTION: otherMap is not locked and must be immutable
 
 	std::stack<SHAMapDiffNode> nodeStack; // track nodes we've pushed
 
-	ScopedLock sl(Lock());
-	if (getHash() == otherMap->getHash()) return true;
-	nodeStack.push(SHAMapDiffNode(SHAMapNode(), getHash(), otherMap->getHash()));
+	boost::recursive_mutex::scoped_lock sl(mLock);
 
+	if (getHash() == otherMap->getHash())
+		return true;
+
+	nodeStack.push(SHAMapDiffNode(SHAMapNode(), getHash(), otherMap->getHash()));
  	while (!nodeStack.empty())
  	{
 		SHAMapDiffNode dNode(nodeStack.top());
@@ -118,17 +121,20 @@ bool SHAMap::compare(const SHAMap::pointer& otherMap, SHAMapDiff& differences, i
 				{
 					differences.insert(std::make_pair(ourNode->getTag(),
 						std::make_pair(ourNode->getItem(), otherNode->getItem())));
-					if (--maxCount <= 0) return false;
+					if (--maxCount <= 0)
+						return false;
 				}
 			}
 			else
 			{
 				differences.insert(std::make_pair(ourNode->getTag(),
 					std::make_pair(ourNode->getItem(), SHAMapItem::pointer())));
-				if (--maxCount <= 0) return false;
+				if (--maxCount <= 0)
+					return false;
 				differences.insert(std::make_pair(otherNode->getTag(),
 					std::make_pair(SHAMapItem::pointer(), otherNode->getItem())));
-				if (--maxCount <= 0) return false;
+				if (--maxCount <= 0)
+					return false;
 			}
 		}
 		else if (ourNode->isInner() && otherNode->isLeaf())
@@ -164,7 +170,8 @@ bool SHAMap::compare(const SHAMap::pointer& otherMap, SHAMapDiff& differences, i
 							ourNode->getChildHash(i), otherNode->getChildHash(i)));
 				}
 		}
-		else assert(false);
+		else
+			assert(false);
 	}
 
 	return true;
