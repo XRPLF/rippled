@@ -294,9 +294,13 @@ SLE::pointer LedgerEntrySet::getForMod(const uint256& node, Ledger::ref ledger,
 bool LedgerEntrySet::threadTx(TransactionMetaNode& metaNode, const NewcoinAddress& threadTo, Ledger::ref ledger,
 	boost::unordered_map<uint256, SLE::pointer>& newMods)
 {
+	Log(lsTRACE) << "Thread to " << threadTo.getAccountID();
 	SLE::pointer sle = getForMod(Ledger::getAccountRootIndex(threadTo.getAccountID()), ledger, newMods);
 	if (!sle)
+	{
+		assert(false);
 		return false;
+	}
 	return threadTx(metaNode, sle, ledger, newMods);
 }
 
