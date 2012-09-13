@@ -6,6 +6,8 @@
 
 #include "../json/writer.h"
 
+#include "Log.h"
+
 std::auto_ptr<SerializedType> STObject::makeDefaultObject(SerializedTypeID id, const char *name)
 {
 	switch(id)
@@ -713,8 +715,7 @@ void STObject::unitTest()
 	copy.setValueFieldU32(sfTest3, 1);
 	if (object1.getSerializer() == copy.getSerializer()) throw std::runtime_error("STObject error");
 #ifdef DEBUG
-	Json::StyledStreamWriter ssw;
-	ssw.write(std::cerr, copy.getJson(0));
+	Log(lsDEBUG) << copy.getJson(0);
 #endif
 
 	for (int i = 0; i < 1000; i++)
