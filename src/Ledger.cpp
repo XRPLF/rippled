@@ -489,14 +489,38 @@ void Ledger::addJson(Json::Value& ret, int options)
 	if (mTransactionMap && (full || ((options & LEDGER_JSON_DUMP_TXNS) != 0)))
 	{
 		Json::Value txns(Json::arrayValue);
-		for (SHAMapItem::pointer item = mTransactionMap->peekFirstItem(); !!item;
-				item = mTransactionMap->peekNextItem(item->getTag()))
+		SHAMapTreeNode::TNType type;
+		for (SHAMapItem::pointer item = mTransactionMap->peekFirstItem(type); !!item;
+				item = mTransactionMap->peekNextItem(item->getTag(), type))
 		{
 			if (full)
 			{
-				SerializerIterator sit(item->peekSerializer());
-				SerializedTransaction txn(sit);
-				txns.append(txn.getJson(0));
+				if (type == SHAMapTreeNode::tnTRANSACTION_NM)
+				{
+					SerializerIterator sit(item->peekSerializer());
+					SerializedTransaction txn(sit);
+					txns.append(txn.getJson(0));
+				}
+				else if (type == SHAMapTreeNode::tnTRANSACTION_MD)
+				{
+					SerializerIterator sit(item->peekSerializer());
+					Serializer sTxn(sit.getVL());
+					Serializer sMeta(sit.getVL());
+
+					SerializerIterator tsit(sTxn);
+					SerializedTransaction txn(tsit);
+
+					TransactionMetaSet meta(mLedgerSeq, sit.getVL());
+					Json::Value txJson = txn.getJson(0);
+					txJson["metaData"] = meta.getJson(0);
+					txns.append(txJson);
+				}
+				else
+				{
+					Json::Value error = Json::objectValue;
+					error[item->getTag().GetHex()] = type;
+					txns.append(error);
+				}
 			}
 			else txns.append(item->getTag().GetHex());
 		}
