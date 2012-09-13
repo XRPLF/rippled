@@ -712,6 +712,12 @@ bool NetworkOPs::hasTXSet(const boost::shared_ptr<Peer>& peer, const uint256& se
 	return mConsensus->peerHasSet(peer, set, status);
 }
 
+void NetworkOPs::mapComplete(const uint256& hash, const SHAMap::pointer& map)
+{
+	if (mConsensus)
+		mConsensus->mapComplete(hash, map, true);
+}
+
 void NetworkOPs::endConsensus(bool correctLCL)
 {
 	uint256 deadLedger = theApp->getMasterLedger().getClosedLedger()->getParentHash();

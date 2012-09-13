@@ -25,7 +25,8 @@ typedef std::pair<const uint256, LCTransaction::pointer> u256_lct_pair;
 
 TransactionAcquire::TransactionAcquire(const uint256& hash) : PeerSet(hash, TX_ACQUIRE_TIMEOUT), mHaveRoot(false)
 {
-	mMap = boost::make_shared<SHAMap>(hash);
+	mMap = boost::make_shared<SHAMap>();
+	mMap->setSynching();
 }
 
 void TransactionAcquire::done()
@@ -33,10 +34,10 @@ void TransactionAcquire::done()
 	if (mFailed)
 	{
 		Log(lsWARNING) << "Failed to acqiure TXs " << mHash;
-		mapComplete(mHash, SHAMap::pointer(), true);
+		theApp->getOPs().mapComplete(mHash, SHAMap::pointer());
 	}
 	else
-		mapComplete(mHash, mMap, true);
+		theApp->getOPs().mapComplete(mHash, mMap);
 }
 
 boost::weak_ptr<PeerSet> TransactionAcquire::pmDowncast()
@@ -375,7 +376,7 @@ void LedgerConsensus::takeInitialPosition(Ledger& initialLedger)
 }
 
 void LedgerConsensus::createDisputes(const SHAMap::pointer& m1, const SHAMap::pointer& m2)
-{ // m2 must be immutable
+{
 	SHAMap::SHAMapDiff differences;
 	m1->compare(m2, differences, 16384);
 	for (SHAMap::SHAMapDiff::iterator pos = differences.begin(), end = differences.end(); pos != end; ++pos)
@@ -418,8 +419,7 @@ void LedgerConsensus::mapComplete(const uint256& hash, const SHAMap::pointer& ma
 			assert((it2->first == mOurPosition->getCurrentHash()) && it2->second);
 			createDisputes(it2->second, map);
 		}
-		else
-			assert(false); // We don't have our own position?!
+		else assert(false); // We don't have our own position?!
 	}
 	mComplete[map->getHash()] = map;
 
@@ -868,10 +868,8 @@ bool LedgerConsensus::peerGaveNodes(Peer::ref peer, const uint256& setHash,
 	const std::list<SHAMapNode>& nodeIDs, const std::list< std::vector<unsigned char> >& nodeData)
 {
 	boost::unordered_map<uint256, TransactionAcquire::pointer>::iterator acq = mAcquiring.find(setHash);
-	if (acq == mAcquiring.end())
-		return false;
-	return
-		acq->second->takeNodes(nodeIDs, nodeData, peer);
+	if (acq == mAcquiring.end()) return false;
+	return acq->second->takeNodes(nodeIDs, nodeData, peer);
 }
 
 void LedgerConsensus::beginAccept()
