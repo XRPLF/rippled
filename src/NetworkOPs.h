@@ -171,7 +171,7 @@ public:
 	bool recvValidation(const SerializedValidation::pointer& val);
 	SHAMap::pointer getTXMap(const uint256& hash);
 	bool hasTXSet(const boost::shared_ptr<Peer>& peer, const uint256& set, newcoin::TxSetStatus status);
-	void mapComplete(const uint256& hash, SHAMap::ref& map);
+	void mapComplete(const uint256& hash, SHAMap::ref map);
 
 	// network state machine
 	void checkState(const boost::system::error_code& result);
