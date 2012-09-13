@@ -14,6 +14,7 @@ const char *TxnDBInit[] = {
 		LedgerSeq	BIGINT UNSIGNED,			\
 		Status		CHARACTER(1),				\
 		RawTxn		BLOB						\
+		TxnMeta		BLOB						\
 	);",
 	"CREATE TABLE PubKeys (						\
 		ID			CHARACTER(35) PRIMARY KEY,	\
