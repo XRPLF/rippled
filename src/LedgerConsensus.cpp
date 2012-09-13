@@ -25,8 +25,7 @@ typedef std::pair<const uint256, LCTransaction::pointer> u256_lct_pair;
 
 TransactionAcquire::TransactionAcquire(const uint256& hash) : PeerSet(hash, TX_ACQUIRE_TIMEOUT), mHaveRoot(false)
 {
-	mMap = boost::make_shared<SHAMap>();
-	mMap->setSynching();
+	mMap = boost::make_shared<SHAMap>(hash);
 }
 
 void TransactionAcquire::done()
