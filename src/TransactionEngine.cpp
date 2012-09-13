@@ -15,7 +15,7 @@
 
 void TransactionEngine::txnWrite()
 {
-	// Write back the account states and add the transaction to the ledger
+	// Write back the account states
 	for (boost::unordered_map<uint256, LedgerEntrySetEntry>::iterator it = mNodes.begin(), end = mNodes.end();
 			it != end; ++it)
 	{
@@ -458,6 +458,9 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 	if (tesSUCCESS == terResult || isTepPartial(terResult))
 	{
 		// Transaction succeeded fully or (retries are not allowed and the transaction succeeded partially).
+		Serializer m;
+		mNodes.calcRawMeta(m);
+
 		txnWrite();
 
 		Serializer s;
@@ -470,8 +473,6 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 		}
 		else
 		{
-			Serializer m;
-			mNodes.calcRawMeta(m);
 			if (!mLedger->addTransaction(txID, s, m))
 				assert(false);
 
