@@ -431,7 +431,7 @@ void LedgerEntrySet::calcRawMeta(Serializer& s)
 	// add any new modified nodes to the modification set
 	for (boost::unordered_map<uint256, SLE::pointer>::iterator it = newMod.begin(), end = newMod.end();
 			it != end; ++it)
-		entryCache(it->second);
+		entryModify(it->second);
 
 	mSet.addRaw(s);
 }
