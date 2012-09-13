@@ -168,6 +168,9 @@ public:
 
 class TransactionMetaSet
 {
+public:
+	typedef boost::shared_ptr<TransactionMetaSet> pointer;
+
 protected:
 	uint256 mTransactionID;
 	uint32 mLedger;

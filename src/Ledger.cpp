@@ -214,7 +214,18 @@ RippleState::pointer Ledger::accessRippleState(const uint256& uNode)
 bool Ledger::addTransaction(const uint256& txID, const Serializer& txn)
 { // low-level - just add to table
 	SHAMapItem::pointer item = boost::make_shared<SHAMapItem>(txID, txn.peekData());
-	if (!mTransactionMap->addGiveItem(item, true, false)) // FIXME: TX metadata
+	if (!mTransactionMap->addGiveItem(item, true, false))
+		return false;
+	return true;
+}
+
+bool Ledger::addTransaction(const uint256& txID, const Serializer& txn, const Serializer& md)
+{ // low-level - just add to table
+	Serializer s(txn.getDataLength() + md.getDataLength() + 64);
+	s.addVL(txn.peekData());
+	s.addVL(md.peekData());
+	SHAMapItem::pointer item = boost::make_shared<SHAMapItem>(txID, s.peekData());
+	if (!mTransactionMap->addGiveItem(item, true, true))
 		return false;
 	return true;
 }
@@ -225,7 +236,8 @@ Transaction::pointer Ledger::getTransaction(const uint256& transID) const
 	if (!item) return Transaction::pointer();
 
 	Transaction::pointer txn = theApp->getMasterTransaction().fetch(transID, false);
-	if (txn) return txn;
+	if (txn)
+		return txn;
 
 	txn = Transaction::sharedTransaction(item->getData(), true);
 	if (txn->getStatus() == NEW)
@@ -233,6 +245,39 @@ Transaction::pointer Ledger::getTransaction(const uint256& transID) const
 
 	theApp->getMasterTransaction().canonicalize(txn, false);
 	return txn;
+}
+
+bool Ledger::getTransaction(const uint256& txID, Transaction::pointer& txn, TransactionMetaSet::pointer& meta)
+{
+	SHAMapTreeNode::TNType type;
+	SHAMapItem::pointer item = mTransactionMap->peekItem(txID, type);
+	if (!item)
+		return false;
+
+	if (type == SHAMapTreeNode::tnTRANSACTION_NM)
+	{ // in tree with no metadata
+		txn = theApp->getMasterTransaction().fetch(txID, false);
+		meta = TransactionMetaSet::pointer();
+		if (!txn)
+			txn = Transaction::sharedTransaction(item->getData(), true);
+	}
+	else if (type == SHAMapTreeNode::tnTRANSACTION_MD)
+	{ // in tree with metadata
+		SerializerIterator it(item->getData());
+		txn = theApp->getMasterTransaction().fetch(txID, false);
+		if (!txn)
+			txn = Transaction::sharedTransaction(it.getVL(), true);
+		else
+			it.getVL(); // skip transaction
+		meta = boost::make_shared<TransactionMetaSet>(mLedgerSeq, it.getVL());
+	}
+	else
+		return false;
+
+	if (txn->getStatus() == NEW)
+		txn->setStatus(mClosed ? COMMITTED : INCLUDED, mLedgerSeq);
+	theApp->getMasterTransaction().canonicalize(txn, false);
+	return true;
 }
 
 bool Ledger::unitTest()

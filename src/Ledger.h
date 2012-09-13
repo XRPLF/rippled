@@ -11,6 +11,7 @@
 #include "../json/value.h"
 
 #include "Transaction.h"
+#include "TransactionMeta.h"
 #include "AccountState.h"
 #include "RippleState.h"
 #include "NicknameState.h"
@@ -56,7 +57,7 @@ public:
 		TR_PASTASEQ	= 6,	// account is past this transaction
 		TR_PREASEQ	= 7,	// account is missing transactions before this
 		TR_BADLSEQ	= 8,	// ledger too early
-		TR_TOOSMALL = 9, // amount is less than Tx fee
+		TR_TOOSMALL = 9, 	// amount is less than Tx fee
 	};
 
 	// ledger close flags
@@ -82,7 +83,6 @@ private:
 
 protected:
 
-	bool addTransaction(const uint256& id, const Serializer& txn);
 
 	static Ledger::pointer getSQL(const std::string& sqlStatement);
 
@@ -151,8 +151,11 @@ public:
 	bool isAcquiringAS(void);
 
 	// Transaction Functions
+	bool addTransaction(const uint256& id, const Serializer& txn);
+	bool addTransaction(const uint256& id, const Serializer& txn, const Serializer& metaData);
 	bool hasTransaction(const uint256& TransID) const { return mTransactionMap->hasItem(TransID); }
 	Transaction::pointer getTransaction(const uint256& transID) const;
+	bool getTransaction(const uint256& transID, Transaction::pointer& txn, TransactionMetaSet::pointer& txMeta);
 
 	// high-level functions
 	AccountState::pointer getAccountState(const NewcoinAddress& acctID);
