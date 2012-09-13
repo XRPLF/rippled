@@ -24,7 +24,8 @@ class SHAMap;
 class SHAMapNode
 { // Identifies a node in a SHA256 hash
 public:
-	typedef boost::shared_ptr<SHAMapNode> pointer;
+	typedef boost::shared_ptr<SHAMapNode> 			pointer;
+	typedef const boost::shared_ptr<SHAMapNode>&	ref;
 
 private:
 	static uint256 smMasks[65]; // AND with hash to get node id
@@ -255,6 +256,7 @@ class SHAMap
 {
 public:
 	typedef boost::shared_ptr<SHAMap> pointer;
+	typedef const boost::shared_ptr<SHAMap>& ref;
 	typedef std::map<uint256, std::pair<SHAMapItem::pointer, SHAMapItem::pointer> > SHAMapDiff;
 
 private:
@@ -350,7 +352,7 @@ public:
 
 	// caution: otherMap must be accessed only by this function
 	// return value: true=successfully completed, false=too different
-	bool compare(const SHAMap::pointer& otherMap, SHAMapDiff& differences, int maxCount);
+	bool compare(SHAMap::ref otherMap, SHAMapDiff& differences, int maxCount);
 
 	void armDirty();
 	int flushDirty(int maxNodes, HashedObjectType t, uint32 seq);

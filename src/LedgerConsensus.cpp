@@ -374,7 +374,7 @@ void LedgerConsensus::takeInitialPosition(Ledger& initialLedger)
 		propose();
 }
 
-void LedgerConsensus::createDisputes(const SHAMap::pointer& m1, const SHAMap::pointer& m2)
+void LedgerConsensus::createDisputes(SHAMap::ref m1, SHAMap::ref m2)
 {
 	SHAMap::SHAMapDiff differences;
 	m1->compare(m2, differences, 16384);
@@ -394,7 +394,7 @@ void LedgerConsensus::createDisputes(const SHAMap::pointer& m1, const SHAMap::po
 	}
 }
 
-void LedgerConsensus::mapComplete(const uint256& hash, const SHAMap::pointer& map, bool acquired)
+void LedgerConsensus::mapComplete(const uint256& hash, SHAMap::ref map, bool acquired)
 {
 	if (acquired)
 		Log(lsINFO) << "We have acquired TXS " << hash;
@@ -446,7 +446,7 @@ void LedgerConsensus::sendHaveTxSet(const uint256& hash, bool direct)
 	theApp->getConnectionPool().relayMessage(NULL, packet);
 }
 
-void LedgerConsensus::adjustCount(const SHAMap::pointer& map, const std::vector<uint160>& peers)
+void LedgerConsensus::adjustCount(SHAMap::ref map, const std::vector<uint160>& peers)
 { // Adjust the counts on all disputed transactions based on the set of peers taking this position
 	BOOST_FOREACH(u256_lct_pair& it, mDisputes)
 	{
@@ -954,7 +954,7 @@ void LedgerConsensus::applyTransaction(TransactionEngine& engine, const Serializ
 #endif
 }
 
-void LedgerConsensus::applyTransactions(const SHAMap::pointer& set, Ledger::ref applyLedger,
+void LedgerConsensus::applyTransactions(SHAMap::ref set, Ledger::ref applyLedger,
 	Ledger::ref checkLedger, CanonicalTXSet& failedTransactions, bool openLgr)
 {
 	TransactionEngineParams parms = openLgr ? tapOPEN_LEDGER : tapNONE;
@@ -1016,7 +1016,7 @@ uint32 LedgerConsensus::roundCloseTime(uint32 closeTime)
 	return closeTime - (closeTime % mCloseResolution);
 }
 
-void LedgerConsensus::accept(const SHAMap::pointer& set)
+void LedgerConsensus::accept(SHAMap::ref set)
 {
 	assert(set->getHash() == mOurPosition->getCurrentHash());
 

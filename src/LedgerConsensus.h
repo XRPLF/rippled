@@ -120,21 +120,21 @@ protected:
 
 	// final accept logic
 	static void Saccept(boost::shared_ptr<LedgerConsensus> This, SHAMap::pointer txSet);
-	void accept(const SHAMap::pointer& txSet);
+	void accept(SHAMap::ref txSet);
 
 	void weHave(const uint256& id, Peer::ref avoidPeer);
 	void startAcquiring(const TransactionAcquire::pointer&);
 	SHAMap::pointer find(const uint256& hash);
 
-	void createDisputes(const SHAMap::pointer&, const SHAMap::pointer&);
+	void createDisputes(SHAMap::ref, SHAMap::ref);
 	void addDisputedTransaction(const uint256&, const std::vector<unsigned char>& transaction);
-	void adjustCount(const SHAMap::pointer& map, const std::vector<uint160>& peers);
+	void adjustCount(SHAMap::ref map, const std::vector<uint160>& peers);
 	void propose();
 
 	void addPosition(LedgerProposal&, bool ours);
 	void removePosition(LedgerProposal&, bool ours);
 	void sendHaveTxSet(const uint256& set, bool direct);
-	void applyTransactions(const SHAMap::pointer& transactionSet, Ledger::ref targetLedger,
+	void applyTransactions(SHAMap::ref transactionSet, Ledger::ref targetLedger,
 		Ledger::ref checkLedger, CanonicalTXSet& failedTransactions, bool openLgr);
 	void applyTransaction(TransactionEngine& engine, const SerializedTransaction::pointer& txn,
 		Ledger::ref targetLedger, CanonicalTXSet& failedTransactions, bool openLgr);
@@ -162,7 +162,7 @@ public:
 
 	SHAMap::pointer getTransactionTree(const uint256& hash, bool doAcquire);
 	TransactionAcquire::pointer getAcquiring(const uint256& hash);
-	void mapComplete(const uint256& hash, const SHAMap::pointer& map, bool acquired);
+	void mapComplete(const uint256& hash, SHAMap::ref map, bool acquired);
 	void checkLCL();
 	void handleLCL(const uint256& lclHash);
 
