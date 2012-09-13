@@ -257,6 +257,8 @@ Json::Value LedgerEntrySet::getJson(int) const
 	}
 	ret["nodes" ] = nodes;
 
+	ret["metaData"] = mSet.getJson(0);
+
 	return ret;
 }
 
@@ -358,7 +360,8 @@ void LedgerEntrySet::calcRawMeta(Serializer& s)
 			continue;
 
 		SLE::pointer origNode = mLedger->getSLE(it->first);
-		if (origNode->getType() == ltDIR_NODE) // No metadata for dir nodes
+
+		if (origNode && (origNode->getType() == ltDIR_NODE)) // No metadata for dir nodes
 			continue;
 
 		SLE::pointer curNode = it->second.mEntry;
@@ -366,6 +369,7 @@ void LedgerEntrySet::calcRawMeta(Serializer& s)
 
 		if (nType == TMNDeletedNode)
 		{
+			assert(origNode);
 			threadOwners(metaNode, origNode, mLedger, newMod);
 
 			if (origNode->getIFieldPresent(sfAmount))
@@ -398,7 +402,10 @@ void LedgerEntrySet::calcRawMeta(Serializer& s)
 		}
 
 		if (nType == TMNCreatedNode) // if created, thread to owner(s)
+		{
+			assert(!origNode);
 			threadOwners(metaNode, curNode, mLedger, newMod);
+		}
 
 		if ((nType == TMNCreatedNode) || (nType == TMNModifiedNode))
 		{
@@ -408,6 +415,7 @@ void LedgerEntrySet::calcRawMeta(Serializer& s)
 
 		if (nType == TMNModifiedNode)
 		{
+			assert(origNode);
 			if (origNode->getIFieldPresent(sfAmount))
 			{ // node has an amount, covers account root nodes and ripple nodes
 				STAmount amount = origNode->getIValueFieldAmount(sfAmount);
