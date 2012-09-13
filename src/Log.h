@@ -6,6 +6,9 @@
 #include <boost/thread/recursive_mutex.hpp>
 #include <boost/filesystem.hpp>
 
+// Ensure that we don't get value.h without writer.h
+#include "../json/json.h"
+
 enum LogSeverity
 {
 	lsTRACE		= 0,
