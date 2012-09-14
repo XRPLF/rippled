@@ -348,13 +348,13 @@ public:
 		SHAMapSyncFilter* filter);
 
 	// status functions
-	void setImmutable(void)		{ assert(mState != smsInvalid); mState = smsImmutable; }
-	void clearImmutable(void)	{ mState = smsModifying; }
-	bool isSynching(void) const	{ return (mState == smsFloating) || (mState == smsSynching); }
-	void setSynching(void)		{ mState = smsSynching; }
-	void setFloating(void)		{ mState = smsFloating; }
-	void clearSynching(void)	{ mState = smsModifying; }
-	bool isValid(void)			{ return mState != smsInvalid; }
+	void setImmutable()		{ assert(mState != smsInvalid); mState = smsImmutable; }
+	void clearImmutable()	{ mState = smsModifying; }
+	bool isSynching() const	{ return (mState == smsFloating) || (mState == smsSynching); }
+	void setSynching()		{ mState = smsSynching; }
+	void setFloating()		{ mState = smsFloating; }
+	void clearSynching()	{ mState = smsModifying; }
+	bool isValid()			{ return mState != smsInvalid; }
 
 	// caution: otherMap must be accessed only by this function
 	// return value: true=successfully completed, false=too different
