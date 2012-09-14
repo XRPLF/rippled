@@ -32,7 +32,7 @@ void TransactionAcquire::done()
 {
 	if (mFailed)
 	{
-		Log(lsWARNING) << "Failed to acqiure TXs " << mHash;
+		Log(lsWARNING) << "Failed to acquire TXs " << mHash;
 		theApp->getOPs().mapComplete(mHash, SHAMap::pointer());
 	}
 	else
@@ -108,7 +108,8 @@ bool TransactionAcquire::takeNodes(const std::list<SHAMapNode>& nodeIDs,
 				}
 				if (!mMap->addRootNode(getHash(), *nodeDatait, snfWIRE))
 					return false;
-				else mHaveRoot = true;
+				else
+					mHaveRoot = true;
 			}
 			else if (!mMap->addKnownNode(*nodeIDit, *nodeDatait, &sf))
 				return false;
@@ -874,7 +875,8 @@ bool LedgerConsensus::peerGaveNodes(Peer::ref peer, const uint256& setHash,
 	const std::list<SHAMapNode>& nodeIDs, const std::list< std::vector<unsigned char> >& nodeData)
 {
 	boost::unordered_map<uint256, TransactionAcquire::pointer>::iterator acq = mAcquiring.find(setHash);
-	if (acq == mAcquiring.end()) return false;
+	if (acq == mAcquiring.end())
+		return false;
 	return acq->second->takeNodes(nodeIDs, nodeData, peer);
 }
 

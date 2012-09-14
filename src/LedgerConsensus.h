@@ -37,11 +37,11 @@ protected:
 public:
 
 	TransactionAcquire(const uint256& hash);
+	virtual ~TransactionAcquire()		{ ; }
 
 	SHAMap::pointer getMap()			{ return mMap; }
 
-	bool takeNodes(const std::list<SHAMapNode>& IDs, const std::list< std::vector<unsigned char> >& data,
-		Peer::ref);
+	bool takeNodes(const std::list<SHAMapNode>& IDs, const std::list< std::vector<unsigned char> >& data, Peer::ref);
 };
 
 class LCTransaction
