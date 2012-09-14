@@ -44,7 +44,7 @@ void TransactionAcquire::done()
 
 boost::weak_ptr<PeerSet> TransactionAcquire::pmDowncast()
 {
-	return boost::shared_polymorphic_downcast<PeerSet, TransactionAcquire>(shared_from_this());
+	return boost::shared_polymorphic_downcast<PeerSet>(shared_from_this());
 }
 
 void TransactionAcquire::trigger(Peer::ref peer, bool timer)

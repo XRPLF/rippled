@@ -108,7 +108,7 @@ void LedgerAcquire::onTimer()
 
 boost::weak_ptr<PeerSet> LedgerAcquire::pmDowncast()
 {
-	return boost::shared_polymorphic_downcast<PeerSet, LedgerAcquire>(shared_from_this());
+	return boost::shared_polymorphic_downcast<PeerSet>(shared_from_this());
 }
 
 void LedgerAcquire::done()
