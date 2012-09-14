@@ -49,24 +49,24 @@ class LCTransaction
 protected:
 	uint256 mTransactionID;
 	int mYays, mNays;
-	bool mOurPosition;
+	bool mOurVote;
 	Serializer transaction;
 	boost::unordered_map<uint160, bool> mVotes;
 
 public:
 	typedef boost::shared_ptr<LCTransaction> pointer;
 
-	LCTransaction(const uint256 &txID, const std::vector<unsigned char>& tx, bool ourPosition) :
-		mTransactionID(txID), mYays(0), mNays(0), mOurPosition(ourPosition), transaction(tx) { ; }
+	LCTransaction(const uint256 &txID, const std::vector<unsigned char>& tx, bool ourVote) :
+		mTransactionID(txID), mYays(0), mNays(0), mOurVote(ourVote), transaction(tx) { ; }
 
 	const uint256& getTransactionID() const				{ return mTransactionID; }
-	bool getOurPosition() const							{ return mOurPosition; }
+	bool getOurVote() const								{ return mOurVote; }
 	Serializer& peekTransaction()						{ return transaction; }
 
 	void setVote(const uint160& peer, bool votesYes);
 	void unVote(const uint160& peer);
 
-	bool updatePosition(int percentTime, bool proposing);
+	bool updateVote(int percentTime, bool proposing);
 };
 
 enum LCState
@@ -100,7 +100,7 @@ protected:
 	boost::unordered_map<uint160, LedgerProposal::pointer> mPeerPositions;
 
 	// Transaction Sets, indexed by hash of transaction tree
-	boost::unordered_map<uint256, SHAMap::pointer> mComplete;
+	boost::unordered_map<uint256, SHAMap::pointer> mAcquired;
 	boost::unordered_map<uint256, TransactionAcquire::pointer> mAcquiring;
 
 	// Peer sets
