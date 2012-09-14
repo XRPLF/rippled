@@ -880,7 +880,8 @@ bool LedgerConsensus::peerGaveNodes(Peer::ref peer, const uint256& setHash,
 	boost::unordered_map<uint256, TransactionAcquire::pointer>::iterator acq = mAcquiring.find(setHash);
 	if (acq == mAcquiring.end())
 		return false;
-	return acq->second->takeNodes(nodeIDs, nodeData, peer);
+	TransactionAcquire::pointer set = acq->second; // We must keep the set around during the function
+	return set->takeNodes(nodeIDs, nodeData, peer);
 }
 
 void LedgerConsensus::beginAccept()
