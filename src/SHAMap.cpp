@@ -39,14 +39,14 @@ std::size_t hash_value(const uint160& u)
 }
 
 
-SHAMap::SHAMap(uint32 seq) : mSeq(seq), mState(Modifying)
+SHAMap::SHAMap(uint32 seq) : mSeq(seq), mState(smsModifying)
 {
 	root = boost::make_shared<SHAMapTreeNode>(mSeq, SHAMapNode(0, uint256()));
 	root->makeInner();
 	mTNByID[*root] = root;
 }
 
-SHAMap::SHAMap(const uint256& hash) : mSeq(0), mState(Synching)
+SHAMap::SHAMap(const uint256& hash) : mSeq(0), mState(smsSynching)
 { // FIXME: Need to acquire root node
 	root = boost::make_shared<SHAMapTreeNode>(mSeq, SHAMapNode(0, uint256()));
 	root->makeInner();
@@ -62,7 +62,7 @@ SHAMap::pointer SHAMap::snapShot(bool isMutable)
 	newMap.mTNByID = mTNByID;
 	newMap.root = root;
 	if (!isMutable)
-		newMap.mState = Immutable;
+		newMap.mState = smsImmutable;
 	return ret;
 }
 
@@ -105,7 +105,7 @@ void SHAMap::dirtyUp(std::stack<SHAMapTreeNode::pointer>& stack, const uint256& 
 { // walk the tree up from through the inner nodes to the root
   // update linking hashes and add nodes to dirty list
 
-	assert((mState != Synching) && (mState != Immutable));
+	assert((mState != smsSynching) && (mState != smsImmutable));
 
 	while (!stack.empty())
 	{
@@ -475,7 +475,7 @@ bool SHAMap::hasItem(const uint256& id)
 bool SHAMap::delItem(const uint256& id)
 { // delete the item with this ID
 	boost::recursive_mutex::scoped_lock sl(mLock);
-	assert(mState != Immutable);
+	assert(mState != smsImmutable);
 
 	std::stack<SHAMapTreeNode::pointer> stack = getStack(id, true, false);
 	if (stack.empty())
@@ -552,7 +552,7 @@ bool SHAMap::addGiveItem(const SHAMapItem::pointer& item, bool isTransaction, bo
 		(hasMeta ? SHAMapTreeNode::tnTRANSACTION_MD : SHAMapTreeNode::tnTRANSACTION_NM);
 
 	boost::recursive_mutex::scoped_lock sl(mLock);
-	assert(mState != Immutable);
+	assert(mState != smsImmutable);
 
 	std::stack<SHAMapTreeNode::pointer> stack = getStack(tag, true, false);
 	if (stack.empty())
@@ -644,7 +644,7 @@ bool SHAMap::updateGiveItem(const SHAMapItem::pointer& item, bool isTransaction,
 	uint256 tag = item->getTag();
 
 	boost::recursive_mutex::scoped_lock sl(mLock);
-	assert(mState != Immutable);
+	assert(mState != smsImmutable);
 
 	std::stack<SHAMapTreeNode::pointer> stack = getStack(tag, true, false);
 	if (stack.empty()) throw std::runtime_error("missing node");

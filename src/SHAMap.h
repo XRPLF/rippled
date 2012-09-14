@@ -217,11 +217,11 @@ public:
 
 enum SHAMapState
 {
-	Modifying = 0,		// Objects can be added and removed (like an open ledger)
-	Immutable = 1,		// Map cannot be changed (like a closed ledger)
-	Synching = 2,		// Map's hash is locked in, valid nodes can be added (like a peer's closing ledger)
-	Floating = 3,		// Map is free to change hash (like a synching open ledger)
-	Invalid = 4,		// Map is known not to be valid (usually synching a corrupt ledger)
+	smsModifying = 0,		// Objects can be added and removed (like an open ledger)
+	smsImmutable = 1,		// Map cannot be changed (like a closed ledger)
+	smsSynching = 2,		// Map's hash is locked in, valid nodes can be added (like a peer's closing ledger)
+	smsFloating = 3,		// Map is free to change hash (like a synching open ledger)
+	smsInvalid = 4,			// Map is known not to be valid (usually synching a corrupt ledger)
 };
 
 class SHAMapSyncFilter
@@ -229,9 +229,11 @@ class SHAMapSyncFilter
 public:
 	SHAMapSyncFilter()				{ ; }
 	virtual ~SHAMapSyncFilter()		{ ; }
+
 	virtual void gotNode(const SHAMapNode& id, const uint256& nodeHash,
 		const std::vector<unsigned char>& nodeData, bool isLeaf)
 	{ ; }
+
 	virtual bool haveNode(const SHAMapNode& id, const uint256& nodeHash, std::vector<unsigned char>& nodeData)
 	{ return false; }
 };
@@ -248,6 +250,7 @@ public:
 	{ ; }
 	virtual ~SHAMapMissingNode() throw()
 	{ ; }
+
 	const SHAMapNode& getNodeID() const	{ return mNodeID; }
 	const uint256& getNodeHash() const	{ return mNodeHash; }
 };
@@ -257,6 +260,7 @@ class SHAMap
 public:
 	typedef boost::shared_ptr<SHAMap> pointer;
 	typedef const boost::shared_ptr<SHAMap>& ref;
+
 	typedef std::map<uint256, std::pair<SHAMapItem::pointer, SHAMapItem::pointer> > SHAMapDiff;
 
 private:
@@ -296,6 +300,8 @@ public:
 	// build new map
 	SHAMap(uint32 seq = 0);
 	SHAMap(const uint256& hash);
+
+	~SHAMap() { mState = smsInvalid; }
 
 	// Returns a new map that's a snapshot of this one. Force CoW
 	SHAMap::pointer snapShot(bool isMutable);
@@ -342,13 +348,13 @@ public:
 		SHAMapSyncFilter* filter);
 
 	// status functions
-	void setImmutable(void)		{ assert(mState != Invalid); mState = Immutable; }
-	void clearImmutable(void)	{ mState = Modifying; }
-	bool isSynching(void) const	{ return (mState == Floating) || (mState == Synching); }
-	void setSynching(void)		{ mState = Synching; }
-	void setFloating(void)		{ mState = Floating; }
-	void clearSynching(void)	{ mState = Modifying; }
-	bool isValid(void)			{ return mState != Invalid; }
+	void setImmutable(void)		{ assert(mState != smsInvalid); mState = smsImmutable; }
+	void clearImmutable(void)	{ mState = smsModifying; }
+	bool isSynching(void) const	{ return (mState == smsFloating) || (mState == smsSynching); }
+	void setSynching(void)		{ mState = smsSynching; }
+	void setFloating(void)		{ mState = smsFloating; }
+	void clearSynching(void)	{ mState = smsModifying; }
+	bool isValid(void)			{ return mState != smsInvalid; }
 
 	// caution: otherMap must be accessed only by this function
 	// return value: true=successfully completed, false=too different
