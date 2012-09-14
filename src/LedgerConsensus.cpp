@@ -909,8 +909,7 @@ void LedgerConsensus::beginAccept()
 	}
 
 	theApp->getOPs().newLCL(mPeerPositions.size(), mCurrentMSeconds, mNewLedgerHash);
-	boost::thread thread(boost::bind(&LedgerConsensus::Saccept, shared_from_this(), consensusSet));
-	thread.detach();
+	theApp->getIOService().post(boost::bind(&LedgerConsensus::Saccept, shared_from_this(), consensusSet));
 }
 
 void LedgerConsensus::Saccept(boost::shared_ptr<LedgerConsensus> This, SHAMap::pointer txSet)
