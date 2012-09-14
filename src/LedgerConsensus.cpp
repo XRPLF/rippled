@@ -185,18 +185,22 @@ bool LCTransaction::updateVote(int percentTime, bool proposing)
 		return false;
 
 	bool newPosition;
+	int weight;
 	if (proposing) // give ourselves full weight
 	{
 		// This is basically the percentage of nodes voting 'yes' (including us)
-		int weight = (mYays * 100 + (mOurVote ? 100 : 0)) / (mNays + mYays + 1);
+		weight = (mYays * 100 + (mOurVote ? 100 : 0)) / (mNays + mYays + 1);
 
 		// To prevent avalanche stalls, we increase the needed weight slightly over time
 		if (percentTime < AV_MID_CONSENSUS_TIME) newPosition = weight >  AV_INIT_CONSENSUS_PCT;
 		else if (percentTime < AV_LATE_CONSENSUS_TIME) newPosition = weight > AV_MID_CONSENSUS_PCT;
 		else newPosition = weight > AV_LATE_CONSENSUS_PCT;
 	}
-	else // don't let us outweight a proposing node, just recognize consensus
+	else // don't let us outweigh a proposing node, just recognize consensus
+	{
+		weight = -1;
 		newPosition = mYays > mNays;
+	}
 
 	if (newPosition == mOurVote)
 	{
@@ -689,17 +693,26 @@ void LedgerConsensus::updateOurPositions()
 }
 
 bool LedgerConsensus::haveConsensus()
-{
+{ // FIXME: Should check for a supermajority on each disputed transaction
+  // counting unacquired TX sets as disagreeing
 	int agree = 0, disagree = 0;
 	uint256 ourPosition = mOurPosition->getCurrentHash();
 	BOOST_FOREACH(u160_prop_pair& it, mPeerPositions)
 	{
-		if (it.second->getCurrentHash() == ourPosition)
-			++agree;
-		else
-			++disagree;
+		if (!it.second->isBowOut())
+		{
+			if (it.second->getCurrentHash() == ourPosition)
+				++agree;
+			else
+				++disagree;
+		}
 	}
 	int currentValidations = theApp->getValidations().getNodesAfter(mPrevLedgerHash);
+
+#ifdef LC_DEBUG
+	Log(lsINFO) << "Checking for TX consensus: agree=" << agree << ", disagree=" << disagree;
+#endif
+
 	return ContinuousLedgerTiming::haveConsensus(mPreviousProposers, agree + disagree, agree, currentValidations,
 		mPreviousMSeconds, mCurrentMSeconds);
 }
