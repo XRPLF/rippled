@@ -97,6 +97,8 @@ bool SHAMap::compare(SHAMap::ref otherMap, SHAMapDiff& differences, int maxCount
 	// throws on corrupt tables or missing nodes
 	// CAUTION: otherMap is not locked and must be immutable
 
+	assert(isValid() && otherMap && otherMap->isValid());
+
 	std::stack<SHAMapDiffNode> nodeStack; // track nodes we've pushed
 
 	boost::recursive_mutex::scoped_lock sl(mLock);
