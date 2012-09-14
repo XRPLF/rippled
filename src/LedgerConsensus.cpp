@@ -402,11 +402,11 @@ void LedgerConsensus::mapComplete(const uint256& hash, SHAMap::ref map, bool acq
 {
 	if (acquired)
 		Log(lsINFO) << "We have acquired TXS " << hash;
-	mAcquiring.erase(hash);
 
 	if (!map)
 	{ // this is an invalid/corrupt map
 		mAcquired[hash] = map;
+		mAcquiring.erase(hash);
 		Log(lsWARNING) << "A trusted node directed us to acquire an invalid TXN map";
 		return;
 	}
@@ -427,6 +427,7 @@ void LedgerConsensus::mapComplete(const uint256& hash, SHAMap::ref map, bool acq
 			assert(false); // We don't have our own position?!
 	}
 	mAcquired[hash] = map;
+	mAcquiring.erase(hash);
 
 	// Adjust tracking for each peer that takes this position
 	std::vector<uint160> peers;
