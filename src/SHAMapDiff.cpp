@@ -112,6 +112,11 @@ bool SHAMap::compare(SHAMap::ref otherMap, SHAMapDiff& differences, int maxCount
 
 		SHAMapTreeNode* ourNode = getNodePointer(dNode.mNodeID, dNode.mOurHash);
 		SHAMapTreeNode* otherNode = otherMap->getNodePointer(dNode.mNodeID, dNode.mOtherHash);
+		if (!ourNode || !otherNode)
+		{
+			assert(false);
+			throw SHAMapMissingNode(dNode.mNodeID, uint256());
+		}
 
 		if (ourNode->isLeaf() && otherNode->isLeaf())
 		{ // two leaves
