@@ -59,11 +59,12 @@ public:
 	void setSignature(const std::string& signature)	{ mSignature = signature; }
 	bool hasSignature()								{ return !mSignature.empty(); }
 	bool isPrevLedger(const uint256& pl)			{ return mPreviousLedger == pl; }
+	bool isBowOut()									{ return mProposeSeq == seqLeave; }
 
 	const boost::posix_time::ptime getCreateTime()	{ return mTime; }
 	bool isStale(boost::posix_time::ptime cutoff)	{ return mTime <= cutoff; }
 
-	void changePosition(const uint256& newPosition, uint32 newCloseTime);
+	bool changePosition(const uint256& newPosition, uint32 newCloseTime);
 	void bowOut();
 	Json::Value getJson() const;
 };

@@ -411,7 +411,7 @@ void LedgerConsensus::mapComplete(const uint256& hash, SHAMap::ref map, bool acq
 	if (mAcquired.find(hash) != mAcquired.end())
 		return; // we already have this map
 
-	if (mOurPosition && (hash != mOurPosition->getCurrentHash()))
+	if (mOurPosition && (!mOurPosition->isBowOut()) && (hash != mOurPosition->getCurrentHash()))
 	{ // this could create disputed transactions
 		boost::unordered_map<uint256, SHAMap::pointer>::iterator it2 = mAcquired.find(mOurPosition->getCurrentHash());
 		if (it2 != mAcquired.end())
@@ -674,10 +674,12 @@ void LedgerConsensus::updateOurPositions()
 	{
 		uint256 newHash = ourPosition->getHash();
 		Log(lsINFO) << "Position change: CTime " << closeTime << ", tx " << newHash;
-		mOurPosition->changePosition(newHash, closeTime);
-		if (mProposing)
-			propose();
-		mapComplete(newHash, ourPosition, false);
+		if (mOurPosition->changePosition(newHash, closeTime))
+		{
+			if (mProposing)
+				propose();
+			mapComplete(newHash, ourPosition, false);
+		}
 	}
 }
 
