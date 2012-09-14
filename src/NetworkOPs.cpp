@@ -211,7 +211,11 @@ SLE::pointer NetworkOPs::getGenerator(const uint256& uLedger, const uint160& uGe
 {
 	LedgerStateParms	qry				= lepNONE;
 
-	return mLedgerMaster->getLedgerByHash(uLedger)->getGenerator(qry, uGeneratorID);
+	Ledger::pointer ledger = mLedgerMaster->getLedgerByHash(uLedger);
+	if (!ledger)
+		return SLE::pointer();
+	else
+		return ledger->getGenerator(qry, uGeneratorID);
 }
 
 //
