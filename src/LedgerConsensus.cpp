@@ -36,7 +36,10 @@ void TransactionAcquire::done()
 		theApp->getOPs().mapComplete(mHash, SHAMap::pointer());
 	}
 	else
+	{
+		mMap->setImmutable();
 		theApp->getOPs().mapComplete(mHash, mMap);
+	}
 }
 
 boost::weak_ptr<PeerSet> TransactionAcquire::pmDowncast()
