@@ -7,12 +7,29 @@
 
 console.log("server.js>");
 
+var config = require("./config.js");
 var utils = require("./utils.js");
 
+var fs = require("fs");
+var path = require("path");
+var util = require("util");
 // var child = require("child");
 
 var serverPath = function(name) {
     return "tmp/server/" + name;
+};
+
+// Return a server's newcoind.cfg as string.
+var serverConfig = function(name) {
+	var	cfg	= config.servers[name];
+
+	return Object.keys(cfg).map(function (o) {
+		return util.format("[%s]\n%s\n", o, cfg[o]);
+		}).join("");
+};
+
+var writeConfig = function(name, done) {
+	fs.writeFile(path.join(serverPath(name), "newcoind.cfg"), serverConfig(name), 'utf8', done);
 };
 
 var makeBase = function(name, done) {
@@ -20,8 +37,15 @@ var makeBase = function(name, done) {
 
     console.log("start> %s: %s", name, path);
 
-    // Remove the existing dir.
-    utils.resetPath(path, parseInt('0777', 8), done);
+    // Reset the server directory, build it if needed.
+    utils.resetPath(path, parseInt('0777', 8), function (e) {
+			if (e) {
+				throw e;
+			}
+			else {
+				writeConfig(name, done);
+			}
+		});
 
     console.log("start< %s", name);
 };
