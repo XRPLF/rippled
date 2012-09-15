@@ -20,3 +20,6 @@ newcoind
 
 # Ignore locally installed node_modules
 node_modules
+
+# Ignore tmp directory.
+tmp
