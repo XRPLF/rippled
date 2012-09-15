@@ -9,6 +9,8 @@ class Data
 public:
 	typedef boost::shared_ptr<Data> pointer;
 
+	virtual ~Data(){ ; }
+
 	virtual bool isInt32(){ return(false); }
 	virtual bool isFloat(){ return(false); }
 	virtual bool isUint160(){ return(false); }

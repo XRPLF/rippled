@@ -93,7 +93,7 @@ Transaction::pointer NetworkOPs::submitTransaction(const Transaction::pointer& t
 	return tpTransNew;
 }
 
-Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, uint32 tgtLedger, Peer* source)
+Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, Peer* source)
 {
 	Transaction::pointer dbtx = theApp->getMasterTransaction().fetch(trans->getID(), true);
 	if (dbtx) return dbtx;
@@ -105,7 +105,7 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 		return trans;
 	}
 
-	TER r = mLedgerMaster->doTransaction(*trans->getSTransaction(), tgtLedger, tapOPEN_LEDGER);
+	TER r = mLedgerMaster->doTransaction(*trans->getSTransaction(), tapOPEN_LEDGER);
 	if (r == tefFAILURE) throw Fault(IO_ERROR);
 
 	if (r == terPRE_SEQ)
@@ -140,7 +140,6 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 		tx.set_rawtransaction(&s.getData().front(), s.getLength());
 		tx.set_status(newcoin::tsCURRENT);
 		tx.set_receivetimestamp(getNetworkTimeNC());
-		tx.set_ledgerindexpossible(trans->getLedger());
 
 		PackedMessage::pointer packet = boost::make_shared<PackedMessage>(tx, newcoin::mtTRANSACTION);
 		theApp->getConnectionPool().relayMessage(source, packet);
@@ -157,7 +156,6 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 		tx.set_rawtransaction(&s.getData().front(), s.getLength());
 		tx.set_status(newcoin::tsCURRENT);
 		tx.set_receivetimestamp(getNetworkTimeNC());
-		tx.set_ledgerindexpossible(tgtLedger);
 		PackedMessage::pointer packet = boost::make_shared<PackedMessage>(tx, newcoin::mtTRANSACTION);
 		theApp->getConnectionPool().relayMessage(source, packet);
 	}
@@ -213,7 +211,11 @@ SLE::pointer NetworkOPs::getGenerator(const uint256& uLedger, const uint160& uGe
 {
 	LedgerStateParms	qry				= lepNONE;
 
-	return mLedgerMaster->getLedgerByHash(uLedger)->getGenerator(qry, uGeneratorID);
+	Ledger::pointer ledger = mLedgerMaster->getLedgerByHash(uLedger);
+	if (!ledger)
+		return SLE::pointer();
+	else
+		return ledger->getGenerator(qry, uGeneratorID);
 }
 
 //
@@ -714,7 +716,7 @@ bool NetworkOPs::hasTXSet(const boost::shared_ptr<Peer>& peer, const uint256& se
 	return mConsensus->peerHasSet(peer, set, status);
 }
 
-void NetworkOPs::mapComplete(const uint256& hash, const SHAMap::pointer& map)
+void NetworkOPs::mapComplete(const uint256& hash, SHAMap::ref map)
 {
 	if (mConsensus)
 		mConsensus->mapComplete(hash, map, true);

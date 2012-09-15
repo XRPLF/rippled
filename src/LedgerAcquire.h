@@ -78,6 +78,7 @@ protected:
 
 public:
 	LedgerAcquire(const uint256& hash);
+	virtual ~LedgerAcquire()			{ ; }
 
 	bool isBase() const					{ return mHaveBase; }
 	bool isAcctStComplete() const		{ return mHaveState; }

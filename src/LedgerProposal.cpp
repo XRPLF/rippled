@@ -54,17 +54,20 @@ bool LedgerProposal::checkSign(const std::string& signature, const uint256& sign
 	return mPublicKey.verifyNodePublic(signingHash, signature);
 }
 
-void LedgerProposal::changePosition(const uint256& newPosition, uint32 closeTime)
+bool LedgerProposal::changePosition(const uint256& newPosition, uint32 closeTime)
 {
+	if (mProposeSeq == seqLeave)
+		return false;
+
 	mCurrentHash 	= newPosition;
 	mCloseTime		= closeTime;
 	mTime			= boost::posix_time::second_clock::universal_time();
 	++mProposeSeq;
+	return true;
 }
 
 void LedgerProposal::bowOut()
 {
-	mCurrentHash	= uint256();
 	mTime			= boost::posix_time::second_clock::universal_time();
 	mProposeSeq		= seqLeave;
 }

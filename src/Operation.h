@@ -12,6 +12,8 @@ public:
 	virtual bool work(Interpreter* interpreter)=0;
 
 	virtual int getFee();
+
+	virtual ~Operation() { ; }
 };
 
 // this is just an Int in the code

@@ -15,7 +15,7 @@
 
 void TransactionEngine::txnWrite()
 {
-	// Write back the account states and add the transaction to the ledger
+	// Write back the account states
 	for (boost::unordered_map<uint256, LedgerEntrySetEntry>::iterator it = mNodes.begin(), end = mNodes.end();
 			it != end; ++it)
 	{
@@ -430,10 +430,10 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 				break;
 
 			case ttCONTRACT:
-				terResult= doContractAdd(txn);
+				terResult = doContractAdd(txn);
 				break;
 			case ttCONTRACT_REMOVE:
-				terResult=doContractRemove(txn);
+				terResult = doContractRemove(txn);
 				break;
 
 			default:
@@ -458,17 +458,27 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 	if (tesSUCCESS == terResult || isTepPartial(terResult))
 	{
 		// Transaction succeeded fully or (retries are not allowed and the transaction succeeded partially).
+		Serializer m;
+		mNodes.calcRawMeta(m);
+
 		txnWrite();
 
 		Serializer s;
-
 		txn.add(s);
 
-		if (!mLedger->addTransaction(txID, s))
-			assert(false);
+		if (isSetBit(params, tapOPEN_LEDGER))
+		{
+			if (!mLedger->addTransaction(txID, s))
+				assert(false);
+		}
+		else
+		{
+			if (!mLedger->addTransaction(txID, s, m))
+				assert(false);
 
-		// Charge whatever fee they specified.
-		mLedger->destroyCoins(saPaid.getNValue());
+			// Charge whatever fee they specified.
+			mLedger->destroyCoins(saPaid.getNValue());
+		}
 	}
 
 	mTxnAccount	= SLE::pointer();

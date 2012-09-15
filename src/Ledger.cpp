@@ -211,40 +211,89 @@ RippleState::pointer Ledger::accessRippleState(const uint256& uNode)
 	return boost::make_shared<RippleState>(sle);
 }
 
-bool Ledger::addTransaction(const Transaction::pointer& trans)
+bool Ledger::addTransaction(const uint256& txID, const Serializer& txn)
 { // low-level - just add to table
-	assert(!mAccepted);
-	assert(trans->getID().isNonZero());
-	Serializer s;
-	trans->getSTransaction()->add(s);
-	SHAMapItem::pointer item = boost::make_shared<SHAMapItem>(trans->getID(), s.peekData());
-	if (!mTransactionMap->addGiveItem(item, true, false)) // FIXME: TX metadata
+	SHAMapItem::pointer item = boost::make_shared<SHAMapItem>(txID, txn.peekData());
+	if (!mTransactionMap->addGiveItem(item, true, false))
 		return false;
 	return true;
 }
 
-bool Ledger::addTransaction(const uint256& txID, const Serializer& txn)
+bool Ledger::addTransaction(const uint256& txID, const Serializer& txn, const Serializer& md)
 { // low-level - just add to table
-	SHAMapItem::pointer item = boost::make_shared<SHAMapItem>(txID, txn.peekData());
-	if (!mTransactionMap->addGiveItem(item, true, false)) // FIXME: TX metadata
+	Serializer s(txn.getDataLength() + md.getDataLength() + 64);
+	s.addVL(txn.peekData());
+	s.addVL(md.peekData());
+	SHAMapItem::pointer item = boost::make_shared<SHAMapItem>(txID, s.peekData());
+	if (!mTransactionMap->addGiveItem(item, true, true))
 		return false;
 	return true;
 }
 
 Transaction::pointer Ledger::getTransaction(const uint256& transID) const
 {
-	SHAMapItem::pointer item = mTransactionMap->peekItem(transID);
+	SHAMapTreeNode::TNType type;
+	SHAMapItem::pointer item = mTransactionMap->peekItem(transID, type);
 	if (!item) return Transaction::pointer();
 
 	Transaction::pointer txn = theApp->getMasterTransaction().fetch(transID, false);
-	if (txn) return txn;
+	if (txn)
+		return txn;
 
-	txn = Transaction::sharedTransaction(item->getData(), true);
+	if (type == SHAMapTreeNode::tnTRANSACTION_NM)
+		txn = Transaction::sharedTransaction(item->getData(), true);
+	else if (type == SHAMapTreeNode::tnTRANSACTION_MD)
+	{
+		std::vector<unsigned char> txnData;
+		int txnLength;
+		if (!item->peekSerializer().getVL(txnData, 0, txnLength))
+			return Transaction::pointer();
+		txn = Transaction::sharedTransaction(txnData, false);
+	}
+	else
+	{
+		assert(false);
+		return Transaction::pointer();
+	}
+
 	if (txn->getStatus() == NEW)
 		txn->setStatus(mClosed ? COMMITTED : INCLUDED, mLedgerSeq);
 
 	theApp->getMasterTransaction().canonicalize(txn, false);
 	return txn;
+}
+
+bool Ledger::getTransaction(const uint256& txID, Transaction::pointer& txn, TransactionMetaSet::pointer& meta)
+{
+	SHAMapTreeNode::TNType type;
+	SHAMapItem::pointer item = mTransactionMap->peekItem(txID, type);
+	if (!item)
+		return false;
+
+	if (type == SHAMapTreeNode::tnTRANSACTION_NM)
+	{ // in tree with no metadata
+		txn = theApp->getMasterTransaction().fetch(txID, false);
+		meta = TransactionMetaSet::pointer();
+		if (!txn)
+			txn = Transaction::sharedTransaction(item->getData(), true);
+	}
+	else if (type == SHAMapTreeNode::tnTRANSACTION_MD)
+	{ // in tree with metadata
+		SerializerIterator it(item->getData());
+		txn = theApp->getMasterTransaction().fetch(txID, false);
+		if (!txn)
+			txn = Transaction::sharedTransaction(it.getVL(), true);
+		else
+			it.getVL(); // skip transaction
+		meta = boost::make_shared<TransactionMetaSet>(mLedgerSeq, it.getVL());
+	}
+	else
+		return false;
+
+	if (txn->getStatus() == NEW)
+		txn->setStatus(mClosed ? COMMITTED : INCLUDED, mLedgerSeq);
+	theApp->getMasterTransaction().canonicalize(txn, false);
+	return true;
 }
 
 bool Ledger::unitTest()
@@ -440,14 +489,38 @@ void Ledger::addJson(Json::Value& ret, int options)
 	if (mTransactionMap && (full || ((options & LEDGER_JSON_DUMP_TXNS) != 0)))
 	{
 		Json::Value txns(Json::arrayValue);
-		for (SHAMapItem::pointer item = mTransactionMap->peekFirstItem(); !!item;
-				item = mTransactionMap->peekNextItem(item->getTag()))
+		SHAMapTreeNode::TNType type;
+		for (SHAMapItem::pointer item = mTransactionMap->peekFirstItem(type); !!item;
+				item = mTransactionMap->peekNextItem(item->getTag(), type))
 		{
 			if (full)
 			{
-				SerializerIterator sit(item->peekSerializer());
-				SerializedTransaction txn(sit);
-				txns.append(txn.getJson(0));
+				if (type == SHAMapTreeNode::tnTRANSACTION_NM)
+				{
+					SerializerIterator sit(item->peekSerializer());
+					SerializedTransaction txn(sit);
+					txns.append(txn.getJson(0));
+				}
+				else if (type == SHAMapTreeNode::tnTRANSACTION_MD)
+				{
+					SerializerIterator sit(item->peekSerializer());
+					Serializer sTxn(sit.getVL());
+					Serializer sMeta(sit.getVL());
+
+					SerializerIterator tsit(sTxn);
+					SerializedTransaction txn(tsit);
+
+					TransactionMetaSet meta(mLedgerSeq, sit.getVL());
+					Json::Value txJson = txn.getJson(0);
+					txJson["metaData"] = meta.getJson(0);
+					txns.append(txJson);
+				}
+				else
+				{
+					Json::Value error = Json::objectValue;
+					error[item->getTag().GetHex()] = type;
+					txns.append(error);
+				}
 			}
 			else txns.append(item->getTag().GetHex());
 		}

@@ -37,11 +37,11 @@ protected:
 public:
 
 	TransactionAcquire(const uint256& hash);
+	virtual ~TransactionAcquire()		{ ; }
 
 	SHAMap::pointer getMap()			{ return mMap; }
 
-	bool takeNodes(const std::list<SHAMapNode>& IDs, const std::list< std::vector<unsigned char> >& data,
-		Peer::ref);
+	bool takeNodes(const std::list<SHAMapNode>& IDs, const std::list< std::vector<unsigned char> >& data, Peer::ref);
 };
 
 class LCTransaction
@@ -49,24 +49,24 @@ class LCTransaction
 protected:
 	uint256 mTransactionID;
 	int mYays, mNays;
-	bool mOurPosition;
+	bool mOurVote;
 	Serializer transaction;
 	boost::unordered_map<uint160, bool> mVotes;
 
 public:
 	typedef boost::shared_ptr<LCTransaction> pointer;
 
-	LCTransaction(const uint256 &txID, const std::vector<unsigned char>& tx, bool ourPosition) :
-		mTransactionID(txID), mYays(0), mNays(0), mOurPosition(ourPosition), transaction(tx) { ; }
+	LCTransaction(const uint256 &txID, const std::vector<unsigned char>& tx, bool ourVote) :
+		mTransactionID(txID), mYays(0), mNays(0), mOurVote(ourVote), transaction(tx) { ; }
 
 	const uint256& getTransactionID() const				{ return mTransactionID; }
-	bool getOurPosition() const							{ return mOurPosition; }
+	bool getOurVote() const								{ return mOurVote; }
 	Serializer& peekTransaction()						{ return transaction; }
 
 	void setVote(const uint160& peer, bool votesYes);
 	void unVote(const uint160& peer);
 
-	bool updatePosition(int percentTime, bool proposing);
+	bool updateVote(int percentTime, bool proposing);
 };
 
 enum LCState
@@ -100,7 +100,7 @@ protected:
 	boost::unordered_map<uint160, LedgerProposal::pointer> mPeerPositions;
 
 	// Transaction Sets, indexed by hash of transaction tree
-	boost::unordered_map<uint256, SHAMap::pointer> mComplete;
+	boost::unordered_map<uint256, SHAMap::pointer> mAcquired;
 	boost::unordered_map<uint256, TransactionAcquire::pointer> mAcquiring;
 
 	// Peer sets
@@ -120,21 +120,21 @@ protected:
 
 	// final accept logic
 	static void Saccept(boost::shared_ptr<LedgerConsensus> This, SHAMap::pointer txSet);
-	void accept(const SHAMap::pointer& txSet);
+	void accept(SHAMap::ref txSet);
 
 	void weHave(const uint256& id, Peer::ref avoidPeer);
 	void startAcquiring(const TransactionAcquire::pointer&);
 	SHAMap::pointer find(const uint256& hash);
 
-	void createDisputes(const SHAMap::pointer&, const SHAMap::pointer&);
+	void createDisputes(SHAMap::ref, SHAMap::ref);
 	void addDisputedTransaction(const uint256&, const std::vector<unsigned char>& transaction);
-	void adjustCount(const SHAMap::pointer& map, const std::vector<uint160>& peers);
+	void adjustCount(SHAMap::ref map, const std::vector<uint160>& peers);
 	void propose();
 
 	void addPosition(LedgerProposal&, bool ours);
 	void removePosition(LedgerProposal&, bool ours);
 	void sendHaveTxSet(const uint256& set, bool direct);
-	void applyTransactions(const SHAMap::pointer& transactionSet, Ledger::ref targetLedger,
+	void applyTransactions(SHAMap::ref transactionSet, Ledger::ref targetLedger,
 		Ledger::ref checkLedger, CanonicalTXSet& failedTransactions, bool openLgr);
 	void applyTransaction(TransactionEngine& engine, const SerializedTransaction::pointer& txn,
 		Ledger::ref targetLedger, CanonicalTXSet& failedTransactions, bool openLgr);
@@ -162,7 +162,7 @@ public:
 
 	SHAMap::pointer getTransactionTree(const uint256& hash, bool doAcquire);
 	TransactionAcquire::pointer getAcquiring(const uint256& hash);
-	void mapComplete(const uint256& hash, const SHAMap::pointer& map, bool acquired);
+	void mapComplete(const uint256& hash, SHAMap::ref map, bool acquired);
 	void checkLCL();
 	void handleLCL(const uint256& lclHash);
 

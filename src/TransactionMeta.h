@@ -46,6 +46,7 @@ protected:
 
 public:
 	TransactionMetaNodeEntry(int type) : mType(type) { ; }
+	virtual ~TransactionMetaNodeEntry() { ; }
 
 	int getType() const { return mType; }
 	virtual Json::Value getJson(int) const = 0;
@@ -167,6 +168,9 @@ public:
 
 class TransactionMetaSet
 {
+public:
+	typedef boost::shared_ptr<TransactionMetaSet> pointer;
+
 protected:
 	uint256 mTransactionID;
 	uint32 mLedger;

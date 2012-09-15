@@ -27,7 +27,7 @@ private:
 
 protected:
 	BN_CTX* pctx;
-	BN_CTX* operator=(BN_CTX* pnew) { return pctx = pnew; }
+	CAutoBN_CTX& operator=(BN_CTX* pnew) { pctx = pnew; return *this; }
 
 public:
 	CAutoBN_CTX()

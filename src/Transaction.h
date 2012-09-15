@@ -281,7 +281,6 @@ public:
 	STAmount getAmount() const { return mTransaction->getITFieldU64(sfAmount); }
 	STAmount getFee() const { return mTransaction->getTransactionFee(); }
 	uint32 getFromAccountSeq() const { return mTransaction->getSequence(); }
-	uint32 getSourceLedger() const { return mTransaction->getITFieldU32(sfTargetLedger); }
 	uint32 getIdent() const { return mTransaction->getITFieldU32(sfSourceTag); }
 	std::vector<unsigned char> getSignature() const { return mTransaction->getSignature(); }
 	uint32 getLedger() const { return mInLedger; }
