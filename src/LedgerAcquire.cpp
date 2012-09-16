@@ -84,9 +84,8 @@ void PeerSet::TimerEntry(boost::weak_ptr<PeerSet> wptr, const boost::system::err
 	if (result == boost::asio::error::operation_aborted)
 		return;
 	boost::shared_ptr<PeerSet> ptr = wptr.lock();
-	if (!ptr)
-		return;
-	ptr->invokeOnTimer();
+	if (ptr)
+		ptr->invokeOnTimer();
 }
 
 LedgerAcquire::LedgerAcquire(const uint256& hash) : PeerSet(hash, LEDGER_ACQUIRE_TIMEOUT), 
@@ -109,7 +108,7 @@ void LedgerAcquire::onTimer()
 
 boost::weak_ptr<PeerSet> LedgerAcquire::pmDowncast()
 {
-	return boost::shared_polymorphic_downcast<PeerSet, LedgerAcquire>(shared_from_this());
+	return boost::shared_polymorphic_downcast<PeerSet>(shared_from_this());
 }
 
 void LedgerAcquire::done()

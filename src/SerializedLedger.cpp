@@ -102,7 +102,7 @@ bool SerializedLedgerEntry::thread(const uint256& txID, uint32 ledgerSeq, uint25
 	if (oldPrevTxID == txID)
 		return false;
 	prevTxID = oldPrevTxID;
-	prevLedgerID = getIFieldU32(sfLastTxnID);
+	prevLedgerID = getIFieldU32(sfLastTxnSeq);
 	assert(prevTxID != txID);
 	setIFieldH256(sfLastTxnID, txID);
 	setIFieldU32(sfLastTxnSeq, ledgerSeq);

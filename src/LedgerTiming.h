@@ -28,6 +28,10 @@
 // How often we check state or change positions (in milliseconds)
 #	define LEDGER_GRANULARITY		1000
 
+// The percentage of active trusted validators that must be able to
+// keep up with the network or we consider the network overloaded
+#	define LEDGER_NET_RATIO			70
+
 // How long we consider a proposal fresh
 #	define PROPOSE_FRESHNESS		20
 

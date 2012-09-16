@@ -9,6 +9,7 @@
 
 #include "Ledger.h"
 #include "Serializer.h"
+#include "Log.h"
 
 AccountState::AccountState(const NewcoinAddress& naAccountID) : mAccountID(naAccountID), mValid(false)
 {
@@ -59,11 +60,8 @@ void AccountState::addJson(Json::Value& val)
 void AccountState::dump()
 {
 	Json::Value j(Json::objectValue);
-
 	addJson(j);
-
-	Json::StyledStreamWriter ssw;
-	ssw.write(std::cerr, j);
+	Log(lsINFO) << j;
 }
 
 // vim:ts=4

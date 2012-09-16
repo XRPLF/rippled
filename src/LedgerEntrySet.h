@@ -6,6 +6,7 @@
 #include "SerializedLedger.h"
 #include "TransactionMeta.h"
 #include "Ledger.h"
+#include "TransactionErr.h"
 
 enum LedgerEntryAction
 {
@@ -15,7 +16,6 @@ enum LedgerEntryAction
 	taaDELETE,	// Delete, must have previously been taaDELETE or taaMODIFY.
 	taaCREATE,	// Newly created.
 };
-
 
 class LedgerEntrySetEntry
 {
@@ -67,6 +67,9 @@ public:
 	void init(Ledger::ref ledger, const uint256& transactionID, uint32 ledgerID);
 	void clear();
 
+	Ledger::pointer& getLedger() { return mLedger; }
+	const Ledger::pointer& getLedgerRef() const { return mLedger; }
+
 	// basic entry functions
 	SLE::pointer getEntry(const uint256& index, LedgerEntryAction&);
 	LedgerEntryAction hasEntry(const uint256& index) const;
@@ -79,8 +82,45 @@ public:
 	SLE::pointer entryCreate(LedgerEntryType letType, const uint256& uIndex);
 	SLE::pointer entryCache(LedgerEntryType letType, const uint256& uIndex);
 
+	// Directory functions.
+	TER dirAdd(
+		uint64&							uNodeDir,		// Node of entry.
+		const uint256&					uRootIndex,
+		const uint256&					uLedgerIndex);
+
+	TER dirDelete(
+		const bool						bKeepRoot,
+		const uint64&					uNodeDir,		// Node item is mentioned in.
+		const uint256&					uRootIndex,
+		const uint256&					uLedgerIndex,	// Item being deleted
+		const bool						bStable);
+
+	bool dirFirst(const uint256& uRootIndex, SLE::pointer& sleNode, unsigned int& uDirEntry, uint256& uEntryIndex);
+	bool dirNext(const uint256& uRootIndex, SLE::pointer& sleNode, unsigned int& uDirEntry, uint256& uEntryIndex);
+
+	// Offer functions.
+	TER					offerDelete(const uint256& uOfferIndex);
+	TER					offerDelete(const SLE::pointer& sleOffer, const uint256& uOfferIndex, const uint160& uOwnerID);
+
+	// Balance functions.
+	uint32				rippleTransferRate(const uint160& uIssuerID);
+	STAmount			rippleOwed(const uint160& uToAccountID, const uint160& uFromAccountID, const uint160& uCurrencyID);
+	STAmount			rippleLimit(const uint160& uToAccountID, const uint160& uFromAccountID, const uint160& uCurrencyID);
+	uint32				rippleQualityIn(const uint160& uToAccountID, const uint160& uFromAccountID, const uint160& uCurrencyID, const SOE_Field sfLow=sfLowQualityIn, const SOE_Field sfHigh=sfHighQualityIn);
+	uint32				rippleQualityOut(const uint160& uToAccountID, const uint160& uFromAccountID, const uint160& uCurrencyID)
+	{ return rippleQualityIn(uToAccountID, uFromAccountID, uCurrencyID, sfLowQualityOut, sfHighQualityOut); }
+
+	STAmount			rippleHolds(const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID);
+	STAmount			rippleTransferFee(const uint160& uSenderID, const uint160& uReceiverID, const uint160& uIssuerID, const STAmount& saAmount);
+	void				rippleCredit(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount, bool bCheckIssuer=true);
+	STAmount			rippleSend(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount);
+
+	STAmount			accountHolds(const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID);
+	void				accountSend(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount);
+	STAmount			accountFunds(const uint160& uAccountID, const STAmount& saDefault);
+
 	Json::Value getJson(int) const;
-	void calcRawMeta(Serializer&, Ledger::ref originalLedger);
+	void calcRawMeta(Serializer&);
 
 	// iterator functions
 	bool isEmpty() const																{ return mEntries.empty(); }

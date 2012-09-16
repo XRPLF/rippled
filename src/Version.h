@@ -5,7 +5,7 @@
 //
 
 #define SERVER_VERSION_MAJOR		0
-#define SERVER_VERSION_MINOR		4
+#define SERVER_VERSION_MINOR		5
 #define SERVER_VERSION_SUB			"-a"
 #define SERVER_NAME					"NewCoin"
 
@@ -16,11 +16,11 @@
 
 // Version we prefer to speak:
 #define PROTO_VERSION_MAJOR			0
-#define PROTO_VERSION_MINOR			6
+#define PROTO_VERSION_MINOR			7
 
 // Version we will speak to:
 #define MIN_PROTO_MAJOR				0
-#define MIN_PROTO_MINOR				6
+#define MIN_PROTO_MINOR				7
 
 #define MAKE_VERSION_INT(maj,min)	((maj << 16) | min)
 #define GET_VERSION_MAJOR(ver)		(ver >> 16)

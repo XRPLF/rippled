@@ -34,7 +34,9 @@ public:
 	void getValidationCount(const uint256& ledger, bool currentOnly, int& trusted, int& untrusted);
 
 	int getTrustedValidationCount(const uint256& ledger);
-	int getCurrentValidationCount(uint32 afterTime);
+
+	int getNodesAfter(const uint256& ledger);
+	int getLoadRatio(bool overLoaded);
 
 	boost::unordered_map<uint256, int> getCurrentValidations(uint256 currentLedger = uint256());
 

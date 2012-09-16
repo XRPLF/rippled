@@ -106,7 +106,6 @@ enum SOE_Field
 	sfTakerGets,
 	sfTakerPays,
 	sfTarget,
-	sfTargetLedger,
 	sfTransferRate,
 	sfVersion,
 	sfWalletLocator,

@@ -28,7 +28,7 @@ protected:
 	TransactionType mType;
 	STVariableLength mSignature;
 	STObject mMiddleTxn, mInnerTxn;
-	TransactionFormat* mFormat;
+	const TransactionFormat* mFormat;
 
 	SerializedTransaction* duplicate() const { return new SerializedTransaction(*this); }
 

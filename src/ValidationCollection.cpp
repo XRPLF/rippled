@@ -116,17 +116,38 @@ int ValidationCollection::getTrustedValidationCount(const uint256& ledger)
 	return trusted;
 }
 
-int ValidationCollection::getCurrentValidationCount(uint32 afterTime)
-{
+int ValidationCollection::getNodesAfter(const uint256& ledger)
+{ // Number of trusted nodes that have moved past this ledger
 	int count = 0;
 	boost::mutex::scoped_lock sl(mValidationLock);
 	for (boost::unordered_map<uint160, SerializedValidation::pointer>::iterator it = mCurrentValidations.begin(),
 		end = mCurrentValidations.end(); it != end; ++it)
 	{
-		if (it->second->isTrusted() && (it->second->getSignTime() > afterTime))
+		if (it->second->isTrusted() && it->second->isPreviousHash(ledger))
 			++count;
 	}
 	return count;
+}
+
+int ValidationCollection::getLoadRatio(bool overLoaded)
+{ // how many trusted nodes are able to keep up, higher is better
+	int goodNodes = overLoaded ? 1 : 0;
+	int badNodes = overLoaded ? 0 : 1;
+	{
+		boost::mutex::scoped_lock sl(mValidationLock);
+		for (boost::unordered_map<uint160, SerializedValidation::pointer>::iterator it = mCurrentValidations.begin(),
+			end = mCurrentValidations.end(); it != end; ++it)
+		{
+			if (it->second->isTrusted())
+			{
+				if (it->second->isFull())
+					++goodNodes;
+				else
+					++badNodes;
+			}
+		}
+	}
+	return (goodNodes * 100) / (goodNodes + badNodes);
 }
 
 boost::unordered_map<uint256, int> ValidationCollection::getCurrentValidations(uint256 currentLedger)

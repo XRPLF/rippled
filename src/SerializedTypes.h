@@ -395,6 +395,9 @@ public:
 	Json::Value getJson(int) const;
 };
 
+extern STAmount saZero;
+extern STAmount saOne;
+
 class STHash128 : public SerializedType
 {
 protected:

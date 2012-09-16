@@ -24,7 +24,8 @@ class SHAMap;
 class SHAMapNode
 { // Identifies a node in a SHA256 hash
 public:
-	typedef boost::shared_ptr<SHAMapNode> pointer;
+	typedef boost::shared_ptr<SHAMapNode> 			pointer;
+	typedef const boost::shared_ptr<SHAMapNode>&	ref;
 
 private:
 	static uint256 smMasks[65]; // AND with hash to get node id
@@ -216,11 +217,11 @@ public:
 
 enum SHAMapState
 {
-	Modifying = 0,		// Objects can be added and removed (like an open ledger)
-	Immutable = 1,		// Map cannot be changed (like a closed ledger)
-	Synching = 2,		// Map's hash is locked in, valid nodes can be added (like a peer's closing ledger)
-	Floating = 3,		// Map is free to change hash (like a synching open ledger)
-	Invalid = 4,		// Map is known not to be valid (usually synching a corrupt ledger)
+	smsModifying = 0,		// Objects can be added and removed (like an open ledger)
+	smsImmutable = 1,		// Map cannot be changed (like a closed ledger)
+	smsSynching = 2,		// Map's hash is locked in, valid nodes can be added (like a peer's closing ledger)
+	smsFloating = 3,		// Map is free to change hash (like a synching open ledger)
+	smsInvalid = 4,			// Map is known not to be valid (usually synching a corrupt ledger)
 };
 
 class SHAMapSyncFilter
@@ -228,9 +229,11 @@ class SHAMapSyncFilter
 public:
 	SHAMapSyncFilter()				{ ; }
 	virtual ~SHAMapSyncFilter()		{ ; }
+
 	virtual void gotNode(const SHAMapNode& id, const uint256& nodeHash,
 		const std::vector<unsigned char>& nodeData, bool isLeaf)
 	{ ; }
+
 	virtual bool haveNode(const SHAMapNode& id, const uint256& nodeHash, std::vector<unsigned char>& nodeData)
 	{ return false; }
 };
@@ -247,6 +250,7 @@ public:
 	{ ; }
 	virtual ~SHAMapMissingNode() throw()
 	{ ; }
+
 	const SHAMapNode& getNodeID() const	{ return mNodeID; }
 	const uint256& getNodeHash() const	{ return mNodeHash; }
 };
@@ -255,6 +259,8 @@ class SHAMap
 {
 public:
 	typedef boost::shared_ptr<SHAMap> pointer;
+	typedef const boost::shared_ptr<SHAMap>& ref;
+
 	typedef std::map<uint256, std::pair<SHAMapItem::pointer, SHAMapItem::pointer> > SHAMapDiff;
 
 private:
@@ -280,9 +286,9 @@ protected:
 	SHAMapTreeNode::pointer getNode(const SHAMapNode& id);
 	SHAMapTreeNode::pointer getNode(const SHAMapNode& id, const uint256& hash, bool modify);
 	SHAMapTreeNode* getNodePointer(const SHAMapNode& id, const uint256& hash);
+	SHAMapTreeNode* firstBelow(SHAMapTreeNode*);
+	SHAMapTreeNode* lastBelow(SHAMapTreeNode*);
 
-	SHAMapItem::pointer firstBelow(SHAMapTreeNode*);
-	SHAMapItem::pointer lastBelow(SHAMapTreeNode*);
 	SHAMapItem::pointer onlyBelow(SHAMapTreeNode*);
 	void eraseChildren(SHAMapTreeNode::pointer);
 
@@ -294,6 +300,8 @@ public:
 	// build new map
 	SHAMap(uint32 seq = 0);
 	SHAMap(const uint256& hash);
+
+	~SHAMap() { mState = smsInvalid; }
 
 	// Returns a new map that's a snapshot of this one. Force CoW
 	SHAMap::pointer snapShot(bool isMutable);
@@ -318,11 +326,14 @@ public:
 
 	// save a copy if you only need a temporary
 	SHAMapItem::pointer peekItem(const uint256& id);
+	SHAMapItem::pointer peekItem(const uint256& id, SHAMapTreeNode::TNType& type);
 
 	// traverse functions
 	SHAMapItem::pointer peekFirstItem();
+	SHAMapItem::pointer peekFirstItem(SHAMapTreeNode::TNType& type);
 	SHAMapItem::pointer peekLastItem();
 	SHAMapItem::pointer peekNextItem(const uint256&);
+	SHAMapItem::pointer peekNextItem(const uint256&, SHAMapTreeNode::TNType& type);
 	SHAMapItem::pointer peekPrevItem(const uint256&);
 
 	// comparison/sync functions
@@ -337,17 +348,17 @@ public:
 		SHAMapSyncFilter* filter);
 
 	// status functions
-	void setImmutable(void)		{ assert(mState != Invalid); mState = Immutable; }
-	void clearImmutable(void)	{ mState = Modifying; }
-	bool isSynching(void) const	{ return (mState == Floating) || (mState == Synching); }
-	void setSynching(void)		{ mState = Synching; }
-	void setFloating(void)		{ mState = Floating; }
-	void clearSynching(void)	{ mState = Modifying; }
-	bool isValid(void)			{ return mState != Invalid; }
+	void setImmutable()		{ assert(mState != smsInvalid); mState = smsImmutable; }
+	void clearImmutable()	{ mState = smsModifying; }
+	bool isSynching() const	{ return (mState == smsFloating) || (mState == smsSynching); }
+	void setSynching()		{ mState = smsSynching; }
+	void setFloating()		{ mState = smsFloating; }
+	void clearSynching()	{ mState = smsModifying; }
+	bool isValid()			{ return mState != smsInvalid; }
 
 	// caution: otherMap must be accessed only by this function
 	// return value: true=successfully completed, false=too different
-	bool compare(const SHAMap::pointer& otherMap, SHAMapDiff& differences, int maxCount);
+	bool compare(SHAMap::ref otherMap, SHAMapDiff& differences, int maxCount);
 
 	void armDirty();
 	int flushDirty(int maxNodes, HashedObjectType t, uint32 seq);

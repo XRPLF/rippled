@@ -160,11 +160,6 @@ TransactionMetaNode::TransactionMetaNode(int type, const uint256& node, Serializ
 
 void TransactionMetaNode::addRaw(Serializer& s)
 {
-	if (mEntries.empty())
-	{ // ack, an empty node
-		assert(false);
-		return;
-	}
 	s.add8(mType);
 	s.add256(mNode);
 	mEntries.sort();
