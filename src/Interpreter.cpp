@@ -21,7 +21,7 @@ Interpreter::Interpreter()
 	mBlockJump=0;
 
 	mFunctionTable.resize(NUM_OF_OPS);
-	/*
+	
 	mFunctionTable[INT_OP]=new IntOp();
 	mFunctionTable[FLOAT_OP]=new FloatOp();
 	mFunctionTable[UINT160_OP]=new Uint160Op();
@@ -47,6 +47,7 @@ Interpreter::Interpreter()
 	mFunctionTable[BLOCK_OP]=new SubOp();
 	mFunctionTable[BLOCK_END_OP]=new SubOp();
 	mFunctionTable[SEND_XNS_OP]=new SendXNSOp();
+	/*
 	mFunctionTable[SEND_OP]=new SendOp();
 	mFunctionTable[REMOVE_CONTRACT_OP]=new SubOp();
 	mFunctionTable[FEE_OP]=new SubOp();
@@ -70,6 +71,7 @@ Interpreter::Interpreter()
 	mFunctionTable[GET_ACCEPTOR_ID_OP]=new GetAcceptorIDOp();
 	mFunctionTable[GET_CONTRACT_ID_OP]=new GetContractIDOp();
 	*/
+	
 }
 
 Data::pointer Interpreter::popStack()
