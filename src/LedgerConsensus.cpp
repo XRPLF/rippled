@@ -358,13 +358,18 @@ void LedgerConsensus::takeInitialPosition(Ledger& initialLedger)
 	SHAMap::pointer initialSet = initialLedger.peekTransactionMap()->snapShot(false);
 	uint256 txSet = initialSet->getHash();
 	Log(lsINFO) << "initial position " << txSet;
+	mapComplete(txSet, initialSet, false);
 
 	if (mValidating)
 		mOurPosition = boost::make_shared<LedgerProposal>
 			(mValSeed, initialLedger.getParentHash(), txSet, mCloseTime);
 	else
 		mOurPosition = boost::make_shared<LedgerProposal>(initialLedger.getParentHash(), txSet, mCloseTime);
-	mapComplete(txSet, initialSet, false);
+
+	BOOST_FOREACH(u256_lct_pair& it, mDisputes)
+	{
+		it.second->setOurVote(initialLedger.hasTransaction(it.first));
+	}
 
 	// if any peers have taken a contrary position, process disputes
 	boost::unordered_set<uint256> found;
@@ -372,7 +377,7 @@ void LedgerConsensus::takeInitialPosition(Ledger& initialLedger)
 	{
 		uint256 set = it.second->getCurrentHash();
 		if (found.insert(set).second)
-		{ // OPTIMIZEME: Don't process the same set more than once
+		{
 			boost::unordered_map<uint256, SHAMap::pointer>::iterator iit = mAcquired.find(set);
 			if (iit != mAcquired.end())
 				createDisputes(initialSet, iit->second);
