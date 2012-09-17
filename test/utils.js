@@ -74,7 +74,7 @@ var emptyPath = function(dirPath, done) {
 
 // Remove path recursively.
 var rmPath = function(dirPath, done) {
-    console.log("rmPath: %s", dirPath);
+//  console.log("rmPath: %s", dirPath);
 
     fs.lstat(dirPath, function (err, stats) {
 			if (err && err.code == "ENOENT") {
