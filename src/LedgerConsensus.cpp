@@ -832,6 +832,16 @@ void LedgerConsensus::addDisputedTransaction(const uint256& txID, const std::vec
 		if (cit != mAcquired.end() && cit->second)
 			txn->setVote(pit.first, cit->second->hasItem(txID));
 	}
+
+	if (!ourVote && theApp->isNew(txID))
+	{
+		newcoin::TMTransaction msg;
+		msg.set_rawtransaction(&(tx.front()), tx.size());
+		msg.set_status(newcoin::tsNEW);
+		msg.set_receivetimestamp(theApp->getOPs().getNetworkTimeNC());
+		PackedMessage::pointer packet = boost::make_shared<PackedMessage>(msg, newcoin::mtTRANSACTION);
+        theApp->getConnectionPool().relayMessage(NULL, packet);
+	}
 }
 
 bool LedgerConsensus::peerPosition(const LedgerProposal::pointer& newPosition)
