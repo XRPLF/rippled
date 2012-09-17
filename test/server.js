@@ -39,7 +39,7 @@ var makeBase = function(name, done) {
     console.log("start> %s: %s", name, path);
 
     // Reset the server directory, build it if needed.
-    utils.resetPath(path, parseInt('0777', 8), function (e) {
+    utils.resetPath(path, '0777', function (e) {
 			if (e) {
 				throw e;
 			}

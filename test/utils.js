@@ -37,7 +37,7 @@ var mapOr = function(func, array, done) {
 
 // Make a directory and sub-directories.
 var mkPath = function(dirPath, mode, done) {
-    fs.mkdir(dirPath, mode, function (e) {
+    fs.mkdir(dirPath, typeof mode === "string" ? parseInt(mode, 8) : mode, function (e) {
 	    if (e && e.code === "EEXIST") {
 			// Already exists, done.
 			done();
