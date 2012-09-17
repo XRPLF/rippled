@@ -2,8 +2,10 @@
 // Configuration for unit tests
 //
 
+var path = require("path");
+
 // Where to find the binary.
-exports.newcoind = "./newcoind";
+exports.newcoind = path.join(process.cwd(), "newcoind");
 
 // Configuration for servers.
 exports.servers = {

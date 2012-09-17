@@ -30,7 +30,6 @@ var configContent = function(name) {
 
 var configPath = function(name) {
 	return path.join(serverPath(name), "newcoind.cfg");
-
 };
 
 // Write a server's newcoind.cfg.
@@ -44,11 +43,12 @@ var serverSpawnSync = function(name) {
 		config.newcoind,
 		[
 			"-a",
-			"--conf=" + configPath(name)
+			"--conf=newcoind.cfg"
 		],
 		{
-			env : process.env,
-			stdio : 'inherit'
+			cwd: serverPath(name),
+			env: process.env,
+			stdio: 'inherit'
 		});
 
 	servers[name] = server;
