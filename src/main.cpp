@@ -96,7 +96,7 @@ int main(int argc, char* argv[])
 		("standalone,a", "Run with no peers.")
 		("test,t", "Perform unit tests.")
 		("parameters", po::value< vector<string> >(), "Specify comma separated parameters.")
-		("verbose,v", "Increase log level")
+		("verbose,v", "Increase log level.")
 	;
 
 	// Interpret positional arguments as --parameters.
