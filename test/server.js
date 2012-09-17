@@ -28,6 +28,7 @@ var serverConfig = function(name) {
 		}).join("");
 };
 
+// Write a server's newcoind.cfg.
 var writeConfig = function(name, done) {
 	fs.writeFile(path.join(serverPath(name), "newcoind.cfg"), serverConfig(name), 'utf8', done);
 };
