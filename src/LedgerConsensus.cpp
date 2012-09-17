@@ -359,6 +359,13 @@ void LedgerConsensus::takeInitialPosition(Ledger& initialLedger)
 	uint256 txSet = initialSet->getHash();
 	Log(lsINFO) << "initial position " << txSet;
 
+	if (mValidating)
+		mOurPosition = boost::make_shared<LedgerProposal>
+			(mValSeed, initialLedger.getParentHash(), txSet, mCloseTime);
+	else
+		mOurPosition = boost::make_shared<LedgerProposal>(initialLedger.getParentHash(), txSet, mCloseTime);
+	mapComplete(txSet, initialSet, false);
+
 	// if any peers have taken a contrary position, process disputes
 	boost::unordered_set<uint256> found;
 	BOOST_FOREACH(u160_prop_pair& it, mPeerPositions)
@@ -372,12 +379,6 @@ void LedgerConsensus::takeInitialPosition(Ledger& initialLedger)
 		}
 	}
 
-	if (mValidating)
-		mOurPosition = boost::make_shared<LedgerProposal>
-			(mValSeed, initialLedger.getParentHash(), txSet, mCloseTime);
-	else
-		mOurPosition = boost::make_shared<LedgerProposal>(initialLedger.getParentHash(), txSet, mCloseTime);
-	mapComplete(txSet, initialSet, false);
 	if (mProposing)
 		propose();
 }
@@ -389,16 +390,17 @@ void LedgerConsensus::createDisputes(SHAMap::ref m1, SHAMap::ref m2)
 	for (SHAMap::SHAMapDiff::iterator pos = differences.begin(), end = differences.end(); pos != end; ++pos)
 	{ // create disputed transactions (from the ledger that has them)
 		if (pos->second.first)
-		{
+		{ // transaction is in first map
 			assert(!pos->second.second);
 			addDisputedTransaction(pos->first, pos->second.first->peekData());
 		}
 		else if (pos->second.second)
-		{
+		{ // transaction is in second map
 			assert(!pos->second.first);
 			addDisputedTransaction(pos->first, pos->second.second->peekData());
 		}
-		else assert(false);
+		else // No other disagreement over a transaction should be possible
+			assert(false);
 	}
 }
 
@@ -417,7 +419,10 @@ void LedgerConsensus::mapComplete(const uint256& hash, SHAMap::ref map, bool acq
 	assert(hash == map->getHash());
 
 	if (mAcquired.find(hash) != mAcquired.end())
+	{
+		mAcquiring.erase(hash);
 		return; // we already have this map
+	}
 
 	if (mOurPosition && (!mOurPosition->isBowOut()) && (hash != mOurPosition->getCurrentHash()))
 	{ // this could create disputed transactions
@@ -799,19 +804,20 @@ void LedgerConsensus::addDisputedTransaction(const uint256& txID, const std::vec
 {
 	Log(lsTRACE) << "Transaction " << txID << " is disputed";
 	boost::unordered_map<uint256, LCTransaction::pointer>::iterator it = mDisputes.find(txID);
-	if (it != mDisputes.end()) return;
+	if (it != mDisputes.end())
+		return;
 
-	bool ourPosition = false;
+	bool ourVote = false;
 	if (mOurPosition)
 	{
 		boost::unordered_map<uint256, SHAMap::pointer>::iterator mit = mAcquired.find(mOurPosition->getCurrentHash());
 		if (mit != mAcquired.end())
-			ourPosition = mit->second->hasItem(txID);
+			ourVote = mit->second->hasItem(txID);
 		else
 			assert(false); // We don't have our own position?
 	}
 
-	LCTransaction::pointer txn = boost::make_shared<LCTransaction>(txID, tx, ourPosition);
+	LCTransaction::pointer txn = boost::make_shared<LCTransaction>(txID, tx, ourVote);
 	mDisputes[txID] = txn;
 
 	BOOST_FOREACH(u160_prop_pair& pit, mPeerPositions)
