@@ -35,8 +35,14 @@ DatabaseCon::~DatabaseCon()
 	delete mDatabase;
 }
 
+static void resetTimer(boost::asio::deadline_timer* timer)
+{ // ugly workaround for Boost IO service weirdness
+	timer->expires_from_now(boost::posix_time::hours(24));
+	timer->async_wait(boost::bind(resetTimer, timer));
+}
+
 Application::Application() :
-	mUNL(mIOService),
+	mIOTimer(mIOService), mAuxTimer(mAuxService), mUNL(mIOService),
 	mNetOps(mIOService, &mMasterLedger), mTempNodeCache(16384, 90), mHashedObjectStore(16384, 300),
 	mSNTPClient(mAuxService), mRpcDB(NULL), mTxnDB(NULL), mLedgerDB(NULL), mWalletDB(NULL),
 	mHashNodeDB(NULL), mNetNodeDB(NULL),
@@ -44,6 +50,9 @@ Application::Application() :
 {
 	RAND_bytes(mNonce256.begin(), mNonce256.size());
 	RAND_bytes(reinterpret_cast<unsigned char *>(&mNonceST), sizeof(mNonceST));
+
+	resetTimer(&mIOTimer);
+	resetTimer(&mAuxTimer);
 }
 
 extern const char *RpcDBInit[], *TxnDBInit[], *LedgerDBInit[], *WalletDBInit[], *HashNodeDBInit[], *NetNodeDBInit[];

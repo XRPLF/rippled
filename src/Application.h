@@ -39,7 +39,8 @@ public:
 
 class Application
 {
-	boost::asio::io_service	mIOService, mAuxService;
+	boost::asio::io_service		mIOService, mAuxService;
+	boost::asio::deadline_timer mIOTimer, mAuxTimer;
 
 	Wallet					mWallet;
 	UniqueNodeList			mUNL;
