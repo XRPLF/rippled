@@ -358,13 +358,18 @@ void LedgerConsensus::takeInitialPosition(Ledger& initialLedger)
 	SHAMap::pointer initialSet = initialLedger.peekTransactionMap()->snapShot(false);
 	uint256 txSet = initialSet->getHash();
 	Log(lsINFO) << "initial position " << txSet;
+	mapComplete(txSet, initialSet, false);
 
 	if (mValidating)
 		mOurPosition = boost::make_shared<LedgerProposal>
 			(mValSeed, initialLedger.getParentHash(), txSet, mCloseTime);
 	else
 		mOurPosition = boost::make_shared<LedgerProposal>(initialLedger.getParentHash(), txSet, mCloseTime);
-	mapComplete(txSet, initialSet, false);
+
+	BOOST_FOREACH(u256_lct_pair& it, mDisputes)
+	{
+		it.second->setOurVote(initialLedger.hasTransaction(it.first));
+	}
 
 	// if any peers have taken a contrary position, process disputes
 	boost::unordered_set<uint256> found;
@@ -372,7 +377,7 @@ void LedgerConsensus::takeInitialPosition(Ledger& initialLedger)
 	{
 		uint256 set = it.second->getCurrentHash();
 		if (found.insert(set).second)
-		{ // OPTIMIZEME: Don't process the same set more than once
+		{
 			boost::unordered_map<uint256, SHAMap::pointer>::iterator iit = mAcquired.find(set);
 			if (iit != mAcquired.end())
 				createDisputes(initialSet, iit->second);
@@ -826,6 +831,16 @@ void LedgerConsensus::addDisputedTransaction(const uint256& txID, const std::vec
 			mAcquired.find(pit.second->getCurrentHash());
 		if (cit != mAcquired.end() && cit->second)
 			txn->setVote(pit.first, cit->second->hasItem(txID));
+	}
+
+	if (!ourVote && theApp->isNew(txID))
+	{
+		newcoin::TMTransaction msg;
+		msg.set_rawtransaction(&(tx.front()), tx.size());
+		msg.set_status(newcoin::tsNEW);
+		msg.set_receivetimestamp(theApp->getOPs().getNetworkTimeNC());
+		PackedMessage::pointer packet = boost::make_shared<PackedMessage>(msg, newcoin::mtTRANSACTION);
+        theApp->getConnectionPool().relayMessage(NULL, packet);
 	}
 }
 

@@ -37,9 +37,9 @@ var mapOr = function(func, array, done) {
 
 // Make a directory and sub-directories.
 var mkPath = function(dirPath, mode, done) {
-    fs.mkdir(dirPath, mode, function (e) {
-	    if (e && e.code === "EEXIST") {
-			// Already exists, done.
+    fs.mkdir(dirPath, typeof mode === "string" ? parseInt(mode, 8) : mode, function (e) {
+		if (!e ||  e.code === "EEXIST") {
+			// Created or already exists, done.
 			done();
 	    }
 	    else if (e.code === "ENOENT") {
@@ -74,7 +74,7 @@ var emptyPath = function(dirPath, done) {
 
 // Remove path recursively.
 var rmPath = function(dirPath, done) {
-    console.log("rmPath: %s", dirPath);
+//  console.log("rmPath: %s", dirPath);
 
     fs.lstat(dirPath, function (err, stats) {
 			if (err && err.code == "ENOENT") {

@@ -36,7 +36,7 @@ DatabaseCon::~DatabaseCon()
 }
 
 Application::Application() :
-	mUNL(mIOService),
+	mIOWork(mIOService), mAuxWork(mAuxService), mUNL(mIOService),
 	mNetOps(mIOService, &mMasterLedger), mTempNodeCache(16384, 90), mHashedObjectStore(16384, 300),
 	mSNTPClient(mAuxService), mRpcDB(NULL), mTxnDB(NULL), mLedgerDB(NULL), mWalletDB(NULL),
 	mHashNodeDB(NULL), mNetNodeDB(NULL),
@@ -51,10 +51,10 @@ extern int RpcDBCount, TxnDBCount, LedgerDBCount, WalletDBCount, HashNodeDBCount
 
 void Application::stop()
 {
-	mAuxService.stop();
 	mIOService.stop();
 	mHashedObjectStore.bulkWrite();
 	mValidations.flush();
+	mAuxService.stop();
 
 	Log(lsINFO) << "Stopped: " << mIOService.stopped();
 }
