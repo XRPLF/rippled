@@ -4,7 +4,7 @@ var path = require("path");
 
 var filterErr = function(code, done) {
     return function (e) {
-			done(e.code !== code ? e : undefined);
+			done(e && e.code === code ? undefined : e);
 		};
 };
 
@@ -38,7 +38,7 @@ var mapOr = function(func, array, done) {
 // Make a directory and sub-directories.
 var mkPath = function(dirPath, mode, done) {
     fs.mkdir(dirPath, typeof mode === "string" ? parseInt(mode, 8) : mode, function (e) {
-		if (!e ||  e.code === "EEXIST") {
+		if (!e || e.code === "EEXIST") {
 			// Created or already exists, done.
 			done();
 	    }

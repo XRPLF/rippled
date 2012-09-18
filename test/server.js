@@ -12,6 +12,7 @@ var fs = require("fs");
 var path = require("path");
 var util = require("util");
 var child = require("child_process");
+var WebSocket = require("ws");
 
 var servers = {};
 
@@ -78,6 +79,14 @@ var makeBase = function(name, done) {
 		});
 };
 
+var wsOpen = function(done) {
+	var socket = new WebSocket(util.format("ws:://%s:%s", server.websocket_ip, server.websocket_port));
+
+	socket.on('open') {
+		done();
+	});
+};
+
 // Prepare the working directory and spawn the server.
 exports.start = function(name, done) {
     makeBase(name, function (e) {
@@ -86,7 +95,7 @@ exports.start = function(name, done) {
 			}
 			else {
 				serverSpawnSync(name);
-				done();
+				wsOpen(done);
 			}
 		});
 };
