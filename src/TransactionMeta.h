@@ -158,6 +158,7 @@ public:
 
 	TransactionMetaNode(int type, const uint256& node, SerializerIterator&);
 	void addRaw(Serializer&);
+	void setType(int t) { mType = t; }
 	Json::Value getJson(int) const;
 
 	bool addAmount(int nodeType, const STAmount& amount);
@@ -189,7 +190,7 @@ public:
 	uint32 getLgrSeq()			{ return mLedger; }
 
 	bool isNodeAffected(const uint256&) const;
-	TransactionMetaNode& getAffectedNode(const uint256&, int type);
+	TransactionMetaNode& getAffectedNode(const uint256&, int type, bool overrideType);
 	const TransactionMetaNode& peekAffectedNode(const uint256&) const;
 
 	Json::Value getJson(int) const;
