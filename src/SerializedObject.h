@@ -18,8 +18,6 @@ enum SOE_Type
 	SOE_IFNFLAG = 3		// present if flag not set
 };
 
-// JED: seems like there would be a better way to do this
-// maybe something that inherits from SerializedTransaction
 enum SOE_Field
 {
 	sfInvalid = -1,
