@@ -348,7 +348,6 @@ public:
 	STAmount operator-(uint64) const;
 	STAmount operator-(void) const;
 
-	STAmount& operator=(const STAmount&);
 	STAmount& operator+=(const STAmount&);
 	STAmount& operator-=(const STAmount&);
 	STAmount& operator+=(uint64);
