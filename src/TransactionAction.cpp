@@ -30,7 +30,7 @@ TER	TransactionEngine::setAuthorized(const SerializedTransaction& txn, bool bMus
 	//
 
 	std::vector<unsigned char>	vucCipher		= txn.getITFieldVL(sfGenerator);
-	std::vector<unsigned char>	vucPubKey		= txn.getITFieldVL(sfPubKey);
+	std::vector<unsigned char>	vucPubKey		= txn.getITFieldVL(sfPublicKey);
 	std::vector<unsigned char>	vucSignature	= txn.getITFieldVL(sfSignature);
 	NewcoinAddress				naAccountPublic	= NewcoinAddress::createAccountPublic(vucPubKey);
 
@@ -620,7 +620,7 @@ TER TransactionEngine::doWalletAdd(const SerializedTransaction& txn)
 {
 	std::cerr << "WalletAdd>" << std::endl;
 
-	const std::vector<unsigned char>	vucPubKey		= txn.getITFieldVL(sfPubKey);
+	const std::vector<unsigned char>	vucPubKey		= txn.getITFieldVL(sfPublicKey);
 	const std::vector<unsigned char>	vucSignature	= txn.getITFieldVL(sfSignature);
 	const uint160						uAuthKeyID		= txn.getITFieldAccount(sfAuthorizedKey);
 	const NewcoinAddress				naMasterPubKey	= NewcoinAddress::createAccountPublic(vucPubKey);

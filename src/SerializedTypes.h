@@ -15,25 +15,28 @@ enum SerializedTypeID
 	STI_DONE		= -1,
 	STI_NOTPRESENT	= 0,
 
-	// standard types
-	STI_OBJECT		= 1,
-	STI_UINT8		= 2,
-	STI_UINT16		= 3,
-	STI_UINT32		= 4,
-	STI_UINT64		= 5,
-	STI_HASH128		= 6,
-	STI_HASH160		= 7,
-	STI_HASH256		= 8,
-	STI_VL			= 9,
-	STI_TL			= 10,
-	STI_AMOUNT		= 11,
-	STI_PATHSET		= 12,
-	STI_VECTOR256	= 13,
+	// common types
+	STI_UINT32		= 1,
+	STI_UINT64		= 2,
+	STI_HASH128		= 3,
+	STI_HASH256		= 4,
+	STI_TL			= 5,
+	STI_AMOUNT		= 6,
+	STI_VL			= 7,
+	STI_ACCOUNT		= 8,
+	STI_OBJECT		= 14,
+	STI_ARRAY		= 15,
+
+	// uncommon types
+	STI_UINT8		= 16,
+	STI_UINT16		= 17,
+	STI_HASH160		= 18,
+	STI_PATHSET		= 19,
+	STI_VECTOR256	= 20,
 
 	// high level types
-	STI_ACCOUNT		= 100,
-	STI_TRANSACTION = 101,
-	STI_LEDGERENTRY	= 102
+	STI_TRANSACTION = 100001,
+	STI_LEDGERENTRY	= 100002
 };
 
 enum PathFlags
