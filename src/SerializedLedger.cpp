@@ -3,6 +3,7 @@
 #include <boost/format.hpp>
 
 #include "Ledger.h"
+#include "Log.h"
 
 SerializedLedgerEntry::SerializedLedgerEntry(SerializerIterator& sit, const uint256& index)
 	: SerializedType("LedgerEntry"), mIndex(index)
@@ -99,6 +100,7 @@ uint32 SerializedLedgerEntry::getThreadedLedger()
 bool SerializedLedgerEntry::thread(const uint256& txID, uint32 ledgerSeq, uint256& prevTxID, uint32& prevLedgerID)
 {
 	uint256 oldPrevTxID = getIFieldH256(sfLastTxnID);
+	Log(lsTRACE) << "Thread Tx:" << txID << " prev:" << oldPrevTxID;
 	if (oldPrevTxID == txID)
 		return false;
 	prevTxID = oldPrevTxID;

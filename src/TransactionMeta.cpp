@@ -294,11 +294,15 @@ bool TransactionMetaSet::isNodeAffected(const uint256& node) const
 	return mNodes.find(node) != mNodes.end();
 }
 
-TransactionMetaNode& TransactionMetaSet::getAffectedNode(const uint256& node, int type)
+TransactionMetaNode& TransactionMetaSet::getAffectedNode(const uint256& node, int type, bool overrideType)
 {
 	std::map<uint256, TransactionMetaNode>::iterator it = mNodes.find(node);
 	if (it != mNodes.end())
+	{
+		if (overrideType)
+			it->second.setType(type);
 		return it->second;
+	}
 	return mNodes.insert(std::make_pair(node, TransactionMetaNode(node, type))).first->second;
 }
 

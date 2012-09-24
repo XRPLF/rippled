@@ -291,7 +291,7 @@ SLE::pointer LedgerEntrySet::getForMod(const uint256& node, Ledger::ref ledger,
 
 }
 
-bool LedgerEntrySet::threadTx(TransactionMetaNode& metaNode, const NewcoinAddress& threadTo, Ledger::ref ledger,
+bool LedgerEntrySet::threadTx(const NewcoinAddress& threadTo, Ledger::ref ledger,
 	boost::unordered_map<uint256, SLE::pointer>& newMods)
 {
 	Log(lsTRACE) << "Thread to " << threadTo.getAccountID();
@@ -301,32 +301,36 @@ bool LedgerEntrySet::threadTx(TransactionMetaNode& metaNode, const NewcoinAddres
 		assert(false);
 		return false;
 	}
-	return threadTx(metaNode, sle, ledger, newMods);
+	return threadTx(sle, ledger, newMods);
 }
 
-bool LedgerEntrySet::threadTx(TransactionMetaNode& metaNode, SLE::ref threadTo, Ledger::ref ledger,
-	boost::unordered_map<uint256, SLE::pointer>& newMods)
+bool LedgerEntrySet::threadTx(SLE::ref threadTo, Ledger::ref ledger, boost::unordered_map<uint256, SLE::pointer>& newMods)
 {  // node = the node that was modified/deleted/created
    // threadTo = the node that needs to know
 	uint256 prevTxID;
 	uint32 prevLgrID;
 	if (!threadTo->thread(mSet.getTxID(), mSet.getLgrSeq(), prevTxID, prevLgrID))
 		return false;
-	if (metaNode.thread(prevTxID, prevLgrID))
+	if (mSet.getAffectedNode(threadTo->getIndex(), TMNModifiedNode, false).thread(prevTxID, prevLgrID))
 		return true;
 	assert(false);
 	return false;
 }
 
-bool LedgerEntrySet::threadOwners(TransactionMetaNode& metaNode, SLE::ref node, Ledger::ref ledger,
-	boost::unordered_map<uint256, SLE::pointer>& newMods)
+bool LedgerEntrySet::threadOwners(SLE::ref node, Ledger::ref ledger, boost::unordered_map<uint256, SLE::pointer>& newMods)
 { // thread new or modified node to owner or owners
 	if (node->hasOneOwner()) // thread to owner's account
-		return threadTx(metaNode, node->getOwner(), ledger, newMods);
-	else if (node->hasTwoOwners()) // thread to owner's accounts
+	{
+		Log(lsTRACE) << "Thread to single owner";
+		return threadTx(node->getOwner(), ledger, newMods);
+	}
+	else if (node->hasTwoOwners()) // thread to owner's accounts]
+	{
+		Log(lsTRACE) << "Thread to two owners";
 		return
-			threadTx(metaNode, node->getFirstOwner(), ledger, newMods) ||
-			threadTx(metaNode, node->getSecondOwner(), ledger, newMods);
+			threadTx(node->getFirstOwner(), ledger, newMods) &&
+			threadTx(node->getSecondOwner(), ledger, newMods);
+	}
 	else
 		return false;
 }
@@ -369,12 +373,12 @@ void LedgerEntrySet::calcRawMeta(Serializer& s)
 			continue;
 
 		SLE::pointer curNode = it->second.mEntry;
-		TransactionMetaNode &metaNode = mSet.getAffectedNode(it->first, nType);
+		TransactionMetaNode &metaNode = mSet.getAffectedNode(it->first, nType, true);
 
 		if (nType == TMNDeletedNode)
 		{
 			assert(origNode);
-			threadOwners(metaNode, origNode, mLedger, newMod);
+			threadOwners(origNode, mLedger, newMod);
 
 			if (origNode->getIFieldPresent(sfAmount))
 			{ // node has an amount, covers ripple state nodes
@@ -408,13 +412,16 @@ void LedgerEntrySet::calcRawMeta(Serializer& s)
 		if (nType == TMNCreatedNode) // if created, thread to owner(s)
 		{
 			assert(!origNode);
-			threadOwners(metaNode, curNode, mLedger, newMod);
+			threadOwners(curNode, mLedger, newMod);
 		}
 
 		if ((nType == TMNCreatedNode) || (nType == TMNModifiedNode))
 		{
 			if (curNode->isThreadedType()) // always thread to self
-				threadTx(metaNode, curNode, mLedger, newMod);
+			{
+				Log(lsTRACE) << "Thread to self";
+				threadTx(curNode, mLedger, newMod);
+			}
 		}
 
 		if (nType == TMNModifiedNode)

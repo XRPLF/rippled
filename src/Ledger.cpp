@@ -505,7 +505,6 @@ void Ledger::addJson(Json::Value& ret, int options)
 				{
 					SerializerIterator sit(item->peekSerializer());
 					Serializer sTxn(sit.getVL());
-					Serializer sMeta(sit.getVL());
 
 					SerializerIterator tsit(sTxn);
 					SerializedTransaction txn(tsit);
