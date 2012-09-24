@@ -10,6 +10,7 @@ struct FieldName
 	const char *fieldName;
 	SerializedTypeID fieldType;
 	int fieldValue;
+	int fieldID;
 };
 
 #endif
