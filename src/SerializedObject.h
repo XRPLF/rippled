@@ -24,7 +24,7 @@ enum SOE_Field
 	sfGeneric = 0,
 
 #define FIELD(name, type, index) sf##name,
-#define TYPE(name, index)
+#define TYPE(name, type, index)
 #include "SerializeProto.h"
 #undef FIELD
 #undef TYPE
