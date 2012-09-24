@@ -250,9 +250,9 @@ protected:
 	STAmount(const char *name, uint64 value, bool isNegative)
 		: SerializedType(name), mValue(value), mOffset(0), mIsNative(true), mIsNegative(isNegative)
 	{ ; }
-	STAmount(const char *n, const uint160& cur, uint64 val, int off, bool isNative, bool isNegative)
-		: SerializedType(n), mCurrency(cur), mValue(val), mOffset(off), mIsNative(isNative), mIsNegative(isNegative)
-	{ ; }
+	STAmount(const char *n, const uint160& cur, const uint160& iss, uint64 val, int off, bool isNat, bool isNeg)
+		: SerializedType(n), mCurrency(cur), mIssuer(iss),  mValue(val), mOffset(off),
+			mIsNative(isNat), mIsNegative(isNeg) { ; }
 
 	uint64 toUInt64() const;
 	static uint64 muldiv(uint64, uint64, uint64);
@@ -272,8 +272,9 @@ public:
 	{ canonicalize(); }
 
 	// YYY This should probably require issuer too.
-	STAmount(const char* n, const uint160& currency, uint64 v = 0, int off = 0, bool isNeg = false) :
-		SerializedType(n), mCurrency(currency), mValue(v), mOffset(off), mIsNegative(isNeg)
+	STAmount(const char* n, const uint160& currency, const uint160& issuer,
+			uint64 v = 0, int off = 0, bool isNeg = false) :
+		SerializedType(n), mCurrency(currency), mIssuer(issuer), mValue(v), mOffset(off), mIsNegative(isNeg)
 	{ canonicalize(); }
 
 	STAmount(const char* n, int64 v);
@@ -347,6 +348,7 @@ public:
 	STAmount operator-(uint64) const;
 	STAmount operator-(void) const;
 
+	STAmount& operator=(const STAmount&);
 	STAmount& operator+=(const STAmount&);
 	STAmount& operator-=(const STAmount&);
 	STAmount& operator+=(uint64);
