@@ -632,9 +632,9 @@ STAmount operator+(const STAmount& v1, const STAmount& v2)
 
 	int64 fv = vv1 + vv2;
 	if (fv >= 0)
-		return STAmount(v1.name, v1.mCurrency, fv, ov1, false);
+		return STAmount(v1.name, v1.mCurrency, v1.mIssuer, fv, ov1, false);
 	else
-		return STAmount(v1.name, v1.mCurrency, -fv, ov1, true);
+		return STAmount(v1.name, v1.mCurrency, v1.mIssuer, -fv, ov1, true);
 }
 
 STAmount operator-(const STAmount& v1, const STAmount& v2)
@@ -664,9 +664,9 @@ STAmount operator-(const STAmount& v1, const STAmount& v2)
 
 	int64 fv = vv1 - vv2;
 	if (fv >= 0)
-		return STAmount(v1.name, v1.mCurrency, fv, ov1, false);
+		return STAmount(v1.name, v1.mCurrency, v1.mIssuer, fv, ov1, false);
 	else
-		return STAmount(v1.name, v1.mCurrency, -fv, ov1, true);
+		return STAmount(v1.name, v1.mCurrency, v1.mIssuer, -fv, ov1, true);
 }
 
 STAmount STAmount::divide(const STAmount& num, const STAmount& den, const uint160& uCurrencyID, const uint160& uIssuerID)
