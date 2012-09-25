@@ -136,6 +136,7 @@
     <ClCompile Include="src\PubKeyCache.cpp" />
     <ClCompile Include="src\RequestParser.cpp" />
     <ClCompile Include="src\rfc1751.cpp" />
+    <ClCompile Include="src\RippleCalc.cpp" />
     <ClCompile Include="src\RippleLines.cpp" />
     <ClCompile Include="src\RippleState.cpp" />
     <ClCompile Include="src\rpc.cpp" />
@@ -156,7 +157,9 @@
     <ClCompile Include="src\SNTPClient.cpp" />
     <ClCompile Include="src\Suppression.cpp" />
     <ClCompile Include="src\Transaction.cpp" />
+    <ClCompile Include="src\TransactionAction.cpp" />
     <ClCompile Include="src\TransactionEngine.cpp" />
+    <ClCompile Include="src\TransactionErr.cpp" />
     <ClCompile Include="src\TransactionFormats.cpp" />
     <ClCompile Include="src\TransactionMaster.cpp" />
     <ClCompile Include="src\TransactionMeta.cpp" />
@@ -271,6 +274,10 @@
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">obj\src\newcoin.pb.h</Outputs>
     </CustomBuild>
     <None Include="SConstruct" />
+    <None Include="test\buster.js" />
+    <None Include="test\server.js" />
+    <None Include="test\standalone-test.js" />
+    <None Include="test\utils.js" />
     <None Include="validators.txt" />
     <None Include="wallet.xml" />
   </ItemGroup>

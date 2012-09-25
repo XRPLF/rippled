@@ -31,6 +31,9 @@
     <Filter Include="Source Files\websocketpp">
       <UniqueIdentifier>{92775c5f-dc9f-4a97-a9a6-6d4bd4e424b4}</UniqueIdentifier>
     </Filter>
+    <Filter Include="test">
+      <UniqueIdentifier>{b8dcb73e-9f6f-48d3-ad81-9858068aacf7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="database\sqlite3.c">
@@ -292,6 +295,15 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\Operation.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\TransactionAction.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\RippleCalc.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\TransactionErr.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -557,6 +569,18 @@
     <None Include="SConstruct" />
     <None Include="newcoind.cfg" />
     <None Include="validators.txt" />
+    <None Include="test\buster.js">
+      <Filter>test</Filter>
+    </None>
+    <None Include="test\server.js">
+      <Filter>test</Filter>
+    </None>
+    <None Include="test\standalone-test.js">
+      <Filter>test</Filter>
+    </None>
+    <None Include="test\utils.js">
+      <Filter>test</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="src\newcoin.proto" />

@@ -741,7 +741,7 @@ TER TransactionEngine::takeOffers(
 		}
 
 		if (!sleOfferDir									// No offer directory to take.
-			|| uTakeQuality < uTipQuality					// No offer's of sufficient quality available.
+			|| uTakeQuality < uTipQuality					// No offers of sufficient quality available.
 			|| (bPassive && uTakeQuality == uTipQuality))
 		{
 			// Done.
