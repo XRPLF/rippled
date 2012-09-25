@@ -194,7 +194,7 @@ Transaction::pointer Transaction::setClaim(
 	const std::vector<unsigned char>& vucSignature)
 {
 	mTransaction->setITFieldVL(sfGenerator, vucGenerator);
-	mTransaction->setITFieldVL(sfPubKey, vucPubKey);
+	mTransaction->setITFieldVL(sfPublicKey, vucPubKey);
 	mTransaction->setITFieldVL(sfSignature, vucSignature);
 
 	sign(naPrivateKey);
@@ -455,7 +455,7 @@ Transaction::pointer Transaction::setPasswordSet(
 {
 	mTransaction->setITFieldAccount(sfAuthorizedKey, naAuthKeyID);
 	mTransaction->setITFieldVL(sfGenerator, vucGenerator);
-	mTransaction->setITFieldVL(sfPubKey, vucPubKey);
+	mTransaction->setITFieldVL(sfPublicKey, vucPubKey);
 	mTransaction->setITFieldVL(sfSignature, vucSignature);
 
 	sign(naPrivateKey);
@@ -542,7 +542,7 @@ Transaction::pointer Transaction::setWalletAdd(
 {
 	mTransaction->setITFieldAmount(sfAmount, saAmount);
 	mTransaction->setITFieldAccount(sfAuthorizedKey, naAuthKeyID);
-	mTransaction->setITFieldVL(sfPubKey, naNewPubKey.getAccountPublic());
+	mTransaction->setITFieldVL(sfPublicKey, naNewPubKey.getAccountPublic());
 	mTransaction->setITFieldVL(sfSignature, vucSignature);
 
 	sign(naPrivateKey);

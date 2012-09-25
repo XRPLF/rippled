@@ -112,7 +112,8 @@ Json::Value callRPC(const std::string& strMethod, const Json::Value& params)
 		"If the file does not exist, create it with owner-readable-only file permissions.");
 
 	// Connect to localhost
-	std::cout << "Connecting to port:" << theConfig.RPC_PORT << std::endl;
+	std::cout << "Connecting to: " << theConfig.RPC_IP << ":" << theConfig.RPC_PORT << std::endl;
+
 	boost::asio::ip::tcp::endpoint
 		endpoint(boost::asio::ip::address::from_string(theConfig.RPC_IP), theConfig.RPC_PORT);
 	boost::asio::ip::tcp::iostream stream;

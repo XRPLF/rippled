@@ -154,6 +154,57 @@ uint256 Serializer::get256(int offset) const
 	return ret;
 }
 
+int Serializer::addFieldID(int type, int name)
+{
+	int ret = mData.size();
+	assert((type > 0) && (type < 256) && (name > 0) && (name < 256));
+	if (type < 16)
+	{
+		if (name < 16) // common type, common name
+			mData.push_back(static_cast<unsigned char>((type << 4) | name));
+		else
+		{ // common type, uncommon name
+			mData.push_back(static_cast<unsigned char>(type << 4));
+			mData.push_back(static_cast<unsigned char>(name));
+		}
+	}
+	else if (name < 16)
+	{ // uncommon type, common name
+		mData.push_back(static_cast<unsigned char>(name));
+		mData.push_back(static_cast<unsigned char>(type));
+	}
+	else
+	{ // uncommon type, uncommon name
+		mData.push_back(static_cast<unsigned char>(0));
+		mData.push_back(static_cast<unsigned char>(type));
+		mData.push_back(static_cast<unsigned char>(name));
+	}
+	return ret;
+}
+
+bool Serializer::getFieldID(int& type, int & name, int offset) const
+{
+	if (!get8(type, offset))
+		return false;
+	name = type & 15;
+	type >>= 4;
+	if (type == 0)
+	{ // uncommon type
+		if (!get8(type, ++offset))
+			return false;
+		if ((type == 0) || (type < 16))
+			return false;
+	}
+	if (name == 0)
+	{ // uncommon name
+		if (!get8(name, ++offset))
+			return false;
+		if ((name == 0) || (name < 16))
+			return false;
+	}
+	return true;
+}
+
 int Serializer::add8(unsigned char byte)
 {
 	int ret = mData.size();
@@ -533,6 +584,17 @@ void Serializer::TestSerializer()
 int SerializerIterator::getBytesLeft()
 {
 	return mSerializer.size() - mPos;
+}
+
+void SerializerIterator::getFieldID(int& type, int& field)
+{
+	if (!mSerializer.getFieldID(type, field, mPos))
+		throw std::runtime_error("invalid serializer getFieldID");
+	++mPos;
+	if (type >= 16)
+		++mPos;
+	if (field >= 16)
+		++mPos;
 }
 
 unsigned char SerializerIterator::get8()

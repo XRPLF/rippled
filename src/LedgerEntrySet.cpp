@@ -349,14 +349,17 @@ void LedgerEntrySet::calcRawMeta(Serializer& s)
 		switch (it->second.mAction)
 		{
 			case taaMODIFY:
+				Log(lsTRACE) << "Modified Node " << it->first;
 				nType = TMNModifiedNode;
 				break;
 
 			case taaDELETE:
+				Log(lsTRACE) << "Deleted Node " << it->first;
 				nType = TMNDeletedNode;
 				break;
 
 			case taaCREATE:
+				Log(lsTRACE) << "Created Node " << it->first;
 				nType = TMNCreatedNode;
 				break;
 
@@ -938,23 +941,18 @@ STAmount LedgerEntrySet::accountHolds(const uint160& uAccountID, const uint160& 
 
 	if (!uCurrencyID)
 	{
-		SLE::pointer		sleAccount	= entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uAccountID));
+		SLE::pointer	sleAccount	= entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uAccountID));
 
 		saAmount	= sleAccount->getIValueFieldAmount(sfBalance);
-
-		Log(lsINFO) << "accountHolds: stamps: " << saAmount.getText();
 	}
 	else
 	{
 		saAmount	= rippleHolds(uAccountID, uCurrencyID, uIssuerID);
-
-		Log(lsINFO) << "accountHolds: "
-			<< saAmount.getFullText()
-			<< " : "
-			<< STAmount::createHumanCurrency(uCurrencyID)
-			<< "/"
-			<< NewcoinAddress::createHumanAccountID(uIssuerID);
 	}
+
+	Log(lsINFO) << boost::str(boost::format("accountHolds: uAccountID=%s saAmount=%s")
+		% NewcoinAddress::createHumanAccountID(uAccountID)
+		% saAmount.getFullText());
 
 	return saAmount;
 }
@@ -968,30 +966,22 @@ STAmount LedgerEntrySet::accountFunds(const uint160& uAccountID, const STAmount&
 {
 	STAmount	saFunds;
 
-	Log(lsINFO) << "accountFunds: uAccountID="
-			<< NewcoinAddress::createHumanAccountID(uAccountID);
-	Log(lsINFO) << "accountFunds: saDefault.isNative()=" << saDefault.isNative();
-	Log(lsINFO) << "accountFunds: saDefault.getIssuer()="
-			<< NewcoinAddress::createHumanAccountID(saDefault.getIssuer());
-
 	if (!saDefault.isNative() && saDefault.getIssuer() == uAccountID)
 	{
 		saFunds	= saDefault;
 
-		Log(lsINFO) << "accountFunds: offer funds: ripple self-funded: " << saFunds.getText();
+		Log(lsINFO) << boost::str(boost::format("accountFunds: uAccountID=%s saDefault=%s SELF-FUNDED")
+			% NewcoinAddress::createHumanAccountID(uAccountID)
+			% saDefault.getFullText());
 	}
 	else
 	{
 		saFunds	= accountHolds(uAccountID, saDefault.getCurrency(), saDefault.getIssuer());
 
-		Log(lsINFO) << "accountFunds: offer funds: uAccountID ="
-			<< NewcoinAddress::createHumanAccountID(uAccountID)
-			<< " : "
-			<< saFunds.getText()
-			<< "/"
-			<< saDefault.getHumanCurrency()
-			<< "/"
-			<< NewcoinAddress::createHumanAccountID(saDefault.getIssuer());
+		Log(lsINFO) << boost::str(boost::format("accountFunds: uAccountID=%s saDefault=%s saFunds=%s")
+			% NewcoinAddress::createHumanAccountID(uAccountID)
+			% saDefault.getFullText()
+			% saFunds.getFullText());
 	}
 
 	return saFunds;

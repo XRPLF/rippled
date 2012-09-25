@@ -67,6 +67,9 @@ public:
 	bool getTaggedList(std::list<TaggedListItem>&, int offset, int& length) const;
 	bool getTaggedList(std::vector<TaggedListItem>&, int offset, int& length) const;
 
+	bool getFieldID(int& type, int& name, int offset) const;
+	int addFieldID(int type, int name);
+
 	// normal hash functions
 	uint160 getRIPEMD160(int size=-1) const;
 	uint256 getSHA256(int size=-1) const;
@@ -155,6 +158,8 @@ public:
 	uint128 get128();
 	uint160 get160();
 	uint256 get256();
+
+	void getFieldID(int& type, int& field);
 
 	std::vector<unsigned char> getRaw(int iLength);
 
