@@ -1,134 +1,132 @@
 
-#include "TransactionFormats.h"
+#include	"TransactionFormats.h"
 
-#define S_FIELD(x) sf##x, #x
-
-TransactionFormat InnerTxnFormats[]=
+TransactionFormat	InnerTxnFormats[]=
 {
-	{ "AccountSet", ttACCOUNT_SET, {
-		{ S_FIELD(Flags),			STI_UINT32,	 SOE_FLAGS,    0 },
-		{ S_FIELD(SourceTag),		STI_UINT32,  SOE_IFFLAG,   1 },
-		{ S_FIELD(EmailHash),		STI_HASH128, SOE_IFFLAG,   2 },
-		{ S_FIELD(WalletLocator),	STI_HASH256, SOE_IFFLAG,   4 },
-		{ S_FIELD(MessageKey),		STI_VL,      SOE_IFFLAG,   8 },
-		{ S_FIELD(Domain),			STI_VL,      SOE_IFFLAG,   16 },
-		{ S_FIELD(TransferRate),	STI_UINT32,	 SOE_IFFLAG,   32 },
-		{ S_FIELD(PublishHash),		STI_HASH256, SOE_IFFLAG,   64 },
-		{ S_FIELD(PublishSize),		STI_UINT32,	 SOE_IFFLAG,   128 },
-		{ sfInvalid, NULL,			STI_DONE,	 SOE_NEVER,    -1 } }
-	},
-	{ "Claim", ttCLAIM, {
-		{ S_FIELD(Flags),			STI_UINT32,  SOE_FLAGS,    0 },
-		{ S_FIELD(Generator),		STI_VL,		 SOE_REQUIRED, 0 },
-		{ S_FIELD(PublicKey),		STI_VL,		 SOE_REQUIRED, 0 },
-		{ S_FIELD(Signature),		STI_VL,		 SOE_REQUIRED, 0 },
-		{ S_FIELD(SourceTag),		STI_UINT32,  SOE_IFFLAG,   1 },
-		{ sfInvalid, NULL,			STI_DONE,	 SOE_NEVER,    -1 } }
-	},
-	{ "CreditSet", ttCREDIT_SET, {
-		{ S_FIELD(Flags),			STI_UINT32,  SOE_FLAGS,    0 },
-		{ S_FIELD(Destination),		STI_ACCOUNT, SOE_REQUIRED, 0 },
-		{ S_FIELD(SourceTag),		STI_UINT32,  SOE_IFFLAG,   1 },
-		{ S_FIELD(LimitAmount),		STI_AMOUNT,  SOE_IFFLAG,   2 },
-		{ S_FIELD(QualityIn),		STI_UINT32,  SOE_IFFLAG,   4 },
-		{ S_FIELD(QualityOut),		STI_UINT32,  SOE_IFFLAG,   8 },
-		{ sfInvalid, NULL,			STI_DONE,	 SOE_NEVER,    -1 } }
-	},
+	{	"AccountSet", ttACCOUNT_SET, {
+		{	sfFlags,			SOE_REQUIRED },
+		{	sfSourceTag,		SOE_OPTIONAL },
+		{	sfEmailHash,		SOE_OPTIONAL },
+		{	sfWalletLocator,	SOE_OPTIONAL },
+		{	sfMessageKey,		SOE_OPTIONAL },
+		{	sfDomain,			SOE_OPTIONAL },
+		{	sfTransferRate,		SOE_OPTIONAL },
+		{	sfPublishHash,		SOE_OPTIONAL },
+		{	sfPublishSize,		SOE_OPTIONAL },
+		{	sfInvalid,			SOE_END } }
+	 },
+	{	"Claim", ttCLAIM, {
+		{	sfFlags,			SOE_REQUIRED },
+		{	sfGenerator,		SOE_REQUIRED },
+		{	sfPublicKey,		SOE_REQUIRED },
+		{	sfSignature,		SOE_REQUIRED },
+		{	sfSourceTag,		SOE_OPTIONAL },
+		{	sfInvalid,			SOE_END } }
+	 },
+	{	"CreditSet", ttCREDIT_SET, {
+		{	sfFlags,			SOE_REQUIRED },
+		{	sfDestination,		SOE_REQUIRED },
+		{	sfSourceTag,		SOE_OPTIONAL },
+		{	sfLimitAmount,		SOE_OPTIONAL },
+		{	sfQualityIn,		SOE_OPTIONAL },
+		{	sfQualityOut,		SOE_OPTIONAL },
+		{	sfInvalid,			SOE_END } }
+	 },
 		/*
-	{ "Invoice", ttINVOICE, {
-		{ S_FIELD(Flags),			STI_UINT32,  SOE_FLAGS,    0 },
-		{ S_FIELD(Target),			STI_ACCOUNT, SOE_REQUIRED, 0 },
-		{ S_FIELD(Amount),			STI_AMOUNT,  SOE_REQUIRED, 0 },
-		{ S_FIELD(SourceTag),		STI_UINT32,  SOE_IFFLAG,   1 },
-		{ S_FIELD(Destination),		STI_ACCOUNT, SOE_IFFLAG,   2 },
-		{ S_FIELD(Identifier),		STI_VL,		 SOE_IFFLAG,   4 },
-		{ sfInvalid, NULL,			STI_DONE,	 SOE_NEVER,    -1 } }
-	},
+	{	"Invoice", ttINVOICE, {
+		{	sfFlags,			SOE_REQUIRED },
+		{	sfTarget,			SOE_REQUIRED },
+		{	sfAmount,			SOE_REQUIRED },
+		{	sfSourceTag,		SOE_OPTIONAL },
+		{	sfDestination,		SOE_OPTIONAL },
+		{	sfIdentifier,		SOE_OPTIONAL },
+		{	sfInvalid,			SOE_END } }
+	 },
 	*/
-	{ "NicknameSet", ttNICKNAME_SET, {
-		{ S_FIELD(Flags),			STI_UINT32,  SOE_FLAGS,    0 },
-		{ S_FIELD(Nickname),		STI_HASH256, SOE_REQUIRED, 0 },
-		{ S_FIELD(MinimumOffer),	STI_AMOUNT,  SOE_IFFLAG,   1 },
-		{ S_FIELD(Signature),		STI_VL,		 SOE_IFFLAG,   2 },
-		{ S_FIELD(SourceTag),		STI_UINT32,  SOE_IFFLAG,   4 },
-		{ sfInvalid, NULL,			STI_DONE,	 SOE_NEVER,    -1 } }
-	},
-	{ "OfferCreate", ttOFFER_CREATE, {
-		{ S_FIELD(Flags),			STI_UINT32,  SOE_FLAGS,    0 },
-		{ S_FIELD(TakerPays),		STI_AMOUNT,  SOE_REQUIRED, 0 },
-		{ S_FIELD(TakerGets),		STI_AMOUNT,  SOE_REQUIRED, 0 },
-		{ S_FIELD(SourceTag),		STI_UINT32,  SOE_IFFLAG,   1 },
-		{ S_FIELD(Expiration),		STI_UINT32,  SOE_IFFLAG,   2 },
-		{ sfInvalid, NULL,			STI_DONE,	 SOE_NEVER,    -1 } }
-	},
-	{ "OfferCancel", ttOFFER_CANCEL, {
-		{ S_FIELD(Flags),			STI_UINT32,  SOE_FLAGS,    0 },
-		{ S_FIELD(OfferSequence),	STI_UINT32,  SOE_REQUIRED, 0 },
-		{ S_FIELD(SourceTag),		STI_UINT32,  SOE_IFFLAG,   1 },
-		{ sfInvalid, NULL,			STI_DONE,	 SOE_NEVER,    -1 } }
-	},
-	{ "PasswordFund", ttPASSWORD_FUND, {
-		{ S_FIELD(Flags),			STI_UINT32,  SOE_FLAGS,    0 },
-		{ S_FIELD(Destination),		STI_ACCOUNT, SOE_REQUIRED, 0 },
-		{ S_FIELD(SourceTag),		STI_UINT32,  SOE_IFFLAG,   1 },
-		{ sfInvalid, NULL,			STI_DONE,	 SOE_NEVER,    -1 } }
-	},
-	{ "PasswordSet", ttPASSWORD_SET, {
-		{ S_FIELD(Flags),			STI_UINT32,  SOE_FLAGS,    0 },
-		{ S_FIELD(AuthorizedKey),	STI_ACCOUNT, SOE_REQUIRED, 0 },
-		{ S_FIELD(Generator),		STI_VL,		 SOE_REQUIRED, 0 },
-		{ S_FIELD(PublicKey),		STI_VL,		 SOE_REQUIRED, 0 },
-		{ S_FIELD(Signature),		STI_VL,		 SOE_REQUIRED, 0 },
-		{ S_FIELD(SourceTag),		STI_UINT32,  SOE_IFFLAG,   1 },
-		{ sfInvalid, NULL,			STI_DONE,	 SOE_NEVER,    -1 } }
-	},
-	{ "Payment", ttPAYMENT, {
-		{ S_FIELD(Flags),			STI_UINT32,  SOE_FLAGS,    0 },
-		{ S_FIELD(Destination),		STI_ACCOUNT, SOE_REQUIRED, 0 },
-		{ S_FIELD(Amount),			STI_AMOUNT,  SOE_REQUIRED, 0 },
-		{ S_FIELD(SendMax),			STI_AMOUNT,  SOE_IFFLAG,   1 },
-		{ S_FIELD(Paths),			STI_PATHSET, SOE_IFFLAG,   2 },
-		{ S_FIELD(SourceTag),		STI_UINT32,  SOE_IFFLAG,   4 },
-		{ S_FIELD(InvoiceID),		STI_HASH256, SOE_IFFLAG,   8 },
-		{ sfInvalid, NULL,			STI_DONE,	 SOE_NEVER,    -1 } }
-	},
-	{ "WalletAdd", ttWALLET_ADD, {
-		{ S_FIELD(Flags),			STI_UINT32,  SOE_FLAGS,    0 },
-		{ S_FIELD(Amount),			STI_AMOUNT,  SOE_REQUIRED, 0 },
-		{ S_FIELD(AuthorizedKey),	STI_ACCOUNT, SOE_REQUIRED, 0 },
-		{ S_FIELD(PublicKey),		STI_VL,		 SOE_REQUIRED, 0 },
-		{ S_FIELD(Signature),		STI_VL,		 SOE_REQUIRED, 0 },
-		{ S_FIELD(SourceTag),		STI_UINT32,  SOE_IFFLAG,   1 },
-		{ sfInvalid, NULL,			STI_DONE,	 SOE_NEVER,    -1 } }
-	},
-	{ "Contract", ttCONTRACT, {
-		{ S_FIELD(Flags),			STI_UINT32,  SOE_FLAGS,    0 },
-		{ S_FIELD(Expiration),		STI_UINT32,  SOE_REQUIRED, 0 },
-		{ S_FIELD(BondAmount),		STI_UINT32,  SOE_REQUIRED, 0 },
-		{ S_FIELD(StampEscrow),		STI_UINT32,  SOE_REQUIRED, 0 },
-		{ S_FIELD(RippleEscrow),	STI_AMOUNT,  SOE_REQUIRED, 0 },
-		{ S_FIELD(CreateCode),		STI_VL,		 SOE_REQUIRED, 0 },
-		{ S_FIELD(FundCode),		STI_VL,		 SOE_REQUIRED, 0 },
-		{ S_FIELD(RemoveCode),		STI_VL,		 SOE_REQUIRED, 0 },
-		{ S_FIELD(ExpireCode),		STI_VL,		 SOE_REQUIRED, 0 },
-		{ sfInvalid, NULL,			STI_DONE,	 SOE_NEVER,    -1 } }
-	},
-	{ "Contract", ttCONTRACT_REMOVE, {
-		{ S_FIELD(Flags),			STI_UINT32,  SOE_FLAGS,    0 },
-		{ S_FIELD(Target),		STI_ACCOUNT, SOE_REQUIRED, 0 },
-		{ sfInvalid, NULL,			STI_DONE,	 SOE_NEVER,    -1 } }
-	},
+	{	"NicknameSet", ttNICKNAME_SET, {
+		{	sfFlags,			SOE_REQUIRED },
+		{	sfNickname,			SOE_REQUIRED },
+		{	sfMinimumOffer,		SOE_OPTIONAL },
+		{	sfSignature,		SOE_OPTIONAL },
+		{	sfSourceTag,		SOE_OPTIONAL },
+		{	sfInvalid,			SOE_END } }
+	 },
+	{	"OfferCreate", ttOFFER_CREATE, {
+		{	sfFlags,			SOE_REQUIRED},
+		{	sfTakerPays,		SOE_REQUIRED },
+		{	sfTakerGets,		SOE_REQUIRED },
+		{	sfSourceTag,		SOE_OPTIONAL },
+		{	sfExpiration,		SOE_OPTIONAL },
+		{	sfInvalid,			SOE_END } }
+	 },
+	{	"OfferCancel", ttOFFER_CANCEL, {
+		{	sfFlags,			SOE_REQUIRED },
+		{	sfOfferSequence,	SOE_REQUIRED },
+		{	sfSourceTag,		SOE_OPTIONAL },
+		{	sfInvalid,			SOE_END } }
+	 },
+	{	"PasswordFund", ttPASSWORD_FUND, {
+		{	sfFlags,			SOE_REQUIRED },
+		{	sfDestination,		SOE_REQUIRED },
+		{	sfSourceTag,		SOE_OPTIONAL },
+		{	sfInvalid,			SOE_END } }
+	 },
+	{	"PasswordSet", ttPASSWORD_SET, {
+		{	sfFlags,			SOE_REQUIRED },
+		{	sfAuthorizedKey,	SOE_REQUIRED },
+		{	sfGenerator,		SOE_REQUIRED },
+		{	sfPublicKey,		SOE_REQUIRED },
+		{	sfSignature,		SOE_REQUIRED },
+		{	sfSourceTag,		SOE_OPTIONAL },
+		{	sfInvalid,			SOE_END } }
+	 },
+	{	"Payment", ttPAYMENT, {
+		{	sfFlags,			SOE_REQUIRED },
+		{	sfDestination,		SOE_REQUIRED },
+		{	sfAmount,			SOE_REQUIRED },
+		{	sfSendMax,			SOE_OPTIONAL },
+		{	sfPaths,			SOE_OPTIONAL },
+		{	sfSourceTag,		SOE_OPTIONAL },
+		{	sfInvoiceID,		SOE_OPTIONAL },
+		{	sfInvalid,			SOE_END } }
+	 },
+	{	"WalletAdd", ttWALLET_ADD, {
+		{	sfFlags,			SOE_REQUIRED },
+		{	sfAmount,			SOE_REQUIRED },
+		{	sfAuthorizedKey,	SOE_REQUIRED },
+		{	sfPublicKey,		SOE_REQUIRED },
+		{	sfSignature,		SOE_REQUIRED },
+		{	sfSourceTag,		SOE_OPTIONAL },
+		{	sfInvalid,			SOE_END } }
+	 },
+	{	"Contract", ttCONTRACT, {
+		{	sfFlags,			SOE_REQUIRED },
+		{	sfExpiration,		SOE_REQUIRED },
+		{	sfBondAmount,		SOE_REQUIRED },
+		{	sfStampEscrow,		SOE_REQUIRED },
+		{	sfRippleEscrow,		SOE_REQUIRED },
+		{	sfCreateCode,		SOE_OPTIONAL },
+		{	sfFundCode,			SOE_OPTIONAL },
+		{	sfRemoveCode,		SOE_OPTIONAL },
+		{	sfExpireCode,		SOE_OPTIONAL },
+		{	sfInvalid,			SOE_END } }
+	 },
+	{	"RemoveContract", ttCONTRACT_REMOVE, {
+		{	sfFlags,			SOE_REQUIRED },
+		{	sfTarget,			SOE_REQUIRED },
+		{	sfInvalid,			SOE_END } }
+	 },
 	{ NULL, ttINVALID }
 };
 
-TransactionFormat* getTxnFormat(TransactionType t)
+TransactionFormat*	getTxnFormat(TransactionType	t)
 {
-	TransactionFormat* f = InnerTxnFormats;
-	while (f->t_name != NULL)
+	TransactionFormat*	f	=	InnerTxnFormats;
+	while	(f->t_name	!=	NULL)
 	{
-		if (f->t_type == t) return f;
+		if	(f->t_type	==	t)	return	f;
 		++f;
-	}
-	return NULL;
+ }
+	return	NULL;
 }
-// vim:ts=4
+//	vim:ts=4

@@ -17,9 +17,9 @@ std::string SerializedType::getFullText() const
 	std::string ret;
 	if (getSType() != STI_NOTPRESENT)
 	{
-		if(name != NULL)
+		if(fName != NULL)
 		{
-			ret = name;
+			ret = fName->fieldName;
 			ret += " = ";
 		}
 		ret += getText();
@@ -27,7 +27,7 @@ std::string SerializedType::getFullText() const
 	return ret;
 }
 
-STUInt8* STUInt8::construct(SerializerIterator& u, const char *name)
+STUInt8* STUInt8::construct(SerializerIterator& u, FieldName* name)
 {
 	return new STUInt8(name, u.get8());
 }
@@ -43,7 +43,7 @@ bool STUInt8::isEquivalent(const SerializedType& t) const
 	return v && (value == v->value);
 }
 
-STUInt16* STUInt16::construct(SerializerIterator& u, const char *name)
+STUInt16* STUInt16::construct(SerializerIterator& u, FieldName* name)
 {
 	return new STUInt16(name, u.get16());
 }
@@ -59,7 +59,7 @@ bool STUInt16::isEquivalent(const SerializedType& t) const
 	return v && (value == v->value);
 }
 
-STUInt32* STUInt32::construct(SerializerIterator& u, const char *name)
+STUInt32* STUInt32::construct(SerializerIterator& u, FieldName* name)
  {
 	return new STUInt32(name, u.get32());
 }
@@ -75,7 +75,7 @@ bool STUInt32::isEquivalent(const SerializedType& t) const
 	return v && (value == v->value);
 }
 
-STUInt64* STUInt64::construct(SerializerIterator& u, const char *name)
+STUInt64* STUInt64::construct(SerializerIterator& u, FieldName* name)
 {
 	return new STUInt64(name, u.get64());
 }
@@ -91,7 +91,7 @@ bool STUInt64::isEquivalent(const SerializedType& t) const
 	return v && (value == v->value);
 }
 
-STHash128* STHash128::construct(SerializerIterator& u, const char *name)
+STHash128* STHash128::construct(SerializerIterator& u, FieldName* name)
 {
 	return new STHash128(name, u.get128());
 }
@@ -107,7 +107,7 @@ bool STHash128::isEquivalent(const SerializedType& t) const
 	return v && (value == v->value);
 }
 
-STHash160* STHash160::construct(SerializerIterator& u, const char *name)
+STHash160* STHash160::construct(SerializerIterator& u, FieldName* name)
 {
 	return new STHash160(name, u.get160());
 }
@@ -123,7 +123,7 @@ bool STHash160::isEquivalent(const SerializedType& t) const
 	return v && (value == v->value);
 }
 
-STHash256* STHash256::construct(SerializerIterator& u, const char *name)
+STHash256* STHash256::construct(SerializerIterator& u, FieldName* name)
 {
 	return new STHash256(name, u.get256());
 }
@@ -139,7 +139,7 @@ bool STHash256::isEquivalent(const SerializedType& t) const
 	return v && (value == v->value);
 }
 
-STVariableLength::STVariableLength(SerializerIterator& st, const char *name) : SerializedType(name)
+STVariableLength::STVariableLength(SerializerIterator& st, FieldName* name) : SerializedType(name)
 {
 	value = st.getVL();
 }
@@ -149,14 +149,9 @@ std::string STVariableLength::getText() const
 	return strHex(value);
 }
 
-STVariableLength* STVariableLength::construct(SerializerIterator& u, const char *name)
+STVariableLength* STVariableLength::construct(SerializerIterator& u, FieldName* name)
 {
 	return new STVariableLength(name, u.getVL());
-}
-
-int STVariableLength::getLength() const
-{
-	return Serializer::encodeLengthLength(value.size()) + value.size();
 }
 
 bool STVariableLength::isEquivalent(const SerializedType& t) const
@@ -176,7 +171,7 @@ std::string STAccount::getText() const
 	return a.humanAccountID();
 }
 
-STAccount* STAccount::construct(SerializerIterator& u, const char *name)
+STAccount* STAccount::construct(SerializerIterator& u, FieldName* name)
 {
 	return new STAccount(name, u.getVL());
 }
@@ -186,7 +181,7 @@ STAccount* STAccount::construct(SerializerIterator& u, const char *name)
 //
 
 // Return a new object from a SerializerIterator.
-STVector256* STVector256::construct(SerializerIterator& u, const char *name)
+STVector256* STVector256::construct(SerializerIterator& u, FieldName* name)
 {
 	std::vector<unsigned char> data = u.getVL();
 	std::vector<uint256> value;
@@ -255,7 +250,7 @@ void STAccount::setValueNCA(const NewcoinAddress& nca)
 	setValueH160(nca.getAccountID());
 }
 
-STPathSet* STPathSet::construct(SerializerIterator& s, const char *name)
+STPathSet* STPathSet::construct(SerializerIterator& s, FieldName* name)
 {
 	std::vector<STPath> paths;
 	std::vector<STPathElement> path;
@@ -340,18 +335,6 @@ int STPath::getSerializeSize() const
 	iBytes	+= 1;	// typeBoundary | typeEnd
 
 	return iBytes;
-}
-
-int STPathSet::getLength() const
-{
-	int iBytes = 0;
-
-	BOOST_FOREACH(const STPath& spPath, value)
-	{
-		iBytes += spPath.getSerializeSize();
-	}
-
-	return iBytes ? iBytes : 1;
 }
 
 Json::Value STPath::getJson(int) const

@@ -9,56 +9,30 @@
 
 #include "SerializedTypes.h"
 
-enum SOE_Type
-{
-	SOE_NEVER = -1,		// never occurs (marks end of object)
-	SOE_REQUIRED = 0,	// required
-	SOE_FLAGS = 1,		// flags field
-	SOE_IFFLAG = 2,		// present if flag set
-	SOE_IFNFLAG = 3		// present if flag not set
-};
-
-enum SOE_Field
-{
-	sfInvalid = -1,
-	sfGeneric = 0,
-
-#define FIELD(name, type, index) sf##name,
-#define TYPE(name, type, index)
-#include "SerializeProto.h"
-#undef FIELD
-#undef TYPE
-
-	// test fields
-	sfTest1, sfTest2, sfTest3, sfTest4
-};
+// Serializable object/array types
 
 struct SOElement
 { // An element in the description of a serialized object
 	SOE_Field e_field;
-	const char *e_name;
-	SerializedTypeID e_id;
-	SOE_Type e_type;
-	int e_flags;
+	SOE_Flags flags;
 };
 
 class STObject : public SerializedType
 {
 protected:
-	int mFlagIdx; // the offset to the flags object, -1 if none
 	boost::ptr_vector<SerializedType> mData;
 	std::vector<const SOElement*> mType;
 
 	STObject* duplicate() const { return new STObject(*this); }
 
 public:
-	STObject(const char *n = NULL) : SerializedType(n), mFlagIdx(-1) { ; }
-	STObject(const SOElement *t, const char *n = NULL);
-	STObject(const SOElement *t, SerializerIterator& u, const char *n = NULL);
+	STObject(FieldName *n = NULL) : SerializedType(n) { ; }
+	STObject(const SOElement *t, FieldName *n = NULL);
+	STObject(const SOElement *t, SerializerIterator& u, FieldName *n = NULL);
 	virtual ~STObject() { ; }
 
 	void set(const SOElement* t);
-	void set(const SOElement* t, SerializerIterator& u);
+	void set(const SOElement* t, SerializerIterator& u, int depth = 0);
 
 	int getLength() const;
 	virtual SerializedTypeID getSType() const { return STI_OBJECT; }
@@ -133,13 +107,71 @@ public:
 	SerializedType* makeFieldPresent(SOE_Field field);
 	void makeFieldAbsent(SOE_Field field);
 
-	static std::auto_ptr<SerializedType> makeDefaultObject(SerializedTypeID id, const char *name);
-	static std::auto_ptr<SerializedType> makeDeserializedObject(SerializedTypeID id, const char *name,
-		SerializerIterator&);
+	static std::auto_ptr<SerializedType> makeDefaultObject(SerializedTypeID id, FieldName *name);
+	static std::auto_ptr<SerializedType> makeDeserializedObject(SerializedTypeID id, FieldName *name,
+		SerializerIterator&, int depth);
 
 	static void unitTest();
 };
 
+class STArray : public SerializedType
+{
+public:
+	typedef std::vector<STObject>							vector;
+	typedef std::vector<STObject>::iterator					iterator;
+	typedef std::vector<STObject>::const_iterator			const_iterator;
+	typedef std::vector<STObject>::reverse_iterator			reverse_iterator;
+	typedef std::vector<STObject>::const_reverse_iterator	const_reverse_iterator;
+	typedef std::vector<STObject>::size_type				size_type;
+
+protected:
+
+	vector value;
+
+	STArray* duplicate() const { return new STArray(fName, value); }
+	static STArray* construct(SerializerIterator&, FieldName* name = NULL);
+
+public:
+
+	STArray()																{ ; }
+	STArray(FieldName* f, const vector& v) : SerializedType(f), value(v)	{ ; }
+	STArray(vector& v) : value(v)											{ ; }
+
+	static std::auto_ptr<SerializedType> deserialize(SerializerIterator& sit, FieldName* name)
+		{ return std::auto_ptr<SerializedType>(construct(sit, name)); }
+
+	const vector& getValue() const			{ return value; }
+	vector& getValue()						{ return value; }
+
+	// vector-like functions
+	void push_back(const STObject& object)	{ value.push_back(object); }
+	STObject& operator[](int j)				{ return value[j]; }
+	const STObject& operator[](int j) const	{ return value[j]; }
+	iterator begin()						{ return value.begin(); }
+	const_iterator begin() const			{ return value.begin(); }
+	iterator end()							{ return value.end(); }
+	const_iterator end() const				{ return value.end(); }
+	size_type size() const					{ return value.size(); }
+	reverse_iterator rbegin()				{ return value.rbegin(); }
+	const_reverse_iterator rbegin() const	{ return value.rbegin(); }
+	reverse_iterator rend()					{ return value.rend(); }
+	const_reverse_iterator rend() const		{ return value.rend(); }
+	iterator erase(iterator pos)			{ return value.erase(pos); }
+	void pop_back()							{ value.pop_back(); }
+	bool empty() const						{ return value.empty(); }
+	void clear()							{ value.clear(); }
+
+	virtual std::string getFullText() const;
+	virtual std::string getText() const;
+	virtual Json::Value getJson(int) const;
+	virtual void add(Serializer& s) const;
+
+	bool operator==(const STArray &s)		{ return value == s.value; }
+	bool operator!=(const STArray &s)		{ return value != s.value; }
+
+	virtual SerializedTypeID getSType() const { return STI_ARRAY; }
+	virtual bool isEquivalent(const SerializedType& t) const;
+};
 
 #endif
 // vim:ts=4

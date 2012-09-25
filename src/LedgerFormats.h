@@ -41,9 +41,9 @@ enum LedgerSpecificFlags
 
 struct LedgerEntryFormat
 {
-	const char *t_name;
-	LedgerEntryType t_type;
-	SOElement elements[20];
+	const char *	t_name;
+	LedgerEntryType	t_type;
+	SOElement		elements[24];
 };
 
 extern LedgerEntryFormat LedgerFormats[];

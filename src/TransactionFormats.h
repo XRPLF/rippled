@@ -23,9 +23,9 @@ enum TransactionType
 
 struct TransactionFormat
 {
-	const char *t_name;
-	TransactionType t_type;
-	SOElement elements[16];
+	const char *		t_name;
+	TransactionType		t_type;
+	SOElement			elements[24];
 };
 
 const int TransactionISigningPubKey	= 0;

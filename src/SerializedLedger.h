@@ -25,7 +25,6 @@ public:
 	SerializedLedgerEntry(SerializerIterator& sit, const uint256& index);
 	SerializedLedgerEntry(LedgerEntryType type);
 
-	int getLength() const { return mVersion.getLength() + mObject.getLength(); }
 	SerializedTypeID getSType() const { return STI_LEDGERENTRY; }
 	std::string getFullText() const;
 	std::string getText() const;

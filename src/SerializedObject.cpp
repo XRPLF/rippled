@@ -8,7 +8,7 @@
 
 #include "Log.h"
 
-std::auto_ptr<SerializedType> STObject::makeDefaultObject(SerializedTypeID id, const char *name)
+std::auto_ptr<SerializedType> STObject::makeDefaultObject(SerializedTypeID id, FieldName* name)
 {
 	switch(id)
 	{
@@ -53,8 +53,8 @@ std::auto_ptr<SerializedType> STObject::makeDefaultObject(SerializedTypeID id, c
 	}
 }
 
-std::auto_ptr<SerializedType> STObject::makeDeserializedObject(SerializedTypeID id, const char *name,
-	SerializerIterator& sit)
+std::auto_ptr<SerializedType> STObject::makeDeserializedObject(SerializedTypeID id, FieldName* name,
+	SerializerIterator& sit, int depth)
 {
 	switch(id)
 	{
@@ -94,6 +94,12 @@ std::auto_ptr<SerializedType> STObject::makeDeserializedObject(SerializedTypeID 
 		case STI_PATHSET:
 			return STPathSet::deserialize(sit, name);
 
+		case STI_ARRAY:
+			return STArray::deserialize(sit, name);
+
+		case STI_OBJECT:
+			return STObject::deserialize(sit, name);
+
 		default:
 			throw std::runtime_error("Unknown object type");
 	}
@@ -103,13 +109,11 @@ void STObject::set(const SOElement* elem)
 {
 	mData.empty();
 	mType.empty();
-	mFlagIdx = -1;
 
-	while (elem->e_id != STI_DONE)
+	while (elem->flags != SOE_END)
 	{
-		if (elem->e_type == SOE_FLAGS) mFlagIdx = mType.size();
 		mType.push_back(elem);
-		if (elem->e_type == SOE_IFFLAG)
+		if (elem->flags == SOE_OPTIONAL)
 			giveObject(makeDefaultObject(STI_NOTPRESENT, elem->e_name));
 		else
 			giveObject(makeDefaultObject(elem->e_id, elem->e_name));
@@ -117,55 +121,30 @@ void STObject::set(const SOElement* elem)
 	}
 }
 
-STObject::STObject(const SOElement* elem, const char *name) : SerializedType(name)
+STObject::STObject(const SOElement* elem, FieldName* name) : SerializedType(name)
 {
 	set(elem);
 }
 
-void STObject::set(const SOElement* elem, SerializerIterator& sit)
+void STObject::set(FieldName* name, SerializerIterator& sit, int depth = 0)
 {
 	mData.empty();
 	mType.empty();
-	mFlagIdx = -1;
 
-	int flags = -1;
-	while (elem->e_id != STI_DONE)
+	fName = name;
+
+	while(1)
 	{
-		mType.push_back(elem);
-		bool done = false;
-		if (elem->e_type == SOE_IFFLAG)
-		{
-			assert(flags >= 0);
-			if ((flags&elem->e_flags) == 0)
-			{
-				done = true;
-				giveObject(makeDefaultObject(STI_NOTPRESENT, elem->e_name));
-			}
-		}
-		else if (elem->e_type == SOE_IFNFLAG)
-		{
-			assert(flags >= 0);
-			if ((flags&elem->e_flags) != 0)
-			{
-				done = true;
-				giveObject(makeDefaultObject(elem->e_id, elem->e_name));
-			}
-		}
-		else if (elem->e_type == SOE_FLAGS)
-		{
-			assert(elem->e_id == STI_UINT32);
-			flags = sit.get32();
-			mFlagIdx = giveObject(new STUInt32(elem->e_name, flags));
-			done = true;
-		}
-		if (!done)
-			giveObject(makeDeserializedObject(elem->e_id, elem->e_name, sit));
-		elem++;
+		int type, field.
+		sit.getFieldID(type, field);
+		if ((type == STI_ARRAY) && (field == 1))
+			return;
+		FieldName* fn = getFieldName(type, field);
+		giveObject(makeDeserializedObject(static_cast<SerializedTypeID> type, fn, sit, depth + 1);
 	}
 }
 
-STObject::STObject(const SOElement* elem, SerializerIterator& sit, const char *name)
-	: SerializedType(name), mFlagIdx(-1)
+STObject::STObject(const SOElement* elem, SerializerIterator& sit, FieldName*name) : SerializedType(name)
 {
 	set(elem, sit);
 }
@@ -190,14 +169,6 @@ std::string STObject::getFullText() const
 		}
 
 	ret += "}";
-	return ret;
-}
-
-int STObject::getLength() const
-{
-	int ret = 0;
-	BOOST_FOREACH(const SerializedType& it, mData)
-		ret += it.getLength();
 	return ret;
 }
 
@@ -295,9 +266,9 @@ bool STObject::isFieldPresent(SOE_Field field) const
 
 bool STObject::setFlag(uint32 f)
 {
-	if (mFlagIdx < 0) return false;
-	STUInt32* t = dynamic_cast<STUInt32*>(getPIndex(mFlagIdx));
-	assert(t);
+	STUInt32* t = dynamic_cast<STUInt32*>(getPField(sfFlags));
+	if (!t)
+		return false;
 	t->setValue(t->getValue() | f);
 	return true;
 }
@@ -305,17 +276,18 @@ bool STObject::setFlag(uint32 f)
 bool STObject::clearFlag(uint32 f)
 {
 	if (mFlagIdx < 0) return false;
-	STUInt32* t = dynamic_cast<STUInt32*>(getPIndex(mFlagIdx));
-	assert(t);
+	STUInt32* t = dynamic_cast<STUInt32*>(getPField(sfFlags));
+	if (!t)
+		return false;
 	t->setValue(t->getValue() & ~f);
 	return true;
 }
 
 uint32 STObject::getFlags(void) const
 {
-	if (mFlagIdx < 0) return 0;
-	const STUInt32* t = dynamic_cast<const STUInt32*>(peekAtPIndex(mFlagIdx));
-	assert(t);
+	const STUInt32* t = dynamic_cast<const STUInt32*>(peekAtPField(mFlagIdx));
+	if (!t)
+		return 0;
 	return t->getValue();
 }
 
