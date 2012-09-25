@@ -42,9 +42,6 @@ std::auto_ptr<SerializedType> STObject::makeDefaultObject(SerializedTypeID id, c
 		case STI_VL:
 			return std::auto_ptr<SerializedType>(new STVariableLength(name));
 
-		case STI_TL:
-			return std::auto_ptr<SerializedType>(new STTaggedList(name));
-
 		case STI_ACCOUNT:
 			return std::auto_ptr<SerializedType>(new STAccount(name));
 
@@ -90,9 +87,6 @@ std::auto_ptr<SerializedType> STObject::makeDeserializedObject(SerializedTypeID 
 
 		case STI_VL:
 			return STVariableLength::deserialize(sit, name);
-
-		case STI_TL:
-			return STTaggedList::deserialize(sit, name);
 
 		case STI_ACCOUNT:
 			return STAccount::deserialize(sit, name);
@@ -476,17 +470,6 @@ std::vector<unsigned char> STObject::getValueFieldVL(SOE_Field field) const
 	return cf->getValue();
 }
 
-std::vector<TaggedListItem> STObject::getValueFieldTL(SOE_Field field) const
-{
-	const SerializedType* rf = peekAtPField(field);
-	if (!rf) throw std::runtime_error("Field not found");
-	SerializedTypeID id = rf->getSType();
-	if (id == STI_NOTPRESENT) return std::vector<TaggedListItem>(); // optional field not present
-	const STTaggedList *cf = dynamic_cast<const STTaggedList *>(rf);
-	if (!cf) throw std::runtime_error("Wrong field type");
-	return cf->getValue();
-}
-
 STAmount STObject::getValueFieldAmount(SOE_Field field) const
 {
 	const SerializedType* rf = peekAtPField(field);
@@ -616,16 +599,6 @@ void STObject::setValueFieldVL(SOE_Field field, const std::vector<unsigned char>
 	if (!rf) throw std::runtime_error("Field not found");
 	if (rf->getSType() == STI_NOTPRESENT) rf = makeFieldPresent(field);
 	STVariableLength* cf = dynamic_cast<STVariableLength*>(rf);
-	if (!cf) throw std::runtime_error("Wrong field type");
-	cf->setValue(v);
-}
-
-void STObject::setValueFieldTL(SOE_Field field, const std::vector<TaggedListItem>& v)
-{
-	SerializedType* rf = getPField(field);
-	if (!rf) throw std::runtime_error("Field not found");
-	if (rf->getSType() == STI_NOTPRESENT) rf = makeFieldPresent(field);
-	STTaggedList* cf = dynamic_cast<STTaggedList*>(rf);
 	if (!cf) throw std::runtime_error("Wrong field type");
 	cf->setValue(v);
 }
