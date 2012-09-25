@@ -710,8 +710,8 @@ TER TransactionEngine::takeOffers(
 	boost::unordered_set<uint256>	usOfferUnfundedBecame;	// Offers that became unfunded.
 	boost::unordered_set<uint160>	usAccountTouched;		// Accounts touched.
 
-	saTakerPaid	= 0;
-	saTakerGot	= 0;
+	saTakerPaid	= STAmount(saTakerPays.getCurrency(), saTakerPays.getIssuer());
+	saTakerGot	= STAmount(saTakerGets.getCurrency(), saTakerGets.getIssuer());
 
 	while (temUNCERTAIN == terResult)
 	{
@@ -915,8 +915,11 @@ Log(lsWARNING) << "doOfferCreate> " << txn.getJson(0);
 	const bool				bPassive		= isSetBit(txFlags, tfPassive);
 	STAmount				saTakerPays		= txn.getITFieldAmount(sfTakerPays);
 	STAmount				saTakerGets		= txn.getITFieldAmount(sfTakerGets);
-Log(lsWARNING) << "doOfferCreate: saTakerPays=" << saTakerPays.getFullText();
-Log(lsWARNING) << "doOfferCreate: saTakerGets=" << saTakerGets.getFullText();
+
+Log(lsINFO) << boost::str(boost::format("doOfferCreate: saTakerPays=%s saTakerGets=%s")
+	% saTakerPays.getFullText()
+	% saTakerGets.getFullText());
+
 	const uint160			uPaysIssuerID	= saTakerPays.getIssuer();
 	const uint160			uGetsIssuerID	= saTakerGets.getIssuer();
 	const uint32			uExpiration		= txn.getITFieldU32(sfExpiration);
@@ -999,14 +1002,14 @@ Log(lsWARNING) << "doOfferCreate: saTakerGets=" << saTakerGets.getFullText();
 		STAmount		saOfferGot;
 		const uint256	uTakeBookBase	= Ledger::getBookBase(uGetsCurrency, uGetsIssuerID, uPaysCurrency, uPaysIssuerID);
 
-		Log(lsINFO) << boost::str(boost::format("doOfferCreate: take against book: %s : %s/%s -> %s/%s")
+		Log(lsINFO) << boost::str(boost::format("doOfferCreate: take against book: %s for %s -> %s")
 			% uTakeBookBase.ToString()
-			% saTakerGets.getHumanCurrency()
-			% NewcoinAddress::createHumanAccountID(saTakerGets.getIssuer())
-			% saTakerPays.getHumanCurrency()
-			% NewcoinAddress::createHumanAccountID(saTakerPays.getIssuer()));
+			% saTakerGets.getFullText()
+			% saTakerPays.getFullText());
 
 		// Take using the parameters of the offer.
+#if 1
+		Log(lsWARNING) << "doOfferCreate: takeOffers: BEFORE saTakerGets=" << saTakerGets.getFullText();
 		terResult	= takeOffers(
 						bPassive,
 						uTakeBookBase,
@@ -1017,12 +1020,14 @@ Log(lsWARNING) << "doOfferCreate: saTakerGets=" << saTakerGets.getFullText();
 						saOfferPaid,	// How much was spent.
 						saOfferGot		// How much was got.
 					);
-
+#else
+		terResult	= tesSUCCESS;
+#endif
 		Log(lsWARNING) << "doOfferCreate: takeOffers=" << terResult;
 		Log(lsWARNING) << "doOfferCreate: takeOffers: saOfferPaid=" << saOfferPaid.getFullText();
 		Log(lsWARNING) << "doOfferCreate: takeOffers:  saOfferGot=" << saOfferGot.getFullText();
 		Log(lsWARNING) << "doOfferCreate: takeOffers: saTakerPays=" << saTakerPays.getFullText();
-		Log(lsWARNING) << "doOfferCreate: takeOffers: saTakerGets=" << saTakerGets.getFullText();
+		Log(lsWARNING) << "doOfferCreate: takeOffers: AFTER saTakerGets=" << saTakerGets.getFullText();
 
 		if (tesSUCCESS == terResult)
 		{
@@ -1033,19 +1038,21 @@ Log(lsWARNING) << "doOfferCreate: saTakerGets=" << saTakerGets.getFullText();
 
 	Log(lsWARNING) << "doOfferCreate: takeOffers: saTakerPays=" << saTakerPays.getFullText();
 	Log(lsWARNING) << "doOfferCreate: takeOffers: saTakerGets=" << saTakerGets.getFullText();
-	Log(lsWARNING) << "doOfferCreate: takeOffers: saTakerGets=" << NewcoinAddress::createHumanAccountID(saTakerGets.getIssuer());
 	Log(lsWARNING) << "doOfferCreate: takeOffers: mTxnAccountID=" << NewcoinAddress::createHumanAccountID(mTxnAccountID);
-	Log(lsWARNING) << "doOfferCreate: takeOffers:         funds=" << mNodes.accountFunds(mTxnAccountID, saTakerGets).getFullText();
+	Log(lsWARNING) << "doOfferCreate: takeOffers:         FUNDS=" << mNodes.accountFunds(mTxnAccountID, saTakerGets).getFullText();
 
 	// Log(lsWARNING) << "doOfferCreate: takeOffers: uPaysIssuerID=" << NewcoinAddress::createHumanAccountID(uPaysIssuerID);
 	// Log(lsWARNING) << "doOfferCreate: takeOffers: uGetsIssuerID=" << NewcoinAddress::createHumanAccountID(uGetsIssuerID);
 
 	if (tesSUCCESS == terResult
-		&& saTakerPays												// Still wanting something.
-		&& saTakerGets												// Still offering something.
+		&& saTakerPays														// Still wanting something.
+		&& saTakerGets														// Still offering something.
 		&& mNodes.accountFunds(mTxnAccountID, saTakerGets).isPositive())	// Still funded.
 	{
 		// We need to place the remainder of the offer into its order book.
+		Log(lsINFO) << boost::str(boost::format("doOfferCreate: offer not fully consumed: saTakerPays=%s saTakerGets=%s")
+			% saTakerPays.getFullText()
+			% saTakerGets.getFullText());
 
 		// Add offer to owner's directory.
 		terResult	= mNodes.dirAdd(uOwnerNode, Ledger::getOwnerDirIndex(mTxnAccountID), uLedgerIndex);
@@ -1069,12 +1076,13 @@ Log(lsWARNING) << "doOfferCreate: saTakerGets=" << saTakerGets.getFullText();
 
 		if (tesSUCCESS == terResult)
 		{
-			// Log(lsWARNING) << "doOfferCreate: uPaysIssuerID=" << NewcoinAddress::createHumanAccountID(uPaysIssuerID);
-			// Log(lsWARNING) << "doOfferCreate: uGetsIssuerID=" << NewcoinAddress::createHumanAccountID(uGetsIssuerID);
-			// Log(lsWARNING) << "doOfferCreate: saTakerPays.isNative()=" << saTakerPays.isNative();
-			// Log(lsWARNING) << "doOfferCreate: saTakerGets.isNative()=" << saTakerGets.isNative();
-			// Log(lsWARNING) << "doOfferCreate: uPaysCurrency=" << saTakerPays.getHumanCurrency();
-			// Log(lsWARNING) << "doOfferCreate: uGetsCurrency=" << saTakerGets.getHumanCurrency();
+			Log(lsWARNING) << "doOfferCreate: sfAccount=" << NewcoinAddress::createHumanAccountID(mTxnAccountID);
+			Log(lsWARNING) << "doOfferCreate: uPaysIssuerID=" << NewcoinAddress::createHumanAccountID(uPaysIssuerID);
+			Log(lsWARNING) << "doOfferCreate: uGetsIssuerID=" << NewcoinAddress::createHumanAccountID(uGetsIssuerID);
+			Log(lsWARNING) << "doOfferCreate: saTakerPays.isNative()=" << saTakerPays.isNative();
+			Log(lsWARNING) << "doOfferCreate: saTakerGets.isNative()=" << saTakerGets.isNative();
+			Log(lsWARNING) << "doOfferCreate: uPaysCurrency=" << saTakerPays.getHumanCurrency();
+			Log(lsWARNING) << "doOfferCreate: uGetsCurrency=" << saTakerGets.getHumanCurrency();
 
 			sleOffer->setIFieldAccount(sfAccount, mTxnAccountID);
 			sleOffer->setIFieldU32(sfSequence, uSequence);
@@ -1091,6 +1099,8 @@ Log(lsWARNING) << "doOfferCreate: saTakerGets=" << saTakerGets.getFullText();
 				sleOffer->setFlag(lsfPassive);
 		}
 	}
+
+	Log(lsINFO) << "doOfferCreate: final sleOffer=" << sleOffer->getJson(0);
 
 	return terResult;
 }
