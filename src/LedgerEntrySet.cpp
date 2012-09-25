@@ -349,14 +349,17 @@ void LedgerEntrySet::calcRawMeta(Serializer& s)
 		switch (it->second.mAction)
 		{
 			case taaMODIFY:
+				Log(lsTRACE) << "Modified Node " << it->first;
 				nType = TMNModifiedNode;
 				break;
 
 			case taaDELETE:
+				Log(lsTRACE) << "Deleted Node " << it->first;
 				nType = TMNDeletedNode;
 				break;
 
 			case taaCREATE:
+				Log(lsTRACE) << "Created Node " << it->first;
 				nType = TMNCreatedNode;
 				break;
 

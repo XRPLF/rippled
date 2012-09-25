@@ -359,18 +359,15 @@ STAmount* STAmount::construct(SerializerIterator& sit, const char *name)
 		if ((value < cMinValue) || (value > cMaxValue) || (offset < cMinOffset) || (offset > cMaxOffset))
 			throw std::runtime_error("invalid currency value");
 
-		sapResult	= new STAmount(name, uCurrencyID, value, offset, isNegative);
+		sapResult	= new STAmount(name, uCurrencyID, uIssuerID, value, offset, isNegative);
 	}
 	else
 	{
 		if (offset != 512)
 			throw std::runtime_error("invalid currency value");
 
-		sapResult	= new STAmount(name, uCurrencyID);
+		sapResult	= new STAmount(name, uCurrencyID, uIssuerID);
 	}
-
-	if (sapResult)
-		sapResult->setIssuer(uIssuerID);
 
 	return sapResult;
 }
@@ -522,7 +519,7 @@ STAmount& STAmount::operator-=(const STAmount& a)
 STAmount STAmount::operator-(void) const
 {
 	if (mValue == 0) return *this;
-	return STAmount(name, mCurrency, mValue, mOffset, mIsNative, !mIsNegative);
+	return STAmount(name, mCurrency, mIssuer, mValue, mOffset, mIsNative, !mIsNegative);
 }
 
 STAmount& STAmount::operator=(uint64 v)
@@ -620,9 +617,9 @@ STAmount operator+(const STAmount& v1, const STAmount& v2)
 
 	int64 fv = vv1 + vv2;
 	if (fv >= 0)
-		return STAmount(v1.name, v1.mCurrency, fv, ov1, false);
+		return STAmount(v1.name, v1.mCurrency, v1.mIssuer, fv, ov1, false);
 	else
-		return STAmount(v1.name, v1.mCurrency, -fv, ov1, true);
+		return STAmount(v1.name, v1.mCurrency, v1.mIssuer, -fv, ov1, true);
 }
 
 STAmount operator-(const STAmount& v1, const STAmount& v2)
@@ -652,9 +649,9 @@ STAmount operator-(const STAmount& v1, const STAmount& v2)
 
 	int64 fv = vv1 - vv2;
 	if (fv >= 0)
-		return STAmount(v1.name, v1.mCurrency, fv, ov1, false);
+		return STAmount(v1.name, v1.mCurrency, v1.mIssuer, fv, ov1, false);
 	else
-		return STAmount(v1.name, v1.mCurrency, -fv, ov1, true);
+		return STAmount(v1.name, v1.mCurrency, v1.mIssuer, -fv, ov1, true);
 }
 
 STAmount STAmount::divide(const STAmount& num, const STAmount& den, const uint160& uCurrencyID, const uint160& uIssuerID)
