@@ -43,25 +43,25 @@ public:
 	uint16 getVersion() const { return mVersion.getValue(); }
 	const LedgerEntryFormat* getFormat() { return mFormat; }
 
-	int getIFieldIndex(SOE_Field field) const { return mObject.getFieldIndex(field); }
+	int getIFieldIndex(SField::ref field) const { return mObject.getFieldIndex(field); }
 	int getIFieldCount() const { return mObject.getCount(); }
-	const SerializedType& peekIField(SOE_Field field) const { return mObject.peekAtField(field); }
-	SerializedType& getIField(SOE_Field field) { return mObject.getField(field); }
-	SOE_Field getIFieldSType(int index) { return mObject.getFieldSType(index); }
+	const SerializedType& peekIField(SField::ref field) const { return mObject.peekAtField(field); }
+	SerializedType& getIField(SField::ref field) { return mObject.getField(field); }
+	SField::ref getIFieldSType(int index) { return mObject.getFieldSType(index); }
 
-	std::string getIFieldString(SOE_Field field) const { return mObject.getFieldString(field); }
-	unsigned char getIFieldU8(SOE_Field field) const { return mObject.getValueFieldU8(field); }
-	uint16 getIFieldU16(SOE_Field field) const { return mObject.getValueFieldU16(field); }
-	uint32 getIFieldU32(SOE_Field field) const { return mObject.getValueFieldU32(field); }
-	uint64 getIFieldU64(SOE_Field field) const { return mObject.getValueFieldU64(field); }
-	uint128 getIFieldH128(SOE_Field field) const { return mObject.getValueFieldH128(field); }
-	uint160 getIFieldH160(SOE_Field field) const { return mObject.getValueFieldH160(field); }
-	uint256 getIFieldH256(SOE_Field field) const { return mObject.getValueFieldH256(field); }
-	std::vector<unsigned char> getIFieldVL(SOE_Field field) const { return mObject.getValueFieldVL(field); }
-	std::vector<TaggedListItem> getIFieldTL(SOE_Field field) const { return mObject.getValueFieldTL(field); }
-	NewcoinAddress getIValueFieldAccount(SOE_Field field) const { return mObject.getValueFieldAccount(field); }
-	STAmount getIValueFieldAmount(SOE_Field field) const { return mObject.getValueFieldAmount(field); }
-	STVector256 getIFieldV256(SOE_Field field) { return mObject.getValueFieldV256(field); }
+	std::string getIFieldString(SField::ref field) const { return mObject.getFieldString(field); }
+	unsigned char getIFieldU8(SField::ref field) const { return mObject.getValueFieldU8(field); }
+	uint16 getIFieldU16(SField::ref field) const { return mObject.getValueFieldU16(field); }
+	uint32 getIFieldU32(SField::ref field) const { return mObject.getValueFieldU32(field); }
+	uint64 getIFieldU64(SField::ref field) const { return mObject.getValueFieldU64(field); }
+	uint128 getIFieldH128(SField::ref field) const { return mObject.getValueFieldH128(field); }
+	uint160 getIFieldH160(SField::ref field) const { return mObject.getValueFieldH160(field); }
+	uint256 getIFieldH256(SField::ref field) const { return mObject.getValueFieldH256(field); }
+	std::vector<unsigned char> getIFieldVL(SField::ref field) const { return mObject.getValueFieldVL(field); }
+	std::vector<TaggedListItem> getIFieldTL(SField::ref field) const { return mObject.getValueFieldTL(field); }
+	NewcoinAddress getIValueFieldAccount(SField::ref field) const { return mObject.getValueFieldAccount(field); }
+	STAmount getIValueFieldAmount(SField::ref field) const { return mObject.getValueFieldAmount(field); }
+	STVector256 getIFieldV256(SField::ref field) { return mObject.getValueFieldV256(field); }
 
 	bool isThreadedType();	// is this a ledger entry that can be threaded
 	bool isThreaded();		// is this ledger entry actually threaded
@@ -75,28 +75,28 @@ public:
 	bool thread(const uint256& txID, uint32 ledgerSeq, uint256& prevTxID, uint32& prevLedgerID);
 	std::vector<uint256> getOwners();	// nodes notified if this node is deleted
 
-	void setIFieldU8(SOE_Field field, unsigned char v) { return mObject.setValueFieldU8(field, v); }
-	void setIFieldU16(SOE_Field field, uint16 v) { return mObject.setValueFieldU16(field, v); }
-	void setIFieldU32(SOE_Field field, uint32 v) { return mObject.setValueFieldU32(field, v); }
-	void setIFieldU64(SOE_Field field, uint64 v) { return mObject.setValueFieldU64(field, v); }
-	void setIFieldH128(SOE_Field field, const uint128& v) { return mObject.setValueFieldH128(field, v); }
-	void setIFieldH160(SOE_Field field, const uint160& v) { return mObject.setValueFieldH160(field, v); }
-	void setIFieldH256(SOE_Field field, const uint256& v) { return mObject.setValueFieldH256(field, v); }
-	void setIFieldVL(SOE_Field field, const std::vector<unsigned char>& v)
+	void setIFieldU8(SField::ref field, unsigned char v) { return mObject.setValueFieldU8(field, v); }
+	void setIFieldU16(SField::ref field, uint16 v) { return mObject.setValueFieldU16(field, v); }
+	void setIFieldU32(SField::ref field, uint32 v) { return mObject.setValueFieldU32(field, v); }
+	void setIFieldU64(SField::ref field, uint64 v) { return mObject.setValueFieldU64(field, v); }
+	void setIFieldH128(SField::ref field, const uint128& v) { return mObject.setValueFieldH128(field, v); }
+	void setIFieldH160(SField::ref field, const uint160& v) { return mObject.setValueFieldH160(field, v); }
+	void setIFieldH256(SField::ref field, const uint256& v) { return mObject.setValueFieldH256(field, v); }
+	void setIFieldVL(SField::ref field, const std::vector<unsigned char>& v)
 		{ return mObject.setValueFieldVL(field, v); }
-	void setIFieldTL(SOE_Field field, const std::vector<TaggedListItem>& v)
+	void setIFieldTL(SField::ref field, const std::vector<TaggedListItem>& v)
 		{ return mObject.setValueFieldTL(field, v); }
-	void setIFieldAccount(SOE_Field field, const uint160& account)
+	void setIFieldAccount(SField::ref field, const uint160& account)
 		{ return mObject.setValueFieldAccount(field, account); }
-	void setIFieldAccount(SOE_Field field, const NewcoinAddress& account)
+	void setIFieldAccount(SField::ref field, const NewcoinAddress& account)
 		{ return mObject.setValueFieldAccount(field, account); }
-	void setIFieldAmount(SOE_Field field, const STAmount& amount)
+	void setIFieldAmount(SField::ref field, const STAmount& amount)
 		{ return mObject.setValueFieldAmount(field, amount); }
-	void setIFieldV256(SOE_Field field, const STVector256& v) { return mObject.setValueFieldV256(field, v); }
+	void setIFieldV256(SField::ref field, const STVector256& v) { return mObject.setValueFieldV256(field, v); }
 
-	bool getIFieldPresent(SOE_Field field) const { return mObject.isFieldPresent(field); }
-	void makeIFieldPresent(SOE_Field field) { mObject.makeFieldPresent(field); }
-	void makeIFieldAbsent(SOE_Field field) { return mObject.makeFieldAbsent(field); }
+	bool getIFieldPresent(SField::ref field) const { return mObject.isFieldPresent(field); }
+	void makeIFieldPresent(SField::ref field) { mObject.makeFieldPresent(field); }
+	void makeIFieldAbsent(SField::ref field) { return mObject.makeFieldAbsent(field); }
 };
 
 typedef SerializedLedgerEntry SLE;

@@ -71,50 +71,50 @@ public:
 	void setSequence(uint32);
 
 	// inner transaction field functions
-	int getITFieldIndex(SOE_Field field) const;
+	int getITFieldIndex(SField::ref field) const;
 	int getITFieldCount() const;
-	const SerializedType& peekITField(SOE_Field field) const;
-	SerializedType& getITField(SOE_Field field);
+	const SerializedType& peekITField(SField::ref field) const;
+	SerializedType& getITField(SField::ref field);
 
 	// inner transaction field value functions
-	std::string getITFieldString(SOE_Field field) const { return mInnerTxn.getFieldString(field); }
-	unsigned char getITFieldU8(SOE_Field field) const { return mInnerTxn.getValueFieldU8(field); }
-	uint16 getITFieldU16(SOE_Field field) const { return mInnerTxn.getValueFieldU16(field); }
-	uint32 getITFieldU32(SOE_Field field) const { return mInnerTxn.getValueFieldU32(field); }
-	uint64 getITFieldU64(SOE_Field field) const { return mInnerTxn.getValueFieldU64(field); }
-	uint128 getITFieldH128(SOE_Field field) const { return mInnerTxn.getValueFieldH128(field); }
-	uint160 getITFieldH160(SOE_Field field) const { return mInnerTxn.getValueFieldH160(field); }
-	uint160 getITFieldAccount(SOE_Field field) const;
-	uint256 getITFieldH256(SOE_Field field) const { return mInnerTxn.getValueFieldH256(field); }
-	std::vector<unsigned char> getITFieldVL(SOE_Field field) const { return mInnerTxn.getValueFieldVL(field); }
-	std::vector<TaggedListItem> getITFieldTL(SOE_Field field) const { return mInnerTxn.getValueFieldTL(field); }
-	STAmount getITFieldAmount(SOE_Field field) const { return mInnerTxn.getValueFieldAmount(field); }
-	STPathSet getITFieldPathSet(SOE_Field field) const { return mInnerTxn.getValueFieldPathSet(field); }
+	std::string getITFieldString(SField::ref field) const { return mInnerTxn.getFieldString(field); }
+	unsigned char getITFieldU8(SField::ref field) const { return mInnerTxn.getValueFieldU8(field); }
+	uint16 getITFieldU16(SField::ref field) const { return mInnerTxn.getValueFieldU16(field); }
+	uint32 getITFieldU32(SField::ref field) const { return mInnerTxn.getValueFieldU32(field); }
+	uint64 getITFieldU64(SField::ref field) const { return mInnerTxn.getValueFieldU64(field); }
+	uint128 getITFieldH128(SField::ref field) const { return mInnerTxn.getValueFieldH128(field); }
+	uint160 getITFieldH160(SField::ref field) const { return mInnerTxn.getValueFieldH160(field); }
+	uint160 getITFieldAccount(SField::ref field) const;
+	uint256 getITFieldH256(SField::ref field) const { return mInnerTxn.getValueFieldH256(field); }
+	std::vector<unsigned char> getITFieldVL(SField::ref field) const { return mInnerTxn.getValueFieldVL(field); }
+	std::vector<TaggedListItem> getITFieldTL(SField::ref field) const { return mInnerTxn.getValueFieldTL(field); }
+	STAmount getITFieldAmount(SField::ref field) const { return mInnerTxn.getValueFieldAmount(field); }
+	STPathSet getITFieldPathSet(SField::ref field) const { return mInnerTxn.getValueFieldPathSet(field); }
 
-	void setITFieldU8(SOE_Field field, unsigned char v) { return mInnerTxn.setValueFieldU8(field, v); }
-	void setITFieldU16(SOE_Field field, uint16 v) { return mInnerTxn.setValueFieldU16(field, v); }
-	void setITFieldU32(SOE_Field field, uint32 v) { return mInnerTxn.setValueFieldU32(field, v); }
-	void setITFieldU64(SOE_Field field, uint32 v) { return mInnerTxn.setValueFieldU64(field, v); }
-	void setITFieldH128(SOE_Field field, const uint128& v) { return mInnerTxn.setValueFieldH128(field, v); }
-	void setITFieldH160(SOE_Field field, const uint160& v) { return mInnerTxn.setValueFieldH160(field, v); }
-	void setITFieldH256(SOE_Field field, const uint256& v) { return mInnerTxn.setValueFieldH256(field, v); }
-	void setITFieldVL(SOE_Field field, const std::vector<unsigned char>& v)
+	void setITFieldU8(SField::ref field, unsigned char v) { return mInnerTxn.setValueFieldU8(field, v); }
+	void setITFieldU16(SField::ref field, uint16 v) { return mInnerTxn.setValueFieldU16(field, v); }
+	void setITFieldU32(SField::ref field, uint32 v) { return mInnerTxn.setValueFieldU32(field, v); }
+	void setITFieldU64(SField::ref field, uint32 v) { return mInnerTxn.setValueFieldU64(field, v); }
+	void setITFieldH128(SField::ref field, const uint128& v) { return mInnerTxn.setValueFieldH128(field, v); }
+	void setITFieldH160(SField::ref field, const uint160& v) { return mInnerTxn.setValueFieldH160(field, v); }
+	void setITFieldH256(SField::ref field, const uint256& v) { return mInnerTxn.setValueFieldH256(field, v); }
+	void setITFieldVL(SField::ref field, const std::vector<unsigned char>& v)
 		{ return mInnerTxn.setValueFieldVL(field, v); }
-	void setITFieldTL(SOE_Field field, const std::vector<TaggedListItem>& v)
+	void setITFieldTL(SField::ref field, const std::vector<TaggedListItem>& v)
 		{ return mInnerTxn.setValueFieldTL(field, v); }
-	void setITFieldAccount(SOE_Field field, const uint160& v)
+	void setITFieldAccount(SField::ref field, const uint160& v)
 		{ return mInnerTxn.setValueFieldAccount(field, v); }
-	void setITFieldAccount(SOE_Field field, const NewcoinAddress& v)
+	void setITFieldAccount(SField::ref field, const NewcoinAddress& v)
 		{ return mInnerTxn.setValueFieldAccount(field, v); }
-	void setITFieldAmount(SOE_Field field, const STAmount& v)
+	void setITFieldAmount(SField::ref field, const STAmount& v)
 		{ return mInnerTxn.setValueFieldAmount(field, v); }
-	void setITFieldPathSet(SOE_Field field, const STPathSet& v)
+	void setITFieldPathSet(SField::ref field, const STPathSet& v)
 		{ return mInnerTxn.setValueFieldPathSet(field, v); }
 
 	// optional field functions
-	bool getITFieldPresent(SOE_Field field) const;
-	void makeITFieldPresent(SOE_Field field);
-	void makeITFieldAbsent(SOE_Field field);
+	bool getITFieldPresent(SField::ref field) const;
+	void makeITFieldPresent(SField::ref field);
+	void makeITFieldAbsent(SField::ref field);
 
 	std::vector<NewcoinAddress> getAffectedAccounts() const;
 

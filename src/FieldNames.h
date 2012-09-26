@@ -1,9 +1,14 @@
 #ifndef __FIELDNAMES__
 #define __FIELDNAMES__
 
+#include <boost/thread/mutex.hpp>
+
+#define FIELD_CODE(type, index) ((static_cast<int>(type) << 16) | index)
+
 enum SerializedTypeID
 {
 	// special types
+	STI_UNKNOWN		= -2,
 	STI_DONE		= -1,
 	STI_NOTPRESENT	= 0,
 
@@ -26,31 +31,43 @@ enum SOE_Flags
 	SOE_OPTIONAL = 1,	// optional
 };
 
-enum SOE_Field
+class SField
 {
-	sfInvalid = -1,
-	sfGeneric = 0,
+public:
+	typedef const SField&	ref;
+	typedef SField const *	ptr;
 
-#define FIELD(name, type, index) sf##name = (STI_##type << 16) | index,
+protected:
+	static std::map<int, SField*>	codeToField;
+	static boost::mutex				mapMutex;
+
+public:
+
+	const int				fieldCode;		// (type<<16)|index
+	const SerializedTypeID	fieldType;		// STI_*
+	const int				fieldValue;		// Code number for protocol
+	const char*				fieldName;
+
+	SField(int fc, SerializedTypeID tid, int fv, const char* fn) : 
+		fieldCode(fc), fieldType(tid), fieldValue(fv), fieldName(fn)
+	{ codeToField[fc] = this; }
+
+	SField(int fc) : fieldCode(fc), fieldType(STI_UNKNOWN), fieldValue(0), fieldName(NULL) { ; }
+
+	static SField::ref getField(int fieldCode);
+	static SField::ref getField(SerializedTypeID type, int value) { return getField(FIELD_CODE(type, value)); }
+
+	bool isGeneric() const		{ return fieldCode == 0; }
+	bool isInvalid() const		{ return fieldCode == -1; }
+	bool isKnown() const		{ return fieldType != STI_UNKNOWN; }
+};
+
+extern SField sfInvalid, sfGeneric;
+
+#define FIELD(name, type, index) extern SField sf##name;
 #define TYPE(name, type, index)
 #include "SerializeProto.h"
 #undef FIELD
 #undef TYPE
-
-	// test fields
-	sfTest1=100000, sfTest2, sfTest3, sfTest4
-};
-
-struct FieldName
-{
-	SOE_Field field;
-	const char *fieldName;
-	SerializedTypeID fieldType;
-	int fieldNum;
-};
-
-extern FieldName FieldNames[];
-extern FieldName* getFieldName(SOE_Field);
-extern FieldName* getFieldName(int type, int field);
 
 #endif

@@ -298,7 +298,7 @@ void STAmount::add(Serializer& s) const
 	}
 }
 
-STAmount::STAmount(FieldName* name, int64 value) : SerializedType(name), mOffset(0), mIsNative(true)
+STAmount::STAmount(SField::ref name, int64 value) : SerializedType(name), mOffset(0), mIsNative(true)
 {
 	if (value >= 0)
 	{
@@ -330,7 +330,7 @@ uint64 STAmount::toUInt64() const
 	return mValue | (static_cast<uint64>(mOffset + 256 + 97) << (64 - 10));
 }
 
-STAmount* STAmount::construct(SerializerIterator& sit, FieldName* name)
+STAmount* STAmount::construct(SerializerIterator& sit, SField::ref name)
 {
 	uint64 value = sit.get64();
 
@@ -882,8 +882,7 @@ uint64 STAmount::convertToDisplayAmount(const STAmount& internalAmount, uint64 t
 	return muldiv(internalAmount.getNValue(), totalInit, totalNow);
 }
 
-STAmount STAmount::convertToInternalAmount(uint64 displayAmount, uint64 totalNow, uint64 totalInit,
-	FieldName* name)
+STAmount STAmount::convertToInternalAmount(uint64 displayAmount, uint64 totalNow, uint64 totalInit, SField::ref name)
 { // Convert a display/request currency amount to an internal amount
 	return STAmount(name, muldiv(displayAmount, totalNow, totalInit));
 }

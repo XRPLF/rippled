@@ -8,7 +8,7 @@
 
 #include "Log.h"
 
-std::auto_ptr<SerializedType> STObject::makeDefaultObject(SerializedTypeID id, FieldName* name)
+std::auto_ptr<SerializedType> STObject::makeDefaultObject(SerializedTypeID id, SField::ref name)
 {
 	switch(id)
 	{
@@ -53,7 +53,7 @@ std::auto_ptr<SerializedType> STObject::makeDefaultObject(SerializedTypeID id, F
 	}
 }
 
-std::auto_ptr<SerializedType> STObject::makeDeserializedObject(SerializedTypeID id, FieldName* name,
+std::auto_ptr<SerializedType> STObject::makeDeserializedObject(SerializedTypeID id, SField::ref name,
 	SerializerIterator& sit, int depth)
 {
 	switch(id)
@@ -114,19 +114,19 @@ void STObject::set(const SOElement* elem)
 	{
 		mType.push_back(elem);
 		if (elem->flags == SOE_OPTIONAL)
-			giveObject(makeDefaultObject(STI_NOTPRESENT, elem->e_name));
+			giveObject(makeDefaultObject(STI_NOTPRESENT, elem));
 		else
-			giveObject(makeDefaultObject(elem->e_id, elem->e_name));
+			giveObject(makeDefaultObject(elem->e_field, elem));
 		++elem;
 	}
 }
 
-STObject::STObject(const SOElement* elem, FieldName* name) : SerializedType(name)
+STObject::STObject(const SOElement* elem, SField::ref name) : SerializedType(name)
 {
 	set(elem);
 }
 
-void STObject::set(FieldName* name, SerializerIterator& sit, int depth = 0)
+void STObject::set(SField::ref name, SerializerIterator& sit, int depth = 0)
 {
 	mData.empty();
 	mType.empty();
@@ -139,12 +139,12 @@ void STObject::set(FieldName* name, SerializerIterator& sit, int depth = 0)
 		sit.getFieldID(type, field);
 		if ((type == STI_ARRAY) && (field == 1))
 			return;
-		FieldName* fn = getFieldName(type, field);
+		SField::ref fn = SField::getField(type, field);
 		giveObject(makeDeserializedObject(static_cast<SerializedTypeID> type, fn, sit, depth + 1);
 	}
 }
 
-STObject::STObject(const SOElement* elem, SerializerIterator& sit, FieldName*name) : SerializedType(name)
+STObject::STObject(const SOElement* elem, SerializerIterator& sit, SField::refname) : SerializedType(name)
 {
 	set(elem, sit);
 }
