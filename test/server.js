@@ -1,4 +1,7 @@
 // Manage test servers
+//
+// YYY Would be nice to be able to hide server output.
+//
 
 // Provide servers
 //
