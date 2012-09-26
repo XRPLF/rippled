@@ -2,11 +2,11 @@
 // appropriate #define statements.
 
 	// types (common)
-	TYPE("Int32",			UINT32,		1)
-	TYPE("Int64",			UINT64,		2)
-	TYPE("Hash128",			HASH128,	3)
-	TYPE("Hash256",			HASH256,	4)
-	// 5 is reserved
+	TYPE("Int16",			UINT16,		1)
+	TYPE("Int32",			UINT32,		2)
+	TYPE("Int64",			UINT64,		3)
+	TYPE("Hash128",			HASH128,	4)
+	TYPE("Hash256",			HASH256,	5)
 	TYPE("Amount",			AMOUNT,		6)
 	TYPE("VariableLength",	VL,			7)
 	TYPE("Account",			ACCOUNT,	8)
@@ -16,15 +16,18 @@
 
 	// types (uncommon)
 	TYPE("Int8",			UINT8,		16)
-	TYPE("Int16",			UINT16,		17)
-	TYPE("Hash160",			HASH160,	18)
-	TYPE("PathSet",			PATHSET,	19)
-	TYPE("Vector256",		VECTOR256,	20)
+	TYPE("Hash160",			HASH160,	17)
+	TYPE("PathSet",			PATHSET,	18)
+	TYPE("Vector256",		VECTOR256,	19)
 
 
 
 	// 8-bit integers
 	FIELD(CloseResolution,		UINT8, 1)
+
+	// 16-bit integers
+	FIELD(LedgerEntryType,		UINT16, 1)
+	FIELD(TransactionType,		UINT16, 1)
 
 	// 32-bit integers (common)
 	FIELD(ObjectType,			UINT32, 1)
