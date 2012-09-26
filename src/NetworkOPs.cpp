@@ -69,7 +69,9 @@ void NetworkOPs::closeTimeOffset(int offset)
 
 uint32 NetworkOPs::getLedgerID(const uint256& hash)
 {
-	return mLedgerMaster->getLedgerByHash(hash)->getLedgerSeq();
+	Ledger::ref  lrLedger	= mLedgerMaster->getLedgerByHash(hash);
+
+	return lrLedger ? lrLedger->getLedgerSeq() : 0;
 }
 
 uint32 NetworkOPs::getCurrentLedgerID()

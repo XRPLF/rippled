@@ -107,11 +107,6 @@ public:
 	uint256					getClosedLedger()
 		{ return mLedgerMaster->getClosedLedger()->getHash(); }
 
-	// FIXME: This function is basically useless since the hash is constantly changing and the ledger
-	// is ephemeral and mutable.
-	uint256					getCurrentLedger()
-		{ return mLedgerMaster->getCurrentLedger()->getHash(); }
-
 	//
 	// Transaction operations
 	//
