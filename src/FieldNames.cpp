@@ -9,34 +9,34 @@
 
 SField sfInvalid(-1), sfGeneric(0);
 
-#define FIELD(name, type, index) SField sf##name(FIELD_CODE(STI_##type, index), STI_##type, index, naem);
+#define FIELD(name, type, index) SField sf##name(FIELD_CODE(STI_##type, index), STI_##type, index, #name);
 #define TYPE(name, type, index)
 #include "SerializeProto.h"
 #undef FIELD
 #undef TYPE
 
-static std::map<int, SField*> SField::codeToField;
-static boost::mutex SField::mapMutex;
+std::map<int, SField*> SField::codeToField;
+boost::mutex SField::mapMutex;
 
-SField::ref SField::getField(int code);
+SField::ref SField::getField(int code)
 {
 	int type = code >> 16;
 	int field = code % 0xffff;
 
-	if ((type <= 0) || (type >= 256) || (field <= 0) || (field >= 256
+	if ((type <= 0) || (type >= 256) || (field <= 0) || (field >= 256))
 		return sfInvalid;
 
 	boost::mutex::scoped_lock sl(mapMutex);
 
-	std::map<int, SField*> it = unknownFieldMap.Find(code);
+	std::map<int, SField*> it = codeToField.find(code);
 	if (it != codeToField.end())
 		return *(it->second);
 
 	switch(type)
 	{ // types we are willing to dynamically extend
 
-#define FIELD(name, type, index)
-#define TYPE(name, type, index) case sf##name:
+#define FIELD(name, type, index) case sf##name:
+#define TYPE(name, type, index)
 #include "SerializeProto.h"
 #undef FIELD
 #undef TYPE
