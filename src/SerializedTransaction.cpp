@@ -12,11 +12,11 @@ SerializedTransaction::SerializedTransaction(TransactionType type) : mType(type)
 	mFormat = getTxnFormat(type);
 	if (mFormat == NULL) throw std::runtime_error("invalid transaction type");
 
-	mMiddleTxn.giveObject(new STVariableLength("SigningPubKey"));
-	mMiddleTxn.giveObject(new STAccount("SourceAccount"));
-	mMiddleTxn.giveObject(new STUInt32("Sequence"));
-	mMiddleTxn.giveObject(new STUInt16("Type", static_cast<uint16>(type)));
-	mMiddleTxn.giveObject(new STAmount("Fee"));
+	mMiddleTxn.giveObject(new STVariableLength(sfSigningPubKey));
+	mMiddleTxn.giveObject(new STAccount(sfSourceAccount));
+	mMiddleTxn.giveObject(new STUInt32(sfSequence));
+	mMiddleTxn.giveObject(new STUInt16(sfTransactionType, static_cast<uint16>(type)));
+	mMiddleTxn.giveObject(new STAmount(sfFee));
 
 	mInnerTxn = STObject(mFormat->elements, "InnerTransaction");
 }

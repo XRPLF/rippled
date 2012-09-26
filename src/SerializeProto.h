@@ -71,8 +71,9 @@
 	FIELD(TransactionHash,		HASH256, 3)
 	FIELD(AccountHash,			HASH256, 4)
 	FIELD(LastTxnID,			HASH256, 5)
-	FIELD(WalletLocator,		HASH256, 6)
-	FIELD(PublishHash,			HASH256, 7)
+	FIELD(LedgerIndex,			HASH256, 6)
+	FIELD(WalletLocator,		HASH256, 7)
+	FIELD(PublishHash,			HASH256, 8)
 
 	// 256-bit (uncommon)
 	FIELD(BookDirectory,		HASH256, 16)

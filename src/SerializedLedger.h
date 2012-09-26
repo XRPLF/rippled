@@ -27,7 +27,6 @@ public:
 	std::string getFullText() const;
 	std::string getText() const;
 	Json::Value getJson(int options) const;
-	virtual bool isEquivalent(const SerializedType& t) const;
 
 	const uint256& getIndex() const;
 	void setIndex(const uint256& i);

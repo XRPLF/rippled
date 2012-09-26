@@ -73,7 +73,7 @@ public:
 	static int compare(SField::ref f1, SField::ref f2);
 };
 
-extern SField sfInvalid, sfGeneric, sfLedgerEntry, sfTransaction;
+extern SField sfInvalid, sfGeneric, sfLedgerEntry, sfTransaction, sfValidation;
 
 #define FIELD(name, type, index) extern SField sf##name;
 #define TYPE(name, type, index)
