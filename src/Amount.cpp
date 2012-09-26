@@ -889,7 +889,7 @@ STAmount STAmount::convertToInternalAmount(uint64 displayAmount, uint64 totalNow
 
 STAmount STAmount::deserialize(SerializerIterator& it)
 {
-	STAmount *s = construct(it);
+	STAmount *s = construct(it, sfGeneric);
 	STAmount ret(*s);
 
 	delete s;
