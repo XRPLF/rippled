@@ -21,9 +21,9 @@ enum SerializedTypeID
 #undef FIELD
 
 	// high level types
-	STI_TRANSACTION = 100001,
-	STI_LEDGERENTRY	= 100002,
-	STI_VALIDATION	= 100003,
+	STI_TRANSACTION = 10001,
+	STI_LEDGERENTRY	= 10002,
+	STI_VALIDATION	= 10003,
 };
 
 enum SOE_Flags
@@ -73,7 +73,7 @@ public:
 	static int compare(SField::ref f1, SField::ref f2);
 };
 
-extern SField sfInvalid, sfGeneric;
+extern SField sfInvalid, sfGeneric, sfLedgerEntry, sfTransaction;
 
 #define FIELD(name, type, index) extern SField sf##name;
 #define TYPE(name, type, index)
