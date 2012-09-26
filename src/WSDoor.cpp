@@ -75,7 +75,10 @@ public:
 	Json::Value invokeCommand(const Json::Value& jvRequest);
 	boost::unordered_set<NewcoinAddress> parseAccountIds(const Json::Value& jvArray);
 
-	// Commands
+	// Request-Response Commands
+	void doLedgerCurrent(Json::Value& jvResult, const Json::Value& jvRequest);
+
+	// Streaming Commands
 	void doAccountInfoSubscribe(Json::Value& jvResult, const Json::Value& jvRequest);
 	void doAccountInfoUnsubscribe(Json::Value& jvResult, const Json::Value& jvRequest);
 	void doAccountTransactionSubscribe(Json::Value& jvResult, const Json::Value& jvRequest);
@@ -293,6 +296,10 @@ Json::Value WSConnection::invokeCommand(const Json::Value& jvRequest)
 		const char* pCommand;
 		doFuncPtr	dfpFunc;
 	} commandsA[] = {
+		// Request-Response Commands:
+		{ "ledger_current",						&WSConnection::doLedgerCurrent				},
+
+		// Streaming commands:
 		{ "account_info_subscribe",				&WSConnection::doAccountInfoSubscribe			},
 		{ "account_info_unsubscribe",			&WSConnection::doAccountInfoUnsubscribe			},
 		{ "account_transaction_subscribe",		&WSConnection::doAccountTransactionSubscribe	},
@@ -539,6 +546,11 @@ void WSConnection::doLedgerAccountsUnsubscribe(Json::Value& jvResult, const Json
 	{
 		jvResult["error"]	= "ledgerAccountsNotSubscribed";
 	}
+}
+
+void WSConnection::doLedgerCurrent(Json::Value& jvResult, const Json::Value& jvRequest)
+{
+	jvResult["ledger"]	= theApp->getOPs().getCurrentLedgerID();
 }
 
 void WSConnection::doTransactionSubcribe(Json::Value& jvResult, const Json::Value& jvRequest)
