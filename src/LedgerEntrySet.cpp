@@ -877,7 +877,7 @@ uint32 LedgerEntrySet::rippleTransferRate(const uint160& uIssuerID)
 }
 
 // XXX Might not need this, might store in nodes on calc reverse.
-uint32 LedgerEntrySet::rippleQualityIn(const uint160& uToAccountID, const uint160& uFromAccountID, const uint160& uCurrencyID, const SOE_Field sfLow, const SOE_Field sfHigh)
+uint32 LedgerEntrySet::rippleQualityIn(const uint160& uToAccountID, const uint160& uFromAccountID, const uint160& uCurrencyID, SField::ref sfLow, SField::ref sfHigh)
 {
 	uint32			uQuality		= QUALITY_ONE;
 	SLE::pointer	sleRippleState;
@@ -892,7 +892,7 @@ uint32 LedgerEntrySet::rippleQualityIn(const uint160& uToAccountID, const uint16
 
 		if (sleRippleState)
 		{
-			SOE_Field	sfField	= uToAccountID < uFromAccountID ? sfLow: sfHigh;
+			SField::ref	sfField	= uToAccountID < uFromAccountID ? sfLow: sfHigh;
 
 			uQuality	= sleRippleState->getIFieldPresent(sfField)
 							? sleRippleState->getIFieldU32(sfField)
