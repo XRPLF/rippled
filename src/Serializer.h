@@ -92,7 +92,7 @@ public:
 	int getDataLength() const			{ return mData.size(); }
 	const void* getDataPtr() const		{ return &mData.front(); }
 	void* getDataPtr()					{ return &mData.front(); }
-	int getLength()						{ return mData.size(); }
+	int getLength()	const				{ return mData.size(); }
 	const std::vector<unsigned char>& peekData() const { return mData; }
 	std::vector<unsigned char> getData() const { return mData; }
 	std::string getString() const { return std::string(static_cast<const char *>(getDataPtr()), size());  }
@@ -143,11 +143,12 @@ protected:
 public:
 	SerializerIterator(const Serializer& s) : mSerializer(s), mPos(0) { ; }
 
-	void reset(void) { mPos=0; }
+	void reset(void) { mPos = 0; }
 	void setPos(int p) { mPos = p; }
 	const Serializer& operator*(void) { return mSerializer; }
 
 	int getPos(void) { return mPos; }
+	bool empty() { return mPos == mSerializer.getLength(); }
 	int getBytesLeft();
 
 	// get functions throw on error
