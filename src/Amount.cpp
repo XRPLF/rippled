@@ -519,7 +519,7 @@ STAmount& STAmount::operator-=(const STAmount& a)
 STAmount STAmount::operator-(void) const
 {
 	if (mValue == 0) return *this;
-	return STAmount(name, mCurrency, mIssuer, mValue, mOffset, mIsNative, !mIsNegative);
+	return STAmount(fName, mCurrency, mIssuer, mValue, mOffset, mIsNative, !mIsNegative);
 }
 
 STAmount& STAmount::operator=(uint64 v)
@@ -572,12 +572,12 @@ bool STAmount::operator>=(uint64 v) const
 
 STAmount STAmount::operator+(uint64 v) const
 {
-	return STAmount(name, getSNValue() + static_cast<int64>(v));
+	return STAmount(fName, getSNValue() + static_cast<int64>(v));
 }
 
 STAmount STAmount::operator-(uint64 v) const
 {
-	return STAmount(name, getSNValue() - static_cast<int64>(v));
+	return STAmount(fName, getSNValue() - static_cast<int64>(v));
 }
 
 STAmount::operator double() const
@@ -595,7 +595,7 @@ STAmount operator+(const STAmount& v1, const STAmount& v2)
 
 	v1.throwComparable(v2);
 	if (v1.mIsNative)
-		return STAmount(v1.name, v1.getSNValue() + v2.getSNValue());
+		return STAmount(v1.fName, v1.getSNValue() + v2.getSNValue());
 
 
 	int ov1 = v1.mOffset, ov2 = v2.mOffset;
@@ -617,9 +617,9 @@ STAmount operator+(const STAmount& v1, const STAmount& v2)
 
 	int64 fv = vv1 + vv2;
 	if (fv >= 0)
-		return STAmount(v1.name, v1.mCurrency, v1.mIssuer, fv, ov1, false);
+		return STAmount(v1.fName, v1.mCurrency, v1.mIssuer, fv, ov1, false);
 	else
-		return STAmount(v1.name, v1.mCurrency, v1.mIssuer, -fv, ov1, true);
+		return STAmount(v1.fName, v1.mCurrency, v1.mIssuer, -fv, ov1, true);
 }
 
 STAmount operator-(const STAmount& v1, const STAmount& v2)
@@ -628,7 +628,7 @@ STAmount operator-(const STAmount& v1, const STAmount& v2)
 
 	v1.throwComparable(v2);
 	if (v2.mIsNative)
-		return STAmount(v1.name, v1.getSNValue() - v2.getSNValue());
+		return STAmount(v1.fName, v1.getSNValue() - v2.getSNValue());
 
 	int ov1 = v1.mOffset, ov2 = v2.mOffset;
 	int64 vv1 = static_cast<int64>(v1.mValue), vv2 = static_cast<int64>(v2.mValue);
@@ -649,9 +649,9 @@ STAmount operator-(const STAmount& v1, const STAmount& v2)
 
 	int64 fv = vv1 - vv2;
 	if (fv >= 0)
-		return STAmount(v1.name, v1.mCurrency, v1.mIssuer, fv, ov1, false);
+		return STAmount(v1.fName, v1.mCurrency, v1.mIssuer, fv, ov1, false);
 	else
-		return STAmount(v1.name, v1.mCurrency, v1.mIssuer, -fv, ov1, true);
+		return STAmount(v1.fName, v1.mCurrency, v1.mIssuer, -fv, ov1, true);
 }
 
 STAmount STAmount::divide(const STAmount& num, const STAmount& den, const uint160& uCurrencyID, const uint160& uIssuerID)
@@ -703,7 +703,7 @@ STAmount STAmount::multiply(const STAmount& v1, const STAmount& v2, const uint16
 		return STAmount(uCurrencyID, uIssuerID);
 
 	if (v1.mIsNative && v2.mIsNative) // FIXME: overflow
-		return STAmount(v1.name, v1.getSNValue() * v2.getSNValue());
+		return STAmount(v1.fName, v1.getSNValue() * v2.getSNValue());
 
 	uint64 value1 = v1.mValue, value2 = v2.mValue;
 	int offset1 = v1.mOffset, offset2 = v2.mOffset;
