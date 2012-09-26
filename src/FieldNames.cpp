@@ -15,7 +15,7 @@ SField sfInvalid(-1), sfGeneric(0);
 #undef FIELD
 #undef TYPE
 
-std::map<int, SField*> SField::codeToField;
+std::map<int, SField::ptr> SField::codeToField;
 boost::mutex SField::mapMutex;
 
 SField::ref SField::getField(int code)
@@ -28,15 +28,15 @@ SField::ref SField::getField(int code)
 
 	boost::mutex::scoped_lock sl(mapMutex);
 
-	std::map<int, SField*> it = codeToField.find(code);
+	std::map<int, SField::ptr>::iterator it = codeToField.find(code);
 	if (it != codeToField.end())
 		return *(it->second);
 
-	switch(type)
+	switch (type)
 	{ // types we are willing to dynamically extend
 
-#define FIELD(name, type, index) case sf##name:
-#define TYPE(name, type, index)
+#define FIELD(name, type, index)
+#define TYPE(name, type, index) case STI_##type:
 #include "SerializeProto.h"
 #undef FIELD
 #undef TYPE
@@ -68,7 +68,7 @@ SField::ref SField::getField(int type, int value)
 	return getField(FIELD_CODE(type, value));
 }
 
-std::string SField::getName() cosnt
+std::string SField::getName() const
 {
 	if (fieldName != NULL)
 		return fieldName;

@@ -40,8 +40,8 @@ public:
 	typedef SField const *	ptr;
 
 protected:
-	static std::map<int, SField*>	codeToField;
-	static boost::mutex				mapMutex;
+	static std::map<int, ptr>	codeToField;
+	static boost::mutex			mapMutex;
 
 public:
 
