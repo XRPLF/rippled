@@ -69,6 +69,8 @@ public:
 
 	bool operator==(const SField& f) const { return fieldCode == f.fieldCode; }
 	bool operator!=(const SField& f) const { return fieldCode != f.fieldCode; }
+
+	static int compare(SField::ref f1, SField::ref f2);
 };
 
 extern SField sfInvalid, sfGeneric;

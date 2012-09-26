@@ -66,6 +66,8 @@ public:
 	virtual bool isEquivalent(const SerializedType& t) const
 	{ assert(getSType() == STI_NOTPRESENT); return t.getSType() == STI_NOTPRESENT; }
 
+	void addFieldID(Serializer& s) const { s.addFieldID(fName->fieldType, fName->fieldValue); }
+
 	SerializedType& operator=(const SerializedType& t)
 	{ if (!fName->fieldCode) fName = t.fName; return *this; }
 	bool operator==(const SerializedType& t) const

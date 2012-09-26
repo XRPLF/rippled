@@ -9,6 +9,7 @@
 
 #include "key.h"
 #include "uint256.h"
+#include "FieldNames.h"
 
 typedef std::pair<int, std::vector<unsigned char> > TaggedListItem;
 
@@ -69,6 +70,7 @@ public:
 
 	bool getFieldID(int& type, int& name, int offset) const;
 	int addFieldID(int type, int name);
+	int addFieldID(SerializedTypeID type, int name);
 
 	// normal hash functions
 	uint160 getRIPEMD160(int size=-1) const;

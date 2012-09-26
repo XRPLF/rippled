@@ -192,9 +192,9 @@ std::string STObject::getFullText() const
 {
 	std::string ret;
 	bool first = true;
-	if (name != NULL)
+	if (fName->hasName())
 	{
-		ret = name;
+		ret = fName->getName();
 		ret += " = {";
 	}
 	else ret = "{";
@@ -213,6 +213,13 @@ std::string STObject::getFullText() const
 
 void STObject::add(Serializer& s) const
 {
+	addFieldID(s);
+	addRaw(s);
+	s.addFieldID(STI_OBJECT, 1);
+}
+
+void STObject::addRaw(Serializer& s) const
+{ // FIXME: need to add in sorted order
 	BOOST_FOREACH(const SerializedType& it, mData)
 		it.add(s);
 }

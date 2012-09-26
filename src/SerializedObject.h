@@ -56,7 +56,8 @@ public:
 	virtual SerializedTypeID getSType() const { return STI_OBJECT; }
 	virtual bool isEquivalent(const SerializedType& t) const;
 
-	void add(Serializer& s) const;
+	void add(Serializer& s) const;				// with start/end of object
+	virtual void addRaw(Serializer& s) const;	// just inner elements
 	Serializer getSerializer() const { Serializer s; add(s); return s; }
 	std::string getFullText() const;
 	std::string getText() const;

@@ -49,6 +49,20 @@ SField::ref SField::getField(int code);
 	return *(new SField(code, static_cast<SerializedTypeID>(type), field, NULL));
 }
 
+int SField::compare(SField::ref f1, SField::ref f2)
+{ // -1 = f1 comes before f2, 0 = illegal combination, 1 = f1 comes after f2
+	if ((f1.fieldCode <= 0) || (f2.fieldCode <= 0))
+		return 0;
+
+	if (f1.fieldCode < f2.fieldCode)
+		return -1;
+
+	if (f2.fieldCode < f1.fieldCode)
+		return 1;
+
+	return 0;
+}
+
 SField::ref SField::getField(int type, int value)
 {
 	return getField(FIELD_CODE(type, value));
