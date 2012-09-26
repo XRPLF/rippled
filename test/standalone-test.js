@@ -92,15 +92,75 @@ buster.testCase("Websocket commands", {
 				});
 		},
 
-	"ledger_current" :
+	'ledger_closed' :
+		function(done) {
+			alpha.ledger_closed(function (r) {
+					console.log(r);
+
+					buster.assert(r.ledger === 1);
+					done();
+				});
+		},
+
+	'ledger_current' :
 		function(done) {
 			alpha.ledger_current(function (r) {
 					console.log(r);
 
-					buster.assert(r.ledger === 2);
+					buster.assert.equals(r.ledger_index, 2);
 					done();
 				});
-		}
+		},
+
+	'ledger_closed' :
+		function(done) {
+			alpha.ledger_closed(function (r) {
+					console.log("result: %s", JSON.stringify(r));
+
+					buster.assert.equals(r.ledger_index, 1);
+					done();
+				});
+		},
 });
 
+buster.testCase("// Work in progress", {
+	'setUp' :
+		function(done) {
+			server.start("alpha",
+				function(e) {
+					buster.refute(e);
+
+					alpha	= remote.remoteConfig(config, "alpha");
+
+					alpha.connect(function(stat) {
+							buster.assert(1 == stat);	// OPEN
+
+							done();
+						}, serverDelay);
+			});
+		},
+
+	'tearDown' :
+		function(done) {
+			alpha.disconnect(function(stat) {
+					buster.assert(3 == stat);			// CLOSED
+
+					server.stop("alpha", function(e) {
+						buster.refute(e);
+
+						done();
+					});
+				});
+		},
+
+	'ledger_closed' :
+		function(done) {
+			alpha.ledger_closed(function (r) {
+					console.log("result: %s", JSON.stringify(r));
+
+					buster.assert.equals(r.ledger_index, 1);
+					done();
+				});
+		},
+});
 // vim:ts=4
