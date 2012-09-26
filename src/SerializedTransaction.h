@@ -37,7 +37,6 @@ public:
 	SerializedTransaction(TransactionType type);
 
 	// STObject functions
-	int getLength() const;
 	SerializedTypeID getSType() const { return STI_TRANSACTION; }
 	std::string getFullText() const;
 	std::string getText() const;

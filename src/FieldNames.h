@@ -1,6 +1,8 @@
 #ifndef __FIELDNAMES__
 #define __FIELDNAMES__
 
+#include <string>
+
 #include <boost/thread/mutex.hpp>
 
 #define FIELD_CODE(type, index) ((static_cast<int>(type) << 16) | index)
@@ -55,11 +57,18 @@ public:
 	SField(int fc) : fieldCode(fc), fieldType(STI_UNKNOWN), fieldValue(0), fieldName(NULL) { ; }
 
 	static SField::ref getField(int fieldCode);
+	static SField::ref getField(int fieldType, int fieldValue);
 	static SField::ref getField(SerializedTypeID type, int value) { return getField(FIELD_CODE(type, value)); }
+
+	std::string getName() const;
+	bool hasName() const		{ return (fieldName != NULL) || (fieldValue != 0); }
 
 	bool isGeneric() const		{ return fieldCode == 0; }
 	bool isInvalid() const		{ return fieldCode == -1; }
 	bool isKnown() const		{ return fieldType != STI_UNKNOWN; }
+
+	bool operator==(const SField& f) const { return fieldCode == f.fieldCode; }
+	bool operator!=(const SField& f) const { return fieldCode != f.fieldCode; }
 };
 
 extern SField sfInvalid, sfGeneric;

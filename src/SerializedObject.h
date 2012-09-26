@@ -11,34 +11,48 @@
 
 // Serializable object/array types
 
-struct SOElement
+class SOElement
 { // An element in the description of a serialized object
+public:
+	typedef SOElement const * ptr;			// used to point to one element
+	typedef SOElement const * ptrList;		// used to point to a terminated list of elements
+
 	SField::ref e_field;
-	SOE_Flags flags;
+	const SOE_Flags flags;
 };
 
 class STObject : public SerializedType
 {
 protected:
 	boost::ptr_vector<SerializedType> mData;
-	std::vector<const SOElement*> mType;
+	std::vector<SOElement::ptr> mType;
 
 	STObject* duplicate() const { return new STObject(*this); }
 	static STObject* construct(SerializerIterator&, SField::ref);
 
 public:
-	STObject(SField *n = NULL) : SerializedType(n) { ; }
-	STObject(const SOElement *t, SField *n = NULL);
-	STObject(const SOElement *t, SerializerIterator& u, SField *n = NULL);
+	STObject()											{ ; }
+
+	STObject(SField::ref name) : SerializedType(name)	{ ; }
+
+	STObject(SOElement::ptrList type, SField::ref name) : SerializedType(name)
+	{ set(type); }
+
+	STObject(SOElement::ptrList type, SerializerIterator& sit, SField::ref name) : SerializedType(name)
+	{ set(type, sit); }
+
 	virtual ~STObject() { ; }
 
 	static std::auto_ptr<SerializedType> deserialize(SerializerIterator& sit, SField::ref name)
 		{ return std::auto_ptr<SerializedType>(construct(sit, name)); }
 
-	void set(const SOElement* t);
-	void set(const SOElement* t, SerializerIterator& u, int depth = 0);
+	void setType(SOElement const * t);
+	bool isValidForType();
+	bool isFieldAllowed(SField::ref);
 
-	int getLength() const;
+	void set(SOElement::ptrList);
+	bool set(SOElement::ptrList, SerializerIterator& u, int depth = 0);
+
 	virtual SerializedTypeID getSType() const { return STI_OBJECT; }
 	virtual bool isEquivalent(const SerializedType& t) const;
 
@@ -111,8 +125,8 @@ public:
 	SerializedType* makeFieldPresent(SField::ref field);
 	void makeFieldAbsent(SField::ref field);
 
-	static std::auto_ptr<SerializedType> makeDefaultObject(SerializedTypeID id, SField *name);
-	static std::auto_ptr<SerializedType> makeDeserializedObject(SerializedTypeID id, SField *name,
+	static std::auto_ptr<SerializedType> makeDefaultObject(SerializedTypeID id, SField::ref name);
+	static std::auto_ptr<SerializedType> makeDeserializedObject(SerializedTypeID id, SField::ref name,
 		SerializerIterator&, int depth);
 
 	static void unitTest();
@@ -138,6 +152,7 @@ protected:
 public:
 
 	STArray()																{ ; }
+	STArray(SField::ref f) : SerializedType(f)								{ ; }
 	STArray(SField::ref f, const vector& v) : SerializedType(f), value(v)	{ ; }
 	STArray(vector& v) : value(v)											{ ; }
 

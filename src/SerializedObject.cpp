@@ -10,6 +10,8 @@
 
 std::auto_ptr<SerializedType> STObject::makeDefaultObject(SerializedTypeID id, SField::ref name)
 {
+	assert((id == STI_NOTPRESENT) || (id == name.fieldType));
+
 	switch(id)
 	{
 		case STI_NOTPRESENT:
@@ -47,6 +49,12 @@ std::auto_ptr<SerializedType> STObject::makeDefaultObject(SerializedTypeID id, S
 
 		case STI_PATHSET:
 			return std::auto_ptr<SerializedType>(new STPathSet(name));
+
+		case STI_OBJECT:
+			return std::auto_ptr<SerializedType>(new STObject(name));
+
+		case STI_ARRAY:
+			return std::auto_ptr<SerializedType>(new STArray(name));
 
 		default:
 			throw std::runtime_error("Unknown object type");
@@ -105,7 +113,7 @@ std::auto_ptr<SerializedType> STObject::makeDeserializedObject(SerializedTypeID 
 	}
 }
 
-void STObject::set(const SOElement* elem)
+void STObject::set(SOElement::ptr elem)
 {
 	mData.empty();
 	mType.empty();
@@ -114,39 +122,70 @@ void STObject::set(const SOElement* elem)
 	{
 		mType.push_back(elem);
 		if (elem->flags == SOE_OPTIONAL)
-			giveObject(makeDefaultObject(STI_NOTPRESENT, elem));
+			giveObject(makeDefaultObject(STI_NOTPRESENT, elem->e_field));
 		else
-			giveObject(makeDefaultObject(elem->e_field, elem));
+			giveObject(makeDefaultObject(elem->e_field.fieldType, elem->e_field));
 		++elem;
 	}
 }
 
-STObject::STObject(const SOElement* elem, SField::ref name) : SerializedType(name)
-{
-	set(elem);
-}
-
-void STObject::set(SField::ref name, SerializerIterator& sit, int depth = 0)
+void STObject::setType(SOElement::ptrList t)
 {
 	mData.empty();
-	mType.empty();
-
-	fName = name;
-
-	while(1)
-	{
-		int type, field.
-		sit.getFieldID(type, field);
-		if ((type == STI_ARRAY) && (field == 1))
-			return;
-		SField::ref fn = SField::getField(type, field);
-		giveObject(makeDeserializedObject(static_cast<SerializedTypeID> type, fn, sit, depth + 1);
-	}
+	while (t->flags != SOE_END)
+		mType.push_back(t++);
 }
 
-STObject::STObject(const SOElement* elem, SerializerIterator& sit, SField::refname) : SerializedType(name)
+bool STObject::isValidForType()
 {
-	set(elem, sit);
+	BOOST_FOREACH(SOElement::ptr elem, mType)
+	{ // are any required elemnents missing
+		if ((elem->flags == SOE_REQUIRED) && (getPField(elem->e_field) == NULL))
+		{
+			Log(lsWARNING) << getName() << " missing required element " << elem->e_field.fieldName;
+			return false;
+		}
+	}
+
+	BOOST_FOREACH(const SerializedType& elem, mData)
+	{ // are any non-permitted elements present
+		if (!isFieldAllowed(elem.getFName()))
+		{
+			Log(lsWARNING) << getName() << " has non-permitted element " << elem.getName();
+			return false;
+		}
+	}
+
+	return true;
+}
+
+bool STObject::isFieldAllowed(SField::ref field)
+{
+	BOOST_FOREACH(SOElement::ptr elem, mType)
+	{ // are any required elemnents missing
+		if (elem->e_field == field)
+			return true;
+	}
+	return false;
+}
+
+bool STObject::set(SOElement::ptrList elem, SerializerIterator& sit, int depth)
+{ // return true = terminated with end-of-object
+	setType(elem);
+
+	mData.empty();
+	while (!sit.empty())
+	{
+		int type, field;
+		sit.getFieldID(type, field);
+		if ((type == STI_OBJECT) && (field == 1)) // end of object indicator
+			return true;
+		SField::ref fn = SField::getField(type, field);
+		if (fn.isInvalid())
+			throw std::runtime_error("Unknown field");
+		giveObject(makeDeserializedObject(fn.fieldType, fn, sit, depth + 1));
+	}
+	return false;
 }
 
 std::string STObject::getFullText() const

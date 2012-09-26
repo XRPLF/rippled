@@ -49,7 +49,7 @@ public:
 	{ return std::auto_ptr<SerializedType>(new SerializedType(name)); }
 
 	void setFName(SField::ref n) { fName = &n; assert(fName); }
-	SField::ref getFName() { return *fName; }
+	SField::ref getFName() const { return *fName; }
 	const char *getName() const { return fName->fieldName; }
 
 	virtual SerializedTypeID getSType() const { return STI_NOTPRESENT; }
