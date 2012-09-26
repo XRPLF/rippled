@@ -122,9 +122,9 @@ void STObject::set(SOElement::ptr elem)
 	{
 		mType.push_back(elem);
 		if (elem->flags == SOE_OPTIONAL)
-			giveObject(makeDefaultObject(STI_NOTPRESENT, elem->e_field));
+			giveObject(makeNonPresentObject(elem->e_field));
 		else
-			giveObject(makeDefaultObject(elem->e_field.fieldType, elem->e_field));
+			giveObject(makeDefaultObject(elem->e_field));
 		++elem;
 	}
 }
@@ -257,7 +257,7 @@ bool STObject::isEquivalent(const SerializedType& t) const
 	return (it1 == end1) && (it2 == end2);
 }
 
-int STObject::getFieldIndex(SOE_Field field) const
+int STObject::getFieldIndex(SField::ref field) const
 {
 	int i = 0;
 	for (std::vector<const SOElement*>::const_iterator it = mType.begin(), end = mType.end(); it != end; ++it, ++i)
@@ -265,7 +265,7 @@ int STObject::getFieldIndex(SOE_Field field) const
 	return -1;
 }
 
-const SerializedType& STObject::peekAtField(SOE_Field field) const
+const SerializedType& STObject::peekAtField(SField::ref field) const
 {
 	int index = getFieldIndex(field);
 	if (index == -1)
@@ -273,7 +273,7 @@ const SerializedType& STObject::peekAtField(SOE_Field field) const
 	return peekAtIndex(index);
 }
 
-SerializedType& STObject::getField(SOE_Field field)
+SerializedType& STObject::getField(SField::ref field)
 {
 	int index = getFieldIndex(field);
 	if (index == -1)
@@ -281,12 +281,12 @@ SerializedType& STObject::getField(SOE_Field field)
 	return getIndex(index);
 }
 
-SOE_Field STObject::getFieldSType(int index) const
+SField::ref STObject::getFieldSType(int index) const
 {
 	return mType[index]->e_field;
 }
 
-const SerializedType* STObject::peekAtPField(SOE_Field field) const
+const SerializedType* STObject::peekAtPField(SField::ref field) const
 {
 	int index = getFieldIndex(field);
 	if (index == -1)
@@ -294,7 +294,7 @@ const SerializedType* STObject::peekAtPField(SOE_Field field) const
 	return peekAtPIndex(index);
 }
 
-SerializedType* STObject::getPField(SOE_Field field)
+SerializedType* STObject::getPField(SField::ref field)
 {
 	int index = getFieldIndex(field);
 	if (index == -1)
@@ -302,7 +302,7 @@ SerializedType* STObject::getPField(SOE_Field field)
 	return getPIndex(index);
 }
 
-bool STObject::isFieldPresent(SOE_Field field) const
+bool STObject::isFieldPresent(SField::ref field) const
 {
 	int index = getFieldIndex(field);
 	if (index == -1)
@@ -321,7 +321,6 @@ bool STObject::setFlag(uint32 f)
 
 bool STObject::clearFlag(uint32 f)
 {
-	if (mFlagIdx < 0) return false;
 	STUInt32* t = dynamic_cast<STUInt32*>(getPField(sfFlags));
 	if (!t)
 		return false;
@@ -331,58 +330,47 @@ bool STObject::clearFlag(uint32 f)
 
 uint32 STObject::getFlags(void) const
 {
-	const STUInt32* t = dynamic_cast<const STUInt32*>(peekAtPField(mFlagIdx));
+	const STUInt32* t = dynamic_cast<const STUInt32*>(peekAtPField(sfFlags));
 	if (!t)
 		return 0;
 	return t->getValue();
 }
 
-SerializedType* STObject::makeFieldPresent(SOE_Field field)
+SerializedType* STObject::makeFieldPresent(SField::ref field)
 {
 	int index = getFieldIndex(field);
 	if (index == -1)
 		throw std::runtime_error("Field not found");
-	if ((mType[index]->e_type != SOE_IFFLAG) && (mType[index]->e_type != SOE_IFNFLAG))
-		throw std::runtime_error("field is not optional");
 
 	SerializedType* f = getPIndex(index);
-	if (f->getSType() != STI_NOTPRESENT) return f;
-	mData.replace(index, makeDefaultObject(mType[index]->e_id, mType[index]->e_name));
-	f = getPIndex(index);
-
-	if (mType[index]->e_type == SOE_IFFLAG)
-		setFlag(mType[index]->e_flags);
-	else if (mType[index]->e_type == SOE_IFNFLAG)
-		clearFlag(mType[index]->e_flags);
-
-	return f;
+	if (f->getSType() != STI_NOTPRESENT)
+		return f;
+	mData.replace(index, makeDefaultObject(mType[index]->e_field));
+	return getPIndex(index);
 }
 
-void STObject::makeFieldAbsent(SOE_Field field)
+void STObject::makeFieldAbsent(SField::ref field)
 {
 	int index = getFieldIndex(field);
 	if (index == -1)
 		throw std::runtime_error("Field not found");
-	if ((mType[index]->e_type != SOE_IFFLAG) && (mType[index]->e_type != SOE_IFNFLAG))
+	if (mType[index]->flags != SOE_OPTIONAL)
 		throw std::runtime_error("field is not optional");
 
-	if (peekAtIndex(index).getSType() == STI_NOTPRESENT) return;
-	mData.replace(index, new SerializedType(mType[index]->e_name));
+	if (peekAtIndex(index).getSType() == STI_NOTPRESENT)
+		return;
 
-	if (mType[index]->e_type == SOE_IFFLAG)
-		clearFlag(mType[index]->e_flags);
-	else if (mType[index]->e_type == SOE_IFNFLAG)
-		setFlag(mType[index]->e_flags);
+	mData.replace(index, makeDefaultObject(mType[index]->e_field));
 }
 
-std::string STObject::getFieldString(SOE_Field field) const
+std::string STObject::getFieldString(SField::ref field) const
 {
 	const SerializedType* rf = peekAtPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
 	return rf->getText();
 }
 
-unsigned char STObject::getValueFieldU8(SOE_Field field) const
+unsigned char STObject::getValueFieldU8(SField::ref field) const
 {
 	const SerializedType* rf = peekAtPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
@@ -393,7 +381,7 @@ unsigned char STObject::getValueFieldU8(SOE_Field field) const
 	return cf->getValue();
 }
 
-uint16 STObject::getValueFieldU16(SOE_Field field) const
+uint16 STObject::getValueFieldU16(SField::ref field) const
 {
 	const SerializedType* rf = peekAtPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
@@ -404,7 +392,7 @@ uint16 STObject::getValueFieldU16(SOE_Field field) const
 	return cf->getValue();
 }
 
-uint32 STObject::getValueFieldU32(SOE_Field field) const
+uint32 STObject::getValueFieldU32(SField::ref field) const
 {
 	const SerializedType* rf = peekAtPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
@@ -415,7 +403,7 @@ uint32 STObject::getValueFieldU32(SOE_Field field) const
 	return cf->getValue();
 }
 
-uint64 STObject::getValueFieldU64(SOE_Field field) const
+uint64 STObject::getValueFieldU64(SField::ref field) const
 {
 	const SerializedType* rf = peekAtPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
@@ -426,7 +414,7 @@ uint64 STObject::getValueFieldU64(SOE_Field field) const
 	return cf->getValue();
 }
 
-uint128 STObject::getValueFieldH128(SOE_Field field) const
+uint128 STObject::getValueFieldH128(SField::ref field) const
 {
 	const SerializedType* rf = peekAtPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
@@ -437,7 +425,7 @@ uint128 STObject::getValueFieldH128(SOE_Field field) const
 	return cf->getValue();
 }
 
-uint160 STObject::getValueFieldH160(SOE_Field field) const
+uint160 STObject::getValueFieldH160(SField::ref field) const
 {
 	const SerializedType* rf = peekAtPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
@@ -448,7 +436,7 @@ uint160 STObject::getValueFieldH160(SOE_Field field) const
 	return cf->getValue();
 }
 
-uint256 STObject::getValueFieldH256(SOE_Field field) const
+uint256 STObject::getValueFieldH256(SField::ref field) const
 {
 	const SerializedType* rf = peekAtPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
@@ -459,7 +447,7 @@ uint256 STObject::getValueFieldH256(SOE_Field field) const
 	return cf->getValue();
 }
 
-NewcoinAddress STObject::getValueFieldAccount(SOE_Field field) const
+NewcoinAddress STObject::getValueFieldAccount(SField::ref field) const
 {
 	const SerializedType* rf = peekAtPField(field);
 	if (!rf)
@@ -477,7 +465,7 @@ NewcoinAddress STObject::getValueFieldAccount(SOE_Field field) const
 	return cf->getValueNCA();
 }
 
-std::vector<unsigned char> STObject::getValueFieldVL(SOE_Field field) const
+std::vector<unsigned char> STObject::getValueFieldVL(SField::ref field) const
 {
 	const SerializedType* rf = peekAtPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
@@ -488,7 +476,7 @@ std::vector<unsigned char> STObject::getValueFieldVL(SOE_Field field) const
 	return cf->getValue();
 }
 
-STAmount STObject::getValueFieldAmount(SOE_Field field) const
+STAmount STObject::getValueFieldAmount(SField::ref field) const
 {
 	const SerializedType* rf = peekAtPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
@@ -499,7 +487,7 @@ STAmount STObject::getValueFieldAmount(SOE_Field field) const
 	return *cf;
 }
 
-STPathSet STObject::getValueFieldPathSet(SOE_Field field) const
+STPathSet STObject::getValueFieldPathSet(SField::ref field) const
 {
 	const SerializedType* rf = peekAtPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
@@ -510,7 +498,7 @@ STPathSet STObject::getValueFieldPathSet(SOE_Field field) const
 	return *cf;
 }
 
-STVector256 STObject::getValueFieldV256(SOE_Field field) const
+STVector256 STObject::getValueFieldV256(SField::ref field) const
 {
 	const SerializedType* rf = peekAtPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
@@ -521,7 +509,7 @@ STVector256 STObject::getValueFieldV256(SOE_Field field) const
 	return *cf;
 }
 
-void STObject::setValueFieldU8(SOE_Field field, unsigned char v)
+void STObject::setValueFieldU8(SField::ref field, unsigned char v)
 {
 	SerializedType* rf = getPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
@@ -531,7 +519,7 @@ void STObject::setValueFieldU8(SOE_Field field, unsigned char v)
 	cf->setValue(v);
 }
 
-void STObject::setValueFieldU16(SOE_Field field, uint16 v)
+void STObject::setValueFieldU16(SField::ref field, uint16 v)
 {
 	SerializedType* rf = getPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
@@ -541,7 +529,7 @@ void STObject::setValueFieldU16(SOE_Field field, uint16 v)
 	cf->setValue(v);
 }
 
-void STObject::setValueFieldU32(SOE_Field field, uint32 v)
+void STObject::setValueFieldU32(SField::ref field, uint32 v)
 {
 	SerializedType* rf = getPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
@@ -551,7 +539,7 @@ void STObject::setValueFieldU32(SOE_Field field, uint32 v)
 	cf->setValue(v);
 }
 
-void STObject::setValueFieldU64(SOE_Field field, uint64 v)
+void STObject::setValueFieldU64(SField::ref field, uint64 v)
 {
 	SerializedType* rf = getPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
@@ -561,7 +549,7 @@ void STObject::setValueFieldU64(SOE_Field field, uint64 v)
 	cf->setValue(v);
 }
 
-void STObject::setValueFieldH128(SOE_Field field, const uint128& v)
+void STObject::setValueFieldH128(SField::ref field, const uint128& v)
 {
 	SerializedType* rf = getPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
@@ -571,7 +559,7 @@ void STObject::setValueFieldH128(SOE_Field field, const uint128& v)
 	cf->setValue(v);
 }
 
-void STObject::setValueFieldH160(SOE_Field field, const uint160& v)
+void STObject::setValueFieldH160(SField::ref field, const uint160& v)
 {
 	SerializedType* rf = getPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
@@ -581,7 +569,7 @@ void STObject::setValueFieldH160(SOE_Field field, const uint160& v)
 	cf->setValue(v);
 }
 
-void STObject::setValueFieldH256(SOE_Field field, const uint256& v)
+void STObject::setValueFieldH256(SField::ref field, const uint256& v)
 {
 	SerializedType* rf = getPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
@@ -591,7 +579,7 @@ void STObject::setValueFieldH256(SOE_Field field, const uint256& v)
 	cf->setValue(v);
 }
 
-void STObject::setValueFieldV256(SOE_Field field, const STVector256& v)
+void STObject::setValueFieldV256(SField::ref field, const STVector256& v)
 {
 	SerializedType* rf = getPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
@@ -601,7 +589,7 @@ void STObject::setValueFieldV256(SOE_Field field, const STVector256& v)
 	cf->setValue(v);
 }
 
-void STObject::setValueFieldAccount(SOE_Field field, const uint160& v)
+void STObject::setValueFieldAccount(SField::ref field, const uint160& v)
 {
 	SerializedType* rf = getPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
@@ -611,7 +599,7 @@ void STObject::setValueFieldAccount(SOE_Field field, const uint160& v)
 	cf->setValueH160(v);
 }
 
-void STObject::setValueFieldVL(SOE_Field field, const std::vector<unsigned char>& v)
+void STObject::setValueFieldVL(SField::ref field, const std::vector<unsigned char>& v)
 {
 	SerializedType* rf = getPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
@@ -621,7 +609,7 @@ void STObject::setValueFieldVL(SOE_Field field, const std::vector<unsigned char>
 	cf->setValue(v);
 }
 
-void STObject::setValueFieldAmount(SOE_Field field, const STAmount &v)
+void STObject::setValueFieldAmount(SField::ref field, const STAmount &v)
 {
 	SerializedType* rf = getPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
@@ -631,7 +619,7 @@ void STObject::setValueFieldAmount(SOE_Field field, const STAmount &v)
 	(*cf) = v;
 }
 
-void STObject::setValueFieldPathSet(SOE_Field field, const STPathSet &v)
+void STObject::setValueFieldPathSet(SField::ref field, const STPathSet &v)
 {
 	SerializedType* rf = getPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
@@ -666,6 +654,8 @@ Json::Value STVector256::getJson(int options) const
 
 	return ret;
 }
+
+#if 0
 
 static SOElement testSOElements[2][16] =
 { // field, name, id, type, flags
@@ -725,5 +715,7 @@ void STObject::unitTest()
 	}
 
 }
+
+#endif
 
 // vim:ts=4
