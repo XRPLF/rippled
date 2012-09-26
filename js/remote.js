@@ -20,10 +20,10 @@ var Remote = function(trusted, websocket_ip, websocket_port, trace) {
 	this.trace			= trace;
 };
 
-var remoteConfig = function(config, server) {
+var remoteConfig = function(config, server, trace) {
 	var	serverConfig	= config.servers[server];
 
-	return new Remote(serverConfig.trusted, serverConfig.websocket_ip, serverConfig.websocket_port);
+	return new Remote(serverConfig.trusted, serverConfig.websocket_ip, serverConfig.websocket_port, trace);
 };
 
 Remote.method('connect_helper', function() {
@@ -35,6 +35,8 @@ Remote.method('connect_helper', function() {
 	this.ws		= new WebSocket(this.url);
 
 	var ws = this.ws;
+
+	ws.response	= {};
 
 	ws.onopen	= function() {
 			if (this.trace)
@@ -80,22 +82,35 @@ Remote.method('connect_helper', function() {
 			self.done(ws.readyState);
 		};
 
-	if (this.onmessage) {
-		ws.onmessage	= this.onmessage;
-	}
+	// XXX Why doesn't onmessage work?
+	ws.on('message', function(json, flags) {
+		var	message	= JSON.parse(json);
+		// console.log("message: %s", json);
+
+		if (message.type !== 'response') {
+			console.log("unexpected message: %s", json);
+
+		} else {
+			var done	= ws.response[message.id];
+
+			if (done) {
+				done(message);
+
+			} else {
+				console.log("unexpected message id: %s", json);
+			}
+		}
+	});
 });
 
 // Target state is connectted.
 // done(readyState):
 // --> readyState: OPEN, CLOSED
-Remote.method('connect', function(done, onmessage, timeout) {
+Remote.method('connect', function(done, timeout) {
 	var self	= this;
 
 	this.url	= util.format("ws://%s:%s", this.websocket_ip, this.websocket_port);
 	this.done	= done;
-
-	if (onmessage)
-		this.onmessage	= onmessage;
 
 	if (timeout) {
 		if (this.trace)
@@ -146,14 +161,15 @@ Remote.method('request', function(command, done) {
 
 	ws.response[command.id] = done;
 
-	ws.send(command);
+	if (this.trace)
+		console.log("remote: send: %s", JSON.stringify(command));
+
+	ws.send(JSON.stringify(command));
 });
 
-// Request the current ledger.
-// done(index)
-// index: undefined = error
-Remote.method('ledger', function(done) {
-
+// Get the current ledger entry (may be live or not).
+Remote.method('ledger_current', function(done) {
+	this.request({ 'command' : 'ledger_current' }, done);
 });
 
 
@@ -166,20 +182,12 @@ Remote.method('submit', function(json, done) {
 //		});
 });
 
-// ==> entry_spec
-Remote.method('ledger_entry', function(entry_spec, done) {
-	entry_spec.command	= 'ledger_entry';
-
-	this.request(entry_spec, function() {
-		});
-});
-
 // done(value)
 // --> value: { 'status', status, 'result' : result, ... }
 // done may be called up to 3 times.
 Remote.method('account_root', function(account_id, done) {
 	this.request({
-			'command' : 'ledger_entry',
+			'command' : 'ledger_current',
 		}, function() {
 		});
 });

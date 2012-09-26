@@ -12,7 +12,6 @@ var serverDelay = 1500;
 
 buster.testRunner.timeout = 5000;
 
-
 buster.testCase("Standalone server startup", {
     "server start and stop": function(done) {
 			server.start("alpha",
@@ -56,44 +55,52 @@ buster.testCase("WebSocket connection", {
 						buster.assert(3 == stat);		// CLOSED
 						done();
 					});
-				}, undefined, serverDelay);
+				}, serverDelay);
 		},
 });
 
-// var alpha	= remote.remoteConfig("alpha");
-// 
-// buster.testCase("Websocket commands", {
-// 	'setUp' :
-// 		function(done) {
-// 			server.start("alpha",
-// 				function(e) {
-// 					buster.refute(e);
-// 
-// 					alpha.connect(function(stat) {
-// 							buster.assert(1 == stat);	// OPEN
-// 
-// 							done();
-// 						});
-// 			});
-// 		},
-// 
-// 	'tearDown' :
-// 		function(done) {
-// 			alpha.disconnect(function(stat) {
-// 					buster.assert(3 == stat);			// CLOSED
-// 
-// 					server.stop("alpha", function(e) {
-// 						buster.refute(e);
-// 
-// 						done();
-// 					});
-// 				});
-// 		},
-// 
-// 	"assert" :
-// 		function() {
-// 			buster.assert(true);
-// 		}
-// });
+// XXX Figure out a way to stuff this into the test case.
+var alpha;
+
+buster.testCase("Websocket commands", {
+	'setUp' :
+		function(done) {
+			server.start("alpha",
+				function(e) {
+					buster.refute(e);
+
+					alpha	= remote.remoteConfig(config, "alpha");
+
+					alpha.connect(function(stat) {
+							buster.assert(1 == stat);	// OPEN
+
+							done();
+						}, serverDelay);
+			});
+		},
+
+	'tearDown' :
+		function(done) {
+			alpha.disconnect(function(stat) {
+					buster.assert(3 == stat);			// CLOSED
+
+					server.stop("alpha", function(e) {
+						buster.refute(e);
+
+						done();
+					});
+				});
+		},
+
+	"ledger_current" :
+		function(done) {
+			alpha.ledger_current(function (r) {
+					console.log(r);
+
+					buster.assert(r.ledger === 2);
+					done();
+				});
+		}
+});
 
 // vim:ts=4
