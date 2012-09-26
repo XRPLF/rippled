@@ -87,7 +87,6 @@ public:
 	SerializedType& getField(SField::ref field);
 	const SerializedType* peekAtPField(SField::ref field) const;
 	SerializedType* getPField(SField::ref field);
-	const SOElement* getFieldType(SField::ref field) const;
 
 	// these throw if the field type doesn't match, or return default values if the
 	// field is optional but not present
@@ -129,6 +128,11 @@ public:
 	static std::auto_ptr<SerializedType> makeDefaultObject(SerializedTypeID id, SField::ref name);
 	static std::auto_ptr<SerializedType> makeDeserializedObject(SerializedTypeID id, SField::ref name,
 		SerializerIterator&, int depth);
+
+	static std::auto_ptr<SerializedType> makeNonPresentObject(SField::ref name)
+	{ return makeDefaultObject(STI_NOTPRESENT, name); }
+	static std::auto_ptr<SerializedType> makeDefaultObject(SField::ref name)
+	{ return makeDefaultObject(name.fieldType, name); }
 
 	static void unitTest();
 };
