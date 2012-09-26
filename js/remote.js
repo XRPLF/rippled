@@ -4,56 +4,121 @@
 //   http://www.w3.org/TR/websockets/#the-websocket-interface
 //
 // YYY Will later provide a network access which use multiple instances of this.
+// YYY A better model might be to allow requesting a target state: keep connected or not.
 //
 
 var util = require('util');
 
 var WebSocket = require('ws');
 
-// YYY This is wrong should not use anything in test directory.
-var config = require("../test/config.js");
-
 // --> trusted: truthy, if remote is trusted
-var Remote = function(trusted, websocket_ip, websocket_port) {
+var Remote = function(trusted, websocket_ip, websocket_port, trace) {
 	this.trusted		= trusted;
 	this.websocket_ip	= websocket_ip;
 	this.websocket_port	= websocket_port;
 	this.id				= 0;
+	this.trace			= trace;
 };
 
-var remoteConfig = function(server) {
+var remoteConfig = function(config, server) {
 	var	serverConfig	= config.servers[server];
 
 	return new Remote(serverConfig.trusted, serverConfig.websocket_ip, serverConfig.websocket_port);
 };
 
-// Target state is connectted.
-// done(readyState):
-// --> readyState: OPEN, CLOSED
-Remote.method('connect', function(done, onmessage) {
-	var	url	= util.format("ws://%s:%s", this.websocket_ip, this.websocket_port);
+Remote.method('connect_helper', function() {
+	var	self	= this;
 
-	console.log("remote: connect: %s", url);
+	if (this.trace)
+		console.log("remote: connect: %s", this.url);
 
-	this.ws	= new WebSocket(url);
+	this.ws		= new WebSocket(this.url);
 
 	var ws = this.ws;
 
-	ws.onopen		= function() {
-		console.log("remote: onopen: %s", ws.readyState);
-		ws.onclose	= undefined;
-		done(ws.readyState);
+	ws.onopen	= function() {
+			if (this.trace)
+				console.log("remote: onopen: %s", ws.readyState);
+
+			ws.onclose	= undefined;
+			ws.onerror	= undefined;
+
+			self.done(ws.readyState);
 		};
 
-	// Also covers failure to open.
-	ws.onclose		= function() {
-		console.log("remote: onclose: %s", ws.readyState);
-		done(ws.readyState);
+	ws.onerror	= function() {
+			if (this.trace)
+				console.log("remote: onerror: %s", ws.readyState);
+
+			ws.onclose	= undefined;
+
+			if (self.expire) {
+				if (this.trace)
+					console.log("remote: was expired");
+
+				self.done(ws.readyState);
+			}
+			else
+			{
+				// Delay and retry.
+				setTimeout(function() {
+						if (this.trace)
+							console.log("remote: retry");
+
+						self.connect_helper();
+					}, 50);	// Retry rate 50ms.
+			}
 		};
 
-	if (onmessage) {
-		ws.onmessage	= onmessage;
+	// Covers failure to open.
+	ws.onclose	= function() {
+			if (this.trace)
+				console.log("remote: onclose: %s", ws.readyState);
+
+			ws.onerror	= undefined;
+
+			self.done(ws.readyState);
+		};
+
+	if (this.onmessage) {
+		ws.onmessage	= this.onmessage;
 	}
+});
+
+// Target state is connectted.
+// done(readyState):
+// --> readyState: OPEN, CLOSED
+Remote.method('connect', function(done, onmessage, timeout) {
+	var self	= this;
+
+	this.url	= util.format("ws://%s:%s", this.websocket_ip, this.websocket_port);
+	this.done	= done;
+
+	if (onmessage)
+		this.onmessage	= onmessage;
+
+	if (timeout) {
+		if (this.trace)
+			console.log("remote: expire: false");
+
+		this.expire	= false;
+
+		setTimeout(function () {
+				if (this.trace)
+					console.log("remote: expire: timeout");
+
+				self.expire	= true;
+			}, timeout);
+	}
+	else {
+		if (this.trace)
+			console.log("remote: expire: false");
+
+		this.expire	= true;
+	}
+
+	this.connect_helper();
+
 });
 
 // Target stated is disconnected.
@@ -61,8 +126,10 @@ Remote.method('disconnect', function(done) {
 	var ws = this.ws;
 
 	ws.onclose		= function() {
-		console.log("remote: onclose: %s", ws.readyState);
-		done(ws.readyState);
+			if (this.trace)
+				console.log("remote: onclose: %s", ws.readyState);
+
+			done(ws.readyState);
 		};
 
 	ws.close();
