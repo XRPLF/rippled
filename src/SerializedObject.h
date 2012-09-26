@@ -39,19 +39,19 @@ public:
 	{ set(type); }
 
 	STObject(SOElement::ptrList type, SerializerIterator& sit, SField::ref name) : SerializedType(name)
-	{ set(type, sit); }
+	{ set(sit); setType(type); }
 
 	virtual ~STObject() { ; }
 
 	static std::auto_ptr<SerializedType> deserialize(SerializerIterator& sit, SField::ref name)
 		{ return std::auto_ptr<SerializedType>(construct(sit, name)); }
 
-	void setType(SOElement const * t);
+	void setType(SOElement::ptrList);
 	bool isValidForType();
 	bool isFieldAllowed(SField::ref);
 
 	void set(SOElement::ptrList);
-	bool set(SOElement::ptrList, SerializerIterator& u, int depth = 0);
+	bool set(SerializerIterator& u, int depth = 0);
 
 	virtual SerializedTypeID getSType() const { return STI_OBJECT; }
 	virtual bool isEquivalent(const SerializedType& t) const;

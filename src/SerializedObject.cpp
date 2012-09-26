@@ -169,10 +169,8 @@ bool STObject::isFieldAllowed(SField::ref field)
 	return false;
 }
 
-bool STObject::set(SOElement::ptrList elem, SerializerIterator& sit, int depth)
+bool STObject::set(SerializerIterator& sit, int depth)
 { // return true = terminated with end-of-object
-	setType(elem);
-
 	mData.empty();
 	while (!sit.empty())
 	{
