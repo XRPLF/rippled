@@ -107,7 +107,7 @@ buster.testCase("Websocket commands", {
 			alpha.ledger_current(function (r) {
 					console.log(r);
 
-					buster.assert.equals(r.ledger_index, 2);
+					buster.assert.equals(r.ledger_index, 3);
 					done();
 				});
 		},
@@ -117,7 +117,7 @@ buster.testCase("Websocket commands", {
 			alpha.ledger_closed(function (r) {
 					console.log("result: %s", JSON.stringify(r));
 
-					buster.assert.equals(r.ledger_index, 1);
+					buster.assert.equals(r.ledger_index, 2);
 					done();
 				});
 		},
@@ -158,7 +158,7 @@ buster.testCase("// Work in progress", {
 			alpha.ledger_closed(function (r) {
 					console.log("result: %s", JSON.stringify(r));
 
-					buster.assert.equals(r.ledger_index, 1);
+					buster.assert.equals(r.ledger_index, 2);
 					done();
 				});
 		},
