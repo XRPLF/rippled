@@ -96,6 +96,7 @@ public:
 	uint32 getValidationTimeNC();
 	void closeTimeOffset(int);
 	boost::posix_time::ptime getNetworkTimePT();
+	uint32 getLedgerID(const uint256& hash);
 	uint32 getCurrentLedgerID();
 	OperatingMode getOperatingMode() { return mMode; }
 	inline bool available() {

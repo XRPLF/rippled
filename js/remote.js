@@ -82,7 +82,7 @@ Remote.method('connect_helper', function() {
 			self.done(ws.readyState);
 		};
 
-	// XXX Why doesn't onmessage work?
+	// Node's ws module doesn't pass arguments to onmessage.
 	ws.on('message', function(json, flags) {
 		var	message	= JSON.parse(json);
 		// console.log("message: %s", json);
@@ -167,11 +167,15 @@ Remote.method('request', function(command, done) {
 	ws.send(JSON.stringify(command));
 });
 
-// Get the current ledger entry (may be live or not).
+Remote.method('ledger_closed', function(done) {
+	this.request({ 'command' : 'ledger_closed' }, done);
+});
+
+// Get the current proposed ledger entry.  May be closed (and revised) at any time (even before returning).
+// Only for use by unit tests.
 Remote.method('ledger_current', function(done) {
 	this.request({ 'command' : 'ledger_current' }, done);
 });
-
 
 // Submit a json transaction.
 // done(value)

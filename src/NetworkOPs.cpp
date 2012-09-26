@@ -67,6 +67,11 @@ void NetworkOPs::closeTimeOffset(int offset)
 		Log(lsINFO) << "Close time offset now " << mCloseTimeOffset;
 }
 
+uint32 NetworkOPs::getLedgerID(const uint256& hash)
+{
+	return mLedgerMaster->getLedgerByHash(hash)->getLedgerSeq();
+}
+
 uint32 NetworkOPs::getCurrentLedgerID()
 {
 	return mLedgerMaster->getCurrentLedger()->getLedgerSeq();

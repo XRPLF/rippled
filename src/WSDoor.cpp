@@ -76,7 +76,9 @@ public:
 	boost::unordered_set<NewcoinAddress> parseAccountIds(const Json::Value& jvArray);
 
 	// Request-Response Commands
+	void doLedgerClosed(Json::Value& jvResult, const Json::Value& jvRequest);
 	void doLedgerCurrent(Json::Value& jvResult, const Json::Value& jvRequest);
+	void doLedgerEntry(Json::Value& jvResult, const Json::Value& jvRequest);
 
 	// Streaming Commands
 	void doAccountInfoSubscribe(Json::Value& jvResult, const Json::Value& jvRequest);
@@ -297,7 +299,9 @@ Json::Value WSConnection::invokeCommand(const Json::Value& jvRequest)
 		doFuncPtr	dfpFunc;
 	} commandsA[] = {
 		// Request-Response Commands:
-		{ "ledger_current",						&WSConnection::doLedgerCurrent				},
+		{ "ledger_closed",						&WSConnection::doLedgerClosed					},
+		{ "ledger_current",						&WSConnection::doLedgerCurrent					},
+		{ "ledger_entry",						&WSConnection::doLedgerEntry					},
 
 		// Streaming commands:
 		{ "account_info_subscribe",				&WSConnection::doAccountInfoSubscribe			},
@@ -548,9 +552,55 @@ void WSConnection::doLedgerAccountsUnsubscribe(Json::Value& jvResult, const Json
 	}
 }
 
+void WSConnection::doLedgerClosed(Json::Value& jvResult, const Json::Value& jvRequest)
+{
+	uint256	uLedger	= theApp->getOPs().getClosedLedger();
+
+	jvResult["ledger_index"]	= theApp->getOPs().getLedgerID(uLedger);
+	jvResult["ledger"]			= uLedger.ToString();
+}
+
 void WSConnection::doLedgerCurrent(Json::Value& jvResult, const Json::Value& jvRequest)
 {
-	jvResult["ledger"]	= theApp->getOPs().getCurrentLedgerID();
+	jvResult["ledger_index"]	= theApp->getOPs().getCurrentLedgerID();
+}
+
+void WSConnection::doLedgerEntry(Json::Value& jvResult, const Json::Value& jvRequest)
+{
+	// Get from request.
+	uint256	uLedger;
+
+	jvResult["ledger_index"]	= theApp->getOPs().getLedgerID(uLedger);
+	jvResult["ledger"]			= uLedger.ToString();
+
+	if (jvRequest.isMember("index"))
+	{
+		jvResult["error"]	= "notImplemented";
+	}
+	else if (jvRequest.isMember("account_root"))
+	{
+		jvResult["error"]	= "notImplemented";
+	}
+	else if (jvRequest.isMember("directory"))
+	{
+		jvResult["error"]	= "notImplemented";
+	}
+	else if (jvRequest.isMember("generator"))
+	{
+		jvResult["error"]	= "notImplemented";
+	}
+	else if (jvRequest.isMember("offer"))
+	{
+		jvResult["error"]	= "notImplemented";
+	}
+	else if (jvRequest.isMember("ripple_state"))
+	{
+		jvResult["error"]	= "notImplemented";
+	}
+	else
+	{
+		jvResult["error"]	= "unknownOption";
+	}
 }
 
 void WSConnection::doTransactionSubcribe(Json::Value& jvResult, const Json::Value& jvRequest)
