@@ -168,6 +168,8 @@ Remote.method('request', function(command, done) {
 });
 
 Remote.method('ledger_closed', function(done) {
+	assert(this.trusted);	// If not trusted, need to check proof.
+
 	this.request({ 'command' : 'ledger_closed' }, done);
 });
 
@@ -177,6 +179,17 @@ Remote.method('ledger_current', function(done) {
 	this.request({ 'command' : 'ledger_current' }, done);
 });
 
+// <-> params:
+//		--> ledger : optional
+//		--> ledger_index : optional
+Remote.method('ledger_entry', function(params, done) {
+	assert(this.trusted);	// If not trusted, need to check proof, maybe talk packet protocol.
+
+	params.command	= 'ledger_entry';
+
+	this.request(params, done);
+});
+
 // Submit a json transaction.
 // done(value)
 // <-> value: { 'status', status, 'result' : result, ... }
@@ -184,16 +197,6 @@ Remote.method('ledger_current', function(done) {
 Remote.method('submit', function(json, done) {
 //	this.request(..., function() {
 //		});
-});
-
-// done(value)
-// --> value: { 'status', status, 'result' : result, ... }
-// done may be called up to 3 times.
-Remote.method('account_root', function(account_id, done) {
-	this.request({
-			'command' : 'ledger_current',
-		}, function() {
-		});
 });
 
 exports.Remote = Remote;

@@ -12,6 +12,7 @@
 
 uint64	STAmount::uRateOne	= STAmount::getRate(STAmount(1), STAmount(1));
 
+// --> sCurrency: "", "XNS", or three letter ISO code.
 bool STAmount::currencyFromString(uint160& uDstCurrency, const std::string& sCurrency)
 {
 	bool	bSuccess	= true;
