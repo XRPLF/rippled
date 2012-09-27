@@ -609,10 +609,13 @@ void WSConnection::doLedgerEntry(Json::Value& jvResult, const Json::Value& jvReq
 	jvResult["ledger_index"]	= uLedgerIndex;
 
 	uint256		uNodeIndex;
+	bool		bNodeBinary	= false;
 
 	if (jvRequest.isMember("index"))
 	{
-		jvResult["error"]	= "notImplemented";
+		// XXX Needs to provide proof.
+		uNodeIndex.SetHex(jvRequest["index"].asString());
+		bNodeBinary	= true;
 	}
 	else if (jvRequest.isMember("account_root"))
 	{
@@ -675,12 +678,21 @@ void WSConnection::doLedgerEntry(Json::Value& jvResult, const Json::Value& jvReq
 		if (!sleNode)
 		{
 			// Not found.
-			// XXX We should also provide proof.
-			jvResult["error"]	= "entryNotFound";
+			// XXX Should also provide proof.
+			jvResult["error"]		= "entryNotFound";
+		}
+		else if (bNodeBinary)
+		{
+			// XXX Should also provide proof.
+			Serializer s;
+
+			sleNode->add(s);
+
+			jvResult["node_binary"]	= strHex(s.peekData());
 		}
 		else
 		{
-			jvResult["node"]	= sleNode->getJson(0);
+			jvResult["node"]		= sleNode->getJson(0);
 		}
 	}
 }
