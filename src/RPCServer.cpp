@@ -427,7 +427,6 @@ Json::Value RPCServer::doAccountDomainSet(const Json::Value &params)
 {
 	NewcoinAddress	naSrcAccountID;
 	NewcoinAddress	naSeed;
-	uint256			uLedger	= mNetOps->getCurrentLedger();
 
 	if (!naSeed.setSeedGeneric(params[0u].asString()))
 	{
@@ -443,7 +442,7 @@ Json::Value RPCServer::doAccountDomainSet(const Json::Value &params)
 	NewcoinAddress			naAccountPrivate;
 	AccountState::pointer	asSrc;
 	STAmount				saSrcBalance;
-	Json::Value				obj				= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
+	Json::Value				obj				= authorize(uint256(0), naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
 		saSrcBalance, theConfig.FEE_DEFAULT, asSrc, naVerifyGenerator);
 
 	if (!obj.empty())
@@ -481,7 +480,6 @@ Json::Value RPCServer::doAccountEmailSet(const Json::Value &params)
 {
 	NewcoinAddress	naSrcAccountID;
 	NewcoinAddress	naSeed;
-	uint256			uLedger	= mNetOps->getCurrentLedger();
 
 	if (!naSeed.setSeedGeneric(params[0u].asString()))
 	{
@@ -497,7 +495,7 @@ Json::Value RPCServer::doAccountEmailSet(const Json::Value &params)
 	NewcoinAddress			naAccountPrivate;
 	AccountState::pointer	asSrc;
 	STAmount				saSrcBalance;
-	Json::Value				obj				= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
+	Json::Value				obj				= authorize(uint256(0), naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
 		saSrcBalance, theConfig.FEE_DEFAULT, asSrc, naVerifyGenerator);
 
 	if (!obj.empty())
@@ -574,12 +572,11 @@ Json::Value RPCServer::doAccountInfo(const Json::Value &params)
 
 	ret["accepted"]	= jAccepted;
 
-	uint256			uCurrent	= mNetOps->getCurrentLedger();
-	Json::Value		jCurrent	= accountFromString(uCurrent, naAccount, bIndex, strIdent, iIndex);
+	Json::Value		jCurrent	= accountFromString(uint256(0), naAccount, bIndex, strIdent, iIndex);
 
 	if (jCurrent.empty())
 	{
-		AccountState::pointer asCurrent	= mNetOps->getAccountState(uCurrent, naAccount);
+		AccountState::pointer asCurrent	= mNetOps->getAccountState(uint256(0), naAccount);
 
 		if (asCurrent)
 			asCurrent->addJson(jCurrent);
@@ -603,7 +600,6 @@ Json::Value RPCServer::doAccountInfo(const Json::Value &params)
 Json::Value RPCServer::doAccountMessageSet(const Json::Value& params) {
 	NewcoinAddress	naSrcAccountID;
 	NewcoinAddress	naSeed;
-	uint256			uLedger	= mNetOps->getCurrentLedger();
 	NewcoinAddress	naMessagePubKey;
 
 	if (!naSeed.setSeedGeneric(params[0u].asString()))
@@ -624,7 +620,7 @@ Json::Value RPCServer::doAccountMessageSet(const Json::Value& params) {
 	NewcoinAddress				naAccountPrivate;
 	AccountState::pointer		asSrc;
 	STAmount					saSrcBalance;
-	Json::Value					obj				= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
+	Json::Value					obj				= authorize(uint256(0), naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
 		saSrcBalance, theConfig.FEE_DEFAULT, asSrc, naVerifyGenerator);
 	std::vector<unsigned char>	vucDomain;
 
@@ -664,7 +660,6 @@ Json::Value RPCServer::doAccountPublishSet(const Json::Value &params)
 {
 	NewcoinAddress	naSrcAccountID;
 	NewcoinAddress	naSeed;
-	uint256			uLedger	= mNetOps->getCurrentLedger();
 
 	if (!naSeed.setSeedGeneric(params[0u].asString()))
 	{
@@ -680,7 +675,7 @@ Json::Value RPCServer::doAccountPublishSet(const Json::Value &params)
 	NewcoinAddress			naAccountPrivate;
 	AccountState::pointer	asSrc;
 	STAmount				saSrcBalance;
-	Json::Value				obj				= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
+	Json::Value				obj				= authorize(uint256(0), naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
 		saSrcBalance, theConfig.FEE_DEFAULT, asSrc, naVerifyGenerator);
 
 	if (!obj.empty())
@@ -722,7 +717,6 @@ Json::Value RPCServer::doAccountRateSet(const Json::Value &params)
 {
 	NewcoinAddress	naSrcAccountID;
 	NewcoinAddress	naSeed;
-	uint256			uLedger	= mNetOps->getCurrentLedger();
 
 	if (!naSeed.setSeedGeneric(params[0u].asString()))
 	{
@@ -738,7 +732,7 @@ Json::Value RPCServer::doAccountRateSet(const Json::Value &params)
 	NewcoinAddress			naAccountPrivate;
 	AccountState::pointer	asSrc;
 	STAmount				saSrcBalance;
-	Json::Value				obj				= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
+	Json::Value				obj				= authorize(uint256(0), naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
 		saSrcBalance, theConfig.FEE_DEFAULT, asSrc, naVerifyGenerator);
 
 	if (!obj.empty())
@@ -778,7 +772,6 @@ Json::Value RPCServer::doAccountRateSet(const Json::Value &params)
 Json::Value RPCServer::doAccountWalletSet(const Json::Value& params) {
 	NewcoinAddress	naSrcAccountID;
 	NewcoinAddress	naSeed;
-	uint256			uLedger	= mNetOps->getCurrentLedger();
 
 	if (!naSeed.setSeedGeneric(params[0u].asString()))
 	{
@@ -794,7 +787,7 @@ Json::Value RPCServer::doAccountWalletSet(const Json::Value& params) {
 	NewcoinAddress				naAccountPrivate;
 	AccountState::pointer		asSrc;
 	STAmount					saSrcBalance;
-	Json::Value					obj					= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
+	Json::Value					obj					= authorize(uint256(0), naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
 		saSrcBalance, theConfig.FEE_DEFAULT, asSrc, naMasterGenerator);
 	std::vector<unsigned char>	vucDomain;
 
@@ -926,8 +919,6 @@ Json::Value RPCServer::doDataStore(const Json::Value& params)
 // Note: Nicknames are not automatically looked up by commands as they are advisory and can be changed.
 Json::Value RPCServer::doNicknameInfo(const Json::Value& params)
 {
-	uint256			uLedger	= mNetOps->getCurrentLedger();
-
 	std::string	strNickname	= params[0u].asString();
 		boost::trim(strNickname);
 
@@ -936,7 +927,7 @@ Json::Value RPCServer::doNicknameInfo(const Json::Value& params)
 		return RPCError(rpcNICKNAME_MALFORMED);
 	}
 
-	NicknameState::pointer	nsSrc	= mNetOps->getNicknameState(uLedger, strNickname);
+	NicknameState::pointer	nsSrc	= mNetOps->getNicknameState(uint256(0), strNickname);
 	if (!nsSrc)
 	{
 		return RPCError(rpcNICKNAME_MISSING);
@@ -956,7 +947,6 @@ Json::Value RPCServer::doNicknameSet(const Json::Value& params)
 {
 	NewcoinAddress	naSrcAccountID;
 	NewcoinAddress	naSeed;
-	uint256			uLedger		= mNetOps->getCurrentLedger();
 
 	if (!naSeed.setSeedGeneric(params[0u].asString()))
 	{
@@ -984,7 +974,7 @@ Json::Value RPCServer::doNicknameSet(const Json::Value& params)
 	}
 
 	STAmount				saFee;
-	NicknameState::pointer	nsSrc	= mNetOps->getNicknameState(uLedger, strNickname);
+	NicknameState::pointer	nsSrc	= mNetOps->getNicknameState(uint256(0), strNickname);
 
 	if (!nsSrc)
 	{
@@ -1007,7 +997,7 @@ Json::Value RPCServer::doNicknameSet(const Json::Value& params)
 	NewcoinAddress			naAccountPrivate;
 	AccountState::pointer	asSrc;
 	STAmount				saSrcBalance;
-	Json::Value				obj				= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
+	Json::Value				obj				= authorize(uint256(0), naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
 		saSrcBalance, saFee, asSrc, naMasterGenerator);
 
 	if (!obj.empty())
@@ -1073,7 +1063,7 @@ Json::Value RPCServer::doOfferCreate(const Json::Value &params)
 	NewcoinAddress			naAccountPrivate;
 	AccountState::pointer	asSrc;
 	STAmount				saSrcBalance;
-	Json::Value				obj				= authorize(mNetOps->getCurrentLedger(), naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
+	Json::Value				obj				= authorize(uint256(0), naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
 		saSrcBalance, theConfig.FEE_DEFAULT, asSrc, naMasterGenerator);
 
 	if (!obj.empty())
@@ -1119,7 +1109,7 @@ Json::Value RPCServer::doOfferCancel(const Json::Value &params)
 	NewcoinAddress			naAccountPrivate;
 	AccountState::pointer	asSrc;
 	STAmount				saSrcBalance;
-	Json::Value				obj				= authorize(mNetOps->getCurrentLedger(), naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
+	Json::Value				obj				= authorize(uint256(0), naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
 		saSrcBalance, theConfig.FEE_DEFAULT, asSrc, naMasterGenerator);
 
 	if (!obj.empty())
@@ -1159,10 +1149,9 @@ Json::Value RPCServer::doOwnerInfo(const Json::Value& params)
 
 	ret["accepted"]	= jAccepted.empty() ? mNetOps->getOwnerInfo(uAccepted, naAccount) : jAccepted;
 
-	uint256			uCurrent	= mNetOps->getCurrentLedger();
-	Json::Value		jCurrent	= accountFromString(uCurrent, naAccount, bIndex, strIdent, iIndex);
+	Json::Value		jCurrent	= accountFromString(uint256(0), naAccount, bIndex, strIdent, iIndex);
 
-	ret["current"]	= jCurrent.empty() ? mNetOps->getOwnerInfo(uCurrent, naAccount) : jCurrent;
+	ret["current"]	= jCurrent.empty() ? mNetOps->getOwnerInfo(uint256(0), naAccount) : jCurrent;
 
 	return ret;
 }
@@ -1173,7 +1162,6 @@ Json::Value RPCServer::doPasswordFund(const Json::Value &params)
 	NewcoinAddress	naSrcAccountID;
 	NewcoinAddress	naDstAccountID;
 	NewcoinAddress	naSeed;
-	uint256			uLedger		= mNetOps->getCurrentLedger();
 
 	if (!naSeed.setSeedGeneric(params[0u].asString()))
 	{
@@ -1193,7 +1181,7 @@ Json::Value RPCServer::doPasswordFund(const Json::Value &params)
 	NewcoinAddress			naAccountPrivate;
 	AccountState::pointer	asSrc;
 	STAmount				saSrcBalance;
-	Json::Value				obj				= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
+	Json::Value				obj				= authorize(uint256(0), naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
 		saSrcBalance, theConfig.FEE_DEFAULT, asSrc, naMasterGenerator);
 
 	if (!obj.empty())
@@ -1499,8 +1487,7 @@ Json::Value RPCServer::doRipple(const Json::Value &params)
 		return RPCError(rpcDST_AMT_MALFORMED);
 	}
 
-	uint256					uLedger	= mNetOps->getCurrentLedger();
-	AccountState::pointer	asDst	= mNetOps->getAccountState(uLedger, naDstAccountID);
+	AccountState::pointer	asDst	= mNetOps->getAccountState(uint256(0), naDstAccountID);
 	STAmount				saFee	= theConfig.FEE_DEFAULT;
 
 	NewcoinAddress			naVerifyGenerator;
@@ -1508,7 +1495,7 @@ Json::Value RPCServer::doRipple(const Json::Value &params)
 	NewcoinAddress			naAccountPrivate;
 	AccountState::pointer	asSrc;
 	STAmount				saSrcBalance;
-	Json::Value				obj		= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
+	Json::Value				obj		= authorize(uint256(0), naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
 		saSrcBalance, saFee, asSrc, naVerifyGenerator);
 
 	if (!obj.empty())
@@ -1561,7 +1548,6 @@ Json::Value RPCServer::doRippleLineSet(const Json::Value& params)
 	NewcoinAddress	naSrcAccountID;
 	NewcoinAddress	naDstAccountID;
 	STAmount		saLimitAmount;
-	uint256			uLedger			= mNetOps->getCurrentLedger();
 	bool			bLimitAmount	= true;
 	bool			bQualityIn		= params.size() >= 6;
 	bool			bQualityOut		= params.size() >= 7;
@@ -1599,7 +1585,7 @@ Json::Value RPCServer::doRippleLineSet(const Json::Value& params)
 		NewcoinAddress			naAccountPrivate;
 		AccountState::pointer	asSrc;
 		STAmount				saSrcBalance;
-		Json::Value				obj			= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
+		Json::Value				obj			= authorize(uint256(0), naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
 			saSrcBalance, theConfig.FEE_DEFAULT, asSrc, naMasterGenerator);
 
 		if (!obj.empty())
@@ -1632,7 +1618,6 @@ Json::Value RPCServer::doRippleLineSet(const Json::Value& params)
 Json::Value RPCServer::doRippleLinesGet(const Json::Value &params)
 {
 //	uint256			uAccepted	= mNetOps->getClosedLedger();
-	uint256			uCurrent	= mNetOps->getCurrentLedger();
 
 	std::string		strIdent	= params[0u].asString();
 	bool			bIndex;
@@ -1642,7 +1627,7 @@ Json::Value RPCServer::doRippleLinesGet(const Json::Value &params)
 
 	Json::Value ret;
 
-	ret	= accountFromString(uCurrent, naAccount, bIndex, strIdent, iIndex);
+	ret	= accountFromString(uint256(0), naAccount, bIndex, strIdent, iIndex);
 
 	if (!ret.empty())
 		return ret;
@@ -1654,7 +1639,7 @@ Json::Value RPCServer::doRippleLinesGet(const Json::Value &params)
 	if (bIndex)
 		ret["index"]	= iIndex;
 
-	AccountState::pointer	as		= mNetOps->getAccountState(uCurrent, naAccount);
+	AccountState::pointer	as		= mNetOps->getAccountState(uint256(0), naAccount);
 	if (as)
 	{
 		Json::Value	jsonLines(Json::arrayValue);
@@ -1744,8 +1729,7 @@ Json::Value RPCServer::doSend(const Json::Value& params)
 	}
 	else
 	{
-		uint256					uLedger	= mNetOps->getCurrentLedger();
-		AccountState::pointer	asDst	= mNetOps->getAccountState(uLedger, naDstAccountID);
+		AccountState::pointer	asDst	= mNetOps->getAccountState(uint256(0), naDstAccountID);
 		bool					bCreate	= !asDst;
 		STAmount				saFee	= bCreate ? theConfig.FEE_ACCOUNT_CREATE : theConfig.FEE_DEFAULT;
 
@@ -1754,7 +1738,7 @@ Json::Value RPCServer::doSend(const Json::Value& params)
 		NewcoinAddress			naAccountPrivate;
 		AccountState::pointer	asSrc;
 		STAmount				saSrcBalance;
-		Json::Value				obj		= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
+		Json::Value				obj		= authorize(uint256(0), naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
 			saSrcBalance, saFee, asSrc, naVerifyGenerator);
 
 		// Log(lsINFO) << boost::str(boost::format("doSend: sSrcIssuer=%s sDstIssuer=%s saSrcAmountMax=%s saDstAmount=%s")
@@ -2096,7 +2080,6 @@ Json::Value RPCServer::accounts(const uint256& uLedger, const NewcoinAddress& na
 Json::Value RPCServer::doWalletAccounts(const Json::Value& params)
 {
 	NewcoinAddress	naSeed;
-	uint256			uLedger		= mNetOps->getCurrentLedger();
 
 	if (!naSeed.setSeedGeneric(params[0u].asString()))
 	{
@@ -2106,17 +2089,17 @@ Json::Value RPCServer::doWalletAccounts(const Json::Value& params)
 	// Try the seed as a master seed.
 	NewcoinAddress	naMasterGenerator	= NewcoinAddress::createGeneratorPublic(naSeed);
 
-	Json::Value jsonAccounts	= accounts(uLedger, naMasterGenerator);
+	Json::Value jsonAccounts	= accounts(uint256(0), naMasterGenerator);
 
 	if (jsonAccounts.empty())
 	{
 		// No account via seed as master, try seed a regular.
-		Json::Value	ret	= getMasterGenerator(uLedger, naSeed, naMasterGenerator);
+		Json::Value	ret	= getMasterGenerator(uint256(0), naSeed, naMasterGenerator);
 
 		if (!ret.empty())
 			return ret;
 
-		ret["accounts"]	= accounts(uLedger, naMasterGenerator);
+		ret["accounts"]	= accounts(uint256(0), naMasterGenerator);
 
 		return ret;
 	}
@@ -2139,7 +2122,6 @@ Json::Value RPCServer::doWalletAdd(const Json::Value& params)
 	NewcoinAddress	naSrcAccountID;
 	STAmount		saAmount;
 	std::string		sDstCurrency;
-	uint256			uLedger		= mNetOps->getCurrentLedger();
 
 	if (!naRegularSeed.setSeedGeneric(params[0u].asString()))
 	{
@@ -2166,7 +2148,7 @@ Json::Value RPCServer::doWalletAdd(const Json::Value& params)
 		NewcoinAddress			naAccountPrivate;
 		AccountState::pointer	asSrc;
 		STAmount				saSrcBalance;
-		Json::Value				obj			= authorize(uLedger, naRegularSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
+		Json::Value				obj			= authorize(uint256(0), naRegularSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
 			saSrcBalance, theConfig.FEE_ACCOUNT_CREATE, asSrc, naMasterGenerator);
 
 		if (!obj.empty())
@@ -2192,7 +2174,7 @@ Json::Value RPCServer::doWalletAdd(const Json::Value& params)
 				++iIndex;
 				naNewAccountPublic.setAccountPublic(naMasterGenerator, iIndex);
 
-				asNew	= mNetOps->getAccountState(uLedger, naNewAccountPublic);
+				asNew	= mNetOps->getAccountState(uint256(0), naNewAccountPublic);
 				if (!asNew)
 					bAgain	= false;
 			} while (bAgain);
@@ -2327,7 +2309,6 @@ Json::Value RPCServer::doWalletCreate(const Json::Value& params)
 	NewcoinAddress	naSrcAccountID;
 	NewcoinAddress	naDstAccountID;
 	NewcoinAddress	naSeed;
-	uint256			uLedger		= mNetOps->getCurrentLedger();
 
 	if (!naSeed.setSeedGeneric(params[0u].asString()))
 	{
@@ -2341,7 +2322,7 @@ Json::Value RPCServer::doWalletCreate(const Json::Value& params)
 	{
 		return RPCError(rpcDST_ACT_MALFORMED);
 	}
-	else if (mNetOps->getAccountState(uLedger, naDstAccountID))
+	else if (mNetOps->getAccountState(uint256(0), naDstAccountID))
 	{
 		return RPCError(rpcACT_EXISTS);
 	}
@@ -2354,7 +2335,7 @@ Json::Value RPCServer::doWalletCreate(const Json::Value& params)
 	NewcoinAddress			naAccountPrivate;
 	AccountState::pointer	asSrc;
 	STAmount				saSrcBalance;
-	Json::Value				obj				= authorize(uLedger, naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
+	Json::Value				obj				= authorize(uint256(0), naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
 		saSrcBalance, theConfig.FEE_ACCOUNT_CREATE, asSrc, naMasterGenerator);
 
 	if (!obj.empty())
@@ -2623,7 +2604,8 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 	{
 		return RPCError(rpcNO_NETWORK);
 	}
-	else if ((commandsA[i].iOptions & optCurrent) && mNetOps->getCurrentLedger().isZero())
+	// XXX Should verify we have a current ledger.
+	else if ((commandsA[i].iOptions & optCurrent) && false)
 	{
 		return RPCError(rpcNO_CURRENT);
 	}

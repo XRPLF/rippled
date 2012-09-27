@@ -96,6 +96,7 @@ public:
 	uint32 getValidationTimeNC();
 	void closeTimeOffset(int);
 	boost::posix_time::ptime getNetworkTimePT();
+	uint32 getLedgerID(const uint256& hash);
 	uint32 getCurrentLedgerID();
 	OperatingMode getOperatingMode() { return mMode; }
 	inline bool available() {
@@ -103,13 +104,14 @@ public:
 		return mMode >= omTRACKING;
 	}
 
+	Ledger::pointer	getCurrentLedger()						{ return mLedgerMaster->getCurrentLedger(); }
+	Ledger::pointer	getLedgerByHash(const uint256& hash)	{ return mLedgerMaster->getLedgerByHash(hash); }
+	Ledger::pointer	getLedgerBySeq(const uint32 seq)		{ return mLedgerMaster->getLedgerBySeq(seq); }
+
 	uint256					getClosedLedger()
 		{ return mLedgerMaster->getClosedLedger()->getHash(); }
 
-	// FIXME: This function is basically useless since the hash is constantly changing and the ledger
-	// is ephemeral and mutable.
-	uint256					getCurrentLedger()
-		{ return mLedgerMaster->getCurrentLedger()->getHash(); }
+	SLE::pointer getSLE(Ledger::pointer lpLedger, const uint256& uHash) { return lpLedger->getSLE(uHash); }
 
 	//
 	// Transaction operations

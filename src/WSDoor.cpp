@@ -76,7 +76,9 @@ public:
 	boost::unordered_set<NewcoinAddress> parseAccountIds(const Json::Value& jvArray);
 
 	// Request-Response Commands
+	void doLedgerClosed(Json::Value& jvResult, const Json::Value& jvRequest);
 	void doLedgerCurrent(Json::Value& jvResult, const Json::Value& jvRequest);
+	void doLedgerEntry(Json::Value& jvResult, const Json::Value& jvRequest);
 
 	// Streaming Commands
 	void doAccountInfoSubscribe(Json::Value& jvResult, const Json::Value& jvRequest);
@@ -297,7 +299,9 @@ Json::Value WSConnection::invokeCommand(const Json::Value& jvRequest)
 		doFuncPtr	dfpFunc;
 	} commandsA[] = {
 		// Request-Response Commands:
-		{ "ledger_current",						&WSConnection::doLedgerCurrent				},
+		{ "ledger_closed",						&WSConnection::doLedgerClosed					},
+		{ "ledger_current",						&WSConnection::doLedgerCurrent					},
+		{ "ledger_entry",						&WSConnection::doLedgerEntry					},
 
 		// Streaming commands:
 		{ "account_info_subscribe",				&WSConnection::doAccountInfoSubscribe			},
@@ -548,9 +552,137 @@ void WSConnection::doLedgerAccountsUnsubscribe(Json::Value& jvResult, const Json
 	}
 }
 
+void WSConnection::doLedgerClosed(Json::Value& jvResult, const Json::Value& jvRequest)
+{
+	uint256	uLedger	= theApp->getOPs().getClosedLedger();
+
+	jvResult["ledger_index"]	= theApp->getOPs().getLedgerID(uLedger);
+	jvResult["ledger"]			= uLedger.ToString();
+}
+
 void WSConnection::doLedgerCurrent(Json::Value& jvResult, const Json::Value& jvRequest)
 {
-	jvResult["ledger"]	= theApp->getOPs().getCurrentLedgerID();
+	jvResult["ledger_index"]	= theApp->getOPs().getCurrentLedgerID();
+}
+
+void WSConnection::doLedgerEntry(Json::Value& jvResult, const Json::Value& jvRequest)
+{
+	NetworkOPs&	noNetwork	= theApp->getOPs();
+	uint256	uLedger			= jvRequest.isMember("ledger") ? uint256(jvRequest["ledger"].asString()) : 0;
+	uint32	uLedgerIndex	= jvRequest.isMember("ledger_index") && jvRequest["ledger_index"].isNumeric() ? jvRequest["ledger_index"].asUInt() : 0;
+
+	Ledger::pointer	 lpLedger;
+
+	if (!!uLedger)
+	{
+		// Ledger directly specified.
+		lpLedger	= noNetwork.getLedgerByHash(uLedger);
+
+		if (!lpLedger)
+		{
+			jvResult["error"]	= "ledgerNotFound";
+			return;
+		}
+
+		uLedgerIndex	= lpLedger->getLedgerSeq();	// Set the current index, override if needed.
+	}
+	else if (!!uLedgerIndex)
+	{
+		lpLedger		= noNetwork.getLedgerBySeq(uLedgerIndex);
+
+		if (!lpLedger)
+		{
+			jvResult["error"]	= "ledgerNotFound";	// ledger_index from future?
+			return;
+		}
+	}
+	else
+	{
+		// Default to current ledger.
+		lpLedger		= noNetwork.getCurrentLedger();
+		uLedgerIndex	= lpLedger->getLedgerSeq();	// Set the current index.
+	}
+
+	if (!!uLedger)
+		jvResult["ledger"]			= uLedger.ToString();
+
+	jvResult["ledger_index"]	= uLedgerIndex;
+
+	uint256		uNodeIndex;
+
+	if (jvRequest.isMember("index"))
+	{
+		jvResult["error"]	= "notImplemented";
+	}
+	else if (jvRequest.isMember("account_root"))
+	{
+		NewcoinAddress	naAccount;
+
+		if (!naAccount.setAccountID(jvRequest["account_root"].asString()))
+		{
+			jvResult["error"]	= "malformedAddress";
+		}
+		else
+		{
+			uNodeIndex = Ledger::getAccountRootIndex(naAccount.getAccountID());
+		}
+	}
+	else if (jvRequest.isMember("directory"))
+	{
+		jvResult["error"]	= "notImplemented";
+	}
+	else if (jvRequest.isMember("generator"))
+	{
+		jvResult["error"]	= "notImplemented";
+	}
+	else if (jvRequest.isMember("offer"))
+	{
+		jvResult["error"]	= "notImplemented";
+	}
+	else if (jvRequest.isMember("ripple_state"))
+	{
+		NewcoinAddress	naA;
+		NewcoinAddress	naB;
+		uint160			uCurrency;
+
+		if (!jvRequest.isMember("accounts")
+			|| !jvRequest.isMember("currency")
+			|| !jvRequest["accounts"].isArray()
+			|| 2 != jvRequest["accounts"].size()) {
+			jvResult["error"]	= "malformedRequest";
+		}
+		else if (!naA.setAccountID(jvRequest["accounts"][0u].asString())
+			|| !naB.setAccountID(jvRequest["accounts"][1u].asString())) {
+			jvResult["error"]	= "malformedAddress";
+		}
+		else if (!STAmount::currencyFromString(uCurrency, jvRequest["currency"].asString())) {
+			jvResult["error"]	= "malformedCurrency";
+		}
+		else
+		{
+			uNodeIndex	= Ledger::getRippleStateIndex(naA, naB, uCurrency);
+		}
+	}
+	else
+	{
+		jvResult["error"]	= "unknownOption";
+	}
+
+	if (!!uNodeIndex)
+	{
+		SLE::pointer	sleNode	= noNetwork.getSLE(lpLedger, uNodeIndex);
+
+		if (!sleNode)
+		{
+			// Not found.
+			// XXX We should also provide proof.
+			jvResult["error"]	= "entryNotFound";
+		}
+		else
+		{
+			jvResult["node"]	= sleNode->getJson(0);
+		}
+	}
 }
 
 void WSConnection::doTransactionSubcribe(Json::Value& jvResult, const Json::Value& jvRequest)

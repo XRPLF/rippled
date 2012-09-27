@@ -82,7 +82,7 @@ Remote.method('connect_helper', function() {
 			self.done(ws.readyState);
 		};
 
-	// XXX Why doesn't onmessage work?
+	// Node's ws module doesn't pass arguments to onmessage.
 	ws.on('message', function(json, flags) {
 		var	message	= JSON.parse(json);
 		// console.log("message: %s", json);
@@ -167,11 +167,28 @@ Remote.method('request', function(command, done) {
 	ws.send(JSON.stringify(command));
 });
 
-// Get the current ledger entry (may be live or not).
+Remote.method('ledger_closed', function(done) {
+	assert(this.trusted);	// If not trusted, need to check proof.
+
+	this.request({ 'command' : 'ledger_closed' }, done);
+});
+
+// Get the current proposed ledger entry.  May be closed (and revised) at any time (even before returning).
+// Only for use by unit tests.
 Remote.method('ledger_current', function(done) {
 	this.request({ 'command' : 'ledger_current' }, done);
 });
 
+// <-> params:
+//		--> ledger : optional
+//		--> ledger_index : optional
+Remote.method('ledger_entry', function(params, done) {
+	assert(this.trusted);	// If not trusted, need to check proof, maybe talk packet protocol.
+
+	params.command	= 'ledger_entry';
+
+	this.request(params, done);
+});
 
 // Submit a json transaction.
 // done(value)
@@ -180,16 +197,6 @@ Remote.method('ledger_current', function(done) {
 Remote.method('submit', function(json, done) {
 //	this.request(..., function() {
 //		});
-});
-
-// done(value)
-// --> value: { 'status', status, 'result' : result, ... }
-// done may be called up to 3 times.
-Remote.method('account_root', function(account_id, done) {
-	this.request({
-			'command' : 'ledger_current',
-		}, function() {
-		});
 });
 
 exports.Remote = Remote;
