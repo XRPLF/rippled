@@ -104,8 +104,14 @@ public:
 		return mMode >= omTRACKING;
 	}
 
+	Ledger::pointer	getCurrentLedger()						{ return mLedgerMaster->getCurrentLedger(); }
+	Ledger::pointer	getLedgerByHash(const uint256& hash)	{ return mLedgerMaster->getLedgerByHash(hash); }
+	Ledger::pointer	getLedgerBySeq(const uint32 seq)		{ return mLedgerMaster->getLedgerBySeq(seq); }
+
 	uint256					getClosedLedger()
 		{ return mLedgerMaster->getClosedLedger()->getHash(); }
+
+	SLE::pointer getSLE(Ledger::pointer lpLedger, const uint256& uHash) { return lpLedger->getSLE(uHash); }
 
 	//
 	// Transaction operations
