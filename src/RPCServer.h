@@ -141,6 +141,7 @@ private:
 	Json::Value doDataFetch(const Json::Value& params);
 	Json::Value doDataStore(const Json::Value& params);
 	Json::Value doLedger(const Json::Value& params);
+	Json::Value doLogRotate(const Json::Value& params);
 	Json::Value doNicknameInfo(const Json::Value& params);
 	Json::Value doNicknameSet(const Json::Value& params);
 	Json::Value doOfferCreate(const Json::Value& params);
@@ -183,6 +184,7 @@ private:
 	Json::Value doWalletVerify(const Json::Value& params);
 
 	Json::Value doLogin(const Json::Value& params);
+
 
 public:
 	static pointer create(boost::asio::io_service& io_service, NetworkOPs* mNetOps)
