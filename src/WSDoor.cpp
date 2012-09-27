@@ -640,7 +640,28 @@ void WSConnection::doLedgerEntry(Json::Value& jvResult, const Json::Value& jvReq
 	}
 	else if (jvRequest.isMember("offer"))
 	{
-		jvResult["error"]	= "notImplemented";
+		NewcoinAddress	naAccountID;
+
+		if (!jvRequest.isObject())
+		{
+			uNodeIndex.SetHex(jvRequest["offer"].asString());
+		}
+		else if (!jvRequest["offer"].isMember("account")
+			|| !jvRequest["offer"].isMember("seq")
+			|| !jvRequest["offer"]["seq"].isIntegral())
+		{
+			jvResult["error"]	= "malformedRequest";
+		}
+		else if (!naAccountID.setAccountID(jvRequest["offer"]["account"].asString()))
+		{
+			jvResult["error"]	= "malformedAddress";
+		}
+		else
+		{
+			uint32		uSequence	= jvRequest["offer"]["seq"].asUInt();
+
+			uNodeIndex	= Ledger::getOfferIndex(naAccountID.getAccountID(), uSequence);
+		}
 	}
 	else if (jvRequest.isMember("ripple_state"))
 	{
