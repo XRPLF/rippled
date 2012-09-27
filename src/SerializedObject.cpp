@@ -186,6 +186,14 @@ bool STObject::set(SerializerIterator& sit, int depth)
 	return false;
 }
 
+std::auto_ptr<SerializedType> STObject::deserialize(SerializerIterator& sit, SField::ref name)
+{
+	STObject *o;
+	std::auto_ptr<SerializedType> object(o = new STObject(name));
+	o->set(sit, 1);
+	return object;
+}
+
 std::string STObject::getFullText() const
 {
 	std::string ret;
@@ -211,15 +219,28 @@ std::string STObject::getFullText() const
 
 void STObject::add(Serializer& s) const
 {
-	addFieldID(s);
-	addData(s);
-	s.addFieldID(STI_OBJECT, 1);
-}
+	std::map<int, const SerializedType*> fields;
 
-void STObject::addData(Serializer& s) const
-{ // FIXME: need to add in sorted order
 	BOOST_FOREACH(const SerializedType& it, mData)
-		it.add(s);
+	{ // pick out the fields and sort them
+		if (it.getSType() != STI_NOTPRESENT)
+			fields.insert(std::make_pair(it.getFName().fieldCode, &it));
+	}
+
+
+	typedef std::pair<const int, const SerializedType*> field_iterator;
+	BOOST_FOREACH(field_iterator& it, fields)
+	{ // insert them in sorted order
+		const SerializedType* field = it.second;
+
+		field->addFieldID(s);
+		field->add(s);
+
+		if (dynamic_cast<const STObject*>(field))
+			s.addFieldID(STI_OBJECT, 1);
+		else if (dynamic_cast<const STArray*>(field))
+			s.addFieldID(STI_ARRAY, 1);
+	}
 }
 
 std::string STObject::getText() const
@@ -652,6 +673,65 @@ Json::Value STVector256::getJson(int options) const
 
 	return ret;
 }
+
+std::string STArray::getFullText() const
+{
+	return "WRITEME";
+}
+
+std::string STArray::getText() const
+{
+	return "WRITEME";
+}
+
+Json::Value STArray::getJson(int) const
+{
+	return Json::Value("WRITEME");
+}
+
+void STArray::add(Serializer& s) const
+{
+	BOOST_FOREACH(const SerializedType& object, value)
+	{
+		object.addFieldID(s);
+		object.add(s);
+
+		if (dynamic_cast<const STObject*>(&object))
+			s.addFieldID(STI_OBJECT, 1);
+		else if (dynamic_cast<const STArray*>(&object))
+			s.addFieldID(STI_ARRAY, 1);
+	}
+}
+
+bool STArray::isEquivalent(const SerializedType& t) const
+{
+	const STArray* v = dynamic_cast<const STArray*>(&t);
+	if (!v)
+		return false;
+	return value == v->value;
+}
+
+STArray* STArray::construct(SerializerIterator& sit, SField::ref field)
+{
+	vector value;
+
+	while (!sit.empty())
+	{
+		int type, field;
+		sit.getFieldID(type, field);
+		if ((type == STI_ARRAY) && (field == 1))
+			break;
+
+		SField::ref fn = SField::getField(type, field);
+		if (fn.isInvalid())
+			throw std::runtime_error("Unknown field");
+
+		value.push_back(*STObject::makeDeserializedObject(fn.fieldType, fn, sit, 1));
+	}
+
+	return new STArray(field, value);
+}
+
 
 #if 0
 

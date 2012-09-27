@@ -275,7 +275,7 @@ void STAmount::canonicalize()
 	assert((mValue != 0) || (mOffset != -100) );
 }
 
-void STAmount::addData(Serializer& s) const
+void STAmount::add(Serializer& s) const
 {
 	if (mIsNative)
 	{

@@ -202,7 +202,7 @@ STVector256* STVector256::construct(SerializerIterator& u, SField::ref name)
 	return new STVector256(name, value);
 }
 
-void STVector256::addData(Serializer& s) const
+void STVector256::add(Serializer& s) const
 {
 	s.addVL(mValue.empty() ? NULL : mValue[0].begin(), mValue.size() * (256 / 8));
 }
@@ -427,7 +427,7 @@ std::string STPathSet::getText() const
 }
 #endif
 
-void STPathSet::addData(Serializer& s) const
+void STPathSet::add(Serializer& s) const
 {
 	bool bFirst = true;
 
