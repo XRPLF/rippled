@@ -636,7 +636,29 @@ void WSConnection::doLedgerEntry(Json::Value& jvResult, const Json::Value& jvReq
 	}
 	else if (jvRequest.isMember("generator"))
 	{
-		jvResult["error"]	= "notImplemented";
+		NewcoinAddress	naGeneratorID;
+
+		if (!jvRequest.isObject())
+		{
+			uNodeIndex.SetHex(jvRequest["generator"].asString());
+		}
+		else if (!jvRequest["generator"].isMember("regular_seed"))
+		{
+			jvResult["error"]	= "malformedRequest";
+		}
+		else if (!naGeneratorID.setSeedGeneric(jvRequest["generator"]["regular_seed"].asString()))
+		{
+			jvResult["error"]	= "malformedAddress";
+		}
+		else
+		{
+			NewcoinAddress		na0Public;		// To find the generator's index.
+			NewcoinAddress		naGenerator	= NewcoinAddress::createGeneratorPublic(naGeneratorID);
+
+			na0Public.setAccountPublic(naGenerator, 0);
+
+			uNodeIndex	= Ledger::getGeneratorIndex(na0Public.getAccountID());
+		}
 	}
 	else if (jvRequest.isMember("offer"))
 	{
@@ -710,10 +732,12 @@ void WSConnection::doLedgerEntry(Json::Value& jvResult, const Json::Value& jvReq
 			sleNode->add(s);
 
 			jvResult["node_binary"]	= strHex(s.peekData());
+			jvResult["index"]		= uNodeIndex.ToString();
 		}
 		else
 		{
 			jvResult["node"]		= sleNode->getJson(0);
+			jvResult["index"]		= uNodeIndex.ToString();
 		}
 	}
 }
