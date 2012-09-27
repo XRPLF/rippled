@@ -1,5 +1,3 @@
-// console.log("standalone-test.js>");
-
 var fs = require("fs");
 var buster = require("buster");
 
@@ -59,9 +57,6 @@ buster.testCase("WebSocket connection", {
 		},
 });
 
-// XXX Figure out a way to stuff this into the test case.
-var alpha;
-
 buster.testCase("Websocket commands", {
 	'setUp' :
 		function(done) {
@@ -92,16 +87,6 @@ buster.testCase("Websocket commands", {
 				});
 		},
 
-	'ledger_closed' :
-		function(done) {
-			alpha.ledger_closed(function (r) {
-					console.log(r);
-
-					buster.assert(r.ledger === 1);
-					done();
-				});
-		},
-
 	'ledger_current' :
 		function(done) {
 			alpha.ledger_current(function (r) {
@@ -112,7 +97,7 @@ buster.testCase("Websocket commands", {
 				});
 		},
 
-	'ledger_closed' :
+	'// ledger_closed' :
 		function(done) {
 			alpha.ledger_closed(function (r) {
 					console.log("result: %s", JSON.stringify(r));
@@ -121,46 +106,63 @@ buster.testCase("Websocket commands", {
 					done();
 				});
 		},
-});
 
-buster.testCase("// Work in progress", {
-	'setUp' :
+	'account_root success' :
 		function(done) {
-			server.start("alpha",
-				function(e) {
-					buster.refute(e);
+			alpha.ledger_closed(function (r) {
+					// console.log("result: %s", JSON.stringify(r));
 
-					alpha	= remote.remoteConfig(config, "alpha");
+					buster.refute('error' in r);
 
-					alpha.connect(function(stat) {
-							buster.assert(1 == stat);	// OPEN
+					alpha.ledger_entry({
+							'ledger_index' : r.ledger_index,
+							'account_root' : 'iHb9CJAWyB4ij91VRWn96DkukG4bwdtyTh'
+						} , function (r) {
+							// console.log("account_root: %s", JSON.stringify(r));
 
+							buster.assert('node' in r);
 							done();
-						}, serverDelay);
-			});
-		},
-
-	'tearDown' :
-		function(done) {
-			alpha.disconnect(function(stat) {
-					buster.assert(3 == stat);			// CLOSED
-
-					server.stop("alpha", function(e) {
-						buster.refute(e);
-
-						done();
-					});
+						});
 				});
 		},
 
-	'ledger_closed' :
+	'account_root malformedAddress' :
 		function(done) {
 			alpha.ledger_closed(function (r) {
-					console.log("result: %s", JSON.stringify(r));
+					// console.log("result: %s", JSON.stringify(r));
 
-					buster.assert.equals(r.ledger_index, 2);
-					done();
+					buster.refute('error' in r);
+
+					alpha.ledger_entry({
+							'ledger_index' : r.ledger_index,
+							'account_root' : 'foobar'
+						} , function (r) {
+							// console.log("account_root: %s", JSON.stringify(r));
+
+							buster.assert.equals(r.error, 'malformedAddress');
+							done();
+						});
+				});
+		},
+
+	'account_root entryNotFound' :
+		function(done) {
+			alpha.ledger_closed(function (r) {
+					// console.log("result: %s", JSON.stringify(r));
+
+					buster.refute('error' in r);
+
+					alpha.ledger_entry({
+							'ledger_index' : r.ledger_index,
+							'account_root' : 'iG1QQv2nh2gi7RCZ1P8YYcBUKCCN633jCn'
+						} , function (r) {
+							// console.log("account_root: %s", JSON.stringify(r));
+
+							buster.assert.equals(r.error, 'entryNotFound');
+							done();
+						});
 				});
 		},
 });
+
 // vim:ts=4

@@ -567,11 +567,46 @@ void WSConnection::doLedgerCurrent(Json::Value& jvResult, const Json::Value& jvR
 
 void WSConnection::doLedgerEntry(Json::Value& jvResult, const Json::Value& jvRequest)
 {
-	// Get from request.
-	uint256	uLedger;
+	NetworkOPs&	noNetwork	= theApp->getOPs();
+	uint256	uLedger			= jvRequest.isMember("ledger") ? uint256(jvRequest["ledger"].asString()) : 0;
+	uint32	uLedgerIndex	= jvRequest.isMember("ledger_index") && jvRequest["ledger_index"].isNumeric() ? jvRequest["ledger_index"].asUInt() : 0;
 
-	jvResult["ledger_index"]	= theApp->getOPs().getLedgerID(uLedger);
-	jvResult["ledger"]			= uLedger.ToString();
+	Ledger::pointer	 lpLedger;
+
+	if (!!uLedger)
+	{
+		// Ledger directly specified.
+		lpLedger	= noNetwork.getLedgerByHash(uLedger);
+
+		if (!lpLedger)
+		{
+			jvResult["error"]	= "ledgerNotFound";
+			return;
+		}
+
+		uLedgerIndex	= lpLedger->getLedgerSeq();	// Set the current index, override if needed.
+	}
+	else if (!!uLedgerIndex)
+	{
+		lpLedger		= noNetwork.getLedgerBySeq(uLedgerIndex);
+
+		if (!lpLedger)
+		{
+			jvResult["error"]	= "ledgerNotFound";	// ledger_index from future?
+			return;
+		}
+	}
+	else
+	{
+		// Default to current ledger.
+		lpLedger		= noNetwork.getCurrentLedger();
+		uLedgerIndex	= lpLedger->getLedgerSeq();	// Set the current index.
+	}
+
+	if (!!uLedger)
+		jvResult["ledger"]			= uLedger.ToString();
+
+	jvResult["ledger_index"]	= uLedgerIndex;
 
 	if (jvRequest.isMember("index"))
 	{
@@ -579,7 +614,28 @@ void WSConnection::doLedgerEntry(Json::Value& jvResult, const Json::Value& jvReq
 	}
 	else if (jvRequest.isMember("account_root"))
 	{
-		jvResult["error"]	= "notImplemented";
+		NewcoinAddress	naAccount			= NewcoinAddress::createAccountID(jvRequest["account_root"].asString());
+
+		if (!naAccount.isValid())
+		{
+			jvResult["error"]	= "malformedAddress";
+			return;
+		}
+
+		uint256			accountRootIndex	= Ledger::getAccountRootIndex(naAccount.getAccountID());
+
+		SLE::pointer	sleNode				= noNetwork.getSLE(lpLedger, accountRootIndex);
+
+		if (!sleNode)
+		{
+			// Not found.
+			// XXX We should also provide proof.
+			jvResult["error"]	= "entryNotFound";
+		}
+		else
+		{
+			jvResult["node"]	= sleNode->getJson(0);
+		}
 	}
 	else if (jvRequest.isMember("directory"))
 	{
