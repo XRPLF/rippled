@@ -163,6 +163,26 @@ buster.testCase("Websocket commands", {
 						});
 				});
 		},
+
+	'ledger_entry index' :
+		function(done) {
+			alpha.ledger_closed(function (r) {
+					// console.log("result: %s", JSON.stringify(r));
+
+					buster.refute('error' in r);
+
+					alpha.ledger_entry({
+							'ledger_index' : r.ledger_index,
+							'index' : "2B6AC232AA4C4BE41BF49D2459FA4A0347E1B543A4C92FCEE0821C0201E2E9A8",
+						} , function (r) {
+							console.log("node: %s", JSON.stringify(r));
+
+							buster.assert('node_binary' in r);
+							done();
+						});
+				});
+		},
+
 });
 
 // vim:ts=4
