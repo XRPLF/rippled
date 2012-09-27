@@ -608,33 +608,23 @@ void WSConnection::doLedgerEntry(Json::Value& jvResult, const Json::Value& jvReq
 
 	jvResult["ledger_index"]	= uLedgerIndex;
 
+	uint256		uNodeIndex;
+
 	if (jvRequest.isMember("index"))
 	{
 		jvResult["error"]	= "notImplemented";
 	}
 	else if (jvRequest.isMember("account_root"))
 	{
-		NewcoinAddress	naAccount			= NewcoinAddress::createAccountID(jvRequest["account_root"].asString());
+		NewcoinAddress	naAccount;
 
-		if (!naAccount.isValid())
+		if (!naAccount.setAccountID(jvRequest["account_root"].asString()))
 		{
 			jvResult["error"]	= "malformedAddress";
-			return;
-		}
-
-		uint256			accountRootIndex	= Ledger::getAccountRootIndex(naAccount.getAccountID());
-
-		SLE::pointer	sleNode				= noNetwork.getSLE(lpLedger, accountRootIndex);
-
-		if (!sleNode)
-		{
-			// Not found.
-			// XXX We should also provide proof.
-			jvResult["error"]	= "entryNotFound";
 		}
 		else
 		{
-			jvResult["node"]	= sleNode->getJson(0);
+			uNodeIndex = Ledger::getAccountRootIndex(naAccount.getAccountID());
 		}
 	}
 	else if (jvRequest.isMember("directory"))
@@ -651,11 +641,47 @@ void WSConnection::doLedgerEntry(Json::Value& jvResult, const Json::Value& jvReq
 	}
 	else if (jvRequest.isMember("ripple_state"))
 	{
-		jvResult["error"]	= "notImplemented";
+		NewcoinAddress	naA;
+		NewcoinAddress	naB;
+		uint160			uCurrency;
+
+		if (!jvRequest.isMember("accounts")
+			|| !jvRequest.isMember("currency")
+			|| !jvRequest["accounts"].isArray()
+			|| 2 != jvRequest["accounts"].size()) {
+			jvResult["error"]	= "malformedRequest";
+		}
+		else if (!naA.setAccountID(jvRequest["accounts"][0u].asString())
+			|| !naB.setAccountID(jvRequest["accounts"][1u].asString())) {
+			jvResult["error"]	= "malformedAddress";
+		}
+		else if (!STAmount::currencyFromString(uCurrency, jvRequest["currency"].asString())) {
+			jvResult["error"]	= "malformedCurrency";
+		}
+		else
+		{
+			uNodeIndex	= Ledger::getRippleStateIndex(naA, naB, uCurrency);
+		}
 	}
 	else
 	{
 		jvResult["error"]	= "unknownOption";
+	}
+
+	if (!!uNodeIndex)
+	{
+		SLE::pointer	sleNode	= noNetwork.getSLE(lpLedger, uNodeIndex);
+
+		if (!sleNode)
+		{
+			// Not found.
+			// XXX We should also provide proof.
+			jvResult["error"]	= "entryNotFound";
+		}
+		else
+		{
+			jvResult["node"]	= sleNode->getJson(0);
+		}
 	}
 }
 
