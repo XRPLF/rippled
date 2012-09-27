@@ -28,8 +28,8 @@ public:
 	std::string getText() const;
 	Json::Value getJson(int options) const;
 
-	const uint256& getIndex() const;
-	void setIndex(const uint256& i);
+	const uint256& getIndex() const		{ return mIndex; }
+	void setIndex(const uint256& i)		{ mIndex = i; }
 
 	LedgerEntryType getType() const { return mType; }
 	uint16 getVersion() const { return getValueFieldU16(sfLedgerEntryType); }

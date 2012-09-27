@@ -12,7 +12,7 @@ SerializedTransaction::SerializedTransaction(TransactionType type) : mType(type)
 	mFormat = getTxnFormat(type);
 	if (mFormat == NULL) throw std::runtime_error("invalid transaction type");
 
-	mMiddleTxn.giveObject(new STVariableLength(sfSigningKey));
+	mMiddleTxn.giveObject(new STVariableLength(sfSigningPubKey));
 	mMiddleTxn.giveObject(new STAccount(sfAccount));
 	mMiddleTxn.giveObject(new STUInt32(sfSequence));
 	mMiddleTxn.giveObject(new STUInt16(sfTransactionType, static_cast<uint16>(type)));
@@ -32,25 +32,25 @@ SerializedTransaction::SerializedTransaction(SerializerIterator& sit)
 
 	mSignature.setValue(sit.getVL());
 
-	mMiddleTxn.giveObject(new STVariableLength("SigningPubKey", sit.getVL()));
+	mMiddleTxn.giveObject(new STVariableLength(sfSigningPubKey, sit.getVL()));
 
-	STAccount sa("SourceAccount", sit.getVL());
+	STAccount sa(sfAccount, sit.getVL());
 	mSourceAccount = sa.getValueNCA();
 	mMiddleTxn.giveObject(new STAccount(sa));
 
-	mMiddleTxn.giveObject(new STUInt32("Sequence", sit.get32()));
+	mMiddleTxn.giveObject(new STUInt32(sfSequence, sit.get32()));
 
 	mType = static_cast<TransactionType>(sit.get16());
-	mMiddleTxn.giveObject(new STUInt16("Type", static_cast<uint16>(mType)));
+	mMiddleTxn.giveObject(new STUInt16(sfTransactionType, static_cast<uint16>(mType)));
 	mFormat = getTxnFormat(mType);
 	if (!mFormat)
 	{
 		Log(lsERROR) << "Transaction has invalid type";
 		throw std::runtime_error("Transaction has invalid type");
 	}
-	mMiddleTxn.giveObject(STAmount::deserialize(sit, "Fee"));
+	mMiddleTxn.giveObject(STAmount::deserialize(sit, sfFee));
 
-	mInnerTxn = STObject(mFormat->elements, sit, "InnerTransaction");
+	mInnerTxn = STObject(mFormat->elements, sit, sfInnerTransaction);
 }
 
 std::string SerializedTransaction::getFullText() const

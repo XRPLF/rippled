@@ -61,7 +61,8 @@ public:
 	virtual Json::Value getJson(int) const
 	{ return getText(); }
 
-	virtual void add(Serializer& s) const { return; }
+	virtual void add(Serializer& s) const { addFieldID(s); addData(s); }
+	virtual void addData(Serializer& s) const { ; }
 
 	virtual bool isEquivalent(const SerializedType& t) const
 	{ assert(getSType() == STI_NOTPRESENT); return t.getSType() == STI_NOTPRESENT; }
@@ -97,7 +98,7 @@ public:
 
 	SerializedTypeID getSType() const { return STI_UINT8; }
 	std::string getText() const;
-	void add(Serializer& s) const { s.add8(value); }
+	void addData(Serializer& s) const { s.add8(value); }
 
 	unsigned char getValue() const { return value; }
 	void setValue(unsigned char v) { value = v; }
@@ -123,7 +124,7 @@ public:
 
 	SerializedTypeID getSType() const { return STI_UINT16; }
 	std::string getText() const;
-	void add(Serializer& s) const { s.add16(value); }
+	void addData(Serializer& s) const { s.add16(value); }
 
 	uint16 getValue() const { return value; }
 	void setValue(uint16 v) { value=v; }
@@ -149,7 +150,7 @@ public:
 
 	SerializedTypeID getSType() const { return STI_UINT32; }
 	std::string getText() const;
-	void add(Serializer& s) const { s.add32(value); }
+	void addData(Serializer& s) const { s.add32(value); }
 
 	uint32 getValue() const { return value; }
 	void setValue(uint32 v) { value=v; }
@@ -175,7 +176,7 @@ public:
 
 	SerializedTypeID getSType() const { return STI_UINT64; }
 	std::string getText() const;
-	void add(Serializer& s) const { s.add64(value); }
+	void addData(Serializer& s) const { s.add64(value); }
 
 	uint64 getValue() const { return value; }
 	void setValue(uint64 v) { value=v; }
@@ -267,7 +268,7 @@ public:
 	std::string getText() const;
 	std::string getRaw() const;
 	std::string getFullText() const;
-	void add(Serializer& s) const;
+	void addData(Serializer& s) const;
 
 	int getExponent() const				{ return mOffset; }
 	uint64 getMantissa() const			{ return mValue; }
@@ -391,7 +392,7 @@ public:
 
 	SerializedTypeID getSType() const { return STI_HASH128; }
 	virtual std::string getText() const;
-	void add(Serializer& s) const { s.add128(value); }
+	void addData(Serializer& s) const { s.add128(value); }
 
 	const uint128& getValue() const { return value; }
 	void setValue(const uint128& v) { value=v; }
@@ -419,7 +420,7 @@ public:
 
 	SerializedTypeID getSType() const { return STI_HASH160; }
 	virtual std::string getText() const;
-	void add(Serializer& s) const { s.add160(value); }
+	void addData(Serializer& s) const { s.add160(value); }
 
 	const uint160& getValue() const { return value; }
 	void setValue(const uint160& v) { value=v; }
@@ -447,7 +448,7 @@ public:
 
 	SerializedTypeID getSType() const { return STI_HASH256; }
 	std::string getText() const;
-	void add(Serializer& s) const { s.add256(value); }
+	void addData(Serializer& s) const { s.add256(value); }
 
 	const uint256& getValue() const { return value; }
 	void setValue(const uint256& v) { value=v; }
@@ -476,7 +477,7 @@ public:
 
 	virtual SerializedTypeID getSType() const { return STI_VL; }
 	virtual std::string getText() const;
-	void add(Serializer& s) const { s.addVL(value); }
+	void addData(Serializer& s) const { s.addVL(value); }
 
 	const std::vector<unsigned char>& peekValue() const { return value; }
 	std::vector<unsigned char>& peekValue() { return value; }
@@ -641,7 +642,7 @@ public:
 	{ return std::auto_ptr<SerializedType>(construct(sit, name)); }
 
 //	std::string getText() const;
-	void add(Serializer& s) const;
+	void addData(Serializer& s) const;
 	virtual Json::Value getJson(int) const;
 
 	SerializedTypeID getSType() const					{ return STI_PATHSET; }
@@ -710,7 +711,7 @@ public:
 	STVector256(const std::vector<uint256>& vector) : mValue(vector) { ; }
 
 	SerializedTypeID getSType() const { return STI_VECTOR256; }
-	void add(Serializer& s) const;
+	void addData(Serializer& s) const;
 
 	static std::auto_ptr<SerializedType> deserialize(SerializerIterator& sit, SField::ref name)
 		{ return std::auto_ptr<SerializedType>(construct(sit, name)); }

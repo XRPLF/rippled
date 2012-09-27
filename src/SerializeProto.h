@@ -64,7 +64,7 @@
 	FIELD(BaseFee,				UINT64, 6)
 
 	// 128-bit
-	FIELD(EmailHash,			HASH128, 2)
+	FIELD(EmailHash,			HASH128, 1)
 
 	// 256-bit (common)
 	FIELD(LedgerHash,			HASH256, 1)
@@ -98,7 +98,7 @@
 	// variable length
 	FIELD(PublicKey,			VL, 1)
 	FIELD(MessageKey,			VL, 2)
-	FIELD(SigningKey,			VL, 3)
+	FIELD(SigningPubKey,		VL, 3)
 	FIELD(Signature,			VL, 4)
 	FIELD(Generator,			VL, 5)
 	FIELD(Domain,				VL, 6)
@@ -125,8 +125,7 @@
 
 	// inner object
 	// OBJECT/1 is reserved for end of object
-	FIELD(MiddleTransaction,	OBJECT, 2)
-	FIELD(InnerTransaction,		OBJECT, 3)
+	FIELD(InnerTransaction,		OBJECT, 1)
 
 	// array of objects
 	// ARRAY/1 is reserved for end of array
