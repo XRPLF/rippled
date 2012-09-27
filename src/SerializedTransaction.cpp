@@ -12,13 +12,13 @@ SerializedTransaction::SerializedTransaction(TransactionType type) : mType(type)
 	mFormat = getTxnFormat(type);
 	if (mFormat == NULL) throw std::runtime_error("invalid transaction type");
 
-	mMiddleTxn.giveObject(new STVariableLength(sfSigningPubKey));
-	mMiddleTxn.giveObject(new STAccount(sfSourceAccount));
+	mMiddleTxn.giveObject(new STVariableLength(sfSigningKey));
+	mMiddleTxn.giveObject(new STAccount(sfAccount));
 	mMiddleTxn.giveObject(new STUInt32(sfSequence));
 	mMiddleTxn.giveObject(new STUInt16(sfTransactionType, static_cast<uint16>(type)));
 	mMiddleTxn.giveObject(new STAmount(sfFee));
 
-	mInnerTxn = STObject(mFormat->elements, "InnerTransaction");
+	mInnerTxn = STObject(mFormat->elements, sfInnerTransaction);
 }
 
 SerializedTransaction::SerializedTransaction(SerializerIterator& sit)
@@ -51,11 +51,6 @@ SerializedTransaction::SerializedTransaction(SerializerIterator& sit)
 	mMiddleTxn.giveObject(STAmount::deserialize(sit, "Fee"));
 
 	mInnerTxn = STObject(mFormat->elements, sit, "InnerTransaction");
-}
-
-int SerializedTransaction::getLength() const
-{
-	return mSignature.getLength() + mMiddleTxn.getLength() + mInnerTxn.getLength();
 }
 
 std::string SerializedTransaction::getFullText() const
@@ -241,7 +236,7 @@ const NewcoinAddress& SerializedTransaction::setSourceAccount(const NewcoinAddre
 	return mSourceAccount;
 }
 
-uint160 SerializedTransaction::getITFieldAccount(SOE_Field field) const
+uint160 SerializedTransaction::getITFieldAccount(SField::ref field) const
 {
 	uint160 r;
 	const SerializedType* st = mInnerTxn.peekAtPField(field);
@@ -253,7 +248,7 @@ uint160 SerializedTransaction::getITFieldAccount(SOE_Field field) const
 	return r;
 }
 
-int SerializedTransaction::getITFieldIndex(SOE_Field field) const
+int SerializedTransaction::getITFieldIndex(SField::ref field) const
 {
 	return mInnerTxn.getFieldIndex(field);
 }
@@ -263,27 +258,27 @@ int SerializedTransaction::getITFieldCount() const
 	return mInnerTxn.getCount();
 }
 
-bool SerializedTransaction::getITFieldPresent(SOE_Field field) const
+bool SerializedTransaction::getITFieldPresent(SField::ref field) const
 {
 	return mInnerTxn.isFieldPresent(field);
 }
 
-const SerializedType& SerializedTransaction::peekITField(SOE_Field field) const
+const SerializedType& SerializedTransaction::peekITField(SField::ref field) const
 {
 	return mInnerTxn.peekAtField(field);
 }
 
-SerializedType& SerializedTransaction::getITField(SOE_Field field)
+SerializedType& SerializedTransaction::getITField(SField::ref field)
 {
 	return mInnerTxn.getField(field);
 }
 
-void SerializedTransaction::makeITFieldPresent(SOE_Field field)
+void SerializedTransaction::makeITFieldPresent(SField::ref field)
 {
 	mInnerTxn.makeFieldPresent(field);
 }
 
-void SerializedTransaction::makeITFieldAbsent(SOE_Field field)
+void SerializedTransaction::makeITFieldAbsent(SField::ref field)
 {
 	return mInnerTxn.makeFieldAbsent(field);
 }

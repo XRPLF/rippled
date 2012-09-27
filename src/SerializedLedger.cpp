@@ -14,7 +14,7 @@ SerializedLedgerEntry::SerializedLedgerEntry(SerializerIterator& sit, const uint
 	if (mFormat == NULL)
 		throw std::runtime_error("invalid ledger entry type");
 	mType = mFormat->t_type;
-	setType(mType);
+	setType(mFormat->elements);
 }
 
 SerializedLedgerEntry::SerializedLedgerEntry(const Serializer& s, const uint256& index)
@@ -28,15 +28,15 @@ SerializedLedgerEntry::SerializedLedgerEntry(const Serializer& s, const uint256&
 	if (mFormat == NULL)
 		throw std::runtime_error("invalid ledger entry type");
 	mType = mFormat->t_type;
-	setType(mTyhpe);
+	setType(mFormat->elements);
 }
 
-SerializedLedgerEntry::SerializedLedgerEntry(LedgerEntryType type) : SerializedType("LedgerEntry"), mType(type)
+SerializedLedgerEntry::SerializedLedgerEntry(LedgerEntryType type) : STObject(sfLedgerEntry), mType(type)
 {
 	mFormat = getLgrFormat(type);
 	if (mFormat == NULL) throw std::runtime_error("invalid ledger entry type");
-	mVersion.setValue(static_cast<uint16>(mFormat->t_type));
 	set(mFormat->elements);
+	setValueFieldU16(sfLedgerEntryType, static_cast<uint16>(mFormat->t_type));
 }
 
 std::string SerializedLedgerEntry::getFullText() const
@@ -60,7 +60,7 @@ std::string SerializedLedgerEntry::getText() const
 
 Json::Value SerializedLedgerEntry::getJson(int options) const
 {
-	Json::Value ret(SerializedObject::getJson(options));
+	Json::Value ret(STObject::getJson(options));
 
 	ret["index"]	= mIndex.GetHex();
 
@@ -96,8 +96,8 @@ bool SerializedLedgerEntry::thread(const uint256& txID, uint32 ledgerSeq, uint25
 	prevTxID = oldPrevTxID;
 	prevLedgerID = getValueFieldU32(sfLastTxnSeq);
 	assert(prevTxID != txID);
-	setFieldH256(sfLastTxnID, txID);
-	setFieldU32(sfLastTxnSeq, ledgerSeq);
+	setValueFieldH256(sfLastTxnID, txID);
+	setValueFieldU32(sfLastTxnSeq, ledgerSeq);
 	return true;
 }
 
@@ -133,19 +133,12 @@ std::vector<uint256> SerializedLedgerEntry::getOwners()
 
 	for (int i = 0, fields = getCount(); i < fields; ++i)
 	{
-		switch (getFieldSType(i))
+		int fc = getFieldSType(i).fieldCode;
+		if ((fc == sfAccount.fieldCode) || (fc == sfLowID.fieldCode) || (fc == sfHighID.fieldCode))
 		{
-			case sfAccount:
-			case sfLowID:
-			case sfHighID:
-			{
-				const STAccount* entry = dynamic_cast<const STAccount *>(mObject.peekAtPIndex(i));
+				const STAccount* entry = dynamic_cast<const STAccount *>(peekAtPIndex(i));
 				if ((entry != NULL) && entry->getValueH160(account))
 					owners.push_back(Ledger::getAccountRootIndex(account));
-			}
-
-			default:
-				nothing();
 		}
 	}
 

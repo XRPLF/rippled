@@ -56,11 +56,12 @@
 	FIELD(OfferSequence,		UINT32, 25)
 
 	// 64-bit integers
-	FIELD(IndexNext,			UINT64, 1)
-	FIELD(IndexPrevious,		UINT64, 2)
-	FIELD(BookNode,				UINT64, 3)
-	FIELD(OwnerNode,			UINT64, 4)
-	FIELD(BaseFee,				UINT64, 5)
+	FIELD(Fee,					UINT64, 1)
+	FIELD(IndexNext,			UINT64, 2)
+	FIELD(IndexPrevious,		UINT64, 3)
+	FIELD(BookNode,				UINT64, 4)
+	FIELD(OwnerNode,			UINT64, 5)
+	FIELD(BaseFee,				UINT64, 6)
 
 	// 128-bit
 	FIELD(EmailHash,			HASH128, 2)
