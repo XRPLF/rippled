@@ -632,7 +632,50 @@ void WSConnection::doLedgerEntry(Json::Value& jvResult, const Json::Value& jvReq
 	}
 	else if (jvRequest.isMember("directory"))
 	{
-		jvResult["error"]	= "notImplemented";
+
+		if (!jvRequest.isObject())
+		{
+			uNodeIndex.SetHex(jvRequest["directory"].asString());
+		}
+		else if (jvRequest["directory"].isMember("sub_index")
+			&& !jvRequest["directory"]["sub_index"].isIntegral())
+		{
+			jvResult["error"]	= "malformedRequest";
+		}
+		else
+		{
+			uint64	uSubIndex = jvRequest["directory"].isMember("sub_index")
+									? jvRequest["directory"]["sub_index"].asUInt()
+									: 0;
+
+			if (jvRequest["directory"].isMember("dir_root"))
+			{
+				uint256	uDirRoot;
+
+				uDirRoot.SetHex(jvRequest["dir_root"].asString());
+
+				uNodeIndex	= Ledger::getDirNodeIndex(uDirRoot, uSubIndex);
+			}
+			else if (jvRequest["directory"].isMember("owner"))
+			{
+				NewcoinAddress	naOwnerID;
+
+				if (!naOwnerID.setAccountID(jvRequest["directory"]["owner"].asString()))
+				{
+					jvResult["error"]	= "malformedAddress";
+				}
+				else
+				{
+					uint256	uDirRoot	= Ledger::getOwnerDirIndex(naOwnerID.getAccountID());
+
+					uNodeIndex	= Ledger::getDirNodeIndex(uDirRoot, uSubIndex);
+				}
+			}
+			else
+			{
+				jvResult["error"]	= "malformedRequest";
+			}
+		}
 	}
 	else if (jvRequest.isMember("generator"))
 	{
