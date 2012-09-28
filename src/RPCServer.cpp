@@ -1451,7 +1451,7 @@ Json::Value RPCServer::doRipple(const Json::Value &params)
 	bLimit		= params.size() != iArg ? params[iArg].asString() == "limit" : false;
 	bAverage	= params.size() != iArg ? params[iArg].asString() == "average" : false;
 
-	if (!bPartial && !bFull)
+	if (!bLimit && !bAverage)
 	{
 		return RPCError(rpcINVALID_PARAMS);
 	}
