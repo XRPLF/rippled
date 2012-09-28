@@ -1,4 +1,7 @@
 // Manage test servers
+//
+// YYY Would be nice to be able to hide server output.
+//
 
 // Provide servers
 //
@@ -6,7 +9,7 @@
 //
 
 var config = require("./config.js");
-var utils = require("./utils.js");
+var utils = require("../js/utils.js");
 
 var fs = require("fs");
 var path = require("path");
@@ -16,107 +19,137 @@ var WebSocket = require("ws");
 
 var servers = {};
 
-var serverPath = function(name) {
-    return "tmp/server/" + name;
+// Create a server object
+var Server = function(name) {
+	this.name = name;
 };
 
 // Return a server's newcoind.cfg as string.
-var configContent = function(name) {
-	var	cfg	= config.servers[name];
+Server.method('configContent', function() {
+	var	cfg	= config.servers[this.name];
 
-	return Object.keys(cfg).map(function (o) {
+	return Object.keys(cfg).map(function(o) {
 		return util.format("[%s]\n%s\n", o, cfg[o]);
 		}).join("");
-};
+});
 
-var configPath = function(name) {
-	return path.join(serverPath(name), "newcoind.cfg");
-};
+Server.method('serverPath', function() {
+    return "tmp/server/" + this.name;
+});
+
+Server.method('configPath', function() {
+	return path.join(this.serverPath(), "newcoind.cfg");
+});
 
 // Write a server's newcoind.cfg.
-var writeConfig = function(name, done) {
-	fs.writeFile(configPath(name), configContent(name), 'utf8', done);
-};
+Server.method('writeConfig', function(done) {
+	fs.writeFile(this.configPath(), this.configContent(), 'utf8', done);
+});
 
-var serverSpawnSync = function(name) {
+// Spawn the server.
+Server.method('serverSpawnSync', function() {
 	// Spawn in standalone mode for now.
-	var server = child.spawn(
+	this.child = child.spawn(
 		config.newcoind,
 		[
 			"-a",
 			"--conf=newcoind.cfg"
 		],
 		{
-			cwd: serverPath(name),
+			cwd: this.serverPath(),
 			env: process.env,
 			stdio: 'inherit'
 		});
 
-	servers[name] = server;
-	console.log("server: %s: %s -a --conf=%s", server.pid, config.newcoind, configPath(name));
-	console.log("sever: start: servers = %s", Object.keys(servers).toString());
+	console.log("server: start %s: %s -a --conf=%s", this.child.pid, config.newcoind, this.configPath());
 
-	server.on('exit', function (code, signal) {
+	// By default, just log exits.
+	this.child.on('exit', function(code, signal) {
 		// If could not exec: code=127, signal=null
 		// If regular exit: code=0, signal=null
-		console.log("sever: spawn: server exited code=%s: signal=%s", code, signal);
-		delete servers[name];
+		console.log("server: spawn: server exited code=%s: signal=%s", code, signal);
 		});
 
-};
+});
 
-var makeBase = function(name, done) {
-    var	path	= serverPath(name);
+// Prepare server's working directory.
+Server.method('makeBase', function(done) {
+    var	path	= this.serverPath();
+	var self	= this;
 
     // Reset the server directory, build it if needed.
-    utils.resetPath(path, '0777', function (e) {
+    utils.resetPath(path, '0777', function(e) {
 			if (e) {
 				throw e;
 			}
 			else {
-				writeConfig(name, done);
+				self.writeConfig(done);
 			}
 		});
-};
+});
 
-var wsOpen = function(done) {
-	var socket = new WebSocket(util.format("ws:://%s:%s", server.websocket_ip, server.websocket_port));
-
-	socket.on('open') {
-		done();
-	});
-};
-
+// Create a standalone server.
 // Prepare the working directory and spawn the server.
-exports.start = function(name, done) {
-    makeBase(name, function (e) {
+Server.method('start', function(done) {
+	var self	= this;
+
+    this.makeBase(function(e) {
 			if (e) {
 				throw e;
 			}
 			else {
-				serverSpawnSync(name);
-				wsOpen(done);
+				self.serverSpawnSync();
+				done();
 			}
 		});
-};
+});
 
-exports.stop = function(name, done) {
-	console.log("sever: stop: servers = %s", Object.keys(servers).toString());
-	var server	= servers[name];
-
-	if (server) {
-		server.on('exit', function (code, signal) {
-			console.log("sever: stop: server exited");
-			delete servers[name];
+// Stop a standalone server.
+Server.method('stop', function(done) {
+	if (this.child) {
+		// Update the on exit to invoke done.
+		this.child.on('exit', function(code, signal) {
+			console.log("server: stop: server exited");
 			done();
 			});
-		server.kill();
+		this.child.kill();
 	}
 	else
 	{
-		console.log("sever: stop: no such server");
+		console.log("server: stop: no such server");
 		done();	
 	}
+});
+
+// Start the named server.
+exports.start = function(name, done) {
+	if (servers[name])
+	{
+		console.log("server: start: server already started.");
+	}
+	else
+	{
+		var	server = new Server(name);
+
+		servers[name] = server;
+
+		console.log("server: start: %s", JSON.stringify(server));
+
+		server.start(done);
+	}
 };
+
+// Delete the named server.
+exports.stop = function(name, done) {
+	console.log("server: stop: %s of %s", name, Object.keys(servers).toString());
+
+	var server	= servers[name];
+	if (server) {
+		server.stop(done);
+		delete servers[name];
+	}
+};
+
+exports.Server = Server;
 
 // vim:ts=4

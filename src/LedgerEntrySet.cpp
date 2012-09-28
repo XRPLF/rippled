@@ -291,7 +291,7 @@ SLE::pointer LedgerEntrySet::getForMod(const uint256& node, Ledger::ref ledger,
 
 }
 
-bool LedgerEntrySet::threadTx(TransactionMetaNode& metaNode, const NewcoinAddress& threadTo, Ledger::ref ledger,
+bool LedgerEntrySet::threadTx(const NewcoinAddress& threadTo, Ledger::ref ledger,
 	boost::unordered_map<uint256, SLE::pointer>& newMods)
 {
 	Log(lsTRACE) << "Thread to " << threadTo.getAccountID();
@@ -301,32 +301,36 @@ bool LedgerEntrySet::threadTx(TransactionMetaNode& metaNode, const NewcoinAddres
 		assert(false);
 		return false;
 	}
-	return threadTx(metaNode, sle, ledger, newMods);
+	return threadTx(sle, ledger, newMods);
 }
 
-bool LedgerEntrySet::threadTx(TransactionMetaNode& metaNode, SLE::ref threadTo, Ledger::ref ledger,
-	boost::unordered_map<uint256, SLE::pointer>& newMods)
+bool LedgerEntrySet::threadTx(SLE::ref threadTo, Ledger::ref ledger, boost::unordered_map<uint256, SLE::pointer>& newMods)
 {  // node = the node that was modified/deleted/created
    // threadTo = the node that needs to know
 	uint256 prevTxID;
 	uint32 prevLgrID;
 	if (!threadTo->thread(mSet.getTxID(), mSet.getLgrSeq(), prevTxID, prevLgrID))
 		return false;
-	if (metaNode.thread(prevTxID, prevLgrID))
+	if (mSet.getAffectedNode(threadTo->getIndex(), TMNModifiedNode, false).thread(prevTxID, prevLgrID))
 		return true;
 	assert(false);
 	return false;
 }
 
-bool LedgerEntrySet::threadOwners(TransactionMetaNode& metaNode, SLE::ref node, Ledger::ref ledger,
-	boost::unordered_map<uint256, SLE::pointer>& newMods)
+bool LedgerEntrySet::threadOwners(SLE::ref node, Ledger::ref ledger, boost::unordered_map<uint256, SLE::pointer>& newMods)
 { // thread new or modified node to owner or owners
 	if (node->hasOneOwner()) // thread to owner's account
-		return threadTx(metaNode, node->getOwner(), ledger, newMods);
-	else if (node->hasTwoOwners()) // thread to owner's accounts
+	{
+		Log(lsTRACE) << "Thread to single owner";
+		return threadTx(node->getOwner(), ledger, newMods);
+	}
+	else if (node->hasTwoOwners()) // thread to owner's accounts]
+	{
+		Log(lsTRACE) << "Thread to two owners";
 		return
-			threadTx(metaNode, node->getFirstOwner(), ledger, newMods) ||
-			threadTx(metaNode, node->getSecondOwner(), ledger, newMods);
+			threadTx(node->getFirstOwner(), ledger, newMods) &&
+			threadTx(node->getSecondOwner(), ledger, newMods);
+	}
 	else
 		return false;
 }
@@ -345,14 +349,17 @@ void LedgerEntrySet::calcRawMeta(Serializer& s)
 		switch (it->second.mAction)
 		{
 			case taaMODIFY:
+				Log(lsTRACE) << "Modified Node " << it->first;
 				nType = TMNModifiedNode;
 				break;
 
 			case taaDELETE:
+				Log(lsTRACE) << "Deleted Node " << it->first;
 				nType = TMNDeletedNode;
 				break;
 
 			case taaCREATE:
+				Log(lsTRACE) << "Created Node " << it->first;
 				nType = TMNCreatedNode;
 				break;
 
@@ -369,12 +376,12 @@ void LedgerEntrySet::calcRawMeta(Serializer& s)
 			continue;
 
 		SLE::pointer curNode = it->second.mEntry;
-		TransactionMetaNode &metaNode = mSet.getAffectedNode(it->first, nType);
+		TransactionMetaNode &metaNode = mSet.getAffectedNode(it->first, nType, true);
 
 		if (nType == TMNDeletedNode)
 		{
 			assert(origNode);
-			threadOwners(metaNode, origNode, mLedger, newMod);
+			threadOwners(origNode, mLedger, newMod);
 
 			if (origNode->getIFieldPresent(sfAmount))
 			{ // node has an amount, covers ripple state nodes
@@ -408,13 +415,16 @@ void LedgerEntrySet::calcRawMeta(Serializer& s)
 		if (nType == TMNCreatedNode) // if created, thread to owner(s)
 		{
 			assert(!origNode);
-			threadOwners(metaNode, curNode, mLedger, newMod);
+			threadOwners(curNode, mLedger, newMod);
 		}
 
 		if ((nType == TMNCreatedNode) || (nType == TMNModifiedNode))
 		{
 			if (curNode->isThreadedType()) // always thread to self
-				threadTx(metaNode, curNode, mLedger, newMod);
+			{
+				Log(lsTRACE) << "Thread to self";
+				threadTx(curNode, mLedger, newMod);
+			}
 		}
 
 		if (nType == TMNModifiedNode)
@@ -931,23 +941,18 @@ STAmount LedgerEntrySet::accountHolds(const uint160& uAccountID, const uint160& 
 
 	if (!uCurrencyID)
 	{
-		SLE::pointer		sleAccount	= entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uAccountID));
+		SLE::pointer	sleAccount	= entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uAccountID));
 
 		saAmount	= sleAccount->getIValueFieldAmount(sfBalance);
-
-		Log(lsINFO) << "accountHolds: stamps: " << saAmount.getText();
 	}
 	else
 	{
 		saAmount	= rippleHolds(uAccountID, uCurrencyID, uIssuerID);
-
-		Log(lsINFO) << "accountHolds: "
-			<< saAmount.getFullText()
-			<< " : "
-			<< STAmount::createHumanCurrency(uCurrencyID)
-			<< "/"
-			<< NewcoinAddress::createHumanAccountID(uIssuerID);
 	}
+
+	Log(lsINFO) << boost::str(boost::format("accountHolds: uAccountID=%s saAmount=%s")
+		% NewcoinAddress::createHumanAccountID(uAccountID)
+		% saAmount.getFullText());
 
 	return saAmount;
 }
@@ -961,30 +966,22 @@ STAmount LedgerEntrySet::accountFunds(const uint160& uAccountID, const STAmount&
 {
 	STAmount	saFunds;
 
-	Log(lsINFO) << "accountFunds: uAccountID="
-			<< NewcoinAddress::createHumanAccountID(uAccountID);
-	Log(lsINFO) << "accountFunds: saDefault.isNative()=" << saDefault.isNative();
-	Log(lsINFO) << "accountFunds: saDefault.getIssuer()="
-			<< NewcoinAddress::createHumanAccountID(saDefault.getIssuer());
-
 	if (!saDefault.isNative() && saDefault.getIssuer() == uAccountID)
 	{
 		saFunds	= saDefault;
 
-		Log(lsINFO) << "accountFunds: offer funds: ripple self-funded: " << saFunds.getText();
+		Log(lsINFO) << boost::str(boost::format("accountFunds: uAccountID=%s saDefault=%s SELF-FUNDED")
+			% NewcoinAddress::createHumanAccountID(uAccountID)
+			% saDefault.getFullText());
 	}
 	else
 	{
 		saFunds	= accountHolds(uAccountID, saDefault.getCurrency(), saDefault.getIssuer());
 
-		Log(lsINFO) << "accountFunds: offer funds: uAccountID ="
-			<< NewcoinAddress::createHumanAccountID(uAccountID)
-			<< " : "
-			<< saFunds.getText()
-			<< "/"
-			<< saDefault.getHumanCurrency()
-			<< "/"
-			<< NewcoinAddress::createHumanAccountID(saDefault.getIssuer());
+		Log(lsINFO) << boost::str(boost::format("accountFunds: uAccountID=%s saDefault=%s saFunds=%s")
+			% NewcoinAddress::createHumanAccountID(uAccountID)
+			% saDefault.getFullText()
+			% saFunds.getFullText());
 	}
 
 	return saFunds;

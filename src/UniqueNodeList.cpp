@@ -2,7 +2,6 @@
 // XXX Want a limit of 2000 validators.
 
 #include "Application.h"
-#include "Conversion.h"
 #include "HttpsClient.h"
 #include "Log.h"
 #include "ParseSection.h"

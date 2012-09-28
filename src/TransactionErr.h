@@ -33,6 +33,7 @@ enum TER	// aka TransactionEngineResult
 	temBAD_PATH,
 	temBAD_PATH_LOOP,
 	temBAD_PUBLISH,
+	temBAD_TRANSFER_RATE,
 	temBAD_SET_ID,
 	temCREATEXNS,
 	temDST_IS_SRC,

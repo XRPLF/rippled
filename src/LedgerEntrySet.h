@@ -42,14 +42,12 @@ protected:
 	SLE::pointer getForMod(const uint256& node, Ledger::ref ledger,
 		boost::unordered_map<uint256, SLE::pointer>& newMods);
 
-	bool threadTx(TransactionMetaNode& metaNode, const NewcoinAddress& threadTo, Ledger::ref ledger,
+	bool threadTx(const NewcoinAddress& threadTo, Ledger::ref ledger,
 		boost::unordered_map<uint256, SLE::pointer>& newMods);
 
-	bool threadTx(TransactionMetaNode& metaNode, SLE::ref threadTo, Ledger::ref ledger,
-	    boost::unordered_map<uint256, SLE::pointer>& newMods);
+	bool threadTx(SLE::ref threadTo, Ledger::ref ledger, boost::unordered_map<uint256, SLE::pointer>& newMods);
 
-	bool threadOwners(TransactionMetaNode& metaNode, SLE::ref node, Ledger::ref ledger,
-		boost::unordered_map<uint256, SLE::pointer>& newMods);
+	bool threadOwners(SLE::ref node, Ledger::ref ledger, boost::unordered_map<uint256, SLE::pointer>& newMods);
 
 public:
 

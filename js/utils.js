@@ -1,15 +1,22 @@
+// YYY Should probably have two versions: node vs browser
 
 var fs = require("fs");
 var path = require("path");
 
+Function.prototype.method = function(name,func) {
+	this.prototype[name] = func;
+
+	return this;
+};
+
 var filterErr = function(code, done) {
-    return function (e) {
-			done(e && e.code === code ? undefined : e);
+    return function(e) {
+			done(e.code !== code ? e : undefined);
 		};
 };
 
 var throwErr = function(done) {
-    return function (e) {
+    return function(e) {
 			if (e)
 				throw e;
 			
@@ -20,7 +27,7 @@ var throwErr = function(done) {
 // apply function to elements of array. Return first true value to done or undefined.
 var mapOr = function(func, array, done) {
     if (array.length) {
-		func(array[array.length-1], function (v) {
+		func(array[array.length-1], function(v) {
 				if (v) {
 					done(v);
 				}
@@ -37,8 +44,8 @@ var mapOr = function(func, array, done) {
 
 // Make a directory and sub-directories.
 var mkPath = function(dirPath, mode, done) {
-    fs.mkdir(dirPath, typeof mode === "string" ? parseInt(mode, 8) : mode, function (e) {
-		if (!e || e.code === "EEXIST") {
+    fs.mkdir(dirPath, typeof mode === "string" ? parseInt(mode, 8) : mode, function(e) {
+		if (!e ||  e.code === "EEXIST") {
 			// Created or already exists, done.
 			done();
 	    }
@@ -62,7 +69,7 @@ var mkPath = function(dirPath, mode, done) {
 
 // Empty a directory.
 var emptyPath = function(dirPath, done) {
-    fs.readdir(dirPath, function (err, files) {
+    fs.readdir(dirPath, function(err, files) {
 	if (err) {
 	    done(err);
 	}
@@ -76,7 +83,7 @@ var emptyPath = function(dirPath, done) {
 var rmPath = function(dirPath, done) {
 //  console.log("rmPath: %s", dirPath);
 
-    fs.lstat(dirPath, function (err, stats) {
+    fs.lstat(dirPath, function(err, stats) {
 			if (err && err.code == "ENOENT") {
 				done();
 			}
@@ -84,7 +91,7 @@ var rmPath = function(dirPath, done) {
 				done(err);
 			}
 			else if (stats.isDirectory()) {
-				emptyPath(dirPath, function (e) {
+				emptyPath(dirPath, function(e) {
 						if (e) {
 							done(e);
 						}
@@ -103,7 +110,7 @@ var rmPath = function(dirPath, done) {
 
 // Create directory if needed and empty if needed.
 var resetPath = function(dirPath, mode, done) {
-    mkPath(dirPath, mode, function (e) {
+    mkPath(dirPath, mode, function(e) {
 			if (e) {
 				done(e);
 			}

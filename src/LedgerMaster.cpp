@@ -5,7 +5,6 @@
 
 #include "Application.h"
 #include "NewcoinAddress.h"
-#include "Conversion.h"
 #include "Log.h"
 
 uint32 LedgerMaster::getCurrentLedgerIndex()

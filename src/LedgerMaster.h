@@ -66,10 +66,15 @@ public:
 
 	Ledger::pointer getLedgerByHash(const uint256& hash)
 	{
+		if (!hash)
+			return mCurrentLedger;
+
 		if (mCurrentLedger && (mCurrentLedger->getHash() == hash))
 			return mCurrentLedger;
+
 		if (mFinalizedLedger && (mFinalizedLedger->getHash() == hash))
 			return mFinalizedLedger;
+
 		return mLedgerHistory.getLedgerByHash(hash);
 	}
 

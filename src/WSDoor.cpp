@@ -75,7 +75,12 @@ public:
 	Json::Value invokeCommand(const Json::Value& jvRequest);
 	boost::unordered_set<NewcoinAddress> parseAccountIds(const Json::Value& jvArray);
 
-	// Commands
+	// Request-Response Commands
+	void doLedgerClosed(Json::Value& jvResult, const Json::Value& jvRequest);
+	void doLedgerCurrent(Json::Value& jvResult, const Json::Value& jvRequest);
+	void doLedgerEntry(Json::Value& jvResult, const Json::Value& jvRequest);
+
+	// Streaming Commands
 	void doAccountInfoSubscribe(Json::Value& jvResult, const Json::Value& jvRequest);
 	void doAccountInfoUnsubscribe(Json::Value& jvResult, const Json::Value& jvRequest);
 	void doAccountTransactionSubscribe(Json::Value& jvResult, const Json::Value& jvRequest);
@@ -293,6 +298,12 @@ Json::Value WSConnection::invokeCommand(const Json::Value& jvRequest)
 		const char* pCommand;
 		doFuncPtr	dfpFunc;
 	} commandsA[] = {
+		// Request-Response Commands:
+		{ "ledger_closed",						&WSConnection::doLedgerClosed					},
+		{ "ledger_current",						&WSConnection::doLedgerCurrent					},
+		{ "ledger_entry",						&WSConnection::doLedgerEntry					},
+
+		// Streaming commands:
 		{ "account_info_subscribe",				&WSConnection::doAccountInfoSubscribe			},
 		{ "account_info_unsubscribe",			&WSConnection::doAccountInfoUnsubscribe			},
 		{ "account_transaction_subscribe",		&WSConnection::doAccountTransactionSubscribe	},
@@ -538,6 +549,239 @@ void WSConnection::doLedgerAccountsUnsubscribe(Json::Value& jvResult, const Json
 	if (!theApp->getOPs().unsubLedgerAccounts(this))
 	{
 		jvResult["error"]	= "ledgerAccountsNotSubscribed";
+	}
+}
+
+void WSConnection::doLedgerClosed(Json::Value& jvResult, const Json::Value& jvRequest)
+{
+	uint256	uLedger	= theApp->getOPs().getClosedLedger();
+
+	jvResult["ledger_index"]	= theApp->getOPs().getLedgerID(uLedger);
+	jvResult["ledger"]			= uLedger.ToString();
+}
+
+void WSConnection::doLedgerCurrent(Json::Value& jvResult, const Json::Value& jvRequest)
+{
+	jvResult["ledger_index"]	= theApp->getOPs().getCurrentLedgerID();
+}
+
+void WSConnection::doLedgerEntry(Json::Value& jvResult, const Json::Value& jvRequest)
+{
+	NetworkOPs&	noNetwork	= theApp->getOPs();
+	uint256	uLedger			= jvRequest.isMember("ledger") ? uint256(jvRequest["ledger"].asString()) : 0;
+	uint32	uLedgerIndex	= jvRequest.isMember("ledger_index") && jvRequest["ledger_index"].isNumeric() ? jvRequest["ledger_index"].asUInt() : 0;
+
+	Ledger::pointer	 lpLedger;
+
+	if (!!uLedger)
+	{
+		// Ledger directly specified.
+		lpLedger	= noNetwork.getLedgerByHash(uLedger);
+
+		if (!lpLedger)
+		{
+			jvResult["error"]	= "ledgerNotFound";
+			return;
+		}
+
+		uLedgerIndex	= lpLedger->getLedgerSeq();	// Set the current index, override if needed.
+	}
+	else if (!!uLedgerIndex)
+	{
+		lpLedger		= noNetwork.getLedgerBySeq(uLedgerIndex);
+
+		if (!lpLedger)
+		{
+			jvResult["error"]	= "ledgerNotFound";	// ledger_index from future?
+			return;
+		}
+	}
+	else
+	{
+		// Default to current ledger.
+		lpLedger		= noNetwork.getCurrentLedger();
+		uLedgerIndex	= lpLedger->getLedgerSeq();	// Set the current index.
+	}
+
+	if (!!uLedger)
+		jvResult["ledger"]			= uLedger.ToString();
+
+	jvResult["ledger_index"]	= uLedgerIndex;
+
+	uint256		uNodeIndex;
+	bool		bNodeBinary	= false;
+
+	if (jvRequest.isMember("index"))
+	{
+		// XXX Needs to provide proof.
+		uNodeIndex.SetHex(jvRequest["index"].asString());
+		bNodeBinary	= true;
+	}
+	else if (jvRequest.isMember("account_root"))
+	{
+		NewcoinAddress	naAccount;
+
+		if (!naAccount.setAccountID(jvRequest["account_root"].asString()))
+		{
+			jvResult["error"]	= "malformedAddress";
+		}
+		else
+		{
+			uNodeIndex = Ledger::getAccountRootIndex(naAccount.getAccountID());
+		}
+	}
+	else if (jvRequest.isMember("directory"))
+	{
+
+		if (!jvRequest.isObject())
+		{
+			uNodeIndex.SetHex(jvRequest["directory"].asString());
+		}
+		else if (jvRequest["directory"].isMember("sub_index")
+			&& !jvRequest["directory"]["sub_index"].isIntegral())
+		{
+			jvResult["error"]	= "malformedRequest";
+		}
+		else
+		{
+			uint64	uSubIndex = jvRequest["directory"].isMember("sub_index")
+									? jvRequest["directory"]["sub_index"].asUInt()
+									: 0;
+
+			if (jvRequest["directory"].isMember("dir_root"))
+			{
+				uint256	uDirRoot;
+
+				uDirRoot.SetHex(jvRequest["dir_root"].asString());
+
+				uNodeIndex	= Ledger::getDirNodeIndex(uDirRoot, uSubIndex);
+			}
+			else if (jvRequest["directory"].isMember("owner"))
+			{
+				NewcoinAddress	naOwnerID;
+
+				if (!naOwnerID.setAccountID(jvRequest["directory"]["owner"].asString()))
+				{
+					jvResult["error"]	= "malformedAddress";
+				}
+				else
+				{
+					uint256	uDirRoot	= Ledger::getOwnerDirIndex(naOwnerID.getAccountID());
+
+					uNodeIndex	= Ledger::getDirNodeIndex(uDirRoot, uSubIndex);
+				}
+			}
+			else
+			{
+				jvResult["error"]	= "malformedRequest";
+			}
+		}
+	}
+	else if (jvRequest.isMember("generator"))
+	{
+		NewcoinAddress	naGeneratorID;
+
+		if (!jvRequest.isObject())
+		{
+			uNodeIndex.SetHex(jvRequest["generator"].asString());
+		}
+		else if (!jvRequest["generator"].isMember("regular_seed"))
+		{
+			jvResult["error"]	= "malformedRequest";
+		}
+		else if (!naGeneratorID.setSeedGeneric(jvRequest["generator"]["regular_seed"].asString()))
+		{
+			jvResult["error"]	= "malformedAddress";
+		}
+		else
+		{
+			NewcoinAddress		na0Public;		// To find the generator's index.
+			NewcoinAddress		naGenerator	= NewcoinAddress::createGeneratorPublic(naGeneratorID);
+
+			na0Public.setAccountPublic(naGenerator, 0);
+
+			uNodeIndex	= Ledger::getGeneratorIndex(na0Public.getAccountID());
+		}
+	}
+	else if (jvRequest.isMember("offer"))
+	{
+		NewcoinAddress	naAccountID;
+
+		if (!jvRequest.isObject())
+		{
+			uNodeIndex.SetHex(jvRequest["offer"].asString());
+		}
+		else if (!jvRequest["offer"].isMember("account")
+			|| !jvRequest["offer"].isMember("seq")
+			|| !jvRequest["offer"]["seq"].isIntegral())
+		{
+			jvResult["error"]	= "malformedRequest";
+		}
+		else if (!naAccountID.setAccountID(jvRequest["offer"]["account"].asString()))
+		{
+			jvResult["error"]	= "malformedAddress";
+		}
+		else
+		{
+			uint32		uSequence	= jvRequest["offer"]["seq"].asUInt();
+
+			uNodeIndex	= Ledger::getOfferIndex(naAccountID.getAccountID(), uSequence);
+		}
+	}
+	else if (jvRequest.isMember("ripple_state"))
+	{
+		NewcoinAddress	naA;
+		NewcoinAddress	naB;
+		uint160			uCurrency;
+
+		if (!jvRequest.isMember("accounts")
+			|| !jvRequest.isMember("currency")
+			|| !jvRequest["accounts"].isArray()
+			|| 2 != jvRequest["accounts"].size()) {
+			jvResult["error"]	= "malformedRequest";
+		}
+		else if (!naA.setAccountID(jvRequest["accounts"][0u].asString())
+			|| !naB.setAccountID(jvRequest["accounts"][1u].asString())) {
+			jvResult["error"]	= "malformedAddress";
+		}
+		else if (!STAmount::currencyFromString(uCurrency, jvRequest["currency"].asString())) {
+			jvResult["error"]	= "malformedCurrency";
+		}
+		else
+		{
+			uNodeIndex	= Ledger::getRippleStateIndex(naA, naB, uCurrency);
+		}
+	}
+	else
+	{
+		jvResult["error"]	= "unknownOption";
+	}
+
+	if (!!uNodeIndex)
+	{
+		SLE::pointer	sleNode	= noNetwork.getSLE(lpLedger, uNodeIndex);
+
+		if (!sleNode)
+		{
+			// Not found.
+			// XXX Should also provide proof.
+			jvResult["error"]		= "entryNotFound";
+		}
+		else if (bNodeBinary)
+		{
+			// XXX Should also provide proof.
+			Serializer s;
+
+			sleNode->add(s);
+
+			jvResult["node_binary"]	= strHex(s.peekData());
+			jvResult["index"]		= uNodeIndex.ToString();
+		}
+		else
+		{
+			jvResult["node"]		= sleNode->getJson(0);
+			jvResult["index"]		= uNodeIndex.ToString();
+		}
 	}
 }
 

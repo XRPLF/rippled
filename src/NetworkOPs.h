@@ -96,6 +96,7 @@ public:
 	uint32 getValidationTimeNC();
 	void closeTimeOffset(int);
 	boost::posix_time::ptime getNetworkTimePT();
+	uint32 getLedgerID(const uint256& hash);
 	uint32 getCurrentLedgerID();
 	OperatingMode getOperatingMode() { return mMode; }
 	inline bool available() {
@@ -103,13 +104,14 @@ public:
 		return mMode >= omTRACKING;
 	}
 
+	Ledger::pointer	getCurrentLedger()						{ return mLedgerMaster->getCurrentLedger(); }
+	Ledger::pointer	getLedgerByHash(const uint256& hash)	{ return mLedgerMaster->getLedgerByHash(hash); }
+	Ledger::pointer	getLedgerBySeq(const uint32 seq)		{ return mLedgerMaster->getLedgerBySeq(seq); }
+
 	uint256					getClosedLedger()
 		{ return mLedgerMaster->getClosedLedger()->getHash(); }
 
-	// FIXME: This function is basically useless since the hash is constantly changing and the ledger
-	// is ephemeral and mutable.
-	uint256					getCurrentLedger()
-		{ return mLedgerMaster->getCurrentLedger()->getHash(); }
+	SLE::pointer getSLE(Ledger::pointer lpLedger, const uint256& uHash) { return lpLedger->getSLE(uHash); }
 
 	//
 	// Transaction operations
@@ -134,8 +136,8 @@ public:
 	// Directory functions
 	//
 
-	STVector256					getDirNodeInfo(const uint256& uLedger, const uint256& uRootIndex,
-									uint64& uNodePrevious, uint64& uNodeNext);
+	STVector256				getDirNodeInfo(const uint256& uLedger, const uint256& uRootIndex,
+								uint64& uNodePrevious, uint64& uNodeNext);
 
 	//
 	// Nickname functions
@@ -150,7 +152,6 @@ public:
 	Json::Value getOwnerInfo(const uint256& uLedger, const NewcoinAddress& naAccount);
 	Json::Value getOwnerInfo(Ledger::pointer lpLedger, const NewcoinAddress& naAccount);
 
-	
 	// raw object operations
 	bool findRawLedger(const uint256& ledgerHash, std::vector<unsigned char>& rawLedger);
 	bool findRawTransaction(const uint256& transactionHash, std::vector<unsigned char>& rawTransaction);

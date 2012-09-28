@@ -31,6 +31,7 @@ bool transResultInfo(TER terCode, std::string& strToken, std::string& strHuman)
 		{	temBAD_PATH,			"temBAD_PATH",				"Malformed."										},
 		{	temBAD_PATH_LOOP,		"temBAD_PATH_LOOP",			"Malformed."										},
 		{	temBAD_PUBLISH,			"temBAD_PUBLISH",			"Malformed: bad publish."							},
+		{	temBAD_TRANSFER_RATE,	"temBAD_TRANSFER_RATE",		"Malformed: transfer rate must be >= 1.0"			},
 		{	temBAD_SET_ID,			"temBAD_SET_ID",			"Malformed."										},
 		{	temCREATEXNS,			"temCREATEXNS",				"Can not specify non XNS for Create."				},
 		{	temDST_IS_SRC,			"temDST_IS_SRC",			"Destination may not be source."					},
@@ -89,3 +90,4 @@ std::string transHuman(TER terCode)
 
 	return transResultInfo(terCode, strToken, strHuman) ? strHuman : "-";
 }
+// vim:ts=4

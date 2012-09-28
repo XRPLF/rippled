@@ -15,25 +15,15 @@ enum SerializedTypeID
 	STI_DONE		= -1,
 	STI_NOTPRESENT	= 0,
 
-	// standard types
-	STI_OBJECT		= 1,
-	STI_UINT8		= 2,
-	STI_UINT16		= 3,
-	STI_UINT32		= 4,
-	STI_UINT64		= 5,
-	STI_HASH128		= 6,
-	STI_HASH160		= 7,
-	STI_HASH256		= 8,
-	STI_VL			= 9,
-	STI_TL			= 10,
-	STI_AMOUNT		= 11,
-	STI_PATHSET		= 12,
-	STI_VECTOR256	= 13,
+#define TYPE(name, field, value) STI_##field = value,
+#define FIELD(name, field, value)
+#include "SerializeProto.h"
+#undef TYPE
+#undef FIELD
 
 	// high level types
-	STI_ACCOUNT		= 100,
-	STI_TRANSACTION = 101,
-	STI_LEDGERENTRY	= 102
+	STI_TRANSACTION = 100001,
+	STI_LEDGERENTRY	= 100002
 };
 
 enum PathFlags
@@ -247,9 +237,9 @@ protected:
 	STAmount(const char *name, uint64 value, bool isNegative)
 		: SerializedType(name), mValue(value), mOffset(0), mIsNative(true), mIsNegative(isNegative)
 	{ ; }
-	STAmount(const char *n, const uint160& cur, uint64 val, int off, bool isNative, bool isNegative)
-		: SerializedType(n), mCurrency(cur), mValue(val), mOffset(off), mIsNative(isNative), mIsNegative(isNegative)
-	{ ; }
+	STAmount(const char *n, const uint160& cur, const uint160& iss, uint64 val, int off, bool isNat, bool isNeg)
+		: SerializedType(n), mCurrency(cur), mIssuer(iss),  mValue(val), mOffset(off),
+			mIsNative(isNat), mIsNegative(isNeg) { ; }
 
 	uint64 toUInt64() const;
 	static uint64 muldiv(uint64, uint64, uint64);
@@ -269,8 +259,9 @@ public:
 	{ canonicalize(); }
 
 	// YYY This should probably require issuer too.
-	STAmount(const char* n, const uint160& currency, uint64 v = 0, int off = 0, bool isNeg = false) :
-		SerializedType(n), mCurrency(currency), mValue(v), mOffset(off), mIsNegative(isNeg)
+	STAmount(const char* n, const uint160& currency, const uint160& issuer,
+			uint64 v = 0, int off = 0, bool isNeg = false) :
+		SerializedType(n), mCurrency(currency), mIssuer(issuer), mValue(v), mOffset(off), mIsNegative(isNeg)
 	{ canonicalize(); }
 
 	STAmount(const char* n, int64 v);
@@ -725,45 +716,6 @@ namespace boost
 		typedef std::vector<STPath>::const_iterator type;
 	};
 }
-
-class STTaggedList : public SerializedType
-{
-protected:
-	std::vector<TaggedListItem> value;
-
-	STTaggedList* duplicate() const { return new STTaggedList(name, value); }
-	static STTaggedList* construct(SerializerIterator&, const char* name = NULL);
-
-public:
-
-	STTaggedList() { ; }
-	STTaggedList(const char* n) : SerializedType(n) { ; }
-	STTaggedList(const std::vector<TaggedListItem>& v) : value(v) { ; }
-	STTaggedList(const char* n, const std::vector<TaggedListItem>& v) : SerializedType(n), value(v) { ; }
-	static std::auto_ptr<SerializedType> deserialize(SerializerIterator& sit, const char* name)
-	{ return std::auto_ptr<SerializedType>(construct(sit, name)); }
-
-	int getLength() const;
-	SerializedTypeID getSType() const { return STI_TL; }
-	std::string getText() const;
-	void add(Serializer& s) const { if (s.addTaggedList(value) < 0) throw(0); }
-
-	const std::vector<TaggedListItem>& peekValue() const { return value; }
-	std::vector<TaggedListItem>& peekValue() { return value; }
-	std::vector<TaggedListItem> getValue() const { return value; }
-	virtual Json::Value getJson(int) const;
-
-	void setValue(const std::vector<TaggedListItem>& v) { value=v; }
-
-	int getItemCount() const { return value.size(); }
-	bool isEmpty() const { return value.empty(); }
-
-	void clear() { value.erase(value.begin(), value.end()); }
-	void addItem(const TaggedListItem& v) { value.push_back(v); }
-
-	operator std::vector<TaggedListItem>() const { return value; }
-	virtual bool isEquivalent(const SerializedType& t) const;
-};
 
 class STVector256 : public SerializedType
 {

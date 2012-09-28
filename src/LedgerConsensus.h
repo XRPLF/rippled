@@ -62,6 +62,7 @@ public:
 	const uint256& getTransactionID() const				{ return mTransactionID; }
 	bool getOurVote() const								{ return mOurVote; }
 	Serializer& peekTransaction()						{ return transaction; }
+	void setOurVote(bool o)								{ mOurVote = o; }
 
 	void setVote(const uint160& peer, bool votesYes);
 	void unVote(const uint160& peer);
