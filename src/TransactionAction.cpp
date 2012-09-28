@@ -166,17 +166,23 @@ TER TransactionEngine::doAccountSet(const SerializedTransaction& txn)
 	{
 		uint32		uRate	= txn.getITFieldU32(sfTransferRate);
 
-		if (!uRate)
+		if (!uRate || uRate == QUALITY_ONE)
 		{
 			Log(lsINFO) << "doAccountSet: unset transfer rate";
 
 			mTxnAccount->makeIFieldAbsent(sfTransferRate);
 		}
-		else
+		else if (uRate > QUALITY_ONE)
 		{
 			Log(lsINFO) << "doAccountSet: set transfer rate";
 
 			mTxnAccount->setIFieldU32(sfTransferRate, uRate);
+		}
+		else
+		{
+			Log(lsINFO) << "doAccountSet: bad transfer rate";
+
+			return temBAD_TRANSFER_RATE;
 		}
 	}
 
