@@ -7,6 +7,10 @@
 #include <boost/lexical_cast.hpp>
 
 
+// These must stay at the top of this file
+std::map<int, SField::ptr> SField::codeToField;
+boost::mutex SField::mapMutex;
+
 SField sfInvalid(-1), sfGeneric(0);
 SField sfLedgerEntry(FIELD_CODE(STI_LEDGERENTRY, 1), STI_LEDGERENTRY, 1, "LedgerEntry");
 SField sfTransaction(FIELD_CODE(STI_TRANSACTION, 1), STI_TRANSACTION, 1, "Transaction");
@@ -18,8 +22,6 @@ SField sfValidation(FIELD_CODE(STI_VALIDATION, 1), STI_VALIDATION, 1, "Validatio
 #undef FIELD
 #undef TYPE
 
-std::map<int, SField::ptr> SField::codeToField;
-boost::mutex SField::mapMutex;
 
 SField::ref SField::getField(int code)
 {

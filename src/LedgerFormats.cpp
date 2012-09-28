@@ -1,10 +1,14 @@
 
 #include "LedgerFormats.h"
 
+#define LEF_BASE							\
+	{ sfLedgerEntryType,	SOE_REQUIRED },	\
+	{ sfFlags,				SOE_REQUIRED },	\
+	{ sfLedgerIndex,		SOE_OPTIONAL },
+
 LedgerEntryFormat LedgerFormats[]=
 {
-	{ "AccountRoot", ltACCOUNT_ROOT, {
-		{ sfFlags,			SOE_REQUIRED },
+	{ "AccountRoot", ltACCOUNT_ROOT, { LEF_BASE
 		{ sfAccount,		SOE_REQUIRED },
 		{ sfSequence,		SOE_REQUIRED },
 		{ sfBalance,		SOE_REQUIRED },
@@ -20,7 +24,8 @@ LedgerEntryFormat LedgerFormats[]=
 		{ sfPublishSize,	SOE_OPTIONAL },
 		{ sfInvalid,		SOE_END } }
 	},
-	{ "Contract", ltCONTRACT, {
+	{ "Contract", ltCONTRACT, { LEF_BASE
+		{ sfLedgerEntryType,SOE_REQUIRED },
 		{ sfFlags,			SOE_REQUIRED },
 		{ sfAccount,		SOE_REQUIRED },
 		{ sfBalance,		SOE_REQUIRED },
@@ -36,25 +41,29 @@ LedgerEntryFormat LedgerFormats[]=
 		{ sfExpireCode,		SOE_REQUIRED },
 		{ sfInvalid,		SOE_END } }
 	},
-	{ "DirectoryNode", ltDIR_NODE, {
+	{ "DirectoryNode", ltDIR_NODE, { LEF_BASE
+		{ sfLedgerEntryType,SOE_REQUIRED },
 		{ sfFlags,			SOE_REQUIRED },
 		{ sfIndexes,		SOE_REQUIRED },
 		{ sfIndexNext,		SOE_OPTIONAL },
 		{ sfIndexPrevious,	SOE_OPTIONAL },
 		{ sfInvalid,		SOE_END } }
 	},
-	{ "GeneratorMap", ltGENERATOR_MAP, {
+	{ "GeneratorMap", ltGENERATOR_MAP, { LEF_BASE
+		{ sfLedgerEntryType,SOE_REQUIRED },
 		{ sfFlags,			SOE_REQUIRED },
 		{ sfGenerator,		SOE_REQUIRED },
 		{ sfInvalid,		SOE_END } }
 	},
-	{ "Nickname", ltNICKNAME, {
+	{ "Nickname", ltNICKNAME, { LEF_BASE
+		{ sfLedgerEntryType,SOE_REQUIRED },
 		{ sfFlags,			SOE_REQUIRED },
 		{ sfAccount,		SOE_REQUIRED },
 		{ sfMinimumOffer,	SOE_OPTIONAL },
 		{ sfInvalid,		SOE_END } }
 	},
-	{ "Offer", ltOFFER, {
+	{ "Offer", ltOFFER, { LEF_BASE
+		{ sfLedgerEntryType,SOE_REQUIRED },
 		{ sfFlags,			SOE_REQUIRED },
 		{ sfAccount,		SOE_REQUIRED },
 		{ sfSequence,		SOE_REQUIRED },
@@ -68,7 +77,8 @@ LedgerEntryFormat LedgerFormats[]=
 		{ sfExpiration,		SOE_OPTIONAL },
 		{ sfInvalid,		SOE_END } }
 	},
-	{ "RippleState", ltRIPPLE_STATE, {
+	{ "RippleState", ltRIPPLE_STATE, { LEF_BASE
+		{ sfLedgerEntryType,SOE_REQUIRED },
 		{ sfFlags,			SOE_REQUIRED },
 		{ sfBalance,		SOE_REQUIRED },
 		{ sfLowID,			SOE_REQUIRED },
