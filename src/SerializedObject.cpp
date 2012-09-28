@@ -718,7 +718,8 @@ STArray* STArray::construct(SerializerIterator& sit, SField::ref field)
 		if (fn.isInvalid())
 			throw std::runtime_error("Unknown field");
 
-		value.push_back(*STObject::makeDeserializedObject(fn.fieldType, fn, sit, 1));
+		value.push_back(STObject(fn));
+		value.rbegin()->set(sit, 1);
 	}
 
 	return new STArray(field, value);
