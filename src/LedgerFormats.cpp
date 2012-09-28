@@ -73,9 +73,7 @@ LedgerEntryFormat LedgerFormats[]=
 	{ "RippleState", ltRIPPLE_STATE, {
 		{ S_FIELD(Flags),				STI_UINT32,		SOE_FLAGS,	  0 },
 		{ S_FIELD(Balance),				STI_AMOUNT,		SOE_REQUIRED, 0 },
-		{ S_FIELD(LowID),				STI_ACCOUNT,	SOE_REQUIRED, 0 },
 		{ S_FIELD(LowLimit),			STI_AMOUNT,		SOE_REQUIRED, 0 },
-		{ S_FIELD(HighID),				STI_ACCOUNT,	SOE_REQUIRED, 0 },
 		{ S_FIELD(HighLimit),			STI_AMOUNT,		SOE_REQUIRED, 0 },
 		{ S_FIELD(LastTxnID),			STI_HASH256,	SOE_REQUIRED, 0 },
 		{ S_FIELD(LastTxnSeq),			STI_UINT32,		SOE_REQUIRED, 0 },

@@ -7,11 +7,11 @@ RippleState::RippleState(SerializedLedgerEntry::pointer ledgerEntry) :
 {
 	if (!mLedgerEntry || mLedgerEntry->getType() != ltRIPPLE_STATE) return;
 
-	mLowID			= mLedgerEntry->getIValueFieldAccount(sfLowID);
-	mHighID			= mLedgerEntry->getIValueFieldAccount(sfHighID);
-
 	mLowLimit		= mLedgerEntry->getIValueFieldAmount(sfLowLimit);
 	mHighLimit		= mLedgerEntry->getIValueFieldAmount(sfHighLimit);
+
+	mLowID			= NewcoinAddress::createAccountID(mLowLimit.getIssuer());
+	mHighID			= NewcoinAddress::createAccountID(mHighLimit.getIssuer());
 
 	mLowQualityIn	= mLedgerEntry->getIFieldU32(sfLowQualityIn);
 	mLowQualityOut	= mLedgerEntry->getIFieldU32(sfLowQualityOut);
