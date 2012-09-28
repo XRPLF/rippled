@@ -191,7 +191,7 @@ public:
 	bool operator!=(const STArray &s)				{ return value != s.value; }
 
 	virtual SerializedTypeID getSType() const 		{ return STI_ARRAY; }
-	virtual bool isEquivalent(const STObject& t) const;
+	virtual bool isEquivalent(const SerializedType& t) const;
 };
 
 #endif
