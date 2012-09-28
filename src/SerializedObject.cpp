@@ -217,14 +217,18 @@ std::string STObject::getFullText() const
 	return ret;
 }
 
-void STObject::add(Serializer& s) const
+void STObject::add(Serializer& s, bool withSigningFields) const
 {
 	std::map<int, const SerializedType*> fields;
 
 	BOOST_FOREACH(const SerializedType& it, mData)
 	{ // pick out the fields and sort them
 		if (it.getSType() != STI_NOTPRESENT)
-			fields.insert(std::make_pair(it.getFName().fieldCode, &it));
+		{
+			SField::ref fName = it.getFName();
+			if (withSigningFields || (fName == sfSignature) || (fName == sfSignatures))
+				fields.insert(std::make_pair(it.getFName().fieldCode, &it));
+		}
 	}
 
 
@@ -235,7 +239,10 @@ void STObject::add(Serializer& s) const
 
 		field->addFieldID(s);
 		field->add(s);
-		s.addFieldID(STI_OBJECT, 1);
+		if (dynamic_cast<STArray>(field) != NULL)
+			s.addFieldID(STI_ARRAY, 1);
+		else if (dynamic_cast<STObject>(field) != NULL)
+			s.addFieldID(STI_OBJECT, 1);
 	}
 }
 
@@ -270,6 +277,22 @@ bool STObject::isEquivalent(const SerializedType& t) const
 		++it2;
 	}
 	return (it1 == end1) && (it2 == end2);
+}
+
+uint256 getHash(uint32 prefix) cosnt
+{
+	Serializer s;
+	s.add32(prefix);
+	add(s, true);
+	return s.getSHA512Half();
+}
+
+uint256 getSigningHash(uint32 prefix) cosnt
+{
+	Serializer s;
+	s.add32(prefix);
+	add(s, false);
+	return s.getSHA512Half();
 }
 
 int STObject::getFieldIndex(SField::ref field) const

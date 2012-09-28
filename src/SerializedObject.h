@@ -54,7 +54,8 @@ public:
 	virtual SerializedTypeID getSType() const { return STI_OBJECT; }
 	virtual bool isEquivalent(const SerializedType& t) const;
 
-	virtual void add(Serializer& s) const;	// just inner elements
+	virtual void add(Serializer& s) const	{ add(s, true);	} // just inner elements
+	void add(Serializer& s, int withSignature) const;
 	Serializer getSerializer() const { Serializer s; add(s); return s; }
 	std::string getFullText() const;
 	std::string getText() const;
@@ -71,6 +72,9 @@ public:
 	bool setFlag(uint32);
 	bool clearFlag(uint32);
 	uint32 getFlags() const;
+
+	uint256 getHash(uint32 prefix) const;
+	uint256 getSigningHash(uint32 prefix) const;
 
 	const SerializedType& peekAtIndex(int offset) const { return mData[offset]; }
 	SerializedType& getIndex(int offset) { return mData[offset]; }
