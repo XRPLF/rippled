@@ -13,7 +13,6 @@
 #include "../obj/src/newcoin.pb.h"
 #include "PackedMessage.h"
 #include "Config.h"
-#include "Conversion.h"
 #include "BitcoinUtil.h"
 #include "Wallet.h"
 #include "LedgerTiming.h"

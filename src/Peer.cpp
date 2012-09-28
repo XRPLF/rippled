@@ -12,7 +12,6 @@
 #include "Peer.h"
 #include "Config.h"
 #include "Application.h"
-#include "Conversion.h"
 #include "SerializedTransaction.h"
 #include "utils.h"
 #include "Log.h"
