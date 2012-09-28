@@ -6,7 +6,6 @@
 #include "Application.h"
 #include "RPC.h"
 #include "Wallet.h"
-#include "Conversion.h"
 #include "NewcoinAddress.h"
 #include "AccountState.h"
 #include "NicknameState.h"
@@ -15,9 +14,6 @@
 #include "RippleLines.h"
 
 #include "Pathfinder.h"
-#include "Conversion.h"
-
-extern uint160 humanTo160(const std::string& buf);
 
 #include <iostream>
 
@@ -1783,7 +1779,7 @@ Json::Value RPCServer::doSend(const Json::Value& params)
 			// Destination exists, ordinary send.
 
 			STPathSet			spsPaths;
-
+			/*
 			uint160  srcCurrencyID;
 			bool ret_b;
 			ret_b = false;
@@ -1793,7 +1789,7 @@ Json::Value RPCServer::doSend(const Json::Value& params)
 
 			ret_b = pf.findPaths(5, 1, spsPaths);
 			// TODO: Nope; the above can't be right
-
+			*/
 			trans	= Transaction::sharedPayment(
 				naAccountPublic, naAccountPrivate,
 				naSrcAccountID,
@@ -2544,7 +2540,7 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 		{	"data_fetch",			&RPCServer::doDataFetch,			1,  1, true					},
 		{	"data_store",			&RPCServer::doDataStore,			2,  2, true					},
 		{	"ledger",				&RPCServer::doLedger,				0,  2, false,	optNetwork	},
-		{       "logrotate",                    &RPCServer::doLogRotate,                        0,  0, true,    optCurrent      },
+		{       "logrotate",                    &RPCServer::doLogRotate,                        0,  0, false,    optCurrent      },
 		{	"nickname_info",		&RPCServer::doNicknameInfo,			1,  1, false,	optCurrent	},
 		{	"nickname_set",			&RPCServer::doNicknameSet,			2,  3, false,	optCurrent	},
 		{	"offer_create",			&RPCServer::doOfferCreate,			9, 10, false,	optCurrent	},

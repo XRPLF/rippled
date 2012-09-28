@@ -632,15 +632,101 @@ void WSConnection::doLedgerEntry(Json::Value& jvResult, const Json::Value& jvReq
 	}
 	else if (jvRequest.isMember("directory"))
 	{
-		jvResult["error"]	= "notImplemented";
+
+		if (!jvRequest.isObject())
+		{
+			uNodeIndex.SetHex(jvRequest["directory"].asString());
+		}
+		else if (jvRequest["directory"].isMember("sub_index")
+			&& !jvRequest["directory"]["sub_index"].isIntegral())
+		{
+			jvResult["error"]	= "malformedRequest";
+		}
+		else
+		{
+			uint64	uSubIndex = jvRequest["directory"].isMember("sub_index")
+									? jvRequest["directory"]["sub_index"].asUInt()
+									: 0;
+
+			if (jvRequest["directory"].isMember("dir_root"))
+			{
+				uint256	uDirRoot;
+
+				uDirRoot.SetHex(jvRequest["dir_root"].asString());
+
+				uNodeIndex	= Ledger::getDirNodeIndex(uDirRoot, uSubIndex);
+			}
+			else if (jvRequest["directory"].isMember("owner"))
+			{
+				NewcoinAddress	naOwnerID;
+
+				if (!naOwnerID.setAccountID(jvRequest["directory"]["owner"].asString()))
+				{
+					jvResult["error"]	= "malformedAddress";
+				}
+				else
+				{
+					uint256	uDirRoot	= Ledger::getOwnerDirIndex(naOwnerID.getAccountID());
+
+					uNodeIndex	= Ledger::getDirNodeIndex(uDirRoot, uSubIndex);
+				}
+			}
+			else
+			{
+				jvResult["error"]	= "malformedRequest";
+			}
+		}
 	}
 	else if (jvRequest.isMember("generator"))
 	{
-		jvResult["error"]	= "notImplemented";
+		NewcoinAddress	naGeneratorID;
+
+		if (!jvRequest.isObject())
+		{
+			uNodeIndex.SetHex(jvRequest["generator"].asString());
+		}
+		else if (!jvRequest["generator"].isMember("regular_seed"))
+		{
+			jvResult["error"]	= "malformedRequest";
+		}
+		else if (!naGeneratorID.setSeedGeneric(jvRequest["generator"]["regular_seed"].asString()))
+		{
+			jvResult["error"]	= "malformedAddress";
+		}
+		else
+		{
+			NewcoinAddress		na0Public;		// To find the generator's index.
+			NewcoinAddress		naGenerator	= NewcoinAddress::createGeneratorPublic(naGeneratorID);
+
+			na0Public.setAccountPublic(naGenerator, 0);
+
+			uNodeIndex	= Ledger::getGeneratorIndex(na0Public.getAccountID());
+		}
 	}
 	else if (jvRequest.isMember("offer"))
 	{
-		jvResult["error"]	= "notImplemented";
+		NewcoinAddress	naAccountID;
+
+		if (!jvRequest.isObject())
+		{
+			uNodeIndex.SetHex(jvRequest["offer"].asString());
+		}
+		else if (!jvRequest["offer"].isMember("account")
+			|| !jvRequest["offer"].isMember("seq")
+			|| !jvRequest["offer"]["seq"].isIntegral())
+		{
+			jvResult["error"]	= "malformedRequest";
+		}
+		else if (!naAccountID.setAccountID(jvRequest["offer"]["account"].asString()))
+		{
+			jvResult["error"]	= "malformedAddress";
+		}
+		else
+		{
+			uint32		uSequence	= jvRequest["offer"]["seq"].asUInt();
+
+			uNodeIndex	= Ledger::getOfferIndex(naAccountID.getAccountID(), uSequence);
+		}
 	}
 	else if (jvRequest.isMember("ripple_state"))
 	{
@@ -689,10 +775,12 @@ void WSConnection::doLedgerEntry(Json::Value& jvResult, const Json::Value& jvReq
 			sleNode->add(s);
 
 			jvResult["node_binary"]	= strHex(s.peekData());
+			jvResult["index"]		= uNodeIndex.ToString();
 		}
 		else
 		{
 			jvResult["node"]		= sleNode->getJson(0);
+			jvResult["index"]		= uNodeIndex.ToString();
 		}
 	}
 }
