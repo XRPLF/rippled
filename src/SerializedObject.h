@@ -137,12 +137,12 @@ public:
 class STArray : public SerializedType
 {
 public:
-	typedef std::vector<SerializedType>							vector;
-	typedef std::vector<SerializedType>::iterator				iterator;
-	typedef std::vector<SerializedType>::const_iterator			const_iterator;
-	typedef std::vector<SerializedType>::reverse_iterator		reverse_iterator;
-	typedef std::vector<SerializedType>::const_reverse_iterator	const_reverse_iterator;
-	typedef std::vector<SerializedType>::size_type				size_type;
+	typedef std::vector<STObject>							vector;
+	typedef std::vector<STObject>::iterator				iterator;
+	typedef std::vector<STObject>::const_iterator			const_iterator;
+	typedef std::vector<STObject>::reverse_iterator		reverse_iterator;
+	typedef std::vector<STObject>::const_reverse_iterator	const_reverse_iterator;
+	typedef std::vector<STObject>::size_type				size_type;
 
 protected:
 
@@ -165,9 +165,9 @@ public:
 	vector& getValue()								{ return value; }
 
 	// vector-like functions
-	void push_back(const SerializedType& object)	{ value.push_back(object); }
-	SerializedType& operator[](int j)				{ return value[j]; }
-	const SerializedType& operator[](int j) const	{ return value[j]; }
+	void push_back(const STObject& object)			{ value.push_back(object); }
+	STObject& operator[](int j)						{ return value[j]; }
+	const STObject& operator[](int j) const			{ return value[j]; }
 	iterator begin()								{ return value.begin(); }
 	const_iterator begin() const					{ return value.begin(); }
 	iterator end()									{ return value.end(); }
@@ -191,7 +191,7 @@ public:
 	bool operator!=(const STArray &s)				{ return value != s.value; }
 
 	virtual SerializedTypeID getSType() const 		{ return STI_ARRAY; }
-	virtual bool isEquivalent(const SerializedType& t) const;
+	virtual bool isEquivalent(const STObject& t) const;
 };
 
 #endif

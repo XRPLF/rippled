@@ -235,11 +235,7 @@ void STObject::add(Serializer& s) const
 
 		field->addFieldID(s);
 		field->add(s);
-
-		if (dynamic_cast<const STObject*>(field))
-			s.addFieldID(STI_OBJECT, 1);
-		else if (dynamic_cast<const STArray*>(field))
-			s.addFieldID(STI_ARRAY, 1);
+		s.addFieldID(STI_OBJECT, 1);
 	}
 }
 
@@ -691,15 +687,11 @@ Json::Value STArray::getJson(int) const
 
 void STArray::add(Serializer& s) const
 {
-	BOOST_FOREACH(const SerializedType& object, value)
+	BOOST_FOREACH(const STObject& object, value)
 	{
 		object.addFieldID(s);
 		object.add(s);
-
-		if (dynamic_cast<const STObject*>(&object))
-			s.addFieldID(STI_OBJECT, 1);
-		else if (dynamic_cast<const STArray*>(&object))
-			s.addFieldID(STI_ARRAY, 1);
+		s.addFieldID(STI_OBJECT, 1);
 	}
 }
 
