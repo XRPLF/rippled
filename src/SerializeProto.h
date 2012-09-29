@@ -27,7 +27,7 @@
 
 	// 16-bit integers
 	FIELD(LedgerEntryType,		UINT16, 1)
-	FIELD(TransactionType,		UINT16, 1)
+	FIELD(TransactionType,		UINT16, 2)
 
 	// 32-bit integers (common)
 	FIELD(ObjectType,			UINT32, 1)
