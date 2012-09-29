@@ -130,46 +130,54 @@ void STObject::set(SOElement::ptr elem)
 	}
 }
 
-bool STObject::compare(const SerializedType& f1, const SerializedType& f2)
+bool STObject::setType(SOElement::ptrList t)
 {
-	BOOST_FOREACH(SOElement::ptr elem, mType)
-	{
-		if (elem->e_field == f1.getFName()) // element one comes first
-			return true;
-		if (elem->e_field == f2.getFName()) // element two comes first
-			return false;
-	}
-	assert(false);
-	return false;
-}
+	boost::ptr_vector<SerializedType> newData;
+	bool valid = true;
 
-void STObject::setType(SOElement::ptrList t)
-{
 	mType.empty();
 	while (t->flags != SOE_END)
-		mType.push_back(t++);
+	{
+		bool match = false;
+		for (boost::ptr_vector<SerializedType>::iterator it = mData.begin(); it != mData.end(); ++it)
+			if (it->getFName() == t->e_field)
+			{
+				match = true;
+				newData.push_back(mData.release(it).release());
+				break;
+			}
 
-	std::sort(mData.begin(), mData.end(), boost::bind(&STObject::compare, this, _1, _2));
+		if (!match)
+		{
+			if (t->flags != SOE_OPTIONAL)
+			{
+				Log(lsTRACE) << "setType !valid missing";
+				valid = false;
+			}
+			newData.push_back(makeNonPresentObject(t->e_field));
+		}
+
+		mType.push_back(t++);
+	}
+	if (mData.size() != 0)
+	{
+		Log(lsTRACE) << "setType !valid leftover";
+		valid = false;
+	}
+	mData.swap(newData);
+	return valid;
 }
 
 bool STObject::isValidForType()
 {
+	boost::ptr_vector<SerializedType>::iterator it = mData.begin();
 	BOOST_FOREACH(SOElement::ptr elem, mType)
-	{ // are any required elemnents missing
-		if ((elem->flags == SOE_REQUIRED) && (getPField(elem->e_field) == NULL))
-		{
-			Log(lsWARNING) << getName() << " missing required element " << elem->e_field.fieldName;
+	{
+		if (it == mData.end())
 			return false;
-		}
-	}
-
-	BOOST_FOREACH(const SerializedType& elem, mData)
-	{ // are any non-permitted elements present
-		if (!isFieldAllowed(elem.getFName()))
-		{
-			Log(lsWARNING) << getName() << " has non-permitted element " << elem.getName();
+		if (elem->e_field != it->getFName())
 			return false;
-		}
+		++it;
 	}
 
 	return true;
@@ -282,7 +290,8 @@ std::string STObject::getText() const
 bool STObject::isEquivalent(const SerializedType& t) const
 {
 	const STObject* v = dynamic_cast<const STObject*>(&t);
-	if (!v) return false;
+	if (!v)
+		return false;
 	boost::ptr_vector<SerializedType>::const_iterator it1 = mData.begin(), end1 = mData.end();
 	boost::ptr_vector<SerializedType>::const_iterator it2 = v->mData.begin(), end2 = v->mData.end();
 	while ((it1 != end1) && (it2 != end2))

@@ -14,7 +14,8 @@ SerializedLedgerEntry::SerializedLedgerEntry(SerializerIterator& sit, const uint
 	if (mFormat == NULL)
 		throw std::runtime_error("invalid ledger entry type");
 	mType = mFormat->t_type;
-	setType(mFormat->elements);
+	if (!setType(mFormat->elements))
+		throw std::runtime_error("ledger entry not valid for type");
 }
 
 SerializedLedgerEntry::SerializedLedgerEntry(const Serializer& s, const uint256& index)
@@ -28,7 +29,8 @@ SerializedLedgerEntry::SerializedLedgerEntry(const Serializer& s, const uint256&
 	if (mFormat == NULL)
 		throw std::runtime_error("invalid ledger entry type");
 	mType = mFormat->t_type;
-	setType(mFormat->elements);
+	if (!setType(mFormat->elements))
+		throw std::runtime_error("ledger entry not valid for type");
 }
 
 SerializedLedgerEntry::SerializedLedgerEntry(LedgerEntryType type) : STObject(sfLedgerEntry), mType(type)

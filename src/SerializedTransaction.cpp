@@ -30,11 +30,10 @@ SerializedTransaction::SerializedTransaction(SerializerIterator& sit) : STObject
 
 	mFormat = getTxnFormat(mType);
 	if (!mFormat)
-		throw std::runtime_error("invalid transction type");
-	setType(mFormat->elements);
-	if (!isValidForType())
+		throw std::runtime_error("invalid transaction type");
+	if (!setType(mFormat->elements))
 	{
-		Log(lsDEBUG) << "Transaction not valid for type " << getJson(0);
+		assert(false);
 		throw std::runtime_error("transaction not valid");
 	}
 }
