@@ -55,7 +55,7 @@ public:
 	virtual bool isEquivalent(const SerializedType& t) const;
 
 	virtual void add(Serializer& s) const	{ add(s, true);	} // just inner elements
-	void add(Serializer& s, int withSignature) const;
+	void add(Serializer& s, bool withSignature) const;
 	Serializer getSerializer() const { Serializer s; add(s); return s; }
 	std::string getFullText() const;
 	std::string getText() const;

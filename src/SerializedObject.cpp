@@ -131,7 +131,7 @@ void STObject::set(SOElement::ptr elem)
 
 void STObject::setType(SOElement::ptrList t)
 {
-	mData.empty();
+	mType.empty();
 	while (t->flags != SOE_END)
 		mType.push_back(t++);
 }
@@ -239,9 +239,9 @@ void STObject::add(Serializer& s, bool withSigningFields) const
 
 		field->addFieldID(s);
 		field->add(s);
-		if (dynamic_cast<STArray>(field) != NULL)
+		if (dynamic_cast<const STArray*>(field) != NULL)
 			s.addFieldID(STI_ARRAY, 1);
-		else if (dynamic_cast<STObject>(field) != NULL)
+		else if (dynamic_cast<const STObject*>(field) != NULL)
 			s.addFieldID(STI_OBJECT, 1);
 	}
 }
@@ -279,7 +279,7 @@ bool STObject::isEquivalent(const SerializedType& t) const
 	return (it1 == end1) && (it2 == end2);
 }
 
-uint256 getHash(uint32 prefix) cosnt
+uint256 STObject::getHash(uint32 prefix) const
 {
 	Serializer s;
 	s.add32(prefix);
@@ -287,7 +287,7 @@ uint256 getHash(uint32 prefix) cosnt
 	return s.getSHA512Half();
 }
 
-uint256 getSigningHash(uint32 prefix) cosnt
+uint256 STObject::getSigningHash(uint32 prefix) const
 {
 	Serializer s;
 	s.add32(prefix);
