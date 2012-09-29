@@ -46,7 +46,7 @@ std::string SerializedLedgerEntry::getFullText() const
 	ret += "\" = { ";
 	ret += mFormat->t_name;
 	ret += ", ";
-	ret += getFullText();
+	ret += STObject::getFullText();
 	ret += "}";
 	return ret;
 }
