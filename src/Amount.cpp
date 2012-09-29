@@ -884,7 +884,7 @@ STAmount STAmount::convertToInternalAmount(uint64 displayAmount, uint64 totalNow
 
 STAmount STAmount::deserialize(SerializerIterator& it)
 {
-	auto_ptr<STAmount> s = construct(it, sfGeneric);
+	std::auto_ptr<STAmount> s(dynamic_cast<STAmount*>(construct(it, sfGeneric)));
 	STAmount ret(*s);
 	return ret;
 }
