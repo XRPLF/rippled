@@ -219,7 +219,7 @@ protected:
 	STAmount(bool isNeg, uint64 value) : mValue(value), mOffset(0), mIsNative(true), mIsNegative(isNeg) { ; }
 
 	STAmount(SField::ref name, uint64 value, bool isNegative)
-		: SerializedType(fName), mValue(value), mOffset(0), mIsNative(true), mIsNegative(isNegative)
+		: SerializedType(name), mValue(value), mOffset(0), mIsNative(true), mIsNegative(isNegative)
 	{ ; }
 	STAmount(SField::ref name, const uint160& cur, const uint160& iss, uint64 val, int off, bool isNat, bool isNeg)
 		: SerializedType(name), mCurrency(cur), mIssuer(iss),  mValue(val), mOffset(off),
