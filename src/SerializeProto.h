@@ -56,12 +56,11 @@
 	FIELD(OfferSequence,		UINT32, 25)
 
 	// 64-bit integers
-	FIELD(Fee,					UINT64, 1)
-	FIELD(IndexNext,			UINT64, 2)
-	FIELD(IndexPrevious,		UINT64, 3)
-	FIELD(BookNode,				UINT64, 4)
-	FIELD(OwnerNode,			UINT64, 5)
-	FIELD(BaseFee,				UINT64, 6)
+	FIELD(IndexNext,			UINT64, 1)
+	FIELD(IndexPrevious,		UINT64, 2)
+	FIELD(BookNode,				UINT64, 3)
+	FIELD(OwnerNode,			UINT64, 4)
+	FIELD(BaseFee,				UINT64, 5)
 
 	// 128-bit
 	FIELD(EmailHash,			HASH128, 1)
@@ -89,6 +88,7 @@
 	FIELD(TakerGets,			AMOUNT, 5)
 	FIELD(LowLimit,				AMOUNT, 6)
 	FIELD(HighLimit,			AMOUNT, 7)
+	FIELD(Fee,					AMOUNT, 8)
 	FIELD(SendMax,				AMOUNT, 9)
 
 	// current amount (uncommon)
@@ -125,8 +125,8 @@
 
 	// inner object
 	// OBJECT/1 is reserved for end of object
-	FIELD(InnerTransaction,		OBJECT, 1)
 
 	// array of objects
 	// ARRAY/1 is reserved for end of array
 	FIELD(SigningAccounts,		ARRAY, 2)
+	FIELD(Signatures,			ARRAY, 3)
