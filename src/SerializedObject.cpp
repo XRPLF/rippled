@@ -298,8 +298,12 @@ uint256 STObject::getSigningHash(uint32 prefix) const
 int STObject::getFieldIndex(SField::ref field) const
 {
 	int i = 0;
-	for (std::vector<const SOElement*>::const_iterator it = mType.begin(), end = mType.end(); it != end; ++it, ++i)
-		if ((*it)->e_field == field) return i;
+	BOOST_FOREACH(const SerializedType& elem, mData)
+	{
+		if (elem.getFName() == field)
+			return i;
+		++i;
+	}
 	return -1;
 }
 
@@ -321,7 +325,7 @@ SerializedType& STObject::getField(SField::ref field)
 
 SField::ref STObject::getFieldSType(int index) const
 {
-	return mType[index]->e_field;
+	return mData[index].getFName();
 }
 
 const SerializedType* STObject::peekAtPField(SField::ref field) const
@@ -383,7 +387,7 @@ SerializedType* STObject::makeFieldPresent(SField::ref field)
 	SerializedType* f = getPIndex(index);
 	if (f->getSType() != STI_NOTPRESENT)
 		return f;
-	mData.replace(index, makeDefaultObject(mType[index]->e_field));
+	mData.replace(index, makeDefaultObject(f->getFName()));
 	return getPIndex(index);
 }
 
@@ -392,13 +396,12 @@ void STObject::makeFieldAbsent(SField::ref field)
 	int index = getFieldIndex(field);
 	if (index == -1)
 		throw std::runtime_error("Field not found");
-	if (mType[index]->flags != SOE_OPTIONAL)
-		throw std::runtime_error("field is not optional");
 
-	if (peekAtIndex(index).getSType() == STI_NOTPRESENT)
+	const SerializedType& f = peekAtIndex(index);
+	if (f.getSType() == STI_NOTPRESENT)
 		return;
 
-	mData.replace(index, makeDefaultObject(mType[index]->e_field));
+	mData.replace(index, makeDefaultObject(f.getFName()));
 }
 
 std::string STObject::getFieldString(SField::ref field) const
