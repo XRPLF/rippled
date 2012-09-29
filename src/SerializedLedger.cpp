@@ -133,14 +133,14 @@ std::vector<uint256> SerializedLedgerEntry::getOwners()
 
 	for (int i = 0, fields = getCount(); i < fields; ++i)
 	{
-		int fc = getFieldSType(i).fieldCode;
-		if ((fc == sfAccount.fieldCode) || (fc == sfOwner.fieldCode))
+		SField::ref fc = getFieldSType(i);
+		if ((fc == sfAccount) || (fc == sfOwner))
 		{
 				const STAccount* entry = dynamic_cast<const STAccount *>(peekAtPIndex(i));
 				if ((entry != NULL) && entry->getValueH160(account))
 					owners.push_back(Ledger::getAccountRootIndex(account));
 		}
-		if ((fc == sfLowLimit.fieldCode) || (fs == sfHighLimit.fieldCode))
+		if ((fc == sfLowLimit) || (fc == sfHighLimit))
 		{
 			const STAmount* entry = dynamic_cast<const STAmount *>(peekAtPIndex(i));
 			if ((entry != NULL))
@@ -148,6 +148,7 @@ std::vector<uint256> SerializedLedgerEntry::getOwners()
 				uint160 issuer = entry->getIssuer();
 				if (issuer.isNonZero())
 					owners.push_back(Ledger::getAccountRootIndex(issuer));
+			}
 		}
 	}
 
