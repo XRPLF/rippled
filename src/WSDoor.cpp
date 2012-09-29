@@ -22,6 +22,9 @@
 // This is a light weight, untrusted interface for web clients.
 // For now we don't provide proof.  Later we will.
 //
+// Might need to support this header for browsers: Access-Control-Allow-Origin: *
+// - https://developer.mozilla.org/en-US/docs/HTTP_access_control
+//
 
 //
 // Strategy:
