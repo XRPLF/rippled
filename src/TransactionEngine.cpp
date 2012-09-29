@@ -105,7 +105,7 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 	NewcoinAddress	naSigningPubKey;
 
 	if (tesSUCCESS == terResult)
-		naSigningPubKey	= NewcoinAddress::createAccountPublic(txn.setSigningPubKey());
+		naSigningPubKey	= NewcoinAddress::createAccountPublic(txn.getSigningPubKey());
 
 	// Consistency: really signed.
 	if ((tesSUCCESS == terResult) && !isSetBit(params, tapNO_CHECK_SIGN) && !txn.checkSign(naSigningPubKey))
