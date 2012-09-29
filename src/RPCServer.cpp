@@ -2540,7 +2540,7 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 		{	"data_fetch",			&RPCServer::doDataFetch,			1,  1, true					},
 		{	"data_store",			&RPCServer::doDataStore,			2,  2, true					},
 		{	"ledger",				&RPCServer::doLedger,				0,  2, false,	optNetwork	},
-		{       "logrotate",                    &RPCServer::doLogRotate,                        0,  0, false,    optCurrent      },
+		{       "logrotate",                    &RPCServer::doLogRotate,                        0,  0, true,    0      },
 		{	"nickname_info",		&RPCServer::doNicknameInfo,			1,  1, false,	optCurrent	},
 		{	"nickname_set",			&RPCServer::doNicknameSet,			2,  3, false,	optCurrent	},
 		{	"offer_create",			&RPCServer::doOfferCreate,			9, 10, false,	optCurrent	},

@@ -394,10 +394,9 @@ void LedgerEntrySet::calcRawMeta(Serializer& s)
 
 				if (origNode->getType() == ltRIPPLE_STATE)
 				{
-					metaNode.addAccount(TMSLowID, origNode->getIValueFieldAccount(sfLowID));
-					metaNode.addAccount(TMSHighID, origNode->getIValueFieldAccount(sfHighID));
+					metaNode.addAccount(TMSLowID, NewcoinAddress::createAccountID(origNode->getIValueFieldAmount(sfLowLimit).getIssuer()));
+					metaNode.addAccount(TMSHighID, NewcoinAddress::createAccountID(origNode->getIValueFieldAmount(sfHighLimit).getIssuer()));
 				}
-
 			}
 
 			if (origNode->getType() == ltOFFER)
@@ -1011,6 +1010,7 @@ STAmount LedgerEntrySet::rippleTransferFee(const uint160& uSenderID, const uint1
 void LedgerEntrySet::rippleCredit(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount, bool bCheckIssuer)
 {
 	uint160				uIssuerID		= saAmount.getIssuer();
+	uint160				uCurrencyID		= saAmount.getCurrency();
 
 	assert(!bCheckIssuer || uSenderID == uIssuerID || uReceiverID == uIssuerID);
 
@@ -1024,14 +1024,16 @@ void LedgerEntrySet::rippleCredit(const uint160& uSenderID, const uint160& uRece
 
 		STAmount	saBalance	= saAmount;
 
+		saBalance.setIssuer(ACCOUNT_ONE);
+
 		sleRippleState	= entryCreate(ltRIPPLE_STATE, uIndex);
 
 		if (!bFlipped)
 			saBalance.negate();
 
 		sleRippleState->setIFieldAmount(sfBalance, saBalance);
-		sleRippleState->setIFieldAccount(bFlipped ? sfHighID : sfLowID, uSenderID);
-		sleRippleState->setIFieldAccount(bFlipped ? sfLowID : sfHighID, uReceiverID);
+		sleRippleState->setIFieldAmount(bFlipped ? sfHighLimit : sfLowLimit, STAmount(uCurrencyID, uSenderID));
+		sleRippleState->setIFieldAmount(bFlipped ? sfLowLimit : sfHighLimit, STAmount(uCurrencyID, uReceiverID));
 	}
 	else
 	{

@@ -118,12 +118,12 @@ NewcoinAddress SerializedLedgerEntry::getOwner()
 
 NewcoinAddress SerializedLedgerEntry::getFirstOwner()
 {
-	return getValueFieldAccount(sfLowID);
+	return NewcoinAddress::createAccountID(getIValueFieldAmount(sfLowLimit).getIssuer());
 }
 
 NewcoinAddress SerializedLedgerEntry::getSecondOwner()
 {
-	return getValueFieldAccount(sfHighID);
+	return NewcoinAddress::createAccountID(getIValueFieldAmount(sfHighLimit).getIssuer());
 }
 
 std::vector<uint256> SerializedLedgerEntry::getOwners()
@@ -134,11 +134,20 @@ std::vector<uint256> SerializedLedgerEntry::getOwners()
 	for (int i = 0, fields = getCount(); i < fields; ++i)
 	{
 		int fc = getFieldSType(i).fieldCode;
-		if ((fc == sfAccount.fieldCode) || (fc == sfLowID.fieldCode) || (fc == sfHighID.fieldCode))
+		if ((fc == sfAccount.fieldCode) || (fc == sfOwner.fieldCode))
 		{
 				const STAccount* entry = dynamic_cast<const STAccount *>(peekAtPIndex(i));
 				if ((entry != NULL) && entry->getValueH160(account))
 					owners.push_back(Ledger::getAccountRootIndex(account));
+		}
+		if ((fc == sfLowLimit.fieldCode) || (fs == sfHighLimit.fieldCode))
+		{
+			const STAmount* entry = dynamic_cast<const STAmount *>(peekAtPIndex(i));
+			if ((entry != NULL))
+			{
+				uint160 issuer = entry->getIssuer();
+				if (issuer.isNonZero())
+					owners.push_back(Ledger::getAccountRootIndex(issuer));
 		}
 	}
 
