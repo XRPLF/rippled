@@ -47,7 +47,7 @@ public:
 	void setTransactionFee(const STAmount& fee)	{ setValueFieldAmount(sfFee, fee); }
 
 	NewcoinAddress getSourceAccount() const		{ return getValueFieldAccount(sfAccount); }
-	std::vector<unsigned char> getSigningPubKey() const;
+	std::vector<unsigned char> getSigningPubKey() const { return getValueFieldVL(sfSigningPubKey); }
 	void setSigningPubKey(const NewcoinAddress& naSignPubKey);
 	void setSourceAccount(const NewcoinAddress& naSource);
 	std::string getTransactionType() const { return mFormat->t_name; }
