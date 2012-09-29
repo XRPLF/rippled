@@ -3,6 +3,7 @@
 
 #include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/bind.hpp>
 
 #include "../json/writer.h"
 
@@ -129,11 +130,26 @@ void STObject::set(SOElement::ptr elem)
 	}
 }
 
+bool STObject::compare(const SerializedType& f1, const SerializedType& f2)
+{
+	BOOST_FOREACH(SOElement::ptr elem, mType)
+	{
+		if (elem->e_field == f1.getFName()) // element one comes first
+			return true;
+		if (elem->e_field == f2.getFName()) // element two comes first
+			return false;
+	}
+	assert(false);
+	return false;
+}
+
 void STObject::setType(SOElement::ptrList t)
 {
 	mType.empty();
 	while (t->flags != SOE_END)
 		mType.push_back(t++);
+
+	std::sort(mData.begin(), mData.end(), boost::bind(&STObject::compare, this, _1, _2));
 }
 
 bool STObject::isValidForType()

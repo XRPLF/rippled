@@ -28,6 +28,7 @@ protected:
 	std::vector<SOElement::ptr> mType;
 
 	STObject* duplicate() const { return new STObject(*this); }
+	bool compare(const SerializedType& f1, const SerializedType& f2);
 
 public:
 	STObject()											{ ; }
