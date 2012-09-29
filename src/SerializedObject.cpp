@@ -677,7 +677,8 @@ Json::Value STObject::getJson(int options) const
 		{
 			if (it.getName() == NULL)
 				ret[boost::lexical_cast<std::string>(index)] = it.getJson(options);
-			else ret[it.getName()] = it.getJson(options);
+			else
+				ret[it.getName()] = it.getJson(options);
 		}
 	}
 	return ret;

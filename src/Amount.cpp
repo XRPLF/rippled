@@ -325,7 +325,8 @@ void STAmount::setValue(const STAmount &a)
 
 uint64 STAmount::toUInt64() const
 { // makes them sort easily
-	if (mValue == 0) return 0x4000000000000000ull;
+	if (mValue == 0)
+		return 0x4000000000000000ull;
 	if (mIsNegative)
 		return mValue | (static_cast<uint64>(mOffset + 97) << (64 - 10));
 	return mValue | (static_cast<uint64>(mOffset + 256 + 97) << (64 - 10));
@@ -351,8 +352,6 @@ STAmount* STAmount::construct(SerializerIterator& sit, SField::ref name)
 	int offset = static_cast<int>(value >> (64 - 10)); // 10 bits for the offset, sign and "not native" flag
 	value &= ~(1023ull << (64-10));
 
-	STAmount*	sapResult;
-
 	if (value)
 	{
 		bool isNegative = (offset & 256) == 0;
@@ -360,17 +359,12 @@ STAmount* STAmount::construct(SerializerIterator& sit, SField::ref name)
 		if ((value < cMinValue) || (value > cMaxValue) || (offset < cMinOffset) || (offset > cMaxOffset))
 			throw std::runtime_error("invalid currency value");
 
-		sapResult	= new STAmount(name, uCurrencyID, uIssuerID, value, offset, isNegative);
-	}
-	else
-	{
-		if (offset != 512)
-			throw std::runtime_error("invalid currency value");
-
-		sapResult	= new STAmount(name, uCurrencyID, uIssuerID);
+		return new STAmount(name, uCurrencyID, uIssuerID, value, offset, isNegative);
 	}
 
-	return sapResult;
+	if (offset != 512)
+		throw std::runtime_error("invalid currency value");
+	return new STAmount(name, uCurrencyID, uIssuerID);
 }
 
 int64 STAmount::getSNValue() const
@@ -890,11 +884,8 @@ STAmount STAmount::convertToInternalAmount(uint64 displayAmount, uint64 totalNow
 
 STAmount STAmount::deserialize(SerializerIterator& it)
 {
-	STAmount *s = construct(it, sfGeneric);
+	auto_ptr<STAmount> s = construct(it, sfGeneric);
 	STAmount ret(*s);
-
-	delete s;
-
 	return ret;
 }
 
