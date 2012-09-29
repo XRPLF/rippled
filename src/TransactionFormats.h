@@ -28,12 +28,6 @@ struct TransactionFormat
 	SOElement			elements[24];
 };
 
-const int TransactionISigningPubKey	= 0;
-const int TransactionISourceID		= 1;
-const int TransactionISequence		= 2;
-const int TransactionIType			= 3;
-const int TransactionIFee			= 4;
-
 const int TransactionMinLen			= 32;
 const int TransactionMaxLen			= 1048576;
 
