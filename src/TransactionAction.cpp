@@ -275,12 +275,15 @@ TER TransactionEngine::doCreditSet(const SerializedTransaction& txn)
 	const uint160		uCurrencyID		= saLimitAmount.getCurrency();
 	bool				bDelIndex		= false;
 
-	if (bLimitAmount && saLimitAmount.getIssuer() != mTxnAccountID)
+	if (bLimitAmount && saLimitAmount.getIssuer() != uDstAccountID)
 	{
-		Log(lsINFO) << "doCreditSet: Malformed transaction: issuer must be signer";
+		Log(lsINFO) << "doCreditSet: Malformed transaction: issuer must be destination account.";
 
 		return temBAD_ISSUER;
 	}
+
+	STAmount		saLimitAllow	= saLimitAmount;
+		saLimitAllow.setIssuer(mTxnAccountID);
 
 	SLE::pointer		sleRippleState	= entryCache(ltRIPPLE_STATE, Ledger::getRippleStateIndex(mTxnAccountID, uDstAccountID, uCurrencyID));
 	if (sleRippleState)
@@ -313,7 +316,7 @@ TER TransactionEngine::doCreditSet(const SerializedTransaction& txn)
 		if (!bDelIndex)
 		{
 			if (bLimitAmount)
-				sleRippleState->setIFieldAmount(bFlipped ? sfHighLimit: sfLowLimit, saLimitAmount);
+				sleRippleState->setIFieldAmount(bFlipped ? sfHighLimit: sfLowLimit, saLimitAllow);
 
 			if (!bQualityIn)
 			{
@@ -361,7 +364,7 @@ TER TransactionEngine::doCreditSet(const SerializedTransaction& txn)
 		Log(lsINFO) << "doCreditSet: Creating ripple line: " << sleRippleState->getIndex().ToString();
 
 		sleRippleState->setIFieldAmount(sfBalance, STAmount(uCurrencyID, ACCOUNT_ONE));	// Zero balance in currency.
-		sleRippleState->setIFieldAmount(bFlipped ? sfHighLimit : sfLowLimit, saLimitAmount);
+		sleRippleState->setIFieldAmount(bFlipped ? sfHighLimit : sfLowLimit, saLimitAllow);
 		sleRippleState->setIFieldAmount(bFlipped ? sfLowLimit : sfHighLimit, STAmount(uCurrencyID, uDstAccountID));
 
 		if (uQualityIn)
