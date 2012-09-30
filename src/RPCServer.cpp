@@ -1544,7 +1544,6 @@ Json::Value RPCServer::doRippleLineSet(const Json::Value& params)
 	NewcoinAddress	naSrcAccountID;
 	NewcoinAddress	naDstAccountID;
 	STAmount		saLimitAmount;
-	bool			bLimitAmount	= true;
 	bool			bQualityIn		= params.size() >= 6;
 	bool			bQualityOut		= params.size() >= 7;
 	uint32			uQualityIn		= 0;
@@ -1593,8 +1592,7 @@ Json::Value RPCServer::doRippleLineSet(const Json::Value& params)
 			asSrc->getSeq(),
 			theConfig.FEE_DEFAULT,
 			0,											// YYY No source tag
-			naDstAccountID,
-			bLimitAmount, saLimitAmount,
+			saLimitAmount,
 			bQualityIn, uQualityIn,
 			bQualityOut, uQualityOut);
 
