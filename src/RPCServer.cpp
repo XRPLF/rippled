@@ -1562,7 +1562,7 @@ Json::Value RPCServer::doRippleLineSet(const Json::Value& params)
 	{
 		return RPCError(rpcDST_ACT_MALFORMED);
 	}
-	else if (!saLimitAmount.setFullValue(params[3u].asString(), params.size() >= 5 ? params[4u].asString() : "", params[1u].asString()))
+	else if (!saLimitAmount.setFullValue(params[3u].asString(), params.size() >= 5 ? params[4u].asString() : "", params[2u].asString()))
 	{
 		return RPCError(rpcSRC_AMT_MALFORMED);
 	}
