@@ -256,18 +256,13 @@ Transaction::pointer Transaction::sharedCreate(
 
 Transaction::pointer Transaction::setCreditSet(
 	const NewcoinAddress&	naPrivateKey,
-	const NewcoinAddress&	naDstAccountID,
-	bool					bLimitAmount,
 	const STAmount&			saLimitAmount,
 	bool					bQualityIn,
 	uint32					uQualityIn,
 	bool					bQualityOut,
 	uint32					uQualityOut)
 {
-	mTransaction->setITFieldAccount(sfDestination, naDstAccountID);
-
-	if (bLimitAmount)
-		mTransaction->setITFieldAmount(sfLimitAmount, saLimitAmount);
+	mTransaction->setITFieldAmount(sfLimitAmount, saLimitAmount);
 
 	if (bQualityIn)
 		mTransaction->setITFieldU32(sfQualityIn, uQualityIn);
@@ -286,8 +281,6 @@ Transaction::pointer Transaction::sharedCreditSet(
 	uint32					uSeq,
 	const STAmount&			saFee,
 	uint32					uSourceTag,
-	const NewcoinAddress&	naDstAccountID,
-	bool					bLimitAmount,
 	const STAmount&			saLimitAmount,
 	bool					bQualityIn,
 	uint32					uQualityIn,
@@ -296,8 +289,8 @@ Transaction::pointer Transaction::sharedCreditSet(
 {
 	pointer	tResult	= boost::make_shared<Transaction>(ttCREDIT_SET, naPublicKey, naSourceAccount, uSeq, saFee, uSourceTag);
 
-	return tResult->setCreditSet(naPrivateKey, naDstAccountID,
-		bLimitAmount, saLimitAmount,
+	return tResult->setCreditSet(naPrivateKey,
+		saLimitAmount,
 		bQualityIn, uQualityIn,
 		bQualityOut, uQualityOut);
 }

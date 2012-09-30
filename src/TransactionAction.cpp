@@ -241,8 +241,17 @@ TER TransactionEngine::doCreditSet(const SerializedTransaction& txn)
 	TER			terResult		= tesSUCCESS;
 	Log(lsINFO) << "doCreditSet>";
 
+	const STAmount		saLimitAmount	= txn.getITFieldAmount(sfLimitAmount);
+	const bool			bQualityIn		= txn.getITFieldPresent(sfQualityIn);
+	const uint32		uQualityIn		= bQualityIn ? txn.getITFieldU32(sfQualityIn) : 0;
+	const bool			bQualityOut		= txn.getITFieldPresent(sfQualityOut);
+	const uint32		uQualityOut		= bQualityIn ? txn.getITFieldU32(sfQualityOut) : 0;
+	const uint160		uCurrencyID		= saLimitAmount.getCurrency();
+	uint160				uDstAccountID	= saLimitAmount.getIssuer();
+	const bool			bFlipped		= mTxnAccountID > uDstAccountID;		// true, iff current is not lowest.
+	bool				bDelIndex		= false;
+
 	// Check if destination makes sense.
-	uint160		uDstAccountID	= txn.getITFieldAccount(sfDestination);
 
 	if (!uDstAccountID)
 	{
@@ -263,23 +272,6 @@ TER TransactionEngine::doCreditSet(const SerializedTransaction& txn)
 		Log(lsINFO) << "doCreditSet: Delay transaction: Destination account does not exist.";
 
 		return terNO_DST;
-	}
-
-	const bool			bFlipped		= mTxnAccountID > uDstAccountID;		// true, iff current is not lowest.
-	const bool			bLimitAmount	= txn.getITFieldPresent(sfLimitAmount);
-	const STAmount		saLimitAmount	= bLimitAmount ? txn.getITFieldAmount(sfLimitAmount) : STAmount();
-	const bool			bQualityIn		= txn.getITFieldPresent(sfQualityIn);
-	const uint32		uQualityIn		= bQualityIn ? txn.getITFieldU32(sfQualityIn) : 0;
-	const bool			bQualityOut		= txn.getITFieldPresent(sfQualityOut);
-	const uint32		uQualityOut		= bQualityIn ? txn.getITFieldU32(sfQualityOut) : 0;
-	const uint160		uCurrencyID		= saLimitAmount.getCurrency();
-	bool				bDelIndex		= false;
-
-	if (bLimitAmount && saLimitAmount.getIssuer() != uDstAccountID)
-	{
-		Log(lsINFO) << "doCreditSet: Malformed transaction: issuer must be destination account.";
-
-		return temBAD_ISSUER;
 	}
 
 	STAmount		saLimitAllow	= saLimitAmount;
@@ -315,8 +307,7 @@ TER TransactionEngine::doCreditSet(const SerializedTransaction& txn)
 
 		if (!bDelIndex)
 		{
-			if (bLimitAmount)
-				sleRippleState->setIFieldAmount(bFlipped ? sfHighLimit: sfLowLimit, saLimitAllow);
+			sleRippleState->setIFieldAmount(bFlipped ? sfHighLimit: sfLowLimit, saLimitAllow);
 
 			if (!bQualityIn)
 			{
