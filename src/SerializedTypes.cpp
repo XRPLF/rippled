@@ -255,51 +255,6 @@ void STAccount::setValueNCA(const NewcoinAddress& nca)
 	setValueH160(nca.getAccountID());
 }
 
-std::string STTaggedList::getText() const
-{
-	std::string ret;
-	for (std::vector<TaggedListItem>::const_iterator it=value.begin(); it!=value.end(); ++it)
-	{
-		ret += boost::lexical_cast<std::string>(it->first);
-		ret += ",";
-		ret += strHex(it->second);
-	}
-	return ret;
-}
-
-Json::Value STTaggedList::getJson(int) const
-{
-	Json::Value ret(Json::arrayValue);
-
-	for (std::vector<TaggedListItem>::const_iterator it=value.begin(); it!=value.end(); ++it)
-	{
-		Json::Value elem(Json::arrayValue);
-		elem.append(it->first);
-		elem.append(strHex(it->second));
-		ret.append(elem);
-	}
-
-	return ret;
-}
-
-STTaggedList* STTaggedList::construct(SerializerIterator& u, const char *name)
-{
-	return new STTaggedList(name, u.getTaggedList());
-}
-
-int STTaggedList::getLength() const
-{
-	int ret = Serializer::getTaggedListLength(value);
-	if (ret<0) throw std::overflow_error("bad TL length");
-	return ret;
-}
-
-bool STTaggedList::isEquivalent(const SerializedType& t) const
-{
-	const STTaggedList* v = dynamic_cast<const STTaggedList*>(&t);
-	return v && (value == v->value);
-}
-
 STPathSet* STPathSet::construct(SerializerIterator& s, const char *name)
 {
 	std::vector<STPath> paths;

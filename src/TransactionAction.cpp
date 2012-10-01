@@ -166,17 +166,23 @@ TER TransactionEngine::doAccountSet(const SerializedTransaction& txn)
 	{
 		uint32		uRate	= txn.getITFieldU32(sfTransferRate);
 
-		if (!uRate)
+		if (!uRate || uRate == QUALITY_ONE)
 		{
 			Log(lsINFO) << "doAccountSet: unset transfer rate";
 
 			mTxnAccount->makeIFieldAbsent(sfTransferRate);
 		}
-		else
+		else if (uRate > QUALITY_ONE)
 		{
 			Log(lsINFO) << "doAccountSet: set transfer rate";
 
 			mTxnAccount->setIFieldU32(sfTransferRate, uRate);
+		}
+		else
+		{
+			Log(lsINFO) << "doAccountSet: bad transfer rate";
+
+			return temBAD_TRANSFER_RATE;
 		}
 	}
 
@@ -235,18 +241,27 @@ TER TransactionEngine::doCreditSet(const SerializedTransaction& txn)
 	TER			terResult		= tesSUCCESS;
 	Log(lsINFO) << "doCreditSet>";
 
+	const STAmount		saLimitAmount	= txn.getITFieldAmount(sfLimitAmount);
+	const bool			bQualityIn		= txn.getITFieldPresent(sfQualityIn);
+	const uint32		uQualityIn		= bQualityIn ? txn.getITFieldU32(sfQualityIn) : 0;
+	const bool			bQualityOut		= txn.getITFieldPresent(sfQualityOut);
+	const uint32		uQualityOut		= bQualityIn ? txn.getITFieldU32(sfQualityOut) : 0;
+	const uint160		uCurrencyID		= saLimitAmount.getCurrency();
+	uint160				uDstAccountID	= saLimitAmount.getIssuer();
+	const bool			bFlipped		= mTxnAccountID > uDstAccountID;		// true, iff current is not lowest.
+	bool				bDelIndex		= false;
+
 	// Check if destination makes sense.
-	uint160		uDstAccountID	= txn.getITFieldAccount(sfDestination);
 
 	if (!uDstAccountID)
 	{
-		Log(lsINFO) << "doCreditSet: Invalid transaction: Destination account not specifed.";
+		Log(lsINFO) << "doCreditSet: Malformed transaction: Destination account not specifed.";
 
 		return temDST_NEEDED;
 	}
 	else if (mTxnAccountID == uDstAccountID)
 	{
-		Log(lsINFO) << "doCreditSet: Invalid transaction: Can not extend credit to self.";
+		Log(lsINFO) << "doCreditSet: Malformed transaction: Can not extend credit to self.";
 
 		return temDST_IS_SRC;
 	}
@@ -259,15 +274,8 @@ TER TransactionEngine::doCreditSet(const SerializedTransaction& txn)
 		return terNO_DST;
 	}
 
-	const bool			bFlipped		= mTxnAccountID > uDstAccountID;		// true, iff current is not lowest.
-	const bool			bLimitAmount	= txn.getITFieldPresent(sfLimitAmount);
-	const STAmount		saLimitAmount	= bLimitAmount ? txn.getITFieldAmount(sfLimitAmount) : STAmount();
-	const bool			bQualityIn		= txn.getITFieldPresent(sfQualityIn);
-	const uint32		uQualityIn		= bQualityIn ? txn.getITFieldU32(sfQualityIn) : 0;
-	const bool			bQualityOut		= txn.getITFieldPresent(sfQualityOut);
-	const uint32		uQualityOut		= bQualityIn ? txn.getITFieldU32(sfQualityOut) : 0;
-	const uint160		uCurrencyID		= saLimitAmount.getCurrency();
-	bool				bDelIndex		= false;
+	STAmount		saLimitAllow	= saLimitAmount;
+		saLimitAllow.setIssuer(mTxnAccountID);
 
 	SLE::pointer		sleRippleState	= entryCache(ltRIPPLE_STATE, Ledger::getRippleStateIndex(mTxnAccountID, uDstAccountID, uCurrencyID));
 	if (sleRippleState)
@@ -277,8 +285,8 @@ TER TransactionEngine::doCreditSet(const SerializedTransaction& txn)
 		if (!saLimitAmount)
 		{
 			// Zeroing line.
-			uint160		uLowID			= sleRippleState->getIValueFieldAccount(sfLowID).getAccountID();
-			uint160		uHighID			= sleRippleState->getIValueFieldAccount(sfHighID).getAccountID();
+			uint160		uLowID			= sleRippleState->getIValueFieldAmount(sfLowLimit).getIssuer();
+			uint160		uHighID			= sleRippleState->getIValueFieldAmount(sfHighLimit).getIssuer();
 			bool		bLow			= uLowID == uSrcAccountID;
 			bool		bHigh			= uLowID == uDstAccountID;
 			bool		bBalanceZero	= !sleRippleState->getIValueFieldAmount(sfBalance);
@@ -299,8 +307,7 @@ TER TransactionEngine::doCreditSet(const SerializedTransaction& txn)
 
 		if (!bDelIndex)
 		{
-			if (bLimitAmount)
-				sleRippleState->setIFieldAmount(bFlipped ? sfHighLimit: sfLowLimit , saLimitAmount);
+			sleRippleState->setIFieldAmount(bFlipped ? sfHighLimit: sfLowLimit, saLimitAllow);
 
 			if (!bQualityIn)
 			{
@@ -348,10 +355,9 @@ TER TransactionEngine::doCreditSet(const SerializedTransaction& txn)
 		Log(lsINFO) << "doCreditSet: Creating ripple line: " << sleRippleState->getIndex().ToString();
 
 		sleRippleState->setIFieldAmount(sfBalance, STAmount(uCurrencyID, ACCOUNT_ONE));	// Zero balance in currency.
-		sleRippleState->setIFieldAmount(bFlipped ? sfHighLimit : sfLowLimit, saLimitAmount);
-		sleRippleState->setIFieldAmount(bFlipped ? sfLowLimit : sfHighLimit, STAmount(uCurrencyID, ACCOUNT_ONE));
-		sleRippleState->setIFieldAccount(bFlipped ? sfHighID : sfLowID, mTxnAccountID);
-		sleRippleState->setIFieldAccount(bFlipped ? sfLowID : sfHighID, uDstAccountID);
+		sleRippleState->setIFieldAmount(bFlipped ? sfHighLimit : sfLowLimit, saLimitAllow);
+		sleRippleState->setIFieldAmount(bFlipped ? sfLowLimit : sfHighLimit, STAmount(uCurrencyID, uDstAccountID));
+
 		if (uQualityIn)
 			sleRippleState->setIFieldU32(bFlipped ? sfHighQualityIn : sfLowQualityIn, uQualityIn);
 		if (uQualityOut)

@@ -74,8 +74,6 @@ private:
 
 	Transaction::pointer setCreditSet(
 		const NewcoinAddress&				naPrivateKey,
-		const NewcoinAddress&				naDstAccountID,
-		bool								bLimitAmount,
 		const STAmount&						saLimitAmount,
 		bool								bQualityIn,
 		uint32								uQualityIn,
@@ -185,8 +183,6 @@ public:
 		uint32								uSeq,
 		const STAmount&						saFee,
 		uint32								uSourceTag,
-		const NewcoinAddress&				naDstAccountID,
-		bool								bLimitAmount,
 		const STAmount&						saLimitAmount,
 		bool								bQualityIn,
 		uint32								uQualityIn,

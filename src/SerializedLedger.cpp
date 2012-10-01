@@ -128,12 +128,12 @@ NewcoinAddress SerializedLedgerEntry::getOwner()
 
 NewcoinAddress SerializedLedgerEntry::getFirstOwner()
 {
-	return getIValueFieldAccount(sfLowID);
+	return NewcoinAddress::createAccountID(getIValueFieldAmount(sfLowLimit).getIssuer());
 }
 
 NewcoinAddress SerializedLedgerEntry::getSecondOwner()
 {
-	return getIValueFieldAccount(sfHighID);
+	return NewcoinAddress::createAccountID(getIValueFieldAmount(sfHighLimit).getIssuer());
 }
 
 std::vector<uint256> SerializedLedgerEntry::getOwners()
@@ -146,16 +146,25 @@ std::vector<uint256> SerializedLedgerEntry::getOwners()
 		switch (getIFieldSType(i))
 		{
 			case sfAccount:
-			case sfLowID:
-			case sfHighID:
-			{
-				const STAccount* entry = dynamic_cast<const STAccount *>(mObject.peekAtPIndex(i));
-				if ((entry != NULL) && entry->getValueH160(account))
-					owners.push_back(Ledger::getAccountRootIndex(account));
-			}
+				{
+					const STAccount* entry = dynamic_cast<const STAccount *>(mObject.peekAtPIndex(i));
+					if ((entry != NULL) && entry->getValueH160(account))
+						owners.push_back(Ledger::getAccountRootIndex(account));
+				}
+				break;
+
+			case sfLowLimit:
+			case sfHighLimit:
+				{
+					const STAmount* entry = dynamic_cast<const STAmount *>(mObject.peekAtPIndex(i));
+					if ((entry != NULL))
+						owners.push_back(Ledger::getAccountRootIndex(entry->getIssuer()));
+				}
+				break;
 
 			default:
 				nothing();
+				break;
 		}
 	}
 

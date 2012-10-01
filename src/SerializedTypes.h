@@ -15,24 +15,11 @@ enum SerializedTypeID
 	STI_DONE		= -1,
 	STI_NOTPRESENT	= 0,
 
-	// common types
-	STI_UINT32		= 1,
-	STI_UINT64		= 2,
-	STI_HASH128		= 3,
-	STI_HASH256		= 4,
-	STI_TL			= 5,
-	STI_AMOUNT		= 6,
-	STI_VL			= 7,
-	STI_ACCOUNT		= 8,
-	STI_OBJECT		= 14,
-	STI_ARRAY		= 15,
-
-	// uncommon types
-	STI_UINT8		= 16,
-	STI_UINT16		= 17,
-	STI_HASH160		= 18,
-	STI_PATHSET		= 19,
-	STI_VECTOR256	= 20,
+#define TYPE(name, field, value) STI_##field = value,
+#define FIELD(name, field, value)
+#include "SerializeProto.h"
+#undef TYPE
+#undef FIELD
 
 	// high level types
 	STI_TRANSACTION = 100001,
@@ -729,45 +716,6 @@ namespace boost
 		typedef std::vector<STPath>::const_iterator type;
 	};
 }
-
-class STTaggedList : public SerializedType
-{
-protected:
-	std::vector<TaggedListItem> value;
-
-	STTaggedList* duplicate() const { return new STTaggedList(name, value); }
-	static STTaggedList* construct(SerializerIterator&, const char* name = NULL);
-
-public:
-
-	STTaggedList() { ; }
-	STTaggedList(const char* n) : SerializedType(n) { ; }
-	STTaggedList(const std::vector<TaggedListItem>& v) : value(v) { ; }
-	STTaggedList(const char* n, const std::vector<TaggedListItem>& v) : SerializedType(n), value(v) { ; }
-	static std::auto_ptr<SerializedType> deserialize(SerializerIterator& sit, const char* name)
-	{ return std::auto_ptr<SerializedType>(construct(sit, name)); }
-
-	int getLength() const;
-	SerializedTypeID getSType() const { return STI_TL; }
-	std::string getText() const;
-	void add(Serializer& s) const { if (s.addTaggedList(value) < 0) throw(0); }
-
-	const std::vector<TaggedListItem>& peekValue() const { return value; }
-	std::vector<TaggedListItem>& peekValue() { return value; }
-	std::vector<TaggedListItem> getValue() const { return value; }
-	virtual Json::Value getJson(int) const;
-
-	void setValue(const std::vector<TaggedListItem>& v) { value=v; }
-
-	int getItemCount() const { return value.size(); }
-	bool isEmpty() const { return value.empty(); }
-
-	void clear() { value.erase(value.begin(), value.end()); }
-	void addItem(const TaggedListItem& v) { value.push_back(v); }
-
-	operator std::vector<TaggedListItem>() const { return value; }
-	virtual bool isEquivalent(const SerializedType& t) const;
-};
 
 class STVector256 : public SerializedType
 {

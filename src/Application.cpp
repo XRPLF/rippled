@@ -73,7 +73,8 @@ void Application::run()
 	boost::thread auxThread(boost::bind(&boost::asio::io_service::run, &mAuxService));
 	auxThread.detach();
 
-	mSNTPClient.init(theConfig.SNTP_SERVERS);
+	if (!theConfig.RUN_STANDALONE)
+		mSNTPClient.init(theConfig.SNTP_SERVERS);
 
 	//
 	// Construct databases.

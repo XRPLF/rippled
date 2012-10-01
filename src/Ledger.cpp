@@ -13,7 +13,6 @@
 #include "../obj/src/newcoin.pb.h"
 #include "PackedMessage.h"
 #include "Config.h"
-#include "Conversion.h"
 #include "BitcoinUtil.h"
 #include "Wallet.h"
 #include "LedgerTiming.h"
@@ -21,7 +20,7 @@
 #include "Log.h"
 
 
-Ledger::Ledger(const NewcoinAddress& masterID, uint64 startAmount) : mTotCoins(startAmount), mLedgerSeq(0),
+Ledger::Ledger(const NewcoinAddress& masterID, uint64 startAmount) : mTotCoins(startAmount), mLedgerSeq(1),
 	mCloseTime(0), mParentCloseTime(0), mCloseResolution(LEDGER_TIME_ACCURACY), mCloseFlags(0),
 	mClosed(false), mValidHash(false), mAccepted(false), mImmutable(false),
 	mTransactionMap(new SHAMap()), mAccountStateMap(new SHAMap())
