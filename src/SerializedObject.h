@@ -40,6 +40,8 @@ public:
 	STObject(SOElement::ptrList type, SerializerIterator& sit, SField::ref name) : SerializedType(name)
 	{ set(sit); setType(type); }
 
+	STObject(const Json::Value& value, SField::ref name);
+
 	virtual ~STObject() { ; }
 
 	static std::auto_ptr<SerializedType> deserialize(SerializerIterator& sit, SField::ref name);

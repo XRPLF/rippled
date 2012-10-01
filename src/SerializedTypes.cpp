@@ -19,7 +19,7 @@ std::string SerializedType::getFullText() const
 	std::string ret;
 	if (getSType() != STI_NOTPRESENT)
 	{
-		if(fName != NULL)
+		if(fName->hasName())
 		{
 			ret = fName->fieldName;
 			ret += " = ";

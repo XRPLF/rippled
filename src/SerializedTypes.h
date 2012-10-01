@@ -50,7 +50,7 @@ public:
 
 	void setFName(SField::ref n) { fName = &n; assert(fName); }
 	SField::ref getFName() const { return *fName; }
-	const char *getName() const { return fName->fieldName; }
+	std::string getName() const { return fName->fieldName; }
 
 	virtual SerializedTypeID getSType() const { return STI_NOTPRESENT; }
 	std::auto_ptr<SerializedType> clone() const { return std::auto_ptr<SerializedType>(duplicate()); }

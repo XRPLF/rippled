@@ -703,7 +703,7 @@ Json::Value STObject::getJson(int options) const
 	{
 		if (it.getSType() != STI_NOTPRESENT)
 		{
-			if (it.getName() == NULL)
+			if (!it.getFName().hasName())
 				ret[boost::lexical_cast<std::string>(index)] = it.getJson(options);
 			else
 				ret[it.getName()] = it.getJson(options);
@@ -777,6 +777,19 @@ STArray* STArray::construct(SerializerIterator& sit, SField::ref field)
 	return new STArray(field, value);
 }
 
+STObject::STObject(const Json::Value& object, SField::ref name) : SerializedType(name)
+{
+	if (!object.isObject())
+		throw std::runtime_error("Value is not an object");
+
+	Json::Value::Members members(object.getMemberNames());
+	for (Json::Value::Members::iterator it = members.begin(), end = members.end(); it != end; ++it)
+	{
+		const std::string& name = *it;
+		const Json::Value& value = object[name];
+		// WRITEME
+	}
+}
 
 #if 0
 

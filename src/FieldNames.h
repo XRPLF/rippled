@@ -48,20 +48,20 @@ public:
 	const int				fieldCode;		// (type<<16)|index
 	const SerializedTypeID	fieldType;		// STI_*
 	const int				fieldValue;		// Code number for protocol
-	const char*				fieldName;
+	std::string				fieldName;
 
 	SField(int fc, SerializedTypeID tid, int fv, const char* fn) : 
 		fieldCode(fc), fieldType(tid), fieldValue(fv), fieldName(fn)
 	{ codeToField[fc] = this; }
 
-	SField(int fc) : fieldCode(fc), fieldType(STI_UNKNOWN), fieldValue(0), fieldName(NULL) { ; }
+	SField(int fc) : fieldCode(fc), fieldType(STI_UNKNOWN), fieldValue(0) { ; }
 
 	static SField::ref getField(int fieldCode);
 	static SField::ref getField(int fieldType, int fieldValue);
 	static SField::ref getField(SerializedTypeID type, int value) { return getField(FIELD_CODE(type, value)); }
 
 	std::string getName() const;
-	bool hasName() const		{ return (fieldName != NULL) || (fieldValue != 0); }
+	bool hasName() const		{ return !fieldName.empty(); }
 
 	bool isGeneric() const		{ return fieldCode == 0; }
 	bool isInvalid() const		{ return fieldCode == -1; }

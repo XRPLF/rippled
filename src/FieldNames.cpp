@@ -75,7 +75,7 @@ SField::ref SField::getField(int type, int value)
 
 std::string SField::getName() const
 {
-	if (fieldName != NULL)
+	if (!fieldName.empty())
 		return fieldName;
 	if (fieldValue == 0)
 		return "";
