@@ -66,7 +66,7 @@ Json::Value TMNEThread::getJson(int) const
 
 TMNEAmount::TMNEAmount(int type, SerializerIterator& sit) : TransactionMetaNodeEntry(type)
 {
-	mAmount = *dynamic_cast<STAmount*>(STAmount::deserialize(sit, NULL).get()); // Ouch
+	mAmount = *dynamic_cast<STAmount*>(STAmount::deserialize(sit, sfAmount).get()); // Ouch
 }
 
 void TMNEAmount::addRaw(Serializer& s) const

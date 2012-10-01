@@ -83,17 +83,18 @@ uint32 NetworkOPs::getCurrentLedgerID()
 Transaction::pointer NetworkOPs::submitTransaction(const Transaction::pointer& tpTrans)
 {
 	Serializer s;
-
 	tpTrans->getSTransaction()->add(s);
 
-	std::vector<unsigned char>	vucTransaction	= s.getData();
-
-	SerializerIterator		sit(s);
-
 	Transaction::pointer	tpTransNew	= Transaction::sharedTransaction(s.getData(), true);
-
 	assert(tpTransNew);
-	assert(tpTransNew->getSTransaction()->isEquivalent(*tpTrans->getSTransaction()));
+
+	if(!tpTransNew->getSTransaction()->isEquivalent(*tpTrans->getSTransaction()))
+	{
+		Log(lsFATAL) << "Transaction reconstruction failure";
+		Log(lsFATAL) << tpTransNew->getSTransaction()->getJson(0);
+		Log(lsFATAL) << tpTrans->getSTransaction()->getJson(0);
+		assert(false);
+	}
 
 	(void) NetworkOPs::processTransaction(tpTransNew);
 

@@ -1777,17 +1777,17 @@ Json::Value RPCServer::doSend(const Json::Value& params)
 			// Destination exists, ordinary send.
 
 			STPathSet			spsPaths;
-			/*
 			uint160  srcCurrencyID;
-			bool ret_b;
-			ret_b = false;
-			STAmount::currencyFromString(srcCurrencyID, sSrcCurrency);
+                        bool ret_b;
+                        ret_b = false;
 
-			Pathfinder pf(naSrcAccountID, naDstAccountID, srcCurrencyID, saDstAmount);
-
-			ret_b = pf.findPaths(5, 1, spsPaths);
-			// TODO: Nope; the above can't be right
-			*/
+			if (!saSrcAmountMax.isNative() || !saDstAmount.isNative()) 
+			{
+			  STAmount::currencyFromString(srcCurrencyID, sSrcCurrency);
+			  Pathfinder pf(naSrcAccountID, naDstAccountID, srcCurrencyID, saDstAmount);
+			  ret_b = pf.findPaths(5, 1, spsPaths);
+			}
+			
 			trans	= Transaction::sharedPayment(
 				naAccountPublic, naAccountPrivate,
 				naSrcAccountID,
