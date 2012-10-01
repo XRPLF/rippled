@@ -299,18 +299,11 @@ void STAmount::add(Serializer& s) const
 	}
 }
 
-STAmount::STAmount(SField::ref name, int64 value) : SerializedType(name), mOffset(0), mIsNative(true)
+STAmount STAmount::createFromInt64(SField::ref name, int64 value)
 {
-	if (value >= 0)
-	{
-		mIsNegative	= false;
-		mValue		= static_cast<uint64>(value);
-	}
-	else
-	{
-		mIsNegative	= true;
-		mValue		= static_cast<uint64>(-value);
-	}
+	return value >= 0
+		? STAmount(name, static_cast<uint64>(value), false)
+		: STAmount(name, static_cast<uint64>(-value), true);
 }
 
 void STAmount::setValue(const STAmount &a)
@@ -623,7 +616,7 @@ STAmount operator-(const STAmount& v1, const STAmount& v2)
 
 	v1.throwComparable(v2);
 	if (v2.mIsNative)
-		return STAmount(v1.fName, v1.getSNValue() - v2.getSNValue());
+		return STAmount::createFromInt64(v1.getFName(), v1.getSNValue() - v2.getSNValue());
 
 	int ov1 = v1.mOffset, ov2 = v2.mOffset;
 	int64 vv1 = static_cast<int64>(v1.mValue), vv2 = static_cast<int64>(v2.mValue);

@@ -355,7 +355,9 @@ Json::Value RPCServer::authorize(const uint256& uLedger,
 	}
 	else
 	{
+		Log(lsINFO) << "authorize: before: fee=" << saFee.getFullText() << " balance=" << saSrcBalance.getFullText();
 		saSrcBalance -= saFee;
+		Log(lsINFO) << "authorize: after: fee=" << saFee.getFullText() << " balance=" << saSrcBalance.getFullText();
 	}
 
 	Json::Value	obj;
@@ -1778,14 +1780,15 @@ Json::Value RPCServer::doSend(const Json::Value& params)
 
 			STPathSet			spsPaths;
 			uint160  srcCurrencyID;
-                        bool ret_b;
-                        ret_b = false;
+//                        bool ret_b;
+//                        ret_b = false;
 
 			if (!saSrcAmountMax.isNative() || !saDstAmount.isNative()) 
 			{
 			  STAmount::currencyFromString(srcCurrencyID, sSrcCurrency);
 			  Pathfinder pf(naSrcAccountID, naDstAccountID, srcCurrencyID, saDstAmount);
-			  ret_b = pf.findPaths(5, 1, spsPaths);
+//			  ret_b = pf.findPaths(5, 1, spsPaths);
+			  pf.findPaths(5, 1, spsPaths);
 			}
 			
 			trans	= Transaction::sharedPayment(
