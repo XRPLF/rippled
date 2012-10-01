@@ -616,7 +616,10 @@ STAmount operator-(const STAmount& v1, const STAmount& v2)
 
 	v1.throwComparable(v2);
 	if (v2.mIsNative)
+	{
+		// XXX This could be better, check for overflow and that maximum range is covered.
 		return STAmount::createFromInt64(v1.getFName(), v1.getSNValue() - v2.getSNValue());
+	}
 
 	int ov1 = v1.mOffset, ov2 = v2.mOffset;
 	int64 vv1 = static_cast<int64>(v1.mValue), vv2 = static_cast<int64>(v2.mValue);

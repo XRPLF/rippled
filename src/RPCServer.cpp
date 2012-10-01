@@ -960,7 +960,6 @@ Json::Value RPCServer::doNicknameSet(const Json::Value& params)
 	std::string					strOfferCurrency;
 	std::string					strNickname		= params[2u].asString();
 									boost::trim(strNickname);
-	std::vector<unsigned char>	vucSignature;
 
 	if (strNickname.empty())
 	{
@@ -1012,8 +1011,7 @@ Json::Value RPCServer::doNicknameSet(const Json::Value& params)
 		0,											// YYY No source tag
 		Ledger::getNicknameHash(strNickname),
 		bSetOffer,
-		saMinimumOffer,
-		vucSignature);
+		saMinimumOffer);
 
 	trans	= mNetOps->submitTransaction(trans);
 
@@ -1783,14 +1781,14 @@ Json::Value RPCServer::doSend(const Json::Value& params)
 //                        bool ret_b;
 //                        ret_b = false;
 
-			if (!saSrcAmountMax.isNative() || !saDstAmount.isNative()) 
+			if (!saSrcAmountMax.isNative() || !saDstAmount.isNative())
 			{
 			  STAmount::currencyFromString(srcCurrencyID, sSrcCurrency);
 			  Pathfinder pf(naSrcAccountID, naDstAccountID, srcCurrencyID, saDstAmount);
 //			  ret_b = pf.findPaths(5, 1, spsPaths);
 			  pf.findPaths(5, 1, spsPaths);
 			}
-			
+
 			trans	= Transaction::sharedPayment(
 				naAccountPublic, naAccountPrivate,
 				naSrcAccountID,
