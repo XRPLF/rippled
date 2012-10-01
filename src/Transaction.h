@@ -272,15 +272,15 @@ public:
 
 	SerializedTransaction::pointer getSTransaction() { return mTransaction; }
 
-	const uint256& getID() const { return mTransactionID; }
-	const NewcoinAddress& getFromAccount() const { return mAccountFrom; }
-	STAmount getAmount() const { return mTransaction->getITFieldU64(sfAmount); }
-	STAmount getFee() const { return mTransaction->getTransactionFee(); }
-	uint32 getFromAccountSeq() const { return mTransaction->getSequence(); }
-	uint32 getIdent() const { return mTransaction->getITFieldU32(sfSourceTag); }
-	std::vector<unsigned char> getSignature() const { return mTransaction->getSignature(); }
-	uint32 getLedger() const { return mInLedger; }
-	TransStatus getStatus() const { return mStatus; }
+	const uint256& getID() const					{ return mTransactionID; }
+	const NewcoinAddress& getFromAccount() const	{ return mAccountFrom; }
+	STAmount getAmount() const						{ return mTransaction->getValueFieldU64(sfAmount); }
+	STAmount getFee() const							{ return mTransaction->getTransactionFee(); }
+	uint32 getFromAccountSeq() const				{ return mTransaction->getSequence(); }
+	uint32 getIdent() const							{ return mTransaction->getValueFieldU32(sfSourceTag); }
+	std::vector<unsigned char> getSignature() const	{ return mTransaction->getSignature(); }
+	uint32 getLedger() const						{ return mInLedger; }
+	TransStatus getStatus() const					{ return mStatus; }
 
 	void setStatus(TransStatus status, uint32 ledgerSeq);
 	void setStatus(TransStatus status) { mStatus=status; }

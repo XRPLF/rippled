@@ -131,15 +131,6 @@ void SerializedTransaction::setSourceAccount(const NewcoinAddress& naSource)
 	setValueFieldAccount(sfAccount, naSource);
 }
 
-uint160 SerializedTransaction::getITFieldAccount(SField::ref field) const
-{
-	uint160 r;
-	const STAccount* ac = dynamic_cast<const STAccount*>(peekAtPField(field));
-	if (ac)
-		ac->getValueH160(r);
-	return r;
-}
-
 Json::Value SerializedTransaction::getJson(int options) const
 {
 	Json::Value ret = STObject::getJson(0);

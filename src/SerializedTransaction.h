@@ -55,51 +55,6 @@ public:
 	uint32 getSequence() const		{ return getValueFieldU32(sfSequence); }
 	void setSequence(uint32 seq)	{ return setValueFieldU32(sfSequence, seq); }
 
-	// inner transaction field functions (OBSOLETE - use STObject functions)
-	int getITFieldIndex(SField::ref field) const				{ return getFieldIndex(field); }
-	const SerializedType& peekITField(SField::ref field) const	{ return peekAtField(field); } 
-	SerializedType& getITField(SField::ref field)				{ return getField(field); }
-
-	// inner transaction field value functions (OBSOLETE - use STObject functions)
-	std::string getITFieldString(SField::ref field) const { return getFieldString(field); }
-	unsigned char getITFieldU8(SField::ref field) const { return getValueFieldU8(field); }
-	uint16 getITFieldU16(SField::ref field) const { return getValueFieldU16(field); }
-	uint32 getITFieldU32(SField::ref field) const { return getValueFieldU32(field); }
-	uint64 getITFieldU64(SField::ref field) const { return getValueFieldU64(field); }
-	uint128 getITFieldH128(SField::ref field) const { return getValueFieldH128(field); }
-	uint160 getITFieldH160(SField::ref field) const { return getValueFieldH160(field); }
-	uint160 getITFieldAccount(SField::ref field) const;
-	uint256 getITFieldH256(SField::ref field) const { return getValueFieldH256(field); }
-	std::vector<unsigned char> getITFieldVL(SField::ref field) const { return getValueFieldVL(field); }
-	std::vector<TaggedListItem> getITFieldTL(SField::ref field) const { return getValueFieldTL(field); }
-	STAmount getITFieldAmount(SField::ref field) const { return getValueFieldAmount(field); }
-	STPathSet getITFieldPathSet(SField::ref field) const { return getValueFieldPathSet(field); }
-
-	void setITFieldU8(SField::ref field, unsigned char v) { return setValueFieldU8(field, v); }
-	void setITFieldU16(SField::ref field, uint16 v) { return setValueFieldU16(field, v); }
-	void setITFieldU32(SField::ref field, uint32 v) { return setValueFieldU32(field, v); }
-	void setITFieldU64(SField::ref field, uint32 v) { return setValueFieldU64(field, v); }
-	void setITFieldH128(SField::ref field, const uint128& v) { return setValueFieldH128(field, v); }
-	void setITFieldH160(SField::ref field, const uint160& v) { return setValueFieldH160(field, v); }
-	void setITFieldH256(SField::ref field, const uint256& v) { return setValueFieldH256(field, v); }
-	void setITFieldVL(SField::ref field, const std::vector<unsigned char>& v)
-		{ return setValueFieldVL(field, v); }
-	void setITFieldTL(SField::ref field, const std::vector<TaggedListItem>& v)
-		{ return setValueFieldTL(field, v); }
-	void setITFieldAccount(SField::ref field, const uint160& v)
-		{ return setValueFieldAccount(field, v); }
-	void setITFieldAccount(SField::ref field, const NewcoinAddress& v)
-		{ return setValueFieldAccount(field, v); }
-	void setITFieldAmount(SField::ref field, const STAmount& v)
-		{ return setValueFieldAmount(field, v); }
-	void setITFieldPathSet(SField::ref field, const STPathSet& v)
-		{ return setValueFieldPathSet(field, v); }
-
-	// optional field functions (OBSOLETE - use STObject functions)
-	bool getITFieldPresent(SField::ref field) const	{ return isFieldPresent(field); }
-	void makeITFieldPresent(SField::ref field)		{ makeFieldPresent(field); }
-	void makeITFieldAbsent(SField::ref field)		{ makeFieldAbsent(field); }
-
 	std::vector<NewcoinAddress> getAffectedAccounts() const;
 
 	uint256 getTransactionID() const;

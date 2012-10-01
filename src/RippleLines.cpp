@@ -25,7 +25,7 @@ void RippleLines::fillLines(const uint160& accountID, Ledger::pointer ledger)
 		SLE::pointer rippleDir=ledger->getDirNode(lspNode, currentIndex);
 		if (!rippleDir) return;
 
-		STVector256 svOwnerNodes		= rippleDir->getIFieldV256(sfIndexes);
+		STVector256 svOwnerNodes		= rippleDir->getValueFieldV256(sfIndexes);
 		BOOST_FOREACH(uint256& uNode, svOwnerNodes.peekValue())
 		{
 			SLE::pointer	sleCur	= ledger->getSLE(uNode);
@@ -45,7 +45,7 @@ void RippleLines::fillLines(const uint160& accountID, Ledger::pointer ledger)
 			}
 		}
 
-		uint64 uNodeNext	= rippleDir->getIFieldU64(sfIndexNext);
+		uint64 uNodeNext	= rippleDir->getValueFieldU64(sfIndexNext);
 		if (!uNodeNext) return;
 
 		currentIndex	= Ledger::getDirNodeIndex(rootIndex, uNodeNext);

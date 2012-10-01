@@ -252,7 +252,7 @@ Json::Value RPCServer::getMasterGenerator(const uint256& uLedger, const NewcoinA
 		return RPCError(rpcNO_ACCOUNT);
 	}
 
-	std::vector<unsigned char>	vucCipher			= sleGen->getIFieldVL(sfGenerator);
+	std::vector<unsigned char>	vucCipher			= sleGen->getValueFieldVL(sfGenerator);
 	std::vector<unsigned char>	vucMasterGenerator	= na0Private.accountPrivateDecrypt(na0Public, vucCipher);
 	if (vucMasterGenerator.empty())
 	{
@@ -402,7 +402,7 @@ Json::Value RPCServer::accountFromString(const uint256& uLedger, NewcoinAddress&
 		else
 		{
 			// Found master public key.
-			std::vector<unsigned char>	vucCipher				= sleGen->getIFieldVL(sfGenerator);
+			std::vector<unsigned char>	vucCipher				= sleGen->getValueFieldVL(sfGenerator);
 			std::vector<unsigned char>	vucMasterGenerator		= naRegular0Private.accountPrivateDecrypt(naRegular0Public, vucCipher);
 			if (vucMasterGenerator.empty())
 			{

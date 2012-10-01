@@ -103,6 +103,7 @@ public:
 	uint160 getValueFieldH160(SField::ref field) const;
 	uint256 getValueFieldH256(SField::ref field) const;
 	NewcoinAddress getValueFieldAccount(SField::ref field) const;
+	uint160 getValueFieldAccount160(SField::ref field) const;
 	std::vector<unsigned char> getValueFieldVL(SField::ref field) const;
 	std::vector<TaggedListItem> getValueFieldTL(SField::ref field) const;
 	STAmount getValueFieldAmount(SField::ref field) const;

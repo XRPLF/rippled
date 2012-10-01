@@ -27,8 +27,8 @@ Ledger::Ledger(const NewcoinAddress& masterID, uint64 startAmount) : mTotCoins(s
 {
 	// special case: put coins in root account
 	AccountState::pointer startAccount = boost::make_shared<AccountState>(masterID);
-	startAccount->peekSLE().setIFieldAmount(sfBalance, startAmount);
-	startAccount->peekSLE().setIFieldU32(sfSequence, 1);
+	startAccount->peekSLE().setValueFieldAmount(sfBalance, startAmount);
+	startAccount->peekSLE().setValueFieldU32(sfSequence, 1);
 	writeBack(lepCREATE, startAccount->getSLE());
 #if 0
 	std::cerr << "Root account:";

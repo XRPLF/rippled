@@ -7,19 +7,19 @@ RippleState::RippleState(SerializedLedgerEntry::pointer ledgerEntry) :
 {
 	if (!mLedgerEntry || mLedgerEntry->getType() != ltRIPPLE_STATE) return;
 
-	mLowLimit		= mLedgerEntry->getIValueFieldAmount(sfLowLimit);
-	mHighLimit		= mLedgerEntry->getIValueFieldAmount(sfHighLimit);
+	mLowLimit		= mLedgerEntry->getValueFieldAmount(sfLowLimit);
+	mHighLimit		= mLedgerEntry->getValueFieldAmount(sfHighLimit);
 
 	mLowID			= NewcoinAddress::createAccountID(mLowLimit.getIssuer());
 	mHighID			= NewcoinAddress::createAccountID(mHighLimit.getIssuer());
 
-	mLowQualityIn	= mLedgerEntry->getIFieldU32(sfLowQualityIn);
-	mLowQualityOut	= mLedgerEntry->getIFieldU32(sfLowQualityOut);
+	mLowQualityIn	= mLedgerEntry->getValueFieldU32(sfLowQualityIn);
+	mLowQualityOut	= mLedgerEntry->getValueFieldU32(sfLowQualityOut);
 
-	mHighQualityIn	= mLedgerEntry->getIFieldU32(sfHighQualityIn);
-	mHighQualityOut	= mLedgerEntry->getIFieldU32(sfHighQualityOut);
+	mHighQualityIn	= mLedgerEntry->getValueFieldU32(sfHighQualityIn);
+	mHighQualityOut	= mLedgerEntry->getValueFieldU32(sfHighQualityOut);
 
-	mBalance	= mLedgerEntry->getIValueFieldAmount(sfBalance);
+	mBalance	= mLedgerEntry->getValueFieldAmount(sfBalance);
 
 	mValid		= true;
 }

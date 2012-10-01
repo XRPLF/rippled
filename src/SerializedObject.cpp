@@ -545,6 +545,28 @@ NewcoinAddress STObject::getValueFieldAccount(SField::ref field) const
 	return cf->getValueNCA();
 }
 
+uint160 STObject::getValueFieldAccount160(SField::ref field) const
+{
+	uint160 a;
+	const SerializedType* rf = peekAtPField(field);
+	if (!rf)
+	{
+#ifdef DEBUG
+		std::cerr << "Account field not found" << std::endl;
+		std::cerr << getFullText() << std::endl;
+#endif
+		throw std::runtime_error("Field not found");
+	}
+	SerializedTypeID id = rf->getSType();
+	if (id != STI_NOTPRESENT)
+	{
+		const STAccount* cf = dynamic_cast<const STAccount *>(rf);
+		if (!cf) throw std::runtime_error("Wrong field type");
+		cf->getValueH160(a);
+	}
+	return a;
+}
+
 std::vector<unsigned char> STObject::getValueFieldVL(SField::ref field) const
 {
 	const SerializedType* rf = peekAtPField(field);

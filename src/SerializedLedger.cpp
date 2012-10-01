@@ -124,12 +124,12 @@ NewcoinAddress SerializedLedgerEntry::getOwner()
 
 NewcoinAddress SerializedLedgerEntry::getFirstOwner()
 {
-	return NewcoinAddress::createAccountID(getIValueFieldAmount(sfLowLimit).getIssuer());
+	return NewcoinAddress::createAccountID(getValueFieldAmount(sfLowLimit).getIssuer());
 }
 
 NewcoinAddress SerializedLedgerEntry::getSecondOwner()
 {
-	return NewcoinAddress::createAccountID(getIValueFieldAmount(sfHighLimit).getIssuer());
+	return NewcoinAddress::createAccountID(getValueFieldAmount(sfHighLimit).getIssuer());
 }
 
 std::vector<uint256> SerializedLedgerEntry::getOwners()

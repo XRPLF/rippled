@@ -245,12 +245,12 @@ STVector256 NetworkOPs::getDirNodeInfo(
 	{
 		Log(lsDEBUG) << "getDirNodeInfo: node index: " << uNodeIndex.ToString();
 
-		Log(lsTRACE) << "getDirNodeInfo: first: " << strHex(sleNode->getIFieldU64(sfIndexPrevious));
-		Log(lsTRACE) << "getDirNodeInfo:  last: " << strHex(sleNode->getIFieldU64(sfIndexNext));
+		Log(lsTRACE) << "getDirNodeInfo: first: " << strHex(sleNode->getValueFieldU64(sfIndexPrevious));
+		Log(lsTRACE) << "getDirNodeInfo:  last: " << strHex(sleNode->getValueFieldU64(sfIndexNext));
 
-		uNodePrevious	= sleNode->getIFieldU64(sfIndexPrevious);
-		uNodeNext		= sleNode->getIFieldU64(sfIndexNext);
-		svIndexes		= sleNode->getIFieldV256(sfIndexes);
+		uNodePrevious	= sleNode->getValueFieldU64(sfIndexPrevious);
+		uNodeNext		= sleNode->getValueFieldU64(sfIndexNext);
+		svIndexes		= sleNode->getValueFieldV256(sfIndexes);
 
 		Log(lsTRACE) << "getDirNodeInfo: first: " << strHex(uNodePrevious);
 		Log(lsTRACE) << "getDirNodeInfo:  last: " << strHex(uNodeNext);
@@ -299,7 +299,7 @@ Json::Value NetworkOPs::getOwnerInfo(Ledger::pointer lpLedger, const NewcoinAddr
 
 		do
 		{
-			STVector256					svIndexes	= sleNode->getIFieldV256(sfIndexes);
+			STVector256					svIndexes	= sleNode->getValueFieldV256(sfIndexes);
 			const std::vector<uint256>&	vuiIndexes	= svIndexes.peekValue();
 
 			BOOST_FOREACH(const uint256& uDirEntry, vuiIndexes)
@@ -332,7 +332,7 @@ Json::Value NetworkOPs::getOwnerInfo(Ledger::pointer lpLedger, const NewcoinAddr
 				}
 			}
 
-			uNodeDir		= sleNode->getIFieldU64(sfIndexNext);
+			uNodeDir		= sleNode->getValueFieldU64(sfIndexNext);
 			if (uNodeDir)
 			{
 				lspNode	= lepNONE;

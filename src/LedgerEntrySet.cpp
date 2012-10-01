@@ -383,28 +383,28 @@ void LedgerEntrySet::calcRawMeta(Serializer& s)
 			assert(origNode);
 			threadOwners(origNode, mLedger, newMod);
 
-			if (origNode->getIFieldPresent(sfAmount))
+			if (origNode->isFieldPresent(sfAmount))
 			{ // node has an amount, covers ripple state nodes
-				STAmount amount = origNode->getIValueFieldAmount(sfAmount);
+				STAmount amount = origNode->getValueFieldAmount(sfAmount);
 				if (amount.isNonZero())
 					metaNode.addAmount(TMSPrevBalance, amount);
-				amount = curNode->getIValueFieldAmount(sfAmount);
+				amount = curNode->getValueFieldAmount(sfAmount);
 				if (amount.isNonZero())
 					metaNode.addAmount(TMSFinalBalance, amount);
 
 				if (origNode->getType() == ltRIPPLE_STATE)
 				{
-					metaNode.addAccount(TMSLowID, NewcoinAddress::createAccountID(origNode->getIValueFieldAmount(sfLowLimit).getIssuer()));
-					metaNode.addAccount(TMSHighID, NewcoinAddress::createAccountID(origNode->getIValueFieldAmount(sfHighLimit).getIssuer()));
+					metaNode.addAccount(TMSLowID, NewcoinAddress::createAccountID(origNode->getValueFieldAmount(sfLowLimit).getIssuer()));
+					metaNode.addAccount(TMSHighID, NewcoinAddress::createAccountID(origNode->getValueFieldAmount(sfHighLimit).getIssuer()));
 				}
 			}
 
 			if (origNode->getType() == ltOFFER)
 			{ // check for non-zero balances
-				STAmount amount = origNode->getIValueFieldAmount(sfTakerPays);
+				STAmount amount = origNode->getValueFieldAmount(sfTakerPays);
 				if (amount.isNonZero())
 					metaNode.addAmount(TMSFinalTakerPays, amount);
-				amount = origNode->getIValueFieldAmount(sfTakerGets);
+				amount = origNode->getValueFieldAmount(sfTakerGets);
 				if (amount.isNonZero())
 					metaNode.addAmount(TMSFinalTakerGets, amount);
 			}
@@ -429,20 +429,20 @@ void LedgerEntrySet::calcRawMeta(Serializer& s)
 		if (nType == TMNModifiedNode)
 		{
 			assert(origNode);
-			if (origNode->getIFieldPresent(sfAmount))
+			if (origNode->isFieldPresent(sfAmount))
 			{ // node has an amount, covers account root nodes and ripple nodes
-				STAmount amount = origNode->getIValueFieldAmount(sfAmount);
-				if (amount != curNode->getIValueFieldAmount(sfAmount))
+				STAmount amount = origNode->getValueFieldAmount(sfAmount);
+				if (amount != curNode->getValueFieldAmount(sfAmount))
 					metaNode.addAmount(TMSPrevBalance, amount);
 			}
 
 			if (origNode->getType() == ltOFFER)
 			{
-				STAmount amount = origNode->getIValueFieldAmount(sfTakerPays);
-				if (amount != curNode->getIValueFieldAmount(sfTakerPays))
+				STAmount amount = origNode->getValueFieldAmount(sfTakerPays);
+				if (amount != curNode->getValueFieldAmount(sfTakerPays))
 					metaNode.addAmount(TMSPrevTakerPays, amount);
-				amount = origNode->getIValueFieldAmount(sfTakerGets);
-				if (amount != curNode->getIValueFieldAmount(sfTakerGets))
+				amount = origNode->getValueFieldAmount(sfTakerGets);
+				if (amount != curNode->getValueFieldAmount(sfTakerGets))
 					metaNode.addAmount(TMSPrevTakerGets, amount);
 			}
 
@@ -485,7 +485,7 @@ TER LedgerEntrySet::dirAdd(
 	}
 	else
 	{
-		uNodeDir	= sleRoot->getIFieldU64(sfIndexPrevious);		// Get index to last directory node.
+		uNodeDir	= sleRoot->getValueFieldU64(sfIndexPrevious);		// Get index to last directory node.
 
 		if (uNodeDir)
 		{
@@ -500,7 +500,7 @@ TER LedgerEntrySet::dirAdd(
 			sleNode		= sleRoot;
 		}
 
-		svIndexes	= sleNode->getIFieldV256(sfIndexes);
+		svIndexes	= sleNode->getValueFieldV256(sfIndexes);
 
 		if (DIR_NODE_MAX != svIndexes.peekValue().size())
 		{
@@ -519,7 +519,7 @@ TER LedgerEntrySet::dirAdd(
 			{
 				// Previous node is root node.
 
-				sleRoot->setIFieldU64(sfIndexNext, uNodeDir);
+				sleRoot->setValueFieldU64(sfIndexNext, uNodeDir);
 			}
 			else
 			{
@@ -527,14 +527,14 @@ TER LedgerEntrySet::dirAdd(
 
 				SLE::pointer	slePrevious	= entryCache(ltDIR_NODE, Ledger::getDirNodeIndex(uRootIndex, uNodeDir-1));
 
-				slePrevious->setIFieldU64(sfIndexNext, uNodeDir);
+				slePrevious->setValueFieldU64(sfIndexNext, uNodeDir);
 				entryModify(slePrevious);
 
-				sleNode->setIFieldU64(sfIndexPrevious, uNodeDir-1);
+				sleNode->setValueFieldU64(sfIndexPrevious, uNodeDir-1);
 			}
 
 			// Have root point to new node.
-			sleRoot->setIFieldU64(sfIndexPrevious, uNodeDir);
+			sleRoot->setValueFieldU64(sfIndexPrevious, uNodeDir);
 			entryModify(sleRoot);
 
 			// Create the new node.
@@ -544,7 +544,7 @@ TER LedgerEntrySet::dirAdd(
 	}
 
 	svIndexes.peekValue().push_back(uLedgerIndex);	// Append entry.
-	sleNode->setIFieldV256(sfIndexes, svIndexes);	// Save entry.
+	sleNode->setValueFieldV256(sfIndexes, svIndexes);	// Save entry.
 
 	Log(lsINFO) << "dirAdd:   creating: root: " << uRootIndex.ToString();
 	Log(lsINFO) << "dirAdd:  appending: Entry: " << uLedgerIndex.ToString();
@@ -574,7 +574,7 @@ TER LedgerEntrySet::dirDelete(
 		return tefBAD_LEDGER;
 	}
 
-	STVector256						svIndexes	= sleNode->getIFieldV256(sfIndexes);
+	STVector256						svIndexes	= sleNode->getValueFieldV256(sfIndexes);
 	std::vector<uint256>&			vuiIndexes	= svIndexes.peekValue();
 	std::vector<uint256>::iterator	it;
 
@@ -608,14 +608,14 @@ TER LedgerEntrySet::dirDelete(
 		vuiIndexes.clear();
 	}
 
-	sleNode->setIFieldV256(sfIndexes, svIndexes);
+	sleNode->setValueFieldV256(sfIndexes, svIndexes);
 	entryModify(sleNode);
 
 	if (vuiIndexes.empty())
 	{
 		// May be able to delete nodes.
-		uint64				uNodePrevious	= sleNode->getIFieldU64(sfIndexPrevious);
-		uint64				uNodeNext		= sleNode->getIFieldU64(sfIndexNext);
+		uint64				uNodePrevious	= sleNode->getValueFieldU64(sfIndexPrevious);
+		uint64				uNodeNext		= sleNode->getValueFieldU64(sfIndexNext);
 
 		if (!uNodeCur)
 		{
@@ -646,7 +646,7 @@ TER LedgerEntrySet::dirDelete(
 
 				assert(sleLast);
 
-				if (sleLast->getIFieldV256(sfIndexes).peekValue().empty())
+				if (sleLast->getValueFieldV256(sfIndexes).peekValue().empty())
 				{
 					// Both nodes are empty.
 
@@ -690,11 +690,11 @@ TER LedgerEntrySet::dirDelete(
 			}
 
 			// Fix previous to point to its new next.
-			slePrevious->setIFieldU64(sfIndexNext, uNodeNext);
+			slePrevious->setValueFieldU64(sfIndexNext, uNodeNext);
 			entryModify(slePrevious);
 
 			// Fix next to point to its new previous.
-			sleNext->setIFieldU64(sfIndexPrevious, uNodePrevious);
+			sleNext->setValueFieldU64(sfIndexPrevious, uNodePrevious);
 			entryModify(sleNext);
 		}
 		// Last node.
@@ -712,7 +712,7 @@ TER LedgerEntrySet::dirDelete(
 
 			assert(sleRoot);
 
-			if (sleRoot->getIFieldV256(sfIndexes).peekValue().empty())
+			if (sleRoot->getValueFieldV256(sfIndexes).peekValue().empty())
 			{
 				// Both nodes are empty.
 
@@ -755,12 +755,12 @@ bool LedgerEntrySet::dirNext(
 	unsigned int& uDirEntry,	// <-> next entry
 	uint256& uEntryIndex)		// <-- The entry, if available. Otherwise, zero.
 {
-	STVector256				svIndexes	= sleNode->getIFieldV256(sfIndexes);
+	STVector256				svIndexes	= sleNode->getValueFieldV256(sfIndexes);
 	std::vector<uint256>&	vuiIndexes	= svIndexes.peekValue();
 
 	if (uDirEntry == vuiIndexes.size())
 	{
-		uint64				uNodeNext	= sleNode->getIFieldU64(sfIndexNext);
+		uint64				uNodeNext	= sleNode->getValueFieldU64(sfIndexNext);
 
 		if (!uNodeNext)
 		{
@@ -785,13 +785,13 @@ Log(lsINFO) << boost::str(boost::format("dirNext: uDirEntry=%d uEntryIndex=%s") 
 
 TER LedgerEntrySet::offerDelete(const SLE::pointer& sleOffer, const uint256& uOfferIndex, const uint160& uOwnerID)
 {
-	uint64	uOwnerNode	= sleOffer->getIFieldU64(sfOwnerNode);
+	uint64	uOwnerNode	= sleOffer->getValueFieldU64(sfOwnerNode);
 	TER		terResult	= dirDelete(false, uOwnerNode, Ledger::getOwnerDirIndex(uOwnerID), uOfferIndex, false);
 
 	if (tesSUCCESS == terResult)
 	{
-		uint256		uDirectory	= sleOffer->getIFieldH256(sfBookDirectory);
-		uint64		uBookNode	= sleOffer->getIFieldU64(sfBookNode);
+		uint256		uDirectory	= sleOffer->getValueFieldH256(sfBookDirectory);
+		uint64		uBookNode	= sleOffer->getValueFieldU64(sfBookNode);
 
 		terResult	= dirDelete(false, uBookNode, uDirectory, uOfferIndex, true);
 	}
@@ -804,7 +804,7 @@ TER LedgerEntrySet::offerDelete(const SLE::pointer& sleOffer, const uint256& uOf
 TER LedgerEntrySet::offerDelete(const uint256& uOfferIndex)
 {
 	SLE::pointer	sleOffer	= entryCache(ltOFFER, uOfferIndex);
-	const uint160	uOwnerID	= sleOffer->getIValueFieldAccount(sfAccount).getAccountID();
+	const uint160	uOwnerID	= sleOffer->getValueFieldAccount(sfAccount).getAccountID();
 
 	return offerDelete(sleOffer, uOfferIndex, uOwnerID);
 }
@@ -818,7 +818,7 @@ STAmount LedgerEntrySet::rippleOwed(const uint160& uToAccountID, const uint160& 
 
 	if (sleRippleState)
 	{
-		saBalance	= sleRippleState->getIValueFieldAmount(sfBalance);
+		saBalance	= sleRippleState->getValueFieldAmount(sfBalance);
 		if (uToAccountID < uFromAccountID)
 			saBalance.negate();
 		saBalance.setIssuer(uToAccountID);
@@ -849,7 +849,7 @@ STAmount LedgerEntrySet::rippleLimit(const uint160& uToAccountID, const uint160&
 	assert(sleRippleState);
 	if (sleRippleState)
 	{
-		saLimit	= sleRippleState->getIValueFieldAmount(uToAccountID < uFromAccountID ? sfLowLimit : sfHighLimit);
+		saLimit	= sleRippleState->getValueFieldAmount(uToAccountID < uFromAccountID ? sfLowLimit : sfHighLimit);
 		saLimit.setIssuer(uToAccountID);
 	}
 
@@ -861,8 +861,8 @@ uint32 LedgerEntrySet::rippleTransferRate(const uint160& uIssuerID)
 {
 	SLE::pointer	sleAccount	= entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uIssuerID));
 
-	uint32			uQuality	= sleAccount && sleAccount->getIFieldPresent(sfTransferRate)
-									? sleAccount->getIFieldU32(sfTransferRate)
+	uint32			uQuality	= sleAccount && sleAccount->isFieldPresent(sfTransferRate)
+									? sleAccount->getValueFieldU32(sfTransferRate)
 									: QUALITY_ONE;
 
 	Log(lsINFO) << boost::str(boost::format("rippleTransferRate: uIssuerID=%s account_exists=%d transfer_rate=%f")
@@ -893,8 +893,8 @@ uint32 LedgerEntrySet::rippleQualityIn(const uint160& uToAccountID, const uint16
 		{
 			SField::ref	sfField	= uToAccountID < uFromAccountID ? sfLow: sfHigh;
 
-			uQuality	= sleRippleState->getIFieldPresent(sfField)
-							? sleRippleState->getIFieldU32(sfField)
+			uQuality	= sleRippleState->isFieldPresent(sfField)
+							? sleRippleState->getValueFieldU32(sfField)
 							: QUALITY_ONE;
 
 			if (!uQuality)
@@ -924,7 +924,7 @@ STAmount LedgerEntrySet::rippleHolds(const uint160& uAccountID, const uint160& u
 
 	if (sleRippleState)
 	{
-		saBalance	= sleRippleState->getIValueFieldAmount(sfBalance);
+		saBalance	= sleRippleState->getValueFieldAmount(sfBalance);
 
 		if (uAccountID > uIssuerID)
 			saBalance.negate();		// Put balance in uAccountID terms.
@@ -942,7 +942,7 @@ STAmount LedgerEntrySet::accountHolds(const uint160& uAccountID, const uint160& 
 	{
 		SLE::pointer	sleAccount	= entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uAccountID));
 
-		saAmount	= sleAccount->getIValueFieldAmount(sfBalance);
+		saAmount	= sleAccount->getValueFieldAmount(sfBalance);
 	}
 	else
 	{
@@ -1031,13 +1031,13 @@ void LedgerEntrySet::rippleCredit(const uint160& uSenderID, const uint160& uRece
 		if (!bFlipped)
 			saBalance.negate();
 
-		sleRippleState->setIFieldAmount(sfBalance, saBalance);
-		sleRippleState->setIFieldAmount(bFlipped ? sfHighLimit : sfLowLimit, STAmount(uCurrencyID, uSenderID));
-		sleRippleState->setIFieldAmount(bFlipped ? sfLowLimit : sfHighLimit, STAmount(uCurrencyID, uReceiverID));
+		sleRippleState->setValueFieldAmount(sfBalance, saBalance);
+		sleRippleState->setValueFieldAmount(bFlipped ? sfHighLimit : sfLowLimit, STAmount(uCurrencyID, uSenderID));
+		sleRippleState->setValueFieldAmount(bFlipped ? sfLowLimit : sfHighLimit, STAmount(uCurrencyID, uReceiverID));
 	}
 	else
 	{
-		STAmount	saBalance	= sleRippleState->getIValueFieldAmount(sfBalance);
+		STAmount	saBalance	= sleRippleState->getValueFieldAmount(sfBalance);
 
 		if (!bFlipped)
 			saBalance.negate();		// Put balance in low terms.
@@ -1047,7 +1047,7 @@ void LedgerEntrySet::rippleCredit(const uint160& uSenderID, const uint160& uRece
 		if (!bFlipped)
 			saBalance.negate();
 
-		sleRippleState->setIFieldAmount(sfBalance, saBalance);
+		sleRippleState->setValueFieldAmount(sfBalance, saBalance);
 
 		entryModify(sleRippleState);
 	}
@@ -1106,28 +1106,28 @@ void LedgerEntrySet::accountSend(const uint160& uSenderID, const uint160& uRecei
 
 		Log(lsINFO) << boost::str(boost::format("accountSend> %s (%s) -> %s (%s) : %s")
 			% NewcoinAddress::createHumanAccountID(uSenderID)
-			% (sleSender ? (sleSender->getIValueFieldAmount(sfBalance)).getFullText() : "-")
+			% (sleSender ? (sleSender->getValueFieldAmount(sfBalance)).getFullText() : "-")
 			% NewcoinAddress::createHumanAccountID(uReceiverID)
-			% (sleReceiver ? (sleReceiver->getIValueFieldAmount(sfBalance)).getFullText() : "-")
+			% (sleReceiver ? (sleReceiver->getValueFieldAmount(sfBalance)).getFullText() : "-")
 			% saAmount.getFullText());
 
 		if (sleSender)
 		{
-			sleSender->setIFieldAmount(sfBalance, sleSender->getIValueFieldAmount(sfBalance) - saAmount);
+			sleSender->setValueFieldAmount(sfBalance, sleSender->getValueFieldAmount(sfBalance) - saAmount);
 			entryModify(sleSender);
 		}
 
 		if (sleReceiver)
 		{
-			sleReceiver->setIFieldAmount(sfBalance, sleReceiver->getIValueFieldAmount(sfBalance) + saAmount);
+			sleReceiver->setValueFieldAmount(sfBalance, sleReceiver->getValueFieldAmount(sfBalance) + saAmount);
 			entryModify(sleReceiver);
 		}
 
 		Log(lsINFO) << boost::str(boost::format("accountSend< %s (%s) -> %s (%s) : %s")
 			% NewcoinAddress::createHumanAccountID(uSenderID)
-			% (sleSender ? (sleSender->getIValueFieldAmount(sfBalance)).getFullText() : "-")
+			% (sleSender ? (sleSender->getValueFieldAmount(sfBalance)).getFullText() : "-")
 			% NewcoinAddress::createHumanAccountID(uReceiverID)
-			% (sleReceiver ? (sleReceiver->getIValueFieldAmount(sfBalance)).getFullText() : "-")
+			% (sleReceiver ? (sleReceiver->getValueFieldAmount(sfBalance)).getFullText() : "-")
 			% saAmount.getFullText());
 	}
 	else

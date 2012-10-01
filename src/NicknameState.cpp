@@ -8,19 +8,19 @@ NicknameState::NicknameState(SerializedLedgerEntry::pointer ledgerEntry) :
 
 bool NicknameState::haveMinimumOffer() const
 {
-    return mLedgerEntry->getIFieldPresent(sfMinimumOffer);
+    return mLedgerEntry->isFieldPresent(sfMinimumOffer);
 }
 
 STAmount NicknameState::getMinimumOffer() const
 {
-    return mLedgerEntry->getIFieldPresent(sfMinimumOffer)
-	? mLedgerEntry->getIValueFieldAmount(sfMinimumOffer)
+    return mLedgerEntry->isFieldPresent(sfMinimumOffer)
+	? mLedgerEntry->getValueFieldAmount(sfMinimumOffer)
 	: STAmount();
 }
 
 NewcoinAddress NicknameState::getAccountID() const
 {
-    return mLedgerEntry->getIValueFieldAccount(sfAccount);
+    return mLedgerEntry->getValueFieldAccount(sfAccount);
 }
 
 void NicknameState::addJson(Json::Value& val)

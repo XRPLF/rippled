@@ -17,7 +17,7 @@ AccountState::AccountState(const NewcoinAddress& naAccountID) : mAccountID(naAcc
 
 	mLedgerEntry = boost::make_shared<SerializedLedgerEntry>(ltACCOUNT_ROOT);
 	mLedgerEntry->setIndex(Ledger::getAccountRootIndex(naAccountID));
-	mLedgerEntry->setIFieldAccount(sfAccount, naAccountID.getAccountID());
+	mLedgerEntry->setValueFieldAccount(sfAccount, naAccountID.getAccountID());
 
 	mValid = true;
 }
@@ -48,8 +48,8 @@ void AccountState::addJson(Json::Value& val)
 
 	if (mValid)
 	{
-		if (mLedgerEntry->getIFieldPresent(sfEmailHash))
-			val["UrlGravatar"]	= createGravatarUrl(mLedgerEntry->getIFieldH128(sfEmailHash));
+		if (mLedgerEntry->isFieldPresent(sfEmailHash))
+			val["UrlGravatar"]	= createGravatarUrl(mLedgerEntry->getValueFieldH128(sfEmailHash));
 	}
 	else
 	{
