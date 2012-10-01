@@ -2,9 +2,9 @@
 #include "LedgerFormats.h"
 
 #define LEF_BASE							\
+	{ sfLedgerIndex,		SOE_OPTIONAL }, \
 	{ sfLedgerEntryType,	SOE_REQUIRED },	\
-	{ sfFlags,				SOE_REQUIRED },	\
-	{ sfLedgerIndex,		SOE_OPTIONAL },
+	{ sfFlags,				SOE_REQUIRED },
 
 LedgerEntryFormat LedgerFormats[]=
 {

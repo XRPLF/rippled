@@ -58,6 +58,7 @@ public:
 
 	static SField::ref getField(int fieldCode);
 	static SField::ref getField(int fieldType, int fieldValue);
+	static SField::ref getField(const std::string& fieldName);
 	static SField::ref getField(SerializedTypeID type, int value) { return getField(FIELD_CODE(type, value)); }
 
 	std::string getName() const;

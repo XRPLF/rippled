@@ -5,6 +5,7 @@
 
 #include <boost/thread/mutex.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/foreach.hpp>
 
 
 // These must stay at the top of this file
@@ -81,4 +82,16 @@ std::string SField::getName() const
 		return "";
 	return boost::lexical_cast<std::string>(static_cast<int>(fieldType)) + "/" +
 		boost::lexical_cast<std::string>(fieldValue);
+}
+
+SField::ref SField::getField(const std::string& fieldName)
+{ // OPTIMIZEME me with a map. CHECKME this is case sensitive
+	boost::mutex::scoped_lock sl(mapMutex);
+	typedef std::pair<const int, SField::ptr> int_sfref_pair;
+	BOOST_FOREACH(const int_sfref_pair& fieldPair, codeToField)
+	{
+		if (fieldPair.second->fieldName == fieldName)
+			return *(fieldPair.second);
+	}
+	return sfInvalid;
 }

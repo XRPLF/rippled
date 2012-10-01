@@ -429,6 +429,20 @@ void STObject::makeFieldAbsent(SField::ref field)
 	mData.replace(index, makeDefaultObject(f.getFName()));
 }
 
+bool STObject::delField(SField::ref field)
+{
+	int index = getFieldIndex(field);
+	if (index == -1)
+		return false;
+	delField(index);
+	return true;
+}
+
+void STObject::delField(int index)
+{
+	mData.erase(mData.begin() + index);
+}
+
 std::string STObject::getFieldString(SField::ref field) const
 {
 	const SerializedType* rf = peekAtPField(field);
@@ -777,18 +791,126 @@ STArray* STArray::construct(SerializerIterator& sit, SField::ref field)
 	return new STArray(field, value);
 }
 
-STObject::STObject(const Json::Value& object, SField::ref name) : SerializedType(name)
+std::auto_ptr<STObject> STObject::parseJson(const Json::Value& object, SField::ref name, int depth)
 {
 	if (!object.isObject())
 		throw std::runtime_error("Value is not an object");
 
+	boost::ptr_vector<SerializedType> data;
 	Json::Value::Members members(object.getMemberNames());
 	for (Json::Value::Members::iterator it = members.begin(), end = members.end(); it != end; ++it)
 	{
 		const std::string& name = *it;
 		const Json::Value& value = object[name];
-		// WRITEME
+
+		SField::ref field = SField::getField(name);
+		if (field == sfInvalid)
+			throw std::runtime_error("Unknown field: " + name);
+
+		switch (field.fieldType)
+		{
+			case STI_UINT8:
+				if (value.isString())
+					data.push_back(new STUInt8(field, boost::lexical_cast<unsigned char>(value.asString())));
+				else if (value.isInt())
+					data.push_back(new STUInt8(field, boost::lexical_cast<unsigned char>(value.asInt())));
+				else if (value.isUInt())
+					data.push_back(new STUInt8(field, boost::lexical_cast<unsigned char>(value.asUInt())));
+				else
+					throw std::runtime_error("Incorrect type");
+				break;
+
+			case STI_UINT16:
+				if (value.isString())
+				{
+					std::string strValue = value.asString();
+					if (!strValue.empty() && (strValue[0]<'0' || strValue[0]>'9'))
+					{
+						if (field == sfTransactionType)
+						{
+							// WRITEME
+						}
+						else if (field == sfLedgerEntryType)
+						{
+							// WRITEME
+						}
+						else
+							throw std::runtime_error("Invalid field data");
+					}
+					data.push_back(new STUInt16(field, boost::lexical_cast<uint16>(strValue)));
+				}
+				else if (value.isInt())
+					data.push_back(new STUInt16(field, boost::lexical_cast<uint16>(value.asInt())));
+				else if (value.isUInt())
+					data.push_back(new STUInt16(field, boost::lexical_cast<uint16>(value.asUInt())));
+				else
+					throw std::runtime_error("Incorrect type");
+				break;
+
+			case STI_UINT32:
+				if (value.isString())
+					data.push_back(new STUInt32(field, boost::lexical_cast<uint32>(value.asString())));
+				else if (value.isInt())
+					data.push_back(new STUInt32(field, boost::lexical_cast<uint32>(value.asInt())));
+				else if (value.isUInt())
+					data.push_back(new STUInt32(field, boost::lexical_cast<uint32>(value.asUInt())));
+				else
+					throw std::runtime_error("Incorrect type");
+				break;
+
+			case STI_UINT64:
+				if (value.isString())
+					data.push_back(new STUInt64(field, boost::lexical_cast<uint64>(value.asString())));
+				else if (value.isInt())
+					data.push_back(new STUInt64(field, boost::lexical_cast<uint64>(value.asInt())));
+				else if (value.isUInt())
+					data.push_back(new STUInt64(field, boost::lexical_cast<uint64>(value.asUInt())));
+				else
+					throw std::runtime_error("Incorrect type");
+				break;
+
+
+			case STI_HASH128:
+				// WRITEME
+
+			case STI_HASH160:
+				// WRITEME
+
+			case STI_HASH256:
+				// WRITEME
+
+			case STI_VL:
+				// WRITEME
+
+			case STI_AMOUNT:
+				// WRITEME
+
+			case STI_VECTOR256:
+				// WRITEME
+
+			case STI_PATHSET:
+				// WRITEME
+
+			case STI_OBJECT:
+			case STI_ACCOUNT:
+			case STI_TRANSACTION:
+			case STI_LEDGERENTRY:
+			case STI_VALIDATION:
+				if (!value.isObject())
+					throw std::runtime_error("Inner value is not an object");
+				if (depth > 64)	
+					throw std::runtime_error("Json nest depth exceeded");
+				data.push_back(parseJson(value, field, depth + 1));
+				break;
+
+			case STI_ARRAY:
+				// WRITEME
+
+			default:
+				throw std::runtime_error("Invalid field type");
+		}
 	}
+	return std::auto_ptr<STObject>(new STObject(name, data));
 }
 
 #if 0

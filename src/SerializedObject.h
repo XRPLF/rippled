@@ -28,6 +28,7 @@ protected:
 	std::vector<SOElement::ptr> mType;
 
 	STObject* duplicate() const { return new STObject(*this); }
+	STObject(SField::ref name, boost::ptr_vector<SerializedType>& data) : SerializedType(name) { mData.swap(data); }
 
 public:
 	STObject()											{ ; }
@@ -40,7 +41,7 @@ public:
 	STObject(SOElement::ptrList type, SerializerIterator& sit, SField::ref name) : SerializedType(name)
 	{ set(sit); setType(type); }
 
-	STObject(const Json::Value& value, SField::ref name);
+	static std::auto_ptr<STObject> parseJson(const Json::Value& value, SField::ref name, int depth = 0);
 
 	virtual ~STObject() { ; }
 
@@ -127,6 +128,8 @@ public:
 	bool isFieldPresent(SField::ref field) const;
 	SerializedType* makeFieldPresent(SField::ref field);
 	void makeFieldAbsent(SField::ref field);
+	bool delField(SField::ref field);
+	void delField(int index);
 
 	static std::auto_ptr<SerializedType> makeDefaultObject(SerializedTypeID id, SField::ref name);
 	static std::auto_ptr<SerializedType> makeDeserializedObject(SerializedTypeID id, SField::ref name,

@@ -91,7 +91,7 @@ protected:
 public:
 
 	STUInt8(unsigned char v = 0) : value(v) { ; }
-	STUInt8(SField::ref n, unsigned char v=0) : SerializedType(n), value(v) { ; }
+	STUInt8(SField::ref n, unsigned char v = 0) : SerializedType(n), value(v) { ; }
 	static std::auto_ptr<SerializedType> deserialize(SerializerIterator& sit, SField::ref name)
 	{ return std::auto_ptr<SerializedType>(construct(sit, name)); }
 
@@ -116,8 +116,8 @@ protected:
 
 public:
 
-	STUInt16(uint16 v=0) : value(v) { ; }
-	STUInt16(SField::ref n, uint16 v=0) : SerializedType(n), value(v) { ; }
+	STUInt16(uint16 v = 0) : value(v) { ; }
+	STUInt16(SField::ref n, uint16 v = 0) : SerializedType(n), value(v) { ; }
 	static std::auto_ptr<SerializedType> deserialize(SerializerIterator& sit, SField::ref name)
 	{ return std::auto_ptr<SerializedType>(construct(sit, name)); }
 
@@ -143,7 +143,7 @@ protected:
 public:
 
 	STUInt32(uint32 v = 0) : value(v) { ; }
-	STUInt32(SField::ref n, uint32 v=0) : SerializedType(n), value(v) { ; }
+	STUInt32(SField::ref n, uint32 v = 0) : SerializedType(n), value(v) { ; }
 	static std::auto_ptr<SerializedType> deserialize(SerializerIterator& sit, SField::ref name)
 	{ return std::auto_ptr<SerializedType>(construct(sit, name)); }
 
@@ -168,8 +168,8 @@ protected:
 
 public:
 
-	STUInt64(uint64 v=0) : value(v) { ; }
-	STUInt64(SField::ref n, uint64 v=0) : SerializedType(n), value(v) { ; }
+	STUInt64(uint64 v = 0) : value(v) { ; }
+	STUInt64(SField::ref n, uint64 v = 0) : SerializedType(n), value(v) { ; }
 	static std::auto_ptr<SerializedType> deserialize(SerializerIterator& sit, SField::ref name)
 	{ return std::auto_ptr<SerializedType>(construct(sit, name)); }
 
@@ -225,6 +225,8 @@ protected:
 		: SerializedType(name), mCurrency(cur), mIssuer(iss),  mValue(val), mOffset(off),
 			mIsNative(isNat), mIsNegative(isNeg) { ; }
 
+	STAmount(SField::ref name, const Json::Value& value);
+
 	uint64 toUInt64() const;
 	static uint64 muldiv(uint64, uint64, uint64);
 
@@ -232,13 +234,13 @@ public:
 	static uint64	uRateOne;
 
 	STAmount(uint64 v = 0, bool isNeg = false) : mValue(v), mOffset(0), mIsNative(true), mIsNegative(isNeg)
-	{ if (v==0) mIsNegative = false; }
+	{ if (v == 0) mIsNegative = false; }
 
 	STAmount(SField::ref n, uint64 v = 0)
 		: SerializedType(n), mValue(v), mOffset(0), mIsNative(true), mIsNegative(false)
 	{ ; }
 
-	STAmount(const uint160& uCurrencyID, const uint160& uIssuerID, uint64 uV=0, int iOff=0, bool bNegative=false)
+	STAmount(const uint160& uCurrencyID, const uint160& uIssuerID, uint64 uV = 0, int iOff = 0, bool bNegative = false)
 		: mCurrency(uCurrencyID), mIssuer(uIssuerID), mValue(uV), mOffset(iOff), mIsNegative(bNegative)
 	{ canonicalize(); }
 
@@ -254,14 +256,10 @@ public:
 	{ return std::auto_ptr<SerializedType>(construct(sit, name)); }
 
 	static STAmount saFromRate(uint64 uRate = 0)
-	{
-		return STAmount(CURRENCY_ONE, ACCOUNT_ONE, uRate, -9, false);
-	}
+	{ return STAmount(CURRENCY_ONE, ACCOUNT_ONE, uRate, -9, false); }
 
-	static STAmount saFromSigned(const uint160& uCurrencyID, const uint160& uIssuerID, int64 iV=0, int iOff=0)
-	{
-		return STAmount(uCurrencyID, uIssuerID, iV < 0 ? -iV : iV, iOff, iV < 0);
-	}
+	static STAmount saFromSigned(const uint160& uCurrencyID, const uint160& uIssuerID, int64 iV = 0, int iOff = 0)
+	{ return STAmount(uCurrencyID, uIssuerID, iV < 0 ? -iV : iV, iOff, iV < 0);	}
 
 	SerializedTypeID getSType() const	{ return STI_AMOUNT; }
 	std::string getText() const;
