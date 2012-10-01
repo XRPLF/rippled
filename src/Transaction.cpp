@@ -18,7 +18,7 @@ Transaction::Transaction(const SerializedTransaction::pointer& sit, bool bValida
 {
 	try
 	{
-		mFromPubKey.setAccountPublic(mTransaction->peekSigningPubKey());
+		mFromPubKey.setAccountPublic(mTransaction->getSigningPubKey());
 		mTransactionID	= mTransaction->getTransactionID();
 		mAccountFrom	= mTransaction->getSourceAccount();
 	}
@@ -92,12 +92,7 @@ bool Transaction::sign(const NewcoinAddress& naAccountPrivate)
 		Log(lsWARNING) << "No private key for signing";
 		bResult	= false;
 	}
-	else if (!getSTransaction()->sign(naAccountPrivate))
-	{
-		Log(lsWARNING) << "Failed to make signature";
-		assert(false);
-		bResult	= false;
-	}
+	getSTransaction()->sign(naAccountPrivate);
 
 	if (bResult)
 	{
