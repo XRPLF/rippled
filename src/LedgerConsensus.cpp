@@ -977,21 +977,23 @@ void LedgerConsensus::applyTransaction(TransactionEngine& engine, const Serializ
 	{
 #endif
 		TER result = engine.applyTransaction(*txn, parms);
-		if (result > 0)
+		if (isTerRetry(result
 		{
 			Log(lsINFO) << "   retry";
 			assert(!ledger->hasTransaction(txn->getTransactionID()));
 			failedTransactions.push_back(txn);
 		}
-		else if (result == 0)
+		else if (isTepSuccess(result)) // FIXME: Need to do partial success
 		{
 			Log(lsTRACE) << "   success";
 			assert(ledger->hasTransaction(txn->getTransactionID()));
 		}
-		else
+		else if (isTemMalformed(result) || isTefFailure(result))
 		{
 			Log(lsINFO) << "   hard fail";
 		}
+		else
+			assert(false);
 #ifndef TRUST_NETWORK
 	}
 	catch (...)
