@@ -25,8 +25,6 @@ LedgerEntryFormat LedgerFormats[]=
 		{ sfInvalid,		SOE_END } }
 	},
 	{ "Contract", ltCONTRACT, { LEF_BASE
-		{ sfLedgerEntryType,SOE_REQUIRED },
-		{ sfFlags,			SOE_REQUIRED },
 		{ sfAccount,		SOE_REQUIRED },
 		{ sfBalance,		SOE_REQUIRED },
 		{ sfLastTxnID,		SOE_REQUIRED },
@@ -42,8 +40,6 @@ LedgerEntryFormat LedgerFormats[]=
 		{ sfInvalid,		SOE_END } }
 	},
 	{ "DirectoryNode", ltDIR_NODE, { LEF_BASE
-		{ sfLedgerEntryType,SOE_REQUIRED },
-		{ sfFlags,			SOE_REQUIRED },
 		{ sfIndexes,		SOE_REQUIRED },
 		{ sfIndexNext,		SOE_OPTIONAL },
 		{ sfIndexPrevious,	SOE_OPTIONAL },
