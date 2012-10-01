@@ -46,5 +46,6 @@ const uint32 tfNoRippleDirect		= 0x00080000;
 
 extern TransactionFormat InnerTxnFormats[];
 extern TransactionFormat* getTxnFormat(TransactionType t);
+extern TransactionFormat* getTxnFormat(int t);
 #endif
 // vim:ts=4

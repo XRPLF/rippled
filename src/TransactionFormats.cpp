@@ -100,14 +100,20 @@ TransactionFormat	InnerTxnFormats[]=
 	{ NULL, ttINVALID }
 };
 
-TransactionFormat*	getTxnFormat(TransactionType	t)
+TransactionFormat* getTxnFormat(TransactionType	t)
 {
-	TransactionFormat*	f	=	InnerTxnFormats;
-	while	(f->t_name	!=	NULL)
+	return getTxnFormat(t);
+}
+
+TransactionFormat* getTxnFormat(int t)
+{
+	TransactionFormat* f = InnerTxnFormats;
+	while (f->t_name != NULL)
 	{
-		if	(f->t_type	==	t)	return	f;
+		if (f->t_type == t)
+			return f;
 		++f;
  }
-	return	NULL;
+	return NULL;
 }
 //	vim:ts=4

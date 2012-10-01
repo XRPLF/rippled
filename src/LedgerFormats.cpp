@@ -86,13 +86,18 @@ LedgerEntryFormat LedgerFormats[]=
 	{ NULL, ltINVALID }
 };
 
-
 LedgerEntryFormat* getLgrFormat(LedgerEntryType t)
+{
+	return getLgrFormat(t);
+}
+
+LedgerEntryFormat* getLgrFormat(int t)
 {
 	LedgerEntryFormat* f = LedgerFormats;
 	while (f->t_name != NULL)
 	{
-		if (f->t_type == t) return f;
+		if (f->t_type == t)
+			return f;
 		++f;
 	}
 	return NULL;

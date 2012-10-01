@@ -5,6 +5,8 @@
 #include "SerializedTypes.h"
 #include "SerializedObject.h"
 #include "TransactionFormats.h"
+#include "LedgerFormats.h"
+#include "FieldNames.h"
 #include "Log.h"
 #include "NewcoinAddress.h"
 #include "utils.h"
@@ -50,6 +52,18 @@ STUInt16* STUInt16::construct(SerializerIterator& u, SField::ref name)
 
 std::string STUInt16::getText() const
 {
+	if (getFName() == sfLedgerEntryType)
+	{
+		LedgerEntryFormat *f = getLgrFormat(value);
+		if (f != NULL)
+			return f->t_name;
+	}
+	if (getFName() == sfTransactionType)
+	{
+		TransactionFormat *f = getTxnFormat(value);
+		if (f != NULL)
+			return f->t_name;
+	}
 	return boost::lexical_cast<std::string>(value);
 }
 
