@@ -758,7 +758,7 @@ TER TransactionEngine::takeOffers(
 		else
 		{
 			// Have an offer directory to consider.
-			Log(lsINFO) << "takeOffers: considering dir : " << sleOfferDir->getJson(0);
+			Log(lsINFO) << "takeOffers: considering dir: " << sleOfferDir->getJson(0);
 
 			SLE::pointer	sleBookNode;
 			unsigned int	uBookEntry;
@@ -965,7 +965,7 @@ Log(lsINFO) << boost::str(boost::format("doOfferCreate: saTakerPays=%s saTakerGe
 
 		terResult	= temBAD_OFFER;
 	}
-	else if (!saTakerPays || !saTakerGets)
+	else if (!saTakerPays.isPositive() || !saTakerGets.isPositive())
 	{
 		Log(lsWARNING) << "doOfferCreate: Malformed offer: bad amount";
 
