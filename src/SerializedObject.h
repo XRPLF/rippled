@@ -41,7 +41,7 @@ public:
 	STObject(SOElement::ptrList type, SerializerIterator& sit, SField::ref name) : SerializedType(name)
 	{ set(sit); setType(type); }
 
-	static std::auto_ptr<STObject> parseJson(const Json::Value& value, SField::ref name, int depth = 0);
+	static std::auto_ptr<STObject> parseJson(const Json::Value& value, SField::ref name = sfGeneric, int depth = 0);
 
 	virtual ~STObject() { ; }
 

@@ -48,6 +48,7 @@ struct LedgerEntryFormat
 
 extern LedgerEntryFormat LedgerFormats[];
 extern LedgerEntryFormat* getLgrFormat(LedgerEntryType t);
+extern LedgerEntryFormat* getLgrFormat(const std::string& t);
 extern LedgerEntryFormat* getLgrFormat(int t);
 #endif
 // vim:ts=4

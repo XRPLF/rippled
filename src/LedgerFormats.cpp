@@ -89,13 +89,18 @@ LedgerEntryFormat* getLgrFormat(LedgerEntryType t)
 
 LedgerEntryFormat* getLgrFormat(int t)
 {
-	LedgerEntryFormat* f = LedgerFormats;
-	while (f->t_name != NULL)
-	{
+	for (LedgerEntryFormat* f = LedgerFormats; f->t_name != NULL; ++f)
 		if (f->t_type == t)
 			return f;
-		++f;
-	}
 	return NULL;
 }
+
+LedgerEntryFormat* getLgrFormat(const std::string& t)
+{
+	for (LedgerEntryFormat* f = LedgerFormats; f->t_name != NULL; ++f)
+		if (t == f->t_name)
+			return f;
+	return NULL;
+}
+
 // vim:ts=4

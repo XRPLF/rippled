@@ -44,8 +44,9 @@ const uint32 tfPartialPayment		= 0x00020000;
 const uint32 tfLimitQuality			= 0x00040000;
 const uint32 tfNoRippleDirect		= 0x00080000;
 
-extern TransactionFormat InnerTxnFormats[];
+extern TransactionFormat TxnFormats[];
 extern TransactionFormat* getTxnFormat(TransactionType t);
+extern TransactionFormat* getTxnFormat(const std::string& t);
 extern TransactionFormat* getTxnFormat(int t);
 #endif
 // vim:ts=4

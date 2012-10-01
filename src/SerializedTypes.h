@@ -377,6 +377,8 @@ public:
 
 	STHash128(const uint128& v) : value(v) { ; }
 	STHash128(SField::ref n, const uint128& v) : SerializedType(n), value(v) { ; }
+	STHash128(SField::ref n, const char *v) : SerializedType(n) { value.SetHex(v); }
+	STHash128(SField::ref n, const std::string &v) : SerializedType(n) { value.SetHex(v); }
 	STHash128(SField::ref n) : SerializedType(n) { ; }
 	STHash128() { ; }
 	static std::auto_ptr<SerializedType> deserialize(SerializerIterator& sit, SField::ref name)
@@ -405,6 +407,8 @@ public:
 
 	STHash160(const uint160& v) : value(v) { ; }
 	STHash160(SField::ref n, const uint160& v) : SerializedType(n), value(v) { ; }
+	STHash160(SField::ref n, const char *v) : SerializedType(n) { value.SetHex(v); }
+	STHash160(SField::ref n, const std::string &v) : SerializedType(n) { value.SetHex(v); }
 	STHash160(SField::ref n) : SerializedType(n) { ; }
 	STHash160() { ; }
 	static std::auto_ptr<SerializedType> deserialize(SerializerIterator& sit, SField::ref name)
@@ -433,6 +437,8 @@ public:
 
 	STHash256(const uint256& v) : value(v) { ; }
 	STHash256(SField::ref n, const uint256& v) : SerializedType(n), value(v) { ; }
+	STHash256(SField::ref n, const char *v) : SerializedType(n) { value.SetHex(v); }
+	STHash256(SField::ref n, const std::string &v) : SerializedType(n) { value.SetHex(v); }
 	STHash256(SField::ref n) : SerializedType(n) { ; }
 	STHash256() { ; }
 	static std::auto_ptr<SerializedType> deserialize(SerializerIterator& sit, SField::ref name)

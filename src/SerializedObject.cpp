@@ -8,6 +8,8 @@
 #include "../json/writer.h"
 
 #include "Log.h"
+#include "LedgerFormats.h"
+#include "TransactionFormats.h"
 
 std::auto_ptr<SerializedType> STObject::makeDefaultObject(SerializedTypeID id, SField::ref name)
 {
@@ -813,21 +815,23 @@ STArray* STArray::construct(SerializerIterator& sit, SField::ref field)
 	return new STArray(field, value);
 }
 
-std::auto_ptr<STObject> STObject::parseJson(const Json::Value& object, SField::ref name, int depth)
+std::auto_ptr<STObject> STObject::parseJson(const Json::Value& object, SField::ref inName, int depth)
 {
 	if (!object.isObject())
 		throw std::runtime_error("Value is not an object");
+
+	SField::ptr name = &inName;
 
 	boost::ptr_vector<SerializedType> data;
 	Json::Value::Members members(object.getMemberNames());
 	for (Json::Value::Members::iterator it = members.begin(), end = members.end(); it != end; ++it)
 	{
-		const std::string& name = *it;
-		const Json::Value& value = object[name];
+		const std::string& fieldName = *it;
+		const Json::Value& value = object[fieldName];
 
-		SField::ref field = SField::getField(name);
+		SField::ref field = SField::getField(fieldName);
 		if (field == sfInvalid)
-			throw std::runtime_error("Unknown field: " + name);
+			throw std::runtime_error("Unknown field: " + fieldName);
 
 		switch (field.fieldType)
 		{
@@ -846,20 +850,31 @@ std::auto_ptr<STObject> STObject::parseJson(const Json::Value& object, SField::r
 				if (value.isString())
 				{
 					std::string strValue = value.asString();
-					if (!strValue.empty() && (strValue[0]<'0' || strValue[0]>'9'))
+					if (!strValue.empty() && ((strValue[0] < '0') || (strValue[0] > '9')))
 					{
 						if (field == sfTransactionType)
 						{
-							// WRITEME
+							TransactionFormat* f = getTxnFormat(strValue);
+							if (!f)
+								throw std::runtime_error("Unknown transaction type");
+							data.push_back(new STUInt16(field, static_cast<uint16>(f->t_type)));
+							if (*name == sfGeneric)
+								name = &sfTransaction;
 						}
 						else if (field == sfLedgerEntryType)
 						{
-							// WRITEME
+							LedgerEntryFormat* f = getLgrFormat(strValue);
+							if (!f)
+								throw std::runtime_error("Unknown ledger entry type");
+							data.push_back(new STUInt16(field, static_cast<uint16>(f->t_type)));
+							if (*name == sfGeneric)
+								name = &sfLedgerEntry;
 						}
 						else
 							throw std::runtime_error("Invalid field data");
 					}
-					data.push_back(new STUInt16(field, boost::lexical_cast<uint16>(strValue)));
+					else
+						data.push_back(new STUInt16(field, boost::lexical_cast<uint16>(strValue)));
 				}
 				else if (value.isInt())
 					data.push_back(new STUInt16(field, boost::lexical_cast<uint16>(value.asInt())));
@@ -893,13 +908,25 @@ std::auto_ptr<STObject> STObject::parseJson(const Json::Value& object, SField::r
 
 
 			case STI_HASH128:
-				// WRITEME
+				if (value.isString())
+					data.push_back(new STHash128(field, value.asString()));
+				else
+					throw std::runtime_error("Incorrect type");
+				break;
 
 			case STI_HASH160:
-				// WRITEME
+				if (value.isString())
+					data.push_back(new STHash160(field, value.asString()));
+				else
+					throw std::runtime_error("Incorrect type");
+				break;
 
 			case STI_HASH256:
-				// WRITEME
+				if (value.isString())
+					data.push_back(new STHash256(field, value.asString()));
+				else
+					throw std::runtime_error("Incorrect type");
+				break;
 
 			case STI_VL:
 				// WRITEME
@@ -932,7 +959,7 @@ std::auto_ptr<STObject> STObject::parseJson(const Json::Value& object, SField::r
 				throw std::runtime_error("Invalid field type");
 		}
 	}
-	return std::auto_ptr<STObject>(new STObject(name, data));
+	return std::auto_ptr<STObject>(new STObject(*name, data));
 }
 
 #if 0

@@ -10,7 +10,7 @@
 		{	sfSigningPubKey,	SOE_REQUIRED }, \
 		{	sfTxnSignature,		SOE_OPTIONAL },
 
-TransactionFormat	InnerTxnFormats[]=
+TransactionFormat TxnFormats[]=
 {
 	{	"AccountSet", ttACCOUNT_SET, { TF_BASE
 		{	sfEmailHash,		SOE_OPTIONAL },
@@ -30,7 +30,7 @@ TransactionFormat	InnerTxnFormats[]=
 	 },
 	{	"CreditSet", ttCREDIT_SET, { TF_BASE
 		{	sfLimitAmount,		SOE_OPTIONAL },
-		{	sfQualityIn,		SOE_OPTIONAL },
+ 		{	sfQualityIn,		SOE_OPTIONAL },
 		{	sfQualityOut,		SOE_OPTIONAL },
 		{	sfInvalid,			SOE_END } }
 	 },
@@ -107,13 +107,18 @@ TransactionFormat* getTxnFormat(TransactionType	t)
 
 TransactionFormat* getTxnFormat(int t)
 {
-	TransactionFormat* f = InnerTxnFormats;
-	while (f->t_name != NULL)
-	{
-		if (f->t_type == t)
+	for (TransactionFormat* f = TxnFormats; f->t_name != NULL; ++f)
+		if (t == f->t_type)
 			return f;
-		++f;
- }
 	return NULL;
 }
+
+TransactionFormat* getTxnFormat(const std::string& format)
+{
+	for (TransactionFormat* f = TxnFormats; f->t_name != NULL; ++f)
+		if (format == f->t_name)
+			return f;
+	return NULL;
+}
+
 //	vim:ts=4
