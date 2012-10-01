@@ -9,7 +9,7 @@ SerializedLedgerEntry::SerializedLedgerEntry(SerializerIterator& sit, const uint
 	: STObject(sfLedgerEntry), mIndex(index)
 {
 	set(sit);
-	uint16 type = getValueFieldU16(sfLedgerEntryType);
+	uint16 type = getFieldU16(sfLedgerEntryType);
 	mFormat = getLgrFormat(static_cast<LedgerEntryType>(type));
 	if (mFormat == NULL)
 		throw std::runtime_error("invalid ledger entry type");
@@ -24,7 +24,7 @@ SerializedLedgerEntry::SerializedLedgerEntry(const Serializer& s, const uint256&
 	SerializerIterator sit(s);
 	set(sit);
 
-	uint16 type = getValueFieldU16(sfLedgerEntryType);
+	uint16 type = getFieldU16(sfLedgerEntryType);
 	mFormat = getLgrFormat(static_cast<LedgerEntryType>(type));
 	if (mFormat == NULL)
 		throw std::runtime_error("invalid ledger entry type");
@@ -42,7 +42,7 @@ SerializedLedgerEntry::SerializedLedgerEntry(LedgerEntryType type) : STObject(sf
 	mFormat = getLgrFormat(type);
 	if (mFormat == NULL) throw std::runtime_error("invalid ledger entry type");
 	set(mFormat->elements);
-	setValueFieldU16(sfLedgerEntryType, static_cast<uint16>(mFormat->t_type));
+	setFieldU16(sfLedgerEntryType, static_cast<uint16>(mFormat->t_type));
 }
 
 std::string SerializedLedgerEntry::getFullText() const
@@ -85,25 +85,25 @@ bool SerializedLedgerEntry::isThreaded()
 
 uint256 SerializedLedgerEntry::getThreadedTransaction()
 {
-	return getValueFieldH256(sfLastTxnID);
+	return getFieldH256(sfLastTxnID);
 }
 
 uint32 SerializedLedgerEntry::getThreadedLedger()
 {
-	return getValueFieldU32(sfLastTxnSeq);
+	return getFieldU32(sfLastTxnSeq);
 }
 
 bool SerializedLedgerEntry::thread(const uint256& txID, uint32 ledgerSeq, uint256& prevTxID, uint32& prevLedgerID)
 {
-	uint256 oldPrevTxID = getValueFieldH256(sfLastTxnID);
+	uint256 oldPrevTxID = getFieldH256(sfLastTxnID);
 	Log(lsTRACE) << "Thread Tx:" << txID << " prev:" << oldPrevTxID;
 	if (oldPrevTxID == txID)
 		return false;
 	prevTxID = oldPrevTxID;
-	prevLedgerID = getValueFieldU32(sfLastTxnSeq);
+	prevLedgerID = getFieldU32(sfLastTxnSeq);
 	assert(prevTxID != txID);
-	setValueFieldH256(sfLastTxnID, txID);
-	setValueFieldU32(sfLastTxnSeq, ledgerSeq);
+	setFieldH256(sfLastTxnID, txID);
+	setFieldU32(sfLastTxnSeq, ledgerSeq);
 	return true;
 }
 
@@ -119,17 +119,17 @@ bool SerializedLedgerEntry::hasTwoOwners()
 
 NewcoinAddress SerializedLedgerEntry::getOwner()
 {
-	return getValueFieldAccount(sfAccount);
+	return getFieldAccount(sfAccount);
 }
 
 NewcoinAddress SerializedLedgerEntry::getFirstOwner()
 {
-	return NewcoinAddress::createAccountID(getValueFieldAmount(sfLowLimit).getIssuer());
+	return NewcoinAddress::createAccountID(getFieldAmount(sfLowLimit).getIssuer());
 }
 
 NewcoinAddress SerializedLedgerEntry::getSecondOwner()
 {
-	return NewcoinAddress::createAccountID(getValueFieldAmount(sfHighLimit).getIssuer());
+	return NewcoinAddress::createAccountID(getFieldAmount(sfHighLimit).getIssuer());
 }
 
 std::vector<uint256> SerializedLedgerEntry::getOwners()

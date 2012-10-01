@@ -32,7 +32,7 @@ public:
 	void setIndex(const uint256& i)		{ mIndex = i; }
 
 	LedgerEntryType getType() const { return mType; }
-	uint16 getVersion() const { return getValueFieldU16(sfLedgerEntryType); }
+	uint16 getVersion() const { return getFieldU16(sfLedgerEntryType); }
 	const LedgerEntryFormat* getFormat() { return mFormat; }
 
 	bool isThreadedType();	// is this a ledger entry that can be threaded

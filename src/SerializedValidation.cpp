@@ -27,10 +27,10 @@ SerializedValidation::SerializedValidation(const uint256& ledgerHash, uint32 sig
 		const NewcoinAddress& naSeed, bool isFull)
 	: STObject(sValidationFormat, sfValidation), mSignature(sfSignature), mTrusted(false)
 {
-	setValueFieldH256(sfLedgerHash, ledgerHash);
-	setValueFieldU32(sfSigningTime, signTime);
+	setFieldH256(sfLedgerHash, ledgerHash);
+	setFieldU32(sfSigningTime, signTime);
 	if (naSeed.isValid())
-		setValueFieldVL(sfSigningPubKey, NewcoinAddress::createNodePublic(naSeed).getNodePublic());
+		setFieldVL(sfSigningPubKey, NewcoinAddress::createNodePublic(naSeed).getNodePublic());
 	if (!isFull) setFlag(sFullFlag);
 
 	NewcoinAddress::createNodePrivate(naSeed).signNodePrivate(getSigningHash(), mSignature.peekValue());
@@ -51,17 +51,17 @@ uint256 SerializedValidation::getSigningHash() const
 
 uint256 SerializedValidation::getLedgerHash() const
 {
-	return getValueFieldH256(sfLedgerHash);
+	return getFieldH256(sfLedgerHash);
 }
 
 uint32 SerializedValidation::getSignTime() const
 {
-	return getValueFieldU32(sfSigningTime);
+	return getFieldU32(sfSigningTime);
 }
 
 uint32 SerializedValidation::getFlags() const
 {
-	return getValueFieldU32(sfFlags);
+	return getFieldU32(sfFlags);
 }
 
 bool SerializedValidation::isValid() const
@@ -73,7 +73,7 @@ bool SerializedValidation::isValid(const uint256& signingHash) const
 {
 	try
 	{
-		NewcoinAddress	naPublicKey	= NewcoinAddress::createNodePublic(getValueFieldVL(sfSigningPubKey));
+		NewcoinAddress	naPublicKey	= NewcoinAddress::createNodePublic(getFieldVL(sfSigningPubKey));
 		return naPublicKey.isValid() && naPublicKey.verifyNodePublic(signingHash, mSignature.peekValue());
 	}
 	catch (...)
@@ -85,7 +85,7 @@ bool SerializedValidation::isValid(const uint256& signingHash) const
 NewcoinAddress SerializedValidation::getSignerPublic() const
 {
 	NewcoinAddress a;
-	a.setNodePublic(getValueFieldVL(sfSigningPubKey));
+	a.setNodePublic(getFieldVL(sfSigningPubKey));
 	return a;
 }
 

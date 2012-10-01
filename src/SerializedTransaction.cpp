@@ -13,7 +13,7 @@ SerializedTransaction::SerializedTransaction(TransactionType type) : STObject(sf
 	if (mFormat == NULL)
 		throw std::runtime_error("invalid transaction type");
 	set(mFormat->elements);
-	setValueFieldU16(sfTransactionType, mFormat->t_type);
+	setFieldU16(sfTransactionType, mFormat->t_type);
 }
 
 SerializedTransaction::SerializedTransaction(SerializerIterator& sit) : STObject(sfTransaction)
@@ -26,7 +26,7 @@ SerializedTransaction::SerializedTransaction(SerializerIterator& sit) : STObject
 	}
 
 	set(sit);
-	mType = static_cast<TransactionType>(getValueFieldU16(sfTransactionType));
+	mType = static_cast<TransactionType>(getFieldU16(sfTransactionType));
 
 	mFormat = getTxnFormat(mType);
 	if (!mFormat)
@@ -94,7 +94,7 @@ std::vector<unsigned char> SerializedTransaction::getSignature() const
 {
 	try
 	{
-		return getValueFieldVL(sfTxnSignature);
+		return getFieldVL(sfTxnSignature);
 	}
 	catch (...)
 	{
@@ -106,14 +106,14 @@ void SerializedTransaction::sign(const NewcoinAddress& naAccountPrivate)
 {
 	std::vector<unsigned char> signature;
 	naAccountPrivate.accountPrivateSign(getSigningHash(), signature);
-	setValueFieldVL(sfTxnSignature, signature);
+	setFieldVL(sfTxnSignature, signature);
 }
 
 bool SerializedTransaction::checkSign(const NewcoinAddress& naAccountPublic) const
 {
 	try
 	{
-		return naAccountPublic.accountPublicVerify(getSigningHash(), getValueFieldVL(sfTxnSignature));
+		return naAccountPublic.accountPublicVerify(getSigningHash(), getFieldVL(sfTxnSignature));
 	}
 	catch (...)
 	{
@@ -123,12 +123,12 @@ bool SerializedTransaction::checkSign(const NewcoinAddress& naAccountPublic) con
 
 void SerializedTransaction::setSigningPubKey(const NewcoinAddress& naSignPubKey)
 {
-	setValueFieldVL(sfSigningPubKey, naSignPubKey.getAccountPublic());
+	setFieldVL(sfSigningPubKey, naSignPubKey.getAccountPublic());
 }
 
 void SerializedTransaction::setSourceAccount(const NewcoinAddress& naSource)
 {
-	setValueFieldAccount(sfAccount, naSource);
+	setFieldAccount(sfAccount, naSource);
 }
 
 Json::Value SerializedTransaction::getJson(int options) const

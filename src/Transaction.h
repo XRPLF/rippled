@@ -272,10 +272,10 @@ public:
 
 	const uint256& getID() const					{ return mTransactionID; }
 	const NewcoinAddress& getFromAccount() const	{ return mAccountFrom; }
-	STAmount getAmount() const						{ return mTransaction->getValueFieldU64(sfAmount); }
+	STAmount getAmount() const						{ return mTransaction->getFieldU64(sfAmount); }
 	STAmount getFee() const							{ return mTransaction->getTransactionFee(); }
 	uint32 getFromAccountSeq() const				{ return mTransaction->getSequence(); }
-	uint32 getIdent() const							{ return mTransaction->getValueFieldU32(sfSourceTag); }
+	uint32 getIdent() const							{ return mTransaction->getFieldU32(sfSourceTag); }
 	std::vector<unsigned char> getSignature() const	{ return mTransaction->getSignature(); }
 	uint32 getLedger() const						{ return mInLedger; }
 	TransStatus getStatus() const					{ return mStatus; }

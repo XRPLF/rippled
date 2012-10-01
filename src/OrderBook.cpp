@@ -10,8 +10,8 @@ OrderBook::pointer OrderBook::newOrderBook(SerializedLedgerEntry::pointer ledger
 
 OrderBook::OrderBook(SerializedLedgerEntry::pointer ledgerEntry)
 {
-	const STAmount	saTakerGets	= ledgerEntry->getValueFieldAmount(sfTakerGets);
-	const STAmount	saTakerPays	= ledgerEntry->getValueFieldAmount(sfTakerPays);
+	const STAmount	saTakerGets	= ledgerEntry->getFieldAmount(sfTakerGets);
+	const STAmount	saTakerPays	= ledgerEntry->getFieldAmount(sfTakerPays);
 
 	mCurrencyIn		= saTakerGets.getCurrency();
 	mCurrencyOut	= saTakerPays.getCurrency();

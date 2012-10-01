@@ -136,7 +136,7 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 
 			case ttNICKNAME_SET:
 				{
-					SLE::pointer		sleNickname		= entryCache(ltNICKNAME, txn.getValueFieldH256(sfNickname));
+					SLE::pointer		sleNickname		= entryCache(ltNICKNAME, txn.getFieldH256(sfNickname));
 
 					if (!sleNickname)
 						saCost	= theConfig.FEE_NICKNAME_CREATE;
@@ -222,7 +222,7 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 	}
 	else
 	{
-		saSrcBalance	= mTxnAccount->getValueFieldAmount(sfBalance);
+		saSrcBalance	= mTxnAccount->getFieldAmount(sfBalance);
 		bHaveAuthKey	= mTxnAccount->isFieldPresent(sfAuthorizedKey);
 	}
 
@@ -279,7 +279,7 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 
 			default:
 				// Verify the transaction's signing public key is the key authorized for signing.
-				if (bHaveAuthKey && naSigningPubKey.getAccountID() == mTxnAccount->getValueFieldAccount(sfAuthorizedKey).getAccountID())
+				if (bHaveAuthKey && naSigningPubKey.getAccountID() == mTxnAccount->getFieldAccount(sfAuthorizedKey).getAccountID())
 				{
 					// Authorized to continue.
 					nothing();
@@ -322,7 +322,7 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 	}
 	else
 	{
-		mTxnAccount->setValueFieldAmount(sfBalance, saSrcBalance - saPaid);
+		mTxnAccount->setFieldAmount(sfBalance, saSrcBalance - saPaid);
 	}
 
 	// Validate sequence
@@ -332,7 +332,7 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 	}
 	else if (saCost)
 	{
-		uint32 a_seq = mTxnAccount->getValueFieldU32(sfSequence);
+		uint32 a_seq = mTxnAccount->getFieldU32(sfSequence);
 
 		Log(lsTRACE) << "Aseq=" << a_seq << ", Tseq=" << t_seq;
 
@@ -359,7 +359,7 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 		}
 		else
 		{
-			mTxnAccount->setValueFieldU32(sfSequence, t_seq + 1);
+			mTxnAccount->setFieldU32(sfSequence, t_seq + 1);
 		}
 	}
 	else

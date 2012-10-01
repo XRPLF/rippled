@@ -29,9 +29,9 @@ TER	TransactionEngine::setAuthorized(const SerializedTransaction& txn, bool bMus
 	// Otherwise, people could deny access to generators.
 	//
 
-	std::vector<unsigned char>	vucCipher		= txn.getValueFieldVL(sfGenerator);
-	std::vector<unsigned char>	vucPubKey		= txn.getValueFieldVL(sfPublicKey);
-	std::vector<unsigned char>	vucSignature	= txn.getValueFieldVL(sfSignature);
+	std::vector<unsigned char>	vucCipher		= txn.getFieldVL(sfGenerator);
+	std::vector<unsigned char>	vucPubKey		= txn.getFieldVL(sfPublicKey);
+	std::vector<unsigned char>	vucSignature	= txn.getFieldVL(sfSignature);
 	NewcoinAddress				naAccountPublic	= NewcoinAddress::createAccountPublic(vucPubKey);
 
 	if (!naAccountPublic.accountPublicVerify(Serializer::getSHA512Half(vucCipher), vucSignature))
@@ -52,7 +52,7 @@ TER	TransactionEngine::setAuthorized(const SerializedTransaction& txn, bool bMus
 
 		sleGen			= entryCreate(ltGENERATOR_MAP, Ledger::getGeneratorIndex(hGeneratorID));
 
-		sleGen->setValueFieldVL(sfGenerator, vucCipher);
+		sleGen->setFieldVL(sfGenerator, vucCipher);
 	}
 	else if (bMustSetGenerator)
 	{
@@ -66,9 +66,9 @@ TER	TransactionEngine::setAuthorized(const SerializedTransaction& txn, bool bMus
 	// Set the public key needed to use the account.
 	uint160				uAuthKeyID		= bMustSetGenerator
 											? hGeneratorID								// Claim
-											: txn.getValueFieldAccount160(sfAuthorizedKey);	// PasswordSet
+											: txn.getFieldAccount160(sfAuthorizedKey);	// PasswordSet
 
-	mTxnAccount->setValueFieldAccount(sfAuthorizedKey, uAuthKeyID);
+	mTxnAccount->setFieldAccount(sfAuthorizedKey, uAuthKeyID);
 
 	return tesSUCCESS;
 }
@@ -83,7 +83,7 @@ TER TransactionEngine::doAccountSet(const SerializedTransaction& txn)
 
 	if (txn.isFieldPresent(sfEmailHash))
 	{
-		uint128		uHash	= txn.getValueFieldH128(sfEmailHash);
+		uint128		uHash	= txn.getFieldH128(sfEmailHash);
 
 		if (!uHash)
 		{
@@ -95,7 +95,7 @@ TER TransactionEngine::doAccountSet(const SerializedTransaction& txn)
 		{
 			Log(lsINFO) << "doAccountSet: set email hash";
 
-			mTxnAccount->setValueFieldH128(sfEmailHash, uHash);
+			mTxnAccount->setFieldH128(sfEmailHash, uHash);
 		}
 	}
 
@@ -105,7 +105,7 @@ TER TransactionEngine::doAccountSet(const SerializedTransaction& txn)
 
 	if (txn.isFieldPresent(sfWalletLocator))
 	{
-		uint256		uHash	= txn.getValueFieldH256(sfWalletLocator);
+		uint256		uHash	= txn.getFieldH256(sfWalletLocator);
 
 		if (!uHash)
 		{
@@ -117,7 +117,7 @@ TER TransactionEngine::doAccountSet(const SerializedTransaction& txn)
 		{
 			Log(lsINFO) << "doAccountSet: set wallet locator";
 
-			mTxnAccount->setValueFieldH256(sfWalletLocator, uHash);
+			mTxnAccount->setFieldH256(sfWalletLocator, uHash);
 		}
 	}
 
@@ -133,7 +133,7 @@ TER TransactionEngine::doAccountSet(const SerializedTransaction& txn)
 	{
 		Log(lsINFO) << "doAccountSet: set message key";
 
-		mTxnAccount->setValueFieldVL(sfMessageKey, txn.getValueFieldVL(sfMessageKey));
+		mTxnAccount->setFieldVL(sfMessageKey, txn.getFieldVL(sfMessageKey));
 	}
 
 	//
@@ -142,7 +142,7 @@ TER TransactionEngine::doAccountSet(const SerializedTransaction& txn)
 
 	if (txn.isFieldPresent(sfDomain))
 	{
-		std::vector<unsigned char>	vucDomain	= txn.getValueFieldVL(sfDomain);
+		std::vector<unsigned char>	vucDomain	= txn.getFieldVL(sfDomain);
 
 		if (vucDomain.empty())
 		{
@@ -154,7 +154,7 @@ TER TransactionEngine::doAccountSet(const SerializedTransaction& txn)
 		{
 			Log(lsINFO) << "doAccountSet: set domain";
 
-			mTxnAccount->setValueFieldVL(sfDomain, vucDomain);
+			mTxnAccount->setFieldVL(sfDomain, vucDomain);
 		}
 	}
 
@@ -164,7 +164,7 @@ TER TransactionEngine::doAccountSet(const SerializedTransaction& txn)
 
 	if (txn.isFieldPresent(sfTransferRate))
 	{
-		uint32		uRate	= txn.getValueFieldU32(sfTransferRate);
+		uint32		uRate	= txn.getFieldU32(sfTransferRate);
 
 		if (!uRate || uRate == QUALITY_ONE)
 		{
@@ -176,7 +176,7 @@ TER TransactionEngine::doAccountSet(const SerializedTransaction& txn)
 		{
 			Log(lsINFO) << "doAccountSet: set transfer rate";
 
-			mTxnAccount->setValueFieldU32(sfTransferRate, uRate);
+			mTxnAccount->setFieldU32(sfTransferRate, uRate);
 		}
 		else
 		{
@@ -201,8 +201,8 @@ TER TransactionEngine::doAccountSet(const SerializedTransaction& txn)
 	}
 	else if (bPublishHash && bPublishSize)
 	{
-		uint256		uHash	= txn.getValueFieldH256(sfPublishHash);
-		uint32		uSize	= txn.getValueFieldU32(sfPublishSize);
+		uint256		uHash	= txn.getFieldH256(sfPublishHash);
+		uint32		uSize	= txn.getFieldU32(sfPublishSize);
 
 		if (!uHash)
 		{
@@ -215,8 +215,8 @@ TER TransactionEngine::doAccountSet(const SerializedTransaction& txn)
 		{
 			Log(lsINFO) << "doAccountSet: set publish";
 
-			mTxnAccount->setValueFieldH256(sfPublishHash, uHash);
-			mTxnAccount->setValueFieldU32(sfPublishSize, uSize);
+			mTxnAccount->setFieldH256(sfPublishHash, uHash);
+			mTxnAccount->setFieldU32(sfPublishSize, uSize);
 		}
 	}
 
@@ -241,11 +241,11 @@ TER TransactionEngine::doCreditSet(const SerializedTransaction& txn)
 	TER			terResult		= tesSUCCESS;
 	Log(lsINFO) << "doCreditSet>";
 
-	const STAmount		saLimitAmount	= txn.getValueFieldAmount(sfLimitAmount);
+	const STAmount		saLimitAmount	= txn.getFieldAmount(sfLimitAmount);
 	const bool			bQualityIn		= txn.isFieldPresent(sfQualityIn);
-	const uint32		uQualityIn		= bQualityIn ? txn.getValueFieldU32(sfQualityIn) : 0;
+	const uint32		uQualityIn		= bQualityIn ? txn.getFieldU32(sfQualityIn) : 0;
 	const bool			bQualityOut		= txn.isFieldPresent(sfQualityOut);
-	const uint32		uQualityOut		= bQualityIn ? txn.getValueFieldU32(sfQualityOut) : 0;
+	const uint32		uQualityOut		= bQualityIn ? txn.getFieldU32(sfQualityOut) : 0;
 	const uint160		uCurrencyID		= saLimitAmount.getCurrency();
 	uint160				uDstAccountID	= saLimitAmount.getIssuer();
 	const bool			bFlipped		= mTxnAccountID > uDstAccountID;		// true, iff current is not lowest.
@@ -285,12 +285,12 @@ TER TransactionEngine::doCreditSet(const SerializedTransaction& txn)
 		if (!saLimitAmount)
 		{
 			// Zeroing line.
-			uint160		uLowID			= sleRippleState->getValueFieldAmount(sfLowLimit).getIssuer();
-			uint160		uHighID			= sleRippleState->getValueFieldAmount(sfHighLimit).getIssuer();
+			uint160		uLowID			= sleRippleState->getFieldAmount(sfLowLimit).getIssuer();
+			uint160		uHighID			= sleRippleState->getFieldAmount(sfHighLimit).getIssuer();
 			bool		bLow			= uLowID == uSrcAccountID;
 			bool		bHigh			= uLowID == uDstAccountID;
-			bool		bBalanceZero	= !sleRippleState->getValueFieldAmount(sfBalance);
-			STAmount	saDstLimit		= sleRippleState->getValueFieldAmount(bSendLow ? sfLowLimit : sfHighLimit);
+			bool		bBalanceZero	= !sleRippleState->getFieldAmount(sfBalance);
+			STAmount	saDstLimit		= sleRippleState->getFieldAmount(bSendLow ? sfLowLimit : sfHighLimit);
 			bool		bDstLimitZero	= !saDstLimit;
 
 			assert(bLow || bHigh);
@@ -307,7 +307,7 @@ TER TransactionEngine::doCreditSet(const SerializedTransaction& txn)
 
 		if (!bDelIndex)
 		{
-			sleRippleState->setValueFieldAmount(bFlipped ? sfHighLimit: sfLowLimit, saLimitAllow);
+			sleRippleState->setFieldAmount(bFlipped ? sfHighLimit: sfLowLimit, saLimitAllow);
 
 			if (!bQualityIn)
 			{
@@ -315,7 +315,7 @@ TER TransactionEngine::doCreditSet(const SerializedTransaction& txn)
 			}
 			else if (uQualityIn)
 			{
-				sleRippleState->setValueFieldU32(bFlipped ? sfLowQualityIn : sfHighQualityIn, uQualityIn);
+				sleRippleState->setFieldU32(bFlipped ? sfLowQualityIn : sfHighQualityIn, uQualityIn);
 			}
 			else
 			{
@@ -328,7 +328,7 @@ TER TransactionEngine::doCreditSet(const SerializedTransaction& txn)
 			}
 			else if (uQualityOut)
 			{
-				sleRippleState->setValueFieldU32(bFlipped ? sfLowQualityOut : sfHighQualityOut, uQualityOut);
+				sleRippleState->setFieldU32(bFlipped ? sfLowQualityOut : sfHighQualityOut, uQualityOut);
 			}
 			else
 			{
@@ -354,14 +354,14 @@ TER TransactionEngine::doCreditSet(const SerializedTransaction& txn)
 
 		Log(lsINFO) << "doCreditSet: Creating ripple line: " << sleRippleState->getIndex().ToString();
 
-		sleRippleState->setValueFieldAmount(sfBalance, STAmount(uCurrencyID, ACCOUNT_ONE));	// Zero balance in currency.
-		sleRippleState->setValueFieldAmount(bFlipped ? sfHighLimit : sfLowLimit, saLimitAllow);
-		sleRippleState->setValueFieldAmount(bFlipped ? sfLowLimit : sfHighLimit, STAmount(uCurrencyID, uDstAccountID));
+		sleRippleState->setFieldAmount(sfBalance, STAmount(uCurrencyID, ACCOUNT_ONE));	// Zero balance in currency.
+		sleRippleState->setFieldAmount(bFlipped ? sfHighLimit : sfLowLimit, saLimitAllow);
+		sleRippleState->setFieldAmount(bFlipped ? sfLowLimit : sfHighLimit, STAmount(uCurrencyID, uDstAccountID));
 
 		if (uQualityIn)
-			sleRippleState->setValueFieldU32(bFlipped ? sfHighQualityIn : sfLowQualityIn, uQualityIn);
+			sleRippleState->setFieldU32(bFlipped ? sfHighQualityIn : sfLowQualityIn, uQualityIn);
 		if (uQualityOut)
-			sleRippleState->setValueFieldU32(bFlipped ? sfHighQualityOut : sfLowQualityOut, uQualityOut);
+			sleRippleState->setFieldU32(bFlipped ? sfHighQualityOut : sfLowQualityOut, uQualityOut);
 
 		uint64			uSrcRef;							// Ignored, dirs never delete.
 
@@ -380,20 +380,20 @@ TER TransactionEngine::doNicknameSet(const SerializedTransaction& txn)
 {
 	std::cerr << "doNicknameSet>" << std::endl;
 
-	const uint256		uNickname		= txn.getValueFieldH256(sfNickname);
+	const uint256		uNickname		= txn.getFieldH256(sfNickname);
 	const bool			bMinOffer		= txn.isFieldPresent(sfMinimumOffer);
-	const STAmount		saMinOffer		= bMinOffer ? txn.getValueFieldAmount(sfAmount) : STAmount();
+	const STAmount		saMinOffer		= bMinOffer ? txn.getFieldAmount(sfAmount) : STAmount();
 
 	SLE::pointer		sleNickname		= entryCache(ltNICKNAME, uNickname);
 
 	if (sleNickname)
 	{
 		// Edit old entry.
-		sleNickname->setValueFieldAccount(sfAccount, mTxnAccountID);
+		sleNickname->setFieldAccount(sfAccount, mTxnAccountID);
 
 		if (bMinOffer && saMinOffer)
 		{
-			sleNickname->setValueFieldAmount(sfMinimumOffer, saMinOffer);
+			sleNickname->setFieldAmount(sfMinimumOffer, saMinOffer);
 		}
 		else
 		{
@@ -411,10 +411,10 @@ TER TransactionEngine::doNicknameSet(const SerializedTransaction& txn)
 
 		std::cerr << "doNicknameSet: Creating nickname node: " << sleNickname->getIndex().ToString() << std::endl;
 
-		sleNickname->setValueFieldAccount(sfAccount, mTxnAccountID);
+		sleNickname->setFieldAccount(sfAccount, mTxnAccountID);
 
 		if (bMinOffer && saMinOffer)
-			sleNickname->setValueFieldAmount(sfMinimumOffer, saMinOffer);
+			sleNickname->setFieldAmount(sfMinimumOffer, saMinOffer);
 	}
 
 	std::cerr << "doNicknameSet<" << std::endl;
@@ -426,7 +426,7 @@ TER TransactionEngine::doPasswordFund(const SerializedTransaction& txn)
 {
 	std::cerr << "doPasswordFund>" << std::endl;
 
-	const uint160		uDstAccountID	= txn.getValueFieldAccount160(sfDestination);
+	const uint160		uDstAccountID	= txn.getFieldAccount160(sfDestination);
 	SLE::pointer		sleDst			= mTxnAccountID == uDstAccountID
 											? mTxnAccount
 											: entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uDstAccountID));
@@ -488,9 +488,9 @@ TER TransactionEngine::doPayment(const SerializedTransaction& txn, const Transac
 	const bool		bNoRippleDirect	= isSetBit(uTxFlags, tfNoRippleDirect);
 	const bool		bPaths			= txn.isFieldPresent(sfPaths);
 	const bool		bMax			= txn.isFieldPresent(sfSendMax);
-	const uint160	uDstAccountID	= txn.getValueFieldAccount160(sfDestination);
-	const STAmount	saDstAmount		= txn.getValueFieldAmount(sfAmount);
-	const STAmount	saMaxAmount		= bMax ? txn.getValueFieldAmount(sfSendMax) : saDstAmount;
+	const uint160	uDstAccountID	= txn.getFieldAccount160(sfDestination);
+	const STAmount	saDstAmount		= txn.getFieldAmount(sfAmount);
+	const STAmount	saMaxAmount		= bMax ? txn.getFieldAmount(sfSendMax) : saDstAmount;
 	const uint160	uSrcCurrency	= saMaxAmount.getCurrency();
 	const uint160	uDstCurrency	= saDstAmount.getCurrency();
 
@@ -550,8 +550,8 @@ TER TransactionEngine::doPayment(const SerializedTransaction& txn, const Transac
 		// Create the account.
 		sleDst	= entryCreate(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uDstAccountID));
 
-		sleDst->setValueFieldAccount(sfAccount, uDstAccountID);
-		sleDst->setValueFieldU32(sfSequence, 1);
+		sleDst->setFieldAccount(sfAccount, uDstAccountID);
+		sleDst->setFieldU32(sfSequence, 1);
 	}
 	else
 	{
@@ -566,7 +566,7 @@ TER TransactionEngine::doPayment(const SerializedTransaction& txn, const Transac
 	{
 		// Ripple payment
 
-		STPathSet	spsPaths = txn.getValueFieldPathSet(sfPaths);
+		STPathSet	spsPaths = txn.getFieldPathSet(sfPaths);
 		STAmount	saMaxAmountAct;
 		STAmount	saDstAmountAct;
 
@@ -589,7 +589,7 @@ TER TransactionEngine::doPayment(const SerializedTransaction& txn, const Transac
 	{
 		// Direct XNS payment.
 
-		STAmount	saSrcXNSBalance	= mTxnAccount->getValueFieldAmount(sfBalance);
+		STAmount	saSrcXNSBalance	= mTxnAccount->getFieldAmount(sfBalance);
 
 		if (saSrcXNSBalance < saDstAmount)
 		{
@@ -600,8 +600,8 @@ TER TransactionEngine::doPayment(const SerializedTransaction& txn, const Transac
 		}
 		else
 		{
-			mTxnAccount->setValueFieldAmount(sfBalance, saSrcXNSBalance - saDstAmount);
-			sleDst->setValueFieldAmount(sfBalance, sleDst->getValueFieldAmount(sfBalance) + saDstAmount);
+			mTxnAccount->setFieldAmount(sfBalance, saSrcXNSBalance - saDstAmount);
+			sleDst->setFieldAmount(sfBalance, sleDst->getFieldAmount(sfBalance) + saDstAmount);
 
 			terResult	= tesSUCCESS;
 		}
@@ -626,9 +626,9 @@ TER TransactionEngine::doWalletAdd(const SerializedTransaction& txn)
 {
 	std::cerr << "WalletAdd>" << std::endl;
 
-	const std::vector<unsigned char>	vucPubKey		= txn.getValueFieldVL(sfPublicKey);
-	const std::vector<unsigned char>	vucSignature	= txn.getValueFieldVL(sfSignature);
-	const uint160						uAuthKeyID		= txn.getValueFieldAccount160(sfAuthorizedKey);
+	const std::vector<unsigned char>	vucPubKey		= txn.getFieldVL(sfPublicKey);
+	const std::vector<unsigned char>	vucSignature	= txn.getFieldVL(sfSignature);
+	const uint160						uAuthKeyID		= txn.getFieldAccount160(sfAuthorizedKey);
 	const NewcoinAddress				naMasterPubKey	= NewcoinAddress::createAccountPublic(vucPubKey);
 	const uint160						uDstAccountID	= naMasterPubKey.getAccountID();
 
@@ -648,8 +648,8 @@ TER TransactionEngine::doWalletAdd(const SerializedTransaction& txn)
 		return tefCREATED;
 	}
 
-	STAmount			saAmount		= txn.getValueFieldAmount(sfAmount);
-	STAmount			saSrcBalance	= mTxnAccount->getValueFieldAmount(sfBalance);
+	STAmount			saAmount		= txn.getFieldAmount(sfAmount);
+	STAmount			saSrcBalance	= mTxnAccount->getFieldAmount(sfBalance);
 
 	if (saSrcBalance < saAmount)
 	{
@@ -663,15 +663,15 @@ TER TransactionEngine::doWalletAdd(const SerializedTransaction& txn)
 	}
 
 	// Deduct initial balance from source account.
-	mTxnAccount->setValueFieldAmount(sfBalance, saSrcBalance-saAmount);
+	mTxnAccount->setFieldAmount(sfBalance, saSrcBalance-saAmount);
 
 	// Create the account.
 	sleDst	= entryCreate(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uDstAccountID));
 
-	sleDst->setValueFieldAccount(sfAccount, uDstAccountID);
-	sleDst->setValueFieldU32(sfSequence, 1);
-	sleDst->setValueFieldAmount(sfBalance, saAmount);
-	sleDst->setValueFieldAccount(sfAuthorizedKey, uAuthKeyID);
+	sleDst->setFieldAccount(sfAccount, uDstAccountID);
+	sleDst->setFieldU32(sfSequence, 1);
+	sleDst->setFieldAmount(sfBalance, saAmount);
+	sleDst->setFieldAccount(sfAuthorizedKey, uAuthKeyID);
 
 	std::cerr << "WalletAdd<" << std::endl;
 
@@ -770,11 +770,11 @@ TER TransactionEngine::takeOffers(
 
 			Log(lsINFO) << "takeOffers: considering offer : " << sleOffer->getJson(0);
 
-			const uint160	uOfferOwnerID	= sleOffer->getValueFieldAccount(sfAccount).getAccountID();
-			STAmount		saOfferPays		= sleOffer->getValueFieldAmount(sfTakerGets);
-			STAmount		saOfferGets		= sleOffer->getValueFieldAmount(sfTakerPays);
+			const uint160	uOfferOwnerID	= sleOffer->getFieldAccount(sfAccount).getAccountID();
+			STAmount		saOfferPays		= sleOffer->getFieldAmount(sfTakerGets);
+			STAmount		saOfferGets		= sleOffer->getFieldAmount(sfTakerPays);
 
-			if (sleOffer->isFieldPresent(sfExpiration) && sleOffer->getValueFieldU32(sfExpiration) <= mLedger->getParentCloseTimeNC())
+			if (sleOffer->isFieldPresent(sfExpiration) && sleOffer->getFieldU32(sfExpiration) <= mLedger->getParentCloseTimeNC())
 			{
 				// Offer is expired. Expired offers are considered unfunded. Delete it.
 				Log(lsINFO) << "takeOffers: encountered expired offer";
@@ -849,10 +849,10 @@ TER TransactionEngine::takeOffers(
 					// Adjust offer
 
 					// Offer owner will pay less.  Subtract what taker just got.
-					sleOffer->setValueFieldAmount(sfTakerGets, saOfferPays -= saSubTakerGot);
+					sleOffer->setFieldAmount(sfTakerGets, saOfferPays -= saSubTakerGot);
 
 					// Offer owner will get less.  Subtract what owner just paid.
-					sleOffer->setValueFieldAmount(sfTakerPays, saOfferGets -= saSubTakerPaid);
+					sleOffer->setFieldAmount(sfTakerPays, saOfferGets -= saSubTakerPaid);
 
 					entryModify(sleOffer);
 
@@ -919,8 +919,8 @@ TER TransactionEngine::doOfferCreate(const SerializedTransaction& txn)
 Log(lsWARNING) << "doOfferCreate> " << txn.getJson(0);
 	const uint32			txFlags			= txn.getFlags();
 	const bool				bPassive		= isSetBit(txFlags, tfPassive);
-	STAmount				saTakerPays		= txn.getValueFieldAmount(sfTakerPays);
-	STAmount				saTakerGets		= txn.getValueFieldAmount(sfTakerGets);
+	STAmount				saTakerPays		= txn.getFieldAmount(sfTakerPays);
+	STAmount				saTakerGets		= txn.getFieldAmount(sfTakerGets);
 
 Log(lsINFO) << boost::str(boost::format("doOfferCreate: saTakerPays=%s saTakerGets=%s")
 	% saTakerPays.getFullText()
@@ -928,7 +928,7 @@ Log(lsINFO) << boost::str(boost::format("doOfferCreate: saTakerPays=%s saTakerGe
 
 	const uint160			uPaysIssuerID	= saTakerPays.getIssuer();
 	const uint160			uGetsIssuerID	= saTakerGets.getIssuer();
-	const uint32			uExpiration		= txn.getValueFieldU32(sfExpiration);
+	const uint32			uExpiration		= txn.getFieldU32(sfExpiration);
 	const bool				bHaveExpiration	= txn.isFieldPresent(sfExpiration);
 	const uint32			uSequence		= txn.getSequence();
 
@@ -1090,16 +1090,16 @@ Log(lsINFO) << boost::str(boost::format("doOfferCreate: saTakerPays=%s saTakerGe
 			Log(lsWARNING) << "doOfferCreate: uPaysCurrency=" << saTakerPays.getHumanCurrency();
 			Log(lsWARNING) << "doOfferCreate: uGetsCurrency=" << saTakerGets.getHumanCurrency();
 
-			sleOffer->setValueFieldAccount(sfAccount, mTxnAccountID);
-			sleOffer->setValueFieldU32(sfSequence, uSequence);
-			sleOffer->setValueFieldH256(sfBookDirectory, uDirectory);
-			sleOffer->setValueFieldAmount(sfTakerPays, saTakerPays);
-			sleOffer->setValueFieldAmount(sfTakerGets, saTakerGets);
-			sleOffer->setValueFieldU64(sfOwnerNode, uOwnerNode);
-			sleOffer->setValueFieldU64(sfBookNode, uBookNode);
+			sleOffer->setFieldAccount(sfAccount, mTxnAccountID);
+			sleOffer->setFieldU32(sfSequence, uSequence);
+			sleOffer->setFieldH256(sfBookDirectory, uDirectory);
+			sleOffer->setFieldAmount(sfTakerPays, saTakerPays);
+			sleOffer->setFieldAmount(sfTakerGets, saTakerGets);
+			sleOffer->setFieldU64(sfOwnerNode, uOwnerNode);
+			sleOffer->setFieldU64(sfBookNode, uBookNode);
 
 			if (uExpiration)
-				sleOffer->setValueFieldU32(sfExpiration, uExpiration);
+				sleOffer->setFieldU32(sfExpiration, uExpiration);
 
 			if (bPassive)
 				sleOffer->setFlag(lsfPassive);
@@ -1114,7 +1114,7 @@ Log(lsINFO) << boost::str(boost::format("doOfferCreate: saTakerPays=%s saTakerGe
 TER TransactionEngine::doOfferCancel(const SerializedTransaction& txn)
 {
 	TER				terResult;
-	const uint32	uSequence	= txn.getValueFieldU32(sfOfferSequence);
+	const uint32	uSequence	= txn.getFieldU32(sfOfferSequence);
 	const uint256	uOfferIndex	= Ledger::getOfferIndex(mTxnAccountID, uSequence);
 	SLE::pointer	sleOffer	= entryCache(ltOFFER, uOfferIndex);
 
@@ -1141,14 +1141,14 @@ TER	TransactionEngine::doContractAdd(const SerializedTransaction& txn)
 {
 	Log(lsWARNING) << "doContractAdd> " << txn.getJson(0);
 
-	const uint32 expiration		= txn.getValueFieldU32(sfExpiration);
-//	const uint32 bondAmount		= txn.getValueFieldU32(sfBondAmount);
-//	const uint32 stampEscrow	= txn.getValueFieldU32(sfStampEscrow);
-	STAmount rippleEscrow		= txn.getValueFieldAmount(sfRippleEscrow);
-	std::vector<unsigned char>	createCode		= txn.getValueFieldVL(sfCreateCode);
-	std::vector<unsigned char>	fundCode		= txn.getValueFieldVL(sfFundCode);
-	std::vector<unsigned char>	removeCode		= txn.getValueFieldVL(sfRemoveCode);
-	std::vector<unsigned char>	expireCode		= txn.getValueFieldVL(sfExpireCode);
+	const uint32 expiration		= txn.getFieldU32(sfExpiration);
+//	const uint32 bondAmount		= txn.getFieldU32(sfBondAmount);
+//	const uint32 stampEscrow	= txn.getFieldU32(sfStampEscrow);
+	STAmount rippleEscrow		= txn.getFieldAmount(sfRippleEscrow);
+	std::vector<unsigned char>	createCode		= txn.getFieldVL(sfCreateCode);
+	std::vector<unsigned char>	fundCode		= txn.getFieldVL(sfFundCode);
+	std::vector<unsigned char>	removeCode		= txn.getFieldVL(sfRemoveCode);
+	std::vector<unsigned char>	expireCode		= txn.getFieldVL(sfExpireCode);
 
 	// make sure
 	// expiration hasn't passed

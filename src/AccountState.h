@@ -38,11 +38,11 @@ public:
 
 	NewcoinAddress getAuthorizedKey()
 	{
-		return mLedgerEntry->getValueFieldAccount(sfAuthorizedKey);
+		return mLedgerEntry->getFieldAccount(sfAuthorizedKey);
 	}
 
-	STAmount getBalance() const { return mLedgerEntry->getValueFieldAmount(sfBalance); }
-	uint32 getSeq() const { return mLedgerEntry->getValueFieldU32(sfSequence); }
+	STAmount getBalance() const { return mLedgerEntry->getFieldAmount(sfBalance); }
+	uint32 getSeq() const { return mLedgerEntry->getFieldU32(sfSequence); }
 
 	SerializedLedgerEntry::pointer getSLE() { return mLedgerEntry; }
 	const SerializedLedgerEntry& peekSLE() const { return *mLedgerEntry; }

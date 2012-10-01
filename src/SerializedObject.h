@@ -95,36 +95,36 @@ public:
 	// these throw if the field type doesn't match, or return default values if the
 	// field is optional but not present
 	std::string getFieldString(SField::ref field) const;
-	unsigned char getValueFieldU8(SField::ref field) const;
-	uint16 getValueFieldU16(SField::ref field) const;
-	uint32 getValueFieldU32(SField::ref field) const;
-	uint64 getValueFieldU64(SField::ref field) const;
-	uint128 getValueFieldH128(SField::ref field) const;
-	uint160 getValueFieldH160(SField::ref field) const;
-	uint256 getValueFieldH256(SField::ref field) const;
-	NewcoinAddress getValueFieldAccount(SField::ref field) const;
-	uint160 getValueFieldAccount160(SField::ref field) const;
-	std::vector<unsigned char> getValueFieldVL(SField::ref field) const;
-	std::vector<TaggedListItem> getValueFieldTL(SField::ref field) const;
-	STAmount getValueFieldAmount(SField::ref field) const;
-	STPathSet getValueFieldPathSet(SField::ref field) const;
-	STVector256 getValueFieldV256(SField::ref field) const;
+	unsigned char getFieldU8(SField::ref field) const;
+	uint16 getFieldU16(SField::ref field) const;
+	uint32 getFieldU32(SField::ref field) const;
+	uint64 getFieldU64(SField::ref field) const;
+	uint128 getFieldH128(SField::ref field) const;
+	uint160 getFieldH160(SField::ref field) const;
+	uint256 getFieldH256(SField::ref field) const;
+	NewcoinAddress getFieldAccount(SField::ref field) const;
+	uint160 getFieldAccount160(SField::ref field) const;
+	std::vector<unsigned char> getFieldVL(SField::ref field) const;
+	std::vector<TaggedListItem> getFieldTL(SField::ref field) const;
+	STAmount getFieldAmount(SField::ref field) const;
+	STPathSet getFieldPathSet(SField::ref field) const;
+	STVector256 getFieldV256(SField::ref field) const;
 
-	void setValueFieldU8(SField::ref field, unsigned char);
-	void setValueFieldU16(SField::ref field, uint16);
-	void setValueFieldU32(SField::ref field, uint32);
-	void setValueFieldU64(SField::ref field, uint64);
-	void setValueFieldH128(SField::ref field, const uint128&);
-	void setValueFieldH160(SField::ref field, const uint160&);
-	void setValueFieldH256(SField::ref field, const uint256&);
-	void setValueFieldVL(SField::ref field, const std::vector<unsigned char>&);
-	void setValueFieldTL(SField::ref field, const std::vector<TaggedListItem>&);
-	void setValueFieldAccount(SField::ref field, const uint160&);
-	void setValueFieldAccount(SField::ref field, const NewcoinAddress& addr)
-	{ setValueFieldAccount(field, addr.getAccountID()); }
-	void setValueFieldAmount(SField::ref field, const STAmount&);
-	void setValueFieldPathSet(SField::ref field, const STPathSet&);
-	void setValueFieldV256(SField::ref field, const STVector256& v);
+	void setFieldU8(SField::ref field, unsigned char);
+	void setFieldU16(SField::ref field, uint16);
+	void setFieldU32(SField::ref field, uint32);
+	void setFieldU64(SField::ref field, uint64);
+	void setFieldH128(SField::ref field, const uint128&);
+	void setFieldH160(SField::ref field, const uint160&);
+	void setFieldH256(SField::ref field, const uint256&);
+	void setFieldVL(SField::ref field, const std::vector<unsigned char>&);
+	void setFieldTL(SField::ref field, const std::vector<TaggedListItem>&);
+	void setFieldAccount(SField::ref field, const uint160&);
+	void setFieldAccount(SField::ref field, const NewcoinAddress& addr)
+	{ setFieldAccount(field, addr.getAccountID()); }
+	void setFieldAmount(SField::ref field, const STAmount&);
+	void setFieldPathSet(SField::ref field, const STPathSet&);
+	void setFieldV256(SField::ref field, const STVector256& v);
 
 	bool isFieldPresent(SField::ref field) const;
 	SerializedType* makeFieldPresent(SField::ref field);

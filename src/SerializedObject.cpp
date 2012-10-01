@@ -450,7 +450,7 @@ std::string STObject::getFieldString(SField::ref field) const
 	return rf->getText();
 }
 
-unsigned char STObject::getValueFieldU8(SField::ref field) const
+unsigned char STObject::getFieldU8(SField::ref field) const
 {
 	const SerializedType* rf = peekAtPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
@@ -461,7 +461,7 @@ unsigned char STObject::getValueFieldU8(SField::ref field) const
 	return cf->getValue();
 }
 
-uint16 STObject::getValueFieldU16(SField::ref field) const
+uint16 STObject::getFieldU16(SField::ref field) const
 {
 	const SerializedType* rf = peekAtPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
@@ -472,7 +472,7 @@ uint16 STObject::getValueFieldU16(SField::ref field) const
 	return cf->getValue();
 }
 
-uint32 STObject::getValueFieldU32(SField::ref field) const
+uint32 STObject::getFieldU32(SField::ref field) const
 {
 	const SerializedType* rf = peekAtPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
@@ -483,7 +483,7 @@ uint32 STObject::getValueFieldU32(SField::ref field) const
 	return cf->getValue();
 }
 
-uint64 STObject::getValueFieldU64(SField::ref field) const
+uint64 STObject::getFieldU64(SField::ref field) const
 {
 	const SerializedType* rf = peekAtPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
@@ -494,7 +494,7 @@ uint64 STObject::getValueFieldU64(SField::ref field) const
 	return cf->getValue();
 }
 
-uint128 STObject::getValueFieldH128(SField::ref field) const
+uint128 STObject::getFieldH128(SField::ref field) const
 {
 	const SerializedType* rf = peekAtPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
@@ -505,7 +505,7 @@ uint128 STObject::getValueFieldH128(SField::ref field) const
 	return cf->getValue();
 }
 
-uint160 STObject::getValueFieldH160(SField::ref field) const
+uint160 STObject::getFieldH160(SField::ref field) const
 {
 	const SerializedType* rf = peekAtPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
@@ -516,7 +516,7 @@ uint160 STObject::getValueFieldH160(SField::ref field) const
 	return cf->getValue();
 }
 
-uint256 STObject::getValueFieldH256(SField::ref field) const
+uint256 STObject::getFieldH256(SField::ref field) const
 {
 	const SerializedType* rf = peekAtPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
@@ -527,7 +527,7 @@ uint256 STObject::getValueFieldH256(SField::ref field) const
 	return cf->getValue();
 }
 
-NewcoinAddress STObject::getValueFieldAccount(SField::ref field) const
+NewcoinAddress STObject::getFieldAccount(SField::ref field) const
 {
 	const SerializedType* rf = peekAtPField(field);
 	if (!rf)
@@ -545,7 +545,7 @@ NewcoinAddress STObject::getValueFieldAccount(SField::ref field) const
 	return cf->getValueNCA();
 }
 
-uint160 STObject::getValueFieldAccount160(SField::ref field) const
+uint160 STObject::getFieldAccount160(SField::ref field) const
 {
 	uint160 a;
 	const SerializedType* rf = peekAtPField(field);
@@ -567,7 +567,7 @@ uint160 STObject::getValueFieldAccount160(SField::ref field) const
 	return a;
 }
 
-std::vector<unsigned char> STObject::getValueFieldVL(SField::ref field) const
+std::vector<unsigned char> STObject::getFieldVL(SField::ref field) const
 {
 	const SerializedType* rf = peekAtPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
@@ -578,7 +578,7 @@ std::vector<unsigned char> STObject::getValueFieldVL(SField::ref field) const
 	return cf->getValue();
 }
 
-STAmount STObject::getValueFieldAmount(SField::ref field) const
+STAmount STObject::getFieldAmount(SField::ref field) const
 {
 	const SerializedType* rf = peekAtPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
@@ -589,7 +589,7 @@ STAmount STObject::getValueFieldAmount(SField::ref field) const
 	return *cf;
 }
 
-STPathSet STObject::getValueFieldPathSet(SField::ref field) const
+STPathSet STObject::getFieldPathSet(SField::ref field) const
 {
 	const SerializedType* rf = peekAtPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
@@ -600,7 +600,7 @@ STPathSet STObject::getValueFieldPathSet(SField::ref field) const
 	return *cf;
 }
 
-STVector256 STObject::getValueFieldV256(SField::ref field) const
+STVector256 STObject::getFieldV256(SField::ref field) const
 {
 	const SerializedType* rf = peekAtPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
@@ -611,7 +611,7 @@ STVector256 STObject::getValueFieldV256(SField::ref field) const
 	return *cf;
 }
 
-void STObject::setValueFieldU8(SField::ref field, unsigned char v)
+void STObject::setFieldU8(SField::ref field, unsigned char v)
 {
 	SerializedType* rf = getPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
@@ -621,7 +621,7 @@ void STObject::setValueFieldU8(SField::ref field, unsigned char v)
 	cf->setValue(v);
 }
 
-void STObject::setValueFieldU16(SField::ref field, uint16 v)
+void STObject::setFieldU16(SField::ref field, uint16 v)
 {
 	SerializedType* rf = getPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
@@ -631,7 +631,7 @@ void STObject::setValueFieldU16(SField::ref field, uint16 v)
 	cf->setValue(v);
 }
 
-void STObject::setValueFieldU32(SField::ref field, uint32 v)
+void STObject::setFieldU32(SField::ref field, uint32 v)
 {
 	SerializedType* rf = getPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
@@ -641,7 +641,7 @@ void STObject::setValueFieldU32(SField::ref field, uint32 v)
 	cf->setValue(v);
 }
 
-void STObject::setValueFieldU64(SField::ref field, uint64 v)
+void STObject::setFieldU64(SField::ref field, uint64 v)
 {
 	SerializedType* rf = getPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
@@ -651,7 +651,7 @@ void STObject::setValueFieldU64(SField::ref field, uint64 v)
 	cf->setValue(v);
 }
 
-void STObject::setValueFieldH128(SField::ref field, const uint128& v)
+void STObject::setFieldH128(SField::ref field, const uint128& v)
 {
 	SerializedType* rf = getPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
@@ -661,7 +661,7 @@ void STObject::setValueFieldH128(SField::ref field, const uint128& v)
 	cf->setValue(v);
 }
 
-void STObject::setValueFieldH160(SField::ref field, const uint160& v)
+void STObject::setFieldH160(SField::ref field, const uint160& v)
 {
 	SerializedType* rf = getPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
@@ -671,7 +671,7 @@ void STObject::setValueFieldH160(SField::ref field, const uint160& v)
 	cf->setValue(v);
 }
 
-void STObject::setValueFieldH256(SField::ref field, const uint256& v)
+void STObject::setFieldH256(SField::ref field, const uint256& v)
 {
 	SerializedType* rf = getPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
@@ -681,7 +681,7 @@ void STObject::setValueFieldH256(SField::ref field, const uint256& v)
 	cf->setValue(v);
 }
 
-void STObject::setValueFieldV256(SField::ref field, const STVector256& v)
+void STObject::setFieldV256(SField::ref field, const STVector256& v)
 {
 	SerializedType* rf = getPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
@@ -691,7 +691,7 @@ void STObject::setValueFieldV256(SField::ref field, const STVector256& v)
 	cf->setValue(v);
 }
 
-void STObject::setValueFieldAccount(SField::ref field, const uint160& v)
+void STObject::setFieldAccount(SField::ref field, const uint160& v)
 {
 	SerializedType* rf = getPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
@@ -701,7 +701,7 @@ void STObject::setValueFieldAccount(SField::ref field, const uint160& v)
 	cf->setValueH160(v);
 }
 
-void STObject::setValueFieldVL(SField::ref field, const std::vector<unsigned char>& v)
+void STObject::setFieldVL(SField::ref field, const std::vector<unsigned char>& v)
 {
 	SerializedType* rf = getPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
@@ -711,7 +711,7 @@ void STObject::setValueFieldVL(SField::ref field, const std::vector<unsigned cha
 	cf->setValue(v);
 }
 
-void STObject::setValueFieldAmount(SField::ref field, const STAmount &v)
+void STObject::setFieldAmount(SField::ref field, const STAmount &v)
 {
 	SerializedType* rf = getPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
@@ -721,7 +721,7 @@ void STObject::setValueFieldAmount(SField::ref field, const STAmount &v)
 	(*cf) = v;
 }
 
-void STObject::setValueFieldPathSet(SField::ref field, const STPathSet &v)
+void STObject::setFieldPathSet(SField::ref field, const STPathSet &v)
 {
 	SerializedType* rf = getPField(field);
 	if (!rf) throw std::runtime_error("Field not found");
@@ -961,7 +961,7 @@ void STObject::unitTest()
 	if (!object1.isFieldPresent(sfTest2)) throw std::runtime_error("STObject Error");
 
 	if ((object1.getFlags() != 1) || (object2.getFlags() != 0)) throw std::runtime_error("STObject error");
-	if (object1.getValueFieldH256(sfTest2) != uint256()) throw std::runtime_error("STObject error");
+	if (object1.getFieldH256(sfTest2) != uint256()) throw std::runtime_error("STObject error");
 
 	if (object1.getSerializer() == object2.getSerializer()) throw std::runtime_error("STObject error");
 	object1.makeFieldAbsent(sfTest2);
@@ -973,7 +973,7 @@ void STObject::unitTest()
 	if (object1.isFieldPresent(sfTest2)) throw std::runtime_error("STObject error");
 	if (copy.isFieldPresent(sfTest2)) throw std::runtime_error("STObject error");
 	if (object1.getSerializer() != copy.getSerializer()) throw std::runtime_error("STObject error");
-	copy.setValueFieldU32(sfTest3, 1);
+	copy.setFieldU32(sfTest3, 1);
 	if (object1.getSerializer() == copy.getSerializer()) throw std::runtime_error("STObject error");
 #ifdef DEBUG
 	Log(lsDEBUG) << copy.getJson(0);
@@ -983,15 +983,15 @@ void STObject::unitTest()
 	{
 		std::cerr << "tol: i=" << i << std::endl;
 		std::vector<unsigned char> j(i, 2);
-		object1.setValueFieldVL(sfTest1, j);
+		object1.setFieldVL(sfTest1, j);
 
 		Serializer s;
 		object1.add(s);
 		SerializerIterator it(s);
 		STObject object3(testSOElements[0], it, "TestElement3");
 
-		if (object1.getValueFieldVL(sfTest1) != j) throw std::runtime_error("STObject error");
-		if (object3.getValueFieldVL(sfTest1) != j) throw std::runtime_error("STObject error");
+		if (object1.getFieldVL(sfTest1) != j) throw std::runtime_error("STObject error");
+		if (object3.getFieldVL(sfTest1) != j) throw std::runtime_error("STObject error");
 	}
 
 }

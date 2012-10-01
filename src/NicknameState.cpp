@@ -14,13 +14,13 @@ bool NicknameState::haveMinimumOffer() const
 STAmount NicknameState::getMinimumOffer() const
 {
     return mLedgerEntry->isFieldPresent(sfMinimumOffer)
-	? mLedgerEntry->getValueFieldAmount(sfMinimumOffer)
+	? mLedgerEntry->getFieldAmount(sfMinimumOffer)
 	: STAmount();
 }
 
 NewcoinAddress NicknameState::getAccountID() const
 {
-    return mLedgerEntry->getValueFieldAccount(sfAccount);
+    return mLedgerEntry->getFieldAccount(sfAccount);
 }
 
 void NicknameState::addJson(Json::Value& val)
