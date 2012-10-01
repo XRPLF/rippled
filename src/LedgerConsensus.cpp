@@ -977,7 +977,7 @@ void LedgerConsensus::applyTransaction(TransactionEngine& engine, const Serializ
 	{
 #endif
 		TER result = engine.applyTransaction(*txn, parms);
-		if (isTerRetry(result
+		if (isTerRetry(result))
 		{
 			Log(lsINFO) << "   retry";
 			assert(!ledger->hasTransaction(txn->getTransactionID()));
