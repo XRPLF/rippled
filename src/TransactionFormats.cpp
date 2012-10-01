@@ -102,7 +102,7 @@ TransactionFormat	InnerTxnFormats[]=
 
 TransactionFormat* getTxnFormat(TransactionType	t)
 {
-	return getTxnFormat(t);
+	return getTxnFormat(static_cast<int>(t));
 }
 
 TransactionFormat* getTxnFormat(int t)

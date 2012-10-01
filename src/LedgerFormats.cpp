@@ -88,7 +88,7 @@ LedgerEntryFormat LedgerFormats[]=
 
 LedgerEntryFormat* getLgrFormat(LedgerEntryType t)
 {
-	return getLgrFormat(t);
+	return getLgrFormat(static_cast<int>(t));
 }
 
 LedgerEntryFormat* getLgrFormat(int t)
