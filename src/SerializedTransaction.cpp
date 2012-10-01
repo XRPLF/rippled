@@ -94,7 +94,7 @@ std::vector<unsigned char> SerializedTransaction::getSignature() const
 {
 	try
 	{
-		return getValueFieldVL(sfSignature);
+		return getValueFieldVL(sfTxnSignature);
 	}
 	catch (...)
 	{
@@ -106,14 +106,14 @@ void SerializedTransaction::sign(const NewcoinAddress& naAccountPrivate)
 {
 	std::vector<unsigned char> signature;
 	naAccountPrivate.accountPrivateSign(getSigningHash(), signature);
-	setValueFieldVL(sfSignature, signature);
+	setValueFieldVL(sfTxnSignature, signature);
 }
 
 bool SerializedTransaction::checkSign(const NewcoinAddress& naAccountPublic) const
 {
 	try
 	{
-		return naAccountPublic.accountPublicVerify(getSigningHash(), getValueFieldVL(sfSignature));
+		return naAccountPublic.accountPublicVerify(getSigningHash(), getValueFieldVL(sfTxnSignature));
 	}
 	catch (...)
 	{

@@ -30,7 +30,11 @@ SerializedLedgerEntry::SerializedLedgerEntry(const Serializer& s, const uint256&
 		throw std::runtime_error("invalid ledger entry type");
 	mType = mFormat->t_type;
 	if (!setType(mFormat->elements))
+	{
+		Log(lsWARNING) << "Ledger entry not valid for type " << mFormat->t_name;
+		Log(lsWARNING) << getJson(0);
 		throw std::runtime_error("ledger entry not valid for type");
+	}
 }
 
 SerializedLedgerEntry::SerializedLedgerEntry(LedgerEntryType type) : STObject(sfLedgerEntry), mType(type)

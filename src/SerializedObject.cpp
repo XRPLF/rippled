@@ -250,7 +250,7 @@ void STObject::add(Serializer& s, bool withSigningFields) const
 		if (it.getSType() != STI_NOTPRESENT)
 		{
 			SField::ref fName = it.getFName();
-			if (withSigningFields || ((fName != sfSignature) && (fName != sfSignatures)))
+			if (withSigningFields || ((fName != sfTxnSignature) && (fName != sfTxnSignatures)))
 				fields.insert(std::make_pair(it.getFName().fieldCode, &it));
 		}
 	}

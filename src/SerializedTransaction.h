@@ -39,7 +39,7 @@ public:
 
 	// outer transaction functions / signature functions
 	std::vector<unsigned char> getSignature() const;
-	void setSignature(const std::vector<unsigned char>& s)	{ setValueFieldVL(sfSignature, s); }
+	void setSignature(const std::vector<unsigned char>& s)	{ setValueFieldVL(sfTxnSignature, s); }
 	uint256 getSigningHash() const;
 
 	TransactionType getTxnType() const			{ return mType; }

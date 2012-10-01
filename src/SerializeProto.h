@@ -99,13 +99,14 @@
 	FIELD(PublicKey,			VL, 1)
 	FIELD(MessageKey,			VL, 2)
 	FIELD(SigningPubKey,		VL, 3)
-	FIELD(Signature,			VL, 4)
+	FIELD(TxnSignature,			VL, 4)
 	FIELD(Generator,			VL, 5)
-	FIELD(Domain,				VL, 6)
-	FIELD(FundCode,				VL, 7)
-	FIELD(RemoveCode,			VL, 8)
-	FIELD(ExpireCode,			VL, 9)
-	FIELD(CreateCode,			VL, 10)
+	FIELD(Signature,			VL, 6)
+	FIELD(Domain,				VL, 7)
+	FIELD(FundCode,				VL, 8)
+	FIELD(RemoveCode,			VL, 9)
+	FIELD(ExpireCode,			VL, 10)
+	FIELD(CreateCode,			VL, 11)
 
 	// account
 	FIELD(Account,				ACCOUNT, 1)
@@ -129,4 +130,5 @@
 	// array of objects
 	// ARRAY/1 is reserved for end of array
 	FIELD(SigningAccounts,		ARRAY, 2)
-	FIELD(Signatures,			ARRAY, 3)
+	FIELD(TxnSignatures,		ARRAY, 3)
+	FIELD(Signatures,			ARRAY, 4)
