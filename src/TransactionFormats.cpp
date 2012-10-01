@@ -1,5 +1,4 @@
-
-#include	"TransactionFormats.h"
+#include "TransactionFormats.h"
 
 #define TF_BASE									\
 		{ 	sfTransactionType,	SOE_REQUIRED },	\
@@ -9,7 +8,7 @@
 		{	sfSequence,			SOE_REQUIRED }, \
 		{	sfFee,				SOE_REQUIRED }, \
 		{	sfSigningPubKey,	SOE_REQUIRED }, \
-		{	sfSignature,		SOE_OPTIONAL },
+		{	sfTxnSignature,		SOE_OPTIONAL },
 
 TransactionFormat	InnerTxnFormats[]=
 {
@@ -26,10 +25,10 @@ TransactionFormat	InnerTxnFormats[]=
 	{	"Claim", ttCLAIM, { TF_BASE
 		{	sfGenerator,		SOE_REQUIRED },
 		{	sfPublicKey,		SOE_REQUIRED },
+		{	sfSignature,		SOE_REQUIRED },
 		{	sfInvalid,			SOE_END } }
 	 },
 	{	"CreditSet", ttCREDIT_SET, { TF_BASE
-		{	sfDestination,		SOE_REQUIRED },
 		{	sfLimitAmount,		SOE_OPTIONAL },
 		{	sfQualityIn,		SOE_OPTIONAL },
 		{	sfQualityOut,		SOE_OPTIONAL },

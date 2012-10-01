@@ -1544,7 +1544,6 @@ Json::Value RPCServer::doRippleLineSet(const Json::Value& params)
 	NewcoinAddress	naSrcAccountID;
 	NewcoinAddress	naDstAccountID;
 	STAmount		saLimitAmount;
-	bool			bLimitAmount	= true;
 	bool			bQualityIn		= params.size() >= 6;
 	bool			bQualityOut		= params.size() >= 7;
 	uint32			uQualityIn		= 0;
@@ -1562,7 +1561,7 @@ Json::Value RPCServer::doRippleLineSet(const Json::Value& params)
 	{
 		return RPCError(rpcDST_ACT_MALFORMED);
 	}
-	else if (!saLimitAmount.setFullValue(params[3u].asString(), params.size() >= 5 ? params[4u].asString() : ""))
+	else if (!saLimitAmount.setFullValue(params[3u].asString(), params.size() >= 5 ? params[4u].asString() : "", params[2u].asString()))
 	{
 		return RPCError(rpcSRC_AMT_MALFORMED);
 	}
@@ -1593,8 +1592,7 @@ Json::Value RPCServer::doRippleLineSet(const Json::Value& params)
 			asSrc->getSeq(),
 			theConfig.FEE_DEFAULT,
 			0,											// YYY No source tag
-			naDstAccountID,
-			bLimitAmount, saLimitAmount,
+			saLimitAmount,
 			bQualityIn, uQualityIn,
 			bQualityOut, uQualityOut);
 
@@ -1779,17 +1777,17 @@ Json::Value RPCServer::doSend(const Json::Value& params)
 			// Destination exists, ordinary send.
 
 			STPathSet			spsPaths;
-			/*
 			uint160  srcCurrencyID;
-			bool ret_b;
-			ret_b = false;
-			STAmount::currencyFromString(srcCurrencyID, sSrcCurrency);
+                        bool ret_b;
+                        ret_b = false;
 
-			Pathfinder pf(naSrcAccountID, naDstAccountID, srcCurrencyID, saDstAmount);
-
-			ret_b = pf.findPaths(5, 1, spsPaths);
-			// TODO: Nope; the above can't be right
-			*/
+			if (!saSrcAmountMax.isNative() || !saDstAmount.isNative()) 
+			{
+			  STAmount::currencyFromString(srcCurrencyID, sSrcCurrency);
+			  Pathfinder pf(naSrcAccountID, naDstAccountID, srcCurrencyID, saDstAmount);
+			  ret_b = pf.findPaths(5, 1, spsPaths);
+			}
+			
 			trans	= Transaction::sharedPayment(
 				naAccountPublic, naAccountPrivate,
 				naSrcAccountID,

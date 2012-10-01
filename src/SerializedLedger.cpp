@@ -55,7 +55,7 @@ std::string SerializedLedgerEntry::getFullText() const
 
 std::string SerializedLedgerEntry::getText() const
 {
-	return str(boost::format("{ %s, %s, %s }")
+	return str(boost::format("{ %s, %s }")
 		% mIndex.GetHex()
 		% STObject::getText());
 }

@@ -744,7 +744,7 @@ void RippleCalc::calcNodeRipple(
 		{
 			const uint160	uCurrencyID		= saCur.getCurrency();
 			const uint160	uCurIssuerID	= saCur.getIssuer();
-			const uint160	uPrvIssuerID	= saPrv.getIssuer();
+			// const uint160	uPrvIssuerID	= saPrv.getIssuer();
 
 			STAmount	saCurIn		= STAmount::divide(STAmount::multiply(saCur, uQualityOut, uCurrencyID, uCurIssuerID), uQualityIn, uCurrencyID, uCurIssuerID);
 
