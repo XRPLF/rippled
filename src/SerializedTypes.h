@@ -216,11 +216,6 @@ protected:
 	static const uint64 cNotNative = 0x8000000000000000ull;
 	static const uint64 cPosNative = 0x4000000000000000ull;
 
-	STAmount(bool isNeg, uint64 value) : mValue(value), mOffset(0), mIsNative(true), mIsNegative(isNeg) { ; }
-
-	STAmount(SField::ref name, uint64 value, bool isNegative)
-		: SerializedType(name), mValue(value), mOffset(0), mIsNative(true), mIsNegative(isNegative)
-	{ ; }
 	STAmount(SField::ref name, const uint160& cur, const uint160& iss, uint64 val, int off, bool isNat, bool isNeg)
 		: SerializedType(name), mCurrency(cur), mIssuer(iss),  mValue(val), mOffset(off),
 			mIsNative(isNat), mIsNegative(isNeg) { ; }
@@ -236,8 +231,8 @@ public:
 	STAmount(uint64 v = 0, bool isNeg = false) : mValue(v), mOffset(0), mIsNative(true), mIsNegative(isNeg)
 	{ if (v == 0) mIsNegative = false; }
 
-	STAmount(SField::ref n, uint64 v = 0)
-		: SerializedType(n), mValue(v), mOffset(0), mIsNative(true), mIsNegative(false)
+	STAmount(SField::ref n, uint64 v = 0, bool isNeg = false)
+		: SerializedType(n), mValue(v), mOffset(0), mIsNative(true), mIsNegative(isNeg)
 	{ ; }
 
 	STAmount(const uint160& uCurrencyID, const uint160& uIssuerID, uint64 uV = 0, int iOff = 0, bool bNegative = false)
@@ -250,7 +245,7 @@ public:
 		SerializedType(n), mCurrency(currency), mIssuer(issuer), mValue(v), mOffset(off), mIsNegative(isNeg)
 	{ canonicalize(); }
 
-	STAmount(SField::ref n, int64 v);
+	static STAmount createFromInt64(SField::ref n, int64 v);
 
 	static std::auto_ptr<SerializedType> deserialize(SerializerIterator& sit, SField::ref name)
 	{ return std::auto_ptr<SerializedType>(construct(sit, name)); }
