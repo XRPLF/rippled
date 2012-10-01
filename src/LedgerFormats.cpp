@@ -50,21 +50,15 @@ LedgerEntryFormat LedgerFormats[]=
 		{ sfInvalid,		SOE_END } }
 	},
 	{ "GeneratorMap", ltGENERATOR_MAP, { LEF_BASE
-		{ sfLedgerEntryType,SOE_REQUIRED },
-		{ sfFlags,			SOE_REQUIRED },
 		{ sfGenerator,		SOE_REQUIRED },
 		{ sfInvalid,		SOE_END } }
 	},
 	{ "Nickname", ltNICKNAME, { LEF_BASE
-		{ sfLedgerEntryType,SOE_REQUIRED },
-		{ sfFlags,			SOE_REQUIRED },
 		{ sfAccount,		SOE_REQUIRED },
 		{ sfMinimumOffer,	SOE_OPTIONAL },
 		{ sfInvalid,		SOE_END } }
 	},
 	{ "Offer", ltOFFER, { LEF_BASE
-		{ sfLedgerEntryType,SOE_REQUIRED },
-		{ sfFlags,			SOE_REQUIRED },
 		{ sfAccount,		SOE_REQUIRED },
 		{ sfSequence,		SOE_REQUIRED },
 		{ sfTakerPays,		SOE_REQUIRED },
@@ -78,8 +72,6 @@ LedgerEntryFormat LedgerFormats[]=
 		{ sfInvalid,		SOE_END } }
 	},
 	{ "RippleState", ltRIPPLE_STATE, { LEF_BASE
-		{ sfLedgerEntryType,SOE_REQUIRED },
-		{ sfFlags,			SOE_REQUIRED },
 		{ sfBalance,		SOE_REQUIRED },
 		{ sfLowLimit,		SOE_REQUIRED },
 		{ sfHighLimit,		SOE_REQUIRED },
