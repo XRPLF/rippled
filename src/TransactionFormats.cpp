@@ -1,124 +1,138 @@
 #include "TransactionFormats.h"
 
-#define TF_BASE									\
-		{ 	sfTransactionType,	SOE_REQUIRED },	\
-		{	sfFlags,			SOE_REQUIRED },	\
-		{	sfSourceTag,		SOE_OPTIONAL }, \
-		{   sfAccount,			SOE_REQUIRED }, \
-		{	sfSequence,			SOE_REQUIRED }, \
-		{	sfFee,				SOE_REQUIRED }, \
-		{	sfSigningPubKey,	SOE_REQUIRED }, \
-		{	sfTxnSignature,		SOE_OPTIONAL },
+std::map<int, TransactionFormat*> TransactionFormat::byType;
+std::map<std::string, TransactionFormat*> TransactionFormat::byName;
 
-TransactionFormat TxnFormats[]=
+#define TF_BASE												\
+		<< SOElement(sfTransactionType,		SOE_REQUIRED)	\
+		<< SOElement(sfFlags,				SOE_REQUIRED)	\
+		<< SOElement(sfSourceTag,			SOE_OPTIONAL)	\
+		<< SOElement(sfAccount,				SOE_REQUIRED)	\
+		<< SOElement(sfSequence,			SOE_REQUIRED)	\
+		<< SOElement(sfFee,					SOE_REQUIRED)	\
+		<< SOElement(sfSigningPubKey,		SOE_REQUIRED)	\
+		<< SOElement(sfTxnSignature,		SOE_OPTIONAL)
+
+#define DECLARE_TF(name, type) tf = new TransactionFormat(#name, type); (*tf) TF_BASE
+
+static bool TFInit()
 {
-	{	"AccountSet", ttACCOUNT_SET, { TF_BASE
-		{	sfEmailHash,		SOE_OPTIONAL },
-		{	sfWalletLocator,	SOE_OPTIONAL },
-		{	sfMessageKey,		SOE_OPTIONAL },
-		{	sfDomain,			SOE_OPTIONAL },
-		{	sfTransferRate,		SOE_OPTIONAL },
-		{	sfPublishHash,		SOE_OPTIONAL },
-		{	sfPublishSize,		SOE_OPTIONAL },
-		{	sfInvalid,			SOE_END } }
-	 },
-	{	"Claim", ttCLAIM, { TF_BASE
-		{	sfGenerator,		SOE_REQUIRED },
-		{	sfPublicKey,		SOE_REQUIRED },
-		{	sfSignature,		SOE_REQUIRED },
-		{	sfInvalid,			SOE_END } }
-	 },
-	{	"CreditSet", ttCREDIT_SET, { TF_BASE
-		{	sfLimitAmount,		SOE_OPTIONAL },
- 		{	sfQualityIn,		SOE_OPTIONAL },
-		{	sfQualityOut,		SOE_OPTIONAL },
-		{	sfInvalid,			SOE_END } }
-	 },
+	TransactionFormat* tf;
+
+	DECLARE_TF(AccountSet, ttACCOUNT_SET)
+		<< SOElement(sfEmailHash,		SOE_OPTIONAL)
+		<< SOElement(sfWalletLocator,	SOE_OPTIONAL)
+		<< SOElement(sfMessageKey,		SOE_OPTIONAL)
+		<< SOElement(sfDomain,			SOE_OPTIONAL)
+		<< SOElement(sfTransferRate,	SOE_OPTIONAL)
+		<< SOElement(sfPublishHash,		SOE_OPTIONAL)
+		<< SOElement(sfPublishSize,		SOE_OPTIONAL)
+		;
+
+	DECLARE_TF(Claim, ttCLAIM)
+		<< SOElement(sfGenerator,		SOE_REQUIRED)
+		<< SOElement(sfPublicKey,		SOE_REQUIRED)
+		<< SOElement(sfSignature,		SOE_REQUIRED)
+		;
+
+	DECLARE_TF(CreditSet, ttCREDIT_SET)
+		<< SOElement(sfLimitAmount,		SOE_OPTIONAL)
+		<< SOElement(sfQualityIn,		SOE_OPTIONAL)
+		<< SOElement(sfQualityOut,		SOE_OPTIONAL)
+		;
+
+
 		/*
-	{	"Invoice", ttINVOICE, { TF_BASE
-		{	sfTarget,			SOE_REQUIRED },
-		{	sfAmount,			SOE_REQUIRED },
-		{	sfDestination,		SOE_OPTIONAL },
-		{	sfIdentifier,		SOE_OPTIONAL },
-		{	sfInvalid,			SOE_END } }
-	 },
+	DECLARE_TF(Invoice, ttINVOICE)
+		<< SOElement(sfTarget,			SOE_REQUIRED)
+		<< SOElement(sfAmount,			SOE_REQUIRED)
+		<< SOElement(sfDestination,		SOE_OPTIONAL)
+		<< SOElement(sfIdentifier,		SOE_OPTIONAL)
+		;
+	)
 	*/
-	{	"NicknameSet", ttNICKNAME_SET, { TF_BASE
-		{	sfNickname,			SOE_REQUIRED },
-		{	sfMinimumOffer,		SOE_OPTIONAL },
-		{	sfInvalid,			SOE_END } }
-	 },
-	{	"OfferCreate", ttOFFER_CREATE, { TF_BASE
-		{	sfTakerPays,		SOE_REQUIRED },
-		{	sfTakerGets,		SOE_REQUIRED },
-		{	sfExpiration,		SOE_OPTIONAL },
-		{	sfInvalid,			SOE_END } }
-	 },
-	{	"OfferCancel", ttOFFER_CANCEL, { TF_BASE
-		{	sfOfferSequence,	SOE_REQUIRED },
-		{	sfInvalid,			SOE_END } }
-	 },
-	{	"PasswordFund", ttPASSWORD_FUND, { TF_BASE
-		{	sfDestination,		SOE_REQUIRED },
-		{	sfInvalid,			SOE_END } }
-	 },
-	{	"PasswordSet", ttPASSWORD_SET, { TF_BASE
-		{	sfAuthorizedKey,	SOE_REQUIRED },
-		{	sfGenerator,		SOE_REQUIRED },
-		{	sfPublicKey,		SOE_REQUIRED },
-		{	sfInvalid,			SOE_END } }
-	 },
-	{	"Payment", ttPAYMENT, { TF_BASE
-		{	sfDestination,		SOE_REQUIRED },
-		{	sfAmount,			SOE_REQUIRED },
-		{	sfSendMax,			SOE_OPTIONAL },
-		{	sfPaths,			SOE_OPTIONAL },
-		{	sfInvoiceID,		SOE_OPTIONAL },
-		{	sfInvalid,			SOE_END } }
-	 },
-	{	"WalletAdd", ttWALLET_ADD, { TF_BASE
-		{	sfAmount,			SOE_REQUIRED },
-		{	sfAuthorizedKey,	SOE_REQUIRED },
-		{	sfPublicKey,		SOE_REQUIRED },
-		{	sfInvalid,			SOE_END } }
-	 },
-	{	"Contract", ttCONTRACT, { TF_BASE
-		{	sfExpiration,		SOE_REQUIRED },
-		{	sfBondAmount,		SOE_REQUIRED },
-		{	sfStampEscrow,		SOE_REQUIRED },
-		{	sfRippleEscrow,		SOE_REQUIRED },
-		{	sfCreateCode,		SOE_OPTIONAL },
-		{	sfFundCode,			SOE_OPTIONAL },
-		{	sfRemoveCode,		SOE_OPTIONAL },
-		{	sfExpireCode,		SOE_OPTIONAL },
-		{	sfInvalid,			SOE_END } }
-	 },
-	{	"RemoveContract", ttCONTRACT_REMOVE, { TF_BASE
-		{	sfTarget,			SOE_REQUIRED },
-		{	sfInvalid,			SOE_END } }
-	 },
-	{ NULL, ttINVALID }
-};
 
-TransactionFormat* getTxnFormat(TransactionType	t)
-{
-	return getTxnFormat(static_cast<int>(t));
+	DECLARE_TF(NicknameSet, ttNICKNAME_SET)
+		<< SOElement(sfNickname,		SOE_REQUIRED)
+		<< SOElement(sfMinimumOffer,	SOE_OPTIONAL)
+		;
+
+	DECLARE_TF(OfferCreate, ttOFFER_CREATE)
+		<< SOElement(sfTakerPays,		SOE_REQUIRED)
+		<< SOElement(sfTakerGets,		SOE_REQUIRED)
+		<< SOElement(sfExpiration,		SOE_OPTIONAL)
+		;
+
+	DECLARE_TF(OfferCancel, ttOFFER_CANCEL)
+		<< SOElement(sfOfferSequence,	SOE_REQUIRED)
+		;
+
+	DECLARE_TF(PasswordFund, ttPASSWORD_FUND)
+		<< SOElement(sfDestination,		SOE_REQUIRED)
+		;
+
+	DECLARE_TF(PasswordSet, ttPASSWORD_SET)
+		<< SOElement(sfAuthorizedKey,	SOE_REQUIRED)
+		<< SOElement(sfGenerator,		SOE_REQUIRED)
+		<< SOElement(sfPublicKey,		SOE_REQUIRED)
+		;
+
+	DECLARE_TF(Payment, ttPAYMENT)
+		<< SOElement(sfDestination,		SOE_REQUIRED)
+		<< SOElement(sfAmount,			SOE_REQUIRED)
+		<< SOElement(sfSendMax,			SOE_OPTIONAL)
+		<< SOElement(sfPaths,			SOE_OPTIONAL)
+		<< SOElement(sfInvoiceID,		SOE_OPTIONAL)
+		;
+
+	DECLARE_TF(WalletAdd, ttWALLET_ADD)
+		<< SOElement(sfAmount,			SOE_REQUIRED)
+		<< SOElement(sfAuthorizedKey,	SOE_REQUIRED)
+		<< SOElement(sfPublicKey,		SOE_REQUIRED)
+		;
+
+	DECLARE_TF(Contract, ttCONTRACT)
+		<< SOElement(sfExpiration,		SOE_REQUIRED)
+		<< SOElement(sfBondAmount,		SOE_REQUIRED)
+		<< SOElement(sfStampEscrow,		SOE_REQUIRED)
+		<< SOElement(sfRippleEscrow,	SOE_REQUIRED)
+		<< SOElement(sfCreateCode,		SOE_OPTIONAL)
+		<< SOElement(sfFundCode,		SOE_OPTIONAL)
+		<< SOElement(sfRemoveCode,		SOE_OPTIONAL)
+		<< SOElement(sfExpireCode,		SOE_OPTIONAL)
+		;
+
+	DECLARE_TF(RemoveContract, ttCONTRACT_REMOVE)
+		<< SOElement(sfTarget,			SOE_REQUIRED)
+		;
+
+	return true;
 }
 
-TransactionFormat* getTxnFormat(int t)
+bool TFInitComplete = TFInit();
+
+TransactionFormat* TransactionFormat::getTxnFormat(TransactionType t)
 {
-	for (TransactionFormat* f = TxnFormats; f->t_name != NULL; ++f)
-		if (t == f->t_type)
-			return f;
-	return NULL;
+	std::map<int, TransactionFormat*>::iterator it = byType.find(static_cast<int>(t));
+	if (it == byType.end())
+		return NULL;
+	return it->second;
 }
 
-TransactionFormat* getTxnFormat(const std::string& format)
+TransactionFormat* TransactionFormat::getTxnFormat(int t)
 {
-	for (TransactionFormat* f = TxnFormats; f->t_name != NULL; ++f)
-		if (format == f->t_name)
-			return f;
-	return NULL;
+	std::map<int, TransactionFormat*>::iterator it = byType.find((t));
+	if (it == byType.end())
+		return NULL;
+	return it->second;
+}
+
+TransactionFormat* TransactionFormat::getTxnFormat(const std::string& t)
+{
+	std::map<std::string, TransactionFormat*>::iterator it = byName.find((t));
+	if (it == byName.end())
+		return NULL;
+	return it->second;
 }
 
 //	vim:ts=4

@@ -39,16 +39,31 @@ enum LedgerSpecificFlags
 	lsfPassive			= 0x00010000,
 };
 
-struct LedgerEntryFormat
+class LedgerEntryFormat
 {
-	const char *	t_name;
-	LedgerEntryType	t_type;
-	SOElement		elements[24];
+public:
+	std::string					t_name;
+	LedgerEntryType				t_type;
+	std::vector<SOElement::ptr>	elements;
+
+	static std::map<int, LedgerEntryFormat*>			byType;
+	static std::map<std::string, LedgerEntryFormat*>	byName;
+
+	LedgerEntryFormat(const char *name, LedgerEntryType type) : t_name(name), t_type(type)
+	{
+		byName[name] = this;
+		byType[type] = this;
+	}
+	LedgerEntryFormat& operator<<(const SOElement& el)
+	{
+		elements.push_back(new SOElement(el));
+		return *this;
+	}
+
+	static LedgerEntryFormat* getLgrFormat(LedgerEntryType t);
+	static LedgerEntryFormat* getLgrFormat(const std::string& t);
+	static LedgerEntryFormat* getLgrFormat(int t);
 };
 
-extern LedgerEntryFormat LedgerFormats[];
-extern LedgerEntryFormat* getLgrFormat(LedgerEntryType t);
-extern LedgerEntryFormat* getLgrFormat(const std::string& t);
-extern LedgerEntryFormat* getLgrFormat(int t);
 #endif
 // vim:ts=4
