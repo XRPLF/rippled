@@ -220,8 +220,6 @@ protected:
 		: SerializedType(name), mCurrency(cur), mIssuer(iss),  mValue(val), mOffset(off),
 			mIsNative(isNat), mIsNegative(isNeg) { ; }
 
-	STAmount(SField::ref name, const Json::Value& value);
-
 	uint64 toUInt64() const;
 	static uint64 muldiv(uint64, uint64, uint64);
 
@@ -244,6 +242,8 @@ public:
 			uint64 v = 0, int off = 0, bool isNeg = false) :
 		SerializedType(n), mCurrency(currency), mIssuer(issuer), mValue(v), mOffset(off), mIsNegative(isNeg)
 	{ canonicalize(); }
+
+	STAmount(SField::ref, const Json::Value&);
 
 	static STAmount createFromInt64(SField::ref n, int64 v);
 
@@ -288,6 +288,7 @@ public:
 	void setIssuer(const uint160& uIssuer)	{ mIssuer	= uIssuer; }
 
 	const uint160& getCurrency() const	{ return mCurrency; }
+	bool setValue(const std::string& sAmount);
 	bool setFullValue(const std::string& sAmount, const std::string& sCurrency = "", const std::string& sIssuer = "");
 	void setValue(const STAmount &);
 
@@ -377,6 +378,8 @@ public:
 
 	STHash128(const uint128& v) : value(v) { ; }
 	STHash128(SField::ref n, const uint128& v) : SerializedType(n), value(v) { ; }
+	STHash128(SField::ref n, const char *v) : SerializedType(n) { value.SetHex(v); }
+	STHash128(SField::ref n, const std::string &v) : SerializedType(n) { value.SetHex(v); }
 	STHash128(SField::ref n) : SerializedType(n) { ; }
 	STHash128() { ; }
 	static std::auto_ptr<SerializedType> deserialize(SerializerIterator& sit, SField::ref name)
@@ -405,6 +408,8 @@ public:
 
 	STHash160(const uint160& v) : value(v) { ; }
 	STHash160(SField::ref n, const uint160& v) : SerializedType(n), value(v) { ; }
+	STHash160(SField::ref n, const char *v) : SerializedType(n) { value.SetHex(v); }
+	STHash160(SField::ref n, const std::string &v) : SerializedType(n) { value.SetHex(v); }
 	STHash160(SField::ref n) : SerializedType(n) { ; }
 	STHash160() { ; }
 	static std::auto_ptr<SerializedType> deserialize(SerializerIterator& sit, SField::ref name)
@@ -433,6 +438,8 @@ public:
 
 	STHash256(const uint256& v) : value(v) { ; }
 	STHash256(SField::ref n, const uint256& v) : SerializedType(n), value(v) { ; }
+	STHash256(SField::ref n, const char *v) : SerializedType(n) { value.SetHex(v); }
+	STHash256(SField::ref n, const std::string &v) : SerializedType(n) { value.SetHex(v); }
 	STHash256(SField::ref n) : SerializedType(n) { ; }
 	STHash256() { ; }
 	static std::auto_ptr<SerializedType> deserialize(SerializerIterator& sit, SField::ref name)
@@ -490,6 +497,7 @@ public:
 
 	STAccount(const std::vector<unsigned char>& v) : STVariableLength(v) { ; }
 	STAccount(SField::ref n, const std::vector<unsigned char>& v) : STVariableLength(n, v) { ; }
+	STAccount(SField::ref n, const uint160& v);
 	STAccount(SField::ref n) : STVariableLength(n) { ; }
 	STAccount() { ; }
 	static std::auto_ptr<SerializedType> deserialize(SerializerIterator& sit, SField::ref name)

@@ -3,17 +3,22 @@
 
 #include "HashPrefixes.h"
 
-SOElement SerializedValidation::sValidationFormat[] = {
-	{ sfFlags,			SOE_REQUIRED },
-	{ sfLedgerHash,		SOE_REQUIRED },
-	{ sfLedgerSequence,	SOE_OPTIONAL },
-	{ sfCloseTime,		SOE_OPTIONAL },
-	{ sfLoadFee,		SOE_OPTIONAL },
-	{ sfBaseFee,		SOE_OPTIONAL },
-	{ sfSigningTime,	SOE_REQUIRED },
-	{ sfSigningPubKey,	SOE_REQUIRED },
-	{ sfInvalid,		SOE_END }
+std::vector<SOElement::ptr> sValidationFormat;
+
+static bool SVFInit()
+{
+	 sValidationFormat.push_back(new SOElement(sfFlags,				SOE_REQUIRED));
+	 sValidationFormat.push_back(new SOElement(sfLedgerHash,		SOE_REQUIRED));
+	 sValidationFormat.push_back(new SOElement(sfLedgerSequence,	SOE_OPTIONAL));
+	 sValidationFormat.push_back(new SOElement(sfCloseTime,			SOE_OPTIONAL));
+	 sValidationFormat.push_back(new SOElement(sfLoadFee,			SOE_OPTIONAL));
+	 sValidationFormat.push_back(new SOElement(sfBaseFee,			SOE_OPTIONAL));
+	 sValidationFormat.push_back(new SOElement(sfSigningTime,		SOE_REQUIRED));
+	 sValidationFormat.push_back(new SOElement(sfSigningPubKey,		SOE_REQUIRED));
+	 return true;
 };
+
+bool SVFinitComplete = SVFInit();
 
 const uint32 SerializedValidation::sFullFlag		= 0x00010000;
 

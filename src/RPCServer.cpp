@@ -1809,11 +1809,11 @@ Json::Value RPCServer::doSend(const Json::Value& params)
 	if (params.size() >= 6)
 		sDstIssuer		= params[5u].asString();
 
-	if (params.size() >= 7)
-		sSrcCurrency	= params[6u].asString();
-
 	if (params.size() >= 8)
-		sSrcIssuer		= params[7u].asString();
+		sSrcCurrency	= params[7u].asString();
+
+	if (params.size() >= 9)
+		sSrcIssuer		= params[8u].asString();
 
 	if (params.size() >= 9)
 		sSrcIssuer		= params[8u].asString();

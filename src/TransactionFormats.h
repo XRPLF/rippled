@@ -21,11 +21,30 @@ enum TransactionType
 	ttCREDIT_SET		= 20,
 };
 
-struct TransactionFormat
+class TransactionFormat
 {
-	const char *		t_name;
-	TransactionType		t_type;
-	SOElement			elements[24];
+public:
+	std::string					t_name;
+	TransactionType				t_type;
+	std::vector<SOElement::ptr>	elements;
+
+	static std::map<int, TransactionFormat*>			byType;
+    static std::map<std::string, TransactionFormat*>	byName;
+
+    TransactionFormat(const char *name, TransactionType type) : t_name(name), t_type(type)
+    {
+	    byName[name] = this;
+	    byType[type] = this;
+    }
+    TransactionFormat& operator<<(const SOElement& el)
+    {
+	    elements.push_back(new SOElement(el));
+	    return *this;
+    }
+
+	static TransactionFormat* getTxnFormat(TransactionType t);
+	static TransactionFormat* getTxnFormat(const std::string& t);
+	static TransactionFormat* getTxnFormat(int t);
 };
 
 const int TransactionMinLen			= 32;
@@ -44,8 +63,5 @@ const uint32 tfPartialPayment		= 0x00020000;
 const uint32 tfLimitQuality			= 0x00040000;
 const uint32 tfNoRippleDirect		= 0x00080000;
 
-extern TransactionFormat InnerTxnFormats[];
-extern TransactionFormat* getTxnFormat(TransactionType t);
-extern TransactionFormat* getTxnFormat(int t);
 #endif
 // vim:ts=4

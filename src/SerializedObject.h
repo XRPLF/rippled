@@ -15,10 +15,11 @@ class SOElement
 { // An element in the description of a serialized object
 public:
 	typedef SOElement const * ptr;			// used to point to one element
-	typedef SOElement const * ptrList;		// used to point to a terminated list of elements
 
 	SField::ref e_field;
 	const SOE_Flags flags;
+
+	SOElement(SField::ref fi, SOE_Flags fl) : e_field(fi), flags(fl) { ; }
 };
 
 class STObject : public SerializedType
@@ -35,23 +36,23 @@ public:
 
 	STObject(SField::ref name) : SerializedType(name)	{ ; }
 
-	STObject(SOElement::ptrList type, SField::ref name) : SerializedType(name)
+	STObject(const std::vector<SOElement::ptr>& type, SField::ref name) : SerializedType(name)
 	{ set(type); }
 
-	STObject(SOElement::ptrList type, SerializerIterator& sit, SField::ref name) : SerializedType(name)
+	STObject(const std::vector<SOElement::ptr>& type, SerializerIterator& sit, SField::ref name) : SerializedType(name)
 	{ set(sit); setType(type); }
 
-	static std::auto_ptr<STObject> parseJson(const Json::Value& value, SField::ref name, int depth = 0);
+	static std::auto_ptr<STObject> parseJson(const Json::Value& value, SField::ref name = sfGeneric, int depth = 0);
 
 	virtual ~STObject() { ; }
 
 	static std::auto_ptr<SerializedType> deserialize(SerializerIterator& sit, SField::ref name);
 
-	bool setType(SOElement::ptrList);
+	bool setType(const std::vector<SOElement::ptr>& type);
 	bool isValidForType();
 	bool isFieldAllowed(SField::ref);
 
-	void set(SOElement::ptrList);
+	void set(const std::vector<SOElement::ptr>&);
 	bool set(SerializerIterator& u, int depth = 0);
 
 	virtual SerializedTypeID getSType() const { return STI_OBJECT; }

@@ -54,13 +54,13 @@ std::string STUInt16::getText() const
 {
 	if (getFName() == sfLedgerEntryType)
 	{
-		LedgerEntryFormat *f = getLgrFormat(value);
+		LedgerEntryFormat *f = LedgerEntryFormat::getLgrFormat(value);
 		if (f != NULL)
 			return f->t_name;
 	}
 	if (getFName() == sfTransactionType)
 	{
-		TransactionFormat *f = getTxnFormat(value);
+		TransactionFormat *f = TransactionFormat::getTxnFormat(value);
 		if (f != NULL)
 			return f->t_name;
 	}
@@ -231,9 +231,14 @@ bool STVector256::isEquivalent(const SerializedType& t) const
 // STAccount
 //
 
+STAccount::STAccount(SField::ref n, const uint160& v) : STVariableLength(n)
+{
+	peekValue().insert(peekValue().end(), v.begin(), v.end());
+}
+
 bool STAccount::isValueH160() const
 {
-	return peekValue().size() == (160/8);
+	return peekValue().size() == (160 / 8);
 }
 
 void STAccount::setValueH160(const uint160& v)

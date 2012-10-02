@@ -17,7 +17,6 @@ public:
 	typedef boost::shared_ptr<SerializedValidation>			pointer;
 	typedef const boost::shared_ptr<SerializedValidation>&	ref;
 
-	static SOElement	sValidationFormat[16];
 	static const uint32	sFullFlag;
 
 	// These throw if the object is not valid

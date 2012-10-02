@@ -8,6 +8,8 @@
 #include "../json/writer.h"
 
 #include "Log.h"
+#include "LedgerFormats.h"
+#include "TransactionFormats.h"
 
 std::auto_ptr<SerializedType> STObject::makeDefaultObject(SerializedTypeID id, SField::ref name)
 {
@@ -114,33 +116,32 @@ std::auto_ptr<SerializedType> STObject::makeDeserializedObject(SerializedTypeID 
 	}
 }
 
-void STObject::set(SOElement::ptr elem)
+void STObject::set(const std::vector<SOElement::ptr>& type)
 {
 	mData.empty();
 	mType.empty();
 
-	while (elem->flags != SOE_END)
+	BOOST_FOREACH(const SOElement::ptr& elem, type)
 	{
 		mType.push_back(elem);
 		if (elem->flags == SOE_OPTIONAL)
 			giveObject(makeNonPresentObject(elem->e_field));
 		else
 			giveObject(makeDefaultObject(elem->e_field));
-		++elem;
 	}
 }
 
-bool STObject::setType(SOElement::ptrList t)
+bool STObject::setType(const std::vector<SOElement::ptr> &type)
 {
 	boost::ptr_vector<SerializedType> newData;
 	bool valid = true;
 
 	mType.empty();
-	while (t->flags != SOE_END)
+	BOOST_FOREACH(const SOElement::ptr& elem, type)
 	{
 		bool match = false;
 		for (boost::ptr_vector<SerializedType>::iterator it = mData.begin(); it != mData.end(); ++it)
-			if (it->getFName() == t->e_field)
+			if (it->getFName() == elem->e_field)
 			{
 				match = true;
 				newData.push_back(mData.release(it).release());
@@ -149,15 +150,15 @@ bool STObject::setType(SOElement::ptrList t)
 
 		if (!match)
 		{
-			if (t->flags != SOE_OPTIONAL)
+			if (elem->flags != SOE_OPTIONAL)
 			{
 				Log(lsTRACE) << "setType !valid missing";
 				valid = false;
 			}
-			newData.push_back(makeNonPresentObject(t->e_field));
+			newData.push_back(makeNonPresentObject(elem->e_field));
 		}
 
-		mType.push_back(t++);
+		mType.push_back(elem);
 	}
 	if (mData.size() != 0)
 	{
@@ -740,7 +741,7 @@ Json::Value STObject::getJson(int options) const
 		if (it.getSType() != STI_NOTPRESENT)
 		{
 			if (!it.getFName().hasName())
-				ret[boost::lexical_cast<std::string>(index)] = it.getJson(options);
+				ret[lexical_cast_i(index)] = it.getJson(options);
 			else
 				ret[it.getName()] = it.getJson(options);
 		}
@@ -813,31 +814,41 @@ STArray* STArray::construct(SerializerIterator& sit, SField::ref field)
 	return new STArray(field, value);
 }
 
-std::auto_ptr<STObject> STObject::parseJson(const Json::Value& object, SField::ref name, int depth)
+std::auto_ptr<STObject> STObject::parseJson(const Json::Value& object, SField::ref inName, int depth)
 {
 	if (!object.isObject())
 		throw std::runtime_error("Value is not an object");
+
+	SField::ptr name = &inName;
 
 	boost::ptr_vector<SerializedType> data;
 	Json::Value::Members members(object.getMemberNames());
 	for (Json::Value::Members::iterator it = members.begin(), end = members.end(); it != end; ++it)
 	{
-		const std::string& name = *it;
-		const Json::Value& value = object[name];
+		const std::string& fieldName = *it;
+		const Json::Value& value = object[fieldName];
 
-		SField::ref field = SField::getField(name);
+		SField::ref field = SField::getField(fieldName);
 		if (field == sfInvalid)
-			throw std::runtime_error("Unknown field: " + name);
+			throw std::runtime_error("Unknown field: " + fieldName);
 
 		switch (field.fieldType)
 		{
 			case STI_UINT8:
 				if (value.isString())
-					data.push_back(new STUInt8(field, boost::lexical_cast<unsigned char>(value.asString())));
-				else if (value.isInt())
-					data.push_back(new STUInt8(field, boost::lexical_cast<unsigned char>(value.asInt())));
+					data.push_back(new STUInt8(field, lexical_cast_st<unsigned char>(value.asString())));
+				else if (value.isInt())	
+				{
+					if (value.asInt() < 0 || value.asInt() > 255)
+						throw std::runtime_error("value out of rand");
+					data.push_back(new STUInt8(field, range_check_cast<unsigned char>(value.asInt(), 0, 255)));
+				}
 				else if (value.isUInt())
-					data.push_back(new STUInt8(field, boost::lexical_cast<unsigned char>(value.asUInt())));
+				{
+					if (value.asUInt() > 255)
+						throw std::runtime_error("value out of rand");
+					data.push_back(new STUInt8(field, range_check_cast<unsigned char>(value.asUInt(), 0, 255)));
+				}
 				else
 					throw std::runtime_error("Incorrect type");
 				break;
@@ -846,75 +857,123 @@ std::auto_ptr<STObject> STObject::parseJson(const Json::Value& object, SField::r
 				if (value.isString())
 				{
 					std::string strValue = value.asString();
-					if (!strValue.empty() && (strValue[0]<'0' || strValue[0]>'9'))
+					if (!strValue.empty() && ((strValue[0] < '0') || (strValue[0] > '9')))
 					{
 						if (field == sfTransactionType)
 						{
-							// WRITEME
+							TransactionFormat* f = TransactionFormat::getTxnFormat(strValue);
+							if (!f)
+								throw std::runtime_error("Unknown transaction type");
+							data.push_back(new STUInt16(field, static_cast<uint16>(f->t_type)));
+							if (*name == sfGeneric)
+								name = &sfTransaction;
 						}
 						else if (field == sfLedgerEntryType)
 						{
-							// WRITEME
+							LedgerEntryFormat* f = LedgerEntryFormat::getLgrFormat(strValue);
+							if (!f)
+								throw std::runtime_error("Unknown ledger entry type");
+							data.push_back(new STUInt16(field, static_cast<uint16>(f->t_type)));
+							if (*name == sfGeneric)
+								name = &sfLedgerEntry;
 						}
 						else
 							throw std::runtime_error("Invalid field data");
 					}
-					data.push_back(new STUInt16(field, boost::lexical_cast<uint16>(strValue)));
+					else
+						data.push_back(new STUInt16(field, lexical_cast_st<uint16>(strValue)));
 				}
 				else if (value.isInt())
-					data.push_back(new STUInt16(field, boost::lexical_cast<uint16>(value.asInt())));
+					data.push_back(new STUInt16(field, range_check_cast<uint16>(value.asInt(), 0, 65535)));
 				else if (value.isUInt())
-					data.push_back(new STUInt16(field, boost::lexical_cast<uint16>(value.asUInt())));
+					data.push_back(new STUInt16(field, range_check_cast<uint16>(value.asUInt(), 0, 65535)));
 				else
 					throw std::runtime_error("Incorrect type");
 				break;
 
 			case STI_UINT32:
 				if (value.isString())
-					data.push_back(new STUInt32(field, boost::lexical_cast<uint32>(value.asString())));
+					data.push_back(new STUInt32(field, lexical_cast_st<uint32>(value.asString())));
 				else if (value.isInt())
-					data.push_back(new STUInt32(field, boost::lexical_cast<uint32>(value.asInt())));
+					data.push_back(new STUInt32(field, range_check_cast<uint32>(value.asInt(), 0, 4294967295)));
 				else if (value.isUInt())
-					data.push_back(new STUInt32(field, boost::lexical_cast<uint32>(value.asUInt())));
+					data.push_back(new STUInt32(field, static_cast<uint32>(value.asUInt())));
 				else
 					throw std::runtime_error("Incorrect type");
 				break;
 
 			case STI_UINT64:
 				if (value.isString())
-					data.push_back(new STUInt64(field, boost::lexical_cast<uint64>(value.asString())));
+					data.push_back(new STUInt64(field, lexical_cast_st<uint64>(value.asString())));
 				else if (value.isInt())
-					data.push_back(new STUInt64(field, boost::lexical_cast<uint64>(value.asInt())));
+					data.push_back(new STUInt64(field,
+						range_check_cast<uint64>(value.asInt(), 0, 18446744073709551615ull)));
 				else if (value.isUInt())
-					data.push_back(new STUInt64(field, boost::lexical_cast<uint64>(value.asUInt())));
+					data.push_back(new STUInt64(field, static_cast<uint64>(value.asUInt())));
 				else
 					throw std::runtime_error("Incorrect type");
 				break;
 
 
 			case STI_HASH128:
-				// WRITEME
+				if (value.isString())
+					data.push_back(new STHash128(field, value.asString()));
+				else
+					throw std::runtime_error("Incorrect type");
+				break;
 
 			case STI_HASH160:
-				// WRITEME
+				if (value.isString())
+					data.push_back(new STHash160(field, value.asString()));
+				else
+					throw std::runtime_error("Incorrect type");
+				break;
 
 			case STI_HASH256:
-				// WRITEME
+				if (value.isString())
+					data.push_back(new STHash256(field, value.asString()));
+				else
+					throw std::runtime_error("Incorrect type");
+				break;
 
 			case STI_VL:
-				// WRITEME
+				if (!value.isString())
+				data.push_back(new STVariableLength(field, strUnHex(value.asString())));
+				break;
 
 			case STI_AMOUNT:
-				// WRITEME
+				data.push_back(new STAmount(field, value));
+				break;
 
 			case STI_VECTOR256:
 				// WRITEME
 
 			case STI_PATHSET:
 				// WRITEME
+				break;
+
+			case STI_ACCOUNT:
+			{
+				if (!value.isString())
+					throw std::runtime_error("Incorrect type");
+				std::string strValue = value.asString();
+				if (value.size() == 40) // 160-bit hex account value
+				{
+					uint160 v;
+					v.SetHex(strValue);
+					data.push_back(new STAccount(field, v));
+				}
+				else
+				{ // newcoin addres
+					NewcoinAddress a;
+					if (!a.setAccountPublic(strValue))
+						throw std::runtime_error("Account invalid");
+					data.push_back(new STAccount(field, a.getAccountID()));
+				}
+			}
+			break;
 
 			case STI_OBJECT:
-			case STI_ACCOUNT:
 			case STI_TRANSACTION:
 			case STI_LEDGERENTRY:
 			case STI_VALIDATION:
@@ -932,7 +991,7 @@ std::auto_ptr<STObject> STObject::parseJson(const Json::Value& object, SField::r
 				throw std::runtime_error("Invalid field type");
 		}
 	}
-	return std::auto_ptr<STObject>(new STObject(name, data));
+	return std::auto_ptr<STObject>(new STObject(*name, data));
 }
 
 #if 0
