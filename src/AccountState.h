@@ -33,16 +33,16 @@ public:
 
 	bool	bHaveAuthorizedKey()
 	{
-		return mLedgerEntry->getIFieldPresent(sfAuthorizedKey);
+		return mLedgerEntry->isFieldPresent(sfAuthorizedKey);
 	}
 
 	NewcoinAddress getAuthorizedKey()
 	{
-		return mLedgerEntry->getIValueFieldAccount(sfAuthorizedKey);
+		return mLedgerEntry->getFieldAccount(sfAuthorizedKey);
 	}
 
-	STAmount getBalance() const { return mLedgerEntry->getIValueFieldAmount(sfBalance); }
-	uint32 getSeq() const { return mLedgerEntry->getIFieldU32(sfSequence); }
+	STAmount getBalance() const { return mLedgerEntry->getFieldAmount(sfBalance); }
+	uint32 getSeq() const { return mLedgerEntry->getFieldU32(sfSequence); }
 
 	SerializedLedgerEntry::pointer getSLE() { return mLedgerEntry; }
 	const SerializedLedgerEntry& peekSLE() const { return *mLedgerEntry; }

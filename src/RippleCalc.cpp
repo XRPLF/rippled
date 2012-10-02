@@ -116,8 +116,8 @@ TER RippleCalc::calcNodeAdvance(
 		{
 			if (bFundsDirty)
 			{
-				saTakerPays		= sleOffer->getIValueFieldAmount(sfTakerPays);
-				saTakerGets		= sleOffer->getIValueFieldAmount(sfTakerGets);
+				saTakerPays		= sleOffer->getFieldAmount(sfTakerPays);
+				saTakerGets		= sleOffer->getFieldAmount(sfTakerGets);
 
 				saOfferFunds	= lesActive.accountFunds(uOfrOwnerID, saTakerGets);	// Funds left.
 				bFundsDirty		= false;
@@ -153,13 +153,13 @@ TER RippleCalc::calcNodeAdvance(
 		{
 			// Got a new offer.
 			sleOffer	= lesActive.entryCache(ltOFFER, uOfferIndex);
-			uOfrOwnerID = sleOffer->getIValueFieldAccount(sfAccount).getAccountID();
+			uOfrOwnerID = sleOffer->getFieldAccount(sfAccount).getAccountID();
 
 			const aciSource			asLine				= boost::make_tuple(uOfrOwnerID, uCurCurrencyID, uCurIssuerID);
 
 			Log(lsINFO) << boost::str(boost::format("calcNodeAdvance: uOfrOwnerID=%s") % NewcoinAddress::createHumanAccountID(uOfrOwnerID));
 
-			if (sleOffer->getIFieldPresent(sfExpiration) && sleOffer->getIFieldU32(sfExpiration) <= lesActive.getLedger()->getParentCloseTimeNC())
+			if (sleOffer->isFieldPresent(sfExpiration) && sleOffer->getFieldU32(sfExpiration) <= lesActive.getLedger()->getParentCloseTimeNC())
 			{
 				// Offer is expired.
 				Log(lsINFO) << "calcNodeAdvance: expired offer";
@@ -207,8 +207,8 @@ TER RippleCalc::calcNodeAdvance(
 				continue;
 			}
 
-			saTakerPays		= sleOffer->getIValueFieldAmount(sfTakerPays);
-			saTakerGets		= sleOffer->getIValueFieldAmount(sfTakerGets);
+			saTakerPays		= sleOffer->getFieldAmount(sfTakerPays);
+			saTakerGets		= sleOffer->getFieldAmount(sfTakerGets);
 
 			saOfferFunds	= lesActive.accountFunds(uOfrOwnerID, saTakerGets);	// Funds left.
 
@@ -430,8 +430,8 @@ TER RippleCalc::calcNodeDeliverRev(
 		lesActive.accountSend(uOfrOwnerID, uCurIssuerID, saOutPass);
 
 		// Adjust offer
-		sleOffer->setIFieldAmount(sfTakerGets, saTakerGets - saOutPass);
-		sleOffer->setIFieldAmount(sfTakerPays, saTakerPays - saInPassAct);
+		sleOffer->setFieldAmount(sfTakerGets, saTakerGets - saOutPass);
+		sleOffer->setFieldAmount(sfTakerPays, saTakerPays - saInPassAct);
 
 		lesActive.entryModify(sleOffer);
 
@@ -580,8 +580,8 @@ TER RippleCalc::calcNodeDeliverFwd(
 			lesActive.accountSend(uInAccountID, uOfrOwnerID, saInPassAct);
 
 			// Adjust offer
-			sleOffer->setIFieldAmount(sfTakerGets, saTakerGets - saOutPassAct);
-			sleOffer->setIFieldAmount(sfTakerPays, saTakerPays - saInPassAct);
+			sleOffer->setFieldAmount(sfTakerGets, saTakerGets - saOutPassAct);
+			sleOffer->setFieldAmount(sfTakerPays, saTakerPays - saInPassAct);
 
 			lesActive.entryModify(sleOffer);
 
@@ -2092,11 +2092,11 @@ void TransactionEngine::calcOfferBridgeNext(
 
 		SLE::pointer	sleOffer		= entryCache(ltOFFER, uOfferIndex);
 
-		uint160			uOfferOwnerID	= sleOffer->getIValueFieldAccount(sfAccount).getAccountID();
-		STAmount		saOfferPays		= sleOffer->getIValueFieldAmount(sfTakerGets);
-		STAmount		saOfferGets		= sleOffer->getIValueFieldAmount(sfTakerPays);
+		uint160			uOfferOwnerID	= sleOffer->getFieldAccount(sfAccount).getAccountID();
+		STAmount		saOfferPays		= sleOffer->getFieldAmount(sfTakerGets);
+		STAmount		saOfferGets		= sleOffer->getFieldAmount(sfTakerPays);
 
-		if (sleOffer->getIFieldPresent(sfExpiration) && sleOffer->getIFieldU32(sfExpiration) <= mLedger->getParentCloseTimeNC())
+		if (sleOffer->isFieldPresent(sfExpiration) && sleOffer->getFieldU32(sfExpiration) <= mLedger->getParentCloseTimeNC())
 		{
 			// Offer is expired.
 			Log(lsINFO) << "calcOfferFirst: encountered expired offer";

@@ -1,100 +1,106 @@
 
 #include "LedgerFormats.h"
 
-#define S_FIELD(x) sf##x, #x
+#define LEF_BASE							\
+	{ sfLedgerIndex,		SOE_OPTIONAL }, \
+	{ sfLedgerEntryType,	SOE_REQUIRED },	\
+	{ sfFlags,				SOE_REQUIRED },
 
 LedgerEntryFormat LedgerFormats[]=
 {
-	{ "AccountRoot", ltACCOUNT_ROOT, {
-		{ S_FIELD(Flags),				STI_UINT32,		SOE_FLAGS,	  0 },
-		{ S_FIELD(Account),				STI_ACCOUNT,	SOE_REQUIRED, 0 },
-		{ S_FIELD(Sequence),			STI_UINT32,		SOE_REQUIRED, 0 },
-		{ S_FIELD(Balance),				STI_AMOUNT,		SOE_REQUIRED, 0 },
-		{ S_FIELD(LastTxnID),			STI_HASH256,	SOE_REQUIRED, 0 },
-		{ S_FIELD(LastTxnSeq),			STI_UINT32,		SOE_REQUIRED, 0 },
-		{ S_FIELD(AuthorizedKey),		STI_ACCOUNT,	SOE_IFFLAG,   1 },
-		{ S_FIELD(EmailHash),			STI_HASH128,	SOE_IFFLAG,   2 },
-		{ S_FIELD(WalletLocator),		STI_HASH256,	SOE_IFFLAG,   4 },
-		{ S_FIELD(MessageKey),			STI_VL,			SOE_IFFLAG,   8 },
-		{ S_FIELD(TransferRate),		STI_UINT32,		SOE_IFFLAG,  16 },
-		{ S_FIELD(Domain),				STI_VL,			SOE_IFFLAG,  32 },
-		{ S_FIELD(PublishHash),			STI_HASH256,	SOE_IFFLAG,  64 },
-		{ S_FIELD(PublishSize),			STI_UINT32,		SOE_IFFLAG, 128 },
-		{ sfInvalid, NULL,				STI_DONE,		SOE_NEVER,	  -1 } }
+	{ "AccountRoot", ltACCOUNT_ROOT, { LEF_BASE
+		{ sfAccount,		SOE_REQUIRED },
+		{ sfSequence,		SOE_REQUIRED },
+		{ sfBalance,		SOE_REQUIRED },
+		{ sfLastTxnID,		SOE_REQUIRED },
+		{ sfLastTxnSeq,		SOE_REQUIRED },
+		{ sfAuthorizedKey,	SOE_OPTIONAL },
+		{ sfEmailHash,		SOE_OPTIONAL },
+		{ sfWalletLocator,	SOE_OPTIONAL },
+		{ sfMessageKey,		SOE_OPTIONAL },
+		{ sfTransferRate,	SOE_OPTIONAL },
+		{ sfDomain,			SOE_OPTIONAL },
+		{ sfPublishHash,	SOE_OPTIONAL },
+		{ sfPublishSize,	SOE_OPTIONAL },
+		{ sfInvalid,		SOE_END } }
 	},
-	{ "Contract", ltCONTRACT, {
-		{ S_FIELD(Flags),				STI_UINT32,		SOE_FLAGS,	  0 },
-		{ S_FIELD(Account),				STI_ACCOUNT,	SOE_REQUIRED, 0 },
-		{ S_FIELD(Balance),				STI_AMOUNT,		SOE_REQUIRED, 0 },
-		{ S_FIELD(LastTxnID),			STI_HASH256,	SOE_REQUIRED, 0 },
-		{ S_FIELD(LastTxnSeq),			STI_UINT32,		SOE_REQUIRED, 0 },
-		{ S_FIELD(Issuer),				STI_ACCOUNT,	SOE_REQUIRED, 0 },
-		{ S_FIELD(Owner),				STI_ACCOUNT,	SOE_REQUIRED, 0 },
-		{ S_FIELD(Expiration),			STI_UINT32,		SOE_REQUIRED, 0 },
-		{ S_FIELD(BondAmount),			STI_UINT32,		SOE_REQUIRED, 0 },
-		{ S_FIELD(CreateCode),			STI_VL,			SOE_REQUIRED, 0 },
-		{ S_FIELD(FundCode),			STI_VL,			SOE_REQUIRED, 0 },
-		{ S_FIELD(RemoveCode),			STI_VL,			SOE_REQUIRED, 0 },
-		{ S_FIELD(ExpireCode),			STI_VL,			SOE_REQUIRED, 0 },
-		{ sfInvalid, NULL,				STI_DONE,		SOE_NEVER,	  -1 } }
+	{ "Contract", ltCONTRACT, { LEF_BASE
+		{ sfAccount,		SOE_REQUIRED },
+		{ sfBalance,		SOE_REQUIRED },
+		{ sfLastTxnID,		SOE_REQUIRED },
+		{ sfLastTxnSeq,		SOE_REQUIRED },
+		{ sfIssuer,			SOE_REQUIRED },
+		{ sfOwner,			SOE_REQUIRED },
+		{ sfExpiration,		SOE_REQUIRED },
+		{ sfBondAmount,		SOE_REQUIRED },
+		{ sfCreateCode,		SOE_REQUIRED },
+		{ sfFundCode,		SOE_REQUIRED },
+		{ sfRemoveCode,		SOE_REQUIRED },
+		{ sfExpireCode,		SOE_REQUIRED },
+		{ sfInvalid,		SOE_END } }
 	},
-	{ "DirectoryNode", ltDIR_NODE, {
-		{ S_FIELD(Flags),				STI_UINT32,		SOE_FLAGS,	  0 },
-		{ S_FIELD(Indexes),				STI_VECTOR256,	SOE_REQUIRED, 0 },
-		{ S_FIELD(IndexNext),			STI_UINT64,		SOE_IFFLAG,   1 },
-		{ S_FIELD(IndexPrevious),		STI_UINT64,		SOE_IFFLAG,   2 },
-		{ sfInvalid, NULL,				STI_DONE,		SOE_NEVER,	  -1 } }
+	{ "DirectoryNode", ltDIR_NODE, { LEF_BASE
+		{ sfIndexes,		SOE_REQUIRED },
+		{ sfIndexNext,		SOE_OPTIONAL },
+		{ sfIndexPrevious,	SOE_OPTIONAL },
+		{ sfInvalid,		SOE_END } }
 	},
-	{ "GeneratorMap", ltGENERATOR_MAP, {
-		{ S_FIELD(Flags),				STI_UINT32,		SOE_FLAGS,	  0 },
-		{ S_FIELD(Generator),			STI_VL,			SOE_REQUIRED, 0 },
-		{ sfInvalid, NULL,				STI_DONE,		SOE_NEVER,	  -1 } }
+	{ "GeneratorMap", ltGENERATOR_MAP, { LEF_BASE
+		{ sfGenerator,		SOE_REQUIRED },
+		{ sfInvalid,		SOE_END } }
 	},
-	{ "Nickname", ltNICKNAME, {
-		{ S_FIELD(Flags),				STI_UINT32,		SOE_FLAGS,	  0 },
-		{ S_FIELD(Account),				STI_ACCOUNT,	SOE_REQUIRED, 0 },
-		{ S_FIELD(MinimumOffer),		STI_AMOUNT,		SOE_IFFLAG,   1 },
-		{ sfInvalid, NULL,				STI_DONE,		SOE_NEVER,	  -1 } }
+	{ "Nickname", ltNICKNAME, { LEF_BASE
+		{ sfAccount,		SOE_REQUIRED },
+		{ sfMinimumOffer,	SOE_OPTIONAL },
+		{ sfInvalid,		SOE_END } }
 	},
-	{ "Offer", ltOFFER, {
-		{ S_FIELD(Flags),				STI_UINT32,		SOE_FLAGS,	  0 },
-		{ S_FIELD(Account),				STI_ACCOUNT,	SOE_REQUIRED, 0 },
-		{ S_FIELD(Sequence),			STI_UINT32,		SOE_REQUIRED, 0 },
-		{ S_FIELD(TakerPays),			STI_AMOUNT,		SOE_REQUIRED, 0 },
-		{ S_FIELD(TakerGets),			STI_AMOUNT,		SOE_REQUIRED, 0 },
-		{ S_FIELD(BookDirectory),		STI_HASH256,	SOE_REQUIRED, 0 },
-		{ S_FIELD(BookNode),			STI_UINT64,		SOE_REQUIRED, 0 },
-		{ S_FIELD(OwnerNode),			STI_UINT64,		SOE_REQUIRED, 0 },
-		{ S_FIELD(LastTxnID),			STI_HASH256,	SOE_REQUIRED, 0 },
-		{ S_FIELD(LastTxnSeq),			STI_UINT32,		SOE_REQUIRED, 0 },
-		{ S_FIELD(Expiration),			STI_UINT32,		SOE_IFFLAG,   1 },
-		{ sfInvalid, NULL,				STI_DONE,		SOE_NEVER,	  -1 } }
+	{ "Offer", ltOFFER, { LEF_BASE
+		{ sfAccount,		SOE_REQUIRED },
+		{ sfSequence,		SOE_REQUIRED },
+		{ sfTakerPays,		SOE_REQUIRED },
+		{ sfTakerGets,		SOE_REQUIRED },
+		{ sfBookDirectory,	SOE_REQUIRED },
+		{ sfBookNode,		SOE_REQUIRED },
+		{ sfOwnerNode,		SOE_REQUIRED },
+		{ sfLastTxnID,		SOE_REQUIRED },
+		{ sfLastTxnSeq,		SOE_REQUIRED },
+		{ sfExpiration,		SOE_OPTIONAL },
+		{ sfInvalid,		SOE_END } }
 	},
-	{ "RippleState", ltRIPPLE_STATE, {
-		{ S_FIELD(Flags),				STI_UINT32,		SOE_FLAGS,	  0 },
-		{ S_FIELD(Balance),				STI_AMOUNT,		SOE_REQUIRED, 0 },
-		{ S_FIELD(LowLimit),			STI_AMOUNT,		SOE_REQUIRED, 0 },
-		{ S_FIELD(HighLimit),			STI_AMOUNT,		SOE_REQUIRED, 0 },
-		{ S_FIELD(LastTxnID),			STI_HASH256,	SOE_REQUIRED, 0 },
-		{ S_FIELD(LastTxnSeq),			STI_UINT32,		SOE_REQUIRED, 0 },
-		{ S_FIELD(LowQualityIn),		STI_UINT32,		SOE_IFFLAG,   1 },
-		{ S_FIELD(LowQualityOut),		STI_UINT32,		SOE_IFFLAG,   2 },
-		{ S_FIELD(HighQualityIn),		STI_UINT32,		SOE_IFFLAG,   4 },
-		{ S_FIELD(HighQualityOut),		STI_UINT32,		SOE_IFFLAG,   8 },
-		{ sfInvalid, NULL,				STI_DONE,		SOE_NEVER,	  -1 } }
+	{ "RippleState", ltRIPPLE_STATE, { LEF_BASE
+		{ sfBalance,		SOE_REQUIRED },
+		{ sfLowLimit,		SOE_REQUIRED },
+		{ sfHighLimit,		SOE_REQUIRED },
+		{ sfLastTxnID,		SOE_REQUIRED },
+		{ sfLastTxnSeq,		SOE_REQUIRED },
+		{ sfLowQualityIn,	SOE_OPTIONAL },
+		{ sfLowQualityOut,	SOE_OPTIONAL },
+		{ sfHighQualityIn,	SOE_OPTIONAL },
+		{ sfHighQualityOut,	SOE_OPTIONAL },
+		{ sfInvalid,		SOE_END } }
 	},
 	{ NULL, ltINVALID }
 };
 
-
 LedgerEntryFormat* getLgrFormat(LedgerEntryType t)
 {
-	LedgerEntryFormat* f = LedgerFormats;
-	while (f->t_name != NULL)
-	{
-		if (f->t_type == t) return f;
-		++f;
-	}
+	return getLgrFormat(static_cast<int>(t));
+}
+
+LedgerEntryFormat* getLgrFormat(int t)
+{
+	for (LedgerEntryFormat* f = LedgerFormats; f->t_name != NULL; ++f)
+		if (f->t_type == t)
+			return f;
 	return NULL;
 }
+
+LedgerEntryFormat* getLgrFormat(const std::string& t)
+{
+	for (LedgerEntryFormat* f = LedgerFormats; f->t_name != NULL; ++f)
+		if (t == f->t_name)
+			return f;
+	return NULL;
+}
+
 // vim:ts=4

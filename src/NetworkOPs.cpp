@@ -83,17 +83,18 @@ uint32 NetworkOPs::getCurrentLedgerID()
 Transaction::pointer NetworkOPs::submitTransaction(const Transaction::pointer& tpTrans)
 {
 	Serializer s;
-
 	tpTrans->getSTransaction()->add(s);
 
-	std::vector<unsigned char>	vucTransaction	= s.getData();
-
-	SerializerIterator		sit(s);
-
 	Transaction::pointer	tpTransNew	= Transaction::sharedTransaction(s.getData(), true);
-
 	assert(tpTransNew);
-	assert(tpTransNew->getSTransaction()->isEquivalent(*tpTrans->getSTransaction()));
+
+	if(!tpTransNew->getSTransaction()->isEquivalent(*tpTrans->getSTransaction()))
+	{
+		Log(lsFATAL) << "Transaction reconstruction failure";
+		Log(lsFATAL) << tpTransNew->getSTransaction()->getJson(0);
+		Log(lsFATAL) << tpTrans->getSTransaction()->getJson(0);
+		assert(false);
+	}
 
 	(void) NetworkOPs::processTransaction(tpTransNew);
 
@@ -244,12 +245,12 @@ STVector256 NetworkOPs::getDirNodeInfo(
 	{
 		Log(lsDEBUG) << "getDirNodeInfo: node index: " << uNodeIndex.ToString();
 
-		Log(lsTRACE) << "getDirNodeInfo: first: " << strHex(sleNode->getIFieldU64(sfIndexPrevious));
-		Log(lsTRACE) << "getDirNodeInfo:  last: " << strHex(sleNode->getIFieldU64(sfIndexNext));
+		Log(lsTRACE) << "getDirNodeInfo: first: " << strHex(sleNode->getFieldU64(sfIndexPrevious));
+		Log(lsTRACE) << "getDirNodeInfo:  last: " << strHex(sleNode->getFieldU64(sfIndexNext));
 
-		uNodePrevious	= sleNode->getIFieldU64(sfIndexPrevious);
-		uNodeNext		= sleNode->getIFieldU64(sfIndexNext);
-		svIndexes		= sleNode->getIFieldV256(sfIndexes);
+		uNodePrevious	= sleNode->getFieldU64(sfIndexPrevious);
+		uNodeNext		= sleNode->getFieldU64(sfIndexNext);
+		svIndexes		= sleNode->getFieldV256(sfIndexes);
 
 		Log(lsTRACE) << "getDirNodeInfo: first: " << strHex(uNodePrevious);
 		Log(lsTRACE) << "getDirNodeInfo:  last: " << strHex(uNodeNext);
@@ -298,7 +299,7 @@ Json::Value NetworkOPs::getOwnerInfo(Ledger::pointer lpLedger, const NewcoinAddr
 
 		do
 		{
-			STVector256					svIndexes	= sleNode->getIFieldV256(sfIndexes);
+			STVector256					svIndexes	= sleNode->getFieldV256(sfIndexes);
 			const std::vector<uint256>&	vuiIndexes	= svIndexes.peekValue();
 
 			BOOST_FOREACH(const uint256& uDirEntry, vuiIndexes)
@@ -331,7 +332,7 @@ Json::Value NetworkOPs::getOwnerInfo(Ledger::pointer lpLedger, const NewcoinAddr
 				}
 			}
 
-			uNodeDir		= sleNode->getIFieldU64(sfIndexNext);
+			uNodeDir		= sleNode->getFieldU64(sfIndexNext);
 			if (uNodeDir)
 			{
 				lspNode	= lepNONE;

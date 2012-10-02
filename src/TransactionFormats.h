@@ -23,16 +23,10 @@ enum TransactionType
 
 struct TransactionFormat
 {
-	const char *t_name;
-	TransactionType t_type;
-	SOElement elements[16];
+	const char *		t_name;
+	TransactionType		t_type;
+	SOElement			elements[24];
 };
-
-const int TransactionISigningPubKey	= 0;
-const int TransactionISourceID		= 1;
-const int TransactionISequence		= 2;
-const int TransactionIType			= 3;
-const int TransactionIFee			= 4;
 
 const int TransactionMinLen			= 32;
 const int TransactionMaxLen			= 1048576;
@@ -50,7 +44,9 @@ const uint32 tfPartialPayment		= 0x00020000;
 const uint32 tfLimitQuality			= 0x00040000;
 const uint32 tfNoRippleDirect		= 0x00080000;
 
-extern TransactionFormat InnerTxnFormats[];
+extern TransactionFormat TxnFormats[];
 extern TransactionFormat* getTxnFormat(TransactionType t);
+extern TransactionFormat* getTxnFormat(const std::string& t);
+extern TransactionFormat* getTxnFormat(int t);
 #endif
 // vim:ts=4

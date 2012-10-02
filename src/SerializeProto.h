@@ -2,11 +2,11 @@
 // appropriate #define statements.
 
 	// types (common)
-	TYPE("Int32",			UINT32,		1)
-	TYPE("Int64",			UINT64,		2)
-	TYPE("Hash128",			HASH128,	3)
-	TYPE("Hash256",			HASH256,	4)
-	// 5 is reserved
+	TYPE("Int16",			UINT16,		1)
+	TYPE("Int32",			UINT32,		2)
+	TYPE("Int64",			UINT64,		3)
+	TYPE("Hash128",			HASH128,	4)
+	TYPE("Hash256",			HASH256,	5)
 	TYPE("Amount",			AMOUNT,		6)
 	TYPE("VariableLength",	VL,			7)
 	TYPE("Account",			ACCOUNT,	8)
@@ -16,28 +16,32 @@
 
 	// types (uncommon)
 	TYPE("Int8",			UINT8,		16)
-	TYPE("Int16",			UINT16,		17)
-	TYPE("Hash160",			HASH160,	18)
-	TYPE("PathSet",			PATHSET,	19)
-	TYPE("Vector256",		VECTOR256,	20)
+	TYPE("Hash160",			HASH160,	17)
+	TYPE("PathSet",			PATHSET,	18)
+	TYPE("Vector256",		VECTOR256,	19)
 
 
 
 	// 8-bit integers
 	FIELD(CloseResolution,		UINT8, 1)
 
+	// 16-bit integers
+	FIELD(LedgerEntryType,		UINT16, 1)
+	FIELD(TransactionType,		UINT16, 2)
+
 	// 32-bit integers (common)
-	FIELD(Flags,				UINT32, 1)
-	FIELD(SourceTag,			UINT32, 2)
-	FIELD(Sequence,				UINT32, 3)
-	FIELD(LastTxnSeq,			UINT32, 4)
-	FIELD(LedgerSequence,		UINT32, 5)
-	FIELD(CloseTime,			UINT32, 6)
-	FIELD(ParentCloseTime,		UINT32, 7)
-	FIELD(SigningTime,			UINT32, 8)
-	FIELD(Expiration,			UINT32, 9)
-	FIELD(TransferRate,			UINT32, 10)
-	FIELD(PublishSize,			UINT32, 11)
+	FIELD(ObjectType,			UINT32, 1)
+	FIELD(Flags,				UINT32, 2)
+	FIELD(SourceTag,			UINT32, 3)
+	FIELD(Sequence,				UINT32, 4)
+	FIELD(LastTxnSeq,			UINT32, 5)
+	FIELD(LedgerSequence,		UINT32, 6)
+	FIELD(CloseTime,			UINT32, 7)
+	FIELD(ParentCloseTime,		UINT32, 8)
+	FIELD(SigningTime,			UINT32, 9)
+	FIELD(Expiration,			UINT32, 10)
+	FIELD(TransferRate,			UINT32, 11)
+	FIELD(PublishSize,			UINT32, 12)
 
 	// 32-bit integers (uncommon)
 	FIELD(HighQualityIn,		UINT32, 16)
@@ -59,7 +63,7 @@
 	FIELD(BaseFee,				UINT64, 5)
 
 	// 128-bit
-	FIELD(EmailHash,			HASH128, 2)
+	FIELD(EmailHash,			HASH128, 1)
 
 	// 256-bit (common)
 	FIELD(LedgerHash,			HASH256, 1)
@@ -67,8 +71,9 @@
 	FIELD(TransactionHash,		HASH256, 3)
 	FIELD(AccountHash,			HASH256, 4)
 	FIELD(LastTxnID,			HASH256, 5)
-	FIELD(WalletLocator,		HASH256, 6)
-	FIELD(PublishHash,			HASH256, 7)
+	FIELD(LedgerIndex,			HASH256, 6)
+	FIELD(WalletLocator,		HASH256, 7)
+	FIELD(PublishHash,			HASH256, 8)
 
 	// 256-bit (uncommon)
 	FIELD(BookDirectory,		HASH256, 16)
@@ -83,6 +88,7 @@
 	FIELD(TakerGets,			AMOUNT, 5)
 	FIELD(LowLimit,				AMOUNT, 6)
 	FIELD(HighLimit,			AMOUNT, 7)
+	FIELD(Fee,					AMOUNT, 8)
 	FIELD(SendMax,				AMOUNT, 9)
 
 	// current amount (uncommon)
@@ -92,14 +98,15 @@
 	// variable length
 	FIELD(PublicKey,			VL, 1)
 	FIELD(MessageKey,			VL, 2)
-	FIELD(SigningKey,			VL, 3)
-	FIELD(Signature,			VL, 4)
+	FIELD(SigningPubKey,		VL, 3)
+	FIELD(TxnSignature,			VL, 4)
 	FIELD(Generator,			VL, 5)
-	FIELD(Domain,				VL, 6)
-	FIELD(FundCode,				VL, 7)
-	FIELD(RemoveCode,			VL, 8)
-	FIELD(ExpireCode,			VL, 9)
-	FIELD(CreateCode,			VL, 10)
+	FIELD(Signature,			VL, 6)
+	FIELD(Domain,				VL, 7)
+	FIELD(FundCode,				VL, 8)
+	FIELD(RemoveCode,			VL, 9)
+	FIELD(ExpireCode,			VL, 10)
+	FIELD(CreateCode,			VL, 11)
 
 	// account
 	FIELD(Account,				ACCOUNT, 1)
@@ -119,9 +126,9 @@
 
 	// inner object
 	// OBJECT/1 is reserved for end of object
-	FIELD(MiddleTransaction,	OBJECT, 2)
-	FIELD(InnerTransaction,		OBJECT, 3)
 
 	// array of objects
 	// ARRAY/1 is reserved for end of array
 	FIELD(SigningAccounts,		ARRAY, 2)
+	FIELD(TxnSignatures,		ARRAY, 3)
+	FIELD(Signatures,			ARRAY, 4)

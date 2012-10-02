@@ -252,7 +252,7 @@ Json::Value RPCServer::getMasterGenerator(const uint256& uLedger, const NewcoinA
 		return RPCError(rpcNO_ACCOUNT);
 	}
 
-	std::vector<unsigned char>	vucCipher			= sleGen->getIFieldVL(sfGenerator);
+	std::vector<unsigned char>	vucCipher			= sleGen->getFieldVL(sfGenerator);
 	std::vector<unsigned char>	vucMasterGenerator	= na0Private.accountPrivateDecrypt(na0Public, vucCipher);
 	if (vucMasterGenerator.empty())
 	{
@@ -355,7 +355,9 @@ Json::Value RPCServer::authorize(const uint256& uLedger,
 	}
 	else
 	{
+		Log(lsINFO) << "authorize: before: fee=" << saFee.getFullText() << " balance=" << saSrcBalance.getFullText();
 		saSrcBalance -= saFee;
+		Log(lsINFO) << "authorize: after: fee=" << saFee.getFullText() << " balance=" << saSrcBalance.getFullText();
 	}
 
 	Json::Value	obj;
@@ -400,7 +402,7 @@ Json::Value RPCServer::accountFromString(const uint256& uLedger, NewcoinAddress&
 		else
 		{
 			// Found master public key.
-			std::vector<unsigned char>	vucCipher				= sleGen->getIFieldVL(sfGenerator);
+			std::vector<unsigned char>	vucCipher				= sleGen->getFieldVL(sfGenerator);
 			std::vector<unsigned char>	vucMasterGenerator		= naRegular0Private.accountPrivateDecrypt(naRegular0Public, vucCipher);
 			if (vucMasterGenerator.empty())
 			{
@@ -958,7 +960,6 @@ Json::Value RPCServer::doNicknameSet(const Json::Value& params)
 	std::string					strOfferCurrency;
 	std::string					strNickname		= params[2u].asString();
 									boost::trim(strNickname);
-	std::vector<unsigned char>	vucSignature;
 
 	if (strNickname.empty())
 	{
@@ -1010,8 +1011,7 @@ Json::Value RPCServer::doNicknameSet(const Json::Value& params)
 		0,											// YYY No source tag
 		Ledger::getNicknameHash(strNickname),
 		bSetOffer,
-		saMinimumOffer,
-		vucSignature);
+		saMinimumOffer);
 
 	trans	= mNetOps->submitTransaction(trans);
 
@@ -1778,16 +1778,17 @@ Json::Value RPCServer::doSend(const Json::Value& params)
 
 			STPathSet			spsPaths;
 			uint160  srcCurrencyID;
-                        bool ret_b;
-                        ret_b = false;
+//                        bool ret_b;
+//                        ret_b = false;
 
-			if (!saSrcAmountMax.isNative() || !saDstAmount.isNative()) 
+			if (!saSrcAmountMax.isNative() || !saDstAmount.isNative())
 			{
 			  STAmount::currencyFromString(srcCurrencyID, sSrcCurrency);
 			  Pathfinder pf(naSrcAccountID, naDstAccountID, srcCurrencyID, saDstAmount);
-			  ret_b = pf.findPaths(5, 1, spsPaths);
+//			  ret_b = pf.findPaths(5, 1, spsPaths);
+			  pf.findPaths(5, 1, spsPaths);
 			}
-			
+
 			trans	= Transaction::sharedPayment(
 				naAccountPublic, naAccountPrivate,
 				naSrcAccountID,

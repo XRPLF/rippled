@@ -4,29 +4,33 @@
 #include "HashPrefixes.h"
 
 SOElement SerializedValidation::sValidationFormat[] = {
-	{ sfFlags,			"Flags",			STI_UINT32,		SOE_FLAGS,		0 },
-	{ sfLedgerHash,		"LedgerHash",		STI_HASH256,	SOE_REQUIRED,	0 },
-	{ sfSigningTime,	"SignTime",			STI_UINT32,		SOE_REQUIRED,	0 },
-	{ sfSigningKey,		"SigningKey",		STI_VL,			SOE_REQUIRED,	0 },
-	{ sfInvalid,		NULL,				STI_DONE,		SOE_NEVER,		-1 },
+	{ sfFlags,			SOE_REQUIRED },
+	{ sfLedgerHash,		SOE_REQUIRED },
+	{ sfLedgerSequence,	SOE_OPTIONAL },
+	{ sfCloseTime,		SOE_OPTIONAL },
+	{ sfLoadFee,		SOE_OPTIONAL },
+	{ sfBaseFee,		SOE_OPTIONAL },
+	{ sfSigningTime,	SOE_REQUIRED },
+	{ sfSigningPubKey,	SOE_REQUIRED },
+	{ sfInvalid,		SOE_END }
 };
 
 const uint32 SerializedValidation::sFullFlag		= 0x00010000;
 
 SerializedValidation::SerializedValidation(SerializerIterator& sit, bool checkSignature)
-	: STObject(sValidationFormat, sit), mSignature(sit, "Signature"), mTrusted(false)
+	: STObject(sValidationFormat, sit, sfValidation), mSignature(sit, sfSignature), mTrusted(false)
 {
 	if  (checkSignature && !isValid()) throw std::runtime_error("Invalid validation");
 }
 
 SerializedValidation::SerializedValidation(const uint256& ledgerHash, uint32 signTime,
 		const NewcoinAddress& naSeed, bool isFull)
-	: STObject(sValidationFormat), mSignature("Signature"), mTrusted(false)
+	: STObject(sValidationFormat, sfValidation), mSignature(sfSignature), mTrusted(false)
 {
-	setValueFieldH256(sfLedgerHash, ledgerHash);
-	setValueFieldU32(sfSigningTime, signTime);
+	setFieldH256(sfLedgerHash, ledgerHash);
+	setFieldU32(sfSigningTime, signTime);
 	if (naSeed.isValid())
-		setValueFieldVL(sfSigningKey, NewcoinAddress::createNodePublic(naSeed).getNodePublic());
+		setFieldVL(sfSigningPubKey, NewcoinAddress::createNodePublic(naSeed).getNodePublic());
 	if (!isFull) setFlag(sFullFlag);
 
 	NewcoinAddress::createNodePrivate(naSeed).signNodePrivate(getSigningHash(), mSignature.peekValue());
@@ -47,17 +51,17 @@ uint256 SerializedValidation::getSigningHash() const
 
 uint256 SerializedValidation::getLedgerHash() const
 {
-	return getValueFieldH256(sfLedgerHash);
+	return getFieldH256(sfLedgerHash);
 }
 
 uint32 SerializedValidation::getSignTime() const
 {
-	return getValueFieldU32(sfSigningTime);
+	return getFieldU32(sfSigningTime);
 }
 
 uint32 SerializedValidation::getFlags() const
 {
-	return getValueFieldU32(sfFlags);
+	return getFieldU32(sfFlags);
 }
 
 bool SerializedValidation::isValid() const
@@ -69,7 +73,7 @@ bool SerializedValidation::isValid(const uint256& signingHash) const
 {
 	try
 	{
-		NewcoinAddress	naPublicKey	= NewcoinAddress::createNodePublic(getValueFieldVL(sfSigningKey));
+		NewcoinAddress	naPublicKey	= NewcoinAddress::createNodePublic(getFieldVL(sfSigningPubKey));
 		return naPublicKey.isValid() && naPublicKey.verifyNodePublic(signingHash, mSignature.peekValue());
 	}
 	catch (...)
@@ -81,7 +85,7 @@ bool SerializedValidation::isValid(const uint256& signingHash) const
 NewcoinAddress SerializedValidation::getSignerPublic() const
 {
 	NewcoinAddress a;
-	a.setNodePublic(getValueFieldVL(sfSigningKey));
+	a.setNodePublic(getFieldVL(sfSigningPubKey));
 	return a;
 }
 

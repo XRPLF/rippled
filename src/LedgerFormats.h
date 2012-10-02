@@ -41,12 +41,14 @@ enum LedgerSpecificFlags
 
 struct LedgerEntryFormat
 {
-	const char *t_name;
-	LedgerEntryType t_type;
-	SOElement elements[20];
+	const char *	t_name;
+	LedgerEntryType	t_type;
+	SOElement		elements[24];
 };
 
 extern LedgerEntryFormat LedgerFormats[];
 extern LedgerEntryFormat* getLgrFormat(LedgerEntryType t);
+extern LedgerEntryFormat* getLgrFormat(const std::string& t);
+extern LedgerEntryFormat* getLgrFormat(int t);
 #endif
 // vim:ts=4
