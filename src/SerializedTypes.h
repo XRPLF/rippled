@@ -496,6 +496,7 @@ public:
 
 	STAccount(const std::vector<unsigned char>& v) : STVariableLength(v) { ; }
 	STAccount(SField::ref n, const std::vector<unsigned char>& v) : STVariableLength(n, v) { ; }
+	STAccount(SField::ref n, const uint160& v);
 	STAccount(SField::ref n) : STVariableLength(n) { ; }
 	STAccount() { ; }
 	static std::auto_ptr<SerializedType> deserialize(SerializerIterator& sit, SField::ref name)

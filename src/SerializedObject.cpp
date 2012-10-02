@@ -897,7 +897,7 @@ std::auto_ptr<STObject> STObject::parseJson(const Json::Value& object, SField::r
 				else if (value.isInt())
 					data.push_back(new STUInt32(field, range_check_cast<uint32>(value.asInt(), 0, 4294967295)));
 				else if (value.isUInt())
-					data.push_back(new STUInt32(field, static_cast<uint32>(value.asUInt(), 0, 4294967295)));
+					data.push_back(new STUInt32(field, static_cast<uint32>(value.asUInt())));
 				else
 					throw std::runtime_error("Incorrect type");
 				break;
@@ -940,7 +940,7 @@ std::auto_ptr<STObject> STObject::parseJson(const Json::Value& object, SField::r
 				if (!value.isString())
 					throw std::runtime_error("Incorrect type");
 				data.push_back(new STVariableLength(field, strUnHex(value.asString())));
-			break;
+				break;
 
 			case STI_AMOUNT:
 				// WRITEME
@@ -950,9 +950,27 @@ std::auto_ptr<STObject> STObject::parseJson(const Json::Value& object, SField::r
 
 			case STI_PATHSET:
 				// WRITEME
-
+				break;
 			case STI_ACCOUNT:
-				// WRITEME
+			{
+				if (!value.isString())
+					throw std::runtime_error("Incorrect type");
+				std::string strValue = value.asString();
+				if (value.size() == 40) // 160-bit hex account value
+				{
+					uint160 v;
+					v.SetHex(strValue);
+					data.push_back(new STAccount(field, v));
+				}
+				else
+				{ // newcoin addres
+					NewcoinAddress a;
+					if (!a.setAccountPublic(strValue))
+						throw std::runtime_error("Account invalid");
+					data.push_back(new STAccount(field, a.getAccountID()));
+				}
+			}
+			break;
 
 			case STI_OBJECT:
 			case STI_TRANSACTION:
