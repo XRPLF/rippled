@@ -10,7 +10,7 @@ SerializedLedgerEntry::SerializedLedgerEntry(SerializerIterator& sit, const uint
 {
 	set(sit);
 	uint16 type = getFieldU16(sfLedgerEntryType);
-	mFormat = getLgrFormat(static_cast<LedgerEntryType>(type));
+	mFormat = LedgerEntryFormat::getLgrFormat(static_cast<LedgerEntryType>(type));
 	if (mFormat == NULL)
 		throw std::runtime_error("invalid ledger entry type");
 	mType = mFormat->t_type;
@@ -25,7 +25,7 @@ SerializedLedgerEntry::SerializedLedgerEntry(const Serializer& s, const uint256&
 	set(sit);
 
 	uint16 type = getFieldU16(sfLedgerEntryType);
-	mFormat = getLgrFormat(static_cast<LedgerEntryType>(type));
+	mFormat = LedgerEntryFormat::getLgrFormat(static_cast<LedgerEntryType>(type));
 	if (mFormat == NULL)
 		throw std::runtime_error("invalid ledger entry type");
 	mType = mFormat->t_type;
@@ -39,7 +39,7 @@ SerializedLedgerEntry::SerializedLedgerEntry(const Serializer& s, const uint256&
 
 SerializedLedgerEntry::SerializedLedgerEntry(LedgerEntryType type) : STObject(sfLedgerEntry), mType(type)
 {
-	mFormat = getLgrFormat(type);
+	mFormat = LedgerEntryFormat::getLgrFormat(type);
 	if (mFormat == NULL) throw std::runtime_error("invalid ledger entry type");
 	set(mFormat->elements);
 	setFieldU16(sfLedgerEntryType, static_cast<uint16>(mFormat->t_type));

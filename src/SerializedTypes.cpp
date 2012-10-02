@@ -54,13 +54,13 @@ std::string STUInt16::getText() const
 {
 	if (getFName() == sfLedgerEntryType)
 	{
-		LedgerEntryFormat *f = getLgrFormat(value);
+		LedgerEntryFormat *f = LedgerEntryFormat::getLgrFormat(value);
 		if (f != NULL)
 			return f->t_name;
 	}
 	if (getFName() == sfTransactionType)
 	{
-		TransactionFormat *f = getTxnFormat(value);
+		TransactionFormat *f = TransactionFormat::getTxnFormat(value);
 		if (f != NULL)
 			return f->t_name;
 	}

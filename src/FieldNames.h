@@ -28,7 +28,7 @@ enum SerializedTypeID
 
 enum SOE_Flags
 {
-	SOE_END = -1,		// marks end of object
+	SOE_INVALID  = -1,
 	SOE_REQUIRED = 0,	// required
 	SOE_OPTIONAL = 1,	// optional
 };

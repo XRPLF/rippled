@@ -9,7 +9,7 @@
 
 SerializedTransaction::SerializedTransaction(TransactionType type) : STObject(sfTransaction), mType(type)
 {
-	mFormat = getTxnFormat(type);
+	mFormat = TransactionFormat::getTxnFormat(type);
 	if (mFormat == NULL)
 		throw std::runtime_error("invalid transaction type");
 	set(mFormat->elements);
@@ -28,7 +28,7 @@ SerializedTransaction::SerializedTransaction(SerializerIterator& sit) : STObject
 	set(sit);
 	mType = static_cast<TransactionType>(getFieldU16(sfTransactionType));
 
-	mFormat = getTxnFormat(mType);
+	mFormat = TransactionFormat::getTxnFormat(mType);
 	if (!mFormat)
 		throw std::runtime_error("invalid transaction type");
 	if (!setType(mFormat->elements))
