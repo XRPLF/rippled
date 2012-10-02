@@ -836,18 +836,18 @@ std::auto_ptr<STObject> STObject::parseJson(const Json::Value& object, SField::r
 		{
 			case STI_UINT8:
 				if (value.isString())
-					data.push_back(new STUInt8(field, lexical_cast_s<unsigned char>(value.asString())));
+					data.push_back(new STUInt8(field, lexical_cast_st<unsigned char>(value.asString())));
 				else if (value.isInt())	
 				{
 					if (value.asInt() < 0 || value.asInt() > 255)
 						throw std::runtime_error("value out of rand");
-					data.push_back(new STUInt8(field, static_cast<unsigned char>(value.asInt())));
+					data.push_back(new STUInt8(field, range_check_cast<unsigned char>(value.asInt(), 0, 255)));
 				}
 				else if (value.isUInt())
 				{
 					if (value.asUInt() > 255)
 						throw std::runtime_error("value out of rand");
-					data.push_back(new STUInt8(field, static_cast<unsigned char>(value.asUInt())));
+					data.push_back(new STUInt8(field, range_check_cast<unsigned char>(value.asUInt(), 0, 255)));
 				}
 				else
 					throw std::runtime_error("Incorrect type");
@@ -881,32 +881,33 @@ std::auto_ptr<STObject> STObject::parseJson(const Json::Value& object, SField::r
 							throw std::runtime_error("Invalid field data");
 					}
 					else
-						data.push_back(new STUInt16(field, lexical_cast_s<uint16>(strValue)));
+						data.push_back(new STUInt16(field, lexical_cast_st<uint16>(strValue)));
 				}
 				else if (value.isInt())
-					data.push_back(new STUInt16(field, static_cast<uint16>(value.asInt())));
+					data.push_back(new STUInt16(field, range_check_cast<uint16>(value.asInt(), 0, 65535)));
 				else if (value.isUInt())
-					data.push_back(new STUInt16(field, static_cast<uint16>(value.asUInt())));
+					data.push_back(new STUInt16(field, range_check_cast<uint16>(value.asUInt(), 0, 65535)));
 				else
 					throw std::runtime_error("Incorrect type");
 				break;
 
 			case STI_UINT32:
 				if (value.isString())
-					data.push_back(new STUInt32(field, lexical_cast_s<uint32>(value.asString())));
+					data.push_back(new STUInt32(field, lexical_cast_st<uint32>(value.asString())));
 				else if (value.isInt())
-					data.push_back(new STUInt32(field, static_cast<uint32>(value.asInt())));
+					data.push_back(new STUInt32(field, range_check_cast<uint32>(value.asInt(), 0, 4294967295)));
 				else if (value.isUInt())
-					data.push_back(new STUInt32(field, static_cast<uint32>(value.asUInt())));
+					data.push_back(new STUInt32(field, static_cast<uint32>(value.asUInt(), 0, 4294967295)));
 				else
 					throw std::runtime_error("Incorrect type");
 				break;
 
 			case STI_UINT64:
 				if (value.isString())
-					data.push_back(new STUInt64(field, lexical_cast_s<uint64>(value.asString())));
+					data.push_back(new STUInt64(field, lexical_cast_st<uint64>(value.asString())));
 				else if (value.isInt())
-					data.push_back(new STUInt64(field, static_cast<uint64>(value.asInt())));
+					data.push_back(new STUInt64(field,
+						range_check_cast<uint64>(value.asInt(), 0, 18446744073709551615ull)));
 				else if (value.isUInt())
 					data.push_back(new STUInt64(field, static_cast<uint64>(value.asUInt())));
 				else
@@ -936,9 +937,9 @@ std::auto_ptr<STObject> STObject::parseJson(const Json::Value& object, SField::r
 				break;
 
 			case STI_VL:
-			{
-				// WRITEME
-			}
+				if (!value.isString())
+					throw std::runtime_error("Incorrect type");
+				data.push_back(new STVariableLength(field, strUnHex(value.asString())));
 			break;
 
 			case STI_AMOUNT:
@@ -950,8 +951,10 @@ std::auto_ptr<STObject> STObject::parseJson(const Json::Value& object, SField::r
 			case STI_PATHSET:
 				// WRITEME
 
-			case STI_OBJECT:
 			case STI_ACCOUNT:
+				// WRITEME
+
+			case STI_OBJECT:
 			case STI_TRANSACTION:
 			case STI_LEDGERENTRY:
 			case STI_VALIDATION:
