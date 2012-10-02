@@ -171,7 +171,7 @@ template<typename T> T lexical_cast_s(const std::string& string)
 	}
 }
 
-template<typename T> std::string lexical_cast_i(T t)
+template<typename T> std::string lexical_cast_i(const T& t)
 { // lexicaly cast the selected type to a string. Does not throw
 	try
 	{
@@ -181,6 +181,44 @@ template<typename T> std::string lexical_cast_i(T t)
 	{
 		return "";
 	}
+}
+
+template<typename T> T lexical_cast_st(const std::string& string)
+{ // lexically cast a string to the selected type. Does throw
+	return boost::lexical_cast<T>(string);
+}
+
+template<typename T> std::string lexical_cast_it(const T& t)
+{ // lexicaly cast the selected type to a string. Does not throw
+	return boost::lexical_cast<std::string>(t);
+}
+
+template<typename T> T range_check(const T& value, const T& minimum, const T& maximum)
+{
+	if ((value < minimum) || (value > maximum))
+		throw std::runtime_error("Value out of range");
+	return value;
+}
+
+template<typename T> T range_check_min(const T& value, const T& minimum)
+{
+	if (value < minimum)
+		throw std::runtime_error("Value out of range");
+	return value;
+}
+
+template<typename T> T range_check_max(const T& value, const T& maximum)
+{
+	if (value > maximum)
+		throw std::runtime_error("Value out of range");
+	return value;
+}
+
+template<typename T, typename U> T range_check_cast(const U& value, const T& minimum, const T& maximum)
+{
+	if ((value < minimum) || (value > maximum))
+		throw std::runtime_error("Value out of range");
+	return static_cast<T>(value);
 }
 
 #endif
