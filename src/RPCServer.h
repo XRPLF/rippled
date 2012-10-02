@@ -149,6 +149,7 @@ private:
 	Json::Value doOwnerInfo(const Json::Value& params);
 	Json::Value doPasswordFund(const Json::Value& params);
 	Json::Value doPasswordSet(const Json::Value& params);
+	Json::Value doProfile(const Json::Value& params);
 	Json::Value doPeers(const Json::Value& params);
 	Json::Value doRipple(const Json::Value &params);
 	Json::Value doRippleLinesGet(const Json::Value &params);

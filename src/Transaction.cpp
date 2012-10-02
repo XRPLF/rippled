@@ -68,8 +68,8 @@ Transaction::Transaction(
 
 	mTransaction	= boost::make_shared<SerializedTransaction>(ttKind);
 
-	Log(lsINFO) << str(boost::format("Transaction: account: %s") % naSourceAccount.humanAccountID());
-	Log(lsINFO) << str(boost::format("Transaction: mAccountFrom: %s") % mAccountFrom.humanAccountID());
+	// Log(lsINFO) << str(boost::format("Transaction: account: %s") % naSourceAccount.humanAccountID());
+	// Log(lsINFO) << str(boost::format("Transaction: mAccountFrom: %s") % mAccountFrom.humanAccountID());
 
 	mTransaction->setSigningPubKey(mFromPubKey);
 	mTransaction->setSourceAccount(mAccountFrom);

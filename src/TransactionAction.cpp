@@ -727,7 +727,7 @@ TER TransactionEngine::takeOffers(
 		// Figure out next offer to take, if needed.
 		if (saTakerGets != saTakerGot && saTakerPays != saTakerPaid)
 		{
-			// Taker has needs.
+			// Taker, still, needs to get and pay.
 
 			sleOfferDir		= entryCache(ltDIR_NODE, mLedger->getNextLedgerIndex(uTipIndex, uBookEnd));
 			if (sleOfferDir)
@@ -832,7 +832,19 @@ TER TransactionEngine::takeOffers(
 					Log(lsINFO) << "takeOffers: applyOffer:    saOfferGets: " << saOfferGets.getFullText();
 					Log(lsINFO) << "takeOffers: applyOffer:    saTakerPays: " << saTakerPays.getFullText();
 					Log(lsINFO) << "takeOffers: applyOffer:    saTakerGets: " << saTakerGets.getFullText();
+#if 0
+					STAmount	saTakerPaysRate	=
+						uTakerPaysAccountID == uTakerAccountID			// Taker is issuing, no fee.
+							|| uTakerPaysAccountID == uOfferAccountID	// Taker is redeeming, no fee.
+							? 0.0
+							: getRate(uTakerPaysAccountID);
 
+					STAmount	saOfferPaysRate =
+						uTakerGetsAccountID == uTakerGetsAccountID		// Offerer is redeeming, no fee.
+							|| uTakerGetsAccountID == uOfferAccountID	// Offerer is issuing, no fee.
+							? 0.0
+							: getRate(uTakerGetsAccountID);
+#endif
 					bool	bOfferDelete	= STAmount::applyOffer(
 						saOfferFunds,
 						saPay,				// Driver XXX need to account for fees.
