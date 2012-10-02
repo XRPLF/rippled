@@ -387,14 +387,14 @@ std::string STAmount::getRaw() const
 	if (mValue == 0) return "0";
 	if (mIsNative)
 	{
-		if (mIsNegative) return std::string("-") + boost::lexical_cast<std::string>(mValue);
-		else return boost::lexical_cast<std::string>(mValue);
+		if (mIsNegative) return std::string("-") + lexical_cast_i(mValue);
+		else return lexical_cast_i(mValue);
 	}
 	if (mIsNegative)
 		return mCurrency.GetHex() + ": -" +
-		boost::lexical_cast<std::string>(mValue) + "e" + boost::lexical_cast<std::string>(mOffset);
+		lexical_cast_i(mValue) + "e" + lexical_cast_i(mOffset);
 	else return mCurrency.GetHex() + ": " +
-		boost::lexical_cast<std::string>(mValue) + "e" + boost::lexical_cast<std::string>(mOffset);
+		lexical_cast_i(mValue) + "e" + lexical_cast_i(mOffset);
 }
 
 std::string STAmount::getText() const
@@ -403,20 +403,20 @@ std::string STAmount::getText() const
 	if (mIsNative)
 	{
 		if (mIsNegative)
-			return std::string("-") +  boost::lexical_cast<std::string>(mValue);
-		else return boost::lexical_cast<std::string>(mValue);
+			return std::string("-") +  lexical_cast_i(mValue);
+		else return lexical_cast_i(mValue);
 	}
 	if ((mOffset < -25) || (mOffset > -5))
 	{
 		if (mIsNegative)
-			return std::string("-") + boost::lexical_cast<std::string>(mValue) +
-				"e" + boost::lexical_cast<std::string>(mOffset);
+			return std::string("-") + lexical_cast_i(mValue) +
+				"e" + lexical_cast_i(mOffset);
 		else
-			return boost::lexical_cast<std::string>(mValue) + "e" + boost::lexical_cast<std::string>(mOffset);
+			return lexical_cast_i(mValue) + "e" + lexical_cast_i(mOffset);
 	}
 
 	std::string val = "000000000000000000000000000";
-	val += boost::lexical_cast<std::string>(mValue);
+	val += lexical_cast_i(mValue);
 	val += "00000000000000000000000";
 
 	std::string pre = val.substr(0, mOffset + 43);
