@@ -1409,7 +1409,7 @@ Json::Value RPCServer::doProfile(const Json::Value &params)
 	Json::Value obj(Json::objectValue);
 
 	obj["count"]			= iCount;
-	obj["sumbit"]			= bSubmit;
+	obj["submit"]			= bSubmit;
 	obj["start"]			= boost::posix_time::to_simple_string(ptStart);
 	obj["end"]				= boost::posix_time::to_simple_string(ptEnd);
 	obj["interval"]			= boost::posix_time::to_simple_string(tdInterval);
