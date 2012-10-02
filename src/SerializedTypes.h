@@ -220,8 +220,6 @@ protected:
 		: SerializedType(name), mCurrency(cur), mIssuer(iss),  mValue(val), mOffset(off),
 			mIsNative(isNat), mIsNegative(isNeg) { ; }
 
-	STAmount(SField::ref name, const Json::Value& value);
-
 	uint64 toUInt64() const;
 	static uint64 muldiv(uint64, uint64, uint64);
 
@@ -244,6 +242,8 @@ public:
 			uint64 v = 0, int off = 0, bool isNeg = false) :
 		SerializedType(n), mCurrency(currency), mIssuer(issuer), mValue(v), mOffset(off), mIsNegative(isNeg)
 	{ canonicalize(); }
+
+	STAmount(SField::ref, const Json::Value&);
 
 	static STAmount createFromInt64(SField::ref n, int64 v);
 
@@ -288,6 +288,7 @@ public:
 	void setIssuer(const uint160& uIssuer)	{ mIssuer	= uIssuer; }
 
 	const uint160& getCurrency() const	{ return mCurrency; }
+	bool setValue(const std::string& sAmount);
 	bool setFullValue(const std::string& sAmount, const std::string& sCurrency = "", const std::string& sIssuer = "");
 	void setValue(const STAmount &);
 

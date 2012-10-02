@@ -57,15 +57,21 @@ std::string STAmount::getHumanCurrency() const
 }
 
 STAmount::STAmount(SField::ref n, const Json::Value& v)
-	: SerializedType(n), mValue(0), mOffset(0), mIsNative(false), mIsNegative(false)
+	: SerializedType(n), mValue(0), mOffset(0), mIsNegative(false)
 {
 	Json::Value value, currency, issuer;
 
-	if (v.isArray())
+	if (v.isObject())
 	{
 		value = v["value"];
 		currency = v["currency"];
 		issuer = v["issuer"];
+	}
+	else if (v.isArray())
+	{
+			value = v.get(Json::UInt(0), 0);
+			currency = v.get(Json::UInt(1), Json::nullValue);
+			issuer = v.get(Json::UInt(2), Json::nullValue);
 	}
 	else if (v.isString())
 	{
@@ -85,6 +91,8 @@ STAmount::STAmount(SField::ref n, const Json::Value& v)
 	else
 		value = v;
 
+	mIsNative = !currency.isString() || currency.asString().empty() || (currency.asString() == SYSTEM_CURRENCY_CODE);
+
 	if (value.isInt())
 	{
 		if (value.asInt() >= 0)
@@ -97,29 +105,27 @@ STAmount::STAmount(SField::ref n, const Json::Value& v)
 	}
 	else if (value.isUInt())
 		mValue = v.asUInt();
-	else if (value.isDouble())
-	{
-		// WRITEME
-	}
 	else if (value.isString())
 	{ // FIXME: If it has a '.' we have to process it specially!
-		int64 val = lexical_cast_st<int64>(value.asString());
-		if (val >= 0)
-			mValue = val;
-		else
+		if (mIsNative)
 		{
-			mValue = -val;
-			mIsNegative = true;
+			int64 val = lexical_cast_st<int64>(value.asString());
+			if (val >= 0)
+				mValue = val;
+			else
+			{
+				mValue = -val;
+				mIsNegative = true;
+			}
 		}
+		else
+			setValue(value.asString());
 	}
 	else
 		throw std::runtime_error("invalid amount type");
 
-	if (!currency.isString() || currency.asString().empty() || (currency.asString() == SYSTEM_CURRENCY_CODE))
-	{
-		mIsNative = true;
+	if (mIsNative)
 		return;
-	}
 
 	// parse currency and issuer
 	// WRITEME
@@ -173,6 +179,94 @@ std::string STAmount::createHumanCurrency(const uint160& uCurrency)
 	return sCurrency;
 }
 
+bool STAmount::setValue(const std::string& sAmount)
+{ // Note: mIsNative must be set already!
+	uint64	uValue;
+	int		iOffset;
+	size_t	uDecimal	= sAmount.find_first_of(mIsNative ? "^" : ".");
+	bool	bInteger	= uDecimal == std::string::npos;
+
+	mIsNegative = false;
+	if (bInteger)
+	{
+		try
+		{
+			int64 a = sAmount.empty() ? 0 : lexical_cast_st<int64>(sAmount);
+			if (a >= 0)
+				uValue = static_cast<uint64>(a);
+			else
+			{
+				uValue = static_cast<uint64>(-a);
+				mIsNegative = true;
+			}
+
+		}
+		catch (...)
+		{
+			Log(lsINFO) << "Bad integer amount: " << sAmount;
+
+			return false;
+		}
+		iOffset	= 0;
+	}
+	else
+	{
+		// Example size decimal size-decimal offset
+		//    ^1      2       0            2     -1
+		// 123^       4       3            1      0
+		//   1^23     4       1            3     -2
+		iOffset	= -int(sAmount.size() - uDecimal - 1);
+
+
+		// Issolate integer and fraction.
+		uint64 uInteger;
+		int64	iInteger	= uDecimal ? lexical_cast_st<uint64>(sAmount.substr(0, uDecimal)) : 0;
+		if (iInteger >= 0)
+			uInteger = static_cast<uint64>(iInteger);
+		else
+		{
+			uInteger = static_cast<uint64>(-iInteger);
+			mIsNegative = true;
+		}
+
+
+		uint64	uFraction	= iOffset ? lexical_cast_st<uint64>(sAmount.substr(uDecimal+1)) : 0;
+
+		// Scale the integer portion to the same offset as the fraction.
+		uValue	= uInteger;
+		for (int i = -iOffset; i--;)
+			uValue	*= 10;
+
+		// Add in the fraction.
+		uValue += uFraction;
+	}
+
+	if (mIsNative)
+	{
+		if (bInteger)
+			iOffset	= -SYSTEM_CURRENCY_PRECISION;
+
+		while (iOffset > -SYSTEM_CURRENCY_PRECISION) {
+			uValue	*= 10;
+			--iOffset;
+		}
+
+		while (iOffset < -SYSTEM_CURRENCY_PRECISION) {
+			uValue	/= 10;
+			++iOffset;
+		}
+
+		mValue		= uValue;
+	}
+	else
+	{
+		mValue		= uValue;
+		mOffset		= iOffset;
+		canonicalize();
+	}
+	return true;
+}
+
 // Not meant to be the ultimate parser.  For use by RPC which is supposed to be sane and trusted.
 // Native has special handling:
 // - Integer values are in base units.
@@ -216,72 +310,7 @@ bool STAmount::setFullValue(const std::string& sAmount, const std::string& sCurr
 		return false;
 	}
 
-	uint64	uValue;
-	int		iOffset;
-	size_t	uDecimal	= sAmount.find_first_of(mIsNative ? "^" : ".");
-	bool	bInteger	= uDecimal == std::string::npos;
-
-	if (bInteger)
-	{
-		try
-		{
-			uValue	= sAmount.empty() ? 0 : boost::lexical_cast<uint64>(sAmount);
-		}
-		catch (...)
-		{
-			Log(lsINFO) << "Bad integer amount: " << sAmount;
-
-			return false;
-		}
-		iOffset	= 0;
-	}
-	else
-	{
-		// Example size decimal size-decimal offset
-		//    ^1      2       0            2     -1
-		// 123^       4       3            1      0
-		//   1^23     4       1            3     -2
-		iOffset	= -int(sAmount.size()-uDecimal-1);
-
-
-		// Issolate integer and fraction.
-		uint64	uInteger	= uDecimal ? boost::lexical_cast<uint64>(sAmount.substr(0, uDecimal)) : 0;
-		uint64	uFraction	= iOffset ? boost::lexical_cast<uint64>(sAmount.substr(uDecimal+1)) : 0;
-
-		// Scale the integer portion to the same offset as the fraction.
-		uValue	= uInteger;
-		for (int i=-iOffset; i--;)
-			uValue	*= 10;
-
-		// Add in the fraction.
-		uValue += uFraction;
-	}
-
-	if (mIsNative)
-	{
-		if (bInteger)
-			iOffset	= -SYSTEM_CURRENCY_PRECISION;
-
-		while (iOffset > -SYSTEM_CURRENCY_PRECISION) {
-			uValue	*= 10;
-			--iOffset;
-		}
-
-		while (iOffset < -SYSTEM_CURRENCY_PRECISION) {
-			uValue	/= 10;
-			++iOffset;
-		}
-
-		mValue		= uValue;
-	}
-	else
-	{
-		mValue		= uValue;
-		mOffset		= iOffset;
-		canonicalize();
-	}
-
-	return true;
+	return setValue(sAmount);
 }
 
 // amount = value * [10 ^ offset]
