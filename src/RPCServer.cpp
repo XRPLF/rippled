@@ -1403,8 +1403,8 @@ Json::Value RPCServer::doProfile(const Json::Value &params)
 
 	boost::posix_time::ptime			ptEnd(boost::posix_time::microsec_clock::local_time());
 	boost::posix_time::time_duration	tdInterval		= ptEnd-ptStart;
-	long								lMilliseconds	= tdInterval.total_milliseconds();
-	float								fRate			= lMilliseconds ? iCount/(lMilliseconds/1000000.0) : 0.0;
+	long								lMicroseconds	= tdInterval.total_microseconds();
+	float								fRate			= lMicroseconds ? iCount/(lMicroseconds/1000000.0) : 0.0;
 
 	Json::Value obj(Json::objectValue);
 
