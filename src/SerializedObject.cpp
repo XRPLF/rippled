@@ -938,12 +938,12 @@ std::auto_ptr<STObject> STObject::parseJson(const Json::Value& object, SField::r
 
 			case STI_VL:
 				if (!value.isString())
-					throw std::runtime_error("Incorrect type");
 				data.push_back(new STVariableLength(field, strUnHex(value.asString())));
 				break;
 
 			case STI_AMOUNT:
-				// WRITEME
+				data.push_back(new STAmount(field, value));
+				break;
 
 			case STI_VECTOR256:
 				// WRITEME
@@ -951,6 +951,7 @@ std::auto_ptr<STObject> STObject::parseJson(const Json::Value& object, SField::r
 			case STI_PATHSET:
 				// WRITEME
 				break;
+
 			case STI_ACCOUNT:
 			{
 				if (!value.isString())

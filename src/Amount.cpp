@@ -3,6 +3,8 @@
 #include <algorithm>
 
 #include <boost/lexical_cast.hpp>
+#include <boost/algorithm/string/split.hpp>
+#include <boost/algorithm/string/classification.hpp>
 #include <boost/test/unit_test.hpp>
 
 #include "Config.h"
@@ -52,6 +54,77 @@ bool STAmount::currencyFromString(uint160& uDstCurrency, const std::string& sCur
 std::string STAmount::getHumanCurrency() const
 {
 	return createHumanCurrency(mCurrency);
+}
+
+STAmount::STAmount(SField::ref n, const Json::Value& v)
+	: SerializedType(n), mValue(0), mOffset(0), mIsNative(false), mIsNegative(false)
+{
+	Json::Value value, currency, issuer;
+
+	if (v.isArray())
+	{
+		value = v["value"];
+		currency = v["currency"];
+		issuer = v["issuer"];
+	}
+	else if (v.isString())
+	{
+		std::string val = v.asString();
+		std::vector<std::string> elements;
+		boost::split(elements, val, boost::is_any_of("\t\n\r ,/"));
+
+		if ((elements.size() < 0) || (elements.size() > 3))
+			throw std::runtime_error("invalid amount string");
+
+		value = elements[0];
+		if (elements.size() > 0)
+			currency = elements[1];
+		if (elements.size() > 1)
+			issuer = elements[2];
+	}
+	else
+		value = v;
+
+	if (value.isInt())
+	{
+		if (value.asInt() >= 0)
+			mValue = value.asInt();
+		else
+		{
+			mValue = -value.asInt();
+			mIsNegative = true;
+		}
+	}
+	else if (value.isUInt())
+		mValue = v.asUInt();
+	else if (value.isDouble())
+	{
+		// WRITEME
+	}
+	else if (value.isString())
+	{ // FIXME: If it has a '.' we have to process it specially!
+		int64 val = lexical_cast_st<int64>(value.asString());
+		if (val >= 0)
+			mValue = val;
+		else
+		{
+			mValue = -val;
+			mIsNegative = true;
+		}
+	}
+	else
+		throw std::runtime_error("invalid amount type");
+
+	if (!currency.isString() || currency.asString().empty() || (currency.asString() == SYSTEM_CURRENCY_CODE))
+	{
+		mIsNative = true;
+		return;
+	}
+
+	// parse currency and issuer
+	// WRITEME
+
+	canonicalize();
 }
 
 std::string STAmount::createHumanCurrency(const uint160& uCurrency)
