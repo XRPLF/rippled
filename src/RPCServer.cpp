@@ -1306,7 +1306,7 @@ Json::Value RPCServer::doPeers(const Json::Value& params)
 // profile 0:offers 1:pass_a 2:account_a 3:currency_offer_a 4:pass_b 5:account_b 6:currency_offer_b 7:<count> 8:[submit]
 // issuer is the offering account
 // the amount of each offer will be 1.
-// --> count: defaults to 100
+// --> count: defaults to 100, does 2 offers per iteration.
 // --> submit: 'submit|true|false': defaults to false
 // Prior to running allow each to have a credit line of what they will be getting from the other account.
 Json::Value RPCServer::doProfile(const Json::Value &params)
@@ -1404,11 +1404,12 @@ Json::Value RPCServer::doProfile(const Json::Value &params)
 	boost::posix_time::ptime			ptEnd(boost::posix_time::microsec_clock::local_time());
 	boost::posix_time::time_duration	tdInterval		= ptEnd-ptStart;
 	long								lMicroseconds	= tdInterval.total_microseconds();
-	float								fRate			= lMicroseconds ? iCount/(lMicroseconds/1000000.0) : 0.0;
+	int									iTransactions	= iCount*2;
+	float								fRate			= lMicroseconds ? iTransactions/(lMicroseconds/1000000.0) : 0.0;
 
 	Json::Value obj(Json::objectValue);
 
-	obj["count"]			= iCount;
+	obj["transactions"]		= iTransactions;
 	obj["submit"]			= bSubmit;
 	obj["start"]			= boost::posix_time::to_simple_string(ptStart);
 	obj["end"]				= boost::posix_time::to_simple_string(ptEnd);
