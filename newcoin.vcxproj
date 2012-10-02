@@ -103,7 +103,6 @@
     <ClCompile Include="src\Config.cpp" />
     <ClCompile Include="src\ConnectionPool.cpp" />
     <ClCompile Include="src\Contract.cpp" />
-    <ClCompile Include="src\Conversion.cpp" />
     <ClCompile Include="src\DBInit.cpp" />
     <ClCompile Include="src\DeterministicKeys.cpp" />
     <ClCompile Include="src\ECIES.cpp" />

@@ -19,6 +19,7 @@ public:
 
 	SField::ref e_field;
 	const SOE_Flags flags;
+
 };
 
 class STObject : public SerializedType

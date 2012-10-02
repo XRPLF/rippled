@@ -66,9 +66,6 @@
     <ClCompile Include="src\ConnectionPool.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\Conversion.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\DBInit.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
