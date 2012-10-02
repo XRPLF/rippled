@@ -1695,11 +1695,11 @@ Json::Value RPCServer::doSend(const Json::Value& params)
 	if (params.size() >= 6)
 		sDstIssuer		= params[5u].asString();
 
-	if (params.size() >= 7)
-		sSrcCurrency	= params[6u].asString();
-
 	if (params.size() >= 8)
-		sSrcIssuer		= params[7u].asString();
+		sSrcCurrency	= params[7u].asString();
+
+	if (params.size() >= 9)
+		sSrcIssuer		= params[8u].asString();
 
 	if (!naSeed.setSeedGeneric(params[0u].asString()))
 	{
@@ -1717,7 +1717,7 @@ Json::Value RPCServer::doSend(const Json::Value& params)
 	{
 		return RPCError(rpcDST_AMT_MALFORMED);
 	}
-	else if (params.size() >= 7 && !saSrcAmountMax.setFullValue(params[5u].asString(), sSrcCurrency, sSrcIssuer))
+	else if (params.size() >= 7 && !saSrcAmountMax.setFullValue(params[6u].asString(), sSrcCurrency, sSrcIssuer))
 	{
 		return RPCError(rpcSRC_AMT_MALFORMED);
 	}
