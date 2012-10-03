@@ -822,6 +822,8 @@ TER TransactionEngine::takeOffers(
 							saPay	= saTakerFunds;
 					STAmount	saSubTakerPaid;
 					STAmount	saSubTakerGot;
+					STAmount	saTakerIssuerFee;
+					STAmount	saOfferIssuerFee;
 
 					Log(lsINFO) << "takeOffers: applyOffer:    saTakerPays: " << saTakerPays.getFullText();
 					Log(lsINFO) << "takeOffers: applyOffer:    saTakerPaid: " << saTakerPaid.getFullText();
@@ -832,20 +834,10 @@ TER TransactionEngine::takeOffers(
 					Log(lsINFO) << "takeOffers: applyOffer:    saOfferGets: " << saOfferGets.getFullText();
 					Log(lsINFO) << "takeOffers: applyOffer:    saTakerPays: " << saTakerPays.getFullText();
 					Log(lsINFO) << "takeOffers: applyOffer:    saTakerGets: " << saTakerGets.getFullText();
-#if 0
-					STAmount	saTakerPaysRate	=
-						uTakerPaysAccountID == uTakerAccountID			// Taker is issuing, no fee.
-							|| uTakerPaysAccountID == uOfferAccountID	// Taker is redeeming, no fee.
-							? 0.0
-							: getRate(uTakerPaysAccountID);
 
-					STAmount	saOfferPaysRate =
-						uTakerGetsAccountID == uTakerGetsAccountID		// Offerer is redeeming, no fee.
-							|| uTakerGetsAccountID == uOfferAccountID	// Offerer is issuing, no fee.
-							? 0.0
-							: getRate(uTakerGetsAccountID);
-#endif
 					bool	bOfferDelete	= STAmount::applyOffer(
+						mNodes.rippleTransferRate(uTakerAccountID, uOfferOwnerID, uTakerPaysAccountID),
+						mNodes.rippleTransferRate(uOfferOwnerID, uTakerAccountID, uTakerGetsAccountID),
 						saOfferFunds,
 						saPay,				// Driver XXX need to account for fees.
 						saOfferPays,
@@ -853,7 +845,9 @@ TER TransactionEngine::takeOffers(
 						saTakerPays,
 						saTakerGets,
 						saSubTakerPaid,
-						saSubTakerGot);
+						saSubTakerGot,
+						saTakerIssuerFee,
+						saOfferIssuerFee);
 
 					Log(lsINFO) << "takeOffers: applyOffer: saSubTakerPaid: " << saSubTakerPaid.getFullText();
 					Log(lsINFO) << "takeOffers: applyOffer:  saSubTakerGot: " << saSubTakerGot.getFullText();
@@ -884,16 +878,20 @@ TER TransactionEngine::takeOffers(
 					}
 
 					// Offer owner pays taker.
-					saSubTakerGot.setIssuer(uTakerGetsAccountID);	// XXX Move this earlier?
+					// saSubTakerGot.setIssuer(uTakerGetsAccountID);	// XXX Move this earlier?
+					assert(!!saSubTakerGot.getIssuer());
 
 					mNodes.accountSend(uOfferOwnerID, uTakerAccountID, saSubTakerGot);
+					mNodes.accountSend(uOfferOwnerID, uTakerGetsAccountID, saOfferIssuerFee);
 
 					saTakerGot	+= saSubTakerGot;
 
 					// Taker pays offer owner.
-					saSubTakerPaid.setIssuer(uTakerPaysAccountID);
+					//	saSubTakerPaid.setIssuer(uTakerPaysAccountID);
+					assert(!!saSubTakerPaid.getIssuer());
 
 					mNodes.accountSend(uTakerAccountID, uOfferOwnerID, saSubTakerPaid);
+					mNodes.accountSend(uTakerAccountID, uTakerPaysAccountID, saTakerIssuerFee);
 
 					saTakerPaid	+= saSubTakerPaid;
 				}

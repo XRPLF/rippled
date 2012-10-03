@@ -875,6 +875,15 @@ uint32 LedgerEntrySet::rippleTransferRate(const uint160& uIssuerID)
 	return uQuality;
 }
 
+uint32 LedgerEntrySet::rippleTransferRate(const uint160& uSenderID, const uint160& uReceiverID, const uint160& uIssuerID)
+{
+	uint32			uQuality;
+
+	return uSenderID == uIssuerID || uReceiverID == uIssuerID
+			? QUALITY_ONE
+			: rippleTransferRate(uIssuerID);
+}
+
 // XXX Might not need this, might store in nodes on calc reverse.
 uint32 LedgerEntrySet::rippleQualityIn(const uint160& uToAccountID, const uint160& uFromAccountID, const uint160& uCurrencyID, SField::ref sfLow, SField::ref sfHigh)
 {

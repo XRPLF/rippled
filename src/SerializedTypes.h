@@ -343,10 +343,12 @@ public:
 	// Someone is offering X for Y, I try to pay Z, how much do I get?
 	// And what's left of the offer? And how much do I actually pay?
 	static bool applyOffer(
+		const uint32 uTakerPaysRate, const uint32 uOfferPaysRate,
 		const STAmount& saOfferFunds, const STAmount& saTakerFunds,
 		const STAmount& saOfferPays, const STAmount& saOfferGets,
 		const STAmount& saTakerPays, const STAmount& saTakerGets,
-		STAmount& saTakerPaid, STAmount& saTakerGot);
+		STAmount& saTakerPaid, STAmount& saTakerGot,
+		STAmount& saTakerIssuerFee, STAmount& saOfferIssuerFee);
 
 	// Someone is offering X for Y, I need Z, how much do I pay
 	static STAmount getPay(const STAmount& offerOut, const STAmount& offerIn, const STAmount& needed);
