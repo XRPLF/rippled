@@ -365,8 +365,8 @@ Json::Value STPath::getJson(int) const
 		Json::Value elem(Json::objectValue);
 		int			iType	= it.getNodeType();
 
-		elem["type"]		= it.getNodeType();
-		elem["type_hex"]	= strHex(it.getNodeType());
+		elem["type"]		= iType;
+		elem["type_hex"]	= strHex(iType);
 
 		if (iType & STPathElement::typeAccount)
 			elem["account"]		= NewcoinAddress::createHumanAccountID(it.getAccountID());

@@ -65,11 +65,15 @@ public:
 	std::string getText() const;
 	virtual Json::Value getJson(int options) const;
 
-	int addObject(const SerializedType& t) { mData.push_back(t.clone()); return mData.size() - 1; }
-	int giveObject(std::auto_ptr<SerializedType> t) { mData.push_back(t); return mData.size() - 1; }
-	int giveObject(SerializedType* t) { mData.push_back(t); return mData.size() - 1; }
+	int addObject(const SerializedType& t)			{ mData.push_back(t.clone()); return mData.size() - 1; }
+	int giveObject(std::auto_ptr<SerializedType> t)	{ mData.push_back(t); return mData.size() - 1; }
+	int giveObject(SerializedType* t)				{ mData.push_back(t); return mData.size() - 1; }
 	const boost::ptr_vector<SerializedType>& peekData() const { return mData; }
-	boost::ptr_vector<SerializedType>& peekData() { return mData; }
+	boost::ptr_vector<SerializedType>& peekData() 	{ return mData; }
+	SerializedType& front() 						{ return mData.front(); }
+	const SerializedType& front() const				{ return mData.front(); }
+	SerializedType& back()							{ return mData.back(); }
+	const SerializedType& back() const				{ return mData.back(); }
 
 	int getCount() const { return mData.size(); }
 
@@ -189,6 +193,10 @@ public:
 	reverse_iterator rend()							{ return value.rend(); }
 	const_reverse_iterator rend() const				{ return value.rend(); }
 	iterator erase(iterator pos)					{ return value.erase(pos); }
+	STObject& front()								{ return value.front(); }
+	const STObject& front() const					{ return value.front(); }
+	STObject& back()								{ return value.back(); }
+	const STObject& back() const					{ return value.back(); }
 	void pop_back()									{ value.pop_back(); }
 	bool empty() const								{ return value.empty(); }
 	void clear()									{ value.clear(); }
