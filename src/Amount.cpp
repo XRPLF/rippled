@@ -106,7 +106,7 @@ STAmount::STAmount(SField::ref n, const Json::Value& v)
 	else if (value.isUInt())
 		mValue = v.asUInt();
 	else if (value.isString())
-	{ // FIXME: If it has a '.' we have to process it specially!
+	{
 		if (mIsNative)
 		{
 			int64 val = lexical_cast_st<int64>(value.asString());
@@ -127,8 +127,23 @@ STAmount::STAmount(SField::ref n, const Json::Value& v)
 	if (mIsNative)
 		return;
 
-	// parse currency and issuer
-	// WRITEME
+	if (!currencyFromString(mCurrency, currency.asString()))
+		throw std::runtime_error("invalid currency");
+
+	if (!issuer.isString())
+		throw std::runtime_error("invalid issuer");
+
+	if (issuer.size() == (160/4))
+		mIssuer.SetHex(issuer.asString());
+	else
+	{
+		NewcoinAddress is;
+		if(!is.setAccountID(issuer.asString()))
+			throw std::runtime_error("invalid issuer");
+		mIssuer = is.getAccountID();
+	}
+	if (mIssuer.isZero())
+		throw std::runtime_error("invalid issuer");
 
 	canonicalize();
 }
