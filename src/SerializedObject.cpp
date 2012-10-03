@@ -946,10 +946,77 @@ std::auto_ptr<STObject> STObject::parseJson(const Json::Value& object, SField::r
 				break;
 
 			case STI_VECTOR256:
-				// WRITEME
+				if (!value.isArray())
+					throw std::runtime_error("Incorrect type");
+				{
+					data.push_back(new STVector256(field));
+					STVector256* tail = dynamic_cast<STVector256*>(&data.back());
+					assert(tail);
+					for (Json::UInt i = 0; !object.isValidIndex(i); ++i)
+					{
+						uint256 s;
+						s.SetHex(object[i].asString());
+						tail->addValue(s);
+					}
+				}
+				break;
 
 			case STI_PATHSET:
-				// WRITEME
+				if (!value.isArray())
+					throw std::runtime_error("Path set must be array");
+				{
+					data.push_back(new STPathSet(field));
+					STPathSet* tail = dynamic_cast<STPathSet*>(&data.back());
+					assert(tail);
+					for (Json::UInt i = 0; !object.isValidIndex(i); ++i)
+					{
+						STPath p;
+						if (!object[i].isArray())
+							throw std::runtime_error("Path must be array");
+						for (Json::UInt j = 0; !object[i].isValidIndex(j); ++j)
+						{ // each element in this path has some combination of account, currency, or issuer
+
+							Json::Value pathEl = object[i][j];
+							if (!pathEl.isObject())
+								throw std::runtime_error("Path elements must be objects");
+							const Json::Value& account =	pathEl["account"];
+							const Json::Value& currency =	pathEl["currency"];
+							const Json::Value& issuer =		pathEl["issuer"];
+
+							uint160 uAccount, uCurrency, uIssuer;
+							bool hasCurrency;
+							if (!account.isNull())
+							{ // human account id
+								if (!account.isString())
+									throw std::runtime_error("path element accounts must be strings");
+								std::string strValue = account.asString();
+								if (value.size() == 40) // 160-bit hex account value
+									uAccount.SetHex(strvalue);
+								{
+									NewcoinAddress a;
+									if (!a.setAccountPublic(strValue))
+										throw std::runtime_error("Account in path element invalid");
+									uAccount = a.getAccountID();
+								}
+							}
+							if (!currency.isNull())
+							{ // human currency
+								if (!currency.isString())
+									throw std::runtime_error("path element currencies must be strings");
+								hasCurrency = true;
+								// WRITEME
+							}
+							if (!issuer.isNull())
+							{ // human account id
+								if (!issuer.isString())
+									throw std::runtime_error("path element issuers must be strings");
+								// WRITEME
+							}
+							p.addElement(STPathElement(uAccount, uCurrency, uIssuer, hasCurrency));
+						}
+						tail->addPath(p);
+					}
+				}
 				break;
 
 			case STI_ACCOUNT:
@@ -985,7 +1052,15 @@ std::auto_ptr<STObject> STObject::parseJson(const Json::Value& object, SField::r
 				break;
 
 			case STI_ARRAY:
-				// WRITEME
+				if (!value.isArray())
+					throw std::runtime_error("Inner value is not an array");
+				{
+					data.push_back(new STArray(field));
+					STArray* tail = dynamic_cast<STArray*>(&data.back());
+					assert(tail);
+					for (Json::UInt i = 0; !object.isValidIndex(i); ++i)
+						tail->push_back(*STObject::parseJson(object[i], sfGeneric, depth + 1));
+				}
 
 			default:
 				throw std::runtime_error("Invalid field type");

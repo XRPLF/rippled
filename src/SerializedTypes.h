@@ -537,12 +537,13 @@ protected:
 	uint160 mIssuerID;
 
 public:
-	STPathElement(const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID)
-		: mAccountID(uAccountID), mCurrencyID(uCurrencyID), mIssuerID(uIssuerID)
+	STPathElement(const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID,
+		bool forceCurrency = false)
+			: mAccountID(uAccountID), mCurrencyID(uCurrencyID), mIssuerID(uIssuerID)
 	{
 		mType	=
 			(uAccountID.isZero() ? 0 : STPathElement::typeAccount)
-			| (uCurrencyID.isZero() ? 0 : STPathElement::typeCurrency)
+			| ((uCurrencyID.isZero() && !forceCurrency) ? 0 : STPathElement::typeCurrency)
 			| (uIssuerID.isZero() ? 0 : STPathElement::typeIssuer);
 	}
 
@@ -720,12 +721,11 @@ public:
 	std::vector<uint256>& peekValue() { return mValue; }
 	virtual bool isEquivalent(const SerializedType& t) const;
 
-	std::vector<uint256> getValue() const { return mValue; }
-
-	bool isEmpty() const { return mValue.empty(); }
-
-	void setValue(const STVector256& v) { mValue = v.mValue; }
-	void setValue(const std::vector<uint256>& v) { mValue = v; }
+	std::vector<uint256> getValue() const			{ return mValue; }
+	bool isEmpty() const							{ return mValue.empty(); }
+	void setValue(const STVector256& v)				{ mValue = v.mValue; }
+	void setValue(const std::vector<uint256>& v)	{ mValue = v; }
+	void addValue(const uint256& v)					{ mValue.push_back(v); }
 
 	Json::Value getJson(int) const;
 };

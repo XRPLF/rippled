@@ -154,7 +154,7 @@ void Pathfinder::addOptions(PathOption::pointer tail)
 			{  // we have a ripple line from the tail to somewhere else
 				PathOption::pointer pathOption(new PathOption(tail));
 
-				STPathElement ele(line->getAccountIDPeer().getAccountID(), uint160(),uint160());
+				STPathElement ele(line->getAccountIDPeer().getAccountID(), uint160(), uint160());
 				pathOption->mPath.addElement(ele);
 
 
