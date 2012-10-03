@@ -991,7 +991,7 @@ std::auto_ptr<STObject> STObject::parseJson(const Json::Value& object, SField::r
 									throw std::runtime_error("path element accounts must be strings");
 								std::string strValue = account.asString();
 								if (value.size() == 40) // 160-bit hex account value
-									uAccount.SetHex(strvalue);
+									uAccount.SetHex(strValue);
 								{
 									NewcoinAddress a;
 									if (!a.setAccountPublic(strValue))
