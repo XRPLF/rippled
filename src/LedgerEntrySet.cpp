@@ -5,6 +5,8 @@
 
 #include "Log.h"
 
+// #define META_DEBUG
+
 // Small for testing, should likely be 32 or 64.
 #define DIR_NODE_MAX		2
 
@@ -294,7 +296,9 @@ SLE::pointer LedgerEntrySet::getForMod(const uint256& node, Ledger::ref ledger,
 bool LedgerEntrySet::threadTx(const NewcoinAddress& threadTo, Ledger::ref ledger,
 	boost::unordered_map<uint256, SLE::pointer>& newMods)
 {
+#ifdef META_DEBUG
 	Log(lsTRACE) << "Thread to " << threadTo.getAccountID();
+#endif
 	SLE::pointer sle = getForMod(Ledger::getAccountRootIndex(threadTo.getAccountID()), ledger, newMods);
 	if (!sle)
 	{
@@ -321,12 +325,16 @@ bool LedgerEntrySet::threadOwners(SLE::ref node, Ledger::ref ledger, boost::unor
 { // thread new or modified node to owner or owners
 	if (node->hasOneOwner()) // thread to owner's account
 	{
+#ifdef META_DEBUG
 		Log(lsTRACE) << "Thread to single owner";
+#endif
 		return threadTx(node->getOwner(), ledger, newMods);
 	}
 	else if (node->hasTwoOwners()) // thread to owner's accounts]
 	{
+#ifdef META_DEBUG
 		Log(lsTRACE) << "Thread to two owners";
+#endif
 		return
 			threadTx(node->getFirstOwner(), ledger, newMods) &&
 			threadTx(node->getSecondOwner(), ledger, newMods);
@@ -349,17 +357,23 @@ void LedgerEntrySet::calcRawMeta(Serializer& s)
 		switch (it->second.mAction)
 		{
 			case taaMODIFY:
+#ifdef META_DEBUG
 				Log(lsTRACE) << "Modified Node " << it->first;
+#endif
 				nType = TMNModifiedNode;
 				break;
 
 			case taaDELETE:
+#ifdef META_DEBUG
 				Log(lsTRACE) << "Deleted Node " << it->first;
+#endif
 				nType = TMNDeletedNode;
 				break;
 
 			case taaCREATE:
+#ifdef META_DEBUG
 				Log(lsTRACE) << "Created Node " << it->first;
+#endif
 				nType = TMNCreatedNode;
 				break;
 
@@ -420,10 +434,7 @@ void LedgerEntrySet::calcRawMeta(Serializer& s)
 		if ((nType == TMNCreatedNode) || (nType == TMNModifiedNode))
 		{
 			if (curNode->isThreadedType()) // always thread to self
-			{
-				Log(lsTRACE) << "Thread to self";
 				threadTx(curNode, mLedger, newMod);
-			}
 		}
 
 		if (nType == TMNModifiedNode)
@@ -454,7 +465,7 @@ void LedgerEntrySet::calcRawMeta(Serializer& s)
 			it != end; ++it)
 		entryModify(it->second);
 
-#ifdef DEBUG
+#ifdef META_DEBUG
 	Log(lsINFO) << "Metadata:" << mSet.getJson(0);
 #endif
 

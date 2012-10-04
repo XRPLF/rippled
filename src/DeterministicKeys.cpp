@@ -5,6 +5,8 @@
 #include <openssl/pem.h>
 #include <openssl/err.h>
 
+// #define EC_DEBUG
+
 // Functions to add CKey support for deterministic EC keys
 
 #include "Serializer.h"
@@ -107,7 +109,9 @@ EC_KEY* CKey::GenerateRootDeterministicKey(const uint128& seed)
 
 	BN_CTX_free(ctx);
 
-	assert(EC_KEY_check_key(pkey)==1);
+#ifdef EC_DEBUG
+	assert(EC_KEY_check_key(pkey)==1); // CAUTION: This check is *very* expensive
+#endif
 	return pkey;
 }
 
