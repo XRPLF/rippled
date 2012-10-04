@@ -248,17 +248,14 @@
     <None Include="html\newcoin.html">
       <SubType>Designer</SubType>
     </None>
-    <None Include="Issues" />
-    <None Include="Makefile" />
     <None Include="newcoind.cfg" />
-    <None Include="notes.txt" />
     <CustomBuild Include="src\newcoin.proto">
       <FileType>Document</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\protoc-2.4.1-win32\protoc -I=..\newcoin\src --cpp_out=..\newcoin\obj\src  ..\newcoin\src\newcoin.proto</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">obj\src\newcoin.pb.h</Outputs>
     </CustomBuild>
+    <None Include="README" />
     <None Include="SConstruct" />
-    <None Include="todo.txt" />
     <None Include="validators.txt" />
     <None Include="wallet.xml" />
   </ItemGroup>
