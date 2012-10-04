@@ -2729,7 +2729,13 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 	}
 	else
 	{
-		return (this->*(commandsA[i].dfpFunc))(params);
+		try {
+			return (this->*(commandsA[i].dfpFunc))(params);
+		}
+		catch (...)
+		{
+			return RPCError(rpcINTERNAL);
+		}
 	}
 }
 
