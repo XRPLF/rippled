@@ -25,7 +25,7 @@
 
 NetworkOPs::NetworkOPs(boost::asio::io_service& io_service, LedgerMaster* pLedgerMaster) :
 	mMode(omDISCONNECTED),mNetTimer(io_service), mLedgerMaster(pLedgerMaster), mCloseTimeOffset(0),
-	mLastCloseProposers(0), mLastCloseConvergeTime(LEDGER_IDLE_INTERVAL), mLastValidationTime(0)
+	mLastCloseProposers(0), mLastCloseConvergeTime(1000 * LEDGER_IDLE_INTERVAL), mLastValidationTime(0)
 {
 }
 
@@ -114,7 +114,18 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 	}
 
 	TER r = mLedgerMaster->doTransaction(*trans->getSTransaction(), tapOPEN_LEDGER);
-	if (r == tefFAILURE) throw Fault(IO_ERROR);
+
+#ifdef DEBUG
+	if (r != tesSUCCESS)
+	{
+		std::string token, human;
+		if (transResultInfo(r, token, human))
+			Log(lsINFO) << "TransactionResult: " << token << ": " << human;
+	}
+#endif
+
+	if (r == tefFAILURE)
+		throw Fault(IO_ERROR);
 
 	if (r == terPRE_SEQ)
 	{ // transaction should be held
@@ -150,7 +161,8 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 		tx.set_receivetimestamp(getNetworkTimeNC());
 
 		PackedMessage::pointer packet = boost::make_shared<PackedMessage>(tx, newcoin::mtTRANSACTION);
-		theApp->getConnectionPool().relayMessage(source, packet);
+		int sentTo = theApp->getConnectionPool().relayMessage(source, packet);
+		Log(lsINFO) << "Transaction relayed to " << sentTo << " node(s)";
 
 		return trans;
 	}
@@ -629,6 +641,24 @@ int NetworkOPs::beginConsensus(const uint256& networkClosed, Ledger::pointer clo
 	return mConsensus->startup();
 }
 
+bool NetworkOPs::haveConsensusObject()
+{
+	if (mConsensus)
+		return true;
+	if (mMode != omFULL)
+		return false;
+
+	uint256 networkClosed;
+	std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
+	bool ledgerChange = checkLastClosedLedger(peerList, networkClosed);
+	if (!ledgerChange)
+	{
+		Log(lsWARNING) << "Beginning consensus due to peer action";
+		beginConsensus(networkClosed, theApp->getMasterLedger().getCurrentLedger());
+	}
+	return mConsensus;
+}
+
 // <-- bool: true to relay
 bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash, const uint256& prevLedger,
 	uint32 closeTime, const std::string& pubKey, const std::string& signature, const NewcoinAddress& nodePublic)
@@ -651,18 +681,7 @@ bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash, cons
 
 	NewcoinAddress naPeerPublic = NewcoinAddress::createNodePublic(strCopy(pubKey));
 
-	if ((!mConsensus) && (mMode == omFULL))
-	{
-		uint256 networkClosed;
-		std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
-		bool ledgerChange = checkLastClosedLedger(peerList, networkClosed);
-		if (!ledgerChange)
-		{
-			Log(lsWARNING) << "Beginning consensus due to proposal from peer";
-			beginConsensus(networkClosed, theApp->getMasterLedger().getCurrentLedger());
-		}
-	}
-	if (!mConsensus)
+	if (!haveConsensusObject())
 	{
 		Log(lsINFO) << "Received proposal outside consensus window";
 		return mMode != omFULL;
@@ -704,7 +723,7 @@ bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash, cons
 
 SHAMap::pointer NetworkOPs::getTXMap(const uint256& hash)
 {
-	if (!mConsensus)
+	if (!haveConsensusObject())
 		return SHAMap::pointer();
 	return mConsensus->getTransactionTree(hash, false);
 }
@@ -712,21 +731,24 @@ SHAMap::pointer NetworkOPs::getTXMap(const uint256& hash)
 bool NetworkOPs::gotTXData(const boost::shared_ptr<Peer>& peer, const uint256& hash,
 	const std::list<SHAMapNode>& nodeIDs, const std::list< std::vector<unsigned char> >& nodeData)
 {
-	if (!mConsensus)
+	if (!haveConsensusObject())
 		return false;
 	return mConsensus->peerGaveNodes(peer, hash, nodeIDs, nodeData);
 }
 
 bool NetworkOPs::hasTXSet(const boost::shared_ptr<Peer>& peer, const uint256& set, newcoin::TxSetStatus status)
 {
-	if (!mConsensus)
+	if (!haveConsensusObject())
+	{
+		Log(lsINFO) << "Peer has TX set, not during consensus";
 		return false;
+	}
 	return mConsensus->peerHasSet(peer, set, status);
 }
 
 void NetworkOPs::mapComplete(const uint256& hash, SHAMap::ref map)
 {
-	if (mConsensus)
+	if (!haveConsensusObject())
 		mConsensus->mapComplete(hash, map, true);
 }
 
@@ -831,6 +853,11 @@ Json::Value NetworkOPs::getServerInfo()
 
 	if (!theConfig.VALIDATION_SEED.isValid()) info["serverState"] = "none";
 	else info["validationPKey"] = NewcoinAddress::createNodePublic(theConfig.VALIDATION_SEED).humanNodePublic();
+
+	Json::Value lastClose = Json::objectValue;
+	lastClose["proposers"] = theApp->getOPs().getPreviousProposers();
+	lastClose["convergeTime"] = theApp->getOPs().getPreviousConvergeTime();
+	info["lastClose"] = lastClose;
 
 	if (mConsensus)
 		info["consensus"] = mConsensus->getJson();

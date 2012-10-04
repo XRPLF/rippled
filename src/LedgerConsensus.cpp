@@ -50,9 +50,13 @@ boost::weak_ptr<PeerSet> TransactionAcquire::pmDowncast()
 void TransactionAcquire::trigger(Peer::ref peer, bool timer)
 {
 	if (mComplete || mFailed)
+	{
+		Log(lsINFO) << "complete or failed";
 		return;
+	}
 	if (!mHaveRoot)
 	{
+		Log(lsINFO) << "have no root";
 		newcoin::TMGetLedger tmGL;
 		tmGL.set_ledgerhash(mHash.begin(), mHash.size());
 		tmGL.set_itype(newcoin::liTS_CANDIDATE);

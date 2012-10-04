@@ -937,7 +937,6 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 	if (packet.itype() == newcoin::liTS_CANDIDATE)
 	{ // Request is  for a transaction candidate set
 		Log(lsINFO) << "Received request for TX candidate set data " << getIP();
-		Ledger::pointer ledger;
 		if ((!packet.has_ledgerhash() || packet.ledgerhash().size() != 32))
 		{
 			punishPeer(PP_INVALID_REQUEST);
@@ -948,7 +947,7 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 		map = theApp->getOPs().getTXMap(txHash);
 		if (!map)
 		{
-			Log(lsERROR) << "We do not hav the map our peer wants";
+			Log(lsERROR) << "We do not have the map our peer wants";
 			punishPeer(PP_INVALID_REQUEST);
 			return;
 		}

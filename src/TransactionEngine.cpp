@@ -345,11 +345,7 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 				terResult	= terPRE_SEQ;
 			}
 			else if (mLedger->hasTransaction(txID))
-			{
-				Log(lsWARNING) << "applyTransaction: duplicate sequence number";
-
 				terResult	= tefALREADY;
-			}
 			else
 			{
 				Log(lsWARNING) << "applyTransaction: past sequence number";

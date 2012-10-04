@@ -58,7 +58,7 @@ public:
 	void start();
 
 	// Send message to network.
-	void relayMessage(Peer* fromPeer, const PackedMessage::pointer& msg);
+	int relayMessage(Peer* fromPeer, const PackedMessage::pointer& msg);
 
 	// Manual connection request.
 	// Queue for immediate scanning.
