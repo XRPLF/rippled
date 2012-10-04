@@ -761,17 +761,44 @@ Json::Value STVector256::getJson(int options) const
 
 std::string STArray::getFullText() const
 {
-	return "WRITEME";
+	std::string r = "[";
+
+	bool first = true;
+	BOOST_FOREACH(const STObject& o, value)
+	{
+		if (!first)
+			r += ",";
+		r += o.getFullText();
+		first = false;
+	}
+
+	r += "]";
+	return r;
 }
 
 std::string STArray::getText() const
 {
-	return "WRITEME";
+	std::string r = "[";
+
+	bool first = true;
+	BOOST_FOREACH(const STObject& o, value)
+	{
+		if (!first)
+			r += ",";
+		r += o.getText();
+		first = false;
+	}
+
+	r += "]";
+	return r;
 }
 
-Json::Value STArray::getJson(int) const
+Json::Value STArray::getJson(int p) const
 {
-	return Json::Value("WRITEME");
+	Json::Value v = Json::arrayValue;
+	BOOST_FOREACH(const STObject& o, value)
+		v.append(o.getJson(p));
+	return v;
 }
 
 void STArray::add(Serializer& s) const
@@ -1004,13 +1031,24 @@ std::auto_ptr<STObject> STObject::parseJson(const Json::Value& object, SField::r
 								if (!currency.isString())
 									throw std::runtime_error("path element currencies must be strings");
 								hasCurrency = true;
-								// WRITEME
+								if (currency.asString().size() == 40)
+									uCurrency.SetHex(currency.asString());
+								else if (!STAmount::currencyFromString(uCurrency, currency.asString()))
+									throw std::runtime_error("invalid currency");
 							}
 							if (!issuer.isNull())
 							{ // human account id
 								if (!issuer.isString())
 									throw std::runtime_error("path element issuers must be strings");
-								// WRITEME
+								if (issuer.asString().size() == 40)
+									uIssuer.SetHex(issuer.asString());
+								else
+								{
+									NewcoinAddress a;
+									if (!a.setAccountPublic(issuer.asString()))
+										throw std::runtime_error("path element issuer invalid");
+									uIssuer = a.getAccountID();
+								}
 							}
 							p.addElement(STPathElement(uAccount, uCurrency, uIssuer, hasCurrency));
 						}
