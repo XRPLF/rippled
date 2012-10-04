@@ -14,6 +14,7 @@ const char *TxnDBInit[] = {
 		LedgerSeq	BIGINT UNSIGNED,			\
 		Status		CHARACTER(1),				\
 		RawTxn		BLOB						\
+		TxnMeta		BLOB						\
 	);",
 	"CREATE TABLE PubKeys (						\
 		ID			CHARACTER(35) PRIMARY KEY,	\
@@ -56,7 +57,7 @@ const char *LedgerDBInit[] = {
 		LedgerHash	CHARACTER(64),					\
 		NodePubKey	CHARACTER(56),					\
 		Flags		BIGINT UNSIGNED,				\
-		CloseTime	BIGINT UNSIGNED,				\
+		SignTime	BIGINT UNSIGNED,				\
 		Signature	BLOB							\
 	);",
 	"CREATE INDEX ValidationByHash ON				\

@@ -6,6 +6,12 @@
 #include <boost/thread/recursive_mutex.hpp>
 #include <boost/filesystem.hpp>
 
+// Ensure that we don't get value.h without writer.h
+#include "../json/json.h"
+
+#include "types.h"
+#include <limits>
+
 enum LogSeverity
 {
 	lsTRACE		= 0,
@@ -30,6 +36,9 @@ protected:
 	mutable std::ostringstream oss;
 	LogSeverity mSeverity;
 
+	static boost::filesystem::path *pathToLog;
+	static uint32 logRotateCounter;
+
 public:
 	Log(LogSeverity s) : mSeverity(s)
 	{ ; }
@@ -48,6 +57,7 @@ public:
 
 	static void setMinSeverity(LogSeverity);
 	static void setLogFile(boost::filesystem::path);
+	static std::string rotateLog(void);
 };
 
 #endif

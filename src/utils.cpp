@@ -156,6 +156,25 @@ bool parseIpPort(const std::string& strSource, std::string& strIP, int& iPort)
 	return bValid;
 }
 
+//
+// Quality parsing
+// - integers as is.
+// - floats multiplied by a billion
+bool parseQuality(const std::string& strSource, uint32& uQuality)
+{
+	uQuality	= lexical_cast_s<uint32>(strSource);
+
+	if (!uQuality)
+	{
+		float	fQuality	= lexical_cast_s<float>(strSource);
+
+		if (fQuality)
+			uQuality	= (uint32)(QUALITY_ONE*fQuality);
+	}
+
+	return !!uQuality;
+}
+
 /*
 void intIPtoStr(int ip,std::string& retStr)
 {

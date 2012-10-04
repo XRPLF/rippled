@@ -26,8 +26,8 @@ class LedgerMaster
 	std::map<uint256, Transaction::pointer> mHeldTransactionsByID;
 
 	void applyFutureTransactions(uint32 ledgerIndex);
-	bool isValidTransaction(Transaction::pointer trans);
-	bool isTransactionOnFutureList(Transaction::pointer trans);
+	bool isValidTransaction(const Transaction::pointer& trans);
+	bool isTransactionOnFutureList(const Transaction::pointer& trans);
 
 public:
 
@@ -43,14 +43,15 @@ public:
 	// The finalized ledger is the last closed/accepted ledger
 	Ledger::pointer getClosedLedger()	{ return mFinalizedLedger; }
 
-	TransactionEngineResult doTransaction(const SerializedTransaction& txn, uint32 targetLedger,
-		TransactionEngineParams params);
+	void runStandAlone()				{ mFinalizedLedger = mCurrentLedger; }
 
-	void pushLedger(Ledger::pointer newLedger);
-	void pushLedger(Ledger::pointer newLCL, Ledger::pointer newOL);
-	void storeLedger(Ledger::pointer);
+	TER doTransaction(const SerializedTransaction& txn, TransactionEngineParams params);
 
-	void switchLedgers(Ledger::pointer lastClosed, Ledger::pointer newCurrent);
+	void pushLedger(Ledger::ref newLedger);
+	void pushLedger(Ledger::ref newLCL, Ledger::ref newOL);
+	void storeLedger(Ledger::ref);
+
+	void switchLedgers(Ledger::ref lastClosed, Ledger::ref newCurrent);
 
 	Ledger::pointer closeLedger();
 
@@ -65,14 +66,19 @@ public:
 
 	Ledger::pointer getLedgerByHash(const uint256& hash)
 	{
+		if (!hash)
+			return mCurrentLedger;
+
 		if (mCurrentLedger && (mCurrentLedger->getHash() == hash))
 			return mCurrentLedger;
+
 		if (mFinalizedLedger && (mFinalizedLedger->getHash() == hash))
 			return mFinalizedLedger;
+
 		return mLedgerHistory.getLedgerByHash(hash);
 	}
 
-	bool addHeldTransaction(Transaction::pointer trans);
+	bool addHeldTransaction(const Transaction::pointer& trans);
 };
 
 #endif

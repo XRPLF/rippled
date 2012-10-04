@@ -18,7 +18,7 @@ public:
 	PubKeyCache() { ; }
 
 	CKey::pointer locate(const NewcoinAddress& id);
-	CKey::pointer store(const NewcoinAddress& id, CKey::pointer key);
+	CKey::pointer store(const NewcoinAddress& id, const CKey::pointer& key);
 	void clear();
 };
 

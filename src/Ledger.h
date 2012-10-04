@@ -11,6 +11,7 @@
 #include "../json/value.h"
 
 #include "Transaction.h"
+#include "TransactionMeta.h"
 #include "AccountState.h"
 #include "RippleState.h"
 #include "NicknameState.h"
@@ -41,7 +42,8 @@ class Ledger : public boost::enable_shared_from_this<Ledger>
 { // The basic Ledger structure, can be opened, closed, or synching
 	friend class TransactionEngine;
 public:
-	typedef boost::shared_ptr<Ledger> pointer;
+	typedef boost::shared_ptr<Ledger>			pointer;
+	typedef const boost::shared_ptr<Ledger>&	ref;
 
 	enum TransResult
 	{
@@ -55,7 +57,7 @@ public:
 		TR_PASTASEQ	= 6,	// account is past this transaction
 		TR_PREASEQ	= 7,	// account is missing transactions before this
 		TR_BADLSEQ	= 8,	// ledger too early
-		TR_TOOSMALL = 9, // amount is less than Tx fee
+		TR_TOOSMALL = 9, 	// amount is less than Tx fee
 	};
 
 	// ledger close flags
@@ -81,8 +83,6 @@ private:
 
 protected:
 
-	bool addTransaction(Transaction::pointer);
-	bool addTransaction(const uint256& id, const Serializer& txn);
 
 	static Ledger::pointer getSQL(const std::string& sqlStatement);
 
@@ -115,7 +115,7 @@ public:
 	void disarmDirty()	{ mTransactionMap->disarmDirty();	mAccountStateMap->disarmDirty(); }
 
 	// This ledger has closed, will never be accepted, and is accepting
-	// new transactions to be re-repocessed when do accept a new last-closed ledger
+	// new transactions to be re-reprocessed when do accept a new last-closed ledger
 	void bumpSeq()		{ mClosed = true; mLedgerSeq++; }
 
 	// ledger signature operations
@@ -151,17 +151,20 @@ public:
 	bool isAcquiringAS(void);
 
 	// Transaction Functions
+	bool addTransaction(const uint256& id, const Serializer& txn);
+	bool addTransaction(const uint256& id, const Serializer& txn, const Serializer& metaData);
 	bool hasTransaction(const uint256& TransID) const { return mTransactionMap->hasItem(TransID); }
 	Transaction::pointer getTransaction(const uint256& transID) const;
+	bool getTransaction(const uint256& transID, Transaction::pointer& txn, TransactionMetaSet::pointer& txMeta);
 
 	// high-level functions
 	AccountState::pointer getAccountState(const NewcoinAddress& acctID);
-	LedgerStateParms writeBack(LedgerStateParms parms, SLE::pointer);
+	LedgerStateParms writeBack(LedgerStateParms parms, SLE::ref);
 	SLE::pointer getAccountRoot(const uint160& accountID);
 	SLE::pointer getAccountRoot(const NewcoinAddress& naAccountID);
 
 	// database functions
-	static void saveAcceptedLedger(Ledger::pointer);
+	static void saveAcceptedLedger(Ledger::ref);
 	static Ledger::pointer loadByIndex(uint32 ledgerIndex);
 	static Ledger::pointer loadByHash(const uint256& ledgerHash);
 
@@ -260,13 +263,10 @@ public:
 	// Ripple functions : credit lines
 	//
 
-	// Index of node which is the ripple state between to accounts for a currency.
+	// Index of node which is the ripple state between two accounts for a currency.
 	static uint256 getRippleStateIndex(const NewcoinAddress& naA, const NewcoinAddress& naB, const uint160& uCurrency);
 	static uint256 getRippleStateIndex(const uint160& uiA, const uint160& uiB, const uint160& uCurrency)
 		{ return getRippleStateIndex(NewcoinAddress::createAccountID(uiA), NewcoinAddress::createAccountID(uiB), uCurrency); }
-
-	// Directory of lines indexed by an account (not all lines are indexed)
-	static uint256 getRippleDirIndex(const uint160& uAccountID);
 
 	RippleState::pointer accessRippleState(const uint256& uNode);
 
@@ -283,12 +283,6 @@ public:
 
 	SLE::pointer getRippleState(const uint160& uiA, const uint160& uiB, const uint160& uCurrency)
 		{ return getRippleState(getRippleStateIndex(NewcoinAddress::createAccountID(uiA), NewcoinAddress::createAccountID(uiB), uCurrency)); }
-
-	//
-	// Misc
-	//
-	bool isCompatible(boost::shared_ptr<Ledger> other);
-//	bool signLedger(std::vector<unsigned char> &signature, const LocalHanko &hanko);
 
 	void addJson(Json::Value&, int options);
 

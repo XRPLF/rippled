@@ -1,89 +1,118 @@
 
 #include "LedgerFormats.h"
 
-#define S_FIELD(x) sf##x, #x
+std::map<int, LedgerEntryFormat*> LedgerEntryFormat::byType;
+std::map<std::string, LedgerEntryFormat*> LedgerEntryFormat::byName;
 
-LedgerEntryFormat LedgerFormats[]=
-{
-	{ "AccountRoot", ltACCOUNT_ROOT, {
-		{ S_FIELD(Flags),				STI_UINT32,		SOE_FLAGS,	  0 },
-		{ S_FIELD(Account),				STI_ACCOUNT,	SOE_REQUIRED, 0 },
-		{ S_FIELD(Sequence),			STI_UINT32,		SOE_REQUIRED, 0 },
-		{ S_FIELD(Balance),				STI_AMOUNT,		SOE_REQUIRED, 0 },
-		{ S_FIELD(LastReceive),			STI_UINT32,		SOE_REQUIRED, 0 },
-		{ S_FIELD(LastTxn),				STI_UINT32,		SOE_REQUIRED, 0 },
-		{ S_FIELD(AuthorizedKey),		STI_ACCOUNT,	SOE_IFFLAG,   1 },
-		{ S_FIELD(EmailHash),			STI_HASH128,	SOE_IFFLAG,   2 },
-		{ S_FIELD(WalletLocator),		STI_HASH256,	SOE_IFFLAG,   4 },
-		{ S_FIELD(MessageKey),			STI_VL,			SOE_IFFLAG,   8 },
-		{ S_FIELD(TransferRate),		STI_UINT32,		SOE_IFFLAG,  16 },
-		{ S_FIELD(Domain),				STI_VL,			SOE_IFFLAG,  32 },
-		{ S_FIELD(PublishHash),			STI_HASH256,	SOE_IFFLAG,  64 },
-		{ S_FIELD(PublishSize),			STI_UINT32,		SOE_IFFLAG, 128 },
-		{ S_FIELD(Extensions),			STI_TL,			SOE_IFFLAG,   0x01000000 },
-		{ sfInvalid, NULL,				STI_DONE,		SOE_NEVER,	  -1 } }
-	},
-	{ "DirectoryNode", ltDIR_NODE, {
-		{ S_FIELD(Flags),				STI_UINT32,		SOE_FLAGS,	  0 },
-		{ S_FIELD(Indexes),				STI_VECTOR256,	SOE_REQUIRED, 0 },
-		{ S_FIELD(IndexNext),			STI_UINT64,		SOE_IFFLAG,   1 },
-		{ S_FIELD(IndexPrevious),		STI_UINT64,		SOE_IFFLAG,   2 },
-		{ S_FIELD(Extensions),			STI_TL,			SOE_IFFLAG,   0x01000000 },
-		{ sfInvalid, NULL,				STI_DONE,		SOE_NEVER,	  -1 } }
-	},
-	{ "GeneratorMap", ltGENERATOR_MAP, {
-		{ S_FIELD(Flags),				STI_UINT32,		SOE_FLAGS,	  0 },
-		{ S_FIELD(Generator),			STI_VL,			SOE_REQUIRED, 0 },
-		{ S_FIELD(Extensions),			STI_TL,			SOE_IFFLAG,   0x01000000 },
-		{ sfInvalid, NULL,				STI_DONE,		SOE_NEVER,	  -1 } }
-	},
-	{ "Nickname", ltNICKNAME, {
-		{ S_FIELD(Flags),				STI_UINT32,		SOE_FLAGS,	  0 },
-		{ S_FIELD(Account),				STI_ACCOUNT,	SOE_REQUIRED, 0 },
-		{ S_FIELD(MinimumOffer),		STI_AMOUNT,		SOE_IFFLAG,   1 },
-		{ S_FIELD(Extensions),			STI_TL,			SOE_IFFLAG,   0x01000000 },
-		{ sfInvalid, NULL,				STI_DONE,		SOE_NEVER,	  -1 } }
-	},
-	{ "Offer", ltOFFER, {
-		{ S_FIELD(Flags),				STI_UINT32,		SOE_FLAGS,	  0 },
-		{ S_FIELD(Account),				STI_ACCOUNT,	SOE_REQUIRED, 0 },
-		{ S_FIELD(Sequence),			STI_UINT32,		SOE_REQUIRED, 0 },
-		{ S_FIELD(TakerPays),			STI_AMOUNT,		SOE_REQUIRED, 0 },
-		{ S_FIELD(TakerGets),			STI_AMOUNT,		SOE_REQUIRED, 0 },
-		{ S_FIELD(BookDirectory),		STI_HASH256,	SOE_REQUIRED, 0 },
-		{ S_FIELD(BookNode),			STI_UINT64,		SOE_REQUIRED, 0 },
-		{ S_FIELD(OwnerNode),			STI_UINT64,		SOE_REQUIRED, 0 },
-		{ S_FIELD(PaysIssuer),			STI_ACCOUNT,	SOE_IFFLAG,   1 },
-		{ S_FIELD(GetsIssuer),			STI_ACCOUNT,	SOE_IFFLAG,   2 },
-		{ S_FIELD(Expiration),			STI_UINT32,		SOE_IFFLAG,   4 },
-		{ S_FIELD(Extensions),			STI_TL,			SOE_IFFLAG,   0x01000000 },
-		{ sfInvalid, NULL,				STI_DONE,		SOE_NEVER,	  -1 } }
-	},
-	{ "RippleState", ltRIPPLE_STATE, {
-		{ S_FIELD(Flags),				STI_UINT32,		SOE_FLAGS,	  0 },
-		{ S_FIELD(Balance),				STI_AMOUNT,		SOE_REQUIRED, 0 },
-		{ S_FIELD(LowID),				STI_ACCOUNT,	SOE_REQUIRED, 0 },
-		{ S_FIELD(LowLimit),			STI_AMOUNT,		SOE_REQUIRED, 0 },
-		{ S_FIELD(HighID),				STI_ACCOUNT,	SOE_REQUIRED, 0 },
-		{ S_FIELD(HighLimit),			STI_AMOUNT,		SOE_REQUIRED, 0 },
-		{ S_FIELD(LowQualityIn),		STI_UINT32,		SOE_IFFLAG,   1 },
-		{ S_FIELD(LowQualityOut),		STI_UINT32,		SOE_IFFLAG,   2 },
-		{ S_FIELD(HighQualityIn),		STI_UINT32,		SOE_IFFLAG,   4 },
-		{ S_FIELD(HighQualityOut),		STI_UINT32,		SOE_IFFLAG,   8 },
-		{ S_FIELD(Extensions),			STI_TL,			SOE_IFFLAG,   0x01000000 },
-		{ sfInvalid, NULL,				STI_DONE,		SOE_NEVER,	  -1 } }
-	},
-	{ NULL, ltINVALID }
-};
+#define LEF_BASE										\
+	<< SOElement(sfLedgerIndex,			SOE_OPTIONAL)	\
+	<< SOElement(sfLedgerEntryType,		SOE_REQUIRED)	\
+	<< SOElement(sfFlags,				SOE_REQUIRED)
 
-LedgerEntryFormat* getLgrFormat(LedgerEntryType t)
+#define DECLARE_LEF(name, type) lef = new LedgerEntryFormat(#name, type); (*lef) LEF_BASE
+
+static bool LEFInit()
 {
-	LedgerEntryFormat* f = LedgerFormats;
-	while (f->t_name != NULL)
-	{
-		if (f->t_type == t) return f;
-		++f;
-	}
-	return NULL;
+	LedgerEntryFormat* lef;
+
+	DECLARE_LEF(AccountRoot, ltACCOUNT_ROOT)
+		<< SOElement(sfAccount,			SOE_REQUIRED)
+		<< SOElement(sfSequence,		SOE_REQUIRED)
+		<< SOElement(sfBalance,			SOE_REQUIRED)
+		<< SOElement(sfLastTxnID,		SOE_REQUIRED)
+		<< SOElement(sfLastTxnSeq,		SOE_REQUIRED)
+		<< SOElement(sfAuthorizedKey,	SOE_OPTIONAL)
+		<< SOElement(sfEmailHash,		SOE_OPTIONAL)
+		<< SOElement(sfWalletLocator,	SOE_OPTIONAL)
+		<< SOElement(sfMessageKey,		SOE_OPTIONAL)
+		<< SOElement(sfTransferRate,	SOE_OPTIONAL)
+		<< SOElement(sfDomain,			SOE_OPTIONAL)
+		<< SOElement(sfPublishHash,		SOE_OPTIONAL)
+		<< SOElement(sfPublishSize,		SOE_OPTIONAL)
+		;
+
+	DECLARE_LEF(Contract, ltCONTRACT)
+		<< SOElement(sfAccount,			SOE_REQUIRED)
+		<< SOElement(sfBalance,			SOE_REQUIRED)
+		<< SOElement(sfLastTxnID,		SOE_REQUIRED)
+		<< SOElement(sfLastTxnSeq,		SOE_REQUIRED)
+		<< SOElement(sfIssuer,			SOE_REQUIRED)
+		<< SOElement(sfOwner,			SOE_REQUIRED)
+		<< SOElement(sfExpiration,		SOE_REQUIRED)
+		<< SOElement(sfBondAmount,		SOE_REQUIRED)
+		<< SOElement(sfCreateCode,		SOE_REQUIRED)
+		<< SOElement(sfFundCode,		SOE_REQUIRED)
+		<< SOElement(sfRemoveCode,		SOE_REQUIRED)
+		<< SOElement(sfExpireCode,		SOE_REQUIRED)
+		;
+
+	DECLARE_LEF(DirectoryNode, ltDIR_NODE)
+		<< SOElement(sfIndexes,			SOE_REQUIRED)
+		<< SOElement(sfIndexNext,		SOE_OPTIONAL)
+		<< SOElement(sfIndexPrevious,	SOE_OPTIONAL)
+		;
+
+	DECLARE_LEF(GeneratorMap, ltGENERATOR_MAP)
+		<< SOElement(sfGenerator,		SOE_REQUIRED)
+		;
+
+	DECLARE_LEF(Nickname, ltNICKNAME)
+		<< SOElement(sfAccount,			SOE_REQUIRED)
+		<< SOElement(sfMinimumOffer,	SOE_OPTIONAL)
+		;
+
+	DECLARE_LEF(Offer, ltOFFER)
+		<< SOElement(sfAccount,			SOE_REQUIRED)
+		<< SOElement(sfSequence,		SOE_REQUIRED)
+		<< SOElement(sfTakerPays,		SOE_REQUIRED)
+		<< SOElement(sfTakerGets,		SOE_REQUIRED)
+		<< SOElement(sfBookDirectory,	SOE_REQUIRED)
+		<< SOElement(sfBookNode,		SOE_REQUIRED)
+		<< SOElement(sfOwnerNode,		SOE_REQUIRED)
+		<< SOElement(sfLastTxnID,		SOE_REQUIRED)
+		<< SOElement(sfLastTxnSeq,		SOE_REQUIRED)
+		<< SOElement(sfExpiration,		SOE_OPTIONAL)
+		;
+
+	DECLARE_LEF(RippleState, ltRIPPLE_STATE)
+		<< SOElement(sfBalance,			SOE_REQUIRED)
+		<< SOElement(sfLowLimit,		SOE_REQUIRED)
+		<< SOElement(sfHighLimit,		SOE_REQUIRED)
+		<< SOElement(sfLastTxnID,		SOE_REQUIRED)
+		<< SOElement(sfLastTxnSeq,		SOE_REQUIRED)
+		<< SOElement(sfLowQualityIn,	SOE_OPTIONAL)
+		<< SOElement(sfLowQualityOut,	SOE_OPTIONAL)
+		<< SOElement(sfHighQualityIn,	SOE_OPTIONAL)
+		<< SOElement(sfHighQualityOut,	SOE_OPTIONAL)
+		;
+
+		return true;
 }
+
+bool LEFInitComplete = LEFInit();
+
+LedgerEntryFormat* LedgerEntryFormat::getLgrFormat(LedgerEntryType t)
+{
+	std::map<int, LedgerEntryFormat*>::iterator it = byType.find(static_cast<int>(t));
+	if (it == byType.end())
+		return NULL;
+	return it->second;
+}
+
+LedgerEntryFormat* LedgerEntryFormat::getLgrFormat(int t)
+{
+	std::map<int, LedgerEntryFormat*>::iterator it = byType.find((t));
+	if (it == byType.end())
+		return NULL;
+	return it->second;
+}
+
+LedgerEntryFormat* LedgerEntryFormat::getLgrFormat(const std::string& t)
+{
+	std::map<std::string, LedgerEntryFormat*>::iterator it = byName.find((t));
+	if (it == byName.end())
+		return NULL;
+	return it->second;
+}
+
 // vim:ts=4

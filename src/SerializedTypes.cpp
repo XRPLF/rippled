@@ -5,17 +5,23 @@
 #include "SerializedTypes.h"
 #include "SerializedObject.h"
 #include "TransactionFormats.h"
+#include "LedgerFormats.h"
+#include "FieldNames.h"
+#include "Log.h"
 #include "NewcoinAddress.h"
 #include "utils.h"
+
+STAmount saZero(CURRENCY_ONE, ACCOUNT_ONE, 0);
+STAmount saOne(CURRENCY_ONE, ACCOUNT_ONE, 1);
 
 std::string SerializedType::getFullText() const
 {
 	std::string ret;
 	if (getSType() != STI_NOTPRESENT)
 	{
-		if(name != NULL)
+		if(fName->hasName())
 		{
-			ret = name;
+			ret = fName->fieldName;
 			ret += " = ";
 		}
 		ret += getText();
@@ -23,7 +29,7 @@ std::string SerializedType::getFullText() const
 	return ret;
 }
 
-STUInt8* STUInt8::construct(SerializerIterator& u, const char *name)
+STUInt8* STUInt8::construct(SerializerIterator& u, SField::ref name)
 {
 	return new STUInt8(name, u.get8());
 }
@@ -39,13 +45,25 @@ bool STUInt8::isEquivalent(const SerializedType& t) const
 	return v && (value == v->value);
 }
 
-STUInt16* STUInt16::construct(SerializerIterator& u, const char *name)
+STUInt16* STUInt16::construct(SerializerIterator& u, SField::ref name)
 {
 	return new STUInt16(name, u.get16());
 }
 
 std::string STUInt16::getText() const
 {
+	if (getFName() == sfLedgerEntryType)
+	{
+		LedgerEntryFormat *f = LedgerEntryFormat::getLgrFormat(value);
+		if (f != NULL)
+			return f->t_name;
+	}
+	if (getFName() == sfTransactionType)
+	{
+		TransactionFormat *f = TransactionFormat::getTxnFormat(value);
+		if (f != NULL)
+			return f->t_name;
+	}
 	return boost::lexical_cast<std::string>(value);
 }
 
@@ -55,7 +73,7 @@ bool STUInt16::isEquivalent(const SerializedType& t) const
 	return v && (value == v->value);
 }
 
-STUInt32* STUInt32::construct(SerializerIterator& u, const char *name)
+STUInt32* STUInt32::construct(SerializerIterator& u, SField::ref name)
  {
 	return new STUInt32(name, u.get32());
 }
@@ -71,7 +89,7 @@ bool STUInt32::isEquivalent(const SerializedType& t) const
 	return v && (value == v->value);
 }
 
-STUInt64* STUInt64::construct(SerializerIterator& u, const char *name)
+STUInt64* STUInt64::construct(SerializerIterator& u, SField::ref name)
 {
 	return new STUInt64(name, u.get64());
 }
@@ -87,7 +105,7 @@ bool STUInt64::isEquivalent(const SerializedType& t) const
 	return v && (value == v->value);
 }
 
-STHash128* STHash128::construct(SerializerIterator& u, const char *name)
+STHash128* STHash128::construct(SerializerIterator& u, SField::ref name)
 {
 	return new STHash128(name, u.get128());
 }
@@ -103,7 +121,7 @@ bool STHash128::isEquivalent(const SerializedType& t) const
 	return v && (value == v->value);
 }
 
-STHash160* STHash160::construct(SerializerIterator& u, const char *name)
+STHash160* STHash160::construct(SerializerIterator& u, SField::ref name)
 {
 	return new STHash160(name, u.get160());
 }
@@ -119,7 +137,7 @@ bool STHash160::isEquivalent(const SerializedType& t) const
 	return v && (value == v->value);
 }
 
-STHash256* STHash256::construct(SerializerIterator& u, const char *name)
+STHash256* STHash256::construct(SerializerIterator& u, SField::ref name)
 {
 	return new STHash256(name, u.get256());
 }
@@ -135,7 +153,7 @@ bool STHash256::isEquivalent(const SerializedType& t) const
 	return v && (value == v->value);
 }
 
-STVariableLength::STVariableLength(SerializerIterator& st, const char *name) : SerializedType(name)
+STVariableLength::STVariableLength(SerializerIterator& st, SField::ref name) : SerializedType(name)
 {
 	value = st.getVL();
 }
@@ -145,14 +163,9 @@ std::string STVariableLength::getText() const
 	return strHex(value);
 }
 
-STVariableLength* STVariableLength::construct(SerializerIterator& u, const char *name)
+STVariableLength* STVariableLength::construct(SerializerIterator& u, SField::ref name)
 {
 	return new STVariableLength(name, u.getVL());
-}
-
-int STVariableLength::getLength() const
-{
-	return Serializer::encodeLengthLength(value.size()) + value.size();
 }
 
 bool STVariableLength::isEquivalent(const SerializedType& t) const
@@ -172,7 +185,7 @@ std::string STAccount::getText() const
 	return a.humanAccountID();
 }
 
-STAccount* STAccount::construct(SerializerIterator& u, const char *name)
+STAccount* STAccount::construct(SerializerIterator& u, SField::ref name)
 {
 	return new STAccount(name, u.getVL());
 }
@@ -182,7 +195,7 @@ STAccount* STAccount::construct(SerializerIterator& u, const char *name)
 //
 
 // Return a new object from a SerializerIterator.
-STVector256* STVector256::construct(SerializerIterator& u, const char *name)
+STVector256* STVector256::construct(SerializerIterator& u, SField::ref name)
 {
 	std::vector<unsigned char> data = u.getVL();
 	std::vector<uint256> value;
@@ -218,9 +231,14 @@ bool STVector256::isEquivalent(const SerializedType& t) const
 // STAccount
 //
 
+STAccount::STAccount(SField::ref n, const uint160& v) : STVariableLength(n)
+{
+	peekValue().insert(peekValue().end(), v.begin(), v.end());
+}
+
 bool STAccount::isValueH160() const
 {
-	return peekValue().size() == (160/8);
+	return peekValue().size() == (160 / 8);
 }
 
 void STAccount::setValueH160(const uint160& v)
@@ -251,93 +269,91 @@ void STAccount::setValueNCA(const NewcoinAddress& nca)
 	setValueH160(nca.getAccountID());
 }
 
-std::string STTaggedList::getText() const
-{
-	std::string ret;
-	for (std::vector<TaggedListItem>::const_iterator it=value.begin(); it!=value.end(); ++it)
-	{
-		ret += boost::lexical_cast<std::string>(it->first);
-		ret += ",";
-		ret += strHex(it->second);
-	}
-	return ret;
-}
-
-Json::Value STTaggedList::getJson(int) const
-{
-	Json::Value ret(Json::arrayValue);
-
-	for (std::vector<TaggedListItem>::const_iterator it=value.begin(); it!=value.end(); ++it)
-	{
-		Json::Value elem(Json::arrayValue);
-		elem.append(it->first);
-		elem.append(strHex(it->second));
-		ret.append(elem);
-	}
-
-	return ret;
-}
-
-STTaggedList* STTaggedList::construct(SerializerIterator& u, const char *name)
-{
-	return new STTaggedList(name, u.getTaggedList());
-}
-
-int STTaggedList::getLength() const
-{
-	int ret = Serializer::getTaggedListLength(value);
-	if (ret<0) throw std::overflow_error("bad TL length");
-	return ret;
-}
-
-bool STTaggedList::isEquivalent(const SerializedType& t) const
-{
-	const STTaggedList* v = dynamic_cast<const STTaggedList*>(&t);
-	return v && (value == v->value);
-}
-
-STPathSet* STPathSet::construct(SerializerIterator& s, const char *name)
+STPathSet* STPathSet::construct(SerializerIterator& s, SField::ref name)
 {
 	std::vector<STPath> paths;
 	std::vector<STPathElement> path;
+
 	do
 	{
-		switch(s.get8())
+		int	iType	= s.get8();
+
+		if (iType == STPathElement::typeEnd || iType == STPathElement::typeBoundary)
 		{
-			case STPathElement::typeEnd:
-				if (path.empty())
-				{
-					if (!paths.empty())
-						throw std::runtime_error("empty last path");
-				}
-				else paths.push_back(path);
+			if (path.empty())
+			{
+				Log(lsINFO) << "STPathSet: Empty path.";
+
+				throw std::runtime_error("empty path");
+			}
+
+			paths.push_back(path);
+			path.clear();
+
+			if (iType == STPathElement::typeEnd)
+			{
 				return new STPathSet(name, paths);
+			}
+		}
+		else if (iType & ~STPathElement::typeValidBits)
+		{
+			Log(lsINFO) << "STPathSet: Bad path element: " << iType;
 
-			case STPathElement::typeBoundary:
-				if (path.empty())
-					throw std::runtime_error("empty path");
-				paths.push_back(path);
-				path.clear();
+			throw std::runtime_error("bad path element");
+		}
+		else
+		{
+			const bool	bAccount	= !!(iType & STPathElement::typeAccount);
+			const bool	bCurrency	= !!(iType & STPathElement::typeCurrency);
+			const bool	bIssuer		= !!(iType & STPathElement::typeIssuer);
 
-			case STPathElement::typeAccount:
-				path.push_back(STPathElement(STPathElement::typeAccount, s.get160()));
-				break;
+			uint160	uAccountID;
+			uint160	uCurrency;
+			uint160	uIssuerID;
 
-			case STPathElement::typeOffer:
-				path.push_back(STPathElement(STPathElement::typeOffer, s.get160()));
-				break;
+			if (bAccount)
+				uAccountID	= s.get160();
 
-			default: throw std::runtime_error("Unknown path element");
+			if (bCurrency)
+				uCurrency	= s.get160();
+
+			if (bIssuer)
+				uIssuerID	= s.get160();
+
+			path.push_back(STPathElement(uAccountID, uCurrency, uIssuerID));
 		}
 	} while(1);
 }
 
-int STPathSet::getLength() const
+bool STPathSet::isEquivalent(const SerializedType& t) const
 {
-	int ret = 0;
-	for (std::vector<STPath>::const_iterator it = value.begin(), end = value.end(); it != end; ++it)
-		ret += it->getSerializeSize();
-	return (ret != 0) ? ret : (ret + 1);
+	const STPathSet* v = dynamic_cast<const STPathSet*>(&t);
+	return v && (value == v->value);
+}
+
+int STPath::getSerializeSize() const
+{
+	int iBytes = 0;
+
+	BOOST_FOREACH(const STPathElement& speElement, mPath)
+	{
+		int	iType	= speElement.getNodeType();
+
+		iBytes	+= 1;	// mType
+
+		if (iType & STPathElement::typeAccount)
+			iBytes	+= 160/8;
+
+		if (iType & STPathElement::typeCurrency)
+			iBytes	+= 160/8;
+
+		if (iType & STPathElement::typeIssuer)
+			iBytes	+= 160/8;
+	}
+
+	iBytes	+= 1;	// typeBoundary | typeEnd
+
+	return iBytes;
 }
 
 Json::Value STPath::getJson(int) const
@@ -346,30 +362,22 @@ Json::Value STPath::getJson(int) const
 
 	BOOST_FOREACH(std::vector<STPathElement>::const_iterator::value_type it, mPath)
 	{
-		switch (it.getNodeType())
-		{
-			case STPathElement::typeAccount:
-			{
-				Json::Value elem(Json::objectValue);
+		Json::Value elem(Json::objectValue);
+		int			iType	= it.getNodeType();
 
-				elem["account"] = NewcoinAddress::createHumanAccountID(it.getNode());
+		elem["type"]		= iType;
+		elem["type_hex"]	= strHex(iType);
 
-				ret.append(elem);
-				break;
-			}
+		if (iType & STPathElement::typeAccount)
+			elem["account"]		= NewcoinAddress::createHumanAccountID(it.getAccountID());
 
-			case STPathElement::typeOffer:
-			{
-				Json::Value elem(Json::objectValue);
+		if (iType & STPathElement::typeCurrency)
+			elem["currency"]	= STAmount::createHumanCurrency(it.getCurrency());
 
-				elem["offer"] = it.getNode().GetHex();
+		if (iType & STPathElement::typeIssuer)
+			elem["issuer"]		= NewcoinAddress::createHumanAccountID(it.getIssuerID());
 
-				ret.append(elem);
-				break;
-			}
-
-			default: throw std::runtime_error("Unknown path element");
-		}
+		ret.append(elem);
 	}
 
 	return ret;
@@ -385,12 +393,13 @@ Json::Value STPathSet::getJson(int options) const
 	return ret;
 }
 
+#if 0
 std::string STPath::getText() const
 {
 	std::string ret("[");
 	bool first = true;
 
-	BOOST_FOREACH(std::vector<STPathElement>::const_iterator::value_type it, mPath)
+	BOOST_FOREACH(const STPathElement& it, mPath)
 	{
 		if (!first) ret += ", ";
 		switch (it.getNodeType())
@@ -416,7 +425,9 @@ std::string STPath::getText() const
 
 	return ret + "]";
 }
+#endif
 
+#if 0
 std::string STPathSet::getText() const
 {
 	std::string ret("{");
@@ -433,23 +444,34 @@ std::string STPathSet::getText() const
 	}
 	return ret + "}";
 }
+#endif
 
 void STPathSet::add(Serializer& s) const
 {
-	bool firstPath = true;
+	bool bFirst = true;
 
-	BOOST_FOREACH(std::vector<STPath>::const_iterator::value_type pit, value)
+	BOOST_FOREACH(const STPath& spPath, value)
 	{
-		if (!firstPath)
+		if (!bFirst)
 		{
 			s.add8(STPathElement::typeBoundary);
-			firstPath = false;
+			bFirst = false;
 		}
 
-		for (std::vector<STPathElement>::const_iterator eit = pit.begin(), eend = pit.end(); eit != eend; ++eit)
+		BOOST_FOREACH(const STPathElement& speElement, spPath)
 		{
-			s.add8(eit->getNodeType());
-			s.add160(eit->getNode());
+			int		iType	= speElement.getNodeType();
+
+			s.add8(iType);
+
+			if (iType & STPathElement::typeAccount)
+				s.add160(speElement.getAccountID());
+
+			if (iType & STPathElement::typeCurrency)
+				s.add160(speElement.getCurrency());
+
+			if (iType & STPathElement::typeIssuer)
+				s.add160(speElement.getIssuerID());
 		}
 	}
 	s.add8(STPathElement::typeEnd);

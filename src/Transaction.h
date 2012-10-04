@@ -74,8 +74,6 @@ private:
 
 	Transaction::pointer setCreditSet(
 		const NewcoinAddress&				naPrivateKey,
-		const NewcoinAddress&				naDstAccountID,
-		bool								bLimitAmount,
 		const STAmount&						saLimitAmount,
 		bool								bQualityIn,
 		uint32								uQualityIn,
@@ -86,8 +84,7 @@ private:
 		const NewcoinAddress&				naPrivateKey,
 		const uint256&						uNickname,
 		bool								bSetOffer,
-		const STAmount&						saMinimumOffer,
-		const std::vector<unsigned char>&	vucSignature);
+		const STAmount&						saMinimumOffer);
 
 	Transaction::pointer setOfferCreate(
 		const NewcoinAddress&				naPrivateKey,
@@ -116,7 +113,9 @@ private:
 		const NewcoinAddress&				naDstAccountID,
 		const STAmount&						saAmount,
 		const STAmount&						saSendMax,
-		const STPathSet&					spPaths);
+		const STPathSet&					spsPaths,
+		const bool							bPartial,
+		const bool							bLimit);
 
 	Transaction::pointer setWalletAdd(
 		const NewcoinAddress&				naPrivateKey,
@@ -126,7 +125,7 @@ private:
 		const std::vector<unsigned char>&	vucSignature);
 
 public:
-	Transaction(const SerializedTransaction::pointer st, bool bValidate);
+	Transaction(const SerializedTransaction::pointer& st, bool bValidate);
 
 	static Transaction::pointer sharedTransaction(const std::vector<unsigned char>&vucTransaction, bool bValidate);
 
@@ -183,8 +182,6 @@ public:
 		uint32								uSeq,
 		const STAmount&						saFee,
 		uint32								uSourceTag,
-		const NewcoinAddress&				naDstAccountID,
-		bool								bLimitAmount,
 		const STAmount&						saLimitAmount,
 		bool								bQualityIn,
 		uint32								uQualityIn,
@@ -200,8 +197,7 @@ public:
 		uint32								uSourceTag,
 		const uint256&						uNickname,
 		bool								bSetOffer,
-		const STAmount&						saMinimumOffer,
-		const std::vector<unsigned char>&	vucSignature);
+		const STAmount&						saMinimumOffer);
 
 	// Pre-fund password change.
 	static Transaction::pointer sharedPasswordFund(
@@ -231,7 +227,9 @@ public:
 		const NewcoinAddress&				naDstAccountID,
 		const STAmount&						saAmount,
 		const STAmount&						saSendMax,
-		const STPathSet&					saPaths);
+		const STPathSet&					spsPaths,
+		const bool							bPartial = false,
+		const bool							bLimit = false);
 
 	// Place an offer.
 	static Transaction::pointer sharedOfferCreate(
@@ -272,23 +270,22 @@ public:
 
 	SerializedTransaction::pointer getSTransaction() { return mTransaction; }
 
-	const uint256& getID() const { return mTransactionID; }
-	const NewcoinAddress& getFromAccount() const { return mAccountFrom; }
-	STAmount getAmount() const { return mTransaction->getITFieldU64(sfAmount); }
-	STAmount getFee() const { return mTransaction->getTransactionFee(); }
-	uint32 getFromAccountSeq() const { return mTransaction->getSequence(); }
-	uint32 getSourceLedger() const { return mTransaction->getITFieldU32(sfTargetLedger); }
-	uint32 getIdent() const { return mTransaction->getITFieldU32(sfSourceTag); }
-	std::vector<unsigned char> getSignature() const { return mTransaction->getSignature(); }
-	uint32 getLedger() const { return mInLedger; }
-	TransStatus getStatus() const { return mStatus; }
+	const uint256& getID() const					{ return mTransactionID; }
+	const NewcoinAddress& getFromAccount() const	{ return mAccountFrom; }
+	STAmount getAmount() const						{ return mTransaction->getFieldU64(sfAmount); }
+	STAmount getFee() const							{ return mTransaction->getTransactionFee(); }
+	uint32 getFromAccountSeq() const				{ return mTransaction->getSequence(); }
+	uint32 getIdent() const							{ return mTransaction->getFieldU32(sfSourceTag); }
+	std::vector<unsigned char> getSignature() const	{ return mTransaction->getSignature(); }
+	uint32 getLedger() const						{ return mInLedger; }
+	TransStatus getStatus() const					{ return mStatus; }
 
 	void setStatus(TransStatus status, uint32 ledgerSeq);
 	void setStatus(TransStatus status) { mStatus=status; }
 	void setLedger(uint32 ledger) { mInLedger = ledger; }
 
 	// database functions
-	static void saveTransaction(Transaction::pointer);
+	static void saveTransaction(const Transaction::pointer&);
 	bool save();
 	static Transaction::pointer load(const uint256& id);
 	static Transaction::pointer findFrom(const NewcoinAddress& fromID, uint32 seq);

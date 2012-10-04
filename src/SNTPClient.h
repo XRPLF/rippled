@@ -9,26 +9,24 @@
 #include <boost/thread/mutex.hpp>
 #include <boost/asio.hpp>
 
+#include "types.h"
+
 class SNTPQuery
 {
 public:
 	bool				mReceivedReply;
 	time_t				mLocalTimeSent;
-	int					mQueryNonce;
+	uint32				mQueryNonce;
 
 	SNTPQuery(time_t j = (time_t) -1)	: mReceivedReply(false), mLocalTimeSent(j) { ; }
 };
 
 class SNTPClient
 {
-public:
-	typedef boost::shared_ptr<SNTPClient> pointer;
-
 protected:
 	std::map<boost::asio::ip::udp::endpoint, SNTPQuery>	mQueries;
 	boost::mutex						mLock;
 
-	boost::asio::io_service&			mIOService;
 	boost::asio::ip::udp::socket		mSocket;
 	boost::asio::deadline_timer			mTimer;
 	boost::asio::ip::udp::resolver		mResolver;
@@ -60,3 +58,4 @@ public:
 };
 
 #endif
+// vim:ts=4

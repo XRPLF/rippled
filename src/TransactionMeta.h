@@ -12,24 +12,45 @@
 #include "Serializer.h"
 #include "SerializedTypes.h"
 
+// master record types
+static const int TMNEndOfMetadata		= 0x00;
+static const int TMNCreatedNode			= 0x10;	// This transaction created this node
+static const int TMNDeletedNode			= 0x11;
+static const int TMNModifiedNode		= 0x12;
+
+// sub record types - special
+static const int TMSEndOfNode			= 0x00;
+static const int TMSThread				= 0x01; // Holds previous TxID and LgrSeq for threading
+
+// sub record types - containing an amount
+static const int TMSPrevBalance			= 0x11; // Balances prior to the transaction
+static const int TMSFinalBalance		= 0x12; // deleted with non-zero balance
+static const int TMSPrevTakerPays		= 0x13;
+static const int TMSPrevTakerGets		= 0x14;
+static const int TMSFinalTakerPays		= 0x15; // Balances at node deletion time
+static const int TMSFinalTakerGets		= 0x16;
+
+// sub record types - containing an account (for example, for when a nickname is transferred)
+static const int TMSPrevAccount			= 0x20;
+static const int TMSLowID				= 0x21;
+static const int TMSHighID				= 0x22;
+
 
 class TransactionMetaNodeEntry
 { // a way that a transaction has affected a node
 public:
-
 	typedef boost::shared_ptr<TransactionMetaNodeEntry> pointer;
 
-	static const int TMNEndOfMetadata =	0;
-	static const int TMNChangedBalance = 1;
-	static const int TMNDeleteUnfunded = 2;
-
+protected:
 	int mType;
+
+public:
 	TransactionMetaNodeEntry(int type) : mType(type) { ; }
+	virtual ~TransactionMetaNodeEntry() { ; }
 
 	int getType() const { return mType; }
 	virtual Json::Value getJson(int) const = 0;
 	virtual void addRaw(Serializer&) const = 0;
-	virtual int compare(const TransactionMetaNodeEntry&) const = 0;
 
 	bool operator<(const TransactionMetaNodeEntry&) const;
 	bool operator<=(const TransactionMetaNodeEntry&) const;
@@ -40,55 +61,70 @@ public:
 	{ return std::auto_ptr<TransactionMetaNodeEntry>(duplicate()); }
 
 protected:
+	virtual int compare(const TransactionMetaNodeEntry&) const = 0;
 	virtual TransactionMetaNodeEntry* duplicate(void) const = 0;
 };
 
-class TMNEBalance : public TransactionMetaNodeEntry
-{ // a transaction affected the balance of a node
-public:
+class TMNEThread : public TransactionMetaNodeEntry
+{
+protected:
+	uint256 mPrevTxID;
+	uint32 mPrevLgrSeq;
 
-	static const int TMBTwoAmounts 	= 0x001;
-	static const int TMBDestroyed	= 0x010;
-	static const int TMBPaidFee		= 0x020;
-	static const int TMBRipple		= 0x100;
-	static const int TMBOffer		= 0x200;
+public:
+	TMNEThread() : TransactionMetaNodeEntry(TMSThread), mPrevLgrSeq(0) { ; }
+	TMNEThread(uint256 prevTx, uint32 prevLgrSeq)
+		: TransactionMetaNodeEntry(TMSThread), mPrevTxID(prevTx), mPrevLgrSeq(prevLgrSeq)
+	{ ; }
+	TMNEThread(SerializerIterator&);
+
+	virtual void addRaw(Serializer&) const;
+	virtual Json::Value getJson(int) const;
 
 protected:
-	unsigned mFlags;
-	STAmount mFirstAmount, mSecondAmount;
-
-public:
-	TMNEBalance() : TransactionMetaNodeEntry(TMNChangedBalance), mFlags(0) { ; }
-
-	TMNEBalance(SerializerIterator&);
-	virtual void addRaw(Serializer&) const;
-
-	unsigned getFlags() const				{ return mFlags; }
-	const STAmount& getFirstAmount() const	{ return mFirstAmount; }
-	const STAmount& getSecondAmount() const	{ return mSecondAmount; }
-
-	void adjustFirstAmount(const STAmount&);
-	void adjustSecondAmount(const STAmount&);
-	void setFlags(unsigned flags);
-
-	virtual Json::Value getJson(int) const;
+	virtual TransactionMetaNodeEntry* duplicate(void) const { return new TMNEThread(*this); }
 	virtual int compare(const TransactionMetaNodeEntry&) const;
-	virtual TransactionMetaNodeEntry* duplicate(void) const { return new TMNEBalance(*this); }
 };
 
-class TMNEUnfunded : public TransactionMetaNodeEntry
+class TMNEAmount : public TransactionMetaNodeEntry
+{ // a transaction affected the balance of a node
+protected:
+	STAmount mAmount;
+
+public:
+	TMNEAmount(int type) : TransactionMetaNodeEntry(type) { ; }
+	TMNEAmount(int type, const STAmount &a) : TransactionMetaNodeEntry(type), mAmount(a) { ; }
+
+	TMNEAmount(int type, SerializerIterator&);
+	virtual void addRaw(Serializer&) const;
+
+	const STAmount& getAmount() const	{ return mAmount; }
+	void setAmount(const STAmount& a)	{ mAmount = a; }
+
+	virtual Json::Value getJson(int) const;
+
+protected:
+	virtual TransactionMetaNodeEntry* duplicate(void) const { return new TMNEAmount(*this); }
+	virtual int compare(const TransactionMetaNodeEntry&) const;
+};
+
+class TMNEAccount : public TransactionMetaNodeEntry
 { // node was deleted because it was unfunded
 protected:
-	STAmount firstAmount, secondAmount; // Amounts left when declared unfunded
+	NewcoinAddress mAccount;
+
 public:
-	TMNEUnfunded() : TransactionMetaNodeEntry(TMNDeleteUnfunded) { ; }
-	TMNEUnfunded(const STAmount& f, const STAmount& s) :
-		TransactionMetaNodeEntry(TMNDeleteUnfunded), firstAmount(f), secondAmount(s) { ; }
-	void setBalances(const STAmount& firstBalance, const STAmount& secondBalance);
+	TMNEAccount(int type, const NewcoinAddress& acct) : TransactionMetaNodeEntry(type), mAccount(acct) { ; }
+	TMNEAccount(int type, SerializerIterator&);
 	virtual void addRaw(Serializer&) const;
 	virtual Json::Value getJson(int) const;
+
+	const NewcoinAddress& getAccount() const		{ return mAccount; }
+	void setAccount(const NewcoinAddress& a)		{ mAccount = a; }
+
+protected:
+	virtual TransactionMetaNodeEntry* duplicate(void) const { return new TMNEAccount(*this); }
 	virtual int compare(const TransactionMetaNodeEntry&) const;
-	virtual TransactionMetaNodeEntry* duplicate(void) const { return new TMNEUnfunded(*this); }
 };
 
 inline TransactionMetaNodeEntry* new_clone(const TransactionMetaNodeEntry& s)	{ return s.clone().release(); }
@@ -100,21 +136,17 @@ public:
 	typedef boost::shared_ptr<TransactionMetaNode> pointer;
 
 protected:
+	int mType;
 	uint256 mNode;
-	uint256 mPreviousTransaction;
-	uint32 mPreviousLedger;
 	boost::ptr_vector<TransactionMetaNodeEntry> mEntries;
 
 public:
-	TransactionMetaNode(const uint256 &node) : mNode(node) { ; }
+	TransactionMetaNode(const uint256 &node, int type) : mType(type), mNode(node) { ; }
 
 	const uint256& getNode() const												{ return mNode; }
-	const uint256& getPreviousTransaction() const								{ return mPreviousTransaction; }
-	uint32 getPreviousLedger() const											{ return mPreviousLedger; }
 	const boost::ptr_vector<TransactionMetaNodeEntry>& peekEntries() const		{ return mEntries; }
 
 	TransactionMetaNodeEntry* findEntry(int nodeType);
-	TMNEBalance* findBalance();
 	void addNode(TransactionMetaNodeEntry*);
 
 	bool operator<(const TransactionMetaNode& n) const	{ return mNode < n.mNode; }
@@ -122,27 +154,28 @@ public:
 	bool operator>(const TransactionMetaNode& n) const	{ return mNode > n.mNode; }
 	bool operator>=(const TransactionMetaNode& n) const	{ return mNode >= n.mNode; }
 
-	void thread(const uint256& prevTx, uint32 prevLgr);
+	bool thread(const uint256& prevTx, uint32 prevLgr);
 
-	TransactionMetaNode(const uint256&node, SerializerIterator&);
+	TransactionMetaNode(int type, const uint256& node, SerializerIterator&);
 	void addRaw(Serializer&);
+	void setType(int t) { mType = t; }
 	Json::Value getJson(int) const;
 
-	void threadNode(const uint256& previousTransaction, uint32 previousLedger);
-	void deleteUnfunded(const STAmount& firstBalance, const STAmount& secondBalance);
-	void adjustBalance(unsigned flags, const STAmount &amount, bool signedBy);
-	void adjustBalances(unsigned flags, const STAmount &firstAmt, const STAmount &secondAmt);
+	bool addAmount(int nodeType, const STAmount& amount);
+	bool addAccount(int nodeType, const NewcoinAddress& account);
+	TMNEAmount* findAmount(int nodeType);
 };
 
 
 class TransactionMetaSet
 {
+public:
+	typedef boost::shared_ptr<TransactionMetaSet> pointer;
+
 protected:
 	uint256 mTransactionID;
 	uint32 mLedger;
 	std::map<uint256, TransactionMetaNode> mNodes;
-
-	TransactionMetaNode& modifyNode(const uint256&);
 
 public:
 	TransactionMetaSet() : mLedger(0) { ; }
@@ -153,8 +186,11 @@ public:
 	void clear() { mNodes.clear(); }
 	void swap(TransactionMetaSet&);
 
+	const uint256& getTxID()	{ return mTransactionID; }
+	uint32 getLgrSeq()			{ return mLedger; }
+
 	bool isNodeAffected(const uint256&) const;
-	TransactionMetaNode& getAffectedNode(const uint256&);
+	TransactionMetaNode& getAffectedNode(const uint256&, int type, bool overrideType);
 	const TransactionMetaNode& peekAffectedNode(const uint256&) const;
 
 	Json::Value getJson(int) const;

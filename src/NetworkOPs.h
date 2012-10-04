@@ -1,17 +1,18 @@
 #ifndef __NETWORK_OPS__
 #define __NETWORK_OPS__
 
+#include <boost/interprocess/sync/interprocess_upgradable_mutex.hpp>
+#include <boost/interprocess/sync/sharable_lock.hpp>
+#include <boost/unordered_map.hpp>
+#include <boost/unordered_set.hpp>
+
 #include "AccountState.h"
 #include "LedgerMaster.h"
 #include "NicknameState.h"
 #include "RippleState.h"
 #include "SerializedValidation.h"
 #include "LedgerAcquire.h"
-
-#include <boost/interprocess/sync/interprocess_upgradable_mutex.hpp>
-#include <boost/interprocess/sync/sharable_lock.hpp>
-#include <boost/unordered_map.hpp>
-#include <boost/unordered_set.hpp>
+#include "LedgerProposal.h"
 
 // Operations that clients may wish to perform against the network
 // Master operational handler, server sequencer, network tracker
@@ -54,6 +55,8 @@ protected:
 	boost::posix_time::ptime			mConnectTime;
 	boost::asio::deadline_timer			mNetTimer;
 	boost::shared_ptr<LedgerConsensus>	mConsensus;
+	boost::unordered_map<uint160,
+		std::list<LedgerProposal::pointer> > mDeferredProposals;
 
 	LedgerMaster*						mLedgerMaster;
 	LedgerAcquire::pointer				mAcquiringLedger;
@@ -63,7 +66,8 @@ protected:
 	// last ledger close
 	int									mLastCloseProposers, mLastCloseConvergeTime;
 	uint256								mLastCloseHash;
-	uint32								mLastCloseNetTime;
+	uint32								mLastCloseTime;
+	uint32								mLastValidationTime;
 
 	// XXX Split into more locks.
     boost::interprocess::interprocess_upgradable_mutex	mMonitorLock;
@@ -77,11 +81,12 @@ protected:
 
 	void setMode(OperatingMode);
 
-	Json::Value transJson(const SerializedTransaction& stTxn, TransactionEngineResult terResult, const std::string& strStatus, int iSeq, const std::string& strType);
-	void pubTransactionAll(const Ledger::pointer& lpCurrent, const SerializedTransaction& stTxn, TransactionEngineResult terResult, const char* pState);
-	void pubTransactionAccounts(const Ledger::pointer& lpCurrent, const SerializedTransaction& stTxn, TransactionEngineResult terResult, const char* pState);
+	Json::Value transJson(const SerializedTransaction& stTxn, TER terResult, const std::string& strStatus, int iSeq, const std::string& strType);
+	void pubTransactionAll(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult, const char* pState);
+	void pubTransactionAccounts(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult, const char* pState);
+	bool haveConsensusObject();
 
-	Json::Value pubBootstrapAccountInfo(const Ledger::pointer& lpAccepted, const NewcoinAddress& naAccountID);
+	Json::Value pubBootstrapAccountInfo(Ledger::ref lpAccepted, const NewcoinAddress& naAccountID);
 
 public:
 	NetworkOPs(boost::asio::io_service& io_service, LedgerMaster* pLedgerMaster);
@@ -89,7 +94,10 @@ public:
 	// network information
 	uint32 getNetworkTimeNC();
 	uint32 getCloseTimeNC();
+	uint32 getValidationTimeNC();
+	void closeTimeOffset(int);
 	boost::posix_time::ptime getNetworkTimePT();
+	uint32 getLedgerID(const uint256& hash);
 	uint32 getCurrentLedgerID();
 	OperatingMode getOperatingMode() { return mMode; }
 	inline bool available() {
@@ -97,21 +105,21 @@ public:
 		return mMode >= omTRACKING;
 	}
 
+	Ledger::pointer	getCurrentLedger()						{ return mLedgerMaster->getCurrentLedger(); }
+	Ledger::pointer	getLedgerByHash(const uint256& hash)	{ return mLedgerMaster->getLedgerByHash(hash); }
+	Ledger::pointer	getLedgerBySeq(const uint32 seq)		{ return mLedgerMaster->getLedgerBySeq(seq); }
+
 	uint256					getClosedLedger()
 		{ return mLedgerMaster->getClosedLedger()->getHash(); }
 
-	// FIXME: This function is basically useless since the hash is constantly changing and the ledger
-	// is ephemeral and mutable.
-	uint256					getCurrentLedger()
-		{ return mLedgerMaster->getCurrentLedger()->getHash(); }
+	SLE::pointer getSLE(Ledger::pointer lpLedger, const uint256& uHash) { return lpLedger->getSLE(uHash); }
 
 	//
 	// Transaction operations
 	//
-	Transaction::pointer submitTransaction(Transaction::pointer tpTrans);
+	Transaction::pointer submitTransaction(const Transaction::pointer& tpTrans);
 
-	Transaction::pointer processTransaction(Transaction::pointer transaction, uint32 targetLedger = 0,
-		Peer* source = NULL);
+	Transaction::pointer processTransaction(Transaction::pointer transaction, Peer* source = NULL);
 	Transaction::pointer findTransactionByID(const uint256& transactionID);
 	int findTransactionsBySource(const uint256& uLedger, std::list<Transaction::pointer>&, const NewcoinAddress& sourceAccount,
 		uint32 minSeq, uint32 maxSeq);
@@ -129,8 +137,8 @@ public:
 	// Directory functions
 	//
 
-	STVector256					getDirNodeInfo(const uint256& uLedger, const uint256& uRootIndex,
-									uint64& uNodePrevious, uint64& uNodeNext);
+	STVector256				getDirNodeInfo(const uint256& uLedger, const uint256& uRootIndex,
+								uint64& uNodePrevious, uint64& uNodeNext);
 
 	//
 	// Nickname functions
@@ -145,21 +153,6 @@ public:
 	Json::Value getOwnerInfo(const uint256& uLedger, const NewcoinAddress& naAccount);
 	Json::Value getOwnerInfo(Ledger::pointer lpLedger, const NewcoinAddress& naAccount);
 
-	//
-	// Ripple functions
-	//
-
-	bool					getDirLineInfo(const uint256& uLedger, const NewcoinAddress& naAccount, uint256& uRootIndex)
-		{
-			LedgerStateParms	lspNode		= lepNONE;
-
-			uRootIndex	= Ledger::getRippleDirIndex(naAccount.getAccountID());
-
-			return !!mLedgerMaster->getLedgerByHash(uLedger)->getDirNode(lspNode, uRootIndex);
-		}
-
-	RippleState::pointer	accessRippleState(const uint256& uLedger, const uint256& uIndex);
-
 	// raw object operations
 	bool findRawLedger(const uint256& ledgerHash, std::vector<unsigned char>& rawLedger);
 	bool findRawTransaction(const uint256& transactionHash, std::vector<unsigned char>& rawTransaction);
@@ -173,14 +166,14 @@ public:
 		const std::vector<unsigned char>& myNode, std::list< std::vector<unsigned char> >& newNodes);
 
 	// ledger proposal/close functions
-	bool recvPropose(uint32 proposeSeq, const uint256& proposeHash, uint32 closeTime,
-		const std::string& pubKey, const std::string& signature);
-	bool gotTXData(boost::shared_ptr<Peer> peer, const uint256& hash,
+	bool recvPropose(uint32 proposeSeq, const uint256& proposeHash, const uint256& prevLedger, uint32 closeTime,
+		const std::string& pubKey, const std::string& signature, const NewcoinAddress& nodePublic);
+	bool gotTXData(const boost::shared_ptr<Peer>& peer, const uint256& hash,
 		const std::list<SHAMapNode>& nodeIDs, const std::list< std::vector<unsigned char> >& nodeData);
-	bool recvValidation(SerializedValidation::pointer val);
+	bool recvValidation(const SerializedValidation::pointer& val);
 	SHAMap::pointer getTXMap(const uint256& hash);
-	bool hasTXSet(boost::shared_ptr<Peer> peer, const uint256& set, newcoin::TxSetStatus status);
-	void mapComplete(const uint256& hash, SHAMap::pointer map);
+	bool hasTXSet(const boost::shared_ptr<Peer>& peer, const uint256& set, newcoin::TxSetStatus status);
+	void mapComplete(const uint256& hash, SHAMap::ref map);
 
 	// network state machine
 	void checkState(const boost::system::error_code& result);
@@ -188,12 +181,14 @@ public:
 	bool checkLastClosedLedger(const std::vector<Peer::pointer>&, uint256& networkClosed);
 	int beginConsensus(const uint256& networkClosed, Ledger::pointer closingLedger);
 	void endConsensus(bool correctLCL);
+	void setStandAlone()				{ setMode(omFULL); }
 	void setStateTimer();
 	void newLCL(int proposers, int convergeTime, const uint256& ledgerHash);
+	void consensusViewChange();
 	int getPreviousProposers()			{ return mLastCloseProposers; }
 	int getPreviousConvergeTime()		{ return mLastCloseConvergeTime; }
-	uint32 getLastCloseNetTime()		{ return mLastCloseNetTime; }
-	void setLastCloseNetTime(uint32 t)	{ mLastCloseNetTime = t; }
+	uint32 getLastCloseTime()			{ return mLastCloseTime; }
+	void setLastCloseTime(uint32 t)		{ mLastCloseTime = t; }
 	Json::Value getServerInfo();
 
 	// client information retrieval functions
@@ -207,8 +202,8 @@ public:
 	//
 
 	void pubAccountInfo(const NewcoinAddress& naAccountID, const Json::Value& jvObj);
-	void pubLedger(const Ledger::pointer& lpAccepted);
-	void pubTransaction(const Ledger::pointer& lpLedger, const SerializedTransaction& stTxn, TransactionEngineResult terResult);
+	void pubLedger(Ledger::ref lpAccepted);
+	void pubTransaction(Ledger::ref lpLedger, const SerializedTransaction& stTxn, TER terResult);
 
 	//
 	// Monitoring: subscriber side

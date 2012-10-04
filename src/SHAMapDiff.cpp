@@ -91,17 +91,22 @@ bool SHAMap::walkBranch(SHAMapTreeNode* node, SHAMapItem::pointer otherMapItem, 
 	return true;
 }
 
-bool SHAMap::compare(SHAMap::pointer otherMap, SHAMapDiff& differences, int maxCount)
+bool SHAMap::compare(SHAMap::ref otherMap, SHAMapDiff& differences, int maxCount)
 {   // compare two hash trees, add up to maxCount differences to the difference table
 	// return value: true=complete table of differences given, false=too many differences
 	// throws on corrupt tables or missing nodes
+	// CAUTION: otherMap is not locked and must be immutable
+
+	assert(isValid() && otherMap && otherMap->isValid());
 
 	std::stack<SHAMapDiffNode> nodeStack; // track nodes we've pushed
 
-	ScopedLock sl(Lock());
-	if (getHash() == otherMap->getHash()) return true;
-	nodeStack.push(SHAMapDiffNode(SHAMapNode(), getHash(), otherMap->getHash()));
+	boost::recursive_mutex::scoped_lock sl(mLock);
 
+	if (getHash() == otherMap->getHash())
+		return true;
+
+	nodeStack.push(SHAMapDiffNode(SHAMapNode(), getHash(), otherMap->getHash()));
  	while (!nodeStack.empty())
  	{
 		SHAMapDiffNode dNode(nodeStack.top());
@@ -109,6 +114,11 @@ bool SHAMap::compare(SHAMap::pointer otherMap, SHAMapDiff& differences, int maxC
 
 		SHAMapTreeNode* ourNode = getNodePointer(dNode.mNodeID, dNode.mOurHash);
 		SHAMapTreeNode* otherNode = otherMap->getNodePointer(dNode.mNodeID, dNode.mOtherHash);
+		if (!ourNode || !otherNode)
+		{
+			assert(false);
+			throw SHAMapMissingNode(dNode.mNodeID, uint256());
+		}
 
 		if (ourNode->isLeaf() && otherNode->isLeaf())
 		{ // two leaves
@@ -118,17 +128,20 @@ bool SHAMap::compare(SHAMap::pointer otherMap, SHAMapDiff& differences, int maxC
 				{
 					differences.insert(std::make_pair(ourNode->getTag(),
 						std::make_pair(ourNode->getItem(), otherNode->getItem())));
-					if (--maxCount <= 0) return false;
+					if (--maxCount <= 0)
+						return false;
 				}
 			}
 			else
 			{
 				differences.insert(std::make_pair(ourNode->getTag(),
 					std::make_pair(ourNode->getItem(), SHAMapItem::pointer())));
-				if (--maxCount <= 0) return false;
+				if (--maxCount <= 0)
+					return false;
 				differences.insert(std::make_pair(otherNode->getTag(),
 					std::make_pair(SHAMapItem::pointer(), otherNode->getItem())));
-				if (--maxCount <= 0) return false;
+				if (--maxCount <= 0)
+					return false;
 			}
 		}
 		else if (ourNode->isInner() && otherNode->isLeaf())
@@ -164,7 +177,8 @@ bool SHAMap::compare(SHAMap::pointer otherMap, SHAMapDiff& differences, int maxC
 							ourNode->getChildHash(i), otherNode->getChildHash(i)));
 				}
 		}
-		else assert(false);
+		else
+			assert(false);
 	}
 
 	return true;

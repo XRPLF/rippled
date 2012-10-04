@@ -39,7 +39,8 @@ public:
 
 class Application
 {
-	boost::asio::io_service	mIOService;
+	boost::asio::io_service			mIOService, mAuxService;
+	boost::asio::io_service::work	mIOWork, mAuxWork;
 
 	Wallet					mWallet;
 	UniqueNodeList			mUNL;
@@ -78,6 +79,7 @@ public:
 	NetworkOPs& getOPs()							{ return mNetOps; }
 
 	boost::asio::io_service& getIOService()			{ return mIOService; }
+	boost::asio::io_service& getAuxService()		{ return mAuxService; }
 
 	LedgerMaster& getMasterLedger()					{ return mMasterLedger; }
 	LedgerAcquireMaster& getMasterLedgerAcquire()	{ return mMasterLedgerAcquire; }

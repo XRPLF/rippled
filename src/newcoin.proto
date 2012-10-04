@@ -69,9 +69,6 @@ message TMTransaction {
 	required bytes rawTransaction			= 1;
 	required TransactionStatus status		= 2;
 	optional uint64 receiveTimestamp		= 3;
-	optional uint32 ledgerIndexPossible		= 4; // the node may not know
-	optional uint32 ledgerIndexFinal		= 5;
-	optional bytes conflictingTransaction	= 6;
 }
 
 
@@ -107,8 +104,9 @@ message TMProposeSet {
 	required bytes nodePubKey			= 3;
 	required uint32 closeTime			= 4;
 	required bytes signature			= 5;	// signature of above fields
-	repeated bytes addedTransactions	= 6;	// not required if number is large
-	repeated bytes removedTransactions	= 7;	// not required if number is large
+	optional bytes previousledger		= 6;
+	repeated bytes addedTransactions	= 10;	// not required if number is large
+	repeated bytes removedTransactions	= 11;	// not required if number is large
 }
 
 enum TxSetStatus {

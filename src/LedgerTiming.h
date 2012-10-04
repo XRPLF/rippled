@@ -4,8 +4,14 @@
 // The number of seconds a ledger may remain idle before closing
 #	define LEDGER_IDLE_INTERVAL		15
 
-// The number of seconds a validation remains current
-#	define LEDGER_MAX_INTERVAL		(LEDGER_IDLE_INTERVAL * 4)
+// The number of seconds a validation remains current after its ledger's close time
+// This is a safety to protect against very old validations and the time it takes to adjust
+// the close time accuracy window
+#	define LEDGER_VAL_INTERVAL		600
+
+// The number of seconds before a close time that we consider a validation acceptable
+// This protects against extreme clock errors
+#	define LEDGER_EARLY_INTERVAL	240
 
 // The number of milliseconds we wait minimum to ensure participation
 #	define LEDGER_MIN_CONSENSUS		2000
@@ -21,6 +27,16 @@
 
 // How often we check state or change positions (in milliseconds)
 #	define LEDGER_GRANULARITY		1000
+
+// The percentage of active trusted validators that must be able to
+// keep up with the network or we consider the network overloaded
+#	define LEDGER_NET_RATIO			70
+
+// How long we consider a proposal fresh
+#	define PROPOSE_FRESHNESS		20
+
+// How often we force generating a new proposal to keep ours fresh
+#	define PROPOSE_INTERVAL			12
 
 // Avalanche tuning
 #define AV_INIT_CONSENSUS_PCT		50	// percentage of nodes on our UNL that must vote yes
@@ -40,10 +56,11 @@ public:
 
 	// Returns the number of seconds the ledger was or should be open
 	// Call when a consensus is reached and when any transaction is relayed to be added
-	static int shouldClose(
+	static bool shouldClose(
 		bool anyTransactions,
 		int previousProposers,		int proposersClosed,
-		int previousSeconds,		int currentSeconds);
+		int previousSeconds,		int currentSeconds,
+		int idleInterval);
 
 	static bool haveConsensus(
 		int previousProposers,		int currentProposers,

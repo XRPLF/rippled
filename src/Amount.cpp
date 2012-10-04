@@ -3,6 +3,8 @@
 #include <algorithm>
 
 #include <boost/lexical_cast.hpp>
+#include <boost/algorithm/string/split.hpp>
+#include <boost/algorithm/string/classification.hpp>
 #include <boost/test/unit_test.hpp>
 
 #include "Config.h"
@@ -10,6 +12,9 @@
 #include "SerializedTypes.h"
 #include "utils.h"
 
+uint64	STAmount::uRateOne	= STAmount::getRate(STAmount(1), STAmount(1));
+
+// --> sCurrency: "", "XNS", or three letter ISO code.
 bool STAmount::currencyFromString(uint160& uDstCurrency, const std::string& sCurrency)
 {
 	bool	bSuccess	= true;
@@ -51,6 +56,98 @@ std::string STAmount::getHumanCurrency() const
 	return createHumanCurrency(mCurrency);
 }
 
+STAmount::STAmount(SField::ref n, const Json::Value& v)
+	: SerializedType(n), mValue(0), mOffset(0), mIsNegative(false)
+{
+	Json::Value value, currency, issuer;
+
+	if (v.isObject())
+	{
+		value = v["value"];
+		currency = v["currency"];
+		issuer = v["issuer"];
+	}
+	else if (v.isArray())
+	{
+			value = v.get(Json::UInt(0), 0);
+			currency = v.get(Json::UInt(1), Json::nullValue);
+			issuer = v.get(Json::UInt(2), Json::nullValue);
+	}
+	else if (v.isString())
+	{
+		std::string val = v.asString();
+		std::vector<std::string> elements;
+		boost::split(elements, val, boost::is_any_of("\t\n\r ,/"));
+
+		if ((elements.size() < 0) || (elements.size() > 3))
+			throw std::runtime_error("invalid amount string");
+
+		value = elements[0];
+		if (elements.size() > 0)
+			currency = elements[1];
+		if (elements.size() > 1)
+			issuer = elements[2];
+	}
+	else
+		value = v;
+
+	mIsNative = !currency.isString() || currency.asString().empty() || (currency.asString() == SYSTEM_CURRENCY_CODE);
+
+	if (value.isInt())
+	{
+		if (value.asInt() >= 0)
+			mValue = value.asInt();
+		else
+		{
+			mValue = -value.asInt();
+			mIsNegative = true;
+		}
+	}
+	else if (value.isUInt())
+		mValue = v.asUInt();
+	else if (value.isString())
+	{
+		if (mIsNative)
+		{
+			int64 val = lexical_cast_st<int64>(value.asString());
+			if (val >= 0)
+				mValue = val;
+			else
+			{
+				mValue = -val;
+				mIsNegative = true;
+			}
+		}
+		else
+			setValue(value.asString());
+	}
+	else
+		throw std::runtime_error("invalid amount type");
+
+	if (mIsNative)
+		return;
+
+	if (!currencyFromString(mCurrency, currency.asString()))
+		throw std::runtime_error("invalid currency");
+
+	if (!issuer.isString())
+		throw std::runtime_error("invalid issuer");
+
+	if (issuer.size() == (160/4))
+		mIssuer.SetHex(issuer.asString());
+	else
+	{
+		NewcoinAddress is;
+		if(!is.setAccountID(issuer.asString()))
+			throw std::runtime_error("invalid issuer");
+		mIssuer = is.getAccountID();
+	}
+	if (mIssuer.isZero())
+		throw std::runtime_error("invalid issuer");
+
+	canonicalize();
+}
+
 std::string STAmount::createHumanCurrency(const uint160& uCurrency)
 {
 	std::string	sCurrency;
@@ -58,6 +155,10 @@ std::string STAmount::createHumanCurrency(const uint160& uCurrency)
 	if (uCurrency.isZero())
 	{
 		return SYSTEM_CURRENCY_CODE;
+	}
+	else if (uCurrency == CURRENCY_ONE)
+	{
+		return "1";
 	}
 	else
 	{
@@ -74,15 +175,15 @@ std::string STAmount::createHumanCurrency(const uint160& uCurrency)
 
 		if (!::isZero(vucZeros.begin(), vucZeros.size()))
 		{
-			throw std::runtime_error("bad currency: zeros");
+			throw std::runtime_error(boost::str(boost::format("bad currency: zeros: %s") % uCurrency));
 		}
 		else if (!::isZero(vucVersion.begin(), vucVersion.size()))
 		{
-			throw std::runtime_error("bad currency: version");
+			throw std::runtime_error(boost::str(boost::format("bad currency: version: %s") % uCurrency));
 		}
 		else if (!::isZero(vucReserved.begin(), vucReserved.size()))
 		{
-			throw std::runtime_error("bad currency: reserved");
+			throw std::runtime_error(boost::str(boost::format("bad currency: reserved: %s") % uCurrency));
 		}
 		else
 		{
@@ -93,50 +194,32 @@ std::string STAmount::createHumanCurrency(const uint160& uCurrency)
 	return sCurrency;
 }
 
-// Not meant to be the ultimate parser.  For use by RPC which is supposed to be sane and trusted.
-// Native has special handling:
-// - Integer values are in base units.
-// - Float values are in float units.
-// - To avoid a mistake float value for native are specified with a "^" in place of a "."
-// <-- bValid: true = valid
-bool STAmount::setFullValue(const std::string& sAmount, const std::string& sCurrency, const std::string& sIssuer)
-{
-	//
-	// Figure out the currency.
-	//
-	if (!currencyFromString(mCurrency, sCurrency))
-		return false;
-
-	mIsNative	= !mCurrency;
-
-	//
-	// Figure out the issuer.
-	//
-	NewcoinAddress	naIssuerID;
-
-	// Issuer must be "" or a valid account string.
-	if (!naIssuerID.setAccountID(sIssuer))
-		return false;
-
-	mIssuer	= naIssuerID.getAccountID();
-
-	// Stamps not must have an issuer.
-	if (mIsNative && !mIssuer.isZero())
-		return false;
-
+bool STAmount::setValue(const std::string& sAmount)
+{ // Note: mIsNative must be set already!
 	uint64	uValue;
 	int		iOffset;
 	size_t	uDecimal	= sAmount.find_first_of(mIsNative ? "^" : ".");
 	bool	bInteger	= uDecimal == std::string::npos;
 
+	mIsNegative = false;
 	if (bInteger)
 	{
 		try
 		{
-			uValue	= sAmount.empty() ? 0 : boost::lexical_cast<uint64>(sAmount);
+			int64 a = sAmount.empty() ? 0 : lexical_cast_st<int64>(sAmount);
+			if (a >= 0)
+				uValue = static_cast<uint64>(a);
+			else
+			{
+				uValue = static_cast<uint64>(-a);
+				mIsNegative = true;
+			}
+
 		}
 		catch (...)
 		{
+			Log(lsINFO) << "Bad integer amount: " << sAmount;
+
 			return false;
 		}
 		iOffset	= 0;
@@ -147,16 +230,26 @@ bool STAmount::setFullValue(const std::string& sAmount, const std::string& sCurr
 		//    ^1      2       0            2     -1
 		// 123^       4       3            1      0
 		//   1^23     4       1            3     -2
-		iOffset	= -int(sAmount.size()-uDecimal-1);
+		iOffset	= -int(sAmount.size() - uDecimal - 1);
 
 
 		// Issolate integer and fraction.
-		uint64	uInteger	= uDecimal ? boost::lexical_cast<uint64>(sAmount.substr(0, uDecimal)) : 0;
-		uint64	uFraction	= iOffset ? boost::lexical_cast<uint64>(sAmount.substr(uDecimal+1)) : 0;
+		uint64 uInteger;
+		int64	iInteger	= uDecimal ? lexical_cast_st<uint64>(sAmount.substr(0, uDecimal)) : 0;
+		if (iInteger >= 0)
+			uInteger = static_cast<uint64>(iInteger);
+		else
+		{
+			uInteger = static_cast<uint64>(-iInteger);
+			mIsNegative = true;
+		}
+
+
+		uint64	uFraction	= iOffset ? lexical_cast_st<uint64>(sAmount.substr(uDecimal+1)) : 0;
 
 		// Scale the integer portion to the same offset as the fraction.
 		uValue	= uInteger;
-		for (int i=-iOffset; i--;)
+		for (int i = -iOffset; i--;)
 			uValue	*= 10;
 
 		// Add in the fraction.
@@ -186,8 +279,53 @@ bool STAmount::setFullValue(const std::string& sAmount, const std::string& sCurr
 		mOffset		= iOffset;
 		canonicalize();
 	}
-
 	return true;
+}
+
+// Not meant to be the ultimate parser.  For use by RPC which is supposed to be sane and trusted.
+// Native has special handling:
+// - Integer values are in base units.
+// - Float values are in float units.
+// - To avoid a mistake float value for native are specified with a "^" in place of a "."
+// <-- bValid: true = valid
+bool STAmount::setFullValue(const std::string& sAmount, const std::string& sCurrency, const std::string& sIssuer)
+{
+	//
+	// Figure out the currency.
+	//
+	if (!currencyFromString(mCurrency, sCurrency))
+	{
+		Log(lsINFO) << "Currency malformed: " << sCurrency;
+
+		return false;
+	}
+
+	mIsNative	= !mCurrency;
+
+	//
+	// Figure out the issuer.
+	//
+	NewcoinAddress	naIssuerID;
+
+	// Issuer must be "" or a valid account string.
+	if (!naIssuerID.setAccountID(sIssuer))
+	{
+		Log(lsINFO) << "Issuer malformed: " << sIssuer;
+
+		return false;
+	}
+
+	mIssuer	= naIssuerID.getAccountID();
+
+	// Stamps not must have an issuer.
+	if (mIsNative && !mIssuer.isZero())
+	{
+		Log(lsINFO) << "Issuer specified for stamps: " << sIssuer;
+
+		return false;
+	}
+
+	return setValue(sAmount);
 }
 
 // amount = value * [10 ^ offset]
@@ -274,21 +412,15 @@ void STAmount::add(Serializer& s) const
 			s.add64(mValue | (static_cast<uint64>(mOffset + 512 + 256 + 97) << (64 - 10)));
 
 		s.add160(mCurrency);
+		s.add160(mIssuer);
 	}
 }
 
-STAmount::STAmount(const char* name, int64 value) : SerializedType(name), mOffset(0), mIsNative(true)
+STAmount STAmount::createFromInt64(SField::ref name, int64 value)
 {
-	if (value >= 0)
-	{
-		mIsNegative	= false;
-		mValue		= static_cast<uint64>(value);
-	}
-	else
-	{
-		mIsNegative	= true;
-		mValue		= static_cast<uint64>(-value);
-	}
+	return value >= 0
+		? STAmount(name, static_cast<uint64>(value), false)
+		: STAmount(name, static_cast<uint64>(-value), true);
 }
 
 void STAmount::setValue(const STAmount &a)
@@ -303,13 +435,14 @@ void STAmount::setValue(const STAmount &a)
 
 uint64 STAmount::toUInt64() const
 { // makes them sort easily
-	if (mValue == 0) return 0x4000000000000000ull;
+	if (mValue == 0)
+		return 0x4000000000000000ull;
 	if (mIsNegative)
 		return mValue | (static_cast<uint64>(mOffset + 97) << (64 - 10));
 	return mValue | (static_cast<uint64>(mOffset + 256 + 97) << (64 - 10));
 }
 
-STAmount* STAmount::construct(SerializerIterator& sit, const char *name)
+STAmount* STAmount::construct(SerializerIterator& sit, SField::ref name)
 {
 	uint64 value = sit.get64();
 
@@ -320,25 +453,28 @@ STAmount* STAmount::construct(SerializerIterator& sit, const char *name)
 		return new STAmount(name, value, true); // negative
 	}
 
-	uint160 currency = sit.get160();
-	if (!currency)
+	uint160 uCurrencyID = sit.get160();
+	if (!uCurrencyID)
 		throw std::runtime_error("invalid native currency");
+
+	uint160	uIssuerID = sit.get160();
 
 	int offset = static_cast<int>(value >> (64 - 10)); // 10 bits for the offset, sign and "not native" flag
 	value &= ~(1023ull << (64-10));
 
-	if (value == 0)
+	if (value)
 	{
-		if (offset != 512)
+		bool isNegative = (offset & 256) == 0;
+		offset = (offset & 255) - 97; // center the range
+		if ((value < cMinValue) || (value > cMaxValue) || (offset < cMinOffset) || (offset > cMaxOffset))
 			throw std::runtime_error("invalid currency value");
-		return new STAmount(name, currency);
+
+		return new STAmount(name, uCurrencyID, uIssuerID, value, offset, isNegative);
 	}
 
-	bool isNegative = (offset & 256) == 0;
-	offset = (offset & 255) - 97; // center the range
-	if ((value < cMinValue) || (value > cMaxValue) || (offset < cMinOffset) || (offset > cMaxOffset))
+	if (offset != 512)
 		throw std::runtime_error("invalid currency value");
-	return new STAmount(name, currency, value, offset, isNegative);
+	return new STAmount(name, uCurrencyID, uIssuerID);
 }
 
 int64 STAmount::getSNValue() const
@@ -368,14 +504,14 @@ std::string STAmount::getRaw() const
 	if (mValue == 0) return "0";
 	if (mIsNative)
 	{
-		if (mIsNegative) return std::string("-") + boost::lexical_cast<std::string>(mValue);
-		else return boost::lexical_cast<std::string>(mValue);
+		if (mIsNegative) return std::string("-") + lexical_cast_i(mValue);
+		else return lexical_cast_i(mValue);
 	}
 	if (mIsNegative)
 		return mCurrency.GetHex() + ": -" +
-		boost::lexical_cast<std::string>(mValue) + "e" + boost::lexical_cast<std::string>(mOffset);
+		lexical_cast_i(mValue) + "e" + lexical_cast_i(mOffset);
 	else return mCurrency.GetHex() + ": " +
-		boost::lexical_cast<std::string>(mValue) + "e" + boost::lexical_cast<std::string>(mOffset);
+		lexical_cast_i(mValue) + "e" + lexical_cast_i(mOffset);
 }
 
 std::string STAmount::getText() const
@@ -384,20 +520,20 @@ std::string STAmount::getText() const
 	if (mIsNative)
 	{
 		if (mIsNegative)
-			return std::string("-") +  boost::lexical_cast<std::string>(mValue);
-		else return boost::lexical_cast<std::string>(mValue);
+			return std::string("-") +  lexical_cast_i(mValue);
+		else return lexical_cast_i(mValue);
 	}
 	if ((mOffset < -25) || (mOffset > -5))
 	{
 		if (mIsNegative)
-			return std::string("-") + boost::lexical_cast<std::string>(mValue) +
-				"e" + boost::lexical_cast<std::string>(mOffset);
+			return std::string("-") + lexical_cast_i(mValue) +
+				"e" + lexical_cast_i(mOffset);
 		else
-			return boost::lexical_cast<std::string>(mValue) + "e" + boost::lexical_cast<std::string>(mOffset);
+			return lexical_cast_i(mValue) + "e" + lexical_cast_i(mOffset);
 	}
 
 	std::string val = "000000000000000000000000000";
-	val += boost::lexical_cast<std::string>(mValue);
+	val += lexical_cast_i(mValue);
 	val += "00000000000000000000000";
 
 	std::string pre = val.substr(0, mOffset + 43);
@@ -446,7 +582,7 @@ bool STAmount::operator==(const STAmount& a) const
 
 bool STAmount::operator!=(const STAmount& a) const
 {
-	return (mOffset != a.mOffset) || (mValue != a.mValue) || (mIsNegative!= a.mIsNegative) || !isComparable(a);
+	return (mOffset != a.mOffset) || (mValue != a.mValue) || (mIsNegative != a.mIsNegative) || !isComparable(a);
 }
 
 bool STAmount::operator<(const STAmount& a) const
@@ -488,19 +624,7 @@ STAmount& STAmount::operator-=(const STAmount& a)
 STAmount STAmount::operator-(void) const
 {
 	if (mValue == 0) return *this;
-	return STAmount(name, mCurrency, mValue, mOffset, mIsNative, !mIsNegative);
-}
-
-STAmount& STAmount::operator=(const STAmount& a)
-{
-	mValue		= a.mValue;
-	mOffset		= a.mOffset;
-	mIssuer		= a.mIssuer;
-	mCurrency	= a.mCurrency;
-	mIsNative	= a.mIsNative;
-	mIsNegative = a.mIsNegative;
-
-	return *this;
+	return STAmount(getFName(), mCurrency, mIssuer, mValue, mOffset, mIsNative, !mIsNegative);
 }
 
 STAmount& STAmount::operator=(uint64 v)
@@ -553,12 +677,12 @@ bool STAmount::operator>=(uint64 v) const
 
 STAmount STAmount::operator+(uint64 v) const
 {
-	return STAmount(name, getSNValue() + static_cast<int64>(v));
+	return STAmount(getFName(), getSNValue() + static_cast<int64>(v));
 }
 
 STAmount STAmount::operator-(uint64 v) const
 {
-	return STAmount(name, getSNValue() - static_cast<int64>(v));
+	return STAmount(getFName(), getSNValue() - static_cast<int64>(v));
 }
 
 STAmount::operator double() const
@@ -576,7 +700,7 @@ STAmount operator+(const STAmount& v1, const STAmount& v2)
 
 	v1.throwComparable(v2);
 	if (v1.mIsNative)
-		return STAmount(v1.name, v1.getSNValue() + v2.getSNValue());
+		return STAmount(v1.getFName(), v1.getSNValue() + v2.getSNValue());
 
 
 	int ov1 = v1.mOffset, ov2 = v2.mOffset;
@@ -598,9 +722,9 @@ STAmount operator+(const STAmount& v1, const STAmount& v2)
 
 	int64 fv = vv1 + vv2;
 	if (fv >= 0)
-		return STAmount(v1.name, v1.mCurrency, fv, ov1, false);
+		return STAmount(v1.getFName(), v1.mCurrency, v1.mIssuer, fv, ov1, false);
 	else
-		return STAmount(v1.name, v1.mCurrency, -fv, ov1, true);
+		return STAmount(v1.getFName(), v1.mCurrency, v1.mIssuer, -fv, ov1, true);
 }
 
 STAmount operator-(const STAmount& v1, const STAmount& v2)
@@ -609,7 +733,10 @@ STAmount operator-(const STAmount& v1, const STAmount& v2)
 
 	v1.throwComparable(v2);
 	if (v2.mIsNative)
-		return STAmount(v1.name, v1.getSNValue() - v2.getSNValue());
+	{
+		// XXX This could be better, check for overflow and that maximum range is covered.
+		return STAmount::createFromInt64(v1.getFName(), v1.getSNValue() - v2.getSNValue());
+	}
 
 	int ov1 = v1.mOffset, ov2 = v2.mOffset;
 	int64 vv1 = static_cast<int64>(v1.mValue), vv2 = static_cast<int64>(v2.mValue);
@@ -630,15 +757,15 @@ STAmount operator-(const STAmount& v1, const STAmount& v2)
 
 	int64 fv = vv1 - vv2;
 	if (fv >= 0)
-		return STAmount(v1.name, v1.mCurrency, fv, ov1, false);
+		return STAmount(v1.getFName(), v1.mCurrency, v1.mIssuer, fv, ov1, false);
 	else
-		return STAmount(v1.name, v1.mCurrency, -fv, ov1, true);
+		return STAmount(v1.getFName(), v1.mCurrency, v1.mIssuer, -fv, ov1, true);
 }
 
-STAmount STAmount::divide(const STAmount& num, const STAmount& den, const uint160& currencyOut)
+STAmount STAmount::divide(const STAmount& num, const STAmount& den, const uint160& uCurrencyID, const uint160& uIssuerID)
 {
 	if (den.isZero()) throw std::runtime_error("division by zero");
-	if (num.isZero()) return STAmount(currencyOut);
+	if (num.isZero()) return STAmount(uCurrencyID, uIssuerID);
 
 	uint64 numVal = num.mValue, denVal = den.mValue;
 	int numOffset = num.mOffset, denOffset = den.mOffset;
@@ -674,17 +801,17 @@ STAmount STAmount::divide(const STAmount& num, const STAmount& den, const uint16
 	assert(BN_num_bytes(&v) <= 64);
 
 	if (num.mIsNegative != den.mIsNegative)
-		return -STAmount(currencyOut, v.getulong(), finOffset);
-	else return STAmount(currencyOut, v.getulong(), finOffset);
+		return -STAmount(uCurrencyID, uIssuerID, v.getulong(), finOffset);
+	else return STAmount(uCurrencyID, uIssuerID, v.getulong(), finOffset);
 }
 
-STAmount STAmount::multiply(const STAmount& v1, const STAmount& v2, const uint160& currencyOut)
+STAmount STAmount::multiply(const STAmount& v1, const STAmount& v2, const uint160& uCurrencyID, const uint160& uIssuerID)
 {
 	if (v1.isZero() || v2.isZero())
-		return STAmount(currencyOut);
+		return STAmount(uCurrencyID, uIssuerID);
 
 	if (v1.mIsNative && v2.mIsNative) // FIXME: overflow
-		return STAmount(v1.name, v1.getSNValue() * v2.getSNValue());
+		return STAmount(v1.getFName(), v1.getSNValue() * v2.getSNValue());
 
 	uint64 value1 = v1.mValue, value2 = v2.mValue;
 	int offset1 = v1.mOffset, offset2 = v2.mOffset;
@@ -737,8 +864,8 @@ STAmount STAmount::multiply(const STAmount& v1, const STAmount& v2, const uint16
 	assert(BN_num_bytes(&v) <= 64);
 
 	if (v1.mIsNegative != v2.mIsNegative)
-		return -STAmount(currencyOut, v.getulong(), offset1 + offset2 + 14);
-	else return STAmount(currencyOut, v.getulong(), offset1 + offset2 + 14);
+		return -STAmount(uCurrencyID, uIssuerID, v.getulong(), offset1 + offset2 + 14);
+	else return STAmount(uCurrencyID, uIssuerID, v.getulong(), offset1 + offset2 + 14);
 }
 
 // Convert an offer into an index amount so they sort by rate.
@@ -753,7 +880,7 @@ uint64 STAmount::getRate(const STAmount& offerOut, const STAmount& offerIn)
 {
 	if (offerOut.isZero()) throw std::runtime_error("Worthless offer");
 
-	STAmount r = divide(offerIn, offerOut, uint160(1));
+	STAmount r = divide(offerIn, offerOut, CURRENCY_ONE, ACCOUNT_ONE);
 
 	assert((r.getExponent() >= -100) && (r.getExponent() <= 155));
 
@@ -762,41 +889,65 @@ uint64 STAmount::getRate(const STAmount& offerOut, const STAmount& offerIn)
 	return (ret << (64 - 8)) | r.getMantissa();
 }
 
+STAmount STAmount::setRate(uint64 rate)
+{
+	uint64 mantissa = rate & ~(255ull << (64 - 8));
+	int exponent = static_cast<int>(rate >> (64 - 8)) - 100;
+
+	return STAmount(CURRENCY_ONE, ACCOUNT_ONE, mantissa, exponent);
+}
+
 // Taker gets all taker can pay for with saTakerFunds, limited by saOfferPays and saOfferFunds.
-// -->  saOfferFunds: Limit for saOfferPays
-// -->  saTakerFunds: Limit for saOfferGets : How much taker really wants. : Driver
-// -->   saOfferPays: Request : this should be reduced as the offer is fullfilled.
-// -->   saOfferGets: Request : this should be reduced as the offer is fullfilled.
-// -->   saTakerPays: Total : Used to know the approximate ratio of the exchange.
-// -->   saTakerGets: Total : Used to know the approximate ratio of the exchange.
-// <--   saTakerPaid: Actual
-// <--    saTakerGot: Actual
-// <--       bRemove: remove offer it is either fullfilled or unfunded
+// -->   uTakerPaysRate: >= QUALITY_ONE
+// -->   uOfferPaysRate: >= QUALITY_ONE
+// -->     saOfferFunds: Limit for saOfferPays
+// -->     saTakerFunds: Limit for saOfferGets : How much taker really wants. : Driver
+// -->      saOfferPays: Request : this should be reduced as the offer is fullfilled.
+// -->      saOfferGets: Request : this should be reduced as the offer is fullfilled.
+// -->      saTakerPays: Total : Used to know the approximate ratio of the exchange.
+// -->      saTakerGets: Total : Used to know the approximate ratio of the exchange.
+// <--      saTakerPaid: Actual
+// <--       saTakerGot: Actual
+// <-- saTakerIssuerFee: Actual
+// <-- saOfferIssuerFee: Actual
+// <--          bRemove: remove offer it is either fullfilled or unfunded
 bool STAmount::applyOffer(
+	const uint32 uTakerPaysRate, const uint32 uOfferPaysRate,
 	const STAmount& saOfferFunds, const STAmount& saTakerFunds,
 	const STAmount& saOfferPays, const STAmount& saOfferGets,
 	const STAmount& saTakerPays, const STAmount& saTakerGets,
-	STAmount& saTakerPaid, STAmount& saTakerGot)
+	STAmount& saTakerPaid, STAmount& saTakerGot,
+	STAmount& saTakerIssuerFee, STAmount& saOfferIssuerFee)
 {
 	saOfferGets.throwComparable(saTakerPays);
 
 	assert(!saOfferFunds.isZero() && !saTakerFunds.isZero());	// Must have funds.
 	assert(!saOfferGets.isZero() && !saOfferPays.isZero());		// Must not be a null offer.
 
+	// Amount offer can pay out, limited by funds and fees.
+	STAmount	saOfferFundsAvailable	= QUALITY_ONE == uOfferPaysRate
+											? saOfferFunds
+											: STAmount::divide(saOfferFunds, STAmount(CURRENCY_ONE, uOfferPaysRate, -9));
+
 	// Amount offer can pay out, limited by offer and funds.
-	STAmount	saOfferPaysAvailable	= saOfferFunds < saOfferPays ? saOfferFunds : saOfferPays;
+	STAmount	saOfferPaysAvailable	= std::min(saOfferFundsAvailable, saOfferPays);
 
 	// Amount offer can get in proportion, limited by offer funds.
 	STAmount	saOfferGetsAvailable =
-		saOfferFunds == saOfferPays
+		saOfferFundsAvailable == saOfferPays
 			? saOfferGets	// Offer was fully funded, avoid shenanigans.
-			: divide(multiply(saTakerPays, saOfferPaysAvailable, uint160(1)), saTakerGets, saOfferGets.getCurrency());
+			: divide(multiply(saTakerPays, saOfferPaysAvailable, CURRENCY_ONE, ACCOUNT_ONE), saTakerGets, saOfferGets.getCurrency(), saOfferGets.getIssuer());
 
-	if (saOfferGets == saOfferGetsAvailable && saTakerFunds >= saOfferGets)
+	// Amount taker can spend, limited by funds and fees.
+	STAmount saTakerFundsAvailable	= QUALITY_ONE == uTakerPaysRate
+										? saTakerFunds
+										: STAmount::divide(saTakerFunds, STAmount(CURRENCY_ONE, uTakerPaysRate, -9));
+
+	if (saOfferGets == saOfferGetsAvailable && saTakerFundsAvailable >= saOfferGets)
 	{
 		// Taker gets all of offer available.
-		saTakerPaid	= saOfferGets;		// Taker paid what offer could get.
-		saTakerGot	= saOfferPays;		// Taker got what offer could pay.
+		saTakerPaid			= saOfferGets;		// Taker paid what offer could get.
+		saTakerGot			= saOfferPays;		// Taker got what offer could pay.
 
 		Log(lsINFO) << "applyOffer: took all outright";
 	}
@@ -812,10 +963,34 @@ bool STAmount::applyOffer(
 	{
 		// Taker only get's a portion of offer.
 		saTakerPaid	= saTakerFunds;					// Taker paid all he had.
-		saTakerGot	= divide(multiply(saTakerFunds, saOfferPaysAvailable, uint160(1)), saOfferGetsAvailable, saOfferPays.getCurrency());
+		saTakerGot	= divide(multiply(saTakerFunds, saOfferPaysAvailable, CURRENCY_ONE, ACCOUNT_ONE), saOfferGetsAvailable, saOfferPays.getCurrency(), saOfferPays.getIssuer());
 
 		Log(lsINFO) << "applyOffer: saTakerGot=" << saTakerGot.getFullText();
 		Log(lsINFO) << "applyOffer: saOfferPaysAvailable=" << saOfferPaysAvailable.getFullText();
+	}
+
+	if (uTakerPaysRate == QUALITY_ONE)
+	{
+		saTakerIssuerFee	= STAmount(saTakerPaid.getCurrency(), saTakerPaid.getIssuer());
+	}
+	else
+	{
+		// Compute fees in a rounding safe way.
+		STAmount	saTotal	= STAmount::multiply(saTakerPaid, STAmount(CURRENCY_ONE, uTakerPaysRate, -9));
+
+		saTakerIssuerFee	= (saTotal > saTakerFunds) ? saTakerFunds-saTakerPaid : saTotal - saTakerPaid;
+	}
+
+	if (uOfferPaysRate == QUALITY_ONE)
+	{
+		saOfferIssuerFee	= STAmount(saTakerGot.getCurrency(), saTakerGot.getIssuer());
+	}
+	else
+	{
+		// Compute fees in a rounding safe way.
+		STAmount	saTotal	= STAmount::multiply(saTakerPaid, STAmount(CURRENCY_ONE, uTakerPaysRate, -9));
+
+		saOfferIssuerFee	= (saTotal > saOfferFunds) ? saOfferFunds-saTakerGot : saTotal - saTakerGot;
 	}
 
 	return saTakerGot >= saOfferPays;
@@ -824,7 +999,7 @@ bool STAmount::applyOffer(
 STAmount STAmount::getPay(const STAmount& offerOut, const STAmount& offerIn, const STAmount& needed)
 { // Someone wants to get (needed) out of the offer, how much should they pay in?
 	if (offerOut.isZero())
-		return STAmount(offerIn.getCurrency());
+		return STAmount(offerIn.getCurrency(), offerIn.getIssuer());
 
 	if (needed >= offerOut)
 	{
@@ -832,7 +1007,7 @@ STAmount STAmount::getPay(const STAmount& offerOut, const STAmount& offerIn, con
 		return needed;
 	}
 
-	STAmount ret = divide(multiply(needed, offerIn, uint160(1)), offerOut, offerIn.getCurrency());
+	STAmount ret = divide(multiply(needed, offerIn, CURRENCY_ONE, ACCOUNT_ONE), offerOut, offerIn.getCurrency(), offerIn.getIssuer());
 
 	return (ret > offerIn) ? offerIn : ret;
 }
@@ -855,19 +1030,15 @@ uint64 STAmount::convertToDisplayAmount(const STAmount& internalAmount, uint64 t
 	return muldiv(internalAmount.getNValue(), totalInit, totalNow);
 }
 
-STAmount STAmount::convertToInternalAmount(uint64 displayAmount, uint64 totalNow, uint64 totalInit,
-	const char *name)
+STAmount STAmount::convertToInternalAmount(uint64 displayAmount, uint64 totalNow, uint64 totalInit, SField::ref name)
 { // Convert a display/request currency amount to an internal amount
 	return STAmount(name, muldiv(displayAmount, totalNow, totalInit));
 }
 
 STAmount STAmount::deserialize(SerializerIterator& it)
 {
-	STAmount *s = construct(it);
+	std::auto_ptr<STAmount> s(dynamic_cast<STAmount*>(construct(it, sfGeneric)));
 	STAmount ret(*s);
-
-	delete s;
-
 	return ret;
 }
 
@@ -875,11 +1046,35 @@ std::string STAmount::getFullText() const
 {
 	if (mIsNative)
 	{
+		return str(boost::format("%s/" SYSTEM_CURRENCY_CODE) % getText());
+	}
+	else if (!mIssuer)
+	{
+		return str(boost::format("%s/%s/0") % getText() % getHumanCurrency());
+	}
+	else if (mIssuer == ACCOUNT_ONE)
+	{
+		return str(boost::format("%s/%s/1") % getText() % getHumanCurrency());
+	}
+	else
+	{
+		return str(boost::format("%s/%s/%s")
+			% getText()
+			% getHumanCurrency()
+			% NewcoinAddress::createHumanAccountID(mIssuer));
+	}
+}
+
+#if 0
+std::string STAmount::getExtendedText() const
+{
+	if (mIsNative)
+	{
 		return str(boost::format("%s " SYSTEM_CURRENCY_CODE) % getText());
 	}
 	else
 	{
-		return str(boost::format("%s %s/%s %dE%d" )
+		return str(boost::format("%s/%s/%s %dE%d" )
 			% getText()
 			% getHumanCurrency()
 			% NewcoinAddress::createHumanAccountID(mIssuer)
@@ -887,6 +1082,7 @@ std::string STAmount::getFullText() const
 			% getExponent());
 	}
 }
+#endif
 
 Json::Value STAmount::getJson(int) const
 {
@@ -1014,8 +1210,7 @@ BOOST_AUTO_TEST_CASE( NativeCurrency_test )
 
 BOOST_AUTO_TEST_CASE( CustomCurrency_test )
 {
-	uint160 currency(1);
-	STAmount zero(currency), one(currency, 1), hundred(currency, 100);
+	STAmount zero(CURRENCY_ONE, ACCOUNT_ONE), one(CURRENCY_ONE, ACCOUNT_ONE, 1), hundred(CURRENCY_ONE, ACCOUNT_ONE, 100);
 
 	serdes(one).getRaw();
 
@@ -1082,28 +1277,34 @@ BOOST_AUTO_TEST_CASE( CustomCurrency_test )
 	if (!(hundred != zero)) BOOST_FAIL("STAmount fail");
 	if (!(hundred != one)) BOOST_FAIL("STAmount fail");
 	if ((hundred != hundred)) BOOST_FAIL("STAmount fail");
-	if (STAmount(currency).getText() != "0") BOOST_FAIL("STAmount fail");
-	if (STAmount(currency,31).getText() != "31") BOOST_FAIL("STAmount fail");
-	if (STAmount(currency,31,1).getText() != "310") BOOST_FAIL("STAmount fail");
-	if (STAmount(currency,31,-1).getText() != "3.1") BOOST_FAIL("STAmount fail");
-	if (STAmount(currency,31,-2).getText() != "0.31") BOOST_FAIL("STAmount fail");
+	if (STAmount(CURRENCY_ONE, ACCOUNT_ONE).getText() != "0") BOOST_FAIL("STAmount fail");
+	if (STAmount(CURRENCY_ONE, ACCOUNT_ONE, 31).getText() != "31") BOOST_FAIL("STAmount fail");
+	if (STAmount(CURRENCY_ONE, ACCOUNT_ONE, 31,1).getText() != "310") BOOST_FAIL("STAmount fail");
+	if (STAmount(CURRENCY_ONE, ACCOUNT_ONE, 31,-1).getText() != "3.1") BOOST_FAIL("STAmount fail");
+	if (STAmount(CURRENCY_ONE, ACCOUNT_ONE, 31,-2).getText() != "0.31") BOOST_FAIL("STAmount fail");
 
-	if (STAmount::multiply(STAmount(currency, 20), STAmount(3), currency).getText() != "60")
+	if (STAmount::multiply(STAmount(CURRENCY_ONE, ACCOUNT_ONE, 20), STAmount(3), CURRENCY_ONE, ACCOUNT_ONE).getText() != "60")
 		BOOST_FAIL("STAmount multiply fail");
-	if (STAmount::multiply(STAmount(currency, 20), STAmount(3), uint160()).getText() != "60")
+	if (STAmount::multiply(STAmount(CURRENCY_ONE, ACCOUNT_ONE, 20), STAmount(3), uint160(), ACCOUNT_XNS).getText() != "60")
 		BOOST_FAIL("STAmount multiply fail");
-	if (STAmount::multiply(STAmount(20), STAmount(3), currency).getText() != "60")
+	if (STAmount::multiply(STAmount(20), STAmount(3), CURRENCY_ONE, ACCOUNT_ONE).getText() != "60")
 		BOOST_FAIL("STAmount multiply fail");
-	if (STAmount::multiply(STAmount(20), STAmount(3), uint160()).getText() != "60")
+	if (STAmount::multiply(STAmount(20), STAmount(3), uint160(), ACCOUNT_XNS).getText() != "60")
 		BOOST_FAIL("STAmount multiply fail");
-	if (STAmount::divide(STAmount(currency, 60) , STAmount(3), currency).getText() != "20")
+	if (STAmount::divide(STAmount(CURRENCY_ONE, ACCOUNT_ONE, 60), STAmount(3), CURRENCY_ONE, ACCOUNT_ONE).getText() != "20")
 		BOOST_FAIL("STAmount divide fail");
-	if (STAmount::divide(STAmount(currency, 60) , STAmount(3), uint160()).getText() != "20")
+	if (STAmount::divide(STAmount(CURRENCY_ONE, ACCOUNT_ONE, 60), STAmount(3), uint160(), ACCOUNT_XNS).getText() != "20")
 		BOOST_FAIL("STAmount divide fail");
-	if (STAmount::divide(STAmount(currency, 60) , STAmount(currency, 3), currency).getText() != "20")
+	if (STAmount::divide(STAmount(CURRENCY_ONE, ACCOUNT_ONE, 60), STAmount(CURRENCY_ONE, ACCOUNT_ONE, 3), CURRENCY_ONE, ACCOUNT_ONE).getText() != "20")
 		BOOST_FAIL("STAmount divide fail");
-	if (STAmount::divide(STAmount(currency, 60) , STAmount(currency, 3), uint160()).getText() != "20")
+	if (STAmount::divide(STAmount(CURRENCY_ONE, ACCOUNT_ONE, 60), STAmount(CURRENCY_ONE, ACCOUNT_ONE, 3), uint160(), ACCOUNT_XNS).getText() != "20")
 		BOOST_FAIL("STAmount divide fail");
+
+	STAmount a1(CURRENCY_ONE, ACCOUNT_ONE, 60), a2 (CURRENCY_ONE, ACCOUNT_ONE, 10, -1);
+	if (STAmount::divide(a2, a1, CURRENCY_ONE, ACCOUNT_ONE) != STAmount::setRate(STAmount::getRate(a1, a2)))
+		BOOST_FAIL("STAmount setRate(getRate) fail");
+	if (STAmount::divide(a1, a2, CURRENCY_ONE, ACCOUNT_ONE) != STAmount::setRate(STAmount::getRate(a2, a1)))
+		BOOST_FAIL("STAmount setRate(getRate) fail");
 
 	BOOST_TEST_MESSAGE("Amount CC Complete");
 }
@@ -1113,23 +1314,22 @@ BOOST_AUTO_TEST_CASE( CurrencyMulDivTests )
 	// Test currency multiplication and division operations such as
 	// convertToDisplayAmount, convertToInternalAmount, getRate, getClaimed, and getNeeded
 
-	uint160 c(1);
 	if (STAmount::getRate(STAmount(1), STAmount(10)) != (((100ul-14)<<(64-8))|1000000000000000ul))
-		BOOST_FAIL("STAmount getrate fail");
+		BOOST_FAIL("STAmount getRate fail");
 	if (STAmount::getRate(STAmount(10), STAmount(1)) != (((100ul-16)<<(64-8))|1000000000000000ul))
-		BOOST_FAIL("STAmount getrate fail");
-	if (STAmount::getRate(STAmount(c, 1), STAmount(c, 10)) != (((100ul-14)<<(64-8))|1000000000000000ul))
-		BOOST_FAIL("STAmount getrate fail");
-	if (STAmount::getRate(STAmount(c, 10), STAmount(c, 1)) != (((100ul-16)<<(64-8))|1000000000000000ul))
-		BOOST_FAIL("STAmount getrate fail");
-	if (STAmount::getRate(STAmount(c, 1), STAmount(10)) != (((100ul-14)<<(64-8))|1000000000000000ul))
-		BOOST_FAIL("STAmount getrate fail");
-	if (STAmount::getRate(STAmount(c, 10), STAmount(1)) != (((100ul-16)<<(64-8))|1000000000000000ul))
-		BOOST_FAIL("STAmount getrate fail");
-	if (STAmount::getRate(STAmount(1), STAmount(c, 10)) != (((100ul-14)<<(64-8))|1000000000000000ul))
-		BOOST_FAIL("STAmount getrate fail");
-	if (STAmount::getRate(STAmount(10), STAmount(c, 1)) != (((100ul-16)<<(64-8))|1000000000000000ul))
-		BOOST_FAIL("STAmount getrate fail");
+		BOOST_FAIL("STAmount getRate fail");
+	if (STAmount::getRate(STAmount(CURRENCY_ONE, ACCOUNT_ONE, 1), STAmount(CURRENCY_ONE, ACCOUNT_ONE, 10)) != (((100ul-14)<<(64-8))|1000000000000000ul))
+		BOOST_FAIL("STAmount getRate fail");
+	if (STAmount::getRate(STAmount(CURRENCY_ONE, ACCOUNT_ONE, 10), STAmount(CURRENCY_ONE, ACCOUNT_ONE, 1)) != (((100ul-16)<<(64-8))|1000000000000000ul))
+		BOOST_FAIL("STAmount getRate fail");
+	if (STAmount::getRate(STAmount(CURRENCY_ONE, ACCOUNT_ONE, 1), STAmount(10)) != (((100ul-14)<<(64-8))|1000000000000000ul))
+		BOOST_FAIL("STAmount getRate fail");
+	if (STAmount::getRate(STAmount(CURRENCY_ONE, ACCOUNT_ONE, 10), STAmount(1)) != (((100ul-16)<<(64-8))|1000000000000000ul))
+		BOOST_FAIL("STAmount getRate fail");
+	if (STAmount::getRate(STAmount(1), STAmount(CURRENCY_ONE, ACCOUNT_ONE, 10)) != (((100ul-14)<<(64-8))|1000000000000000ul))
+		BOOST_FAIL("STAmount getRate fail");
+	if (STAmount::getRate(STAmount(10), STAmount(CURRENCY_ONE, ACCOUNT_ONE, 1)) != (((100ul-16)<<(64-8))|1000000000000000ul))
+		BOOST_FAIL("STAmount getRate fail");
 
 }
 

@@ -9,6 +9,7 @@
 
 #include "key.h"
 #include "uint256.h"
+#include "FieldNames.h"
 
 typedef std::pair<int, std::vector<unsigned char> > TaggedListItem;
 
@@ -67,6 +68,10 @@ public:
 	bool getTaggedList(std::list<TaggedListItem>&, int offset, int& length) const;
 	bool getTaggedList(std::vector<TaggedListItem>&, int offset, int& length) const;
 
+	bool getFieldID(int& type, int& name, int offset) const;
+	int addFieldID(int type, int name);
+	int addFieldID(SerializedTypeID type, int name) { return addFieldID(static_cast<int>(type), name); }
+
 	// normal hash functions
 	uint160 getRIPEMD160(int size=-1) const;
 	uint256 getSHA256(int size=-1) const;
@@ -89,7 +94,7 @@ public:
 	int getDataLength() const			{ return mData.size(); }
 	const void* getDataPtr() const		{ return &mData.front(); }
 	void* getDataPtr()					{ return &mData.front(); }
-	int getLength()						{ return mData.size(); }
+	int getLength()	const				{ return mData.size(); }
 	const std::vector<unsigned char>& peekData() const { return mData; }
 	std::vector<unsigned char> getData() const { return mData; }
 	std::string getString() const { return std::string(static_cast<const char *>(getDataPtr()), size());  }
@@ -140,11 +145,12 @@ protected:
 public:
 	SerializerIterator(const Serializer& s) : mSerializer(s), mPos(0) { ; }
 
-	void reset(void) { mPos=0; }
+	void reset(void) { mPos = 0; }
 	void setPos(int p) { mPos = p; }
 	const Serializer& operator*(void) { return mSerializer; }
 
 	int getPos(void) { return mPos; }
+	bool empty() { return mPos == mSerializer.getLength(); }
 	int getBytesLeft();
 
 	// get functions throw on error
@@ -155,6 +161,8 @@ public:
 	uint128 get128();
 	uint160 get160();
 	uint256 get256();
+
+	void getFieldID(int& type, int& field);
 
 	std::vector<unsigned char> getRaw(int iLength);
 

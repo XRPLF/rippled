@@ -5,6 +5,7 @@
 #include <boost/lexical_cast.hpp>
 #include <fstream>
 #include <iostream>
+#include <algorithm>
 
 #define SECTION_ACCOUNT_PROBE_MAX		"account_probe_max"
 #define SECTION_DEBUG_LOGFILE			"debug_logfile"
@@ -12,6 +13,7 @@
 #define SECTION_FEE_DEFAULT				"fee_default"
 #define SECTION_FEE_NICKNAME_CREATE		"fee_nickname_create"
 #define SECTION_FEE_OFFER				"fee_offer"
+#define SECTION_FEE_OPERATION			"fee_operation"
 #define SECTION_IPS						"ips"
 #define SECTION_NETWORK_QUORUM			"network_quorum"
 #define SECTION_PEER_CONNECT_LOW_WATER	"peer_connect_low_water"
@@ -37,6 +39,7 @@
 #define DEFAULT_FEE_ACCOUNT_CREATE		1000
 #define DEFAULT_FEE_NICKNAME_CREATE		1000
 #define DEFAULT_FEE_OFFER				DEFAULT_FEE_DEFAULT
+#define DEFAULT_FEE_OPERATION			1
 
 Config theConfig;
 
@@ -145,10 +148,13 @@ void Config::setup(const std::string& strConf)
 	FEE_NICKNAME_CREATE		= DEFAULT_FEE_NICKNAME_CREATE;
 	FEE_OFFER				= DEFAULT_FEE_OFFER;
 	FEE_DEFAULT				= DEFAULT_FEE_DEFAULT;
+	FEE_CONTRACT_OPERATION  = DEFAULT_FEE_OPERATION;
 
 	ACCOUNT_PROBE_MAX		= 10;
 
 	VALIDATORS_SITE			= DEFAULT_VALIDATORS_SITE;
+
+	RUN_STANDALONE			= false;
 
 	load();
 }
@@ -230,19 +236,19 @@ void Config::load()
 
 			if (sectionSingleB(secConfig, SECTION_PEER_SCAN_INTERVAL_MIN, strTemp))
 				// Minimum for min is 60 seconds.
-				PEER_SCAN_INTERVAL_MIN = MAX(60, boost::lexical_cast<int>(strTemp));
+				PEER_SCAN_INTERVAL_MIN = std::max(60, boost::lexical_cast<int>(strTemp));
 
 			if (sectionSingleB(secConfig, SECTION_PEER_START_MAX, strTemp))
-				PEER_START_MAX		= MAX(1, boost::lexical_cast<int>(strTemp));
+				PEER_START_MAX		= std::max(1, boost::lexical_cast<int>(strTemp));
 
 			if (sectionSingleB(secConfig, SECTION_PEER_CONNECT_LOW_WATER, strTemp))
-				PEER_CONNECT_LOW_WATER = MAX(1, boost::lexical_cast<int>(strTemp));
+				PEER_CONNECT_LOW_WATER = std::max(1, boost::lexical_cast<int>(strTemp));
 
 			if (sectionSingleB(secConfig, SECTION_NETWORK_QUORUM, strTemp))
-				NETWORK_QUORUM		= MAX(0, boost::lexical_cast<int>(strTemp));
+				NETWORK_QUORUM		= std::max(0, boost::lexical_cast<int>(strTemp));
 
 			if (sectionSingleB(secConfig, SECTION_VALIDATION_QUORUM, strTemp))
-				VALIDATION_QUORUM	= MAX(0, boost::lexical_cast<int>(strTemp));
+				VALIDATION_QUORUM	= std::max(0, boost::lexical_cast<int>(strTemp));
 
 			if (sectionSingleB(secConfig, SECTION_FEE_ACCOUNT_CREATE, strTemp))
 				FEE_ACCOUNT_CREATE	= boost::lexical_cast<int>(strTemp);
@@ -255,6 +261,9 @@ void Config::load()
 
 			if (sectionSingleB(secConfig, SECTION_FEE_DEFAULT, strTemp))
 				FEE_DEFAULT			= boost::lexical_cast<int>(strTemp);
+
+			if (sectionSingleB(secConfig, SECTION_FEE_OPERATION, strTemp))
+				FEE_CONTRACT_OPERATION	= boost::lexical_cast<int>(strTemp);
 
 			if (sectionSingleB(secConfig, SECTION_ACCOUNT_PROBE_MAX, strTemp))
 				ACCOUNT_PROBE_MAX	= boost::lexical_cast<int>(strTemp);

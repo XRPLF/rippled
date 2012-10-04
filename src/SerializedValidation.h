@@ -8,24 +8,25 @@ class SerializedValidation : public STObject
 {
 protected:
 	STVariableLength mSignature;
+	uint256	mPreviousHash;
 	bool mTrusted;
 
 	void setNode();
 
 public:
-	typedef boost::shared_ptr<SerializedValidation> pointer;
+	typedef boost::shared_ptr<SerializedValidation>			pointer;
+	typedef const boost::shared_ptr<SerializedValidation>&	ref;
 
-	static SOElement	sValidationFormat[16];
 	static const uint32	sFullFlag;
 
 	// These throw if the object is not valid
 	SerializedValidation(SerializerIterator& sit, bool checkSignature = true);
 	SerializedValidation(const Serializer& s, bool checkSignature = true);
 
-	SerializedValidation(const uint256& ledgerHash, uint32 closeTime, const NewcoinAddress& naSeed, bool isFull);
+	SerializedValidation(const uint256& ledgerHash, uint32 signTime, const NewcoinAddress& naSeed, bool isFull);
 
 	uint256			getLedgerHash()		const;
-	uint32			getCloseTime()		const;
+	uint32			getSignTime()		const;
 	uint32			getFlags()			const;
 	NewcoinAddress  getSignerPublic()	const;
 	bool			isValid()			const;
@@ -39,6 +40,11 @@ public:
 	void						addSignature(Serializer&)	const;
 	std::vector<unsigned char>	getSigned()					const;
 	std::vector<unsigned char>	getSignature()				const;
+
+	// The validation this replaced
+	const uint256& getPreviousHash()		{ return mPreviousHash; }
+	bool isPreviousHash(const uint256& h)	{ return mPreviousHash == h; }
+	void setPreviousHash(const uint256& h)	{ mPreviousHash = h; }
 };
 
 #endif

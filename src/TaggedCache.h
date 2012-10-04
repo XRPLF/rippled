@@ -1,8 +1,6 @@
 #ifndef __TAGGEDCACHE__
 #define __TAGGEDCACHE__
 
-#include <map>
-
 #include <boost/thread/recursive_mutex.hpp>
 #include <boost/unordered_map.hpp>
 #include <boost/shared_ptr.hpp>
@@ -21,18 +19,18 @@
 template <typename c_Key, typename c_Data> class TaggedCache
 {
 public:
-	typedef c_Key key_type;
-	typedef c_Data data_type;
+	typedef c_Key	key_type;
+	typedef c_Data	data_type;
 
-	typedef boost::weak_ptr<data_type> weak_data_ptr;
-	typedef boost::shared_ptr<data_type> data_ptr;
-
-	typedef std::pair<time_t, data_ptr> cache_entry;
+	typedef boost::weak_ptr<data_type>		weak_data_ptr;
+	typedef boost::shared_ptr<data_type>	data_ptr;
+	typedef std::pair<time_t, data_ptr>		cache_entry;
 
 protected:
 	mutable boost::recursive_mutex mLock;
 
 	int mTargetSize, mTargetAge;
+
 	boost::unordered_map<key_type, cache_entry> mCache;	// Hold strong reference to recent objects
 	time_t mLastSweep;
 
@@ -40,6 +38,7 @@ protected:
 
 public:
 	TaggedCache(int size, int age) : mTargetSize(size), mTargetAge(age), mLastSweep(time(NULL)) { ; }
+
 	int getTargetSize() const;
 	int getTargetAge() const;
 
@@ -52,7 +51,7 @@ public:
 
 	bool touch(const key_type& key);
 	bool del(const key_type& key);
-	bool canonicalize(const key_type& key, boost::shared_ptr<c_Data>& data);
+	bool canonicalize(const key_type& key, boost::shared_ptr<c_Data>& data, bool replace = false);
 	bool store(const key_type& key, const c_Data& data);
 	boost::shared_ptr<c_Data> fetch(const key_type& key);
 	bool retrieve(const key_type& key, c_Data& data);
@@ -82,10 +81,12 @@ template<typename c_Key, typename c_Data> void TaggedCache<c_Key, c_Data>::sweep
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
-	if (mCache.size() < mTargetSize) return;
+	if (mCache.size() < mTargetSize)
+		return;
 
 	time_t now = time(NULL);
-	if ((mLastSweep + 10) < now) return;
+	if ((mLastSweep + 10) < now)
+		return;
 	
 	mLastSweep = now;
 	time_t target = now - mTargetAge;
@@ -99,7 +100,8 @@ template<typename c_Key, typename c_Data> void TaggedCache<c_Key, c_Data>::sweep
 			typename boost::unordered_map<key_type, cache_entry>::iterator tmp = cit++;
 			mCache.erase(tmp);
 		}
-		else ++cit;
+		else
+			++cit;
 	}
 
 	// Pass 2, remove dead objects from map
@@ -109,9 +111,10 @@ template<typename c_Key, typename c_Data> void TaggedCache<c_Key, c_Data>::sweep
 		if (mit->second->expired())
 		{
 			typename boost::unordered_map<key_type, weak_data_ptr>::iterator tmp = mit++;
-			mMap.erase(mit);
+			mMap.erase(mit++);
 		}
-		else ++mit;
+		else
+			++mit;
 	}
 }
 
@@ -121,7 +124,8 @@ template<typename c_Key, typename c_Data> bool TaggedCache<c_Key, c_Data>::touch
 
 	// Is the object in the map?
 	typename boost::unordered_map<key_type, weak_data_ptr>::iterator mit = mMap.find(key);
-	if (mit == mMap.end()) return false;
+	if (mit == mMap.end())
+		return false;
 	if (mit->second.expired())
 	{	// in map, but expired
 		mMap.erase(mit);
@@ -146,13 +150,14 @@ template<typename c_Key, typename c_Data> bool TaggedCache<c_Key, c_Data>::del(c
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
 	typename boost::unordered_map<key_type, cache_entry>::iterator cit = mCache.find(key);
-	if (cit == mCache.end()) return false;
+	if (cit == mCache.end())
+		return false;
 	mCache.erase(cit);
 	return true;	
 }
 
 template<typename c_Key, typename c_Data>
-bool TaggedCache<c_Key, c_Data>::canonicalize(const key_type& key, boost::shared_ptr<c_Data>& data)
+bool TaggedCache<c_Key, c_Data>::canonicalize(const key_type& key, boost::shared_ptr<c_Data>& data, bool replace)
 {	// Return canonical value, store if needed, refresh in cache
 	// Return values: true=we had the data already
 	boost::recursive_mutex::scoped_lock sl(mLock);
@@ -172,13 +177,21 @@ bool TaggedCache<c_Key, c_Data>::canonicalize(const key_type& key, boost::shared
 		mCache.insert(std::make_pair(key, std::make_pair(time(NULL), data)));
 		return false;
 	}
-	
-	data = cachedData;
+
+	// in map and cache, canonicalize
+	if (replace)
+		mit->second = data;
+	else
+		data = cachedData;
 
 	// Valid in map, is it in cache?
 	typename boost::unordered_map<key_type, cache_entry>::iterator cit = mCache.find(key);
 	if (cit != mCache.end())
+	{
 		cit->second.first = time(NULL); // Yes, refesh
+		if (replace)
+			cit->second.second = data;
+	}
 	else // no, add to cache
 		mCache.insert(std::make_pair(key, std::make_pair(time(NULL), data)));
 
@@ -192,7 +205,8 @@ boost::shared_ptr<c_Data> TaggedCache<c_Key, c_Data>::fetch(const key_type& key)
 
 	// Is it in the map?
 	typename boost::unordered_map<key_type, weak_data_ptr>::iterator mit = mMap.find(key);
-	if (mit == mMap.end()) return data_ptr(); // No, we're done
+	if (mit == mMap.end())
+		return data_ptr(); // No, we're done
 
 	boost::shared_ptr<c_Data> cachedData = mit->second.lock();
 	if (!cachedData)

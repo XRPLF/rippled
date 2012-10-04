@@ -27,21 +27,21 @@ protected:
 	SHAMap::pointer		mMap;
 	bool				mHaveRoot;
 
-	void onTimer()						{ trigger(Peer::pointer()); }
-	void newPeer(Peer::pointer peer)	{ trigger(peer); }
+	void onTimer()					{ trigger(Peer::pointer(), true); }
+	void newPeer(Peer::ref peer)	{ trigger(peer, false); }
 
 	void done();
-	void trigger(Peer::pointer);
+	void trigger(Peer::ref, bool timer);
 	boost::weak_ptr<PeerSet> pmDowncast();
 
 public:
 
 	TransactionAcquire(const uint256& hash);
+	virtual ~TransactionAcquire()		{ ; }
 
 	SHAMap::pointer getMap()			{ return mMap; }
 
-	bool takeNodes(const std::list<SHAMapNode>& IDs, const std::list< std::vector<unsigned char> >& data,
-		Peer::pointer);
+	bool takeNodes(const std::list<SHAMapNode>& IDs, const std::list< std::vector<unsigned char> >& data, Peer::ref);
 };
 
 class LCTransaction
@@ -49,23 +49,25 @@ class LCTransaction
 protected:
 	uint256 mTransactionID;
 	int mYays, mNays;
-	bool mOurPosition;
+	bool mOurVote;
 	Serializer transaction;
 	boost::unordered_map<uint160, bool> mVotes;
 
 public:
 	typedef boost::shared_ptr<LCTransaction> pointer;
 
-	LCTransaction(const uint256 &txID, const std::vector<unsigned char>& tx, bool ourPosition) :
-		mTransactionID(txID), mYays(0), mNays(0), mOurPosition(ourPosition), transaction(tx) { ; }
+	LCTransaction(const uint256 &txID, const std::vector<unsigned char>& tx, bool ourVote) :
+		mTransactionID(txID), mYays(0), mNays(0), mOurVote(ourVote), transaction(tx) { ; }
 
 	const uint256& getTransactionID() const				{ return mTransactionID; }
-	bool getOurPosition() const							{ return mOurPosition; }
+	bool getOurVote() const								{ return mOurVote; }
 	Serializer& peekTransaction()						{ return transaction; }
+	void setOurVote(bool o)								{ mOurVote = o; }
 
 	void setVote(const uint160& peer, bool votesYes);
+	void unVote(const uint160& peer);
 
-	bool updatePosition(int percentTime, bool proposing);
+	bool updateVote(int percentTime, bool proposing);
 };
 
 enum LCState
@@ -99,7 +101,7 @@ protected:
 	boost::unordered_map<uint160, LedgerProposal::pointer> mPeerPositions;
 
 	// Transaction Sets, indexed by hash of transaction tree
-	boost::unordered_map<uint256, SHAMap::pointer> mComplete;
+	boost::unordered_map<uint256, SHAMap::pointer> mAcquired;
 	boost::unordered_map<uint256, TransactionAcquire::pointer> mAcquiring;
 
 	// Peer sets
@@ -111,37 +113,47 @@ protected:
 	// Close time estimates
 	std::map<uint32, int> mCloseTimes;
 
+	// deferred proposals (node ID -> proposals from that peer)
+	boost::unordered_map< uint160,  std::list<LedgerProposal::pointer> > mDeferredProposals;
+
+	// nodes that have bowed out of this consensus process
+	boost::unordered_set<uint160> mDeadNodes;
+
 	// final accept logic
 	static void Saccept(boost::shared_ptr<LedgerConsensus> This, SHAMap::pointer txSet);
-	void accept(SHAMap::pointer txSet);
+	void accept(SHAMap::ref txSet);
 
-	void weHave(const uint256& id, Peer::pointer avoidPeer);
-	void startAcquiring(TransactionAcquire::pointer);
+	void weHave(const uint256& id, Peer::ref avoidPeer);
+	void startAcquiring(const TransactionAcquire::pointer&);
 	SHAMap::pointer find(const uint256& hash);
 
-	void createDisputes(SHAMap::pointer, SHAMap::pointer);
+	void createDisputes(SHAMap::ref, SHAMap::ref);
 	void addDisputedTransaction(const uint256&, const std::vector<unsigned char>& transaction);
-	void adjustCount(SHAMap::pointer map, const std::vector<uint160>& peers);
-	void propose(const std::vector<uint256>& addedTx, const std::vector<uint256>& removedTx);
+	void adjustCount(SHAMap::ref map, const std::vector<uint160>& peers);
+	void propose();
 
 	void addPosition(LedgerProposal&, bool ours);
 	void removePosition(LedgerProposal&, bool ours);
 	void sendHaveTxSet(const uint256& set, bool direct);
-	void applyTransactions(SHAMap::pointer transactionSet, Ledger::pointer targetLedger, Ledger::pointer checkLedger,
-		CanonicalTXSet& failedTransactions, bool final);
-	void applyTransaction(TransactionEngine& engine, SerializedTransaction::pointer txn, Ledger::pointer targetLedger,
-		CanonicalTXSet& failedTransactions, bool final);
+	void applyTransactions(SHAMap::ref transactionSet, Ledger::ref targetLedger,
+		Ledger::ref checkLedger, CanonicalTXSet& failedTransactions, bool openLgr);
+	void applyTransaction(TransactionEngine& engine, const SerializedTransaction::pointer& txn,
+		Ledger::ref targetLedger, CanonicalTXSet& failedTransactions, bool openLgr);
+
+	uint32 roundCloseTime(uint32 closeTime);
 
 	// manipulating our own position
 	void statusChange(newcoin::NodeEvent, Ledger& ledger);
 	void takeInitialPosition(Ledger& initialLedger);
 	void updateOurPositions();
+	void playbackProposals();
 	int getThreshold();
+
 	void beginAccept();
 	void endConsensus();
 
 public:
-	LedgerConsensus(const uint256& prevLCLHash, Ledger::pointer previousLedger, uint32 closeTime);
+	LedgerConsensus(const uint256& prevLCLHash, Ledger::ref previousLedger, uint32 closeTime);
 
 	int startup();
 	Json::Value getJson();
@@ -151,8 +163,9 @@ public:
 
 	SHAMap::pointer getTransactionTree(const uint256& hash, bool doAcquire);
 	TransactionAcquire::pointer getAcquiring(const uint256& hash);
-	void mapComplete(const uint256& hash, SHAMap::pointer map, bool acquired);
+	void mapComplete(const uint256& hash, SHAMap::ref map, bool acquired);
 	void checkLCL();
+	void handleLCL(const uint256& lclHash);
 
 	void timerEntry();
 
@@ -165,12 +178,17 @@ public:
 
 	bool haveConsensus();
 
-	bool peerPosition(LedgerProposal::pointer);
+	bool peerPosition(const LedgerProposal::pointer&);
+	void deferProposal(const LedgerProposal::pointer& proposal,	const NewcoinAddress& peerPublic);
 
-	bool peerHasSet(Peer::pointer peer, const uint256& set, newcoin::TxSetStatus status);
+	bool peerHasSet(Peer::ref peer, const uint256& set, newcoin::TxSetStatus status);
 
-	bool peerGaveNodes(Peer::pointer peer, const uint256& setHash,
+	bool peerGaveNodes(Peer::ref peer, const uint256& setHash,
 		const std::list<SHAMapNode>& nodeIDs, const std::list< std::vector<unsigned char> >& nodeData);
+
+	void swapDefer(boost::unordered_map< uint160, std::list<LedgerProposal::pointer> > &n)
+		{ mDeferredProposals.swap(n); }
+
 };
 
 

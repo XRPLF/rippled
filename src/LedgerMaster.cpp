@@ -5,7 +5,6 @@
 
 #include "Application.h"
 #include "NewcoinAddress.h"
-#include "Conversion.h"
 #include "Log.h"
 
 uint32 LedgerMaster::getCurrentLedgerIndex()
@@ -13,37 +12,39 @@ uint32 LedgerMaster::getCurrentLedgerIndex()
 	return mCurrentLedger->getLedgerSeq();
 }
 
-bool LedgerMaster::addHeldTransaction(Transaction::pointer transaction)
+bool LedgerMaster::addHeldTransaction(const Transaction::pointer& transaction)
 { // returns true if transaction was added
 	boost::recursive_mutex::scoped_lock ml(mLock);
 	return mHeldTransactionsByID.insert(std::make_pair(transaction->getID(), transaction)).second;
 }
 
-void LedgerMaster::pushLedger(Ledger::pointer newLedger)
+void LedgerMaster::pushLedger(Ledger::ref newLedger)
 {
 	// Caller should already have properly assembled this ledger into "ready-to-close" form --
 	// all candidate transactions must already be appled
-	Log(lsINFO) << "PushLedger: " << newLedger->getHash().GetHex();
+	Log(lsINFO) << "PushLedger: " << newLedger->getHash();
 	ScopedLock sl(mLock);
 	if (!!mFinalizedLedger)
 	{
 		mFinalizedLedger->setClosed();
-		Log(lsTRACE) << "Finalizes: " << mFinalizedLedger->getHash().GetHex();
+		Log(lsTRACE) << "Finalizes: " << mFinalizedLedger->getHash();
 	}
 	mFinalizedLedger = mCurrentLedger;
 	mCurrentLedger = newLedger;
 	mEngine.setLedger(newLedger);
 }
 
-void LedgerMaster::pushLedger(Ledger::pointer newLCL, Ledger::pointer newOL)
+void LedgerMaster::pushLedger(Ledger::ref newLCL, Ledger::ref newOL)
 {
 	assert(newLCL->isClosed() && newLCL->isAccepted());
 	assert(!newOL->isClosed() && !newOL->isAccepted());
 
 	if (newLCL->isAccepted())
 	{
+		assert(newLCL->isClosed());
+		assert(newLCL->isImmutable());
 		mLedgerHistory.addAcceptedLedger(newLCL);
-		Log(lsINFO) << "StashAccepted: " << newLCL->getHash().GetHex();
+		Log(lsINFO) << "StashAccepted: " << newLCL->getHash();
 	}
 
 	mFinalizedLedger = newLCL;
@@ -52,7 +53,7 @@ void LedgerMaster::pushLedger(Ledger::pointer newLCL, Ledger::pointer newOL)
 	mEngine.setLedger(newOL);
 }
 
-void LedgerMaster::switchLedgers(Ledger::pointer lastClosed, Ledger::pointer current)
+void LedgerMaster::switchLedgers(Ledger::ref lastClosed, Ledger::ref current)
 {
 	assert(lastClosed && current);
 	mFinalizedLedger = lastClosed;
@@ -64,7 +65,7 @@ void LedgerMaster::switchLedgers(Ledger::pointer lastClosed, Ledger::pointer cur
 	mEngine.setLedger(mCurrentLedger);
 }
 
-void LedgerMaster::storeLedger(Ledger::pointer ledger)
+void LedgerMaster::storeLedger(Ledger::ref ledger)
 {
 	mLedgerHistory.addLedger(ledger);
 }
@@ -78,10 +79,9 @@ Ledger::pointer LedgerMaster::closeLedger()
 	return closingLedger;
 }
 
-TransactionEngineResult LedgerMaster::doTransaction(const SerializedTransaction& txn, uint32 targetLedger,
-	TransactionEngineParams params)
+TER LedgerMaster::doTransaction(const SerializedTransaction& txn, TransactionEngineParams params)
 {
-	TransactionEngineResult result = mEngine.applyTransaction(txn, params);
+	TER result = mEngine.applyTransaction(txn, params);
 	theApp->getOPs().pubTransaction(mEngine.getLedger(), txn, result);
 	return result;
 }

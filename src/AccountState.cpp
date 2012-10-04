@@ -9,23 +9,28 @@
 
 #include "Ledger.h"
 #include "Serializer.h"
+#include "Log.h"
 
-AccountState::AccountState(const NewcoinAddress& id) : mAccountID(id), mValid(false)
+AccountState::AccountState(const NewcoinAddress& naAccountID) : mAccountID(naAccountID), mValid(false)
 {
-	if (!id.isValid()) return;
+	if (!naAccountID.isValid()) return;
+
 	mLedgerEntry = boost::make_shared<SerializedLedgerEntry>(ltACCOUNT_ROOT);
-	mLedgerEntry->setIndex(Ledger::getAccountRootIndex(id));
-	mLedgerEntry->setIFieldAccount(sfAccount, id);
+	mLedgerEntry->setIndex(Ledger::getAccountRootIndex(naAccountID));
+	mLedgerEntry->setFieldAccount(sfAccount, naAccountID.getAccountID());
+
 	mValid = true;
 }
 
-AccountState::AccountState(SerializedLedgerEntry::pointer ledgerEntry) : mLedgerEntry(ledgerEntry), mValid(false)
+AccountState::AccountState(SLE::ref ledgerEntry, const NewcoinAddress& naAccountID) :
+	mAccountID(naAccountID), mLedgerEntry(ledgerEntry), mValid(false)
 {
-	if (!mLedgerEntry) return;
-	if (mLedgerEntry->getType() != ltACCOUNT_ROOT) return;
-	mAccountID = mLedgerEntry->getIValueFieldAccount(sfAccount);
-	if (mAccountID.isValid())
-		mValid = true;
+	if (!mLedgerEntry)
+		return;
+	if (mLedgerEntry->getType() != ltACCOUNT_ROOT)
+		return;
+
+	mValid = true;
 }
 
 std::string AccountState::createGravatarUrl(uint128 uEmailHash)
@@ -41,20 +46,22 @@ void AccountState::addJson(Json::Value& val)
 {
 	val = mLedgerEntry->getJson(0);
 
-	if (!mValid) val["Invalid"] = true;
-
-	if (mLedgerEntry->getIFieldPresent(sfEmailHash))
-		val["UrlGravatar"]	= createGravatarUrl(mLedgerEntry->getIFieldH128(sfEmailHash));
+	if (mValid)
+	{
+		if (mLedgerEntry->isFieldPresent(sfEmailHash))
+			val["UrlGravatar"]	= createGravatarUrl(mLedgerEntry->getFieldH128(sfEmailHash));
+	}
+	else
+	{
+		val["Invalid"] = true;
+	}
 }
 
 void AccountState::dump()
 {
 	Json::Value j(Json::objectValue);
-
 	addJson(j);
-
-	Json::StyledStreamWriter ssw;
-	ssw.write(std::cerr, j);
+	Log(lsINFO) << j;
 }
 
 // vim:ts=4

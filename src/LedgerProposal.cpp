@@ -9,14 +9,14 @@
 
 LedgerProposal::LedgerProposal(const uint256& pLgr, uint32 seq, const uint256& tx, uint32 closeTime,
 		const NewcoinAddress& naPeerPublic) :
-	mPreviousLedger(pLgr), mCurrentHash(tx), mCloseTime(closeTime), mProposeSeq(seq)
+	mPreviousLedger(pLgr), mCurrentHash(tx), mCloseTime(closeTime), mProposeSeq(seq), mPublicKey(naPeerPublic)
 {
-	mPublicKey		= naPeerPublic;
 	// XXX Validate key.
 	// if (!mKey->SetPubKey(pubKey))
 	// throw std::runtime_error("Invalid public key in proposal");
 
 	mPeerID			= mPublicKey.getNodeID();
+	mTime			= boost::posix_time::second_clock::universal_time();
 }
 
 
@@ -27,12 +27,13 @@ LedgerProposal::LedgerProposal(const NewcoinAddress& naSeed, const uint256& prev
 	mPublicKey	= NewcoinAddress::createNodePublic(naSeed);
 	mPrivateKey	= NewcoinAddress::createNodePrivate(naSeed);
 	mPeerID		= mPublicKey.getNodeID();
+	mTime		= boost::posix_time::second_clock::universal_time();
 }
 
 LedgerProposal::LedgerProposal(const uint256& prevLgr, const uint256& position, uint32 closeTime) :
 	mPreviousLedger(prevLgr), mCurrentHash(position), mCloseTime(closeTime), mProposeSeq(0)
 {
-	;
+	mTime		= boost::posix_time::second_clock::universal_time();
 }
 
 uint256 LedgerProposal::getSigningHash() const
@@ -53,11 +54,22 @@ bool LedgerProposal::checkSign(const std::string& signature, const uint256& sign
 	return mPublicKey.verifyNodePublic(signingHash, signature);
 }
 
-void LedgerProposal::changePosition(const uint256& newPosition, uint32 closeTime)
+bool LedgerProposal::changePosition(const uint256& newPosition, uint32 closeTime)
 {
-	mCurrentHash = newPosition;
-	mCloseTime = closeTime;
+	if (mProposeSeq == seqLeave)
+		return false;
+
+	mCurrentHash 	= newPosition;
+	mCloseTime		= closeTime;
+	mTime			= boost::posix_time::second_clock::universal_time();
 	++mProposeSeq;
+	return true;
+}
+
+void LedgerProposal::bowOut()
+{
+	mTime			= boost::posix_time::second_clock::universal_time();
+	mProposeSeq		= seqLeave;
 }
 
 std::vector<unsigned char> LedgerProposal::sign(void)
@@ -76,9 +88,14 @@ Json::Value LedgerProposal::getJson() const
 {
 	Json::Value ret = Json::objectValue;
 	ret["previous_ledger"] = mPreviousLedger.GetHex();
-	ret["transaction_hash"] = mCurrentHash.GetHex();
+
+	if (mProposeSeq != seqLeave)
+	{
+		ret["transaction_hash"] = mCurrentHash.GetHex();
+		ret["propose_seq"] = mProposeSeq;
+	}
+
 	ret["close_time"] = mCloseTime;
-	ret["propose_seq"] = mProposeSeq;
 
 	if (mPublicKey.isValid())
 		ret["peer_id"] = mPublicKey.humanNodePublic();

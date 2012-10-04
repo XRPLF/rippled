@@ -8,19 +8,15 @@
 
 #include "types.h"
 
+#define QUALITY_ONE			1000000000	// 10e9
+
 #define nothing()			do {} while (0)
 #define fallthru()			do {} while (0)
 #define NUMBER(x)			(sizeof(x)/sizeof((x)[0]))
 #define ADDRESS(p)			strHex(uint64( ((char*) p) - ((char*) 0)))
 #define ADDRESS_SHARED(p)	strHex(uint64( ((char*) (p).get()) - ((char*) 0)))
 
-#ifndef MAX
-#define MAX(x,y) ((x) < (y) ? (y) : (x))
-#endif
-
-#ifndef MIN
-#define MIN(x,y) ((x) > (y) ? (y) : (x))
-#endif
+#define isSetBit(x,y)		(!!((x) & (y)))
 
 #ifdef WIN32
 extern uint64_t htobe64(uint64_t value);
@@ -153,6 +149,7 @@ std::vector<unsigned char> strCopy(const std::string& strSrc);
 std::string strCopy(const std::vector<unsigned char>& vucSrc);
 
 bool parseIpPort(const std::string& strSource, std::string& strIP, int& iPort);
+bool parseQuality(const std::string& strSource, uint32& uQuality);
 
 DH* DH_der_load(const std::string& strDer);
 std::string DH_der_gen(int iKeyLength);
@@ -174,7 +171,7 @@ template<typename T> T lexical_cast_s(const std::string& string)
 	}
 }
 
-template<typename T> std::string lexical_cast_i(T t)
+template<typename T> std::string lexical_cast_i(const T& t)
 { // lexicaly cast the selected type to a string. Does not throw
 	try
 	{
@@ -184,6 +181,44 @@ template<typename T> std::string lexical_cast_i(T t)
 	{
 		return "";
 	}
+}
+
+template<typename T> T lexical_cast_st(const std::string& string)
+{ // lexically cast a string to the selected type. Does throw
+	return boost::lexical_cast<T>(string);
+}
+
+template<typename T> std::string lexical_cast_it(const T& t)
+{ // lexicaly cast the selected type to a string. Does not throw
+	return boost::lexical_cast<std::string>(t);
+}
+
+template<typename T> T range_check(const T& value, const T& minimum, const T& maximum)
+{
+	if ((value < minimum) || (value > maximum))
+		throw std::runtime_error("Value out of range");
+	return value;
+}
+
+template<typename T> T range_check_min(const T& value, const T& minimum)
+{
+	if (value < minimum)
+		throw std::runtime_error("Value out of range");
+	return value;
+}
+
+template<typename T> T range_check_max(const T& value, const T& maximum)
+{
+	if (value > maximum)
+		throw std::runtime_error("Value out of range");
+	return value;
+}
+
+template<typename T, typename U> T range_check_cast(const U& value, const T& minimum, const T& maximum)
+{
+	if ((value < minimum) || (value > maximum))
+		throw std::runtime_error("Value out of range");
+	return static_cast<T>(value);
 }
 
 #endif

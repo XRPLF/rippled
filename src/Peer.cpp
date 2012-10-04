@@ -12,7 +12,6 @@
 #include "Peer.h"
 #include "Config.h"
 #include "Application.h"
-#include "Conversion.h"
 #include "SerializedTransaction.h"
 #include "utils.h"
 #include "Log.h"
@@ -140,7 +139,7 @@ void Peer::handleVerifyTimer(const boost::system::error_code& ecResult)
 
 // Begin trying to connect. We are not connected till we know and accept peer's public key.
 // Only takes IP addresses (not domains).
-void Peer::connect(const std::string strIp, int iPort)
+void Peer::connect(const std::string& strIp, int iPort)
 {
 	int	iPortAct	= (iPort <= 0) ? SYSTEM_PEER_PORT : iPort;
 
@@ -260,7 +259,7 @@ void Peer::connected(const boost::system::error_code& error)
 	}
 }
 
-void Peer::sendPacketForce(PackedMessage::pointer packet)
+void Peer::sendPacketForce(const PackedMessage::pointer& packet)
 {
 	if (!mDetaching)
 	{
@@ -273,7 +272,7 @@ void Peer::sendPacketForce(PackedMessage::pointer packet)
 	}
 }
 
-void Peer::sendPacket(PackedMessage::pointer packet)
+void Peer::sendPacket(const PackedMessage::pointer& packet)
 {
 	if (packet)
 	{
@@ -572,8 +571,8 @@ void Peer::recvHello(newcoin::TMHello& packet)
 	(void) mVerifyTimer.cancel();
 
 	uint32 ourTime = theApp->getOPs().getNetworkTimeNC();
-	uint32 minTime = ourTime - 10;
-	uint32 maxTime = ourTime + 10;
+	uint32 minTime = ourTime - 20;
+	uint32 maxTime = ourTime + 20;
 
 #ifdef DEBUG
 	if (packet.has_nettime())
@@ -586,7 +585,10 @@ void Peer::recvHello(newcoin::TMHello& packet)
 
 	if (packet.has_nettime() && ((packet.nettime() < minTime) || (packet.nettime() > maxTime)))
 	{
-		Log(lsINFO) << "Recv(Hello): Disconnect: Clock is far off";
+		if (packet.nettime() > maxTime)
+			Log(lsINFO) << "Recv(Hello): " << getIP() << " :Clock far off +" << packet.nettime() - ourTime;
+		else if(packet.nettime() < minTime)
+			Log(lsINFO) << "Recv(Hello): " << getIP() << " :Clock far off -" << ourTime - packet.nettime();
 	}
 	else if (packet.protoversionmin() < MAKE_VERSION_INT(MIN_PROTO_MAJOR, MIN_PROTO_MINOR))
 	{
@@ -646,9 +648,11 @@ void Peer::recvHello(newcoin::TMHello& packet)
 			{
 				memcpy(mClosedLedgerHash.begin(), packet.ledgerclosed().data(), 256 / 8);
 				if ((packet.has_ledgerprevious()) && (packet.ledgerprevious().size() == (256 / 8)))
+				{
 					memcpy(mPreviousLedgerHash.begin(), packet.ledgerprevious().data(), 256 / 8);
+					addLedger(mPreviousLedgerHash);
+				}
 				else mPreviousLedgerHash.zero();
-				mClosedLedgerTime = boost::posix_time::second_clock::universal_time();
 			}
 
 			bDetach	= false;
@@ -697,13 +701,7 @@ void Peer::recvTransaction(newcoin::TMTransaction& packet)
 	}
 #endif
 
-	uint32 targetLedger = 0;
-	if (packet.has_ledgerindexfinal())
-		targetLedger = packet.ledgerindexfinal();
-	else if (packet.has_ledgerindexpossible())
-		targetLedger = packet.ledgerindexpossible();
-
-	tx = theApp->getOPs().processTransaction(tx, targetLedger, this);
+	tx = theApp->getOPs().processTransaction(tx, this);
 
 	if(tx->getStatus() != INCLUDED)
 	{ // transaction wasn't accepted into ledger
@@ -722,12 +720,14 @@ void Peer::recvPropose(newcoin::TMProposeSet& packet)
 		return;
 	}
 
-	uint32 proposeSeq = packet.proposeseq();
-	uint256 currentTxHash;
+	uint256 currentTxHash, prevLedger;
 	memcpy(currentTxHash.begin(), packet.currenttxhash().data(), 32);
 
-	if(theApp->getOPs().recvPropose(proposeSeq, currentTxHash, packet.closetime(),
-		packet.nodepubkey(), packet.signature()))
+	if ((packet.has_previousledger()) && (packet.previousledger().size() == 32))
+		memcpy(prevLedger.begin(), packet.previousledger().data(), 32);
+
+	if(theApp->getOPs().recvPropose(packet.proposeseq(), currentTxHash, prevLedger, packet.closetime(),
+		packet.nodepubkey(), packet.signature(), mNodePublic))
 	{ // FIXME: Not all nodes will want proposals 
 		PackedMessage::pointer message = boost::make_shared<PackedMessage>(packet, newcoin::mtPROPOSE_LEDGER);
 		theApp->getConnectionPool().relayMessage(this, message);
@@ -744,8 +744,11 @@ void Peer::recvHaveTxSet(newcoin::TMHaveTransactionSet& packet)
 		punishPeer(PP_INVALID_REQUEST);
 		return;
 	}
-	memcpy(hashes.begin(), packet.hash().data(), 32);
-	if (!theApp->getOPs().hasTXSet(shared_from_this(), hashes, packet.status()))
+	uint256 hash;
+	memcpy(hash.begin(), packet.hash().data(), 32);
+	if (packet.status() == newcoin::tsHAVE)
+		addTxSet(hash);
+	if (!theApp->getOPs().hasTXSet(shared_from_this(), hash, packet.status()))
 		punishPeer(PP_UNWANTED_DATA);
 }
 
@@ -900,16 +903,19 @@ void Peer::recvStatus(newcoin::TMStatusChange& packet)
 
 	if (packet.newevent() == newcoin::neLOST_SYNC)
 	{
-		Log(lsTRACE) << "peer has lost sync " << getIP();
+		if (!mClosedLedgerHash.isZero())
+		{
+			Log(lsTRACE) << "peer has lost sync " << getIP();
+			mClosedLedgerHash.zero();
+		}
 		mPreviousLedgerHash.zero();
-		mClosedLedgerHash.zero();
 		return;
 	}
 	if (packet.has_ledgerhash() && (packet.ledgerhash().size() == (256 / 8)))
 	{ // a peer has changed ledgers
 		memcpy(mClosedLedgerHash.begin(), packet.ledgerhash().data(), 256 / 8);
-		mClosedLedgerTime = ptFromSeconds(packet.networktime());
-		Log(lsTRACE) << "peer LCL is " << mClosedLedgerHash.GetHex() << " " << getIP();
+		addLedger(mClosedLedgerHash);
+		Log(lsTRACE) << "peer LCL is " << mClosedLedgerHash << " " << getIP();
 	}
 	else
 	{
@@ -920,6 +926,7 @@ void Peer::recvStatus(newcoin::TMStatusChange& packet)
 	if (packet.has_ledgerhashprevious() && packet.ledgerhashprevious().size() == (256 / 8))
 	{
 		memcpy(mPreviousLedgerHash.begin(), packet.ledgerhashprevious().data(), 256 / 8);
+		addLedger(mPreviousLedgerHash);
 	}
 	else mPreviousLedgerHash.zero();
 }
@@ -928,12 +935,11 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 {
 	SHAMap::pointer map;
 	newcoin::TMLedgerData reply;
-	bool fatLeaves = true;
+	bool fatLeaves = true, fatRoot = false;
 
 	if (packet.itype() == newcoin::liTS_CANDIDATE)
 	{ // Request is  for a transaction candidate set
 		Log(lsINFO) << "Received request for TX candidate set data " << getIP();
-		Ledger::pointer ledger;
 		if ((!packet.has_ledgerhash() || packet.ledgerhash().size() != 32))
 		{
 			punishPeer(PP_INVALID_REQUEST);
@@ -944,7 +950,7 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 		map = theApp->getOPs().getTXMap(txHash);
 		if (!map)
 		{
-			Log(lsERROR) << "We do not hav the map our peer wants";
+			Log(lsERROR) << "We do not have the map our peer wants";
 			punishPeer(PP_INVALID_REQUEST);
 			return;
 		}
@@ -952,6 +958,7 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 		reply.set_ledgerhash(txHash.begin(), txHash.size());
 		reply.set_type(newcoin::liTS_CANDIDATE);
 		fatLeaves = false; // We'll already have most transactions
+		fatRoot = true; // Save a pass
 	}
 	else
 	{ // Figure out what ledger they want
@@ -968,6 +975,8 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 			}
 			memcpy(ledgerhash.begin(), packet.ledgerhash().data(), 32);
 			ledger = theApp->getMasterLedger().getLedgerByHash(ledgerhash);
+			if (!ledger)
+				Log(lsINFO) << "Don't have ledger " << ledgerhash;
 		}
 		else if (packet.has_ledgerseq())
 			ledger = theApp->getMasterLedger().getLedgerBySeq(packet.ledgerseq());
@@ -986,7 +995,7 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 			return;
 		}
 
-		if ((!ledger) || (packet.has_ledgerseq() && (packet.ledgerseq()!=ledger->getLedgerSeq())))
+		if ((!ledger) || (packet.has_ledgerseq() && (packet.ledgerseq() != ledger->getLedgerSeq())))
 		{
 			punishPeer(PP_UNKNOWN_REQUEST);
 			Log(lsWARNING) << "Can't find the ledger they want";
@@ -1007,13 +1016,13 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 			reply.add_nodes()->set_nodedata(nData.getDataPtr(), nData.getLength());
 
 			if (packet.nodeids().size() != 0)
-			{
+			{ // new-style root request
 				Log(lsINFO) << "Ledger root w/map roots request";
 				SHAMap::pointer map = ledger->peekAccountStateMap();
 				if (map)
-				{
+				{ // return account state root node if possible
 					Serializer rootNode(768);
-					if (map->getRootNode(rootNode, STN_ARF_WIRE))
+					if (map->getRootNode(rootNode, snfWIRE))
 					{
 						reply.add_nodes()->set_nodedata(rootNode.getDataPtr(), rootNode.getLength());
 						if (ledger->getTransHash().isNonZero())
@@ -1022,7 +1031,7 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 							if (map)
 							{
 								rootNode.resize(0);
-								if (map->getRootNode(rootNode, STN_ARF_WIRE))
+								if (map->getRootNode(rootNode, snfWIRE))
 									reply.add_nodes()->set_nodedata(rootNode.getDataPtr(), rootNode.getLength());
 							}
 						}
@@ -1057,7 +1066,7 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 		}
 		std::vector<SHAMapNode> nodeIDs;
 		std::list< std::vector<unsigned char> > rawNodes;
-		if(map->getNodeFat(mn, nodeIDs, rawNodes, fatLeaves))
+		if(map->getNodeFat(mn, nodeIDs, rawNodes, fatRoot, fatLeaves))
 		{
 			std::vector<SHAMapNode>::iterator nodeIDIterator;
 			std::list< std::vector<unsigned char> >::iterator rawNodeIterator;
@@ -1074,7 +1083,8 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 			}
 		}
 	}
-	if (packet.has_requestcookie()) reply.set_requestcookie(packet.requestcookie());
+	if (packet.has_requestcookie())
+		reply.set_requestcookie(packet.requestcookie());
 	PackedMessage::pointer oPacket = boost::make_shared<PackedMessage>(reply, newcoin::mtLEDGER_DATA);
 	sendPacket(oPacket);
 }
@@ -1124,7 +1134,38 @@ void Peer::recvLedger(newcoin::TMLedgerData& packet)
 
 bool Peer::hasLedger(const uint256& hash) const
 {
-	return (hash == mClosedLedgerHash) || (hash == mPreviousLedgerHash);
+	BOOST_FOREACH(const uint256& ledger, mRecentLedgers)
+		if (ledger == hash)
+			return true;
+	return false;
+}
+
+void Peer::addLedger(const uint256& hash)
+{
+	BOOST_FOREACH(const uint256& ledger, mRecentLedgers)
+		if (ledger == hash)
+			return;
+	if (mRecentLedgers.size() == 128)
+		mRecentLedgers.pop_front();
+	mRecentLedgers.push_back(hash);
+}
+
+bool Peer::hasTxSet(const uint256& hash) const
+{
+	BOOST_FOREACH(const uint256& set, mRecentTxSets)
+		if (set == hash)
+			return true;
+	return false;
+}
+
+void Peer::addTxSet(const uint256& hash)
+{
+	BOOST_FOREACH(const uint256& set, mRecentTxSets)
+		if (set == hash)
+			return;
+	if (mRecentTxSets.size() == 128)
+		mRecentTxSets.pop_front();
+	mRecentTxSets.push_back(hash);
 }
 
 // Get session information we can sign to prevent man in the middle attack.
@@ -1212,7 +1253,8 @@ Json::Value Peer::getJson()
 	//ret["this"]			= ADDRESS(this);
 	ret["public_key"]	= mNodePublic.ToString();
 	ret["ip"]			= mIpPortConnect.first;
-	ret["port"]			= mIpPortConnect.second;
+	//ret["port"]			= mIpPortConnect.second;
+	ret["port"]			= mIpPort.second;
 
 	if (mHello.has_fullversion())
 		ret["version"] = mHello.fullversion();

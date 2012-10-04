@@ -58,7 +58,7 @@ void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint2
 						std::vector<unsigned char> nodeData;
 						if (filter->haveNode(childID, childHash, nodeData))
 						{
-							d = boost::make_shared<SHAMapTreeNode>(childID, nodeData, mSeq, STN_ARF_PREFIXED);
+							d = boost::make_shared<SHAMapTreeNode>(childID, nodeData, mSeq, snfPREFIX);
 							if (childHash != d->getNodeHash())
 							{
 								Log(lsERROR) << "Wrong hash from cached object";
@@ -66,7 +66,7 @@ void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint2
 							}
 							else
 							{
-								Log(lsTRACE) << "Got sync node from cache: " << d->getString();
+								Log(lsTRACE) << "Got sync node from cache: " << *d;
 								mTNByID[*d] = d;
 							}
 						}
@@ -86,7 +86,7 @@ void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint2
 }
 
 bool SHAMap::getNodeFat(const SHAMapNode& wanted, std::vector<SHAMapNode>& nodeIDs,
-	std::list<std::vector<unsigned char> >& rawNodes, bool fatLeaves)
+	std::list<std::vector<unsigned char> >& rawNodes, bool fatRoot, bool fatLeaves)
 { // Gets a node and some of its children
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
@@ -99,10 +99,10 @@ bool SHAMap::getNodeFat(const SHAMapNode& wanted, std::vector<SHAMapNode>& nodeI
 
 	nodeIDs.push_back(*node);
 	Serializer s;
-	node->addRaw(s, STN_ARF_WIRE);
+	node->addRaw(s, snfWIRE);
 	rawNodes.push_back(s.peekData());
 
-	if (node->isRoot() || node->isLeaf()) // don't get a fat root, can't get a fat leaf
+	if ((!fatRoot && node->isRoot()) || node->isLeaf()) // don't get a fat root, can't get a fat leaf
 		return true;
 
 	for (int i = 0; i < 16; ++i)
@@ -114,7 +114,7 @@ bool SHAMap::getNodeFat(const SHAMapNode& wanted, std::vector<SHAMapNode>& nodeI
 			{
 				nodeIDs.push_back(*nextNode);
 				Serializer s;
-				nextNode->addRaw(s, STN_ARF_WIRE);
+				nextNode->addRaw(s, snfWIRE);
 				rawNodes.push_back(s.peekData());
 		 	}
 		}
@@ -122,14 +122,14 @@ bool SHAMap::getNodeFat(const SHAMapNode& wanted, std::vector<SHAMapNode>& nodeI
 		return true;
 }
 
-bool SHAMap::getRootNode(Serializer& s, int format)
+bool SHAMap::getRootNode(Serializer& s, SHANodeFormat format)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	root->addRaw(s, format);
 	return true;
 }
 
-bool SHAMap::addRootNode(const std::vector<unsigned char>& rootNode, int format)
+bool SHAMap::addRootNode(const std::vector<unsigned char>& rootNode, SHANodeFormat format)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
@@ -141,7 +141,8 @@ bool SHAMap::addRootNode(const std::vector<unsigned char>& rootNode, int format)
 	}
 
 	SHAMapTreeNode::pointer node = boost::make_shared<SHAMapTreeNode>(SHAMapNode(), rootNode, 0, format);
-	if (!node) return false;
+	if (!node)
+		return false;
 
 #ifdef DEBUG
 	node->dump();
@@ -160,7 +161,7 @@ bool SHAMap::addRootNode(const std::vector<unsigned char>& rootNode, int format)
 	return true;
 }
 
-bool SHAMap::addRootNode(const uint256& hash, const std::vector<unsigned char>& rootNode, int format)
+bool SHAMap::addRootNode(const uint256& hash, const std::vector<unsigned char>& rootNode, SHANodeFormat format)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
@@ -221,8 +222,8 @@ bool SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigned cha
 
 	if (iNode->getDepth() != (node.getDepth() - 1))
 	{ // Either this node is broken or we didn't request it (yet)
-		Log(lsINFO) << "unable to hook node " << node.getString();
-		Log(lsINFO) << " stuck at " << iNode->getString();
+		Log(lsINFO) << "unable to hook node " << node;
+		Log(lsINFO) << " stuck at " << *iNode;
 		Log(lsINFO) << "got depth=" << node.getDepth() << ", walked to= " << iNode->getDepth();
 		return false;
 	}
@@ -236,14 +237,14 @@ bool SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigned cha
 	uint256 hash = iNode->getChildHash(branch);
 	if (!hash) return false;
 
-	SHAMapTreeNode::pointer newNode = boost::make_shared<SHAMapTreeNode>(node, rawNode, mSeq, STN_ARF_WIRE);
+	SHAMapTreeNode::pointer newNode = boost::make_shared<SHAMapTreeNode>(node, rawNode, mSeq, snfWIRE);
 	if (hash != newNode->getNodeHash()) // these aren't the droids we're looking for
 		return false;
 
 	if (filter)
 	{
 		Serializer s;
-		newNode->addRaw(s, STN_ARF_PREFIXED);
+		newNode->addRaw(s, snfPREFIX);
 		filter->gotNode(node, hash, s.peekData(), newNode->isLeaf());
 	}
 
@@ -303,7 +304,7 @@ bool SHAMap::deepCompare(SHAMap& other)
 			return false;
 		}
 
-//		Log(lsTRACE) << "Comparing inner nodes " << node->getString();
+//		Log(lsTRACE) << "Comparing inner nodes " << *node;
 
 		if (node->getNodeHash() != otherNode->getNodeHash())
 			return false;
@@ -399,7 +400,7 @@ std::list<std::vector<unsigned char> > SHAMap::getTrustedPath(const uint256& ind
 	Serializer s;
 	while (!stack.empty())
 	{
-		stack.top()->addRaw(s, STN_ARF_WIRE);
+		stack.top()->addRaw(s, snfWIRE);
 		path.push_back(s.getData());
 		s.erase();
 		stack.pop();
@@ -444,17 +445,17 @@ BOOST_AUTO_TEST_CASE( SHAMapSync_test )
 
 	destination.setSynching();
 
-	if (!source.getNodeFat(SHAMapNode(), nodeIDs, gotNodes, (rand() % 2) == 0))
+	if (!source.getNodeFat(SHAMapNode(), nodeIDs, gotNodes, (rand() % 2) == 0, (rand() % 2) == 0))
 	{
 		Log(lsFATAL) << "GetNodeFat(root) fails";
 		BOOST_FAIL("GetNodeFat");
 	}
-	if (gotNodes.size() != 1)
+	if (gotNodes.size() < 1)
 	{
 		Log(lsFATAL) << "Didn't get root node " << gotNodes.size();
 		BOOST_FAIL("NodeSize");
 	}
-	if (!destination.addRootNode(*gotNodes.begin(), STN_ARF_WIRE))
+	if (!destination.addRootNode(*gotNodes.begin(), snfWIRE))
 	{
 		Log(lsFATAL) << "AddRootNode fails";
 		BOOST_FAIL("AddRootNode");
@@ -481,7 +482,7 @@ BOOST_AUTO_TEST_CASE( SHAMapSync_test )
 		// get as many nodes as possible based on this information
 		for (nodeIDIterator = nodeIDs.begin(); nodeIDIterator != nodeIDs.end(); ++nodeIDIterator)
 		{
-			if (!source.getNodeFat(*nodeIDIterator, gotNodeIDs, gotNodes, (rand() % 2) == 0))
+			if (!source.getNodeFat(*nodeIDIterator, gotNodeIDs, gotNodes, (rand() % 2) == 0, (rand() % 2) == 0))
 			{
 				Log(lsFATAL) << "GetNodeFat fails";
 				BOOST_FAIL("GetNodeFat");

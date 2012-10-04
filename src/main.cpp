@@ -51,6 +51,7 @@ void printHelp(const po::options_description& desc)
 	cout << "     data_fetch <key>" << endl;
 	cout << "     data_store <key> <value>" << endl;
 	cout << "     ledger [<id>|current|lastclosed] [full]" << endl;
+	cout << "     logrotate " << endl;
 	cout << "     nickname_info <nickname>" << endl;
 	cout << "     nickname_set <seed> <paying_account> <nickname> [<offer_minimum>] [<authorization>]" << endl;
 	cout << "     offer_create <seed> <paying_account> <taker_pays_amount> <taker_pays_currency> <taker_pays_issuer> <takers_gets_amount> <takers_gets_currency> <takers_gets_issuer> <expires> [passive]" << endl;
@@ -58,6 +59,7 @@ void printHelp(const po::options_description& desc)
 	cout << "     password_fund <seed> <paying_account> [<account>]" << endl;
 	cout << "     password_set <master_seed> <regular_seed> [<account>]" << endl;
 	cout << "     peers" << endl;
+	cout << "     ripple ..." << endl;
 	cout << "     ripple_lines_get <account>|<nickname>|<account_public_key> [<index>]" << endl;
 	cout << "     ripple_line_set <seed> <paying_account> <destination_account> <limit_amount> <currency> [<quality_in>] [<quality_out>]" << endl;
 	cout << "     send <seed> <paying_account> <account_id> <amount> [<currency>] [<send_max>] [<send_currency>]" << endl;
@@ -75,7 +77,7 @@ void printHelp(const po::options_description& desc)
 	cout << "     wallet_accounts <seed>" << endl;
 	cout << "     wallet_claim <master_seed> <regular_seed> [<source_tag>] [<account_annotation>]" << endl;
 	cout << "     wallet_seed [<seed>|<passphrase>|<passkey>]" << endl;
-	cout << "     wallet_propose" << endl;
+	cout << "     wallet_propose [<passphrase>]" << endl;
 }
 
 int main(int argc, char* argv[])
@@ -92,9 +94,10 @@ int main(int argc, char* argv[])
 		("help,h", "Display this message.")
 		("conf", po::value<std::string>(), "Specify the configuration file.")
 		("rpc", "Perform rpc command (default).")
+		("standalone,a", "Run with no peers.")
 		("test,t", "Perform unit tests.")
 		("parameters", po::value< vector<string> >(), "Specify comma separated parameters.")
-		("verbose,v", "Increase log level")
+		("verbose,v", "Increase log level.")
 	;
 
 	// Interpret positional arguments as --parameters.
@@ -144,6 +147,11 @@ int main(int argc, char* argv[])
 	if (!iResult)
 	{
 		theConfig.setup(vm.count("conf") ? vm["conf"].as<std::string>() : "");
+
+		if (vm.count("standalone"))
+		{
+			theConfig.RUN_STANDALONE = true;
+		}
 	}
 
 	if (iResult)

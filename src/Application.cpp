@@ -36,9 +36,9 @@ DatabaseCon::~DatabaseCon()
 }
 
 Application::Application() :
-	mUNL(mIOService),
+	mIOWork(mIOService), mAuxWork(mAuxService), mUNL(mIOService),
 	mNetOps(mIOService, &mMasterLedger), mTempNodeCache(16384, 90), mHashedObjectStore(16384, 300),
-	mSNTPClient(mIOService), mRpcDB(NULL), mTxnDB(NULL), mLedgerDB(NULL), mWalletDB(NULL),
+	mSNTPClient(mAuxService), mRpcDB(NULL), mTxnDB(NULL), mLedgerDB(NULL), mWalletDB(NULL),
 	mHashNodeDB(NULL), mNetNodeDB(NULL),
 	mConnectionPool(mIOService), mPeerDoor(NULL), mRPCDoor(NULL)
 {
@@ -54,6 +54,7 @@ void Application::stop()
 	mIOService.stop();
 	mHashedObjectStore.bulkWrite();
 	mValidations.flush();
+	mAuxService.stop();
 
 	Log(lsINFO) << "Stopped: " << mIOService.stopped();
 }
@@ -68,6 +69,12 @@ void Application::run()
 	assert(mTxnDB == NULL);
 	if (!theConfig.DEBUG_LOGFILE.empty())
 		Log::setLogFile(theConfig.DEBUG_LOGFILE);
+
+	boost::thread auxThread(boost::bind(&boost::asio::io_service::run, &mAuxService));
+	auxThread.detach();
+
+	if (!theConfig.RUN_STANDALONE)
+		mSNTPClient.init(theConfig.SNTP_SERVERS);
 
 	//
 	// Construct databases.
@@ -89,12 +96,14 @@ void Application::run()
 	//
 	// Set up UNL.
 	//
-	getUNL().nodeBootstrap();
+	if (!theConfig.RUN_STANDALONE)
+		getUNL().nodeBootstrap();
+
 
 	//
 	// Allow peer connections.
 	//
-	if (!theConfig.PEER_IP.empty() && theConfig.PEER_PORT)
+	if (!theConfig.RUN_STANDALONE && !theConfig.PEER_IP.empty() && theConfig.PEER_PORT)
 	{
 		mPeerDoor = new PeerDoor(mIOService);
 	}
@@ -120,7 +129,8 @@ void Application::run()
 	//
 	// Begin connecting to network.
 	//
-	mConnectionPool.start();
+	if (!theConfig.RUN_STANDALONE)
+		mConnectionPool.start();
 
 	// New stuff.
 	NewcoinAddress	rootSeedMaster		= NewcoinAddress::createSeedGeneric("masterpassphrase");
@@ -144,12 +154,18 @@ void Application::run()
 		secondLedger->setAccepted();
 		mMasterLedger.pushLedger(secondLedger, boost::make_shared<Ledger>(true, boost::ref(*secondLedger)));
 		assert(!!secondLedger->getAccountState(rootAddress));
-		mNetOps.setLastCloseNetTime(secondLedger->getCloseTimeNC());
+		mNetOps.setLastCloseTime(secondLedger->getCloseTimeNC());
 	}
 
-	mSNTPClient.init(theConfig.SNTP_SERVERS);
 
-	mNetOps.setStateTimer();
+	if (theConfig.RUN_STANDALONE)
+	{
+		Log(lsWARNING) << "Running in standalone mode";
+		mNetOps.setStandAlone();
+		mMasterLedger.runStandAlone();
+	}
+	else
+		mNetOps.setStateTimer();
 
 	mIOService.run(); // This blocks
 

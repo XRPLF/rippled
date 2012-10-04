@@ -13,12 +13,12 @@
 #include "SerializedTransaction.h"
 #include "Log.h"
 
-Transaction::Transaction(const SerializedTransaction::pointer sit, bool bValidate)
+Transaction::Transaction(const SerializedTransaction::pointer& sit, bool bValidate)
 	: mInLedger(0), mStatus(INVALID), mTransaction(sit)
 {
 	try
 	{
-		mFromPubKey.setAccountPublic(mTransaction->peekSigningPubKey());
+		mFromPubKey.setAccountPublic(mTransaction->getSigningPubKey());
 		mTransactionID	= mTransaction->getTransactionID();
 		mAccountFrom	= mTransaction->getSourceAccount();
 	}
@@ -68,8 +68,8 @@ Transaction::Transaction(
 
 	mTransaction	= boost::make_shared<SerializedTransaction>(ttKind);
 
-	Log(lsINFO) << str(boost::format("Transaction: account: %s") % naSourceAccount.humanAccountID());
-	Log(lsINFO) << str(boost::format("Transaction: mAccountFrom: %s") % mAccountFrom.humanAccountID());
+	// Log(lsINFO) << str(boost::format("Transaction: account: %s") % naSourceAccount.humanAccountID());
+	// Log(lsINFO) << str(boost::format("Transaction: mAccountFrom: %s") % mAccountFrom.humanAccountID());
 
 	mTransaction->setSigningPubKey(mFromPubKey);
 	mTransaction->setSourceAccount(mAccountFrom);
@@ -78,8 +78,8 @@ Transaction::Transaction(
 
 	if (uSourceTag)
 	{
-		mTransaction->makeITFieldPresent(sfSourceTag);
-		mTransaction->setITFieldU32(sfSourceTag, uSourceTag);
+		mTransaction->makeFieldPresent(sfSourceTag);
+		mTransaction->setFieldU32(sfSourceTag, uSourceTag);
 	}
 }
 
@@ -92,12 +92,7 @@ bool Transaction::sign(const NewcoinAddress& naAccountPrivate)
 		Log(lsWARNING) << "No private key for signing";
 		bResult	= false;
 	}
-	else if (!getSTransaction()->sign(naAccountPrivate))
-	{
-		Log(lsWARNING) << "Failed to make signature";
-		assert(false);
-		bResult	= false;
-	}
+	getSTransaction()->sign(naAccountPrivate);
 
 	if (bResult)
 	{
@@ -132,24 +127,24 @@ Transaction::pointer Transaction::setAccountSet(
 	)
 {
 	if (!bEmailHash)
-		mTransaction->setITFieldH128(sfEmailHash, uEmailHash);
+		mTransaction->setFieldH128(sfEmailHash, uEmailHash);
 
 	if (!bWalletLocator)
-		mTransaction->setITFieldH256(sfWalletLocator, uWalletLocator);
+		mTransaction->setFieldH256(sfWalletLocator, uWalletLocator);
 
 	if (naMessagePublic.isValid())
-		mTransaction->setITFieldVL(sfMessageKey, naMessagePublic.getAccountPublic());
+		mTransaction->setFieldVL(sfMessageKey, naMessagePublic.getAccountPublic());
 
 	if (bDomain)
-		mTransaction->setITFieldVL(sfDomain, vucDomain);
+		mTransaction->setFieldVL(sfDomain, vucDomain);
 
 	if (bTransferRate)
-		mTransaction->setITFieldU32(sfTransferRate, uTransferRate);
+		mTransaction->setFieldU32(sfTransferRate, uTransferRate);
 
 	if (bPublish)
 	{
-		mTransaction->setITFieldH256(sfPublishHash, uPublishHash);
-		mTransaction->setITFieldU32(sfPublishSize, uPublishSize);
+		mTransaction->setFieldH256(sfPublishHash, uPublishHash);
+		mTransaction->setFieldU32(sfPublishSize, uPublishSize);
 	}
 
 	sign(naPrivateKey);
@@ -193,9 +188,9 @@ Transaction::pointer Transaction::setClaim(
 	const std::vector<unsigned char>& vucPubKey,
 	const std::vector<unsigned char>& vucSignature)
 {
-	mTransaction->setITFieldVL(sfGenerator, vucGenerator);
-	mTransaction->setITFieldVL(sfPubKey, vucPubKey);
-	mTransaction->setITFieldVL(sfSignature, vucSignature);
+	mTransaction->setFieldVL(sfGenerator, vucGenerator);
+	mTransaction->setFieldVL(sfPublicKey, vucPubKey);
+	mTransaction->setFieldVL(sfSignature, vucSignature);
 
 	sign(naPrivateKey);
 
@@ -227,9 +222,9 @@ Transaction::pointer Transaction::setCreate(
 	const NewcoinAddress&	naCreateAccountID,
 	const STAmount&			saFund)
 {
-	mTransaction->setITFieldU32(sfFlags, tfCreateAccount);
-	mTransaction->setITFieldAccount(sfDestination, naCreateAccountID);
-	mTransaction->setITFieldAmount(sfAmount, saFund);
+	mTransaction->setFieldU32(sfFlags, tfCreateAccount);
+	mTransaction->setFieldAccount(sfDestination, naCreateAccountID);
+	mTransaction->setFieldAmount(sfAmount, saFund);
 
 	sign(naPrivateKey);
 
@@ -256,24 +251,19 @@ Transaction::pointer Transaction::sharedCreate(
 
 Transaction::pointer Transaction::setCreditSet(
 	const NewcoinAddress&	naPrivateKey,
-	const NewcoinAddress&	naDstAccountID,
-	bool					bLimitAmount,
 	const STAmount&			saLimitAmount,
 	bool					bQualityIn,
 	uint32					uQualityIn,
 	bool					bQualityOut,
 	uint32					uQualityOut)
 {
-	mTransaction->setITFieldAccount(sfDestination, naDstAccountID);
-
-	if (bLimitAmount)
-		mTransaction->setITFieldAmount(sfLimitAmount, saLimitAmount);
+	mTransaction->setFieldAmount(sfLimitAmount, saLimitAmount);
 
 	if (bQualityIn)
-		mTransaction->setITFieldU32(sfAcceptRate, uQualityIn);
+		mTransaction->setFieldU32(sfQualityIn, uQualityIn);
 
 	if (bQualityOut)
-		mTransaction->setITFieldU32(sfAcceptRate, uQualityOut);
+		mTransaction->setFieldU32(sfQualityOut, uQualityOut);
 
 	sign(naPrivateKey);
 
@@ -286,8 +276,6 @@ Transaction::pointer Transaction::sharedCreditSet(
 	uint32					uSeq,
 	const STAmount&			saFee,
 	uint32					uSourceTag,
-	const NewcoinAddress&	naDstAccountID,
-	bool					bLimitAmount,
 	const STAmount&			saLimitAmount,
 	bool					bQualityIn,
 	uint32					uQualityIn,
@@ -296,8 +284,8 @@ Transaction::pointer Transaction::sharedCreditSet(
 {
 	pointer	tResult	= boost::make_shared<Transaction>(ttCREDIT_SET, naPublicKey, naSourceAccount, uSeq, saFee, uSourceTag);
 
-	return tResult->setCreditSet(naPrivateKey, naDstAccountID,
-		bLimitAmount, saLimitAmount,
+	return tResult->setCreditSet(naPrivateKey,
+		saLimitAmount,
 		bQualityIn, uQualityIn,
 		bQualityOut, uQualityOut);
 }
@@ -310,17 +298,13 @@ Transaction::pointer Transaction::setNicknameSet(
 	const NewcoinAddress&				naPrivateKey,
 	const uint256&						uNickname,
 	bool								bSetOffer,
-	const STAmount&						saMinimumOffer,
-	const std::vector<unsigned char>&	vucSignature)
+	const STAmount&						saMinimumOffer)
 {
-	mTransaction->setITFieldH256(sfNickname, uNickname);
+	mTransaction->setFieldH256(sfNickname, uNickname);
 
 	// XXX Make sure field is present even for 0!
 	if (bSetOffer)
-		mTransaction->setITFieldAmount(sfMinimumOffer, saMinimumOffer);
-
-	if (!vucSignature.empty())
-		mTransaction->setITFieldVL(sfSignature, vucSignature);
+		mTransaction->setFieldAmount(sfMinimumOffer, saMinimumOffer);
 
 	sign(naPrivateKey);
 
@@ -337,12 +321,11 @@ Transaction::pointer Transaction::sharedNicknameSet(
 	uint32								uSourceTag,
 	const uint256&						uNickname,
 	bool								bSetOffer,
-	const STAmount&						saMinimumOffer,
-	const std::vector<unsigned char>&	vucSignature)
+	const STAmount&						saMinimumOffer)
 {
 	pointer	tResult	= boost::make_shared<Transaction>(ttNICKNAME_SET, naPublicKey, naSourceAccount, uSeq, saFee, uSourceTag);
 
-	return tResult->setNicknameSet(naPrivateKey, uNickname, bSetOffer, saMinimumOffer, vucSignature);
+	return tResult->setNicknameSet(naPrivateKey, uNickname, bSetOffer, saMinimumOffer);
 }
 
 //
@@ -357,19 +340,13 @@ Transaction::pointer Transaction::setOfferCreate(
 	uint32								uExpiration)
 {
 	if (bPassive)
-		mTransaction->setITFieldU32(sfFlags, tfPassive);
+		mTransaction->setFieldU32(sfFlags, tfPassive);
 
-	mTransaction->setITFieldAmount(sfTakerPays, saTakerPays);
-	mTransaction->setITFieldAmount(sfTakerGets, saTakerGets);
-
-	if (!saTakerPays.isNative())
-		mTransaction->setITFieldAccount(sfPaysIssuer, saTakerPays.getIssuer());
-
-	if (!saTakerGets.isNative())
-		mTransaction->setITFieldAccount(sfGetsIssuer, saTakerGets.getIssuer());
+	mTransaction->setFieldAmount(sfTakerPays, saTakerPays);
+	mTransaction->setFieldAmount(sfTakerGets, saTakerGets);
 
 	if (uExpiration)
-		mTransaction->setITFieldU32(sfExpiration, uExpiration);
+		mTransaction->setFieldU32(sfExpiration, uExpiration);
 
 	sign(naPrivateKey);
 
@@ -400,7 +377,7 @@ Transaction::pointer Transaction::setOfferCancel(
 	const NewcoinAddress&				naPrivateKey,
 	uint32								uSequence)
 {
-	mTransaction->setITFieldU32(sfOfferSequence, uSequence);
+	mTransaction->setFieldU32(sfOfferSequence, uSequence);
 
 	sign(naPrivateKey);
 
@@ -428,7 +405,7 @@ Transaction::pointer Transaction::setPasswordFund(
 	const NewcoinAddress&	naPrivateKey,
 	const NewcoinAddress&	naDstAccountID)
 {
-	mTransaction->setITFieldAccount(sfDestination, naDstAccountID);
+	mTransaction->setFieldAccount(sfDestination, naDstAccountID);
 
 	sign(naPrivateKey);
 
@@ -459,10 +436,10 @@ Transaction::pointer Transaction::setPasswordSet(
 	const std::vector<unsigned char>&	vucPubKey,
 	const std::vector<unsigned char>&	vucSignature)
 {
-	mTransaction->setITFieldAccount(sfAuthorizedKey, naAuthKeyID);
-	mTransaction->setITFieldVL(sfGenerator, vucGenerator);
-	mTransaction->setITFieldVL(sfPubKey, vucPubKey);
-	mTransaction->setITFieldVL(sfSignature, vucSignature);
+	mTransaction->setFieldAccount(sfAuthorizedKey, naAuthKeyID);
+	mTransaction->setFieldVL(sfGenerator, vucGenerator);
+	mTransaction->setFieldVL(sfPublicKey, vucPubKey);
+	mTransaction->setFieldVL(sfSignature, vucSignature);
 
 	sign(naPrivateKey);
 
@@ -495,19 +472,21 @@ Transaction::pointer Transaction::setPayment(
 	const NewcoinAddress&	naDstAccountID,
 	const STAmount&			saAmount,
 	const STAmount&			saSendMax,
-	const STPathSet&		spPaths)
+	const STPathSet&		spsPaths,
+	const bool				bPartial,
+	const bool				bLimit)
 {
-	mTransaction->setITFieldAccount(sfDestination, naDstAccountID);
-	mTransaction->setITFieldAmount(sfAmount, saAmount);
+	mTransaction->setFieldAccount(sfDestination, naDstAccountID);
+	mTransaction->setFieldAmount(sfAmount, saAmount);
 
-	if (saAmount != saSendMax)
+	if (saAmount != saSendMax || saAmount.getCurrency() != saSendMax.getCurrency())
 	{
-		mTransaction->setITFieldAmount(sfSendMax, saSendMax);
+		mTransaction->setFieldAmount(sfSendMax, saSendMax);
 	}
 
-	if (spPaths.getPathCount())
+	if (spsPaths.getPathCount())
 	{
-		mTransaction->setITFieldPathSet(sfPaths, spPaths);
+		mTransaction->setFieldPathSet(sfPaths, spsPaths);
 	}
 
 	sign(naPrivateKey);
@@ -524,11 +503,13 @@ Transaction::pointer Transaction::sharedPayment(
 	const NewcoinAddress&	naDstAccountID,
 	const STAmount&			saAmount,
 	const STAmount&			saSendMax,
-	const STPathSet&		saPaths)
+	const STPathSet&		spsPaths,
+	const bool				bPartial,
+	const bool				bLimit)
 {
 	pointer	tResult	= boost::make_shared<Transaction>(ttPAYMENT, naPublicKey, naSourceAccount, uSeq, saFee, uSourceTag);
 
-	return tResult->setPayment(naPrivateKey, naDstAccountID, saAmount, saSendMax, saPaths);
+	return tResult->setPayment(naPrivateKey, naDstAccountID, saAmount, saSendMax, spsPaths, bPartial, bLimit);
 }
 
 //
@@ -542,10 +523,10 @@ Transaction::pointer Transaction::setWalletAdd(
 	const NewcoinAddress&				naNewPubKey,
 	const std::vector<unsigned char>&	vucSignature)
 {
-	mTransaction->setITFieldAmount(sfAmount, saAmount);
-	mTransaction->setITFieldAccount(sfAuthorizedKey, naAuthKeyID);
-	mTransaction->setITFieldVL(sfPubKey, naNewPubKey.getAccountPublic());
-	mTransaction->setITFieldVL(sfSignature, vucSignature);
+	mTransaction->setFieldAmount(sfAmount, saAmount);
+	mTransaction->setFieldAccount(sfAuthorizedKey, naAuthKeyID);
+	mTransaction->setFieldVL(sfPublicKey, naNewPubKey.getAccountPublic());
+	mTransaction->setFieldVL(sfSignature, vucSignature);
 
 	sign(naPrivateKey);
 
@@ -584,7 +565,7 @@ void Transaction::setStatus(TransStatus ts, uint32 lseq)
 	mInLedger	= lseq;
 }
 
-void Transaction::saveTransaction(Transaction::pointer txn)
+void Transaction::saveTransaction(const Transaction::pointer& txn)
 {
 	txn->save();
 }

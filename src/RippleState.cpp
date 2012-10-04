@@ -7,20 +7,26 @@ RippleState::RippleState(SerializedLedgerEntry::pointer ledgerEntry) :
 {
 	if (!mLedgerEntry || mLedgerEntry->getType() != ltRIPPLE_STATE) return;
 
-	mLowID		= mLedgerEntry->getIValueFieldAccount(sfLowID);
-	mHighID		= mLedgerEntry->getIValueFieldAccount(sfHighID);
+	mLowLimit		= mLedgerEntry->getFieldAmount(sfLowLimit);
+	mHighLimit		= mLedgerEntry->getFieldAmount(sfHighLimit);
 
-	mLowLimit	= mLedgerEntry->getIValueFieldAmount(sfLowLimit);
-	mHighLimit	= mLedgerEntry->getIValueFieldAmount(sfHighLimit);
+	mLowID			= NewcoinAddress::createAccountID(mLowLimit.getIssuer());
+	mHighID			= NewcoinAddress::createAccountID(mHighLimit.getIssuer());
 
-	mBalance	= mLedgerEntry->getIValueFieldAmount(sfBalance);
+	mLowQualityIn	= mLedgerEntry->getFieldU32(sfLowQualityIn);
+	mLowQualityOut	= mLedgerEntry->getFieldU32(sfLowQualityOut);
+
+	mHighQualityIn	= mLedgerEntry->getFieldU32(sfHighQualityIn);
+	mHighQualityOut	= mLedgerEntry->getFieldU32(sfHighQualityOut);
+
+	mBalance	= mLedgerEntry->getFieldAmount(sfBalance);
 
 	mValid		= true;
 }
 
-void RippleState::setViewAccount(const NewcoinAddress& naView)
+void RippleState::setViewAccount(const uint160& accountID)
 {
-	bool	bViewLowestNew	= mLowID.getAccountID() == naView.getAccountID();
+	bool	bViewLowestNew	= mLowID.getAccountID() == accountID;
 
 	if (bViewLowestNew != mViewLowest)
 	{

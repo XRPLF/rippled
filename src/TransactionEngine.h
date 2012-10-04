@@ -8,111 +8,23 @@
 #include "SerializedTransaction.h"
 #include "SerializedLedger.h"
 #include "LedgerEntrySet.h"
+#include "TransactionErr.h"
 
 // A TransactionEngine applies serialized transactions to a ledger
 // It can also, verify signatures, verify fees, and give rejection reasons
 
-enum TransactionEngineResult
-{
-	// Note: Numbers are currently unstable.  Use tokens.
-
-	// tenCAN_NEVER_SUCCEED = <0
-
-	// Malformed: Fee claimed
-	tenGEN_IN_USE	= -300,
-	tenBAD_ADD_AUTH,
-	tenBAD_AMOUNT,
-	tenBAD_CLAIM_ID,
-	tenBAD_EXPIRATION,
-	tenBAD_GEN_AUTH,
-	tenBAD_ISSUER,
-	tenBAD_OFFER,
-	tenBAD_PATH_COUNT,
-	tenBAD_PUBLISH,
-	tenBAD_SET_ID,
-	tenCREATEXNS,
-	tenDST_IS_SRC,
-	tenDST_NEEDED,
-	tenEXPLICITXNS,
-	tenREDUNDANT,
-	tenRIPPLE_EMPTY,
-
-	// Invalid: Ledger won't allow.
-	tenCLAIMED		= -200,
-	tenBAD_RIPPLE,
-	tenCREATED,
-	tenEXPIRED,
-	tenMSG_SET,
-	terALREADY,
-
-	// Other
-	tenFAILED		= -100,
-	tenINSUF_FEE_P,
-	tenINVALID,
-	tenUNKNOWN,
-
-	terSUCCESS		= 0,
-
-	// terFAILED_BUT_COULD_SUCCEED = >0
-	// Conflict with ledger database: Fee claimed
-	// Might succeed if not conflict is not caused by transaction ordering.
-	terBAD_AUTH,
-	terBAD_AUTH_MASTER,
-	terBAD_LEDGER,
-	terBAD_RIPPLE,
-	terBAD_SEQ,
-	terCREATED,
-	terDIR_FULL,
-	terFUNDS_SPENT,
-	terINSUF_FEE_B,
-	terINSUF_FEE_T,
-	terNODE_NOT_FOUND,
-	terNODE_NOT_MENTIONED,
-	terNODE_NO_ROOT,
-	terNO_ACCOUNT,
-	terNO_DST,
-	terNO_LINE_NO_ZERO,
-	terNO_PATH,
-	terOFFER_NOT_FOUND,
-	terOVER_LIMIT,
-	terPAST_LEDGER,
-	terPAST_SEQ,
-	terPRE_SEQ,
-	terSET_MISSING_DST,
-	terUNCLAIMED,
-	terUNFUNDED,
-
-	// Might succeed in different order.
-	// XXX claim fee and try to delete unfunded.
-	terPATH_EMPTY,
-	terPATH_PARTIAL,
-};
-
-bool transResultInfo(TransactionEngineResult terCode, std::string& strToken, std::string& strHuman);
-
 enum TransactionEngineParams
 {
-	tepNONE          = 0,
-	tepNO_CHECK_SIGN = 1,	// Signature already checked
-	tepNO_CHECK_FEE  = 2,	// It was voted into a ledger anyway
-	tepUPDATE_TOTAL  = 4,	// Update the total coins
-	tepMETADATA      = 5,   // put metadata in tree, not transaction
-};
+	tapNONE				= 0x00,
 
-// Hold a path state under incremental application.
-class PathState
-{
-public:
-	typedef boost::shared_ptr<PathState> pointer;
+	tapNO_CHECK_SIGN	= 0x01,	// Signature already checked
 
-	int			mIndex;
-	uint64		uQuality;		// 0 = none.
-	STAmount	saIn;
-	STAmount	saOut;
+	tapOPEN_LEDGER		= 0x10,	// Transaction is running against an open ledger
+		// true = failures are not forwarded, check transaction fee
+		// false = debit ledger for consumed funds
 
-	PathState(int iIndex) : mIndex(iIndex) { ; };
-
-	static PathState::pointer createPathState(int iIndex) { return boost::make_shared<PathState>(iIndex); };
+	tapRETRY			= 0x20,	// This is not the transaction's last pass
+		// Transaction can be retried, soft failures allowed
 };
 
 // One instance per ledger.
@@ -120,52 +32,11 @@ public:
 class TransactionEngine
 {
 private:
-	LedgerEntrySet						mNodes, mOrigNodes;
+	LedgerEntrySet						mNodes;
 
-	TransactionEngineResult dirAdd(
-		uint64&							uNodeDir,		// Node of entry.
-		const uint256&					uRootIndex,
-		const uint256&					uLedgerIndex);
+	TER	setAuthorized(const SerializedTransaction& txn, bool bMustSetGenerator);
 
-	TransactionEngineResult dirDelete(
-		bool							bKeepRoot,
-		const uint64&					uNodeDir,		// Node item is mentioned in.
-		const uint256&					uRootIndex,
-		const uint256&					uLedgerIndex);	// Item being deleted
-
-	bool dirFirst(const uint256& uRootIndex, SLE::pointer& sleNode, unsigned int& uDirEntry, uint256& uEntryIndex);
-	bool dirNext(const uint256& uRootIndex, SLE::pointer& sleNode, unsigned int& uDirEntry, uint256& uEntryIndex);
-
-#ifdef WORK_IN_PROGRESS
-	typedef struct {
-		uint16							uFlags;			// --> from path
-
-		STAccount						saAccount;		// --> recieving/sending account
-
-		STAmount						saWanted;		// --> What this node wants from upstream.
-
-		// Maybe this should just be a bool:
-		STAmount						saIOURedeemMax;	// --> Max amount of IOUs to redeem downstream.
-		// Maybe this should just be a bool:
-		STAmount						saIOUIssueMax;	// --> Max Amount of IOUs to issue downstream.
-
-		STAmount						saIOURedeem;	// <-- What this node will redeem downstream.
-		STAmount						saIOUIssue;		// <-- What this node will issue downstream.
-		STAmount						saSend;			// <-- Stamps this node will send downstream.
-
-		STAmount						saRecieve;		// Amount stamps to receive.
-
-	} paymentNode;
-
-	typedef struct {
-		std::vector<paymentNode>	vpnNodes;
-		bool						bAllowPartial;
-	} paymentGroup;
-#endif
-
-	TransactionEngineResult	setAuthorized(const SerializedTransaction& txn, bool bMustSetGenerator);
-
-	TransactionEngineResult takeOffers(
+	TER takeOffers(
 		bool				bPassive,
 		const uint256&		uBookBase,
 		const uint160&		uTakerAccountID,
@@ -176,60 +47,40 @@ private:
 		STAmount&			saTakerGot);
 
 protected:
-	Ledger::pointer mLedger;
-	uint64			mLedgerParentCloseTime;
+	Ledger::pointer		mLedger;
 
-	uint160			mTxnAccountID;
-	SLE::pointer	mTxnAccount;
+	uint160				mTxnAccountID;
+	SLE::pointer		mTxnAccount;
 
-	boost::unordered_set<uint256>	mUnfunded;	// Indexes that were found unfunded.
+	SLE::pointer		entryCreate(LedgerEntryType type, const uint256& index)		{ return mNodes.entryCreate(type, index); }
+	SLE::pointer		entryCache(LedgerEntryType type, const uint256& index)		{ return mNodes.entryCache(type, index); }
+	void				entryDelete(SLE::ref sleEntry)								{ mNodes.entryDelete(sleEntry); }
+	void				entryModify(SLE::ref sleEntry)								{ mNodes.entryModify(sleEntry); }
 
-	SLE::pointer	entryCreate(LedgerEntryType letType, const uint256& uIndex);
-	SLE::pointer	entryCache(LedgerEntryType letType, const uint256& uIndex);
-	void			entryDelete(SLE::pointer sleEntry, bool unfunded = false);
-	void			entryModify(SLE::pointer sleEntry);
+	void				txnWrite();
 
-	void			entryReset();
-
-	STAmount		rippleHolds(const uint160& uAccountID, const uint160& uCurrency, const uint160& uIssuerID);
-	STAmount		rippleTransit(const uint160& uSenderID, const uint160& uReceiverID, const uint160& uIssuerID, const STAmount& saAmount);
-	STAmount		rippleSend(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount);
-
-	STAmount		accountHolds(const uint160& uAccountID, const uint160& uCurrency, const uint160& uIssuerID);
-	STAmount		accountSend(const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount);
-	STAmount		accountFunds(const uint160& uAccountID, const STAmount& saDefault);
-
-	PathState::pointer	pathCreate(const STPath& spPath);
-	void				pathApply(PathState::pointer pspCur);
-	void				pathNext(PathState::pointer pspCur);
-
-	void			txnWrite();
-
-	TransactionEngineResult offerDelete(const SLE::pointer& sleOffer, const uint256& uOfferIndex, const uint160& uOwnerID);
-
-	TransactionEngineResult doAccountSet(const SerializedTransaction& txn);
-	TransactionEngineResult doClaim(const SerializedTransaction& txn);
-	TransactionEngineResult doCreditSet(const SerializedTransaction& txn);
-	TransactionEngineResult doDelete(const SerializedTransaction& txn);
-	TransactionEngineResult doInvoice(const SerializedTransaction& txn);
-	TransactionEngineResult doOfferCreate(const SerializedTransaction& txn);
-	TransactionEngineResult doOfferCancel(const SerializedTransaction& txn);
-	TransactionEngineResult doNicknameSet(const SerializedTransaction& txn);
-	TransactionEngineResult doPasswordFund(const SerializedTransaction& txn);
-	TransactionEngineResult doPasswordSet(const SerializedTransaction& txn);
-	TransactionEngineResult doPayment(const SerializedTransaction& txn);
-	TransactionEngineResult doStore(const SerializedTransaction& txn);
-	TransactionEngineResult doTake(const SerializedTransaction& txn);
-	TransactionEngineResult doWalletAdd(const SerializedTransaction& txn);
+	TER					doAccountSet(const SerializedTransaction& txn);
+	TER					doClaim(const SerializedTransaction& txn);
+	TER					doCreditSet(const SerializedTransaction& txn);
+	TER					doInvoice(const SerializedTransaction& txn);
+	TER					doOfferCreate(const SerializedTransaction& txn);
+	TER					doOfferCancel(const SerializedTransaction& txn);
+	TER					doNicknameSet(const SerializedTransaction& txn);
+	TER					doPasswordFund(const SerializedTransaction& txn);
+	TER					doPasswordSet(const SerializedTransaction& txn);
+	TER					doPayment(const SerializedTransaction& txn, const TransactionEngineParams params);
+	TER					doWalletAdd(const SerializedTransaction& txn);
+	TER					doContractAdd(const SerializedTransaction& txn);
+	TER					doContractRemove(const SerializedTransaction& txn);
 
 public:
 	TransactionEngine() { ; }
-	TransactionEngine(Ledger::pointer ledger) : mLedger(ledger) { ; }
+	TransactionEngine(Ledger::ref ledger) : mLedger(ledger) { assert(mLedger); }
 
-	Ledger::pointer getLedger()						{ return mLedger; }
-	void setLedger(Ledger::pointer ledger)			{ assert(ledger); mLedger = ledger; }
+	Ledger::pointer getLedger()			{ return mLedger; }
+	void setLedger(Ledger::ref ledger)	{ assert(ledger); mLedger = ledger; }
 
-	TransactionEngineResult applyTransaction(const SerializedTransaction&, TransactionEngineParams);
+	TER applyTransaction(const SerializedTransaction&, TransactionEngineParams);
 };
 
 inline TransactionEngineParams operator|(const TransactionEngineParams& l1, const TransactionEngineParams& l2)

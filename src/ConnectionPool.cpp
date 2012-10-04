@@ -6,6 +6,7 @@
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>
 #include <boost/algorithm/string.hpp>
+#include <algorithm>
 
 #include "Config.h"
 #include "Peer.h"
@@ -42,6 +43,9 @@ ConnectionPool::ConnectionPool(boost::asio::io_service& io_service) :
 
 void ConnectionPool::start()
 {
+	if (theConfig.RUN_STANDALONE)
+		return;
+
 	// Start running policy.
 	policyEnforce();
 
@@ -223,8 +227,9 @@ void ConnectionPool::policyHandler(const boost::system::error_code& ecResult)
 
 // YYY: Should probably do this in the background.
 // YYY: Might end up sending to disconnected peer?
-void ConnectionPool::relayMessage(Peer* fromPeer, PackedMessage::pointer msg)
+int ConnectionPool::relayMessage(Peer* fromPeer, const PackedMessage::pointer& msg)
 {
+	int sentTo = 0;
 	boost::mutex::scoped_lock sl(mPeerLock);
 
 	BOOST_FOREACH(naPeer pair, mConnectedMap)
@@ -233,8 +238,13 @@ void ConnectionPool::relayMessage(Peer* fromPeer, PackedMessage::pointer msg)
 		if (!peer)
 			std::cerr << "CP::RM null peer in list" << std::endl;
 		else if ((!fromPeer || !(peer.get() == fromPeer)) && peer->isConnected())
+		{
+			++sentTo;
 			peer->sendPacket(msg);
+		}
 	}
+
+	return sentTo;
 }
 
 // Schedule a connection via scanning.
@@ -243,6 +253,8 @@ void ConnectionPool::relayMessage(Peer* fromPeer, PackedMessage::pointer msg)
 // Requires sane IP and port.
 void ConnectionPool::connectTo(const std::string& strIp, int iPort)
 {
+	if (theConfig.RUN_STANDALONE)
+		return;
 	{
 		Database*	db	= theApp->getWalletDB()->getDB();
 		ScopedLock	sl(theApp->getWalletDB()->getDBLock());
@@ -334,7 +346,8 @@ std::vector<Peer::pointer> ConnectionPool::getPeerVector()
 
 // Now know peer's node public key.  Determine if we want to stay connected.
 // <-- bNew: false = redundant
-bool ConnectionPool::peerConnected(Peer::pointer peer, const NewcoinAddress& naPeer, const std::string& strIP, int iPort)
+bool ConnectionPool::peerConnected(Peer::ref peer, const NewcoinAddress& naPeer,
+	const std::string& strIP, int iPort)
 {
 	bool	bNew	= false;
 
@@ -392,7 +405,7 @@ bool ConnectionPool::peerConnected(Peer::pointer peer, const NewcoinAddress& naP
 }
 
 // We maintain a map of public key to peer for connected and verified peers.  Maintain it.
-void ConnectionPool::peerDisconnected(Peer::pointer peer, const NewcoinAddress& naPeer)
+void ConnectionPool::peerDisconnected(Peer::ref peer, const NewcoinAddress& naPeer)
 {
 	if (naPeer.isValid())
 	{
@@ -479,7 +492,7 @@ bool ConnectionPool::peerScanSet(const std::string& strIp, int iPort)
 }
 
 // --> strIp: not empty
-void ConnectionPool::peerClosed(Peer::pointer peer, const std::string& strIp, int iPort)
+void ConnectionPool::peerClosed(Peer::ref peer, const std::string& strIp, int iPort)
 {
 	ipPort		ipPeer			= make_pair(strIp, iPort);
 	bool		bScanRefresh	= false;
@@ -534,7 +547,7 @@ void ConnectionPool::peerClosed(Peer::pointer peer, const std::string& strIp, in
 		scanRefresh();
 }
 
-void ConnectionPool::peerVerified(Peer::pointer peer)
+void ConnectionPool::peerVerified(Peer::ref peer)
 {
 	if (mScanning && mScanning == peer)
 	{
@@ -639,7 +652,7 @@ void ConnectionPool::scanRefresh()
 
 			(void) mScanTimer.cancel();
 
-			iInterval	= MAX(iInterval, theConfig.PEER_SCAN_INTERVAL_MIN);
+			iInterval	= std::max(iInterval, theConfig.PEER_SCAN_INTERVAL_MIN);
 
 			tpNext		= tpNow + boost::posix_time::seconds(iInterval);
 

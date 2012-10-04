@@ -24,7 +24,8 @@ class SHAMap;
 class SHAMapNode
 { // Identifies a node in a SHA256 hash
 public:
-	typedef boost::shared_ptr<SHAMapNode> pointer;
+	typedef boost::shared_ptr<SHAMapNode> 			pointer;
+	typedef const boost::shared_ptr<SHAMapNode>&	ref;
 
 private:
 	static uint256 smMasks[65]; // AND with hash to get node id
@@ -78,6 +79,8 @@ public:
 
 extern std::size_t hash_value(const SHAMapNode& mn);
 
+inline std::ostream& operator<<(std::ostream& out, const SHAMapNode& node) { return out << node.getString(); }
+
 class SHAMapItem
 { // an item stored in a SHAMap
 public:
@@ -122,6 +125,12 @@ public:
 	virtual void dump();
 };
 
+enum SHANodeFormat
+{
+	snfPREFIX	= 1, // Form that hashes to its official hash
+	snfWIRE		= 2, // Compressed form used on the wire
+};
+
 class SHAMapTreeNode : public SHAMapNode
 {
 	friend class SHAMap;
@@ -154,14 +163,11 @@ private:
 public:
 	SHAMapTreeNode(uint32 seq, const SHAMapNode& nodeID); // empty node
 	SHAMapTreeNode(const SHAMapTreeNode& node, uint32 seq); // copy node from older tree
-	SHAMapTreeNode(const SHAMapNode& nodeID, SHAMapItem::pointer item, TNType type, uint32 seq);
-
-#define STN_ARF_PREFIXED	1
-#define STN_ARF_WIRE		2
+	SHAMapTreeNode(const SHAMapNode& nodeID, const SHAMapItem::pointer& item, TNType type, uint32 seq);
 
 	// raw node functions
-	SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned char>& contents, uint32 seq, int format);
-	void addRaw(Serializer &, int format);
+	SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned char>& data, uint32 seq, SHANodeFormat format);
+	void addRaw(Serializer &, SHANodeFormat format);
 
 	virtual bool isPopulated() const { return true; }
 
@@ -196,7 +202,7 @@ public:
 	bool hasItem() const { return !!mItem; }
 	SHAMapItem::pointer peekItem() { return mItem; }
 	SHAMapItem::pointer getItem() const;
-	bool setItem(SHAMapItem::pointer& i, TNType type);
+	bool setItem(const SHAMapItem::pointer& i, TNType type);
 	const uint256& getTag() const { return mItem->getTag(); }
 	const std::vector<unsigned char>& peekData() { return mItem->peekData(); }
 	std::vector<unsigned char> getData() const { return mItem->getData(); }
@@ -211,11 +217,11 @@ public:
 
 enum SHAMapState
 {
-	Modifying = 0,		// Objects can be added and removed (like an open ledger)
-	Immutable = 1,		// Map cannot be changed (like a closed ledger)
-	Synching = 2,		// Map's hash is locked in, valid nodes can be added (like a peer's closing ledger)
-	Floating = 3,		// Map is free to change hash (like a synching open ledger)
-	Invalid = 4,		// Map is known not to be valid (usually synching a corrupt ledger)
+	smsModifying = 0,		// Objects can be added and removed (like an open ledger)
+	smsImmutable = 1,		// Map cannot be changed (like a closed ledger)
+	smsSynching = 2,		// Map's hash is locked in, valid nodes can be added (like a peer's closing ledger)
+	smsFloating = 3,		// Map is free to change hash (like a synching open ledger)
+	smsInvalid = 4,			// Map is known not to be valid (usually synching a corrupt ledger)
 };
 
 class SHAMapSyncFilter
@@ -223,9 +229,11 @@ class SHAMapSyncFilter
 public:
 	SHAMapSyncFilter()				{ ; }
 	virtual ~SHAMapSyncFilter()		{ ; }
+
 	virtual void gotNode(const SHAMapNode& id, const uint256& nodeHash,
 		const std::vector<unsigned char>& nodeData, bool isLeaf)
 	{ ; }
+
 	virtual bool haveNode(const SHAMapNode& id, const uint256& nodeHash, std::vector<unsigned char>& nodeData)
 	{ return false; }
 };
@@ -242,6 +250,7 @@ public:
 	{ ; }
 	virtual ~SHAMapMissingNode() throw()
 	{ ; }
+
 	const SHAMapNode& getNodeID() const	{ return mNodeID; }
 	const uint256& getNodeHash() const	{ return mNodeHash; }
 };
@@ -250,6 +259,8 @@ class SHAMap
 {
 public:
 	typedef boost::shared_ptr<SHAMap> pointer;
+	typedef const boost::shared_ptr<SHAMap>& ref;
+
 	typedef std::map<uint256, std::pair<SHAMapItem::pointer, SHAMapItem::pointer> > SHAMapDiff;
 
 private:
@@ -275,9 +286,9 @@ protected:
 	SHAMapTreeNode::pointer getNode(const SHAMapNode& id);
 	SHAMapTreeNode::pointer getNode(const SHAMapNode& id, const uint256& hash, bool modify);
 	SHAMapTreeNode* getNodePointer(const SHAMapNode& id, const uint256& hash);
+	SHAMapTreeNode* firstBelow(SHAMapTreeNode*);
+	SHAMapTreeNode* lastBelow(SHAMapTreeNode*);
 
-	SHAMapItem::pointer firstBelow(SHAMapTreeNode*);
-	SHAMapItem::pointer lastBelow(SHAMapTreeNode*);
 	SHAMapItem::pointer onlyBelow(SHAMapTreeNode*);
 	void eraseChildren(SHAMapTreeNode::pointer);
 
@@ -289,6 +300,8 @@ public:
 	// build new map
 	SHAMap(uint32 seq = 0);
 	SHAMap(const uint256& hash);
+
+	~SHAMap() { mState = smsInvalid; }
 
 	// Returns a new map that's a snapshot of this one. Force CoW
 	SHAMap::pointer snapShot(bool isMutable);
@@ -308,41 +321,44 @@ public:
 	uint256 getHash()			{ return root->getNodeHash(); }
 
 	// save a copy if you have a temporary anyway
-	bool updateGiveItem(SHAMapItem::pointer, bool isTransaction, bool hasMeta);
-	bool addGiveItem(SHAMapItem::pointer, bool isTransaction, bool hasMeta);
+	bool updateGiveItem(const SHAMapItem::pointer&, bool isTransaction, bool hasMeta);
+	bool addGiveItem(const SHAMapItem::pointer&, bool isTransaction, bool hasMeta);
 
 	// save a copy if you only need a temporary
 	SHAMapItem::pointer peekItem(const uint256& id);
+	SHAMapItem::pointer peekItem(const uint256& id, SHAMapTreeNode::TNType& type);
 
 	// traverse functions
 	SHAMapItem::pointer peekFirstItem();
+	SHAMapItem::pointer peekFirstItem(SHAMapTreeNode::TNType& type);
 	SHAMapItem::pointer peekLastItem();
 	SHAMapItem::pointer peekNextItem(const uint256&);
+	SHAMapItem::pointer peekNextItem(const uint256&, SHAMapTreeNode::TNType& type);
 	SHAMapItem::pointer peekPrevItem(const uint256&);
 
 	// comparison/sync functions
 	void getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint256>& hashes, int max,
 		SHAMapSyncFilter* filter);
 	bool getNodeFat(const SHAMapNode& node, std::vector<SHAMapNode>& nodeIDs,
-	 std::list<std::vector<unsigned char> >& rawNode, bool fatLeaves);
-	bool getRootNode(Serializer& s, int format);
-	bool addRootNode(const uint256& hash, const std::vector<unsigned char>& rootNode, int format);
-	bool addRootNode(const std::vector<unsigned char>& rootNode, int format);
+	 std::list<std::vector<unsigned char> >& rawNode, bool fatRoot, bool fatLeaves);
+	bool getRootNode(Serializer& s, SHANodeFormat format);
+	bool addRootNode(const uint256& hash, const std::vector<unsigned char>& rootNode, SHANodeFormat format);
+	bool addRootNode(const std::vector<unsigned char>& rootNode, SHANodeFormat format);
 	bool addKnownNode(const SHAMapNode& nodeID, const std::vector<unsigned char>& rawNode,
 		SHAMapSyncFilter* filter);
 
 	// status functions
-	void setImmutable(void)		{ assert(mState != Invalid); mState = Immutable; }
-	void clearImmutable(void)	{ mState = Modifying; }
-	bool isSynching(void) const	{ return (mState == Floating) || (mState == Synching); }
-	void setSynching(void)		{ mState = Synching; }
-	void setFloating(void)		{ mState = Floating; }
-	void clearSynching(void)	{ mState = Modifying; }
-	bool isValid(void)			{ return mState != Invalid; }
+	void setImmutable()		{ assert(mState != smsInvalid); mState = smsImmutable; }
+	void clearImmutable()	{ mState = smsModifying; }
+	bool isSynching() const	{ return (mState == smsFloating) || (mState == smsSynching); }
+	void setSynching()		{ mState = smsSynching; }
+	void setFloating()		{ mState = smsFloating; }
+	void clearSynching()	{ mState = smsModifying; }
+	bool isValid()			{ return mState != smsInvalid; }
 
 	// caution: otherMap must be accessed only by this function
 	// return value: true=successfully completed, false=too different
-	bool compare(SHAMap::pointer otherMap, SHAMapDiff& differences, int maxCount);
+	bool compare(SHAMap::ref otherMap, SHAMapDiff& differences, int maxCount);
 
 	void armDirty();
 	int flushDirty(int maxNodes, HashedObjectType t, uint32 seq);

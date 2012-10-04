@@ -46,6 +46,7 @@ public:
 
 	static NewcoinAddress createNodePublic(const NewcoinAddress& naSeed);
 	static NewcoinAddress createNodePublic(const std::vector<unsigned char>& vPublic);
+	static NewcoinAddress createNodePublic(const std::string& strPublic);
 
 	//
 	// Node Private
@@ -71,6 +72,9 @@ public:
 
 	bool setAccountID(const std::string& strAccountID);
 	void setAccountID(const uint160& hash160In);
+
+	static NewcoinAddress createAccountID(const std::string& strAccountID)
+	{ NewcoinAddress na; na.setAccountID(strAccountID); return na; }
 
 	static NewcoinAddress createAccountID(const uint160& uiAccountID);
 

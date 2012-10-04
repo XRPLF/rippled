@@ -15,22 +15,37 @@ enum TransactionType
 	ttNICKNAME_SET		= 6,
 	ttOFFER_CREATE		= 7,
 	ttOFFER_CANCEL		= 8,
+	ttCONTRACT			= 9,
+	ttCONTRACT_REMOVE	= 10,  // can we use the same msg as offer cancel
+
 	ttCREDIT_SET		= 20,
-	ttINVOICE			= 10,
 };
 
-struct TransactionFormat
+class TransactionFormat
 {
-	const char *t_name;
-	TransactionType t_type;
-	SOElement elements[16];
-};
+public:
+	std::string					t_name;
+	TransactionType				t_type;
+	std::vector<SOElement::ptr>	elements;
 
-const int TransactionISigningPubKey	= 0;
-const int TransactionISourceID		= 1;
-const int TransactionISequence		= 2;
-const int TransactionIType			= 3;
-const int TransactionIFee			= 4;
+	static std::map<int, TransactionFormat*>			byType;
+    static std::map<std::string, TransactionFormat*>	byName;
+
+    TransactionFormat(const char *name, TransactionType type) : t_name(name), t_type(type)
+    {
+	    byName[name] = this;
+	    byType[type] = this;
+    }
+    TransactionFormat& operator<<(const SOElement& el)
+    {
+	    elements.push_back(new SOElement(el));
+	    return *this;
+    }
+
+	static TransactionFormat* getTxnFormat(TransactionType t);
+	static TransactionFormat* getTxnFormat(const std::string& t);
+	static TransactionFormat* getTxnFormat(int t);
+};
 
 const int TransactionMinLen			= 32;
 const int TransactionMaxLen			= 1048576;
@@ -45,9 +60,8 @@ const uint32 tfPassive				= 0x00010000;
 // Payment flags:
 const uint32 tfCreateAccount		= 0x00010000;
 const uint32 tfPartialPayment		= 0x00020000;
-const uint32 tfNoRippleDirect		= 0x00040000;
+const uint32 tfLimitQuality			= 0x00040000;
+const uint32 tfNoRippleDirect		= 0x00080000;
 
-extern TransactionFormat InnerTxnFormats[];
-extern TransactionFormat* getTxnFormat(TransactionType t);
 #endif
 // vim:ts=4

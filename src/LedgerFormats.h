@@ -13,6 +13,7 @@ enum LedgerEntryType
 	ltRIPPLE_STATE		= 'r',
 	ltNICKNAME			= 'n',
 	ltOFFER				= 'o',
+	ltCONTRACT			= 'c',
 };
 
 // Used as a prefix for computing ledger indexes (keys).
@@ -23,12 +24,10 @@ enum LedgerNameSpace
 	spaceGenerator		= 'g',
 	spaceNickname		= 'n',
 	spaceRipple			= 'r',
-	spaceRippleDir		= 'R',
 	spaceOffer			= 'o',	// Entry for an offer.
 	spaceOwnerDir		= 'O',	// Directory of things owned by an account.
 	spaceBookDir		= 'B',	// Directory of order books.
-	spaceBond			= 'b',
-	spaceInvoice		= 'i',
+	spaceContract		= 'c',
 };
 
 enum LedgerSpecificFlags
@@ -38,20 +37,33 @@ enum LedgerSpecificFlags
 
 	// ltOFFER
 	lsfPassive			= 0x00010000,
-
-	// ltRIPPLE_STATE
-	lsfLowIndexed		= 0x00010000,
-	lsfHighIndexed		= 0x00020000,
 };
 
-struct LedgerEntryFormat
+class LedgerEntryFormat
 {
-	const char *t_name;
-	LedgerEntryType t_type;
-	SOElement elements[20];
+public:
+	std::string					t_name;
+	LedgerEntryType				t_type;
+	std::vector<SOElement::ptr>	elements;
+
+	static std::map<int, LedgerEntryFormat*>			byType;
+	static std::map<std::string, LedgerEntryFormat*>	byName;
+
+	LedgerEntryFormat(const char *name, LedgerEntryType type) : t_name(name), t_type(type)
+	{
+		byName[name] = this;
+		byType[type] = this;
+	}
+	LedgerEntryFormat& operator<<(const SOElement& el)
+	{
+		elements.push_back(new SOElement(el));
+		return *this;
+	}
+
+	static LedgerEntryFormat* getLgrFormat(LedgerEntryType t);
+	static LedgerEntryFormat* getLgrFormat(const std::string& t);
+	static LedgerEntryFormat* getLgrFormat(int t);
 };
 
-extern LedgerEntryFormat LedgerFormats[];
-extern LedgerEntryFormat* getLgrFormat(LedgerEntryType t);
 #endif
 // vim:ts=4

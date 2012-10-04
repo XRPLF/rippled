@@ -6,21 +6,28 @@
 #include <openssl/rand.h>
 
 #include "utils.h"
+#include "Config.h"
 #include "Log.h"
 
-static uint8_t SNTPQueryData[48] = {
-	0x1B,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-};
+// #define SNTP_DEBUG
 
-// NTP query frequency - 5 minutes
-#define NTP_QUERY_FREQUENCY		(5 * 60)
+static uint8_t SNTPQueryData[48] =
+{ 0x1B,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
+
+// NTP query frequency - 4 minutes
+#define NTP_QUERY_FREQUENCY		(4 * 60)
+
+// NTP minimum interval to query same servers - 3 minutes
+#define NTP_MIN_QUERY			(3 * 60)
 
 // NTP sample window (should be odd)
 #define NTP_SAMPLE_WINDOW		9
 
 // NTP timestamp constant
 #define NTP_UNIX_OFFSET			0x83AA7E80
+
+// NTP timestamp validity
+#define NTP_TIMESTAMP_VALID		((NTP_QUERY_FREQUENCY + NTP_MIN_QUERY) * 2)
 
 // SNTP packet offsets
 #define NTP_OFF_INFO			0
@@ -37,15 +44,14 @@ static uint8_t SNTPQueryData[48] = {
 #define NTP_OFF_XMITTS_FRAC		11
 
 
-SNTPClient::SNTPClient(boost::asio::io_service& service) :
-		mIOService(service), mSocket(service), mTimer(service), mResolver(service),
+SNTPClient::SNTPClient(boost::asio::io_service& service) : mSocket(service), mTimer(service), mResolver(service),
 		mOffset(0), mLastOffsetUpdate((time_t) -1), mReceiveBuffer(256)
 {
 	mSocket.open(boost::asio::ip::udp::v4());
 	mSocket.async_receive_from(boost::asio::buffer(mReceiveBuffer, 256), mReceiveEndpoint,
 		boost::bind(&SNTPClient::receivePacket, this, boost::asio::placeholders::error,
 			boost::asio::placeholders::bytes_transferred));
-	
+
 	mTimer.expires_from_now(boost::posix_time::seconds(NTP_QUERY_FREQUENCY));
 	mTimer.async_wait(boost::bind(&SNTPClient::timerEntry, this, boost::asio::placeholders::error));
 }
@@ -65,7 +71,7 @@ void SNTPClient::resolveComplete(const boost::system::error_code& error, boost::
 			SNTPQuery& query = mQueries[*sel];
 			time_t now = time(NULL);
 			if ((query.mLocalTimeSent == now) || ((query.mLocalTimeSent + 1) == now))
-			{
+			{ // This can happen if the same IP address is reached through multiple names
 				Log(lsTRACE) << "SNTP: Redundant query suppressed";
 				return;
 			}
@@ -86,21 +92,24 @@ void SNTPClient::receivePacket(const boost::system::error_code& error, std::size
 	if (!error)
 	{
 		boost::mutex::scoped_lock sl(mLock);
+#ifdef SNTP_DEBUG
 		Log(lsTRACE) << "SNTP: Packet from " << mReceiveEndpoint;
+#endif
 		std::map<boost::asio::ip::udp::endpoint, SNTPQuery>::iterator query = mQueries.find(mReceiveEndpoint);
 		if (query == mQueries.end())
-			Log(lsDEBUG) << "SNTP: Reply found without matching query";
+			Log(lsDEBUG) << "SNTP: Reply from " << mReceiveEndpoint << " found without matching query";
 		else if (query->second.mReceivedReply)
-			Log(lsDEBUG) << "SNTP: Duplicate response to query";
+			Log(lsDEBUG) << "SNTP: Duplicate response from " << mReceiveEndpoint;
 		else
 		{
 			query->second.mReceivedReply = true;
 			if (time(NULL) > (query->second.mLocalTimeSent + 1))
-				Log(lsWARNING) << "SNTP: Late response";
+				Log(lsWARNING) << "SNTP: Late response from " << mReceiveEndpoint;
 			else if (bytes_xferd < 48)
-				Log(lsWARNING) << "SNTP: Short reply (" << bytes_xferd << ") " << mReceiveBuffer.size();
+				Log(lsWARNING) << "SNTP: Short reply from " << mReceiveEndpoint
+					<< " (" << bytes_xferd << ") " << mReceiveBuffer.size();
 			else if (reinterpret_cast<uint32*>(&mReceiveBuffer[0])[NTP_OFF_ORGTS_FRAC] != query->second.mQueryNonce)
-				Log(lsWARNING) << "SNTP: Reply had wrong nonce";
+				Log(lsWARNING) << "SNTP: Reply from " << mReceiveEndpoint << "had wrong nonce";
 			else
 				processReply();
 		}
@@ -128,12 +137,12 @@ void SNTPClient::processReply()
 
 	if ((info >> 30) == 3)
 	{
-		Log(lsINFO) << "SNTP: Alarm condition";
+		Log(lsINFO) << "SNTP: Alarm condition " << mReceiveEndpoint;
 		return;
 	}
 	if ((stratum == 0) || (stratum > 14))
 	{
-		Log(lsINFO) << "SNTP: Unreasonable stratum";
+		Log(lsINFO) << "SNTP: Unreasonable stratum (" << stratum << ") from " << mReceiveEndpoint;
 		return;
 	}
 
@@ -161,7 +170,10 @@ void SNTPClient::processReply()
 	if ((mOffset == -1) || (mOffset == 1)) // small corrections likely do more harm than good
 		mOffset = 0;
 
-	Log(lsTRACE) << "SNTP: Offset is " << timev << ", new system offset is " << mOffset;
+#ifndef SNTP_DEBUG
+	if (timev || mOffset)
+#endif
+		Log(lsTRACE) << "SNTP: Offset is " << timev << ", new system offset is " << mOffset;
 }
 
 void SNTPClient::timerEntry(const boost::system::error_code& error)
@@ -196,14 +208,14 @@ void SNTPClient::init(const std::vector<std::string>& servers)
 
 void SNTPClient::queryAll()
 {
-	while(doQuery())
+	while (doQuery())
 		nothing();
 }
 
 bool SNTPClient::getOffset(int& offset)
 {
 	boost::mutex::scoped_lock sl(mLock);
-	if ((mLastOffsetUpdate == (time_t) -1) || ((mLastOffsetUpdate + 90) < time(NULL)))
+	if ((mLastOffsetUpdate == (time_t) -1) || ((mLastOffsetUpdate + NTP_TIMESTAMP_VALID) < time(NULL)))
 		return false;
 	offset = mOffset;
 	return true;
@@ -223,7 +235,7 @@ bool SNTPClient::doQuery()
 		return false;
 	}
 	time_t now = time(NULL);
-	if ((best->second == now) || (best->second == (now - 1)))
+	if ((best->second != (time_t) -1) && ((best->second + NTP_MIN_QUERY) >= now))
 	{
 		Log(lsTRACE) << "SNTP: All servers recently queried";
 		return false;
@@ -234,6 +246,9 @@ bool SNTPClient::doQuery()
 	mResolver.async_resolve(query,
 		boost::bind(&SNTPClient::resolveComplete, this,
 		boost::asio::placeholders::error, boost::asio::placeholders::iterator));
+#ifdef SNTP_DEBUG
 	Log(lsTRACE) << "SNTP: Resolve pending for " << best->first;
+#endif
 	return true;
 }
+// vim:ts=4

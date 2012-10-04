@@ -2,7 +2,6 @@
 // XXX Want a limit of 2000 validators.
 
 #include "Application.h"
-#include "Conversion.h"
 #include "HttpsClient.h"
 #include "Log.h"
 #include "ParseSection.h"
@@ -38,6 +37,10 @@
 // YYY Move to config file.
 #define REFERRAL_VALIDATORS_MAX	50
 #define REFERRAL_IPS_MAX		50
+
+#ifndef MIN
+#define MIN(x,y) ((x)<(y)?(x):(y))
+#endif
 
 UniqueNodeList::UniqueNodeList(boost::asio::io_service& io_service) :
 	mdtScoreTimer(io_service),
@@ -179,8 +182,6 @@ void UniqueNodeList::scoreCompute()
 	std::vector<scoreNode>	vsnNodes;		// Index to scoring node.
 
 	Database*	db=theApp->getWalletDB()->getDB();
-
-	std::string strSql;
 
 	// For each entry in SeedDomains with a PublicKey:
 	// - Add an entry in umPulicIdx, umDomainIdx, and vsnNodes.
@@ -385,7 +386,7 @@ void UniqueNodeList::scoreCompute()
 	db->executeSQL("BEGIN;");
 	db->executeSQL("UPDATE TrustedNodes SET Score = 0 WHERE Score != 0;");
 
-	if (vsnNodes.size())
+	if (!vsnNodes.empty())
 	{
 		// Load existing Seens from DB.
 		std::vector<std::string>	vstrPublicKeys;
@@ -406,7 +407,7 @@ void UniqueNodeList::scoreCompute()
 
 	boost::unordered_set<std::string>	usUNL;
 
-	if (vsnNodes.size())
+	if (!vsnNodes.empty())
 	{
 		// Update the score old entries and add new entries as needed.
 		std::vector<std::string>	vstrValues;
@@ -442,7 +443,7 @@ void UniqueNodeList::scoreCompute()
 
 	boost::unordered_map<std::string, int>	umValidators;
 
-	if (vsnNodes.size())
+	if (!vsnNodes.empty())
 	{
 		std::vector<std::string> vstrPublicKeys;
 
@@ -623,7 +624,7 @@ void UniqueNodeList::processIps(const std::string& strSite, const NewcoinAddress
 	}
 
 	// Add new referral entries.
-	if (pmtVecStrIps && pmtVecStrIps->size()) {
+	if (pmtVecStrIps && !pmtVecStrIps->empty()) {
 		std::vector<std::string> vstrValues;
 
 		vstrValues.resize(MIN(pmtVecStrIps->size(), REFERRAL_IPS_MAX));
@@ -708,7 +709,6 @@ int UniqueNodeList::processValidators(const std::string& strSite, const std::str
 				break;
 
 			boost::smatch	smMatch;
-			std::string		strIP;
 
 			// domain comment?
 			// public_key comment?
@@ -775,7 +775,7 @@ int UniqueNodeList::processValidators(const std::string& strSite, const std::str
 }
 
 // Given a section with IPs, parse and persist it for a validator.
-void UniqueNodeList::responseIps(const std::string& strSite, const NewcoinAddress& naNodePublic, const boost::system::error_code& err, const std::string strIpsFile)
+void UniqueNodeList::responseIps(const std::string& strSite, const NewcoinAddress& naNodePublic, const boost::system::error_code& err, const std::string& strIpsFile)
 {
 	if (!err)
 	{
@@ -815,7 +815,7 @@ void UniqueNodeList::getIpsUrl(const NewcoinAddress& naNodePublic, section secSi
 }
 
 // After fetching a newcoin.txt from a web site, given a section with validators, parse and persist it.
-void UniqueNodeList::responseValidators(const std::string& strValidatorsUrl, const NewcoinAddress& naNodePublic, section secSite, const std::string& strSite, const boost::system::error_code& err, const std::string strValidatorsFile)
+void UniqueNodeList::responseValidators(const std::string& strValidatorsUrl, const NewcoinAddress& naNodePublic, section secSite, const std::string& strSite, const boost::system::error_code& err, const std::string& strValidatorsFile)
 {
 	if (!err)
 	{
@@ -854,7 +854,7 @@ void UniqueNodeList::getValidatorsUrl(const NewcoinAddress& naNodePublic, sectio
 }
 
 // Process a newcoin.txt.
-void UniqueNodeList::processFile(const std::string strDomain, const NewcoinAddress& naNodePublic, section secSite)
+void UniqueNodeList::processFile(const std::string& strDomain, const NewcoinAddress& naNodePublic, section secSite)
 {
 	//
 	// Process Validators
@@ -881,7 +881,7 @@ void UniqueNodeList::processFile(const std::string strDomain, const NewcoinAddre
 }
 
 // Given a newcoin.txt, process it.
-void UniqueNodeList::responseFetch(const std::string strDomain, const boost::system::error_code& err, const std::string strSiteFile)
+void UniqueNodeList::responseFetch(const std::string& strDomain, const boost::system::error_code& err, const std::string& strSiteFile)
 {
 	section				secSite	= ParseSection(strSiteFile, true);
 	bool				bGood	= !err;

@@ -23,7 +23,7 @@ LedgerHistory::LedgerHistory() : mLedgersByHash(CACHED_LEDGER_NUM, CACHED_LEDGER
 
 void LedgerHistory::addLedger(Ledger::pointer ledger)
 {
-	mLedgersByHash.canonicalize(ledger->getHash(), ledger);
+	mLedgersByHash.canonicalize(ledger->getHash(), ledger, true);
 }
 
 void LedgerHistory::addAcceptedLedger(Ledger::pointer ledger)
@@ -31,8 +31,10 @@ void LedgerHistory::addAcceptedLedger(Ledger::pointer ledger)
 	assert(ledger && ledger->isAccepted());
 	uint256 h(ledger->getHash());
 	boost::recursive_mutex::scoped_lock sl(mLedgersByHash.peekMutex());
-	mLedgersByHash.canonicalize(h, ledger);
-	assert(ledger && ledger->isAccepted() && ledger->isImmutable());
+	mLedgersByHash.canonicalize(h, ledger, true);
+	assert(ledger);
+	assert(ledger->isAccepted());
+	assert(ledger->isImmutable());
 	mLedgersByIndex.insert(std::make_pair(ledger->getLedgerSeq(), ledger));
 	boost::thread thread(boost::bind(&Ledger::saveAcceptedLedger, ledger));
 	thread.detach();
@@ -88,7 +90,8 @@ Ledger::pointer LedgerHistory::canonicalizeLedger(Ledger::pointer ledger, bool s
 	if (!save)
 	{ // return input ledger if not in map, otherwise, return corresponding map ledger
 		Ledger::pointer ret = mLedgersByHash.fetch(h);
-		if (ret) return ret;
+		if (ret)
+			return ret;
 		return ledger;
 	}
 

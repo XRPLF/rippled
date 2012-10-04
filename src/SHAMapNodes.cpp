@@ -27,58 +27,58 @@ uint256 SHAMapNode::smMasks[65];
 
 bool SHAMapNode::operator<(const SHAMapNode &s) const
 {
-	if(s.mDepth<mDepth) return true;
-	if(s.mDepth>mDepth) return false;
-	return mNodeID<s.mNodeID;
+	if (s.mDepth < mDepth) return true;
+	if (s.mDepth > mDepth) return false;
+	return mNodeID < s.mNodeID;
 }
 
 bool SHAMapNode::operator>(const SHAMapNode &s) const
 {
-	if(s.mDepth<mDepth) return false;
-	if(s.mDepth>mDepth) return true;
-	return mNodeID>s.mNodeID;
+	if (s.mDepth < mDepth) return false;
+	if (s.mDepth > mDepth) return true;
+	return mNodeID > s.mNodeID;
 }
 
 bool SHAMapNode::operator<=(const SHAMapNode &s) const
 {
-	if(s.mDepth<mDepth) return true;
-	if(s.mDepth>mDepth) return false;
-	return mNodeID<=s.mNodeID;
+	if (s.mDepth < mDepth) return true;
+	if (s.mDepth > mDepth) return false;
+	return mNodeID <= s.mNodeID;
 }
 
 bool SHAMapNode::operator>=(const SHAMapNode &s) const
 {
-	if(s.mDepth<mDepth) return false;
-	if(s.mDepth>mDepth) return true;
-	return mNodeID>=s.mNodeID;
+	if (s.mDepth < mDepth) return false;
+	if (s.mDepth > mDepth) return true;
+	return mNodeID >= s.mNodeID;
 }
 
 bool SHAMapNode::operator==(const SHAMapNode &s) const
 {
-	return (s.mDepth==mDepth) && (s.mNodeID==mNodeID);
+	return (s.mDepth == mDepth) && (s.mNodeID == mNodeID);
 }
 
 bool SHAMapNode::operator!=(const SHAMapNode &s) const
 {
-	return (s.mDepth!=mDepth) || (s.mNodeID!=mNodeID);
+	return (s.mDepth != mDepth) || (s.mNodeID != mNodeID);
 }
 
 bool SHAMapNode::operator==(const uint256 &s) const
 {
-	return s==mNodeID;
+	return s == mNodeID;
 }
 
 bool SHAMapNode::operator!=(const uint256 &s) const
 {
-	return s!=mNodeID;
+	return s != mNodeID;
 }
 
-static bool j = SHAMapNode::ClassInit();
+bool SMN_j = SHAMapNode::ClassInit();
 
 bool SHAMapNode::ClassInit()
 { // set up the depth masks
 	uint256 selector;
-	for(int i = 0; i < 64; i += 2)
+	for (int i = 0; i < 64; i += 2)
 	{
 		smMasks[i] = selector;
 		*(selector.begin() + (i / 2)) = 0xF0;
@@ -147,7 +147,7 @@ int SHAMapNode::selectBranch(const uint256& hash) const
 	if ((hash & smMasks[mDepth]) != mNodeID)
 	{
 		std::cerr << "selectBranch(" << getString() << std::endl;
-		std::cerr << "  " << hash.GetHex() << " off branch" << std::endl;
+		std::cerr << "  " << hash << " off branch" << std::endl;
 		assert(false);
 		return -1;	// does not go under this node
 	}
@@ -182,17 +182,17 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapTreeNode& node, uint32 seq) : SHAMapN
 		memcpy(mHashes, node.mHashes, sizeof(mHashes));
 }
 
-SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& node, SHAMapItem::pointer item, TNType type, uint32 seq) :
+SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& node, const SHAMapItem::pointer& item, TNType type, uint32 seq) :
 	SHAMapNode(node), mItem(item), mSeq(seq), mType(type), mFullBelow(true)
 {
 	assert(item->peekData().size() >= 12);
 	updateHash();
 }
 
-SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned char>& rawNode, uint32 seq, int format)
-	: SHAMapNode(id), mSeq(seq), mType(tnERROR), mFullBelow(false)
+SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned char>& rawNode, uint32 seq,
+	SHANodeFormat format) : SHAMapNode(id), mSeq(seq), mType(tnERROR), mFullBelow(false)
 {
-	if (format == STN_ARF_WIRE)
+	if (format == snfWIRE)
 	{
 		Serializer s(rawNode);
 		int type = s.removeLastByte();
@@ -256,7 +256,7 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned 
 		}
 	}
 
-	if (format == STN_ARF_PREFIXED)
+	if (format == snfPREFIX)
 	{
 		if (rawNode.size() < 4)
 		{
@@ -296,8 +296,9 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned 
 		}
 		else if (prefix == sHP_TransactionNode)
 		{
-			uint256 txID; // WRITEME: Need code to extract transaction ID from TX+MD
-			assert(false);
+			uint256 txID;
+			s.get256(txID, s.getLength() - 32);
+			s.chop(32);
 			mItem = boost::make_shared<SHAMapItem>(txID, s.peekData());
 			mType = tnTRANSACTION_MD;
 		}
@@ -350,14 +351,14 @@ bool SHAMapTreeNode::updateHash()
 	return true;
 }
 
-void SHAMapTreeNode::addRaw(Serializer& s, int format)
+void SHAMapTreeNode::addRaw(Serializer& s, SHANodeFormat format)
 {
-	assert((format == STN_ARF_PREFIXED) || (format == STN_ARF_WIRE));
+	assert((format == snfPREFIX) || (format == snfWIRE));
 	if (mType == tnERROR) throw std::runtime_error("invalid I node type");
 
 	if (mType == tnINNER)
 	{
-		if (format == STN_ARF_PREFIXED)
+		if (format == snfPREFIX)
 		{
 			s.add32(sHP_InnerNode);
 			for (int i = 0; i < 16; ++i)
@@ -385,7 +386,7 @@ void SHAMapTreeNode::addRaw(Serializer& s, int format)
 	}
 	else if (mType == tnACCOUNT_STATE)
 	{
-		if (format == STN_ARF_PREFIXED)
+		if (format == snfPREFIX)
 		{
 			s.add32(sHP_LeafNode);
 			mItem->addRaw(s);
@@ -400,7 +401,7 @@ void SHAMapTreeNode::addRaw(Serializer& s, int format)
 	}
 	else if (mType == tnTRANSACTION_NM)
 	{
-		if (format == STN_ARF_PREFIXED)
+		if (format == snfPREFIX)
 		{
 			s.add32(sHP_TransactionID);
 			mItem->addRaw(s);
@@ -413,7 +414,7 @@ void SHAMapTreeNode::addRaw(Serializer& s, int format)
 	}
 	else if (mType == tnTRANSACTION_MD)
 	{
-		if (format == STN_ARF_PREFIXED)
+		if (format == snfPREFIX)
 		{
 			s.add32(sHP_TransactionNode);
 			mItem->addRaw(s);
@@ -429,7 +430,7 @@ void SHAMapTreeNode::addRaw(Serializer& s, int format)
 		assert(false);
 }
 
-bool SHAMapTreeNode::setItem(SHAMapItem::pointer& i, TNType type)
+bool SHAMapTreeNode::setItem(const SHAMapItem::pointer& i, TNType type)
 {
 	uint256 hash = getNodeHash();
 	mType = type;
@@ -464,7 +465,7 @@ void SHAMapTreeNode::makeInner()
 
 void SHAMapTreeNode::dump()
 {
-	Log(lsDEBUG) << "SHAMapTreeNode(" << getNodeID().GetHex() << ")";
+	Log(lsDEBUG) << "SHAMapTreeNode(" << getNodeID() << ")";
 }
 
 std::string SHAMapTreeNode::getString() const
@@ -476,7 +477,7 @@ std::string SHAMapTreeNode::getString() const
 	ret += ")";
 	if (isInner())
 	{
-		for(int i = 0; i < 16; ++i)
+		for (int i = 0; i < 16; ++i)
 			if (!isEmptyBranch(i))
 			{
 				ret += "\nb";

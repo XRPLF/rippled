@@ -48,8 +48,10 @@ public:
 
 		// Bad parameter
 		rpcACT_MALFORMED,
+		rpcQUALITY_MALFORMED,
 		rpcBAD_SEED,
 		rpcDST_ACT_MALFORMED,
+		rpcDST_ACT_MISSING,
 		rpcDST_AMT_MALFORMED,
 		rpcGETS_ACT_MALFORMED,
 		rpcGETS_AMT_MALFORMED,
@@ -63,6 +65,7 @@ public:
 		rpcPORT_MALFORMED,
 		rpcPUBLIC_MALFORMED,
 		rpcSRC_ACT_MALFORMED,
+		rpcSRC_ACT_MISSING,
 		rpcSRC_AMT_MALFORMED,
 
 		// Internal error (should never happen)
@@ -138,6 +141,7 @@ private:
 	Json::Value doDataFetch(const Json::Value& params);
 	Json::Value doDataStore(const Json::Value& params);
 	Json::Value doLedger(const Json::Value& params);
+	Json::Value doLogRotate(const Json::Value& params);
 	Json::Value doNicknameInfo(const Json::Value& params);
 	Json::Value doNicknameSet(const Json::Value& params);
 	Json::Value doOfferCreate(const Json::Value& params);
@@ -145,7 +149,9 @@ private:
 	Json::Value doOwnerInfo(const Json::Value& params);
 	Json::Value doPasswordFund(const Json::Value& params);
 	Json::Value doPasswordSet(const Json::Value& params);
+	Json::Value doProfile(const Json::Value& params);
 	Json::Value doPeers(const Json::Value& params);
+	Json::Value doRipple(const Json::Value &params);
 	Json::Value doRippleLinesGet(const Json::Value &params);
 	Json::Value doRippleLineSet(const Json::Value& params);
 	Json::Value doSend(const Json::Value& params);
@@ -179,6 +185,7 @@ private:
 	Json::Value doWalletVerify(const Json::Value& params);
 
 	Json::Value doLogin(const Json::Value& params);
+
 
 public:
 	static pointer create(boost::asio::io_service& io_service, NetworkOPs* mNetOps)
