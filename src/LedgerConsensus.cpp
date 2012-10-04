@@ -790,6 +790,14 @@ void LedgerConsensus::startAcquiring(const TransactionAcquire::pointer& acquire)
 			}
 		}
 	}
+
+	std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
+	BOOST_FOREACH(Peer::ref peer, peerList)
+	{
+		if (peer->hasTxSet(acquire->getHash())
+			acquire->peerHash(peer);
+	}
+
 	acquire->resetTimer();
 }
 
