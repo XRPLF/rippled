@@ -63,9 +63,6 @@
     <ClCompile Include="src\ConnectionPool.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\Conversion.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\DBInit.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -292,6 +289,18 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\Operation.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\FieldNames.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\TransactionAction.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\RippleCalc.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\TransactionErr.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -557,6 +566,7 @@
     <None Include="SConstruct" />
     <None Include="newcoind.cfg" />
     <None Include="validators.txt" />
+    <None Include="README" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="src\newcoin.proto" />

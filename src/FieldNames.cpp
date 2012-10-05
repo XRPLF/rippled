@@ -33,15 +33,16 @@ SField::ref SField::getField(int code)
 
 	if ((type <= 0) || (field <= 0))
 		return sfInvalid;
+	{ //JED: Did this to fix a deadlock. david you should check. Line after this block also has a scoped lock
+		// why doe sthis thing even need a mutex?
+		boost::mutex::scoped_lock sl(mapMutex);
 
-	boost::mutex::scoped_lock sl(mapMutex);
+		std::map<int, SField::ptr>::iterator it = codeToField.find(code);
+		if (it != codeToField.end())
+			return *(it->second);
 
-	std::map<int, SField::ptr>::iterator it = codeToField.find(code);
-	if (it != codeToField.end())
-		return *(it->second);
-
-	switch (type)
-	{ // types we are willing to dynamically extend
+		switch (type)
+		{ // types we are willing to dynamically extend
 
 #define FIELD(name, type, index)
 #define TYPE(name, type, index) case STI_##type:
@@ -50,11 +51,13 @@ SField::ref SField::getField(int code)
 #undef TYPE
 
 			break;
-		default:
-			return sfInvalid;
-	}
+default:
+	return sfInvalid;
+		}
 
-	std::string dynName = lexical_cast_i(type) + "/" + lexical_cast_i(field);
+		std::string dynName = lexical_cast_i(type) + "/" + lexical_cast_i(field);
+	}// end scope lock
+	
 	return *(new SField(code, static_cast<SerializedTypeID>(type), field, dynName.c_str()));
 }
 
