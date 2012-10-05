@@ -20,86 +20,76 @@ var Remote = function (trusted, websocket_ip, websocket_port, trace) {
   this.trace		    = trace;
   this.ledger_closed	    = undefined;
   this.ledger_current_index = undefined;
-  this.stand_alone	     = undefined;
-
+  this.stand_alone	    = undefined;
+  
   // Cache information for accounts.
-  this.accounts		    = {
-    };
+  this.account = {};
   
   // Cache for various ledgers.
   // XXX Clear when ledger advances.
-  this.ledgers	     = {
-      'current'	: {}
-    };
+  this.ledgers = {
+    'current' : {}
+  };
 };
 
 var remoteConfig = function (config, server, trace) {
-    var	serverConfig	= config.servers[server];
-
-    return new Remote(serverConfig.trusted, serverConfig.websocket_ip, serverConfig.websocket_port, trace);
+  var serverConfig = config.servers[server];
+  
+  return new Remote(serverConfig.trusted, serverConfig.websocket_ip, serverConfig.websocket_port, trace);
 };
 
 // XXX This needs to be determined from the network.
-var fees    = {
-    'default' : 100,
-    'account_create' : 1000,
-    'nickname_create' : 1000,
-    'offer' : 100,
+var fees = {
+  'default' : 100,
+  'account_create' : 1000,
+  'nickname_create' : 1000,
+  'offer' : 100,
 };
 
 // For accounts we cache things like sequence numbers.
 var accounts = {
-    // Consider sequence numbers stable if you know you're not generating bad transactions.
-    // Otherwise, clear it to have it automatically refreshed from the network.
-
-// acount : { seq : __ }
+  // Consider sequence numbers stable if you know you're not generating bad transactions.
+  // Otherwise, clear it to have it automatically refreshed from the network.
+  
+  // acount : { seq : __ }
 };
 
 Remote.method('connect_helper', function () {
-    var	self	= this;
+  var self = this;
+  
+  if (this.trace) console.log("remote: connect: %s", this.url);
+  
+  this.ws = new WebSocket(this.url);
+  
+  var ws = this.ws;
+  
+  ws.response = {};
+  
+  ws.onopen = function () {
+    if (this.trace) console.log("remote: onopen: %s", ws.readyState);
+    
+    ws.onclose = undefined;
+    ws.onerror = undefined;
+    
+    self.done(ws.readyState);
+  };
 
-    if (this.trace)
-	console.log("remote: connect: %s", this.url);
-
-    this.ws	= new WebSocket(this.url);
-
-    var ws = this.ws;
-
-    ws.response	= {};
-
-    ws.onopen	= function () {
-	    if (this.trace)
-		console.log("remote: onopen: %s", ws.readyState);
-
-	    ws.onclose	= undefined;
-	    ws.onerror	= undefined;
-
-	    self.done(ws.readyState);
-	};
-
-    ws.onerror	= function () {
-	    if (this.trace)
-		console.log("remote: onerror: %s", ws.readyState);
-
-	    ws.onclose	= undefined;
-
-	    if (self.expire) {
-		if (this.trace)
-		    console.log("remote: was expired");
-
-		self.done(ws.readyState);
-	    }
-	    else
-	    {
-		// Delay and retry.
-		setTimeout(function () {
-			if (this.trace)
-			    console.log("remote: retry");
-
-			self.connect_helper();
-		    }, 50); // Retry rate 50ms.
-	    }
-	};
+  ws.onerror = function () {
+    if (this.trace) console.log("remote: onerror: %s", ws.readyState);
+    
+    ws.onclose = undefined;
+    
+    if (self.expire) {
+      if (this.trace) console.log("remote: was expired");
+      self.done(ws.readyState);
+    } else {
+      // Delay and retry.
+      setTimeout(function () {
+	if (this.trace) console.log("remote: retry");
+	self.connect_helper();
+      }, 50); // Retry rate 50ms.
+    }
+  };
 
     // Covers failure to open.
     ws.onclose	= function () {
