@@ -518,6 +518,9 @@ public:
 
 class STPathElement
 {
+  friend class STPathSet;
+  friend class STPath;
+  friend class Pathfinder;
 public:
 	enum {
 		typeEnd			= 0x00,
@@ -567,6 +570,8 @@ public:
 
 class STPath
 {
+  friend class STPathSet;
+  friend class Pathfinder;
 protected:
 	std::vector<STPathElement> mPath;
 
@@ -574,12 +579,14 @@ public:
 	STPath()		{ ; }
 	STPath(const std::vector<STPathElement>& p) : mPath(p) { ; }
 
+	void printDebug();
 	int getElementCount() const							{ return mPath.size(); }
 	bool isEmpty() const								{ return mPath.empty(); }
 	const STPathElement& getElement(int offset) const	{ return mPath[offset]; }
 	const STPathElement& getElemet(int offset)			{ return mPath[offset]; }
-	void addElement(const STPathElement& e)				{ mPath.push_back(e); }
+	void addElement(const STPathElement &e)				{ mPath.push_back(e); }
 	void clear()										{ mPath.clear(); }
+	bool hasSeen(const uint160 &acct);
 	int getSerializeSize() const;
 //	std::string getText() const;
 	Json::Value getJson(int) const;
@@ -636,7 +643,6 @@ protected:
 	static STPathSet* construct(SerializerIterator&, SField::ref);
 
 public:
-
 	STPathSet() { ; }
 	STPathSet(SField::ref n) : SerializedType(n) { ; }
 	STPathSet(const std::vector<STPath>& v) : value(v) { ; }
@@ -657,6 +663,8 @@ public:
 	void addPath(const STPath& e)						{ value.push_back(e); }
 
 	virtual bool isEquivalent(const SerializedType& t) const;
+
+	void printDebug();
 
 	std::vector<STPath>::iterator begin()				{ return value.begin(); }
 	std::vector<STPath>::iterator end()					{ return value.end(); }
