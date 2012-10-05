@@ -23,7 +23,13 @@ var Remote = function (trusted, websocket_ip, websocket_port, trace) {
   this.stand_alone          = undefined;
   
   // Cache information for accounts.
-  this.account = {};
+  this.account = {
+    // Consider sequence numbers stable if you know you're not generating bad transactions.
+    // Otherwise, clear it to have it automatically refreshed from the network.
+    
+    // acount : { seq : __ }
+
+    };
   
   // Cache for various ledgers.
   // XXX Clear when ledger advances.
@@ -43,14 +49,6 @@ var fees = {
   'account_create' : 1000,
   'nickname_create' : 1000,
   'offer' : 100,
-};
-
-// For accounts we cache things like sequence numbers.
-var accounts = {
-  // Consider sequence numbers stable if you know you're not generating bad transactions.
-  // Otherwise, clear it to have it automatically refreshed from the network.
-  
-  // acount : { seq : __ }
 };
 
 Remote.method('connect_helper', function () {
@@ -151,8 +149,8 @@ Remote.method('disconnect', function (done) {
   ws.close();
 });
 
-// Send a command. The comman should lack the id.
-// <-> command: what to send, consumed.
+// Send a request. The request should lack the id.
+// <-> request: what to send, consumed.
 Remote.method('request', function (request, onDone, onFailure) {
   this.id += 1;   // Advance id.
   
@@ -252,15 +250,14 @@ Remote.method('request_ledger_entry', function (req, onDone, onFailure) {
 
 // Submit a json transaction.
 // done(value)
-// <-> value: { 'status', status, 'result' : result, ... }
-// done may be called up to 3 times.
-Remote.method('submit', function (json, private_key, onDone, onFailure) {
+// XXX <-> value: { 'status', status, 'result' : result, ... }
+Remote.method('submit', function (request, onDone, onFailure) {
   var req = {};
   
   req.command = 'submit';
-  req.json = json;
+  req.request = request;
   
-  if (private_key && !this.trusted)
+  if (req.secret && !this.trusted)
   {
     onFailure({ 'error' : 'untrustedSever', 'request' : req });
   }
@@ -279,11 +276,11 @@ Remote.method('submit', function (json, private_key, onDone, onFailure) {
 Remote.method('server_subscribe', function (onDone, onFailure) {
   this.request(
     { 'command' : 'server_subscribe' },
-    function (r) {
-      this.ledger_current_index = r.ledger_current_index;
-      this.ledger_closed        = r.ledger_closed;
-      this.stand_alone          = r.stand_alone;
-      onDone();
+      function (r) {
+	this.ledger_current_index = r.ledger_current_index;
+	this.ledger_closed        = r.ledger_closed;
+	this.stand_alone          = r.stand_alone;
+	onDone();
     },
     onFailure
   );
@@ -291,12 +288,16 @@ Remote.method('server_subscribe', function (onDone, onFailure) {
 
 // Refresh accounts[account].seq
 // done(result);
-Remote.method('account_seq', function (account, onDone, onFailure) {
+Remote.method('account_seq', function (account, advance, onDone, onFailure) {
   var account_root_entry = this.accounts[account];
   
   if (account_root_entry && account_root_entry.seq)
   {
-    onDone(account_root_entry.seq);
+    var seq = account_root_entry.seq;
+
+    if (advance) account_root_entry.seq += 1;
+
+    onDone(advance);
   }
   else
   {
@@ -308,8 +309,11 @@ Remote.method('account_seq', function (account, onDone, onFailure) {
       },
       function (r) {
 	// Extract the seqence number from the account root entry.
-	this.accounts[account].seq = r.seq;
-	onDone(r.seq);
+	var seq	= r.seq;
+
+	this.accounts[account].seq = seq + 1;
+
+	onDone(seq);
       },
       onFailure
     );
@@ -317,13 +321,23 @@ Remote.method('account_seq', function (account, onDone, onFailure) {
 });
 
 // A submit that fills in the sequence number.
-Remote.method('submit_seq', function (onDone, onFailure) {
+Remote.method('submit_seq', function (transaction, onDirty, onDone, onFailure) {
+  // Get the next sequence number for the account.
+  this.account_seq(transaction.Signer, true,
+    function (seq) {
+      request.seq = seq;
+      this.submit(onDone, onFailure);
+    },
+    onFailure);
+});
 
+// Mark an account's root node as dirty.
+Remote.method('dirty_account_root', function (account) {
+  delete this.ledgers.current.account_root.account;
 });
 
 exports.Remote          = Remote;
 exports.remoteConfig    = remoteConfig;
 exports.fees            = fees;
-exports.accounts        = accounts;
 
 // vim:sw=2:sts=2:ts=8
