@@ -209,7 +209,6 @@ BOOST_AUTO_TEST_CASE( STrans_test )
 		Log(lsFATAL) << copy.getJson(0);
 		BOOST_FAIL("Transaction fails serialize/deserialize test");
 	}
-	Log(lsFATAL) << j.getJson(0);
 	std::auto_ptr<STObject> new_obj = STObject::parseJson(j.getJson(0), sfGeneric);
 	if (new_obj.get() == NULL) BOOST_FAIL("Unable to build object from json");
 	Log(lsINFO) << new_obj->getJson(0);
