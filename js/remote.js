@@ -13,14 +13,14 @@ var WebSocket = require('ws');
 
 // --> trusted: truthy, if remote is trusted
 var Remote = function (trusted, websocket_ip, websocket_port, trace) {
-  this.trusted		    = trusted;
-  this.websocket_ip	    = websocket_ip;
-  this.websocket_port	    = websocket_port;
-  this.id		    = 0;
-  this.trace		    = trace;
-  this.ledger_closed	    = undefined;
+  this.trusted              = trusted;
+  this.websocket_ip         = websocket_ip;
+  this.websocket_port       = websocket_port;
+  this.id                   = 0;
+  this.trace                = trace;
+  this.ledger_closed        = undefined;
   this.ledger_current_index = undefined;
-  this.stand_alone	    = undefined;
+  this.stand_alone          = undefined;
   
   // Cache information for accounts.
   this.account = {};
@@ -34,7 +34,6 @@ var Remote = function (trusted, websocket_ip, websocket_port, trace) {
 
 var remoteConfig = function (config, server, trace) {
   var serverConfig = config.servers[server];
-  
   return new Remote(serverConfig.trusted, serverConfig.websocket_ip, serverConfig.websocket_port, trace);
 };
 
@@ -59,9 +58,7 @@ Remote.method('connect_helper', function () {
   
   if (this.trace) console.log("remote: connect: %s", this.url);
   
-  this.ws = new WebSocket(this.url);
-  
-  var ws = this.ws;
+  var ws = this.ws = new WebSocket(this.url);;
   
   ws.response = {};
   
@@ -73,7 +70,7 @@ Remote.method('connect_helper', function () {
     
     self.done(ws.readyState);
   };
-
+  
   ws.onerror = function () {
     if (this.trace) console.log("remote: onerror: %s", ws.readyState);
     
@@ -90,98 +87,82 @@ Remote.method('connect_helper', function () {
       }, 50); // Retry rate 50ms.
     }
   };
-
-    // Covers failure to open.
-    ws.onclose	= function () {
-	    if (this.trace)
-		console.log("remote: onclose: %s", ws.readyState);
-
-	    ws.onerror	= undefined;
-
-	    self.done(ws.readyState);
-	};
-
-    // Node's ws module doesn't pass arguments to onmessage.
-    ws.on('message', function (json, flags) {
-	var message = JSON.parse(json);
-	// console.log("message: %s", json);
-
-	if (message.type !== 'response') {
-	    console.log("unexpected message: %s", json);
-
-	} else {
-	    var done	= ws.response[message.id];
-
-	    if (done) {
-		done(message);
-
-	    } else {
-		console.log("unexpected message id: %s", json);
-	    }
-	}
-    });
+  
+  // Covers failure to open.
+  ws.onclose = function () {
+    if (this.trace) console.log("remote: onclose: %s", ws.readyState);
+    ws.onerror = undefined;
+    self.done(ws.readyState);
+  };
+  
+  // Node's ws module doesn't pass arguments to onmessage.
+  ws.on('message', function (json, flags) {
+    var message = JSON.parse(json);
+    // console.log("message: %s", json);
+    
+    if (message.type !== 'response') {
+      console.log("unexpected message: %s", json);
+    } else {
+      var done = ws.response[message.id];
+      if (done) {
+	done(message);
+      } else {
+	console.log("unexpected message id: %s", json);
+      }
+    }
+  });
 });
 
 // Target state is connectted.
 // done(readyState):
 // --> readyState: OPEN, CLOSED
 Remote.method('connect', function (done, timeout) {
-    var self	= this;
-
-    this.url	= util.format("ws://%s:%s", this.websocket_ip, this.websocket_port);
-    this.done	= done;
-
-    if (timeout) {
-	if (this.trace)
-	    console.log("remote: expire: false");
-
-	this.expire = false;
-
-	setTimeout(function () {
-		if (this.trace)
-		    console.log("remote: expire: timeout");
-
-		self.expire = true;
-	    }, timeout);
-    }
-    else {
-	if (this.trace)
-	    console.log("remote: expire: false");
-
-	this.expire = true;
-    }
-
-    this.connect_helper();
-
+  var self = this;
+  
+  this.url = util.format("ws://%s:%s", this.websocket_ip, this.websocket_port);
+  this.done = done;
+  
+  if (timeout) {
+    if (this.trace) console.log("remote: expire: false");
+    
+    this.expire = false;
+    
+    setTimeout(function () {
+      if (this.trace) console.log("remote: expire: timeout");
+      self.expire = true;
+    }, timeout);
+  } else {
+    if (this.trace) console.log("remote: expire: false");
+    this.expire = true;
+  }
+  
+  this.connect_helper();
 });
 
 // Target stated is disconnected.
 Remote.method('disconnect', function (done) {
-    var ws = this.ws;
-
-    ws.onclose	    = function () {
-	    if (this.trace)
-		console.log("remote: onclose: %s", ws.readyState);
-
-	    done(ws.readyState);
-	};
-
-    ws.close();
+  var ws = this.ws;
+  
+  ws.onclose = function () {
+    if (this.trace) console.log("remote: onclose: %s", ws.readyState);
+    done(ws.readyState);
+  };
+  
+  ws.close();
 });
 
 // Send a command. The comman should lack the id.
 // <-> command: what to send, consumed.
 Remote.method('request', function (request, onDone, onFailure) {
   this.id += 1;   // Advance id.
-
+  
   var ws = this.ws;
-
-  request.id	= this.id;
-
+  
+  request.id = this.id;
+  
   ws.response[request.id] = function (response) {
-    if (this.trace)
-      console.log("remote: response: %s", JSON.stringify(response));
-
+    if (this.trace) console.log("remote: response: %s", JSON.stringify(response));
+    
     if (onFailure && response.error)
     {
       onFailure(response);
@@ -191,16 +172,14 @@ Remote.method('request', function (request, onDone, onFailure) {
       onDone(response);
     }
   };
-
-  if (this.trace)
-    console.log("remote: request: %s", JSON.stringify(request));
-
+  
+  if (this.trace) console.log("remote: request: %s", JSON.stringify(request));
+  
   ws.send(JSON.stringify(request));
 });
 
 Remote.method('request_ledger_closed', function (onDone, onFailure) {
   assert(this.trusted);   // If not trusted, need to check proof.
-
   this.request({ 'command' : 'ledger_closed' }, onDone, onFailure);
 });
 
@@ -211,18 +190,17 @@ Remote.method('request_ledger_current', function (onDone, onFailure) {
 });
 
 // <-> request:
-//	--> ledger : optional
-//	--> ledger_index : optional
-//	--> type
+// --> ledger : optional
+// --> ledger_index : optional
+// --> type
 Remote.method('request_ledger_entry', function (req, onDone, onFailure) {
   assert(this.trusted);   // If not trusted, need to check proof, maybe talk packet protocol.
-
-  req.command	= 'ledger_entry';
-
+  
+  req.command = 'ledger_entry';
+  
   if (req.ledger_closed)
   {
     // XXX Initial implementation no caching.
-
     this.request(req, onDone, onFailure);
   }
   else if (req.ledger_index)
@@ -230,23 +208,23 @@ Remote.method('request_ledger_entry', function (req, onDone, onFailure) {
     // Current
     // XXX Only allow with standalone mode.  Must sync response with advance.
     var entry;
-  
+    
     switch (req.type) {
       case 'account_root':
 	var cache = this.ledgers.current.account_root;
-
+	
 	if (!cache)
 	{
 	  cache = this.ledgers.current.account_root = {};
 	}
-
-        var entry = this.ledgers.current.account_root[req.account];
+	
+	var entry = this.ledgers.current.account_root[req.account];
 	break;
-
+	
       default:
 	// This type not cached.
     }
-
+    
     if (entry)
     {
       onDone(entry);
@@ -254,20 +232,20 @@ Remote.method('request_ledger_entry', function (req, onDone, onFailure) {
     else
     {
       // Not cached.
-
+     
       // Submit request
       this.request(req, function (r) {
-	  // Got result.
-	  switch (req.type) {
-	    case 'account_root':
-	      this.ledgers.current.account_root.account = r;
-	      break;
-
-	    default:
-	      // This type not cached.
-	  }
-	  onDone(r);
-	}, onFailure);
+	// Got result.
+	switch (req.type) {
+	  case 'account_root':
+	    this.ledgers.current.account_root.account = r;
+	    break;
+	  
+	  default:
+	    // This type not cached.
+	}
+	onDone(r);
+      }, onFailure);
     }
   }
 });
@@ -279,13 +257,13 @@ Remote.method('request_ledger_entry', function (req, onDone, onFailure) {
 Remote.method('submit', function (json, private_key, onDone, onFailure) {
   var req = {};
   
-  req.command	= 'submit';
-  req.json	= json;
+  req.command = 'submit';
+  req.json = json;
   
   if (private_key && !this.trusted)
   {
     onFailure({ 'error' : 'untrustedSever', 'request' : req });
-  }	
+  }
   else
   {
     this.request(req, onDone, onFailure);
@@ -299,22 +277,23 @@ Remote.method('submit', function (json, private_key, onDone, onFailure) {
 // Subscribe to a server to get the current and closed ledger.
 // XXX Set up routine to update on notification.
 Remote.method('server_subscribe', function (onDone, onFailure) {
-  this.request({
-      'command' : 'server_subscribe'
-    }, function (r) {
+  this.request(
+    { 'command' : 'server_subscribe' },
+    function (r) {
       this.ledger_current_index = r.ledger_current_index;
-      this.ledger_closed	= r.ledger_closed;
-      this.stand_alone		= r.stand_alone;
-
+      this.ledger_closed        = r.ledger_closed;
+      this.stand_alone          = r.stand_alone;
       onDone();
-    }, onFailure);
+    },
+    onFailure
+  );
 });
 
 // Refresh accounts[account].seq
 // done(result);
 Remote.method('account_seq', function (account, onDone, onFailure) {
-  var account_root_entry      = this.accounts[account];
-
+  var account_root_entry = this.accounts[account];
+  
   if (account_root_entry && account_root_entry.seq)
   {
     onDone(account_root_entry.seq);
@@ -322,16 +301,18 @@ Remote.method('account_seq', function (account, onDone, onFailure) {
   else
   {
     // Need to get the ledger entry.
-    this.request_ledger_entry({
+    this.request_ledger_entry(
+      {
 	'ledger' : this.ledger_closed,
 	'account_root' : account
-      }, function (r) {
+      },
+      function (r) {
 	// Extract the seqence number from the account root entry.
 	this.accounts[account].seq = r.seq;
-
 	onDone(r.seq);
-
-      }, onFailure);
+      },
+      onFailure
+    );
   }
 });
 
@@ -340,9 +321,9 @@ Remote.method('submit_seq', function (onDone, onFailure) {
 
 });
 
-exports.Remote		= Remote;
-exports.remoteConfig	= remoteConfig;
-exports.fees		= fees;
-exports.accounts	= accounts;
+exports.Remote          = Remote;
+exports.remoteConfig    = remoteConfig;
+exports.fees            = fees;
+exports.accounts        = accounts;
 
 // vim:sw=2:sts=2:ts=8
