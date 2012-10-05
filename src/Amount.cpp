@@ -83,9 +83,9 @@ STAmount::STAmount(SField::ref n, const Json::Value& v)
 			throw std::runtime_error("invalid amount string");
 
 		value = elements[0];
-		if (elements.size() > 0)
-			currency = elements[1];
 		if (elements.size() > 1)
+			currency = elements[1];
+		if (elements.size() > 2)
 			issuer = elements[2];
 	}
 	else
