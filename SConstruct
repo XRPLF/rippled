@@ -3,8 +3,14 @@
 #
 
 import glob
+import platform
 
-CTAGS = '/usr/bin/exuberant-ctags'
+OSX = bool(platform.mac_ver()[0])
+
+if OSX:
+	CTAGS = '/usr/bin/ctags'
+else:
+	CTAGS = '/usr/bin/exuberant-ctags'
 
 #
 # scons tools
@@ -23,7 +29,10 @@ env = Environment(
 #
 ctags = Builder(action = '$CTAGS $CTAGSOPTIONS -f $TARGET $SOURCES')
 env.Append(BUILDERS = { 'CTags' : ctags })
-env.Replace(CTAGS = CTAGS, CTAGSOPTIONS = '--tag-relative')
+if OSX:
+	env.Replace(CTAGS = CTAGS)
+else:
+	env.Replace(CTAGS = CTAGS, CTAGSOPTIONS = '--tag-relative')
 
 #
 # Put objects files in their own directory.
@@ -54,6 +63,10 @@ BOOSTFLAGS	= ['-DBOOST_TEST_DYN_LINK', '-DBOOST_FILESYSTEM_NO_DEPRECATED']
 env.Append(LINKFLAGS = ['-rdynamic', '-pthread'])
 env.Append(CCFLAGS = ['-pthread', '-Wall', '-Wno-sign-compare', '-Wno-char-subscripts', '-DSQLITE_THREADSAFE'])
 env.Append(CXXFLAGS = ['-O0', '-pthread', '-Wno-invalid-offsetof', '-Wformat']+BOOSTFLAGS+DEBUGFLAGS)
+
+if OSX:
+	env.Append(LINKFLAGS = ['-L/usr/local/Cellar/openssl/1.0.1c/lib'])
+	env.Append(CXXFLAGS = ['-I/usr/local/Cellar/openssl/1.0.1c/include'])
 
 DB_SRCS   = glob.glob('database/*.c') + glob.glob('database/*.cpp')
 JSON_SRCS = glob.glob('json/*.cpp')
