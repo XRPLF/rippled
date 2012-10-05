@@ -2,6 +2,7 @@
 #include "SerializedTransaction.h"
 
 #include <boost/foreach.hpp>
+#include <boost/test/unit_test.hpp>
 
 #include "Application.h"
 #include "Log.h"
@@ -109,6 +110,20 @@ void SerializedTransaction::sign(const NewcoinAddress& naAccountPrivate)
 	setFieldVL(sfTxnSignature, signature);
 }
 
+bool SerializedTransaction::checkSign() const
+{
+	try
+	{
+		NewcoinAddress n;
+		n.setAccountPublic(getFieldVL(sfSigningPubKey));
+		return checkSign(n);
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
 bool SerializedTransaction::checkSign(const NewcoinAddress& naAccountPublic) const
 {
 	try
@@ -165,5 +180,41 @@ std::string SerializedTransaction::getSQL(Serializer rawTxn, uint32 inLedger, ch
 		% getSequence() % inLedger % status % rTxn);
 }
 
+
+BOOST_AUTO_TEST_SUITE(SerializedTransactionTS)
+
+BOOST_AUTO_TEST_CASE( STrans_test )
+{
+	NewcoinAddress seed;
+	seed.setSeedRandom();
+	NewcoinAddress generator = NewcoinAddress::createGeneratorPublic(seed);
+	NewcoinAddress  publicAcct = NewcoinAddress::createAccountPublic(generator, 1);
+	NewcoinAddress  privateAcct = NewcoinAddress::createAccountPrivate(generator, seed, 1);
+
+	SerializedTransaction j(ttCLAIM);
+	j.setSourceAccount(publicAcct);
+	j.setSigningPubKey(publicAcct);
+	j.setFieldVL(sfPublicKey, publicAcct.getAccountPublic());
+	j.sign(privateAcct);
+
+	if (!j.checkSign()) BOOST_FAIL("Transaction fails signature test");
+
+	Serializer rawTxn;
+	j.add(rawTxn);
+	SerializerIterator sit(rawTxn);
+	SerializedTransaction copy(sit);
+	if (copy != j)
+	{
+		Log(lsFATAL) << j.getJson(0);
+		Log(lsFATAL) << copy.getJson(0);
+		BOOST_FAIL("Transaction fails serialize/deserialize test");
+	}
+	Log(lsFATAL) << j.getJson(0);
+	std::auto_ptr<STObject> new_obj = STObject::parseJson(j.getJson(0), sfGeneric);
+	if (new_obj.get() == NULL) BOOST_FAIL("Unable to build object from json");
+	Log(lsINFO) << new_obj->getJson(0);
+}
+
+BOOST_AUTO_TEST_SUITE_END();
 
 // vim:ts=4

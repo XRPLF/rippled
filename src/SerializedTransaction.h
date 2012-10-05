@@ -63,6 +63,7 @@ public:
 
 	void sign(const NewcoinAddress& naAccountPrivate);
 	bool checkSign(const NewcoinAddress& naAccountPublic) const;
+	bool checkSign() const;
 
 	// SQL Functions
 	static std::string getSQLValueHeader();
