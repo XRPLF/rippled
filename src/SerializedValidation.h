@@ -8,6 +8,7 @@ class SerializedValidation : public STObject
 {
 protected:
 	uint256	mPreviousHash;
+	uint160 mNodeID;
 	bool mTrusted;
 
 	void setNode();
@@ -26,6 +27,7 @@ public:
 	uint32			getSignTime()		const;
 	uint32			getFlags()			const;
 	NewcoinAddress  getSignerPublic()	const;
+	uint160			getNodeID()			const	{ return mNodeID; }
 	bool			isValid()			const;
 	bool			isFull()			const;
 	bool			isTrusted()			const	{ return mTrusted; }

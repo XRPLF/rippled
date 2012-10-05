@@ -12,6 +12,8 @@
 
 typedef boost::unordered_map<uint160, SerializedValidation::pointer> ValidationSet;
 
+typedef std::pair<int, uint160> currentValidationCount; // nodes validating and highest node ID validating
+
 class ValidationCollection
 {
 protected:
@@ -38,7 +40,7 @@ public:
 	int getNodesAfter(const uint256& ledger);
 	int getLoadRatio(bool overLoaded);
 
-	boost::unordered_map<uint256, int> getCurrentValidations(uint256 currentLedger = uint256());
+	boost::unordered_map<uint256, currentValidationCount> getCurrentValidations(uint256 currentLedger);
 
 	void flush();
 };

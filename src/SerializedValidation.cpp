@@ -27,6 +27,8 @@ const uint32 SerializedValidation::sFullFlag		= 0x1;
 SerializedValidation::SerializedValidation(SerializerIterator& sit, bool checkSignature)
 	: STObject(sValidationFormat, sit, sfValidation), mTrusted(false)
 {
+	mNodeID = NewcoinAddress::createNodePublic(getFieldVL(sfSigningPubKey)).getNodeID();
+	assert(mNodeID.isNonZero());
 	if  (checkSignature && !isValid())
 	{
 		Log(lsTRACE) << "Invalid validation " << getJson(0);
@@ -41,7 +43,12 @@ SerializedValidation::SerializedValidation(const uint256& ledgerHash, uint32 sig
 	setFieldH256(sfLedgerHash, ledgerHash);
 	setFieldU32(sfSigningTime, signTime);
 	if (naSeed.isValid())
-		setFieldVL(sfSigningPubKey, NewcoinAddress::createNodePublic(naSeed).getNodePublic());
+	{
+		NewcoinAddress np = NewcoinAddress::createNodePublic(naSeed);
+		setFieldVL(sfSigningPubKey, np.getNodePublic());
+		mNodeID = np.getNodeID();
+		assert(mNodeID.isNonZero());
+	}
 	if (!isFull)
 		setFlag(sFullFlag);
 
