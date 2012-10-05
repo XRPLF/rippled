@@ -206,7 +206,10 @@ bool STObject::set(SerializerIterator& sit, int depth)
 			return true;
 		SField::ref fn = SField::getField(type, field);
 		if (fn.isInvalid())
+		{
+			Log(lsWARNING) << "Unknown field: field_type=" << type << ", field_name=" << field;
 			throw std::runtime_error("Unknown field");
+		}
 		giveObject(makeDeserializedObject(fn.fieldType, fn, sit, depth + 1));
 	}
 	return false;
@@ -252,7 +255,8 @@ void STObject::add(Serializer& s, bool withSigningFields) const
 		if (it.getSType() != STI_NOTPRESENT)
 		{
 			SField::ref fName = it.getFName();
-			if (withSigningFields || ((fName != sfTxnSignature) && (fName != sfTxnSignatures)))
+			if (withSigningFields ||
+					((fName != sfTxnSignature) && (fName != sfTxnSignatures) && (fName != sfSignature)))
 				fields.insert(std::make_pair(it.getFName().fieldCode, &it));
 		}
 	}
