@@ -252,7 +252,7 @@ void STObject::add(Serializer& s, bool withSigningFields) const
 
 	BOOST_FOREACH(const SerializedType& it, mData)
 	{ // pick out the fields and sort them
-		if (it.getSType() != STI_NOTPRESENT)
+		if ((it.getSType() != STI_NOTPRESENT) && it.getFName().isBinary())
 		{
 			SField::ref fName = it.getFName();
 			if (withSigningFields ||
@@ -837,7 +837,10 @@ STArray* STArray::construct(SerializerIterator& sit, SField::ref field)
 
 		SField::ref fn = SField::getField(type, field);
 		if (fn.isInvalid())
+		{
+			Log(lsTRACE) << "Unknown field: " << type << "/" << field;
 			throw std::runtime_error("Unknown field");
+		}
 
 		value.push_back(STObject(fn));
 		value.rbegin()->set(sit, 1);
@@ -1076,8 +1079,11 @@ std::auto_ptr<STObject> STObject::parseJson(const Json::Value& object, SField::r
 				else
 				{ // newcoin addres
 					NewcoinAddress a;
-					if (!a.setAccountPublic(strValue))
+					if (!a.setAccountID(strValue))
+					{
+						Log(lsINFO) << "Invalid acccount JSON: " << fieldName << ": " << strValue;
 						throw std::runtime_error("Account invalid");
+					}
 					data.push_back(new STAccount(field, a.getAccountID()));
 				}
 			}
@@ -1116,10 +1122,10 @@ BOOST_AUTO_TEST_SUITE(SerializedObject)
 
 BOOST_AUTO_TEST_CASE( FieldManipulation_test )
 {
-	SField sfTestVL(STI_VL, 10, "TestVL", true);
-	SField sfTestH256(STI_HASH256, 32, "TestH256", true);
-	SField sfTestU32(STI_UINT32, 15, "TestU32", true);
-	SField sfTestObject(STI_OBJECT, 9, "TestObject", true);
+	SField sfTestVL(STI_VL, 255, "TestVL");
+	SField sfTestH256(STI_HASH256, 255, "TestH256");
+	SField sfTestU32(STI_UINT32, 255, "TestU32");
+	SField sfTestObject(STI_OBJECT, 255, "TestObject");
 
 	std::vector<SOElement::ptr> elements;
 	elements.push_back(new SOElement(sfFlags, SOE_REQUIRED));
@@ -1129,27 +1135,32 @@ BOOST_AUTO_TEST_CASE( FieldManipulation_test )
 
 	STObject object1(elements, sfTestObject);
 	STObject object2(object1);
-	if (object1.getSerializer() != object2.getSerializer()) BOOST_FAIL("STObject error");
+	if (object1.getSerializer() != object2.getSerializer()) BOOST_FAIL("STObject error 1");
 
 	if (object1.isFieldPresent(sfTestH256) || !object1.isFieldPresent(sfTestVL))
 		BOOST_FAIL("STObject error");
 
 	object1.makeFieldPresent(sfTestH256);
-	if (!object1.isFieldPresent(sfTestH256)) BOOST_FAIL("STObject Error");
-	if (object1.getFieldH256(sfTestH256) != uint256()) BOOST_FAIL("STObject error");
+	if (!object1.isFieldPresent(sfTestH256)) BOOST_FAIL("STObject Error 2");
+	if (object1.getFieldH256(sfTestH256) != uint256()) BOOST_FAIL("STObject error 3");
 
-	if (object1.getSerializer() == object2.getSerializer()) BOOST_FAIL("STObject error");
+	if (object1.getSerializer() == object2.getSerializer())
+	{
+		Log(lsINFO) << "O1: " << object1.getJson(0);
+		Log(lsINFO) << "O2: " << object2.getJson(0);
+		BOOST_FAIL("STObject error 4");
+	}
 	object1.makeFieldAbsent(sfTestH256);
-	if (object1.isFieldPresent(sfTestH256)) BOOST_FAIL("STObject error");
-	if (object1.getFlags() != 0) BOOST_FAIL("STObject error");
-	if (object1.getSerializer() != object2.getSerializer()) BOOST_FAIL("STObject error");
+	if (object1.isFieldPresent(sfTestH256)) BOOST_FAIL("STObject error 5");
+	if (object1.getFlags() != 0) BOOST_FAIL("STObject error 6");
+	if (object1.getSerializer() != object2.getSerializer()) BOOST_FAIL("STObject error 7");
 
 	STObject copy(object1);
-	if (object1.isFieldPresent(sfTestH256)) BOOST_FAIL("STObject error");
-	if (copy.isFieldPresent(sfTestH256)) BOOST_FAIL("STObject error");
-	if (object1.getSerializer() != copy.getSerializer()) BOOST_FAIL("STObject error");
+	if (object1.isFieldPresent(sfTestH256)) BOOST_FAIL("STObject error 8");
+	if (copy.isFieldPresent(sfTestH256)) BOOST_FAIL("STObject error 9");
+	if (object1.getSerializer() != copy.getSerializer()) BOOST_FAIL("STObject error 10");
 	copy.setFieldU32(sfTestU32, 1);
-	if (object1.getSerializer() == copy.getSerializer()) BOOST_FAIL("STObject error");
+	if (object1.getSerializer() == copy.getSerializer()) BOOST_FAIL("STObject error 11");
 
 	for (int i = 0; i < 1000; i++)
 	{
