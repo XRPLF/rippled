@@ -31,7 +31,7 @@ SField::ref SField::getField(int code)
 	int type = code >> 16;
 	int field = code % 0xffff;
 
-	if ((type <= 0) || (type >= 256) || (field <= 0) || (field >= 256))
+	if ((type <= 0) || (field <= 0))
 		return sfInvalid;
 
 	boost::mutex::scoped_lock sl(mapMutex);
@@ -70,11 +70,6 @@ int SField::compare(SField::ref f1, SField::ref f2)
 		return 1;
 
 	return 0;
-}
-
-SField::ref SField::getField(int type, int value)
-{
-	return getField(FIELD_CODE(type, value));
 }
 
 std::string SField::getName() const

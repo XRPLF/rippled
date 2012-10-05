@@ -52,20 +52,26 @@ public:
 
 	SField(int fc, SerializedTypeID tid, int fv, const char* fn) : 
 		fieldCode(fc), fieldType(tid), fieldValue(fv), fieldName(fn)
-	{ codeToField[fieldCode] = this; }
+	{
+		boost::mutex::scoped_lock sl(mapMutex);
+		codeToField[fieldCode] = this;
+	}
 
 	SField(SerializedTypeID tid, int fv, const char *fn) :
 		fieldCode(FIELD_CODE(tid, fv)), fieldType(tid), fieldValue(fv), fieldName(fn)
-	{ codeToField[fieldCode] = this; }
+	{
+		boost::mutex::scoped_lock sl(mapMutex);
+		codeToField[fieldCode] = this;
+	}
 
 	SField(int fc) : fieldCode(fc), fieldType(STI_UNKNOWN), fieldValue(0) { ; }
 
 	~SField();
 
 	static SField::ref getField(int fieldCode);
-	static SField::ref getField(int fieldType, int fieldValue);
 	static SField::ref getField(const std::string& fieldName);
-	static SField::ref getField(SerializedTypeID type, int value) { return getField(FIELD_CODE(type, value)); }
+	static SField::ref getField(int type, int value)				{ return getField(FIELD_CODE(type, value)); }
+	static SField::ref getField(SerializedTypeID type, int value)	{ return getField(FIELD_CODE(type, value)); }
 
 	std::string getName() const;
 	bool hasName() const		{ return !fieldName.empty(); }
