@@ -34,6 +34,8 @@ SField::ref SField::getField(int code)
 	if ((type <= 0) || (field <= 0))
 		return sfInvalid;
 
+	boost::mutex::scoped_lock sl(mapMutex);
+
 	boost::recursive_mutex::scoped_lock sl(mapMutex);
 
 	std::map<int, SField::ptr>::iterator it = codeToField.find(code);
