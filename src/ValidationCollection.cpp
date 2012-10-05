@@ -150,35 +150,37 @@ int ValidationCollection::getLoadRatio(bool overLoaded)
 	return (goodNodes * 100) / (goodNodes + badNodes);
 }
 
-boost::unordered_map<uint256, int> ValidationCollection::getCurrentValidations(uint256 currentLedger)
+boost::unordered_map<uint256, currentValidationCount>
+ValidationCollection::getCurrentValidations(uint256 currentLedger)
 {
     uint32 cutoff = theApp->getOPs().getNetworkTimeNC() - LEDGER_VAL_INTERVAL;
     bool valCurrentLedger = currentLedger.isNonZero();
 
-	boost::unordered_map<uint256, int> ret;
+	boost::unordered_map<uint256, currentValidationCount> ret;
 
+	boost::mutex::scoped_lock sl(mValidationLock);
+	boost::unordered_map<uint160, SerializedValidation::pointer>::iterator it = mCurrentValidations.begin();
+	while (it != mCurrentValidations.end())
 	{
-		boost::mutex::scoped_lock sl(mValidationLock);
-		boost::unordered_map<uint160, SerializedValidation::pointer>::iterator it = mCurrentValidations.begin();
-		while (it != mCurrentValidations.end())
-		{
-			if (!it->second) // contains no record
-				it = mCurrentValidations.erase(it);
-			else if (it->second->getSignTime() < cutoff)
-			{ // contains a stale record
-				mStaleValidations.push_back(it->second);
-				it->second = SerializedValidation::pointer();
-				condWrite();
-				it = mCurrentValidations.erase(it);
-			}
-			else
-			{ // contains a live record
-				if (valCurrentLedger && it->second->isPreviousHash(currentLedger))
-					++ret[currentLedger]; // count for the favored ledger
-				else
-					++ret[it->second->getLedgerHash()];
-				++it;
-			}
+		if (!it->second) // contains no record
+			it = mCurrentValidations.erase(it);
+		else if (it->second->getSignTime() < cutoff)
+		{ // contains a stale record
+			mStaleValidations.push_back(it->second);
+			it->second = SerializedValidation::pointer();
+			condWrite();
+			it = mCurrentValidations.erase(it);
+		}
+		else
+		{ // contains a live record
+			bool countPreferred = valCurrentLedger && it->second->isPreviousHash(currentLedger);
+			currentValidationCount& p = countPreferred ? ret[currentLedger] : ret[it->second->getLedgerHash()];
+
+			++(p.first); // count for the favored ledger
+			uint160 ni = it->second->getNodeID();
+			if (ni > p.second)
+				p.second = ni;
+			++it;
 		}
 	}
 

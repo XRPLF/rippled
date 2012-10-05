@@ -372,7 +372,7 @@ class ValidationCount
 {
 public:
 	int trustedValidations, nodesUsing;
-	NewcoinAddress highNode;
+	uint160 highNodeUsing, highValidation;
 
 	ValidationCount() : trustedValidations(0), nodesUsing(0) { ; }
 	bool operator>(const ValidationCount& v)
@@ -383,8 +383,9 @@ public:
 		{
 			if (nodesUsing > v.nodesUsing) return true;
 			if (nodesUsing < v.nodesUsing) return false;
+			return highNodeUsing > v.highNodeUsing;
 		}
-		return highNode > v.highNode;
+		return highValidation > v.highValidation;
 	}
 };
 
@@ -474,10 +475,16 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 
 	boost::unordered_map<uint256, ValidationCount> ledgers;
 	{
-		boost::unordered_map<uint256, int> current = theApp->getValidations().getCurrentValidations(closedLedger);
-		typedef std::pair<const uint256, int> u256_int_pair;
-		BOOST_FOREACH(u256_int_pair& it, current)
-			ledgers[it.first].trustedValidations += it.second;
+		boost::unordered_map<uint256, currentValidationCount> current =
+			theApp->getValidations().getCurrentValidations(closedLedger);
+		typedef std::pair<const uint256, currentValidationCount> u256_cvc_pair;
+		BOOST_FOREACH(u256_cvc_pair& it, current)
+		{
+			ValidationCount& vc = ledgers[it.first];
+			vc.trustedValidations += it.second.first;
+			if (it.second.second > vc.highValidation)
+				vc.highValidation = it.second.second;
+		}
 	}
 
 	ValidationCount& ourVC = ledgers[closedLedger];
@@ -485,7 +492,9 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 	if ((theConfig.LEDGER_CREATOR) && (mMode >= omTRACKING))
 	{
 		++ourVC.nodesUsing;
-		ourVC.highNode = theApp->getWallet().getNodePublic();
+		uint160 ourAddress = theApp->getWallet().getNodePublic().getNodeID();
+		if (ourAddress > ourVC.highNodeUsing)
+			ourVC.highNodeUsing = ourAddress;
 	}
 
 	BOOST_FOREACH(Peer::ref it, peerList)
@@ -500,8 +509,8 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 			if (peerLedger.isNonZero())
 			{
 				ValidationCount& vc = ledgers[peerLedger];
-				if ((vc.nodesUsing == 0) || (it->getNodePublic() > vc.highNode))
-					vc.highNode = it->getNodePublic();
+				if ((vc.nodesUsing == 0) || (it->getNodePublic().getNodeID() > vc.highNodeUsing))
+					vc.highNodeUsing = it->getNodePublic().getNodeID();
 				++vc.nodesUsing;
 			}
 		}
@@ -516,6 +525,13 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 	{
 		Log(lsTRACE) << "L: " << it->first << " t=" << it->second.trustedValidations <<
 			", n=" << it->second.nodesUsing;
+
+		// Temporary logging to make sure tiebreaking isn't broken
+		if (it->second.trustedValidations > 0)
+			Log(lsTRACE) << "  TieBreakTV: " << it->second.highValidation;
+		else if (it->second.nodesUsing > 0)
+			Log(lsTRACE) << "  TieBreakNU: " << it->second.highNodeUsing;
+
 		if (it->second > bestVC)
 		{
 			bestVC = it->second;
@@ -526,6 +542,7 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 
 	if (switchLedgers && (closedLedger == prevClosedLedger))
 	{ // don't switch to our own previous ledger
+		Log(lsINFO) << "We won't switch to our own previous ledger";
 		networkClosed = ourClosed->getHash();
 		switchLedgers = false;
 	}
