@@ -794,8 +794,8 @@ void LedgerConsensus::startAcquiring(const TransactionAcquire::pointer& acquire)
 	std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
 	BOOST_FOREACH(Peer::ref peer, peerList)
 	{
-		if (peer->hasTxSet(acquire->getHash())
-			acquire->peerHash(peer);
+		if (peer->hasTxSet(acquire->getHash()))
+			acquire->peerHas(peer);
 	}
 
 	acquire->resetTimer();
@@ -1114,12 +1114,13 @@ void LedgerConsensus::accept(SHAMap::ref set)
 		SerializedValidation::pointer v = boost::make_shared<SerializedValidation>
 			(newLCLHash, theApp->getOPs().getValidationTimeNC(), mValSeed, mProposing);
 		v->setTrusted();
-		Log(lsINFO) << "CNF Val " << newLCLHash;
 		theApp->getValidations().addValidation(v);
 		std::vector<unsigned char> validation = v->getSigned();
 		newcoin::TMValidation val;
 		val.set_validation(&validation[0], validation.size());
-		theApp->getConnectionPool().relayMessage(NULL, boost::make_shared<PackedMessage>(val, newcoin::mtVALIDATION));
+		int j = theApp->getConnectionPool().relayMessage(NULL,
+			boost::make_shared<PackedMessage>(val, newcoin::mtVALIDATION));
+		Log(lsINFO) << "CNF Val " << newLCLHash << " to " << j << " peers";
 	}
 	else
 		Log(lsINFO) << "CNF newLCL " << newLCLHash;

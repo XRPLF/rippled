@@ -96,10 +96,7 @@ template<typename c_Key, typename c_Data> void TaggedCache<c_Key, c_Data>::sweep
 	while (cit != mCache.end())
 	{
 		if (cit->second->second.first < target)
-		{
-			typename boost::unordered_map<key_type, cache_entry>::iterator tmp = cit++;
-			mCache.erase(tmp);
-		}
+			mCache.erase(cit++);
 		else
 			++cit;
 	}
@@ -109,10 +106,7 @@ template<typename c_Key, typename c_Data> void TaggedCache<c_Key, c_Data>::sweep
 	while (mit != mMap.end())
 	{
 		if (mit->second->expired())
-		{
-			typename boost::unordered_map<key_type, weak_data_ptr>::iterator tmp = mit++;
 			mMap.erase(mit++);
-		}
 		else
 			++mit;
 	}

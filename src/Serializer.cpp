@@ -182,7 +182,7 @@ int Serializer::addFieldID(int type, int name)
 	return ret;
 }
 
-bool Serializer::getFieldID(int& type, int & name, int offset) const
+bool Serializer::getFieldID(int& type, int& name, int offset) const
 {
 	if (!get8(type, offset))
 		return false;

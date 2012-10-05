@@ -1890,20 +1890,16 @@ Json::Value RPCServer::doSend(const Json::Value& params)
 		// XXX Don't allow send to self of same currency.
 
 		Transaction::pointer	trans;
-
 		if (asDst) {
 			// Destination exists, ordinary send.
 
-			STPathSet			spsPaths;
-			uint160  srcCurrencyID;
-//                        bool ret_b;
-//                        ret_b = false;
+		        STPathSet  spsPaths;
+			uint160    srcCurrencyID;
 
 			if (!saSrcAmountMax.isNative() || !saDstAmount.isNative())
 			{
 			  STAmount::currencyFromString(srcCurrencyID, sSrcCurrency);
 			  Pathfinder pf(naSrcAccountID, naDstAccountID, srcCurrencyID, saDstAmount);
-//			  ret_b = pf.findPaths(5, 1, spsPaths);
 			  pf.findPaths(5, 1, spsPaths);
 			}
 

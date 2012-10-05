@@ -4,6 +4,7 @@
 #include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/bind.hpp>
+#include <boost/test/unit_test.hpp>
 
 #include "../json/writer.h"
 
@@ -205,7 +206,10 @@ bool STObject::set(SerializerIterator& sit, int depth)
 			return true;
 		SField::ref fn = SField::getField(type, field);
 		if (fn.isInvalid())
+		{
+			Log(lsWARNING) << "Unknown field: field_type=" << type << ", field_name=" << field;
 			throw std::runtime_error("Unknown field");
+		}
 		giveObject(makeDeserializedObject(fn.fieldType, fn, sit, depth + 1));
 	}
 	return false;
@@ -248,10 +252,11 @@ void STObject::add(Serializer& s, bool withSigningFields) const
 
 	BOOST_FOREACH(const SerializedType& it, mData)
 	{ // pick out the fields and sort them
-		if (it.getSType() != STI_NOTPRESENT)
+		if ((it.getSType() != STI_NOTPRESENT) && it.getFName().isBinary())
 		{
 			SField::ref fName = it.getFName();
-			if (withSigningFields || ((fName != sfTxnSignature) && (fName != sfTxnSignatures)))
+			if (withSigningFields ||
+					((fName != sfTxnSignature) && (fName != sfTxnSignatures) && (fName != sfSignature)))
 				fields.insert(std::make_pair(it.getFName().fieldCode, &it));
 		}
 	}
@@ -427,7 +432,7 @@ void STObject::makeFieldAbsent(SField::ref field)
 	if (f.getSType() == STI_NOTPRESENT)
 		return;
 
-	mData.replace(index, makeDefaultObject(f.getFName()));
+	mData.replace(index, makeNonPresentObject(f.getFName()));
 }
 
 bool STObject::delField(SField::ref field)
@@ -761,17 +766,44 @@ Json::Value STVector256::getJson(int options) const
 
 std::string STArray::getFullText() const
 {
-	return "WRITEME";
+	std::string r = "[";
+
+	bool first = true;
+	BOOST_FOREACH(const STObject& o, value)
+	{
+		if (!first)
+			r += ",";
+		r += o.getFullText();
+		first = false;
+	}
+
+	r += "]";
+	return r;
 }
 
 std::string STArray::getText() const
 {
-	return "WRITEME";
+	std::string r = "[";
+
+	bool first = true;
+	BOOST_FOREACH(const STObject& o, value)
+	{
+		if (!first)
+			r += ",";
+		r += o.getText();
+		first = false;
+	}
+
+	r += "]";
+	return r;
 }
 
-Json::Value STArray::getJson(int) const
+Json::Value STArray::getJson(int p) const
 {
-	return Json::Value("WRITEME");
+	Json::Value v = Json::arrayValue;
+	BOOST_FOREACH(const STObject& o, value)
+		v.append(o.getJson(p));
+	return v;
 }
 
 void STArray::add(Serializer& s) const
@@ -805,7 +837,10 @@ STArray* STArray::construct(SerializerIterator& sit, SField::ref field)
 
 		SField::ref fn = SField::getField(type, field);
 		if (fn.isInvalid())
+		{
+			Log(lsTRACE) << "Unknown field: " << type << "/" << field;
 			throw std::runtime_error("Unknown field");
+		}
 
 		value.push_back(STObject(fn));
 		value.rbegin()->set(sit, 1);
@@ -938,6 +973,7 @@ std::auto_ptr<STObject> STObject::parseJson(const Json::Value& object, SField::r
 
 			case STI_VL:
 				if (!value.isString())
+					throw std::runtime_error("Incorrect type");
 				data.push_back(new STVariableLength(field, strUnHex(value.asString())));
 				break;
 
@@ -1004,13 +1040,24 @@ std::auto_ptr<STObject> STObject::parseJson(const Json::Value& object, SField::r
 								if (!currency.isString())
 									throw std::runtime_error("path element currencies must be strings");
 								hasCurrency = true;
-								// WRITEME
+								if (currency.asString().size() == 40)
+									uCurrency.SetHex(currency.asString());
+								else if (!STAmount::currencyFromString(uCurrency, currency.asString()))
+									throw std::runtime_error("invalid currency");
 							}
 							if (!issuer.isNull())
 							{ // human account id
 								if (!issuer.isString())
 									throw std::runtime_error("path element issuers must be strings");
-								// WRITEME
+								if (issuer.asString().size() == 40)
+									uIssuer.SetHex(issuer.asString());
+								else
+								{
+									NewcoinAddress a;
+									if (!a.setAccountPublic(issuer.asString()))
+										throw std::runtime_error("path element issuer invalid");
+									uIssuer = a.getAccountID();
+								}
 							}
 							p.addElement(STPathElement(uAccount, uCurrency, uIssuer, hasCurrency));
 						}
@@ -1033,8 +1080,11 @@ std::auto_ptr<STObject> STObject::parseJson(const Json::Value& object, SField::r
 				else
 				{ // newcoin addres
 					NewcoinAddress a;
-					if (!a.setAccountPublic(strValue))
+					if (!a.setAccountID(strValue))
+					{
+						Log(lsINFO) << "Invalid acccount JSON: " << fieldName << ": " << strValue;
 						throw std::runtime_error("Account invalid");
+					}
 					data.push_back(new STAccount(field, a.getAccountID()));
 				}
 			}
@@ -1069,67 +1119,68 @@ std::auto_ptr<STObject> STObject::parseJson(const Json::Value& object, SField::r
 	return std::auto_ptr<STObject>(new STObject(*name, data));
 }
 
-#if 0
+BOOST_AUTO_TEST_SUITE(SerializedObject)
 
-static SOElement testSOElements[2][16] =
-{ // field, name, id, type, flags
-	{
-		{ sfFlags, "Flags", STI_UINT32,		SOE_FLAGS, 0 },
-		{ sfTest1, "Test1", STI_VL,			SOE_REQUIRED, 0 },
-		{ sfTest2, "Test2", STI_HASH256,	SOE_IFFLAG, 1 },
-		{ sfTest3, "Test3", STI_UINT32,     SOE_REQUIRED, 0 },
-		{ sfInvalid, NULL, STI_DONE,		SOE_NEVER, -1 }
-	}
-};
-
-void STObject::unitTest()
+BOOST_AUTO_TEST_CASE( FieldManipulation_test )
 {
-	STObject object1(testSOElements[0], "TestElement1");
+	SField sfTestVL(STI_VL, 255, "TestVL");
+	SField sfTestH256(STI_HASH256, 255, "TestH256");
+	SField sfTestU32(STI_UINT32, 255, "TestU32");
+	SField sfTestObject(STI_OBJECT, 255, "TestObject");
+
+	std::vector<SOElement::ptr> elements;
+	elements.push_back(new SOElement(sfFlags, SOE_REQUIRED));
+	elements.push_back(new SOElement(sfTestVL, SOE_REQUIRED));
+	elements.push_back(new SOElement(sfTestH256, SOE_OPTIONAL));
+	elements.push_back(new SOElement(sfTestU32, SOE_REQUIRED));
+
+	STObject object1(elements, sfTestObject);
 	STObject object2(object1);
-	if (object1.getSerializer() != object2.getSerializer()) throw std::runtime_error("STObject error");
+	if (object1.getSerializer() != object2.getSerializer()) BOOST_FAIL("STObject error 1");
 
-	if (object1.isFieldPresent(sfTest2) || !object1.isFieldPresent(sfTest1))
-		throw std::runtime_error("STObject error");
+	if (object1.isFieldPresent(sfTestH256) || !object1.isFieldPresent(sfTestVL))
+		BOOST_FAIL("STObject error");
 
-	object1.makeFieldPresent(sfTest2);
-	if (!object1.isFieldPresent(sfTest2)) throw std::runtime_error("STObject Error");
+	object1.makeFieldPresent(sfTestH256);
+	if (!object1.isFieldPresent(sfTestH256)) BOOST_FAIL("STObject Error 2");
+	if (object1.getFieldH256(sfTestH256) != uint256()) BOOST_FAIL("STObject error 3");
 
-	if ((object1.getFlags() != 1) || (object2.getFlags() != 0)) throw std::runtime_error("STObject error");
-	if (object1.getFieldH256(sfTest2) != uint256()) throw std::runtime_error("STObject error");
-
-	if (object1.getSerializer() == object2.getSerializer()) throw std::runtime_error("STObject error");
-	object1.makeFieldAbsent(sfTest2);
-	if (object1.isFieldPresent(sfTest2)) throw std::runtime_error("STObject error");
-	if (object1.getFlags() != 0) throw std::runtime_error("STObject error");
-	if (object1.getSerializer() != object2.getSerializer()) throw std::runtime_error("STObject error");
+	if (object1.getSerializer() == object2.getSerializer())
+	{
+		Log(lsINFO) << "O1: " << object1.getJson(0);
+		Log(lsINFO) << "O2: " << object2.getJson(0);
+		BOOST_FAIL("STObject error 4");
+	}
+	object1.makeFieldAbsent(sfTestH256);
+	if (object1.isFieldPresent(sfTestH256)) BOOST_FAIL("STObject error 5");
+	if (object1.getFlags() != 0) BOOST_FAIL("STObject error 6");
+	if (object1.getSerializer() != object2.getSerializer()) BOOST_FAIL("STObject error 7");
 
 	STObject copy(object1);
-	if (object1.isFieldPresent(sfTest2)) throw std::runtime_error("STObject error");
-	if (copy.isFieldPresent(sfTest2)) throw std::runtime_error("STObject error");
-	if (object1.getSerializer() != copy.getSerializer()) throw std::runtime_error("STObject error");
-	copy.setFieldU32(sfTest3, 1);
-	if (object1.getSerializer() == copy.getSerializer()) throw std::runtime_error("STObject error");
-#ifdef DEBUG
-	Log(lsDEBUG) << copy.getJson(0);
-#endif
+	if (object1.isFieldPresent(sfTestH256)) BOOST_FAIL("STObject error 8");
+	if (copy.isFieldPresent(sfTestH256)) BOOST_FAIL("STObject error 9");
+	if (object1.getSerializer() != copy.getSerializer()) BOOST_FAIL("STObject error 10");
+	copy.setFieldU32(sfTestU32, 1);
+	if (object1.getSerializer() == copy.getSerializer()) BOOST_FAIL("STObject error 11");
 
 	for (int i = 0; i < 1000; i++)
 	{
-		std::cerr << "tol: i=" << i << std::endl;
 		std::vector<unsigned char> j(i, 2);
-		object1.setFieldVL(sfTest1, j);
+
+		object1.setFieldVL(sfTestVL, j);
 
 		Serializer s;
 		object1.add(s);
 		SerializerIterator it(s);
-		STObject object3(testSOElements[0], it, "TestElement3");
 
-		if (object1.getFieldVL(sfTest1) != j) throw std::runtime_error("STObject error");
-		if (object3.getFieldVL(sfTest1) != j) throw std::runtime_error("STObject error");
+		STObject object3(elements, it, sfTestObject);
+
+		if (object1.getFieldVL(sfTestVL) != j) BOOST_FAIL("STObject error");
+		if (object3.getFieldVL(sfTestVL) != j) BOOST_FAIL("STObject error");
 	}
 
 }
 
-#endif
+BOOST_AUTO_TEST_SUITE_END();
 
 // vim:ts=4

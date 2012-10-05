@@ -16,4 +16,5 @@ public:
 	RippleLines(const uint160& accountID ); // looks in the current ledger
 
 	std::vector<RippleState::pointer>& getLines(){ return(mLines); }
+	void printRippleLines();
 };

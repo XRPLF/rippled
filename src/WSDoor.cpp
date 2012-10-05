@@ -89,8 +89,8 @@ public:
 	void doAccountTransactionSubscribe(Json::Value& jvResult, const Json::Value& jvRequest);
 	void doAccountTransactionUnsubscribe(Json::Value& jvResult, const Json::Value& jvRequest);
 
-	void doLedgerSubcribe(Json::Value& jvResult, const Json::Value& jvRequest);
-	void doLedgerUnsubscribe(Json::Value& jvResult, const Json::Value& jvRequest);
+	void doServerSubscribe(Json::Value& jvResult, const Json::Value& jvRequest);
+	void doServerUnsubscribe(Json::Value& jvResult, const Json::Value& jvRequest);
 	void doLedgerAccountsSubcribe(Json::Value& jvResult, const Json::Value& jvRequest);
 	void doLedgerAccountsUnsubscribe(Json::Value& jvResult, const Json::Value& jvRequest);
 	void doTransactionSubcribe(Json::Value& jvResult, const Json::Value& jvRequest);
@@ -311,10 +311,10 @@ Json::Value WSConnection::invokeCommand(const Json::Value& jvRequest)
 		{ "account_info_unsubscribe",			&WSConnection::doAccountInfoUnsubscribe			},
 		{ "account_transaction_subscribe",		&WSConnection::doAccountTransactionSubscribe	},
 		{ "account_transaction_unsubscribe",	&WSConnection::doAccountTransactionUnsubscribe	},
-		{ "ledger_subscribe",					&WSConnection::doLedgerSubcribe					},
-		{ "ledger_unsubscribe",					&WSConnection::doLedgerUnsubscribe				},
 		{ "ledger_accounts_subscribe",			&WSConnection::doLedgerAccountsSubcribe			},
 		{ "ledger_accounts_unsubscribe",		&WSConnection::doLedgerAccountsUnsubscribe		},
+		{ "server_subscribe",					&WSConnection::doServerSubscribe				},
+		{ "server_unsubscribe",					&WSConnection::doServerUnsubscribe				},
 		{ "transaction_subscribe",				&WSConnection::doTransactionSubcribe			},
 		{ "transaction_unsubscribe",			&WSConnection::doTransactionUnsubscribe			},
 	};
@@ -523,22 +523,6 @@ void WSConnection::doAccountTransactionUnsubscribe(Json::Value& jvResult, const 
 	}
 }
 
-void WSConnection::doLedgerSubcribe(Json::Value& jvResult, const Json::Value& jvRequest)
-{
-	if (!theApp->getOPs().subLedger(this))
-	{
-		jvResult["error"]	= "ledgerSubscribed";
-	}
-}
-
-void WSConnection::doLedgerUnsubscribe(Json::Value& jvResult, const Json::Value& jvRequest)
-{
-	if (!theApp->getOPs().unsubLedger(this))
-	{
-		jvResult["error"]	= "ledgerNotSubscribed";
-	}
-}
-
 void WSConnection::doLedgerAccountsSubcribe(Json::Value& jvResult, const Json::Value& jvRequest)
 {
 	if (!theApp->getOPs().subLedgerAccounts(this))
@@ -559,13 +543,13 @@ void WSConnection::doLedgerClosed(Json::Value& jvResult, const Json::Value& jvRe
 {
 	uint256	uLedger	= theApp->getOPs().getClosedLedger();
 
-	jvResult["ledger_index"]	= theApp->getOPs().getLedgerID(uLedger);
-	jvResult["ledger"]			= uLedger.ToString();
+	jvResult["ledger_closed_index"]		= theApp->getOPs().getLedgerID(uLedger);
+	jvResult["ledger_closed"]			= uLedger.ToString();
 }
 
 void WSConnection::doLedgerCurrent(Json::Value& jvResult, const Json::Value& jvRequest)
 {
-	jvResult["ledger_index"]	= theApp->getOPs().getCurrentLedgerID();
+	jvResult["ledger_current_index"]	= theApp->getOPs().getCurrentLedgerID();
 }
 
 void WSConnection::doLedgerEntry(Json::Value& jvResult, const Json::Value& jvRequest)
@@ -606,10 +590,17 @@ void WSConnection::doLedgerEntry(Json::Value& jvResult, const Json::Value& jvReq
 		uLedgerIndex	= lpLedger->getLedgerSeq();	// Set the current index.
 	}
 
-	if (!!uLedger)
-		jvResult["ledger"]			= uLedger.ToString();
+	if (lpLedger->isClosed())
+	{
+		if (!!uLedger)
+			jvResult["ledger_closed"]			= uLedger.ToString();
 
-	jvResult["ledger_index"]	= uLedgerIndex;
+		jvResult["ledger_closed_index"]		= uLedgerIndex;
+	}
+	else
+	{
+		jvResult["ledger_current_index"]	= uLedgerIndex;
+	}
 
 	uint256		uNodeIndex;
 	bool		bNodeBinary	= false;
@@ -785,6 +776,32 @@ void WSConnection::doLedgerEntry(Json::Value& jvResult, const Json::Value& jvReq
 			jvResult["node"]		= sleNode->getJson(0);
 			jvResult["index"]		= uNodeIndex.ToString();
 		}
+	}
+}
+
+void WSConnection::doServerSubscribe(Json::Value& jvResult, const Json::Value& jvRequest)
+{
+	if (!theApp->getOPs().subLedger(this))
+	{
+		jvResult["error"]	= "serverSubscribed";
+	}
+	else
+	{
+		if (theConfig.RUN_STANDALONE)
+			jvResult["stand_alone"]	= 1;
+
+		// XXX Make sure these values are available before returning them.
+		// XXX return connected status.
+		jvResult["ledger_closed"]			= theApp->getOPs().getClosedLedger().ToString();
+		jvResult["ledger_current_index"]	= theApp->getOPs().getCurrentLedgerID();
+	}
+}
+
+void WSConnection::doServerUnsubscribe(Json::Value& jvResult, const Json::Value& jvRequest)
+{
+	if (!theApp->getOPs().unsubLedger(this))
+	{
+		jvResult["error"]	= "serverNotSubscribed";
 	}
 }
 

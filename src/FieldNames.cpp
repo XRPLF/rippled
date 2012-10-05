@@ -7,15 +7,17 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/foreach.hpp>
 
+#include "utils.h"
 
 // These must stay at the top of this file
 std::map<int, SField::ptr> SField::codeToField;
 boost::mutex SField::mapMutex;
 
 SField sfInvalid(-1), sfGeneric(0);
-SField sfLedgerEntry(FIELD_CODE(STI_LEDGERENTRY, 1), STI_LEDGERENTRY, 1, "LedgerEntry");
-SField sfTransaction(FIELD_CODE(STI_TRANSACTION, 1), STI_TRANSACTION, 1, "Transaction");
-SField sfValidation(FIELD_CODE(STI_VALIDATION, 1), STI_VALIDATION, 1, "Validation");
+SField sfLedgerEntry(STI_LEDGERENTRY, 1, "LedgerEntry");
+SField sfTransaction(STI_TRANSACTION, 1, "Transaction");
+SField sfValidation(STI_VALIDATION, 1, "Validation");
+SField sfID(STI_HASH256, 257, "id");
 
 #define FIELD(name, type, index) SField sf##name(FIELD_CODE(STI_##type, index), STI_##type, index, #name);
 #define TYPE(name, type, index)
@@ -29,7 +31,7 @@ SField::ref SField::getField(int code)
 	int type = code >> 16;
 	int field = code % 0xffff;
 
-	if ((type <= 0) || (type >= 256) || (field <= 0) || (field >= 256))
+	if ((type <= 0) || (field <= 0))
 		return sfInvalid;
 
 	boost::mutex::scoped_lock sl(mapMutex);
@@ -52,7 +54,8 @@ SField::ref SField::getField(int code)
 			return sfInvalid;
 	}
 
-	return *(new SField(code, static_cast<SerializedTypeID>(type), field, NULL));
+	std::string dynName = lexical_cast_i(type) + "/" + lexical_cast_i(field);
+	return *(new SField(code, static_cast<SerializedTypeID>(type), field, dynName.c_str()));
 }
 
 int SField::compare(SField::ref f1, SField::ref f2)
@@ -67,11 +70,6 @@ int SField::compare(SField::ref f1, SField::ref f2)
 		return 1;
 
 	return 0;
-}
-
-SField::ref SField::getField(int type, int value)
-{
-	return getField(FIELD_CODE(type, value));
 }
 
 std::string SField::getName() const
@@ -95,3 +93,13 @@ SField::ref SField::getField(const std::string& fieldName)
 	}
 	return sfInvalid;
 }
+
+SField::~SField()
+{
+	boost::mutex::scoped_lock sl(mapMutex);
+	std::map<int, ptr>::iterator it = codeToField.find(fieldCode);
+	if ((it != codeToField.end()) && (it->second == this))
+		codeToField.erase(it);
+}
+
+// vim:ts=4
