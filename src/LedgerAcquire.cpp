@@ -267,7 +267,8 @@ void PeerSet::sendRequest(const newcoin::TMGetLedger& tmGL, Peer::ref peer)
 void PeerSet::sendRequest(const newcoin::TMGetLedger& tmGL)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
-	if (mPeers.empty()) return;
+	if (mPeers.empty())
+		return;
 
 	PackedMessage::pointer packet = boost::make_shared<PackedMessage>(tmGL, newcoin::mtGET_LEDGER);
 

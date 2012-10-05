@@ -744,8 +744,11 @@ void Peer::recvHaveTxSet(newcoin::TMHaveTransactionSet& packet)
 		punishPeer(PP_INVALID_REQUEST);
 		return;
 	}
-	memcpy(hashes.begin(), packet.hash().data(), 32);
-	if (!theApp->getOPs().hasTXSet(shared_from_this(), hashes, packet.status()))
+	uint256 hash;
+	memcpy(hash.begin(), packet.hash().data(), 32);
+	if (packet.status() == newcoin::tsHAVE)
+		addTxSet(hash);
+	if (!theApp->getOPs().hasTXSet(shared_from_this(), hash, packet.status()))
 		punishPeer(PP_UNWANTED_DATA);
 }
 
@@ -937,7 +940,6 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 	if (packet.itype() == newcoin::liTS_CANDIDATE)
 	{ // Request is  for a transaction candidate set
 		Log(lsINFO) << "Received request for TX candidate set data " << getIP();
-		Ledger::pointer ledger;
 		if ((!packet.has_ledgerhash() || packet.ledgerhash().size() != 32))
 		{
 			punishPeer(PP_INVALID_REQUEST);
@@ -948,7 +950,7 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 		map = theApp->getOPs().getTXMap(txHash);
 		if (!map)
 		{
-			Log(lsERROR) << "We do not hav the map our peer wants";
+			Log(lsERROR) << "We do not have the map our peer wants";
 			punishPeer(PP_INVALID_REQUEST);
 			return;
 		}
@@ -1143,9 +1145,27 @@ void Peer::addLedger(const uint256& hash)
 	BOOST_FOREACH(const uint256& ledger, mRecentLedgers)
 		if (ledger == hash)
 			return;
-	if (mRecentLedgers.size() == 16)
+	if (mRecentLedgers.size() == 128)
 		mRecentLedgers.pop_front();
 	mRecentLedgers.push_back(hash);
+}
+
+bool Peer::hasTxSet(const uint256& hash) const
+{
+	BOOST_FOREACH(const uint256& set, mRecentTxSets)
+		if (set == hash)
+			return true;
+	return false;
+}
+
+void Peer::addTxSet(const uint256& hash)
+{
+	BOOST_FOREACH(const uint256& set, mRecentTxSets)
+		if (set == hash)
+			return;
+	if (mRecentTxSets.size() == 128)
+		mRecentTxSets.pop_front();
+	mRecentTxSets.push_back(hash);
 }
 
 // Get session information we can sign to prevent man in the middle attack.

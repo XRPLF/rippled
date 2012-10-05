@@ -7,6 +7,7 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/foreach.hpp>
 
+#include "utils.h"
 
 // These must stay at the top of this file
 std::map<int, SField::ptr> SField::codeToField;
@@ -52,7 +53,8 @@ SField::ref SField::getField(int code)
 			return sfInvalid;
 	}
 
-	return *(new SField(code, static_cast<SerializedTypeID>(type), field, NULL));
+	std::string dynName = lexical_cast_i(type) + "/" + lexical_cast_i(field);
+	return *(new SField(code, static_cast<SerializedTypeID>(type), field, dynName.c_str()));
 }
 
 int SField::compare(SField::ref f1, SField::ref f2)

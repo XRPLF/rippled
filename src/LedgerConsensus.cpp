@@ -50,9 +50,13 @@ boost::weak_ptr<PeerSet> TransactionAcquire::pmDowncast()
 void TransactionAcquire::trigger(Peer::ref peer, bool timer)
 {
 	if (mComplete || mFailed)
+	{
+		Log(lsINFO) << "complete or failed";
 		return;
+	}
 	if (!mHaveRoot)
 	{
+		Log(lsINFO) << "have no root";
 		newcoin::TMGetLedger tmGL;
 		tmGL.set_ledgerhash(mHash.begin(), mHash.size());
 		tmGL.set_itype(newcoin::liTS_CANDIDATE);
@@ -786,6 +790,14 @@ void LedgerConsensus::startAcquiring(const TransactionAcquire::pointer& acquire)
 			}
 		}
 	}
+
+	std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
+	BOOST_FOREACH(Peer::ref peer, peerList)
+	{
+		if (peer->hasTxSet(acquire->getHash()))
+			acquire->peerHas(peer);
+	}
+
 	acquire->resetTimer();
 }
 

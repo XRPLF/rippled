@@ -52,7 +52,11 @@ public:
 
 	SField(int fc, SerializedTypeID tid, int fv, const char* fn) : 
 		fieldCode(fc), fieldType(tid), fieldValue(fv), fieldName(fn)
-	{ codeToField[fc] = this; }
+	{ codeToField[fieldCode] = this; }
+
+	SField(SerializedTypeID tid, int fv, const char *fn, bool temporary) :
+		fieldCode(FIELD_CODE(tid, fv)), fieldType(tid), fieldValue(fv), fieldName(fn)
+	{ if (!temporary) codeToField[fieldCode] = this; }
 
 	SField(int fc) : fieldCode(fc), fieldType(STI_UNKNOWN), fieldValue(0) { ; }
 

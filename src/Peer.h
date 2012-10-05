@@ -46,6 +46,7 @@ private:
 
 	uint256			mClosedLedgerHash, mPreviousLedgerHash;
 	std::list<uint256>	mRecentLedgers;
+	std::list<uint256>	mRecentTxSets;
 
 	boost::asio::ssl::stream<boost::asio::ip::tcp::socket>		mSocketSsl;
 
@@ -118,6 +119,7 @@ protected:
 	void getSessionCookie(std::string& strDst);
 
 	void addLedger(const uint256& ledger);
+	void addTxSet(const uint256& TxSet);
 
 public:
 
@@ -157,6 +159,7 @@ public:
 
 	uint256 getClosedLedgerHash() const		{ return mClosedLedgerHash; }
 	bool hasLedger(const uint256& hash) const;
+	bool hasTxSet(const uint256& hash) const;
 	NewcoinAddress getNodePublic() const	{ return mNodePublic; }
 	void cycleStatus() { mPreviousLedgerHash = mClosedLedgerHash; mClosedLedgerHash.zero(); }
 };
