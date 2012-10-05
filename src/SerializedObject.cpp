@@ -973,6 +973,7 @@ std::auto_ptr<STObject> STObject::parseJson(const Json::Value& object, SField::r
 
 			case STI_VL:
 				if (!value.isString())
+					throw std::runtime_error("Incorrect type");
 				data.push_back(new STVariableLength(field, strUnHex(value.asString())));
 				break;
 
