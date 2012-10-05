@@ -3,7 +3,7 @@
 
 #include <string>
 
-#include <boost/thread/mutex.hpp>
+#include <boost/thread/recursive_mutex.hpp>
 
 #define FIELD_CODE(type, index) ((static_cast<int>(type) << 16) | index)
 
@@ -40,8 +40,8 @@ public:
 	typedef SField const *	ptr;
 
 protected:
-	static std::map<int, ptr>	codeToField;
-	static boost::mutex			mapMutex;
+	static std::map<int, ptr>		codeToField;
+	static boost::recursive_mutex	mapMutex;
 
 public:
 
@@ -53,14 +53,14 @@ public:
 	SField(int fc, SerializedTypeID tid, int fv, const char* fn) : 
 		fieldCode(fc), fieldType(tid), fieldValue(fv), fieldName(fn)
 	{
-		boost::mutex::scoped_lock sl(mapMutex);
+		boost::recursive_mutex::scoped_lock sl(mapMutex);
 		codeToField[fieldCode] = this;
 	}
 
 	SField(SerializedTypeID tid, int fv, const char *fn) :
 		fieldCode(FIELD_CODE(tid, fv)), fieldType(tid), fieldValue(fv), fieldName(fn)
 	{
-		boost::mutex::scoped_lock sl(mapMutex);
+		boost::recursive_mutex::scoped_lock sl(mapMutex);
 		codeToField[fieldCode] = this;
 	}
 

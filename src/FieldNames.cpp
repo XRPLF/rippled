@@ -11,7 +11,7 @@
 
 // These must stay at the top of this file
 std::map<int, SField::ptr> SField::codeToField;
-boost::mutex SField::mapMutex;
+boost::recursive_mutex SField::mapMutex;
 
 SField sfInvalid(-1), sfGeneric(0);
 SField sfLedgerEntry(STI_LEDGERENTRY, 1, "LedgerEntry");
@@ -33,16 +33,15 @@ SField::ref SField::getField(int code)
 
 	if ((type <= 0) || (field <= 0))
 		return sfInvalid;
-	{ //JED: Did this to fix a deadlock. david you should check. Line after this block also has a scoped lock
-		// why doe sthis thing even need a mutex?
-		boost::mutex::scoped_lock sl(mapMutex);
 
-		std::map<int, SField::ptr>::iterator it = codeToField.find(code);
-		if (it != codeToField.end())
-			return *(it->second);
+	boost::recursive_mutex::scoped_lock sl(mapMutex);
 
-		switch (type)
-		{ // types we are willing to dynamically extend
+	std::map<int, SField::ptr>::iterator it = codeToField.find(code);
+	if (it != codeToField.end())
+		return *(it->second);
+
+	switch (type)
+	{ // types we are willing to dynamically extend
 
 #define FIELD(name, type, index)
 #define TYPE(name, type, index) case STI_##type:
@@ -51,12 +50,10 @@ SField::ref SField::getField(int code)
 #undef TYPE
 
 			break;
-default:
-	return sfInvalid;
-		}
+		default:
+			return sfInvalid;
+	}
 
-		
-	}// end scope lock
 	std::string dynName = lexical_cast_i(type) + "/" + lexical_cast_i(field);
 	return *(new SField(code, static_cast<SerializedTypeID>(type), field, dynName.c_str()));
 }
@@ -87,7 +84,7 @@ std::string SField::getName() const
 
 SField::ref SField::getField(const std::string& fieldName)
 { // OPTIMIZEME me with a map. CHECKME this is case sensitive
-	boost::mutex::scoped_lock sl(mapMutex);
+	boost::recursive_mutex::scoped_lock sl(mapMutex);
 	typedef std::pair<const int, SField::ptr> int_sfref_pair;
 	BOOST_FOREACH(const int_sfref_pair& fieldPair, codeToField)
 	{
@@ -99,7 +96,7 @@ SField::ref SField::getField(const std::string& fieldName)
 
 SField::~SField()
 {
-	boost::mutex::scoped_lock sl(mapMutex);
+	boost::recursive_mutex::scoped_lock sl(mapMutex);
 	std::map<int, ptr>::iterator it = codeToField.find(fieldCode);
 	if ((it != codeToField.end()) && (it->second == this))
 		codeToField.erase(it);
