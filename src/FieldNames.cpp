@@ -55,9 +55,9 @@ default:
 	return sfInvalid;
 		}
 
-		std::string dynName = lexical_cast_i(type) + "/" + lexical_cast_i(field);
+		
 	}// end scope lock
-	
+	std::string dynName = lexical_cast_i(type) + "/" + lexical_cast_i(field);
 	return *(new SField(code, static_cast<SerializedTypeID>(type), field, dynName.c_str()));
 }
 
