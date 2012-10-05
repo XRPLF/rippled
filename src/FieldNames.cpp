@@ -11,7 +11,7 @@
 
 // These must stay at the top of this file
 std::map<int, SField::ptr> SField::codeToField;
-boost::mutex SField::mapMutex;
+boost::recursive_mutex SField::mapMutex;
 
 SField sfInvalid(-1), sfGeneric(0);
 SField sfLedgerEntry(STI_LEDGERENTRY, 1, "LedgerEntry");
@@ -34,7 +34,7 @@ SField::ref SField::getField(int code)
 	if ((type <= 0) || (field <= 0))
 		return sfInvalid;
 
-	boost::mutex::scoped_lock sl(mapMutex);
+	boost::recursive_mutex::scoped_lock sl(mapMutex);
 
 	std::map<int, SField::ptr>::iterator it = codeToField.find(code);
 	if (it != codeToField.end())
@@ -84,7 +84,7 @@ std::string SField::getName() const
 
 SField::ref SField::getField(const std::string& fieldName)
 { // OPTIMIZEME me with a map. CHECKME this is case sensitive
-	boost::mutex::scoped_lock sl(mapMutex);
+	boost::recursive_mutex::scoped_lock sl(mapMutex);
 	typedef std::pair<const int, SField::ptr> int_sfref_pair;
 	BOOST_FOREACH(const int_sfref_pair& fieldPair, codeToField)
 	{
@@ -96,7 +96,7 @@ SField::ref SField::getField(const std::string& fieldName)
 
 SField::~SField()
 {
-	boost::mutex::scoped_lock sl(mapMutex);
+	boost::recursive_mutex::scoped_lock sl(mapMutex);
 	std::map<int, ptr>::iterator it = codeToField.find(fieldCode);
 	if ((it != codeToField.end()) && (it->second == this))
 		codeToField.erase(it);
