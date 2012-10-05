@@ -18,12 +18,20 @@
 
 #define isSetBit(x,y)		(!!((x) & (y)))
 
+// maybe use http://www.mail-archive.com/licq-commits@googlegroups.com/msg02334.html
 #ifdef WIN32
 extern uint64_t htobe64(uint64_t value);
 extern uint64_t be64toh(uint64_t value);
 extern uint32_t htobe32(uint32_t value);
 extern uint32_t be32toh(uint32_t value);
+#elif __APPLE__
+#define be16toh(x) betoh16(x)
+#define be32toh(x) betoh32(x)
+#define be64toh(x) betoh64(x)
+#define h64tobe(x) htobe64(x)
+#define h32tobe(x) htobe32(x)
 #endif
+
 
 #define vt_f_black          "\033[30m"
 #define vt_f_red            "\033[31m"
