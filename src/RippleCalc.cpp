@@ -863,7 +863,9 @@ TER RippleCalc::calcNodeAccountRev(const unsigned int uIndex, const PathState::p
 	Log(lsINFO) << pspCur->getJson();
 
 	assert(!saCurRedeemReq || (-saNxtOwed) >= saCurRedeemReq);	// Current redeem req can't be more than IOUs on hand.
-	assert(!saCurIssueReq || !saNxtOwed.isPositive() || saNxtOwed == saCurRedeemReq);	// If issue req, then redeem req must consume all owed.
+	assert(!saCurIssueReq					// If not issuing, fine.
+		|| !saNxtOwed.isNegative()			// Not hold next IOUs: owed is >= 0
+		|| saNxtOwed == saCurRedeemReq);	// If issue req, then redeem req must consume all owed.
 
 	if (bPrvAccount && bNxtAccount)
 	{
