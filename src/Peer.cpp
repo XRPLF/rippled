@@ -756,11 +756,14 @@ void Peer::recvValidation(newcoin::TMValidation& packet)
 {
 	if (packet.validation().size() < 50)
 	{
+		Log(lsWARNING) << "Too small validation from peer";
 		punishPeer(PP_UNKNOWN_REQUEST);
 		return;
 	}
 
+#ifndef TRUST_NETWORK
 	try
+#endif
 	{
 		Serializer s(packet.validation());
 		SerializerIterator sit(s);
@@ -768,10 +771,14 @@ void Peer::recvValidation(newcoin::TMValidation& packet)
 
 		uint256 signingHash = val->getSigningHash();
 		if (!theApp->isNew(signingHash))
+		{
+			Log(lsTRACE) << "Validation is duplicate";
 			return;
+		}
 
 		if (!val->isValid(signingHash))
 		{
+			Log(lsWARNING) << "Validation is invalid";
 			punishPeer(PP_UNKNOWN_REQUEST);
 			return;
 		}
@@ -782,10 +789,13 @@ void Peer::recvValidation(newcoin::TMValidation& packet)
 			theApp->getConnectionPool().relayMessage(this, message);
 		}
 	}
+#ifndef TRUST_NETWORK
 	catch (...)
 	{
+		Log(lsWARNING) << "Exception processing validation";
 		punishPeer(PP_UNKNOWN_REQUEST);
 	}
+#endif
 }
 
 void Peer::recvGetValidation(newcoin::TMGetValidations& packet)
