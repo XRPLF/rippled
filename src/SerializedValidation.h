@@ -7,7 +7,6 @@
 class SerializedValidation : public STObject
 {
 protected:
-	STVariableLength mSignature;
 	uint256	mPreviousHash;
 	bool mTrusted;
 
@@ -21,8 +20,6 @@ public:
 
 	// These throw if the object is not valid
 	SerializedValidation(SerializerIterator& sit, bool checkSignature = true);
-	SerializedValidation(const Serializer& s, bool checkSignature = true);
-
 	SerializedValidation(const uint256& ledgerHash, uint32 signTime, const NewcoinAddress& naSeed, bool isFull);
 
 	uint256			getLedgerHash()		const;
@@ -36,8 +33,6 @@ public:
 	bool			isValid(const uint256&) const;
 
 	void 						setTrusted()				{ mTrusted = true; }
-	void						addSigned(Serializer&)		const;
-	void						addSignature(Serializer&)	const;
 	std::vector<unsigned char>	getSigned()					const;
 	std::vector<unsigned char>	getSignature()				const;
 
