@@ -54,11 +54,13 @@ public:
 		fieldCode(fc), fieldType(tid), fieldValue(fv), fieldName(fn)
 	{ codeToField[fieldCode] = this; }
 
-	SField(SerializedTypeID tid, int fv, const char *fn, bool temporary) :
+	SField(SerializedTypeID tid, int fv, const char *fn) :
 		fieldCode(FIELD_CODE(tid, fv)), fieldType(tid), fieldValue(fv), fieldName(fn)
-	{ if (!temporary) codeToField[fieldCode] = this; }
+	{ codeToField[fieldCode] = this; }
 
 	SField(int fc) : fieldCode(fc), fieldType(STI_UNKNOWN), fieldValue(0) { ; }
+
+	~SField();
 
 	static SField::ref getField(int fieldCode);
 	static SField::ref getField(int fieldType, int fieldValue);
@@ -71,6 +73,7 @@ public:
 	bool isGeneric() const		{ return fieldCode == 0; }
 	bool isInvalid() const		{ return fieldCode == -1; }
 	bool isKnown() const		{ return fieldType != STI_UNKNOWN; }
+	bool isBinary() const		{ return fieldValue < 256; }
 
 	bool operator==(const SField& f) const { return fieldCode == f.fieldCode; }
 	bool operator!=(const SField& f) const { return fieldCode != f.fieldCode; }

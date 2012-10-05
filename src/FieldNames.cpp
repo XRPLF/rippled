@@ -14,9 +14,10 @@ std::map<int, SField::ptr> SField::codeToField;
 boost::mutex SField::mapMutex;
 
 SField sfInvalid(-1), sfGeneric(0);
-SField sfLedgerEntry(FIELD_CODE(STI_LEDGERENTRY, 1), STI_LEDGERENTRY, 1, "LedgerEntry");
-SField sfTransaction(FIELD_CODE(STI_TRANSACTION, 1), STI_TRANSACTION, 1, "Transaction");
-SField sfValidation(FIELD_CODE(STI_VALIDATION, 1), STI_VALIDATION, 1, "Validation");
+SField sfLedgerEntry(STI_LEDGERENTRY, 1, "LedgerEntry");
+SField sfTransaction(STI_TRANSACTION, 1, "Transaction");
+SField sfValidation(STI_VALIDATION, 1, "Validation");
+SField sfID(STI_HASH256, 257, "id");
 
 #define FIELD(name, type, index) SField sf##name(FIELD_CODE(STI_##type, index), STI_##type, index, #name);
 #define TYPE(name, type, index)
@@ -97,3 +98,13 @@ SField::ref SField::getField(const std::string& fieldName)
 	}
 	return sfInvalid;
 }
+
+SField::~SField()
+{
+	boost::mutex::scoped_lock sl(mapMutex);
+	std::map<int, ptr>::iterator it = codeToField.find(fieldCode);
+	if ((it != codeToField.end()) && (it->second == this))
+		codeToField.erase(it);
+}
+
+// vim:ts=4
