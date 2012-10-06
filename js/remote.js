@@ -23,11 +23,11 @@ var Remote = function (trusted, websocket_ip, websocket_port, trace) {
   this.stand_alone          = undefined;
   
   // Cache information for accounts.
-  this.account = {
+  this.accounts = {
     // Consider sequence numbers stable if you know you're not generating bad transactions.
     // Otherwise, clear it to have it automatically refreshed from the network.
     
-    // acount : { seq : __ }
+    // account : { seq : __ }
 
     };
   
@@ -126,7 +126,7 @@ Remote.method('connect', function (done, timeout) {
     this.expire = false;
     
     setTimeout(function () {
-      if (this.trace) console.log("remote: expire: timeout");
+      if (self.trace) console.log("remote: expire: timeout");
       self.expire = true;
     }, timeout);
   } else {
@@ -139,10 +139,11 @@ Remote.method('connect', function (done, timeout) {
 
 // Target stated is disconnected.
 Remote.method('disconnect', function (done) {
-  var ws = this.ws;
+  var self  = this;
+  var ws    = this.ws;
   
   ws.onclose = function () {
-    if (this.trace) console.log("remote: onclose: %s", ws.readyState);
+    if (self.trace) console.log("remote: onclose: %s", ws.readyState);
     done(ws.readyState);
   };
   
@@ -152,14 +153,14 @@ Remote.method('disconnect', function (done) {
 // Send a request. The request should lack the id.
 // <-> request: what to send, consumed.
 Remote.method('request', function (request, onDone, onFailure) {
+  var self  = this;
+
   this.id += 1;   // Advance id.
-  
-  var ws = this.ws;
   
   request.id = this.id;
   
-  ws.response[request.id] = function (response) {
-    if (this.trace) console.log("remote: response: %s", JSON.stringify(response));
+  this.ws.response[request.id] = function (response) {
+    if (self.trace) console.log("remote: response: %s", JSON.stringify(response));
     
     if (onFailure && response.error)
     {
@@ -173,7 +174,7 @@ Remote.method('request', function (request, onDone, onFailure) {
   
   if (this.trace) console.log("remote: request: %s", JSON.stringify(request));
   
-  ws.send(JSON.stringify(request));
+  this.ws.send(JSON.stringify(request));
 });
 
 Remote.method('request_ledger_closed', function (onDone, onFailure) {
@@ -192,6 +193,8 @@ Remote.method('request_ledger_current', function (onDone, onFailure) {
 // --> ledger_index : optional
 // --> type
 Remote.method('request_ledger_entry', function (req, onDone, onFailure) {
+  var self  = this;
+
   assert(this.trusted);   // If not trusted, need to check proof, maybe talk packet protocol.
   
   req.command = 'ledger_entry';
@@ -201,7 +204,8 @@ Remote.method('request_ledger_entry', function (req, onDone, onFailure) {
     // XXX Initial implementation no caching.
     this.request(req, onDone, onFailure);
   }
-  else if (req.ledger_index)
+  // else if (req.ledger_index)
+  else
   {
     // Current
     // XXX Only allow with standalone mode.  Must sync response with advance.
@@ -216,7 +220,7 @@ Remote.method('request_ledger_entry', function (req, onDone, onFailure) {
 	  cache = this.ledgers.current.account_root = {};
 	}
 	
-	var entry = this.ledgers.current.account_root[req.account];
+	entry = this.ledgers.current.account_root[req.account];
 	break;
 	
       default:
@@ -233,17 +237,19 @@ Remote.method('request_ledger_entry', function (req, onDone, onFailure) {
      
       // Submit request
       this.request(req, function (r) {
-	// Got result.
-	switch (req.type) {
-	  case 'account_root':
-	    this.ledgers.current.account_root.account = r;
-	    break;
-	  
-	  default:
-	    // This type not cached.
-	}
-	onDone(r);
-      }, onFailure);
+	  // Got result.
+	  switch (req.type) {
+	    case 'account_root':
+	      self.ledgers.current.account_root[r.node.Account] = r.node;
+	      break;
+	    
+	    default:
+	      // This type not cached.
+	      // nothing();
+	      break;
+	  }
+	  onDone(r.node);
+	}, onFailure);
     }
   }
 });
@@ -252,6 +258,8 @@ Remote.method('request_ledger_entry', function (req, onDone, onFailure) {
 // done(value)
 // XXX <-> value: { 'status', status, 'result' : result, ... }
 Remote.method('submit', function (request, onDone, onFailure) {
+  if (this.trace) console.log("remote: submit: %s", request);
+
   var req = {};
   
   req.command = 'submit';
@@ -274,12 +282,14 @@ Remote.method('submit', function (request, onDone, onFailure) {
 // Subscribe to a server to get the current and closed ledger.
 // XXX Set up routine to update on notification.
 Remote.method('server_subscribe', function (onDone, onFailure) {
+  var self  = this;
+
   this.request(
     { 'command' : 'server_subscribe' },
       function (r) {
-	this.ledger_current_index = r.ledger_current_index;
-	this.ledger_closed        = r.ledger_closed;
-	this.stand_alone          = r.stand_alone;
+	self.ledger_current_index = r.ledger_current_index;
+	self.ledger_closed        = r.ledger_closed;
+	self.stand_alone          = r.stand_alone;
 	onDone();
     },
     onFailure
@@ -289,6 +299,7 @@ Remote.method('server_subscribe', function (onDone, onFailure) {
 // Refresh accounts[account].seq
 // done(result);
 Remote.method('account_seq', function (account, advance, onDone, onFailure) {
+  var self = this;
   var account_root_entry = this.accounts[account];
   
   if (account_root_entry && account_root_entry.seq)
@@ -304,14 +315,17 @@ Remote.method('account_seq', function (account, advance, onDone, onFailure) {
     // Need to get the ledger entry.
     this.request_ledger_entry(
       {
-	'ledger' : this.ledger_closed,
-	'account_root' : account
+	'ledger'	: this.ledger_closed,
+	'type'		: 'account_root',
+	'account_root'	: account
       },
-      function (r) {
+      function (node) {
 	// Extract the seqence number from the account root entry.
-	var seq	= r.seq;
+	var seq	= node.Sequence;
 
-	this.accounts[account].seq = seq + 1;
+	if (!self.accounts[account]) self.accounts[account]  = {};
+
+	self.accounts[account].seq = seq + 1;
 
 	onDone(seq);
       },
@@ -322,11 +336,13 @@ Remote.method('account_seq', function (account, advance, onDone, onFailure) {
 
 // A submit that fills in the sequence number.
 Remote.method('submit_seq', function (transaction, onDirty, onDone, onFailure) {
+  var self = this;
+
   // Get the next sequence number for the account.
-  this.account_seq(transaction.Signer, true,
+  this.account_seq(transaction.fields.Signer, true,
     function (seq) {
-      request.seq = seq;
-      this.submit(onDone, onFailure);
+      transaction.seq = seq;
+      self.submit(transaction, onDone, onFailure);
     },
     onFailure);
 });
