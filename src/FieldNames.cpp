@@ -18,6 +18,7 @@ SField sfLedgerEntry(STI_LEDGERENTRY, 1, "LedgerEntry");
 SField sfTransaction(STI_TRANSACTION, 1, "Transaction");
 SField sfValidation(STI_VALIDATION, 1, "Validation");
 SField sfID(STI_HASH256, 257, "id");
+SField sfIndex(STI_HASH256, 258, "index");
 
 #define FIELD(name, type, index) SField sf##name(FIELD_CODE(STI_##type, index), STI_##type, index, #name);
 #define TYPE(name, type, index)
