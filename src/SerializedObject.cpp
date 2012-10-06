@@ -939,7 +939,7 @@ std::auto_ptr<STObject> STObject::parseJson(const Json::Value& object, SField::r
 
 			case STI_UINT64:
 				if (value.isString())
-					data.push_back(new STUInt64(field, lexical_cast_st<uint64>(value.asString())));
+					data.push_back(new STUInt64(field, uintFromHex(value.asString())));
 				else if (value.isInt())
 					data.push_back(new STUInt64(field,
 						range_check_cast<uint64>(value.asInt(), 0, 18446744073709551615ull)));

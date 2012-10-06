@@ -162,6 +162,8 @@ bool isZero(Iterator first, int iSize)
 int charUnHex(char cDigit);
 void strUnHex(std::string& strDst, const std::string& strSrc);
 
+uint64_t uintFromHex(const std::string& strSrc);
+
 std::vector<unsigned char> strUnHex(const std::string& strSrc);
 
 std::vector<unsigned char> strCopy(const std::string& strSrc);

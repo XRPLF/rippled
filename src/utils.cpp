@@ -2,6 +2,7 @@
 #include "uint256.h"
 
 #include <boost/asio.hpp>
+#include <boost/foreach.hpp>
 #include <boost/regex.hpp>
 
 //
@@ -65,6 +66,16 @@ std::vector<unsigned char> strUnHex(const std::string& strSrc)
 	strUnHex(strTmp, strSrc);
 
 	return strCopy(strTmp);
+}
+
+uint64_t uintFromHex(const std::string& strSrc)
+{
+	uint64_t	uValue = 0;
+
+	BOOST_FOREACH(char c, strSrc)
+		uValue = (uValue << 4) | charUnHex(c);
+
+	return uValue;
 }
 
 //
