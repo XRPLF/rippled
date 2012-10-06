@@ -31,6 +31,7 @@ protected:
 public:
 	SerializedTransaction(SerializerIterator& sit);
 	SerializedTransaction(TransactionType type);
+	SerializedTransaction(const STObject &object);
 
 	// STObject functions
 	SerializedTypeID getSType() const { return STI_TRANSACTION; }

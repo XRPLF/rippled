@@ -17,6 +17,19 @@ SerializedTransaction::SerializedTransaction(TransactionType type) : STObject(sf
 	setFieldU16(sfTransactionType, mFormat->t_type);
 }
 
+SerializedTransaction::SerializedTransaction(const STObject& object) : STObject(object)
+{
+	mType = static_cast<TransactionType>(getFieldU16(sfTransactionType));
+	mFormat = TransactionFormat::getTxnFormat(mType);
+	if (!mFormat)
+		throw std::runtime_error("invalid transaction type");
+	if (!setType(mFormat->elements))
+	{
+		assert(false);
+		throw std::runtime_error("transaction not valid");
+	}
+}
+
 SerializedTransaction::SerializedTransaction(SerializerIterator& sit) : STObject(sfTransaction)
 {
 	int length = sit.getBytesLeft();
@@ -209,9 +222,9 @@ BOOST_AUTO_TEST_CASE( STrans_test )
 		Log(lsFATAL) << copy.getJson(0);
 		BOOST_FAIL("Transaction fails serialize/deserialize test");
 	}
+	Log(lsINFO) << "ORIG: " << j.getJson(0);
 	std::auto_ptr<STObject> new_obj = STObject::parseJson(j.getJson(0), sfGeneric);
 	if (new_obj.get() == NULL) BOOST_FAIL("Unable to build object from json");
-	Log(lsINFO) << "ORIG: " << j.getJson(0);
 	Log(lsINFO) << "BUILT " << new_obj->getJson(0);
 }
 
