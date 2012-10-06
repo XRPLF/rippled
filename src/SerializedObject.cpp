@@ -11,6 +11,7 @@
 #include "Log.h"
 #include "LedgerFormats.h"
 #include "TransactionFormats.h"
+#include "SerializedTransaction.h"
 
 std::auto_ptr<SerializedType> STObject::makeDefaultObject(SerializedTypeID id, SField::ref name)
 {
@@ -163,8 +164,14 @@ bool STObject::setType(const std::vector<SOElement::ptr> &type)
 	}
 	if (mData.size() != 0)
 	{
-		Log(lsTRACE) << "setType !valid leftover";
-		valid = false;
+		BOOST_FOREACH(const SerializedType& t, mData)
+		{
+			if (!t.getFName().isDiscardable())
+			{
+				Log(lsTRACE) << "setType !valid leftover: " << t.getFName().getName();
+				valid = false;
+			}
+		}
 	}
 	mData.swap(newData);
 	return valid;
@@ -1116,6 +1123,10 @@ std::auto_ptr<STObject> STObject::parseJson(const Json::Value& object, SField::r
 				throw std::runtime_error("Invalid field type");
 		}
 	}
+
+	if (name->fieldType == STI_TRANSACTION)
+		return std::auto_ptr<STObject>(new SerializedTransaction(STObject(*name, data)));
+
 	return std::auto_ptr<STObject>(new STObject(*name, data));
 }
 
