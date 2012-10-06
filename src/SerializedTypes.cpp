@@ -99,6 +99,18 @@ std::string STUInt16::getText() const
 
 Json::Value STUInt16::getJson(int) const
 {
+	if (getFName() == sfLedgerEntryType)
+	{
+		LedgerEntryFormat *f = LedgerEntryFormat::getLgrFormat(value);
+		if (f != NULL)
+			return f->t_name;
+	}
+	if (getFName() == sfTransactionType)
+	{
+		TransactionFormat *f = TransactionFormat::getTxnFormat(value);
+		if (f != NULL)
+			return f->t_name;
+	}
 	return value;
 }
 
