@@ -11,7 +11,7 @@
 
 // These must stay at the top of this file
 std::map<int, SField::ptr> SField::codeToField;
-boost::recursive_mutex SField::mapMutex;
+boost::mutex SField::mapMutex;
 
 SField sfInvalid(-1), sfGeneric(0);
 SField sfLedgerEntry(STI_LEDGERENTRY, 1, "LedgerEntry");
@@ -26,6 +26,12 @@ SField sfID(STI_HASH256, 257, "id");
 #undef TYPE
 
 
+SField::SField(SerializedTypeID tid, int fv) : fieldCode(FIELD_CODE(tid, fv)), fieldType(tid), fieldValue(fv)
+{ // call with the map mutex
+	fieldName = lexical_cast_i(tid) + "/" + lexical_cast_i(fv);
+	codeToField[fieldCode] = this;
+}
+
 SField::ref SField::getField(int code)
 {
 	int type = code >> 16;
@@ -34,11 +40,14 @@ SField::ref SField::getField(int code)
 	if ((type <= 0) || (field <= 0))
 		return sfInvalid;
 
-	boost::recursive_mutex::scoped_lock sl(mapMutex);
+	boost::mutex::scoped_lock sl(mapMutex);
 
 	std::map<int, SField::ptr>::iterator it = codeToField.find(code);
 	if (it != codeToField.end())
 		return *(it->second);
+
+	if (field > 255)		// don't dynamically extend types that have no binary encoding
+		return sfInvalid;
 
 	switch (type)
 	{ // types we are willing to dynamically extend
@@ -54,8 +63,7 @@ SField::ref SField::getField(int code)
 			return sfInvalid;
 	}
 
-	std::string dynName = lexical_cast_i(type) + "/" + lexical_cast_i(field);
-	return *(new SField(code, static_cast<SerializedTypeID>(type), field, dynName.c_str()));
+	return *(new SField(static_cast<SerializedTypeID>(type), field));
 }
 
 int SField::compare(SField::ref f1, SField::ref f2)
@@ -84,7 +92,7 @@ std::string SField::getName() const
 
 SField::ref SField::getField(const std::string& fieldName)
 { // OPTIMIZEME me with a map. CHECKME this is case sensitive
-	boost::recursive_mutex::scoped_lock sl(mapMutex);
+	boost::mutex::scoped_lock sl(mapMutex);
 	typedef std::pair<const int, SField::ptr> int_sfref_pair;
 	BOOST_FOREACH(const int_sfref_pair& fieldPair, codeToField)
 	{
@@ -96,7 +104,7 @@ SField::ref SField::getField(const std::string& fieldName)
 
 SField::~SField()
 {
-	boost::recursive_mutex::scoped_lock sl(mapMutex);
+	boost::mutex::scoped_lock sl(mapMutex);
 	std::map<int, ptr>::iterator it = codeToField.find(fieldCode);
 	if ((it != codeToField.end()) && (it->second == this))
 		codeToField.erase(it);
