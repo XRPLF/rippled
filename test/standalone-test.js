@@ -184,6 +184,16 @@ buster.testCase("Websocket commands", {
 	    });
 	});
     },
+
+  'create account' :
+    function (done) {
+      alpha.send_xns(undefined, 'root', 'alice', 10000, true, function (r) {
+	  console.log(r);
+
+	  buster.refute(r.error);
+	  done();
+	});
+    },
 });
 
 // vim:sw=2:sts=2:ts=8
