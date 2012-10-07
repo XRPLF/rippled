@@ -1124,9 +1124,6 @@ std::auto_ptr<STObject> STObject::parseJson(const Json::Value& object, SField::r
 		}
 	}
 
-	if (name->fieldType == STI_TRANSACTION)
-		return std::auto_ptr<STObject>(new SerializedTransaction(STObject(*name, data)));
-
 	return std::auto_ptr<STObject>(new STObject(*name, data));
 }
 
