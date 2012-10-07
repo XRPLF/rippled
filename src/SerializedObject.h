@@ -51,6 +51,7 @@ public:
 	bool setType(const std::vector<SOElement::ptr>& type);
 	bool isValidForType();
 	bool isFieldAllowed(SField::ref);
+	bool isFree() const { return mType.empty(); }
 
 	void set(const std::vector<SOElement::ptr>&);
 	bool set(SerializerIterator& u, int depth = 0);
@@ -95,7 +96,7 @@ public:
 	const SerializedType& peekAtField(SField::ref field) const;
 	SerializedType& getField(SField::ref field);
 	const SerializedType* peekAtPField(SField::ref field) const;
-	SerializedType* getPField(SField::ref field);
+	SerializedType* getPField(SField::ref field, bool createOkay = false);
 
 	// these throw if the field type doesn't match, or return default values if the
 	// field is optional but not present
