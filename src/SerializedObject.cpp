@@ -154,7 +154,7 @@ bool STObject::setType(const std::vector<SOElement::ptr> &type)
 		{
 			if (elem->flags != SOE_OPTIONAL)
 			{
-				Log(lsTRACE) << "setType !valid missing";
+				Log(lsWARNING) << "setType !valid missing " << elem->e_field.fieldName;
 				valid = false;
 			}
 			newData.push_back(makeNonPresentObject(elem->e_field));
@@ -168,7 +168,7 @@ bool STObject::setType(const std::vector<SOElement::ptr> &type)
 		{
 			if (!t.getFName().isDiscardable())
 			{
-				Log(lsTRACE) << "setType !valid leftover: " << t.getFName().getName();
+				Log(lsWARNING) << "setType !valid leftover: " << t.getFName().getName();
 				valid = false;
 			}
 		}
