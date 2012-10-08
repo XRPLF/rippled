@@ -12,11 +12,12 @@ var util = require('util');
 var WebSocket = require('ws');
 
 // --> trusted: truthy, if remote is trusted
-var Remote = function (trusted, websocket_ip, websocket_port, trace) {
+var Remote = function (trusted, websocket_ip, websocket_port, config, trace) {
   this.trusted              = trusted;
   this.websocket_ip         = websocket_ip;
   this.websocket_port       = websocket_port;
   this.id                   = 0;
+  this.config               = config;
   this.trace                = trace;
   this.ledger_closed        = undefined;
   this.ledger_current_index = undefined;
@@ -40,7 +41,18 @@ var Remote = function (trusted, websocket_ip, websocket_port, trace) {
 
 var remoteConfig = function (config, server, trace) {
   var serverConfig = config.servers[server];
-  return new Remote(serverConfig.trusted, serverConfig.websocket_ip, serverConfig.websocket_port, trace);
+  return new Remote(serverConfig.trusted, serverConfig.websocket_ip, serverConfig.websocket_port, config, trace);
+};
+
+var flags = {
+  // OfferCreate flags:
+  'tfPassive'		      : 0x00010000,
+
+  // Payment flags:
+  'tfCreateAccount'	      : 0x00010000,
+  'tfPartialPayment'	      : 0x00020000,
+  'tfLimitQuality'	      : 0x00040000,
+  'tfNoRippleDirect'	      : 0x00080000,
 };
 
 // XXX This needs to be determined from the network.
@@ -257,13 +269,10 @@ Remote.method('request_ledger_entry', function (req, onDone, onFailure) {
 // Submit a json transaction.
 // done(value)
 // XXX <-> value: { 'status', status, 'result' : result, ... }
-Remote.method('submit', function (request, onDone, onFailure) {
-  if (this.trace) console.log("remote: submit: %s", request);
+Remote.method('submit', function (req, onDone, onFailure) {
+  if (this.trace) console.log("remote: submit: %s", JSON.stringify(req));
 
-  var req = {};
-  
   req.command = 'submit';
-  req.request = request;
   
   if (req.secret && !this.trusted)
   {
@@ -308,7 +317,7 @@ Remote.method('account_seq', function (account, advance, onDone, onFailure) {
 
     if (advance) account_root_entry.seq += 1;
 
-    onDone(advance);
+    onDone(seq);
   }
   else
   {
@@ -323,9 +332,9 @@ Remote.method('account_seq', function (account, advance, onDone, onFailure) {
 	// Extract the seqence number from the account root entry.
 	var seq	= node.Sequence;
 
-	if (!self.accounts[account]) self.accounts[account]  = {};
+	if (!account_root_entry) self.accounts[account]  = {};
 
-	self.accounts[account].seq = seq + 1;
+	self.accounts[account].seq = seq + !!advance;
 
 	onDone(seq);
       },
@@ -335,14 +344,14 @@ Remote.method('account_seq', function (account, advance, onDone, onFailure) {
 });
 
 // A submit that fills in the sequence number.
-Remote.method('submit_seq', function (transaction, onDirty, onDone, onFailure) {
+Remote.method('submit_seq', function (trans, onDirty, onDone, onFailure) {
   var self = this;
 
   // Get the next sequence number for the account.
-  this.account_seq(transaction.fields.Signer, true,
+  this.account_seq(trans.transaction.Account, true,
     function (seq) {
-      transaction.seq = seq;
-      self.submit(transaction, onDone, onFailure);
+      trans.transaction.Sequence = seq;
+      self.submit(trans, onDone, onFailure);
     },
     onFailure);
 });
@@ -352,8 +361,33 @@ Remote.method('dirty_account_root', function (account) {
   delete this.ledgers.current.account_root.account;
 });
 
+//
+// Transactions
+//
+
+Remote.method('send_xns', function (secret, src, dst, amount, create, onDone) {
+  var secret	  = this.config.accounts[src] ? this.config.accounts[src].secret : secret;
+  var src_account = this.config.accounts[src] ? this.config.accounts[src].account : src;
+  var dst_account = this.config.accounts[dst] ? this.config.accounts[dst].account : dst;
+
+  this.submit_seq(
+      {
+	'transaction' : {
+	  'TransactionType' : 'Payment',
+	  'Account' : src_account,
+	  'Destination' : dst_account,
+	  'Fee' : create ? fees.account_create : fees['default'],
+	  'Flags' : create ? flags.tfCreateAccount : 0,
+	  'Amount' : amount,
+	},
+	'secret' : secret,
+      }, function () {
+      }, onDone);
+});
+
 exports.Remote          = Remote;
 exports.remoteConfig    = remoteConfig;
 exports.fees            = fees;
+exports.flags           = flags;
 
 // vim:sw=2:sts=2:ts=8

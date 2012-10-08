@@ -52,6 +52,7 @@ Server.method('serverSpawnSync', function() {
 		config.newcoind,
 		[
 			"-a",
+			"-v",
 			"--conf=newcoind.cfg"
 		],
 		{
