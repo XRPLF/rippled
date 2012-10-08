@@ -28,10 +28,12 @@
 #include "../json/reader.h"
 #include "../json/writer.h"
 
+SETUP_LOG();
+
 RPCServer::RPCServer(boost::asio::io_service& io_service , NetworkOPs* nopNetwork)
 	: mNetOps(nopNetwork), mSocket(io_service)
 {
-	mRole=GUEST;
+	mRole = GUEST;
 }
 
 Json::Value RPCServer::RPCError(int iError)
@@ -175,13 +177,12 @@ std::string RPCServer::handleRequest(const std::string& requestStr)
 	else if (!valParams.isArray())
 		return(HTTPReply(400, "parms unparseable"));
 
-	Json::StyledStreamWriter w;
-	w.write(Log(lsTRACE).ref(), valParams);
-	Json::Value result(doCommand(strMethod, valParams));
-	w.write(Log(lsTRACE).ref(), result);
+	cLog(lsTRACE) << valParams;
+	Json::Value result = doCommand(strMethod, valParams);
+	cLog(lsTRACE) << result;
 
 	std::string strReply = JSONRPCReply(result, Json::Value(), id);
-	return( HTTPReply(200, strReply) );
+	return HTTPReply(200, strReply);
 }
 
 int RPCServer::getParamCount(const Json::Value& params)

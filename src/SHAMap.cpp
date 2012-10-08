@@ -15,6 +15,8 @@
 #include "SHAMap.h"
 #include "Application.h"
 
+SETUP_LOG();
+
 std::size_t hash_value(const SHAMapNode& mn)
 {
 	std::size_t seed = theApp->getNonceST();
@@ -662,7 +664,7 @@ bool SHAMap::updateGiveItem(const SHAMapItem::pointer& item, bool isTransaction,
 	if (!node->setItem(item, !isTransaction ? SHAMapTreeNode::tnACCOUNT_STATE :
 		(hasMeta ? SHAMapTreeNode::tnTRANSACTION_MD : SHAMapTreeNode::tnTRANSACTION_NM)))
 	{
-		Log(lsWARNING) << "SHAMap setItem, no change";
+		cLog(lsWARNING) << "SHAMap setItem, no change";
 		return true;
 	}
 
@@ -695,7 +697,7 @@ SHAMapTreeNode::pointer SHAMap::fetchNodeExternal(const SHAMapNode& id, const ui
 	}
 	catch (...)
 	{
-		Log(lsWARNING) << "fetchNodeExternal gets an invalid node: " << hash;
+		cLog(lsWARNING) << "fetchNodeExternal gets an invalid node: " << hash;
 		throw SHAMapMissingNode(id, hash);
 	}
 }
@@ -792,7 +794,7 @@ BOOST_AUTO_TEST_SUITE(SHAMap_suite)
 
 BOOST_AUTO_TEST_CASE( SHAMap_test )
 { // h3 and h4 differ only in the leaf, same terminal node (level 19)
-	Log(lsTRACE) << "SHAMap test";
+	cLog(lsTRACE) << "SHAMap test";
 	uint256 h1, h2, h3, h4, h5;
 	h1.SetHex("092891fe4ef6cee585fdc6fda0e09eb4d386363158ec3321b8123e5a772c6ca7");
 	h2.SetHex("436ccbac3347baa1f1e53baeef1f43334da88f1f6d70d963b833afd6dfa289fe");
@@ -828,7 +830,7 @@ BOOST_AUTO_TEST_CASE( SHAMap_test )
 	i = sMap.peekNextItem(i->getTag());
 	if (i) BOOST_FAIL("bad traverse");
 
-	Log(lsTRACE) << "SHAMap snap test";
+	cLog(lsTRACE) << "SHAMap snap test";
 	uint256 mapHash = sMap.getHash();
 	SHAMap::pointer map2 = sMap.snapShot(false);
 	if (sMap.getHash() != mapHash) BOOST_FAIL("bad snapshot");

@@ -8,6 +8,8 @@
 #include "Application.h"
 #include "Log.h"
 
+SETUP_LOG();
+
 HashedObjectStore::HashedObjectStore(int cacheSize, int cacheAge) :
 	mCache(cacheSize, cacheAge), mWritePending(false)
 {
@@ -22,9 +24,7 @@ bool HashedObjectStore::store(HashedObjectType type, uint32 index,
 	if (!theApp->getHashNodeDB()) return true;
 	if (mCache.touch(hash))
 	{
-#ifdef HS_DEBUG
-		Log(lsTRACE) << "HOS: " << hash << " store: incache";
-#endif
+		cLog(lsTRACE) << "HOS: " << hash << " store: incache";
 		return false;
 	}
 
@@ -53,7 +53,7 @@ void HashedObjectStore::bulkWrite()
 		mWriteSet.swap(set);
 		mWritePending = false;
 	}
-	Log(lsINFO) << "HOS: BulkWrite " << set.size();
+	cLog(lsINFO) << "HOS: BulkWrite " << set.size();
 
 	static boost::format fExists("SELECT ObjType FROM CommittedObjects WHERE Hash = '%s';");
 	static boost::format
@@ -94,7 +94,7 @@ HashedObject::pointer HashedObjectStore::retrieve(const uint256& hash)
 		obj = mCache.fetch(hash);
 		if (obj)
 		{
-			Log(lsTRACE) << "HOS: " << hash << " fetch: incache";
+			cLog(lsTRACE) << "HOS: " << hash << " fetch: incache";
 			return obj;
 		}
 	}
@@ -111,7 +111,7 @@ HashedObject::pointer HashedObjectStore::retrieve(const uint256& hash)
 
 		if (!db->executeSQL(sql) || !db->startIterRows())
 		{
-			Log(lsTRACE) << "HOS: " << hash << " fetch: not in db";
+			cLog(lsTRACE) << "HOS: " << hash << " fetch: not in db";
 			return HashedObject::pointer();
 		}
 
@@ -136,14 +136,14 @@ HashedObject::pointer HashedObjectStore::retrieve(const uint256& hash)
 			case 'A': htype = hotACCOUNT_NODE; break;
 			case 'N': htype = hotTRANSACTION_NODE; break;
 			default:
-				Log(lsERROR) << "Invalid hashed object";
+				cLog(lsERROR) << "Invalid hashed object";
 				return HashedObject::pointer();
 		}
 
 		obj = boost::make_shared<HashedObject>(htype, index, data, hash);
 		mCache.canonicalize(hash, obj);
 	}
-	Log(lsTRACE) << "HOS: " << hash << " fetch: in db";
+	cLog(lsTRACE) << "HOS: " << hash << " fetch: in db";
 	return obj;
 }
 
