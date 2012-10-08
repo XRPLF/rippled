@@ -417,8 +417,7 @@ void LedgerConsensus::createDisputes(SHAMap::ref m1, SHAMap::ref m2)
 
 void LedgerConsensus::mapComplete(const uint256& hash, SHAMap::ref map, bool acquired)
 {
-	if (acquired)
-		cLog(lsINFO) << "We have acquired TXS " << hash;
+	tLog(acquired, lsINFO) << "We have acquired TXS " << hash;
 
 	if (!map)
 	{ // this is an invalid/corrupt map
@@ -458,8 +457,7 @@ void LedgerConsensus::mapComplete(const uint256& hash, SHAMap::ref map, bool acq
 	}
 	if (!peers.empty())
 		adjustCount(map, peers);
-	else if (acquired)
-		cLog(lsWARNING) << "By the time we got the map " << hash << " no peers were proposing it";
+	else tLog(acquired, lsWARNING) << "By the time we got the map " << hash << " no peers were proposing it";
 
 	sendHaveTxSet(hash, true);
 }
@@ -547,8 +545,7 @@ void LedgerConsensus::stateEstablish()
 	updateOurPositions();
 	if (!mHaveCloseTimeConsensus)
 	{
-		if (haveConsensus())
-			cLog(lsINFO) << "We have TX consensus but not CT consensus";
+		tLog(haveConsensus(), lsINFO) << "We have TX consensus but not CT consensus";
 	}
 	else if (haveConsensus())
 	{
@@ -681,9 +678,8 @@ void LedgerConsensus::updateOurPositions()
 				thresh = it->second;
 			}
 		}
-		if (!mHaveCloseTimeConsensus)
-			cLog(lsDEBUG) << "No CT consensus: Proposers:" << mPeerPositions.size() << " Proposing:" <<
-			(mProposing ? "yes" : "no") << " Thresh:" << thresh << " Pos:" << closeTime;
+		tLog(!mHaveCloseTimeConsensus, lsDEBUG) << "No CT consensus: Proposers:" << mPeerPositions.size()
+			<< " Proposing:" <<	(mProposing ? "yes" : "no") << " Thresh:" << thresh << " Pos:" << closeTime;
 	}
 
 	if ((!changes) &&
