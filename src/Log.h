@@ -22,6 +22,9 @@
 // Log only if an additional condition 'c' is true. Condition is not computed if not needed
 #define tLog(c,x)	if (!logPartition.doLog(x) || !(c)) do {} while(0); else Log(x)
 
+// Check if should log
+#define sLog(x)		(logPartition.doLog(x))
+
 
 enum LogSeverity
 {

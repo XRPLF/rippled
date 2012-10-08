@@ -79,8 +79,8 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 		{
 			cLog(lsFATAL) << "Transaction serdes mismatch";
 			Json::StyledStreamWriter ssw;
-			ssw.write(Log(lsINFO).ref(), txn.getJson(0));
-			ssw.write(Log(lsFATAL).ref(), s2.getJson(0));
+			cLog(lsINFO) << txn.getJson(0);
+			cLog(lsFATAL) << s2.getJson(0);
 			assert(false);
 		}
 	}

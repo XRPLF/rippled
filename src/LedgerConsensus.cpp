@@ -1174,12 +1174,12 @@ void LedgerConsensus::accept(SHAMap::ref set)
 	}
 
 #ifdef DEBUG
+	if (sLog(lsTRACE))
 	{
-		Json::StyledStreamWriter ssw;
-		cLog(lsTRACE) << "newLCL";
+		Log(lsTRACE) << "newLCL";
 		Json::Value p;
 		newLCL->addJson(p, LEDGER_JSON_DUMP_TXNS | LEDGER_JSON_DUMP_STATE);
-		ssw.write(Log(lsTRACE).ref(), p);
+		Log(lsTRACE) << p;
 	}
 #endif
 }
