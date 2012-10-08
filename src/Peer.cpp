@@ -16,6 +16,8 @@
 #include "utils.h"
 #include "Log.h"
 
+SETUP_LOG();
+
 // Don't try to run past receiving nonsense from a peer
 #define TRUST_NETWORK
 
@@ -28,7 +30,7 @@ Peer::Peer(boost::asio::io_service& io_service, boost::asio::ssl::context& ctx) 
 	mSocketSsl(io_service, ctx),
 	mVerifyTimer(io_service)
 {
-	// Log(lsDEBUG) << "CREATING PEER: " << ADDRESS(this);
+	// cLog(lsDEBUG) << "CREATING PEER: " << ADDRESS(this);
 }
 
 void Peer::handle_write(const boost::system::error_code& error, size_t bytes_transferred)
@@ -47,7 +49,7 @@ void Peer::handle_write(const boost::system::error_code& error, size_t bytes_tra
 	}
 	else if (error)
 	{
-		Log(lsINFO) << "Peer: Write: Error: " << ADDRESS(this) << ": bytes=" << bytes_transferred << ": " << error.category().name() << ": " << error.message() << ": " << error;
+		cLog(lsINFO) << "Peer: Write: Error: " << ADDRESS(this) << ": bytes=" << bytes_transferred << ": " << error.category().name() << ": " << error.message() << ": " << error;
 
 		detach("hw");
 	}
@@ -67,7 +69,7 @@ void Peer::setIpPort(const std::string& strIP, int iPort)
 {
 	mIpPort = make_pair(strIP, iPort);
 
-	Log(lsDEBUG) << "Peer: Set: "
+	cLog(lsDEBUG) << "Peer: Set: "
 		<< ADDRESS(this) << "> "
 		<< (mNodePublic.isValid() ? mNodePublic.humanNodePublic() : "-") << " " << getIP() << " " << getPort();
 }
@@ -78,7 +80,7 @@ void Peer::detach(const char *rsn)
 	{
 		mDetaching	= true;			// Race is ok.
 		/*
-		Log(lsDEBUG) << "Peer: Detach: "
+		cLog(lsDEBUG) << "Peer: Detach: "
 			<< ADDRESS(this) << "> "
 			<< rsn << ": "
 			<< (mNodePublic.isValid() ? mNodePublic.humanNodePublic() : "-") << " " << getIP() << " " << getPort();
@@ -105,7 +107,7 @@ void Peer::detach(const char *rsn)
 			mIpPort.first.clear();		// Be idempotent.
 		}
 		/*
-		Log(lsDEBUG) << "Peer: Detach: "
+		cLog(lsDEBUG) << "Peer: Detach: "
 			<< ADDRESS(this) << "< "
 			<< rsn << ": "
 			<< (mNodePublic.isValid() ? mNodePublic.humanNodePublic() : "-") << " " << getIP() << " " << getPort();
@@ -124,14 +126,14 @@ void Peer::handleVerifyTimer(const boost::system::error_code& ecResult)
 	}
 	else if (ecResult)
 	{
-		Log(lsINFO) << "Peer verify timer error";
+		cLog(lsINFO) << "Peer verify timer error";
 
 		// Can't do anything sound.
 		abort();
 	}
 	else
 	{
-		//Log(lsINFO) << "Peer: Verify: Peer failed to verify in time.";
+		//cLog(lsINFO) << "Peer: Verify: Peer failed to verify in time.";
 
 		detach("hvt");
 	}
@@ -157,7 +159,7 @@ void Peer::connect(const std::string& strIp, int iPort)
 
 	if (err || itrEndpoint == boost::asio::ip::tcp::resolver::iterator())
 	{
-		Log(lsWARNING) << "Peer: Connect: Bad IP: " << strIp;
+		cLog(lsWARNING) << "Peer: Connect: Bad IP: " << strIp;
 		detach("c");
 		return;
 	}
@@ -168,7 +170,7 @@ void Peer::connect(const std::string& strIp, int iPort)
 
 		if (err)
 		{
-			Log(lsWARNING) << "Peer: Connect: Failed to set timer.";
+			cLog(lsWARNING) << "Peer: Connect: Failed to set timer.";
 			detach("c2");
 			return;
 		}
@@ -176,7 +178,7 @@ void Peer::connect(const std::string& strIp, int iPort)
 
 	if (!err)
 	{
-		Log(lsINFO) << "Peer: Connect: Outbound: " << ADDRESS(this) << ": " << mIpPort.first << " " << mIpPort.second;
+		cLog(lsINFO) << "Peer: Connect: Outbound: " << ADDRESS(this) << ": " << mIpPort.first << " " << mIpPort.second;
 
 		boost::asio::async_connect(
 			getSocket(),
@@ -197,7 +199,7 @@ void Peer::handleStart(const boost::system::error_code& error)
 {
 	if (error)
 	{
-		Log(lsINFO) << "Peer: Handshake: Error: " << error.category().name() << ": " << error.message() << ": " << error;
+		cLog(lsINFO) << "Peer: Handshake: Error: " << error.category().name() << ": " << error.message() << ": " << error;
 		detach("hs");
 	}
 	else
@@ -212,7 +214,7 @@ void Peer::handleConnect(const boost::system::error_code& error, boost::asio::ip
 {
 	if (error)
 	{
-		Log(lsINFO) << "Peer: Connect: Error: " << error.category().name() << ": " << error.message() << ": " << error;
+		cLog(lsINFO) << "Peer: Connect: Error: " << error.category().name() << ": " << error.message() << ": " << error;
 		detach("hc");
 	}
 	else
@@ -244,7 +246,7 @@ void Peer::connected(const boost::system::error_code& error)
 	{
 		// Not redundant ip and port, handshake, and start.
 
-		Log(lsINFO) << "Peer: Inbound: Accepted: " << ADDRESS(this) << ": " << strIp << " " << iPort;
+		cLog(lsINFO) << "Peer: Inbound: Accepted: " << ADDRESS(this) << ": " << strIp << " " << iPort;
 
 		mSocketSsl.set_verify_mode(boost::asio::ssl::verify_none);
 
@@ -253,7 +255,7 @@ void Peer::connected(const boost::system::error_code& error)
 	}
 	else if (!mDetaching)
 	{
-		Log(lsINFO) << "Peer: Inbound: Error: " << ADDRESS(this) << ": " << strIp << " " << iPort << " : " << error.category().name() << ": " << error.message() << ": " << error;
+		cLog(lsINFO) << "Peer: Inbound: Error: " << ADDRESS(this) << ": " << strIp << " " << iPort << " : " << error.category().name() << ": " << error.message() << ": " << error;
 
 		detach("ctd");
 	}
@@ -334,7 +336,7 @@ void Peer::handle_read_header(const boost::system::error_code& error)
 	}
 	else
 	{
-		Log(lsINFO) << "Peer: Header: Error: " << ADDRESS(this) << ": " << error.category().name() << ": " << error.message() << ": " << error;
+		cLog(lsINFO) << "Peer: Header: Error: " << ADDRESS(this) << ": " << error.category().name() << ": " << error.message() << ": " << error;
 		detach("hrh2");
 	}
 }
@@ -353,7 +355,7 @@ void Peer::handle_read_body(const boost::system::error_code& error)
 	}
 	else
 	{
-		Log(lsINFO) << "Peer: Body: Error: " << ADDRESS(this) << ": " << error.category().name() << ": " << error.message() << ": " << error;
+		cLog(lsINFO) << "Peer: Body: Error: " << ADDRESS(this) << ": " << error.category().name() << ": " << error.message() << ": " << error;
 		detach("hrb");
 	}
 }
@@ -370,7 +372,7 @@ void Peer::processReadBuffer()
 	// If connected and get a mtHELLO or if not connected and get a non-mtHELLO, wrong message was sent.
 	if (mHelloed == (type == newcoin::mtHELLO))
 	{
-		Log(lsWARNING) << "Wrong message type: " << type;
+		cLog(lsWARNING) << "Wrong message type: " << type;
 		detach("prb1");
 	}
 	else
@@ -579,36 +581,36 @@ void Peer::recvHello(newcoin::TMHello& packet)
 	{
 		int64 to = ourTime;
 		to -= packet.nettime();
-		Log(lsDEBUG) << "Connect: time offset " << to;
+		cLog(lsDEBUG) << "Connect: time offset " << to;
 	}
 #endif
 
 	if (packet.has_nettime() && ((packet.nettime() < minTime) || (packet.nettime() > maxTime)))
 	{
 		if (packet.nettime() > maxTime)
-			Log(lsINFO) << "Recv(Hello): " << getIP() << " :Clock far off +" << packet.nettime() - ourTime;
+			cLog(lsINFO) << "Recv(Hello): " << getIP() << " :Clock far off +" << packet.nettime() - ourTime;
 		else if(packet.nettime() < minTime)
-			Log(lsINFO) << "Recv(Hello): " << getIP() << " :Clock far off -" << ourTime - packet.nettime();
+			cLog(lsINFO) << "Recv(Hello): " << getIP() << " :Clock far off -" << ourTime - packet.nettime();
 	}
 	else if (packet.protoversionmin() < MAKE_VERSION_INT(MIN_PROTO_MAJOR, MIN_PROTO_MINOR))
 	{
-		Log(lsINFO) << "Recv(Hello): Server requires protocol version " <<
+		cLog(lsINFO) << "Recv(Hello): Server requires protocol version " <<
 			GET_VERSION_MAJOR(packet.protoversion()) << "." << GET_VERSION_MINOR(packet.protoversion())
 				<< " we run " << PROTO_VERSION_MAJOR << "." << PROTO_VERSION_MINOR;
 	}
 	else if (!mNodePublic.setNodePublic(packet.nodepublic()))
 	{
-		Log(lsINFO) << "Recv(Hello): Disconnect: Bad node public key.";
+		cLog(lsINFO) << "Recv(Hello): Disconnect: Bad node public key.";
 	}
 	else if (!mNodePublic.verifyNodePublic(mCookieHash, packet.nodeproof()))
 	{ // Unable to verify they have private key for claimed public key.
-		Log(lsINFO) << "Recv(Hello): Disconnect: Failed to verify session.";
+		cLog(lsINFO) << "Recv(Hello): Disconnect: Failed to verify session.";
 	}
 	else
 	{ // Successful connection.
-		Log(lsINFO) << "Recv(Hello): Connect: " << mNodePublic.humanNodePublic();
+		cLog(lsINFO) << "Recv(Hello): Connect: " << mNodePublic.humanNodePublic();
 		if (packet.protoversion() != MAKE_VERSION_INT(PROTO_VERSION_MAJOR, PROTO_VERSION_MINOR))
-			Log(lsINFO) << "Peer speaks version " <<
+			cLog(lsINFO) << "Peer speaks version " <<
 				(packet.protoversion() >> 16) << "." << (packet.protoversion() & 0xFF);
 		mHello = packet;
 
@@ -620,7 +622,7 @@ void Peer::recvHello(newcoin::TMHello& packet)
 
 		if (!theApp->getConnectionPool().peerConnected(shared_from_this(), mNodePublic, getIP(), getPort()))
 		{ // Already connected, self, or some other reason.
-			Log(lsINFO) << "Recv(Hello): Disconnect: Extraneous connection.";
+			cLog(lsINFO) << "Recv(Hello): Disconnect: Extraneous connection.";
 		}
 		else
 		{
@@ -716,7 +718,7 @@ void Peer::recvPropose(newcoin::TMProposeSet& packet)
 	if ((packet.currenttxhash().size() != 32) || (packet.nodepubkey().size() < 28) ||
 		(packet.signature().size() < 56))
 	{
-		Log(lsWARNING) << "Received proposal is malformed";
+		cLog(lsWARNING) << "Received proposal is malformed";
 		return;
 	}
 
@@ -756,7 +758,7 @@ void Peer::recvValidation(newcoin::TMValidation& packet)
 {
 	if (packet.validation().size() < 50)
 	{
-		Log(lsWARNING) << "Too small validation from peer";
+		cLog(lsWARNING) << "Too small validation from peer";
 		punishPeer(PP_UNKNOWN_REQUEST);
 		return;
 	}
@@ -774,13 +776,13 @@ void Peer::recvValidation(newcoin::TMValidation& packet)
 		uint256 signingHash = val->getSigningHash();
 		if (!theApp->isNew(signingHash))
 		{
-			Log(lsTRACE) << "Validation is duplicate";
+			cLog(lsTRACE) << "Validation is duplicate";
 			return;
 		}
 
 		if (!val->isValid(signingHash))
 		{
-			Log(lsWARNING) << "Validation is invalid";
+			cLog(lsWARNING) << "Validation is invalid";
 			punishPeer(PP_UNKNOWN_REQUEST);
 			return;
 		}
@@ -794,7 +796,7 @@ void Peer::recvValidation(newcoin::TMValidation& packet)
 //#ifndef TRUST_NETWORK
 	catch (...)
 	{
-		Log(lsWARNING) << "Exception processing validation";
+		cLog(lsWARNING) << "Exception processing validation";
 		punishPeer(PP_UNKNOWN_REQUEST);
 	}
 //#endif
@@ -837,7 +839,7 @@ void Peer::recvGetPeers(newcoin::TMGetPeers& packet)
 			addr->set_ipv4(inet_addr(strIP.c_str()));
 			addr->set_ipv4port(iPort);
 
-			//Log(lsINFO) << "Peer: Teaching: " << ADDRESS(this) << ": " << n << ": " << strIP << " " << iPort;
+			//cLog(lsINFO) << "Peer: Teaching: " << ADDRESS(this) << ": " << n << ": " << strIP << " " << iPort;
 		}
 
 		PackedMessage::pointer message = boost::make_shared<PackedMessage>(peers, newcoin::mtPEERS);
@@ -859,7 +861,7 @@ void Peer::recvPeers(newcoin::TMPeers& packet)
 
 		if (strIP != "0.0.0.0" && strIP != "127.0.0.1")
 		{
-			//Log(lsINFO) << "Peer: Learning: " << ADDRESS(this) << ": " << i << ": " << strIP << " " << iPort;
+			//cLog(lsINFO) << "Peer: Learning: " << ADDRESS(this) << ": " << i << ": " << strIP << " " << iPort;
 
 			theApp->getConnectionPool().savePeer(strIP, iPort, UniqueNodeList::vsTold);
 		}
@@ -900,7 +902,7 @@ void Peer::recvAccount(newcoin::TMAccount& packet)
 
 void Peer::recvStatus(newcoin::TMStatusChange& packet)
 {
-	Log(lsTRACE) << "Received status change from peer " << getIP();
+	cLog(lsTRACE) << "Received status change from peer " << getIP();
 	if (!packet.has_networktime())
 		packet.set_networktime(theApp->getOPs().getNetworkTimeNC());
 
@@ -917,7 +919,7 @@ void Peer::recvStatus(newcoin::TMStatusChange& packet)
 	{
 		if (!mClosedLedgerHash.isZero())
 		{
-			Log(lsTRACE) << "peer has lost sync " << getIP();
+			cLog(lsTRACE) << "peer has lost sync " << getIP();
 			mClosedLedgerHash.zero();
 		}
 		mPreviousLedgerHash.zero();
@@ -927,11 +929,11 @@ void Peer::recvStatus(newcoin::TMStatusChange& packet)
 	{ // a peer has changed ledgers
 		memcpy(mClosedLedgerHash.begin(), packet.ledgerhash().data(), 256 / 8);
 		addLedger(mClosedLedgerHash);
-		Log(lsTRACE) << "peer LCL is " << mClosedLedgerHash << " " << getIP();
+		cLog(lsTRACE) << "peer LCL is " << mClosedLedgerHash << " " << getIP();
 	}
 	else
 	{
-		Log(lsTRACE) << "peer has no ledger hash" << getIP();
+		cLog(lsTRACE) << "peer has no ledger hash" << getIP();
 		mClosedLedgerHash.zero();
 	}
 
@@ -951,7 +953,7 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 
 	if (packet.itype() == newcoin::liTS_CANDIDATE)
 	{ // Request is  for a transaction candidate set
-		Log(lsINFO) << "Received request for TX candidate set data " << getIP();
+		cLog(lsINFO) << "Received request for TX candidate set data " << getIP();
 		if ((!packet.has_ledgerhash() || packet.ledgerhash().size() != 32))
 		{
 			punishPeer(PP_INVALID_REQUEST);
@@ -962,7 +964,7 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 		map = theApp->getOPs().getTXMap(txHash);
 		if (!map)
 		{
-			Log(lsERROR) << "We do not have the map our peer wants";
+			cLog(lsERROR) << "We do not have the map our peer wants";
 			punishPeer(PP_INVALID_REQUEST);
 			return;
 		}
@@ -974,7 +976,7 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 	}
 	else
 	{ // Figure out what ledger they want
-		Log(lsINFO) << "Received request for ledger data " << getIP();
+		cLog(lsINFO) << "Received request for ledger data " << getIP();
 		Ledger::pointer ledger;
 		if (packet.has_ledgerhash())
 		{
@@ -982,13 +984,13 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 			if (packet.ledgerhash().size() != 32)
 			{
 				punishPeer(PP_INVALID_REQUEST);
-				Log(lsWARNING) << "Invalid request";
+				cLog(lsWARNING) << "Invalid request";
 				return;
 			}
 			memcpy(ledgerhash.begin(), packet.ledgerhash().data(), 32);
 			ledger = theApp->getMasterLedger().getLedgerByHash(ledgerhash);
 			if (!ledger)
-				Log(lsINFO) << "Don't have ledger " << ledgerhash;
+				cLog(lsINFO) << "Don't have ledger " << ledgerhash;
 		}
 		else if (packet.has_ledgerseq())
 			ledger = theApp->getMasterLedger().getLedgerBySeq(packet.ledgerseq());
@@ -1003,14 +1005,14 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 		else
 		{
 			punishPeer(PP_INVALID_REQUEST);
-			Log(lsWARNING) << "Can't figure out what ledger they want";
+			cLog(lsWARNING) << "Can't figure out what ledger they want";
 			return;
 		}
 
 		if ((!ledger) || (packet.has_ledgerseq() && (packet.ledgerseq() != ledger->getLedgerSeq())))
 		{
 			punishPeer(PP_UNKNOWN_REQUEST);
-			Log(lsWARNING) << "Can't find the ledger they want";
+			cLog(lsWARNING) << "Can't find the ledger they want";
 			return;
 		}
 
@@ -1022,14 +1024,14 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 
 		if(packet.itype() == newcoin::liBASE)
 		{ // they want the ledger base data
-			Log(lsTRACE) << "Want ledger base data";
+			cLog(lsTRACE) << "Want ledger base data";
 			Serializer nData(128);
 			ledger->addRaw(nData);
 			reply.add_nodes()->set_nodedata(nData.getDataPtr(), nData.getLength());
 
 			if (packet.nodeids().size() != 0)
 			{ // new-style root request
-				Log(lsINFO) << "Ledger root w/map roots request";
+				cLog(lsINFO) << "Ledger root w/map roots request";
 				SHAMap::pointer map = ledger->peekAccountStateMap();
 				if (map)
 				{ // return account state root node if possible
@@ -1063,7 +1065,7 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 
 	if ((!map) || (packet.nodeids_size() == 0))
 	{
-		Log(lsWARNING) << "Can't find map or empty request";
+		cLog(lsWARNING) << "Can't find map or empty request";
 		punishPeer(PP_INVALID_REQUEST);
 		return;
 	}
@@ -1128,7 +1130,7 @@ void Peer::recvLedger(newcoin::TMLedgerData& packet)
 			const newcoin::TMLedgerNode& node = packet.nodes(i);
 			if (!node.has_nodeid() || !node.has_nodedata() || (node.nodeid().size() != 33))
 			{
-				Log(lsWARNING) << "LedgerData request with invalid node ID";
+				cLog(lsWARNING) << "LedgerData request with invalid node ID";
 				punishPeer(PP_INVALID_REQUEST);
 				return;
 			}
@@ -1288,7 +1290,7 @@ Json::Value Peer::getJson()
 			case newcoin::nsMONITORING:		ret["status"] = "monitoring";	break;
 			case newcoin::nsVALIDATING:		ret["status"] = "validating";	break;
 			case newcoin::nsSHUTTING:		ret["status"] = "shutting";		break;
-			default:						Log(lsWARNING) << "Peer has unknown status: " << mLastStatus.newstatus();
+			default:						cLog(lsWARNING) << "Peer has unknown status: " << mLastStatus.newstatus();
 		}
 	}
 
