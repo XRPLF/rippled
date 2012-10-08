@@ -588,9 +588,13 @@ void Peer::recvHello(newcoin::TMHello& packet)
 	if (packet.has_nettime() && ((packet.nettime() < minTime) || (packet.nettime() > maxTime)))
 	{
 		if (packet.nettime() > maxTime)
+		{
 			cLog(lsINFO) << "Recv(Hello): " << getIP() << " :Clock far off +" << packet.nettime() - ourTime;
+		}
 		else if(packet.nettime() < minTime)
+		{
 			cLog(lsINFO) << "Recv(Hello): " << getIP() << " :Clock far off -" << ourTime - packet.nettime();
+		}
 	}
 	else if (packet.protoversionmin() < MAKE_VERSION_INT(MIN_PROTO_MAJOR, MIN_PROTO_MINOR))
 	{
@@ -609,8 +613,8 @@ void Peer::recvHello(newcoin::TMHello& packet)
 	else
 	{ // Successful connection.
 		cLog(lsINFO) << "Recv(Hello): Connect: " << mNodePublic.humanNodePublic();
-		if (packet.protoversion() != MAKE_VERSION_INT(PROTO_VERSION_MAJOR, PROTO_VERSION_MINOR))
-			cLog(lsINFO) << "Peer speaks version " <<
+		tLog(packet.protoversion() != MAKE_VERSION_INT(PROTO_VERSION_MAJOR, PROTO_VERSION_MINOR), lsINFO)
+			<< "Peer speaks version " <<
 				(packet.protoversion() >> 16) << "." << (packet.protoversion() & 0xFF);
 		mHello = packet;
 
@@ -989,8 +993,7 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 			}
 			memcpy(ledgerhash.begin(), packet.ledgerhash().data(), 32);
 			ledger = theApp->getMasterLedger().getLedgerByHash(ledgerhash);
-			if (!ledger)
-				cLog(lsINFO) << "Don't have ledger " << ledgerhash;
+			tLog(!ledger, lsINFO) << "Don't have ledger " << ledgerhash;
 		}
 		else if (packet.has_ledgerseq())
 			ledger = theApp->getMasterLedger().getLedgerBySeq(packet.ledgerseq());

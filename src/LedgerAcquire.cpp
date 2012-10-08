@@ -146,7 +146,7 @@ void LedgerAcquire::trigger(Peer::ref peer, bool timer)
 	if (mAborted || mComplete || mFailed)
 		return;
 #ifdef LA_DEBUG
-	if(peer) Log(lsTRACE) <<  "Trigger acquiring ledger " << mHash << " from " << peer->getIP();
+	if (peer) Log(lsTRACE) <<  "Trigger acquiring ledger " << mHash << " from " << peer->getIP();
 	else Log(lsTRACE) <<  "Trigger acquiring ledger " << mHash;
 	if (mComplete || mFailed)
 		Log(lsTRACE) <<  "complete=" << mComplete << " failed=" << mFailed;
