@@ -365,6 +365,25 @@ Remote.method('dirty_account_root', function (account) {
 // Transactions
 //
 
+Remote.method('ripple_line_set', function (secret, src, dst, amount, onDone) {
+  var secret	  = this.config.accounts[src] ? this.config.accounts[src].secret : secret;
+  var src_account = this.config.accounts[src] ? this.config.accounts[src].account : src;
+  var dst_account = this.config.accounts[dst] ? this.config.accounts[dst].account : dst;
+
+  this.submit_seq(
+      {
+	'transaction' : {
+	  'TransactionType' : 'CreditSet',
+	  'Account' : src_account,
+	  'Destination' : dst_account,
+	  'Fee' : create ? fees.account_create : fees['default'],
+	  'Amount' : amount,
+	},
+	'secret' : secret,
+      }, function () {
+      }, onDone);
+});
+
 Remote.method('send_xns', function (secret, src, dst, amount, create, onDone) {
   var secret	  = this.config.accounts[src] ? this.config.accounts[src].secret : secret;
   var src_account = this.config.accounts[src] ? this.config.accounts[src].account : src;
