@@ -13,6 +13,8 @@ std::ofstream* Log::outStream = NULL;
 boost::filesystem::path *Log::pathToLog = NULL;
 uint32 Log::logRotateCounter = 0;
 
+LogPartition* LogPartition::headLog = NULL;
+
 Log::~Log()
 {
 	std::string logMsg = boost::posix_time::to_simple_string(boost::posix_time::second_clock::universal_time());
@@ -79,6 +81,7 @@ void Log::setMinSeverity(LogSeverity s)
 {
 	boost::recursive_mutex::scoped_lock sl(sLock);
 	sMinSeverity = s;
+	LogPartition::setSeverity(s);
 }
 
 void Log::setLogFile(boost::filesystem::path path)
@@ -98,4 +101,20 @@ void Log::setLogFile(boost::filesystem::path path)
 		Log(lsINFO) << "Starting up";
 
 	pathToLog = new boost::filesystem::path(path);
+}
+
+void LogPartition::setSeverity(const char *partition, LogSeverity severity)
+{
+	for (LogPartition *p = headLog; p != NULL; p = p->mNextLog)
+		if (p->mName == partition)
+		{
+			p->mMinSeverity = severity;
+			return;
+		}
+}
+
+void LogPartition::setSeverity(LogSeverity severity)
+{
+	for (LogPartition *p = headLog; p != NULL; p = p->mNextLog)
+			p->mMinSeverity = severity;
 }

@@ -2,6 +2,8 @@
 #define __LOG__
 
 #include <sstream>
+#include <string>
+#include <limits>
 
 #include <boost/thread/recursive_mutex.hpp>
 #include <boost/filesystem.hpp>
@@ -10,7 +12,9 @@
 #include "../json/json.h"
 
 #include "types.h"
-#include <limits>
+
+#define SETUP_LOG()	static LogPartition logPartition(__FILE__)
+#define cLog(x)		if (logPartition.doLog(x)) Log(x)
 
 enum LogSeverity
 {
@@ -20,6 +24,32 @@ enum LogSeverity
 	lsWARNING	= 3,
 	lsERROR		= 4,
 	lsFATAL		= 5
+};
+
+class LogPartition
+{
+protected:
+	static LogPartition* headLog;
+
+	LogPartition*		mNextLog;
+	LogSeverity			mMinSeverity;
+	std::string			mName;
+
+public:
+	LogPartition(const char *name) : mNextLog(headLog), mMinSeverity(lsWARNING)
+	{
+		const char *ptr = strrchr(name, '/');
+		mName = (ptr == NULL) ? name : ptr;
+		headLog = this;
+	}
+
+	bool doLog(enum LogSeverity s)
+	{
+		return s >= mMinSeverity;
+	}
+
+	static void setSeverity(const char *partition, LogSeverity severity);
+	static void setSeverity(LogSeverity severity);
 };
 
 class Log
