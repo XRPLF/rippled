@@ -13,10 +13,15 @@
 
 #include "types.h"
 
+// Put at the beginning of a C++ file that needs its own log partition
 #define SETUP_LOG()	static LogPartition logPartition(__FILE__)
 
-#define tLog(c,x)	if (!logPartition.doLog(x) || !(c)) do {} while(0); else Log(x)
+// Standard conditional log
 #define cLog(x)		if (!logPartition.doLog(x)) do {} while (0); else Log(x)
+
+// Log only if an additional condition 'c' is true. Condition is not computed if not needed
+#define tLog(c,x)	if (!logPartition.doLog(x) || !(c)) do {} while(0); else Log(x)
+
 
 enum LogSeverity
 {
