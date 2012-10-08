@@ -7,7 +7,7 @@
 #include "LedgerTiming.h"
 #include "Log.h"
 
-// #define VC_DEBUG
+SETUP_LOG();
 
 bool ValidationCollection::addValidation(const SerializedValidation::pointer& val)
 {
@@ -21,9 +21,14 @@ bool ValidationCollection::addValidation(const SerializedValidation::pointer& va
 		if ((now > (valClose - LEDGER_EARLY_INTERVAL)) && (now < (valClose + LEDGER_VAL_INTERVAL)))
 			isCurrent = true;
 		else
-			Log(lsWARNING) << "Received stale validation now=" << now << ", close=" << valClose;
+		{
+			cLog(lsWARNING) << "Received stale validation now=" << now << ", close=" << valClose;
+		}
 	}
-	else Log(lsINFO) << "Node " << signer.humanNodePublic() << " not in UNL";
+	else
+	{
+		cLog(lsINFO) << "Node " << signer.humanNodePublic() << " not in UNL";
+	}
 
 	uint256 hash = val->getLedgerHash();
 	uint160 node = signer.getNodeID();
@@ -49,7 +54,7 @@ bool ValidationCollection::addValidation(const SerializedValidation::pointer& va
 		}
 	}
 
-	Log(lsINFO) << "Val for " << hash << " from " << signer.humanNodePublic()
+	cLog(lsINFO) << "Val for " << hash << " from " << signer.humanNodePublic()
 		<< " added " << (val->isTrusted() ? "trusted/" : "UNtrusted/") << (isCurrent ? "current" : "stale");
 	return isCurrent;
 }
@@ -84,9 +89,7 @@ void ValidationCollection::getValidationCount(const uint256& ledger, bool curren
 					isTrusted = false;
 				else
 				{
-#ifdef VC_DEBUG
-					Log(lsINFO) << "VC: Untrusted due to time " << ledger;
-#endif
+					cLog(lsTRACE) << "VC: Untrusted due to time " << ledger;
 				}
 			}
 			if (isTrusted)
@@ -95,9 +98,7 @@ void ValidationCollection::getValidationCount(const uint256& ledger, bool curren
 				++untrusted;
 		}
 	}
-#ifdef VC_DEBUG
-	Log(lsINFO) << "VC: " << ledger << "t:" << trusted << " u:" << untrusted;
-#endif
+	cLog(lsTRACE) << "VC: " << ledger << "t:" << trusted << " u:" << untrusted;
 }
 
 int ValidationCollection::getTrustedValidationCount(const uint256& ledger)

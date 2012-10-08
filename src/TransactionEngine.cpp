@@ -13,6 +13,8 @@
 #include "TransactionFormats.h"
 #include "utils.h"
 
+SETUP_LOG();
+
 void TransactionEngine::txnWrite()
 {
 	// Write back the account states
@@ -32,7 +34,7 @@ void TransactionEngine::txnWrite()
 
 			case taaCREATE:
 				{
-					Log(lsINFO) << "applyTransaction: taaCREATE: " << sleEntry->getText();
+					cLog(lsINFO) << "applyTransaction: taaCREATE: " << sleEntry->getText();
 
 					if (mLedger->writeBack(lepCREATE, sleEntry) & lepERROR)
 						assert(false);
@@ -41,7 +43,7 @@ void TransactionEngine::txnWrite()
 
 			case taaMODIFY:
 				{
-					Log(lsINFO) << "applyTransaction: taaMODIFY: " << sleEntry->getText();
+					cLog(lsINFO) << "applyTransaction: taaMODIFY: " << sleEntry->getText();
 
 					if (mLedger->writeBack(lepNONE, sleEntry) & lepERROR)
 						assert(false);
@@ -50,7 +52,7 @@ void TransactionEngine::txnWrite()
 
 			case taaDELETE:
 				{
-					Log(lsINFO) << "applyTransaction: taaDELETE: " << sleEntry->getText();
+					cLog(lsINFO) << "applyTransaction: taaDELETE: " << sleEntry->getText();
 
 					if (!mLedger->peekAccountStateMap()->delItem(it->first))
 						assert(false);
@@ -62,7 +64,7 @@ void TransactionEngine::txnWrite()
 
 TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, TransactionEngineParams params)
 {
-	Log(lsTRACE) << "applyTransaction>";
+	cLog(lsTRACE) << "applyTransaction>";
 	assert(mLedger);
 	mNodes.init(mLedger, txn.getTransactionID(), mLedger->getLedgerSeq());
 
@@ -75,7 +77,7 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 		SerializedTransaction s2(sit);
 		if (!s2.isEquivalent(txn))
 		{
-			Log(lsFATAL) << "Transaction serdes mismatch";
+			cLog(lsFATAL) << "Transaction serdes mismatch";
 			Json::StyledStreamWriter ssw;
 			ssw.write(Log(lsINFO).ref(), txn.getJson(0));
 			ssw.write(Log(lsFATAL).ref(), s2.getJson(0));
@@ -88,7 +90,7 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 	uint256 txID		= txn.getTransactionID();
 	if (!txID)
 	{
-		Log(lsWARNING) << "applyTransaction: invalid transaction id";
+		cLog(lsWARNING) << "applyTransaction: invalid transaction id";
 
 		terResult	= temINVALID;
 	}
@@ -110,7 +112,7 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 	// Consistency: really signed.
 	if ((tesSUCCESS == terResult) && !isSetBit(params, tapNO_CHECK_SIGN) && !txn.checkSign(naSigningPubKey))
 	{
-		Log(lsWARNING) << "applyTransaction: Invalid transaction: bad signature";
+		cLog(lsWARNING) << "applyTransaction: Invalid transaction: bad signature";
 
 		terResult	= temINVALID;
 	}
@@ -153,12 +155,12 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 				break;
 
 			case ttINVALID:
-				Log(lsWARNING) << "applyTransaction: Invalid transaction: ttINVALID transaction type";
+				cLog(lsWARNING) << "applyTransaction: Invalid transaction: ttINVALID transaction type";
 				terResult = temINVALID;
 				break;
 
 			default:
-				Log(lsWARNING) << "applyTransaction: Invalid transaction: unknown transaction type";
+				cLog(lsWARNING) << "applyTransaction: Invalid transaction: unknown transaction type";
 				terResult = temUNKNOWN;
 				break;
 		}
@@ -173,7 +175,7 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 			// Only check fee is sufficient when the ledger is open.
 			if (isSetBit(params, tapOPEN_LEDGER) && saPaid < saCost)
 			{
-				Log(lsINFO) << "applyTransaction: insufficient fee";
+				cLog(lsINFO) << "applyTransaction: insufficient fee";
 
 				terResult	= telINSUF_FEE_P;
 			}
@@ -183,7 +185,7 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 			if (saPaid)
 			{
 				// Transaction is malformed.
-				Log(lsWARNING) << "applyTransaction: fee not allowed";
+				cLog(lsWARNING) << "applyTransaction: fee not allowed";
 
 				terResult	= temINSUF_FEE_P;
 			}
@@ -194,7 +196,7 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 	mTxnAccountID	= txn.getSourceAccount().getAccountID();
 	if (tesSUCCESS == terResult && !mTxnAccountID)
 	{
-		Log(lsWARNING) << "applyTransaction: bad source id";
+		cLog(lsWARNING) << "applyTransaction: bad source id";
 
 		terResult	= temINVALID;
 	}
@@ -215,7 +217,7 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 
 	if (!mTxnAccount)
 	{
-		Log(lsTRACE) << boost::str(boost::format("applyTransaction: Delay transaction: source account does not exist: %s") %
+		cLog(lsTRACE) << boost::str(boost::format("applyTransaction: Delay transaction: source account does not exist: %s") %
 			txn.getSourceAccount().humanAccountID());
 
 		terResult			= terNO_ACCOUNT;
@@ -234,7 +236,7 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 			case ttCLAIM:
 				if (bHaveAuthKey)
 				{
-					Log(lsWARNING) << "applyTransaction: Account already claimed.";
+					cLog(lsWARNING) << "applyTransaction: Account already claimed.";
 
 					terResult	= tefCLAIMED;
 				}
@@ -257,8 +259,8 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 				if (naSigningPubKey.getAccountID() != mTxnAccountID)
 				{
 					// Signing Pub Key must be for Source Account ID.
-					Log(lsWARNING) << "sourceAccountID: " << naSigningPubKey.humanAccountID();
-					Log(lsWARNING) << "txn accountID: " << txn.getSourceAccount().humanAccountID();
+					cLog(lsWARNING) << "sourceAccountID: " << naSigningPubKey.humanAccountID();
+					cLog(lsWARNING) << "txn accountID: " << txn.getSourceAccount().humanAccountID();
 
 					terResult	= tefBAD_CLAIM_ID;
 				}
@@ -270,8 +272,8 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 				if (naSigningPubKey.getAccountID() != mTxnAccountID)
 				{
 					// Signing Pub Key must be for Source Account ID.
-					Log(lsWARNING) << "sourceAccountID: " << naSigningPubKey.humanAccountID();
-					Log(lsWARNING) << "txn accountID: " << txn.getSourceAccount().humanAccountID();
+					cLog(lsWARNING) << "sourceAccountID: " << naSigningPubKey.humanAccountID();
+					cLog(lsWARNING) << "txn accountID: " << txn.getSourceAccount().humanAccountID();
 
 					terResult	= temBAD_SET_ID;
 				}
@@ -291,13 +293,13 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 				}
 				else if (bHaveAuthKey)
 				{
-					Log(lsINFO) << "applyTransaction: Delay: Not authorized to use account.";
+					cLog(lsINFO) << "applyTransaction: Delay: Not authorized to use account.";
 
 					terResult	= tefBAD_AUTH;
 				}
 				else
 				{
-					Log(lsINFO) << "applyTransaction: Invalid: Not authorized to use account.";
+					cLog(lsINFO) << "applyTransaction: Invalid: Not authorized to use account.";
 
 					terResult	= temBAD_AUTH_MASTER;
 				}
@@ -313,7 +315,7 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 	}
 	else if (saSrcBalance < saPaid)
 	{
-		Log(lsINFO)
+		cLog(lsINFO)
 			<< boost::str(boost::format("applyTransaction: Delay: insufficient balance: balance=%s paid=%s")
 				% saSrcBalance.getText()
 				% saPaid.getText());
@@ -334,13 +336,13 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 	{
 		uint32 a_seq = mTxnAccount->getFieldU32(sfSequence);
 
-		Log(lsTRACE) << "Aseq=" << a_seq << ", Tseq=" << t_seq;
+		cLog(lsTRACE) << "Aseq=" << a_seq << ", Tseq=" << t_seq;
 
 		if (t_seq != a_seq)
 		{
 			if (a_seq < t_seq)
 			{
-				Log(lsINFO) << "applyTransaction: future sequence number";
+				cLog(lsINFO) << "applyTransaction: future sequence number";
 
 				terResult	= terPRE_SEQ;
 			}
@@ -348,7 +350,7 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 				terResult	= tefALREADY;
 			else
 			{
-				Log(lsWARNING) << "applyTransaction: past sequence number";
+				cLog(lsWARNING) << "applyTransaction: past sequence number";
 
 				terResult	= tefPAST_SEQ;
 			}
@@ -360,11 +362,11 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 	}
 	else
 	{
-		Log(lsINFO) << "applyTransaction: Zero cost transaction";
+		cLog(lsINFO) << "applyTransaction: Zero cost transaction";
 
 		if (t_seq)
 		{
-			Log(lsINFO) << "applyTransaction: bad sequence for pre-paid transaction";
+			cLog(lsINFO) << "applyTransaction: bad sequence for pre-paid transaction";
 
 			terResult	= tefPAST_SEQ;
 		}
@@ -389,7 +391,7 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 				break;
 
 			case ttINVALID:
-				Log(lsINFO) << "applyTransaction: invalid type";
+				cLog(lsINFO) << "applyTransaction: invalid type";
 				terResult = temINVALID;
 				break;
 
@@ -443,7 +445,7 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 
 	transResultInfo(terResult, strToken, strHuman);
 
-	Log(lsINFO) << "applyTransaction: terResult=" << strToken << " : " << terResult << " : " << strHuman;
+	cLog(lsINFO) << "applyTransaction: terResult=" << strToken << " : " << terResult << " : " << strHuman;
 
 	if (isTepPartial(terResult) && isSetBit(params, tapRETRY))
 	{
