@@ -127,11 +127,32 @@ var trace = function(comment, func) {
 		};
 };
 
+var hexToString = function (h) {
+  var	c = h.length % 1 ? "0" + h : h;
+  var	a = [];
+
+  for (i=0; i != c.length; i += 2) {
+    a.push(String.fromCharCode(parseInt(c.substring(i, i+2), 16)));
+  }
+  
+  return a.join("");
+};
+
+var stringToHex = function (s) {
+  return Array.prototype.map.call(s, function (c) {
+      var b = c.charCodeAt(0);
+
+      return b < 16 ? "0" + b.toString(16) : b.toString(16);
+    }).join("");
+};
+
 exports.emptyPath   = emptyPath;
 exports.mapOr	    = mapOr;
 exports.mkPath	    = mkPath;
 exports.resetPath   = resetPath;
 exports.rmPath	    = rmPath;
 exports.trace	    = trace;
+exports.hexToString = hexToString;
+exports.stringToHex = stringToHex;
 
-// vim:ts=4
+// vim:sw=2:sts=2:ts=8
