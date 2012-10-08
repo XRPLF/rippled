@@ -14,7 +14,9 @@
 #include "types.h"
 
 #define SETUP_LOG()	static LogPartition logPartition(__FILE__)
-#define cLog(x)		if (logPartition.doLog(x)) Log(x)
+
+#define tLog(c,x)	if (!logPartition.doLog(x) || !(c)) do {} while(0); else Log(x)
+#define cLog(x)		if (!logPartition.doLog(x)) do {} while (0); else Log(x)
 
 enum LogSeverity
 {
