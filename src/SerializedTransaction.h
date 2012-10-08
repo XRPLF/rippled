@@ -31,6 +31,7 @@ protected:
 public:
 	SerializedTransaction(SerializerIterator& sit);
 	SerializedTransaction(TransactionType type);
+	SerializedTransaction(const STObject &object);
 
 	// STObject functions
 	SerializedTypeID getSType() const { return STI_TRANSACTION; }
@@ -63,6 +64,7 @@ public:
 
 	void sign(const NewcoinAddress& naAccountPrivate);
 	bool checkSign(const NewcoinAddress& naAccountPublic) const;
+	bool checkSign() const;
 
 	// SQL Functions
 	static std::string getSQLValueHeader();

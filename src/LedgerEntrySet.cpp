@@ -5,6 +5,10 @@
 
 #include "Log.h"
 
+SETUP_LOG();
+
+// #define META_DEBUG
+
 // Small for testing, should likely be 32 or 64.
 #define DIR_NODE_MAX		2
 
@@ -294,7 +298,9 @@ SLE::pointer LedgerEntrySet::getForMod(const uint256& node, Ledger::ref ledger,
 bool LedgerEntrySet::threadTx(const NewcoinAddress& threadTo, Ledger::ref ledger,
 	boost::unordered_map<uint256, SLE::pointer>& newMods)
 {
-	Log(lsTRACE) << "Thread to " << threadTo.getAccountID();
+#ifdef META_DEBUG
+	cLog(lsTRACE) << "Thread to " << threadTo.getAccountID();
+#endif
 	SLE::pointer sle = getForMod(Ledger::getAccountRootIndex(threadTo.getAccountID()), ledger, newMods);
 	if (!sle)
 	{
@@ -321,12 +327,16 @@ bool LedgerEntrySet::threadOwners(SLE::ref node, Ledger::ref ledger, boost::unor
 { // thread new or modified node to owner or owners
 	if (node->hasOneOwner()) // thread to owner's account
 	{
-		Log(lsTRACE) << "Thread to single owner";
+#ifdef META_DEBUG
+		cLog(lsTRACE) << "Thread to single owner";
+#endif
 		return threadTx(node->getOwner(), ledger, newMods);
 	}
 	else if (node->hasTwoOwners()) // thread to owner's accounts]
 	{
-		Log(lsTRACE) << "Thread to two owners";
+#ifdef META_DEBUG
+		cLog(lsTRACE) << "Thread to two owners";
+#endif
 		return
 			threadTx(node->getFirstOwner(), ledger, newMods) &&
 			threadTx(node->getSecondOwner(), ledger, newMods);
@@ -349,17 +359,23 @@ void LedgerEntrySet::calcRawMeta(Serializer& s)
 		switch (it->second.mAction)
 		{
 			case taaMODIFY:
-				Log(lsTRACE) << "Modified Node " << it->first;
+#ifdef META_DEBUG
+				cLog(lsTRACE) << "Modified Node " << it->first;
+#endif
 				nType = TMNModifiedNode;
 				break;
 
 			case taaDELETE:
-				Log(lsTRACE) << "Deleted Node " << it->first;
+#ifdef META_DEBUG
+				cLog(lsTRACE) << "Deleted Node " << it->first;
+#endif
 				nType = TMNDeletedNode;
 				break;
 
 			case taaCREATE:
-				Log(lsTRACE) << "Created Node " << it->first;
+#ifdef META_DEBUG
+				cLog(lsTRACE) << "Created Node " << it->first;
+#endif
 				nType = TMNCreatedNode;
 				break;
 
@@ -420,10 +436,7 @@ void LedgerEntrySet::calcRawMeta(Serializer& s)
 		if ((nType == TMNCreatedNode) || (nType == TMNModifiedNode))
 		{
 			if (curNode->isThreadedType()) // always thread to self
-			{
-				Log(lsTRACE) << "Thread to self";
 				threadTx(curNode, mLedger, newMod);
-			}
 		}
 
 		if (nType == TMNModifiedNode)
@@ -454,8 +467,8 @@ void LedgerEntrySet::calcRawMeta(Serializer& s)
 			it != end; ++it)
 		entryModify(it->second);
 
-#ifdef DEBUG
-	Log(lsINFO) << "Metadata:" << mSet.getJson(0);
+#ifdef META_DEBUG
+	cLog(lsINFO) << "Metadata:" << mSet.getJson(0);
 #endif
 
 	mSet.addRaw(s);
@@ -546,10 +559,10 @@ TER LedgerEntrySet::dirAdd(
 	svIndexes.peekValue().push_back(uLedgerIndex);	// Append entry.
 	sleNode->setFieldV256(sfIndexes, svIndexes);	// Save entry.
 
-	Log(lsINFO) << "dirAdd:   creating: root: " << uRootIndex.ToString();
-	Log(lsINFO) << "dirAdd:  appending: Entry: " << uLedgerIndex.ToString();
-	Log(lsINFO) << "dirAdd:  appending: Node: " << strHex(uNodeDir);
-	// Log(lsINFO) << "dirAdd:  appending: PREV: " << svIndexes.peekValue()[0].ToString();
+	cLog(lsINFO) << "dirAdd:   creating: root: " << uRootIndex.ToString();
+	cLog(lsINFO) << "dirAdd:  appending: Entry: " << uLedgerIndex.ToString();
+	cLog(lsINFO) << "dirAdd:  appending: Node: " << strHex(uNodeDir);
+	// cLog(lsINFO) << "dirAdd:  appending: PREV: " << svIndexes.peekValue()[0].ToString();
 
 	return tesSUCCESS;
 }
@@ -569,7 +582,7 @@ TER LedgerEntrySet::dirDelete(
 
 	if (!sleNode)
 	{
-		Log(lsWARNING) << "dirDelete: no such node";
+		cLog(lsWARNING) << "dirDelete: no such node";
 
 		return tefBAD_LEDGER;
 	}
@@ -585,7 +598,7 @@ TER LedgerEntrySet::dirDelete(
 	{
 		assert(false);
 
-		Log(lsWARNING) << "dirDelete: no such entry";
+		cLog(lsWARNING) << "dirDelete: no such entry";
 
 		return tefBAD_LEDGER;
 	}
@@ -677,14 +690,14 @@ TER LedgerEntrySet::dirDelete(
 
 			if (!slePrevious)
 			{
-				Log(lsWARNING) << "dirDelete: previous node is missing";
+				cLog(lsWARNING) << "dirDelete: previous node is missing";
 
 				return tefBAD_LEDGER;
 			}
 
 			if (!sleNext)
 			{
-				Log(lsWARNING) << "dirDelete: next node is missing";
+				cLog(lsWARNING) << "dirDelete: next node is missing";
 
 				return tefBAD_LEDGER;
 			}
@@ -778,7 +791,7 @@ bool LedgerEntrySet::dirNext(
 	}
 
 	uEntryIndex	= vuiIndexes[uDirEntry++];
-Log(lsINFO) << boost::str(boost::format("dirNext: uDirEntry=%d uEntryIndex=%s") % uDirEntry % uEntryIndex);
+	cLog(lsINFO) << boost::str(boost::format("dirNext: uDirEntry=%d uEntryIndex=%s") % uDirEntry % uEntryIndex);
 
 	return true;
 }
@@ -825,7 +838,7 @@ STAmount LedgerEntrySet::rippleOwed(const uint160& uToAccountID, const uint160& 
 	}
 	else
 	{
-		Log(lsINFO) << "rippleOwed: No credit line between "
+		cLog(lsINFO) << "rippleOwed: No credit line between "
 			<< NewcoinAddress::createHumanAccountID(uFromAccountID)
 			<< " and "
 			<< NewcoinAddress::createHumanAccountID(uToAccountID)
@@ -865,7 +878,7 @@ uint32 LedgerEntrySet::rippleTransferRate(const uint160& uIssuerID)
 									? sleAccount->getFieldU32(sfTransferRate)
 									: QUALITY_ONE;
 
-	Log(lsINFO) << boost::str(boost::format("rippleTransferRate: uIssuerID=%s account_exists=%d transfer_rate=%f")
+	cLog(lsINFO) << boost::str(boost::format("rippleTransferRate: uIssuerID=%s account_exists=%d transfer_rate=%f")
 		% NewcoinAddress::createHumanAccountID(uIssuerID)
 		% !!sleAccount
 		% (uQuality/1000000000.0));
@@ -873,6 +886,13 @@ uint32 LedgerEntrySet::rippleTransferRate(const uint160& uIssuerID)
 	assert(sleAccount);
 
 	return uQuality;
+}
+
+uint32 LedgerEntrySet::rippleTransferRate(const uint160& uSenderID, const uint160& uReceiverID, const uint160& uIssuerID)
+{
+	return uSenderID == uIssuerID || uReceiverID == uIssuerID
+			? QUALITY_ONE
+			: rippleTransferRate(uIssuerID);
 }
 
 // XXX Might not need this, might store in nodes on calc reverse.
@@ -902,7 +922,7 @@ uint32 LedgerEntrySet::rippleQualityIn(const uint160& uToAccountID, const uint16
 		}
 	}
 
-	Log(lsINFO) << boost::str(boost::format("rippleQuality: %s uToAccountID=%s uFromAccountID=%s uCurrencyID=%s bLine=%d uQuality=%f")
+	cLog(lsINFO) << boost::str(boost::format("rippleQuality: %s uToAccountID=%s uFromAccountID=%s uCurrencyID=%s bLine=%d uQuality=%f")
 		% (sfLow == sfLowQualityIn ? "in" : "out")
 		% NewcoinAddress::createHumanAccountID(uToAccountID)
 		% NewcoinAddress::createHumanAccountID(uFromAccountID)
@@ -949,7 +969,7 @@ STAmount LedgerEntrySet::accountHolds(const uint160& uAccountID, const uint160& 
 		saAmount	= rippleHolds(uAccountID, uCurrencyID, uIssuerID);
 	}
 
-	Log(lsINFO) << boost::str(boost::format("accountHolds: uAccountID=%s saAmount=%s")
+	cLog(lsINFO) << boost::str(boost::format("accountHolds: uAccountID=%s saAmount=%s")
 		% NewcoinAddress::createHumanAccountID(uAccountID)
 		% saAmount.getFullText());
 
@@ -969,7 +989,7 @@ STAmount LedgerEntrySet::accountFunds(const uint160& uAccountID, const STAmount&
 	{
 		saFunds	= saDefault;
 
-		Log(lsINFO) << boost::str(boost::format("accountFunds: uAccountID=%s saDefault=%s SELF-FUNDED")
+		cLog(lsINFO) << boost::str(boost::format("accountFunds: uAccountID=%s saDefault=%s SELF-FUNDED")
 			% NewcoinAddress::createHumanAccountID(uAccountID)
 			% saDefault.getFullText());
 	}
@@ -977,7 +997,7 @@ STAmount LedgerEntrySet::accountFunds(const uint160& uAccountID, const STAmount&
 	{
 		saFunds	= accountHolds(uAccountID, saDefault.getCurrency(), saDefault.getIssuer());
 
-		Log(lsINFO) << boost::str(boost::format("accountFunds: uAccountID=%s saDefault=%s saFunds=%s")
+		cLog(lsINFO) << boost::str(boost::format("accountFunds: uAccountID=%s saDefault=%s saFunds=%s")
 			% NewcoinAddress::createHumanAccountID(uAccountID)
 			% saDefault.getFullText()
 			% saFunds.getFullText());
@@ -1020,7 +1040,7 @@ void LedgerEntrySet::rippleCredit(const uint160& uSenderID, const uint160& uRece
 
 	if (!sleRippleState)
 	{
-		Log(lsINFO) << "rippleCredit: Creating ripple line: " << uIndex.ToString();
+		cLog(lsINFO) << "rippleCredit: Creating ripple line: " << uIndex.ToString();
 
 		STAmount	saBalance	= saAmount;
 
@@ -1104,7 +1124,7 @@ void LedgerEntrySet::accountSend(const uint160& uSenderID, const uint160& uRecei
 											? entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uReceiverID))
 											: SLE::pointer();
 
-		Log(lsINFO) << boost::str(boost::format("accountSend> %s (%s) -> %s (%s) : %s")
+		cLog(lsINFO) << boost::str(boost::format("accountSend> %s (%s) -> %s (%s) : %s")
 			% NewcoinAddress::createHumanAccountID(uSenderID)
 			% (sleSender ? (sleSender->getFieldAmount(sfBalance)).getFullText() : "-")
 			% NewcoinAddress::createHumanAccountID(uReceiverID)
@@ -1123,7 +1143,7 @@ void LedgerEntrySet::accountSend(const uint160& uSenderID, const uint160& uRecei
 			entryModify(sleReceiver);
 		}
 
-		Log(lsINFO) << boost::str(boost::format("accountSend< %s (%s) -> %s (%s) : %s")
+		cLog(lsINFO) << boost::str(boost::format("accountSend< %s (%s) -> %s (%s) : %s")
 			% NewcoinAddress::createHumanAccountID(uSenderID)
 			% (sleSender ? (sleSender->getFieldAmount(sfBalance)).getFullText() : "-")
 			% NewcoinAddress::createHumanAccountID(uReceiverID)

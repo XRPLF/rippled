@@ -140,9 +140,8 @@ public:
 	boost::posix_time::ptime getCloseTime() const;
 
 	// low level functions
-	SHAMap::pointer peekTransactionMap() { return mTransactionMap; }
-	SHAMap::pointer peekAccountStateMap() { return mAccountStateMap; }
-	Ledger::pointer snapShot(bool isMutable);
+	SHAMap::ref peekTransactionMap() { return mTransactionMap; }
+	SHAMap::ref peekAccountStateMap() { return mAccountStateMap; }
 
 	// ledger sync functions
 	void setAcquiring(void);

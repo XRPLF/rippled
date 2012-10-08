@@ -10,9 +10,34 @@
 #include "Log.h"
 #include "NewcoinAddress.h"
 #include "utils.h"
+#include "NewcoinAddress.h"
 
 STAmount saZero(CURRENCY_ONE, ACCOUNT_ONE, 0);
 STAmount saOne(CURRENCY_ONE, ACCOUNT_ONE, 1);
+
+void STPathSet::printDebug() {
+  for (int i = 0; i < value.size(); i++) {
+    std::cout << i << ": ";
+    for (int j = 0; j < value[i].mPath.size(); j++) {
+      //STPathElement pe = value[i].mPath[j];
+      NewcoinAddress nad;
+      nad.setAccountID(value[i].mPath[j].mAccountID);
+      std::cout << "    " << nad.humanAccountID();
+      //std::cout << "    " << pe.mAccountID.GetHex();
+    }
+    std::cout << std::endl;
+  }
+
+}
+
+void STPath::printDebug() {
+  std::cout << "STPath:" << std::endl;
+  for(int i =0; i < mPath.size(); i++) {
+    NewcoinAddress nad;
+    nad.setAccountID(mPath[i].mAccountID);
+    std::cout << "   " << i << ": " << nad.humanAccountID() << std::endl;
+  }
+}
 
 std::string SerializedType::getFullText() const
 {
@@ -37,6 +62,11 @@ STUInt8* STUInt8::construct(SerializerIterator& u, SField::ref name)
 std::string STUInt8::getText() const
 {
 	return boost::lexical_cast<std::string>(value);
+}
+
+Json::Value STUInt8::getJson(int) const
+{
+	return value;
 }
 
 bool STUInt8::isEquivalent(const SerializedType& t) const
@@ -67,6 +97,23 @@ std::string STUInt16::getText() const
 	return boost::lexical_cast<std::string>(value);
 }
 
+Json::Value STUInt16::getJson(int) const
+{
+	if (getFName() == sfLedgerEntryType)
+	{
+		LedgerEntryFormat *f = LedgerEntryFormat::getLgrFormat(value);
+		if (f != NULL)
+			return f->t_name;
+	}
+	if (getFName() == sfTransactionType)
+	{
+		TransactionFormat *f = TransactionFormat::getTxnFormat(value);
+		if (f != NULL)
+			return f->t_name;
+	}
+	return value;
+}
+
 bool STUInt16::isEquivalent(const SerializedType& t) const
 {
 	const STUInt16* v = dynamic_cast<const STUInt16*>(&t);
@@ -83,6 +130,11 @@ std::string STUInt32::getText() const
 	return boost::lexical_cast<std::string>(value);
 }
 
+Json::Value STUInt32::getJson(int) const
+{
+	return value;
+}
+
 bool STUInt32::isEquivalent(const SerializedType& t) const
 {
 	const STUInt32* v = dynamic_cast<const STUInt32*>(&t);
@@ -97,6 +149,11 @@ STUInt64* STUInt64::construct(SerializerIterator& u, SField::ref name)
 std::string STUInt64::getText() const
 {
 	return boost::lexical_cast<std::string>(value);
+}
+
+Json::Value STUInt64::getJson(int) const
+{
+	return strHex(value);
 }
 
 bool STUInt64::isEquivalent(const SerializedType& t) const
@@ -231,9 +288,14 @@ bool STVector256::isEquivalent(const SerializedType& t) const
 // STAccount
 //
 
+STAccount::STAccount(SField::ref n, const uint160& v) : STVariableLength(n)
+{
+	peekValue().insert(peekValue().end(), v.begin(), v.end());
+}
+
 bool STAccount::isValueH160() const
 {
-	return peekValue().size() == (160/8);
+	return peekValue().size() == (160 / 8);
 }
 
 void STAccount::setValueH160(const uint160& v)
@@ -326,6 +388,16 @@ bool STPathSet::isEquivalent(const SerializedType& t) const
 	return v && (value == v->value);
 }
 
+bool STPath::hasSeen(const uint160 &acct) {
+
+  for (int i = 0; i < mPath.size();i++) {
+    STPathElement ele = getElement(i);
+    if (ele.getAccountID() == acct)
+      return true;
+  }
+
+  return false;
+}
 int STPath::getSerializeSize() const
 {
 	int iBytes = 0;
@@ -360,8 +432,8 @@ Json::Value STPath::getJson(int) const
 		Json::Value elem(Json::objectValue);
 		int			iType	= it.getNodeType();
 
-		elem["type"]		= it.getNodeType();
-		elem["type_hex"]	= strHex(it.getNodeType());
+		elem["type"]		= iType;
+		elem["type_hex"]	= strHex(iType);
 
 		if (iType & STPathElement::typeAccount)
 			elem["account"]		= NewcoinAddress::createHumanAccountID(it.getAccountID());

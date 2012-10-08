@@ -727,7 +727,7 @@ TER TransactionEngine::takeOffers(
 		// Figure out next offer to take, if needed.
 		if (saTakerGets != saTakerGot && saTakerPays != saTakerPaid)
 		{
-			// Taker has needs.
+			// Taker, still, needs to get and pay.
 
 			sleOfferDir		= entryCache(ltDIR_NODE, mLedger->getNextLedgerIndex(uTipIndex, uBookEnd));
 			if (sleOfferDir)
@@ -822,6 +822,8 @@ TER TransactionEngine::takeOffers(
 							saPay	= saTakerFunds;
 					STAmount	saSubTakerPaid;
 					STAmount	saSubTakerGot;
+					STAmount	saTakerIssuerFee;
+					STAmount	saOfferIssuerFee;
 
 					Log(lsINFO) << "takeOffers: applyOffer:    saTakerPays: " << saTakerPays.getFullText();
 					Log(lsINFO) << "takeOffers: applyOffer:    saTakerPaid: " << saTakerPaid.getFullText();
@@ -834,6 +836,8 @@ TER TransactionEngine::takeOffers(
 					Log(lsINFO) << "takeOffers: applyOffer:    saTakerGets: " << saTakerGets.getFullText();
 
 					bool	bOfferDelete	= STAmount::applyOffer(
+						mNodes.rippleTransferRate(uTakerAccountID, uOfferOwnerID, uTakerPaysAccountID),
+						mNodes.rippleTransferRate(uOfferOwnerID, uTakerAccountID, uTakerGetsAccountID),
 						saOfferFunds,
 						saPay,				// Driver XXX need to account for fees.
 						saOfferPays,
@@ -841,7 +845,9 @@ TER TransactionEngine::takeOffers(
 						saTakerPays,
 						saTakerGets,
 						saSubTakerPaid,
-						saSubTakerGot);
+						saSubTakerGot,
+						saTakerIssuerFee,
+						saOfferIssuerFee);
 
 					Log(lsINFO) << "takeOffers: applyOffer: saSubTakerPaid: " << saSubTakerPaid.getFullText();
 					Log(lsINFO) << "takeOffers: applyOffer:  saSubTakerGot: " << saSubTakerGot.getFullText();
@@ -872,16 +878,20 @@ TER TransactionEngine::takeOffers(
 					}
 
 					// Offer owner pays taker.
-					saSubTakerGot.setIssuer(uTakerGetsAccountID);	// XXX Move this earlier?
+					// saSubTakerGot.setIssuer(uTakerGetsAccountID);	// XXX Move this earlier?
+					assert(!!saSubTakerGot.getIssuer());
 
 					mNodes.accountSend(uOfferOwnerID, uTakerAccountID, saSubTakerGot);
+					mNodes.accountSend(uOfferOwnerID, uTakerGetsAccountID, saOfferIssuerFee);
 
 					saTakerGot	+= saSubTakerGot;
 
 					// Taker pays offer owner.
-					saSubTakerPaid.setIssuer(uTakerPaysAccountID);
+					//	saSubTakerPaid.setIssuer(uTakerPaysAccountID);
+					assert(!!saSubTakerPaid.getIssuer());
 
 					mNodes.accountSend(uTakerAccountID, uOfferOwnerID, saSubTakerPaid);
+					mNodes.accountSend(uTakerAccountID, uTakerPaysAccountID, saTakerIssuerFee);
 
 					saTakerPaid	+= saSubTakerPaid;
 				}

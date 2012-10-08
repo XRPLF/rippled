@@ -2,6 +2,8 @@
 #define __LOG__
 
 #include <sstream>
+#include <string>
+#include <limits>
 
 #include <boost/thread/recursive_mutex.hpp>
 #include <boost/filesystem.hpp>
@@ -10,7 +12,19 @@
 #include "../json/json.h"
 
 #include "types.h"
-#include <limits>
+
+// Put at the beginning of a C++ file that needs its own log partition
+#define SETUP_LOG()	static LogPartition logPartition(__FILE__)
+
+// Standard conditional log
+#define cLog(x)		if (!logPartition.doLog(x)) do {} while (0); else Log(x)
+
+// Log only if an additional condition 'c' is true. Condition is not computed if not needed
+#define tLog(c,x)	if (!logPartition.doLog(x) || !(c)) do {} while(0); else Log(x)
+
+// Check if should log
+#define sLog(x)		(logPartition.doLog(x))
+
 
 enum LogSeverity
 {
@@ -20,6 +34,32 @@ enum LogSeverity
 	lsWARNING	= 3,
 	lsERROR		= 4,
 	lsFATAL		= 5
+};
+
+class LogPartition
+{
+protected:
+	static LogPartition* headLog;
+
+	LogPartition*		mNextLog;
+	LogSeverity			mMinSeverity;
+	std::string			mName;
+
+public:
+	LogPartition(const char *name) : mNextLog(headLog), mMinSeverity(lsWARNING)
+	{
+		const char *ptr = strrchr(name, '/');
+		mName = (ptr == NULL) ? name : ptr;
+		headLog = this;
+	}
+
+	bool doLog(enum LogSeverity s)
+	{
+		return s >= mMinSeverity;
+	}
+
+	static void setSeverity(const char *partition, LogSeverity severity);
+	static void setSeverity(LogSeverity severity);
 };
 
 class Log

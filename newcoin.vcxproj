@@ -273,6 +273,7 @@
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\protoc-2.4.1-win32\protoc -I=..\newcoin\src --cpp_out=..\newcoin\obj\src  ..\newcoin\src\newcoin.proto</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">obj\src\newcoin.pb.h</Outputs>
     </CustomBuild>
+    <None Include="README" />
     <None Include="SConstruct" />
     <None Include="test\buster.js" />
     <None Include="test\server.js" />

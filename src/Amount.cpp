@@ -3,6 +3,8 @@
 #include <algorithm>
 
 #include <boost/lexical_cast.hpp>
+#include <boost/algorithm/string/split.hpp>
+#include <boost/algorithm/string/classification.hpp>
 #include <boost/test/unit_test.hpp>
 
 #include "Config.h"
@@ -54,6 +56,98 @@ std::string STAmount::getHumanCurrency() const
 	return createHumanCurrency(mCurrency);
 }
 
+STAmount::STAmount(SField::ref n, const Json::Value& v)
+	: SerializedType(n), mValue(0), mOffset(0), mIsNegative(false)
+{
+	Json::Value value, currency, issuer;
+
+	if (v.isObject())
+	{
+		value = v["value"];
+		currency = v["currency"];
+		issuer = v["issuer"];
+	}
+	else if (v.isArray())
+	{
+			value = v.get(Json::UInt(0), 0);
+			currency = v.get(Json::UInt(1), Json::nullValue);
+			issuer = v.get(Json::UInt(2), Json::nullValue);
+	}
+	else if (v.isString())
+	{
+		std::string val = v.asString();
+		std::vector<std::string> elements;
+		boost::split(elements, val, boost::is_any_of("\t\n\r ,/"));
+
+		if ((elements.size() < 0) || (elements.size() > 3))
+			throw std::runtime_error("invalid amount string");
+
+		value = elements[0];
+		if (elements.size() > 1)
+			currency = elements[1];
+		if (elements.size() > 2)
+			issuer = elements[2];
+	}
+	else
+		value = v;
+
+	mIsNative = !currency.isString() || currency.asString().empty() || (currency.asString() == SYSTEM_CURRENCY_CODE);
+
+	if (value.isInt())
+	{
+		if (value.asInt() >= 0)
+			mValue = value.asInt();
+		else
+		{
+			mValue = -value.asInt();
+			mIsNegative = true;
+		}
+	}
+	else if (value.isUInt())
+		mValue = v.asUInt();
+	else if (value.isString())
+	{
+		if (mIsNative)
+		{
+			int64 val = lexical_cast_st<int64>(value.asString());
+			if (val >= 0)
+				mValue = val;
+			else
+			{
+				mValue = -val;
+				mIsNegative = true;
+			}
+		}
+		else
+			setValue(value.asString());
+	}
+	else
+		throw std::runtime_error("invalid amount type");
+
+	if (mIsNative)
+		return;
+
+	if (!currencyFromString(mCurrency, currency.asString()))
+		throw std::runtime_error("invalid currency");
+
+	if (!issuer.isString())
+		throw std::runtime_error("invalid issuer");
+
+	if (issuer.size() == (160/4))
+		mIssuer.SetHex(issuer.asString());
+	else
+	{
+		NewcoinAddress is;
+		if(!is.setAccountID(issuer.asString()))
+			throw std::runtime_error("invalid issuer");
+		mIssuer = is.getAccountID();
+	}
+	if (mIssuer.isZero())
+		throw std::runtime_error("invalid issuer");
+
+	canonicalize();
+}
+
 std::string STAmount::createHumanCurrency(const uint160& uCurrency)
 {
 	std::string	sCurrency;
@@ -100,6 +194,94 @@ std::string STAmount::createHumanCurrency(const uint160& uCurrency)
 	return sCurrency;
 }
 
+bool STAmount::setValue(const std::string& sAmount)
+{ // Note: mIsNative must be set already!
+	uint64	uValue;
+	int		iOffset;
+	size_t	uDecimal	= sAmount.find_first_of(mIsNative ? "^" : ".");
+	bool	bInteger	= uDecimal == std::string::npos;
+
+	mIsNegative = false;
+	if (bInteger)
+	{
+		try
+		{
+			int64 a = sAmount.empty() ? 0 : lexical_cast_st<int64>(sAmount);
+			if (a >= 0)
+				uValue = static_cast<uint64>(a);
+			else
+			{
+				uValue = static_cast<uint64>(-a);
+				mIsNegative = true;
+			}
+
+		}
+		catch (...)
+		{
+			Log(lsINFO) << "Bad integer amount: " << sAmount;
+
+			return false;
+		}
+		iOffset	= 0;
+	}
+	else
+	{
+		// Example size decimal size-decimal offset
+		//    ^1      2       0            2     -1
+		// 123^       4       3            1      0
+		//   1^23     4       1            3     -2
+		iOffset	= -int(sAmount.size() - uDecimal - 1);
+
+
+		// Issolate integer and fraction.
+		uint64 uInteger;
+		int64	iInteger	= uDecimal ? lexical_cast_st<uint64>(sAmount.substr(0, uDecimal)) : 0;
+		if (iInteger >= 0)
+			uInteger = static_cast<uint64>(iInteger);
+		else
+		{
+			uInteger = static_cast<uint64>(-iInteger);
+			mIsNegative = true;
+		}
+
+
+		uint64	uFraction	= iOffset ? lexical_cast_st<uint64>(sAmount.substr(uDecimal+1)) : 0;
+
+		// Scale the integer portion to the same offset as the fraction.
+		uValue	= uInteger;
+		for (int i = -iOffset; i--;)
+			uValue	*= 10;
+
+		// Add in the fraction.
+		uValue += uFraction;
+	}
+
+	if (mIsNative)
+	{
+		if (bInteger)
+			iOffset	= -SYSTEM_CURRENCY_PRECISION;
+
+		while (iOffset > -SYSTEM_CURRENCY_PRECISION) {
+			uValue	*= 10;
+			--iOffset;
+		}
+
+		while (iOffset < -SYSTEM_CURRENCY_PRECISION) {
+			uValue	/= 10;
+			++iOffset;
+		}
+
+		mValue		= uValue;
+	}
+	else
+	{
+		mValue		= uValue;
+		mOffset		= iOffset;
+		canonicalize();
+	}
+	return true;
+}
+
 // Not meant to be the ultimate parser.  For use by RPC which is supposed to be sane and trusted.
 // Native has special handling:
 // - Integer values are in base units.
@@ -143,72 +325,7 @@ bool STAmount::setFullValue(const std::string& sAmount, const std::string& sCurr
 		return false;
 	}
 
-	uint64	uValue;
-	int		iOffset;
-	size_t	uDecimal	= sAmount.find_first_of(mIsNative ? "^" : ".");
-	bool	bInteger	= uDecimal == std::string::npos;
-
-	if (bInteger)
-	{
-		try
-		{
-			uValue	= sAmount.empty() ? 0 : boost::lexical_cast<uint64>(sAmount);
-		}
-		catch (...)
-		{
-			Log(lsINFO) << "Bad integer amount: " << sAmount;
-
-			return false;
-		}
-		iOffset	= 0;
-	}
-	else
-	{
-		// Example size decimal size-decimal offset
-		//    ^1      2       0            2     -1
-		// 123^       4       3            1      0
-		//   1^23     4       1            3     -2
-		iOffset	= -int(sAmount.size()-uDecimal-1);
-
-
-		// Issolate integer and fraction.
-		uint64	uInteger	= uDecimal ? boost::lexical_cast<uint64>(sAmount.substr(0, uDecimal)) : 0;
-		uint64	uFraction	= iOffset ? boost::lexical_cast<uint64>(sAmount.substr(uDecimal+1)) : 0;
-
-		// Scale the integer portion to the same offset as the fraction.
-		uValue	= uInteger;
-		for (int i=-iOffset; i--;)
-			uValue	*= 10;
-
-		// Add in the fraction.
-		uValue += uFraction;
-	}
-
-	if (mIsNative)
-	{
-		if (bInteger)
-			iOffset	= -SYSTEM_CURRENCY_PRECISION;
-
-		while (iOffset > -SYSTEM_CURRENCY_PRECISION) {
-			uValue	*= 10;
-			--iOffset;
-		}
-
-		while (iOffset < -SYSTEM_CURRENCY_PRECISION) {
-			uValue	/= 10;
-			++iOffset;
-		}
-
-		mValue		= uValue;
-	}
-	else
-	{
-		mValue		= uValue;
-		mOffset		= iOffset;
-		canonicalize();
-	}
-
-	return true;
+	return setValue(sAmount);
 }
 
 // amount = value * [10 ^ offset]
@@ -387,14 +504,14 @@ std::string STAmount::getRaw() const
 	if (mValue == 0) return "0";
 	if (mIsNative)
 	{
-		if (mIsNegative) return std::string("-") + boost::lexical_cast<std::string>(mValue);
-		else return boost::lexical_cast<std::string>(mValue);
+		if (mIsNegative) return std::string("-") + lexical_cast_i(mValue);
+		else return lexical_cast_i(mValue);
 	}
 	if (mIsNegative)
 		return mCurrency.GetHex() + ": -" +
-		boost::lexical_cast<std::string>(mValue) + "e" + boost::lexical_cast<std::string>(mOffset);
+		lexical_cast_i(mValue) + "e" + lexical_cast_i(mOffset);
 	else return mCurrency.GetHex() + ": " +
-		boost::lexical_cast<std::string>(mValue) + "e" + boost::lexical_cast<std::string>(mOffset);
+		lexical_cast_i(mValue) + "e" + lexical_cast_i(mOffset);
 }
 
 std::string STAmount::getText() const
@@ -403,20 +520,20 @@ std::string STAmount::getText() const
 	if (mIsNative)
 	{
 		if (mIsNegative)
-			return std::string("-") +  boost::lexical_cast<std::string>(mValue);
-		else return boost::lexical_cast<std::string>(mValue);
+			return std::string("-") +  lexical_cast_i(mValue);
+		else return lexical_cast_i(mValue);
 	}
 	if ((mOffset < -25) || (mOffset > -5))
 	{
 		if (mIsNegative)
-			return std::string("-") + boost::lexical_cast<std::string>(mValue) +
-				"e" + boost::lexical_cast<std::string>(mOffset);
+			return std::string("-") + lexical_cast_i(mValue) +
+				"e" + lexical_cast_i(mOffset);
 		else
-			return boost::lexical_cast<std::string>(mValue) + "e" + boost::lexical_cast<std::string>(mOffset);
+			return lexical_cast_i(mValue) + "e" + lexical_cast_i(mOffset);
 	}
 
 	std::string val = "000000000000000000000000000";
-	val += boost::lexical_cast<std::string>(mValue);
+	val += lexical_cast_i(mValue);
 	val += "00000000000000000000000";
 
 	std::string pre = val.substr(0, mOffset + 43);
@@ -781,40 +898,56 @@ STAmount STAmount::setRate(uint64 rate)
 }
 
 // Taker gets all taker can pay for with saTakerFunds, limited by saOfferPays and saOfferFunds.
-// -->  saOfferFunds: Limit for saOfferPays
-// -->  saTakerFunds: Limit for saOfferGets : How much taker really wants. : Driver
-// -->   saOfferPays: Request : this should be reduced as the offer is fullfilled.
-// -->   saOfferGets: Request : this should be reduced as the offer is fullfilled.
-// -->   saTakerPays: Total : Used to know the approximate ratio of the exchange.
-// -->   saTakerGets: Total : Used to know the approximate ratio of the exchange.
-// <--   saTakerPaid: Actual
-// <--    saTakerGot: Actual
-// <--       bRemove: remove offer it is either fullfilled or unfunded
+// -->   uTakerPaysRate: >= QUALITY_ONE
+// -->   uOfferPaysRate: >= QUALITY_ONE
+// -->     saOfferFunds: Limit for saOfferPays
+// -->     saTakerFunds: Limit for saOfferGets : How much taker really wants. : Driver
+// -->      saOfferPays: Request : this should be reduced as the offer is fullfilled.
+// -->      saOfferGets: Request : this should be reduced as the offer is fullfilled.
+// -->      saTakerPays: Total : Used to know the approximate ratio of the exchange.
+// -->      saTakerGets: Total : Used to know the approximate ratio of the exchange.
+// <--      saTakerPaid: Actual
+// <--       saTakerGot: Actual
+// <-- saTakerIssuerFee: Actual
+// <-- saOfferIssuerFee: Actual
+// <--          bRemove: remove offer it is either fullfilled or unfunded
 bool STAmount::applyOffer(
+	const uint32 uTakerPaysRate, const uint32 uOfferPaysRate,
 	const STAmount& saOfferFunds, const STAmount& saTakerFunds,
 	const STAmount& saOfferPays, const STAmount& saOfferGets,
 	const STAmount& saTakerPays, const STAmount& saTakerGets,
-	STAmount& saTakerPaid, STAmount& saTakerGot)
+	STAmount& saTakerPaid, STAmount& saTakerGot,
+	STAmount& saTakerIssuerFee, STAmount& saOfferIssuerFee)
 {
 	saOfferGets.throwComparable(saTakerPays);
 
 	assert(!saOfferFunds.isZero() && !saTakerFunds.isZero());	// Must have funds.
 	assert(!saOfferGets.isZero() && !saOfferPays.isZero());		// Must not be a null offer.
 
+	// Amount offer can pay out, limited by funds and fees.
+	STAmount	saOfferFundsAvailable	= QUALITY_ONE == uOfferPaysRate
+											? saOfferFunds
+											: STAmount::divide(saOfferFunds, STAmount(CURRENCY_ONE, uOfferPaysRate, -9));
+
 	// Amount offer can pay out, limited by offer and funds.
-	STAmount	saOfferPaysAvailable	= saOfferFunds < saOfferPays ? saOfferFunds : saOfferPays;
+	STAmount	saOfferPaysAvailable	= std::min(saOfferFundsAvailable, saOfferPays);
 
 	// Amount offer can get in proportion, limited by offer funds.
 	STAmount	saOfferGetsAvailable =
-		saOfferFunds == saOfferPays
+		saOfferFundsAvailable == saOfferPays
 			? saOfferGets	// Offer was fully funded, avoid shenanigans.
 			: divide(multiply(saTakerPays, saOfferPaysAvailable, CURRENCY_ONE, ACCOUNT_ONE), saTakerGets, saOfferGets.getCurrency(), saOfferGets.getIssuer());
 
-	if (saOfferGets == saOfferGetsAvailable && saTakerFunds >= saOfferGets)
+	// Amount taker can spend, limited by funds and fees.
+	STAmount saTakerFundsAvailable	= QUALITY_ONE == uTakerPaysRate
+										? saTakerFunds
+										: STAmount::divide(saTakerFunds, STAmount(CURRENCY_ONE, uTakerPaysRate, -9));
+
+	if (saOfferGets == saOfferGetsAvailable && saTakerFundsAvailable >= saOfferGets)
 	{
 		// Taker gets all of offer available.
-		saTakerPaid	= saOfferGets;		// Taker paid what offer could get.
-		saTakerGot	= saOfferPays;		// Taker got what offer could pay.
+		saTakerPaid			= saOfferGets;		// Taker paid what offer could get.
+		saTakerGot			= saOfferPays;		// Taker got what offer could pay.
 
 		Log(lsINFO) << "applyOffer: took all outright";
 	}
@@ -832,8 +965,32 @@ bool STAmount::applyOffer(
 		saTakerPaid	= saTakerFunds;					// Taker paid all he had.
 		saTakerGot	= divide(multiply(saTakerFunds, saOfferPaysAvailable, CURRENCY_ONE, ACCOUNT_ONE), saOfferGetsAvailable, saOfferPays.getCurrency(), saOfferPays.getIssuer());
 
-		Log(lsINFO) << "applyOffer: saTakerGot=" << saTakerGot;
-		Log(lsINFO) << "applyOffer: saOfferPaysAvailable=" << saOfferPaysAvailable;
+		Log(lsINFO) << "applyOffer: saTakerGot=" << saTakerGot.getFullText();
+		Log(lsINFO) << "applyOffer: saOfferPaysAvailable=" << saOfferPaysAvailable.getFullText();
+	}
+
+	if (uTakerPaysRate == QUALITY_ONE)
+	{
+		saTakerIssuerFee	= STAmount(saTakerPaid.getCurrency(), saTakerPaid.getIssuer());
+	}
+	else
+	{
+		// Compute fees in a rounding safe way.
+		STAmount	saTotal	= STAmount::multiply(saTakerPaid, STAmount(CURRENCY_ONE, uTakerPaysRate, -9));
+
+		saTakerIssuerFee	= (saTotal > saTakerFunds) ? saTakerFunds-saTakerPaid : saTotal - saTakerPaid;
+	}
+
+	if (uOfferPaysRate == QUALITY_ONE)
+	{
+		saOfferIssuerFee	= STAmount(saTakerGot.getCurrency(), saTakerGot.getIssuer());
+	}
+	else
+	{
+		// Compute fees in a rounding safe way.
+		STAmount	saTotal	= STAmount::multiply(saTakerPaid, STAmount(CURRENCY_ONE, uTakerPaysRate, -9));
+
+		saOfferIssuerFee	= (saTotal > saOfferFunds) ? saOfferFunds-saTakerGot : saTotal - saTakerGot;
 	}
 
 	return saTakerGot >= saOfferPays;

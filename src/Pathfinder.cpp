@@ -84,24 +84,65 @@ Pathfinder::Pathfinder(NewcoinAddress& srcAccountID, NewcoinAddress& dstAccountI
 
 bool Pathfinder::findPaths(int maxSearchSteps, int maxPay, STPathSet& retPathSet)
 {
-	if(mLedger)
-	{
-		PathOption::pointer head(new PathOption(mSrcAccountID,mSrcCurrencyID,mDstAmount.getCurrency()));
-		addOptions(head);
+  if(mLedger) {
+    std::queue<STPath> pqueue;
+    STPathElement ele(mSrcAccountID, 
+		      mSrcCurrencyID,
+		      uint160());
+    STPath path;
+    path.addElement(ele);
+    pqueue.push(path);
+    while(pqueue.size()) {
 
-		for(int n=0; n<maxSearchSteps; n++)
-		{
-			std::list<PathOption::pointer> tempPaths=mBuildingPaths;
-			mBuildingPaths.clear();
-			BOOST_FOREACH(PathOption::pointer path,tempPaths)
-			{
-				addOptions(path);
-			}
-			if(checkComplete(retPathSet)) return(true);
-		}
-	}
+      STPath path = pqueue.front();
+      pqueue.pop();
+      // get the first path from the queue
 
-	return(false);
+      ele = path.mPath.back();
+      // get the last node from the path
+
+      if (ele.mAccountID == mDstAccountID) {
+	path.mPath.erase(path.mPath.begin());
+	path.mPath.erase(path.mPath.begin() + path.mPath.size()-1);
+	retPathSet.addPath(path);
+	return true;
+      } 
+      // found the destination
+
+      if (!ele.mCurrencyID) {
+	BOOST_FOREACH(OrderBook::pointer book,mOrderBook.getXNSInBooks())
+	  {
+	    //if (!path.hasSeen(line->getAccountIDPeer().getAccountID())) 
+	      {
+
+		STPath new_path(path);
+		STPathElement new_ele(uint160(), book->getCurrencyOut(), book->getIssuerOut());
+		new_path.mPath.push_back(new_ele);
+		pqueue.push(new_path);
+	      }
+	  }
+
+      } else {
+	RippleLines rippleLines(ele.mAccountID);
+	BOOST_FOREACH(RippleState::pointer line,rippleLines.getLines())
+	  {
+	    if (!path.hasSeen(line->getAccountIDPeer().getAccountID())) 
+	      {
+		STPath new_path(path);
+		STPathElement new_ele(line->getAccountIDPeer().getAccountID(),
+				      ele.mCurrencyID,
+				      uint160());
+	
+		new_path.mPath.push_back(new_ele);
+		pqueue.push(new_path);
+	      }
+	  }
+      }
+      // enumerate all adjacent nodes, construct a new path and push it into the queue
+    } // While
+  } // if there is a ledger
+
+  return false;
 }
 
 bool Pathfinder::checkComplete(STPathSet& retPathSet)
@@ -154,7 +195,7 @@ void Pathfinder::addOptions(PathOption::pointer tail)
 			{  // we have a ripple line from the tail to somewhere else
 				PathOption::pointer pathOption(new PathOption(tail));
 
-				STPathElement ele(line->getAccountIDPeer().getAccountID(), uint160(),uint160());
+				STPathElement ele(line->getAccountIDPeer().getAccountID(), uint160(), uint160());
 				pathOption->mPath.addElement(ele);
 
 

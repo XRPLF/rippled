@@ -97,6 +97,7 @@ public:
 
 	SerializedTypeID getSType() const { return STI_UINT8; }
 	std::string getText() const;
+	Json::Value getJson(int) const;
 	void add(Serializer& s) const { s.add8(value); }
 
 	unsigned char getValue() const { return value; }
@@ -123,6 +124,7 @@ public:
 
 	SerializedTypeID getSType() const { return STI_UINT16; }
 	std::string getText() const;
+	Json::Value getJson(int) const;
 	void add(Serializer& s) const { s.add16(value); }
 
 	uint16 getValue() const { return value; }
@@ -149,6 +151,7 @@ public:
 
 	SerializedTypeID getSType() const { return STI_UINT32; }
 	std::string getText() const;
+	Json::Value getJson(int) const;
 	void add(Serializer& s) const { s.add32(value); }
 
 	uint32 getValue() const { return value; }
@@ -175,6 +178,7 @@ public:
 
 	SerializedTypeID getSType() const { return STI_UINT64; }
 	std::string getText() const;
+	Json::Value getJson(int) const;
 	void add(Serializer& s) const { s.add64(value); }
 
 	uint64 getValue() const { return value; }
@@ -220,8 +224,6 @@ protected:
 		: SerializedType(name), mCurrency(cur), mIssuer(iss),  mValue(val), mOffset(off),
 			mIsNative(isNat), mIsNegative(isNeg) { ; }
 
-	STAmount(SField::ref name, const Json::Value& value);
-
 	uint64 toUInt64() const;
 	static uint64 muldiv(uint64, uint64, uint64);
 
@@ -244,6 +246,8 @@ public:
 			uint64 v = 0, int off = 0, bool isNeg = false) :
 		SerializedType(n), mCurrency(currency), mIssuer(issuer), mValue(v), mOffset(off), mIsNegative(isNeg)
 	{ canonicalize(); }
+
+	STAmount(SField::ref, const Json::Value&);
 
 	static STAmount createFromInt64(SField::ref n, int64 v);
 
@@ -288,6 +292,7 @@ public:
 	void setIssuer(const uint160& uIssuer)	{ mIssuer	= uIssuer; }
 
 	const uint160& getCurrency() const	{ return mCurrency; }
+	bool setValue(const std::string& sAmount);
 	bool setFullValue(const std::string& sAmount, const std::string& sCurrency = "", const std::string& sIssuer = "");
 	void setValue(const STAmount &);
 
@@ -342,10 +347,12 @@ public:
 	// Someone is offering X for Y, I try to pay Z, how much do I get?
 	// And what's left of the offer? And how much do I actually pay?
 	static bool applyOffer(
+		const uint32 uTakerPaysRate, const uint32 uOfferPaysRate,
 		const STAmount& saOfferFunds, const STAmount& saTakerFunds,
 		const STAmount& saOfferPays, const STAmount& saOfferGets,
 		const STAmount& saTakerPays, const STAmount& saTakerGets,
-		STAmount& saTakerPaid, STAmount& saTakerGot);
+		STAmount& saTakerPaid, STAmount& saTakerGot,
+		STAmount& saTakerIssuerFee, STAmount& saOfferIssuerFee);
 
 	// Someone is offering X for Y, I need Z, how much do I pay
 	static STAmount getPay(const STAmount& offerOut, const STAmount& offerIn, const STAmount& needed);
@@ -496,6 +503,7 @@ public:
 
 	STAccount(const std::vector<unsigned char>& v) : STVariableLength(v) { ; }
 	STAccount(SField::ref n, const std::vector<unsigned char>& v) : STVariableLength(n, v) { ; }
+	STAccount(SField::ref n, const uint160& v);
 	STAccount(SField::ref n) : STVariableLength(n) { ; }
 	STAccount() { ; }
 	static std::auto_ptr<SerializedType> deserialize(SerializerIterator& sit, SField::ref name)
@@ -514,6 +522,9 @@ public:
 
 class STPathElement
 {
+  friend class STPathSet;
+  friend class STPath;
+  friend class Pathfinder;
 public:
 	enum {
 		typeEnd			= 0x00,
@@ -535,12 +546,13 @@ protected:
 	uint160 mIssuerID;
 
 public:
-	STPathElement(const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID)
-		: mAccountID(uAccountID), mCurrencyID(uCurrencyID), mIssuerID(uIssuerID)
+	STPathElement(const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID,
+		bool forceCurrency = false)
+			: mAccountID(uAccountID), mCurrencyID(uCurrencyID), mIssuerID(uIssuerID)
 	{
 		mType	=
 			(uAccountID.isZero() ? 0 : STPathElement::typeAccount)
-			| (uCurrencyID.isZero() ? 0 : STPathElement::typeCurrency)
+			| ((uCurrencyID.isZero() && !forceCurrency) ? 0 : STPathElement::typeCurrency)
 			| (uIssuerID.isZero() ? 0 : STPathElement::typeIssuer);
 	}
 
@@ -562,6 +574,8 @@ public:
 
 class STPath
 {
+  friend class STPathSet;
+  friend class Pathfinder;
 protected:
 	std::vector<STPathElement> mPath;
 
@@ -569,12 +583,14 @@ public:
 	STPath()		{ ; }
 	STPath(const std::vector<STPathElement>& p) : mPath(p) { ; }
 
+	void printDebug();
 	int getElementCount() const							{ return mPath.size(); }
 	bool isEmpty() const								{ return mPath.empty(); }
 	const STPathElement& getElement(int offset) const	{ return mPath[offset]; }
 	const STPathElement& getElemet(int offset)			{ return mPath[offset]; }
-	void addElement(const STPathElement& e)				{ mPath.push_back(e); }
+	void addElement(const STPathElement &e)				{ mPath.push_back(e); }
 	void clear()										{ mPath.clear(); }
+	bool hasSeen(const uint160 &acct);
 	int getSerializeSize() const;
 //	std::string getText() const;
 	Json::Value getJson(int) const;
@@ -631,7 +647,6 @@ protected:
 	static STPathSet* construct(SerializerIterator&, SField::ref);
 
 public:
-
 	STPathSet() { ; }
 	STPathSet(SField::ref n) : SerializedType(n) { ; }
 	STPathSet(const std::vector<STPath>& v) : value(v) { ; }
@@ -652,6 +667,8 @@ public:
 	void addPath(const STPath& e)						{ value.push_back(e); }
 
 	virtual bool isEquivalent(const SerializedType& t) const;
+
+	void printDebug();
 
 	std::vector<STPath>::iterator begin()				{ return value.begin(); }
 	std::vector<STPath>::iterator end()					{ return value.end(); }
@@ -718,12 +735,11 @@ public:
 	std::vector<uint256>& peekValue() { return mValue; }
 	virtual bool isEquivalent(const SerializedType& t) const;
 
-	std::vector<uint256> getValue() const { return mValue; }
-
-	bool isEmpty() const { return mValue.empty(); }
-
-	void setValue(const STVector256& v) { mValue = v.mValue; }
-	void setValue(const std::vector<uint256>& v) { mValue = v; }
+	std::vector<uint256> getValue() const			{ return mValue; }
+	bool isEmpty() const							{ return mValue.empty(); }
+	void setValue(const STVector256& v)				{ mValue = v.mValue; }
+	void setValue(const std::vector<uint256>& v)	{ mValue = v; }
+	void addValue(const uint256& v)					{ mValue.push_back(v); }
 
 	Json::Value getJson(int) const;
 };

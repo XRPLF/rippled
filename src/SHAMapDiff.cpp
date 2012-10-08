@@ -20,13 +20,15 @@ class SHAMapDiffNode
 		mNodeID(id), mOurHash(ourHash), mOtherHash(otherHash) { ; }
 };
 
-bool SHAMap::walkBranch(SHAMapTreeNode* node, SHAMapItem::pointer otherMapItem, bool isFirstMap,
+bool SHAMap::walkBranch(SHAMapTreeNode* node, SHAMapItem::ref otherMapItem, bool isFirstMap,
 	SHAMapDiff& differences, int& maxCount)
 {
 	// Walk a branch of a SHAMap that's matched by an empty branch or single item in the other map
 	std::stack<SHAMapTreeNode*> nodeStack;
 	nodeStack.push(node);
-	
+
+	bool emptyBranch = !otherMapItem;
+
 	while (!nodeStack.empty())
 	{
 		SHAMapTreeNode* node = nodeStack.top();
@@ -41,7 +43,7 @@ bool SHAMap::walkBranch(SHAMapTreeNode* node, SHAMapItem::pointer otherMapItem, 
 		{ // This is a leaf node, process its item
 			SHAMapItem::pointer item = node->getItem();
 
-			if (otherMapItem && (otherMapItem->getTag() < item->getTag()))
+			if (!emptyBranch && (otherMapItem->getTag() < item->getTag()))
 			{ // this item comes after the item from the other map, so add the other item
 				if (isFirstMap) // this is first map, so other item is from second
 					differences.insert(std::make_pair(otherMapItem->getTag(),
@@ -49,11 +51,12 @@ bool SHAMap::walkBranch(SHAMapTreeNode* node, SHAMapItem::pointer otherMapItem, 
 				else
 					differences.insert(std::make_pair(otherMapItem->getTag(),
 						std::make_pair(otherMapItem, SHAMapItem::pointer())));
-				if (--maxCount <= 0) return false;
-				otherMapItem = SHAMapItem::pointer();
+				if (--maxCount <= 0)
+					return false;
+				emptyBranch = true;
 			}
 
-			if ((!otherMapItem) || (item->getTag() < otherMapItem->getTag()))
+			if (emptyBranch || (item->getTag() < otherMapItem->getTag()))
 			{ // unmatched
 				if (isFirstMap)
 					differences.insert(std::make_pair(item->getTag(), std::make_pair(item, SHAMapItem::pointer())));
@@ -77,7 +80,7 @@ bool SHAMap::walkBranch(SHAMapTreeNode* node, SHAMapItem::pointer otherMapItem, 
 		}
 	}
 	
-	if (otherMapItem)
+	if (!emptyBranch)
 	{ // otherMapItem was unmatched, must add
 			if (isFirstMap) // this is first map, so other item is from second
 				differences.insert(std::make_pair(otherMapItem->getTag(),

@@ -21,16 +21,19 @@
 #include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
 
 #include <openssl/md5.h>
 
 #include "../json/reader.h"
 #include "../json/writer.h"
 
+SETUP_LOG();
+
 RPCServer::RPCServer(boost::asio::io_service& io_service , NetworkOPs* nopNetwork)
 	: mNetOps(nopNetwork), mSocket(io_service)
 {
-	mRole=GUEST;
+	mRole = GUEST;
 }
 
 Json::Value RPCServer::RPCError(int iError)
@@ -174,13 +177,12 @@ std::string RPCServer::handleRequest(const std::string& requestStr)
 	else if (!valParams.isArray())
 		return(HTTPReply(400, "parms unparseable"));
 
-	Json::StyledStreamWriter w;
-	w.write(Log(lsTRACE).ref(), valParams);
-	Json::Value result(doCommand(strMethod, valParams));
-	w.write(Log(lsTRACE).ref(), result);
+	cLog(lsTRACE) << valParams;
+	Json::Value result = doCommand(strMethod, valParams);
+	cLog(lsTRACE) << result;
 
 	std::string strReply = JSONRPCReply(result, Json::Value(), id);
-	return( HTTPReply(200, strReply) );
+	return HTTPReply(200, strReply);
 }
 
 int RPCServer::getParamCount(const Json::Value& params)
@@ -318,7 +320,7 @@ Json::Value RPCServer::authorize(const uint256& uLedger,
 	{
 		naMasterAccountPublic.setAccountPublic(naMasterGenerator, iIndex);
 
-		Log(lsINFO) << "authorize: " << iIndex << " : " << naMasterAccountPublic.humanAccountID() << " : " << naSrcAccountID.humanAccountID();
+		Log(lsDEBUG) << "authorize: " << iIndex << " : " << naMasterAccountPublic.humanAccountID() << " : " << naSrcAccountID.humanAccountID();
 
 		bFound	= naSrcAccountID.getAccountID() == naMasterAccountPublic.getAccountID();
 		if (!bFound)
@@ -355,13 +357,10 @@ Json::Value RPCServer::authorize(const uint256& uLedger,
 	}
 	else
 	{
-		Log(lsINFO) << "authorize: before: fee=" << saFee.getFullText() << " balance=" << saSrcBalance.getFullText();
 		saSrcBalance -= saFee;
-		Log(lsINFO) << "authorize: after: fee=" << saFee.getFullText() << " balance=" << saSrcBalance.getFullText();
 	}
 
-	Json::Value	obj;
-	return obj;
+	return Json::Value();
 }
 
 // --> strIdent: public key, account ID, or regular seed.
@@ -1304,6 +1303,123 @@ Json::Value RPCServer::doPeers(const Json::Value& params)
 	return obj;
 }
 
+// profile offers <pass_a> <account_a> <currency_offer_a> <pass_b> <account_b> <currency_offer_b> <count> [submit]
+// profile 0:offers 1:pass_a 2:account_a 3:currency_offer_a 4:pass_b 5:account_b 6:currency_offer_b 7:<count> 8:[submit]
+// issuer is the offering account
+// the amount of each offer will be 1.
+// --> count: defaults to 100, does 2 offers per iteration.
+// --> submit: 'submit|true|false': defaults to false
+// Prior to running allow each to have a credit line of what they will be getting from the other account.
+Json::Value RPCServer::doProfile(const Json::Value &params)
+{
+	int				iArgs	= params.size();
+	NewcoinAddress	naSeedA;
+	NewcoinAddress	naAccountA;
+	uint160			uCurrencyOfferA;
+	NewcoinAddress	naSeedB;
+	NewcoinAddress	naAccountB;
+	uint160			uCurrencyOfferB;
+	uint32			iCount	= 100;
+	bool			bSubmit	= false;
+
+	if (iArgs < 7 || "offers" != params[0u].asString())
+	{
+		return RPCError(rpcINVALID_PARAMS);
+	}
+
+	if (!naSeedA.setSeedGeneric(params[1u].asString()))							// <pass_a>
+		return RPCError(rpcINVALID_PARAMS);
+
+	naAccountA.setAccountID(params[2u].asString());								// <account_a>
+
+	if (!STAmount::currencyFromString(uCurrencyOfferA, params[3u].asString()))	// <currency_offer_a>
+		return RPCError(rpcINVALID_PARAMS);
+
+	if (!naSeedB.setSeedGeneric(params[4u].asString()))							// <pass_b>
+		return RPCError(rpcINVALID_PARAMS);
+
+	naAccountB.setAccountID(params[5u].asString());								// <account_b>
+	if (!STAmount::currencyFromString(uCurrencyOfferB, params[6u].asString()))	// <currency_offer_b>
+		return RPCError(rpcINVALID_PARAMS);
+
+	if (iArgs >= 8)
+		iCount	= lexical_cast_s<uint32>(params[7u].asString());
+
+	if (iArgs >= 9 && "false" != params[8u].asString())
+		bSubmit	= true;
+
+	boost::posix_time::ptime			ptStart(boost::posix_time::microsec_clock::local_time());
+
+	for (int i = iCount; i-- >= 0;) {
+		NewcoinAddress			naMasterGeneratorA;
+		NewcoinAddress			naAccountPublicA;
+		NewcoinAddress			naAccountPrivateA;
+		AccountState::pointer	asSrcA;
+		STAmount				saSrcBalanceA;
+		Json::Value				jvObjA		= authorize(uint256(0), naSeedA, naAccountA, naAccountPublicA, naAccountPrivateA,
+			saSrcBalanceA, theConfig.FEE_DEFAULT, asSrcA, naMasterGeneratorA);
+
+		if (!jvObjA.empty())
+			return jvObjA;
+
+		Transaction::pointer	tpOfferA	= Transaction::sharedOfferCreate(
+			naAccountPublicA, naAccountPrivateA,
+			naAccountA,													// naSourceAccount,
+			asSrcA->getSeq(),											// uSeq
+			theConfig.FEE_DEFAULT,
+			0,															// uSourceTag,
+			false,														// bPassive
+			STAmount(uCurrencyOfferA, naAccountA.getAccountID(), 1),	// saTakerPays
+			STAmount(uCurrencyOfferB, naAccountB.getAccountID(), 1),	// saTakerGets
+			0);															// uExpiration
+
+		if (bSubmit)
+			tpOfferA	= mNetOps->submitTransaction(tpOfferA);
+
+		NewcoinAddress			naMasterGeneratorB;
+		NewcoinAddress			naAccountPublicB;
+		NewcoinAddress			naAccountPrivateB;
+		AccountState::pointer	asSrcB;
+		STAmount				saSrcBalanceB;
+		Json::Value				jvObjB		= authorize(uint256(0), naSeedB, naAccountB, naAccountPublicB, naAccountPrivateB,
+			saSrcBalanceB, theConfig.FEE_DEFAULT, asSrcB, naMasterGeneratorB);
+
+		if (!jvObjB.empty())
+			return jvObjB;
+
+		Transaction::pointer	tpOfferB	= Transaction::sharedOfferCreate(
+			naAccountPublicB, naAccountPrivateB,
+			naAccountB,													// naSourceAccount,
+			asSrcB->getSeq(),											// uSeq
+			theConfig.FEE_DEFAULT,
+			0,															// uSourceTag,
+			false,														// bPassive
+			STAmount(uCurrencyOfferB, naAccountB.getAccountID(), 1),	// saTakerPays
+			STAmount(uCurrencyOfferA, naAccountA.getAccountID(), 1),	// saTakerGets
+			0);															// uExpiration
+
+		if (bSubmit)
+			tpOfferB	= mNetOps->submitTransaction(tpOfferB);
+	}
+
+	boost::posix_time::ptime			ptEnd(boost::posix_time::microsec_clock::local_time());
+	boost::posix_time::time_duration	tdInterval		= ptEnd-ptStart;
+	long								lMicroseconds	= tdInterval.total_microseconds();
+	int									iTransactions	= iCount*2;
+	float								fRate			= lMicroseconds ? iTransactions/(lMicroseconds/1000000.0) : 0.0;
+
+	Json::Value obj(Json::objectValue);
+
+	obj["transactions"]		= iTransactions;
+	obj["submit"]			= bSubmit;
+	obj["start"]			= boost::posix_time::to_simple_string(ptStart);
+	obj["end"]				= boost::posix_time::to_simple_string(ptEnd);
+	obj["interval"]			= boost::posix_time::to_simple_string(tdInterval);
+	obj["rate_per_second"]	= fRate;
+
+	return obj;
+}
+
 // ripple <regular_seed> <paying_account>
 //	 <source_max> <source_currency> [<source_issuerID>]
 //   <path>+
@@ -1695,11 +1811,14 @@ Json::Value RPCServer::doSend(const Json::Value& params)
 	if (params.size() >= 6)
 		sDstIssuer		= params[5u].asString();
 
-	if (params.size() >= 7)
-		sSrcCurrency	= params[6u].asString();
-
 	if (params.size() >= 8)
-		sSrcIssuer		= params[7u].asString();
+		sSrcCurrency	= params[7u].asString();
+
+	if (params.size() >= 9)
+		sSrcIssuer		= params[8u].asString();
+
+	if (params.size() >= 9)
+		sSrcIssuer		= params[8u].asString();
 
 	if (!naSeed.setSeedGeneric(params[0u].asString()))
 	{
@@ -1717,7 +1836,7 @@ Json::Value RPCServer::doSend(const Json::Value& params)
 	{
 		return RPCError(rpcDST_AMT_MALFORMED);
 	}
-	else if (params.size() >= 7 && !saSrcAmountMax.setFullValue(params[5u].asString(), sSrcCurrency, sSrcIssuer))
+	else if (params.size() >= 7 && !saSrcAmountMax.setFullValue(params[6u].asString(), sSrcCurrency, sSrcIssuer))
 	{
 		return RPCError(rpcSRC_AMT_MALFORMED);
 	}
@@ -1772,20 +1891,16 @@ Json::Value RPCServer::doSend(const Json::Value& params)
 		// XXX Don't allow send to self of same currency.
 
 		Transaction::pointer	trans;
-
 		if (asDst) {
 			// Destination exists, ordinary send.
 
-			STPathSet			spsPaths;
-			uint160  srcCurrencyID;
-//                        bool ret_b;
-//                        ret_b = false;
+		        STPathSet  spsPaths;
+			uint160    srcCurrencyID;
 
 			if (!saSrcAmountMax.isNative() || !saDstAmount.isNative())
 			{
 			  STAmount::currencyFromString(srcCurrencyID, sSrcCurrency);
 			  Pathfinder pf(naSrcAccountID, naDstAccountID, srcCurrencyID, saDstAmount);
-//			  ret_b = pf.findPaths(5, 1, spsPaths);
 			  pf.findPaths(5, 1, spsPaths);
 			}
 
@@ -2539,7 +2654,7 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 		{	"data_fetch",			&RPCServer::doDataFetch,			1,  1, true					},
 		{	"data_store",			&RPCServer::doDataStore,			2,  2, true					},
 		{	"ledger",				&RPCServer::doLedger,				0,  2, false,	optNetwork	},
-		{       "logrotate",                    &RPCServer::doLogRotate,                        0,  0, true,    0      },
+		{   "logrotate",            &RPCServer::doLogRotate,            0,  0, true				    },
 		{	"nickname_info",		&RPCServer::doNicknameInfo,			1,  1, false,	optCurrent	},
 		{	"nickname_set",			&RPCServer::doNicknameSet,			2,  3, false,	optCurrent	},
 		{	"offer_create",			&RPCServer::doOfferCreate,			9, 10, false,	optCurrent	},
@@ -2548,6 +2663,7 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 		{	"password_fund",		&RPCServer::doPasswordFund,			2,  3, false,	optCurrent	},
 		{	"password_set",			&RPCServer::doPasswordSet,			2,  3, false,	optNetwork	},
 		{	"peers",				&RPCServer::doPeers,				0,  0, true					},
+		{	"profile",				&RPCServer::doProfile,				1,  9, false,	optCurrent	},
 		{	"ripple",				&RPCServer::doRipple,				9, -1, false,	optCurrent|optClosed },
 		{	"ripple_lines_get",		&RPCServer::doRippleLinesGet,		1,  2, false,	optCurrent	},
 		{	"ripple_line_set",		&RPCServer::doRippleLineSet,		4,  7, false,	optCurrent	},
@@ -2610,7 +2726,13 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 	}
 	else
 	{
-		return (this->*(commandsA[i].dfpFunc))(params);
+		try {
+			return (this->*(commandsA[i].dfpFunc))(params);
+		}
+		catch (...)
+		{
+			return RPCError(rpcINTERNAL);
+		}
 	}
 }
 

@@ -227,8 +227,9 @@ void ConnectionPool::policyHandler(const boost::system::error_code& ecResult)
 
 // YYY: Should probably do this in the background.
 // YYY: Might end up sending to disconnected peer?
-void ConnectionPool::relayMessage(Peer* fromPeer, const PackedMessage::pointer& msg)
+int ConnectionPool::relayMessage(Peer* fromPeer, const PackedMessage::pointer& msg)
 {
+	int sentTo = 0;
 	boost::mutex::scoped_lock sl(mPeerLock);
 
 	BOOST_FOREACH(naPeer pair, mConnectedMap)
@@ -237,8 +238,13 @@ void ConnectionPool::relayMessage(Peer* fromPeer, const PackedMessage::pointer& 
 		if (!peer)
 			std::cerr << "CP::RM null peer in list" << std::endl;
 		else if ((!fromPeer || !(peer.get() == fromPeer)) && peer->isConnected())
+		{
+			++sentTo;
 			peer->sendPacket(msg);
+		}
 	}
+
+	return sentTo;
 }
 
 // Schedule a connection via scanning.

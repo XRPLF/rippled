@@ -146,7 +146,7 @@ void LedgerAcquire::trigger(Peer::ref peer, bool timer)
 	if (mAborted || mComplete || mFailed)
 		return;
 #ifdef LA_DEBUG
-	if(peer) Log(lsTRACE) <<  "Trigger acquiring ledger " << mHash << " from " << peer->getIP();
+	if (peer) Log(lsTRACE) <<  "Trigger acquiring ledger " << mHash << " from " << peer->getIP();
 	else Log(lsTRACE) <<  "Trigger acquiring ledger " << mHash;
 	if (mComplete || mFailed)
 		Log(lsTRACE) <<  "complete=" << mComplete << " failed=" << mFailed;
@@ -267,7 +267,8 @@ void PeerSet::sendRequest(const newcoin::TMGetLedger& tmGL, Peer::ref peer)
 void PeerSet::sendRequest(const newcoin::TMGetLedger& tmGL)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
-	if (mPeers.empty()) return;
+	if (mPeers.empty())
+		return;
 
 	PackedMessage::pointer packet = boost::make_shared<PackedMessage>(tmGL, newcoin::mtGET_LEDGER);
 

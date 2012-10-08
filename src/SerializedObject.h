@@ -51,6 +51,7 @@ public:
 	bool setType(const std::vector<SOElement::ptr>& type);
 	bool isValidForType();
 	bool isFieldAllowed(SField::ref);
+	bool isFree() const { return mType.empty(); }
 
 	void set(const std::vector<SOElement::ptr>&);
 	bool set(SerializerIterator& u, int depth = 0);
@@ -65,11 +66,15 @@ public:
 	std::string getText() const;
 	virtual Json::Value getJson(int options) const;
 
-	int addObject(const SerializedType& t) { mData.push_back(t.clone()); return mData.size() - 1; }
-	int giveObject(std::auto_ptr<SerializedType> t) { mData.push_back(t); return mData.size() - 1; }
-	int giveObject(SerializedType* t) { mData.push_back(t); return mData.size() - 1; }
+	int addObject(const SerializedType& t)			{ mData.push_back(t.clone()); return mData.size() - 1; }
+	int giveObject(std::auto_ptr<SerializedType> t)	{ mData.push_back(t); return mData.size() - 1; }
+	int giveObject(SerializedType* t)				{ mData.push_back(t); return mData.size() - 1; }
 	const boost::ptr_vector<SerializedType>& peekData() const { return mData; }
-	boost::ptr_vector<SerializedType>& peekData() { return mData; }
+	boost::ptr_vector<SerializedType>& peekData() 	{ return mData; }
+	SerializedType& front() 						{ return mData.front(); }
+	const SerializedType& front() const				{ return mData.front(); }
+	SerializedType& back()							{ return mData.back(); }
+	const SerializedType& back() const				{ return mData.back(); }
 
 	int getCount() const { return mData.size(); }
 
@@ -91,7 +96,7 @@ public:
 	const SerializedType& peekAtField(SField::ref field) const;
 	SerializedType& getField(SField::ref field);
 	const SerializedType* peekAtPField(SField::ref field) const;
-	SerializedType* getPField(SField::ref field);
+	SerializedType* getPField(SField::ref field, bool createOkay = false);
 
 	// these throw if the field type doesn't match, or return default values if the
 	// field is optional but not present
@@ -141,8 +146,6 @@ public:
 	{ return makeDefaultObject(STI_NOTPRESENT, name); }
 	static std::auto_ptr<SerializedType> makeDefaultObject(SField::ref name)
 	{ return makeDefaultObject(name.fieldType, name); }
-
-	static void unitTest();
 };
 
 class STArray : public SerializedType
@@ -189,6 +192,10 @@ public:
 	reverse_iterator rend()							{ return value.rend(); }
 	const_reverse_iterator rend() const				{ return value.rend(); }
 	iterator erase(iterator pos)					{ return value.erase(pos); }
+	STObject& front()								{ return value.front(); }
+	const STObject& front() const					{ return value.front(); }
+	STObject& back()								{ return value.back(); }
+	const STObject& back() const					{ return value.back(); }
 	void pop_back()									{ value.pop_back(); }
 	bool empty() const								{ return value.empty(); }
 	void clear()									{ value.clear(); }

@@ -102,6 +102,7 @@ public:
 
 	// Balance functions.
 	uint32				rippleTransferRate(const uint160& uIssuerID);
+	uint32				rippleTransferRate(const uint160& uSenderID, const uint160& uReceiverID, const uint160& uIssuerID);
 	STAmount			rippleOwed(const uint160& uToAccountID, const uint160& uFromAccountID, const uint160& uCurrencyID);
 	STAmount			rippleLimit(const uint160& uToAccountID, const uint160& uFromAccountID, const uint160& uCurrencyID);
 	uint32				rippleQualityIn(const uint160& uToAccountID, const uint160& uFromAccountID, const uint160& uCurrencyID,

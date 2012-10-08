@@ -18,12 +18,31 @@
 
 #define isSetBit(x,y)		(!!((x) & (y)))
 
+// maybe use http://www.mail-archive.com/licq-commits@googlegroups.com/msg02334.html
 #ifdef WIN32
 extern uint64_t htobe64(uint64_t value);
 extern uint64_t be64toh(uint64_t value);
 extern uint32_t htobe32(uint32_t value);
 extern uint32_t be32toh(uint32_t value);
+#elif __APPLE__
+#include <libkern/OSByteOrder.h>
+
+#define htobe16(x) OSSwapHostToBigInt16(x)
+#define htole16(x) OSSwapHostToLittleInt16(x)
+#define be16toh(x) OSSwapBigToHostInt16(x)
+#define le16toh(x) OSSwapLittleToHostInt16(x)
+
+#define htobe32(x) OSSwapHostToBigInt32(x)
+#define htole32(x) OSSwapHostToLittleInt32(x)
+#define be32toh(x) OSSwapBigToHostInt32(x)
+#define le32toh(x) OSSwapLittleToHostInt32(x)
+
+#define htobe64(x) OSSwapHostToBigInt64(x)
+#define htole64(x) OSSwapHostToLittleInt64(x)
+#define be64toh(x) OSSwapBigToHostInt64(x)
+#define le64toh(x) OSSwapLittleToHostInt64(x)
 #endif
+
 
 #define vt_f_black          "\033[30m"
 #define vt_f_red            "\033[31m"
@@ -143,6 +162,8 @@ bool isZero(Iterator first, int iSize)
 int charUnHex(char cDigit);
 void strUnHex(std::string& strDst, const std::string& strSrc);
 
+uint64_t uintFromHex(const std::string& strSrc);
+
 std::vector<unsigned char> strUnHex(const std::string& strSrc);
 
 std::vector<unsigned char> strCopy(const std::string& strSrc);
@@ -171,7 +192,7 @@ template<typename T> T lexical_cast_s(const std::string& string)
 	}
 }
 
-template<typename T> std::string lexical_cast_i(T t)
+template<typename T> std::string lexical_cast_i(const T& t)
 { // lexicaly cast the selected type to a string. Does not throw
 	try
 	{
@@ -181,6 +202,44 @@ template<typename T> std::string lexical_cast_i(T t)
 	{
 		return "";
 	}
+}
+
+template<typename T> T lexical_cast_st(const std::string& string)
+{ // lexically cast a string to the selected type. Does throw
+	return boost::lexical_cast<T>(string);
+}
+
+template<typename T> std::string lexical_cast_it(const T& t)
+{ // lexicaly cast the selected type to a string. Does not throw
+	return boost::lexical_cast<std::string>(t);
+}
+
+template<typename T> T range_check(const T& value, const T& minimum, const T& maximum)
+{
+	if ((value < minimum) || (value > maximum))
+		throw std::runtime_error("Value out of range");
+	return value;
+}
+
+template<typename T> T range_check_min(const T& value, const T& minimum)
+{
+	if (value < minimum)
+		throw std::runtime_error("Value out of range");
+	return value;
+}
+
+template<typename T> T range_check_max(const T& value, const T& maximum)
+{
+	if (value > maximum)
+		throw std::runtime_error("Value out of range");
+	return value;
+}
+
+template<typename T, typename U> T range_check_cast(const U& value, const T& minimum, const T& maximum)
+{
+	if ((value < minimum) || (value > maximum))
+		throw std::runtime_error("Value out of range");
+	return static_cast<T>(value);
 }
 
 #endif

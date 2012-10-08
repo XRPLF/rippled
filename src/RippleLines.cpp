@@ -1,11 +1,22 @@
 #include "RippleLines.h"
+
+#include <boost/foreach.hpp>
+
 #include "Application.h"
 #include "Log.h"
-#include <boost/foreach.hpp>
+
+SETUP_LOG();
 
 RippleLines::RippleLines(const uint160& accountID, Ledger::pointer ledger)
 {
 	fillLines(accountID,ledger);
+}
+
+void RippleLines::printRippleLines() {
+  for (int i =0; i < mLines.size(); i++) {
+    std::cout << i << ": " << mLines[i]->getAccountID().humanAccountID()  << std::endl;
+  }
+  std::cout << std::endl;
 }
 
 RippleLines::RippleLines(const uint160& accountID )
@@ -40,7 +51,7 @@ void RippleLines::fillLines(const uint160& accountID, Ledger::pointer ledger)
 				}
 				else
 				{
-					Log(lsWARNING) << "doRippleLinesGet: Bad index: " << uNode.ToString();
+					cLog(lsWARNING) << "doRippleLinesGet: Bad index: " << uNode.ToString();
 				}
 			}
 		}

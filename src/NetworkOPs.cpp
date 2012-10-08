@@ -23,9 +23,11 @@
 // code assumes this node is synched (and will continue to do so until
 // there's a functional network.
 
+SETUP_LOG();
+
 NetworkOPs::NetworkOPs(boost::asio::io_service& io_service, LedgerMaster* pLedgerMaster) :
 	mMode(omDISCONNECTED),mNetTimer(io_service), mLedgerMaster(pLedgerMaster), mCloseTimeOffset(0),
-	mLastCloseProposers(0), mLastCloseConvergeTime(LEDGER_IDLE_INTERVAL), mLastValidationTime(0)
+	mLastCloseProposers(0), mLastCloseConvergeTime(1000 * LEDGER_IDLE_INTERVAL), mLastValidationTime(0)
 {
 }
 
@@ -63,8 +65,7 @@ void NetworkOPs::closeTimeOffset(int offset)
 		mCloseTimeOffset += (offset - 3) / 4;
 	else
 		mCloseTimeOffset = (mCloseTimeOffset * 3) / 4;
-	if (mCloseTimeOffset)
-		Log(lsINFO) << "Close time offset now " << mCloseTimeOffset;
+	tLog(mCloseTimeOffset != 0, lsINFO) << "Close time offset now " << mCloseTimeOffset;
 }
 
 uint32 NetworkOPs::getLedgerID(const uint256& hash)
@@ -90,9 +91,9 @@ Transaction::pointer NetworkOPs::submitTransaction(const Transaction::pointer& t
 
 	if(!tpTransNew->getSTransaction()->isEquivalent(*tpTrans->getSTransaction()))
 	{
-		Log(lsFATAL) << "Transaction reconstruction failure";
-		Log(lsFATAL) << tpTransNew->getSTransaction()->getJson(0);
-		Log(lsFATAL) << tpTrans->getSTransaction()->getJson(0);
+		cLog(lsFATAL) << "Transaction reconstruction failure";
+		cLog(lsFATAL) << tpTransNew->getSTransaction()->getJson(0);
+		cLog(lsFATAL) << tpTrans->getSTransaction()->getJson(0);
 		assert(false);
 	}
 
@@ -108,17 +109,27 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 
 	if (!trans->checkSign())
 	{
-		Log(lsINFO) << "Transaction has bad signature";
+		cLog(lsINFO) << "Transaction has bad signature";
 		trans->setStatus(INVALID);
 		return trans;
 	}
 
 	TER r = mLedgerMaster->doTransaction(*trans->getSTransaction(), tapOPEN_LEDGER);
-	if (r == tefFAILURE) throw Fault(IO_ERROR);
+
+#ifdef DEBUG
+	if (r != tesSUCCESS)
+	{
+		std::string token, human;
+		tLog(transResultInfo(r, token, human), lsINFO) << "TransactionResult: " << token << ": " << human;
+	}
+#endif
+
+	if (r == tefFAILURE)
+		throw Fault(IO_ERROR);
 
 	if (r == terPRE_SEQ)
 	{ // transaction should be held
-		Log(lsDEBUG) << "Transaction should be held";
+		cLog(lsDEBUG) << "Transaction should be held";
 		trans->setStatus(HELD);
 		theApp->getMasterTransaction().canonicalize(trans, true);
 		mLedgerMaster->addHeldTransaction(trans);
@@ -126,14 +137,14 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 	}
 	if ((r == tefPAST_SEQ))
 	{ // duplicate or conflict
-		Log(lsINFO) << "Transaction is obsolete";
+		cLog(lsINFO) << "Transaction is obsolete";
 		trans->setStatus(OBSOLETE);
 		return trans;
 	}
 
 	if (r == tesSUCCESS)
 	{
-		Log(lsINFO) << "Transaction is now included";
+		cLog(lsINFO) << "Transaction is now included";
 		trans->setStatus(INCLUDED);
 		theApp->getMasterTransaction().canonicalize(trans, true);
 
@@ -150,12 +161,13 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 		tx.set_receivetimestamp(getNetworkTimeNC());
 
 		PackedMessage::pointer packet = boost::make_shared<PackedMessage>(tx, newcoin::mtTRANSACTION);
-		theApp->getConnectionPool().relayMessage(source, packet);
+		int sentTo = theApp->getConnectionPool().relayMessage(source, packet);
+		cLog(lsINFO) << "Transaction relayed to " << sentTo << " node(s)";
 
 		return trans;
 	}
 
-	Log(lsDEBUG) << "Status other than success " << r;
+	cLog(lsDEBUG) << "Status other than success " << r;
 	if ((mMode != omFULL) && (mMode != omTRACKING) && (theApp->isNew(trans->getID())))
 	{
 		newcoin::TMTransaction tx;
@@ -243,21 +255,21 @@ STVector256 NetworkOPs::getDirNodeInfo(
 
 	if (sleNode)
 	{
-		Log(lsDEBUG) << "getDirNodeInfo: node index: " << uNodeIndex.ToString();
+		cLog(lsDEBUG) << "getDirNodeInfo: node index: " << uNodeIndex.ToString();
 
-		Log(lsTRACE) << "getDirNodeInfo: first: " << strHex(sleNode->getFieldU64(sfIndexPrevious));
-		Log(lsTRACE) << "getDirNodeInfo:  last: " << strHex(sleNode->getFieldU64(sfIndexNext));
+		cLog(lsTRACE) << "getDirNodeInfo: first: " << strHex(sleNode->getFieldU64(sfIndexPrevious));
+		cLog(lsTRACE) << "getDirNodeInfo:  last: " << strHex(sleNode->getFieldU64(sfIndexNext));
 
 		uNodePrevious	= sleNode->getFieldU64(sfIndexPrevious);
 		uNodeNext		= sleNode->getFieldU64(sfIndexNext);
 		svIndexes		= sleNode->getFieldV256(sfIndexes);
 
-		Log(lsTRACE) << "getDirNodeInfo: first: " << strHex(uNodePrevious);
-		Log(lsTRACE) << "getDirNodeInfo:  last: " << strHex(uNodeNext);
+		cLog(lsTRACE) << "getDirNodeInfo: first: " << strHex(uNodePrevious);
+		cLog(lsTRACE) << "getDirNodeInfo:  last: " << strHex(uNodeNext);
 	}
 	else
 	{
-		Log(lsINFO) << "getDirNodeInfo: node index: NOT FOUND: " << uNodeIndex.ToString();
+		cLog(lsINFO) << "getDirNodeInfo: node index: NOT FOUND: " << uNodeIndex.ToString();
 
 		uNodePrevious	= 0;
 		uNodeNext		= 0;
@@ -360,7 +372,7 @@ class ValidationCount
 {
 public:
 	int trustedValidations, nodesUsing;
-	NewcoinAddress highNode;
+	uint160 highNodeUsing, highValidation;
 
 	ValidationCount() : trustedValidations(0), nodesUsing(0) { ; }
 	bool operator>(const ValidationCount& v)
@@ -371,8 +383,9 @@ public:
 		{
 			if (nodesUsing > v.nodesUsing) return true;
 			if (nodesUsing < v.nodesUsing) return false;
+			return highNodeUsing > v.highNodeUsing;
 		}
-		return highNode > v.highNode;
+		return highValidation > v.highValidation;
 	}
 };
 
@@ -390,7 +403,7 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 		if (mMode != omDISCONNECTED)
 		{
 			setMode(omDISCONNECTED);
-			Log(lsWARNING) << "Node count (" << peerList.size() <<
+			cLog(lsWARNING) << "Node count (" << peerList.size() <<
 				") has fallen below quorum (" << theConfig.NETWORK_QUORUM << ").";
 		}
 		return;
@@ -398,7 +411,7 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 	if (mMode == omDISCONNECTED)
 	{
 		setMode(omCONNECTED);
-		Log(lsINFO) << "Node count (" << peerList.size() << ") is sufficient.";
+		cLog(lsINFO) << "Node count (" << peerList.size() << ") is sufficient.";
 	}
 
 	if (mConsensus)
@@ -454,7 +467,7 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 
 	// FIXME: We may have a ledger with many recent validations but that no directly-connected
 	// node is using. THis is kind of fundamental.
-	Log(lsTRACE) << "NetworkOPs::checkLastClosedLedger";
+	cLog(lsTRACE) << "NetworkOPs::checkLastClosedLedger";
 
 	Ledger::pointer ourClosed = mLedgerMaster->getClosedLedger();
 	uint256 closedLedger = ourClosed->getHash();
@@ -462,10 +475,16 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 
 	boost::unordered_map<uint256, ValidationCount> ledgers;
 	{
-		boost::unordered_map<uint256, int> current = theApp->getValidations().getCurrentValidations(closedLedger);
-		typedef std::pair<const uint256, int> u256_int_pair;
-		BOOST_FOREACH(u256_int_pair& it, current)
-			ledgers[it.first].trustedValidations += it.second;
+		boost::unordered_map<uint256, currentValidationCount> current =
+			theApp->getValidations().getCurrentValidations(closedLedger);
+		typedef std::pair<const uint256, currentValidationCount> u256_cvc_pair;
+		BOOST_FOREACH(u256_cvc_pair& it, current)
+		{
+			ValidationCount& vc = ledgers[it.first];
+			vc.trustedValidations += it.second.first;
+			if (it.second.second > vc.highValidation)
+				vc.highValidation = it.second.second;
+		}
 	}
 
 	ValidationCount& ourVC = ledgers[closedLedger];
@@ -473,14 +492,16 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 	if ((theConfig.LEDGER_CREATOR) && (mMode >= omTRACKING))
 	{
 		++ourVC.nodesUsing;
-		ourVC.highNode = theApp->getWallet().getNodePublic();
+		uint160 ourAddress = theApp->getWallet().getNodePublic().getNodeID();
+		if (ourAddress > ourVC.highNodeUsing)
+			ourVC.highNodeUsing = ourAddress;
 	}
 
 	BOOST_FOREACH(Peer::ref it, peerList)
 	{
 		if (!it)
 		{
-			Log(lsDEBUG) << "NOP::CS Dead pointer in peer list";
+			cLog(lsDEBUG) << "NOP::CS Dead pointer in peer list";
 		}
 		else if (it->isConnected())
 		{
@@ -488,8 +509,8 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 			if (peerLedger.isNonZero())
 			{
 				ValidationCount& vc = ledgers[peerLedger];
-				if ((vc.nodesUsing == 0) || (it->getNodePublic() > vc.highNode))
-					vc.highNode = it->getNodePublic();
+				if ((vc.nodesUsing == 0) || (it->getNodePublic().getNodeID() > vc.highNodeUsing))
+					vc.highNodeUsing = it->getNodePublic().getNodeID();
 				++vc.nodesUsing;
 			}
 		}
@@ -502,8 +523,14 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 	for (boost::unordered_map<uint256, ValidationCount>::iterator it = ledgers.begin(), end = ledgers.end();
 		it != end; ++it)
 	{
-		Log(lsTRACE) << "L: " << it->first << " t=" << it->second.trustedValidations <<
+		cLog(lsTRACE) << "L: " << it->first << " t=" << it->second.trustedValidations <<
 			", n=" << it->second.nodesUsing;
+
+		// Temporary logging to make sure tiebreaking isn't broken
+		if (it->second.trustedValidations > 0)
+			cLog(lsTRACE) << "  TieBreakTV: " << it->second.highValidation;
+		else tLog(it->second.nodesUsing > 0, lsTRACE) << "  TieBreakNU: " << it->second.highNodeUsing;
+
 		if (it->second > bestVC)
 		{
 			bestVC = it->second;
@@ -514,6 +541,7 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 
 	if (switchLedgers && (closedLedger == prevClosedLedger))
 	{ // don't switch to our own previous ledger
+		cLog(lsINFO) << "We won't switch to our own previous ledger";
 		networkClosed = ourClosed->getHash();
 		switchLedgers = false;
 	}
@@ -531,22 +559,22 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 		return false;
 	}
 
-	Log(lsWARNING) << "We are not running on the consensus ledger";
-	Log(lsINFO) << "Our LCL " << ourClosed->getHash();
-	Log(lsINFO) << "Net LCL " << closedLedger;
+	cLog(lsWARNING) << "We are not running on the consensus ledger";
+	cLog(lsINFO) << "Our LCL " << ourClosed->getHash();
+	cLog(lsINFO) << "Net LCL " << closedLedger;
 	if ((mMode == omTRACKING) || (mMode == omFULL))
 		setMode(omCONNECTED);
 
 	Ledger::pointer consensus = mLedgerMaster->getLedgerByHash(closedLedger);
 	if (!consensus)
 	{
-		Log(lsINFO) << "Acquiring consensus ledger " << closedLedger;
+		cLog(lsINFO) << "Acquiring consensus ledger " << closedLedger;
 		if (!mAcquiringLedger || (mAcquiringLedger->getHash() != closedLedger))
 			mAcquiringLedger = theApp->getMasterLedgerAcquire().findCreate(closedLedger);
 		if (!mAcquiringLedger || mAcquiringLedger->isFailed())
 		{
 			theApp->getMasterLedgerAcquire().dropLedger(closedLedger);
-			Log(lsERROR) << "Network ledger cannot be acquired";
+			cLog(lsERROR) << "Network ledger cannot be acquired";
 			return true;
 		}
 		if (!mAcquiringLedger->isComplete())
@@ -583,9 +611,9 @@ void NetworkOPs::switchLastClosedLedger(Ledger::pointer newLedger, bool duringCo
 { // set the newledger as our last closed ledger -- this is abnormal code
 
 	if (duringConsensus)
-		Log(lsERROR) << "JUMPdc last closed ledger to " << newLedger->getHash();
+		cLog(lsERROR) << "JUMPdc last closed ledger to " << newLedger->getHash();
 	else
-		Log(lsERROR) << "JUMP last closed ledger to " << newLedger->getHash();
+		cLog(lsERROR) << "JUMP last closed ledger to " << newLedger->getHash();
 
 	newLedger->setClosed();
 	Ledger::pointer openLedger = boost::make_shared<Ledger>(false, boost::ref(*newLedger));
@@ -605,13 +633,13 @@ void NetworkOPs::switchLastClosedLedger(Ledger::pointer newLedger, bool duringCo
 
 int NetworkOPs::beginConsensus(const uint256& networkClosed, Ledger::pointer closingLedger)
 {
-	Log(lsINFO) << "Consensus time for ledger " << closingLedger->getLedgerSeq();
-	Log(lsINFO) << " LCL is " << closingLedger->getParentHash();
+	cLog(lsINFO) << "Consensus time for ledger " << closingLedger->getLedgerSeq();
+	cLog(lsINFO) << " LCL is " << closingLedger->getParentHash();
 
 	Ledger::pointer prevLedger = mLedgerMaster->getLedgerByHash(closingLedger->getParentHash());
 	if (!prevLedger)
 	{ // this shouldn't happen unless we jump ledgers
-		Log(lsWARNING) << "Don't have LCL, going to tracking";
+		cLog(lsWARNING) << "Don't have LCL, going to tracking";
 		setMode(omTRACKING);
 		return 3;
 	}
@@ -625,8 +653,26 @@ int NetworkOPs::beginConsensus(const uint256& networkClosed, Ledger::pointer clo
 		networkClosed, prevLedger, theApp->getMasterLedger().getCurrentLedger()->getCloseTimeNC());
 	mConsensus->swapDefer(mDeferredProposals);
 
-	Log(lsDEBUG) << "Initiating consensus engine";
+	cLog(lsDEBUG) << "Initiating consensus engine";
 	return mConsensus->startup();
+}
+
+bool NetworkOPs::haveConsensusObject()
+{
+	if (mConsensus)
+		return true;
+	if (mMode != omFULL)
+		return false;
+
+	uint256 networkClosed;
+	std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
+	bool ledgerChange = checkLastClosedLedger(peerList, networkClosed);
+	if (!ledgerChange)
+	{
+		cLog(lsWARNING) << "Beginning consensus due to peer action";
+		beginConsensus(networkClosed, theApp->getMasterLedger().getCurrentLedger());
+	}
+	return mConsensus;
 }
 
 // <-- bool: true to relay
@@ -651,27 +697,16 @@ bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash, cons
 
 	NewcoinAddress naPeerPublic = NewcoinAddress::createNodePublic(strCopy(pubKey));
 
-	if ((!mConsensus) && (mMode == omFULL))
+	if (!haveConsensusObject())
 	{
-		uint256 networkClosed;
-		std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
-		bool ledgerChange = checkLastClosedLedger(peerList, networkClosed);
-		if (!ledgerChange)
-		{
-			Log(lsWARNING) << "Beginning consensus due to proposal from peer";
-			beginConsensus(networkClosed, theApp->getMasterLedger().getCurrentLedger());
-		}
-	}
-	if (!mConsensus)
-	{
-		Log(lsINFO) << "Received proposal outside consensus window";
+		cLog(lsINFO) << "Received proposal outside consensus window";
 		return mMode != omFULL;
 	}
 
 	// Is this node on our UNL?
 	if (!theApp->getUNL().nodeInUNL(naPeerPublic))
 	{
-		Log(lsINFO) << "Untrusted proposal: " << naPeerPublic.humanNodePublic() << " " << proposeHash;
+		cLog(lsINFO) << "Untrusted proposal: " << naPeerPublic.humanNodePublic() << " " << proposeHash;
 		return true;
 	}
 
@@ -681,7 +716,7 @@ bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash, cons
 			boost::make_shared<LedgerProposal>(prevLedger, proposeSeq, proposeHash, closeTime, naPeerPublic);
 		if (!proposal->checkSign(signature))
 		{
-			Log(lsWARNING) << "New-style ledger proposal fails signature check";
+			cLog(lsWARNING) << "New-style ledger proposal fails signature check";
 			return false;
 		}
 		if (prevLedger == mConsensus->getLCL())
@@ -694,7 +729,7 @@ bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash, cons
 		boost::make_shared<LedgerProposal>(mConsensus->getLCL(), proposeSeq, proposeHash, closeTime, naPeerPublic);
 	if (!proposal->checkSign(signature))
 	{ // Note that if the LCL is different, the signature check will fail
-		Log(lsWARNING) << "Ledger proposal fails signature check";
+		cLog(lsWARNING) << "Ledger proposal fails signature check";
 		proposal->setSignature(signature);
 		mConsensus->deferProposal(proposal, nodePublic);
 		return false;
@@ -704,7 +739,7 @@ bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash, cons
 
 SHAMap::pointer NetworkOPs::getTXMap(const uint256& hash)
 {
-	if (!mConsensus)
+	if (!haveConsensusObject())
 		return SHAMap::pointer();
 	return mConsensus->getTransactionTree(hash, false);
 }
@@ -712,21 +747,24 @@ SHAMap::pointer NetworkOPs::getTXMap(const uint256& hash)
 bool NetworkOPs::gotTXData(const boost::shared_ptr<Peer>& peer, const uint256& hash,
 	const std::list<SHAMapNode>& nodeIDs, const std::list< std::vector<unsigned char> >& nodeData)
 {
-	if (!mConsensus)
+	if (!haveConsensusObject())
 		return false;
 	return mConsensus->peerGaveNodes(peer, hash, nodeIDs, nodeData);
 }
 
 bool NetworkOPs::hasTXSet(const boost::shared_ptr<Peer>& peer, const uint256& set, newcoin::TxSetStatus status)
 {
-	if (!mConsensus)
+	if (!haveConsensusObject())
+	{
+		cLog(lsINFO) << "Peer has TX set, not during consensus";
 		return false;
+	}
 	return mConsensus->peerHasSet(peer, set, status);
 }
 
 void NetworkOPs::mapComplete(const uint256& hash, SHAMap::ref map)
 {
-	if (mConsensus)
+	if (!haveConsensusObject())
 		mConsensus->mapComplete(hash, map, true);
 }
 
@@ -737,7 +775,7 @@ void NetworkOPs::endConsensus(bool correctLCL)
 	BOOST_FOREACH(Peer::ref it, peerList)
 		if (it && (it->getClosedLedgerHash() == deadLedger))
 		{
-			Log(lsTRACE) << "Killing obsolete peer status";
+			cLog(lsTRACE) << "Killing obsolete peer status";
 			it->cycleStatus();
 		}
 	mConsensus->swapDefer(mDeferredProposals);
@@ -812,7 +850,7 @@ std::vector<NewcoinAddress>
 
 bool NetworkOPs::recvValidation(const SerializedValidation::pointer& val)
 {
-	Log(lsINFO) << "recvValidation " << val->getLedgerHash();
+	cLog(lsINFO) << "recvValidation " << val->getLedgerHash();
 	return theApp->getValidations().addValidation(val);
 }
 
@@ -831,6 +869,11 @@ Json::Value NetworkOPs::getServerInfo()
 
 	if (!theConfig.VALIDATION_SEED.isValid()) info["serverState"] = "none";
 	else info["validationPKey"] = NewcoinAddress::createNodePublic(theConfig.VALIDATION_SEED).humanNodePublic();
+
+	Json::Value lastClose = Json::objectValue;
+	lastClose["proposers"] = theApp->getOPs().getPreviousProposers();
+	lastClose["convergeTime"] = theApp->getOPs().getPreviousConvergeTime();
+	info["lastClose"] = lastClose;
 
 	if (mConsensus)
 		info["consensus"] = mConsensus->getJson();
