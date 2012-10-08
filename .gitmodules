@@ -1,3 +1,9 @@
 [submodule "websocketpp"]
 	path = websocketpp
 	url = https://github.com/zaphoyd/websocketpp.git
+[submodule "js/cryptojs"]
+	path = js/cryptojs
+	url = git://github.com/gwjjeff/cryptojs.git
+[submodule "js/sjcl"]
+	path = js/sjcl
+	url = git://github.com/bitwiseshiftleft/sjcl.git
