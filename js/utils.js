@@ -128,11 +128,16 @@ var trace = function(comment, func) {
 };
 
 var hexToString = function (h) {
-  var	c = h.length % 1 ? "0" + h : h;
   var	a = [];
+  var	i = 0;
 
-  for (i=0; i != c.length; i += 2) {
-    a.push(String.fromCharCode(parseInt(c.substring(i, i+2), 16)));
+  if (h.length % 2) {
+    a.push(String.fromCharCode(parseInt(h.substring(0, 1), 16)));
+    i = 1;
+  }
+
+  for (; i != h.length; i += 2) {
+    a.push(String.fromCharCode(parseInt(h.substring(i, i+2), 16)));
   }
   
   return a.join("");
