@@ -30,7 +30,6 @@
 	FIELD(TransactionType,		UINT16, 2)
 
 	// 32-bit integers (common)
-	FIELD(ObjectType,			UINT32, 1)
 	FIELD(Flags,				UINT32, 2)
 	FIELD(SourceTag,			UINT32, 3)
 	FIELD(Sequence,				UINT32, 4)
@@ -91,7 +90,7 @@
 	FIELD(Fee,					AMOUNT, 8)
 	FIELD(SendMax,				AMOUNT, 9)
 
-	// current amount (uncommon)
+	// currency amount (uncommon)
 	FIELD(MinimumOffer,			AMOUNT, 16)
 	FIELD(RippleEscrow,			AMOUNT, 17)
 
@@ -113,8 +112,6 @@
 	FIELD(Owner,				ACCOUNT, 2)
 	FIELD(Destination,			ACCOUNT, 3)
 	FIELD(Issuer,				ACCOUNT, 4)
-	FIELD(HighID,				ACCOUNT, 5)
-	FIELD(LowID,				ACCOUNT, 6)
 	FIELD(Target,				ACCOUNT, 7)
 	FIELD(AuthorizedKey,		ACCOUNT, 8)
 

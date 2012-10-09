@@ -56,6 +56,9 @@ public:
 	std::vector<std::string>	IPS;					// Peer IPs from newcoind.cfg.
 	std::vector<std::string>	SNTP_SERVERS;			// SNTP servers from newcoind.cfg.
 
+	enum StartUpType {FRESH,NORMAL,LOAD};
+	StartUpType					START_UP;
+
 	// Network parameters
 	int							NETWORK_START_TIME;		// The Unix time we start ledger 0.
 	int							TRANSACTION_FEE_BASE;

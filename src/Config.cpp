@@ -155,6 +155,7 @@ void Config::setup(const std::string& strConf)
 	VALIDATORS_SITE			= DEFAULT_VALIDATORS_SITE;
 
 	RUN_STANDALONE			= false;
+	START_UP				= NORMAL;
 
 	load();
 }

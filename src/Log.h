@@ -28,12 +28,12 @@
 
 enum LogSeverity
 {
-	lsTRACE		= 0,
-	lsDEBUG		= 1,
-	lsINFO		= 2,
-	lsWARNING	= 3,
-	lsERROR		= 4,
-	lsFATAL		= 5
+	lsTRACE		= 0,	// Very low-level progress information, details inside an operation
+	lsDEBUG		= 1,	// Function-level progress information, operations
+	lsINFO		= 2,	// Server-level progress information, major operations
+	lsWARNING	= 3,	// Conditions that warrant human attention, may indicate a problem
+	lsERROR		= 4,	// A condition that indicates a problem
+	lsFATAL		= 5		// A severe condition that indicates a server problem
 };
 
 class LogPartition

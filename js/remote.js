@@ -63,7 +63,7 @@ var fees = {
   'offer' : 100,
 };
 
-Remote.method('connect_helper', function () {
+Remote.prototype.connect_helper = function () {
   var self = this;
   
   if (this.trace) console.log("remote: connect: %s", this.url);
@@ -88,11 +88,13 @@ Remote.method('connect_helper', function () {
     
     if (self.expire) {
       if (this.trace) console.log("remote: was expired");
+
       self.done(ws.readyState);
     } else {
       // Delay and retry.
       setTimeout(function () {
 	if (this.trace) console.log("remote: retry");
+
 	self.connect_helper();
       }, 50); // Retry rate 50ms.
     }
@@ -101,6 +103,7 @@ Remote.method('connect_helper', function () {
   // Covers failure to open.
   ws.onclose = function () {
     if (this.trace) console.log("remote: onclose: %s", ws.readyState);
+
     ws.onerror = undefined;
     self.done(ws.readyState);
   };
@@ -112,6 +115,7 @@ Remote.method('connect_helper', function () {
     
     if (message.type !== 'response') {
       console.log("unexpected message: %s", json);
+
     } else {
       var done = ws.response[message.id];
       if (done) {
@@ -121,12 +125,12 @@ Remote.method('connect_helper', function () {
       }
     }
   });
-});
+};
 
 // Target state is connectted.
 // done(readyState):
 // --> readyState: OPEN, CLOSED
-Remote.method('connect', function (done, timeout) {
+Remote.prototype.connect = function (done, timeout) {
   var self = this;
   
   this.url = util.format("ws://%s:%s", this.websocket_ip, this.websocket_port);
@@ -147,10 +151,10 @@ Remote.method('connect', function (done, timeout) {
   }
   
   this.connect_helper();
-});
+};
 
 // Target stated is disconnected.
-Remote.method('disconnect', function (done) {
+Remote.prototype.disconnect = function (done) {
   var self  = this;
   var ws    = this.ws;
   
@@ -160,11 +164,11 @@ Remote.method('disconnect', function (done) {
   };
   
   ws.close();
-});
+};
 
 // Send a request. The request should lack the id.
 // <-> request: what to send, consumed.
-Remote.method('request', function (request, onDone, onFailure) {
+Remote.prototype.request = function (request, onDone, onFailure) {
   var self  = this;
 
   this.id += 1;   // Advance id.
@@ -187,24 +191,24 @@ Remote.method('request', function (request, onDone, onFailure) {
   if (this.trace) console.log("remote: request: %s", JSON.stringify(request));
   
   this.ws.send(JSON.stringify(request));
-});
+};
 
-Remote.method('request_ledger_closed', function (onDone, onFailure) {
+Remote.prototype.request_ledger_closed = function (onDone, onFailure) {
   assert(this.trusted);   // If not trusted, need to check proof.
   this.request({ 'command' : 'ledger_closed' }, onDone, onFailure);
-});
+};
 
 // Get the current proposed ledger entry.  May be closed (and revised) at any time (even before returning).
 // Only for use by unit tests.
-Remote.method('request_ledger_current', function (onDone, onFailure) {
+Remote.prototype.request_ledger_current = function (onDone, onFailure) {
   this.request({ 'command' : 'ledger_current' }, onDone, onFailure);
-});
+};
 
 // <-> request:
 // --> ledger : optional
 // --> ledger_index : optional
 // --> type
-Remote.method('request_ledger_entry', function (req, onDone, onFailure) {
+Remote.prototype.request_ledger_entry = function (req, onDone, onFailure) {
   var self  = this;
 
   assert(this.trusted);   // If not trusted, need to check proof, maybe talk packet protocol.
@@ -264,12 +268,12 @@ Remote.method('request_ledger_entry', function (req, onDone, onFailure) {
 	}, onFailure);
     }
   }
-});
+};
 
 // Submit a json transaction.
 // done(value)
 // XXX <-> value: { 'status', status, 'result' : result, ... }
-Remote.method('submit', function (req, onDone, onFailure) {
+Remote.prototype.submit = function (req, onDone, onFailure) {
   if (this.trace) console.log("remote: submit: %s", JSON.stringify(req));
 
   req.command = 'submit';
@@ -282,7 +286,7 @@ Remote.method('submit', function (req, onDone, onFailure) {
   {
     this.request(req, onDone, onFailure);
   }
-});
+};
 
 //
 // Higher level functions.
@@ -290,7 +294,7 @@ Remote.method('submit', function (req, onDone, onFailure) {
 
 // Subscribe to a server to get the current and closed ledger.
 // XXX Set up routine to update on notification.
-Remote.method('server_subscribe', function (onDone, onFailure) {
+Remote.prototype.server_subscribe = function (onDone, onFailure) {
   var self  = this;
 
   this.request(
@@ -303,11 +307,11 @@ Remote.method('server_subscribe', function (onDone, onFailure) {
     },
     onFailure
   );
-});
+};
 
 // Refresh accounts[account].seq
 // done(result);
-Remote.method('account_seq', function (account, advance, onDone, onFailure) {
+Remote.prototype.account_seq = function (account, advance, onDone, onFailure) {
   var self = this;
   var account_root_entry = this.accounts[account];
   
@@ -341,10 +345,10 @@ Remote.method('account_seq', function (account, advance, onDone, onFailure) {
       onFailure
     );
   }
-});
+};
 
 // A submit that fills in the sequence number.
-Remote.method('submit_seq', function (trans, onDirty, onDone, onFailure) {
+Remote.prototype.submit_seq = function (trans, onDirty, onDone, onFailure) {
   var self = this;
 
   // Get the next sequence number for the account.
@@ -354,18 +358,18 @@ Remote.method('submit_seq', function (trans, onDirty, onDone, onFailure) {
       self.submit(trans, onDone, onFailure);
     },
     onFailure);
-});
+};
 
 // Mark an account's root node as dirty.
-Remote.method('dirty_account_root', function (account) {
+Remote.prototype.dirty_account_root = function (account) {
   delete this.ledgers.current.account_root.account;
-});
+};
 
 //
 // Transactions
 //
 
-Remote.method('ripple_line_set', function (secret, src, dst, amount, onDone) {
+Remote.prototype.ripple_line_set = function (secret, src, dst, amount, onDone) {
   var secret	  = this.config.accounts[src] ? this.config.accounts[src].secret : secret;
   var src_account = this.config.accounts[src] ? this.config.accounts[src].account : src;
   var dst_account = this.config.accounts[dst] ? this.config.accounts[dst].account : dst;
@@ -382,9 +386,9 @@ Remote.method('ripple_line_set', function (secret, src, dst, amount, onDone) {
 	'secret' : secret,
       }, function () {
       }, onDone);
-});
+};
 
-Remote.method('send_xns', function (secret, src, dst, amount, create, onDone) {
+Remote.prototype.send_xns = function (secret, src, dst, amount, create, onDone) {
   var secret	  = this.config.accounts[src] ? this.config.accounts[src].secret : secret;
   var src_account = this.config.accounts[src] ? this.config.accounts[src].account : src;
   var dst_account = this.config.accounts[dst] ? this.config.accounts[dst].account : dst;
@@ -402,7 +406,7 @@ Remote.method('send_xns', function (secret, src, dst, amount, create, onDone) {
 	'secret' : secret,
       }, function () {
       }, onDone);
-});
+};
 
 exports.Remote          = Remote;
 exports.remoteConfig    = remoteConfig;
