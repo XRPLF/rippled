@@ -424,7 +424,7 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 	// If full or tracking, check only at wobble time!
 	uint256 networkClosed;
 	bool ledgerChange = checkLastClosedLedger(peerList, networkClosed);
-	assert(networkClosed.isNonZero());
+	if(networkClosed.isZero())return;
 
 	// WRITEME: Unless we are in omFULL and in the process of doing a consensus,
 	// we must count how many nodes share our LCL, how many nodes disagree with our LCL,
@@ -438,7 +438,7 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 		setMode(omTRACKING);
 	}
 
-	if ((mMode == omTRACKING) && !ledgerChange)
+	if ((mMode == omTRACKING) && !ledgerChange )
 	{
 		// check if the ledger is good enough to go to omFULL
 		// Note: Do not go to omFULL if we don't have the previous ledger
@@ -470,6 +470,8 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 	Log(lsTRACE) << "NetworkOPs::checkLastClosedLedger";
 
 	Ledger::pointer ourClosed = mLedgerMaster->getClosedLedger();
+	if(!ourClosed) return(false);
+
 	uint256 closedLedger = ourClosed->getHash();
 	uint256 prevClosedLedger = ourClosed->getParentHash();
 

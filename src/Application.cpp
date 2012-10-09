@@ -73,6 +73,7 @@ void Application::run()
 	boost::thread auxThread(boost::bind(&boost::asio::io_service::run, &mAuxService));
 	auxThread.detach();
 
+
 	if (!theConfig.RUN_STANDALONE)
 		mSNTPClient.init(theConfig.SNTP_SERVERS);
 
@@ -87,9 +88,24 @@ void Application::run()
 	boost::thread t6(boost::bind(&InitDB, &mNetNodeDB, "netnode.db", NetNodeDBInit, NetNodeDBCount));
 	t1.join(); t2.join(); t3.join(); t4.join(); t5.join(); t6.join();
 
+	if(theConfig.START_UP==Config::FRESH)
+	{
+		Log(lsINFO) << "Starting new Ledger";
+		startNewLedger();	
+	}else if(theConfig.START_UP==Config::LOAD)
+	{
+		Log(lsINFO) << "Loading Old Ledger";
+		loadOldLedger();
+	}else
+	{ // TODO: This should really not validate a ledger until it gets the current one from our peers
+		// but I'll let david make this change since a lot of code assumes we have a ledger
+		// for now just do what we always were doing
+		startNewLedger();
+	}
+
 	//
 	// Begin validation and ip maintenance.
-	// - Wallet maintains local information: including identity and network connection persistency information.
+	// - Wallet maintains local information: including identity and network connection persistence information.
 	//
 	mWallet.start();
 
@@ -132,6 +148,34 @@ void Application::run()
 	if (!theConfig.RUN_STANDALONE)
 		mConnectionPool.start();
 
+
+	
+	if (theConfig.RUN_STANDALONE)
+	{
+		Log(lsWARNING) << "Running in standalone mode";
+		mNetOps.setStandAlone();
+		mMasterLedger.runStandAlone();
+	}
+	else
+		mNetOps.setStateTimer();
+
+	mIOService.run(); // This blocks
+
+	mWSDoor->stop();
+
+	std::cout << "Done." << std::endl;
+}
+
+Application::~Application()
+{
+	delete mTxnDB;
+	delete mLedgerDB;
+	delete mWalletDB;
+	delete mHashNodeDB;
+	delete mNetNodeDB;
+}
+void Application::startNewLedger()
+{
 	// New stuff.
 	NewcoinAddress	rootSeedMaster		= NewcoinAddress::createSeedGeneric("masterpassphrase");
 	NewcoinAddress	rootGeneratorMaster	= NewcoinAddress::createGeneratorPublic(rootSeedMaster);
@@ -156,30 +200,18 @@ void Application::run()
 		assert(!!secondLedger->getAccountState(rootAddress));
 		mNetOps.setLastCloseTime(secondLedger->getCloseTimeNC());
 	}
-
-
-	if (theConfig.RUN_STANDALONE)
-	{
-		Log(lsWARNING) << "Running in standalone mode";
-		mNetOps.setStandAlone();
-		mMasterLedger.runStandAlone();
-	}
-	else
-		mNetOps.setStateTimer();
-
-	mIOService.run(); // This blocks
-
-	mWSDoor->stop();
-
-	std::cout << "Done." << std::endl;
 }
 
-Application::~Application()
+void Application::loadOldLedger()
 {
-	delete mTxnDB;
-	delete mLedgerDB;
-	delete mWalletDB;
-	delete mHashNodeDB;
-	delete mNetNodeDB;
+	Ledger::pointer lastLedger = Ledger::getSQL("SELECT * from Ledgers order by LedgerSeq desc limit 1;",true);
+
+	if(!lastLedger) 
+	{
+		std::cout << "No Ledger found?" << std::endl;
+		exit(-1);
+	}
+	mMasterLedger.pushLedger(lastLedger);
+	mNetOps.setLastCloseTime(lastLedger->getCloseTimeNC());
 }
 // vim:ts=4

@@ -98,6 +98,8 @@ int main(int argc, char* argv[])
 		("test,t", "Perform unit tests.")
 		("parameters", po::value< vector<string> >(), "Specify comma separated parameters.")
 		("verbose,v", "Increase log level.")
+		("load","Load the current ledger from the local DB.")
+		("start","Start from a fresh Ledger.")
 	;
 
 	// Interpret positional arguments as --parameters.
@@ -153,6 +155,9 @@ int main(int argc, char* argv[])
 			theConfig.RUN_STANDALONE = true;
 		}
 	}
+
+	if(vm.count("start")) theConfig.START_UP=Config::FRESH;
+	else if(vm.count("load")) theConfig.START_UP=Config::LOAD;
 
 	if (iResult)
 	{

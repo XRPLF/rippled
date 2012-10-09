@@ -37,11 +37,11 @@ Ledger::Ledger(const NewcoinAddress& masterID, uint64 startAmount) : mTotCoins(s
 }
 
 Ledger::Ledger(const uint256 &parentHash, const uint256 &transHash, const uint256 &accountHash,
-	uint64 totCoins, uint32 closeTime, uint32 parentCloseTime, int closeFlags, int closeResolution, uint32 ledgerSeq)
+	uint64 totCoins, uint32 closeTime, uint32 parentCloseTime, int closeFlags, int closeResolution, uint32 ledgerSeq,bool isMutable)
 		: mParentHash(parentHash), mTransHash(transHash), mAccountHash(accountHash), mTotCoins(totCoins),
 		mLedgerSeq(ledgerSeq), mCloseTime(closeTime), mParentCloseTime(parentCloseTime),
 		mCloseResolution(closeResolution), mCloseFlags(closeFlags),
-		mClosed(false), mValidHash(false), mAccepted(false), mImmutable(false)
+		mClosed(false), mValidHash(false), mAccepted(false), mImmutable(isMutable)
 {
 	updateHash();
 }
@@ -390,7 +390,7 @@ void Ledger::saveAcceptedLedger(Ledger::ref ledger)
 	theApp->getOPs().pubLedger(ledger);
 }
 
-Ledger::pointer Ledger::getSQL(const std::string& sql)
+Ledger::pointer Ledger::getSQL(const std::string& sql,bool isMutable)
 {
 	uint256 ledgerHash, prevHash, accountHash, transHash;
 	uint64 totCoins;
@@ -423,9 +423,8 @@ Ledger::pointer Ledger::getSQL(const std::string& sql)
 		db->endIterRows();
 	}
 
-	Ledger::pointer ret =
-		boost::make_shared<Ledger>(prevHash, transHash, accountHash, totCoins, closingTime, prevClosingTime,
-			closeFlags, closeResolution, ledgerSeq);
+	Ledger::pointer ret =Ledger::pointer(new Ledger(prevHash, transHash, accountHash, totCoins, closingTime, prevClosingTime,
+			closeFlags, closeResolution, ledgerSeq,isMutable));
 	if (ret->getHash() != ledgerHash)
 	{
 		Json::StyledStreamWriter ssw;

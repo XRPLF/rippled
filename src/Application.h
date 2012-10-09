@@ -67,6 +67,9 @@ class Application
 	std::map<std::string, Peer::pointer> mPeerMap;
 	boost::recursive_mutex	mPeerMapLock;
 
+	void startNewLedger();
+	void loadOldLedger();
+
 public:
 	Application();
 	~Application();

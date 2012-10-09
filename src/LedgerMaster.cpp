@@ -21,7 +21,7 @@ bool LedgerMaster::addHeldTransaction(const Transaction::pointer& transaction)
 void LedgerMaster::pushLedger(Ledger::ref newLedger)
 {
 	// Caller should already have properly assembled this ledger into "ready-to-close" form --
-	// all candidate transactions must already be appled
+	// all candidate transactions must already be applied
 	Log(lsINFO) << "PushLedger: " << newLedger->getHash();
 	ScopedLock sl(mLock);
 	if (!!mFinalizedLedger)
@@ -69,6 +69,8 @@ void LedgerMaster::storeLedger(Ledger::ref ledger)
 {
 	mLedgerHistory.addLedger(ledger);
 }
+
+
 
 Ledger::pointer LedgerMaster::closeLedger()
 {
