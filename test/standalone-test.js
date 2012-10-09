@@ -24,6 +24,9 @@ buster.testCase("Utils", {
     },
     "Under 10: 1" : function () {
       buster.assert.equals("01", utils.stringToHex(utils.hexToString("1")));
+    },
+    "Empty" : function () {
+      buster.assert.equals("", utils.stringToHex(utils.hexToString("")));
     }
   }
 });
