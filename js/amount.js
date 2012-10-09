@@ -10,7 +10,7 @@ var UInt160 = function () {
 };
 
 // Returns NaN on error.
-UInt160.method('parse_json', function (j) {
+UInt160.prototype.parse_json = function (j) {
   // Canonicalize and validate
 
   switch (j) {
@@ -50,11 +50,11 @@ UInt160.method('parse_json', function (j) {
   }
 
   return this.value;
-});
+};
 
 // Convert from internal form.
 // XXX Json form should allow 0 and 1, C++ doesn't currently allow it.
-UInt160.method('to_json', function () {
+UInt160.prototype.to_json = function () {
   if ("0" === this.value) {
     return exports.consts.hex_xns;
   }
@@ -69,7 +69,7 @@ UInt160.method('to_json', function () {
   {
     return this.value;  
   }
-});
+};
 
 var Currency = function () {
   // Internal form: 0 = XNS. 3 letter-code.
@@ -82,7 +82,7 @@ var Currency = function () {
 }
 
 // Returns NaN on error.
-Currency.method('parse_json', function (j) {
+Currency.prototype.parse_json = function (j) {
   if ("" === j || "0" === j || "XNS" === j) {
     this.value	= 0;
   }
@@ -94,15 +94,15 @@ Currency.method('parse_json', function (j) {
   }
 
   return this.value;
-});
+};
 
-Currency.method('to_json', function () {
+Currency.prototype.to_json = function () {
   return this.value ? this.value : 'XNS';
-});
+};
 
-Currency.method('to_human', function() {
+Currency.prototype.to_human = function() {
   return this.value ? this.value : 'XNS';
-});
+};
 
 var Amount = function () {
   // Json format:
@@ -116,16 +116,15 @@ var Amount = function () {
 
   this.currency	    = new Currency();
   this.issuer	    = new UInt160();
-
-}
+};
 
 // Convert only value to JSON text.
-Amount.method('to_text', function() {
+Amount.prototype.to_text = function() {
   // XXX Needs to work for native and non-native.
   return this.is_negative ? -this.value : this.value;	  // XXX Use biginteger.
-});
+};
 
-Amount.method('to_json', function() {
+Amount.prototype.to_json = function() {
   if (this.is_native) {
     return this.to_text();
   }
@@ -137,49 +136,49 @@ Amount.method('to_json', function() {
       'issuer' : this.issuer.to_json(),
     };
   }
-});
+};
 
 // Parse a native value.
-Amount.method('parse_native', function() {
+Amount.prototype.parse_native = function(j) {
   if ('integer' === typeof j) {
     // XNS
-    this.value	      = x >= 0 ? j : -j;  // XXX Use biginteger.
+    this.value	      = j >= 0 ? j : -j;  // XXX Use biginteger.
     this.offset	      = 0;
     this.is_native    = true;
-    this.is_negative  = x < 0;
+    this.is_negative  = j < 0;
   } 
   else if ('string' === typeof j) {
-    this.value	      = x >= 0 ? j : -j;  // XXX Use biginteger.
+    this.value	      = j >= 0 ? j : -j;  // XXX Use biginteger.
     this.offset	      = 0;
     this.is_native    = true;
-    this.is_negative  = x < 0;
+    this.is_negative  = j < 0;
   }
   else {
     this.value	      = NaN;
   }
-});
+};
 
 // Parse a non-native value.
-Amount.method('parse_value', function() {
+Amount.prototype.parse_value = function(j) {
   if ('integer' === typeof j) {
-    this.value	      = x >= 0 ? j : -j;  // XXX Use biginteger.
+    this.value	      = j >= 0 ? j : -j;  // XXX Use biginteger.
     this.offset	      = 0;
     this.is_native    = false;
-    this.is_negative  = x < 0;
+    this.is_negative  = j < 0;
   } 
   else if ('string' === typeof j) {
-    this.value	      = x >= 0 ? j : -j;  // XXX Use biginteger.
+    this.value	      = j >= 0 ? j : -j;  // XXX Use biginteger.
     this.offset	      = 0;
     this.is_native    = false;
-    this.is_negative  = x < 0;
+    this.is_negative  = j < 0;
   }
   else {
     this.value	      = NaN;
   }
-});
+};
 
 // <-> j
-Amount.method('parse_json', function(j) {
+Amount.prototype.parse_json = function(j) {
   if ('object' === typeof j && j.currency) {
 
     this.parse_value(j);
@@ -191,13 +190,13 @@ Amount.method('parse_json', function(j) {
     this.currency = 0;
     this.issuer  = 0;
   }
-});
+};
 
-exports.UInt160  = UInt160;
+exports.Amount	  = Amount;
 exports.Currency  = Currency;
-exports.Amount  = Amount;
+exports.UInt160	  = UInt160;
 
-exports.consts	= {
+exports.consts	  = {
   'address_xns' : "iiiiiiiiiiiiiiiiiiiiihoLvTp",
   'address_one' : "iiiiiiiiiiiiiiiiiiiiBZbvjr",
   'currency_xns' : 0,
