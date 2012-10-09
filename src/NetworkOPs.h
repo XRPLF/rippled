@@ -190,6 +190,7 @@ public:
 	uint32 getLastCloseTime()			{ return mLastCloseTime; }
 	void setLastCloseTime(uint32 t)		{ mLastCloseTime = t; }
 	Json::Value getServerInfo();
+	uint32 acceptLedger();
 
 	// client information retrieval functions
 	std::vector< std::pair<uint32, uint256> >

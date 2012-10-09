@@ -527,15 +527,20 @@ void LedgerConsensus::statePreClose()
 	}
 
 	if (ContinuousLedgerTiming::shouldClose(anyTransactions, mPreviousProposers, proposersClosed,
-			mPreviousMSeconds, sinceClose, idleInterval))
-	{ // it is time to close the ledger
+				mPreviousMSeconds, sinceClose, idleInterval))
+	{
+		closeLedger();
+	}
+}
+
+void LedgerConsensus::closeLedger()
+{
 		mState = lcsESTABLISH;
 		mConsensusStartTime = boost::posix_time::microsec_clock::universal_time();
 		mCloseTime = theApp->getOPs().getCloseTimeNC();
 		theApp->getOPs().setLastCloseTime(mCloseTime);
 		statusChange(newcoin::neCLOSING_LEDGER, *mPreviousLedger);
 		takeInitialPosition(*theApp->getMasterLedger().closeLedger());
-	}
 }
 
 void LedgerConsensus::stateEstablish()
@@ -551,7 +556,7 @@ void LedgerConsensus::stateEstablish()
 	{
 		cLog(lsINFO) << "Converge cutoff (" << mPeerPositions.size() << " participants)";
 		mState = lcsFINISHED;
-		beginAccept();
+		beginAccept(false);
 	}
 }
 
@@ -929,7 +934,7 @@ bool LedgerConsensus::peerGaveNodes(Peer::ref peer, const uint256& setHash,
 	return set->takeNodes(nodeIDs, nodeData, peer);
 }
 
-void LedgerConsensus::beginAccept()
+void LedgerConsensus::beginAccept(bool synchronous)
 {
 	SHAMap::pointer consensusSet = mAcquired[mOurPosition->getCurrentHash()];
 	if (!consensusSet)
@@ -940,7 +945,10 @@ void LedgerConsensus::beginAccept()
 	}
 
 	theApp->getOPs().newLCL(mPeerPositions.size(), mCurrentMSeconds, mNewLedgerHash);
-	theApp->getIOService().post(boost::bind(&LedgerConsensus::Saccept, shared_from_this(), consensusSet));
+	if (synchronous)
+		accept(consensusSet);
+	else
+		theApp->getIOService().post(boost::bind(&LedgerConsensus::Saccept, shared_from_this(), consensusSet));
 }
 
 void LedgerConsensus::Saccept(boost::shared_ptr<LedgerConsensus> This, SHAMap::pointer txSet)
@@ -1173,7 +1181,6 @@ void LedgerConsensus::accept(SHAMap::ref set)
 		theApp->getOPs().closeTimeOffset(offset);
 	}
 
-#ifdef DEBUG
 	if (sLog(lsTRACE))
 	{
 		Log(lsTRACE) << "newLCL";
@@ -1181,12 +1188,21 @@ void LedgerConsensus::accept(SHAMap::ref set)
 		newLCL->addJson(p, LEDGER_JSON_DUMP_TXNS | LEDGER_JSON_DUMP_STATE);
 		Log(lsTRACE) << p;
 	}
-#endif
 }
 
 void LedgerConsensus::endConsensus()
 {
 	theApp->getOPs().endConsensus(mHaveCorrectLCL);
+}
+
+void LedgerConsensus::simulate()
+{
+	cLog(lsINFO) << "Simulating consensus";
+	closeLedger();
+	mCurrentMSeconds = 100;
+	beginAccept(true);
+	endConsensus();
+	cLog(lsINFO) << "Simulation complete";
 }
 
 Json::Value LedgerConsensus::getJson()

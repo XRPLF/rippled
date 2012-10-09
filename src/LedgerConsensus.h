@@ -148,8 +148,9 @@ protected:
 	void updateOurPositions();
 	void playbackProposals();
 	int getThreshold();
+	void closeLedger();
 
-	void beginAccept();
+	void beginAccept(bool synchronous);
 	void endConsensus();
 
 public:
@@ -189,6 +190,8 @@ public:
 	void swapDefer(boost::unordered_map< uint160, std::list<LedgerProposal::pointer> > &n)
 		{ mDeferredProposals.swap(n); }
 
+	// test/debug
+	void simulate();
 };
 
 
