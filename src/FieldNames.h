@@ -43,6 +43,8 @@ protected:
 	static std::map<int, ptr>	codeToField;
 	static boost::mutex			mapMutex;
 
+	SField(SerializedTypeID id, int val);
+
 public:
 
 	const int				fieldCode;		// (type<<16)|index
@@ -80,6 +82,7 @@ public:
 	bool isInvalid() const		{ return fieldCode == -1; }
 	bool isKnown() const		{ return fieldType != STI_UNKNOWN; }
 	bool isBinary() const		{ return fieldValue < 256; }
+	bool isDiscardable() const	{ return fieldValue > 256; }
 
 	bool operator==(const SField& f) const { return fieldCode == f.fieldCode; }
 	bool operator!=(const SField& f) const { return fieldCode != f.fieldCode; }

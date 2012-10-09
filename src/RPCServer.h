@@ -23,6 +23,7 @@ public:
 		// Misc failure
 		rpcLOAD_FAILED,
 		rpcNO_PERMISSION,
+		rpcNOT_STANDALONE,
 
 		// Networking
 		rpcNO_CLOSED,
@@ -128,6 +129,7 @@ private:
 
 	Json::Value accountFromString(const uint256& uLedger, NewcoinAddress& naAccount, bool& bIndex, const std::string& strIdent, const int iIndex);
 
+	Json::Value doAcceptLedger(const Json::Value &params);
 	Json::Value doAccountDomainSet(const Json::Value &params);
 	Json::Value doAccountEmailSet(const Json::Value &params);
 	Json::Value doAccountInfo(const Json::Value& params);

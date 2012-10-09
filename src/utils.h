@@ -25,11 +25,22 @@ extern uint64_t be64toh(uint64_t value);
 extern uint32_t htobe32(uint32_t value);
 extern uint32_t be32toh(uint32_t value);
 #elif __APPLE__
-#define be16toh(x) betoh16(x)
-#define be32toh(x) betoh32(x)
-#define be64toh(x) betoh64(x)
-#define h64tobe(x) htobe64(x)
-#define h32tobe(x) htobe32(x)
+#include <libkern/OSByteOrder.h>
+
+#define htobe16(x) OSSwapHostToBigInt16(x)
+#define htole16(x) OSSwapHostToLittleInt16(x)
+#define be16toh(x) OSSwapBigToHostInt16(x)
+#define le16toh(x) OSSwapLittleToHostInt16(x)
+
+#define htobe32(x) OSSwapHostToBigInt32(x)
+#define htole32(x) OSSwapHostToLittleInt32(x)
+#define be32toh(x) OSSwapBigToHostInt32(x)
+#define le32toh(x) OSSwapLittleToHostInt32(x)
+
+#define htobe64(x) OSSwapHostToBigInt64(x)
+#define htole64(x) OSSwapHostToLittleInt64(x)
+#define be64toh(x) OSSwapBigToHostInt64(x)
+#define le64toh(x) OSSwapLittleToHostInt64(x)
 #endif
 
 
@@ -150,6 +161,8 @@ bool isZero(Iterator first, int iSize)
 
 int charUnHex(char cDigit);
 void strUnHex(std::string& strDst, const std::string& strSrc);
+
+uint64_t uintFromHex(const std::string& strSrc);
 
 std::vector<unsigned char> strUnHex(const std::string& strSrc);
 

@@ -19,6 +19,7 @@
 #include "HashPrefixes.h"
 #include "Log.h"
 
+SETUP_LOG();
 
 Ledger::Ledger(const NewcoinAddress& masterID, uint64 startAmount) : mTotCoins(startAmount), mLedgerSeq(1),
 	mCloseTime(0), mParentCloseTime(0), mCloseResolution(LEDGER_TIME_ACCURACY), mCloseFlags(0),
@@ -427,11 +428,13 @@ Ledger::pointer Ledger::getSQL(const std::string& sql,bool isMutable)
 			closeFlags, closeResolution, ledgerSeq,isMutable));
 	if (ret->getHash() != ledgerHash)
 	{
-		Json::StyledStreamWriter ssw;
-		Log(lsERROR) << "Failed on ledger";
-		Json::Value p;
-		ret->addJson(p, LEDGER_JSON_FULL);
-		ssw.write(Log(lsERROR).ref(), p);
+		if (sLog(lsERROR))
+		{
+			Log(lsERROR) << "Failed on ledger";
+			Json::Value p;
+			ret->addJson(p, LEDGER_JSON_FULL);
+			Log(lsERROR) << p;
+		}
 		assert(false);
 		return Ledger::pointer();
 	}

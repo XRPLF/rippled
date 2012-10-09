@@ -64,6 +64,11 @@ std::string STUInt8::getText() const
 	return boost::lexical_cast<std::string>(value);
 }
 
+Json::Value STUInt8::getJson(int) const
+{
+	return value;
+}
+
 bool STUInt8::isEquivalent(const SerializedType& t) const
 {
 	const STUInt8* v = dynamic_cast<const STUInt8*>(&t);
@@ -92,6 +97,23 @@ std::string STUInt16::getText() const
 	return boost::lexical_cast<std::string>(value);
 }
 
+Json::Value STUInt16::getJson(int) const
+{
+	if (getFName() == sfLedgerEntryType)
+	{
+		LedgerEntryFormat *f = LedgerEntryFormat::getLgrFormat(value);
+		if (f != NULL)
+			return f->t_name;
+	}
+	if (getFName() == sfTransactionType)
+	{
+		TransactionFormat *f = TransactionFormat::getTxnFormat(value);
+		if (f != NULL)
+			return f->t_name;
+	}
+	return value;
+}
+
 bool STUInt16::isEquivalent(const SerializedType& t) const
 {
 	const STUInt16* v = dynamic_cast<const STUInt16*>(&t);
@@ -108,6 +130,11 @@ std::string STUInt32::getText() const
 	return boost::lexical_cast<std::string>(value);
 }
 
+Json::Value STUInt32::getJson(int) const
+{
+	return value;
+}
+
 bool STUInt32::isEquivalent(const SerializedType& t) const
 {
 	const STUInt32* v = dynamic_cast<const STUInt32*>(&t);
@@ -122,6 +149,11 @@ STUInt64* STUInt64::construct(SerializerIterator& u, SField::ref name)
 std::string STUInt64::getText() const
 {
 	return boost::lexical_cast<std::string>(value);
+}
+
+Json::Value STUInt64::getJson(int) const
+{
+	return strHex(value);
 }
 
 bool STUInt64::isEquivalent(const SerializedType& t) const

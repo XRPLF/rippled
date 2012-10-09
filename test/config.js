@@ -28,37 +28,37 @@ exports.accounts = {
   // Users
   'alice' : {
     'account' : 'iG1QQv2nh2gi7RCZ1P8YYcBUKCCN633jCn',
-    'passphrase' : 'alice',
+    'secret' : 'alice',
   },
   'bob' : {
     'account' : 'iPMh7Pr9ct699rZUTWaytJUoHcJ7cgyzrK',
-    'passphrase' : 'bob',
+    'secret' : 'bob',
   },
   'carol' : {
     'account' : 'iH4KEcG9dEwGwpn6AyoWK9cZPLL4RLSmWW',
-    'passphrase' : 'carol',
+    'secret' : 'carol',
   },
 
   // Nexuses
   'bitstamp' : {
     'account' : 'i4jKmc2nQb5yEU6eycefrNKGHTU5NQJASx',
-    'passphrase' : 'bitstamp',
+    'secret' : 'bitstamp',
   },
   'mtgox' : {
     'account' : 'iGrhwhaqU8g7ahwAvTq6rX5ivsfcbgZw6v',
-    'passphrase' : 'mtgox',
+    'secret' : 'mtgox',
   },
 
   // Merchants
   'amazon' : {
     'account' : 'ihheXqX7bDnXePJeMHhubDDvw2uUTtenPd',
-    'passphrase' : 'amazon',
+    'secret' : 'amazon',
   },
 
   // Master account
   'root' : {
     'account' : 'iHb9CJAWyB4ij91VRWn96DkukG4bwdtyTh',
-    'passphrase' : 'masterpassphrase',
+    'secret' : 'masterpassphrase',
   },
 };
 

@@ -23,10 +23,6 @@ class SHAMap;
 
 class SHAMapNode
 { // Identifies a node in a SHA256 hash
-public:
-	typedef boost::shared_ptr<SHAMapNode> 			pointer;
-	typedef const boost::shared_ptr<SHAMapNode>&	ref;
-
 private:
 	static uint256 smMasks[65]; // AND with hash to get node id
 
@@ -84,7 +80,8 @@ inline std::ostream& operator<<(std::ostream& out, const SHAMapNode& node) { ret
 class SHAMapItem
 { // an item stored in a SHAMap
 public:
-	typedef boost::shared_ptr<SHAMapItem> pointer;
+	typedef boost::shared_ptr<SHAMapItem>			pointer;
+	typedef const boost::shared_ptr<SHAMapItem>&	ref;
 
 private:
 	uint256 mTag;
@@ -136,7 +133,8 @@ class SHAMapTreeNode : public SHAMapNode
 	friend class SHAMap;
 
 public:
-	typedef boost::shared_ptr<SHAMapTreeNode> pointer;
+	typedef boost::shared_ptr<SHAMapTreeNode>			pointer;
+	typedef const boost::shared_ptr<SHAMapTreeNode>&	ref;
 
 	enum TNType
 	{
@@ -163,7 +161,7 @@ private:
 public:
 	SHAMapTreeNode(uint32 seq, const SHAMapNode& nodeID); // empty node
 	SHAMapTreeNode(const SHAMapTreeNode& node, uint32 seq); // copy node from older tree
-	SHAMapTreeNode(const SHAMapNode& nodeID, const SHAMapItem::pointer& item, TNType type, uint32 seq);
+	SHAMapTreeNode(const SHAMapNode& nodeID, SHAMapItem::ref item, TNType type, uint32 seq);
 
 	// raw node functions
 	SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned char>& data, uint32 seq, SHANodeFormat format);
@@ -200,7 +198,7 @@ public:
 
 	// item node function
 	bool hasItem() const { return !!mItem; }
-	SHAMapItem::pointer peekItem() { return mItem; }
+	SHAMapItem::ref peekItem() { return mItem; }
 	SHAMapItem::pointer getItem() const;
 	bool setItem(const SHAMapItem::pointer& i, TNType type);
 	const uint256& getTag() const { return mItem->getTag(); }
@@ -292,7 +290,7 @@ protected:
 	SHAMapItem::pointer onlyBelow(SHAMapTreeNode*);
 	void eraseChildren(SHAMapTreeNode::pointer);
 
-	bool walkBranch(SHAMapTreeNode* node, SHAMapItem::pointer otherMapItem, bool isFirstMap,
+	bool walkBranch(SHAMapTreeNode* node, SHAMapItem::ref otherMapItem, bool isFirstMap,
 	    SHAMapDiff& differences, int& maxCount);
 
 public:
@@ -321,8 +319,8 @@ public:
 	uint256 getHash()			{ return root->getNodeHash(); }
 
 	// save a copy if you have a temporary anyway
-	bool updateGiveItem(const SHAMapItem::pointer&, bool isTransaction, bool hasMeta);
-	bool addGiveItem(const SHAMapItem::pointer&, bool isTransaction, bool hasMeta);
+	bool updateGiveItem(SHAMapItem::ref, bool isTransaction, bool hasMeta);
+	bool addGiveItem(SHAMapItem::ref, bool isTransaction, bool hasMeta);
 
 	// save a copy if you only need a temporary
 	SHAMapItem::pointer peekItem(const uint256& id);

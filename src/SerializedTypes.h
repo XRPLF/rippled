@@ -97,6 +97,7 @@ public:
 
 	SerializedTypeID getSType() const { return STI_UINT8; }
 	std::string getText() const;
+	Json::Value getJson(int) const;
 	void add(Serializer& s) const { s.add8(value); }
 
 	unsigned char getValue() const { return value; }
@@ -123,6 +124,7 @@ public:
 
 	SerializedTypeID getSType() const { return STI_UINT16; }
 	std::string getText() const;
+	Json::Value getJson(int) const;
 	void add(Serializer& s) const { s.add16(value); }
 
 	uint16 getValue() const { return value; }
@@ -149,6 +151,7 @@ public:
 
 	SerializedTypeID getSType() const { return STI_UINT32; }
 	std::string getText() const;
+	Json::Value getJson(int) const;
 	void add(Serializer& s) const { s.add32(value); }
 
 	uint32 getValue() const { return value; }
@@ -175,6 +178,7 @@ public:
 
 	SerializedTypeID getSType() const { return STI_UINT64; }
 	std::string getText() const;
+	Json::Value getJson(int) const;
 	void add(Serializer& s) const { s.add64(value); }
 
 	uint64 getValue() const { return value; }

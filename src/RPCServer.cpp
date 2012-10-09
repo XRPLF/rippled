@@ -28,10 +28,12 @@
 #include "../json/reader.h"
 #include "../json/writer.h"
 
+SETUP_LOG();
+
 RPCServer::RPCServer(boost::asio::io_service& io_service , NetworkOPs* nopNetwork)
 	: mNetOps(nopNetwork), mSocket(io_service)
 {
-	mRole=GUEST;
+	mRole = GUEST;
 }
 
 Json::Value RPCServer::RPCError(int iError)
@@ -68,6 +70,7 @@ Json::Value RPCServer::RPCError(int iError)
 		{ rpcNO_GEN_DECRPYT,		"noGenDectypt",		"Password failed to decrypt master public generator."	},
 		{ rpcNO_NETWORK,			"noNetwork",		"Network not available."								},
 		{ rpcNO_PERMISSION,			"noPermission",		"You don't have permission for this command."			},
+		{ rpcNOT_STANDALONE,		"notStandAlone",	"Operation valid in debug mode only."					},
 		{ rpcPASSWD_CHANGED,		"passwdChanged",	"Wrong key, password changed."							},
 		{ rpcPAYS_ACT_MALFORMED,	"paysActMalformed",	"Pays account malformed."								},
 		{ rpcPAYS_AMT_MALFORMED,	"paysAmtMalformed",	"Pays amount malformed."								},
@@ -175,13 +178,12 @@ std::string RPCServer::handleRequest(const std::string& requestStr)
 	else if (!valParams.isArray())
 		return(HTTPReply(400, "parms unparseable"));
 
-	Json::StyledStreamWriter w;
-	w.write(Log(lsTRACE).ref(), valParams);
-	Json::Value result(doCommand(strMethod, valParams));
-	w.write(Log(lsTRACE).ref(), result);
+	cLog(lsTRACE) << valParams;
+	Json::Value result = doCommand(strMethod, valParams);
+	cLog(lsTRACE) << result;
 
 	std::string strReply = JSONRPCReply(result, Json::Value(), id);
-	return( HTTPReply(200, strReply) );
+	return HTTPReply(200, strReply);
 }
 
 int RPCServer::getParamCount(const Json::Value& params)
@@ -416,6 +418,16 @@ Json::Value RPCServer::accountFromString(const uint256& uLedger, NewcoinAddress&
 	}
 
 	return Json::Value(Json::objectValue);
+}
+
+Json::Value RPCServer::doAcceptLedger(const Json::Value &params)
+{
+	if (!theConfig.RUN_STANDALONE)
+		return RPCError(rpcNOT_STANDALONE);
+
+	Json::Value obj(Json::objectValue);
+	obj["newLedger"] = theApp->getOPs().acceptLedger();
+	return obj;
 }
 
 // account_domain_set <seed> <paying_account> [<domain>]
@@ -2640,6 +2652,7 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 		bool		mAdminRequired;
 		unsigned int	iOptions;
 	} commandsA[] = {
+		{	"accept_ledger",		&RPCServer::doAcceptLedger,			0,	0, true					},
 		{	"account_domain_set",	&RPCServer::doAccountDomainSet,		2,  3, false,	optCurrent	},
 		{	"account_email_set",	&RPCServer::doAccountEmailSet,		2,  3, false,	optCurrent	},
 		{	"account_info",			&RPCServer::doAccountInfo,			1,  2, false,	optCurrent	},

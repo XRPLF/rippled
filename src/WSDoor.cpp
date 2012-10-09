@@ -5,7 +5,6 @@
 #include "Config.h"
 #include "Log.h"
 #include "NetworkOPs.h"
-#include "NetworkOPs.h"
 #include "utils.h"
 
 #include <iostream>
@@ -60,14 +59,15 @@ protected:
 
 	WSServerHandler<websocketpp::WSDOOR_SERVER>*	mHandler;
 	connection_ptr									mConnection;
+	NetworkOPs&										mNetwork;
 
 public:
-	WSConnection()
-		: mHandler((WSServerHandler<websocketpp::WSDOOR_SERVER>*)(NULL)),
-			mConnection(connection_ptr()) { ; }
+//	WSConnection()
+//		: mHandler((WSServerHandler<websocketpp::WSDOOR_SERVER>*)(NULL)),
+//			mConnection(connection_ptr()) { ; }
 
 	WSConnection(WSServerHandler<websocketpp::WSDOOR_SERVER>* wshpHandler, connection_ptr cpConnection)
-		: mHandler(wshpHandler), mConnection(cpConnection) { ; }
+		: mHandler(wshpHandler), mConnection(cpConnection), mNetwork(theApp->getOPs()) { ; }
 
 	virtual ~WSConnection();
 
@@ -82,6 +82,7 @@ public:
 	void doLedgerClosed(Json::Value& jvResult, const Json::Value& jvRequest);
 	void doLedgerCurrent(Json::Value& jvResult, const Json::Value& jvRequest);
 	void doLedgerEntry(Json::Value& jvResult, const Json::Value& jvRequest);
+	void doSubmit(Json::Value& jvResult, const Json::Value& jvRequest);
 
 	// Streaming Commands
 	void doAccountInfoSubscribe(Json::Value& jvResult, const Json::Value& jvRequest);
@@ -305,6 +306,7 @@ Json::Value WSConnection::invokeCommand(const Json::Value& jvRequest)
 		{ "ledger_closed",						&WSConnection::doLedgerClosed					},
 		{ "ledger_current",						&WSConnection::doLedgerCurrent					},
 		{ "ledger_entry",						&WSConnection::doLedgerEntry					},
+		{ "submit",								&WSConnection::doSubmit							},
 
 		// Streaming commands:
 		{ "account_info_subscribe",				&WSConnection::doAccountInfoSubscribe			},
@@ -422,7 +424,7 @@ void WSConnection::doAccountInfoSubscribe(Json::Value& jvResult, const Json::Val
 				mSubAccountInfo.insert(naAccountID);
 			}
 
-			theApp->getOPs().subAccountInfo(this, usnaAccoundIds);
+			mNetwork.subAccountInfo(this, usnaAccoundIds);
 		}
 	}
 }
@@ -454,7 +456,7 @@ void WSConnection::doAccountInfoUnsubscribe(Json::Value& jvResult, const Json::V
 				mSubAccountInfo.erase(naAccountID);
 			}
 
-			theApp->getOPs().unsubAccountInfo(this, usnaAccoundIds);
+			mNetwork.unsubAccountInfo(this, usnaAccoundIds);
 		}
 	}
 }
@@ -486,7 +488,7 @@ void WSConnection::doAccountTransactionSubscribe(Json::Value& jvResult, const Js
 				mSubAccountTransaction.insert(naAccountID);
 			}
 
-			theApp->getOPs().subAccountTransaction(this, usnaAccoundIds);
+			mNetwork.subAccountTransaction(this, usnaAccoundIds);
 		}
 	}
 }
@@ -518,14 +520,14 @@ void WSConnection::doAccountTransactionUnsubscribe(Json::Value& jvResult, const 
 				mSubAccountTransaction.erase(naAccountID);
 			}
 
-			theApp->getOPs().unsubAccountTransaction(this, usnaAccoundIds);
+			mNetwork.unsubAccountTransaction(this, usnaAccoundIds);
 		}
 	}
 }
 
 void WSConnection::doLedgerAccountsSubcribe(Json::Value& jvResult, const Json::Value& jvRequest)
 {
-	if (!theApp->getOPs().subLedgerAccounts(this))
+	if (!mNetwork.subLedgerAccounts(this))
 	{
 		jvResult["error"]	= "ledgerAccountsSubscribed";
 	}
@@ -533,7 +535,7 @@ void WSConnection::doLedgerAccountsSubcribe(Json::Value& jvResult, const Json::V
 
 void WSConnection::doLedgerAccountsUnsubscribe(Json::Value& jvResult, const Json::Value& jvRequest)
 {
-	if (!theApp->getOPs().unsubLedgerAccounts(this))
+	if (!mNetwork.unsubLedgerAccounts(this))
 	{
 		jvResult["error"]	= "ledgerAccountsNotSubscribed";
 	}
@@ -541,20 +543,20 @@ void WSConnection::doLedgerAccountsUnsubscribe(Json::Value& jvResult, const Json
 
 void WSConnection::doLedgerClosed(Json::Value& jvResult, const Json::Value& jvRequest)
 {
-	uint256	uLedger	= theApp->getOPs().getClosedLedger();
+	uint256	uLedger	= mNetwork.getClosedLedger();
 
-	jvResult["ledger_closed_index"]		= theApp->getOPs().getLedgerID(uLedger);
+	jvResult["ledger_closed_index"]		= mNetwork.getLedgerID(uLedger);
 	jvResult["ledger_closed"]			= uLedger.ToString();
 }
 
 void WSConnection::doLedgerCurrent(Json::Value& jvResult, const Json::Value& jvRequest)
 {
-	jvResult["ledger_current_index"]	= theApp->getOPs().getCurrentLedgerID();
+	jvResult["ledger_current_index"]	= mNetwork.getCurrentLedgerID();
 }
 
 void WSConnection::doLedgerEntry(Json::Value& jvResult, const Json::Value& jvRequest)
 {
-	NetworkOPs&	noNetwork	= theApp->getOPs();
+	NetworkOPs&	noNetwork	= mNetwork;
 	uint256	uLedger			= jvRequest.isMember("ledger") ? uint256(jvRequest["ledger"].asString()) : 0;
 	uint32	uLedgerIndex	= jvRequest.isMember("ledger_index") && jvRequest["ledger_index"].isNumeric() ? jvRequest["ledger_index"].asUInt() : 0;
 
@@ -781,7 +783,7 @@ void WSConnection::doLedgerEntry(Json::Value& jvResult, const Json::Value& jvReq
 
 void WSConnection::doServerSubscribe(Json::Value& jvResult, const Json::Value& jvRequest)
 {
-	if (!theApp->getOPs().subLedger(this))
+	if (!mNetwork.subLedger(this))
 	{
 		jvResult["error"]	= "serverSubscribed";
 	}
@@ -792,22 +794,169 @@ void WSConnection::doServerSubscribe(Json::Value& jvResult, const Json::Value& j
 
 		// XXX Make sure these values are available before returning them.
 		// XXX return connected status.
-		jvResult["ledger_closed"]			= theApp->getOPs().getClosedLedger().ToString();
-		jvResult["ledger_current_index"]	= theApp->getOPs().getCurrentLedgerID();
+		jvResult["ledger_closed"]			= mNetwork.getClosedLedger().ToString();
+		jvResult["ledger_current_index"]	= mNetwork.getCurrentLedgerID();
 	}
 }
 
 void WSConnection::doServerUnsubscribe(Json::Value& jvResult, const Json::Value& jvRequest)
 {
-	if (!theApp->getOPs().unsubLedger(this))
+	if (!mNetwork.unsubLedger(this))
 	{
 		jvResult["error"]	= "serverNotSubscribed";
 	}
 }
 
+// XXX Current requires secret. Allow signed transaction as an alternative.
+void WSConnection::doSubmit(Json::Value& jvResult, const Json::Value& jvRequest)
+{
+	NewcoinAddress	naAccount;
+
+	if (!jvRequest.isMember("transaction"))
+	{
+		jvResult["error"]	= "fieldNotFoundTransaction";
+	}
+	else if (!jvRequest["transaction"].isMember("Account"))
+	{
+		jvResult["error"]	= "fieldNotFoundAccount";
+	}
+	else if (!naAccount.setAccountID(jvRequest["transaction"]["Account"].asString()))
+	{
+		jvResult["error"]	= "malformedAccount";
+	}
+	else if (!jvRequest.isMember("secret"))
+	{
+		jvResult["error"]	= "fieldNotFoundSecret";
+	}
+	else
+	{
+		Ledger::pointer	lpCurrent		= mNetwork.getCurrentLedger();
+		SLE::pointer	sleAccountRoot	= mNetwork.getSLE(lpCurrent, Ledger::getAccountRootIndex(naAccount.getAccountID()));
+
+		if (!sleAccountRoot)
+		{
+			// XXX Ignore transactions for accounts not created.
+
+			jvResult["error"]	= "accountNotFound";
+			return;
+		}
+
+		bool			bHaveAuthKey	= false;
+		NewcoinAddress	naAuthorizedPublic;
+#if 0
+
+		if (sleAccountRoot->isFieldPresent(sfAuthorizedKey))
+		{
+			naAuthorizedPublic	= mLedgerEntry->getFieldAccount(sfAuthorizedKey);
+			// Json::Value	obj	= getMasterGenerator(uLedger, naRegularSeed, naMasterGenerator);
+		}
+#endif
+
+		NewcoinAddress	naSecret			= NewcoinAddress::createSeedGeneric(jvRequest["secret"].asString());
+		NewcoinAddress	naMasterGenerator	= NewcoinAddress::createGeneratorPublic(naSecret);
+
+		// Find the index of Account from the master generator, so we can generate the public and private keys.
+		NewcoinAddress		naMasterAccountPublic;
+		unsigned int		iIndex	= 0;
+		bool				bFound	= false;
+
+		// Don't look at ledger entries to determine if the account exists.  Don't want to leak to thin server that these accounts are
+		// related.
+		while (!bFound && iIndex != theConfig.ACCOUNT_PROBE_MAX)
+		{
+			naMasterAccountPublic.setAccountPublic(naMasterGenerator, iIndex);
+
+			Log(lsWARNING) << "authorize: " << iIndex << " : " << naMasterAccountPublic.humanAccountID() << " : " << naAccount.humanAccountID();
+
+			bFound	= naAccount.getAccountID() == naMasterAccountPublic.getAccountID();
+			if (!bFound)
+				++iIndex;
+		}
+
+		if (!bFound)
+		{
+			jvResult["error"]	= "accountNotMatched";
+			return;
+		}
+
+		// Use the generator to determine the associated public and private keys.
+		NewcoinAddress	naGenerator			= NewcoinAddress::createGeneratorPublic(naSecret);
+		NewcoinAddress	naAccountPublic		= NewcoinAddress::createAccountPublic(naGenerator, iIndex);
+		NewcoinAddress	naAccountPrivate	= NewcoinAddress::createAccountPrivate(naGenerator, naSecret, iIndex);
+
+		if (bHaveAuthKey
+			// The generated pair must match authorized...
+			&& naAuthorizedPublic.getAccountID() != naAccountPublic.getAccountID()
+			// ... or the master key must have been used.
+			&& naAccount.getAccountID() != naAccountPublic.getAccountID())
+		{
+			// std::cerr << "iIndex: " << iIndex << std::endl;
+			// std::cerr << "sfAuthorizedKey: " << strHex(asSrc->getAuthorizedKey().getAccountID()) << std::endl;
+			// std::cerr << "naAccountPublic: " << strHex(naAccountPublic.getAccountID()) << std::endl;
+
+			jvResult["error"]	= "passwordChanged";
+			return;
+		}
+
+		std::auto_ptr<STObject>	sopTrans;
+
+		try
+		{
+			sopTrans = STObject::parseJson(jvRequest["transaction"]);
+		}
+		catch (std::exception& e)
+		{
+			jvResult["error"]			= "malformedTransaction";
+			jvResult["error_exception"]	= e.what();
+			return;
+		}
+
+		sopTrans->setFieldVL(sfSigningPubKey, naAccountPublic.getAccountPublic());
+
+		SerializedTransaction::pointer	stpTrans	= boost::make_shared<SerializedTransaction>(*sopTrans);
+
+		stpTrans->sign(naAccountPrivate);
+
+		Transaction::pointer			tpTrans;
+
+		try
+		{
+			tpTrans		= boost::make_shared<Transaction>(stpTrans, false);
+		}
+		catch (std::exception& e)
+		{
+			jvResult["error"]			= "internalTransaction";
+			jvResult["error_exception"]	= e.what();
+			return;
+		}
+
+		try
+		{
+			tpTrans	= mNetwork.submitTransaction(tpTrans);
+		}
+		catch (std::exception& e)
+		{
+			jvResult["error"]			= "internalSubmit";
+			jvResult["error_exception"]	= e.what();
+			return;
+		}
+
+		try
+		{
+			jvResult["submitted"]	= tpTrans->getJson(0);
+		}
+		catch (std::exception& e)
+		{
+			jvResult["error"]			= "internalJson";
+			jvResult["error_exception"]	= e.what();
+			return;
+		}
+	}
+}
+
 void WSConnection::doTransactionSubcribe(Json::Value& jvResult, const Json::Value& jvRequest)
 {
-	if (!theApp->getOPs().subTransaction(this))
+	if (!mNetwork.subTransaction(this))
 	{
 		jvResult["error"]	= "TransactionsSubscribed";
 	}
@@ -815,7 +964,7 @@ void WSConnection::doTransactionSubcribe(Json::Value& jvResult, const Json::Valu
 
 void WSConnection::doTransactionUnsubscribe(Json::Value& jvResult, const Json::Value& jvRequest)
 {
-	if (!theApp->getOPs().unsubTransaction(this))
+	if (!mNetwork.unsubTransaction(this))
 	{
 		jvResult["error"]	= "TransactionsNotSubscribed";
 	}

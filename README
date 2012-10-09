@@ -2,5 +2,9 @@ Dependancies:
 - boost 1.47
 - Google protocol buffers 2.4.1
 - openssl
-- mysql
-- websocketpp
+
+Sub modules:
+- websocketpp: https://github.com/zaphoyd/websocketpp
+- sjcl: https://github.com/bitwiseshiftleft/sjcl
+- cryptojs: https://github.com/gwjjeff/cryptojs
+  aka http://code.google.com/p/crypto-js/

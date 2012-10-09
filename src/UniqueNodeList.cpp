@@ -42,6 +42,8 @@
 #define MIN(x,y) ((x)<(y)?(x):(y))
 #endif
 
+SETUP_LOG();
+
 UniqueNodeList::UniqueNodeList(boost::asio::io_service& io_service) :
 	mdtScoreTimer(io_service),
 	mFetchActive(0),
@@ -612,7 +614,7 @@ void UniqueNodeList::processIps(const std::string& strSite, const NewcoinAddress
 
 	std::string strEscNodePublic	= sqlEscape(naNodePublic.humanNodePublic());
 
-	Log(lsINFO)
+	cLog(lsDEBUG)
 		<< str(boost::format("Validator: '%s' processing %d ips.")
 			% strSite % ( pmtVecStrIps ? pmtVecStrIps->size() : 0));
 
@@ -716,7 +718,7 @@ int UniqueNodeList::processValidators(const std::string& strSite, const std::str
 
 			if (!boost::regex_match(strReferral, smMatch, reReferral))
 			{
-				Log(lsWARNING) << str(boost::format("Bad validator: syntax error: %s: %s") % strSite % strReferral);
+				cLog(lsWARNING) << str(boost::format("Bad validator: syntax error: %s: %s") % strSite % strReferral);
 			}
 			else
 			{
@@ -727,7 +729,7 @@ int UniqueNodeList::processValidators(const std::string& strSite, const std::str
 				if (naValidator.setSeedGeneric(strRefered))
 				{
 
-					Log(lsWARNING) << str(boost::format("Bad validator: domain or public key required: %s %s") % strRefered % strComment);
+					cLog(lsWARNING) << str(boost::format("Bad validator: domain or public key required: %s %s") % strRefered % strComment);
 				}
 				else if (naValidator.setNodePublic(strRefered))
 				{
@@ -735,7 +737,7 @@ int UniqueNodeList::processValidators(const std::string& strSite, const std::str
 					// XXX Schedule for CAS lookup.
 					nodeAddPublic(naValidator, vsWhy, strComment);
 
-					Log(lsINFO) << str(boost::format("Node Public: %s %s") % strRefered % strComment);
+					cLog(lsINFO) << str(boost::format("Node Public: %s %s") % strRefered % strComment);
 
 					if (naNodePublic.isValid())
 						vstrValues.push_back(str(boost::format("('%s',%d,'%s')") % strNodePublic % iValues % naValidator.humanNodePublic()));
@@ -747,7 +749,7 @@ int UniqueNodeList::processValidators(const std::string& strSite, const std::str
 					// A domain: need to look it up.
 					nodeAddDomain(strRefered, vsWhy, strComment);
 
-					Log(lsINFO) << str(boost::format("Node Domain: %s %s") % strRefered % strComment);
+					cLog(lsINFO) << str(boost::format("Node Domain: %s %s") % strRefered % strComment);
 
 					if (naNodePublic.isValid())
 						vstrValues.push_back(str(boost::format("('%s',%d,%s)") % strNodePublic % iValues % sqlEscape(strRefered)));
@@ -1577,7 +1579,7 @@ void UniqueNodeList::nodeBootstrap()
 	// Always merge in the file specified in the config.
 	if (!theConfig.UNL_DEFAULT.empty())
 	{
-		Log(lsINFO) << "Bootstrapping UNL: loading from unl_default.";
+		cLog(lsINFO) << "Bootstrapping UNL: loading from unl_default.";
 
 		bLoaded	= nodeLoad(theConfig.UNL_DEFAULT);
 	}
@@ -1585,7 +1587,7 @@ void UniqueNodeList::nodeBootstrap()
 	// If never loaded anything try the current directory.
 	if (!bLoaded && theConfig.UNL_DEFAULT.empty())
 	{
-		Log(lsINFO) << "Bootstrapping UNL: loading from '" VALIDATORS_FILE_NAME "'.";
+		cLog(lsINFO) << "Bootstrapping UNL: loading from '" VALIDATORS_FILE_NAME "'.";
 
 		bLoaded	= nodeLoad(VALIDATORS_FILE_NAME);
 	}
@@ -1595,7 +1597,7 @@ void UniqueNodeList::nodeBootstrap()
 	{
 		NewcoinAddress	naInvalid;	// Don't want a referrer on added entries.
 
-		Log(lsINFO) << "Bootstrapping UNL: loading from " CONFIG_FILE_NAME ".";
+		cLog(lsINFO) << "Bootstrapping UNL: loading from " CONFIG_FILE_NAME ".";
 
 		if (processValidators("local", CONFIG_FILE_NAME, naInvalid, vsConfig, &theConfig.VALIDATORS))
 			bLoaded	= true;
@@ -1603,7 +1605,7 @@ void UniqueNodeList::nodeBootstrap()
 
 	if (!bLoaded)
 	{
-		Log(lsINFO) << "Bootstrapping UNL: loading from " << theConfig.VALIDATORS_SITE << ".";
+		cLog(lsINFO) << "Bootstrapping UNL: loading from " << theConfig.VALIDATORS_SITE << ".";
 
 		nodeNetwork();
 	}

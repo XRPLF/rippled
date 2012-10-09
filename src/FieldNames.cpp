@@ -18,6 +18,7 @@ SField sfLedgerEntry(STI_LEDGERENTRY, 1, "LedgerEntry");
 SField sfTransaction(STI_TRANSACTION, 1, "Transaction");
 SField sfValidation(STI_VALIDATION, 1, "Validation");
 SField sfID(STI_HASH256, 257, "id");
+SField sfIndex(STI_HASH256, 258, "index");
 
 #define FIELD(name, type, index) SField sf##name(FIELD_CODE(STI_##type, index), STI_##type, index, #name);
 #define TYPE(name, type, index)
@@ -26,6 +27,12 @@ SField sfID(STI_HASH256, 257, "id");
 #undef TYPE
 
 
+SField::SField(SerializedTypeID tid, int fv) : fieldCode(FIELD_CODE(tid, fv)), fieldType(tid), fieldValue(fv)
+{ // call with the map mutex
+	fieldName = lexical_cast_i(tid) + "/" + lexical_cast_i(fv);
+	codeToField[fieldCode] = this;
+}
+
 SField::ref SField::getField(int code)
 {
 	int type = code >> 16;
@@ -33,16 +40,18 @@ SField::ref SField::getField(int code)
 
 	if ((type <= 0) || (field <= 0))
 		return sfInvalid;
-	{ //JED: Did this to fix a deadlock. david you should check. Line after this block also has a scoped lock
-		// why doe sthis thing even need a mutex?
-		boost::mutex::scoped_lock sl(mapMutex);
 
-		std::map<int, SField::ptr>::iterator it = codeToField.find(code);
-		if (it != codeToField.end())
-			return *(it->second);
+	boost::mutex::scoped_lock sl(mapMutex);
 
-		switch (type)
-		{ // types we are willing to dynamically extend
+	std::map<int, SField::ptr>::iterator it = codeToField.find(code);
+	if (it != codeToField.end())
+		return *(it->second);
+
+	if (field > 255)		// don't dynamically extend types that have no binary encoding
+		return sfInvalid;
+
+	switch (type)
+	{ // types we are willing to dynamically extend
 
 #define FIELD(name, type, index)
 #define TYPE(name, type, index) case STI_##type:
@@ -51,14 +60,11 @@ SField::ref SField::getField(int code)
 #undef TYPE
 
 			break;
-default:
-	return sfInvalid;
-		}
+		default:
+			return sfInvalid;
+	}
 
-		
-	}// end scope lock
-	std::string dynName = lexical_cast_i(type) + "/" + lexical_cast_i(field);
-	return *(new SField(code, static_cast<SerializedTypeID>(type), field, dynName.c_str()));
+	return *(new SField(static_cast<SerializedTypeID>(type), field));
 }
 
 int SField::compare(SField::ref f1, SField::ref f2)

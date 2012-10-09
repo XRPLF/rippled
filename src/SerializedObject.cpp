@@ -11,6 +11,7 @@
 #include "Log.h"
 #include "LedgerFormats.h"
 #include "TransactionFormats.h"
+#include "SerializedTransaction.h"
 
 std::auto_ptr<SerializedType> STObject::makeDefaultObject(SerializedTypeID id, SField::ref name)
 {
@@ -153,7 +154,7 @@ bool STObject::setType(const std::vector<SOElement::ptr> &type)
 		{
 			if (elem->flags != SOE_OPTIONAL)
 			{
-				Log(lsTRACE) << "setType !valid missing";
+				Log(lsWARNING) << "setType !valid missing " << elem->e_field.fieldName;
 				valid = false;
 			}
 			newData.push_back(makeNonPresentObject(elem->e_field));
@@ -163,8 +164,14 @@ bool STObject::setType(const std::vector<SOElement::ptr> &type)
 	}
 	if (mData.size() != 0)
 	{
-		Log(lsTRACE) << "setType !valid leftover";
-		valid = false;
+		BOOST_FOREACH(const SerializedType& t, mData)
+		{
+			if (!t.getFName().isDiscardable())
+			{
+				Log(lsWARNING) << "setType !valid leftover: " << t.getFName().getName();
+				valid = false;
+			}
+		}
 	}
 	mData.swap(newData);
 	return valid;
@@ -367,11 +374,15 @@ const SerializedType* STObject::peekAtPField(SField::ref field) const
 	return peekAtPIndex(index);
 }
 
-SerializedType* STObject::getPField(SField::ref field)
+SerializedType* STObject::getPField(SField::ref field, bool createOkay)
 {
 	int index = getFieldIndex(field);
 	if (index == -1)
+	{
+		if (createOkay && isFree())
+			return getPIndex(giveObject(makeDefaultObject(field)));
 		return NULL;
+	}
 	return getPIndex(index);
 }
 
@@ -385,7 +396,7 @@ bool STObject::isFieldPresent(SField::ref field) const
 
 bool STObject::setFlag(uint32 f)
 {
-	STUInt32* t = dynamic_cast<STUInt32*>(getPField(sfFlags));
+	STUInt32* t = dynamic_cast<STUInt32*>(getPField(sfFlags, true));
 	if (!t)
 		return false;
 	t->setValue(t->getValue() | f);
@@ -413,7 +424,11 @@ SerializedType* STObject::makeFieldPresent(SField::ref field)
 {
 	int index = getFieldIndex(field);
 	if (index == -1)
-		throw std::runtime_error("Field not found");
+	{
+		if (!isFree())
+			throw std::runtime_error("Field not found");
+		return getPIndex(giveObject(makeNonPresentObject(field)));
+	}
 
 	SerializedType* f = getPIndex(index);
 	if (f->getSType() != STI_NOTPRESENT)
@@ -619,7 +634,7 @@ STVector256 STObject::getFieldV256(SField::ref field) const
 
 void STObject::setFieldU8(SField::ref field, unsigned char v)
 {
-	SerializedType* rf = getPField(field);
+	SerializedType* rf = getPField(field, true);
 	if (!rf) throw std::runtime_error("Field not found");
 	if (rf->getSType() == STI_NOTPRESENT) rf = makeFieldPresent(field);
 	STUInt8* cf = dynamic_cast<STUInt8*>(rf);
@@ -629,7 +644,7 @@ void STObject::setFieldU8(SField::ref field, unsigned char v)
 
 void STObject::setFieldU16(SField::ref field, uint16 v)
 {
-	SerializedType* rf = getPField(field);
+	SerializedType* rf = getPField(field, true);
 	if (!rf) throw std::runtime_error("Field not found");
 	if (rf->getSType() == STI_NOTPRESENT) rf = makeFieldPresent(field);
 	STUInt16* cf = dynamic_cast<STUInt16*>(rf);
@@ -639,7 +654,7 @@ void STObject::setFieldU16(SField::ref field, uint16 v)
 
 void STObject::setFieldU32(SField::ref field, uint32 v)
 {
-	SerializedType* rf = getPField(field);
+	SerializedType* rf = getPField(field, true);
 	if (!rf) throw std::runtime_error("Field not found");
 	if (rf->getSType() == STI_NOTPRESENT) rf = makeFieldPresent(field);
 	STUInt32* cf = dynamic_cast<STUInt32*>(rf);
@@ -649,7 +664,7 @@ void STObject::setFieldU32(SField::ref field, uint32 v)
 
 void STObject::setFieldU64(SField::ref field, uint64 v)
 {
-	SerializedType* rf = getPField(field);
+	SerializedType* rf = getPField(field, true);
 	if (!rf) throw std::runtime_error("Field not found");
 	if (rf->getSType() == STI_NOTPRESENT) rf = makeFieldPresent(field);
 	STUInt64* cf = dynamic_cast<STUInt64*>(rf);
@@ -659,7 +674,7 @@ void STObject::setFieldU64(SField::ref field, uint64 v)
 
 void STObject::setFieldH128(SField::ref field, const uint128& v)
 {
-	SerializedType* rf = getPField(field);
+	SerializedType* rf = getPField(field, true);
 	if (!rf) throw std::runtime_error("Field not found");
 	if (rf->getSType() == STI_NOTPRESENT) rf = makeFieldPresent(field);
 	STHash128* cf = dynamic_cast<STHash128*>(rf);
@@ -669,7 +684,7 @@ void STObject::setFieldH128(SField::ref field, const uint128& v)
 
 void STObject::setFieldH160(SField::ref field, const uint160& v)
 {
-	SerializedType* rf = getPField(field);
+	SerializedType* rf = getPField(field, true);
 	if (!rf) throw std::runtime_error("Field not found");
 	if (rf->getSType() == STI_NOTPRESENT) rf = makeFieldPresent(field);
 	STHash160* cf = dynamic_cast<STHash160*>(rf);
@@ -679,7 +694,7 @@ void STObject::setFieldH160(SField::ref field, const uint160& v)
 
 void STObject::setFieldH256(SField::ref field, const uint256& v)
 {
-	SerializedType* rf = getPField(field);
+	SerializedType* rf = getPField(field, true);
 	if (!rf) throw std::runtime_error("Field not found");
 	if (rf->getSType() == STI_NOTPRESENT) rf = makeFieldPresent(field);
 	STHash256* cf = dynamic_cast<STHash256*>(rf);
@@ -689,7 +704,7 @@ void STObject::setFieldH256(SField::ref field, const uint256& v)
 
 void STObject::setFieldV256(SField::ref field, const STVector256& v)
 {
-	SerializedType* rf = getPField(field);
+	SerializedType* rf = getPField(field, true);
 	if (!rf) throw std::runtime_error("Field not found");
 	if (rf->getSType() == STI_NOTPRESENT) rf = makeFieldPresent(field);
 	STVector256* cf = dynamic_cast<STVector256*>(rf);
@@ -699,7 +714,7 @@ void STObject::setFieldV256(SField::ref field, const STVector256& v)
 
 void STObject::setFieldAccount(SField::ref field, const uint160& v)
 {
-	SerializedType* rf = getPField(field);
+	SerializedType* rf = getPField(field, true);
 	if (!rf) throw std::runtime_error("Field not found");
 	if (rf->getSType() == STI_NOTPRESENT) rf = makeFieldPresent(field);
 	STAccount* cf = dynamic_cast<STAccount*>(rf);
@@ -709,7 +724,7 @@ void STObject::setFieldAccount(SField::ref field, const uint160& v)
 
 void STObject::setFieldVL(SField::ref field, const std::vector<unsigned char>& v)
 {
-	SerializedType* rf = getPField(field);
+	SerializedType* rf = getPField(field, true);
 	if (!rf) throw std::runtime_error("Field not found");
 	if (rf->getSType() == STI_NOTPRESENT) rf = makeFieldPresent(field);
 	STVariableLength* cf = dynamic_cast<STVariableLength*>(rf);
@@ -719,7 +734,7 @@ void STObject::setFieldVL(SField::ref field, const std::vector<unsigned char>& v
 
 void STObject::setFieldAmount(SField::ref field, const STAmount &v)
 {
-	SerializedType* rf = getPField(field);
+	SerializedType* rf = getPField(field, true);
 	if (!rf) throw std::runtime_error("Field not found");
 	if (rf->getSType() == STI_NOTPRESENT) rf = makeFieldPresent(field);
 	STAmount* cf = dynamic_cast<STAmount*>(rf);
@@ -729,7 +744,7 @@ void STObject::setFieldAmount(SField::ref field, const STAmount &v)
 
 void STObject::setFieldPathSet(SField::ref field, const STPathSet &v)
 {
-	SerializedType* rf = getPField(field);
+	SerializedType* rf = getPField(field, true);
 	if (!rf) throw std::runtime_error("Field not found");
 	if (rf->getSType() == STI_NOTPRESENT) rf = makeFieldPresent(field);
 	STPathSet* cf = dynamic_cast<STPathSet*>(rf);
@@ -939,7 +954,7 @@ std::auto_ptr<STObject> STObject::parseJson(const Json::Value& object, SField::r
 
 			case STI_UINT64:
 				if (value.isString())
-					data.push_back(new STUInt64(field, lexical_cast_st<uint64>(value.asString())));
+					data.push_back(new STUInt64(field, uintFromHex(value.asString())));
 				else if (value.isInt())
 					data.push_back(new STUInt64(field,
 						range_check_cast<uint64>(value.asInt(), 0, 18446744073709551615ull)));
@@ -1116,6 +1131,7 @@ std::auto_ptr<STObject> STObject::parseJson(const Json::Value& object, SField::r
 				throw std::runtime_error("Invalid field type");
 		}
 	}
+
 	return std::auto_ptr<STObject>(new STObject(*name, data));
 }
 

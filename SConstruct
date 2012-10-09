@@ -3,16 +3,22 @@
 #
 
 import glob
+import platform
 
-CTAGS = '/usr/bin/exuberant-ctags'
+OSX = bool(platform.mac_ver()[0])
+
+if OSX:
+	CTAGS = '/usr/bin/ctags'
+else:
+	CTAGS = '/usr/bin/exuberant-ctags'
 
 #
 # scons tools
 #
 
 env = Environment(
-    tools = ['default', 'protoc']    
-    )
+	tools = ['default', 'protoc']
+)
 
 # Use clang
 #env.Replace(CC = 'clang')
@@ -23,73 +29,83 @@ env = Environment(
 #
 ctags = Builder(action = '$CTAGS $CTAGSOPTIONS -f $TARGET $SOURCES')
 env.Append(BUILDERS = { 'CTags' : ctags })
-env.Replace(CTAGS = CTAGS, CTAGSOPTIONS = '--tag-relative')
+if OSX:
+	env.Replace(CTAGS = CTAGS)
+else:
+	env.Replace(CTAGS = CTAGS, CTAGSOPTIONS = '--tag-relative')
 
 #
 # Put objects files in their own directory.
 #
 for dir in ['src', 'database', 'json', 'websocketpp']:
-    VariantDir('obj/'+dir, dir, duplicate=0)
+	VariantDir('obj/'+dir, dir, duplicate=0)
 
 # Use openssl
 env.ParseConfig('pkg-config --cflags --libs openssl')
 
-env.Append(LIBS = [
-    'boost_date_time-mt',
-    'boost_filesystem-mt',
-    'boost_program_options-mt',
-    'boost_regex-mt',
-    'boost_system-mt',
-    'boost_thread-mt',
-    'protobuf',
-    'dl',			# dynamic linking
-    'z'
-    ])
+env.Append(
+	LIBS = [
+		'boost_date_time-mt',
+		'boost_filesystem-mt',
+		'boost_program_options-mt',
+		'boost_regex-mt',
+		'boost_system-mt',
+		'boost_thread-mt',
+		'protobuf',
+		'dl', # dynamic linking
+		'z'
+	]
+)
 
-DEBUGFLAGS  = ['-g', '-DDEBUG']
-BOOSTFLAGS  = ['-DBOOST_TEST_DYN_LINK', '-DBOOST_FILESYSTEM_NO_DEPRECATED']
+DEBUGFLAGS	= ['-g', '-DDEBUG']
+BOOSTFLAGS	= ['-DBOOST_TEST_DYN_LINK', '-DBOOST_FILESYSTEM_NO_DEPRECATED']
 
 env.Append(LINKFLAGS = ['-rdynamic', '-pthread'])
 env.Append(CCFLAGS = ['-pthread', '-Wall', '-Wno-sign-compare', '-Wno-char-subscripts', '-DSQLITE_THREADSAFE'])
 env.Append(CXXFLAGS = ['-O0', '-pthread', '-Wno-invalid-offsetof', '-Wformat']+BOOSTFLAGS+DEBUGFLAGS)
 
-DB_SRCS		    = glob.glob('database/*.c') + glob.glob('database/*.cpp')
-JSON_SRCS	    = glob.glob('json/*.cpp')
-WEBSOCKETPP_SRCS    = [
-			'websocketpp/src/base64/base64.cpp',
-			'websocketpp/src/md5/md5.c',
-			'websocketpp/src/messages/data.cpp',
-			'websocketpp/src/network_utilities.cpp',
-			'websocketpp/src/processors/hybi_header.cpp',
-			'websocketpp/src/processors/hybi_util.cpp',
-			'websocketpp/src/sha1/sha1.cpp',
-			'websocketpp/src/uri.cpp'
-			]
+if OSX:
+	env.Append(LINKFLAGS = ['-L/usr/local/Cellar/openssl/1.0.1c/lib'])
+	env.Append(CXXFLAGS = ['-I/usr/local/Cellar/openssl/1.0.1c/include'])
 
-NEWCOIN_SRCS	    = glob.glob('src/*.cpp')
-PROTO_SRCS	    = env.Protoc([], 'src/newcoin.proto', PROTOCOUTDIR='obj', PROTOCPYTHONOUTDIR=None)
+DB_SRCS   = glob.glob('database/*.c') + glob.glob('database/*.cpp')
+JSON_SRCS = glob.glob('json/*.cpp')
+
+WEBSOCKETPP_SRCS = [
+	'websocketpp/src/base64/base64.cpp',
+	'websocketpp/src/md5/md5.c',
+	'websocketpp/src/messages/data.cpp',
+	'websocketpp/src/network_utilities.cpp',
+	'websocketpp/src/processors/hybi_header.cpp',
+	'websocketpp/src/processors/hybi_util.cpp',
+	'websocketpp/src/sha1/sha1.cpp',
+	'websocketpp/src/uri.cpp'
+	]
+
+NEWCOIN_SRCS = glob.glob('src/*.cpp')
+PROTO_SRCS = env.Protoc([], 'src/newcoin.proto', PROTOCOUTDIR='obj', PROTOCPYTHONOUTDIR=None)
 
 env.Clean(PROTO_SRCS, 'site_scons/site_tools/protoc.pyc')
 
 # Remove unused source files.
-UNUSED_SRCS	= ['src/HttpReply.cpp']
+UNUSED_SRCS = ['src/HttpReply.cpp']
 
 for file in UNUSED_SRCS:
-    NEWCOIN_SRCS.remove(file)
+	NEWCOIN_SRCS.remove(file)
 
-NEWCOIN_SRCS	+= DB_SRCS + JSON_SRCS + WEBSOCKETPP_SRCS
+NEWCOIN_SRCS += DB_SRCS + JSON_SRCS + WEBSOCKETPP_SRCS
 
 # Derive the object files from the source files.
-NEWCOIN_OBJS	= []
+NEWCOIN_OBJS = []
 
 for file in NEWCOIN_SRCS:
-    NEWCOIN_OBJS.append('obj/' + file)
+	NEWCOIN_OBJS.append('obj/' + file)
 
-NEWCOIN_OBJS	+= PROTO_SRCS
+NEWCOIN_OBJS += PROTO_SRCS
 
-newcoind    = env.Program('newcoind', NEWCOIN_OBJS)
+newcoind = env.Program('newcoind', NEWCOIN_OBJS)
 
-tags	    = env.CTags('obj/tags', NEWCOIN_SRCS)
+tags = env.CTags('obj/tags', NEWCOIN_SRCS)
 
 Default(newcoind, tags)
 
