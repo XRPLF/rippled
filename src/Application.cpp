@@ -154,7 +154,6 @@ void Application::run()
 	{
 		Log(lsWARNING) << "Running in standalone mode";
 		mNetOps.setStandAlone();
-		mMasterLedger.runStandAlone();
 	}
 	else
 		mNetOps.setStateTimer();
