@@ -299,14 +299,28 @@ Remote.prototype.server_subscribe = function (onDone, onFailure) {
 
   this.request(
     { 'command' : 'server_subscribe' },
-      function (r) {
-	self.ledger_current_index = r.ledger_current_index;
-	self.ledger_closed        = r.ledger_closed;
-	self.stand_alone          = r.stand_alone;
-	onDone();
+    function (r) {
+      self.ledger_current_index = r.ledger_current_index;
+      self.ledger_closed        = r.ledger_closed;
+      self.stand_alone          = r.stand_alone;
+      onDone();
     },
     onFailure
   );
+};
+
+Remote.prototype.ledger_accept = function (onDone, onFailure) {
+  if (this.stand_alone)
+  {
+    this.request(
+      { 'command' : 'ledger_accept' },
+      onDone,
+      onFailure
+    );
+  }
+  else {
+    onFailure({ 'error' : 'notStandAlone' });
+  }
 };
 
 // Refresh accounts[account].seq

@@ -24,6 +24,7 @@
 
 	// 8-bit integers
 	FIELD(CloseResolution,		UINT8, 1)
+	FIELD(TemplateEntryType,	UINT8, 2)
 
 	// 16-bit integers
 	FIELD(LedgerEntryType,		UINT16, 1)
@@ -123,9 +124,13 @@
 
 	// inner object
 	// OBJECT/1 is reserved for end of object
+	FIELD(TemplateEntry,		OBJECT, 1)
 
 	// array of objects
 	// ARRAY/1 is reserved for end of array
 	FIELD(SigningAccounts,		ARRAY, 2)
 	FIELD(TxnSignatures,		ARRAY, 3)
 	FIELD(Signatures,			ARRAY, 4)
+	FIELD(Template,				ARRAY, 5)
+	FIELD(Necessary,			ARRAY, 6)
+	FIELD(Sufficient,			ARRAY, 7)

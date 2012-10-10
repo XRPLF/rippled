@@ -79,6 +79,7 @@ public:
 	boost::unordered_set<NewcoinAddress> parseAccountIds(const Json::Value& jvArray);
 
 	// Request-Response Commands
+	void doLedgerAccept(Json::Value& jvResult, const Json::Value& jvRequest);
 	void doLedgerClosed(Json::Value& jvResult, const Json::Value& jvRequest);
 	void doLedgerCurrent(Json::Value& jvResult, const Json::Value& jvRequest);
 	void doLedgerEntry(Json::Value& jvResult, const Json::Value& jvRequest);
@@ -303,6 +304,7 @@ Json::Value WSConnection::invokeCommand(const Json::Value& jvRequest)
 		doFuncPtr	dfpFunc;
 	} commandsA[] = {
 		// Request-Response Commands:
+		{ "ledger_accept",						&WSConnection::doLedgerAccept					},
 		{ "ledger_closed",						&WSConnection::doLedgerClosed					},
 		{ "ledger_current",						&WSConnection::doLedgerCurrent					},
 		{ "ledger_entry",						&WSConnection::doLedgerEntry					},
@@ -538,6 +540,20 @@ void WSConnection::doLedgerAccountsUnsubscribe(Json::Value& jvResult, const Json
 	if (!mNetwork.unsubLedgerAccounts(this))
 	{
 		jvResult["error"]	= "ledgerAccountsNotSubscribed";
+	}
+}
+
+void WSConnection::doLedgerAccept(Json::Value& jvResult, const Json::Value& jvRequest)
+{
+	if (!theConfig.RUN_STANDALONE)
+	{
+		jvResult["error"]	= "notStandAlone";
+	}
+	else
+	{
+		mNetwork.acceptLedger();
+
+		jvResult["ledger_current_index"]	= mNetwork.getCurrentLedgerID();
 	}
 }
 

@@ -595,6 +595,9 @@ public:
 //	std::string getText() const;
 	Json::Value getJson(int) const;
 
+	uint160 mCurrencyID;
+	uint160 mCurrentAccount; // what account is at the end of the path
+
 	std::vector<STPathElement>::iterator begin()				{ return mPath.begin(); }
 	std::vector<STPathElement>::iterator end()					{ return mPath.end(); }
 	std::vector<STPathElement>::const_iterator begin() const	{ return mPath.begin(); }
