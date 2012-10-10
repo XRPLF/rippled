@@ -122,7 +122,7 @@ bool Pathfinder::findPaths(int maxSearchSteps, int maxPay, STPathSet& retPathSet
 		STPathElement new_ele(uint160(), book->getCurrencyOut(), book->getIssuerOut());
 		new_path.mPath.push_back(new_ele);
 		new_path.mCurrencyID = book->getCurrencyOut();
-		new_path.mCurrencyID = book->getCurrencyOut();
+		new_path.mCurrentAccount = book->getCurrencyOut();
 
 		pqueue.push(new_path);
 
