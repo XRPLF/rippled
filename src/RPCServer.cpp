@@ -1828,9 +1828,6 @@ Json::Value RPCServer::doSend(const Json::Value& params)
 	if (params.size() >= 9)
 		sSrcIssuer		= params[8u].asString();
 
-	if (params.size() >= 9)
-		sSrcIssuer		= params[8u].asString();
-
 	if (!naSeed.setSeedGeneric(params[0u].asString()))
 	{
 		return RPCError(rpcBAD_SEED);
