@@ -104,6 +104,9 @@ bool Pathfinder::findPaths(int maxSearchSteps, int maxPay, STPathSet& retPathSet
       if (ele.mAccountID == mDstAccountID) {
 	path.mPath.erase(path.mPath.begin());
 	path.mPath.erase(path.mPath.begin() + path.mPath.size()-1);
+	if (path.mPath.size() == 0) {
+	  continue;
+	}
 	retPathSet.addPath(path);
 	return true;
       } 
@@ -118,7 +121,11 @@ bool Pathfinder::findPaths(int maxSearchSteps, int maxPay, STPathSet& retPathSet
 		STPath new_path(path);
 		STPathElement new_ele(uint160(), book->getCurrencyOut(), book->getIssuerOut());
 		new_path.mPath.push_back(new_ele);
+		new_path.mCurrencyID = book->getCurrencyOut();
+		new_path.mCurrencyID = book->getCurrencyOut();
+
 		pqueue.push(new_path);
+
 	      }
 	  }
 
@@ -136,8 +143,26 @@ bool Pathfinder::findPaths(int maxSearchSteps, int maxPay, STPathSet& retPathSet
 		new_path.mPath.push_back(new_ele);
 		pqueue.push(new_path);
 	      }
+	  } // BOOST_FOREACHE
+
+	// every offer that wants the source currency
+	std::vector<OrderBook::pointer> books;
+	mOrderBook.getBooks(path.mCurrentAccount, path.mCurrencyID, books);
+
+	BOOST_FOREACH(OrderBook::pointer book,books)
+	  {
+	    STPath new_path(path);
+	    STPathElement new_ele(uint160(), book->getCurrencyOut(), book->getIssuerOut());
+
+	    new_path.mPath.push_back(new_ele);
+	    new_path.mCurrentAccount=book->getIssuerOut();
+	    new_path.mCurrencyID=book->getCurrencyOut();
+
+	    pqueue.push(new_path);
+
 	  }
-      }
+
+      } // else
       // enumerate all adjacent nodes, construct a new path and push it into the queue
     } // While
   } // if there is a ledger
