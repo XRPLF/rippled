@@ -98,12 +98,14 @@ void Application::run()
 		Log(lsINFO) << "Loading Old Ledger";
 		loadOldLedger();
 	}
-	else
-	{ // TODO: This should really not validate a ledger until it gets the current one from our peers
-		// but I'll let david make this change since a lot of code assumes we have a ledger
-		// for now just do what we always were doing
+	else if (theConfig.START_UP == Config::NETWORK)
+	{ // This should probably become the default once we have a stable network
+		if (!theConfig.RUN_STANDALONE)
+			mNetOps.needNetworkLedger();
 		startNewLedger();
 	}
+	else
+		startNewLedger();
 
 	//
 	// Begin validation and ip maintenance.

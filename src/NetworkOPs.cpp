@@ -26,8 +26,9 @@
 SETUP_LOG();
 
 NetworkOPs::NetworkOPs(boost::asio::io_service& io_service, LedgerMaster* pLedgerMaster) :
-	mMode(omDISCONNECTED),mNetTimer(io_service), mLedgerMaster(pLedgerMaster), mCloseTimeOffset(0),
-	mLastCloseProposers(0), mLastCloseConvergeTime(1000 * LEDGER_IDLE_INTERVAL), mLastValidationTime(0)
+	mMode(omDISCONNECTED), mNeedNetworkLedger(false), mNetTimer(io_service), mLedgerMaster(pLedgerMaster),
+	mCloseTimeOffset(0), mLastCloseProposers(0), mLastCloseConvergeTime(1000 * LEDGER_IDLE_INTERVAL),
+	mLastValidationTime(0)
 {
 }
 
@@ -424,7 +425,8 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 	// If full or tracking, check only at wobble time!
 	uint256 networkClosed;
 	bool ledgerChange = checkLastClosedLedger(peerList, networkClosed);
-	if(networkClosed.isZero())return;
+	if(networkClosed.isZero())
+		return;
 
 	// WRITEME: Unless we are in omFULL and in the process of doing a consensus,
 	// we must count how many nodes share our LCL, how many nodes disagree with our LCL,
@@ -435,7 +437,8 @@ void NetworkOPs::checkState(const boost::system::error_code& result)
 	if ((mMode == omCONNECTED) && !ledgerChange)
 	{ // count number of peers that agree with us and UNL nodes whose validations we have for LCL
 		// if the ledger is good enough, go to omTRACKING - TODO
-		setMode(omTRACKING);
+		if (!mNeedNetworkLedger)
+			setMode(omTRACKING);
 	}
 
 	if ((mMode == omTRACKING) && !ledgerChange )
@@ -617,6 +620,7 @@ void NetworkOPs::switchLastClosedLedger(Ledger::pointer newLedger, bool duringCo
 	else
 		cLog(lsERROR) << "JUMP last closed ledger to " << newLedger->getHash();
 
+	mNeedNetworkLedger = false;
 	newLedger->setClosed();
 	Ledger::pointer openLedger = boost::make_shared<Ledger>(false, boost::ref(*newLedger));
 	mLedgerMaster->switchLedgers(newLedger, openLedger);
