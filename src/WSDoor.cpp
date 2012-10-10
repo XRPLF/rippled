@@ -551,6 +551,8 @@ void WSConnection::doLedgerAccept(Json::Value& jvResult, const Json::Value& jvRe
 	}
 	else
 	{
+		theApp->getOPs().acceptLedger();
+
 		jvResult["ledger_current_index"]	= mNetwork.getCurrentLedgerID();
 	}
 }
