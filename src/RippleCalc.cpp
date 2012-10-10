@@ -478,6 +478,8 @@ TER RippleCalc::calcNodeDeliverFwd(
 	const uint160&	uPrvIssuerID	= pnPrv.uIssuerID;
 	const STAmount&	saTransferRate	= pnPrv.saTransferRate;
 
+	STAmount&		saCurDeliverAct	= pnCur.saFwdDeliver;
+
 	saInAct		= 0;
 	saInFees	= 0;
 
@@ -594,8 +596,11 @@ TER RippleCalc::calcNodeDeliverFwd(
 				bEntryAdvance	= true;
 			}
 
-			saInAct		+= saInPassAct;
-			saInFees	+= saInPassFees;
+			saInAct			+= saInPassAct;
+			saInFees		+= saInPassFees;
+
+			// Adjust amount available to next node.
+			saCurDeliverAct	+= saOutPassAct;
 		}
 	}
 
@@ -1086,10 +1091,10 @@ TER RippleCalc::calcNodeAccountRev(const unsigned int uIndex, const PathState::p
 	return terResult;
 }
 
-// Perfrom balance adjustments between previous and current node.
+// Perform balance adjustments between previous and current node.
 // - The previous node: specifies what to push through to current.
 // - All of previous output is consumed.
-// Then, compute output for next node.
+// Then, compute current node's output for next node.
 // - Current node: specify what to push through to next.
 // - Output to next node is computed as input minus quality or transfer fee.
 TER RippleCalc::calcNodeAccountFwd(
@@ -1299,12 +1304,12 @@ TER RippleCalc::calcNodeAccountFwd(
 		if (uIndex == uLast)
 		{
 			// offer --> ACCOUNT --> $
-			cLog(lsINFO) << boost::str(boost::format("calcNodeAccountFwd: offer --> ACCOUNT --> $"));
+			cLog(lsINFO) << boost::str(boost::format("calcNodeAccountFwd: offer --> ACCOUNT --> $ : %s") % saPrvDeliverReq.getFullText());
 
 			STAmount&	saCurReceive	= pspCur->saOutAct;
 
 			// Amount to credit.
-			saCurReceive	= saPrvDeliverAct;
+			saCurReceive	= saPrvDeliverReq;
 
 			// No income balance adjustments necessary.  The paying side inside the offer paid to this account.
 		}
@@ -1797,6 +1802,14 @@ void RippleCalc::pathNext(const PathState::pointer& pspCur, const int iPaths, co
 
 		pspCur->terStatus	= calcNodeFwd(0, pspCur, bMultiQuality);
 
+		tLog(tesSUCCESS == pspCur->terStatus, lsDEBUG)
+			<< boost::str(boost::format("saOutAct=%s saInAct=%s")
+				% pspCur->saOutAct.getFullText()
+				% pspCur->saInAct.getFullText());
+
+		// Make sure we have a quality.
+		assert(tesSUCCESS != pspCur->terStatus || (!!pspCur->saOutAct && !!pspCur->saInAct));
+
 		pspCur->uQuality	= tesSUCCESS == pspCur->terStatus
 								? STAmount::getRate(pspCur->saOutAct, pspCur->saInAct)	// Calculate relative quality.
 								: 0;													// Mark path as inactive.
@@ -1928,6 +1941,7 @@ TER RippleCalc::rippleCalc(
 	    // Find the best path.
 	    BOOST_FOREACH(PathState::pointer& pspCur, vpsPaths)
 	    {
+			// XXX Handle paths that are found dry?
 		    rc.pathNext(pspCur, vpsPaths.size(), lesCheckpoint, lesActive);			// Compute increment.
 
 		    if ((!bLimitQuality || pspCur->uQuality <= uQualityLimit)				// Quality is not limted or increment has allowed quality.
