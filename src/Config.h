@@ -56,7 +56,7 @@ public:
 	std::vector<std::string>	IPS;					// Peer IPs from newcoind.cfg.
 	std::vector<std::string>	SNTP_SERVERS;			// SNTP servers from newcoind.cfg.
 
-	enum StartUpType {FRESH,NORMAL,LOAD};
+	enum StartUpType { FRESH, NORMAL, LOAD, NETWORK };
 	StartUpType					START_UP;
 
 	// Network parameters

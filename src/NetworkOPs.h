@@ -52,6 +52,7 @@ protected:
 	typedef boost::unordered_map<uint160,boost::unordered_set<InfoSub*> >::iterator		subInfoMapIterator;
 
 	OperatingMode						mMode;
+	bool								mNeedNetworkLedger;
 	boost::posix_time::ptime			mConnectTime;
 	boost::asio::deadline_timer			mNetTimer;
 	boost::shared_ptr<LedgerConsensus>	mConsensus;
@@ -184,6 +185,7 @@ public:
 	void setStandAlone()				{ setMode(omFULL); }
 	void setStateTimer();
 	void newLCL(int proposers, int convergeTime, const uint256& ledgerHash);
+	void needNetworkLedger()			{ mNeedNetworkLedger = true; }
 	void consensusViewChange();
 	int getPreviousProposers()			{ return mLastCloseProposers; }
 	int getPreviousConvergeTime()		{ return mLastCloseConvergeTime; }
