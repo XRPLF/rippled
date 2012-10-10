@@ -931,10 +931,10 @@ void NetworkOPs::pubLedger(Ledger::ref lpAccepted)
 		{
 			Json::Value	jvObj(Json::objectValue);
 
-			jvObj["type"]	= "ledgerAccepted";
-			jvObj["seq"]	= lpAccepted->getLedgerSeq();
-			jvObj["hash"]	= lpAccepted->getHash().ToString();
-			jvObj["time"]	= Json::Value::UInt(lpAccepted->getCloseTimeNC());
+			jvObj["type"]					= "ledgerAccepted";
+			jvObj["ledger_closed_index"]	= lpAccepted->getLedgerSeq();
+			jvObj["ledger_closed"]			= lpAccepted->getHash().ToString();
+			jvObj["time"]					= Json::Value::UInt(lpAccepted->getCloseTimeNC());
 
 			BOOST_FOREACH(InfoSub* ispListener, mSubLedger)
 			{
