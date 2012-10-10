@@ -391,7 +391,7 @@ void Ledger::saveAcceptedLedger(Ledger::ref ledger)
 	theApp->getOPs().pubLedger(ledger);
 }
 
-Ledger::pointer Ledger::getSQL(const std::string& sql,bool isMutable)
+Ledger::pointer Ledger::getSQL(const std::string& sql)
 {
 	uint256 ledgerHash, prevHash, accountHash, transHash;
 	uint64 totCoins;
@@ -424,8 +424,8 @@ Ledger::pointer Ledger::getSQL(const std::string& sql,bool isMutable)
 		db->endIterRows();
 	}
 
-	Ledger::pointer ret =Ledger::pointer(new Ledger(prevHash, transHash, accountHash, totCoins, closingTime, prevClosingTime,
-			closeFlags, closeResolution, ledgerSeq,isMutable));
+	Ledger::pointer ret = Ledger::pointer(new Ledger(prevHash, transHash, accountHash, totCoins,
+		closingTime, prevClosingTime, closeFlags, closeResolution, ledgerSeq, true));
 	if (ret->getHash() != ledgerHash)
 	{
 		if (sLog(lsERROR))

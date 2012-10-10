@@ -93,7 +93,7 @@ public:
 
 	Ledger(const uint256 &parentHash, const uint256 &transHash, const uint256 &accountHash,
 		uint64 totCoins, uint32 closeTime, uint32 parentCloseTime, int closeFlags, int closeResolution,
-		uint32 ledgerSeq,bool immutable); // used for database ledgers
+		uint32 ledgerSeq, bool immutable); // used for database ledgers
 
 	Ledger(const std::vector<unsigned char>& rawLedger);
 
@@ -103,7 +103,7 @@ public:
 
 	Ledger(Ledger& target, bool isMutable); // snapshot
 
-	static Ledger::pointer getSQL(const std::string& sqlStatement,bool immutable=false);
+	static Ledger::pointer getSQL(const std::string& sqlStatement);
 
 	void updateHash();
 	void setClosed()	{ mClosed = true; }
@@ -115,10 +115,6 @@ public:
 	bool isImmutable()	{ return mImmutable; }
 	void armDirty()		{ mTransactionMap->armDirty();		mAccountStateMap->armDirty(); }
 	void disarmDirty()	{ mTransactionMap->disarmDirty();	mAccountStateMap->disarmDirty(); }
-
-	// This ledger has closed, will never be accepted, and is accepting
-	// new transactions to be re-reprocessed when do accept a new last-closed ledger
-	void bumpSeq()		{ mClosed = true; mLedgerSeq++; }
 
 	// ledger signature operations
 	void addRaw(Serializer &s) const;

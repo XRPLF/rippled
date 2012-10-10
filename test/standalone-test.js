@@ -1,32 +1,14 @@
-var fs = require("fs");
-var buster = require("buster");
+var fs	    = require("fs");
+var buster  = require("buster");
 
 var server  = require("./server.js");
 var remote  = require("../js/remote.js");
-var utils   = require("../js/utils.js");
 var config  = require("./config.js");
 
 // How long to wait for server to start.
 var serverDelay = 1500;
 
 buster.testRunner.timeout = 5000;
-
-buster.testCase("Utils", {
-  "hexToString and stringToHex" : {
-    "Even: 123456" : function () {
-      buster.assert.equals("123456", utils.stringToHex(utils.hexToString("123456")));
-    },
-    "Odd: 12345" : function () {
-      buster.assert.equals("012345", utils.stringToHex(utils.hexToString("12345")));
-    },
-    "Under 10: 0" : function () {
-      buster.assert.equals("00", utils.stringToHex(utils.hexToString("0")));
-    },
-    "Under 10: 1" : function () {
-      buster.assert.equals("01", utils.stringToHex(utils.hexToString("1")));
-    }
-  }
-});
 
 buster.testCase("Standalone server startup", {
   "server start and stop" : function (done) {

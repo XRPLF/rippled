@@ -194,24 +194,30 @@ std::string STAmount::createHumanCurrency(const uint160& uCurrency)
 	return sCurrency;
 }
 
+// Assumes trusted input.
 bool STAmount::setValue(const std::string& sAmount)
 { // Note: mIsNative must be set already!
 	uint64	uValue;
 	int		iOffset;
 	size_t	uDecimal	= sAmount.find_first_of(mIsNative ? "^" : ".");
-	bool	bInteger	= uDecimal == std::string::npos;
+	size_t	uExp		= uDecimal == std::string::npos ? sAmount.find_first_of("e") : std::string::npos;
+	bool	bInteger	= uDecimal == std::string::npos && uExp == std::string::npos;
 
 	mIsNegative = false;
 	if (bInteger)
 	{
+		// Integer input: does not necessarily mean native.
+
 		try
 		{
 			int64 a = sAmount.empty() ? 0 : lexical_cast_st<int64>(sAmount);
 			if (a >= 0)
-				uValue = static_cast<uint64>(a);
+			{
+				uValue		= static_cast<uint64>(a);
+			}
 			else
 			{
-				uValue = static_cast<uint64>(-a);
+				uValue		= static_cast<uint64>(-a);
 				mIsNegative = true;
 			}
 
@@ -224,36 +230,73 @@ bool STAmount::setValue(const std::string& sAmount)
 		}
 		iOffset	= 0;
 	}
+	else if (uExp != std::string::npos)
+	{
+		// e input
+
+		try
+		{
+			int64	iInteger	= uExp ? lexical_cast_st<uint64>(sAmount.substr(0, uExp)) : 0;
+			if (iInteger >= 0)
+			{
+				uValue		= static_cast<uint64>(iInteger);
+			}
+			else
+			{
+				uValue		= static_cast<uint64>(-iInteger);
+				mIsNegative = true;
+			}
+
+			iOffset = lexical_cast_st<uint64>(sAmount.substr(uExp+1));
+		}
+		catch (...)
+		{
+			Log(lsINFO) << "Bad e amount: " << sAmount;
+
+			return false;
+		}
+	}
 	else
 	{
+		// Float input: has a decimal
+
 		// Example size decimal size-decimal offset
 		//    ^1      2       0            2     -1
 		// 123^       4       3            1      0
 		//   1^23     4       1            3     -2
-		iOffset	= -int(sAmount.size() - uDecimal - 1);
-
-
-		// Issolate integer and fraction.
-		uint64 uInteger;
-		int64	iInteger	= uDecimal ? lexical_cast_st<uint64>(sAmount.substr(0, uDecimal)) : 0;
-		if (iInteger >= 0)
-			uInteger = static_cast<uint64>(iInteger);
-		else
+		try
 		{
-			uInteger = static_cast<uint64>(-iInteger);
-			mIsNegative = true;
+			iOffset	= -int(sAmount.size() - uDecimal - 1);
+
+			// Issolate integer and fraction.
+			uint64 uInteger;
+			int64	iInteger	= uDecimal ? lexical_cast_st<uint64>(sAmount.substr(0, uDecimal)) : 0;
+			if (iInteger >= 0)
+			{
+				uInteger	= static_cast<uint64>(iInteger);
+			}
+			else
+			{
+				uInteger	= static_cast<uint64>(-iInteger);
+				mIsNegative = true;
+			}
+
+			uint64	uFraction	= iOffset ? lexical_cast_st<uint64>(sAmount.substr(uDecimal+1)) : 0;
+
+			// Scale the integer portion to the same offset as the fraction.
+			uValue	= uInteger;
+			for (int i = -iOffset; i--;)
+				uValue	*= 10;
+
+			// Add in the fraction.
+			uValue += uFraction;
 		}
+		catch (...)
+		{
+			Log(lsINFO) << "Bad float amount: " << sAmount;
 
-
-		uint64	uFraction	= iOffset ? lexical_cast_st<uint64>(sAmount.substr(uDecimal+1)) : 0;
-
-		// Scale the integer portion to the same offset as the fraction.
-		uValue	= uInteger;
-		for (int i = -iOffset; i--;)
-			uValue	*= 10;
-
-		// Add in the fraction.
-		uValue += uFraction;
+			return false;
+		}
 	}
 
 	if (mIsNative)

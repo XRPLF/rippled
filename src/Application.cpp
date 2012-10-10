@@ -88,20 +88,24 @@ void Application::run()
 	boost::thread t6(boost::bind(&InitDB, &mNetNodeDB, "netnode.db", NetNodeDBInit, NetNodeDBCount));
 	t1.join(); t2.join(); t3.join(); t4.join(); t5.join(); t6.join();
 
-	if(theConfig.START_UP==Config::FRESH)
+	if (theConfig.START_UP == Config::FRESH)
 	{
 		Log(lsINFO) << "Starting new Ledger";
 		startNewLedger();	
-	}else if(theConfig.START_UP==Config::LOAD)
+	}
+	else if (theConfig.START_UP == Config::LOAD)
 	{
 		Log(lsINFO) << "Loading Old Ledger";
 		loadOldLedger();
-	}else
-	{ // TODO: This should really not validate a ledger until it gets the current one from our peers
-		// but I'll let david make this change since a lot of code assumes we have a ledger
-		// for now just do what we always were doing
+	}
+	else if (theConfig.START_UP == Config::NETWORK)
+	{ // This should probably become the default once we have a stable network
+		if (!theConfig.RUN_STANDALONE)
+			mNetOps.needNetworkLedger();
 		startNewLedger();
 	}
+	else
+		startNewLedger();
 
 	//
 	// Begin validation and ip maintenance.
@@ -173,6 +177,7 @@ Application::~Application()
 	delete mHashNodeDB;
 	delete mNetNodeDB;
 }
+
 void Application::startNewLedger()
 {
 	// New stuff.
@@ -203,14 +208,17 @@ void Application::startNewLedger()
 
 void Application::loadOldLedger()
 {
-	Ledger::pointer lastLedger = Ledger::getSQL("SELECT * from Ledgers order by LedgerSeq desc limit 1;",true);
+	Ledger::pointer lastLedger = Ledger::getSQL("SELECT * from Ledgers order by LedgerSeq desc limit 1;");
 
-	if(!lastLedger) 
+	if (!lastLedger)
 	{
 		std::cout << "No Ledger found?" << std::endl;
 		exit(-1);
 	}
-	mMasterLedger.pushLedger(lastLedger);
+
+	lastLedger->setClosed();
+	Ledger::pointer openLedger = boost::make_shared<Ledger>(false, boost::ref(*lastLedger));
+	mMasterLedger.switchLedgers(lastLedger, openLedger);
 	mNetOps.setLastCloseTime(lastLedger->getCloseTimeNC());
 }
 // vim:ts=4
