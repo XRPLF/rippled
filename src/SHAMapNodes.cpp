@@ -18,6 +18,9 @@
 
 std::string SHAMapNode::getString() const
 {
+	if ((mDepth == 0) && (mNodeID.isZero()))
+		return "NodeID(root)";
+
 	return str(boost::format("NodeID(%s,%s)")
 			% boost::lexical_cast<std::string>(mDepth)
 			% mNodeID.GetHex());
@@ -506,5 +509,17 @@ bool SHAMapTreeNode::setChildHash(int m, const uint256 &hash)
 	mHashes[m] = hash;
 	return updateHash();
 }
+
+std::ostream& operator<<(std::ostream& out, const SHAMapMissingNode& mn)
+{
+	if (mn.getMapType() == smtTRANSACTION)
+		out << "Missing/TXN(" << mn.getNodeID() << ")";
+	else if (mn.getMapType() == smtSTATE)
+		out << "Missing/STA(" << mn.getNodeID() << ")";
+	else
+		out << "Missing/" << mn.getNodeID();
+}
+
+
 
 // vim:ts=4
