@@ -861,18 +861,19 @@ TER RippleCalc::calcNodeAccountRev(const unsigned int uIndex, const PathState::p
 	const STAmount&	saCurDeliverReq	= pnCur.saRevDeliver;
 	STAmount		saCurDeliverAct(saCurDeliverReq.getCurrency(), saCurDeliverReq.getIssuer());
 
-	cLog(lsINFO) << boost::str(boost::format("calcNodeAccountRev: saPrvRedeemReq=%s saPrvIssueReq=%s saCurRedeemReq=%s saNxtOwed=%s")
+	cLog(lsINFO) << boost::str(boost::format("calcNodeAccountRev: saPrvRedeemReq=%s saPrvIssueReq=%s saCurRedeemReq=%s saCurIssueReq=%s saNxtOwed=%s")
 		% saPrvRedeemReq.getFullText()
 		% saPrvIssueReq.getFullText()
 		% saCurRedeemReq.getFullText()
+		% saCurIssueReq.getFullText()
 		% saNxtOwed.getFullText());
 
 	cLog(lsINFO) << pspCur->getJson();
 
 	assert(!saCurRedeemReq || (-saNxtOwed) >= saCurRedeemReq);	// Current redeem req can't be more than IOUs on hand.
 	assert(!saCurIssueReq					// If not issuing, fine.
-		|| !saNxtOwed.isNegative()			// Not hold next IOUs: owed is >= 0
-		|| saNxtOwed == saCurRedeemReq);	// If issue req, then redeem req must consume all owed.
+		|| !saNxtOwed.isNegative()			// saNxtOwed >= 0: Sender not holding next IOUs, saNxtOwed < 0: Sender holding next IOUs.
+		|| -saNxtOwed == saCurRedeemReq);	// If issue req, then redeem req must consume all owed.
 
 	if (bPrvAccount && bNxtAccount)
 	{
