@@ -1,9 +1,8 @@
-var fs	    = require("fs");
 var buster  = require("buster");
 
+var config  = require("./config.js");
 var server  = require("./server.js");
 var remote  = require("../js/remote.js");
-var config  = require("./config.js");
 
 // How long to wait for server to start.
 var serverDelay = 1500;
