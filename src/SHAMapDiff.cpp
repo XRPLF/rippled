@@ -120,7 +120,7 @@ bool SHAMap::compare(SHAMap::ref otherMap, SHAMapDiff& differences, int maxCount
 		if (!ourNode || !otherNode)
 		{
 			assert(false);
-			throw SHAMapMissingNode(dNode.mNodeID, uint256());
+			throw SHAMapMissingNode(mType, dNode.mNodeID, uint256());
 		}
 
 		if (ourNode->isLeaf() && otherNode->isLeaf())

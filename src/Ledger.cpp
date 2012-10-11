@@ -24,7 +24,8 @@ SETUP_LOG();
 Ledger::Ledger(const NewcoinAddress& masterID, uint64 startAmount) : mTotCoins(startAmount), mLedgerSeq(1),
 	mCloseTime(0), mParentCloseTime(0), mCloseResolution(LEDGER_TIME_ACCURACY), mCloseFlags(0),
 	mClosed(false), mValidHash(false), mAccepted(false), mImmutable(false),
-	mTransactionMap(new SHAMap()), mAccountStateMap(new SHAMap())
+	mTransactionMap(boost::make_shared<SHAMap>(smtTRANSACTION)),
+	mAccountStateMap(boost::make_shared<SHAMap>(smtSTATE))
 {
 	// special case: put coins in root account
 	AccountState::pointer startAccount = boost::make_shared<AccountState>(masterID);
@@ -38,13 +39,21 @@ Ledger::Ledger(const NewcoinAddress& masterID, uint64 startAmount) : mTotCoins(s
 }
 
 Ledger::Ledger(const uint256 &parentHash, const uint256 &transHash, const uint256 &accountHash,
-	uint64 totCoins, uint32 closeTime, uint32 parentCloseTime, int closeFlags, int closeResolution, uint32 ledgerSeq,bool isMutable)
+	uint64 totCoins, uint32 closeTime, uint32 parentCloseTime, int closeFlags, int closeResolution, uint32 ledgerSeq)
 		: mParentHash(parentHash), mTransHash(transHash), mAccountHash(accountHash), mTotCoins(totCoins),
 		mLedgerSeq(ledgerSeq), mCloseTime(closeTime), mParentCloseTime(parentCloseTime),
 		mCloseResolution(closeResolution), mCloseFlags(closeFlags),
-		mClosed(false), mValidHash(false), mAccepted(false), mImmutable(isMutable)
-{
+		mClosed(false), mValidHash(false), mAccepted(false), mImmutable(true),
+		mTransactionMap(boost::make_shared<SHAMap>(smtTRANSACTION, transHash)),
+		mAccountStateMap(boost::make_shared<SHAMap>(smtSTATE, accountHash))
+{ // This will throw if the root nodes are not available locally
 	updateHash();
+	if (mTransHash.isNonZero())
+		mTransactionMap->fetchRoot(mTransHash);
+	if (mAccountHash.isNonZero())
+		mAccountStateMap->fetchRoot(mAccountHash);
+	mTransactionMap->setImmutable();
+	mAccountStateMap->setImmutable();
 }
 
 Ledger::Ledger(Ledger& ledger, bool isMutable) : mTotCoins(ledger.mTotCoins), mLedgerSeq(ledger.mLedgerSeq),
@@ -62,7 +71,8 @@ Ledger::Ledger(bool /* dummy */, Ledger& prevLedger) :
 	mTotCoins(prevLedger.mTotCoins), mLedgerSeq(prevLedger.mLedgerSeq + 1),
 	mParentCloseTime(prevLedger.mCloseTime), mCloseResolution(prevLedger.mCloseResolution),
 	mCloseFlags(0),	mClosed(false), mValidHash(false), mAccepted(false), mImmutable(false),
-	mTransactionMap(new SHAMap()), mAccountStateMap(prevLedger.mAccountStateMap->snapShot(true))
+	mTransactionMap(boost::make_shared<SHAMap>(smtTRANSACTION)),
+	mAccountStateMap(prevLedger.mAccountStateMap->snapShot(true))
 { // Create a new ledger that follows this one
 	prevLedger.updateHash();
 	mParentHash = prevLedger.getHash();
@@ -123,8 +133,8 @@ void Ledger::setRaw(const Serializer &s)
 	updateHash();
 	if(mValidHash)
 	{
-		mTransactionMap = boost::make_shared<SHAMap>(mTransHash);
-		mAccountStateMap = boost::make_shared<SHAMap>(mAccountHash);
+		mTransactionMap = boost::make_shared<SHAMap>(smtTRANSACTION, mTransHash);
+		mAccountStateMap = boost::make_shared<SHAMap>(smtSTATE, mAccountHash);
 	}
 }
 
@@ -328,10 +338,11 @@ void Ledger::saveAcceptedLedger(Ledger::ref ledger)
 		ledger->mAccountHash.GetHex() % ledger->mTransHash.GetHex()));
 
 	// write out dirty nodes
-	while(ledger->mTransactionMap->flushDirty(256, hotTRANSACTION_NODE, ledger->mLedgerSeq))
-	{ ; }
-	while(ledger->mAccountStateMap->flushDirty(256, hotACCOUNT_NODE, ledger->mLedgerSeq))
-	{ ; }
+	int fc;
+	while ((fc = ledger->mTransactionMap->flushDirty(256, hotTRANSACTION_NODE, ledger->mLedgerSeq)) > 0)
+	{ cLog(lsINFO) << "Flushed " << fc << " dirty transaction nodes"; }
+	while ((fc = ledger->mAccountStateMap->flushDirty(256, hotACCOUNT_NODE, ledger->mLedgerSeq)) > 0)
+	{ cLog(lsINFO) << "Flushed " << fc << " dirty state nodes"; }
 	ledger->disarmDirty();
 
 	SHAMap& txSet = *ledger->peekTransactionMap();
@@ -425,7 +436,7 @@ Ledger::pointer Ledger::getSQL(const std::string& sql)
 	}
 
 	Ledger::pointer ret = Ledger::pointer(new Ledger(prevHash, transHash, accountHash, totCoins,
-		closingTime, prevClosingTime, closeFlags, closeResolution, ledgerSeq, true));
+		closingTime, prevClosingTime, closeFlags, closeResolution, ledgerSeq));
 	if (ret->getHash() != ledgerHash)
 	{
 		if (sLog(lsERROR))

@@ -41,14 +41,14 @@ std::size_t hash_value(const uint160& u)
 }
 
 
-SHAMap::SHAMap(uint32 seq) : mSeq(seq), mState(smsModifying)
+SHAMap::SHAMap(SHAMapType t, uint32 seq) : mSeq(seq), mState(smsModifying), mType(t)
 {
 	root = boost::make_shared<SHAMapTreeNode>(mSeq, SHAMapNode(0, uint256()));
 	root->makeInner();
 	mTNByID[*root] = root;
 }
 
-SHAMap::SHAMap(const uint256& hash) : mSeq(0), mState(smsSynching)
+SHAMap::SHAMap(SHAMapType t, const uint256& hash) : mSeq(0), mState(smsSynching), mType(t)
 { // FIXME: Need to acquire root node
 	root = boost::make_shared<SHAMapTreeNode>(mSeq, SHAMapNode(0, uint256()));
 	root->makeInner();
@@ -58,7 +58,7 @@ SHAMap::SHAMap(const uint256& hash) : mSeq(0), mState(smsSynching)
 SHAMap::pointer SHAMap::snapShot(bool isMutable)
 { // Return a new SHAMap that is an immutable snapshot of this one
   // Initially nodes are shared, but CoW is forced on both ledgers
-	SHAMap::pointer ret = boost::make_shared<SHAMap>();
+	SHAMap::pointer ret = boost::make_shared<SHAMap>(mType);
 	SHAMap& newMap = *ret;
 	newMap.mSeq = ++mSeq;
 	newMap.mTNByID = mTNByID;
@@ -93,7 +93,8 @@ std::stack<SHAMapTreeNode::pointer> SHAMap::getStack(const uint256& id, bool inc
 		{
 			if (partialOk)
 				return stack;
-			throw mn;
+			mn.setTargetNode(id);
+			throw;
 		}
 	}
 
@@ -153,10 +154,15 @@ SHAMapTreeNode::pointer SHAMap::walkTo(const uint256& id, bool modify)
 			return inNode;
 		uint256 childHash = inNode->getChildHash(branch);
 
-		SHAMapTreeNode::pointer nextNode = getNode(inNode->getChildNodeID(branch), childHash, false);
-		if (!nextNode)
-			throw SHAMapMissingNode(inNode->getChildNodeID(branch), childHash);
-		inNode = nextNode;
+		try
+		{
+			inNode = getNode(inNode->getChildNodeID(branch), childHash, false);
+		}
+		catch (SHAMapMissingNode& mn)
+		{
+			mn.setTargetNode(id);
+			throw;
+		}
 	}
 	if (inNode->getTag() != id)
 		return SHAMapTreeNode::pointer();
@@ -175,7 +181,7 @@ SHAMapTreeNode* SHAMap::walkToPointer(const uint256& id)
 		if (nextHash.isZero()) return NULL;
 		inNode = getNodePointer(inNode->getChildNodeID(branch), nextHash);
 		if (!inNode)
-			throw SHAMapMissingNode(inNode->getChildNodeID(branch), nextHash);
+			throw SHAMapMissingNode(mType, inNode->getChildNodeID(branch), nextHash, id);
 	}
 	return (inNode->getTag() == id) ? inNode : NULL;
 }
@@ -680,11 +686,14 @@ void SHAMapItem::dump()
 SHAMapTreeNode::pointer SHAMap::fetchNodeExternal(const SHAMapNode& id, const uint256& hash)
 {
 	if (!theApp->running())
-		throw SHAMapMissingNode(id, hash);
+		throw SHAMapMissingNode(mType, id, hash);
 
 	HashedObject::pointer obj(theApp->getHashedObjectStore().retrieve(hash));
 	if (!obj)
-		throw SHAMapMissingNode(id, hash);
+	{
+		Log(lsTRACE) << "fetchNodeExternal: missing " << hash;
+		throw SHAMapMissingNode(mType, id, hash);
+	}
 	assert(Serializer::getSHA512Half(obj->getData()) == hash);
 
 	try
@@ -698,8 +707,15 @@ SHAMapTreeNode::pointer SHAMap::fetchNodeExternal(const SHAMapNode& id, const ui
 	catch (...)
 	{
 		cLog(lsWARNING) << "fetchNodeExternal gets an invalid node: " << hash;
-		throw SHAMapMissingNode(id, hash);
+		throw SHAMapMissingNode(mType, id, hash);
 	}
+}
+
+void SHAMap::fetchRoot(const uint256& hash)
+{
+	root = fetchNodeExternal(SHAMapNode(), hash);
+	root->makeInner();
+	mTNByID[*root] = root;
 }
 
 void SHAMap::armDirty()
@@ -719,6 +735,8 @@ int SHAMap::flushDirty(int maxNodes, HashedObjectType t, uint32 seq)
 		boost::unordered_map<SHAMapNode, SHAMapTreeNode::pointer>::iterator it = dirtyNodes.begin();
 		while (it != dirtyNodes.end())
 		{
+			tLog(mType == smtTRANSACTION, lsDEBUG) << "TX node write " << it->first;
+			tLog(mType == smtSTATE, lsDEBUG) << "STATE node write " << it->first;
 			s.erase();
 			it->second->addRaw(s, snfPREFIX);
 			theApp->getHashedObjectStore().store(t, seq, s.peekData(), s.getSHA512Half());
@@ -802,7 +820,7 @@ BOOST_AUTO_TEST_CASE( SHAMap_test )
 	h4.SetHex("b92891fe4ef6cee585fdc6fda2e09eb4d386363158ec3321b8123e5a772c6ca8");
 	h5.SetHex("a92891fe4ef6cee585fdc6fda0e09eb4d386363158ec3321b8123e5a772c6ca7");
 
-	SHAMap sMap;
+	SHAMap sMap(smtFREE);
 	SHAMapItem i1(h1, IntToVUC(1)), i2(h2, IntToVUC(2)), i3(h3, IntToVUC(3)), i4(h4, IntToVUC(4)), i5(h5, IntToVUC(5));
 
 	if (!sMap.addItem(i2, true, false)) BOOST_FAIL("no add");

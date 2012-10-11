@@ -128,6 +128,13 @@ enum SHANodeFormat
 	snfWIRE		= 2, // Compressed form used on the wire
 };
 
+enum SHAMapType
+{
+	smtTRANSACTION	=1,		// A tree of transactions
+	smtSTATE		=2,		// A tree of state nodes
+	smtFREE			=3,		// A tree not part of a ledger
+};
+
 class SHAMapTreeNode : public SHAMapNode
 {
 	friend class SHAMap;
@@ -239,19 +246,34 @@ public:
 class SHAMapMissingNode : public std::runtime_error
 {
 protected:
+	SHAMapType mType;
 	SHAMapNode mNodeID;
 	uint256 mNodeHash;
+	uint256 mTargetIndex;
 
 public:
-	SHAMapMissingNode(const SHAMapNode& nodeID, const uint256& nodeHash) :
-		std::runtime_error(nodeID.getString()), mNodeID(nodeID), mNodeHash(nodeHash)
+	SHAMapMissingNode(SHAMapType t, const SHAMapNode& nodeID, const uint256& nodeHash) :
+		std::runtime_error(nodeID.getString()), mType(t), mNodeID(nodeID), mNodeHash(nodeHash)
 	{ ; }
+
+	SHAMapMissingNode(SHAMapType t, const SHAMapNode& nodeID, const uint256& nodeHash, const uint256& targetIndex) :
+		std::runtime_error(nodeID.getString()), mType(t),
+		mNodeID(nodeID), mNodeHash(nodeHash), mTargetIndex(targetIndex)
+	{ ; }
+
 	virtual ~SHAMapMissingNode() throw()
 	{ ; }
 
-	const SHAMapNode& getNodeID() const	{ return mNodeID; }
-	const uint256& getNodeHash() const	{ return mNodeHash; }
+	void setTargetNode(const uint256& tn)	{ mTargetIndex = tn; }
+
+	SHAMapType getMapType() const			{ return mType; }
+	const SHAMapNode& getNodeID() const		{ return mNodeID; }
+	const uint256& getNodeHash() const		{ return mNodeHash; }
+	const uint256& getTargetIndex() const	{ return mTargetIndex; }
+	bool hasTargetIndex() const				{ return !mTargetIndex.isZero(); }
 };
+
+extern std::ostream& operator<<(std::ostream&, const SHAMapMissingNode&);
 
 class SHAMap
 {
@@ -271,6 +293,8 @@ private:
 	SHAMapTreeNode::pointer root;
 
 	SHAMapState mState;
+
+	SHAMapType mType;
 
 protected:
 
@@ -296,8 +320,8 @@ protected:
 public:
 
 	// build new map
-	SHAMap(uint32 seq = 0);
-	SHAMap(const uint256& hash);
+	SHAMap(SHAMapType t, uint32 seq = 0);
+	SHAMap(SHAMapType t, const uint256& hash);
 
 	~SHAMap() { mState = smsInvalid; }
 
@@ -308,6 +332,7 @@ public:
 	ScopedLock Lock() const { return ScopedLock(mLock); }
 
 	bool hasNode(const SHAMapNode& id);
+	void fetchRoot(const uint256& hash);
 
 	// normal hash access functions
 	bool hasItem(const uint256& id);

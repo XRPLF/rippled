@@ -27,7 +27,7 @@ SETUP_LOG();
 
 TransactionAcquire::TransactionAcquire(const uint256& hash) : PeerSet(hash, TX_ACQUIRE_TIMEOUT), mHaveRoot(false)
 {
-	mMap = boost::make_shared<SHAMap>(hash);
+	mMap = boost::make_shared<SHAMap>(smtTRANSACTION, hash);
 }
 
 void TransactionAcquire::done()
@@ -759,7 +759,7 @@ SHAMap::pointer LedgerConsensus::getTransactionTree(const uint256& hash, bool do
 			{
 				if (!hash)
 				{
-					SHAMap::pointer empty = boost::make_shared<SHAMap>();
+					SHAMap::pointer empty = boost::make_shared<SHAMap>(smtTRANSACTION);
 					mapComplete(hash, empty, false);
 					return empty;
 				}

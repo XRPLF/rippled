@@ -69,6 +69,6 @@ CKey::pointer PubKeyCache::store(const NewcoinAddress& id, const CKey::pointer& 
 void PubKeyCache::clear()
 {
 	boost::mutex::scoped_lock sl(mLock);
-	mCache.empty();
+	mCache.clear();
 }
 // vim:ts=4
