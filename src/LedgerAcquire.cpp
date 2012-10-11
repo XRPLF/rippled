@@ -124,7 +124,7 @@ void LedgerAcquire::done()
 	setComplete();
 	mLock.lock();
 	triggers = mOnComplete;
-	mOnComplete.empty();
+	mOnComplete.clear();
 	mLock.unlock();
 
 	if (mLedger)

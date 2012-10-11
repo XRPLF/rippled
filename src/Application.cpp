@@ -215,8 +215,8 @@ void Application::loadOldLedger()
 		std::cout << "No Ledger found?" << std::endl;
 		exit(-1);
 	}
-
 	lastLedger->setClosed();
+
 	Ledger::pointer openLedger = boost::make_shared<Ledger>(false, boost::ref(*lastLedger));
 	mMasterLedger.switchLedgers(lastLedger, openLedger);
 	mNetOps.setLastCloseTime(lastLedger->getCloseTimeNC());

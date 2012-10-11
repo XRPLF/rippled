@@ -120,8 +120,8 @@ std::auto_ptr<SerializedType> STObject::makeDeserializedObject(SerializedTypeID 
 
 void STObject::set(const std::vector<SOElement::ptr>& type)
 {
-	mData.empty();
-	mType.empty();
+	mData.clear();
+	mType.clear();
 
 	BOOST_FOREACH(const SOElement::ptr& elem, type)
 	{
@@ -138,7 +138,7 @@ bool STObject::setType(const std::vector<SOElement::ptr> &type)
 	boost::ptr_vector<SerializedType> newData;
 	bool valid = true;
 
-	mType.empty();
+	mType.clear();
 	BOOST_FOREACH(const SOElement::ptr& elem, type)
 	{
 		bool match = false;
@@ -204,7 +204,7 @@ bool STObject::isFieldAllowed(SField::ref field)
 
 bool STObject::set(SerializerIterator& sit, int depth)
 { // return true = terminated with end-of-object
-	mData.empty();
+	mData.clear();
 	while (!sit.empty())
 	{
 		int type, field;
