@@ -181,7 +181,7 @@ SHAMapTreeNode* SHAMap::walkToPointer(const uint256& id)
 		if (nextHash.isZero()) return NULL;
 		inNode = getNodePointer(inNode->getChildNodeID(branch), nextHash);
 		if (!inNode)
-			throw SHAMapMissingNode(inNode->getChildNodeID(branch), nextHash, id);
+			throw SHAMapMissingNode(mType, inNode->getChildNodeID(branch), nextHash, id);
 	}
 	return (inNode->getTag() == id) ? inNode : NULL;
 }
@@ -686,11 +686,11 @@ void SHAMapItem::dump()
 SHAMapTreeNode::pointer SHAMap::fetchNodeExternal(const SHAMapNode& id, const uint256& hash)
 {
 	if (!theApp->running())
-		throw SHAMapMissingNode(id, hash);
+		throw SHAMapMissingNode(mType, id, hash);
 
 	HashedObject::pointer obj(theApp->getHashedObjectStore().retrieve(hash));
 	if (!obj)
-		throw SHAMapMissingNode(id, hash);
+		throw SHAMapMissingNode(mType, id, hash);
 	assert(Serializer::getSHA512Half(obj->getData()) == hash);
 
 	try
@@ -704,7 +704,7 @@ SHAMapTreeNode::pointer SHAMap::fetchNodeExternal(const SHAMapNode& id, const ui
 	catch (...)
 	{
 		cLog(lsWARNING) << "fetchNodeExternal gets an invalid node: " << hash;
-		throw SHAMapMissingNode(id, hash);
+		throw SHAMapMissingNode(mType, id, hash);
 	}
 }
 
