@@ -208,17 +208,25 @@ void Application::startNewLedger()
 
 void Application::loadOldLedger()
 {
-	Ledger::pointer lastLedger = Ledger::getSQL("SELECT * from Ledgers order by LedgerSeq desc limit 1;");
-
-	if (!lastLedger)
+	try
 	{
-		std::cout << "No Ledger found?" << std::endl;
+		Ledger::pointer lastLedger = Ledger::getSQL("SELECT * from Ledgers order by LedgerSeq desc limit 1;");
+
+		if (!lastLedger)
+		{
+			std::cout << "No Ledger found?" << std::endl;
+			exit(-1);
+		}
+		lastLedger->setClosed();
+
+		Ledger::pointer openLedger = boost::make_shared<Ledger>(false, boost::ref(*lastLedger));
+		mMasterLedger.switchLedgers(lastLedger, openLedger);
+		mNetOps.setLastCloseTime(lastLedger->getCloseTimeNC());
+	}
+	catch (SHAMapMissingNode& mn)
+	{
+		Log(lsFATAL) << "Cannot load ledger. " << mn;
 		exit(-1);
 	}
-	lastLedger->setClosed();
-
-	Ledger::pointer openLedger = boost::make_shared<Ledger>(false, boost::ref(*lastLedger));
-	mMasterLedger.switchLedgers(lastLedger, openLedger);
-	mNetOps.setLastCloseTime(lastLedger->getCloseTimeNC());
 }
 // vim:ts=4
