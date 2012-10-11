@@ -241,16 +241,26 @@ class SHAMapMissingNode : public std::runtime_error
 protected:
 	SHAMapNode mNodeID;
 	uint256 mNodeHash;
+	uint256 mTargetIndex;
 
 public:
 	SHAMapMissingNode(const SHAMapNode& nodeID, const uint256& nodeHash) :
 		std::runtime_error(nodeID.getString()), mNodeID(nodeID), mNodeHash(nodeHash)
 	{ ; }
+
+	SHAMapMissingNode(const SHAMapNode& nodeID, const uint256& nodeHash, const uint256& targetIndex) :
+		std::runtime_error(nodeID.getString()), mNodeID(nodeID), mNodeHash(nodeHash), mTargetIndex(targetIndex)
+	{ ; }
+
 	virtual ~SHAMapMissingNode() throw()
 	{ ; }
 
-	const SHAMapNode& getNodeID() const	{ return mNodeID; }
-	const uint256& getNodeHash() const	{ return mNodeHash; }
+	void setTargetNode(const uint256& tn)	{ mTargetIndex = tn; }
+
+	const SHAMapNode& getNodeID() const		{ return mNodeID; }
+	const uint256& getNodeHash() const		{ return mNodeHash; }
+	const uint256& getTargetIndex() const	{ return mTargetIndex; }
+	bool hasTargetIndex() const				{ return !mTargetIndex.isZero(); }
 };
 
 class SHAMap

@@ -93,7 +93,8 @@ std::stack<SHAMapTreeNode::pointer> SHAMap::getStack(const uint256& id, bool inc
 		{
 			if (partialOk)
 				return stack;
-			throw mn;
+			mn.setTargetNode(id);
+			throw;
 		}
 	}
 
@@ -153,10 +154,15 @@ SHAMapTreeNode::pointer SHAMap::walkTo(const uint256& id, bool modify)
 			return inNode;
 		uint256 childHash = inNode->getChildHash(branch);
 
-		SHAMapTreeNode::pointer nextNode = getNode(inNode->getChildNodeID(branch), childHash, false);
-		if (!nextNode)
-			throw SHAMapMissingNode(inNode->getChildNodeID(branch), childHash);
-		inNode = nextNode;
+		try
+		{
+			inNode = getNode(inNode->getChildNodeID(branch), childHash, false);
+		}
+		catch (SHAMapMissingNode& mn)
+		{
+			mn.setTargetNode(id);
+			throw;
+		}
 	}
 	if (inNode->getTag() != id)
 		return SHAMapTreeNode::pointer();
@@ -175,7 +181,7 @@ SHAMapTreeNode* SHAMap::walkToPointer(const uint256& id)
 		if (nextHash.isZero()) return NULL;
 		inNode = getNodePointer(inNode->getChildNodeID(branch), nextHash);
 		if (!inNode)
-			throw SHAMapMissingNode(inNode->getChildNodeID(branch), nextHash);
+			throw SHAMapMissingNode(inNode->getChildNodeID(branch), nextHash, id);
 	}
 	return (inNode->getTag() == id) ? inNode : NULL;
 }

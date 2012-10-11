@@ -53,7 +53,7 @@ void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint2
 				{
 					d = getNode(childID, childHash, false);
 				}
-				catch (SHAMapMissingNode& )
+				catch (SHAMapMissingNode&)
 				{ // node is not in the map
 					if (filter != NULL)
 					{
@@ -269,14 +269,15 @@ bool SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigned cha
 					if (nextNode->isInner() && !nextNode->isFullBelow())
 						return true;
 				}
-				catch (SHAMapMissingNode)
+				catch (SHAMapMissingNode&)
 				{
 					return true;
 				}
 			}
 		iNode->setFullBelow();
 	} while (!stack.empty());
-	if (root->isFullBelow()) clearSynching();
+	if (root->isFullBelow())
+		clearSynching();
 	return true;
 }
 
