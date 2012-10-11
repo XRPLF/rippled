@@ -690,7 +690,10 @@ SHAMapTreeNode::pointer SHAMap::fetchNodeExternal(const SHAMapNode& id, const ui
 
 	HashedObject::pointer obj(theApp->getHashedObjectStore().retrieve(hash));
 	if (!obj)
+	{
+		Log(lsTRACE) << "fetchNodeExternal: missing " << hash;
 		throw SHAMapMissingNode(mType, id, hash);
+	}
 	assert(Serializer::getSHA512Half(obj->getData()) == hash);
 
 	try
@@ -706,6 +709,13 @@ SHAMapTreeNode::pointer SHAMap::fetchNodeExternal(const SHAMapNode& id, const ui
 		cLog(lsWARNING) << "fetchNodeExternal gets an invalid node: " << hash;
 		throw SHAMapMissingNode(mType, id, hash);
 	}
+}
+
+void SHAMap::fetchRoot(const uint256& hash)
+{
+	root = fetchNodeExternal(SHAMapNode(), hash);
+	root->makeInner();
+	mTNByID[*root] = root;
 }
 
 void SHAMap::armDirty()

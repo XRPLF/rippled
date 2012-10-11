@@ -273,6 +273,8 @@ public:
 	bool hasTargetIndex() const				{ return !mTargetIndex.isZero(); }
 };
 
+extern std::ostream& operator<<(std::ostream&, const SHAMapMissingNode&);
+
 class SHAMap
 {
 public:
@@ -330,6 +332,7 @@ public:
 	ScopedLock Lock() const { return ScopedLock(mLock); }
 
 	bool hasNode(const SHAMapNode& id);
+	void fetchRoot(const uint256& hash);
 
 	// normal hash access functions
 	bool hasItem(const uint256& id);
