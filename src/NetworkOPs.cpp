@@ -585,7 +585,6 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 		if (!mAcquiringLedger->isComplete())
 		{ // add more peers
 			int count = 0;
-			std::vector<Peer::pointer> peers=theApp->getConnectionPool().getPeerVector();
 			BOOST_FOREACH(Peer::ref it, peerList)
 			{
 				if (it->getClosedLedgerHash() == closedLedger)
