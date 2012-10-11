@@ -91,10 +91,12 @@ public:
 
 	int							mIndex;
 	uint64						uQuality;			// 0 = none.
-	STAmount					saInReq;			// Max amount to spend by sender
-	STAmount					saInAct;			// Amount spent by sender (calc output)
-	STAmount					saOutReq;			// Amount to send (calc input)
-	STAmount					saOutAct;			// Amount actually sent (calc output).
+	const STAmount&				saInReq;			// --> Max amount to spend by sender.
+	STAmount					saInAct;			// --> Amount spent by sender so far.
+	STAmount					saInPass;			// <-- Amount spent by sender.
+	const STAmount&				saOutReq;			// --> Amount to send.
+	STAmount					saOutAct;			// --> Amount actually sent so far.
+	STAmount					saOutPass;			// <-- Amount actually sent.
 
 	PathState(
 		const int				iIndex,

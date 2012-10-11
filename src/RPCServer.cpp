@@ -2711,8 +2711,10 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 		try {
 			return (this->*(commandsA[i].dfpFunc))(params);
 		}
-		catch (...)
+		catch (std::exception& e)
 		{
+			cLog(lsINFO) << "Caught throw: " << e.what();
+
 			return RPCError(rpcINTERNAL);
 		}
 	}

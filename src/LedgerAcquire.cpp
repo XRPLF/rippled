@@ -96,6 +96,45 @@ LedgerAcquire::LedgerAcquire(const uint256& hash) : PeerSet(hash, LEDGER_ACQUIRE
 #endif
 }
 
+bool LedgerAcquire::tryLocal()
+{ // return value: true = no more work to do
+	HashedObject::pointer node = theApp->getHashedObjectStore().retrieve(mHash);
+	if (!node)
+		return false;
+
+	mLedger = boost::make_shared<Ledger>(strCopy(node->getData()));
+	assert(mLedger->getHash() == mHash);
+	mHaveBase = true;
+
+	if (!mLedger->getTransHash())
+		mHaveTransactions = true;
+	else
+	{
+		try
+		{
+			mLedger->peekTransactionMap()->fetchRoot(mLedger->getTransHash());
+		}
+		catch (SHAMapMissingNode&)
+		{
+		}
+	}
+
+	if (!mLedger->getAccountHash())
+		mHaveState = true;
+	else
+	{
+		try
+		{
+			mLedger->peekAccountStateMap()->fetchRoot(mLedger->getAccountHash());
+		}
+		catch (SHAMapMissingNode&)
+		{
+		}
+	}
+
+	return mHaveTransactions && mHaveState;
+}
+
 void LedgerAcquire::onTimer()
 {
 	if (getTimeouts() > 6)
@@ -124,7 +163,7 @@ void LedgerAcquire::done()
 	setComplete();
 	mLock.lock();
 	triggers = mOnComplete;
-	mOnComplete.empty();
+	mOnComplete.clear();
 	mLock.unlock();
 
 	if (mLedger)

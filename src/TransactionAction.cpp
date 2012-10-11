@@ -504,9 +504,15 @@ TER TransactionEngine::doPayment(const SerializedTransaction& txn, const Transac
 
 		return temDST_NEEDED;
 	}
+	else if (bMax && !saMaxAmount.isPositive())
+	{
+		Log(lsINFO) << "doPayment: Invalid transaction: bad max amount: " << saMaxAmount.getFullText();
+
+		return temBAD_AMOUNT;
+	}
 	else if (!saDstAmount.isPositive())
 	{
-		Log(lsINFO) << "doPayment: Invalid transaction: bad amount: " << saDstAmount.getHumanCurrency() << " " << saDstAmount.getText();
+		Log(lsINFO) << "doPayment: Invalid transaction: bad dst amount: " << saDstAmount.getFullText();
 
 		return temBAD_AMOUNT;
 	}
