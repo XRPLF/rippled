@@ -1566,6 +1566,7 @@ PathState::PathState(
 
 	saInReq					= saSendMax;
 	saOutReq				= saSend;
+	uQuality				= 1;								// Mark path as active.
 
 	// Push sending node.
 	terStatus	= pushNode(
@@ -1927,8 +1928,8 @@ TER RippleCalc::rippleCalc(
 	    terResult	= temUNCERTAIN;
     }
 
-    STAmount				saPaid;
-    STAmount				saWanted;
+	STAmount				saInAct;
+	STAmount				saOutAct;
     const LedgerEntrySet	lesBase			= lesActive;							// Checkpoint with just fees paid.
     const uint64			uQualityLimit	= bLimitQuality ? STAmount::getRate(saDstAmountReq, saMaxAmountReq) : 0;
 	// When processing, don't want to complicate directory walking with deletion.
@@ -1942,16 +1943,26 @@ TER RippleCalc::rippleCalc(
 	    // Find the best path.
 	    BOOST_FOREACH(PathState::pointer& pspCur, vpsPaths)
 	    {
-			// XXX Handle paths that are found dry?
-		    rc.pathNext(pspCur, vpsPaths.size(), lesCheckpoint, lesActive);			// Compute increment.
+		    if (pspCur->uQuality)
+			{
+				pspCur->saInAct		= saInAct;										// Update to current amount processed.
+				pspCur->saOutAct	= saOutAct;
 
-		    if ((!bLimitQuality || pspCur->uQuality <= uQualityLimit)				// Quality is not limted or increment has allowed quality.
-			    || !pspBest															// Best is not yet set.
-			    || (pspCur->uQuality && PathState::lessPriority(pspBest, pspCur)))	// Current is better than set.
-		    {
-			    lesActive.swapWith(pspCur->lesEntries);								// For the path, save ledger state.
-			    pspBest	= pspCur;
-		    }
+				rc.pathNext(pspCur, vpsPaths.size(), lesCheckpoint, lesActive);		// Compute increment.
+
+				if (!pspCur->uQuality) {
+					// Path was dry.
+
+					nothing();
+				}
+				else if ((!bLimitQuality || pspCur->uQuality <= uQualityLimit)		// Quality is not limted or increment has allowed quality.
+					|| !pspBest														// Best is not yet set.
+					|| PathState::lessPriority(pspBest, pspCur))					// Current is better than set.
+				{
+					lesActive.swapWith(pspCur->lesEntries);							// For the path, save ledger state.
+					pspBest	= pspCur;
+				}
+			}
 	    }
 
 	    if (pspBest)
@@ -1964,18 +1975,35 @@ TER RippleCalc::rippleCalc(
 		    // Record best pass' LedgerEntrySet to build off of and potentially return.
 		    lesActive.swapWith(pspBest->lesEntries);
 
-		    // Figure out if done.
-		    if (temUNCERTAIN == terResult && saPaid == saWanted)
+			saInAct		+= pspBest->saInAct;
+			saOutAct	+= pspBest->saOutAct;
+
+		    if (temUNCERTAIN == terResult && saOutAct == saDstAmountReq)
 		    {
+				// Done. Delivered requested amount.
+
 			    terResult	= tesSUCCESS;
 		    }
-		    else
+		    else if (saInAct != saMaxAmountReq)
 		    {
-			    // Prepare for next pass.
+			    // Have not met requested amount or max send. Prepare for next pass.
 
 			    // Merge best pass' umReverse.
 			    rc.mumSource.insert(pspBest->umReverse.begin(), pspBest->umReverse.end());
 		    }
+			else if (!bPartialPayment)
+			{
+				// Have sent maximum allowed. Partial payment not allowed.
+
+				terResult	= tepPATH_PARTIAL;
+				lesActive	= lesBase;				// Revert to just fees charged.
+			}
+			else
+			{
+				// Have sent maximum allowed. Partial payment allowed.  Success.
+
+				terResult	= tesSUCCESS;
+			}
 	    }
 	    // Not done and ran out of paths.
 	    else if (!bPartialPayment)
@@ -1985,7 +2013,7 @@ TER RippleCalc::rippleCalc(
 		    lesActive	= lesBase;				// Revert to just fees charged.
 	    }
 	    // Partial payment ok.
-	    else if (!saPaid)
+	    else if (!saOutAct)
 	    {
 		    // No payment at all.
 		    terResult	= tepPATH_DRY;
