@@ -12,7 +12,7 @@ var UInt160 = function () {
   //   XXX Should standardize on 'i' format or 20 format.
 };
 
-UInt160.prototype.from_json = function (j) {
+UInt160.from_json = function (j) {
   var u	= new UInt160();
 
   return u.parse_json(j);
