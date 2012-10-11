@@ -24,7 +24,8 @@ SETUP_LOG();
 Ledger::Ledger(const NewcoinAddress& masterID, uint64 startAmount) : mTotCoins(startAmount), mLedgerSeq(1),
 	mCloseTime(0), mParentCloseTime(0), mCloseResolution(LEDGER_TIME_ACCURACY), mCloseFlags(0),
 	mClosed(false), mValidHash(false), mAccepted(false), mImmutable(false),
-	mTransactionMap(new SHAMap(smtTRANSACTION)), mAccountStateMap(new SHAMap(smtFREE))
+	mTransactionMap(boost::make_shared<SHAMap>(smtTRANSACTION)),
+	mAccountStateMap(boost::make_shared<SHAMap>(smtSTATE))
 {
 	// special case: put coins in root account
 	AccountState::pointer startAccount = boost::make_shared<AccountState>(masterID);
@@ -42,9 +43,19 @@ Ledger::Ledger(const uint256 &parentHash, const uint256 &transHash, const uint25
 		: mParentHash(parentHash), mTransHash(transHash), mAccountHash(accountHash), mTotCoins(totCoins),
 		mLedgerSeq(ledgerSeq), mCloseTime(closeTime), mParentCloseTime(parentCloseTime),
 		mCloseResolution(closeResolution), mCloseFlags(closeFlags),
-		mClosed(false), mValidHash(false), mAccepted(false), mImmutable(isMutable)
+		mClosed(false), mValidHash(false), mAccepted(false), mImmutable(isMutable),
+		mTransactionMap(boost::make_shared<SHAMap>(smtTRANSACTION)),
+		mAccountStateMap(boost::make_shared<SHAMap>(smtSTATE))
 {
 	updateHash();
+	if (mTransHash.isNonZero())
+	{
+		// WRITEME
+	}
+	if (mAccountHash.isNonZero())
+	{
+		// WRITEME
+	}
 }
 
 Ledger::Ledger(Ledger& ledger, bool isMutable) : mTotCoins(ledger.mTotCoins), mLedgerSeq(ledger.mLedgerSeq),
@@ -62,7 +73,8 @@ Ledger::Ledger(bool /* dummy */, Ledger& prevLedger) :
 	mTotCoins(prevLedger.mTotCoins), mLedgerSeq(prevLedger.mLedgerSeq + 1),
 	mParentCloseTime(prevLedger.mCloseTime), mCloseResolution(prevLedger.mCloseResolution),
 	mCloseFlags(0),	mClosed(false), mValidHash(false), mAccepted(false), mImmutable(false),
-	mTransactionMap(new SHAMap(smtTRANSACTION)), mAccountStateMap(prevLedger.mAccountStateMap->snapShot(true))
+	mTransactionMap(boost::make_shared<SHAMap>(smtTRANSACTION)),
+	mAccountStateMap(prevLedger.mAccountStateMap->snapShot(true))
 { // Create a new ledger that follows this one
 	prevLedger.updateHash();
 	mParentHash = prevLedger.getHash();
