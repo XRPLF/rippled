@@ -39,23 +39,21 @@ Ledger::Ledger(const NewcoinAddress& masterID, uint64 startAmount) : mTotCoins(s
 }
 
 Ledger::Ledger(const uint256 &parentHash, const uint256 &transHash, const uint256 &accountHash,
-	uint64 totCoins, uint32 closeTime, uint32 parentCloseTime, int closeFlags, int closeResolution, uint32 ledgerSeq,bool isMutable)
+	uint64 totCoins, uint32 closeTime, uint32 parentCloseTime, int closeFlags, int closeResolution, uint32 ledgerSeq)
 		: mParentHash(parentHash), mTransHash(transHash), mAccountHash(accountHash), mTotCoins(totCoins),
 		mLedgerSeq(ledgerSeq), mCloseTime(closeTime), mParentCloseTime(parentCloseTime),
 		mCloseResolution(closeResolution), mCloseFlags(closeFlags),
-		mClosed(false), mValidHash(false), mAccepted(false), mImmutable(isMutable),
-		mTransactionMap(boost::make_shared<SHAMap>(smtTRANSACTION)),
-		mAccountStateMap(boost::make_shared<SHAMap>(smtSTATE))
+		mClosed(false), mValidHash(false), mAccepted(false), mImmutable(true),
+		mTransactionMap(boost::make_shared<SHAMap>(smtTRANSACTION, transHash)),
+		mAccountStateMap(boost::make_shared<SHAMap>(smtSTATE, accountHash))
 {
 	updateHash();
 	if (mTransHash.isNonZero())
-	{
-		// WRITEME
-	}
+		mTransactionMap->fetchRoot(mTransHash);
 	if (mAccountHash.isNonZero())
-	{
-		// WRITEME
-	}
+		mAccountStateMap->fetchRoot(mAccountHash);
+	mTransactionMap->setImmutable();
+	mAccountStateMap->setImmutable();
 }
 
 Ledger::Ledger(Ledger& ledger, bool isMutable) : mTotCoins(ledger.mTotCoins), mLedgerSeq(ledger.mLedgerSeq),
@@ -438,7 +436,7 @@ Ledger::pointer Ledger::getSQL(const std::string& sql)
 	}
 
 	Ledger::pointer ret = Ledger::pointer(new Ledger(prevHash, transHash, accountHash, totCoins,
-		closingTime, prevClosingTime, closeFlags, closeResolution, ledgerSeq, true));
+		closingTime, prevClosingTime, closeFlags, closeResolution, ledgerSeq));
 	if (ret->getHash() != ledgerHash)
 	{
 		if (sLog(lsERROR))
