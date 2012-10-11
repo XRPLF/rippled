@@ -421,7 +421,7 @@ BOOST_AUTO_TEST_CASE( SHAMapSync_test )
 	srand(seed);
 
 	cLog(lsTRACE) << "Constructing maps";
-	SHAMap source, destination;
+	SHAMap source(smtFREE), destination(smtFREE);
 
 	// add random data to the source map
 	cLog(lsTRACE) << "Adding random data";

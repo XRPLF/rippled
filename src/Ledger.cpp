@@ -24,7 +24,7 @@ SETUP_LOG();
 Ledger::Ledger(const NewcoinAddress& masterID, uint64 startAmount) : mTotCoins(startAmount), mLedgerSeq(1),
 	mCloseTime(0), mParentCloseTime(0), mCloseResolution(LEDGER_TIME_ACCURACY), mCloseFlags(0),
 	mClosed(false), mValidHash(false), mAccepted(false), mImmutable(false),
-	mTransactionMap(new SHAMap()), mAccountStateMap(new SHAMap())
+	mTransactionMap(new SHAMap(smtTRANSACTION)), mAccountStateMap(new SHAMap(smtFREE))
 {
 	// special case: put coins in root account
 	AccountState::pointer startAccount = boost::make_shared<AccountState>(masterID);
@@ -62,7 +62,7 @@ Ledger::Ledger(bool /* dummy */, Ledger& prevLedger) :
 	mTotCoins(prevLedger.mTotCoins), mLedgerSeq(prevLedger.mLedgerSeq + 1),
 	mParentCloseTime(prevLedger.mCloseTime), mCloseResolution(prevLedger.mCloseResolution),
 	mCloseFlags(0),	mClosed(false), mValidHash(false), mAccepted(false), mImmutable(false),
-	mTransactionMap(new SHAMap()), mAccountStateMap(prevLedger.mAccountStateMap->snapShot(true))
+	mTransactionMap(new SHAMap(smtTRANSACTION)), mAccountStateMap(prevLedger.mAccountStateMap->snapShot(true))
 { // Create a new ledger that follows this one
 	prevLedger.updateHash();
 	mParentHash = prevLedger.getHash();
@@ -123,8 +123,8 @@ void Ledger::setRaw(const Serializer &s)
 	updateHash();
 	if(mValidHash)
 	{
-		mTransactionMap = boost::make_shared<SHAMap>(mTransHash);
-		mAccountStateMap = boost::make_shared<SHAMap>(mAccountHash);
+		mTransactionMap = boost::make_shared<SHAMap>(smtTRANSACTION, mTransHash);
+		mAccountStateMap = boost::make_shared<SHAMap>(smtSTATE, mAccountHash);
 	}
 }
 

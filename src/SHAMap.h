@@ -128,6 +128,13 @@ enum SHANodeFormat
 	snfWIRE		= 2, // Compressed form used on the wire
 };
 
+enum SHAMapType
+{
+	smtTRANSACTION	=1,		// A tree of transactions
+	smtSTATE		=2,		// A tree of state nodes
+	smtFREE			=3,		// A tree not part of a ledger
+};
+
 class SHAMapTreeNode : public SHAMapNode
 {
 	friend class SHAMap;
@@ -282,6 +289,8 @@ private:
 
 	SHAMapState mState;
 
+	SHAMapType mType;
+
 protected:
 
 	void dirtyUp(std::stack<SHAMapTreeNode::pointer>& stack, const uint256& target, uint256 prevHash);
@@ -306,8 +315,8 @@ protected:
 public:
 
 	// build new map
-	SHAMap(uint32 seq = 0);
-	SHAMap(const uint256& hash);
+	SHAMap(SHAMapType t, uint32 seq = 0);
+	SHAMap(SHAMapType t, const uint256& hash);
 
 	~SHAMap() { mState = smsInvalid; }
 

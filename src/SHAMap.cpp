@@ -41,14 +41,14 @@ std::size_t hash_value(const uint160& u)
 }
 
 
-SHAMap::SHAMap(uint32 seq) : mSeq(seq), mState(smsModifying)
+SHAMap::SHAMap(SHAMapType t, uint32 seq) : mSeq(seq), mState(smsModifying), mType(t)
 {
 	root = boost::make_shared<SHAMapTreeNode>(mSeq, SHAMapNode(0, uint256()));
 	root->makeInner();
 	mTNByID[*root] = root;
 }
 
-SHAMap::SHAMap(const uint256& hash) : mSeq(0), mState(smsSynching)
+SHAMap::SHAMap(SHAMapType t, const uint256& hash) : mSeq(0), mState(smsSynching), mType(t)
 { // FIXME: Need to acquire root node
 	root = boost::make_shared<SHAMapTreeNode>(mSeq, SHAMapNode(0, uint256()));
 	root->makeInner();
@@ -58,7 +58,7 @@ SHAMap::SHAMap(const uint256& hash) : mSeq(0), mState(smsSynching)
 SHAMap::pointer SHAMap::snapShot(bool isMutable)
 { // Return a new SHAMap that is an immutable snapshot of this one
   // Initially nodes are shared, but CoW is forced on both ledgers
-	SHAMap::pointer ret = boost::make_shared<SHAMap>();
+	SHAMap::pointer ret = boost::make_shared<SHAMap>(mType);
 	SHAMap& newMap = *ret;
 	newMap.mSeq = ++mSeq;
 	newMap.mTNByID = mTNByID;
@@ -808,7 +808,7 @@ BOOST_AUTO_TEST_CASE( SHAMap_test )
 	h4.SetHex("b92891fe4ef6cee585fdc6fda2e09eb4d386363158ec3321b8123e5a772c6ca8");
 	h5.SetHex("a92891fe4ef6cee585fdc6fda0e09eb4d386363158ec3321b8123e5a772c6ca7");
 
-	SHAMap sMap;
+	SHAMap sMap(smtFREE);
 	SHAMapItem i1(h1, IntToVUC(1)), i2(h2, IntToVUC(2)), i3(h3, IntToVUC(3)), i4(h4, IntToVUC(4)), i5(h5, IntToVUC(5));
 
 	if (!sMap.addItem(i2, true, false)) BOOST_FAIL("no add");
