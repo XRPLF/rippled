@@ -102,9 +102,7 @@ protected:
 	void recvGetContacts(newcoin::TMGetContacts& packet);
 	void recvGetPeers(newcoin::TMGetPeers& packet);
 	void recvPeers(newcoin::TMPeers& packet);
-	void recvIndexedObject(newcoin::TMIndexedObject& packet);
 	void recvGetObjectByHash(newcoin::TMGetObjectByHash& packet);
-	void recvObjectByHash(newcoin::TMObjectByHash& packet);
 	void recvPing(newcoin::TMPing& packet);
 	void recvErrorMessage(newcoin::TMErrorMsg& packet);
 	void recvSearchTransaction(newcoin::TMSearchTransaction& packet);

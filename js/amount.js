@@ -1,7 +1,10 @@
 // Represent Newcoin amounts and currencies.
+// - Numbers in hex are big-endian.
 
+var utils   = require('./utils.js');
+var jsbn    = require('./jsbn.js');
 
-var utils  = require("./utils.js");
+var BigInteger	= jsbn.BigInteger;
 
 var UInt160 = function () {
   // Internal form:
@@ -9,7 +12,11 @@ var UInt160 = function () {
   //   XXX Should standardize on 'i' format or 20 format.
 };
 
-// Returns NaN on error.
+UInt160.from_json = function (j) {
+  return (new UInt160()).parse_json(j);
+};
+
+// value === NaN on error.
 UInt160.prototype.parse_json = function (j) {
   // Canonicalize and validate
 
@@ -49,7 +56,7 @@ UInt160.prototype.parse_json = function (j) {
       }
   }
 
-  return this.value;
+  return this;
 };
 
 // Convert from internal form.
@@ -62,7 +69,7 @@ UInt160.prototype.to_json = function () {
   {
     return exports.consts.hex_one;
   }
-  else if (20 === this.value.length) {
+  else if ('string' === typeof this.value && 20 === this.value.length) {
     return utils.stringToHex(this.value);
   }
   else
@@ -81,7 +88,11 @@ var Currency = function () {
   // XXX Should support hex, C++ doesn't currently allow it.
 }
 
-// Returns NaN on error.
+Currency.from_json = function (j) {
+  return (new Currency()).parse_json(j);
+};
+
+// this.value === NaN on error.
 Currency.prototype.parse_json = function (j) {
   if ("" === j || "0" === j || "XNS" === j) {
     this.value	= 0;
@@ -93,15 +104,15 @@ Currency.prototype.parse_json = function (j) {
     this.value	= j;
   }
 
-  return this.value;
+  return this;
 };
 
 Currency.prototype.to_json = function () {
-  return this.value ? this.value : 'XNS';
+  return this.value ? this.value : "XNS";
 };
 
 Currency.prototype.to_human = function() {
-  return this.value ? this.value : 'XNS';
+  return this.value ? this.value : "XNS";
 };
 
 var Amount = function () {
@@ -109,19 +120,86 @@ var Amount = function () {
   //  integer : XNS
   //  { 'value' : ..., 'currency' : ..., 'issuer' : ...}
 
-  this.value	    = 0;
-  this.offset	    = 0;
-  this.is_native    = false;
-  this.is_negative  = false;
+  this.value	    = new BigInteger();	// NaN for bad value. Always positive for non-XNS.
+  this.offset	    = undefined;	// For non-XNS.
+  this.is_native    = true;		// Default to XNS. Only valid if value is not NaN.
+  this.is_negative  = undefined;	// Undefined for XNS.
 
   this.currency	    = new Currency();
   this.issuer	    = new UInt160();
 };
 
-// Convert only value to JSON text.
-Amount.prototype.to_text = function() {
-  // XXX Needs to work for native and non-native.
-  return this.is_negative ? -this.value : this.value;	  // XXX Use biginteger.
+Amount.from_json = function (j) {
+  return (new Amount()).parse_json(j);
+};
+
+// YYY Might also check range.
+Amount.prototype.is_valid = function() {
+  return NaN !== this.value;
+}
+
+// Convert only value to JSON wire format.
+Amount.prototype.to_text = function(allow_nan) {
+  if (NaN === this.value) {
+    // Never should happen.
+    return allow_nan ? NaN : "0";
+  }
+  else if (this.is_native) {
+    if (this.value.compareTo(exports.consts.xns_max) > 0 || this.value.compareTo(exports.consts.xns_min) < 0)
+    {
+      // Never should happen.
+      return allow_nan ? NaN : "0";
+    }
+    else
+    {
+      return this.value.toString();
+    }
+  }
+  else if (this.value.equals(BigInteger.ZERO))
+  {
+    return "0"; 
+  }
+  else if (this.offset < -25 || this.offset > -5)
+  {
+    // Use e notation.
+    // XXX Clamp output.
+
+    return (this.is_negative ? "-" : "") + this.value.toString() + "e" + this.offset;
+  }
+  else
+  {
+    var val = "000000000000000000000000000" + this.value.toString() + "00000000000000000000000";
+    var	pre = val.substring(0, this.offset + 43);
+    var	post = val.substring(this.offset + 43);
+    var	s_pre = pre.match(/[1-9].*$/);	  // Everything but leading zeros.
+    var	s_post = post.match(/[1-9]0*$/);  // Last non-zero plus trailing zeros.
+
+    return (this.is_negative ? "-" : "")
+      + (s_pre ? s_pre[0] : "0")
+      + (s_post ? "." + post.substring(0, 1+post.length-s_post[0].length) : "");
+  }
+};
+
+Amount.prototype.canonicalize = function() {
+  if (NaN === this.value || !this.currency) {
+    // nothing
+  }
+  else if (this.value.equals(BigInteger.ZERO)) {
+    this.offset	      = -100;
+    this.is_negative  = false;
+  }
+  else
+  {
+    while (this.value.compareTo(exports.consts.bi_man_min_value) < 0) {
+      this.value  = this.value.multiply(exports.consts.bi_10);
+      this.offset -= 1;
+    }
+
+    while (this.value.compareTo(exports.consts.bi_man_max_value) > 0) {
+      this.value  = this.value.divide(exports.consts.bi_10);
+      this.offset += 1;
+    }
+  }
 };
 
 Amount.prototype.to_json = function() {
@@ -138,58 +216,132 @@ Amount.prototype.to_json = function() {
   }
 };
 
-// Parse a native value.
+Amount.prototype.to_text_full = function() {
+  return this.value === NaN
+    ? NaN
+    : this.is_native
+      ? this.to_text() + "/XNS"
+      : this.to_text() + "/" + this.currency.to_json() + "/" + this.issuer.to_json();
+};
+
+// Parse a XNS value from untrusted input.
+// - integer = raw units
+// - float = with precision 6
+// XXX Improvements: disallow leading zeros.
 Amount.prototype.parse_native = function(j) {
-  if ('integer' === typeof j) {
-    // XNS
-    this.value	      = j >= 0 ? j : -j;  // XXX Use biginteger.
-    this.offset	      = 0;
+  var m;
+
+  if ('string' === typeof j)
+    m = j.match(/^(\d+)(\.\d{1,6})?$/);
+
+  if (null !== m) {
+    if (undefined === m[2]) {
+      // Integer notation
+
+      this.value	  = new BigInteger(m[1]);
+    }
+    else {
+      // Decimal notation
+
+      var   int_part	  = (new BigInteger(m[1])).multiply(exports.consts.xns_unit);
+      var   fraction_part = (new BigInteger(m[2])).multiply(new BigInteger(String(Math.pow(10, 1+exports.consts.xns_precision-m[2].length))));
+
+      this.value	  = int_part.add(fraction_part);
+    }
+
     this.is_native    = true;
-    this.is_negative  = j < 0;
+    this.offset	      = undefined;
+    this.is_negative  = undefined;
+
+    if (this.value.compareTo(exports.consts.xns_max) > 0 || this.value.compareTo(exports.consts.xns_min) < 0)
+    {
+      this.value	  = NaN;
+    }
   } 
-  else if ('string' === typeof j) {
-    this.value	      = j >= 0 ? j : -j;  // XXX Use biginteger.
-    this.offset	      = 0;
-    this.is_native    = true;
-    this.is_negative  = j < 0;
-  }
   else {
     this.value	      = NaN;
   }
+
+  return this;
 };
 
 // Parse a non-native value.
 Amount.prototype.parse_value = function(j) {
-  if ('integer' === typeof j) {
-    this.value	      = j >= 0 ? j : -j;  // XXX Use biginteger.
+  if ('number' === typeof j) {
+    this.value	      = new BigInteger(j);
     this.offset	      = 0;
     this.is_native    = false;
     this.is_negative  = j < 0;
+
+    this.canonicalize();
   } 
   else if ('string' === typeof j) {
-    this.value	      = j >= 0 ? j : -j;  // XXX Use biginteger.
-    this.offset	      = 0;
+    var	e = j.match(/^(-?\d+)e(\d+)/);
+    var	d = j.match(/^(-?\d+)\.(\d+)/);
+
+    if (e) {
+      // e notation
+    
+      this.value  = new BigInteger(e[1]);
+      this.offset = parseInt(e[2]);
+    }
+    else if (d) {
+      // float notation
+
+      var integer   = new BigInteger(d[1]);
+      var fraction  = new BigInteger(d[2]);
+      this.value    = integer.multiply(exports.consts.bi_10.clone().pow(d[2].length)).add(fraction);
+      this.offset   = -d[2].length;
+    }
+    else
+    {
+      // integer notation
+
+      this.value  = new BigInteger(j);
+      this.offset = 0;
+    }
+
     this.is_native    = false;
-    this.is_negative  = j < 0;
+    this.is_negative  = undefined;
+
+    this.canonicalize();
   }
   else {
     this.value	      = NaN;
   }
+
+  return this;
 };
 
 // <-> j
 Amount.prototype.parse_json = function(j) {
-  if ('object' === typeof j && j.currency) {
+  if ('string' === typeof j) {
+    // .../.../... notation is not a wire format.  But allowed for easier testing.
+    var	m = j.match(/^(.+)\/(...)\/(.+)$/);
 
-    this.parse_value(j);
+    if (m) {
+      this.parse_value(m[1]);
+      this.currency = Currency.from_json(m[2]);
+      this.issuer   = UInt160.from_json(m[3]);
+    }
+    else {
+      this.parse_native(j);
+      this.currency = new Currency();
+      this.issuer   = new UInt160();
+    }
+  }
+  else if ('object' === typeof j && j.currency) {
+    // Never XNS.
+
+    this.parse_value(j.value);
     this.currency.parse_json(j.currency);
     this.issuer.parse_json(j.issuer);
   }
   else {
-    this.parse_native(j);
-    this.currency = 0;
-    this.issuer  = 0;
+    this.value	      = NaN;
   }
+
+  return this;
 };
 
 exports.Amount	  = Amount;
@@ -201,10 +353,17 @@ exports.consts	  = {
   'address_one' : "iiiiiiiiiiiiiiiiiiiiBZbvjr",
   'currency_xns' : 0,
   'currency_one' : 1,
-  'uint160_xns' : hexToString("0000000000000000000000000000000000000000"),
-  'uint160_one' : hexToString("0000000000000000000000000000000000000001"),
+  'uint160_xns' : utils.hexToString("0000000000000000000000000000000000000000"),
+  'uint160_one' : utils.hexToString("0000000000000000000000000000000000000001"),
   'hex_xns' : "0000000000000000000000000000000000000000",
   'hex_one' : "0000000000000000000000000000000000000001",
+  'xns_max' : new BigInteger("9000000000000000000"),	  // Json wire limit.
+  'xns_min' : new BigInteger("-9000000000000000000"),	  // Json wire limit.
+  'xns_unit' : new BigInteger('1000000'),
+  'xns_precision' : 6,
+  'bi_man_min_value' : new BigInteger('1000000000000000'),
+  'bi_man_max_value' : new BigInteger('9999999999999999'),
+  'bi_10' : new BigInteger('10'),
 };
 
 // vim:sw=2:sts=2:ts=8

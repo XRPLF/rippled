@@ -540,20 +540,11 @@ void Peer::processReadBuffer()
 			break;
 
 #endif
-		case newcoin::mtGET_OBJECT:
+		case newcoin::mtGET_OBJECTS:
 			{
 				newcoin::TMGetObjectByHash msg;
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvGetObjectByHash(msg);
-				else std::cerr << "parse error: " << type << std::endl;
-			}
-			break;
-
-		case newcoin::mtOBJECT:
-			{
-				newcoin::TMObjectByHash msg;
-				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
-					recvObjectByHash(msg);
 				else std::cerr << "parse error: " << type << std::endl;
 			}
 			break;
@@ -872,16 +863,45 @@ void Peer::recvPeers(newcoin::TMPeers& packet)
 	}
 }
 
-void Peer::recvIndexedObject(newcoin::TMIndexedObject& packet)
-{
-}
-
 void Peer::recvGetObjectByHash(newcoin::TMGetObjectByHash& packet)
 {
-}
+	if (packet.query())
+	{ // this is a query
+		newcoin::TMGetObjectByHash reply;
 
-void Peer::recvObjectByHash(newcoin::TMObjectByHash& packet)
-{
+		reply.clear_query();
+		if (packet.has_seq())
+			reply.set_seq(packet.seq());
+		reply.set_type(packet.type());
+		if (packet.has_ledgerhash())
+			reply.set_ledgerhash(packet.ledgerhash());
+
+		// This is a very minimal implementation
+		for (unsigned i = 0; i < packet.objects_size(); ++i)
+		{
+			uint256 hash;
+			const newcoin::TMIndexedObject& obj = packet.objects(i);
+			if (obj.has_hash() && (obj.hash().size() == (256/8)))
+			{
+				memcpy(hash.begin(), obj.hash().data(), 256 / 8);
+				HashedObject::pointer hObj = theApp->getHashedObjectStore().retrieve(hash);
+				if (hObj)
+				{
+					newcoin::TMIndexedObject& newObj = *reply.add_objects();
+					newObj.set_hash(hash.begin(), hash.size());
+					newObj.set_data(&hObj->getData().front(), hObj->getData().size());
+					if (obj.has_nodeid())
+						newObj.set_index(obj.nodeid());
+				}
+			}
+		}
+		cLog(lsDEBUG) << "GetObjByHash query: had " << reply.objects_size() << " of " << packet.objects_size();
+		sendPacket(boost::make_shared<PackedMessage>(packet, newcoin::mtGET_OBJECTS));
+	}
+	else
+	{ // this is a reply
+		// WRITEME
+	}
 }
 
 void Peer::recvPing(newcoin::TMPing& packet)

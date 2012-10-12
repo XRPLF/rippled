@@ -518,7 +518,7 @@ std::ostream& operator<<(std::ostream& out, const SHAMapMissingNode& mn)
 		out << "Missing/STA(" << mn.getNodeID() << ")";
 	else
 		out << "Missing/" << mn.getNodeID();
-	return(out);
+	return out;
 }
 
 
