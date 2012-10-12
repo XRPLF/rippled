@@ -876,11 +876,27 @@ void Peer::recvGetObjectByHash(newcoin::TMGetObjectByHash& packet)
 		if (packet.has_ledgerhash())
 			reply.set_ledgerhash(packet.ledgerhash());
 
+		// This is a very minimal implementation
 		for (unsigned i = 0; i < packet.objects_size(); ++i)
 		{
+			uint256 hash;
 			const newcoin::TMIndexedObject& obj = packet.objects(i);
-			// WRITEME
+			if (obj.has_hash() && (obj.hash().size() == (256/8)))
+			{
+				memcpy(hash.begin(), obj.hash().data(), 256 / 8);
+				HashedObject::pointer hObj = theApp->getHashedObjectStore().retrieve(hash);
+				if (hObj)
+				{
+					newcoin::TMIndexedObject& newObj = *reply.add_objects();
+					newObj.set_hash(hash.begin(), hash.size());
+					newObj.set_data(&hObj->getData().front(), hObj->getData().size());
+					if (obj.has_nodeid())
+						newObj.set_index(obj.nodeid());
+				}
+			}
 		}
+		cLog(lsDEBUG) << "GetObjByHash query: had " << reply.objects_size() << " of " << packet.objects_size();
+		sendPacket(boost::make_shared<PackedMessage>(packet, newcoin::mtGET_OBJECTS));
 	}
 	else
 	{ // this is a reply
