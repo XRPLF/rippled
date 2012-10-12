@@ -478,10 +478,12 @@ void STAmount::setValue(const STAmount &a)
 
 uint64 STAmount::toUInt64() const
 { // makes them sort easily
+	if (mIsNative)
+		return mValue;
 	if (mValue == 0)
 		return 0x4000000000000000ull;
 	if (mIsNegative)
-		return mValue | (static_cast<uint64>(mOffset + 97) << (64 - 10));
+		return ((cMaxNative + 1) - mValue) | (static_cast<uint64>(mOffset + 97) << (64 - 10));
 	return mValue | (static_cast<uint64>(mOffset + 256 + 97) << (64 - 10));
 }
 
