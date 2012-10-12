@@ -1131,15 +1131,13 @@ Json::Value STAmount::getJson(int) const
 {
 	Json::Value elem(Json::objectValue);
 
-	// This is a hack, many places don't specify a currency.  STAmount is used just as a value.
 	if (!mIsNative)
 	{
+		// It is an error for currency or issuer not to be specified for valid json.
+
 		elem["value"]		= getText();
 		elem["currency"]	= getHumanCurrency();
-
-		if (!mIssuer.isZero())
-			elem["issuer"]	= NewcoinAddress::createHumanAccountID(mIssuer);
-
+		elem["issuer"]		= NewcoinAddress::createHumanAccountID(mIssuer);
 	}
 	else
 	{

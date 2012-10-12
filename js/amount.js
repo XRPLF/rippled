@@ -13,9 +13,7 @@ var UInt160 = function () {
 };
 
 UInt160.from_json = function (j) {
-  var u	= new UInt160();
-
-  return u.parse_json(j);
+  return (new UInt160()).parse_json(j);
 };
 
 // value === NaN on error.
@@ -71,7 +69,7 @@ UInt160.prototype.to_json = function () {
   {
     return exports.consts.hex_one;
   }
-  else if (20 === this.value.length) {
+  else if ('string' === typeof this.value && 20 === this.value.length) {
     return utils.stringToHex(this.value);
   }
   else
@@ -90,7 +88,11 @@ var Currency = function () {
   // XXX Should support hex, C++ doesn't currently allow it.
 }
 
-// Returns NaN on error.
+Currency.from_json = function (j) {
+  return (new Currency()).parse_json(j);
+};
+
+// this.value === NaN on error.
 Currency.prototype.parse_json = function (j) {
   if ("" === j || "0" === j || "XNS" === j) {
     this.value	= 0;
@@ -102,15 +104,15 @@ Currency.prototype.parse_json = function (j) {
     this.value	= j;
   }
 
-  return this.value;
+  return this;
 };
 
 Currency.prototype.to_json = function () {
-  return this.value ? this.value : 'XNS';
+  return this.value ? this.value : "XNS";
 };
 
 Currency.prototype.to_human = function() {
-  return this.value ? this.value : 'XNS';
+  return this.value ? this.value : "XNS";
 };
 
 var Amount = function () {
@@ -125,6 +127,10 @@ var Amount = function () {
 
   this.currency	    = new Currency();
   this.issuer	    = new UInt160();
+};
+
+Amount.from_json = function (j) {
+  return (new Amount()).parse_json(j);
 };
 
 // YYY Might also check range.
@@ -153,7 +159,7 @@ Amount.prototype.to_text = function(allow_nan) {
   {
     return "0"; 
   }
-  else if (this.offset < -25 || mOffset > -5)
+  else if (this.offset < -25 || this.offset > -5)
   {
     // Use e notation.
     // XXX Clamp output.
@@ -165,14 +171,12 @@ Amount.prototype.to_text = function(allow_nan) {
     var val = "000000000000000000000000000" + this.value.toString() + "00000000000000000000000";
     var	pre = val.substring(0, this.offset + 43);
     var	post = val.substring(this.offset + 43);
-    var	s_pre = val.match(/[1-9].*$/);	// Everything but leading zeros.
-    var	s_post = val.match(/0+$/);	// Trailing zeros.
-
+    var	s_pre = pre.match(/[1-9].*$/);	  // Everything but leading zeros.
+    var	s_post = post.match(/[1-9]0*$/);  // Last non-zero plus trailing zeros.
 
     return (this.is_negative ? "-" : "")
-      + (null == s_pre ? "0" : s_pre[0])
-      + "."
-      + post.substring(post.length - s_post.length);
+      + (s_pre ? s_pre[0] : "0")
+      + (s_post ? "." + post.substring(0, 1+post.length-s_post[0].length) : "");
   }
 };
 
@@ -186,13 +190,13 @@ Amount.prototype.canonicalize = function() {
   }
   else
   {
-    while (this.value.compareTo(exports.consts.bi_man_min_value)) {
-      this.value.multiply(exports.consts.bi_10);
+    while (this.value.compareTo(exports.consts.bi_man_min_value) < 0) {
+      this.value  = this.value.multiply(exports.consts.bi_10);
       this.offset -= 1;
     }
 
-    while (this.value.compareTo(exports.consts.bi_man_max_value)) {
-      this.value.divide(exports.consts.bi_10);
+    while (this.value.compareTo(exports.consts.bi_man_max_value) > 0) {
+      this.value  = this.value.divide(exports.consts.bi_10);
       this.offset += 1;
     }
   }
@@ -212,7 +216,17 @@ Amount.prototype.to_json = function() {
   }
 };
 
+Amount.prototype.to_text_full = function() {
+  return this.value === NaN
+    ? NaN
+    : this.is_native
+      ? this.to_text() + "/XNS"
+      : this.to_text() + "/" + this.currency.to_json() + "/" + this.issuer.to_json();
+};
+
 // Parse a XNS value from untrusted input.
+// - integer = raw units
+// - float = with precision 6
 // XXX Improvements: disallow leading zeros.
 Amount.prototype.parse_native = function(j) {
   var m;
@@ -220,18 +234,21 @@ Amount.prototype.parse_native = function(j) {
   if ('string' === typeof j)
     m = j.match(/^(\d+)(\.\d{1,6})?$/);
 
-  if ('integer' === typeof j || null !== m) {
-    if ('integer' === typeof j || ("" === e[2])) {
-      this.value	      = new BigInteger(j);
-    }
-    else
-    {
-      // Decimal notation
-      var   int_part	  = (new BigInteger(e[1])).multiply(exports.consts.xns_unit);
-      var   fraction_part = (new BigInteger(e[2])).multiply(new BigInteger(Math.pow(10, exports.consts.xns_unit-e[2].length)));
+  if (null !== m) {
+    if (undefined === m[2]) {
+      // Integer notation
 
-      this.value  = int_part.add(fraction_part);
+      this.value	  = new BigInteger(m[1]);
     }
+    else {
+      // Decimal notation
+
+      var   int_part	  = (new BigInteger(m[1])).multiply(exports.consts.xns_unit);
+      var   fraction_part = (new BigInteger(m[2])).multiply(new BigInteger(String(Math.pow(10, 1+exports.consts.xns_precision-m[2].length))));
+
+      this.value	  = int_part.add(fraction_part);
+    }
+
     this.is_native    = true;
     this.offset	      = undefined;
     this.is_negative  = undefined;
@@ -244,11 +261,13 @@ Amount.prototype.parse_native = function(j) {
   else {
     this.value	      = NaN;
   }
+
+  return this;
 };
 
 // Parse a non-native value.
 Amount.prototype.parse_value = function(j) {
-  if ('integer' === typeof j) {
+  if ('number' === typeof j) {
     this.value	      = new BigInteger(j);
     this.offset	      = 0;
     this.is_native    = false;
@@ -260,17 +279,19 @@ Amount.prototype.parse_value = function(j) {
     var	e = j.match(/^(-?\d+)e(\d+)/);
     var	d = j.match(/^(-?\d+)\.(\d+)/);
 
-    if (null !== e) {
+    if (e) {
       // e notation
     
       this.value  = new BigInteger(e[1]);
       this.offset = parseInt(e[2]);
     }
-    else if (null !== d) {
+    else if (d) {
       // float notation
 
-      this.value  = (new BigInteger(e[1])).multiply((new BigInteger(exports.consts.bi_10)).pow(e[2].length)).add(new BigInteger(e[2]));
-      this.offset = -e[2].length;
+      var integer   = new BigInteger(d[1]);
+      var fraction  = new BigInteger(d[2]);
+      this.value    = integer.multiply(exports.consts.bi_10.clone().pow(d[2].length)).add(fraction);
+      this.offset   = -d[2].length;
     }
     else
     {
@@ -288,21 +309,39 @@ Amount.prototype.parse_value = function(j) {
   else {
     this.value	      = NaN;
   }
+
+  return this;
 };
 
 // <-> j
 Amount.prototype.parse_json = function(j) {
-  if ('object' === typeof j && j.currency) {
+  if ('string' === typeof j) {
+    // .../.../... notation is not a wire format.  But allowed for easier testing.
+    var	m = j.match(/^(.+)\/(...)\/(.+)$/);
 
-    this.parse_value(j);
+    if (m) {
+      this.parse_value(m[1]);
+      this.currency = Currency.from_json(m[2]);
+      this.issuer   = UInt160.from_json(m[3]);
+    }
+    else {
+      this.parse_native(j);
+      this.currency = new Currency();
+      this.issuer   = new UInt160();
+    }
+  }
+  else if ('object' === typeof j && j.currency) {
+    // Never XNS.
+
+    this.parse_value(j.value);
     this.currency.parse_json(j.currency);
     this.issuer.parse_json(j.issuer);
   }
   else {
-    this.parse_native(j);
-    this.currency = 0;
-    this.issuer  = 0;
+    this.value	      = NaN;
   }
+
+  return this;
 };
 
 exports.Amount	  = Amount;
@@ -321,6 +360,7 @@ exports.consts	  = {
   'xns_max' : new BigInteger("9000000000000000000"),	  // Json wire limit.
   'xns_min' : new BigInteger("-9000000000000000000"),	  // Json wire limit.
   'xns_unit' : new BigInteger('1000000'),
+  'xns_precision' : 6,
   'bi_man_min_value' : new BigInteger('1000000000000000'),
   'bi_man_max_value' : new BigInteger('9999999999999999'),
   'bi_10' : new BigInteger('10'),
