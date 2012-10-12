@@ -97,7 +97,7 @@ buster.testCase("Websocket commands", {
 	});
     },
 
-  '// ledger_closed' :
+  'ledger_closed' :
     function (done) {
       alpha.request_ledger_closed(function (r) {
 	  console.log("result: %s", JSON.stringify(r));
