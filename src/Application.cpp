@@ -91,7 +91,7 @@ void Application::run()
 	if (theConfig.START_UP == Config::FRESH)
 	{
 		Log(lsINFO) << "Starting new Ledger";
-		startNewLedger();	
+		startNewLedger();
 	}
 	else if (theConfig.START_UP == Config::LOAD)
 	{
@@ -153,7 +153,6 @@ void Application::run()
 		mConnectionPool.start();
 
 
-	
 	if (theConfig.RUN_STANDALONE)
 	{
 		Log(lsWARNING) << "Running in standalone mode";

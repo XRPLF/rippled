@@ -887,7 +887,7 @@ std::auto_ptr<STObject> STObject::parseJson(const Json::Value& object, SField::r
 			case STI_UINT8:
 				if (value.isString())
 					data.push_back(new STUInt8(field, lexical_cast_st<unsigned char>(value.asString())));
-				else if (value.isInt())	
+				else if (value.isInt())
 				{
 					if (value.asInt() < 0 || value.asInt() > 255)
 						throw std::runtime_error("value out of rand");
