@@ -10,10 +10,22 @@ var UInt160 = function () {
   // Internal form:
   //   0, 1, 'iXXXXX', 20 byte string, or NaN.
   //   XXX Should standardize on 'i' format or 20 format.
+  this.value  = NaN;
 };
 
 UInt160.from_json = function (j) {
   return (new UInt160()).parse_json(j);
+};
+
+UInt160.prototype.clone = function() {
+  return this.copyTo(new UInt160());
+};
+
+// Returns copy.
+UInt160.prototype.copyTo = function(d) {
+  d.value = this.value;
+
+  return d;
 };
 
 // value === NaN on error.
@@ -86,14 +98,27 @@ var Currency = function () {
   //  '', 'XNS', '0': 0
   //  3-letter code: ...
   // XXX Should support hex, C++ doesn't currently allow it.
+
+  this.value  = NaN;
 }
 
 Currency.from_json = function (j) {
   return (new Currency()).parse_json(j);
 };
 
+Currency.prototype.clone = function() {
+  return this.copyTo(new Currency());
+};
+
+// Returns copy.
+Currency.prototype.copyTo = function(d) {
+  d.value = this.value;
+
+  return d;
+};
+
 // this.value === NaN on error.
-Currency.prototype.parse_json = function (j) {
+Currency.prototype.parse_json = function(j) {
   if ("" === j || "0" === j || "XNS" === j) {
     this.value	= 0;
   }
@@ -129,14 +154,39 @@ var Amount = function () {
   this.issuer	    = new UInt160();
 };
 
-Amount.from_json = function (j) {
+Amount.from_json = function(j) {
   return (new Amount()).parse_json(j);
 };
 
-// YYY Might also check range.
+Amount.prototype.clone = function() {
+  return this.copyTo(new Amount());
+};
+
+// Returns copy.
+Amount.prototype.copyTo = function(d) {
+  if ('object' === typeof this.value)
+  {
+    this.value.copyTo(d.value);
+  }
+  else
+  {
+    d.value   = this.value;
+  }
+
+  d.offset	= this.offset;
+  d.is_native	= this.is_native;
+  d.is_negative	= this.is_negative;
+
+  this.currency.copyTo(d.currency);
+  this.issuer.copyTo(d.issuer);
+
+  return d;
+};
+
+// YYY Might also provide is_valid_json.
 Amount.prototype.is_valid = function() {
   return NaN !== this.value;
-}
+};
 
 // Convert only value to JSON wire format.
 Amount.prototype.to_text = function(allow_nan) {
@@ -234,7 +284,7 @@ Amount.prototype.parse_native = function(j) {
   if ('string' === typeof j)
     m = j.match(/^(\d+)(\.\d{1,6})?$/);
 
-  if (null !== m) {
+  if (m) {
     if (undefined === m[2]) {
       // Integer notation
 
