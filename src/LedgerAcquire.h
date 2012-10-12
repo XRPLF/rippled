@@ -30,8 +30,8 @@ protected:
 	PeerSet(const uint256& hash, int interval);
 	virtual ~PeerSet() { ; }
 
-	void sendRequest(const newcoin::TMGetLedger& message);
-	void sendRequest(const newcoin::TMGetLedger& message, Peer::ref peer);
+	void sendRequest(const ripple::TMGetLedger& message);
+	void sendRequest(const ripple::TMGetLedger& message, Peer::ref peer);
 
 public:
 	const uint256& getHash() const		{ return mHash; }
@@ -110,7 +110,7 @@ public:
 	LedgerAcquire::pointer find(const uint256& hash);
 	bool hasLedger(const uint256& ledgerHash);
 	void dropLedger(const uint256& ledgerHash);
-	bool gotLedgerData(newcoin::TMLedgerData& packet, Peer::ref);
+	bool gotLedgerData(ripple::TMLedgerData& packet, Peer::ref);
 };
 
 #endif

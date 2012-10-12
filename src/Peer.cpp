@@ -370,7 +370,7 @@ void Peer::processReadBuffer()
 //	std::cerr << "Peer::processReadBuffer: " << mIpPort.first << " " << mIpPort.second << std::endl;
 
 	// If connected and get a mtHELLO or if not connected and get a non-mtHELLO, wrong message was sent.
-	if (mHelloed == (type == newcoin::mtHELLO))
+	if (mHelloed == (type == ripple::mtHELLO))
 	{
 		cLog(lsWARNING) << "Wrong message type: " << type;
 		detach("prb1");
@@ -379,160 +379,160 @@ void Peer::processReadBuffer()
 	{
 		switch(type)
 		{
-		case newcoin::mtHELLO:
+		case ripple::mtHELLO:
 			{
-				newcoin::TMHello msg;
+				ripple::TMHello msg;
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvHello(msg);
 				else std::cerr << "parse error: " << type << std::endl;
 			}
 			break;
 
-		case newcoin::mtERROR_MSG:
+		case ripple::mtERROR_MSG:
 			{
-				newcoin::TMErrorMsg msg;
+				ripple::TMErrorMsg msg;
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvErrorMessage(msg);
 				else std::cerr << "parse error: " << type << std::endl;
 			}
 			break;
 
-		case newcoin::mtPING:
+		case ripple::mtPING:
 			{
-				newcoin::TMPing msg;
+				ripple::TMPing msg;
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvPing(msg);
 				else std::cerr << "parse error: " << type << std::endl;
 			}
 			break;
 
-		case newcoin::mtGET_CONTACTS:
+		case ripple::mtGET_CONTACTS:
 			{
-				newcoin::TMGetContacts msg;
+				ripple::TMGetContacts msg;
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvGetContacts(msg);
 				else std::cerr << "parse error: " << type << std::endl;
 			}
 			break;
 
-		case newcoin::mtCONTACT:
+		case ripple::mtCONTACT:
 			{
-				newcoin::TMContact msg;
+				ripple::TMContact msg;
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvContact(msg);
 				else std::cerr << "parse error: " << type << std::endl;
 			}
 			break;
-		case newcoin::mtGET_PEERS:
+		case ripple::mtGET_PEERS:
 			{
-				newcoin::TMGetPeers msg;
+				ripple::TMGetPeers msg;
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvGetPeers(msg);
 				else std::cerr << "parse error: " << type << std::endl;
 			}
 			break;
-		case newcoin::mtPEERS:
+		case ripple::mtPEERS:
 			{
-				newcoin::TMPeers msg;
+				ripple::TMPeers msg;
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvPeers(msg);
 				else std::cerr << "parse error: " << type << std::endl;
 			}
 			break;
 
-		case newcoin::mtSEARCH_TRANSACTION:
+		case ripple::mtSEARCH_TRANSACTION:
 			{
-				newcoin::TMSearchTransaction msg;
+				ripple::TMSearchTransaction msg;
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvSearchTransaction(msg);
 				else std::cerr << "parse error: " << type << std::endl;
 			}
 			break;
 
-		case newcoin::mtGET_ACCOUNT:
+		case ripple::mtGET_ACCOUNT:
 			{
-				newcoin::TMGetAccount msg;
+				ripple::TMGetAccount msg;
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvGetAccount(msg);
 				else std::cerr << "parse error: " << type << std::endl;
 			}
 			break;
 
-		case newcoin::mtACCOUNT:
+		case ripple::mtACCOUNT:
 			{
-				newcoin::TMAccount msg;
+				ripple::TMAccount msg;
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvAccount(msg);
 				else std::cerr << "parse error: " << type << std::endl;
 			}
 			break;
 
-		case newcoin::mtTRANSACTION:
+		case ripple::mtTRANSACTION:
 			{
-				newcoin::TMTransaction msg;
+				ripple::TMTransaction msg;
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvTransaction(msg);
 				else std::cerr << "parse error: " << type << std::endl;
 			}
 			break;
 
-		case newcoin::mtSTATUS_CHANGE:
+		case ripple::mtSTATUS_CHANGE:
 			{
-				newcoin::TMStatusChange msg;
+				ripple::TMStatusChange msg;
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvStatus(msg);
 				else std::cerr << "parse error: " << type << std::endl;
 			}
 			break;
 
-		case newcoin::mtPROPOSE_LEDGER:
+		case ripple::mtPROPOSE_LEDGER:
 			{
-				newcoin::TMProposeSet msg;
+				ripple::TMProposeSet msg;
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvPropose(msg);
 				else std::cerr << "parse error: " << type << std::endl;
 			}
 			break;
 
-		case newcoin::mtGET_LEDGER:
+		case ripple::mtGET_LEDGER:
 			{
-				newcoin::TMGetLedger msg;
+				ripple::TMGetLedger msg;
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvGetLedger(msg);
 				else std::cerr << "parse error: " << type << std::endl;
 			}
 			break;
 
-		case newcoin::mtLEDGER_DATA:
+		case ripple::mtLEDGER_DATA:
 			{
-				newcoin::TMLedgerData msg;
+				ripple::TMLedgerData msg;
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvLedger(msg);
 				else std::cerr << "parse error: " << type << std::endl;
 			}
 			break;
 
-		case newcoin::mtHAVE_SET:
+		case ripple::mtHAVE_SET:
 			{
-				newcoin::TMHaveTransactionSet msg;
+				ripple::TMHaveTransactionSet msg;
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvHaveTxSet(msg);
 				else std::cerr << "parse error: " << type << std::endl;
 			}
 			break;
 
-		case newcoin::mtVALIDATION:
+		case ripple::mtVALIDATION:
 			{
-				newcoin::TMValidation msg;
+				ripple::TMValidation msg;
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvValidation(msg);
 				else std::cerr << "parse error: " << type << std::endl;
 			}
 			break;
 #if 0
-		case newcoin::mtGET_VALIDATION:
+		case ripple::mtGET_VALIDATION:
 			{
-				newcoin::TM msg;
+				ripple::TM msg;
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recv(msg);
 				else std::cerr << "parse error: " << type << std::endl;
@@ -540,9 +540,9 @@ void Peer::processReadBuffer()
 			break;
 
 #endif
-		case newcoin::mtGET_OBJECTS:
+		case ripple::mtGET_OBJECTS:
 			{
-				newcoin::TMGetObjectByHash msg;
+				ripple::TMGetObjectByHash msg;
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvGetObjectByHash(msg);
 				else std::cerr << "parse error: " << type << std::endl;
@@ -556,7 +556,7 @@ void Peer::processReadBuffer()
 	}
 }
 
-void Peer::recvHello(newcoin::TMHello& packet)
+void Peer::recvHello(ripple::TMHello& packet)
 {
 	bool	bDetach	= true;
 
@@ -667,7 +667,7 @@ void Peer::recvHello(newcoin::TMHello& packet)
 	}
 }
 
-void Peer::recvTransaction(newcoin::TMTransaction& packet)
+void Peer::recvTransaction(ripple::TMTransaction& packet)
 {
 #ifdef DEBUG
 	std::cerr << "Got transaction from peer" << std::endl;
@@ -708,7 +708,7 @@ void Peer::recvTransaction(newcoin::TMTransaction& packet)
 	}
 }
 
-void Peer::recvPropose(newcoin::TMProposeSet& packet)
+void Peer::recvPropose(ripple::TMProposeSet& packet)
 {
 	if ((packet.currenttxhash().size() != 32) || (packet.nodepubkey().size() < 28) ||
 		(packet.signature().size() < 56))
@@ -726,12 +726,12 @@ void Peer::recvPropose(newcoin::TMProposeSet& packet)
 	if(theApp->getOPs().recvPropose(packet.proposeseq(), currentTxHash, prevLedger, packet.closetime(),
 		packet.nodepubkey(), packet.signature(), mNodePublic))
 	{ // FIXME: Not all nodes will want proposals 
-		PackedMessage::pointer message = boost::make_shared<PackedMessage>(packet, newcoin::mtPROPOSE_LEDGER);
+		PackedMessage::pointer message = boost::make_shared<PackedMessage>(packet, ripple::mtPROPOSE_LEDGER);
 		theApp->getConnectionPool().relayMessage(this, message);
 	}
 }
 
-void Peer::recvHaveTxSet(newcoin::TMHaveTransactionSet& packet)
+void Peer::recvHaveTxSet(ripple::TMHaveTransactionSet& packet)
 {
 	// FIXME: We should have some limit on the number of HaveTxSet messages a peer can send us
 	// per consensus pass, to keep a peer from running up our memory without limit
@@ -743,13 +743,13 @@ void Peer::recvHaveTxSet(newcoin::TMHaveTransactionSet& packet)
 	}
 	uint256 hash;
 	memcpy(hash.begin(), packet.hash().data(), 32);
-	if (packet.status() == newcoin::tsHAVE)
+	if (packet.status() == ripple::tsHAVE)
 		addTxSet(hash);
 	if (!theApp->getOPs().hasTXSet(shared_from_this(), hash, packet.status()))
 		punishPeer(PP_UNWANTED_DATA);
 }
 
-void Peer::recvValidation(newcoin::TMValidation& packet)
+void Peer::recvValidation(ripple::TMValidation& packet)
 {
 	if (packet.validation().size() < 50)
 	{
@@ -784,7 +784,7 @@ void Peer::recvValidation(newcoin::TMValidation& packet)
 
 		if (theApp->getOPs().recvValidation(val))
 		{
-			PackedMessage::pointer message = boost::make_shared<PackedMessage>(packet, newcoin::mtVALIDATION);
+			PackedMessage::pointer message = boost::make_shared<PackedMessage>(packet, ripple::mtVALIDATION);
 			theApp->getConnectionPool().relayMessage(this, message);
 		}
 	}
@@ -797,22 +797,22 @@ void Peer::recvValidation(newcoin::TMValidation& packet)
 //#endif
 }
 
-void Peer::recvGetValidation(newcoin::TMGetValidations& packet)
+void Peer::recvGetValidation(ripple::TMGetValidations& packet)
 {
 }
 
-void Peer::recvContact(newcoin::TMContact& packet)
+void Peer::recvContact(ripple::TMContact& packet)
 {
 }
 
-void Peer::recvGetContacts(newcoin::TMGetContacts& packet)
+void Peer::recvGetContacts(ripple::TMGetContacts& packet)
 {
 }
 
 // return a list of your favorite people
 // TODO: filter out all the LAN peers
 // TODO: filter out the peer you are talking to
-void Peer::recvGetPeers(newcoin::TMGetPeers& packet)
+void Peer::recvGetPeers(ripple::TMGetPeers& packet)
 {
 	std::vector<std::string> addrs;
 
@@ -820,7 +820,7 @@ void Peer::recvGetPeers(newcoin::TMGetPeers& packet)
 
 	if (!addrs.empty())
 	{
-		newcoin::TMPeers peers;
+		ripple::TMPeers peers;
 
 		for (unsigned int n=0; n<addrs.size(); n++)
 		{
@@ -830,20 +830,20 @@ void Peer::recvGetPeers(newcoin::TMGetPeers& packet)
 			splitIpPort(addrs[n], strIP, iPort);
 
 			// XXX This should also ipv6
-			newcoin::TMIPv4EndPoint* addr=peers.add_nodes();
+			ripple::TMIPv4EndPoint* addr=peers.add_nodes();
 			addr->set_ipv4(inet_addr(strIP.c_str()));
 			addr->set_ipv4port(iPort);
 
 			//cLog(lsINFO) << "Peer: Teaching: " << ADDRESS(this) << ": " << n << ": " << strIP << " " << iPort;
 		}
 
-		PackedMessage::pointer message = boost::make_shared<PackedMessage>(peers, newcoin::mtPEERS);
+		PackedMessage::pointer message = boost::make_shared<PackedMessage>(peers, ripple::mtPEERS);
 		sendPacket(message);
 	}
 }
 
 // TODO: filter out all the LAN peers
-void Peer::recvPeers(newcoin::TMPeers& packet)
+void Peer::recvPeers(ripple::TMPeers& packet)
 {
 	for (int i = 0; i < packet.nodes().size(); ++i)
 	{
@@ -863,11 +863,11 @@ void Peer::recvPeers(newcoin::TMPeers& packet)
 	}
 }
 
-void Peer::recvGetObjectByHash(newcoin::TMGetObjectByHash& packet)
+void Peer::recvGetObjectByHash(ripple::TMGetObjectByHash& packet)
 {
 	if (packet.query())
 	{ // this is a query
-		newcoin::TMGetObjectByHash reply;
+		ripple::TMGetObjectByHash reply;
 
 		reply.clear_query();
 		if (packet.has_seq())
@@ -880,14 +880,14 @@ void Peer::recvGetObjectByHash(newcoin::TMGetObjectByHash& packet)
 		for (unsigned i = 0; i < packet.objects_size(); ++i)
 		{
 			uint256 hash;
-			const newcoin::TMIndexedObject& obj = packet.objects(i);
+			const ripple::TMIndexedObject& obj = packet.objects(i);
 			if (obj.has_hash() && (obj.hash().size() == (256/8)))
 			{
 				memcpy(hash.begin(), obj.hash().data(), 256 / 8);
 				HashedObject::pointer hObj = theApp->getHashedObjectStore().retrieve(hash);
 				if (hObj)
 				{
-					newcoin::TMIndexedObject& newObj = *reply.add_objects();
+					ripple::TMIndexedObject& newObj = *reply.add_objects();
 					newObj.set_hash(hash.begin(), hash.size());
 					newObj.set_data(&hObj->getData().front(), hObj->getData().size());
 					if (obj.has_nodeid())
@@ -896,7 +896,7 @@ void Peer::recvGetObjectByHash(newcoin::TMGetObjectByHash& packet)
 			}
 		}
 		cLog(lsDEBUG) << "GetObjByHash query: had " << reply.objects_size() << " of " << packet.objects_size();
-		sendPacket(boost::make_shared<PackedMessage>(packet, newcoin::mtGET_OBJECTS));
+		sendPacket(boost::make_shared<PackedMessage>(packet, ripple::mtGET_OBJECTS));
 	}
 	else
 	{ // this is a reply
@@ -904,27 +904,27 @@ void Peer::recvGetObjectByHash(newcoin::TMGetObjectByHash& packet)
 	}
 }
 
-void Peer::recvPing(newcoin::TMPing& packet)
+void Peer::recvPing(ripple::TMPing& packet)
 {
 }
 
-void Peer::recvErrorMessage(newcoin::TMErrorMsg& packet)
+void Peer::recvErrorMessage(ripple::TMErrorMsg& packet)
 {
 }
 
-void Peer::recvSearchTransaction(newcoin::TMSearchTransaction& packet)
+void Peer::recvSearchTransaction(ripple::TMSearchTransaction& packet)
 {
 }
 
-void Peer::recvGetAccount(newcoin::TMGetAccount& packet)
+void Peer::recvGetAccount(ripple::TMGetAccount& packet)
 {
 }
 
-void Peer::recvAccount(newcoin::TMAccount& packet)
+void Peer::recvAccount(ripple::TMAccount& packet)
 {
 }
 
-void Peer::recvStatus(newcoin::TMStatusChange& packet)
+void Peer::recvStatus(ripple::TMStatusChange& packet)
 {
 	cLog(lsTRACE) << "Received status change from peer " << getIP();
 	if (!packet.has_networktime())
@@ -934,12 +934,12 @@ void Peer::recvStatus(newcoin::TMStatusChange& packet)
 		mLastStatus = packet;
 	else
 	{ // preserve old status
-		newcoin::NodeStatus status = mLastStatus.newstatus();
+		ripple::NodeStatus status = mLastStatus.newstatus();
 		mLastStatus = packet;
 		packet.set_newstatus(status);
 	}
 
-	if (packet.newevent() == newcoin::neLOST_SYNC)
+	if (packet.newevent() == ripple::neLOST_SYNC)
 	{
 		if (!mClosedLedgerHash.isZero())
 		{
@@ -969,13 +969,13 @@ void Peer::recvStatus(newcoin::TMStatusChange& packet)
 	else mPreviousLedgerHash.zero();
 }
 
-void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
+void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 {
 	SHAMap::pointer map;
-	newcoin::TMLedgerData reply;
+	ripple::TMLedgerData reply;
 	bool fatLeaves = true, fatRoot = false;
 
-	if (packet.itype() == newcoin::liTS_CANDIDATE)
+	if (packet.itype() == ripple::liTS_CANDIDATE)
 	{ // Request is  for a transaction candidate set
 		cLog(lsINFO) << "Received request for TX candidate set data " << getIP();
 		if ((!packet.has_ledgerhash() || packet.ledgerhash().size() != 32))
@@ -994,7 +994,7 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 		}
 		reply.set_ledgerseq(0);
 		reply.set_ledgerhash(txHash.begin(), txHash.size());
-		reply.set_type(newcoin::liTS_CANDIDATE);
+		reply.set_type(ripple::liTS_CANDIDATE);
 		fatLeaves = false; // We'll already have most transactions
 		fatRoot = true; // Save a pass
 	}
@@ -1017,9 +1017,9 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 		}
 		else if (packet.has_ledgerseq())
 			ledger = theApp->getMasterLedger().getLedgerBySeq(packet.ledgerseq());
-		else if (packet.has_ltype() && (packet.ltype() == newcoin::ltCURRENT))
+		else if (packet.has_ltype() && (packet.ltype() == ripple::ltCURRENT))
 			ledger = theApp->getMasterLedger().getCurrentLedger();
-		else if (packet.has_ltype() && (packet.ltype() == newcoin::ltCLOSED) )
+		else if (packet.has_ltype() && (packet.ltype() == ripple::ltCLOSED) )
 		{
 			ledger = theApp->getMasterLedger().getClosedLedger();
 			if (ledger && !ledger->isClosed())
@@ -1045,7 +1045,7 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 		reply.set_ledgerseq(ledger->getLedgerSeq());
 		reply.set_type(packet.itype());
 
-		if(packet.itype() == newcoin::liBASE)
+		if(packet.itype() == ripple::liBASE)
 		{ // they want the ledger base data
 			cLog(lsTRACE) << "Want ledger base data";
 			Serializer nData(128);
@@ -1076,13 +1076,13 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 				}
 			}
 
-			PackedMessage::pointer oPacket = boost::make_shared<PackedMessage>(reply, newcoin::mtLEDGER_DATA);
+			PackedMessage::pointer oPacket = boost::make_shared<PackedMessage>(reply, ripple::mtLEDGER_DATA);
 			sendPacket(oPacket);
 			return;
 		}
 
-		if ((packet.itype() == newcoin::liTX_NODE) || (packet.itype() == newcoin::liAS_NODE))
-			map = (packet.itype() == newcoin::liTX_NODE) ?
+		if ((packet.itype() == ripple::liTX_NODE) || (packet.itype() == ripple::liAS_NODE))
+			map = (packet.itype() == ripple::liTX_NODE) ?
 				ledger->peekTransactionMap() : ledger->peekAccountStateMap();
 	}
 
@@ -1113,7 +1113,7 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 			{
 				Serializer nID(33);
 				nodeIDIterator->addIDRaw(nID);
-				newcoin::TMLedgerNode* node = reply.add_nodes();
+				ripple::TMLedgerNode* node = reply.add_nodes();
 				node->set_nodeid(nID.getDataPtr(), nID.getLength());
 				node->set_nodedata(&rawNodeIterator->front(), rawNodeIterator->size());
 				++count;
@@ -1122,11 +1122,11 @@ void Peer::recvGetLedger(newcoin::TMGetLedger& packet)
 	}
 	if (packet.has_requestcookie())
 		reply.set_requestcookie(packet.requestcookie());
-	PackedMessage::pointer oPacket = boost::make_shared<PackedMessage>(reply, newcoin::mtLEDGER_DATA);
+	PackedMessage::pointer oPacket = boost::make_shared<PackedMessage>(reply, ripple::mtLEDGER_DATA);
 	sendPacket(oPacket);
 }
 
-void Peer::recvLedger(newcoin::TMLedgerData& packet)
+void Peer::recvLedger(ripple::TMLedgerData& packet)
 {
 	if (packet.nodes().size() <= 0)
 	{
@@ -1134,7 +1134,7 @@ void Peer::recvLedger(newcoin::TMLedgerData& packet)
 		return;
 	}
 
-	if (packet.type() == newcoin::liTS_CANDIDATE)
+	if (packet.type() == ripple::liTS_CANDIDATE)
 	{ // got data for a candidate transaction set
 		uint256 hash;
 		if(packet.ledgerhash().size() != 32)
@@ -1150,7 +1150,7 @@ void Peer::recvLedger(newcoin::TMLedgerData& packet)
 
 		for (int i = 0; i < packet.nodes().size(); ++i)
 		{
-			const newcoin::TMLedgerNode& node = packet.nodes(i);
+			const ripple::TMLedgerNode& node = packet.nodes(i);
 			if (!node.has_nodeid() || !node.has_nodedata() || (node.nodeid().size() != 33))
 			{
 				cLog(lsWARNING) << "LedgerData request with invalid node ID";
@@ -1244,7 +1244,7 @@ void Peer::sendHello()
 
 	theApp->getWallet().getNodePrivate().signNodePrivate(mCookieHash, vchSig);
 
-	newcoin::TMHello h;
+	ripple::TMHello h;
 
 	h.set_protoversion(MAKE_VERSION_INT(PROTO_VERSION_MAJOR, PROTO_VERSION_MINOR));
 	h.set_protoversionmin(MAKE_VERSION_INT(MIN_PROTO_MAJOR, MIN_PROTO_MINOR));
@@ -1263,18 +1263,18 @@ void Peer::sendHello()
 		h.set_ledgerprevious(hash.begin(), hash.GetSerializeSize());
 	}
 
-	PackedMessage::pointer packet = boost::make_shared<PackedMessage>(h, newcoin::mtHELLO);
+	PackedMessage::pointer packet = boost::make_shared<PackedMessage>(h, ripple::mtHELLO);
 	sendPacket(packet);
 }
 
 void Peer::sendGetPeers()
 {
 	// get other peers this guy knows about
-	newcoin::TMGetPeers getPeers;
+	ripple::TMGetPeers getPeers;
 
 	getPeers.set_doweneedthis(1);
 
-	PackedMessage::pointer packet = boost::make_shared<PackedMessage>(getPeers, newcoin::mtGET_PEERS);
+	PackedMessage::pointer packet = boost::make_shared<PackedMessage>(getPeers, ripple::mtGET_PEERS);
 
 	sendPacket(packet);
 }
@@ -1308,11 +1308,11 @@ Json::Value Peer::getJson()
 	{
 		switch (mLastStatus.newstatus())
 		{
-			case newcoin::nsCONNECTING:		ret["status"] = "connecting";	break;
-			case newcoin::nsCONNECTED:		ret["status"] = "connected";	break;
-			case newcoin::nsMONITORING:		ret["status"] = "monitoring";	break;
-			case newcoin::nsVALIDATING:		ret["status"] = "validating";	break;
-			case newcoin::nsSHUTTING:		ret["status"] = "shutting";		break;
+			case ripple::nsCONNECTING:		ret["status"] = "connecting";	break;
+			case ripple::nsCONNECTED:		ret["status"] = "connected";	break;
+			case ripple::nsMONITORING:		ret["status"] = "monitoring";	break;
+			case ripple::nsVALIDATING:		ret["status"] = "validating";	break;
+			case ripple::nsSHUTTING:		ret["status"] = "shutting";		break;
 			default:						cLog(lsWARNING) << "Peer has unknown status: " << mLastStatus.newstatus();
 		}
 	}

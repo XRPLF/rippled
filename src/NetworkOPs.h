@@ -173,7 +173,7 @@ public:
 		const std::list<SHAMapNode>& nodeIDs, const std::list< std::vector<unsigned char> >& nodeData);
 	bool recvValidation(const SerializedValidation::pointer& val);
 	SHAMap::pointer getTXMap(const uint256& hash);
-	bool hasTXSet(const boost::shared_ptr<Peer>& peer, const uint256& set, newcoin::TxSetStatus status);
+	bool hasTXSet(const boost::shared_ptr<Peer>& peer, const uint256& set, ripple::TxSetStatus status);
 	void mapComplete(const uint256& hash, SHAMap::ref map);
 
 	// network state machine

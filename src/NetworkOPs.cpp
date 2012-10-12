@@ -154,14 +154,14 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 // no cache the account balance information and always get it from the current ledger
 //		theApp->getWallet().applyTransaction(trans);
 
-		newcoin::TMTransaction tx;
+		ripple::TMTransaction tx;
 		Serializer s;
 		trans->getSTransaction()->add(s);
 		tx.set_rawtransaction(&s.getData().front(), s.getLength());
-		tx.set_status(newcoin::tsCURRENT);
+		tx.set_status(ripple::tsCURRENT);
 		tx.set_receivetimestamp(getNetworkTimeNC());
 
-		PackedMessage::pointer packet = boost::make_shared<PackedMessage>(tx, newcoin::mtTRANSACTION);
+		PackedMessage::pointer packet = boost::make_shared<PackedMessage>(tx, ripple::mtTRANSACTION);
 		int sentTo = theApp->getConnectionPool().relayMessage(source, packet);
 		cLog(lsINFO) << "Transaction relayed to " << sentTo << " node(s)";
 
@@ -171,13 +171,13 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 	cLog(lsDEBUG) << "Status other than success " << r;
 	if ((mMode != omFULL) && (mMode != omTRACKING) && (theApp->isNew(trans->getID())))
 	{
-		newcoin::TMTransaction tx;
+		ripple::TMTransaction tx;
 		Serializer s;
 		trans->getSTransaction()->add(s);
 		tx.set_rawtransaction(&s.getData().front(), s.getLength());
-		tx.set_status(newcoin::tsCURRENT);
+		tx.set_status(ripple::tsCURRENT);
 		tx.set_receivetimestamp(getNetworkTimeNC());
-		PackedMessage::pointer packet = boost::make_shared<PackedMessage>(tx, newcoin::mtTRANSACTION);
+		PackedMessage::pointer packet = boost::make_shared<PackedMessage>(tx, ripple::mtTRANSACTION);
 		theApp->getConnectionPool().relayMessage(source, packet);
 	}
 
@@ -624,15 +624,15 @@ void NetworkOPs::switchLastClosedLedger(Ledger::pointer newLedger, bool duringCo
 	Ledger::pointer openLedger = boost::make_shared<Ledger>(false, boost::ref(*newLedger));
 	mLedgerMaster->switchLedgers(newLedger, openLedger);
 
-	newcoin::TMStatusChange s;
-	s.set_newevent(newcoin::neSWITCHED_LEDGER);
+	ripple::TMStatusChange s;
+	s.set_newevent(ripple::neSWITCHED_LEDGER);
 	s.set_ledgerseq(newLedger->getLedgerSeq());
 	s.set_networktime(theApp->getOPs().getNetworkTimeNC());
 	uint256 hash = newLedger->getParentHash();
 	s.set_ledgerhashprevious(hash.begin(), hash.size());
 	hash = newLedger->getHash();
 	s.set_ledgerhash(hash.begin(), hash.size());
-	PackedMessage::pointer packet = boost::make_shared<PackedMessage>(s, newcoin::mtSTATUS_CHANGE);
+	PackedMessage::pointer packet = boost::make_shared<PackedMessage>(s, ripple::mtSTATUS_CHANGE);
 	theApp->getConnectionPool().relayMessage(NULL, packet);
 }
 
@@ -757,7 +757,7 @@ bool NetworkOPs::gotTXData(const boost::shared_ptr<Peer>& peer, const uint256& h
 	return mConsensus->peerGaveNodes(peer, hash, nodeIDs, nodeData);
 }
 
-bool NetworkOPs::hasTXSet(const boost::shared_ptr<Peer>& peer, const uint256& set, newcoin::TxSetStatus status)
+bool NetworkOPs::hasTXSet(const boost::shared_ptr<Peer>& peer, const uint256& set, ripple::TxSetStatus status)
 {
 	if (!haveConsensusObject())
 	{

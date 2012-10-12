@@ -1,4 +1,4 @@
-package newcoin;
+package ripple;
 
 enum MessageType {
 // core

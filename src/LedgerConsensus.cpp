@@ -59,9 +59,9 @@ void TransactionAcquire::trigger(Peer::ref peer, bool timer)
 	if (!mHaveRoot)
 	{
 		cLog(lsINFO) << "have no root";
-		newcoin::TMGetLedger tmGL;
+		ripple::TMGetLedger tmGL;
 		tmGL.set_ledgerhash(mHash.begin(), mHash.size());
-		tmGL.set_itype(newcoin::liTS_CANDIDATE);
+		tmGL.set_itype(ripple::liTS_CANDIDATE);
 		*(tmGL.add_nodeids()) = SHAMapNode().getRawString();
 		sendRequest(tmGL, peer);
 	}
@@ -82,9 +82,9 @@ void TransactionAcquire::trigger(Peer::ref peer, bool timer)
 		}
 		else
 		{
-			newcoin::TMGetLedger tmGL;
+			ripple::TMGetLedger tmGL;
 			tmGL.set_ledgerhash(mHash.begin(), mHash.size());
-			tmGL.set_itype(newcoin::liTS_CANDIDATE);
+			tmGL.set_itype(ripple::liTS_CANDIDATE);
 			for (std::vector<SHAMapNode>::iterator it = nodeIDs.begin(); it != nodeIDs.end(); ++it)
 				*(tmGL.add_nodeids()) = it->getRawString();
 			sendRequest(tmGL, peer);
@@ -464,10 +464,10 @@ void LedgerConsensus::mapComplete(const uint256& hash, SHAMap::ref map, bool acq
 
 void LedgerConsensus::sendHaveTxSet(const uint256& hash, bool direct)
 {
-	newcoin::TMHaveTransactionSet msg;
+	ripple::TMHaveTransactionSet msg;
 	msg.set_hash(hash.begin(), 256 / 8);
-	msg.set_status(direct ? newcoin::tsHAVE : newcoin::tsCAN_GET);
-	PackedMessage::pointer packet = boost::make_shared<PackedMessage>(msg, newcoin::mtHAVE_SET);
+	msg.set_status(direct ? ripple::tsHAVE : ripple::tsCAN_GET);
+	PackedMessage::pointer packet = boost::make_shared<PackedMessage>(msg, ripple::mtHAVE_SET);
 	theApp->getConnectionPool().relayMessage(NULL, packet);
 }
 
@@ -481,11 +481,11 @@ void LedgerConsensus::adjustCount(SHAMap::ref map, const std::vector<uint160>& p
 	}
 }
 
-void LedgerConsensus::statusChange(newcoin::NodeEvent event, Ledger& ledger)
+void LedgerConsensus::statusChange(ripple::NodeEvent event, Ledger& ledger)
 { // Send a node status change message to our peers
-	newcoin::TMStatusChange s;
+	ripple::TMStatusChange s;
 	if (!mHaveCorrectLCL)
-		s.set_newevent(newcoin::neLOST_SYNC);
+		s.set_newevent(ripple::neLOST_SYNC);
 	else
 		s.set_newevent(event);
 	s.set_ledgerseq(ledger.getLedgerSeq());
@@ -494,7 +494,7 @@ void LedgerConsensus::statusChange(newcoin::NodeEvent event, Ledger& ledger)
 	s.set_ledgerhashprevious(hash.begin(), hash.size());
 	hash = ledger.getHash();
 	s.set_ledgerhash(hash.begin(), hash.size());
-	PackedMessage::pointer packet = boost::make_shared<PackedMessage>(s, newcoin::mtSTATUS_CHANGE);
+	PackedMessage::pointer packet = boost::make_shared<PackedMessage>(s, ripple::mtSTATUS_CHANGE);
 	theApp->getConnectionPool().relayMessage(NULL, packet);
 	cLog(lsINFO) << "send status change to peer";
 }
@@ -539,7 +539,7 @@ void LedgerConsensus::closeLedger()
 		mConsensusStartTime = boost::posix_time::microsec_clock::universal_time();
 		mCloseTime = theApp->getOPs().getCloseTimeNC();
 		theApp->getOPs().setLastCloseTime(mCloseTime);
-		statusChange(newcoin::neCLOSING_LEDGER, *mPreviousLedger);
+		statusChange(ripple::neCLOSING_LEDGER, *mPreviousLedger);
 		takeInitialPosition(*theApp->getMasterLedger().closeLedger());
 }
 
@@ -807,7 +807,7 @@ void LedgerConsensus::startAcquiring(const TransactionAcquire::pointer& acquire)
 void LedgerConsensus::propose()
 {
 	cLog(lsTRACE) << "We propose: " << mOurPosition->getCurrentHash();
-	newcoin::TMProposeSet prop;
+	ripple::TMProposeSet prop;
 	prop.set_currenttxhash(mOurPosition->getCurrentHash().begin(), 256 / 8);
 	prop.set_proposeseq(mOurPosition->getProposeSeq());
 	prop.set_closetime(mOurPosition->getCloseTime());
@@ -817,7 +817,7 @@ void LedgerConsensus::propose()
 	prop.set_nodepubkey(&pubKey[0], pubKey.size());
 	prop.set_signature(&sig[0], sig.size());
 	theApp->getConnectionPool().relayMessage(NULL,
-		boost::make_shared<PackedMessage>(prop, newcoin::mtPROPOSE_LEDGER));
+		boost::make_shared<PackedMessage>(prop, ripple::mtPROPOSE_LEDGER));
 }
 
 void LedgerConsensus::addDisputedTransaction(const uint256& txID, const std::vector<unsigned char>& tx)
@@ -850,11 +850,11 @@ void LedgerConsensus::addDisputedTransaction(const uint256& txID, const std::vec
 
 	if (!ourVote && theApp->isNew(txID))
 	{
-		newcoin::TMTransaction msg;
+		ripple::TMTransaction msg;
 		msg.set_rawtransaction(&(tx.front()), tx.size());
-		msg.set_status(newcoin::tsNEW);
+		msg.set_status(ripple::tsNEW);
 		msg.set_receivetimestamp(theApp->getOPs().getNetworkTimeNC());
-		PackedMessage::pointer packet = boost::make_shared<PackedMessage>(msg, newcoin::mtTRANSACTION);
+		PackedMessage::pointer packet = boost::make_shared<PackedMessage>(msg, ripple::mtTRANSACTION);
         theApp->getConnectionPool().relayMessage(NULL, packet);
 	}
 }
@@ -907,9 +907,9 @@ bool LedgerConsensus::peerPosition(const LedgerProposal::pointer& newPosition)
 	return true;
 }
 
-bool LedgerConsensus::peerHasSet(Peer::ref peer, const uint256& hashSet, newcoin::TxSetStatus status)
+bool LedgerConsensus::peerHasSet(Peer::ref peer, const uint256& hashSet, ripple::TxSetStatus status)
 {
-	if (status != newcoin::tsHAVE) // Indirect requests are for future support
+	if (status != ripple::tsHAVE) // Indirect requests are for future support
 		return true;
 
 	std::vector< boost::weak_ptr<Peer> >& set = mPeerData[hashSet];
@@ -1114,7 +1114,7 @@ void LedgerConsensus::accept(SHAMap::ref set)
 	newLCL->setAccepted(closeTime, mCloseResolution, closeTimeCorrect);
 	newLCL->updateHash();
 	uint256 newLCLHash = newLCL->getHash();
-	statusChange(newcoin::neACCEPTED_LEDGER, *newLCL);
+	statusChange(ripple::neACCEPTED_LEDGER, *newLCL);
 	if (mValidating)
 	{
 		SerializedValidation::pointer v = boost::make_shared<SerializedValidation>
@@ -1122,10 +1122,10 @@ void LedgerConsensus::accept(SHAMap::ref set)
 		v->setTrusted();
 		theApp->getValidations().addValidation(v);
 		std::vector<unsigned char> validation = v->getSigned();
-		newcoin::TMValidation val;
+		ripple::TMValidation val;
 		val.set_validation(&validation[0], validation.size());
 		int j = theApp->getConnectionPool().relayMessage(NULL,
-			boost::make_shared<PackedMessage>(val, newcoin::mtVALIDATION));
+			boost::make_shared<PackedMessage>(val, ripple::mtVALIDATION));
 		cLog(lsINFO) << "CNF Val " << newLCLHash << " to " << j << " peers";
 	}
 	else

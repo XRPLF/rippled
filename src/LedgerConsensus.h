@@ -143,7 +143,7 @@ protected:
 	uint32 roundCloseTime(uint32 closeTime);
 
 	// manipulating our own position
-	void statusChange(newcoin::NodeEvent, Ledger& ledger);
+	void statusChange(ripple::NodeEvent, Ledger& ledger);
 	void takeInitialPosition(Ledger& initialLedger);
 	void updateOurPositions();
 	void playbackProposals();
@@ -182,7 +182,7 @@ public:
 	bool peerPosition(const LedgerProposal::pointer&);
 	void deferProposal(const LedgerProposal::pointer& proposal,	const NewcoinAddress& peerPublic);
 
-	bool peerHasSet(Peer::ref peer, const uint256& set, newcoin::TxSetStatus status);
+	bool peerHasSet(Peer::ref peer, const uint256& set, ripple::TxSetStatus status);
 
 	bool peerGaveNodes(Peer::ref peer, const uint256& setHash,
 		const std::list<SHAMapNode>& nodeIDs, const std::list< std::vector<unsigned char> >& nodeData);
