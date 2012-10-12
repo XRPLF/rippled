@@ -195,7 +195,7 @@ Amount.prototype.to_text = function(allow_nan) {
     return allow_nan ? NaN : "0";
   }
   else if (this.is_native) {
-    if (this.value.compareTo(exports.consts.xns_max) > 0 || this.value.compareTo(exports.consts.xns_min) < 0)
+    if (this.value.compareTo(exports.consts.bi_xns_max) > 0 || this.value.compareTo(exports.consts.bi_xns_min) < 0)
     {
       // Never should happen.
       return allow_nan ? NaN : "0";
@@ -293,7 +293,7 @@ Amount.prototype.parse_native = function(j) {
     else {
       // Decimal notation
 
-      var   int_part	  = (new BigInteger(m[1])).multiply(exports.consts.xns_unit);
+      var   int_part	  = (new BigInteger(m[1])).multiply(exports.consts.bi_xns_unit);
       var   fraction_part = (new BigInteger(m[2])).multiply(new BigInteger(String(Math.pow(10, 1+exports.consts.xns_precision-m[2].length))));
 
       this.value	  = int_part.add(fraction_part);
@@ -303,7 +303,7 @@ Amount.prototype.parse_native = function(j) {
     this.offset	      = undefined;
     this.is_negative  = undefined;
 
-    if (this.value.compareTo(exports.consts.xns_max) > 0 || this.value.compareTo(exports.consts.xns_min) < 0)
+    if (this.value.compareTo(exports.consts.bi_xns_max) > 0 || this.value.compareTo(exports.consts.bi_xns_min) < 0)
     {
       this.value	  = NaN;
     }
@@ -399,21 +399,23 @@ exports.Currency  = Currency;
 exports.UInt160	  = UInt160;
 
 exports.consts	  = {
-  'address_xns' : "iiiiiiiiiiiiiiiiiiiiihoLvTp",
-  'address_one' : "iiiiiiiiiiiiiiiiiiiiBZbvjr",
-  'currency_xns' : 0,
-  'currency_one' : 1,
-  'uint160_xns' : utils.hexToString("0000000000000000000000000000000000000000"),
-  'uint160_one' : utils.hexToString("0000000000000000000000000000000000000001"),
-  'hex_xns' : "0000000000000000000000000000000000000000",
-  'hex_one' : "0000000000000000000000000000000000000001",
-  'xns_max' : new BigInteger("9000000000000000000"),	  // Json wire limit.
-  'xns_min' : new BigInteger("-9000000000000000000"),	  // Json wire limit.
-  'xns_unit' : new BigInteger('1000000'),
-  'xns_precision' : 6,
-  'bi_man_min_value' : new BigInteger('1000000000000000'),
-  'bi_man_max_value' : new BigInteger('9999999999999999'),
-  'bi_10' : new BigInteger('10'),
+  'address_xns'	      : "iiiiiiiiiiiiiiiiiiiiihoLvTp",
+  'address_one'	      : "iiiiiiiiiiiiiiiiiiiiBZbvjr",
+  'currency_xns'      : 0,
+  'currency_one'      : 1,
+  'uint160_xns'	      : utils.hexToString("0000000000000000000000000000000000000000"),
+  'uint160_one'	      : utils.hexToString("0000000000000000000000000000000000000001"),
+  'hex_xns'	      : "0000000000000000000000000000000000000000",
+  'hex_one'	      : "0000000000000000000000000000000000000001",
+  'xns_precision'     : 6,
+
+  // BigInteger values prefixed with bi_.
+  'bi_10'	      : new BigInteger('10'),
+  'bi_man_max_value'  : new BigInteger('9999999999999999'),
+  'bi_man_min_value'  : new BigInteger('1000000000000000'),
+  'bi_xns_max'	      : new BigInteger("9000000000000000000"),	  // Json wire limit.
+  'bi_xns_min'	      : new BigInteger("-9000000000000000000"),	  // Json wire limit.
+  'bi_xns_unit'	      : new BigInteger('1000000'),
 };
 
 // vim:sw=2:sts=2:ts=8
