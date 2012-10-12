@@ -94,6 +94,7 @@ public:
 	bool takeAsNode(const std::list<SHAMapNode>& IDs, const std::list<std::vector<unsigned char> >& data);
 	bool takeAsRootNode(const std::vector<unsigned char>& data);
 	void trigger(Peer::ref, bool timer);
+	bool tryLocal();
 };
 
 class LedgerAcquireMaster

@@ -690,7 +690,10 @@ SHAMapTreeNode::pointer SHAMap::fetchNodeExternal(const SHAMapNode& id, const ui
 
 	HashedObject::pointer obj(theApp->getHashedObjectStore().retrieve(hash));
 	if (!obj)
+	{
+		Log(lsTRACE) << "fetchNodeExternal: missing " << hash;
 		throw SHAMapMissingNode(mType, id, hash);
+	}
 	assert(Serializer::getSHA512Half(obj->getData()) == hash);
 
 	try
@@ -706,6 +709,13 @@ SHAMapTreeNode::pointer SHAMap::fetchNodeExternal(const SHAMapNode& id, const ui
 		cLog(lsWARNING) << "fetchNodeExternal gets an invalid node: " << hash;
 		throw SHAMapMissingNode(mType, id, hash);
 	}
+}
+
+void SHAMap::fetchRoot(const uint256& hash)
+{
+	root = fetchNodeExternal(SHAMapNode(), hash);
+	root->makeInner();
+	mTNByID[*root] = root;
 }
 
 void SHAMap::armDirty()
@@ -725,6 +735,8 @@ int SHAMap::flushDirty(int maxNodes, HashedObjectType t, uint32 seq)
 		boost::unordered_map<SHAMapNode, SHAMapTreeNode::pointer>::iterator it = dirtyNodes.begin();
 		while (it != dirtyNodes.end())
 		{
+			tLog(mType == smtTRANSACTION, lsDEBUG) << "TX node write " << it->first;
+			tLog(mType == smtSTATE, lsDEBUG) << "STATE node write " << it->first;
 			s.erase();
 			it->second->addRaw(s, snfPREFIX);
 			theApp->getHashedObjectStore().store(t, seq, s.peekData(), s.getSHA512Half());

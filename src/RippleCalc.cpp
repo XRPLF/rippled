@@ -1816,20 +1816,24 @@ void RippleCalc::pathNext(const PathState::pointer& pspCur, const int iPaths, co
 		lesCurrent.bumpSeq();						// Begin ledger varance.
 
 		pspCur->terStatus	= calcNodeFwd(0, pspCur, bMultiQuality);
+	}
 
-		tLog(tesSUCCESS == pspCur->terStatus, lsDEBUG)
+	if (tesSUCCESS == pspCur->terStatus)
+	{
+		tLog(!pspCur->saInPass || !pspCur->saOutPass, lsDEBUG)
 			<< boost::str(boost::format("saOutPass=%s saInPass=%s")
 				% pspCur->saOutPass.getFullText()
 				% pspCur->saInPass.getFullText());
 
-		// Make sure we have a quality.
-		assert(tesSUCCESS != pspCur->terStatus || (!!pspCur->saOutPass && !!pspCur->saInPass));
+		assert(!!pspCur->saOutPass && !!pspCur->saInPass);
 
-		pspCur->uQuality	= tesSUCCESS == pspCur->terStatus
-								? STAmount::getRate(pspCur->saOutPass, pspCur->saInPass)	// Calculate relative quality.
-								: 0;														// Mark path as inactive.
+		pspCur->uQuality	= STAmount::getRate(pspCur->saOutPass, pspCur->saInPass);	// Calculate relative quality.
 
 		cLog(lsINFO) << "Path after forward: " << pspCur->getJson();
+	}
+	else
+	{
+		pspCur->uQuality	= 0;
 	}
 }
 
@@ -1968,12 +1972,27 @@ TER RippleCalc::rippleCalc(
 
 					nothing();
 				}
-				else if ((!bLimitQuality || pspCur->uQuality <= uQualityLimit)		// Quality is not limted or increment has allowed quality.
-					|| !pspBest														// Best is not yet set.
-					|| PathState::lessPriority(pspBest, pspCur))					// Current is better than set.
-				{
-					lesActive.swapWith(pspCur->lesEntries);							// For the path, save ledger state.
-					pspBest	= pspCur;
+				else {
+					tLog(!pspCur->saInPass || !pspCur->saOutPass, lsDEBUG)
+						<< boost::str(boost::format("calcOfferFirst: better: uQuality=%016lX saInPass=%s saOutPass=%s")
+							% pspCur->uQuality
+							% pspCur->saInPass.getFullText()
+							% pspCur->saOutPass.getFullText());
+
+					assert(!!pspCur->saInPass && !!pspCur->saOutPass);
+
+					if ((!bLimitQuality || pspCur->uQuality <= uQualityLimit)		// Quality is not limted or increment has allowed quality.
+						|| !pspBest														// Best is not yet set.
+						|| PathState::lessPriority(pspBest, pspCur))					// Current is better than set.
+					{
+						cLog(lsDEBUG) << boost::str(boost::format("calcOfferFirst: better: uQuality=%016lX saInPass=%s saOutPass=%s")
+							% pspCur->uQuality
+							% pspCur->saInPass.getFullText()
+							% pspCur->saOutPass.getFullText());
+
+						lesActive.swapWith(pspCur->lesEntries);							// For the path, save ledger state.
+						pspBest	= pspCur;
+					}
 				}
 			}
 	    }
@@ -1981,6 +2000,11 @@ TER RippleCalc::rippleCalc(
 	    if (pspBest)
 	    {
 		    // Apply best path.
+
+			cLog(lsDEBUG) << boost::str(boost::format("calcOfferFirst: best: uQuality=%016lX saInPass=%s saOutPass=%s")
+				% pspBest->uQuality
+				% pspBest->saInPass.getFullText()
+				% pspBest->saOutPass.getFullText());
 
 		    // Record best pass' offers that became unfunded for deletion on success.
 		    vuUnfundedBecame.insert(vuUnfundedBecame.end(), pspBest->vUnfundedBecame.begin(), pspBest->vUnfundedBecame.end());
@@ -1991,7 +2015,7 @@ TER RippleCalc::rippleCalc(
 			saInAct		+= pspBest->saInPass;
 			saOutAct	+= pspBest->saOutPass;
 
-		    if (temUNCERTAIN == terResult && saOutAct == saDstAmountReq)
+		    if (saOutAct == saDstAmountReq)
 		    {
 				// Done. Delivered requested amount.
 
