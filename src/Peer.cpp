@@ -540,20 +540,11 @@ void Peer::processReadBuffer()
 			break;
 
 #endif
-		case newcoin::mtGET_OBJECT:
+		case newcoin::mtGET_OBJECTS:
 			{
 				newcoin::TMGetObjectByHash msg;
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvGetObjectByHash(msg);
-				else std::cerr << "parse error: " << type << std::endl;
-			}
-			break;
-
-		case newcoin::mtOBJECT:
-			{
-				newcoin::TMObjectByHash msg;
-				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
-					recvObjectByHash(msg);
 				else std::cerr << "parse error: " << type << std::endl;
 			}
 			break;
@@ -872,16 +863,29 @@ void Peer::recvPeers(newcoin::TMPeers& packet)
 	}
 }
 
-void Peer::recvIndexedObject(newcoin::TMIndexedObject& packet)
-{
-}
-
 void Peer::recvGetObjectByHash(newcoin::TMGetObjectByHash& packet)
 {
-}
+	if (packet.query())
+	{ // this is a query
+		newcoin::TMGetObjectByHash reply;
 
-void Peer::recvObjectByHash(newcoin::TMObjectByHash& packet)
-{
+		reply.clear_query();
+		if (packet.has_seq())
+			reply.set_seq(packet.seq());
+		reply.set_type(packet.type());
+		if (packet.has_ledgerhash())
+			reply.set_ledgerhash(packet.ledgerhash());
+
+		for (unsigned i = 0; i < packet.objects_size(); ++i)
+		{
+			const newcoin::TMIndexedObject& obj = packet.objects(i);
+			// WRITEME
+		}
+	}
+	else
+	{ // this is a reply
+		// WRITEME
+	}
 }
 
 void Peer::recvPing(newcoin::TMPing& packet)
