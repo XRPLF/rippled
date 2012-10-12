@@ -275,6 +275,10 @@
     </CustomBuild>
     <None Include="README" />
     <None Include="SConstruct" />
+    <None Include="test\buster.js" />
+    <None Include="test\server.js" />
+    <None Include="test\standalone-test.js" />
+    <None Include="test\utils.js" />
     <None Include="validators.txt" />
     <None Include="wallet.xml" />
   </ItemGroup>
