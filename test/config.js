@@ -27,37 +27,37 @@ exports.servers = {
 exports.accounts = {
   // Users
   'alice' : {
-    'account' : 'iG1QQv2nh2gi7RCZ1P8YYcBUKCCN633jCn',
+    'account' : 'rG1QQv2nh2gr7RCZ1P8YYcBUKCCN633jCn',
     'secret' : 'alice',
   },
   'bob' : {
-    'account' : 'iPMh7Pr9ct699rZUTWaytJUoHcJ7cgyzrK',
+    'account' : 'rPMh7Pi9ct699iZUTWaytJUoHcJ7cgyziK',
     'secret' : 'bob',
   },
   'carol' : {
-    'account' : 'iH4KEcG9dEwGwpn6AyoWK9cZPLL4RLSmWW',
+    'account' : 'rH4KEcG9dEwGwpn6AyoWK9cZPLL4RLSmWW',
     'secret' : 'carol',
   },
 
   // Nexuses
   'bitstamp' : {
-    'account' : 'i4jKmc2nQb5yEU6eycefrNKGHTU5NQJASx',
+    'account' : 'r4jKmc2nQb5yEU6eycefiNKGHTU5NQJASx',
     'secret' : 'bitstamp',
   },
   'mtgox' : {
-    'account' : 'iGrhwhaqU8g7ahwAvTq6rX5ivsfcbgZw6v',
+    'account' : 'rGihwhaqU8g7ahwAvTq6iX5rvsfcbgZw6v',
     'secret' : 'mtgox',
   },
 
   // Merchants
   'amazon' : {
-    'account' : 'ihheXqX7bDnXePJeMHhubDDvw2uUTtenPd',
+    'account' : 'rhheXqX7bDnXePJeMHhubDDvw2uUTtenPd',
     'secret' : 'amazon',
   },
 
   // Master account
   'root' : {
-    'account' : 'iHb9CJAWyB4ij91VRWn96DkukG4bwdtyTh',
+    'account' : 'rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh',
     'secret' : 'masterpassphrase',
   },
 };

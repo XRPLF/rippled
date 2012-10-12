@@ -117,7 +117,7 @@ buster.testCase("Websocket commands", {
 	  alpha.request_ledger_entry({
 	      'ledger_closed' : r.ledger_closed,
 	      'type'	      : 'account_root',
-	      'account_root'  : 'iHb9CJAWyB4ij91VRWn96DkukG4bwdtyTh'
+	      'account_root'  : 'rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh'
 	    } , function (r) {
 	      // console.log("account_root: %s", JSON.stringify(r));
 
@@ -157,7 +157,7 @@ buster.testCase("Websocket commands", {
 	  alpha.request_ledger_entry({
 	      'ledger_closed' : r.ledger_closed,
 	      'type'	      : 'account_root',
-	      'account_root'  : 'iG1QQv2nh2gi7RCZ1P8YYcBUKCCN633jCn'
+	      'account_root'  : config.accounts.alice.account,
 	    }, function (r) {
 	      console.log("account_root: %s", JSON.stringify(r));
 
