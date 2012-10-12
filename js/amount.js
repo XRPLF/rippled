@@ -58,7 +58,7 @@ UInt160.prototype.parse_json = function (j) {
       else if (40 === j.length) {
 	this.value  = utils.hexToString(j);
       }
-      else if (j[0] === "i") {
+      else if (j[0] === "r") {
 	// XXX Do more checking convert to string.
 
 	this.value  = j;
@@ -399,8 +399,8 @@ exports.Currency  = Currency;
 exports.UInt160	  = UInt160;
 
 exports.consts	  = {
-  'address_xns'	      : "iiiiiiiiiiiiiiiiiiiiihoLvTp",
-  'address_one'	      : "iiiiiiiiiiiiiiiiiiiiBZbvjr",
+  'address_xns'	      : "rrrrrrrrrrrrrrrrrrrrrhoLvTp",
+  'address_one'	      : "rrrrrrrrrrrrrrrrrrrrBZbvji",
   'currency_xns'      : 0,
   'currency_one'      : 1,
   'uint160_xns'	      : utils.hexToString("0000000000000000000000000000000000000000"),
