@@ -7,7 +7,7 @@
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include "../obj/src/newcoin.pb.h"
+#include "../obj/src/ripple.pb.h"
 #include "PackedMessage.h"
 #include "Ledger.h"
 #include "Transaction.h"

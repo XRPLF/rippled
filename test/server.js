@@ -23,7 +23,7 @@ var Server = function(name) {
     this.name = name;
 };
 
-// Return a server's newcoind.cfg as string.
+// Return a server's rippled.cfg as string.
 Server.prototype.configContent = function() {
     var	cfg = config.servers[this.name];
 
@@ -37,10 +37,10 @@ Server.prototype.serverPath = function() {
 };
 
 Server.prototype.configPath = function() {
-    return path.join(this.serverPath(), "newcoind.cfg");
+    return path.join(this.serverPath(), "rippled.cfg");
 };
 
-// Write a server's newcoind.cfg.
+// Write a server's rippled.cfg.
 Server.prototype.writeConfig = function(done) {
     fs.writeFile(this.configPath(), this.configContent(), 'utf8', done);
 };
@@ -49,11 +49,11 @@ Server.prototype.writeConfig = function(done) {
 Server.prototype.serverSpawnSync = function() {
     // Spawn in standalone mode for now.
     this.child = child.spawn(
-	config.newcoind,
+	config.rippled,
 	[
 	    "-a",
 	    "-v",
-	    "--conf=newcoind.cfg"
+	    "--conf=rippled.cfg"
 	],
 	{
 	    cwd: this.serverPath(),
@@ -61,7 +61,7 @@ Server.prototype.serverSpawnSync = function() {
 	    stdio: 'inherit'
 	});
 
-    console.log("server: start %s: %s -a --conf=%s", this.child.pid, config.newcoind, this.configPath());
+    console.log("server: start %s: %s -a --conf=%s", this.child.pid, config.rippled, this.configPath());
 
     // By default, just log exits.
     this.child.on('exit', function(code, signal) {

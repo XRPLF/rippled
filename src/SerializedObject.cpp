@@ -1093,7 +1093,7 @@ std::auto_ptr<STObject> STObject::parseJson(const Json::Value& object, SField::r
 					data.push_back(new STAccount(field, v));
 				}
 				else
-				{ // newcoin addres
+				{ // ripple address
 					NewcoinAddress a;
 					if (!a.setAccountID(strValue))
 					{

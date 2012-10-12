@@ -5,7 +5,7 @@
 var path = require("path");
 
 // Where to find the binary.
-exports.newcoind = path.join(process.cwd(), "newcoind");
+exports.rippled = path.join(process.cwd(), "rippled");
 
 // Configuration for servers.
 exports.servers = {

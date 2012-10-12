@@ -15,8 +15,8 @@
 # Ignore object files.
 *.o
 obj/*
-bin/newcoind
-newcoind
+bin/rippled
+rippled
 
 # Ignore locally installed node_modules
 node_modules

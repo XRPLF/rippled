@@ -11,7 +11,7 @@
 
 #include "key.h"
 #include "uint256.h"
-#include "../obj/src/newcoin.pb.h"
+#include "../obj/src/ripple.pb.h"
 #include "Serializer.h"
 #include "SHAMap.h"
 #include "SerializedTransaction.h"

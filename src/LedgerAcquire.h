@@ -14,7 +14,7 @@
 #include "Ledger.h"
 #include "Peer.h"
 #include "TaggedCache.h"
-#include "../obj/src/newcoin.pb.h"
+#include "../obj/src/ripple.pb.h"
 
 class PeerSet
 {

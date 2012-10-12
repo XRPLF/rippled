@@ -9,7 +9,7 @@
 #include <string>
 #include <boost/filesystem.hpp>
 
-#define SYSTEM_NAME					"newcoin"
+#define SYSTEM_NAME					"ripple"
 #define SYSTEM_CURRENCY_CODE		"XNS"
 #define SYSTEM_CURRENCY_PRECISION	6
 #define SYSTEM_CURRENCY_CODE_RIPPLE	"XNR"
@@ -19,7 +19,7 @@
 #define SYSTEM_CURRENCY_PARTS		1000000ull		// 10^SYSTEM_CURRENCY_PRECISION
 #define SYSTEM_CURRENCY_START		(SYSTEM_CURRENCY_GIFT*SYSTEM_CURRENCY_USERS*SYSTEM_CURRENCY_PARTS)
 
-#define CONFIG_FILE_NAME				SYSTEM_NAME "d.cfg"	// newcoind.cfg
+#define CONFIG_FILE_NAME				SYSTEM_NAME "d.cfg"	// rippled.cfg
 
 #define DEFAULT_VALIDATORS_SITE		"redstem.com"
 #define VALIDATORS_FILE_NAME		"validators.txt"
@@ -52,9 +52,9 @@ public:
 	boost::filesystem::path		UNL_DEFAULT;
 
 	std::string					VALIDATORS_SITE;		// Where to find validators.txt on the Internet.
-	std::vector<std::string>	VALIDATORS;				// Validators from newcoind.cfg.
-	std::vector<std::string>	IPS;					// Peer IPs from newcoind.cfg.
-	std::vector<std::string>	SNTP_SERVERS;			// SNTP servers from newcoind.cfg.
+	std::vector<std::string>	VALIDATORS;				// Validators from rippled.cfg.
+	std::vector<std::string>	IPS;					// Peer IPs from rippled.cfg.
+	std::vector<std::string>	SNTP_SERVERS;			// SNTP servers from rippled.cfg.
 
 	enum StartUpType { FRESH, NORMAL, LOAD, NETWORK };
 	StartUpType					START_UP;

@@ -10,7 +10,7 @@
 #include "Application.h"
 #include "Ledger.h"
 #include "utils.h"
-#include "../obj/src/newcoin.pb.h"
+#include "../obj/src/ripple.pb.h"
 #include "PackedMessage.h"
 #include "Config.h"
 #include "BitcoinUtil.h"

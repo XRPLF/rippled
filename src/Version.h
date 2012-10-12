@@ -7,7 +7,7 @@
 #define SERVER_VERSION_MAJOR		0
 #define SERVER_VERSION_MINOR		7
 #define SERVER_VERSION_SUB			"-a"
-#define SERVER_NAME					"NewCoin"
+#define SERVER_NAME					"Ripple"
 
 #define SV_STRINGIZE(x)				SV_STRINGIZE2(x)
 #define SV_STRINGIZE2(x)			#x

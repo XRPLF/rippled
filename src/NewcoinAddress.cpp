@@ -808,7 +808,7 @@ NewcoinAddress NewcoinAddress::createSeedGeneric(const std::string& strText)
 	return naNew;
 }
 
-BOOST_AUTO_TEST_SUITE(newcoin_address)
+BOOST_AUTO_TEST_SUITE(ripple_address)
 
 BOOST_AUTO_TEST_CASE( check_crypto )
 {

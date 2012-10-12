@@ -2555,7 +2555,7 @@ Json::Value RPCServer::doUnlLoad(const Json::Value& params)
 	return "loading";
 }
 
-// Populate the UNL from newcoin.org's validators.txt file.
+// Populate the UNL from ripple.com's validators.txt file.
 Json::Value RPCServer::doUnlNetwork(const Json::Value& params)
 {
 	theApp->getUNL().nodeNetwork();

@@ -32,7 +32,7 @@ class UniqueNodeList
 {
 public:
 	typedef enum {
-		vsConfig	= 'C',	// newcoind.cfg
+		vsConfig	= 'C',	// rippled.cfg
 		vsInbound	= 'I',
 		vsManual	= 'M',
 		vsReferral	= 'R',

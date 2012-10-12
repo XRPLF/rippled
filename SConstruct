@@ -83,7 +83,7 @@ WEBSOCKETPP_SRCS = [
 	]
 
 NEWCOIN_SRCS = glob.glob('src/*.cpp')
-PROTO_SRCS = env.Protoc([], 'src/newcoin.proto', PROTOCOUTDIR='obj', PROTOCPYTHONOUTDIR=None)
+PROTO_SRCS = env.Protoc([], 'src/ripple.proto', PROTOCOUTDIR='obj', PROTOCPYTHONOUTDIR=None)
 
 env.Clean(PROTO_SRCS, 'site_scons/site_tools/protoc.pyc')
 
@@ -103,9 +103,9 @@ for file in NEWCOIN_SRCS:
 
 NEWCOIN_OBJS += PROTO_SRCS
 
-newcoind = env.Program('newcoind', NEWCOIN_OBJS)
+rippled = env.Program('rippled', NEWCOIN_OBJS)
 
 tags = env.CTags('obj/tags', NEWCOIN_SRCS)
 
-Default(newcoind, tags)
+Default(rippled, tags)
 
