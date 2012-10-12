@@ -2,7 +2,10 @@ var buster  = require("buster");
 
 var config  = require("./config.js");
 var server  = require("./server.js");
+var amount  = require("../js/amount.js");
 var remote  = require("../js/remote.js");
+
+var Amount  = amount.Amount;
 
 // How long to wait for server to start.
 var serverDelay = 1500;
@@ -113,8 +116,8 @@ buster.testCase("Websocket commands", {
 
 	  alpha.request_ledger_entry({
 	      'ledger_closed' : r.ledger_closed,
-	      'type' : 'account_root',
-	      'account_root' : 'iHb9CJAWyB4ij91VRWn96DkukG4bwdtyTh'
+	      'type'	      : 'account_root',
+	      'account_root'  : 'iHb9CJAWyB4ij91VRWn96DkukG4bwdtyTh'
 	    } , function (r) {
 	      // console.log("account_root: %s", JSON.stringify(r));
 
@@ -133,8 +136,8 @@ buster.testCase("Websocket commands", {
 
 	  alpha.request_ledger_entry({
 	      'ledger_closed' : r.ledger_closed,
-	      'type' : 'account_root',
-	      'account_root' : 'foobar'
+	      'type'	      : 'account_root',
+	      'account_root'  : 'foobar'
 	    } , function (r) {
 	      // console.log("account_root: %s", JSON.stringify(r));
 
@@ -153,8 +156,8 @@ buster.testCase("Websocket commands", {
 
 	  alpha.request_ledger_entry({
 	      'ledger_closed' : r.ledger_closed,
-	      'type' : 'account_root',
-	      'account_root' : 'iG1QQv2nh2gi7RCZ1P8YYcBUKCCN633jCn'
+	      'type'	      : 'account_root',
+	      'account_root'  : 'iG1QQv2nh2gi7RCZ1P8YYcBUKCCN633jCn'
 	    }, function (r) {
 	      console.log("account_root: %s", JSON.stringify(r));
 
@@ -173,8 +176,8 @@ buster.testCase("Websocket commands", {
 
 	  alpha.request_ledger_entry({
 	      'ledger_closed' : r.ledger_closed,
-	      'type' : 'account_root',
-	      'index' : "2B6AC232AA4C4BE41BF49D2459FA4A0347E1B543A4C92FCEE0821C0201E2E9A8",
+	      'type'	      : 'account_root',
+	      'index'	      : "2B6AC232AA4C4BE41BF49D2459FA4A0347E1B543A4C92FCEE0821C0201E2E9A8",
 	    } , function (r) {
 	      console.log("node: %s", JSON.stringify(r));
 
@@ -186,7 +189,7 @@ buster.testCase("Websocket commands", {
 
   'create account' :
     function (done) {
-      alpha.send_xns(undefined, 'root', 'alice', 10000, true, function (r) {
+      alpha.send(undefined, 'root', 'alice', Amount.from_json("10000"), undefined, 'CREATE', function (r) {
 	  console.log(r);
 
 	  buster.refute(r.error);

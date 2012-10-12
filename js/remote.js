@@ -7,9 +7,14 @@
 // YYY A better model might be to allow requesting a target state: keep connected or not.
 //
 
-var util = require('util');
+// Node
+var util      = require('util');
 
+// npm
 var WebSocket = require('ws');
+
+var amount    = require('./amount.js');
+var Amount    = amount.Amount;
 
 // --> trusted: truthy, if remote is trusted
 var Remote = function (trusted, websocket_ip, websocket_port, config, trace) {
@@ -57,10 +62,10 @@ var flags = {
 
 // XXX This needs to be determined from the network.
 var fees = {
-  'default' : 100,
-  'account_create' : 1000,
-  'nickname_create' : 1000,
-  'offer' : 100,
+  'default'	    : Amount.from_json("100"),
+  'account_create'  : Amount.from_json("1000"),
+  'nickname_create' : Amount.from_json("1000"),
+  'offer'	    : Amount.from_json("100"),
 };
 
 Remote.prototype.connect_helper = function () {
@@ -383,40 +388,79 @@ Remote.prototype.dirty_account_root = function (account) {
 // Transactions
 //
 
-Remote.prototype.ripple_line_set = function (secret, src, dst, amount, onDone) {
+Remote.prototype.offer_create = function (secret, src, taker_pays, taker_gets, expiration, onDone) {
   var secret	  = this.config.accounts[src] ? this.config.accounts[src].secret : secret;
   var src_account = this.config.accounts[src] ? this.config.accounts[src].account : src;
-  var dst_account = this.config.accounts[dst] ? this.config.accounts[dst].account : dst;
+
+  var transaction = {
+      'TransactionType'	: 'OfferCreate',
+      'Account'		: src_account,
+      'Fee'		: fees.offer.to_json(),
+      'TakerPays'	: taker_pays.to_json(),
+      'TakerGets'	: taker_gets.to_json(),
+    };
+
+  if (expiration)
+    transaction.Expiration  = expiration;
 
   this.submit_seq(
       {
-	'transaction' : {
-	  'TransactionType' : 'CreditSet',
-	  'Account' : src_account,
-	  'Destination' : dst_account,
-	  'Fee' : create ? fees.account_create : fees['default'],
-	  'Amount' : amount,
-	},
+	'transaction' : transaction,
 	'secret' : secret,
       }, function () {
       }, onDone);
 };
 
-Remote.prototype.send_xns = function (secret, src, dst, amount, create, onDone) {
+Remote.prototype.ripple_line_set = function (secret, src, limit, quaility_in, quality_out, onDone) {
+  var secret	  = this.config.accounts[src] ? this.config.accounts[src].secret : secret;
+  var src_account = this.config.accounts[src] ? this.config.accounts[src].account : src;
+
+  var transaction = {
+      'TransactionType'	: 'CreditSet',
+      'Account'		: src_account,
+      'Fee'		: fees['default'].to_json(),
+    };
+
+  if (limit)
+      transaction.LimitAmount = limit.to_json();
+
+  if (quaility_in)
+      transaction.QualityIn   = quaility_in;
+
+  if (quaility_out)
+      transaction.QualityOut  = quaility_out;
+
+  this.submit_seq(
+      {
+	'transaction' : transaction,
+	'secret'      : secret,
+      }, function () {
+      }, onDone);
+};
+
+// --> create: is only valid if destination gets XNS.
+Remote.prototype.send = function (secret, src, dst, deliver_amount, send_max, create, onDone) {
   var secret	  = this.config.accounts[src] ? this.config.accounts[src].secret : secret;
   var src_account = this.config.accounts[src] ? this.config.accounts[src].account : src;
   var dst_account = this.config.accounts[dst] ? this.config.accounts[dst].account : dst;
 
+  var transaction = {
+      'TransactionType' : 'Payment',
+      'Account'		: src_account,
+      'Fee'		: (create ? fees.account_create : fees['default']).to_json(),
+      'Destination'	: dst_account,
+      'Amount'		: deliver_amount.to_json(),
+    };
+
+  if (create)
+      transaction.Flags	  = flags.tfCreateAccount;
+
+  if (send_max)
+      transaction.SendMax = send_max.to_json();
+
   this.submit_seq(
       {
-	'transaction' : {
-	  'TransactionType' : 'Payment',
-	  'Account' : src_account,
-	  'Destination' : dst_account,
-	  'Fee' : create ? fees.account_create : fees['default'],
-	  'Flags' : create ? flags.tfCreateAccount : 0,
-	  'Amount' : amount,
-	},
+	'transaction' : transaction,
 	'secret' : secret,
       }, function () {
       }, onDone);
