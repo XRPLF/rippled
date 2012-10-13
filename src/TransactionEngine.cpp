@@ -18,7 +18,7 @@ SETUP_LOG();
 void TransactionEngine::txnWrite()
 {
 	// Write back the account states
-	for (boost::unordered_map<uint256, LedgerEntrySetEntry>::iterator it = mNodes.begin(), end = mNodes.end();
+	for (std::map<uint256, LedgerEntrySetEntry>::iterator it = mNodes.begin(), end = mNodes.end();
 			it != end; ++it)
 	{
 		const SLE::pointer&	sleEntry	= it->second.mEntry;

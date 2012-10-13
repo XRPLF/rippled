@@ -18,7 +18,7 @@
 
 #define TRUST_NETWORK
 
-// #define LC_DEBUG
+#define LC_DEBUG
 
 typedef std::pair<const uint160, LedgerProposal::pointer> u160_prop_pair;
 typedef std::pair<const uint256, LCTransaction::pointer> u256_lct_pair;
