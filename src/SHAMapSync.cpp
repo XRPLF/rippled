@@ -415,7 +415,7 @@ BOOST_AUTO_TEST_SUITE( SHAMapSync )
 
 BOOST_AUTO_TEST_CASE( SHAMapSync_test )
 {
-	cLog(lsTRACE) << "being sync test";
+	cLog(lsTRACE) << "begin sync test";
 	unsigned int seed;
 	RAND_pseudo_bytes(reinterpret_cast<unsigned char *>(&seed), sizeof(seed));
 	srand(seed);
