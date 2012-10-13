@@ -487,11 +487,11 @@ int STAmount::compare(const STAmount& a) const
 	if (!mValue) return a.mValue ? 1 : 0;
 	if (!a.mValue) return 1;
 
-	if (mOffset > a.mOffset) return mIsNegative ? 1 : -1;
-	if (mOffset < a.mOffset) return mIsNegative ? -1 : 1;
+	if (mOffset > a.mOffset) return mIsNegative ? -1 : 1;
+	if (mOffset < a.mOffset) return mIsNegative ? 1 : -1;
 
-	if (mValue > a.mValue) return mIsNegative ? 1 : -1;
-	if (mValue < a.mValue) return mIsNegative ? -1 : 1;
+	if (mValue > a.mValue) return mIsNegative ? -1 : 1;
+	if (mValue < a.mValue) return mIsNegative ? 1 : -1;
 
 	return 0;
 }
