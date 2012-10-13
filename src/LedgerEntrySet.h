@@ -32,11 +32,11 @@ class LedgerEntrySet
 {
 protected:
 	Ledger::pointer mLedger;
-	boost::unordered_map<uint256, LedgerEntrySetEntry>	mEntries;
+	std::map<uint256, LedgerEntrySetEntry>	mEntries; // cannot be unordered!
 	TransactionMetaSet mSet;
 	int mSeq;
 
-	LedgerEntrySet(Ledger::ref ledger, const boost::unordered_map<uint256, LedgerEntrySetEntry> &e,
+	LedgerEntrySet(Ledger::ref ledger, const std::map<uint256, LedgerEntrySetEntry> &e,
 		const TransactionMetaSet& s, int m) : mLedger(ledger), mEntries(e), mSet(s), mSeq(m) { ; }
 
 	SLE::pointer getForMod(const uint256& node, Ledger::ref ledger,
@@ -123,11 +123,11 @@ public:
 	void calcRawMeta(Serializer&);
 
 	// iterator functions
-	bool isEmpty() const																{ return mEntries.empty(); }
-	boost::unordered_map<uint256, LedgerEntrySetEntry>::const_iterator begin() const	{ return mEntries.begin(); }
-	boost::unordered_map<uint256, LedgerEntrySetEntry>::const_iterator end() const		{ return mEntries.end(); }
-	boost::unordered_map<uint256, LedgerEntrySetEntry>::iterator begin()				{ return mEntries.begin(); }
-	boost::unordered_map<uint256, LedgerEntrySetEntry>::iterator end()					{ return mEntries.end(); }
+	bool isEmpty() const													{ return mEntries.empty(); }
+	std::map<uint256, LedgerEntrySetEntry>::const_iterator begin() const	{ return mEntries.begin(); }
+	std::map<uint256, LedgerEntrySetEntry>::const_iterator end() const		{ return mEntries.end(); }
+	std::map<uint256, LedgerEntrySetEntry>::iterator begin()				{ return mEntries.begin(); }
+	std::map<uint256, LedgerEntrySetEntry>::iterator end()					{ return mEntries.end(); }
 
 	static bool intersect(const LedgerEntrySet& lesLeft, const LedgerEntrySet& lesRight);
 };

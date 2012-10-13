@@ -378,7 +378,7 @@ bool STAmount::setFullValue(const std::string& sAmount, const std::string& sCurr
 
 void STAmount::canonicalize()
 {
-	if (!mCurrency)
+	if (mCurrency.isZero())
 	{ // native currency amounts should always have an offset of zero
 		mIsNative = true;
 
@@ -401,7 +401,11 @@ void STAmount::canonicalize()
 			--mOffset;
 		}
 
-		assert(mValue <= cMaxNative);
+		if (mValue > cMaxNative)
+		{
+			assert(false);
+			throw std::runtime_error("Native currency amount out of range");
+		}
 		return;
 	}
 
@@ -430,9 +434,9 @@ void STAmount::canonicalize()
 		mValue /= 10;
 		++mOffset;
 	}
-	assert((mValue == 0) || ((mValue >= cMinValue) && (mValue <= cMaxValue)) );
-	assert((mValue == 0) || ((mOffset >= cMinOffset) && (mOffset <= cMaxOffset)) );
-	assert((mValue != 0) || (mOffset != -100) );
+	assert((mValue == 0) || ((mValue >= cMinValue) && (mValue <= cMaxValue)));
+	assert((mValue == 0) || ((mOffset >= cMinOffset) && (mOffset <= cMaxOffset)));
+	assert((mValue != 0) || (mOffset != -100));
 }
 
 void STAmount::add(Serializer& s) const
@@ -476,15 +480,24 @@ void STAmount::setValue(const STAmount &a)
 	mIsNegative = a.mIsNegative;
 }
 
-uint64 STAmount::toUInt64() const
-{ // makes them sort easily
-	if (mIsNative)
-		return mValue;
-	if (mValue == 0)
-		return 0x4000000000000000ull;
-	if (mIsNegative)
-		return ((cMaxNative + 1) - mValue) | (static_cast<uint64>(mOffset + 97) << (64 - 10));
-	return mValue | (static_cast<uint64>(mOffset + 256 + 97) << (64 - 10));
+int STAmount::compare(const STAmount& a) const
+{ // Compares the value of a to the value of this STAmount, amounts must be comparable
+	if (mIsNegative != a.mIsNegative) return mIsNegative ? -1 : 1;
+
+	if (!mValue)
+	{
+		if (a.mIsNegative) return 1;
+		return a.mValue ? -1 : 0;
+	}
+	if (!a.mValue) return 1;
+
+	if (mOffset > a.mOffset) return mIsNegative ? -1 : 1;
+	if (mOffset < a.mOffset) return mIsNegative ? 1 : -1;
+
+	if (mValue > a.mValue) return mIsNegative ? -1 : 1;
+	if (mValue < a.mValue) return mIsNegative ? 1 : -1;
+
+	return 0;
 }
 
 STAmount* STAmount::construct(SerializerIterator& sit, SField::ref name)
@@ -633,25 +646,25 @@ bool STAmount::operator!=(const STAmount& a) const
 bool STAmount::operator<(const STAmount& a) const
 {
 	throwComparable(a);
-	return toUInt64() < a.toUInt64();
+	return compare(a) < 0;
 }
 
 bool STAmount::operator>(const STAmount& a) const
 {
 	throwComparable(a);
-	return toUInt64() > a.toUInt64();
+	return compare(a) > 0;
 }
 
 bool STAmount::operator<=(const STAmount& a) const
 {
 	throwComparable(a);
-	return toUInt64() <= a.toUInt64();
+	return compare(a) <= 0;
 }
 
 bool STAmount::operator>=(const STAmount& a) const
 {
 	throwComparable(a);
-	return toUInt64() >= a.toUInt64();
+	return compare(a) >= 0;
 }
 
 STAmount& STAmount::operator+=(const STAmount& a)
