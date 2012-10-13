@@ -162,7 +162,9 @@ void SerializedTransaction::setSourceAccount(const NewcoinAddress& naSource)
 Json::Value SerializedTransaction::getJson(int options) const
 {
 	Json::Value ret = STObject::getJson(0);
-	ret["id"] = getTransactionID().GetHex();
+
+	ret["hash"] = getTransactionID().GetHex();
+
 	return ret;
 }
 
