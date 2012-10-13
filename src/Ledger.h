@@ -57,7 +57,7 @@ public:
 		TR_PASTASEQ	= 6,	// account is past this transaction
 		TR_PREASEQ	= 7,	// account is missing transactions before this
 		TR_BADLSEQ	= 8,	// ledger too early
-		TR_TOOSMALL = 9, 	// amount is less than Tx fee
+		TR_TOOSMALL = 9,	// amount is less than Tx fee
 	};
 
 	// ledger close flags
@@ -82,10 +82,6 @@ private:
 	Ledger& operator=(const Ledger&);	// no implementation
 
 protected:
-
-
-	
-
 	SLE::pointer getASNode(LedgerStateParms& parms, const uint256& nodeID, LedgerEntryType let);
 
 public:

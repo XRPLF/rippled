@@ -42,7 +42,7 @@ enum TER	// aka TransactionEngineResult
 	temINVALID,
 	temREDUNDANT,
 	temRIPPLE_EMPTY,
-	temUNCERTAIN,
+	temUNCERTAIN,		// An intermediate result used internally, should never be returned.
 	temUNKNOWN,
 
 	// -199 .. -100: F Failure (sequence number previously used)
