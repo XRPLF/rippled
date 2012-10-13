@@ -484,7 +484,11 @@ int STAmount::compare(const STAmount& a) const
 { // Compares the value of a to the value of this STAmount, amounts must be comparable
 	if (mIsNegative != a.mIsNegative) return mIsNegative ? -1 : 1;
 
-	if (!mValue) return a.mValue ? 1 : 0;
+	if (!mValue)
+	{
+		if (a.mIsNegative) return 1;
+		return a.mValue ? -1 : 0;
+	}
 	if (!a.mValue) return 1;
 
 	if (mOffset > a.mOffset) return mIsNegative ? -1 : 1;
