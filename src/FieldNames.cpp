@@ -17,7 +17,7 @@ SField sfInvalid(-1), sfGeneric(0);
 SField sfLedgerEntry(STI_LEDGERENTRY, 1, "LedgerEntry");
 SField sfTransaction(STI_TRANSACTION, 1, "Transaction");
 SField sfValidation(STI_VALIDATION, 1, "Validation");
-SField sfID(STI_HASH256, 257, "id");
+SField sfHash(STI_HASH256, 257, "hash");
 SField sfIndex(STI_HASH256, 258, "index");
 
 #define FIELD(name, type, index) SField sf##name(FIELD_CODE(STI_##type, index), STI_##type, index, #name);
