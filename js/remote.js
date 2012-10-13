@@ -50,14 +50,16 @@ var remoteConfig = function (config, server, trace) {
 };
 
 var flags = {
-  // OfferCreate flags:
-  'tfPassive'		      : 0x00010000,
+  'OfferCreate' : {
+    'Passive'		      : 0x00010000,
+  },
 
-  // Payment flags:
-  'tfCreateAccount'	      : 0x00010000,
-  'tfPartialPayment'	      : 0x00020000,
-  'tfLimitQuality'	      : 0x00040000,
-  'tfNoRippleDirect'	      : 0x00080000,
+  'Payment' : {
+    'CreateAccount'	      : 0x00010000,
+    'PartialPayment'	      : 0x00020000,
+    'LimitQuality'	      : 0x00040000,
+    'NoRippleDirect'	      : 0x00080000,
+  },
 };
 
 // XXX This needs to be determined from the network.
@@ -439,7 +441,15 @@ Remote.prototype.ripple_line_set = function (secret, src, limit, quaility_in, qu
 };
 
 // --> create: is only valid if destination gets XNS.
-Remote.prototype.send = function (secret, src, dst, deliver_amount, send_max, create, onDone) {
+// --> flags: undefined, _flag_, or [ _flags_ ]
+//
+// When a transaction is submitted:
+// - If the connection is reliable and the server is not merely forwarding and is not malicious, 
+//   The server will report the initial transaction engine result.
+// - For the final disposition of the transaction, the ledger will need to be monitored.
+//   Use on onFinal() for the final disposition.
+//   The ledger must close for any onFinal() to be called.
+Remote.prototype.send = function (secret, src, dst, deliver_amount, send_max, flags, onDone) {
   var secret	  = this.config.accounts[src] ? this.config.accounts[src].secret : secret;
   var src_account = this.config.accounts[src] ? this.config.accounts[src].account : src;
   var dst_account = this.config.accounts[dst] ? this.config.accounts[dst].account : dst;
@@ -447,13 +457,27 @@ Remote.prototype.send = function (secret, src, dst, deliver_amount, send_max, cr
   var transaction = {
       'TransactionType' : 'Payment',
       'Account'		: src_account,
-      'Fee'		: (create ? fees.account_create : fees['default']).to_json(),
+      'Fee'		: fees['default'].to_json(),
       'Destination'	: dst_account,
       'Amount'		: deliver_amount.to_json(),
     };
 
-  if (create)
-      transaction.Flags	  = flags.tfCreateAccount;
+  if (flags) {
+      transaction.Flags	  = 0;
+
+      for (flag in 'object' === typeof flags ? flags : [ flags ]) {
+	if (flag in exports.flags.Payment)
+	{
+	  transaction.Flags	  += exports.flags.Payment[flag];
+	}
+	else {
+	  // XXX Immediately report an error.
+	}
+      }
+
+      if (transaction.Flags & exports.flags.Payment.CreateAccount)
+	transaction.Fee	= fees.account_create.to_json();
+  }
 
   if (send_max)
       transaction.SendMax = send_max.to_json();
