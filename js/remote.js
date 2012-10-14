@@ -79,6 +79,19 @@ Request.prototype.index = function (hash) {
   return this;
 };
 
+Request.prototype.secret = function (s) {
+  if (s)
+    this.message.secret  = s;
+
+  return this;
+};
+
+Request.prototype.transaction = function (t) {
+  this.message.transaction  = t;
+
+  return this;
+};
+
 // --> trusted: truthy, if remote is trusted
 var Remote = function (trusted, websocket_ip, websocket_port, config, trace) {
   this.trusted              = trusted;
@@ -404,7 +417,6 @@ Remote.prototype.request_ledger_entry = function (type) {
 
 // Submit a transaction.
 Remote.prototype.submit = function (transaction) {
-  debugger;
   var self  = this;
 
   if (this.trace) console.log("remote: submit: %s", JSON.stringify(transaction.transaction));
@@ -438,6 +450,9 @@ Remote.prototype.submit = function (transaction) {
     }
     else {
       var submit_request = new Request(this, 'submit');
+
+      submit_request.transaction(transaction.transaction);
+      submit_request.secret(transaction.secret);
 
       // Forward successes and errors.
       submit_request.on('success', function (message) { transaction.emit('success', message); });
@@ -507,7 +522,7 @@ Remote.prototype.account_seq = function (account, advance) {
   {
     var seq = account_info.seq;
 
-    if (advance) account_root_entry.seq += 1;
+    if (advance) account_info.seq += 1;
   }
 
   return seq;
@@ -520,12 +535,15 @@ Remote.prototype.account_cache = function (account) {
 
   // Only care about a closed ledger.
   // YYY Might be more advanced and work with a changing current ledger.
-  request.ledger_closed	= this.ledger_closed;
-  request.account_root	= account;
+  request.ledger(this.ledger_closed);  // XXX Requires active server_subscribe
+  request.account_root(account);
 
   request.on('success', function (message) {
       var seq = message.node.Sequence;
   
+      if (!self.accounts[account])
+	self.accounts[account]	= {};
+
       self.accounts[account].seq  = seq;
 
       // If the caller also waits for 'success', they might run before this.
@@ -572,19 +590,14 @@ Transaction.prototype.on = function (e, c) {
 Transaction.prototype.submit = function () {
   var transaction = this.transaction;
 
-  // Fill in secret from config, if needed.
-  if (undefined === transaction.secret && this.remote.config.accounts[this.Account]) {
-    this.secret		      = this.remote.config.accounts[this.Account].secret;
-  }
-
   if (undefined === transaction.Fee) {
     if ('Payment' === transaction.TransactionType
       && transaction.Flags & exports.flags.Payment.CreateAccount) {
 
-      transaction.Fee      = fees.account_create.to_json();
+      transaction.Fee    = fees.account_create.to_json();
     }
     else {
-      transaction.Fee      = fees['default'].to_json();
+      transaction.Fee    = fees['default'].to_json();
     }
   }
 
@@ -617,8 +630,12 @@ Transaction.prototype.flags = function (flags) {
 
       if (undefined == this.transaction.Flags)
 	this.transaction.Flags	  = 0;
+      
+      var flag_set  = 'object' === typeof flags ? flags : [ flags ];
 
-      for (flag in 'object' === typeof flags ? flags : [ flags ]) {
+      for (index in flag_set) {
+	var flag  = flag_set[index];
+
 	if (flag in transaction_flags)
 	{
 	  this.transaction.Flags      += transaction_flags[flag];
@@ -650,7 +667,13 @@ Transaction.prototype.account_default = function (account) {
   return this.remote.config.accounts[account] ? this.remote.config.accounts[account].account : account;
 };
 
+Transaction.prototype.account_secret = function (account) {
+  // Fill in secret from config, if needed.
+  return this.remote.config.accounts[account] ? this.remote.config.accounts[account].secret : undefined;
+};
+
 Transaction.prototype.offer_create = function (src, taker_pays, taker_gets, expiration) {
+  this.secret			    = this.account_secret(src);
   this.transaction.TransactionType  = 'OfferCreate';
   this.transaction.Account	    = this.account_default(src);
   this.transaction.Amount	    = deliver_amount.to_json();
@@ -670,7 +693,7 @@ Transaction.prototype.offer_create = function (src, taker_pays, taker_gets, expi
 // When a transaction is submitted:
 // - If the connection is reliable and the server is not merely forwarding and is not malicious, 
 Transaction.prototype.payment = function (src, dst, deliver_amount) {
-
+  this.secret			    = this.account_secret(src);
   this.transaction.TransactionType  = 'Payment';
   this.transaction.Account	    = this.account_default(src);
   this.transaction.Amount	    = deliver_amount.to_json();
@@ -680,6 +703,7 @@ Transaction.prototype.payment = function (src, dst, deliver_amount) {
 }
 
 Remote.prototype.ripple_line_set = function (src, limit, quaility_in, quality_out) {
+  this.secret			    = this.account_secret(src);
   this.transaction.TransactionType  = 'CreditSet';
   this.transaction.Account	    = this.account_default(src);
 

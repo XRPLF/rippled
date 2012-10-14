@@ -73,7 +73,7 @@ buster.testCase("Remote functions", {
 	  buster.assert.equals(m.ledger_closed_index, 2);
 	  done();
 	}).on('error', function(m) {
-	  console.log(m);
+	  console.log("error: %s", m);
 
 	  buster.assert(false);
 	}).request();
@@ -94,12 +94,12 @@ buster.testCase("Remote functions", {
 		buster.assert('node' in r);
 		done();
 	      }).on('error', function(m) {
-		console.log(m);
+		console.log("error: %s", m);
 
 		buster.assert(false);
 	      }).request();
 	}).on('error', function(m) {
-	  console.log(m);
+	  console.log("error: %s", m);
 
 	  buster.assert(false);
 	}).request();
@@ -119,14 +119,14 @@ buster.testCase("Remote functions", {
 
 		buster.assert(false);
 	      }).on('error', function(m) {
-		console.log(m);
+		console.log("error: %s", m);
 
 		buster.assert.equals(m.error, 'remoteError');
 		buster.assert.equals(m.remote.error, 'malformedAddress');
 		done();
 	      }).request();
 	}).on('error', function(m) {
-	  console.log(m);
+	  console.log("error: %s", m);
 
 	  buster.assert(false);
 	}).request();
@@ -146,14 +146,14 @@ buster.testCase("Remote functions", {
 
 		buster.assert(false);
 	      }).on('error', function(m) {
-		console.log(m);
+		console.log("error: %s", m);
 
 		buster.assert.equals(m.error, 'remoteError');
 		buster.assert.equals(m.remote.error, 'entryNotFound');
 		done();
 	      }).request();
 	}).on('error', function(m) {
-	  console.log(m);
+	  console.log("error: %s", m);
 
 	  buster.assert(false);
 	}).request();
@@ -175,7 +175,7 @@ buster.testCase("Remote functions", {
 		buster.assert('node_binary' in r);
 		done();
 	      }).on('error', function(m) {
-		console.log(m);
+		console.log("error: %s", m);
 
 		buster.assert(false);
 	      }).request();
@@ -186,7 +186,7 @@ buster.testCase("Remote functions", {
 	}).request();
     },
 
-  '// create account' :
+  'create account' :
     function (done) {
       alpha.transaction()
 	.payment('root', 'alice', Amount.from_json("10000"))
@@ -197,7 +197,7 @@ buster.testCase("Remote functions", {
 	    // Need to verify account and balance.
 	    done();
 	  }).on('error', function(m) {
-	    console.log(m);
+	    console.log("error: %s", m);
 
 	    buster.assert(false);
 	  }).submit();
