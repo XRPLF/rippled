@@ -165,6 +165,7 @@ Remote.prototype.connect_helper = function () {
     if (self.expire) {
       if (self.trace) console.log("remote: was expired");
 
+      ws.onerror = undefined;
       self.done(ws.readyState);
 
     } else {
@@ -300,15 +301,19 @@ Remote.prototype.connect = function (done, timeout) {
 };
 
 // Target stated is disconnected.
+// Note: if exiting or other side is going away, don't need to disconnect.
 Remote.prototype.disconnect = function (done) {
   var self  = this;
   var ws    = this.ws;
+
+  if (self.trace) console.log("remote: disconnect");
   
   ws.onclose = function () {
     if (self.trace) console.log("remote: onclose: %s", ws.readyState);
     done(ws.readyState);
   };
-  
+
+  // ws package has a hard coded 30 second timeout.
   ws.close();
 };
 

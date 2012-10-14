@@ -30,15 +30,17 @@ buster.testCase("WebSocket connection", {
 
   "websocket connect and disconnect" :
     function (done) {
-      var alpha	= remote.remoteConfig(config, "alpha");
+      var alpha	= remote.remoteConfig(config, "alpha", 'TRACE');
 
       alpha.connect(function (stat) {
-	buster.assert(1 == stat);	    // OPEN
+	buster.assert.equals(stat, 1);	    // OPEN
 
 	alpha.disconnect(function (stat) {
-	    buster.assert(3 == stat);	    // CLOSED
+	    buster.assert.equals(stat, 3);  // CLOSED
 	    done();
 	  });
 	}, serverDelay);
     },
 });
+
+// vim:sw=2:sts=2:ts=8

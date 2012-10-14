@@ -7,11 +7,13 @@ var remote  = require("../js/remote.js");
 
 var Amount  = amount.Amount;
 
+var fastTearDown  = true;
+
 // How long to wait for server to start.
 var serverDelay = 1500;
 
 buster.testRunner.timeout = 5000;
-
+ 
 buster.testCase("Remote functions", {
   'setUp' :
     function (done) {
@@ -30,14 +32,23 @@ buster.testCase("Remote functions", {
 
   'tearDown' :
     function (done) {
-      alpha.disconnect(function (stat) {
-	  buster.assert(3 == stat);		// CLOSED
-
-	  server.stop("alpha", function (e) {
-	    buster.refute(e);
-	    done();
-	  });
+      if (fastTearDown) {
+	// Fast tearDown
+	server.stop("alpha", function (e) {
+	  buster.refute(e);
+	  done();
 	});
+      }
+      else {
+	alpha.disconnect(function (stat) {
+	    buster.assert(3 == stat);		// CLOSED
+
+	    server.stop("alpha", function (e) {
+	      buster.refute(e);
+	      done();
+	    });
+	  });
+      }
     },
 
   'request_ledger_current' :
