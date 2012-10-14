@@ -59,7 +59,7 @@ buster.testCase("WebSocket connection", {
     },
 });
 
-buster.testCase("Websocket commands", {
+buster.testCase("Remote functions", {
   'setUp' :
     function (done) {
       server.start("alpha",
@@ -87,114 +87,156 @@ buster.testCase("Websocket commands", {
 	});
     },
 
-  'ledger_current' :
+  'request_ledger_current' :
     function (done) {
-      alpha.request_ledger_current(function (r) {
-	  console.log(r);
+      alpha.request_ledger_current().on('success', function (m) {
+	  console.log(m);
 
-	  buster.assert.equals(r.ledger_current_index, 3);
+	  buster.assert.equals(m.ledger_current_index, 3);
 	  done();
-	});
+	}).on('error', function(m) {
+	  console.log(m);
+
+	  buster.assert(false);
+	}).request();
     },
 
-  'ledger_closed' :
+  'request_ledger_closed' :
     function (done) {
-      alpha.request_ledger_closed(function (r) {
+      alpha.request_ledger_closed().on('success', function (m) {
+	  console.log("result: %s", JSON.stringify(m));
+
+	  buster.assert.equals(m.ledger_closed_index, 2);
+	  done();
+	}).on('error', function(m) {
+	  console.log(m);
+
+	  buster.assert(false);
+	}).request();
+    },
+
+  'manual account_root success' :
+    function (done) {
+      alpha.request_ledger_closed().on('success', function (r) {
+	  // console.log("result: %s", JSON.stringify(r));
+
+	  alpha
+	    .request_ledger_entry('account_root')
+	    .ledger(r.ledger_closed)
+	    .account_root("rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh")
+	    .on('success', function (r) {
+		// console.log("account_root: %s", JSON.stringify(r));
+
+		buster.assert('node' in r);
+		done();
+	      }).on('error', function(m) {
+		console.log(m);
+
+		buster.assert(false);
+	      }).request();
+	}).on('error', function(m) {
+	  console.log(m);
+
+	  buster.assert(false);
+	}).request();
+    },
+
+  'account_root remote malformedAddress' :
+    function (done) {
+      alpha.request_ledger_closed().on('success', function (r) {
 	  console.log("result: %s", JSON.stringify(r));
 
-	  buster.assert.equals(r.ledger_closed_index, 2);
-	  done();
-	});
-    },
+	  alpha
+	    .request_ledger_entry('account_root')
+	    .ledger(r.ledger_closed)
+	    .account_root("zHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh")
+	    .on('success', function (r) {
+		// console.log("account_root: %s", JSON.stringify(r));
 
-  'account_root success' :
-    function (done) {
-      alpha.request_ledger_closed(function (r) {
-	  // console.log("result: %s", JSON.stringify(r));
+		buster.assert(false);
+	      }).on('error', function(m) {
+		console.log(m);
 
-	  buster.refute(r.error);
+		buster.assert.equals(m.error, 'remoteError');
+		buster.assert.equals(m.remote.error, 'malformedAddress');
+		done();
+	      }).request();
+	}).on('error', function(m) {
+	  console.log(m);
 
-	  alpha.request_ledger_entry({
-	      'ledger_closed' : r.ledger_closed,
-	      'type'	      : 'account_root',
-	      'account_root'  : 'rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh'
-	    } , function (r) {
-	      // console.log("account_root: %s", JSON.stringify(r));
-
-	      buster.assert('node' in r);
-	      done();
-	    });
-	});
-    },
-
-  'account_root malformedAddress' :
-    function (done) {
-      alpha.request_ledger_closed(function (r) {
-	  // console.log("result: %s", JSON.stringify(r));
-
-	  buster.refute(r.error);
-
-	  alpha.request_ledger_entry({
-	      'ledger_closed' : r.ledger_closed,
-	      'type'	      : 'account_root',
-	      'account_root'  : 'foobar'
-	    } , function (r) {
-	      // console.log("account_root: %s", JSON.stringify(r));
-
-	      buster.assert.equals(r.error, 'malformedAddress');
-	      done();
-	    });
-	});
+	  buster.assert(false);
+	}).request();
     },
 
   'account_root entryNotFound' :
     function (done) {
-      alpha.request_ledger_closed(function (r) {
+      alpha.request_ledger_closed().on('success', function (r) {
 	  console.log("result: %s", JSON.stringify(r));
 
-	  buster.refute(r.error);
+	  alpha
+	    .request_ledger_entry('account_root')
+	    .ledger(r.ledger_closed)
+	    .account_root(config.accounts.alice.account)
+	    .on('success', function (r) {
+		// console.log("account_root: %s", JSON.stringify(r));
 
-	  alpha.request_ledger_entry({
-	      'ledger_closed' : r.ledger_closed,
-	      'type'	      : 'account_root',
-	      'account_root'  : config.accounts.alice.account,
-	    }, function (r) {
-	      console.log("account_root: %s", JSON.stringify(r));
+		buster.assert(false);
+	      }).on('error', function(m) {
+		console.log(m);
 
-	      buster.assert.equals(r.error, 'entryNotFound');
-	      done();
-	    });
-	});
+		buster.assert.equals(m.error, 'remoteError');
+		buster.assert.equals(m.remote.error, 'entryNotFound');
+		done();
+	      }).request();
+	}).on('error', function(m) {
+	  console.log(m);
+
+	  buster.assert(false);
+	}).request();
     },
 
   'ledger_entry index' :
     function (done) {
-      alpha.request_ledger_closed(function (r) {
-	  // console.log("result: %s", JSON.stringify(r));
+      alpha.request_ledger_closed().on('success', function (r) {
+	  console.log("result: %s", JSON.stringify(r));
 
-	  buster.refute(r.error);
+	  alpha
+	    .request_ledger_entry('index')
+	    .ledger(r.ledger_closed)
+	    .account_root(config.accounts.alice.account)
+	    .index("2B6AC232AA4C4BE41BF49D2459FA4A0347E1B543A4C92FCEE0821C0201E2E9A8")
+	    .on('success', function (r) {
+		// console.log("account_root: %s", JSON.stringify(r));
 
-	  alpha.request_ledger_entry({
-	      'ledger_closed' : r.ledger_closed,
-	      'type'	      : 'account_root',
-	      'index'	      : "2B6AC232AA4C4BE41BF49D2459FA4A0347E1B543A4C92FCEE0821C0201E2E9A8",
-	    } , function (r) {
-	      console.log("node: %s", JSON.stringify(r));
+		buster.assert('node_binary' in r);
+		done();
+	      }).on('error', function(m) {
+		console.log(m);
 
-	      buster.assert('node_binary' in r);
-	      done();
-	    });
-	});
+		buster.assert(false);
+	      }).request();
+	}).on('error', function(m) {
+	  console.log(m);
+
+	  buster.assert(false);
+	}).request();
     },
 
-  'create account' :
+  '// create account' :
     function (done) {
-      alpha.send(undefined, 'root', 'alice', Amount.from_json("10000"), undefined, 'CREATE', function (r) {
-	  console.log(r);
+      alpha.transaction()
+	.payment('root', 'alice', Amount.from_json("10000"))
+	.flags('CreateAccount')
+	.on('success', function (r) {
+	    // console.log("account_root: %s", JSON.stringify(r));
 
-	  buster.refute(r.error);
-	  done();
-	});
+	    // Need to verify account and balance.
+	    done();
+	  }).on('error', function(m) {
+	    console.log(m);
+
+	    buster.assert(false);
+	  }).submit();
     },
 });
 
