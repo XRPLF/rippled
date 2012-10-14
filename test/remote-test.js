@@ -58,7 +58,8 @@ buster.testCase("Remote functions", {
 
 	  buster.assert.equals(m.ledger_current_index, 3);
 	  done();
-	}).on('error', function(m) {
+	})
+      .on('error', function(m) {
 	  console.log(m);
 
 	  buster.assert(false);
@@ -72,7 +73,8 @@ buster.testCase("Remote functions", {
 
 	  buster.assert.equals(m.ledger_closed_index, 2);
 	  done();
-	}).on('error', function(m) {
+	})
+      .on('error', function(m) {
 	  console.log("error: %s", m);
 
 	  buster.assert(false);
@@ -93,12 +95,14 @@ buster.testCase("Remote functions", {
 
 		buster.assert('node' in r);
 		done();
-	      }).on('error', function(m) {
+	      })
+	    .on('error', function(m) {
 		console.log("error: %s", m);
 
 		buster.assert(false);
 	      }).request();
-	}).on('error', function(m) {
+	})
+      .on('error', function(m) {
 	  console.log("error: %s", m);
 
 	  buster.assert(false);
@@ -118,14 +122,16 @@ buster.testCase("Remote functions", {
 		// console.log("account_root: %s", JSON.stringify(r));
 
 		buster.assert(false);
-	      }).on('error', function(m) {
+	      })
+	    .on('error', function(m) {
 		console.log("error: %s", m);
 
 		buster.assert.equals(m.error, 'remoteError');
 		buster.assert.equals(m.remote.error, 'malformedAddress');
 		done();
 	      }).request();
-	}).on('error', function(m) {
+	})
+      .on('error', function(m) {
 	  console.log("error: %s", m);
 
 	  buster.assert(false);
@@ -145,14 +151,16 @@ buster.testCase("Remote functions", {
 		// console.log("account_root: %s", JSON.stringify(r));
 
 		buster.assert(false);
-	      }).on('error', function(m) {
+	      })
+	    .on('error', function(m) {
 		console.log("error: %s", m);
 
 		buster.assert.equals(m.error, 'remoteError');
 		buster.assert.equals(m.remote.error, 'entryNotFound');
 		done();
 	      }).request();
-	}).on('error', function(m) {
+	})
+      .on('error', function(m) {
 	  console.log("error: %s", m);
 
 	  buster.assert(false);
@@ -174,12 +182,14 @@ buster.testCase("Remote functions", {
 
 		buster.assert('node_binary' in r);
 		done();
-	      }).on('error', function(m) {
+	      })
+	    .on('error', function(m) {
 		console.log("error: %s", m);
 
 		buster.assert(false);
 	      }).request();
-	}).on('error', function(m) {
+	})
+      .on('error', function(m) {
 	  console.log(m);
 
 	  buster.assert(false);
@@ -196,7 +206,8 @@ buster.testCase("Remote functions", {
 
 	    // Need to verify account and balance.
 	    done();
-	  }).on('error', function(m) {
+	  })
+	.on('error', function(m) {
 	    console.log("error: %s", m);
 
 	    buster.assert(false);
