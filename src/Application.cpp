@@ -222,11 +222,21 @@ void Application::loadOldLedger()
 
 		cLog(lsINFO) << "Loading ledger " << lastLedger->getHash() << " seq:" << lastLedger->getLedgerSeq();
 
+		if (lastLedger->getAccountHash().isZero())
+		{
+			cLog(lsFATAL) << "Ledger is empty.";
+			assert(false);
+			exit(-1);
+		}
+
 		if (!lastLedger->walkLedger())
 		{
 			cLog(lsFATAL) << "Ledger is missing nodes.";
 			exit(-1);
 		}
+
+		assert(lastLedger->getAccountHash() == lastLedger->peekAccountStateMap()->getHash());
+		assert(lastLedger->getTransHash() == lastLedger->peekTransactionMap()->getHash());
 
 		Ledger::pointer openLedger = boost::make_shared<Ledger>(false, boost::ref(*lastLedger));
 		mMasterLedger.switchLedgers(lastLedger, openLedger);
