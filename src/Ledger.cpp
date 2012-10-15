@@ -977,13 +977,13 @@ uint256 Ledger::getRippleStateIndex(const NewcoinAddress& naA, const NewcoinAddr
 bool Ledger::walkLedger()
 {
 	std::vector<SHAMapMissingNode> missingNodes;
-	mAccountStateMap->walkMap(missingNodes, 6);
+	mAccountStateMap->walkMap(missingNodes, 32);
 	if (sLog(lsINFO) && !missingNodes.empty())
 	{
-		Log(lsINFO) << missingNodes.size() << " missing account nodes";
+		Log(lsINFO) << missingNodes.size() << " missing account node(s)";
 		Log(lsINFO) << "First: " << missingNodes[0];
 	}
-	mTransactionMap->walkMap(missingNodes, 6);
+	mTransactionMap->walkMap(missingNodes, 32);
 	return missingNodes.empty();
 }
 
