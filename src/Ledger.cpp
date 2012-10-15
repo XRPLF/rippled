@@ -957,6 +957,12 @@ uint256 Ledger::getRippleStateIndex(const NewcoinAddress& naA, const NewcoinAddr
 	return s.getSHA512Half();
 }
 
-
+bool Ledger::walkLedger()
+{
+	std::vector<SHAMapMissingNode> missingNodes;
+	mAccountStateMap->walkMap(missingNodes, 1);
+	mTransactionMap->walkMap(missingNodes, 1);
+	return missingNodes.empty();
+}
 
 // vim:ts=4

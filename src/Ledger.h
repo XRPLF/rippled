@@ -280,6 +280,8 @@ public:
 
 	void addJson(Json::Value&, int options);
 
+	bool walkLedger();
+
 	static bool unitTest();
 };
 
