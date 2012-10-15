@@ -52,8 +52,10 @@ bool HashedObjectStore::store(HashedObjectType type, uint32 index,
 
 void HashedObjectStore::bulkWrite()
 {
+	std::vector< boost::shared_ptr<HashedObject> > set;
+	while (1)
 	{
-		std::vector< boost::shared_ptr<HashedObject> > set;
+		set.clear();
 		set.reserve(128);
 
 		{
@@ -65,6 +67,7 @@ void HashedObjectStore::bulkWrite()
 				return;
 			}
 		}
+		cLog(lsINFO) << "HOS: writing " << set.size();
 
 		static boost::format fExists("SELECT ObjType FROM CommittedObjects WHERE Hash = '%s';");
 		static boost::format
@@ -95,7 +98,7 @@ void HashedObjectStore::bulkWrite()
 		}
 
 		db->executeSQL("END TRANSACTION;");
-	} while(1);
+	}
 }
 
 HashedObject::pointer HashedObjectStore::retrieve(const uint256& hash)
