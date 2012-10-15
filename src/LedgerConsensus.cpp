@@ -18,7 +18,7 @@
 
 #define TRUST_NETWORK
 
-// #define LC_DEBUG
+#define LC_DEBUG
 
 typedef std::pair<const uint160, LedgerProposal::pointer> u160_prop_pair;
 typedef std::pair<const uint256, LCTransaction::pointer> u256_lct_pair;
@@ -58,7 +58,6 @@ void TransactionAcquire::trigger(Peer::ref peer, bool timer)
 	}
 	if (!mHaveRoot)
 	{
-		cLog(lsINFO) << "have no root";
 		ripple::TMGetLedger tmGL;
 		tmGL.set_ledgerhash(mHash.begin(), mHash.size());
 		tmGL.set_itype(ripple::liTS_CANDIDATE);
@@ -301,37 +300,9 @@ void LedgerConsensus::checkLCL()
 
 void LedgerConsensus::handleLCL(const uint256& lclHash)
 {
-	mPrevLedgerHash = lclHash;
-	if (mPreviousLedger->getHash() == mPrevLedgerHash)
-		return;
-
-	Ledger::pointer newLCL = theApp->getMasterLedger().getLedgerByHash(lclHash);
-	if (newLCL)
-		mPreviousLedger = newLCL;
-	else if (mAcquiringLedger && (mAcquiringLedger->getHash() == mPrevLedgerHash))
-		return;
-	else
-	{
-		cLog(lsWARNING) << "Need consensus ledger " << mPrevLedgerHash;
-
-		mAcquiringLedger = theApp->getMasterLedgerAcquire().findCreate(mPrevLedgerHash);
-		std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
-
-		bool found = false;
-		BOOST_FOREACH(Peer::ref peer, peerList)
-		{
-			if (peer->hasLedger(mPrevLedgerHash))
-			{
-				found = true;
-				mAcquiringLedger->peerHas(peer);
-			}
-		}
-
-		if (!found)
-		{
-			BOOST_FOREACH(Peer::ref peer, peerList)
-				mAcquiringLedger->peerHas(peer);
-		}
+	if (mPrevLedgerHash != lclHash)
+	{ // first time switching to this ledger
+		mPrevLedgerHash = lclHash;
 
 		if (mHaveCorrectLCL && mProposing && mOurPosition)
 		{
@@ -339,15 +310,47 @@ void LedgerConsensus::handleLCL(const uint256& lclHash)
 			mOurPosition->bowOut();
 			propose();
 		}
-		mHaveCorrectLCL = false;
 		mProposing = false;
 		mValidating = false;
-		mCloseTimes.clear();
 		mPeerPositions.clear();
+		mPeerData.clear();
 		mDisputes.clear();
+		mCloseTimes.clear();
 		mDeadNodes.clear();
 		playbackProposals();
-		return;
+	}
+
+	if (mPreviousLedger->getHash() != mPrevLedgerHash)
+	{ // we need to switch the ledger we're working from
+		Ledger::pointer newLCL = theApp->getMasterLedger().getLedgerByHash(lclHash);
+		if (newLCL)
+			mPreviousLedger = newLCL;
+		else if (!mAcquiringLedger || (mAcquiringLedger->getHash() != mPrevLedgerHash))
+		{ // need to start acquiring the correct consensus LCL
+			cLog(lsWARNING) << "Need consensus ledger " << mPrevLedgerHash;
+
+			mAcquiringLedger = theApp->getMasterLedgerAcquire().findCreate(mPrevLedgerHash);
+			std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
+
+			bool found = false;
+			BOOST_FOREACH(Peer::ref peer, peerList)
+			{
+				if (peer->hasLedger(mPrevLedgerHash))
+				{
+					found = true;
+					mAcquiringLedger->peerHas(peer);
+				}
+			}
+
+			if (!found)
+			{
+				BOOST_FOREACH(Peer::ref peer, peerList)
+					mAcquiringLedger->peerHas(peer);
+			}
+
+			mHaveCorrectLCL = false;
+			return;
+		}
 	}
 
 	cLog(lsINFO) << "Acquired the consensus ledger " << mPrevLedgerHash;
@@ -356,7 +359,6 @@ void LedgerConsensus::handleLCL(const uint256& lclHash)
 	mCloseResolution = ContinuousLedgerTiming::getNextLedgerTimeResolution(
 		mPreviousLedger->getCloseResolution(), mPreviousLedger->getCloseAgree(),
 		mPreviousLedger->getLedgerSeq() + 1);
-	playbackProposals();
 }
 
 void LedgerConsensus::takeInitialPosition(Ledger& initialLedger)
@@ -675,7 +677,7 @@ void LedgerConsensus::updateOurPositions()
 		for (std::map<uint32, int>::iterator it = closeTimes.begin(), end = closeTimes.end(); it != end; ++it)
 		{
 			cLog(lsINFO) << "CCTime: " << it->first << " has " << it->second << ", " << thresh << " required";
-			if (it->second > thresh)
+			if (it->second >= thresh)
 			{
 				cLog(lsINFO) << "Close time consensus reached: " << it->first;
 				mHaveCloseTimeConsensus = true;
@@ -1114,6 +1116,15 @@ void LedgerConsensus::accept(SHAMap::ref set)
 	newLCL->setAccepted(closeTime, mCloseResolution, closeTimeCorrect);
 	newLCL->updateHash();
 	uint256 newLCLHash = newLCL->getHash();
+
+	if (sLog(lsTRACE))
+	{
+		Log(lsTRACE) << "newLCL";
+		Json::Value p;
+		newLCL->addJson(p, LEDGER_JSON_DUMP_TXNS | LEDGER_JSON_DUMP_STATE);
+		Log(lsTRACE) << p;
+	}
+
 	statusChange(ripple::neACCEPTED_LEDGER, *newLCL);
 	if (mValidating)
 	{
@@ -1181,13 +1192,6 @@ void LedgerConsensus::accept(SHAMap::ref set)
 		theApp->getOPs().closeTimeOffset(offset);
 	}
 
-	if (sLog(lsTRACE))
-	{
-		Log(lsTRACE) << "newLCL";
-		Json::Value p;
-		newLCL->addJson(p, LEDGER_JSON_DUMP_TXNS | LEDGER_JSON_DUMP_STATE);
-		Log(lsTRACE) << p;
-	}
 }
 
 void LedgerConsensus::endConsensus()

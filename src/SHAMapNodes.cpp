@@ -278,6 +278,8 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned 
 		}
 		else if (prefix == sHP_LeafNode)
 		{
+			if (s.getLength() < 32)
+				throw std::runtime_error("short PLN node");
 			uint256 u;
 			s.get256(u, s.getLength() - 32);
 			s.chop(32);
@@ -291,7 +293,7 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned 
 		}
 		else if (prefix == sHP_InnerNode)
 		{
-			if (rawNode.size() != (512 + 4))
+			if (s.getLength() != 512)
 				throw std::runtime_error("invalid PIN node");
 			for (int i = 0; i < 16; ++i)
 				s.get256(mHashes[i] , i * 32);
@@ -347,9 +349,11 @@ bool SHAMapTreeNode::updateHash()
 	{
 		nh = Serializer::getPrefixHash(sHP_TransactionNode, mItem->peekData());
 	}
-	else assert(false);
+	else
+		assert(false);
 
-	if (nh == mHash) return false;
+	if (nh == mHash)
+		return false;
 	mHash = nh;
 	return true;
 }
@@ -357,10 +361,12 @@ bool SHAMapTreeNode::updateHash()
 void SHAMapTreeNode::addRaw(Serializer& s, SHANodeFormat format)
 {
 	assert((format == snfPREFIX) || (format == snfWIRE));
-	if (mType == tnERROR) throw std::runtime_error("invalid I node type");
+	if (mType == tnERROR)
+		throw std::runtime_error("invalid I node type");
 
 	if (mType == tnINNER)
 	{
+		assert(!isEmpty());
 		if (format == snfPREFIX)
 		{
 			s.add32(sHP_InnerNode);
@@ -449,6 +455,14 @@ SHAMapItem::pointer SHAMapTreeNode::getItem() const
 	return boost::make_shared<SHAMapItem>(*mItem);
 }
 
+bool SHAMapTreeNode::isEmpty() const
+{
+	assert(isInner());
+	for (int i = 0; i < 16; ++i)
+		if (mHashes[i].isNonZero()) return false;
+	return true;
+}
+
 int SHAMapTreeNode::getBranchCount() const
 {
 	assert(isInner());
@@ -513,9 +527,9 @@ bool SHAMapTreeNode::setChildHash(int m, const uint256 &hash)
 std::ostream& operator<<(std::ostream& out, const SHAMapMissingNode& mn)
 {
 	if (mn.getMapType() == smtTRANSACTION)
-		out << "Missing/TXN(" << mn.getNodeID() << ")";
+		out << "Missing/TXN(" << mn.getNodeID() << "/" << mn.getNodeHash() << ")";
 	else if (mn.getMapType() == smtSTATE)
-		out << "Missing/STA(" << mn.getNodeID() << ")";
+		out << "Missing/STA(" << mn.getNodeID() << "/" << mn.getNodeHash() << ")";
 	else
 		out << "Missing/" << mn.getNodeID();
 	return out;

@@ -51,7 +51,7 @@ void LedgerEntrySet::swapWith(LedgerEntrySet& e)
 // This is basically: copy-on-read.
 SLE::pointer LedgerEntrySet::getEntry(const uint256& index, LedgerEntryAction& action)
 {
-	boost::unordered_map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find(index);
+	std::map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find(index);
 	if (it == mEntries.end())
 	{
 		action = taaNONE;
@@ -98,7 +98,7 @@ SLE::pointer LedgerEntrySet::entryCache(LedgerEntryType letType, const uint256& 
 
 LedgerEntryAction LedgerEntrySet::hasEntry(const uint256& index) const
 {
-	boost::unordered_map<uint256, LedgerEntrySetEntry>::const_iterator it = mEntries.find(index);
+	std::map<uint256, LedgerEntrySetEntry>::const_iterator it = mEntries.find(index);
 	if (it == mEntries.end())
 		return taaNONE;
 	return it->second.mAction;
@@ -106,7 +106,7 @@ LedgerEntryAction LedgerEntrySet::hasEntry(const uint256& index) const
 
 void LedgerEntrySet::entryCache(SLE::ref sle)
 {
-	boost::unordered_map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find(sle->getIndex());
+	std::map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find(sle->getIndex());
 	if (it == mEntries.end())
 	{
 		mEntries.insert(std::make_pair(sle->getIndex(), LedgerEntrySetEntry(sle, taaCACHED, mSeq)));
@@ -127,7 +127,7 @@ void LedgerEntrySet::entryCache(SLE::ref sle)
 
 void LedgerEntrySet::entryCreate(SLE::ref sle)
 {
-	boost::unordered_map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find(sle->getIndex());
+	std::map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find(sle->getIndex());
 	if (it == mEntries.end())
 	{
 		mEntries.insert(std::make_pair(sle->getIndex(), LedgerEntrySetEntry(sle, taaCREATE, mSeq)));
@@ -157,7 +157,7 @@ void LedgerEntrySet::entryCreate(SLE::ref sle)
 
 void LedgerEntrySet::entryModify(SLE::ref sle)
 {
-	boost::unordered_map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find(sle->getIndex());
+	std::map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find(sle->getIndex());
 	if (it == mEntries.end())
 	{
 		mEntries.insert(std::make_pair(sle->getIndex(), LedgerEntrySetEntry(sle, taaMODIFY, mSeq)));
@@ -192,7 +192,7 @@ void LedgerEntrySet::entryModify(SLE::ref sle)
 
 void LedgerEntrySet::entryDelete(SLE::ref sle)
 {
-	boost::unordered_map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find(sle->getIndex());
+	std::map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find(sle->getIndex());
 	if (it == mEntries.end())
 	{
 		mEntries.insert(std::make_pair(sle->getIndex(), LedgerEntrySetEntry(sle, taaDELETE, mSeq)));
@@ -233,7 +233,7 @@ Json::Value LedgerEntrySet::getJson(int) const
 	Json::Value ret(Json::objectValue);
 
 	Json::Value nodes(Json::arrayValue);
-	for (boost::unordered_map<uint256, LedgerEntrySetEntry>::const_iterator it = mEntries.begin(),
+	for (std::map<uint256, LedgerEntrySetEntry>::const_iterator it = mEntries.begin(),
 			end = mEntries.end(); it != end; ++it)
 	{
 		Json::Value entry(Json::objectValue);
@@ -269,7 +269,7 @@ Json::Value LedgerEntrySet::getJson(int) const
 SLE::pointer LedgerEntrySet::getForMod(const uint256& node, Ledger::ref ledger,
 	boost::unordered_map<uint256, SLE::pointer>& newMods)
 {
-	boost::unordered_map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find(node);
+	std::map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find(node);
 	if (it != mEntries.end())
 	{
 		if (it->second.mAction == taaDELETE)
@@ -310,7 +310,8 @@ bool LedgerEntrySet::threadTx(const NewcoinAddress& threadTo, Ledger::ref ledger
 	return threadTx(sle, ledger, newMods);
 }
 
-bool LedgerEntrySet::threadTx(SLE::ref threadTo, Ledger::ref ledger, boost::unordered_map<uint256, SLE::pointer>& newMods)
+bool LedgerEntrySet::threadTx(SLE::ref threadTo, Ledger::ref ledger,
+	boost::unordered_map<uint256, SLE::pointer>& newMods)
 {  // node = the node that was modified/deleted/created
    // threadTo = the node that needs to know
 	uint256 prevTxID;
@@ -323,7 +324,8 @@ bool LedgerEntrySet::threadTx(SLE::ref threadTo, Ledger::ref ledger, boost::unor
 	return false;
 }
 
-bool LedgerEntrySet::threadOwners(SLE::ref node, Ledger::ref ledger, boost::unordered_map<uint256, SLE::pointer>& newMods)
+bool LedgerEntrySet::threadOwners(SLE::ref node, Ledger::ref ledger,
+	boost::unordered_map<uint256, SLE::pointer>& newMods)
 { // thread new or modified node to owner or owners
 	if (node->hasOneOwner()) // thread to owner's account
 	{
@@ -351,7 +353,7 @@ void LedgerEntrySet::calcRawMeta(Serializer& s)
 	// Entries modified only as a result of building the transaction metadata
 	boost::unordered_map<uint256, SLE::pointer> newMod;
 
-	for (boost::unordered_map<uint256, LedgerEntrySetEntry>::const_iterator it = mEntries.begin(),
+	for (std::map<uint256, LedgerEntrySetEntry>::const_iterator it = mEntries.begin(),
 			end = mEntries.end(); it != end; ++it)
 	{
 		int nType = TMNEndOfMetadata;
@@ -410,8 +412,10 @@ void LedgerEntrySet::calcRawMeta(Serializer& s)
 
 				if (origNode->getType() == ltRIPPLE_STATE)
 				{
-					metaNode.addAccount(TMSLowID, NewcoinAddress::createAccountID(origNode->getFieldAmount(sfLowLimit).getIssuer()));
-					metaNode.addAccount(TMSHighID, NewcoinAddress::createAccountID(origNode->getFieldAmount(sfHighLimit).getIssuer()));
+					metaNode.addAccount(TMSLowID,
+						NewcoinAddress::createAccountID(origNode->getFieldAmount(sfLowLimit).getIssuer()));
+					metaNode.addAccount(TMSHighID,
+						NewcoinAddress::createAccountID(origNode->getFieldAmount(sfHighLimit).getIssuer()));
 				}
 			}
 

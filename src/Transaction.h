@@ -15,6 +15,7 @@
 #include "Serializer.h"
 #include "SHAMap.h"
 #include "SerializedTransaction.h"
+#include "TransactionErr.h"
 
 enum TransStatus
 {
@@ -43,6 +44,7 @@ private:
 
 	uint32			mInLedger;
 	TransStatus		mStatus;
+	TER				mResult;
 
 	SerializedTransaction::pointer mTransaction;
 
@@ -279,6 +281,9 @@ public:
 	std::vector<unsigned char> getSignature() const	{ return mTransaction->getSignature(); }
 	uint32 getLedger() const						{ return mInLedger; }
 	TransStatus getStatus() const					{ return mStatus; }
+
+	TER getResult()									{ return mResult; }
+	void setResult(TER terResult)					{ mResult = terResult; }
 
 	void setStatus(TransStatus status, uint32 ledgerSeq);
 	void setStatus(TransStatus status) { mStatus=status; }

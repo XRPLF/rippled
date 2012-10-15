@@ -959,7 +959,19 @@ void WSConnection::doSubmit(Json::Value& jvResult, const Json::Value& jvRequest)
 
 		try
 		{
-			jvResult["submitted"]	= tpTrans->getJson(0);
+			jvResult["transaction"]		= tpTrans->getJson(0);
+
+			if (temUNCERTAIN != tpTrans->getResult())
+			{
+				std::string	sToken;
+				std::string	sHuman;
+
+				transResultInfo(tpTrans->getResult(), sToken, sHuman);
+
+				jvResult["engine_result"]			= sToken;
+				jvResult["engine_result_code"]		= tpTrans->getResult();
+				jvResult["engine_result_message"]	= sHuman;
+			}
 		}
 		catch (std::exception& e)
 		{

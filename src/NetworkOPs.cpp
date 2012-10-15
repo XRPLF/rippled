@@ -117,6 +117,8 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 
 	TER r = mLedgerMaster->doTransaction(*trans->getSTransaction(), tapOPEN_LEDGER);
 
+	trans->setResult(r);
+
 #ifdef DEBUG
 	if (r != tesSUCCESS)
 	{
@@ -136,7 +138,7 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 		mLedgerMaster->addHeldTransaction(trans);
 		return trans;
 	}
-	if ((r == tefPAST_SEQ))
+	if (r == tefPAST_SEQ)
 	{ // duplicate or conflict
 		cLog(lsINFO) << "Transaction is obsolete";
 		trans->setStatus(OBSOLETE);
@@ -894,12 +896,12 @@ Json::Value NetworkOPs::pubBootstrapAccountInfo(Ledger::ref lpAccepted, const Ne
 {
 	Json::Value			jvObj(Json::objectValue);
 
-	jvObj["type"]		= "accountInfoBootstrap";
-	jvObj["account"]	= naAccountID.humanAccountID();
-	jvObj["owner"]		= getOwnerInfo(lpAccepted, naAccountID);
-	jvObj["seq"]		= lpAccepted->getLedgerSeq();
-	jvObj["hash"]		= lpAccepted->getHash().ToString();
-	jvObj["time"]		= Json::Value::UInt(lpAccepted->getCloseTimeNC());
+	jvObj["type"]					= "accountInfoBootstrap";
+	jvObj["account"]				= naAccountID.humanAccountID();
+	jvObj["owner"]					= getOwnerInfo(lpAccepted, naAccountID);
+	jvObj["ledger_closed_index"]	= lpAccepted->getLedgerSeq();
+	jvObj["ledger_closed"]			= lpAccepted->getHash().ToString();
+	jvObj["time"]					= Json::Value::UInt(lpAccepted->getCloseTimeNC());
 
 	return jvObj;
 }
@@ -934,7 +936,7 @@ void NetworkOPs::pubLedger(Ledger::ref lpAccepted)
 		{
 			Json::Value	jvObj(Json::objectValue);
 
-			jvObj["type"]					= "ledgerAccepted";
+			jvObj["type"]					= "ledgerClosed";
 			jvObj["ledger_closed_index"]	= lpAccepted->getLedgerSeq();
 			jvObj["ledger_closed"]			= lpAccepted->getHash().ToString();
 			jvObj["time"]					= Json::Value::UInt(lpAccepted->getCloseTimeNC());
@@ -959,11 +961,11 @@ void NetworkOPs::pubLedger(Ledger::ref lpAccepted)
 
 			Json::Value	jvObj(Json::objectValue);
 
-			jvObj["type"]		= "ledgerAcceptedAccounts";
-			jvObj["seq"]		= lpAccepted->getLedgerSeq();
-			jvObj["hash"]		= lpAccepted->getHash().ToString();
-			jvObj["time"]		= Json::Value::UInt(lpAccepted->getCloseTimeNC());
-			jvObj["accounts"]	= jvAccounts;
+			jvObj["type"]					= "ledgerClosedAccounts";
+			jvObj["ledger_closed_index"]	= lpAccepted->getLedgerSeq();
+			jvObj["ledger_closed"]			= lpAccepted->getHash().ToString();
+			jvObj["time"]					= Json::Value::UInt(lpAccepted->getCloseTimeNC());
+			jvObj["accounts"]				= jvAccounts;
 
 			BOOST_FOREACH(InfoSub* ispListener, mSubLedgerAccounts)
 			{
@@ -990,12 +992,12 @@ void NetworkOPs::pubLedger(Ledger::ref lpAccepted)
 
 				if (bAll)
 				{
-					pubTransactionAll(lpAccepted, *stTxn, terResult, "accepted");
+					pubTransactionAll(lpAccepted, *stTxn, terResult, "closed");
 				}
 
 				if (bAccounts)
 				{
-					pubTransactionAccounts(lpAccepted, *stTxn, terResult, "accepted");
+					pubTransactionAccounts(lpAccepted, *stTxn, terResult, "closed");
 				}
 			}
 		}
@@ -1020,27 +1022,35 @@ void NetworkOPs::pubLedger(Ledger::ref lpAccepted)
 	// XXX Publish delta information for accounts.
 }
 
-Json::Value NetworkOPs::transJson(const SerializedTransaction& stTxn, TER terResult, const std::string& strStatus, int iSeq, const std::string& strType)
+Json::Value NetworkOPs::transJson(const SerializedTransaction& stTxn, TER terResult, bool bAccepted, Ledger::ref lpCurrent, const std::string& strType)
 {
 	Json::Value	jvObj(Json::objectValue);
-	std::string	strToken;
-	std::string	strHuman;
+	std::string	sToken;
+	std::string	sHuman;
 
-	transResultInfo(terResult, strToken, strHuman);
+	transResultInfo(terResult, sToken, sHuman);
 
 	jvObj["type"]			= strType;
 	jvObj["transaction"]	= stTxn.getJson(0);
-	jvObj["transaction"]["inLedger"] = iSeq;
-	jvObj["transaction"]["status"] = strStatus;
-	jvObj["result"]			= strToken;
-	jvObj["result_code"]	= terResult;
+	if (bAccepted) {
+		jvObj["ledger_closed_index"]	= lpCurrent->getLedgerSeq();
+		jvObj["ledger_closed"]			= lpCurrent->getHash().ToString();
+	}
+	else
+	{
+		jvObj["ledger_current_index"]	= lpCurrent->getLedgerSeq();
+	}
+	jvObj["status"]					= bAccepted ? "closed" : "proposed";
+	jvObj["engine_result"]			= sToken;
+	jvObj["engine_result_code"]		= terResult;
+	jvObj["engine_result_message"]	= sHuman;
 
 	return jvObj;
 }
 
-void NetworkOPs::pubTransactionAll(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult, const char* pState)
+void NetworkOPs::pubTransactionAll(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult, bool bAccepted)
 {
-	Json::Value	jvObj	= transJson(stTxn, terResult, pState, lpCurrent->getLedgerSeq(), "transaction");
+	Json::Value	jvObj	= transJson(stTxn, terResult, bAccepted, lpCurrent, "transaction");
 
 	BOOST_FOREACH(InfoSub* ispListener, mSubTransaction)
 	{
@@ -1048,7 +1058,7 @@ void NetworkOPs::pubTransactionAll(Ledger::ref lpCurrent, const SerializedTransa
 	}
 }
 
-void NetworkOPs::pubTransactionAccounts(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult, const char* pState)
+void NetworkOPs::pubTransactionAccounts(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult, bool bAccepted)
 {
 	boost::unordered_set<InfoSub*>	usisNotify;
 
@@ -1074,7 +1084,7 @@ void NetworkOPs::pubTransactionAccounts(Ledger::ref lpCurrent, const SerializedT
 
 	if (!usisNotify.empty())
 	{
-		Json::Value	jvObj	= transJson(stTxn, terResult, pState, lpCurrent->getLedgerSeq(), "account");
+		Json::Value	jvObj	= transJson(stTxn, terResult, bAccepted, lpCurrent, "account");
 
 		BOOST_FOREACH(InfoSub* ispListener, usisNotify)
 		{
