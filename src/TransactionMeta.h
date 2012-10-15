@@ -81,6 +81,9 @@ public:
 	virtual void addRaw(Serializer&) const;
 	virtual Json::Value getJson(int) const;
 
+	const uint256& getPrevTxID() const		{ return mPrevTxID; }
+	uint32 getPrevLgr() const				{ return mPrevLgrSeq; }
+
 protected:
 	virtual TransactionMetaNodeEntry* duplicate(void) const { return new TMNEThread(*this); }
 	virtual int compare(const TransactionMetaNodeEntry&) const;
@@ -175,7 +178,7 @@ public:
 protected:
 	uint256 mTransactionID;
 	uint32 mLedger;
-	std::map<uint256, TransactionMetaNode> mNodes;
+	std::map<uint256, TransactionMetaNode> mNodes; // must be an ordered set
 
 public:
 	TransactionMetaSet() : mLedger(0) { ; }

@@ -195,7 +195,11 @@ bool TransactionMetaNode::thread(const uint256& prevTx, uint32 prevLgr)
 {
 	BOOST_FOREACH(TransactionMetaNodeEntry& it, mEntries)
 		if (it.getType() == TMSThread)
+		{
+			TMNEThread* a = dynamic_cast<TMNEThread *>(&it);
+			assert(a && (a->getPrevTxID() == prevTx) && (a->getPrevLgr() == prevLgr));
 			return false;
+		}
 	addNode(new TMNEThread(prevTx, prevLgr));
 	return true;
 }
@@ -267,8 +271,7 @@ TransactionMetaSet::TransactionMetaSet(uint32 ledger, const std::vector<unsigned
 void TransactionMetaSet::addRaw(Serializer& s)
 {
 	s.add256(mTransactionID);
-	for (std::map<uint256, TransactionMetaNode>::iterator it = mNodes.begin(), end = mNodes.end();
-			it != end; ++it)
+	for (std::map<uint256, TransactionMetaNode>::iterator it = mNodes.begin(), end = mNodes.end(); it != end; ++it)
 		it->second.addRaw(s);
 	s.add8(TMNEndOfMetadata);
 }

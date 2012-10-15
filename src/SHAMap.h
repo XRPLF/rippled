@@ -195,6 +195,7 @@ public:
 	bool isInnerNode() const { return !mItem; }
 	bool setChildHash(int m, const uint256& hash);
 	bool isEmptyBranch(int m) const { return !mHashes[m]; }
+	bool isEmpty() const;
 	int getBranchCount() const;
 	void makeInner();
 	const uint256& getChildHash(int m) const
@@ -399,6 +400,8 @@ public:
 	std::list<std::vector<unsigned char> > getTrustedPath(const uint256& index);
 	static std::vector<unsigned char> checkTrustedPath(const uint256& ledgerHash, const uint256& leafIndex,
 		const std::list<std::vector<unsigned char> >& path);
+
+	void walkMap(std::vector<SHAMapMissingNode>& missingNodes, int maxMissing);
 
 	bool deepCompare(SHAMap& other);
 	virtual void dump(bool withHashes = false);

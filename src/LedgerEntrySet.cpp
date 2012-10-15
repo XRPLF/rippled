@@ -310,7 +310,8 @@ bool LedgerEntrySet::threadTx(const NewcoinAddress& threadTo, Ledger::ref ledger
 	return threadTx(sle, ledger, newMods);
 }
 
-bool LedgerEntrySet::threadTx(SLE::ref threadTo, Ledger::ref ledger, boost::unordered_map<uint256, SLE::pointer>& newMods)
+bool LedgerEntrySet::threadTx(SLE::ref threadTo, Ledger::ref ledger,
+	boost::unordered_map<uint256, SLE::pointer>& newMods)
 {  // node = the node that was modified/deleted/created
    // threadTo = the node that needs to know
 	uint256 prevTxID;
@@ -323,7 +324,8 @@ bool LedgerEntrySet::threadTx(SLE::ref threadTo, Ledger::ref ledger, boost::unor
 	return false;
 }
 
-bool LedgerEntrySet::threadOwners(SLE::ref node, Ledger::ref ledger, boost::unordered_map<uint256, SLE::pointer>& newMods)
+bool LedgerEntrySet::threadOwners(SLE::ref node, Ledger::ref ledger,
+	boost::unordered_map<uint256, SLE::pointer>& newMods)
 { // thread new or modified node to owner or owners
 	if (node->hasOneOwner()) // thread to owner's account
 	{

@@ -230,11 +230,13 @@ void SHAMap::returnNode(SHAMapTreeNode::pointer& node, bool modify)
 	assert(node->getSeq() <= mSeq);
 	if (node && modify && (node->getSeq() != mSeq))
 	{ // have a CoW
-		if (mDirtyNodes) (*mDirtyNodes)[*node] = node;
 		node = boost::make_shared<SHAMapTreeNode>(*node, mSeq);
+		if (mDirtyNodes)
+			(*mDirtyNodes)[*node] = node;
 		assert(node->isValid());
 		mTNByID[*node] = node;
-		if (node->isRoot()) root = node;
+		if (node->isRoot())
+			root = node;
 	}
 }
 
@@ -549,7 +551,7 @@ bool SHAMap::delItem(const uint256& id)
 	return true;
 }
 
-bool SHAMap::addGiveItem(const SHAMapItem::pointer& item, bool isTransaction, bool hasMeta)
+bool SHAMap::addGiveItem(SHAMapItem::ref item, bool isTransaction, bool hasMeta)
 { // add the specified item, does not update
 #ifdef ST_DEBUG
 	std::cerr << "aGI " << item->getTag() << std::endl;
@@ -647,7 +649,7 @@ bool SHAMap::addItem(const SHAMapItem& i, bool isTransaction, bool hasMetaData)
 	return addGiveItem(boost::make_shared<SHAMapItem>(i), isTransaction, hasMetaData);
 }
 
-bool SHAMap::updateGiveItem(const SHAMapItem::pointer& item, bool isTransaction, bool hasMeta)
+bool SHAMap::updateGiveItem(SHAMapItem::ref item, bool isTransaction, bool hasMeta)
 { // can't change the tag but can change the hash
 	uint256 tag = item->getTag();
 
@@ -686,12 +688,15 @@ void SHAMapItem::dump()
 SHAMapTreeNode::pointer SHAMap::fetchNodeExternal(const SHAMapNode& id, const uint256& hash)
 {
 	if (!theApp->running())
+	{
+		cLog(lsTRACE) << "Trying to fetch external node with application not running";
 		throw SHAMapMissingNode(mType, id, hash);
+	}
 
 	HashedObject::pointer obj(theApp->getHashedObjectStore().retrieve(hash));
 	if (!obj)
 	{
-		Log(lsTRACE) << "fetchNodeExternal: missing " << hash;
+//		Log(lsTRACE) << "fetchNodeExternal: missing " << hash;
 		throw SHAMapMissingNode(mType, id, hash);
 	}
 	assert(Serializer::getSHA512Half(obj->getData()) == hash);
@@ -699,9 +704,7 @@ SHAMapTreeNode::pointer SHAMap::fetchNodeExternal(const SHAMapNode& id, const ui
 	try
 	{
 		SHAMapTreeNode::pointer ret = boost::make_shared<SHAMapTreeNode>(id, obj->getData(), mSeq, snfPREFIX);
-#ifdef DEBUG
 		assert((ret->getNodeHash() == hash) && (id == *ret));
-#endif
 		return ret;
 	}
 	catch (...)
@@ -713,9 +716,18 @@ SHAMapTreeNode::pointer SHAMap::fetchNodeExternal(const SHAMapNode& id, const ui
 
 void SHAMap::fetchRoot(const uint256& hash)
 {
+	if (sLog(lsTRACE))
+	{
+		if (mType == smtTRANSACTION)
+			Log(lsTRACE) << "Fetch root TXN node " << hash;
+		else if (mType == smtSTATE)
+			Log(lsTRACE) << "Fetch root STATE node " << hash;
+		else
+			Log(lsTRACE) << "Fetch root SHAMap node " << hash;
+	}
 	root = fetchNodeExternal(SHAMapNode(), hash);
-	root->makeInner();
 	mTNByID[*root] = root;
+	assert(root->getNodeHash() == hash);
 }
 
 void SHAMap::armDirty()
@@ -735,8 +747,8 @@ int SHAMap::flushDirty(int maxNodes, HashedObjectType t, uint32 seq)
 		boost::unordered_map<SHAMapNode, SHAMapTreeNode::pointer>::iterator it = dirtyNodes.begin();
 		while (it != dirtyNodes.end())
 		{
-			tLog(mType == smtTRANSACTION, lsDEBUG) << "TX node write " << it->first;
-			tLog(mType == smtSTATE, lsDEBUG) << "STATE node write " << it->first;
+//			tLog(mType == smtTRANSACTION, lsDEBUG) << "TX node write " << it->first;
+//			tLog(mType == smtSTATE, lsDEBUG) << "STATE node write " << it->first;
 			s.erase();
 			it->second->addRaw(s, snfPREFIX);
 			theApp->getHashedObjectStore().store(t, seq, s.peekData(), s.getSHA512Half());

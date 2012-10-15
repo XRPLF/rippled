@@ -13,6 +13,8 @@
 #include "TransactionFormats.h"
 #include "SerializedTransaction.h"
 
+SETUP_LOG();
+
 std::auto_ptr<SerializedType> STObject::makeDefaultObject(SerializedTypeID id, SField::ref name)
 {
 	assert((id == STI_NOTPRESENT) || (id == name.fieldType));
@@ -154,7 +156,7 @@ bool STObject::setType(const std::vector<SOElement::ptr> &type)
 		{
 			if (elem->flags != SOE_OPTIONAL)
 			{
-				Log(lsWARNING) << "setType !valid missing " << elem->e_field.fieldName;
+				cLog(lsWARNING) << "setType !valid missing " << elem->e_field.fieldName;
 				valid = false;
 			}
 			newData.push_back(makeNonPresentObject(elem->e_field));
@@ -168,7 +170,7 @@ bool STObject::setType(const std::vector<SOElement::ptr> &type)
 		{
 			if (!t.getFName().isDiscardable())
 			{
-				Log(lsWARNING) << "setType !valid leftover: " << t.getFName().getName();
+				cLog(lsWARNING) << "setType !valid leftover: " << t.getFName().getName();
 				valid = false;
 			}
 		}
@@ -214,7 +216,7 @@ bool STObject::set(SerializerIterator& sit, int depth)
 		SField::ref fn = SField::getField(type, field);
 		if (fn.isInvalid())
 		{
-			Log(lsWARNING) << "Unknown field: field_type=" << type << ", field_name=" << field;
+			cLog(lsWARNING) << "Unknown field: field_type=" << type << ", field_name=" << field;
 			throw std::runtime_error("Unknown field");
 		}
 		giveObject(makeDeserializedObject(fn.fieldType, fn, sit, depth + 1));
@@ -853,7 +855,7 @@ STArray* STArray::construct(SerializerIterator& sit, SField::ref field)
 		SField::ref fn = SField::getField(type, field);
 		if (fn.isInvalid())
 		{
-			Log(lsTRACE) << "Unknown field: " << type << "/" << field;
+			cLog(lsTRACE) << "Unknown field: " << type << "/" << field;
 			throw std::runtime_error("Unknown field");
 		}
 
@@ -1097,7 +1099,7 @@ std::auto_ptr<STObject> STObject::parseJson(const Json::Value& object, SField::r
 					NewcoinAddress a;
 					if (!a.setAccountID(strValue))
 					{
-						Log(lsINFO) << "Invalid acccount JSON: " << fieldName << ": " << strValue;
+						cLog(lsINFO) << "Invalid acccount JSON: " << fieldName << ": " << strValue;
 						throw std::runtime_error("Account invalid");
 					}
 					data.push_back(new STAccount(field, a.getAccountID()));
@@ -1163,8 +1165,8 @@ BOOST_AUTO_TEST_CASE( FieldManipulation_test )
 
 	if (object1.getSerializer() == object2.getSerializer())
 	{
-		Log(lsINFO) << "O1: " << object1.getJson(0);
-		Log(lsINFO) << "O2: " << object2.getJson(0);
+		cLog(lsINFO) << "O1: " << object1.getJson(0);
+		cLog(lsINFO) << "O2: " << object2.getJson(0);
 		BOOST_FAIL("STObject error 4");
 	}
 	object1.makeFieldAbsent(sfTestH256);
