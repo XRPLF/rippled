@@ -67,7 +67,7 @@ void HashedObjectStore::bulkWrite()
 				return;
 			}
 		}
-		cLog(lsINFO) << "HOS: writing " << set.size();
+//		cLog(lsINFO) << "HOS: writing " << set.size();
 
 		static boost::format fExists("SELECT ObjType FROM CommittedObjects WHERE Hash = '%s';");
 		static boost::format

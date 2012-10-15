@@ -749,8 +749,8 @@ int SHAMap::flushDirty(int maxNodes, HashedObjectType t, uint32 seq)
 		boost::unordered_map<SHAMapNode, SHAMapTreeNode::pointer>::iterator it = dirtyNodes.begin();
 		while (it != dirtyNodes.end())
 		{
-			tLog(mType == smtTRANSACTION, lsDEBUG) << "TX node write " << it->first;
-			tLog(mType == smtSTATE, lsDEBUG) << "STATE node write " << it->first;
+//			tLog(mType == smtTRANSACTION, lsDEBUG) << "TX node write " << it->first;
+//			tLog(mType == smtSTATE, lsDEBUG) << "STATE node write " << it->first;
 			s.erase();
 			it->second->addRaw(s, snfPREFIX);
 			theApp->getHashedObjectStore().store(t, seq, s.peekData(), s.getSHA512Half());
