@@ -235,8 +235,11 @@ void Application::loadOldLedger()
 			exit(-1);
 		}
 
-		assert(lastLedger->getAccountHash() == lastLedger->peekAccountStateMap()->getHash());
-		assert(lastLedger->getTransHash() == lastLedger->peekTransactionMap()->getHash());
+		if (!lastLedger->assertSane())
+		{
+			cLog(lsFATAL) << "Ledger is not sane.";
+			exit(-1);
+		}
 
 		Ledger::pointer openLedger = boost::make_shared<Ledger>(false, boost::ref(*lastLedger));
 		mMasterLedger.switchLedgers(lastLedger, openLedger);
