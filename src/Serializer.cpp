@@ -9,6 +9,9 @@
 #include <boost/test/unit_test.hpp>
 
 #include "key.h"
+#include "Log.h"
+
+SETUP_LOG();
 
 int Serializer::addZeros(size_t uBytes)
 {
@@ -185,7 +188,10 @@ int Serializer::addFieldID(int type, int name)
 bool Serializer::getFieldID(int& type, int& name, int offset) const
 {
 	if (!get8(type, offset))
+	{
+		cLog(lsWARNING) << "gFID: unable to get type";
 		return false;
+	}
 	name = type & 15;
 	type >>= 4;
 	if (type == 0)
@@ -193,14 +199,20 @@ bool Serializer::getFieldID(int& type, int& name, int offset) const
 		if (!get8(type, ++offset))
 			return false;
 		if ((type == 0) || (type < 16))
+		{
+			cLog(lsWARNING) << "gFID: uncommon type out of range " << type;
 			return false;
+		}
 	}
 	if (name == 0)
 	{ // uncommon name
 		if (!get8(name, ++offset))
 			return false;
 		if ((name == 0) || (name < 16))
+		{
+			cLog(lsWARNING) << "gFID: uncommon name out of range " << name;
 			return false;
+		}
 	}
 	return true;
 }
