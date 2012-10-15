@@ -686,7 +686,10 @@ void SHAMapItem::dump()
 SHAMapTreeNode::pointer SHAMap::fetchNodeExternal(const SHAMapNode& id, const uint256& hash)
 {
 	if (!theApp->running())
+	{
+		cLog(lsTRACE) << "Trying to fetch external node with application not running";
 		throw SHAMapMissingNode(mType, id, hash);
+	}
 
 	HashedObject::pointer obj(theApp->getHashedObjectStore().retrieve(hash));
 	if (!obj)
@@ -713,6 +716,7 @@ SHAMapTreeNode::pointer SHAMap::fetchNodeExternal(const SHAMapNode& id, const ui
 
 void SHAMap::fetchRoot(const uint256& hash)
 {
+	cLog(lsTRACE) << "Trying to fetch root SHAMap node " << hash;
 	root = fetchNodeExternal(SHAMapNode(), hash);
 	root->makeInner();
 	mTNByID[*root] = root;
