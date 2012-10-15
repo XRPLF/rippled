@@ -347,9 +347,11 @@ bool SHAMapTreeNode::updateHash()
 	{
 		nh = Serializer::getPrefixHash(sHP_TransactionNode, mItem->peekData());
 	}
-	else assert(false);
+	else
+		assert(false);
 
-	if (nh == mHash) return false;
+	if (nh == mHash)
+		return false;
 	mHash = nh;
 	return true;
 }
@@ -357,10 +359,12 @@ bool SHAMapTreeNode::updateHash()
 void SHAMapTreeNode::addRaw(Serializer& s, SHANodeFormat format)
 {
 	assert((format == snfPREFIX) || (format == snfWIRE));
-	if (mType == tnERROR) throw std::runtime_error("invalid I node type");
+	if (mType == tnERROR)
+		throw std::runtime_error("invalid I node type");
 
 	if (mType == tnINNER)
 	{
+		assert(getBranchCount() != 0);
 		if (format == snfPREFIX)
 		{
 			s.add32(sHP_InnerNode);
