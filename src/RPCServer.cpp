@@ -2046,9 +2046,14 @@ Json::Value RPCServer::doAccountTransactions(const Json::Value& params)
 		{
 			Transaction::pointer txn = theApp->getMasterTransaction().fetch(it->second, true);
 			if (!txn)
+			{
 				ret["transactions"].append(it->second.GetHex());
+			}
 			else
+			{
+				txn->setLedger(it->first);
 				ret["transactions"].append(txn->getJson(0));
+			}
 
 		}
 		return ret;
