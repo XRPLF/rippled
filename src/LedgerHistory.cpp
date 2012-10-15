@@ -36,6 +36,7 @@ void LedgerHistory::addAcceptedLedger(Ledger::pointer ledger)
 	assert(ledger->isAccepted());
 	assert(ledger->isImmutable());
 	mLedgersByIndex.insert(std::make_pair(ledger->getLedgerSeq(), ledger));
+
 	boost::thread thread(boost::bind(&Ledger::saveAcceptedLedger, ledger));
 	thread.detach();
 }
