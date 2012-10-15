@@ -31,11 +31,12 @@ Ledger::Ledger(const NewcoinAddress& masterID, uint64 startAmount) : mTotCoins(s
 	AccountState::pointer startAccount = boost::make_shared<AccountState>(masterID);
 	startAccount->peekSLE().setFieldAmount(sfBalance, startAmount);
 	startAccount->peekSLE().setFieldU32(sfSequence, 1);
+	cLog(lsTRACE) << "root account: " << startAccount->peekSLE().getJson(0);
+
+	mAccountStateMap->armDirty();
 	writeBack(lepCREATE, startAccount->getSLE());
-#if 0
-	std::cerr << "Root account:";
-	startAccount->dump();
-#endif
+	mAccountStateMap->flushDirty(256, hotACCOUNT_NODE, mLedgerSeq);
+	mAccountStateMap->disarmDirty();
 }
 
 Ledger::Ledger(const uint256 &parentHash, const uint256 &transHash, const uint256 &accountHash,
