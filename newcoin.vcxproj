@@ -272,7 +272,7 @@
     <None Include="SConstruct" />
     <CustomBuild Include="src\ripple.proto">
       <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">d:/code/protoc-2.4.1-win32/protoc -I=..\newcoin --cpp_out=ripple ..\newcoin/src/ripple.proto</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">d:/code/protoc-2.4.1-win32/protoc -I=..\newcoin --cpp_out=D:\code\newcoin\obj\ ..\newcoin/src/ripple.proto</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">D:\code\newcoin\obj\src\ripple.pb.h</Outputs>
     </CustomBuild>
     <None Include="test\buster.js" />
