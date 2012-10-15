@@ -17,6 +17,8 @@
 #include <boost/filesystem.hpp>
 #include <boost/thread.hpp>
 
+SETUP_LOG();
+
 Application* theApp = NULL;
 
 DatabaseCon::DatabaseCon(const std::string& strName, const char *initStrings[], int initCount)
@@ -56,7 +58,7 @@ void Application::stop()
 	mValidations.flush();
 	mAuxService.stop();
 
-	Log(lsINFO) << "Stopped: " << mIOService.stopped();
+	cLog(lsINFO) << "Stopped: " << mIOService.stopped();
 }
 
 static void InitDB(DatabaseCon** dbCon, const char *fileName, const char *dbInit[], int dbCount)
@@ -90,12 +92,12 @@ void Application::run()
 
 	if (theConfig.START_UP == Config::FRESH)
 	{
-		Log(lsINFO) << "Starting new Ledger";
+		cLog(lsINFO) << "Starting new Ledger";
 		startNewLedger();
 	}
 	else if (theConfig.START_UP == Config::LOAD)
 	{
-		Log(lsINFO) << "Loading Old Ledger";
+		cLog(lsINFO) << "Loading Old Ledger";
 		loadOldLedger();
 	}
 	else if (theConfig.START_UP == Config::NETWORK)
@@ -155,7 +157,7 @@ void Application::run()
 
 	if (theConfig.RUN_STANDALONE)
 	{
-		Log(lsWARNING) << "Running in standalone mode";
+		cLog(lsWARNING) << "Running in standalone mode";
 		mNetOps.setStandAlone();
 	}
 	else
@@ -185,8 +187,8 @@ void Application::startNewLedger()
 	NewcoinAddress	rootAddress			= NewcoinAddress::createAccountPublic(rootGeneratorMaster, 0);
 
 	// Print enough information to be able to claim root account.
-	Log(lsINFO) << "Root master seed: " << rootSeedMaster.humanSeed();
-	Log(lsINFO) << "Root account: " << rootAddress.humanAccountID();
+	cLog(lsINFO) << "Root master seed: " << rootSeedMaster.humanSeed();
+	cLog(lsINFO) << "Root account: " << rootAddress.humanAccountID();
 
 	{
 		Ledger::pointer firstLedger = boost::make_shared<Ledger>(rootAddress, SYSTEM_CURRENCY_START);
@@ -218,13 +220,21 @@ void Application::loadOldLedger()
 		}
 		lastLedger->setClosed();
 
+		cLog(lsINFO) << "Loading ledger " << lastLedger->getHash() << " seq:" << lastLedger->getLedgerSeq();
+
+		if (!lastLedger->walkLedger())
+		{
+			cLog(lsFATAL) << "Ledger is missing nodes.";
+			exit(-1);
+		}
+
 		Ledger::pointer openLedger = boost::make_shared<Ledger>(false, boost::ref(*lastLedger));
 		mMasterLedger.switchLedgers(lastLedger, openLedger);
 		mNetOps.setLastCloseTime(lastLedger->getCloseTimeNC());
 	}
 	catch (SHAMapMissingNode& mn)
 	{
-		Log(lsFATAL) << "Cannot load ledger. " << mn;
+		cLog(lsFATAL) << "Cannot load ledger. " << mn;
 		exit(-1);
 	}
 }
