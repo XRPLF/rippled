@@ -567,8 +567,12 @@
     <None Include="newcoind.cfg" />
     <None Include="validators.txt" />
     <None Include="README" />
+    <None Include="test\buster.js" />
+    <None Include="test\server.js" />
+    <None Include="test\standalone-test.js" />
+    <None Include="test\utils.js" />
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="src\newcoin.proto" />
+    <CustomBuild Include="src\ripple.proto" />
   </ItemGroup>
 </Project>
