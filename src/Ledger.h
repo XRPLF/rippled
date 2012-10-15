@@ -149,6 +149,7 @@ public:
 	bool hasTransaction(const uint256& TransID) const { return mTransactionMap->hasItem(TransID); }
 	Transaction::pointer getTransaction(const uint256& transID) const;
 	bool getTransaction(const uint256& transID, Transaction::pointer& txn, TransactionMetaSet::pointer& txMeta);
+	static SerializedTransaction::pointer getSTransaction(SHAMapItem::ref, SHAMapTreeNode::TNType);
 
 	// high-level functions
 	AccountState::pointer getAccountState(const NewcoinAddress& acctID);
@@ -157,7 +158,7 @@ public:
 	SLE::pointer getAccountRoot(const NewcoinAddress& naAccountID);
 
 	// database functions
-	static void saveAcceptedLedger(Ledger::ref);
+	void saveAcceptedLedger();
 	static Ledger::pointer loadByIndex(uint32 ledgerIndex);
 	static Ledger::pointer loadByHash(const uint256& ledgerHash);
 

@@ -225,18 +225,24 @@ bool Ledger::addTransaction(const uint256& txID, const Serializer& txn)
 { // low-level - just add to table
 	SHAMapItem::pointer item = boost::make_shared<SHAMapItem>(txID, txn.peekData());
 	if (!mTransactionMap->addGiveItem(item, true, false))
+	{
+		cLog(lsWARNING) << "Attempt to add transaction to ledger that already had it";
 		return false;
+	}
 	return true;
 }
 
 bool Ledger::addTransaction(const uint256& txID, const Serializer& txn, const Serializer& md)
 { // low-level - just add to table
-	Serializer s(txn.getDataLength() + md.getDataLength() + 64);
+	Serializer s(txn.getDataLength() + md.getDataLength() + 16);
 	s.addVL(txn.peekData());
 	s.addVL(md.peekData());
 	SHAMapItem::pointer item = boost::make_shared<SHAMapItem>(txID, s.peekData());
 	if (!mTransactionMap->addGiveItem(item, true, true))
+	{
+		cLog(lsFATAL) << "Attempt to add transaction+MD to ledger that already had it";
 		return false;
+	}
 	return true;
 }
 
@@ -273,6 +279,22 @@ Transaction::pointer Ledger::getTransaction(const uint256& transID) const
 	return txn;
 }
 
+SerializedTransaction::pointer Ledger::getSTransaction(SHAMapItem::ref item, SHAMapTreeNode::TNType type)
+{
+	SerializerIterator sit(item->peekSerializer());
+
+	if (type == SHAMapTreeNode::tnTRANSACTION_NM)
+		return boost::make_shared<SerializedTransaction>(boost::ref(sit));
+	else if (type == SHAMapTreeNode::tnTRANSACTION_MD)
+	{
+		Serializer sTxn(sit.getVL());
+		SerializerIterator tSit(sTxn);
+		return boost::make_shared<SerializedTransaction>(boost::ref(tSit));
+	}
+
+	return SerializedTransaction::pointer();
+}
+
 bool Ledger::getTransaction(const uint256& txID, Transaction::pointer& txn, TransactionMetaSet::pointer& meta)
 {
 	SHAMapTreeNode::TNType type;
@@ -285,7 +307,7 @@ bool Ledger::getTransaction(const uint256& txID, Transaction::pointer& txn, Tran
 		txn = theApp->getMasterTransaction().fetch(txID, false);
 		meta = TransactionMetaSet::pointer();
 		if (!txn)
-			txn = Transaction::sharedTransaction(item->getData(), true);
+			txn = Transaction::sharedTransaction(item->peekData(), true);
 	}
 	else if (type == SHAMapTreeNode::tnTRANSACTION_MD)
 	{ // in tree with metadata
@@ -317,8 +339,8 @@ uint256 Ledger::getHash()
 	return(mHash);
 }
 
-void Ledger::saveAcceptedLedger(Ledger::ref ledger)
-{
+void Ledger::saveAcceptedLedger()
+{ // can be called in a different thread
 	static boost::format ledgerExists("SELECT LedgerSeq FROM Ledgers where LedgerSeq = %d;");
 	static boost::format deleteLedger("DELETE FROM Ledgers WHERE LedgerSeq = %d;");
 	static boost::format AcctTransExists("SELECT LedgerSeq FROM AccountTransactions WHERE TransId = '%s';");
@@ -328,78 +350,83 @@ void Ledger::saveAcceptedLedger(Ledger::ref ledger)
 		"(LedgerHash,LedgerSeq,PrevHash,TotalCoins,ClosingTime,PrevClosingTime,CloseTimeRes,CloseFlags,"
 		"AccountSetHash,TransSetHash) VALUES ('%s','%u','%s','%s','%u','%u','%d','%u','%s','%s');");
 
-	ScopedLock sl(theApp->getLedgerDB()->getDBLock());
-	if (SQL_EXISTS(theApp->getLedgerDB()->getDB(), boost::str(ledgerExists % ledger->mLedgerSeq)))
-		theApp->getLedgerDB()->getDB()->executeSQL(boost::str(deleteLedger % ledger->mLedgerSeq));
-	theApp->getLedgerDB()->getDB()->executeSQL(boost::str(addLedger %
-		ledger->getHash().GetHex() % ledger->mLedgerSeq % ledger->mParentHash.GetHex() %
-		boost::lexical_cast<std::string>(ledger->mTotCoins) % ledger->mCloseTime % ledger->mParentCloseTime %
-		ledger->mCloseResolution % ledger->mCloseFlags %
-		ledger->mAccountHash.GetHex() % ledger->mTransHash.GetHex()));
-
-	// write out dirty nodes
-	int fc;
-	while ((fc = ledger->mTransactionMap->flushDirty(256, hotTRANSACTION_NODE, ledger->mLedgerSeq)) > 0)
-	{ cLog(lsINFO) << "Flushed " << fc << " dirty transaction nodes"; }
-	while ((fc = ledger->mAccountStateMap->flushDirty(256, hotACCOUNT_NODE, ledger->mLedgerSeq)) > 0)
-	{ cLog(lsINFO) << "Flushed " << fc << " dirty state nodes"; }
-	ledger->disarmDirty();
-
-	SHAMap& txSet = *ledger->peekTransactionMap();
-	Database *db = theApp->getTxnDB()->getDB();
-	ScopedLock dbLock = theApp->getTxnDB()->getDBLock();
-	db->executeSQL("BEGIN TRANSACTION;");
-	for (SHAMapItem::pointer item = txSet.peekFirstItem(); !!item; item = txSet.peekNextItem(item->getTag()))
 	{
-		SerializedTransaction::pointer	txn	= theApp->getMasterTransaction().fetch(item, false, ledger->mLedgerSeq);
+		ScopedLock sl(theApp->getLedgerDB()->getDBLock());
+		if (SQL_EXISTS(theApp->getLedgerDB()->getDB(), boost::str(ledgerExists % mLedgerSeq)))
+			theApp->getLedgerDB()->getDB()->executeSQL(boost::str(deleteLedger % mLedgerSeq));
+		theApp->getLedgerDB()->getDB()->executeSQL(boost::str(addLedger %
+			getHash().GetHex() % mLedgerSeq % mParentHash.GetHex() %
+			boost::lexical_cast<std::string>(mTotCoins) % mCloseTime % mParentCloseTime %
+			mCloseResolution % mCloseFlags %
+			mAccountHash.GetHex() % mTransHash.GetHex()));
 
-		// Make sure transaction is in AccountTransactions.
-		if (!SQL_EXISTS(db, boost::str(AcctTransExists % item->getTag().GetHex())))
+		// write out dirty nodes
+		int fc;
+		while ((fc = mTransactionMap->flushDirty(256, hotTRANSACTION_NODE, mLedgerSeq)) > 0)
+		{ cLog(lsINFO) << "Flushed " << fc << " dirty transaction nodes"; }
+		while ((fc = mAccountStateMap->flushDirty(256, hotACCOUNT_NODE, mLedgerSeq)) > 0)
+		{ cLog(lsINFO) << "Flushed " << fc << " dirty state nodes"; }
+		disarmDirty();
+
+		SHAMap& txSet = *peekTransactionMap();
+		Database *db = theApp->getTxnDB()->getDB();
+		ScopedLock dbLock = theApp->getTxnDB()->getDBLock();
+		db->executeSQL("BEGIN TRANSACTION;");
+		SHAMapTreeNode::TNType type;
+		for (SHAMapItem::pointer item = txSet.peekFirstItem(type); !!item;
+			item = txSet.peekNextItem(item->getTag(), type))
 		{
-			// Transaction not in AccountTransactions
-			std::vector<NewcoinAddress> accts = txn->getAffectedAccounts();
+			SerializedTransaction::pointer txn	= getSTransaction(item, type);
+			assert(txn);
 
-			std::string sql = "INSERT INTO AccountTransactions (TransID, Account, LedgerSeq) VALUES ";
-			bool first = true;
-			for (std::vector<NewcoinAddress>::iterator it = accts.begin(), end = accts.end(); it != end; ++it)
+			// Make sure transaction is in AccountTransactions.
+			if (!SQL_EXISTS(db, boost::str(AcctTransExists % item->getTag().GetHex())))
 			{
-				if (!first)
-					sql += ", ('";
-				else
+				// Transaction not in AccountTransactions
+				std::vector<NewcoinAddress> accts = txn->getAffectedAccounts();
+
+				std::string sql = "INSERT INTO AccountTransactions (TransID, Account, LedgerSeq) VALUES ";
+				bool first = true;
+				for (std::vector<NewcoinAddress>::iterator it = accts.begin(), end = accts.end(); it != end; ++it)
 				{
-					sql += "('";
-					first = false;
+					if (!first)
+						sql += ", ('";
+					else
+					{
+						sql += "('";
+						first = false;
+					}
+					sql += txn->getTransactionID().GetHex();
+					sql += "','";
+					sql += it->humanAccountID();
+					sql += "',";
+					sql += boost::lexical_cast<std::string>(getLedgerSeq());
+					sql += ")";
 				}
-				sql += txn->getTransactionID().GetHex();
-				sql += "','";
-				sql += it->humanAccountID();
-				sql += "',";
-				sql += boost::lexical_cast<std::string>(ledger->getLedgerSeq());
-				sql += ")";
+				sql += ";";
+				Log(lsTRACE) << "ActTx: " << sql;
+				db->executeSQL(sql); // may already be in there
 			}
-			sql += ";";
-			Log(lsTRACE) << "ActTx: " << sql;
-			db->executeSQL(sql); // may already be in there
-		}
 
-		if (SQL_EXISTS(db, boost::str(transExists %	txn->getTransactionID().GetHex())))
-		{
-			// In Transactions, update LedgerSeq and Status.
-			db->executeSQL(boost::str(updateTx
-				% ledger->getLedgerSeq()
-				% TXN_SQL_VALIDATED
-				% txn->getTransactionID().GetHex()));
+			if (SQL_EXISTS(db, boost::str(transExists %	txn->getTransactionID().GetHex())))
+			{
+				// In Transactions, update LedgerSeq and Status.
+				db->executeSQL(boost::str(updateTx
+					% getLedgerSeq()
+					% TXN_SQL_VALIDATED
+					% txn->getTransactionID().GetHex()));
+			}
+			else
+			{
+				// Not in Transactions, insert the whole thing..
+				db->executeSQL(
+					txn->getSQLInsertHeader() + txn->getSQL(getLedgerSeq(), TXN_SQL_VALIDATED) + ";");
+			}
 		}
-		else
-		{
-			// Not in Transactions, insert the whole thing..
-			db->executeSQL(
-				txn->getSQLInsertHeader() + txn->getSQL(ledger->getLedgerSeq(), TXN_SQL_VALIDATED) + ";");
-		}
+		db->executeSQL("COMMIT TRANSACTION;");
 	}
-	db->executeSQL("COMMIT TRANSACTION;");
 
-	theApp->getOPs().pubLedger(ledger);
+	theApp->getOPs().pubLedger(shared_from_this());
 }
 
 Ledger::pointer Ledger::getSQL(const std::string& sql)
