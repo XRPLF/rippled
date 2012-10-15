@@ -52,11 +52,10 @@ bool HashedObjectStore::store(HashedObjectType type, uint32 index,
 
 void HashedObjectStore::bulkWrite()
 {
-	std::vector< boost::shared_ptr<HashedObject> > set;
-	set.reserve(128);
-
-	do
 	{
+		std::vector< boost::shared_ptr<HashedObject> > set;
+		set.reserve(128);
+
 		{
 			boost::recursive_mutex::scoped_lock sl(mWriteMutex);
 			mWriteSet.swap(set);
@@ -66,7 +65,6 @@ void HashedObjectStore::bulkWrite()
 				return;
 			}
 		}
-		cLog(lsINFO) << "HOS: BulkWrite " << set.size();
 
 		static boost::format fExists("SELECT ObjType FROM CommittedObjects WHERE Hash = '%s';");
 		static boost::format
@@ -125,7 +123,7 @@ HashedObject::pointer HashedObjectStore::retrieve(const uint256& hash)
 
 		if (!db->executeSQL(sql) || !db->startIterRows())
 		{
-			cLog(lsTRACE) << "HOS: " << hash << " fetch: not in db";
+//			cLog(lsTRACE) << "HOS: " << hash << " fetch: not in db";
 			return HashedObject::pointer();
 		}
 
