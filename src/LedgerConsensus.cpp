@@ -58,7 +58,6 @@ void TransactionAcquire::trigger(Peer::ref peer, bool timer)
 	}
 	if (!mHaveRoot)
 	{
-		cLog(lsINFO) << "have no root";
 		ripple::TMGetLedger tmGL;
 		tmGL.set_ledgerhash(mHash.begin(), mHash.size());
 		tmGL.set_itype(ripple::liTS_CANDIDATE);
@@ -675,7 +674,7 @@ void LedgerConsensus::updateOurPositions()
 		for (std::map<uint32, int>::iterator it = closeTimes.begin(), end = closeTimes.end(); it != end; ++it)
 		{
 			cLog(lsINFO) << "CCTime: " << it->first << " has " << it->second << ", " << thresh << " required";
-			if (it->second > thresh)
+			if (it->second >= thresh)
 			{
 				cLog(lsINFO) << "Close time consensus reached: " << it->first;
 				mHaveCloseTimeConsensus = true;
