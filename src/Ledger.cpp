@@ -641,7 +641,7 @@ LedgerStateParms Ledger::writeBack(LedgerStateParms parms, SLE::ref entry)
 	if (create)
 	{
 		assert(!mAccountStateMap->hasItem(entry->getIndex()));
-		if(!mAccountStateMap->addGiveItem(item, false, false)) // FIXME: TX metadata
+		if(!mAccountStateMap->addGiveItem(item, false, false))
 		{
 			assert(false);
 			return lepERROR;
@@ -649,7 +649,7 @@ LedgerStateParms Ledger::writeBack(LedgerStateParms parms, SLE::ref entry)
 		return lepCREATED;
 	}
 
-	if (!mAccountStateMap->updateGiveItem(item, false, false)) // FIXME: TX metadata
+	if (!mAccountStateMap->updateGiveItem(item, false, false))
 	{
 		assert(false);
 		return lepERROR;
