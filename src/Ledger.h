@@ -278,6 +278,7 @@ public:
 	SLE::pointer getRippleState(const uint160& uiA, const uint160& uiB, const uint160& uCurrency)
 		{ return getRippleState(getRippleStateIndex(NewcoinAddress::createAccountID(uiA), NewcoinAddress::createAccountID(uiB), uCurrency)); }
 
+	Json::Value getJson(int options);
 	void addJson(Json::Value&, int options);
 
 	bool walkLedger();

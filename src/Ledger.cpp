@@ -336,8 +336,9 @@ bool Ledger::unitTest()
 
 uint256 Ledger::getHash()
 {
-	if(!mValidHash) updateHash();
-	return(mHash);
+	if (!mValidHash)
+		updateHash();
+	return mHash;
 }
 
 void Ledger::saveAcceptedLedger()
@@ -350,6 +351,15 @@ void Ledger::saveAcceptedLedger()
 	static boost::format addLedger("INSERT INTO Ledgers "
 		"(LedgerHash,LedgerSeq,PrevHash,TotalCoins,ClosingTime,PrevClosingTime,CloseTimeRes,CloseFlags,"
 		"AccountSetHash,TransSetHash) VALUES ('%s','%u','%s','%s','%u','%u','%d','%u','%s','%s');");
+
+	if (!getAccountHash().isNonZero())
+	{
+		cLog(lsFATAL) << "AH is zero: " << getJson(0);
+		assert(false);
+	}
+
+	assert (getAccountHash() == mAccountStateMap->getHash());
+	assert (getTransHash() == mTransactionMap->getHash());
 
 	{
 		ScopedLock sl(theApp->getLedgerDB()->getDBLock());
@@ -477,6 +487,7 @@ Ledger::pointer Ledger::getSQL(const std::string& sql)
 		assert(false);
 		return Ledger::pointer();
 	}
+	Log(lsDEBUG) << "Loaded ledger: " << ledgerHash;
 	return ret;
 }
 
@@ -497,6 +508,11 @@ Ledger::pointer Ledger::loadByHash(const uint256& ledgerHash)
 }
 
 void Ledger::addJson(Json::Value& ret, int options)
+{
+	ret["ledger"] = getJson(options);
+}
+
+Json::Value Ledger::getJson(int options)
 {
 	Json::Value ledger(Json::objectValue);
 
@@ -582,8 +598,8 @@ void Ledger::addJson(Json::Value& ret, int options)
 		}
 		ledger["accountState"] = state;
 	}
-	ledger["seqNum"]=boost::lexical_cast<std::string>(mLedgerSeq);
-	ret["ledger"] = ledger;
+	ledger["seqNum"] = boost::lexical_cast<std::string>(mLedgerSeq);
+	return ledger;
 }
 
 void Ledger::setAcquiring(void)
