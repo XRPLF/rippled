@@ -1113,6 +1113,15 @@ void LedgerConsensus::accept(SHAMap::ref set)
 	newLCL->setAccepted(closeTime, mCloseResolution, closeTimeCorrect);
 	newLCL->updateHash();
 	uint256 newLCLHash = newLCL->getHash();
+
+	if (sLog(lsTRACE))
+	{
+		Log(lsTRACE) << "newLCL";
+		Json::Value p;
+		newLCL->addJson(p, LEDGER_JSON_DUMP_TXNS | LEDGER_JSON_DUMP_STATE);
+		Log(lsTRACE) << p;
+	}
+
 	statusChange(ripple::neACCEPTED_LEDGER, *newLCL);
 	if (mValidating)
 	{
@@ -1180,13 +1189,6 @@ void LedgerConsensus::accept(SHAMap::ref set)
 		theApp->getOPs().closeTimeOffset(offset);
 	}
 
-	if (sLog(lsTRACE))
-	{
-		Log(lsTRACE) << "newLCL";
-		Json::Value p;
-		newLCL->addJson(p, LEDGER_JSON_DUMP_TXNS | LEDGER_JSON_DUMP_STATE);
-		Log(lsTRACE) << p;
-	}
 }
 
 void LedgerConsensus::endConsensus()
