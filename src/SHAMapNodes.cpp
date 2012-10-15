@@ -278,6 +278,8 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned 
 		}
 		else if (prefix == sHP_LeafNode)
 		{
+			if (s.getLength() < 32)
+				throw std::runtime_error("short PLN node");
 			uint256 u;
 			s.get256(u, s.getLength() - 32);
 			s.chop(32);
@@ -291,7 +293,7 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned 
 		}
 		else if (prefix == sHP_InnerNode)
 		{
-			if (rawNode.size() != (512 + 4))
+			if (s.getLength() != 512)
 				throw std::runtime_error("invalid PIN node");
 			for (int i = 0; i < 16; ++i)
 				s.get256(mHashes[i] , i * 32);
