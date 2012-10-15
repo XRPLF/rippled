@@ -977,9 +977,29 @@ uint256 Ledger::getRippleStateIndex(const NewcoinAddress& naA, const NewcoinAddr
 bool Ledger::walkLedger()
 {
 	std::vector<SHAMapMissingNode> missingNodes;
-	mAccountStateMap->walkMap(missingNodes, 1);
-	mTransactionMap->walkMap(missingNodes, 1);
+	mAccountStateMap->walkMap(missingNodes, 6);
+	if (sLog(lsINFO) && !missingNodes.empty())
+	{
+		Log(lsINFO) << missingNodes.size() << " missing account nodes";
+		Log(lsINFO) << "First: " << missingNodes[0];
+	}
+	mTransactionMap->walkMap(missingNodes, 6);
 	return missingNodes.empty();
+}
+
+bool Ledger::assertSane()
+{
+	if (mHash.isNonZero() && mAccountHash.isNonZero() && mAccountStateMap && mTransactionMap &&
+			(mAccountHash == mAccountStateMap->getHash()) && (mTransHash == mTransactionMap->getHash()))
+		return true;
+
+	Log(lsFATAL) << "ledger is not sane";
+	Json::Value j = getJson(0);
+	j["accountTreeHash"] = mAccountHash.GetHex();
+	j["transTreeHash"] = mTransHash.GetHex();
+
+	assert(false);
+	return false;
 }
 
 // vim:ts=4

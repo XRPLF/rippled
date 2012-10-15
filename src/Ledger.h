@@ -282,6 +282,7 @@ public:
 	void addJson(Json::Value&, int options);
 
 	bool walkLedger();
+	bool assertSane();
 
 	static bool unitTest();
 };
