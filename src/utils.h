@@ -90,6 +90,7 @@ extern uint32_t be32toh(uint32_t value);
 boost::posix_time::ptime ptEpoch();
 int iToSeconds(boost::posix_time::ptime ptWhen);
 boost::posix_time::ptime ptFromSeconds(int iSeconds);
+uint64_t utFromSeconds(int iSeconds);
 
 /*
 void intIPtoStr(int ip,std::string& retStr);

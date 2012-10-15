@@ -901,7 +901,7 @@ Json::Value NetworkOPs::pubBootstrapAccountInfo(Ledger::ref lpAccepted, const Ne
 	jvObj["owner"]					= getOwnerInfo(lpAccepted, naAccountID);
 	jvObj["ledger_closed_index"]	= lpAccepted->getLedgerSeq();
 	jvObj["ledger_closed"]			= lpAccepted->getHash().ToString();
-	jvObj["time"]					= Json::Value::UInt(lpAccepted->getCloseTimeNC());
+	jvObj["ledger_closed_time"]		= Json::Value::UInt(utFromSeconds(lpAccepted->getCloseTimeNC()));
 
 	return jvObj;
 }
@@ -939,7 +939,7 @@ void NetworkOPs::pubLedger(Ledger::ref lpAccepted)
 			jvObj["type"]					= "ledgerClosed";
 			jvObj["ledger_closed_index"]	= lpAccepted->getLedgerSeq();
 			jvObj["ledger_closed"]			= lpAccepted->getHash().ToString();
-			jvObj["time"]					= Json::Value::UInt(lpAccepted->getCloseTimeNC());
+			jvObj["ledger_closed_time"]		= Json::Value::UInt(utFromSeconds(lpAccepted->getCloseTimeNC()));
 
 			BOOST_FOREACH(InfoSub* ispListener, mSubLedger)
 			{
@@ -964,7 +964,7 @@ void NetworkOPs::pubLedger(Ledger::ref lpAccepted)
 			jvObj["type"]					= "ledgerClosedAccounts";
 			jvObj["ledger_closed_index"]	= lpAccepted->getLedgerSeq();
 			jvObj["ledger_closed"]			= lpAccepted->getHash().ToString();
-			jvObj["time"]					= Json::Value::UInt(lpAccepted->getCloseTimeNC());
+			jvObj["ledger_closed_time"]		= Json::Value::UInt(utFromSeconds(lpAccepted->getCloseTimeNC()));
 			jvObj["accounts"]				= jvAccounts;
 
 			BOOST_FOREACH(InfoSub* ispListener, mSubLedgerAccounts)
