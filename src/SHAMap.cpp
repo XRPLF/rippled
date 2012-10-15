@@ -696,7 +696,7 @@ SHAMapTreeNode::pointer SHAMap::fetchNodeExternal(const SHAMapNode& id, const ui
 	HashedObject::pointer obj(theApp->getHashedObjectStore().retrieve(hash));
 	if (!obj)
 	{
-		Log(lsTRACE) << "fetchNodeExternal: missing " << hash;
+//		Log(lsTRACE) << "fetchNodeExternal: missing " << hash;
 		throw SHAMapMissingNode(mType, id, hash);
 	}
 	assert(Serializer::getSHA512Half(obj->getData()) == hash);
