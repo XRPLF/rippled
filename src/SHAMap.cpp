@@ -230,11 +230,16 @@ void SHAMap::returnNode(SHAMapTreeNode::pointer& node, bool modify)
 	assert(node->getSeq() <= mSeq);
 	if (node && modify && (node->getSeq() != mSeq))
 	{ // have a CoW
-		if (mDirtyNodes) (*mDirtyNodes)[*node] = node;
+		if (mDirtyNodes)
+		{ // don't save an empty root
+			if (!node->isRoot() || !node->isEmpty())
+				(*mDirtyNodes)[*node] = node;
+		}
 		node = boost::make_shared<SHAMapTreeNode>(*node, mSeq);
 		assert(node->isValid());
 		mTNByID[*node] = node;
-		if (node->isRoot()) root = node;
+		if (node->isRoot())
+			root = node;
 	}
 }
 
@@ -716,7 +721,15 @@ SHAMapTreeNode::pointer SHAMap::fetchNodeExternal(const SHAMapNode& id, const ui
 
 void SHAMap::fetchRoot(const uint256& hash)
 {
-	cLog(lsTRACE) << "Trying to fetch root SHAMap node " << hash;
+	if (sLog(lsTRACE))
+	{
+		if (mType == smtTRANSACTION)
+			Log(lsTRACE) << "Fetch root TXN node " << hash;
+		else if (mType == smtSTATE)
+			Log(lsTRACE) << "Fetch root STATE node " << hash;
+		else
+			Log(lsTRACE) << "Fetch root SHAMap node " << hash;
+	}
 	root = fetchNodeExternal(SHAMapNode(), hash);
 	root->makeInner();
 	mTNByID[*root] = root;
