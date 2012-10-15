@@ -230,12 +230,9 @@ void SHAMap::returnNode(SHAMapTreeNode::pointer& node, bool modify)
 	assert(node->getSeq() <= mSeq);
 	if (node && modify && (node->getSeq() != mSeq))
 	{ // have a CoW
-		if (mDirtyNodes)
-		{ // don't save an empty root
-			if (!node->isRoot() || !node->isEmpty())
-				(*mDirtyNodes)[*node] = node;
-		}
 		node = boost::make_shared<SHAMapTreeNode>(*node, mSeq);
+		if (mDirtyNodes)
+			(*mDirtyNodes)[*node] = node;
 		assert(node->isValid());
 		mTNByID[*node] = node;
 		if (node->isRoot())
@@ -554,7 +551,7 @@ bool SHAMap::delItem(const uint256& id)
 	return true;
 }
 
-bool SHAMap::addGiveItem(const SHAMapItem::pointer& item, bool isTransaction, bool hasMeta)
+bool SHAMap::addGiveItem(SHAMapItem::ref item, bool isTransaction, bool hasMeta)
 { // add the specified item, does not update
 #ifdef ST_DEBUG
 	std::cerr << "aGI " << item->getTag() << std::endl;
@@ -652,7 +649,7 @@ bool SHAMap::addItem(const SHAMapItem& i, bool isTransaction, bool hasMetaData)
 	return addGiveItem(boost::make_shared<SHAMapItem>(i), isTransaction, hasMetaData);
 }
 
-bool SHAMap::updateGiveItem(const SHAMapItem::pointer& item, bool isTransaction, bool hasMeta)
+bool SHAMap::updateGiveItem(SHAMapItem::ref item, bool isTransaction, bool hasMeta)
 { // can't change the tag but can change the hash
 	uint256 tag = item->getTag();
 
