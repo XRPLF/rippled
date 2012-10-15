@@ -1035,7 +1035,10 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 		if ((!ledger) || (packet.has_ledgerseq() && (packet.ledgerseq() != ledger->getLedgerSeq())))
 		{
 			punishPeer(PP_UNKNOWN_REQUEST);
-			cLog(lsWARNING) << "Can't find the ledger they want";
+			if (ledger)
+				cLog(lsWARNING) << "Ledger has wrong sequence";
+			else
+				cLog(lsWARNING) << "Can't find the ledger they want";
 			return;
 		}
 
