@@ -300,37 +300,9 @@ void LedgerConsensus::checkLCL()
 
 void LedgerConsensus::handleLCL(const uint256& lclHash)
 {
-	mPrevLedgerHash = lclHash;
-	if (mPreviousLedger->getHash() == mPrevLedgerHash)
-		return;
-
-	Ledger::pointer newLCL = theApp->getMasterLedger().getLedgerByHash(lclHash);
-	if (newLCL)
-		mPreviousLedger = newLCL;
-	else if (mAcquiringLedger && (mAcquiringLedger->getHash() == mPrevLedgerHash))
-		return;
-	else
-	{
-		cLog(lsWARNING) << "Need consensus ledger " << mPrevLedgerHash;
-
-		mAcquiringLedger = theApp->getMasterLedgerAcquire().findCreate(mPrevLedgerHash);
-		std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
-
-		bool found = false;
-		BOOST_FOREACH(Peer::ref peer, peerList)
-		{
-			if (peer->hasLedger(mPrevLedgerHash))
-			{
-				found = true;
-				mAcquiringLedger->peerHas(peer);
-			}
-		}
-
-		if (!found)
-		{
-			BOOST_FOREACH(Peer::ref peer, peerList)
-				mAcquiringLedger->peerHas(peer);
-		}
+	if (mPrevLedgerHash != lclHash)
+	{ // first time switching to this ledger
+		mPrevLedgerHash = lclHash;
 
 		if (mHaveCorrectLCL && mProposing && mOurPosition)
 		{
@@ -338,15 +310,47 @@ void LedgerConsensus::handleLCL(const uint256& lclHash)
 			mOurPosition->bowOut();
 			propose();
 		}
-		mHaveCorrectLCL = false;
 		mProposing = false;
 		mValidating = false;
-		mCloseTimes.clear();
 		mPeerPositions.clear();
+		mPeerData.clear();
 		mDisputes.clear();
+		mCloseTimes.clear();
 		mDeadNodes.clear();
 		playbackProposals();
-		return;
+	}
+
+	if (mPreviousLedger->getHash() != mPrevLedgerHash)
+	{ // we need to switch the ledger we're working from
+		Ledger::pointer newLCL = theApp->getMasterLedger().getLedgerByHash(lclHash);
+		if (newLCL)
+			mPreviousLedger = newLCL;
+		else if (!mAcquiringLedger || (mAcquiringLedger->getHash() != mPrevLedgerHash))
+		{ // need to start acquiring the correct consensus LCL
+			cLog(lsWARNING) << "Need consensus ledger " << mPrevLedgerHash;
+
+			mAcquiringLedger = theApp->getMasterLedgerAcquire().findCreate(mPrevLedgerHash);
+			std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
+
+			bool found = false;
+			BOOST_FOREACH(Peer::ref peer, peerList)
+			{
+				if (peer->hasLedger(mPrevLedgerHash))
+				{
+					found = true;
+					mAcquiringLedger->peerHas(peer);
+				}
+			}
+
+			if (!found)
+			{
+				BOOST_FOREACH(Peer::ref peer, peerList)
+					mAcquiringLedger->peerHas(peer);
+			}
+
+			mHaveCorrectLCL = false;
+			return;
+		}
 	}
 
 	cLog(lsINFO) << "Acquired the consensus ledger " << mPrevLedgerHash;
@@ -355,7 +359,6 @@ void LedgerConsensus::handleLCL(const uint256& lclHash)
 	mCloseResolution = ContinuousLedgerTiming::getNextLedgerTimeResolution(
 		mPreviousLedger->getCloseResolution(), mPreviousLedger->getCloseAgree(),
 		mPreviousLedger->getLedgerSeq() + 1);
-	playbackProposals();
 }
 
 void LedgerConsensus::takeInitialPosition(Ledger& initialLedger)
