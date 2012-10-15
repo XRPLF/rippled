@@ -704,9 +704,7 @@ SHAMapTreeNode::pointer SHAMap::fetchNodeExternal(const SHAMapNode& id, const ui
 	try
 	{
 		SHAMapTreeNode::pointer ret = boost::make_shared<SHAMapTreeNode>(id, obj->getData(), mSeq, snfPREFIX);
-#ifdef DEBUG
 		assert((ret->getNodeHash() == hash) && (id == *ret));
-#endif
 		return ret;
 	}
 	catch (...)
@@ -728,8 +726,8 @@ void SHAMap::fetchRoot(const uint256& hash)
 			Log(lsTRACE) << "Fetch root SHAMap node " << hash;
 	}
 	root = fetchNodeExternal(SHAMapNode(), hash);
-	root->makeInner();
 	mTNByID[*root] = root;
+	assert(root->getNodeHash() == hash);
 }
 
 void SHAMap::armDirty()
