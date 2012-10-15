@@ -35,15 +35,18 @@ bool HashedObjectStore::store(HashedObjectType type, uint32 index,
 	HashedObject::pointer object = boost::make_shared<HashedObject>(type, index, data, hash);
 	if (!mCache.canonicalize(hash, object))
 	{
+//		cLog(lsTRACE) << "Queuing write for " << hash;
 		boost::recursive_mutex::scoped_lock sl(mWriteMutex);
 		mWriteSet.push_back(object);
-		if (!mWritePending && (mWriteSet.size() >= 64))
+		if (!mWritePending)
 		{
 			mWritePending = true;
 			boost::thread t(boost::bind(&HashedObjectStore::bulkWrite, this));
 			t.detach();
 		}
 	}
+//	else
+//		cLog(lsTRACE) << "HOS: already had " << hash;
 	return true;
 }
 
