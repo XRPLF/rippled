@@ -195,6 +195,7 @@ public:
 	bool isInnerNode() const { return !mItem; }
 	bool setChildHash(int m, const uint256& hash);
 	bool isEmptyBranch(int m) const { return !mHashes[m]; }
+	bool isEmpty() const;
 	int getBranchCount() const;
 	void makeInner();
 	const uint256& getChildHash(int m) const

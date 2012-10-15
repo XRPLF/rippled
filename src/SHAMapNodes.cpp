@@ -364,7 +364,7 @@ void SHAMapTreeNode::addRaw(Serializer& s, SHANodeFormat format)
 
 	if (mType == tnINNER)
 	{
-		assert(getBranchCount() != 0);
+		assert(!isEmpty());
 		if (format == snfPREFIX)
 		{
 			s.add32(sHP_InnerNode);
@@ -451,6 +451,14 @@ SHAMapItem::pointer SHAMapTreeNode::getItem() const
 {
 	assert(isLeaf());
 	return boost::make_shared<SHAMapItem>(*mItem);
+}
+
+bool SHAMapTreeNode::isEmpty() const
+{
+	assert(isInner());
+	for (int i = 0; i < 16; ++i)
+		if (mHashes[i].isNonZero()) return false;
+	return true;
 }
 
 int SHAMapTreeNode::getBranchCount() const
