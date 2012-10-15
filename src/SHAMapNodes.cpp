@@ -513,9 +513,9 @@ bool SHAMapTreeNode::setChildHash(int m, const uint256 &hash)
 std::ostream& operator<<(std::ostream& out, const SHAMapMissingNode& mn)
 {
 	if (mn.getMapType() == smtTRANSACTION)
-		out << "Missing/TXN(" << mn.getNodeID() << ")";
+		out << "Missing/TXN(" << mn.getNodeID() << "/" << mn.getNodeHash() << ")";
 	else if (mn.getMapType() == smtSTATE)
-		out << "Missing/STA(" << mn.getNodeID() << ")";
+		out << "Missing/STA(" << mn.getNodeID() << "/" << mn.getNodeHash() << ")";
 	else
 		out << "Missing/" << mn.getNodeID();
 	return out;
