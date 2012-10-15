@@ -400,6 +400,8 @@ public:
 	static std::vector<unsigned char> checkTrustedPath(const uint256& ledgerHash, const uint256& leafIndex,
 		const std::list<std::vector<unsigned char> >& path);
 
+	void walkMap(std::vector<SHAMapMissingNode>& missingNodes, int maxMissing);
+
 	bool deepCompare(SHAMap& other);
 	virtual void dump(bool withHashes = false);
 };
