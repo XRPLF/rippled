@@ -169,7 +169,7 @@ bool TaggedCache<c_Key, c_Data>::canonicalize(const key_type& key, boost::shared
 	{ // in map, but expired. Update in map, insert in cache
 		mit->second = data;
 		mCache.insert(std::make_pair(key, std::make_pair(time(NULL), data)));
-		return false;
+		return true;
 	}
 
 	// in map and cache, canonicalize
