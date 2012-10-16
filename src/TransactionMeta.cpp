@@ -100,14 +100,8 @@ STObject TransactionMetaSet::getAsObject() const
 
 void TransactionMetaSet::addRaw(Serializer& s, TER result)
 {
-	mResult = 255;
-
-	if (result == tesSUCCESS)
-		mResult = 0;
-	else if (result == tepPATH_DRY)
-		mResult = 1;
-	else if (result == tepPATH_PARTIAL)
-		mResult = 2;
+	mResult = static_cast<int>(result);
+	assert((mResult == 0) || ((mResult > 100) && (mResult <= 255)));
 
 	mNodes.sort(compare);
 

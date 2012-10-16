@@ -69,7 +69,7 @@ enum TER	// aka TransactionEngineResult
 
 	// -99 .. -1: R Retry (sequence too high, no funds for txn fee, originating account non-existent)
 	// Causes:
-	// - Priror application of another, possibly non-existant, transaction could allow this transaction to succeed.
+	// - Prior application of another, possibly non-existant, another transaction could allow this transaction to succeed.
 	// Implications:
 	// - Not applied
 	// - Not forwarded
@@ -103,9 +103,10 @@ enum TER	// aka TransactionEngineResult
 	// - Applied
 	// - Forwarded
 	// Only allowed as a return code of appliedTransaction when !tapRetry. Otherwise, treated as terRETRY.
+	// CAUTION: The numerical values for these results are part of the binary formats
 	tepPARTIAL		= 100,
-	tepPATH_DRY,
-	tepPATH_PARTIAL,
+	tepPATH_DRY		= 101,
+	tepPATH_PARTIAL	= 102,
 };
 
 #define isTelLocal(x)		((x) >= telLOCAL_ERROR && (x) < temMALFORMED)
