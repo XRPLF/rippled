@@ -926,7 +926,19 @@ std::auto_ptr<STObject> STObject::parseJson(const Json::Value& object, SField::r
 		{
 			case STI_UINT8:
 				if (value.isString())
+				{
+#if 0
+					if (field == sfTransactionResult)
+					{
+						TER terCode;
+						if (FUNCTION_THAT_DOESNT_EXIST(value.asString(), terCode))
+							value = static_cast<int>(terCode);
+						else
+							data.push_back(new STUInt8(field, lexical_cast_st<unsigned char>(value.asString())));
+					}
 					data.push_back(new STUInt8(field, lexical_cast_st<unsigned char>(value.asString())));
+#endif
+				}
 				else if (value.isInt())
 				{
 					if (value.asInt() < 0 || value.asInt() > 255)
