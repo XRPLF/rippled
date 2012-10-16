@@ -259,7 +259,7 @@ void LedgerConsensus::checkLCL()
 	uint256 netLgr = mPrevLedgerHash;
 	int netLgrCount = 0;
 
-	uint256 favoredLedger = (mState == lcsPRE_CLOSE) ? uint256() : mPrevLedgerHash; // Don't get stuck one ledger behind
+	uint256 favoredLedger = (mState == lcsPRE_CLOSE) ? uint256() : mPrevLedgerHash; // Don't get stuck one ledger back
 	boost::unordered_map<uint256, currentValidationCount> vals =
 		theApp->getValidations().getCurrentValidations(favoredLedger);
 
@@ -287,15 +287,18 @@ void LedgerConsensus::checkLCL()
 			<< status << ", " << (mHaveCorrectLCL ? "CorrectLCL" : "IncorrectLCL");
 		cLog(lsWARNING) << mPrevLedgerHash << " to " << netLgr;
 
-#ifdef DEBUG
-	BOOST_FOREACH(u256_cvc_pair& it, vals)
-		cLog(lsDEBUG) << "V: " << it.first << ", " << it.second.first;
-#endif
+		if (sLog(lsDEBUG))
+		{
+			BOOST_FOREACH(u256_cvc_pair& it, vals)
+				cLog(lsDEBUG) << "V: " << it.first << ", " << it.second.first;
+		}
 
 		if (mHaveCorrectLCL)
 			theApp->getOPs().consensusViewChange();
 		handleLCL(netLgr);
 	}
+	else if (mPreviousLedger->getHash() != mPrevLedgerHash)
+		handleLCL(netLgr);
 }
 
 void LedgerConsensus::handleLCL(const uint256& lclHash)
@@ -810,7 +813,9 @@ void LedgerConsensus::propose()
 {
 	cLog(lsTRACE) << "We propose: " << mOurPosition->getCurrentHash();
 	ripple::TMProposeSet prop;
+
 	prop.set_currenttxhash(mOurPosition->getCurrentHash().begin(), 256 / 8);
+	prop.set_previousledger(mOurPosition->getPrevLedger().begin(), 256 / 8);
 	prop.set_proposeseq(mOurPosition->getProposeSeq());
 	prop.set_closetime(mOurPosition->getCloseTime());
 
@@ -958,18 +963,12 @@ void LedgerConsensus::Saccept(boost::shared_ptr<LedgerConsensus> This, SHAMap::p
 	This->accept(txSet);
 }
 
-void LedgerConsensus::deferProposal(const LedgerProposal::pointer& proposal, const NewcoinAddress& peerPublic)
-{
-	std::list<LedgerProposal::pointer>& props = mDeferredProposals[peerPublic.getNodeID()];
-	if (props.size() >= (mPreviousProposers + 10))
-		props.pop_front();
-	props.push_back(proposal);
-}
-
 void LedgerConsensus::playbackProposals()
 {
+	boost::unordered_map<uint160,
+		std::list<LedgerProposal::pointer> >& storedProposals = theApp->getOPs().peekStoredProposals();
 	for (boost::unordered_map< uint160, std::list<LedgerProposal::pointer> >::iterator
-			it = mDeferredProposals.begin(), end = mDeferredProposals.end(); it != end; ++it)
+			it = storedProposals.begin(), end = storedProposals.end(); it != end; ++it)
 	{
 		BOOST_FOREACH(const LedgerProposal::pointer& proposal, it->second)
 		{
@@ -978,7 +977,7 @@ void LedgerConsensus::playbackProposals()
 				proposal->setPrevLedger(mPrevLedgerHash);
 				if (proposal->checkSign())
 				{
-					cLog(lsINFO) << "Applying deferred proposal";
+					cLog(lsINFO) << "Applying stored proposal";
 					peerPosition(proposal);
 				}
 			}

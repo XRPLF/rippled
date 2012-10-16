@@ -57,7 +57,7 @@ protected:
 	boost::asio::deadline_timer			mNetTimer;
 	boost::shared_ptr<LedgerConsensus>	mConsensus;
 	boost::unordered_map<uint160,
-		std::list<LedgerProposal::pointer> > mDeferredProposals;
+		std::list<LedgerProposal::pointer> > mStoredProposals;
 
 	LedgerMaster*						mLedgerMaster;
 	LedgerAcquire::pointer				mAcquiringLedger;
@@ -193,6 +193,9 @@ public:
 	void setLastCloseTime(uint32 t)		{ mLastCloseTime = t; }
 	Json::Value getServerInfo();
 	uint32 acceptLedger();
+	boost::unordered_map<uint160,
+		std::list<LedgerProposal::pointer> >& peekStoredProposals() { return mStoredProposals; }
+	void storeProposal(const LedgerProposal::pointer& proposal,	const NewcoinAddress& peerPublic);
 
 	// client information retrieval functions
 	std::vector< std::pair<uint32, uint256> >
