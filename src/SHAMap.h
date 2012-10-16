@@ -283,13 +283,14 @@ public:
 	typedef const boost::shared_ptr<SHAMap>& ref;
 
 	typedef std::map<uint256, std::pair<SHAMapItem::pointer, SHAMapItem::pointer> > SHAMapDiff;
+	typedef boost::unordered_map<SHAMapNode, SHAMapTreeNode::pointer> SHADirtyMap;
 
 private:
 	uint32 mSeq;
 	mutable boost::recursive_mutex mLock;
 	boost::unordered_map<SHAMapNode, SHAMapTreeNode::pointer> mTNByID;
 
-	boost::shared_ptr< boost::unordered_map<SHAMapNode, SHAMapTreeNode::pointer> > mDirtyNodes;
+	boost::shared_ptr<SHADirtyMap> mDirtyNodes;
 
 	SHAMapTreeNode::pointer root;
 
@@ -384,9 +385,9 @@ public:
 	// return value: true=successfully completed, false=too different
 	bool compare(SHAMap::ref otherMap, SHAMapDiff& differences, int maxCount);
 
-	void armDirty();
-	int flushDirty(int maxNodes, HashedObjectType t, uint32 seq);
-	void disarmDirty();
+	int armDirty();
+	static int flushDirty(SHADirtyMap& dirtyMap, int maxNodes, HashedObjectType t, uint32 seq);
+	boost::shared_ptr<SHADirtyMap> disarmDirty();
 
 	void setSeq(uint32 seq)		{ mSeq = seq; }
 	uint32 getSeq()				{ return mSeq; }

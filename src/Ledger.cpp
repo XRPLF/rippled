@@ -35,8 +35,7 @@ Ledger::Ledger(const NewcoinAddress& masterID, uint64 startAmount) : mTotCoins(s
 
 	mAccountStateMap->armDirty();
 	writeBack(lepCREATE, startAccount->getSLE());
-	mAccountStateMap->flushDirty(256, hotACCOUNT_NODE, mLedgerSeq);
-	mAccountStateMap->disarmDirty();
+	SHAMap::flushDirty(*mAccountStateMap->disarmDirty(), 256, hotACCOUNT_NODE, mLedgerSeq);
 }
 
 Ledger::Ledger(const uint256 &parentHash, const uint256 &transHash, const uint256 &accountHash,
@@ -329,11 +328,6 @@ bool Ledger::getTransaction(const uint256& txID, Transaction::pointer& txn, Tran
 	return true;
 }
 
-bool Ledger::unitTest()
-{
-	return true;
-}
-
 uint256 Ledger::getHash()
 {
 	if (!mValidHash)
@@ -366,14 +360,6 @@ void Ledger::saveAcceptedLedger()
 
 		if (SQL_EXISTS(theApp->getLedgerDB()->getDB(), boost::str(ledgerExists % mLedgerSeq)))
 			theApp->getLedgerDB()->getDB()->executeSQL(boost::str(deleteLedger % mLedgerSeq));
-
-		// write out dirty nodes
-		int fc;
-		while ((fc = mTransactionMap->flushDirty(256, hotTRANSACTION_NODE, mLedgerSeq)) > 0)
-		{ cLog(lsINFO) << "Flushed " << fc << " dirty transaction nodes"; }
-		while ((fc = mAccountStateMap->flushDirty(256, hotACCOUNT_NODE, mLedgerSeq)) > 0)
-		{ cLog(lsINFO) << "Flushed " << fc << " dirty state nodes"; }
-		disarmDirty();
 
 		SHAMap& txSet = *peekTransactionMap();
 		Database *db = theApp->getTxnDB()->getDB();

@@ -109,8 +109,6 @@ public:
 	bool isClosed()		{ return mClosed; }
 	bool isAccepted()	{ return mAccepted; }
 	bool isImmutable()	{ return mImmutable; }
-	void armDirty()		{ mTransactionMap->armDirty();		mAccountStateMap->armDirty(); }
-	void disarmDirty()	{ mTransactionMap->disarmDirty();	mAccountStateMap->disarmDirty(); }
 
 	// ledger signature operations
 	void addRaw(Serializer &s) const;
@@ -283,8 +281,6 @@ public:
 
 	bool walkLedger();
 	bool assertSane();
-
-	static bool unitTest();
 };
 
 inline LedgerStateParms operator|(const LedgerStateParms& l1, const LedgerStateParms& l2)
