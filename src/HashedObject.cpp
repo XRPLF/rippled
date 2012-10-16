@@ -36,7 +36,7 @@ bool HashedObjectStore::store(HashedObjectType type, uint32 index,
 	if (!mCache.canonicalize(hash, object))
 	{
 //		cLog(lsTRACE) << "Queuing write for " << hash;
-		boost::recursive_mutex::scoped_lock sl(mWriteMutex);
+		boost::mutex::scoped_lock sl(mWriteMutex);
 		mWriteSet.push_back(object);
 		if (!mWritePending)
 		{
@@ -50,6 +50,13 @@ bool HashedObjectStore::store(HashedObjectType type, uint32 index,
 	return true;
 }
 
+void HashedObjectStore::waitWrite()
+{
+	boost::unique_lock<boost::mutex> sl(mWriteMutex);
+	while (mWritePending)
+		mWriteCondition.wait(sl);
+}
+
 void HashedObjectStore::bulkWrite()
 {
 	std::vector< boost::shared_ptr<HashedObject> > set;
@@ -59,11 +66,12 @@ void HashedObjectStore::bulkWrite()
 		set.reserve(128);
 
 		{
-			boost::recursive_mutex::scoped_lock sl(mWriteMutex);
+			boost::unique_lock<boost::mutex> sl(mWriteMutex);
 			mWriteSet.swap(set);
 			if (set.empty())
 			{
 				mWritePending = false;
+				mWriteCondition.notify_all();
 				return;
 			}
 		}

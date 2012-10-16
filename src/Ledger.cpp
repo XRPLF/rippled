@@ -363,13 +363,9 @@ void Ledger::saveAcceptedLedger()
 
 	{
 		ScopedLock sl(theApp->getLedgerDB()->getDBLock());
+
 		if (SQL_EXISTS(theApp->getLedgerDB()->getDB(), boost::str(ledgerExists % mLedgerSeq)))
 			theApp->getLedgerDB()->getDB()->executeSQL(boost::str(deleteLedger % mLedgerSeq));
-		theApp->getLedgerDB()->getDB()->executeSQL(boost::str(addLedger %
-			getHash().GetHex() % mLedgerSeq % mParentHash.GetHex() %
-			boost::lexical_cast<std::string>(mTotCoins) % mCloseTime % mParentCloseTime %
-			mCloseResolution % mCloseFlags %
-			mAccountHash.GetHex() % mTransHash.GetHex()));
 
 		// write out dirty nodes
 		int fc;
@@ -435,6 +431,13 @@ void Ledger::saveAcceptedLedger()
 			}
 		}
 		db->executeSQL("COMMIT TRANSACTION;");
+
+		theApp->getHashedObjectStore().waitWrite(); // wait until all nodes are written
+		theApp->getLedgerDB()->getDB()->executeSQL(boost::str(addLedger %
+			getHash().GetHex() % mLedgerSeq % mParentHash.GetHex() %
+			boost::lexical_cast<std::string>(mTotCoins) % mCloseTime % mParentCloseTime %
+			mCloseResolution % mCloseFlags %
+			mAccountHash.GetHex() % mTransHash.GetHex()));
 	}
 
 	theApp->getOPs().pubLedger(shared_from_this());

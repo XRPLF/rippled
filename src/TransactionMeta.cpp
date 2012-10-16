@@ -280,7 +280,7 @@ Json::Value TransactionMetaSet::getJson(int v) const
 {
 	Json::Value ret = Json::objectValue;
 
-	ret["transaction_id"] = mTransactionID.GetHex();
+	ret["hash"] = mTransactionID.GetHex();
 	ret["ledger"] = mLedger;
 
 	Json::Value e = Json::arrayValue;
@@ -330,3 +330,4 @@ void TransactionMetaSet::swap(TransactionMetaSet& s)
 	mNodes.swap(s.mNodes);
 }
 
+// vim:ts=4
