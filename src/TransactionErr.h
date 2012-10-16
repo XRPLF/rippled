@@ -108,11 +108,12 @@ enum TER	// aka TransactionEngineResult
 	tepPATH_PARTIAL,
 };
 
+#define isTelLocal(x)		((x) >= telLOCAL_ERROR && (x) < temMALFORMED)
 #define isTemMalformed(x)	((x) >= temMALFORMED && (x) < tefFAILURE)
 #define isTefFailure(x)		((x) >= tefFAILURE && (x) < terRETRY)
-#define isTepPartial(x)		((x) >= tepPATH_PARTIAL)
-#define isTepSuccess(x)		((x) >= tesSUCCESS)
 #define isTerRetry(x)		((x) >= terRETRY && (x) < tesSUCCESS)
+#define isTepSuccess(x)		((x) >= tesSUCCESS)
+#define isTepPartial(x)		((x) >= tepPATH_PARTIAL)
 
 bool transResultInfo(TER terCode, std::string& strToken, std::string& strHuman);
 std::string transToken(TER terCode);
