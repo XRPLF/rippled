@@ -5,11 +5,13 @@
 //
 // YYY Will later provide a network access which use multiple instances of this.
 // YYY A better model might be to allow requesting a target state: keep connected or not.
+// XXX Make subscribe target state.
+// XXX Auto subscribe on connect.
 //
 
 // Node
-var util      = require('util');
-var events    = require('events');
+var util	  = require('util');
+var EventEmitter  = require('events').EventEmitter;
 
 // npm
 var WebSocket = require('ws');
@@ -17,9 +19,9 @@ var WebSocket = require('ws');
 var amount    = require('./amount.js');
 var Amount    = amount.Amount;
 
-// Events emmitted:
-// 'success'
-// 'error'
+// Request events emmitted:
+// 'success' : Request successful.
+// 'error'   : Request failed.
 //   'remoteError'
 //   'remoteUnexpected'
 //   'remoteDisconnected'
@@ -33,11 +35,11 @@ var Request = function (remote, command) {
   this.on('request', this.request_default);
 };
 
-Request.prototype  = new events.EventEmitter;
+Request.prototype  = new EventEmitter;
 
 // Return this.  node EventEmitter's on doesn't return this.
 Request.prototype.on = function (e, c) {
-  events.EventEmitter.prototype.on.call(this, e, c);
+  EventEmitter.prototype.on.call(this, e, c);
 
   return this;
 };
@@ -120,12 +122,20 @@ var Remote = function (trusted, websocket_ip, websocket_port, config, trace) {
   };
 };
 
-Remote.prototype      = new events.EventEmitter;
+Remote.prototype      = new EventEmitter;
 
 var remoteConfig = function (config, server, trace) {
   var serverConfig = config.servers[server];
 
   return new Remote(serverConfig.trusted, serverConfig.websocket_ip, serverConfig.websocket_port, config, trace);
+};
+
+var isTemMalformed  = function (engine_result_code) {
+  return (engine_result_code >= -299 && engine_result_code <  199);
+};
+
+var isTefFailure = function (engine_result_code) {
+  return (engine_result_code >= -299 && engine_result_code <  199);
 };
 
 var flags = {
@@ -217,27 +227,28 @@ Remote.prototype.connect_helper = function () {
     else {
       switch (message.type) {
 	case 'response':
-	{
-	  request	  = ws.response[message.id];
+	  {
+	    request	  = ws.response[message.id];
 
-	  if (!request) {
-	    unexpected  = true;
-	  }
-	  else if ('success' === message.result) {
-	    if (self.trace) console.log("message: %s", json);
+	    if (!request) {
+	      unexpected  = true;
+	    }
+	    else if ('success' === message.result) {
+	      if (self.trace) console.log("message: %s", json);
 
-	    request.emit('success', message);
-	  }
-	  else if (message.error) {
-	    if (self.trace) console.log("message: %s", json);
+	      request.emit('success', message);
+	    }
+	    else if (message.error) {
+	      if (self.trace) console.log("message: %s", json);
 
-	    request.emit('error', {
-		'error'		: 'remoteError',
-		'error_message' : 'Remote reported an error.',
-		'remote'        : message,
-	      });
+	      request.emit('error', {
+		  'error'		: 'remoteError',
+		  'error_message' : 'Remote reported an error.',
+		  'remote'        : message,
+		});
+	    }
 	  }
-	}
+	  break;
 
 	case 'ledgerClosed':
 	  // XXX If not trusted, need to verify we consider ledger closed.
@@ -247,8 +258,8 @@ Remote.prototype.connect_helper = function () {
 
 	  self.ledger_closed	    = message.ledger_closed;
 	  self.ledger_current_index = message.ledger_closed_index + 1;
-	  
-	  self.emit('ledger_closed');
+
+	  self.emit('ledger_closed', self.ledger_closed, self.ledger_closed_index);
 	  break;
 	
 	default:
@@ -319,7 +330,7 @@ Remote.prototype.disconnect = function (done) {
   var self  = this;
   var ws    = this.ws;
 
-  if (self.trace) console.log("remote: disconnect");
+  if (this.trace) console.log("remote: disconnect");
   
   ws.onclose = function () {
     if (self.trace) console.log("remote: onclose: %s", ws.readyState);
@@ -333,8 +344,6 @@ Remote.prototype.disconnect = function (done) {
 // Send a request.
 // <-> request: what to send, consumed.
 Remote.prototype.request = function (request) {
-  var self  = this;
-
   this.ws.response[request.message.id = this.id] = request;
   
   this.id += 1;   // Advance id.
@@ -356,7 +365,6 @@ Remote.prototype.request_ledger_current = function () {
   return new Request(this, 'ledger_current');
 };
 
-// <-> request:
 // --> ledger : optional
 // --> ledger_index : optional
 Remote.prototype.request_ledger_entry = function (type) {
@@ -411,6 +419,19 @@ Remote.prototype.request_ledger_entry = function (type) {
       }
     }
   });
+
+  return request;
+};
+
+// --> ledger_closed : optional
+Remote.prototype.request_transaction_entry = function (hash, ledger_closed) {
+  assert(this.trusted);   // If not trusted, need to check proof, maybe talk packet protocol.
+  
+  var request = new Request(this, 'transaction_entry');
+
+  request.message.transaction	= hash;
+  if (ledger_closed)
+    request.message.ledger_closed	= ledger_closed;
 
   return request;
 };
@@ -479,15 +500,17 @@ Remote.prototype.server_subscribe = function () {
 
   var request = new Request(this, 'server_subscribe');
 
-  request.on('success', function (message) {
-      self.ledger_current_index = message.ledger_current_index;
-      self.ledger_closed        = message.ledger_closed;
-      self.stand_alone          = message.stand_alone;
+  request.
+    on('success', function (message) {
+	self.ledger_closed        = message.ledger_closed;
+	self.ledger_current_index = message.ledger_current_index;
+	self.stand_alone          = !!message.stand_alone;
 
-      self.emit('subscribed');
+	self.emit('subscribed');
 
-      self.emit('ledger_closed');
-    });
+	self.emit('ledger_closed', self.ledger_closed, self.ledger_current_index-1);
+      })
+    .request();
 
   // XXX Could give error events, maybe even time out.
 
@@ -497,14 +520,14 @@ Remote.prototype.server_subscribe = function () {
 // Ask the remote to accept the current ledger.
 // - To be notified when the ledger is accepted, server_subscribe() then listen to 'ledger_closed' events.
 Remote.prototype.ledger_accept = function () {
-  if (this.stand_alone)
+  if (this.stand_alone || undefined === this.stand_alone)
   {
     var request = new Request(this, 'ledger_accept');
 
     request.request();
   }
   else {
-    self.emit('error', {
+    this.emit('error', {
 	'error' : 'notStandAlone'
       });
   }
@@ -565,29 +588,139 @@ Remote.prototype.transaction = function () {
 //
 // Transactions
 //
+// Transaction events:
+// 'success' : Transaction submitted without error.
+// 'error' : Error submitting transaction.
+// 'proposed: Advisory proposed status transaction.
+// - A client should expect 0 to multiple results.
+// - Might not get back. The remote might just forward the transaction.
+// - A success could be reverted in final.
+// - local error: other remotes might like it.
+// - malformed error: local server thought it was malformed.
+// - The client should only trust this when talking to a trusted server.
+// 'final' : Final status of transaction.
+// - Only expect a final from honest clients after a tesSUCCESS or ter*.
+// 'state' : Follow the state of a transaction.
+//    'clientSubmitted'	    - Sent to remote
+//     |- 'remoteError'	    - Remote rejected transaction.
+//      \- 'clientProposed' - Remote provisionally accepted transaction.
+//       |- 'clientMissing' - Transaction has not appeared in ledger as expected.
+//       | |- 'clientLost'  - No longer monitoring missing transaction.
+//       |/
+//       |- 'tesSUCCESS'    - Transaction in ledger as expected.
+//       |- 'ter...'	    - Transaction failed.
+//       |- 'tep...'	    - Transaction partially succeeded.
+//
+// Notes:
+// - All transactions including locally errors and malformed errors may be
+//   forwarded.
+// - A malicous server can:
+//   - give any proposed result.
+//     - it may declare something correct as incorrect or something correct as incorrect.
+//     - it may not communicate with the rest of the network.
+//   - may or may not forward.
+//
+
+var SUBMIT_MISSING  = 4;    // Report missing.
+var SUBMIT_LOST	    = 8;    // Give up tracking.
 
 // A class to implement transactions.
 // - Collects parameters
 // - Allow event listeners to be attached to determine the outcome.
 var Transaction	= function (remote) {
-  this.prototype    = events.EventEmitter;	// XXX Node specific.
+  var self  = this;
+
+  this.prototype    = EventEmitter;	// XXX Node specific.
 
   this.remote	    = remote;
   this.secret	    = undefined;
-  this.transaction  = {};   // Transaction data.
+  this.transaction  = {		      	// Transaction data.
+    'Flags' : 0,		      	// XXX Would be nice if server did not require this.
+  };
+  this.hash	    = undefined;
+  this.submit_index = undefined;      	// ledger_current_index was this when transaction was submited.
+  this.state	    = undefined;	// Under construction.
+
+  this.on('success', function (message) {
+      if (message.engine_result) {
+	self.hash	= message.transaction.hash;
+
+	self.set_state('clientProposed');
+
+	self.emit('proposed', {
+	    'result'	      : message.engine_result,
+	    'result_code'     : message.engine_result_code,
+	    'result_message'  : message.engine_result_message,
+	    'rejected'	      : self.isRejected(message.engine_result_code),	  // If server is honest, don't expect a final if rejected.
+	  });
+      }
+    });
+
+  this.on('error', function (message) {
+	// Might want to give more detailed information.
+	self.set_state('remoteError');
+    });
 };
 
-Transaction.prototype  = new events.EventEmitter;
+Transaction.prototype  = new EventEmitter;
 
 // Return this.  node EventEmitter's on doesn't return this.
 Transaction.prototype.on = function (e, c) {
-  events.EventEmitter.prototype.on.call(this, e, c);
+  EventEmitter.prototype.on.call(this, e, c);
 
   return this;
 };
 
+Transaction.prototype.consts = {
+  'telLOCAL_ERROR'  : -399,
+  'temMALFORMED'    : -299,
+  'tefFAILURE'	    : -199,
+  'terRETRY'	    : -99,
+  'tesSUCCESS'	    : 0,
+  'tepPARTIAL'	    : 100,
+};
+
+Transaction.prototype.isTelLocal = function (ter) {
+  return ter >= this.consts.telLOCAL_ERROR && ter < this.consts.temMALFORMED;
+};
+
+Transaction.prototype.isTemMalformed = function (ter) {
+  return ter >= this.consts.temMALFORMED && ter < this.consts.tefFAILURE;
+};
+
+Transaction.prototype.isTefFailure = function (ter) {
+  return ter >= this.consts.tefFAILURE && ter < this.consts.terRETRY;
+};
+
+Transaction.prototype.isTerRetry = function (ter) {
+  return ter >= this.consts.terRETRY && ter < this.consts.tesSUCCESS;
+};
+
+Transaction.prototype.isTepSuccess = function (ter) {
+  return ter >= this.consts.tesSUCCESS;
+};
+
+Transaction.prototype.isTepPartial = function (ter) {
+  return ter >= this.consts.tepPATH_PARTIAL;
+};
+
+Transaction.prototype.isRejected = function (ter) {
+  return this.isTelLocal(ter) || this.isTemMalformed(ter) || this.isTefFailure(ter);
+};
+
+Transaction.prototype.set_state = function (state) {
+  if (this.state !== state) {
+    this.state  = state;
+    this.emit('state', state);
+  }
+};
+
 // Submit a transaction to the network.
+// XXX Don't allow a submit without knowing ledger_closed_index.
+// XXX Have a network canSubmit(), post events for following.
+// XXX Also give broader status for tracking through network disconnects.
 Transaction.prototype.submit = function () {
+  var self	  = this;
   var transaction = this.transaction;
 
   if (undefined === transaction.Fee) {
@@ -600,6 +733,50 @@ Transaction.prototype.submit = function () {
       transaction.Fee    = fees['default'].to_json();
     }
   }
+
+  if (this.listeners('final').length) {
+    // There are listeners for 'final' arrange to emit it.
+
+    this.submit_index = this.remote.ledger_current_index;
+
+    var	on_ledger_closed = function (ledger_closed, ledger_closed_index) {
+	var stop  = false;
+
+// XXX make sure self.hash is available.
+	self.remote.request_transaction_entry(self.hash, ledger_closed)
+	  .on('success', function (message) {
+	      // XXX Fake results for now.
+	      if (!message.metadata.result)
+		message.metadata.result	= 'tesSUCCESS';
+
+	      self.set_state(message.metadata.result);	// XXX Untested.
+	      self.emit('final', message);
+	    })
+	  .on('error', function (message) {
+	      if ('remoteError' === message.error
+		&& 'transactionNotFound' === message.remote.error) {
+		if (self.submit_index + SUBMIT_LOST < ledger_closed_index) {
+		  self.set_state('clientLost');	      // Gave up.
+		  stop  = true;
+		}
+		else if (self.submit_index + SUBMIT_MISSING < ledger_closed_index) {
+		  self.set_state('clientMissing');    // We don't know what happened to transaction, still might find.
+		}
+	      }
+	      // XXX Could log other unexpectedness.
+	    })
+	  .request();
+	
+	if (stop) {
+	  self.removeListener('ledger_closed', on_ledger_closed);
+	  self.emit('final', message);
+	}
+      };
+
+    this.remote.on('ledger_closed', on_ledger_closed);
+  }
+
+  this.set_state('clientSubmitted');
 
   this.remote.submit(this);
 
@@ -628,7 +805,7 @@ Transaction.prototype.flags = function (flags) {
   if (flags) {
       var   transaction_flags = exports.flags[this.transaction.TransactionType];
 
-      if (undefined == this.transaction.Flags)
+      if (undefined == this.transaction.Flags)	// We plan to not define this field on new Transaction.
 	this.transaction.Flags	  = 0;
       
       var flag_set  = 'object' === typeof flags ? flags : [ flags ];
@@ -655,11 +832,17 @@ Transaction.prototype.flags = function (flags) {
 //
 // Transactions
 //
-//  remote.transaction()    // Build a transaction object.
+//  Construction:
+//    remote.transaction()  // Build a transaction object.
 //     .offer_create(...)   // Set major parameters.
 //     .flags()		    // Set optional parameters.
 //     .on()		    // Register for events.
 //     .submit();	    // Send to network.
+//
+//  Events:
+//   'success'		    // Transaction was successfully submitted: hash, proposed TER
+//   'error'		    // Error submitting transaction.
+//   'closed'		    // Result from closed ledger: TER
 //
 
 // Allow config account defaults to be used.
