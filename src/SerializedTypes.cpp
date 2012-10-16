@@ -13,6 +13,8 @@
 #include "NewcoinAddress.h"
 #include "TransactionErr.h"
 
+SETUP_LOG();
+
 STAmount saZero(CURRENCY_ONE, ACCOUNT_ONE, 0);
 STAmount saOne(CURRENCY_ONE, ACCOUNT_ONE, 1);
 
@@ -62,7 +64,7 @@ STUInt8* STUInt8::construct(SerializerIterator& u, SField::ref name)
 
 std::string STUInt8::getText() const
 {
-	if (getFName() == sfTransactionType)
+	if (getFName() == sfTransactionResult)
 	{
 		std::string token, human;
 		if (transResultInfo(static_cast<TER>(value), token, human))
@@ -73,11 +75,13 @@ std::string STUInt8::getText() const
 
 Json::Value STUInt8::getJson(int) const
 {
-	if (getFName() == sfTransactionType)
+	if (getFName() == sfTransactionResult)
 	{
 		std::string token, human;
 		if (transResultInfo(static_cast<TER>(value), token, human))
 			return token;
+		else
+			cLog(lsWARNING) << "Unknown result code in metadata: " << value;
 	}
 	return value;
 }
@@ -352,7 +356,7 @@ STPathSet* STPathSet::construct(SerializerIterator& s, SField::ref name)
 		{
 			if (path.empty())
 			{
-				Log(lsINFO) << "STPathSet: Empty path.";
+				cLog(lsINFO) << "STPathSet: Empty path.";
 
 				throw std::runtime_error("empty path");
 			}
@@ -367,7 +371,7 @@ STPathSet* STPathSet::construct(SerializerIterator& s, SField::ref name)
 		}
 		else if (iType & ~STPathElement::typeValidBits)
 		{
-			Log(lsINFO) << "STPathSet: Bad path element: " << iType;
+			cLog(lsINFO) << "STPathSet: Bad path element: " << iType;
 
 			throw std::runtime_error("bad path element");
 		}
