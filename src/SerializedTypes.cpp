@@ -11,6 +11,7 @@
 #include "NewcoinAddress.h"
 #include "utils.h"
 #include "NewcoinAddress.h"
+#include "TransactionErr.h"
 
 STAmount saZero(CURRENCY_ONE, ACCOUNT_ONE, 0);
 STAmount saOne(CURRENCY_ONE, ACCOUNT_ONE, 1);
@@ -61,11 +62,23 @@ STUInt8* STUInt8::construct(SerializerIterator& u, SField::ref name)
 
 std::string STUInt8::getText() const
 {
+	if (getFName() == sfTransactionType)
+	{
+		std::string token, human;
+		if (transResultInfo(static_cast<TER>(value), token, human))
+			return human;
+	}
 	return boost::lexical_cast<std::string>(value);
 }
 
 Json::Value STUInt8::getJson(int) const
 {
+	if (getFName() == sfTransactionType)
+	{
+		std::string token, human;
+		if (transResultInfo(static_cast<TER>(value), token, human))
+			return token;
+	}
 	return value;
 }
 
