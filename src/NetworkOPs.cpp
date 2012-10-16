@@ -646,8 +646,11 @@ int NetworkOPs::beginConsensus(const uint256& networkClosed, Ledger::pointer clo
 	Ledger::pointer prevLedger = mLedgerMaster->getLedgerByHash(closingLedger->getParentHash());
 	if (!prevLedger)
 	{ // this shouldn't happen unless we jump ledgers
-		cLog(lsWARNING) << "Don't have LCL, going to tracking";
-		setMode(omTRACKING);
+		if (mMode == omFULL)
+		{
+			cLog(lsWARNING) << "Don't have LCL, going to tracking";
+			setMode(omTRACKING);
+		}
 		return 3;
 	}
 	assert(prevLedger->getHash() == closingLedger->getParentHash());
