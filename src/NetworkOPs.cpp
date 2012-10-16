@@ -646,8 +646,11 @@ int NetworkOPs::beginConsensus(const uint256& networkClosed, Ledger::pointer clo
 	Ledger::pointer prevLedger = mLedgerMaster->getLedgerByHash(closingLedger->getParentHash());
 	if (!prevLedger)
 	{ // this shouldn't happen unless we jump ledgers
-		cLog(lsWARNING) << "Don't have LCL, going to tracking";
-		setMode(omTRACKING);
+		if (mMode == omFULL)
+		{
+			cLog(lsWARNING) << "Don't have LCL, going to tracking";
+			setMode(omTRACKING);
+		}
 		return 3;
 	}
 	assert(prevLedger->getHash() == closingLedger->getParentHash());
@@ -658,7 +661,6 @@ int NetworkOPs::beginConsensus(const uint256& networkClosed, Ledger::pointer clo
 	prevLedger->setImmutable();
 	mConsensus = boost::make_shared<LedgerConsensus>(
 		networkClosed, prevLedger, mLedgerMaster->getCurrentLedger()->getCloseTimeNC());
-	mConsensus->swapDefer(mDeferredProposals);
 
 	cLog(lsDEBUG) << "Initiating consensus engine";
 	return mConsensus->startup();
@@ -728,7 +730,7 @@ bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash, cons
 		}
 		if (prevLedger == mConsensus->getLCL())
 			return mConsensus->peerPosition(proposal);
-		mConsensus->deferProposal(proposal, nodePublic);
+		storeProposal(proposal, nodePublic);
 		return false;
 	}
 
@@ -738,7 +740,7 @@ bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash, cons
 	{ // Note that if the LCL is different, the signature check will fail
 		cLog(lsWARNING) << "Ledger proposal fails signature check";
 		proposal->setSignature(signature);
-		mConsensus->deferProposal(proposal, nodePublic);
+		storeProposal(proposal, nodePublic);
 		return false;
 	}
 	return mConsensus->peerPosition(proposal);
@@ -785,7 +787,6 @@ void NetworkOPs::endConsensus(bool correctLCL)
 			cLog(lsTRACE) << "Killing obsolete peer status";
 			it->cycleStatus();
 		}
-	mConsensus->swapDefer(mDeferredProposals);
 	mConsensus = boost::shared_ptr<LedgerConsensus>();
 }
 
@@ -874,8 +875,13 @@ Json::Value NetworkOPs::getServerInfo()
 		default: info["serverState"] = "unknown";
 	}
 
-	if (!theConfig.VALIDATION_SEED.isValid()) info["serverState"] = "none";
-	else info["validationPKey"] = NewcoinAddress::createNodePublic(theConfig.VALIDATION_SEED).humanNodePublic();
+	if (!theConfig.VALIDATION_SEED.isValid())
+		info["serverState"] = "none";
+	else
+		info["validationPKey"] = NewcoinAddress::createNodePublic(theConfig.VALIDATION_SEED).humanNodePublic();
+
+	if (mNeedNetworkLedger)
+		info["networkLedger"] = "waiting";
 
 	Json::Value lastClose = Json::objectValue;
 	lastClose["proposers"] = theApp->getOPs().getPreviousProposers();
@@ -1242,6 +1248,14 @@ uint32 NetworkOPs::acceptLedger()
 	beginConsensus(mLedgerMaster->getClosedLedger()->getHash(), mLedgerMaster->getCurrentLedger());
 	mConsensus->simulate();
 	return mLedgerMaster->getCurrentLedger()->getLedgerSeq();
+}
+
+void NetworkOPs::storeProposal(const LedgerProposal::pointer& proposal, const NewcoinAddress& peerPublic)
+{
+	std::list<LedgerProposal::pointer>& props = mStoredProposals[peerPublic.getNodeID()];
+	if (props.size() >= (mLastCloseProposers + 10))
+		props.pop_front();
+	props.push_back(proposal);
 }
 
 #if 0

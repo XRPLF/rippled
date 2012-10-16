@@ -35,8 +35,7 @@ Ledger::Ledger(const NewcoinAddress& masterID, uint64 startAmount) : mTotCoins(s
 
 	mAccountStateMap->armDirty();
 	writeBack(lepCREATE, startAccount->getSLE());
-	mAccountStateMap->flushDirty(256, hotACCOUNT_NODE, mLedgerSeq);
-	mAccountStateMap->disarmDirty();
+	SHAMap::flushDirty(*mAccountStateMap->disarmDirty(), 256, hotACCOUNT_NODE, mLedgerSeq);
 }
 
 Ledger::Ledger(const uint256 &parentHash, const uint256 &transHash, const uint256 &accountHash,
@@ -318,7 +317,7 @@ bool Ledger::getTransaction(const uint256& txID, Transaction::pointer& txn, Tran
 			txn = Transaction::sharedTransaction(it.getVL(), true);
 		else
 			it.getVL(); // skip transaction
-		meta = boost::make_shared<TransactionMetaSet>(mLedgerSeq, it.getVL());
+		meta = boost::make_shared<TransactionMetaSet>(txID, mLedgerSeq, it.getVL());
 	}
 	else
 		return false;
@@ -326,11 +325,6 @@ bool Ledger::getTransaction(const uint256& txID, Transaction::pointer& txn, Tran
 	if (txn->getStatus() == NEW)
 		txn->setStatus(mClosed ? COMMITTED : INCLUDED, mLedgerSeq);
 	theApp->getMasterTransaction().canonicalize(txn, false);
-	return true;
-}
-
-bool Ledger::unitTest()
-{
 	return true;
 }
 
@@ -363,21 +357,9 @@ void Ledger::saveAcceptedLedger()
 
 	{
 		ScopedLock sl(theApp->getLedgerDB()->getDBLock());
+
 		if (SQL_EXISTS(theApp->getLedgerDB()->getDB(), boost::str(ledgerExists % mLedgerSeq)))
 			theApp->getLedgerDB()->getDB()->executeSQL(boost::str(deleteLedger % mLedgerSeq));
-		theApp->getLedgerDB()->getDB()->executeSQL(boost::str(addLedger %
-			getHash().GetHex() % mLedgerSeq % mParentHash.GetHex() %
-			boost::lexical_cast<std::string>(mTotCoins) % mCloseTime % mParentCloseTime %
-			mCloseResolution % mCloseFlags %
-			mAccountHash.GetHex() % mTransHash.GetHex()));
-
-		// write out dirty nodes
-		int fc;
-		while ((fc = mTransactionMap->flushDirty(256, hotTRANSACTION_NODE, mLedgerSeq)) > 0)
-		{ cLog(lsINFO) << "Flushed " << fc << " dirty transaction nodes"; }
-		while ((fc = mAccountStateMap->flushDirty(256, hotACCOUNT_NODE, mLedgerSeq)) > 0)
-		{ cLog(lsINFO) << "Flushed " << fc << " dirty state nodes"; }
-		disarmDirty();
 
 		SHAMap& txSet = *peekTransactionMap();
 		Database *db = theApp->getTxnDB()->getDB();
@@ -435,6 +417,13 @@ void Ledger::saveAcceptedLedger()
 			}
 		}
 		db->executeSQL("COMMIT TRANSACTION;");
+
+		theApp->getHashedObjectStore().waitWrite(); // wait until all nodes are written
+		theApp->getLedgerDB()->getDB()->executeSQL(boost::str(addLedger %
+			getHash().GetHex() % mLedgerSeq % mParentHash.GetHex() %
+			boost::lexical_cast<std::string>(mTotCoins) % mCloseTime % mParentCloseTime %
+			mCloseResolution % mCloseFlags %
+			mAccountHash.GetHex() % mTransHash.GetHex()));
 	}
 
 	theApp->getOPs().pubLedger(shared_from_this());
@@ -565,7 +554,7 @@ Json::Value Ledger::getJson(int options)
 					SerializerIterator tsit(sTxn);
 					SerializedTransaction txn(tsit);
 
-					TransactionMetaSet meta(mLedgerSeq, sit.getVL());
+					TransactionMetaSet meta(item->getTag(), mLedgerSeq, sit.getVL());
 					Json::Value txJson = txn.getJson(0);
 					txJson["metaData"] = meta.getJson(0);
 					txns.append(txJson);

@@ -120,7 +120,7 @@ public:
 	STAmount			accountFunds(const uint160& uAccountID, const STAmount& saDefault);
 
 	Json::Value getJson(int) const;
-	void calcRawMeta(Serializer&);
+	void calcRawMeta(Serializer&, TER result);
 
 	// iterator functions
 	bool isEmpty() const													{ return mEntries.empty(); }

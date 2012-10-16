@@ -24,6 +24,9 @@ std::auto_ptr<SerializedType> STObject::makeDefaultObject(SerializedTypeID id, S
 		case STI_NOTPRESENT:
 			return std::auto_ptr<SerializedType>(new SerializedType(name));
 
+		case STI_UINT8:
+			return std::auto_ptr<SerializedType>(new STUInt8(name));
+
 		case STI_UINT16:
 			return std::auto_ptr<SerializedType>(new STUInt16(name));
 
@@ -64,6 +67,8 @@ std::auto_ptr<SerializedType> STObject::makeDefaultObject(SerializedTypeID id, S
 			return std::auto_ptr<SerializedType>(new STArray(name));
 
 		default:
+			cLog(lsFATAL) << "Object type: " << lexical_cast_i(id);
+			assert(false);
 			throw std::runtime_error("Unknown object type");
 	}
 }
@@ -75,6 +80,9 @@ std::auto_ptr<SerializedType> STObject::makeDeserializedObject(SerializedTypeID 
 	{
 		case STI_NOTPRESENT:
 			return SerializedType::deserialize(name);
+
+		case STI_UINT8:
+			return STUInt8::deserialize(sit, name);
 
 		case STI_UINT16:
 			return STUInt16::deserialize(sit, name);
@@ -394,6 +402,19 @@ bool STObject::isFieldPresent(SField::ref field) const
 	if (index == -1)
 		return false;
 	return peekAtIndex(index).getSType() != STI_NOTPRESENT;
+}
+
+STObject& STObject::peekFieldObject(SField::ref field)
+{
+	SerializedType* rf = getPField(field, true);
+	if (!rf)
+		throw std::runtime_error("Field not found");
+	if (rf->getSType() == STI_NOTPRESENT)
+		rf = makeFieldPresent(field);
+	STObject* cf = dynamic_cast<STObject*>(rf);
+	if (!cf)
+		throw std::runtime_error("Wrong field type");
+	return *cf;
 }
 
 bool STObject::setFlag(uint32 f)
@@ -818,8 +839,20 @@ std::string STArray::getText() const
 Json::Value STArray::getJson(int p) const
 {
 	Json::Value v = Json::arrayValue;
-	BOOST_FOREACH(const STObject& o, value)
-		v.append(o.getJson(p));
+	int index = 1;
+	BOOST_FOREACH(const STObject& object, value)
+	{
+		if (object.getSType() != STI_NOTPRESENT)
+		{
+			Json::Value inner = Json::objectValue;
+			if (!object.getFName().hasName())
+				inner[lexical_cast_i(index)] = object.getJson(p);
+			else
+				inner[object.getName()] = object.getJson(p);
+			v.append(inner);
+			index++;
+		}
+	}
 	return v;
 }
 
@@ -864,6 +897,11 @@ STArray* STArray::construct(SerializerIterator& sit, SField::ref field)
 	}
 
 	return new STArray(field, value);
+}
+
+void STArray::sort(bool (*compare)(const STObject&, const STObject&))
+{
+	std::sort(value.begin(), value.end(), compare);
 }
 
 std::auto_ptr<STObject> STObject::parseJson(const Json::Value& object, SField::ref inName, int depth)

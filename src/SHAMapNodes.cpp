@@ -300,7 +300,9 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned 
 			mType = tnINNER;
 		}
 		else if (prefix == sHP_TransactionNode)
-		{
+		{ // transaction with metadata
+			if (s.getLength() < 32)
+				throw std::runtime_error("short TXN node");
 			uint256 txID;
 			s.get256(txID, s.getLength() - 32);
 			s.chop(32);
@@ -333,21 +335,25 @@ bool SHAMapTreeNode::updateHash()
 		if(!empty)
 			nh = Serializer::getPrefixHash(sHP_InnerNode, reinterpret_cast<unsigned char *>(mHashes), sizeof(mHashes));
 	}
-	else if (mType == tnACCOUNT_STATE)
-	{
-		Serializer s((256 + 32) / 8 + mItem->peekData().size());
-		s.add32(sHP_LeafNode);
-		mItem->addRaw(s);
-		s.add256(mItem->getTag());
-		nh = s.getSHA512Half();
-	}
 	else if (mType == tnTRANSACTION_NM)
 	{
 		nh = Serializer::getPrefixHash(sHP_TransactionID, mItem->peekData());
 	}
+	else if (mType == tnACCOUNT_STATE)
+	{
+		Serializer s(mItem->peekSerializer().getDataLength() + (256 + 32) / 8);
+		s.add32(sHP_LeafNode);
+		s.addRaw(mItem->peekData());
+		s.add256(mItem->getTag());
+		nh = s.getSHA512Half();
+	}
 	else if (mType == tnTRANSACTION_MD)
 	{
-		nh = Serializer::getPrefixHash(sHP_TransactionNode, mItem->peekData());
+		Serializer s(mItem->peekSerializer().getDataLength() + (256 + 32) / 8);
+		s.add32(sHP_TransactionNode);
+		s.addRaw(mItem->peekData());
+		s.add256(mItem->getTag());
+		nh = s.getSHA512Half();
 	}
 	else
 		assert(false);
@@ -427,6 +433,7 @@ void SHAMapTreeNode::addRaw(Serializer& s, SHANodeFormat format)
 		{
 			s.add32(sHP_TransactionNode);
 			mItem->addRaw(s);
+			s.add256(mItem->getTag());
 		}
 		else
 		{
@@ -505,11 +512,21 @@ std::string SHAMapTreeNode::getString() const
 	}
 	if (isLeaf())
 	{
-		ret += ",leaf\n";
+		if (mType == tnTRANSACTION_NM)
+			ret += ",txn\n";
+		else if (mType == tnTRANSACTION_MD)
+			ret += ",txn+md\n";
+		else if (mType == tnACCOUNT_STATE)
+			ret += ",as\n";
+		else
+			ret += ",leaf\n";
+
 		ret += "  Tag=";
 		ret += getTag().GetHex();
 		ret += "\n  Hash=";
 		ret += mHash.GetHex();
+		ret += "/";
+		ret += lexical_cast_i(mItem->peekSerializer().getDataLength());
 	}
 	return ret;
 }
