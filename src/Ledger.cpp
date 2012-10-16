@@ -317,7 +317,7 @@ bool Ledger::getTransaction(const uint256& txID, Transaction::pointer& txn, Tran
 			txn = Transaction::sharedTransaction(it.getVL(), true);
 		else
 			it.getVL(); // skip transaction
-		meta = boost::make_shared<TransactionMetaSet>(mLedgerSeq, it.getVL());
+		meta = boost::make_shared<TransactionMetaSet>(txID, mLedgerSeq, it.getVL());
 	}
 	else
 		return false;
@@ -554,7 +554,7 @@ Json::Value Ledger::getJson(int options)
 					SerializerIterator tsit(sTxn);
 					SerializedTransaction txn(tsit);
 
-					TransactionMetaSet meta(mLedgerSeq, sit.getVL());
+					TransactionMetaSet meta(item->getTag(), mLedgerSeq, sit.getVL());
 					Json::Value txJson = txn.getJson(0);
 					txJson["metaData"] = meta.getJson(0);
 					txns.append(txJson);
