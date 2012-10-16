@@ -63,7 +63,8 @@ buster.testCase("Remote functions", {
 	  console.log(m);
 
 	  buster.assert(false);
-	}).request();
+	})
+      .request();
     },
 
   'request_ledger_closed' :
@@ -78,7 +79,8 @@ buster.testCase("Remote functions", {
 	  console.log("error: %s", m);
 
 	  buster.assert(false);
-	}).request();
+	})
+      .request();
     },
 
   'manual account_root success' :
@@ -100,13 +102,15 @@ buster.testCase("Remote functions", {
 		console.log("error: %s", m);
 
 		buster.assert(false);
-	      }).request();
+	      })
+	    .request();
 	})
       .on('error', function(m) {
 	  console.log("error: %s", m);
 
 	  buster.assert(false);
-	}).request();
+	})
+      .request();
     },
 
   'account_root remote malformedAddress' :
@@ -129,13 +133,15 @@ buster.testCase("Remote functions", {
 		buster.assert.equals(m.error, 'remoteError');
 		buster.assert.equals(m.remote.error, 'malformedAddress');
 		done();
-	      }).request();
+	      })
+	    .request();
 	})
       .on('error', function(m) {
 	  console.log("error: %s", m);
 
 	  buster.assert(false);
-	}).request();
+	})
+      .request();
     },
 
   'account_root entryNotFound' :
@@ -158,7 +164,8 @@ buster.testCase("Remote functions", {
 		buster.assert.equals(m.error, 'remoteError');
 		buster.assert.equals(m.remote.error, 'entryNotFound');
 		done();
-	      }).request();
+	      })
+	    .request();
 	})
       .on('error', function(m) {
 	  console.log("error: %s", m);
@@ -187,13 +194,15 @@ buster.testCase("Remote functions", {
 		console.log("error: %s", m);
 
 		buster.assert(false);
-	      }).request();
+	      }).
+	    request();
 	})
       .on('error', function(m) {
 	  console.log(m);
 
 	  buster.assert(false);
-	}).request();
+	})
+      .request();
     },
 
   'create account' :
@@ -211,7 +220,8 @@ buster.testCase("Remote functions", {
 	    console.log("error: %s", m);
 
 	    buster.assert(false);
-	  }).submit();
+	  })
+	.submit();
     },
 });
 
