@@ -24,6 +24,9 @@ std::auto_ptr<SerializedType> STObject::makeDefaultObject(SerializedTypeID id, S
 		case STI_NOTPRESENT:
 			return std::auto_ptr<SerializedType>(new SerializedType(name));
 
+		case STI_UINT8:
+			return std::auto_ptr<SerializedType>(new STUInt8(name));
+
 		case STI_UINT16:
 			return std::auto_ptr<SerializedType>(new STUInt16(name));
 
@@ -64,6 +67,8 @@ std::auto_ptr<SerializedType> STObject::makeDefaultObject(SerializedTypeID id, S
 			return std::auto_ptr<SerializedType>(new STArray(name));
 
 		default:
+			cLog(lsFATAL) << "Object type: " << lexical_cast_i(id);
+			assert(false);
 			throw std::runtime_error("Unknown object type");
 	}
 }
@@ -75,6 +80,9 @@ std::auto_ptr<SerializedType> STObject::makeDeserializedObject(SerializedTypeID 
 	{
 		case STI_NOTPRESENT:
 			return SerializedType::deserialize(name);
+
+		case STI_UINT8:
+			return STUInt8::deserialize(sit, name);
 
 		case STI_UINT16:
 			return STUInt16::deserialize(sit, name);
