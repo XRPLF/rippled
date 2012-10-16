@@ -6,314 +6,50 @@
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 
-bool TransactionMetaNodeEntry::operator<(const TransactionMetaNodeEntry& e) const
-{
-	if (mType < e.mType) return true;
-	if (mType > e.mType) return false;
-	return compare(e) < 0;
-}
-
-bool TransactionMetaNodeEntry::operator<=(const TransactionMetaNodeEntry& e) const
-{
-	if (mType < e.mType) return true;
-	if (mType > e.mType) return false;
-	return compare(e) <= 0;
-}
-
-bool TransactionMetaNodeEntry::operator>(const TransactionMetaNodeEntry& e) const
-{
-	if (mType > e.mType) return true;
-	if (mType < e.mType) return false;
-	return compare(e) > 0;
-}
-
-bool TransactionMetaNodeEntry::operator>=(const TransactionMetaNodeEntry& e) const
-{
-	if (mType > e.mType) return true;
-	if (mType < e.mType) return false;
-	return compare(e) >= 0;
-}
-
-TMNEThread::TMNEThread(SerializerIterator& sit) : TransactionMetaNodeEntry(TMSThread)
-{
-	mPrevTxID = sit.get256();
-	mPrevLgrSeq = sit.get32();
-}
-
-void TMNEThread::addRaw(Serializer& sit) const
-{
-	sit.add8(mType);
-	sit.add256(mPrevTxID);
-	sit.add32(mPrevLgrSeq);
-}
-
-int TMNEThread::compare(const TransactionMetaNodeEntry&) const
-{
-	assert(false); // should never be two entries for the same node (as of now)
-	return 0;
-}
-
-Json::Value TMNEThread::getJson(int) const
-{
-	Json::Value inner(Json::objectValue);
-	inner["prev_transaction"] = mPrevTxID.GetHex();
-	inner["prev_ledger_seq"] = mPrevLgrSeq;
-
-	Json::Value outer(Json::objectValue);
-	outer["thread"] = inner;
-	return outer;
-}
-
-TMNEAmount::TMNEAmount(int type, SerializerIterator& sit) : TransactionMetaNodeEntry(type)
-{
-	mAmount = *dynamic_cast<STAmount*>(STAmount::deserialize(sit, sfAmount).get()); // Ouch
-}
-
-void TMNEAmount::addRaw(Serializer& s) const
-{
-	s.add8(mType);
-	mAmount.add(s);
-}
-
-Json::Value TMNEAmount::getJson(int v) const
-{
-	Json::Value outer(Json::objectValue);
-	switch (mType)
-	{
-		case TMSPrevBalance:		outer["prev_balance"] = mAmount.getJson(v); break;
-		case TMSFinalBalance:		outer["final_balance"] = mAmount.getJson(v); break;
-		case TMSPrevTakerPays:		outer["prev_taker_pays"] = mAmount.getJson(v); break;
-		case TMSPrevTakerGets:		outer["prev_taker_gets"] = mAmount.getJson(v); break;
-		case TMSFinalTakerPays:		outer["final_taker_pays"] = mAmount.getJson(v); break;
-		case TMSFinalTakerGets:		outer["final_taker_gets"] = mAmount.getJson(v); break;
-		default: assert(false);
-	}
-	return outer;
-}
-
-int TMNEAmount::compare(const TransactionMetaNodeEntry& e) const
-{
-	assert(false); // can't be two changed amounts of same type
-	return 0;
-}
-
-TMNEAccount::TMNEAccount(int type, SerializerIterator& sit)
-	: TransactionMetaNodeEntry(type), mAccount(STAccount(sit.getVL()).getValueNCA())
-{ ; }
-
-void TMNEAccount::addRaw(Serializer& sit) const
-{
-	sit.add8(mType);
-
-	STAccount sta;
-	sta.setValueNCA(mAccount);
-	sta.add(sit);
-}
-
-Json::Value TMNEAccount::getJson(int) const
-{
-	Json::Value outer(Json::objectValue);
-	switch (mType)
-	{
-		case TMSPrevAccount:	outer["prev_account"] = mAccount.humanAccountID(); break;
-		case TMSLowID:			outer["lowID"] = mAccount.humanAccountID(); break;
-		case TMSHighID:			outer["highID"] = mAccount.humanAccountID(); break;
-		default: assert(false);
-	}
-	return outer;
-}
-
-int TMNEAccount::compare(const TransactionMetaNodeEntry&) const
-{
-	assert(false); // Can't be two modified accounts of same type for same node
-	return 0;
-}
-
-TransactionMetaNode::TransactionMetaNode(int type, const uint256& node, SerializerIterator& sit)
-		: mType(type), mNode(node)
-{
-	while (1)
-	{
-		int nType = sit.get8();
-		switch (nType)
-		{
-			case TMSEndOfNode:
-				return;
-
-			case TMSThread:
-				mEntries.push_back(new TMNEThread(sit));
-				break;
-
-			// Nodes that contain an amount
-			case TMSPrevBalance:
-			case TMSPrevTakerPays:
-			case TMSPrevTakerGets:
-			case TMSFinalTakerPays:
-			case TMSFinalTakerGets:
-				mEntries.push_back(new TMNEAmount(nType, sit));
-
-			case TMSPrevAccount:
-				mEntries.push_back(new TMNEAccount(nType, sit));
-		}
-	}
-}
-
-void TransactionMetaNode::addRaw(Serializer& s)
-{
-	s.add8(mType);
-	s.add256(mNode);
-	mEntries.sort();
-	BOOST_FOREACH(TransactionMetaNodeEntry& it, mEntries)
-		it.addRaw(s);
-	s.add8(TMSEndOfNode);
-}
-
-TransactionMetaNodeEntry* TransactionMetaNode::findEntry(int nodeType)
-{
-	BOOST_FOREACH(TransactionMetaNodeEntry& it, mEntries)
-		if (it.getType() == nodeType)
-			return &it;
-	return NULL;
-}
-
-TMNEAmount* TransactionMetaNode::findAmount(int nType)
-{
-	BOOST_FOREACH(TransactionMetaNodeEntry& it, mEntries)
-		if (it.getType() == nType)
-			return dynamic_cast<TMNEAmount *>(&it);
-	TMNEAmount* node = new TMNEAmount(nType);
-	mEntries.push_back(node);
-	return node;
-}
-
-void TransactionMetaNode::addNode(TransactionMetaNodeEntry* node)
-{
-	mEntries.push_back(node);
-}
-
-bool TransactionMetaNode::thread(const uint256& prevTx, uint32 prevLgr)
-{
-	BOOST_FOREACH(TransactionMetaNodeEntry& it, mEntries)
-		if (it.getType() == TMSThread)
-		{
-			TMNEThread* a = dynamic_cast<TMNEThread *>(&it);
-			assert(a && (a->getPrevTxID() == prevTx) && (a->getPrevLgr() == prevLgr));
-			return false;
-		}
-	addNode(new TMNEThread(prevTx, prevLgr));
-	return true;
-}
-
-bool TransactionMetaNode::addAmount(int nodeType, const STAmount& amount)
-{
-	BOOST_FOREACH(TransactionMetaNodeEntry& it, mEntries)
-		if (it.getType() == nodeType)
-		{
-			TMNEAmount* a = dynamic_cast<TMNEAmount *>(&it);
-			assert(a && (a->getAmount() == amount));
-			return false;
-		}
-	addNode(new TMNEAmount(nodeType, amount));
-	return true;
-}
-
-bool TransactionMetaNode::addAccount(int nodeType, const NewcoinAddress& account)
-{
-	BOOST_FOREACH(TransactionMetaNodeEntry& it, mEntries)
-		if (it.getType() == nodeType)
-		{
-			TMNEAccount* a = dynamic_cast<TMNEAccount *>(&it);
-			assert(a && (a->getAccount() == account));
-			return false;
-		}
-	addNode(new TMNEAccount(nodeType, account));
-	return true;
-}
-
-Json::Value TransactionMetaNode::getJson(int v) const
-{
-	Json::Value ret = Json::objectValue;
-
-	switch (mType)
-	{
-		case TMNCreatedNode:	ret["action"] = "create"; break;
-		case TMNDeletedNode:	ret["action"] = "delete"; break;
-		case TMNModifiedNode:	ret["action"] = "modify"; break;
-		default:
-			assert(false);
-	}
-
-	ret["node"] = mNode.GetHex();
-
-	Json::Value e = Json::arrayValue;
-	BOOST_FOREACH(const TransactionMetaNodeEntry& it, mEntries)
-		e.append(it.getJson(v));
-	ret["entries"] = e;
-
-	return ret;
-}
-
-TransactionMetaSet::TransactionMetaSet(uint32 ledger, const std::vector<unsigned char>& vec) : mLedger(ledger)
+TransactionMetaSet::TransactionMetaSet(const uint256& txid, uint32 ledger, const std::vector<unsigned char>& vec) :
+	mTransactionID(txid), mLedger(ledger), mNodes(sfTransactionMetaData)
 {
 	Serializer s(vec);
 	SerializerIterator sit(s);
 
-	mTransactionID = sit.get256();
-
-	int type;
-	while ((type = sit.get8()) != TMNEndOfMetadata)
-	{
-		uint256 node = sit.get256();
-		mNodes.insert(std::make_pair(node, TransactionMetaNode(type, node, sit)));
-	}
-}
-
-void TransactionMetaSet::addRaw(Serializer& s)
-{
-	s.add256(mTransactionID);
-	for (std::map<uint256, TransactionMetaNode>::iterator it = mNodes.begin(), end = mNodes.end(); it != end; ++it)
-		it->second.addRaw(s);
-	s.add8(TMNEndOfMetadata);
-}
-
-Json::Value TransactionMetaSet::getJson(int v) const
-{
-	Json::Value ret = Json::objectValue;
-
-	ret["hash"] = mTransactionID.GetHex();
-	ret["ledger"] = mLedger;
-
-	Json::Value e = Json::arrayValue;
-	for (std::map<uint256, TransactionMetaNode>::const_iterator it = mNodes.begin(), end = mNodes.end();
-			it != end; ++it)
-		e.append(it->second.getJson(v));
-	ret["nodes_affected"] = e;
-
-	return ret;
+	std::auto_ptr<SerializedType> obj = STArray::deserialize(sit, sfTransactionMetaData);
+	mNodes = * static_cast<STArray*>(obj.get());
 }
 
 bool TransactionMetaSet::isNodeAffected(const uint256& node) const
 {
-	return mNodes.find(node) != mNodes.end();
+	for (STArray::const_iterator it = mNodes.begin(); it != mNodes.end(); ++it)
+		if (it->getFieldH256(sfLedgerIndex) == node)
+			return true;
+	return false;
 }
 
-TransactionMetaNode& TransactionMetaSet::getAffectedNode(const uint256& node, int type, bool overrideType)
+STObject& TransactionMetaSet::getAffectedNode(const uint256& node, SField::ref type, bool overrideType)
 {
-	std::map<uint256, TransactionMetaNode>::iterator it = mNodes.find(node);
-	if (it != mNodes.end())
+	for (STArray::iterator it = mNodes.begin(); it != mNodes.end(); ++it)
 	{
-		if (overrideType)
-			it->second.setType(type);
-		return it->second;
+		if (it->getFieldH256(sfLedgerIndex) == node)
+		{
+			if (overrideType)
+				it->setFName(type);
+			return *it;
+		}
 	}
-	return mNodes.insert(std::make_pair(node, TransactionMetaNode(node, type))).first->second;
+
+	mNodes.push_back(STObject(type));
+	STObject& obj = mNodes.back();
+
+	assert(obj.getFName() == type);
+	obj.setFieldH256(sfLedgerIndex, node);
+
+	return mNodes.back();
 }
 
-const TransactionMetaNode& TransactionMetaSet::peekAffectedNode(const uint256& node) const
+const STObject& TransactionMetaSet::peekAffectedNode(const uint256& node) const
 {
-	std::map<uint256, TransactionMetaNode>::const_iterator it = mNodes.find(node);
-	if (it != mNodes.end())
-		return it->second;
+	for (STArray::const_iterator it = mNodes.begin(); it != mNodes.end(); ++it)
+		if (it->getFieldH256(sfLedgerIndex) == node)
+			return *it;
 	throw std::runtime_error("Affected node not found");
 }
 
@@ -321,13 +57,38 @@ void TransactionMetaSet::init(const uint256& id, uint32 ledger)
 {
 	mTransactionID = id;
 	mLedger = ledger;
-	mNodes.clear();
+	mNodes = STArray(sfTransactionMetaData);
 }
 
 void TransactionMetaSet::swap(TransactionMetaSet& s)
 {
 	assert((mTransactionID == s.mTransactionID) && (mLedger == s.mLedger));
 	mNodes.swap(s.mNodes);
+}
+
+bool TransactionMetaSet::thread(STObject& node, const uint256& prevTxID, uint32 prevLgrID)
+{
+	if (node.getFieldIndex(sfLastTxnID) == -1)
+	{
+		assert(node.getFieldIndex(sfLastTxnSeq) == -1);
+		node.setFieldH256(sfLastTxnID, prevTxID);
+		node.setFieldU32(sfLastTxnSeq, prevLgrID);
+		return true;
+	}
+	assert(node.getFieldH256(sfLastTxnID) == prevTxID);
+	assert(node.getFieldU32(sfLastTxnSeq) == prevLgrID);
+	return false;
+}
+
+static bool compare(const STObject& o1, const STObject& o2)
+{
+	return o1.getFieldH256(sfLedgerIndex) < o2.getFieldH256(sfLedgerIndex);
+}
+
+void TransactionMetaSet::addRaw(Serializer& s)
+{
+	mNodes.sort(compare);
+	mNodes.add(s);
 }
 
 // vim:ts=4
