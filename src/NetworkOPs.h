@@ -186,6 +186,8 @@ public:
 	void setStateTimer();
 	void newLCL(int proposers, int convergeTime, const uint256& ledgerHash);
 	void needNetworkLedger()			{ mNeedNetworkLedger = true; }
+	void clearNeedNetworkLedger()		{ mNeedNetworkLedger = false; }
+	bool isNeedNetworkLedger()			{ return mNeedNetworkLedger; }
 	void consensusViewChange();
 	int getPreviousProposers()			{ return mLastCloseProposers; }
 	int getPreviousConvergeTime()		{ return mLastCloseConvergeTime; }
