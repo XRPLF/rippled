@@ -661,7 +661,6 @@ int NetworkOPs::beginConsensus(const uint256& networkClosed, Ledger::pointer clo
 	prevLedger->setImmutable();
 	mConsensus = boost::make_shared<LedgerConsensus>(
 		networkClosed, prevLedger, mLedgerMaster->getCurrentLedger()->getCloseTimeNC());
-	mConsensus->swapDefer(mDeferredProposals);
 
 	cLog(lsDEBUG) << "Initiating consensus engine";
 	return mConsensus->startup();
@@ -731,7 +730,7 @@ bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash, cons
 		}
 		if (prevLedger == mConsensus->getLCL())
 			return mConsensus->peerPosition(proposal);
-		mConsensus->deferProposal(proposal, nodePublic);
+		storeProposal(proposal, nodePublic);
 		return false;
 	}
 
@@ -741,7 +740,7 @@ bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash, cons
 	{ // Note that if the LCL is different, the signature check will fail
 		cLog(lsWARNING) << "Ledger proposal fails signature check";
 		proposal->setSignature(signature);
-		mConsensus->deferProposal(proposal, nodePublic);
+		storeProposal(proposal, nodePublic);
 		return false;
 	}
 	return mConsensus->peerPosition(proposal);
@@ -788,7 +787,6 @@ void NetworkOPs::endConsensus(bool correctLCL)
 			cLog(lsTRACE) << "Killing obsolete peer status";
 			it->cycleStatus();
 		}
-	mConsensus->swapDefer(mDeferredProposals);
 	mConsensus = boost::shared_ptr<LedgerConsensus>();
 }
 
@@ -1245,6 +1243,14 @@ uint32 NetworkOPs::acceptLedger()
 	beginConsensus(mLedgerMaster->getClosedLedger()->getHash(), mLedgerMaster->getCurrentLedger());
 	mConsensus->simulate();
 	return mLedgerMaster->getCurrentLedger()->getLedgerSeq();
+}
+
+void NetworkOPs::storeProposal(const LedgerProposal::pointer& proposal, const NewcoinAddress& peerPublic)
+{
+	std::list<LedgerProposal::pointer>& props = mStoredProposals[peerPublic.getNodeID()];
+	if (props.size() >= (mLastCloseProposers + 10))
+		props.pop_front();
+	props.push_back(proposal);
 }
 
 #if 0
