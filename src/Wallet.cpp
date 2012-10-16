@@ -6,7 +6,6 @@
 
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>
-#include <boost/interprocess/sync/scoped_lock.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/make_shared.hpp>
 
