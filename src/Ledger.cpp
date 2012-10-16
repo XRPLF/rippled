@@ -363,13 +363,9 @@ void Ledger::saveAcceptedLedger()
 
 	{
 		ScopedLock sl(theApp->getLedgerDB()->getDBLock());
+
 		if (SQL_EXISTS(theApp->getLedgerDB()->getDB(), boost::str(ledgerExists % mLedgerSeq)))
 			theApp->getLedgerDB()->getDB()->executeSQL(boost::str(deleteLedger % mLedgerSeq));
-		theApp->getLedgerDB()->getDB()->executeSQL(boost::str(addLedger %
-			getHash().GetHex() % mLedgerSeq % mParentHash.GetHex() %
-			boost::lexical_cast<std::string>(mTotCoins) % mCloseTime % mParentCloseTime %
-			mCloseResolution % mCloseFlags %
-			mAccountHash.GetHex() % mTransHash.GetHex()));
 
 		// write out dirty nodes
 		int fc;
@@ -378,6 +374,12 @@ void Ledger::saveAcceptedLedger()
 		while ((fc = mAccountStateMap->flushDirty(256, hotACCOUNT_NODE, mLedgerSeq)) > 0)
 		{ cLog(lsINFO) << "Flushed " << fc << " dirty state nodes"; }
 		disarmDirty();
+
+		theApp->getLedgerDB()->getDB()->executeSQL(boost::str(addLedger %
+			getHash().GetHex() % mLedgerSeq % mParentHash.GetHex() %
+			boost::lexical_cast<std::string>(mTotCoins) % mCloseTime % mParentCloseTime %
+			mCloseResolution % mCloseFlags %
+			mAccountHash.GetHex() % mTransHash.GetHex()));
 
 		SHAMap& txSet = *peekTransactionMap();
 		Database *db = theApp->getTxnDB()->getDB();
