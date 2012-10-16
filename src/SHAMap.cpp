@@ -774,7 +774,13 @@ int SHAMap::flushDirty(SHADirtyMap& map, int maxNodes, HashedObjectType t, uint3
 //		tLog(t == hotACCOUNT_NODE, lsDEBUG) << "STATE node write " << it->first;
 		s.erase();
 		it->second->addRaw(s, snfPREFIX);
-		assert(s.getSHA512Half() == it->second->getNodeHash());
+		if (s.getSHA512Half() != it->second->getNodeHash())
+		{
+			cLog(lsFATAL) << *(it->second);
+			cLog(lsFATAL) << lexical_cast_i(s.getDataLength());
+			cLog(lsFATAL) << s.getSHA512Half() << " != " << it->second->getNodeHash();
+			assert(false);
+		}
 		theApp->getHashedObjectStore().store(t, seq, s.peekData(), it->second->getNodeHash());
 		if (flushed++ >= maxNodes)
 			return flushed;
