@@ -25,6 +25,7 @@
 	// 8-bit integers
 	FIELD(CloseResolution,		UINT8, 1)
 	FIELD(TemplateEntryType,	UINT8, 2)
+	FIELD(TransactionResult,	UINT8, 3)
 
 	// 16-bit integers
 	FIELD(LedgerEntryType,		UINT16, 1)
@@ -92,8 +93,14 @@
 	FIELD(SendMax,				AMOUNT, 9)
 
 	// currency amount (uncommon)
-	FIELD(MinimumOffer,			AMOUNT, 16)
-	FIELD(RippleEscrow,			AMOUNT, 17)
+	FIELD(MinimumOffer,			AMOUNT,	16)
+	FIELD(RippleEscrow,			AMOUNT,	17)
+	FIELD(PreviousBalance,		AMOUNT,	18)
+	FIELD(FinalBalance,			AMOUNT,	19)
+	FIELD(PreviousTakerPays,	AMOUNT,	20)
+	FIELD(PreviousTakerGets,	AMOUNT,	21)
+	FIELD(FinalTakerPays,		AMOUNT,	22)
+	FIELD(FinalTakerGets,		AMOUNT,	23)
 
 	// variable length
 	FIELD(PublicKey,			VL, 1)
@@ -116,6 +123,11 @@
 	FIELD(Target,				ACCOUNT, 7)
 	FIELD(AuthorizedKey,		ACCOUNT, 8)
 
+	// account (uncommon)
+	FIELD(PreviousAccount,		ACCOUNT, 16)
+	FIELD(LowID,				ACCOUNT, 17)
+	FIELD(HighID,				ACCOUNT, 18)
+
 	// path set
 	FIELD(Paths,				PATHSET, 1)
 
@@ -125,9 +137,13 @@
 	// inner object
 	// OBJECT/1 is reserved for end of object
 	FIELD(TemplateEntry,		OBJECT, 1)
+	FIELD(CreatedNode,			OBJECT,	2)
+	FIELD(DeletedNode,			OBJECT,	3)
+	FIELD(ModifiedNode,			OBJECT,	4)
 
 	// array of objects
 	// ARRAY/1 is reserved for end of array
+	FIELD(TransactionMetaData,	ARRAY, 1)
 	FIELD(SigningAccounts,		ARRAY, 2)
 	FIELD(TxnSignatures,		ARRAY, 3)
 	FIELD(Signatures,			ARRAY, 4)
