@@ -396,6 +396,19 @@ bool STObject::isFieldPresent(SField::ref field) const
 	return peekAtIndex(index).getSType() != STI_NOTPRESENT;
 }
 
+STObject& STObject::peekFieldObject(SField::ref field)
+{
+	SerializedType* rf = getPField(field, true);
+	if (!rf)
+		throw std::runtime_error("Field not found");
+	if (rf->getSType() == STI_NOTPRESENT)
+		rf = makeFieldPresent(field);
+	STObject* cf = dynamic_cast<STObject*>(rf);
+	if (!cf)
+		throw std::runtime_error("Wrong field type");
+	return *cf;
+}
+
 bool STObject::setFlag(uint32 f)
 {
 	STUInt32* t = dynamic_cast<STUInt32*>(getPField(sfFlags, true));

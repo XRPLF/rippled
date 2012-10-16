@@ -132,6 +132,8 @@ public:
 	void setFieldPathSet(SField::ref field, const STPathSet&);
 	void setFieldV256(SField::ref field, const STVector256& v);
 
+	STObject& peekFieldObject(SField::ref field);
+
 	bool isFieldPresent(SField::ref field) const;
 	SerializedType* makeFieldPresent(SField::ref field);
 	void makeFieldAbsent(SField::ref field);
@@ -199,6 +201,7 @@ public:
 	void pop_back()									{ value.pop_back(); }
 	bool empty() const								{ return value.empty(); }
 	void clear()									{ value.clear(); }
+	void swap(STArray& a)							{ value.swap(a.value); }
 
 	virtual std::string getFullText() const;
 	virtual std::string getText() const;
