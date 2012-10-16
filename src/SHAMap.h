@@ -306,6 +306,7 @@ protected:
 	SHAMapTreeNode* walkToPointer(const uint256& id);
 	SHAMapTreeNode::pointer checkCacheNode(const SHAMapNode&);
 	void returnNode(SHAMapTreeNode::pointer&, bool modify);
+	void trackNewNode(SHAMapTreeNode::pointer&);
 
 	SHAMapTreeNode::pointer getNode(const SHAMapNode& id);
 	SHAMapTreeNode::pointer getNode(const SHAMapNode& id, const uint256& hash, bool modify);
@@ -322,7 +323,7 @@ protected:
 public:
 
 	// build new map
-	SHAMap(SHAMapType t, uint32 seq = 0);
+	SHAMap(SHAMapType t, uint32 seq = 1);
 	SHAMap(SHAMapType t, const uint256& hash);
 
 	~SHAMap() { mState = smsInvalid; }
