@@ -1098,12 +1098,23 @@ void LedgerConsensus::accept(SHAMap::ref set)
 		cLog(lsINFO) << "CNF mode " << theApp->getOPs().getOperatingMode() << ", oldLCL " << mPrevLedgerHash;
 	}
 
-	Ledger::pointer newLCL = boost::make_shared<Ledger>(false, boost::ref(*mPreviousLedger));
-	newLCL->armDirty();
-
 	CanonicalTXSet failedTransactions(set->getHash());
+
+	Ledger::pointer newLCL = boost::make_shared<Ledger>(false, boost::ref(*mPreviousLedger));
+
+	newLCL->peekTransactionMap()->armDirty();
+	newLCL->peekAccountStateMap()->armDirty();
 	applyTransactions(set, newLCL, newLCL, failedTransactions, false);
 	newLCL->setClosed();
+	boost::shared_ptr<SHAMap::SHADirtyMap> acctNodes = newLCL->peekAccountStateMap()->disarmDirty();
+	boost::shared_ptr<SHAMap::SHADirtyMap> txnNodes = newLCL->peekTransactionMap()->disarmDirty();
+
+	// write out dirty nodes (temporarily done here) Most come before setAccepted
+	int fc;
+	while ((fc = SHAMap::flushDirty(*acctNodes, 256, hotACCOUNT_NODE, newLCL->getLedgerSeq())) > 0)
+	{ cLog(lsINFO) << "Flushed " << fc << " dirty state nodes"; }
+	while ((fc = SHAMap::flushDirty(*txnNodes, 256, hotTRANSACTION_NODE, newLCL->getLedgerSeq())) > 0)
+	{ cLog(lsINFO) << "Flushed " << fc << " dirty transaction nodes"; }
 
 	bool closeTimeCorrect = true;
 	if (closeTime == 0)

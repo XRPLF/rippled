@@ -48,7 +48,7 @@ SHAMap::SHAMap(SHAMapType t, uint32 seq) : mSeq(seq), mState(smsModifying), mTyp
 	mTNByID[*root] = root;
 }
 
-SHAMap::SHAMap(SHAMapType t, const uint256& hash) : mSeq(0), mState(smsSynching), mType(t)
+SHAMap::SHAMap(SHAMapType t, const uint256& hash) : mSeq(1), mState(smsSynching), mType(t)
 { // FIXME: Need to acquire root node
 	root = boost::make_shared<SHAMapTreeNode>(mSeq, SHAMapNode(0, uint256()));
 	root->makeInner();
@@ -138,7 +138,8 @@ void SHAMap::dirtyUp(std::stack<SHAMapTreeNode::pointer>& stack, const uint256& 
 SHAMapTreeNode::pointer SHAMap::checkCacheNode(const SHAMapNode& iNode)
 {
 	boost::unordered_map<SHAMapNode, SHAMapTreeNode::pointer>::iterator it = mTNByID.find(iNode);
-	if (it == mTNByID.end()) return SHAMapTreeNode::pointer();
+	if (it == mTNByID.end())
+		return SHAMapTreeNode::pointer();
 	return it->second;
 }
 
@@ -209,6 +210,7 @@ SHAMapTreeNode::pointer SHAMap::getNode(const SHAMapNode& id, const uint256& has
 	node = fetchNodeExternal(id, hash);
 	if (!mTNByID.insert(std::make_pair(id, node)).second)
 		assert(false);
+	trackNewNode(node);
 	return node;
 }
 
@@ -221,6 +223,7 @@ SHAMapTreeNode* SHAMap::getNodePointer(const SHAMapNode& id, const uint256& hash
 	SHAMapTreeNode::pointer node = fetchNodeExternal(id, hash);
 	if (!mTNByID.insert(std::make_pair(id, node)).second)
 		assert(false);
+	trackNewNode(node);
 	return node.get();
 }
 
@@ -230,14 +233,23 @@ void SHAMap::returnNode(SHAMapTreeNode::pointer& node, bool modify)
 	assert(node->getSeq() <= mSeq);
 	if (node && modify && (node->getSeq() != mSeq))
 	{ // have a CoW
-		node = boost::make_shared<SHAMapTreeNode>(*node, mSeq);
-		if (mDirtyNodes)
-			(*mDirtyNodes)[*node] = node;
+		assert(node->getSeq() < mSeq);
+
+		node = boost::make_shared<SHAMapTreeNode>(*node, mSeq); // here's to the new node, same as the old node
 		assert(node->isValid());
+
 		mTNByID[*node] = node;
 		if (node->isRoot())
 			root = node;
+		if (mDirtyNodes)
+			(*mDirtyNodes)[*node] = node;
 	}
+}
+
+void SHAMap::trackNewNode(SHAMapTreeNode::pointer& node)
+{
+	if (mDirtyNodes)
+		(*mDirtyNodes)[*node] = node;
 }
 
 SHAMapItem::SHAMapItem(const uint256& tag, const std::vector<unsigned char>& data)
@@ -594,6 +606,7 @@ bool SHAMap::addGiveItem(SHAMapItem::ref item, bool isTransaction, bool hasMeta)
 			assert(false);
 			throw std::runtime_error("invalid inner node");
 		}
+		trackNewNode(newNode);
 		node->setChildHash(branch, newNode->getNodeHash());
 	}
 	else
@@ -622,6 +635,7 @@ bool SHAMap::addGiveItem(SHAMapItem::ref item, bool isTransaction, bool hasMeta)
 				assert(false);
 			stack.push(node);
 			node = newNode;
+			trackNewNode(node);
 		}
 
 		// we can add the two leaf nodes here
@@ -632,12 +646,14 @@ bool SHAMap::addGiveItem(SHAMapItem::ref item, bool isTransaction, bool hasMeta)
 		if (!mTNByID.insert(std::make_pair(SHAMapNode(*newNode), newNode)).second)
 			assert(false);
 		node->setChildHash(b1, newNode->getNodeHash()); // OPTIMIZEME hash op not needed
+		trackNewNode(newNode);
 
 		newNode = boost::make_shared<SHAMapTreeNode>(node->getChildNodeID(b2), otherItem, type, mSeq);
 		assert(newNode->isValid() && newNode->isLeaf());
 		if (!mTNByID.insert(std::make_pair(SHAMapNode(*newNode), newNode)).second)
 			assert(false);
 		node->setChildHash(b2, newNode->getNodeHash());
+		trackNewNode(newNode);
 	}
 
 	dirtyUp(stack, tag, node->getNodeHash());
@@ -703,8 +719,19 @@ SHAMapTreeNode::pointer SHAMap::fetchNodeExternal(const SHAMapNode& id, const ui
 
 	try
 	{
-		SHAMapTreeNode::pointer ret = boost::make_shared<SHAMapTreeNode>(id, obj->getData(), mSeq, snfPREFIX);
-		assert((ret->getNodeHash() == hash) && (id == *ret));
+		SHAMapTreeNode::pointer ret = boost::make_shared<SHAMapTreeNode>(id, obj->getData(), mSeq - 1, snfPREFIX);
+#ifdef DEBUG
+		if (id != *ret)
+		{
+			Log(lsFATAL) << "id:" << id << ", got:" << *ret;
+			assert(false);
+		}
+		if (ret->getNodeHash() != hash)
+		{
+			Log(lsFATAL) << "Hashes don't match";
+			assert(false);
+		}
+#endif
 		return ret;
 	}
 	catch (...)
@@ -730,40 +757,37 @@ void SHAMap::fetchRoot(const uint256& hash)
 	assert(root->getNodeHash() == hash);
 }
 
-void SHAMap::armDirty()
+int SHAMap::armDirty()
 { // begin saving dirty nodes
-	++mSeq;
 	mDirtyNodes = boost::make_shared< boost::unordered_map<SHAMapNode, SHAMapTreeNode::pointer> >();
+	return ++mSeq;
 }
 
-int SHAMap::flushDirty(int maxNodes, HashedObjectType t, uint32 seq)
+int SHAMap::flushDirty(SHADirtyMap& map, int maxNodes, HashedObjectType t, uint32 seq)
 {
 	int flushed = 0;
 	Serializer s;
 
-	if (mDirtyNodes)
+	for(SHADirtyMap::iterator it = map.begin(); it != map.end(); it = map.erase(it))
 	{
-		boost::unordered_map<SHAMapNode, SHAMapTreeNode::pointer>& dirtyNodes = *mDirtyNodes;
-		boost::unordered_map<SHAMapNode, SHAMapTreeNode::pointer>::iterator it = dirtyNodes.begin();
-		while (it != dirtyNodes.end())
-		{
-//			tLog(mType == smtTRANSACTION, lsDEBUG) << "TX node write " << it->first;
-//			tLog(mType == smtSTATE, lsDEBUG) << "STATE node write " << it->first;
-			s.erase();
-			it->second->addRaw(s, snfPREFIX);
-			theApp->getHashedObjectStore().store(t, seq, s.peekData(), s.getSHA512Half());
-			if (flushed++ >= maxNodes)
-				return flushed;
-			it = dirtyNodes.erase(it);
-		}
+//		tLog(t == hotTRANSACTION_NODE, lsDEBUG) << "TX node write " << it->first;
+//		tLog(t == hotACCOUNT_NODE, lsDEBUG) << "STATE node write " << it->first;
+		s.erase();
+		it->second->addRaw(s, snfPREFIX);
+		assert(s.getSHA512Half() == it->second->getNodeHash());
+		theApp->getHashedObjectStore().store(t, seq, s.peekData(), it->second->getNodeHash());
+		if (flushed++ >= maxNodes)
+			return flushed;
 	}
 
 	return flushed;
 }
 
-void SHAMap::disarmDirty()
+boost::shared_ptr<SHAMap::SHADirtyMap> SHAMap::disarmDirty()
 { // stop saving dirty nodes
-	mDirtyNodes = boost::shared_ptr< boost::unordered_map<SHAMapNode, SHAMapTreeNode::pointer> >();
+	boost::shared_ptr<SHADirtyMap> ret;
+	ret.swap(mDirtyNodes);
+	return ret;
 }
 
 SHAMapTreeNode::pointer SHAMap::getNode(const SHAMapNode& nodeID)
