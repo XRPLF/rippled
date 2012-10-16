@@ -137,13 +137,14 @@
 	// inner object
 	// OBJECT/1 is reserved for end of object
 	FIELD(TemplateEntry,		OBJECT, 1)
-	FIELD(CreatedNode,			OBJECT,	2)
-	FIELD(DeletedNode,			OBJECT,	3)
-	FIELD(ModifiedNode,			OBJECT,	4)
+	FIELD(TransactionMetaData,	OBJECT,	2)
+	FIELD(CreatedNode,			OBJECT,	3)
+	FIELD(DeletedNode,			OBJECT,	4)
+	FIELD(ModifiedNode,			OBJECT,	5)
 
 	// array of objects
 	// ARRAY/1 is reserved for end of array
-	FIELD(TransactionMetaData,	ARRAY, 1)
+	FIELD(AffectedNodes,		ARRAY, 1)
 	FIELD(SigningAccounts,		ARRAY, 2)
 	FIELD(TxnSignatures,		ARRAY, 3)
 	FIELD(Signatures,			ARRAY, 4)
