@@ -875,8 +875,13 @@ Json::Value NetworkOPs::getServerInfo()
 		default: info["serverState"] = "unknown";
 	}
 
-	if (!theConfig.VALIDATION_SEED.isValid()) info["serverState"] = "none";
-	else info["validationPKey"] = NewcoinAddress::createNodePublic(theConfig.VALIDATION_SEED).humanNodePublic();
+	if (!theConfig.VALIDATION_SEED.isValid())
+		info["serverState"] = "none";
+	else
+		info["validationPKey"] = NewcoinAddress::createNodePublic(theConfig.VALIDATION_SEED).humanNodePublic();
+
+	if (mNeedNetworkLedger)
+		info["networkLedger"] = "waiting";
 
 	Json::Value lastClose = Json::objectValue;
 	lastClose["proposers"] = theApp->getOPs().getPreviousProposers();
