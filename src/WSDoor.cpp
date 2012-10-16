@@ -17,6 +17,8 @@
 #include "../json/reader.h"
 #include "../json/writer.h"
 
+SETUP_LOG();
+
 //
 // This is a light weight, untrusted interface for web clients.
 // For now we don't provide proof.  Later we will.
@@ -145,7 +147,7 @@ public:
 	{
 		try
 		{
-			// Log(lsINFO) << "Ws:: Sending '" << strMessage << "'";
+			cLog(lsDEBUG) << "Ws:: Sending '" << strMessage << "'";
 
 			cpClient->send(strMessage);
 		}
@@ -159,7 +161,7 @@ public:
 	{
 		Json::FastWriter	jfwWriter;
 
-		// Log(lsINFO) << "Ws:: Object '" << jfwWriter.write(jvObj) << "'";
+		cLog(lsDEBUG) << "Ws:: Object '" << jfwWriter.write(jvObj) << "'";
 
 		send(cpClient, jfwWriter.write(jvObj));
 	}

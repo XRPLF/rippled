@@ -992,12 +992,12 @@ void NetworkOPs::pubLedger(Ledger::ref lpAccepted)
 
 				if (bAll)
 				{
-					pubTransactionAll(lpAccepted, *stTxn, terResult, "closed");
+					pubTransactionAll(lpAccepted, *stTxn, terResult, true);
 				}
 
 				if (bAccounts)
 				{
-					pubTransactionAccounts(lpAccepted, *stTxn, terResult, "closed");
+					pubTransactionAccounts(lpAccepted, *stTxn, terResult, true);
 				}
 			}
 		}
@@ -1099,12 +1099,12 @@ void NetworkOPs::pubTransaction(Ledger::ref lpCurrent, const SerializedTransacti
 
 	if (!mSubTransaction.empty())
 	{
-		pubTransactionAll(lpCurrent, stTxn, terResult, "proposed");
+		pubTransactionAll(lpCurrent, stTxn, terResult, false);
 	}
 
 	if (!mSubAccountTransaction.empty())
 	{
-		pubTransactionAccounts(lpCurrent, stTxn, terResult, "proposed");
+		pubTransactionAccounts(lpCurrent, stTxn, terResult, false);
 	}
 }
 
