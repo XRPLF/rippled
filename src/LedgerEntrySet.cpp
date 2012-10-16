@@ -348,7 +348,7 @@ bool LedgerEntrySet::threadOwners(SLE::ref node, Ledger::ref ledger,
 		return false;
 }
 
-void LedgerEntrySet::calcRawMeta(Serializer& s)
+void LedgerEntrySet::calcRawMeta(Serializer& s, TER result)
 { // calculate the raw meta data and return it. This must be called before the set is committed
 
 	// Entries modified only as a result of building the transaction metadata
@@ -476,7 +476,7 @@ void LedgerEntrySet::calcRawMeta(Serializer& s)
 	cLog(lsINFO) << "Metadata:" << mSet.getJson(0);
 #endif
 
-	mSet.addRaw(s);
+	mSet.addRaw(s, result);
 }
 
 // <--     uNodeDir: For deletion, present to make dirDelete efficient.

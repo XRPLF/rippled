@@ -12,6 +12,7 @@
 #include "Serializer.h"
 #include "SerializedTypes.h"
 #include "SerializedObject.h"
+#include "TransactionErr.h"
 
 class TransactionMetaSet
 {
@@ -19,13 +20,14 @@ public:
 	typedef boost::shared_ptr<TransactionMetaSet> pointer;
 
 protected:
-	uint256 mTransactionID;
-	uint32 mLedger;
+	uint256	mTransactionID;
+	uint32	mLedger;
+	int		mResult;
 
 	STArray mNodes;
 
 public:
-	TransactionMetaSet() : mLedger(0) { ; }
+	TransactionMetaSet() : mLedger(0), mResult(255) { ; }
 	TransactionMetaSet(const uint256& txID, uint32 ledger) : mTransactionID(txID), mLedger(ledger) { ; }
 	TransactionMetaSet(const uint256& txID, uint32 ledger, const std::vector<unsigned char>&);
 
@@ -40,8 +42,10 @@ public:
 	STObject& getAffectedNode(const uint256&, SField::ref type, bool overrideType);
 	const STObject& peekAffectedNode(const uint256&) const;
 
-	Json::Value getJson(int p) const { return mNodes.getJson(p); }
-	void addRaw(Serializer&);
+	Json::Value getJson(int p) const { return getAsObject().getJson(p); }
+	void addRaw(Serializer&, TER);
+
+	STObject getAsObject() const;
 
 	static bool thread(STObject& node, const uint256& prevTxID, uint32 prevLgrID);
 };

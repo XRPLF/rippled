@@ -7,13 +7,18 @@
 #include <boost/foreach.hpp>
 
 TransactionMetaSet::TransactionMetaSet(const uint256& txid, uint32 ledger, const std::vector<unsigned char>& vec) :
-	mTransactionID(txid), mLedger(ledger), mNodes(sfTransactionMetaData)
+	mTransactionID(txid), mLedger(ledger), mNodes(sfAffectedNodes)
 {
 	Serializer s(vec);
 	SerializerIterator sit(s);
 
-	std::auto_ptr<SerializedType> obj = STArray::deserialize(sit, sfTransactionMetaData);
-	mNodes = * static_cast<STArray*>(obj.get());
+	std::auto_ptr<SerializedType> pobj = STObject::deserialize(sit, sfAffectedNodes);
+	STObject *obj = static_cast<STObject*>(pobj.get());
+	if (!obj)
+		throw std::runtime_error("bad metadata");
+
+	mResult = obj->getFieldU8(sfTransactionResult);
+	mNodes = * dynamic_cast<STArray*>(&obj->getField(sfAffectedNodes));
 }
 
 bool TransactionMetaSet::isNodeAffected(const uint256& node) const
@@ -57,7 +62,7 @@ void TransactionMetaSet::init(const uint256& id, uint32 ledger)
 {
 	mTransactionID = id;
 	mLedger = ledger;
-	mNodes = STArray(sfTransactionMetaData);
+	mNodes = STArray(sfAffectedNodes);
 }
 
 void TransactionMetaSet::swap(TransactionMetaSet& s)
@@ -85,10 +90,28 @@ static bool compare(const STObject& o1, const STObject& o2)
 	return o1.getFieldH256(sfLedgerIndex) < o2.getFieldH256(sfLedgerIndex);
 }
 
-void TransactionMetaSet::addRaw(Serializer& s)
+STObject TransactionMetaSet::getAsObject() const
 {
+	STObject metaData(sfTransactionMetaData);
+	metaData.setFieldU8(sfTransactionResult, mResult);
+	metaData.addObject(mNodes);
+	return metaData;
+}
+
+void TransactionMetaSet::addRaw(Serializer& s, TER result)
+{
+	mResult = 255;
+
+	if (result == tesSUCCESS)
+		mResult = 0;
+	else if (result == tepPATH_DRY)
+		mResult = 1;
+	else if (result == tepPATH_PARTIAL)
+		mResult = 2;
+
 	mNodes.sort(compare);
-	mNodes.add(s);
+
+	getAsObject().add(s);
 }
 
 // vim:ts=4
