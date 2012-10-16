@@ -831,8 +831,20 @@ std::string STArray::getText() const
 Json::Value STArray::getJson(int p) const
 {
 	Json::Value v = Json::arrayValue;
-	BOOST_FOREACH(const STObject& o, value)
-		v.append(o.getJson(p));
+	int index = 1;
+	BOOST_FOREACH(const STObject& object, value)
+	{
+		if (object.getSType() != STI_NOTPRESENT)
+		{
+			Json::Value inner = Json::objectValue;
+			if (!object.getFName().hasName())
+				inner[lexical_cast_i(index)] = object.getJson(p);
+			else
+				inner[object.getName()] = object.getJson(p);
+			v.append(inner);
+			index++;
+		}
+	}
 	return v;
 }
 
