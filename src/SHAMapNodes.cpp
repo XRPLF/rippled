@@ -301,6 +301,8 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned 
 		}
 		else if (prefix == sHP_TransactionNode)
 		{
+			if (s.getLength() < 32)
+				throw std::runtime_error("short TXN node");
 			uint256 txID;
 			s.get256(txID, s.getLength() - 32);
 			s.chop(32);
@@ -347,7 +349,11 @@ bool SHAMapTreeNode::updateHash()
 	}
 	else if (mType == tnTRANSACTION_MD)
 	{
-		nh = Serializer::getPrefixHash(sHP_TransactionNode, mItem->peekData());
+		Serializer s(mItem->peekSerializer().getDataLength() + (256 + 32) / 8);
+		s.add32(sHP_TransactionNode);
+		s.addRaw(mItem->peekData());
+		s.add256(mItem->getTag());
+		nh = s.getSHA512Half();
 	}
 	else
 		assert(false);
