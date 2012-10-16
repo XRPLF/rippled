@@ -69,7 +69,7 @@ enum TER	// aka TransactionEngineResult
 
 	// -99 .. -1: R Retry (sequence too high, no funds for txn fee, originating account non-existent)
 	// Causes:
-	// - Priror application of another, possibly non-existant, transaction could allow this transaction to succeed.
+	// - Prior application of another, possibly non-existant, another transaction could allow this transaction to succeed.
 	// Implications:
 	// - Not applied
 	// - Not forwarded
