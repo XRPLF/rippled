@@ -375,12 +375,6 @@ void Ledger::saveAcceptedLedger()
 		{ cLog(lsINFO) << "Flushed " << fc << " dirty state nodes"; }
 		disarmDirty();
 
-		theApp->getLedgerDB()->getDB()->executeSQL(boost::str(addLedger %
-			getHash().GetHex() % mLedgerSeq % mParentHash.GetHex() %
-			boost::lexical_cast<std::string>(mTotCoins) % mCloseTime % mParentCloseTime %
-			mCloseResolution % mCloseFlags %
-			mAccountHash.GetHex() % mTransHash.GetHex()));
-
 		SHAMap& txSet = *peekTransactionMap();
 		Database *db = theApp->getTxnDB()->getDB();
 		ScopedLock dbLock = theApp->getTxnDB()->getDBLock();
@@ -437,6 +431,13 @@ void Ledger::saveAcceptedLedger()
 			}
 		}
 		db->executeSQL("COMMIT TRANSACTION;");
+
+		theApp->getHashedObjectStore().waitWrite(); // wait until all nodes are written
+		theApp->getLedgerDB()->getDB()->executeSQL(boost::str(addLedger %
+			getHash().GetHex() % mLedgerSeq % mParentHash.GetHex() %
+			boost::lexical_cast<std::string>(mTotCoins) % mCloseTime % mParentCloseTime %
+			mCloseResolution % mCloseFlags %
+			mAccountHash.GetHex() % mTransHash.GetHex()));
 	}
 
 	theApp->getOPs().pubLedger(shared_from_this());
