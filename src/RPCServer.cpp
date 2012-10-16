@@ -133,7 +133,7 @@ void RPCServer::handle_read(const boost::system::error_code& e,
 		}
 		else if (!result)
 		{ // bad request
-			std::cout << "bad request" << std::endl;
+			std::cout << "bad request: " << mIncomingRequest.mBody <<std::endl;
 		}
 		else
 		{  // not done keep reading
