@@ -98,8 +98,7 @@ public:
 	std::vector<unsigned char> getData() const	{ return mData.getData(); }
 	const std::vector<unsigned char>& peekData() const { return mData.peekData(); }
 	Serializer& peekSerializer()				{ return mData; }
-	void addRaw(Serializer &s)					{ s.addRaw(mData); }
-	void addRaw(std::vector<unsigned char>& s)	{ s.insert(s.end(), mData.begin(), mData.end()); }
+	void addRaw(std::vector<unsigned char>& s) const { s.insert(s.end(), mData.begin(), mData.end()); }
 
 	void updateData(const std::vector<unsigned char>& data) { mData=data; }
 
@@ -195,6 +194,7 @@ public:
 	bool isInnerNode() const { return !mItem; }
 	bool setChildHash(int m, const uint256& hash);
 	bool isEmptyBranch(int m) const { return !mHashes[m]; }
+	bool isEmpty() const;
 	int getBranchCount() const;
 	void makeInner();
 	const uint256& getChildHash(int m) const
@@ -282,13 +282,14 @@ public:
 	typedef const boost::shared_ptr<SHAMap>& ref;
 
 	typedef std::map<uint256, std::pair<SHAMapItem::pointer, SHAMapItem::pointer> > SHAMapDiff;
+	typedef boost::unordered_map<SHAMapNode, SHAMapTreeNode::pointer> SHADirtyMap;
 
 private:
 	uint32 mSeq;
 	mutable boost::recursive_mutex mLock;
 	boost::unordered_map<SHAMapNode, SHAMapTreeNode::pointer> mTNByID;
 
-	boost::shared_ptr< boost::unordered_map<SHAMapNode, SHAMapTreeNode::pointer> > mDirtyNodes;
+	boost::shared_ptr<SHADirtyMap> mDirtyNodes;
 
 	SHAMapTreeNode::pointer root;
 
@@ -304,6 +305,7 @@ protected:
 	SHAMapTreeNode* walkToPointer(const uint256& id);
 	SHAMapTreeNode::pointer checkCacheNode(const SHAMapNode&);
 	void returnNode(SHAMapTreeNode::pointer&, bool modify);
+	void trackNewNode(SHAMapTreeNode::pointer&);
 
 	SHAMapTreeNode::pointer getNode(const SHAMapNode& id);
 	SHAMapTreeNode::pointer getNode(const SHAMapNode& id, const uint256& hash, bool modify);
@@ -320,7 +322,7 @@ protected:
 public:
 
 	// build new map
-	SHAMap(SHAMapType t, uint32 seq = 0);
+	SHAMap(SHAMapType t, uint32 seq = 1);
 	SHAMap(SHAMapType t, const uint256& hash);
 
 	~SHAMap() { mState = smsInvalid; }
@@ -383,9 +385,9 @@ public:
 	// return value: true=successfully completed, false=too different
 	bool compare(SHAMap::ref otherMap, SHAMapDiff& differences, int maxCount);
 
-	void armDirty();
-	int flushDirty(int maxNodes, HashedObjectType t, uint32 seq);
-	void disarmDirty();
+	int armDirty();
+	static int flushDirty(SHADirtyMap& dirtyMap, int maxNodes, HashedObjectType t, uint32 seq);
+	boost::shared_ptr<SHADirtyMap> disarmDirty();
 
 	void setSeq(uint32 seq)		{ mSeq = seq; }
 	uint32 getSeq()				{ return mSeq; }
@@ -399,6 +401,8 @@ public:
 	std::list<std::vector<unsigned char> > getTrustedPath(const uint256& index);
 	static std::vector<unsigned char> checkTrustedPath(const uint256& ledgerHash, const uint256& leafIndex,
 		const std::list<std::vector<unsigned char> >& path);
+
+	void walkMap(std::vector<SHAMapMissingNode>& missingNodes, int maxMissing);
 
 	bool deepCompare(SHAMap& other);
 	virtual void dump(bool withHashes = false);

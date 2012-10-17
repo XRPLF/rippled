@@ -133,7 +133,7 @@ void RPCServer::handle_read(const boost::system::error_code& e,
 		}
 		else if (!result)
 		{ // bad request
-			std::cout << "bad request" << std::endl;
+			std::cout << "bad request: " << mIncomingRequest.mBody <<std::endl;
 		}
 		else
 		{  // not done keep reading
@@ -1314,11 +1314,9 @@ Json::Value RPCServer::doPeers(const Json::Value& params)
 	return obj;
 }
 
-// profile offers <pass_a> <account_a> <currency_offer_a> <pass_b> <account_b> <currency_offer_b> <count> [submit]
-// profile 0:offers 1:pass_a 2:account_a 3:currency_offer_a 4:pass_b 5:account_b 6:currency_offer_b 7:<count> 8:[submit]
+// profile offers <pass_a> <account_a> <currency_offer_a> <account_b> <currency_offer_b> <count> [submit]
+// profile 0:offers 1:pass_a 2:account_a 3:currency_offer_a 4:account_b 5:currency_offer_b 6:<count> 7:[submit]
 // issuer is the offering account
-// the amount of each offer will be 1.
-// --> count: defaults to 100, does 2 offers per iteration.
 // --> submit: 'submit|true|false': defaults to false
 // Prior to running allow each to have a credit line of what they will be getting from the other account.
 Json::Value RPCServer::doProfile(const Json::Value &params)
@@ -1333,7 +1331,7 @@ Json::Value RPCServer::doProfile(const Json::Value &params)
 	uint32			iCount	= 100;
 	bool			bSubmit	= false;
 
-	if (iArgs < 7 || "offers" != params[0u].asString())
+	if (iArgs < 6 || "offers" != params[0u].asString())
 	{
 		return RPCError(rpcINVALID_PARAMS);
 	}
@@ -1346,27 +1344,27 @@ Json::Value RPCServer::doProfile(const Json::Value &params)
 	if (!STAmount::currencyFromString(uCurrencyOfferA, params[3u].asString()))	// <currency_offer_a>
 		return RPCError(rpcINVALID_PARAMS);
 
-	if (!naSeedB.setSeedGeneric(params[4u].asString()))							// <pass_b>
+	naAccountB.setAccountID(params[4u].asString());								// <account_b>
+	if (!STAmount::currencyFromString(uCurrencyOfferB, params[5u].asString()))	// <currency_offer_b>
 		return RPCError(rpcINVALID_PARAMS);
 
-	naAccountB.setAccountID(params[5u].asString());								// <account_b>
-	if (!STAmount::currencyFromString(uCurrencyOfferB, params[6u].asString()))	// <currency_offer_b>
-		return RPCError(rpcINVALID_PARAMS);
+	iCount	= lexical_cast_s<uint32>(params[6u].asString());
 
-	if (iArgs >= 8)
-		iCount	= lexical_cast_s<uint32>(params[7u].asString());
-
-	if (iArgs >= 9 && "false" != params[8u].asString())
+	if (iArgs >= 8 && "false" != params[7u].asString())
 		bSubmit	= true;
+
+	Log::setMinSeverity(lsFATAL);
 
 	boost::posix_time::ptime			ptStart(boost::posix_time::microsec_clock::local_time());
 
-	for (int i = iCount; i-- >= 0;) {
+	for(int n=0; n<iCount; n++) 
+	{
 		NewcoinAddress			naMasterGeneratorA;
 		NewcoinAddress			naAccountPublicA;
 		NewcoinAddress			naAccountPrivateA;
 		AccountState::pointer	asSrcA;
 		STAmount				saSrcBalanceA;
+
 		Json::Value				jvObjA		= authorize(uint256(0), naSeedA, naAccountA, naAccountPublicA, naAccountPrivateA,
 			saSrcBalanceA, theConfig.FEE_DEFAULT, asSrcA, naMasterGeneratorA);
 
@@ -1381,42 +1379,17 @@ Json::Value RPCServer::doProfile(const Json::Value &params)
 			0,															// uSourceTag,
 			false,														// bPassive
 			STAmount(uCurrencyOfferA, naAccountA.getAccountID(), 1),	// saTakerPays
-			STAmount(uCurrencyOfferB, naAccountB.getAccountID(), 1),	// saTakerGets
+			STAmount(uCurrencyOfferB, naAccountB.getAccountID(), 1+n),	// saTakerGets
 			0);															// uExpiration
 
-		if (bSubmit)
+		if(bSubmit)
 			tpOfferA	= mNetOps->submitTransaction(tpOfferA);
-
-		NewcoinAddress			naMasterGeneratorB;
-		NewcoinAddress			naAccountPublicB;
-		NewcoinAddress			naAccountPrivateB;
-		AccountState::pointer	asSrcB;
-		STAmount				saSrcBalanceB;
-		Json::Value				jvObjB		= authorize(uint256(0), naSeedB, naAccountB, naAccountPublicB, naAccountPrivateB,
-			saSrcBalanceB, theConfig.FEE_DEFAULT, asSrcB, naMasterGeneratorB);
-
-		if (!jvObjB.empty())
-			return jvObjB;
-
-		Transaction::pointer	tpOfferB	= Transaction::sharedOfferCreate(
-			naAccountPublicB, naAccountPrivateB,
-			naAccountB,													// naSourceAccount,
-			asSrcB->getSeq(),											// uSeq
-			theConfig.FEE_DEFAULT,
-			0,															// uSourceTag,
-			false,														// bPassive
-			STAmount(uCurrencyOfferB, naAccountB.getAccountID(), 1),	// saTakerPays
-			STAmount(uCurrencyOfferA, naAccountA.getAccountID(), 1),	// saTakerGets
-			0);															// uExpiration
-
-		if (bSubmit)
-			tpOfferB	= mNetOps->submitTransaction(tpOfferB);
 	}
 
 	boost::posix_time::ptime			ptEnd(boost::posix_time::microsec_clock::local_time());
 	boost::posix_time::time_duration	tdInterval		= ptEnd-ptStart;
 	long								lMicroseconds	= tdInterval.total_microseconds();
-	int									iTransactions	= iCount*2;
+	int									iTransactions	= iCount;
 	float								fRate			= lMicroseconds ? iTransactions/(lMicroseconds/1000000.0) : 0.0;
 
 	Json::Value obj(Json::objectValue);
@@ -2073,9 +2046,14 @@ Json::Value RPCServer::doAccountTransactions(const Json::Value& params)
 		{
 			Transaction::pointer txn = theApp->getMasterTransaction().fetch(it->second, true);
 			if (!txn)
+			{
 				ret["transactions"].append(it->second.GetHex());
+			}
 			else
+			{
+				txn->setLedger(it->first);
 				ret["transactions"].append(txn->getJson(0));
+			}
 
 		}
 		return ret;
@@ -2582,7 +2560,7 @@ Json::Value RPCServer::doUnlLoad(const Json::Value& params)
 	return "loading";
 }
 
-// Populate the UNL from newcoin.org's validators.txt file.
+// Populate the UNL from ripple.com's validators.txt file.
 Json::Value RPCServer::doUnlNetwork(const Json::Value& params)
 {
 	theApp->getUNL().nodeNetwork();

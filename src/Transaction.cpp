@@ -14,7 +14,7 @@
 #include "Log.h"
 
 Transaction::Transaction(const SerializedTransaction::pointer& sit, bool bValidate)
-	: mInLedger(0), mStatus(INVALID), mTransaction(sit)
+	: mInLedger(0), mStatus(INVALID), mResult(temUNCERTAIN), mTransaction(sit)
 {
 	try
 	{
@@ -60,10 +60,8 @@ Transaction::Transaction(
 	uint32					uSeq,
 	const STAmount&			saFee,
 	uint32					uSourceTag) :
-	mStatus(NEW)
+		mAccountFrom(naSourceAccount), mFromPubKey(naPublicKey), mStatus(NEW), mResult(temUNCERTAIN)
 {
-	mAccountFrom	= naSourceAccount;
-	mFromPubKey		= naPublicKey;
 	assert(mFromPubKey.isValid());
 
 	mTransaction	= boost::make_shared<SerializedTransaction>(ttKind);
@@ -710,18 +708,18 @@ Json::Value Transaction::getJson(int options) const
 
 	if (mInLedger) ret["inLedger"]=mInLedger;
 
-	switch(mStatus)
+	switch (mStatus)
 	{
-		case NEW: ret["status"] = "new"; break;
-		case INVALID: ret["status"] = "invalid"; break;
-		case INCLUDED: ret["status"] = "included"; break;
-		case CONFLICTED: ret["status"] = "conflicted"; break;
-		case COMMITTED: ret["status"] = "committed"; break;
-		case HELD: ret["status"] = "held"; break;
-		case REMOVED: ret["status"] = "removed"; break;
-		case OBSOLETE: ret["status"] = "obsolete"; break;
-		case INCOMPLETE: ret["status"] = "incomplete"; break;
-		default: ret["status"] = "unknown";
+		case NEW:			ret["status"] = "new";			break;
+		case INVALID:		ret["status"] = "invalid";		break;
+		case INCLUDED:		ret["status"] = "included";		break;
+		case CONFLICTED:	ret["status"] = "conflicted";	break;
+		case COMMITTED:		ret["status"] = "committed";	break;
+		case HELD:			ret["status"] = "held";			break;
+		case REMOVED:		ret["status"] = "removed";		break;
+		case OBSOLETE:		ret["status"] = "obsolete";		break;
+		case INCOMPLETE:	ret["status"] = "incomplete";	break;
+		default:			ret["status"] = "unknown";		break;
 	}
 
 	return ret;

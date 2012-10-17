@@ -113,9 +113,6 @@ protected:
 	// Close time estimates
 	std::map<uint32, int> mCloseTimes;
 
-	// deferred proposals (node ID -> proposals from that peer)
-	boost::unordered_map< uint160,  std::list<LedgerProposal::pointer> > mDeferredProposals;
-
 	// nodes that have bowed out of this consensus process
 	boost::unordered_set<uint160> mDeadNodes;
 
@@ -143,7 +140,7 @@ protected:
 	uint32 roundCloseTime(uint32 closeTime);
 
 	// manipulating our own position
-	void statusChange(newcoin::NodeEvent, Ledger& ledger);
+	void statusChange(ripple::NodeEvent, Ledger& ledger);
 	void takeInitialPosition(Ledger& initialLedger);
 	void updateOurPositions();
 	void playbackProposals();
@@ -180,15 +177,11 @@ public:
 	bool haveConsensus();
 
 	bool peerPosition(const LedgerProposal::pointer&);
-	void deferProposal(const LedgerProposal::pointer& proposal,	const NewcoinAddress& peerPublic);
 
-	bool peerHasSet(Peer::ref peer, const uint256& set, newcoin::TxSetStatus status);
+	bool peerHasSet(Peer::ref peer, const uint256& set, ripple::TxSetStatus status);
 
 	bool peerGaveNodes(Peer::ref peer, const uint256& setHash,
 		const std::list<SHAMapNode>& nodeIDs, const std::list< std::vector<unsigned char> >& nodeData);
-
-	void swapDefer(boost::unordered_map< uint160, std::list<LedgerProposal::pointer> > &n)
-		{ mDeferredProposals.swap(n); }
 
 	// test/debug
 	void simulate();

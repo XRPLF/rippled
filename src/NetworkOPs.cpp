@@ -117,6 +117,8 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 
 	TER r = mLedgerMaster->doTransaction(*trans->getSTransaction(), tapOPEN_LEDGER);
 
+	trans->setResult(r);
+
 #ifdef DEBUG
 	if (r != tesSUCCESS)
 	{
@@ -136,7 +138,7 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 		mLedgerMaster->addHeldTransaction(trans);
 		return trans;
 	}
-	if ((r == tefPAST_SEQ))
+	if (r == tefPAST_SEQ)
 	{ // duplicate or conflict
 		cLog(lsINFO) << "Transaction is obsolete";
 		trans->setStatus(OBSOLETE);
@@ -154,14 +156,14 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 // no cache the account balance information and always get it from the current ledger
 //		theApp->getWallet().applyTransaction(trans);
 
-		newcoin::TMTransaction tx;
+		ripple::TMTransaction tx;
 		Serializer s;
 		trans->getSTransaction()->add(s);
 		tx.set_rawtransaction(&s.getData().front(), s.getLength());
-		tx.set_status(newcoin::tsCURRENT);
+		tx.set_status(ripple::tsCURRENT);
 		tx.set_receivetimestamp(getNetworkTimeNC());
 
-		PackedMessage::pointer packet = boost::make_shared<PackedMessage>(tx, newcoin::mtTRANSACTION);
+		PackedMessage::pointer packet = boost::make_shared<PackedMessage>(tx, ripple::mtTRANSACTION);
 		int sentTo = theApp->getConnectionPool().relayMessage(source, packet);
 		cLog(lsINFO) << "Transaction relayed to " << sentTo << " node(s)";
 
@@ -171,13 +173,13 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 	cLog(lsDEBUG) << "Status other than success " << r;
 	if ((mMode != omFULL) && (mMode != omTRACKING) && (theApp->isNew(trans->getID())))
 	{
-		newcoin::TMTransaction tx;
+		ripple::TMTransaction tx;
 		Serializer s;
 		trans->getSTransaction()->add(s);
 		tx.set_rawtransaction(&s.getData().front(), s.getLength());
-		tx.set_status(newcoin::tsCURRENT);
+		tx.set_status(ripple::tsCURRENT);
 		tx.set_receivetimestamp(getNetworkTimeNC());
-		PackedMessage::pointer packet = boost::make_shared<PackedMessage>(tx, newcoin::mtTRANSACTION);
+		PackedMessage::pointer packet = boost::make_shared<PackedMessage>(tx, ripple::mtTRANSACTION);
 		theApp->getConnectionPool().relayMessage(source, packet);
 	}
 
@@ -624,15 +626,15 @@ void NetworkOPs::switchLastClosedLedger(Ledger::pointer newLedger, bool duringCo
 	Ledger::pointer openLedger = boost::make_shared<Ledger>(false, boost::ref(*newLedger));
 	mLedgerMaster->switchLedgers(newLedger, openLedger);
 
-	newcoin::TMStatusChange s;
-	s.set_newevent(newcoin::neSWITCHED_LEDGER);
+	ripple::TMStatusChange s;
+	s.set_newevent(ripple::neSWITCHED_LEDGER);
 	s.set_ledgerseq(newLedger->getLedgerSeq());
 	s.set_networktime(theApp->getOPs().getNetworkTimeNC());
 	uint256 hash = newLedger->getParentHash();
 	s.set_ledgerhashprevious(hash.begin(), hash.size());
 	hash = newLedger->getHash();
 	s.set_ledgerhash(hash.begin(), hash.size());
-	PackedMessage::pointer packet = boost::make_shared<PackedMessage>(s, newcoin::mtSTATUS_CHANGE);
+	PackedMessage::pointer packet = boost::make_shared<PackedMessage>(s, ripple::mtSTATUS_CHANGE);
 	theApp->getConnectionPool().relayMessage(NULL, packet);
 }
 
@@ -644,8 +646,11 @@ int NetworkOPs::beginConsensus(const uint256& networkClosed, Ledger::pointer clo
 	Ledger::pointer prevLedger = mLedgerMaster->getLedgerByHash(closingLedger->getParentHash());
 	if (!prevLedger)
 	{ // this shouldn't happen unless we jump ledgers
-		cLog(lsWARNING) << "Don't have LCL, going to tracking";
-		setMode(omTRACKING);
+		if (mMode == omFULL)
+		{
+			cLog(lsWARNING) << "Don't have LCL, going to tracking";
+			setMode(omTRACKING);
+		}
 		return 3;
 	}
 	assert(prevLedger->getHash() == closingLedger->getParentHash());
@@ -656,7 +661,6 @@ int NetworkOPs::beginConsensus(const uint256& networkClosed, Ledger::pointer clo
 	prevLedger->setImmutable();
 	mConsensus = boost::make_shared<LedgerConsensus>(
 		networkClosed, prevLedger, mLedgerMaster->getCurrentLedger()->getCloseTimeNC());
-	mConsensus->swapDefer(mDeferredProposals);
 
 	cLog(lsDEBUG) << "Initiating consensus engine";
 	return mConsensus->startup();
@@ -726,7 +730,7 @@ bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash, cons
 		}
 		if (prevLedger == mConsensus->getLCL())
 			return mConsensus->peerPosition(proposal);
-		mConsensus->deferProposal(proposal, nodePublic);
+		storeProposal(proposal, nodePublic);
 		return false;
 	}
 
@@ -736,7 +740,7 @@ bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash, cons
 	{ // Note that if the LCL is different, the signature check will fail
 		cLog(lsWARNING) << "Ledger proposal fails signature check";
 		proposal->setSignature(signature);
-		mConsensus->deferProposal(proposal, nodePublic);
+		storeProposal(proposal, nodePublic);
 		return false;
 	}
 	return mConsensus->peerPosition(proposal);
@@ -757,7 +761,7 @@ bool NetworkOPs::gotTXData(const boost::shared_ptr<Peer>& peer, const uint256& h
 	return mConsensus->peerGaveNodes(peer, hash, nodeIDs, nodeData);
 }
 
-bool NetworkOPs::hasTXSet(const boost::shared_ptr<Peer>& peer, const uint256& set, newcoin::TxSetStatus status)
+bool NetworkOPs::hasTXSet(const boost::shared_ptr<Peer>& peer, const uint256& set, ripple::TxSetStatus status)
 {
 	if (!haveConsensusObject())
 	{
@@ -783,7 +787,6 @@ void NetworkOPs::endConsensus(bool correctLCL)
 			cLog(lsTRACE) << "Killing obsolete peer status";
 			it->cycleStatus();
 		}
-	mConsensus->swapDefer(mDeferredProposals);
 	mConsensus = boost::shared_ptr<LedgerConsensus>();
 }
 
@@ -872,8 +875,13 @@ Json::Value NetworkOPs::getServerInfo()
 		default: info["serverState"] = "unknown";
 	}
 
-	if (!theConfig.VALIDATION_SEED.isValid()) info["serverState"] = "none";
-	else info["validationPKey"] = NewcoinAddress::createNodePublic(theConfig.VALIDATION_SEED).humanNodePublic();
+	if (!theConfig.VALIDATION_SEED.isValid())
+		info["serverState"] = "none";
+	else
+		info["validationPKey"] = NewcoinAddress::createNodePublic(theConfig.VALIDATION_SEED).humanNodePublic();
+
+	if (mNeedNetworkLedger)
+		info["networkLedger"] = "waiting";
 
 	Json::Value lastClose = Json::objectValue;
 	lastClose["proposers"] = theApp->getOPs().getPreviousProposers();
@@ -894,12 +902,12 @@ Json::Value NetworkOPs::pubBootstrapAccountInfo(Ledger::ref lpAccepted, const Ne
 {
 	Json::Value			jvObj(Json::objectValue);
 
-	jvObj["type"]		= "accountInfoBootstrap";
-	jvObj["account"]	= naAccountID.humanAccountID();
-	jvObj["owner"]		= getOwnerInfo(lpAccepted, naAccountID);
-	jvObj["seq"]		= lpAccepted->getLedgerSeq();
-	jvObj["hash"]		= lpAccepted->getHash().ToString();
-	jvObj["time"]		= Json::Value::UInt(lpAccepted->getCloseTimeNC());
+	jvObj["type"]					= "accountInfoBootstrap";
+	jvObj["account"]				= naAccountID.humanAccountID();
+	jvObj["owner"]					= getOwnerInfo(lpAccepted, naAccountID);
+	jvObj["ledger_closed_index"]	= lpAccepted->getLedgerSeq();
+	jvObj["ledger_closed"]			= lpAccepted->getHash().ToString();
+	jvObj["ledger_closed_time"]		= Json::Value::UInt(utFromSeconds(lpAccepted->getCloseTimeNC()));
 
 	return jvObj;
 }
@@ -934,10 +942,10 @@ void NetworkOPs::pubLedger(Ledger::ref lpAccepted)
 		{
 			Json::Value	jvObj(Json::objectValue);
 
-			jvObj["type"]					= "ledgerAccepted";
+			jvObj["type"]					= "ledgerClosed";
 			jvObj["ledger_closed_index"]	= lpAccepted->getLedgerSeq();
 			jvObj["ledger_closed"]			= lpAccepted->getHash().ToString();
-			jvObj["time"]					= Json::Value::UInt(lpAccepted->getCloseTimeNC());
+			jvObj["ledger_closed_time"]		= Json::Value::UInt(utFromSeconds(lpAccepted->getCloseTimeNC()));
 
 			BOOST_FOREACH(InfoSub* ispListener, mSubLedger)
 			{
@@ -959,11 +967,11 @@ void NetworkOPs::pubLedger(Ledger::ref lpAccepted)
 
 			Json::Value	jvObj(Json::objectValue);
 
-			jvObj["type"]		= "ledgerAcceptedAccounts";
-			jvObj["seq"]		= lpAccepted->getLedgerSeq();
-			jvObj["hash"]		= lpAccepted->getHash().ToString();
-			jvObj["time"]		= Json::Value::UInt(lpAccepted->getCloseTimeNC());
-			jvObj["accounts"]	= jvAccounts;
+			jvObj["type"]					= "ledgerClosedAccounts";
+			jvObj["ledger_closed_index"]	= lpAccepted->getLedgerSeq();
+			jvObj["ledger_closed"]			= lpAccepted->getHash().ToString();
+			jvObj["ledger_closed_time"]		= Json::Value::UInt(utFromSeconds(lpAccepted->getCloseTimeNC()));
+			jvObj["accounts"]				= jvAccounts;
 
 			BOOST_FOREACH(InfoSub* ispListener, mSubLedgerAccounts)
 			{
@@ -990,12 +998,12 @@ void NetworkOPs::pubLedger(Ledger::ref lpAccepted)
 
 				if (bAll)
 				{
-					pubTransactionAll(lpAccepted, *stTxn, terResult, "accepted");
+					pubTransactionAll(lpAccepted, *stTxn, terResult, true);
 				}
 
 				if (bAccounts)
 				{
-					pubTransactionAccounts(lpAccepted, *stTxn, terResult, "accepted");
+					pubTransactionAccounts(lpAccepted, *stTxn, terResult, true);
 				}
 			}
 		}
@@ -1020,27 +1028,35 @@ void NetworkOPs::pubLedger(Ledger::ref lpAccepted)
 	// XXX Publish delta information for accounts.
 }
 
-Json::Value NetworkOPs::transJson(const SerializedTransaction& stTxn, TER terResult, const std::string& strStatus, int iSeq, const std::string& strType)
+Json::Value NetworkOPs::transJson(const SerializedTransaction& stTxn, TER terResult, bool bAccepted, Ledger::ref lpCurrent, const std::string& strType)
 {
 	Json::Value	jvObj(Json::objectValue);
-	std::string	strToken;
-	std::string	strHuman;
+	std::string	sToken;
+	std::string	sHuman;
 
-	transResultInfo(terResult, strToken, strHuman);
+	transResultInfo(terResult, sToken, sHuman);
 
 	jvObj["type"]			= strType;
 	jvObj["transaction"]	= stTxn.getJson(0);
-	jvObj["transaction"]["inLedger"] = iSeq;
-	jvObj["transaction"]["status"] = strStatus;
-	jvObj["result"]			= strToken;
-	jvObj["result_code"]	= terResult;
+	if (bAccepted) {
+		jvObj["ledger_closed_index"]	= lpCurrent->getLedgerSeq();
+		jvObj["ledger_closed"]			= lpCurrent->getHash().ToString();
+	}
+	else
+	{
+		jvObj["ledger_current_index"]	= lpCurrent->getLedgerSeq();
+	}
+	jvObj["status"]					= bAccepted ? "closed" : "proposed";
+	jvObj["engine_result"]			= sToken;
+	jvObj["engine_result_code"]		= terResult;
+	jvObj["engine_result_message"]	= sHuman;
 
 	return jvObj;
 }
 
-void NetworkOPs::pubTransactionAll(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult, const char* pState)
+void NetworkOPs::pubTransactionAll(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult, bool bAccepted)
 {
-	Json::Value	jvObj	= transJson(stTxn, terResult, pState, lpCurrent->getLedgerSeq(), "transaction");
+	Json::Value	jvObj	= transJson(stTxn, terResult, bAccepted, lpCurrent, "transaction");
 
 	BOOST_FOREACH(InfoSub* ispListener, mSubTransaction)
 	{
@@ -1048,7 +1064,7 @@ void NetworkOPs::pubTransactionAll(Ledger::ref lpCurrent, const SerializedTransa
 	}
 }
 
-void NetworkOPs::pubTransactionAccounts(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult, const char* pState)
+void NetworkOPs::pubTransactionAccounts(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult, bool bAccepted)
 {
 	boost::unordered_set<InfoSub*>	usisNotify;
 
@@ -1074,7 +1090,7 @@ void NetworkOPs::pubTransactionAccounts(Ledger::ref lpCurrent, const SerializedT
 
 	if (!usisNotify.empty())
 	{
-		Json::Value	jvObj	= transJson(stTxn, terResult, pState, lpCurrent->getLedgerSeq(), "account");
+		Json::Value	jvObj	= transJson(stTxn, terResult, bAccepted, lpCurrent, "account");
 
 		BOOST_FOREACH(InfoSub* ispListener, usisNotify)
 		{
@@ -1089,12 +1105,12 @@ void NetworkOPs::pubTransaction(Ledger::ref lpCurrent, const SerializedTransacti
 
 	if (!mSubTransaction.empty())
 	{
-		pubTransactionAll(lpCurrent, stTxn, terResult, "proposed");
+		pubTransactionAll(lpCurrent, stTxn, terResult, false);
 	}
 
 	if (!mSubAccountTransaction.empty())
 	{
-		pubTransactionAccounts(lpCurrent, stTxn, terResult, "proposed");
+		pubTransactionAccounts(lpCurrent, stTxn, terResult, false);
 	}
 }
 
@@ -1232,6 +1248,14 @@ uint32 NetworkOPs::acceptLedger()
 	beginConsensus(mLedgerMaster->getClosedLedger()->getHash(), mLedgerMaster->getCurrentLedger());
 	mConsensus->simulate();
 	return mLedgerMaster->getCurrentLedger()->getLedgerSeq();
+}
+
+void NetworkOPs::storeProposal(const LedgerProposal::pointer& proposal, const NewcoinAddress& peerPublic)
+{
+	std::list<LedgerProposal::pointer>& props = mStoredProposals[peerPublic.getNodeID()];
+	if (props.size() >= (mLastCloseProposers + 10))
+		props.pop_front();
+	props.push_back(proposal);
 }
 
 #if 0

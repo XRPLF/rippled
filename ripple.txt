@@ -1,5 +1,5 @@
 #
-# Sample newcoin.txt
+# Sample ripple.txt
 #
 # Publishing this file allows a site to declare in a trustworthy manor that
 # their node_public_key is the authorized signature for the domain. This does
@@ -8,9 +8,9 @@
 #
 # This file is stored on the web server for a domain.  This file is searched
 # for in the following order:
-# - https://newcoin.DOMAIN/newcoin.txt
-# - https://www.DOMAIN/newcoin.txt
-# - https://DOMAIN/newcoin.txt
+# - https://ripple.DOMAIN/ripple.txt
+# - https://www.DOMAIN/ripple.txt
+# - https://DOMAIN/ripple.txt
 #
 # This file is UTF-8 with Dos, UNIX, or Mac style end of lines.
 # Blank lines and lines beginning with '#' are ignored.
@@ -18,20 +18,20 @@
 # No escapes are currently defined.
 #
 # [validation_public_key]:
-#   Mandatory in "newcoin.txt".
-#   Only valid in "newcoin.txt".
+#   Mandatory in "ripple.txt".
+#   Only valid in "ripple.txt".
 #
 #   Example: n9MZTnHe5D5Q2cgE8oV2usFwRqhUvEA8MwP5Mu1XVD6TxmssPRev
 #
 # [domain]:
-#   Mandatory in "newcoin.txt".
-#   Only valid in "newcoin.txt".
+#   Mandatory in "ripple.txt".
+#   Only valid in "ripple.txt".
 #   Must match location of file.
 #
 #   Example: google.com
 #
 # [ips]:
-#   Only valid in "newcoind.cfg", "newcoin.txt", and the referered [ips_url].
+#   Only valid in "rippled.cfg", "ripple.txt", and the referered [ips_url].
 #   List of ips where the Newcoin protocol is avialable.
 #   One ipv4 or ipv6 address per line.
 #   A port may optionally be specified after adding a space to the address.
@@ -43,11 +43,11 @@
 #    2001:0db8:0100:f101:0210:a4ff:fee3:9566
 #
 # [validators]:
-#   Only valid in "newcoind.cfg", "newcoin.txt", and the referered [validators_url].
+#   Only valid in "rippled.cfg", "ripple.txt", and the referered [validators_url].
 #   List of Newcoin validators this node recommends.
 #
-#   For domains, newcoind will probe for https web servers at the specied
-#   domain in the following order: newcoin.DOMAIN, www.DOMAIN, DOMAIN
+#   For domains, rippled will probe for https web servers at the specied
+#   domain in the following order: ripple.DOMAIN, www.DOMAIN, DOMAIN
 #
 #   Examples:
 #    redstem.com
@@ -55,16 +55,16 @@
 #    n9MqiExBcoG19UXwoLjBJnhsxEhAZMuWwJDRdkyDz1EkEkwzQTNt John Doe
 #
 # [ips_url]:
-#   Only valid in "newcoin.txt".
+#   Only valid in "ripple.txt".
 #   https URL to a similarily formatted file containing [ips].
 #
-#   Example: https://google.com/newcoin_ips.txt
+#   Example: https://google.com/ripple_ips.txt
 #
 # [validators_url]:
-#   Only valid in "newcoin.txt".
+#   Only valid in "ripple.txt".
 #   https URL to a similarily formatted file containing [validators].
 #
-#   Example: https://google.com/newcoin_validators.txt
+#   Example: https://google.com/ripple_validators.txt
 #
 # [currencies]:
 #   This section allows a site to declare currencies it currently issues.

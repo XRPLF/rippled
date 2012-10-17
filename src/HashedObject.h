@@ -3,6 +3,9 @@
 
 #include <vector>
 
+#include <boost/thread/mutex.hpp>
+#include <boost/thread/condition_variable.hpp>
+
 #include "types.h"
 #include "uint256.h"
 #include "ScopedLock.h"
@@ -41,7 +44,9 @@ class HashedObjectStore
 protected:
 	TaggedCache<uint256, HashedObject> mCache;
 
-	boost::recursive_mutex mWriteMutex;
+	boost::mutex mWriteMutex;
+	boost::condition_variable mWriteCondition;
+
 	std::vector< boost::shared_ptr<HashedObject> > mWriteSet;
 	bool mWritePending;
 
@@ -55,6 +60,7 @@ public:
 	HashedObject::pointer retrieve(const uint256& hash);
 
 	void bulkWrite();
+	void waitWrite();
 };
 
 #endif

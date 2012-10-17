@@ -278,6 +278,8 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned 
 		}
 		else if (prefix == sHP_LeafNode)
 		{
+			if (s.getLength() < 32)
+				throw std::runtime_error("short PLN node");
 			uint256 u;
 			s.get256(u, s.getLength() - 32);
 			s.chop(32);
@@ -291,14 +293,16 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned 
 		}
 		else if (prefix == sHP_InnerNode)
 		{
-			if (rawNode.size() != (512 + 4))
+			if (s.getLength() != 512)
 				throw std::runtime_error("invalid PIN node");
 			for (int i = 0; i < 16; ++i)
 				s.get256(mHashes[i] , i * 32);
 			mType = tnINNER;
 		}
 		else if (prefix == sHP_TransactionNode)
-		{
+		{ // transaction with metadata
+			if (s.getLength() < 32)
+				throw std::runtime_error("short TXN node");
 			uint256 txID;
 			s.get256(txID, s.getLength() - 32);
 			s.chop(32);
@@ -331,25 +335,31 @@ bool SHAMapTreeNode::updateHash()
 		if(!empty)
 			nh = Serializer::getPrefixHash(sHP_InnerNode, reinterpret_cast<unsigned char *>(mHashes), sizeof(mHashes));
 	}
-	else if (mType == tnACCOUNT_STATE)
-	{
-		Serializer s((256 + 32) / 8 + mItem->peekData().size());
-		s.add32(sHP_LeafNode);
-		mItem->addRaw(s);
-		s.add256(mItem->getTag());
-		nh = s.getSHA512Half();
-	}
 	else if (mType == tnTRANSACTION_NM)
 	{
 		nh = Serializer::getPrefixHash(sHP_TransactionID, mItem->peekData());
 	}
+	else if (mType == tnACCOUNT_STATE)
+	{
+		Serializer s(mItem->peekSerializer().getDataLength() + (256 + 32) / 8);
+		s.add32(sHP_LeafNode);
+		s.addRaw(mItem->peekData());
+		s.add256(mItem->getTag());
+		nh = s.getSHA512Half();
+	}
 	else if (mType == tnTRANSACTION_MD)
 	{
-		nh = Serializer::getPrefixHash(sHP_TransactionNode, mItem->peekData());
+		Serializer s(mItem->peekSerializer().getDataLength() + (256 + 32) / 8);
+		s.add32(sHP_TransactionNode);
+		s.addRaw(mItem->peekData());
+		s.add256(mItem->getTag());
+		nh = s.getSHA512Half();
 	}
-	else assert(false);
+	else
+		assert(false);
 
-	if (nh == mHash) return false;
+	if (nh == mHash)
+		return false;
 	mHash = nh;
 	return true;
 }
@@ -357,10 +367,12 @@ bool SHAMapTreeNode::updateHash()
 void SHAMapTreeNode::addRaw(Serializer& s, SHANodeFormat format)
 {
 	assert((format == snfPREFIX) || (format == snfWIRE));
-	if (mType == tnERROR) throw std::runtime_error("invalid I node type");
+	if (mType == tnERROR)
+		throw std::runtime_error("invalid I node type");
 
 	if (mType == tnINNER)
 	{
+		assert(!isEmpty());
 		if (format == snfPREFIX)
 		{
 			s.add32(sHP_InnerNode);
@@ -392,12 +404,12 @@ void SHAMapTreeNode::addRaw(Serializer& s, SHANodeFormat format)
 		if (format == snfPREFIX)
 		{
 			s.add32(sHP_LeafNode);
-			mItem->addRaw(s);
+			s.addRaw(mItem->peekData());
 			s.add256(mItem->getTag());
 		}
 		else
 		{
-			mItem->addRaw(s);
+			s.addRaw(mItem->peekData());
 			s.add256(mItem->getTag());
 			s.add8(1);
 		}
@@ -407,11 +419,11 @@ void SHAMapTreeNode::addRaw(Serializer& s, SHANodeFormat format)
 		if (format == snfPREFIX)
 		{
 			s.add32(sHP_TransactionID);
-			mItem->addRaw(s);
+			s.addRaw(mItem->peekData());
 		}
 		else
 		{
-			mItem->addRaw(s);
+			s.addRaw(mItem->peekData());
 			s.add8(0);
 		}
 	}
@@ -420,11 +432,12 @@ void SHAMapTreeNode::addRaw(Serializer& s, SHANodeFormat format)
 		if (format == snfPREFIX)
 		{
 			s.add32(sHP_TransactionNode);
-			mItem->addRaw(s);
+			s.addRaw(mItem->peekData());
+			s.add256(mItem->getTag());
 		}
 		else
 		{
-			mItem->addRaw(s);
+			s.addRaw(mItem->peekData());
 			s.add256(mItem->getTag());
 			s.add8(4);
 		}
@@ -447,6 +460,14 @@ SHAMapItem::pointer SHAMapTreeNode::getItem() const
 {
 	assert(isLeaf());
 	return boost::make_shared<SHAMapItem>(*mItem);
+}
+
+bool SHAMapTreeNode::isEmpty() const
+{
+	assert(isInner());
+	for (int i = 0; i < 16; ++i)
+		if (mHashes[i].isNonZero()) return false;
+	return true;
 }
 
 int SHAMapTreeNode::getBranchCount() const
@@ -491,11 +512,21 @@ std::string SHAMapTreeNode::getString() const
 	}
 	if (isLeaf())
 	{
-		ret += ",leaf\n";
+		if (mType == tnTRANSACTION_NM)
+			ret += ",txn\n";
+		else if (mType == tnTRANSACTION_MD)
+			ret += ",txn+md\n";
+		else if (mType == tnACCOUNT_STATE)
+			ret += ",as\n";
+		else
+			ret += ",leaf\n";
+
 		ret += "  Tag=";
 		ret += getTag().GetHex();
 		ret += "\n  Hash=";
 		ret += mHash.GetHex();
+		ret += "/";
+		ret += lexical_cast_i(mItem->peekSerializer().getDataLength());
 	}
 	return ret;
 }
@@ -513,9 +544,9 @@ bool SHAMapTreeNode::setChildHash(int m, const uint256 &hash)
 std::ostream& operator<<(std::ostream& out, const SHAMapMissingNode& mn)
 {
 	if (mn.getMapType() == smtTRANSACTION)
-		out << "Missing/TXN(" << mn.getNodeID() << ")";
+		out << "Missing/TXN(" << mn.getNodeID() << "/" << mn.getNodeHash() << ")";
 	else if (mn.getMapType() == smtSTATE)
-		out << "Missing/STA(" << mn.getNodeID() << ")";
+		out << "Missing/STA(" << mn.getNodeID() << "/" << mn.getNodeHash() << ")";
 	else
 		out << "Missing/" << mn.getNodeID();
 	return out;

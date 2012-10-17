@@ -1,4 +1,4 @@
-package newcoin;
+package ripple;
 
 enum MessageType {
 // core
@@ -28,8 +28,7 @@ enum MessageType {
 // data replication and synchronization
 	mtGET_VALIDATIONS		= 40;
 	mtVALIDATION			= 41;
-	mtGET_OBJECT			= 42;
-	mtOBJECT				= 43;
+	mtGET_OBJECTS			= 42;
 }
 
 
@@ -193,34 +192,31 @@ message TMAccount{
 
 message TMIndexedObject
 {
-	enum ObjectType {
-		otTRANSACTION			= 1;
-		otTRANSACTION_NODE		= 2; // a node in a transaction tree
-		otTRANSACTION_LEAF		= 3; // a leaf in a transaction tree
-		otACCOUNT				= 4; // a single account state (with balance/sequence)
-		otACCOUNT_NODE			= 5; // a node in an account state tree
-		otACCOUNT_LEAF			= 6; // a leaf in an account state tree
-		otLEDGER				= 7;
-	}
-
-	required bytes hash			= 1;
-	required ObjectType type	= 2;
+	optional bytes hash			= 1;
+	optional bytes nodeID		= 2;
+	optional bytes index		= 3;
+	optional bytes data			= 4;
 }
-
-
 
 message TMGetObjectByHash
 {
-	required TMIndexedObject object	= 1;
-	optional uint32 seq				= 2;	// used to match replies to queries
+	enum ObjectType {
+		otUNKNOWN			= 0;
+		otLEDGER			= 1;
+		otTRANSACTION		= 2;
+		otTRANSACTION_NODE	= 3;
+		otSTATE_NODE		= 4;
+		otCAS_OBJECT		= 5;
+	}
+
+	required ObjectType type			= 1;
+	required bool query					= 2;	// is this a query or a reply?
+	optional uint32 seq					= 3;	// used to match replies to queries
+	optional bytes ledgerHash			= 4;	// the hash of the ledger these queries are for
+	optional bool fat					= 5;	// return related nodes
+	repeated TMIndexedObject objects	= 6;	// the specific objects requested
 }
 
-message TMObjectByHash
-{
-	optional TMIndexedObject object	= 1;	// present unless no object found
-	optional bytes data				= 2;	// present unless no object found
-	optional uint32 seq				= 3;	// matches seq from query
-}
 
 message TMLedgerNode {
 	required bytes nodedata			= 1;

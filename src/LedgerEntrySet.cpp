@@ -51,7 +51,7 @@ void LedgerEntrySet::swapWith(LedgerEntrySet& e)
 // This is basically: copy-on-read.
 SLE::pointer LedgerEntrySet::getEntry(const uint256& index, LedgerEntryAction& action)
 {
-	boost::unordered_map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find(index);
+	std::map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find(index);
 	if (it == mEntries.end())
 	{
 		action = taaNONE;
@@ -98,7 +98,7 @@ SLE::pointer LedgerEntrySet::entryCache(LedgerEntryType letType, const uint256& 
 
 LedgerEntryAction LedgerEntrySet::hasEntry(const uint256& index) const
 {
-	boost::unordered_map<uint256, LedgerEntrySetEntry>::const_iterator it = mEntries.find(index);
+	std::map<uint256, LedgerEntrySetEntry>::const_iterator it = mEntries.find(index);
 	if (it == mEntries.end())
 		return taaNONE;
 	return it->second.mAction;
@@ -106,7 +106,7 @@ LedgerEntryAction LedgerEntrySet::hasEntry(const uint256& index) const
 
 void LedgerEntrySet::entryCache(SLE::ref sle)
 {
-	boost::unordered_map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find(sle->getIndex());
+	std::map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find(sle->getIndex());
 	if (it == mEntries.end())
 	{
 		mEntries.insert(std::make_pair(sle->getIndex(), LedgerEntrySetEntry(sle, taaCACHED, mSeq)));
@@ -127,7 +127,7 @@ void LedgerEntrySet::entryCache(SLE::ref sle)
 
 void LedgerEntrySet::entryCreate(SLE::ref sle)
 {
-	boost::unordered_map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find(sle->getIndex());
+	std::map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find(sle->getIndex());
 	if (it == mEntries.end())
 	{
 		mEntries.insert(std::make_pair(sle->getIndex(), LedgerEntrySetEntry(sle, taaCREATE, mSeq)));
@@ -157,7 +157,7 @@ void LedgerEntrySet::entryCreate(SLE::ref sle)
 
 void LedgerEntrySet::entryModify(SLE::ref sle)
 {
-	boost::unordered_map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find(sle->getIndex());
+	std::map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find(sle->getIndex());
 	if (it == mEntries.end())
 	{
 		mEntries.insert(std::make_pair(sle->getIndex(), LedgerEntrySetEntry(sle, taaMODIFY, mSeq)));
@@ -192,7 +192,7 @@ void LedgerEntrySet::entryModify(SLE::ref sle)
 
 void LedgerEntrySet::entryDelete(SLE::ref sle)
 {
-	boost::unordered_map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find(sle->getIndex());
+	std::map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find(sle->getIndex());
 	if (it == mEntries.end())
 	{
 		mEntries.insert(std::make_pair(sle->getIndex(), LedgerEntrySetEntry(sle, taaDELETE, mSeq)));
@@ -233,7 +233,7 @@ Json::Value LedgerEntrySet::getJson(int) const
 	Json::Value ret(Json::objectValue);
 
 	Json::Value nodes(Json::arrayValue);
-	for (boost::unordered_map<uint256, LedgerEntrySetEntry>::const_iterator it = mEntries.begin(),
+	for (std::map<uint256, LedgerEntrySetEntry>::const_iterator it = mEntries.begin(),
 			end = mEntries.end(); it != end; ++it)
 	{
 		Json::Value entry(Json::objectValue);
@@ -269,7 +269,7 @@ Json::Value LedgerEntrySet::getJson(int) const
 SLE::pointer LedgerEntrySet::getForMod(const uint256& node, Ledger::ref ledger,
 	boost::unordered_map<uint256, SLE::pointer>& newMods)
 {
-	boost::unordered_map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find(node);
+	std::map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find(node);
 	if (it != mEntries.end())
 	{
 		if (it->second.mAction == taaDELETE)
@@ -310,20 +310,23 @@ bool LedgerEntrySet::threadTx(const NewcoinAddress& threadTo, Ledger::ref ledger
 	return threadTx(sle, ledger, newMods);
 }
 
-bool LedgerEntrySet::threadTx(SLE::ref threadTo, Ledger::ref ledger, boost::unordered_map<uint256, SLE::pointer>& newMods)
+bool LedgerEntrySet::threadTx(SLE::ref threadTo, Ledger::ref ledger,
+	boost::unordered_map<uint256, SLE::pointer>& newMods)
 {  // node = the node that was modified/deleted/created
    // threadTo = the node that needs to know
 	uint256 prevTxID;
 	uint32 prevLgrID;
 	if (!threadTo->thread(mSet.getTxID(), mSet.getLgrSeq(), prevTxID, prevLgrID))
 		return false;
-	if (mSet.getAffectedNode(threadTo->getIndex(), TMNModifiedNode, false).thread(prevTxID, prevLgrID))
+	if (TransactionMetaSet::thread(mSet.getAffectedNode(threadTo->getIndex(), sfModifiedNode, false),
+			prevTxID, prevLgrID))
 		return true;
 	assert(false);
 	return false;
 }
 
-bool LedgerEntrySet::threadOwners(SLE::ref node, Ledger::ref ledger, boost::unordered_map<uint256, SLE::pointer>& newMods)
+bool LedgerEntrySet::threadOwners(SLE::ref node, Ledger::ref ledger,
+	boost::unordered_map<uint256, SLE::pointer>& newMods)
 { // thread new or modified node to owner or owners
 	if (node->hasOneOwner()) // thread to owner's account
 	{
@@ -345,16 +348,16 @@ bool LedgerEntrySet::threadOwners(SLE::ref node, Ledger::ref ledger, boost::unor
 		return false;
 }
 
-void LedgerEntrySet::calcRawMeta(Serializer& s)
+void LedgerEntrySet::calcRawMeta(Serializer& s, TER result)
 { // calculate the raw meta data and return it. This must be called before the set is committed
 
 	// Entries modified only as a result of building the transaction metadata
 	boost::unordered_map<uint256, SLE::pointer> newMod;
 
-	for (boost::unordered_map<uint256, LedgerEntrySetEntry>::const_iterator it = mEntries.begin(),
+	for (std::map<uint256, LedgerEntrySetEntry>::const_iterator it = mEntries.begin(),
 			end = mEntries.end(); it != end; ++it)
 	{
-		int nType = TMNEndOfMetadata;
+		SField::ptr type = &sfGeneric;
 
 		switch (it->second.mAction)
 		{
@@ -362,28 +365,28 @@ void LedgerEntrySet::calcRawMeta(Serializer& s)
 #ifdef META_DEBUG
 				cLog(lsTRACE) << "Modified Node " << it->first;
 #endif
-				nType = TMNModifiedNode;
+				type = &sfModifiedNode;
 				break;
 
 			case taaDELETE:
 #ifdef META_DEBUG
 				cLog(lsTRACE) << "Deleted Node " << it->first;
 #endif
-				nType = TMNDeletedNode;
+				type = &sfDeletedNode;
 				break;
 
 			case taaCREATE:
 #ifdef META_DEBUG
 				cLog(lsTRACE) << "Created Node " << it->first;
 #endif
-				nType = TMNCreatedNode;
+				type = &sfCreatedNode;
 				break;
 
 			default: // ignore these
 				break;
 		}
 
-		if (nType == TMNEndOfMetadata)
+		if (type == &sfGeneric)
 			continue;
 
 		SLE::pointer origNode = mLedger->getSLE(it->first);
@@ -392,9 +395,9 @@ void LedgerEntrySet::calcRawMeta(Serializer& s)
 			continue;
 
 		SLE::pointer curNode = it->second.mEntry;
-		TransactionMetaNode &metaNode = mSet.getAffectedNode(it->first, nType, true);
+		STObject &metaNode = mSet.getAffectedNode(it->first, *type, true);
 
-		if (nType == TMNDeletedNode)
+		if (type == &sfDeletedNode)
 		{
 			assert(origNode);
 			threadOwners(origNode, mLedger, newMod);
@@ -403,15 +406,17 @@ void LedgerEntrySet::calcRawMeta(Serializer& s)
 			{ // node has an amount, covers ripple state nodes
 				STAmount amount = origNode->getFieldAmount(sfAmount);
 				if (amount.isNonZero())
-					metaNode.addAmount(TMSPrevBalance, amount);
+					metaNode.setFieldAmount(sfPreviousBalance, amount);
 				amount = curNode->getFieldAmount(sfAmount);
 				if (amount.isNonZero())
-					metaNode.addAmount(TMSFinalBalance, amount);
+					metaNode.setFieldAmount(sfFinalBalance, amount);
 
 				if (origNode->getType() == ltRIPPLE_STATE)
 				{
-					metaNode.addAccount(TMSLowID, NewcoinAddress::createAccountID(origNode->getFieldAmount(sfLowLimit).getIssuer()));
-					metaNode.addAccount(TMSHighID, NewcoinAddress::createAccountID(origNode->getFieldAmount(sfHighLimit).getIssuer()));
+					metaNode.setFieldAccount(sfLowID,
+						NewcoinAddress::createAccountID(origNode->getFieldAmount(sfLowLimit).getIssuer()));
+					metaNode.setFieldAccount(sfHighID,
+						NewcoinAddress::createAccountID(origNode->getFieldAmount(sfHighLimit).getIssuer()));
 				}
 			}
 
@@ -419,44 +424,44 @@ void LedgerEntrySet::calcRawMeta(Serializer& s)
 			{ // check for non-zero balances
 				STAmount amount = origNode->getFieldAmount(sfTakerPays);
 				if (amount.isNonZero())
-					metaNode.addAmount(TMSFinalTakerPays, amount);
+					metaNode.setFieldAmount(sfFinalTakerPays, amount);
 				amount = origNode->getFieldAmount(sfTakerGets);
 				if (amount.isNonZero())
-					metaNode.addAmount(TMSFinalTakerGets, amount);
+					metaNode.setFieldAmount(sfFinalTakerGets, amount);
 			}
 
 		}
 
-		if (nType == TMNCreatedNode) // if created, thread to owner(s)
+		if (type == &sfCreatedNode) // if created, thread to owner(s)
 		{
 			assert(!origNode);
 			threadOwners(curNode, mLedger, newMod);
 		}
 
-		if ((nType == TMNCreatedNode) || (nType == TMNModifiedNode))
+		if ((type == &sfCreatedNode) || (type == &sfModifiedNode))
 		{
 			if (curNode->isThreadedType()) // always thread to self
 				threadTx(curNode, mLedger, newMod);
 		}
 
-		if (nType == TMNModifiedNode)
+		if (type == &sfModifiedNode)
 		{
 			assert(origNode);
 			if (origNode->isFieldPresent(sfAmount))
 			{ // node has an amount, covers account root nodes and ripple nodes
 				STAmount amount = origNode->getFieldAmount(sfAmount);
 				if (amount != curNode->getFieldAmount(sfAmount))
-					metaNode.addAmount(TMSPrevBalance, amount);
+					metaNode.setFieldAmount(sfPreviousBalance, amount);
 			}
 
 			if (origNode->getType() == ltOFFER)
 			{
 				STAmount amount = origNode->getFieldAmount(sfTakerPays);
 				if (amount != curNode->getFieldAmount(sfTakerPays))
-					metaNode.addAmount(TMSPrevTakerPays, amount);
+					metaNode.setFieldAmount(sfPreviousTakerPays, amount);
 				amount = origNode->getFieldAmount(sfTakerGets);
 				if (amount != curNode->getFieldAmount(sfTakerGets))
-					metaNode.addAmount(TMSPrevTakerGets, amount);
+					metaNode.setFieldAmount(sfPreviousTakerGets, amount);
 			}
 
 		}
@@ -471,7 +476,7 @@ void LedgerEntrySet::calcRawMeta(Serializer& s)
 	cLog(lsINFO) << "Metadata:" << mSet.getJson(0);
 #endif
 
-	mSet.addRaw(s);
+	mSet.addRaw(s, result);
 }
 
 // <--     uNodeDir: For deletion, present to make dirDelete efficient.

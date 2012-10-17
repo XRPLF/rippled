@@ -7,7 +7,7 @@
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include "../obj/src/newcoin.pb.h"
+#include "../obj/src/ripple.pb.h"
 #include "PackedMessage.h"
 #include "Ledger.h"
 #include "Transaction.h"
@@ -65,8 +65,8 @@ protected:
 	std::vector<uint8_t> mReadbuf;
 	std::list<PackedMessage::pointer> mSendQ;
 	PackedMessage::pointer mSendingPacket;
-	newcoin::TMStatusChange mLastStatus;
-	newcoin::TMHello mHello;
+	ripple::TMStatusChange mLastStatus;
+	ripple::TMHello mHello;
 
 	Peer(boost::asio::io_service& io_service, boost::asio::ssl::context& ctx);
 
@@ -94,27 +94,25 @@ protected:
 
 	void sendHello();
 
-	void recvHello(newcoin::TMHello& packet);
-	void recvTransaction(newcoin::TMTransaction& packet);
-	void recvValidation(newcoin::TMValidation& packet);
-	void recvGetValidation(newcoin::TMGetValidations& packet);
-	void recvContact(newcoin::TMContact& packet);
-	void recvGetContacts(newcoin::TMGetContacts& packet);
-	void recvGetPeers(newcoin::TMGetPeers& packet);
-	void recvPeers(newcoin::TMPeers& packet);
-	void recvIndexedObject(newcoin::TMIndexedObject& packet);
-	void recvGetObjectByHash(newcoin::TMGetObjectByHash& packet);
-	void recvObjectByHash(newcoin::TMObjectByHash& packet);
-	void recvPing(newcoin::TMPing& packet);
-	void recvErrorMessage(newcoin::TMErrorMsg& packet);
-	void recvSearchTransaction(newcoin::TMSearchTransaction& packet);
-	void recvGetAccount(newcoin::TMGetAccount& packet);
-	void recvAccount(newcoin::TMAccount& packet);
-	void recvGetLedger(newcoin::TMGetLedger& packet);
-	void recvLedger(newcoin::TMLedgerData& packet);
-	void recvStatus(newcoin::TMStatusChange& packet);
-	void recvPropose(newcoin::TMProposeSet& packet);
-	void recvHaveTxSet(newcoin::TMHaveTransactionSet& packet);
+	void recvHello(ripple::TMHello& packet);
+	void recvTransaction(ripple::TMTransaction& packet);
+	void recvValidation(ripple::TMValidation& packet);
+	void recvGetValidation(ripple::TMGetValidations& packet);
+	void recvContact(ripple::TMContact& packet);
+	void recvGetContacts(ripple::TMGetContacts& packet);
+	void recvGetPeers(ripple::TMGetPeers& packet);
+	void recvPeers(ripple::TMPeers& packet);
+	void recvGetObjectByHash(ripple::TMGetObjectByHash& packet);
+	void recvPing(ripple::TMPing& packet);
+	void recvErrorMessage(ripple::TMErrorMsg& packet);
+	void recvSearchTransaction(ripple::TMSearchTransaction& packet);
+	void recvGetAccount(ripple::TMGetAccount& packet);
+	void recvAccount(ripple::TMAccount& packet);
+	void recvGetLedger(ripple::TMGetLedger& packet);
+	void recvLedger(ripple::TMLedgerData& packet);
+	void recvStatus(ripple::TMStatusChange& packet);
+	void recvPropose(ripple::TMProposeSet& packet);
+	void recvHaveTxSet(ripple::TMHaveTransactionSet& packet);
 
 	void getSessionCookie(std::string& strDst);
 

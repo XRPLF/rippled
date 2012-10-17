@@ -186,3 +186,38 @@ bool SHAMap::compare(SHAMap::ref otherMap, SHAMapDiff& differences, int maxCount
 
 	return true;
 }
+
+void SHAMap::walkMap(std::vector<SHAMapMissingNode>& missingNodes, int maxMissing)
+{
+	std::stack<SHAMapTreeNode::pointer> nodeStack;
+
+	boost::recursive_mutex::scoped_lock sl(mLock);
+
+	if (!root->isInner())	// root is only node, and we have it
+		return;
+
+	nodeStack.push(root);
+
+	while (!nodeStack.empty())
+	{
+		SHAMapTreeNode::pointer node = nodeStack.top();
+		nodeStack.pop();
+
+		for (int i = 0; i < 16; ++i)
+			if (!node->isEmptyBranch(i))
+			{
+				try
+				{
+					SHAMapTreeNode::pointer d = getNode(node->getChildNodeID(i), node->getChildHash(i), false);
+					if (d->isInner())
+						nodeStack.push(d);
+				}
+				catch (SHAMapMissingNode& n)
+				{
+					missingNodes.push_back(n);
+					if (--maxMissing <= 0)
+						return;
+				}
+			}
+	}
+}

@@ -17,6 +17,8 @@
 #include "../json/reader.h"
 #include "../json/writer.h"
 
+SETUP_LOG();
+
 //
 // This is a light weight, untrusted interface for web clients.
 // For now we don't provide proof.  Later we will.
@@ -84,6 +86,7 @@ public:
 	void doLedgerCurrent(Json::Value& jvResult, const Json::Value& jvRequest);
 	void doLedgerEntry(Json::Value& jvResult, const Json::Value& jvRequest);
 	void doSubmit(Json::Value& jvResult, const Json::Value& jvRequest);
+	void doTransactionEntry(Json::Value& jvResult, const Json::Value& jvRequest);
 
 	// Streaming Commands
 	void doAccountInfoSubscribe(Json::Value& jvResult, const Json::Value& jvRequest);
@@ -145,7 +148,7 @@ public:
 	{
 		try
 		{
-			// Log(lsINFO) << "Ws:: Sending '" << strMessage << "'";
+			cLog(lsDEBUG) << "Ws:: Sending '" << strMessage << "'";
 
 			cpClient->send(strMessage);
 		}
@@ -159,7 +162,7 @@ public:
 	{
 		Json::FastWriter	jfwWriter;
 
-		// Log(lsINFO) << "Ws:: Object '" << jfwWriter.write(jvObj) << "'";
+		// cLog(lsDEBUG) << "Ws:: Object '" << jfwWriter.write(jvObj) << "'";
 
 		send(cpClient, jfwWriter.write(jvObj));
 	}
@@ -309,6 +312,7 @@ Json::Value WSConnection::invokeCommand(const Json::Value& jvRequest)
 		{ "ledger_current",						&WSConnection::doLedgerCurrent					},
 		{ "ledger_entry",						&WSConnection::doLedgerEntry					},
 		{ "submit",								&WSConnection::doSubmit							},
+		{ "transaction_entry",					&WSConnection::doTransactionEntry				},
 
 		// Streaming commands:
 		{ "account_info_subscribe",				&WSConnection::doAccountInfoSubscribe			},
@@ -959,13 +963,71 @@ void WSConnection::doSubmit(Json::Value& jvResult, const Json::Value& jvRequest)
 
 		try
 		{
-			jvResult["submitted"]	= tpTrans->getJson(0);
+			jvResult["transaction"]		= tpTrans->getJson(0);
+
+			if (temUNCERTAIN != tpTrans->getResult())
+			{
+				std::string	sToken;
+				std::string	sHuman;
+
+				transResultInfo(tpTrans->getResult(), sToken, sHuman);
+
+				jvResult["engine_result"]			= sToken;
+				jvResult["engine_result_code"]		= tpTrans->getResult();
+				jvResult["engine_result_message"]	= sHuman;
+			}
 		}
 		catch (std::exception& e)
 		{
 			jvResult["error"]			= "internalJson";
 			jvResult["error_exception"]	= e.what();
 			return;
+		}
+	}
+}
+
+void WSConnection::doTransactionEntry(Json::Value& jvResult, const Json::Value& jvRequest)
+{
+	if (!jvRequest.isMember("transaction"))
+	{
+		jvResult["error"]	= "fieldNotFoundTransaction";
+	}
+	if (!jvRequest.isMember("ledger_closed"))
+	{
+		jvResult["error"]	= "notYetImplemented";	// XXX We don't support any transaction yet.
+	}
+	else
+	{
+		uint256						uTransID;
+		// XXX Relying on trusted WSS client. Would be better to have a strict routine, returning success or failure.
+		uTransID.SetHex(jvRequest["transaction"].asString());
+
+		uint256						uLedgerID;
+		// XXX Relying on trusted WSS client. Would be better to have a strict routine, returning success or failure.
+		uLedgerID.SetHex(jvRequest["ledger_closed"].asString());
+
+		Ledger::pointer				lpLedger	= theApp->getMasterLedger().getLedgerByHash(uLedgerID);
+
+		if (!lpLedger) {
+			jvResult["error"]	= "ledgerNotFound";
+		}
+		else
+		{
+			Transaction::pointer		tpTrans;
+			TransactionMetaSet::pointer	tmTrans;
+
+			if (!lpLedger-> getTransaction(uTransID, tpTrans, tmTrans))
+			{
+				jvResult["error"]	= "transactionNotFound";
+			}
+			else
+			{
+				jvResult["transaction"]		= tpTrans->getJson(0);
+				jvResult["metadata"]		= tmTrans->getJson(0);
+				// 'accounts'
+				// 'engine_...'
+				// 'ledger_...'
+			}
 		}
 	}
 }

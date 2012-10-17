@@ -33,7 +33,7 @@ bool init_unit_test()
 
 void printHelp(const po::options_description& desc)
 {
-	cout << "newcoin [options] <command> <params>" << endl;
+	cout << SYSTEM_NAME "d [options] <command> <params>" << endl;
 
 	cout << desc << endl;
 

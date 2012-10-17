@@ -253,7 +253,13 @@ TER TransactionEngine::doCreditSet(const SerializedTransaction& txn)
 
 	// Check if destination makes sense.
 
-	if (!uDstAccountID)
+	if (saLimitAmount.isNegative())
+	{
+		Log(lsINFO) << "doCreditSet: Malformed transaction: Negatived credit limit.";
+
+		return temBAD_AMOUNT;
+	}
+	else if (!uDstAccountID)
 	{
 		Log(lsINFO) << "doCreditSet: Malformed transaction: Destination account not specifed.";
 
@@ -753,7 +759,7 @@ TER TransactionEngine::takeOffers(
 		}
 
 		if (!sleOfferDir									// No offer directory to take.
-			|| uTakeQuality < uTipQuality					// No offer's of sufficient quality available.
+			|| uTakeQuality < uTipQuality					// No offers of sufficient quality available.
 			|| (bPassive && uTakeQuality == uTipQuality))
 		{
 			// Done.

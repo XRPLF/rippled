@@ -143,7 +143,9 @@ protected:
 	int mPos;
 
 public:
-	SerializerIterator(const Serializer& s) : mSerializer(s), mPos(0) { ; }
+
+	// Reference is not const because we don't want to bind to a temporary
+	SerializerIterator(Serializer& s) : mSerializer(s), mPos(0) { ; }
 
 	void reset(void) { mPos = 0; }
 	void setPos(int p) { mPos = p; }

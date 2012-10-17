@@ -102,6 +102,102 @@ public:
 	}
 };
 
+class MulOp : public Operation
+{
+public:
+	bool work(Interpreter* interpreter)
+	{
+		Data::pointer data1=interpreter->popStack();
+		Data::pointer data2=interpreter->popStack();
+		if( (data1->isInt32() || data1->isFloat()) &&
+			(data2->isInt32() || data2->isFloat()) )
+		{
+			if(data1->isFloat() || data2->isFloat()) interpreter->pushStack(Data::pointer(new FloatData(data1->getFloat()*data2->getFloat())));
+			else interpreter->pushStack(Data::pointer(new IntData(data1->getInt()*data2->getInt())));
+			return(true);
+		}else
+		{
+			return(false);
+		}	
+	}
+};
+
+class DivOp : public Operation
+{
+public:
+	bool work(Interpreter* interpreter)
+	{
+		Data::pointer data1=interpreter->popStack();
+		Data::pointer data2=interpreter->popStack();
+		if( (data1->isInt32() || data1->isFloat()) &&
+			(data2->isInt32() || data2->isFloat()) )
+		{
+			if(data1->isFloat() || data2->isFloat()) interpreter->pushStack(Data::pointer(new FloatData(data1->getFloat()/data2->getFloat())));
+			else interpreter->pushStack(Data::pointer(new IntData(data1->getInt()/data2->getInt())));
+			return(true);
+		}else
+		{
+			return(false);
+		}	
+	}
+};
+
+class GtrOp : public Operation
+{
+public:
+	bool work(Interpreter* interpreter)
+	{
+		Data::pointer data1=interpreter->popStack();
+		Data::pointer data2=interpreter->popStack();
+		if( (data1->isInt32() || data1->isFloat()) &&
+			(data2->isInt32() || data2->isFloat()) )
+		{
+			interpreter->pushStack(Data::pointer(new BoolData(data1->getFloat()>data2->getFloat())));
+			return(true);
+		}else
+		{
+			return(false);
+		}	
+	}
+};
+
+class LessOp : public Operation
+{
+public:
+	bool work(Interpreter* interpreter)
+	{
+		Data::pointer data1=interpreter->popStack();
+		Data::pointer data2=interpreter->popStack();
+		if( (data1->isInt32() || data1->isFloat()) &&
+			(data2->isInt32() || data2->isFloat()) )
+		{
+			interpreter->pushStack(Data::pointer(new FloatData(data1->getFloat()<data2->getFloat())));
+			return(true);
+		}else
+		{
+			return(false);
+		}	
+	}
+};
+
+class ModOp : public Operation
+{
+public:
+	bool work(Interpreter* interpreter)
+	{
+		Data::pointer data1=interpreter->popStack();
+		Data::pointer data2=interpreter->popStack();
+		if( data1->isInt32() && data2->isInt32() )
+		{
+			interpreter->pushStack(Data::pointer(new IntData(data1->getInt()%data2->getInt())));
+			return(true);
+		}else
+		{
+			return(false);
+		}	
+	}
+};
+
 
 class StartBlockOp : public Operation
 {

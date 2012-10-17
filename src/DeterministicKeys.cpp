@@ -115,7 +115,7 @@ EC_KEY* CKey::GenerateRootDeterministicKey(const uint128& seed)
 	return pkey;
 }
 
-// Take newcoin address.
+// Take ripple address.
 // --> root public generator (consumes)
 // <-- root public generator in EC format
 EC_KEY* CKey::GenerateRootPubKey(BIGNUM* pubGenerator)

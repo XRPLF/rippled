@@ -816,7 +816,7 @@ void UniqueNodeList::getIpsUrl(const NewcoinAddress& naNodePublic, section secSi
 	}
 }
 
-// After fetching a newcoin.txt from a web site, given a section with validators, parse and persist it.
+// After fetching a ripple.txt from a web site, given a section with validators, parse and persist it.
 void UniqueNodeList::responseValidators(const std::string& strValidatorsUrl, const NewcoinAddress& naNodePublic, section secSite, const std::string& strSite, const boost::system::error_code& err, const std::string& strValidatorsFile)
 {
 	if (!err)
@@ -855,7 +855,7 @@ void UniqueNodeList::getValidatorsUrl(const NewcoinAddress& naNodePublic, sectio
 	}
 }
 
-// Process a newcoin.txt.
+// Process a ripple.txt.
 void UniqueNodeList::processFile(const std::string& strDomain, const NewcoinAddress& naNodePublic, section secSite)
 {
 	//
@@ -882,7 +882,7 @@ void UniqueNodeList::processFile(const std::string& strDomain, const NewcoinAddr
 	getValidatorsUrl(naNodePublic, secSite);
 }
 
-// Given a newcoin.txt, process it.
+// Given a ripple.txt, process it.
 void UniqueNodeList::responseFetch(const std::string& strDomain, const boost::system::error_code& err, const std::string& strSiteFile)
 {
 	section				secSite	= ParseSection(strSiteFile, true);
@@ -1002,7 +1002,7 @@ void UniqueNodeList::responseFetch(const std::string& strDomain, const boost::sy
 	}
 }
 
-// Get the newcoin.txt and process it.
+// Get the ripple.txt and process it.
 void UniqueNodeList::fetchProcess(std::string strDomain)
 {
 	std::cerr << "Fetching '" NODE_FILE_NAME "' from '" << strDomain << "'." << std::endl;
@@ -1035,7 +1035,7 @@ void UniqueNodeList::fetchTimerHandler(const boost::system::error_code& err)
 	}
 }
 
-// Try to process the next fetch of a newcoin.txt.
+// Try to process the next fetch of a ripple.txt.
 void UniqueNodeList::fetchNext()
 {
 	bool	bFull;
@@ -1238,7 +1238,7 @@ void UniqueNodeList::setSeedDomains(const seedDomain& sdSource, bool bNext)
 	}
 }
 
-// Queue a domain for a single attempt fetch a newcoin.txt.
+// Queue a domain for a single attempt fetch a ripple.txt.
 // --> strComment: only used on vsManual
 // YYY As a lot of these may happen at once, would be nice to wrap multiple calls in a transaction.
 void UniqueNodeList::nodeAddDomain(std::string strDomain, validatorSource vsWhy, const std::string& strComment)
@@ -1592,7 +1592,7 @@ void UniqueNodeList::nodeBootstrap()
 		bLoaded	= nodeLoad(VALIDATORS_FILE_NAME);
 	}
 
-	// Always load from newcoind.cfg
+	// Always load from rippled.cfg
 	if (!theConfig.VALIDATORS.empty())
 	{
 		NewcoinAddress	naInvalid;	// Don't want a referrer on added entries.

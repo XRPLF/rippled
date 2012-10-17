@@ -224,7 +224,6 @@ protected:
 		: SerializedType(name), mCurrency(cur), mIssuer(iss),  mValue(val), mOffset(off),
 			mIsNative(isNat), mIsNegative(isNeg) { ; }
 
-	uint64 toUInt64() const;
 	static uint64 muldiv(uint64, uint64, uint64);
 
 public:
@@ -287,6 +286,7 @@ public:
 
 	void negate()				{ if (!isZero()) mIsNegative = !mIsNegative; }
 	void zero()					{ mOffset = mIsNative ? -100 : 0; mValue = 0; mIsNegative = false; }
+	int compare(const STAmount&) const;
 
 	const uint160& getIssuer() const		{ return mIssuer; }
 	void setIssuer(const uint160& uIssuer)	{ mIssuer	= uIssuer; }

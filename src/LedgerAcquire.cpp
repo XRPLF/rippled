@@ -194,9 +194,9 @@ void LedgerAcquire::trigger(Peer::ref peer, bool timer)
 #endif
 	if (!mHaveBase)
 	{
-		newcoin::TMGetLedger tmGL;
+		ripple::TMGetLedger tmGL;
 		tmGL.set_ledgerhash(mHash.begin(), mHash.size());
-		tmGL.set_itype(newcoin::liBASE);
+		tmGL.set_itype(ripple::liBASE);
 		*(tmGL.add_nodeids()) = SHAMapNode().getRawString();
 		sendRequest(tmGL, peer);
 	}
@@ -209,10 +209,10 @@ void LedgerAcquire::trigger(Peer::ref peer, bool timer)
 		assert(mLedger);
 		if (mLedger->peekTransactionMap()->getHash().isZero())
 		{ // we need the root node
-			newcoin::TMGetLedger tmGL;
+			ripple::TMGetLedger tmGL;
 			tmGL.set_ledgerhash(mHash.begin(), mHash.size());
 			tmGL.set_ledgerseq(mLedger->getLedgerSeq());
-			tmGL.set_itype(newcoin::liTX_NODE);
+			tmGL.set_itype(ripple::liTX_NODE);
 			*(tmGL.add_nodeids()) = SHAMapNode().getRawString();
 			sendRequest(tmGL, peer);
 		}
@@ -234,10 +234,10 @@ void LedgerAcquire::trigger(Peer::ref peer, bool timer)
 			}
 			else
 			{
-				newcoin::TMGetLedger tmGL;
+				ripple::TMGetLedger tmGL;
 				tmGL.set_ledgerhash(mHash.begin(), mHash.size());
 				tmGL.set_ledgerseq(mLedger->getLedgerSeq());
-				tmGL.set_itype(newcoin::liTX_NODE);
+				tmGL.set_itype(ripple::liTX_NODE);
 				for (std::vector<SHAMapNode>::iterator it = nodeIDs.begin(); it != nodeIDs.end(); ++it)
 					*(tmGL.add_nodeids()) = it->getRawString();
 				sendRequest(tmGL, peer);
@@ -253,10 +253,10 @@ void LedgerAcquire::trigger(Peer::ref peer, bool timer)
 		assert(mLedger);
 		if (mLedger->peekAccountStateMap()->getHash().isZero())
 		{ // we need the root node
-			newcoin::TMGetLedger tmGL;
+			ripple::TMGetLedger tmGL;
 			tmGL.set_ledgerhash(mHash.begin(), mHash.size());
 			tmGL.set_ledgerseq(mLedger->getLedgerSeq());
-			tmGL.set_itype(newcoin::liAS_NODE);
+			tmGL.set_itype(ripple::liAS_NODE);
 			*(tmGL.add_nodeids()) = SHAMapNode().getRawString();
 			sendRequest(tmGL, peer);
 		}
@@ -278,10 +278,10 @@ void LedgerAcquire::trigger(Peer::ref peer, bool timer)
 			}
 			else
 			{
-				newcoin::TMGetLedger tmGL;
+				ripple::TMGetLedger tmGL;
 				tmGL.set_ledgerhash(mHash.begin(), mHash.size());
 				tmGL.set_ledgerseq(mLedger->getLedgerSeq());
-				tmGL.set_itype(newcoin::liAS_NODE);
+				tmGL.set_itype(ripple::liAS_NODE);
 				for (std::vector<SHAMapNode>::iterator it = nodeIDs.begin(); it != nodeIDs.end(); ++it)
 					*(tmGL.add_nodeids()) = it->getRawString();
 				sendRequest(tmGL, peer);
@@ -295,21 +295,21 @@ void LedgerAcquire::trigger(Peer::ref peer, bool timer)
 		resetTimer();
 }
 
-void PeerSet::sendRequest(const newcoin::TMGetLedger& tmGL, Peer::ref peer)
+void PeerSet::sendRequest(const ripple::TMGetLedger& tmGL, Peer::ref peer)
 {
 	if (!peer)
 		sendRequest(tmGL);
 	else
-		peer->sendPacket(boost::make_shared<PackedMessage>(tmGL, newcoin::mtGET_LEDGER));
+		peer->sendPacket(boost::make_shared<PackedMessage>(tmGL, ripple::mtGET_LEDGER));
 }
 
-void PeerSet::sendRequest(const newcoin::TMGetLedger& tmGL)
+void PeerSet::sendRequest(const ripple::TMGetLedger& tmGL)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	if (mPeers.empty())
 		return;
 
-	PackedMessage::pointer packet = boost::make_shared<PackedMessage>(tmGL, newcoin::mtGET_LEDGER);
+	PackedMessage::pointer packet = boost::make_shared<PackedMessage>(tmGL, ripple::mtGET_LEDGER);
 
 	std::vector< boost::weak_ptr<Peer> >::iterator it = mPeers.begin();
 	while (it != mPeers.end())
@@ -476,7 +476,7 @@ void LedgerAcquireMaster::dropLedger(const uint256& hash)
 	mLedgers.erase(hash);
 }
 
-bool LedgerAcquireMaster::gotLedgerData(newcoin::TMLedgerData& packet, Peer::ref peer)
+bool LedgerAcquireMaster::gotLedgerData(ripple::TMLedgerData& packet, Peer::ref peer)
 {
 #ifdef LA_DEBUG
 	Log(lsTRACE) << "got data for acquiring ledger ";
@@ -495,11 +495,11 @@ bool LedgerAcquireMaster::gotLedgerData(newcoin::TMLedgerData& packet, Peer::ref
 	LedgerAcquire::pointer ledger = find(hash);
 	if (!ledger) return false;
 
-	if (packet.type() == newcoin::liBASE)
+	if (packet.type() == ripple::liBASE)
 	{
 		if (packet.nodes_size() < 1)
 			return false;
-		const newcoin::TMLedgerNode& node = packet.nodes(0);
+		const ripple::TMLedgerNode& node = packet.nodes(0);
 		if (!ledger->takeBase(node.nodedata()))
 			return false;
 		if (packet.nodes_size() == 1)
@@ -522,7 +522,7 @@ bool LedgerAcquireMaster::gotLedgerData(newcoin::TMLedgerData& packet, Peer::ref
 		return true;
 	}
 
-	if ((packet.type() == newcoin::liTX_NODE) || (packet.type() == newcoin::liAS_NODE))
+	if ((packet.type() == ripple::liTX_NODE) || (packet.type() == ripple::liAS_NODE))
 	{
 		std::list<SHAMapNode> nodeIDs;
 		std::list< std::vector<unsigned char> > nodeData;
@@ -530,14 +530,14 @@ bool LedgerAcquireMaster::gotLedgerData(newcoin::TMLedgerData& packet, Peer::ref
 		if (packet.nodes().size() <= 0) return false;
 		for (int i = 0; i < packet.nodes().size(); ++i)
 		{
-			const newcoin::TMLedgerNode& node = packet.nodes(i);
+			const ripple::TMLedgerNode& node = packet.nodes(i);
 			if (!node.has_nodeid() || !node.has_nodedata()) return false;
 
 			nodeIDs.push_back(SHAMapNode(node.nodeid().data(), node.nodeid().size()));
 			nodeData.push_back(std::vector<unsigned char>(node.nodedata().begin(), node.nodedata().end()));
 		}
 		bool ret;
-		if (packet.type() == newcoin::liTX_NODE)
+		if (packet.type() == ripple::liTX_NODE)
 			ret = ledger->takeTxNode(nodeIDs, nodeData);
 		else
 			ret = ledger->takeAsNode(nodeIDs, nodeData);

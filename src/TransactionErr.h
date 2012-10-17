@@ -42,7 +42,7 @@ enum TER	// aka TransactionEngineResult
 	temINVALID,
 	temREDUNDANT,
 	temRIPPLE_EMPTY,
-	temUNCERTAIN,
+	temUNCERTAIN,		// An intermediate result used internally, should never be returned.
 	temUNKNOWN,
 
 	// -199 .. -100: F Failure (sequence number previously used)
@@ -69,7 +69,7 @@ enum TER	// aka TransactionEngineResult
 
 	// -99 .. -1: R Retry (sequence too high, no funds for txn fee, originating account non-existent)
 	// Causes:
-	// - Priror application of another, possibly non-existant, transaction could allow this transaction to succeed.
+	// - Prior application of another, possibly non-existant, another transaction could allow this transaction to succeed.
 	// Implications:
 	// - Not applied
 	// - Not forwarded
@@ -103,16 +103,18 @@ enum TER	// aka TransactionEngineResult
 	// - Applied
 	// - Forwarded
 	// Only allowed as a return code of appliedTransaction when !tapRetry. Otherwise, treated as terRETRY.
+	// CAUTION: The numerical values for these results are part of the binary formats
 	tepPARTIAL		= 100,
-	tepPATH_DRY,
-	tepPATH_PARTIAL,
+	tepPATH_DRY		= 101,
+	tepPATH_PARTIAL	= 102,
 };
 
+#define isTelLocal(x)		((x) >= telLOCAL_ERROR && (x) < temMALFORMED)
 #define isTemMalformed(x)	((x) >= temMALFORMED && (x) < tefFAILURE)
 #define isTefFailure(x)		((x) >= tefFAILURE && (x) < terRETRY)
-#define isTepPartial(x)		((x) >= tepPATH_PARTIAL)
-#define isTepSuccess(x)		((x) >= tesSUCCESS)
 #define isTerRetry(x)		((x) >= terRETRY && (x) < tesSUCCESS)
+#define isTepSuccess(x)		((x) >= tesSUCCESS)
+#define isTepPartial(x)		((x) >= tepPATH_PARTIAL)
 
 bool transResultInfo(TER terCode, std::string& strToken, std::string& strHuman);
 std::string transToken(TER terCode);

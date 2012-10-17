@@ -808,7 +808,7 @@ NewcoinAddress NewcoinAddress::createSeedGeneric(const std::string& strText)
 	return naNew;
 }
 
-BOOST_AUTO_TEST_SUITE(newcoin_address)
+BOOST_AUTO_TEST_SUITE(ripple_address)
 
 BOOST_AUTO_TEST_CASE( check_crypto )
 {
@@ -816,14 +816,14 @@ BOOST_AUTO_TEST_CASE( check_crypto )
 	NewcoinAddress	naSeed;
 
 	BOOST_CHECK(naSeed.setSeedGeneric("masterpassphrase"));
-	BOOST_CHECK_MESSAGE(naSeed.humanSeed() == "snoPBiXtMeMyMHUVTgbuqAfg1SUTb", naSeed.humanSeed());
+	BOOST_CHECK_MESSAGE(naSeed.humanSeed() == "snoPBrXtMeMyMHUVTgbuqAfg1SUTb", naSeed.humanSeed());
 
 	// Create node public/private key pair
 	NewcoinAddress	naNodePublic	= NewcoinAddress::createNodePublic(naSeed);
 	NewcoinAddress	naNodePrivate	= NewcoinAddress::createNodePrivate(naSeed);
 
-	BOOST_CHECK_MESSAGE(naNodePublic.humanNodePublic() == "n94a1u4jAz288pZLtw6yFWVbr89YamrC6JBXPVUj5zmExe5fTVg9", naNodePublic.humanNodePublic());
-	BOOST_CHECK_MESSAGE(naNodePrivate.humanNodePrivate() == "pnen77YEeUd4fFKG7rycBWcwKpTaeFRkW2WFostaATy1DSupwXe", naNodePrivate.humanNodePrivate());
+	BOOST_CHECK_MESSAGE(naNodePublic.humanNodePublic() == "n94a1u4jAz288pZLtw6yFWVbi89YamiC6JBXPVUj5zmExe5fTVg9", naNodePublic.humanNodePublic());
+	BOOST_CHECK_MESSAGE(naNodePrivate.humanNodePrivate() == "pnen77YEeUd4fFKG7iycBWcwKpTaeFRkW2WFostaATy1DSupwXe", naNodePrivate.humanNodePrivate());
 
 	// Check node signing.
 	std::vector<unsigned char> vucTextSrc = strCopy("Hello, nurse!");
@@ -836,23 +836,23 @@ BOOST_AUTO_TEST_CASE( check_crypto )
 	// Construct a public generator from the seed.
 	NewcoinAddress	naGenerator		= NewcoinAddress::createGeneratorPublic(naSeed);
 
-	BOOST_CHECK_MESSAGE(naGenerator.humanGenerator() == "fhuJKihSDzV2SkjLn9qbwm5AaRmixDPfFsHDCP6yfDZWcxDFz4mt", naGenerator.humanGenerator());
+	BOOST_CHECK_MESSAGE(naGenerator.humanGenerator() == "fhuJKrhSDzV2SkjLn9qbwm5AaRmrxDPfFsHDCP6yfDZWcxDFz4mt", naGenerator.humanGenerator());
 
 	// Create account #0 public/private key pair.
 	NewcoinAddress	naAccountPublic0	= NewcoinAddress::createAccountPublic(naGenerator, 0);
 	NewcoinAddress	naAccountPrivate0	= NewcoinAddress::createAccountPrivate(naGenerator, naSeed, 0);
 
-	BOOST_CHECK_MESSAGE(naAccountPublic0.humanAccountID() == "iHb9CJAWyB4ij91VRWn96DkukG4bwdtyTh", naAccountPublic0.humanAccountID());
-	BOOST_CHECK_MESSAGE(naAccountPublic0.humanAccountPublic() == "aBQG8RQAzjs1eTKFEAQXi2gS4utcDrEC9wmr7pfUPTr27VCahwgw", naAccountPublic0.humanAccountPublic());
-	BOOST_CHECK_MESSAGE(naAccountPrivate0.humanAccountPrivate() == "p9JfM6HHr64m6mvB6v5k7G2b1cXzGmYrCNJf6GHPKvFTWdeRVjh", naAccountPrivate0.humanAccountPrivate());
+	BOOST_CHECK_MESSAGE(naAccountPublic0.humanAccountID() == "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", naAccountPublic0.humanAccountID());
+	BOOST_CHECK_MESSAGE(naAccountPublic0.humanAccountPublic() == "aBQG8RQAzjs1eTKFEAQXr2gS4utcDiEC9wmi7pfUPTi27VCahwgw", naAccountPublic0.humanAccountPublic());
+	BOOST_CHECK_MESSAGE(naAccountPrivate0.humanAccountPrivate() == "p9JfM6HHi64m6mvB6v5k7G2b1cXzGmYiCNJf6GHPKvFTWdeRVjh", naAccountPrivate0.humanAccountPrivate());
 
 	// Create account #1 public/private key pair.
 	NewcoinAddress	naAccountPublic1	= NewcoinAddress::createAccountPublic(naGenerator, 1);
 	NewcoinAddress	naAccountPrivate1	= NewcoinAddress::createAccountPrivate(naGenerator, naSeed, 1);
 
-	BOOST_CHECK_MESSAGE(naAccountPublic1.humanAccountID() == "i4bYF7SLUMD7QgSLLpgJx38WJSY12VrRjP", naAccountPublic1.humanAccountID());
-	BOOST_CHECK_MESSAGE(naAccountPublic1.humanAccountPublic() == "aBPXpTfuLy1Bhk3HnGTTAqnovpKWQ23NpFMNkAF6F1Atg5vDyPiw", naAccountPublic1.humanAccountPublic());
-	BOOST_CHECK_MESSAGE(naAccountPrivate1.humanAccountPrivate() == "p9JEm822LMizJrr1k7TvdphfENTp6G5ji253Xa5ikzUWVi8ogQt", naAccountPrivate1.humanAccountPrivate());
+	BOOST_CHECK_MESSAGE(naAccountPublic1.humanAccountID() == "r4bYF7SLUMD7QgSLLpgJx38WJSY12ViRjP", naAccountPublic1.humanAccountID());
+	BOOST_CHECK_MESSAGE(naAccountPublic1.humanAccountPublic() == "aBPXpTfuLy1Bhk3HnGTTAqnovpKWQ23NpFMNkAF6F1Atg5vDyPrw", naAccountPublic1.humanAccountPublic());
+	BOOST_CHECK_MESSAGE(naAccountPrivate1.humanAccountPrivate() == "p9JEm822LMrzJii1k7TvdphfENTp6G5jr253Xa5rkzUWVr8ogQt", naAccountPrivate1.humanAccountPrivate());
 
 	// Check account signing.
 	BOOST_CHECK_MESSAGE(naAccountPrivate0.accountPrivateSign(uHash, vucTextSig), "Signing failed.");

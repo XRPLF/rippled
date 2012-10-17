@@ -132,6 +132,8 @@ public:
 	void setFieldPathSet(SField::ref field, const STPathSet&);
 	void setFieldV256(SField::ref field, const STVector256& v);
 
+	STObject& peekFieldObject(SField::ref field);
+
 	bool isFieldPresent(SField::ref field) const;
 	SerializedType* makeFieldPresent(SField::ref field);
 	void makeFieldAbsent(SField::ref field);
@@ -152,9 +154,9 @@ class STArray : public SerializedType
 {
 public:
 	typedef std::vector<STObject>							vector;
-	typedef std::vector<STObject>::iterator				iterator;
+	typedef std::vector<STObject>::iterator					iterator;
 	typedef std::vector<STObject>::const_iterator			const_iterator;
-	typedef std::vector<STObject>::reverse_iterator		reverse_iterator;
+	typedef std::vector<STObject>::reverse_iterator			reverse_iterator;
 	typedef std::vector<STObject>::const_reverse_iterator	const_reverse_iterator;
 	typedef std::vector<STObject>::size_type				size_type;
 
@@ -199,11 +201,14 @@ public:
 	void pop_back()									{ value.pop_back(); }
 	bool empty() const								{ return value.empty(); }
 	void clear()									{ value.clear(); }
+	void swap(STArray& a)							{ value.swap(a.value); }
 
 	virtual std::string getFullText() const;
 	virtual std::string getText() const;
 	virtual Json::Value getJson(int) const;
 	virtual void add(Serializer& s) const;
+
+	void sort(bool (*compare)(const STObject& o1, const STObject& o2));
 
 	bool operator==(const STArray &s)				{ return value == s.value; }
 	bool operator!=(const STArray &s)				{ return value != s.value; }

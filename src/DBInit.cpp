@@ -140,7 +140,7 @@ const char *WalletDBInit[] = {
 	"CREATE INDEX SeedDomainNext ON SeedDomains (Next);",
 
 	// Table of PublicKeys user has asked to trust.
-	// Fetches are made to the CAS.  This gets the newcoin.txt so even validators without a web server can publish a newcoin.txt.
+	// Fetches are made to the CAS.  This gets the ripple.txt so even validators without a web server can publish a ripple.txt.
 	// Source:
 	//  'M' = Manually added.	: 1500
 	//  'V' = validators.txt	: 1000
@@ -189,7 +189,7 @@ const char *WalletDBInit[] = {
 	// Entry:
 	//  Entry index in [validators] table.
 	// Referral:
-	//  This is the form provided by the newcoin.txt:
+	//  This is the form provided by the ripple.txt:
 	//  - Public key for CAS based referral.
 	//  - Domain for domain based referral.
 	// XXX Do garbage collection when validators have no references.
@@ -200,7 +200,7 @@ const char *WalletDBInit[] = {
 		PRIMARY KEY (Validator,Entry)				\
 	);",
 
-	// List of referrals from newcoin.txt files.
+	// List of referrals from ripple.txt files.
 	// Validator:
 	//  Public key of referree.
 	// Entry:

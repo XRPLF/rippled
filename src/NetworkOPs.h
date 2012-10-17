@@ -57,7 +57,7 @@ protected:
 	boost::asio::deadline_timer			mNetTimer;
 	boost::shared_ptr<LedgerConsensus>	mConsensus;
 	boost::unordered_map<uint160,
-		std::list<LedgerProposal::pointer> > mDeferredProposals;
+		std::list<LedgerProposal::pointer> > mStoredProposals;
 
 	LedgerMaster*						mLedgerMaster;
 	LedgerAcquire::pointer				mAcquiringLedger;
@@ -82,9 +82,9 @@ protected:
 
 	void setMode(OperatingMode);
 
-	Json::Value transJson(const SerializedTransaction& stTxn, TER terResult, const std::string& strStatus, int iSeq, const std::string& strType);
-	void pubTransactionAll(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult, const char* pState);
-	void pubTransactionAccounts(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult, const char* pState);
+	Json::Value transJson(const SerializedTransaction& stTxn, TER terResult, bool bAccepted, Ledger::ref lpCurrent, const std::string& strType);
+	void pubTransactionAll(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult, bool bAccepted);
+	void pubTransactionAccounts(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult, bool bAccepted);
 	bool haveConsensusObject();
 
 	Json::Value pubBootstrapAccountInfo(Ledger::ref lpAccepted, const NewcoinAddress& naAccountID);
@@ -173,7 +173,7 @@ public:
 		const std::list<SHAMapNode>& nodeIDs, const std::list< std::vector<unsigned char> >& nodeData);
 	bool recvValidation(const SerializedValidation::pointer& val);
 	SHAMap::pointer getTXMap(const uint256& hash);
-	bool hasTXSet(const boost::shared_ptr<Peer>& peer, const uint256& set, newcoin::TxSetStatus status);
+	bool hasTXSet(const boost::shared_ptr<Peer>& peer, const uint256& set, ripple::TxSetStatus status);
 	void mapComplete(const uint256& hash, SHAMap::ref map);
 
 	// network state machine
@@ -186,6 +186,8 @@ public:
 	void setStateTimer();
 	void newLCL(int proposers, int convergeTime, const uint256& ledgerHash);
 	void needNetworkLedger()			{ mNeedNetworkLedger = true; }
+	void clearNeedNetworkLedger()		{ mNeedNetworkLedger = false; }
+	bool isNeedNetworkLedger()			{ return mNeedNetworkLedger; }
 	void consensusViewChange();
 	int getPreviousProposers()			{ return mLastCloseProposers; }
 	int getPreviousConvergeTime()		{ return mLastCloseConvergeTime; }
@@ -193,6 +195,9 @@ public:
 	void setLastCloseTime(uint32 t)		{ mLastCloseTime = t; }
 	Json::Value getServerInfo();
 	uint32 acceptLedger();
+	boost::unordered_map<uint160,
+		std::list<LedgerProposal::pointer> >& peekStoredProposals() { return mStoredProposals; }
+	void storeProposal(const LedgerProposal::pointer& proposal,	const NewcoinAddress& peerPublic);
 
 	// client information retrieval functions
 	std::vector< std::pair<uint32, uint256> >

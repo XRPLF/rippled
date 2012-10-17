@@ -201,9 +201,6 @@
     <ClCompile Include="database\win\windatabase.cpp">
       <Filter>Source Files\database</Filter>
     </ClCompile>
-    <ClCompile Include="obj\src\newcoin.pb.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\RippleState.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -301,6 +298,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\TransactionErr.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="obj\src\ripple.pb.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -567,8 +567,12 @@
     <None Include="newcoind.cfg" />
     <None Include="validators.txt" />
     <None Include="README" />
+    <None Include="test\buster.js" />
+    <None Include="test\server.js" />
+    <None Include="test\standalone-test.js" />
+    <None Include="test\utils.js" />
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="src\newcoin.proto" />
+    <CustomBuild Include="src\ripple.proto" />
   </ItemGroup>
 </Project>
