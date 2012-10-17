@@ -801,6 +801,9 @@ void WSConnection::doLedgerEntry(Json::Value& jvResult, const Json::Value& jvReq
 	}
 }
 
+// The objective is to allow the client to know the server's status. The only thing that show the server is fully operating is the
+// stream of ledger_closeds. Therefore, that is all that is provided. A client can drop servers that do not provide recent
+// ledger_closeds.
 void WSConnection::doServerSubscribe(Json::Value& jvResult, const Json::Value& jvRequest)
 {
 	if (!mNetwork.subLedger(this))
@@ -812,10 +815,10 @@ void WSConnection::doServerSubscribe(Json::Value& jvResult, const Json::Value& j
 		if (theConfig.RUN_STANDALONE)
 			jvResult["stand_alone"]	= 1;
 
-		// XXX Make sure these values are available before returning them.
-		// XXX return connected status.
-		jvResult["ledger_closed"]			= mNetwork.getClosedLedger().ToString();
-		jvResult["ledger_current_index"]	= mNetwork.getCurrentLedgerID();
+		if (NetworkOPs::omDISCONNECTED != mNetwork.getOperatingMode()) {
+			jvResult["ledger_closed"]			= mNetwork.getClosedLedger().ToString();
+			jvResult["ledger_current_index"]	= mNetwork.getCurrentLedgerID();
+		}
 	}
 }
 

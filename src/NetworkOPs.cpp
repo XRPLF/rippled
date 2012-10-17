@@ -935,6 +935,10 @@ void NetworkOPs::pubAccountInfo(const NewcoinAddress& naAccountID, const Json::V
 
 void NetworkOPs::pubLedger(Ledger::ref lpAccepted)
 {
+	// Don't publish to clients ledgers we don't trust.
+	if (NetworkOPs::omDISCONNECTED == getOperatingMode())
+		return;
+
 	{
 		boost::interprocess::sharable_lock<boost::interprocess::interprocess_upgradable_mutex>	sl(mMonitorLock);
 
