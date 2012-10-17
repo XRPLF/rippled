@@ -813,11 +813,7 @@ Transaction.prototype.submit = function () {
 // XXX make sure self.hash is available.
 	self.remote.request_transaction_entry(self.hash, ledger_closed)
 	  .on('success', function (message) {
-	      // XXX Fake results for now.
-	      if (!message.metadata.result)
-		message.metadata.result	= 'tesSUCCESS';
-
-	      self.set_state(message.metadata.result);	// XXX Untested.
+	      self.set_state(message.metadata.TransactionResult);
 	      self.emit('final', message);
 	    })
 	  .on('error', function (message) {
