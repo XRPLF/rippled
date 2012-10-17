@@ -121,3 +121,4 @@ std::string transToken(TER terCode);
 std::string transHuman(TER terCode);
 
 #endif
+// vim:ts=4
