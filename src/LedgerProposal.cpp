@@ -22,10 +22,10 @@ LedgerProposal::LedgerProposal(const uint256& pLgr, uint32 seq, const uint256& t
 
 LedgerProposal::LedgerProposal(const NewcoinAddress& naSeed, const uint256& prevLgr,
 		const uint256& position, uint32 closeTime) :
-	mPreviousLedger(prevLgr), mCurrentHash(position), mCloseTime(closeTime), mProposeSeq(0)
+	mPreviousLedger(prevLgr), mCurrentHash(position), mCloseTime(closeTime), mProposeSeq(0),
+	mPublicKey(NewcoinAddress::createNodePublic(naSeed)),
+	mPrivateKey(NewcoinAddress::createNodePrivate(naSeed))
 {
-	mPublicKey	= NewcoinAddress::createNodePublic(naSeed);
-	mPrivateKey	= NewcoinAddress::createNodePrivate(naSeed);
 	mPeerID		= mPublicKey.getNodeID();
 	mTime		= boost::posix_time::second_clock::universal_time();
 }

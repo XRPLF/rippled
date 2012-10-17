@@ -57,10 +57,7 @@ class Uint160Data : public Data
 {
 	uint160 mValue;
 public:
-	Uint160Data(uint160 value)
-	{
-		mValue=value;
-	}
+	Uint160Data(uint160 value) : mValue(value) { ; }
 	bool isUint160(){ return(true); }
 	uint160 getUint160(){ return(mValue); }
 };
