@@ -704,10 +704,7 @@ void SHAMapItem::dump()
 SHAMapTreeNode::pointer SHAMap::fetchNodeExternal(const SHAMapNode& id, const uint256& hash)
 {
 	if (!theApp->running())
-	{
-		cLog(lsTRACE) << "Trying to fetch external node with application not running";
 		throw SHAMapMissingNode(mType, id, hash);
-	}
 
 	HashedObject::pointer obj(theApp->getHashedObjectStore().retrieve(hash));
 	if (!obj)
