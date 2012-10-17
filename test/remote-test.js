@@ -213,6 +213,46 @@ buster.testCase("Remote functions", {
 	  })
 	.submit();
     },
+
+  "create account final" :
+    function (done) {
+      var   got_proposed;
+      var   got_success;
+
+      alpha.transaction()
+	.payment('root', 'alice', Amount.from_json("10000"))
+	.flags('CreateAccount')
+	.on('success', function (r) {
+	    console.log("create_account: %s", JSON.stringify(r));
+
+	    got_success	= true;
+	  })
+	.on('error', function (m) {
+	    console.log("error: %s", m);
+
+	    buster.assert(false);
+	  })
+	.on('final', function (m) {
+	    console.log("final: %s", JSON.stringify(m));
+
+	    buster.assert(got_success && got_proposed);
+	    done();
+	  })
+	.on('proposed', function (m) {
+	    console.log("proposed: %s", JSON.stringify(m));
+
+	    // buster.assert.equals(m.result, 'terNO_DST');
+	    buster.assert.equals(m.result, 'tesSUCCESS');
+
+	    got_proposed  = true;
+
+	    alpha.ledger_accept();
+	  })
+	.on('status', function (s) {
+	    console.log("status: %s", JSON.stringify(s));
+	  })
+	.submit();
+    },
 });
 
 // vim:sw=2:sts=2:ts=8

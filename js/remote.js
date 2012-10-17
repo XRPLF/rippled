@@ -189,6 +189,7 @@ Remote.prototype._set_state = function (state) {
 	this.online_state	= 'open';
 	this.emit('connected');
 	break;
+
       case 'offline':
 	this.online_state	= 'closed';
 	this.emit('disconnected');
@@ -295,11 +296,11 @@ Remote.prototype._connect_start = function () {
     };
  
     if (self.online_target) {
-    if (self.trace) console.log("remote: onopen: %s: online_target2=%s", ws.readyState, self.online_target);
+      self._server_subscribe();	    // Automatically subscribe.
+
       self._set_state('online');
     }
     else {
-    if (self.trace) console.log("remote: onopen: %s: online_target3=%s", ws.readyState, self.online_target);
       self._connect_stop();
     }
   };
@@ -323,11 +324,12 @@ Remote.prototype._connect_start = function () {
   
   // Node's ws module doesn't pass arguments to onmessage.
   ws.on('message', function (json, flags) {
-      self._connect_message(json, flags);
+      self._connect_message(ws, json, flags);
     });
 };
 
-Remote.prototype._connect_message = function (json, flags) {
+// It is possible for messages to be dispatched after the connection is closed.
+Remote.prototype._connect_message = function (ws, json, flags) {
   var message	  = JSON.parse(json);
   var unexpected  = false;
   var request;
@@ -339,7 +341,7 @@ Remote.prototype._connect_message = function (json, flags) {
     switch (message.type) {
       case 'response':
 	{
-	  request	  = this.ws.response[message.id];
+	  request	  = ws.response[message.id];
 
 	  if (!request) {
 	    unexpected  = true;
@@ -558,20 +560,23 @@ Remote.prototype.submit = function (transaction) {
 // Subscribe to a server to get 'ledger_closed' events.
 // 'subscribed' : This command was successful.
 // 'ledger_closed : ledger_closed and ledger_current_index are updated.
-Remote.prototype.server_subscribe = function () {
+Remote.prototype._server_subscribe = function () {
   var self  = this;
 
   var request = new Request(this, 'server_subscribe');
 
   request.
     on('success', function (message) {
-	self.ledger_closed        = message.ledger_closed;
-	self.ledger_current_index = message.ledger_current_index;
 	self.stand_alone          = !!message.stand_alone;
 
-	self.emit('subscribed');
+	if (message.ledger_closed && message.ledger_current_index) {
+	  self.ledger_closed        = message.ledger_closed;
+	  self.ledger_current_index = message.ledger_current_index;
 
-	self.emit('ledger_closed', self.ledger_closed, self.ledger_current_index-1);
+	  self.emit('ledger_closed', self.ledger_closed, self.ledger_current_index-1);
+	}
+
+	self.emit('subscribed');
       })
     .request();
 
