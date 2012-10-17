@@ -404,12 +404,12 @@ void SHAMapTreeNode::addRaw(Serializer& s, SHANodeFormat format)
 		if (format == snfPREFIX)
 		{
 			s.add32(sHP_LeafNode);
-			mItem->addRaw(s);
+			s.addRaw(mItem->peekData());
 			s.add256(mItem->getTag());
 		}
 		else
 		{
-			mItem->addRaw(s);
+			s.addRaw(mItem->peekData());
 			s.add256(mItem->getTag());
 			s.add8(1);
 		}
@@ -419,11 +419,11 @@ void SHAMapTreeNode::addRaw(Serializer& s, SHANodeFormat format)
 		if (format == snfPREFIX)
 		{
 			s.add32(sHP_TransactionID);
-			mItem->addRaw(s);
+			s.addRaw(mItem->peekData());
 		}
 		else
 		{
-			mItem->addRaw(s);
+			s.addRaw(mItem->peekData());
 			s.add8(0);
 		}
 	}
@@ -432,12 +432,12 @@ void SHAMapTreeNode::addRaw(Serializer& s, SHANodeFormat format)
 		if (format == snfPREFIX)
 		{
 			s.add32(sHP_TransactionNode);
-			mItem->addRaw(s);
+			s.addRaw(mItem->peekData());
 			s.add256(mItem->getTag());
 		}
 		else
 		{
-			mItem->addRaw(s);
+			s.addRaw(mItem->peekData());
 			s.add256(mItem->getTag());
 			s.add8(4);
 		}
