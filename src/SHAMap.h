@@ -98,8 +98,7 @@ public:
 	std::vector<unsigned char> getData() const	{ return mData.getData(); }
 	const std::vector<unsigned char>& peekData() const { return mData.peekData(); }
 	Serializer& peekSerializer()				{ return mData; }
-	void addRaw(Serializer &s)					{ s.addRaw(mData); }
-	void addRaw(std::vector<unsigned char>& s)	{ s.insert(s.end(), mData.begin(), mData.end()); }
+	void addRaw(std::vector<unsigned char>& s) const { s.insert(s.end(), mData.begin(), mData.end()); }
 
 	void updateData(const std::vector<unsigned char>& data) { mData=data; }
 

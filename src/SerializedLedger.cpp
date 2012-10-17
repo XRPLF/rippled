@@ -21,7 +21,7 @@ SerializedLedgerEntry::SerializedLedgerEntry(SerializerIterator& sit, const uint
 SerializedLedgerEntry::SerializedLedgerEntry(const Serializer& s, const uint256& index)
 	: STObject(sfLedgerEntry), mIndex(index)
 {
-	SerializerIterator sit(s);
+	SerializerIterator sit(const_cast<Serializer&>(s)); // we know 's' isn't going away
 	set(sit);
 
 	uint16 type = getFieldU16(sfLedgerEntryType);

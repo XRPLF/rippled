@@ -60,10 +60,8 @@ Transaction::Transaction(
 	uint32					uSeq,
 	const STAmount&			saFee,
 	uint32					uSourceTag) :
-	mStatus(NEW), mResult(temUNCERTAIN)
+		mAccountFrom(naSourceAccount), mFromPubKey(naPublicKey), mStatus(NEW), mResult(temUNCERTAIN)
 {
-	mAccountFrom	= naSourceAccount;
-	mFromPubKey		= naPublicKey;
 	assert(mFromPubKey.isValid());
 
 	mTransaction	= boost::make_shared<SerializedTransaction>(ttKind);

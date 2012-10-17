@@ -112,7 +112,7 @@ public:
 
 	// ledger signature operations
 	void addRaw(Serializer &s) const;
-	void setRaw(const Serializer& s);
+	void setRaw(Serializer& s);
 
 	uint256 getHash();
 	const uint256& getParentHash() const	{ return mParentHash; }

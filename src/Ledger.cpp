@@ -92,13 +92,15 @@ Ledger::Ledger(bool /* dummy */, Ledger& prevLedger) :
 Ledger::Ledger(const std::vector<unsigned char>& rawLedger) :
 	mClosed(false), mValidHash(false), mAccepted(false), mImmutable(true)
 {
-	setRaw(Serializer(rawLedger));
+	Serializer s(rawLedger);
+	setRaw(s);
 }
 
 Ledger::Ledger(const std::string& rawLedger) :
 	mClosed(false), mValidHash(false), mAccepted(false), mImmutable(true)
 {
-	setRaw(Serializer(rawLedger));
+	Serializer s(rawLedger);
+	setRaw(s);
 }
 
 void Ledger::updateHash()
@@ -118,7 +120,7 @@ void Ledger::updateHash()
 	mValidHash = true;
 }
 
-void Ledger::setRaw(const Serializer &s)
+void Ledger::setRaw(Serializer &s)
 {
 	SerializerIterator sit(s);
 	mLedgerSeq =		sit.get32();
@@ -311,7 +313,7 @@ bool Ledger::getTransaction(const uint256& txID, Transaction::pointer& txn, Tran
 	}
 	else if (type == SHAMapTreeNode::tnTRANSACTION_MD)
 	{ // in tree with metadata
-		SerializerIterator it(item->getData());
+		SerializerIterator it(item->peekSerializer());
 		txn = theApp->getMasterTransaction().fetch(txID, false);
 		if (!txn)
 			txn = Transaction::sharedTransaction(it.getVL(), true);
