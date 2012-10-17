@@ -10,7 +10,7 @@ var Amount  = amount.Amount;
 var fastTearDown  = true;
 
 // How long to wait for server to start.
-var serverDelay = 1500;
+var serverDelay = 1500;	  // XXX Not implemented.
 
 buster.testRunner.timeout = 5000;
  
@@ -23,32 +23,22 @@ buster.testCase("Remote functions", {
 
 	  alpha   = remote.remoteConfig(config, "alpha");
 
-	  alpha.connect(function (stat) {
-	      buster.assert(1 == stat);	      // OPEN
-	      done();
-	    }, serverDelay);
+	  alpha
+	    .on('connected', done)
+	    .connect();
       });
     },
 
   'tearDown' :
     function (done) {
-      if (fastTearDown) {
-	// Fast tearDown
-	server.stop("alpha", function (e) {
-	  buster.refute(e);
-	  done();
-	});
-      }
-      else {
-	alpha.disconnect(function (stat) {
-	    buster.assert(3 == stat);		// CLOSED
-
+      alpha
+	.on('disconnected', function () {
 	    server.stop("alpha", function (e) {
 	      buster.refute(e);
 	      done();
 	    });
-	  });
-      }
+	  })
+	.connect(false);
     },
 
   'request_ledger_current' :

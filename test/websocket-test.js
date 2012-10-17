@@ -32,14 +32,20 @@ buster.testCase("WebSocket connection", {
     function (done) {
       var alpha	= remote.remoteConfig(config, "alpha", 'TRACE');
 
-      alpha.connect(function (stat) {
-	buster.assert.equals(stat, 1);	    // OPEN
+      alpha
+	.on('connected', function () {
+	    // OPEN
+	    buster.assert(true);
 
-	alpha.disconnect(function (stat) {
-	    buster.assert.equals(stat, 3);  // CLOSED
-	    done();
-	  });
-	}, serverDelay);
+	    alpha
+	      .on('disconnected', function () {
+		  // CLOSED
+		  buster.assert(true);
+		  done();
+		})
+	      .connect(false);
+	  })
+	.connect();
     },
 });
 

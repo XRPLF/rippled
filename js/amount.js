@@ -1,4 +1,4 @@
-// Represent Newcoin amounts and currencies.
+// Represent Ripple amounts and currencies.
 // - Numbers in hex are big-endian.
 
 var utils   = require('./utils.js');
