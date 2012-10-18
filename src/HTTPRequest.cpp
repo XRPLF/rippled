@@ -50,7 +50,6 @@ HTTPRequestAction HTTPRequest::consume(boost::asio::streambuf& buf)
 		bShouldClose = sRequest.find("HTTP/1.1") == std::string::npos;
 
 		eState = await_header;
-//		cLog(lsTRACE) << "Got first line. Going to header state";
 		return haREAD_LINE;
 	}
 
@@ -60,11 +59,10 @@ HTTPRequestAction HTTPRequest::consume(boost::asio::streambuf& buf)
 		{
 			if (iDataSize == 0)
 			{ // no body
-				eState = bShouldClose ? await_close : await_reset;
+				eState = do_request;
 				return haDO_REQUEST;
 			}
 			eState = getting_body;
-//			cLog(lsTRACE) << "Got header, need body: " << iDataSize;
 			return haREAD_RAW;
 		}
 		vHeaders.push_back(line);

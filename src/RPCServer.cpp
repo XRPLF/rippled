@@ -29,6 +29,10 @@
 
 SETUP_LOG();
 
+#ifndef RPC_MAXIMUM_QUERY
+#define RPC_MAXIMUM_QUERY	(1024*1024)
+#endif
+
 RPCServer::RPCServer(boost::asio::io_service& io_service , NetworkOPs* nopNetwork)
 	: mNetOps(nopNetwork), mSocket(io_service)
 {
@@ -152,7 +156,13 @@ void RPCServer::handle_read_line(const boost::system::error_code& e)
 	else if (action == haREAD_RAW)
 	{
 		int rLen = mHTTPRequest.getDataSize();
-		assert(rLen > 0);
+		if ((rLen < 0) || (rLen > RPC_MAXIMUM_QUERY))
+		{
+			cLog(lsWARNING) << "Illegal RPC request length " << rLen;
+			boost::system::error_code ignore_ec;
+			mSocket.shutdown(boost::asio::ip::tcp::socket::shutdown_both, ignore_ec);
+			return;
+		}
 
 		int alreadyHave = mLineBuffer.size();
 
