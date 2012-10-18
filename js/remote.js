@@ -539,19 +539,26 @@ Remote.prototype.submit = function (transaction) {
     }
 
     if (!transaction.transaction.Sequence) {
-      var   cache_request = this.account_cache(transaction.transaction.Account);
-
-      cache_request.on('success_account_cache', function () {
+      // Look in the last closed ledger.
+      this.account_cache(transaction.transaction.Account, false)
+	.on('success_account_cache', function () {
 	    // Try again.
 	    self.submit(transaction);
-	});
-
-      cache_request.on('error', function (message) {
-	  // Forward errors.
-	  transaction.emit('error', message);
-	});
-
-      cache_request.request();
+	  })
+	.on('error', function (message) {
+	    // Look in the current ledger.
+	    self.account_cache(transaction.transaction.Account, true)
+	      .on('success_account_cache', function () {
+		  // Try again.
+		  self.submit(transaction);
+		})
+	      .on('error', function (message) {
+		  // Forward errors.
+		  transaction.emit('error', message);
+		})
+	      .request();
+	  })
+	.request();
     }
     else {
       var submit_request = new Request(this, 'submit');
@@ -639,16 +646,13 @@ Remote.prototype.account_seq = function (account, advance) {
 }
 
 // Return a request to refresh accounts[account].seq.
-Remote.prototype.account_cache = function (account) {
+Remote.prototype.account_cache = function (account, current) {
   var self    = this;
-  var request = this.request_ledger_entry('account_root')
+  var request = this.request_ledger_entry('account_root');
 
-  // Only care about a closed ledger.
-  // YYY Might be more advanced and work with a changing current ledger.
-  request.ledger(this.ledger_closed);  // XXX Requires active server_subscribe
-  request.account_root(account);
-
-  request.on('success', function (message) {
+  request
+    .account_root(account)
+    .on('success', function (message) {
       var seq = message.node.Sequence;
   
       if (!self.accounts[account])
@@ -660,7 +664,15 @@ Remote.prototype.account_cache = function (account) {
       request.emit('success_account_cache');
     });
 
-    return request;
+  if (current)
+  {
+    request.ledger_index(this.ledger_current_index);
+  }
+  else {
+    request.ledger(this.ledger_closed);
+  }
+
+  return request;
 };
 
 // Mark an account's root node as dirty.
