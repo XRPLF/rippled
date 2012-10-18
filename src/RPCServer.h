@@ -160,6 +160,7 @@ private:
 	Json::Value doServerInfo(const Json::Value& params);
 	Json::Value doSessionClose(const Json::Value& params);
 	Json::Value doSessionOpen(const Json::Value& params);
+	Json::Value doLogSeverity(const Json::Value& params);
 	Json::Value doStop(const Json::Value& params);
 	Json::Value doTransitSet(const Json::Value& params);
 	Json::Value doTx(const Json::Value& params);
