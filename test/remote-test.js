@@ -80,7 +80,7 @@ buster.testCase("Remote functions", {
 
 	  alpha
 	    .request_ledger_entry('account_root')
-	    .ledger(r.ledger_closed)
+	    .ledger_closed(r.ledger_closed)
 	    .account_root("rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh")
 	    .on('success', function (r) {
 		// console.log("account_root: %s", JSON.stringify(r));
@@ -110,7 +110,7 @@ buster.testCase("Remote functions", {
 
 	  alpha
 	    .request_ledger_entry('account_root')
-	    .ledger(r.ledger_closed)
+	    .ledger_closed(r.ledger_closed)
 	    .account_root("zHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh")
 	    .on('success', function (r) {
 		// console.log("account_root: %s", JSON.stringify(r));
@@ -141,7 +141,7 @@ buster.testCase("Remote functions", {
 
 	  alpha
 	    .request_ledger_entry('account_root')
-	    .ledger(r.ledger_closed)
+	    .ledger_closed(r.ledger_closed)
 	    .account_root(config.accounts.alice.account)
 	    .on('success', function (r) {
 		// console.log("account_root: %s", JSON.stringify(r));
@@ -171,7 +171,7 @@ buster.testCase("Remote functions", {
 
 	  alpha
 	    .request_ledger_entry('index')
-	    .ledger(r.ledger_closed)
+	    .ledger_closed(r.ledger_closed)
 	    .account_root(config.accounts.alice.account)
 	    .index("2B6AC232AA4C4BE41BF49D2459FA4A0347E1B543A4C92FCEE0821C0201E2E9A8")
 	    .on('success', function (r) {
