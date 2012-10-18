@@ -686,19 +686,19 @@ Remote.prototype.transaction = function () {
 // - malformed error: local server thought it was malformed.
 // - The client should only trust this when talking to a trusted server.
 // 'final' : Final status of transaction.
-// - Only expect a final from honest clients after a tesSUCCESS or ter*.
+// - Only expect a final from dishonest servers after a tesSUCCESS or ter*.
 // 'lost' : Gave up looking for on ledger_closed.
 // 'pending' : Transaction was not found on ledger_closed.
 // 'state' : Follow the state of a transaction.
-//    'clientSubmitted'	    - Sent to remote
-//     |- 'remoteError'	    - Remote rejected transaction.
-//      \- 'clientProposed' - Remote provisionally accepted transaction.
-//       |- 'clientMissing' - Transaction has not appeared in ledger as expected.
-//       | |- 'clientLost'  - No longer monitoring missing transaction.
+//    'client_submitted'     - Sent to remote
+//     |- 'remoteError'	     - Remote rejected transaction.
+//      \- 'client_proposed' - Remote provisionally accepted transaction.
+//       |- 'client_missing' - Transaction has not appeared in ledger as expected.
+//       | |\- 'client_lost' - No longer monitoring missing transaction.
 //       |/
-//       |- 'tesSUCCESS'    - Transaction in ledger as expected.
-//       |- 'ter...'	    - Transaction failed.
-//       |- 'tep...'	    - Transaction partially succeeded.
+//       |- 'tesSUCCESS'     - Transaction in ledger as expected.
+//       |- 'ter...'	     - Transaction failed.
+//       \- 'tep...'	     - Transaction partially succeeded.
 //
 // Notes:
 // - All transactions including locally errors and malformed errors may be
@@ -734,7 +734,7 @@ var Transaction	= function (remote) {
       if (message.engine_result) {
 	self.hash	= message.transaction.hash;
 
-	self.set_state('clientProposed');
+	self.set_state('client_proposed');
 
 	self.emit('proposed', {
 	    'result'	      : message.engine_result,
@@ -866,7 +866,7 @@ Transaction.prototype.submit = function () {
     this.remote.on('ledger_closed', on_ledger_closed);
   }
 
-  this.set_state('clientSubmitted');
+  this.set_state('client_submitted');
 
   this.remote.submit(this);
 
@@ -973,7 +973,7 @@ Transaction.prototype.payment = function (src, dst, deliver_amount) {
   return this;
 }
 
-Remote.prototype.ripple_line_set = function (src, limit, quaility_in, quality_out) {
+Transaction.prototype.ripple_line_set = function (src, limit, quality_in, quality_out) {
   this.secret			    = this.account_secret(src);
   this.transaction.TransactionType  = 'CreditSet';
   this.transaction.Account	    = this.account_default(src);
@@ -982,11 +982,11 @@ Remote.prototype.ripple_line_set = function (src, limit, quaility_in, quality_ou
   if (undefined !== limit)
     this.transaction.LimitAmount  = limit.to_json();
 
-  if (quaility_in)
-    this.transaction.QualityIn	  = quaility_in;
+  if (quality_in)
+    this.transaction.QualityIn	  = quality_in;
 
-  if (quaility_out)
-    this.transaction.QualityOut	  = quaility_out;
+  if (quality_out)
+    this.transaction.QualityOut	  = quality_out;
 
   // XXX Throw an error if nothing is set.
 

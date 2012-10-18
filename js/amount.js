@@ -14,7 +14,7 @@ var UInt160 = function () {
 };
 
 UInt160.from_json = function (j) {
-  return (new UInt160()).parse_json(j);
+  return (new UInt160()).parse_json(j in accounts ? accounts[j].account : j);
 };
 
 UInt160.prototype.clone = function() {
@@ -138,6 +138,12 @@ Currency.prototype.to_json = function () {
 
 Currency.prototype.to_human = function() {
   return this.value ? this.value : "XNS";
+};
+
+var accounts = {};
+
+var setAccounts = function (accounts_new) {
+  accounts  = accounts_new;
 };
 
 var Amount = function () {
@@ -394,9 +400,10 @@ Amount.prototype.parse_json = function(j) {
   return this;
 };
 
-exports.Amount	  = Amount;
-exports.Currency  = Currency;
-exports.UInt160	  = UInt160;
+exports.setAccounts   = setAccounts;
+exports.Amount	      = Amount;
+exports.Currency      = Currency;
+exports.UInt160	      = UInt160;
 
 exports.consts	  = {
   'address_xns'	      : "rrrrrrrrrrrrrrrrrrrrrhoLvTp",
