@@ -16,8 +16,8 @@ var EventEmitter  = require('events').EventEmitter;
 // npm
 var WebSocket = require('ws');
 
-var amount    = require('./amount.js');
-var Amount    = amount.Amount;
+var Amount    = require('./amount.js').Amount;
+var UInt160   = require('./amount.js').UInt160;
 
 // Request events emmitted:
 // 'success' : Request successful.
@@ -63,10 +63,23 @@ Request.prototype.request_default = function () {
   this.remote.request(this);
 };
 
+Request.prototype.ledger_choose = function (current) {
+  if (current)
+  {
+    this.message.ledger_index = this.remote.ledger_current_index;
+  }
+  else {
+    this.message.ledger	      = this.remote.ledger_closed;
+  }
+
+  return this;
+};
+
 // Set the ledger for a request.
 // - ledger_entry
-Request.prototype.ledger = function (ledger) {
-  this.message.ledger	    = ledger;
+// - transaction_entry
+Request.prototype.ledger_closed = function (ledger) {
+  this.message.ledger_closed  = ledger;
 
   return this;
 };
@@ -100,6 +113,15 @@ Request.prototype.secret = function (s) {
 
 Request.prototype.transaction = function (t) {
   this.message.transaction  = t;
+
+  return this;
+};
+
+Request.prototype.ripple_state = function (account, issuer, currency) {
+  this.message.ripple_state  = {
+      'accounts' : [ account, issuer ],
+      'currency' : currency
+    };
 
   return this;
 };
@@ -463,9 +485,10 @@ Remote.prototype.request_ledger_entry = function (type) {
   // Transparent caching:
   request.on('request', function (remote) {	      // Intercept default request.
     if (this.ledger_closed) {
-      // XXX Initial implementation no caching.
+      // XXX Add caching.
     }
     // else if (req.ledger_index)
+    // else if ('ripple_state' === this.type)	      // YYY Could be cached per ledger.
     else if ('account_root' === this.type) {
       var cache = self.ledgers.current.account_root;
       
@@ -507,17 +530,11 @@ Remote.prototype.request_ledger_entry = function (type) {
   return request;
 };
 
-// --> ledger_closed : optional
-Remote.prototype.request_transaction_entry = function (hash, ledger_closed) {
+Remote.prototype.request_transaction_entry = function (hash) {
   assert(this.trusted);   // If not trusted, need to check proof, maybe talk packet protocol.
   
-  var request = new Request(this, 'transaction_entry');
-
-  request.message.transaction	= hash;
-  if (ledger_closed)
-    request.message.ledger_closed	= ledger_closed;
-
-  return request;
+  return (new Request(this, 'transaction_entry'))
+    .transaction(hash);
 };
 
 // Submit a transaction.
@@ -587,10 +604,8 @@ Remote.prototype.submit = function (transaction) {
 Remote.prototype._server_subscribe = function () {
   var self  = this;
 
-  var request = new Request(this, 'server_subscribe');
-
-  request.
-    on('success', function (message) {
+  (new Request(this, 'server_subscribe'))
+    .on('success', function (message) {
 	self.stand_alone          = !!message.stand_alone;
 
 	if (message.ledger_closed && message.ledger_current_index) {
@@ -614,9 +629,8 @@ Remote.prototype._server_subscribe = function () {
 Remote.prototype.ledger_accept = function () {
   if (this.stand_alone || undefined === this.stand_alone)
   {
-    var request = new Request(this, 'ledger_accept');
-
-    request.request();
+    (new Request(this, 'ledger_accept'))
+      .request();
   }
   else {
     this.emit('error', {
@@ -625,6 +639,17 @@ Remote.prototype.ledger_accept = function () {
   }
 
   return this;
+};
+
+// Return a request to refresh the account balance.
+Remote.prototype.request_account_balance = function (account, current) {
+  return (this.request_ledger_entry('account_root'))
+    .account_root(account)
+    .ledger_choose(current)
+    .on('success', function (message) {
+      // If the caller also waits for 'success', they might run before this.
+      request.emit('account_balance', message.node.Balance);
+    });
 };
 
 // Return the next account sequence if possible.
@@ -648,35 +673,56 @@ Remote.prototype.account_seq_cache = function (account, current) {
   var self    = this;
   var request = this.request_ledger_entry('account_root');
 
-  request
+  return request
     .account_root(account)
+    .ledger_choose(current)
     .on('success', function (message) {
-      var seq = message.node.Sequence;
-  
-      if (!self.accounts[account])
-	self.accounts[account]	= {};
+	var seq = message.node.Sequence;
+    
+	if (!self.accounts[account]) self.accounts[account] = {};
 
-      self.accounts[account].seq  = seq;
+	self.accounts[account].seq  = seq;
 
-      // If the caller also waits for 'success', they might run before this.
-      request.emit('success_account_seq_cache');
-    });
-
-  if (current)
-  {
-    request.ledger_index(this.ledger_current_index);
-  }
-  else {
-    request.ledger(this.ledger_closed);
-  }
-
-  return request;
+	// If the caller also waits for 'success', they might run before this.
+	request.emit('success_account_seq_cache');
+      });
 };
 
 // Mark an account's root node as dirty.
 Remote.prototype.dirty_account_root = function (account) {
   delete this.ledgers.current.account_root[account];
 };
+
+// Return a request to get a ripple balance.
+//
+// --> account: String
+// --> issuer: String
+// --> currency: String
+// --> current: bool : true = current ledger
+Remote.prototype.request_ripple_balance = function (account, issuer, currency, current) {
+  var src     =  this.remote.config.accounts[account] ? this.remote.config.accounts[account].account : account;
+  var dst     =  this.remote.config.accounts[issuer] ? this.remote.config.accounts[issuer].account : issuer;
+
+  return (this.request_ledger_entry('ripple_state'))		      // YYY Could be cached per ledger.
+    .ripple_state(src, dst, currency)
+    .ledger_choose(current)
+    .on('success', function (message) {
+	var node	    = message.node;
+	var flip	    = UInt160.from_json(src) == node.HighLimit.issuer;
+	var issuerLimit	    = flip ? node.LowLimit : node.HighLimit;
+	var accountLimit    = flip ? node.HighLimit : node.LowLimit;
+	var issuerBalance   = (flip ? node.Balance.clone().negate() : node.Balance.clone()).parse_issuer(dst);
+	var accountBalance  = issuerBalance.clone().parse_issuer(dst);
+
+	// If the caller also waits for 'success', they might run before this.
+	request.emit('ripple_state', {
+	  'issuer_balance'  : issuerBalance,			      // Balance with dst as issuer.
+	  'account_balance' : accountBalance,			      // Balance with src as issuer.
+	  'issuer_limit'    : issuerLimit.clone().parse_issuer(src),  // Limit set by issuer with src as issuer.
+	  'account_limit'   : accountLimit.clone().parse_issuer(dst)  // Limit set by account with dst as issuer.
+	});
+      });
+}
 
 Remote.prototype.transaction = function () {
   return new Transaction(this);
@@ -849,7 +895,8 @@ Transaction.prototype.submit = function () {
 	var stop  = false;
 
 // XXX make sure self.hash is available.
-	self.remote.request_transaction_entry(self.hash, ledger_closed)
+	self.remote.request_transaction_entry(self.hash)
+	  .ledger_closed(ledger_closed)
 	  .on('success', function (message) {
 	      self.set_state(message.metadata.TransactionResult);
 	      self.emit('final', message);
