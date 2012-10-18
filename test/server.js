@@ -19,8 +19,9 @@ var child     = require("child_process");
 var servers = {};
 
 // Create a server object
-var Server = function (name) {
+var Server = function (name, mock) {
   this.name = name;
+  this.mock = mock;
 };
 
 // Return a server's rippled.cfg as string.
@@ -92,20 +93,29 @@ Server.prototype.makeBase = function (done) {
 Server.prototype.start = function (done) {
   var self	= this;
 
-  this.makeBase(function (e) {
-      if (e) {
-	throw e;
-      }
-      else {
-	self.serverSpawnSync();
-	done();
-      }
-    });
+  if (this.mock) {
+    done();
+  }
+  else {
+    this.makeBase(function (e) {
+	if (e) {
+	  throw e;
+	}
+	else {
+	  self.serverSpawnSync();
+	  done();
+	}
+      });
+  }
 };
 
 // Stop a standalone server.
 Server.prototype.stop = function (done) {
-  if (this.child) {
+  if (this.mock) {
+    console.log("server: stop: mock");
+    done();	
+  }
+  else if (this.child) {
     // Update the on exit to invoke done.
     this.child.on('exit', function (code, signal) {
 	console.log("server: stop: server exited");
@@ -121,14 +131,14 @@ Server.prototype.stop = function (done) {
 };
 
 // Start the named server.
-exports.start = function (name, done) {
+exports.start = function (name, done, mock) {
   if (servers[name])
   {
     console.log("server: start: server already started.");
   }
   else
   {
-    var server = new Server(name);
+    var server = new Server(name, mock);
 
     servers[name] = server;
 

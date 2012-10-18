@@ -98,8 +98,7 @@ public:
 	std::vector<unsigned char> getData() const	{ return mData.getData(); }
 	const std::vector<unsigned char>& peekData() const { return mData.peekData(); }
 	Serializer& peekSerializer()				{ return mData; }
-	void addRaw(Serializer &s)					{ s.addRaw(mData); }
-	void addRaw(std::vector<unsigned char>& s)	{ s.insert(s.end(), mData.begin(), mData.end()); }
+	void addRaw(std::vector<unsigned char>& s) const { s.insert(s.end(), mData.begin(), mData.end()); }
 
 	void updateData(const std::vector<unsigned char>& data) { mData=data; }
 
@@ -126,6 +125,7 @@ enum SHANodeFormat
 {
 	snfPREFIX	= 1, // Form that hashes to its official hash
 	snfWIRE		= 2, // Compressed form used on the wire
+	snfHASH		= 3, // just the hash
 };
 
 enum SHAMapType
@@ -404,6 +404,8 @@ public:
 		const std::list<std::vector<unsigned char> >& path);
 
 	void walkMap(std::vector<SHAMapMissingNode>& missingNodes, int maxMissing);
+
+	bool getPath(const uint256& index, std::vector< std::vector<unsigned char> >& nodes, SHANodeFormat format);
 
 	bool deepCompare(SHAMap& other);
 	virtual void dump(bool withHashes = false);

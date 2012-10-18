@@ -259,7 +259,7 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned 
 		}
 	}
 
-	if (format == snfPREFIX)
+	else if (format == snfPREFIX)
 	{
 		if (rawNode.size() < 4)
 		{
@@ -316,6 +316,12 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned 
 		}
 	}
 
+	else
+	{
+		assert(false);
+		throw std::runtime_error("Unknown format");
+	}
+
 	updateHash();
 }
 
@@ -333,7 +339,16 @@ bool SHAMapTreeNode::updateHash()
 				break;
 			}
 		if(!empty)
+		{
 			nh = Serializer::getPrefixHash(sHP_InnerNode, reinterpret_cast<unsigned char *>(mHashes), sizeof(mHashes));
+#ifdef DEBUG
+			Serializer s;
+			s.add32(sHP_InnerNode);
+			for(int i = 0; i < 16; ++i)
+				s.add256(mHashes[i]);
+			assert(nh == s.getSHA512Half());
+#endif
+		}
 	}
 	else if (mType == tnTRANSACTION_NM)
 	{
@@ -366,11 +381,15 @@ bool SHAMapTreeNode::updateHash()
 
 void SHAMapTreeNode::addRaw(Serializer& s, SHANodeFormat format)
 {
-	assert((format == snfPREFIX) || (format == snfWIRE));
+	assert((format == snfPREFIX) || (format == snfWIRE) || (format == snfHASH));
 	if (mType == tnERROR)
 		throw std::runtime_error("invalid I node type");
 
-	if (mType == tnINNER)
+	if (format == snfHASH)
+	{
+		s.add256(getNodeHash());
+	}
+	else if (mType == tnINNER)
 	{
 		assert(!isEmpty());
 		if (format == snfPREFIX)
@@ -404,12 +423,12 @@ void SHAMapTreeNode::addRaw(Serializer& s, SHANodeFormat format)
 		if (format == snfPREFIX)
 		{
 			s.add32(sHP_LeafNode);
-			mItem->addRaw(s);
+			s.addRaw(mItem->peekData());
 			s.add256(mItem->getTag());
 		}
 		else
 		{
-			mItem->addRaw(s);
+			s.addRaw(mItem->peekData());
 			s.add256(mItem->getTag());
 			s.add8(1);
 		}
@@ -419,11 +438,11 @@ void SHAMapTreeNode::addRaw(Serializer& s, SHANodeFormat format)
 		if (format == snfPREFIX)
 		{
 			s.add32(sHP_TransactionID);
-			mItem->addRaw(s);
+			s.addRaw(mItem->peekData());
 		}
 		else
 		{
-			mItem->addRaw(s);
+			s.addRaw(mItem->peekData());
 			s.add8(0);
 		}
 	}
@@ -432,12 +451,12 @@ void SHAMapTreeNode::addRaw(Serializer& s, SHANodeFormat format)
 		if (format == snfPREFIX)
 		{
 			s.add32(sHP_TransactionNode);
-			mItem->addRaw(s);
+			s.addRaw(mItem->peekData());
 			s.add256(mItem->getTag());
 		}
 		else
 		{
-			mItem->addRaw(s);
+			s.addRaw(mItem->peekData());
 			s.add256(mItem->getTag());
 			s.add8(4);
 		}

@@ -26,13 +26,17 @@ var Amount    = amount.Amount;
 //   'remoteUnexpected'
 //   'remoteDisconnected'
 var Request = function (remote, command) {
+  var self  = this;
+
   this.message	= {
     'command' : command,
     'id'      : undefined,
   };
   this.remote	= remote;
 
-  this.on('request', this.request_default);
+  this.on('request', function () {
+      self.request_default();
+    });
 };
 
 Request.prototype  = new EventEmitter;
@@ -40,6 +44,12 @@ Request.prototype  = new EventEmitter;
 // Return this.  node EventEmitter's on doesn't return this.
 Request.prototype.on = function (e, c) {
   EventEmitter.prototype.on.call(this, e, c);
+
+  return this;
+};
+
+Request.prototype.once = function (e, c) {
+  EventEmitter.prototype.once.call(this, e, c);
 
   return this;
 };
@@ -94,6 +104,19 @@ Request.prototype.transaction = function (t) {
   return this;
 };
 
+//
+// Remote - access to a remote Ripple server via websocket.
+//
+// Events:
+// 'connectted'
+// 'disconnected'
+// 'state':
+// - 'online' : connectted and subscribed
+// - 'offline' : not subscribed or not connectted.
+// 'ledger_closed': A good indicate of ready to serve.
+// 'subscribed' : This indicates stand-alone is available.
+//
+
 // --> trusted: truthy, if remote is trusted
 var Remote = function (trusted, websocket_ip, websocket_port, config, trace) {
   this.trusted              = trusted;
@@ -105,6 +128,11 @@ var Remote = function (trusted, websocket_ip, websocket_port, config, trace) {
   this.ledger_closed        = undefined;
   this.ledger_current_index = undefined;
   this.stand_alone          = undefined;
+  this.online_target	    = false;
+  this.online_state	    = 'closed';	  // 'open', 'closed', 'connecting', 'closing'
+  this.state	  	    = 'offline';  // 'online', 'offline'
+  this.retry_timer	    = undefined;
+  this.retry		    = undefined;
   
   // Cache information for accounts.
   this.accounts = {
@@ -159,198 +187,254 @@ var fees = {
   'offer'	    : Amount.from_json("100"),
 };
 
-Remote.prototype.connect_helper = function () {
+// Set the emited state: 'online' or 'offline'
+Remote.prototype._set_state = function (state) {
+  if (this.trace) console.log("remote: set_state: %s", state);
+
+  if (this.state !== state) {
+    this.state = state;
+
+    this.emit('state', state);
+    switch (state) {
+      case 'online':
+	this.online_state	= 'open';
+	this.emit('connected');
+	break;
+
+      case 'offline':
+	this.online_state	= 'closed';
+	this.emit('disconnected');
+	break;
+    }
+  }
+};
+
+// Set the target online state. Defaults to false.
+Remote.prototype.connect = function (online) {
+  var target  = undefined === online || online;
+
+  if (this.online_target != target) {
+    this.online_target  = target;
+
+    // If we were in a stable state, go dynamic.
+    switch (this.online_state) {
+      case 'open':
+	if (!target) this._connect_stop();
+	break;
+
+      case 'closed':
+	if (target) this._connect_retry();
+	break;
+    }
+  }
+
+  return this;
+};
+
+// Stop from open state.
+Remote.prototype._connect_stop = function () {
+  delete this.ws.onerror;
+  delete this.ws.onclose;
+
+  this.ws.terminate();
+  delete this.ws;
+
+  this._set_state('offline');
+};
+
+// Implictly we are not connected.
+Remote.prototype._connect_retry = function () {
+  var self  = this;
+
+  if (!self.online_target) {
+    // Do not continue trying to connect.
+    this._set_state('offline');
+  }
+  else if ('connecting' !== this.online_state) {
+    // New to connecting state.
+    this.online_state = 'connecting';
+    this.retry	      = 0;
+ 
+    this._connect_start();
+  }
+  else
+  {
+    // Delay and retry.
+    this.retry	      += 1;
+    this.retry_timer  =  setTimeout(function () {
+	if (self.trace) console.log("remote: retry");
+
+	if (self.online_target) {
+	  self._connect_start();
+	}
+	else {
+	  self._connect_retry();
+	}
+      }, this.retry < 40 ? 1000/20 : 1000); // 20 times per second for 2 seconds then once per second.
+  }
+};
+
+Remote.prototype._connect_start = function () {
+  // Note: as a browser client can't make encrypted connections to random ips
+  // with self-signed certs as the user must have pre-approved the self-signed certs.
+
   var self = this;
+  var url  = util.format("ws://%s:%s", this.websocket_ip, this.websocket_port);
   
-  if (this.trace) console.log("remote: connect: %s", this.url);
+  if (this.trace) console.log("remote: connect: %s", url);
   
-  var ws = this.ws = new WebSocket(this.url);;
+  var ws = this.ws = new WebSocket(url);
   
   ws.response = {};
   
   ws.onopen = function () {
-    if (self.trace) console.log("remote: onopen: %s", ws.readyState);
+    if (self.trace) console.log("remote: onopen: %s: online_target=%s", ws.readyState, self.online_target);
     
-    ws.onclose = undefined;
-    ws.onerror = undefined;
-    
-    clearTimeout(self.connect_timer); delete self.connect_timer;
-    clearTimeout(self.retry_timer); delete self.retry_timer;
+    ws.onerror = function () {
+      if (self.trace) console.log("remote: onerror: %s", ws.readyState);
 
-    self.done(ws.readyState);
+      delete ws.onclose;
+
+      self._connect_retry();
+    };
+
+    ws.onclose = function () {
+      if (self.trace) console.log("remote: onclose: %s", ws.readyState);
+
+      delete ws.onerror;
+
+      self._connect_retry();
+    };
+ 
+    if (self.online_target) {
+      self._set_state('online');
+
+      // Note, we could get disconnected before tis go through.
+      self._server_subscribe();	    // Automatically subscribe.
+    }
+    else {
+      self._connect_stop();
+    }
   };
   
   ws.onerror = function () {
     if (self.trace) console.log("remote: onerror: %s", ws.readyState);
+ 
+    delete ws.onclose;
     
-    ws.onclose = undefined;
-    
-    if (self.expire) {
-      if (self.trace) console.log("remote: was expired");
-
-      ws.onerror = undefined;
-      self.done(ws.readyState);
-
-    } else {
-      // Delay and retry.
-
-      clearTimeout(self.retry_timer);
-      self.retry_timer  =  setTimeout(function () {
-	  if (self.trace) console.log("remote: retry");
-
-	  self.connect_helper();
-	}, 50); // Retry rate 50ms.
-    }
+    self._connect_retry();
   };
-  
-  // Covers failure to open.
+
+  // Failure to open.
   ws.onclose = function () {
     if (self.trace) console.log("remote: onclose: %s", ws.readyState);
 
-    ws.onerror = undefined;
+    delete ws.onerror;
 
-    clearTimeout(self.retry_timer);
-    delete self.retry_timer;
-
-    self.done(ws.readyState);
+    self._connect_retry();
   };
   
   // Node's ws module doesn't pass arguments to onmessage.
   ws.on('message', function (json, flags) {
-    var message	    = JSON.parse(json);
-    var	unexpected  = false;
-    var request;
-
-    if ('object' !== typeof message) {
-      unexpected  = true;
-    }
-    else {
-      switch (message.type) {
-	case 'response':
-	  {
-	    request	  = ws.response[message.id];
-
-	    if (!request) {
-	      unexpected  = true;
-	    }
-	    else if ('success' === message.result) {
-	      if (self.trace) console.log("message: %s", json);
-
-	      request.emit('success', message);
-	    }
-	    else if (message.error) {
-	      if (self.trace) console.log("message: %s", json);
-
-	      request.emit('error', {
-		  'error'		: 'remoteError',
-		  'error_message' : 'Remote reported an error.',
-		  'remote'        : message,
-		});
-	    }
-	  }
-	  break;
-
-	case 'ledgerClosed':
-	  // XXX If not trusted, need to verify we consider ledger closed.
-	  // XXX Also need to consider a slow server or out of order response.
-	  // XXX Be more defensive fields could be missing or of wrong type.
-	  // YYY Might want to do some cache management.
-
-	  self.ledger_closed	    = message.ledger_closed;
-	  self.ledger_current_index = message.ledger_closed_index + 1;
-
-	  self.emit('ledger_closed', self.ledger_closed, self.ledger_closed_index);
-	  break;
-	
-	default:
-	  unexpected  = true;
-	  break;
-      }
-    }
-
-    if (!unexpected) {
-    }
-    // Unexpected response from remote.
-    // XXX This isn't so robust. Hard fails should probably only happen in a debugging scenairo.
-    else if (self.trusted) {
-      // Remote is trusted, report an error.
-      console.log("unexpected message from trusted remote: %s", json);
-
-      (request || self).emit('error', {
-	  'error' : 'remoteUnexpected',
-	  'error_message' : 'Unexpected response from remote.'
-	});
-    }
-    else {
-      // Treat as a disconnect.
-      if (self.trace) console.log("unexpected message from untrusted remote: %s", json);
-
-      // XXX All pending request need this treatment and need to actionally disconnect.
-      (request || self).emit('error', {
-	  'error' : 'remoteDisconnected',
-	  'error_message' : 'Remote disconnected.'
-	});
-    }
-  });
+      self._connect_message(ws, json, flags);
+    });
 };
 
-// Target state is connectted.
-// XXX Get rid of 'done' use event model.
-// done(readyState):
-// --> readyState: OPEN, CLOSED
-Remote.prototype.connect = function (done, timeout) {
-  var self = this;
-  
-  this.url  = util.format("ws://%s:%s", this.websocket_ip, this.websocket_port);
-  this.done = done;
-  
-  if (timeout) {
-    if (this.trace) console.log("remote: expire: false");
-    
-    this.expire		= false;
+// It is possible for messages to be dispatched after the connection is closed.
+Remote.prototype._connect_message = function (ws, json, flags) {
+  var message	  = JSON.parse(json);
+  var unexpected  = false;
+  var request;
 
-    this.connect_timer	= setTimeout(function () {
-	if (self.trace) console.log("remote: expire: timeout");
-
-	delete self.connect_timer;
-	self.expire = true;
-      }, timeout);
-
-  } else {
-    if (this.trace) console.log("remote: expire: false");
-    this.expire = true;
+  if ('object' !== typeof message) {
+    unexpected  = true;
   }
-  
-  this.connect_helper();
-};
+  else {
+    switch (message.type) {
+      case 'response':
+	{
+	  request	  = ws.response[message.id];
 
-// Target stated is disconnected.
-// Note: if exiting or other side is going away, don't need to disconnect.
-Remote.prototype.disconnect = function (done) {
-  var self  = this;
-  var ws    = this.ws;
+	  if (!request) {
+	    unexpected  = true;
+	  }
+	  else if ('success' === message.result) {
+	    if (this.trace) console.log("message: %s", json);
 
-  if (this.trace) console.log("remote: disconnect");
-  
-  ws.onclose = function () {
-    if (self.trace) console.log("remote: onclose: %s", ws.readyState);
-    done(ws.readyState);
-  };
+	    request.emit('success', message);
+	  }
+	  else if (message.error) {
+	    if (this.trace) console.log("message: %s", json);
 
-  // ws package has a hard coded 30 second timeout.
-  ws.close();
+	    request.emit('error', {
+		'error'		: 'remoteError',
+		'error_message' : 'Remote reported an error.',
+		'remote'        : message,
+	      });
+	  }
+	}
+	break;
+
+      case 'ledgerClosed':
+	// XXX If not trusted, need to verify we consider ledger closed.
+	// XXX Also need to consider a slow server or out of order response.
+	// XXX Be more defensive fields could be missing or of wrong type.
+	// YYY Might want to do some cache management.
+
+	this.ledger_closed	  = message.ledger_closed;
+	this.ledger_current_index = message.ledger_closed_index + 1;
+
+	this.emit('ledger_closed', message.ledger_closed, message.ledger_closed_index);
+	break;
+      
+      default:
+	unexpected  = true;
+	break;
+    }
+  }
+
+  if (!unexpected) {
+  }
+  // Unexpected response from remote.
+  // XXX This isn't so robust. Hard fails should probably only happen in a debugging scenairo.
+  else if (this.trusted) {
+    // Remote is trusted, report an error.
+    console.log("unexpected message from trusted remote: %s", json);
+
+    (request || this).emit('error', {
+	'error' : 'remoteUnexpected',
+	'error_message' : 'Unexpected response from remote.'
+      });
+  }
+  else {
+    // Treat as a disconnect.
+    if (this.trace) console.log("unexpected message from untrusted remote: %s", json);
+
+    // XXX All pending request need this treatment and need to actionally disconnect.
+    (request || this).emit('error', {
+	'error' : 'remoteDisconnected',
+	'error_message' : 'Remote disconnected.'
+      });
+  }
 };
 
 // Send a request.
 // <-> request: what to send, consumed.
 Remote.prototype.request = function (request) {
-  this.ws.response[request.message.id = this.id] = request;
-  
-  this.id += 1;   // Advance id.
-  
-  if (this.trace) console.log("remote: request: %s", JSON.stringify(request.message));
-  
-  this.ws.send(JSON.stringify(request.message));
+  if (this.ws) {
+    // Only bother if we are still connected.
+
+    this.ws.response[request.message.id = this.id] = request;
+    
+    this.id += 1;   // Advance id.
+    
+    if (this.trace) console.log("remote: request: %s", JSON.stringify(request.message));
+    
+    this.ws.send(JSON.stringify(request.message));
+  }
+  else {
+    if (this.trace) console.log("remote: request: DROPPING: %s", JSON.stringify(request.message));
+  }
 };
 
 Remote.prototype.request_ledger_closed = function () {
@@ -415,7 +499,7 @@ Remote.prototype.request_ledger_entry = function (type) {
 	    // This type not cached.
 	}
 
-	this.request_default(remote);
+	this.request_default();
       }
     }
   });
@@ -455,19 +539,28 @@ Remote.prototype.submit = function (transaction) {
     }
 
     if (!transaction.transaction.Sequence) {
-      var   cache_request = this.account_cache(transaction.transaction.Account);
-
-      cache_request.on('success_account_cache', function () {
+      // Look in the last closed ledger.
+      this.account_seq_cache(transaction.transaction.Account, false)
+	.on('success_account_seq_cache', function () {
 	    // Try again.
 	    self.submit(transaction);
-	});
+	  })
+	.on('error', function (message) {
+	    // XXX Maybe be smarter about this. Don't want to trust an untrusted server for this seq number.
 
-      cache_request.on('error', function (message) {
-	  // Forward errors.
-	  transaction.emit('error', message);
-	});
-
-      cache_request.request();
+	    // Look in the current ledger.
+	    self.account_seq_cache(transaction.transaction.Account, 'CURRENT')
+	      .on('success_account_seq_cache', function () {
+		  // Try again.
+		  self.submit(transaction);
+		})
+	      .on('error', function (message) {
+		  // Forward errors.
+		  transaction.emit('error', message);
+		})
+	      .request();
+	  })
+	.request();
     }
     else {
       var submit_request = new Request(this, 'submit');
@@ -479,10 +572,6 @@ Remote.prototype.submit = function (transaction) {
       submit_request.on('success', function (message) { transaction.emit('success', message); });
       submit_request.on('error', function (message) { transaction.emit('error', message); });
     
-      // XXX If transaction has a 'final' event listeners, register transaction to listen to final results.
-      // XXX Final messages only happen if a transaction makes it into a ledger.
-      // XXX   A transaction may be "lost" or even resubmitted in this case.
-      // XXX For when ledger closes, can look up transaction meta data.
       submit_request.request();
     }
   }
@@ -495,20 +584,23 @@ Remote.prototype.submit = function (transaction) {
 // Subscribe to a server to get 'ledger_closed' events.
 // 'subscribed' : This command was successful.
 // 'ledger_closed : ledger_closed and ledger_current_index are updated.
-Remote.prototype.server_subscribe = function () {
+Remote.prototype._server_subscribe = function () {
   var self  = this;
 
   var request = new Request(this, 'server_subscribe');
 
   request.
     on('success', function (message) {
-	self.ledger_closed        = message.ledger_closed;
-	self.ledger_current_index = message.ledger_current_index;
 	self.stand_alone          = !!message.stand_alone;
 
-	self.emit('subscribed');
+	if (message.ledger_closed && message.ledger_current_index) {
+	  self.ledger_closed        = message.ledger_closed;
+	  self.ledger_current_index = message.ledger_current_index;
 
-	self.emit('ledger_closed', self.ledger_closed, self.ledger_current_index-1);
+	  self.emit('ledger_closed', self.ledger_closed, self.ledger_current_index-1);
+	}
+
+	self.emit('subscribed');
       })
     .request();
 
@@ -552,16 +644,13 @@ Remote.prototype.account_seq = function (account, advance) {
 }
 
 // Return a request to refresh accounts[account].seq.
-Remote.prototype.account_cache = function (account) {
+Remote.prototype.account_seq_cache = function (account, current) {
   var self    = this;
-  var request = this.request_ledger_entry('account_root')
+  var request = this.request_ledger_entry('account_root');
 
-  // Only care about a closed ledger.
-  // YYY Might be more advanced and work with a changing current ledger.
-  request.ledger(this.ledger_closed);  // XXX Requires active server_subscribe
-  request.account_root(account);
-
-  request.on('success', function (message) {
+  request
+    .account_root(account)
+    .on('success', function (message) {
       var seq = message.node.Sequence;
   
       if (!self.accounts[account])
@@ -570,10 +659,18 @@ Remote.prototype.account_cache = function (account) {
       self.accounts[account].seq  = seq;
 
       // If the caller also waits for 'success', they might run before this.
-      request.emit('success_account_cache');
+      request.emit('success_account_seq_cache');
     });
 
-    return request;
+  if (current)
+  {
+    request.ledger_index(this.ledger_current_index);
+  }
+  else {
+    request.ledger(this.ledger_closed);
+  }
+
+  return request;
 };
 
 // Mark an account's root node as dirty.
@@ -588,7 +685,14 @@ Remote.prototype.transaction = function () {
 //
 // Transactions
 //
-// Transaction events:
+//  Construction:
+//    remote.transaction()  // Build a transaction object.
+//     .offer_create(...)   // Set major parameters.
+//     .flags()		    // Set optional parameters.
+//     .on()		    // Register for events.
+//     .submit();	    // Send to network.
+//
+//  Events:
 // 'success' : Transaction submitted without error.
 // 'error' : Error submitting transaction.
 // 'proposed: Advisory proposed status transaction.
@@ -599,21 +703,23 @@ Remote.prototype.transaction = function () {
 // - malformed error: local server thought it was malformed.
 // - The client should only trust this when talking to a trusted server.
 // 'final' : Final status of transaction.
-// - Only expect a final from honest clients after a tesSUCCESS or ter*.
+// - Only expect a final from dishonest servers after a tesSUCCESS or ter*.
+// 'lost' : Gave up looking for on ledger_closed.
+// 'pending' : Transaction was not found on ledger_closed.
 // 'state' : Follow the state of a transaction.
-//    'clientSubmitted'	    - Sent to remote
-//     |- 'remoteError'	    - Remote rejected transaction.
-//      \- 'clientProposed' - Remote provisionally accepted transaction.
-//       |- 'clientMissing' - Transaction has not appeared in ledger as expected.
-//       | |- 'clientLost'  - No longer monitoring missing transaction.
+//    'client_submitted'     - Sent to remote
+//     |- 'remoteError'	     - Remote rejected transaction.
+//      \- 'client_proposed' - Remote provisionally accepted transaction.
+//       |- 'client_missing' - Transaction has not appeared in ledger as expected.
+//       | |\- 'client_lost' - No longer monitoring missing transaction.
 //       |/
-//       |- 'tesSUCCESS'    - Transaction in ledger as expected.
-//       |- 'ter...'	    - Transaction failed.
-//       |- 'tep...'	    - Transaction partially succeeded.
+//       |- 'tesSUCCESS'     - Transaction in ledger as expected.
+//       |- 'ter...'	     - Transaction failed.
+//       \- 'tep...'	     - Transaction partially succeeded.
 //
 // Notes:
-// - All transactions including locally errors and malformed errors may be
-//   forwarded.
+// - All transactions including those with local and malformed errors may be
+//   forwarded anyway.
 // - A malicous server can:
 //   - give any proposed result.
 //     - it may declare something correct as incorrect or something correct as incorrect.
@@ -645,7 +751,7 @@ var Transaction	= function (remote) {
       if (message.engine_result) {
 	self.hash	= message.transaction.hash;
 
-	self.set_state('clientProposed');
+	self.set_state('client_proposed');
 
 	self.emit('proposed', {
 	    'result'	      : message.engine_result,
@@ -734,8 +840,8 @@ Transaction.prototype.submit = function () {
     }
   }
 
-  if (this.listeners('final').length) {
-    // There are listeners for 'final' arrange to emit it.
+  if (this.listeners('final').length || this.listeners('lost').length || this.listeners('pending').length) {
+    // There are listeners for 'final', 'lost', or 'pending' arrange to emit them.
 
     this.submit_index = this.remote.ledger_current_index;
 
@@ -745,22 +851,23 @@ Transaction.prototype.submit = function () {
 // XXX make sure self.hash is available.
 	self.remote.request_transaction_entry(self.hash, ledger_closed)
 	  .on('success', function (message) {
-	      // XXX Fake results for now.
-	      if (!message.metadata.result)
-		message.metadata.result	= 'tesSUCCESS';
-
-	      self.set_state(message.metadata.result);	// XXX Untested.
+	      self.set_state(message.metadata.TransactionResult);
 	      self.emit('final', message);
 	    })
 	  .on('error', function (message) {
 	      if ('remoteError' === message.error
 		&& 'transactionNotFound' === message.remote.error) {
 		if (self.submit_index + SUBMIT_LOST < ledger_closed_index) {
-		  self.set_state('clientLost');	      // Gave up.
+		  self.set_state('client_lost');	// Gave up.
+		  self.emit('lost');
 		  stop  = true;
 		}
 		else if (self.submit_index + SUBMIT_MISSING < ledger_closed_index) {
-		  self.set_state('clientMissing');    // We don't know what happened to transaction, still might find.
+		  self.set_state('client_missing');    // We don't know what happened to transaction, still might find.
+		  self.emit('pending');
+		}
+		else {
+		  self.emit('pending');
 		}
 	      }
 	      // XXX Could log other unexpectedness.
@@ -776,7 +883,7 @@ Transaction.prototype.submit = function () {
     this.remote.on('ledger_closed', on_ledger_closed);
   }
 
-  this.set_state('clientSubmitted');
+  this.set_state('client_submitted');
 
   this.remote.submit(this);
 
@@ -832,18 +939,6 @@ Transaction.prototype.flags = function (flags) {
 //
 // Transactions
 //
-//  Construction:
-//    remote.transaction()  // Build a transaction object.
-//     .offer_create(...)   // Set major parameters.
-//     .flags()		    // Set optional parameters.
-//     .on()		    // Register for events.
-//     .submit();	    // Send to network.
-//
-//  Events:
-//   'success'		    // Transaction was successfully submitted: hash, proposed TER
-//   'error'		    // Error submitting transaction.
-//   'closed'		    // Result from closed ledger: TER
-//
 
 // Allow config account defaults to be used.
 Transaction.prototype.account_default = function (account) {
@@ -883,7 +978,7 @@ Transaction.prototype.payment = function (src, dst, deliver_amount) {
   return this;
 }
 
-Remote.prototype.ripple_line_set = function (src, limit, quaility_in, quality_out) {
+Transaction.prototype.ripple_line_set = function (src, limit, quality_in, quality_out) {
   this.secret			    = this.account_secret(src);
   this.transaction.TransactionType  = 'CreditSet';
   this.transaction.Account	    = this.account_default(src);
@@ -892,11 +987,11 @@ Remote.prototype.ripple_line_set = function (src, limit, quaility_in, quality_ou
   if (undefined !== limit)
     this.transaction.LimitAmount  = limit.to_json();
 
-  if (quaility_in)
-    this.transaction.QualityIn	  = quaility_in;
+  if (quality_in)
+    this.transaction.QualityIn	  = quality_in;
 
-  if (quaility_out)
-    this.transaction.QualityOut	  = quaility_out;
+  if (quality_out)
+    this.transaction.QualityOut	  = quality_out;
 
   // XXX Throw an error if nothing is set.
 

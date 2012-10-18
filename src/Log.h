@@ -28,6 +28,7 @@
 
 enum LogSeverity
 {
+	lsINVALID	= -1,	// used to indicate an invalid severity
 	lsTRACE		= 0,	// Very low-level progress information, details inside an operation
 	lsDEBUG		= 1,	// Function-level progress information, operations
 	lsINFO		= 2,	// Server-level progress information, major operations
@@ -46,20 +47,16 @@ protected:
 	std::string			mName;
 
 public:
-	LogPartition(const char *name) : mNextLog(headLog), mMinSeverity(lsWARNING)
-	{
-		const char *ptr = strrchr(name, '/');
-		mName = (ptr == NULL) ? name : ptr;
-		headLog = this;
-	}
+	LogPartition(const char *name);
 
-	bool doLog(enum LogSeverity s)
+	bool doLog(LogSeverity s)
 	{
 		return s >= mMinSeverity;
 	}
 
-	static void setSeverity(const char *partition, LogSeverity severity);
+	static bool setSeverity(const std::string& partition, LogSeverity severity);
 	static void setSeverity(LogSeverity severity);
+	static std::vector< std::pair<std::string, std::string> > getSeverities();
 };
 
 class Log
@@ -95,6 +92,10 @@ public:
 		return oss;
 	}
 
+	static std::string severityToString(LogSeverity);
+	static LogSeverity stringToSeverity(const std::string&);
+
+	static LogSeverity getMinSeverity();
 	static void setMinSeverity(LogSeverity);
 	static void setLogFile(boost::filesystem::path);
 	static std::string rotateLog(void);

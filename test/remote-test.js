@@ -10,7 +10,7 @@ var Amount  = amount.Amount;
 var fastTearDown  = true;
 
 // How long to wait for server to start.
-var serverDelay = 1500;
+var serverDelay = 1500;	  // XXX Not implemented.
 
 buster.testRunner.timeout = 5000;
  
@@ -23,32 +23,22 @@ buster.testCase("Remote functions", {
 
 	  alpha   = remote.remoteConfig(config, "alpha");
 
-	  alpha.connect(function (stat) {
-	      buster.assert(1 == stat);	      // OPEN
-	      done();
-	    }, serverDelay);
+	  alpha
+	    .once('ledger_closed', done)
+	    .connect();
       });
     },
 
   'tearDown' :
     function (done) {
-      if (fastTearDown) {
-	// Fast tearDown
-	server.stop("alpha", function (e) {
-	  buster.refute(e);
-	  done();
-	});
-      }
-      else {
-	alpha.disconnect(function (stat) {
-	    buster.assert(3 == stat);		// CLOSED
-
+      alpha
+	.on('disconnected', function () {
 	    server.stop("alpha", function (e) {
 	      buster.refute(e);
 	      done();
 	    });
-	  });
-      }
+	  })
+	.connect(false);
     },
 
   'request_ledger_current' :
@@ -220,6 +210,46 @@ buster.testCase("Remote functions", {
 	    console.log("error: %s", m);
 
 	    buster.assert(false);
+	  })
+	.submit();
+    },
+
+  "create account final" :
+    function (done) {
+      var   got_proposed;
+      var   got_success;
+
+      alpha.transaction()
+	.payment('root', 'alice', Amount.from_json("10000"))
+	.flags('CreateAccount')
+	.on('success', function (r) {
+	    console.log("create_account: %s", JSON.stringify(r));
+
+	    got_success	= true;
+	  })
+	.on('error', function (m) {
+	    console.log("error: %s", m);
+
+	    buster.assert(false);
+	  })
+	.on('final', function (m) {
+	    console.log("final: %s", JSON.stringify(m));
+
+	    buster.assert(got_success && got_proposed);
+	    done();
+	  })
+	.on('proposed', function (m) {
+	    console.log("proposed: %s", JSON.stringify(m));
+
+	    // buster.assert.equals(m.result, 'terNO_DST');
+	    buster.assert.equals(m.result, 'tesSUCCESS');
+
+	    got_proposed  = true;
+
+	    alpha.ledger_accept();
+	  })
+	.on('status', function (s) {
+	    console.log("status: %s", JSON.stringify(s));
 	  })
 	.submit();
     },

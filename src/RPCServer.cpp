@@ -1875,8 +1875,8 @@ Json::Value RPCServer::doSend(const Json::Value& params)
 		if (asDst) {
 			// Destination exists, ordinary send.
 
-		        STPathSet  spsPaths;
-			uint160    srcCurrencyID;
+			STPathSet	spsPaths;
+			uint160		srcCurrencyID;
 
 			if (!saSrcAmountMax.isNative() || !saDstAmount.isNative())
 			{
@@ -2610,6 +2610,49 @@ Json::Value RPCServer::doLogin(const Json::Value& params)
 	}
 }
 
+Json::Value RPCServer::doLogSeverity(const Json::Value& params)
+{
+	if (params.size() == 0)
+	{ // get log severities
+		Json::Value ret = Json::objectValue;
+
+		ret["base"] = Log::severityToString(Log::getMinSeverity());
+
+		std::vector< std::pair<std::string, std::string> > logTable = LogPartition::getSeverities();
+		for (std::vector< std::pair<std::string, std::string> >::iterator it = logTable.begin();
+				it != logTable.end(); ++it)
+			ret[it->first] = it->second;
+		return ret;
+	}
+
+	if (params.size() == 1)
+	{ // set base log severity
+		LogSeverity sv = Log::stringToSeverity(params[0u].asString());
+		if (sv == lsINVALID)
+		{
+			Log(lsWARNING) << "Unable to parse severity: " << params[0u].asString();
+			return RPCError(rpcINVALID_PARAMS);
+		}
+		Log::setMinSeverity(sv);
+		return RPCError(rpcSUCCESS);
+	}
+
+	if (params.size() == 2)
+	{ // set partition severity
+		LogSeverity sv = Log::stringToSeverity(params[1u].asString());
+		if (sv == lsINVALID)
+			return RPCError(rpcINVALID_PARAMS);
+		if (params[2u].asString() == "base")
+			Log::setMinSeverity(sv);
+		else if (!LogPartition::setSeverity(params[0u].asString(), sv))
+			return RPCError(rpcINVALID_PARAMS);
+		return RPCError(rpcSUCCESS);
+	}
+
+	assert(false);
+	return RPCError(rpcINVALID_PARAMS);
+}
+
 Json::Value RPCServer::doLogRotate(const Json::Value& params) 
 {
   return Log::rotateLog();
@@ -2641,7 +2684,8 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 		{	"data_fetch",			&RPCServer::doDataFetch,			1,  1, true					},
 		{	"data_store",			&RPCServer::doDataStore,			2,  2, true					},
 		{	"ledger",				&RPCServer::doLedger,				0,  2, false,	optNetwork	},
-		{   "logrotate",            &RPCServer::doLogRotate,            0,  0, true				    },
+		{	"logrotate",			&RPCServer::doLogRotate,			0,  0, true					},
+		{	"logseverity",			&RPCServer::doLogSeverity,			0,  2, true					},
 		{	"nickname_info",		&RPCServer::doNicknameInfo,			1,  1, false,	optCurrent	},
 		{	"nickname_set",			&RPCServer::doNicknameSet,			2,  3, false,	optCurrent	},
 		{	"offer_create",			&RPCServer::doOfferCreate,			9, 10, false,	optCurrent	},

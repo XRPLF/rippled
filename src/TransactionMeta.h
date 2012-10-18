@@ -28,7 +28,7 @@ protected:
 
 public:
 	TransactionMetaSet() : mLedger(0), mResult(255) { ; }
-	TransactionMetaSet(const uint256& txID, uint32 ledger) : mTransactionID(txID), mLedger(ledger) { ; }
+	TransactionMetaSet(const uint256& txID, uint32 ledger) : mTransactionID(txID), mLedger(ledger), mResult(255) { ; }
 	TransactionMetaSet(const uint256& txID, uint32 ledger, const std::vector<unsigned char>&);
 
 	void init(const uint256& transactionID, uint32 ledger);

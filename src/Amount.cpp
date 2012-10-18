@@ -12,6 +12,8 @@
 #include "SerializedTypes.h"
 #include "utils.h"
 
+SETUP_LOG();
+
 uint64	STAmount::uRateOne	= STAmount::getRate(STAmount(1), STAmount(1));
 
 // --> sCurrency: "", "XNS", or three letter ISO code.
@@ -63,15 +65,21 @@ STAmount::STAmount(SField::ref n, const Json::Value& v)
 
 	if (v.isObject())
 	{
-		value = v["value"];
-		currency = v["currency"];
-		issuer = v["issuer"];
+		cLog(lsTRACE)
+			<< boost::str(boost::format("value='%s', currency='%s', issuer='%s'")
+				% v["value"].asString()
+				% v["currency"].asString()
+				% v["issuer"].asString());
+
+		value		= v["value"];
+		currency	= v["currency"];
+		issuer		= v["issuer"];
 	}
 	else if (v.isArray())
 	{
-			value = v.get(Json::UInt(0), 0);
-			currency = v.get(Json::UInt(1), Json::nullValue);
-			issuer = v.get(Json::UInt(2), Json::nullValue);
+		value = v.get(Json::UInt(0), 0);
+		currency = v.get(Json::UInt(1), Json::nullValue);
+		issuer = v.get(Json::UInt(2), Json::nullValue);
 	}
 	else if (v.isString())
 	{
@@ -93,6 +101,31 @@ STAmount::STAmount(SField::ref n, const Json::Value& v)
 
 	mIsNative = !currency.isString() || currency.asString().empty() || (currency.asString() == SYSTEM_CURRENCY_CODE);
 
+	if (!mIsNative) {
+		if (!currencyFromString(mCurrency, currency.asString()))
+			throw std::runtime_error("invalid currency");
+
+		if (!issuer.isString())
+			throw std::runtime_error("invalid issuer");
+
+		if (issuer.size() == (160/4))
+		{
+			mIssuer.SetHex(issuer.asString());
+		}
+		else
+		{
+			NewcoinAddress is;
+
+			if(!is.setAccountID(issuer.asString()))
+				throw std::runtime_error("invalid issuer");
+
+			mIssuer = is.getAccountID();
+		}
+
+		if (mIssuer.isZero())
+			throw std::runtime_error("invalid issuer");
+	}
+
 	if (value.isInt())
 	{
 		if (value.asInt() >= 0)
@@ -102,9 +135,15 @@ STAmount::STAmount(SField::ref n, const Json::Value& v)
 			mValue = -value.asInt();
 			mIsNegative = true;
 		}
+
+		canonicalize();
 	}
 	else if (value.isUInt())
+	{
 		mValue = v.asUInt();
+
+		canonicalize();
+	}
 	else if (value.isString())
 	{
 		if (mIsNative)
@@ -117,35 +156,18 @@ STAmount::STAmount(SField::ref n, const Json::Value& v)
 				mValue = -val;
 				mIsNegative = true;
 			}
+
+			canonicalize();
 		}
 		else
+		{
 			setValue(value.asString());
+		}
 	}
 	else
 		throw std::runtime_error("invalid amount type");
 
-	if (mIsNative)
-		return;
-
-	if (!currencyFromString(mCurrency, currency.asString()))
-		throw std::runtime_error("invalid currency");
-
-	if (!issuer.isString())
-		throw std::runtime_error("invalid issuer");
-
-	if (issuer.size() == (160/4))
-		mIssuer.SetHex(issuer.asString());
-	else
-	{
-		NewcoinAddress is;
-		if(!is.setAccountID(issuer.asString()))
-			throw std::runtime_error("invalid issuer");
-		mIssuer = is.getAccountID();
-	}
-	if (mIssuer.isZero())
-		throw std::runtime_error("invalid issuer");
-
-	canonicalize();
+	cLog(lsTRACE) << "Parsed: " << this->getJson(0);
 }
 
 std::string STAmount::createHumanCurrency(const uint160& uCurrency)
@@ -196,7 +218,7 @@ std::string STAmount::createHumanCurrency(const uint160& uCurrency)
 
 // Assumes trusted input.
 bool STAmount::setValue(const std::string& sAmount)
-{ // Note: mIsNative must be set already!
+{ // Note: mIsNative and mCurrency must be set already!
 	uint64	uValue;
 	int		iOffset;
 	size_t	uDecimal	= sAmount.find_first_of(mIsNative ? "^" : ".");
