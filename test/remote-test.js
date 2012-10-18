@@ -24,7 +24,7 @@ buster.testCase("Remote functions", {
 	  alpha   = remote.remoteConfig(config, "alpha");
 
 	  alpha
-	    .on('connected', done)
+	    .once('ledger_closed', done)
 	    .connect();
       });
     },

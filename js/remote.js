@@ -26,13 +26,17 @@ var Amount    = amount.Amount;
 //   'remoteUnexpected'
 //   'remoteDisconnected'
 var Request = function (remote, command) {
+  var self  = this;
+
   this.message	= {
     'command' : command,
     'id'      : undefined,
   };
   this.remote	= remote;
 
-  this.on('request', this.request_default);
+  this.on('request', function () {
+      self.request_default();
+    });
 };
 
 Request.prototype  = new EventEmitter;
@@ -40,6 +44,12 @@ Request.prototype  = new EventEmitter;
 // Return this.  node EventEmitter's on doesn't return this.
 Request.prototype.on = function (e, c) {
   EventEmitter.prototype.on.call(this, e, c);
+
+  return this;
+};
+
+Request.prototype.once = function (e, c) {
+  EventEmitter.prototype.once.call(this, e, c);
 
   return this;
 };
@@ -103,7 +113,8 @@ Request.prototype.transaction = function (t) {
 // 'state':
 // - 'online' : connectted and subscribed
 // - 'offline' : not subscribed or not connectted.
-// 'ledger_closed'
+// 'ledger_closed': A good indicate of ready to serve.
+// 'subscribed' : This indicates stand-alone is available.
 //
 
 // --> trusted: truthy, if remote is trusted
@@ -296,9 +307,10 @@ Remote.prototype._connect_start = function () {
     };
  
     if (self.online_target) {
-      self._server_subscribe();	    // Automatically subscribe.
-
       self._set_state('online');
+
+      // Note, we could get disconnected before tis go through.
+      self._server_subscribe();	    // Automatically subscribe.
     }
     else {
       self._connect_stop();
@@ -372,7 +384,7 @@ Remote.prototype._connect_message = function (ws, json, flags) {
 	this.ledger_closed	  = message.ledger_closed;
 	this.ledger_current_index = message.ledger_closed_index + 1;
 
-	this.emit('ledger_closed', this.ledger_closed, this.ledger_closed_index);
+	this.emit('ledger_closed', message.ledger_closed, message.ledger_closed_index);
 	break;
       
       default:
@@ -409,13 +421,20 @@ Remote.prototype._connect_message = function (ws, json, flags) {
 // Send a request.
 // <-> request: what to send, consumed.
 Remote.prototype.request = function (request) {
-  this.ws.response[request.message.id = this.id] = request;
-  
-  this.id += 1;   // Advance id.
-  
-  if (this.trace) console.log("remote: request: %s", JSON.stringify(request.message));
-  
-  this.ws.send(JSON.stringify(request.message));
+  if (this.ws) {
+    // Only bother if we are still connected.
+
+    this.ws.response[request.message.id = this.id] = request;
+    
+    this.id += 1;   // Advance id.
+    
+    if (this.trace) console.log("remote: request: %s", JSON.stringify(request.message));
+    
+    this.ws.send(JSON.stringify(request.message));
+  }
+  else {
+    if (this.trace) console.log("remote: request: DROPPING: %s", JSON.stringify(request.message));
+  }
 };
 
 Remote.prototype.request_ledger_closed = function () {
@@ -480,7 +499,7 @@ Remote.prototype.request_ledger_entry = function (type) {
 	    // This type not cached.
 	}
 
-	this.request_default(remote);
+	this.request_default();
       }
     }
   });
@@ -668,6 +687,8 @@ Remote.prototype.transaction = function () {
 // - The client should only trust this when talking to a trusted server.
 // 'final' : Final status of transaction.
 // - Only expect a final from honest clients after a tesSUCCESS or ter*.
+// 'lost' : Gave up looking for on ledger_closed.
+// 'pending' : Transaction was not found on ledger_closed.
 // 'state' : Follow the state of a transaction.
 //    'clientSubmitted'	    - Sent to remote
 //     |- 'remoteError'	    - Remote rejected transaction.
@@ -802,8 +823,8 @@ Transaction.prototype.submit = function () {
     }
   }
 
-  if (this.listeners('final').length) {
-    // There are listeners for 'final' arrange to emit it.
+  if (this.listeners('final').length || this.listeners('lost').length || this.listeners('pending').length) {
+    // There are listeners for 'final', 'lost', or 'pending' arrange to emit them.
 
     this.submit_index = this.remote.ledger_current_index;
 
@@ -820,11 +841,16 @@ Transaction.prototype.submit = function () {
 	      if ('remoteError' === message.error
 		&& 'transactionNotFound' === message.remote.error) {
 		if (self.submit_index + SUBMIT_LOST < ledger_closed_index) {
-		  self.set_state('clientLost');	      // Gave up.
+		  self.set_state('client_lost');	// Gave up.
+		  self.emit('lost');
 		  stop  = true;
 		}
 		else if (self.submit_index + SUBMIT_MISSING < ledger_closed_index) {
-		  self.set_state('clientMissing');    // We don't know what happened to transaction, still might find.
+		  self.set_state('client_missing');    // We don't know what happened to transaction, still might find.
+		  self.emit('pending');
+		}
+		else {
+		  self.emit('pending');
 		}
 	      }
 	      // XXX Could log other unexpectedness.
