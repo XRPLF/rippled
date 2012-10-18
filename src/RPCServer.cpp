@@ -1,7 +1,5 @@
 
 #include "RPCServer.h"
-#include "RequestParser.h"
-#include "HttpReply.h"
 #include "HttpsClient.h"
 #include "Application.h"
 #include "RPC.h"
@@ -22,6 +20,7 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/asio/read_until.hpp>
 
 #include <openssl/md5.h>
 
@@ -29,6 +28,10 @@
 #include "../json/writer.h"
 
 SETUP_LOG();
+
+#ifndef RPC_MAXIMUM_QUERY
+#define RPC_MAXIMUM_QUERY	(1024*1024)
+#endif
 
 RPCServer::RPCServer(boost::asio::io_service& io_service , NetworkOPs* nopNetwork)
 	: mNetOps(nopNetwork), mSocket(io_service)
@@ -107,45 +110,79 @@ Json::Value RPCServer::RPCError(int iError)
 void RPCServer::connected()
 {
 	//std::cout << "RPC request" << std::endl;
-	if (mSocket.remote_endpoint().address().to_string()=="127.0.0.1") mRole=ADMIN;
-	else mRole=GUEST;
+	if (mSocket.remote_endpoint().address().to_string()=="127.0.0.1") mRole = ADMIN;
+	else mRole = GUEST;
 
-	mSocket.async_read_some(boost::asio::buffer(mReadBuffer),
-		boost::bind(&RPCServer::Shandle_read, shared_from_this(),
-		boost::asio::placeholders::error,
-		boost::asio::placeholders::bytes_transferred));
+	boost::asio::async_read_until(mSocket, mLineBuffer, "\r\n",
+		boost::bind(&RPCServer::handle_read_line, shared_from_this(), boost::asio::placeholders::error));
 }
 
-void RPCServer::handle_read(const boost::system::error_code& e,
-	std::size_t bytes_transferred)
+void RPCServer::handle_read_req(const boost::system::error_code& e)
 {
-	if (!e)
+	std::string req;
+
+	if (mLineBuffer.size())
 	{
-		boost::tribool result;
-		result = mRequestParser.parse(
-			mIncomingRequest, mReadBuffer.data(), mReadBuffer.data() + bytes_transferred);
+		req.assign(boost::asio::buffer_cast<const char*>(mLineBuffer.data()), mLineBuffer.size());
+		mLineBuffer.consume(mLineBuffer.size());
+	}
 
-		if (result)
+	req += strCopy(mQueryVec);
+	mReplyStr = handleRequest(req);
+	boost::asio::async_write(mSocket, boost::asio::buffer(mReplyStr),
+		boost::bind(&RPCServer::handle_write, shared_from_this(), boost::asio::placeholders::error));
+}
+
+void RPCServer::handle_read_line(const boost::system::error_code& e)
+{
+	if (e)
+		return;
+
+	HTTPRequestAction action = mHTTPRequest.consume(mLineBuffer);
+
+	if (action == haDO_REQUEST)
+	{ // request with no body
+		cLog(lsWARNING) << "RPC HTTP request with no body";
+		boost::system::error_code ignore_ec;
+		mSocket.shutdown(boost::asio::ip::tcp::socket::shutdown_both, ignore_ec);
+		return;
+	}
+	else if (action == haREAD_LINE)
+	{
+		boost::asio::async_read_until(mSocket, mLineBuffer, "\r\n",
+			boost::bind(&RPCServer::handle_read_line, shared_from_this(),
+			boost::asio::placeholders::error));
+	}
+	else if (action == haREAD_RAW)
+	{
+		int rLen = mHTTPRequest.getDataSize();
+		if ((rLen < 0) || (rLen > RPC_MAXIMUM_QUERY))
 		{
-			mReplyStr = handleRequest(mIncomingRequest.mBody);
-
-			sendReply();
+			cLog(lsWARNING) << "Illegal RPC request length " << rLen;
+			boost::system::error_code ignore_ec;
+			mSocket.shutdown(boost::asio::ip::tcp::socket::shutdown_both, ignore_ec);
+			return;
 		}
-		else if (!result)
-		{ // bad request
-			std::cout << "bad request: " << mIncomingRequest.mBody <<std::endl;
+
+		int alreadyHave = mLineBuffer.size();
+
+		if (alreadyHave < rLen)
+		{
+			mQueryVec.resize(rLen - alreadyHave);
+			boost::asio::async_read(mSocket, boost::asio::buffer(mQueryVec),
+				boost::bind(&RPCServer::handle_read_req, shared_from_this(), boost::asio::placeholders::error));
+			cLog(lsTRACE) << "Waiting for completed request: " << rLen;
 		}
 		else
-		{  // not done keep reading
-			mSocket.async_read_some(boost::asio::buffer(mReadBuffer),
-				boost::bind(&RPCServer::Shandle_read, shared_from_this(),
-				boost::asio::placeholders::error,
-				boost::asio::placeholders::bytes_transferred));
+		{ // we have the whole thing
+			mQueryVec.resize(0);
+			handle_read_req(e);
 		}
 	}
-	else if (e != boost::asio::error::operation_aborted)
+	else
 	{
-
+		boost::system::error_code ignore_ec;
+		mSocket.shutdown(boost::asio::ip::tcp::socket::shutdown_both, ignore_ec);
 	}
 }
 
@@ -2769,47 +2806,22 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 	}
 }
 
-void RPCServer::sendReply()
-{
-	//std::cout << "RPC reply: " << mReplyStr << std::endl;
-	boost::asio::async_write(mSocket, boost::asio::buffer(mReplyStr),
-			boost::bind(&RPCServer::Shandle_write, shared_from_this(),
-			boost::asio::placeholders::error));
-}
-
 void RPCServer::handle_write(const boost::system::error_code& e)
 {
 	//std::cout << "async_write complete " << e << std::endl;
 
 	if (!e)
 	{
-		bool keep_alive = (mIncomingRequest.http_version_major == 1) && (mIncomingRequest.http_version_minor >= 1);
-		BOOST_FOREACH(HttpHeader& h, mIncomingRequest.headers)
-		{
-			if (boost::iequals(h.name, "connection"))
-			{
-				if (boost::iequals(h.value, "keep-alive"))
-					keep_alive = true;
-				if (boost::iequals(h.value, "close"))
-					keep_alive = false;
-			}
-		}
-		if (keep_alive)
-		{
-			mIncomingRequest.method.clear();
-			mIncomingRequest.uri.clear();
-			mIncomingRequest.mBody.clear();
-			mIncomingRequest.headers.clear();
-			mRequestParser.reset();
-			mSocket.async_read_some(boost::asio::buffer(mReadBuffer),
-				boost::bind(&RPCServer::Shandle_read, shared_from_this(),
-				boost::asio::placeholders::error,
-				boost::asio::placeholders::bytes_transferred));
-		}
-		else
+		HTTPRequestAction action = mHTTPRequest.requestDone(false);
+		if (action == haCLOSE_CONN)
 		{
 			boost::system::error_code ignored_ec;
 			mSocket.shutdown(boost::asio::ip::tcp::socket::shutdown_both, ignored_ec);
+		}
+		else
+		{
+			boost::asio::async_read_until(mSocket, mLineBuffer, "\r\n",
+				boost::bind(&RPCServer::handle_read_line, shared_from_this(), boost::asio::placeholders::error));
 		}
 	}
 

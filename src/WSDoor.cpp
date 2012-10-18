@@ -577,7 +577,7 @@ void WSConnection::doLedgerCurrent(Json::Value& jvResult, const Json::Value& jvR
 void WSConnection::doLedgerEntry(Json::Value& jvResult, const Json::Value& jvRequest)
 {
 	NetworkOPs&	noNetwork	= mNetwork;
-	uint256	uLedger			= jvRequest.isMember("ledger") ? uint256(jvRequest["ledger"].asString()) : 0;
+	uint256	uLedger			= jvRequest.isMember("ledger_closed") ? uint256(jvRequest["ledger_closed"].asString()) : 0;
 	uint32	uLedgerIndex	= jvRequest.isMember("ledger_index") && jvRequest["ledger_index"].isNumeric() ? jvRequest["ledger_index"].asUInt() : 0;
 
 	Ledger::pointer	 lpLedger;

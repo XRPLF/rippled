@@ -8,8 +8,7 @@
 
 #include "../json/value.h"
 
-#include "HttpRequest.h"
-#include "RequestParser.h"
+#include "HTTPRequest.h"
 #include "NewcoinAddress.h"
 #include "NetworkOPs.h"
 #include "SerializedLedger.h"
@@ -91,11 +90,12 @@ private:
 	NetworkOPs*	mNetOps;
 
 	boost::asio::ip::tcp::socket mSocket;
-	boost::array<char, 8192> mReadBuffer;
+
+	boost::asio::streambuf mLineBuffer;
+	std::vector<unsigned char> mQueryVec;
 	std::string mReplyStr;
 
-	HttpRequest mIncomingRequest;
-	HttpRequestParser mRequestParser;
+	HTTPRequest mHTTPRequest;
 
 	enum { GUEST, USER, ADMIN };
 	int mRole;
@@ -106,15 +106,10 @@ private:
 	RPCServer& operator=(const RPCServer&); // no implementation
 
 	void handle_write(const boost::system::error_code& ec);
-	static void Shandle_write(pointer This, const boost::system::error_code& ec)
-	{ This->handle_write(ec); }
-
-	void handle_read(const boost::system::error_code& ec, std::size_t bytes_transferred);
-	static void Shandle_read(pointer This, const boost::system::error_code& ec, std::size_t bytes_transferred)
-	{ This->handle_read(ec, bytes_transferred); }
+	void handle_read_line(const boost::system::error_code& ec);
+	void handle_read_req(const boost::system::error_code& ec);
 
 	std::string handleRequest(const std::string& requestStr);
-	void sendReply();
 
 	Json::Value doCommand(const std::string& command, Json::Value& params);
 	int getParamCount(const Json::Value& params);

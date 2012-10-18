@@ -258,6 +258,15 @@ Amount.prototype.canonicalize = function() {
   }
 };
 
+Amount.prototype.negate = function () {
+  if (this.is_native) {
+    this.value.negate();
+  }
+  else {
+    this.is_negative  = !this.is_negative;
+  }
+};
+
 Amount.prototype.to_json = function() {
   if (this.is_native) {
     return this.to_text();
@@ -396,6 +405,12 @@ Amount.prototype.parse_json = function(j) {
   else {
     this.value	      = NaN;
   }
+
+  return this;
+};
+
+Amount.prototype.parse_issuer = function (issuer) {
+  this.issuer.parse_json(issuer);
 
   return this;
 };
