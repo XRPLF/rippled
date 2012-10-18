@@ -540,15 +540,17 @@ Remote.prototype.submit = function (transaction) {
 
     if (!transaction.transaction.Sequence) {
       // Look in the last closed ledger.
-      this.account_cache(transaction.transaction.Account, false)
-	.on('success_account_cache', function () {
+      this.account_seq_cache(transaction.transaction.Account, false)
+	.on('success_account_seq_cache', function () {
 	    // Try again.
 	    self.submit(transaction);
 	  })
 	.on('error', function (message) {
+	    // XXX Maybe be smarter about this. Don't want to trust an untrusted server for this seq number.
+
 	    // Look in the current ledger.
-	    self.account_cache(transaction.transaction.Account, true)
-	      .on('success_account_cache', function () {
+	    self.account_seq_cache(transaction.transaction.Account, 'CURRENT')
+	      .on('success_account_seq_cache', function () {
 		  // Try again.
 		  self.submit(transaction);
 		})
@@ -570,10 +572,6 @@ Remote.prototype.submit = function (transaction) {
       submit_request.on('success', function (message) { transaction.emit('success', message); });
       submit_request.on('error', function (message) { transaction.emit('error', message); });
     
-      // XXX If transaction has a 'final' event listeners, register transaction to listen to final results.
-      // XXX Final messages only happen if a transaction makes it into a ledger.
-      // XXX   A transaction may be "lost" or even resubmitted in this case.
-      // XXX For when ledger closes, can look up transaction meta data.
       submit_request.request();
     }
   }
@@ -646,7 +644,7 @@ Remote.prototype.account_seq = function (account, advance) {
 }
 
 // Return a request to refresh accounts[account].seq.
-Remote.prototype.account_cache = function (account, current) {
+Remote.prototype.account_seq_cache = function (account, current) {
   var self    = this;
   var request = this.request_ledger_entry('account_root');
 
@@ -661,7 +659,7 @@ Remote.prototype.account_cache = function (account, current) {
       self.accounts[account].seq  = seq;
 
       // If the caller also waits for 'success', they might run before this.
-      request.emit('success_account_cache');
+      request.emit('success_account_seq_cache');
     });
 
   if (current)
@@ -687,7 +685,14 @@ Remote.prototype.transaction = function () {
 //
 // Transactions
 //
-// Transaction events:
+//  Construction:
+//    remote.transaction()  // Build a transaction object.
+//     .offer_create(...)   // Set major parameters.
+//     .flags()		    // Set optional parameters.
+//     .on()		    // Register for events.
+//     .submit();	    // Send to network.
+//
+//  Events:
 // 'success' : Transaction submitted without error.
 // 'error' : Error submitting transaction.
 // 'proposed: Advisory proposed status transaction.
@@ -713,8 +718,8 @@ Remote.prototype.transaction = function () {
 //       \- 'tep...'	     - Transaction partially succeeded.
 //
 // Notes:
-// - All transactions including locally errors and malformed errors may be
-//   forwarded.
+// - All transactions including those with local and malformed errors may be
+//   forwarded anyway.
 // - A malicous server can:
 //   - give any proposed result.
 //     - it may declare something correct as incorrect or something correct as incorrect.
@@ -933,18 +938,6 @@ Transaction.prototype.flags = function (flags) {
 
 //
 // Transactions
-//
-//  Construction:
-//    remote.transaction()  // Build a transaction object.
-//     .offer_create(...)   // Set major parameters.
-//     .flags()		    // Set optional parameters.
-//     .on()		    // Register for events.
-//     .submit();	    // Send to network.
-//
-//  Events:
-//   'success'		    // Transaction was successfully submitted: hash, proposed TER
-//   'error'		    // Error submitting transaction.
-//   'closed'		    // Result from closed ledger: TER
 //
 
 // Allow config account defaults to be used.
