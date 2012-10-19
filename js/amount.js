@@ -6,6 +6,12 @@ var jsbn    = require('./jsbn.js');
 
 var BigInteger	= jsbn.BigInteger;
 
+var accounts = {};
+
+var setAccounts = function (accounts_new) {
+  accounts  = accounts_new;
+};
+
 var UInt160 = function () {
   // Internal form:
   //   0, 1, 'iXXXXX', 20 byte string, or NaN.
@@ -13,8 +19,11 @@ var UInt160 = function () {
   this.value  = NaN;
 };
 
+// Return a new UInt160 from j.
 UInt160.from_json = function (j) {
-  return (new UInt160()).parse_json(j in accounts ? accounts[j].account : j);
+  return 'string' === typeof j
+    ? (new UInt160()).parse_json(j in accounts ? accounts[j].account : j)
+    : j.clone();
 };
 
 UInt160.prototype.clone = function() {
@@ -138,12 +147,6 @@ Currency.prototype.to_json = function () {
 
 Currency.prototype.to_human = function() {
   return this.value ? this.value : "XNS";
-};
-
-var accounts = {};
-
-var setAccounts = function (accounts_new) {
-  accounts  = accounts_new;
 };
 
 var Amount = function () {
@@ -371,6 +374,9 @@ Amount.prototype.parse_value = function(j) {
 
     this.canonicalize();
   }
+  else if (j.constructor == BigInteger) {
+    this.value	      = j.clone();
+  }
   else {
     this.value	      = NaN;
   }
@@ -396,10 +402,10 @@ Amount.prototype.parse_json = function(j) {
     }
   }
   else if ('object' === typeof j && j.currency) {
-    // Never XNS.
+    // Parse the passed value to sanitize and copy it.
 
     this.parse_value(j.value);
-    this.currency.parse_json(j.currency);
+    this.currency.parse_json(j.currency);     // Never XNS.
     this.issuer.parse_json(j.issuer);
   }
   else {
