@@ -60,13 +60,13 @@ bool ContinuousLedgerTiming::haveConsensus(
 	int previousProposers,		// proposers in the last closing (not including us)
 	int currentProposers,		// proposers in this closing so far (not including us)
 	int currentAgree,			// proposers who agree with us
-	int currentClosed,			// proposers who have currently closed their ledgers
+	int currentFinished,		// proposers who have validated a ledger after this one
 	int previousAgreeTime,		// how long it took to agree on the last ledger
 	int currentAgreeTime,		// how long we've been trying to agree
 	bool forReal)				// deciding whether to stop consensus process
 {
-	cLog(lsTRACE) << boost::str(boost::format("CLC::haveConsensus: prop=%d/%d agree=%d closed=%d time=%d/%d%s") %
-		currentProposers % previousProposers % currentAgree % currentClosed % currentAgreeTime % previousAgreeTime %
+	cLog(lsTRACE) << boost::str(boost::format("CLC::haveConsensus: prop=%d/%d agree=%d validated=%d time=%d/%d%s") %
+		currentProposers % previousProposers % currentAgree % currentFinished % currentAgreeTime % previousAgreeTime %
 		(forReal ? "" : "X"));
 
 	if (currentAgreeTime <= LEDGER_MIN_CONSENSUS)
@@ -84,14 +84,14 @@ bool ContinuousLedgerTiming::haveConsensus(
 	// If 80% of current proposers (plus us) agree on a set, we have consensus
 	if (((currentAgree * 100 + 100) / (currentProposers + 1)) > 80)
 	{
-		tLog(forReal, lsTRACE) << "normal consensus";
+		tLog(forReal, lsINFO) << "normal consensus";
 		return true;
 	}
 
-	// If 50% of the nodes on your UNL (minus us) have closed, you should close
-	if (((currentClosed * 100 - 100) / (currentProposers + 1)) > 50)
+	// If 50% of the nodes on your UNL have moved on, you should declare consensus
+	if (((currentFinished * 100) / (currentProposers + 1)) > 50)
 	{
-		tLog(forReal, lsTRACE) << "many closers";
+		tLog(forReal, lsWARNING) << "We see no consensus, but 50% of nodes have moved on";
 		return true;
 	}
 
