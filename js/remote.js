@@ -701,19 +701,22 @@ Remote.prototype.dirty_account_root = function (account) {
 // --> current: bool : true = current ledger
 Remote.prototype.request_ripple_balance = function (account, issuer, currency, current) {
   var account_u	    = UInt160.from_json(account);
+  var request	    = this.request_ledger_entry('ripple_state');	  // YYY Could be cached per ledger.
 
-  return (this.request_ledger_entry('ripple_state'))		      // YYY Could be cached per ledger.
+  return request
     .ripple_state(account, issuer, currency)
     .ledger_choose(current)
     .on('success', function (message) {
 	var node	    = message.node;
-	var flip	    = account_u == node.HighLimit.issuer;
-	var issuerLimit	    = flip ? node.LowLimit : node.HighLimit;
-	var accountLimit    = flip ? node.HighLimit : node.LowLimit;
-	var issuerBalance   = (flip ? node.Balance.clone().negate() : node.Balance.clone()).parse_issuer(issuer);
+	var lowLimit	    = Amount.from_json(node.LowLimit);
+	var highLimit	    = Amount.from_json(node.HighLimit);
+	var balance	    = Amount.from_json(node.Balance);
+	var flip	    = account_u == highLimit.issuer;
+	var issuerLimit	    = flip ? lowLimit : highLimit;
+	var accountLimit    = flip ? highLimit : lowLimit;
+	var issuerBalance   = (flip ? balance.negate() : balance).parse_issuer(issuer);
 	var accountBalance  = issuerBalance.clone().parse_issuer(issuer);
 
-	// If the caller also waits for 'success', they might run before this.
 	request.emit('ripple_state', {
 	  'issuer_balance'  : issuerBalance,				  // Balance with dst as issuer.
 	  'account_balance' : accountBalance,				  // Balance with account as issuer.
