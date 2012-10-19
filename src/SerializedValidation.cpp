@@ -37,7 +37,7 @@ SerializedValidation::SerializedValidation(SerializerIterator& sit, bool checkSi
 }
 
 SerializedValidation::SerializedValidation(const uint256& ledgerHash, uint32 signTime,
-		const NewcoinAddress& naSeed, bool isFull)
+		const NewcoinAddress& naSeed, bool isFull, uint256& signingHash)
 	: STObject(sValidationFormat, sfValidation), mTrusted(false)
 {
 	setFieldH256(sfLedgerHash, ledgerHash);
@@ -52,8 +52,9 @@ SerializedValidation::SerializedValidation(const uint256& ledgerHash, uint32 sig
 	if (!isFull)
 		setFlag(sFullFlag);
 
+	signingHash = getSigningHash();
 	std::vector<unsigned char> signature;
-	NewcoinAddress::createNodePrivate(naSeed).signNodePrivate(getSigningHash(), signature);
+	NewcoinAddress::createNodePrivate(naSeed).signNodePrivate(signingHash, signature);
 	setFieldVL(sfSignature, signature);
 	// XXX Check if this can fail.
 	// if (!NewcoinAddress::createNodePrivate(naSeed).signNodePrivate(getSigningHash(), mSignature.peekValue()))

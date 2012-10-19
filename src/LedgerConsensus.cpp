@@ -239,6 +239,7 @@ LedgerConsensus::LedgerConsensus(const uint256& prevLCLHash, Ledger::ref previou
 		cLog(lsINFO) << "Entering consensus process, validating";
 		mValidating = true;
 		mProposing = theApp->getOPs().getOperatingMode() == NetworkOPs::omFULL;
+		mValPublic = NewcoinAddress::createNodePublic(mValSeed);
 	}
 	else
 	{
@@ -1139,9 +1140,11 @@ void LedgerConsensus::accept(SHAMap::ref set)
 	statusChange(ripple::neACCEPTED_LEDGER, *newLCL);
 	if (mValidating)
 	{
+		uint256 signingHash;
 		SerializedValidation::pointer v = boost::make_shared<SerializedValidation>
-			(newLCLHash, theApp->getOPs().getValidationTimeNC(), mValSeed, mProposing);
+			(newLCLHash, theApp->getOPs().getValidationTimeNC(), mValSeed, mProposing, boost::ref(signingHash));
 		v->setTrusted();
+		theApp->isNew(signingHash); // suppress it if we receive it
 		theApp->getValidations().addValidation(v);
 		std::vector<unsigned char> validation = v->getSigned();
 		ripple::TMValidation val;
