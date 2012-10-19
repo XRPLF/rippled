@@ -155,14 +155,14 @@ void LCTransaction::setVote(const uint160& peer, bool votesYes)
 	}
 	else if (votesYes && !res.first->second)
 	{ // changes vote to yes
-		cLog(lsTRACE) << "Peer " << peer << " now votes YES on " << mTransactionID;
+		cLog(lsDEBUG) << "Peer " << peer << " now votes YES on " << mTransactionID;
 		--mNays;
 		++mYays;
 		res.first->second = true;
 	}
 	else if (!votesYes && res.first->second)
 	{ // changes vote to no
-		cLog(lsTRACE) << "Peer " << peer << " now votes NO on " << mTransactionID;
+		cLog(lsDEBUG) << "Peer " << peer << " now votes NO on " << mTransactionID;
 		++mNays;
 		--mYays;
 		res.first->second = false;
@@ -216,7 +216,7 @@ bool LCTransaction::updateVote(int percentTime, bool proposing)
 		return false;
 	}
 	mOurVote = newPosition;
-	cLog(lsTRACE) << "We now vote " << (mOurVote ? "YES" : "NO") << " on " << mTransactionID;
+	cLog(lsDEBUG) << "We now vote " << (mOurVote ? "YES" : "NO") << " on " << mTransactionID;
 	return true;
 }
 
@@ -818,7 +818,8 @@ void LedgerConsensus::startAcquiring(const TransactionAcquire::pointer& acquire)
 
 void LedgerConsensus::propose()
 {
-	cLog(lsTRACE) << "We propose: " << mOurPosition->getCurrentHash();
+	cLog(lsTRACE) << "We propose: " <<
+		(mOurPosition->isBowOut() ? std::string("bowOut") : mOurPosition->getCurrentHash().GetHex());
 	ripple::TMProposeSet prop;
 
 	prop.set_currenttxhash(mOurPosition->getCurrentHash().begin(), 256 / 8);
@@ -836,7 +837,7 @@ void LedgerConsensus::propose()
 
 void LedgerConsensus::addDisputedTransaction(const uint256& txID, const std::vector<unsigned char>& tx)
 {
-	cLog(lsTRACE) << "Transaction " << txID << " is disputed";
+	cLog(lsDEBUG) << "Transaction " << txID << " is disputed";
 	boost::unordered_map<uint256, LCTransaction::pointer>::iterator it = mDisputes.find(txID);
 	if (it != mDisputes.end())
 		return;
@@ -916,7 +917,7 @@ bool LedgerConsensus::peerPosition(const LedgerProposal::pointer& newPosition)
 			it.second->setVote(peerID, set->hasItem(it.first));
 	}
 	else
-		cLog(lsTRACE) << "Don't have that tx set";
+		cLog(lsDEBUG) << "Don't have that tx set";
 
 	return true;
 }
