@@ -738,9 +738,7 @@ bool LedgerConsensus::haveConsensus(bool forReal)
 	}
 	int currentValidations = theApp->getValidations().getNodesAfter(mPrevLedgerHash);
 
-#ifdef LC_DEBUG
-	cLog(lsINFO) << "Checking for TX consensus: agree=" << agree << ", disagree=" << disagree;
-#endif
+	cLog(lsDEBUG) << "Checking for TX consensus: agree=" << agree << ", disagree=" << disagree;
 
 	return ContinuousLedgerTiming::haveConsensus(mPreviousProposers, agree + disagree, agree, currentValidations,
 		mPreviousMSeconds, mCurrentMSeconds, forReal);
