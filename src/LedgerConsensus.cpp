@@ -247,11 +247,16 @@ LedgerConsensus::LedgerConsensus(const uint256& prevLCLHash, Ledger::ref previou
 		mProposing = mValidating = false;
 	}
 
-	handleLCL(prevLCLHash);
+	mHaveCorrectLCL = (mPreviousLedger->getHash() == mPrevLedgerHash);
 	if (!mHaveCorrectLCL)
 	{
-		cLog(lsINFO) << "Entering consensus with: " << previousLedger->getHash();
-		cLog(lsINFO) << "Correct LCL is: " << prevLCLHash;
+		handleLCL(mPrevLedgerHash);
+		if (!mHaveCorrectLCL)
+		{
+			mProposing = mValidating = false;
+			cLog(lsINFO) << "Entering consensus with: " << previousLedger->getHash();
+			cLog(lsINFO) << "Correct LCL is: " << prevLCLHash;
+		}
 	}
 }
 
@@ -357,7 +362,7 @@ void LedgerConsensus::handleLCL(const uint256& lclHash)
 		}
 	}
 
-	cLog(lsINFO) << "Acquired the consensus ledger " << mPrevLedgerHash;
+	cLog(lsINFO) << "Have the consensus ledger " << mPrevLedgerHash;
 	mHaveCorrectLCL = true;
 	mAcquiringLedger = LedgerAcquire::pointer();
 	theApp->getOPs().clearNeedNetworkLedger();
