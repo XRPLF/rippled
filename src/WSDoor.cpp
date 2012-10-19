@@ -637,7 +637,8 @@ void WSConnection::doLedgerEntry(Json::Value& jvResult, const Json::Value& jvReq
 	{
 		NewcoinAddress	naAccount;
 
-		if (!naAccount.setAccountID(jvRequest["account_root"].asString()))
+		if (!naAccount.setAccountID(jvRequest["account_root"].asString())
+			|| !naAccount.getAccountID())
 		{
 			jvResult["error"]	= "malformedAddress";
 		}
