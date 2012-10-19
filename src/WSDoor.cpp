@@ -750,18 +750,27 @@ void WSConnection::doLedgerEntry(Json::Value& jvResult, const Json::Value& jvReq
 		NewcoinAddress	naA;
 		NewcoinAddress	naB;
 		uint160			uCurrency;
+		Json::Value		jvRippleState	= jvRequest["ripple_state"];
 
-		if (!jvRequest.isMember("accounts")
-			|| !jvRequest.isMember("currency")
-			|| !jvRequest["accounts"].isArray()
-			|| 2 != jvRequest["accounts"].size()) {
+		if (!jvRippleState.isMember("accounts")
+			|| !jvRippleState.isMember("currency")
+			|| !jvRippleState["accounts"].isArray()
+			|| 2 != jvRippleState["accounts"].size()) {
+
+			cLog(lsINFO)
+				<< boost::str(boost::format("ledger_entry: ripple_state: accounts: %d currency: %d array=%d, size=%d")
+					% jvRippleState.isMember("accounts")
+					% jvRippleState.isMember("currency")
+					% jvRippleState["accounts"].isArray()
+					% jvRippleState["accounts"].size());
+
 			jvResult["error"]	= "malformedRequest";
 		}
-		else if (!naA.setAccountID(jvRequest["accounts"][0u].asString())
-			|| !naB.setAccountID(jvRequest["accounts"][1u].asString())) {
+		else if (!naA.setAccountID(jvRippleState["accounts"][0u].asString())
+			|| !naB.setAccountID(jvRippleState["accounts"][1u].asString())) {
 			jvResult["error"]	= "malformedAddress";
 		}
-		else if (!STAmount::currencyFromString(uCurrency, jvRequest["currency"].asString())) {
+		else if (!STAmount::currencyFromString(uCurrency, jvRippleState["currency"].asString())) {
 			jvResult["error"]	= "malformedCurrency";
 		}
 		else
