@@ -70,7 +70,10 @@ void Application::run()
 {
 	assert(mTxnDB == NULL);
 	if (!theConfig.DEBUG_LOGFILE.empty())
+	{
 		Log::setLogFile(theConfig.DEBUG_LOGFILE);
+		LogPartition::setSeverity(lsDEBUG);
+	}
 
 	boost::thread auxThread(boost::bind(&boost::asio::io_service::run, &mAuxService));
 	auxThread.detach();
