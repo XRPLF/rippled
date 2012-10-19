@@ -24,8 +24,7 @@ protected:
 		await_request,	// We are waiting for the request line
 		await_header,	// We are waiting for request headers
 		getting_body,	// We are waiting for the body
-		await_close,	// We are waiting for the request to complete so we can close the connection
-		await_reset		// We are waiting for the request to complete so we can reset the connection
+		do_request,		// We are waiting for the request to complete
 	};
 
 	state eState;
