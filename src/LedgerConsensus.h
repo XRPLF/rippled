@@ -174,7 +174,7 @@ public:
 	void stateFinished();
 	void stateAccepted();
 
-	bool haveConsensus();
+	bool haveConsensus(bool forReal);
 
 	bool peerPosition(const LedgerProposal::pointer&);
 

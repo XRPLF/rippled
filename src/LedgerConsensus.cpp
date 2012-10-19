@@ -562,9 +562,9 @@ void LedgerConsensus::stateEstablish()
 	updateOurPositions();
 	if (!mHaveCloseTimeConsensus)
 	{
-		tLog(haveConsensus(), lsINFO) << "We have TX consensus but not CT consensus";
+		tLog(haveConsensus(false), lsINFO) << "We have TX consensus but not CT consensus";
 	}
-	else if (haveConsensus())
+	else if (haveConsensus(true))
 	{
 		cLog(lsINFO) << "Converge cutoff (" << mPeerPositions.size() << " participants)";
 		mState = lcsFINISHED;
@@ -721,7 +721,7 @@ void LedgerConsensus::updateOurPositions()
 	}
 }
 
-bool LedgerConsensus::haveConsensus()
+bool LedgerConsensus::haveConsensus(bool forReal)
 { // FIXME: Should check for a supermajority on each disputed transaction
   // counting unacquired TX sets as disagreeing
 	int agree = 0, disagree = 0;
@@ -743,7 +743,7 @@ bool LedgerConsensus::haveConsensus()
 #endif
 
 	return ContinuousLedgerTiming::haveConsensus(mPreviousProposers, agree + disagree, agree, currentValidations,
-		mPreviousMSeconds, mCurrentMSeconds);
+		mPreviousMSeconds, mCurrentMSeconds, forReal);
 }
 
 SHAMap::pointer LedgerConsensus::getTransactionTree(const uint256& hash, bool doAcquire)
