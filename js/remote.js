@@ -703,7 +703,9 @@ Remote.prototype.account_seq_cache = function (account, current) {
 
 // Mark an account's root node as dirty.
 Remote.prototype.dirty_account_root = function (account) {
-  delete this.ledgers.current.account_root[UInt160.json_rewrite(account)];
+  var account	    = UInt160.json_rewrite(account);
+
+  delete this.ledgers.current.account_root[account];
 };
 
 // Return a request to get a ripple balance.

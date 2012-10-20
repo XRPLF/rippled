@@ -15,7 +15,7 @@ buster.testRunner.timeout = 5000;
 
 var alpha;
 
-buster.testCase("Work in progress", {
+buster.testCase("Offer tests", {
   'setUp' :
     function (done) {
       server.start("alpha",
