@@ -2,10 +2,11 @@ var buster  = require("buster");
 
 var config  = require("./config.js");
 var server  = require("./server.js");
-var amount  = require("../js/amount.js");
 var remote  = require("../js/remote.js");
 
-var Amount  = amount.Amount;
+var Amount = require("../js/amount.js").Amount;
+
+require("../js/amount.js").setAccounts(config.accounts);
 
 var fastTearDown  = true;
 
