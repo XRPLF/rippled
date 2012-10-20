@@ -180,6 +180,101 @@ buster.testCase("Work in progress", {
 	});
     },
 
+
+  "new user offer_create then ledger_accept then offer_cancel then ledger_accept." :
+    function (done) {
+      var final_create;
+      var offer_seq;
+
+      async.waterfall([
+	  function (callback) {
+	    alpha.transaction()
+	      .payment('root', 'alice', "1000")
+	      .flags('CreateAccount')
+	      .on('proposed', function (m) {
+		console.log("proposed: %s", JSON.stringify(m));
+		buster.assert.equals(m.result, 'tesSUCCESS');
+		callback();
+	      })
+	      .submit()
+	  },
+	  function (callback) {
+	    alpha.transaction()
+	      .offer_create("alice", "500", "100/USD/alice")
+	      .on("proposed", function (m) {
+		  console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
+
+		  offer_seq = m.transaction.Sequence;
+
+		  callback(m.result != 'tesSUCCESS');
+		})
+	      .on("final", function (m) {
+		  console.log("FINAL: offer_create: %s", JSON.stringify(m));
+
+		  buster.assert.equals('tesSUCCESS', m.metadata.TransactionResult);
+
+		  final_create	= m;
+
+		  callback(); 
+		})
+	      .submit();
+	  },
+	  function (callback) {
+	    if (!final_create) {
+	      alpha
+		.once("ledger_closed", function (ledger_closed, ledger_closed_index) {
+		    console.log("LEDGER_CLOSED: %d: %s", ledger_closed_index, ledger_closed);
+
+		  })
+		.ledger_accept();
+	    }
+	    else {
+	      callback(); 
+	    }
+	  },
+	  function (callback) {
+	    console.log("CANCEL: offer_cancel: %d", offer_seq);
+
+	    alpha.transaction()
+	      .offer_cancel("alice", offer_seq)
+	      .on("proposed", function (m) {
+		  console.log("PROPOSED: offer_cancel: %s", JSON.stringify(m));
+		  callback(m.result != 'tesSUCCESS');
+		})
+	      .on("final", function (m) {
+		  console.log("FINAL: offer_cancel: %s", JSON.stringify(m));
+
+		  buster.assert.equals('tesSUCCESS', m.metadata.TransactionResult);
+		  buster.assert(final_create);
+
+		  done();
+		})
+	      .submit();
+	  },
+	  // See if ledger_accept will crash.
+	  function (callback) {
+	    alpha
+	      .once("ledger_closed", function (ledger_closed, ledger_closed_index) {
+		  console.log("LEDGER_CLOSED: A: %d: %s", ledger_closed_index, ledger_closed);
+		  callback();
+		})
+	      .ledger_accept();
+	  },
+	  function (callback) {
+	    alpha
+	      .once("ledger_closed", function (ledger_closed, ledger_closed_index) {
+		  console.log("LEDGER_CLOSED: B: %d: %s", ledger_closed_index, ledger_closed);
+		  callback();
+		})
+	      .ledger_accept();
+	  },
+	], function (error) {
+	  console.log("result: error=%s", error);
+	  buster.refute(error);
+	  if (error) done();
+	});
+    },
+
   "offer cancel past and future sequence" :
     function (done) {
       var final_create;
