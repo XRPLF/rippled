@@ -90,7 +90,7 @@ Request.prototype.ledger_index = function (ledger_index) {
 };
 
 Request.prototype.account_root = function (account) {
-  this.message.account_root  = UInt160.from_json(account).to_json();
+  this.message.account_root  = UInt160.json_rewrite(account);
 
   return this;
 };
@@ -168,7 +168,9 @@ var Remote = function (trusted, websocket_ip, websocket_port, config, trace) {
   // Cache for various ledgers.
   // XXX Clear when ledger advances.
   this.ledgers = {
-    'current' : {}
+    'current' : {
+      'account_root' : {}
+    }
   };
 };
 
@@ -626,6 +628,8 @@ Remote.prototype._server_subscribe = function () {
 
 // Ask the remote to accept the current ledger.
 // - To be notified when the ledger is accepted, server_subscribe() then listen to 'ledger_closed' events.
+// A good way to be notified of the result of this is:
+//    remote.once('ledger_closed', function (ledger_closed, ledger_closed_index) { ... } );
 Remote.prototype.ledger_accept = function () {
   if (this.stand_alone || undefined === this.stand_alone)
   {
@@ -655,17 +659,26 @@ Remote.prototype.request_account_balance = function (account, current) {
 // Return the next account sequence if possible.
 // <-- undefined or Sequence
 Remote.prototype.account_seq = function (account, advance) {
-  var account_info = this.accounts[account];
+  var account	    = UInt160.json_rewrite(account);
+  var account_info  = this.accounts[account];
   var seq;
 
   if (account_info && account_info.seq)
   {
-    var seq = account_info.seq;
+    seq = account_info.seq;
 
     if (advance) account_info.seq += 1;
   }
 
   return seq;
+}
+
+Remote.prototype.set_account_seq = function (account, seq) {
+  var account	    = UInt160.json_rewrite(account);
+
+  if (!this.accounts[account]) this.accounts[account] = {};
+ 
+  this.accounts[account].seq = seq;
 }
 
 // Return a request to refresh accounts[account].seq.
@@ -690,7 +703,7 @@ Remote.prototype.account_seq_cache = function (account, current) {
 
 // Mark an account's root node as dirty.
 Remote.prototype.dirty_account_root = function (account) {
-  delete this.ledgers.current.account_root[account];
+  delete this.ledgers.current.account_root[UInt160.json_rewrite(account)];
 };
 
 // Return a request to get a ripple balance.
@@ -802,6 +815,7 @@ var Transaction	= function (remote) {
 	self.set_state('client_proposed');
 
 	self.emit('proposed', {
+	    'transaction'     : message.transaction,
 	    'result'	      : message.engine_result,
 	    'result_code'     : message.engine_result_code,
 	    'result_message'  : message.engine_result_message,
@@ -999,13 +1013,23 @@ Transaction.prototype.account_secret = function (account) {
   return this.remote.config.accounts[account] ? this.remote.config.accounts[account].secret : undefined;
 };
 
+Transaction.prototype.offer_cancel = function (src, sequence) {
+  this.secret			    = this.account_secret(src);
+  this.transaction.TransactionType  = 'OfferCancel';
+  this.transaction.Account	    = UInt160.from_json(src).to_json();
+  this.transaction.OfferSequence    = Number(sequence);
+
+  return this;
+};
+
+// XXX Expiration should use a time.
 Transaction.prototype.offer_create = function (src, taker_pays, taker_gets, expiration) {
   this.secret			    = this.account_secret(src);
   this.transaction.TransactionType  = 'OfferCreate';
   this.transaction.Account	    = UInt160.from_json(src).to_json();
   this.transaction.Fee		    = fees.offer.to_json();
-  this.transaction.TakerPays	    = taker_pays.to_json();
-  this.transaction.TakerGets	    = taker_gets.to_json();
+  this.transaction.TakerPays	    = Amount.json_rewrite(taker_pays);
+  this.transaction.TakerGets	    = Amount.json_rewrite(taker_gets);
 
   if (expiration)
     this.transaction.Expiration  = expiration;
@@ -1024,7 +1048,7 @@ Transaction.prototype.payment = function (src, dst, deliver_amount) {
   this.secret			    = this.account_secret(src);
   this.transaction.TransactionType  = 'Payment';
   this.transaction.Account	    = UInt160.from_json(src).to_json();
-  this.transaction.Amount	    = Amount.from_json(deliver_amount).to_json();
+  this.transaction.Amount	    = Amount.json_rewrite(deliver_amount);
   this.transaction.Destination	    = UInt160.from_json(dst).to_json();
 
   return this;
