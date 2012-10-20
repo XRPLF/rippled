@@ -758,11 +758,9 @@ void Peer::recvValidation(ripple::TMValidation& packet)
 		return;
 	}
 
-// The four #ifndef/#endif's are commented out temporarily to avoid
-// an update hassle. They can be removed once all nodes are running this code
-//#ifndef TRUST_NETWORK
+#ifndef TRUST_NETWORK
 	try
-//#endif
+#endif
 	{
 		Serializer s(packet.validation());
 		SerializerIterator sit(s);
@@ -788,13 +786,13 @@ void Peer::recvValidation(ripple::TMValidation& packet)
 			theApp->getConnectionPool().relayMessage(this, message);
 		}
 	}
-//#ifndef TRUST_NETWORK
+#ifndef TRUST_NETWORK
 	catch (...)
 	{
 		cLog(lsWARNING) << "Exception processing validation";
 		punishPeer(PP_UNKNOWN_REQUEST);
 	}
-//#endif
+#endif
 }
 
 void Peer::recvGetValidation(ripple::TMGetValidations& packet)

@@ -2647,7 +2647,7 @@ Json::Value RPCServer::doLogin(const Json::Value& params)
 	}
 }
 
-Json::Value RPCServer::doLogSeverity(const Json::Value& params)
+Json::Value RPCServer::doLogLevel(const Json::Value& params)
 {
 	if (params.size() == 0)
 	{ // get log severities
@@ -2666,10 +2666,7 @@ Json::Value RPCServer::doLogSeverity(const Json::Value& params)
 	{ // set base log severity
 		LogSeverity sv = Log::stringToSeverity(params[0u].asString());
 		if (sv == lsINVALID)
-		{
-			Log(lsWARNING) << "Unable to parse severity: " << params[0u].asString();
 			return RPCError(rpcINVALID_PARAMS);
-		}
 		Log::setMinSeverity(sv);
 		return RPCError(rpcSUCCESS);
 	}
@@ -2721,8 +2718,8 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 		{	"data_fetch",			&RPCServer::doDataFetch,			1,  1, true					},
 		{	"data_store",			&RPCServer::doDataStore,			2,  2, true					},
 		{	"ledger",				&RPCServer::doLedger,				0,  2, false,	optNetwork	},
+		{	"log_level",			&RPCServer::doLogLevel,				0,  2, true					},
 		{	"logrotate",			&RPCServer::doLogRotate,			0,  0, true					},
-		{	"logseverity",			&RPCServer::doLogSeverity,			0,  2, true					},
 		{	"nickname_info",		&RPCServer::doNicknameInfo,			1,  1, false,	optCurrent	},
 		{	"nickname_set",			&RPCServer::doNicknameSet,			2,  3, false,	optCurrent	},
 		{	"offer_create",			&RPCServer::doOfferCreate,			9, 10, false,	optCurrent	},

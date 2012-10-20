@@ -712,6 +712,12 @@ bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash, cons
 		return mMode != omFULL;
 	}
 
+	if (mConsensus->isOurPubKey(naPeerPublic))
+	{
+		cLog(lsTRACE) << "Received our own validation";
+		return false;
+	}
+
 	// Is this node on our UNL?
 	if (!theApp->getUNL().nodeInUNL(naPeerPublic))
 	{
