@@ -15,47 +15,6 @@ buster.testRunner.timeout = 5000;
 
 var alpha;
 
-// success: callback(), error: callback(err)
-var createAccounts = function (remote, src, amount, accounts, callback) {
-  async.forEachSeries(accounts, function (account, callback) {
-    remote.transaction()
-      .payment(src, account, Amount.from_json(amount))
-      .flags('CreateAccount')
-      .on('proposed', function (m) {
-	  console.log("proposed: %s", JSON.stringify(m));
-
-	  buster.assert.equals(m.result, 'tesSUCCESS');
-
-	  callback();
-	})
-      .on('error', function (m) {
-	  console.log("error: %s", JSON.stringify(m));
-
-	  callback('error');
-	})
-      .submit();
-    }, callback);
-};
-
-// success: callback(), error: callback(err)
-var creditLimit = function (remote, src, amount, callback) {
-  remote.transaction()
-    .ripple_line_set(src, Amount.from_json(amount))
-    .on('proposed', function (m) {
-	console.log("proposed: %s", JSON.stringify(m));
-
-	buster.assert.equals(m.result, 'tesSUCCESS');
-
-	callback();
-      })
-    .on('error', function (m) {
-	console.log("error: %s", JSON.stringify(m));
-
-	callback('error');
-      })
-    .submit();
-};
-
 buster.testCase("Work in progress", {
   'setUp' :
     function (done) {
