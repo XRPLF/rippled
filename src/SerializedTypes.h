@@ -36,13 +36,11 @@ protected:
 	SField::ptr	fName;
 
 	virtual SerializedType* duplicate() const { return new SerializedType(*fName); }
-	SerializedType(SField::ptr n) : fName(n) { assert(fName); }
 
 public:
 
 	SerializedType() : fName(&sfGeneric) { ; }
 	SerializedType(SField::ref n) : fName(&n) { assert(fName); }
-	SerializedType(const SerializedType& n) : fName(n.fName) { ; }
 	virtual ~SerializedType() { ; }
 
 	static std::auto_ptr<SerializedType> deserialize(SField::ref name)

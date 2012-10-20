@@ -31,6 +31,7 @@ bool TransactionMetaSet::isNodeAffected(const uint256& node) const
 
 STObject& TransactionMetaSet::getAffectedNode(const uint256& node, SField::ref type, bool overrideType)
 {
+	assert(&type);
 	for (STArray::iterator it = mNodes.begin(); it != mNodes.end(); ++it)
 	{
 		if (it->getFieldH256(sfLedgerIndex) == node)
@@ -47,7 +48,7 @@ STObject& TransactionMetaSet::getAffectedNode(const uint256& node, SField::ref t
 	assert(obj.getFName() == type);
 	obj.setFieldH256(sfLedgerIndex, node);
 
-	return mNodes.back();
+	return obj;
 }
 
 const STObject& TransactionMetaSet::peekAffectedNode(const uint256& node) const
