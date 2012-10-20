@@ -151,3 +151,5 @@
 	FIELD(Template,				ARRAY, 5)
 	FIELD(Necessary,			ARRAY, 6)
 	FIELD(Sufficient,			ARRAY, 7)
+
+// vim:ts=4

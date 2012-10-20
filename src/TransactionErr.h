@@ -34,6 +34,7 @@ enum TER	// aka TransactionEngineResult
 	temBAD_PATH_LOOP,
 	temBAD_PUBLISH,
 	temBAD_TRANSFER_RATE,
+	temBAD_SEQUENCE,
 	temBAD_SET_ID,
 	temCREATEXNS,
 	temDST_IS_SRC,
@@ -83,7 +84,6 @@ enum TER	// aka TransactionEngineResult
 	terNO_DST,
 	terNO_LINE,
 	terNO_LINE_NO_ZERO,
-	terOFFER_NOT_FOUND, // XXX If we check sequence first this could be hard failure.
 	terPRE_SEQ,
 	terSET_MISSING_DST,
 	terUNFUNDED,

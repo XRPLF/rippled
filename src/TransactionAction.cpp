@@ -1136,24 +1136,37 @@ Log(lsINFO) << boost::str(boost::format("doOfferCreate: saTakerPays=%s saTakerGe
 TER TransactionEngine::doOfferCancel(const SerializedTransaction& txn)
 {
 	TER				terResult;
-	const uint32	uSequence	= txn.getFieldU32(sfOfferSequence);
-	const uint256	uOfferIndex	= Ledger::getOfferIndex(mTxnAccountID, uSequence);
-	SLE::pointer	sleOffer	= entryCache(ltOFFER, uOfferIndex);
+	const uint32	uOfferSequence			= txn.getFieldU32(sfOfferSequence);
+	const uint32	uAccountSequenceNext	= mTxnAccount->getFieldU32(sfSequence);
 
-	if (sleOffer)
+	Log(lsDEBUG) << "doOfferCancel: uAccountSequenceNext=" << uAccountSequenceNext << " uOfferSequence=" << uOfferSequence;
+
+	if (!uOfferSequence || uAccountSequenceNext-1 <= uOfferSequence)
 	{
-		Log(lsWARNING) << "doOfferCancel: uSequence=" << uSequence;
+		Log(lsINFO) << "doOfferCancel: uAccountSequenceNext=" << uAccountSequenceNext << " uOfferSequence=" << uOfferSequence;
 
-		terResult	= mNodes.offerDelete(sleOffer, uOfferIndex, mTxnAccountID);
+		terResult	= temBAD_SEQUENCE;
 	}
 	else
 	{
-		Log(lsWARNING) << "doOfferCancel: offer not found: "
-			<< NewcoinAddress::createHumanAccountID(mTxnAccountID)
-			<< " : " << uSequence
-			<< " : " << uOfferIndex.ToString();
+		const uint256	uOfferIndex	= Ledger::getOfferIndex(mTxnAccountID, uOfferSequence);
+		SLE::pointer	sleOffer	= entryCache(ltOFFER, uOfferIndex);
 
-		terResult	= terOFFER_NOT_FOUND;
+		if (sleOffer)
+		{
+			Log(lsWARNING) << "doOfferCancel: uOfferSequence=" << uOfferSequence;
+
+			terResult	= mNodes.offerDelete(sleOffer, uOfferIndex, mTxnAccountID);
+		}
+		else
+		{
+			Log(lsWARNING) << "doOfferCancel: offer not found: "
+				<< NewcoinAddress::createHumanAccountID(mTxnAccountID)
+				<< " : " << uOfferSequence
+				<< " : " << uOfferIndex.ToString();
+
+			terResult	= tesSUCCESS;
+		}
 	}
 
 	return terResult;
@@ -1179,7 +1192,6 @@ TER	TransactionEngine::doContractAdd(const SerializedTransaction& txn)
 
 	// place contract in ledger
 	// run create code
-	
 
 	if (mLedger->getParentCloseTimeNC() >= expiration)
 	{

@@ -19,10 +19,14 @@ var UInt160 = function () {
   this.value  = NaN;
 };
 
+UInt160.json_rewrite = function (j) {
+  return UInt160.from_json(j).to_json();
+};
+
 // Return a new UInt160 from j.
 UInt160.from_json = function (j) {
   return 'string' === typeof j
-    ? (new UInt160()).parse_json(j in accounts ? accounts[j].account : j)
+    ? (new UInt160()).parse_json(j)
     : j.clone();
 };
 
@@ -40,6 +44,8 @@ UInt160.prototype.copyTo = function(d) {
 // value = NaN on error.
 UInt160.prototype.parse_json = function (j) {
   // Canonicalize and validate
+  if (j in accounts)
+    j = accounts[j].account;
 
   switch (j) {
     case undefined:
@@ -161,6 +167,10 @@ var Amount = function () {
 
   this.currency	    = new Currency();
   this.issuer	    = new UInt160();
+};
+
+Amount.json_rewrite = function(j) {
+  return Amount.from_json(j).to_json();
 };
 
 Amount.from_json = function(j) {
