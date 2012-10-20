@@ -170,7 +170,9 @@ protected:
 public:
 
 	STArray()																{ ; }
+	STArray(int n)															{ value.reserve(n); }
 	STArray(SField::ref f) : SerializedType(f)								{ ; }
+	STArray(SField::ref f, int n) : SerializedType(f)						{ value.reserve(n); }
 	STArray(SField::ref f, const vector& v) : SerializedType(f), value(v)	{ ; }
 	STArray(vector& v) : value(v)											{ ; }
 
