@@ -6,8 +6,10 @@
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 
+#include "Log.h"
+
 TransactionMetaSet::TransactionMetaSet(const uint256& txid, uint32 ledger, const std::vector<unsigned char>& vec) :
-	mTransactionID(txid), mLedger(ledger), mNodes(sfAffectedNodes)
+	mTransactionID(txid), mLedger(ledger), mNodes(sfAffectedNodes, 32)
 {
 	Serializer s(vec);
 	SerializerIterator sit(s);
@@ -29,15 +31,14 @@ bool TransactionMetaSet::isNodeAffected(const uint256& node) const
 	return false;
 }
 
-STObject& TransactionMetaSet::getAffectedNode(const uint256& node, SField::ref type, bool overrideType)
-{
+void TransactionMetaSet::setAffectedNode(const uint256& node, SField::ref type)
+{ // make sure the node exists and force its type
 	for (STArray::iterator it = mNodes.begin(); it != mNodes.end(); ++it)
 	{
 		if (it->getFieldH256(sfLedgerIndex) == node)
 		{
-			if (overrideType)
-				it->setFName(type);
-			return *it;
+			it->setFName(type);
+			return;
 		}
 	}
 
@@ -46,8 +47,35 @@ STObject& TransactionMetaSet::getAffectedNode(const uint256& node, SField::ref t
 
 	assert(obj.getFName() == type);
 	obj.setFieldH256(sfLedgerIndex, node);
+}
 
-	return mNodes.back();
+STObject& TransactionMetaSet::getAffectedNode(const uint256& node, SField::ref type)
+{
+	assert(&type);
+	for (STArray::iterator it = mNodes.begin(); it != mNodes.end(); ++it)
+	{
+		if (it->getFieldH256(sfLedgerIndex) == node)
+			return *it;
+	}
+
+	mNodes.push_back(STObject(sfModifiedNode));
+	STObject& obj = mNodes.back();
+
+	assert(obj.getFName() == type);
+	obj.setFieldH256(sfLedgerIndex, node);
+
+	return obj;
+}
+
+STObject& TransactionMetaSet::getAffectedNode(const uint256& node)
+{
+	for (STArray::iterator it = mNodes.begin(); it != mNodes.end(); ++it)
+	{
+		if (it->getFieldH256(sfLedgerIndex) == node)
+			return *it;
+	}
+	assert(false);
+	throw std::runtime_error("Affected node not found");
 }
 
 const STObject& TransactionMetaSet::peekAffectedNode(const uint256& node) const
@@ -62,7 +90,7 @@ void TransactionMetaSet::init(const uint256& id, uint32 ledger)
 {
 	mTransactionID = id;
 	mLedger = ledger;
-	mNodes = STArray(sfAffectedNodes);
+	mNodes = STArray(sfAffectedNodes, 32);
 }
 
 void TransactionMetaSet::swap(TransactionMetaSet& s)

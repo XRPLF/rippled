@@ -318,7 +318,7 @@ bool LedgerEntrySet::threadTx(SLE::ref threadTo, Ledger::ref ledger,
 	uint32 prevLgrID;
 	if (!threadTo->thread(mSet.getTxID(), mSet.getLgrSeq(), prevTxID, prevLgrID))
 		return false;
-	if (TransactionMetaSet::thread(mSet.getAffectedNode(threadTo->getIndex(), sfModifiedNode, false),
+	if (TransactionMetaSet::thread(mSet.getAffectedNode(threadTo->getIndex(), sfModifiedNode),
 			prevTxID, prevLgrID))
 		return true;
 	assert(false);
@@ -395,7 +395,7 @@ void LedgerEntrySet::calcRawMeta(Serializer& s, TER result)
 			continue;
 
 		SLE::pointer curNode = it->second.mEntry;
-		STObject &metaNode = mSet.getAffectedNode(it->first, *type, true);
+		mSet.setAffectedNode(it->first, *type);
 
 		if (type == &sfDeletedNode)
 		{
@@ -406,16 +406,16 @@ void LedgerEntrySet::calcRawMeta(Serializer& s, TER result)
 			{ // node has an amount, covers ripple state nodes
 				STAmount amount = origNode->getFieldAmount(sfAmount);
 				if (amount.isNonZero())
-					metaNode.setFieldAmount(sfPreviousBalance, amount);
+					mSet.getAffectedNode(it->first).setFieldAmount(sfPreviousBalance, amount);
 				amount = curNode->getFieldAmount(sfAmount);
 				if (amount.isNonZero())
-					metaNode.setFieldAmount(sfFinalBalance, amount);
+					mSet.getAffectedNode(it->first).setFieldAmount(sfFinalBalance, amount);
 
 				if (origNode->getType() == ltRIPPLE_STATE)
 				{
-					metaNode.setFieldAccount(sfLowID,
+					mSet.getAffectedNode(it->first).setFieldAccount(sfLowID,
 						NewcoinAddress::createAccountID(origNode->getFieldAmount(sfLowLimit).getIssuer()));
-					metaNode.setFieldAccount(sfHighID,
+					mSet.getAffectedNode(it->first).setFieldAccount(sfHighID,
 						NewcoinAddress::createAccountID(origNode->getFieldAmount(sfHighLimit).getIssuer()));
 				}
 			}
@@ -424,10 +424,10 @@ void LedgerEntrySet::calcRawMeta(Serializer& s, TER result)
 			{ // check for non-zero balances
 				STAmount amount = origNode->getFieldAmount(sfTakerPays);
 				if (amount.isNonZero())
-					metaNode.setFieldAmount(sfFinalTakerPays, amount);
+					mSet.getAffectedNode(it->first).setFieldAmount(sfFinalTakerPays, amount);
 				amount = origNode->getFieldAmount(sfTakerGets);
 				if (amount.isNonZero())
-					metaNode.setFieldAmount(sfFinalTakerGets, amount);
+					mSet.getAffectedNode(it->first).setFieldAmount(sfFinalTakerGets, amount);
 			}
 
 		}
@@ -451,17 +451,17 @@ void LedgerEntrySet::calcRawMeta(Serializer& s, TER result)
 			{ // node has an amount, covers account root nodes and ripple nodes
 				STAmount amount = origNode->getFieldAmount(sfAmount);
 				if (amount != curNode->getFieldAmount(sfAmount))
-					metaNode.setFieldAmount(sfPreviousBalance, amount);
+					mSet.getAffectedNode(it->first).setFieldAmount(sfPreviousBalance, amount);
 			}
 
 			if (origNode->getType() == ltOFFER)
 			{
 				STAmount amount = origNode->getFieldAmount(sfTakerPays);
 				if (amount != curNode->getFieldAmount(sfTakerPays))
-					metaNode.setFieldAmount(sfPreviousTakerPays, amount);
+					mSet.getAffectedNode(it->first).setFieldAmount(sfPreviousTakerPays, amount);
 				amount = origNode->getFieldAmount(sfTakerGets);
 				if (amount != curNode->getFieldAmount(sfTakerGets))
-					metaNode.setFieldAmount(sfPreviousTakerGets, amount);
+					mSet.getAffectedNode(it->first).setFieldAmount(sfPreviousTakerGets, amount);
 			}
 
 		}
