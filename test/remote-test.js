@@ -103,6 +103,7 @@ buster.testCase("Remote functions", {
       .request();
     },
 
+  // XXX This should be detected locally.
   'account_root remote malformedAddress' :
     function (done) {
       alpha.request_ledger_closed().on('success', function (r) {

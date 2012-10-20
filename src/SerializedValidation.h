@@ -21,7 +21,8 @@ public:
 
 	// These throw if the object is not valid
 	SerializedValidation(SerializerIterator& sit, bool checkSignature = true);
-	SerializedValidation(const uint256& ledgerHash, uint32 signTime, const NewcoinAddress& naSeed, bool isFull);
+	SerializedValidation(const uint256& ledgerHash, uint32 signTime, const NewcoinAddress& naSeed, bool isFull,
+		uint256& signingHash);
 
 	uint256			getLedgerHash()		const;
 	uint32			getSignTime()		const;

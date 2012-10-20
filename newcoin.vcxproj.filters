@@ -120,9 +120,6 @@
     <ClCompile Include="src\PubKeyCache.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\RequestParser.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\rfc1751.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -301,6 +298,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="obj\src\ripple.pb.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\HTTPRequest.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

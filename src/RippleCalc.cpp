@@ -1400,30 +1400,30 @@ TER PathState::pushImply(
 		// Currency is different, need to convert via an offer.
 
 		terResult	= pushNode(
-					STPathElement::typeCurrency		// Offer.
-					 | STPathElement::typeIssuer,
-					ACCOUNT_ONE,	// Placeholder for offers.
-					uCurrencyID,	// The offer's output is what is now wanted.
-					uIssuerID);
+						STPathElement::typeCurrency		// Offer.
+						 | STPathElement::typeIssuer,
+						ACCOUNT_ONE,					// Placeholder for offers.
+						uCurrencyID,					// The offer's output is what is now wanted.
+						uIssuerID);
 
 	}
 
 	// For ripple, non-stamps, ensure the issuer is on at least one side of the transaction.
 	if (tesSUCCESS == terResult
-		&& !!uCurrencyID							// Not stamps.
-		&& (pnPrv.uAccountID != uIssuerID			// Previous is not issuing own IOUs.
-			&& uAccountID != uIssuerID))			// Current is not receiving own IOUs.
+		&& !!uCurrencyID								// Not stamps.
+		&& (pnPrv.uAccountID != uIssuerID				// Previous is not issuing own IOUs.
+			&& uAccountID != uIssuerID))				// Current is not receiving own IOUs.
 	{
 		// Need to ripple through uIssuerID's account.
 
 		terResult	= pushNode(
-					STPathElement::typeAccount,
-					uIssuerID,						// Intermediate account is the needed issuer.
-					uCurrencyID,
-					uIssuerID);
+						STPathElement::typeAccount,
+						uIssuerID,						// Intermediate account is the needed issuer.
+						uCurrencyID,
+						uIssuerID);
 	}
 
-	cLog(lsINFO) << "pushImply< " << terResult;
+	cLog(lsDEBUG) << boost::str(boost::format("pushImply< : %s") % transToken(terResult));
 
 	return terResult;
 }
@@ -1544,11 +1544,12 @@ TER PathState::pushNode(
 			vpnNodes.push_back(pnCur);
 		}
 	}
-	cLog(lsINFO) << "pushNode< " << terResult;
+	cLog(lsDEBUG) << boost::str(boost::format("pushNode< : %s") % transToken(terResult));
 
 	return terResult;
 }
 
+// terStatus = tesSUCCESS, temBAD_PATH, terNO_LINE, or temBAD_PATH_LOOP
 PathState::PathState(
 	const int				iIndex,
 	const LedgerEntrySet&	lesSource,
@@ -1886,7 +1887,7 @@ TER RippleCalc::rippleCalc(
 	    if (pspDirect)
 	    {
 		    // Return if malformed.
-		    if (pspDirect->terStatus >= temMALFORMED && pspDirect->terStatus < tefFAILURE)
+		    if (isTemMalformed(pspDirect->terStatus))
 			    return pspDirect->terStatus;
 
 		    if (tesSUCCESS == pspDirect->terStatus)
@@ -1917,14 +1918,11 @@ TER RippleCalc::rippleCalc(
 	    if (pspExpanded)
 	    {
 		    // Return if malformed.
-		    if (pspExpanded->terStatus >= temMALFORMED && pspExpanded->terStatus < tefFAILURE)
+		    if (isTemMalformed(pspExpanded->terStatus))
 			    return pspExpanded->terStatus;
 
 		    if (tesSUCCESS == pspExpanded->terStatus)
-		    {
-			    // Had a success.
-			    terResult	= tesSUCCESS;
-		    }
+			    terResult	= tesSUCCESS;			// Had a success.
 
 		    vpsPaths.push_back(pspExpanded);
 	    }
@@ -1932,7 +1930,8 @@ TER RippleCalc::rippleCalc(
 
     if (vpsPaths.empty())
     {
-	    return tefEXCEPTION;
+		// No paths. Missing credit lines.
+	    return terNO_LINE;
     }
     else if (tesSUCCESS != terResult)
     {

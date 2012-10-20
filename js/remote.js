@@ -4,9 +4,6 @@
 //   http://www.w3.org/TR/websockets/#the-websocket-interface
 //
 // YYY Will later provide a network access which use multiple instances of this.
-// YYY A better model might be to allow requesting a target state: keep connected or not.
-// XXX Make subscribe target state.
-// XXX Auto subscribe on connect.
 //
 
 // Node
@@ -93,7 +90,7 @@ Request.prototype.ledger_index = function (ledger_index) {
 };
 
 Request.prototype.account_root = function (account) {
-  this.message.account_root  = account;
+  this.message.account_root  = UInt160.json_rewrite(account);
 
   return this;
 };
@@ -119,7 +116,10 @@ Request.prototype.transaction = function (t) {
 
 Request.prototype.ripple_state = function (account, issuer, currency) {
   this.message.ripple_state  = {
-      'accounts' : [ account, issuer ],
+      'accounts' : [
+	UInt160.from_json(account).to_json(),
+	UInt160.from_json(issuer).to_json()
+      ],
       'currency' : currency
     };
 
@@ -168,7 +168,9 @@ var Remote = function (trusted, websocket_ip, websocket_port, config, trace) {
   // Cache for various ledgers.
   // XXX Clear when ledger advances.
   this.ledgers = {
-    'current' : {}
+    'current' : {
+      'account_root' : {}
+    }
   };
 };
 
@@ -626,6 +628,8 @@ Remote.prototype._server_subscribe = function () {
 
 // Ask the remote to accept the current ledger.
 // - To be notified when the ledger is accepted, server_subscribe() then listen to 'ledger_closed' events.
+// A good way to be notified of the result of this is:
+//    remote.once('ledger_closed', function (ledger_closed, ledger_closed_index) { ... } );
 Remote.prototype.ledger_accept = function () {
   if (this.stand_alone || undefined === this.stand_alone)
   {
@@ -655,17 +659,26 @@ Remote.prototype.request_account_balance = function (account, current) {
 // Return the next account sequence if possible.
 // <-- undefined or Sequence
 Remote.prototype.account_seq = function (account, advance) {
-  var account_info = this.accounts[account];
+  var account	    = UInt160.json_rewrite(account);
+  var account_info  = this.accounts[account];
   var seq;
 
   if (account_info && account_info.seq)
   {
-    var seq = account_info.seq;
+    seq = account_info.seq;
 
     if (advance) account_info.seq += 1;
   }
 
   return seq;
+}
+
+Remote.prototype.set_account_seq = function (account, seq) {
+  var account	    = UInt160.json_rewrite(account);
+
+  if (!this.accounts[account]) this.accounts[account] = {};
+ 
+  this.accounts[account].seq = seq;
 }
 
 // Return a request to refresh accounts[account].seq.
@@ -690,7 +703,7 @@ Remote.prototype.account_seq_cache = function (account, current) {
 
 // Mark an account's root node as dirty.
 Remote.prototype.dirty_account_root = function (account) {
-  delete this.ledgers.current.account_root[account];
+  delete this.ledgers.current.account_root[UInt160.json_rewrite(account)];
 };
 
 // Return a request to get a ripple balance.
@@ -700,26 +713,28 @@ Remote.prototype.dirty_account_root = function (account) {
 // --> currency: String
 // --> current: bool : true = current ledger
 Remote.prototype.request_ripple_balance = function (account, issuer, currency, current) {
-  var src     =  this.remote.config.accounts[account] ? this.remote.config.accounts[account].account : account;
-  var dst     =  this.remote.config.accounts[issuer] ? this.remote.config.accounts[issuer].account : issuer;
+  var account_u	    = UInt160.from_json(account);
+  var request	    = this.request_ledger_entry('ripple_state');	  // YYY Could be cached per ledger.
 
-  return (this.request_ledger_entry('ripple_state'))		      // YYY Could be cached per ledger.
-    .ripple_state(src, dst, currency)
+  return request
+    .ripple_state(account, issuer, currency)
     .ledger_choose(current)
     .on('success', function (message) {
 	var node	    = message.node;
-	var flip	    = UInt160.from_json(src) == node.HighLimit.issuer;
-	var issuerLimit	    = flip ? node.LowLimit : node.HighLimit;
-	var accountLimit    = flip ? node.HighLimit : node.LowLimit;
-	var issuerBalance   = (flip ? node.Balance.clone().negate() : node.Balance.clone()).parse_issuer(dst);
-	var accountBalance  = issuerBalance.clone().parse_issuer(dst);
+	var lowLimit	    = Amount.from_json(node.LowLimit);
+	var highLimit	    = Amount.from_json(node.HighLimit);
+	var balance	    = Amount.from_json(node.Balance);
+	var flip	    = account_u == highLimit.issuer;
+	var issuerLimit	    = flip ? lowLimit : highLimit;
+	var accountLimit    = flip ? highLimit : lowLimit;
+	var issuerBalance   = (flip ? balance.negate() : balance).parse_issuer(issuer);
+	var accountBalance  = issuerBalance.clone().parse_issuer(issuer);
 
-	// If the caller also waits for 'success', they might run before this.
 	request.emit('ripple_state', {
-	  'issuer_balance'  : issuerBalance,			      // Balance with dst as issuer.
-	  'account_balance' : accountBalance,			      // Balance with src as issuer.
-	  'issuer_limit'    : issuerLimit.clone().parse_issuer(src),  // Limit set by issuer with src as issuer.
-	  'account_limit'   : accountLimit.clone().parse_issuer(dst)  // Limit set by account with dst as issuer.
+	  'issuer_balance'  : issuerBalance,				  // Balance with dst as issuer.
+	  'account_balance' : accountBalance,				  // Balance with account as issuer.
+	  'issuer_limit'    : issuerLimit.clone().parse_issuer(account),  // Limit set by issuer with src as issuer.
+	  'account_limit'   : accountLimit.clone().parse_issuer(issuer)	  // Limit set by account with dst as issuer.
 	});
       });
 }
@@ -800,6 +815,7 @@ var Transaction	= function (remote) {
 	self.set_state('client_proposed');
 
 	self.emit('proposed', {
+	    'transaction'     : message.transaction,
 	    'result'	      : message.engine_result,
 	    'result_code'     : message.engine_result_code,
 	    'result_message'  : message.engine_result_message,
@@ -997,13 +1013,23 @@ Transaction.prototype.account_secret = function (account) {
   return this.remote.config.accounts[account] ? this.remote.config.accounts[account].secret : undefined;
 };
 
+Transaction.prototype.offer_cancel = function (src, sequence) {
+  this.secret			    = this.account_secret(src);
+  this.transaction.TransactionType  = 'OfferCancel';
+  this.transaction.Account	    = UInt160.from_json(src).to_json();
+  this.transaction.OfferSequence    = Number(sequence);
+
+  return this;
+};
+
+// XXX Expiration should use a time.
 Transaction.prototype.offer_create = function (src, taker_pays, taker_gets, expiration) {
   this.secret			    = this.account_secret(src);
   this.transaction.TransactionType  = 'OfferCreate';
-  this.transaction.Account	    = this.account_default(src);
+  this.transaction.Account	    = UInt160.from_json(src).to_json();
   this.transaction.Fee		    = fees.offer.to_json();
-  this.transaction.TakerPays	    = taker_pays.to_json();
-  this.transaction.TakerGets	    = taker_gets.to_json();
+  this.transaction.TakerPays	    = Amount.json_rewrite(taker_pays);
+  this.transaction.TakerGets	    = Amount.json_rewrite(taker_gets);
 
   if (expiration)
     this.transaction.Expiration  = expiration;
@@ -1015,12 +1041,15 @@ Transaction.prototype.offer_create = function (src, taker_pays, taker_gets, expi
 //
 // When a transaction is submitted:
 // - If the connection is reliable and the server is not merely forwarding and is not malicious, 
+// --> src : UInt160 or String
+// --> dst : UInt160 or String
+// --> deliver_amount : Amount or String.
 Transaction.prototype.payment = function (src, dst, deliver_amount) {
   this.secret			    = this.account_secret(src);
   this.transaction.TransactionType  = 'Payment';
-  this.transaction.Account	    = this.account_default(src);
-  this.transaction.Amount	    = deliver_amount.to_json();
-  this.transaction.Destination	    = this.account_default(dst);
+  this.transaction.Account	    = UInt160.from_json(src).to_json();
+  this.transaction.Amount	    = Amount.json_rewrite(deliver_amount);
+  this.transaction.Destination	    = UInt160.from_json(dst).to_json();
 
   return this;
 }
@@ -1028,7 +1057,7 @@ Transaction.prototype.payment = function (src, dst, deliver_amount) {
 Transaction.prototype.ripple_line_set = function (src, limit, quality_in, quality_out) {
   this.secret			    = this.account_secret(src);
   this.transaction.TransactionType  = 'CreditSet';
-  this.transaction.Account	    = this.account_default(src);
+  this.transaction.Account	    = UInt160.from_json(src).to_json();
 
   // Allow limit of 0 through.
   if (undefined !== limit)
