@@ -36,11 +36,11 @@ buster.testCase("Offer tests", {
 	    alpha.transaction()
 	      .offer_create("root", "500", "100/USD/root")
 	      .on("proposed", function (m) {
-		  console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
+		  // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
 		  callback(m.result != 'tesSUCCESS', m);
 		})
 	      .on("final", function (m) {
-		  console.log("FINAL: offer_create: %s", JSON.stringify(m));
+		  // console.log("FINAL: offer_create: %s", JSON.stringify(m));
 
 		  buster.assert.equals('tesSUCCESS', m.metadata.TransactionResult);
 
@@ -52,11 +52,11 @@ buster.testCase("Offer tests", {
 	    alpha.transaction()
 	      .offer_cancel("root", m.transaction.Sequence)
 	      .on("proposed", function (m) {
-		  console.log("PROPOSED: offer_cancel: %s", JSON.stringify(m));
+		  // console.log("PROPOSED: offer_cancel: %s", JSON.stringify(m));
 		  callback(m.result != 'tesSUCCESS', m);
 		})
 	      .on("final", function (m) {
-		  console.log("FINAL: offer_cancel: %s", JSON.stringify(m));
+		  // console.log("FINAL: offer_cancel: %s", JSON.stringify(m));
 
 		  buster.assert.equals('tesSUCCESS', m.metadata.TransactionResult);
 		  buster.assert(final_create);
@@ -67,12 +67,12 @@ buster.testCase("Offer tests", {
 	  function (m, callback) {
 	    alpha
 	      .once("ledger_closed", function (ledger_closed, ledger_closed_index) {
-		  console.log("LEDGER_CLOSED: %d: %s", ledger_closed_index, ledger_closed);
+		  // console.log("LEDGER_CLOSED: %d: %s", ledger_closed_index, ledger_closed);
 		})
 	      .ledger_accept();
 	  }
 	], function (error) {
-	  console.log("result: error=%s", error);
+	  // console.log("result: error=%s", error);
 	  buster.refute(error);
 
 	  if (error) done();
@@ -89,14 +89,14 @@ buster.testCase("Offer tests", {
 	    alpha.transaction()
 	      .offer_create("root", "500", "100/USD/root")
 	      .on("proposed", function (m) {
-		  console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
+		  // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
 
 		  offer_seq = m.transaction.Sequence;
 
 		  callback(m.result != 'tesSUCCESS');
 		})
 	      .on("final", function (m) {
-		  console.log("FINAL: offer_create: %s", JSON.stringify(m));
+		  // console.log("FINAL: offer_create: %s", JSON.stringify(m));
 
 		  buster.assert.equals('tesSUCCESS', m.metadata.TransactionResult);
 
@@ -110,7 +110,7 @@ buster.testCase("Offer tests", {
 	    if (!final_create) {
 	      alpha
 		.once("ledger_closed", function (ledger_closed, ledger_closed_index) {
-		    console.log("LEDGER_CLOSED: %d: %s", ledger_closed_index, ledger_closed);
+		    // console.log("LEDGER_CLOSED: %d: %s", ledger_closed_index, ledger_closed);
 
 		  })
 		.ledger_accept();
@@ -120,16 +120,16 @@ buster.testCase("Offer tests", {
 	    }
 	  },
 	  function (callback) {
-	    console.log("CANCEL: offer_cancel: %d", offer_seq);
+	    // console.log("CANCEL: offer_cancel: %d", offer_seq);
 
 	    alpha.transaction()
 	      .offer_cancel("root", offer_seq)
 	      .on("proposed", function (m) {
-		  console.log("PROPOSED: offer_cancel: %s", JSON.stringify(m));
+		  // console.log("PROPOSED: offer_cancel: %s", JSON.stringify(m));
 		  callback(m.result != 'tesSUCCESS');
 		})
 	      .on("final", function (m) {
-		  console.log("FINAL: offer_cancel: %s", JSON.stringify(m));
+		  // console.log("FINAL: offer_cancel: %s", JSON.stringify(m));
 
 		  buster.assert.equals('tesSUCCESS', m.metadata.TransactionResult);
 		  buster.assert(final_create);
@@ -142,7 +142,7 @@ buster.testCase("Offer tests", {
 	  function (callback) {
 	    alpha
 	      .once("ledger_closed", function (ledger_closed, ledger_closed_index) {
-		  console.log("LEDGER_CLOSED: A: %d: %s", ledger_closed_index, ledger_closed);
+		  // console.log("LEDGER_CLOSED: A: %d: %s", ledger_closed_index, ledger_closed);
 		  callback();
 		})
 	      .ledger_accept();
@@ -150,13 +150,13 @@ buster.testCase("Offer tests", {
 	  function (callback) {
 	    alpha
 	      .once("ledger_closed", function (ledger_closed, ledger_closed_index) {
-		  console.log("LEDGER_CLOSED: B: %d: %s", ledger_closed_index, ledger_closed);
+		  // console.log("LEDGER_CLOSED: B: %d: %s", ledger_closed_index, ledger_closed);
 		  callback();
 		})
 	      .ledger_accept();
 	  },
 	], function (error) {
-	  console.log("result: error=%s", error);
+	  // console.log("result: error=%s", error);
 	  buster.refute(error);
 
 	  if (error) done();
@@ -175,7 +175,7 @@ buster.testCase("Offer tests", {
 	      .payment('root', 'alice', "1000")
 	      .set_flags('CreateAccount')
 	      .on('proposed', function (m) {
-		console.log("proposed: %s", JSON.stringify(m));
+		// console.log("proposed: %s", JSON.stringify(m));
 		buster.assert.equals(m.result, 'tesSUCCESS');
 		callback();
 	      })
@@ -185,14 +185,14 @@ buster.testCase("Offer tests", {
 	    alpha.transaction()
 	      .offer_create("alice", "500", "100/USD/alice")
 	      .on("proposed", function (m) {
-		  console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
+		  // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
 
 		  offer_seq = m.transaction.Sequence;
 
 		  callback(m.result != 'tesSUCCESS');
 		})
 	      .on("final", function (m) {
-		  console.log("FINAL: offer_create: %s", JSON.stringify(m));
+		  // console.log("FINAL: offer_create: %s", JSON.stringify(m));
 
 		  buster.assert.equals('tesSUCCESS', m.metadata.TransactionResult);
 
@@ -206,7 +206,7 @@ buster.testCase("Offer tests", {
 	    if (!final_create) {
 	      alpha
 		.once("ledger_closed", function (ledger_closed, ledger_closed_index) {
-		    console.log("LEDGER_CLOSED: %d: %s", ledger_closed_index, ledger_closed);
+		    // console.log("LEDGER_CLOSED: %d: %s", ledger_closed_index, ledger_closed);
 
 		  })
 		.ledger_accept();
@@ -216,16 +216,16 @@ buster.testCase("Offer tests", {
 	    }
 	  },
 	  function (callback) {
-	    console.log("CANCEL: offer_cancel: %d", offer_seq);
+	    // console.log("CANCEL: offer_cancel: %d", offer_seq);
 
 	    alpha.transaction()
 	      .offer_cancel("alice", offer_seq)
 	      .on("proposed", function (m) {
-		  console.log("PROPOSED: offer_cancel: %s", JSON.stringify(m));
+		  // console.log("PROPOSED: offer_cancel: %s", JSON.stringify(m));
 		  callback(m.result != 'tesSUCCESS');
 		})
 	      .on("final", function (m) {
-		  console.log("FINAL: offer_cancel: %s", JSON.stringify(m));
+		  // console.log("FINAL: offer_cancel: %s", JSON.stringify(m));
 
 		  buster.assert.equals('tesSUCCESS', m.metadata.TransactionResult);
 		  buster.assert(final_create);
@@ -238,7 +238,7 @@ buster.testCase("Offer tests", {
 	  function (callback) {
 	    alpha
 	      .once("ledger_closed", function (ledger_closed, ledger_closed_index) {
-		  console.log("LEDGER_CLOSED: A: %d: %s", ledger_closed_index, ledger_closed);
+		  // console.log("LEDGER_CLOSED: A: %d: %s", ledger_closed_index, ledger_closed);
 		  callback();
 		})
 	      .ledger_accept();
@@ -246,13 +246,13 @@ buster.testCase("Offer tests", {
 	  function (callback) {
 	    alpha
 	      .once("ledger_closed", function (ledger_closed, ledger_closed_index) {
-		  console.log("LEDGER_CLOSED: B: %d: %s", ledger_closed_index, ledger_closed);
+		  // console.log("LEDGER_CLOSED: B: %d: %s", ledger_closed_index, ledger_closed);
 		  callback();
 		})
 	      .ledger_accept();
 	  },
 	], function (error) {
-	  console.log("result: error=%s", error);
+	  // console.log("result: error=%s", error);
 	  buster.refute(error);
 	  if (error) done();
 	});
@@ -268,11 +268,11 @@ buster.testCase("Offer tests", {
 	      .payment('root', 'alice', Amount.from_json("10000"))
 	      .set_flags('CreateAccount')
 	      .on("proposed", function (m) {
-		  console.log("PROPOSED: CreateAccount: %s", JSON.stringify(m));
+		  // console.log("PROPOSED: CreateAccount: %s", JSON.stringify(m));
 		  callback(m.result != 'tesSUCCESS', m);
 		})
 	      .on('error', function(m) {
-		  console.log("error: %s", m);
+		  // console.log("error: %s", m);
 
 		  buster.assert(false);
 		  callback(m);
@@ -284,7 +284,7 @@ buster.testCase("Offer tests", {
 	    alpha.transaction()
 	      .offer_cancel("root", m.transaction.Sequence)
 	      .on("proposed", function (m) {
-		  console.log("PROPOSED: offer_cancel past: %s", JSON.stringify(m));
+		  // console.log("PROPOSED: offer_cancel past: %s", JSON.stringify(m));
 		  callback(m.result != 'tesSUCCESS', m);
 		})
 	      .submit();
@@ -294,7 +294,7 @@ buster.testCase("Offer tests", {
 	    alpha.transaction()
 	      .offer_cancel("root", m.transaction.Sequence+1)
 	      .on("proposed", function (m) {
-		  console.log("PROPOSED: offer_cancel same: %s", JSON.stringify(m));
+		  // console.log("PROPOSED: offer_cancel same: %s", JSON.stringify(m));
 		  callback(m.result != 'temBAD_SEQUENCE', m);
 		})
 	      .submit();
@@ -307,7 +307,7 @@ buster.testCase("Offer tests", {
 	    alpha.transaction()
 	      .offer_cancel("root", m.transaction.Sequence+2)
 	      .on("proposed", function (m) {
-		  console.log("ERROR: offer_cancel future: %s", JSON.stringify(m));
+		  // console.log("ERROR: offer_cancel future: %s", JSON.stringify(m));
 		  callback(m.result != 'temBAD_SEQUENCE');
 		})
 	      .submit();
@@ -316,7 +316,7 @@ buster.testCase("Offer tests", {
 	  function (callback) {
 	    alpha
 	      .once("ledger_closed", function (ledger_closed, ledger_closed_index) {
-		  console.log("LEDGER_CLOSED: A: %d: %s", ledger_closed_index, ledger_closed);
+		  // console.log("LEDGER_CLOSED: A: %d: %s", ledger_closed_index, ledger_closed);
 		  callback();
 		})
 	      .ledger_accept();
@@ -324,7 +324,7 @@ buster.testCase("Offer tests", {
 	  function (callback) {
 	    alpha
 	      .once("ledger_closed", function (ledger_closed, ledger_closed_index) {
-		  console.log("LEDGER_CLOSED: B: %d: %s", ledger_closed_index, ledger_closed);
+		  // console.log("LEDGER_CLOSED: B: %d: %s", ledger_closed_index, ledger_closed);
 		  callback();
 		})
 	      .ledger_accept();
@@ -333,7 +333,7 @@ buster.testCase("Offer tests", {
 	    callback();
 	  }
 	], function (error) {
-	  console.log("result: error=%s", error);
+	  // console.log("result: error=%s", error);
 	  buster.refute(error);
 
 	  done();
