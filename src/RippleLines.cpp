@@ -12,11 +12,12 @@ RippleLines::RippleLines(const uint160& accountID, Ledger::pointer ledger)
 	fillLines(accountID,ledger);
 }
 
-void RippleLines::printRippleLines() {
-  for (int i =0; i < mLines.size(); i++) {
-    std::cout << i << ": " << mLines[i]->getAccountID().humanAccountID()  << std::endl;
-  }
-  std::cout << std::endl;
+void RippleLines::printRippleLines() 
+{
+	for (unsigned int i =0; i < mLines.size(); i++) {
+		std::cout << i << ": " << mLines[i]->getAccountID().humanAccountID()  << std::endl;
+	}
+	std::cout << std::endl;
 }
 
 RippleLines::RippleLines(const uint160& accountID )

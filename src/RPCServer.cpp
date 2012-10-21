@@ -2518,7 +2518,7 @@ Json::Value RPCServer::doWalletPropose(const Json::Value& params)
 	Json::Value obj(Json::objectValue);
 
 	obj["master_seed"]		= naSeed.humanSeed();
-	obj["master_key"]		= naSeed.humanSeed1751();
+	//obj["master_key"]		= naSeed.humanSeed1751();
 	obj["account_id"]		= naAccount.humanAccountID();
 
 	return obj;
