@@ -808,8 +808,6 @@ var SUBMIT_LOST	    = 8;    // Give up tracking.
 var Transaction	= function (remote) {
   var self  = this;
 
-  this.prototype    = EventEmitter;	// XXX Node specific.
-
   this.remote	    = remote;
   this.secret	    = undefined;
   this.transaction  = {		      	// Transaction data.
@@ -1033,7 +1031,7 @@ Transaction.prototype.offer_cancel = function (src, sequence) {
   return this;
 };
 
-// XXX Expiration should use a time.
+// --> expiration : Date or Number
 Transaction.prototype.offer_create = function (src, taker_pays, taker_gets, expiration) {
   this.secret			    = this.account_secret(src);
   this.transaction.TransactionType  = 'OfferCreate';
@@ -1042,8 +1040,12 @@ Transaction.prototype.offer_create = function (src, taker_pays, taker_gets, expi
   this.transaction.TakerPays	    = Amount.json_rewrite(taker_pays);
   this.transaction.TakerGets	    = Amount.json_rewrite(taker_gets);
 
+  this.prototype    = EventEmitter;	// XXX Node specific.
+
   if (expiration)
-    this.transaction.Expiration  = expiration;
+    this.transaction.Expiration  = Date === expiration.constructor
+				    ? expiration.getTime()
+				    : Number(expiration);
 
   return this;
 };
