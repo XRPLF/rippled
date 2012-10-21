@@ -16,6 +16,9 @@ var WebSocket = require('ws');
 var Amount    = require('./amount.js').Amount;
 var UInt160   = require('./amount.js').UInt160;
 
+// Don't include in browser context.
+var config    = require('../test/config.js');
+
 // Request events emmitted:
 // 'success' : Request successful.
 // 'error'   : Request failed.
@@ -140,12 +143,11 @@ Request.prototype.ripple_state = function (account, issuer, currency) {
 //
 
 // --> trusted: truthy, if remote is trusted
-var Remote = function (trusted, websocket_ip, websocket_port, config, trace) {
+var Remote = function (trusted, websocket_ip, websocket_port, trace) {
   this.trusted              = trusted;
   this.websocket_ip         = websocket_ip;
   this.websocket_port       = websocket_port;
   this.id                   = 0;
-  this.config               = config;
   this.trace                = trace;
   this.ledger_closed        = undefined;
   this.ledger_current_index = undefined;
@@ -155,6 +157,7 @@ var Remote = function (trusted, websocket_ip, websocket_port, config, trace) {
   this.state	  	    = 'offline';  // 'online', 'offline'
   this.retry_timer	    = undefined;
   this.retry		    = undefined;
+  this.config		    = config || { 'accounts' : {}};
   
   // Cache information for accounts.
   this.accounts = {
@@ -176,10 +179,10 @@ var Remote = function (trusted, websocket_ip, websocket_port, config, trace) {
 
 Remote.prototype      = new EventEmitter;
 
-var remoteConfig = function (config, server, trace) {
-  var serverConfig = config.servers[server];
+Remote.from_config = function (name, trace) {
+  var serverConfig = config.servers[name];
 
-  return new Remote(serverConfig.trusted, serverConfig.websocket_ip, serverConfig.websocket_port, config, trace);
+  return new Remote(serverConfig.trusted, serverConfig.websocket_ip, serverConfig.websocket_port, trace);
 };
 
 var isTemMalformed  = function (engine_result_code) {
@@ -190,7 +193,7 @@ var isTefFailure = function (engine_result_code) {
   return (engine_result_code >= -299 && engine_result_code <  199);
 };
 
-var flags = {
+Remote.flags = {
   'OfferCreate' : {
     'Passive'		      : 0x00010000,
   },
@@ -204,7 +207,7 @@ var flags = {
 };
 
 // XXX This needs to be determined from the network.
-var fees = {
+Remote.fees = {
   'default'	    : Amount.from_json("100"),
   'account_create'  : Amount.from_json("1000"),
   'nickname_create' : Amount.from_json("1000"),
@@ -231,6 +234,12 @@ Remote.prototype._set_state = function (state) {
 	break;
     }
   }
+};
+
+Remote.prototype.trace = function () {
+  this.trace  = true;
+
+  return this;
 };
 
 // Set the target online state. Defaults to false.
@@ -751,7 +760,7 @@ Remote.prototype.transaction = function () {
 //  Construction:
 //    remote.transaction()  // Build a transaction object.
 //     .offer_create(...)   // Set major parameters.
-//     .flags()		    // Set optional parameters.
+//     .set_flags()	    // Set optional parameters.
 //     .on()		    // Register for events.
 //     .submit();	    // Send to network.
 //
@@ -895,12 +904,12 @@ Transaction.prototype.submit = function () {
 
   if (undefined === transaction.Fee) {
     if ('Payment' === transaction.TransactionType
-      && transaction.Flags & exports.flags.Payment.CreateAccount) {
+      && transaction.Flags & Remote.flags.Payment.CreateAccount) {
 
-      transaction.Fee    = fees.account_create.to_json();
+      transaction.Fee    = Remote.fees.account_create.to_json();
     }
     else {
-      transaction.Fee    = fees['default'].to_json();
+      transaction.Fee    = Remote.fees['default'].to_json();
     }
   }
 
@@ -973,9 +982,9 @@ Transaction.prototype.send_max = function (send_max) {
 
 // Add flags to a transaction.
 // --> flags: undefined, _flag_, or [ _flags_ ]
-Transaction.prototype.flags = function (flags) {
+Transaction.prototype.set_flags = function (flags) {
   if (flags) {
-      var   transaction_flags = exports.flags[this.transaction.TransactionType];
+      var   transaction_flags = Remote.flags[this.transaction.TransactionType];
 
       if (undefined == this.transaction.Flags)	// We plan to not define this field on new Transaction.
 	this.transaction.Flags	  = 0;
@@ -994,8 +1003,8 @@ Transaction.prototype.flags = function (flags) {
 	}
       }
 
-      if (this.transaction.Flags & exports.flags.Payment.CreateAccount)
-	this.transaction.Fee	= fees.account_create.to_json();
+      if (this.transaction.Flags & Remote.flags.Payment.CreateAccount)
+	this.transaction.Fee	= Remote.fees.account_create.to_json();
   }
 
   return this;
@@ -1029,7 +1038,7 @@ Transaction.prototype.offer_create = function (src, taker_pays, taker_gets, expi
   this.secret			    = this.account_secret(src);
   this.transaction.TransactionType  = 'OfferCreate';
   this.transaction.Account	    = UInt160.from_json(src).to_json();
-  this.transaction.Fee		    = fees.offer.to_json();
+  this.transaction.Fee		    = Remote.fees.offer.to_json();
   this.transaction.TakerPays	    = Amount.json_rewrite(taker_pays);
   this.transaction.TakerGets	    = Amount.json_rewrite(taker_gets);
 
@@ -1077,8 +1086,5 @@ Transaction.prototype.ripple_line_set = function (src, limit, quality_in, qualit
 };
 
 exports.Remote          = Remote;
-exports.remoteConfig    = remoteConfig;
-exports.fees            = fees;
-exports.flags           = flags;
 
 // vim:sw=2:sts=2:ts=8

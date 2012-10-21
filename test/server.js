@@ -1,6 +1,13 @@
-// Manage test servers
+// Create and stop test servers.
 //
-// YYY Would be nice to be able to hide server output.
+// Usage:
+// s = new Server(name, config)
+// s.verbose()	: optional
+//  .start()
+//	'started'
+//
+// s.stop()	: stops server is started.
+//   'stopped'
 //
 
 // Provide servers
@@ -8,29 +15,40 @@
 // Servers are created in tmp/server/$server
 //
 
-var config    = require("./config.js");
-var nodeutils = require("../js/nodeutils.js");
+var buster	  = require("buster");
+var child	  = require("child_process");
+var fs	      	  = require("fs");
+var path      	  = require("path");
+var util      	  = require("util");
+var EventEmitter  = require('events').EventEmitter;
 
-var fs	      = require("fs");
-var path      = require("path");
-var util      = require("util");
-var child     = require("child_process");
-
-var servers = {};
+var config	  = require("./config.js");
+var nodeutils 	  = require("../js/nodeutils.js");
 
 // Create a server object
-var Server = function (name, mock) {
-  this.name = name;
-  this.mock = mock;
+var Server = function (name, config, verbose) {
+  this.name	= name;
+  this.config	= config;
+  this.started	= false;
+  this.quiet	= !verbose;
 };
 
-// Return a server's rippled.cfg as string.
-Server.prototype.configContent = function() {
-  var	cfg = config.servers[this.name];
+Server.prototype  = new EventEmitter;
 
-  return Object.keys(cfg).map(function(o) {
-      return util.format("[%s]\n%s\n", o, cfg[o]);
-    }).join("");
+Server.from_config = function (name, verbose) {
+  return new Server(name, config.servers[name], verbose);
+};
+
+Server.prototype.on = function (e, c) {
+  EventEmitter.prototype.on.call(this, e, c);
+
+  return this;
+};
+
+Server.prototype.once = function (e, c) {
+  EventEmitter.prototype.once.call(this, e, c);
+
+  return this;
 };
 
 Server.prototype.serverPath = function() {
@@ -42,38 +60,51 @@ Server.prototype.configPath = function() {
 };
 
 // Write a server's rippled.cfg.
-Server.prototype.writeConfig = function(done) {
-  fs.writeFile(this.configPath(), this.configContent(), 'utf8', done);
+Server.prototype._writeConfig = function(done) {
+  var self  = this;
+
+  fs.writeFile(
+    this.configPath(),
+    Object.keys(this.config).map(function(o) {
+	return util.format("[%s]\n%s\n", o, self.config[o]);
+      }).join(""),
+    'utf8', done);
 };
 
 // Spawn the server.
-Server.prototype.serverSpawnSync = function() {
-  // Spawn in standalone mode for now.
-  this.child = child.spawn(
-    config.rippled,
-    [
+Server.prototype._serverSpawnSync = function() {
+  var self  = this;
+
+  var args  = [
       "-a",
       "-v",
       "--conf=rippled.cfg"
-    ],
+    ];
+
+  // Spawn in standalone mode for now.
+  this.child = child.spawn(
+    config.rippled,
+    args,
     {
       cwd: this.serverPath(),
       env: process.env,
-      stdio: 'inherit'
+      stdio: this.quiet ? 'ignore' : 'inherit'
     });
 
-  console.log("server: start %s: %s -a --conf=%s", this.child.pid, config.rippled, this.configPath());
+  if (!this.quiet)
+    console.log("server: start %s: %s --conf=%s",
+      this.child.pid, config.rippled, args.join(" "), this.configPath());
 
   // By default, just log exits.
   this.child.on('exit', function(code, signal) {
       // If could not exec: code=127, signal=null
       // If regular exit: code=0, signal=null
-      console.log("server: spawn: server exited code=%s: signal=%s", code, signal);
+      if (!self.quiet) console.log("server: spawn: server exited code=%s: signal=%s", code, signal);
     });
 };
 
 // Prepare server's working directory.
-Server.prototype.makeBase = function (done) {
+Server.prototype._makeBase = function (done) {
   var path  = this.serverPath();
   var self  = this;
 
@@ -83,80 +114,59 @@ Server.prototype.makeBase = function (done) {
 	throw e;
       }
       else {
-	self.writeConfig(done);
+	self._writeConfig(done);
       }
     });
 };
 
+Server.prototype.verbose = function () {
+  this.quiet  = false;
+
+  return this;
+};
+
 // Create a standalone server.
 // Prepare the working directory and spawn the server.
-Server.prototype.start = function (done) {
+Server.prototype.start = function () {
   var self	= this;
 
-  if (this.mock) {
-    done();
-  }
-  else {
-    this.makeBase(function (e) {
-	if (e) {
-	  throw e;
-	}
-	else {
-	  self.serverSpawnSync();
-	  done();
-	}
-      });
-  }
+  if (!this.quiet) console.log("server: start: %s: %s", this.name, JSON.stringify(this.config));
+
+  this._makeBase(function (e) {
+      if (e) {
+	throw e;
+      }
+      else {
+	self._serverSpawnSync();
+	self.emit('started');
+      }
+    });
+
+  return this;
 };
 
 // Stop a standalone server.
-Server.prototype.stop = function (done) {
-  if (this.mock) {
-    console.log("server: stop: mock");
-    done();	
-  }
-  else if (this.child) {
+Server.prototype.stop = function () {
+  var self  = this;
+
+  if (this.child) {
     // Update the on exit to invoke done.
     this.child.on('exit', function (code, signal) {
-	console.log("server: stop: server exited");
-	done();
+
+	if (!self.quiet) console.log("server: stop: server exited");
+
+	self.emit('stopped');
+	delete this.child;
       });
+
     this.child.kill();
   }
   else
   {
-    console.log("server: stop: no such server");
-    done('noSuchServer');	
+    buster.log("server: stop: can't stop");
   }
-};
 
-// Start the named server.
-exports.start = function (name, done, mock) {
-  if (servers[name])
-  {
-    console.log("server: start: server already started.");
-  }
-  else
-  {
-    var server = new Server(name, mock);
-
-    servers[name] = server;
-
-    console.log("server: start: %s", JSON.stringify(server));
-
-    server.start(done);
-  }
-};
-
-// Delete the named server.
-exports.stop = function (name, done) {
-  console.log("server: stop: %s of %s", name, Object.keys(servers).toString());
-
-  var server	= servers[name];
-  if (server) {
-    server.stop(done);
-    delete servers[name];
-  }
+  return this;
 };
 
 exports.Server = Server;

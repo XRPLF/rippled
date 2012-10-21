@@ -1,12 +1,8 @@
 var buster  = require("buster");
 
-var config  = require("./config.js");
-var server  = require("./server.js");
-var remote  = require("../js/remote.js");
-
 var Amount = require("../js/amount.js").Amount;
-
-require("../js/amount.js").setAccounts(config.accounts);
+var Remote  = require("../js/remote.js").Remote;
+var Server  = require("./server.js").Server;
 
 var fastTearDown  = true;
 
@@ -18,26 +14,16 @@ buster.testRunner.timeout = 5000;
 buster.testCase("Remote functions", {
   'setUp' :
     function (done) {
-      server.start("alpha",
-	function (e) {
-	  buster.refute(e);
-
-	  alpha   = remote.remoteConfig(config, "alpha");
-
-	  alpha
-	    .once('ledger_closed', done)
-	    .connect();
-      });
+      server = Server.from_config("alpha").on('started', function () {
+	  alpha	= Remote.from_config("alpha").once('ledger_closed', done) .connect();
+	}).start();
     },
 
   'tearDown' :
-    function (done) {
+    function (done) { 
       alpha
 	.on('disconnected', function () {
-	    server.stop("alpha", function (e) {
-	      buster.refute(e);
-	      done();
-	    });
+	    server.on('stopped', done).stop();
 	  })
 	.connect(false);
     },
@@ -45,13 +31,13 @@ buster.testCase("Remote functions", {
   'request_ledger_current' :
     function (done) {
       alpha.request_ledger_current().on('success', function (m) {
-	  console.log(m);
+	  // console.log(m);
 
 	  buster.assert.equals(m.ledger_current_index, 3);
 	  done();
 	})
       .on('error', function(m) {
-	  console.log(m);
+	  // console.log(m);
 
 	  buster.assert(false);
 	})
@@ -61,13 +47,13 @@ buster.testCase("Remote functions", {
   'request_ledger_closed' :
     function (done) {
       alpha.request_ledger_closed().on('success', function (m) {
-	  console.log("result: %s", JSON.stringify(m));
+	  // console.log("result: %s", JSON.stringify(m));
 
 	  buster.assert.equals(m.ledger_closed_index, 2);
 	  done();
 	})
       .on('error', function(m) {
-	  console.log("error: %s", m);
+	  // console.log("error: %s", m);
 
 	  buster.assert(false);
 	})
@@ -90,14 +76,14 @@ buster.testCase("Remote functions", {
 		done();
 	      })
 	    .on('error', function(m) {
-		console.log("error: %s", m);
+		// console.log("error: %s", m);
 
 		buster.assert(false);
 	      })
 	    .request();
 	})
       .on('error', function(m) {
-	  console.log("error: %s", m);
+	  // console.log("error: %s", m);
 
 	  buster.assert(false);
 	})
@@ -108,7 +94,7 @@ buster.testCase("Remote functions", {
   'account_root remote malformedAddress' :
     function (done) {
       alpha.request_ledger_closed().on('success', function (r) {
-	  console.log("result: %s", JSON.stringify(r));
+	  // console.log("result: %s", JSON.stringify(r));
 
 	  alpha
 	    .request_ledger_entry('account_root')
@@ -120,7 +106,7 @@ buster.testCase("Remote functions", {
 		buster.assert(false);
 	      })
 	    .on('error', function(m) {
-		console.log("error: %s", m);
+		// console.log("error: %s", m);
 
 		buster.assert.equals(m.error, 'remoteError');
 		buster.assert.equals(m.remote.error, 'malformedAddress');
@@ -129,7 +115,7 @@ buster.testCase("Remote functions", {
 	    .request();
 	})
       .on('error', function(m) {
-	  console.log("error: %s", m);
+	  // console.log("error: %s", m);
 
 	  buster.assert(false);
 	})
@@ -139,19 +125,19 @@ buster.testCase("Remote functions", {
   'account_root entryNotFound' :
     function (done) {
       alpha.request_ledger_closed().on('success', function (r) {
-	  console.log("result: %s", JSON.stringify(r));
+	  // console.log("result: %s", JSON.stringify(r));
 
 	  alpha
 	    .request_ledger_entry('account_root')
 	    .ledger_closed(r.ledger_closed)
-	    .account_root(config.accounts.alice.account)
+	    .account_root("alice")
 	    .on('success', function (r) {
 		// console.log("account_root: %s", JSON.stringify(r));
 
 		buster.assert(false);
 	      })
 	    .on('error', function(m) {
-		console.log("error: %s", m);
+		// console.log("error: %s", m);
 
 		buster.assert.equals(m.error, 'remoteError');
 		buster.assert.equals(m.remote.error, 'entryNotFound');
@@ -160,7 +146,7 @@ buster.testCase("Remote functions", {
 	    .request();
 	})
       .on('error', function(m) {
-	  console.log("error: %s", m);
+	  // console.log("error: %s", m);
 
 	  buster.assert(false);
 	}).request();
@@ -169,12 +155,12 @@ buster.testCase("Remote functions", {
   'ledger_entry index' :
     function (done) {
       alpha.request_ledger_closed().on('success', function (r) {
-	  console.log("result: %s", JSON.stringify(r));
+	  // console.log("result: %s", JSON.stringify(r));
 
 	  alpha
 	    .request_ledger_entry('index')
 	    .ledger_closed(r.ledger_closed)
-	    .account_root(config.accounts.alice.account)
+	    .account_root("alice")
 	    .index("2B6AC232AA4C4BE41BF49D2459FA4A0347E1B543A4C92FCEE0821C0201E2E9A8")
 	    .on('success', function (r) {
 		// console.log("account_root: %s", JSON.stringify(r));
@@ -183,14 +169,14 @@ buster.testCase("Remote functions", {
 		done();
 	      })
 	    .on('error', function(m) {
-		console.log("error: %s", m);
+		// console.log("error: %s", m);
 
 		buster.assert(false);
 	      }).
 	    request();
 	})
       .on('error', function(m) {
-	  console.log(m);
+	  // console.log(m);
 
 	  buster.assert(false);
 	})
@@ -201,7 +187,7 @@ buster.testCase("Remote functions", {
     function (done) {
       alpha.transaction()
 	.payment('root', 'alice', Amount.from_json("10000"))
-	.flags('CreateAccount')
+	.set_flags('CreateAccount')
 	.on('success', function (r) {
 	    // console.log("account_root: %s", JSON.stringify(r));
 
@@ -209,7 +195,7 @@ buster.testCase("Remote functions", {
 	    done();
 	  })
 	.on('error', function(m) {
-	    console.log("error: %s", m);
+	    // console.log("error: %s", m);
 
 	    buster.assert(false);
 	  })
@@ -223,25 +209,25 @@ buster.testCase("Remote functions", {
 
       alpha.transaction()
 	.payment('root', 'alice', Amount.from_json("10000"))
-	.flags('CreateAccount')
+	.set_flags('CreateAccount')
 	.on('success', function (r) {
-	    console.log("create_account: %s", JSON.stringify(r));
+	    // console.log("create_account: %s", JSON.stringify(r));
 
 	    got_success	= true;
 	  })
 	.on('error', function (m) {
-	    console.log("error: %s", m);
+	    // console.log("error: %s", m);
 
 	    buster.assert(false);
 	  })
 	.on('final', function (m) {
-	    console.log("final: %s", JSON.stringify(m));
+	    // console.log("final: %s", JSON.stringify(m));
 
 	    buster.assert(got_success && got_proposed);
 	    done();
 	  })
 	.on('proposed', function (m) {
-	    console.log("proposed: %s", JSON.stringify(m));
+	    // console.log("proposed: %s", JSON.stringify(m));
 
 	    // buster.assert.equals(m.result, 'terNO_DST');
 	    buster.assert.equals(m.result, 'tesSUCCESS');
@@ -251,7 +237,7 @@ buster.testCase("Remote functions", {
 	    alpha.ledger_accept();
 	  })
 	.on('status', function (s) {
-	    console.log("status: %s", JSON.stringify(s));
+	    // console.log("status: %s", JSON.stringify(s));
 	  })
 	.submit();
     },

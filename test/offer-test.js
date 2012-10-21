@@ -1,15 +1,10 @@
 
 var async   = require("async");
 var buster  = require("buster");
-var fs	    = require("fs");
-
-var server = require("./server.js");
-var remote = require("../js/remote.js");
-var config = require("./config.js");
 
 var Amount = require("../js/amount.js").Amount;
-
-require("../js/amount.js").setAccounts(config.accounts);
+var Remote  = require("../js/remote.js").Remote;
+var Server  = require("./server.js").Server;
 
 buster.testRunner.timeout = 5000;
 
@@ -18,28 +13,16 @@ var alpha;
 buster.testCase("Offer tests", {
   'setUp' :
     function (done) {
-      server.start("alpha",
-	function (e) {
-	  buster.refute(e);
-
-	  alpha   = remote.remoteConfig(config, "alpha", 'TRACE');
-
-	  alpha
-	    .once('ledger_closed', done)
-	    .connect();
-	  }
-//	  , 'MOCK'
-	);
+      server = Server.from_config("alpha").on('started', function () {
+	  alpha	= Remote.from_config("alpha").once('ledger_closed', done) .connect();
+	}).start();
     },
 
   'tearDown' :
-    function (done) {
+    function (done) { 
       alpha
 	.on('disconnected', function () {
-	    server.stop("alpha", function (e) {
-	      buster.refute(e);
-	      done();
-	    });
+	    server.on('stopped', done).stop();
 	  })
 	.connect(false);
     },
@@ -190,7 +173,7 @@ buster.testCase("Offer tests", {
 	  function (callback) {
 	    alpha.transaction()
 	      .payment('root', 'alice', "1000")
-	      .flags('CreateAccount')
+	      .set_flags('CreateAccount')
 	      .on('proposed', function (m) {
 		console.log("proposed: %s", JSON.stringify(m));
 		buster.assert.equals(m.result, 'tesSUCCESS');
@@ -283,7 +266,7 @@ buster.testCase("Offer tests", {
 	  function (callback) {
 	    alpha.transaction()
 	      .payment('root', 'alice', Amount.from_json("10000"))
-	      .flags('CreateAccount')
+	      .set_flags('CreateAccount')
 	      .on("proposed", function (m) {
 		  console.log("PROPOSED: CreateAccount: %s", JSON.stringify(m));
 		  callback(m.result != 'tesSUCCESS', m);
