@@ -3,7 +3,15 @@
 // - We use the W3C interface for node and browser compatibility:
 //   http://www.w3.org/TR/websockets/#the-websocket-interface
 //
-// YYY Will later provide a network access which use multiple instances of this.
+// This class is intended for both browser and node.js use.
+//
+// This class is designed to work via peer protocol via either the public or
+// private websocket interfaces.  The JavaScript class for the peer protocol
+// has not yet been implemented. However, this class has been designed for it
+// to be a very simple drop option.
+//
+// YYY Will later provide js/network.js which will transparently use multiple
+// instances of this class for network access.
 //
 
 // Node
@@ -120,8 +128,8 @@ Request.prototype.transaction = function (t) {
 Request.prototype.ripple_state = function (account, issuer, currency) {
   this.message.ripple_state  = {
       'accounts' : [
-	UInt160.from_json(account).to_json(),
-	UInt160.from_json(issuer).to_json()
+	UInt160.json_rewrite(account),
+	UInt160.json_rewrite(issuer)
       ],
       'currency' : currency
     };
@@ -724,7 +732,6 @@ Remote.prototype.dirty_account_root = function (account) {
 // --> currency: String
 // --> current: bool : true = current ledger
 Remote.prototype.request_ripple_balance = function (account, issuer, currency, current) {
-  var account_u	    = UInt160.from_json(account);
   var request	    = this.request_ledger_entry('ripple_state');	  // YYY Could be cached per ledger.
 
   return request
@@ -735,7 +742,7 @@ Remote.prototype.request_ripple_balance = function (account, issuer, currency, c
 	var lowLimit	    = Amount.from_json(node.LowLimit);
 	var highLimit	    = Amount.from_json(node.HighLimit);
 	var balance	    = Amount.from_json(node.Balance);
-	var flip	    = account_u == highLimit.issuer;
+	var flip	    = UInt160.from_json(account) == highLimit.issuer;
 	var issuerLimit	    = flip ? lowLimit : highLimit;
 	var accountLimit    = flip ? highLimit : lowLimit;
 	var issuerBalance   = (flip ? balance.negate() : balance).parse_issuer(issuer);
@@ -1012,20 +1019,37 @@ Transaction.prototype.set_flags = function (flags) {
 // Transactions
 //
 
-// Allow config account defaults to be used.
-Transaction.prototype.account_default = function (account) {
-  return this.remote.config.accounts[account] ? this.remote.config.accounts[account].account : account;
-};
-
-Transaction.prototype.account_secret = function (account) {
+Transaction.prototype._account_secret = function (account) {
   // Fill in secret from config, if needed.
   return this.remote.config.accounts[account] ? this.remote.config.accounts[account].secret : undefined;
 };
 
+// .wallet_locator()
+// .message_key()
+// .domain()
+// .transfer_rate()
+// .publish()
+Transaction.prototype.account_set = function (src) {
+  this.secret			    = this._account_secret(src);
+  this.transaction.TransactionType  = 'AccountSet';
+
+  return this;
+};
+
+Transaction.prototype.claim = function (src, generator, public_key, signature) {
+  this.secret			    = this._account_secret(src);
+  this.transaction.TransactionType  = 'Claim';
+  this.transaction.Generator	    = generator;
+  this.transaction.PublicKey	    = public_key;
+  this.transaction.Signature	    = signature;
+
+  return this;
+};
+
 Transaction.prototype.offer_cancel = function (src, sequence) {
-  this.secret			    = this.account_secret(src);
+  this.secret			    = this._account_secret(src);
   this.transaction.TransactionType  = 'OfferCancel';
-  this.transaction.Account	    = UInt160.from_json(src).to_json();
+  this.transaction.Account	    = UInt160.json_rewrite(src);
   this.transaction.OfferSequence    = Number(sequence);
 
   return this;
@@ -1033,14 +1057,12 @@ Transaction.prototype.offer_cancel = function (src, sequence) {
 
 // --> expiration : Date or Number
 Transaction.prototype.offer_create = function (src, taker_pays, taker_gets, expiration) {
-  this.secret			    = this.account_secret(src);
+  this.secret			    = this._account_secret(src);
   this.transaction.TransactionType  = 'OfferCreate';
-  this.transaction.Account	    = UInt160.from_json(src).to_json();
+  this.transaction.Account	    = UInt160.json_rewrite(src);
   this.transaction.Fee		    = Remote.fees.offer.to_json();
   this.transaction.TakerPays	    = Amount.json_rewrite(taker_pays);
   this.transaction.TakerGets	    = Amount.json_rewrite(taker_gets);
-
-  this.prototype    = EventEmitter;	// XXX Node specific.
 
   if (expiration)
     this.transaction.Expiration  = Date === expiration.constructor
@@ -1050,6 +1072,25 @@ Transaction.prototype.offer_create = function (src, taker_pays, taker_gets, expi
   return this;
 };
 
+Transaction.prototype.password_fund = function (src, dst) {
+  this.secret			    = this._account_secret(src);
+  this.transaction.TransactionType  = 'PasswordFund';
+  this.transaction.Destination	    = UInt160.json_rewrite(dst);
+
+  return this;
+}
+
+Transaction.prototype.password_set = function (src, authorized_key, generator, public_key, signature) {
+  this.secret			    = this._account_secret(src);
+  this.transaction.TransactionType  = 'PasswordSet';
+  this.transaction.AuthorizedKey    = authorized_key;
+  this.transaction.Generator	    = generator;
+  this.transaction.PublicKey	    = public_key;
+  this.transaction.Signature	    = signature;
+
+  return this;
+}
+
 // Construct a 'payment' transaction.
 //
 // When a transaction is submitted:
@@ -1058,19 +1099,19 @@ Transaction.prototype.offer_create = function (src, taker_pays, taker_gets, expi
 // --> dst : UInt160 or String
 // --> deliver_amount : Amount or String.
 Transaction.prototype.payment = function (src, dst, deliver_amount) {
-  this.secret			    = this.account_secret(src);
+  this.secret			    = this._account_secret(src);
   this.transaction.TransactionType  = 'Payment';
-  this.transaction.Account	    = UInt160.from_json(src).to_json();
+  this.transaction.Account	    = UInt160.json_rewrite(src);
   this.transaction.Amount	    = Amount.json_rewrite(deliver_amount);
-  this.transaction.Destination	    = UInt160.from_json(dst).to_json();
+  this.transaction.Destination	    = UInt160.json_rewrite(dst);
 
   return this;
 }
 
 Transaction.prototype.ripple_line_set = function (src, limit, quality_in, quality_out) {
-  this.secret			    = this.account_secret(src);
+  this.secret			    = this._account_secret(src);
   this.transaction.TransactionType  = 'CreditSet';
-  this.transaction.Account	    = UInt160.from_json(src).to_json();
+  this.transaction.Account	    = UInt160.json_rewrite(src);
 
   // Allow limit of 0 through.
   if (undefined !== limit)
@@ -1083,6 +1124,17 @@ Transaction.prototype.ripple_line_set = function (src, limit, quality_in, qualit
     this.transaction.QualityOut	  = quality_out;
 
   // XXX Throw an error if nothing is set.
+
+  return this;
+};
+
+Transaction.prototype.wallet_add = function (src, amount, authorized_key, public_key, signature) {
+  this.secret			    = this._account_secret(src);
+  this.transaction.TransactionType  = 'WalletAdd';
+  this.transaction.Amount	    = Amount.json_rewrite(amount);
+  this.transaction.AuthorizedKey    = authorized_key;
+  this.transaction.PublicKey	    = public_key;
+  this.transaction.Signature	    = signature;
 
   return this;
 };
