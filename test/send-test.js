@@ -4,36 +4,24 @@ var Amount = require("../js/amount.js").Amount;
 var Remote  = require("../js/remote.js").Remote;
 var Server  = require("./server.js").Server;
 
+var testutils  = require("./testutils.js");
+
 // How long to wait for server to start.
 var serverDelay = 1500;
 
 buster.testRunner.timeout = 5000;
 
-var alpha;
-
 buster.testCase("Sending", {
-  'setUp' :
-    function (done) {
-      server = Server.from_config("alpha").on('started', function () {
-	  alpha	= Remote.from_config("alpha").once('ledger_closed', done) .connect();
-	}).start();
-    },
-
-  'tearDown' :
-    function (done) { 
-      alpha
-	.on('disconnected', function () {
-	    server.on('stopped', done).stop();
-	  })
-	.connect(false);
-    },
+  'setUp' : testutils.test_setup,
+  'tearDown' : testutils.test_teardown,
 
   "send to non-existant account without create." :
     function (done) {
+      var self	  = this;
+      var ledgers = 20;
       var got_proposed;
-      var ledgers  = 20;
 
-      alpha.transaction()
+      this.remote.transaction()
 	.payment('root', 'alice', Amount.from_json("10000"))
 	.on('success', function (r) {
 	    // Transaction sent.
@@ -46,7 +34,7 @@ buster.testCase("Sending", {
 
 	    ledgers    -= 1;
 	    if (ledgers) {
-	      alpha.ledger_accept();
+	      self.remote.ledger_accept();
 	    }
 	    else {
 	      buster.assert(false, "Final never received.");
@@ -68,7 +56,7 @@ buster.testCase("Sending", {
 
 	    got_proposed  = true;
 
-	    alpha.ledger_accept();    // Move it along.
+	    self.remote.ledger_accept();    // Move it along.
 	  })
 	.on('final', function (m) {
 	    // console.log("final: %s", JSON.stringify(m));

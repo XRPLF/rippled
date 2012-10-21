@@ -4,6 +4,8 @@ var Amount = require("../js/amount.js").Amount;
 var Remote  = require("../js/remote.js").Remote;
 var Server  = require("./server.js").Server;
 
+var testutils  = require("./testutils.js");
+
 var fastTearDown  = true;
 
 // How long to wait for server to start.
@@ -12,25 +14,12 @@ var serverDelay = 1500;	  // XXX Not implemented.
 buster.testRunner.timeout = 5000;
  
 buster.testCase("Remote functions", {
-  'setUp' :
-    function (done) {
-      server = Server.from_config("alpha").on('started', function () {
-	  alpha	= Remote.from_config("alpha").once('ledger_closed', done) .connect();
-	}).start();
-    },
-
-  'tearDown' :
-    function (done) { 
-      alpha
-	.on('disconnected', function () {
-	    server.on('stopped', done).stop();
-	  })
-	.connect(false);
-    },
+  'setUp' : testutils.test_setup,
+  'tearDown' : testutils.test_teardown,
 
   'request_ledger_current' :
     function (done) {
-      alpha.request_ledger_current().on('success', function (m) {
+      this.remote.request_ledger_current().on('success', function (m) {
 	  // console.log(m);
 
 	  buster.assert.equals(m.ledger_current_index, 3);
@@ -46,7 +35,7 @@ buster.testCase("Remote functions", {
 
   'request_ledger_closed' :
     function (done) {
-      alpha.request_ledger_closed().on('success', function (m) {
+      this.remote.request_ledger_closed().on('success', function (m) {
 	  // console.log("result: %s", JSON.stringify(m));
 
 	  buster.assert.equals(m.ledger_closed_index, 2);
@@ -62,10 +51,12 @@ buster.testCase("Remote functions", {
 
   'manual account_root success' :
     function (done) {
-      alpha.request_ledger_closed().on('success', function (r) {
+      var self = this;
+
+      this.remote.request_ledger_closed().on('success', function (r) {
 	  // console.log("result: %s", JSON.stringify(r));
 
-	  alpha
+	  self.remote
 	    .request_ledger_entry('account_root')
 	    .ledger_closed(r.ledger_closed)
 	    .account_root("rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh")
@@ -93,10 +84,12 @@ buster.testCase("Remote functions", {
   // XXX This should be detected locally.
   'account_root remote malformedAddress' :
     function (done) {
-      alpha.request_ledger_closed().on('success', function (r) {
+      var self = this;
+
+      this.remote.request_ledger_closed().on('success', function (r) {
 	  // console.log("result: %s", JSON.stringify(r));
 
-	  alpha
+	  self.remote
 	    .request_ledger_entry('account_root')
 	    .ledger_closed(r.ledger_closed)
 	    .account_root("zHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh")
@@ -124,10 +117,12 @@ buster.testCase("Remote functions", {
 
   'account_root entryNotFound' :
     function (done) {
-      alpha.request_ledger_closed().on('success', function (r) {
+      var self = this;
+
+      this.remote.request_ledger_closed().on('success', function (r) {
 	  // console.log("result: %s", JSON.stringify(r));
 
-	  alpha
+	  self.remote
 	    .request_ledger_entry('account_root')
 	    .ledger_closed(r.ledger_closed)
 	    .account_root("alice")
@@ -154,10 +149,12 @@ buster.testCase("Remote functions", {
 
   'ledger_entry index' :
     function (done) {
-      alpha.request_ledger_closed().on('success', function (r) {
+      var self = this;
+
+      this.remote.request_ledger_closed().on('success', function (r) {
 	  // console.log("result: %s", JSON.stringify(r));
 
-	  alpha
+	  self.remote
 	    .request_ledger_entry('index')
 	    .ledger_closed(r.ledger_closed)
 	    .account_root("alice")
@@ -185,7 +182,7 @@ buster.testCase("Remote functions", {
 
   'create account' :
     function (done) {
-      alpha.transaction()
+      this.remote.transaction()
 	.payment('root', 'alice', Amount.from_json("10000"))
 	.set_flags('CreateAccount')
 	.on('success', function (r) {
@@ -204,10 +201,12 @@ buster.testCase("Remote functions", {
 
   "create account final" :
     function (done) {
+      var self = this;
+
       var   got_proposed;
       var   got_success;
 
-      alpha.transaction()
+      this.remote.transaction()
 	.payment('root', 'alice', Amount.from_json("10000"))
 	.set_flags('CreateAccount')
 	.on('success', function (r) {
@@ -234,7 +233,7 @@ buster.testCase("Remote functions", {
 
 	    got_proposed  = true;
 
-	    alpha.ledger_accept();
+	    self.remote.ledger_accept();
 	  })
 	.on('status', function (s) {
 	    // console.log("status: %s", JSON.stringify(s));
