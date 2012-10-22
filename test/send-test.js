@@ -10,7 +10,7 @@ var testutils  = require("./testutils.js");
 // How long to wait for server to start.
 var serverDelay = 1500;
 
-buster.testRunner.timeout = 3000;
+buster.testRunner.timeout = 5000;
 
 buster.testCase("Sending", {
   'setUp' : testutils.test_setup,
@@ -88,10 +88,10 @@ buster.testCase("Sending", {
 	.submit();
     },
 
-  "// credit_limit" :
+  "credit_limit" :
     function (done) {
       var self = this;
-      this.remote.set_trace();
+      // this.remote.set_trace();
 
       async.waterfall([
 	  function (callback) {

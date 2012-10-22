@@ -6,7 +6,9 @@ var nbi		= jsbn.nbi;
 
 var amount  = require("../js/amount.js");
 var Amount  = require("../js/amount.js").Amount;
-var UInt160  = require("../js/amount.js").UInt160;
+var UInt160 = require("../js/amount.js").UInt160;
+
+var config  = require('./config.js');
 
 buster.testCase("Amount", {
   "UInt160" : {
@@ -25,8 +27,14 @@ buster.testCase("Amount", {
     "Parse rrrrrrrrrrrrrrrrrrrrBZbvji export" : function () {
       buster.assert.equals(amount.consts.address_one, UInt160.from_json("rrrrrrrrrrrrrrrrrrrrBZbvji").to_json());
     },
+    "Parse mtgox export" : function () {
+      buster.assert.equals(config.accounts["mtgox"].account, UInt160.from_json("mtgox").to_json());
+    },
   },
   "Amount parsing" : {
+    "Parse 800/USD/mtgox" : function () {
+      buster.assert.equals("800/USD/"+config.accounts["mtgox"].account, Amount.from_json("800/USD/mtgox").to_text_full());
+    },
     "Parse native 0" : function () {
       buster.assert.equals("0/XNS", Amount.from_json("0").to_text_full());
     },

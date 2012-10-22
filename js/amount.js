@@ -152,7 +152,7 @@ UInt160.prototype.copyTo = function(d) {
 };
 
 UInt160.prototype.equals = function(d) {
-  return this.value === d.value;
+  return isNaN(this.value) || isNaN(d.value) ? false : this.value.equals(d.value);
 };
 
 // value = NaN on error.
