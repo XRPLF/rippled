@@ -993,7 +993,7 @@ void LedgerConsensus::playbackProposals()
 	}
 }
 
-void LedgerConsensus::applyTransaction(TransactionEngine& engine, const SerializedTransaction::pointer& txn,
+void LedgerConsensus::applyTransaction(TransactionEngine& engine, SerializedTransaction::ref txn,
 	Ledger::ref ledger, CanonicalTXSet& failedTransactions, bool openLedger)
 {
 	TransactionEngineParams parms = openLedger ? tapOPEN_LEDGER : tapNONE;

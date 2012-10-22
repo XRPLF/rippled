@@ -496,7 +496,7 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 
 	ValidationCount& ourVC = ledgers[closedLedger];
 
-	if ((theConfig.LEDGER_CREATOR) && (mMode >= omTRACKING))
+	if (mMode >= omTRACKING)
 	{
 		++ourVC.nodesUsing;
 		uint160 ourAddress = theApp->getWallet().getNodePublic().getNodeID();
@@ -638,7 +638,7 @@ void NetworkOPs::switchLastClosedLedger(Ledger::pointer newLedger, bool duringCo
 	theApp->getConnectionPool().relayMessage(NULL, packet);
 }
 
-int NetworkOPs::beginConsensus(const uint256& networkClosed, Ledger::pointer closingLedger)
+int NetworkOPs::beginConsensus(const uint256& networkClosed, Ledger::ref closingLedger)
 {
 	cLog(lsINFO) << "Consensus time for ledger " << closingLedger->getLedgerSeq();
 	cLog(lsINFO) << " LCL is " << closingLedger->getParentHash();
@@ -864,7 +864,7 @@ std::vector<NewcoinAddress>
 
 bool NetworkOPs::recvValidation(const SerializedValidation::pointer& val)
 {
-	cLog(lsINFO) << "recvValidation " << val->getLedgerHash();
+	cLog(lsDEBUG) << "recvValidation " << val->getLedgerHash();
 	return theApp->getValidations().addValidation(val);
 }
 

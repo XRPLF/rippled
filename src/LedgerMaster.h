@@ -20,6 +20,7 @@ class LedgerMaster
 
 	Ledger::pointer mCurrentLedger;		// The ledger we are currently processiong
 	Ledger::pointer mFinalizedLedger;	// The ledger that most recently closed
+	Ledger::pointer mLastFullLedger;	// We have history to this point
 
 	LedgerHistory mLedgerHistory;
 
@@ -48,6 +49,11 @@ public:
 	void pushLedger(Ledger::ref newLedger);
 	void pushLedger(Ledger::ref newLCL, Ledger::ref newOL);
 	void storeLedger(Ledger::ref);
+
+	void setLastFullLedger(Ledger::ref ledger)
+	{
+		mLastFullLedger = ledger;
+	}
 
 	void switchLedgers(Ledger::ref lastClosed, Ledger::ref newCurrent);
 

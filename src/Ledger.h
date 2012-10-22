@@ -100,6 +100,7 @@ public:
 	Ledger(Ledger& target, bool isMutable); // snapshot
 
 	static Ledger::pointer getSQL(const std::string& sqlStatement);
+	static Ledger::pointer getLastFullLedger();
 
 	void updateHash();
 	void setClosed()	{ mClosed = true; }

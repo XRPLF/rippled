@@ -45,6 +45,9 @@ public:
 	void badPeer(Peer::ref);
 	void resetTimer();
 
+	int takePeerSetFrom(const PeerSet& s);
+	int getPeerCount() const;
+
 protected:
 	virtual void newPeer(Peer::ref) = 0;
 	virtual void onTimer(void) = 0;

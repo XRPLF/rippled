@@ -102,6 +102,9 @@ public:
 	uint64						FEE_OFFER;				// Rate per day.
 	int							FEE_CONTRACT_OPERATION; // fee for each contract operation
 
+	// Node storage configuration
+	bool						FULL_HISTORY;
+
 	// Client behavior
 	int							ACCOUNT_PROBE_MAX;		// How far to scan for accounts.
 

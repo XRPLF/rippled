@@ -27,7 +27,7 @@ std::size_t hash_value(const aciSource& asValue)
 // <-- uOfferIndex : 0=end of list.
 TER RippleCalc::calcNodeAdvance(
 	const unsigned int			uIndex,				// 0 < uIndex < uLast
-	const PathState::pointer&	pspCur,
+	PathState::ref				pspCur,
 	const bool					bMultiQuality,
 	const bool					bReverse)
 {
@@ -267,7 +267,7 @@ TER RippleCalc::calcNodeAdvance(
 // Continue process till request is satisified while we the rate does not increase past the initial rate.
 TER RippleCalc::calcNodeDeliverRev(
 	const unsigned int			uIndex,			// 0 < uIndex < uLast
-	const PathState::pointer&	pspCur,
+	PathState::ref				pspCur,
 	const bool					bMultiQuality,
 	const uint160&				uOutAccountID,	// --> Output owner's account.
 	const STAmount&				saOutReq,		// --> Funds wanted.
@@ -459,7 +459,7 @@ TER RippleCalc::calcNodeDeliverRev(
 // Goal: Make progress consuming the offer.
 TER RippleCalc::calcNodeDeliverFwd(
 	const unsigned int			uIndex,			// 0 < uIndex < uLast
-	const PathState::pointer&	pspCur,
+	PathState::ref				pspCur,
 	const bool					bMultiQuality,
 	const uint160&				uInAccountID,	// --> Input owner's account.
 	const STAmount&				saInFunds,		// --> Funds available for delivery and fees.
@@ -610,7 +610,7 @@ TER RippleCalc::calcNodeDeliverFwd(
 // Called to drive from the last offer node in a chain.
 TER RippleCalc::calcNodeOfferRev(
 	const unsigned int			uIndex,				// 0 < uIndex < uLast
-	const PathState::pointer&	pspCur,
+	PathState::ref				pspCur,
 	const bool					bMultiQuality)
 {
 	TER				terResult;
@@ -650,7 +650,7 @@ TER RippleCalc::calcNodeOfferRev(
 // - Deliver is set without transfer fees.
 TER RippleCalc::calcNodeOfferFwd(
 	const unsigned int			uIndex,				// 0 < uIndex < uLast
-	const PathState::pointer&	pspCur,
+	PathState::ref				pspCur,
 	const bool					bMultiQuality
 	)
 {
@@ -789,7 +789,7 @@ void RippleCalc::calcNodeRipple(
 
 // Calculate saPrvRedeemReq, saPrvIssueReq, saPrvDeliver from saCur...
 // <-- tesSUCCESS or tepPATH_DRY
-TER RippleCalc::calcNodeAccountRev(const unsigned int uIndex, const PathState::pointer& pspCur, const bool bMultiQuality)
+TER RippleCalc::calcNodeAccountRev(const unsigned int uIndex, PathState::ref pspCur, const bool bMultiQuality)
 {
 	TER					terResult		= tesSUCCESS;
 	const unsigned int	uLast			= pspCur->vpnNodes.size() - 1;
@@ -1100,7 +1100,7 @@ TER RippleCalc::calcNodeAccountRev(const unsigned int uIndex, const PathState::p
 // - Output to next node is computed as input minus quality or transfer fee.
 TER RippleCalc::calcNodeAccountFwd(
 	const unsigned int			uIndex,				// 0 <= uIndex <= uLast
-	const PathState::pointer&	pspCur,
+	PathState::ref				pspCur,
 	const bool					bMultiQuality)
 {
 	TER					terResult		= tesSUCCESS;
@@ -1362,7 +1362,7 @@ TER RippleCalc::calcNodeAccountFwd(
 }
 
 // Return true, iff lhs has less priority than rhs.
-bool PathState::lessPriority(const PathState::pointer& lhs, const PathState::pointer& rhs)
+bool PathState::lessPriority(PathState::ref lhs, PathState::ref rhs)
 {
 	if (lhs->uQuality != rhs->uQuality)
 		return lhs->uQuality > rhs->uQuality;	// Bigger is worse.
@@ -1713,7 +1713,7 @@ Json::Value	PathState::getJson() const
 	return jvPathState;
 }
 
-TER RippleCalc::calcNodeFwd(const unsigned int uIndex, const PathState::pointer& pspCur, const bool bMultiQuality)
+TER RippleCalc::calcNodeFwd(const unsigned int uIndex, PathState::ref pspCur, const bool bMultiQuality)
 {
 	const PaymentNode&		pnCur		= pspCur->vpnNodes[uIndex];
 	const bool				bCurAccount	= isSetBit(pnCur.uFlags,  STPathElement::typeAccount);
@@ -1743,7 +1743,7 @@ TER RippleCalc::calcNodeFwd(const unsigned int uIndex, const PathState::pointer&
 //     --> [all]saWanted.mCurrency
 //     --> [all]saAccount
 //     <-> [0]saWanted.mAmount : --> limit, <-- actual
-TER RippleCalc::calcNodeRev(const unsigned int uIndex, const PathState::pointer& pspCur, const bool bMultiQuality)
+TER RippleCalc::calcNodeRev(const unsigned int uIndex, PathState::ref pspCur, const bool bMultiQuality)
 {
 	PaymentNode&	pnCur		= pspCur->vpnNodes[uIndex];
 	const bool		bCurAccount	= isSetBit(pnCur.uFlags,  STPathElement::typeAccount);
@@ -1785,7 +1785,7 @@ TER RippleCalc::calcNodeRev(const unsigned int uIndex, const PathState::pointer&
 // Calculate the next increment of a path.
 // The increment is what can satisfy a portion or all of the requested output at the best quality.
 // <-- pspCur->uQuality
-void RippleCalc::pathNext(const PathState::pointer& pspCur, const int iPaths, const LedgerEntrySet& lesCheckpoint, LedgerEntrySet& lesCurrent)
+void RippleCalc::pathNext(PathState::ref pspCur, const int iPaths, const LedgerEntrySet& lesCheckpoint, LedgerEntrySet& lesCurrent)
 {
 	// The next state is what is available in preference order.
 	// This is calculated when referenced accounts changed.

@@ -1053,25 +1053,22 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 			ledger->addRaw(nData);
 			reply.add_nodes()->set_nodedata(nData.getDataPtr(), nData.getLength());
 
-			if (packet.nodeids().size() != 0)
-			{ // new-style root request
-				cLog(lsINFO) << "Ledger root w/map roots request";
-				SHAMap::pointer map = ledger->peekAccountStateMap();
-				if (map && map->getHash().isNonZero())
-				{ // return account state root node if possible
-					Serializer rootNode(768);
-					if (map->getRootNode(rootNode, snfWIRE))
+			cLog(lsINFO) << "Ledger root w/map roots request";
+			SHAMap::pointer map = ledger->peekAccountStateMap();
+			if (map && map->getHash().isNonZero())
+			{ // return account state root node if possible
+				Serializer rootNode(768);
+				if (map->getRootNode(rootNode, snfWIRE))
+				{
+					reply.add_nodes()->set_nodedata(rootNode.getDataPtr(), rootNode.getLength());
+					if (ledger->getTransHash().isNonZero())
 					{
-						reply.add_nodes()->set_nodedata(rootNode.getDataPtr(), rootNode.getLength());
-						if (ledger->getTransHash().isNonZero())
+						map = ledger->peekTransactionMap();
+						if (map && map->getHash().isNonZero())
 						{
-							map = ledger->peekTransactionMap();
-							if (map && map->getHash().isNonZero())
-							{
-								rootNode.resize(0);
-								if (map->getRootNode(rootNode, snfWIRE))
-									reply.add_nodes()->set_nodedata(rootNode.getDataPtr(), rootNode.getLength());
-							}
+							rootNode.resize(0);
+							if (map->getRootNode(rootNode, snfWIRE))
+								reply.add_nodes()->set_nodedata(rootNode.getDataPtr(), rootNode.getLength());
 						}
 					}
 				}

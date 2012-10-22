@@ -129,7 +129,7 @@ private:
 		const std::vector<unsigned char>&	vucSignature);
 
 public:
-	Transaction(const SerializedTransaction::pointer& st, bool bValidate);
+	Transaction(SerializedTransaction::ref st, bool bValidate);
 
 	static Transaction::pointer sharedTransaction(const std::vector<unsigned char>&vucTransaction, bool bValidate);
 	static Transaction::pointer transactionFromSQL(Database* db, bool bValidate);
