@@ -1980,9 +1980,12 @@ Json::Value RPCServer::doTxHistory(const Json::Value& params)
 	{
 		unsigned int startIndex = params[0u].asInt();
 		Json::Value	obj;
+		Json::Value	txs;
+
+		obj["index"]=startIndex;
 
 		std::string sql =
-			str(boost::format("SELECT * FROM Transactions ORDER BY LedgerSeq LIMIT %u,20")
+			str(boost::format("SELECT * FROM Transactions ORDER BY LedgerSeq desc LIMIT %u,20")
 			% startIndex);
 
 		{
@@ -1992,9 +1995,11 @@ Json::Value RPCServer::doTxHistory(const Json::Value& params)
 			SQL_FOREACH(db, sql)
 			{
 				Transaction::pointer trans=Transaction::transactionFromSQL(db, false);
-				if(trans) obj.append(trans->getJson(0));
+				if(trans) txs.append(trans->getJson(0));
 			}
 		}
+
+		obj["txs"]=txs;
 
 		return obj;
 	}
