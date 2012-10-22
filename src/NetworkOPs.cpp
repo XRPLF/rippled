@@ -864,7 +864,7 @@ std::vector<NewcoinAddress>
 
 bool NetworkOPs::recvValidation(const SerializedValidation::pointer& val)
 {
-	cLog(lsINFO) << "recvValidation " << val->getLedgerHash();
+	cLog(lsDEBUG) << "recvValidation " << val->getLedgerHash();
 	return theApp->getValidations().addValidation(val);
 }
 
