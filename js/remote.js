@@ -244,8 +244,8 @@ Remote.prototype._set_state = function (state) {
   }
 };
 
-Remote.prototype.trace = function () {
-  this.trace  = true;
+Remote.prototype.set_trace = function (trace) {
+  this.trace  = undefined === trace || trace;
 
   return this;
 };
@@ -731,6 +731,8 @@ Remote.prototype.dirty_account_root = function (account) {
 // --> issuer: String
 // --> currency: String
 // --> current: bool : true = current ledger
+//
+// If does not exist: emit('error', 'error' : 'remoteError', 'remote' : { 'error' : 'entryNotFound' })
 Remote.prototype.request_ripple_balance = function (account, issuer, currency, current) {
   var request	    = this.request_ledger_entry('ripple_state');	  // YYY Could be cached per ledger.
 
@@ -739,20 +741,25 @@ Remote.prototype.request_ripple_balance = function (account, issuer, currency, c
     .ledger_choose(current)
     .on('success', function (message) {
 	var node	    = message.node;
+
 	var lowLimit	    = Amount.from_json(node.LowLimit);
 	var highLimit	    = Amount.from_json(node.HighLimit);
+	// The amount account holds of issuer (after negation if needed).
 	var balance	    = Amount.from_json(node.Balance);
-	var flip	    = UInt160.from_json(account) == highLimit.issuer;
-	var issuerLimit	    = flip ? lowLimit : highLimit;
-	var accountLimit    = flip ? highLimit : lowLimit;
-	var issuerBalance   = (flip ? balance.negate() : balance).parse_issuer(issuer);
-	var accountBalance  = issuerBalance.clone().parse_issuer(issuer);
+	// accountHigh implies: for account: balance is negated, highLimit is the limit set by account.
+	var accountHigh	    = UInt160.from_json(account).equals(highLimit.issuer);
+	// The limit set by issuer.
+	var issuerLimit	    = (accountHigh ? lowLimit : highLimit).parse_issuer(issuer);
+	// The limit set by account.
+	var accountLimit    = (accountHigh ? highLimit : lowLimit).parse_issuer(account);
+	var issuerBalance   = (accountHigh ? balance.negate() : balance).parse_issuer(issuer);
+	var accountBalance  = issuerBalance.clone().negate().parse_issuer(account);
 
 	request.emit('ripple_state', {
-	  'issuer_balance'  : issuerBalance,				  // Balance with dst as issuer.
-	  'account_balance' : accountBalance,				  // Balance with account as issuer.
-	  'issuer_limit'    : issuerLimit.clone().parse_issuer(account),  // Limit set by issuer with src as issuer.
-	  'account_limit'   : accountLimit.clone().parse_issuer(issuer)	  // Limit set by account with dst as issuer.
+	  'issuer_balance'  : issuerBalance,  // Balance with dst as issuer.
+	  'account_balance' : accountBalance, // Balance with account as issuer.
+	  'issuer_limit'    : issuerLimit,    // Limit set by issuer with src as issuer.
+	  'account_limit'   : accountLimit    // Limit set by account with dst as issuer.
 	});
       });
 }
@@ -774,7 +781,7 @@ Remote.prototype.transaction = function () {
 //  Events:
 // 'success' : Transaction submitted without error.
 // 'error' : Error submitting transaction.
-// 'proposed: Advisory proposed status transaction.
+// 'proposed' : Advisory proposed status transaction.
 // - A client should expect 0 to multiple results.
 // - Might not get back. The remote might just forward the transaction.
 // - A success could be reverted in final.
@@ -1115,7 +1122,7 @@ Transaction.prototype.ripple_line_set = function (src, limit, quality_in, qualit
 
   // Allow limit of 0 through.
   if (undefined !== limit)
-    this.transaction.LimitAmount  = limit.to_json();
+    this.transaction.LimitAmount  = Amount.json_rewrite(limit);
 
   if (quality_in)
     this.transaction.QualityIn	  = quality_in;
