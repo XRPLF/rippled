@@ -13,7 +13,7 @@
 #include "SerializedTransaction.h"
 #include "Log.h"
 
-Transaction::Transaction(const SerializedTransaction::pointer& sit, bool bValidate)
+Transaction::Transaction(SerializedTransaction::ref sit, bool bValidate)
 	: mInLedger(0), mStatus(INVALID), mResult(temUNCERTAIN), mTransaction(sit)
 {
 	try
@@ -709,8 +709,8 @@ bool Transaction::convertToTransactions(uint32 firstLedgerSeq, uint32 secondLedg
 	for(it = inMap.begin(); it != inMap.end(); ++it)
 	{
 		const uint256& id = it->first;
-		const SHAMapItem::pointer& first = it->second.first;
-		const SHAMapItem::pointer& second = it->second.second;
+		SHAMapItem::ref first = it->second.first;
+		SHAMapItem::ref second = it->second.second;
 
 		Transaction::pointer firstTrans, secondTrans;
 		if (!!first)

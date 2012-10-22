@@ -37,7 +37,7 @@ bool CanonicalTXKey::operator>=(const CanonicalTXKey& key)const
 	return mTXid >= key.mTXid;
 }
 
-void CanonicalTXSet::push_back(const SerializedTransaction::pointer& txn)
+void CanonicalTXSet::push_back(SerializedTransaction::ref txn)
 {
 	uint256 effectiveAccount = mSetHash;
 	effectiveAccount ^= txn->getSourceAccount().getAccountID().to256();

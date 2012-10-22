@@ -638,7 +638,7 @@ void NetworkOPs::switchLastClosedLedger(Ledger::pointer newLedger, bool duringCo
 	theApp->getConnectionPool().relayMessage(NULL, packet);
 }
 
-int NetworkOPs::beginConsensus(const uint256& networkClosed, Ledger::pointer closingLedger)
+int NetworkOPs::beginConsensus(const uint256& networkClosed, Ledger::ref closingLedger)
 {
 	cLog(lsINFO) << "Consensus time for ledger " << closingLedger->getLedgerSeq();
 	cLog(lsINFO) << " LCL is " << closingLedger->getParentHash();

@@ -185,7 +185,7 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapTreeNode& node, uint32 seq) : SHAMapN
 		memcpy(mHashes, node.mHashes, sizeof(mHashes));
 }
 
-SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& node, const SHAMapItem::pointer& item, TNType type, uint32 seq) :
+SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& node, SHAMapItem::ref item, TNType type, uint32 seq) :
 	SHAMapNode(node), mItem(item), mSeq(seq), mType(type), mFullBelow(true)
 {
 	assert(item->peekData().size() >= 12);
@@ -465,7 +465,7 @@ void SHAMapTreeNode::addRaw(Serializer& s, SHANodeFormat format)
 		assert(false);
 }
 
-bool SHAMapTreeNode::setItem(const SHAMapItem::pointer& i, TNType type)
+bool SHAMapTreeNode::setItem(SHAMapItem::ref i, TNType type)
 {
 	uint256 hash = getNodeHash();
 	mType = type;
