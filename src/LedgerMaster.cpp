@@ -32,6 +32,8 @@ void LedgerMaster::pushLedger(Ledger::ref newLedger)
 	mFinalizedLedger = mCurrentLedger;
 	mCurrentLedger = newLedger;
 	mEngine.setLedger(newLedger);
+	if (mLastFullLedger && (newLedger->getParentHash() == mLastFullLedger->getHash()))
+		mLastFullLedger = newLedger;
 }
 
 void LedgerMaster::pushLedger(Ledger::ref newLCL, Ledger::ref newOL)
@@ -44,6 +46,8 @@ void LedgerMaster::pushLedger(Ledger::ref newLCL, Ledger::ref newOL)
 		assert(newLCL->isClosed());
 		assert(newLCL->isImmutable());
 		mLedgerHistory.addAcceptedLedger(newLCL);
+		if (mLastFullLedger && (newLCL->getParentHash() == mLastFullLedger->getHash()))
+			mLastFullLedger = newLCL;
 		Log(lsINFO) << "StashAccepted: " << newLCL->getHash();
 	}
 

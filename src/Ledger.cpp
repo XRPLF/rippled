@@ -429,6 +429,12 @@ void Ledger::saveAcceptedLedger()
 	}
 
 	theApp->getOPs().pubLedger(shared_from_this());
+
+	if(theConfig.FULL_HISTORY)
+	{
+		// WRITEME: check for seamless ledger history
+	}
+
 }
 
 Ledger::pointer Ledger::getSQL(const std::string& sql)
@@ -496,6 +502,11 @@ Ledger::pointer Ledger::loadByHash(const uint256& ledgerHash)
 	sql.append(ledgerHash.GetHex());
 	sql.append("';");
 	return getSQL(sql);
+}
+
+Ledger::pointer Ledger::getLastFullLedger()
+{
+	return getSQL("SELECT * from Ledgers order by LedgerSeq desc limit 1;");
 }
 
 void Ledger::addJson(Json::Value& ret, int options)
