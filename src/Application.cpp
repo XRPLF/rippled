@@ -70,8 +70,9 @@ void Application::run()
 {
 	assert(mTxnDB == NULL);
 	if (!theConfig.DEBUG_LOGFILE.empty())
-	{
+	{ // Let DEBUG messages go to the file but only WARNING or higher to regular output
 		Log::setLogFile(theConfig.DEBUG_LOGFILE);
+		Log::setMinSeverity(lsWARNING);
 		LogPartition::setSeverity(lsDEBUG);
 	}
 
