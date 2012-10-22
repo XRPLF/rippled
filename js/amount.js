@@ -193,7 +193,7 @@ Amount.prototype.copyTo = function(d, negate) {
   if ('object' === typeof this.value)
   {
     if (this.is_native && negate)
-      this.value.negate.copyTo(d.value);
+      this.value.negate().copyTo(d.value);
     else
       this.value.copyTo(d.value);
   }
@@ -204,7 +204,7 @@ Amount.prototype.copyTo = function(d, negate) {
 
   d.offset	= this.offset;
   d.is_native	= this.is_native;
-  d.is_negative	= this.is_negative ? undefined : !this.is_negative;
+  d.is_negative	= this.is_native ? undefined : !this.is_negative;
 
   this.currency.copyTo(d.currency);
   this.issuer.copyTo(d.issuer);
