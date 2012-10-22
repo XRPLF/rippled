@@ -496,7 +496,7 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 
 	ValidationCount& ourVC = ledgers[closedLedger];
 
-	if ((theConfig.LEDGER_CREATOR) && (mMode >= omTRACKING))
+	if (mMode >= omTRACKING)
 	{
 		++ourVC.nodesUsing;
 		uint160 ourAddress = theApp->getWallet().getNodePublic().getNodeID();
