@@ -245,14 +245,19 @@ message TMGetLedger {
 	optional uint32 requestCookie	= 6;
 }
 
+enum TMReplyError {
+	reNO_LEDGER						= 1;	// We don't have the ledger you are asking about
+	reNO_NODE						= 2;	// We don't have any of the nodes you are asking for
+}
+
 message TMLedgerData {
 	required bytes ledgerHash		= 1;
 	required uint32 ledgerSeq		= 2;
 	required TMLedgerInfoType type	= 3;
 	repeated TMLedgerNode nodes		= 4;
 	optional uint32 requestCookie	= 5;
+	optional TMReplyError error		= 6;
 }
-
 
 message TMPing {
 	enum pingType {
