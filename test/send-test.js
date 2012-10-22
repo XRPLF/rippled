@@ -10,7 +10,7 @@ var testutils  = require("./testutils.js");
 // How long to wait for server to start.
 var serverDelay = 1500;
 
-buster.testRunner.timeout = 2000;
+buster.testRunner.timeout = 3000;
 
 buster.testCase("Sending", {
   'setUp' : testutils.test_setup,
@@ -23,7 +23,7 @@ buster.testCase("Sending", {
       var got_proposed;
 
       this.remote.transaction()
-	.payment('root', 'alice', Amount.from_json("10000"))
+	.payment('root', 'alice', "10000")
 	.on('success', function (r) {
 	    // Transaction sent.
 
@@ -88,10 +88,10 @@ buster.testCase("Sending", {
 	.submit();
     },
 
-  "credit_limit" :
+  "// credit_limit" :
     function (done) {
       var self = this;
-      //this.remote.set_trace();
+      this.remote.set_trace();
 
       async.waterfall([
 	  function (callback) {
@@ -101,11 +101,10 @@ buster.testCase("Sending", {
 	  },
 	  function (callback) {
 	    this.what = "Check a non-existant credit limit.";
+
 	    self.remote.request_ripple_balance("alice", "mtgox", "USD", 'CURRENT')
 	      .on('ripple_state', function (m) {
-		  buster.assert(false);
-
-		  callback();
+		  callback(true);
 		})
 	      .on('error', function(m) {
 		  // console.log("error: %s", JSON.stringify(m));
@@ -118,6 +117,7 @@ buster.testCase("Sending", {
 	  },
 	  function (callback) {
 	    this.what = "Create a credit limit.";
+
 	    testutils.credit_limit(self.remote, "alice", "800/USD/mtgox", callback);
 	  },
 	  function (callback) {

@@ -1,6 +1,8 @@
 // Represent Ripple amounts and currencies.
 // - Numbers in hex are big-endian.
 
+var sjcl    = require('./sjcl/core.js');
+var bn	    = require('./sjcl/core.js').bn;
 var utils   = require('./utils.js');
 var jsbn    = require('./jsbn.js');
 
@@ -8,11 +10,122 @@ var jsbn    = require('./jsbn.js');
 var config    = require('../test/config.js');
 
 var BigInteger	= jsbn.BigInteger;
+var nbi		= jsbn.nbi;
+
+var alphabets = {
+  'ripple' : "rpshnaf39wBUDNEGHJKLM4PQRST7VWXYZ2bcdeCg65jkm8oFqi1tuvAxyz",
+  'bitcoin' : "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+};
+
+// --> input: big-endian array of bytes. 
+// <-- string at least as long as input.
+var encode_base = function (input, alphabet) {
+  var alphabet	= alphabets[alphabet || 'ripple'];
+  var bi_base	= new BigInteger(String(alphabet.length));
+  var bi_q	= nbi();
+  var bi_r	= nbi();
+  var bi_value	= new BigInteger(input);
+  var buffer	= [];
+
+  while (bi_value.compareTo(BigInteger.ZERO) > 0)
+  {
+    bi_value.divRemTo(bi_base, bi_q, bi_r);
+    bi_q.copyTo(bi_value);
+
+    buffer.push(alphabet[bi_r.intValue()]);
+  }
+
+  var i;
+
+  for (i = 0; i != input.length && !input[i]; i += 1) {
+    buffer.push(alphabet[0]);
+  }
+
+  return buffer.reverse().join("");
+};
+
+// --> input: String
+// <-- array of bytes or undefined.
+var decode_base = function (input, alphabet) {
+  var alphabet	= alphabets[alphabet || 'ripple'];
+  var bi_base	= new BigInteger(String(alphabet.length));
+  var bi_value	= nbi();
+  var i;
+
+  while (i != input.length && input[i] === alphabet[0])
+    i += 1;
+
+  for (i = 0; i != input.length; i += 1) {
+    var	v = alphabet.indexOf(input[i]);
+
+    if (v < 0)
+      return undefined;
+
+    var r = nbi();
+
+    r.fromInt(v); 
+
+    bi_value  = bi_value.multiply(bi_base).add(r); 
+  }
+
+  // toByteArray:
+  // - Returns leading zeros!
+  // - Returns signed bytes!
+  var bytes =  bi_value.toByteArray().map(function (b) { return b ? b < 0 ? 256+b : b : 0});
+  var extra = 0;
+  
+  while (extra != bytes.length && !bytes[extra])
+    extra += 1;
+
+  if (extra)
+    bytes = bytes.slice(extra);
+
+  var zeros = 0;
+
+  while (zeros !== input.length && input[zeros] === alphabet[0])
+    zeros += 1;
+
+  return [].concat(utils.arraySet(zeros, 0), bytes);
+};
+
+var sha256  = function (bytes) {
+  return sjcl.codec.bytes.fromBits(sjcl.hash.sha256.hash(sjcl.codec.bytes.toBits(bytes)));
+};
+
+var sha256hash = function (bytes) {
+  return sha256(sha256(bytes));
+};
+
+// --> input: Array
+// <-- String
+var encode_base_check = function (version, input, alphabet) {
+  var buffer  = [].concat(version, input);
+  var check   = sha256(sha256(buffer)).slice(0, 4);
+
+  return encode_base([].concat(buffer, check), alphabet);
+}
+
+// --> input : String
+// <-- NaN || BigInteger
+var decode_base_check = function (version, input, alphabet) {
+  var buffer = decode_base(input, alphabet);
+
+  if (!buffer || buffer[0] !== version || buffer.length < 5)
+    return NaN;
+
+  var computed	= sha256hash(buffer.slice(0, -4)).slice(0, 4);
+  var checksum	= buffer.slice(-4);
+  var i;
+
+  for (i = 0; i != 4; i += 1)
+    if (computed[i] !== checksum[i])
+      return NaN;
+
+  return new BigInteger(buffer.slice(1, -4));
+}
 
 var UInt160 = function () {
-  // Internal form:
-  //   0, 1, 'iXXXXX', 20 byte string, or NaN.
-  //   XXX Should standardize on 'i' format or 20 format.
+  // Internal form: NaN or BigInteger
   this.value  = NaN;
 };
 
@@ -54,14 +167,15 @@ UInt160.prototype.parse_json = function (j) {
     case exports.consts.address_xns:
     case exports.consts.uint160_xns:
     case exports.consts.hex_xns:
-      this.value  = 0;
+      this.value  = nbi();
       break;
 
     case "1":
     case exports.consts.address_one:
     case exports.consts.uint160_one:
     case exports.consts.hex_one:
-      this.value  = 1;
+      this.value  = new BigInteger([1]);
+
       break;
 
     default:
@@ -69,15 +183,14 @@ UInt160.prototype.parse_json = function (j) {
 	this.value  = NaN;
       }
       else if (20 === j.length) {
-	this.value  = j;
+	this.value  = new BigInteger(utils.stringToArray(j), 256);
       }
       else if (40 === j.length) {
-	this.value  = utils.hexToString(j);
+	// XXX Check char set!
+	this.value  = new BigInteger(j, 16);
       }
       else if (j[0] === "r") {
-	// XXX Do more checking convert to string.
-
-	this.value  = j;
+	this.value  = decode_base_check(0, j);
       }
       else {
 	this.value  = NaN;
@@ -90,25 +203,26 @@ UInt160.prototype.parse_json = function (j) {
 // Convert from internal form.
 // XXX Json form should allow 0 and 1, C++ doesn't currently allow it.
 UInt160.prototype.to_json = function () {
-  if ("0" === this.value) {
-    return exports.consts.hex_xns;
-  }
-  else if ("1" === this.value)
-  {
-    return exports.consts.hex_one;
-  }
-  else if ('string' === typeof this.value && 20 === this.value.length) {
-    return utils.stringToHex(this.value);
-  }
-  else
-  {
-    return this.value;  
-  }
+  if (isNaN(this.value))
+    return NaN;
+  
+  var bytes   = this.value.toByteArray().map(function (b) { return b ? b < 0 ? 256+b : b : 0});
+  var target  = 20;
+
+  // XXX Make sure only trim off leading zeros.
+  var array = bytes.length < target
+		? bytes.length
+		  ? [].concat(utils.arraySet(target - bytes.length, 0), bytes)
+		  : utils.arraySet(target, 0)
+		: bytes.slice(target - bytes.length);
+  var output = encode_base_check(0, array);
+
+  return output;
 };
 
 var Currency = function () {
   // Internal form: 0 = XNS. 3 letter-code.
-  // XXX Internal should be 0 or hex.
+  // XXX Internal should be 0 or hex with three letter annotation when valid.
 
   // Json form:
   //  '', 'XNS', '0': 0
