@@ -1,63 +1,34 @@
 
 var async   = require("async");
 var buster  = require("buster");
-var fs	    = require("fs");
-
-var server = require("./server.js");
-var remote = require("../js/remote.js");
-var config = require("./config.js");
 
 var Amount = require("../js/amount.js").Amount;
+var Remote  = require("../js/remote.js").Remote;
+var Server  = require("./server.js").Server;
 
-require("../js/amount.js").setAccounts(config.accounts);
+var testutils  = require("./testutils.js");
 
 buster.testRunner.timeout = 5000;
 
-var alpha;
-
-buster.testCase("Work in progress", {
-  'setUp' :
-    function (done) {
-      server.start("alpha",
-	function (e) {
-	  buster.refute(e);
-
-	  alpha   = remote.remoteConfig(config, "alpha", 'TRACE');
-
-	  alpha
-	    .once('ledger_closed', done)
-	    .connect();
-	  }
-//	  , 'MOCK'
-	);
-    },
-
-  'tearDown' :
-    function (done) {
-      alpha
-	.on('disconnected', function () {
-	    server.stop("alpha", function (e) {
-	      buster.refute(e);
-	      done();
-	    });
-	  })
-	.connect(false);
-    },
+buster.testCase("Offer tests", {
+  'setUp' : testutils.test_setup,
+  'tearDown' : testutils.test_teardown,
 
   "offer create then cancel in one ledger" :
     function (done) {
+      var self = this;
       var final_create;
 
       async.waterfall([
 	  function (callback) {
-	    alpha.transaction()
+	    self.remote.transaction()
 	      .offer_create("root", "500", "100/USD/root")
 	      .on("proposed", function (m) {
-		  console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
+		  // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
 		  callback(m.result != 'tesSUCCESS', m);
 		})
 	      .on("final", function (m) {
-		  console.log("FINAL: offer_create: %s", JSON.stringify(m));
+		  // console.log("FINAL: offer_create: %s", JSON.stringify(m));
 
 		  buster.assert.equals('tesSUCCESS', m.metadata.TransactionResult);
 
@@ -66,14 +37,14 @@ buster.testCase("Work in progress", {
 	      .submit();
 	  },
 	  function (m, callback) {
-	    alpha.transaction()
+	    self.remote.transaction()
 	      .offer_cancel("root", m.transaction.Sequence)
 	      .on("proposed", function (m) {
-		  console.log("PROPOSED: offer_cancel: %s", JSON.stringify(m));
+		  // console.log("PROPOSED: offer_cancel: %s", JSON.stringify(m));
 		  callback(m.result != 'tesSUCCESS', m);
 		})
 	      .on("final", function (m) {
-		  console.log("FINAL: offer_cancel: %s", JSON.stringify(m));
+		  // console.log("FINAL: offer_cancel: %s", JSON.stringify(m));
 
 		  buster.assert.equals('tesSUCCESS', m.metadata.TransactionResult);
 		  buster.assert(final_create);
@@ -82,14 +53,14 @@ buster.testCase("Work in progress", {
 	      .submit();
 	  },
 	  function (m, callback) {
-	    alpha
+	    self.remote
 	      .once("ledger_closed", function (ledger_closed, ledger_closed_index) {
-		  console.log("LEDGER_CLOSED: %d: %s", ledger_closed_index, ledger_closed);
+		  // console.log("LEDGER_CLOSED: %d: %s", ledger_closed_index, ledger_closed);
 		})
 	      .ledger_accept();
 	  }
 	], function (error) {
-	  console.log("result: error=%s", error);
+	  // console.log("result: error=%s", error);
 	  buster.refute(error);
 
 	  if (error) done();
@@ -98,22 +69,23 @@ buster.testCase("Work in progress", {
 
   "offer_create then ledger_accept then offer_cancel then ledger_accept." :
     function (done) {
+      var self = this;
       var final_create;
       var offer_seq;
 
       async.waterfall([
 	  function (callback) {
-	    alpha.transaction()
+	    self.remote.transaction()
 	      .offer_create("root", "500", "100/USD/root")
 	      .on("proposed", function (m) {
-		  console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
+		  // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
 
 		  offer_seq = m.transaction.Sequence;
 
 		  callback(m.result != 'tesSUCCESS');
 		})
 	      .on("final", function (m) {
-		  console.log("FINAL: offer_create: %s", JSON.stringify(m));
+		  // console.log("FINAL: offer_create: %s", JSON.stringify(m));
 
 		  buster.assert.equals('tesSUCCESS', m.metadata.TransactionResult);
 
@@ -125,9 +97,9 @@ buster.testCase("Work in progress", {
 	  },
 	  function (callback) {
 	    if (!final_create) {
-	      alpha
+	      self.remote
 		.once("ledger_closed", function (ledger_closed, ledger_closed_index) {
-		    console.log("LEDGER_CLOSED: %d: %s", ledger_closed_index, ledger_closed);
+		    // console.log("LEDGER_CLOSED: %d: %s", ledger_closed_index, ledger_closed);
 
 		  })
 		.ledger_accept();
@@ -137,16 +109,16 @@ buster.testCase("Work in progress", {
 	    }
 	  },
 	  function (callback) {
-	    console.log("CANCEL: offer_cancel: %d", offer_seq);
+	    // console.log("CANCEL: offer_cancel: %d", offer_seq);
 
-	    alpha.transaction()
+	    self.remote.transaction()
 	      .offer_cancel("root", offer_seq)
 	      .on("proposed", function (m) {
-		  console.log("PROPOSED: offer_cancel: %s", JSON.stringify(m));
+		  // console.log("PROPOSED: offer_cancel: %s", JSON.stringify(m));
 		  callback(m.result != 'tesSUCCESS');
 		})
 	      .on("final", function (m) {
-		  console.log("FINAL: offer_cancel: %s", JSON.stringify(m));
+		  // console.log("FINAL: offer_cancel: %s", JSON.stringify(m));
 
 		  buster.assert.equals('tesSUCCESS', m.metadata.TransactionResult);
 		  buster.assert(final_create);
@@ -157,23 +129,23 @@ buster.testCase("Work in progress", {
 	  },
 	  // See if ledger_accept will crash.
 	  function (callback) {
-	    alpha
+	    self.remote
 	      .once("ledger_closed", function (ledger_closed, ledger_closed_index) {
-		  console.log("LEDGER_CLOSED: A: %d: %s", ledger_closed_index, ledger_closed);
+		  // console.log("LEDGER_CLOSED: A: %d: %s", ledger_closed_index, ledger_closed);
 		  callback();
 		})
 	      .ledger_accept();
 	  },
 	  function (callback) {
-	    alpha
+	    self.remote
 	      .once("ledger_closed", function (ledger_closed, ledger_closed_index) {
-		  console.log("LEDGER_CLOSED: B: %d: %s", ledger_closed_index, ledger_closed);
+		  // console.log("LEDGER_CLOSED: B: %d: %s", ledger_closed_index, ledger_closed);
 		  callback();
 		})
 	      .ledger_accept();
 	  },
 	], function (error) {
-	  console.log("result: error=%s", error);
+	  // console.log("result: error=%s", error);
 	  buster.refute(error);
 
 	  if (error) done();
@@ -183,33 +155,34 @@ buster.testCase("Work in progress", {
 
   "new user offer_create then ledger_accept then offer_cancel then ledger_accept." :
     function (done) {
+      var self = this;
       var final_create;
       var offer_seq;
 
       async.waterfall([
 	  function (callback) {
-	    alpha.transaction()
+	    self.remote.transaction()
 	      .payment('root', 'alice', "1000")
-	      .flags('CreateAccount')
+	      .set_flags('CreateAccount')
 	      .on('proposed', function (m) {
-		console.log("proposed: %s", JSON.stringify(m));
+		// console.log("proposed: %s", JSON.stringify(m));
 		buster.assert.equals(m.result, 'tesSUCCESS');
 		callback();
 	      })
 	      .submit()
 	  },
 	  function (callback) {
-	    alpha.transaction()
+	    self.remote.transaction()
 	      .offer_create("alice", "500", "100/USD/alice")
 	      .on("proposed", function (m) {
-		  console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
+		  // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
 
 		  offer_seq = m.transaction.Sequence;
 
 		  callback(m.result != 'tesSUCCESS');
 		})
 	      .on("final", function (m) {
-		  console.log("FINAL: offer_create: %s", JSON.stringify(m));
+		  // console.log("FINAL: offer_create: %s", JSON.stringify(m));
 
 		  buster.assert.equals('tesSUCCESS', m.metadata.TransactionResult);
 
@@ -221,9 +194,9 @@ buster.testCase("Work in progress", {
 	  },
 	  function (callback) {
 	    if (!final_create) {
-	      alpha
+	      self.remote
 		.once("ledger_closed", function (ledger_closed, ledger_closed_index) {
-		    console.log("LEDGER_CLOSED: %d: %s", ledger_closed_index, ledger_closed);
+		    // console.log("LEDGER_CLOSED: %d: %s", ledger_closed_index, ledger_closed);
 
 		  })
 		.ledger_accept();
@@ -233,16 +206,16 @@ buster.testCase("Work in progress", {
 	    }
 	  },
 	  function (callback) {
-	    console.log("CANCEL: offer_cancel: %d", offer_seq);
+	    // console.log("CANCEL: offer_cancel: %d", offer_seq);
 
-	    alpha.transaction()
+	    self.remote.transaction()
 	      .offer_cancel("alice", offer_seq)
 	      .on("proposed", function (m) {
-		  console.log("PROPOSED: offer_cancel: %s", JSON.stringify(m));
+		  // console.log("PROPOSED: offer_cancel: %s", JSON.stringify(m));
 		  callback(m.result != 'tesSUCCESS');
 		})
 	      .on("final", function (m) {
-		  console.log("FINAL: offer_cancel: %s", JSON.stringify(m));
+		  // console.log("FINAL: offer_cancel: %s", JSON.stringify(m));
 
 		  buster.assert.equals('tesSUCCESS', m.metadata.TransactionResult);
 		  buster.assert(final_create);
@@ -253,23 +226,23 @@ buster.testCase("Work in progress", {
 	  },
 	  // See if ledger_accept will crash.
 	  function (callback) {
-	    alpha
+	    self.remote
 	      .once("ledger_closed", function (ledger_closed, ledger_closed_index) {
-		  console.log("LEDGER_CLOSED: A: %d: %s", ledger_closed_index, ledger_closed);
+		  // console.log("LEDGER_CLOSED: A: %d: %s", ledger_closed_index, ledger_closed);
 		  callback();
 		})
 	      .ledger_accept();
 	  },
 	  function (callback) {
-	    alpha
+	    self.remote
 	      .once("ledger_closed", function (ledger_closed, ledger_closed_index) {
-		  console.log("LEDGER_CLOSED: B: %d: %s", ledger_closed_index, ledger_closed);
+		  // console.log("LEDGER_CLOSED: B: %d: %s", ledger_closed_index, ledger_closed);
 		  callback();
 		})
 	      .ledger_accept();
 	  },
 	], function (error) {
-	  console.log("result: error=%s", error);
+	  // console.log("result: error=%s", error);
 	  buster.refute(error);
 	  if (error) done();
 	});
@@ -277,19 +250,20 @@ buster.testCase("Work in progress", {
 
   "offer cancel past and future sequence" :
     function (done) {
+      var self = this;
       var final_create;
 
       async.waterfall([
 	  function (callback) {
-	    alpha.transaction()
+	    self.remote.transaction()
 	      .payment('root', 'alice', Amount.from_json("10000"))
-	      .flags('CreateAccount')
+	      .set_flags('CreateAccount')
 	      .on("proposed", function (m) {
-		  console.log("PROPOSED: CreateAccount: %s", JSON.stringify(m));
+		  // console.log("PROPOSED: CreateAccount: %s", JSON.stringify(m));
 		  callback(m.result != 'tesSUCCESS', m);
 		})
 	      .on('error', function(m) {
-		  console.log("error: %s", m);
+		  // console.log("error: %s", m);
 
 		  buster.assert(false);
 		  callback(m);
@@ -298,20 +272,20 @@ buster.testCase("Work in progress", {
 	  },
 	  // Past sequence but wrong
 	  function (m, callback) {
-	    alpha.transaction()
+	    self.remote.transaction()
 	      .offer_cancel("root", m.transaction.Sequence)
 	      .on("proposed", function (m) {
-		  console.log("PROPOSED: offer_cancel past: %s", JSON.stringify(m));
+		  // console.log("PROPOSED: offer_cancel past: %s", JSON.stringify(m));
 		  callback(m.result != 'tesSUCCESS', m);
 		})
 	      .submit();
 	  },
 	  // Same sequence
 	  function (m, callback) {
-	    alpha.transaction()
+	    self.remote.transaction()
 	      .offer_cancel("root", m.transaction.Sequence+1)
 	      .on("proposed", function (m) {
-		  console.log("PROPOSED: offer_cancel same: %s", JSON.stringify(m));
+		  // console.log("PROPOSED: offer_cancel same: %s", JSON.stringify(m));
 		  callback(m.result != 'temBAD_SEQUENCE', m);
 		})
 	      .submit();
@@ -319,29 +293,29 @@ buster.testCase("Work in progress", {
 	  // Future sequence
 	  function (m, callback) {
 	    // After a malformed transaction, need to recover correct sequence.
-	    alpha.set_account_seq("root", alpha.account_seq("root")-1);
+	    self.remote.set_account_seq("root", self.remote.account_seq("root")-1);
 
-	    alpha.transaction()
+	    self.remote.transaction()
 	      .offer_cancel("root", m.transaction.Sequence+2)
 	      .on("proposed", function (m) {
-		  console.log("ERROR: offer_cancel future: %s", JSON.stringify(m));
+		  // console.log("ERROR: offer_cancel future: %s", JSON.stringify(m));
 		  callback(m.result != 'temBAD_SEQUENCE');
 		})
 	      .submit();
 	  },
 	  // See if ledger_accept will crash.
 	  function (callback) {
-	    alpha
+	    self.remote
 	      .once("ledger_closed", function (ledger_closed, ledger_closed_index) {
-		  console.log("LEDGER_CLOSED: A: %d: %s", ledger_closed_index, ledger_closed);
+		  // console.log("LEDGER_CLOSED: A: %d: %s", ledger_closed_index, ledger_closed);
 		  callback();
 		})
 	      .ledger_accept();
 	  },
 	  function (callback) {
-	    alpha
+	    self.remote
 	      .once("ledger_closed", function (ledger_closed, ledger_closed_index) {
-		  console.log("LEDGER_CLOSED: B: %d: %s", ledger_closed_index, ledger_closed);
+		  // console.log("LEDGER_CLOSED: B: %d: %s", ledger_closed_index, ledger_closed);
 		  callback();
 		})
 	      .ledger_accept();
@@ -350,7 +324,7 @@ buster.testCase("Work in progress", {
 	    callback();
 	  }
 	], function (error) {
-	  console.log("result: error=%s", error);
+	  // console.log("result: error=%s", error);
 	  buster.refute(error);
 
 	  done();

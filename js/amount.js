@@ -4,13 +4,10 @@
 var utils   = require('./utils.js');
 var jsbn    = require('./jsbn.js');
 
+// Don't include in browser context.
+var config    = require('../test/config.js');
+
 var BigInteger	= jsbn.BigInteger;
-
-var accounts = {};
-
-var setAccounts = function (accounts_new) {
-  accounts  = accounts_new;
-};
 
 var UInt160 = function () {
   // Internal form:
@@ -44,8 +41,8 @@ UInt160.prototype.copyTo = function(d) {
 // value = NaN on error.
 UInt160.prototype.parse_json = function (j) {
   // Canonicalize and validate
-  if (j in accounts)
-    j = accounts[j].account;
+  if (config.accounts && j in config.accounts)
+    j = config.accounts[j].account;
 
   switch (j) {
     case undefined:
@@ -445,7 +442,6 @@ Amount.prototype.parse_issuer = function (issuer) {
   return this;
 };
 
-exports.setAccounts   = setAccounts;
 exports.Amount	      = Amount;
 exports.Currency      = Currency;
 exports.UInt160	      = UInt160;
