@@ -1,22 +1,27 @@
 var buster  = require("buster");
 
-var server  = require("./server.js");
+var Server  = require("./server.js").Server;
 
 // How long to wait for server to start.
-var serverDelay = 1500;
+// var serverDelay = 1500;
 
-buster.testRunner.timeout = 5000;
+var alpha;
 
 buster.testCase("Standalone server startup", {
   "server start and stop" : function (done) {
-      server.start("alpha",
-	function (e) {
-	  buster.refute(e);
-	  server.stop("alpha", function (e) {
-	    buster.refute(e);
-	    done();
-	  });
-	});
+      alpha = Server.from_config("alpha");
+
+      alpha
+	.on('started', function () {
+	    alpha
+	      .on('stopped', function () {
+		  buster.assert(true);
+
+		  done();
+		})
+	      .stop();
+	  })
+	.start();
     }
 });
 

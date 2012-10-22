@@ -4,13 +4,10 @@
 var utils   = require('./utils.js');
 var jsbn    = require('./jsbn.js');
 
+// Don't include in browser context.
+var config    = require('../test/config.js');
+
 var BigInteger	= jsbn.BigInteger;
-
-var accounts = {};
-
-var setAccounts = function (accounts_new) {
-  accounts  = accounts_new;
-};
 
 var UInt160 = function () {
   // Internal form:
@@ -41,11 +38,15 @@ UInt160.prototype.copyTo = function(d) {
   return d;
 };
 
+UInt160.prototype.equals = function(d) {
+  return this.value === d.value;
+};
+
 // value = NaN on error.
 UInt160.prototype.parse_json = function (j) {
   // Canonicalize and validate
-  if (j in accounts)
-    j = accounts[j].account;
+  if (config.accounts && j in config.accounts)
+    j = config.accounts[j].account;
 
   switch (j) {
     case undefined:
@@ -169,6 +170,12 @@ var Amount = function () {
   this.issuer	    = new UInt160();
 };
 
+// Given "100/USD/mtgox" return the a string with mtgox remapped.
+Amount.text_full_rewrite = function (j) {
+  return Amount.from_json(j).to_text_full();
+}
+
+// Given "100/USD/mtgox" return the json.
 Amount.json_rewrite = function(j) {
   return Amount.from_json(j).to_json();
 };
@@ -177,15 +184,18 @@ Amount.from_json = function(j) {
   return (new Amount()).parse_json(j);
 };
 
-Amount.prototype.clone = function() {
-  return this.copyTo(new Amount());
+Amount.prototype.clone = function(negate) {
+  return this.copyTo(new Amount(), negate);
 };
 
 // Returns copy.
-Amount.prototype.copyTo = function(d) {
+Amount.prototype.copyTo = function(d, negate) {
   if ('object' === typeof this.value)
   {
-    this.value.copyTo(d.value);
+    if (this.is_native && negate)
+      this.value.negate().copyTo(d.value);
+    else
+      this.value.copyTo(d.value);
   }
   else
   {
@@ -194,7 +204,7 @@ Amount.prototype.copyTo = function(d) {
 
   d.offset	= this.offset;
   d.is_native	= this.is_native;
-  d.is_negative	= this.is_negative;
+  d.is_negative	= this.is_native ? undefined : !this.is_negative;
 
   this.currency.copyTo(d.currency);
   this.issuer.copyTo(d.issuer);
@@ -269,15 +279,13 @@ Amount.prototype.canonicalize = function() {
       this.offset += 1;
     }
   }
+
+  return this;
 };
 
+// Return a new value.
 Amount.prototype.negate = function () {
-  if (this.is_native) {
-    this.value.negate();
-  }
-  else {
-    this.is_negative  = !this.is_negative;
-  }
+  return this.clone('NEGATE');
 };
 
 Amount.prototype.to_json = function() {
@@ -310,22 +318,25 @@ Amount.prototype.parse_native = function(j) {
   var m;
 
   if ('string' === typeof j)
-    m = j.match(/^(\d+)(\.\d{1,6})?$/);
+    m = j.match(/^(-?)(\d+)(\.\d{1,6})?$/);
 
   if (m) {
-    if (undefined === m[2]) {
+    if (undefined === m[3]) {
       // Integer notation
 
-      this.value	  = new BigInteger(m[1]);
+      this.value	  = new BigInteger(m[2]);
     }
     else {
       // Decimal notation
 
-      var   int_part	  = (new BigInteger(m[1])).multiply(exports.consts.bi_xns_unit);
-      var   fraction_part = (new BigInteger(m[2])).multiply(new BigInteger(String(Math.pow(10, 1+exports.consts.xns_precision-m[2].length))));
+      var   int_part	  = (new BigInteger(m[2])).multiply(exports.consts.bi_xns_unit);
+      var   fraction_part = (new BigInteger(m[3])).multiply(new BigInteger(String(Math.pow(10, 1+exports.consts.xns_precision-m[3].length))));
 
       this.value	  = int_part.add(fraction_part);
     }
+
+    if (m[1])
+      this.value  = this.value.negate();
 
     this.is_native    = true;
     this.offset	      = undefined;
@@ -445,7 +456,20 @@ Amount.prototype.parse_issuer = function (issuer) {
   return this;
 };
 
-exports.setAccounts   = setAccounts;
+// Check BigInteger NaN
+Amount.prototype.equals = function (d) {
+  return 'string' === typeof (d)
+    ? this.equals(Amount.from_json(d))
+    : this === d
+      || (d.constructor === Amount
+	&& this.is_native === d.is_native
+	&& (this.is_native
+	    ? this.value.equals(d.value)
+	    : this.is_negative === d.is_negative
+	      ? this.value.equals(d.value)
+	      : this.value.equals(BigInteger.ZERO) && d.value.equals(BigInteger.ZERO)));
+};
+
 exports.Amount	      = Amount;
 exports.Currency      = Currency;
 exports.UInt160	      = UInt160;

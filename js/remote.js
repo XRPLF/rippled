@@ -3,7 +3,15 @@
 // - We use the W3C interface for node and browser compatibility:
 //   http://www.w3.org/TR/websockets/#the-websocket-interface
 //
-// YYY Will later provide a network access which use multiple instances of this.
+// This class is intended for both browser and node.js use.
+//
+// This class is designed to work via peer protocol via either the public or
+// private websocket interfaces.  The JavaScript class for the peer protocol
+// has not yet been implemented. However, this class has been designed for it
+// to be a very simple drop option.
+//
+// YYY Will later provide js/network.js which will transparently use multiple
+// instances of this class for network access.
 //
 
 // Node
@@ -15,6 +23,9 @@ var WebSocket = require('ws');
 
 var Amount    = require('./amount.js').Amount;
 var UInt160   = require('./amount.js').UInt160;
+
+// Don't include in browser context.
+var config    = require('../test/config.js');
 
 // Request events emmitted:
 // 'success' : Request successful.
@@ -117,8 +128,8 @@ Request.prototype.transaction = function (t) {
 Request.prototype.ripple_state = function (account, issuer, currency) {
   this.message.ripple_state  = {
       'accounts' : [
-	UInt160.from_json(account).to_json(),
-	UInt160.from_json(issuer).to_json()
+	UInt160.json_rewrite(account),
+	UInt160.json_rewrite(issuer)
       ],
       'currency' : currency
     };
@@ -140,12 +151,11 @@ Request.prototype.ripple_state = function (account, issuer, currency) {
 //
 
 // --> trusted: truthy, if remote is trusted
-var Remote = function (trusted, websocket_ip, websocket_port, config, trace) {
+var Remote = function (trusted, websocket_ip, websocket_port, trace) {
   this.trusted              = trusted;
   this.websocket_ip         = websocket_ip;
   this.websocket_port       = websocket_port;
   this.id                   = 0;
-  this.config               = config;
   this.trace                = trace;
   this.ledger_closed        = undefined;
   this.ledger_current_index = undefined;
@@ -155,6 +165,7 @@ var Remote = function (trusted, websocket_ip, websocket_port, config, trace) {
   this.state	  	    = 'offline';  // 'online', 'offline'
   this.retry_timer	    = undefined;
   this.retry		    = undefined;
+  this.config		    = config || { 'accounts' : {}};
   
   // Cache information for accounts.
   this.accounts = {
@@ -176,10 +187,10 @@ var Remote = function (trusted, websocket_ip, websocket_port, config, trace) {
 
 Remote.prototype      = new EventEmitter;
 
-var remoteConfig = function (config, server, trace) {
-  var serverConfig = config.servers[server];
+Remote.from_config = function (name, trace) {
+  var serverConfig = config.servers[name];
 
-  return new Remote(serverConfig.trusted, serverConfig.websocket_ip, serverConfig.websocket_port, config, trace);
+  return new Remote(serverConfig.trusted, serverConfig.websocket_ip, serverConfig.websocket_port, trace);
 };
 
 var isTemMalformed  = function (engine_result_code) {
@@ -190,7 +201,7 @@ var isTefFailure = function (engine_result_code) {
   return (engine_result_code >= -299 && engine_result_code <  199);
 };
 
-var flags = {
+Remote.flags = {
   'OfferCreate' : {
     'Passive'		      : 0x00010000,
   },
@@ -204,7 +215,7 @@ var flags = {
 };
 
 // XXX This needs to be determined from the network.
-var fees = {
+Remote.fees = {
   'default'	    : Amount.from_json("100"),
   'account_create'  : Amount.from_json("1000"),
   'nickname_create' : Amount.from_json("1000"),
@@ -231,6 +242,12 @@ Remote.prototype._set_state = function (state) {
 	break;
     }
   }
+};
+
+Remote.prototype.set_trace = function (trace) {
+  this.trace  = undefined === trace || trace;
+
+  return this;
 };
 
 // Set the target online state. Defaults to false.
@@ -703,7 +720,9 @@ Remote.prototype.account_seq_cache = function (account, current) {
 
 // Mark an account's root node as dirty.
 Remote.prototype.dirty_account_root = function (account) {
-  delete this.ledgers.current.account_root[UInt160.json_rewrite(account)];
+  var account	    = UInt160.json_rewrite(account);
+
+  delete this.ledgers.current.account_root[account];
 };
 
 // Return a request to get a ripple balance.
@@ -712,8 +731,9 @@ Remote.prototype.dirty_account_root = function (account) {
 // --> issuer: String
 // --> currency: String
 // --> current: bool : true = current ledger
+//
+// If does not exist: emit('error', 'error' : 'remoteError', 'remote' : { 'error' : 'entryNotFound' })
 Remote.prototype.request_ripple_balance = function (account, issuer, currency, current) {
-  var account_u	    = UInt160.from_json(account);
   var request	    = this.request_ledger_entry('ripple_state');	  // YYY Could be cached per ledger.
 
   return request
@@ -721,20 +741,25 @@ Remote.prototype.request_ripple_balance = function (account, issuer, currency, c
     .ledger_choose(current)
     .on('success', function (message) {
 	var node	    = message.node;
+
 	var lowLimit	    = Amount.from_json(node.LowLimit);
 	var highLimit	    = Amount.from_json(node.HighLimit);
+	// The amount account holds of issuer (after negation if needed).
 	var balance	    = Amount.from_json(node.Balance);
-	var flip	    = account_u == highLimit.issuer;
-	var issuerLimit	    = flip ? lowLimit : highLimit;
-	var accountLimit    = flip ? highLimit : lowLimit;
-	var issuerBalance   = (flip ? balance.negate() : balance).parse_issuer(issuer);
-	var accountBalance  = issuerBalance.clone().parse_issuer(issuer);
+	// accountHigh implies: for account: balance is negated, highLimit is the limit set by account.
+	var accountHigh	    = UInt160.from_json(account).equals(highLimit.issuer);
+	// The limit set by issuer.
+	var issuerLimit	    = (accountHigh ? lowLimit : highLimit).parse_issuer(issuer);
+	// The limit set by account.
+	var accountLimit    = (accountHigh ? highLimit : lowLimit).parse_issuer(account);
+	var issuerBalance   = (accountHigh ? balance.negate() : balance).parse_issuer(issuer);
+	var accountBalance  = issuerBalance.clone().negate().parse_issuer(account);
 
 	request.emit('ripple_state', {
-	  'issuer_balance'  : issuerBalance,				  // Balance with dst as issuer.
-	  'account_balance' : accountBalance,				  // Balance with account as issuer.
-	  'issuer_limit'    : issuerLimit.clone().parse_issuer(account),  // Limit set by issuer with src as issuer.
-	  'account_limit'   : accountLimit.clone().parse_issuer(issuer)	  // Limit set by account with dst as issuer.
+	  'issuer_balance'  : issuerBalance,  // Balance with dst as issuer.
+	  'account_balance' : accountBalance, // Balance with account as issuer.
+	  'issuer_limit'    : issuerLimit,    // Limit set by issuer with src as issuer.
+	  'account_limit'   : accountLimit    // Limit set by account with dst as issuer.
 	});
       });
 }
@@ -749,14 +774,14 @@ Remote.prototype.transaction = function () {
 //  Construction:
 //    remote.transaction()  // Build a transaction object.
 //     .offer_create(...)   // Set major parameters.
-//     .flags()		    // Set optional parameters.
+//     .set_flags()	    // Set optional parameters.
 //     .on()		    // Register for events.
 //     .submit();	    // Send to network.
 //
 //  Events:
 // 'success' : Transaction submitted without error.
 // 'error' : Error submitting transaction.
-// 'proposed: Advisory proposed status transaction.
+// 'proposed' : Advisory proposed status transaction.
 // - A client should expect 0 to multiple results.
 // - Might not get back. The remote might just forward the transaction.
 // - A success could be reverted in final.
@@ -796,8 +821,6 @@ var SUBMIT_LOST	    = 8;    // Give up tracking.
 // - Allow event listeners to be attached to determine the outcome.
 var Transaction	= function (remote) {
   var self  = this;
-
-  this.prototype    = EventEmitter;	// XXX Node specific.
 
   this.remote	    = remote;
   this.secret	    = undefined;
@@ -893,12 +916,12 @@ Transaction.prototype.submit = function () {
 
   if (undefined === transaction.Fee) {
     if ('Payment' === transaction.TransactionType
-      && transaction.Flags & exports.flags.Payment.CreateAccount) {
+      && transaction.Flags & Remote.flags.Payment.CreateAccount) {
 
-      transaction.Fee    = fees.account_create.to_json();
+      transaction.Fee    = Remote.fees.account_create.to_json();
     }
     else {
-      transaction.Fee    = fees['default'].to_json();
+      transaction.Fee    = Remote.fees['default'].to_json();
     }
   }
 
@@ -971,9 +994,9 @@ Transaction.prototype.send_max = function (send_max) {
 
 // Add flags to a transaction.
 // --> flags: undefined, _flag_, or [ _flags_ ]
-Transaction.prototype.flags = function (flags) {
+Transaction.prototype.set_flags = function (flags) {
   if (flags) {
-      var   transaction_flags = exports.flags[this.transaction.TransactionType];
+      var   transaction_flags = Remote.flags[this.transaction.TransactionType];
 
       if (undefined == this.transaction.Flags)	// We plan to not define this field on new Transaction.
 	this.transaction.Flags	  = 0;
@@ -992,8 +1015,8 @@ Transaction.prototype.flags = function (flags) {
 	}
       }
 
-      if (this.transaction.Flags & exports.flags.Payment.CreateAccount)
-	this.transaction.Fee	= fees.account_create.to_json();
+      if (this.transaction.Flags & Remote.flags.Payment.CreateAccount)
+	this.transaction.Fee	= Remote.fees.account_create.to_json();
   }
 
   return this;
@@ -1003,39 +1026,77 @@ Transaction.prototype.flags = function (flags) {
 // Transactions
 //
 
-// Allow config account defaults to be used.
-Transaction.prototype.account_default = function (account) {
-  return this.remote.config.accounts[account] ? this.remote.config.accounts[account].account : account;
-};
-
-Transaction.prototype.account_secret = function (account) {
+Transaction.prototype._account_secret = function (account) {
   // Fill in secret from config, if needed.
   return this.remote.config.accounts[account] ? this.remote.config.accounts[account].secret : undefined;
 };
 
+// .wallet_locator()
+// .message_key()
+// .domain()
+// .transfer_rate()
+// .publish()
+Transaction.prototype.account_set = function (src) {
+  this.secret			    = this._account_secret(src);
+  this.transaction.TransactionType  = 'AccountSet';
+
+  return this;
+};
+
+Transaction.prototype.claim = function (src, generator, public_key, signature) {
+  this.secret			    = this._account_secret(src);
+  this.transaction.TransactionType  = 'Claim';
+  this.transaction.Generator	    = generator;
+  this.transaction.PublicKey	    = public_key;
+  this.transaction.Signature	    = signature;
+
+  return this;
+};
+
 Transaction.prototype.offer_cancel = function (src, sequence) {
-  this.secret			    = this.account_secret(src);
+  this.secret			    = this._account_secret(src);
   this.transaction.TransactionType  = 'OfferCancel';
-  this.transaction.Account	    = UInt160.from_json(src).to_json();
+  this.transaction.Account	    = UInt160.json_rewrite(src);
   this.transaction.OfferSequence    = Number(sequence);
 
   return this;
 };
 
-// XXX Expiration should use a time.
+// --> expiration : Date or Number
 Transaction.prototype.offer_create = function (src, taker_pays, taker_gets, expiration) {
-  this.secret			    = this.account_secret(src);
+  this.secret			    = this._account_secret(src);
   this.transaction.TransactionType  = 'OfferCreate';
-  this.transaction.Account	    = UInt160.from_json(src).to_json();
-  this.transaction.Fee		    = fees.offer.to_json();
+  this.transaction.Account	    = UInt160.json_rewrite(src);
+  this.transaction.Fee		    = Remote.fees.offer.to_json();
   this.transaction.TakerPays	    = Amount.json_rewrite(taker_pays);
   this.transaction.TakerGets	    = Amount.json_rewrite(taker_gets);
 
   if (expiration)
-    this.transaction.Expiration  = expiration;
+    this.transaction.Expiration  = Date === expiration.constructor
+				    ? expiration.getTime()
+				    : Number(expiration);
 
   return this;
 };
+
+Transaction.prototype.password_fund = function (src, dst) {
+  this.secret			    = this._account_secret(src);
+  this.transaction.TransactionType  = 'PasswordFund';
+  this.transaction.Destination	    = UInt160.json_rewrite(dst);
+
+  return this;
+}
+
+Transaction.prototype.password_set = function (src, authorized_key, generator, public_key, signature) {
+  this.secret			    = this._account_secret(src);
+  this.transaction.TransactionType  = 'PasswordSet';
+  this.transaction.AuthorizedKey    = authorized_key;
+  this.transaction.Generator	    = generator;
+  this.transaction.PublicKey	    = public_key;
+  this.transaction.Signature	    = signature;
+
+  return this;
+}
 
 // Construct a 'payment' transaction.
 //
@@ -1045,23 +1106,23 @@ Transaction.prototype.offer_create = function (src, taker_pays, taker_gets, expi
 // --> dst : UInt160 or String
 // --> deliver_amount : Amount or String.
 Transaction.prototype.payment = function (src, dst, deliver_amount) {
-  this.secret			    = this.account_secret(src);
+  this.secret			    = this._account_secret(src);
   this.transaction.TransactionType  = 'Payment';
-  this.transaction.Account	    = UInt160.from_json(src).to_json();
+  this.transaction.Account	    = UInt160.json_rewrite(src);
   this.transaction.Amount	    = Amount.json_rewrite(deliver_amount);
-  this.transaction.Destination	    = UInt160.from_json(dst).to_json();
+  this.transaction.Destination	    = UInt160.json_rewrite(dst);
 
   return this;
 }
 
 Transaction.prototype.ripple_line_set = function (src, limit, quality_in, quality_out) {
-  this.secret			    = this.account_secret(src);
+  this.secret			    = this._account_secret(src);
   this.transaction.TransactionType  = 'CreditSet';
-  this.transaction.Account	    = UInt160.from_json(src).to_json();
+  this.transaction.Account	    = UInt160.json_rewrite(src);
 
   // Allow limit of 0 through.
   if (undefined !== limit)
-    this.transaction.LimitAmount  = limit.to_json();
+    this.transaction.LimitAmount  = Amount.json_rewrite(limit);
 
   if (quality_in)
     this.transaction.QualityIn	  = quality_in;
@@ -1074,9 +1135,17 @@ Transaction.prototype.ripple_line_set = function (src, limit, quality_in, qualit
   return this;
 };
 
+Transaction.prototype.wallet_add = function (src, amount, authorized_key, public_key, signature) {
+  this.secret			    = this._account_secret(src);
+  this.transaction.TransactionType  = 'WalletAdd';
+  this.transaction.Amount	    = Amount.json_rewrite(amount);
+  this.transaction.AuthorizedKey    = authorized_key;
+  this.transaction.PublicKey	    = public_key;
+  this.transaction.Signature	    = signature;
+
+  return this;
+};
+
 exports.Remote          = Remote;
-exports.remoteConfig    = remoteConfig;
-exports.fees            = fees;
-exports.flags           = flags;
 
 // vim:sw=2:sts=2:ts=8

@@ -875,7 +875,7 @@ void Peer::recvGetObjectByHash(ripple::TMGetObjectByHash& packet)
 			reply.set_ledgerhash(packet.ledgerhash());
 
 		// This is a very minimal implementation
-		for (unsigned i = 0; i < packet.objects_size(); ++i)
+		for (int i = 0; i < packet.objects_size(); ++i)
 		{
 			uint256 hash;
 			const ripple::TMIndexedObject& obj = packet.objects(i);
