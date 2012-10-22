@@ -326,6 +326,29 @@ void PeerSet::sendRequest(const ripple::TMGetLedger& tmGL)
 	}
 }
 
+int  PeerSet::takePeerSetFrom(const PeerSet& s)
+{
+	int ret = 0;
+	mPeers.clear();
+	mPeers.reserve(s.mPeers.size());
+	BOOST_FOREACH(const boost::weak_ptr<Peer>& p, s.mPeers)
+		if (p.lock())
+		{
+			mPeers.push_back(p);
+			++ret;
+		}
+	return ret;
+}
+
+int PeerSet::getPeerCount() const
+{
+	int ret = 0;
+	BOOST_FOREACH(const boost::weak_ptr<Peer>& p, mPeers)
+		if (p.lock())
+			++ret;
+	return ret;
+}
+
 bool LedgerAcquire::takeBase(const std::string& data)
 { // Return value: true=normal, false=bad data
 #ifdef LA_DEBUG
