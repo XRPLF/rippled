@@ -593,6 +593,47 @@ bool Transaction::save()
 		db->executeSQL(mTransaction->getSQLInsertHeader() + mTransaction->getSQL(getLedger(), status) + ";");
 }
 
+Transaction::pointer Transaction::transactionFromSQL(Database* db, bool bValidate)
+{
+	Serializer rawTxn;
+	std::string status;
+	uint32 inLedger;
+
+	int txSize = 2048;
+	rawTxn.resize(txSize);
+
+	db->getStr("Status", status);
+	inLedger = db->getInt("LedgerSeq");
+	txSize = db->getBinary("RawTxn", &*rawTxn.begin(), rawTxn.getLength());
+	if (txSize > rawTxn.getLength())
+	{
+		rawTxn.resize(txSize);
+		db->getBinary("RawTxn", &*rawTxn.begin(), rawTxn.getLength());
+	}
+
+	rawTxn.resize(txSize);
+
+	SerializerIterator it(rawTxn);
+	SerializedTransaction::pointer txn = boost::make_shared<SerializedTransaction>(boost::ref(it));
+	Transaction::pointer tr = boost::make_shared<Transaction>(txn, bValidate);
+
+	TransStatus st(INVALID);
+	switch (status[0])
+	{
+	case TXN_SQL_NEW:			st = NEW;			break;
+	case TXN_SQL_CONFLICT:		st = CONFLICTED;	break;
+	case TXN_SQL_HELD:			st = HELD;			break;
+	case TXN_SQL_VALIDATED:		st = COMMITTED;		break;
+	case TXN_SQL_INCLUDED:		st = INCLUDED;		break;
+	case TXN_SQL_UNKNOWN:							break;
+	default: assert(false);
+	}
+	tr->setStatus(st);
+	tr->setLedger(inLedger);
+	return tr;
+}
+
+// DAVID: would you rather duplicate this code or keep the lock longer?
 Transaction::pointer Transaction::transactionFromSQL(const std::string& sql)
 {
 	Serializer rawTxn;
