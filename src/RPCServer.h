@@ -159,6 +159,7 @@ private:
 	Json::Value doStop(const Json::Value& params);
 	Json::Value doTransitSet(const Json::Value& params);
 	Json::Value doTx(const Json::Value& params);
+	Json::Value doTxHistory(const Json::Value& params);
 
 	Json::Value doUnlAdd(const Json::Value& params);
 	Json::Value doUnlDelete(const Json::Value& params);

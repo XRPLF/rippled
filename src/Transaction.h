@@ -17,6 +17,8 @@
 #include "SerializedTransaction.h"
 #include "TransactionErr.h"
 
+class Database;
+
 enum TransStatus
 {
 	NEW			= 0, // just received / generated
@@ -130,6 +132,7 @@ public:
 	Transaction(const SerializedTransaction::pointer& st, bool bValidate);
 
 	static Transaction::pointer sharedTransaction(const std::vector<unsigned char>&vucTransaction, bool bValidate);
+	static Transaction::pointer transactionFromSQL(Database* db, bool bValidate);
 
 	Transaction(
 		TransactionType ttKind,

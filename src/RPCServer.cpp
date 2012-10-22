@@ -1394,7 +1394,7 @@ Json::Value RPCServer::doProfile(const Json::Value &params)
 
 	boost::posix_time::ptime			ptStart(boost::posix_time::microsec_clock::local_time());
 
-	for(int n=0; n<iCount; n++) 
+	for(unsigned int n=0; n<iCount; n++) 
 	{
 		NewcoinAddress			naMasterGeneratorA;
 		NewcoinAddress			naAccountPublicA;
@@ -1972,6 +1972,34 @@ Json::Value RPCServer::doServerInfo(const Json::Value& params)
 	ret["info"]	= theApp->getOPs().getServerInfo();
 
 	return ret;
+}
+
+Json::Value RPCServer::doTxHistory(const Json::Value& params)
+{
+	if (params.size() == 1)
+	{
+		unsigned int startIndex = params[0u].asInt();
+		Json::Value	obj;
+
+		std::string sql =
+			str(boost::format("SELECT * FROM Transactions ORDER BY LedgerSeq LIMIT %u,20")
+			% startIndex);
+
+		{
+			Database* db = theApp->getTxnDB()->getDB();
+			ScopedLock dbLock = theApp->getTxnDB()->getDBLock();
+
+			SQL_FOREACH(db, sql)
+			{
+				Transaction::pointer trans=Transaction::transactionFromSQL(db, false);
+				if(trans) obj.append(trans->getJson(0));
+			}
+		}
+
+		return obj;
+	}
+
+	return RPCError(rpcSRC_ACT_MALFORMED);
 }
 
 Json::Value RPCServer::doTx(const Json::Value& params)
@@ -2736,6 +2764,7 @@ Json::Value RPCServer::doCommand(const std::string& command, Json::Value& params
 		{	"server_info",			&RPCServer::doServerInfo,			0,  0, true					},
 		{	"stop",					&RPCServer::doStop,					0,  0, true					},
 		{	"tx",					&RPCServer::doTx,					1,  1, true					},
+		{	"tx_history",			&RPCServer::doTxHistory,			1,  1, false,				},
 
 		{	"unl_add",				&RPCServer::doUnlAdd,				1,  2, true					},
 		{	"unl_delete",			&RPCServer::doUnlDelete,			1,  1, true					},
