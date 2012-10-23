@@ -792,6 +792,42 @@ Json::Value STObject::getJson(int options) const
 	return ret;
 }
 
+bool STObject::operator==(const STObject& obj) const
+{ // This is not particularly efficient, and only compares data elements with binary representations
+	int matches = 0;
+	BOOST_FOREACH(const SerializedType& t, mData)
+		if ((t.getSType() != STI_NOTPRESENT) && t.getFName().isBinary())
+		{ // each present field must have a matching field
+			bool match = false;
+			BOOST_FOREACH(const SerializedType& t2, obj.mData)
+				if (t.getFName() == t2.getFName())
+				{
+					if (t2 != t)
+						return false;
+					match = true;
+					++matches;
+					break;
+				}
+			if (!match)
+			{
+				Log(lsTRACE) << "STObject::operator==: no match for " << t.getFName().getName();
+				return false;
+			}
+		}
+
+	int fields = 0;
+	BOOST_FOREACH(const SerializedType& t2, obj.mData)
+		if ((t2.getSType() != STI_NOTPRESENT) && t2.getFName().isBinary())
+			++fields;
+
+	if (fields != matches)
+	{
+		Log(lsTRACE) << "STObject::operator==: " << fields << " fields, " << matches << " matches";
+		return false;
+	}
+	return true;
+}
+
 Json::Value STVector256::getJson(int options) const
 {
 	Json::Value ret(Json::arrayValue);
@@ -1246,7 +1282,6 @@ BOOST_AUTO_TEST_CASE( FieldManipulation_test )
 		if (object1.getFieldVL(sfTestVL) != j) BOOST_FAIL("STObject error");
 		if (object3.getFieldVL(sfTestVL) != j) BOOST_FAIL("STObject error");
 	}
-
 }
 
 BOOST_AUTO_TEST_SUITE_END();
