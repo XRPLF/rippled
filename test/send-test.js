@@ -13,7 +13,7 @@ var serverDelay = 1500;
 buster.testRunner.timeout = 5000;
 
 buster.testCase("Sending", {
-  'setUp' : testutils.test_setup_verbose,
+  'setUp' : testutils.test_setup,
   'tearDown' : testutils.test_teardown,
 
   "send XNS to non-existant account without create." :

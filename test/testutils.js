@@ -62,9 +62,7 @@ var credit_limit = function (remote, src, amount, callback) {
   remote.transaction()
     .ripple_line_set(src, amount)
     .on('proposed', function (m) {
-	console.log("proposed: %s", JSON.stringify(m));
-
-	// buster.assert.equals(m.result, 'tesSUCCESS');
+	// console.log("proposed: %s", JSON.stringify(m));
 
 	callback(m.result != 'tesSUCCESS');
       })
