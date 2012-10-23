@@ -14,7 +14,7 @@ var serverDelay = 1500;	  // XXX Not implemented.
 buster.testRunner.timeout = 5000;
  
 buster.testCase("Remote functions", {
-  'setUp' : testutils.test_setup,
+  'setUp' : testutils.build_setup(),
   'tearDown' : testutils.test_teardown,
 
   'request_ledger_current' :

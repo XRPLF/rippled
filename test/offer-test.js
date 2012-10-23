@@ -11,7 +11,7 @@ var testutils  = require("./testutils.js");
 buster.testRunner.timeout = 5000;
 
 buster.testCase("Offer tests", {
-  'setUp' : testutils.test_setup,
+  'setUp' : testutils.build_setup(),
   'tearDown' : testutils.test_teardown,
 
   "offer create then cancel in one ledger" :

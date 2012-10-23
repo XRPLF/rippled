@@ -13,7 +13,7 @@ var serverDelay = 1500;
 buster.testRunner.timeout = 5000;
 
 buster.testCase("// Sending", {
-  'setUp' : testutils.test_setup,
+  'setUp' : testutils.build_setup(),
   'tearDown' : testutils.test_teardown,
 
   "send XNS to non-existant account without create." :
@@ -235,7 +235,7 @@ buster.testCase("// Sending", {
 
 // XXX In the future add ledger_accept after partial retry is implemented in the server.
 buster.testCase("Sending future", {
-  'setUp' : testutils.test_setup,
+  'setUp' : testutils.build_setup(),
   'tearDown' : testutils.test_teardown,
 
   "direct ripple" :
