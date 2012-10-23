@@ -6,7 +6,7 @@ var Server  = require("./server.js").Server;
 
 var config  = require("./config.js");
 
-var test_setup = function (done, host) {
+var test_setup = function (done, host, verbose) {
   var self  = this;
   var host  = host || config.server_default;
 
@@ -14,10 +14,14 @@ var test_setup = function (done, host) {
 
   var data   = this.store[host] = this.store[host] || {};
 
-  data.server = Server.from_config(host).on('started', function () {
+  data.server = Server.from_config(host, verbose).on('started', function () {
       self.remote = data.remote = Remote.from_config(host).once('ledger_closed', done).connect();
     }).start();
 };
+
+var test_setup_verbose = function (done, host) {
+  test_setup.call(this, done, host, 'VERBOSE');
+}
 
 var test_teardown = function (done, host) { 
   var host  = host || config.server_default;
@@ -58,7 +62,7 @@ var credit_limit = function (remote, src, amount, callback) {
   remote.transaction()
     .ripple_line_set(src, amount)
     .on('proposed', function (m) {
-	// console.log("proposed: %s", JSON.stringify(m));
+	console.log("proposed: %s", JSON.stringify(m));
 
 	// buster.assert.equals(m.result, 'tesSUCCESS');
 
@@ -72,9 +76,10 @@ var credit_limit = function (remote, src, amount, callback) {
     .submit();
 };
 
-exports.create_accounts = create_accounts;
-exports.credit_limit = credit_limit;
-exports.test_setup = test_setup;
-exports.test_teardown = test_teardown;
+exports.create_accounts	    = create_accounts;
+exports.credit_limit	    = credit_limit;
+exports.test_setup	    = test_setup;
+exports.test_setup_verbose  = test_setup_verbose;
+exports.test_teardown	    = test_teardown;
 
 // vim:sw=2:sts=2:ts=8
