@@ -744,16 +744,16 @@ Remote.prototype.request_ripple_balance = function (account, issuer, currency, c
 
 	var lowLimit	    = Amount.from_json(node.LowLimit);
 	var highLimit	    = Amount.from_json(node.HighLimit);
-	// The amount account holds of issuer (after negation if needed).
+	// The amount the low account holds of issuer.
 	var balance	    = Amount.from_json(node.Balance);
 	// accountHigh implies: for account: balance is negated, highLimit is the limit set by account.
 	var accountHigh	    = UInt160.from_json(account).equals(highLimit.issuer);
-	// The limit set by issuer.
-	var issuerLimit	    = (accountHigh ? lowLimit : highLimit).parse_issuer(issuer);
 	// The limit set by account.
 	var accountLimit    = (accountHigh ? highLimit : lowLimit).parse_issuer(account);
-	var issuerBalance   = (accountHigh ? balance.negate() : balance).parse_issuer(issuer);
-	var accountBalance  = issuerBalance.clone().negate().parse_issuer(account);
+	// The limit set by issuer.
+	var issuerLimit	    = (accountHigh ? lowLimit : highLimit).parse_issuer(issuer);
+	var accountBalance  = (accountHigh ? balance.negate() : balance).parse_issuer(account);
+	var issuerBalance   = (accountHigh ? balance : balance.negate()).parse_issuer(issuer);
 
 	request.emit('ripple_state', {
 	  'issuer_balance'  : issuerBalance,  // Balance with dst as issuer.
