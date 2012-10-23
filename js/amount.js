@@ -318,7 +318,11 @@ Amount.prototype.copyTo = function(d, negate) {
 
   d.offset	= this.offset;
   d.is_native	= this.is_native;
-  d.is_negative	= this.is_native ? undefined : !this.is_negative;
+  d.is_negative	= this.is_native
+		    ? undefined		    // Native sign in BigInteger.
+		    : negate
+		      ? !this.is_negative   // Negating.
+		      : this.is_negative;   // Just copying.
 
   this.currency.copyTo(d.currency);
   this.issuer.copyTo(d.issuer);
