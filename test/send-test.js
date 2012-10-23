@@ -13,7 +13,7 @@ var serverDelay = 1500;
 buster.testRunner.timeout = 5000;
 
 buster.testCase("Sending", {
-  'setUp' : testutils.test_setup,
+  'setUp' : testutils.test_setup_verbose,
   'tearDown' : testutils.test_teardown,
 
   "send XNS to non-existant account without create." :
@@ -91,16 +91,15 @@ buster.testCase("Sending", {
   "credit_limit" :
     function (done) {
       var self = this;
-      // this.remote.set_trace();
 
       async.waterfall([
 	  function (callback) {
-	    this.what = "Create account.";
+	    self.what = "Create accounts.";
 
 	    testutils.create_accounts(self.remote, "root", "10000", ["alice", "bob", "mtgox"], callback);
 	  },
 	  function (callback) {
-	    this.what = "Check a non-existant credit limit.";
+	    self.what = "Check a non-existant credit limit.";
 
 	    self.remote.request_ripple_balance("alice", "mtgox", "USD", 'CURRENT')
 	      .on('ripple_state', function (m) {
@@ -116,7 +115,7 @@ buster.testCase("Sending", {
 	      .request();
 	  },
 	  function (callback) {
-	    this.what = "Create a credit limit.";
+	    self.what = "Create a credit limit.";
 
 	    testutils.credit_limit(self.remote, "alice", "800/USD/mtgox", callback);
 	  },
@@ -138,7 +137,7 @@ buster.testCase("Sending", {
 	      .request();
 	  },
 	  function (callback) {
-	    this.what = "Modify a credit limit.";
+	    self.what = "Modify a credit limit.";
 
 	    testutils.credit_limit(self.remote, "alice", "700/USD/mtgox", callback);
 	  },
@@ -155,12 +154,12 @@ buster.testCase("Sending", {
 	      .request();
 	  },
 	  function (callback) {
-	    this.what = "Zero a credit limit.";
+	    self.what = "Zero a credit limit.";
 
 	    testutils.credit_limit(self.remote, "alice", "0/USD/mtgox", callback);
 	  },
 	  function (callback) {
-	    this.what = "Make sure still exists.";
+	    self.what = "Make sure still exists.";
 
 	    self.remote.request_ripple_balance("alice", "mtgox", "USD", 'CURRENT')
 	      .on('ripple_state', function (m) {
@@ -173,17 +172,284 @@ buster.testCase("Sending", {
 		})
 	      .request();
 	  },
-	  // Check in both owner books.
-	  // Set limit on other side.
 	  // Set negative limit.
-	  //function (callback) {
-	  //  testutils.credit_limit(self.remote, "alice", "-1/USD/mtgox", callback);
-	  //},
+	  function (callback) {
+	    self.remote.transaction()
+	      .ripple_line_set("alice", "-1/USD/mtgox")
+	      .on('proposed', function (m) {
+		  buster.assert.equals('temBAD_AMOUNT', m.result);
+
+		  // After a malformed transaction, need to recover correct sequence.
+		  self.remote.set_account_seq("alice", self.remote.account_seq("alice")-1);
+		  callback('temBAD_AMOUNT' !== m.result);
+		})
+	      .submit();
+	  },
+	  // TODO Check in both owner books.
+	  function (callback) {
+	    self.what = "Set another limit.";
+
+	    testutils.credit_limit(self.remote, "alice", "600/USD/bob", callback);
+	  },
+	  function (callback) {
+	    self.what = "Set limit on other side.";
+
+	    testutils.credit_limit(self.remote, "bob", "500/USD/alice", callback);
+	  },
+	  function (callback) {
+	    self.what = "Check ripple_line's state from alice's pov.";
+
+	    self.remote.request_ripple_balance("alice", "bob", "USD", 'CURRENT')
+	      .on('ripple_state', function (m) {
+		  // console.log("proposed: %s", JSON.stringify(m));
+
+		  buster.assert(m.account_balance.equals("0/USD/alice"));
+		  buster.assert(m.account_limit.equals("600/USD/alice"));
+		  buster.assert(m.issuer_balance.equals("0/USD/bob"));
+		  buster.assert(m.issuer_limit.equals("500/USD/bob"));
+
+		  callback();
+		})
+	      .request();
+	  },
+	  function (callback) {
+	    self.what = "Check ripple_line's state from bob's pov.";
+
+	    self.remote.request_ripple_balance("bob", "alice", "USD", 'CURRENT')
+	      .on('ripple_state', function (m) {
+		  buster.assert(m.account_balance.equals("0/USD/bob"));
+		  buster.assert(m.account_limit.equals("500/USD/bob"));
+		  buster.assert(m.issuer_balance.equals("0/USD/alice"));
+		  buster.assert(m.issuer_limit.equals("600/USD/alice"));
+
+		  callback();
+		})
+	      .request();
+	  },
 	], function (error) {
-	  buster.refute(error, this.what);
+	  buster.refute(error, self.what);
 	  done();
 	});
-    }
+    },
+});
+
+buster.testCase("Broken Sending", {
+  'setUp' : testutils.test_setup_verbose,
+  'tearDown' : testutils.test_teardown,
+
+  "// direct ripple" :
+    function (done) {
+      var self = this;
+
+      self.remote.set_trace();
+
+      async.waterfall([
+	  function (callback) {
+	    self.what = "Create accounts.";
+
+	    testutils.create_accounts(self.remote, "root", "10000", ["alice", "bob"], callback);
+	  },
+	  function (callback) {
+	    self.what = "Set alice's limit.";
+
+	    testutils.credit_limit(self.remote, "alice", "600/USD/bob", callback);
+	  },
+	  function (callback) {
+	    self.what = "Set bob's limit.";
+
+	    testutils.credit_limit(self.remote, "bob", "700/USD/alice", callback);
+	  },
+	  function (callback) {
+	    self.what = "Set alice send bob partial with alice as issuer.";
+
+	    self.remote.transaction()
+	      .payment('alice', 'bob', "24/USD/alice")
+	      .on('proposed', function (m) {
+		  // console.log("proposed: %s", JSON.stringify(m));
+		  callback(m.result != 'tesSUCCESS');
+		})
+	      .once('final', function (m) {
+		  buster.assert(m.result != 'tesSUCCESS');
+		})
+	      .submit();
+	  },
+	  function (callback) {
+	    self.what = "Verify balance.";
+
+	    self.remote.request_ripple_balance("alice", "bob", "USD", 'CURRENT')
+	      .once('ripple_state', function (m) {
+		  console.log("BALANCE: %s", JSON.stringify(m));
+		  console.log("account_balance: %s", m.account_balance.to_text_full());
+		  console.log("account_limit: %s", m.account_limit.to_text_full());
+		  console.log("issuer_balance: %s", m.issuer_balance.to_text_full());
+		  console.log("issuer_limit: %s", m.issuer_limit.to_text_full());
+
+		  buster.assert(m.account_balance.equals("-24/USD/alice"));
+		  buster.assert(m.issuer_balance.equals("24/USD/bob"));
+
+		  callback();
+		})
+	      .request();
+	  },
+	  function (callback) {
+	    self.what = "Set alice send bob more with bob as issuer.";
+
+	    self.remote.transaction()
+	      .payment('alice', 'bob', "33/USD/bob")
+	      .once('proposed', function (m) {
+		  // console.log("proposed: %s", JSON.stringify(m));
+		  callback(m.result != 'tesSUCCESS');
+		})
+	      .once('final', function (m) {
+		  buster.assert(m.result != 'tesSUCCESS');
+		})
+	      .submit();
+	  },
+	  function (callback) {
+	    self.what = "Verify balance from bob's pov.";
+
+	    self.remote.request_ripple_balance("bob", "alice", "USD", 'CURRENT')
+	      .once('ripple_state', function (m) {
+		  buster.assert(m.account_balance.equals("57/USD/bob"));
+		  buster.assert(m.issuer_balance.equals("-57/USD/alice"));
+
+		  callback();
+		})
+	      .request();
+	  },
+	  function (callback) {
+	    self.what = "Bob send back more than sent.";
+
+	    self.remote.transaction()
+	      .payment('bob', 'alice', "90/USD/bob")
+	      .once('proposed', function (m) {
+		  // console.log("proposed: %s", JSON.stringify(m));
+		  callback(m.result != 'tesSUCCESS');
+		})
+	      .once('final', function (m) {
+		  buster.assert(m.result != 'tesSUCCESS');
+		})
+	      .submit();
+	  },
+	  function (callback) {
+	    self.what = "Verify balance from alice's pov.";
+
+	    self.remote.request_ripple_balance("alice", "bob", "USD", 'CURRENT')
+	      .once('ripple_state', function (m) {
+		  buster.assert(m.account_balance.equals("33/USD/alice"));
+
+		  callback();
+		})
+	      .request();
+	  },
+	  function (callback) {
+	    self.what = "Alice send to limit.";
+
+	    self.remote.transaction()
+	      .payment('alice', 'bob', "733/USD/bob")
+	      .once('proposed', function (m) {
+		  // console.log("proposed: %s", JSON.stringify(m));
+		  callback(m.result != 'tesSUCCESS');
+		})
+	      .once('final', function (m) {
+		  buster.assert(m.result != 'tesSUCCESS');
+		})
+	      .submit();
+	  },
+	  function (callback) {
+	    self.what = "Verify balance from alice's pov.";
+
+	    self.remote.request_ripple_balance("alice", "bob", "USD", 'CURRENT')
+	      .once('ripple_state', function (m) {
+		  buster.assert(m.account_balance.equals("-700/USD/alice"));
+
+		  callback();
+		})
+	      .request();
+	  },
+	  function (callback) {
+	    self.what = "Bob send to limit.";
+
+	    self.remote.transaction()
+	      .payment('bob', 'alice', "1300/USD/bob")
+	      .once('proposed', function (m) {
+		  // console.log("proposed: %s", JSON.stringify(m));
+		  callback(m.result != 'tesSUCCESS');
+		})
+	      .once('final', function (m) {
+		  buster.assert(m.result != 'tesSUCCESS');
+		})
+	      .submit();
+	  },
+	  function (callback) {
+	    self.what = "Verify balance from alice's pov.";
+
+	    self.remote.request_ripple_balance("alice", "bob", "USD", 'CURRENT')
+	      .once('ripple_state', function (m) {
+		  buster.assert(m.account_balance.equals("600/USD/alice"));
+
+		  callback();
+		})
+	      .request();
+	  },
+//	  function (callback) {
+//	    // If this gets applied out of order, it could stop the big payment.
+//	    self.what = "Bob send past limit.";
+//
+//	    self.remote.transaction()
+//	      .payment('bob', 'alice', "1/USD/bob")
+//	      .once('proposed', function (m) {
+//		  // console.log("proposed: %s", JSON.stringify(m));
+//		  callback(m.result != 'tepPATH_PARTIAL');
+//		})
+//	      .submit();
+//	  },
+	  function (callback) {
+	    self.what = "Verify balance from alice's pov.";
+
+	    self.remote.request_ripple_balance("alice", "bob", "USD", 'CURRENT')
+	      .once('ripple_state', function (m) {
+		  buster.assert(m.account_balance.equals("600/USD/alice"));
+
+		  callback();
+		})
+	      .request();
+	  },
+	  function (callback) {
+	    // Make sure all is good after canonical ordering.
+	    self.what = "Close the ledger and check balance.";
+
+	    self.remote
+	      .once('ledger_closed', function (ledger_closed, ledger_closed_index) {
+		  // console.log("LEDGER_CLOSED: A: %d: %s", ledger_closed_index, ledger_closed);
+		  callback();
+		})
+	      .ledger_accept();
+	  },
+	  function (callback) {
+	    self.what = "Verify balance from alice's pov.";
+
+	    self.remote.request_ripple_balance("alice", "bob", "USD", 'CURRENT')
+	      .once('ripple_state', function (m) {
+		  console.log("account_balance: %s", m.account_balance.to_text_full());
+		  console.log("account_limit: %s", m.account_limit.to_text_full());
+		  console.log("issuer_balance: %s", m.issuer_balance.to_text_full());
+		  console.log("issuer_limit: %s", m.issuer_limit.to_text_full());
+
+		  buster.assert(m.account_balance.equals("600/USD/alice"));
+
+		  callback();
+		})
+	      .request();
+	  },
+	], function (error) {
+	  buster.refute(error, self.what);
+	  done();
+	});
+    },
+
+    // Ripple without credit path.
+    // Ripple with one-way credit path.
 });
 
 // vim:sw=2:sts=2:ts=8
