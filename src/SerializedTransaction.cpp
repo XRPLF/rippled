@@ -202,8 +202,8 @@ BOOST_AUTO_TEST_CASE( STrans_test )
 	NewcoinAddress seed;
 	seed.setSeedRandom();
 	NewcoinAddress generator = NewcoinAddress::createGeneratorPublic(seed);
-	NewcoinAddress  publicAcct = NewcoinAddress::createAccountPublic(generator, 1);
-	NewcoinAddress  privateAcct = NewcoinAddress::createAccountPrivate(generator, seed, 1);
+	NewcoinAddress publicAcct = NewcoinAddress::createAccountPublic(generator, 1);
+	NewcoinAddress privateAcct = NewcoinAddress::createAccountPrivate(generator, seed, 1);
 
 	SerializedTransaction j(ttCLAIM);
 	j.setSourceAccount(publicAcct);
@@ -223,10 +223,15 @@ BOOST_AUTO_TEST_CASE( STrans_test )
 		Log(lsFATAL) << copy.getJson(0);
 		BOOST_FAIL("Transaction fails serialize/deserialize test");
 	}
-	Log(lsINFO) << "ORIG: " << j.getJson(0);
 	std::auto_ptr<STObject> new_obj = STObject::parseJson(j.getJson(0), sfGeneric);
 	if (new_obj.get() == NULL) BOOST_FAIL("Unable to build object from json");
-	Log(lsINFO) << "BUILT " << new_obj->getJson(0);
+
+	if (STObject(j) != *new_obj)
+	{
+		Log(lsINFO) << "ORIG: " << j.getJson(0);
+		Log(lsINFO) << "BUILT " << new_obj->getJson(0);
+		BOOST_FAIL("Built a different transaction");
+	}
 }
 
 BOOST_AUTO_TEST_SUITE_END();
