@@ -52,10 +52,10 @@ var decode_base = function (input, alphabet) {
   var bi_value	= nbi();
   var i;
 
-  while (i != input.length && input[i] === alphabet[0])
-    i += 1;
+  for (i = 0; i != input.length && input[i] === alphabet[0]; i += 1)
+    ;
 
-  for (i = 0; i != input.length; i += 1) {
+  for (; i != input.length; i += 1) {
     var	v = alphabet.indexOf(input[i]);
 
     if (v < 0)
