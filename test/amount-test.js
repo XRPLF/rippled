@@ -88,6 +88,9 @@ buster.testCase("Amount", {
     "Negate non-native -123" : function () {
       buster.assert.equals("123/USD/rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", Amount.from_json("-123/USD/rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh").negate().to_text_full());
     },
+    "Clone non-native -123" : function () {
+      buster.assert.equals("-123/USD/rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", Amount.from_json("-123/USD/rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh").clone().to_text_full());
+    },
   }
 });
 
