@@ -148,6 +148,9 @@ public:
 	{ return makeDefaultObject(STI_NOTPRESENT, name); }
 	static std::auto_ptr<SerializedType> makeDefaultObject(SField::ref name)
 	{ return makeDefaultObject(name.fieldType, name); }
+
+	bool operator==(const STObject& o) const;
+	bool operator!=(const STObject& o) const { return ! (*this == o); }
 };
 
 class STArray : public SerializedType
