@@ -25,7 +25,6 @@ SerializedTransaction::SerializedTransaction(const STObject& object) : STObject(
 		throw std::runtime_error("invalid transaction type");
 	if (!setType(mFormat->elements))
 	{
-		assert(false);
 		throw std::runtime_error("transaction not valid");
 	}
 }
