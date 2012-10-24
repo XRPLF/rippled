@@ -1019,7 +1019,7 @@ void NetworkOPs::pubLedger(Ledger::ref lpAccepted)
 		}
 	}
 
-	// Publish bootsrap information for accounts.
+	// Publish bootstrap information for accounts.
 	{
 		boost::interprocess::scoped_lock<boost::interprocess::interprocess_upgradable_mutex>	sl(mMonitorLock);
 

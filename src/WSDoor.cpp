@@ -80,20 +80,21 @@ public:
 	Json::Value invokeCommand(const Json::Value& jvRequest);
 	boost::unordered_set<NewcoinAddress> parseAccountIds(const Json::Value& jvArray);
 
-	// Request-Response Commands
-	void doLedgerAccept(Json::Value& jvResult, const Json::Value& jvRequest);
-	void doLedgerClosed(Json::Value& jvResult, const Json::Value& jvRequest);
-	void doLedgerCurrent(Json::Value& jvResult, const Json::Value& jvRequest);
-	void doLedgerEntry(Json::Value& jvResult, const Json::Value& jvRequest);
+	// Commands
 	void doSubmit(Json::Value& jvResult, const Json::Value& jvRequest);
-	void doTransactionEntry(Json::Value& jvResult, const Json::Value& jvRequest);
-
-	// Streaming Commands
+	void doRPC(Json::Value& jvResult, const Json::Value& jvRequest);
 	void doSubscribe(Json::Value& jvResult, const Json::Value& jvRequest);
 	void doUnsubscribe(Json::Value& jvResult, const Json::Value& jvRequest);
 
 
+
 	// deprecated
+	void doLedgerAccept(Json::Value& jvResult, const Json::Value& jvRequest);
+	void doLedgerClosed(Json::Value& jvResult, const Json::Value& jvRequest);
+	void doLedgerCurrent(Json::Value& jvResult, const Json::Value& jvRequest);
+	void doLedgerEntry(Json::Value& jvResult, const Json::Value& jvRequest);
+	void doTransactionEntry(Json::Value& jvResult, const Json::Value& jvRequest);
+
 	void doAccountInfoSubscribe(Json::Value& jvResult, const Json::Value& jvRequest);
 	void doAccountInfoUnsubscribe(Json::Value& jvResult, const Json::Value& jvRequest);
 	void doAccountTransactionSubscribe(Json::Value& jvResult, const Json::Value& jvRequest);
@@ -909,6 +910,15 @@ void WSConnection::doServerUnsubscribe(Json::Value& jvResult, const Json::Value&
 	{
 		jvResult["error"]	= "serverNotSubscribed";
 	}
+}
+
+void WSConnection::doRPC(Json::Value& jvResult, const Json::Value& jvRequest)
+{
+	if (jvRequest.isMember("commandline"))
+	{
+
+	}else jvResult["error"]	= "fieldNotFoundCommandline";
+	
 }
 
 // XXX Current requires secret. Allow signed transaction as an alternative.
