@@ -1390,7 +1390,7 @@ Json::Value RPCServer::doProfile(const Json::Value &params)
 	if (iArgs >= 8 && "false" != params[7u].asString())
 		bSubmit	= true;
 
-	Log::setMinSeverity(lsFATAL);
+	Log::setMinSeverity(lsFATAL, true);
 
 	boost::posix_time::ptime			ptStart(boost::posix_time::microsec_clock::local_time());
 
@@ -2700,7 +2700,7 @@ Json::Value RPCServer::doLogLevel(const Json::Value& params)
 		LogSeverity sv = Log::stringToSeverity(params[0u].asString());
 		if (sv == lsINVALID)
 			return RPCError(rpcINVALID_PARAMS);
-		Log::setMinSeverity(sv);
+		Log::setMinSeverity(sv, true);
 		return RPCError(rpcSUCCESS);
 	}
 
@@ -2710,7 +2710,7 @@ Json::Value RPCServer::doLogLevel(const Json::Value& params)
 		if (sv == lsINVALID)
 			return RPCError(rpcINVALID_PARAMS);
 		if (params[2u].asString() == "base")
-			Log::setMinSeverity(sv);
+			Log::setMinSeverity(sv, false);
 		else if (!LogPartition::setSeverity(params[0u].asString(), sv))
 			return RPCError(rpcINVALID_PARAMS);
 		return RPCError(rpcSUCCESS);

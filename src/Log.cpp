@@ -101,11 +101,12 @@ std::string Log::rotateLog(void)
   
 }
 
-void Log::setMinSeverity(LogSeverity s)
+void Log::setMinSeverity(LogSeverity s, bool all)
 {
 	boost::recursive_mutex::scoped_lock sl(sLock);
 	sMinSeverity = s;
-	LogPartition::setSeverity(s);
+	if (all)
+		LogPartition::setSeverity(s);
 }
 
 LogSeverity Log::getMinSeverity()

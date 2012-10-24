@@ -121,9 +121,10 @@ int main(int argc, char* argv[])
 	{
 		nothing();
 	}
-	else if (argc >= 2 && !strcmp(argv[1], "--test")) {
+	else if (argc >= 2 && !strcmp(argv[1], "--test"))
+	{
 		bTest	= true;
-		Log::setMinSeverity(lsTRACE);
+		Log::setMinSeverity(lsTRACE, true);
 	}
 	else
 	{
@@ -143,9 +144,9 @@ int main(int argc, char* argv[])
 	}
 
 	if (vm.count("verbose"))
-	{
-		Log::setMinSeverity(lsTRACE);
-	}
+		Log::setMinSeverity(lsTRACE, true);
+	else if (!bTest)
+		Log::setMinSeverity(lsWARNING, true);
 
 	if (!iResult)
 	{
