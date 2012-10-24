@@ -166,7 +166,7 @@ inline STObject::iterator range_end(STObject &x)		{ return x.end(); }
 namespace boost
 {
 	template<> struct range_mutable_iterator<STObject>	{ typedef STObject::iterator type; };
-	template<> struct range_const_iterator<STObject>	{ typedef STObject::iterator type; };
+	template<> struct range_const_iterator<STObject>	{ typedef STObject::const_iterator type; };
 }
 
 
@@ -245,7 +245,7 @@ inline STArray::iterator range_end(STArray &x)			{ return x.end(); }
 namespace boost
 {
 	template<> struct range_mutable_iterator<STArray>	{ typedef STArray::iterator type; };
-	template<> struct range_const_iterator<STArray>		{ typedef STArray::iterator type; };
+	template<> struct range_const_iterator<STArray>		{ typedef STArray::const_iterator type; };
 }
 
 #endif
