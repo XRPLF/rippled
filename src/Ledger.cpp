@@ -507,7 +507,15 @@ Ledger::pointer Ledger::loadByHash(const uint256& ledgerHash)
 
 Ledger::pointer Ledger::getLastFullLedger()
 {
-	return getSQL("SELECT * from Ledgers order by LedgerSeq desc limit 1;");
+	try
+	{
+		return getSQL("SELECT * from Ledgers order by LedgerSeq desc limit 1;");
+	}
+	catch (SHAMapMissingNode&)
+	{
+		cLog(lsWARNING) << "Database contains ledger with missing nodes";
+		return Ledger::pointer();
+	}
 }
 
 void Ledger::addJson(Json::Value& ret, int options)
