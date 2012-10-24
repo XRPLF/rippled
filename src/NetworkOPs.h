@@ -78,6 +78,7 @@ protected:
 	boost::unordered_set<InfoSub*>						mSubLedger;				// ledger accepteds
 	boost::unordered_set<InfoSub*>						mSubLedgerAccounts;		// ledger accepteds + affected accounts
 	boost::unordered_set<InfoSub*>						mSubTransaction;		// all transactions
+	boost::unordered_set<InfoSub*>						mSubTxMeta;				// all transaction meta
 //	subInfoMapType										mSubTransactionAccounts;
 
 	void setMode(OperatingMode);

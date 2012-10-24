@@ -1813,6 +1813,12 @@ Json::Value RPCServer::doRippleLinesGet(const Json::Value &params)
 	return ret;
 }
 
+// submit any transaction to the network
+Json::Value RPCServer::doSubmit(const Json::Value& params)
+{
+	
+}
+
 // send regular_seed paying_account account_id amount [currency] [issuer] [send_max] [send_currency] [send_issuer]
 Json::Value RPCServer::doSend(const Json::Value& params)
 {

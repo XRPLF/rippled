@@ -160,6 +160,8 @@ private:
 	Json::Value doTransitSet(const Json::Value& params);
 	Json::Value doTx(const Json::Value& params);
 	Json::Value doTxHistory(const Json::Value& params);
+	Json::Value doSubmit(const Json::Value& params);
+
 
 	Json::Value doUnlAdd(const Json::Value& params);
 	Json::Value doUnlDelete(const Json::Value& params);
@@ -184,6 +186,9 @@ private:
 	Json::Value doWalletVerify(const Json::Value& params);
 
 	Json::Value doLogin(const Json::Value& params);
+
+
+	// deprecated
 
 
 public:

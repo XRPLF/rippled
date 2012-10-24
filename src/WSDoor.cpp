@@ -89,6 +89,11 @@ public:
 	void doTransactionEntry(Json::Value& jvResult, const Json::Value& jvRequest);
 
 	// Streaming Commands
+	void doSubscribe(Json::Value& jvResult, const Json::Value& jvRequest);
+	void doUnsubscribe(Json::Value& jvResult, const Json::Value& jvRequest);
+
+
+	// deprecated
 	void doAccountInfoSubscribe(Json::Value& jvResult, const Json::Value& jvRequest);
 	void doAccountInfoUnsubscribe(Json::Value& jvResult, const Json::Value& jvRequest);
 	void doAccountTransactionSubscribe(Json::Value& jvResult, const Json::Value& jvRequest);
@@ -313,18 +318,8 @@ Json::Value WSConnection::invokeCommand(const Json::Value& jvRequest)
 		{ "ledger_entry",						&WSConnection::doLedgerEntry					},
 		{ "submit",								&WSConnection::doSubmit							},
 		{ "transaction_entry",					&WSConnection::doTransactionEntry				},
-
-		// Streaming commands:
-		{ "account_info_subscribe",				&WSConnection::doAccountInfoSubscribe			},
-		{ "account_info_unsubscribe",			&WSConnection::doAccountInfoUnsubscribe			},
-		{ "account_transaction_subscribe",		&WSConnection::doAccountTransactionSubscribe	},
-		{ "account_transaction_unsubscribe",	&WSConnection::doAccountTransactionUnsubscribe	},
-		{ "ledger_accounts_subscribe",			&WSConnection::doLedgerAccountsSubcribe			},
-		{ "ledger_accounts_unsubscribe",		&WSConnection::doLedgerAccountsUnsubscribe		},
-		{ "server_subscribe",					&WSConnection::doServerSubscribe				},
-		{ "server_unsubscribe",					&WSConnection::doServerUnsubscribe				},
-		{ "transaction_subscribe",				&WSConnection::doTransactionSubcribe			},
-		{ "transaction_unsubscribe",			&WSConnection::doTransactionUnsubscribe			},
+		{ "subscribe",							&WSConnection::doSubscribe						},
+		{ "unsubscribe",						&WSConnection::doUnsubscribe					},
 	};
 
 	if (!jvRequest.isMember("command"))
@@ -403,6 +398,96 @@ boost::unordered_set<NewcoinAddress> WSConnection::parseAccountIds(const Json::V
 // Commands
 //
 
+/*
+server : Sends a message anytime the server status changes such as network connectivity.
+ledger : Sends a message at every ledger close.
+tx_meta : Sends the effects of all the transactions every time a ledger closes.
+transactions : Sends a message for every transaction that makes it into a ledger.
+rt_transactions
+*/
+
+void WSConnection::doSubscribe(Json::Value& jvResult, const Json::Value& jvRequest)
+{
+	if (jvRequest.isMember("streams"))
+	{
+		for (Json::Value::const_iterator it = jvRequest["streams"].begin(); it != jvRequest["streams"].end(); it++)
+		{
+			if ((*it).isString() )
+			{
+				std::string streamName=(*it).asString();
+
+				if(streamName=="server")
+				{
+					mNetwork.subLedgerAccounts(this)
+				}else if(streamName=="ledger")
+				{
+					mNetwork.subLedgerAccounts(this)
+				}else if(streamName=="tx_meta")
+				{
+
+				}else if(streamName=="transactions")
+				{
+
+				}else if(streamName=="rt_transactions")
+				{
+
+				}else
+				{
+					jvResult["error"]	= str(boost::format("Unknown stream: %s") % streamName);
+				}
+			}else
+			{
+				jvResult["error"]	= "malformedSteam";
+			}
+		}
+	}
+
+	if (jvRequest.isMember("rt_accounts"))
+	{
+		boost::unordered_set<NewcoinAddress> usnaAccoundIds	= parseAccountIds(jvRequest["rt_accounts"]);
+
+		if (usnaAccoundIds.empty())
+		{
+			jvResult["error"]	= "malformedAccount";
+		}else
+		{
+			boost::mutex::scoped_lock	sl(mLock);
+
+			BOOST_FOREACH(const NewcoinAddress& naAccountID, usnaAccoundIds)
+			{
+				mSubAccountInfo.insert(naAccountID);
+			}
+
+			mNetwork.subAccountInfo(this, usnaAccoundIds);
+		}
+	}
+
+	if (jvRequest.isMember("accounts"))
+	{
+		boost::unordered_set<NewcoinAddress> usnaAccoundIds	= parseAccountIds(jvRequest["accounts"]);
+
+		if (usnaAccoundIds.empty())
+		{
+			jvResult["error"]	= "malformedAccount";
+		}else
+		{
+			boost::mutex::scoped_lock	sl(mLock);
+
+			BOOST_FOREACH(const NewcoinAddress& naAccountID, usnaAccoundIds)
+			{
+				mSubAccountInfo.insert(naAccountID);
+			}
+
+			mNetwork.subAccountInfo(this, usnaAccoundIds);
+		}
+	}
+}
+
+void WSConnection::doUnsubscribe(Json::Value& jvResult, const Json::Value& jvRequest)
+{
+
+}
+
 void WSConnection::doAccountInfoSubscribe(Json::Value& jvResult, const Json::Value& jvRequest)
 {
 	if (!jvRequest.isMember("accounts"))
@@ -417,21 +502,7 @@ void WSConnection::doAccountInfoSubscribe(Json::Value& jvResult, const Json::Val
 	{
 		boost::unordered_set<NewcoinAddress> usnaAccoundIds	= parseAccountIds(jvRequest["accounts"]);
 
-		if (usnaAccoundIds.empty())
-		{
-			jvResult["error"]	= "malformedAccount";
-		}
-		else
-		{
-			boost::mutex::scoped_lock	sl(mLock);
-
-			BOOST_FOREACH(const NewcoinAddress& naAccountID, usnaAccoundIds)
-			{
-				mSubAccountInfo.insert(naAccountID);
-			}
-
-			mNetwork.subAccountInfo(this, usnaAccoundIds);
-		}
+		
 	}
 }
 
