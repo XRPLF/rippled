@@ -111,14 +111,14 @@ protected:
 	LedgerAcquire::pointer	mCurrentLedger; // ledger we are acquiring
 	bool					mCheckComplete; // should we check to make sure we have all nodes
 
-	void updateCurrentLedger(Ledger::pointer currentLedger);
 	void done();
 	void addPeers();
 
 	static void onComplete(boost::weak_ptr<LedgerAcquireSet>, LedgerAcquire::pointer);
 
 public:
-	LedgerAcquireSet(Ledger::ref targetLedger, Ledger::ref currentLedger);
+	LedgerAcquireSet(Ledger::ref targetLedger);
+	void updateCurrentLedger(Ledger::pointer currentLedger);
 };
 
 class LedgerAcquireMaster
@@ -140,7 +140,10 @@ public:
 	bool hasSet()							{ return !!mAcquireSet; }
 	void killSet(const LedgerAcquireSet&)	{ mAcquireSet = LedgerAcquireSet::pointer(); }
 	void makeSet(Ledger::ref target, Ledger::ref current)
-	{ mAcquireSet = boost::make_shared<LedgerAcquireSet>(boost::ref(target), boost::ref(current)); }
+	{
+		mAcquireSet = boost::make_shared<LedgerAcquireSet>(boost::ref(target));
+		mAcquireSet->updateCurrentLedger(current);
+	}
 };
 
 #endif

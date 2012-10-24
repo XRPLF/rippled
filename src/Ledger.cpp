@@ -339,6 +339,7 @@ uint256 Ledger::getHash()
 
 void Ledger::saveAcceptedLedger(bool fromConsensus)
 { // can be called in a different thread
+	cLog(lsTRACE) << "saveAcceptedLedger " << (fromConsensus ? "fromConsensus" : "fromAcquire") << getLedgerSeq();
 	static boost::format ledgerExists("SELECT LedgerSeq FROM Ledgers where LedgerSeq = %d;");
 	static boost::format deleteLedger("DELETE FROM Ledgers WHERE LedgerSeq = %d;");
 	static boost::format AcctTransExists("SELECT LedgerSeq FROM AccountTransactions WHERE TransId = '%s';");
