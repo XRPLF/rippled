@@ -26,7 +26,7 @@ SETUP_LOG();
 #endif
 
 RPCServer::RPCServer(boost::asio::io_service& io_service , NetworkOPs* nopNetwork)
-	: mNetOps(nopNetwork), mSocket(io_service),mRPCHandler(nopNetwork)
+	: mNetOps(nopNetwork), mRPCHandler(nopNetwork), mSocket(io_service)
 {
 
 	mRole = RPCHandler::GUEST;
