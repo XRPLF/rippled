@@ -38,7 +38,7 @@ protected:
 public:
 	CanonicalTXSet(const uint256& lclHash) : mSetHash(lclHash) { ; }
 
-	void push_back(const SerializedTransaction::pointer& txn);
+	void push_back(SerializedTransaction::ref txn);
 	iterator erase(const iterator& it);
 
 	iterator begin()				{ return mMap.begin(); }

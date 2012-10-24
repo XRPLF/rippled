@@ -65,8 +65,8 @@ public:
 	void init(Ledger::ref ledger, const uint256& transactionID, uint32 ledgerID);
 	void clear();
 
-	Ledger::pointer& getLedger() { return mLedger; }
-	const Ledger::pointer& getLedgerRef() const { return mLedger; }
+	Ledger::pointer& getLedger() 		{ return mLedger; }
+	Ledger::ref getLedgerRef() const	{ return mLedger; }
 
 	// basic entry functions
 	SLE::pointer getEntry(const uint256& index, LedgerEntryAction&);

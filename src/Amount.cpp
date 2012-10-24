@@ -166,8 +166,6 @@ STAmount::STAmount(SField::ref n, const Json::Value& v)
 	}
 	else
 		throw std::runtime_error("invalid amount type");
-
-	cLog(lsTRACE) << "Parsed: " << this->getJson(0);
 }
 
 std::string STAmount::createHumanCurrency(const uint160& uCurrency)

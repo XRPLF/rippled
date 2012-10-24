@@ -1,6 +1,11 @@
 #ifndef __TRANSACTION__
 #define __TRANSACTION__
 
+//
+// Notes: this code contains legacy constructored sharedXYZ and setXYZ. The intent is for these functions to go away. Transactions
+// should now be constructed in JSON with. Use STObject::parseJson to obtain a binary version.
+//
+
 #include <vector>
 
 #include <boost/shared_ptr.hpp>
@@ -129,7 +134,7 @@ private:
 		const std::vector<unsigned char>&	vucSignature);
 
 public:
-	Transaction(const SerializedTransaction::pointer& st, bool bValidate);
+	Transaction(SerializedTransaction::ref st, bool bValidate);
 
 	static Transaction::pointer sharedTransaction(const std::vector<unsigned char>&vucTransaction, bool bValidate);
 	static Transaction::pointer transactionFromSQL(Database* db, bool bValidate);

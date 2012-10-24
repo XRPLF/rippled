@@ -337,7 +337,7 @@ uint256 Ledger::getHash()
 	return mHash;
 }
 
-void Ledger::saveAcceptedLedger()
+void Ledger::saveAcceptedLedger(bool fromConsensus)
 { // can be called in a different thread
 	static boost::format ledgerExists("SELECT LedgerSeq FROM Ledgers where LedgerSeq = %d;");
 	static boost::format deleteLedger("DELETE FROM Ledgers WHERE LedgerSeq = %d;");
@@ -428,7 +428,16 @@ void Ledger::saveAcceptedLedger()
 			mAccountHash.GetHex() % mTransHash.GetHex()));
 	}
 
+	if (!fromConsensus)
+		return;
+
 	theApp->getOPs().pubLedger(shared_from_this());
+
+	if(theConfig.FULL_HISTORY)
+	{
+		// WRITEME: check for seamless ledger history
+	}
+
 }
 
 Ledger::pointer Ledger::getSQL(const std::string& sql)
@@ -496,6 +505,11 @@ Ledger::pointer Ledger::loadByHash(const uint256& ledgerHash)
 	sql.append(ledgerHash.GetHex());
 	sql.append("';");
 	return getSQL(sql);
+}
+
+Ledger::pointer Ledger::getLastFullLedger()
+{
+	return getSQL("SELECT * from Ledgers order by LedgerSeq desc limit 1;");
 }
 
 void Ledger::addJson(Json::Value& ret, int options)

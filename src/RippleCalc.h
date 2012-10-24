@@ -65,13 +65,14 @@ extern std::size_t hash_value(const aciSource& asValue);
 class PathState
 {
 protected:
-	const Ledger::pointer&		mLedger;
+	Ledger::ref					mLedger;
 
 	TER		pushNode(const int iType, const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID);
 	TER		pushImply(const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID);
 
 public:
-	typedef boost::shared_ptr<PathState> pointer;
+	typedef boost::shared_ptr<PathState>		pointer;
+	typedef const boost::shared_ptr<PathState>&	ref;
 
 	TER							terStatus;
 	std::vector<PaymentNode>	vpnNodes;
@@ -123,7 +124,7 @@ public:
 		return boost::make_shared<PathState>(iIndex, lesSource, spSourcePath, uReceiverID, uSenderID, saSend, saSendMax);
 	}
 
-	static bool lessPriority(const PathState::pointer& lhs, const PathState::pointer& rhs);
+	static bool lessPriority(PathState::ref lhs, PathState::ref rhs);
 };
 
 class RippleCalc
@@ -139,18 +140,18 @@ public:
 	boost::unordered_set<uint256>	musUnfundedFound;	// Offers that were found unfunded.
 
 	PathState::pointer	pathCreate(const STPath& spPath);
-	void				pathNext(const PathState::pointer& pspCur, const int iPaths, const LedgerEntrySet& lesCheckpoint, LedgerEntrySet& lesCurrent);
-	TER					calcNode(const unsigned int uIndex, const PathState::pointer& pspCur, const bool bMultiQuality);
-	TER					calcNodeRev(const unsigned int uIndex, const PathState::pointer& pspCur, const bool bMultiQuality);
-	TER					calcNodeFwd(const unsigned int uIndex, const PathState::pointer& pspCur, const bool bMultiQuality);
-	TER					calcNodeOfferRev(const unsigned int uIndex, const PathState::pointer& pspCur, const bool bMultiQuality);
-	TER					calcNodeOfferFwd(const unsigned int uIndex, const PathState::pointer& pspCur, const bool bMultiQuality);
-	TER					calcNodeAccountRev(const unsigned int uIndex, const PathState::pointer& pspCur, const bool bMultiQuality);
-	TER					calcNodeAccountFwd(const unsigned int uIndex, const PathState::pointer& pspCur, const bool bMultiQuality);
-	TER					calcNodeAdvance(const unsigned int uIndex, const PathState::pointer& pspCur, const bool bMultiQuality, const bool bReverse);
+	void				pathNext(PathState::ref pspCur, const int iPaths, const LedgerEntrySet& lesCheckpoint, LedgerEntrySet& lesCurrent);
+	TER					calcNode(const unsigned int uIndex, PathState::ref pspCur, const bool bMultiQuality);
+	TER					calcNodeRev(const unsigned int uIndex, PathState::ref pspCur, const bool bMultiQuality);
+	TER					calcNodeFwd(const unsigned int uIndex, PathState::ref pspCur, const bool bMultiQuality);
+	TER					calcNodeOfferRev(const unsigned int uIndex, PathState::ref pspCur, const bool bMultiQuality);
+	TER					calcNodeOfferFwd(const unsigned int uIndex, PathState::ref pspCur, const bool bMultiQuality);
+	TER					calcNodeAccountRev(const unsigned int uIndex, PathState::ref pspCur, const bool bMultiQuality);
+	TER					calcNodeAccountFwd(const unsigned int uIndex, PathState::ref pspCur, const bool bMultiQuality);
+	TER					calcNodeAdvance(const unsigned int uIndex, PathState::ref pspCur, const bool bMultiQuality, const bool bReverse);
 	TER					calcNodeDeliverRev(
 							const unsigned int			uIndex,
-							const PathState::pointer&	pspCur,
+							PathState::ref				pspCur,
 							const bool					bMultiQuality,
 							const uint160&				uOutAccountID,
 							const STAmount&				saOutReq,
@@ -158,7 +159,7 @@ public:
 
 	TER					calcNodeDeliverFwd(
 							const unsigned int			uIndex,
-							const PathState::pointer&	pspCur,
+							PathState::ref				pspCur,
 							const bool					bMultiQuality,
 							const uint160&				uInAccountID,
 							const STAmount&				saInFunds,

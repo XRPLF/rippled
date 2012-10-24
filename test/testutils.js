@@ -6,29 +6,87 @@ var Server  = require("./server.js").Server;
 
 var config  = require("./config.js");
 
-var test_setup = function (done, host) {
-  var self  = this;
-  var host  = host || config.server_default;
+/**
+ * Helper called by test cases to generate a setUp routine.
+ *
+ * By default you would call this without options, but it is useful to
+ * be able to plug options in during development for quick and easy
+ * debugging.
+ *
+ * @example
+ *   buster.testCase("Foobar", {
+ *     setUp: testutils.build_setup({verbose: true}),
+ *     // ...
+ *   });
+ *
+ * @param opts {Object} These options allow quick-and-dirty test-specific
+ *   customizations of your test environment.
+ * @param opts.verbose {Bool} Enable all debug output (then cover your ears
+ *   and run)
+ * @param opts.verbose_ws {Bool} Enable tracing in the Remote class. Prints
+ *   websocket traffic.
+ * @param opts.verbose_server {Bool} Set the -v option when running rippled.
+ * @param opts.no_server {Bool} Don't auto-run rippled.
+ * @param host {String} Identifier for the host configuration to be used.
+ */
+var build_setup = function (opts, host) {
+  opts = opts || {};
 
-  this.store  = this.store || {};
+  // Normalize options
+  if (opts.verbose) {
+    opts.verbose_ws = true;
+    opts.verbose_server = true;
+  };
 
-  var data   = this.store[host] = this.store[host] || {};
+  return function (done) {
+    var self = this;
 
-  data.server = Server.from_config(host).on('started', function () {
-      self.remote = data.remote = Remote.from_config(host).once('ledger_closed', done).connect();
-    }).start();
+    host = host || config.server_default;
+
+    this.store = this.store || {};
+
+    var data = this.store[host] = this.store[host] || {};
+
+    data.opts = opts;
+
+    async.series([
+      function runServerStep(callback) {
+        if (opts.no_server) return callback();
+
+        data.server = Server.from_config(host, !!opts.verbose_server).on('started', callback).start();
+      },
+      function connectWebsocketStep(callback) {
+        self.remote = data.remote = Remote.from_config(host, !!opts.verbose_ws).once('ledger_closed', callback).connect();
+      }
+    ], done);
+  };
 };
 
-var test_teardown = function (done, host) { 
-  var host  = host || config.server_default;
+/**
+ * Generate tearDown routine.
+ *
+ * @param host {String} Identifier for the host configuration to be used.
+ */
+var build_teardown = function (host) {
+  return function (done) {
+    host = host || config.server_default;
 
-  var data  = this.store[host];
+    var data = this.store[host];
+    var opts = data.opts;
 
-  data.remote
-    .on('disconnected', function () {
-	data.server.on('stopped', done).stop();
-      })
-    .connect(false);
+    async.series([
+      function disconnectWebsocketStep(callback) {
+        data.remote
+          .on('disconnected', callback)
+          .connect(false);
+      },
+      function stopServerStep(callback) {
+        if (opts.no_server) return callback();
+
+        data.server.on('stopped', callback).stop();
+      }
+    ], done);
+  };
 };
 
 var create_accounts = function (remote, src, amount, accounts, callback) {
@@ -60,8 +118,6 @@ var credit_limit = function (remote, src, amount, callback) {
     .on('proposed', function (m) {
 	// console.log("proposed: %s", JSON.stringify(m));
 
-	// buster.assert.equals(m.result, 'tesSUCCESS');
-
 	callback(m.result != 'tesSUCCESS');
       })
     .on('error', function (m) {
@@ -72,9 +128,9 @@ var credit_limit = function (remote, src, amount, callback) {
     .submit();
 };
 
-exports.create_accounts = create_accounts;
-exports.credit_limit = credit_limit;
-exports.test_setup = test_setup;
-exports.test_teardown = test_teardown;
+exports.create_accounts     = create_accounts;
+exports.credit_limit        = credit_limit;
+exports.build_setup	        = build_setup;
+exports.build_teardown      = build_teardown;
 
 // vim:sw=2:sts=2:ts=8

@@ -208,7 +208,7 @@ public:
 	bool hasItem() const { return !!mItem; }
 	SHAMapItem::ref peekItem() { return mItem; }
 	SHAMapItem::pointer getItem() const;
-	bool setItem(const SHAMapItem::pointer& i, TNType type);
+	bool setItem(SHAMapItem::ref i, TNType type);
 	const uint256& getTag() const { return mItem->getTag(); }
 	const std::vector<unsigned char>& peekData() { return mItem->peekData(); }
 	std::vector<unsigned char> getData() const { return mItem->getData(); }

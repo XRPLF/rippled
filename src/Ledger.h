@@ -100,6 +100,7 @@ public:
 	Ledger(Ledger& target, bool isMutable); // snapshot
 
 	static Ledger::pointer getSQL(const std::string& sqlStatement);
+	static Ledger::pointer getLastFullLedger();
 
 	void updateHash();
 	void setClosed()	{ mClosed = true; }
@@ -156,7 +157,7 @@ public:
 	SLE::pointer getAccountRoot(const NewcoinAddress& naAccountID);
 
 	// database functions
-	void saveAcceptedLedger();
+	void saveAcceptedLedger(bool fromConsensus);
 	static Ledger::pointer loadByIndex(uint32 ledgerIndex);
 	static Ledger::pointer loadByHash(const uint256& ledgerHash);
 

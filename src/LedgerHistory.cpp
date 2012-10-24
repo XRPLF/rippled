@@ -26,7 +26,7 @@ void LedgerHistory::addLedger(Ledger::pointer ledger)
 	mLedgersByHash.canonicalize(ledger->getHash(), ledger, true);
 }
 
-void LedgerHistory::addAcceptedLedger(Ledger::pointer ledger)
+void LedgerHistory::addAcceptedLedger(Ledger::pointer ledger, bool fromConsensus)
 {
 	assert(ledger && ledger->isAccepted());
 	uint256 h(ledger->getHash());
@@ -37,7 +37,7 @@ void LedgerHistory::addAcceptedLedger(Ledger::pointer ledger)
 	assert(ledger->isImmutable());
 	mLedgersByIndex.insert(std::make_pair(ledger->getLedgerSeq(), ledger));
 
-	boost::thread thread(boost::bind(&Ledger::saveAcceptedLedger, ledger));
+	boost::thread thread(boost::bind(&Ledger::saveAcceptedLedger, ledger, fromConsensus));
 	thread.detach();
 }
 

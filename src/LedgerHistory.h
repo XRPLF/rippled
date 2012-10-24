@@ -13,7 +13,7 @@ public:
 	LedgerHistory();
 
 	void addLedger(Ledger::pointer ledger);
-	void addAcceptedLedger(Ledger::pointer ledger);
+	void addAcceptedLedger(Ledger::pointer ledger, bool fromConsensus);
 
 	Ledger::pointer getLedgerBySeq(uint32 index);
 	Ledger::pointer getLedgerByHash(const uint256& hash);

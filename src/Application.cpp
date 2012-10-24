@@ -70,8 +70,9 @@ void Application::run()
 {
 	assert(mTxnDB == NULL);
 	if (!theConfig.DEBUG_LOGFILE.empty())
-	{
+	{ // Let DEBUG messages go to the file but only WARNING or higher to regular output
 		Log::setLogFile(theConfig.DEBUG_LOGFILE);
+		Log::setMinSeverity(lsWARNING);
 		LogPartition::setSeverity(lsDEBUG);
 	}
 
@@ -111,6 +112,13 @@ void Application::run()
 	}
 	else
 		startNewLedger();
+
+	if (theConfig.FULL_HISTORY && (theConfig.START_UP != Config::LOAD))
+	{
+		Ledger::pointer ledger = Ledger::getLastFullLedger();
+		if (ledger)
+			mMasterLedger.setLastFullLedger(ledger);
+	}
 
 	//
 	// Begin validation and ip maintenance.
@@ -214,7 +222,7 @@ void Application::loadOldLedger()
 {
 	try
 	{
-		Ledger::pointer lastLedger = Ledger::getSQL("SELECT * from Ledgers order by LedgerSeq desc limit 1;");
+		Ledger::pointer lastLedger = Ledger::getLastFullLedger();
 
 		if (!lastLedger)
 		{
@@ -243,6 +251,7 @@ void Application::loadOldLedger()
 			cLog(lsFATAL) << "Ledger is not sane.";
 			exit(-1);
 		}
+		mMasterLedger.setLastFullLedger(lastLedger);
 
 		Ledger::pointer openLedger = boost::make_shared<Ledger>(false, boost::ref(*lastLedger));
 		mMasterLedger.switchLedgers(lastLedger, openLedger);
