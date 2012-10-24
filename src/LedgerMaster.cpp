@@ -45,7 +45,7 @@ void LedgerMaster::pushLedger(Ledger::ref newLCL, Ledger::ref newOL)
 	{
 		assert(newLCL->isClosed());
 		assert(newLCL->isImmutable());
-		mLedgerHistory.addAcceptedLedger(newLCL);
+		mLedgerHistory.addAcceptedLedger(newLCL, false);
 		if (mLastFullLedger && (newLCL->getParentHash() == mLastFullLedger->getHash()))
 			mLastFullLedger = newLCL;
 		Log(lsINFO) << "StashAccepted: " << newLCL->getHash();
@@ -72,6 +72,8 @@ void LedgerMaster::switchLedgers(Ledger::ref lastClosed, Ledger::ref current)
 void LedgerMaster::storeLedger(Ledger::ref ledger)
 {
 	mLedgerHistory.addLedger(ledger);
+	if (ledger->isAccepted())
+		mLedgerHistory.addAcceptedLedger(ledger, false);
 }
 
 
