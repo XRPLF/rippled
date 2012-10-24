@@ -946,7 +946,18 @@ void WSConnection::doSubmit(Json::Value& jvResult, const Json::Value& jvRequest)
 
 		sopTrans->setFieldVL(sfSigningPubKey, naAccountPublic.getAccountPublic());
 
-		SerializedTransaction::pointer	stpTrans	= boost::make_shared<SerializedTransaction>(*sopTrans);
+		SerializedTransaction::pointer stpTrans;
+
+		try
+		{
+			stpTrans = boost::make_shared<SerializedTransaction>(*sopTrans);
+		}
+		catch (std::exception& e)
+		{
+			jvResult["error"]			= "invalidTransaction";
+			jvResult["error_exception"]	= e.what();
+			return;
+		}
 
 		stpTrans->sign(naAccountPrivate);
 
