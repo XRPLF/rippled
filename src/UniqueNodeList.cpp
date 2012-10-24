@@ -45,8 +45,6 @@ SETUP_LOG();
 #define MIN(x,y) ((x)<(y)?(x):(y))
 #endif
 
-SETUP_LOG();
-
 UniqueNodeList::UniqueNodeList(boost::asio::io_service& io_service) :
 	mdtScoreTimer(io_service),
 	mFetchActive(0),
@@ -60,8 +58,8 @@ void UniqueNodeList::start()
 {
 	miscLoad();
 
-	Log(lsDEBUG) << "Validator fetch updated: " << mtpFetchUpdated
-	Log(lsDEBOG) << "Validator score updated: " << mtpScoreUpdated;
+	Log(lsDEBUG) << "Validator fetch updated: " << mtpFetchUpdated;
+	Log(lsDEBUG) << "Validator score updated: " << mtpScoreUpdated;
 
 	fetchNext();			// Start fetching.
 	scoreNext(false);		// Start scoring.
@@ -139,9 +137,9 @@ bool UniqueNodeList::scoreRound(std::vector<scoreNode>& vsnNodes)
 		}
     }
 
-	cLog(lsTRACE) << "midway: ";
-
 	if (sLog(lsTRACE))
+	{
+		Log(lsTRACE) << "midway: ";
 		BOOST_FOREACH(scoreNode& sn, vsnNodes)
 		{
 			Log(lsTRACE) << str(boost::format("%s| %d, %d, %d: [%s]")
@@ -151,6 +149,7 @@ bool UniqueNodeList::scoreRound(std::vector<scoreNode>& vsnNodes)
 				% sn.iRoundSeed
 				% strJoin(sn.viReferrals.begin(), sn.viReferrals.end(), ","));
 		}
+	}
 
     // Add roundScore to score.
     // Make roundScore new roundSeed.
@@ -163,8 +162,9 @@ bool UniqueNodeList::scoreRound(std::vector<scoreNode>& vsnNodes)
 		sn.iRoundScore	= 0;
     }
 
-	cLog(lsTRACE) << "finish: ";
 	if (sLog(lsTRACE))
+	{
+		Log(lsTRACE) << "finish: ";
 		BOOST_FOREACH(scoreNode& sn, vsnNodes)
 		{
 			Log(lsTRACE) << str(boost::format("%s| %d, %d, %d: [%s]")
@@ -174,6 +174,7 @@ bool UniqueNodeList::scoreRound(std::vector<scoreNode>& vsnNodes)
 				% sn.iRoundSeed
 				% strJoin(sn.viReferrals.begin(), sn.viReferrals.end(), ","));
 		}
+	}
 
     return bDist;
 }
@@ -285,7 +286,8 @@ void UniqueNodeList::scoreCompute()
 	}
 
 	// For debugging, print out initial scores.
-	if (sLog(lsTRACE)
+	if (sLog(lsTRACE))
+	{
 		BOOST_FOREACH(scoreNode& sn, vsnNodes)
 		{
 			Log(lsTRACE) << str(boost::format("%s| %d, %d, %d")
@@ -294,12 +296,13 @@ void UniqueNodeList::scoreCompute()
 				% sn.iRoundScore
 				% sn.iRoundSeed);
 		}
+	}
 
 	// cLog(lsTRACE) << str(boost::format("vsnNodes.size=%d") % vsnNodes.size());
 
 	// Step through growing list of nodes adding each validation list.
 	// - Each validator may have provided referals.  Add those referals as validators.
-	for (int iNode=0; iNode != vsnNodes.size(); iNode++)
+	for (int iNode = 0; iNode != vsnNodes.size(); ++iNode)
 	{
 		scoreNode&			sn				= vsnNodes[iNode];
 		std::string&		strValidator	= sn.strValidator;
@@ -371,8 +374,9 @@ void UniqueNodeList::scoreCompute()
     for (int i = SCORE_ROUNDS; bDist && i--;)
 		bDist	= scoreRound(vsnNodes);
 
-	Log(lsTRACE) << "Scored:";
-	if (sLog(lsTRACE)
+	if (sLog(lsTRACE))
+	{
+		Log(lsTRACE) << "Scored:";
 		BOOST_FOREACH(scoreNode& sn, vsnNodes)
 		{
 			Log(lsTRACE) << str(boost::format("%s| %d, %d, %d: [%s]")
@@ -382,6 +386,7 @@ void UniqueNodeList::scoreCompute()
 				% sn.iRoundSeed
 				% strJoin(sn.viReferrals.begin(), sn.viReferrals.end(), ","));
 		}
+	}
 
 	// Persist validator scores.
 	ScopedLock sl(theApp->getWalletDB()->getDBLock());
