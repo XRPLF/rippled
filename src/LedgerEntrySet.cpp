@@ -2,6 +2,7 @@
 #include "LedgerEntrySet.h"
 
 #include <boost/make_shared.hpp>
+#include <boost/foreach.hpp>
 
 #include "Log.h"
 
@@ -354,30 +355,30 @@ void LedgerEntrySet::calcRawMeta(Serializer& s, TER result)
 	// Entries modified only as a result of building the transaction metadata
 	boost::unordered_map<uint256, SLE::pointer> newMod;
 
-	for (std::map<uint256, LedgerEntrySetEntry>::const_iterator it = mEntries.begin(),
-			end = mEntries.end(); it != end; ++it)
+	typedef std::pair<const uint256, LedgerEntrySetEntry> u256_LES_pair;
+	BOOST_FOREACH(u256_LES_pair& it, mEntries)
 	{
 		SField::ptr type = &sfGeneric;
 
-		switch (it->second.mAction)
+		switch (it.second.mAction)
 		{
 			case taaMODIFY:
 #ifdef META_DEBUG
-				cLog(lsTRACE) << "Modified Node " << it->first;
+				cLog(lsTRACE) << "Modified Node " << it.first;
 #endif
 				type = &sfModifiedNode;
 				break;
 
 			case taaDELETE:
 #ifdef META_DEBUG
-				cLog(lsTRACE) << "Deleted Node " << it->first;
+				cLog(lsTRACE) << "Deleted Node " << it.first;
 #endif
 				type = &sfDeletedNode;
 				break;
 
 			case taaCREATE:
 #ifdef META_DEBUG
-				cLog(lsTRACE) << "Created Node " << it->first;
+				cLog(lsTRACE) << "Created Node " << it.first;
 #endif
 				type = &sfCreatedNode;
 				break;
@@ -389,13 +390,13 @@ void LedgerEntrySet::calcRawMeta(Serializer& s, TER result)
 		if (type == &sfGeneric)
 			continue;
 
-		SLE::pointer origNode = mLedger->getSLE(it->first);
+		SLE::pointer origNode = mLedger->getSLE(it.first);
 
 		if (origNode && (origNode->getType() == ltDIR_NODE)) // No metadata for dir nodes
 			continue;
 
-		SLE::pointer curNode = it->second.mEntry;
-		mSet.setAffectedNode(it->first, *type);
+		SLE::pointer curNode = it.second.mEntry;
+		mSet.setAffectedNode(it.first, *type);
 
 		if (type == &sfDeletedNode)
 		{
@@ -406,16 +407,16 @@ void LedgerEntrySet::calcRawMeta(Serializer& s, TER result)
 			{ // node has an amount, covers ripple state nodes
 				STAmount amount = origNode->getFieldAmount(sfAmount);
 				if (amount.isNonZero())
-					mSet.getAffectedNode(it->first).setFieldAmount(sfPreviousBalance, amount);
+					mSet.getAffectedNode(it.first).setFieldAmount(sfPreviousBalance, amount);
 				amount = curNode->getFieldAmount(sfAmount);
 				if (amount.isNonZero())
-					mSet.getAffectedNode(it->first).setFieldAmount(sfFinalBalance, amount);
+					mSet.getAffectedNode(it.first).setFieldAmount(sfFinalBalance, amount);
 
 				if (origNode->getType() == ltRIPPLE_STATE)
 				{
-					mSet.getAffectedNode(it->first).setFieldAccount(sfLowID,
+					mSet.getAffectedNode(it.first).setFieldAccount(sfLowID,
 						NewcoinAddress::createAccountID(origNode->getFieldAmount(sfLowLimit).getIssuer()));
-					mSet.getAffectedNode(it->first).setFieldAccount(sfHighID,
+					mSet.getAffectedNode(it.first).setFieldAccount(sfHighID,
 						NewcoinAddress::createAccountID(origNode->getFieldAmount(sfHighLimit).getIssuer()));
 				}
 			}
@@ -424,10 +425,10 @@ void LedgerEntrySet::calcRawMeta(Serializer& s, TER result)
 			{ // check for non-zero balances
 				STAmount amount = origNode->getFieldAmount(sfTakerPays);
 				if (amount.isNonZero())
-					mSet.getAffectedNode(it->first).setFieldAmount(sfFinalTakerPays, amount);
+					mSet.getAffectedNode(it.first).setFieldAmount(sfFinalTakerPays, amount);
 				amount = origNode->getFieldAmount(sfTakerGets);
 				if (amount.isNonZero())
-					mSet.getAffectedNode(it->first).setFieldAmount(sfFinalTakerGets, amount);
+					mSet.getAffectedNode(it.first).setFieldAmount(sfFinalTakerGets, amount);
 			}
 
 		}
@@ -451,17 +452,17 @@ void LedgerEntrySet::calcRawMeta(Serializer& s, TER result)
 			{ // node has an amount, covers account root nodes and ripple nodes
 				STAmount amount = origNode->getFieldAmount(sfAmount);
 				if (amount != curNode->getFieldAmount(sfAmount))
-					mSet.getAffectedNode(it->first).setFieldAmount(sfPreviousBalance, amount);
+					mSet.getAffectedNode(it.first).setFieldAmount(sfPreviousBalance, amount);
 			}
 
 			if (origNode->getType() == ltOFFER)
 			{
 				STAmount amount = origNode->getFieldAmount(sfTakerPays);
 				if (amount != curNode->getFieldAmount(sfTakerPays))
-					mSet.getAffectedNode(it->first).setFieldAmount(sfPreviousTakerPays, amount);
+					mSet.getAffectedNode(it.first).setFieldAmount(sfPreviousTakerPays, amount);
 				amount = origNode->getFieldAmount(sfTakerGets);
 				if (amount != curNode->getFieldAmount(sfTakerGets))
-					mSet.getAffectedNode(it->first).setFieldAmount(sfPreviousTakerGets, amount);
+					mSet.getAffectedNode(it.first).setFieldAmount(sfPreviousTakerGets, amount);
 			}
 
 		}

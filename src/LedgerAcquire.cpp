@@ -244,8 +244,8 @@ void LedgerAcquire::trigger(Peer::ref peer, bool timer)
 				tmGL.set_ledgerhash(mHash.begin(), mHash.size());
 				tmGL.set_ledgerseq(mLedger->getLedgerSeq());
 				tmGL.set_itype(ripple::liTX_NODE);
-				for (std::vector<SHAMapNode>::iterator it = nodeIDs.begin(); it != nodeIDs.end(); ++it)
-					*(tmGL.add_nodeids()) = it->getRawString();
+				BOOST_FOREACH(SHAMapNode& it, nodeIDs)
+					*(tmGL.add_nodeids()) = it.getRawString();
 				sendRequest(tmGL, peer);
 			}
 		}
@@ -288,8 +288,8 @@ void LedgerAcquire::trigger(Peer::ref peer, bool timer)
 				tmGL.set_ledgerhash(mHash.begin(), mHash.size());
 				tmGL.set_ledgerseq(mLedger->getLedgerSeq());
 				tmGL.set_itype(ripple::liAS_NODE);
-				for (std::vector<SHAMapNode>::iterator it = nodeIDs.begin(); it != nodeIDs.end(); ++it)
-					*(tmGL.add_nodeids()) = it->getRawString();
+				BOOST_FOREACH(SHAMapNode& it, nodeIDs)
+					*(tmGL.add_nodeids()) = it.getRawString();
 				sendRequest(tmGL, peer);
 			}
 		}

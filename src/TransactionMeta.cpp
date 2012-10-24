@@ -25,19 +25,19 @@ TransactionMetaSet::TransactionMetaSet(const uint256& txid, uint32 ledger, const
 
 bool TransactionMetaSet::isNodeAffected(const uint256& node) const
 {
-	for (STArray::const_iterator it = mNodes.begin(); it != mNodes.end(); ++it)
-		if (it->getFieldH256(sfLedgerIndex) == node)
+	BOOST_FOREACH(const STObject& it, mNodes)
+		if (it.getFieldH256(sfLedgerIndex) == node)
 			return true;
 	return false;
 }
 
 void TransactionMetaSet::setAffectedNode(const uint256& node, SField::ref type)
 { // make sure the node exists and force its type
-	for (STArray::iterator it = mNodes.begin(); it != mNodes.end(); ++it)
+	BOOST_FOREACH(STObject& it, mNodes)
 	{
-		if (it->getFieldH256(sfLedgerIndex) == node)
+		if (it.getFieldH256(sfLedgerIndex) == node)
 		{
-			it->setFName(type);
+			it.setFName(type);
 			return;
 		}
 	}
@@ -52,10 +52,10 @@ void TransactionMetaSet::setAffectedNode(const uint256& node, SField::ref type)
 STObject& TransactionMetaSet::getAffectedNode(const uint256& node, SField::ref type)
 {
 	assert(&type);
-	for (STArray::iterator it = mNodes.begin(); it != mNodes.end(); ++it)
+	BOOST_FOREACH(STObject& it, mNodes)
 	{
-		if (it->getFieldH256(sfLedgerIndex) == node)
-			return *it;
+		if (it.getFieldH256(sfLedgerIndex) == node)
+			return it;
 	}
 
 	mNodes.push_back(STObject(sfModifiedNode));
@@ -69,10 +69,10 @@ STObject& TransactionMetaSet::getAffectedNode(const uint256& node, SField::ref t
 
 STObject& TransactionMetaSet::getAffectedNode(const uint256& node)
 {
-	for (STArray::iterator it = mNodes.begin(); it != mNodes.end(); ++it)
+	BOOST_FOREACH(STObject& it, mNodes)
 	{
-		if (it->getFieldH256(sfLedgerIndex) == node)
-			return *it;
+		if (it.getFieldH256(sfLedgerIndex) == node)
+			return it;
 	}
 	assert(false);
 	throw std::runtime_error("Affected node not found");
@@ -80,9 +80,9 @@ STObject& TransactionMetaSet::getAffectedNode(const uint256& node)
 
 const STObject& TransactionMetaSet::peekAffectedNode(const uint256& node) const
 {
-	for (STArray::const_iterator it = mNodes.begin(); it != mNodes.end(); ++it)
-		if (it->getFieldH256(sfLedgerIndex) == node)
-			return *it;
+	BOOST_FOREACH(const STObject& it, mNodes)
+		if (it.getFieldH256(sfLedgerIndex) == node)
+			return it;
 	throw std::runtime_error("Affected node not found");
 }
 
