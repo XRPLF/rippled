@@ -72,7 +72,6 @@ void Application::run()
 	if (!theConfig.DEBUG_LOGFILE.empty())
 	{ // Let DEBUG messages go to the file but only WARNING or higher to regular output
 		Log::setLogFile(theConfig.DEBUG_LOGFILE);
-		Log::setMinSeverity(lsWARNING);
 		LogPartition::setSeverity(lsDEBUG);
 	}
 
@@ -212,7 +211,7 @@ void Application::startNewLedger()
 		Ledger::pointer secondLedger = boost::make_shared<Ledger>(true, boost::ref(*firstLedger));
 		secondLedger->setClosed();
 		secondLedger->setAccepted();
-		mMasterLedger.pushLedger(secondLedger, boost::make_shared<Ledger>(true, boost::ref(*secondLedger)));
+		mMasterLedger.pushLedger(secondLedger, boost::make_shared<Ledger>(true, boost::ref(*secondLedger)), false);
 		assert(!!secondLedger->getAccountState(rootAddress));
 		mNetOps.setLastCloseTime(secondLedger->getCloseTimeNC());
 	}

@@ -47,13 +47,16 @@ public:
 	TER doTransaction(const SerializedTransaction& txn, TransactionEngineParams params);
 
 	void pushLedger(Ledger::ref newLedger);
-	void pushLedger(Ledger::ref newLCL, Ledger::ref newOL);
+	void pushLedger(Ledger::ref newLCL, Ledger::ref newOL, bool fromConsensus);
 	void storeLedger(Ledger::ref);
 
 	void setLastFullLedger(Ledger::ref ledger)
 	{
+		boost::recursive_mutex::scoped_lock ml(mLock);
 		mLastFullLedger = ledger;
 	}
+
+	void checkLedgerGap(Ledger::ref ledger);
 
 	void switchLedgers(Ledger::ref lastClosed, Ledger::ref newCurrent);
 

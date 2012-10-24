@@ -219,7 +219,7 @@ void Peer::handleConnect(const boost::system::error_code& error, boost::asio::ip
 	}
 	else
 	{
-		std::cerr << "Connect peer: success." << std::endl;
+		cLog(lsINFO) << "Connect peer: success.";
 
 		mSocketSsl.set_verify_mode(boost::asio::ssl::verify_none);
 

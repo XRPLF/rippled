@@ -96,7 +96,7 @@ public:
 	static LogSeverity stringToSeverity(const std::string&);
 
 	static LogSeverity getMinSeverity();
-	static void setMinSeverity(LogSeverity);
+	static void setMinSeverity(LogSeverity, bool all);
 	static void setLogFile(boost::filesystem::path);
 	static std::string rotateLog(void);
 };
