@@ -23,7 +23,7 @@ void LedgerMaster::pushLedger(Ledger::ref newLedger)
 	// Caller should already have properly assembled this ledger into "ready-to-close" form --
 	// all candidate transactions must already be applied
 	Log(lsINFO) << "PushLedger: " << newLedger->getHash();
-	ScopedLock sl(mLock);
+	boost::recursive_mutex::scoped_lock ml(mLock);
 	if (!!mFinalizedLedger)
 	{
 		mFinalizedLedger->setClosed();
@@ -51,8 +51,8 @@ void LedgerMaster::pushLedger(Ledger::ref newLCL, Ledger::ref newOL)
 		Log(lsINFO) << "StashAccepted: " << newLCL->getHash();
 	}
 
+	boost::recursive_mutex::scoped_lock ml(mLock);
 	mFinalizedLedger = newLCL;
-	ScopedLock sl(mLock);
 	mCurrentLedger = newOL;
 	mEngine.setLedger(newOL);
 }
@@ -60,11 +60,15 @@ void LedgerMaster::pushLedger(Ledger::ref newLCL, Ledger::ref newOL)
 void LedgerMaster::switchLedgers(Ledger::ref lastClosed, Ledger::ref current)
 {
 	assert(lastClosed && current);
-	mFinalizedLedger = lastClosed;
-	mFinalizedLedger->setClosed();
-	mFinalizedLedger->setAccepted();
 
-	mCurrentLedger = current;
+	{
+		boost::recursive_mutex::scoped_lock ml(mLock);
+		mFinalizedLedger = lastClosed;
+		mFinalizedLedger->setClosed();
+		mFinalizedLedger->setAccepted();
+		mCurrentLedger = current;
+	}
+
 	assert(!mCurrentLedger->isClosed());
 	mEngine.setLedger(mCurrentLedger);
 }
@@ -75,7 +79,6 @@ void LedgerMaster::storeLedger(Ledger::ref ledger)
 	if (ledger->isAccepted())
 		mLedgerHistory.addAcceptedLedger(ledger, false);
 }
-
 
 
 Ledger::pointer LedgerMaster::closeLedger()
@@ -94,5 +97,25 @@ TER LedgerMaster::doTransaction(const SerializedTransaction& txn, TransactionEng
 	return result;
 }
 
+void LedgerMaster::checkLedgerGap(Ledger::ref ledger)
+{
+	boost::recursive_mutex::scoped_lock sl(mLock);
+
+	if (ledger->getParentHash() == mLastFullLedger->getHash())
+	{
+		mLastFullLedger = ledger;
+		return;
+	}
+
+	if (theApp->getMasterLedgerAcquire().hasSet())
+		return;
+
+	if (ledger->getLedgerSeq() < mLastFullLedger->getLedgerSeq())
+		return;
+
+	// we have a gap or discontinuity
+	theApp->getMasterLedgerAcquire().makeSet(mLastFullLedger, ledger);
+
+}
 
 // vim:ts=4

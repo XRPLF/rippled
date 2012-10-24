@@ -52,8 +52,11 @@ public:
 
 	void setLastFullLedger(Ledger::ref ledger)
 	{
+		boost::recursive_mutex::scoped_lock ml(mLock);
 		mLastFullLedger = ledger;
 	}
+
+	void checkLedgerGap(Ledger::ref ledger);
 
 	void switchLedgers(Ledger::ref lastClosed, Ledger::ref newCurrent);
 

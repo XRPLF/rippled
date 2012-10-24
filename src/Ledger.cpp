@@ -434,9 +434,7 @@ void Ledger::saveAcceptedLedger(bool fromConsensus)
 	theApp->getOPs().pubLedger(shared_from_this());
 
 	if(theConfig.FULL_HISTORY)
-	{
-		// WRITEME: check for seamless ledger history
-	}
+		theApp->getMasterLedger().checkLedgerGap(shared_from_this());
 
 }
 

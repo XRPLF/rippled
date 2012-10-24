@@ -137,8 +137,8 @@ public:
 	void dropLedger(const uint256& ledgerHash);
 	bool gotLedgerData(ripple::TMLedgerData& packet, Peer::ref);
 
-	void killSet(const LedgerAcquireSet&)
-	{ mAcquireSet = LedgerAcquireSet::pointer(); }
+	bool hasSet()							{ return !!mAcquireSet; }
+	void killSet(const LedgerAcquireSet&)	{ mAcquireSet = LedgerAcquireSet::pointer(); }
 	void makeSet(Ledger::ref target, Ledger::ref current)
 	{ mAcquireSet = boost::make_shared<LedgerAcquireSet>(boost::ref(target), boost::ref(current)); }
 };
