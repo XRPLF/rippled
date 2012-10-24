@@ -149,9 +149,27 @@ public:
 	static std::auto_ptr<SerializedType> makeDefaultObject(SField::ref name)
 	{ return makeDefaultObject(name.fieldType, name); }
 
+	// field iterator stuff
+	typedef boost::ptr_vector<SerializedType>::iterator iterator;
+	typedef boost::ptr_vector<SerializedType>::const_iterator const_iterator;
+	iterator begin()				{ return mData.begin(); }
+	iterator end()					{ return mData.end(); }
+	const_iterator begin() const	{ return mData.begin(); }
+	const_iterator end() const		{ return mData.end(); }
+
 	bool operator==(const STObject& o) const;
 	bool operator!=(const STObject& o) const { return ! (*this == o); }
 };
+
+inline STObject::iterator range_begin(STObject& x)		{ return x.begin(); }
+inline STObject::iterator range_end(STObject &x)		{ return x.end(); }
+namespace boost
+{
+	template<> struct range_mutable_iterator<STObject>	{ typedef STObject::iterator type; };
+	template<> struct range_const_iterator<STObject>	{ typedef STObject::iterator type; };
+}
+
+
 
 class STArray : public SerializedType
 {
@@ -221,6 +239,14 @@ public:
 	virtual SerializedTypeID getSType() const 		{ return STI_ARRAY; }
 	virtual bool isEquivalent(const SerializedType& t) const;
 };
+
+inline STArray::iterator range_begin(STArray& x)		{ return x.begin(); }
+inline STArray::iterator range_end(STArray &x)			{ return x.end(); }
+namespace boost
+{
+	template<> struct range_mutable_iterator<STArray>	{ typedef STArray::iterator type; };
+	template<> struct range_const_iterator<STArray>		{ typedef STArray::iterator type; };
+}
 
 #endif
 // vim:ts=4
