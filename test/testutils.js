@@ -19,7 +19,6 @@ var config  = require("./config.js");
  *     // ...
  *   });
  *
- * @param host {String} Identifier for the host configuration to be used.
  * @param opts {Object} These options allow quick-and-dirty test-specific
  *   customizations of your test environment.
  * @param opts.verbose {Bool} Enable all debug output (then cover your ears
@@ -28,9 +27,10 @@ var config  = require("./config.js");
  *   websocket traffic.
  * @param opts.verbose_server {Bool} Set the -v option when running rippled.
  * @param opts.no_server {Bool} Don't auto-run rippled.
+ * @param host {String} Identifier for the host configuration to be used.
  */
-var build_setup = function (opts) {
-  opts = this.opts = opts || {};
+var build_setup = function (opts, host) {
+  opts = opts || {};
 
   // Normalize options
   if (opts.verbose) {
@@ -41,11 +41,13 @@ var build_setup = function (opts) {
   return function (done) {
     var self = this;
 
-    var host = host || config.server_default;
+    host = host || config.server_default;
 
     this.store = this.store || {};
 
     var data = this.store[host] = this.store[host] || {};
+
+    data.opts = opts;
 
     async.series([
       function runServerStep(callback) {
@@ -60,24 +62,31 @@ var build_setup = function (opts) {
   };
 };
 
-var test_teardown = function (done, host) {
-  host  = host || config.server_default;
+/**
+ * Generate tearDown routine.
+ *
+ * @param host {String} Identifier for the host configuration to be used.
+ */
+var build_teardown = function (host) {
+  return function (done) {
+    host = host || config.server_default;
 
-  var data = this.store[host];
-  var opts = this.opts;
+    var data = this.store[host];
+    var opts = data.opts;
 
-  async.series([
-    function disconnectWebsocketStep(callback) {
-       data.remote
-        .on('disconnected', callback)
-        .connect(false);
-    },
-    function stopServerStep(callback) {
-      if (opts.no_server) return callback();
+    async.series([
+      function disconnectWebsocketStep(callback) {
+        data.remote
+          .on('disconnected', callback)
+          .connect(false);
+      },
+      function stopServerStep(callback) {
+        if (opts.no_server) return callback();
 
-      data.server.on('stopped', callback).stop();
-    }
-  ], done);
+        data.server.on('stopped', callback).stop();
+      }
+    ], done);
+  };
 };
 
 var create_accounts = function (remote, src, amount, accounts, callback) {
@@ -119,9 +128,9 @@ var credit_limit = function (remote, src, amount, callback) {
     .submit();
 };
 
-exports.create_accounts	    = create_accounts;
-exports.credit_limit	    = credit_limit;
-exports.build_setup	    = build_setup;
-exports.test_teardown	    = test_teardown;
+exports.create_accounts     = create_accounts;
+exports.credit_limit        = credit_limit;
+exports.build_setup	        = build_setup;
+exports.build_teardown      = build_teardown;
 
 // vim:sw=2:sts=2:ts=8
