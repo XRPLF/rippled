@@ -84,7 +84,6 @@ int main(int argc, char* argv[])
 {
 	int					iResult	= 0;
 	po::variables_map	vm;										// Map of options.
-	bool				bTest	= false;
 
 	//
 	// Set up option parsing.
@@ -117,14 +116,10 @@ int main(int argc, char* argv[])
 		iResult	= 2;
 	}
 
+
 	if (iResult)
 	{
 		nothing();
-	}
-	else if (argc >= 2 && !strcmp(argv[1], "--test"))
-	{
-		bTest	= true;
-		Log::setMinSeverity(lsTRACE, true);
 	}
 	else
 	{
@@ -143,10 +138,17 @@ int main(int argc, char* argv[])
 		}
 	}
 
+
 	if (vm.count("verbose"))
 		Log::setMinSeverity(lsTRACE, true);
-	else if (!bTest)
+	else
 		Log::setMinSeverity(lsWARNING, true);
+
+	if (vm.count("test"))
+	{
+		unit_test_main(init_unit_test, argc, argv);
+		return 0;
+	}
 
 	if (!iResult)
 	{
@@ -169,15 +171,6 @@ int main(int argc, char* argv[])
 	else if (vm.count("help"))
 	{
 		iResult	= 1;
-	}
-	else if (vm.count("test"))
-	{
-		std::cerr << "--test must be first parameter." << std::endl;
-		iResult	= 1;
-	}
-	else if (bTest)
-	{
-		iResult	= unit_test_main(init_unit_test, argc, argv);
 	}
 	else if (!vm.count("parameters"))
 	{
