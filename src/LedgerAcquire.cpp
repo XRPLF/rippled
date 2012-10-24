@@ -91,7 +91,7 @@ void PeerSet::TimerEntry(boost::weak_ptr<PeerSet> wptr, const boost::system::err
 }
 
 LedgerAcquire::LedgerAcquire(const uint256& hash) : PeerSet(hash, LEDGER_ACQUIRE_TIMEOUT), 
-	mHaveBase(false), mHaveState(false), mHaveTransactions(false), mAborted(false), mSignaled(false)
+	mHaveBase(false), mHaveState(false), mHaveTransactions(false), mAborted(false), mSignaled(false), mAccept(false)
 {
 #ifdef LA_DEBUG
 	cLog(lsTRACE) << "Acquiring ledger " << mHash;
@@ -169,7 +169,11 @@ void LedgerAcquire::done()
 	mLock.unlock();
 
 	if (mLedger)
+	{
+		if (mAccept)
+			mLedger->setAccepted();
 		theApp->getMasterLedger().storeLedger(mLedger);
+	}
 
 	for (unsigned int i = 0; i < triggers.size(); ++i)
 		triggers[i](shared_from_this());
@@ -619,6 +623,7 @@ void LedgerAcquireSet::updateCurrentLedger(Ledger::pointer currentLedger)
 		{ // the next ledger we need is missing or missing nodes
 			LedgerAcquire::pointer nextAcquire =
 				theApp->getMasterLedgerAcquire().findCreate(currentLedger->getParentHash());
+			nextAcquire->setAccept();
 			if (mCurrentLedger)
 				nextAcquire->takePeerSetFrom(*mCurrentLedger);
 			mCurrentLedger = nextAcquire;
@@ -639,7 +644,11 @@ void LedgerAcquireSet::onComplete(boost::weak_ptr<LedgerAcquireSet> set, LedgerA
 		return;
 
 	if (acquired->isComplete())
-		lSet->updateCurrentLedger(acquired->getLedger());
+	{
+		Ledger::pointer ledger = acquired->getLedger();
+		ledger->setAccepted();
+		lSet->updateCurrentLedger(ledger);
+	}
 	else
 	{
 		cLog(lsWARNING) << "Bailing on LedgerAcquireSet due to failure to acquire a ledger";

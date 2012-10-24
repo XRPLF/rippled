@@ -68,7 +68,7 @@ public:
 
 protected:
 	Ledger::pointer mLedger;
-	bool mHaveBase, mHaveState, mHaveTransactions, mAborted, mSignaled;
+	bool mHaveBase, mHaveState, mHaveTransactions, mAborted, mSignaled, mAccept;
 
 	std::vector< boost::function<void (LedgerAcquire::pointer)> > mOnComplete;
 
@@ -88,6 +88,7 @@ public:
 	bool isTransComplete() const		{ return mHaveTransactions; }
 	Ledger::pointer getLedger()			{ return mLedger; }
 	void abort()						{ mAborted = true; }
+	void setAccept()					{ mAccept = true; }
 
 	void addOnComplete(boost::function<void (LedgerAcquire::pointer)>);
 

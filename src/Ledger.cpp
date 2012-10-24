@@ -337,7 +337,7 @@ uint256 Ledger::getHash()
 	return mHash;
 }
 
-void Ledger::saveAcceptedLedger()
+void Ledger::saveAcceptedLedger(bool fromConsensus)
 { // can be called in a different thread
 	static boost::format ledgerExists("SELECT LedgerSeq FROM Ledgers where LedgerSeq = %d;");
 	static boost::format deleteLedger("DELETE FROM Ledgers WHERE LedgerSeq = %d;");
@@ -427,6 +427,9 @@ void Ledger::saveAcceptedLedger()
 			mCloseResolution % mCloseFlags %
 			mAccountHash.GetHex() % mTransHash.GetHex()));
 	}
+
+	if (!fromConsensus)
+		return;
 
 	theApp->getOPs().pubLedger(shared_from_this());
 

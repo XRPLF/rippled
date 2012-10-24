@@ -157,7 +157,7 @@ public:
 	SLE::pointer getAccountRoot(const NewcoinAddress& naAccountID);
 
 	// database functions
-	void saveAcceptedLedger();
+	void saveAcceptedLedger(bool fromConsensus);
 	static Ledger::pointer loadByIndex(uint32 ledgerIndex);
 	static Ledger::pointer loadByHash(const uint256& ledgerHash);
 
