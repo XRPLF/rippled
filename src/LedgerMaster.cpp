@@ -7,6 +7,8 @@
 #include "NewcoinAddress.h"
 #include "Log.h"
 
+SETUP_LOG();
+
 uint32 LedgerMaster::getCurrentLedgerIndex()
 {
 	return mCurrentLedger->getLedgerSeq();
@@ -22,12 +24,12 @@ void LedgerMaster::pushLedger(Ledger::ref newLedger)
 {
 	// Caller should already have properly assembled this ledger into "ready-to-close" form --
 	// all candidate transactions must already be applied
-	Log(lsINFO) << "PushLedger: " << newLedger->getHash();
+	cLog(lsINFO) << "PushLedger: " << newLedger->getHash();
 	boost::recursive_mutex::scoped_lock ml(mLock);
 	if (!!mFinalizedLedger)
 	{
 		mFinalizedLedger->setClosed();
-		Log(lsTRACE) << "Finalizes: " << mFinalizedLedger->getHash();
+		cLog(lsTRACE) << "Finalizes: " << mFinalizedLedger->getHash();
 	}
 	mFinalizedLedger = mCurrentLedger;
 	mCurrentLedger = newLedger;
@@ -48,7 +50,7 @@ void LedgerMaster::pushLedger(Ledger::ref newLCL, Ledger::ref newOL)
 		mLedgerHistory.addAcceptedLedger(newLCL, false);
 		if (mLastFullLedger && (newLCL->getParentHash() == mLastFullLedger->getHash()))
 			mLastFullLedger = newLCL;
-		Log(lsINFO) << "StashAccepted: " << newLCL->getHash();
+		cLog(lsINFO) << "StashAccepted: " << newLCL->getHash();
 	}
 
 	boost::recursive_mutex::scoped_lock ml(mLock);
@@ -99,21 +101,25 @@ TER LedgerMaster::doTransaction(const SerializedTransaction& txn, TransactionEng
 
 void LedgerMaster::checkLedgerGap(Ledger::ref ledger)
 {
+	cLog(lsTRACE) << "Checking for ledger gap";
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
-	if (ledger->getParentHash() == mLastFullLedger->getHash())
+	if (mLastFullLedger && (ledger->getParentHash() == mLastFullLedger->getHash()))
 	{
 		mLastFullLedger = ledger;
+		cLog(lsTRACE) << "Perfect fit, no gap";
 		return;
 	}
 
 	if (theApp->getMasterLedgerAcquire().hasSet())
 		return;
 
-	if (ledger->getLedgerSeq() < mLastFullLedger->getLedgerSeq())
+	if (mLastFullLedger && (ledger->getLedgerSeq() < mLastFullLedger->getLedgerSeq()))
 		return;
 
 	// we have a gap or discontinuity
+	cLog(lsWARNING) << "Ledger gap found " <<
+		(mLastFullLedger ? mLastFullLedger->getLedgerSeq() : 0) << " - " << ledger->getLedgerSeq();
 	theApp->getMasterLedgerAcquire().makeSet(mLastFullLedger, ledger);
 
 }

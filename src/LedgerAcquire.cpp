@@ -646,6 +646,8 @@ void LedgerAcquireSet::onComplete(boost::weak_ptr<LedgerAcquireSet> set, LedgerA
 	if (acquired->isComplete())
 	{
 		Ledger::pointer ledger = acquired->getLedger();
+		assert(ledger);
+		cLog(lsDEBUG) << "LedgerAcquireSet::onComplete " << ledger->getLedgerSeq();
 		ledger->setAccepted();
 		theApp->getMasterLedger().checkLedgerGap(ledger);
 		lSet->updateCurrentLedger(ledger);
