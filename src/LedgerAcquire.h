@@ -100,11 +100,32 @@ public:
 	bool tryLocal();
 };
 
+class LedgerAcquireSet : public boost::enable_shared_from_this<LedgerAcquireSet>
+{ // a sequence of ledgers we are retreiving
+public:
+	typedef boost::shared_ptr<LedgerAcquireSet> pointer;
+
+protected:
+	Ledger::pointer			mTargetLedger;	// ledger we have and want to get back to
+	LedgerAcquire::pointer	mCurrentLedger; // ledger we are acquiring
+	bool					mCheckComplete; // should we check to make sure we have all nodes
+
+	void updateCurrentLedger(Ledger::pointer currentLedger);
+	void done();
+	void addPeers();
+
+	static void onComplete(boost::weak_ptr<LedgerAcquireSet>, LedgerAcquire::pointer);
+
+public:
+	LedgerAcquireSet(Ledger::ref targetLedger, Ledger::ref currentLedger);
+};
+
 class LedgerAcquireMaster
 {
 protected:
 	boost::mutex mLock;
 	std::map<uint256, LedgerAcquire::pointer> mLedgers;
+	LedgerAcquireSet::pointer mAcquireSet;
 
 public:
 	LedgerAcquireMaster() { ; }
@@ -114,6 +135,11 @@ public:
 	bool hasLedger(const uint256& ledgerHash);
 	void dropLedger(const uint256& ledgerHash);
 	bool gotLedgerData(ripple::TMLedgerData& packet, Peer::ref);
+
+	void killSet(const LedgerAcquireSet&)
+	{ mAcquireSet = LedgerAcquireSet::pointer(); }
+	void makeSet(Ledger::ref target, Ledger::ref current)
+	{ mAcquireSet = boost::make_shared<LedgerAcquireSet>(boost::ref(target), boost::ref(current)); }
 };
 
 #endif
