@@ -580,10 +580,9 @@ bool LedgerAcquireMaster::gotLedgerData(ripple::TMLedgerData& packet, Peer::ref 
 	return false;
 }
 
-LedgerAcquireSet::LedgerAcquireSet(Ledger::ref targetLedger, Ledger::ref currentLedger) :
+LedgerAcquireSet::LedgerAcquireSet(Ledger::ref targetLedger) :
 	mTargetLedger(targetLedger), mCheckComplete(true)
 {
-	updateCurrentLedger(currentLedger);
 }
 
 void LedgerAcquireSet::updateCurrentLedger(Ledger::pointer currentLedger)
@@ -591,22 +590,24 @@ void LedgerAcquireSet::updateCurrentLedger(Ledger::pointer currentLedger)
 
 	while (1)
 	{
-
-		if ((currentLedger->getHash() == mTargetLedger->getHash()) ||
-			(currentLedger->getParentHash() == mTargetLedger->getHash()))
-		{ // We have completed acquiring the set
-			done();
-			return;
-		}
-
-		while (mTargetLedger->getLedgerSeq() >= currentLedger->getLedgerSeq())
-		{ // We need to back up our target
-			mTargetLedger = theApp->getMasterLedger().getLedgerByHash(mTargetLedger->getParentHash());
-			if (!mTargetLedger)
-			{
-				cLog(lsWARNING) << "LedgerAcquireSet encountered a non-present target ledger";
+		if (mTargetLedger)
+		{
+			if ((currentLedger->getHash() == mTargetLedger->getHash()) ||
+				(currentLedger->getParentHash() == mTargetLedger->getHash()))
+			{ // We have completed acquiring the set
 				done();
 				return;
+			}
+
+			while (mTargetLedger->getLedgerSeq() >= currentLedger->getLedgerSeq())
+			{ // We need to back up our target
+				mTargetLedger = theApp->getMasterLedger().getLedgerByHash(mTargetLedger->getParentHash());
+				if (!mTargetLedger)
+				{
+					cLog(lsWARNING) << "LedgerAcquireSet encountered a non-present target ledger";
+					done();
+					return;
+				}
 			}
 		}
 

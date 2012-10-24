@@ -47,7 +47,7 @@ public:
 	TER doTransaction(const SerializedTransaction& txn, TransactionEngineParams params);
 
 	void pushLedger(Ledger::ref newLedger);
-	void pushLedger(Ledger::ref newLCL, Ledger::ref newOL);
+	void pushLedger(Ledger::ref newLCL, Ledger::ref newOL, bool fromConsensus);
 	void storeLedger(Ledger::ref);
 
 	void setLastFullLedger(Ledger::ref ledger)

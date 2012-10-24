@@ -211,7 +211,7 @@ void Application::startNewLedger()
 		Ledger::pointer secondLedger = boost::make_shared<Ledger>(true, boost::ref(*firstLedger));
 		secondLedger->setClosed();
 		secondLedger->setAccepted();
-		mMasterLedger.pushLedger(secondLedger, boost::make_shared<Ledger>(true, boost::ref(*secondLedger)));
+		mMasterLedger.pushLedger(secondLedger, boost::make_shared<Ledger>(true, boost::ref(*secondLedger)), false);
 		assert(!!secondLedger->getAccountState(rootAddress));
 		mNetOps.setLastCloseTime(secondLedger->getCloseTimeNC());
 	}

@@ -1186,7 +1186,7 @@ void LedgerConsensus::accept(SHAMap::ref set)
 	cLog(lsINFO) << "Applying transactions from current ledger";
 	applyTransactions(theApp->getMasterLedger().getCurrentLedger()->peekTransactionMap(), newOL, newLCL,
 		failedTransactions, true);
-	theApp->getMasterLedger().pushLedger(newLCL, newOL);
+	theApp->getMasterLedger().pushLedger(newLCL, newOL, true);
 	mNewLedgerHash = newLCL->getHash();
 	mState = lcsACCEPTED;
 	sl.unlock();
