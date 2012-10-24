@@ -15,7 +15,7 @@ buster.testRunner.timeout = 5000;
  
 buster.testCase("Remote functions", {
   'setUp' : testutils.build_setup(),
-  'tearDown' : testutils.test_teardown,
+  'tearDown' : testutils.build_teardown(),
 
   'request_ledger_current' :
     function (done) {

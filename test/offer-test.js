@@ -12,7 +12,7 @@ buster.testRunner.timeout = 5000;
 
 buster.testCase("Offer tests", {
   'setUp' : testutils.build_setup(),
-  'tearDown' : testutils.test_teardown,
+  'tearDown' : testutils.build_teardown(),
 
   "offer create then cancel in one ledger" :
     function (done) {
