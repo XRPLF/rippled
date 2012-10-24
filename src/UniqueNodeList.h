@@ -10,7 +10,7 @@
 #include "HttpsClient.h"
 #include "ParseSection.h"
 
-#include <boost/thread/mutex.hpp>
+#include <boost/thread/recursive_mutex.hpp>
 #include <boost/unordered_map.hpp>
 #include <boost/unordered_set.hpp>
 
@@ -48,7 +48,7 @@ private:
 	boost::posix_time::ptime		mtpScoreUpdated;
 	boost::posix_time::ptime		mtpFetchUpdated;
 
-	boost::recursive_mutex				mUNLLock;
+	boost::recursive_mutex			mUNLLock;
 	// XXX Make this faster, make this the contents vector unsigned char or raw public key.
 	// XXX Contents needs to based on score.
 	boost::unordered_set<std::string>	mUNL;
