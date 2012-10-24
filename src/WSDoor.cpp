@@ -321,6 +321,18 @@ Json::Value WSConnection::invokeCommand(const Json::Value& jvRequest)
 		{ "transaction_entry",					&WSConnection::doTransactionEntry				},
 		{ "subscribe",							&WSConnection::doSubscribe						},
 		{ "unsubscribe",						&WSConnection::doUnsubscribe					},
+
+		// deprecated
+		{ "account_info_subscribe",				&WSConnection::doAccountInfoSubscribe			},
+		{ "account_info_unsubscribe",			&WSConnection::doAccountInfoUnsubscribe			},
+		{ "account_transaction_subscribe",		&WSConnection::doAccountTransactionSubscribe	},
+		{ "account_transaction_unsubscribe",	&WSConnection::doAccountTransactionUnsubscribe	},
+		{ "ledger_accounts_subscribe",			&WSConnection::doLedgerAccountsSubcribe			},
+		{ "ledger_accounts_unsubscribe",		&WSConnection::doLedgerAccountsUnsubscribe		},
+		{ "server_subscribe",					&WSConnection::doServerSubscribe				},
+		{ "server_unsubscribe",					&WSConnection::doServerUnsubscribe				},
+		{ "transaction_subscribe",				&WSConnection::doTransactionSubcribe			},
+		{ "transaction_unsubscribe",			&WSConnection::doTransactionUnsubscribe			},
 	};
 
 	if (!jvRequest.isMember("command"))
@@ -402,11 +414,10 @@ boost::unordered_set<NewcoinAddress> WSConnection::parseAccountIds(const Json::V
 /*
 server : Sends a message anytime the server status changes such as network connectivity.
 ledger : Sends a message at every ledger close.
-tx_meta : Sends the effects of all the transactions every time a ledger closes.
 transactions : Sends a message for every transaction that makes it into a ledger.
 rt_transactions
 */
-
+// TODO
 void WSConnection::doSubscribe(Json::Value& jvResult, const Json::Value& jvRequest)
 {
 	if (jvRequest.isMember("streams"))
@@ -419,19 +430,16 @@ void WSConnection::doSubscribe(Json::Value& jvResult, const Json::Value& jvReque
 
 				if(streamName=="server")
 				{
-					mNetwork.subLedgerAccounts(this)
+					mNetwork.subLedgerAccounts(this);
 				}else if(streamName=="ledger")
 				{
-					mNetwork.subLedgerAccounts(this)
-				}else if(streamName=="tx_meta")
-				{
-
+					mNetwork.subLedgerAccounts(this);
 				}else if(streamName=="transactions")
 				{
-
+					mNetwork.subTransaction(this);
 				}else if(streamName=="rt_transactions")
 				{
-
+					mNetwork.subTransaction(this); // TODO
 				}else
 				{
 					jvResult["error"]	= str(boost::format("Unknown stream: %s") % streamName);
@@ -914,10 +922,10 @@ void WSConnection::doServerUnsubscribe(Json::Value& jvResult, const Json::Value&
 
 void WSConnection::doRPC(Json::Value& jvResult, const Json::Value& jvRequest)
 {
-	if (jvRequest.isMember("commandline"))
+	if (jvRequest.isMember("command"))
 	{
-
-	}else jvResult["error"]	= "fieldNotFoundCommandline";
+		// TODO
+	}else jvResult["error"]	= "fieldNotCommand";
 	
 }
 
