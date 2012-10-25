@@ -21,15 +21,15 @@ int RangeSet::getFirst() const
 	const_iterator it = begin();
 	if (it == end())
 		return RangeSetAbsent;
-	return it->lower();
+	return lower(it);
 }
 
 int RangeSet::getNext(int v) const
 {
 	for (const_iterator it = begin(); it != end(); ++it)
 	{
-		if ((it->upper() - 1) > v)
-			return max(v + 1, it->lower());
+		if (upper(it) > v)
+			return max(v + 1, lower(it));
 	}
 	return RangeSetAbsent;
 }
@@ -39,15 +39,15 @@ int RangeSet::getLast() const
 	const_reverse_iterator it = rbegin();
 	if (it == rend())
 		return RangeSetAbsent;
-	return it->upper() - 1;
+	return upper(it);
 }
 
 int RangeSet::getPrev(int v) const
 {
 	for (const_reverse_iterator it = rbegin(); it != rend(); ++it)
 	{
-		if (it->lower() < v)
-			return min(v - 1, it->upper() - 1);
+		if (lower(it) < v)
+			return min(v - 1, upper(it));
 	}
 	return RangeSetAbsent;
 }
@@ -79,11 +79,11 @@ std::string RangeSet::toString() const
 	{
 		if (!ret.empty())
 			ret += ",";
-		if (it->lower() == (it->upper() - 1))
-			ret += boost::lexical_cast<std::string>(it->lower());
+		if (lower(it) == upper(it))
+			ret += boost::lexical_cast<std::string>(lower(it));
 		else
-			ret += boost::lexical_cast<std::string>(it->lower()) + "-"
-				+ boost::lexical_cast<std::string>(it->upper() - 1);
+			ret += boost::lexical_cast<std::string>(lower(it)) + "-"
+				+ boost::lexical_cast<std::string>(upper(it));
 	}
 	if (ret.empty())
 		return "empty";

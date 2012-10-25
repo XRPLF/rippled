@@ -50,6 +50,12 @@ public:
 	const_reverse_iterator rbegin() const	{ return mRanges.rbegin(); }
 	const_reverse_iterator rend() const		{ return mRanges.rend(); }
 
+	static int lower(const_iterator& it)				{ return it->lower(); }
+	static int upper(const_iterator& it)				{ return it->upper() - 1; }
+	static int lower(const_reverse_iterator& it)		{ return it->lower(); }
+	static int upper(const_reverse_iterator& it)		{ return it->upper() - 1; }
+
+
 	bool operator!=(const RangeSet& r) const	{ return mRanges != r.mRanges; }
 	bool operator==(const RangeSet& r) const	{ return mRanges == r.mRanges; }
 
