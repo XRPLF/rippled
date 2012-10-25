@@ -58,7 +58,8 @@ public:
 	virtual void gotNode(const SHAMapNode& id, const uint256& nodeHash,
 		const std::vector<unsigned char>& nodeData, SHAMapTreeNode::TNType type)
 	{
-		theApp->getHashedObjectStore().store((type == tnTRANSACTION_NM) ? hotTRANSACTION : hotTRANSACTION_NODE,
+		theApp->getHashedObjectStore().store(
+			(type == SHAMapTreeNode::tnTRANSACTION_NM) ? hotTRANSACTION : hotTRANSACTION_NODE,
 			mLedgerSeq, nodeData, nodeHash);
 	}
 	virtual bool haveNode(const SHAMapNode& id, const uint256& nodeHash, std::vector<unsigned char>& nodeData)
