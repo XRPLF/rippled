@@ -216,7 +216,7 @@ bool SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigned cha
 		return true;
 	}
 
-	if (iNode->isLeaf() || (iNode->getDepth() == node.getDepth()))
+	if (iNode->isLeaf() || (iNode->getDepth() >= node.getDepth()))
 	{
 		cLog(lsTRACE) << "got inner node, already had it (late)";
 		return true;
