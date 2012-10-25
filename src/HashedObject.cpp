@@ -75,7 +75,7 @@ void HashedObjectStore::bulkWrite()
 				return;
 			}
 		}
-//		cLog(lsINFO) << "HOS: writing " << set.size();
+		cLog(lsTRACE) << "HOS: writing " << set.size();
 
 		static boost::format fExists("SELECT ObjType FROM CommittedObjects WHERE Hash = '%s';");
 		static boost::format
@@ -122,7 +122,8 @@ HashedObject::pointer HashedObjectStore::retrieve(const uint256& hash)
 		}
 	}
 
-	if (!theApp || !theApp->getHashNodeDB()) return HashedObject::pointer();
+	if (!theApp || !theApp->getHashNodeDB())
+		return HashedObject::pointer();
 	std::string sql = "SELECT * FROM CommittedObjects WHERE Hash='";
 	sql.append(hash.GetHex());
 	sql.append("';");
