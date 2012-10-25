@@ -1944,7 +1944,7 @@ TER RippleCalc::rippleCalc(
 	    terResult	= temUNCERTAIN;
     }
 
-	STAmount				saInAct;
+	STAmount				saInAct;	// XXX Verify don't need to set currency/issuer.
 	STAmount				saOutAct;
     const LedgerEntrySet	lesBase			= lesActive;							// Checkpoint with just fees paid.
     const uint64			uQualityLimit	= bLimitQuality ? STAmount::getRate(saDstAmountReq, saMaxAmountReq) : 0;

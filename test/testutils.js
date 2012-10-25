@@ -1,6 +1,7 @@
 var async   = require("async");
 // var buster  = require("buster");
 
+var Amount  = require("../js/amount.js").Amount;
 var Remote  = require("../js/remote.js").Remote;
 var Server  = require("./server.js").Server;
 
@@ -116,6 +117,24 @@ var credit_limit = function (remote, src, amount, callback) {
   remote.transaction()
     .ripple_line_set(src, amount)
     .on('proposed', function (m) {
+	console.log("proposed: %s", JSON.stringify(m));
+
+	callback(m.result != 'tesSUCCESS');
+      })
+    .on('error', function (m) {
+	// console.log("error: %s", JSON.stringify(m));
+
+	callback(m);
+      })
+    .submit();
+};
+
+var payment = function (remote, src, dst, amount, callback) {
+  assert(5 === arguments.length);
+
+  remote.transaction()
+    .payment(src, dst, amount)
+    .on('proposed', function (m) {
 	// console.log("proposed: %s", JSON.stringify(m));
 
 	callback(m.result != 'tesSUCCESS');
@@ -128,9 +147,27 @@ var credit_limit = function (remote, src, amount, callback) {
     .submit();
 };
 
-exports.create_accounts     = create_accounts;
-exports.credit_limit        = credit_limit;
-exports.build_setup	        = build_setup;
-exports.build_teardown      = build_teardown;
+var verify_balance = function (remote, src, amount_json, callback) {
+  assert(4 === arguments.length);
+  var amount  = Amount.from_json(amount_json);
+
+  remote.request_ripple_balance(src, amount.issuer.to_json(), amount.currency.to_json(), 'CURRENT')
+    .once('ripple_state', function (m) {
+	console.log("BALANCE: %s", JSON.stringify(m));
+	console.log("account_balance: %s", m.account_balance.to_text_full());
+	console.log("account_limit: %s", m.account_limit.to_text_full());
+	console.log("issuer_balance: %s", m.issuer_balance.to_text_full());
+	console.log("issuer_limit: %s", m.issuer_limit.to_text_full());
+
+	callback(!m.account_balance.equals(amount));
+      })
+    .request();
+};
+exports.build_setup	    = build_setup;
+exports.create_accounts	    = create_accounts;
+exports.credit_limit	    = credit_limit;
+exports.payment		    = payment;
+exports.test_teardown	    = test_teardown;
+exports.verify_balance	    = verify_balance;
 
 // vim:sw=2:sts=2:ts=8

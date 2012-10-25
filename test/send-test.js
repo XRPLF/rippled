@@ -10,7 +10,7 @@ var testutils  = require("./testutils.js");
 // How long to wait for server to start.
 var serverDelay = 1500;
 
-buster.testRunner.timeout = 5000;
+buster.testRunner.timeout = 3000;
 
 buster.testCase("// Sending", {
   'setUp' : testutils.build_setup(),
@@ -234,7 +234,7 @@ buster.testCase("// Sending", {
 });
 
 // XXX In the future add ledger_accept after partial retry is implemented in the server.
-buster.testCase("Sending future", {
+buster.testCase("// Sending future", {
   'setUp' : testutils.build_setup(),
   'tearDown' : testutils.build_teardown(),
 
@@ -265,7 +265,7 @@ buster.testCase("Sending future", {
 
 	    self.remote.transaction()
 	      .payment('alice', 'bob', "24/USD/alice")
-	      .on('proposed', function (m) {
+	      .once('proposed', function (m) {
 		  // console.log("proposed: %s", JSON.stringify(m));
 		  callback(m.result != 'tesSUCCESS');
 		})
@@ -453,4 +453,59 @@ buster.testCase("Sending future", {
     // Ripple with one-way credit path.
 });
 
+buster.testCase("Indirect ripple", {
+  'setUp' : testutils.build_setup({ verbose: true, no_server: false }),
+  'tearDown' : testutils.test_teardown,
+
+  "indirect ripple" :
+    function (done) {
+      var self = this;
+
+      self.remote.set_trace();
+
+      async.waterfall([
+	  function (callback) {
+	    self.what = "Create accounts.";
+
+	    testutils.create_accounts(self.remote, "root", "10000", ["alice", "bob", "mtgox"], callback);
+	  },
+	  function (callback) {
+	    self.what = "Set alice's limit.";
+
+	    testutils.credit_limit(self.remote, "alice", "600/USD/mtgox", callback);
+	  },
+	  function (callback) {
+	    self.what = "Set bob's limit.";
+
+	    testutils.credit_limit(self.remote, "bob", "700/USD/mtgox", callback);
+	  },
+	  function (callback) {
+	    self.what = "Give alice some mtgox.";
+
+	    testutils.payment(self.remote, "mtgox", "alice", "70/USD/mtgox", callback);
+	  },
+	  function (callback) {
+	    self.what = "Give bob some mtgox.";
+
+	    testutils.payment(self.remote, "mtgox", "bob", "50/USD/mtgox", callback);
+	  },
+	  function (callback) {
+	    self.what = "Verify alice balance with mtgox.";
+
+	    testutils.verify_balance(self.remote, "alice", "70/USD/mtgox", callback);
+	  },
+	  function (callback) {
+	    self.what = "Verify bob balance with mtgox.";
+
+	    testutils.verify_balance(self.remote, "bob", "50/USD/mtgox", callback);
+	  },
+	], function (error) {
+	  buster.refute(error, self.what);
+	  done();
+	});
+    },
+
+    // Ripple without credit path.
+    // Ripple with one-way credit path.
+});
 // vim:sw=2:sts=2:ts=8

@@ -832,17 +832,23 @@ void WSConnection::doLedgerEntry(Json::Value& jvResult, const Json::Value& jvReq
 		uint160			uCurrency;
 		Json::Value		jvRippleState	= jvRequest["ripple_state"];
 
-		if (!jvRippleState.isMember("accounts")
-			|| !jvRippleState.isMember("currency")
+		if (!jvRippleState.isMember("currency")
+			|| !jvRippleState.isMember("accounts")
 			|| !jvRippleState["accounts"].isArray()
-			|| 2 != jvRippleState["accounts"].size()) {
+			|| 2 != jvRippleState["accounts"].size()
+			|| !jvRippleState["accounts"][0u].isString()
+			|| !jvRippleState["accounts"][1u].isString()
+			|| jvRippleState["accounts"][0u].asString() == jvRippleState["accounts"][1u].asString()
+			) {
 
 			cLog(lsINFO)
-				<< boost::str(boost::format("ledger_entry: ripple_state: accounts: %d currency: %d array=%d, size=%d")
+				<< boost::str(boost::format("ledger_entry: ripple_state: accounts: %d currency: %d array: %d size: %d equal: %d")
 					% jvRippleState.isMember("accounts")
 					% jvRippleState.isMember("currency")
 					% jvRippleState["accounts"].isArray()
-					% jvRippleState["accounts"].size());
+					% jvRippleState["accounts"].size()
+					% (jvRippleState["accounts"][0u].asString() == jvRippleState["accounts"][1u].asString())
+					);
 
 			jvResult["error"]	= "malformedRequest";
 		}
