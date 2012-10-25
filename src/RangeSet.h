@@ -2,24 +2,26 @@
 #define RANGESET__H
 
 #include <list>
+#include <string>
 
 #include <boost/foreach.hpp>
+#include <boost/icl/interval_set.hpp>
 
 class RangeSet
 {
 
 public:
 
-	typedef std::pair<int, int>							Range;
-	typedef std::list<Range>::iterator					iterator;
-	typedef std::list<Range>::const_iterator			const_iterator;
-	typedef std::list<Range>::reverse_iterator			reverse_iterator;
-	typedef std::list<Range>::const_reverse_iterator	const_reverse_iterator;
+	typedef boost::icl::interval_set<int>		iRangeSet;
+	typedef iRangeSet::iterator					iterator;
+	typedef iRangeSet::const_iterator			const_iterator;
+	typedef iRangeSet::reverse_iterator			reverse_iterator;
+	typedef iRangeSet::const_reverse_iterator	const_reverse_iterator;
 	static const int RangeSetAbsent = -1;
 
 protected:
 
-	std::list<Range> mRanges;
+	iRangeSet mRanges;
 
 public:
 
@@ -31,10 +33,12 @@ public:
 	int getLast() const;
 	int getPrev(int) const;
 
-	bool setValue(int);
+	void setValue(int);
 	void setRange(int, int);
-	bool clearValue(int);
+	void clearValue(int);
 	void clearRange(int, int);
+
+	void clear()							{ mRanges.clear(); }
 
 	// iterator stuff
 	iterator begin()						{ return mRanges.begin(); }
@@ -45,6 +49,11 @@ public:
 	reverse_iterator rend()					{ return mRanges.rend(); }
 	const_reverse_iterator rbegin() const	{ return mRanges.rbegin(); }
 	const_reverse_iterator rend() const		{ return mRanges.rend(); }
+
+	bool operator!=(const RangeSet& r) const	{ return mRanges != r.mRanges; }
+	bool operator==(const RangeSet& r) const	{ return mRanges == r.mRanges; }
+
+	std::string toString() const;
 };
 
 inline RangeSet::const_iterator	range_begin(const RangeSet& r)	{ return r.begin(); }
@@ -65,3 +74,5 @@ namespace boost
 }
 
 #endif
+
+// vim:ts=4
