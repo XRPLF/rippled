@@ -247,7 +247,7 @@ bool SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigned cha
 	{
 		Serializer s;
 		newNode->addRaw(s, snfPREFIX);
-		filter->gotNode(node, hash, s.peekData(), newNode->isLeaf());
+		filter->gotNode(node, hash, s.peekData(), newNode->getType());
 	}
 
 	mTNByID[*newNode] = newNode;

@@ -237,7 +237,7 @@ public:
 	virtual ~SHAMapSyncFilter()		{ ; }
 
 	virtual void gotNode(const SHAMapNode& id, const uint256& nodeHash,
-		const std::vector<unsigned char>& nodeData, bool isLeaf)
+		const std::vector<unsigned char>& nodeData, SHAMapTreeNode::TNType type)
 	{ ; }
 
 	virtual bool haveNode(const SHAMapNode& id, const uint256& nodeHash, std::vector<unsigned char>& nodeData)

@@ -12,7 +12,7 @@ class ConsensusTransSetSF : public SHAMapSyncFilter
 public:
 	ConsensusTransSetSF() { ; }
 	virtual void gotNode(const SHAMapNode& id, const uint256& nodeHash,
-		const std::vector<unsigned char>& nodeData, bool isLeaf)
+		const std::vector<unsigned char>& nodeData, SHAMapTreeNode::TNType)
 	{
 		// WRITEME: If 'isLeaf' is true, this is a transaction
 		theApp->getTempNodeCache().store(nodeHash, nodeData);
@@ -35,7 +35,7 @@ public:
 	{ ; }
 
 	virtual void gotNode(const SHAMapNode& id, const uint256& nodeHash,
-		const std::vector<unsigned char>& nodeData, bool isLeaf)
+		const std::vector<unsigned char>& nodeData, SHAMapTreeNode::TNType)
 	{
 		theApp->getHashedObjectStore().store(hotACCOUNT_NODE, mLedgerSeq, nodeData, nodeHash);
 	}
@@ -56,10 +56,10 @@ public:
 	{ ; }
 
 	virtual void gotNode(const SHAMapNode& id, const uint256& nodeHash,
-		const std::vector<unsigned char>& nodeData, bool isLeaf)
+		const std::vector<unsigned char>& nodeData, SHAMapTreeNode::TNType type)
 	{
-		theApp->getHashedObjectStore().store(isLeaf ? hotTRANSACTION : hotTRANSACTION_NODE, mLedgerSeq,
-			nodeData, nodeHash);
+		theApp->getHashedObjectStore().store((type == tnTRANSACTION_NM) ? hotTRANSACTION : hotTRANSACTION_NODE,
+			mLedgerSeq, nodeData, nodeHash);
 	}
 	virtual bool haveNode(const SHAMapNode& id, const uint256& nodeHash, std::vector<unsigned char>& nodeData)
 	{ // fetchNodeExternal already tried
