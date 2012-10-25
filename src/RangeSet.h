@@ -33,10 +33,13 @@ public:
 	int getLast() const;
 	int getPrev(int) const;
 
+	int prevMissing(int) const;		// largest number not in the set that is less than the given number
+
 	void setValue(int);
 	void setRange(int, int);
 	void clearValue(int);
 	void clearRange(int, int);
+
 
 	void clear()							{ mRanges.clear(); }
 

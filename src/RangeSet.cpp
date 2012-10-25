@@ -52,6 +52,20 @@ int RangeSet::getPrev(int v) const
 	return RangeSetAbsent;
 }
 
+int RangeSet::prevMissing(int v) const
+{ // largest number not in the set that is less than the given number
+	for (const_reverse_iterator it = rbegin(); it != rend(); ++it)
+	{
+		if (lower(it) <= v)
+		{
+			if (upper(it) < v)
+				return upper(it) + 1;
+			return lower(it) - 1;
+		}
+	}
+	return RangeSetAbsent;
+}
+
 void RangeSet::setValue(int v)
 {
 	setRange(v, v);
