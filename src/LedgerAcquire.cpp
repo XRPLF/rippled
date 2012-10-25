@@ -400,7 +400,7 @@ bool LedgerAcquire::takeTxNode(const std::list<SHAMapNode>& nodeIDs,
 	{
 		if (nodeIDit->isRoot())
 		{
-			if (!mLedger->peekTransactionMap()->addRootNode(mLedger->getTransHash(), *nodeDatait, snfWIRE))
+			if (!mLedger->peekTransactionMap()->addRootNode(mLedger->getTransHash(), *nodeDatait, snfWIRE, &tFilter))
 				return false;
 		}
 		else if (!mLedger->peekTransactionMap()->addKnownNode(*nodeIDit, *nodeDatait, &tFilter))
@@ -435,7 +435,8 @@ bool LedgerAcquire::takeAsNode(const std::list<SHAMapNode>& nodeIDs,
 	{
 		if (nodeIDit->isRoot())
 		{
-			if (!mLedger->peekAccountStateMap()->addRootNode(mLedger->getAccountHash(), *nodeDatait, snfWIRE))
+			if (!mLedger->peekAccountStateMap()->addRootNode(mLedger->getAccountHash(),
+					*nodeDatait, snfWIRE, &tFilter))
 				return false;
 		}
 		else if (!mLedger->peekAccountStateMap()->addKnownNode(*nodeIDit, *nodeDatait, &tFilter))
@@ -458,14 +459,22 @@ bool LedgerAcquire::takeAsNode(const std::list<SHAMapNode>& nodeIDs,
 
 bool LedgerAcquire::takeAsRootNode(const std::vector<unsigned char>& data)
 {
-	if (!mHaveBase) return false;
-	return mLedger->peekAccountStateMap()->addRootNode(mLedger->getAccountHash(), data, snfWIRE);
+	if (!mHaveBase)
+		return false;
+	AccountStateSF tFilter(mLedger->getHash(), mLedger->getLedgerSeq());
+	if (!mLedger->peekAccountStateMap()->addRootNode(mLedger->getAccountHash(), data, snfWIRE, &tFilter))
+		return false;
+	return true;
 }
 
 bool LedgerAcquire::takeTxRootNode(const std::vector<unsigned char>& data)
 {
-	if (!mHaveBase) return false;
-	return mLedger->peekTransactionMap()->addRootNode(mLedger->getTransHash(), data, snfWIRE);
+	if (!mHaveBase)
+		return false;
+	TransactionStateSF tFilter(mLedger->getHash(), mLedger->getLedgerSeq());
+	if (!mLedger->peekTransactionMap()->addRootNode(mLedger->getTransHash(), data, snfWIRE, &tFilter))
+		return false;
+	return true;
 }
 
 LedgerAcquire::pointer LedgerAcquireMaster::findCreate(const uint256& hash)

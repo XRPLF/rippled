@@ -368,8 +368,10 @@ public:
 	bool getNodeFat(const SHAMapNode& node, std::vector<SHAMapNode>& nodeIDs,
 	 std::list<std::vector<unsigned char> >& rawNode, bool fatRoot, bool fatLeaves);
 	bool getRootNode(Serializer& s, SHANodeFormat format);
-	bool addRootNode(const uint256& hash, const std::vector<unsigned char>& rootNode, SHANodeFormat format);
-	bool addRootNode(const std::vector<unsigned char>& rootNode, SHANodeFormat format);
+	bool addRootNode(const uint256& hash, const std::vector<unsigned char>& rootNode, SHANodeFormat format,
+		SHAMapSyncFilter* filter);
+	bool addRootNode(const std::vector<unsigned char>& rootNode, SHANodeFormat format,
+		SHAMapSyncFilter* filter);
 	bool addKnownNode(const SHAMapNode& nodeID, const std::vector<unsigned char>& rawNode,
 		SHAMapSyncFilter* filter);
 
