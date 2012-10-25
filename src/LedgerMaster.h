@@ -5,8 +5,10 @@
 #include "LedgerHistory.h"
 #include "Peer.h"
 #include "types.h"
+#include "LedgerAcquire.h"
 #include "Transaction.h"
 #include "TransactionEngine.h"
+#include "RangeSet.h"
 
 // Tracks the current ledger and any ledgers in the process of closing
 // Tracks ledger history
@@ -20,19 +22,25 @@ class LedgerMaster
 
 	Ledger::pointer mCurrentLedger;		// The ledger we are currently processiong
 	Ledger::pointer mFinalizedLedger;	// The ledger that most recently closed
-	Ledger::pointer mLastFullLedger;	// We have history to this point
 
 	LedgerHistory mLedgerHistory;
 
 	std::map<uint256, Transaction::pointer> mHeldTransactionsByID;
 
+	RangeSet mCompleteLedgers;
+	LedgerAcquire::pointer mMissingLedger;
+	uint32 mMissingSeq;
+
 	void applyFutureTransactions(uint32 ledgerIndex);
 	bool isValidTransaction(const Transaction::pointer& trans);
 	bool isTransactionOnFutureList(const Transaction::pointer& trans);
 
+	void acquireMissingLedger(const uint256& ledgerHash, uint32 ledgerSeq);
+	void missingAcquireComplete(LedgerAcquire::pointer);
+
 public:
 
-	LedgerMaster()						{ ; }
+	LedgerMaster() : mMissingSeq(0)		{ ; }
 
 	uint32 getCurrentLedgerIndex();
 
@@ -50,13 +58,7 @@ public:
 	void pushLedger(Ledger::ref newLCL, Ledger::ref newOL, bool fromConsensus);
 	void storeLedger(Ledger::ref);
 
-	void setLastFullLedger(Ledger::ref ledger)
-	{
-		boost::recursive_mutex::scoped_lock ml(mLock);
-		mLastFullLedger = ledger;
-	}
-
-	void checkLedgerGap(Ledger::ref ledger);
+	void setFullLedger(Ledger::ref ledger);
 
 	void switchLedgers(Ledger::ref lastClosed, Ledger::ref newCurrent);
 
@@ -84,6 +86,8 @@ public:
 
 		return mLedgerHistory.getLedgerByHash(hash);
 	}
+
+	void setLedgerRangePresent(uint32 minV, uint32 maxV) { mCompleteLedgers.setRange(minV, maxV); }
 
 	bool addHeldTransaction(const Transaction::pointer& trans);
 };

@@ -117,7 +117,6 @@ protected:
 	boost::unordered_set<uint160> mDeadNodes;
 
 	// final accept logic
-	static void Saccept(boost::shared_ptr<LedgerConsensus> This, SHAMap::pointer txSet);
 	void accept(SHAMap::ref txSet);
 
 	void weHave(const uint256& id, Peer::ref avoidPeer);

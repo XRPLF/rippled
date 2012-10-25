@@ -961,12 +961,7 @@ void LedgerConsensus::beginAccept(bool synchronous)
 	if (synchronous)
 		accept(consensusSet);
 	else
-		theApp->getIOService().post(boost::bind(&LedgerConsensus::Saccept, shared_from_this(), consensusSet));
-}
-
-void LedgerConsensus::Saccept(boost::shared_ptr<LedgerConsensus> This, SHAMap::pointer txSet)
-{
-	This->accept(txSet);
+		theApp->getIOService().post(boost::bind(&LedgerConsensus::accept, shared_from_this(), consensusSet));
 }
 
 void LedgerConsensus::playbackProposals()

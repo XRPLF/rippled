@@ -116,7 +116,7 @@ void Application::run()
 	{
 		Ledger::pointer ledger = Ledger::getLastFullLedger();
 		if (ledger)
-			mMasterLedger.setLastFullLedger(ledger);
+			mMasterLedger.setLedgerRangePresent(0, ledger->getLedgerSeq());
 	}
 
 	//
@@ -250,7 +250,7 @@ void Application::loadOldLedger()
 			cLog(lsFATAL) << "Ledger is not sane.";
 			exit(-1);
 		}
-		mMasterLedger.setLastFullLedger(lastLedger);
+		mMasterLedger.setLedgerRangePresent(0, lastLedger->getLedgerSeq());
 
 		Ledger::pointer openLedger = boost::make_shared<Ledger>(false, boost::ref(*lastLedger));
 		mMasterLedger.switchLedgers(lastLedger, openLedger);

@@ -434,9 +434,7 @@ void Ledger::saveAcceptedLedger(bool fromConsensus)
 
 	theApp->getOPs().pubLedger(shared_from_this());
 
-	if(theConfig.FULL_HISTORY)
-		theApp->getMasterLedger().checkLedgerGap(shared_from_this());
-
+	theApp->getMasterLedger().setFullLedger(shared_from_this());
 }
 
 Ledger::pointer Ledger::getSQL(const std::string& sql)
@@ -472,6 +470,7 @@ Ledger::pointer Ledger::getSQL(const std::string& sql)
 		db->endIterRows();
 	}
 
+	Log(lsTRACE) << "Constructing ledger " << ledgerSeq << " from SQL";
 	Ledger::pointer ret = Ledger::pointer(new Ledger(prevHash, transHash, accountHash, totCoins,
 		closingTime, prevClosingTime, closeFlags, closeResolution, ledgerSeq));
 	if (ret->getHash() != ledgerHash)
@@ -512,9 +511,9 @@ Ledger::pointer Ledger::getLastFullLedger()
 	{
 		return getSQL("SELECT * from Ledgers order by LedgerSeq desc limit 1;");
 	}
-	catch (SHAMapMissingNode&)
+	catch (SHAMapMissingNode& sn)
 	{
-		cLog(lsWARNING) << "Database contains ledger with missing nodes";
+		cLog(lsWARNING) << "Database contains ledger with missing nodes: " << sn;
 		return Ledger::pointer();
 	}
 }
@@ -988,15 +987,20 @@ uint256 Ledger::getRippleStateIndex(const NewcoinAddress& naA, const NewcoinAddr
 
 bool Ledger::walkLedger()
 {
-	std::vector<SHAMapMissingNode> missingNodes;
-	mAccountStateMap->walkMap(missingNodes, 32);
-	if (sLog(lsINFO) && !missingNodes.empty())
+	std::vector<SHAMapMissingNode> missingNodes1, missingNodes2;
+	mAccountStateMap->walkMap(missingNodes1, 32);
+	if (sLog(lsINFO) && !missingNodes1.empty())
 	{
-		Log(lsINFO) << missingNodes.size() << " missing account node(s)";
-		Log(lsINFO) << "First: " << missingNodes[0];
+		Log(lsINFO) << missingNodes1.size() << " missing account node(s)";
+		Log(lsINFO) << "First: " << missingNodes1[0];
 	}
-	mTransactionMap->walkMap(missingNodes, 32);
-	return missingNodes.empty();
+	mTransactionMap->walkMap(missingNodes2, 32);
+	if (sLog(lsINFO) && !missingNodes2.empty())
+	{
+		Log(lsINFO) << missingNodes2.size() << " missing transaction node(s)";
+		Log(lsINFO) << "First: " << missingNodes2[0];
+	}
+	return missingNodes1.empty() && missingNodes2.empty();
 }
 
 bool Ledger::assertSane()

@@ -34,8 +34,6 @@ void LedgerMaster::pushLedger(Ledger::ref newLedger)
 	mFinalizedLedger = mCurrentLedger;
 	mCurrentLedger = newLedger;
 	mEngine.setLedger(newLedger);
-	if (mLastFullLedger && (newLedger->getParentHash() == mLastFullLedger->getHash()))
-		mLastFullLedger = newLedger;
 }
 
 void LedgerMaster::pushLedger(Ledger::ref newLCL, Ledger::ref newOL, bool fromConsensus)
@@ -48,8 +46,6 @@ void LedgerMaster::pushLedger(Ledger::ref newLCL, Ledger::ref newOL, bool fromCo
 		assert(newLCL->isClosed());
 		assert(newLCL->isImmutable());
 		mLedgerHistory.addAcceptedLedger(newLCL, fromConsensus);
-		if (mLastFullLedger && (newLCL->getParentHash() == mLastFullLedger->getHash()))
-			mLastFullLedger = newLCL;
 		cLog(lsINFO) << "StashAccepted: " << newLCL->getHash();
 	}
 
@@ -99,29 +95,72 @@ TER LedgerMaster::doTransaction(const SerializedTransaction& txn, TransactionEng
 	return result;
 }
 
-void LedgerMaster::checkLedgerGap(Ledger::ref ledger)
+void LedgerMaster::acquireMissingLedger(const uint256& ledgerHash, uint32 ledgerSeq)
 {
-	cLog(lsTRACE) << "Checking for ledger gap";
-	boost::recursive_mutex::scoped_lock sl(mLock);
+	mMissingLedger = theApp->getMasterLedgerAcquire().findCreate(ledgerHash);
+	mMissingSeq = ledgerSeq;
+	if (mMissingLedger->setAccept())
+		mMissingLedger->addOnComplete(boost::bind(&LedgerMaster::missingAcquireComplete, this, _1));
+}
 
-	if (mLastFullLedger && (ledger->getParentHash() == mLastFullLedger->getHash()))
+void LedgerMaster::missingAcquireComplete(LedgerAcquire::pointer acq)
+{
+	boost::recursive_mutex::scoped_lock ml(mLock);
+
+	if (acq->isFailed())
 	{
-		mLastFullLedger = ledger;
-		cLog(lsTRACE) << "Perfect fit, no gap";
-		return;
+		if (mMissingSeq != 0)
+		{
+			cLog(lsWARNING) << "Acquire failed, invalidating following ledger " << mMissingSeq + 1;
+			mCompleteLedgers.clearValue(mMissingSeq + 1);
+		}
 	}
 
-	if (theApp->getMasterLedgerAcquire().hasSet())
+	mMissingLedger = LedgerAcquire::pointer();
+	mMissingSeq = 0;
+
+	if (!acq->isFailed())
+		setFullLedger(acq->getLedger());
+}
+
+void LedgerMaster::setFullLedger(Ledger::ref ledger)
+{
+	boost::recursive_mutex::scoped_lock ml(mLock);
+
+	mCompleteLedgers.setValue(ledger->getLedgerSeq());
+
+	if ((ledger->getLedgerSeq() != 0) && mCompleteLedgers.hasValue(ledger->getLedgerSeq() - 1))
+	{ // we think we have the previous ledger, double check
+		Ledger::pointer prevLedger = getLedgerBySeq(ledger->getLedgerSeq() - 1);
+		if (prevLedger && (prevLedger->getHash() != ledger->getParentHash()))
+		{
+			cLog(lsWARNING) << "Ledger " << ledger->getLedgerSeq() << " invalidates prior ledger";
+			mCompleteLedgers.clearValue(prevLedger->getLedgerSeq());
+		}
+	}
+
+	if (mMissingLedger || !theConfig.FULL_HISTORY)
 		return;
 
-	if (mLastFullLedger && (ledger->getLedgerSeq() < mLastFullLedger->getLedgerSeq()))
-		return;
-
-	// we have a gap or discontinuity
-	cLog(lsWARNING) << "Ledger gap found " <<
-		(mLastFullLedger ? mLastFullLedger->getLedgerSeq() : 0) << " - " << ledger->getLedgerSeq();
-	theApp->getMasterLedgerAcquire().makeSet(mLastFullLedger, ledger);
-
+	// see if there's a ledger gap we need to fill
+	if (!mCompleteLedgers.hasValue(ledger->getLedgerSeq() - 1))
+	{
+		cLog(lsINFO) << "We need the ledger before the ledger we just accepted";
+		acquireMissingLedger(ledger->getParentHash(), ledger->getLedgerSeq() - 1);
+	}
+	else
+	{
+		uint32 prevMissing = mCompleteLedgers.prevMissing(ledger->getLedgerSeq());
+		if (prevMissing != RangeSet::RangeSetAbsent)
+		{
+			cLog(lsINFO) << "Ledger " << prevMissing << " is missing";
+			Ledger::pointer nextLedger = getLedgerBySeq(prevMissing);
+			if (nextLedger)
+				acquireMissingLedger(nextLedger->getParentHash(), nextLedger->getLedgerSeq() - 1);
+			else
+				cLog(lsWARNING) << "We have a ledger gap we can't quite fix";
+		}
+	}
 }
 
 // vim:ts=4
