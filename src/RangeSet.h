@@ -7,17 +7,19 @@
 #include <boost/foreach.hpp>
 #include <boost/icl/interval_set.hpp>
 
+#include "types.h"
+
 class RangeSet
 {
 
 public:
 
-	typedef boost::icl::interval_set<int>		iRangeSet;
+	typedef boost::icl::interval_set<uint32>	iRangeSet;
 	typedef iRangeSet::iterator					iterator;
 	typedef iRangeSet::const_iterator			const_iterator;
 	typedef iRangeSet::reverse_iterator			reverse_iterator;
 	typedef iRangeSet::const_reverse_iterator	const_reverse_iterator;
-	static const int RangeSetAbsent = -1;
+	static const uint32 RangeSetAbsent = static_cast<uint32>(-1);
 
 protected:
 
@@ -27,18 +29,18 @@ public:
 
 	RangeSet()					{ ; }
 
-	bool hasValue(int) const;
-	int getFirst() const;
-	int getNext(int) const;
-	int getLast() const;
-	int getPrev(int) const;
+	bool hasValue(uint32) const;
+	uint32 getFirst() const;
+	uint32 getNext(uint32) const;
+	uint32 getLast() const;
+	uint32 getPrev(uint32) const;
 
-	int prevMissing(int) const;		// largest number not in the set that is less than the given number
+	uint32 prevMissing(uint32) const;		// largest number not in the set that is less than the given number
 
-	void setValue(int);
-	void setRange(int, int);
-	void clearValue(int);
-	void clearRange(int, int);
+	void setValue(uint32);
+	void setRange(uint32, uint32);
+	void clearValue(uint32);
+	void clearRange(uint32, uint32);
 
 
 	void clear()							{ mRanges.clear(); }
@@ -53,10 +55,10 @@ public:
 	const_reverse_iterator rbegin() const	{ return mRanges.rbegin(); }
 	const_reverse_iterator rend() const		{ return mRanges.rend(); }
 
-	static int lower(const_iterator& it)				{ return it->lower(); }
-	static int upper(const_iterator& it)				{ return it->upper() - 1; }
-	static int lower(const_reverse_iterator& it)		{ return it->lower(); }
-	static int upper(const_reverse_iterator& it)		{ return it->upper() - 1; }
+	static uint32 lower(const_iterator& it)				{ return it->lower(); }
+	static uint32 upper(const_iterator& it)				{ return it->upper() - 1; }
+	static uint32 lower(const_reverse_iterator& it)		{ return it->lower(); }
+	static uint32 upper(const_reverse_iterator& it)		{ return it->upper() - 1; }
 
 
 	bool operator!=(const RangeSet& r) const	{ return mRanges != r.mRanges; }

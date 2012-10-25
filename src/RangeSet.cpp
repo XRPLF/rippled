@@ -8,15 +8,15 @@
 
 SETUP_LOG();
 
-inline int min(int x, int y)	{ return (x < y) ? x : y; }
-inline int max(int x, int y)	{ return (x > y) ? x : y; }
+inline uint32 min(uint32 x, uint32 y)	{ return (x < y) ? x : y; }
+inline uint32 max(uint32 x, uint32 y)	{ return (x > y) ? x : y; }
 
-bool RangeSet::hasValue(int v) const
+bool RangeSet::hasValue(uint32 v) const
 {
 	return mRanges.find(v) != mRanges.end();
 }
 
-int RangeSet::getFirst() const
+uint32 RangeSet::getFirst() const
 {
 	const_iterator it = begin();
 	if (it == end())
@@ -24,7 +24,7 @@ int RangeSet::getFirst() const
 	return lower(it);
 }
 
-int RangeSet::getNext(int v) const
+uint32 RangeSet::getNext(uint32 v) const
 {
 	for (const_iterator it = begin(); it != end(); ++it)
 	{
@@ -34,7 +34,7 @@ int RangeSet::getNext(int v) const
 	return RangeSetAbsent;
 }
 
-int RangeSet::getLast() const
+uint32 RangeSet::getLast() const
 {
 	const_reverse_iterator it = rbegin();
 	if (it == rend())
@@ -42,7 +42,7 @@ int RangeSet::getLast() const
 	return upper(it);
 }
 
-int RangeSet::getPrev(int v) const
+uint32 RangeSet::getPrev(uint32 v) const
 {
 	for (const_reverse_iterator it = rbegin(); it != rend(); ++it)
 	{
@@ -52,7 +52,7 @@ int RangeSet::getPrev(int v) const
 	return RangeSetAbsent;
 }
 
-int RangeSet::prevMissing(int v) const
+uint32 RangeSet::prevMissing(uint32 v) const
 { // largest number not in the set that is less than the given number
 	for (const_reverse_iterator it = rbegin(); it != rend(); ++it)
 	{
@@ -66,24 +66,24 @@ int RangeSet::prevMissing(int v) const
 	return RangeSetAbsent;
 }
 
-void RangeSet::setValue(int v)
+void RangeSet::setValue(uint32 v)
 {
 	setRange(v, v);
 }
 
-void RangeSet::setRange(int minV, int maxV)
+void RangeSet::setRange(uint32 minV, uint32 maxV)
 {
-	mRanges.add(boost::icl::discrete_interval<int>(minV, maxV + 1));
+	mRanges.add(boost::icl::discrete_interval<uint32>(minV, maxV + 1));
 }
 
-void RangeSet::clearValue(int v)
+void RangeSet::clearValue(uint32 v)
 {
 	clearRange(v, v);
 }
 
-void RangeSet::clearRange(int minV, int maxV)
+void RangeSet::clearRange(uint32 minV, uint32 maxV)
 {
-	mRanges.erase(boost::icl::discrete_interval<int>(minV, maxV + 1));
+	mRanges.erase(boost::icl::discrete_interval<uint32>(minV, maxV + 1));
 }
 
 std::string RangeSet::toString() const
