@@ -37,25 +37,22 @@ SerializedValidation::SerializedValidation(SerializerIterator& sit, bool checkSi
 }
 
 SerializedValidation::SerializedValidation(const uint256& ledgerHash, uint32 signTime,
-		const RippleAddress& naSeed, bool isFull, uint256& signingHash)
+		const RippleAddress& naPub, const RippleAddress& naPriv, bool isFull, uint256& signingHash)
 	: STObject(sValidationFormat, sfValidation), mTrusted(false)
 {
 	setFieldH256(sfLedgerHash, ledgerHash);
 	setFieldU32(sfSigningTime, signTime);
-	if (naSeed.isValid())
-	{ // OPTIMIZEME: Should compute the node public key just once and pass it in
-		RippleAddress np = RippleAddress::createNodePublic(naSeed);
-		setFieldVL(sfSigningPubKey, np.getNodePublic());
-		mNodeID = np.getNodeID();
-		assert(mNodeID.isNonZero());
-	}
+
+	setFieldVL(sfSigningPubKey, naPub.getNodePublic());
+	mNodeID = naPub.getNodeID();
+	assert(mNodeID.isNonZero());
+
 	if (!isFull)
 		setFlag(sFullFlag);
 
 	signingHash = getSigningHash();
 	std::vector<unsigned char> signature;
-	// OPTIMIZEME: Should compute the node private key just once and pass it in
-	RippleAddress::createNodePrivate(naSeed).signNodePrivate(signingHash, signature);
+	naPriv.signNodePrivate(signingHash, signature);
 	setFieldVL(sfSignature, signature);
 	// XXX Check if this can fail.
 	// if (!RippleAddress::createNodePrivate(naSeed).signNodePrivate(getSigningHash(), mSignature.peekValue()))

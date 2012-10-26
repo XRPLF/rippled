@@ -234,7 +234,14 @@ void Config::load()
 				WEBSOCKET_PORT		= boost::lexical_cast<int>(strTemp);
 
 			if (sectionSingleB(secConfig, SECTION_VALIDATION_SEED, strTemp))
+			{
 				VALIDATION_SEED.setSeedGeneric(strTemp);
+				if (VALIDATION_SEED.isValid())
+				{
+					VALIDATION_PUB = RippleAddress::createNodePublic(VALIDATION_SEED);
+					VALIDATION_PRIV = RippleAddress::createNodePrivate(VALIDATION_SEED);
+				}
+			}
 
 			(void) sectionSingleB(secConfig, SECTION_PEER_SSL_CIPHER_LIST, PEER_SSL_CIPHER_LIST);
 

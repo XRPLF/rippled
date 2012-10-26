@@ -222,7 +222,8 @@ bool LCTransaction::updateVote(int percentTime, bool proposing)
 
 LedgerConsensus::LedgerConsensus(const uint256& prevLCLHash, Ledger::ref previousLedger, uint32 closeTime)
 		:  mState(lcsPRE_CLOSE), mCloseTime(closeTime), mPrevLedgerHash(prevLCLHash), mPreviousLedger(previousLedger),
-		mValSeed(theConfig.VALIDATION_SEED), mCurrentMSeconds(0), mClosePercent(0), mHaveCloseTimeConsensus(false),
+		mValPublic(theConfig.VALIDATION_PUB), mValPrivate(theConfig.VALIDATION_PRIV),
+		mCurrentMSeconds(0), mClosePercent(0), mHaveCloseTimeConsensus(false),
 		mConsensusStartTime(boost::posix_time::microsec_clock::universal_time())
 {
 	cLog(lsDEBUG) << "Creating consensus object";
@@ -234,12 +235,11 @@ LedgerConsensus::LedgerConsensus(const uint256& prevLCLHash, Ledger::ref previou
 	mCloseResolution = ContinuousLedgerTiming::getNextLedgerTimeResolution(
 		mPreviousLedger->getCloseResolution(), mPreviousLedger->getCloseAgree(), previousLedger->getLedgerSeq() + 1);
 
-	if (mValSeed.isValid())
+	if (mValPublic.isValid() && mValPrivate.isValid())
 	{
 		cLog(lsINFO) << "Entering consensus process, validating";
 		mValidating = true;
 		mProposing = theApp->getOPs().getOperatingMode() == NetworkOPs::omFULL;
-		mValPublic = RippleAddress::createNodePublic(mValSeed);
 	}
 	else
 	{
@@ -380,7 +380,7 @@ void LedgerConsensus::takeInitialPosition(Ledger& initialLedger)
 
 	if (mValidating)
 		mOurPosition = boost::make_shared<LedgerProposal>
-			(mValSeed, initialLedger.getParentHash(), txSet, mCloseTime);
+			(mValPublic, mValPrivate, initialLedger.getParentHash(), txSet, mCloseTime);
 	else
 		mOurPosition = boost::make_shared<LedgerProposal>(initialLedger.getParentHash(), txSet, mCloseTime);
 
@@ -1141,7 +1141,8 @@ void LedgerConsensus::accept(SHAMap::ref set)
 	{
 		uint256 signingHash;
 		SerializedValidation::pointer v = boost::make_shared<SerializedValidation>
-			(newLCLHash, theApp->getOPs().getValidationTimeNC(), mValSeed, mProposing, boost::ref(signingHash));
+				(newLCLHash, theApp->getOPs().getValidationTimeNC(), mValPublic, mValPrivate,
+				mProposing, boost::ref(signingHash));
 		v->setTrusted();
 		theApp->isNew(signingHash); // suppress it if we receive it
 		theApp->getValidations().addValidation(v);

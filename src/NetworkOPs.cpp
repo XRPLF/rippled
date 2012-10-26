@@ -881,10 +881,10 @@ Json::Value NetworkOPs::getServerInfo()
 		default: info["serverState"] = "unknown";
 	}
 
-	if (!theConfig.VALIDATION_SEED.isValid())
+	if (!theConfig.VALIDATION_PUB.isValid())
 		info["serverState"] = "none";
 	else
-		info["validationPKey"] = RippleAddress::createNodePublic(theConfig.VALIDATION_SEED).humanNodePublic();
+		info["validationPKey"] = theConfig.VALIDATION_PUB.humanNodePublic();
 
 	if (mNeedNetworkLedger)
 		info["networkLedger"] = "waiting";

@@ -87,7 +87,7 @@ protected:
 	Ledger::pointer mPreviousLedger;
 	LedgerAcquire::pointer mAcquiringLedger;
 	LedgerProposal::pointer mOurPosition;
-	RippleAddress mValSeed, mValPublic;
+	RippleAddress mValPublic, mValPrivate;
 	bool mProposing, mValidating, mHaveCorrectLCL;
 
 	int mCurrentMSeconds, mClosePercent, mCloseResolution;
