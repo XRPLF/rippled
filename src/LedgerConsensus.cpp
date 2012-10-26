@@ -84,8 +84,8 @@ void TransactionAcquire::trigger(Peer::ref peer, bool timer)
 			ripple::TMGetLedger tmGL;
 			tmGL.set_ledgerhash(mHash.begin(), mHash.size());
 			tmGL.set_itype(ripple::liTS_CANDIDATE);
-			for (std::vector<SHAMapNode>::iterator it = nodeIDs.begin(); it != nodeIDs.end(); ++it)
-				*(tmGL.add_nodeids()) = it->getRawString();
+			BOOST_FOREACH(SHAMapNode& it, nodeIDs)
+				*(tmGL.add_nodeids()) = it.getRawString();
 			sendRequest(tmGL, peer);
 		}
 	}
@@ -410,17 +410,19 @@ void LedgerConsensus::createDisputes(SHAMap::ref m1, SHAMap::ref m2)
 {
 	SHAMap::SHAMapDiff differences;
 	m1->compare(m2, differences, 16384);
-	for (SHAMap::SHAMapDiff::iterator pos = differences.begin(), end = differences.end(); pos != end; ++pos)
+
+	typedef std::pair<const uint256, SHAMap::SHAMapDiffItem> u256_diff_pair;
+	BOOST_FOREACH (u256_diff_pair& pos, differences)
 	{ // create disputed transactions (from the ledger that has them)
-		if (pos->second.first)
+		if (pos.second.first)
 		{ // transaction is in first map
-			assert(!pos->second.second);
-			addDisputedTransaction(pos->first, pos->second.first->peekData());
+			assert(!pos.second.second);
+			addDisputedTransaction(pos.first, pos.second.first->peekData());
 		}
-		else if (pos->second.second)
+		else if (pos.second.second)
 		{ // transaction is in second map
-			assert(!pos->second.first);
-			addDisputedTransaction(pos->first, pos->second.second->peekData());
+			assert(!pos.second.first);
+			addDisputedTransaction(pos.first, pos.second.second->peekData());
 		}
 		else // No other disagreement over a transaction should be possible
 			assert(false);

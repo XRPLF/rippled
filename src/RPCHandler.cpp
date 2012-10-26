@@ -2612,9 +2612,9 @@ Json::Value RPCHandler::doLogLevel(const Json::Value& params)
 		ret["base"] = Log::severityToString(Log::getMinSeverity());
 
 		std::vector< std::pair<std::string, std::string> > logTable = LogPartition::getSeverities();
-		for (std::vector< std::pair<std::string, std::string> >::iterator it = logTable.begin();
-			it != logTable.end(); ++it)
-			ret[it->first] = it->second;
+		typedef std::pair<std::string, std::string> stringPair;
+		BOOST_FOREACH(const stringPair& it, logTable)
+			ret[it.first] = it.second;
 		return ret;
 	}
 

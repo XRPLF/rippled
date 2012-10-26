@@ -678,7 +678,7 @@ bool NetworkOPs::haveConsensusObject()
 	bool ledgerChange = checkLastClosedLedger(peerList, networkClosed);
 	if (!ledgerChange)
 	{
-		cLog(lsWARNING) << "Beginning consensus due to peer action";
+		cLog(lsINFO) << "Beginning consensus due to peer action";
 		beginConsensus(networkClosed, mLedgerMaster->getCurrentLedger());
 	}
 	return mConsensus;

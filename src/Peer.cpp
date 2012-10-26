@@ -688,9 +688,7 @@ void Peer::recvHello(ripple::TMHello& packet)
 
 void Peer::recvTransaction(ripple::TMTransaction& packet)
 {
-#ifdef DEBUG
-	std::cerr << "Got transaction from peer" << std::endl;
-#endif
+	cLog(lsDEBUG) << "Got transaction from peer";
 
 	Transaction::pointer tx;
 #ifndef TRUST_NETWORK

@@ -7,6 +7,7 @@
 #include <openssl/sha.h>
 
 #include <boost/test/unit_test.hpp>
+#include <boost/foreach.hpp>
 
 #include "key.h"
 #include "Log.h"
@@ -376,11 +377,13 @@ int Serializer::addTaggedList(const std::list<TaggedListItem>& list)
 	if (size > 255) return -1;
 	int ret = add8(size);
 	if (size != 0)
-		for (std::list<TaggedListItem>::const_iterator it = list.begin(); it != list.end(); ++it)
+	{
+		BOOST_FOREACH(const TaggedListItem& it, list)
 		{
-			add8(it->first);
-			addVL(it->second);
+			add8(it.first);
+			addVL(it.second);
 		}
+	}
 	return ret;
 }
 
@@ -390,11 +393,13 @@ int Serializer::addTaggedList(const std::vector<TaggedListItem>& list)
 	if (size > 255) return -1;
 	int ret = add8(size);
 	if (size != 0)
-		for (std::vector<TaggedListItem>::const_iterator it = list.begin(); it != list.end(); ++it)
+	{
+		BOOST_FOREACH(const TaggedListItem& it, list)
 		{
-			add8(it->first);
-			addVL(it->second);
+			add8(it.first);
+			addVL(it.second);
 		}
+	}
 	return ret;
 }
 
@@ -404,8 +409,10 @@ int Serializer::getTaggedListLength(const std::list<TaggedListItem>& list)
 	if (size > 255) return -1;
 	int ret = 1;
 	if (size != 0)
-		for (std::list<TaggedListItem>::const_iterator it = list.begin(); it != list.end(); ++it)
-			ret += 1 + it->second.size() + Serializer::encodeLengthLength(it->second.size());
+	{
+		BOOST_FOREACH(const TaggedListItem& it, list)
+			ret += 1 + it.second.size() + Serializer::encodeLengthLength(it.second.size());
+	}
 	return ret;
 }
 
@@ -415,8 +422,10 @@ int Serializer::getTaggedListLength(const std::vector<TaggedListItem>& list)
 	if (size > 255) return -1;
 	int ret = 1;
 	if (size != 0)
-		for (std::vector<TaggedListItem>::const_iterator it = list.begin(); it != list.end(); ++it)
-			ret += 1 + it->second.size() + Serializer::encodeLengthLength(it->second.size());
+	{
+		BOOST_FOREACH(const TaggedListItem& it, list)
+			ret += 1 + it.second.size() + Serializer::encodeLengthLength(it.second.size());
+	}
 	return ret;
 }
 
