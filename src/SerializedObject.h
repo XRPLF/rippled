@@ -58,6 +58,7 @@ public:
 
 	virtual SerializedTypeID getSType() const { return STI_OBJECT; }
 	virtual bool isEquivalent(const SerializedType& t) const;
+	virtual bool isDefault() const { return mData.empty(); }
 
 	virtual void add(Serializer& s) const	{ add(s, true);	} // just inner elements
 	void add(Serializer& s, bool withSignature) const;
@@ -241,6 +242,7 @@ public:
 
 	virtual SerializedTypeID getSType() const 		{ return STI_ARRAY; }
 	virtual bool isEquivalent(const SerializedType& t) const;
+	virtual bool isDefault() const					{ return value.empty(); }
 };
 
 inline STArray::iterator range_begin(STArray& x)		{ return x.begin(); }
