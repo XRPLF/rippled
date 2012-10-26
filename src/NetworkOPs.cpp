@@ -889,6 +889,8 @@ Json::Value NetworkOPs::getServerInfo()
 	if (mNeedNetworkLedger)
 		info["networkLedger"] = "waiting";
 
+	info["completeLedgers"] = theApp->getMasterLedger().getCompleteLedgers();
+
 	Json::Value lastClose = Json::objectValue;
 	lastClose["proposers"] = theApp->getOPs().getPreviousProposers();
 	lastClose["convergeTime"] = theApp->getOPs().getPreviousConvergeTime();
