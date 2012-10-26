@@ -167,7 +167,7 @@ exports.build_setup	    = build_setup;
 exports.create_accounts	    = create_accounts;
 exports.credit_limit	    = credit_limit;
 exports.payment		    = payment;
-exports.test_teardown	    = test_teardown;
+exports.build_teardown	    = build_teardown;
 exports.verify_balance	    = verify_balance;
 
 // vim:sw=2:sts=2:ts=8
