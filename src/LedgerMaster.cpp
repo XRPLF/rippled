@@ -98,6 +98,11 @@ TER LedgerMaster::doTransaction(const SerializedTransaction& txn, TransactionEng
 void LedgerMaster::acquireMissingLedger(const uint256& ledgerHash, uint32 ledgerSeq)
 {
 	mMissingLedger = theApp->getMasterLedgerAcquire().findCreate(ledgerHash);
+	if (mMissingLedger->isComplete())
+	{
+		mMissingLedger = LedgerAcquire::pointer();
+		return;
+	}
 	mMissingSeq = ledgerSeq;
 	if (mMissingLedger->setAccept())
 		mMissingLedger->addOnComplete(boost::bind(&LedgerMaster::missingAcquireComplete, this, _1));
@@ -107,20 +112,20 @@ void LedgerMaster::missingAcquireComplete(LedgerAcquire::pointer acq)
 {
 	boost::recursive_mutex::scoped_lock ml(mLock);
 
-	if (acq->isFailed())
+	if (acq->isFailed() && (mMissingSeq != 0))
 	{
-		if (mMissingSeq != 0)
-		{
-			cLog(lsWARNING) << "Acquire failed, invalidating following ledger " << mMissingSeq + 1;
-			mCompleteLedgers.clearValue(mMissingSeq + 1);
-		}
+		cLog(lsWARNING) << "Acquire failed for " << mMissingSeq;
 	}
 
 	mMissingLedger = LedgerAcquire::pointer();
 	mMissingSeq = 0;
 
 	if (!acq->isFailed())
+	{
+		boost::thread thread(boost::bind(&Ledger::saveAcceptedLedger, acq->getLedger(), false));
+		thread.detach();
 		setFullLedger(acq->getLedger());
+	}
 }
 
 void LedgerMaster::setFullLedger(Ledger::ref ledger)
@@ -139,6 +144,9 @@ void LedgerMaster::setFullLedger(Ledger::ref ledger)
 		}
 	}
 
+	if (mMissingLedger && mMissingLedger->isComplete())
+		mMissingLedger = LedgerAcquire::pointer();
+
 	if (mMissingLedger || !theConfig.FULL_HISTORY)
 		return;
 
@@ -154,11 +162,15 @@ void LedgerMaster::setFullLedger(Ledger::ref ledger)
 		if (prevMissing != RangeSet::RangeSetAbsent)
 		{
 			cLog(lsINFO) << "Ledger " << prevMissing << " is missing";
-			Ledger::pointer nextLedger = getLedgerBySeq(prevMissing);
+			assert(!mCompleteLedgers.hasValue(prevMissing));
+			Ledger::pointer nextLedger = getLedgerBySeq(prevMissing + 1);
 			if (nextLedger)
 				acquireMissingLedger(nextLedger->getParentHash(), nextLedger->getLedgerSeq() - 1);
 			else
-				cLog(lsWARNING) << "We have a ledger gap we can't quite fix";
+			{
+				mCompleteLedgers.clearValue(prevMissing);
+				cLog(lsWARNING) << "We have a gap we can't fix: " << prevMissing + 1;
+			}
 		}
 	}
 }

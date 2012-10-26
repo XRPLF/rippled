@@ -339,7 +339,7 @@ uint256 Ledger::getHash()
 
 void Ledger::saveAcceptedLedger(bool fromConsensus)
 { // can be called in a different thread
-	cLog(lsTRACE) << "saveAcceptedLedger " << (fromConsensus ? "fromConsensus" : "fromAcquire") << getLedgerSeq();
+	cLog(lsTRACE) << "saveAcceptedLedger " << (fromConsensus ? "fromConsensus " : "fromAcquire ") << getLedgerSeq();
 	static boost::format ledgerExists("SELECT LedgerSeq FROM Ledgers where LedgerSeq = %d;");
 	static boost::format deleteLedger("DELETE FROM Ledgers WHERE LedgerSeq = %d;");
 	static boost::format AcctTransExists("SELECT LedgerSeq FROM AccountTransactions WHERE TransId = '%s';");
@@ -432,9 +432,10 @@ void Ledger::saveAcceptedLedger(bool fromConsensus)
 	if (!fromConsensus)
 		return;
 
+	theApp->getMasterLedger().setFullLedger(shared_from_this());
+
 	theApp->getOPs().pubLedger(shared_from_this());
 
-	theApp->getMasterLedger().setFullLedger(shared_from_this());
 }
 
 Ledger::pointer Ledger::getSQL(const std::string& sql)
