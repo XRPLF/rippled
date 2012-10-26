@@ -70,9 +70,10 @@ void Application::run()
 {
 	assert(mTxnDB == NULL);
 	if (!theConfig.DEBUG_LOGFILE.empty())
-	{ // Let DEBUG messages go to the file but only WARNING or higher to regular output
+	{ // Let DEBUG messages go to the file but only WARNING or higher to regular output (unless verbose)
 		Log::setLogFile(theConfig.DEBUG_LOGFILE);
-		LogPartition::setSeverity(lsDEBUG);
+		if (Log::getMinSeverity() > lsDEBUG)
+			LogPartition::setSeverity(lsDEBUG);
 	}
 
 	boost::thread auxThread(boost::bind(&boost::asio::io_service::run, &mAuxService));
