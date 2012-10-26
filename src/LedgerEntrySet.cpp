@@ -408,7 +408,7 @@ void LedgerEntrySet::calcRawMeta(Serializer& s, TER result)
 			STObject finals(sfFinalFields);
 			BOOST_FOREACH(const SerializedType& obj, *curNode)
 			{ // search the deleted node for values saved on delete
-				if (obj.getFName().shouldMetaDel())
+				if (obj.getFName().shouldMetaDel() && !obj.isDefault())
 					finals.addObject(obj);
 			}
 			if (!finals.empty())
@@ -420,7 +420,7 @@ void LedgerEntrySet::calcRawMeta(Serializer& s, TER result)
 			STObject mods(sfPreviousFields);
 			BOOST_FOREACH(const SerializedType& obj, *origNode)
 			{ // search the original node for values saved on modify
-				if (obj.getFName().shouldMetaMod() && !curNode->hasMatchingEntry(obj))
+				if (obj.getFName().shouldMetaMod() && !obj.isDefault() && !curNode->hasMatchingEntry(obj))
 					mods.addObject(obj);
 			}
 			if (!mods.empty())
