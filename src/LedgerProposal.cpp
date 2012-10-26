@@ -8,7 +8,7 @@
 #include "HashPrefixes.h"
 
 LedgerProposal::LedgerProposal(const uint256& pLgr, uint32 seq, const uint256& tx, uint32 closeTime,
-		const NewcoinAddress& naPeerPublic) :
+		const RippleAddress& naPeerPublic) :
 	mPreviousLedger(pLgr), mCurrentHash(tx), mCloseTime(closeTime), mProposeSeq(seq), mPublicKey(naPeerPublic)
 {
 	// XXX Validate key.
@@ -20,11 +20,11 @@ LedgerProposal::LedgerProposal(const uint256& pLgr, uint32 seq, const uint256& t
 }
 
 
-LedgerProposal::LedgerProposal(const NewcoinAddress& naSeed, const uint256& prevLgr,
+LedgerProposal::LedgerProposal(const RippleAddress& naSeed, const uint256& prevLgr,
 		const uint256& position, uint32 closeTime) :
 	mPreviousLedger(prevLgr), mCurrentHash(position), mCloseTime(closeTime), mProposeSeq(0),
-	mPublicKey(NewcoinAddress::createNodePublic(naSeed)),
-	mPrivateKey(NewcoinAddress::createNodePrivate(naSeed))
+	mPublicKey(RippleAddress::createNodePublic(naSeed)),
+	mPrivateKey(RippleAddress::createNodePrivate(naSeed))
 {
 	mPeerID		= mPublicKey.getNodeID();
 	mTime		= boost::posix_time::second_clock::universal_time();

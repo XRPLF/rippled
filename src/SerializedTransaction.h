@@ -8,7 +8,7 @@
 #include "uint256.h"
 #include "SerializedObject.h"
 #include "TransactionFormats.h"
-#include "NewcoinAddress.h"
+#include "RippleAddress.h"
 
 #define TXN_SQL_NEW			'N'
 #define TXN_SQL_CONFLICT	'C'
@@ -48,23 +48,23 @@ public:
 	STAmount getTransactionFee() const			{ return getFieldAmount(sfFee); }
 	void setTransactionFee(const STAmount& fee)	{ setFieldAmount(sfFee, fee); }
 
-	NewcoinAddress getSourceAccount() const		{ return getFieldAccount(sfAccount); }
+	RippleAddress getSourceAccount() const		{ return getFieldAccount(sfAccount); }
 	std::vector<unsigned char> getSigningPubKey() const { return getFieldVL(sfSigningPubKey); }
-	void setSigningPubKey(const NewcoinAddress& naSignPubKey);
-	void setSourceAccount(const NewcoinAddress& naSource);
+	void setSigningPubKey(const RippleAddress& naSignPubKey);
+	void setSourceAccount(const RippleAddress& naSource);
 	std::string getTransactionType() const { return mFormat->t_name; }
 
 	uint32 getSequence() const		{ return getFieldU32(sfSequence); }
 	void setSequence(uint32 seq)	{ return setFieldU32(sfSequence, seq); }
 
-	std::vector<NewcoinAddress> getAffectedAccounts() const;
+	std::vector<RippleAddress> getAffectedAccounts() const;
 
 	uint256 getTransactionID() const;
 
 	virtual Json::Value getJson(int options) const;
 
-	void sign(const NewcoinAddress& naAccountPrivate);
-	bool checkSign(const NewcoinAddress& naAccountPublic) const;
+	void sign(const RippleAddress& naAccountPrivate);
+	bool checkSign(const RippleAddress& naAccountPublic) const;
 	bool checkSign() const;
 
 	// SQL Functions

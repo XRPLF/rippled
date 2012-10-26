@@ -510,8 +510,8 @@ public:
 	SerializedTypeID getSType() const { return STI_ACCOUNT; }
 	std::string getText() const;
 
-	NewcoinAddress getValueNCA() const;
-	void setValueNCA(const NewcoinAddress& nca);
+	RippleAddress getValueNCA() const;
+	void setValueNCA(const RippleAddress& nca);
 
 	void setValueH160(const uint160& v);
 	bool getValueH160(uint160&) const;

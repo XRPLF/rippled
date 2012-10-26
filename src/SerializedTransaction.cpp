@@ -66,9 +66,9 @@ std::string SerializedTransaction::getText() const
 	return STObject::getText();
 }
 
-std::vector<NewcoinAddress> SerializedTransaction::getAffectedAccounts() const
+std::vector<RippleAddress> SerializedTransaction::getAffectedAccounts() const
 {
-	std::vector<NewcoinAddress> accounts;
+	std::vector<RippleAddress> accounts;
 
 	BOOST_FOREACH(const SerializedType& it, peekData())
 	{
@@ -76,8 +76,8 @@ std::vector<NewcoinAddress> SerializedTransaction::getAffectedAccounts() const
 		if (sa != NULL)
 		{
 			bool found = false;
-			NewcoinAddress na = sa->getValueNCA();
-			for (std::vector<NewcoinAddress>::iterator it = accounts.begin(), end = accounts.end();
+			RippleAddress na = sa->getValueNCA();
+			for (std::vector<RippleAddress>::iterator it = accounts.begin(), end = accounts.end();
 				it != end; ++it)
 			{
 				if (*it == na)
@@ -115,7 +115,7 @@ std::vector<unsigned char> SerializedTransaction::getSignature() const
 	}
 }
 
-void SerializedTransaction::sign(const NewcoinAddress& naAccountPrivate)
+void SerializedTransaction::sign(const RippleAddress& naAccountPrivate)
 {
 	std::vector<unsigned char> signature;
 	naAccountPrivate.accountPrivateSign(getSigningHash(), signature);
@@ -126,7 +126,7 @@ bool SerializedTransaction::checkSign() const
 {
 	try
 	{
-		NewcoinAddress n;
+		RippleAddress n;
 		n.setAccountPublic(getFieldVL(sfSigningPubKey));
 		return checkSign(n);
 	}
@@ -136,7 +136,7 @@ bool SerializedTransaction::checkSign() const
 	}
 }
 
-bool SerializedTransaction::checkSign(const NewcoinAddress& naAccountPublic) const
+bool SerializedTransaction::checkSign(const RippleAddress& naAccountPublic) const
 {
 	try
 	{
@@ -148,12 +148,12 @@ bool SerializedTransaction::checkSign(const NewcoinAddress& naAccountPublic) con
 	}
 }
 
-void SerializedTransaction::setSigningPubKey(const NewcoinAddress& naSignPubKey)
+void SerializedTransaction::setSigningPubKey(const RippleAddress& naSignPubKey)
 {
 	setFieldVL(sfSigningPubKey, naSignPubKey.getAccountPublic());
 }
 
-void SerializedTransaction::setSourceAccount(const NewcoinAddress& naSource)
+void SerializedTransaction::setSourceAccount(const RippleAddress& naSource)
 {
 	setFieldAccount(sfAccount, naSource);
 }
@@ -199,11 +199,11 @@ BOOST_AUTO_TEST_SUITE(SerializedTransactionTS)
 
 BOOST_AUTO_TEST_CASE( STrans_test )
 {
-	NewcoinAddress seed;
+	RippleAddress seed;
 	seed.setSeedRandom();
-	NewcoinAddress generator = NewcoinAddress::createGeneratorPublic(seed);
-	NewcoinAddress publicAcct = NewcoinAddress::createAccountPublic(generator, 1);
-	NewcoinAddress privateAcct = NewcoinAddress::createAccountPrivate(generator, seed, 1);
+	RippleAddress generator = RippleAddress::createGeneratorPublic(seed);
+	RippleAddress publicAcct = RippleAddress::createAccountPublic(generator, 1);
+	RippleAddress privateAcct = RippleAddress::createAccountPrivate(generator, seed, 1);
 
 	SerializedTransaction j(ttCLAIM);
 	j.setSourceAccount(publicAcct);

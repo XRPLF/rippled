@@ -159,7 +159,7 @@ TER RippleCalc::calcNodeAdvance(
 
 			const aciSource			asLine				= boost::make_tuple(uOfrOwnerID, uCurCurrencyID, uCurIssuerID);
 
-			cLog(lsINFO) << boost::str(boost::format("calcNodeAdvance: uOfrOwnerID=%s") % NewcoinAddress::createHumanAccountID(uOfrOwnerID));
+			cLog(lsINFO) << boost::str(boost::format("calcNodeAdvance: uOfrOwnerID=%s") % RippleAddress::createHumanAccountID(uOfrOwnerID));
 
 			if (sleOffer->isFieldPresent(sfExpiration) && sleOffer->getFieldU32(sfExpiration) <= lesActive.getLedger()->getParentCloseTimeNC())
 			{
@@ -236,9 +236,9 @@ TER RippleCalc::calcNodeAdvance(
 			{
 				// Consider source mentioned by current path state.
 				cLog(lsINFO) << boost::str(boost::format("calcNodeAdvance: remember=%s/%s/%s")
-					% NewcoinAddress::createHumanAccountID(uOfrOwnerID)
+					% RippleAddress::createHumanAccountID(uOfrOwnerID)
 					% STAmount::createHumanCurrency(uCurCurrencyID)
-					% NewcoinAddress::createHumanAccountID(uCurIssuerID));
+					% RippleAddress::createHumanAccountID(uCurIssuerID));
 
 				pspCur->umReverse.insert(std::make_pair(asLine, uIndex));
 			}
@@ -311,9 +311,9 @@ TER RippleCalc::calcNodeDeliverRev(
 										? saOne				// No fee.
 										: saTransferRate;	// Transfer rate of issuer.
 		cLog(lsINFO) << boost::str(boost::format("calcNodeDeliverRev: uOfrOwnerID=%s uOutAccountID=%s uCurIssuerID=%s saTransferRate=%s saOutFeeRate=%s")
-			% NewcoinAddress::createHumanAccountID(uOfrOwnerID)
-			% NewcoinAddress::createHumanAccountID(uOutAccountID)
-			% NewcoinAddress::createHumanAccountID(uCurIssuerID)
+			% RippleAddress::createHumanAccountID(uOfrOwnerID)
+			% RippleAddress::createHumanAccountID(uOutAccountID)
+			% RippleAddress::createHumanAccountID(uCurIssuerID)
 			% saTransferRate.getFullText()
 			% saOutFeeRate.getFullText());
 
@@ -829,9 +829,9 @@ TER RippleCalc::calcNodeAccountRev(const unsigned int uIndex, PathState::ref psp
 	cLog(lsINFO) << boost::str(boost::format("calcNodeAccountRev> uIndex=%d/%d uPrvAccountID=%s uCurAccountID=%s uNxtAccountID=%s uCurrencyID=%s uQualityIn=%d uQualityOut=%d saPrvOwed=%s saPrvLimit=%s")
 		% uIndex
 		% uLast
-		% NewcoinAddress::createHumanAccountID(uPrvAccountID)
-		% NewcoinAddress::createHumanAccountID(uCurAccountID)
-		% NewcoinAddress::createHumanAccountID(uNxtAccountID)
+		% RippleAddress::createHumanAccountID(uPrvAccountID)
+		% RippleAddress::createHumanAccountID(uCurAccountID)
+		% RippleAddress::createHumanAccountID(uNxtAccountID)
 		% STAmount::createHumanCurrency(uCurrencyID)
 		% uQualityIn
 		% uQualityOut
@@ -1215,8 +1215,8 @@ TER RippleCalc::calcNodeAccountFwd(
 		{
 			// account --> ACCOUNT --> $
 			cLog(lsINFO) << boost::str(boost::format("calcNodeAccountFwd: account --> ACCOUNT --> $ : uPrvAccountID=%s uCurAccountID=%s saPrvRedeemReq=%s saPrvIssueReq=%s")
-				% NewcoinAddress::createHumanAccountID(uPrvAccountID)
-				% NewcoinAddress::createHumanAccountID(uCurAccountID)
+				% RippleAddress::createHumanAccountID(uPrvAccountID)
+				% RippleAddress::createHumanAccountID(uCurAccountID)
 				% saPrvRedeemReq.getFullText()
 				% saPrvIssueReq.getFullText());
 
@@ -1391,9 +1391,9 @@ TER PathState::pushImply(
 	TER					terResult	= tesSUCCESS;
 
 	cLog(lsINFO) << "pushImply> "
-		<< NewcoinAddress::createHumanAccountID(uAccountID)
+		<< RippleAddress::createHumanAccountID(uAccountID)
 		<< " " << STAmount::createHumanCurrency(uCurrencyID)
-		<< " " << NewcoinAddress::createHumanAccountID(uIssuerID);
+		<< " " << RippleAddress::createHumanAccountID(uIssuerID);
 
 	if (pnPrv.uCurrencyID != uCurrencyID)
 	{
@@ -1437,9 +1437,9 @@ TER PathState::pushNode(
 	const uint160& uIssuerID)
 {
 	cLog(lsINFO) << "pushNode> "
-		<< NewcoinAddress::createHumanAccountID(uAccountID)
+		<< RippleAddress::createHumanAccountID(uAccountID)
 		<< " " << STAmount::createHumanCurrency(uCurrencyID)
-		<< "/" << NewcoinAddress::createHumanAccountID(uIssuerID);
+		<< "/" << RippleAddress::createHumanAccountID(uIssuerID);
 	PaymentNode			pnCur;
 	const bool			bFirst		= vpnNodes.empty();
 	const PaymentNode&	pnPrv		= bFirst ? PaymentNode() : vpnNodes.back();
@@ -1491,9 +1491,9 @@ TER PathState::pushNode(
 				if (!sleRippleState)
 				{
 					cLog(lsINFO) << "pushNode: No credit line between "
-						<< NewcoinAddress::createHumanAccountID(pnBck.uAccountID)
+						<< RippleAddress::createHumanAccountID(pnBck.uAccountID)
 						<< " and "
-						<< NewcoinAddress::createHumanAccountID(pnCur.uAccountID)
+						<< RippleAddress::createHumanAccountID(pnCur.uAccountID)
 						<< " for "
 						<< STAmount::createHumanCurrency(pnPrv.uCurrencyID)
 						<< "." ;
@@ -1505,9 +1505,9 @@ TER PathState::pushNode(
 				else
 				{
 					cLog(lsINFO) << "pushNode: Credit line found between "
-						<< NewcoinAddress::createHumanAccountID(pnBck.uAccountID)
+						<< RippleAddress::createHumanAccountID(pnBck.uAccountID)
 						<< " and "
-						<< NewcoinAddress::createHumanAccountID(pnCur.uAccountID)
+						<< RippleAddress::createHumanAccountID(pnCur.uAccountID)
 						<< " for "
 						<< STAmount::createHumanCurrency(pnPrv.uCurrencyID)
 						<< "." ;
@@ -1633,9 +1633,9 @@ PathState::PathState(
 
 	cLog(lsINFO) << boost::str(boost::format("PathState: in=%s/%s out=%s/%s %s")
 		% STAmount::createHumanCurrency(uInCurrencyID)
-		% NewcoinAddress::createHumanAccountID(uInIssuerID)
+		% RippleAddress::createHumanAccountID(uInIssuerID)
 		% STAmount::createHumanCurrency(uOutCurrencyID)
-		% NewcoinAddress::createHumanAccountID(uOutIssuerID)
+		% RippleAddress::createHumanAccountID(uOutIssuerID)
 		% getJson());
 }
 
@@ -1656,13 +1656,13 @@ Json::Value	PathState::getJson() const
 		jvNode["flags"]	= jvFlags;
 
 		if (pnNode.uFlags & STPathElement::typeAccount)
-			jvNode["account"]	= NewcoinAddress::createHumanAccountID(pnNode.uAccountID);
+			jvNode["account"]	= RippleAddress::createHumanAccountID(pnNode.uAccountID);
 
 		if (!!pnNode.uCurrencyID)
 			jvNode["currency"]	= STAmount::createHumanCurrency(pnNode.uCurrencyID);
 
 		if (!!pnNode.uIssuerID)
-			jvNode["issuer"]	= NewcoinAddress::createHumanAccountID(pnNode.uIssuerID);
+			jvNode["issuer"]	= RippleAddress::createHumanAccountID(pnNode.uIssuerID);
 
 		// if (pnNode.saRevRedeem)
 			jvNode["rev_redeem"]	= pnNode.saRevRedeem.getFullText();
@@ -1757,7 +1757,7 @@ TER RippleCalc::calcNodeRev(const unsigned int uIndex, PathState::ref pspCur, co
 
 	cLog(lsINFO) << boost::str(boost::format("calcNodeRev> uIndex=%d uIssuerID=%s saTransferRate=%s")
 		% uIndex
-		% NewcoinAddress::createHumanAccountID(uCurIssuerID)
+		% RippleAddress::createHumanAccountID(uCurIssuerID)
 		% saTransferRate.getFullText());
 
 	terResult	= bCurAccount

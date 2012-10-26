@@ -13,7 +13,7 @@ typedef std::pair<const uint160, SerializedValidation::pointer> u160_val_pair;
 
 bool ValidationCollection::addValidation(const SerializedValidation::pointer& val)
 {
-	NewcoinAddress signer = val->getSignerPublic();
+	RippleAddress signer = val->getSignerPublic();
 	bool isCurrent = false;
 	if (theApp->getUNL().nodeInUNL(signer) || val->isTrusted())
 	{

@@ -88,7 +88,7 @@ protected:
 	void pubTransactionAccounts(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult, bool bAccepted);
 	bool haveConsensusObject();
 
-	Json::Value pubBootstrapAccountInfo(Ledger::ref lpAccepted, const NewcoinAddress& naAccountID);
+	Json::Value pubBootstrapAccountInfo(Ledger::ref lpAccepted, const RippleAddress& naAccountID);
 
 public:
 	NetworkOPs(boost::asio::io_service& io_service, LedgerMaster* pLedgerMaster);
@@ -123,16 +123,16 @@ public:
 
 	Transaction::pointer processTransaction(Transaction::pointer transaction, Peer* source = NULL);
 	Transaction::pointer findTransactionByID(const uint256& transactionID);
-	int findTransactionsBySource(const uint256& uLedger, std::list<Transaction::pointer>&, const NewcoinAddress& sourceAccount,
+	int findTransactionsBySource(const uint256& uLedger, std::list<Transaction::pointer>&, const RippleAddress& sourceAccount,
 		uint32 minSeq, uint32 maxSeq);
-	int findTransactionsByDestination(std::list<Transaction::pointer>&, const NewcoinAddress& destinationAccount,
+	int findTransactionsByDestination(std::list<Transaction::pointer>&, const RippleAddress& destinationAccount,
 		uint32 startLedgerSeq, uint32 endLedgerSeq, int maxTransactions);
 
 	//
 	// Account functions
 	//
 
-	AccountState::pointer	getAccountState(const uint256& uLedger, const NewcoinAddress& accountID);
+	AccountState::pointer	getAccountState(const uint256& uLedger, const RippleAddress& accountID);
 	SLE::pointer			getGenerator(const uint256& uLedger, const uint160& uGeneratorID);
 
 	//
@@ -152,8 +152,8 @@ public:
 	// Owner functions
 	//
 
-	Json::Value getOwnerInfo(const uint256& uLedger, const NewcoinAddress& naAccount);
-	Json::Value getOwnerInfo(Ledger::pointer lpLedger, const NewcoinAddress& naAccount);
+	Json::Value getOwnerInfo(const uint256& uLedger, const RippleAddress& naAccount);
+	Json::Value getOwnerInfo(Ledger::pointer lpLedger, const RippleAddress& naAccount);
 
 	// raw object operations
 	bool findRawLedger(const uint256& ledgerHash, std::vector<unsigned char>& rawLedger);
@@ -169,7 +169,7 @@ public:
 
 	// ledger proposal/close functions
 	bool recvPropose(uint32 proposeSeq, const uint256& proposeHash, const uint256& prevLedger, uint32 closeTime,
-		const std::string& pubKey, const std::string& signature, const NewcoinAddress& nodePublic);
+		const std::string& pubKey, const std::string& signature, const RippleAddress& nodePublic);
 	bool gotTXData(const boost::shared_ptr<Peer>& peer, const uint256& hash,
 		const std::list<SHAMapNode>& nodeIDs, const std::list< std::vector<unsigned char> >& nodeData);
 	bool recvValidation(const SerializedValidation::pointer& val);
@@ -198,19 +198,19 @@ public:
 	uint32 acceptLedger();
 	boost::unordered_map<uint160,
 		std::list<LedgerProposal::pointer> >& peekStoredProposals() { return mStoredProposals; }
-	void storeProposal(const LedgerProposal::pointer& proposal,	const NewcoinAddress& peerPublic);
+	void storeProposal(const LedgerProposal::pointer& proposal,	const RippleAddress& peerPublic);
 
 	// client information retrieval functions
 	std::vector< std::pair<uint32, uint256> >
-		getAffectedAccounts(const NewcoinAddress& account, uint32 minLedger, uint32 maxLedger);
-	std::vector<NewcoinAddress> getLedgerAffectedAccounts(uint32 ledgerSeq);
+		getAffectedAccounts(const RippleAddress& account, uint32 minLedger, uint32 maxLedger);
+	std::vector<RippleAddress> getLedgerAffectedAccounts(uint32 ledgerSeq);
 	std::vector<SerializedTransaction> getLedgerTransactions(uint32 ledgerSeq);
 
 	//
 	// Monitoring: publisher side
 	//
 
-	void pubAccountInfo(const NewcoinAddress& naAccountID, const Json::Value& jvObj);
+	void pubAccountInfo(const RippleAddress& naAccountID, const Json::Value& jvObj);
 	void pubLedger(Ledger::ref lpAccepted);
 	void pubTransaction(Ledger::ref lpLedger, const SerializedTransaction& stTxn, TER terResult);
 
@@ -219,11 +219,11 @@ public:
 	//
 
 	// --> vnaAddress: empty = all
-	void subAccountInfo(InfoSub* ispListener, const boost::unordered_set<NewcoinAddress>& vnaAccountIDs);
-	void unsubAccountInfo(InfoSub* ispListener, const boost::unordered_set<NewcoinAddress>& vnaAccountIDs);
+	void subAccountInfo(InfoSub* ispListener, const boost::unordered_set<RippleAddress>& vnaAccountIDs);
+	void unsubAccountInfo(InfoSub* ispListener, const boost::unordered_set<RippleAddress>& vnaAccountIDs);
 
-	void subAccountTransaction(InfoSub* ispListener, const boost::unordered_set<NewcoinAddress>& vnaAccountIDs);
-	void unsubAccountTransaction(InfoSub* ispListener, const boost::unordered_set<NewcoinAddress>& vnaAccountIDs);
+	void subAccountTransaction(InfoSub* ispListener, const boost::unordered_set<RippleAddress>& vnaAccountIDs);
+	void unsubAccountTransaction(InfoSub* ispListener, const boost::unordered_set<RippleAddress>& vnaAccountIDs);
 
 	// void subAccountChanges(InfoSub* ispListener, const uint256 uLedgerHash);
 	// void unsubAccountChanges(InfoSub* ispListener);

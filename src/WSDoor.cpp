@@ -56,8 +56,8 @@ protected:
 	typedef void (WSConnection::*doFuncPtr)(Json::Value& jvResult, const Json::Value &jvRequest);
 
     boost::mutex									mLock;
-	boost::unordered_set<NewcoinAddress>			mSubAccountInfo;
-	boost::unordered_set<NewcoinAddress>			mSubAccountTransaction;
+	boost::unordered_set<RippleAddress>			mSubAccountInfo;
+	boost::unordered_set<RippleAddress>			mSubAccountTransaction;
 
 	WSServerHandler<websocketpp::WSDOOR_SERVER>*	mHandler;
 	connection_ptr									mConnection;
@@ -78,7 +78,7 @@ public:
 
 	// Utilities
 	Json::Value invokeCommand(const Json::Value& jvRequest);
-	boost::unordered_set<NewcoinAddress> parseAccountIds(const Json::Value& jvArray);
+	boost::unordered_set<RippleAddress> parseAccountIds(const Json::Value& jvArray);
 
 	// Commands
 	void doSubmit(Json::Value& jvResult, const Json::Value& jvRequest);
@@ -385,13 +385,13 @@ Json::Value WSConnection::invokeCommand(const Json::Value& jvRequest)
 	return jvResult;
 }
 
-boost::unordered_set<NewcoinAddress> WSConnection::parseAccountIds(const Json::Value& jvArray)
+boost::unordered_set<RippleAddress> WSConnection::parseAccountIds(const Json::Value& jvArray)
 {
-	boost::unordered_set<NewcoinAddress>	usnaResult;
+	boost::unordered_set<RippleAddress>	usnaResult;
 
 	for (Json::Value::const_iterator it = jvArray.begin(); it != jvArray.end(); it++)
 	{
-		NewcoinAddress	naString;
+		RippleAddress	naString;
 
 		if (!(*it).isString() || !naString.setAccountID((*it).asString()))
 		{
@@ -453,7 +453,7 @@ void WSConnection::doSubscribe(Json::Value& jvResult, const Json::Value& jvReque
 
 	if (jvRequest.isMember("rt_accounts"))
 	{
-		boost::unordered_set<NewcoinAddress> usnaAccoundIds	= parseAccountIds(jvRequest["rt_accounts"]);
+		boost::unordered_set<RippleAddress> usnaAccoundIds	= parseAccountIds(jvRequest["rt_accounts"]);
 
 		if (usnaAccoundIds.empty())
 		{
@@ -462,7 +462,7 @@ void WSConnection::doSubscribe(Json::Value& jvResult, const Json::Value& jvReque
 		{
 			boost::mutex::scoped_lock	sl(mLock);
 
-			BOOST_FOREACH(const NewcoinAddress& naAccountID, usnaAccoundIds)
+			BOOST_FOREACH(const RippleAddress& naAccountID, usnaAccoundIds)
 			{
 				mSubAccountInfo.insert(naAccountID);
 			}
@@ -473,7 +473,7 @@ void WSConnection::doSubscribe(Json::Value& jvResult, const Json::Value& jvReque
 
 	if (jvRequest.isMember("accounts"))
 	{
-		boost::unordered_set<NewcoinAddress> usnaAccoundIds	= parseAccountIds(jvRequest["accounts"]);
+		boost::unordered_set<RippleAddress> usnaAccoundIds	= parseAccountIds(jvRequest["accounts"]);
 
 		if (usnaAccoundIds.empty())
 		{
@@ -482,7 +482,7 @@ void WSConnection::doSubscribe(Json::Value& jvResult, const Json::Value& jvReque
 		{
 			boost::mutex::scoped_lock	sl(mLock);
 
-			BOOST_FOREACH(const NewcoinAddress& naAccountID, usnaAccoundIds)
+			BOOST_FOREACH(const RippleAddress& naAccountID, usnaAccoundIds)
 			{
 				mSubAccountInfo.insert(naAccountID);
 			}
@@ -509,7 +509,7 @@ void WSConnection::doAccountInfoSubscribe(Json::Value& jvResult, const Json::Val
 	}
 	else
 	{
-		boost::unordered_set<NewcoinAddress> usnaAccoundIds	= parseAccountIds(jvRequest["accounts"]);
+		boost::unordered_set<RippleAddress> usnaAccoundIds	= parseAccountIds(jvRequest["accounts"]);
 
 		
 	}
@@ -527,7 +527,7 @@ void WSConnection::doAccountInfoUnsubscribe(Json::Value& jvResult, const Json::V
 	}
 	else
 	{
-		boost::unordered_set<NewcoinAddress> usnaAccoundIds	= parseAccountIds(jvRequest["accounts"]);
+		boost::unordered_set<RippleAddress> usnaAccoundIds	= parseAccountIds(jvRequest["accounts"]);
 
 		if (usnaAccoundIds.empty())
 		{
@@ -537,7 +537,7 @@ void WSConnection::doAccountInfoUnsubscribe(Json::Value& jvResult, const Json::V
 		{
 			boost::mutex::scoped_lock	sl(mLock);
 
-			BOOST_FOREACH(const NewcoinAddress& naAccountID, usnaAccoundIds)
+			BOOST_FOREACH(const RippleAddress& naAccountID, usnaAccoundIds)
 			{
 				mSubAccountInfo.erase(naAccountID);
 			}
@@ -559,7 +559,7 @@ void WSConnection::doAccountTransactionSubscribe(Json::Value& jvResult, const Js
 	}
 	else
 	{
-		boost::unordered_set<NewcoinAddress> usnaAccoundIds	= parseAccountIds(jvRequest["accounts"]);
+		boost::unordered_set<RippleAddress> usnaAccoundIds	= parseAccountIds(jvRequest["accounts"]);
 
 		if (usnaAccoundIds.empty())
 		{
@@ -569,7 +569,7 @@ void WSConnection::doAccountTransactionSubscribe(Json::Value& jvResult, const Js
 		{
 			boost::mutex::scoped_lock	sl(mLock);
 
-			BOOST_FOREACH(const NewcoinAddress& naAccountID, usnaAccoundIds)
+			BOOST_FOREACH(const RippleAddress& naAccountID, usnaAccoundIds)
 			{
 				mSubAccountTransaction.insert(naAccountID);
 			}
@@ -591,7 +591,7 @@ void WSConnection::doAccountTransactionUnsubscribe(Json::Value& jvResult, const 
 	}
 	else
 	{
-		boost::unordered_set<NewcoinAddress> usnaAccoundIds	= parseAccountIds(jvRequest["accounts"]);
+		boost::unordered_set<RippleAddress> usnaAccoundIds	= parseAccountIds(jvRequest["accounts"]);
 
 		if (usnaAccoundIds.empty())
 		{
@@ -601,7 +601,7 @@ void WSConnection::doAccountTransactionUnsubscribe(Json::Value& jvResult, const 
 		{
 			boost::mutex::scoped_lock	sl(mLock);
 
-			BOOST_FOREACH(const NewcoinAddress& naAccountID, usnaAccoundIds)
+			BOOST_FOREACH(const RippleAddress& naAccountID, usnaAccoundIds)
 			{
 				mSubAccountTransaction.erase(naAccountID);
 			}
@@ -715,7 +715,7 @@ void WSConnection::doLedgerEntry(Json::Value& jvResult, const Json::Value& jvReq
 	}
 	else if (jvRequest.isMember("account_root"))
 	{
-		NewcoinAddress	naAccount;
+		RippleAddress	naAccount;
 
 		if (!naAccount.setAccountID(jvRequest["account_root"].asString())
 			|| !naAccount.getAccountID())
@@ -755,7 +755,7 @@ void WSConnection::doLedgerEntry(Json::Value& jvResult, const Json::Value& jvReq
 			}
 			else if (jvRequest["directory"].isMember("owner"))
 			{
-				NewcoinAddress	naOwnerID;
+				RippleAddress	naOwnerID;
 
 				if (!naOwnerID.setAccountID(jvRequest["directory"]["owner"].asString()))
 				{
@@ -776,7 +776,7 @@ void WSConnection::doLedgerEntry(Json::Value& jvResult, const Json::Value& jvReq
 	}
 	else if (jvRequest.isMember("generator"))
 	{
-		NewcoinAddress	naGeneratorID;
+		RippleAddress	naGeneratorID;
 
 		if (!jvRequest.isObject())
 		{
@@ -792,8 +792,8 @@ void WSConnection::doLedgerEntry(Json::Value& jvResult, const Json::Value& jvReq
 		}
 		else
 		{
-			NewcoinAddress		na0Public;		// To find the generator's index.
-			NewcoinAddress		naGenerator	= NewcoinAddress::createGeneratorPublic(naGeneratorID);
+			RippleAddress		na0Public;		// To find the generator's index.
+			RippleAddress		naGenerator	= RippleAddress::createGeneratorPublic(naGeneratorID);
 
 			na0Public.setAccountPublic(naGenerator, 0);
 
@@ -802,7 +802,7 @@ void WSConnection::doLedgerEntry(Json::Value& jvResult, const Json::Value& jvReq
 	}
 	else if (jvRequest.isMember("offer"))
 	{
-		NewcoinAddress	naAccountID;
+		RippleAddress	naAccountID;
 
 		if (!jvRequest.isObject())
 		{
@@ -827,8 +827,8 @@ void WSConnection::doLedgerEntry(Json::Value& jvResult, const Json::Value& jvReq
 	}
 	else if (jvRequest.isMember("ripple_state"))
 	{
-		NewcoinAddress	naA;
-		NewcoinAddress	naB;
+		RippleAddress	naA;
+		RippleAddress	naB;
 		uint160			uCurrency;
 		Json::Value		jvRippleState	= jvRequest["ripple_state"];
 
@@ -938,7 +938,7 @@ void WSConnection::doRPC(Json::Value& jvResult, const Json::Value& jvRequest)
 // XXX Current requires secret. Allow signed transaction as an alternative.
 void WSConnection::doSubmit(Json::Value& jvResult, const Json::Value& jvRequest)
 {
-	NewcoinAddress	naAccount;
+	RippleAddress	naAccount;
 
 	if (!jvRequest.isMember("transaction"))
 	{
@@ -970,7 +970,7 @@ void WSConnection::doSubmit(Json::Value& jvResult, const Json::Value& jvRequest)
 		}
 
 		bool			bHaveAuthKey	= false;
-		NewcoinAddress	naAuthorizedPublic;
+		RippleAddress	naAuthorizedPublic;
 #if 0
 
 		if (sleAccountRoot->isFieldPresent(sfAuthorizedKey))
@@ -980,11 +980,11 @@ void WSConnection::doSubmit(Json::Value& jvResult, const Json::Value& jvRequest)
 		}
 #endif
 
-		NewcoinAddress	naSecret			= NewcoinAddress::createSeedGeneric(jvRequest["secret"].asString());
-		NewcoinAddress	naMasterGenerator	= NewcoinAddress::createGeneratorPublic(naSecret);
+		RippleAddress	naSecret			= RippleAddress::createSeedGeneric(jvRequest["secret"].asString());
+		RippleAddress	naMasterGenerator	= RippleAddress::createGeneratorPublic(naSecret);
 
 		// Find the index of Account from the master generator, so we can generate the public and private keys.
-		NewcoinAddress		naMasterAccountPublic;
+		RippleAddress		naMasterAccountPublic;
 		unsigned int		iIndex	= 0;
 		bool				bFound	= false;
 
@@ -1008,9 +1008,9 @@ void WSConnection::doSubmit(Json::Value& jvResult, const Json::Value& jvRequest)
 		}
 
 		// Use the generator to determine the associated public and private keys.
-		NewcoinAddress	naGenerator			= NewcoinAddress::createGeneratorPublic(naSecret);
-		NewcoinAddress	naAccountPublic		= NewcoinAddress::createAccountPublic(naGenerator, iIndex);
-		NewcoinAddress	naAccountPrivate	= NewcoinAddress::createAccountPrivate(naGenerator, naSecret, iIndex);
+		RippleAddress	naGenerator			= RippleAddress::createGeneratorPublic(naSecret);
+		RippleAddress	naAccountPublic		= RippleAddress::createAccountPublic(naGenerator, iIndex);
+		RippleAddress	naAccountPrivate	= RippleAddress::createAccountPrivate(naGenerator, naSecret, iIndex);
 
 		if (bHaveAuthKey
 			// The generated pair must match authorized...

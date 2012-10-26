@@ -55,8 +55,8 @@ Transaction::pointer Transaction::sharedTransaction(const std::vector<unsigned c
 
 Transaction::Transaction(
 	TransactionType ttKind,
-	const NewcoinAddress&	naPublicKey,
-	const NewcoinAddress&	naSourceAccount,
+	const RippleAddress&	naPublicKey,
+	const RippleAddress&	naSourceAccount,
 	uint32					uSeq,
 	const STAmount&			saFee,
 	uint32					uSourceTag) :
@@ -81,7 +81,7 @@ Transaction::Transaction(
 	}
 }
 
-bool Transaction::sign(const NewcoinAddress& naAccountPrivate)
+bool Transaction::sign(const RippleAddress& naAccountPrivate)
 {
 	bool	bResult	= true;
 
@@ -109,12 +109,12 @@ bool Transaction::sign(const NewcoinAddress& naAccountPrivate)
 //
 
 Transaction::pointer Transaction::setAccountSet(
-	const NewcoinAddress& naPrivateKey,
+	const RippleAddress& naPrivateKey,
 	bool								bEmailHash,
 	const uint128&						uEmailHash,
 	bool								bWalletLocator,
 	const uint256&						uWalletLocator,
-	const NewcoinAddress&				naMessagePublic,
+	const RippleAddress&				naMessagePublic,
 	bool								bDomain,
 	const std::vector<unsigned char>&	vucDomain,
 	bool								bTransferRate,
@@ -151,8 +151,8 @@ Transaction::pointer Transaction::setAccountSet(
 }
 
 Transaction::pointer Transaction::sharedAccountSet(
-	const NewcoinAddress& naPublicKey, const NewcoinAddress& naPrivateKey,
-	const NewcoinAddress& naSourceAccount,
+	const RippleAddress& naPublicKey, const RippleAddress& naPrivateKey,
+	const RippleAddress& naSourceAccount,
 	uint32								uSeq,
 	const STAmount&						saFee,
 	uint32								uSourceTag,
@@ -160,7 +160,7 @@ Transaction::pointer Transaction::sharedAccountSet(
 	const uint128&						uEmailHash,
 	bool								bWalletLocator,
 	const uint256&						uWalletLocator,
-	const NewcoinAddress&				naMessagePublic,
+	const RippleAddress&				naMessagePublic,
 	bool								bDomain,
 	const std::vector<unsigned char>&	vucDomain,
 	bool								bTransferRate,
@@ -181,7 +181,7 @@ Transaction::pointer Transaction::sharedAccountSet(
 //
 
 Transaction::pointer Transaction::setClaim(
-	const NewcoinAddress& naPrivateKey,
+	const RippleAddress& naPrivateKey,
 	const std::vector<unsigned char>& vucGenerator,
 	const std::vector<unsigned char>& vucPubKey,
 	const std::vector<unsigned char>& vucSignature)
@@ -196,7 +196,7 @@ Transaction::pointer Transaction::setClaim(
 }
 
 Transaction::pointer Transaction::sharedClaim(
-	const NewcoinAddress& naPublicKey, const NewcoinAddress& naPrivateKey,
+	const RippleAddress& naPublicKey, const RippleAddress& naPrivateKey,
 	uint32 uSourceTag,
 	const std::vector<unsigned char>& vucGenerator,
 	const std::vector<unsigned char>& vucPubKey,
@@ -216,8 +216,8 @@ Transaction::pointer Transaction::sharedClaim(
 //
 
 Transaction::pointer Transaction::setCreate(
-	const NewcoinAddress&	naPrivateKey,
-	const NewcoinAddress&	naCreateAccountID,
+	const RippleAddress&	naPrivateKey,
+	const RippleAddress&	naCreateAccountID,
 	const STAmount&			saFund)
 {
 	mTransaction->setFieldU32(sfFlags, tfCreateAccount);
@@ -230,12 +230,12 @@ Transaction::pointer Transaction::setCreate(
 }
 
 Transaction::pointer Transaction::sharedCreate(
-	const NewcoinAddress& naPublicKey, const NewcoinAddress& naPrivateKey,
-	const NewcoinAddress& naSourceAccount,
+	const RippleAddress& naPublicKey, const RippleAddress& naPrivateKey,
+	const RippleAddress& naSourceAccount,
 	uint32					uSeq,
 	const STAmount&			saFee,
 	uint32					uSourceTag,
-	const NewcoinAddress&	naCreateAccountID,
+	const RippleAddress&	naCreateAccountID,
 	const STAmount&			saFund)
 {
 	pointer	tResult	= boost::make_shared<Transaction>(ttPAYMENT, naPublicKey, naSourceAccount, uSeq, saFee, uSourceTag);
@@ -248,7 +248,7 @@ Transaction::pointer Transaction::sharedCreate(
 //
 
 Transaction::pointer Transaction::setCreditSet(
-	const NewcoinAddress&	naPrivateKey,
+	const RippleAddress&	naPrivateKey,
 	const STAmount&			saLimitAmount,
 	bool					bQualityIn,
 	uint32					uQualityIn,
@@ -269,8 +269,8 @@ Transaction::pointer Transaction::setCreditSet(
 }
 
 Transaction::pointer Transaction::sharedCreditSet(
-	const NewcoinAddress& naPublicKey, const NewcoinAddress& naPrivateKey,
-	const NewcoinAddress&	naSourceAccount,
+	const RippleAddress& naPublicKey, const RippleAddress& naPrivateKey,
+	const RippleAddress&	naSourceAccount,
 	uint32					uSeq,
 	const STAmount&			saFee,
 	uint32					uSourceTag,
@@ -293,7 +293,7 @@ Transaction::pointer Transaction::sharedCreditSet(
 //
 
 Transaction::pointer Transaction::setNicknameSet(
-	const NewcoinAddress&				naPrivateKey,
+	const RippleAddress&				naPrivateKey,
 	const uint256&						uNickname,
 	bool								bSetOffer,
 	const STAmount&						saMinimumOffer)
@@ -312,8 +312,8 @@ Transaction::pointer Transaction::setNicknameSet(
 // --> bSetOffer: true, change offer
 // --> saMinimumOffer: 0 to remove.
 Transaction::pointer Transaction::sharedNicknameSet(
-	const NewcoinAddress& naPublicKey, const NewcoinAddress& naPrivateKey,
-	const NewcoinAddress&				naSourceAccount,
+	const RippleAddress& naPublicKey, const RippleAddress& naPrivateKey,
+	const RippleAddress&				naSourceAccount,
 	uint32								uSeq,
 	const STAmount&						saFee,
 	uint32								uSourceTag,
@@ -331,7 +331,7 @@ Transaction::pointer Transaction::sharedNicknameSet(
 //
 
 Transaction::pointer Transaction::setOfferCreate(
-	const NewcoinAddress&				naPrivateKey,
+	const RippleAddress&				naPrivateKey,
 	bool								bPassive,
 	const STAmount&						saTakerPays,
 	const STAmount&						saTakerGets,
@@ -352,8 +352,8 @@ Transaction::pointer Transaction::setOfferCreate(
 }
 
 Transaction::pointer Transaction::sharedOfferCreate(
-	const NewcoinAddress& naPublicKey, const NewcoinAddress& naPrivateKey,
-	const NewcoinAddress&				naSourceAccount,
+	const RippleAddress& naPublicKey, const RippleAddress& naPrivateKey,
+	const RippleAddress&				naSourceAccount,
 	uint32								uSeq,
 	const STAmount&						saFee,
 	uint32								uSourceTag,
@@ -372,7 +372,7 @@ Transaction::pointer Transaction::sharedOfferCreate(
 //
 
 Transaction::pointer Transaction::setOfferCancel(
-	const NewcoinAddress&				naPrivateKey,
+	const RippleAddress&				naPrivateKey,
 	uint32								uSequence)
 {
 	mTransaction->setFieldU32(sfOfferSequence, uSequence);
@@ -383,8 +383,8 @@ Transaction::pointer Transaction::setOfferCancel(
 }
 
 Transaction::pointer Transaction::sharedOfferCancel(
-	const NewcoinAddress& naPublicKey, const NewcoinAddress& naPrivateKey,
-	const NewcoinAddress&				naSourceAccount,
+	const RippleAddress& naPublicKey, const RippleAddress& naPrivateKey,
+	const RippleAddress&				naSourceAccount,
 	uint32								uSeq,
 	const STAmount&						saFee,
 	uint32								uSourceTag,
@@ -400,8 +400,8 @@ Transaction::pointer Transaction::sharedOfferCancel(
 //
 
 Transaction::pointer Transaction::setPasswordFund(
-	const NewcoinAddress&	naPrivateKey,
-	const NewcoinAddress&	naDstAccountID)
+	const RippleAddress&	naPrivateKey,
+	const RippleAddress&	naDstAccountID)
 {
 	mTransaction->setFieldAccount(sfDestination, naDstAccountID);
 
@@ -411,12 +411,12 @@ Transaction::pointer Transaction::setPasswordFund(
 }
 
 Transaction::pointer Transaction::sharedPasswordFund(
-	const NewcoinAddress& naPublicKey, const NewcoinAddress& naPrivateKey,
-	const NewcoinAddress&	naSourceAccount,
+	const RippleAddress& naPublicKey, const RippleAddress& naPrivateKey,
+	const RippleAddress&	naSourceAccount,
 	uint32					uSeq,
 	const STAmount&			saFee,
 	uint32					uSourceTag,
-	const NewcoinAddress&	naDstAccountID)
+	const RippleAddress&	naDstAccountID)
 {
 	pointer	tResult	= boost::make_shared<Transaction>(ttPASSWORD_FUND, naPublicKey, naSourceAccount, uSeq, saFee, uSourceTag);
 
@@ -428,8 +428,8 @@ Transaction::pointer Transaction::sharedPasswordFund(
 //
 
 Transaction::pointer Transaction::setPasswordSet(
-	const NewcoinAddress& naPrivateKey,
-	const NewcoinAddress&				naAuthKeyID,
+	const RippleAddress& naPrivateKey,
+	const RippleAddress&				naAuthKeyID,
 	const std::vector<unsigned char>&	vucGenerator,
 	const std::vector<unsigned char>&	vucPubKey,
 	const std::vector<unsigned char>&	vucSignature)
@@ -445,9 +445,9 @@ Transaction::pointer Transaction::setPasswordSet(
 }
 
 Transaction::pointer Transaction::sharedPasswordSet(
-	const NewcoinAddress& naPublicKey, const NewcoinAddress& naPrivateKey,
+	const RippleAddress& naPublicKey, const RippleAddress& naPrivateKey,
 	uint32								uSourceTag,
-	const NewcoinAddress&				naAuthKeyID,
+	const RippleAddress&				naAuthKeyID,
 	const std::vector<unsigned char>&	vucGenerator,
 	const std::vector<unsigned char>&	vucPubKey,
 	const std::vector<unsigned char>&	vucSignature)
@@ -466,8 +466,8 @@ Transaction::pointer Transaction::sharedPasswordSet(
 //
 
 Transaction::pointer Transaction::setPayment(
-	const NewcoinAddress&	naPrivateKey,
-	const NewcoinAddress&	naDstAccountID,
+	const RippleAddress&	naPrivateKey,
+	const RippleAddress&	naDstAccountID,
 	const STAmount&			saAmount,
 	const STAmount&			saSendMax,
 	const STPathSet&		spsPaths,
@@ -493,12 +493,12 @@ Transaction::pointer Transaction::setPayment(
 }
 
 Transaction::pointer Transaction::sharedPayment(
-	const NewcoinAddress& naPublicKey, const NewcoinAddress& naPrivateKey,
-	const NewcoinAddress&	naSourceAccount,
+	const RippleAddress& naPublicKey, const RippleAddress& naPrivateKey,
+	const RippleAddress&	naSourceAccount,
 	uint32					uSeq,
 	const STAmount&			saFee,
 	uint32					uSourceTag,
-	const NewcoinAddress&	naDstAccountID,
+	const RippleAddress&	naDstAccountID,
 	const STAmount&			saAmount,
 	const STAmount&			saSendMax,
 	const STPathSet&		spsPaths,
@@ -515,10 +515,10 @@ Transaction::pointer Transaction::sharedPayment(
 //
 
 Transaction::pointer Transaction::setWalletAdd(
-	const NewcoinAddress&				naPrivateKey,
+	const RippleAddress&				naPrivateKey,
 	const STAmount&						saAmount,
-	const NewcoinAddress&				naAuthKeyID,
-	const NewcoinAddress&				naNewPubKey,
+	const RippleAddress&				naAuthKeyID,
+	const RippleAddress&				naNewPubKey,
 	const std::vector<unsigned char>&	vucSignature)
 {
 	mTransaction->setFieldAmount(sfAmount, saAmount);
@@ -532,14 +532,14 @@ Transaction::pointer Transaction::setWalletAdd(
 }
 
 Transaction::pointer Transaction::sharedWalletAdd(
-	const NewcoinAddress& naPublicKey, const NewcoinAddress& naPrivateKey,
-	const NewcoinAddress&				naSourceAccount,
+	const RippleAddress& naPublicKey, const RippleAddress& naPrivateKey,
+	const RippleAddress&				naSourceAccount,
 	uint32								uSeq,
 	const STAmount&						saFee,
 	uint32								uSourceTag,
 	const STAmount&						saAmount,
-	const NewcoinAddress&				naAuthKeyID,
-	const NewcoinAddress&				naNewPubKey,
+	const RippleAddress&				naAuthKeyID,
+	const RippleAddress&				naNewPubKey,
 	const std::vector<unsigned char>&	vucSignature)
 {
 	pointer	tResult	= boost::make_shared<Transaction>(ttWALLET_ADD, naPublicKey, naSourceAccount, uSeq, saFee, uSourceTag);
@@ -690,7 +690,7 @@ Transaction::pointer Transaction::load(const uint256& id)
 	return transactionFromSQL(sql);
 }
 
-Transaction::pointer Transaction::findFrom(const NewcoinAddress& fromID, uint32 seq)
+Transaction::pointer Transaction::findFrom(const RippleAddress& fromID, uint32 seq)
 {
 	std::string sql = "SELECT LedgerSeq,Status,RawTxn FROM Transactions WHERE FromID='";
 	sql.append(fromID.humanAccountID());

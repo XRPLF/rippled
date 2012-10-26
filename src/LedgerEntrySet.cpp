@@ -296,7 +296,7 @@ SLE::pointer LedgerEntrySet::getForMod(const uint256& node, Ledger::ref ledger,
 
 }
 
-bool LedgerEntrySet::threadTx(const NewcoinAddress& threadTo, Ledger::ref ledger,
+bool LedgerEntrySet::threadTx(const RippleAddress& threadTo, Ledger::ref ledger,
 	boost::unordered_map<uint256, SLE::pointer>& newMods)
 {
 #ifdef META_DEBUG
@@ -415,9 +415,9 @@ void LedgerEntrySet::calcRawMeta(Serializer& s, TER result)
 				if (origNode->getType() == ltRIPPLE_STATE)
 				{
 					mSet.getAffectedNode(it.first).setFieldAccount(sfLowID,
-						NewcoinAddress::createAccountID(origNode->getFieldAmount(sfLowLimit).getIssuer()));
+						RippleAddress::createAccountID(origNode->getFieldAmount(sfLowLimit).getIssuer()));
 					mSet.getAffectedNode(it.first).setFieldAccount(sfHighID,
-						NewcoinAddress::createAccountID(origNode->getFieldAmount(sfHighLimit).getIssuer()));
+						RippleAddress::createAccountID(origNode->getFieldAmount(sfHighLimit).getIssuer()));
 				}
 			}
 
@@ -845,9 +845,9 @@ STAmount LedgerEntrySet::rippleOwed(const uint160& uToAccountID, const uint160& 
 	else
 	{
 		cLog(lsINFO) << "rippleOwed: No credit line between "
-			<< NewcoinAddress::createHumanAccountID(uFromAccountID)
+			<< RippleAddress::createHumanAccountID(uFromAccountID)
 			<< " and "
-			<< NewcoinAddress::createHumanAccountID(uToAccountID)
+			<< RippleAddress::createHumanAccountID(uToAccountID)
 			<< " for "
 			<< STAmount::createHumanCurrency(uCurrencyID)
 			<< "." ;
@@ -885,7 +885,7 @@ uint32 LedgerEntrySet::rippleTransferRate(const uint160& uIssuerID)
 									: QUALITY_ONE;
 
 	cLog(lsINFO) << boost::str(boost::format("rippleTransferRate: uIssuerID=%s account_exists=%d transfer_rate=%f")
-		% NewcoinAddress::createHumanAccountID(uIssuerID)
+		% RippleAddress::createHumanAccountID(uIssuerID)
 		% !!sleAccount
 		% (uQuality/1000000000.0));
 
@@ -930,8 +930,8 @@ uint32 LedgerEntrySet::rippleQualityIn(const uint160& uToAccountID, const uint16
 
 	cLog(lsINFO) << boost::str(boost::format("rippleQuality: %s uToAccountID=%s uFromAccountID=%s uCurrencyID=%s bLine=%d uQuality=%f")
 		% (sfLow == sfLowQualityIn ? "in" : "out")
-		% NewcoinAddress::createHumanAccountID(uToAccountID)
-		% NewcoinAddress::createHumanAccountID(uFromAccountID)
+		% RippleAddress::createHumanAccountID(uToAccountID)
+		% RippleAddress::createHumanAccountID(uFromAccountID)
 		% STAmount::createHumanCurrency(uCurrencyID)
 		% !!sleRippleState
 		% (uQuality/1000000000.0));
@@ -976,7 +976,7 @@ STAmount LedgerEntrySet::accountHolds(const uint160& uAccountID, const uint160& 
 	}
 
 	cLog(lsINFO) << boost::str(boost::format("accountHolds: uAccountID=%s saAmount=%s")
-		% NewcoinAddress::createHumanAccountID(uAccountID)
+		% RippleAddress::createHumanAccountID(uAccountID)
 		% saAmount.getFullText());
 
 	return saAmount;
@@ -996,7 +996,7 @@ STAmount LedgerEntrySet::accountFunds(const uint160& uAccountID, const STAmount&
 		saFunds	= saDefault;
 
 		cLog(lsINFO) << boost::str(boost::format("accountFunds: uAccountID=%s saDefault=%s SELF-FUNDED")
-			% NewcoinAddress::createHumanAccountID(uAccountID)
+			% RippleAddress::createHumanAccountID(uAccountID)
 			% saDefault.getFullText());
 	}
 	else
@@ -1004,7 +1004,7 @@ STAmount LedgerEntrySet::accountFunds(const uint160& uAccountID, const STAmount&
 		saFunds	= accountHolds(uAccountID, saDefault.getCurrency(), saDefault.getIssuer());
 
 		cLog(lsINFO) << boost::str(boost::format("accountFunds: uAccountID=%s saDefault=%s saFunds=%s")
-			% NewcoinAddress::createHumanAccountID(uAccountID)
+			% RippleAddress::createHumanAccountID(uAccountID)
 			% saDefault.getFullText()
 			% saFunds.getFullText());
 	}
@@ -1131,9 +1131,9 @@ void LedgerEntrySet::accountSend(const uint160& uSenderID, const uint160& uRecei
 											: SLE::pointer();
 
 		cLog(lsINFO) << boost::str(boost::format("accountSend> %s (%s) -> %s (%s) : %s")
-			% NewcoinAddress::createHumanAccountID(uSenderID)
+			% RippleAddress::createHumanAccountID(uSenderID)
 			% (sleSender ? (sleSender->getFieldAmount(sfBalance)).getFullText() : "-")
-			% NewcoinAddress::createHumanAccountID(uReceiverID)
+			% RippleAddress::createHumanAccountID(uReceiverID)
 			% (sleReceiver ? (sleReceiver->getFieldAmount(sfBalance)).getFullText() : "-")
 			% saAmount.getFullText());
 
@@ -1150,9 +1150,9 @@ void LedgerEntrySet::accountSend(const uint160& uSenderID, const uint160& uRecei
 		}
 
 		cLog(lsINFO) << boost::str(boost::format("accountSend< %s (%s) -> %s (%s) : %s")
-			% NewcoinAddress::createHumanAccountID(uSenderID)
+			% RippleAddress::createHumanAccountID(uSenderID)
 			% (sleSender ? (sleSender->getFieldAmount(sfBalance)).getFullText() : "-")
-			% NewcoinAddress::createHumanAccountID(uReceiverID)
+			% RippleAddress::createHumanAccountID(uReceiverID)
 			% (sleReceiver ? (sleReceiver->getFieldAmount(sfBalance)).getFullText() : "-")
 			% saAmount.getFullText());
 	}

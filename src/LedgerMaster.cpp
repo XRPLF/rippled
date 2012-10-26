@@ -4,7 +4,7 @@
 #include <boost/foreach.hpp>
 
 #include "Application.h"
-#include "NewcoinAddress.h"
+#include "RippleAddress.h"
 #include "Log.h"
 
 SETUP_LOG();

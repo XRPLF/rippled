@@ -239,7 +239,7 @@ LedgerConsensus::LedgerConsensus(const uint256& prevLCLHash, Ledger::ref previou
 		cLog(lsINFO) << "Entering consensus process, validating";
 		mValidating = true;
 		mProposing = theApp->getOPs().getOperatingMode() == NetworkOPs::omFULL;
-		mValPublic = NewcoinAddress::createNodePublic(mValSeed);
+		mValPublic = RippleAddress::createNodePublic(mValSeed);
 	}
 	else
 	{

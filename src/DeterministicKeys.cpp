@@ -158,7 +158,7 @@ EC_KEY* CKey::GenerateRootPubKey(BIGNUM* pubGenerator)
 }
 
 // --> public generator
-static BIGNUM* makeHash(const NewcoinAddress& pubGen, int seq, BIGNUM* order)
+static BIGNUM* makeHash(const RippleAddress& pubGen, int seq, BIGNUM* order)
 {
 	int subSeq=0;
 	BIGNUM* ret=NULL;
@@ -178,7 +178,7 @@ static BIGNUM* makeHash(const NewcoinAddress& pubGen, int seq, BIGNUM* order)
 }
 
 // --> public generator
-EC_KEY* CKey::GeneratePublicDeterministicKey(const NewcoinAddress& pubGen, int seq)
+EC_KEY* CKey::GeneratePublicDeterministicKey(const RippleAddress& pubGen, int seq)
 { // publicKey(n) = rootPublicKey EC_POINT_+ Hash(pubHash|seq)*point
 	EC_KEY*			rootKey		= CKey::GenerateRootPubKey(pubGen.getGeneratorBN());
 	const EC_POINT*	rootPubKey	= EC_KEY_get0_public_key(rootKey);
@@ -231,14 +231,14 @@ EC_KEY* CKey::GeneratePublicDeterministicKey(const NewcoinAddress& pubGen, int s
 	return success ? pkey : NULL;
 }
 
-EC_KEY* CKey::GeneratePrivateDeterministicKey(const NewcoinAddress& pubGen, const uint256& u, int seq)
+EC_KEY* CKey::GeneratePrivateDeterministicKey(const RippleAddress& pubGen, const uint256& u, int seq)
 {
 	CBigNum bn(u);
 	return GeneratePrivateDeterministicKey(pubGen, static_cast<BIGNUM*>(&bn), seq);
 }
 
 // --> root private key
-EC_KEY* CKey::GeneratePrivateDeterministicKey(const NewcoinAddress& pubGen, const BIGNUM* rootPrivKey, int seq)
+EC_KEY* CKey::GeneratePrivateDeterministicKey(const RippleAddress& pubGen, const BIGNUM* rootPrivKey, int seq)
 { // privateKey(n) = (rootPrivateKey + Hash(pubHash|seq)) % order
 	BN_CTX* ctx=BN_CTX_new();
 	if(ctx==NULL) return NULL;
@@ -327,7 +327,7 @@ BOOST_AUTO_TEST_CASE(DeterminsticKeys_test1)
 	if (priv2.GetHex() != "98BC2EACB26EB021D1A6293C044D88BA2F0B6729A2772DEEBF2E21A263C1740B")
 		BOOST_FAIL("Incorrect private key for generator");
 
-	NewcoinAddress nSeed;
+	RippleAddress nSeed;
 	nSeed.setSeed(seed1);
 	if (nSeed.humanSeed() != "shHM53KPZ87Gwdqarm1bAmPeXg8Tn")
 		BOOST_FAIL("Incorrect human seed");

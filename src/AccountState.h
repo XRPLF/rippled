@@ -12,7 +12,7 @@
 #include "../json/value.h"
 
 #include "types.h"
-#include "NewcoinAddress.h"
+#include "RippleAddress.h"
 #include "SerializedLedger.h"
 
 class AccountState
@@ -21,22 +21,22 @@ public:
 	typedef boost::shared_ptr<AccountState> pointer;
 
 private:
-	NewcoinAddress					mAccountID;
-	NewcoinAddress					mAuthorizedKey;
+	RippleAddress					mAccountID;
+	RippleAddress					mAuthorizedKey;
 	SerializedLedgerEntry::pointer	mLedgerEntry;
 
 	bool							mValid;
 
 public:
-	AccountState(const NewcoinAddress& naAccountID);						// For new accounts
-	AccountState(SLE::ref ledgerEntry,const NewcoinAddress& naAccountI);	// For accounts in a ledger
+	AccountState(const RippleAddress& naAccountID);						// For new accounts
+	AccountState(SLE::ref ledgerEntry,const RippleAddress& naAccountI);	// For accounts in a ledger
 
 	bool	bHaveAuthorizedKey()
 	{
 		return mLedgerEntry->isFieldPresent(sfAuthorizedKey);
 	}
 
-	NewcoinAddress getAuthorizedKey()
+	RippleAddress getAuthorizedKey()
 	{
 		return mLedgerEntry->getFieldAccount(sfAuthorizedKey);
 	}

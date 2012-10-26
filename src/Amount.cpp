@@ -114,7 +114,7 @@ STAmount::STAmount(SField::ref n, const Json::Value& v)
 		}
 		else
 		{
-			NewcoinAddress is;
+			RippleAddress is;
 
 			if(!is.setAccountID(issuer.asString()))
 				throw std::runtime_error("invalid issuer");
@@ -368,7 +368,7 @@ bool STAmount::setFullValue(const std::string& sAmount, const std::string& sCurr
 	//
 	// Figure out the issuer.
 	//
-	NewcoinAddress	naIssuerID;
+	RippleAddress	naIssuerID;
 
 	// Issuer must be "" or a valid account string.
 	if (!naIssuerID.setAccountID(sIssuer))
@@ -1139,7 +1139,7 @@ std::string STAmount::getFullText() const
 		return str(boost::format("%s/%s/%s")
 			% getText()
 			% getHumanCurrency()
-			% NewcoinAddress::createHumanAccountID(mIssuer));
+			% RippleAddress::createHumanAccountID(mIssuer));
 	}
 }
 
@@ -1155,7 +1155,7 @@ std::string STAmount::getExtendedText() const
 		return str(boost::format("%s/%s/%s %dE%d" )
 			% getText()
 			% getHumanCurrency()
-			% NewcoinAddress::createHumanAccountID(mIssuer)
+			% RippleAddress::createHumanAccountID(mIssuer)
 			% getMantissa()
 			% getExponent());
 	}
@@ -1172,7 +1172,7 @@ Json::Value STAmount::getJson(int) const
 
 		elem["value"]		= getText();
 		elem["currency"]	= getHumanCurrency();
-		elem["issuer"]		= NewcoinAddress::createHumanAccountID(mIssuer);
+		elem["issuer"]		= RippleAddress::createHumanAccountID(mIssuer);
 	}
 	else
 	{

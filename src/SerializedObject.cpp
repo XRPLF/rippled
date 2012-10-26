@@ -573,7 +573,7 @@ uint256 STObject::getFieldH256(SField::ref field) const
 	return cf->getValue();
 }
 
-NewcoinAddress STObject::getFieldAccount(SField::ref field) const
+RippleAddress STObject::getFieldAccount(SField::ref field) const
 {
 	const SerializedType* rf = peekAtPField(field);
 	if (!rf)
@@ -585,7 +585,7 @@ NewcoinAddress STObject::getFieldAccount(SField::ref field) const
 		throw std::runtime_error("Field not found");
 	}
 	SerializedTypeID id = rf->getSType();
-	if (id == STI_NOTPRESENT) return NewcoinAddress(); // optional field not present
+	if (id == STI_NOTPRESENT) return RippleAddress(); // optional field not present
 	const STAccount* cf = dynamic_cast<const STAccount *>(rf);
 	if (!cf) throw std::runtime_error("Wrong field type");
 	return cf->getValueNCA();
@@ -1134,7 +1134,7 @@ std::auto_ptr<STObject> STObject::parseJson(const Json::Value& object, SField::r
 								if (value.size() == 40) // 160-bit hex account value
 									uAccount.SetHex(strValue);
 								{
-									NewcoinAddress a;
+									RippleAddress a;
 									if (!a.setAccountPublic(strValue))
 										throw std::runtime_error("Account in path element invalid");
 									uAccount = a.getAccountID();
@@ -1158,7 +1158,7 @@ std::auto_ptr<STObject> STObject::parseJson(const Json::Value& object, SField::r
 									uIssuer.SetHex(issuer.asString());
 								else
 								{
-									NewcoinAddress a;
+									RippleAddress a;
 									if (!a.setAccountPublic(issuer.asString()))
 										throw std::runtime_error("path element issuer invalid");
 									uIssuer = a.getAccountID();
@@ -1184,7 +1184,7 @@ std::auto_ptr<STObject> STObject::parseJson(const Json::Value& object, SField::r
 				}
 				else
 				{ // ripple address
-					NewcoinAddress a;
+					RippleAddress a;
 					if (!a.setAccountID(strValue))
 					{
 						cLog(lsINFO) << "Invalid acccount JSON: " << fieldName << ": " << strValue;

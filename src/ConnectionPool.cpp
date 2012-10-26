@@ -349,7 +349,7 @@ std::vector<Peer::pointer> ConnectionPool::getPeerVector()
 
 // Now know peer's node public key.  Determine if we want to stay connected.
 // <-- bNew: false = redundant
-bool ConnectionPool::peerConnected(Peer::ref peer, const NewcoinAddress& naPeer,
+bool ConnectionPool::peerConnected(Peer::ref peer, const RippleAddress& naPeer,
 	const std::string& strIP, int iPort)
 {
 	bool	bNew	= false;
@@ -363,7 +363,7 @@ bool ConnectionPool::peerConnected(Peer::ref peer, const NewcoinAddress& naPeer,
 	else
 	{
 		boost::mutex::scoped_lock sl(mPeerLock);
-		boost::unordered_map<NewcoinAddress, Peer::pointer>::iterator itCm	= mConnectedMap.find(naPeer);
+		boost::unordered_map<RippleAddress, Peer::pointer>::iterator itCm	= mConnectedMap.find(naPeer);
 
 		if (itCm == mConnectedMap.end())
 		{
@@ -408,11 +408,11 @@ bool ConnectionPool::peerConnected(Peer::ref peer, const NewcoinAddress& naPeer,
 }
 
 // We maintain a map of public key to peer for connected and verified peers.  Maintain it.
-void ConnectionPool::peerDisconnected(Peer::ref peer, const NewcoinAddress& naPeer)
+void ConnectionPool::peerDisconnected(Peer::ref peer, const RippleAddress& naPeer)
 {
 	if (naPeer.isValid())
 	{
-		boost::unordered_map<NewcoinAddress, Peer::pointer>::iterator itCm;
+		boost::unordered_map<RippleAddress, Peer::pointer>::iterator itCm;
 
 		boost::mutex::scoped_lock sl(mPeerLock);
 

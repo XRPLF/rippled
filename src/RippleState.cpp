@@ -10,8 +10,8 @@ RippleState::RippleState(SerializedLedgerEntry::pointer ledgerEntry) :
 	mLowLimit		= mLedgerEntry->getFieldAmount(sfLowLimit);
 	mHighLimit		= mLedgerEntry->getFieldAmount(sfHighLimit);
 
-	mLowID			= NewcoinAddress::createAccountID(mLowLimit.getIssuer());
-	mHighID			= NewcoinAddress::createAccountID(mHighLimit.getIssuer());
+	mLowID			= RippleAddress::createAccountID(mLowLimit.getIssuer());
+	mHighID			= RippleAddress::createAccountID(mHighLimit.getIssuer());
 
 	mLowQualityIn	= mLedgerEntry->getFieldU32(sfLowQualityIn);
 	mLowQualityOut	= mLedgerEntry->getFieldU32(sfLowQualityOut);

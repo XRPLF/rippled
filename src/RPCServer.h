@@ -9,7 +9,7 @@
 #include "../json/value.h"
 
 #include "HTTPRequest.h"
-#include "NewcoinAddress.h"
+#include "RippleAddress.h"
 #include "NetworkOPs.h"
 #include "SerializedLedger.h"
 #include "RPCHandler.h"

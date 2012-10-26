@@ -32,7 +32,7 @@ TER	TransactionEngine::setAuthorized(const SerializedTransaction& txn, bool bMus
 	std::vector<unsigned char>	vucCipher		= txn.getFieldVL(sfGenerator);
 	std::vector<unsigned char>	vucPubKey		= txn.getFieldVL(sfPublicKey);
 	std::vector<unsigned char>	vucSignature	= txn.getFieldVL(sfSignature);
-	NewcoinAddress				naAccountPublic	= NewcoinAddress::createAccountPublic(vucPubKey);
+	RippleAddress				naAccountPublic	= RippleAddress::createAccountPublic(vucPubKey);
 
 	if (!naAccountPublic.accountPublicVerify(Serializer::getSHA512Half(vucCipher), vucSignature))
 	{
@@ -641,7 +641,7 @@ TER TransactionEngine::doWalletAdd(const SerializedTransaction& txn)
 	const std::vector<unsigned char>	vucPubKey		= txn.getFieldVL(sfPublicKey);
 	const std::vector<unsigned char>	vucSignature	= txn.getFieldVL(sfSignature);
 	const uint160						uAuthKeyID		= txn.getFieldAccount160(sfAuthorizedKey);
-	const NewcoinAddress				naMasterPubKey	= NewcoinAddress::createAccountPublic(vucPubKey);
+	const RippleAddress				naMasterPubKey	= RippleAddress::createAccountPublic(vucPubKey);
 	const uint160						uDstAccountID	= naMasterPubKey.getAccountID();
 
 	if (!naMasterPubKey.accountPublicVerify(Serializer::getSHA512Half(uAuthKeyID.begin(), uAuthKeyID.size()), vucSignature))
@@ -1018,7 +1018,7 @@ Log(lsINFO) << boost::str(boost::format("doOfferCreate: saTakerPays=%s saTakerGe
 
 		if (!sleTakerPays)
 		{
-			Log(lsWARNING) << "doOfferCreate: delay: can't receive IOUs from non-existant issuer: " << NewcoinAddress::createHumanAccountID(uPaysIssuerID);
+			Log(lsWARNING) << "doOfferCreate: delay: can't receive IOUs from non-existant issuer: " << RippleAddress::createHumanAccountID(uPaysIssuerID);
 
 			terResult	= terNO_ACCOUNT;
 		}
@@ -1066,11 +1066,11 @@ Log(lsINFO) << boost::str(boost::format("doOfferCreate: saTakerPays=%s saTakerGe
 
 	Log(lsWARNING) << "doOfferCreate: takeOffers: saTakerPays=" << saTakerPays.getFullText();
 	Log(lsWARNING) << "doOfferCreate: takeOffers: saTakerGets=" << saTakerGets.getFullText();
-	Log(lsWARNING) << "doOfferCreate: takeOffers: mTxnAccountID=" << NewcoinAddress::createHumanAccountID(mTxnAccountID);
+	Log(lsWARNING) << "doOfferCreate: takeOffers: mTxnAccountID=" << RippleAddress::createHumanAccountID(mTxnAccountID);
 	Log(lsWARNING) << "doOfferCreate: takeOffers:         FUNDS=" << mNodes.accountFunds(mTxnAccountID, saTakerGets).getFullText();
 
-	// Log(lsWARNING) << "doOfferCreate: takeOffers: uPaysIssuerID=" << NewcoinAddress::createHumanAccountID(uPaysIssuerID);
-	// Log(lsWARNING) << "doOfferCreate: takeOffers: uGetsIssuerID=" << NewcoinAddress::createHumanAccountID(uGetsIssuerID);
+	// Log(lsWARNING) << "doOfferCreate: takeOffers: uPaysIssuerID=" << RippleAddress::createHumanAccountID(uPaysIssuerID);
+	// Log(lsWARNING) << "doOfferCreate: takeOffers: uGetsIssuerID=" << RippleAddress::createHumanAccountID(uGetsIssuerID);
 
 	if (tesSUCCESS == terResult
 		&& saTakerPays														// Still wanting something.
@@ -1092,9 +1092,9 @@ Log(lsINFO) << boost::str(boost::format("doOfferCreate: saTakerPays=%s saTakerGe
 			Log(lsINFO) << boost::str(boost::format("doOfferCreate: adding to book: %s : %s/%s -> %s/%s")
 				% uBookBase.ToString()
 				% saTakerPays.getHumanCurrency()
-				% NewcoinAddress::createHumanAccountID(saTakerPays.getIssuer())
+				% RippleAddress::createHumanAccountID(saTakerPays.getIssuer())
 				% saTakerGets.getHumanCurrency()
-				% NewcoinAddress::createHumanAccountID(saTakerGets.getIssuer()));
+				% RippleAddress::createHumanAccountID(saTakerGets.getIssuer()));
 
 			uDirectory	= Ledger::getQualityIndex(uBookBase, uRate);	// Use original rate.
 
@@ -1104,9 +1104,9 @@ Log(lsINFO) << boost::str(boost::format("doOfferCreate: saTakerPays=%s saTakerGe
 
 		if (tesSUCCESS == terResult)
 		{
-			Log(lsWARNING) << "doOfferCreate: sfAccount=" << NewcoinAddress::createHumanAccountID(mTxnAccountID);
-			Log(lsWARNING) << "doOfferCreate: uPaysIssuerID=" << NewcoinAddress::createHumanAccountID(uPaysIssuerID);
-			Log(lsWARNING) << "doOfferCreate: uGetsIssuerID=" << NewcoinAddress::createHumanAccountID(uGetsIssuerID);
+			Log(lsWARNING) << "doOfferCreate: sfAccount=" << RippleAddress::createHumanAccountID(mTxnAccountID);
+			Log(lsWARNING) << "doOfferCreate: uPaysIssuerID=" << RippleAddress::createHumanAccountID(uPaysIssuerID);
+			Log(lsWARNING) << "doOfferCreate: uGetsIssuerID=" << RippleAddress::createHumanAccountID(uGetsIssuerID);
 			Log(lsWARNING) << "doOfferCreate: saTakerPays.isNative()=" << saTakerPays.isNative();
 			Log(lsWARNING) << "doOfferCreate: saTakerGets.isNative()=" << saTakerGets.isNative();
 			Log(lsWARNING) << "doOfferCreate: uPaysCurrency=" << saTakerPays.getHumanCurrency();
@@ -1161,7 +1161,7 @@ TER TransactionEngine::doOfferCancel(const SerializedTransaction& txn)
 		else
 		{
 			Log(lsWARNING) << "doOfferCancel: offer not found: "
-				<< NewcoinAddress::createHumanAccountID(mTxnAccountID)
+				<< RippleAddress::createHumanAccountID(mTxnAccountID)
 				<< " : " << uOfferSequence
 				<< " : " << uOfferIndex.ToString();
 

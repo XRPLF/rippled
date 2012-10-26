@@ -192,9 +192,9 @@ Application::~Application()
 void Application::startNewLedger()
 {
 	// New stuff.
-	NewcoinAddress	rootSeedMaster		= NewcoinAddress::createSeedGeneric("masterpassphrase");
-	NewcoinAddress	rootGeneratorMaster	= NewcoinAddress::createGeneratorPublic(rootSeedMaster);
-	NewcoinAddress	rootAddress			= NewcoinAddress::createAccountPublic(rootGeneratorMaster, 0);
+	RippleAddress	rootSeedMaster		= RippleAddress::createSeedGeneric("masterpassphrase");
+	RippleAddress	rootGeneratorMaster	= RippleAddress::createGeneratorPublic(rootSeedMaster);
+	RippleAddress	rootAddress			= RippleAddress::createAccountPublic(rootGeneratorMaster, 0);
 
 	// Print enough information to be able to claim root account.
 	cLog(lsINFO) << "Root master seed: " << rootSeedMaster.humanSeed();

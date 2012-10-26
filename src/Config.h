@@ -2,7 +2,7 @@
 #define __CONFIG__
 
 #include "types.h"
-#include "NewcoinAddress.h"
+#include "RippleAddress.h"
 #include "ParseSection.h"
 #include "SerializedTypes.h"
 
@@ -93,7 +93,7 @@ public:
 	bool						RPC_ALLOW_REMOTE;
 
 	// Validation
-	NewcoinAddress				VALIDATION_SEED;
+	RippleAddress				VALIDATION_SEED;
 
 	// Fees
 	uint64						FEE_DEFAULT;			// Default fee.

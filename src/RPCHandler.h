@@ -15,14 +15,14 @@ class RPCHandler
 	int getParamCount(const Json::Value& params);
 	bool extractString(std::string& param, const Json::Value& params, int index);
 
-	Json::Value getMasterGenerator(const uint256& uLedger, const NewcoinAddress& naRegularSeed, NewcoinAddress& naMasterGenerator);
-	Json::Value authorize(const uint256& uLedger, const NewcoinAddress& naRegularSeed, const NewcoinAddress& naSrcAccountID,
-		NewcoinAddress& naAccountPublic, NewcoinAddress& naAccountPrivate,
+	Json::Value getMasterGenerator(const uint256& uLedger, const RippleAddress& naRegularSeed, RippleAddress& naMasterGenerator);
+	Json::Value authorize(const uint256& uLedger, const RippleAddress& naRegularSeed, const RippleAddress& naSrcAccountID,
+		RippleAddress& naAccountPublic, RippleAddress& naAccountPrivate,
 		STAmount& saSrcBalance, const STAmount& saFee, AccountState::pointer& asSrc,
-		const NewcoinAddress& naVerifyGenerator);
-	Json::Value accounts(const uint256& uLedger, const NewcoinAddress& naMasterGenerator);
+		const RippleAddress& naVerifyGenerator);
+	Json::Value accounts(const uint256& uLedger, const RippleAddress& naMasterGenerator);
 
-	Json::Value accountFromString(const uint256& uLedger, NewcoinAddress& naAccount, bool& bIndex, const std::string& strIdent, const int iIndex);
+	Json::Value accountFromString(const uint256& uLedger, RippleAddress& naAccount, bool& bIndex, const std::string& strIdent, const int iIndex);
 
 	Json::Value doAcceptLedger(const Json::Value &params);
 	Json::Value doAccountDomainSet(const Json::Value &params);

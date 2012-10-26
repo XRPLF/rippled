@@ -87,7 +87,7 @@ protected:
 	Ledger::pointer mPreviousLedger;
 	LedgerAcquire::pointer mAcquiringLedger;
 	LedgerProposal::pointer mOurPosition;
-	NewcoinAddress mValSeed, mValPublic;
+	RippleAddress mValSeed, mValPublic;
 	bool mProposing, mValidating, mHaveCorrectLCL;
 
 	int mCurrentMSeconds, mClosePercent, mCloseResolution;
@@ -182,7 +182,7 @@ public:
 	bool peerGaveNodes(Peer::ref peer, const uint256& setHash,
 		const std::list<SHAMapNode>& nodeIDs, const std::list< std::vector<unsigned char> >& nodeData);
 
-	bool isOurPubKey(const NewcoinAddress &k)	{ return k == mValPublic; }
+	bool isOurPubKey(const RippleAddress &k)	{ return k == mValPublic; }
 
 	// test/debug
 	void simulate();

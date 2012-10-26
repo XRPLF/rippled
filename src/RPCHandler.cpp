@@ -4,7 +4,7 @@
 #include "Log.h"
 #include "RippleLines.h"
 #include "Wallet.h"
-#include "NewcoinAddress.h"
+#include "RippleAddress.h"
 #include "AccountState.h"
 #include "NicknameState.h"
 
@@ -133,11 +133,11 @@ bool RPCHandler::extractString(std::string& param, const Json::Value& params, in
 // Look up the master public generator for a regular seed so we may index source accounts ids.
 // --> naRegularSeed
 // <-- naMasterGenerator
-Json::Value RPCHandler::getMasterGenerator(const uint256& uLedger, const NewcoinAddress& naRegularSeed, NewcoinAddress& naMasterGenerator)
+Json::Value RPCHandler::getMasterGenerator(const uint256& uLedger, const RippleAddress& naRegularSeed, RippleAddress& naMasterGenerator)
 {
-	NewcoinAddress		na0Public;		// To find the generator's index.
-	NewcoinAddress		na0Private;		// To decrypt the master generator's cipher.
-	NewcoinAddress		naGenerator	= NewcoinAddress::createGeneratorPublic(naRegularSeed);
+	RippleAddress		na0Public;		// To find the generator's index.
+	RippleAddress		na0Private;		// To decrypt the master generator's cipher.
+	RippleAddress		naGenerator	= RippleAddress::createGeneratorPublic(naRegularSeed);
 
 	na0Public.setAccountPublic(naGenerator, 0);
 	na0Private.setAccountPrivate(naGenerator, naRegularSeed, 0);
@@ -172,10 +172,10 @@ Json::Value RPCHandler::getMasterGenerator(const uint256& uLedger, const Newcoin
 // --> naVerifyGenerator : If provided, the found master public generator must match.
 // XXX Be more lenient, allow use of master generator on claimed accounts.
 Json::Value RPCHandler::authorize(const uint256& uLedger,
-	const NewcoinAddress& naRegularSeed, const NewcoinAddress& naSrcAccountID,
-	NewcoinAddress& naAccountPublic, NewcoinAddress& naAccountPrivate,
+	const RippleAddress& naRegularSeed, const RippleAddress& naSrcAccountID,
+	RippleAddress& naAccountPublic, RippleAddress& naAccountPrivate,
 	STAmount& saSrcBalance, const STAmount& saFee, AccountState::pointer& asSrc,
-	const NewcoinAddress& naVerifyGenerator)
+	const RippleAddress& naVerifyGenerator)
 {
 	// Source/paying account must exist.
 	asSrc	= mNetOps->getAccountState(uLedger, naSrcAccountID);
@@ -184,7 +184,7 @@ Json::Value RPCHandler::authorize(const uint256& uLedger,
 		return rpcError(rpcSRC_ACT_MISSING);
 	}
 
-	NewcoinAddress	naMasterGenerator;
+	RippleAddress	naMasterGenerator;
 
 	if (asSrc->bHaveAuthorizedKey())
 	{
@@ -196,7 +196,7 @@ Json::Value RPCHandler::authorize(const uint256& uLedger,
 	else
 	{
 		// Try the seed as a master seed.
-		naMasterGenerator	= NewcoinAddress::createGeneratorPublic(naRegularSeed);
+		naMasterGenerator	= RippleAddress::createGeneratorPublic(naRegularSeed);
 	}
 
 	// If naVerifyGenerator is provided, make sure it is the master generator.
@@ -206,7 +206,7 @@ Json::Value RPCHandler::authorize(const uint256& uLedger,
 	}
 
 	// Find the index of the account from the master generator, so we can generate the public and private keys.
-	NewcoinAddress		naMasterAccountPublic;
+	RippleAddress		naMasterAccountPublic;
 	unsigned int		iIndex	= 0;
 	bool				bFound	= false;
 
@@ -229,7 +229,7 @@ Json::Value RPCHandler::authorize(const uint256& uLedger,
 	}
 
 	// Use the regular generator to determine the associated public and private keys.
-	NewcoinAddress		naGenerator	= NewcoinAddress::createGeneratorPublic(naRegularSeed);
+	RippleAddress		naGenerator	= RippleAddress::createGeneratorPublic(naRegularSeed);
 
 	naAccountPublic.setAccountPublic(naGenerator, iIndex);
 	naAccountPrivate.setAccountPrivate(naGenerator, naRegularSeed, iIndex);
@@ -261,9 +261,9 @@ Json::Value RPCHandler::authorize(const uint256& uLedger,
 
 // --> strIdent: public key, account ID, or regular seed.
 // <-- bIndex: true if iIndex > 0 and used the index.
-Json::Value RPCHandler::accountFromString(const uint256& uLedger, NewcoinAddress& naAccount, bool& bIndex, const std::string& strIdent, const int iIndex)
+Json::Value RPCHandler::accountFromString(const uint256& uLedger, RippleAddress& naAccount, bool& bIndex, const std::string& strIdent, const int iIndex)
 {
-	NewcoinAddress	naSeed;
+	RippleAddress	naSeed;
 
 	if (naAccount.setAccountPublic(strIdent) || naAccount.setAccountID(strIdent))
 	{
@@ -279,10 +279,10 @@ Json::Value RPCHandler::accountFromString(const uint256& uLedger, NewcoinAddress
 	{
 		// We allow the use of the seeds to access #0.
 		// This is poor practice and merely for debuging convenience.
-		NewcoinAddress		naRegular0Public;
-		NewcoinAddress		naRegular0Private;
+		RippleAddress		naRegular0Public;
+		RippleAddress		naRegular0Private;
 
-		NewcoinAddress		naGenerator		= NewcoinAddress::createGeneratorPublic(naSeed);
+		RippleAddress		naGenerator		= RippleAddress::createGeneratorPublic(naSeed);
 
 		naRegular0Public.setAccountPublic(naGenerator, 0);
 		naRegular0Private.setAccountPrivate(naGenerator, naSeed, 0);
@@ -328,8 +328,8 @@ Json::Value RPCHandler::doAcceptLedger(const Json::Value &params)
 // account_domain_set <seed> <paying_account> [<domain>]
 Json::Value RPCHandler::doAccountDomainSet(const Json::Value &params)
 {
-	NewcoinAddress	naSrcAccountID;
-	NewcoinAddress	naSeed;
+	RippleAddress	naSrcAccountID;
+	RippleAddress	naSeed;
 
 	if (!naSeed.setSeedGeneric(params[0u].asString()))
 	{
@@ -340,9 +340,9 @@ Json::Value RPCHandler::doAccountDomainSet(const Json::Value &params)
 		return rpcError(rpcSRC_ACT_MALFORMED);
 	}
 
-	NewcoinAddress			naVerifyGenerator;
-	NewcoinAddress			naAccountPublic;
-	NewcoinAddress			naAccountPrivate;
+	RippleAddress			naVerifyGenerator;
+	RippleAddress			naAccountPublic;
+	RippleAddress			naAccountPrivate;
 	AccountState::pointer	asSrc;
 	STAmount				saSrcBalance;
 	Json::Value				obj				= authorize(uint256(0), naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
@@ -361,7 +361,7 @@ Json::Value RPCHandler::doAccountDomainSet(const Json::Value &params)
 		uint128(),
 		false,
 		0,
-		NewcoinAddress(),
+		RippleAddress(),
 		true,
 		strCopy(params[2u].asString()),
 		false,
@@ -381,8 +381,8 @@ Json::Value RPCHandler::doAccountDomainSet(const Json::Value &params)
 // account_email_set <seed> <paying_account> [<email_address>]
 Json::Value RPCHandler::doAccountEmailSet(const Json::Value &params)
 {
-	NewcoinAddress	naSrcAccountID;
-	NewcoinAddress	naSeed;
+	RippleAddress	naSrcAccountID;
+	RippleAddress	naSeed;
 
 	if (!naSeed.setSeedGeneric(params[0u].asString()))
 	{
@@ -393,9 +393,9 @@ Json::Value RPCHandler::doAccountEmailSet(const Json::Value &params)
 		return rpcError(rpcSRC_ACT_MALFORMED);
 	}
 
-	NewcoinAddress			naVerifyGenerator;
-	NewcoinAddress			naAccountPublic;
-	NewcoinAddress			naAccountPrivate;
+	RippleAddress			naVerifyGenerator;
+	RippleAddress			naAccountPublic;
+	RippleAddress			naAccountPrivate;
 	AccountState::pointer	asSrc;
 	STAmount				saSrcBalance;
 	Json::Value				obj				= authorize(uint256(0), naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
@@ -425,7 +425,7 @@ Json::Value RPCHandler::doAccountEmailSet(const Json::Value &params)
 		strEmail.empty() ? uint128() : uEmailHash,
 		false,
 		uint256(),
-		NewcoinAddress(),
+		RippleAddress(),
 		false,
 		vucDomain,
 		false,
@@ -456,7 +456,7 @@ Json::Value RPCHandler::doAccountInfo(const Json::Value &params)
 	std::string		strIdent	= params[0u].asString();
 	bool			bIndex;
 	int				iIndex		= 2 == params.size() ? lexical_cast_s<int>(params[1u].asString()) : 0;
-	NewcoinAddress	naAccount;
+	RippleAddress	naAccount;
 
 	Json::Value		ret;
 
@@ -503,9 +503,9 @@ Json::Value RPCHandler::doAccountInfo(const Json::Value &params)
 
 // account_message_set <seed> <paying_account> <pub_key>
 Json::Value RPCHandler::doAccountMessageSet(const Json::Value& params) {
-	NewcoinAddress	naSrcAccountID;
-	NewcoinAddress	naSeed;
-	NewcoinAddress	naMessagePubKey;
+	RippleAddress	naSrcAccountID;
+	RippleAddress	naSeed;
+	RippleAddress	naMessagePubKey;
 
 	if (!naSeed.setSeedGeneric(params[0u].asString()))
 	{
@@ -520,9 +520,9 @@ Json::Value RPCHandler::doAccountMessageSet(const Json::Value& params) {
 		return rpcError(rpcPUBLIC_MALFORMED);
 	}
 
-	NewcoinAddress				naVerifyGenerator;
-	NewcoinAddress				naAccountPublic;
-	NewcoinAddress				naAccountPrivate;
+	RippleAddress				naVerifyGenerator;
+	RippleAddress				naAccountPublic;
+	RippleAddress				naAccountPrivate;
 	AccountState::pointer		asSrc;
 	STAmount					saSrcBalance;
 	Json::Value					obj				= authorize(uint256(0), naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
@@ -563,8 +563,8 @@ Json::Value RPCHandler::doAccountMessageSet(const Json::Value& params) {
 // account_publish_set <seed> <paying_account> <hash> <size>
 Json::Value RPCHandler::doAccountPublishSet(const Json::Value &params)
 {
-	NewcoinAddress	naSrcAccountID;
-	NewcoinAddress	naSeed;
+	RippleAddress	naSrcAccountID;
+	RippleAddress	naSeed;
 
 	if (!naSeed.setSeedGeneric(params[0u].asString()))
 	{
@@ -575,9 +575,9 @@ Json::Value RPCHandler::doAccountPublishSet(const Json::Value &params)
 		return rpcError(rpcSRC_ACT_MALFORMED);
 	}
 
-	NewcoinAddress			naVerifyGenerator;
-	NewcoinAddress			naAccountPublic;
-	NewcoinAddress			naAccountPrivate;
+	RippleAddress			naVerifyGenerator;
+	RippleAddress			naAccountPublic;
+	RippleAddress			naAccountPrivate;
 	AccountState::pointer	asSrc;
 	STAmount				saSrcBalance;
 	Json::Value				obj				= authorize(uint256(0), naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
@@ -600,7 +600,7 @@ Json::Value RPCHandler::doAccountPublishSet(const Json::Value &params)
 		uint128(),
 		false,
 		0,
-		NewcoinAddress(),
+		RippleAddress(),
 		false,
 		vucDomain,
 		false,
@@ -620,8 +620,8 @@ Json::Value RPCHandler::doAccountPublishSet(const Json::Value &params)
 // account_rate_set <seed> <paying_account> <rate>
 Json::Value RPCHandler::doAccountRateSet(const Json::Value &params)
 {
-	NewcoinAddress	naSrcAccountID;
-	NewcoinAddress	naSeed;
+	RippleAddress	naSrcAccountID;
+	RippleAddress	naSeed;
 
 	if (!naSeed.setSeedGeneric(params[0u].asString()))
 	{
@@ -632,9 +632,9 @@ Json::Value RPCHandler::doAccountRateSet(const Json::Value &params)
 		return rpcError(rpcSRC_ACT_MALFORMED);
 	}
 
-	NewcoinAddress			naVerifyGenerator;
-	NewcoinAddress			naAccountPublic;
-	NewcoinAddress			naAccountPrivate;
+	RippleAddress			naVerifyGenerator;
+	RippleAddress			naAccountPublic;
+	RippleAddress			naAccountPrivate;
 	AccountState::pointer	asSrc;
 	STAmount				saSrcBalance;
 	Json::Value				obj				= authorize(uint256(0), naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
@@ -656,7 +656,7 @@ Json::Value RPCHandler::doAccountRateSet(const Json::Value &params)
 		uint128(),
 		false,
 		0,
-		NewcoinAddress(),
+		RippleAddress(),
 		false,
 		vucDomain,
 		true,
@@ -675,8 +675,8 @@ Json::Value RPCHandler::doAccountRateSet(const Json::Value &params)
 
 // account_wallet_set <seed> <paying_account> [<wallet_hash>]
 Json::Value RPCHandler::doAccountWalletSet(const Json::Value& params) {
-	NewcoinAddress	naSrcAccountID;
-	NewcoinAddress	naSeed;
+	RippleAddress	naSrcAccountID;
+	RippleAddress	naSeed;
 
 	if (!naSeed.setSeedGeneric(params[0u].asString()))
 	{
@@ -687,9 +687,9 @@ Json::Value RPCHandler::doAccountWalletSet(const Json::Value& params) {
 		return rpcError(rpcSRC_ACT_MALFORMED);
 	}
 
-	NewcoinAddress				naMasterGenerator;
-	NewcoinAddress				naAccountPublic;
-	NewcoinAddress				naAccountPrivate;
+	RippleAddress				naMasterGenerator;
+	RippleAddress				naAccountPublic;
+	RippleAddress				naAccountPrivate;
 	AccountState::pointer		asSrc;
 	STAmount					saSrcBalance;
 	Json::Value					obj					= authorize(uint256(0), naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
@@ -715,7 +715,7 @@ Json::Value RPCHandler::doAccountWalletSet(const Json::Value& params) {
 		uint128(),
 		true,
 		uWalletLocator,
-		NewcoinAddress(),
+		RippleAddress(),
 		false,
 		vucDomain,
 		false,
@@ -850,8 +850,8 @@ Json::Value RPCHandler::doNicknameInfo(const Json::Value& params)
 // nickname_set <seed> <paying_account> <nickname> [<offer_minimum>] [<authorization>]
 Json::Value RPCHandler::doNicknameSet(const Json::Value& params)
 {
-	NewcoinAddress	naSrcAccountID;
-	NewcoinAddress	naSeed;
+	RippleAddress	naSrcAccountID;
+	RippleAddress	naSeed;
 
 	if (!naSeed.setSeedGeneric(params[0u].asString()))
 	{
@@ -896,9 +896,9 @@ Json::Value RPCHandler::doNicknameSet(const Json::Value& params)
 		saFee	= theConfig.FEE_DEFAULT;
 	}
 
-	NewcoinAddress			naMasterGenerator;
-	NewcoinAddress			naAccountPublic;
-	NewcoinAddress			naAccountPrivate;
+	RippleAddress			naMasterGenerator;
+	RippleAddress			naAccountPublic;
+	RippleAddress			naAccountPrivate;
 	AccountState::pointer	asSrc;
 	STAmount				saSrcBalance;
 	Json::Value				obj				= authorize(uint256(0), naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
@@ -932,8 +932,8 @@ Json::Value RPCHandler::doNicknameSet(const Json::Value& params)
 // *offering* for *wants*
 Json::Value RPCHandler::doOfferCreate(const Json::Value &params)
 {
-	NewcoinAddress	naSeed;
-	NewcoinAddress	naSrcAccountID;
+	RippleAddress	naSeed;
+	RippleAddress	naSrcAccountID;
 	STAmount		saTakerPays;
 	STAmount		saTakerGets;
 
@@ -961,9 +961,9 @@ Json::Value RPCHandler::doOfferCreate(const Json::Value &params)
 	uint32					uExpiration	= lexical_cast_s<int>(params[8u].asString());
 	bool					bPassive	= params.size() == 10;
 
-	NewcoinAddress			naMasterGenerator;
-	NewcoinAddress			naAccountPublic;
-	NewcoinAddress			naAccountPrivate;
+	RippleAddress			naMasterGenerator;
+	RippleAddress			naAccountPublic;
+	RippleAddress			naAccountPrivate;
 	AccountState::pointer	asSrc;
 	STAmount				saSrcBalance;
 	Json::Value				obj				= authorize(uint256(0), naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
@@ -994,8 +994,8 @@ Json::Value RPCHandler::doOfferCreate(const Json::Value &params)
 // offer_cancel <seed> <paying_account> <sequence>
 Json::Value RPCHandler::doOfferCancel(const Json::Value &params)
 {
-	NewcoinAddress	naSeed;
-	NewcoinAddress	naSrcAccountID;
+	RippleAddress	naSeed;
+	RippleAddress	naSrcAccountID;
 	uint32			uSequence	= lexical_cast_s<int>(params[2u].asString());
 
 	if (!naSeed.setSeedGeneric(params[0u].asString()))
@@ -1007,9 +1007,9 @@ Json::Value RPCHandler::doOfferCancel(const Json::Value &params)
 		return rpcError(rpcSRC_ACT_MALFORMED);
 	}
 
-	NewcoinAddress			naMasterGenerator;
-	NewcoinAddress			naAccountPublic;
-	NewcoinAddress			naAccountPrivate;
+	RippleAddress			naMasterGenerator;
+	RippleAddress			naAccountPublic;
+	RippleAddress			naAccountPrivate;
 	AccountState::pointer	asSrc;
 	STAmount				saSrcBalance;
 	Json::Value				obj				= authorize(uint256(0), naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
@@ -1041,7 +1041,7 @@ Json::Value RPCHandler::doOwnerInfo(const Json::Value& params)
 	std::string		strIdent	= params[0u].asString();
 	bool			bIndex;
 	int				iIndex		= 2 == params.size() ? lexical_cast_s<int>(params[1u].asString()) : 0;
-	NewcoinAddress	naAccount;
+	RippleAddress	naAccount;
 
 	Json::Value		ret;
 
@@ -1062,9 +1062,9 @@ Json::Value RPCHandler::doOwnerInfo(const Json::Value& params)
 // YYY Make making account default to first account for seed.
 Json::Value RPCHandler::doPasswordFund(const Json::Value &params)
 {
-	NewcoinAddress	naSrcAccountID;
-	NewcoinAddress	naDstAccountID;
-	NewcoinAddress	naSeed;
+	RippleAddress	naSrcAccountID;
+	RippleAddress	naDstAccountID;
+	RippleAddress	naSeed;
 
 	if (!naSeed.setSeedGeneric(params[0u].asString()))
 	{
@@ -1079,9 +1079,9 @@ Json::Value RPCHandler::doPasswordFund(const Json::Value &params)
 		return rpcError(rpcDST_ACT_MALFORMED);
 	}
 
-	NewcoinAddress			naMasterGenerator;
-	NewcoinAddress			naAccountPublic;
-	NewcoinAddress			naAccountPrivate;
+	RippleAddress			naMasterGenerator;
+	RippleAddress			naAccountPublic;
+	RippleAddress			naAccountPrivate;
 	AccountState::pointer	asSrc;
 	STAmount				saSrcBalance;
 	Json::Value				obj				= authorize(uint256(0), naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
@@ -1111,9 +1111,9 @@ Json::Value RPCHandler::doPasswordFund(const Json::Value &params)
 // password_set <master_seed> <regular_seed> [<account>]
 Json::Value RPCHandler::doPasswordSet(const Json::Value& params)
 {
-	NewcoinAddress	naMasterSeed;
-	NewcoinAddress	naRegularSeed;
-	NewcoinAddress	naAccountID;
+	RippleAddress	naMasterSeed;
+	RippleAddress	naRegularSeed;
+	RippleAddress	naAccountID;
 
 	if (!naMasterSeed.setSeedGeneric(params[0u].asString()))
 	{
@@ -1132,13 +1132,13 @@ Json::Value RPCHandler::doPasswordSet(const Json::Value& params)
 	}
 	else
 	{
-		NewcoinAddress	naMasterGenerator	= NewcoinAddress::createGeneratorPublic(naMasterSeed);
-		NewcoinAddress	naRegularGenerator	= NewcoinAddress::createGeneratorPublic(naRegularSeed);
-		NewcoinAddress	naRegular0Public;
-		NewcoinAddress	naRegular0Private;
+		RippleAddress	naMasterGenerator	= RippleAddress::createGeneratorPublic(naMasterSeed);
+		RippleAddress	naRegularGenerator	= RippleAddress::createGeneratorPublic(naRegularSeed);
+		RippleAddress	naRegular0Public;
+		RippleAddress	naRegular0Private;
 
-		NewcoinAddress	naAccountPublic;
-		NewcoinAddress	naAccountPrivate;
+		RippleAddress	naAccountPublic;
+		RippleAddress	naAccountPrivate;
 
 		naAccountPublic.setAccountPublic(naMasterGenerator, 0);
 		naAccountPrivate.setAccountPrivate(naMasterGenerator, naMasterSeed, 0);
@@ -1155,8 +1155,8 @@ Json::Value RPCHandler::doPasswordSet(const Json::Value& params)
 		// XXX Check result.
 		naRegular0Private.accountPrivateSign(Serializer::getSHA512Half(vucGeneratorCipher), vucGeneratorSig);
 
-		NewcoinAddress		naMasterXPublic;
-		NewcoinAddress		naRegularXPublic;
+		RippleAddress		naMasterXPublic;
+		RippleAddress		naRegularXPublic;
 		unsigned int		iIndex	= -1;	// Compensate for initial increment.
 		int					iMax	= theConfig.ACCOUNT_PROBE_MAX;
 
@@ -1219,11 +1219,11 @@ Json::Value RPCHandler::doPeers(const Json::Value& params)
 Json::Value RPCHandler::doProfile(const Json::Value &params)
 {
 	int				iArgs	= params.size();
-	NewcoinAddress	naSeedA;
-	NewcoinAddress	naAccountA;
+	RippleAddress	naSeedA;
+	RippleAddress	naAccountA;
 	uint160			uCurrencyOfferA;
-	NewcoinAddress	naSeedB;
-	NewcoinAddress	naAccountB;
+	RippleAddress	naSeedB;
+	RippleAddress	naAccountB;
 	uint160			uCurrencyOfferB;
 	uint32			iCount	= 100;
 	bool			bSubmit	= false;
@@ -1256,9 +1256,9 @@ Json::Value RPCHandler::doProfile(const Json::Value &params)
 
 	for(unsigned int n=0; n<iCount; n++) 
 	{
-		NewcoinAddress			naMasterGeneratorA;
-		NewcoinAddress			naAccountPublicA;
-		NewcoinAddress			naAccountPrivateA;
+		RippleAddress			naMasterGeneratorA;
+		RippleAddress			naAccountPublicA;
+		RippleAddress			naAccountPrivateA;
 		AccountState::pointer	asSrcA;
 		STAmount				saSrcBalanceA;
 
@@ -1314,16 +1314,16 @@ Json::Value RPCHandler::doProfile(const Json::Value &params)
 //      offer <currency> [<issuerID>]
 Json::Value RPCHandler::doRipple(const Json::Value &params)
 {
-	NewcoinAddress	naSeed;
+	RippleAddress	naSeed;
 	STAmount		saSrcAmountMax;
 	uint160			uSrcCurrencyID;
-	NewcoinAddress	naSrcAccountID;
-	NewcoinAddress	naSrcIssuerID;
+	RippleAddress	naSrcAccountID;
+	RippleAddress	naSrcIssuerID;
 	bool			bPartial;
 	bool			bFull;
 	bool			bLimit;
 	bool			bAverage;
-	NewcoinAddress	naDstAccountID;
+	RippleAddress	naDstAccountID;
 	STAmount		saDstAmount;
 	uint160			uDstCurrencyID;
 
@@ -1367,7 +1367,7 @@ Json::Value RPCHandler::doRipple(const Json::Value &params)
 			{
 				Log(lsINFO) << "Offer>";
 				uint160			uCurrencyID;
-				NewcoinAddress	naIssuerID;
+				RippleAddress	naIssuerID;
 
 				++iArg;
 
@@ -1388,9 +1388,9 @@ Json::Value RPCHandler::doRipple(const Json::Value &params)
 			else if (params.size() >= iArg + 2 && params[iArg].asString() == "account")	// account
 			{
 				Log(lsINFO) << "Account>";
-				NewcoinAddress	naAccountID;
+				RippleAddress	naAccountID;
 				uint160			uCurrencyID;
-				NewcoinAddress	naIssuerID;
+				RippleAddress	naIssuerID;
 
 				++iArg;
 
@@ -1483,9 +1483,9 @@ Json::Value RPCHandler::doRipple(const Json::Value &params)
 	AccountState::pointer	asDst	= mNetOps->getAccountState(uint256(0), naDstAccountID);
 	STAmount				saFee	= theConfig.FEE_DEFAULT;
 
-	NewcoinAddress			naVerifyGenerator;
-	NewcoinAddress			naAccountPublic;
-	NewcoinAddress			naAccountPrivate;
+	RippleAddress			naVerifyGenerator;
+	RippleAddress			naAccountPublic;
+	RippleAddress			naAccountPrivate;
 	AccountState::pointer	asSrc;
 	STAmount				saSrcBalance;
 	Json::Value				obj		= authorize(uint256(0), naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
@@ -1537,9 +1537,9 @@ Json::Value RPCHandler::doRipple(const Json::Value &params)
 // ripple_line_set <seed> <paying_account> <destination_account> <limit_amount> [<currency>] [<quality_in>] [<quality_out>]
 Json::Value RPCHandler::doRippleLineSet(const Json::Value& params)
 {
-	NewcoinAddress	naSeed;
-	NewcoinAddress	naSrcAccountID;
-	NewcoinAddress	naDstAccountID;
+	RippleAddress	naSeed;
+	RippleAddress	naSrcAccountID;
+	RippleAddress	naDstAccountID;
 	STAmount		saLimitAmount;
 	bool			bQualityIn		= params.size() >= 6;
 	bool			bQualityOut		= params.size() >= 7;
@@ -1572,9 +1572,9 @@ Json::Value RPCHandler::doRippleLineSet(const Json::Value& params)
 	}
 	else
 	{
-		NewcoinAddress			naMasterGenerator;
-		NewcoinAddress			naAccountPublic;
-		NewcoinAddress			naAccountPrivate;
+		RippleAddress			naMasterGenerator;
+		RippleAddress			naAccountPublic;
+		RippleAddress			naAccountPrivate;
 		AccountState::pointer	asSrc;
 		STAmount				saSrcBalance;
 		Json::Value				obj			= authorize(uint256(0), naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
@@ -1614,7 +1614,7 @@ Json::Value RPCHandler::doRippleLinesGet(const Json::Value &params)
 	bool			bIndex;
 	int				iIndex		= 2 == params.size() ? lexical_cast_s<int>(params[1u].asString()) : 0;
 
-	NewcoinAddress	naAccount;
+	RippleAddress	naAccount;
 
 	Json::Value ret;
 
@@ -1683,9 +1683,9 @@ Json::Value RPCHandler::doSubmit(const Json::Value& params)
 // send regular_seed paying_account account_id amount [currency] [issuer] [send_max] [send_currency] [send_issuer]
 Json::Value RPCHandler::doSend(const Json::Value& params)
 {
-	NewcoinAddress	naSeed;
-	NewcoinAddress	naSrcAccountID;
-	NewcoinAddress	naDstAccountID;
+	RippleAddress	naSeed;
+	RippleAddress	naSrcAccountID;
+	RippleAddress	naDstAccountID;
 	STAmount		saSrcAmountMax;
 	STAmount		saDstAmount;
 	std::string		sSrcCurrency;
@@ -1731,9 +1731,9 @@ Json::Value RPCHandler::doSend(const Json::Value& params)
 		bool					bCreate	= !asDst;
 		STAmount				saFee	= bCreate ? theConfig.FEE_ACCOUNT_CREATE : theConfig.FEE_DEFAULT;
 
-		NewcoinAddress			naVerifyGenerator;
-		NewcoinAddress			naAccountPublic;
-		NewcoinAddress			naAccountPrivate;
+		RippleAddress			naVerifyGenerator;
+		RippleAddress			naAccountPublic;
+		RippleAddress			naAccountPrivate;
 		AccountState::pointer	asSrc;
 		STAmount				saSrcBalance;
 		Json::Value				obj		= authorize(uint256(0), naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
@@ -1948,7 +1948,7 @@ Json::Value RPCHandler::doAccountTransactions(const Json::Value& params)
 	if (!extractString(param, params, 0))
 		return rpcError(rpcINVALID_PARAMS);
 
-	NewcoinAddress account;
+	RippleAddress account;
 	if (!account.setAccountID(param))
 		return rpcError(rpcACT_MALFORMED);
 
@@ -2009,7 +2009,7 @@ Json::Value RPCHandler::doUnlAdd(const Json::Value& params)
 	std::string	strNode		= params[0u].asString();
 	std::string strComment	= (params.size() == 2) ? params[1u].asString() : "";
 
-	NewcoinAddress	naNodePublic;
+	RippleAddress	naNodePublic;
 
 	if (naNodePublic.setNodePublic(strNode))
 	{
@@ -2030,7 +2030,7 @@ Json::Value RPCHandler::doUnlAdd(const Json::Value& params)
 // NOTE: It is poor security to specify secret information on the command line.  This information might be saved in the command
 // shell history file (e.g. .bash_history) and it may be leaked via the process status command (i.e. ps).
 Json::Value RPCHandler::doValidationCreate(const Json::Value& params) {
-	NewcoinAddress	naSeed;
+	RippleAddress	naSeed;
 	Json::Value		obj(Json::objectValue);
 
 	if (params.empty())
@@ -2044,7 +2044,7 @@ Json::Value RPCHandler::doValidationCreate(const Json::Value& params) {
 		return rpcError(rpcBAD_SEED);
 	}
 
-	obj["validation_public_key"]	= NewcoinAddress::createNodePublic(naSeed).humanNodePublic();
+	obj["validation_public_key"]	= RippleAddress::createNodePublic(naSeed).humanNodePublic();
 	obj["validation_seed"]			= naSeed.humanSeed();
 	obj["validation_key"]			= naSeed.humanSeed1751();
 
@@ -2070,7 +2070,7 @@ Json::Value RPCHandler::doValidationSeed(const Json::Value& params) {
 	}
 	else
 	{
-		obj["validation_public_key"]	= NewcoinAddress::createNodePublic(theConfig.VALIDATION_SEED).humanNodePublic();
+		obj["validation_public_key"]	= RippleAddress::createNodePublic(theConfig.VALIDATION_SEED).humanNodePublic();
 		obj["validation_seed"]			= theConfig.VALIDATION_SEED.humanSeed();
 		obj["validation_key"]			= theConfig.VALIDATION_SEED.humanSeed1751();
 	}
@@ -2078,7 +2078,7 @@ Json::Value RPCHandler::doValidationSeed(const Json::Value& params) {
 	return obj;
 }
 
-Json::Value RPCHandler::accounts(const uint256& uLedger, const NewcoinAddress& naMasterGenerator)
+Json::Value RPCHandler::accounts(const uint256& uLedger, const RippleAddress& naMasterGenerator)
 {
 	Json::Value jsonAccounts(Json::arrayValue);
 
@@ -2087,7 +2087,7 @@ Json::Value RPCHandler::accounts(const uint256& uLedger, const NewcoinAddress& n
 	unsigned int	uIndex	= 0;
 
 	do {
-		NewcoinAddress		naAccount;
+		RippleAddress		naAccount;
 
 		naAccount.setAccountPublic(naMasterGenerator, uIndex++);
 
@@ -2112,7 +2112,7 @@ Json::Value RPCHandler::accounts(const uint256& uLedger, const NewcoinAddress& n
 // wallet_accounts <seed>
 Json::Value RPCHandler::doWalletAccounts(const Json::Value& params)
 {
-	NewcoinAddress	naSeed;
+	RippleAddress	naSeed;
 
 	if (!naSeed.setSeedGeneric(params[0u].asString()))
 	{
@@ -2120,7 +2120,7 @@ Json::Value RPCHandler::doWalletAccounts(const Json::Value& params)
 	}
 
 	// Try the seed as a master seed.
-	NewcoinAddress	naMasterGenerator	= NewcoinAddress::createGeneratorPublic(naSeed);
+	RippleAddress	naMasterGenerator	= RippleAddress::createGeneratorPublic(naSeed);
 
 	Json::Value jsonAccounts	= accounts(uint256(0), naMasterGenerator);
 
@@ -2150,9 +2150,9 @@ Json::Value RPCHandler::doWalletAccounts(const Json::Value& params)
 // wallet_add <regular_seed> <paying_account> <master_seed> [<initial_funds>] [<account_annotation>]
 Json::Value RPCHandler::doWalletAdd(const Json::Value& params)
 {
-	NewcoinAddress	naMasterSeed;
-	NewcoinAddress	naRegularSeed;
-	NewcoinAddress	naSrcAccountID;
+	RippleAddress	naMasterSeed;
+	RippleAddress	naRegularSeed;
+	RippleAddress	naSrcAccountID;
 	STAmount		saAmount;
 	std::string		sDstCurrency;
 
@@ -2174,11 +2174,11 @@ Json::Value RPCHandler::doWalletAdd(const Json::Value& params)
 	}
 	else
 	{
-		NewcoinAddress			naMasterGenerator	= NewcoinAddress::createGeneratorPublic(naMasterSeed);
-		NewcoinAddress			naRegularGenerator	= NewcoinAddress::createGeneratorPublic(naRegularSeed);
+		RippleAddress			naMasterGenerator	= RippleAddress::createGeneratorPublic(naMasterSeed);
+		RippleAddress			naRegularGenerator	= RippleAddress::createGeneratorPublic(naRegularSeed);
 
-		NewcoinAddress			naAccountPublic;
-		NewcoinAddress			naAccountPrivate;
+		RippleAddress			naAccountPublic;
+		RippleAddress			naAccountPrivate;
 		AccountState::pointer	asSrc;
 		STAmount				saSrcBalance;
 		Json::Value				obj			= authorize(uint256(0), naRegularSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
@@ -2193,9 +2193,9 @@ Json::Value RPCHandler::doWalletAdd(const Json::Value& params)
 		}
 		else
 		{
-			NewcoinAddress				naNewAccountPublic;
-			NewcoinAddress				naNewAccountPrivate;
-			NewcoinAddress				naAuthKeyID;
+			RippleAddress				naNewAccountPublic;
+			RippleAddress				naNewAccountPrivate;
+			RippleAddress				naAuthKeyID;
 			uint160						uAuthKeyID;
 			AccountState::pointer		asNew;
 			std::vector<unsigned char>	vucSignature;
@@ -2254,8 +2254,8 @@ Json::Value RPCHandler::doWalletAdd(const Json::Value& params)
 // To provide an example to client writers, we do everything we expect a client to do here.
 Json::Value RPCHandler::doWalletClaim(const Json::Value& params)
 {
-	NewcoinAddress	naMasterSeed;
-	NewcoinAddress	naRegularSeed;
+	RippleAddress	naMasterSeed;
+	RippleAddress	naRegularSeed;
 
 	if (!naMasterSeed.setSeedGeneric(params[0u].asString()))
 	{
@@ -2281,13 +2281,13 @@ Json::Value RPCHandler::doWalletClaim(const Json::Value& params)
 		// XXX Annotation is ignored.
 		std::string strAnnotation	= (params.size() == 3) ? "" : params[3u].asString();
 
-		NewcoinAddress	naMasterGenerator	= NewcoinAddress::createGeneratorPublic(naMasterSeed);
-		NewcoinAddress	naRegularGenerator	= NewcoinAddress::createGeneratorPublic(naRegularSeed);
-		NewcoinAddress	naRegular0Public;
-		NewcoinAddress	naRegular0Private;
+		RippleAddress	naMasterGenerator	= RippleAddress::createGeneratorPublic(naMasterSeed);
+		RippleAddress	naRegularGenerator	= RippleAddress::createGeneratorPublic(naRegularSeed);
+		RippleAddress	naRegular0Public;
+		RippleAddress	naRegular0Private;
 
-		NewcoinAddress	naAccountPublic;
-		NewcoinAddress	naAccountPrivate;
+		RippleAddress	naAccountPublic;
+		RippleAddress	naAccountPrivate;
 
 		naAccountPublic.setAccountPublic(naMasterGenerator, 0);
 		naAccountPrivate.setAccountPrivate(naMasterGenerator, naMasterSeed, 0);
@@ -2339,9 +2339,9 @@ Json::Value RPCHandler::doWalletClaim(const Json::Value& params)
 // YYY Need annotation and source tag
 Json::Value RPCHandler::doWalletCreate(const Json::Value& params)
 {
-	NewcoinAddress	naSrcAccountID;
-	NewcoinAddress	naDstAccountID;
-	NewcoinAddress	naSeed;
+	RippleAddress	naSrcAccountID;
+	RippleAddress	naDstAccountID;
+	RippleAddress	naSeed;
 
 	if (!naSeed.setSeedGeneric(params[0u].asString()))
 	{
@@ -2363,9 +2363,9 @@ Json::Value RPCHandler::doWalletCreate(const Json::Value& params)
 	// Trying to build:
 	//	 peer_wallet_create <paying_account> <paying_signature> <account_id> [<initial_funds>] [<annotation>]
 
-	NewcoinAddress			naMasterGenerator;
-	NewcoinAddress			naAccountPublic;
-	NewcoinAddress			naAccountPrivate;
+	RippleAddress			naMasterGenerator;
+	RippleAddress			naAccountPublic;
+	RippleAddress			naAccountPrivate;
 	AccountState::pointer	asSrc;
 	STAmount				saSrcBalance;
 	Json::Value				obj				= authorize(uint256(0), naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
@@ -2521,8 +2521,8 @@ Json::Value RPCHandler::doCommand(const std::string& command, Json::Value& param
 // <passphrase> is only for testing. Master seeds should only be generated randomly.
 Json::Value RPCHandler::doWalletPropose(const Json::Value& params)
 {
-	NewcoinAddress	naSeed;
-	NewcoinAddress	naAccount;
+	RippleAddress	naSeed;
+	RippleAddress	naAccount;
 
 	if (params.empty())
 	{
@@ -2530,10 +2530,10 @@ Json::Value RPCHandler::doWalletPropose(const Json::Value& params)
 	}
 	else
 	{
-		naSeed	= NewcoinAddress::createSeedGeneric(params[0u].asString());
+		naSeed	= RippleAddress::createSeedGeneric(params[0u].asString());
 	}
 
-	NewcoinAddress	naGenerator	= NewcoinAddress::createGeneratorPublic(naSeed);
+	RippleAddress	naGenerator	= RippleAddress::createGeneratorPublic(naSeed);
 	naAccount.setAccountPublic(naGenerator, 0);
 
 	Json::Value obj(Json::objectValue);
@@ -2548,7 +2548,7 @@ Json::Value RPCHandler::doWalletPropose(const Json::Value& params)
 // wallet_seed [<seed>|<passphrase>|<passkey>]
 Json::Value RPCHandler::doWalletSeed(const Json::Value& params)
 {
-	NewcoinAddress	naSeed;
+	RippleAddress	naSeed;
 
 	if (params.size()
 		&& !naSeed.setSeedGeneric(params[0u].asString()))
@@ -2557,14 +2557,14 @@ Json::Value RPCHandler::doWalletSeed(const Json::Value& params)
 	}
 	else
 	{
-		NewcoinAddress	naAccount;
+		RippleAddress	naAccount;
 
 		if (!params.size())
 		{
 			naSeed.setSeedRandom();
 		}
 
-		NewcoinAddress	naGenerator	= NewcoinAddress::createGeneratorPublic(naSeed);
+		RippleAddress	naGenerator	= RippleAddress::createGeneratorPublic(naSeed);
 
 		naAccount.setAccountPublic(naGenerator, 0);
 
@@ -2675,7 +2675,7 @@ Json::Value RPCHandler::doUnlDelete(const Json::Value& params)
 {
 	std::string	strNode		= params[0u].asString();
 
-	NewcoinAddress	naNodePublic;
+	RippleAddress	naNodePublic;
 
 	if (naNodePublic.setNodePublic(strNode))
 	{

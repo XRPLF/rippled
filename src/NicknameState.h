@@ -23,7 +23,7 @@ public:
 
 	bool					haveMinimumOffer() const;
 	STAmount				getMinimumOffer() const;
-	NewcoinAddress			getAccountID() const;
+	RippleAddress			getAccountID() const;
 
 	SerializedLedgerEntry::pointer getSLE() { return mLedgerEntry; }
 	const SerializedLedgerEntry& peekSLE() const { return *mLedgerEntry; }

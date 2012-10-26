@@ -318,7 +318,7 @@ void UniqueNodeList::scoreCompute()
 
 			strIndex::iterator	itEntry;
 
-			NewcoinAddress		na;
+			RippleAddress		na;
 
 			if (na.setNodePublic(strReferral))
 			{
@@ -614,7 +614,7 @@ void UniqueNodeList::fetchDirty()
 // Persist the IPs refered to by a Validator.
 // --> strSite: source of the IPs (for debugging)
 // --> naNodePublic: public key of the validating node.
-void UniqueNodeList::processIps(const std::string& strSite, const NewcoinAddress& naNodePublic, section::mapped_type* pmtVecStrIps)
+void UniqueNodeList::processIps(const std::string& strSite, const RippleAddress& naNodePublic, section::mapped_type* pmtVecStrIps)
 {
 	Database*	db=theApp->getWalletDB()->getDB();
 
@@ -683,7 +683,7 @@ void UniqueNodeList::processIps(const std::string& strSite, const NewcoinAddress
 // --> strValidatorsSrc: source details for display
 // --> naNodePublic: remote source public key - not valid for local
 // --> vsWhy: reason for adding validator to SeedDomains or SeedNodes.
-int UniqueNodeList::processValidators(const std::string& strSite, const std::string& strValidatorsSrc, const NewcoinAddress& naNodePublic, validatorSource vsWhy, section::mapped_type* pmtVecStrValidators)
+int UniqueNodeList::processValidators(const std::string& strSite, const std::string& strValidatorsSrc, const RippleAddress& naNodePublic, validatorSource vsWhy, section::mapped_type* pmtVecStrValidators)
 {
 	Database*	db				= theApp->getWalletDB()->getDB();
 	std::string strNodePublic	= naNodePublic.isValid() ? naNodePublic.humanNodePublic() : strValidatorsSrc;
@@ -728,7 +728,7 @@ int UniqueNodeList::processValidators(const std::string& strSite, const std::str
 			{
 				std::string		strRefered	= smMatch[1];
 				std::string		strComment	= smMatch[2];
-				NewcoinAddress	naValidator;
+				RippleAddress	naValidator;
 
 				if (naValidator.setSeedGeneric(strRefered))
 				{
@@ -781,7 +781,7 @@ int UniqueNodeList::processValidators(const std::string& strSite, const std::str
 }
 
 // Given a section with IPs, parse and persist it for a validator.
-void UniqueNodeList::responseIps(const std::string& strSite, const NewcoinAddress& naNodePublic, const boost::system::error_code& err, const std::string& strIpsFile)
+void UniqueNodeList::responseIps(const std::string& strSite, const RippleAddress& naNodePublic, const boost::system::error_code& err, const std::string& strIpsFile)
 {
 	if (!err)
 	{
@@ -795,7 +795,7 @@ void UniqueNodeList::responseIps(const std::string& strSite, const NewcoinAddres
 
 // Process section [ips_url].
 // If we have a section with a single entry, fetch the url and process it.
-void UniqueNodeList::getIpsUrl(const NewcoinAddress& naNodePublic, section secSite)
+void UniqueNodeList::getIpsUrl(const RippleAddress& naNodePublic, section secSite)
 {
 	std::string	strIpsUrl;
 	std::string	strDomain;
@@ -821,7 +821,7 @@ void UniqueNodeList::getIpsUrl(const NewcoinAddress& naNodePublic, section secSi
 }
 
 // After fetching a ripple.txt from a web site, given a section with validators, parse and persist it.
-void UniqueNodeList::responseValidators(const std::string& strValidatorsUrl, const NewcoinAddress& naNodePublic, section secSite, const std::string& strSite, const boost::system::error_code& err, const std::string& strValidatorsFile)
+void UniqueNodeList::responseValidators(const std::string& strValidatorsUrl, const RippleAddress& naNodePublic, section secSite, const std::string& strSite, const boost::system::error_code& err, const std::string& strValidatorsFile)
 {
 	if (!err)
 	{
@@ -834,7 +834,7 @@ void UniqueNodeList::responseValidators(const std::string& strValidatorsUrl, con
 }
 
 // Process section [validators_url].
-void UniqueNodeList::getValidatorsUrl(const NewcoinAddress& naNodePublic, section secSite)
+void UniqueNodeList::getValidatorsUrl(const RippleAddress& naNodePublic, section secSite)
 {
 	std::string strValidatorsUrl;
 	std::string	strDomain;
@@ -860,7 +860,7 @@ void UniqueNodeList::getValidatorsUrl(const NewcoinAddress& naNodePublic, sectio
 }
 
 // Process a ripple.txt.
-void UniqueNodeList::processFile(const std::string& strDomain, const NewcoinAddress& naNodePublic, section secSite)
+void UniqueNodeList::processFile(const std::string& strDomain, const RippleAddress& naNodePublic, section secSite)
 {
 	//
 	// Process Validators
@@ -943,7 +943,7 @@ void UniqueNodeList::responseFetch(const std::string& strDomain, const boost::sy
 				% strDomain;
 	}
 
-	NewcoinAddress	naNodePublic;
+	RippleAddress	naNodePublic;
 
 	if (bGood && !naNodePublic.setNodePublic(strNodePublicKey))
 	{
@@ -1282,7 +1282,7 @@ void UniqueNodeList::nodeAddDomain(std::string strDomain, validatorSource vsWhy,
 }
 
 // Retrieve a SeedNode from DB.
-bool UniqueNodeList::getSeedNodes(const NewcoinAddress& naNodePublic, seedNode& dstSeedNode)
+bool UniqueNodeList::getSeedNodes(const RippleAddress& naNodePublic, seedNode& dstSeedNode)
 {
 	bool		bResult;
 	Database*	db=theApp->getWalletDB()->getDB();
@@ -1384,7 +1384,7 @@ void UniqueNodeList::setSeedNodes(const seedNode& snSource, bool bNext)
 }
 
 // Add a trusted node.  Called by RPC or other source.
-void UniqueNodeList::nodeAddPublic(const NewcoinAddress& naNodePublic, validatorSource vsWhy, const std::string& strComment)
+void UniqueNodeList::nodeAddPublic(const RippleAddress& naNodePublic, validatorSource vsWhy, const std::string& strComment)
 {
 	seedNode	snCurrent;
 
@@ -1416,7 +1416,7 @@ void UniqueNodeList::nodeAddPublic(const NewcoinAddress& naNodePublic, validator
 		setSeedNodes(snCurrent, true);
 }
 
-void UniqueNodeList::nodeRemovePublic(const NewcoinAddress& naNodePublic)
+void UniqueNodeList::nodeRemovePublic(const RippleAddress& naNodePublic)
 {
 	{
 		Database* db=theApp->getWalletDB()->getDB();
@@ -1594,7 +1594,7 @@ void UniqueNodeList::nodeBootstrap()
 	// Always load from rippled.cfg
 	if (!theConfig.VALIDATORS.empty())
 	{
-		NewcoinAddress	naInvalid;	// Don't want a referrer on added entries.
+		RippleAddress	naInvalid;	// Don't want a referrer on added entries.
 
 		cLog(lsINFO) << "Bootstrapping UNL: loading from " CONFIG_FILE_NAME ".";
 
@@ -1649,7 +1649,7 @@ void UniqueNodeList::nodeProcess(const std::string& strSite, const std::string& 
 	section::mapped_type*	pmtEntries	= sectionEntries(secValidators, SECTION_VALIDATORS);
 	if (pmtEntries)
 	{
-		NewcoinAddress	naInvalid;	// Don't want a referrer on added entries.
+		RippleAddress	naInvalid;	// Don't want a referrer on added entries.
 
 		// YYY Unspecified might be bootstrap or rpc command
 		processValidators(strSite, strSource, naInvalid, vsValidator, pmtEntries);
@@ -1660,7 +1660,7 @@ void UniqueNodeList::nodeProcess(const std::string& strSite, const std::string& 
 	}
 }
 
-bool UniqueNodeList::nodeInUNL(const NewcoinAddress& naNodePublic)
+bool UniqueNodeList::nodeInUNL(const RippleAddress& naNodePublic)
 {
 	ScopedLock	sl(mUNLLock);
 

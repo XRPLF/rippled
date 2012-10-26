@@ -105,10 +105,10 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 	// without going to disk.  Each transaction also notes a source account id.  This is used to verify that the signing key is
 	// associated with the account.
 	// XXX This could be a lot cleaner to prevent unnecessary copying.
-	NewcoinAddress	naSigningPubKey;
+	RippleAddress	naSigningPubKey;
 
 	if (tesSUCCESS == terResult)
-		naSigningPubKey	= NewcoinAddress::createAccountPublic(txn.getSigningPubKey());
+		naSigningPubKey	= RippleAddress::createAccountPublic(txn.getSigningPubKey());
 
 	// Consistency: really signed.
 	if ((tesSUCCESS == terResult) && !isSetBit(params, tapNO_CHECK_SIGN) && !txn.checkSign(naSigningPubKey))

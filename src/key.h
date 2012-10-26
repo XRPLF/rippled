@@ -16,7 +16,7 @@
 #include <boost/shared_ptr.hpp>
 
 #include "SecureAllocator.h"
-#include "NewcoinAddress.h"
+#include "RippleAddress.h"
 #include "uint256.h"
 #include "base58.h"
 
@@ -124,9 +124,9 @@ public:
 	static uint128 PassPhraseToKey(const std::string& passPhrase);
 	static EC_KEY* GenerateRootDeterministicKey(const uint128& passPhrase);
 	static EC_KEY* GenerateRootPubKey(BIGNUM* pubGenerator);
-	static EC_KEY* GeneratePublicDeterministicKey(const NewcoinAddress& generator, int n);
-	static EC_KEY* GeneratePrivateDeterministicKey(const NewcoinAddress& family, const BIGNUM* rootPriv, int n);
-	static EC_KEY* GeneratePrivateDeterministicKey(const NewcoinAddress& family, const uint256& rootPriv, int n);
+	static EC_KEY* GeneratePublicDeterministicKey(const RippleAddress& generator, int n);
+	static EC_KEY* GeneratePrivateDeterministicKey(const RippleAddress& family, const BIGNUM* rootPriv, int n);
+	static EC_KEY* GeneratePrivateDeterministicKey(const RippleAddress& family, const uint256& rootPriv, int n);
 
 	CKey(const uint128& passPhrase) : fSet(false)
 	{
@@ -135,14 +135,14 @@ public:
 		assert(pkey);
 	}
 
-	CKey(const NewcoinAddress& generator, int n) : fSet(false)
+	CKey(const RippleAddress& generator, int n) : fSet(false)
 	{ // public deterministic key
 		pkey = GeneratePublicDeterministicKey(generator, n);
 		fSet = true;
 		assert(pkey);
 	}
 
-	CKey(const NewcoinAddress& base, const BIGNUM* rootPrivKey, int n) : fSet(false)
+	CKey(const RippleAddress& base, const BIGNUM* rootPrivKey, int n) : fSet(false)
 	{ // private deterministic key
 		pkey = GeneratePrivateDeterministicKey(base, rootPrivKey, n);
 		fSet = true;
@@ -156,7 +156,7 @@ public:
 	}
 
 #if 0
-	CKey(const NewcoinAddress& masterKey, int keyNum, bool isPublic) : pkey(NULL), fSet(false)
+	CKey(const RippleAddress& masterKey, int keyNum, bool isPublic) : pkey(NULL), fSet(false)
 	{
 		if (isPublic)
 			SetPubSeq(masterKey, keyNum);

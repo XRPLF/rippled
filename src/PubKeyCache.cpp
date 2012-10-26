@@ -1,11 +1,11 @@
 #include "PubKeyCache.h"
 #include "Application.h"
 
-CKey::pointer PubKeyCache::locate(const NewcoinAddress& id)
+CKey::pointer PubKeyCache::locate(const RippleAddress& id)
 {
 	{ // is it in cache
 		boost::mutex::scoped_lock sl(mLock);
-		std::map<NewcoinAddress, CKey::pointer>::iterator it(mCache.find(id));
+		std::map<RippleAddress, CKey::pointer>::iterator it(mCache.find(id));
 		if(it!=mCache.end()) return it->second;
 	}
 
@@ -39,11 +39,11 @@ CKey::pointer PubKeyCache::locate(const NewcoinAddress& id)
 	return ckp;
 }
 
-CKey::pointer PubKeyCache::store(const NewcoinAddress& id, const CKey::pointer& key)
+CKey::pointer PubKeyCache::store(const RippleAddress& id, const CKey::pointer& key)
 { // stored if needed, returns cached copy (possibly the original)
 	{
 		boost::mutex::scoped_lock sl(mLock);
-		std::pair<std::map<NewcoinAddress,CKey::pointer>::iterator, bool> pit(mCache.insert(std::make_pair(id, key)));
+		std::pair<std::map<RippleAddress,CKey::pointer>::iterator, bool> pit(mCache.insert(std::make_pair(id, key)));
 		if(!pit.second) // there was an existing key
 			return pit.first->second;
 	}

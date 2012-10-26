@@ -8,9 +8,9 @@
 #include "LedgerFormats.h"
 #include "FieldNames.h"
 #include "Log.h"
-#include "NewcoinAddress.h"
+#include "RippleAddress.h"
 #include "utils.h"
-#include "NewcoinAddress.h"
+#include "RippleAddress.h"
 #include "TransactionErr.h"
 
 SETUP_LOG();
@@ -23,7 +23,7 @@ void STPathSet::printDebug() {
     std::cout << i << ": ";
     for (int j = 0; j < value[i].mPath.size(); j++) {
       //STPathElement pe = value[i].mPath[j];
-      NewcoinAddress nad;
+      RippleAddress nad;
       nad.setAccountID(value[i].mPath[j].mAccountID);
       std::cout << "    " << nad.humanAccountID();
       //std::cout << "    " << pe.mAccountID.GetHex();
@@ -36,7 +36,7 @@ void STPathSet::printDebug() {
 void STPath::printDebug() {
   std::cout << "STPath:" << std::endl;
   for(int i =0; i < mPath.size(); i++) {
-    NewcoinAddress nad;
+    RippleAddress nad;
     nad.setAccountID(mPath[i].mAccountID);
     std::cout << "   " << i << ": " << nad.humanAccountID() << std::endl;
   }
@@ -251,7 +251,7 @@ bool STVariableLength::isEquivalent(const SerializedType& t) const
 std::string STAccount::getText() const
 {
 	uint160 u;
-	NewcoinAddress a;
+	RippleAddress a;
 
 	if (!getValueH160(u))
 		return STVariableLength::getText();
@@ -329,16 +329,16 @@ bool STAccount::getValueH160(uint160& v) const
 	return true;
 }
 
-NewcoinAddress STAccount::getValueNCA() const
+RippleAddress STAccount::getValueNCA() const
 {
-	NewcoinAddress a;
+	RippleAddress a;
 	uint160 v;
 	if (getValueH160(v))
 		a.setAccountID(v);
 	return a;
 }
 
-void STAccount::setValueNCA(const NewcoinAddress& nca)
+void STAccount::setValueNCA(const RippleAddress& nca)
 {
 	setValueH160(nca.getAccountID());
 }
@@ -453,13 +453,13 @@ Json::Value STPath::getJson(int) const
 		elem["type_hex"]	= strHex(iType);
 
 		if (iType & STPathElement::typeAccount)
-			elem["account"]		= NewcoinAddress::createHumanAccountID(it.getAccountID());
+			elem["account"]		= RippleAddress::createHumanAccountID(it.getAccountID());
 
 		if (iType & STPathElement::typeCurrency)
 			elem["currency"]	= STAmount::createHumanCurrency(it.getCurrency());
 
 		if (iType & STPathElement::typeIssuer)
-			elem["issuer"]		= NewcoinAddress::createHumanAccountID(it.getIssuerID());
+			elem["issuer"]		= RippleAddress::createHumanAccountID(it.getIssuerID());
 
 		ret.append(elem);
 	}
@@ -490,7 +490,7 @@ std::string STPath::getText() const
 		{
 			case STPathElement::typeAccount:
 			{
-				ret += NewcoinAddress::createHumanAccountID(it.getNode());
+				ret += RippleAddress::createHumanAccountID(it.getNode());
 				break;
 			}
 

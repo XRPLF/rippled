@@ -18,7 +18,7 @@ STAmount NicknameState::getMinimumOffer() const
 	: STAmount();
 }
 
-NewcoinAddress NicknameState::getAccountID() const
+RippleAddress NicknameState::getAccountID() const
 {
     return mLedgerEntry->getFieldAccount(sfAccount);
 }

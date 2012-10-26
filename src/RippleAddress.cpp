@@ -1,4 +1,4 @@
-#include "NewcoinAddress.h"
+#include "RippleAddress.h"
 #include "key.h"
 #include "Config.h"
 #include "BitcoinUtil.h"
@@ -13,12 +13,12 @@
 #include <iostream>
 #include <openssl/rand.h>
 
-NewcoinAddress::NewcoinAddress()
+RippleAddress::RippleAddress()
 {
     nVersion = VER_NONE;
 }
 
-bool NewcoinAddress::isValid() const
+bool RippleAddress::isValid() const
 {
     bool	bValid	= false;
 
@@ -48,13 +48,13 @@ bool NewcoinAddress::isValid() const
 	return bValid;
 }
 
-void NewcoinAddress::clear()
+void RippleAddress::clear()
 {
     nVersion = VER_NONE;
     vchData.clear();
 }
 
-std::string NewcoinAddress::humanAddressType() const
+std::string RippleAddress::humanAddressType() const
 {
 	switch (nVersion)
 	{
@@ -75,10 +75,10 @@ std::string NewcoinAddress::humanAddressType() const
 // NodePublic
 //
 
-NewcoinAddress NewcoinAddress::createNodePublic(const NewcoinAddress& naSeed)
+RippleAddress RippleAddress::createNodePublic(const RippleAddress& naSeed)
 {
 	CKey			ckSeed(naSeed.getSeed());
-	NewcoinAddress	naNew;
+	RippleAddress	naNew;
 
 	// YYY Should there be a GetPubKey() equiv that returns a uint256?
 	naNew.setNodePublic(ckSeed.GetPubKey());
@@ -86,25 +86,25 @@ NewcoinAddress NewcoinAddress::createNodePublic(const NewcoinAddress& naSeed)
 	return naNew;
 }
 
-NewcoinAddress NewcoinAddress::createNodePublic(const std::vector<unsigned char>& vPublic)
+RippleAddress RippleAddress::createNodePublic(const std::vector<unsigned char>& vPublic)
 {
-	NewcoinAddress	naNew;
+	RippleAddress	naNew;
 
 	naNew.setNodePublic(vPublic);
 
 	return naNew;
 }
 
-NewcoinAddress NewcoinAddress::createNodePublic(const std::string& strPublic)
+RippleAddress RippleAddress::createNodePublic(const std::string& strPublic)
 {
-	NewcoinAddress	naNew;
+	RippleAddress	naNew;
 
 	naNew.setNodePublic(strPublic);
 
 	return naNew;
 }
 
-uint160 NewcoinAddress::getNodeID() const
+uint160 RippleAddress::getNodeID() const
 {
     switch (nVersion) {
     case VER_NONE:
@@ -118,7 +118,7 @@ uint160 NewcoinAddress::getNodeID() const
 		throw std::runtime_error(str(boost::format("bad source: %d") % int(nVersion)));
     }
 }
-const std::vector<unsigned char>& NewcoinAddress::getNodePublic() const
+const std::vector<unsigned char>& RippleAddress::getNodePublic() const
 {
     switch (nVersion) {
     case VER_NONE:
@@ -132,7 +132,7 @@ const std::vector<unsigned char>& NewcoinAddress::getNodePublic() const
     }
 }
 
-std::string NewcoinAddress::humanNodePublic() const
+std::string RippleAddress::humanNodePublic() const
 {
     switch (nVersion) {
     case VER_NONE:
@@ -146,17 +146,17 @@ std::string NewcoinAddress::humanNodePublic() const
     }
 }
 
-bool NewcoinAddress::setNodePublic(const std::string& strPublic)
+bool RippleAddress::setNodePublic(const std::string& strPublic)
 {
 	return SetString(strPublic.c_str(), VER_NODE_PUBLIC);
 }
 
-void NewcoinAddress::setNodePublic(const std::vector<unsigned char>& vPublic)
+void RippleAddress::setNodePublic(const std::vector<unsigned char>& vPublic)
 {
     SetData(VER_NODE_PUBLIC, vPublic);
 }
 
-bool NewcoinAddress::verifyNodePublic(const uint256& hash, const std::vector<unsigned char>& vchSig) const
+bool RippleAddress::verifyNodePublic(const uint256& hash, const std::vector<unsigned char>& vchSig) const
 {
 	CKey	pubkey	= CKey();
 	bool	bVerified;
@@ -174,7 +174,7 @@ bool NewcoinAddress::verifyNodePublic(const uint256& hash, const std::vector<uns
 	return bVerified;
 }
 
-bool NewcoinAddress::verifyNodePublic(const uint256& hash, const std::string& strSig) const
+bool RippleAddress::verifyNodePublic(const uint256& hash, const std::string& strSig) const
 {
 	std::vector<unsigned char> vchSig(strSig.begin(), strSig.end());
 
@@ -185,10 +185,10 @@ bool NewcoinAddress::verifyNodePublic(const uint256& hash, const std::string& st
 // NodePrivate
 //
 
-NewcoinAddress NewcoinAddress::createNodePrivate(const NewcoinAddress& naSeed)
+RippleAddress RippleAddress::createNodePrivate(const RippleAddress& naSeed)
 {
 	uint256			uPrivKey;
-	NewcoinAddress	naNew;
+	RippleAddress	naNew;
 	CKey			ckSeed(naSeed.getSeed());
 
 	ckSeed.GetPrivateKeyU(uPrivKey);
@@ -198,7 +198,7 @@ NewcoinAddress NewcoinAddress::createNodePrivate(const NewcoinAddress& naSeed)
 	return naNew;
 }
 
-const std::vector<unsigned char>& NewcoinAddress::getNodePrivateData() const
+const std::vector<unsigned char>& RippleAddress::getNodePrivateData() const
 {
     switch (nVersion) {
     case VER_NONE:
@@ -212,7 +212,7 @@ const std::vector<unsigned char>& NewcoinAddress::getNodePrivateData() const
     }
 }
 
-uint256 NewcoinAddress::getNodePrivate() const
+uint256 RippleAddress::getNodePrivate() const
 {
     switch (nVersion) {
     case VER_NONE:
@@ -226,7 +226,7 @@ uint256 NewcoinAddress::getNodePrivate() const
     }
 }
 
-std::string NewcoinAddress::humanNodePrivate() const
+std::string RippleAddress::humanNodePrivate() const
 {
     switch (nVersion) {
     case VER_NONE:
@@ -240,21 +240,21 @@ std::string NewcoinAddress::humanNodePrivate() const
     }
 }
 
-bool NewcoinAddress::setNodePrivate(const std::string& strPrivate)
+bool RippleAddress::setNodePrivate(const std::string& strPrivate)
 {
     return SetString(strPrivate.c_str(), VER_NODE_PRIVATE);
 }
 
-void NewcoinAddress::setNodePrivate(const std::vector<unsigned char>& vPrivate) {
+void RippleAddress::setNodePrivate(const std::vector<unsigned char>& vPrivate) {
     SetData(VER_NODE_PRIVATE, vPrivate);
 }
 
-void NewcoinAddress::setNodePrivate(uint256 hash256)
+void RippleAddress::setNodePrivate(uint256 hash256)
 {
     SetData(VER_NODE_PRIVATE, hash256.begin(), 32);
 }
 
-void NewcoinAddress::signNodePrivate(const uint256& hash, std::vector<unsigned char>& vchSig) const
+void RippleAddress::signNodePrivate(const uint256& hash, std::vector<unsigned char>& vchSig) const
 {
 	CKey	ckPrivKey;
 
@@ -268,7 +268,7 @@ void NewcoinAddress::signNodePrivate(const uint256& hash, std::vector<unsigned c
 // AccountID
 //
 
-uint160 NewcoinAddress::getAccountID() const
+uint160 RippleAddress::getAccountID() const
 {
     switch (nVersion) {
     case VER_NONE:
@@ -286,7 +286,7 @@ uint160 NewcoinAddress::getAccountID() const
     }
 }
 
-std::string NewcoinAddress::humanAccountID() const
+std::string RippleAddress::humanAccountID() const
 {
     switch (nVersion) {
     case VER_NONE:
@@ -297,7 +297,7 @@ std::string NewcoinAddress::humanAccountID() const
 
     case VER_ACCOUNT_PUBLIC:
 	{
-	    NewcoinAddress	accountID;
+	    RippleAddress	accountID;
 
 	    (void) accountID.setAccountID(getAccountID());
 
@@ -309,7 +309,7 @@ std::string NewcoinAddress::humanAccountID() const
     }
 }
 
-bool NewcoinAddress::setAccountID(const std::string& strAccountID)
+bool RippleAddress::setAccountID(const std::string& strAccountID)
 {
 	if (strAccountID.empty())
 	{
@@ -323,7 +323,7 @@ bool NewcoinAddress::setAccountID(const std::string& strAccountID)
 	}
 }
 
-void NewcoinAddress::setAccountID(const uint160& hash160)
+void RippleAddress::setAccountID(const uint160& hash160)
 {
     SetData(VER_ACCOUNT_ID, hash160.begin(), 20);
 }
@@ -332,17 +332,17 @@ void NewcoinAddress::setAccountID(const uint160& hash160)
 // AccountPublic
 //
 
-NewcoinAddress NewcoinAddress::createAccountPublic(const NewcoinAddress& naGenerator, int iSeq)
+RippleAddress RippleAddress::createAccountPublic(const RippleAddress& naGenerator, int iSeq)
 {
 	CKey			ckPub(naGenerator, iSeq);
-	NewcoinAddress	naNew;
+	RippleAddress	naNew;
 
 	naNew.setAccountPublic(ckPub.GetPubKey());
 
 	return naNew;
 }
 
-const std::vector<unsigned char>& NewcoinAddress::getAccountPublic() const
+const std::vector<unsigned char>& RippleAddress::getAccountPublic() const
 {
     switch (nVersion) {
     case VER_NONE:
@@ -360,7 +360,7 @@ const std::vector<unsigned char>& NewcoinAddress::getAccountPublic() const
     }
 }
 
-std::string NewcoinAddress::humanAccountPublic() const
+std::string RippleAddress::humanAccountPublic() const
 {
     switch (nVersion) {
     case VER_NONE:
@@ -377,24 +377,24 @@ std::string NewcoinAddress::humanAccountPublic() const
     }
 }
 
-bool NewcoinAddress::setAccountPublic(const std::string& strPublic)
+bool RippleAddress::setAccountPublic(const std::string& strPublic)
 {
     return SetString(strPublic.c_str(), VER_ACCOUNT_PUBLIC);
 }
 
-void NewcoinAddress::setAccountPublic(const std::vector<unsigned char>& vPublic)
+void RippleAddress::setAccountPublic(const std::vector<unsigned char>& vPublic)
 {
     SetData(VER_ACCOUNT_PUBLIC, vPublic);
 }
 
-void NewcoinAddress::setAccountPublic(const NewcoinAddress& generator, int seq)
+void RippleAddress::setAccountPublic(const RippleAddress& generator, int seq)
 {
 	CKey	pubkey	= CKey(generator, seq);
 
 	setAccountPublic(pubkey.GetPubKey());
 }
 
-bool NewcoinAddress::accountPublicVerify(const uint256& uHash, const std::vector<unsigned char>& vucSig) const
+bool RippleAddress::accountPublicVerify(const uint256& uHash, const std::vector<unsigned char>& vucSig) const
 {
 	CKey		ckPublic;
 	bool		bVerified;
@@ -413,9 +413,9 @@ bool NewcoinAddress::accountPublicVerify(const uint256& uHash, const std::vector
 	return bVerified;
 }
 
-NewcoinAddress NewcoinAddress::createAccountID(const uint160& uiAccountID)
+RippleAddress RippleAddress::createAccountID(const uint160& uiAccountID)
 {
-	NewcoinAddress	na;
+	RippleAddress	na;
 
 	na.setAccountID(uiAccountID);
 
@@ -426,16 +426,16 @@ NewcoinAddress NewcoinAddress::createAccountID(const uint160& uiAccountID)
 // AccountPrivate
 //
 
-NewcoinAddress NewcoinAddress::createAccountPrivate(const NewcoinAddress& naGenerator, const NewcoinAddress& naSeed, int iSeq)
+RippleAddress RippleAddress::createAccountPrivate(const RippleAddress& naGenerator, const RippleAddress& naSeed, int iSeq)
 {
-	NewcoinAddress	naNew;
+	RippleAddress	naNew;
 
 	naNew.setAccountPrivate(naGenerator, naSeed, iSeq);
 
 	return naNew;
 }
 
-uint256 NewcoinAddress::getAccountPrivate() const
+uint256 RippleAddress::getAccountPrivate() const
 {
     switch (nVersion) {
     case VER_NONE:
@@ -449,7 +449,7 @@ uint256 NewcoinAddress::getAccountPrivate() const
     }
 }
 
-std::string NewcoinAddress::humanAccountPrivate() const
+std::string RippleAddress::humanAccountPrivate() const
 {
     switch (nVersion) {
     case VER_NONE:
@@ -463,22 +463,22 @@ std::string NewcoinAddress::humanAccountPrivate() const
     }
 }
 
-bool NewcoinAddress::setAccountPrivate(const std::string& strPrivate)
+bool RippleAddress::setAccountPrivate(const std::string& strPrivate)
 {
     return SetString(strPrivate.c_str(), VER_ACCOUNT_PRIVATE);
 }
 
-void NewcoinAddress::setAccountPrivate(const std::vector<unsigned char>& vPrivate)
+void RippleAddress::setAccountPrivate(const std::vector<unsigned char>& vPrivate)
 {
     SetData(VER_ACCOUNT_PRIVATE, vPrivate);
 }
 
-void NewcoinAddress::setAccountPrivate(uint256 hash256)
+void RippleAddress::setAccountPrivate(uint256 hash256)
 {
     SetData(VER_ACCOUNT_PRIVATE, hash256.begin(), 32);
 }
 
-void NewcoinAddress::setAccountPrivate(const NewcoinAddress& naGenerator, const NewcoinAddress& naSeed, int seq)
+void RippleAddress::setAccountPrivate(const RippleAddress& naGenerator, const RippleAddress& naSeed, int seq)
 {
 	CKey	ckPubkey	= CKey(naSeed.getSeed());
 	CKey	ckPrivkey	= CKey(naGenerator, ckPubkey.GetSecretBN(), seq);
@@ -489,7 +489,7 @@ void NewcoinAddress::setAccountPrivate(const NewcoinAddress& naGenerator, const 
 	setAccountPrivate(uPrivKey);
 }
 
-bool NewcoinAddress::accountPrivateSign(const uint256& uHash, std::vector<unsigned char>& vucSig) const
+bool RippleAddress::accountPrivateSign(const uint256& uHash, std::vector<unsigned char>& vucSig) const
 {
 	CKey		ckPrivate;
 	bool		bResult;
@@ -511,7 +511,7 @@ bool NewcoinAddress::accountPrivateSign(const uint256& uHash, std::vector<unsign
 }
 
 #if 0
-bool NewcoinAddress::accountPrivateVerify(const uint256& uHash, const std::vector<unsigned char>& vucSig) const
+bool RippleAddress::accountPrivateVerify(const uint256& uHash, const std::vector<unsigned char>& vucSig) const
 {
 	CKey		ckPrivate;
 	bool		bVerified;
@@ -531,7 +531,7 @@ bool NewcoinAddress::accountPrivateVerify(const uint256& uHash, const std::vecto
 }
 #endif
 
-std::vector<unsigned char> NewcoinAddress::accountPrivateEncrypt(const NewcoinAddress& naPublicTo, const std::vector<unsigned char>& vucPlainText) const
+std::vector<unsigned char> RippleAddress::accountPrivateEncrypt(const RippleAddress& naPublicTo, const std::vector<unsigned char>& vucPlainText) const
 {
 	CKey						ckPrivate;
 	CKey						ckPublic;
@@ -561,7 +561,7 @@ std::vector<unsigned char> NewcoinAddress::accountPrivateEncrypt(const NewcoinAd
 	return vucCipherText;
 }
 
-std::vector<unsigned char> NewcoinAddress::accountPrivateDecrypt(const NewcoinAddress& naPublicFrom, const std::vector<unsigned char>& vucCipherText) const
+std::vector<unsigned char> RippleAddress::accountPrivateDecrypt(const RippleAddress& naPublicFrom, const std::vector<unsigned char>& vucCipherText) const
 {
 	CKey						ckPrivate;
 	CKey						ckPublic;
@@ -595,7 +595,7 @@ std::vector<unsigned char> NewcoinAddress::accountPrivateDecrypt(const NewcoinAd
 // Generators
 //
 
-BIGNUM* NewcoinAddress::getGeneratorBN() const
+BIGNUM* RippleAddress::getGeneratorBN() const
 { // returns the public generator
     switch (nVersion) {
     case VER_NONE:
@@ -614,7 +614,7 @@ BIGNUM* NewcoinAddress::getGeneratorBN() const
     return ret;
 }
 
-const std::vector<unsigned char>& NewcoinAddress::getGenerator() const
+const std::vector<unsigned char>& RippleAddress::getGenerator() const
 { // returns the public generator
     switch (nVersion) {
     case VER_NONE:
@@ -629,7 +629,7 @@ const std::vector<unsigned char>& NewcoinAddress::getGenerator() const
     }
 }
 
-std::string NewcoinAddress::humanGenerator() const
+std::string RippleAddress::humanGenerator() const
 {
     switch (nVersion) {
     case VER_NONE:
@@ -643,20 +643,20 @@ std::string NewcoinAddress::humanGenerator() const
     }
 }
 
-bool NewcoinAddress::setGenerator(const std::string& strGenerator)
+bool RippleAddress::setGenerator(const std::string& strGenerator)
 {
     return SetString(strGenerator.c_str(), VER_FAMILY_GENERATOR);
 }
 
-void NewcoinAddress::setGenerator(const std::vector<unsigned char>& vPublic)
+void RippleAddress::setGenerator(const std::vector<unsigned char>& vPublic)
 {
     SetData(VER_FAMILY_GENERATOR, vPublic);
 }
 
-NewcoinAddress NewcoinAddress::createGeneratorPublic(const NewcoinAddress& naSeed)
+RippleAddress RippleAddress::createGeneratorPublic(const RippleAddress& naSeed)
 {
 	CKey			ckSeed(naSeed.getSeed());
-	NewcoinAddress	naNew;
+	RippleAddress	naNew;
 
 	naNew.setGenerator(ckSeed.GetPubKey());
 
@@ -667,7 +667,7 @@ NewcoinAddress NewcoinAddress::createGeneratorPublic(const NewcoinAddress& naSee
 // Seed
 //
 
-uint128 NewcoinAddress::getSeed() const
+uint128 RippleAddress::getSeed() const
 {
     switch (nVersion) {
     case VER_NONE:
@@ -681,7 +681,7 @@ uint128 NewcoinAddress::getSeed() const
     }
 }
 
-std::string NewcoinAddress::humanSeed1751() const
+std::string RippleAddress::humanSeed1751() const
 {
     switch (nVersion) {
     case VER_NONE:
@@ -708,7 +708,7 @@ std::string NewcoinAddress::humanSeed1751() const
     }
 }
 
-std::string NewcoinAddress::humanSeed() const
+std::string RippleAddress::humanSeed() const
 {
     switch (nVersion) {
     case VER_NONE:
@@ -722,7 +722,7 @@ std::string NewcoinAddress::humanSeed() const
     }
 }
 
-int NewcoinAddress::setSeed1751(const std::string& strHuman1751)
+int RippleAddress::setSeed1751(const std::string& strHuman1751)
 {
 	std::string strKey;
 	int			iResult	= eng2key(strKey, strHuman1751);
@@ -738,14 +738,14 @@ int NewcoinAddress::setSeed1751(const std::string& strHuman1751)
 	return iResult;
 }
 
-bool NewcoinAddress::setSeed(const std::string& strSeed)
+bool RippleAddress::setSeed(const std::string& strSeed)
 {
     return SetString(strSeed.c_str(), VER_FAMILY_SEED);
 }
 
-bool NewcoinAddress::setSeedGeneric(const std::string& strText)
+bool RippleAddress::setSeedGeneric(const std::string& strText)
 {
-	NewcoinAddress	naTemp;
+	RippleAddress	naTemp;
 	bool			bResult	= true;
 
 	if (strText.empty()
@@ -776,32 +776,32 @@ bool NewcoinAddress::setSeedGeneric(const std::string& strText)
 	return bResult;
 }
 
-void NewcoinAddress::setSeed(uint128 hash128) {
+void RippleAddress::setSeed(uint128 hash128) {
     SetData(VER_FAMILY_SEED, hash128.begin(), 16);
 }
 
-void NewcoinAddress::setSeedRandom()
+void RippleAddress::setSeedRandom()
 {
 	// XXX Maybe we should call MakeNewKey
 	uint128 key;
 
 	RAND_bytes((unsigned char *) &key, sizeof(key));
 
-	NewcoinAddress::setSeed(key);
+	RippleAddress::setSeed(key);
 }
 
-NewcoinAddress NewcoinAddress::createSeedRandom()
+RippleAddress RippleAddress::createSeedRandom()
 {
-	NewcoinAddress	naNew;
+	RippleAddress	naNew;
 
 	naNew.setSeedRandom();
 
 	return naNew;
 }
 
-NewcoinAddress NewcoinAddress::createSeedGeneric(const std::string& strText)
+RippleAddress RippleAddress::createSeedGeneric(const std::string& strText)
 {
-	NewcoinAddress	naNew;
+	RippleAddress	naNew;
 
 	naNew.setSeedGeneric(strText);
 
@@ -813,14 +813,14 @@ BOOST_AUTO_TEST_SUITE(ripple_address)
 BOOST_AUTO_TEST_CASE( check_crypto )
 {
 	// Construct a seed.
-	NewcoinAddress	naSeed;
+	RippleAddress	naSeed;
 
 	BOOST_CHECK(naSeed.setSeedGeneric("masterpassphrase"));
 	BOOST_CHECK_MESSAGE(naSeed.humanSeed() == "snoPBrXtMeMyMHUVTgbuqAfg1SUTb", naSeed.humanSeed());
 
 	// Create node public/private key pair
-	NewcoinAddress	naNodePublic	= NewcoinAddress::createNodePublic(naSeed);
-	NewcoinAddress	naNodePrivate	= NewcoinAddress::createNodePrivate(naSeed);
+	RippleAddress	naNodePublic	= RippleAddress::createNodePublic(naSeed);
+	RippleAddress	naNodePrivate	= RippleAddress::createNodePrivate(naSeed);
 
 	BOOST_CHECK_MESSAGE(naNodePublic.humanNodePublic() == "n94a1u4jAz288pZLtw6yFWVbi89YamiC6JBXPVUj5zmExe5fTVg9", naNodePublic.humanNodePublic());
 	BOOST_CHECK_MESSAGE(naNodePrivate.humanNodePrivate() == "pnen77YEeUd4fFKG7iycBWcwKpTaeFRkW2WFostaATy1DSupwXe", naNodePrivate.humanNodePrivate());
@@ -834,21 +834,21 @@ BOOST_AUTO_TEST_CASE( check_crypto )
 	BOOST_CHECK_MESSAGE(naNodePublic.verifyNodePublic(uHash, vucTextSig), "Verify failed.");
 
 	// Construct a public generator from the seed.
-	NewcoinAddress	naGenerator		= NewcoinAddress::createGeneratorPublic(naSeed);
+	RippleAddress	naGenerator		= RippleAddress::createGeneratorPublic(naSeed);
 
 	BOOST_CHECK_MESSAGE(naGenerator.humanGenerator() == "fhuJKrhSDzV2SkjLn9qbwm5AaRmrxDPfFsHDCP6yfDZWcxDFz4mt", naGenerator.humanGenerator());
 
 	// Create account #0 public/private key pair.
-	NewcoinAddress	naAccountPublic0	= NewcoinAddress::createAccountPublic(naGenerator, 0);
-	NewcoinAddress	naAccountPrivate0	= NewcoinAddress::createAccountPrivate(naGenerator, naSeed, 0);
+	RippleAddress	naAccountPublic0	= RippleAddress::createAccountPublic(naGenerator, 0);
+	RippleAddress	naAccountPrivate0	= RippleAddress::createAccountPrivate(naGenerator, naSeed, 0);
 
 	BOOST_CHECK_MESSAGE(naAccountPublic0.humanAccountID() == "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", naAccountPublic0.humanAccountID());
 	BOOST_CHECK_MESSAGE(naAccountPublic0.humanAccountPublic() == "aBQG8RQAzjs1eTKFEAQXr2gS4utcDiEC9wmi7pfUPTi27VCahwgw", naAccountPublic0.humanAccountPublic());
 	BOOST_CHECK_MESSAGE(naAccountPrivate0.humanAccountPrivate() == "p9JfM6HHi64m6mvB6v5k7G2b1cXzGmYiCNJf6GHPKvFTWdeRVjh", naAccountPrivate0.humanAccountPrivate());
 
 	// Create account #1 public/private key pair.
-	NewcoinAddress	naAccountPublic1	= NewcoinAddress::createAccountPublic(naGenerator, 1);
-	NewcoinAddress	naAccountPrivate1	= NewcoinAddress::createAccountPrivate(naGenerator, naSeed, 1);
+	RippleAddress	naAccountPublic1	= RippleAddress::createAccountPublic(naGenerator, 1);
+	RippleAddress	naAccountPrivate1	= RippleAddress::createAccountPrivate(naGenerator, naSeed, 1);
 
 	BOOST_CHECK_MESSAGE(naAccountPublic1.humanAccountID() == "r4bYF7SLUMD7QgSLLpgJx38WJSY12ViRjP", naAccountPublic1.humanAccountID());
 	BOOST_CHECK_MESSAGE(naAccountPublic1.humanAccountPublic() == "aBPXpTfuLy1Bhk3HnGTTAqnovpKWQ23NpFMNkAF6F1Atg5vDyPrw", naAccountPublic1.humanAccountPublic());

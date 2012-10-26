@@ -76,7 +76,7 @@ PathOption::PathOption(PathOption::pointer other)
 }
 
 
-Pathfinder::Pathfinder(NewcoinAddress& srcAccountID, NewcoinAddress& dstAccountID, uint160& srcCurrencyID, STAmount dstAmount) : 
+Pathfinder::Pathfinder(RippleAddress& srcAccountID, RippleAddress& dstAccountID, uint160& srcCurrencyID, STAmount dstAmount) : 
 	mSrcAccountID(srcAccountID.getAccountID()), mDstAccountID(dstAccountID.getAccountID()), mDstAmount(dstAmount), mSrcCurrencyID(srcCurrencyID), mOrderBook(theApp->getMasterLedger().getCurrentLedger())
 {
 	mLedger=theApp->getMasterLedger().getCurrentLedger();

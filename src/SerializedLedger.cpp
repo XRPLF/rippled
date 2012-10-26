@@ -119,19 +119,19 @@ bool SerializedLedgerEntry::hasTwoOwners()
 	return mType == ltRIPPLE_STATE;
 }
 
-NewcoinAddress SerializedLedgerEntry::getOwner()
+RippleAddress SerializedLedgerEntry::getOwner()
 {
 	return getFieldAccount(sfAccount);
 }
 
-NewcoinAddress SerializedLedgerEntry::getFirstOwner()
+RippleAddress SerializedLedgerEntry::getFirstOwner()
 {
-	return NewcoinAddress::createAccountID(getFieldAmount(sfLowLimit).getIssuer());
+	return RippleAddress::createAccountID(getFieldAmount(sfLowLimit).getIssuer());
 }
 
-NewcoinAddress SerializedLedgerEntry::getSecondOwner()
+RippleAddress SerializedLedgerEntry::getSecondOwner()
 {
-	return NewcoinAddress::createAccountID(getFieldAmount(sfHighLimit).getIssuer());
+	return RippleAddress::createAccountID(getFieldAmount(sfHighLimit).getIssuer());
 }
 
 std::vector<uint256> SerializedLedgerEntry::getOwners()

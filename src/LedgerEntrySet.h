@@ -42,7 +42,7 @@ protected:
 	SLE::pointer getForMod(const uint256& node, Ledger::ref ledger,
 		boost::unordered_map<uint256, SLE::pointer>& newMods);
 
-	bool threadTx(const NewcoinAddress& threadTo, Ledger::ref ledger,
+	bool threadTx(const RippleAddress& threadTo, Ledger::ref ledger,
 		boost::unordered_map<uint256, SLE::pointer>& newMods);
 
 	bool threadTx(SLE::ref threadTo, Ledger::ref ledger, boost::unordered_map<uint256, SLE::pointer>& newMods);
