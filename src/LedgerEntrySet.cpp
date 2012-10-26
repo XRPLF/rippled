@@ -445,9 +445,7 @@ void LedgerEntrySet::calcRawMeta(Serializer& s, TER result)
 			it != end; ++it)
 		entryModify(it->second);
 
-#ifdef META_DEBUG
-	cLog(lsINFO) << "Metadata:" << mSet.getJson(0);
-#endif
+	cLog(lsTRACE) << "Metadata:" << mSet.getJson(0);
 
 	mSet.addRaw(s, result);
 }
