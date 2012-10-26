@@ -101,15 +101,15 @@ void TransactionMetaSet::swap(TransactionMetaSet& s)
 
 bool TransactionMetaSet::thread(STObject& node, const uint256& prevTxID, uint32 prevLgrID)
 {
-	if (node.getFieldIndex(sfLastTxnID) == -1)
+	if (node.getFieldIndex(sfPreviousTxnID) == -1)
 	{
-		assert(node.getFieldIndex(sfLastTxnSeq) == -1);
-		node.setFieldH256(sfLastTxnID, prevTxID);
-		node.setFieldU32(sfLastTxnSeq, prevLgrID);
+		assert(node.getFieldIndex(sfPreviousTxnLgrSeq) == -1);
+		node.setFieldH256(sfPreviousTxnID, prevTxID);
+		node.setFieldU32(sfPreviousTxnLgrSeq, prevLgrID);
 		return true;
 	}
-	assert(node.getFieldH256(sfLastTxnID) == prevTxID);
-	assert(node.getFieldU32(sfLastTxnSeq) == prevLgrID);
+	assert(node.getFieldH256(sfPreviousTxnID) == prevTxID);
+	assert(node.getFieldU32(sfPreviousTxnLgrSeq) == prevLgrID);
 	return false;
 }
 
