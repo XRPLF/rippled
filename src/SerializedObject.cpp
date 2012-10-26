@@ -206,6 +206,8 @@ bool STObject::isValidForType()
 
 bool STObject::isFieldAllowed(SField::ref field)
 {
+	if (isFree())
+		return true;
 	BOOST_FOREACH(SOElement::ptr elem, mType)
 	{ // are any required elemnents missing
 		if (elem->e_field == field)
@@ -240,6 +242,14 @@ std::auto_ptr<SerializedType> STObject::deserialize(SerializerIterator& sit, SFi
 	std::auto_ptr<SerializedType> object(o = new STObject(name));
 	o->set(sit, 1);
 	return object;
+}
+
+bool STObject::hasMatchingEntry(const SerializedType& t)
+{
+	const SerializedType* o = peekAtPField(t.getFName());
+	if (!o)
+		return false;
+	return t == *o;
 }
 
 std::string STObject::getFullText() const

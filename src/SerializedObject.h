@@ -156,6 +156,9 @@ public:
 	iterator end()					{ return mData.end(); }
 	const_iterator begin() const	{ return mData.begin(); }
 	const_iterator end() const		{ return mData.end(); }
+	bool empty() const				{ return mData.empty(); }
+
+	bool hasMatchingEntry(const SerializedType&);
 
 	bool operator==(const STObject& o) const;
 	bool operator!=(const STObject& o) const { return ! (*this == o); }
