@@ -758,6 +758,9 @@ void Peer::recvValidation(ripple::TMValidation& packet)
 		return;
 	}
 
+// OPTIMIZEME: Should just defer validation checking to another thread
+// checking the signature is expensive (but should do 'isNew' check here)
+
 #ifndef TRUST_NETWORK
 	try
 #endif

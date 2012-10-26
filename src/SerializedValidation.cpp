@@ -43,7 +43,7 @@ SerializedValidation::SerializedValidation(const uint256& ledgerHash, uint32 sig
 	setFieldH256(sfLedgerHash, ledgerHash);
 	setFieldU32(sfSigningTime, signTime);
 	if (naSeed.isValid())
-	{
+	{ // OPTIMIZEME: Should compute the node public key just once and pass it in
 		RippleAddress np = RippleAddress::createNodePublic(naSeed);
 		setFieldVL(sfSigningPubKey, np.getNodePublic());
 		mNodeID = np.getNodeID();
@@ -54,6 +54,7 @@ SerializedValidation::SerializedValidation(const uint256& ledgerHash, uint32 sig
 
 	signingHash = getSigningHash();
 	std::vector<unsigned char> signature;
+	// OPTIMIZEME: Should compute the node private key just once and pass it in
 	RippleAddress::createNodePrivate(naSeed).signNodePrivate(signingHash, signature);
 	setFieldVL(sfSignature, signature);
 	// XXX Check if this can fail.
