@@ -12,7 +12,7 @@
 
 SETUP_LOG();
 
-// #define LA_DEBUG
+#define LA_DEBUG
 #define LEDGER_ACQUIRE_TIMEOUT 750
 #define TRUST_NETWORK
 
@@ -74,7 +74,7 @@ void PeerSet::invokeOnTimer()
 	if (!mProgress)
 	{
 		++mTimeouts;
-		cLog(lsWARNING) << "Timeout " << mTimeouts << " acquiring " << mHash;
+		cLog(lsWARNING) << "Timeout(" << mTimeouts << ") pc=" << mPeers.size() << " acquiring " << mHash;
 	}
 	else
 		mProgress = false;
@@ -144,7 +144,8 @@ void LedgerAcquire::onTimer()
 		setFailed();
 		done();
 	}
-	else trigger(Peer::pointer(), true);
+	else
+		trigger(Peer::pointer(), true);
 }
 
 boost::weak_ptr<PeerSet> LedgerAcquire::pmDowncast()
