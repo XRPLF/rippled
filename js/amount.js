@@ -436,7 +436,7 @@ Amount.prototype.parse_native = function(j) {
   var m;
 
   if ('string' === typeof j)
-    m = j.match(/^(-?)(\d+)(\.\d{1,6})?$/);
+    m = j.match(/^(-?)(\d+)(\.\d{0,6})?$/);
 
   if (m) {
     if (undefined === m[3]) {
@@ -445,7 +445,7 @@ Amount.prototype.parse_native = function(j) {
       this.value	  = new BigInteger(m[2]);
     }
     else {
-      // Decimal notation
+      // Float notation
 
       var   int_part	  = (new BigInteger(m[2])).multiply(exports.consts.bi_xns_unit);
       var   fraction_part = (new BigInteger(m[3])).multiply(new BigInteger(String(Math.pow(10, 1+exports.consts.xns_precision-m[3].length))));
