@@ -62,6 +62,8 @@ public:
 
 	void switchLedgers(Ledger::ref lastClosed, Ledger::ref newCurrent);
 
+	std::string getCompleteLedgers()	{ return mCompleteLedgers.toString(); }
+
 	Ledger::pointer closeLedger();
 
 	Ledger::pointer getLedgerBySeq(uint32 index)

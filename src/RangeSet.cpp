@@ -54,15 +54,18 @@ uint32 RangeSet::getPrev(uint32 v) const
 
 uint32 RangeSet::prevMissing(uint32 v) const
 { // largest number not in the set that is less than the given number
+	cLog(lsTRACE) << "prevMissing(" << v << ") " << toString();
 	for (const_reverse_iterator it = rbegin(); it != rend(); ++it)
 	{
-		if (lower(it) <= v)
-		{
-			if (upper(it) < v)
-				return upper(it) + 1;
+		if ((upper(it) + 1) < v)
+			return upper(it) + 1;
+		if (lower(it) == 0)
+			return RangeSetAbsent;
+		if ((lower(it) - 1) < v)
 			return lower(it) - 1;
-		}
 	}
+	if (v > 0)
+		return v - 1;
 	return RangeSetAbsent;
 }
 

@@ -206,6 +206,8 @@ bool STObject::isValidForType()
 
 bool STObject::isFieldAllowed(SField::ref field)
 {
+	if (isFree())
+		return true;
 	BOOST_FOREACH(SOElement::ptr elem, mType)
 	{ // are any required elemnents missing
 		if (elem->e_field == field)
@@ -240,6 +242,14 @@ std::auto_ptr<SerializedType> STObject::deserialize(SerializerIterator& sit, SFi
 	std::auto_ptr<SerializedType> object(o = new STObject(name));
 	o->set(sit, 1);
 	return object;
+}
+
+bool STObject::hasMatchingEntry(const SerializedType& t)
+{
+	const SerializedType* o = peekAtPField(t.getFName());
+	if (!o)
+		return false;
+	return t == *o;
 }
 
 std::string STObject::getFullText() const
@@ -565,7 +575,8 @@ uint160 STObject::getFieldH160(SField::ref field) const
 uint256 STObject::getFieldH256(SField::ref field) const
 {
 	const SerializedType* rf = peekAtPField(field);
-	if (!rf) throw std::runtime_error("Field not found");
+	if (!rf)
+		throw std::runtime_error("Field not found");
 	SerializedTypeID id = rf->getSType();
 	if (id == STI_NOTPRESENT) return uint256(); // optional field not present
 	const STHash256 *cf = dynamic_cast<const STHash256 *>(rf);
@@ -577,17 +588,12 @@ RippleAddress STObject::getFieldAccount(SField::ref field) const
 {
 	const SerializedType* rf = peekAtPField(field);
 	if (!rf)
-	{
-#ifdef DEBUG
-		std::cerr << "Account field not found" << std::endl;
-		std::cerr << getFullText() << std::endl;
-#endif
 		throw std::runtime_error("Field not found");
-	}
 	SerializedTypeID id = rf->getSType();
 	if (id == STI_NOTPRESENT) return RippleAddress(); // optional field not present
 	const STAccount* cf = dynamic_cast<const STAccount *>(rf);
-	if (!cf) throw std::runtime_error("Wrong field type");
+	if (!cf)
+		throw std::runtime_error("Wrong field type");
 	return cf->getValueNCA();
 }
 
@@ -596,18 +602,13 @@ uint160 STObject::getFieldAccount160(SField::ref field) const
 	uint160 a;
 	const SerializedType* rf = peekAtPField(field);
 	if (!rf)
-	{
-#ifdef DEBUG
-		std::cerr << "Account field not found" << std::endl;
-		std::cerr << getFullText() << std::endl;
-#endif
 		throw std::runtime_error("Field not found");
-	}
 	SerializedTypeID id = rf->getSType();
 	if (id != STI_NOTPRESENT)
 	{
 		const STAccount* cf = dynamic_cast<const STAccount *>(rf);
-		if (!cf) throw std::runtime_error("Wrong field type");
+		if (!cf)
+			throw std::runtime_error("Wrong field type");
 		cf->getValueH160(a);
 	}
 	return a;

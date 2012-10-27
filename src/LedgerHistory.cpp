@@ -50,7 +50,8 @@ Ledger::pointer LedgerHistory::getLedgerBySeq(uint32 index)
 	sl.unlock();
 
 	Ledger::pointer ret(Ledger::loadByIndex(index));
-	if (!ret) return ret;
+	if (!ret)
+		return ret;
 	assert(ret->getLedgerSeq() == index);
 
 	sl.lock();

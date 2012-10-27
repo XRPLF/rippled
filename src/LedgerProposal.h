@@ -35,8 +35,8 @@ public:
 		uint32 closeTime, const RippleAddress& naPeerPublic);
 
 	// our first proposal
-	LedgerProposal(const RippleAddress& privKey, const uint256& prevLedger, const uint256& position,
-		uint32 closeTime);
+	LedgerProposal(const RippleAddress& pubKey, const RippleAddress& privKey,
+		const uint256& prevLedger, const uint256& position,	uint32 closeTime);
 
 	// an unsigned "dummy" proposal for nodes not validating
 	LedgerProposal(const uint256& prevLedger, const uint256& position, uint32 closeTime);

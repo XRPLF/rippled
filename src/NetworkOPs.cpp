@@ -678,7 +678,7 @@ bool NetworkOPs::haveConsensusObject()
 	bool ledgerChange = checkLastClosedLedger(peerList, networkClosed);
 	if (!ledgerChange)
 	{
-		cLog(lsWARNING) << "Beginning consensus due to peer action";
+		cLog(lsINFO) << "Beginning consensus due to peer action";
 		beginConsensus(networkClosed, mLedgerMaster->getCurrentLedger());
 	}
 	return mConsensus;
@@ -881,13 +881,15 @@ Json::Value NetworkOPs::getServerInfo()
 		default: info["serverState"] = "unknown";
 	}
 
-	if (!theConfig.VALIDATION_SEED.isValid())
+	if (!theConfig.VALIDATION_PUB.isValid())
 		info["serverState"] = "none";
 	else
-		info["validationPKey"] = RippleAddress::createNodePublic(theConfig.VALIDATION_SEED).humanNodePublic();
+		info["validationPKey"] = theConfig.VALIDATION_PUB.humanNodePublic();
 
 	if (mNeedNetworkLedger)
 		info["networkLedger"] = "waiting";
+
+	info["completeLedgers"] = theApp->getMasterLedger().getCompleteLedgers();
 
 	Json::Value lastClose = Json::objectValue;
 	lastClose["proposers"] = theApp->getOPs().getPreviousProposers();

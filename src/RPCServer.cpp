@@ -115,7 +115,7 @@ void RPCServer::handle_read_line(const boost::system::error_code& e)
 
 std::string RPCServer::handleRequest(const std::string& requestStr)
 {
-	std::cout << "handleRequest " << requestStr << std::endl;
+	cLog(lsTRACE) << "handleRequest " << requestStr;
 	Json::Value id;
 
 	// Parse request

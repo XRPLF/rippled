@@ -282,7 +282,8 @@ public:
 	typedef boost::shared_ptr<SHAMap> pointer;
 	typedef const boost::shared_ptr<SHAMap>& ref;
 
-	typedef std::map<uint256, std::pair<SHAMapItem::pointer, SHAMapItem::pointer> > SHAMapDiff;
+	typedef std::pair<SHAMapItem::pointer, SHAMapItem::pointer> SHAMapDiffItem;
+	typedef std::map<uint256, SHAMapDiffItem> SHAMapDiff;
 	typedef boost::unordered_map<SHAMapNode, SHAMapTreeNode::pointer> SHADirtyMap;
 
 private:

@@ -99,9 +99,6 @@
     <ClCompile Include="src\NetworkOPs.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\NewcoinAddress.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\PackedMessage.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -304,6 +301,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\RPCHandler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\RippleAddress.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\RangeSet.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

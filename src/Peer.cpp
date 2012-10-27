@@ -384,7 +384,8 @@ void Peer::processReadBuffer()
 				ripple::TMHello msg;
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvHello(msg);
-				else std::cerr << "parse error: " << type << std::endl;
+				else
+					cLog(lsWARNING) << "parse error: " << type;
 			}
 			break;
 
@@ -393,7 +394,8 @@ void Peer::processReadBuffer()
 				ripple::TMErrorMsg msg;
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvErrorMessage(msg);
-				else std::cerr << "parse error: " << type << std::endl;
+				else
+					cLog(lsWARNING) << "parse error: " << type;
 			}
 			break;
 
@@ -402,7 +404,8 @@ void Peer::processReadBuffer()
 				ripple::TMPing msg;
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvPing(msg);
-				else std::cerr << "parse error: " << type << std::endl;
+				else
+					cLog(lsWARNING) << "parse error: " << type;
 			}
 			break;
 
@@ -411,7 +414,8 @@ void Peer::processReadBuffer()
 				ripple::TMGetContacts msg;
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvGetContacts(msg);
-				else std::cerr << "parse error: " << type << std::endl;
+				else
+					cLog(lsWARNING) << "parse error: " << type;
 			}
 			break;
 
@@ -420,7 +424,8 @@ void Peer::processReadBuffer()
 				ripple::TMContact msg;
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvContact(msg);
-				else std::cerr << "parse error: " << type << std::endl;
+				else
+					cLog(lsWARNING) << "parse error: " << type;
 			}
 			break;
 		case ripple::mtGET_PEERS:
@@ -428,7 +433,8 @@ void Peer::processReadBuffer()
 				ripple::TMGetPeers msg;
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvGetPeers(msg);
-				else std::cerr << "parse error: " << type << std::endl;
+				else
+					cLog(lsWARNING) << "parse error: " << type;
 			}
 			break;
 		case ripple::mtPEERS:
@@ -436,7 +442,8 @@ void Peer::processReadBuffer()
 				ripple::TMPeers msg;
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvPeers(msg);
-				else std::cerr << "parse error: " << type << std::endl;
+				else
+					cLog(lsWARNING) << "parse error: " << type;
 			}
 			break;
 
@@ -445,7 +452,8 @@ void Peer::processReadBuffer()
 				ripple::TMSearchTransaction msg;
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvSearchTransaction(msg);
-				else std::cerr << "parse error: " << type << std::endl;
+				else
+					cLog(lsWARNING) << "parse error: " << type;
 			}
 			break;
 
@@ -454,7 +462,8 @@ void Peer::processReadBuffer()
 				ripple::TMGetAccount msg;
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvGetAccount(msg);
-				else std::cerr << "parse error: " << type << std::endl;
+				else
+					cLog(lsWARNING) << "parse error: " << type;
 			}
 			break;
 
@@ -463,7 +472,8 @@ void Peer::processReadBuffer()
 				ripple::TMAccount msg;
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvAccount(msg);
-				else std::cerr << "parse error: " << type << std::endl;
+				else
+					cLog(lsWARNING) << "parse error: " << type;
 			}
 			break;
 
@@ -472,7 +482,8 @@ void Peer::processReadBuffer()
 				ripple::TMTransaction msg;
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvTransaction(msg);
-				else std::cerr << "parse error: " << type << std::endl;
+				else
+					cLog(lsWARNING) << "parse error: " << type;
 			}
 			break;
 
@@ -481,7 +492,8 @@ void Peer::processReadBuffer()
 				ripple::TMStatusChange msg;
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvStatus(msg);
-				else std::cerr << "parse error: " << type << std::endl;
+				else
+					cLog(lsWARNING) << "parse error: " << type;
 			}
 			break;
 
@@ -490,7 +502,8 @@ void Peer::processReadBuffer()
 				ripple::TMProposeSet msg;
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvPropose(msg);
-				else std::cerr << "parse error: " << type << std::endl;
+				else
+					cLog(lsWARNING) << "parse error: " << type;
 			}
 			break;
 
@@ -499,7 +512,8 @@ void Peer::processReadBuffer()
 				ripple::TMGetLedger msg;
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvGetLedger(msg);
-				else std::cerr << "parse error: " << type << std::endl;
+				else
+					cLog(lsWARNING) << "parse error: " << type;
 			}
 			break;
 
@@ -508,7 +522,8 @@ void Peer::processReadBuffer()
 				ripple::TMLedgerData msg;
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvLedger(msg);
-				else std::cerr << "parse error: " << type << std::endl;
+				else
+					cLog(lsWARNING) << "parse error: " << type;
 			}
 			break;
 
@@ -517,7 +532,8 @@ void Peer::processReadBuffer()
 				ripple::TMHaveTransactionSet msg;
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvHaveTxSet(msg);
-				else std::cerr << "parse error: " << type << std::endl;
+				else
+					cLog(lsWARNING) << "parse error: " << type;
 			}
 			break;
 
@@ -526,7 +542,8 @@ void Peer::processReadBuffer()
 				ripple::TMValidation msg;
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvValidation(msg);
-				else std::cerr << "parse error: " << type << std::endl;
+				else
+					cLog(lsWARNING) << "parse error: " << type;
 			}
 			break;
 #if 0
@@ -535,7 +552,8 @@ void Peer::processReadBuffer()
 				ripple::TM msg;
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recv(msg);
-				else std::cerr << "parse error: " << type << std::endl;
+				else
+					cLog(lsWARNING) << "parse error: " << type;
 			}
 			break;
 
@@ -545,13 +563,14 @@ void Peer::processReadBuffer()
 				ripple::TMGetObjectByHash msg;
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvGetObjectByHash(msg);
-				else std::cerr << "parse error: " << type << std::endl;
+				else
+					cLog(lsWARNING) << "parse error: " << type;
 			}
 			break;
 
 		default:
-			std::cerr << "Unknown Msg: " << type << std::endl;
-			std::cerr << strHex(&mReadbuf[0], mReadbuf.size());
+			cLog(lsWARNING) << "Unknown Msg: " << type;
+			cLog(lsWARNING) << strHex(&mReadbuf[0], mReadbuf.size());
 		}
 	}
 }
@@ -669,9 +688,7 @@ void Peer::recvHello(ripple::TMHello& packet)
 
 void Peer::recvTransaction(ripple::TMTransaction& packet)
 {
-#ifdef DEBUG
-	std::cerr << "Got transaction from peer" << std::endl;
-#endif
+	cLog(lsDEBUG) << "Got transaction from peer";
 
 	Transaction::pointer tx;
 #ifndef TRUST_NETWORK
@@ -757,6 +774,9 @@ void Peer::recvValidation(ripple::TMValidation& packet)
 		punishPeer(PP_UNKNOWN_REQUEST);
 		return;
 	}
+
+// OPTIMIZEME: Should just defer validation checking to another thread
+// checking the signature is expensive (but should do 'isNew' check here)
 
 #ifndef TRUST_NETWORK
 	try

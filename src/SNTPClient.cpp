@@ -2,6 +2,7 @@
 
 #include <boost/bind.hpp>
 #include <boost/make_shared.hpp>
+#include <boost/foreach.hpp>
 
 #include <openssl/rand.h>
 
@@ -200,9 +201,8 @@ void SNTPClient::init(const std::vector<std::string>& servers)
 		Log(lsINFO) << "SNTP: no server specified";
 		return;
 	}
-	do
-		addServer(*it++);
-	while (it != servers.end());
+	BOOST_FOREACH(const std::string& it, servers)
+		addServer(it);
 	queryAll();
 }
 

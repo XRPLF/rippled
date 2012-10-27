@@ -705,7 +705,7 @@ bool Transaction::convertToTransactions(uint32 firstLedgerSeq, uint32 secondLedg
 	std::map<uint256, std::pair<Transaction::pointer, Transaction::pointer> >& outMap)
 { // convert a straight SHAMap payload difference to a transaction difference table
   // return value: true=ledgers are valid, false=a ledger is invalid
-	std::map<uint256, std::pair<SHAMapItem::pointer, SHAMapItem::pointer> >::const_iterator it;
+	SHAMap::SHAMapDiff::const_iterator it;
 	for(it = inMap.begin(); it != inMap.end(); ++it)
 	{
 		const uint256& id = it->first;

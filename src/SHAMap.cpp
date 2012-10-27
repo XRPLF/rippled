@@ -123,12 +123,12 @@ void SHAMap::dirtyUp(std::stack<SHAMapTreeNode::pointer>& stack, const uint256& 
 
 		if (!node->setChildHash(branch, prevHash))
 		{
-			std::cerr << "dirtyUp terminates early" << std::endl;
+			cLog(lsFATAL) << "dirtyUp terminates early";
 			assert(false);
 			return;
 		}
 #ifdef ST_DEBUG
-		std::cerr << "dirtyUp sets branch " << branch << " to " << prevHash << std::endl;
+		cLog(lsTRACE) << "dirtyUp sets branch " << branch << " to " << prevHash;
 #endif
 		prevHash = node->getNodeHash();
 		assert(prevHash.isNonZero());

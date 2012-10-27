@@ -77,10 +77,9 @@ std::vector<RippleAddress> SerializedTransaction::getAffectedAccounts() const
 		{
 			bool found = false;
 			RippleAddress na = sa->getValueNCA();
-			for (std::vector<RippleAddress>::iterator it = accounts.begin(), end = accounts.end();
-				it != end; ++it)
+			BOOST_FOREACH(const RippleAddress& it, accounts)
 			{
-				if (*it == na)
+				if (it == na)
 				{
 					found = true;
 					break;

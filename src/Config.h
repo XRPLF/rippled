@@ -93,7 +93,7 @@ public:
 	bool						RPC_ALLOW_REMOTE;
 
 	// Validation
-	RippleAddress				VALIDATION_SEED;
+	RippleAddress				VALIDATION_SEED, VALIDATION_PUB, VALIDATION_PRIV;
 
 	// Fees
 	uint64						FEE_DEFAULT;			// Default fee.

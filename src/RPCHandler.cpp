@@ -2063,14 +2063,20 @@ Json::Value RPCHandler::doValidationSeed(const Json::Value& params) {
 		std::cerr << "Unset validation seed." << std::endl;
 
 		theConfig.VALIDATION_SEED.clear();
+		theConfig.VALIDATION_PUB.clear();
+		theConfig.VALIDATION_PRIV.clear();
 	}
 	else if (!theConfig.VALIDATION_SEED.setSeedGeneric(params[0u].asString()))
 	{
+		theConfig.VALIDATION_PUB.clear();
+		theConfig.VALIDATION_PRIV.clear();
 		return rpcError(rpcBAD_SEED);
 	}
 	else
 	{
-		obj["validation_public_key"]	= RippleAddress::createNodePublic(theConfig.VALIDATION_SEED).humanNodePublic();
+		theConfig.VALIDATION_PUB = RippleAddress::createNodePublic(theConfig.VALIDATION_SEED);
+		theConfig.VALIDATION_PRIV = RippleAddress::createNodePrivate(theConfig.VALIDATION_SEED);
+		obj["validation_public_key"]	= theConfig.VALIDATION_PUB.humanNodePublic();
 		obj["validation_seed"]			= theConfig.VALIDATION_SEED.humanSeed();
 		obj["validation_key"]			= theConfig.VALIDATION_SEED.humanSeed1751();
 	}
@@ -2606,9 +2612,9 @@ Json::Value RPCHandler::doLogLevel(const Json::Value& params)
 		ret["base"] = Log::severityToString(Log::getMinSeverity());
 
 		std::vector< std::pair<std::string, std::string> > logTable = LogPartition::getSeverities();
-		for (std::vector< std::pair<std::string, std::string> >::iterator it = logTable.begin();
-			it != logTable.end(); ++it)
-			ret[it->first] = it->second;
+		typedef std::pair<std::string, std::string> stringPair;
+		BOOST_FOREACH(const stringPair& it, logTable)
+			ret[it.first] = it.second;
 		return ret;
 	}
 

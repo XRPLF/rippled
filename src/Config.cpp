@@ -35,9 +35,9 @@
 #define SECTION_VALIDATORS				"validators"
 #define SECTION_VALIDATORS_SITE			"validators_site"
 
-// Fees are in XNB.
-#define DEFAULT_FEE_DEFAULT				100
-#define DEFAULT_FEE_ACCOUNT_CREATE		1000
+// Fees are in XNS.
+#define DEFAULT_FEE_DEFAULT				10
+#define DEFAULT_FEE_ACCOUNT_CREATE		1000*SYSTEM_CURRENCY_PARTS
 #define DEFAULT_FEE_NICKNAME_CREATE		1000
 #define DEFAULT_FEE_OFFER				DEFAULT_FEE_DEFAULT
 #define DEFAULT_FEE_OPERATION			1
@@ -234,7 +234,14 @@ void Config::load()
 				WEBSOCKET_PORT		= boost::lexical_cast<int>(strTemp);
 
 			if (sectionSingleB(secConfig, SECTION_VALIDATION_SEED, strTemp))
+			{
 				VALIDATION_SEED.setSeedGeneric(strTemp);
+				if (VALIDATION_SEED.isValid())
+				{
+					VALIDATION_PUB = RippleAddress::createNodePublic(VALIDATION_SEED);
+					VALIDATION_PRIV = RippleAddress::createNodePrivate(VALIDATION_SEED);
+				}
+			}
 
 			(void) sectionSingleB(secConfig, SECTION_PEER_SSL_CIPHER_LIST, PEER_SSL_CIPHER_LIST);
 

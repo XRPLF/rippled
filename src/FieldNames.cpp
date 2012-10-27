@@ -26,6 +26,31 @@ SField sfIndex(STI_HASH256, 258, "index");
 #undef FIELD
 #undef TYPE
 
+static int initFields()
+{
+	sfHighQualityIn.setMeta(SFM_CHANGE);	sfHighQualityOut.setMeta(SFM_CHANGE);
+	sfLowQualityIn.setMeta(SFM_CHANGE);		sfLowQualityOut.setMeta(SFM_CHANGE);
+
+	sfLowLimit.setMeta(SFM_ALWAYS);			sfHighLimit.setMeta(SFM_ALWAYS);
+	sfTakerPays.setMeta(SFM_ALWAYS);		sfTakerGets.setMeta(SFM_ALWAYS);
+	sfQualityIn.setMeta(SFM_ALWAYS);		sfQualityOut.setMeta(SFM_ALWAYS);
+
+	sfBalance.setMeta(SFM_ALWAYS);
+
+	sfPublicKey.setMeta(SFM_CHANGE);		sfMessageKey.setMeta(SFM_CHANGE);
+	sfSigningPubKey.setMeta(SFM_CHANGE);	sfAuthorizedKey.setMeta(SFM_CHANGE);
+	sfSigningAccounts.setMeta(SFM_CHANGE);
+
+	sfWalletLocator.setMeta(SFM_CHANGE);
+	sfNickname.setMeta(SFM_CHANGE);
+	sfAmount.setMeta(SFM_ALWAYS);
+	sfDomain.setMeta(SFM_CHANGE);
+	sfOwner.setMeta(SFM_ALWAYS);
+
+	return 0;
+}
+static const int f = initFields();
+
 
 SField::SField(SerializedTypeID tid, int fv) : fieldCode(FIELD_CODE(tid, fv)), fieldType(tid), fieldValue(fv)
 { // call with the map mutex

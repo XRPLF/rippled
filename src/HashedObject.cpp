@@ -59,15 +59,15 @@ void HashedObjectStore::waitWrite()
 
 void HashedObjectStore::bulkWrite()
 {
-	std::vector< boost::shared_ptr<HashedObject> > set;
 	while (1)
 	{
-		set.clear();
+		std::vector< boost::shared_ptr<HashedObject> > set;
 		set.reserve(128);
 
 		{
 			boost::unique_lock<boost::mutex> sl(mWriteMutex);
 			mWriteSet.swap(set);
+			assert(mWriteSet.empty());
 			if (set.empty())
 			{
 				mWritePending = false;
