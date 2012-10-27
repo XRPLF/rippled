@@ -90,14 +90,15 @@ public:
 
 	LedgerEntrySet				lesEntries;
 
-	int							mIndex;
-	uint64						uQuality;			// 0 = none.
+	int							mIndex;				// Index/rank amoung siblings.
+	uint64						uQuality;			// 0 = no quality/liquity left.
 	const STAmount&				saInReq;			// --> Max amount to spend by sender.
 	STAmount					saInAct;			// --> Amount spent by sender so far.
 	STAmount					saInPass;			// <-- Amount spent by sender.
 	const STAmount&				saOutReq;			// --> Amount to send.
 	STAmount					saOutAct;			// --> Amount actually sent so far.
 	STAmount					saOutPass;			// <-- Amount actually sent.
+	bool						bConsumed;			// If true, use consumes full liquidity. False, may or may not.
 
 	PathState(
 		const int				iIndex,
