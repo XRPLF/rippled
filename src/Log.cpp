@@ -4,6 +4,7 @@
 #include <fstream>
 
 #include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/algorithm/string.hpp>
 
 boost::recursive_mutex Log::sLock;
 
@@ -14,6 +15,28 @@ boost::filesystem::path *Log::pathToLog = NULL;
 uint32 Log::logRotateCounter = 0;
 
 LogPartition* LogPartition::headLog = NULL;
+
+LogPartition::LogPartition(const char *name) : mNextLog(headLog), mMinSeverity(lsWARNING)
+{
+	const char *ptr = strrchr(name, '/');
+	mName = (ptr == NULL) ? name : (ptr + 1);
+
+	size_t p = mName.find(".cpp");
+	if (p != std::string::npos)
+		mName.erase(mName.begin() + p, mName.end());
+
+	headLog = this;
+}
+
+std::vector< std::pair<std::string, std::string> > LogPartition::getSeverities()
+{
+	std::vector< std::pair<std::string, std::string> > sevs;
+
+	for (LogPartition *l = headLog; l != NULL; l = l->mNextLog)
+		sevs.push_back(std::make_pair(l->mName, Log::severityToString(l->mMinSeverity)));
+
+	return sevs;
+}
 
 Log::~Log()
 {
@@ -26,6 +49,7 @@ Log::~Log()
 		case lsWARNING:	logMsg += " WARN "; break;
 		case lsERROR:	logMsg += " EROR "; break;
 		case lsFATAL:	logMsg += " FATL "; break;
+		case lsINVALID:	assert(false); return;
 	}
 	logMsg += oss.str();
 	boost::recursive_mutex::scoped_lock sl(sLock);
@@ -77,11 +101,50 @@ std::string Log::rotateLog(void)
   
 }
 
-void Log::setMinSeverity(LogSeverity s)
+void Log::setMinSeverity(LogSeverity s, bool all)
 {
 	boost::recursive_mutex::scoped_lock sl(sLock);
 	sMinSeverity = s;
-	LogPartition::setSeverity(s);
+	if (all)
+		LogPartition::setSeverity(s);
+}
+
+LogSeverity Log::getMinSeverity()
+{
+	boost::recursive_mutex::scoped_lock sl(sLock);
+	return sMinSeverity;
+}
+
+std::string Log::severityToString(LogSeverity s)
+{
+	switch (s)
+	{
+		case lsTRACE:	return "Trace";
+		case lsDEBUG:	return "Debug";
+		case lsINFO:	return "Info";
+		case lsWARNING: return "Warning";
+		case lsERROR:	return "Error";
+		case lsFATAL:	return "Fatal";
+		default:		assert(false); return "Unknown";
+	}
+
+}
+
+LogSeverity Log::stringToSeverity(const std::string& s)
+{
+	if (boost::iequals(s, "trace"))
+		return lsTRACE;
+	if (boost::iequals(s, "debug"))
+		return lsDEBUG;
+	if (boost::iequals(s, "info") || boost::iequals(s, "information"))
+		return lsINFO;
+	if (boost::iequals(s, "warn") || boost::iequals(s, "warning") || boost::iequals(s, "warnings"))
+		return lsWARNING;
+	if (boost::iequals(s, "error") || boost::iequals(s, "errors"))
+		return lsERROR;
+	if (boost::iequals(s, "fatal") || boost::iequals(s, "fatals"))
+		return lsFATAL;
+	return lsINVALID;
 }
 
 void Log::setLogFile(boost::filesystem::path path)
@@ -103,14 +166,15 @@ void Log::setLogFile(boost::filesystem::path path)
 	pathToLog = new boost::filesystem::path(path);
 }
 
-void LogPartition::setSeverity(const char *partition, LogSeverity severity)
+bool LogPartition::setSeverity(const std::string& partition, LogSeverity severity)
 {
 	for (LogPartition *p = headLog; p != NULL; p = p->mNextLog)
-		if (p->mName == partition)
+		if (boost::iequals(p->mName, partition))
 		{
 			p->mMinSeverity = severity;
-			return;
+			return true;
 		}
+	return false;
 }
 
 void LogPartition::setSeverity(LogSeverity severity)

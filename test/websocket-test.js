@@ -1,8 +1,7 @@
 var buster  = require("buster");
 
-var config  = require("./config.js");
-var server  = require("./server.js");
-var remote  = require("../js/remote.js");
+var Server  = require("./server.js").Server;
+var Remote  = require("../js/remote.js").Remote;
 
 // How long to wait for server to start.
 var serverDelay = 1500;
@@ -11,35 +10,29 @@ buster.testRunner.timeout = 5000;
 
 buster.testCase("WebSocket connection", {
   'setUp' :
-    function (done) {
-      server.start("alpha",
-	function (e) {
-	  buster.refute(e);
-	  done();
-	}
-      );
-    },
+    function (done) { server = Server.from_config("alpha").on('started', done).start(); },
 
   'tearDown' :
-    function (done) {
-      server.stop("alpha", function (e) {
-	buster.refute(e);
-	done();
-      });
-    },
+    function (done) { server.on('stopped', done).stop(); },
 
   "websocket connect and disconnect" :
     function (done) {
-      var alpha	= remote.remoteConfig(config, "alpha", 'TRACE');
+      var alpha	= Remote.from_config("alpha");
 
-      alpha.connect(function (stat) {
-	buster.assert.equals(stat, 1);	    // OPEN
+      alpha
+	.on('connected', function () {
+	    // OPEN
+	    buster.assert(true);
 
-	alpha.disconnect(function (stat) {
-	    buster.assert.equals(stat, 3);  // CLOSED
-	    done();
-	  });
-	}, serverDelay);
+	    alpha
+	      .on('disconnected', function () {
+		  // CLOSED
+		  buster.assert(true);
+		  done();
+		})
+	      .connect(false);
+	  })
+	.connect();
     },
 });
 

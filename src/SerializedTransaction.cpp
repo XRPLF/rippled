@@ -25,7 +25,6 @@ SerializedTransaction::SerializedTransaction(const STObject& object) : STObject(
 		throw std::runtime_error("invalid transaction type");
 	if (!setType(mFormat->elements))
 	{
-		assert(false);
 		throw std::runtime_error("transaction not valid");
 	}
 }
@@ -67,9 +66,9 @@ std::string SerializedTransaction::getText() const
 	return STObject::getText();
 }
 
-std::vector<NewcoinAddress> SerializedTransaction::getAffectedAccounts() const
+std::vector<RippleAddress> SerializedTransaction::getAffectedAccounts() const
 {
-	std::vector<NewcoinAddress> accounts;
+	std::vector<RippleAddress> accounts;
 
 	BOOST_FOREACH(const SerializedType& it, peekData())
 	{
@@ -77,11 +76,10 @@ std::vector<NewcoinAddress> SerializedTransaction::getAffectedAccounts() const
 		if (sa != NULL)
 		{
 			bool found = false;
-			NewcoinAddress na = sa->getValueNCA();
-			for (std::vector<NewcoinAddress>::iterator it = accounts.begin(), end = accounts.end();
-				it != end; ++it)
+			RippleAddress na = sa->getValueNCA();
+			BOOST_FOREACH(const RippleAddress& it, accounts)
 			{
-				if (*it == na)
+				if (it == na)
 				{
 					found = true;
 					break;
@@ -116,7 +114,7 @@ std::vector<unsigned char> SerializedTransaction::getSignature() const
 	}
 }
 
-void SerializedTransaction::sign(const NewcoinAddress& naAccountPrivate)
+void SerializedTransaction::sign(const RippleAddress& naAccountPrivate)
 {
 	std::vector<unsigned char> signature;
 	naAccountPrivate.accountPrivateSign(getSigningHash(), signature);
@@ -127,7 +125,7 @@ bool SerializedTransaction::checkSign() const
 {
 	try
 	{
-		NewcoinAddress n;
+		RippleAddress n;
 		n.setAccountPublic(getFieldVL(sfSigningPubKey));
 		return checkSign(n);
 	}
@@ -137,7 +135,7 @@ bool SerializedTransaction::checkSign() const
 	}
 }
 
-bool SerializedTransaction::checkSign(const NewcoinAddress& naAccountPublic) const
+bool SerializedTransaction::checkSign(const RippleAddress& naAccountPublic) const
 {
 	try
 	{
@@ -149,12 +147,12 @@ bool SerializedTransaction::checkSign(const NewcoinAddress& naAccountPublic) con
 	}
 }
 
-void SerializedTransaction::setSigningPubKey(const NewcoinAddress& naSignPubKey)
+void SerializedTransaction::setSigningPubKey(const RippleAddress& naSignPubKey)
 {
 	setFieldVL(sfSigningPubKey, naSignPubKey.getAccountPublic());
 }
 
-void SerializedTransaction::setSourceAccount(const NewcoinAddress& naSource)
+void SerializedTransaction::setSourceAccount(const RippleAddress& naSource)
 {
 	setFieldAccount(sfAccount, naSource);
 }
@@ -200,11 +198,11 @@ BOOST_AUTO_TEST_SUITE(SerializedTransactionTS)
 
 BOOST_AUTO_TEST_CASE( STrans_test )
 {
-	NewcoinAddress seed;
+	RippleAddress seed;
 	seed.setSeedRandom();
-	NewcoinAddress generator = NewcoinAddress::createGeneratorPublic(seed);
-	NewcoinAddress  publicAcct = NewcoinAddress::createAccountPublic(generator, 1);
-	NewcoinAddress  privateAcct = NewcoinAddress::createAccountPrivate(generator, seed, 1);
+	RippleAddress generator = RippleAddress::createGeneratorPublic(seed);
+	RippleAddress publicAcct = RippleAddress::createAccountPublic(generator, 1);
+	RippleAddress privateAcct = RippleAddress::createAccountPrivate(generator, seed, 1);
 
 	SerializedTransaction j(ttCLAIM);
 	j.setSourceAccount(publicAcct);
@@ -224,10 +222,15 @@ BOOST_AUTO_TEST_CASE( STrans_test )
 		Log(lsFATAL) << copy.getJson(0);
 		BOOST_FAIL("Transaction fails serialize/deserialize test");
 	}
-	Log(lsINFO) << "ORIG: " << j.getJson(0);
 	std::auto_ptr<STObject> new_obj = STObject::parseJson(j.getJson(0), sfGeneric);
 	if (new_obj.get() == NULL) BOOST_FAIL("Unable to build object from json");
-	Log(lsINFO) << "BUILT " << new_obj->getJson(0);
+
+	if (STObject(j) != *new_obj)
+	{
+		Log(lsINFO) << "ORIG: " << j.getJson(0);
+		Log(lsINFO) << "BUILT " << new_obj->getJson(0);
+		BOOST_FAIL("Built a different transaction");
+	}
 }
 
 BOOST_AUTO_TEST_SUITE_END();

@@ -131,7 +131,7 @@ bool SHAMap::getRootNode(Serializer& s, SHANodeFormat format)
 	return true;
 }
 
-bool SHAMap::addRootNode(const std::vector<unsigned char>& rootNode, SHANodeFormat format)
+bool SHAMap::addRootNode(const std::vector<unsigned char>& rootNode, SHANodeFormat format, SHAMapSyncFilter* filter)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
@@ -154,16 +154,23 @@ bool SHAMap::addRootNode(const std::vector<unsigned char>& rootNode, SHANodeForm
 
 	root = node;
 	mTNByID[*root] = root;
-	if (!root->getNodeHash())
+	if (root->getNodeHash().isZero())
 	{
 		root->setFullBelow();
 		clearSynching();
+	}
+	else if (filter)
+	{
+		Serializer s;
+		root->addRaw(s, snfPREFIX);
+		filter->gotNode(*root, root->getNodeHash(), s.peekData(), root->getType());
 	}
 
 	return true;
 }
 
-bool SHAMap::addRootNode(const uint256& hash, const std::vector<unsigned char>& rootNode, SHANodeFormat format)
+bool SHAMap::addRootNode(const uint256& hash, const std::vector<unsigned char>& rootNode, SHANodeFormat format,
+	SHAMapSyncFilter* filter)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
@@ -184,10 +191,16 @@ bool SHAMap::addRootNode(const uint256& hash, const std::vector<unsigned char>& 
 	returnNode(root, true);
 	root = node;
 	mTNByID[*root] = root;
-	if (!root->getNodeHash())
+	if (root->getNodeHash().isZero())
 	{
 		root->setFullBelow();
 		clearSynching();
+	}
+	else if (filter)
+	{
+		Serializer s;
+		root->addRaw(s, snfPREFIX);
+		filter->gotNode(*root, root->getNodeHash(), s.peekData(), root->getType());
 	}
 
 	return true;
@@ -216,7 +229,7 @@ bool SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigned cha
 		return true;
 	}
 
-	if (iNode->isLeaf() || (iNode->getDepth() == node.getDepth()))
+	if (iNode->isLeaf() || (iNode->getDepth() >= node.getDepth()))
 	{
 		cLog(lsTRACE) << "got inner node, already had it (late)";
 		return true;
@@ -247,7 +260,7 @@ bool SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigned cha
 	{
 		Serializer s;
 		newNode->addRaw(s, snfPREFIX);
-		filter->gotNode(node, hash, s.peekData(), newNode->isLeaf());
+		filter->gotNode(node, hash, s.peekData(), newNode->getType());
 	}
 
 	mTNByID[*newNode] = newNode;
@@ -458,7 +471,7 @@ BOOST_AUTO_TEST_CASE( SHAMapSync_test )
 		cLog(lsFATAL) << "Didn't get root node " << gotNodes.size();
 		BOOST_FAIL("NodeSize");
 	}
-	if (!destination.addRootNode(*gotNodes.begin(), snfWIRE))
+	if (!destination.addRootNode(*gotNodes.begin(), snfWIRE, NULL))
 	{
 		cLog(lsFATAL) << "AddRootNode fails";
 		BOOST_FAIL("AddRootNode");

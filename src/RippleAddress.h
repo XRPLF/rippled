@@ -8,7 +8,7 @@
 // Used to hold addresses and parse and produce human formats.
 //
 // XXX This needs to be reworked to store data in uint160 and uint256.  Conversion to CBase58Data should happen as needed.
-class NewcoinAddress : public CBase58Data
+class RippleAddress : public CBase58Data
 {
 private:
 	typedef enum {
@@ -23,7 +23,7 @@ private:
 	} VersionEncoding;
 
 public:
-	NewcoinAddress();
+	RippleAddress();
 
 	// For public and private key, checks if they are legal.
 	bool isValid() const;
@@ -44,9 +44,9 @@ public:
 	bool verifyNodePublic(const uint256& hash, const std::vector<unsigned char>& vchSig) const;
 	bool verifyNodePublic(const uint256& hash, const std::string& strSig) const;
 
-	static NewcoinAddress createNodePublic(const NewcoinAddress& naSeed);
-	static NewcoinAddress createNodePublic(const std::vector<unsigned char>& vPublic);
-	static NewcoinAddress createNodePublic(const std::string& strPublic);
+	static RippleAddress createNodePublic(const RippleAddress& naSeed);
+	static RippleAddress createNodePublic(const std::vector<unsigned char>& vPublic);
+	static RippleAddress createNodePublic(const std::string& strPublic);
 
 	//
 	// Node Private
@@ -61,7 +61,7 @@ public:
 	void setNodePrivate(uint256 hash256);
 	void signNodePrivate(const uint256& hash, std::vector<unsigned char>& vchSig) const;
 
-	static NewcoinAddress createNodePrivate(const NewcoinAddress& naSeed);
+	static RippleAddress createNodePrivate(const RippleAddress& naSeed);
 
 	//
 	// Accounts IDs
@@ -73,10 +73,10 @@ public:
 	bool setAccountID(const std::string& strAccountID);
 	void setAccountID(const uint160& hash160In);
 
-	static NewcoinAddress createAccountID(const std::string& strAccountID)
-	{ NewcoinAddress na; na.setAccountID(strAccountID); return na; }
+	static RippleAddress createAccountID(const std::string& strAccountID)
+	{ RippleAddress na; na.setAccountID(strAccountID); return na; }
 
-	static NewcoinAddress createAccountID(const uint160& uiAccountID);
+	static RippleAddress createAccountID(const uint160& uiAccountID);
 
 	static std::string createHumanAccountID(const uint160& uiAccountID)
 	{ return createAccountID(uiAccountID).humanAccountID(); }
@@ -93,13 +93,13 @@ public:
 
 	bool setAccountPublic(const std::string& strPublic);
 	void setAccountPublic(const std::vector<unsigned char>& vPublic);
-	void setAccountPublic(const NewcoinAddress& generator, int seq);
+	void setAccountPublic(const RippleAddress& generator, int seq);
 
 	bool accountPublicVerify(const uint256& uHash, const std::vector<unsigned char>& vucSig) const;
 
-	static NewcoinAddress createAccountPublic(const std::vector<unsigned char>& vPublic)
+	static RippleAddress createAccountPublic(const std::vector<unsigned char>& vPublic)
 	{
-		NewcoinAddress	naNew;
+		RippleAddress	naNew;
 
 		naNew.setAccountPublic(vPublic);
 
@@ -111,7 +111,7 @@ public:
 	}
 
 	// Create a deterministic public key from a public generator.
-	static NewcoinAddress createAccountPublic(const NewcoinAddress& naGenerator, int iSeq);
+	static RippleAddress createAccountPublic(const RippleAddress& naGenerator, int iSeq);
 
 	//
 	// Accounts Private
@@ -123,22 +123,22 @@ public:
 	bool setAccountPrivate(const std::string& strPrivate);
 	void setAccountPrivate(const std::vector<unsigned char>& vPrivate);
 	void setAccountPrivate(uint256 hash256);
-	void setAccountPrivate(const NewcoinAddress& naGenerator, const NewcoinAddress& naSeed, int seq);
+	void setAccountPrivate(const RippleAddress& naGenerator, const RippleAddress& naSeed, int seq);
 
 	bool accountPrivateSign(const uint256& uHash, std::vector<unsigned char>& vucSig) const;
 	// bool accountPrivateVerify(const uint256& uHash, const std::vector<unsigned char>& vucSig) const;
 
 	// Encrypt a message.
-	std::vector<unsigned char> accountPrivateEncrypt(const NewcoinAddress& naPublicTo, const std::vector<unsigned char>& vucPlainText) const;
+	std::vector<unsigned char> accountPrivateEncrypt(const RippleAddress& naPublicTo, const std::vector<unsigned char>& vucPlainText) const;
 
 	// Decrypt a message.
-	std::vector<unsigned char> accountPrivateDecrypt(const NewcoinAddress& naPublicFrom, const std::vector<unsigned char>& vucCipherText) const;
+	std::vector<unsigned char> accountPrivateDecrypt(const RippleAddress& naPublicFrom, const std::vector<unsigned char>& vucCipherText) const;
 
-	static NewcoinAddress createAccountPrivate(const NewcoinAddress& naGenerator, const NewcoinAddress& naSeed, int iSeq);
+	static RippleAddress createAccountPrivate(const RippleAddress& naGenerator, const RippleAddress& naSeed, int iSeq);
 
-	static NewcoinAddress createAccountPrivate(const std::vector<unsigned char>& vPrivate)
+	static RippleAddress createAccountPrivate(const std::vector<unsigned char>& vPrivate)
 	{
-		NewcoinAddress	naNew;
+		RippleAddress	naNew;
 
 		naNew.setAccountPrivate(vPrivate);
 
@@ -160,10 +160,10 @@ public:
 
 	bool setGenerator(const std::string& strGenerator);
 	void setGenerator(const std::vector<unsigned char>& vPublic);
-	// void setGenerator(const NewcoinAddress& seed);
+	// void setGenerator(const RippleAddress& seed);
 
 	// Create generator for making public deterministic keys.
-	static NewcoinAddress createGeneratorPublic(const NewcoinAddress& naSeed);
+	static RippleAddress createGeneratorPublic(const RippleAddress& naSeed);
 
 	//
 	// Seeds
@@ -179,8 +179,8 @@ public:
 	void setSeed(uint128 hash128);
 	void setSeedRandom();
 
-	static NewcoinAddress createSeedRandom();
-	static NewcoinAddress createSeedGeneric(const std::string& strText);
+	static RippleAddress createSeedRandom();
+	static RippleAddress createSeedGeneric(const std::string& strText);
 };
 
 #endif

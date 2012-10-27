@@ -87,7 +87,7 @@ protected:
 	Ledger::pointer mPreviousLedger;
 	LedgerAcquire::pointer mAcquiringLedger;
 	LedgerProposal::pointer mOurPosition;
-	NewcoinAddress mValSeed;
+	RippleAddress mValPublic, mValPrivate;
 	bool mProposing, mValidating, mHaveCorrectLCL;
 
 	int mCurrentMSeconds, mClosePercent, mCloseResolution;
@@ -117,7 +117,6 @@ protected:
 	boost::unordered_set<uint160> mDeadNodes;
 
 	// final accept logic
-	static void Saccept(boost::shared_ptr<LedgerConsensus> This, SHAMap::pointer txSet);
 	void accept(SHAMap::ref txSet);
 
 	void weHave(const uint256& id, Peer::ref avoidPeer);
@@ -134,7 +133,7 @@ protected:
 	void sendHaveTxSet(const uint256& set, bool direct);
 	void applyTransactions(SHAMap::ref transactionSet, Ledger::ref targetLedger,
 		Ledger::ref checkLedger, CanonicalTXSet& failedTransactions, bool openLgr);
-	void applyTransaction(TransactionEngine& engine, const SerializedTransaction::pointer& txn,
+	void applyTransaction(TransactionEngine& engine, SerializedTransaction::ref txn,
 		Ledger::ref targetLedger, CanonicalTXSet& failedTransactions, bool openLgr);
 
 	uint32 roundCloseTime(uint32 closeTime);
@@ -174,7 +173,7 @@ public:
 	void stateFinished();
 	void stateAccepted();
 
-	bool haveConsensus();
+	bool haveConsensus(bool forReal);
 
 	bool peerPosition(const LedgerProposal::pointer&);
 
@@ -182,6 +181,8 @@ public:
 
 	bool peerGaveNodes(Peer::ref peer, const uint256& setHash,
 		const std::list<SHAMapNode>& nodeIDs, const std::list< std::vector<unsigned char> >& nodeData);
+
+	bool isOurPubKey(const RippleAddress &k)	{ return k == mValPublic; }
 
 	// test/debug
 	void simulate();

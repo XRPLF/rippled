@@ -4,8 +4,10 @@
 #include <boost/foreach.hpp>
 
 #include "Application.h"
-#include "NewcoinAddress.h"
+#include "RippleAddress.h"
 #include "Log.h"
+
+SETUP_LOG();
 
 uint32 LedgerMaster::getCurrentLedgerIndex()
 {
@@ -22,19 +24,19 @@ void LedgerMaster::pushLedger(Ledger::ref newLedger)
 {
 	// Caller should already have properly assembled this ledger into "ready-to-close" form --
 	// all candidate transactions must already be applied
-	Log(lsINFO) << "PushLedger: " << newLedger->getHash();
-	ScopedLock sl(mLock);
+	cLog(lsINFO) << "PushLedger: " << newLedger->getHash();
+	boost::recursive_mutex::scoped_lock ml(mLock);
 	if (!!mFinalizedLedger)
 	{
 		mFinalizedLedger->setClosed();
-		Log(lsTRACE) << "Finalizes: " << mFinalizedLedger->getHash();
+		cLog(lsTRACE) << "Finalizes: " << mFinalizedLedger->getHash();
 	}
 	mFinalizedLedger = mCurrentLedger;
 	mCurrentLedger = newLedger;
 	mEngine.setLedger(newLedger);
 }
 
-void LedgerMaster::pushLedger(Ledger::ref newLCL, Ledger::ref newOL)
+void LedgerMaster::pushLedger(Ledger::ref newLCL, Ledger::ref newOL, bool fromConsensus)
 {
 	assert(newLCL->isClosed() && newLCL->isAccepted());
 	assert(!newOL->isClosed() && !newOL->isAccepted());
@@ -43,12 +45,12 @@ void LedgerMaster::pushLedger(Ledger::ref newLCL, Ledger::ref newOL)
 	{
 		assert(newLCL->isClosed());
 		assert(newLCL->isImmutable());
-		mLedgerHistory.addAcceptedLedger(newLCL);
-		Log(lsINFO) << "StashAccepted: " << newLCL->getHash();
+		mLedgerHistory.addAcceptedLedger(newLCL, fromConsensus);
+		cLog(lsINFO) << "StashAccepted: " << newLCL->getHash();
 	}
 
+	boost::recursive_mutex::scoped_lock ml(mLock);
 	mFinalizedLedger = newLCL;
-	ScopedLock sl(mLock);
 	mCurrentLedger = newOL;
 	mEngine.setLedger(newOL);
 }
@@ -56,11 +58,15 @@ void LedgerMaster::pushLedger(Ledger::ref newLCL, Ledger::ref newOL)
 void LedgerMaster::switchLedgers(Ledger::ref lastClosed, Ledger::ref current)
 {
 	assert(lastClosed && current);
-	mFinalizedLedger = lastClosed;
-	mFinalizedLedger->setClosed();
-	mFinalizedLedger->setAccepted();
 
-	mCurrentLedger = current;
+	{
+		boost::recursive_mutex::scoped_lock ml(mLock);
+		mFinalizedLedger = lastClosed;
+		mFinalizedLedger->setClosed();
+		mFinalizedLedger->setAccepted();
+		mCurrentLedger = current;
+	}
+
 	assert(!mCurrentLedger->isClosed());
 	mEngine.setLedger(mCurrentLedger);
 }
@@ -68,8 +74,9 @@ void LedgerMaster::switchLedgers(Ledger::ref lastClosed, Ledger::ref current)
 void LedgerMaster::storeLedger(Ledger::ref ledger)
 {
 	mLedgerHistory.addLedger(ledger);
+	if (ledger->isAccepted())
+		mLedgerHistory.addAcceptedLedger(ledger, false);
 }
-
 
 
 Ledger::pointer LedgerMaster::closeLedger()
@@ -88,5 +95,84 @@ TER LedgerMaster::doTransaction(const SerializedTransaction& txn, TransactionEng
 	return result;
 }
 
+void LedgerMaster::acquireMissingLedger(const uint256& ledgerHash, uint32 ledgerSeq)
+{
+	mMissingLedger = theApp->getMasterLedgerAcquire().findCreate(ledgerHash);
+	if (mMissingLedger->isComplete())
+	{
+		mMissingLedger = LedgerAcquire::pointer();
+		return;
+	}
+	mMissingSeq = ledgerSeq;
+	if (mMissingLedger->setAccept())
+		mMissingLedger->addOnComplete(boost::bind(&LedgerMaster::missingAcquireComplete, this, _1));
+}
+
+void LedgerMaster::missingAcquireComplete(LedgerAcquire::pointer acq)
+{
+	boost::recursive_mutex::scoped_lock ml(mLock);
+
+	if (acq->isFailed() && (mMissingSeq != 0))
+	{
+		cLog(lsWARNING) << "Acquire failed for " << mMissingSeq;
+	}
+
+	mMissingLedger = LedgerAcquire::pointer();
+	mMissingSeq = 0;
+
+	if (!acq->isFailed())
+	{
+		boost::thread thread(boost::bind(&Ledger::saveAcceptedLedger, acq->getLedger(), false));
+		thread.detach();
+		setFullLedger(acq->getLedger());
+	}
+}
+
+void LedgerMaster::setFullLedger(Ledger::ref ledger)
+{
+	boost::recursive_mutex::scoped_lock ml(mLock);
+
+	mCompleteLedgers.setValue(ledger->getLedgerSeq());
+
+	if ((ledger->getLedgerSeq() != 0) && mCompleteLedgers.hasValue(ledger->getLedgerSeq() - 1))
+	{ // we think we have the previous ledger, double check
+		Ledger::pointer prevLedger = getLedgerBySeq(ledger->getLedgerSeq() - 1);
+		if (prevLedger && (prevLedger->getHash() != ledger->getParentHash()))
+		{
+			cLog(lsWARNING) << "Ledger " << ledger->getLedgerSeq() << " invalidates prior ledger";
+			mCompleteLedgers.clearValue(prevLedger->getLedgerSeq());
+		}
+	}
+
+	if (mMissingLedger && mMissingLedger->isComplete())
+		mMissingLedger = LedgerAcquire::pointer();
+
+	if (mMissingLedger || !theConfig.FULL_HISTORY)
+		return;
+
+	// see if there's a ledger gap we need to fill
+	if (!mCompleteLedgers.hasValue(ledger->getLedgerSeq() - 1))
+	{
+		cLog(lsINFO) << "We need the ledger before the ledger we just accepted";
+		acquireMissingLedger(ledger->getParentHash(), ledger->getLedgerSeq() - 1);
+	}
+	else
+	{
+		uint32 prevMissing = mCompleteLedgers.prevMissing(ledger->getLedgerSeq());
+		if (prevMissing != RangeSet::RangeSetAbsent)
+		{
+			cLog(lsINFO) << "Ledger " << prevMissing << " is missing";
+			assert(!mCompleteLedgers.hasValue(prevMissing));
+			Ledger::pointer nextLedger = getLedgerBySeq(prevMissing + 1);
+			if (nextLedger)
+				acquireMissingLedger(nextLedger->getParentHash(), nextLedger->getLedgerSeq() - 1);
+			else
+			{
+				mCompleteLedgers.clearValue(prevMissing);
+				cLog(lsWARNING) << "We have a gap we can't fix: " << prevMissing + 1;
+			}
+		}
+	}
+}
 
 // vim:ts=4

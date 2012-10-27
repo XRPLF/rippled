@@ -8,7 +8,7 @@
 
 #include "../json/value.h"
 
-#include "NewcoinAddress.h"
+#include "RippleAddress.h"
 #include "Serializer.h"
 
 class LedgerProposal
@@ -19,8 +19,8 @@ protected:
 	uint32 mCloseTime, mProposeSeq;
 
 	uint160			mPeerID;
-	NewcoinAddress	mPublicKey;
-	NewcoinAddress	mPrivateKey;	// If ours
+	RippleAddress	mPublicKey;
+	RippleAddress	mPrivateKey;	// If ours
 
 	std::string					mSignature; // set only if needed
 	boost::posix_time::ptime	mTime;
@@ -32,11 +32,11 @@ public:
 
 	// proposal from peer
 	LedgerProposal(const uint256& prevLgr, uint32 proposeSeq, const uint256& propose,
-		uint32 closeTime, const NewcoinAddress& naPeerPublic);
+		uint32 closeTime, const RippleAddress& naPeerPublic);
 
 	// our first proposal
-	LedgerProposal(const NewcoinAddress& privKey, const uint256& prevLedger, const uint256& position,
-		uint32 closeTime);
+	LedgerProposal(const RippleAddress& pubKey, const RippleAddress& privKey,
+		const uint256& prevLedger, const uint256& position,	uint32 closeTime);
 
 	// an unsigned "dummy" proposal for nodes not validating
 	LedgerProposal(const uint256& prevLedger, const uint256& position, uint32 closeTime);
@@ -51,7 +51,7 @@ public:
 	const uint256& getPrevLedger() const	{ return mPreviousLedger; }
 	uint32 getProposeSeq() const			{ return mProposeSeq; }
 	uint32 getCloseTime() const				{ return mCloseTime; }
-	const NewcoinAddress& peekPublic() const		{ return mPublicKey; }
+	const RippleAddress& peekPublic() const		{ return mPublicKey; }
 	std::vector<unsigned char> getPubKey() const	{ return mPublicKey.getNodePublic(); }
 	std::vector<unsigned char> sign();
 

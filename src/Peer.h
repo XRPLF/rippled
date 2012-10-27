@@ -39,7 +39,7 @@ private:
 	bool			mClientConnect;		// In process of connecting as client.
 	bool			mHelloed;			// True, if hello accepted.
 	bool			mDetaching;			// True, if detaching.
-	NewcoinAddress	mNodePublic;		// Node public key of peer.
+	RippleAddress	mNodePublic;		// Node public key of peer.
 	ipPort			mIpPort;
 	ipPort			mIpPortConnect;
 	uint256			mCookieHash;
@@ -158,7 +158,7 @@ public:
 	uint256 getClosedLedgerHash() const		{ return mClosedLedgerHash; }
 	bool hasLedger(const uint256& hash) const;
 	bool hasTxSet(const uint256& hash) const;
-	NewcoinAddress getNodePublic() const	{ return mNodePublic; }
+	RippleAddress getNodePublic() const	{ return mNodePublic; }
 	void cycleStatus() { mPreviousLedgerHash = mClosedLedgerHash; mClosedLedgerHash.zero(); }
 };
 

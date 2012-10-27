@@ -21,7 +21,7 @@
 
 SETUP_LOG();
 
-Ledger::Ledger(const NewcoinAddress& masterID, uint64 startAmount) : mTotCoins(startAmount), mLedgerSeq(1),
+Ledger::Ledger(const RippleAddress& masterID, uint64 startAmount) : mTotCoins(startAmount), mLedgerSeq(1),
 	mCloseTime(0), mParentCloseTime(0), mCloseResolution(LEDGER_TIME_ACCURACY), mCloseFlags(0),
 	mClosed(false), mValidHash(false), mAccepted(false), mImmutable(false),
 	mTransactionMap(boost::make_shared<SHAMap>(smtTRANSACTION)),
@@ -173,7 +173,7 @@ void Ledger::setAccepted()
 	mImmutable = true;
 }
 
-AccountState::pointer Ledger::getAccountState(const NewcoinAddress& accountID)
+AccountState::pointer Ledger::getAccountState(const RippleAddress& accountID)
 {
 #ifdef DEBUG
 //	std::cerr << "Ledger:getAccountState(" << accountID.humanAccountID() << ")" << std::endl;
@@ -337,8 +337,9 @@ uint256 Ledger::getHash()
 	return mHash;
 }
 
-void Ledger::saveAcceptedLedger()
+void Ledger::saveAcceptedLedger(bool fromConsensus)
 { // can be called in a different thread
+	cLog(lsTRACE) << "saveAcceptedLedger " << (fromConsensus ? "fromConsensus " : "fromAcquire ") << getLedgerSeq();
 	static boost::format ledgerExists("SELECT LedgerSeq FROM Ledgers where LedgerSeq = %d;");
 	static boost::format deleteLedger("DELETE FROM Ledgers WHERE LedgerSeq = %d;");
 	static boost::format AcctTransExists("SELECT LedgerSeq FROM AccountTransactions WHERE TransId = '%s';");
@@ -378,11 +379,11 @@ void Ledger::saveAcceptedLedger()
 			if (!SQL_EXISTS(db, boost::str(AcctTransExists % item->getTag().GetHex())))
 			{
 				// Transaction not in AccountTransactions
-				std::vector<NewcoinAddress> accts = txn->getAffectedAccounts();
+				std::vector<RippleAddress> accts = txn->getAffectedAccounts();
 
 				std::string sql = "INSERT INTO AccountTransactions (TransID, Account, LedgerSeq) VALUES ";
 				bool first = true;
-				for (std::vector<NewcoinAddress>::iterator it = accts.begin(), end = accts.end(); it != end; ++it)
+				for (std::vector<RippleAddress>::iterator it = accts.begin(), end = accts.end(); it != end; ++it)
 				{
 					if (!first)
 						sql += ", ('";
@@ -428,7 +429,13 @@ void Ledger::saveAcceptedLedger()
 			mAccountHash.GetHex() % mTransHash.GetHex()));
 	}
 
+	if (!fromConsensus)
+		return;
+
+	theApp->getMasterLedger().setFullLedger(shared_from_this());
+
 	theApp->getOPs().pubLedger(shared_from_this());
+
 }
 
 Ledger::pointer Ledger::getSQL(const std::string& sql)
@@ -464,6 +471,7 @@ Ledger::pointer Ledger::getSQL(const std::string& sql)
 		db->endIterRows();
 	}
 
+	Log(lsTRACE) << "Constructing ledger " << ledgerSeq << " from SQL";
 	Ledger::pointer ret = Ledger::pointer(new Ledger(prevHash, transHash, accountHash, totCoins,
 		closingTime, prevClosingTime, closeFlags, closeResolution, ledgerSeq));
 	if (ret->getHash() != ledgerHash)
@@ -496,6 +504,19 @@ Ledger::pointer Ledger::loadByHash(const uint256& ledgerHash)
 	sql.append(ledgerHash.GetHex());
 	sql.append("';");
 	return getSQL(sql);
+}
+
+Ledger::pointer Ledger::getLastFullLedger()
+{
+	try
+	{
+		return getSQL("SELECT * from Ledgers order by LedgerSeq desc limit 1;");
+	}
+	catch (SHAMapMissingNode& sn)
+	{
+		cLog(lsWARNING) << "Database contains ledger with missing nodes: " << sn;
+		return Ledger::pointer();
+	}
 }
 
 void Ledger::addJson(Json::Value& ret, int options)
@@ -753,7 +774,7 @@ SLE::pointer Ledger::getAccountRoot(const uint160& accountID)
 	return getASNode(qry, getAccountRootIndex(accountID), ltACCOUNT_ROOT);
 }
 
-SLE::pointer Ledger::getAccountRoot(const NewcoinAddress& naAccountID)
+SLE::pointer Ledger::getAccountRoot(const RippleAddress& naAccountID)
 {
 	LedgerStateParms	qry			= lepNONE;
 
@@ -880,9 +901,9 @@ uint256 Ledger::getBookBase(const uint160& uTakerPaysCurrency, const uint160& uT
 
 	Log(lsINFO) << str(boost::format("getBookBase(%s,%s,%s,%s) = %s")
 		% STAmount::createHumanCurrency(uTakerPaysCurrency)
-		% NewcoinAddress::createHumanAccountID(uTakerPaysIssuerID)
+		% RippleAddress::createHumanAccountID(uTakerPaysIssuerID)
 		% STAmount::createHumanCurrency(uTakerGetsCurrency)
-		% NewcoinAddress::createHumanAccountID(uTakerGetsIssuerID)
+		% RippleAddress::createHumanAccountID(uTakerGetsIssuerID)
 		% uBaseIndex.ToString());
 
 	return uBaseIndex;
@@ -950,7 +971,7 @@ uint256 Ledger::getOwnerDirIndex(const uint160& uAccountID)
 	return s.getSHA512Half();
 }
 
-uint256 Ledger::getRippleStateIndex(const NewcoinAddress& naA, const NewcoinAddress& naB, const uint160& uCurrency)
+uint256 Ledger::getRippleStateIndex(const RippleAddress& naA, const RippleAddress& naB, const uint160& uCurrency)
 {
 	uint160		uAID	= naA.getAccountID();
 	uint160		uBID	= naB.getAccountID();
@@ -967,15 +988,20 @@ uint256 Ledger::getRippleStateIndex(const NewcoinAddress& naA, const NewcoinAddr
 
 bool Ledger::walkLedger()
 {
-	std::vector<SHAMapMissingNode> missingNodes;
-	mAccountStateMap->walkMap(missingNodes, 32);
-	if (sLog(lsINFO) && !missingNodes.empty())
+	std::vector<SHAMapMissingNode> missingNodes1, missingNodes2;
+	mAccountStateMap->walkMap(missingNodes1, 32);
+	if (sLog(lsINFO) && !missingNodes1.empty())
 	{
-		Log(lsINFO) << missingNodes.size() << " missing account node(s)";
-		Log(lsINFO) << "First: " << missingNodes[0];
+		Log(lsINFO) << missingNodes1.size() << " missing account node(s)";
+		Log(lsINFO) << "First: " << missingNodes1[0];
 	}
-	mTransactionMap->walkMap(missingNodes, 32);
-	return missingNodes.empty();
+	mTransactionMap->walkMap(missingNodes2, 32);
+	if (sLog(lsINFO) && !missingNodes2.empty())
+	{
+		Log(lsINFO) << missingNodes2.size() << " missing transaction node(s)";
+		Log(lsINFO) << "First: " << missingNodes2[0];
+	}
+	return missingNodes1.empty() && missingNodes2.empty();
 }
 
 bool Ledger::assertSane()

@@ -11,7 +11,7 @@
 #include "Serializer.h"
 #include "Log.h"
 
-AccountState::AccountState(const NewcoinAddress& naAccountID) : mAccountID(naAccountID), mValid(false)
+AccountState::AccountState(const RippleAddress& naAccountID) : mAccountID(naAccountID), mValid(false)
 {
 	if (!naAccountID.isValid()) return;
 
@@ -22,7 +22,7 @@ AccountState::AccountState(const NewcoinAddress& naAccountID) : mAccountID(naAcc
 	mValid = true;
 }
 
-AccountState::AccountState(SLE::ref ledgerEntry, const NewcoinAddress& naAccountID) :
+AccountState::AccountState(SLE::ref ledgerEntry, const RippleAddress& naAccountID) :
 	mAccountID(naAccountID), mLedgerEntry(ledgerEntry), mValid(false)
 {
 	if (!mLedgerEntry)

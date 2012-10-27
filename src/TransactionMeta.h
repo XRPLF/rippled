@@ -39,7 +39,9 @@ public:
 	uint32 getLgrSeq()			{ return mLedger; }
 
 	bool isNodeAffected(const uint256&) const;
-	STObject& getAffectedNode(const uint256&, SField::ref type, bool overrideType);
+	void setAffectedNode(const uint256&, SField::ref type);
+	STObject& getAffectedNode(const uint256&, SField::ref type);
+	STObject& getAffectedNode(const uint256&);
 	const STObject& peekAffectedNode(const uint256&) const;
 
 	Json::Value getJson(int p) const { return getAsObject().getJson(p); }

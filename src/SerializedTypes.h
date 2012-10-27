@@ -36,13 +36,11 @@ protected:
 	SField::ptr	fName;
 
 	virtual SerializedType* duplicate() const { return new SerializedType(*fName); }
-	SerializedType(SField::ptr n) : fName(n) { assert(fName); }
 
 public:
 
 	SerializedType() : fName(&sfGeneric) { ; }
 	SerializedType(SField::ref n) : fName(&n) { assert(fName); }
-	SerializedType(const SerializedType& n) : fName(n.fName) { ; }
 	virtual ~SerializedType() { ; }
 
 	static std::auto_ptr<SerializedType> deserialize(SField::ref name)
@@ -74,6 +72,8 @@ public:
 	{ return (getSType() == t.getSType()) && isEquivalent(t); }
 	bool operator!=(const SerializedType& t) const
 	{ return (getSType() != t.getSType()) || !isEquivalent(t); }
+
+	virtual bool isDefault() const	{ return true; }
 };
 
 inline SerializedType* new_clone(const SerializedType& s) { return s.clone().release(); }
@@ -105,6 +105,7 @@ public:
 
 	operator unsigned char() const { return value; }
 	virtual bool isEquivalent(const SerializedType& t) const;
+	virtual bool isDefault() const	{ return value == 0; }
 };
 
 class STUInt16 : public SerializedType
@@ -132,6 +133,7 @@ public:
 
 	operator uint16() const { return value; }
 	virtual bool isEquivalent(const SerializedType& t) const;
+	virtual bool isDefault() const	{ return value == 0; }
 };
 
 class STUInt32 : public SerializedType
@@ -159,6 +161,7 @@ public:
 
 	operator uint32() const { return value; }
 	virtual bool isEquivalent(const SerializedType& t) const;
+	virtual bool isDefault() const	{ return value == 0; }
 };
 
 class STUInt64 : public SerializedType
@@ -186,6 +189,7 @@ public:
 
 	operator uint64() const { return value; }
 	virtual bool isEquivalent(const SerializedType& t) const;
+	virtual bool isDefault() const	{ return value == 0; }
 };
 
 class STAmount : public SerializedType
@@ -297,6 +301,7 @@ public:
 	void setValue(const STAmount &);
 
 	virtual bool isEquivalent(const SerializedType& t) const;
+	virtual bool isDefault() const	{ return mValue == 0 && mIssuer.isZero() && mCurrency.isZero(); }
 
 	bool operator==(const STAmount&) const;
 	bool operator!=(const STAmount&) const;
@@ -400,6 +405,7 @@ public:
 
 	operator uint128() const { return value; }
 	virtual bool isEquivalent(const SerializedType& t) const;
+	virtual bool isDefault() const	{ return value.isZero(); }
 };
 
 class STHash160 : public SerializedType
@@ -430,6 +436,7 @@ public:
 
 	operator uint160() const { return value; }
 	virtual bool isEquivalent(const SerializedType& t) const;
+	virtual bool isDefault() const	{ return value.isZero(); }
 };
 
 class STHash256 : public SerializedType
@@ -460,6 +467,7 @@ public:
 
 	operator uint256() const { return value; }
 	virtual bool isEquivalent(const SerializedType& t) const;
+	virtual bool isDefault() const	{ return value.isZero(); }
 };
 
 class STVariableLength : public SerializedType
@@ -491,6 +499,7 @@ public:
 
 	operator std::vector<unsigned char>() const { return value; }
 	virtual bool isEquivalent(const SerializedType& t) const;
+	virtual bool isDefault() const	{ return value.empty(); }
 };
 
 class STAccount : public STVariableLength
@@ -512,8 +521,8 @@ public:
 	SerializedTypeID getSType() const { return STI_ACCOUNT; }
 	std::string getText() const;
 
-	NewcoinAddress getValueNCA() const;
-	void setValueNCA(const NewcoinAddress& nca);
+	RippleAddress getValueNCA() const;
+	void setValueNCA(const RippleAddress& nca);
 
 	void setValueH160(const uint160& v);
 	bool getValueH160(uint160&) const;
@@ -670,6 +679,7 @@ public:
 	void addPath(const STPath& e)						{ value.push_back(e); }
 
 	virtual bool isEquivalent(const SerializedType& t) const;
+	virtual bool isDefault() const	{ return value.empty(); }
 
 	void printDebug();
 
@@ -737,6 +747,7 @@ public:
 	const std::vector<uint256>& peekValue() const { return mValue; }
 	std::vector<uint256>& peekValue() { return mValue; }
 	virtual bool isEquivalent(const SerializedType& t) const;
+	virtual bool isDefault() const	{ return mValue.empty(); }
 
 	std::vector<uint256> getValue() const			{ return mValue; }
 	bool isEmpty() const							{ return mValue.empty(); }

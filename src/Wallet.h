@@ -31,8 +31,8 @@ private:
 protected:
 	boost::recursive_mutex mLock;
 
-	NewcoinAddress	mNodePublicKey;
-	NewcoinAddress	mNodePrivateKey;
+	RippleAddress	mNodePublicKey;
+	RippleAddress	mNodePrivateKey;
 	DH*				mDh512;
 	DH*				mDh1024;
 
@@ -45,8 +45,8 @@ public:
 	// - Maintain peer connectivity through validation and peer management.
 	void start();
 
-	const NewcoinAddress&	getNodePublic() const { return mNodePublicKey; }
-	const NewcoinAddress&	getNodePrivate() const { return mNodePrivateKey; }
+	const RippleAddress&	getNodePublic() const { return mNodePublicKey; }
+	const RippleAddress&	getNodePrivate() const { return mNodePrivateKey; }
 	DH*		    getDh512() { return DHparams_dup(mDh512); }
 	DH*		    getDh1024() { return DHparams_dup(mDh1024); }
 

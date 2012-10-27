@@ -9,7 +9,10 @@
 
 // Functions to add CKey support for deterministic EC keys
 
+#include <boost/test/unit_test.hpp>
+
 #include "Serializer.h"
+#include "Log.h"
 
 // <-- seed
 uint128 CKey::PassPhraseToKey(const std::string& passPhrase)
@@ -155,7 +158,7 @@ EC_KEY* CKey::GenerateRootPubKey(BIGNUM* pubGenerator)
 }
 
 // --> public generator
-static BIGNUM* makeHash(const NewcoinAddress& pubGen, int seq, BIGNUM* order)
+static BIGNUM* makeHash(const RippleAddress& pubGen, int seq, BIGNUM* order)
 {
 	int subSeq=0;
 	BIGNUM* ret=NULL;
@@ -175,7 +178,7 @@ static BIGNUM* makeHash(const NewcoinAddress& pubGen, int seq, BIGNUM* order)
 }
 
 // --> public generator
-EC_KEY* CKey::GeneratePublicDeterministicKey(const NewcoinAddress& pubGen, int seq)
+EC_KEY* CKey::GeneratePublicDeterministicKey(const RippleAddress& pubGen, int seq)
 { // publicKey(n) = rootPublicKey EC_POINT_+ Hash(pubHash|seq)*point
 	EC_KEY*			rootKey		= CKey::GenerateRootPubKey(pubGen.getGeneratorBN());
 	const EC_POINT*	rootPubKey	= EC_KEY_get0_public_key(rootKey);
@@ -228,14 +231,14 @@ EC_KEY* CKey::GeneratePublicDeterministicKey(const NewcoinAddress& pubGen, int s
 	return success ? pkey : NULL;
 }
 
-EC_KEY* CKey::GeneratePrivateDeterministicKey(const NewcoinAddress& pubGen, const uint256& u, int seq)
+EC_KEY* CKey::GeneratePrivateDeterministicKey(const RippleAddress& pubGen, const uint256& u, int seq)
 {
 	CBigNum bn(u);
 	return GeneratePrivateDeterministicKey(pubGen, static_cast<BIGNUM*>(&bn), seq);
 }
 
 // --> root private key
-EC_KEY* CKey::GeneratePrivateDeterministicKey(const NewcoinAddress& pubGen, const BIGNUM* rootPrivKey, int seq)
+EC_KEY* CKey::GeneratePrivateDeterministicKey(const RippleAddress& pubGen, const BIGNUM* rootPrivKey, int seq)
 { // privateKey(n) = (rootPrivateKey + Hash(pubHash|seq)) % order
 	BN_CTX* ctx=BN_CTX_new();
 	if(ctx==NULL) return NULL;
@@ -303,5 +306,35 @@ EC_KEY* CKey::GeneratePrivateDeterministicKey(const NewcoinAddress& pubGen, cons
 
 	return pkey;
 }
+
+BOOST_AUTO_TEST_SUITE(DeterministicKeys_test)
+
+BOOST_AUTO_TEST_CASE(DeterminsticKeys_test1)
+{
+	Log(lsDEBUG) << "Beginning deterministic key test";
+
+	uint128 seed1, seed2;
+	seed1.SetHex("71ED064155FFADFA38782C5E0158CB26");
+	seed2.SetHex("CF0C3BE4485961858C4198515AE5B965");
+	CKey root1(seed1), root2(seed2);
+
+	uint256 priv1, priv2;
+	root1.GetPrivateKeyU(priv1);
+	root2.GetPrivateKeyU(priv2);
+
+	if (priv1.GetHex() != "7CFBA64F771E93E817E15039215430B53F7401C34931D111EAB3510B22DBB0D8")
+		BOOST_FAIL("Incorrect private key for generator");
+	if (priv2.GetHex() != "98BC2EACB26EB021D1A6293C044D88BA2F0B6729A2772DEEBF2E21A263C1740B")
+		BOOST_FAIL("Incorrect private key for generator");
+
+	RippleAddress nSeed;
+	nSeed.setSeed(seed1);
+	if (nSeed.humanSeed() != "shHM53KPZ87Gwdqarm1bAmPeXg8Tn")
+		BOOST_FAIL("Incorrect human seed");
+	if (nSeed.humanSeed1751() != "MAD BODY ACE MINT OKAY HUB WHAT DATA SACK FLAT DANA MATH")
+		BOOST_FAIL("Incorrect 1751 seed");
+}
+
+BOOST_AUTO_TEST_SUITE_END();
 
 // vim:ts=4

@@ -185,7 +185,7 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapTreeNode& node, uint32 seq) : SHAMapN
 		memcpy(mHashes, node.mHashes, sizeof(mHashes));
 }
 
-SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& node, const SHAMapItem::pointer& item, TNType type, uint32 seq) :
+SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& node, SHAMapItem::ref item, TNType type, uint32 seq) :
 	SHAMapNode(node), mItem(item), mSeq(seq), mType(type), mFullBelow(true)
 {
 	assert(item->peekData().size() >= 12);
@@ -259,7 +259,7 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned 
 		}
 	}
 
-	if (format == snfPREFIX)
+	else if (format == snfPREFIX)
 	{
 		if (rawNode.size() < 4)
 		{
@@ -316,6 +316,12 @@ SHAMapTreeNode::SHAMapTreeNode(const SHAMapNode& id, const std::vector<unsigned 
 		}
 	}
 
+	else
+	{
+		assert(false);
+		throw std::runtime_error("Unknown format");
+	}
+
 	updateHash();
 }
 
@@ -333,7 +339,16 @@ bool SHAMapTreeNode::updateHash()
 				break;
 			}
 		if(!empty)
+		{
 			nh = Serializer::getPrefixHash(sHP_InnerNode, reinterpret_cast<unsigned char *>(mHashes), sizeof(mHashes));
+#ifdef DEBUG
+			Serializer s;
+			s.add32(sHP_InnerNode);
+			for(int i = 0; i < 16; ++i)
+				s.add256(mHashes[i]);
+			assert(nh == s.getSHA512Half());
+#endif
+		}
 	}
 	else if (mType == tnTRANSACTION_NM)
 	{
@@ -366,11 +381,15 @@ bool SHAMapTreeNode::updateHash()
 
 void SHAMapTreeNode::addRaw(Serializer& s, SHANodeFormat format)
 {
-	assert((format == snfPREFIX) || (format == snfWIRE));
+	assert((format == snfPREFIX) || (format == snfWIRE) || (format == snfHASH));
 	if (mType == tnERROR)
 		throw std::runtime_error("invalid I node type");
 
-	if (mType == tnINNER)
+	if (format == snfHASH)
+	{
+		s.add256(getNodeHash());
+	}
+	else if (mType == tnINNER)
 	{
 		assert(!isEmpty());
 		if (format == snfPREFIX)
@@ -446,7 +465,7 @@ void SHAMapTreeNode::addRaw(Serializer& s, SHANodeFormat format)
 		assert(false);
 }
 
-bool SHAMapTreeNode::setItem(const SHAMapItem::pointer& i, TNType type)
+bool SHAMapTreeNode::setItem(SHAMapItem::ref i, TNType type)
 {
 	uint256 hash = getNodeHash();
 	mType = type;

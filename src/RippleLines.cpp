@@ -7,16 +7,17 @@
 
 SETUP_LOG();
 
-RippleLines::RippleLines(const uint160& accountID, Ledger::pointer ledger)
+RippleLines::RippleLines(const uint160& accountID, Ledger::ref ledger)
 {
-	fillLines(accountID,ledger);
+	fillLines(accountID, ledger);
 }
 
-void RippleLines::printRippleLines() {
-  for (int i =0; i < mLines.size(); i++) {
-    std::cout << i << ": " << mLines[i]->getAccountID().humanAccountID()  << std::endl;
-  }
-  std::cout << std::endl;
+void RippleLines::printRippleLines() 
+{
+	for (unsigned int i =0; i < mLines.size(); i++) {
+		std::cout << i << ": " << mLines[i]->getAccountID().humanAccountID()  << std::endl;
+	}
+	std::cout << std::endl;
 }
 
 RippleLines::RippleLines(const uint160& accountID )
@@ -24,7 +25,7 @@ RippleLines::RippleLines(const uint160& accountID )
 	fillLines(accountID,theApp->getMasterLedger().getCurrentLedger());
 }
 
-void RippleLines::fillLines(const uint160& accountID, Ledger::pointer ledger)
+void RippleLines::fillLines(const uint160& accountID, Ledger::ref ledger)
 {
 	uint256 rootIndex		= Ledger::getOwnerDirIndex(accountID);
 	uint256 currentIndex	= rootIndex;

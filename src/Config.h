@@ -2,7 +2,7 @@
 #define __CONFIG__
 
 #include "types.h"
-#include "NewcoinAddress.h"
+#include "RippleAddress.h"
 #include "ParseSection.h"
 #include "SerializedTypes.h"
 
@@ -93,7 +93,7 @@ public:
 	bool						RPC_ALLOW_REMOTE;
 
 	// Validation
-	NewcoinAddress				VALIDATION_SEED;
+	RippleAddress				VALIDATION_SEED, VALIDATION_PUB, VALIDATION_PRIV;
 
 	// Fees
 	uint64						FEE_DEFAULT;			// Default fee.
@@ -101,6 +101,9 @@ public:
 	uint64						FEE_NICKNAME_CREATE;	// Fee to create a nickname.
 	uint64						FEE_OFFER;				// Rate per day.
 	int							FEE_CONTRACT_OPERATION; // fee for each contract operation
+
+	// Node storage configuration
+	bool						FULL_HISTORY;
 
 	// Client behavior
 	int							ACCOUNT_PROBE_MAX;		// How far to scan for accounts.

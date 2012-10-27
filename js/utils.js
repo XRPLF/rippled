@@ -44,6 +44,16 @@ var trace = function(comment, func) {
     };
 };
 
+var arraySet = function (count, value) {
+  var a = new Array(count);
+  var i;
+
+  for (i = 0; i != count; i += 1)
+    a[i] = value;
+
+  return a;
+};
+
 var hexToString = function (h) {
   var	a = [];
   var	i = 0;
@@ -68,9 +78,21 @@ var stringToHex = function (s) {
     }).join("");
 };
 
+var stringToArray = function (s) {
+  var a = new Array(s.length);
+  var i;
+
+  for (i = 0; i != a.length; i += 1)
+    a[i] = s.charCodeAt(i);
+
+  return a;
+};
+
 exports.mapOr	    = mapOr;
 exports.trace	    = trace;
+exports.arraySet    = arraySet;
 exports.hexToString = hexToString;
+exports.stringToArray = stringToArray;
 exports.stringToHex = stringToHex;
 
 // vim:sw=2:sts=2:ts=8

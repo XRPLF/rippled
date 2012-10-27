@@ -70,7 +70,11 @@ void Application::run()
 {
 	assert(mTxnDB == NULL);
 	if (!theConfig.DEBUG_LOGFILE.empty())
+	{ // Let DEBUG messages go to the file but only WARNING or higher to regular output (unless verbose)
 		Log::setLogFile(theConfig.DEBUG_LOGFILE);
+		if (Log::getMinSeverity() > lsDEBUG)
+			LogPartition::setSeverity(lsDEBUG);
+	}
 
 	boost::thread auxThread(boost::bind(&boost::asio::io_service::run, &mAuxService));
 	auxThread.detach();
@@ -108,6 +112,13 @@ void Application::run()
 	}
 	else
 		startNewLedger();
+
+	if (theConfig.FULL_HISTORY && (theConfig.START_UP != Config::LOAD))
+	{
+		Ledger::pointer ledger = Ledger::getLastFullLedger();
+		if (ledger)
+			mMasterLedger.setLedgerRangePresent(0, ledger->getLedgerSeq());
+	}
 
 	//
 	// Begin validation and ip maintenance.
@@ -182,9 +193,9 @@ Application::~Application()
 void Application::startNewLedger()
 {
 	// New stuff.
-	NewcoinAddress	rootSeedMaster		= NewcoinAddress::createSeedGeneric("masterpassphrase");
-	NewcoinAddress	rootGeneratorMaster	= NewcoinAddress::createGeneratorPublic(rootSeedMaster);
-	NewcoinAddress	rootAddress			= NewcoinAddress::createAccountPublic(rootGeneratorMaster, 0);
+	RippleAddress	rootSeedMaster		= RippleAddress::createSeedGeneric("masterpassphrase");
+	RippleAddress	rootGeneratorMaster	= RippleAddress::createGeneratorPublic(rootSeedMaster);
+	RippleAddress	rootAddress			= RippleAddress::createAccountPublic(rootGeneratorMaster, 0);
 
 	// Print enough information to be able to claim root account.
 	cLog(lsINFO) << "Root master seed: " << rootSeedMaster.humanSeed();
@@ -201,7 +212,7 @@ void Application::startNewLedger()
 		Ledger::pointer secondLedger = boost::make_shared<Ledger>(true, boost::ref(*firstLedger));
 		secondLedger->setClosed();
 		secondLedger->setAccepted();
-		mMasterLedger.pushLedger(secondLedger, boost::make_shared<Ledger>(true, boost::ref(*secondLedger)));
+		mMasterLedger.pushLedger(secondLedger, boost::make_shared<Ledger>(true, boost::ref(*secondLedger)), false);
 		assert(!!secondLedger->getAccountState(rootAddress));
 		mNetOps.setLastCloseTime(secondLedger->getCloseTimeNC());
 	}
@@ -211,7 +222,7 @@ void Application::loadOldLedger()
 {
 	try
 	{
-		Ledger::pointer lastLedger = Ledger::getSQL("SELECT * from Ledgers order by LedgerSeq desc limit 1;");
+		Ledger::pointer lastLedger = Ledger::getLastFullLedger();
 
 		if (!lastLedger)
 		{
@@ -240,6 +251,7 @@ void Application::loadOldLedger()
 			cLog(lsFATAL) << "Ledger is not sane.";
 			exit(-1);
 		}
+		mMasterLedger.setLedgerRangePresent(0, lastLedger->getLedgerSeq());
 
 		Ledger::pointer openLedger = boost::make_shared<Ledger>(false, boost::ref(*lastLedger));
 		mMasterLedger.switchLedgers(lastLedger, openLedger);

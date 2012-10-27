@@ -2,7 +2,7 @@
 #define __VALIDATION__
 
 #include "SerializedObject.h"
-#include "NewcoinAddress.h"
+#include "RippleAddress.h"
 
 class SerializedValidation : public STObject
 {
@@ -21,12 +21,13 @@ public:
 
 	// These throw if the object is not valid
 	SerializedValidation(SerializerIterator& sit, bool checkSignature = true);
-	SerializedValidation(const uint256& ledgerHash, uint32 signTime, const NewcoinAddress& naSeed, bool isFull);
+	SerializedValidation(const uint256& ledgerHash, uint32 signTime, const RippleAddress& naPub,
+		const RippleAddress& naPriv, bool isFull, uint256& signingHash);
 
 	uint256			getLedgerHash()		const;
 	uint32			getSignTime()		const;
 	uint32			getFlags()			const;
-	NewcoinAddress  getSignerPublic()	const;
+	RippleAddress  getSignerPublic()	const;
 	uint160			getNodeID()			const	{ return mNodeID; }
 	bool			isValid()			const;
 	bool			isFull()			const;

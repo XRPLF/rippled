@@ -65,7 +65,8 @@ public:
 	static bool haveConsensus(
 		int previousProposers,		int currentProposers,
 		int currentAgree,			int currentClosed,
-		int previousAgreeTime,		int currentAgreeTime);
+		int previousAgreeTime,		int currentAgreeTime,
+		bool forReal);
 
 	static int getNextLedgerTimeResolution(int previousResolution, bool previousAgree, int ledgerSeq);
 };

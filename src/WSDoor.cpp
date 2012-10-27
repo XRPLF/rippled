@@ -56,8 +56,8 @@ protected:
 	typedef void (WSConnection::*doFuncPtr)(Json::Value& jvResult, const Json::Value &jvRequest);
 
     boost::mutex									mLock;
-	boost::unordered_set<NewcoinAddress>			mSubAccountInfo;
-	boost::unordered_set<NewcoinAddress>			mSubAccountTransaction;
+	boost::unordered_set<RippleAddress>			mSubAccountInfo;
+	boost::unordered_set<RippleAddress>			mSubAccountTransaction;
 
 	WSServerHandler<websocketpp::WSDOOR_SERVER>*	mHandler;
 	connection_ptr									mConnection;
@@ -78,17 +78,23 @@ public:
 
 	// Utilities
 	Json::Value invokeCommand(const Json::Value& jvRequest);
-	boost::unordered_set<NewcoinAddress> parseAccountIds(const Json::Value& jvArray);
+	boost::unordered_set<RippleAddress> parseAccountIds(const Json::Value& jvArray);
 
-	// Request-Response Commands
+	// Commands
+	void doSubmit(Json::Value& jvResult, const Json::Value& jvRequest);
+	void doRPC(Json::Value& jvResult, const Json::Value& jvRequest);
+	void doSubscribe(Json::Value& jvResult, const Json::Value& jvRequest);
+	void doUnsubscribe(Json::Value& jvResult, const Json::Value& jvRequest);
+
+
+
+	// deprecated
 	void doLedgerAccept(Json::Value& jvResult, const Json::Value& jvRequest);
 	void doLedgerClosed(Json::Value& jvResult, const Json::Value& jvRequest);
 	void doLedgerCurrent(Json::Value& jvResult, const Json::Value& jvRequest);
 	void doLedgerEntry(Json::Value& jvResult, const Json::Value& jvRequest);
-	void doSubmit(Json::Value& jvResult, const Json::Value& jvRequest);
 	void doTransactionEntry(Json::Value& jvResult, const Json::Value& jvRequest);
 
-	// Streaming Commands
 	void doAccountInfoSubscribe(Json::Value& jvResult, const Json::Value& jvRequest);
 	void doAccountInfoUnsubscribe(Json::Value& jvResult, const Json::Value& jvRequest);
 	void doAccountTransactionSubscribe(Json::Value& jvResult, const Json::Value& jvRequest);
@@ -313,8 +319,10 @@ Json::Value WSConnection::invokeCommand(const Json::Value& jvRequest)
 		{ "ledger_entry",						&WSConnection::doLedgerEntry					},
 		{ "submit",								&WSConnection::doSubmit							},
 		{ "transaction_entry",					&WSConnection::doTransactionEntry				},
+		{ "subscribe",							&WSConnection::doSubscribe						},
+		{ "unsubscribe",						&WSConnection::doUnsubscribe					},
 
-		// Streaming commands:
+		// deprecated
 		{ "account_info_subscribe",				&WSConnection::doAccountInfoSubscribe			},
 		{ "account_info_unsubscribe",			&WSConnection::doAccountInfoUnsubscribe			},
 		{ "account_transaction_subscribe",		&WSConnection::doAccountTransactionSubscribe	},
@@ -377,13 +385,13 @@ Json::Value WSConnection::invokeCommand(const Json::Value& jvRequest)
 	return jvResult;
 }
 
-boost::unordered_set<NewcoinAddress> WSConnection::parseAccountIds(const Json::Value& jvArray)
+boost::unordered_set<RippleAddress> WSConnection::parseAccountIds(const Json::Value& jvArray)
 {
-	boost::unordered_set<NewcoinAddress>	usnaResult;
+	boost::unordered_set<RippleAddress>	usnaResult;
 
 	for (Json::Value::const_iterator it = jvArray.begin(); it != jvArray.end(); it++)
 	{
-		NewcoinAddress	naString;
+		RippleAddress	naString;
 
 		if (!(*it).isString() || !naString.setAccountID((*it).asString()))
 		{
@@ -403,6 +411,92 @@ boost::unordered_set<NewcoinAddress> WSConnection::parseAccountIds(const Json::V
 // Commands
 //
 
+/*
+server : Sends a message anytime the server status changes such as network connectivity.
+ledger : Sends a message at every ledger close.
+transactions : Sends a message for every transaction that makes it into a ledger.
+rt_transactions
+*/
+// TODO
+void WSConnection::doSubscribe(Json::Value& jvResult, const Json::Value& jvRequest)
+{
+	if (jvRequest.isMember("streams"))
+	{
+		for (Json::Value::const_iterator it = jvRequest["streams"].begin(); it != jvRequest["streams"].end(); it++)
+		{
+			if ((*it).isString() )
+			{
+				std::string streamName=(*it).asString();
+
+				if(streamName=="server")
+				{
+					mNetwork.subLedgerAccounts(this);
+				}else if(streamName=="ledger")
+				{
+					mNetwork.subLedgerAccounts(this);
+				}else if(streamName=="transactions")
+				{
+					mNetwork.subTransaction(this);
+				}else if(streamName=="rt_transactions")
+				{
+					mNetwork.subTransaction(this); // TODO
+				}else
+				{
+					jvResult["error"]	= str(boost::format("Unknown stream: %s") % streamName);
+				}
+			}else
+			{
+				jvResult["error"]	= "malformedSteam";
+			}
+		}
+	}
+
+	if (jvRequest.isMember("rt_accounts"))
+	{
+		boost::unordered_set<RippleAddress> usnaAccoundIds	= parseAccountIds(jvRequest["rt_accounts"]);
+
+		if (usnaAccoundIds.empty())
+		{
+			jvResult["error"]	= "malformedAccount";
+		}else
+		{
+			boost::mutex::scoped_lock	sl(mLock);
+
+			BOOST_FOREACH(const RippleAddress& naAccountID, usnaAccoundIds)
+			{
+				mSubAccountInfo.insert(naAccountID);
+			}
+
+			mNetwork.subAccountInfo(this, usnaAccoundIds);
+		}
+	}
+
+	if (jvRequest.isMember("accounts"))
+	{
+		boost::unordered_set<RippleAddress> usnaAccoundIds	= parseAccountIds(jvRequest["accounts"]);
+
+		if (usnaAccoundIds.empty())
+		{
+			jvResult["error"]	= "malformedAccount";
+		}else
+		{
+			boost::mutex::scoped_lock	sl(mLock);
+
+			BOOST_FOREACH(const RippleAddress& naAccountID, usnaAccoundIds)
+			{
+				mSubAccountInfo.insert(naAccountID);
+			}
+
+			mNetwork.subAccountInfo(this, usnaAccoundIds);
+		}
+	}
+}
+
+void WSConnection::doUnsubscribe(Json::Value& jvResult, const Json::Value& jvRequest)
+{
+
+}
+
 void WSConnection::doAccountInfoSubscribe(Json::Value& jvResult, const Json::Value& jvRequest)
 {
 	if (!jvRequest.isMember("accounts"))
@@ -415,23 +509,9 @@ void WSConnection::doAccountInfoSubscribe(Json::Value& jvResult, const Json::Val
 	}
 	else
 	{
-		boost::unordered_set<NewcoinAddress> usnaAccoundIds	= parseAccountIds(jvRequest["accounts"]);
+		boost::unordered_set<RippleAddress> usnaAccoundIds	= parseAccountIds(jvRequest["accounts"]);
 
-		if (usnaAccoundIds.empty())
-		{
-			jvResult["error"]	= "malformedAccount";
-		}
-		else
-		{
-			boost::mutex::scoped_lock	sl(mLock);
-
-			BOOST_FOREACH(const NewcoinAddress& naAccountID, usnaAccoundIds)
-			{
-				mSubAccountInfo.insert(naAccountID);
-			}
-
-			mNetwork.subAccountInfo(this, usnaAccoundIds);
-		}
+		
 	}
 }
 
@@ -447,7 +527,7 @@ void WSConnection::doAccountInfoUnsubscribe(Json::Value& jvResult, const Json::V
 	}
 	else
 	{
-		boost::unordered_set<NewcoinAddress> usnaAccoundIds	= parseAccountIds(jvRequest["accounts"]);
+		boost::unordered_set<RippleAddress> usnaAccoundIds	= parseAccountIds(jvRequest["accounts"]);
 
 		if (usnaAccoundIds.empty())
 		{
@@ -457,7 +537,7 @@ void WSConnection::doAccountInfoUnsubscribe(Json::Value& jvResult, const Json::V
 		{
 			boost::mutex::scoped_lock	sl(mLock);
 
-			BOOST_FOREACH(const NewcoinAddress& naAccountID, usnaAccoundIds)
+			BOOST_FOREACH(const RippleAddress& naAccountID, usnaAccoundIds)
 			{
 				mSubAccountInfo.erase(naAccountID);
 			}
@@ -479,7 +559,7 @@ void WSConnection::doAccountTransactionSubscribe(Json::Value& jvResult, const Js
 	}
 	else
 	{
-		boost::unordered_set<NewcoinAddress> usnaAccoundIds	= parseAccountIds(jvRequest["accounts"]);
+		boost::unordered_set<RippleAddress> usnaAccoundIds	= parseAccountIds(jvRequest["accounts"]);
 
 		if (usnaAccoundIds.empty())
 		{
@@ -489,7 +569,7 @@ void WSConnection::doAccountTransactionSubscribe(Json::Value& jvResult, const Js
 		{
 			boost::mutex::scoped_lock	sl(mLock);
 
-			BOOST_FOREACH(const NewcoinAddress& naAccountID, usnaAccoundIds)
+			BOOST_FOREACH(const RippleAddress& naAccountID, usnaAccoundIds)
 			{
 				mSubAccountTransaction.insert(naAccountID);
 			}
@@ -511,7 +591,7 @@ void WSConnection::doAccountTransactionUnsubscribe(Json::Value& jvResult, const 
 	}
 	else
 	{
-		boost::unordered_set<NewcoinAddress> usnaAccoundIds	= parseAccountIds(jvRequest["accounts"]);
+		boost::unordered_set<RippleAddress> usnaAccoundIds	= parseAccountIds(jvRequest["accounts"]);
 
 		if (usnaAccoundIds.empty())
 		{
@@ -521,7 +601,7 @@ void WSConnection::doAccountTransactionUnsubscribe(Json::Value& jvResult, const 
 		{
 			boost::mutex::scoped_lock	sl(mLock);
 
-			BOOST_FOREACH(const NewcoinAddress& naAccountID, usnaAccoundIds)
+			BOOST_FOREACH(const RippleAddress& naAccountID, usnaAccoundIds)
 			{
 				mSubAccountTransaction.erase(naAccountID);
 			}
@@ -577,7 +657,7 @@ void WSConnection::doLedgerCurrent(Json::Value& jvResult, const Json::Value& jvR
 void WSConnection::doLedgerEntry(Json::Value& jvResult, const Json::Value& jvRequest)
 {
 	NetworkOPs&	noNetwork	= mNetwork;
-	uint256	uLedger			= jvRequest.isMember("ledger") ? uint256(jvRequest["ledger"].asString()) : 0;
+	uint256	uLedger			= jvRequest.isMember("ledger_closed") ? uint256(jvRequest["ledger_closed"].asString()) : 0;
 	uint32	uLedgerIndex	= jvRequest.isMember("ledger_index") && jvRequest["ledger_index"].isNumeric() ? jvRequest["ledger_index"].asUInt() : 0;
 
 	Ledger::pointer	 lpLedger;
@@ -635,9 +715,10 @@ void WSConnection::doLedgerEntry(Json::Value& jvResult, const Json::Value& jvReq
 	}
 	else if (jvRequest.isMember("account_root"))
 	{
-		NewcoinAddress	naAccount;
+		RippleAddress	naAccount;
 
-		if (!naAccount.setAccountID(jvRequest["account_root"].asString()))
+		if (!naAccount.setAccountID(jvRequest["account_root"].asString())
+			|| !naAccount.getAccountID())
 		{
 			jvResult["error"]	= "malformedAddress";
 		}
@@ -674,7 +755,7 @@ void WSConnection::doLedgerEntry(Json::Value& jvResult, const Json::Value& jvReq
 			}
 			else if (jvRequest["directory"].isMember("owner"))
 			{
-				NewcoinAddress	naOwnerID;
+				RippleAddress	naOwnerID;
 
 				if (!naOwnerID.setAccountID(jvRequest["directory"]["owner"].asString()))
 				{
@@ -695,7 +776,7 @@ void WSConnection::doLedgerEntry(Json::Value& jvResult, const Json::Value& jvReq
 	}
 	else if (jvRequest.isMember("generator"))
 	{
-		NewcoinAddress	naGeneratorID;
+		RippleAddress	naGeneratorID;
 
 		if (!jvRequest.isObject())
 		{
@@ -711,8 +792,8 @@ void WSConnection::doLedgerEntry(Json::Value& jvResult, const Json::Value& jvReq
 		}
 		else
 		{
-			NewcoinAddress		na0Public;		// To find the generator's index.
-			NewcoinAddress		naGenerator	= NewcoinAddress::createGeneratorPublic(naGeneratorID);
+			RippleAddress		na0Public;		// To find the generator's index.
+			RippleAddress		naGenerator	= RippleAddress::createGeneratorPublic(naGeneratorID);
 
 			na0Public.setAccountPublic(naGenerator, 0);
 
@@ -721,7 +802,7 @@ void WSConnection::doLedgerEntry(Json::Value& jvResult, const Json::Value& jvReq
 	}
 	else if (jvRequest.isMember("offer"))
 	{
-		NewcoinAddress	naAccountID;
+		RippleAddress	naAccountID;
 
 		if (!jvRequest.isObject())
 		{
@@ -746,21 +827,36 @@ void WSConnection::doLedgerEntry(Json::Value& jvResult, const Json::Value& jvReq
 	}
 	else if (jvRequest.isMember("ripple_state"))
 	{
-		NewcoinAddress	naA;
-		NewcoinAddress	naB;
+		RippleAddress	naA;
+		RippleAddress	naB;
 		uint160			uCurrency;
+		Json::Value		jvRippleState	= jvRequest["ripple_state"];
 
-		if (!jvRequest.isMember("accounts")
-			|| !jvRequest.isMember("currency")
-			|| !jvRequest["accounts"].isArray()
-			|| 2 != jvRequest["accounts"].size()) {
+		if (!jvRippleState.isMember("currency")
+			|| !jvRippleState.isMember("accounts")
+			|| !jvRippleState["accounts"].isArray()
+			|| 2 != jvRippleState["accounts"].size()
+			|| !jvRippleState["accounts"][0u].isString()
+			|| !jvRippleState["accounts"][1u].isString()
+			|| jvRippleState["accounts"][0u].asString() == jvRippleState["accounts"][1u].asString()
+			) {
+
+			cLog(lsINFO)
+				<< boost::str(boost::format("ledger_entry: ripple_state: accounts: %d currency: %d array: %d size: %d equal: %d")
+					% jvRippleState.isMember("accounts")
+					% jvRippleState.isMember("currency")
+					% jvRippleState["accounts"].isArray()
+					% jvRippleState["accounts"].size()
+					% (jvRippleState["accounts"][0u].asString() == jvRippleState["accounts"][1u].asString())
+					);
+
 			jvResult["error"]	= "malformedRequest";
 		}
-		else if (!naA.setAccountID(jvRequest["accounts"][0u].asString())
-			|| !naB.setAccountID(jvRequest["accounts"][1u].asString())) {
+		else if (!naA.setAccountID(jvRippleState["accounts"][0u].asString())
+			|| !naB.setAccountID(jvRippleState["accounts"][1u].asString())) {
 			jvResult["error"]	= "malformedAddress";
 		}
-		else if (!STAmount::currencyFromString(uCurrency, jvRequest["currency"].asString())) {
+		else if (!STAmount::currencyFromString(uCurrency, jvRippleState["currency"].asString())) {
 			jvResult["error"]	= "malformedCurrency";
 		}
 		else
@@ -801,6 +897,9 @@ void WSConnection::doLedgerEntry(Json::Value& jvResult, const Json::Value& jvReq
 	}
 }
 
+// The objective is to allow the client to know the server's status. The only thing that show the server is fully operating is the
+// stream of ledger_closeds. Therefore, that is all that is provided. A client can drop servers that do not provide recent
+// ledger_closeds.
 void WSConnection::doServerSubscribe(Json::Value& jvResult, const Json::Value& jvRequest)
 {
 	if (!mNetwork.subLedger(this))
@@ -812,10 +911,10 @@ void WSConnection::doServerSubscribe(Json::Value& jvResult, const Json::Value& j
 		if (theConfig.RUN_STANDALONE)
 			jvResult["stand_alone"]	= 1;
 
-		// XXX Make sure these values are available before returning them.
-		// XXX return connected status.
-		jvResult["ledger_closed"]			= mNetwork.getClosedLedger().ToString();
-		jvResult["ledger_current_index"]	= mNetwork.getCurrentLedgerID();
+		if (NetworkOPs::omDISCONNECTED != mNetwork.getOperatingMode()) {
+			jvResult["ledger_closed"]			= mNetwork.getClosedLedger().ToString();
+			jvResult["ledger_current_index"]	= mNetwork.getCurrentLedgerID();
+		}
 	}
 }
 
@@ -827,10 +926,19 @@ void WSConnection::doServerUnsubscribe(Json::Value& jvResult, const Json::Value&
 	}
 }
 
+void WSConnection::doRPC(Json::Value& jvResult, const Json::Value& jvRequest)
+{
+	if (jvRequest.isMember("command"))
+	{
+		// TODO
+	}else jvResult["error"]	= "fieldNotCommand";
+	
+}
+
 // XXX Current requires secret. Allow signed transaction as an alternative.
 void WSConnection::doSubmit(Json::Value& jvResult, const Json::Value& jvRequest)
 {
-	NewcoinAddress	naAccount;
+	RippleAddress	naAccount;
 
 	if (!jvRequest.isMember("transaction"))
 	{
@@ -862,7 +970,7 @@ void WSConnection::doSubmit(Json::Value& jvResult, const Json::Value& jvRequest)
 		}
 
 		bool			bHaveAuthKey	= false;
-		NewcoinAddress	naAuthorizedPublic;
+		RippleAddress	naAuthorizedPublic;
 #if 0
 
 		if (sleAccountRoot->isFieldPresent(sfAuthorizedKey))
@@ -872,11 +980,11 @@ void WSConnection::doSubmit(Json::Value& jvResult, const Json::Value& jvRequest)
 		}
 #endif
 
-		NewcoinAddress	naSecret			= NewcoinAddress::createSeedGeneric(jvRequest["secret"].asString());
-		NewcoinAddress	naMasterGenerator	= NewcoinAddress::createGeneratorPublic(naSecret);
+		RippleAddress	naSecret			= RippleAddress::createSeedGeneric(jvRequest["secret"].asString());
+		RippleAddress	naMasterGenerator	= RippleAddress::createGeneratorPublic(naSecret);
 
 		// Find the index of Account from the master generator, so we can generate the public and private keys.
-		NewcoinAddress		naMasterAccountPublic;
+		RippleAddress		naMasterAccountPublic;
 		unsigned int		iIndex	= 0;
 		bool				bFound	= false;
 
@@ -900,9 +1008,9 @@ void WSConnection::doSubmit(Json::Value& jvResult, const Json::Value& jvRequest)
 		}
 
 		// Use the generator to determine the associated public and private keys.
-		NewcoinAddress	naGenerator			= NewcoinAddress::createGeneratorPublic(naSecret);
-		NewcoinAddress	naAccountPublic		= NewcoinAddress::createAccountPublic(naGenerator, iIndex);
-		NewcoinAddress	naAccountPrivate	= NewcoinAddress::createAccountPrivate(naGenerator, naSecret, iIndex);
+		RippleAddress	naGenerator			= RippleAddress::createGeneratorPublic(naSecret);
+		RippleAddress	naAccountPublic		= RippleAddress::createAccountPublic(naGenerator, iIndex);
+		RippleAddress	naAccountPrivate	= RippleAddress::createAccountPrivate(naGenerator, naSecret, iIndex);
 
 		if (bHaveAuthKey
 			// The generated pair must match authorized...
@@ -933,7 +1041,18 @@ void WSConnection::doSubmit(Json::Value& jvResult, const Json::Value& jvRequest)
 
 		sopTrans->setFieldVL(sfSigningPubKey, naAccountPublic.getAccountPublic());
 
-		SerializedTransaction::pointer	stpTrans	= boost::make_shared<SerializedTransaction>(*sopTrans);
+		SerializedTransaction::pointer stpTrans;
+
+		try
+		{
+			stpTrans = boost::make_shared<SerializedTransaction>(*sopTrans);
+		}
+		catch (std::exception& e)
+		{
+			jvResult["error"]			= "invalidTransaction";
+			jvResult["error_exception"]	= e.what();
+			return;
+		}
 
 		stpTrans->sign(naAccountPrivate);
 

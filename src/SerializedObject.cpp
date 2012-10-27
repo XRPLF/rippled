@@ -164,7 +164,8 @@ bool STObject::setType(const std::vector<SOElement::ptr> &type)
 		{
 			if (elem->flags != SOE_OPTIONAL)
 			{
-				cLog(lsWARNING) << "setType !valid missing " << elem->e_field.fieldName;
+				cLog(lsWARNING) << "setType( " << getFName().getName() << ") invalid missing "
+					<< elem->e_field.fieldName;
 				valid = false;
 			}
 			newData.push_back(makeNonPresentObject(elem->e_field));
@@ -178,7 +179,8 @@ bool STObject::setType(const std::vector<SOElement::ptr> &type)
 		{
 			if (!t.getFName().isDiscardable())
 			{
-				cLog(lsWARNING) << "setType !valid leftover: " << t.getFName().getName();
+				cLog(lsWARNING) << "setType( " << getFName().getName() << ") invalid leftover "
+					<< t.getFName().getName();
 				valid = false;
 			}
 		}
@@ -204,6 +206,8 @@ bool STObject::isValidForType()
 
 bool STObject::isFieldAllowed(SField::ref field)
 {
+	if (isFree())
+		return true;
 	BOOST_FOREACH(SOElement::ptr elem, mType)
 	{ // are any required elemnents missing
 		if (elem->e_field == field)
@@ -238,6 +242,14 @@ std::auto_ptr<SerializedType> STObject::deserialize(SerializerIterator& sit, SFi
 	std::auto_ptr<SerializedType> object(o = new STObject(name));
 	o->set(sit, 1);
 	return object;
+}
+
+bool STObject::hasMatchingEntry(const SerializedType& t)
+{
+	const SerializedType* o = peekAtPField(t.getFName());
+	if (!o)
+		return false;
+	return t == *o;
 }
 
 std::string STObject::getFullText() const
@@ -563,7 +575,8 @@ uint160 STObject::getFieldH160(SField::ref field) const
 uint256 STObject::getFieldH256(SField::ref field) const
 {
 	const SerializedType* rf = peekAtPField(field);
-	if (!rf) throw std::runtime_error("Field not found");
+	if (!rf)
+		throw std::runtime_error("Field not found");
 	SerializedTypeID id = rf->getSType();
 	if (id == STI_NOTPRESENT) return uint256(); // optional field not present
 	const STHash256 *cf = dynamic_cast<const STHash256 *>(rf);
@@ -571,21 +584,16 @@ uint256 STObject::getFieldH256(SField::ref field) const
 	return cf->getValue();
 }
 
-NewcoinAddress STObject::getFieldAccount(SField::ref field) const
+RippleAddress STObject::getFieldAccount(SField::ref field) const
 {
 	const SerializedType* rf = peekAtPField(field);
 	if (!rf)
-	{
-#ifdef DEBUG
-		std::cerr << "Account field not found" << std::endl;
-		std::cerr << getFullText() << std::endl;
-#endif
 		throw std::runtime_error("Field not found");
-	}
 	SerializedTypeID id = rf->getSType();
-	if (id == STI_NOTPRESENT) return NewcoinAddress(); // optional field not present
+	if (id == STI_NOTPRESENT) return RippleAddress(); // optional field not present
 	const STAccount* cf = dynamic_cast<const STAccount *>(rf);
-	if (!cf) throw std::runtime_error("Wrong field type");
+	if (!cf)
+		throw std::runtime_error("Wrong field type");
 	return cf->getValueNCA();
 }
 
@@ -594,18 +602,13 @@ uint160 STObject::getFieldAccount160(SField::ref field) const
 	uint160 a;
 	const SerializedType* rf = peekAtPField(field);
 	if (!rf)
-	{
-#ifdef DEBUG
-		std::cerr << "Account field not found" << std::endl;
-		std::cerr << getFullText() << std::endl;
-#endif
 		throw std::runtime_error("Field not found");
-	}
 	SerializedTypeID id = rf->getSType();
 	if (id != STI_NOTPRESENT)
 	{
 		const STAccount* cf = dynamic_cast<const STAccount *>(rf);
-		if (!cf) throw std::runtime_error("Wrong field type");
+		if (!cf)
+			throw std::runtime_error("Wrong field type");
 		cf->getValueH160(a);
 	}
 	return a;
@@ -790,6 +793,42 @@ Json::Value STObject::getJson(int options) const
 		}
 	}
 	return ret;
+}
+
+bool STObject::operator==(const STObject& obj) const
+{ // This is not particularly efficient, and only compares data elements with binary representations
+	int matches = 0;
+	BOOST_FOREACH(const SerializedType& t, mData)
+		if ((t.getSType() != STI_NOTPRESENT) && t.getFName().isBinary())
+		{ // each present field must have a matching field
+			bool match = false;
+			BOOST_FOREACH(const SerializedType& t2, obj.mData)
+				if (t.getFName() == t2.getFName())
+				{
+					if (t2 != t)
+						return false;
+					match = true;
+					++matches;
+					break;
+				}
+			if (!match)
+			{
+				Log(lsTRACE) << "STObject::operator==: no match for " << t.getFName().getName();
+				return false;
+			}
+		}
+
+	int fields = 0;
+	BOOST_FOREACH(const SerializedType& t2, obj.mData)
+		if ((t2.getSType() != STI_NOTPRESENT) && t2.getFName().isBinary())
+			++fields;
+
+	if (fields != matches)
+	{
+		Log(lsTRACE) << "STObject::operator==: " << fields << " fields, " << matches << " matches";
+		return false;
+	}
+	return true;
 }
 
 Json::Value STVector256::getJson(int options) const
@@ -1096,7 +1135,7 @@ std::auto_ptr<STObject> STObject::parseJson(const Json::Value& object, SField::r
 								if (value.size() == 40) // 160-bit hex account value
 									uAccount.SetHex(strValue);
 								{
-									NewcoinAddress a;
+									RippleAddress a;
 									if (!a.setAccountPublic(strValue))
 										throw std::runtime_error("Account in path element invalid");
 									uAccount = a.getAccountID();
@@ -1120,7 +1159,7 @@ std::auto_ptr<STObject> STObject::parseJson(const Json::Value& object, SField::r
 									uIssuer.SetHex(issuer.asString());
 								else
 								{
-									NewcoinAddress a;
+									RippleAddress a;
 									if (!a.setAccountPublic(issuer.asString()))
 										throw std::runtime_error("path element issuer invalid");
 									uIssuer = a.getAccountID();
@@ -1146,7 +1185,7 @@ std::auto_ptr<STObject> STObject::parseJson(const Json::Value& object, SField::r
 				}
 				else
 				{ // ripple address
-					NewcoinAddress a;
+					RippleAddress a;
 					if (!a.setAccountID(strValue))
 					{
 						cLog(lsINFO) << "Invalid acccount JSON: " << fieldName << ": " << strValue;
@@ -1246,7 +1285,6 @@ BOOST_AUTO_TEST_CASE( FieldManipulation_test )
 		if (object1.getFieldVL(sfTestVL) != j) BOOST_FAIL("STObject error");
 		if (object3.getFieldVL(sfTestVL) != j) BOOST_FAIL("STObject error");
 	}
-
 }
 
 BOOST_AUTO_TEST_SUITE_END();

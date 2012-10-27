@@ -2,6 +2,7 @@
 #include "LedgerEntrySet.h"
 
 #include <boost/make_shared.hpp>
+#include <boost/foreach.hpp>
 
 #include "Log.h"
 
@@ -295,7 +296,7 @@ SLE::pointer LedgerEntrySet::getForMod(const uint256& node, Ledger::ref ledger,
 
 }
 
-bool LedgerEntrySet::threadTx(const NewcoinAddress& threadTo, Ledger::ref ledger,
+bool LedgerEntrySet::threadTx(const RippleAddress& threadTo, Ledger::ref ledger,
 	boost::unordered_map<uint256, SLE::pointer>& newMods)
 {
 #ifdef META_DEBUG
@@ -318,9 +319,11 @@ bool LedgerEntrySet::threadTx(SLE::ref threadTo, Ledger::ref ledger,
 	uint32 prevLgrID;
 	if (!threadTo->thread(mSet.getTxID(), mSet.getLgrSeq(), prevTxID, prevLgrID))
 		return false;
-	if (TransactionMetaSet::thread(mSet.getAffectedNode(threadTo->getIndex(), sfModifiedNode, false),
+
+	if (prevTxID.isZero() || TransactionMetaSet::thread(mSet.getAffectedNode(threadTo->getIndex(), sfModifiedNode),
 			prevTxID, prevLgrID))
 		return true;
+
 	assert(false);
 	return false;
 }
@@ -354,30 +357,30 @@ void LedgerEntrySet::calcRawMeta(Serializer& s, TER result)
 	// Entries modified only as a result of building the transaction metadata
 	boost::unordered_map<uint256, SLE::pointer> newMod;
 
-	for (std::map<uint256, LedgerEntrySetEntry>::const_iterator it = mEntries.begin(),
-			end = mEntries.end(); it != end; ++it)
+	typedef std::pair<const uint256, LedgerEntrySetEntry> u256_LES_pair;
+	BOOST_FOREACH(u256_LES_pair& it, mEntries)
 	{
 		SField::ptr type = &sfGeneric;
 
-		switch (it->second.mAction)
+		switch (it.second.mAction)
 		{
 			case taaMODIFY:
 #ifdef META_DEBUG
-				cLog(lsTRACE) << "Modified Node " << it->first;
+				cLog(lsTRACE) << "Modified Node " << it.first;
 #endif
 				type = &sfModifiedNode;
 				break;
 
 			case taaDELETE:
 #ifdef META_DEBUG
-				cLog(lsTRACE) << "Deleted Node " << it->first;
+				cLog(lsTRACE) << "Deleted Node " << it.first;
 #endif
 				type = &sfDeletedNode;
 				break;
 
 			case taaCREATE:
 #ifdef META_DEBUG
-				cLog(lsTRACE) << "Created Node " << it->first;
+				cLog(lsTRACE) << "Created Node " << it.first;
 #endif
 				type = &sfCreatedNode;
 				break;
@@ -389,47 +392,39 @@ void LedgerEntrySet::calcRawMeta(Serializer& s, TER result)
 		if (type == &sfGeneric)
 			continue;
 
-		SLE::pointer origNode = mLedger->getSLE(it->first);
+		SLE::pointer origNode = mLedger->getSLE(it.first);
 
 		if (origNode && (origNode->getType() == ltDIR_NODE)) // No metadata for dir nodes
 			continue;
 
-		SLE::pointer curNode = it->second.mEntry;
-		STObject &metaNode = mSet.getAffectedNode(it->first, *type, true);
+		SLE::pointer curNode = it.second.mEntry;
+		mSet.setAffectedNode(it.first, *type);
 
 		if (type == &sfDeletedNode)
 		{
 			assert(origNode);
 			threadOwners(origNode, mLedger, newMod);
 
-			if (origNode->isFieldPresent(sfAmount))
-			{ // node has an amount, covers ripple state nodes
-				STAmount amount = origNode->getFieldAmount(sfAmount);
-				if (amount.isNonZero())
-					metaNode.setFieldAmount(sfPreviousBalance, amount);
-				amount = curNode->getFieldAmount(sfAmount);
-				if (amount.isNonZero())
-					metaNode.setFieldAmount(sfFinalBalance, amount);
-
-				if (origNode->getType() == ltRIPPLE_STATE)
-				{
-					metaNode.setFieldAccount(sfLowID,
-						NewcoinAddress::createAccountID(origNode->getFieldAmount(sfLowLimit).getIssuer()));
-					metaNode.setFieldAccount(sfHighID,
-						NewcoinAddress::createAccountID(origNode->getFieldAmount(sfHighLimit).getIssuer()));
-				}
+			STObject finals(sfFinalFields);
+			BOOST_FOREACH(const SerializedType& obj, *curNode)
+			{ // search the deleted node for values saved on delete
+				if (obj.getFName().shouldMetaDel() && !obj.isDefault())
+					finals.addObject(obj);
 			}
+			if (!finals.empty())
+				mSet.getAffectedNode(it.first, *type).addObject(finals);
+		}
 
-			if (origNode->getType() == ltOFFER)
-			{ // check for non-zero balances
-				STAmount amount = origNode->getFieldAmount(sfTakerPays);
-				if (amount.isNonZero())
-					metaNode.setFieldAmount(sfFinalTakerPays, amount);
-				amount = origNode->getFieldAmount(sfTakerGets);
-				if (amount.isNonZero())
-					metaNode.setFieldAmount(sfFinalTakerGets, amount);
+		if ((type == &sfDeletedNode || type == &sfModifiedNode))
+		{
+			STObject mods(sfPreviousFields);
+			BOOST_FOREACH(const SerializedType& obj, *origNode)
+			{ // search the original node for values saved on modify
+				if (obj.getFName().shouldMetaMod() && !obj.isDefault() && !curNode->hasMatchingEntry(obj))
+					mods.addObject(obj);
 			}
-
+			if (!mods.empty())
+				mSet.getAffectedNode(it.first, *type).addObject(mods);
 		}
 
 		if (type == &sfCreatedNode) // if created, thread to owner(s)
@@ -443,28 +438,6 @@ void LedgerEntrySet::calcRawMeta(Serializer& s, TER result)
 			if (curNode->isThreadedType()) // always thread to self
 				threadTx(curNode, mLedger, newMod);
 		}
-
-		if (type == &sfModifiedNode)
-		{
-			assert(origNode);
-			if (origNode->isFieldPresent(sfAmount))
-			{ // node has an amount, covers account root nodes and ripple nodes
-				STAmount amount = origNode->getFieldAmount(sfAmount);
-				if (amount != curNode->getFieldAmount(sfAmount))
-					metaNode.setFieldAmount(sfPreviousBalance, amount);
-			}
-
-			if (origNode->getType() == ltOFFER)
-			{
-				STAmount amount = origNode->getFieldAmount(sfTakerPays);
-				if (amount != curNode->getFieldAmount(sfTakerPays))
-					metaNode.setFieldAmount(sfPreviousTakerPays, amount);
-				amount = origNode->getFieldAmount(sfTakerGets);
-				if (amount != curNode->getFieldAmount(sfTakerGets))
-					metaNode.setFieldAmount(sfPreviousTakerGets, amount);
-			}
-
-		}
 	}
 
 	// add any new modified nodes to the modification set
@@ -472,9 +445,7 @@ void LedgerEntrySet::calcRawMeta(Serializer& s, TER result)
 			it != end; ++it)
 		entryModify(it->second);
 
-#ifdef META_DEBUG
-	cLog(lsINFO) << "Metadata:" << mSet.getJson(0);
-#endif
+	cLog(lsTRACE) << "Metadata:" << mSet.getJson(0);
 
 	mSet.addRaw(s, result);
 }
@@ -844,9 +815,9 @@ STAmount LedgerEntrySet::rippleOwed(const uint160& uToAccountID, const uint160& 
 	else
 	{
 		cLog(lsINFO) << "rippleOwed: No credit line between "
-			<< NewcoinAddress::createHumanAccountID(uFromAccountID)
+			<< RippleAddress::createHumanAccountID(uFromAccountID)
 			<< " and "
-			<< NewcoinAddress::createHumanAccountID(uToAccountID)
+			<< RippleAddress::createHumanAccountID(uToAccountID)
 			<< " for "
 			<< STAmount::createHumanCurrency(uCurrencyID)
 			<< "." ;
@@ -884,7 +855,7 @@ uint32 LedgerEntrySet::rippleTransferRate(const uint160& uIssuerID)
 									: QUALITY_ONE;
 
 	cLog(lsINFO) << boost::str(boost::format("rippleTransferRate: uIssuerID=%s account_exists=%d transfer_rate=%f")
-		% NewcoinAddress::createHumanAccountID(uIssuerID)
+		% RippleAddress::createHumanAccountID(uIssuerID)
 		% !!sleAccount
 		% (uQuality/1000000000.0));
 
@@ -929,8 +900,8 @@ uint32 LedgerEntrySet::rippleQualityIn(const uint160& uToAccountID, const uint16
 
 	cLog(lsINFO) << boost::str(boost::format("rippleQuality: %s uToAccountID=%s uFromAccountID=%s uCurrencyID=%s bLine=%d uQuality=%f")
 		% (sfLow == sfLowQualityIn ? "in" : "out")
-		% NewcoinAddress::createHumanAccountID(uToAccountID)
-		% NewcoinAddress::createHumanAccountID(uFromAccountID)
+		% RippleAddress::createHumanAccountID(uToAccountID)
+		% RippleAddress::createHumanAccountID(uFromAccountID)
 		% STAmount::createHumanCurrency(uCurrencyID)
 		% !!sleRippleState
 		% (uQuality/1000000000.0));
@@ -975,7 +946,7 @@ STAmount LedgerEntrySet::accountHolds(const uint160& uAccountID, const uint160& 
 	}
 
 	cLog(lsINFO) << boost::str(boost::format("accountHolds: uAccountID=%s saAmount=%s")
-		% NewcoinAddress::createHumanAccountID(uAccountID)
+		% RippleAddress::createHumanAccountID(uAccountID)
 		% saAmount.getFullText());
 
 	return saAmount;
@@ -995,7 +966,7 @@ STAmount LedgerEntrySet::accountFunds(const uint160& uAccountID, const STAmount&
 		saFunds	= saDefault;
 
 		cLog(lsINFO) << boost::str(boost::format("accountFunds: uAccountID=%s saDefault=%s SELF-FUNDED")
-			% NewcoinAddress::createHumanAccountID(uAccountID)
+			% RippleAddress::createHumanAccountID(uAccountID)
 			% saDefault.getFullText());
 	}
 	else
@@ -1003,7 +974,7 @@ STAmount LedgerEntrySet::accountFunds(const uint160& uAccountID, const STAmount&
 		saFunds	= accountHolds(uAccountID, saDefault.getCurrency(), saDefault.getIssuer());
 
 		cLog(lsINFO) << boost::str(boost::format("accountFunds: uAccountID=%s saDefault=%s saFunds=%s")
-			% NewcoinAddress::createHumanAccountID(uAccountID)
+			% RippleAddress::createHumanAccountID(uAccountID)
 			% saDefault.getFullText()
 			% saFunds.getFullText());
 	}
@@ -1130,9 +1101,9 @@ void LedgerEntrySet::accountSend(const uint160& uSenderID, const uint160& uRecei
 											: SLE::pointer();
 
 		cLog(lsINFO) << boost::str(boost::format("accountSend> %s (%s) -> %s (%s) : %s")
-			% NewcoinAddress::createHumanAccountID(uSenderID)
+			% RippleAddress::createHumanAccountID(uSenderID)
 			% (sleSender ? (sleSender->getFieldAmount(sfBalance)).getFullText() : "-")
-			% NewcoinAddress::createHumanAccountID(uReceiverID)
+			% RippleAddress::createHumanAccountID(uReceiverID)
 			% (sleReceiver ? (sleReceiver->getFieldAmount(sfBalance)).getFullText() : "-")
 			% saAmount.getFullText());
 
@@ -1149,9 +1120,9 @@ void LedgerEntrySet::accountSend(const uint160& uSenderID, const uint160& uRecei
 		}
 
 		cLog(lsINFO) << boost::str(boost::format("accountSend< %s (%s) -> %s (%s) : %s")
-			% NewcoinAddress::createHumanAccountID(uSenderID)
+			% RippleAddress::createHumanAccountID(uSenderID)
 			% (sleSender ? (sleSender->getFieldAmount(sfBalance)).getFullText() : "-")
-			% NewcoinAddress::createHumanAccountID(uReceiverID)
+			% RippleAddress::createHumanAccountID(uReceiverID)
 			% (sleReceiver ? (sleReceiver->getFieldAmount(sfBalance)).getFullText() : "-")
 			% saAmount.getFullText());
 	}

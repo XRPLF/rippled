@@ -26,7 +26,7 @@ void LedgerHistory::addLedger(Ledger::pointer ledger)
 	mLedgersByHash.canonicalize(ledger->getHash(), ledger, true);
 }
 
-void LedgerHistory::addAcceptedLedger(Ledger::pointer ledger)
+void LedgerHistory::addAcceptedLedger(Ledger::pointer ledger, bool fromConsensus)
 {
 	assert(ledger && ledger->isAccepted());
 	uint256 h(ledger->getHash());
@@ -37,7 +37,7 @@ void LedgerHistory::addAcceptedLedger(Ledger::pointer ledger)
 	assert(ledger->isImmutable());
 	mLedgersByIndex.insert(std::make_pair(ledger->getLedgerSeq(), ledger));
 
-	boost::thread thread(boost::bind(&Ledger::saveAcceptedLedger, ledger));
+	boost::thread thread(boost::bind(&Ledger::saveAcceptedLedger, ledger, fromConsensus));
 	thread.detach();
 }
 
@@ -45,11 +45,13 @@ Ledger::pointer LedgerHistory::getLedgerBySeq(uint32 index)
 {
 	boost::recursive_mutex::scoped_lock sl(mLedgersByHash.peekMutex());
 	std::map<uint32, Ledger::pointer>::iterator it(mLedgersByIndex.find(index));
-	if (it != mLedgersByIndex.end()) return it->second;
+	if (it != mLedgersByIndex.end())
+		return it->second;
 	sl.unlock();
 
 	Ledger::pointer ret(Ledger::loadByIndex(index));
-	if (!ret) return ret;
+	if (!ret)
+		return ret;
 	assert(ret->getLedgerSeq() == index);
 
 	sl.lock();
@@ -61,24 +63,13 @@ Ledger::pointer LedgerHistory::getLedgerBySeq(uint32 index)
 Ledger::pointer LedgerHistory::getLedgerByHash(const uint256& hash)
 {
 	Ledger::pointer ret = mLedgersByHash.fetch(hash);
-	if (ret) return ret;
-
-#if 0
-//		FIXME: A ledger without SHA maps isn't very useful
-// 		This code will need to build them
-
-	// The fix is to audit all callers to this function and replace them with
-	// higher-level functions that ask more-specific questions that we can
-	// test against our database
+	if (ret)
+		return ret;
 
 	ret = Ledger::loadByHash(hash);
-	if (!ret) return ret;
+	if (!ret)
+		return ret;
 	assert(ret->getHash() == hash);
-
-	boost::recursive_mutex::scoped_lock sl(mLedgersByHash.peekMutex());
-	mLedgersByHash.canonicalize(hash, ret);
-	if (ret->isAccepted()) mLedgersByIndex[ret->getLedgerSeq()] = ret;
-#endif
 
 	return ret;
 }

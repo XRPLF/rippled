@@ -75,37 +75,37 @@ Json::Value SerializedLedgerEntry::getJson(int options) const
 
 bool SerializedLedgerEntry::isThreadedType()
 {
-	return getFieldIndex(sfLastTxnID) != -1;
+	return getFieldIndex(sfPreviousTxnID) != -1;
 }
 
 bool SerializedLedgerEntry::isThreaded()
 {
-	return isFieldPresent(sfLastTxnID);
+	return isFieldPresent(sfPreviousTxnID);
 }
 
 uint256 SerializedLedgerEntry::getThreadedTransaction()
 {
-	return getFieldH256(sfLastTxnID);
+	return getFieldH256(sfPreviousTxnID);
 }
 
 uint32 SerializedLedgerEntry::getThreadedLedger()
 {
-	return getFieldU32(sfLastTxnSeq);
+	return getFieldU32(sfPreviousTxnLgrSeq);
 }
 
 bool SerializedLedgerEntry::thread(const uint256& txID, uint32 ledgerSeq, uint256& prevTxID, uint32& prevLedgerID)
 {
-	uint256 oldPrevTxID = getFieldH256(sfLastTxnID);
+	uint256 oldPrevTxID = getFieldH256(sfPreviousTxnID);
 	Log(lsTRACE) << "Thread Tx:" << txID << " prev:" << oldPrevTxID;
 	if (oldPrevTxID == txID)
 	{ // this transaction is already threaded
-		assert(getFieldU32(sfLastTxnSeq) == ledgerSeq);
+		assert(getFieldU32(sfPreviousTxnLgrSeq) == ledgerSeq);
 		return false;
 	}
 	prevTxID = oldPrevTxID;
-	prevLedgerID = getFieldU32(sfLastTxnSeq);
-	setFieldH256(sfLastTxnID, txID);
-	setFieldU32(sfLastTxnSeq, ledgerSeq);
+	prevLedgerID = getFieldU32(sfPreviousTxnLgrSeq);
+	setFieldH256(sfPreviousTxnID, txID);
+	setFieldU32(sfPreviousTxnLgrSeq, ledgerSeq);
 	return true;
 }
 
@@ -119,19 +119,19 @@ bool SerializedLedgerEntry::hasTwoOwners()
 	return mType == ltRIPPLE_STATE;
 }
 
-NewcoinAddress SerializedLedgerEntry::getOwner()
+RippleAddress SerializedLedgerEntry::getOwner()
 {
 	return getFieldAccount(sfAccount);
 }
 
-NewcoinAddress SerializedLedgerEntry::getFirstOwner()
+RippleAddress SerializedLedgerEntry::getFirstOwner()
 {
-	return NewcoinAddress::createAccountID(getFieldAmount(sfLowLimit).getIssuer());
+	return RippleAddress::createAccountID(getFieldAmount(sfLowLimit).getIssuer());
 }
 
-NewcoinAddress SerializedLedgerEntry::getSecondOwner()
+RippleAddress SerializedLedgerEntry::getSecondOwner()
 {
-	return NewcoinAddress::createAccountID(getFieldAmount(sfHighLimit).getIssuer());
+	return RippleAddress::createAccountID(getFieldAmount(sfHighLimit).getIssuer());
 }
 
 std::vector<uint256> SerializedLedgerEntry::getOwners()

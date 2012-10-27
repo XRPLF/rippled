@@ -27,7 +27,7 @@ const uint32 SerializedValidation::sFullFlag		= 0x1;
 SerializedValidation::SerializedValidation(SerializerIterator& sit, bool checkSignature)
 	: STObject(sValidationFormat, sit, sfValidation), mTrusted(false)
 {
-	mNodeID = NewcoinAddress::createNodePublic(getFieldVL(sfSigningPubKey)).getNodeID();
+	mNodeID = RippleAddress::createNodePublic(getFieldVL(sfSigningPubKey)).getNodeID();
 	assert(mNodeID.isNonZero());
 	if  (checkSignature && !isValid())
 	{
@@ -37,26 +37,25 @@ SerializedValidation::SerializedValidation(SerializerIterator& sit, bool checkSi
 }
 
 SerializedValidation::SerializedValidation(const uint256& ledgerHash, uint32 signTime,
-		const NewcoinAddress& naSeed, bool isFull)
+		const RippleAddress& naPub, const RippleAddress& naPriv, bool isFull, uint256& signingHash)
 	: STObject(sValidationFormat, sfValidation), mTrusted(false)
 {
 	setFieldH256(sfLedgerHash, ledgerHash);
 	setFieldU32(sfSigningTime, signTime);
-	if (naSeed.isValid())
-	{
-		NewcoinAddress np = NewcoinAddress::createNodePublic(naSeed);
-		setFieldVL(sfSigningPubKey, np.getNodePublic());
-		mNodeID = np.getNodeID();
-		assert(mNodeID.isNonZero());
-	}
+
+	setFieldVL(sfSigningPubKey, naPub.getNodePublic());
+	mNodeID = naPub.getNodeID();
+	assert(mNodeID.isNonZero());
+
 	if (!isFull)
 		setFlag(sFullFlag);
 
+	signingHash = getSigningHash();
 	std::vector<unsigned char> signature;
-	NewcoinAddress::createNodePrivate(naSeed).signNodePrivate(getSigningHash(), signature);
+	naPriv.signNodePrivate(signingHash, signature);
 	setFieldVL(sfSignature, signature);
 	// XXX Check if this can fail.
-	// if (!NewcoinAddress::createNodePrivate(naSeed).signNodePrivate(getSigningHash(), mSignature.peekValue()))
+	// if (!RippleAddress::createNodePrivate(naSeed).signNodePrivate(getSigningHash(), mSignature.peekValue()))
 	//	throw std::runtime_error("Unable to sign validation");
 }
 
@@ -89,7 +88,7 @@ bool SerializedValidation::isValid(const uint256& signingHash) const
 {
 	try
 	{
-		NewcoinAddress	naPublicKey	= NewcoinAddress::createNodePublic(getFieldVL(sfSigningPubKey));
+		RippleAddress	naPublicKey	= RippleAddress::createNodePublic(getFieldVL(sfSigningPubKey));
 		return naPublicKey.isValid() && naPublicKey.verifyNodePublic(signingHash, getFieldVL(sfSignature));
 	}
 	catch (...)
@@ -99,9 +98,9 @@ bool SerializedValidation::isValid(const uint256& signingHash) const
 	}
 }
 
-NewcoinAddress SerializedValidation::getSignerPublic() const
+RippleAddress SerializedValidation::getSignerPublic() const
 {
-	NewcoinAddress a;
+	RippleAddress a;
 	a.setNodePublic(getFieldVL(sfSigningPubKey));
 	return a;
 }

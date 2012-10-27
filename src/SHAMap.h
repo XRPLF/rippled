@@ -125,6 +125,7 @@ enum SHANodeFormat
 {
 	snfPREFIX	= 1, // Form that hashes to its official hash
 	snfWIRE		= 2, // Compressed form used on the wire
+	snfHASH		= 3, // just the hash
 };
 
 enum SHAMapType
@@ -207,7 +208,7 @@ public:
 	bool hasItem() const { return !!mItem; }
 	SHAMapItem::ref peekItem() { return mItem; }
 	SHAMapItem::pointer getItem() const;
-	bool setItem(const SHAMapItem::pointer& i, TNType type);
+	bool setItem(SHAMapItem::ref i, TNType type);
 	const uint256& getTag() const { return mItem->getTag(); }
 	const std::vector<unsigned char>& peekData() { return mItem->peekData(); }
 	std::vector<unsigned char> getData() const { return mItem->getData(); }
@@ -236,7 +237,7 @@ public:
 	virtual ~SHAMapSyncFilter()		{ ; }
 
 	virtual void gotNode(const SHAMapNode& id, const uint256& nodeHash,
-		const std::vector<unsigned char>& nodeData, bool isLeaf)
+		const std::vector<unsigned char>& nodeData, SHAMapTreeNode::TNType type)
 	{ ; }
 
 	virtual bool haveNode(const SHAMapNode& id, const uint256& nodeHash, std::vector<unsigned char>& nodeData)
@@ -281,7 +282,8 @@ public:
 	typedef boost::shared_ptr<SHAMap> pointer;
 	typedef const boost::shared_ptr<SHAMap>& ref;
 
-	typedef std::map<uint256, std::pair<SHAMapItem::pointer, SHAMapItem::pointer> > SHAMapDiff;
+	typedef std::pair<SHAMapItem::pointer, SHAMapItem::pointer> SHAMapDiffItem;
+	typedef std::map<uint256, SHAMapDiffItem> SHAMapDiff;
 	typedef boost::unordered_map<SHAMapNode, SHAMapTreeNode::pointer> SHADirtyMap;
 
 private:
@@ -367,8 +369,10 @@ public:
 	bool getNodeFat(const SHAMapNode& node, std::vector<SHAMapNode>& nodeIDs,
 	 std::list<std::vector<unsigned char> >& rawNode, bool fatRoot, bool fatLeaves);
 	bool getRootNode(Serializer& s, SHANodeFormat format);
-	bool addRootNode(const uint256& hash, const std::vector<unsigned char>& rootNode, SHANodeFormat format);
-	bool addRootNode(const std::vector<unsigned char>& rootNode, SHANodeFormat format);
+	bool addRootNode(const uint256& hash, const std::vector<unsigned char>& rootNode, SHANodeFormat format,
+		SHAMapSyncFilter* filter);
+	bool addRootNode(const std::vector<unsigned char>& rootNode, SHANodeFormat format,
+		SHAMapSyncFilter* filter);
 	bool addKnownNode(const SHAMapNode& nodeID, const std::vector<unsigned char>& rawNode,
 		SHAMapSyncFilter* filter);
 
@@ -403,6 +407,8 @@ public:
 		const std::list<std::vector<unsigned char> >& path);
 
 	void walkMap(std::vector<SHAMapMissingNode>& missingNodes, int maxMissing);
+
+	bool getPath(const uint256& index, std::vector< std::vector<unsigned char> >& nodes, SHANodeFormat format);
 
 	bool deepCompare(SHAMap& other);
 	virtual void dump(bool withHashes = false);

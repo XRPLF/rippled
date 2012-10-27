@@ -7,7 +7,7 @@
 #include "LedgerConsensus.h"
 #include "LedgerTiming.h"
 #include "Log.h"
-#include "NewcoinAddress.h"
+#include "RippleAddress.h"
 
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
@@ -193,7 +193,7 @@ Transaction::pointer NetworkOPs::findTransactionByID(const uint256& transactionI
 }
 
 int NetworkOPs::findTransactionsBySource(const uint256& uLedger, std::list<Transaction::pointer>& txns,
-	const NewcoinAddress& sourceAccount, uint32 minSeq, uint32 maxSeq)
+	const RippleAddress& sourceAccount, uint32 minSeq, uint32 maxSeq)
 {
 	AccountState::pointer state = getAccountState(uLedger, sourceAccount);
 	if (!state) return 0;
@@ -215,7 +215,7 @@ int NetworkOPs::findTransactionsBySource(const uint256& uLedger, std::list<Trans
 }
 
 int NetworkOPs::findTransactionsByDestination(std::list<Transaction::pointer>& txns,
-	const NewcoinAddress& destinationAccount, uint32 startLedgerSeq, uint32 endLedgerSeq, int maxTransactions)
+	const RippleAddress& destinationAccount, uint32 startLedgerSeq, uint32 endLedgerSeq, int maxTransactions)
 {
 	// WRITEME
 	return 0;
@@ -225,7 +225,7 @@ int NetworkOPs::findTransactionsByDestination(std::list<Transaction::pointer>& t
 // Account functions
 //
 
-AccountState::pointer NetworkOPs::getAccountState(const uint256& uLedger, const NewcoinAddress& accountID)
+AccountState::pointer NetworkOPs::getAccountState(const uint256& uLedger, const RippleAddress& accountID)
 {
 	return mLedgerMaster->getLedgerByHash(uLedger)->getAccountState(accountID);
 }
@@ -294,12 +294,12 @@ NicknameState::pointer NetworkOPs::getNicknameState(const uint256& uLedger, cons
 // Owner functions
 //
 
-Json::Value NetworkOPs::getOwnerInfo(const uint256& uLedger, const NewcoinAddress& naAccount)
+Json::Value NetworkOPs::getOwnerInfo(const uint256& uLedger, const RippleAddress& naAccount)
 {
 	return getOwnerInfo(mLedgerMaster->getLedgerByHash(uLedger), naAccount);
 }
 
-Json::Value NetworkOPs::getOwnerInfo(Ledger::pointer lpLedger, const NewcoinAddress& naAccount)
+Json::Value NetworkOPs::getOwnerInfo(Ledger::pointer lpLedger, const RippleAddress& naAccount)
 {
 	Json::Value	jvObjects(Json::objectValue);
 
@@ -496,7 +496,7 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 
 	ValidationCount& ourVC = ledgers[closedLedger];
 
-	if ((theConfig.LEDGER_CREATOR) && (mMode >= omTRACKING))
+	if (mMode >= omTRACKING)
 	{
 		++ourVC.nodesUsing;
 		uint160 ourAddress = theApp->getWallet().getNodePublic().getNodeID();
@@ -638,7 +638,7 @@ void NetworkOPs::switchLastClosedLedger(Ledger::pointer newLedger, bool duringCo
 	theApp->getConnectionPool().relayMessage(NULL, packet);
 }
 
-int NetworkOPs::beginConsensus(const uint256& networkClosed, Ledger::pointer closingLedger)
+int NetworkOPs::beginConsensus(const uint256& networkClosed, Ledger::ref closingLedger)
 {
 	cLog(lsINFO) << "Consensus time for ledger " << closingLedger->getLedgerSeq();
 	cLog(lsINFO) << " LCL is " << closingLedger->getParentHash();
@@ -678,7 +678,7 @@ bool NetworkOPs::haveConsensusObject()
 	bool ledgerChange = checkLastClosedLedger(peerList, networkClosed);
 	if (!ledgerChange)
 	{
-		cLog(lsWARNING) << "Beginning consensus due to peer action";
+		cLog(lsINFO) << "Beginning consensus due to peer action";
 		beginConsensus(networkClosed, mLedgerMaster->getCurrentLedger());
 	}
 	return mConsensus;
@@ -686,7 +686,7 @@ bool NetworkOPs::haveConsensusObject()
 
 // <-- bool: true to relay
 bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash, const uint256& prevLedger,
-	uint32 closeTime, const std::string& pubKey, const std::string& signature, const NewcoinAddress& nodePublic)
+	uint32 closeTime, const std::string& pubKey, const std::string& signature, const RippleAddress& nodePublic)
 {
 	// JED: does mConsensus need to be locked?
 
@@ -704,12 +704,18 @@ bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash, cons
 	if (!theApp->isNew(s.getSHA512Half()))
 		return false;
 
-	NewcoinAddress naPeerPublic = NewcoinAddress::createNodePublic(strCopy(pubKey));
+	RippleAddress naPeerPublic = RippleAddress::createNodePublic(strCopy(pubKey));
 
 	if (!haveConsensusObject())
 	{
 		cLog(lsINFO) << "Received proposal outside consensus window";
 		return mMode != omFULL;
+	}
+
+	if (mConsensus->isOurPubKey(naPeerPublic))
+	{
+		cLog(lsTRACE) << "Received our own validation";
+		return false;
 	}
 
 	// Is this node on our UNL?
@@ -814,7 +820,7 @@ void NetworkOPs::setMode(OperatingMode om)
 }
 
 std::vector< std::pair<uint32, uint256> >
-	NetworkOPs::getAffectedAccounts(const NewcoinAddress& account, uint32 minLedger, uint32 maxLedger)
+	NetworkOPs::getAffectedAccounts(const RippleAddress& account, uint32 minLedger, uint32 maxLedger)
 {
 	std::vector< std::pair<uint32, uint256> > affectedAccounts;
 
@@ -836,14 +842,14 @@ std::vector< std::pair<uint32, uint256> >
 	return affectedAccounts;
 }
 
-std::vector<NewcoinAddress>
+std::vector<RippleAddress>
 	NetworkOPs::getLedgerAffectedAccounts(uint32 ledgerSeq)
 {
-	std::vector<NewcoinAddress> accounts;
+	std::vector<RippleAddress> accounts;
 	std::string sql = str(boost::format
 		("SELECT DISTINCT Account FROM AccountTransactions INDEXED BY AcctLgrIndex WHERE LedgerSeq = '%d';")
 			 % ledgerSeq);
-	NewcoinAddress acct;
+	RippleAddress acct;
 	{
 		Database* db = theApp->getTxnDB()->getDB();
 		ScopedLock dblock = theApp->getTxnDB()->getDBLock();
@@ -858,7 +864,7 @@ std::vector<NewcoinAddress>
 
 bool NetworkOPs::recvValidation(const SerializedValidation::pointer& val)
 {
-	cLog(lsINFO) << "recvValidation " << val->getLedgerHash();
+	cLog(lsDEBUG) << "recvValidation " << val->getLedgerHash();
 	return theApp->getValidations().addValidation(val);
 }
 
@@ -875,13 +881,15 @@ Json::Value NetworkOPs::getServerInfo()
 		default: info["serverState"] = "unknown";
 	}
 
-	if (!theConfig.VALIDATION_SEED.isValid())
+	if (!theConfig.VALIDATION_PUB.isValid())
 		info["serverState"] = "none";
 	else
-		info["validationPKey"] = NewcoinAddress::createNodePublic(theConfig.VALIDATION_SEED).humanNodePublic();
+		info["validationPKey"] = theConfig.VALIDATION_PUB.humanNodePublic();
 
 	if (mNeedNetworkLedger)
 		info["networkLedger"] = "waiting";
+
+	info["completeLedgers"] = theApp->getMasterLedger().getCompleteLedgers();
 
 	Json::Value lastClose = Json::objectValue;
 	lastClose["proposers"] = theApp->getOPs().getPreviousProposers();
@@ -898,7 +906,7 @@ Json::Value NetworkOPs::getServerInfo()
 // Monitoring: publisher side
 //
 
-Json::Value NetworkOPs::pubBootstrapAccountInfo(Ledger::ref lpAccepted, const NewcoinAddress& naAccountID)
+Json::Value NetworkOPs::pubBootstrapAccountInfo(Ledger::ref lpAccepted, const RippleAddress& naAccountID)
 {
 	Json::Value			jvObj(Json::objectValue);
 
@@ -912,7 +920,7 @@ Json::Value NetworkOPs::pubBootstrapAccountInfo(Ledger::ref lpAccepted, const Ne
 	return jvObj;
 }
 
-void NetworkOPs::pubAccountInfo(const NewcoinAddress& naAccountID, const Json::Value& jvObj)
+void NetworkOPs::pubAccountInfo(const RippleAddress& naAccountID, const Json::Value& jvObj)
 {
 	boost::interprocess::sharable_lock<boost::interprocess::interprocess_upgradable_mutex>	sl(mMonitorLock);
 
@@ -935,6 +943,10 @@ void NetworkOPs::pubAccountInfo(const NewcoinAddress& naAccountID, const Json::V
 
 void NetworkOPs::pubLedger(Ledger::ref lpAccepted)
 {
+	// Don't publish to clients ledgers we don't trust.
+	if (NetworkOPs::omDISCONNECTED == getOperatingMode())
+		return;
+
 	{
 		boost::interprocess::sharable_lock<boost::interprocess::interprocess_upgradable_mutex>	sl(mMonitorLock);
 
@@ -960,7 +972,7 @@ void NetworkOPs::pubLedger(Ledger::ref lpAccepted)
 		{
 			Json::Value	jvAccounts(Json::arrayValue);
 
-			BOOST_FOREACH(const NewcoinAddress& naAccountID, getLedgerAffectedAccounts(lpAccepted->getLedgerSeq()))
+			BOOST_FOREACH(const RippleAddress& naAccountID, getLedgerAffectedAccounts(lpAccepted->getLedgerSeq()))
 			{
 				jvAccounts.append(Json::Value(naAccountID.humanAccountID()));
 			}
@@ -1009,13 +1021,13 @@ void NetworkOPs::pubLedger(Ledger::ref lpAccepted)
 		}
 	}
 
-	// Publish bootsrap information for accounts.
+	// Publish bootstrap information for accounts.
 	{
 		boost::interprocess::scoped_lock<boost::interprocess::interprocess_upgradable_mutex>	sl(mMonitorLock);
 
 		BOOST_FOREACH(const subInfoMapType::iterator::value_type& it, mBootAccountInfo)
 		{
-			Json::Value	jvObj	= pubBootstrapAccountInfo(lpAccepted, NewcoinAddress::createAccountID(it.first));
+			Json::Value	jvObj	= pubBootstrapAccountInfo(lpAccepted, RippleAddress::createAccountID(it.first));
 
 			BOOST_FOREACH(InfoSub* ispListener, it.second)
 			{
@@ -1073,7 +1085,7 @@ void NetworkOPs::pubTransactionAccounts(Ledger::ref lpCurrent, const SerializedT
 
 		if (!mSubAccountTransaction.empty())
 		{
-			BOOST_FOREACH(const NewcoinAddress& naAccountPublic, stTxn.getAffectedAccounts())
+			BOOST_FOREACH(const RippleAddress& naAccountPublic, stTxn.getAffectedAccounts())
 			{
 				subInfoMapIterator	simiIt	= mSubAccountTransaction.find(naAccountPublic.getAccountID());
 
@@ -1118,11 +1130,11 @@ void NetworkOPs::pubTransaction(Ledger::ref lpCurrent, const SerializedTransacti
 // Monitoring
 //
 
-void NetworkOPs::subAccountInfo(InfoSub* ispListener, const boost::unordered_set<NewcoinAddress>& vnaAccountIDs)
+void NetworkOPs::subAccountInfo(InfoSub* ispListener, const boost::unordered_set<RippleAddress>& vnaAccountIDs)
 {
 	boost::interprocess::scoped_lock<boost::interprocess::interprocess_upgradable_mutex>	sl(mMonitorLock);
 
-	BOOST_FOREACH(const NewcoinAddress& naAccountID, vnaAccountIDs)
+	BOOST_FOREACH(const RippleAddress& naAccountID, vnaAccountIDs)
 	{
 		// Register for bootstrap info.
 		subInfoMapType::iterator	simIterator;
@@ -1160,11 +1172,11 @@ void NetworkOPs::subAccountInfo(InfoSub* ispListener, const boost::unordered_set
 	}
 }
 
-void NetworkOPs::unsubAccountInfo(InfoSub* ispListener, const boost::unordered_set<NewcoinAddress>& vnaAccountIDs)
+void NetworkOPs::unsubAccountInfo(InfoSub* ispListener, const boost::unordered_set<RippleAddress>& vnaAccountIDs)
 {
 	boost::interprocess::scoped_lock<boost::interprocess::interprocess_upgradable_mutex>	sl(mMonitorLock);
 
-	BOOST_FOREACH(const NewcoinAddress& naAccountID, vnaAccountIDs)
+	BOOST_FOREACH(const RippleAddress& naAccountID, vnaAccountIDs)
 	{
 		subInfoMapType::iterator	simIterator	= mSubAccountInfo.find(naAccountID.getAccountID());
 		if (simIterator == mSubAccountInfo.end())
@@ -1186,11 +1198,11 @@ void NetworkOPs::unsubAccountInfo(InfoSub* ispListener, const boost::unordered_s
 	}
 }
 
-void NetworkOPs::subAccountTransaction(InfoSub* ispListener, const boost::unordered_set<NewcoinAddress>& vnaAccountIDs)
+void NetworkOPs::subAccountTransaction(InfoSub* ispListener, const boost::unordered_set<RippleAddress>& vnaAccountIDs)
 {
 	boost::interprocess::scoped_lock<boost::interprocess::interprocess_upgradable_mutex>	sl(mMonitorLock);
 
-	BOOST_FOREACH(const NewcoinAddress& naAccountID, vnaAccountIDs)
+	BOOST_FOREACH(const RippleAddress& naAccountID, vnaAccountIDs)
 	{
 		subInfoMapType::iterator	simIterator	= mSubAccountTransaction.find(naAccountID.getAccountID());
 		if (simIterator == mSubAccountTransaction.end())
@@ -1209,11 +1221,11 @@ void NetworkOPs::subAccountTransaction(InfoSub* ispListener, const boost::unorde
 	}
 }
 
-void NetworkOPs::unsubAccountTransaction(InfoSub* ispListener, const boost::unordered_set<NewcoinAddress>& vnaAccountIDs)
+void NetworkOPs::unsubAccountTransaction(InfoSub* ispListener, const boost::unordered_set<RippleAddress>& vnaAccountIDs)
 {
 	boost::interprocess::scoped_lock<boost::interprocess::interprocess_upgradable_mutex>	sl(mMonitorLock);
 
-	BOOST_FOREACH(const NewcoinAddress& naAccountID, vnaAccountIDs)
+	BOOST_FOREACH(const RippleAddress& naAccountID, vnaAccountIDs)
 	{
 		subInfoMapType::iterator	simIterator	= mSubAccountTransaction.find(naAccountID.getAccountID());
 		if (simIterator == mSubAccountTransaction.end())
@@ -1250,7 +1262,7 @@ uint32 NetworkOPs::acceptLedger()
 	return mLedgerMaster->getCurrentLedger()->getLedgerSeq();
 }
 
-void NetworkOPs::storeProposal(const LedgerProposal::pointer& proposal, const NewcoinAddress& peerPublic)
+void NetworkOPs::storeProposal(const LedgerProposal::pointer& proposal, const RippleAddress& peerPublic)
 {
 	std::list<LedgerProposal::pointer>& props = mStoredProposals[peerPublic.getNodeID()];
 	if (props.size() >= (mLastCloseProposers + 10))

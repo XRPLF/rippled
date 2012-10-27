@@ -123,12 +123,12 @@ void SHAMap::dirtyUp(std::stack<SHAMapTreeNode::pointer>& stack, const uint256& 
 
 		if (!node->setChildHash(branch, prevHash))
 		{
-			std::cerr << "dirtyUp terminates early" << std::endl;
+			cLog(lsFATAL) << "dirtyUp terminates early";
 			assert(false);
 			return;
 		}
 #ifdef ST_DEBUG
-		std::cerr << "dirtyUp sets branch " << branch << " to " << prevHash << std::endl;
+		cLog(lsTRACE) << "dirtyUp sets branch " << branch << " to " << prevHash;
 #endif
 		prevHash = node->getNodeHash();
 		assert(prevHash.isNonZero());
@@ -812,6 +812,38 @@ SHAMapTreeNode::pointer SHAMap::getNode(const SHAMapNode& nodeID)
 		if (!node) throw std::runtime_error("missing node");
 	}
 	return node;
+}
+
+bool SHAMap::getPath(const uint256& index, std::vector< std::vector<unsigned char> >& nodes, SHANodeFormat format)
+{
+	// Return the path of nodes to the specified index in the specified format
+	// Return value: true = node present, false = node not present
+
+	boost::recursive_mutex::scoped_lock sl(mLock);
+	SHAMapTreeNode* inNode = root.get();
+
+	while (!inNode->isLeaf())
+	{
+		Serializer s;
+		inNode->addRaw(s, format);
+		nodes.push_back(s.peekData());
+
+		int branch = inNode->selectBranch(index);
+		if (inNode->isEmptyBranch(branch)) // paths leads to empty branch
+			return false;
+		inNode = getNodePointer(inNode->getChildNodeID(branch), inNode->getChildHash(branch));
+		if (!inNode)
+			throw SHAMapMissingNode(mType, inNode->getChildNodeID(branch), inNode->getChildHash(branch), index);
+	}
+
+	if (inNode->getTag() != index) // path leads to different leaf
+		return false;
+
+	// path lead to the requested leaf
+	Serializer s;
+	inNode->addRaw(s, format);
+	nodes.push_back(s.peekData());
+	return true;
 }
 
 void SHAMap::dump(bool hash)

@@ -1,5 +1,5 @@
 #include "SerializedTypes.h"
-#include "NewcoinAddress.h"
+#include "RippleAddress.h"
 #include "OrderBookDB.h"
 #include <boost/shared_ptr.hpp>
 
@@ -44,7 +44,7 @@ class Pathfinder
 	void addPathOption(PathOption::pointer pathOption);
 
 public:
-	Pathfinder(NewcoinAddress& srcAccountID, NewcoinAddress& dstAccountID, uint160& srcCurrencyID, STAmount dstAmount);
+	Pathfinder(RippleAddress& srcAccountID, RippleAddress& dstAccountID, uint160& srcCurrencyID, STAmount dstAmount);
 
 	// returns false if there is no path. otherwise fills out retPath
 	bool findPaths(int maxSearchSteps, int maxPay, STPathSet& retPathSet);

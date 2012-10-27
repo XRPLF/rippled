@@ -31,7 +31,7 @@ Transaction::pointer TransactionMaster::fetch(const uint256& txnID, bool checkDi
 	return txn;
 }
 
-SerializedTransaction::pointer TransactionMaster::fetch(const SHAMapItem::pointer& item, bool checkDisk, uint32 uCommitLedger)
+SerializedTransaction::pointer TransactionMaster::fetch(SHAMapItem::ref item, bool checkDisk, uint32 uCommitLedger)
 {
 	SerializedTransaction::pointer	txn;
 	Transaction::pointer			iTx = theApp->getMasterTransaction().fetch(item->getTag(), false);

@@ -18,8 +18,8 @@ public:
 private:
 	SerializedLedgerEntry::pointer	mLedgerEntry;
 
-	NewcoinAddress					mLowID;
-	NewcoinAddress					mHighID;
+	RippleAddress					mLowID;
+	RippleAddress					mHighID;
 
 	STAmount						mLowLimit;
 	STAmount						mHighLimit;
@@ -39,8 +39,8 @@ public:
 
 	void					setViewAccount(const uint160& accountID);
 
-	const NewcoinAddress	getAccountID() const		{ return mViewLowest ? mLowID : mHighID; }
-	const NewcoinAddress	getAccountIDPeer() const	{ return mViewLowest ? mHighID : mLowID; }
+	const RippleAddress	getAccountID() const		{ return mViewLowest ? mLowID : mHighID; }
+	const RippleAddress	getAccountIDPeer() const	{ return mViewLowest ? mHighID : mLowID; }
 
 	STAmount				getBalance() const			{ return mBalance; }
 

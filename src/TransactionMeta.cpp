@@ -6,8 +6,10 @@
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 
+#include "Log.h"
+
 TransactionMetaSet::TransactionMetaSet(const uint256& txid, uint32 ledger, const std::vector<unsigned char>& vec) :
-	mTransactionID(txid), mLedger(ledger), mNodes(sfAffectedNodes)
+	mTransactionID(txid), mLedger(ledger), mNodes(sfAffectedNodes, 32)
 {
 	Serializer s(vec);
 	SerializerIterator sit(s);
@@ -23,21 +25,20 @@ TransactionMetaSet::TransactionMetaSet(const uint256& txid, uint32 ledger, const
 
 bool TransactionMetaSet::isNodeAffected(const uint256& node) const
 {
-	for (STArray::const_iterator it = mNodes.begin(); it != mNodes.end(); ++it)
-		if (it->getFieldH256(sfLedgerIndex) == node)
+	BOOST_FOREACH(const STObject& it, mNodes)
+		if (it.getFieldH256(sfLedgerIndex) == node)
 			return true;
 	return false;
 }
 
-STObject& TransactionMetaSet::getAffectedNode(const uint256& node, SField::ref type, bool overrideType)
-{
-	for (STArray::iterator it = mNodes.begin(); it != mNodes.end(); ++it)
+void TransactionMetaSet::setAffectedNode(const uint256& node, SField::ref type)
+{ // make sure the node exists and force its type
+	BOOST_FOREACH(STObject& it, mNodes)
 	{
-		if (it->getFieldH256(sfLedgerIndex) == node)
+		if (it.getFieldH256(sfLedgerIndex) == node)
 		{
-			if (overrideType)
-				it->setFName(type);
-			return *it;
+			it.setFName(type);
+			return;
 		}
 	}
 
@@ -46,15 +47,42 @@ STObject& TransactionMetaSet::getAffectedNode(const uint256& node, SField::ref t
 
 	assert(obj.getFName() == type);
 	obj.setFieldH256(sfLedgerIndex, node);
+}
 
-	return mNodes.back();
+STObject& TransactionMetaSet::getAffectedNode(const uint256& node, SField::ref type)
+{
+	assert(&type);
+	BOOST_FOREACH(STObject& it, mNodes)
+	{
+		if (it.getFieldH256(sfLedgerIndex) == node)
+			return it;
+	}
+
+	mNodes.push_back(STObject(sfModifiedNode));
+	STObject& obj = mNodes.back();
+
+	assert(obj.getFName() == type);
+	obj.setFieldH256(sfLedgerIndex, node);
+
+	return obj;
+}
+
+STObject& TransactionMetaSet::getAffectedNode(const uint256& node)
+{
+	BOOST_FOREACH(STObject& it, mNodes)
+	{
+		if (it.getFieldH256(sfLedgerIndex) == node)
+			return it;
+	}
+	assert(false);
+	throw std::runtime_error("Affected node not found");
 }
 
 const STObject& TransactionMetaSet::peekAffectedNode(const uint256& node) const
 {
-	for (STArray::const_iterator it = mNodes.begin(); it != mNodes.end(); ++it)
-		if (it->getFieldH256(sfLedgerIndex) == node)
-			return *it;
+	BOOST_FOREACH(const STObject& it, mNodes)
+		if (it.getFieldH256(sfLedgerIndex) == node)
+			return it;
 	throw std::runtime_error("Affected node not found");
 }
 
@@ -62,7 +90,7 @@ void TransactionMetaSet::init(const uint256& id, uint32 ledger)
 {
 	mTransactionID = id;
 	mLedger = ledger;
-	mNodes = STArray(sfAffectedNodes);
+	mNodes = STArray(sfAffectedNodes, 32);
 }
 
 void TransactionMetaSet::swap(TransactionMetaSet& s)
@@ -73,15 +101,15 @@ void TransactionMetaSet::swap(TransactionMetaSet& s)
 
 bool TransactionMetaSet::thread(STObject& node, const uint256& prevTxID, uint32 prevLgrID)
 {
-	if (node.getFieldIndex(sfLastTxnID) == -1)
+	if (node.getFieldIndex(sfPreviousTxnID) == -1)
 	{
-		assert(node.getFieldIndex(sfLastTxnSeq) == -1);
-		node.setFieldH256(sfLastTxnID, prevTxID);
-		node.setFieldU32(sfLastTxnSeq, prevLgrID);
+		assert(node.getFieldIndex(sfPreviousTxnLgrSeq) == -1);
+		node.setFieldH256(sfPreviousTxnID, prevTxID);
+		node.setFieldU32(sfPreviousTxnLgrSeq, prevLgrID);
 		return true;
 	}
-	assert(node.getFieldH256(sfLastTxnID) == prevTxID);
-	assert(node.getFieldU32(sfLastTxnSeq) == prevLgrID);
+	assert(node.getFieldH256(sfPreviousTxnID) == prevTxID);
+	assert(node.getFieldU32(sfPreviousTxnLgrSeq) == prevLgrID);
 	return false;
 }
 

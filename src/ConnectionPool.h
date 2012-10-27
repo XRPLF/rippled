@@ -9,14 +9,14 @@
 #include "types.h"
 
 //
-// Access to the Newcoin network.
+// Access to the Ripple network.
 //
 class ConnectionPool
 {
 private:
     boost::mutex mPeerLock;
 
-	typedef std::pair<NewcoinAddress, Peer::pointer>	naPeer;
+	typedef std::pair<RippleAddress, Peer::pointer>	naPeer;
 	typedef std::pair<ipPort, Peer::pointer>			pipPeer;
 
 	// Peers we are connecting with and non-thin peers we are connected to.
@@ -28,7 +28,7 @@ private:
 
 	// Non-thin peers which we are connected to.
 	// Peers we have the public key for.
-    boost::unordered_map<NewcoinAddress, Peer::pointer>	mConnectedMap;
+    boost::unordered_map<RippleAddress, Peer::pointer>	mConnectedMap;
 
     boost::asio::ssl::context							mCtx;
 
@@ -72,10 +72,10 @@ public:
 
 	// We know peers node public key.
 	// <-- bool: false=reject
-	bool peerConnected(Peer::ref peer, const NewcoinAddress& naPeer, const std::string& strIP, int iPort);
+	bool peerConnected(Peer::ref peer, const RippleAddress& naPeer, const std::string& strIP, int iPort);
 
 	// No longer connected.
-	void peerDisconnected(Peer::ref peer, const NewcoinAddress& naPeer);
+	void peerDisconnected(Peer::ref peer, const RippleAddress& naPeer);
 
 	// As client accepted.
 	void peerVerified(Peer::ref peer);

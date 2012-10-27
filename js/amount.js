@@ -1,20 +1,143 @@
-// Represent Newcoin amounts and currencies.
+// Represent Ripple amounts and currencies.
 // - Numbers in hex are big-endian.
 
+var sjcl    = require('./sjcl/core.js');
+var bn	    = require('./sjcl/core.js').bn;
 var utils   = require('./utils.js');
 var jsbn    = require('./jsbn.js');
 
+// Don't include in browser context.
+var config    = require('../test/config.js');
+
 var BigInteger	= jsbn.BigInteger;
+var nbi		= jsbn.nbi;
+
+var alphabets = {
+  'ripple' : "rpshnaf39wBUDNEGHJKLM4PQRST7VWXYZ2bcdeCg65jkm8oFqi1tuvAxyz",
+  'bitcoin' : "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+};
+
+// --> input: big-endian array of bytes. 
+// <-- string at least as long as input.
+var encode_base = function (input, alphabet) {
+  var alphabet	= alphabets[alphabet || 'ripple'];
+  var bi_base	= new BigInteger(String(alphabet.length));
+  var bi_q	= nbi();
+  var bi_r	= nbi();
+  var bi_value	= new BigInteger(input);
+  var buffer	= [];
+
+  while (bi_value.compareTo(BigInteger.ZERO) > 0)
+  {
+    bi_value.divRemTo(bi_base, bi_q, bi_r);
+    bi_q.copyTo(bi_value);
+
+    buffer.push(alphabet[bi_r.intValue()]);
+  }
+
+  var i;
+
+  for (i = 0; i != input.length && !input[i]; i += 1) {
+    buffer.push(alphabet[0]);
+  }
+
+  return buffer.reverse().join("");
+};
+
+// --> input: String
+// <-- array of bytes or undefined.
+var decode_base = function (input, alphabet) {
+  var alphabet	= alphabets[alphabet || 'ripple'];
+  var bi_base	= new BigInteger(String(alphabet.length));
+  var bi_value	= nbi();
+  var i;
+
+  for (i = 0; i != input.length && input[i] === alphabet[0]; i += 1)
+    ;
+
+  for (; i != input.length; i += 1) {
+    var	v = alphabet.indexOf(input[i]);
+
+    if (v < 0)
+      return undefined;
+
+    var r = nbi();
+
+    r.fromInt(v); 
+
+    bi_value  = bi_value.multiply(bi_base).add(r); 
+  }
+
+  // toByteArray:
+  // - Returns leading zeros!
+  // - Returns signed bytes!
+  var bytes =  bi_value.toByteArray().map(function (b) { return b ? b < 0 ? 256+b : b : 0});
+  var extra = 0;
+  
+  while (extra != bytes.length && !bytes[extra])
+    extra += 1;
+
+  if (extra)
+    bytes = bytes.slice(extra);
+
+  var zeros = 0;
+
+  while (zeros !== input.length && input[zeros] === alphabet[0])
+    zeros += 1;
+
+  return [].concat(utils.arraySet(zeros, 0), bytes);
+};
+
+var sha256  = function (bytes) {
+  return sjcl.codec.bytes.fromBits(sjcl.hash.sha256.hash(sjcl.codec.bytes.toBits(bytes)));
+};
+
+var sha256hash = function (bytes) {
+  return sha256(sha256(bytes));
+};
+
+// --> input: Array
+// <-- String
+var encode_base_check = function (version, input, alphabet) {
+  var buffer  = [].concat(version, input);
+  var check   = sha256(sha256(buffer)).slice(0, 4);
+
+  return encode_base([].concat(buffer, check), alphabet);
+}
+
+// --> input : String
+// <-- NaN || BigInteger
+var decode_base_check = function (version, input, alphabet) {
+  var buffer = decode_base(input, alphabet);
+
+  if (!buffer || buffer[0] !== version || buffer.length < 5)
+    return NaN;
+
+  var computed	= sha256hash(buffer.slice(0, -4)).slice(0, 4);
+  var checksum	= buffer.slice(-4);
+  var i;
+
+  for (i = 0; i != 4; i += 1)
+    if (computed[i] !== checksum[i])
+      return NaN;
+
+  return new BigInteger(buffer.slice(1, -4));
+}
 
 var UInt160 = function () {
-  // Internal form:
-  //   0, 1, 'iXXXXX', 20 byte string, or NaN.
-  //   XXX Should standardize on 'i' format or 20 format.
+  // Internal form: NaN or BigInteger
   this.value  = NaN;
 };
 
+UInt160.json_rewrite = function (j) {
+  return UInt160.from_json(j).to_json();
+};
+
+// Return a new UInt160 from j.
 UInt160.from_json = function (j) {
-  return (new UInt160()).parse_json(j);
+  return 'string' === typeof j
+    ? (new UInt160()).parse_json(j)
+    : j.clone();
 };
 
 UInt160.prototype.clone = function() {
@@ -28,9 +151,15 @@ UInt160.prototype.copyTo = function(d) {
   return d;
 };
 
-// value === NaN on error.
+UInt160.prototype.equals = function(d) {
+  return isNaN(this.value) || isNaN(d.value) ? false : this.value.equals(d.value);
+};
+
+// value = NaN on error.
 UInt160.prototype.parse_json = function (j) {
   // Canonicalize and validate
+  if (config.accounts && j in config.accounts)
+    j = config.accounts[j].account;
 
   switch (j) {
     case undefined:
@@ -38,14 +167,15 @@ UInt160.prototype.parse_json = function (j) {
     case exports.consts.address_xns:
     case exports.consts.uint160_xns:
     case exports.consts.hex_xns:
-      this.value  = 0;
+      this.value  = nbi();
       break;
 
     case "1":
     case exports.consts.address_one:
     case exports.consts.uint160_one:
     case exports.consts.hex_one:
-      this.value  = 1;
+      this.value  = new BigInteger([1]);
+
       break;
 
     default:
@@ -53,15 +183,14 @@ UInt160.prototype.parse_json = function (j) {
 	this.value  = NaN;
       }
       else if (20 === j.length) {
-	this.value  = j;
+	this.value  = new BigInteger(utils.stringToArray(j), 256);
       }
       else if (40 === j.length) {
-	this.value  = utils.hexToString(j);
+	// XXX Check char set!
+	this.value  = new BigInteger(j, 16);
       }
       else if (j[0] === "r") {
-	// XXX Do more checking convert to string.
-
-	this.value  = j;
+	this.value  = decode_base_check(0, j);
       }
       else {
 	this.value  = NaN;
@@ -74,25 +203,26 @@ UInt160.prototype.parse_json = function (j) {
 // Convert from internal form.
 // XXX Json form should allow 0 and 1, C++ doesn't currently allow it.
 UInt160.prototype.to_json = function () {
-  if ("0" === this.value) {
-    return exports.consts.hex_xns;
-  }
-  else if ("1" === this.value)
-  {
-    return exports.consts.hex_one;
-  }
-  else if ('string' === typeof this.value && 20 === this.value.length) {
-    return utils.stringToHex(this.value);
-  }
-  else
-  {
-    return this.value;  
-  }
+  if (isNaN(this.value))
+    return NaN;
+  
+  var bytes   = this.value.toByteArray().map(function (b) { return b ? b < 0 ? 256+b : b : 0});
+  var target  = 20;
+
+  // XXX Make sure only trim off leading zeros.
+  var array = bytes.length < target
+		? bytes.length
+		  ? [].concat(utils.arraySet(target - bytes.length, 0), bytes)
+		  : utils.arraySet(target, 0)
+		: bytes.slice(target - bytes.length);
+  var output = encode_base_check(0, array);
+
+  return output;
 };
 
 var Currency = function () {
   // Internal form: 0 = XNS. 3 letter-code.
-  // XXX Internal should be 0 or hex.
+  // XXX Internal should be 0 or hex with three letter annotation when valid.
 
   // Json form:
   //  '', 'XNS', '0': 0
@@ -117,7 +247,7 @@ Currency.prototype.copyTo = function(d) {
   return d;
 };
 
-// this.value === NaN on error.
+// this.value = NaN on error.
 Currency.prototype.parse_json = function(j) {
   if ("" === j || "0" === j || "XNS" === j) {
     this.value	= 0;
@@ -154,19 +284,32 @@ var Amount = function () {
   this.issuer	    = new UInt160();
 };
 
+// Given "100/USD/mtgox" return the a string with mtgox remapped.
+Amount.text_full_rewrite = function (j) {
+  return Amount.from_json(j).to_text_full();
+}
+
+// Given "100/USD/mtgox" return the json.
+Amount.json_rewrite = function(j) {
+  return Amount.from_json(j).to_json();
+};
+
 Amount.from_json = function(j) {
   return (new Amount()).parse_json(j);
 };
 
-Amount.prototype.clone = function() {
-  return this.copyTo(new Amount());
+Amount.prototype.clone = function(negate) {
+  return this.copyTo(new Amount(), negate);
 };
 
 // Returns copy.
-Amount.prototype.copyTo = function(d) {
+Amount.prototype.copyTo = function(d, negate) {
   if ('object' === typeof this.value)
   {
-    this.value.copyTo(d.value);
+    if (this.is_native && negate)
+      this.value.negate().copyTo(d.value);
+    else
+      this.value.copyTo(d.value);
   }
   else
   {
@@ -175,7 +318,11 @@ Amount.prototype.copyTo = function(d) {
 
   d.offset	= this.offset;
   d.is_native	= this.is_native;
-  d.is_negative	= this.is_negative;
+  d.is_negative	= this.is_native
+		    ? undefined		    // Native sign in BigInteger.
+		    : negate
+		      ? !this.is_negative   // Negating.
+		      : this.is_negative;   // Just copying.
 
   this.currency.copyTo(d.currency);
   this.issuer.copyTo(d.issuer);
@@ -185,12 +332,12 @@ Amount.prototype.copyTo = function(d) {
 
 // YYY Might also provide is_valid_json.
 Amount.prototype.is_valid = function() {
-  return NaN !== this.value;
+  return !isNaN(this.value);
 };
 
 // Convert only value to JSON wire format.
 Amount.prototype.to_text = function(allow_nan) {
-  if (NaN === this.value) {
+  if (isNaN(this.value)) {
     // Never should happen.
     return allow_nan ? NaN : "0";
   }
@@ -231,7 +378,7 @@ Amount.prototype.to_text = function(allow_nan) {
 };
 
 Amount.prototype.canonicalize = function() {
-  if (NaN === this.value || !this.currency) {
+  if (isNaN(this.value) || !this.currency) {
     // nothing
   }
   else if (this.value.equals(BigInteger.ZERO)) {
@@ -250,6 +397,13 @@ Amount.prototype.canonicalize = function() {
       this.offset += 1;
     }
   }
+
+  return this;
+};
+
+// Return a new value.
+Amount.prototype.negate = function () {
+  return this.clone('NEGATE');
 };
 
 Amount.prototype.to_json = function() {
@@ -267,7 +421,7 @@ Amount.prototype.to_json = function() {
 };
 
 Amount.prototype.to_text_full = function() {
-  return this.value === NaN
+  return isNaN(this.value)
     ? NaN
     : this.is_native
       ? this.to_text() + "/XNS"
@@ -282,22 +436,25 @@ Amount.prototype.parse_native = function(j) {
   var m;
 
   if ('string' === typeof j)
-    m = j.match(/^(\d+)(\.\d{1,6})?$/);
+    m = j.match(/^(-?)(\d+)(\.\d{1,6})?$/);
 
   if (m) {
-    if (undefined === m[2]) {
+    if (undefined === m[3]) {
       // Integer notation
 
-      this.value	  = new BigInteger(m[1]);
+      this.value	  = new BigInteger(m[2]);
     }
     else {
       // Decimal notation
 
-      var   int_part	  = (new BigInteger(m[1])).multiply(exports.consts.bi_xns_unit);
-      var   fraction_part = (new BigInteger(m[2])).multiply(new BigInteger(String(Math.pow(10, 1+exports.consts.xns_precision-m[2].length))));
+      var   int_part	  = (new BigInteger(m[2])).multiply(exports.consts.bi_xns_unit);
+      var   fraction_part = (new BigInteger(m[3])).multiply(new BigInteger(String(Math.pow(10, 1+exports.consts.xns_precision-m[3].length))));
 
       this.value	  = int_part.add(fraction_part);
     }
+
+    if (m[1])
+      this.value  = this.value.negate();
 
     this.is_native    = true;
     this.offset	      = undefined;
@@ -317,44 +474,58 @@ Amount.prototype.parse_native = function(j) {
 
 // Parse a non-native value.
 Amount.prototype.parse_value = function(j) {
+  this.is_native    = false;
+
   if ('number' === typeof j) {
+    this.is_negative  = j < 0;
+      if (this.is_negative) j = -j;
     this.value	      = new BigInteger(j);
     this.offset	      = 0;
-    this.is_native    = false;
-    this.is_negative  = j < 0;
 
     this.canonicalize();
   } 
   else if ('string' === typeof j) {
-    var	e = j.match(/^(-?\d+)e(\d+)/);
-    var	d = j.match(/^(-?\d+)\.(\d+)/);
+    var	i = j.match(/^(-?)(\d+)$/);
+    var	d = !i && j.match(/^(-?)(\d+)\.(\d*)$/);
+    var	e = !e && j.match(/^(-?)(\d+)e(\d+)$/);
 
     if (e) {
       // e notation
     
-      this.value  = new BigInteger(e[1]);
-      this.offset = parseInt(e[2]);
+      this.value	= new BigInteger(e[2]);
+      this.offset 	= parseInt(e[3]);
+      this.is_negative  = !!e[1];
+
+      this.canonicalize();
     }
     else if (d) {
       // float notation
 
-      var integer   = new BigInteger(d[1]);
-      var fraction  = new BigInteger(d[2]);
-      this.value    = integer.multiply(exports.consts.bi_10.clone().pow(d[2].length)).add(fraction);
-      this.offset   = -d[2].length;
+      var integer	= new BigInteger(d[2]);
+      var fraction    	= new BigInteger(d[3]);
+      var precision	= d[3].length;
+
+      this.value      	= integer.multiply(exports.consts.bi_10.clone().pow(precision)).add(fraction);
+      this.offset     	= -precision;
+      this.is_negative  = !!d[1];
+
+      this.canonicalize();
     }
-    else
-    {
+    else if (i) {
       // integer notation
 
-      this.value  = new BigInteger(j);
-      this.offset = 0;
+      this.value	= new BigInteger(i[2]);
+      this.offset 	= 0;
+      this.is_negative  = !!i[1];
+
+      this.canonicalize();
     }
-
-    this.is_native    = false;
-    this.is_negative  = undefined;
-
-    this.canonicalize();
+    else {
+      this.value	= NaN;
+    }
+  }
+  else if (j.constructor == BigInteger) {
+    this.value	      = j.clone();
   }
   else {
     this.value	      = NaN;
@@ -380,23 +551,46 @@ Amount.prototype.parse_json = function(j) {
       this.issuer   = new UInt160();
     }
   }
-  else if ('object' === typeof j && j.currency) {
-    // Never XNS.
+  else if ('object' === typeof j && j.constructor == Amount) {
+    j.copyTo(this);
+  }
+  else if ('object' === typeof j && 'value' in j) {
+    // Parse the passed value to sanitize and copy it.
 
     this.parse_value(j.value);
-    this.currency.parse_json(j.currency);
+    this.currency.parse_json(j.currency);     // Never XNS.
     this.issuer.parse_json(j.issuer);
   }
   else {
-    this.value	      = NaN;
+    this.value	    = NaN;
   }
 
   return this;
 };
 
-exports.Amount	  = Amount;
-exports.Currency  = Currency;
-exports.UInt160	  = UInt160;
+Amount.prototype.parse_issuer = function (issuer) {
+  this.issuer.parse_json(issuer);
+
+  return this;
+};
+
+// Check BigInteger NaN
+Amount.prototype.equals = function (d) {
+  return 'string' === typeof (d)
+    ? this.equals(Amount.from_json(d))
+    : this === d
+      || (d.constructor === Amount
+	&& this.is_native === d.is_native
+	&& (this.is_native
+	    ? this.value.equals(d.value)
+	    : this.is_negative === d.is_negative
+	      ? this.value.equals(d.value)
+	      : this.value.equals(BigInteger.ZERO) && d.value.equals(BigInteger.ZERO)));
+};
+
+exports.Amount	      = Amount;
+exports.Currency      = Currency;
+exports.UInt160	      = UInt160;
 
 exports.consts	  = {
   'address_xns'	      : "rrrrrrrrrrrrrrrrrrrrrhoLvTp",

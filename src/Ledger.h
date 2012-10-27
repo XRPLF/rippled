@@ -85,7 +85,7 @@ protected:
 	SLE::pointer getASNode(LedgerStateParms& parms, const uint256& nodeID, LedgerEntryType let);
 
 public:
-	Ledger(const NewcoinAddress& masterID, uint64 startAmount); // used for the starting bootstrap ledger
+	Ledger(const RippleAddress& masterID, uint64 startAmount); // used for the starting bootstrap ledger
 
 	Ledger(const uint256 &parentHash, const uint256 &transHash, const uint256 &accountHash,
 		uint64 totCoins, uint32 closeTime, uint32 parentCloseTime, int closeFlags, int closeResolution,
@@ -100,6 +100,7 @@ public:
 	Ledger(Ledger& target, bool isMutable); // snapshot
 
 	static Ledger::pointer getSQL(const std::string& sqlStatement);
+	static Ledger::pointer getLastFullLedger();
 
 	void updateHash();
 	void setClosed()	{ mClosed = true; }
@@ -150,13 +151,13 @@ public:
 	static SerializedTransaction::pointer getSTransaction(SHAMapItem::ref, SHAMapTreeNode::TNType);
 
 	// high-level functions
-	AccountState::pointer getAccountState(const NewcoinAddress& acctID);
+	AccountState::pointer getAccountState(const RippleAddress& acctID);
 	LedgerStateParms writeBack(LedgerStateParms parms, SLE::ref);
 	SLE::pointer getAccountRoot(const uint160& accountID);
-	SLE::pointer getAccountRoot(const NewcoinAddress& naAccountID);
+	SLE::pointer getAccountRoot(const RippleAddress& naAccountID);
 
 	// database functions
-	void saveAcceptedLedger();
+	void saveAcceptedLedger(bool fromConsensus);
 	static Ledger::pointer loadByIndex(uint32 ledgerIndex);
 	static Ledger::pointer loadByHash(const uint256& ledgerHash);
 
@@ -172,7 +173,7 @@ public:
 	// index calculation functions
 	static uint256 getAccountRootIndex(const uint160& uAccountID);
 
-	static uint256 getAccountRootIndex(const NewcoinAddress& account)
+	static uint256 getAccountRootIndex(const RippleAddress& account)
 	{ return getAccountRootIndex(account.getAccountID()); }
 
 	//
@@ -256,9 +257,9 @@ public:
 	//
 
 	// Index of node which is the ripple state between two accounts for a currency.
-	static uint256 getRippleStateIndex(const NewcoinAddress& naA, const NewcoinAddress& naB, const uint160& uCurrency);
+	static uint256 getRippleStateIndex(const RippleAddress& naA, const RippleAddress& naB, const uint160& uCurrency);
 	static uint256 getRippleStateIndex(const uint160& uiA, const uint160& uiB, const uint160& uCurrency)
-		{ return getRippleStateIndex(NewcoinAddress::createAccountID(uiA), NewcoinAddress::createAccountID(uiB), uCurrency); }
+		{ return getRippleStateIndex(RippleAddress::createAccountID(uiA), RippleAddress::createAccountID(uiB), uCurrency); }
 
 	RippleState::pointer accessRippleState(const uint256& uNode);
 
@@ -270,11 +271,11 @@ public:
 			return getRippleState(qry, uNode);
 		}
 
-	SLE::pointer getRippleState(const NewcoinAddress& naA, const NewcoinAddress& naB, const uint160& uCurrency)
+	SLE::pointer getRippleState(const RippleAddress& naA, const RippleAddress& naB, const uint160& uCurrency)
 		{ return getRippleState(getRippleStateIndex(naA, naB, uCurrency)); }
 
 	SLE::pointer getRippleState(const uint160& uiA, const uint160& uiB, const uint160& uCurrency)
-		{ return getRippleState(getRippleStateIndex(NewcoinAddress::createAccountID(uiA), NewcoinAddress::createAccountID(uiB), uCurrency)); }
+		{ return getRippleState(getRippleStateIndex(RippleAddress::createAccountID(uiA), RippleAddress::createAccountID(uiB), uCurrency)); }
 
 	Json::Value getJson(int options);
 	void addJson(Json::Value&, int options);

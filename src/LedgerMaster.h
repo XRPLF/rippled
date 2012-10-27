@@ -5,8 +5,10 @@
 #include "LedgerHistory.h"
 #include "Peer.h"
 #include "types.h"
+#include "LedgerAcquire.h"
 #include "Transaction.h"
 #include "TransactionEngine.h"
+#include "RangeSet.h"
 
 // Tracks the current ledger and any ledgers in the process of closing
 // Tracks ledger history
@@ -25,13 +27,20 @@ class LedgerMaster
 
 	std::map<uint256, Transaction::pointer> mHeldTransactionsByID;
 
+	RangeSet mCompleteLedgers;
+	LedgerAcquire::pointer mMissingLedger;
+	uint32 mMissingSeq;
+
 	void applyFutureTransactions(uint32 ledgerIndex);
 	bool isValidTransaction(const Transaction::pointer& trans);
 	bool isTransactionOnFutureList(const Transaction::pointer& trans);
 
+	void acquireMissingLedger(const uint256& ledgerHash, uint32 ledgerSeq);
+	void missingAcquireComplete(LedgerAcquire::pointer);
+
 public:
 
-	LedgerMaster()						{ ; }
+	LedgerMaster() : mMissingSeq(0)		{ ; }
 
 	uint32 getCurrentLedgerIndex();
 
@@ -46,10 +55,14 @@ public:
 	TER doTransaction(const SerializedTransaction& txn, TransactionEngineParams params);
 
 	void pushLedger(Ledger::ref newLedger);
-	void pushLedger(Ledger::ref newLCL, Ledger::ref newOL);
+	void pushLedger(Ledger::ref newLCL, Ledger::ref newOL, bool fromConsensus);
 	void storeLedger(Ledger::ref);
 
+	void setFullLedger(Ledger::ref ledger);
+
 	void switchLedgers(Ledger::ref lastClosed, Ledger::ref newCurrent);
+
+	std::string getCompleteLedgers()	{ return mCompleteLedgers.toString(); }
 
 	Ledger::pointer closeLedger();
 
@@ -75,6 +88,8 @@ public:
 
 		return mLedgerHistory.getLedgerByHash(hash);
 	}
+
+	void setLedgerRangePresent(uint32 minV, uint32 maxV) { mCompleteLedgers.setRange(minV, maxV); }
 
 	bool addHeldTransaction(const Transaction::pointer& trans);
 };

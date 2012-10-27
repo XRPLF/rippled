@@ -58,6 +58,7 @@ public:
 
 	virtual SerializedTypeID getSType() const { return STI_OBJECT; }
 	virtual bool isEquivalent(const SerializedType& t) const;
+	virtual bool isDefault() const { return mData.empty(); }
 
 	virtual void add(Serializer& s) const	{ add(s, true);	} // just inner elements
 	void add(Serializer& s, bool withSignature) const;
@@ -108,7 +109,7 @@ public:
 	uint128 getFieldH128(SField::ref field) const;
 	uint160 getFieldH160(SField::ref field) const;
 	uint256 getFieldH256(SField::ref field) const;
-	NewcoinAddress getFieldAccount(SField::ref field) const;
+	RippleAddress getFieldAccount(SField::ref field) const;
 	uint160 getFieldAccount160(SField::ref field) const;
 	std::vector<unsigned char> getFieldVL(SField::ref field) const;
 	std::vector<TaggedListItem> getFieldTL(SField::ref field) const;
@@ -126,7 +127,7 @@ public:
 	void setFieldVL(SField::ref field, const std::vector<unsigned char>&);
 	void setFieldTL(SField::ref field, const std::vector<TaggedListItem>&);
 	void setFieldAccount(SField::ref field, const uint160&);
-	void setFieldAccount(SField::ref field, const NewcoinAddress& addr)
+	void setFieldAccount(SField::ref field, const RippleAddress& addr)
 	{ setFieldAccount(field, addr.getAccountID()); }
 	void setFieldAmount(SField::ref field, const STAmount&);
 	void setFieldPathSet(SField::ref field, const STPathSet&);
@@ -148,7 +149,31 @@ public:
 	{ return makeDefaultObject(STI_NOTPRESENT, name); }
 	static std::auto_ptr<SerializedType> makeDefaultObject(SField::ref name)
 	{ return makeDefaultObject(name.fieldType, name); }
+
+	// field iterator stuff
+	typedef boost::ptr_vector<SerializedType>::iterator iterator;
+	typedef boost::ptr_vector<SerializedType>::const_iterator const_iterator;
+	iterator begin()				{ return mData.begin(); }
+	iterator end()					{ return mData.end(); }
+	const_iterator begin() const	{ return mData.begin(); }
+	const_iterator end() const		{ return mData.end(); }
+	bool empty() const				{ return mData.empty(); }
+
+	bool hasMatchingEntry(const SerializedType&);
+
+	bool operator==(const STObject& o) const;
+	bool operator!=(const STObject& o) const { return ! (*this == o); }
 };
+
+inline STObject::iterator range_begin(STObject& x)		{ return x.begin(); }
+inline STObject::iterator range_end(STObject &x)		{ return x.end(); }
+namespace boost
+{
+	template<> struct range_mutable_iterator<STObject>	{ typedef STObject::iterator type; };
+	template<> struct range_const_iterator<STObject>	{ typedef STObject::const_iterator type; };
+}
+
+
 
 class STArray : public SerializedType
 {
@@ -170,7 +195,9 @@ protected:
 public:
 
 	STArray()																{ ; }
+	STArray(int n)															{ value.reserve(n); }
 	STArray(SField::ref f) : SerializedType(f)								{ ; }
+	STArray(SField::ref f, int n) : SerializedType(f)						{ value.reserve(n); }
 	STArray(SField::ref f, const vector& v) : SerializedType(f), value(v)	{ ; }
 	STArray(vector& v) : value(v)											{ ; }
 
@@ -215,7 +242,16 @@ public:
 
 	virtual SerializedTypeID getSType() const 		{ return STI_ARRAY; }
 	virtual bool isEquivalent(const SerializedType& t) const;
+	virtual bool isDefault() const					{ return value.empty(); }
 };
+
+inline STArray::iterator range_begin(STArray& x)		{ return x.begin(); }
+inline STArray::iterator range_end(STArray &x)			{ return x.end(); }
+namespace boost
+{
+	template<> struct range_mutable_iterator<STArray>	{ typedef STArray::iterator type; };
+	template<> struct range_const_iterator<STArray>		{ typedef STArray::const_iterator type; };
+}
 
 #endif
 // vim:ts=4

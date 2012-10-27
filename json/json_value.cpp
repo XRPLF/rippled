@@ -734,6 +734,7 @@ Value::asInt() const
    case booleanValue:
       return value_.bool_ ? 1 : 0;
    case stringValue:
+	    return boost::lexical_cast<int>(value_.string_);
    case arrayValue:
    case objectValue:
       JSON_ASSERT_MESSAGE( false, "Type is not convertible to int" );
@@ -761,6 +762,7 @@ Value::asUInt() const
    case booleanValue:
       return value_.bool_ ? 1 : 0;
    case stringValue:
+	   return boost::lexical_cast<unsigned int>(value_.string_);
    case arrayValue:
    case objectValue:
       JSON_ASSERT_MESSAGE( false, "Type is not convertible to uint" );

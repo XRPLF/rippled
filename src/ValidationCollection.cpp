@@ -9,9 +9,11 @@
 
 SETUP_LOG();
 
+typedef std::pair<const uint160, SerializedValidation::pointer> u160_val_pair;
+
 bool ValidationCollection::addValidation(const SerializedValidation::pointer& val)
 {
-	NewcoinAddress signer = val->getSignerPublic();
+	RippleAddress signer = val->getSignerPublic();
 	bool isCurrent = false;
 	if (theApp->getUNL().nodeInUNL(signer) || val->isTrusted())
 	{
@@ -121,10 +123,9 @@ int ValidationCollection::getNodesAfter(const uint256& ledger)
 { // Number of trusted nodes that have moved past this ledger
 	int count = 0;
 	boost::mutex::scoped_lock sl(mValidationLock);
-	for (boost::unordered_map<uint160, SerializedValidation::pointer>::iterator it = mCurrentValidations.begin(),
-		end = mCurrentValidations.end(); it != end; ++it)
+	BOOST_FOREACH(u160_val_pair& it, mCurrentValidations)
 	{
-		if (it->second->isTrusted() && it->second->isPreviousHash(ledger))
+		if (it.second->isTrusted() && it.second->isPreviousHash(ledger))
 			++count;
 	}
 	return count;
@@ -136,12 +137,11 @@ int ValidationCollection::getLoadRatio(bool overLoaded)
 	int badNodes = overLoaded ? 0 : 1;
 	{
 		boost::mutex::scoped_lock sl(mValidationLock);
-		for (boost::unordered_map<uint160, SerializedValidation::pointer>::iterator it = mCurrentValidations.begin(),
-			end = mCurrentValidations.end(); it != end; ++it)
+		BOOST_FOREACH(u160_val_pair& it, mCurrentValidations)
 		{
-			if (it->second->isTrusted())
+			if (it.second->isTrusted())
 			{
-				if (it->second->isFull())
+				if (it.second->isFull())
 					++goodNodes;
 				else
 					++badNodes;
@@ -190,14 +190,13 @@ ValidationCollection::getCurrentValidations(uint256 currentLedger)
 
 void ValidationCollection::flush()
 {
-		boost::mutex::scoped_lock sl(mValidationLock);
-		boost::unordered_map<uint160, SerializedValidation::pointer>::iterator it = mCurrentValidations.begin();
 		bool anyNew = false;
-		while (it != mCurrentValidations.end())
+
+		boost::mutex::scoped_lock sl(mValidationLock);
+		BOOST_FOREACH(u160_val_pair& it, mCurrentValidations)
 		{
-			if (it->second)
-				mStaleValidations.push_back(it->second);
-			++it;
+			if (it.second)
+				mStaleValidations.push_back(it.second);
 			anyNew = true;
 		}
 		mCurrentValidations.clear();
@@ -243,7 +242,6 @@ void ValidationCollection::doWrite()
 					% db->escape(strCopy(it->getSignature()))));
 			db->executeSQL("END TRANSACTION;");
 		}
-
 		sl.lock();
 	}
 	mWriting = false;

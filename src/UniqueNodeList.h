@@ -5,12 +5,12 @@
 
 #include "../json/value.h"
 
-#include "NewcoinAddress.h"
+#include "RippleAddress.h"
 #include "Config.h"
 #include "HttpsClient.h"
 #include "ParseSection.h"
 
-#include <boost/thread/mutex.hpp>
+#include <boost/thread/recursive_mutex.hpp>
 #include <boost/unordered_map.hpp>
 #include <boost/unordered_set.hpp>
 
@@ -48,7 +48,7 @@ private:
 	boost::posix_time::ptime		mtpScoreUpdated;
 	boost::posix_time::ptime		mtpFetchUpdated;
 
-	boost::recursive_mutex				mUNLLock;
+	boost::recursive_mutex			mUNLLock;
 	// XXX Make this faster, make this the contents vector unsigned char or raw public key.
 	// XXX Contents needs to based on score.
 	boost::unordered_set<std::string>	mUNL;
@@ -58,7 +58,7 @@ private:
 
 	typedef struct {
 		std::string					strDomain;
-		NewcoinAddress				naPublicKey;
+		RippleAddress				naPublicKey;
 		validatorSource				vsSource;
 		boost::posix_time::ptime	tpNext;
 		boost::posix_time::ptime	tpScan;
@@ -68,7 +68,7 @@ private:
 	} seedDomain;
 
 	typedef struct {
-		NewcoinAddress				naPublicKey;
+		RippleAddress				naPublicKey;
 		validatorSource				vsSource;
 		boost::posix_time::ptime	tpNext;
 		boost::posix_time::ptime	tpScan;
@@ -117,20 +117,20 @@ private:
 	void fetchProcess(std::string strDomain);
 	void fetchTimerHandler(const boost::system::error_code& err);
 
-	void getValidatorsUrl(const NewcoinAddress& naNodePublic, section secSite);
-	void getIpsUrl(const NewcoinAddress& naNodePublic, section secSite);
-	void responseIps(const std::string& strSite, const NewcoinAddress& naNodePublic, const boost::system::error_code& err, const std::string& strIpsFile);
-	void responseValidators(const std::string& strValidatorsUrl, const NewcoinAddress& naNodePublic, section secSite, const std::string& strSite, const boost::system::error_code& err, const std::string& strValidatorsFile);
+	void getValidatorsUrl(const RippleAddress& naNodePublic, section secSite);
+	void getIpsUrl(const RippleAddress& naNodePublic, section secSite);
+	void responseIps(const std::string& strSite, const RippleAddress& naNodePublic, const boost::system::error_code& err, const std::string& strIpsFile);
+	void responseValidators(const std::string& strValidatorsUrl, const RippleAddress& naNodePublic, section secSite, const std::string& strSite, const boost::system::error_code& err, const std::string& strValidatorsFile);
 
-	void processIps(const std::string& strSite, const NewcoinAddress& naNodePublic, section::mapped_type* pmtVecStrIps);
-	int processValidators(const std::string& strSite, const std::string& strValidatorsSrc, const NewcoinAddress& naNodePublic, validatorSource vsWhy, section::mapped_type* pmtVecStrValidators);
+	void processIps(const std::string& strSite, const RippleAddress& naNodePublic, section::mapped_type* pmtVecStrIps);
+	int processValidators(const std::string& strSite, const std::string& strValidatorsSrc, const RippleAddress& naNodePublic, validatorSource vsWhy, section::mapped_type* pmtVecStrValidators);
 
-	void processFile(const std::string& strDomain, const NewcoinAddress& naNodePublic, section secSite);
+	void processFile(const std::string& strDomain, const RippleAddress& naNodePublic, section secSite);
 
 	bool getSeedDomains(const std::string& strDomain, seedDomain& dstSeedDomain);
 	void setSeedDomains(const seedDomain& dstSeedDomain, bool bNext);
 
-	bool getSeedNodes(const NewcoinAddress& naNodePublic, seedNode& dstSeedNode);
+	bool getSeedNodes(const RippleAddress& naNodePublic, seedNode& dstSeedNode);
 	void setSeedNodes(const seedNode& snSource, bool bNext);
 
 	void validatorsResponse(const boost::system::error_code& err, std::string strResponse);
@@ -142,15 +142,15 @@ public:
 	// Begin processing.
 	void start();
 
-	void nodeAddPublic(const NewcoinAddress& naNodePublic, validatorSource vsWhy, const std::string& strComment);
+	void nodeAddPublic(const RippleAddress& naNodePublic, validatorSource vsWhy, const std::string& strComment);
 	void nodeAddDomain(std::string strDomain, validatorSource vsWhy, const std::string& strComment="");
-	void nodeRemovePublic(const NewcoinAddress& naNodePublic);
+	void nodeRemovePublic(const RippleAddress& naNodePublic);
 	void nodeRemoveDomain(std::string strDomain);
 	void nodeReset();
 
 	void nodeScore();
 
-	bool nodeInUNL(const NewcoinAddress& naNodePublic);
+	bool nodeInUNL(const RippleAddress& naNodePublic);
 
 	void nodeBootstrap();
 	bool nodeLoad(boost::filesystem::path pConfig);

@@ -1,6 +1,11 @@
 #ifndef __TRANSACTION__
 #define __TRANSACTION__
 
+//
+// Notes: this code contains legacy constructored sharedXYZ and setXYZ. The intent is for these functions to go away. Transactions
+// should now be constructed in JSON with. Use STObject::parseJson to obtain a binary version.
+//
+
 #include <vector>
 
 #include <boost/shared_ptr.hpp>
@@ -16,6 +21,8 @@
 #include "SHAMap.h"
 #include "SerializedTransaction.h"
 #include "TransactionErr.h"
+
+class Database;
 
 enum TransStatus
 {
@@ -38,9 +45,9 @@ public:
 
 private:
 	uint256			mTransactionID;
-	NewcoinAddress	mAccountFrom;
-	NewcoinAddress	mFromPubKey;	// Sign transaction with this. mSignPubKey
-	NewcoinAddress	mSourcePrivate;	// Sign transaction with this.
+	RippleAddress	mAccountFrom;
+	RippleAddress	mFromPubKey;	// Sign transaction with this. mSignPubKey
+	RippleAddress	mSourcePrivate;	// Sign transaction with this.
 
 	uint32			mInLedger;
 	TransStatus		mStatus;
@@ -49,12 +56,12 @@ private:
 	SerializedTransaction::pointer mTransaction;
 
 	Transaction::pointer setAccountSet(
-		const NewcoinAddress&				naPrivateKey,
+		const RippleAddress&				naPrivateKey,
 		bool								bEmailHash,
 		const uint128&						uEmailHash,
 		bool								bWalletLocator,
 		const uint256&						uWalletLocator,
-		const NewcoinAddress&				naMessagePublic,
+		const RippleAddress&				naMessagePublic,
 		bool								bDomain,
 		const std::vector<unsigned char>&	vucDomain,
 		bool								bTransferRate,
@@ -64,18 +71,18 @@ private:
 		const uint32						uPublishSize);
 
 	Transaction::pointer setClaim(
-		const NewcoinAddress&				naPrivateKey,
+		const RippleAddress&				naPrivateKey,
 		const std::vector<unsigned char>&	vucGenerator,
 		const std::vector<unsigned char>&	vucPubKey,
 		const std::vector<unsigned char>&	vucSignature);
 
 	Transaction::pointer setCreate(
-		const NewcoinAddress&				naPrivateKey,
-		const NewcoinAddress&				naCreateAccountID,
+		const RippleAddress&				naPrivateKey,
+		const RippleAddress&				naCreateAccountID,
 		const STAmount&						saFund);
 
 	Transaction::pointer setCreditSet(
-		const NewcoinAddress&				naPrivateKey,
+		const RippleAddress&				naPrivateKey,
 		const STAmount&						saLimitAmount,
 		bool								bQualityIn,
 		uint32								uQualityIn,
@@ -83,36 +90,36 @@ private:
 		uint32								uQualityOut);
 
 	Transaction::pointer setNicknameSet(
-		const NewcoinAddress&				naPrivateKey,
+		const RippleAddress&				naPrivateKey,
 		const uint256&						uNickname,
 		bool								bSetOffer,
 		const STAmount&						saMinimumOffer);
 
 	Transaction::pointer setOfferCreate(
-		const NewcoinAddress&				naPrivateKey,
+		const RippleAddress&				naPrivateKey,
 		bool								bPassive,
 		const STAmount&						saTakerPays,
 		const STAmount&						saTakerGets,
 		uint32								uExpiration);
 
 	Transaction::pointer setOfferCancel(
-		const NewcoinAddress&				naPrivateKey,
+		const RippleAddress&				naPrivateKey,
 		uint32								uSequence);
 
 	Transaction::pointer setPasswordFund(
-		const NewcoinAddress&				naPrivateKey,
-		const NewcoinAddress&				naDstAccountID);
+		const RippleAddress&				naPrivateKey,
+		const RippleAddress&				naDstAccountID);
 
 	Transaction::pointer setPasswordSet(
-		const NewcoinAddress&				naPrivateKey,
-		const NewcoinAddress&				naAuthKeyID,
+		const RippleAddress&				naPrivateKey,
+		const RippleAddress&				naAuthKeyID,
 		const std::vector<unsigned char>&	vucGenerator,
 		const std::vector<unsigned char>&	vucPubKey,
 		const std::vector<unsigned char>&	vucSignature);
 
 	Transaction::pointer setPayment(
-		const NewcoinAddress&				naPrivateKey,
-		const NewcoinAddress&				naDstAccountID,
+		const RippleAddress&				naPrivateKey,
+		const RippleAddress&				naDstAccountID,
 		const STAmount&						saAmount,
 		const STAmount&						saSendMax,
 		const STPathSet&					spsPaths,
@@ -120,29 +127,30 @@ private:
 		const bool							bLimit);
 
 	Transaction::pointer setWalletAdd(
-		const NewcoinAddress&				naPrivateKey,
+		const RippleAddress&				naPrivateKey,
 		const STAmount&						saAmount,
-		const NewcoinAddress&				naAuthKeyID,
-		const NewcoinAddress&				naNewPubKey,
+		const RippleAddress&				naAuthKeyID,
+		const RippleAddress&				naNewPubKey,
 		const std::vector<unsigned char>&	vucSignature);
 
 public:
-	Transaction(const SerializedTransaction::pointer& st, bool bValidate);
+	Transaction(SerializedTransaction::ref st, bool bValidate);
 
 	static Transaction::pointer sharedTransaction(const std::vector<unsigned char>&vucTransaction, bool bValidate);
+	static Transaction::pointer transactionFromSQL(Database* db, bool bValidate);
 
 	Transaction(
 		TransactionType ttKind,
-		const NewcoinAddress&	naPublicKey,		// To prove transaction is consistent and authorized.
-		const NewcoinAddress&	naSourceAccount,	// To identify the paying account.
+		const RippleAddress&	naPublicKey,		// To prove transaction is consistent and authorized.
+		const RippleAddress&	naSourceAccount,	// To identify the paying account.
 		uint32					uSeq,				// To order transactions.
 		const STAmount&			saFee,				// Transaction fee.
 		uint32					uSourceTag);		// User call back value.
 
 	// Change account settings.
 	static Transaction::pointer sharedAccountSet(
-		const NewcoinAddress& naPublicKey, const NewcoinAddress& naPrivateKey,
-		const NewcoinAddress&				naSourceAccount,
+		const RippleAddress& naPublicKey, const RippleAddress& naPrivateKey,
+		const RippleAddress&				naSourceAccount,
 		uint32								uSeq,
 		const STAmount&						saFee,
 		uint32								uSourceTag,
@@ -150,7 +158,7 @@ public:
 		const uint128&						uEmailHash,
 		bool								bWalletLocator,
 		const uint256&						uWalletLocator,
-		const NewcoinAddress&				naMessagePublic,
+		const RippleAddress&				naMessagePublic,
 		bool								bDomain,
 		const std::vector<unsigned char>&	vucDomain,
 		bool								bTransferRate,
@@ -161,7 +169,7 @@ public:
 
 	// Claim a wallet.
 	static Transaction::pointer sharedClaim(
-		const NewcoinAddress& naPublicKey, const NewcoinAddress& naPrivateKey,
+		const RippleAddress& naPublicKey, const RippleAddress& naPrivateKey,
 		uint32								uSourceTag,
 		const std::vector<unsigned char>&	vucGenerator,
 		const std::vector<unsigned char>&	vucPubKey,
@@ -169,18 +177,18 @@ public:
 
 	// Create an account.
 	static Transaction::pointer sharedCreate(
-		const NewcoinAddress& naPublicKey, const NewcoinAddress& naPrivateKey,
-		const NewcoinAddress&				naSourceAccount,
+		const RippleAddress& naPublicKey, const RippleAddress& naPrivateKey,
+		const RippleAddress&				naSourceAccount,
 		uint32								uSeq,
 		const STAmount&						saFee,
 		uint32								uSourceTag,
-		const NewcoinAddress&				naCreateAccountID,	// Account to create.
+		const RippleAddress&				naCreateAccountID,	// Account to create.
 		const STAmount&						saFund);			// Initial funds in XNC.
 
 	// Set credit limit and borrow fees.
 	static Transaction::pointer sharedCreditSet(
-		const NewcoinAddress& naPublicKey, const NewcoinAddress& naPrivateKey,
-		const NewcoinAddress&				naSourceAccount,
+		const RippleAddress& naPublicKey, const RippleAddress& naPrivateKey,
+		const RippleAddress&				naSourceAccount,
 		uint32								uSeq,
 		const STAmount&						saFee,
 		uint32								uSourceTag,
@@ -192,8 +200,8 @@ public:
 
 	// Set Nickname
 	static Transaction::pointer sharedNicknameSet(
-		const NewcoinAddress& naPublicKey, const NewcoinAddress& naPrivateKey,
-		const NewcoinAddress&				naSourceAccount,
+		const RippleAddress& naPublicKey, const RippleAddress& naPrivateKey,
+		const RippleAddress&				naSourceAccount,
 		uint32								uSeq,
 		const STAmount&						saFee,
 		uint32								uSourceTag,
@@ -203,30 +211,30 @@ public:
 
 	// Pre-fund password change.
 	static Transaction::pointer sharedPasswordFund(
-		const NewcoinAddress& naPublicKey, const NewcoinAddress& naPrivateKey,
-		const NewcoinAddress&				naSourceAccount,
+		const RippleAddress& naPublicKey, const RippleAddress& naPrivateKey,
+		const RippleAddress&				naSourceAccount,
 		uint32								uSeq,
 		const STAmount&						saFee,
 		uint32								uSourceTag,
-		const NewcoinAddress&				naDstAccountID);
+		const RippleAddress&				naDstAccountID);
 
 	// Change a password.
 	static Transaction::pointer sharedPasswordSet(
-		const NewcoinAddress& naPublicKey, const NewcoinAddress& naPrivateKey,
+		const RippleAddress& naPublicKey, const RippleAddress& naPrivateKey,
 		uint32								uSourceTag,
-		const NewcoinAddress&				naAuthKeyID,	// ID of regular public to auth.
+		const RippleAddress&				naAuthKeyID,	// ID of regular public to auth.
 		const std::vector<unsigned char>&	vucGenerator,
 		const std::vector<unsigned char>&	vucPubKey,
 		const std::vector<unsigned char>&	vucSignature);
 
 	// Make a payment.
 	static Transaction::pointer sharedPayment(
-		const NewcoinAddress& naPublicKey, const NewcoinAddress& naPrivateKey,
-		const NewcoinAddress&				naSourceAccount,
+		const RippleAddress& naPublicKey, const RippleAddress& naPrivateKey,
+		const RippleAddress&				naSourceAccount,
 		uint32								uSeq,
 		const STAmount&						saFee,
 		uint32								uSourceTag,
-		const NewcoinAddress&				naDstAccountID,
+		const RippleAddress&				naDstAccountID,
 		const STAmount&						saAmount,
 		const STAmount&						saSendMax,
 		const STPathSet&					spsPaths,
@@ -235,8 +243,8 @@ public:
 
 	// Place an offer.
 	static Transaction::pointer sharedOfferCreate(
-		const NewcoinAddress& naPublicKey, const NewcoinAddress& naPrivateKey,
-		const NewcoinAddress&				naSourceAccount,
+		const RippleAddress& naPublicKey, const RippleAddress& naPrivateKey,
+		const RippleAddress&				naSourceAccount,
 		uint32								uSeq,
 		const STAmount&						saFee,
 		uint32								uSourceTag,
@@ -247,8 +255,8 @@ public:
 
 	// Cancel an offer
 	static Transaction::pointer sharedOfferCancel(
-		const NewcoinAddress& naPublicKey, const NewcoinAddress& naPrivateKey,
-		const NewcoinAddress&				naSourceAccount,
+		const RippleAddress& naPublicKey, const RippleAddress& naPrivateKey,
+		const RippleAddress&				naSourceAccount,
 		uint32								uSeq,
 		const STAmount&						saFee,
 		uint32								uSourceTag,
@@ -256,24 +264,24 @@ public:
 
 	// Add an account to a wallet.
 	static Transaction::pointer sharedWalletAdd(
-		const NewcoinAddress& naPublicKey, const NewcoinAddress& naPrivateKey,
-		const NewcoinAddress&				naSourceAccount,
+		const RippleAddress& naPublicKey, const RippleAddress& naPrivateKey,
+		const RippleAddress&				naSourceAccount,
 		uint32								uSeq,
 		const STAmount&						saFee,
 		uint32								uSourceTag,
 		const STAmount&						saAmount,		// Initial funds in XNC.
-		const NewcoinAddress&				naAuthKeyID,	// ID of regular public to auth.
-		const NewcoinAddress&				naNewPubKey,	// Public key of new account
+		const RippleAddress&				naAuthKeyID,	// ID of regular public to auth.
+		const RippleAddress&				naNewPubKey,	// Public key of new account
 		const std::vector<unsigned char>&	vucSignature);	// Proof know new account's private key.
 
-	bool sign(const NewcoinAddress& naAccountPrivate);
+	bool sign(const RippleAddress& naAccountPrivate);
 	bool checkSign() const;
 	void updateID() { mTransactionID=mTransaction->getTransactionID(); }
 
 	SerializedTransaction::pointer getSTransaction() { return mTransaction; }
 
 	const uint256& getID() const					{ return mTransactionID; }
-	const NewcoinAddress& getFromAccount() const	{ return mAccountFrom; }
+	const RippleAddress& getFromAccount() const	{ return mAccountFrom; }
 	STAmount getAmount() const						{ return mTransaction->getFieldU64(sfAmount); }
 	STAmount getFee() const							{ return mTransaction->getTransactionFee(); }
 	uint32 getFromAccountSeq() const				{ return mTransaction->getSequence(); }
@@ -293,7 +301,7 @@ public:
 	static void saveTransaction(const Transaction::pointer&);
 	bool save();
 	static Transaction::pointer load(const uint256& id);
-	static Transaction::pointer findFrom(const NewcoinAddress& fromID, uint32 seq);
+	static Transaction::pointer findFrom(const RippleAddress& fromID, uint32 seq);
 
 	// conversion function
 	static bool convertToTransactions(uint32 ourLedgerSeq, uint32 otherLedgerSeq,

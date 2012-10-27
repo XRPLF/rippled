@@ -11,7 +11,7 @@
 
 #include "Wallet.h"
 #include "Ledger.h"
-#include "NewcoinAddress.h"
+#include "RippleAddress.h"
 #include "Application.h"
 #include "utils.h"
 
@@ -69,9 +69,9 @@ bool Wallet::nodeIdentityCreate() {
 	//
 	// Generate the public and private key
 	//
-	NewcoinAddress	naSeed			= NewcoinAddress::createSeedRandom();
-	NewcoinAddress	naNodePublic	= NewcoinAddress::createNodePublic(naSeed);
-	NewcoinAddress	naNodePrivate	= NewcoinAddress::createNodePrivate(naSeed);
+	RippleAddress	naSeed			= RippleAddress::createSeedRandom();
+	RippleAddress	naNodePublic	= RippleAddress::createNodePublic(naSeed);
+	RippleAddress	naNodePrivate	= RippleAddress::createNodePrivate(naSeed);
 
 	// Make new key.
 

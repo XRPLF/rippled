@@ -42,7 +42,7 @@ protected:
 	SLE::pointer getForMod(const uint256& node, Ledger::ref ledger,
 		boost::unordered_map<uint256, SLE::pointer>& newMods);
 
-	bool threadTx(const NewcoinAddress& threadTo, Ledger::ref ledger,
+	bool threadTx(const RippleAddress& threadTo, Ledger::ref ledger,
 		boost::unordered_map<uint256, SLE::pointer>& newMods);
 
 	bool threadTx(SLE::ref threadTo, Ledger::ref ledger, boost::unordered_map<uint256, SLE::pointer>& newMods);
@@ -65,8 +65,8 @@ public:
 	void init(Ledger::ref ledger, const uint256& transactionID, uint32 ledgerID);
 	void clear();
 
-	Ledger::pointer& getLedger() { return mLedger; }
-	const Ledger::pointer& getLedgerRef() const { return mLedger; }
+	Ledger::pointer& getLedger() 		{ return mLedger; }
+	Ledger::ref getLedgerRef() const	{ return mLedger; }
 
 	// basic entry functions
 	SLE::pointer getEntry(const uint256& index, LedgerEntryAction&);
@@ -123,14 +123,24 @@ public:
 	void calcRawMeta(Serializer&, TER result);
 
 	// iterator functions
+	typedef std::map<uint256, LedgerEntrySetEntry>::iterator				iterator;
+	typedef std::map<uint256, LedgerEntrySetEntry>::const_iterator			const_iterator;
 	bool isEmpty() const													{ return mEntries.empty(); }
 	std::map<uint256, LedgerEntrySetEntry>::const_iterator begin() const	{ return mEntries.begin(); }
 	std::map<uint256, LedgerEntrySetEntry>::const_iterator end() const		{ return mEntries.end(); }
-	std::map<uint256, LedgerEntrySetEntry>::iterator begin()				{ return mEntries.begin(); }
+	std::map<uint256, LedgerEntrySetEntry>::iterator begin() 				{ return mEntries.begin(); }
 	std::map<uint256, LedgerEntrySetEntry>::iterator end()					{ return mEntries.end(); }
 
 	static bool intersect(const LedgerEntrySet& lesLeft, const LedgerEntrySet& lesRight);
 };
+
+inline LedgerEntrySet::iterator range_begin(LedgerEntrySet& x)		{ return x.begin(); }
+inline LedgerEntrySet::iterator range_end(LedgerEntrySet &x)		{ return x.end(); }
+namespace boost
+{
+	template<> struct range_mutable_iterator<LedgerEntrySet>	{ typedef LedgerEntrySet::iterator type; };
+	template<> struct range_const_iterator<LedgerEntrySet>		{ typedef LedgerEntrySet::const_iterator type; };
+}
 
 #endif
 // vim:ts=4

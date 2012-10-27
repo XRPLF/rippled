@@ -3,6 +3,7 @@
 //
 
 #include <boost/format.hpp>
+#include <boost/foreach.hpp>
 
 #include "TransactionEngine.h"
 
@@ -18,12 +19,12 @@ SETUP_LOG();
 void TransactionEngine::txnWrite()
 {
 	// Write back the account states
-	for (std::map<uint256, LedgerEntrySetEntry>::iterator it = mNodes.begin(), end = mNodes.end();
-			it != end; ++it)
+	typedef std::pair<const uint256, LedgerEntrySetEntry> u256_LES_pair;
+	BOOST_FOREACH(u256_LES_pair& it, mNodes)
 	{
-		const SLE::pointer&	sleEntry	= it->second.mEntry;
+		const SLE::pointer&	sleEntry	= it.second.mEntry;
 
-		switch (it->second.mAction)
+		switch (it.second.mAction)
 		{
 			case taaNONE:
 				assert(false);
@@ -54,7 +55,7 @@ void TransactionEngine::txnWrite()
 				{
 					cLog(lsINFO) << "applyTransaction: taaDELETE: " << sleEntry->getText();
 
-					if (!mLedger->peekAccountStateMap()->delItem(it->first))
+					if (!mLedger->peekAccountStateMap()->delItem(it.first))
 						assert(false);
 				}
 				break;
@@ -104,10 +105,10 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 	// without going to disk.  Each transaction also notes a source account id.  This is used to verify that the signing key is
 	// associated with the account.
 	// XXX This could be a lot cleaner to prevent unnecessary copying.
-	NewcoinAddress	naSigningPubKey;
+	RippleAddress	naSigningPubKey;
 
 	if (tesSUCCESS == terResult)
-		naSigningPubKey	= NewcoinAddress::createAccountPublic(txn.getSigningPubKey());
+		naSigningPubKey	= RippleAddress::createAccountPublic(txn.getSigningPubKey());
 
 	// Consistency: really signed.
 	if ((tesSUCCESS == terResult) && !isSetBit(params, tapNO_CHECK_SIGN) && !txn.checkSign(naSigningPubKey))
