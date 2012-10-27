@@ -200,12 +200,12 @@ class STAmount : public SerializedType
 	// Low 56 bits are value, legal range is 10^15 to (10^16 - 1) inclusive
 
 protected:
-	uint160	mCurrency;
-	uint160	mIssuer;		// Only for access, not compared.
+	uint160	mCurrency;		// Compared by ==. Always update mIsNative.
+	uint160	mIssuer;		// Not compared by ==. 0 for XNS.
 
 	uint64	mValue;
 	int		mOffset;
-	bool	mIsNative;		// True for native stamps, ripple stamps are not native.
+	bool	mIsNative;		// Always !mCurrency. Native is XNS.
 	bool	mIsNegative;
 
 	void canonicalize();
@@ -282,12 +282,17 @@ public:
 	bool isGEZero() const		{ return !mIsNegative; }
 	operator bool() const		{ return !isZero(); }
 
-	void negate()				{ if (!isZero()) mIsNegative = !mIsNegative; }
-	void zero()					{ mOffset = mIsNative ? -100 : 0; mValue = 0; mIsNegative = false; }
+	STAmount* negate()			{ if (!isZero()) mIsNegative = !mIsNegative; return this; }
+	STAmount* zero()			{ mOffset = mIsNative ? 0 : -100; mValue = 0; mIsNegative = false; return this; }
+
+	// Zero while copying currency and issuer.
+	STAmount* zero(const STAmount& saTmpl)
+	{ mCurrency = saTmpl.mCurrency; mIssuer = saTmpl.mIssuer; mIsNative = saTmpl.mIsNative; return zero(); }
+
 	int compare(const STAmount&) const;
 
 	const uint160& getIssuer() const		{ return mIssuer; }
-	void setIssuer(const uint160& uIssuer)	{ mIssuer	= uIssuer; }
+	STAmount* setIssuer(const uint160& uIssuer)	{ mIssuer	= uIssuer; return this; }
 
 	const uint160& getCurrency() const	{ return mCurrency; }
 	bool setValue(const std::string& sAmount);
