@@ -12,7 +12,7 @@ var serverDelay = 1500;
 
 buster.testRunner.timeout = 3000;
 
-buster.testCase("// Sending", {
+buster.testCase("Sending", {
   'setUp' : testutils.build_setup(),
   'tearDown' : testutils.build_teardown(),
 
@@ -234,7 +234,7 @@ buster.testCase("// Sending", {
 });
 
 // XXX In the future add ledger_accept after partial retry is implemented in the server.
-buster.testCase("// Sending future", {
+buster.testCase("Sending future", {
   'setUp' : testutils.build_setup(),
   'tearDown' : testutils.build_teardown(),
 
@@ -242,7 +242,7 @@ buster.testCase("// Sending future", {
     function (done) {
       var self = this;
 
-      self.remote.set_trace();
+      // self.remote.set_trace();
 
       async.waterfall([
 	  function (callback) {
@@ -279,12 +279,6 @@ buster.testCase("// Sending future", {
 
 	    self.remote.request_ripple_balance("alice", "bob", "USD", 'CURRENT')
 	      .once('ripple_state', function (m) {
-		  console.log("BALANCE: %s", JSON.stringify(m));
-		  console.log("account_balance: %s", m.account_balance.to_text_full());
-		  console.log("account_limit: %s", m.account_limit.to_text_full());
-		  console.log("issuer_balance: %s", m.issuer_balance.to_text_full());
-		  console.log("issuer_limit: %s", m.issuer_limit.to_text_full());
-
 		  buster.assert(m.account_balance.equals("-24/USD/alice"));
 		  buster.assert(m.issuer_balance.equals("24/USD/bob"));
 
@@ -401,7 +395,7 @@ buster.testCase("// Sending future", {
 	      .payment('bob', 'alice', "1/USD/bob")
 	      .once('proposed', function (m) {
 		  // console.log("proposed: %s", JSON.stringify(m));
-		  callback(m.result != 'tepPATH_PARTIAL');
+		  callback(m.result != 'tepPATH_DRY');
 		})
 	      .submit();
 	  },
@@ -454,14 +448,14 @@ buster.testCase("// Sending future", {
 });
 
 buster.testCase("Indirect ripple", {
-  'setUp' : testutils.build_setup({ verbose: true, no_server: false }),
+  'setUp' : testutils.build_setup({ verbose: false, no_server: false }),
   'tearDown' : testutils.test_teardown,
 
   "indirect ripple" :
     function (done) {
       var self = this;
 
-      self.remote.set_trace();
+      // self.remote.set_trace();
 
       async.waterfall([
 	  function (callback) {
@@ -499,13 +493,40 @@ buster.testCase("Indirect ripple", {
 
 	    testutils.verify_balance(self.remote, "bob", "50/USD/mtgox", callback);
 	  },
+	  function (callback) {
+	    self.what = "Alice sends more than has to issuer: 100 out of 70";
+
+	    self.remote.transaction()
+	      .payment("alice", "mtgox", "100/USD/mtgox")
+	      .on('proposed', function (m) {
+		  // console.log("proposed: %s", JSON.stringify(m));
+
+		  callback(m.result != 'tepPATH_PARTIAL');
+		})
+	      .submit();
+	  },
+	  function (callback) {
+	    self.what = "Alice sends more than has to bob: 100 out of 70";
+
+	    self.remote.transaction()
+	      .payment("alice", "bob", "100/USD/mtgox")
+	      .on('proposed', function (m) {
+		  // console.log("proposed: %s", JSON.stringify(m));
+
+		  callback(m.result != 'tepPATH_PARTIAL');
+		})
+	      .submit();
+	  },
 	], function (error) {
 	  buster.refute(error, self.what);
 	  done();
 	});
     },
 
+    // Direct ripple without no liqudity.
     // Ripple without credit path.
     // Ripple with one-way credit path.
+    // Transfer Fees
+    // Use multiple paths.
 });
 // vim:sw=2:sts=2:ts=8

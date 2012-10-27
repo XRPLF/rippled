@@ -117,7 +117,7 @@ var credit_limit = function (remote, src, amount, callback) {
   remote.transaction()
     .ripple_line_set(src, amount)
     .on('proposed', function (m) {
-	console.log("proposed: %s", JSON.stringify(m));
+	// console.log("proposed: %s", JSON.stringify(m));
 
 	callback(m.result != 'tesSUCCESS');
       })
@@ -153,11 +153,11 @@ var verify_balance = function (remote, src, amount_json, callback) {
 
   remote.request_ripple_balance(src, amount.issuer.to_json(), amount.currency.to_json(), 'CURRENT')
     .once('ripple_state', function (m) {
-	console.log("BALANCE: %s", JSON.stringify(m));
-	console.log("account_balance: %s", m.account_balance.to_text_full());
-	console.log("account_limit: %s", m.account_limit.to_text_full());
-	console.log("issuer_balance: %s", m.issuer_balance.to_text_full());
-	console.log("issuer_limit: %s", m.issuer_limit.to_text_full());
+//	console.log("BALANCE: %s", JSON.stringify(m));
+//	console.log("account_balance: %s", m.account_balance.to_text_full());
+//	console.log("account_limit: %s", m.account_limit.to_text_full());
+//	console.log("issuer_balance: %s", m.issuer_balance.to_text_full());
+//	console.log("issuer_limit: %s", m.issuer_limit.to_text_full());
 
 	callback(!m.account_balance.equals(amount));
       })
