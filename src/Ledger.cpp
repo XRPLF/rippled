@@ -452,7 +452,10 @@ Ledger::pointer Ledger::getSQL(const std::string& sql)
 		ScopedLock sl(theApp->getLedgerDB()->getDBLock());
 
 		if (!db->executeSQL(sql) || !db->startIterRows())
-			 return Ledger::pointer();
+		{
+			cLog(lsWARNING) << "No ledger for query: " << sql;
+			return Ledger::pointer();
+		}
 
 		db->getStr("LedgerHash", hash);
 		ledgerHash.SetHex(hash);
@@ -472,8 +475,8 @@ Ledger::pointer Ledger::getSQL(const std::string& sql)
 	}
 
 	Log(lsTRACE) << "Constructing ledger " << ledgerSeq << " from SQL";
-	Ledger::pointer ret = Ledger::pointer(new Ledger(prevHash, transHash, accountHash, totCoins,
-		closingTime, prevClosingTime, closeFlags, closeResolution, ledgerSeq));
+	Ledger::pointer ret = boost::make_shared<Ledger>(prevHash, transHash, accountHash, totCoins,
+		closingTime, prevClosingTime, closeFlags, closeResolution, ledgerSeq);
 	if (ret->getHash() != ledgerHash)
 	{
 		if (sLog(lsERROR))

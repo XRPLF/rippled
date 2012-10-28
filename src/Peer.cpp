@@ -993,6 +993,9 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 	ripple::TMLedgerData reply;
 	bool fatLeaves = true, fatRoot = false;
 
+	if (packet.has_requestcookie())
+		reply.set_requestcookie(packet.requestcookie());
+
 	if (packet.itype() == ripple::liTS_CANDIDATE)
 	{ // Request is  for a transaction candidate set
 		cLog(lsINFO) << "Received request for TX candidate set data " << getIP();
@@ -1034,7 +1037,10 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 			tLog(!ledger, lsINFO) << "Don't have ledger " << ledgerhash;
 		}
 		else if (packet.has_ledgerseq())
+		{
 			ledger = theApp->getMasterLedger().getLedgerBySeq(packet.ledgerseq());
+			tLog(!ledger, lsINFO) << "Don't have ledger " << packet.ledgerseq();
+		}
 		else if (packet.has_ltype() && (packet.ltype() == ripple::ltCURRENT))
 			ledger = theApp->getMasterLedger().getCurrentLedger();
 		else if (packet.has_ltype() && (packet.ltype() == ripple::ltCLOSED) )
@@ -1053,10 +1059,13 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 		if ((!ledger) || (packet.has_ledgerseq() && (packet.ledgerseq() != ledger->getLedgerSeq())))
 		{
 			punishPeer(PP_UNKNOWN_REQUEST);
-			if (ledger)
-				cLog(lsWARNING) << "Ledger has wrong sequence";
-			else
-				cLog(lsWARNING) << "Can't find the ledger they want";
+			if (sLog(lsWARNING))
+			{
+				if (ledger)
+					Log(lsWARNING) << "Ledger has wrong sequence";
+				else
+					Log(lsWARNING) << "Can't find the ledger they want";
+			}
 			return;
 		}
 
@@ -1068,12 +1077,11 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 
 		if(packet.itype() == ripple::liBASE)
 		{ // they want the ledger base data
-			cLog(lsTRACE) << "Want ledger base data";
+			cLog(lsTRACE) << "They want ledger base data";
 			Serializer nData(128);
 			ledger->addRaw(nData);
 			reply.add_nodes()->set_nodedata(nData.getDataPtr(), nData.getLength());
 
-			cLog(lsINFO) << "Ledger root w/map roots request";
 			SHAMap::pointer map = ledger->peekAccountStateMap();
 			if (map && map->getHash().isNonZero())
 			{ // return account state root node if possible
@@ -1086,7 +1094,7 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 						map = ledger->peekTransactionMap();
 						if (map && map->getHash().isNonZero())
 						{
-							rootNode.resize(0);
+							rootNode.erase();
 							if (map->getRootNode(rootNode, snfWIRE))
 								reply.add_nodes()->set_nodedata(rootNode.getDataPtr(), rootNode.getLength());
 						}
@@ -1099,9 +1107,10 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 			return;
 		}
 
-		if ((packet.itype() == ripple::liTX_NODE) || (packet.itype() == ripple::liAS_NODE))
-			map = (packet.itype() == ripple::liTX_NODE) ?
-				ledger->peekTransactionMap() : ledger->peekAccountStateMap();
+		if (packet.itype() == ripple::liTX_NODE)
+			map = ledger->peekTransactionMap();
+		else if (packet.itype() == ripple::liAS_NODE)
+			map = ledger->peekAccountStateMap();
 	}
 
 	if ((!map) || (packet.nodeids_size() == 0))
@@ -1125,7 +1134,6 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 		{
 			std::vector<SHAMapNode>::iterator nodeIDIterator;
 			std::list< std::vector<unsigned char> >::iterator rawNodeIterator;
-			int count = 0;
 			for(nodeIDIterator = nodeIDs.begin(), rawNodeIterator = rawNodes.begin();
 				nodeIDIterator != nodeIDs.end(); ++nodeIDIterator, ++rawNodeIterator)
 			{
@@ -1134,12 +1142,9 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 				ripple::TMLedgerNode* node = reply.add_nodes();
 				node->set_nodeid(nID.getDataPtr(), nID.getLength());
 				node->set_nodedata(&rawNodeIterator->front(), rawNodeIterator->size());
-				++count;
 			}
 		}
 	}
-	if (packet.has_requestcookie())
-		reply.set_requestcookie(packet.requestcookie());
 	PackedMessage::pointer oPacket = boost::make_shared<PackedMessage>(reply, ripple::mtLEDGER_DATA);
 	sendPacket(oPacket);
 }
