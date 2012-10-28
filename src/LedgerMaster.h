@@ -77,12 +77,11 @@ public:
 
 	Ledger::pointer getLedgerByHash(const uint256& hash)
 	{
-		if (!hash)
+		if (hash.isZero())
 			return mCurrentLedger;
 
 		if (mCurrentLedger && (mCurrentLedger->getHash() == hash))
 			return mCurrentLedger;
-
 		if (mFinalizedLedger && (mFinalizedLedger->getHash() == hash))
 			return mFinalizedLedger;
 
