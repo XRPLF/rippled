@@ -449,7 +449,7 @@ buster.testCase("Sending future", {
 
 buster.testCase("Indirect ripple", {
   'setUp' : testutils.build_setup({ verbose: false, no_server: false }),
-  'tearDown' : testutils.test_teardown,
+  'tearDown' : testutils.build_teardown(),
 
   "indirect ripple" :
     function (done) {
