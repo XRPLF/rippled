@@ -190,15 +190,24 @@ void LedgerAcquire::addOnComplete(boost::function<void (LedgerAcquire::pointer)>
 void LedgerAcquire::trigger(Peer::ref peer, bool timer)
 {
 	if (mAborted || mComplete || mFailed)
+	{
+		cLog(lsTRACE) << "Trigger on ledger:" <<
+			(mAborted ? " aborted": "") << (mComplete ? " completed": "") << (mFailed ? " failed" : "");
 		return;
-#ifdef LA_DEBUG
-	if (peer) cLog(lsTRACE) <<  "Trigger acquiring ledger " << mHash << " from " << peer->getIP();
-	else cLog(lsTRACE) <<  "Trigger acquiring ledger " << mHash;
-	if (mComplete || mFailed)
-		cLog(lsTRACE) <<  "complete=" << mComplete << " failed=" << mFailed;
-	else
-		cLog(lsTRACE) <<  "base=" << mHaveBase << " tx=" << mHaveTransactions << " as=" << mHaveState;
-#endif
+	}
+
+	if (sLog(lsTRACE))
+	{
+		if (peer)
+			cLog(lsTRACE) <<  "Trigger acquiring ledger " << mHash << " from " << peer->getIP();
+		else
+			cLog(lsTRACE) <<  "Trigger acquiring ledger " << mHash;
+		if (mComplete || mFailed)
+			cLog(lsTRACE) <<  "complete=" << mComplete << " failed=" << mFailed;
+		else
+			cLog(lsTRACE) <<  "base=" << mHaveBase << " tx=" << mHaveTransactions << " as=" << mHaveState;
+	}
+
 	if (!mHaveBase)
 	{
 		ripple::TMGetLedger tmGL;
@@ -211,9 +220,6 @@ void LedgerAcquire::trigger(Peer::ref peer, bool timer)
 
 	if (mHaveBase && !mHaveTransactions)
 	{
-#ifdef LA_DEBUG
-		cLog(lsTRACE) <<  "need tx";
-#endif
 		assert(mLedger);
 		if (mLedger->peekTransactionMap()->getHash().isZero())
 		{ // we need the root node
@@ -258,9 +264,6 @@ void LedgerAcquire::trigger(Peer::ref peer, bool timer)
 
 	if (mHaveBase && !mHaveState)
 	{
-#ifdef LA_DEBUG
-		cLog(lsTRACE) <<  "need as";
-#endif
 		assert(mLedger);
 		if (mLedger->peekAccountStateMap()->getHash().isZero())
 		{ // we need the root node
@@ -304,7 +307,10 @@ void LedgerAcquire::trigger(Peer::ref peer, bool timer)
 	}
 
 	if (mComplete || mFailed)
+	{
+		cLog(lsDEBUG) << "Done:" << (mComplete ? " complete" : "") << (mFailed ? " failed" : "");
 		done();
+	}
 	else if (timer)
 		resetTimer();
 }
