@@ -70,7 +70,8 @@ public:
 
 	void addJob(JobType type, const boost::function<void(void)>& job);
 
-	int getJobCount(JobType t); // All jobs at or greater than this priority
+	int getJobCount(JobType t);		// Jobs at this priority
+	int getJobCountGE(JobType t);	// All jobs at or greater than this priority
 	std::vector< std::pair<JobType, int> > getJobCounts();
 
 	void shutdown();

@@ -70,6 +70,14 @@ void JobQueue::addJob(JobType type, const boost::function<void(void)>& jobFunc)
 }
 
 int JobQueue::getJobCount(JobType t)
+{
+	boost::mutex::scoped_lock sl(mJobLock);
+
+	std::map<JobType, int>::iterator c = mJobCounts.find(t);
+	return (c == mJobCounts.end()) ? 0 : c->second;
+}
+
+int JobQueue::getJobCountGE(JobType t)
 { // return the number of jobs at this priority level or greater
 	int ret = 0;
 
