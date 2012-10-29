@@ -100,6 +100,9 @@ void LedgerMaster::acquireMissingLedger(const uint256& ledgerHash, uint32 ledger
 	mMissingLedger = theApp->getMasterLedgerAcquire().findCreate(ledgerHash);
 	if (mMissingLedger->isComplete())
 	{
+		Ledger::pointer lgr = mMissingLedger->getLedger();
+		if (lgr && (lgr->getLedgerSeq() == ledgerSeq))
+			missingAcquireComplete(mMissingLedger);
 		mMissingLedger = LedgerAcquire::pointer();
 		return;
 	}
