@@ -205,6 +205,7 @@ void LedgerAcquire::trigger(Peer::ref peer, bool timer)
 		tmGL.set_ledgerhash(mHash.begin(), mHash.size());
 		tmGL.set_itype(ripple::liBASE);
 		*(tmGL.add_nodeids()) = SHAMapNode().getRawString();
+		cLog(lsTRACE) << "Sending base request to " << (peer ? "selected peer" : "all peers");
 		sendRequest(tmGL, peer);
 	}
 
@@ -221,6 +222,7 @@ void LedgerAcquire::trigger(Peer::ref peer, bool timer)
 			tmGL.set_ledgerseq(mLedger->getLedgerSeq());
 			tmGL.set_itype(ripple::liTX_NODE);
 			*(tmGL.add_nodeids()) = SHAMapNode().getRawString();
+			cLog(lsTRACE) << "Sending TX root request to " << (peer ? "selected peer" : "all peers");
 			sendRequest(tmGL, peer);
 		}
 		else
@@ -247,6 +249,8 @@ void LedgerAcquire::trigger(Peer::ref peer, bool timer)
 				tmGL.set_itype(ripple::liTX_NODE);
 				BOOST_FOREACH(SHAMapNode& it, nodeIDs)
 					*(tmGL.add_nodeids()) = it.getRawString();
+				cLog(lsTRACE) << "Sending TX node " << nodeIDs.size()
+					<< "request to " << (peer ? "selected peer" : "all peers");
 				sendRequest(tmGL, peer);
 			}
 		}
@@ -265,6 +269,7 @@ void LedgerAcquire::trigger(Peer::ref peer, bool timer)
 			tmGL.set_ledgerseq(mLedger->getLedgerSeq());
 			tmGL.set_itype(ripple::liAS_NODE);
 			*(tmGL.add_nodeids()) = SHAMapNode().getRawString();
+			cLog(lsTRACE) << "Sending AS root request to " << (peer ? "selected peer" : "all peers");
 			sendRequest(tmGL, peer);
 		}
 		else
@@ -291,6 +296,8 @@ void LedgerAcquire::trigger(Peer::ref peer, bool timer)
 				tmGL.set_itype(ripple::liAS_NODE);
 				BOOST_FOREACH(SHAMapNode& it, nodeIDs)
 					*(tmGL.add_nodeids()) = it.getRawString();
+				cLog(lsTRACE) << "Sending AS node " << nodeIDs.size()
+					<< "request to " << (peer ? "selected peer" : "all peers");
 				sendRequest(tmGL, peer);
 			}
 		}
@@ -517,9 +524,6 @@ void LedgerAcquireMaster::dropLedger(const uint256& hash)
 
 bool LedgerAcquireMaster::gotLedgerData(ripple::TMLedgerData& packet, Peer::ref peer)
 {
-#ifdef LA_DEBUG
-	cLog(lsTRACE) << "got data for acquiring ledger ";
-#endif
 	uint256 hash;
 	if (packet.ledgerhash().size() != 32)
 	{
@@ -527,37 +531,34 @@ bool LedgerAcquireMaster::gotLedgerData(ripple::TMLedgerData& packet, Peer::ref 
 		return false;
 	}
 	memcpy(hash.begin(), packet.ledgerhash().data(), 32);
-#ifdef LA_DEBUG
-	cLog(lsTRACE) << hash;
-#endif
+	cLog(lsTRACE) << "Got data for acquiring ledger: " << hash;
 
 	LedgerAcquire::pointer ledger = find(hash);
-	if (!ledger) return false;
+	if (!ledger)
+	{
+		cLog(lsINFO) << "Got data for ledger we're not acquiring";
+		return false;
+	}
 
 	if (packet.type() == ripple::liBASE)
 	{
 		if (packet.nodes_size() < 1)
-			return false;
-		const ripple::TMLedgerNode& node = packet.nodes(0);
-		if (!ledger->takeBase(node.nodedata()))
-			return false;
-		if (packet.nodes_size() == 1)
 		{
-			ledger->trigger(peer, false);
-			return true;
+			cLog(lsWARNING) << "Got empty base data";
+			return false;
 		}
-		if (!ledger->takeAsRootNode(strCopy(packet.nodes(1).nodedata())))
+		if (!ledger->takeBase(packet.nodes(0).nodedata()))
+		{
+			cLog(lsWARNING) << "Got unwanted base data";
+			return false;
+		}
+		if ((packet.nodes().size() > 1) && !ledger->takeAsRootNode(strCopy(packet.nodes(1).nodedata())))
 		{
 			cLog(lsWARNING) << "Included ASbase invalid";
 		}
-		if (packet.nodes().size() == 2)
+		if ((packet.nodes().size() > 2) && !ledger->takeTxRootNode(strCopy(packet.nodes(2).nodedata())))
 		{
-			ledger->trigger(peer, false);
-			return true;
-		}
-		if (!ledger->takeTxRootNode(strCopy(packet.nodes(2).nodedata())))
-		{
-			cLog(lsWARNING) << "Invcluded TXbase invalid";
+			cLog(lsWARNING) << "Included TXbase invalid";
 		}
 		ledger->trigger(peer, false);
 		return true;
@@ -568,11 +569,16 @@ bool LedgerAcquireMaster::gotLedgerData(ripple::TMLedgerData& packet, Peer::ref 
 		std::list<SHAMapNode> nodeIDs;
 		std::list< std::vector<unsigned char> > nodeData;
 
-		if (packet.nodes().size() <= 0) return false;
+		if (packet.nodes().size() <= 0)
+		{
+			cLog(lsINFO) << "Got request for no nodes";
+			return false;
+		}
 		for (int i = 0; i < packet.nodes().size(); ++i)
 		{
 			const ripple::TMLedgerNode& node = packet.nodes(i);
-			if (!node.has_nodeid() || !node.has_nodedata()) return false;
+			if (!node.has_nodeid() || !node.has_nodedata())
+				return false;
 
 			nodeIDs.push_back(SHAMapNode(node.nodeid().data(), node.nodeid().size()));
 			nodeData.push_back(std::vector<unsigned char>(node.nodedata().begin(), node.nodedata().end()));
@@ -587,6 +593,7 @@ bool LedgerAcquireMaster::gotLedgerData(ripple::TMLedgerData& packet, Peer::ref 
 		return ret;
 	}
 
+	cLog(lsWARNING) << "Not sure what ledger data we got";
 	return false;
 }
 

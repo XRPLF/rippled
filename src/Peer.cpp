@@ -1153,6 +1153,7 @@ void Peer::recvLedger(ripple::TMLedgerData& packet)
 {
 	if (packet.nodes().size() <= 0)
 	{
+		cLog(lsWARNING) << "Ledger data with no nodes";
 		punishPeer(PP_INVALID_REQUEST);
 		return;
 	}
