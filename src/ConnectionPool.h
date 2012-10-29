@@ -83,6 +83,7 @@ public:
 	// As client failed connect and be accepted.
 	void peerClosed(Peer::ref peer, const std::string& strIp, int iPort);
 
+	int getPeerCount();
 	Json::Value getPeersJson();
 	std::vector<Peer::pointer> getPeerVector();
 
