@@ -125,9 +125,8 @@ void LedgerMaster::missingAcquireComplete(LedgerAcquire::pointer acq)
 
 	if (!acq->isFailed())
 	{
-		boost::thread thread(boost::bind(&Ledger::saveAcceptedLedger, acq->getLedger(), false));
-		thread.detach();
 		setFullLedger(acq->getLedger());
+		acq->getLedger()->pendSave(false);
 	}
 }
 
@@ -152,6 +151,12 @@ void LedgerMaster::setFullLedger(Ledger::ref ledger)
 
 	if (mMissingLedger || !theConfig.FULL_HISTORY)
 		return;
+
+	if (Ledger::getPendingSaves() > 2)
+	{
+		cLog(lsINFO) << "Too many pending ledger saves";
+		return;
+	}
 
 	// see if there's a ledger gap we need to fill
 	if (!mCompleteLedgers.hasValue(ledger->getLedgerSeq() - 1))

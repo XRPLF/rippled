@@ -430,12 +430,16 @@ void Ledger::saveAcceptedLedger(bool fromConsensus)
 	}
 
 	if (!fromConsensus)
+	{
+		decPendingSaves();
 		return;
+	}
 
 	theApp->getMasterLedger().setFullLedger(shared_from_this());
 
 	theApp->getOPs().pubLedger(shared_from_this());
 
+	decPendingSaves();
 }
 
 Ledger::pointer Ledger::getSQL(const std::string& sql)
@@ -1020,6 +1024,30 @@ bool Ledger::assertSane()
 
 	assert(false);
 	return false;
+}
+
+int Ledger::sPendingSaves = 0;
+boost::recursive_mutex Ledger::sPendingSaveLock;
+
+int Ledger::getPendingSaves()
+{
+	boost::recursive_mutex::scoped_lock sl(sPendingSaveLock);
+	return sPendingSaves;
+}
+
+void Ledger::pendSave(bool fromConsensus)
+{
+	boost::thread thread(boost::bind(&Ledger::saveAcceptedLedger, shared_from_this(), fromConsensus));
+	thread.detach();
+
+	boost::recursive_mutex::scoped_lock sl(sPendingSaveLock);
+	++sPendingSaves;
+}
+
+void Ledger::decPendingSaves()
+{
+	boost::recursive_mutex::scoped_lock sl(sPendingSaveLock);
+	--sPendingSaves;
 }
 
 // vim:ts=4

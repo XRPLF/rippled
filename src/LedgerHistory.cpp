@@ -38,8 +38,7 @@ void LedgerHistory::addAcceptedLedger(Ledger::pointer ledger, bool fromConsensus
 	assert(ledger->isImmutable());
 	mLedgersByIndex.insert(std::make_pair(ledger->getLedgerSeq(), ledger));
 
-	boost::thread thread(boost::bind(&Ledger::saveAcceptedLedger, ledger, fromConsensus));
-	thread.detach();
+	ledger->pendSave(fromConsensus);
 }
 
 Ledger::pointer LedgerHistory::getLedgerBySeq(uint32 index)
