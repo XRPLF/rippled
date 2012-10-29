@@ -19,7 +19,7 @@ HashedObjectStore::HashedObjectStore(int cacheSize, int cacheAge) :
 
 bool HashedObjectStore::store(HashedObjectType type, uint32 index,
 	const std::vector<unsigned char>& data, const uint256& hash)
-{ // return: false=already in cache, true = added to cache
+{ // return: false = already in cache, true = added to cache
 	assert(hash == Serializer::getSHA512Half(data));
 	if (!theApp->getHashNodeDB())
 	{
