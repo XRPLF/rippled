@@ -99,6 +99,7 @@ public:
 	bool takeAsRootNode(const std::vector<unsigned char>& data);
 	void trigger(Peer::ref, bool timer);
 	bool tryLocal();
+	void addPeers();
 };
 
 class LedgerAcquireMaster

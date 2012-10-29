@@ -145,7 +145,32 @@ void LedgerAcquire::onTimer()
 		done();
 	}
 	else
+	{
+		if (!getPeerCount())
+			addPeers();
 		trigger(Peer::pointer(), true);
+	}
+}
+
+void LedgerAcquire::addPeers()
+{
+	std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
+
+	bool found = false;
+	BOOST_FOREACH(Peer::ref peer, peerList)
+	{
+		if (peer->hasLedger(getHash()))
+		{
+			found = true;
+			peerHas(peer);
+		}
+	}
+
+	if (!found)
+	{
+		BOOST_FOREACH(Peer::ref peer, peerList)
+		peerHas(peer);
+	}
 }
 
 boost::weak_ptr<PeerSet> LedgerAcquire::pmDowncast()
@@ -213,7 +238,6 @@ void LedgerAcquire::trigger(Peer::ref peer, bool timer)
 		ripple::TMGetLedger tmGL;
 		tmGL.set_ledgerhash(mHash.begin(), mHash.size());
 		tmGL.set_itype(ripple::liBASE);
-		*(tmGL.add_nodeids()) = SHAMapNode().getRawString();
 		cLog(lsTRACE) << "Sending base request to " << (peer ? "selected peer" : "all peers");
 		sendRequest(tmGL, peer);
 	}
@@ -340,7 +364,8 @@ void PeerSet::sendRequest(const ripple::TMGetLedger& tmGL)
 		{
 			// FIXME: Track last peer sent to and time sent
 			Peer::pointer peer = it->lock();
-			if (peer) peer->sendPacket(packet);
+			if (peer)
+				peer->sendPacket(packet);
 			return;
 		}
 	}
@@ -500,6 +525,7 @@ LedgerAcquire::pointer LedgerAcquireMaster::findCreate(const uint256& hash)
 		return ptr;
 	ptr = boost::make_shared<LedgerAcquire>(hash);
 	assert(mLedgers[hash] == ptr);
+	ptr->addPeers();
 	ptr->resetTimer(); // Cannot call in constructor
 	return ptr;
 }
