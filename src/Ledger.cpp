@@ -453,7 +453,7 @@ Ledger::pointer Ledger::getSQL(const std::string& sql)
 
 		if (!db->executeSQL(sql) || !db->startIterRows())
 		{
-			cLog(lsWARNING) << "No ledger for query: " << sql;
+			cLog(lsDEBUG) << "No ledger for query: " << sql;
 			return Ledger::pointer();
 		}
 
