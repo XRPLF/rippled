@@ -152,7 +152,7 @@ void LedgerMaster::setFullLedger(Ledger::ref ledger)
 	if (mMissingLedger || !theConfig.FULL_HISTORY)
 		return;
 
-	if (Ledger::getPendingSaves() > 2)
+	if (Ledger::getPendingSaves() > 3)
 	{
 		cLog(lsINFO) << "Too many pending ledger saves";
 		return;
