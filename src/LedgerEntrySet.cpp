@@ -338,7 +338,7 @@ bool LedgerEntrySet::threadOwners(SLE::ref node, Ledger::ref ledger,
 #endif
 		return threadTx(node->getOwner(), ledger, newMods);
 	}
-	else if (node->hasTwoOwners()) // thread to owner's accounts]
+	else if (node->hasTwoOwners()) // thread to owner's accounts
 	{
 #ifdef META_DEBUG
 		cLog(lsTRACE) << "Thread to two owners";
