@@ -22,7 +22,7 @@ const char* Job::toString(JobType t)
 }
 
 bool Job::operator<(const Job& j) const
-{
+{ // These comparison operators make the jobs sort in priority order in the job set
 	if (mType < j.mType)
 		return true;
 	if (mType > j.mType)
@@ -62,6 +62,7 @@ void JobQueue::addJob(JobType type, const boost::function<void(void)>& jobFunc)
 	assert(type != jtINVALID);
 
 	boost::mutex::scoped_lock sl(mJobLock);
+	assert(mThreadCount != 0); // do not add jobs to a queue with no threads
 
 	mJobSet.insert(Job(type, ++mLastJob, jobFunc));	
 	++mJobCounts[type];
@@ -69,7 +70,7 @@ void JobQueue::addJob(JobType type, const boost::function<void(void)>& jobFunc)
 }
 
 int JobQueue::getJobCount(JobType t)
-{
+{ // return the number of jobs at this priority level or greater
 	int ret = 0;
 
 	boost::mutex::scoped_lock sl(mJobLock);
@@ -82,7 +83,7 @@ int JobQueue::getJobCount(JobType t)
 }
 
 std::vector< std::pair<JobType, int> > JobQueue::getJobCounts()
-{
+{ // return all jobs at all priority levels
 	std::vector< std::pair<JobType, int> > ret;
 
 	boost::mutex::scoped_lock sl(mJobLock);
@@ -96,7 +97,7 @@ std::vector< std::pair<JobType, int> > JobQueue::getJobCounts()
 }
 
 void JobQueue::shutdown()
-{
+{ // shut down the job queue without completing pending jobs
 	boost::mutex::scoped_lock sl(mJobLock);
 	mShuttingDown = true;
 	mJobCond.notify_all();
@@ -105,33 +106,36 @@ void JobQueue::shutdown()
 }
 
 void JobQueue::setThreadCount(int c)
-{
+{ // set the number of thread serving the job queue to precisely this number
+	assert(c != 0);
 	boost::mutex::scoped_lock sl(mJobLock);
-	while (mThreadCount != c)
+
+	while (mJobCounts[jtDEATH] != 0)
+		mJobCond.wait(sl);
+
+	while (mThreadCount < c)
 	{
-		if (mThreadCount < c)
+		++mThreadCount;
+		boost::thread t(boost::bind(&JobQueue::threadEntry, this));
+		t.detach();
+	}
+	while (mThreadCount > c)
+	{
+		if (mJobCounts[jtDEATH] != 0)
+			mJobCond.wait(sl);
+		else
 		{
-			++mThreadCount;
-			boost::thread t(boost::bind(&JobQueue::threadEntry, this));
-			t.detach();
-		}
-		if (mThreadCount > c)
-		{
-			if (mJobCounts[jtDEATH] != 0)
-				mJobCond.wait(sl);
-			else
-			{
-				mJobSet.insert(Job(jtDEATH, 0));
-				++mJobCounts[jtDEATH];
-			}
+			mJobSet.insert(Job(jtDEATH, 0));
+			++mJobCounts[jtDEATH];
 		}
 	}
+	mJobCond.notify_one(); // in case we sucked up someone else's signal
 }
 
 void JobQueue::threadEntry()
-{
+{ // do jobs until asked to stop
 	boost::mutex::scoped_lock sl(mJobLock);
-	while (!mShuttingDown)
+	while (1)
 	{
 		while (mJobSet.empty() && !mShuttingDown)
 			mJobCond.wait(sl);
