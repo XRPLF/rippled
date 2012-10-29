@@ -58,8 +58,8 @@ void UniqueNodeList::start()
 {
 	miscLoad();
 
-	Log(lsDEBUG) << "Validator fetch updated: " << mtpFetchUpdated;
-	Log(lsDEBUG) << "Validator score updated: " << mtpScoreUpdated;
+	cLog(lsDEBUG) << "Validator fetch updated: " << mtpFetchUpdated;
+	cLog(lsDEBUG) << "Validator score updated: " << mtpScoreUpdated;
 
 	fetchNext();			// Start fetching.
 	scoreNext(false);		// Start scoring.
@@ -139,10 +139,10 @@ bool UniqueNodeList::scoreRound(std::vector<scoreNode>& vsnNodes)
 
 	if (sLog(lsTRACE))
 	{
-		Log(lsTRACE) << "midway: ";
+		cLog(lsTRACE) << "midway: ";
 		BOOST_FOREACH(scoreNode& sn, vsnNodes)
 		{
-			Log(lsTRACE) << str(boost::format("%s| %d, %d, %d: [%s]")
+			cLog(lsTRACE) << str(boost::format("%s| %d, %d, %d: [%s]")
 				% sn.strValidator
 				% sn.iScore
 				% sn.iRoundScore
@@ -164,10 +164,10 @@ bool UniqueNodeList::scoreRound(std::vector<scoreNode>& vsnNodes)
 
 	if (sLog(lsTRACE))
 	{
-		Log(lsTRACE) << "finish: ";
+		cLog(lsTRACE) << "finish: ";
 		BOOST_FOREACH(scoreNode& sn, vsnNodes)
 		{
-			Log(lsTRACE) << str(boost::format("%s| %d, %d, %d: [%s]")
+			cLog(lsTRACE) << str(boost::format("%s| %d, %d, %d: [%s]")
 				% sn.strValidator
 				% sn.iScore
 				% sn.iRoundScore
@@ -290,7 +290,7 @@ void UniqueNodeList::scoreCompute()
 	{
 		BOOST_FOREACH(scoreNode& sn, vsnNodes)
 		{
-			Log(lsTRACE) << str(boost::format("%s| %d, %d, %d")
+			cLog(lsTRACE) << str(boost::format("%s| %d, %d, %d")
 				% sn.strValidator
 				% sn.iScore
 				% sn.iRoundScore
@@ -376,10 +376,10 @@ void UniqueNodeList::scoreCompute()
 
 	if (sLog(lsTRACE))
 	{
-		Log(lsTRACE) << "Scored:";
+		cLog(lsTRACE) << "Scored:";
 		BOOST_FOREACH(scoreNode& sn, vsnNodes)
 		{
-			Log(lsTRACE) << str(boost::format("%s| %d, %d, %d: [%s]")
+			cLog(lsTRACE) << str(boost::format("%s| %d, %d, %d: [%s]")
 				% sn.strValidator
 				% sn.iScore
 				% sn.iRoundScore
