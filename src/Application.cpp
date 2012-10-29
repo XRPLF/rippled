@@ -72,7 +72,7 @@ void Application::run()
 	if (!theConfig.DEBUG_LOGFILE.empty())
 	{ // Let DEBUG messages go to the file but only WARNING or higher to regular output (unless verbose)
 		Log::setLogFile(theConfig.DEBUG_LOGFILE);
-		if (Log::getMinSeverity() < lsDEBUG)
+		if (Log::getMinSeverity() > lsDEBUG)
 			LogPartition::setSeverity(lsDEBUG);
 	}
 
