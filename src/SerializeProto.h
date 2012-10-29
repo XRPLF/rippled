@@ -122,6 +122,7 @@
 
 	// vector of 256-bit
 	FIELD(Indexes,				VECTOR256, 1)
+	FIELD(Hashes,				VECTOR256, 2)
 
 	// inner object
 	// OBJECT/1 is reserved for end of object

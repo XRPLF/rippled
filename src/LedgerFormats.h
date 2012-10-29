@@ -14,6 +14,7 @@ enum LedgerEntryType
 	ltNICKNAME			= 'n',
 	ltOFFER				= 'o',
 	ltCONTRACT			= 'c',
+	ltLEDGER_HASHES		= 'h',
 };
 
 // Used as a prefix for computing ledger indexes (keys).
@@ -28,6 +29,7 @@ enum LedgerNameSpace
 	spaceOwnerDir		= 'O',	// Directory of things owned by an account.
 	spaceBookDir		= 'B',	// Directory of order books.
 	spaceContract		= 'c',
+	spaceHashes			= 'h',
 };
 
 enum LedgerSpecificFlags

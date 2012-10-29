@@ -86,6 +86,10 @@ static bool LEFInit()
 		<< SOElement(sfHighQualityOut,		SOE_OPTIONAL)
 		;
 
+	DECLARE_LEF(LedgerHashes, ltLEDGER_HASHES)
+		<< SOElement(sfHashes,				SOE_REQUIRED)
+		;
+
 		return true;
 }
 

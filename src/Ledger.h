@@ -178,6 +178,12 @@ public:
 	uint256 getPrevLedgerIndex(const uint256& uHash);							// last node <hash
 	uint256 getPrevLedgerIndex(const uint256& uHash, const uint256& uBegin);	// last node <hash, >begin
 
+	// Ledger hash table function
+	static uint256 getLedgerHashIndex();
+	static uint256 getLedgerHashIndex(uint32 desiredLedgerIndex);
+	static int getLedgerHashOffset(uint32 desiredLedgerIndex);
+	static int getLedgerHashOffset(uint32 desiredLedgerIndex, uint32 currentLedgerIndex);
+
 	// index calculation functions
 	static uint256 getAccountRootIndex(const uint160& uAccountID);
 

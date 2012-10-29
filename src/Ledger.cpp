@@ -885,6 +885,41 @@ uint256 Ledger::getAccountRootIndex(const uint160& uAccountID)
 	return s.getSHA512Half();
 }
 
+uint256 Ledger::getLedgerHashIndex()
+{ // get the index of the node that holds the last 256 ledgers
+	Serializer s(2);
+	s.add16(spaceHashes);
+	return s.getSHA512Half();
+}
+
+uint256 Ledger::getLedgerHashIndex(uint32 desiredLedgerIndex)
+{ // get the index of the node that holds the set of 256 ledgers that includes this ledger's hash
+  // (or the first ledger after it if it's not a multiple of 256)
+	Serializer s(6);
+	s.add16(spaceHashes);
+	s.add32(desiredLedgerIndex >> 16);
+	return s.getSHA512Half();
+}
+
+int Ledger::getLedgerHashOffset(uint32 ledgerIndex)
+{ // get the offset for this ledger's hash (or the first one after it) in the every-256-ledger table
+	return (ledgerIndex >> 8) % 256;
+}
+
+int Ledger::getLedgerHashOffset(uint32 desiredLedgerIndex, uint32 currentLedgerIndex)
+{ // get the offset for this ledger's hash in the every-ledger table, -1 if not in it
+	if (desiredLedgerIndex >= currentLedgerIndex)
+		return -1;
+
+	if (currentLedgerIndex < 256)
+		return desiredLedgerIndex;
+
+	if (desiredLedgerIndex < (currentLedgerIndex - 256))
+		return -1;
+
+	return currentLedgerIndex - desiredLedgerIndex - 1;
+}
+
 uint256 Ledger::getBookBase(const uint160& uTakerPaysCurrency, const uint160& uTakerPaysIssuerID,
 	const uint160& uTakerGetsCurrency, const uint160& uTakerGetsIssuerID)
 {
