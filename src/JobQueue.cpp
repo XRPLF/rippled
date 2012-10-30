@@ -5,6 +5,10 @@
 #include <boost/bind.hpp>
 #include <boost/thread.hpp>
 
+#include "Log.h"
+
+SETUP_LOG();
+
 const char* Job::toString(JobType t)
 {
 	switch(t)
@@ -57,7 +61,7 @@ bool Job::operator>=(const Job& j) const
 	return mJobIndex >= j.mJobIndex;
 }
 
-void JobQueue::addJob(JobType type, const boost::function<void(void)>& jobFunc)
+void JobQueue::addJob(JobType type, const boost::function<void(Job&)>& jobFunc)
 {
 	assert(type != jtINVALID);
 
@@ -106,6 +110,7 @@ std::vector< std::pair<JobType, int> > JobQueue::getJobCounts()
 
 void JobQueue::shutdown()
 { // shut down the job queue without completing pending jobs
+	cLog(lsINFO) << "Job queue shutting down";
 	boost::mutex::scoped_lock sl(mJobLock);
 	mShuttingDown = true;
 	mJobCond.notify_all();
@@ -115,7 +120,14 @@ void JobQueue::shutdown()
 
 void JobQueue::setThreadCount(int c)
 { // set the number of thread serving the job queue to precisely this number
-	assert(c != 0);
+	if (c == 0)
+	{
+		c = boost::thread::hardware_concurrency();
+		if (c < 2)
+			c = 2;
+		cLog(lsINFO) << "Auto-tuning to " << c << " validation/transaction/proposal threads";
+	}
+
 	boost::mutex::scoped_lock sl(mJobLock);
 
 	while (mJobCounts[jtDEATH] != 0)
@@ -160,6 +172,7 @@ void JobQueue::threadEntry()
 			break;
 
 		sl.unlock();
+		cLog(lsDEBUG) << "Doing " << Job::toString(job.getType()) << " job";
 		job.doJob();
 		sl.lock();
 	}

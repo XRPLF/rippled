@@ -46,6 +46,7 @@ Application::Application() :
 {
 	RAND_bytes(mNonce256.begin(), mNonce256.size());
 	RAND_bytes(reinterpret_cast<unsigned char *>(&mNonceST), sizeof(mNonceST));
+	mJobQueue.setThreadCount();
 }
 
 extern const char *RpcDBInit[], *TxnDBInit[], *LedgerDBInit[], *WalletDBInit[], *HashNodeDBInit[], *NetNodeDBInit[];
@@ -54,6 +55,7 @@ extern int RpcDBCount, TxnDBCount, LedgerDBCount, WalletDBCount, HashNodeDBCount
 void Application::stop()
 {
 	mIOService.stop();
+	mJobQueue.shutdown();
 	mHashedObjectStore.bulkWrite();
 	mValidations.flush();
 	mAuxService.stop();

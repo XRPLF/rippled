@@ -11,6 +11,9 @@
 
 #include "types.h"
 
+// Note that this queue should only be used for CPU-bound jobs
+// It is primarily intended for signature checking
+
 enum JobType
 { // must be in priority order, low to high
 	jtINVALID,
@@ -28,18 +31,17 @@ class Job
 protected:
 	JobType						mType;
 	uint64						mJobIndex;
-	boost::function<void(void)>	mJob;
+	boost::function<void(Job&)>	mJob;
 
 public:
 	Job()							: mType(jtINVALID), mJobIndex(0)	{ ; }
 	Job(JobType type, uint64 index)	: mType(type), mJobIndex(index)		{ ; }
 
-	Job(JobType type, uint64 index, const boost::function<void(void)>& job)
+	Job(JobType type, uint64 index, const boost::function<void(Job&)>& job)
 		: mType(type), mJobIndex(index), mJob(job) { ; }
 
 	JobType getType() const				{ return mType; }
-	void setIndex(uint64 i)				{ mJobIndex = i; }
-	void doJob(void)					{ mJob(); }
+	void doJob(void)					{ mJob(*this); }
 
 	bool operator<(const Job& j) const;
 	bool operator>(const Job& j) const;
@@ -68,14 +70,14 @@ public:
 
 	JobQueue() : mLastJob(0), mThreadCount(0), mShuttingDown(false) { ; }
 
-	void addJob(JobType type, const boost::function<void(void)>& job);
+	void addJob(JobType type, const boost::function<void(Job&)>& job);
 
 	int getJobCount(JobType t);		// Jobs at this priority
 	int getJobCountGE(JobType t);	// All jobs at or greater than this priority
 	std::vector< std::pair<JobType, int> > getJobCounts();
 
 	void shutdown();
-	void setThreadCount(int c);
+	void setThreadCount(int c = 0);
 };
 
 #endif

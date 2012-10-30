@@ -18,6 +18,7 @@
 #include "Suppression.h"
 #include "SNTPClient.h"
 #include "../database/database.h"
+#include "JobQueue.h"
 
 
 class RPCDoor;
@@ -53,6 +54,7 @@ class Application
 	SuppressionTable		mSuppressions;
 	HashedObjectStore		mHashedObjectStore;
 	SNTPClient				mSNTPClient;
+	JobQueue				mJobQueue;
 
 	DatabaseCon				*mRpcDB, *mTxnDB, *mLedgerDB, *mWalletDB, *mHashNodeDB, *mNetNodeDB;
 
@@ -90,6 +92,7 @@ public:
 	NodeCache& getTempNodeCache()					{ return mTempNodeCache; }
 	HashedObjectStore& getHashedObjectStore()		{ return mHashedObjectStore; }
 	ValidationCollection& getValidations()			{ return mValidations; }
+	JobQueue& getJobQueue()							{ return mJobQueue; }
 	bool isNew(const uint256& s)					{ return mSuppressions.addSuppression(s); }
 	bool isNew(const uint160& s)					{ return mSuppressions.addSuppression(s); }
 	bool running()									{ return mTxnDB != NULL; }
