@@ -123,7 +123,6 @@
     <ClCompile Include="src\Log.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\NetworkOPs.cpp" />
-    <ClCompile Include="src\NewcoinAddress.cpp" />
     <ClCompile Include="src\NicknameState.cpp" />
     <ClCompile Include="src\Operation.cpp" />
     <ClCompile Include="src\OrderBook.cpp" />
@@ -135,7 +134,9 @@
     <ClCompile Include="src\PeerDoor.cpp" />
     <ClCompile Include="src\PlatRand.cpp" />
     <ClCompile Include="src\PubKeyCache.cpp" />
+    <ClCompile Include="src\RangeSet.cpp" />
     <ClCompile Include="src\rfc1751.cpp" />
+    <ClCompile Include="src\RippleAddress.cpp" />
     <ClCompile Include="src\RippleCalc.cpp" />
     <ClCompile Include="src\RippleLines.cpp" />
     <ClCompile Include="src\RippleState.cpp" />
