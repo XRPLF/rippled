@@ -538,8 +538,8 @@ void Peer::processReadBuffer()
 
 		case ripple::mtVALIDATION:
 			{
-				ripple::TMValidation msg;
-				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
+				boost::shared_ptr<ripple::TMValidation> msg = boost::make_shared<ripple::TMValidation>();
+				if (msg->ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvValidation(msg);
 				else
 					cLog(lsWARNING) << "parse error: " << type;
@@ -773,7 +773,7 @@ void Peer::recvHaveTxSet(ripple::TMHaveTransactionSet& packet)
 }
 
 static void checkValidation(Job&, SerializedValidation::pointer val, uint256 signingHash,
-	bool isTrusted, ripple::TMValidation packet, boost::weak_ptr<Peer> peer)
+	bool isTrusted, boost::shared_ptr<ripple::TMValidation> packet, boost::weak_ptr<Peer> peer)
 {
 #ifndef TRUST_NETWORK
 	try
@@ -789,7 +789,7 @@ static void checkValidation(Job&, SerializedValidation::pointer val, uint256 sig
 		if (theApp->getOPs().recvValidation(val))
 		{
 			Peer::pointer pp = peer.lock();
-			PackedMessage::pointer message = boost::make_shared<PackedMessage>(packet, ripple::mtVALIDATION);
+			PackedMessage::pointer message = boost::make_shared<PackedMessage>(*packet, ripple::mtVALIDATION);
 			theApp->getConnectionPool().relayMessage(pp ? pp.get() : NULL, message);
 		}
 	}
@@ -802,9 +802,9 @@ static void checkValidation(Job&, SerializedValidation::pointer val, uint256 sig
 #endif
 }
 
-void Peer::recvValidation(ripple::TMValidation& packet)
+void Peer::recvValidation(const boost::shared_ptr<ripple::TMValidation>& packet)
 {
-	if (packet.validation().size() < 50)
+	if (packet->validation().size() < 50)
 	{
 		cLog(lsWARNING) << "Too small validation from peer";
 		punishPeer(PP_UNKNOWN_REQUEST);
@@ -815,7 +815,7 @@ void Peer::recvValidation(ripple::TMValidation& packet)
 	try
 #endif
 	{
-		Serializer s(packet.validation());
+		Serializer s(packet->validation());
 		SerializerIterator sit(s);
 		SerializedValidation::pointer val = boost::make_shared<SerializedValidation>(boost::ref(sit), false);
 

@@ -96,7 +96,7 @@ protected:
 
 	void recvHello(ripple::TMHello& packet);
 	void recvTransaction(ripple::TMTransaction& packet);
-	void recvValidation(ripple::TMValidation& packet);
+	void recvValidation(const boost::shared_ptr<ripple::TMValidation>& packet);
 	void recvGetValidation(ripple::TMGetValidations& packet);
 	void recvContact(ripple::TMContact& packet);
 	void recvGetContacts(ripple::TMGetContacts& packet);
