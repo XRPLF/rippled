@@ -107,6 +107,7 @@
     <ClCompile Include="src\DeterministicKeys.cpp" />
     <ClCompile Include="src\ECIES.cpp" />
     <ClCompile Include="src\FieldNames.cpp" />
+    <ClCompile Include="src\JobQueue.cpp" />
     <ClCompile Include="src\HashedObject.cpp" />
     <ClCompile Include="src\HTTPRequest.cpp" />
     <ClCompile Include="src\HttpsClient.cpp" />
