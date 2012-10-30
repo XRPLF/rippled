@@ -78,11 +78,18 @@ private:
 
 	mutable boost::recursive_mutex mLock;
 
+	static int sPendingSaves;
+	static boost::recursive_mutex sPendingSaveLock;
+
 	Ledger(const Ledger&);				// no implementation
 	Ledger& operator=(const Ledger&);	// no implementation
 
 protected:
 	SLE::pointer getASNode(LedgerStateParms& parms, const uint256& nodeID, LedgerEntryType let);
+
+	static void incPendingSaves();
+	static void decPendingSaves();
+	void saveAcceptedLedger(bool fromConsensus);
 
 public:
 	Ledger(const RippleAddress& masterID, uint64 startAmount); // used for the starting bootstrap ledger
@@ -101,6 +108,7 @@ public:
 
 	static Ledger::pointer getSQL(const std::string& sqlStatement);
 	static Ledger::pointer getLastFullLedger();
+	static int getPendingSaves();
 
 	void updateHash();
 	void setClosed()	{ mClosed = true; }
@@ -157,9 +165,9 @@ public:
 	SLE::pointer getAccountRoot(const RippleAddress& naAccountID);
 
 	// database functions
-	void saveAcceptedLedger(bool fromConsensus);
 	static Ledger::pointer loadByIndex(uint32 ledgerIndex);
 	static Ledger::pointer loadByHash(const uint256& ledgerHash);
+	void pendSave(bool fromConsensus);
 
 	// next/prev function
 	SLE::pointer getSLE(const uint256& uHash);
@@ -169,6 +177,12 @@ public:
 	uint256 getNextLedgerIndex(const uint256& uHash, const uint256& uEnd);		// first node >hash, <end
 	uint256 getPrevLedgerIndex(const uint256& uHash);							// last node <hash
 	uint256 getPrevLedgerIndex(const uint256& uHash, const uint256& uBegin);	// last node <hash, >begin
+
+	// Ledger hash table function
+	static uint256 getLedgerHashIndex();
+	static uint256 getLedgerHashIndex(uint32 desiredLedgerIndex);
+	static int getLedgerHashOffset(uint32 desiredLedgerIndex);
+	static int getLedgerHashOffset(uint32 desiredLedgerIndex, uint32 currentLedgerIndex);
 
 	// index calculation functions
 	static uint256 getAccountRootIndex(const uint160& uAccountID);

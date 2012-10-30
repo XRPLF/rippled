@@ -46,6 +46,7 @@ Application::Application() :
 {
 	RAND_bytes(mNonce256.begin(), mNonce256.size());
 	RAND_bytes(reinterpret_cast<unsigned char *>(&mNonceST), sizeof(mNonceST));
+	mJobQueue.setThreadCount();
 }
 
 extern const char *RpcDBInit[], *TxnDBInit[], *LedgerDBInit[], *WalletDBInit[], *HashNodeDBInit[], *NetNodeDBInit[];
@@ -54,6 +55,7 @@ extern int RpcDBCount, TxnDBCount, LedgerDBCount, WalletDBCount, HashNodeDBCount
 void Application::stop()
 {
 	mIOService.stop();
+	mJobQueue.shutdown();
 	mHashedObjectStore.bulkWrite();
 	mValidations.flush();
 	mAuxService.stop();
@@ -70,9 +72,10 @@ void Application::run()
 {
 	assert(mTxnDB == NULL);
 	if (!theConfig.DEBUG_LOGFILE.empty())
-	{ // Let DEBUG messages go to the file but only WARNING or higher to regular output
+	{ // Let DEBUG messages go to the file but only WARNING or higher to regular output (unless verbose)
 		Log::setLogFile(theConfig.DEBUG_LOGFILE);
-		LogPartition::setSeverity(lsDEBUG);
+		if (Log::getMinSeverity() > lsDEBUG)
+			LogPartition::setSeverity(lsDEBUG);
 	}
 
 	boost::thread auxThread(boost::bind(&boost::asio::io_service::run, &mAuxService));

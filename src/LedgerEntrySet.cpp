@@ -319,9 +319,11 @@ bool LedgerEntrySet::threadTx(SLE::ref threadTo, Ledger::ref ledger,
 	uint32 prevLgrID;
 	if (!threadTo->thread(mSet.getTxID(), mSet.getLgrSeq(), prevTxID, prevLgrID))
 		return false;
-	if (TransactionMetaSet::thread(mSet.getAffectedNode(threadTo->getIndex(), sfModifiedNode),
+
+	if (prevTxID.isZero() || TransactionMetaSet::thread(mSet.getAffectedNode(threadTo->getIndex(), sfModifiedNode),
 			prevTxID, prevLgrID))
 		return true;
+
 	assert(false);
 	return false;
 }
@@ -336,7 +338,7 @@ bool LedgerEntrySet::threadOwners(SLE::ref node, Ledger::ref ledger,
 #endif
 		return threadTx(node->getOwner(), ledger, newMods);
 	}
-	else if (node->hasTwoOwners()) // thread to owner's accounts]
+	else if (node->hasTwoOwners()) // thread to owner's accounts
 	{
 #ifdef META_DEBUG
 		cLog(lsTRACE) << "Thread to two owners";
@@ -403,34 +405,26 @@ void LedgerEntrySet::calcRawMeta(Serializer& s, TER result)
 			assert(origNode);
 			threadOwners(origNode, mLedger, newMod);
 
-			if (origNode->isFieldPresent(sfAmount))
-			{ // node has an amount, covers ripple state nodes
-				STAmount amount = origNode->getFieldAmount(sfAmount);
-				if (amount.isNonZero())
-					mSet.getAffectedNode(it.first).setFieldAmount(sfPreviousBalance, amount);
-				amount = curNode->getFieldAmount(sfAmount);
-				if (amount.isNonZero())
-					mSet.getAffectedNode(it.first).setFieldAmount(sfFinalBalance, amount);
-
-				if (origNode->getType() == ltRIPPLE_STATE)
-				{
-					mSet.getAffectedNode(it.first).setFieldAccount(sfLowID,
-						RippleAddress::createAccountID(origNode->getFieldAmount(sfLowLimit).getIssuer()));
-					mSet.getAffectedNode(it.first).setFieldAccount(sfHighID,
-						RippleAddress::createAccountID(origNode->getFieldAmount(sfHighLimit).getIssuer()));
-				}
+			STObject finals(sfFinalFields);
+			BOOST_FOREACH(const SerializedType& obj, *curNode)
+			{ // search the deleted node for values saved on delete
+				if (obj.getFName().shouldMetaDel() && !obj.isDefault())
+					finals.addObject(obj);
 			}
+			if (!finals.empty())
+				mSet.getAffectedNode(it.first, *type).addObject(finals);
+		}
 
-			if (origNode->getType() == ltOFFER)
-			{ // check for non-zero balances
-				STAmount amount = origNode->getFieldAmount(sfTakerPays);
-				if (amount.isNonZero())
-					mSet.getAffectedNode(it.first).setFieldAmount(sfFinalTakerPays, amount);
-				amount = origNode->getFieldAmount(sfTakerGets);
-				if (amount.isNonZero())
-					mSet.getAffectedNode(it.first).setFieldAmount(sfFinalTakerGets, amount);
+		if ((type == &sfDeletedNode || type == &sfModifiedNode))
+		{
+			STObject mods(sfPreviousFields);
+			BOOST_FOREACH(const SerializedType& obj, *origNode)
+			{ // search the original node for values saved on modify
+				if (obj.getFName().shouldMetaMod() && !obj.isDefault() && !curNode->hasMatchingEntry(obj))
+					mods.addObject(obj);
 			}
-
+			if (!mods.empty())
+				mSet.getAffectedNode(it.first, *type).addObject(mods);
 		}
 
 		if (type == &sfCreatedNode) // if created, thread to owner(s)
@@ -444,28 +438,6 @@ void LedgerEntrySet::calcRawMeta(Serializer& s, TER result)
 			if (curNode->isThreadedType()) // always thread to self
 				threadTx(curNode, mLedger, newMod);
 		}
-
-		if (type == &sfModifiedNode)
-		{
-			assert(origNode);
-			if (origNode->isFieldPresent(sfAmount))
-			{ // node has an amount, covers account root nodes and ripple nodes
-				STAmount amount = origNode->getFieldAmount(sfAmount);
-				if (amount != curNode->getFieldAmount(sfAmount))
-					mSet.getAffectedNode(it.first).setFieldAmount(sfPreviousBalance, amount);
-			}
-
-			if (origNode->getType() == ltOFFER)
-			{
-				STAmount amount = origNode->getFieldAmount(sfTakerPays);
-				if (amount != curNode->getFieldAmount(sfTakerPays))
-					mSet.getAffectedNode(it.first).setFieldAmount(sfPreviousTakerPays, amount);
-				amount = origNode->getFieldAmount(sfTakerGets);
-				if (amount != curNode->getFieldAmount(sfTakerGets))
-					mSet.getAffectedNode(it.first).setFieldAmount(sfPreviousTakerGets, amount);
-			}
-
-		}
 	}
 
 	// add any new modified nodes to the modification set
@@ -473,9 +445,7 @@ void LedgerEntrySet::calcRawMeta(Serializer& s, TER result)
 			it != end; ++it)
 		entryModify(it->second);
 
-#ifdef META_DEBUG
-	cLog(lsINFO) << "Metadata:" << mSet.getJson(0);
-#endif
+	cLog(lsTRACE) << "Metadata:" << mSet.getJson(0);
 
 	mSet.addRaw(s, result);
 }

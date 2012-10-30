@@ -35,7 +35,7 @@
 	FIELD(Flags,				UINT32, 2)
 	FIELD(SourceTag,			UINT32, 3)
 	FIELD(Sequence,				UINT32, 4)
-	FIELD(LastTxnSeq,			UINT32, 5)
+	FIELD(PreviousTxnLgrSeq,	UINT32, 5)
 	FIELD(LedgerSequence,		UINT32, 6)
 	FIELD(CloseTime,			UINT32, 7)
 	FIELD(ParentCloseTime,		UINT32, 8)
@@ -71,7 +71,7 @@
 	FIELD(ParentHash,			HASH256, 2)
 	FIELD(TransactionHash,		HASH256, 3)
 	FIELD(AccountHash,			HASH256, 4)
-	FIELD(LastTxnID,			HASH256, 5)
+	FIELD(PreviousTxnID,		HASH256, 5)
 	FIELD(LedgerIndex,			HASH256, 6)
 	FIELD(WalletLocator,		HASH256, 7)
 	FIELD(PublishHash,			HASH256, 8)
@@ -95,12 +95,6 @@
 	// currency amount (uncommon)
 	FIELD(MinimumOffer,			AMOUNT,	16)
 	FIELD(RippleEscrow,			AMOUNT,	17)
-	FIELD(PreviousBalance,		AMOUNT,	18)
-	FIELD(FinalBalance,			AMOUNT,	19)
-	FIELD(PreviousTakerPays,	AMOUNT,	20)
-	FIELD(PreviousTakerGets,	AMOUNT,	21)
-	FIELD(FinalTakerPays,		AMOUNT,	22)
-	FIELD(FinalTakerGets,		AMOUNT,	23)
 
 	// variable length
 	FIELD(PublicKey,			VL, 1)
@@ -123,16 +117,12 @@
 	FIELD(Target,				ACCOUNT, 7)
 	FIELD(AuthorizedKey,		ACCOUNT, 8)
 
-	// account (uncommon)
-	FIELD(PreviousAccount,		ACCOUNT, 16)
-	FIELD(LowID,				ACCOUNT, 17)
-	FIELD(HighID,				ACCOUNT, 18)
-
 	// path set
 	FIELD(Paths,				PATHSET, 1)
 
 	// vector of 256-bit
 	FIELD(Indexes,				VECTOR256, 1)
+	FIELD(Hashes,				VECTOR256, 2)
 
 	// inner object
 	// OBJECT/1 is reserved for end of object
@@ -141,6 +131,8 @@
 	FIELD(CreatedNode,			OBJECT,	3)
 	FIELD(DeletedNode,			OBJECT,	4)
 	FIELD(ModifiedNode,			OBJECT,	5)
+	FIELD(PreviousFields,		OBJECT, 6)
+	FIELD(FinalFields,			OBJECT, 7)
 
 	// array of objects
 	// ARRAY/1 is reserved for end of array

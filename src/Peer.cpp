@@ -1,4 +1,3 @@
-
 #include <iostream>
 
 #include <boost/bind.hpp>
@@ -539,8 +538,8 @@ void Peer::processReadBuffer()
 
 		case ripple::mtVALIDATION:
 			{
-				ripple::TMValidation msg;
-				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
+				boost::shared_ptr<ripple::TMValidation> msg = boost::make_shared<ripple::TMValidation>();
+				if (msg->ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvValidation(msg);
 				else
 					cLog(lsWARNING) << "parse error: " << type;
@@ -573,6 +572,13 @@ void Peer::processReadBuffer()
 			cLog(lsWARNING) << strHex(&mReadbuf[0], mReadbuf.size());
 		}
 	}
+}
+
+void Peer::punishPeer(const boost::weak_ptr<Peer>& wp, PeerPunish pp)
+{
+	Peer::pointer p = wp.lock();
+	if (p)
+		p->punishPeer(pp);
 }
 
 void Peer::recvHello(ripple::TMHello& packet)
@@ -766,23 +772,50 @@ void Peer::recvHaveTxSet(ripple::TMHaveTransactionSet& packet)
 		punishPeer(PP_UNWANTED_DATA);
 }
 
-void Peer::recvValidation(ripple::TMValidation& packet)
+static void checkValidation(Job&, SerializedValidation::pointer val, uint256 signingHash,
+	bool isTrusted, boost::shared_ptr<ripple::TMValidation> packet, boost::weak_ptr<Peer> peer)
 {
-	if (packet.validation().size() < 50)
+#ifndef TRUST_NETWORK
+	try
+#endif
+	{
+		if (!val->isValid(signingHash))
+		{
+			cLog(lsWARNING) << "Validation is invalid";
+			Peer::punishPeer(peer, PP_UNKNOWN_REQUEST);
+			return;
+		}
+
+		if (theApp->getOPs().recvValidation(val))
+		{
+			Peer::pointer pp = peer.lock();
+			PackedMessage::pointer message = boost::make_shared<PackedMessage>(*packet, ripple::mtVALIDATION);
+			theApp->getConnectionPool().relayMessage(pp ? pp.get() : NULL, message);
+		}
+	}
+#ifndef TRUST_NETWORK
+	catch (...)
+	{
+		cLog(lsWARNING) << "Exception processing validation";
+		Peer::punishPeer(peer, PP_UNKNOWN_REQUEST);
+	}
+#endif
+}
+
+void Peer::recvValidation(const boost::shared_ptr<ripple::TMValidation>& packet)
+{
+	if (packet->validation().size() < 50)
 	{
 		cLog(lsWARNING) << "Too small validation from peer";
 		punishPeer(PP_UNKNOWN_REQUEST);
 		return;
 	}
 
-// OPTIMIZEME: Should just defer validation checking to another thread
-// checking the signature is expensive (but should do 'isNew' check here)
-
 #ifndef TRUST_NETWORK
 	try
 #endif
 	{
-		Serializer s(packet.validation());
+		Serializer s(packet->validation());
 		SerializerIterator sit(s);
 		SerializedValidation::pointer val = boost::make_shared<SerializedValidation>(boost::ref(sit), false);
 
@@ -793,18 +826,10 @@ void Peer::recvValidation(ripple::TMValidation& packet)
 			return;
 		}
 
-		if (!val->isValid(signingHash))
-		{
-			cLog(lsWARNING) << "Validation is invalid";
-			punishPeer(PP_UNKNOWN_REQUEST);
-			return;
-		}
-
-		if (theApp->getOPs().recvValidation(val))
-		{
-			PackedMessage::pointer message = boost::make_shared<PackedMessage>(packet, ripple::mtVALIDATION);
-			theApp->getConnectionPool().relayMessage(this, message);
-		}
+		bool isTrusted = theApp->getUNL().nodeInUNL(val->getSignerPublic());
+		theApp->getJobQueue().addJob(isTrusted ? jtVALIDATION_t : jtVALIDATION_ut,
+			boost::bind(&checkValidation, _1, val, signingHash, isTrusted, packet,
+				boost::weak_ptr<Peer>(shared_from_this())));
 	}
 #ifndef TRUST_NETWORK
 	catch (...)
@@ -993,6 +1018,9 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 	ripple::TMLedgerData reply;
 	bool fatLeaves = true, fatRoot = false;
 
+	if (packet.has_requestcookie())
+		reply.set_requestcookie(packet.requestcookie());
+
 	if (packet.itype() == ripple::liTS_CANDIDATE)
 	{ // Request is  for a transaction candidate set
 		cLog(lsINFO) << "Received request for TX candidate set data " << getIP();
@@ -1034,7 +1062,10 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 			tLog(!ledger, lsINFO) << "Don't have ledger " << ledgerhash;
 		}
 		else if (packet.has_ledgerseq())
+		{
 			ledger = theApp->getMasterLedger().getLedgerBySeq(packet.ledgerseq());
+			tLog(!ledger, lsINFO) << "Don't have ledger " << packet.ledgerseq();
+		}
 		else if (packet.has_ltype() && (packet.ltype() == ripple::ltCURRENT))
 			ledger = theApp->getMasterLedger().getCurrentLedger();
 		else if (packet.has_ltype() && (packet.ltype() == ripple::ltCLOSED) )
@@ -1053,10 +1084,13 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 		if ((!ledger) || (packet.has_ledgerseq() && (packet.ledgerseq() != ledger->getLedgerSeq())))
 		{
 			punishPeer(PP_UNKNOWN_REQUEST);
-			if (ledger)
-				cLog(lsWARNING) << "Ledger has wrong sequence";
-			else
-				cLog(lsWARNING) << "Can't find the ledger they want";
+			if (sLog(lsWARNING))
+			{
+				if (ledger)
+					Log(lsWARNING) << "Ledger has wrong sequence";
+				else
+					Log(lsWARNING) << "Can't find the ledger they want";
+			}
 			return;
 		}
 
@@ -1068,12 +1102,11 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 
 		if(packet.itype() == ripple::liBASE)
 		{ // they want the ledger base data
-			cLog(lsTRACE) << "Want ledger base data";
+			cLog(lsTRACE) << "They want ledger base data";
 			Serializer nData(128);
 			ledger->addRaw(nData);
 			reply.add_nodes()->set_nodedata(nData.getDataPtr(), nData.getLength());
 
-			cLog(lsINFO) << "Ledger root w/map roots request";
 			SHAMap::pointer map = ledger->peekAccountStateMap();
 			if (map && map->getHash().isNonZero())
 			{ // return account state root node if possible
@@ -1086,7 +1119,7 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 						map = ledger->peekTransactionMap();
 						if (map && map->getHash().isNonZero())
 						{
-							rootNode.resize(0);
+							rootNode.erase();
 							if (map->getRootNode(rootNode, snfWIRE))
 								reply.add_nodes()->set_nodedata(rootNode.getDataPtr(), rootNode.getLength());
 						}
@@ -1099,9 +1132,10 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 			return;
 		}
 
-		if ((packet.itype() == ripple::liTX_NODE) || (packet.itype() == ripple::liAS_NODE))
-			map = (packet.itype() == ripple::liTX_NODE) ?
-				ledger->peekTransactionMap() : ledger->peekAccountStateMap();
+		if (packet.itype() == ripple::liTX_NODE)
+			map = ledger->peekTransactionMap();
+		else if (packet.itype() == ripple::liAS_NODE)
+			map = ledger->peekAccountStateMap();
 	}
 
 	if ((!map) || (packet.nodeids_size() == 0))
@@ -1125,7 +1159,6 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 		{
 			std::vector<SHAMapNode>::iterator nodeIDIterator;
 			std::list< std::vector<unsigned char> >::iterator rawNodeIterator;
-			int count = 0;
 			for(nodeIDIterator = nodeIDs.begin(), rawNodeIterator = rawNodes.begin();
 				nodeIDIterator != nodeIDs.end(); ++nodeIDIterator, ++rawNodeIterator)
 			{
@@ -1134,12 +1167,9 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 				ripple::TMLedgerNode* node = reply.add_nodes();
 				node->set_nodeid(nID.getDataPtr(), nID.getLength());
 				node->set_nodedata(&rawNodeIterator->front(), rawNodeIterator->size());
-				++count;
 			}
 		}
 	}
-	if (packet.has_requestcookie())
-		reply.set_requestcookie(packet.requestcookie());
 	PackedMessage::pointer oPacket = boost::make_shared<PackedMessage>(reply, ripple::mtLEDGER_DATA);
 	sendPacket(oPacket);
 }
@@ -1148,6 +1178,7 @@ void Peer::recvLedger(ripple::TMLedgerData& packet)
 {
 	if (packet.nodes().size() <= 0)
 	{
+		cLog(lsWARNING) << "Ledger data with no nodes";
 		punishPeer(PP_INVALID_REQUEST);
 		return;
 	}

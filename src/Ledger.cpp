@@ -339,7 +339,7 @@ uint256 Ledger::getHash()
 
 void Ledger::saveAcceptedLedger(bool fromConsensus)
 { // can be called in a different thread
-	cLog(lsTRACE) << "saveAcceptedLedger " << (fromConsensus ? "fromConsensus" : "fromAcquire") << getLedgerSeq();
+	cLog(lsTRACE) << "saveAcceptedLedger " << (fromConsensus ? "fromConsensus " : "fromAcquire ") << getLedgerSeq();
 	static boost::format ledgerExists("SELECT LedgerSeq FROM Ledgers where LedgerSeq = %d;");
 	static boost::format deleteLedger("DELETE FROM Ledgers WHERE LedgerSeq = %d;");
 	static boost::format AcctTransExists("SELECT LedgerSeq FROM AccountTransactions WHERE TransId = '%s';");
@@ -430,11 +430,16 @@ void Ledger::saveAcceptedLedger(bool fromConsensus)
 	}
 
 	if (!fromConsensus)
+	{
+		decPendingSaves();
 		return;
+	}
+
+	theApp->getMasterLedger().setFullLedger(shared_from_this());
 
 	theApp->getOPs().pubLedger(shared_from_this());
 
-	theApp->getMasterLedger().setFullLedger(shared_from_this());
+	decPendingSaves();
 }
 
 Ledger::pointer Ledger::getSQL(const std::string& sql)
@@ -451,7 +456,10 @@ Ledger::pointer Ledger::getSQL(const std::string& sql)
 		ScopedLock sl(theApp->getLedgerDB()->getDBLock());
 
 		if (!db->executeSQL(sql) || !db->startIterRows())
-			 return Ledger::pointer();
+		{
+			cLog(lsDEBUG) << "No ledger for query: " << sql;
+			return Ledger::pointer();
+		}
 
 		db->getStr("LedgerHash", hash);
 		ledgerHash.SetHex(hash);
@@ -471,8 +479,8 @@ Ledger::pointer Ledger::getSQL(const std::string& sql)
 	}
 
 	Log(lsTRACE) << "Constructing ledger " << ledgerSeq << " from SQL";
-	Ledger::pointer ret = Ledger::pointer(new Ledger(prevHash, transHash, accountHash, totCoins,
-		closingTime, prevClosingTime, closeFlags, closeResolution, ledgerSeq));
+	Ledger::pointer ret = boost::make_shared<Ledger>(prevHash, transHash, accountHash, totCoins,
+		closingTime, prevClosingTime, closeFlags, closeResolution, ledgerSeq);
 	if (ret->getHash() != ledgerHash)
 	{
 		if (sLog(lsERROR))
@@ -877,6 +885,41 @@ uint256 Ledger::getAccountRootIndex(const uint160& uAccountID)
 	return s.getSHA512Half();
 }
 
+uint256 Ledger::getLedgerHashIndex()
+{ // get the index of the node that holds the last 256 ledgers
+	Serializer s(2);
+	s.add16(spaceHashes);
+	return s.getSHA512Half();
+}
+
+uint256 Ledger::getLedgerHashIndex(uint32 desiredLedgerIndex)
+{ // get the index of the node that holds the set of 256 ledgers that includes this ledger's hash
+  // (or the first ledger after it if it's not a multiple of 256)
+	Serializer s(6);
+	s.add16(spaceHashes);
+	s.add32(desiredLedgerIndex >> 16);
+	return s.getSHA512Half();
+}
+
+int Ledger::getLedgerHashOffset(uint32 ledgerIndex)
+{ // get the offset for this ledger's hash (or the first one after it) in the every-256-ledger table
+	return (ledgerIndex >> 8) % 256;
+}
+
+int Ledger::getLedgerHashOffset(uint32 desiredLedgerIndex, uint32 currentLedgerIndex)
+{ // get the offset for this ledger's hash in the every-ledger table, -1 if not in it
+	if (desiredLedgerIndex >= currentLedgerIndex)
+		return -1;
+
+	if (currentLedgerIndex < 256)
+		return desiredLedgerIndex;
+
+	if (desiredLedgerIndex < (currentLedgerIndex - 256))
+		return -1;
+
+	return currentLedgerIndex - desiredLedgerIndex - 1;
+}
+
 uint256 Ledger::getBookBase(const uint160& uTakerPaysCurrency, const uint160& uTakerPaysIssuerID,
 	const uint160& uTakerGetsCurrency, const uint160& uTakerGetsIssuerID)
 {
@@ -1016,6 +1059,33 @@ bool Ledger::assertSane()
 
 	assert(false);
 	return false;
+}
+
+int Ledger::sPendingSaves = 0;
+boost::recursive_mutex Ledger::sPendingSaveLock;
+
+int Ledger::getPendingSaves()
+{
+	boost::recursive_mutex::scoped_lock sl(sPendingSaveLock);
+	return sPendingSaves;
+}
+
+void Ledger::pendSave(bool fromConsensus)
+{
+	if (!fromConsensus && !theApp->isNew(getHash()))
+		return;
+
+	boost::thread thread(boost::bind(&Ledger::saveAcceptedLedger, shared_from_this(), fromConsensus));
+	thread.detach();
+
+	boost::recursive_mutex::scoped_lock sl(sPendingSaveLock);
+	++sPendingSaves;
+}
+
+void Ledger::decPendingSaves()
+{
+	boost::recursive_mutex::scoped_lock sl(sPendingSaveLock);
+	--sPendingSaves;
 }
 
 // vim:ts=4

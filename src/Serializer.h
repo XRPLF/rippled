@@ -90,16 +90,16 @@ public:
 		{ return getPrefixHash(prefix, reinterpret_cast<const unsigned char *>(strData.c_str()), strData.size()); }
 
 	// totality functions
+	const std::vector<unsigned char>& peekData() const		{ return mData; }
+	std::vector<unsigned char> getData() const				{ return mData; }
 	int getCapacity() const				{ return mData.capacity(); }
 	int getDataLength() const			{ return mData.size(); }
 	const void* getDataPtr() const		{ return &mData.front(); }
 	void* getDataPtr()					{ return &mData.front(); }
 	int getLength()	const				{ return mData.size(); }
-	const std::vector<unsigned char>& peekData() const { return mData; }
-	std::vector<unsigned char> getData() const { return mData; }
-	std::string getString() const { return std::string(static_cast<const char *>(getDataPtr()), size());  }
-	void secureErase() { memset(&(mData.front()), 0, mData.size()); erase(); }
-	void erase() { mData.clear(); }
+	std::string getString() const 		{ return std::string(static_cast<const char *>(getDataPtr()), size());  }
+	void secureErase()					{ memset(&(mData.front()), 0, mData.size()); erase(); }
+	void erase()						{ mData.clear(); }
 	int removeLastByte();
 	bool chop(int num);
 
@@ -113,10 +113,10 @@ public:
 	void resize(size_t n)									{ mData.resize(n); }
 	size_t capacity() const									{ return mData.capacity(); }
 
-	bool operator==(const std::vector<unsigned char>& v) { return v == mData; }
-	bool operator!=(const std::vector<unsigned char>& v) { return v != mData; }
-	bool operator==(const Serializer& v) { return v.mData == mData; }
-	bool operator!=(const Serializer& v) { return v.mData != mData; }
+	bool operator==(const std::vector<unsigned char>& v)	{ return v == mData; }
+	bool operator!=(const std::vector<unsigned char>& v)	{ return v != mData; }
+	bool operator==(const Serializer& v)					{ return v.mData == mData; }
+	bool operator!=(const Serializer& v)					{ return v.mData != mData; }
 
 	// signature functions
 	bool checkSignature(int pubkeyOffset, int signatureOffset) const;
@@ -147,12 +147,12 @@ public:
 	// Reference is not const because we don't want to bind to a temporary
 	SerializerIterator(Serializer& s) : mSerializer(s), mPos(0) { ; }
 
-	void reset(void) { mPos = 0; }
-	void setPos(int p) { mPos = p; }
 	const Serializer& operator*(void) { return mSerializer; }
+	void reset(void)		{ mPos = 0; }
+	void setPos(int p)		{ mPos = p; }
 
-	int getPos(void) { return mPos; }
-	bool empty() { return mPos == mSerializer.getLength(); }
+	int getPos(void)		{ return mPos; }
+	bool empty()			{ return mPos == mSerializer.getLength(); }
 	int getBytesLeft();
 
 	// get functions throw on error

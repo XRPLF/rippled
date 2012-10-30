@@ -62,6 +62,8 @@ public:
 
 	void switchLedgers(Ledger::ref lastClosed, Ledger::ref newCurrent);
 
+	std::string getCompleteLedgers()	{ return mCompleteLedgers.toString(); }
+
 	Ledger::pointer closeLedger();
 
 	Ledger::pointer getLedgerBySeq(uint32 index)
@@ -75,12 +77,11 @@ public:
 
 	Ledger::pointer getLedgerByHash(const uint256& hash)
 	{
-		if (!hash)
+		if (hash.isZero())
 			return mCurrentLedger;
 
 		if (mCurrentLedger && (mCurrentLedger->getHash() == hash))
 			return mCurrentLedger;
-
 		if (mFinalizedLedger && (mFinalizedLedger->getHash() == hash))
 			return mFinalizedLedger;
 

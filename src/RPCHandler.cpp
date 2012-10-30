@@ -216,7 +216,7 @@ Json::Value RPCHandler::authorize(const uint256& uLedger,
 	{
 		naMasterAccountPublic.setAccountPublic(naMasterGenerator, iIndex);
 
-		Log(lsDEBUG) << "authorize: " << iIndex << " : " << naMasterAccountPublic.humanAccountID() << " : " << naSrcAccountID.humanAccountID();
+		cLog(lsDEBUG) << "authorize: " << iIndex << " : " << naMasterAccountPublic.humanAccountID() << " : " << naSrcAccountID.humanAccountID();
 
 		bFound	= naSrcAccountID.getAccountID() == naMasterAccountPublic.getAccountID();
 		if (!bFound)
@@ -247,7 +247,7 @@ Json::Value RPCHandler::authorize(const uint256& uLedger,
 
 	if (saSrcBalance < saFee)
 	{
-		Log(lsINFO) << "authorize: Insufficent funds for fees: fee=" << saFee.getText() << " balance=" << saSrcBalance.getText();
+		cLog(lsINFO) << "authorize: Insufficent funds for fees: fee=" << saFee.getText() << " balance=" << saSrcBalance.getText();
 
 		return rpcError(rpcINSUF_FUNDS);
 	}
@@ -2410,7 +2410,7 @@ Json::Value RPCHandler::doLogRotate(const Json::Value& params)
 
 Json::Value RPCHandler::doCommand(const std::string& command, Json::Value& params,int role)
 {
-	Log(lsTRACE) << "RPC:" << command;
+	cLog(lsTRACE) << "RPC:" << command;
 
 	static struct {
 		const char* pCommand;

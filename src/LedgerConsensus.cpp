@@ -339,24 +339,6 @@ void LedgerConsensus::handleLCL(const uint256& lclHash)
 			cLog(lsWARNING) << "Need consensus ledger " << mPrevLedgerHash;
 
 			mAcquiringLedger = theApp->getMasterLedgerAcquire().findCreate(mPrevLedgerHash);
-			std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
-
-			bool found = false;
-			BOOST_FOREACH(Peer::ref peer, peerList)
-			{
-				if (peer->hasLedger(mPrevLedgerHash))
-				{
-					found = true;
-					mAcquiringLedger->peerHas(peer);
-				}
-			}
-
-			if (!found)
-			{
-				BOOST_FOREACH(Peer::ref peer, peerList)
-					mAcquiringLedger->peerHas(peer);
-			}
-
 			mHaveCorrectLCL = false;
 			return;
 		}

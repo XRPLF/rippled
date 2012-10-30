@@ -41,14 +41,18 @@ std::vector< std::pair<std::string, std::string> > LogPartition::getSeverities()
 Log::~Log()
 {
 	std::string logMsg = boost::posix_time::to_simple_string(boost::posix_time::second_clock::universal_time());
+	if (!mPartitionName.empty())
+		logMsg += " " + mPartitionName + ":";
+	else
+		logMsg += " ";
 	switch (mSeverity)
 	{
-		case lsTRACE:	logMsg += " TRAC "; break;
-		case lsDEBUG:	logMsg += " DEBG "; break;
-		case lsINFO:	logMsg += " INFO "; break;
-		case lsWARNING:	logMsg += " WARN "; break;
-		case lsERROR:	logMsg += " EROR "; break;
-		case lsFATAL:	logMsg += " FATL "; break;
+		case lsTRACE:	logMsg += "TRC "; break;
+		case lsDEBUG:	logMsg += "DBG "; break;
+		case lsINFO:	logMsg += "NFO "; break;
+		case lsWARNING:	logMsg += "WRN "; break;
+		case lsERROR:	logMsg += "ERR "; break;
+		case lsFATAL:	logMsg += "FTL "; break;
 		case lsINVALID:	assert(false); return;
 	}
 	logMsg += oss.str();

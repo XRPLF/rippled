@@ -216,10 +216,10 @@ Remote.flags = {
 
 // XXX This needs to be determined from the network.
 Remote.fees = {
-  'default'	    : Amount.from_json("100"),
-  'account_create'  : Amount.from_json("1000"),
+  'default'	    : Amount.from_json("10"),
+  'account_create'  : Amount.from_json("1000000000"),
   'nickname_create' : Amount.from_json("1000"),
-  'offer'	    : Amount.from_json("100"),
+  'offer'	    : Amount.from_json("10"),
 };
 
 // Set the emited state: 'online' or 'offline'

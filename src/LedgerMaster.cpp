@@ -98,6 +98,14 @@ TER LedgerMaster::doTransaction(const SerializedTransaction& txn, TransactionEng
 void LedgerMaster::acquireMissingLedger(const uint256& ledgerHash, uint32 ledgerSeq)
 {
 	mMissingLedger = theApp->getMasterLedgerAcquire().findCreate(ledgerHash);
+	if (mMissingLedger->isComplete())
+	{
+		Ledger::pointer lgr = mMissingLedger->getLedger();
+		if (lgr && (lgr->getLedgerSeq() == ledgerSeq))
+			missingAcquireComplete(mMissingLedger);
+		mMissingLedger = LedgerAcquire::pointer();
+		return;
+	}
 	mMissingSeq = ledgerSeq;
 	if (mMissingLedger->setAccept())
 		mMissingLedger->addOnComplete(boost::bind(&LedgerMaster::missingAcquireComplete, this, _1));
@@ -107,20 +115,19 @@ void LedgerMaster::missingAcquireComplete(LedgerAcquire::pointer acq)
 {
 	boost::recursive_mutex::scoped_lock ml(mLock);
 
-	if (acq->isFailed())
+	if (acq->isFailed() && (mMissingSeq != 0))
 	{
-		if (mMissingSeq != 0)
-		{
-			cLog(lsWARNING) << "Acquire failed, invalidating following ledger " << mMissingSeq + 1;
-			mCompleteLedgers.clearValue(mMissingSeq + 1);
-		}
+		cLog(lsWARNING) << "Acquire failed for " << mMissingSeq;
 	}
 
 	mMissingLedger = LedgerAcquire::pointer();
 	mMissingSeq = 0;
 
 	if (!acq->isFailed())
+	{
 		setFullLedger(acq->getLedger());
+		acq->getLedger()->pendSave(false);
+	}
 }
 
 void LedgerMaster::setFullLedger(Ledger::ref ledger)
@@ -139,8 +146,17 @@ void LedgerMaster::setFullLedger(Ledger::ref ledger)
 		}
 	}
 
+	if (mMissingLedger && mMissingLedger->isComplete())
+		mMissingLedger = LedgerAcquire::pointer();
+
 	if (mMissingLedger || !theConfig.FULL_HISTORY)
 		return;
+
+	if (Ledger::getPendingSaves() > 3)
+	{
+		cLog(lsINFO) << "Too many pending ledger saves";
+		return;
+	}
 
 	// see if there's a ledger gap we need to fill
 	if (!mCompleteLedgers.hasValue(ledger->getLedgerSeq() - 1))
@@ -154,11 +170,15 @@ void LedgerMaster::setFullLedger(Ledger::ref ledger)
 		if (prevMissing != RangeSet::RangeSetAbsent)
 		{
 			cLog(lsINFO) << "Ledger " << prevMissing << " is missing";
-			Ledger::pointer nextLedger = getLedgerBySeq(prevMissing);
+			assert(!mCompleteLedgers.hasValue(prevMissing));
+			Ledger::pointer nextLedger = getLedgerBySeq(prevMissing + 1);
 			if (nextLedger)
 				acquireMissingLedger(nextLedger->getParentHash(), nextLedger->getLedgerSeq() - 1);
 			else
-				cLog(lsWARNING) << "We have a ledger gap we can't quite fix";
+			{
+				mCompleteLedgers.clearValue(prevMissing);
+				cLog(lsWARNING) << "We have a gap we can't fix: " << prevMissing + 1;
+			}
 		}
 	}
 }

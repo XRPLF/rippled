@@ -1,10 +1,11 @@
 
+#include "LedgerHistory.h"
+
 #include <string>
 
 #include <boost/bind.hpp>
 #include <boost/thread.hpp>
 
-#include "LedgerHistory.h"
 #include "Config.h"
 #include "Application.h"
 
@@ -13,13 +14,13 @@
 #endif
 
 #ifndef CACHED_LEDGER_AGE
-#define CACHED_LEDGER_AGE 600
+#define CACHED_LEDGER_AGE 900
 #endif
 
+// FIXME: Need to clean up ledgers by index, probably should switch to just mapping sequence to hash
+
 LedgerHistory::LedgerHistory() : mLedgersByHash(CACHED_LEDGER_NUM, CACHED_LEDGER_AGE)
-{
-;
-}
+{ ; }
 
 void LedgerHistory::addLedger(Ledger::pointer ledger)
 {
@@ -37,8 +38,7 @@ void LedgerHistory::addAcceptedLedger(Ledger::pointer ledger, bool fromConsensus
 	assert(ledger->isImmutable());
 	mLedgersByIndex.insert(std::make_pair(ledger->getLedgerSeq(), ledger));
 
-	boost::thread thread(boost::bind(&Ledger::saveAcceptedLedger, ledger, fromConsensus));
-	thread.detach();
+	ledger->pendSave(fromConsensus);
 }
 
 Ledger::pointer LedgerHistory::getLedgerBySeq(uint32 index)
@@ -50,7 +50,8 @@ Ledger::pointer LedgerHistory::getLedgerBySeq(uint32 index)
 	sl.unlock();
 
 	Ledger::pointer ret(Ledger::loadByIndex(index));
-	if (!ret) return ret;
+	if (!ret)
+		return ret;
 	assert(ret->getLedgerSeq() == index);
 
 	sl.lock();

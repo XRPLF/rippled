@@ -72,6 +72,8 @@ public:
 	{ return (getSType() == t.getSType()) && isEquivalent(t); }
 	bool operator!=(const SerializedType& t) const
 	{ return (getSType() != t.getSType()) || !isEquivalent(t); }
+
+	virtual bool isDefault() const	{ return true; }
 };
 
 inline SerializedType* new_clone(const SerializedType& s) { return s.clone().release(); }
@@ -103,6 +105,7 @@ public:
 
 	operator unsigned char() const { return value; }
 	virtual bool isEquivalent(const SerializedType& t) const;
+	virtual bool isDefault() const	{ return value == 0; }
 };
 
 class STUInt16 : public SerializedType
@@ -130,6 +133,7 @@ public:
 
 	operator uint16() const { return value; }
 	virtual bool isEquivalent(const SerializedType& t) const;
+	virtual bool isDefault() const	{ return value == 0; }
 };
 
 class STUInt32 : public SerializedType
@@ -157,6 +161,7 @@ public:
 
 	operator uint32() const { return value; }
 	virtual bool isEquivalent(const SerializedType& t) const;
+	virtual bool isDefault() const	{ return value == 0; }
 };
 
 class STUInt64 : public SerializedType
@@ -184,6 +189,7 @@ public:
 
 	operator uint64() const { return value; }
 	virtual bool isEquivalent(const SerializedType& t) const;
+	virtual bool isDefault() const	{ return value == 0; }
 };
 
 class STAmount : public SerializedType
@@ -200,12 +206,12 @@ class STAmount : public SerializedType
 	// Low 56 bits are value, legal range is 10^15 to (10^16 - 1) inclusive
 
 protected:
-	uint160	mCurrency;
-	uint160	mIssuer;		// Only for access, not compared.
+	uint160	mCurrency;		// Compared by ==. Always update mIsNative.
+	uint160	mIssuer;		// Not compared by ==. 0 for XNS.
 
 	uint64	mValue;
 	int		mOffset;
-	bool	mIsNative;		// True for native stamps, ripple stamps are not native.
+	bool	mIsNative;		// Always !mCurrency. Native is XNS.
 	bool	mIsNegative;
 
 	void canonicalize();
@@ -282,12 +288,17 @@ public:
 	bool isGEZero() const		{ return !mIsNegative; }
 	operator bool() const		{ return !isZero(); }
 
-	void negate()				{ if (!isZero()) mIsNegative = !mIsNegative; }
-	void zero()					{ mOffset = mIsNative ? -100 : 0; mValue = 0; mIsNegative = false; }
+	STAmount* negate()			{ if (!isZero()) mIsNegative = !mIsNegative; return this; }
+	STAmount* zero()			{ mOffset = mIsNative ? 0 : -100; mValue = 0; mIsNegative = false; return this; }
+
+	// Zero while copying currency and issuer.
+	STAmount* zero(const STAmount& saTmpl)
+	{ mCurrency = saTmpl.mCurrency; mIssuer = saTmpl.mIssuer; mIsNative = saTmpl.mIsNative; return zero(); }
+
 	int compare(const STAmount&) const;
 
 	const uint160& getIssuer() const		{ return mIssuer; }
-	void setIssuer(const uint160& uIssuer)	{ mIssuer	= uIssuer; }
+	STAmount* setIssuer(const uint160& uIssuer)	{ mIssuer	= uIssuer; return this; }
 
 	const uint160& getCurrency() const	{ return mCurrency; }
 	bool setValue(const std::string& sAmount);
@@ -295,6 +306,7 @@ public:
 	void setValue(const STAmount &);
 
 	virtual bool isEquivalent(const SerializedType& t) const;
+	virtual bool isDefault() const	{ return mValue == 0 && mIssuer.isZero() && mCurrency.isZero(); }
 
 	bool operator==(const STAmount&) const;
 	bool operator!=(const STAmount&) const;
@@ -398,6 +410,7 @@ public:
 
 	operator uint128() const { return value; }
 	virtual bool isEquivalent(const SerializedType& t) const;
+	virtual bool isDefault() const	{ return value.isZero(); }
 };
 
 class STHash160 : public SerializedType
@@ -428,6 +441,7 @@ public:
 
 	operator uint160() const { return value; }
 	virtual bool isEquivalent(const SerializedType& t) const;
+	virtual bool isDefault() const	{ return value.isZero(); }
 };
 
 class STHash256 : public SerializedType
@@ -458,6 +472,7 @@ public:
 
 	operator uint256() const { return value; }
 	virtual bool isEquivalent(const SerializedType& t) const;
+	virtual bool isDefault() const	{ return value.isZero(); }
 };
 
 class STVariableLength : public SerializedType
@@ -489,6 +504,7 @@ public:
 
 	operator std::vector<unsigned char>() const { return value; }
 	virtual bool isEquivalent(const SerializedType& t) const;
+	virtual bool isDefault() const	{ return value.empty(); }
 };
 
 class STAccount : public STVariableLength
@@ -668,6 +684,7 @@ public:
 	void addPath(const STPath& e)						{ value.push_back(e); }
 
 	virtual bool isEquivalent(const SerializedType& t) const;
+	virtual bool isDefault() const	{ return value.empty(); }
 
 	void printDebug();
 
@@ -735,6 +752,7 @@ public:
 	const std::vector<uint256>& peekValue() const { return mValue; }
 	std::vector<uint256>& peekValue() { return mValue; }
 	virtual bool isEquivalent(const SerializedType& t) const;
+	virtual bool isDefault() const	{ return mValue.empty(); }
 
 	std::vector<uint256> getValue() const			{ return mValue; }
 	bool isEmpty() const							{ return mValue.empty(); }

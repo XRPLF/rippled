@@ -330,6 +330,13 @@ Json::Value ConnectionPool::getPeersJson()
     return ret;
 }
 
+int ConnectionPool::getPeerCount()
+{
+	boost::mutex::scoped_lock sl(mPeerLock);
+
+	return mConnectedMap.size();
+}
+
 std::vector<Peer::pointer> ConnectionPool::getPeerVector()
 {
 	std::vector<Peer::pointer> ret;

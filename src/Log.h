@@ -17,10 +17,10 @@
 #define SETUP_LOG()	static LogPartition logPartition(__FILE__)
 
 // Standard conditional log
-#define cLog(x)		if (!logPartition.doLog(x)) do {} while (0); else Log(x)
+#define cLog(x)		if (!logPartition.doLog(x)) do {} while (0); else Log(x, logPartition)
 
 // Log only if an additional condition 'c' is true. Condition is not computed if not needed
-#define tLog(c,x)	if (!logPartition.doLog(x) || !(c)) do {} while(0); else Log(x)
+#define tLog(c,x)	if (!logPartition.doLog(x) || !(c)) do {} while(0); else Log(x, logPartition)
 
 // Check if should log
 #define sLog(x)		(logPartition.doLog(x))
@@ -49,10 +49,8 @@ protected:
 public:
 	LogPartition(const char *name);
 
-	bool doLog(LogSeverity s)
-	{
-		return s >= mMinSeverity;
-	}
+	bool doLog(LogSeverity s)			{ return s >= mMinSeverity;	}
+	const std::string& getName() const	{ return mName; }
 
 	static bool setSeverity(const std::string& partition, LogSeverity severity);
 	static void setSeverity(LogSeverity severity);
@@ -70,14 +68,18 @@ protected:
 	static LogSeverity sMinSeverity;
 	static std::ofstream* outStream;
 
-	mutable std::ostringstream oss;
-	LogSeverity mSeverity;
+	mutable std::ostringstream	oss;
+	LogSeverity					mSeverity;
+	std::string					mPartitionName;
 
 	static boost::filesystem::path *pathToLog;
 	static uint32 logRotateCounter;
 
 public:
 	Log(LogSeverity s) : mSeverity(s)
+	{ ; }
+
+	Log(LogSeverity s, const LogPartition& p) : mSeverity(s), mPartitionName(p.getName())
 	{ ; }
 
 	~Log();

@@ -41,6 +41,7 @@ void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint2
 		stack.pop();
 
 		int base = rand() % 256;
+		bool have_all = false;
 		for (int ii = 0; ii < 16; ++ii)
 		{ // traverse in semi-random order
 			int branch = (base + ii) % 16;
@@ -76,7 +77,8 @@ void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint2
 				}
 				if (!d)
 				{ // we need this node
-					nodeIDs.push_back(node->getChildNodeID(branch));
+					have_all = false;
+					nodeIDs.push_back(childID);
 					if (--max <= 0)
 						return;
 				}
@@ -84,6 +86,8 @@ void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint2
 					stack.push(d);
 			}
 		}
+		if (have_all)
+			node->setFullBelow();
 	}
 }
 
