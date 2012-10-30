@@ -1,4 +1,3 @@
-
 #include <iostream>
 
 #include <boost/bind.hpp>
@@ -575,6 +574,13 @@ void Peer::processReadBuffer()
 	}
 }
 
+void Peer::punishPeer(const boost::weak_ptr<Peer>& wp, PeerPunish pp)
+{
+	Peer::pointer p = wp.lock();
+	if (p)
+		p->punishPeer(pp);
+}
+
 void Peer::recvHello(ripple::TMHello& packet)
 {
 	bool	bDetach	= true;
@@ -766,6 +772,36 @@ void Peer::recvHaveTxSet(ripple::TMHaveTransactionSet& packet)
 		punishPeer(PP_UNWANTED_DATA);
 }
 
+static void checkValidation(Job&, SerializedValidation::pointer val, uint256 signingHash,
+	bool isTrusted, ripple::TMValidation packet, boost::weak_ptr<Peer> peer)
+{
+#ifndef TRUST_NETWORK
+	try
+#endif
+	{
+		if (!val->isValid(signingHash))
+		{
+			cLog(lsWARNING) << "Validation is invalid";
+			Peer::punishPeer(peer, PP_UNKNOWN_REQUEST);
+			return;
+		}
+
+		if (theApp->getOPs().recvValidation(val))
+		{
+			Peer::pointer pp = peer.lock();
+			PackedMessage::pointer message = boost::make_shared<PackedMessage>(packet, ripple::mtVALIDATION);
+			theApp->getConnectionPool().relayMessage(pp ? pp.get() : NULL, message);
+		}
+	}
+#ifndef TRUST_NETWORK
+	catch (...)
+	{
+		cLog(lsWARNING) << "Exception processing validation";
+		Peer::punishPeer(peer, PP_UNKNOWN_REQUEST);
+	}
+#endif
+}
+
 void Peer::recvValidation(ripple::TMValidation& packet)
 {
 	if (packet.validation().size() < 50)
@@ -774,9 +810,6 @@ void Peer::recvValidation(ripple::TMValidation& packet)
 		punishPeer(PP_UNKNOWN_REQUEST);
 		return;
 	}
-
-// OPTIMIZEME: Should just defer validation checking to another thread
-// checking the signature is expensive (but should do 'isNew' check here)
 
 #ifndef TRUST_NETWORK
 	try
@@ -793,18 +826,10 @@ void Peer::recvValidation(ripple::TMValidation& packet)
 			return;
 		}
 
-		if (!val->isValid(signingHash))
-		{
-			cLog(lsWARNING) << "Validation is invalid";
-			punishPeer(PP_UNKNOWN_REQUEST);
-			return;
-		}
-
-		if (theApp->getOPs().recvValidation(val))
-		{
-			PackedMessage::pointer message = boost::make_shared<PackedMessage>(packet, ripple::mtVALIDATION);
-			theApp->getConnectionPool().relayMessage(this, message);
-		}
+		bool isTrusted = theApp->getUNL().nodeInUNL(val->getSignerPublic());
+		theApp->getJobQueue().addJob(isTrusted ? jtVALIDATION_t : jtVALIDATION_ut,
+			boost::bind(&checkValidation, _1, val, signingHash, isTrusted, packet,
+				boost::weak_ptr<Peer>(shared_from_this())));
 	}
 #ifndef TRUST_NETWORK
 	catch (...)

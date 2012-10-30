@@ -151,6 +151,7 @@ public:
 	void sendGetPeers();
 
 	void punishPeer(PeerPunish pp);
+	static void punishPeer(const boost::weak_ptr<Peer>&, PeerPunish);
 
 	Json::Value getJson();
 	bool isConnected() const				{ return mHelloed && !mDetaching; }
