@@ -9,6 +9,7 @@
 #include "Log.h"
 
 SETUP_LOG();
+DECLARE_INSTANCE(HashedObject);
 
 HashedObjectStore::HashedObjectStore(int cacheSize, int cacheAge) :
 	mCache(cacheSize, cacheAge), mWritePending(false)
