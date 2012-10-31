@@ -16,6 +16,7 @@
 #include "Log.h"
 
 SETUP_LOG();
+DECLARE_INSTANCE(Peer);
 
 // Don't try to run past receiving nonsense from a peer
 #define TRUST_NETWORK

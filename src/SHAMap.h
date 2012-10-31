@@ -14,6 +14,11 @@
 #include "ScopedLock.h"
 #include "Serializer.h"
 #include "HashedObject.h"
+#include "InstanceCounter.h"
+
+DEFINE_INSTANCE(SHAMap);
+DEFINE_INSTANCE(SHAMapItem);
+DEFINE_INSTANCE(SHAMapTreeNode);
 
 class SHAMap;
 
@@ -31,7 +36,7 @@ private:
 
 public:
 
-	static const int rootDepth=0;
+	static const int rootDepth = 0;
 
 	SHAMapNode() : mDepth(0)			{ ; }
 	SHAMapNode(int depth, const uint256& hash);
@@ -77,7 +82,7 @@ extern std::size_t hash_value(const SHAMapNode& mn);
 
 inline std::ostream& operator<<(std::ostream& out, const SHAMapNode& node) { return out << node.getString(); }
 
-class SHAMapItem
+class SHAMapItem : public IS_INSTANCE(SHAMapItem)
 { // an item stored in a SHAMap
 public:
 	typedef boost::shared_ptr<SHAMapItem>			pointer;
@@ -135,7 +140,7 @@ enum SHAMapType
 	smtFREE			=3,		// A tree not part of a ledger
 };
 
-class SHAMapTreeNode : public SHAMapNode
+class SHAMapTreeNode : public SHAMapNode, public IS_INSTANCE(SHAMapTreeNode)
 {
 	friend class SHAMap;
 
@@ -276,7 +281,7 @@ public:
 
 extern std::ostream& operator<<(std::ostream&, const SHAMapMissingNode&);
 
-class SHAMap
+class SHAMap : public IS_INSTANCE(SHAMap)
 {
 public:
 	typedef boost::shared_ptr<SHAMap> pointer;

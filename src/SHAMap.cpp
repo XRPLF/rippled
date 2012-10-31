@@ -17,6 +17,10 @@
 
 SETUP_LOG();
 
+DECLARE_INSTANCE(SHAMap);
+DECLARE_INSTANCE(SHAMapItem);
+DECLARE_INSTANCE(SHAMapTreeNode);
+
 std::size_t hash_value(const SHAMapNode& mn)
 {
 	std::size_t seed = theApp->getNonceST();
