@@ -14,6 +14,7 @@
 #include "TransactionErr.h"
 
 SETUP_LOG();
+DECLARE_INSTANCE(SerializedEntry);
 
 STAmount saZero(CURRENCY_ONE, ACCOUNT_ONE, 0);
 STAmount saOne(CURRENCY_ONE, ACCOUNT_ONE, 1);

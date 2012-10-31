@@ -14,6 +14,8 @@
 #include "SerializedTransaction.h"
 
 SETUP_LOG();
+DECLARE_INSTANCE(SerializedObject);
+DECLARE_INSTANCE(SerializedArray);
 
 std::auto_ptr<SerializedType> STObject::makeDefaultObject(SerializedTypeID id, SField::ref name)
 {

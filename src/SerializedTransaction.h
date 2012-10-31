@@ -9,6 +9,7 @@
 #include "SerializedObject.h"
 #include "TransactionFormats.h"
 #include "RippleAddress.h"
+#include "InstanceCounter.h"
 
 #define TXN_SQL_NEW			'N'
 #define TXN_SQL_CONFLICT	'C'
@@ -17,7 +18,9 @@
 #define TXN_SQL_INCLUDED	'I'
 #define TXN_SQL_UNKNOWN		'U'
 
-class SerializedTransaction : public STObject
+DEFINE_INSTANCE(SerializedTransaction);
+
+class SerializedTransaction : public STObject, private IS_INSTANCE(SerializedTransaction)
 {
 public:
 	typedef boost::shared_ptr<SerializedTransaction>		pointer;

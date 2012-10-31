@@ -8,6 +8,10 @@
 #include "../json/value.h"
 
 #include "SerializedTypes.h"
+#include "InstanceCounter.h"
+
+DEFINE_INSTANCE(SerializedObject);
+DEFINE_INSTANCE(SerializedArray);
 
 // Serializable object/array types
 
@@ -22,7 +26,7 @@ public:
 	SOElement(SField::ref fi, SOE_Flags fl) : e_field(fi), flags(fl) { ; }
 };
 
-class STObject : public SerializedType
+class STObject : public SerializedType, private IS_INSTANCE(SerializedObject)
 {
 protected:
 	boost::ptr_vector<SerializedType> mData;
@@ -175,7 +179,7 @@ namespace boost
 
 
 
-class STArray : public SerializedType
+class STArray : public SerializedType, private IS_INSTANCE(SerializedArray)
 {
 public:
 	typedef std::vector<STObject>							vector;
