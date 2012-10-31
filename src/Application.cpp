@@ -190,6 +190,7 @@ void Application::sweep()
 	mMasterTransaction.sweep();
 	mHashedObjectStore.sweep();
 	mMasterLedger.sweep();
+	mTempNodeCache.sweep();
 	mSweepTimer.expires_from_now(boost::posix_time::seconds(60));
 	mSweepTimer.async_wait(boost::bind(&Application::sweep, this));
 }
