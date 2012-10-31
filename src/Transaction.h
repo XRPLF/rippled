@@ -21,6 +21,7 @@
 #include "SHAMap.h"
 #include "SerializedTransaction.h"
 #include "TransactionErr.h"
+#include "InstanceCounter.h"
 
 class Database;
 
@@ -37,8 +38,10 @@ enum TransStatus
 	INCOMPLETE	= 8  // needs more signatures
 };
 
+DEFINE_INSTANCE(Transaction);
+
 // This class is for constructing and examining transactions.  Transactions are static so manipulation functions are unnecessary.
-class Transaction : public boost::enable_shared_from_this<Transaction>
+class Transaction : public boost::enable_shared_from_this<Transaction>, private IS_INSTANCE(Transaction)
 {
 public:
 	typedef boost::shared_ptr<Transaction> pointer;
