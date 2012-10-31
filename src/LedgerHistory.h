@@ -18,6 +18,7 @@ public:
 	Ledger::pointer getLedgerBySeq(uint32 index);
 	Ledger::pointer getLedgerByHash(const uint256& hash);
 	Ledger::pointer canonicalizeLedger(Ledger::pointer, bool cache);
+	void sweep() { mLedgersByHash.sweep(); }
 };
 
 #endif

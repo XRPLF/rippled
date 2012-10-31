@@ -42,11 +42,13 @@ Application::Application() :
 	mNetOps(mIOService, &mMasterLedger), mTempNodeCache(16384, 90), mHashedObjectStore(16384, 300),
 	mSNTPClient(mAuxService), mRpcDB(NULL), mTxnDB(NULL), mLedgerDB(NULL), mWalletDB(NULL),
 	mHashNodeDB(NULL), mNetNodeDB(NULL),
-	mConnectionPool(mIOService), mPeerDoor(NULL), mRPCDoor(NULL)
+	mConnectionPool(mIOService), mPeerDoor(NULL), mRPCDoor(NULL), mSweepTimer(mAuxService)
 {
 	RAND_bytes(mNonce256.begin(), mNonce256.size());
 	RAND_bytes(reinterpret_cast<unsigned char *>(&mNonceST), sizeof(mNonceST));
 	mJobQueue.setThreadCount();
+	mSweepTimer.expires_from_now(boost::posix_time::seconds(60));
+	mSweepTimer.async_wait(boost::bind(&Application::sweep, this));
 }
 
 extern const char *RpcDBInit[], *TxnDBInit[], *LedgerDBInit[], *WalletDBInit[], *HashNodeDBInit[], *NetNodeDBInit[];
@@ -181,6 +183,15 @@ void Application::run()
 	mWSDoor->stop();
 
 	std::cout << "Done." << std::endl;
+}
+
+void Application::sweep()
+{
+	mMasterTransaction.sweep();
+	mHashedObjectStore.sweep();
+	mMasterLedger.sweep();
+	mSweepTimer.expires_from_now(boost::posix_time::seconds(60));
+	mSweepTimer.async_wait(boost::bind(&Application::sweep, this));
 }
 
 Application::~Application()

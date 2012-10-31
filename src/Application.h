@@ -66,6 +66,8 @@ class Application
 	uint256					mNonce256;
 	std::size_t				mNonceST;
 
+	boost::asio::deadline_timer	mSweepTimer;
+
 	std::map<std::string, Peer::pointer> mPeerMap;
 	boost::recursive_mutex	mPeerMapLock;
 
@@ -110,6 +112,7 @@ public:
 
 	void run();
 	void stop();
+	void sweep();
 };
 
 extern Application* theApp;

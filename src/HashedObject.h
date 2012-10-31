@@ -61,6 +61,7 @@ public:
 
 	void bulkWrite();
 	void waitWrite();
+	void sweep() { mCache.sweep(); }
 };
 
 #endif
