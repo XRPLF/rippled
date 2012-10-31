@@ -10,6 +10,9 @@
 #include "uint256.h"
 #include "ScopedLock.h"
 #include "TaggedCache.h"
+#include "InstanceCounter.h"
+
+DEFINE_INSTANCE(HashedObject);
 
 enum HashedObjectType
 {
@@ -20,7 +23,7 @@ enum HashedObjectType
 	hotTRANSACTION_NODE = 4
 };
 
-class HashedObject
+class HashedObject : private IS_INSTANCE(HashedObject)
 {
 public:
 	typedef boost::shared_ptr<HashedObject> pointer;
@@ -61,6 +64,7 @@ public:
 
 	void bulkWrite();
 	void waitWrite();
+	void sweep() { mCache.sweep(); }
 };
 
 #endif

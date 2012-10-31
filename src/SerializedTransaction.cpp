@@ -8,6 +8,8 @@
 #include "Log.h"
 #include "HashPrefixes.h"
 
+DECLARE_INSTANCE(SerializedTransaction);
+
 SerializedTransaction::SerializedTransaction(TransactionType type) : STObject(sfTransaction), mType(type)
 {
 	mFormat = TransactionFormat::getTxnFormat(type);

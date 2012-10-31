@@ -5,6 +5,8 @@
 #include "Ledger.h"
 #include "Log.h"
 
+DECLARE_INSTANCE(SerializedLedgerEntry)
+
 SerializedLedgerEntry::SerializedLedgerEntry(SerializerIterator& sit, const uint256& index)
 	: STObject(sfLedgerEntry), mIndex(index)
 {

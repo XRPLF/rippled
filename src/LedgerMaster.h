@@ -91,6 +91,8 @@ public:
 	void setLedgerRangePresent(uint32 minV, uint32 maxV) { mCompleteLedgers.setRange(minV, maxV); }
 
 	bool addHeldTransaction(const Transaction::pointer& trans);
+
+	void sweep(void) { mLedgerHistory.sweep(); }
 };
 
 #endif

@@ -4,8 +4,11 @@
 #include "SerializedObject.h"
 #include "LedgerFormats.h"
 #include "RippleAddress.h"
+#include "InstanceCounter.h"
 
-class SerializedLedgerEntry : public STObject
+DEFINE_INSTANCE(SerializedLedgerEntry);
+
+class SerializedLedgerEntry : public STObject, private IS_INSTANCE(SerializedLedgerEntry)
 {
 public:
 	typedef boost::shared_ptr<SerializedLedgerEntry>		pointer;

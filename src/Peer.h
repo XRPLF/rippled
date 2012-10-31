@@ -11,6 +11,7 @@
 #include "PackedMessage.h"
 #include "Ledger.h"
 #include "Transaction.h"
+#include "InstanceCounter.h"
 
 enum PeerPunish
 {
@@ -21,7 +22,9 @@ enum PeerPunish
 
 typedef std::pair<std::string,int> ipPort;
 
-class Peer : public boost::enable_shared_from_this<Peer>
+DEFINE_INSTANCE(Peer);
+
+class Peer : public boost::enable_shared_from_this<Peer>, public IS_INSTANCE(Peer)
 {
 public:
 	typedef boost::shared_ptr<Peer>			pointer;

@@ -44,6 +44,7 @@ public:
 	int getTargetAge() const;
 
 	int getCacheSize();
+	int getTrackSize();
 	int getSweepAge();
 
 	void setTargetSize(int size);
@@ -78,6 +79,12 @@ template<typename c_Key, typename c_Data> int TaggedCache<c_Key, c_Data>::getCac
 	return mCache.size();
 }
 
+template<typename c_Key, typename c_Data> int TaggedCache<c_Key, c_Data>::getTrackSize()
+{
+	boost::recursive_mutex::scoped_lock sl(mLock);
+	return mMap.size();
+}
+
 template<typename c_Key, typename c_Data> void TaggedCache<c_Key, c_Data>::sweep()
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
@@ -96,7 +103,7 @@ template<typename c_Key, typename c_Data> void TaggedCache<c_Key, c_Data>::sweep
 	typename boost::unordered_map<key_type, cache_entry>::iterator cit = mCache.begin();
 	while (cit != mCache.end())
 	{
-		if (cit->second->second.first < target)
+		if (cit->second.first < target)
 			mCache.erase(cit++);
 		else
 			++cit;
@@ -106,7 +113,7 @@ template<typename c_Key, typename c_Data> void TaggedCache<c_Key, c_Data>::sweep
 	typename boost::unordered_map<key_type, weak_data_ptr>::iterator mit = mMap.begin();
 	while (mit != mMap.end())
 	{
-		if (mit->second->expired())
+		if (mit->second.expired())
 			mMap.erase(mit++);
 		else
 			++mit;
