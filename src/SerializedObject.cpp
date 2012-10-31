@@ -1110,23 +1110,24 @@ std::auto_ptr<STObject> STObject::parseJson(const Json::Value& object, SField::r
 					data.push_back(new STPathSet(field));
 					STPathSet* tail = dynamic_cast<STPathSet*>(&data.back());
 					assert(tail);
-					for (Json::UInt i = 0; !object.isValidIndex(i); ++i)
+					for (Json::UInt i = 0; value.isValidIndex(i); ++i)
 					{
 						STPath p;
-						if (!object[i].isArray())
+						if (!value[i].isArray())
 							throw std::runtime_error("Path must be array");
-						for (Json::UInt j = 0; !object[i].isValidIndex(j); ++j)
+						for (Json::UInt j = 0; value[i].isValidIndex(j); ++j)
 						{ // each element in this path has some combination of account, currency, or issuer
 
-							Json::Value pathEl = object[i][j];
+							Json::Value pathEl = value[i][j];
 							if (!pathEl.isObject())
 								throw std::runtime_error("Path elements must be objects");
-							const Json::Value& account =	pathEl["account"];
-							const Json::Value& currency =	pathEl["currency"];
-							const Json::Value& issuer =		pathEl["issuer"];
 
+							const Json::Value& account	= pathEl["account"];
+							const Json::Value& currency = pathEl["currency"];
+							const Json::Value& issuer	= pathEl["issuer"];
+							bool hasCurrency			= false;
 							uint160 uAccount, uCurrency, uIssuer;
-							bool hasCurrency;
+
 							if (!account.isNull())
 							{ // human account id
 								if (!account.isString())
@@ -1136,7 +1137,7 @@ std::auto_ptr<STObject> STObject::parseJson(const Json::Value& object, SField::r
 									uAccount.SetHex(strValue);
 								{
 									RippleAddress a;
-									if (!a.setAccountPublic(strValue))
+									if (!a.setAccountID(strValue))
 										throw std::runtime_error("Account in path element invalid");
 									uAccount = a.getAccountID();
 								}
@@ -1160,7 +1161,7 @@ std::auto_ptr<STObject> STObject::parseJson(const Json::Value& object, SField::r
 								else
 								{
 									RippleAddress a;
-									if (!a.setAccountPublic(issuer.asString()))
+									if (!a.setAccountID(issuer.asString()))
 										throw std::runtime_error("path element issuer invalid");
 									uIssuer = a.getAccountID();
 								}
