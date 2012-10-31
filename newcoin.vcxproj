@@ -112,6 +112,7 @@
     <ClCompile Include="src\HTTPRequest.cpp" />
     <ClCompile Include="src\HttpsClient.cpp" />
     <ClCompile Include="src\Interpreter.cpp" />
+    <ClCompile Include="src\InstanceCounter.cpp" />
     <ClCompile Include="src\Ledger.cpp" />
     <ClCompile Include="src\LedgerAcquire.cpp" />
     <ClCompile Include="src\LedgerConsensus.cpp" />
