@@ -6,15 +6,19 @@
 
 #include <boost/thread/mutex.hpp>
 
-#define DEFINE_INSTANCE(x)							\
-	extern InstanceType IT_##x;						\
-	class Instance_##x : private Instance			\
-	{												\
-	protected:										\
-		Instance_##x() : Instance(IT_##x) { ; }		\
+#define DEFINE_INSTANCE(x)								\
+	extern InstanceType IT_##x;							\
+	class Instance_##x : private Instance				\
+	{													\
+	protected:											\
+		Instance_##x() : Instance(IT_##x) { ; }			\
+		Instance_##x(const Instance_##x &) :			\
+			Instance(IT_##x) { ; }						\
+		Instance_##x& operator=(const Instance_##x&)	\
+		{ return *this; }								\
 	}
 
-#define DECLARE_INSTANCE(x)							\
+#define DECLARE_INSTANCE(x)								\
 	InstanceType IT_##x(#x);
 
 #define IS_INSTANCE(x) Instance_##x
