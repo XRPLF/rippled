@@ -44,6 +44,7 @@ public:
 	int getTargetAge() const;
 
 	int getCacheSize();
+	int getTrackSize();
 	int getSweepAge();
 
 	void setTargetSize(int size);
@@ -76,6 +77,12 @@ template<typename c_Key, typename c_Data> int TaggedCache<c_Key, c_Data>::getCac
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	return mCache.size();
+}
+
+template<typename c_Key, typename c_Data> int TaggedCache<c_Key, c_Data>::getTrackSize()
+{
+	boost::recursive_mutex::scoped_lock sl(mLock);
+	return mMap.size();
 }
 
 template<typename c_Key, typename c_Data> void TaggedCache<c_Key, c_Data>::sweep()
