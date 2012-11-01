@@ -30,9 +30,9 @@ enum PathFlags
 #define ACCOUNT_XNS			uint160(0)
 #define ACCOUNT_ONE			uint160(1)	// Used as a place holder
 
-DEFINE_INSTANCE(SerializedEntry);
+DEFINE_INSTANCE(SerializedValue);
 
-class SerializedType : private IS_INSTANCE(SerializedEntry)
+class SerializedType : private IS_INSTANCE(SerializedValue)
 {
 protected:
 	SField::ptr	fName;
