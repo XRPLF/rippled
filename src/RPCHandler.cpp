@@ -2607,7 +2607,7 @@ Json::Value RPCHandler::doLogin(const Json::Value& params)
 
 Json::Value RPCHandler::doGetCounts(const Json::Value& params)
 {
-	int minCount = 1;
+	int minCount = 10;
 	if (params.size() > 0)
 		minCount = params[0u].asInt();
 
