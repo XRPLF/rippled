@@ -914,6 +914,17 @@ Transaction.prototype.submit = function () {
   var self	  = this;
   var transaction = this.transaction;
 
+  if ('string' !== typeof transaction.Account)
+  {
+    this.emit('error', {
+	'error' : 'invalidAccount',
+	'error_message' : 'Bad account.'
+      });
+    return;
+  }
+
+  // YYY Might check paths for invalid accounts.
+
   if (undefined === transaction.Fee) {
     if ('Payment' === transaction.TransactionType
       && transaction.Flags & Remote.flags.Payment.CreateAccount) {
@@ -989,8 +1000,10 @@ Transaction._path_rewrite = function (path) {
 
     if ('account' in node)
       node_new.account	= UInt160.json_rewrite(node.account);
+
     if ('issuer' in node)
       node_new.issuer	= UInt160.json_rewrite(node.issuer);
+
     if ('currency' in node)
       node_new.currency	= Currency.json_rewrite(node.currency);
 
