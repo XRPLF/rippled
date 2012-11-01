@@ -3,8 +3,11 @@
 
 #include "SerializedObject.h"
 #include "RippleAddress.h"
+#include "InstanceCounter.h"
 
-class SerializedValidation : public STObject
+DEFINE_INSTANCE(SerializedValidation);
+
+class SerializedValidation : public STObject, private IS_INSTANCE(SerializedValidation)
 {
 protected:
 	uint256	mPreviousHash;

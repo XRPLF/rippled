@@ -10,6 +10,23 @@
 SETUP_LOG();
 
 typedef std::pair<const uint160, SerializedValidation::pointer> u160_val_pair;
+typedef boost::shared_ptr<ValidationSet> VSpointer;
+
+VSpointer ValidationCollection::findCreateSet(const uint256& ledgerHash)
+{
+	VSpointer j = mValidations.fetch(ledgerHash);
+	if (!j)
+	{
+		j = boost::make_shared<ValidationSet>();
+		mValidations.canonicalize(ledgerHash, j);
+	}
+	return j;
+}
+
+VSpointer ValidationCollection::findSet(const uint256& ledgerHash)
+{
+	return mValidations.fetch(ledgerHash);
+}
 
 bool ValidationCollection::addValidation(const SerializedValidation::pointer& val)
 {
@@ -37,7 +54,7 @@ bool ValidationCollection::addValidation(const SerializedValidation::pointer& va
 
 	{
 		boost::mutex::scoped_lock sl(mValidationLock);
-		if (!mValidations[hash].insert(std::make_pair(node, val)).second)
+		if (!findCreateSet(hash)->insert(std::make_pair(node, val)).second)
 			return false;
 		if (isCurrent)
 		{
@@ -63,25 +80,24 @@ bool ValidationCollection::addValidation(const SerializedValidation::pointer& va
 
 ValidationSet ValidationCollection::getValidations(const uint256& ledger)
 {
-	ValidationSet ret;
 	{
 		boost::mutex::scoped_lock sl(mValidationLock);
-		boost::unordered_map<uint256, ValidationSet>::iterator it = mValidations.find(ledger);
-		if (it != mValidations.end())
-			ret = it->second;
+		VSpointer set = findSet(ledger);
+		if (set != VSpointer())
+			return *set;
 	}
-	return ret;
+	return ValidationSet();
 }
 
 void ValidationCollection::getValidationCount(const uint256& ledger, bool currentOnly, int& trusted, int &untrusted)
 {
 	trusted = untrusted = 0;
 	boost::mutex::scoped_lock sl(mValidationLock);
-	boost::unordered_map<uint256, ValidationSet>::iterator it = mValidations.find(ledger);
+	VSpointer set = findSet(ledger);
 	uint32 now = theApp->getOPs().getNetworkTimeNC();
-	if (it != mValidations.end())
+	if (set)
 	{
-		for (ValidationSet::iterator vit = it->second.begin(), end = it->second.end(); vit != end; ++vit)
+		for (ValidationSet::iterator vit = set->begin(), end = set->end(); vit != end; ++vit)
 		{
 			bool isTrusted = vit->second->isTrusted();
 			if (isTrusted && currentOnly)
@@ -107,10 +123,10 @@ int ValidationCollection::getTrustedValidationCount(const uint256& ledger)
 {
 	int trusted = 0;
 	boost::mutex::scoped_lock sl(mValidationLock);
-	for (boost::unordered_map<uint256, ValidationSet>::iterator it = mValidations.find(ledger),
-		end = mValidations.end(); it != end; ++it)
+	VSpointer set = findSet(ledger);
+	if (set)
 	{
-		for (ValidationSet::iterator vit = it->second.begin(), end = it->second.end(); vit != end; ++vit)
+		for (ValidationSet::iterator vit = set->begin(), end = set->end(); vit != end; ++vit)
 		{
 			if (vit->second->isTrusted())
 				++trusted;

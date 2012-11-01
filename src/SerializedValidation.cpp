@@ -4,6 +4,8 @@
 #include "HashPrefixes.h"
 #include "Log.h"
 
+DECLARE_INSTANCE(SerializedValidation);
+
 std::vector<SOElement::ptr> sValidationFormat;
 
 static bool SVFInit()
