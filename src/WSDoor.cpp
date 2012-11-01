@@ -416,6 +416,8 @@ server : Sends a message anytime the server status changes such as network conne
 ledger : Sends a message at every ledger close.
 transactions : Sends a message for every transaction that makes it into a ledger.
 rt_transactions
+accounts
+rt_accounts
 */
 // TODO
 void WSConnection::doSubscribe(Json::Value& jvResult, const Json::Value& jvRequest)
