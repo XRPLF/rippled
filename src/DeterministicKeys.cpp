@@ -19,7 +19,7 @@ uint128 CKey::PassPhraseToKey(const std::string& passPhrase)
 {
 	Serializer s;
 
-	s.addRaw(passPhrase.c_str(), passPhrase.size());
+	s.addRaw(passPhrase);
 	uint256	hash256	= s.getSHA512Half();
 	uint128 ret(hash256);
 

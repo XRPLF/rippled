@@ -411,7 +411,7 @@ Json::Value RPCHandler::doAccountEmailSet(const Json::Value &params)
 	boost::to_lower(strEmail);
 
 	std::vector<unsigned char>	vucMD5(128/8, 0);
-	MD5(reinterpret_cast<const unsigned char*>(strEmail.c_str()), strEmail.size(), &vucMD5.front());
+	MD5(reinterpret_cast<const unsigned char*>(strEmail.data()), strEmail.size(), &vucMD5.front());
 
 	uint128						uEmailHash(vucMD5);
 	std::vector<unsigned char>	vucDomain;
