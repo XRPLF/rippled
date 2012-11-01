@@ -305,7 +305,7 @@ uint256 Serializer::getSHA512Half(const unsigned char *data, int len)
 
 uint256 Serializer::getSHA512Half(const std::string& strData)
 {
-	return getSHA512Half(reinterpret_cast<const unsigned char*>(strData.c_str()), strData.size());
+	return getSHA512Half(reinterpret_cast<const unsigned char*>(strData.data()), strData.size());
 }
 
 uint256 Serializer::getPrefixHash(uint32 prefix, const unsigned char *data, int len)
@@ -367,7 +367,16 @@ int Serializer::addVL(const std::vector<unsigned char>& vector)
 int Serializer::addVL(const void *ptr, int len)
 {
 	int ret = addRaw(encodeVL(len));
-	if (len) addRaw(ptr, len);
+	if (len)
+		addRaw(ptr, len);
+	return ret;
+}
+
+int Serializer::addVL(const std::string& string)
+{
+	int ret = addRaw(string.size());
+	if (!string.empty())
+		addRaw(string.data(), string.size());
 	return ret;
 }
 

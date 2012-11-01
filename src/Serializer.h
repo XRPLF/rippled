@@ -44,6 +44,7 @@ public:
 	int addZeros(size_t uBytes);
 
 	int addVL(const std::vector<unsigned char> &vector);
+	int addVL(const std::string& string);
 	int addVL(const void *ptr, int len);
 	int addTaggedList(const std::list<TaggedListItem>&);
 	int addTaggedList(const std::vector<TaggedListItem>&);
@@ -87,7 +88,7 @@ public:
 	static uint256 getPrefixHash(uint32 prefix, const std::vector<unsigned char>& data)
 		{ return getPrefixHash(prefix, &(data.front()), data.size()); }
 	static uint256 getPrefixHash(uint32 prefix, const std::string& strData)
-		{ return getPrefixHash(prefix, reinterpret_cast<const unsigned char *>(strData.c_str()), strData.size()); }
+		{ return getPrefixHash(prefix, reinterpret_cast<const unsigned char *>(strData.data()), strData.size()); }
 
 	// totality functions
 	const std::vector<unsigned char>& peekData() const		{ return mData; }
