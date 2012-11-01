@@ -24,14 +24,14 @@ DECLARE_INSTANCE(Peer);
 // Node has this long to verify its identity from connection accepted or connection attempt.
 #define NODE_VERIFY_SECONDS		15
 
-Peer::Peer(boost::asio::io_service& io_service, boost::asio::ssl::context& ctx) :
+Peer::Peer(boost::asio::io_service& io_service, boost::asio::ssl::context& ctx, uint64 peerID) :
 	mHelloed(false),
 	mDetaching(false),
+	mPeerId(peerID),
 	mSocketSsl(io_service, ctx),
 	mVerifyTimer(io_service)
 {
 	cLog(lsDEBUG) << "CREATING PEER: " << ADDRESS(this);
-	mPeerId = theApp->getConnectionPool().assignPeerId();
 }
 
 void Peer::handle_write(const boost::system::error_code& error, size_t bytes_transferred)
