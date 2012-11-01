@@ -7,7 +7,7 @@
 class LedgerHistory
 {
 	TaggedCache<uint256, Ledger> mLedgersByHash;
-	std::map<uint32, Ledger::pointer> mLedgersByIndex; // accepted ledgers
+	std::map<uint32, uint256> mLedgersByIndex; // accepted ledgers
 
 public:
 	LedgerHistory();

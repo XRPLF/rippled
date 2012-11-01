@@ -10,14 +10,14 @@
 #include "Application.h"
 
 #ifndef CACHED_LEDGER_NUM
-#define CACHED_LEDGER_NUM 512
+#define CACHED_LEDGER_NUM 128
 #endif
 
 #ifndef CACHED_LEDGER_AGE
 #define CACHED_LEDGER_AGE 900
 #endif
 
-// FIXME: Need to clean up ledgers by index, probably should switch to just mapping sequence to hash
+// FIXME: Need to clean up ledgers by index at some point
 
 LedgerHistory::LedgerHistory() : mLedgersByHash("LedgerCache", CACHED_LEDGER_NUM, CACHED_LEDGER_AGE)
 { ; }
@@ -36,7 +36,7 @@ void LedgerHistory::addAcceptedLedger(Ledger::pointer ledger, bool fromConsensus
 	assert(ledger);
 	assert(ledger->isAccepted());
 	assert(ledger->isImmutable());
-	mLedgersByIndex.insert(std::make_pair(ledger->getLedgerSeq(), ledger));
+	mLedgersByIndex[ledger->getLedgerSeq()] = ledger->getHash();
 
 	ledger->pendSave(fromConsensus);
 }
@@ -44,9 +44,13 @@ void LedgerHistory::addAcceptedLedger(Ledger::pointer ledger, bool fromConsensus
 Ledger::pointer LedgerHistory::getLedgerBySeq(uint32 index)
 {
 	boost::recursive_mutex::scoped_lock sl(mLedgersByHash.peekMutex());
-	std::map<uint32, Ledger::pointer>::iterator it(mLedgersByIndex.find(index));
+	std::map<uint32, uint256>::iterator it(mLedgersByIndex.find(index));
 	if (it != mLedgersByIndex.end())
-		return it->second;
+	{
+		uint256 hash = it->second;
+		sl.unlock();
+		return getLedgerByHash(hash);
+	}
 	sl.unlock();
 
 	Ledger::pointer ret(Ledger::loadByIndex(index));
@@ -56,8 +60,8 @@ Ledger::pointer LedgerHistory::getLedgerBySeq(uint32 index)
 
 	sl.lock();
 	mLedgersByHash.canonicalize(ret->getHash(), ret);
-	mLedgersByIndex.insert(std::make_pair(index, ret));
-	return ret;
+	mLedgersByIndex[ret->getLedgerSeq()] = ret->getHash();
+	return (ret->getLedgerSeq() == index) ? ret : Ledger::pointer();
 }
 
 Ledger::pointer LedgerHistory::getLedgerByHash(const uint256& hash)
@@ -91,7 +95,7 @@ Ledger::pointer LedgerHistory::canonicalizeLedger(Ledger::pointer ledger, bool s
 	boost::recursive_mutex::scoped_lock sl(mLedgersByHash.peekMutex());
 	mLedgersByHash.canonicalize(h, ledger);
 	if (ledger->isAccepted())
-		mLedgersByIndex[ledger->getLedgerSeq()] = ledger;
+		mLedgersByIndex[ledger->getLedgerSeq()] = ledger->getHash();
 	return ledger;
 }
 
