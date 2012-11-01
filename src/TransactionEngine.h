@@ -9,6 +9,9 @@
 #include "SerializedLedger.h"
 #include "LedgerEntrySet.h"
 #include "TransactionErr.h"
+#include "InstanceCounter.h"
+
+DEFINE_INSTANCE(TransactionEngine);
 
 // A TransactionEngine applies serialized transactions to a ledger
 // It can also, verify signatures, verify fees, and give rejection reasons
@@ -29,7 +32,7 @@ enum TransactionEngineParams
 
 // One instance per ledger.
 // Only one transaction applied at a time.
-class TransactionEngine
+class TransactionEngine : private IS_INSTANCE(TransactionEngine)
 {
 private:
 	LedgerEntrySet						mNodes;
