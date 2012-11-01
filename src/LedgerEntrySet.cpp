@@ -1016,7 +1016,7 @@ void LedgerEntrySet::rippleCredit(const uint160& uSenderID, const uint160& uRece
 
 	if (!sleRippleState)
 	{
-		cLog(lsINFO) << "rippleCredit: Creating ripple line: " << uIndex.ToString();
+		cLog(lsDEBUG) << "rippleCredit: Creating ripple line: " << uIndex.ToString();
 
 		STAmount	saBalance	= saAmount;
 

@@ -1283,6 +1283,9 @@ TER RippleCalc::calcNodeAccountFwd(
 			// account --> ACCOUNT --> account
 			cLog(lsINFO) << boost::str(boost::format("calcNodeAccountFwd: account --> ACCOUNT --> account"));
 
+			saCurRedeemAct.zero(saCurRedeemReq);
+			saCurIssueAct.zero(saCurIssueReq);
+
 			// Previous redeem part 1: redeem -> redeem
 			if (saPrvRedeemReq != saPrvRedeemAct)			// Previous wants to redeem. To next must be ok.
 			{
@@ -1326,6 +1329,8 @@ TER RippleCalc::calcNodeAccountFwd(
 		// account --> ACCOUNT --> offer
 		cLog(lsINFO) << boost::str(boost::format("calcNodeAccountFwd: account --> ACCOUNT --> offer"));
 
+		saCurDeliverAct.zero(saCurDeliverReq);
+
 		// redeem -> issue.
 		// wants to redeem and current would and can issue.
 		// If redeeming cur to next is done, this implies can issue.
@@ -1366,6 +1371,9 @@ TER RippleCalc::calcNodeAccountFwd(
 			// offer --> ACCOUNT --> account
 			cLog(lsINFO) << boost::str(boost::format("calcNodeAccountFwd: offer --> ACCOUNT --> account"));
 
+			saCurRedeemAct.zero(saCurRedeemReq);
+			saCurIssueAct.zero(saCurIssueReq);
+
 			// deliver -> redeem
 			if (saPrvDeliverReq)							// Previous wants to deliver.
 			{
@@ -1391,6 +1399,8 @@ TER RippleCalc::calcNodeAccountFwd(
 		// offer --> ACCOUNT --> offer
 		// deliver/redeem -> deliver/issue.
 		cLog(lsINFO) << boost::str(boost::format("calcNodeAccountFwd: offer --> ACCOUNT --> offer"));
+
+		saCurDeliverAct.zero(saCurDeliverReq);
 
 		if (saPrvDeliverReq									// Previous wants to deliver
 			&& saCurIssueReq)								// Current wants issue.
@@ -1925,7 +1935,7 @@ TER RippleCalc::rippleCalc(
 
     if (bNoRippleDirect && spsPaths.isEmpty())
     {
-	    cLog(lsINFO) << "doPayment: Invalid transaction: No paths and direct ripple not allowed.";
+	    cLog(lsINFO) << "rippleCalc: Invalid transaction: No paths and direct ripple not allowed.";
 
 	    return temRIPPLE_EMPTY;
     }
@@ -1937,7 +1947,6 @@ TER RippleCalc::rippleCalc(
     {
 	    // Direct path.
 	    // XXX Might also make a stamp bridge by default.
-	    cLog(lsINFO) << "doPayment: Build direct:";
 
 	    PathState::pointer	pspDirect	= PathState::createPathState(
 		    vpsPaths.size(),
@@ -1948,6 +1957,9 @@ TER RippleCalc::rippleCalc(
 		    saDstAmountReq,
 		    saMaxAmountReq);
 
+cLog(lsDEBUG) << boost::str(boost::format("rippleCalc: Build direct: add: %d status: %s")
+	% !!pspDirect
+	% transToken(pspDirect ? pspDirect->terStatus : temUNKNOWN));
 	    if (pspDirect)
 	    {
 		    // Return if malformed.
@@ -1968,12 +1980,11 @@ TER RippleCalc::rippleCalc(
 	    }
     }
 
-    cLog(lsINFO) << "doPayment: Paths in set: " << spsPaths.getPathCount();
+    cLog(lsINFO) << "rippleCalc: Paths in set: " << spsPaths.getPathCount();
 
+int	iIndex	= 0;
     BOOST_FOREACH(const STPath& spPath, spsPaths)
     {
-	    cLog(lsINFO) << "doPayment: Build path:";
-
 	    PathState::pointer	pspExpanded	= PathState::createPathState(
 		    vpsPaths.size(),
 		    lesActive,
@@ -1982,6 +1993,11 @@ TER RippleCalc::rippleCalc(
 		    uSrcAccountID,
 		    saDstAmountReq,
 		    saMaxAmountReq);
+
+cLog(lsDEBUG) << boost::str(boost::format("rippleCalc: Build path: %d: add: %d status: %s")
+	% ++iIndex
+	% !!pspExpanded
+	% transToken(pspExpanded ? pspExpanded->terStatus : temUNKNOWN));
 
 	    if (pspExpanded)
 	    {
@@ -2010,13 +2026,14 @@ TER RippleCalc::rippleCalc(
 	    terResult	= temUNCERTAIN;
     }
 
-	STAmount				saInAct;	// XXX Verify don't need to set currency/issuer.
-	STAmount				saOutAct;
+	STAmount				saInAct			= STAmount(saMaxAmountReq.getCurrency(), saMaxAmountReq.getIssuer());
+	STAmount				saOutAct		= STAmount(saDstAmountReq.getCurrency(), saDstAmountReq.getIssuer());
     const LedgerEntrySet	lesBase			= lesActive;							// Checkpoint with just fees paid.
     const uint64			uQualityLimit	= bLimitQuality ? STAmount::getRate(saDstAmountReq, saMaxAmountReq) : 0;
 	// When processing, don't want to complicate directory walking with deletion.
 	std::vector<uint256>	vuUnfundedBecame;										// Offers that became unfunded.
 
+int iPass	= 0;
     while (temUNCERTAIN == terResult)
     {
 	    PathState::pointer		pspBest;
@@ -2062,6 +2079,11 @@ TER RippleCalc::rippleCalc(
 				}
 			}
 	    }
+cLog(lsDEBUG) << boost::str(boost::format("rippleCalc: Summary: Pass: %d Dry: %d Paths: %d") % ++iPass % iDry % vpsPaths.size());
+	    BOOST_FOREACH(PathState::pointer& pspCur, vpsPaths)
+	    {
+cLog(lsDEBUG) << boost::str(boost::format("rippleCalc: Summary: %d quality:%d best: %d consumed: %d") % pspCur->mIndex % pspCur->uQuality % (pspBest == pspCur) % pspCur->bConsumed);
+		}
 
 	    if (pspBest)
 	    {
