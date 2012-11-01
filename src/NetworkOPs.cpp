@@ -695,26 +695,14 @@ bool NetworkOPs::haveConsensusObject()
 }
 
 // <-- bool: true to relay
-bool NetworkOPs::recvPropose(uint64 peerId, uint32 proposeSeq, const uint256& proposeHash, const uint256& prevLedger,
-	uint32 closeTime, const std::string& pubKey, const std::string& signature, const RippleAddress& nodePublic)
+bool NetworkOPs::recvPropose(const uint256& suppression, uint32 proposeSeq, const uint256& proposeHash,
+	const uint256& prevLedger, uint32 closeTime, const std::string& signature,
+	const RippleAddress& nodePublic)
 {
 	// JED: does mConsensus need to be locked?
 
 	// XXX Validate key.
 	// XXX Take a vuc for pubkey.
-
-	// Get a preliminary hash to use to suppress duplicates
-	Serializer s(256);
-	s.add256(proposeHash);
-	s.add256(prevLedger);
-	s.add32(proposeSeq);
-	s.add32(closeTime);
-	s.addRaw(pubKey);
-	s.addRaw(signature);
-	if (!theApp->isNew(s.getSHA512Half(), peerId))
-		return false;
-
-	RippleAddress naPeerPublic = RippleAddress::createNodePublic(strCopy(pubKey));
 
 	if (!haveConsensusObject())
 	{
@@ -722,23 +710,23 @@ bool NetworkOPs::recvPropose(uint64 peerId, uint32 proposeSeq, const uint256& pr
 		return mMode != omFULL;
 	}
 
-	if (mConsensus->isOurPubKey(naPeerPublic))
+	if (mConsensus->isOurPubKey(nodePublic))
 	{
 		cLog(lsTRACE) << "Received our own validation";
 		return false;
 	}
 
 	// Is this node on our UNL?
-	if (!theApp->getUNL().nodeInUNL(naPeerPublic))
+	if (!theApp->getUNL().nodeInUNL(nodePublic))
 	{
-		cLog(lsINFO) << "Untrusted proposal: " << naPeerPublic.humanNodePublic() << " " << proposeHash;
+		cLog(lsINFO) << "Untrusted proposal: " << nodePublic.humanNodePublic() << " " << proposeHash;
 		return true;
 	}
 
 	if (prevLedger.isNonZero())
 	{ // proposal includes a previous ledger
 		LedgerProposal::pointer proposal =
-			boost::make_shared<LedgerProposal>(prevLedger, proposeSeq, proposeHash, closeTime, naPeerPublic);
+			boost::make_shared<LedgerProposal>(prevLedger, proposeSeq, proposeHash, closeTime, nodePublic);
 		if (!proposal->checkSign(signature))
 		{
 			cLog(lsWARNING) << "New-style ledger proposal fails signature check";
@@ -751,7 +739,7 @@ bool NetworkOPs::recvPropose(uint64 peerId, uint32 proposeSeq, const uint256& pr
 	}
 
 	LedgerProposal::pointer proposal =
-		boost::make_shared<LedgerProposal>(mConsensus->getLCL(), proposeSeq, proposeHash, closeTime, naPeerPublic);
+		boost::make_shared<LedgerProposal>(mConsensus->getLCL(), proposeSeq, proposeHash, closeTime, nodePublic);
 	if (!proposal->checkSign(signature))
 	{ // Note that if the LCL is different, the signature check will fail
 		cLog(lsWARNING) << "Ledger proposal fails signature check";

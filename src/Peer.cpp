@@ -740,7 +740,7 @@ void Peer::recvTransaction(ripple::TMTransaction& packet)
 void Peer::recvPropose(ripple::TMProposeSet& packet)
 {
 	if ((packet.currenttxhash().size() != 32) || (packet.nodepubkey().size() < 28) ||
-		(packet.signature().size() < 56))
+		(packet.signature().size() < 56) || (packet.nodepubkey().size() > 128) || (packet.signature().size() > 128))
 	{
 		cLog(lsWARNING) << "Received proposal is malformed";
 		return;
@@ -752,8 +752,23 @@ void Peer::recvPropose(ripple::TMProposeSet& packet)
 	if ((packet.has_previousledger()) && (packet.previousledger().size() == 32))
 		memcpy(prevLedger.begin(), packet.previousledger().data(), 32);
 
-	if(theApp->getOPs().recvPropose(mPeerId, packet.proposeseq(), currentTxHash, prevLedger, packet.closetime(),
-		packet.nodepubkey(), packet.signature(), mNodePublic))
+	Serializer s(512);
+	s.add256(currentTxHash);
+	s.add256(prevLedger);
+	s.add32(packet.proposeseq());
+	s.add32(packet.closetime());
+	s.addVL(packet.nodepubkey());
+	s.addVL(packet.signature());
+	uint256 suppression = s.getSHA512Half();
+
+	if (!theApp->isNew(suppression, mPeerId))
+		return;
+
+	RippleAddress nodePublic = RippleAddress::createNodePublic(strCopy(packet.nodepubkey()));
+//	bool isTrusted = theApp->getUNL().nodeInUNL(nodePublic);
+
+	if(theApp->getOPs().recvPropose(suppression, packet.proposeseq(), currentTxHash, prevLedger, packet.closetime(),
+		packet.signature(), nodePublic))
 	{ // FIXME: Not all nodes will want proposals 
 		PackedMessage::pointer message = boost::make_shared<PackedMessage>(packet, ripple::mtPROPOSE_LEDGER);
 		theApp->getConnectionPool().relayMessage(this, message);
@@ -792,11 +807,11 @@ static void checkValidation(Job&, SerializedValidation::pointer val, uint256 sig
 			return;
 		}
 
-		if (theApp->getOPs().recvValidation(val))
+		std::set<uint64> peers;
+		if (theApp->getOPs().recvValidation(val) && theApp->getSuppression().swapSet(signingHash, peers, SF_RELAYED))
 		{
-			Peer::pointer pp = peer.lock();
 			PackedMessage::pointer message = boost::make_shared<PackedMessage>(*packet, ripple::mtVALIDATION);
-			theApp->getConnectionPool().relayMessage(pp ? pp.get() : NULL, message);
+			theApp->getConnectionPool().relayMessageBut(peers, message);
 		}
 	}
 #ifndef TRUST_NETWORK
@@ -835,7 +850,7 @@ void Peer::recvValidation(const boost::shared_ptr<ripple::TMValidation>& packet)
 		bool isTrusted = theApp->getUNL().nodeInUNL(val->getSignerPublic());
 		theApp->getJobQueue().addJob(isTrusted ? jtVALIDATION_t : jtVALIDATION_ut,
 			boost::bind(&checkValidation, _1, val, signingHash, isTrusted, packet,
-				boost::weak_ptr<Peer>(shared_from_this())));
+			boost::weak_ptr<Peer>(shared_from_this())));
 	}
 #ifndef TRUST_NETWORK
 	catch (...)
