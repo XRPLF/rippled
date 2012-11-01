@@ -773,8 +773,12 @@ STAmount::operator double() const
 
 STAmount operator+(const STAmount& v1, const STAmount& v2)
 {
-	if (v1.isZero()) return v2;
 	if (v2.isZero()) return v1;
+	if (v1.isZero())
+	{
+		// Result must be in terms of v1 currency and issuer.
+		return STAmount(v1.getFName(), v1.mCurrency, v1.mIssuer, v2.mValue, v2.mOffset, v2.mIsNegative);
+	}
 
 	v1.throwComparable(v2);
 	if (v1.mIsNative)
