@@ -66,3 +66,35 @@ bool SuppressionTable::addSuppressionFlags(const uint256& index, int flag)
 	findCreateEntry(index, created).setFlag(flag);
 	return created;
 }
+
+bool SuppressionTable::setFlag(const uint256& index, int flag)
+{ // return: true = changed, false = unchanged
+	assert(flag != 0);
+
+	boost::mutex::scoped_lock sl(mSuppressionMutex);
+
+	bool created;
+	Suppression &s = findCreateEntry(index, created);
+
+	if ((s.getFlags() & flag) == flag)
+		return false;
+
+	s.setFlag(flag);
+	return true;
+}
+
+bool SuppressionTable::swapSet(const uint256& index, std::set<uint64>& peers, int flag)
+{
+	boost::mutex::scoped_lock sl(mSuppressionMutex);
+
+	bool created;
+	Suppression &s = findCreateEntry(index, created);
+
+	if ((s.getFlags() & flag) == flag)
+		return false;
+
+	s.swapSet(peers);
+	s.setFlag(flag);
+
+	return true;
+}

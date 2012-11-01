@@ -845,7 +845,7 @@ void LedgerConsensus::addDisputedTransaction(const uint256& txID, const std::vec
 			txn->setVote(pit.first, cit->second->hasItem(txID));
 	}
 
-	if (!ourVote && theApp->isNew(txID))
+	if (!ourVote && theApp->isNewFlag(txID, SF_RELAYED))
 	{
 		ripple::TMTransaction msg;
 		msg.set_rawtransaction(&(tx.front()), tx.size());

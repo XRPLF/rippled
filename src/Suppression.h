@@ -14,6 +14,11 @@
 
 DEFINE_INSTANCE(Suppression);
 
+#define SF_RELAYED		0x01
+#define SF_SIGBAD		0x02
+#define SF_SIGGOOD		0x04
+#define SF_SAVED		0x08
+
 class Suppression : private IS_INSTANCE(Suppression)
 {
 protected:
@@ -27,9 +32,11 @@ public:
 	void addPeer(uint64 peer)					{ mPeers.insert(peer); }
 	bool hasPeer(uint64 peer)					{ return mPeers.count(peer) > 0; }
 
+	int getFlags(void)							{ return mFlags; }
 	bool hasFlag(int f)							{ return (mFlags & f) != 0; }
 	void setFlag(int f)							{ mFlags |= f; }
 	void clearFlag(int f)						{ mFlags &= ~f; }
+	void swapSet(std::set<uint64>& s)			{ mPeers.swap(s); }
 };
 
 class SuppressionTable
@@ -55,8 +62,11 @@ public:
 
 	bool addSuppressionPeer(const uint256& index, uint64 peer);
 	bool addSuppressionFlags(const uint256& index, int flag);
+	bool setFlag(const uint256& index, int flag);
 
 	Suppression getEntry(const uint256&);
+
+	bool swapSet(const uint256& index, std::set<uint64>& peers, int flag);
 };
 
 #endif

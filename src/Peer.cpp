@@ -708,8 +708,12 @@ void Peer::recvTransaction(ripple::TMTransaction& packet)
 		SerializerIterator sit(s);
 		SerializedTransaction::pointer stx = boost::make_shared<SerializedTransaction>(boost::ref(sit));
 
+		if (!theApp->isNew(stx->getTransactionID(), mPeerId))
+			return;
+
 		tx = boost::make_shared<Transaction>(stx, true);
-		if (tx->getStatus() == INVALID) throw(0);
+		if (tx->getStatus() == INVALID)
+			throw(0);
 #ifndef TRUST_NETWORK
 	}
 	catch (...)
@@ -723,7 +727,7 @@ void Peer::recvTransaction(ripple::TMTransaction& packet)
 	}
 #endif
 
-	tx = theApp->getOPs().processTransaction(tx, this);
+	tx = theApp->getOPs().processTransaction(tx);
 
 	if(tx->getStatus() != INCLUDED)
 	{ // transaction wasn't accepted into ledger
@@ -748,7 +752,7 @@ void Peer::recvPropose(ripple::TMProposeSet& packet)
 	if ((packet.has_previousledger()) && (packet.previousledger().size() == 32))
 		memcpy(prevLedger.begin(), packet.previousledger().data(), 32);
 
-	if(theApp->getOPs().recvPropose(packet.proposeseq(), currentTxHash, prevLedger, packet.closetime(),
+	if(theApp->getOPs().recvPropose(mPeerId, packet.proposeseq(), currentTxHash, prevLedger, packet.closetime(),
 		packet.nodepubkey(), packet.signature(), mNodePublic))
 	{ // FIXME: Not all nodes will want proposals 
 		PackedMessage::pointer message = boost::make_shared<PackedMessage>(packet, ripple::mtPROPOSE_LEDGER);
@@ -822,7 +826,7 @@ void Peer::recvValidation(const boost::shared_ptr<ripple::TMValidation>& packet)
 		SerializedValidation::pointer val = boost::make_shared<SerializedValidation>(boost::ref(sit), false);
 
 		uint256 signingHash = val->getSigningHash();
-		if (!theApp->isNew(signingHash))
+		if (!theApp->isNew(signingHash, mPeerId))
 		{
 			cLog(lsTRACE) << "Validation is duplicate";
 			return;

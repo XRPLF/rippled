@@ -251,22 +251,30 @@ int ConnectionPool::relayMessage(Peer* fromPeer, const PackedMessage::pointer& m
 	return sentTo;
 }
 
-int ConnectionPool::relayMessage(const std::set<uint64>& fromPeers, const PackedMessage::pointer& msg)
-{
-	int sentTo = 0;
+void ConnectionPool::relayMessageBut(const std::set<uint64>& fromPeers, const PackedMessage::pointer& msg)
+{ // Relay message to all but the specified peers
 	boost::mutex::scoped_lock sl(mPeerLock);
 
 	BOOST_FOREACH(naPeer pair, mConnectedMap)
 	{
 		Peer::ref peer	= pair.second;
 		if (peer->isConnected() && (fromPeers.count(peer->getPeerId()) == 0))
-		{
-			++sentTo;
 			peer->sendPacket(msg);
-		}
 	}
 
-	return sentTo;
+}
+
+void ConnectionPool::relayMessageTo(const std::set<uint64>& fromPeers, const PackedMessage::pointer& msg)
+{ // Relay message to the specified peers
+	boost::mutex::scoped_lock sl(mPeerLock);
+
+	BOOST_FOREACH(naPeer pair, mConnectedMap)
+	{
+		Peer::ref peer	= pair.second;
+		if (peer->isConnected() && (fromPeers.count(peer->getPeerId()) > 0))
+			peer->sendPacket(msg);
+	}
+
 }
 
 // Schedule a connection via scanning.
