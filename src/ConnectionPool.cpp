@@ -29,6 +29,7 @@ void splitIpPort(const std::string& strIpPort, std::string& strIp, int& iPort)
 }
 
 ConnectionPool::ConnectionPool(boost::asio::io_service& io_service) :
+	mLastPeer(0),
 	mCtx(boost::asio::ssl::context::sslv23),
 	mScanTimer(io_service),
 	mPolicyTimer(io_service)
@@ -237,10 +238,28 @@ int ConnectionPool::relayMessage(Peer* fromPeer, const PackedMessage::pointer& m
 
 	BOOST_FOREACH(naPeer pair, mConnectedMap)
 	{
-		Peer::pointer peer	= pair.second;
+		Peer::ref peer	= pair.second;
 		if (!peer)
 			std::cerr << "CP::RM null peer in list" << std::endl;
 		else if ((!fromPeer || !(peer.get() == fromPeer)) && peer->isConnected())
+		{
+			++sentTo;
+			peer->sendPacket(msg);
+		}
+	}
+
+	return sentTo;
+}
+
+int ConnectionPool::relayMessage(const std::set<uint64>& fromPeers, const PackedMessage::pointer& msg)
+{
+	int sentTo = 0;
+	boost::mutex::scoped_lock sl(mPeerLock);
+
+	BOOST_FOREACH(naPeer pair, mConnectedMap)
+	{
+		Peer::ref peer	= pair.second;
+		if (peer->isConnected() && (fromPeers.count(peer->getPeerId()) == 0))
 		{
 			++sentTo;
 			peer->sendPacket(msg);
@@ -352,6 +371,12 @@ std::vector<Peer::pointer> ConnectionPool::getPeerVector()
     }
 
     return ret;
+}
+
+uint64 ConnectionPool::assignPeerId()
+{
+	boost::mutex::scoped_lock sl(mPeerLock);
+	return ++mLastPeer;
 }
 
 // Now know peer's node public key.  Determine if we want to stay connected.
