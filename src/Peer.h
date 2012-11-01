@@ -5,6 +5,7 @@
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
 #include <boost/enable_shared_from_this.hpp>
+#include <boost/make_shared.hpp>
 #include <boost/shared_ptr.hpp>
 
 #include "../obj/src/ripple.pb.h"
@@ -72,7 +73,7 @@ protected:
 	ripple::TMStatusChange mLastStatus;
 	ripple::TMHello mHello;
 
-	Peer(boost::asio::io_service& io_service, boost::asio::ssl::context& ctx);
+	Peer(boost::asio::io_service& io_service, boost::asio::ssl::context& ctx, uint64 peerId);
 
 	void handleShutdown(const boost::system::error_code& error) { ; }
 	static void sHandleShutdown(Peer::ref ptr, const boost::system::error_code& error)
@@ -132,9 +133,9 @@ public:
 
 	void setIpPort(const std::string& strIP, int iPort);
 
-	static pointer create(boost::asio::io_service& io_service, boost::asio::ssl::context& ctx)
+	static pointer create(boost::asio::io_service& io_service, boost::asio::ssl::context& ctx, uint64 id)
 	{
-		return pointer(new Peer(io_service, ctx));
+		return pointer(new Peer(io_service, ctx, id));
 	}
 
 	boost::asio::ssl::stream<boost::asio::ip::tcp::socket>::lowest_layer_type& getSocket()

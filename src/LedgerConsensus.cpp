@@ -24,6 +24,7 @@ typedef std::pair<const uint160, LedgerProposal::pointer> u160_prop_pair;
 typedef std::pair<const uint256, LCTransaction::pointer> u256_lct_pair;
 
 SETUP_LOG();
+DECLARE_INSTANCE(LedgerConsensus);
 
 TransactionAcquire::TransactionAcquire(const uint256& hash) : PeerSet(hash, TX_ACQUIRE_TIMEOUT), mHaveRoot(false)
 {
@@ -845,7 +846,7 @@ void LedgerConsensus::addDisputedTransaction(const uint256& txID, const std::vec
 			txn->setVote(pit.first, cit->second->hasItem(txID));
 	}
 
-	if (!ourVote && theApp->isNew(txID))
+	if (!ourVote && theApp->isNewFlag(txID, SF_RELAYED))
 	{
 		ripple::TMTransaction msg;
 		msg.set_rawtransaction(&(tx.front()), tx.size());

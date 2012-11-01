@@ -36,7 +36,7 @@ std::string EncodeBase64(const std::string& s)
 	BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL);
 	bmem = BIO_new(BIO_s_mem());
 	b64 = BIO_push(b64, bmem);
-	BIO_write(b64, s.c_str(), s.size());
+	BIO_write(b64, s.data(), s.size());
 	(void) BIO_flush(b64);
 	BIO_get_mem_ptr(b64, &bptr);
 

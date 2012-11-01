@@ -95,7 +95,11 @@ public:
 	HashedObjectStore& getHashedObjectStore()		{ return mHashedObjectStore; }
 	ValidationCollection& getValidations()			{ return mValidations; }
 	JobQueue& getJobQueue()							{ return mJobQueue; }
+	SuppressionTable& getSuppression()				{ return mSuppressions; }
+
 	bool isNew(const uint256& s)					{ return mSuppressions.addSuppression(s); }
+	bool isNew(const uint256& s, uint64 p)			{ return mSuppressions.addSuppressionPeer(s, p); }
+	bool isNewFlag(const uint256& s, int f)			{ return mSuppressions.setFlag(s, f); }
 	bool running()									{ return mTxnDB != NULL; }
 	bool getSystemTimeOffset(int& offset)			{ return mSNTPClient.getOffset(offset); }
 

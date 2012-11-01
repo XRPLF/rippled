@@ -7,6 +7,8 @@
 #include "Log.h"
 
 SETUP_LOG();
+DECLARE_INSTANCE(LedgerEntrySetEntry);
+DECLARE_INSTANCE(LedgerEntrySet)
 
 // #define META_DEBUG
 

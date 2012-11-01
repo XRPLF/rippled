@@ -62,7 +62,8 @@ public:
 
 	// Send message to network.
 	int relayMessage(Peer* fromPeer, const PackedMessage::pointer& msg);
-	int relayMessage(const std::set<uint64>& fromPeers, const PackedMessage::pointer& msg);
+	void relayMessageTo(const std::set<uint64>& fromPeers, const PackedMessage::pointer& msg);
+	void relayMessageBut(const std::set<uint64>& fromPeers, const PackedMessage::pointer& msg);
 
 	// Manual connection request.
 	// Queue for immediate scanning.

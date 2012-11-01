@@ -1073,7 +1073,7 @@ int Ledger::getPendingSaves()
 
 void Ledger::pendSave(bool fromConsensus)
 {
-	if (!fromConsensus && !theApp->isNew(getHash()))
+	if (!fromConsensus && !theApp->isNewFlag(getHash(), SF_SAVED))
 		return;
 
 	boost::thread thread(boost::bind(&Ledger::saveAcceptedLedger, shared_from_this(), fromConsensus));

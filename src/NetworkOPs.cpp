@@ -112,7 +112,7 @@ Transaction::pointer NetworkOPs::submitTransaction(const Transaction::pointer& t
 	return tpTransNew;
 }
 
-Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, Peer* source)
+Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans)
 {
 	Transaction::pointer dbtx = theApp->getMasterTransaction().fetch(trans->getID(), true);
 	if (dbtx) return dbtx;
@@ -160,27 +160,28 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 		trans->setStatus(INCLUDED);
 		theApp->getMasterTransaction().canonicalize(trans, true);
 
-// FIXME: Need code to get all accounts affected by a transaction and re-synch
-// any of them that affect local accounts cached in memory. Or, we need to
-// no cache the account balance information and always get it from the current ledger
-//		theApp->getWallet().applyTransaction(trans);
+		std::set<uint64> peers;
+		if (theApp->getSuppression().swapSet(trans->getID(), peers, SF_RELAYED))
+		{
+			ripple::TMTransaction tx;
+			Serializer s;
+			trans->getSTransaction()->add(s);
+			tx.set_rawtransaction(&s.getData().front(), s.getLength());
+			tx.set_status(ripple::tsCURRENT);
+			tx.set_receivetimestamp(getNetworkTimeNC());
 
-		ripple::TMTransaction tx;
-		Serializer s;
-		trans->getSTransaction()->add(s);
-		tx.set_rawtransaction(&s.getData().front(), s.getLength());
-		tx.set_status(ripple::tsCURRENT);
-		tx.set_receivetimestamp(getNetworkTimeNC());
-
-		PackedMessage::pointer packet = boost::make_shared<PackedMessage>(tx, ripple::mtTRANSACTION);
-		int sentTo = theApp->getConnectionPool().relayMessage(source, packet);
-		cLog(lsINFO) << "Transaction relayed to " << sentTo << " node(s)";
+			PackedMessage::pointer packet = boost::make_shared<PackedMessage>(tx, ripple::mtTRANSACTION);
+			theApp->getConnectionPool().relayMessageBut(peers, packet);
+		}
 
 		return trans;
 	}
 
 	cLog(lsDEBUG) << "Status other than success " << r;
-	if ((mMode != omFULL) && (mMode != omTRACKING) && (theApp->isNew(trans->getID())))
+	std::set<uint64> peers;
+
+	if ((mMode != omFULL) && (mMode != omTRACKING) &&
+		theApp->getSuppression().swapSet(trans->getID(), peers, SF_RELAYED))
 	{
 		ripple::TMTransaction tx;
 		Serializer s;
@@ -189,7 +190,7 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 		tx.set_status(ripple::tsCURRENT);
 		tx.set_receivetimestamp(getNetworkTimeNC());
 		PackedMessage::pointer packet = boost::make_shared<PackedMessage>(tx, ripple::mtTRANSACTION);
-		theApp->getConnectionPool().relayMessage(source, packet);
+		theApp->getConnectionPool().relayMessageTo(peers, packet);
 	}
 
 	trans->setStatus(INVALID);
@@ -694,26 +695,14 @@ bool NetworkOPs::haveConsensusObject()
 }
 
 // <-- bool: true to relay
-bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash, const uint256& prevLedger,
-	uint32 closeTime, const std::string& pubKey, const std::string& signature, const RippleAddress& nodePublic)
+bool NetworkOPs::recvPropose(const uint256& suppression, uint32 proposeSeq, const uint256& proposeHash,
+	const uint256& prevLedger, uint32 closeTime, const std::string& signature,
+	const RippleAddress& nodePublic)
 {
 	// JED: does mConsensus need to be locked?
 
 	// XXX Validate key.
 	// XXX Take a vuc for pubkey.
-
-	// Get a preliminary hash to use to suppress duplicates
-	Serializer s(256);
-	s.add256(proposeHash);
-	s.add256(prevLedger);
-	s.add32(proposeSeq);
-	s.add32(closeTime);
-	s.addRaw(pubKey);
-	s.addRaw(signature);
-	if (!theApp->isNew(s.getSHA512Half()))
-		return false;
-
-	RippleAddress naPeerPublic = RippleAddress::createNodePublic(strCopy(pubKey));
 
 	if (!haveConsensusObject())
 	{
@@ -721,23 +710,23 @@ bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash, cons
 		return mMode != omFULL;
 	}
 
-	if (mConsensus->isOurPubKey(naPeerPublic))
+	if (mConsensus->isOurPubKey(nodePublic))
 	{
 		cLog(lsTRACE) << "Received our own validation";
 		return false;
 	}
 
 	// Is this node on our UNL?
-	if (!theApp->getUNL().nodeInUNL(naPeerPublic))
+	if (!theApp->getUNL().nodeInUNL(nodePublic))
 	{
-		cLog(lsINFO) << "Untrusted proposal: " << naPeerPublic.humanNodePublic() << " " << proposeHash;
+		cLog(lsINFO) << "Untrusted proposal: " << nodePublic.humanNodePublic() << " " << proposeHash;
 		return true;
 	}
 
 	if (prevLedger.isNonZero())
 	{ // proposal includes a previous ledger
 		LedgerProposal::pointer proposal =
-			boost::make_shared<LedgerProposal>(prevLedger, proposeSeq, proposeHash, closeTime, naPeerPublic);
+			boost::make_shared<LedgerProposal>(prevLedger, proposeSeq, proposeHash, closeTime, nodePublic);
 		if (!proposal->checkSign(signature))
 		{
 			cLog(lsWARNING) << "New-style ledger proposal fails signature check";
@@ -750,7 +739,7 @@ bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash, cons
 	}
 
 	LedgerProposal::pointer proposal =
-		boost::make_shared<LedgerProposal>(mConsensus->getLCL(), proposeSeq, proposeHash, closeTime, naPeerPublic);
+		boost::make_shared<LedgerProposal>(mConsensus->getLCL(), proposeSeq, proposeHash, closeTime, nodePublic);
 	if (!proposal->checkSign(signature))
 	{ // Note that if the LCL is different, the signature check will fail
 		cLog(lsWARNING) << "Ledger proposal fails signature check";

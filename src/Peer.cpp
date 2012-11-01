@@ -24,14 +24,14 @@ DECLARE_INSTANCE(Peer);
 // Node has this long to verify its identity from connection accepted or connection attempt.
 #define NODE_VERIFY_SECONDS		15
 
-Peer::Peer(boost::asio::io_service& io_service, boost::asio::ssl::context& ctx) :
+Peer::Peer(boost::asio::io_service& io_service, boost::asio::ssl::context& ctx, uint64 peerID) :
 	mHelloed(false),
 	mDetaching(false),
+	mPeerId(peerID),
 	mSocketSsl(io_service, ctx),
 	mVerifyTimer(io_service)
 {
 	cLog(lsDEBUG) << "CREATING PEER: " << ADDRESS(this);
-	mPeerId = theApp->getConnectionPool().assignPeerId();
 }
 
 void Peer::handle_write(const boost::system::error_code& error, size_t bytes_transferred)
@@ -708,8 +708,12 @@ void Peer::recvTransaction(ripple::TMTransaction& packet)
 		SerializerIterator sit(s);
 		SerializedTransaction::pointer stx = boost::make_shared<SerializedTransaction>(boost::ref(sit));
 
+		if (!theApp->isNew(stx->getTransactionID(), mPeerId))
+			return;
+
 		tx = boost::make_shared<Transaction>(stx, true);
-		if (tx->getStatus() == INVALID) throw(0);
+		if (tx->getStatus() == INVALID)
+			throw(0);
 #ifndef TRUST_NETWORK
 	}
 	catch (...)
@@ -723,7 +727,7 @@ void Peer::recvTransaction(ripple::TMTransaction& packet)
 	}
 #endif
 
-	tx = theApp->getOPs().processTransaction(tx, this);
+	tx = theApp->getOPs().processTransaction(tx);
 
 	if(tx->getStatus() != INCLUDED)
 	{ // transaction wasn't accepted into ledger
@@ -736,7 +740,7 @@ void Peer::recvTransaction(ripple::TMTransaction& packet)
 void Peer::recvPropose(ripple::TMProposeSet& packet)
 {
 	if ((packet.currenttxhash().size() != 32) || (packet.nodepubkey().size() < 28) ||
-		(packet.signature().size() < 56))
+		(packet.signature().size() < 56) || (packet.nodepubkey().size() > 128) || (packet.signature().size() > 128))
 	{
 		cLog(lsWARNING) << "Received proposal is malformed";
 		return;
@@ -748,8 +752,23 @@ void Peer::recvPropose(ripple::TMProposeSet& packet)
 	if ((packet.has_previousledger()) && (packet.previousledger().size() == 32))
 		memcpy(prevLedger.begin(), packet.previousledger().data(), 32);
 
-	if(theApp->getOPs().recvPropose(packet.proposeseq(), currentTxHash, prevLedger, packet.closetime(),
-		packet.nodepubkey(), packet.signature(), mNodePublic))
+	Serializer s(512);
+	s.add256(currentTxHash);
+	s.add256(prevLedger);
+	s.add32(packet.proposeseq());
+	s.add32(packet.closetime());
+	s.addVL(packet.nodepubkey());
+	s.addVL(packet.signature());
+	uint256 suppression = s.getSHA512Half();
+
+	if (!theApp->isNew(suppression, mPeerId))
+		return;
+
+	RippleAddress nodePublic = RippleAddress::createNodePublic(strCopy(packet.nodepubkey()));
+//	bool isTrusted = theApp->getUNL().nodeInUNL(nodePublic);
+
+	if(theApp->getOPs().recvPropose(suppression, packet.proposeseq(), currentTxHash, prevLedger, packet.closetime(),
+		packet.signature(), nodePublic))
 	{ // FIXME: Not all nodes will want proposals 
 		PackedMessage::pointer message = boost::make_shared<PackedMessage>(packet, ripple::mtPROPOSE_LEDGER);
 		theApp->getConnectionPool().relayMessage(this, message);
@@ -788,11 +807,11 @@ static void checkValidation(Job&, SerializedValidation::pointer val, uint256 sig
 			return;
 		}
 
-		if (theApp->getOPs().recvValidation(val))
+		std::set<uint64> peers;
+		if (theApp->getOPs().recvValidation(val) && theApp->getSuppression().swapSet(signingHash, peers, SF_RELAYED))
 		{
-			Peer::pointer pp = peer.lock();
 			PackedMessage::pointer message = boost::make_shared<PackedMessage>(*packet, ripple::mtVALIDATION);
-			theApp->getConnectionPool().relayMessage(pp ? pp.get() : NULL, message);
+			theApp->getConnectionPool().relayMessageBut(peers, message);
 		}
 	}
 #ifndef TRUST_NETWORK
@@ -822,7 +841,7 @@ void Peer::recvValidation(const boost::shared_ptr<ripple::TMValidation>& packet)
 		SerializedValidation::pointer val = boost::make_shared<SerializedValidation>(boost::ref(sit), false);
 
 		uint256 signingHash = val->getSigningHash();
-		if (!theApp->isNew(signingHash))
+		if (!theApp->isNew(signingHash, mPeerId))
 		{
 			cLog(lsTRACE) << "Validation is duplicate";
 			return;
@@ -831,7 +850,7 @@ void Peer::recvValidation(const boost::shared_ptr<ripple::TMValidation>& packet)
 		bool isTrusted = theApp->getUNL().nodeInUNL(val->getSignerPublic());
 		theApp->getJobQueue().addJob(isTrusted ? jtVALIDATION_t : jtVALIDATION_ut,
 			boost::bind(&checkValidation, _1, val, signingHash, isTrusted, packet,
-				boost::weak_ptr<Peer>(shared_from_this())));
+			boost::weak_ptr<Peer>(shared_from_this())));
 	}
 #ifndef TRUST_NETWORK
 	catch (...)

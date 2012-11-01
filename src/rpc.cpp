@@ -189,7 +189,7 @@ std::string DecodeBase64(std::string s)
 
 	b64 = BIO_new(BIO_f_base64());
 	BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL);
-	bmem = BIO_new_mem_buf(const_cast<char*>(s.c_str()), s.size());
+	bmem = BIO_new_mem_buf(const_cast<char*>(s.data()), s.size());
 	bmem = BIO_push(b64, bmem);
 	BIO_read(bmem, buffer, s.size());
 	BIO_free_all(bmem);
