@@ -96,9 +96,6 @@ template<typename c_Key, typename c_Data> void TaggedCache<c_Key, c_Data>::sweep
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
-	if (mCache.size() < mTargetSize)
-		return;
-
 	mLastSweep = time(NULL);
 	time_t target = mLastSweep - mTargetAge;
 
