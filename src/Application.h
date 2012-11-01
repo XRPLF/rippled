@@ -96,7 +96,6 @@ public:
 	ValidationCollection& getValidations()			{ return mValidations; }
 	JobQueue& getJobQueue()							{ return mJobQueue; }
 	bool isNew(const uint256& s)					{ return mSuppressions.addSuppression(s); }
-	bool isNew(const uint160& s)					{ return mSuppressions.addSuppression(s); }
 	bool running()									{ return mTxnDB != NULL; }
 	bool getSystemTimeOffset(int& offset)			{ return mSNTPClient.getOffset(offset); }
 

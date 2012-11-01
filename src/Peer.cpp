@@ -30,7 +30,8 @@ Peer::Peer(boost::asio::io_service& io_service, boost::asio::ssl::context& ctx) 
 	mSocketSsl(io_service, ctx),
 	mVerifyTimer(io_service)
 {
-	// cLog(lsDEBUG) << "CREATING PEER: " << ADDRESS(this);
+	cLog(lsDEBUG) << "CREATING PEER: " << ADDRESS(this);
+	mPeerId = theApp->getConnectionPool().assignPeerId();
 }
 
 void Peer::handle_write(const boost::system::error_code& error, size_t bytes_transferred)
