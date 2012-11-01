@@ -17,6 +17,9 @@
 #include "Peer.h"
 #include "CanonicalTXSet.h"
 #include "TransactionEngine.h"
+#include "InstanceCounter.h"
+
+DEFINE_INSTANCE(LedgerConsensus);
 
 class TransactionAcquire : public PeerSet, public boost::enable_shared_from_this<TransactionAcquire>
 { // A transaction set we are trying to acquire
@@ -78,7 +81,7 @@ enum LCState
 	lcsACCEPTED,		// We have accepted/validated a new last closed ledger
 };
 
-class LedgerConsensus : public boost::enable_shared_from_this<LedgerConsensus>
+class LedgerConsensus : public boost::enable_shared_from_this<LedgerConsensus>, IS_INSTANCE(LedgerConsensus)
 {
 protected:
 	LCState mState;

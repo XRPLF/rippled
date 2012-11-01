@@ -9,6 +9,9 @@
 #include "Config.h"
 #include "Application.h"
 
+#define CACHED_LEDGER_NUM 3 // TEMPORARY REMOVEME FIXME
+#define CACHED_LEDGER_AGE 60 // TEMPORARY REMOVEME FIXME
+
 #ifndef CACHED_LEDGER_NUM
 #define CACHED_LEDGER_NUM 512
 #endif

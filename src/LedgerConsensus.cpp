@@ -24,6 +24,7 @@ typedef std::pair<const uint160, LedgerProposal::pointer> u160_prop_pair;
 typedef std::pair<const uint256, LCTransaction::pointer> u256_lct_pair;
 
 SETUP_LOG();
+DECLARE_INSTANCE(LedgerConsensus);
 
 TransactionAcquire::TransactionAcquire(const uint256& hash) : PeerSet(hash, TX_ACQUIRE_TIMEOUT), mHaveRoot(false)
 {

@@ -14,9 +14,12 @@
 #include "Ledger.h"
 #include "Peer.h"
 #include "TaggedCache.h"
+#include "InstanceCounter.h"
 #include "../obj/src/ripple.pb.h"
 
-class PeerSet
+DEFINE_INSTANCE(PeerSet);
+
+class PeerSet : private IS_INSTANCE(PeerSet)
 {
 protected:
 	uint256 mHash;

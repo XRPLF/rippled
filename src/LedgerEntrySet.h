@@ -7,6 +7,10 @@
 #include "TransactionMeta.h"
 #include "Ledger.h"
 #include "TransactionErr.h"
+#include "InstanceCounter.h"
+
+DEFINE_INSTANCE(LedgerEntrySetEntry);
+DEFINE_INSTANCE(LedgerEntrySet);
 
 enum LedgerEntryAction
 {
@@ -17,7 +21,7 @@ enum LedgerEntryAction
 	taaCREATE,	// Newly created.
 };
 
-class LedgerEntrySetEntry
+class LedgerEntrySetEntry : private IS_INSTANCE(LedgerEntrySetEntry)
 {
 public:
 	SLE::pointer		mEntry;
@@ -28,7 +32,7 @@ public:
 };
 
 
-class LedgerEntrySet
+class LedgerEntrySet : private IS_INSTANCE(LedgerEntrySet)
 {
 protected:
 	Ledger::pointer mLedger;
