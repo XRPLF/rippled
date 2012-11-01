@@ -19,7 +19,7 @@
 
 // FIXME: Need to clean up ledgers by index, probably should switch to just mapping sequence to hash
 
-LedgerHistory::LedgerHistory() : mLedgersByHash(CACHED_LEDGER_NUM, CACHED_LEDGER_AGE)
+LedgerHistory::LedgerHistory() : mLedgersByHash("LedgerCache", CACHED_LEDGER_NUM, CACHED_LEDGER_AGE)
 { ; }
 
 void LedgerHistory::addLedger(Ledger::pointer ledger)

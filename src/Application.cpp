@@ -18,7 +18,7 @@
 #include <boost/thread.hpp>
 
 SETUP_LOG();
-
+LogPartition TaggedCachePartition("TaggedCache");
 Application* theApp = NULL;
 
 DatabaseCon::DatabaseCon(const std::string& strName, const char *initStrings[], int initCount)
@@ -39,7 +39,7 @@ DatabaseCon::~DatabaseCon()
 
 Application::Application() :
 	mIOWork(mIOService), mAuxWork(mAuxService), mUNL(mIOService),
-	mNetOps(mIOService, &mMasterLedger), mTempNodeCache(16384, 90), mHashedObjectStore(16384, 300),
+	mNetOps(mIOService, &mMasterLedger), mTempNodeCache("NodeCache", 16384, 90), mHashedObjectStore(16384, 300),
 	mSNTPClient(mAuxService), mRpcDB(NULL), mTxnDB(NULL), mLedgerDB(NULL), mWalletDB(NULL),
 	mHashNodeDB(NULL), mNetNodeDB(NULL),
 	mConnectionPool(mIOService), mPeerDoor(NULL), mRPCDoor(NULL), mSweepTimer(mAuxService)

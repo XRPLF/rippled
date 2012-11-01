@@ -13,7 +13,7 @@
 #define CACHED_TRANSACTION_AGE 1800
 #endif
 
-TransactionMaster::TransactionMaster() : mCache(CACHED_TRANSACTION_NUM, CACHED_TRANSACTION_AGE)
+TransactionMaster::TransactionMaster() : mCache("TransactionCache", CACHED_TRANSACTION_NUM, CACHED_TRANSACTION_AGE)
 {
 	;
 }

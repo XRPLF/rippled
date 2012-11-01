@@ -1,11 +1,16 @@
 #ifndef __TAGGEDCACHE__
 #define __TAGGEDCACHE__
 
+#include <string>
+
 #include <boost/thread/recursive_mutex.hpp>
 #include <boost/unordered_map.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/ref.hpp>
 #include <boost/make_shared.hpp>
+
+#include "Log.h"
+extern LogPartition TaggedCachePartition;
 
 // This class implemented a cache and a map. The cache keeps objects alive
 // in the map. The map allows multiple code paths that reference objects
@@ -30,6 +35,7 @@ public:
 protected:
 	mutable boost::recursive_mutex mLock;
 
+	std::string mName;
 	int mTargetSize, mTargetAge;
 
 	boost::unordered_map<key_type, cache_entry> mCache;	// Hold strong reference to recent objects
@@ -38,7 +44,8 @@ protected:
 	boost::unordered_map<key_type, weak_data_ptr> mMap;	// Track stored objects
 
 public:
-	TaggedCache(int size, int age) : mTargetSize(size), mTargetAge(age), mLastSweep(time(NULL)) { ; }
+	TaggedCache(const char *name, int size, int age)
+		: mName(name), mTargetSize(size), mTargetAge(age), mLastSweep(time(NULL)) { ; }
 
 	int getTargetSize() const;
 	int getTargetAge() const;
@@ -92,32 +99,40 @@ template<typename c_Key, typename c_Data> void TaggedCache<c_Key, c_Data>::sweep
 	if (mCache.size() < mTargetSize)
 		return;
 
-	time_t now = time(NULL);
-	if ((mLastSweep + 10) < now)
-		return;
-	
-	mLastSweep = now;
-	time_t target = now - mTargetAge;
+	mLastSweep = time(NULL);
+	time_t target = mLastSweep - mTargetAge;
 
 	// Pass 1, remove old objects from cache
+	int cacheRemovals = 0;
 	typename boost::unordered_map<key_type, cache_entry>::iterator cit = mCache.begin();
 	while (cit != mCache.end())
 	{
 		if (cit->second.first < target)
+		{
+			++cacheRemovals;
 			mCache.erase(cit++);
+		}
 		else
 			++cit;
 	}
 
 	// Pass 2, remove dead objects from map
+	int mapRemovals = 0;
 	typename boost::unordered_map<key_type, weak_data_ptr>::iterator mit = mMap.begin();
 	while (mit != mMap.end())
 	{
 		if (mit->second.expired())
+		{
+			++mapRemovals;
 			mMap.erase(mit++);
+		}
 		else
 			++mit;
 	}
+
+	if (TaggedCachePartition.doLog(lsTRACE) && (mapRemovals || cacheRemovals))
+		Log(lsTRACE, TaggedCachePartition) << mName << ": cache = " << mCache.size() << "-" << cacheRemovals <<
+			", map = " << mMap.size() << "-" << mapRemovals;
 }
 
 template<typename c_Key, typename c_Data> bool TaggedCache<c_Key, c_Data>::touch(const key_type& key)
