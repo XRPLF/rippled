@@ -66,6 +66,8 @@ class Application
 	uint256					mNonce256;
 	std::size_t				mNonceST;
 
+	boost::asio::deadline_timer	mSweepTimer;
+
 	std::map<std::string, Peer::pointer> mPeerMap;
 	boost::recursive_mutex	mPeerMapLock;
 
@@ -93,8 +95,11 @@ public:
 	HashedObjectStore& getHashedObjectStore()		{ return mHashedObjectStore; }
 	ValidationCollection& getValidations()			{ return mValidations; }
 	JobQueue& getJobQueue()							{ return mJobQueue; }
+	SuppressionTable& getSuppression()				{ return mSuppressions; }
+
 	bool isNew(const uint256& s)					{ return mSuppressions.addSuppression(s); }
-	bool isNew(const uint160& s)					{ return mSuppressions.addSuppression(s); }
+	bool isNew(const uint256& s, uint64 p)			{ return mSuppressions.addSuppressionPeer(s, p); }
+	bool isNewFlag(const uint256& s, int f)			{ return mSuppressions.setFlag(s, f); }
 	bool running()									{ return mTxnDB != NULL; }
 	bool getSystemTimeOffset(int& offset)			{ return mSNTPClient.getOffset(offset); }
 
@@ -110,6 +115,7 @@ public:
 
 	void run();
 	void stop();
+	void sweep();
 };
 
 extern Application* theApp;

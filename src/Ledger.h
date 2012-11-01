@@ -18,6 +18,7 @@
 #include "types.h"
 #include "BitcoinUtil.h"
 #include "SHAMap.h"
+#include "InstanceCounter.h"
 
 enum LedgerStateParms
 {
@@ -38,7 +39,9 @@ enum LedgerStateParms
 #define LEDGER_JSON_DUMP_STATE	0x20000000
 #define LEDGER_JSON_FULL		0x40000000
 
-class Ledger : public boost::enable_shared_from_this<Ledger>
+DEFINE_INSTANCE(Ledger);
+
+class Ledger : public boost::enable_shared_from_this<Ledger>, public IS_INSTANCE(Ledger)
 { // The basic Ledger structure, can be opened, closed, or synching
 	friend class TransactionEngine;
 public:

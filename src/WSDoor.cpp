@@ -1074,6 +1074,12 @@ void WSConnection::doSubmit(Json::Value& jvResult, const Json::Value& jvRequest)
 		try
 		{
 			tpTrans	= mNetwork.submitTransaction(tpTrans);
+
+			if (!tpTrans) {
+				jvResult["error"]			= "invalidTransaction";
+				jvResult["error_exception"]	= "Unable to sterilize transaction.";
+				return;
+			}
 		}
 		catch (std::exception& e)
 		{

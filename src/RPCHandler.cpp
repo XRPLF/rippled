@@ -7,6 +7,7 @@
 #include "RippleAddress.h"
 #include "AccountState.h"
 #include "NicknameState.h"
+#include "InstanceCounter.h"
 
 #include "Pathfinder.h"
 #include <boost/foreach.hpp>
@@ -75,7 +76,7 @@ Json::Value RPCHandler::rpcError(int iError)
 	for (i=NUMBER(errorInfoA); i-- && errorInfoA[i].iError != iError;)
 		;
 
-	Json::Value	jsonResult = Json::Value(Json::objectValue);
+	Json::Value	jsonResult(Json::objectValue);
 
 	jsonResult["error"]			= i >= 0 ? errorInfoA[i].pToken : lexical_cast_i(iError);
 	jsonResult["error_message"]	= i >= 0 ? errorInfoA[i].pMessage : lexical_cast_i(iError);
@@ -2420,37 +2421,38 @@ Json::Value RPCHandler::doCommand(const std::string& command, Json::Value& param
 		bool		mAdminRequired;
 		unsigned int	iOptions;
 	} commandsA[] = {
-		{	"accept_ledger",		&RPCHandler::doAcceptLedger,			0,	0, true					},
-		{	"account_domain_set",	&RPCHandler::doAccountDomainSet,		2,  3, false,	optCurrent	},
+		{	"accept_ledger",		&RPCHandler::doAcceptLedger,		0,	0, true					},
+		{	"account_domain_set",	&RPCHandler::doAccountDomainSet,	2,  3, false,	optCurrent	},
 		{	"account_email_set",	&RPCHandler::doAccountEmailSet,		2,  3, false,	optCurrent	},
 		{	"account_info",			&RPCHandler::doAccountInfo,			1,  2, false,	optCurrent	},
 		{	"account_message_set",	&RPCHandler::doAccountMessageSet,	3,  3, false,	optCurrent	},
 		{	"account_publish_set",	&RPCHandler::doAccountPublishSet,	4,  4, false,	optCurrent	},
 		{	"account_rate_set",		&RPCHandler::doAccountRateSet,		3,  3, false,	optCurrent	},
 		{	"account_tx",			&RPCHandler::doAccountTransactions,	2,  3, false,	optNetwork	},
-		{	"account_wallet_set",	&RPCHandler::doAccountWalletSet,		2,  3, false,	optCurrent	},
+		{	"account_wallet_set",	&RPCHandler::doAccountWalletSet,	2,  3, false,	optCurrent	},
 		{	"connect",				&RPCHandler::doConnect,				1,  2, true					},
 		{	"data_delete",			&RPCHandler::doDataDelete,			1,  1, true					},
 		{	"data_fetch",			&RPCHandler::doDataFetch,			1,  1, true					},
 		{	"data_store",			&RPCHandler::doDataStore,			2,  2, true					},
+		{	"get_counts",			&RPCHandler::doGetCounts,			0,	1, true					},
 		{	"ledger",				&RPCHandler::doLedger,				0,  2, false,	optNetwork	},
-		{	"log_level",			&RPCHandler::doLogLevel,				0,  2, true					},
+		{	"log_level",			&RPCHandler::doLogLevel,			0,  2, true					},
 		{	"logrotate",			&RPCHandler::doLogRotate,			0,  0, true					},
-		{	"nickname_info",		&RPCHandler::doNicknameInfo,			1,  1, false,	optCurrent	},
+		{	"nickname_info",		&RPCHandler::doNicknameInfo,		1,  1, false,	optCurrent	},
 		{	"nickname_set",			&RPCHandler::doNicknameSet,			2,  3, false,	optCurrent	},
 		{	"offer_create",			&RPCHandler::doOfferCreate,			9, 10, false,	optCurrent	},
 		{	"offer_cancel",			&RPCHandler::doOfferCancel,			3,  3, false,	optCurrent	},
 		{	"owner_info",			&RPCHandler::doOwnerInfo,			1,  2, false,	optCurrent	},
-		{	"password_fund",		&RPCHandler::doPasswordFund,			2,  3, false,	optCurrent	},
+		{	"password_fund",		&RPCHandler::doPasswordFund,		2,  3, false,	optCurrent	},
 		{	"password_set",			&RPCHandler::doPasswordSet,			2,  3, false,	optNetwork	},
 		{	"peers",				&RPCHandler::doPeers,				0,  0, true					},
 		{	"profile",				&RPCHandler::doProfile,				1,  9, false,	optCurrent	},
 		{	"ripple",				&RPCHandler::doRipple,				9, -1, false,	optCurrent|optClosed },
 		{	"ripple_lines_get",		&RPCHandler::doRippleLinesGet,		1,  2, false,	optCurrent	},
 		{	"ripple_line_set",		&RPCHandler::doRippleLineSet,		4,  7, false,	optCurrent	},
-		{	"send",					&RPCHandler::doSend,					3,  9, false,	optCurrent	},
+		{	"send",					&RPCHandler::doSend,				3,  9, false,	optCurrent	},
 		{	"server_info",			&RPCHandler::doServerInfo,			0,  0, true					},
-		{	"stop",					&RPCHandler::doStop,					0,  0, true					},
+		{	"stop",					&RPCHandler::doStop,				0,  0, true					},
 		{	"tx",					&RPCHandler::doTx,					1,  1, true					},
 		{	"tx_history",			&RPCHandler::doTxHistory,			1,  1, false,				},
 
@@ -2459,16 +2461,16 @@ Json::Value RPCHandler::doCommand(const std::string& command, Json::Value& param
 		{	"unl_list",				&RPCHandler::doUnlList,				0,  0, true					},
 		{	"unl_load",				&RPCHandler::doUnlLoad,				0,  0, true					},
 		{	"unl_network",			&RPCHandler::doUnlNetwork,			0,  0, true					},
-		{	"unl_reset",			&RPCHandler::doUnlReset,				0,  0, true					},
-		{	"unl_score",			&RPCHandler::doUnlScore,				0,  0, true					},
+		{	"unl_reset",			&RPCHandler::doUnlReset,			0,  0, true					},
+		{	"unl_score",			&RPCHandler::doUnlScore,			0,  0, true					},
 
-		{	"validation_create",	&RPCHandler::doValidationCreate,		0,  1, false				},
+		{	"validation_create",	&RPCHandler::doValidationCreate,	0,  1, false				},
 		{	"validation_seed",		&RPCHandler::doValidationSeed,		0,  1, false				},
 
 		{	"wallet_accounts",		&RPCHandler::doWalletAccounts,		1,  1, false,	optCurrent	},
 		{	"wallet_add",			&RPCHandler::doWalletAdd,			3,  5, false,	optCurrent	},
 		{	"wallet_claim",			&RPCHandler::doWalletClaim,			2,  4, false,	optNetwork	},
-		{	"wallet_create",		&RPCHandler::doWalletCreate,			3,  4, false,	optCurrent	},
+		{	"wallet_create",		&RPCHandler::doWalletCreate,		3,  4, false,	optCurrent	},
 		{	"wallet_propose",		&RPCHandler::doWalletPropose,		0,  1, false,				},
 		{	"wallet_seed",			&RPCHandler::doWalletSeed,			0,  1, false,				},
 
@@ -2601,6 +2603,20 @@ Json::Value RPCHandler::doLogin(const Json::Value& params)
 	{
 		return "nope";
 	}
+}
+
+Json::Value RPCHandler::doGetCounts(const Json::Value& params)
+{
+	int minCount = 1;
+	if (params.size() > 0)
+		minCount = params[0u].asInt();
+
+	std::vector<InstanceType::InstanceCount> count = InstanceType::getInstanceCounts(minCount);
+
+	Json::Value ret(Json::objectValue);
+	BOOST_FOREACH(InstanceType::InstanceCount& it, count)
+		ret[it.first] = it.second;
+	return ret;
 }
 
 Json::Value RPCHandler::doLogLevel(const Json::Value& params)

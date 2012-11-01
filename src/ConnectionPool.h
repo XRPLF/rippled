@@ -1,6 +1,8 @@
 #ifndef __CONNECTION_POOL__
 #define __CONNECTION_POOL__
 
+#include <set>
+
 #include <boost/asio/ssl.hpp>
 #include <boost/thread/mutex.hpp>
 
@@ -14,7 +16,8 @@
 class ConnectionPool
 {
 private:
-    boost::mutex mPeerLock;
+    boost::mutex	mPeerLock;
+    uint64			mLastPeer;
 
 	typedef std::pair<RippleAddress, Peer::pointer>	naPeer;
 	typedef std::pair<ipPort, Peer::pointer>			pipPeer;
@@ -59,6 +62,8 @@ public:
 
 	// Send message to network.
 	int relayMessage(Peer* fromPeer, const PackedMessage::pointer& msg);
+	void relayMessageTo(const std::set<uint64>& fromPeers, const PackedMessage::pointer& msg);
+	void relayMessageBut(const std::set<uint64>& fromPeers, const PackedMessage::pointer& msg);
 
 	// Manual connection request.
 	// Queue for immediate scanning.
@@ -86,6 +91,9 @@ public:
 	int getPeerCount();
 	Json::Value getPeersJson();
 	std::vector<Peer::pointer> getPeerVector();
+
+	// Peer 64-bit ID function
+	uint64 assignPeerId();
 
 	//
 	// Scanning

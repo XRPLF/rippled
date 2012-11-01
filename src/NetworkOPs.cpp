@@ -88,22 +88,31 @@ Transaction::pointer NetworkOPs::submitTransaction(const Transaction::pointer& t
 	tpTrans->getSTransaction()->add(s);
 
 	Transaction::pointer	tpTransNew	= Transaction::sharedTransaction(s.getData(), true);
-	assert(tpTransNew);
 
-	if(!tpTransNew->getSTransaction()->isEquivalent(*tpTrans->getSTransaction()))
+	if (!tpTransNew)
+	{
+		// Could not construct transaction.
+		nothing();
+	}
+	else if (tpTransNew->getSTransaction()->isEquivalent(*tpTrans->getSTransaction()))
+	{
+		(void) NetworkOPs::processTransaction(tpTransNew);
+	}
+	else
 	{
 		cLog(lsFATAL) << "Transaction reconstruction failure";
 		cLog(lsFATAL) << tpTransNew->getSTransaction()->getJson(0);
 		cLog(lsFATAL) << tpTrans->getSTransaction()->getJson(0);
-		assert(false);
-	}
 
-	(void) NetworkOPs::processTransaction(tpTransNew);
+		assert(false);
+
+		tpTransNew	= Transaction::pointer();
+	}
 
 	return tpTransNew;
 }
 
-Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, Peer* source)
+Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans)
 {
 	Transaction::pointer dbtx = theApp->getMasterTransaction().fetch(trans->getID(), true);
 	if (dbtx) return dbtx;
@@ -151,27 +160,28 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 		trans->setStatus(INCLUDED);
 		theApp->getMasterTransaction().canonicalize(trans, true);
 
-// FIXME: Need code to get all accounts affected by a transaction and re-synch
-// any of them that affect local accounts cached in memory. Or, we need to
-// no cache the account balance information and always get it from the current ledger
-//		theApp->getWallet().applyTransaction(trans);
+		std::set<uint64> peers;
+		if (theApp->getSuppression().swapSet(trans->getID(), peers, SF_RELAYED))
+		{
+			ripple::TMTransaction tx;
+			Serializer s;
+			trans->getSTransaction()->add(s);
+			tx.set_rawtransaction(&s.getData().front(), s.getLength());
+			tx.set_status(ripple::tsCURRENT);
+			tx.set_receivetimestamp(getNetworkTimeNC());
 
-		ripple::TMTransaction tx;
-		Serializer s;
-		trans->getSTransaction()->add(s);
-		tx.set_rawtransaction(&s.getData().front(), s.getLength());
-		tx.set_status(ripple::tsCURRENT);
-		tx.set_receivetimestamp(getNetworkTimeNC());
-
-		PackedMessage::pointer packet = boost::make_shared<PackedMessage>(tx, ripple::mtTRANSACTION);
-		int sentTo = theApp->getConnectionPool().relayMessage(source, packet);
-		cLog(lsINFO) << "Transaction relayed to " << sentTo << " node(s)";
+			PackedMessage::pointer packet = boost::make_shared<PackedMessage>(tx, ripple::mtTRANSACTION);
+			theApp->getConnectionPool().relayMessageBut(peers, packet);
+		}
 
 		return trans;
 	}
 
 	cLog(lsDEBUG) << "Status other than success " << r;
-	if ((mMode != omFULL) && (mMode != omTRACKING) && (theApp->isNew(trans->getID())))
+	std::set<uint64> peers;
+
+	if ((mMode != omFULL) && (mMode != omTRACKING) &&
+		theApp->getSuppression().swapSet(trans->getID(), peers, SF_RELAYED))
 	{
 		ripple::TMTransaction tx;
 		Serializer s;
@@ -180,7 +190,7 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 		tx.set_status(ripple::tsCURRENT);
 		tx.set_receivetimestamp(getNetworkTimeNC());
 		PackedMessage::pointer packet = boost::make_shared<PackedMessage>(tx, ripple::mtTRANSACTION);
-		theApp->getConnectionPool().relayMessage(source, packet);
+		theApp->getConnectionPool().relayMessageTo(peers, packet);
 	}
 
 	trans->setStatus(INVALID);
@@ -685,7 +695,7 @@ bool NetworkOPs::haveConsensusObject()
 }
 
 // <-- bool: true to relay
-bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash, const uint256& prevLedger,
+bool NetworkOPs::recvPropose(uint64 peerId, uint32 proposeSeq, const uint256& proposeHash, const uint256& prevLedger,
 	uint32 closeTime, const std::string& pubKey, const std::string& signature, const RippleAddress& nodePublic)
 {
 	// JED: does mConsensus need to be locked?
@@ -701,7 +711,7 @@ bool NetworkOPs::recvPropose(uint32 proposeSeq, const uint256& proposeHash, cons
 	s.add32(closeTime);
 	s.addRaw(pubKey);
 	s.addRaw(signature);
-	if (!theApp->isNew(s.getSHA512Half()))
+	if (!theApp->isNew(s.getSHA512Half(), peerId))
 		return false;
 
 	RippleAddress naPeerPublic = RippleAddress::createNodePublic(strCopy(pubKey));

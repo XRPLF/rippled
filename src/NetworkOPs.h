@@ -124,7 +124,7 @@ public:
 	//
 	Transaction::pointer submitTransaction(const Transaction::pointer& tpTrans);
 
-	Transaction::pointer processTransaction(Transaction::pointer transaction, Peer* source = NULL);
+	Transaction::pointer processTransaction(Transaction::pointer transaction);
 	Transaction::pointer findTransactionByID(const uint256& transactionID);
 	int findTransactionsBySource(const uint256& uLedger, std::list<Transaction::pointer>&, const RippleAddress& sourceAccount,
 		uint32 minSeq, uint32 maxSeq);
@@ -171,8 +171,8 @@ public:
 		const std::vector<unsigned char>& myNode, std::list< std::vector<unsigned char> >& newNodes);
 
 	// ledger proposal/close functions
-	bool recvPropose(uint32 proposeSeq, const uint256& proposeHash, const uint256& prevLedger, uint32 closeTime,
-		const std::string& pubKey, const std::string& signature, const RippleAddress& nodePublic);
+	bool recvPropose(uint64 peerId, uint32 proposeSeq, const uint256& proposeHash, const uint256& prevLedger,
+		uint32 closeTime, const std::string& pubKey, const std::string& signature, const RippleAddress& nodePublic);
 	bool gotTXData(const boost::shared_ptr<Peer>& peer, const uint256& hash,
 		const std::list<SHAMapNode>& nodeIDs, const std::list< std::vector<unsigned char> >& nodeData);
 	bool recvValidation(const SerializedValidation::pointer& val);

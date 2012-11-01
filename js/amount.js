@@ -136,8 +136,8 @@ UInt160.json_rewrite = function (j) {
 // Return a new UInt160 from j.
 UInt160.from_json = function (j) {
   return 'string' === typeof j
-    ? (new UInt160()).parse_json(j)
-    : j.clone();
+      ? (new UInt160()).parse_json(j)
+      : j.clone();
 };
 
 UInt160.prototype.clone = function() {
@@ -232,8 +232,15 @@ var Currency = function () {
   this.value  = NaN;
 }
 
+// Given "USD" return the json.
+Currency.json_rewrite = function(j) {
+  return Currency.from_json(j).to_json();
+};
+
 Currency.from_json = function (j) {
-  return (new Currency()).parse_json(j);
+  return 'string' === typeof j
+      ? (new Currency()).parse_json(j)
+      : j.clone();
 };
 
 Currency.prototype.clone = function() {

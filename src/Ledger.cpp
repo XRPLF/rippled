@@ -20,6 +20,7 @@
 #include "Log.h"
 
 SETUP_LOG();
+DECLARE_INSTANCE(Ledger);
 
 Ledger::Ledger(const RippleAddress& masterID, uint64 startAmount) : mTotCoins(startAmount), mLedgerSeq(1),
 	mCloseTime(0), mParentCloseTime(0), mCloseResolution(LEDGER_TIME_ACCURACY), mCloseFlags(0),
@@ -1072,7 +1073,7 @@ int Ledger::getPendingSaves()
 
 void Ledger::pendSave(bool fromConsensus)
 {
-	if (!fromConsensus && !theApp->isNew(getHash()))
+	if (!fromConsensus && !theApp->isNewFlag(getHash(), SF_SAVED))
 		return;
 
 	boost::thread thread(boost::bind(&Ledger::saveAcceptedLedger, shared_from_this(), fromConsensus));

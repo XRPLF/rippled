@@ -11,6 +11,7 @@
 #include "PackedMessage.h"
 #include "Ledger.h"
 #include "Transaction.h"
+#include "InstanceCounter.h"
 
 enum PeerPunish
 {
@@ -21,7 +22,9 @@ enum PeerPunish
 
 typedef std::pair<std::string,int> ipPort;
 
-class Peer : public boost::enable_shared_from_this<Peer>
+DEFINE_INSTANCE(Peer);
+
+class Peer : public boost::enable_shared_from_this<Peer>, public IS_INSTANCE(Peer)
 {
 public:
 	typedef boost::shared_ptr<Peer>			pointer;
@@ -43,6 +46,7 @@ private:
 	ipPort			mIpPort;
 	ipPort			mIpPortConnect;
 	uint256			mCookieHash;
+	uint64			mPeerId;
 
 	uint256			mClosedLedgerHash, mPreviousLedgerHash;
 	std::list<uint256>	mRecentLedgers;
@@ -159,6 +163,8 @@ public:
 	uint256 getClosedLedgerHash() const		{ return mClosedLedgerHash; }
 	bool hasLedger(const uint256& hash) const;
 	bool hasTxSet(const uint256& hash) const;
+	uint64 getPeerId() const				{ return mPeerId; }
+
 	RippleAddress getNodePublic() const	{ return mNodePublic; }
 	void cycleStatus() { mPreviousLedgerHash = mClosedLedgerHash; mClosedLedgerHash.zero(); }
 };

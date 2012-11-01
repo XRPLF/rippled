@@ -20,6 +20,7 @@ public:
 
 	// return value: true = we had the transaction already
 	bool canonicalize(Transaction::pointer& txn, bool maybeNew);
+	void sweep(void) { mCache.sweep(); }
 };
 
 #endif

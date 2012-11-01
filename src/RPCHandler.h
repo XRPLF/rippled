@@ -1,3 +1,6 @@
+#ifndef RPCHANDLER__H
+#define RPCHANDLER__H
+
 // used by the RPCServer or WSDoor to carry out these RPC commands
 class NetworkOPs;
 
@@ -37,6 +40,7 @@ class RPCHandler
 	Json::Value doDataDelete(const Json::Value& params);
 	Json::Value doDataFetch(const Json::Value& params);
 	Json::Value doDataStore(const Json::Value& params);
+	Json::Value doGetCounts(const Json::Value& params);
 	Json::Value doLedger(const Json::Value& params);
 	Json::Value doLogRotate(const Json::Value& params);
 	Json::Value doNicknameInfo(const Json::Value& params);
@@ -157,3 +161,5 @@ public:
 	Json::Value rpcError(int iError);
 
 };
+
+#endif
