@@ -773,6 +773,8 @@ STAmount::operator double() const
 
 STAmount operator+(const STAmount& v1, const STAmount& v2)
 {
+	v1.throwComparable(v2);
+
 	if (v2.isZero()) return v1;
 	if (v1.isZero())
 	{
@@ -780,7 +782,6 @@ STAmount operator+(const STAmount& v1, const STAmount& v2)
 		return STAmount(v1.getFName(), v1.mCurrency, v1.mIssuer, v2.mValue, v2.mOffset, v2.mIsNegative);
 	}
 
-	v1.throwComparable(v2);
 	if (v1.mIsNative)
 		return STAmount(v1.getFName(), v1.getSNValue() + v2.getSNValue());
 
@@ -810,9 +811,9 @@ STAmount operator+(const STAmount& v1, const STAmount& v2)
 
 STAmount operator-(const STAmount& v1, const STAmount& v2)
 {
-	if (v2.isZero()) return v1;
-
 	v1.throwComparable(v2);
+
+	if (v2.isZero()) return v1;
 	if (v2.mIsNative)
 	{
 		// XXX This could be better, check for overflow and that maximum range is covered.
