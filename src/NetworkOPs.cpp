@@ -88,17 +88,26 @@ Transaction::pointer NetworkOPs::submitTransaction(const Transaction::pointer& t
 	tpTrans->getSTransaction()->add(s);
 
 	Transaction::pointer	tpTransNew	= Transaction::sharedTransaction(s.getData(), true);
-	assert(tpTransNew);
 
-	if(!tpTransNew->getSTransaction()->isEquivalent(*tpTrans->getSTransaction()))
+	if (!tpTransNew)
+	{
+		// Could not construct transaction.
+		nothing();
+	}
+	else if (tpTransNew->getSTransaction()->isEquivalent(*tpTrans->getSTransaction()))
+	{
+		(void) NetworkOPs::processTransaction(tpTransNew);
+	}
+	else
 	{
 		cLog(lsFATAL) << "Transaction reconstruction failure";
 		cLog(lsFATAL) << tpTransNew->getSTransaction()->getJson(0);
 		cLog(lsFATAL) << tpTrans->getSTransaction()->getJson(0);
-		assert(false);
-	}
 
-	(void) NetworkOPs::processTransaction(tpTransNew);
+		assert(false);
+
+		tpTransNew	= Transaction::pointer();
+	}
 
 	return tpTransNew;
 }

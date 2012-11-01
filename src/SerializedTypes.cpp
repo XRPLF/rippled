@@ -540,7 +540,6 @@ void STPathSet::add(Serializer& s) const
 		if (!bFirst)
 		{
 			s.add8(STPathElement::typeBoundary);
-			bFirst = false;
 		}
 
 		BOOST_FOREACH(const STPathElement& speElement, spPath)
@@ -558,6 +557,8 @@ void STPathSet::add(Serializer& s) const
 			if (iType & STPathElement::typeIssuer)
 				s.add160(speElement.getIssuerID());
 		}
+
+		bFirst = false;
 	}
 	s.add8(STPathElement::typeEnd);
 }
