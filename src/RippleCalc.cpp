@@ -1421,6 +1421,8 @@ bool PathState::lessPriority(PathState::ref lhs, PathState::ref rhs)
 
 // Make sure the path delivers to uAccountID: uCurrencyID from uIssuerID.
 //
+// If the unadded next node as specified by arguments would not work as is, then add the necessary nodes so it would work.
+//
 // Rules:
 // - Currencies must be converted via an offer.
 // - A node names it's output.
@@ -1449,13 +1451,14 @@ TER PathState::pushImply(
 						ACCOUNT_ONE,					// Placeholder for offers.
 						uCurrencyID,					// The offer's output is what is now wanted.
 						uIssuerID);
-
 	}
+
+	const PaymentNode&	pnBck		= vpnNodes.back();
 
 	// For ripple, non-stamps, ensure the issuer is on at least one side of the transaction.
 	if (tesSUCCESS == terResult
 		&& !!uCurrencyID								// Not stamps.
-		&& (pnPrv.uAccountID != uIssuerID				// Previous is not issuing own IOUs.
+		&& (pnBck.uAccountID != uIssuerID				// Previous is not issuing own IOUs.
 			&& uAccountID != uIssuerID))				// Current is not receiving own IOUs.
 	{
 		// Need to ripple through uIssuerID's account.
@@ -1514,13 +1517,19 @@ TER PathState::pushNode(
 		pnCur.saRevRedeem	= STAmount(uCurrencyID, uAccountID);
 		pnCur.saRevIssue	= STAmount(uCurrencyID, uAccountID);
 
-		if (!bFirst)
+		if (bFirst)
+		{
+			// The first node is always correct as is.
+
+			nothing();
+		}
+		else
 		{
 			// Add required intermediate nodes to deliver to current account.
 			terResult	= pushImply(
 				pnCur.uAccountID,									// Current account.
 				pnCur.uCurrencyID,									// Wanted currency.
-				!!pnCur.uCurrencyID ? uAccountID : ACCOUNT_XNS);	// Account as issuer.
+				!!pnCur.uCurrencyID ? uAccountID : ACCOUNT_XNS);	// Account as wanted issuer.
 
 			// Note: pnPrv may no longer be the immediately previous node.
 		}
@@ -1532,7 +1541,7 @@ TER PathState::pushNode(
 
 			if (bBckAccount)
 			{
-				SLE::pointer	sleRippleState	= mLedger->getSLE(Ledger::getRippleStateIndex(pnBck.uAccountID, pnCur.uAccountID, pnPrv.uCurrencyID));
+				SLE::pointer	sleRippleState	= lesEntries.entryCache(ltRIPPLE_STATE, Ledger::getRippleStateIndex(pnBck.uAccountID, pnCur.uAccountID, pnPrv.uCurrencyID));
 
 				if (!sleRippleState)
 				{
@@ -1541,7 +1550,7 @@ TER PathState::pushNode(
 						<< " and "
 						<< RippleAddress::createHumanAccountID(pnCur.uAccountID)
 						<< " for "
-						<< STAmount::createHumanCurrency(pnPrv.uCurrencyID)
+						<< STAmount::createHumanCurrency(pnCur.uCurrencyID)
 						<< "." ;
 
 					cLog(lsINFO) << getJson();
@@ -1555,12 +1564,12 @@ TER PathState::pushNode(
 						<< " and "
 						<< RippleAddress::createHumanAccountID(pnCur.uAccountID)
 						<< " for "
-						<< STAmount::createHumanCurrency(pnPrv.uCurrencyID)
+						<< STAmount::createHumanCurrency(pnCur.uCurrencyID)
 						<< "." ;
 
-					STAmount	saOwed	= lesEntries.rippleOwed(pnCur.uAccountID, pnBck.uAccountID, uCurrencyID);
+					STAmount	saOwed	= lesEntries.rippleOwed(pnCur.uAccountID, pnBck.uAccountID, pnCur.uCurrencyID);
 
-					if (!saOwed.isPositive() && *saOwed.negate() >= lesEntries.rippleLimit(pnCur.uAccountID, pnBck.uAccountID, uCurrencyID))
+					if (!saOwed.isPositive() && *saOwed.negate() >= lesEntries.rippleLimit(pnCur.uAccountID, pnBck.uAccountID, pnCur.uCurrencyID))
 					{
 						terResult	= tepPATH_DRY;
 					}

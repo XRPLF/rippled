@@ -232,6 +232,11 @@ var Currency = function () {
   this.value  = NaN;
 }
 
+// Given "USD" return the json.
+Currency.json_rewrite = function(j) {
+  return Currency.from_json(j).to_json();
+};
+
 Currency.from_json = function (j) {
   return (new Currency()).parse_json(j);
 };

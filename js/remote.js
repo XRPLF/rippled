@@ -980,6 +980,43 @@ Transaction.prototype.submit = function () {
 // Set options for Transactions
 //
 
+Transaction._path_rewrite = function (path) {
+  var path_new	= [];
+  
+  for (var index in path) {
+    var	node	  = path[index];
+    var	node_new  = {};
+
+    if ('account' in node)
+      node_new.account	= UInt160.json_rewrite(node.account);
+    if ('issuer' in node)
+      node_new.issuer	= UInt160.json_rewrite(node.issuer);
+    if ('currency' in node)
+      node_new.currency	= Currency.json_rewrite(node.currency);
+
+    path_new.push(node_new);
+  }
+
+  return path_new;
+}
+
+Transaction.prototype.path_add = function (path) {
+  this.transaction.Paths  = this.transaction.Paths || []
+  this.transaction.Paths.push(Transaction._path_rewrite(path));
+
+  return this;
+}
+
+// --> paths: undefined or array of path
+// A path is an array of objects containing some combination of: account, currency, issuer
+Transaction.prototype.paths = function (paths) {
+  for (var index in paths) {
+    this.path_add(paths[index]);
+  }
+
+  return this;
+}
+
 // If the secret is in the config object, it does not need to be provided.
 Transaction.prototype.secret = function (secret) {
   this.secret = secret;
@@ -987,7 +1024,7 @@ Transaction.prototype.secret = function (secret) {
 
 Transaction.prototype.send_max = function (send_max) {
   if (send_max)
-      this.transaction.SendMax = send_max.to_json();
+      this.transaction.SendMax = Amount.json_rewrite(send_max);
 
   return this;
 }
@@ -1105,6 +1142,13 @@ Transaction.prototype.password_set = function (src, authorized_key, generator, p
 // --> src : UInt160 or String
 // --> dst : UInt160 or String
 // --> deliver_amount : Amount or String.
+//
+// Options:
+//  .paths()
+//  .path_add()
+//  .secret()
+//  .send_max()
+//  .set_flags()
 Transaction.prototype.payment = function (src, dst, deliver_amount) {
   this.secret			    = this._account_secret(src);
   this.transaction.TransactionType  = 'Payment';

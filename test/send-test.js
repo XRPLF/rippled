@@ -523,6 +523,65 @@ buster.testCase("Indirect ripple", {
 	});
     },
 
+  "indirect ripple with path" :
+    function (done) {
+      var self = this;
+
+      async.waterfall([
+	  function (callback) {
+	    self.what = "Create accounts.";
+
+	    testutils.create_accounts(self.remote, "root", "10000", ["alice", "bob", "mtgox"], callback);
+	  },
+	  function (callback) {
+	    self.what = "Set alice's limit.";
+
+	    testutils.credit_limit(self.remote, "alice", "600/USD/mtgox", callback);
+	  },
+	  function (callback) {
+	    self.what = "Set bob's limit.";
+
+	    testutils.credit_limit(self.remote, "bob", "700/USD/mtgox", callback);
+	  },
+	  function (callback) {
+	    self.what = "Give alice some mtgox.";
+
+	    testutils.payment(self.remote, "mtgox", "alice", "70/USD/mtgox", callback);
+	  },
+	  function (callback) {
+	    self.what = "Give bob some mtgox.";
+
+	    testutils.payment(self.remote, "mtgox", "bob", "50/USD/mtgox", callback);
+	  },
+	  function (callback) {
+	    self.what = "Alice sends via a path";
+
+	    self.remote.transaction()
+	      .payment("alice", "bob", "5/USD/mtgox")
+	      .path_add( [ { account: "mtgox" } ])
+	      .on('proposed', function (m) {
+		  // console.log("proposed: %s", JSON.stringify(m));
+
+		  callback(m.result != 'tesSUCCESS');
+		})
+	      .submit();
+	  },
+	  function (callback) {
+	    self.what = "Verify alice balance with mtgox.";
+
+	    testutils.verify_balance(self.remote, "alice", "65/USD/mtgox", callback);
+	  },
+	  function (callback) {
+	    self.what = "Verify bob balance with mtgox.";
+
+	    testutils.verify_balance(self.remote, "bob", "55/USD/mtgox", callback);
+	  },
+	], function (error) {
+	  buster.refute(error, self.what);
+	  done();
+	});
+    },
+
     // Direct ripple without no liqudity.
     // Ripple without credit path.
     // Ripple with one-way credit path.
