@@ -582,6 +582,95 @@ buster.testCase("Indirect ripple", {
 	});
     },
 
+  "indirect ripple with multi path" :
+    function (done) {
+      var self = this;
+
+      async.waterfall([
+	  function (callback) {
+	    self.what = "Create accounts.";
+
+	    testutils.create_accounts(self.remote, "root", "10000", ["alice", "bob", "carol", "amazon", "mtgox"], callback);
+	  },
+	  function (callback) {
+	    self.what = "Set alice's limit with bob.";
+
+	    testutils.credit_limit(self.remote, "bob", "600/USD/alice", callback);
+	  },
+	  function (callback) {
+	    self.what = "Set alice's limit with carol.";
+
+	    testutils.credit_limit(self.remote, "carol", "700/USD/alice", callback);
+	  },
+	  function (callback) {
+	    self.what = "Set bob's mtgox limit.";
+
+	    testutils.credit_limit(self.remote, "bob", "1000/USD/mtgox", callback);
+	  },
+	  function (callback) {
+	    self.what = "Set carol's mtgox limit.";
+
+	    testutils.credit_limit(self.remote, "carol", "1000/USD/mtgox", callback);
+	  },
+	  function (callback) {
+	    self.what = "Set amazon's mtgox limit.";
+
+	    testutils.credit_limit(self.remote, "amazon", "2000/USD/mtgox", callback);
+	  },
+	  function (callback) {
+	    self.what = "Give bob some mtgox.";
+
+	    testutils.payment(self.remote, "mtgox", "bob", "100/USD/mtgox", callback);
+	  },
+	  function (callback) {
+	    self.what = "Give carol some mtgox.";
+
+	    testutils.payment(self.remote, "mtgox", "carol", "100/USD/mtgox", callback);
+	  },
+	  function (callback) {
+	    self.what = "Alice pays amazon via multiple paths";
+
+	    self.remote.transaction()
+	      .payment("alice", "amazon", "150/USD/mtgox")
+	      .path_add( [ { account: "bob" } ])
+	      .path_add( [ { account: "carol" } ])
+	      .on('proposed', function (m) {
+		  // console.log("proposed: %s", JSON.stringify(m));
+
+		  callback(m.result != 'tesSUCCESS');
+		})
+	      .submit();
+	  },
+	  function (callback) {
+	    self.what = "Verify amazon balance with mtgox.";
+
+	    testutils.verify_balance(self.remote, "amazon", "150/USD/mtgox", callback);
+	  },
+	  function (callback) {
+	    self.what = "Verify alice balance with bob.";
+
+	    testutils.verify_balance(self.remote, "alice", "-50/USD/bob", callback);
+	  },
+	  function (callback) {
+	    self.what = "Verify alice balance with carol.";
+
+	    testutils.verify_balance(self.remote, "alice", "-100/USD/carol", callback);
+	  },
+	  function (callback) {
+	    self.what = "Verify bob balance with mtgox.";
+
+	    testutils.verify_balance(self.remote, "bob", "50/USD/mtgox", callback);
+	  },
+	  function (callback) {
+	    self.what = "Verify carol balance with mtgox.";
+
+	    testutils.verify_balance(self.remote, "carol", "0/USD/mtgox", callback);
+	  },
+	], function (error) {
+	  buster.refute(error, self.what);
+	  done();
+	});
+    },
     // Direct ripple without no liqudity.
     // Ripple without credit path.
     // Ripple with one-way credit path.
