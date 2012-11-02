@@ -10,8 +10,11 @@
 
 #include "RippleAddress.h"
 #include "Serializer.h"
+#include "InstanceCounter.h"
 
-class LedgerProposal
+DEFINE_INSTANCE(LedgerProposal);
+
+class LedgerProposal : private IS_INSTANCE(LedgerProposal)
 {
 protected:
 
