@@ -20,7 +20,8 @@ extern LogPartition TaggedCachePartition;
 // If it stays in memory even after it is ejected from the cache,
 // the map will track it.
 
-// CAUTION: Callers must not modify data objects that are stored in the cache!
+// CAUTION: Callers must not modify data objects that are stored in the cache
+// unless they hold their own lock over all cache operations.
 
 template <typename c_Key, typename c_Data> class TaggedCache
 {
