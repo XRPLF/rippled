@@ -993,7 +993,7 @@ void NetworkOPs::pubLedger(Ledger::ref lpAccepted)
 
 	{
 		boost::interprocess::sharable_lock<boost::interprocess::interprocess_upgradable_mutex>	sl(mMonitorLock);
-		bool	bAll		= !mSubTransaction.empty();
+		bool	bAll		= !mSubTransactions.empty();
 		bool	bAccounts	= !mSubAccountTransaction.empty();
 
 		if (bAll || bAccounts)
@@ -1069,7 +1069,7 @@ void NetworkOPs::pubTransactionAll(Ledger::ref lpCurrent, const SerializedTransa
 {
 	Json::Value	jvObj	= transJson(stTxn, terResult, bAccepted, lpCurrent, "transaction");
 
-	BOOST_FOREACH(InfoSub* ispListener, mSubTransaction)
+	BOOST_FOREACH(InfoSub* ispListener, mSubTransactions)
 	{
 		ispListener->send(jvObj);
 	}
@@ -1114,7 +1114,7 @@ void NetworkOPs::pubTransaction(Ledger::ref lpCurrent, const SerializedTransacti
 {
 	boost::interprocess::sharable_lock<boost::interprocess::interprocess_upgradable_mutex>	sl(mMonitorLock);
 
-	if (!mSubTransaction.empty())
+	if (!mSubTransactions.empty())
 	{
 		pubTransactionAll(lpCurrent, stTxn, terResult, false);
 	}
@@ -1306,13 +1306,13 @@ bool NetworkOPs::unsubLedgerAccounts(InfoSub* ispListener)
 // <-- bool: true=added, false=already there
 bool NetworkOPs::subTransaction(InfoSub* ispListener)
 {
-	return mSubTransaction.insert(ispListener).second;
+	return mSubTransactions.insert(ispListener).second;
 }
 
 // <-- bool: true=erased, false=was not there
 bool NetworkOPs::unsubTransaction(InfoSub* ispListener)
 {
-	return !!mSubTransaction.erase(ispListener);
+	return !!mSubTransactions.erase(ispListener);
 }
 
 // vim:ts=4

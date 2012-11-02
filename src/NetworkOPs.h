@@ -72,14 +72,17 @@ protected:
 
 	// XXX Split into more locks.
     boost::interprocess::interprocess_upgradable_mutex	mMonitorLock;
-	subInfoMapType										mBootAccountInfo;
-	subInfoMapType										mSubAccountInfo;
-	subInfoMapType										mSubAccountTransaction;
-	boost::unordered_set<InfoSub*>						mSubLedger;				// ledger accepteds
-	boost::unordered_set<InfoSub*>						mSubLedgerAccounts;		// ledger accepteds + affected accounts
-	boost::unordered_set<InfoSub*>						mSubTransaction;		// all transactions
-	boost::unordered_set<InfoSub*>						mSubTxMeta;				// all transaction meta
-//	subInfoMapType										mSubTransactionAccounts;
+	subInfoMapType										mSubAccount; 
+	subInfoMapType										mSubRTAccount; 
+
+	boost::unordered_set<InfoSub*>						mSubLedger;				// accepted ledgers
+	boost::unordered_set<InfoSub*>						mSubLedgerAccounts;		// accepted ledgers + affected accounts
+	boost::unordered_set<InfoSub*>						mSubTransactions;		// all accepted transactions
+	boost::unordered_set<InfoSub*>						mSubRTTransactions;		// all proposed and accepted transactions
+
+	subInfoMapType										mSubAccountTransaction; // DEPRECATED
+	subInfoMapType										mBootAccountInfo; // DEPRECATED
+	subInfoMapType										mSubAccountInfo;  // DEPRECATED
 
 	void setMode(OperatingMode);
 
