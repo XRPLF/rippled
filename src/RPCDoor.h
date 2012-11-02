@@ -15,4 +15,5 @@ class RPCDoor
 	bool isClientAllowed(const std::string& ip);
 public:
 	RPCDoor(boost::asio::io_service& io_service);
+	~RPCDoor();
 };

@@ -1675,8 +1675,19 @@ Json::Value RPCHandler::doRippleLinesGet(const Json::Value &params)
 }
 
 // submit any transaction to the network
+// submit private_key json
 Json::Value RPCHandler::doSubmit(const Json::Value& params)
 {
+	RippleAddress	naSeed;
+	std::string		txJSON= params[1u].asString();
+
+	if (!naSeed.setSeedGeneric(params[0u].asString()))
+	{
+		return rpcError(rpcBAD_SEED);
+	}
+
+
+
 	// TODO
 	return rpcError(rpcSRC_ACT_MALFORMED);
 }
@@ -2451,6 +2462,7 @@ Json::Value RPCHandler::doCommand(const std::string& command, Json::Value& param
 		{	"ripple_lines_get",		&RPCHandler::doRippleLinesGet,		1,  2, false,	optCurrent	},
 		{	"ripple_line_set",		&RPCHandler::doRippleLineSet,		4,  7, false,	optCurrent	},
 		{	"send",					&RPCHandler::doSend,				3,  9, false,	optCurrent	},
+		{	"submit",				&RPCHandler::doSubmit,				2,  2, false,	optCurrent	},
 		{	"server_info",			&RPCHandler::doServerInfo,			0,  0, true					},
 		{	"stop",					&RPCHandler::doStop,				0,  0, true					},
 		{	"tx",					&RPCHandler::doTx,					1,  1, true					},

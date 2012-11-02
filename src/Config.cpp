@@ -165,6 +165,8 @@ void Config::setup(const std::string& strConf)
 
 void Config::load()
 {
+	std::cout << "Loading: " << CONFIG_FILE << std::endl;
+
 	std::ifstream	ifsConfig(CONFIG_FILE.c_str(), std::ios::in);
 
 	if (!ifsConfig)
