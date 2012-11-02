@@ -9,6 +9,7 @@
 #include "uint256.h"
 #include "types.h"
 #include "SerializedValidation.h"
+#include "TaggedCache.h"
 
 typedef boost::unordered_map<uint160, SerializedValidation::pointer> ValidationSet;
 
@@ -19,7 +20,7 @@ class ValidationCollection
 protected:
 
 	boost::mutex mValidationLock;
-	boost::unordered_map<uint256, ValidationSet> 					mValidations;
+	TaggedCache<uint256, ValidationSet>			 					mValidations;
 	boost::unordered_map<uint160, SerializedValidation::pointer> 	mCurrentValidations;
 	std::vector<SerializedValidation::pointer> 						mStaleValidations;
 
@@ -28,8 +29,11 @@ protected:
 	void doWrite();
 	void condWrite();
 
+	boost::shared_ptr<ValidationSet> findCreateSet(const uint256& ledgerHash);
+	boost::shared_ptr<ValidationSet> findSet(const uint256& ledgerHash);
+
 public:
-	ValidationCollection() : mWriting(false) { ; }
+	ValidationCollection() : mValidations("Validations", 128, 500), mWriting(false) { ; }
 
 	bool addValidation(const SerializedValidation::pointer&);
 	ValidationSet getValidations(const uint256& ledger);
@@ -43,6 +47,7 @@ public:
 	boost::unordered_map<uint256, currentValidationCount> getCurrentValidations(uint256 currentLedger);
 
 	void flush();
+	void sweep() { mValidations.sweep(); }
 };
 
 #endif
