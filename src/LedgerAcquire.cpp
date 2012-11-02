@@ -407,7 +407,7 @@ bool LedgerAcquire::takeBase(const std::string& data)
 	{
 		cLog(lsWARNING) << "Acquire hash mismatch";
 		cLog(lsWARNING) << mLedger->getHash() << "!=" << mHash;
-		mLedger = Ledger::pointer();
+		mLedger.reset();
 #ifdef TRUST_NETWORK
 		assert(false);
 #endif

@@ -190,7 +190,8 @@ AccountState::pointer Ledger::getAccountState(const RippleAddress& accountID)
 	}
 	SerializedLedgerEntry::pointer sle =
 		boost::make_shared<SerializedLedgerEntry>(item->peekSerializer(), item->getTag());
-	if (sle->getType() != ltACCOUNT_ROOT) return AccountState::pointer();
+	if (sle->getType() != ltACCOUNT_ROOT)
+		return AccountState::pointer();
 	return boost::make_shared<AccountState>(sle,accountID);
 }
 
@@ -308,7 +309,7 @@ bool Ledger::getTransaction(const uint256& txID, Transaction::pointer& txn, Tran
 	if (type == SHAMapTreeNode::tnTRANSACTION_NM)
 	{ // in tree with no metadata
 		txn = theApp->getMasterTransaction().fetch(txID, false);
-		meta = TransactionMetaSet::pointer();
+		meta.reset();
 		if (!txn)
 			txn = Transaction::sharedTransaction(item->peekData(), true);
 	}

@@ -41,7 +41,7 @@ void Peer::handle_write(const boost::system::error_code& error, size_t bytes_tra
 //		std::cerr << "Peer::handle_write bytes: "<< bytes_transferred << std::endl;
 #endif
 
-	mSendingPacket = PackedMessage::pointer();
+	mSendingPacket.reset();
 
 	if (mDetaching)
 	{

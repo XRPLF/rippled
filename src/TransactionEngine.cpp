@@ -481,7 +481,7 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 		}
 	}
 
-	mTxnAccount	= SLE::pointer();
+	mTxnAccount.reset();
 	mNodes.clear();
 
 	if (!isSetBit(params, tapOPEN_LEDGER)

@@ -184,7 +184,7 @@ ValidationCollection::getCurrentValidations(uint256 currentLedger)
 		else if (it->second->getSignTime() < cutoff)
 		{ // contains a stale record
 			mStaleValidations.push_back(it->second);
-			it->second = SerializedValidation::pointer();
+			it->second.reset();
 			condWrite();
 			it = mCurrentValidations.erase(it);
 		}
