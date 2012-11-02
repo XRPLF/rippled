@@ -42,7 +42,7 @@
 	FIELD(SigningTime,			UINT32, 9)
 	FIELD(Expiration,			UINT32, 10)
 	FIELD(TransferRate,			UINT32, 11)
-	FIELD(PublishSize,			UINT32, 12)
+	FIELD(WalletSize,			UINT32, 12)
 
 	// 32-bit integers (uncommon)
 	FIELD(HighQualityIn,		UINT32, 16)
@@ -74,7 +74,6 @@
 	FIELD(PreviousTxnID,		HASH256, 5)
 	FIELD(LedgerIndex,			HASH256, 6)
 	FIELD(WalletLocator,		HASH256, 7)
-	FIELD(PublishHash,			HASH256, 8)
 
 	// 256-bit (uncommon)
 	FIELD(BookDirectory,		HASH256, 16)

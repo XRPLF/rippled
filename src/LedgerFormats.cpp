@@ -24,11 +24,10 @@ static bool LEFInit()
 		<< SOElement(sfAuthorizedKey,		SOE_OPTIONAL)
 		<< SOElement(sfEmailHash,			SOE_OPTIONAL)
 		<< SOElement(sfWalletLocator,		SOE_OPTIONAL)
+		<< SOElement(sfWalletSize,			SOE_OPTIONAL)
 		<< SOElement(sfMessageKey,			SOE_OPTIONAL)
 		<< SOElement(sfTransferRate,		SOE_OPTIONAL)
 		<< SOElement(sfDomain,				SOE_OPTIONAL)
-		<< SOElement(sfPublishHash,			SOE_OPTIONAL)
-		<< SOElement(sfPublishSize,			SOE_OPTIONAL)
 		;
 
 	DECLARE_LEF(Contract, ltCONTRACT)

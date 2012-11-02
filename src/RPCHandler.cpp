@@ -362,13 +362,11 @@ Json::Value RPCHandler::doAccountDomainSet(const Json::Value &params)
 		uint128(),
 		false,
 		0,
+		0,
 		RippleAddress(),
 		true,
 		strCopy(params[2u].asString()),
 		false,
-		0,
-		false,
-		uint256(),
 		0);
 
 	trans	= mNetOps->submitTransaction(trans);
@@ -426,13 +424,11 @@ Json::Value RPCHandler::doAccountEmailSet(const Json::Value &params)
 		strEmail.empty() ? uint128() : uEmailHash,
 		false,
 		uint256(),
+		0,
 		RippleAddress(),
 		false,
 		vucDomain,
 		false,
-		0,
-		false,
-		uint256(),
 		0);
 
 	trans	= mNetOps->submitTransaction(trans);
@@ -543,13 +539,11 @@ Json::Value RPCHandler::doAccountMessageSet(const Json::Value& params) {
 		uint128(),
 		false,
 		uint256(),
+		0,
 		naMessagePubKey,
 		false,
 		vucDomain,
 		false,
-		0,
-		false,
-		uint256(),
 		0);
 
 	trans	= mNetOps->submitTransaction(trans);
@@ -559,63 +553,6 @@ Json::Value RPCHandler::doAccountMessageSet(const Json::Value& params) {
 	obj["MessageKey"]		= naMessagePubKey.humanAccountPublic();
 
 	return obj;
-}
-
-// account_publish_set <seed> <paying_account> <hash> <size>
-Json::Value RPCHandler::doAccountPublishSet(const Json::Value &params)
-{
-	RippleAddress	naSrcAccountID;
-	RippleAddress	naSeed;
-
-	if (!naSeed.setSeedGeneric(params[0u].asString()))
-	{
-		return rpcError(rpcBAD_SEED);
-	}
-	else if (!naSrcAccountID.setAccountID(params[1u].asString()))
-	{
-		return rpcError(rpcSRC_ACT_MALFORMED);
-	}
-
-	RippleAddress			naVerifyGenerator;
-	RippleAddress			naAccountPublic;
-	RippleAddress			naAccountPrivate;
-	AccountState::pointer	asSrc;
-	STAmount				saSrcBalance;
-	Json::Value				obj				= authorize(uint256(0), naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
-		saSrcBalance, theConfig.FEE_DEFAULT, asSrc, naVerifyGenerator);
-
-	if (!obj.empty())
-		return obj;
-
-	uint256						uPublishHash(params[2u].asString());
-	uint32						uPublishSize	= lexical_cast_s<int>(params[3u].asString());
-	std::vector<unsigned char>	vucDomain;
-
-	Transaction::pointer	trans	= Transaction::sharedAccountSet(
-		naAccountPublic, naAccountPrivate,
-		naSrcAccountID,
-		asSrc->getSeq(),
-		theConfig.FEE_DEFAULT,
-		0,											// YYY No source tag
-		false,
-		uint128(),
-		false,
-		0,
-		RippleAddress(),
-		false,
-		vucDomain,
-		false,
-		0,
-		true,
-		uPublishHash,
-		uPublishSize);
-
-	trans	= mNetOps->submitTransaction(trans);
-
-	obj["transaction"]		= trans->getSTransaction()->getJson(0);
-	obj["status"]			= trans->getStatus();
-
-	return Json::Value(Json::objectValue);
 }
 
 // account_rate_set <seed> <paying_account> <rate>
@@ -657,14 +594,12 @@ Json::Value RPCHandler::doAccountRateSet(const Json::Value &params)
 		uint128(),
 		false,
 		0,
+		0,
 		RippleAddress(),
 		false,
 		vucDomain,
 		true,
-		uRate,
-		false,
-		uint256(),
-		0);
+		uRate);
 
 	trans	= mNetOps->submitTransaction(trans);
 
@@ -702,6 +637,7 @@ Json::Value RPCHandler::doAccountWalletSet(const Json::Value& params) {
 
 	std::string					strWalletLocator	= params.size() == 3 ? params[2u].asString() : "";
 	uint256						uWalletLocator;
+	uint32						uWalletSize	= 0;	// XXX Broken should be an argument.
 
 	if (!strWalletLocator.empty())
 		uWalletLocator.SetHex(strWalletLocator);
@@ -716,13 +652,11 @@ Json::Value RPCHandler::doAccountWalletSet(const Json::Value& params) {
 		uint128(),
 		true,
 		uWalletLocator,
+		uWalletSize,
 		RippleAddress(),
 		false,
 		vucDomain,
 		false,
-		0,
-		false,
-		uint256(),
 		0);
 
 	trans	= mNetOps->submitTransaction(trans);
@@ -2426,7 +2360,6 @@ Json::Value RPCHandler::doCommand(const std::string& command, Json::Value& param
 		{	"account_email_set",	&RPCHandler::doAccountEmailSet,		2,  3, false,	optCurrent	},
 		{	"account_info",			&RPCHandler::doAccountInfo,			1,  2, false,	optCurrent	},
 		{	"account_message_set",	&RPCHandler::doAccountMessageSet,	3,  3, false,	optCurrent	},
-		{	"account_publish_set",	&RPCHandler::doAccountPublishSet,	4,  4, false,	optCurrent	},
 		{	"account_rate_set",		&RPCHandler::doAccountRateSet,		3,  3, false,	optCurrent	},
 		{	"account_tx",			&RPCHandler::doAccountTransactions,	2,  3, false,	optNetwork	},
 		{	"account_wallet_set",	&RPCHandler::doAccountWalletSet,	2,  3, false,	optCurrent	},

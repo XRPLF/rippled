@@ -41,7 +41,8 @@ static int initFields()
 	sfSigningPubKey.setMeta(SFM_CHANGE);	sfAuthorizedKey.setMeta(SFM_CHANGE);
 	sfSigningAccounts.setMeta(SFM_CHANGE);
 
-	sfWalletLocator.setMeta(SFM_CHANGE);
+	sfWalletLocator.setMeta(SFM_ALWAYS);
+	sfWalletSize.setMeta(SFM_ALWAYS);
 	sfNickname.setMeta(SFM_CHANGE);
 	sfAmount.setMeta(SFM_ALWAYS);
 	sfDomain.setMeta(SFM_CHANGE);

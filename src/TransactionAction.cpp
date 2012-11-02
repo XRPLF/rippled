@@ -186,40 +186,6 @@ TER TransactionEngine::doAccountSet(const SerializedTransaction& txn)
 		}
 	}
 
-	//
-	// PublishHash && PublishSize
-	//
-
-	bool	bPublishHash	= txn.isFieldPresent(sfPublishHash);
-	bool	bPublishSize	= txn.isFieldPresent(sfPublishSize);
-
-	if (bPublishHash ^ bPublishSize)
-	{
-		Log(lsINFO) << "doAccountSet: bad publish";
-
-		return temBAD_PUBLISH;
-	}
-	else if (bPublishHash && bPublishSize)
-	{
-		uint256		uHash	= txn.getFieldH256(sfPublishHash);
-		uint32		uSize	= txn.getFieldU32(sfPublishSize);
-
-		if (!uHash)
-		{
-			Log(lsINFO) << "doAccountSet: unset publish";
-
-			mTxnAccount->makeFieldAbsent(sfPublishHash);
-			mTxnAccount->makeFieldAbsent(sfPublishSize);
-		}
-		else
-		{
-			Log(lsINFO) << "doAccountSet: set publish";
-
-			mTxnAccount->setFieldH256(sfPublishHash, uHash);
-			mTxnAccount->setFieldU32(sfPublishSize, uSize);
-		}
-	}
-
 	Log(lsINFO) << "doAccountSet<";
 
 	return tesSUCCESS;

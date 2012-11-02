@@ -116,21 +116,21 @@ Transaction::pointer Transaction::setAccountSet(
 	const uint128&						uEmailHash,
 	bool								bWalletLocator,
 	const uint256&						uWalletLocator,
+	const uint32						uWalletSize,
 	const RippleAddress&				naMessagePublic,
 	bool								bDomain,
 	const std::vector<unsigned char>&	vucDomain,
 	bool								bTransferRate,
-	const uint32						uTransferRate,
-	bool								bPublish,
-	const uint256&						uPublishHash,
-	const uint32						uPublishSize
-	)
+	const uint32						uTransferRate)
 {
 	if (!bEmailHash)
 		mTransaction->setFieldH128(sfEmailHash, uEmailHash);
 
 	if (!bWalletLocator)
+	{
 		mTransaction->setFieldH256(sfWalletLocator, uWalletLocator);
+		mTransaction->setFieldU32(sfWalletSize, uWalletSize);
+	}
 
 	if (naMessagePublic.isValid())
 		mTransaction->setFieldVL(sfMessageKey, naMessagePublic.getAccountPublic());
@@ -140,12 +140,6 @@ Transaction::pointer Transaction::setAccountSet(
 
 	if (bTransferRate)
 		mTransaction->setFieldU32(sfTransferRate, uTransferRate);
-
-	if (bPublish)
-	{
-		mTransaction->setFieldH256(sfPublishHash, uPublishHash);
-		mTransaction->setFieldU32(sfPublishSize, uPublishSize);
-	}
 
 	sign(naPrivateKey);
 
@@ -162,20 +156,19 @@ Transaction::pointer Transaction::sharedAccountSet(
 	const uint128&						uEmailHash,
 	bool								bWalletLocator,
 	const uint256&						uWalletLocator,
+	const uint32						uWalletSize,
 	const RippleAddress&				naMessagePublic,
 	bool								bDomain,
 	const std::vector<unsigned char>&	vucDomain,
 	bool								bTransferRate,
-	const uint32						uTransferRate,
-	bool								bPublish,
-	const uint256&						uPublishHash,
-	const uint32						uPublishSize)
+	const uint32						uTransferRate)
 {
 	pointer	tResult	= boost::make_shared<Transaction>(ttACCOUNT_SET, naPublicKey, naSourceAccount, uSeq, saFee, uSourceTag);
 
-	return tResult->setAccountSet(naPrivateKey, bEmailHash, uEmailHash, bWalletLocator, uWalletLocator,
+	return tResult->setAccountSet(naPrivateKey, bEmailHash, uEmailHash,
+		bWalletLocator, uWalletLocator, uWalletSize,
 		naMessagePublic,
-		bDomain, vucDomain, bTransferRate, uTransferRate, bPublish, uPublishHash, uPublishSize);
+		bDomain, vucDomain, bTransferRate, uTransferRate);
 }
 
 //

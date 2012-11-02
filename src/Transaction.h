@@ -64,14 +64,12 @@ private:
 		const uint128&						uEmailHash,
 		bool								bWalletLocator,
 		const uint256&						uWalletLocator,
+		const uint32						uWalletSize,
 		const RippleAddress&				naMessagePublic,
 		bool								bDomain,
 		const std::vector<unsigned char>&	vucDomain,
 		bool								bTransferRate,
-		const uint32						uTransferRate,
-		bool								bPublish,
-		const uint256&						uPublishHash,
-		const uint32						uPublishSize);
+		const uint32						uTransferRate);
 
 	Transaction::pointer setClaim(
 		const RippleAddress&				naPrivateKey,
@@ -161,14 +159,12 @@ public:
 		const uint128&						uEmailHash,
 		bool								bWalletLocator,
 		const uint256&						uWalletLocator,
+		const uint32						uWalletSize,
 		const RippleAddress&				naMessagePublic,
 		bool								bDomain,
 		const std::vector<unsigned char>&	vucDomain,
 		bool								bTransferRate,
-		const uint32						uTransferRate,
-		bool								bPublish,
-		const uint256&						uPublishHash,
-		const uint32						uPublishSize);
+		const uint32						uTransferRate);
 
 	// Claim a wallet.
 	static Transaction::pointer sharedClaim(
@@ -284,7 +280,7 @@ public:
 	SerializedTransaction::pointer getSTransaction() { return mTransaction; }
 
 	const uint256& getID() const					{ return mTransactionID; }
-	const RippleAddress& getFromAccount() const	{ return mAccountFrom; }
+	const RippleAddress& getFromAccount() const		{ return mAccountFrom; }
 	STAmount getAmount() const						{ return mTransaction->getFieldU64(sfAmount); }
 	STAmount getFee() const							{ return mTransaction->getTransactionFee(); }
 	uint32 getFromAccountSeq() const				{ return mTransaction->getSequence(); }

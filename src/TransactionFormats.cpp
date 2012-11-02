@@ -22,11 +22,10 @@ static bool TFInit()
 	DECLARE_TF(AccountSet, ttACCOUNT_SET)
 		<< SOElement(sfEmailHash,		SOE_OPTIONAL)
 		<< SOElement(sfWalletLocator,	SOE_OPTIONAL)
+		<< SOElement(sfWalletSize,		SOE_OPTIONAL)
 		<< SOElement(sfMessageKey,		SOE_OPTIONAL)
 		<< SOElement(sfDomain,			SOE_OPTIONAL)
 		<< SOElement(sfTransferRate,	SOE_OPTIONAL)
-		<< SOElement(sfPublishHash,		SOE_OPTIONAL)
-		<< SOElement(sfPublishSize,		SOE_OPTIONAL)
 		;
 
 	DECLARE_TF(Claim, ttCLAIM)
