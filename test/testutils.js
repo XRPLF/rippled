@@ -129,6 +129,30 @@ var credit_limit = function (remote, src, amount, callback) {
     .submit();
 };
 
+var credit_limits = function (remote, balances, callback) {
+  assert(3 === arguments.length);
+
+  var limits = [];
+
+  for (var src in balances) {
+    var	values_src  = balances[src];
+    var values	    = 'string' === typeof values_src ? [ values_src ] : values_src;
+
+    for (var index in values) {
+      limits.push( { "source" : src, "amount" : values[index] } );
+    }
+  }
+
+  async.every(limits,
+    function (limit, callback) {
+      credit_limit(remote, limit.source, limit.amount,
+	function (mismatch) { callback(!mismatch); });
+    },
+    function (every) {
+      callback(!every);
+    });
+};
+
 var payment = function (remote, src, dst, amount, callback) {
   assert(5 === arguments.length);
 
@@ -212,6 +236,7 @@ var verify_balances = function (remote, balances, callback) {
 exports.build_setup	    = build_setup;
 exports.create_accounts	    = create_accounts;
 exports.credit_limit	    = credit_limit;
+exports.credit_limits	    = credit_limits;
 exports.payment		    = payment;
 exports.build_teardown	    = build_teardown;
 exports.transfer_rate	    = transfer_rate;

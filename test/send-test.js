@@ -464,14 +464,14 @@ buster.testCase("Indirect ripple", {
 	    testutils.create_accounts(self.remote, "root", "10000", ["alice", "bob", "mtgox"], callback);
 	  },
 	  function (callback) {
-	    self.what = "Set alice's limit.";
+	    self.what = "Set credit limits.";
 
-	    testutils.credit_limit(self.remote, "alice", "600/USD/mtgox", callback);
-	  },
-	  function (callback) {
-	    self.what = "Set bob's limit.";
-
-	    testutils.credit_limit(self.remote, "bob", "700/USD/mtgox", callback);
+	    testutils.credit_limits(self.remote,
+	      {
+		"alice" : "600/USD/mtgox",
+		"bob"	: "700/USD/mtgox",
+	      },
+	      callback);
 	  },
 	  function (callback) {
 	    self.what = "Give alice some mtgox.";
@@ -534,14 +534,14 @@ buster.testCase("Indirect ripple", {
 	    testutils.create_accounts(self.remote, "root", "10000", ["alice", "bob", "mtgox"], callback);
 	  },
 	  function (callback) {
-	    self.what = "Set alice's limit.";
+	    self.what = "Set credit limits.";
 
-	    testutils.credit_limit(self.remote, "alice", "600/USD/mtgox", callback);
-	  },
-	  function (callback) {
-	    self.what = "Set bob's limit.";
-
-	    testutils.credit_limit(self.remote, "bob", "700/USD/mtgox", callback);
+	    testutils.credit_limits(self.remote,
+	      {
+		"alice" : "600/USD/mtgox",
+		"bob"	: "700/USD/mtgox",
+	      },
+	      callback);
 	  },
 	  function (callback) {
 	    self.what = "Give alice some mtgox.";
@@ -593,29 +593,15 @@ buster.testCase("Indirect ripple", {
 	    testutils.create_accounts(self.remote, "root", "10000", ["alice", "bob", "carol", "amazon", "mtgox"], callback);
 	  },
 	  function (callback) {
-	    self.what = "Set alice's limit with bob.";
+	    self.what = "Set credit limits.";
 
-	    testutils.credit_limit(self.remote, "bob", "600/USD/alice", callback);
-	  },
-	  function (callback) {
-	    self.what = "Set alice's limit with carol.";
-
-	    testutils.credit_limit(self.remote, "carol", "700/USD/alice", callback);
-	  },
-	  function (callback) {
-	    self.what = "Set bob's mtgox limit.";
-
-	    testutils.credit_limit(self.remote, "bob", "1000/USD/mtgox", callback);
-	  },
-	  function (callback) {
-	    self.what = "Set carol's mtgox limit.";
-
-	    testutils.credit_limit(self.remote, "carol", "1000/USD/mtgox", callback);
-	  },
-	  function (callback) {
-	    self.what = "Set amazon's mtgox limit.";
-
-	    testutils.credit_limit(self.remote, "amazon", "2000/USD/mtgox", callback);
+	    testutils.credit_limits(self.remote,
+	      {
+		"amazon"  : "2000/USD/mtgox",
+		"bob"	: [ "600/USD/alice", "1000/USD/mtgox" ],
+		"carol"	: [ "700/USD/alice", "1000/USD/mtgox" ],
+	      },
+	      callback);
 	  },
 	  function (callback) {
 	    self.what = "Give bob some mtgox.";
@@ -675,29 +661,15 @@ buster.testCase("Indirect ripple", {
 	    testutils.transfer_rate(self.remote, "mtgox", 1.1e9, callback);
 	  },
 	  function (callback) {
-	    self.what = "Set alice's limit with bob.";
+	    self.what = "Set credit limits.";
 
-	    testutils.credit_limit(self.remote, "bob", "600/USD/alice", callback);
-	  },
-	  function (callback) {
-	    self.what = "Set alice's limit with carol.";
-
-	    testutils.credit_limit(self.remote, "carol", "700/USD/alice", callback);
-	  },
-	  function (callback) {
-	    self.what = "Set bob's mtgox limit.";
-
-	    testutils.credit_limit(self.remote, "bob", "1000/USD/mtgox", callback);
-	  },
-	  function (callback) {
-	    self.what = "Set carol's mtgox limit.";
-
-	    testutils.credit_limit(self.remote, "carol", "1000/USD/mtgox", callback);
-	  },
-	  function (callback) {
-	    self.what = "Set amazon's mtgox limit.";
-
-	    testutils.credit_limit(self.remote, "amazon", "2000/USD/mtgox", callback);
+	    testutils.credit_limits(self.remote,
+	      {
+		"amazon"  : "2000/USD/mtgox",
+		"bob"	: [ "600/USD/alice", "1000/USD/mtgox" ],
+		"carol"	: [ "700/USD/alice", "1000/USD/mtgox" ],
+	      },
+	      callback);
 	  },
 	  function (callback) {
 	    self.what = "Give bob some mtgox.";
