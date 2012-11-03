@@ -28,6 +28,9 @@ SField sfIndex(STI_HASH256, 258, "index");
 
 static int initFields()
 {
+	sfTxnSignature.notSigningField();		sfTxnSignatures.notSigningField();
+	sfSignature.notSigningField();
+
 	sfHighQualityIn.setMeta(SFM_CHANGE);	sfHighQualityOut.setMeta(SFM_CHANGE);
 	sfLowQualityIn.setMeta(SFM_CHANGE);		sfLowQualityOut.setMeta(SFM_CHANGE);
 
