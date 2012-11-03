@@ -171,6 +171,33 @@ var payment = function (remote, src, dst, amount, callback) {
     .submit();
 };
 
+var payments = function (remote, balances, callback) {
+  assert(3 === arguments.length);
+
+  var sends = [];
+
+  for (var src in balances) {
+    var	values_src  = balances[src];
+    var values	    = 'string' === typeof values_src ? [ values_src ] : values_src;
+
+    for (var index in values) {
+      var amount_json = values[index];
+      var amount      = Amount.from_json(amount_json);
+
+      sends.push( { "source" : src, "destination" : amount.issuer.to_json(), "amount" : amount_json } );
+    }
+  }
+
+  async.every(sends,
+    function (send, callback) {
+      payment(remote, send.source, send.destination, send.amount,
+	function (mismatch) { callback(!mismatch); });
+    },
+    function (every) {
+      callback(!every);
+    });
+};
+
 var transfer_rate = function (remote, src, billionths, callback) {
   assert(4 === arguments.length);
 
@@ -238,6 +265,7 @@ exports.create_accounts	    = create_accounts;
 exports.credit_limit	    = credit_limit;
 exports.credit_limits	    = credit_limits;
 exports.payment		    = payment;
+exports.payments	    = payments;
 exports.build_teardown	    = build_teardown;
 exports.transfer_rate	    = transfer_rate;
 exports.verify_balance	    = verify_balance;

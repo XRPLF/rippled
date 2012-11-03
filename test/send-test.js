@@ -474,14 +474,13 @@ buster.testCase("Indirect ripple", {
 	      callback);
 	  },
 	  function (callback) {
-	    self.what = "Give alice some mtgox.";
+	    self.what = "Distribute funds.";
 
-	    testutils.payment(self.remote, "mtgox", "alice", "70/USD/mtgox", callback);
-	  },
-	  function (callback) {
-	    self.what = "Give bob some mtgox.";
-
-	    testutils.payment(self.remote, "mtgox", "bob", "50/USD/mtgox", callback);
+	    testutils.payments(self.remote,
+	      {
+		"mtgox" : [ "70/USD/alice", "50/USD/bob" ],
+	      },
+	      callback);
 	  },
 	  function (callback) {
 	    self.what = "Verify alice balance with mtgox.";
@@ -544,14 +543,13 @@ buster.testCase("Indirect ripple", {
 	      callback);
 	  },
 	  function (callback) {
-	    self.what = "Give alice some mtgox.";
+	    self.what = "Distribute funds.";
 
-	    testutils.payment(self.remote, "mtgox", "alice", "70/USD/mtgox", callback);
-	  },
-	  function (callback) {
-	    self.what = "Give bob some mtgox.";
-
-	    testutils.payment(self.remote, "mtgox", "bob", "50/USD/mtgox", callback);
+	    testutils.payments(self.remote,
+	      {
+		"mtgox" : [ "70/USD/alice", "50/USD/bob" ],
+	      },
+	      callback);
 	  },
 	  function (callback) {
 	    self.what = "Alice sends via a path";
@@ -604,14 +602,13 @@ buster.testCase("Indirect ripple", {
 	      callback);
 	  },
 	  function (callback) {
-	    self.what = "Give bob some mtgox.";
+	    self.what = "Distribute funds.";
 
-	    testutils.payment(self.remote, "mtgox", "bob", "100/USD/mtgox", callback);
-	  },
-	  function (callback) {
-	    self.what = "Give carol some mtgox.";
-
-	    testutils.payment(self.remote, "mtgox", "carol", "100/USD/mtgox", callback);
+	    testutils.payments(self.remote,
+	      {
+		"mtgox" : [ "100/USD/bob", "100/USD/carol" ],
+	      },
+	      callback);
 	  },
 	  function (callback) {
 	    self.what = "Alice pays amazon via multiple paths";
@@ -672,14 +669,13 @@ buster.testCase("Indirect ripple", {
 	      callback);
 	  },
 	  function (callback) {
-	    self.what = "Give bob some mtgox.";
+	    self.what = "Distribute funds.";
 
-	    testutils.payment(self.remote, "mtgox", "bob", "100/USD/mtgox", callback);
-	  },
-	  function (callback) {
-	    self.what = "Give carol some mtgox.";
-
-	    testutils.payment(self.remote, "mtgox", "carol", "100/USD/mtgox", callback);
+	    testutils.payments(self.remote,
+	      {
+		"mtgox" : [ "100/USD/bob", "100/USD/carol" ],
+	      },
+	      callback);
 	  },
 	  function (callback) {
 	    self.what = "Alice pays amazon via multiple paths";
