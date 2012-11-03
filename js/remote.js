@@ -36,11 +36,12 @@ var config    = require('../test/config.js');
 var Request = function (remote, command) {
   var self  = this;
 
-  this.message	= {
+  this.message	  = {
     'command' : command,
     'id'      : undefined,
   };
-  this.remote	= remote;
+  this.remote	  = remote;
+  this.requested  = false;
 
   this.on('request', function () {
       self.request_default();
@@ -68,7 +69,10 @@ Request.prototype.request = function (remote) {
 };
 
 Request.prototype.request_default = function () {
-  this.remote.request(this);
+  if (!this.requested) {
+    this.requested  = true;
+    this.remote.request(this);
+  }
 };
 
 Request.prototype.ledger_choose = function (current) {
@@ -572,6 +576,7 @@ Remote.prototype.submit = function (transaction) {
   else {
     if (!transaction.transaction.Sequence) {
       transaction.transaction.Sequence	= this.account_seq(transaction.transaction.Account, 'ADVANCE');
+      // console.log("Sequence: %s", transaction.transaction.Sequence);
     }
 
     if (!transaction.transaction.Sequence) {
@@ -581,7 +586,7 @@ Remote.prototype.submit = function (transaction) {
 	    // Try again.
 	    self.submit(transaction);
 	  })
-	.on('error', function (message) {
+	.on('error_account_seq_cache', function (message) {
 	    // XXX Maybe be smarter about this. Don't want to trust an untrusted server for this seq number.
 
 	    // Look in the current ledger.
@@ -590,7 +595,7 @@ Remote.prototype.submit = function (transaction) {
 		  // Try again.
 		  self.submit(transaction);
 		})
-	      .on('error', function (message) {
+	      .on('error_account_seq_cache', function (message) {
 		  // Forward errors.
 		  transaction.emit('error', message);
 		})
@@ -685,6 +690,11 @@ Remote.prototype.account_seq = function (account, advance) {
     seq = account_info.seq;
 
     if (advance) account_info.seq += 1;
+
+    // console.log("cached: %s current=%d next=%d", account, seq, account_info.seq);
+  }
+  else {
+    // console.log("uncached: %s", account);
   }
 
   return seq;
@@ -701,21 +711,40 @@ Remote.prototype.set_account_seq = function (account, seq) {
 // Return a request to refresh accounts[account].seq.
 Remote.prototype.account_seq_cache = function (account, current) {
   var self    = this;
-  var request = this.request_ledger_entry('account_root');
+  var request;
+
+  if (!self.accounts[account]) self.accounts[account] = {};
+
+  var account_info = self.accounts[account];
+
+  request = account_info.caching_seq_request;
+  if (!request) {
+    // console.log("starting: %s", account);
+    request = self.request_ledger_entry('account_root')
+      .account_root(account)
+      .ledger_choose(current)
+      .on('success', function (message) {
+	  delete account_info.caching_seq_request;
+
+	  var seq = message.node.Sequence;
+      
+	  account_info.seq  = seq;
+
+	  // console.log("caching: %s %d", account, seq);
+	  // If the caller also waits for 'success', they might run before this.
+	  request.emit('success_account_seq_cache', message);
+	})
+      .on('error', function (message) {
+	  // console.log("error: %s", account);
+	  delete account_info.caching_seq_request;
+
+	  request.emit('error_account_seq_cache', message);
+	});
+
+    account_info.caching_seq_request	= request;
+  }
 
   return request
-    .account_root(account)
-    .ledger_choose(current)
-    .on('success', function (message) {
-	var seq = message.node.Sequence;
-    
-	if (!self.accounts[account]) self.accounts[account] = {};
-
-	self.accounts[account].seq  = seq;
-
-	// If the caller also waits for 'success', they might run before this.
-	request.emit('success_account_seq_cache');
-      });
 };
 
 // Mark an account's root node as dirty.
