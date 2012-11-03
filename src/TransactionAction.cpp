@@ -462,7 +462,11 @@ TER TransactionEngine::doPayment(const SerializedTransaction& txn, const Transac
 	const bool		bMax			= txn.isFieldPresent(sfSendMax);
 	const uint160	uDstAccountID	= txn.getFieldAccount160(sfDestination);
 	const STAmount	saDstAmount		= txn.getFieldAmount(sfAmount);
-	const STAmount	saMaxAmount		= bMax ? txn.getFieldAmount(sfSendMax) : saDstAmount;
+	const STAmount	saMaxAmount		= bMax
+										? txn.getFieldAmount(sfSendMax)
+										: saDstAmount.isNative()
+											? saDstAmount
+											: STAmount(saDstAmount.getCurrency(), mTxnAccountID, saDstAmount.getMantissa(), saDstAmount.getExponent(), saDstAmount.isNegative());
 	const uint160	uSrcCurrency	= saMaxAmount.getCurrency();
 	const uint160	uDstCurrency	= saDstAmount.getCurrency();
 

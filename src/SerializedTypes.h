@@ -603,7 +603,7 @@ public:
 	int getElementCount() const							{ return mPath.size(); }
 	bool isEmpty() const								{ return mPath.empty(); }
 	const STPathElement& getElement(int offset) const	{ return mPath[offset]; }
-	const STPathElement& getElemet(int offset)			{ return mPath[offset]; }
+	const STPathElement& getElement(int offset)			{ return mPath[offset]; }
 	void addElement(const STPathElement &e)				{ mPath.push_back(e); }
 	void clear()										{ mPath.clear(); }
 	bool hasSeen(const uint160 &acct);
