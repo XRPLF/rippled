@@ -159,15 +159,43 @@ var verify_balance = function (remote, src, amount_json, callback) {
 //	console.log("issuer_balance: %s", m.issuer_balance.to_text_full());
 //	console.log("issuer_limit: %s", m.issuer_limit.to_text_full());
 
+	if (!m.account_balance.equals(amount)) {
+	  console.log("verify_balance: failed: %s vs %s is %s", src, amount_json, amount.to_text_full());
+	}
+
 	callback(!m.account_balance.equals(amount));
       })
     .request();
 };
+
+var verify_balances = function (remote, balances, callback) {
+  var tests = [];
+
+  for (var src in balances) {
+    var	values_src  = balances[src];
+    var values	    = 'string' === typeof values_src ? [ values_src ] : values_src;
+
+    for (var index in values) {
+      tests.push( { "source" : src, "amount" : values[index] } );
+    }
+  }
+
+  async.every(tests,
+    function (check, callback) {
+      verify_balance(remote, check.source, check.amount,
+	function (mismatch) { callback(!mismatch); });
+    },
+    function (every) {
+      callback(!every);
+    });
+};
+
 exports.build_setup	    = build_setup;
 exports.create_accounts	    = create_accounts;
 exports.credit_limit	    = credit_limit;
 exports.payment		    = payment;
 exports.build_teardown	    = build_teardown;
 exports.verify_balance	    = verify_balance;
+exports.verify_balances	    = verify_balances;
 
 // vim:sw=2:sts=2:ts=8
