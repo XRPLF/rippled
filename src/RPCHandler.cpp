@@ -1624,8 +1624,6 @@ Json::Value RPCHandler::doSubmit(const Json::Value& params)
 
 Json::Value RPCHandler::handleJSONSubmit(std::string& key, Json::Value& txJSON)
 {
-	return rpcError(rpcSRC_ACT_MALFORMED);
-	/*
 	Json::Value jvResult;
 	RippleAddress	naSeed;
 	RippleAddress	naAccount;
@@ -1636,11 +1634,11 @@ Json::Value RPCHandler::handleJSONSubmit(std::string& key, Json::Value& txJSON)
 	}
 	if (!txJSON.isMember("Account"))
 	{
-		return rpcError(rpcBAD_SEED);
+		return rpcError(rpcSRC_ACT_MISSING);
 	}
 	if (!naAccount.setAccountID(txJSON["Account"].asString()))
 	{
-		return rpcError(rpcBAD_SEED);
+		return rpcError(rpcSRC_ACT_MISSING);
 	}
 
 	
@@ -1650,7 +1648,7 @@ Json::Value RPCHandler::handleJSONSubmit(std::string& key, Json::Value& txJSON)
 	if (!sleAccountRoot)
 	{
 		// XXX Ignore transactions for accounts not created.
-		return rpcError(rpcBAD_SEED);
+		return rpcError(rpcSRC_ACT_MISSING);
 	}
 
 	bool			bHaveAuthKey	= false;
@@ -1680,7 +1678,7 @@ Json::Value RPCHandler::handleJSONSubmit(std::string& key, Json::Value& txJSON)
 
 	if (!bFound)
 	{
-		return rpcError(rpcBAD_SEED);
+		return rpcError(rpcSRC_ACT_MISSING);
 	}
 
 	// Use the generator to determine the associated public and private keys.
@@ -1698,96 +1696,93 @@ Json::Value RPCHandler::handleJSONSubmit(std::string& key, Json::Value& txJSON)
 		// std::cerr << "sfAuthorizedKey: " << strHex(asSrc->getAuthorizedKey().getAccountID()) << std::endl;
 		// std::cerr << "naAccountPublic: " << strHex(naAccountPublic.getAccountID()) << std::endl;
 
-		return rpcError(rpcBAD_SEED);
+		return rpcError(rpcSRC_ACT_MISSING);
 	}
 
-		std::auto_ptr<STObject>	sopTrans;
+	std::auto_ptr<STObject>	sopTrans;
 
-		try
-		{
-			sopTrans = STObject::parseJson(jvRequest["transaction"]);
-		}
-		catch (std::exception& e)
-		{
-			jvResult["error"]			= "malformedTransaction";
-			jvResult["error_exception"]	= e.what();
-			return;
-		}
+	try
+	{
+		sopTrans = STObject::parseJson(txJSON);
+	}
+	catch (std::exception& e)
+	{
+		jvResult["error"]			= "malformedTransaction";
+		jvResult["error_exception"]	= e.what();
+		return(jvResult);
+	}
 
-		sopTrans->setFieldVL(sfSigningPubKey, naAccountPublic.getAccountPublic());
+	sopTrans->setFieldVL(sfSigningPubKey, naAccountPublic.getAccountPublic());
 
-		SerializedTransaction::pointer stpTrans;
+	SerializedTransaction::pointer stpTrans;
 
-		try
-		{
-			stpTrans = boost::make_shared<SerializedTransaction>(*sopTrans);
-		}
-		catch (std::exception& e)
-		{
+	try
+	{
+		stpTrans = boost::make_shared<SerializedTransaction>(*sopTrans);
+	}
+	catch (std::exception& e)
+	{
+		jvResult["error"]			= "invalidTransaction";
+		jvResult["error_exception"]	= e.what();
+		return jvResult;
+	}
+
+	stpTrans->sign(naAccountPrivate);
+
+	Transaction::pointer			tpTrans;
+
+	try
+	{
+		tpTrans		= boost::make_shared<Transaction>(stpTrans, false);
+	}
+	catch (std::exception& e)
+	{
+		jvResult["error"]			= "internalTransaction";
+		jvResult["error_exception"]	= e.what();
+		return(jvResult);
+	}
+
+	try
+	{
+		tpTrans	= mNetOps->submitTransaction(tpTrans);
+
+		if (!tpTrans) {
 			jvResult["error"]			= "invalidTransaction";
-			jvResult["error_exception"]	= e.what();
-			return jvResult;
-		}
-
-		stpTrans->sign(naAccountPrivate);
-
-		Transaction::pointer			tpTrans;
-
-		try
-		{
-			tpTrans		= boost::make_shared<Transaction>(stpTrans, false);
-		}
-		catch (std::exception& e)
-		{
-			jvResult["error"]			= "internalTransaction";
-			jvResult["error_exception"]	= e.what();
-			return(jvResult);
-		}
-
-		try
-		{
-			tpTrans	= mNetwork.submitTransaction(tpTrans);
-
-			if (!tpTrans) {
-				jvResult["error"]			= "invalidTransaction";
-				jvResult["error_exception"]	= "Unable to sterilize transaction.";
-				return(jvResult);
-			}
-		}
-		catch (std::exception& e)
-		{
-			jvResult["error"]			= "internalSubmit";
-			jvResult["error_exception"]	= e.what();
-			return(jvResult);
-		}
-
-		try
-		{
-			jvResult["transaction"]		= tpTrans->getJson(0);
-
-			if (temUNCERTAIN != tpTrans->getResult())
-			{
-				std::string	sToken;
-				std::string	sHuman;
-
-				transResultInfo(tpTrans->getResult(), sToken, sHuman);
-
-				jvResult["engine_result"]			= sToken;
-				jvResult["engine_result_code"]		= tpTrans->getResult();
-				jvResult["engine_result_message"]	= sHuman;
-			}
-			return(jvResult);
-		}
-		catch (std::exception& e)
-		{
-			jvResult["error"]			= "internalJson";
-			jvResult["error_exception"]	= e.what();
+			jvResult["error_exception"]	= "Unable to sterilize transaction.";
 			return(jvResult);
 		}
 	}
+	catch (std::exception& e)
+	{
+		jvResult["error"]			= "internalSubmit";
+		jvResult["error_exception"]	= e.what();
+		return(jvResult);
+	}
 
-	*/
-	
+	try
+	{
+		jvResult["transaction"]		= tpTrans->getJson(0);
+
+		if (temUNCERTAIN != tpTrans->getResult())
+		{
+			std::string	sToken;
+			std::string	sHuman;
+
+			transResultInfo(tpTrans->getResult(), sToken, sHuman);
+
+			jvResult["engine_result"]			= sToken;
+			jvResult["engine_result_code"]		= tpTrans->getResult();
+			jvResult["engine_result_message"]	= sHuman;
+		}
+		return(jvResult);
+	}
+	catch (std::exception& e)
+	{
+		jvResult["error"]			= "internalJson";
+		jvResult["error_exception"]	= e.what();
+		return(jvResult);
+	}
+		
 }
 
 // send regular_seed paying_account account_id amount [currency] [issuer] [send_max] [send_currency] [send_issuer]

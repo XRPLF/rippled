@@ -1065,63 +1065,73 @@ Json::Value NetworkOPs::transJson(const SerializedTransaction& stTxn, TER terRes
 	return jvObj;
 }
 
-void NetworkOPs::pubTransactionAll(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult, bool bAccepted)
+void NetworkOPs::pubAcceptedTransaction(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult)
 {
-	Json::Value	jvObj	= transJson(stTxn, terResult, bAccepted, lpCurrent, "transaction");
+	Json::Value	jvObj	= transJson(stTxn, terResult, true, lpCurrent, "transaction");
 
-	BOOST_FOREACH(InfoSub* ispListener, mSubTransactions)
 	{
-		ispListener->send(jvObj);
+		boost::interprocess::sharable_lock<boost::interprocess::interprocess_upgradable_mutex>	sl(mMonitorLock);
+		BOOST_FOREACH(InfoSub* ispListener, mSubTransactions)
+		{
+			ispListener->send(jvObj);
+		}
+
+		BOOST_FOREACH(InfoSub* ispListener, mSubRTTransactions)
+		{
+			ispListener->send(jvObj);
+		}
 	}
+	
+	pubAccountTransaction(lpCurrent,stTxn,terResult,true);
 }
 
-void NetworkOPs::pubTransactionAccounts(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult, bool bAccepted)
+
+void NetworkOPs::pubAccountTransaction(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult, bool bAccepted)
 {
-	boost::unordered_set<InfoSub*>	usisNotify;
+	boost::unordered_set<InfoSub*>	notify;
 
 	{
 		boost::interprocess::sharable_lock<boost::interprocess::interprocess_upgradable_mutex>	sl(mMonitorLock);
 
-		if (!mSubAccountTransaction.empty())
+		if(!bAccepted && mSubRTAccount.empty()) return;
+
+		if (!mSubAccount.empty() || (!mSubRTAccount.empty()) )
 		{
 			BOOST_FOREACH(const RippleAddress& naAccountPublic, stTxn.getAffectedAccounts())
 			{
-				subInfoMapIterator	simiIt	= mSubAccountTransaction.find(naAccountPublic.getAccountID());
+				subInfoMapIterator	simiIt	= mSubRTAccount.find(naAccountPublic.getAccountID());
 
-				if (simiIt != mSubAccountTransaction.end())
+				if (simiIt != mSubRTAccount.end())
 				{
 					BOOST_FOREACH(InfoSub* ispListener, simiIt->second)
 					{
-						usisNotify.insert(ispListener);
+						notify.insert(ispListener);
+					}
+				}
+				if(bAccepted)
+				{
+					simiIt	= mSubAccount.find(naAccountPublic.getAccountID());
+
+					if (simiIt != mSubAccount.end())
+					{
+						BOOST_FOREACH(InfoSub* ispListener, simiIt->second)
+						{
+							notify.insert(ispListener);
+						}
 					}
 				}
 			}
 		}
 	}
 
-	if (!usisNotify.empty())
+	if (!notify.empty())
 	{
 		Json::Value	jvObj	= transJson(stTxn, terResult, bAccepted, lpCurrent, "account");
 
-		BOOST_FOREACH(InfoSub* ispListener, usisNotify)
+		BOOST_FOREACH(InfoSub* ispListener, notify)
 		{
 			ispListener->send(jvObj);
 		}
-	}
-}
-
-void NetworkOPs::pubTransaction(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult)
-{
-	boost::interprocess::sharable_lock<boost::interprocess::interprocess_upgradable_mutex>	sl(mMonitorLock);
-
-	if (!mSubTransactions.empty())
-	{
-		pubTransactionAll(lpCurrent, stTxn, terResult, false);
-	}
-
-	if (!mSubAccountTransaction.empty())
-	{
-		pubTransactionAccounts(lpCurrent, stTxn, terResult, false);
 	}
 }
 

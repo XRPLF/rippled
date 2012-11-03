@@ -80,18 +80,16 @@ protected:
 	boost::unordered_set<InfoSub*>						mSubTransactions;		// all accepted transactions
 	boost::unordered_set<InfoSub*>						mSubRTTransactions;		// all proposed and accepted transactions
 
-	subInfoMapType										mSubAccountTransaction; // DEPRECATED
-	subInfoMapType										mBootAccountInfo; // DEPRECATED
-	subInfoMapType										mSubAccountInfo;  // DEPRECATED
 
 	void setMode(OperatingMode);
 
 	Json::Value transJson(const SerializedTransaction& stTxn, TER terResult, bool bAccepted, Ledger::ref lpCurrent, const std::string& strType);
-	void pubTransactionAll(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult, bool bAccepted);
-	void pubTransactionAccounts(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult, bool bAccepted);
 	bool haveConsensusObject();
 
 	Json::Value pubBootstrapAccountInfo(Ledger::ref lpAccepted, const RippleAddress& naAccountID);
+
+	void pubAcceptedTransaction(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult);
+	void pubAccountTransaction(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult,bool accepted);
 
 public:
 	NetworkOPs(boost::asio::io_service& io_service, LedgerMaster* pLedgerMaster);
@@ -212,10 +210,9 @@ public:
 	//
 	// Monitoring: publisher side
 	//
-
-	void pubAccountInfo(const RippleAddress& naAccountID, const Json::Value& jvObj);
 	void pubLedger(Ledger::ref lpAccepted);
-	void pubTransaction(Ledger::ref lpLedger, const SerializedTransaction& stTxn, TER terResult);
+	void pubProposedTransaction(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult, bool bAccepted);
+
 
 	//
 	// Monitoring: subscriber side
