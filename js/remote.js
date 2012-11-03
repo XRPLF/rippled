@@ -1042,6 +1042,13 @@ Transaction.prototype.send_max = function (send_max) {
   return this;
 }
 
+// --> rate: In billionths.
+Transaction.prototype.transfer_rate = function (rate) {
+  this.transaction.TransferRate = Number(rate);
+
+  return this;
+}
+
 // Add flags to a transaction.
 // --> flags: undefined, _flag_, or [ _flags_ ]
 Transaction.prototype.set_flags = function (flags) {
@@ -1081,14 +1088,15 @@ Transaction.prototype._account_secret = function (account) {
   return this.remote.config.accounts[account] ? this.remote.config.accounts[account].secret : undefined;
 };
 
-// .wallet_locator()
-// .message_key()
-// .domain()
-// .transfer_rate()
-// .publish()
+// Options:
+//  .domain()		NYI
+//  .message_key()	NYI
+//  .transfer_rate()
+//  .wallet_locator()	NYI
 Transaction.prototype.account_set = function (src) {
   this.secret			    = this._account_secret(src);
   this.transaction.TransactionType  = 'AccountSet';
+  this.transaction.Account	    = UInt160.json_rewrite(src);
 
   return this;
 };
