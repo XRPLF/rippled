@@ -171,6 +171,7 @@
     <ClCompile Include="src\utils.cpp" />
     <ClCompile Include="src\ValidationCollection.cpp" />
     <ClCompile Include="src\Wallet.cpp" />
+    <ClCompile Include="src\WSConnection.cpp" />
     <ClCompile Include="src\WSDoor.cpp" />
     <ClCompile Include="websocketpp\src\base64\base64.cpp" />
     <ClCompile Include="websocketpp\src\md5\md5.c" />
@@ -263,6 +264,7 @@
     <ClInclude Include="src\utils.h" />
     <ClInclude Include="src\ValidationCollection.h" />
     <ClInclude Include="src\Wallet.h" />
+    <ClInclude Include="src\WSHandler.h" />
     <ClInclude Include="TimingService.h" />
     <ClInclude Include="ExtendedTransaction.h" />
     <ClInclude Include="util\pugiconfig.hpp" />

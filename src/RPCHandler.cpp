@@ -1612,18 +1612,182 @@ Json::Value RPCHandler::doRippleLinesGet(const Json::Value &params)
 // submit private_key json
 Json::Value RPCHandler::doSubmit(const Json::Value& params)
 {
-	RippleAddress	naSeed;
-	std::string		txJSON= params[1u].asString();
+	Json::Value txJSON;
+	Json::Reader reader;
+	if(reader.parse(params[1u].asString(),txJSON))
+	{
+		return handleJSONSubmit(params[0u].asString(), txJSON );
+	}
 
-	if (!naSeed.setSeedGeneric(params[0u].asString()))
+	return rpcError(rpcSRC_ACT_MALFORMED);
+}
+
+Json::Value RPCHandler::handleJSONSubmit(std::string& key, Json::Value& txJSON)
+{
+	return rpcError(rpcSRC_ACT_MALFORMED);
+	/*
+	Json::Value jvResult;
+	RippleAddress	naSeed;
+	RippleAddress	naAccount;
+
+	if (!naSeed.setSeedGeneric(key))
+	{
+		return rpcError(rpcBAD_SEED);
+	}
+	if (!txJSON.isMember("Account"))
+	{
+		return rpcError(rpcBAD_SEED);
+	}
+	if (!naAccount.setAccountID(txJSON["Account"].asString()))
 	{
 		return rpcError(rpcBAD_SEED);
 	}
 
+	
+	Ledger::pointer	lpCurrent		= mNetOps->getCurrentLedger();
+	SLE::pointer	sleAccountRoot	= mNetOps->getSLE(lpCurrent, Ledger::getAccountRootIndex(naAccount.getAccountID()));
+
+	if (!sleAccountRoot)
+	{
+		// XXX Ignore transactions for accounts not created.
+		return rpcError(rpcBAD_SEED);
+	}
+
+	bool			bHaveAuthKey	= false;
+	RippleAddress	naAuthorizedPublic;
 
 
-	// TODO
-	return rpcError(rpcSRC_ACT_MALFORMED);
+	RippleAddress	naSecret			= RippleAddress::createSeedGeneric(key);
+	RippleAddress	naMasterGenerator	= RippleAddress::createGeneratorPublic(naSecret);
+
+	// Find the index of Account from the master generator, so we can generate the public and private keys.
+	RippleAddress		naMasterAccountPublic;
+	unsigned int		iIndex	= 0;
+	bool				bFound	= false;
+
+	// Don't look at ledger entries to determine if the account exists.  Don't want to leak to thin server that these accounts are
+	// related.
+	while (!bFound && iIndex != theConfig.ACCOUNT_PROBE_MAX)
+	{
+		naMasterAccountPublic.setAccountPublic(naMasterGenerator, iIndex);
+
+		Log(lsWARNING) << "authorize: " << iIndex << " : " << naMasterAccountPublic.humanAccountID() << " : " << naAccount.humanAccountID();
+
+		bFound	= naAccount.getAccountID() == naMasterAccountPublic.getAccountID();
+		if (!bFound)
+			++iIndex;
+	}
+
+	if (!bFound)
+	{
+		return rpcError(rpcBAD_SEED);
+	}
+
+	// Use the generator to determine the associated public and private keys.
+	RippleAddress	naGenerator			= RippleAddress::createGeneratorPublic(naSecret);
+	RippleAddress	naAccountPublic		= RippleAddress::createAccountPublic(naGenerator, iIndex);
+	RippleAddress	naAccountPrivate	= RippleAddress::createAccountPrivate(naGenerator, naSecret, iIndex);
+
+	if (bHaveAuthKey
+		// The generated pair must match authorized...
+		&& naAuthorizedPublic.getAccountID() != naAccountPublic.getAccountID()
+		// ... or the master key must have been used.
+		&& naAccount.getAccountID() != naAccountPublic.getAccountID())
+	{
+		// std::cerr << "iIndex: " << iIndex << std::endl;
+		// std::cerr << "sfAuthorizedKey: " << strHex(asSrc->getAuthorizedKey().getAccountID()) << std::endl;
+		// std::cerr << "naAccountPublic: " << strHex(naAccountPublic.getAccountID()) << std::endl;
+
+		return rpcError(rpcBAD_SEED);
+	}
+
+		std::auto_ptr<STObject>	sopTrans;
+
+		try
+		{
+			sopTrans = STObject::parseJson(jvRequest["transaction"]);
+		}
+		catch (std::exception& e)
+		{
+			jvResult["error"]			= "malformedTransaction";
+			jvResult["error_exception"]	= e.what();
+			return;
+		}
+
+		sopTrans->setFieldVL(sfSigningPubKey, naAccountPublic.getAccountPublic());
+
+		SerializedTransaction::pointer stpTrans;
+
+		try
+		{
+			stpTrans = boost::make_shared<SerializedTransaction>(*sopTrans);
+		}
+		catch (std::exception& e)
+		{
+			jvResult["error"]			= "invalidTransaction";
+			jvResult["error_exception"]	= e.what();
+			return jvResult;
+		}
+
+		stpTrans->sign(naAccountPrivate);
+
+		Transaction::pointer			tpTrans;
+
+		try
+		{
+			tpTrans		= boost::make_shared<Transaction>(stpTrans, false);
+		}
+		catch (std::exception& e)
+		{
+			jvResult["error"]			= "internalTransaction";
+			jvResult["error_exception"]	= e.what();
+			return(jvResult);
+		}
+
+		try
+		{
+			tpTrans	= mNetwork.submitTransaction(tpTrans);
+
+			if (!tpTrans) {
+				jvResult["error"]			= "invalidTransaction";
+				jvResult["error_exception"]	= "Unable to sterilize transaction.";
+				return(jvResult);
+			}
+		}
+		catch (std::exception& e)
+		{
+			jvResult["error"]			= "internalSubmit";
+			jvResult["error_exception"]	= e.what();
+			return(jvResult);
+		}
+
+		try
+		{
+			jvResult["transaction"]		= tpTrans->getJson(0);
+
+			if (temUNCERTAIN != tpTrans->getResult())
+			{
+				std::string	sToken;
+				std::string	sHuman;
+
+				transResultInfo(tpTrans->getResult(), sToken, sHuman);
+
+				jvResult["engine_result"]			= sToken;
+				jvResult["engine_result_code"]		= tpTrans->getResult();
+				jvResult["engine_result_message"]	= sHuman;
+			}
+			return(jvResult);
+		}
+		catch (std::exception& e)
+		{
+			jvResult["error"]			= "internalJson";
+			jvResult["error_exception"]	= e.what();
+			return(jvResult);
+		}
+	}
+
+	*/
+	
 }
 
 // send regular_seed paying_account account_id amount [currency] [issuer] [send_max] [send_currency] [send_issuer]
