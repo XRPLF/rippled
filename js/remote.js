@@ -1046,6 +1046,9 @@ Transaction.prototype.send_max = function (send_max) {
 Transaction.prototype.transfer_rate = function (rate) {
   this.transaction.TransferRate = Number(rate);
 
+  if (this.transaction.TransferRate < 1e9)
+    throw 'invalidTransferRate';
+
   return this;
 }
 

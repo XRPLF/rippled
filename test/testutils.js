@@ -147,6 +147,25 @@ var payment = function (remote, src, dst, amount, callback) {
     .submit();
 };
 
+var transfer_rate = function (remote, src, billionths, callback) {
+  assert(4 === arguments.length);
+
+  remote.transaction()
+    .account_set(src)
+    .transfer_rate(billionths)
+    .on('proposed', function (m) {
+	// console.log("proposed: %s", JSON.stringify(m));
+
+	callback(m.result != 'tesSUCCESS');
+      })
+    .on('error', function (m) {
+	// console.log("error: %s", JSON.stringify(m));
+
+	callback(m);
+      })
+    .submit();
+};
+
 var verify_balance = function (remote, src, amount_json, callback) {
   assert(4 === arguments.length);
   var amount  = Amount.from_json(amount_json);
@@ -195,6 +214,7 @@ exports.create_accounts	    = create_accounts;
 exports.credit_limit	    = credit_limit;
 exports.payment		    = payment;
 exports.build_teardown	    = build_teardown;
+exports.transfer_rate	    = transfer_rate;
 exports.verify_balance	    = verify_balance;
 exports.verify_balances	    = verify_balances;
 

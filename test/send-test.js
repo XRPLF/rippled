@@ -672,15 +672,7 @@ buster.testCase("Indirect ripple", {
 	  function (callback) {
 	    self.what = "Set mtgox transfer rate.";
 
-	    self.remote.transaction()
-	      .account_set("mtgox")
-	      .transfer_rate(1.1e9)
-	      .on('proposed', function (m) {
-		  // console.log("proposed: %s", JSON.stringify(m));
-
-		  callback(m.result != 'tesSUCCESS');
-		})
-	      .submit();
+	    testutils.transfer_rate(self.remote, "mtgox", 1.1e9, callback);
 	  },
 	  function (callback) {
 	    self.what = "Set alice's limit with bob.";
@@ -749,12 +741,7 @@ buster.testCase("Indirect ripple", {
 	  done();
 	});
     },
-    // Max send of currency sender doesn't have.
     // Direct ripple without no liqudity.
-    // Ripple without credit path.
-    // Ripple with one-way credit path.
-    // Transfer Fees
-    // Use multiple paths.
     // Test with XRC at start and end.
 });
 // vim:sw=2:sts=2:ts=8
