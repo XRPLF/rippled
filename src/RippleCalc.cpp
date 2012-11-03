@@ -2109,8 +2109,8 @@ int iPass	= 0;
 					assert(!!pspCur->saInPass && !!pspCur->saOutPass);
 
 					if ((!bLimitQuality || pspCur->uQuality <= uQualityLimit)		// Quality is not limted or increment has allowed quality.
-						|| !pspBest														// Best is not yet set.
-						|| PathState::lessPriority(pspBest, pspCur))					// Current is better than set.
+						&& (!pspBest												// Best is not yet set.
+							|| PathState::lessPriority(pspBest, pspCur)))			// Current is better than set.
 					{
 						cLog(lsDEBUG) << boost::str(boost::format("rippleCalc: better: uQuality=%s saInPass=%s saOutPass=%s")
 							% STAmount::saFromRate(pspCur->uQuality)

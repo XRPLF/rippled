@@ -646,10 +646,10 @@ buster.testCase("Indirect ripple", {
 
 	    testutils.verify_balances(self.remote,
 	      {
-		"alice"	  : [ "-50/USD/bob", "-100/USD/carol" ],
+		"alice"	  : [ "-100/USD/bob", "-50/USD/carol" ],
 		"amazon"  : "150/USD/mtgox",
-		"bob"	  : "50/USD/mtgox",
-		"carol"	  : "0/USD/mtgox",
+		"bob"	  : "0/USD/mtgox",
+		"carol"	  : "50/USD/mtgox",
 	      },
 	      callback);
 	  },
@@ -737,10 +737,10 @@ buster.testCase("Indirect ripple", {
 
 	    testutils.verify_balances(self.remote,
 	      {
-		"alice"	  : [ "-65.00000000000001/USD/bob", "-100/USD/carol" ],
+		"alice"	  : [ "-100/USD/bob", "-65.00000000000001/USD/carol" ],
 		"amazon"  : "150/USD/mtgox",
-		"bob"	  : "35/USD/mtgox",
-		"carol"	  : "0/USD/mtgox",
+		"bob"	  : "0/USD/mtgox",
+		"carol"	  : "35/USD/mtgox",
 	      },
 	      callback);
 	  },
