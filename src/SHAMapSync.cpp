@@ -65,7 +65,7 @@ void SHAMap::getMissingNodes(std::vector<SHAMapNode>& nodeIDs, std::vector<uint2
 							if (childHash != d->getNodeHash())
 							{
 								cLog(lsERROR) << "Wrong hash from cached object";
-								d = SHAMapTreeNode::pointer();
+								d.reset();
 							}
 							else
 							{

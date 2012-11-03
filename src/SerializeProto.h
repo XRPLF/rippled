@@ -125,22 +125,22 @@
 
 	// inner object
 	// OBJECT/1 is reserved for end of object
-	FIELD(TemplateEntry,		OBJECT, 1)
 	FIELD(TransactionMetaData,	OBJECT,	2)
 	FIELD(CreatedNode,			OBJECT,	3)
 	FIELD(DeletedNode,			OBJECT,	4)
 	FIELD(ModifiedNode,			OBJECT,	5)
 	FIELD(PreviousFields,		OBJECT, 6)
 	FIELD(FinalFields,			OBJECT, 7)
+	FIELD(TemplateEntry,		OBJECT, 8)
 
 	// array of objects
 	// ARRAY/1 is reserved for end of array
-	FIELD(AffectedNodes,		ARRAY, 1)
 	FIELD(SigningAccounts,		ARRAY, 2)
 	FIELD(TxnSignatures,		ARRAY, 3)
 	FIELD(Signatures,			ARRAY, 4)
 	FIELD(Template,				ARRAY, 5)
 	FIELD(Necessary,			ARRAY, 6)
 	FIELD(Sufficient,			ARRAY, 7)
+	FIELD(AffectedNodes,		ARRAY, 8)
 
 // vim:ts=4

@@ -106,7 +106,7 @@ Transaction::pointer NetworkOPs::submitTransaction(const Transaction::pointer& t
 
 		assert(false);
 
-		tpTransNew	= Transaction::pointer();
+		tpTransNew.reset();
 	}
 
 	return tpTransNew;
@@ -571,7 +571,7 @@ bool NetworkOPs::checkLastClosedLedger(const std::vector<Peer::pointer>& peerLis
 		{
 			mAcquiringLedger->abort();
 			theApp->getMasterLedgerAcquire().dropLedger(mAcquiringLedger->getHash());
-			mAcquiringLedger = LedgerAcquire::pointer();
+			mAcquiringLedger.reset();
 		}
 		return false;
 	}

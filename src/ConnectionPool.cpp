@@ -304,7 +304,7 @@ void ConnectionPool::connectTo(const std::string& strIp, int iPort)
 Peer::pointer ConnectionPool::peerConnect(const std::string& strIp, int iPort)
 {
 	ipPort			pipPeer		= make_pair(strIp, iPort);
-	Peer::pointer	ppResult	= Peer::pointer();
+	Peer::pointer	ppResult;
 
     boost::unordered_map<ipPort, Peer::pointer>::iterator	it;
 
@@ -545,7 +545,7 @@ void ConnectionPool::peerClosed(Peer::ref peer, const std::string& strIp, int iP
 	{
 		//cLog(lsINFO) << "Pool: Scan: scan fail: " << strIp << " " << iPort;
 
-		mScanning		= Peer::pointer();	// No longer scanning.
+		mScanning.reset();					// No longer scanning.
 		bScanRefresh	= true;				// Look for more to scan.
 	}
 
@@ -619,7 +619,7 @@ void ConnectionPool::peerVerified(Peer::ref peer)
 			// XXX Check error.
 		}
 
-		mScanning	= Peer::pointer();
+		mScanning.reset();
 
 		scanRefresh();	// Continue scanning.
 	}

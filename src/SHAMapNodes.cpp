@@ -500,7 +500,7 @@ int SHAMapTreeNode::getBranchCount() const
 
 void SHAMapTreeNode::makeInner()
 {
-	mItem = SHAMapItem::pointer();
+	mItem.reset();
 	memset(mHashes, 0, sizeof(mHashes));
 	mType = tnINNER;
 	mHash.zero();

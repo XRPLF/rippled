@@ -73,7 +73,7 @@ bool SHAMap::walkBranch(SHAMapTreeNode* node, SHAMapItem::ref otherMapItem, bool
 					else differences.insert(std::make_pair(otherMapItem->getTag(),
 						std::make_pair(otherMapItem, item)));
 					if(--maxCount <= 0) return false;
-					item = SHAMapItem::pointer();
+					item.reset();
 				}
 			}
 			else assert(false);

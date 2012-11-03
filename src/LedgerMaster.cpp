@@ -103,7 +103,7 @@ void LedgerMaster::acquireMissingLedger(const uint256& ledgerHash, uint32 ledger
 		Ledger::pointer lgr = mMissingLedger->getLedger();
 		if (lgr && (lgr->getLedgerSeq() == ledgerSeq))
 			missingAcquireComplete(mMissingLedger);
-		mMissingLedger = LedgerAcquire::pointer();
+		mMissingLedger.reset();
 		return;
 	}
 	mMissingSeq = ledgerSeq;
@@ -120,7 +120,7 @@ void LedgerMaster::missingAcquireComplete(LedgerAcquire::pointer acq)
 		cLog(lsWARNING) << "Acquire failed for " << mMissingSeq;
 	}
 
-	mMissingLedger = LedgerAcquire::pointer();
+	mMissingLedger.reset();
 	mMissingSeq = 0;
 
 	if (!acq->isFailed())
@@ -147,7 +147,7 @@ void LedgerMaster::setFullLedger(Ledger::ref ledger)
 	}
 
 	if (mMissingLedger && mMissingLedger->isComplete())
-		mMissingLedger = LedgerAcquire::pointer();
+		mMissingLedger.reset();
 
 	if (mMissingLedger || !theConfig.FULL_HISTORY)
 		return;

@@ -7,6 +7,8 @@
 #include "Application.h"
 #include "HashPrefixes.h"
 
+DECLARE_INSTANCE(LedgerProposal);
+
 LedgerProposal::LedgerProposal(const uint256& pLgr, uint32 seq, const uint256& tx, uint32 closeTime,
 		const RippleAddress& naPeerPublic) :
 	mPreviousLedger(pLgr), mCurrentHash(tx), mCloseTime(closeTime), mProposeSeq(seq), mPublicKey(naPeerPublic)
