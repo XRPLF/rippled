@@ -19,24 +19,6 @@ var throwErr = function(done) {
     };
 };
  
-// apply function to elements of array. Return first true value to done or undefined.
-var mapOr = function(func, array, done) {
-  if (array.length) {
-    func(array[array.length-1], function(v) {
-	if (v) {
-	  done(v);
-	}
-	else {
-	  array.length -= 1;
-	  mapOr(func, array, done);
-	}
-      });
-  }
-  else {
-    done();
-  }
-};
-
 var trace = function(comment, func) {
   return function() {
       console.log("%s: %s", trace, arguments.toString);
@@ -88,7 +70,6 @@ var stringToArray = function (s) {
   return a;
 };
 
-exports.mapOr	    = mapOr;
 exports.trace	    = trace;
 exports.arraySet    = arraySet;
 exports.hexToString = hexToString;
