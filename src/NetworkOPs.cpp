@@ -918,7 +918,7 @@ Json::Value NetworkOPs::pubBootstrapAccountInfo(Ledger::ref lpAccepted, const Ri
 
 	return jvObj;
 }
-
+/*
 void NetworkOPs::pubAccountInfo(const RippleAddress& naAccountID, const Json::Value& jvObj)
 {
 	boost::interprocess::sharable_lock<boost::interprocess::interprocess_upgradable_mutex>	sl(mMonitorLock);
@@ -939,6 +939,7 @@ void NetworkOPs::pubAccountInfo(const RippleAddress& naAccountID, const Json::Va
 		}
 	}
 }
+*/
 
 void NetworkOPs::pubLedger(Ledger::ref lpAccepted)
 {
@@ -964,7 +965,7 @@ void NetworkOPs::pubLedger(Ledger::ref lpAccepted)
 			}
 		}
 	}
-
+	/*
 	{
 		boost::interprocess::sharable_lock<boost::interprocess::interprocess_upgradable_mutex>	sl(mMonitorLock);
 		if (!mSubAccountTransaction.empty())
@@ -990,13 +991,11 @@ void NetworkOPs::pubLedger(Ledger::ref lpAccepted)
 			}
 		}
 	}
-
+	*/
 	{
 		boost::interprocess::sharable_lock<boost::interprocess::interprocess_upgradable_mutex>	sl(mMonitorLock);
-		bool	bAll		= !mSubTransactions.empty();
-		bool	bAccounts	= !mSubAccountTransaction.empty();
-
-		if (bAll || bAccounts)
+		
+		if (!mSubTransactions.empty() || !mSubRTTransactions.empty() || !mSubAccount.empty() || !mSubRTAccount.empty())
 		{
 			SHAMap&		txSet	= *lpAccepted->peekTransactionMap();
 
