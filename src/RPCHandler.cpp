@@ -248,7 +248,7 @@ Json::Value RPCHandler::authorize(const uint256& uLedger,
 
 	if (saSrcBalance < saFee)
 	{
-		cLog(lsINFO) << "authorize: Insufficent funds for fees: fee=" << saFee.getText() << " balance=" << saSrcBalance.getText();
+		cLog(lsINFO) << "authorize: Insufficient funds for fees: fee=" << saFee.getText() << " balance=" << saSrcBalance.getText();
 
 		return rpcError(rpcINSUF_FUNDS);
 	}
@@ -1638,13 +1638,65 @@ Json::Value RPCHandler::handleJSONSubmit(std::string& key, Json::Value& txJSON)
 	}
 	if (!naAccount.setAccountID(txJSON["Account"].asString()))
 	{
-		return rpcError(rpcSRC_ACT_MISSING);
+		return rpcError(rpcSRC_ACT_MALFORMED);
 	}
 
+	AccountState::pointer asSrc	= mNetOps->getAccountState(uint256(0), naAccount);
+
+	if( txJSON["type"]=="Payment")
+	{	
+		txJSON["TransactionType"]=0;
+		
+		if(!txJSON.isMember("Fee"))
+		{
+			RippleAddress naDstAccountID;
+			if (!naDstAccountID.setAccountID(txJSON["Destination"].asString()))
+			{
+				return rpcError(rpcDST_ACT_MALFORMED);
+			}
+
+			if(mNetOps->getAccountState(uint256(0), naDstAccountID))
+				txJSON["Fee"]=(int)theConfig.FEE_DEFAULT;
+			else txJSON["Fee"]=(int)theConfig.FEE_ACCOUNT_CREATE;
+		}
+		/* TODO: pathfinding
+		if(!txJSON.isMember("Paths"))
+		{
+			if(txJSON["Amount"].isObject() || txJSON.isMember("SendMax") )
+			{  // we need a ripple path
+				STPathSet	spsPaths;
+				uint160		srcCurrencyID;
+
+				STAmount::currencyFromString(srcCurrencyID, sSrcCurrency);
+				Pathfinder pf(naSrcAccountID, naDstAccountID, srcCurrencyID, saDstAmount);
+				pf.findPaths(5, 1, spsPaths);
+				txJSON["Paths"]=spsPaths.getJson();
+				if(txJSON.isMember("Flags")) txJSON["Flags"]=txJSON["Flags"].asUInt() | 2;
+				else txJSON["Flags"]=2;
+			}
+		}*/
+	}else if( txJSON["type"]=="OfferCreate" )
+	{
+		txJSON["TransactionType"]=7;
+		if(!txJSON.isMember("Fee")) txJSON["Fee"]=(int)theConfig.FEE_DEFAULT;
+	}else if( txJSON["type"]=="TrustSet")
+	{
+		txJSON["TransactionType"]=20;
+		if(!txJSON.isMember("Fee")) txJSON["Fee"]=(int)theConfig.FEE_DEFAULT;
+	}else if( txJSON["type"]=="OfferCancel")
+	{
+		txJSON["TransactionType"]=8;
+		if(!txJSON.isMember("Fee")) txJSON["Fee"]=(int)theConfig.FEE_DEFAULT;
+	}
+
+	txJSON.removeMember("type");
+
+	if(!txJSON.isMember("Sequence")) txJSON["Sequence"]=asSrc->getSeq();
+	if(!txJSON.isMember("Flags")) txJSON["Flags"]=0;	
 	
 	Ledger::pointer	lpCurrent		= mNetOps->getCurrentLedger();
 	SLE::pointer	sleAccountRoot	= mNetOps->getSLE(lpCurrent, Ledger::getAccountRootIndex(naAccount.getAccountID()));
-
+	
 	if (!sleAccountRoot)
 	{
 		// XXX Ignore transactions for accounts not created.
@@ -2003,6 +2055,24 @@ Json::Value RPCHandler::doTx(const Json::Value& params)
 	}
 
 	return rpcError(rpcNOT_IMPL);
+}
+
+Json::Value RPCHandler::doLedgerClosed(const Json::Value& params)
+{
+	Json::Value jvResult;
+	uint256	uLedger	= mNetOps->getClosedLedger();
+
+	jvResult["ledger_closed_index"]		= mNetOps->getLedgerID(uLedger);
+	jvResult["ledger_closed"]			= uLedger.ToString();
+	//jvResult["ledger_closed_time"]		= uLedger.
+	return jvResult;
+}
+
+Json::Value RPCHandler::doLedgerCurrent(const Json::Value& params)
+{
+	Json::Value jvResult;
+	jvResult["ledger_current_index"]	= mNetOps->getCurrentLedgerID();
+	return jvResult;
 }
 
 // ledger [id|current|lastclosed] [full]
@@ -2836,5 +2906,323 @@ Json::Value RPCHandler::doUnlLoad(const Json::Value& params)
 
 	return "loading";
 }
+
+Json::Value RPCHandler::doLedgerAccept(const Json::Value& )
+{
+	Json::Value jvResult;
+	if (!theConfig.RUN_STANDALONE)
+	{
+		jvResult["error"]	= "notStandAlone";
+	}
+	else
+	{
+		mNetOps->acceptLedger();
+
+		jvResult["ledger_current_index"]	= mNetOps->getCurrentLedgerID();
+	}
+	return(jvResult);
+}
+
+
+
+Json::Value RPCHandler::doTransactionEntry(const Json::Value& params)
+{
+	Json::Value jvResult;
+	/* LATER
+	if (!jvRequest.isMember("transaction"))
+	{
+		jvResult["error"]	= "fieldNotFoundTransaction";
+	}
+	if (!jvRequest.isMember("ledger_closed"))
+	{
+		jvResult["error"]	= "notYetImplemented";	// XXX We don't support any transaction yet.
+	}
+	else
+	{
+		uint256						uTransID;
+		// XXX Relying on trusted WSS client. Would be better to have a strict routine, returning success or failure.
+		uTransID.SetHex(jvRequest["transaction"].asString());
+
+		uint256						uLedgerID;
+		// XXX Relying on trusted WSS client. Would be better to have a strict routine, returning success or failure.
+		uLedgerID.SetHex(jvRequest["ledger_closed"].asString());
+
+		Ledger::pointer				lpLedger	= theApp->getMasterLedger().getLedgerByHash(uLedgerID);
+
+		if (!lpLedger) {
+			jvResult["error"]	= "ledgerNotFound";
+		}
+		else
+		{
+			Transaction::pointer		tpTrans;
+			TransactionMetaSet::pointer	tmTrans;
+
+			if (!lpLedger-> getTransaction(uTransID, tpTrans, tmTrans))
+			{
+				jvResult["error"]	= "transactionNotFound";
+			}
+			else
+			{
+				jvResult["transaction"]		= tpTrans->getJson(0);
+				jvResult["metadata"]		= tmTrans->getJson(0);
+				// 'accounts'
+				// 'engine_...'
+				// 'ledger_...'
+			}
+		}
+	}
+	*/
+	return jvResult;
+}
+
+
+
+Json::Value RPCHandler::doLedgerEntry(const Json::Value& params)
+{
+	Json::Value jvResult;
+	/* TODO
+
+	uint256	uLedger			= jvRequest.isMember("ledger_closed") ? uint256(jvRequest["ledger_closed"].asString()) : 0;
+	uint32	uLedgerIndex	= jvRequest.isMember("ledger_index") && jvRequest["ledger_index"].isNumeric() ? jvRequest["ledger_index"].asUInt() : 0;
+
+	Ledger::pointer	 lpLedger;
+
+	if (!!uLedger)
+	{
+		// Ledger directly specified.
+		lpLedger	= noNetwork.getLedgerByHash(uLedger);
+
+		if (!lpLedger)
+		{
+			jvResult["error"]	= "ledgerNotFound";
+			return;
+		}
+
+		uLedgerIndex	= lpLedger->getLedgerSeq();	// Set the current index, override if needed.
+	}
+	else if (!!uLedgerIndex)
+	{
+		lpLedger		= noNetwork.getLedgerBySeq(uLedgerIndex);
+
+		if (!lpLedger)
+		{
+			jvResult["error"]	= "ledgerNotFound";	// ledger_index from future?
+			return;
+		}
+	}
+	else
+	{
+		// Default to current ledger.
+		lpLedger		= noNetwork.getCurrentLedger();
+		uLedgerIndex	= lpLedger->getLedgerSeq();	// Set the current index.
+	}
+
+	if (lpLedger->isClosed())
+	{
+		if (!!uLedger)
+			jvResult["ledger_closed"]			= uLedger.ToString();
+
+		jvResult["ledger_closed_index"]		= uLedgerIndex;
+	}
+	else
+	{
+		jvResult["ledger_current_index"]	= uLedgerIndex;
+	}
+
+	uint256		uNodeIndex;
+	bool		bNodeBinary	= false;
+
+	if (jvRequest.isMember("index"))
+	{
+		// XXX Needs to provide proof.
+		uNodeIndex.SetHex(jvRequest["index"].asString());
+		bNodeBinary	= true;
+	}
+	else if (jvRequest.isMember("account_root"))
+	{
+		RippleAddress	naAccount;
+
+		if (!naAccount.setAccountID(jvRequest["account_root"].asString())
+			|| !naAccount.getAccountID())
+		{
+			jvResult["error"]	= "malformedAddress";
+		}
+		else
+		{
+			uNodeIndex = Ledger::getAccountRootIndex(naAccount.getAccountID());
+		}
+	}
+	else if (jvRequest.isMember("directory"))
+	{
+
+		if (!jvRequest.isObject())
+		{
+			uNodeIndex.SetHex(jvRequest["directory"].asString());
+		}
+		else if (jvRequest["directory"].isMember("sub_index")
+			&& !jvRequest["directory"]["sub_index"].isIntegral())
+		{
+			jvResult["error"]	= "malformedRequest";
+		}
+		else
+		{
+			uint64	uSubIndex = jvRequest["directory"].isMember("sub_index")
+				? jvRequest["directory"]["sub_index"].asUInt()
+				: 0;
+
+			if (jvRequest["directory"].isMember("dir_root"))
+			{
+				uint256	uDirRoot;
+
+				uDirRoot.SetHex(jvRequest["dir_root"].asString());
+
+				uNodeIndex	= Ledger::getDirNodeIndex(uDirRoot, uSubIndex);
+			}
+			else if (jvRequest["directory"].isMember("owner"))
+			{
+				RippleAddress	naOwnerID;
+
+				if (!naOwnerID.setAccountID(jvRequest["directory"]["owner"].asString()))
+				{
+					jvResult["error"]	= "malformedAddress";
+				}
+				else
+				{
+					uint256	uDirRoot	= Ledger::getOwnerDirIndex(naOwnerID.getAccountID());
+
+					uNodeIndex	= Ledger::getDirNodeIndex(uDirRoot, uSubIndex);
+				}
+			}
+			else
+			{
+				jvResult["error"]	= "malformedRequest";
+			}
+		}
+	}
+	else if (jvRequest.isMember("generator"))
+	{
+		RippleAddress	naGeneratorID;
+
+		if (!jvRequest.isObject())
+		{
+			uNodeIndex.SetHex(jvRequest["generator"].asString());
+		}
+		else if (!jvRequest["generator"].isMember("regular_seed"))
+		{
+			jvResult["error"]	= "malformedRequest";
+		}
+		else if (!naGeneratorID.setSeedGeneric(jvRequest["generator"]["regular_seed"].asString()))
+		{
+			jvResult["error"]	= "malformedAddress";
+		}
+		else
+		{
+			RippleAddress		na0Public;		// To find the generator's index.
+			RippleAddress		naGenerator	= RippleAddress::createGeneratorPublic(naGeneratorID);
+
+			na0Public.setAccountPublic(naGenerator, 0);
+
+			uNodeIndex	= Ledger::getGeneratorIndex(na0Public.getAccountID());
+		}
+	}
+	else if (jvRequest.isMember("offer"))
+	{
+		RippleAddress	naAccountID;
+
+		if (!jvRequest.isObject())
+		{
+			uNodeIndex.SetHex(jvRequest["offer"].asString());
+		}
+		else if (!jvRequest["offer"].isMember("account")
+			|| !jvRequest["offer"].isMember("seq")
+			|| !jvRequest["offer"]["seq"].isIntegral())
+		{
+			jvResult["error"]	= "malformedRequest";
+		}
+		else if (!naAccountID.setAccountID(jvRequest["offer"]["account"].asString()))
+		{
+			jvResult["error"]	= "malformedAddress";
+		}
+		else
+		{
+			uint32		uSequence	= jvRequest["offer"]["seq"].asUInt();
+
+			uNodeIndex	= Ledger::getOfferIndex(naAccountID.getAccountID(), uSequence);
+		}
+	}
+	else if (jvRequest.isMember("ripple_state"))
+	{
+		RippleAddress	naA;
+		RippleAddress	naB;
+		uint160			uCurrency;
+		Json::Value		jvRippleState	= jvRequest["ripple_state"];
+
+		if (!jvRippleState.isMember("currency")
+			|| !jvRippleState.isMember("accounts")
+			|| !jvRippleState["accounts"].isArray()
+			|| 2 != jvRippleState["accounts"].size()
+			|| !jvRippleState["accounts"][0u].isString()
+			|| !jvRippleState["accounts"][1u].isString()
+			|| jvRippleState["accounts"][0u].asString() == jvRippleState["accounts"][1u].asString()
+			) {
+
+				cLog(lsINFO)
+					<< boost::str(boost::format("ledger_entry: ripple_state: accounts: %d currency: %d array: %d size: %d equal: %d")
+					% jvRippleState.isMember("accounts")
+					% jvRippleState.isMember("currency")
+					% jvRippleState["accounts"].isArray()
+					% jvRippleState["accounts"].size()
+					% (jvRippleState["accounts"][0u].asString() == jvRippleState["accounts"][1u].asString())
+					);
+
+				jvResult["error"]	= "malformedRequest";
+		}
+		else if (!naA.setAccountID(jvRippleState["accounts"][0u].asString())
+			|| !naB.setAccountID(jvRippleState["accounts"][1u].asString())) {
+				jvResult["error"]	= "malformedAddress";
+		}
+		else if (!STAmount::currencyFromString(uCurrency, jvRippleState["currency"].asString())) {
+			jvResult["error"]	= "malformedCurrency";
+		}
+		else
+		{
+			uNodeIndex	= Ledger::getRippleStateIndex(naA, naB, uCurrency);
+		}
+	}
+	else
+	{
+		jvResult["error"]	= "unknownOption";
+	}
+
+	if (!!uNodeIndex)
+	{
+		SLE::pointer	sleNode	= noNetwork.getSLE(lpLedger, uNodeIndex);
+
+		if (!sleNode)
+		{
+			// Not found.
+			// XXX Should also provide proof.
+			jvResult["error"]		= "entryNotFound";
+		}
+		else if (bNodeBinary)
+		{
+			// XXX Should also provide proof.
+			Serializer s;
+
+			sleNode->add(s);
+
+			jvResult["node_binary"]	= strHex(s.peekData());
+			jvResult["index"]		= uNodeIndex.ToString();
+		}
+		else
+		{
+			jvResult["node"]		= sleNode->getJson(0);
+			jvResult["index"]		= uNodeIndex.ToString();
+		}
+	}
+	*/
+	return jvResult;
+}
+
 
 // vim:ts=4

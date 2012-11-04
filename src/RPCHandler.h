@@ -92,6 +92,14 @@ class RPCHandler
 	Json::Value doLogin(const Json::Value& params);
 
 
+	
+	Json::Value doLedgerAccept(const Json::Value& params);
+	Json::Value doLedgerClosed(const Json::Value& params);
+	Json::Value doLedgerCurrent(const Json::Value& params);
+	Json::Value doLedgerEntry(const Json::Value& params);
+	Json::Value doTransactionEntry(const Json::Value& params);
+
+
 public:
 
 	enum {

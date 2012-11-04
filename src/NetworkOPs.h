@@ -51,6 +51,8 @@ protected:
 	typedef boost::unordered_map<uint160,boost::unordered_set<InfoSub*> >::value_type	subInfoMapValue;
 	typedef boost::unordered_map<uint160,boost::unordered_set<InfoSub*> >::iterator		subInfoMapIterator;
 
+	typedef boost::unordered_map<uint160,std::pair<InfoSub*,uint32> >					subSubmitMapType;
+
 	OperatingMode						mMode;
 	bool								mNeedNetworkLedger;
 	boost::posix_time::ptime			mConnectTime;
@@ -74,9 +76,10 @@ protected:
     boost::interprocess::interprocess_upgradable_mutex	mMonitorLock;
 	subInfoMapType										mSubAccount; 
 	subInfoMapType										mSubRTAccount; 
+	subSubmitMapType									mSubmitMap;
 
 	boost::unordered_set<InfoSub*>						mSubLedger;				// accepted ledgers
-	boost::unordered_set<InfoSub*>						mSubLedgerAccounts;		// accepted ledgers + affected accounts
+	boost::unordered_set<InfoSub*>						mSubServer;				// when server changes connectivity state
 	boost::unordered_set<InfoSub*>						mSubTransactions;		// all accepted transactions
 	boost::unordered_set<InfoSub*>						mSubRTTransactions;		// all proposed and accepted transactions
 
@@ -211,31 +214,26 @@ public:
 	// Monitoring: publisher side
 	//
 	void pubLedger(Ledger::ref lpAccepted);
-	void pubProposedTransaction(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult, bool bAccepted);
+	void pubProposedTransaction(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult);
 
 
 	//
 	// Monitoring: subscriber side
 	//
-
-	// --> vnaAddress: empty = all
-	void subAccountInfo(InfoSub* ispListener, const boost::unordered_set<RippleAddress>& vnaAccountIDs);
-	void unsubAccountInfo(InfoSub* ispListener, const boost::unordered_set<RippleAddress>& vnaAccountIDs);
-
-	void subAccountTransaction(InfoSub* ispListener, const boost::unordered_set<RippleAddress>& vnaAccountIDs);
-	void unsubAccountTransaction(InfoSub* ispListener, const boost::unordered_set<RippleAddress>& vnaAccountIDs);
-
-	// void subAccountChanges(InfoSub* ispListener, const uint256 uLedgerHash);
-	// void unsubAccountChanges(InfoSub* ispListener);
+	void subAccount(InfoSub* ispListener, const boost::unordered_set<RippleAddress>& vnaAccountIDs,bool rt);
+	void unsubAccount(InfoSub* ispListener, const boost::unordered_set<RippleAddress>& vnaAccountIDs,bool rt);
 
 	bool subLedger(InfoSub* ispListener);
 	bool unsubLedger(InfoSub* ispListener);
 
-	bool subLedgerAccounts(InfoSub* ispListener);
-	bool unsubLedgerAccounts(InfoSub* ispListener);
+	bool subServer(InfoSub* ispListener);
+	bool unsubServer(InfoSub* ispListener);
 
-	bool subTransaction(InfoSub* ispListener);
-	bool unsubTransaction(InfoSub* ispListener);
+	bool subTransactions(InfoSub* ispListener);
+	bool unsubTransactions(InfoSub* ispListener);
+
+	bool subRTTransactions(InfoSub* ispListener);
+	bool unsubRTTransactions(InfoSub* ispListener);
 };
 
 #endif

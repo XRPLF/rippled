@@ -52,24 +52,4 @@ public:
 	void doSubscribe(Json::Value& jvResult,  Json::Value& jvRequest);
 	void doUnsubscribe(Json::Value& jvResult,  Json::Value& jvRequest);
 
-
-
-	// deprecated
-	void doLedgerAccept(Json::Value& jvResult,  Json::Value& jvRequest);
-	void doLedgerClosed(Json::Value& jvResult,  Json::Value& jvRequest);
-	void doLedgerCurrent(Json::Value& jvResult,  Json::Value& jvRequest);
-	void doLedgerEntry(Json::Value& jvResult,  Json::Value& jvRequest);
-	void doTransactionEntry(Json::Value& jvResult,  Json::Value& jvRequest);
-
-	void doAccountInfoSubscribe(Json::Value& jvResult, Json::Value& jvRequest);
-	void doAccountInfoUnsubscribe(Json::Value& jvResult,  Json::Value& jvRequest);
-	void doAccountTransactionSubscribe(Json::Value& jvResult,  Json::Value& jvRequest);
-	void doAccountTransactionUnsubscribe(Json::Value& jvResult,  Json::Value& jvRequest);
-
-	void doServerSubscribe(Json::Value& jvResult,  Json::Value& jvRequest);
-	void doServerUnsubscribe(Json::Value& jvResult,  Json::Value& jvRequest);
-	void doLedgerAccountsSubcribe(Json::Value& jvResult,  Json::Value& jvRequest);
-	void doLedgerAccountsUnsubscribe(Json::Value& jvResult,  Json::Value& jvRequest);
-	void doTransactionSubcribe(Json::Value& jvResult,  Json::Value& jvRequest);
-	void doTransactionUnsubscribe(Json::Value& jvResult,  Json::Value& jvRequest);
 };
