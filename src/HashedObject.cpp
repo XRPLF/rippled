@@ -21,7 +21,6 @@ HashedObjectStore::HashedObjectStore(int cacheSize, int cacheAge) :
 bool HashedObjectStore::store(HashedObjectType type, uint32 index,
 	const std::vector<unsigned char>& data, const uint256& hash)
 { // return: false = already in cache, true = added to cache
-	assert(hash == Serializer::getSHA512Half(data));
 	if (!theApp->getHashNodeDB())
 	{
 		cLog(lsTRACE) << "HOS: no db";
@@ -32,6 +31,7 @@ bool HashedObjectStore::store(HashedObjectType type, uint32 index,
 		cLog(lsTRACE) << "HOS: " << hash << " store: incache";
 		return false;
 	}
+	assert(hash == Serializer::getSHA512Half(data));
 
 	HashedObject::pointer object = boost::make_shared<HashedObject>(type, index, data, hash);
 	if (!mCache.canonicalize(hash, object))
