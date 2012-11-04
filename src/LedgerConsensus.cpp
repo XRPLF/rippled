@@ -45,6 +45,29 @@ void TransactionAcquire::done()
 	}
 }
 
+void TransactionAcquire::onTimer()
+{
+	if (!getPeerCount())
+	{ // out of peers
+		bool found = false;
+		std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
+		BOOST_FOREACH(Peer::ref peer, peerList)
+		{
+			if (peer->hasTxSet(getHash()))
+			{
+				found = true;
+				peerHas(peer);
+			}
+		}
+		if (!found)
+		{
+			BOOST_FOREACH(Peer::ref peer, peerList)
+				peerHas(peer);
+		}
+	}
+	trigger(Peer::pointer(), true);
+}
+
 boost::weak_ptr<PeerSet> TransactionAcquire::pmDowncast()
 {
 	return boost::shared_polymorphic_downcast<PeerSet>(shared_from_this());
@@ -59,6 +82,7 @@ void TransactionAcquire::trigger(Peer::ref peer, bool timer)
 	}
 	if (!mHaveRoot)
 	{
+		cLog(lsTRACE) << "TransactionAcquire::trigger " << (peer ? "havePeer" : "noPeer") << " no root";
 		ripple::TMGetLedger tmGL;
 		tmGL.set_ledgerhash(mHash.begin(), mHash.size());
 		tmGL.set_itype(ripple::liTS_CANDIDATE);
@@ -323,7 +347,6 @@ void LedgerConsensus::handleLCL(const uint256& lclHash)
 		mProposing = false;
 		mValidating = false;
 		mPeerPositions.clear();
-		mPeerData.clear();
 		mDisputes.clear();
 		mCloseTimes.clear();
 		mDeadNodes.clear();
