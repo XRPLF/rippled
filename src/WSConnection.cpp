@@ -277,9 +277,9 @@ void WSConnection::doUnsubscribe(Json::Value& jvResult,  Json::Value& jvRequest)
 
 void WSConnection::doRPC(Json::Value& jvResult, Json::Value& jvRequest)
 {
-	if (jvRequest.isMember("command") && jvRequest.isMember("params"))
+	if (jvRequest.isMember("rpc_command") )
 	{
-		jvResult=theApp->getRPCHandler().doCommand(jvRequest["command"].asString(),jvRequest["params"],RPCHandler::GUEST);
+		jvResult=theApp->getRPCHandler().doCommand(jvRequest["rpc_command"].asString(),jvRequest["params"],RPCHandler::GUEST);
 
 	}else jvResult["error"]	= "fieldNotCommand";
 

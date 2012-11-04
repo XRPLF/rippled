@@ -28,14 +28,9 @@ class RPCHandler
 	Json::Value accountFromString(const uint256& uLedger, RippleAddress& naAccount, bool& bIndex, const std::string& strIdent, const int iIndex);
 
 	Json::Value doAcceptLedger(const Json::Value &params);
-	Json::Value doAccountDomainSet(const Json::Value &params);
-	Json::Value doAccountEmailSet(const Json::Value &params);
+	
 	Json::Value doAccountInfo(const Json::Value& params);
-	Json::Value doAccountMessageSet(const Json::Value &params);
-	Json::Value doAccountPublishSet(const Json::Value &params);
-	Json::Value doAccountRateSet(const Json::Value &params);
 	Json::Value doAccountTransactions(const Json::Value& params);
-	Json::Value doAccountWalletSet(const Json::Value &params);
 	Json::Value doConnect(const Json::Value& params);
 	Json::Value doDataDelete(const Json::Value& params);
 	Json::Value doDataFetch(const Json::Value& params);
@@ -44,24 +39,18 @@ class RPCHandler
 	Json::Value doLedger(const Json::Value& params);
 	Json::Value doLogRotate(const Json::Value& params);
 	Json::Value doNicknameInfo(const Json::Value& params);
-	Json::Value doNicknameSet(const Json::Value& params);
-	Json::Value doOfferCreate(const Json::Value& params);
-	Json::Value doOfferCancel(const Json::Value& params);
+	
 	Json::Value doOwnerInfo(const Json::Value& params);
-	Json::Value doPasswordFund(const Json::Value& params);
-	Json::Value doPasswordSet(const Json::Value& params);
+	
 	Json::Value doProfile(const Json::Value& params);
 	Json::Value doPeers(const Json::Value& params);
-	Json::Value doRipple(const Json::Value &params);
+	
 	Json::Value doRippleLinesGet(const Json::Value &params);
-	Json::Value doRippleLineSet(const Json::Value& params);
-	Json::Value doSend(const Json::Value& params);
 	Json::Value doServerInfo(const Json::Value& params);
 	Json::Value doSessionClose(const Json::Value& params);
 	Json::Value doSessionOpen(const Json::Value& params);
 	Json::Value doLogLevel(const Json::Value& params);
 	Json::Value doStop(const Json::Value& params);
-	Json::Value doTransitSet(const Json::Value& params);
 	Json::Value doTx(const Json::Value& params);
 	Json::Value doTxHistory(const Json::Value& params);
 	Json::Value doSubmit(const Json::Value& params);
@@ -80,9 +69,6 @@ class RPCHandler
 	Json::Value doValidationSeed(const Json::Value& params);
 
 	Json::Value doWalletAccounts(const Json::Value& params);
-	Json::Value doWalletAdd(const Json::Value& params);
-	Json::Value doWalletClaim(const Json::Value& params);
-	Json::Value doWalletCreate(const Json::Value& params);
 	Json::Value doWalletLock(const Json::Value& params);
 	Json::Value doWalletPropose(const Json::Value& params);
 	Json::Value doWalletSeed(const Json::Value& params);
@@ -91,8 +77,6 @@ class RPCHandler
 
 	Json::Value doLogin(const Json::Value& params);
 
-
-	
 	Json::Value doLedgerAccept(const Json::Value& params);
 	Json::Value doLedgerClosed(const Json::Value& params);
 	Json::Value doLedgerCurrent(const Json::Value& params);
