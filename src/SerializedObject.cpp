@@ -283,13 +283,8 @@ void STObject::add(Serializer& s, bool withSigningFields) const
 
 	BOOST_FOREACH(const SerializedType& it, mData)
 	{ // pick out the fields and sort them
-		if ((it.getSType() != STI_NOTPRESENT) && it.getFName().isBinary())
-		{
-			SField::ref fName = it.getFName();
-			if (withSigningFields ||
-					((fName != sfTxnSignature) && (fName != sfTxnSignatures) && (fName != sfSignature)))
+		if ((it.getSType() != STI_NOTPRESENT) && it.getFName().shouldInclude(withSigningFields))
 				fields.insert(std::make_pair(it.getFName().fieldCode, &it));
-		}
 	}
 
 

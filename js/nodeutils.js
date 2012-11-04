@@ -1,16 +1,18 @@
+var async = require("async");
 var fs	  = require("fs");
 var path  = require("path");
 
 var utils  = require("./utils.js");
 
 // Empty a directory.
+// done(err) : err = true if an error occured.
 var emptyPath = function(dirPath, done) {
   fs.readdir(dirPath, function(err, files) {
     if (err) {
       done(err);
     }
     else {
-      utils.mapOr(rmPath, files.map(function(f) { return path.join(dirPath, f); }), done);
+      async.some(files.map(function(f) { return path.join(dirPath, f); }), rmPath, done);
     }
   });
 };
@@ -53,6 +55,7 @@ var resetPath = function(dirPath, mode, done) {
 };
 
 // Remove path recursively.
+// done(err)
 var rmPath = function(dirPath, done) {
 //  console.log("rmPath: %s", dirPath);
 

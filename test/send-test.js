@@ -464,24 +464,23 @@ buster.testCase("Indirect ripple", {
 	    testutils.create_accounts(self.remote, "root", "10000", ["alice", "bob", "mtgox"], callback);
 	  },
 	  function (callback) {
-	    self.what = "Set alice's limit.";
+	    self.what = "Set credit limits.";
 
-	    testutils.credit_limit(self.remote, "alice", "600/USD/mtgox", callback);
+	    testutils.credit_limits(self.remote,
+	      {
+		"alice" : "600/USD/mtgox",
+		"bob"	: "700/USD/mtgox",
+	      },
+	      callback);
 	  },
 	  function (callback) {
-	    self.what = "Set bob's limit.";
+	    self.what = "Distribute funds.";
 
-	    testutils.credit_limit(self.remote, "bob", "700/USD/mtgox", callback);
-	  },
-	  function (callback) {
-	    self.what = "Give alice some mtgox.";
-
-	    testutils.payment(self.remote, "mtgox", "alice", "70/USD/mtgox", callback);
-	  },
-	  function (callback) {
-	    self.what = "Give bob some mtgox.";
-
-	    testutils.payment(self.remote, "mtgox", "bob", "50/USD/mtgox", callback);
+	    testutils.payments(self.remote,
+	      {
+		"mtgox" : [ "70/USD/alice", "50/USD/bob" ],
+	      },
+	      callback);
 	  },
 	  function (callback) {
 	    self.what = "Verify alice balance with mtgox.";
@@ -534,24 +533,23 @@ buster.testCase("Indirect ripple", {
 	    testutils.create_accounts(self.remote, "root", "10000", ["alice", "bob", "mtgox"], callback);
 	  },
 	  function (callback) {
-	    self.what = "Set alice's limit.";
+	    self.what = "Set credit limits.";
 
-	    testutils.credit_limit(self.remote, "alice", "600/USD/mtgox", callback);
+	    testutils.credit_limits(self.remote,
+	      {
+		"alice" : "600/USD/mtgox",
+		"bob"	: "700/USD/mtgox",
+	      },
+	      callback);
 	  },
 	  function (callback) {
-	    self.what = "Set bob's limit.";
+	    self.what = "Distribute funds.";
 
-	    testutils.credit_limit(self.remote, "bob", "700/USD/mtgox", callback);
-	  },
-	  function (callback) {
-	    self.what = "Give alice some mtgox.";
-
-	    testutils.payment(self.remote, "mtgox", "alice", "70/USD/mtgox", callback);
-	  },
-	  function (callback) {
-	    self.what = "Give bob some mtgox.";
-
-	    testutils.payment(self.remote, "mtgox", "bob", "50/USD/mtgox", callback);
+	    testutils.payments(self.remote,
+	      {
+		"mtgox" : [ "70/USD/alice", "50/USD/bob" ],
+	      },
+	      callback);
 	  },
 	  function (callback) {
 	    self.what = "Alice sends via a path";
@@ -593,39 +591,24 @@ buster.testCase("Indirect ripple", {
 	    testutils.create_accounts(self.remote, "root", "10000", ["alice", "bob", "carol", "amazon", "mtgox"], callback);
 	  },
 	  function (callback) {
-	    self.what = "Set alice's limit with bob.";
+	    self.what = "Set credit limits.";
 
-	    testutils.credit_limit(self.remote, "bob", "600/USD/alice", callback);
+	    testutils.credit_limits(self.remote,
+	      {
+		"amazon"  : "2000/USD/mtgox",
+		"bob"	: [ "600/USD/alice", "1000/USD/mtgox" ],
+		"carol"	: [ "700/USD/alice", "1000/USD/mtgox" ],
+	      },
+	      callback);
 	  },
 	  function (callback) {
-	    self.what = "Set alice's limit with carol.";
+	    self.what = "Distribute funds.";
 
-	    testutils.credit_limit(self.remote, "carol", "700/USD/alice", callback);
-	  },
-	  function (callback) {
-	    self.what = "Set bob's mtgox limit.";
-
-	    testutils.credit_limit(self.remote, "bob", "1000/USD/mtgox", callback);
-	  },
-	  function (callback) {
-	    self.what = "Set carol's mtgox limit.";
-
-	    testutils.credit_limit(self.remote, "carol", "1000/USD/mtgox", callback);
-	  },
-	  function (callback) {
-	    self.what = "Set amazon's mtgox limit.";
-
-	    testutils.credit_limit(self.remote, "amazon", "2000/USD/mtgox", callback);
-	  },
-	  function (callback) {
-	    self.what = "Give bob some mtgox.";
-
-	    testutils.payment(self.remote, "mtgox", "bob", "100/USD/mtgox", callback);
-	  },
-	  function (callback) {
-	    self.what = "Give carol some mtgox.";
-
-	    testutils.payment(self.remote, "mtgox", "carol", "100/USD/mtgox", callback);
+	    testutils.payments(self.remote,
+	      {
+		"mtgox" : [ "100/USD/bob", "100/USD/carol" ],
+	      },
+	      callback);
 	  },
 	  function (callback) {
 	    self.what = "Alice pays amazon via multiple paths";
@@ -642,29 +625,84 @@ buster.testCase("Indirect ripple", {
 	      .submit();
 	  },
 	  function (callback) {
-	    self.what = "Verify amazon balance with mtgox.";
+	    self.what = "Verify balances.";
 
-	    testutils.verify_balance(self.remote, "amazon", "150/USD/mtgox", callback);
+	    testutils.verify_balances(self.remote,
+	      {
+		"alice"	  : [ "-100/USD/bob", "-50/USD/carol" ],
+		"amazon"  : "150/USD/mtgox",
+		"bob"	  : "0/USD/mtgox",
+		"carol"	  : "50/USD/mtgox",
+	      },
+	      callback);
+	  },
+	], function (error) {
+	  buster.refute(error, self.what);
+	  done();
+	});
+    },
+
+  "indirect ripple with path and transfer fee" :
+    function (done) {
+      var self = this;
+
+      async.waterfall([
+	  function (callback) {
+	    self.what = "Create accounts.";
+
+	    testutils.create_accounts(self.remote, "root", "10000", ["alice", "bob", "carol", "amazon", "mtgox"], callback);
 	  },
 	  function (callback) {
-	    self.what = "Verify alice balance with bob.";
+	    self.what = "Set mtgox transfer rate.";
 
-	    testutils.verify_balance(self.remote, "alice", "-50/USD/bob", callback);
+	    testutils.transfer_rate(self.remote, "mtgox", 1.1e9, callback);
 	  },
 	  function (callback) {
-	    self.what = "Verify alice balance with carol.";
+	    self.what = "Set credit limits.";
 
-	    testutils.verify_balance(self.remote, "alice", "-100/USD/carol", callback);
+	    testutils.credit_limits(self.remote,
+	      {
+		"amazon"  : "2000/USD/mtgox",
+		"bob"	: [ "600/USD/alice", "1000/USD/mtgox" ],
+		"carol"	: [ "700/USD/alice", "1000/USD/mtgox" ],
+	      },
+	      callback);
 	  },
 	  function (callback) {
-	    self.what = "Verify bob balance with mtgox.";
+	    self.what = "Distribute funds.";
 
-	    testutils.verify_balance(self.remote, "bob", "50/USD/mtgox", callback);
+	    testutils.payments(self.remote,
+	      {
+		"mtgox" : [ "100/USD/bob", "100/USD/carol" ],
+	      },
+	      callback);
 	  },
 	  function (callback) {
-	    self.what = "Verify carol balance with mtgox.";
+	    self.what = "Alice pays amazon via multiple paths";
 
-	    testutils.verify_balance(self.remote, "carol", "0/USD/mtgox", callback);
+	    self.remote.transaction()
+	      .payment("alice", "amazon", "150/USD/mtgox")
+	      .send_max("200/USD/alice")
+	      .path_add( [ { account: "bob" } ])
+	      .path_add( [ { account: "carol" } ])
+	      .on('proposed', function (m) {
+		  // console.log("proposed: %s", JSON.stringify(m));
+
+		  callback(m.result != 'tesSUCCESS');
+		})
+	      .submit();
+	  },
+	  function (callback) {
+	    self.what = "Verify balances.";
+
+	    testutils.verify_balances(self.remote,
+	      {
+		"alice"	  : [ "-100/USD/bob", "-65.00000000000001/USD/carol" ],
+		"amazon"  : "150/USD/mtgox",
+		"bob"	  : "0/USD/mtgox",
+		"carol"	  : "35/USD/mtgox",
+	      },
+	      callback);
 	  },
 	], function (error) {
 	  buster.refute(error, self.what);
@@ -672,9 +710,6 @@ buster.testCase("Indirect ripple", {
 	});
     },
     // Direct ripple without no liqudity.
-    // Ripple without credit path.
-    // Ripple with one-way credit path.
-    // Transfer Fees
-    // Use multiple paths.
+    // Test with XRC at start and end.
 });
 // vim:sw=2:sts=2:ts=8

@@ -799,7 +799,11 @@ void RippleCalc::calcNodeRipple(
 }
 
 // Calculate saPrvRedeemReq, saPrvIssueReq, saPrvDeliver from saCur...
-// No account adjustments in reverse as we don't know how much is going to actually be pushed through yet.
+// Based on required deliverable, propagate redeem, issue, and deliver requests to the previous node.
+// Inflate amount requested by required fees.
+// Reedems are limited based on IOUs previous has on hand.
+// Issues are limited based on credit limits and amount owed.
+// No account balance adjustments as we don't know how much is going to actually be pushed through yet.
 // <-- tesSUCCESS or tepPATH_DRY
 TER RippleCalc::calcNodeAccountRev(const unsigned int uIndex, PathState::ref pspCur, const bool bMultiQuality)
 {
@@ -1135,7 +1139,9 @@ TER RippleCalc::calcNodeAccountRev(const unsigned int uIndex, PathState::ref psp
 	return terResult;
 }
 
-// When moving forward, we know the actual amount to push through so adjust balances.
+// The reverse pass has been narrowing by credit available and inflating by fees as it worked backwards.
+// Now, push through the actual amount to each node and adjust balances.
+//
 // Perform balance adjustments between previous and current node.
 // - The previous node: specifies what to push through to current.
 // - All of previous output is consumed.
@@ -1204,46 +1210,39 @@ TER RippleCalc::calcNodeAccountFwd(
 
 	if (bPrvAccount && bNxtAccount)
 	{
+		// Next is an account, must be rippling.
+
 		if (!uIndex)
 		{
 			// ^ --> ACCOUNT --> account
 
-			// First node, calculate amount to send.
-			// XXX Limit by stamp/ripple balance
+			// First node, calculate amount to ripple based on what is available.
 
-			const STAmount&	saCurSendMaxReq		= pspCur->saInReq.isNegative()
-													? pspCur->saInReq	// Negative for no limit, doing a calculation.
+			// Limit by sendmax.
+			const STAmount	saCurSendMaxReq		= pspCur->saInReq.isNegative()
+													? pspCur->saInReq					// Negative for no limit, doing a calculation.
 													: pspCur->saInReq-pspCur->saInAct;	// request - done.
 			STAmount&		saCurSendMaxPass	= pspCur->saInPass;		// Report how much pass sends.
 
-			if (saCurRedeemReq)
-			{
-				// Redeem requested.
-				saCurRedeemAct	= saCurRedeemReq.isNegative()
-									? saCurRedeemReq
-									: std::min(saCurRedeemReq, saCurSendMaxReq);
-			}
-			else
-			{
-				// No redeeming.
-
-				saCurRedeemAct	= saCurRedeemReq;
-			}
+			saCurRedeemAct		= saCurRedeemReq
+									// Redeem requested.
+									? saCurRedeemReq.isNegative()
+										? saCurRedeemReq
+										: std::min(saCurRedeemReq, saCurSendMaxReq)
+									// No redeeming.
+									: saCurRedeemReq;
 			saCurSendMaxPass	= saCurRedeemAct;
 
-			if (saCurIssueReq && (saCurSendMaxReq.isNegative() || saCurSendMaxPass != saCurSendMaxReq))
-			{
-				// Issue requested and pass does not meet max.
-				saCurIssueAct	= saCurSendMaxReq.isNegative()
-									? saCurIssueReq
-									: std::min(saCurSendMaxReq-saCurRedeemAct, saCurIssueReq);
-			}
-			else
-			{
-				// No issuing.
+			saCurIssueAct		= (saCurIssueReq									// Issue wanted.
+									&& (saCurSendMaxReq.isNegative()				// No limit.
+										|| saCurSendMaxPass != saCurSendMaxReq))	// Not yet satisfied.
+									// Issue requested and pass does not meet max.
+									? saCurSendMaxReq.isNegative()
+										? saCurIssueReq
+										: std::min(saCurSendMaxReq-saCurRedeemAct, saCurIssueReq)
+									// No issuing.
+									: STAmount(saCurIssueReq);
 
-				saCurIssueAct	= STAmount(saCurIssueReq);
-			}
 			saCurSendMaxPass	+= saCurIssueAct;
 
 			cLog(lsINFO) << boost::str(boost::format("calcNodeAccountFwd: ^ --> ACCOUNT --> account : saInReq=%s saInAct=%s saCurSendMaxReq=%s saCurRedeemAct=%s saCurIssueReq=%s saCurIssueAct=%s saCurSendMaxPass=%s")
@@ -1287,7 +1286,7 @@ TER RippleCalc::calcNodeAccountFwd(
 			saCurIssueAct.zero(saCurIssueReq);
 
 			// Previous redeem part 1: redeem -> redeem
-			if (saPrvRedeemReq != saPrvRedeemAct)			// Previous wants to redeem. To next must be ok.
+			if (saPrvRedeemReq && saCurRedeemReq)			// Previous wants to redeem.
 			{
 				// Rate : 1.0 : quality out
 				calcNodeRipple(QUALITY_ONE, uQualityOut, saPrvRedeemReq, saCurRedeemReq, saPrvRedeemAct, saCurRedeemAct, uRateMax);
@@ -1302,25 +1301,23 @@ TER RippleCalc::calcNodeAccountFwd(
 			}
 
 			// Previous redeem part 2: redeem -> issue.
-			// wants to redeem and current would and can issue.
-			// If redeeming cur to next is done, this implies can issue.
 			if (saPrvRedeemReq != saPrvRedeemAct			// Previous still wants to redeem.
-				&& saCurRedeemReq == saCurRedeemAct			// Current has no more to redeem to next.
-				&& saCurIssueReq)
+				&& saCurRedeemReq == saCurRedeemAct			// Current redeeming is done can issue.
+				&& saCurIssueReq)							// Current wants to issue.
 			{
 				// Rate : 1.0 : transfer_rate
 				calcNodeRipple(QUALITY_ONE, lesActive.rippleTransferRate(uCurAccountID), saPrvRedeemReq, saCurIssueReq, saPrvRedeemAct, saCurIssueAct, uRateMax);
 			}
 
 			// Previous issue part 2 : issue -> issue
-			if (saPrvIssueReq != saPrvIssueAct)				// Previous wants to issue. To next must be ok.
+			if (saPrvIssueReq != saPrvIssueAct				// Previous wants to issue.
+				&& saCurRedeemReq == saCurRedeemAct)		// Current redeeming is done can issue.
 			{
 				// Rate: quality in : 1.0
 				calcNodeRipple(uQualityIn, QUALITY_ONE, saPrvIssueReq, saCurIssueReq, saPrvIssueAct, saCurIssueAct, uRateMax);
 			}
 
 			// Adjust prv --> cur balance : take all inbound
-			// XXX Currency must be in amount.
 			lesActive.rippleCredit(uPrvAccountID, uCurAccountID, saPrvRedeemReq + saPrvIssueReq, false);
 		}
 	}
@@ -1429,7 +1426,7 @@ bool PathState::lessPriority(PathState::ref lhs, PathState::ref rhs)
 	return lhs->mIndex > rhs->mIndex;			// Bigger is worse.
 }
 
-// Make sure the path delivers to uAccountID: uCurrencyID from uIssuerID.
+// Make sure last path node delivers to uAccountID: uCurrencyID from uIssuerID.
 //
 // If the unadded next node as specified by arguments would not work as is, then add the necessary nodes so it would work.
 //
@@ -1651,7 +1648,40 @@ PathState::PathState(
 			| STPathElement::typeIssuer,
 		uSenderID,
 		uInCurrencyID,
-		uInIssuerID);
+		uSenderID);
+
+	if (tesSUCCESS == terStatus
+		&& !!uInCurrencyID							// First was not XRC
+		&& uInIssuerID != uSenderID) {				// Issuer was not same as sender
+		// May have an implied node.
+
+		// Figure out next node properties for implied node.
+		const uint160	uNxtCurrencyID	= spSourcePath.getElementCount()
+											? spSourcePath.getElement(0).getCurrency()
+											: uOutCurrencyID;
+		const uint160	uNxtAccountID	= spSourcePath.getElementCount()
+											? spSourcePath.getElement(0).getAccountID()
+											: !!uOutCurrencyID
+												? uOutIssuerID == uReceiverID
+													? uReceiverID
+													: uOutIssuerID
+												: ACCOUNT_XNS;
+
+		// Can't just use push implied, because it can't compensate for next account.
+		if (!uNxtCurrencyID							// Next is XRC - will have offer next
+				|| uInCurrencyID != uNxtCurrencyID	// Next is different current - will have offer next
+				|| uInIssuerID != uNxtAccountID)	// Next is not implied issuer
+		{
+			// Add implied account.
+			terStatus	= pushNode(
+				STPathElement::typeAccount
+					| STPathElement::typeCurrency
+					| STPathElement::typeIssuer,
+				uInIssuerID,
+				uInCurrencyID,
+				uInIssuerID);
+		}
+	}
 
 	BOOST_FOREACH(const STPathElement& speElement, spSourcePath)
 	{
@@ -1659,21 +1689,35 @@ PathState::PathState(
 			terStatus	= pushNode(speElement.getNodeType(), speElement.getAccountID(), speElement.getCurrency(), speElement.getIssuerID());
 	}
 
+	const PaymentNode&	pnPrv			= vpnNodes.back();
+
+	if (tesSUCCESS == terStatus
+		&& !!uOutCurrencyID							// Next is not XRC
+		&& uOutIssuerID != uReceiverID				// Out issuer is not reciever
+		&& (pnPrv.uCurrencyID != uOutCurrencyID		// Previous will be an offer.
+			|| pnPrv.uAccountID != uOutIssuerID))	// Need the implied issuer.
+	{
+		// Add implied account.
+		terStatus	= pushNode(
+			STPathElement::typeAccount
+				| STPathElement::typeCurrency
+				| STPathElement::typeIssuer,
+			uOutIssuerID,
+			uInCurrencyID,
+			uOutIssuerID);
+	}
+
 	if (tesSUCCESS == terStatus)
 	{
 		// Create receiver node.
 
-		terStatus	= pushImply(uReceiverID, uOutCurrencyID, uOutIssuerID);
-		if (tesSUCCESS == terStatus)
-		{
-			terStatus	= pushNode(
-				STPathElement::typeAccount						// Last node is always an account.
-					| STPathElement::typeCurrency
-					| STPathElement::typeIssuer,
-				uReceiverID,									// Receive to output
-				uOutCurrencyID,									// Desired currency
-				uOutIssuerID);
-		}
+		terStatus	= pushNode(
+			STPathElement::typeAccount						// Last node is always an account.
+				| STPathElement::typeCurrency
+				| STPathElement::typeIssuer,
+			uReceiverID,									// Receive to output
+			uOutCurrencyID,									// Desired currency
+			!!uOutCurrencyID ? uReceiverID : ACCOUNT_XNS);
 	}
 
 	if (tesSUCCESS == terStatus)
@@ -2065,8 +2109,8 @@ int iPass	= 0;
 					assert(!!pspCur->saInPass && !!pspCur->saOutPass);
 
 					if ((!bLimitQuality || pspCur->uQuality <= uQualityLimit)		// Quality is not limted or increment has allowed quality.
-						|| !pspBest														// Best is not yet set.
-						|| PathState::lessPriority(pspBest, pspCur))					// Current is better than set.
+						&& (!pspBest												// Best is not yet set.
+							|| PathState::lessPriority(pspBest, pspCur)))			// Current is better than set.
 					{
 						cLog(lsDEBUG) << boost::str(boost::format("rippleCalc: better: uQuality=%s saInPass=%s saOutPass=%s")
 							% STAmount::saFromRate(pspCur->uQuality)

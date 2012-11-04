@@ -60,16 +60,18 @@ public:
 	const int				fieldValue;		// Code number for protocol
 	std::string				fieldName;
 	SF_Meta					fieldMeta;
+	bool					signingField;
 
 	SField(int fc, SerializedTypeID tid, int fv, const char* fn) : 
-		fieldCode(fc), fieldType(tid), fieldValue(fv), fieldName(fn), fieldMeta(SFM_NEVER)
+		fieldCode(fc), fieldType(tid), fieldValue(fv), fieldName(fn), fieldMeta(SFM_NEVER), signingField(true)
 	{
 		boost::mutex::scoped_lock sl(mapMutex);
 		codeToField[fieldCode] = this;
 	}
 
 	SField(SerializedTypeID tid, int fv, const char *fn) :
-		fieldCode(FIELD_CODE(tid, fv)), fieldType(tid), fieldValue(fv), fieldName(fn), fieldMeta(SFM_NEVER)
+		fieldCode(FIELD_CODE(tid, fv)), fieldType(tid), fieldValue(fv), fieldName(fn),
+		fieldMeta(SFM_NEVER), signingField(true)
 	{
 		boost::mutex::scoped_lock sl(mapMutex);
 		codeToField[fieldCode] = this;
@@ -97,6 +99,11 @@ public:
 	bool shouldMetaDel() const	{ return (fieldMeta == SFM_DELETE) || (fieldMeta == SFM_ALWAYS); }
 	bool shouldMetaMod() const	{ return (fieldMeta == SFM_CHANGE) || (fieldMeta == SFM_ALWAYS); }
 	void setMeta(SF_Meta m)		{ fieldMeta = m; }
+	bool isSigningField() const	{ return signingField; }
+	void notSigningField()		{ signingField = false; }
+
+	bool shouldInclude(bool withSigningField) const
+		{ return (fieldValue < 256) && (withSigningField || signingField); }
 
 	bool operator==(const SField& f) const { return fieldCode == f.fieldCode; }
 	bool operator!=(const SField& f) const { return fieldCode != f.fieldCode; }
