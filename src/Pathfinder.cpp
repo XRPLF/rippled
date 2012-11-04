@@ -21,18 +21,18 @@ TODO: what is a good way to come up with multiple paths?
 
 
 OrderDB:
-	getXNSOffers();
+	getXRPOffers();
 
-	// return list of all orderbooks that want XNS
+	// return list of all orderbooks that want XRP
 	// return list of all orderbooks that want IssuerID
 	// return list of all orderbooks that want this issuerID and currencyID
 */
 
 /*
-Test sending to XNS
-Test XNS to XNS
+Test sending to XRP
+Test XRP to XRP
 Test offer in middle
-Test XNS to USD
+Test XRP to USD
 Test USD to EUR
 */
 
@@ -113,7 +113,7 @@ bool Pathfinder::findPaths(int maxSearchSteps, int maxPay, STPathSet& retPathSet
       // found the destination
 
       if (!ele.mCurrencyID) {
-	BOOST_FOREACH(OrderBook::pointer book,mOrderBook.getXNSInBooks())
+	BOOST_FOREACH(OrderBook::pointer book,mOrderBook.getXRPInBooks())
 	  {
 	    //if (!path.hasSeen(line->getAccountIDPeer().getAccountID())) 
 	      {
@@ -188,8 +188,8 @@ bool Pathfinder::checkComplete(STPathSet& retPathSet)
 
 
 // get all the options from this accountID
-//   if source is XNS
-//		every offer that wants XNS
+//   if source is XRP
+//		every offer that wants XRP
 //   else
 //		every ripple line that starts with the source currency
 //		every offer that we can take that wants the source currency
@@ -197,8 +197,8 @@ bool Pathfinder::checkComplete(STPathSet& retPathSet)
 void Pathfinder::addOptions(PathOption::pointer tail)
 {
 	if(!tail->mCurrencyID)
-	{ // source XNS
-		BOOST_FOREACH(OrderBook::pointer book,mOrderBook.getXNSInBooks())
+	{ // source XRP
+		BOOST_FOREACH(OrderBook::pointer book,mOrderBook.getXRPInBooks())
 		{
 			PathOption::pointer pathOption(new PathOption(tail));
 

@@ -35,7 +35,7 @@
 #define SECTION_VALIDATORS				"validators"
 #define SECTION_VALIDATORS_SITE			"validators_site"
 
-// Fees are in XNS.
+// Fees are in XRP.
 #define DEFAULT_FEE_DEFAULT				10
 #define DEFAULT_FEE_ACCOUNT_CREATE		1000*SYSTEM_CURRENCY_PARTS
 #define DEFAULT_FEE_NICKNAME_CREATE		1000

@@ -276,7 +276,7 @@ public:
 	}
 };
 
-class SendXNSOp  : public Operation
+class SendXRPOp  : public Operation
 {
 public:
 	bool work(Interpreter* interpreter)

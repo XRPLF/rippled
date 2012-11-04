@@ -25,9 +25,9 @@ enum PathFlags
 	PF_ISSUE			= 0x80,
 };
 
-#define CURRENCY_XNS		uint160(0)
+#define CURRENCY_XRP		uint160(0)
 #define CURRENCY_ONE		uint160(1)	// Used as a place holder
-#define ACCOUNT_XNS			uint160(0)
+#define ACCOUNT_XRP			uint160(0)
 #define ACCOUNT_ONE			uint160(1)	// Used as a place holder
 
 DEFINE_INSTANCE(SerializedValue);
@@ -209,11 +209,11 @@ class STAmount : public SerializedType
 
 protected:
 	uint160	mCurrency;		// Compared by ==. Always update mIsNative.
-	uint160	mIssuer;		// Not compared by ==. 0 for XNS.
+	uint160	mIssuer;		// Not compared by ==. 0 for XRP.
 
 	uint64	mValue;
 	int		mOffset;
-	bool	mIsNative;		// Always !mCurrency. Native is XNS.
+	bool	mIsNative;		// Always !mCurrency. Native is XRP.
 	bool	mIsNegative;
 
 	void canonicalize();
@@ -274,7 +274,7 @@ public:
 	int getExponent() const				{ return mOffset; }
 	uint64 getMantissa() const			{ return mValue; }
 
-	// When the currency is XNS, the value in raw units. S=signed
+	// When the currency is XRP, the value in raw units. S=signed
 	uint64 getNValue() const			{ if (!mIsNative) throw std::runtime_error("not native"); return mValue; }
 	void setNValue(uint64 v)			{ if (!mIsNative) throw std::runtime_error("not native"); mValue = v; }
 	int64 getSNValue() const;

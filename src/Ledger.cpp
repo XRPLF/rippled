@@ -563,7 +563,7 @@ Json::Value Ledger::getJson(int options)
 	}
 	else
 		ledger["closed"] = false;
-	if (mTransactionMap && (full || ((options & LEDGER_JSON_DUMP_TXNS) != 0)))
+	if (mTransactionMap && (full || ((options & LEDGER_JSON_DUMP_TXRP) != 0)))
 	{
 		Json::Value txns(Json::arrayValue);
 		SHAMapTreeNode::TNType type;
