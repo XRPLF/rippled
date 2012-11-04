@@ -694,6 +694,41 @@ void Peer::recvHello(ripple::TMHello& packet)
 	}
 }
 
+static void checkTransaction(Job&, int flags, SerializedTransaction::pointer stx, boost::weak_ptr<Peer> peer)
+{
+
+#ifndef TRUST_NETWORK
+	try
+	{
+#endif
+		Transaction::pointer tx;
+
+		if ((flags & SF_SIGGOOD) != 0)
+		{
+			tx = boost::make_shared<Transaction>(stx, true);
+			if (tx->getStatus() == INVALID)
+			{
+				theApp->getSuppression().setFlag(stx->getTransactionID(), SF_BAD);
+				return;
+			}
+			else
+				theApp->getSuppression().setFlag(stx->getTransactionID(), SF_SIGGOOD);
+		}
+		else
+			tx = boost::make_shared<Transaction>(stx, false);
+
+		theApp->getIOService().post(boost::bind(&NetworkOPs::processTransaction, &theApp->getOPs(), tx));
+
+#ifndef TRUST_NETWORK
+	}
+	catch (...)
+	{
+		theApp->getSuppression().setFlags(stx->getTransactionID(), SF_BAD);
+		punishPeer(peer, PP_INVALID_REQUEST);
+	}
+#endif
+}
+
 void Peer::recvTransaction(ripple::TMTransaction& packet)
 {
 	cLog(lsDEBUG) << "Got transaction from peer";
@@ -708,12 +743,22 @@ void Peer::recvTransaction(ripple::TMTransaction& packet)
 		SerializerIterator sit(s);
 		SerializedTransaction::pointer stx = boost::make_shared<SerializedTransaction>(boost::ref(sit));
 
-		if (!theApp->isNew(stx->getTransactionID(), mPeerId))
-			return;
+		int flags;
+		if (!theApp->isNew(stx->getTransactionID(), mPeerId, flags))
+		{ // we have seen this transaction recently
+			if ((flags & SF_BAD) != 0)
+			{
+				punishPeer(PP_INVALID_REQUEST);
+				return;
+			}
 
-		tx = boost::make_shared<Transaction>(stx, true);
-		if (tx->getStatus() == INVALID)
-			throw(0);
+			if ((flags & SF_RETRY) == 0)
+				return;
+		}
+
+		theApp->getJobQueue().addJob(jtTRANSACTION,
+			boost::bind(&checkTransaction, _1, flags, stx,  boost::weak_ptr<Peer>(shared_from_this())));
+
 #ifndef TRUST_NETWORK
 	}
 	catch (...)
@@ -727,14 +772,6 @@ void Peer::recvTransaction(ripple::TMTransaction& packet)
 	}
 #endif
 
-	tx = theApp->getOPs().processTransaction(tx);
-
-	if(tx->getStatus() != INCLUDED)
-	{ // transaction wasn't accepted into ledger
-#ifdef DEBUG
-		std::cerr << "Transaction from peer won't go in ledger" << std::endl;
-#endif
-	}
 }
 
 void Peer::recvPropose(ripple::TMProposeSet& packet)
