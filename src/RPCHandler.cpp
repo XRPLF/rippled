@@ -13,7 +13,7 @@
 #include <boost/foreach.hpp>
 #include <openssl/md5.h>
 /*
-carries out the RPC 
+carries out the RPC
 
 */
 
@@ -341,7 +341,7 @@ Json::Value RPCHandler::doAccountInfo(const Json::Value &params)
 
 	// Get info on account.
 
-	uint256			uAccepted		= mNetOps->getClosedLedger();
+	uint256			uAccepted		= mNetOps->getClosedLedgerHash();
 	Json::Value		jAccepted		= accountFromString(uAccepted, naAccount, bIndex, strIdent, iIndex);
 
 	if (jAccepted.empty())
@@ -507,7 +507,7 @@ Json::Value RPCHandler::doOwnerInfo(const Json::Value& params)
 
 	// Get info on account.
 
-	uint256			uAccepted	= mNetOps->getClosedLedger();
+	uint256			uAccepted	= mNetOps->getClosedLedgerHash();
 	Json::Value		jAccepted	= accountFromString(uAccepted, naAccount, bIndex, strIdent, iIndex);
 
 	ret["accepted"]	= jAccepted.empty() ? mNetOps->getOwnerInfo(uAccepted, naAccount) : jAccepted;
@@ -621,7 +621,7 @@ Json::Value RPCHandler::doProfile(const Json::Value &params)
 // ripple_lines_get <account>|<nickname>|<account_public_key> [<index>]
 Json::Value RPCHandler::doRippleLinesGet(const Json::Value &params)
 {
-	//	uint256			uAccepted	= mNetOps->getClosedLedger();
+	//	uint256			uAccepted	= mNetOps->getClosedLedgerHash();
 
 	std::string		strIdent	= params[0u].asString();
 	bool			bIndex;
@@ -1020,11 +1020,11 @@ Json::Value RPCHandler::doTx(const Json::Value& params)
 Json::Value RPCHandler::doLedgerClosed(const Json::Value& params)
 {
 	Json::Value jvResult;
-	uint256	uLedger	= mNetOps->getClosedLedger();
+	uint256	uLedger	= mNetOps->getClosedLedgerHash();
 
-	jvResult["ledger_closed_index"]		= mNetOps->getLedgerID(uLedger);
-	jvResult["ledger_closed"]			= uLedger.ToString();
-	//jvResult["ledger_closed_time"]		= uLedger.
+	jvResult["ledger_index"]		= mNetOps->getLedgerID(uLedger);
+	jvResult["ledger_hash"]			= uLedger.ToString();
+	//jvResult["ledger_time"]		= uLedger.
 	return jvResult;
 }
 
@@ -1373,7 +1373,7 @@ Json::Value RPCHandler::doCommand(const std::string& command, Json::Value& param
 	{
 		return rpcError(rpcNO_CURRENT);
 	}
-	else if ((commandsA[i].iOptions & optClosed) && mNetOps->getClosedLedger().isZero())
+	else if ((commandsA[i].iOptions & optClosed) && !mNetOps->getClosedLedger())
 	{
 		return rpcError(rpcNO_CLOSED);
 	}
@@ -1680,7 +1680,7 @@ Json::Value RPCHandler::doLedgerEntry(const Json::Value& params)
 	if(!reader.parse(params[0u].asString(),jvRequest))
 		return rpcError(rpcINVALID_PARAMS);
 
-	uint256	uLedger			= jvRequest.isMember("ledger_closed") ? uint256(jvRequest["ledger_closed"].asString()) : 0;
+	uint256	uLedger			= jvRequest.isMember("ledger_hash") ? uint256(jvRequest["ledger_hash"].asString()) : 0;
 	uint32	uLedgerIndex	= jvRequest.isMember("ledger_index") && jvRequest["ledger_index"].isNumeric() ? jvRequest["ledger_index"].asUInt() : 0;
 
 	Ledger::pointer	 lpLedger;
@@ -1718,9 +1718,9 @@ Json::Value RPCHandler::doLedgerEntry(const Json::Value& params)
 	if (lpLedger->isClosed())
 	{
 		if (!!uLedger)
-			jvResult["ledger_closed"]			= uLedger.ToString();
+			jvResult["ledger_hash"]			= uLedger.ToString();
 
-		jvResult["ledger_closed_index"]		= uLedgerIndex;
+		jvResult["ledger_index"]		= uLedgerIndex;
 	}
 	else
 	{
