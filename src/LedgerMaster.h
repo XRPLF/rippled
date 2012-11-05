@@ -9,6 +9,7 @@
 #include "Transaction.h"
 #include "TransactionEngine.h"
 #include "RangeSet.h"
+#include "CanonicalTXSet.h"
 
 // Tracks the current ledger and any ledgers in the process of closing
 // Tracks ledger history
@@ -25,7 +26,7 @@ class LedgerMaster
 
 	LedgerHistory mLedgerHistory;
 
-	std::map<uint256, Transaction::pointer> mHeldTransactionsByID;
+	CanonicalTXSet mHeldTransactions;
 
 	RangeSet mCompleteLedgers;
 	LedgerAcquire::pointer mMissingLedger;
@@ -40,7 +41,7 @@ class LedgerMaster
 
 public:
 
-	LedgerMaster() : mMissingSeq(0)		{ ; }
+	LedgerMaster() : mHeldTransactions(uint256()), mMissingSeq(0)	{ ; }
 
 	uint32 getCurrentLedgerIndex();
 
@@ -64,7 +65,7 @@ public:
 
 	std::string getCompleteLedgers()	{ return mCompleteLedgers.toString(); }
 
-	Ledger::pointer closeLedger();
+	Ledger::pointer closeLedger(bool recoverHeldTransactions);
 
 	Ledger::pointer getLedgerBySeq(uint32 index)
 	{
@@ -90,7 +91,7 @@ public:
 
 	void setLedgerRangePresent(uint32 minV, uint32 maxV) { mCompleteLedgers.setRange(minV, maxV); }
 
-	bool addHeldTransaction(const Transaction::pointer& trans);
+	void addHeldTransaction(const Transaction::pointer& trans);
 
 	void sweep(void) { mLedgerHistory.sweep(); }
 };

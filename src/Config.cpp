@@ -35,7 +35,7 @@
 #define SECTION_VALIDATORS				"validators"
 #define SECTION_VALIDATORS_SITE			"validators_site"
 
-// Fees are in XNS.
+// Fees are in XRP.
 #define DEFAULT_FEE_DEFAULT				10
 #define DEFAULT_FEE_ACCOUNT_CREATE		1000*SYSTEM_CURRENCY_PARTS
 #define DEFAULT_FEE_NICKNAME_CREATE		1000
@@ -165,6 +165,8 @@ void Config::setup(const std::string& strConf)
 
 void Config::load()
 {
+	std::cout << "Loading: " << CONFIG_FILE << std::endl;
+
 	std::ifstream	ifsConfig(CONFIG_FILE.c_str(), std::ios::in);
 
 	if (!ifsConfig)

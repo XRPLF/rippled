@@ -42,7 +42,7 @@ Application::Application() :
 	mNetOps(mIOService, &mMasterLedger), mTempNodeCache("NodeCache", 16384, 90), mHashedObjectStore(16384, 300),
 	mSNTPClient(mAuxService), mRpcDB(NULL), mTxnDB(NULL), mLedgerDB(NULL), mWalletDB(NULL),
 	mHashNodeDB(NULL), mNetNodeDB(NULL),
-	mConnectionPool(mIOService), mPeerDoor(NULL), mRPCDoor(NULL), mSweepTimer(mAuxService)
+	mConnectionPool(mIOService), mPeerDoor(NULL), mRPCDoor(NULL), mSweepTimer(mAuxService), mRPCHandler(&mNetOps)
 {
 	RAND_bytes(mNonce256.begin(), mNonce256.size());
 	RAND_bytes(reinterpret_cast<unsigned char *>(&mNonceST), sizeof(mNonceST));

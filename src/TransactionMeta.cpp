@@ -121,6 +121,7 @@ static bool compare(const STObject& o1, const STObject& o2)
 STObject TransactionMetaSet::getAsObject() const
 {
 	STObject metaData(sfTransactionMetaData);
+	assert(mResult != 255);
 	metaData.setFieldU8(sfTransactionResult, mResult);
 	metaData.addObject(mNodes);
 	return metaData;

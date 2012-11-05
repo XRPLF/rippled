@@ -14,6 +14,10 @@ RPCDoor::RPCDoor(boost::asio::io_service& io_service) :
 	Log(lsINFO) << "RPC port: " << theConfig.RPC_IP << " " << theConfig.RPC_PORT << " allow remote: " << theConfig.RPC_ALLOW_REMOTE;
 	startListening();
 }
+RPCDoor::~RPCDoor()
+{
+	Log(lsINFO) << "RPC port: " << theConfig.RPC_IP << " " << theConfig.RPC_PORT << " allow remote: " << theConfig.RPC_ALLOW_REMOTE;
+}
 
 void RPCDoor::startListening()
 {

@@ -35,14 +35,41 @@ void TransactionAcquire::done()
 {
 	if (mFailed)
 	{
-		cLog(lsWARNING) << "Failed to acquire TXs " << mHash;
+		cLog(lsWARNING) << "Failed to acquire TX set " << mHash;
 		theApp->getOPs().mapComplete(mHash, SHAMap::pointer());
 	}
 	else
 	{
+		cLog(lsINFO) << "Acquired TX set " << mHash;
 		mMap->setImmutable();
 		theApp->getOPs().mapComplete(mHash, mMap);
 	}
+}
+
+void TransactionAcquire::onTimer()
+{
+	if (!getPeerCount())
+	{ // out of peers
+		cLog(lsWARNING) << "Out of peers for TX set " << getHash();
+
+		bool found = false;
+		std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
+		BOOST_FOREACH(Peer::ref peer, peerList)
+		{
+			if (peer->hasTxSet(getHash()))
+			{
+				found = true;
+				peerHas(peer);
+			}
+		}
+		if (!found)
+		{
+			BOOST_FOREACH(Peer::ref peer, peerList)
+				peerHas(peer);
+		}
+	}
+	else
+		trigger(Peer::pointer(), true);
 }
 
 boost::weak_ptr<PeerSet> TransactionAcquire::pmDowncast()
@@ -59,6 +86,7 @@ void TransactionAcquire::trigger(Peer::ref peer, bool timer)
 	}
 	if (!mHaveRoot)
 	{
+		cLog(lsTRACE) << "TransactionAcquire::trigger " << (peer ? "havePeer" : "noPeer") << " no root";
 		ripple::TMGetLedger tmGL;
 		tmGL.set_ledgerhash(mHash.begin(), mHash.size());
 		tmGL.set_itype(ripple::liTS_CANDIDATE);
@@ -98,9 +126,15 @@ bool TransactionAcquire::takeNodes(const std::list<SHAMapNode>& nodeIDs,
 	const std::list< std::vector<unsigned char> >& data, Peer::ref peer)
 {
 	if (mComplete)
+	{
+		cLog(lsTRACE) << "TX set complete";
 		return true;
+	}
 	if (mFailed)
+	{
+		cLog(lsTRACE) << "TX set failed";
 		return false;
+	}
 	try
 	{
 		std::list<SHAMapNode>::const_iterator nodeIDit = nodeIDs.begin();
@@ -116,12 +150,18 @@ bool TransactionAcquire::takeNodes(const std::list<SHAMapNode>& nodeIDs,
 					return false;
 				}
 				if (!mMap->addRootNode(getHash(), *nodeDatait, snfWIRE, NULL))
+				{
+					cLog(lsWARNING) << "TX acquire got bad root node";
 					return false;
+				}
 				else
 					mHaveRoot = true;
 			}
 			else if (!mMap->addKnownNode(*nodeIDit, *nodeDatait, &sf))
+			{
+				cLog(lsWARNING) << "TX acquire got bad non-root node";
 				return false;
+			}
 			++nodeIDit;
 			++nodeDatait;
 		}
@@ -323,7 +363,6 @@ void LedgerConsensus::handleLCL(const uint256& lclHash)
 		mProposing = false;
 		mValidating = false;
 		mPeerPositions.clear();
-		mPeerData.clear();
 		mDisputes.clear();
 		mCloseTimes.clear();
 		mDeadNodes.clear();
@@ -537,7 +576,7 @@ void LedgerConsensus::closeLedger()
 		mCloseTime = theApp->getOPs().getCloseTimeNC();
 		theApp->getOPs().setLastCloseTime(mCloseTime);
 		statusChange(ripple::neCLOSING_LEDGER, *mPreviousLedger);
-		takeInitialPosition(*theApp->getMasterLedger().closeLedger());
+		takeInitialPosition(*theApp->getMasterLedger().closeLedger(true));
 }
 
 void LedgerConsensus::stateEstablish()
@@ -842,7 +881,7 @@ void LedgerConsensus::addDisputedTransaction(const uint256& txID, const std::vec
 	{
 		boost::unordered_map<uint256, SHAMap::pointer>::const_iterator cit =
 			mAcquired.find(pit.second->getCurrentHash());
-		if (cit != mAcquired.end() && cit->second)
+		if ((cit != mAcquired.end()) && cit->second)
 			txn->setVote(pit.first, cit->second->hasItem(txID));
 	}
 
@@ -927,7 +966,10 @@ bool LedgerConsensus::peerGaveNodes(Peer::ref peer, const uint256& setHash,
 {
 	boost::unordered_map<uint256, TransactionAcquire::pointer>::iterator acq = mAcquiring.find(setHash);
 	if (acq == mAcquiring.end())
+	{
+		cLog(lsINFO) << "Got TX data for set not acquiring: " << setHash;
 		return false;
+	}
 	TransactionAcquire::pointer set = acq->second; // We must keep the set around during the function
 	return set->takeNodes(nodeIDs, nodeData, peer);
 }
@@ -956,6 +998,7 @@ void LedgerConsensus::playbackProposals()
 	for (boost::unordered_map< uint160, std::list<LedgerProposal::pointer> >::iterator
 			it = storedProposals.begin(), end = storedProposals.end(); it != end; ++it)
 	{
+		bool relay = false;
 		BOOST_FOREACH(const LedgerProposal::pointer& proposal, it->second)
 		{
 			if (proposal->hasSignature())
@@ -964,11 +1007,33 @@ void LedgerConsensus::playbackProposals()
 				if (proposal->checkSign())
 				{
 					cLog(lsINFO) << "Applying stored proposal";
-					peerPosition(proposal);
+					relay = peerPosition(proposal);
 				}
 			}
 			else if (proposal->isPrevLedger(mPrevLedgerHash))
-				peerPosition(proposal);
+				relay = peerPosition(proposal);
+
+			if (relay)
+			{
+				cLog(lsWARNING) << "We should do delayed relay of this proposal, but we cannot";
+			}
+#if 0 // FIXME: We can't do delayed relay because we don't have the signature
+			std::set<uint64> peers
+			if (relay && theApp->getSuppression().swapSet(proposal.getSuppress(), set, SF_RELAYED))
+			{
+				cLog(lsDEBUG) << "Stored proposal delayed relay";
+				ripple::TMProposeSet set;
+				set.set_proposeseq
+				set.set_currenttxhash(, 256 / 8);
+				previousledger
+				closetime
+				nodepubkey
+				signature
+				PackedMessage::pointer message = boost::make_shared<PackedMessage>(set, ripple::mtPROPOSE_LEDGER);
+				theApp->getConnectionPool().relayMessageBut(peers, message);
+			}
+#endif
+
 		}
 	}
 }
@@ -1117,7 +1182,7 @@ void LedgerConsensus::accept(SHAMap::ref set)
 	{
 		Log(lsTRACE) << "newLCL";
 		Json::Value p;
-		newLCL->addJson(p, LEDGER_JSON_DUMP_TXNS | LEDGER_JSON_DUMP_STATE);
+		newLCL->addJson(p, LEDGER_JSON_DUMP_TXRP | LEDGER_JSON_DUMP_STATE);
 		Log(lsTRACE) << p;
 	}
 

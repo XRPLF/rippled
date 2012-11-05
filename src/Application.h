@@ -19,7 +19,7 @@
 #include "SNTPClient.h"
 #include "../database/database.h"
 #include "JobQueue.h"
-
+#include "RPCHandler.h"
 
 class RPCDoor;
 class PeerDoor;
@@ -55,6 +55,7 @@ class Application
 	HashedObjectStore		mHashedObjectStore;
 	SNTPClient				mSNTPClient;
 	JobQueue				mJobQueue;
+	RPCHandler				mRPCHandler;
 
 	DatabaseCon				*mRpcDB, *mTxnDB, *mLedgerDB, *mWalletDB, *mHashNodeDB, *mNetNodeDB;
 
@@ -96,9 +97,12 @@ public:
 	ValidationCollection& getValidations()			{ return mValidations; }
 	JobQueue& getJobQueue()							{ return mJobQueue; }
 	SuppressionTable& getSuppression()				{ return mSuppressions; }
+	RPCHandler& getRPCHandler()						{ return mRPCHandler; }
+
 
 	bool isNew(const uint256& s)					{ return mSuppressions.addSuppression(s); }
 	bool isNew(const uint256& s, uint64 p)			{ return mSuppressions.addSuppressionPeer(s, p); }
+	bool isNew(const uint256& s, uint64 p, int& f)	{ return mSuppressions.addSuppressionPeer(s, p, f); }
 	bool isNewFlag(const uint256& s, int f)			{ return mSuppressions.setFlag(s, f); }
 	bool running()									{ return mTxnDB != NULL; }
 	bool getSystemTimeOffset(int& offset)			{ return mSNTPClient.getOffset(offset); }

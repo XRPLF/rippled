@@ -170,7 +170,7 @@ void LedgerAcquire::addPeers()
 	if (!found)
 	{
 		BOOST_FOREACH(Peer::ref peer, peerList)
-		peerHas(peer);
+			peerHas(peer);
 	}
 }
 

@@ -14,10 +14,11 @@
 
 DEFINE_INSTANCE(Suppression);
 
-#define SF_RELAYED		0x01
-#define SF_SIGBAD		0x02
-#define SF_SIGGOOD		0x04
+#define SF_RELAYED		0x01	// Has already been relayed to other nodes
+#define SF_BAD			0x02	// Signature/format is bad
+#define SF_SIGGOOD		0x04	// Signature is good
 #define SF_SAVED		0x08
+#define SF_RETRY		0x10	// Transaction can be retried
 
 class Suppression : private IS_INSTANCE(Suppression)
 {
@@ -61,12 +62,15 @@ public:
 	bool addSuppression(const uint256& index);
 
 	bool addSuppressionPeer(const uint256& index, uint64 peer);
+	bool addSuppressionPeer(const uint256& index, uint64 peer, int& flags);
 	bool addSuppressionFlags(const uint256& index, int flag);
 	bool setFlag(const uint256& index, int flag);
+	int getFlags(const uint256& index);
 
 	Suppression getEntry(const uint256&);
 
 	bool swapSet(const uint256& index, std::set<uint64>& peers, int flag);
+	bool swapSet(const uint256& index, std::set<uint64>& peers);
 };
 
 #endif

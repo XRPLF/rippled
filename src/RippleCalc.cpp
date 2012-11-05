@@ -1536,7 +1536,7 @@ TER PathState::pushNode(
 			terResult	= pushImply(
 				pnCur.uAccountID,									// Current account.
 				pnCur.uCurrencyID,									// Wanted currency.
-				!!pnCur.uCurrencyID ? uAccountID : ACCOUNT_XNS);	// Account as wanted issuer.
+				!!pnCur.uCurrencyID ? uAccountID : ACCOUNT_XRP);	// Account as wanted issuer.
 
 			// Note: pnPrv may no longer be the immediately previous node.
 		}
@@ -1603,7 +1603,7 @@ TER PathState::pushNode(
 			terResult	= pushImply(
 				!!pnPrv.uCurrencyID
 					? ACCOUNT_ONE	// Rippling, but offer's don't have an account.
-					: ACCOUNT_XNS,
+					: ACCOUNT_XRP,
 				pnPrv.uCurrencyID,
 				pnPrv.uIssuerID);
 		}
@@ -1636,8 +1636,8 @@ PathState::PathState(
 {
 	const uint160	uInCurrencyID	= saSendMax.getCurrency();
 	const uint160	uOutCurrencyID	= saSend.getCurrency();
-	const uint160	uInIssuerID		= !!uInCurrencyID ? saSendMax.getIssuer() : ACCOUNT_XNS;
-	const uint160	uOutIssuerID	= !!uOutCurrencyID ? saSend.getIssuer() : ACCOUNT_XNS;
+	const uint160	uInIssuerID		= !!uInCurrencyID ? saSendMax.getIssuer() : ACCOUNT_XRP;
+	const uint160	uOutIssuerID	= !!uOutCurrencyID ? saSend.getIssuer() : ACCOUNT_XRP;
 
 	lesEntries				= lesSource.duplicate();
 
@@ -1670,7 +1670,7 @@ cLog(lsDEBUG) << boost::str(boost::format("PathState: pushed: account=%s currenc
 												? uOutIssuerID == uReceiverID
 													? uReceiverID
 													: uOutIssuerID
-												: ACCOUNT_XNS;
+												: ACCOUNT_XRP;
 
 cLog(lsDEBUG) << boost::str(boost::format("PathState: implied check: uNxtCurrencyID=%s uNxtAccountID=%s")
 	% RippleAddress::createHumanAccountID(uNxtCurrencyID)
@@ -1730,7 +1730,7 @@ cLog(lsDEBUG) << boost::str(boost::format("PathState: implied: account=%s curren
 				| STPathElement::typeIssuer,
 			uReceiverID,									// Receive to output
 			uOutCurrencyID,									// Desired currency
-			!!uOutCurrencyID ? uReceiverID : ACCOUNT_XNS);
+			!!uOutCurrencyID ? uReceiverID : ACCOUNT_XRP);
 	}
 
 	if (tesSUCCESS == terStatus)
@@ -2441,13 +2441,13 @@ void TransactionEngine::calcNodeOffer(
 {
 	TER	terResult	= temUNKNOWN;
 
-	// Direct: not bridging via XNS
+	// Direct: not bridging via XRP
 	bool			bDirectNext	= true;		// True, if need to load.
 	uint256			uDirectQuality;
 	uint256			uDirectTip	= Ledger::getBookBase(uGetsCurrency, uGetsIssuerID, uPaysCurrency, uPaysIssuerID);
 	uint256			uDirectEnd	= Ledger::getQualityNext(uDirectTip);
 
-	// Bridging: bridging via XNS
+	// Bridging: bridging via XRP
 	bool			bBridge		= true;		// True, if bridging active. False, missing an offer.
 	uint256			uBridgeQuality;
 	STAmount		saBridgeIn;				// Amount available.
@@ -2475,10 +2475,10 @@ void TransactionEngine::calcNodeOffer(
 
 	if (!uCurCurrencyID && !uPrvCurrencyID)
 	{
-		// Bridging: Neither currency is XNS.
-		uInTip		= Ledger::getBookBase(uPrvCurrencyID, uPrvIssuerID, CURRENCY_XNS, ACCOUNT_XNS);
+		// Bridging: Neither currency is XRP.
+		uInTip		= Ledger::getBookBase(uPrvCurrencyID, uPrvIssuerID, CURRENCY_XRP, ACCOUNT_XRP);
 		uInEnd		= Ledger::getQualityNext(uInTip);
-		uOutTip		= Ledger::getBookBase(CURRENCY_XNS, ACCOUNT_XNS, uCurCurrencyID, uCurIssuerID);
+		uOutTip		= Ledger::getBookBase(CURRENCY_XRP, ACCOUNT_XRP, uCurCurrencyID, uCurIssuerID);
 		uOutEnd		= Ledger::getQualityNext(uInTip);
 	}
 

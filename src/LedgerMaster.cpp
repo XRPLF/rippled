@@ -14,10 +14,10 @@ uint32 LedgerMaster::getCurrentLedgerIndex()
 	return mCurrentLedger->getLedgerSeq();
 }
 
-bool LedgerMaster::addHeldTransaction(const Transaction::pointer& transaction)
+void LedgerMaster::addHeldTransaction(const Transaction::pointer& transaction)
 { // returns true if transaction was added
 	boost::recursive_mutex::scoped_lock ml(mLock);
-	return mHeldTransactionsByID.insert(std::make_pair(transaction->getID(), transaction)).second;
+	mHeldTransactions.push_back(transaction->getSTransaction());
 }
 
 void LedgerMaster::pushLedger(Ledger::ref newLedger)
@@ -79,19 +79,41 @@ void LedgerMaster::storeLedger(Ledger::ref ledger)
 }
 
 
-Ledger::pointer LedgerMaster::closeLedger()
+Ledger::pointer LedgerMaster::closeLedger(bool recover)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 	Ledger::pointer closingLedger = mCurrentLedger;
+
+	if (recover)
+	{
+		int recovers = 0;
+		for (CanonicalTXSet::iterator it = mHeldTransactions.begin(), end = mHeldTransactions.end(); it != end; ++it)
+		{
+			try
+			{
+				TER result = mEngine.applyTransaction(*it->second, tapOPEN_LEDGER);
+				if (isTepSuccess(result))
+					++recovers;
+			}
+			catch (...)
+			{
+				cLog(lsWARNING) << "Held transaction throws";
+			}
+		}
+		tLog(recovers != 0, lsINFO) << "Recovered " << recovers << " held transactions";
+		mHeldTransactions.reset(closingLedger->getHash());
+	}
+
 	mCurrentLedger = boost::make_shared<Ledger>(boost::ref(*closingLedger), true);
 	mEngine.setLedger(mCurrentLedger);
+
 	return closingLedger;
 }
 
 TER LedgerMaster::doTransaction(const SerializedTransaction& txn, TransactionEngineParams params)
 {
 	TER result = mEngine.applyTransaction(txn, params);
-	theApp->getOPs().pubTransaction(mEngine.getLedger(), txn, result);
+	theApp->getOPs().pubProposedTransaction(mEngine.getLedger(), txn, result);
 	return result;
 }
 
