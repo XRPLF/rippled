@@ -716,23 +716,22 @@ SHAMapTreeNode::pointer SHAMap::fetchNodeExternal(const SHAMapNode& id, const ui
 //		Log(lsTRACE) << "fetchNodeExternal: missing " << hash;
 		throw SHAMapMissingNode(mType, id, hash);
 	}
-	assert(Serializer::getSHA512Half(obj->getData()) == hash);
 
 	try
 	{
 		SHAMapTreeNode::pointer ret = boost::make_shared<SHAMapTreeNode>(id, obj->getData(), mSeq - 1, snfPREFIX);
-#ifdef DEBUG
 		if (id != *ret)
 		{
 			Log(lsFATAL) << "id:" << id << ", got:" << *ret;
 			assert(false);
+			return SHAMapTreeNode::pointer();
 		}
 		if (ret->getNodeHash() != hash)
 		{
 			Log(lsFATAL) << "Hashes don't match";
 			assert(false);
+			return SHAMapTreeNode::pointer();
 		}
-#endif
 		return ret;
 	}
 	catch (...)

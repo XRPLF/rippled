@@ -500,8 +500,8 @@ void Peer::processReadBuffer()
 
 		case ripple::mtPROPOSE_LEDGER:
 			{
-				ripple::TMProposeSet msg;
-				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
+				boost::shared_ptr<ripple::TMProposeSet> msg = boost::make_shared<ripple::TMProposeSet>();
+				if (msg->ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvPropose(msg);
 				else
 					cLog(lsWARNING) << "parse error: " << type;
@@ -694,6 +694,42 @@ void Peer::recvHello(ripple::TMHello& packet)
 	}
 }
 
+static void checkTransaction(Job&, int flags, SerializedTransaction::pointer stx, boost::weak_ptr<Peer> peer)
+{
+
+#ifndef TRUST_NETWORK
+	try
+	{
+#endif
+		Transaction::pointer tx;
+
+		if ((flags & SF_SIGGOOD) != 0)
+		{
+			tx = boost::make_shared<Transaction>(stx, true);
+			if (tx->getStatus() == INVALID)
+			{
+				theApp->getSuppression().setFlag(stx->getTransactionID(), SF_BAD);
+				Peer::punishPeer(peer, PP_BAD_SIGNATURE);
+				return;
+			}
+			else
+				theApp->getSuppression().setFlag(stx->getTransactionID(), SF_SIGGOOD);
+		}
+		else
+			tx = boost::make_shared<Transaction>(stx, false);
+
+		theApp->getIOService().post(boost::bind(&NetworkOPs::processTransaction, &theApp->getOPs(), tx));
+
+#ifndef TRUST_NETWORK
+	}
+	catch (...)
+	{
+		theApp->getSuppression().setFlags(stx->getTransactionID(), SF_BAD);
+		punishPeer(peer, PP_INVALID_REQUEST);
+	}
+#endif
+}
+
 void Peer::recvTransaction(ripple::TMTransaction& packet)
 {
 	cLog(lsDEBUG) << "Got transaction from peer";
@@ -708,12 +744,22 @@ void Peer::recvTransaction(ripple::TMTransaction& packet)
 		SerializerIterator sit(s);
 		SerializedTransaction::pointer stx = boost::make_shared<SerializedTransaction>(boost::ref(sit));
 
-		if (!theApp->isNew(stx->getTransactionID(), mPeerId))
-			return;
+		int flags;
+		if (!theApp->isNew(stx->getTransactionID(), mPeerId, flags))
+		{ // we have seen this transaction recently
+			if ((flags & SF_BAD) != 0)
+			{
+				punishPeer(PP_BAD_SIGNATURE);
+				return;
+			}
 
-		tx = boost::make_shared<Transaction>(stx, true);
-		if (tx->getStatus() == INVALID)
-			throw(0);
+			if ((flags & SF_RETRY) == 0)
+				return;
+		}
+
+		theApp->getJobQueue().addJob(jtTRANSACTION,
+			boost::bind(&checkTransaction, _1, flags, stx, boost::weak_ptr<Peer>(shared_from_this())));
+
 #ifndef TRUST_NETWORK
 	}
 	catch (...)
@@ -727,52 +773,122 @@ void Peer::recvTransaction(ripple::TMTransaction& packet)
 	}
 #endif
 
-	tx = theApp->getOPs().processTransaction(tx);
-
-	if(tx->getStatus() != INCLUDED)
-	{ // transaction wasn't accepted into ledger
-#ifdef DEBUG
-		std::cerr << "Transaction from peer won't go in ledger" << std::endl;
-#endif
-	}
 }
 
-void Peer::recvPropose(ripple::TMProposeSet& packet)
+static void checkPropose(Job& job, boost::shared_ptr<ripple::TMProposeSet> packet,
+	LedgerProposal::pointer proposal, uint256 consensusLCL,	RippleAddress nodePublic, boost::weak_ptr<Peer> peer)
 {
-	if ((packet.currenttxhash().size() != 32) || (packet.nodepubkey().size() < 28) ||
-		(packet.signature().size() < 56) || (packet.nodepubkey().size() > 128) || (packet.signature().size() > 128))
+	bool sigGood = false;
+	bool isTrusted = (job.getType() == jtPROPOSAL_t);
+
+	cLog(lsTRACE) << "Checking " << (isTrusted ? "trusted" : "UNtrusted") << " proposal";
+
+	assert(packet);
+	ripple::TMProposeSet& set = *packet;
+
+	uint256 prevLedger;
+	if (set.has_previousledger())
+	{ // proposal includes a previous ledger
+		cLog(lsTRACE) << "proposal with previous ledger";
+		memcpy(prevLedger.begin(), set.previousledger().data(), 256 / 8);
+		if (!proposal->checkSign(set.signature()))
+		{
+			cLog(lsWARNING) << "proposal with previous ledger fails signature check";
+			Peer::punishPeer(peer, PP_BAD_SIGNATURE);
+			return;
+		}
+		else
+			sigGood = true;
+	}
+	else
+	{
+		if (consensusLCL.isNonZero() && proposal->checkSign(set.signature()))
+		{
+			prevLedger = consensusLCL;
+			sigGood = true;
+		}
+		else
+		{
+			cLog(lsWARNING) << "Ledger proposal fails signature check";
+			proposal->setSignature(set.signature());
+		}
+	}
+
+	if (isTrusted)
+	{
+		theApp->getIOService().post(boost::bind(&NetworkOPs::processTrustedProposal, &theApp->getOPs(),
+			proposal, packet, nodePublic, prevLedger, sigGood));
+	}
+	else if (sigGood && (prevLedger == consensusLCL))
+	{ // relay untrusted proposal
+		cLog(lsTRACE) << "relaying untrusted proposal";
+		std::set<uint64> peers;
+		theApp->getSuppression().swapSet(proposal->getSuppression(), peers, SF_RELAYED);
+		PackedMessage::pointer message = boost::make_shared<PackedMessage>(set, ripple::mtPROPOSE_LEDGER);
+		theApp->getConnectionPool().relayMessageBut(peers, message);
+	}
+	else
+		cLog(lsDEBUG) << "Not relaying untrusted proposal";
+}
+
+void Peer::recvPropose(const boost::shared_ptr<ripple::TMProposeSet>& packet)
+{
+	assert(packet);
+	ripple::TMProposeSet& set = *packet;
+
+	if ((set.currenttxhash().size() != 32) || (set.nodepubkey().size() < 28) ||
+		(set.signature().size() < 56) || (set.nodepubkey().size() > 128) || (set.signature().size() > 128))
 	{
 		cLog(lsWARNING) << "Received proposal is malformed";
+		punishPeer(PP_INVALID_REQUEST);
 		return;
 	}
 
-	uint256 currentTxHash, prevLedger;
-	memcpy(currentTxHash.begin(), packet.currenttxhash().data(), 32);
+	if (set.has_previousledger() && (set.previousledger().size() != 32))
+	{
+		cLog(lsWARNING) << "Received proposal is malformed";
+		punishPeer(PP_INVALID_REQUEST);
+		return;
+	}
 
-	if ((packet.has_previousledger()) && (packet.previousledger().size() == 32))
-		memcpy(prevLedger.begin(), packet.previousledger().data(), 32);
+	uint256 proposeHash, prevLedger;
+	memcpy(proposeHash.begin(), set.currenttxhash().data(), 32);
+	if (set.has_previousledger())
+		memcpy(prevLedger.begin(), set.previousledger().data(), 32);
 
 	Serializer s(512);
-	s.add256(currentTxHash);
-	s.add256(prevLedger);
-	s.add32(packet.proposeseq());
-	s.add32(packet.closetime());
-	s.addVL(packet.nodepubkey());
-	s.addVL(packet.signature());
+	s.add256(proposeHash);
+	s.add32(set.proposeseq());
+	s.add32(set.closetime());
+	s.addVL(set.nodepubkey());
+	s.addVL(set.signature());
+	if (set.has_previousledger())
+		s.add256(prevLedger);
 	uint256 suppression = s.getSHA512Half();
 
 	if (!theApp->isNew(suppression, mPeerId))
+	{
+		cLog(lsTRACE) << "Received duplicate proposal from peer " << mPeerId;
 		return;
-
-	RippleAddress nodePublic = RippleAddress::createNodePublic(strCopy(packet.nodepubkey()));
-//	bool isTrusted = theApp->getUNL().nodeInUNL(nodePublic);
-
-	if(theApp->getOPs().recvPropose(suppression, packet.proposeseq(), currentTxHash, prevLedger, packet.closetime(),
-		packet.signature(), nodePublic))
-	{ // FIXME: Not all nodes will want proposals 
-		PackedMessage::pointer message = boost::make_shared<PackedMessage>(packet, ripple::mtPROPOSE_LEDGER);
-		theApp->getConnectionPool().relayMessage(this, message);
 	}
+
+	RippleAddress signerPublic = RippleAddress::createNodePublic(strCopy(set.nodepubkey()));
+	if (signerPublic == theConfig.VALIDATION_PUB)
+	{
+		cLog(lsTRACE) << "Received our own proposal from peer " << mPeerId;
+		return;
+	}
+	bool isTrusted = theApp->getUNL().nodeInUNL(signerPublic);
+	cLog(lsTRACE) << "Received " << (isTrusted ? "trusted" : "UNtrusted") << " proposal from " << mPeerId;
+
+	uint256 consensusLCL = theApp->getOPs().getConsensusLCL();
+	LedgerProposal::pointer proposal = boost::make_shared<LedgerProposal>(
+		prevLedger.isNonZero() ? prevLedger : consensusLCL,
+		set.proposeseq(), proposeHash, set.closetime(), signerPublic, suppression);
+
+	theApp->getJobQueue().addJob(isTrusted ? jtPROPOSAL_t : jtPROPOSAL_ut,
+		boost::bind(&checkPropose, _1, packet, proposal, consensusLCL,
+			mNodePublic, boost::weak_ptr<Peer>(shared_from_this())));
 }
 
 void Peer::recvHaveTxSet(ripple::TMHaveTransactionSet& packet)
@@ -1043,11 +1159,12 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 		reply.set_requestcookie(packet.requestcookie());
 
 	if (packet.itype() == ripple::liTS_CANDIDATE)
-	{ // Request is  for a transaction candidate set
+	{ // Request is for a transaction candidate set
 		cLog(lsINFO) << "Received request for TX candidate set data " << getIP();
 		if ((!packet.has_ledgerhash() || packet.ledgerhash().size() != 32))
 		{
 			punishPeer(PP_INVALID_REQUEST);
+			cLog(lsWARNING) << "invalid request";
 			return;
 		}
 		uint256 txHash;
@@ -1171,6 +1288,7 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 		SHAMapNode mn(packet.nodeids(i).data(), packet.nodeids(i).size());
 		if(!mn.isValid())
 		{
+			cLog(lsWARNING) << "Request for invalid node";
 			punishPeer(PP_INVALID_REQUEST);
 			return;
 		}
@@ -1178,6 +1296,8 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 		std::list< std::vector<unsigned char> > rawNodes;
 		if(map->getNodeFat(mn, nodeIDs, rawNodes, fatRoot, fatLeaves))
 		{
+			assert(nodeIDs.size() == rawNodes.size());
+			cLog(lsDEBUG) << "getNodeFat got " << rawNodes.size() << " nodes";
 			std::vector<SHAMapNode>::iterator nodeIDIterator;
 			std::list< std::vector<unsigned char> >::iterator rawNodeIterator;
 			for(nodeIDIterator = nodeIDs.begin(), rawNodeIterator = rawNodes.begin();
@@ -1190,6 +1310,8 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 				node->set_nodedata(&rawNodeIterator->front(), rawNodeIterator->size());
 			}
 		}
+		else
+			cLog(lsWARNING) << "getNodeFat returns false";
 	}
 	PackedMessage::pointer oPacket = boost::make_shared<PackedMessage>(reply, ripple::mtLEDGER_DATA);
 	sendPacket(oPacket);
@@ -1199,7 +1321,7 @@ void Peer::recvLedger(ripple::TMLedgerData& packet)
 {
 	if (packet.nodes().size() <= 0)
 	{
-		cLog(lsWARNING) << "Ledger data with no nodes";
+		cLog(lsWARNING) << "Ledger/TXset data with no nodes";
 		punishPeer(PP_INVALID_REQUEST);
 		return;
 	}
@@ -1209,6 +1331,7 @@ void Peer::recvLedger(ripple::TMLedgerData& packet)
 		uint256 hash;
 		if(packet.ledgerhash().size() != 32)
 		{
+			cLog(lsWARNING) << "TX candidate reply with invalid hash size";
 			punishPeer(PP_INVALID_REQUEST);
 			return;
 		}
@@ -1368,7 +1491,7 @@ Json::Value Peer::getJson()
 
 	if (mHello.has_protoversion() &&
 			(mHello.protoversion() != MAKE_VERSION_INT(PROTO_VERSION_MAJOR, PROTO_VERSION_MINOR)))
-		ret["protocol"] =  boost::lexical_cast<std::string>(GET_VERSION_MAJOR(mHello.protoversion())) + "." +
+		ret["protocol"] = boost::lexical_cast<std::string>(GET_VERSION_MAJOR(mHello.protoversion())) + "." +
 			boost::lexical_cast<std::string>(GET_VERSION_MINOR(mHello.protoversion()));
 
 	if (!!mClosedLedgerHash)
