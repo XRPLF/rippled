@@ -982,6 +982,7 @@ void LedgerConsensus::playbackProposals()
 	for (boost::unordered_map< uint160, std::list<LedgerProposal::pointer> >::iterator
 			it = storedProposals.begin(), end = storedProposals.end(); it != end; ++it)
 	{
+		bool relay = false;
 		BOOST_FOREACH(const LedgerProposal::pointer& proposal, it->second)
 		{
 			if (proposal->hasSignature())
@@ -990,11 +991,33 @@ void LedgerConsensus::playbackProposals()
 				if (proposal->checkSign())
 				{
 					cLog(lsINFO) << "Applying stored proposal";
-					peerPosition(proposal);
+					relay = peerPosition(proposal);
 				}
 			}
 			else if (proposal->isPrevLedger(mPrevLedgerHash))
-				peerPosition(proposal);
+				relay = peerPosition(proposal);
+
+			if (relay)
+			{
+				cLog(lsWARNING) << "We should do delayed relay of this proposal, but we cannot";
+			}
+#if 0 // FIXME: We can't do delayed relay because we don't have the signature
+			std::set<uint64> peers
+			if (relay && theApp->getSuppression().swapSet(proposal.getSuppress(), set, SF_RELAYED))
+			{
+				cLog(lsDEBUG) << "Stored proposal delayed relay";
+				ripple::TMProposeSet set;
+				set.set_proposeseq
+				set.set_currenttxhash(, 256 / 8);
+				previousledger
+				closetime
+				nodepubkey
+				signature
+				PackedMessage::pointer message = boost::make_shared<PackedMessage>(set, ripple::mtPROPOSE_LEDGER);
+				theApp->getConnectionPool().relayMessageBut(peers, message);
+			}
+#endif
+
 		}
 	}
 }
