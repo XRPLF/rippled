@@ -1331,6 +1331,7 @@ void Peer::recvLedger(ripple::TMLedgerData& packet)
 		uint256 hash;
 		if(packet.ledgerhash().size() != 32)
 		{
+			cLog(lsWARNING) << "TX candidate reply with invalid hash size";
 			punishPeer(PP_INVALID_REQUEST);
 			return;
 		}
