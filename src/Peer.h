@@ -19,6 +19,7 @@ enum PeerPunish
 	PP_INVALID_REQUEST	= 1,	// The peer sent a request that makes no sense
 	PP_UNKNOWN_REQUEST	= 2,	// The peer sent a request that might be garbage
 	PP_UNWANTED_DATA	= 3,	// The peer sent us data we didn't want/need
+	PP_BAD_SIGNATURE	= 4,	// Object had bad signature
 };
 
 typedef std::pair<std::string,int> ipPort;
@@ -116,7 +117,7 @@ protected:
 	void recvGetLedger(ripple::TMGetLedger& packet);
 	void recvLedger(ripple::TMLedgerData& packet);
 	void recvStatus(ripple::TMStatusChange& packet);
-	void recvPropose(ripple::TMProposeSet& packet);
+	void recvPropose(const boost::shared_ptr<ripple::TMProposeSet>& packet);
 	void recvHaveTxSet(ripple::TMHaveTransactionSet& packet);
 
 	void getSessionCookie(std::string& strDst);

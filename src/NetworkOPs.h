@@ -168,8 +168,9 @@ public:
 		const std::vector<unsigned char>& myNode, std::list< std::vector<unsigned char> >& newNodes);
 
 	// ledger proposal/close functions
-	bool recvPropose(const uint256& suppression, uint32 proposeSeq, const uint256& proposeHash,
-		const uint256& prevLedger, uint32 closeTime, const std::string& signature, const RippleAddress& nodePublic);
+	void processTrustedProposal(uint256 supression, LedgerProposal::pointer proposal,
+		boost::shared_ptr<ripple::TMProposeSet> set,
+		RippleAddress nodePublic, uint256 checkLedger, bool sigGood);
 	bool gotTXData(const boost::shared_ptr<Peer>& peer, const uint256& hash,
 		const std::list<SHAMapNode>& nodeIDs, const std::list< std::vector<unsigned char> >& nodeData);
 	bool recvValidation(const SerializedValidation::pointer& val);
@@ -199,6 +200,7 @@ public:
 	boost::unordered_map<uint160,
 		std::list<LedgerProposal::pointer> >& peekStoredProposals() { return mStoredProposals; }
 	void storeProposal(const LedgerProposal::pointer& proposal,	const RippleAddress& peerPublic);
+	uint256 getConsensusLCL();
 
 	// client information retrieval functions
 	std::vector< std::pair<uint32, uint256> >

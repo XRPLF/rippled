@@ -694,60 +694,55 @@ bool NetworkOPs::haveConsensusObject()
 	return mConsensus;
 }
 
-// <-- bool: true to relay
-bool NetworkOPs::recvPropose(const uint256& suppression, uint32 proposeSeq, const uint256& proposeHash,
-	const uint256& prevLedger, uint32 closeTime, const std::string& signature,
-	const RippleAddress& nodePublic)
+uint256 NetworkOPs::getConsensusLCL()
 {
-	// JED: does mConsensus need to be locked?
+	if (!haveConsensusObject())
+		return uint256();
+	return mConsensus->getLCL();
+}
 
-	// XXX Validate key.
-	// XXX Take a vuc for pubkey.
+void NetworkOPs::processTrustedProposal(uint256 suppression, LedgerProposal::pointer proposal,
+	boost::shared_ptr<ripple::TMProposeSet> set, RippleAddress nodePublic, uint256 checkLedger, bool sigGood)
+{
+	bool relay = true;
 
 	if (!haveConsensusObject())
 	{
 		cLog(lsINFO) << "Received proposal outside consensus window";
-		return mMode != omFULL;
+		if (mMode == omFULL)
+			relay = false;
 	}
-
-	if (mConsensus->isOurPubKey(nodePublic))
+	else
 	{
-		cLog(lsTRACE) << "Received our own validation";
-		return false;
-	}
+		storeProposal(proposal, nodePublic);
 
-	// Is this node on our UNL?
-	if (!theApp->getUNL().nodeInUNL(nodePublic))
-	{
-		cLog(lsINFO) << "Untrusted proposal: " << nodePublic.humanNodePublic() << " " << proposeHash;
-		return true;
-	}
+		uint256 consensusLCL = mConsensus->getLCL();
 
-	if (prevLedger.isNonZero())
-	{ // proposal includes a previous ledger
-		LedgerProposal::pointer proposal =
-			boost::make_shared<LedgerProposal>(prevLedger, proposeSeq, proposeHash, closeTime, nodePublic);
-		if (!proposal->checkSign(signature))
+		if (!set->has_previousledger() && (checkLedger != consensusLCL))
 		{
-			cLog(lsWARNING) << "New-style ledger proposal fails signature check";
-			return false;
+			cLog(lsWARNING) << "Have to re-check proposal signature due to consensus view change";
+			assert(proposal->hasSignature());
+			proposal->setPrevLedger(consensusLCL);
+			if (proposal->checkSign())
+				sigGood = true;
 		}
-		if (prevLedger == mConsensus->getLCL())
-			return mConsensus->peerPosition(proposal);
-		storeProposal(proposal, nodePublic);
-		return false;
+
+		if (sigGood && (consensusLCL == proposal->getPrevLedger()))
+		{
+			relay = mConsensus->peerPosition(proposal);
+			cLog(lsTRACE) << "Proposal processing finished, relay=" << relay;
+		}
 	}
 
-	LedgerProposal::pointer proposal =
-		boost::make_shared<LedgerProposal>(mConsensus->getLCL(), proposeSeq, proposeHash, closeTime, nodePublic);
-	if (!proposal->checkSign(signature))
-	{ // Note that if the LCL is different, the signature check will fail
-		cLog(lsWARNING) << "Ledger proposal fails signature check";
-		proposal->setSignature(signature);
-		storeProposal(proposal, nodePublic);
-		return false;
+	if (relay)
+	{
+		std::set<uint64> peers;
+		theApp->getSuppression().swapSet(suppression, peers, SF_RELAYED);
+		PackedMessage::pointer message = boost::make_shared<PackedMessage>(*set, ripple::mtPROPOSE_LEDGER);
+		theApp->getConnectionPool().relayMessageBut(peers, message);
 	}
-	return mConsensus->peerPosition(proposal);
+	else
+		cLog(lsINFO) << "Not relaying trusted proposal";
 }
 
 SHAMap::pointer NetworkOPs::getTXMap(const uint256& hash)
