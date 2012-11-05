@@ -700,11 +700,12 @@ Json::Value RPCHandler::doSubmit(const Json::Value& params)
 	return rpcError(rpcSRC_ACT_MALFORMED);
 }
 
+
 Json::Value RPCHandler::handleJSONSubmit(std::string& key, Json::Value& txJSON)
 {
 	Json::Value jvResult;
 	RippleAddress	naSeed;
-	RippleAddress	naAccount;
+	RippleAddress	srcAddress;
 
 	if (!naSeed.setSeedGeneric(key))
 	{
@@ -714,45 +715,63 @@ Json::Value RPCHandler::handleJSONSubmit(std::string& key, Json::Value& txJSON)
 	{
 		return rpcError(rpcSRC_ACT_MISSING);
 	}
-	if (!naAccount.setAccountID(txJSON["Account"].asString()))
+	if (!srcAddress.setAccountID(txJSON["Account"].asString()))
 	{
 		return rpcError(rpcSRC_ACT_MALFORMED);
 	}
 
-	AccountState::pointer asSrc	= mNetOps->getAccountState(uint256(0), naAccount);
+	AccountState::pointer asSrc	= mNetOps->getAccountState(uint256(0), srcAddress);
 
 	if( txJSON["type"]=="Payment")
 	{	
 		txJSON["TransactionType"]=0;
+
+		RippleAddress dstAccountID;
+		if (!dstAccountID.setAccountID(txJSON["Destination"].asString()))
+		{
+			return rpcError(rpcDST_ACT_MALFORMED);
+		}
 		
 		if(!txJSON.isMember("Fee"))
 		{
-			RippleAddress naDstAccountID;
-			if (!naDstAccountID.setAccountID(txJSON["Destination"].asString()))
-			{
-				return rpcError(rpcDST_ACT_MALFORMED);
-			}
-
-			if(mNetOps->getAccountState(uint256(0), naDstAccountID))
+			if(mNetOps->getAccountState(uint256(0), dstAccountID))
 				txJSON["Fee"]=(int)theConfig.FEE_DEFAULT;
 			else txJSON["Fee"]=(int)theConfig.FEE_ACCOUNT_CREATE;
 		}
-		/* TODO: pathfinding
 		if(!txJSON.isMember("Paths"))
 		{
 			if(txJSON["Amount"].isObject() || txJSON.isMember("SendMax") )
 			{  // we need a ripple path
 				STPathSet	spsPaths;
 				uint160		srcCurrencyID;
+				if(txJSON.isMember("SendMax") && txJSON["SendMax"].isMember("currency"))
+				{
+					STAmount::currencyFromString(srcCurrencyID, "XRP");
+				}else STAmount::currencyFromString(srcCurrencyID, txJSON["SendMax"]["currency"].asString());
 
-				STAmount::currencyFromString(srcCurrencyID, sSrcCurrency);
-				Pathfinder pf(naSrcAccountID, naDstAccountID, srcCurrencyID, saDstAmount);
+				STAmount dstAmount;
+				if(txJSON["Amount"].isObject()) 
+				{
+					std::string issuerStr;
+					if( txJSON["Amount"].isMember("issuer")) issuerStr=txJSON["Amount"]["issuer"].asString();
+					if( !txJSON["Amount"].isMember("value") || !txJSON["Amount"].isMember("currency")) return rpcError(rpcDST_AMT_MALFORMED);
+					if (!dstAmount.setFullValue(txJSON["Amount"]["value"].asString(), txJSON["Amount"]["currency"].asString(), issuerStr))
+					{
+						return rpcError(rpcDST_AMT_MALFORMED);
+					}
+				}else if (!dstAmount.setFullValue(txJSON["Amount"].asString()))
+				{
+					return rpcError(rpcDST_AMT_MALFORMED);
+				}
+
+				Pathfinder pf(srcAddress, dstAccountID, srcCurrencyID, dstAmount);
 				pf.findPaths(5, 1, spsPaths);
-				txJSON["Paths"]=spsPaths.getJson();
+				txJSON["Paths"]=spsPaths.getJson(0);
 				if(txJSON.isMember("Flags")) txJSON["Flags"]=txJSON["Flags"].asUInt() | 2;
 				else txJSON["Flags"]=2;
 			}
-		}*/
+		}
+		
 	}else if( txJSON["type"]=="OfferCreate" )
 	{
 		txJSON["TransactionType"]=7;
@@ -773,7 +792,7 @@ Json::Value RPCHandler::handleJSONSubmit(std::string& key, Json::Value& txJSON)
 	if(!txJSON.isMember("Flags")) txJSON["Flags"]=0;	
 	
 	Ledger::pointer	lpCurrent		= mNetOps->getCurrentLedger();
-	SLE::pointer	sleAccountRoot	= mNetOps->getSLE(lpCurrent, Ledger::getAccountRootIndex(naAccount.getAccountID()));
+	SLE::pointer	sleAccountRoot	= mNetOps->getSLE(lpCurrent, Ledger::getAccountRootIndex(srcAddress.getAccountID()));
 	
 	if (!sleAccountRoot)
 	{
@@ -799,9 +818,9 @@ Json::Value RPCHandler::handleJSONSubmit(std::string& key, Json::Value& txJSON)
 	{
 		naMasterAccountPublic.setAccountPublic(naMasterGenerator, iIndex);
 
-		Log(lsWARNING) << "authorize: " << iIndex << " : " << naMasterAccountPublic.humanAccountID() << " : " << naAccount.humanAccountID();
+		Log(lsWARNING) << "authorize: " << iIndex << " : " << naMasterAccountPublic.humanAccountID() << " : " << srcAddress.humanAccountID();
 
-		bFound	= naAccount.getAccountID() == naMasterAccountPublic.getAccountID();
+		bFound	= srcAddress.getAccountID() == naMasterAccountPublic.getAccountID();
 		if (!bFound)
 			++iIndex;
 	}
@@ -820,7 +839,7 @@ Json::Value RPCHandler::handleJSONSubmit(std::string& key, Json::Value& txJSON)
 		// The generated pair must match authorized...
 		&& naAuthorizedPublic.getAccountID() != naAccountPublic.getAccountID()
 		// ... or the master key must have been used.
-		&& naAccount.getAccountID() != naAccountPublic.getAccountID())
+		&& srcAddress.getAccountID() != naAccountPublic.getAccountID())
 	{
 		// std::cerr << "iIndex: " << iIndex << std::endl;
 		// std::cerr << "sfAuthorizedKey: " << strHex(asSrc->getAuthorizedKey().getAccountID()) << std::endl;
@@ -1585,16 +1604,19 @@ Json::Value RPCHandler::doLedgerAccept(const Json::Value& )
 }
 
 
-
 Json::Value RPCHandler::doTransactionEntry(const Json::Value& params)
 {
 	Json::Value jvResult;
-	/* LATER
-	if (!jvRequest.isMember("transaction"))
+	Json::Value jvRequest;
+	Json::Reader reader;
+	if(!reader.parse(params[0u].asString(),jvRequest))
+		return rpcError(rpcINVALID_PARAMS);
+
+	if (!jvRequest.isMember("tx_hash"))
 	{
 		jvResult["error"]	= "fieldNotFoundTransaction";
 	}
-	if (!jvRequest.isMember("ledger_closed"))
+	if (!jvRequest.isMember("ledger_hash"))
 	{
 		jvResult["error"]	= "notYetImplemented";	// XXX We don't support any transaction yet.
 	}
@@ -1602,11 +1624,11 @@ Json::Value RPCHandler::doTransactionEntry(const Json::Value& params)
 	{
 		uint256						uTransID;
 		// XXX Relying on trusted WSS client. Would be better to have a strict routine, returning success or failure.
-		uTransID.SetHex(jvRequest["transaction"].asString());
+		uTransID.SetHex(jvRequest["tx_hash"].asString());
 
 		uint256						uLedgerID;
 		// XXX Relying on trusted WSS client. Would be better to have a strict routine, returning success or failure.
-		uLedgerID.SetHex(jvRequest["ledger_closed"].asString());
+		uLedgerID.SetHex(jvRequest["ledger_hash"].asString());
 
 		Ledger::pointer				lpLedger	= theApp->getMasterLedger().getLedgerByHash(uLedgerID);
 
@@ -1632,7 +1654,7 @@ Json::Value RPCHandler::doTransactionEntry(const Json::Value& params)
 			}
 		}
 	}
-	*/
+	
 	return jvResult;
 }
 
@@ -1641,7 +1663,11 @@ Json::Value RPCHandler::doTransactionEntry(const Json::Value& params)
 Json::Value RPCHandler::doLedgerEntry(const Json::Value& params)
 {
 	Json::Value jvResult;
-	/* TODO
+	Json::Value jvRequest;
+	Json::Reader reader;
+	if(!reader.parse(params[0u].asString(),jvRequest))
+		return rpcError(rpcINVALID_PARAMS);
+		
 
 	uint256	uLedger			= jvRequest.isMember("ledger_closed") ? uint256(jvRequest["ledger_closed"].asString()) : 0;
 	uint32	uLedgerIndex	= jvRequest.isMember("ledger_index") && jvRequest["ledger_index"].isNumeric() ? jvRequest["ledger_index"].asUInt() : 0;
@@ -1651,30 +1677,30 @@ Json::Value RPCHandler::doLedgerEntry(const Json::Value& params)
 	if (!!uLedger)
 	{
 		// Ledger directly specified.
-		lpLedger	= noNetwork.getLedgerByHash(uLedger);
+		lpLedger	= mNetOps->getLedgerByHash(uLedger);
 
 		if (!lpLedger)
 		{
 			jvResult["error"]	= "ledgerNotFound";
-			return;
+			return jvResult;
 		}
 
 		uLedgerIndex	= lpLedger->getLedgerSeq();	// Set the current index, override if needed.
 	}
 	else if (!!uLedgerIndex)
 	{
-		lpLedger		= noNetwork.getLedgerBySeq(uLedgerIndex);
+		lpLedger		= mNetOps->getLedgerBySeq(uLedgerIndex);
 
 		if (!lpLedger)
 		{
 			jvResult["error"]	= "ledgerNotFound";	// ledger_index from future?
-			return;
+			return jvResult;
 		}
 	}
 	else
 	{
 		// Default to current ledger.
-		lpLedger		= noNetwork.getCurrentLedger();
+		lpLedger		= mNetOps->getCurrentLedger();
 		uLedgerIndex	= lpLedger->getLedgerSeq();	// Set the current index.
 	}
 
@@ -1857,7 +1883,7 @@ Json::Value RPCHandler::doLedgerEntry(const Json::Value& params)
 
 	if (!!uNodeIndex)
 	{
-		SLE::pointer	sleNode	= noNetwork.getSLE(lpLedger, uNodeIndex);
+		SLE::pointer	sleNode	= mNetOps->getSLE(lpLedger, uNodeIndex);
 
 		if (!sleNode)
 		{
@@ -1881,7 +1907,7 @@ Json::Value RPCHandler::doLedgerEntry(const Json::Value& params)
 			jvResult["index"]		= uNodeIndex.ToString();
 		}
 	}
-	*/
+	
 	return jvResult;
 }
 

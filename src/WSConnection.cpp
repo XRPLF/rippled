@@ -298,7 +298,7 @@ void WSConnection::doSubmit(Json::Value& jvResult, Json::Value& jvRequest)
 	{
 		jvResult=theApp->getRPCHandler().handleJSONSubmit(jvRequest["key"].asString(),jvRequest["tx_json"]);
 
-		// TODO: mNetwork.subSubmit(this, jvResult["tx hash"] );
+		// TODO: track the transaction mNetwork.subSubmit(this, jvResult["tx hash"] );
 	}
 }
 

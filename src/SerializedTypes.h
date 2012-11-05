@@ -58,7 +58,7 @@ public:
 	virtual std::string getFullText() const;
 	virtual std::string getText() const // just the value
 	{ return std::string(); }
-	virtual Json::Value getJson(int) const
+	virtual Json::Value getJson(int /*options*/) const
 	{ return getText(); }
 
 	virtual void add(Serializer& s) const { ; }

@@ -84,6 +84,8 @@ class RPCHandler
 	Json::Value doTransactionEntry(const Json::Value& params);
 
 
+	void addSubmitPath(Json::Value& txJSON);
+
 public:
 
 	enum {
