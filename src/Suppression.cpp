@@ -69,6 +69,14 @@ bool SuppressionTable::addSuppressionPeer(const uint256& index, uint64 peer, int
 	return created;
 }
 
+int SuppressionTable::getFlags(const uint256& index)
+{
+	boost::mutex::scoped_lock sl(mSuppressionMutex);
+
+	bool created;
+	return findCreateEntry(index, created).getFlags();
+}
+
 bool SuppressionTable::addSuppressionFlags(const uint256& index, int flag)
 {
 	boost::mutex::scoped_lock sl(mSuppressionMutex);

@@ -65,6 +65,7 @@ public:
 	bool addSuppressionPeer(const uint256& index, uint64 peer, int& flags);
 	bool addSuppressionFlags(const uint256& index, int flag);
 	bool setFlag(const uint256& index, int flag);
+	int getFlags(const uint256& index);
 
 	Suppression getEntry(const uint256&);
 
