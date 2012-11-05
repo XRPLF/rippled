@@ -694,20 +694,26 @@ Json::Value RPCHandler::doSubmit(const Json::Value& params)
 	Json::Reader reader;
 	if(reader.parse(params[1u].asString(),txJSON))
 	{
-		return handleJSONSubmit(params[0u].asString(), txJSON);
+		Json::Value	jvRequest;
+
+		jvRequest["secret"]		= params[0u].asString();
+		jvRequest["tx_json"]	= txJSON;
+
+		return handleJSONSubmit(jvRequest);
 	}
 
 	return rpcError(rpcSRC_ACT_MALFORMED);
 }
 
 
-Json::Value RPCHandler::handleJSONSubmit(const std::string& key, Json::Value& txJSON)
+Json::Value RPCHandler::handleJSONSubmit(const Json::Value& jvRequest)
 {
-	Json::Value jvResult;
+	Json::Value		jvResult;
 	RippleAddress	naSeed;
 	RippleAddress	srcAddress;
+	Json::Value		txJSON		= jvResult["tx_json"];
 
-	if (!naSeed.setSeedGeneric(key))
+	if (!naSeed.setSeedGeneric(jvResult["secret"].asString()))
 	{
 		return rpcError(rpcBAD_SEED);
 	}
@@ -727,6 +733,11 @@ Json::Value RPCHandler::handleJSONSubmit(const std::string& key, Json::Value& tx
 		txJSON["TransactionType"]=0;
 
 		RippleAddress dstAccountID;
+
+		if (!txJSON.isMember("Destination"))
+		{
+			return rpcError(rpcDST_ACT_MISSING);
+		}
 		if (!dstAccountID.setAccountID(txJSON["Destination"].asString()))
 		{
 			return rpcError(rpcDST_ACT_MALFORMED);
@@ -738,7 +749,8 @@ Json::Value RPCHandler::handleJSONSubmit(const std::string& key, Json::Value& tx
 				txJSON["Fee"]=(int)theConfig.FEE_DEFAULT;
 			else txJSON["Fee"]=(int)theConfig.FEE_ACCOUNT_CREATE;
 		}
-		if(!txJSON.isMember("Paths"))
+
+		if(!txJSON.isMember("Paths") && (!jvRequest.isMember("build_path") || jvRequest["build_path"].asBool()))
 		{
 			if(txJSON["Amount"].isObject() || txJSON.isMember("SendMax") )
 			{  // we need a ripple path
@@ -746,8 +758,12 @@ Json::Value RPCHandler::handleJSONSubmit(const std::string& key, Json::Value& tx
 				uint160		srcCurrencyID;
 				if(txJSON.isMember("SendMax") && txJSON["SendMax"].isMember("currency"))
 				{
-					STAmount::currencyFromString(srcCurrencyID, "XRP");
-				}else STAmount::currencyFromString(srcCurrencyID, txJSON["SendMax"]["currency"].asString());
+					STAmount::currencyFromString(srcCurrencyID, txJSON["SendMax"]["currency"].asString());
+				}
+				else
+				{
+					srcCurrencyID	= CURRENCY_XRP;
+				}
 
 				STAmount dstAmount;
 				if(txJSON["Amount"].isObject())
@@ -804,7 +820,7 @@ Json::Value RPCHandler::handleJSONSubmit(const std::string& key, Json::Value& tx
 	RippleAddress	naAuthorizedPublic;
 
 
-	RippleAddress	naSecret			= RippleAddress::createSeedGeneric(key);
+	RippleAddress	naSecret			= RippleAddress::createSeedGeneric(jvResult["secret"].asString());
 	RippleAddress	naMasterGenerator	= RippleAddress::createGeneratorPublic(naSecret);
 
 	// Find the index of Account from the master generator, so we can generate the public and private keys.
@@ -858,7 +874,7 @@ Json::Value RPCHandler::handleJSONSubmit(const std::string& key, Json::Value& tx
 	{
 		jvResult["error"]			= "malformedTransaction";
 		jvResult["error_exception"]	= e.what();
-		return(jvResult);
+		return jvResult;
 	}
 
 	sopTrans->setFieldVL(sfSigningPubKey, naAccountPublic.getAccountPublic());
@@ -888,7 +904,7 @@ Json::Value RPCHandler::handleJSONSubmit(const std::string& key, Json::Value& tx
 	{
 		jvResult["error"]			= "internalTransaction";
 		jvResult["error_exception"]	= e.what();
-		return(jvResult);
+		return jvResult;
 	}
 
 	try
@@ -898,19 +914,19 @@ Json::Value RPCHandler::handleJSONSubmit(const std::string& key, Json::Value& tx
 		if (!tpTrans) {
 			jvResult["error"]			= "invalidTransaction";
 			jvResult["error_exception"]	= "Unable to sterilize transaction.";
-			return(jvResult);
+			return jvResult;
 		}
 	}
 	catch (std::exception& e)
 	{
 		jvResult["error"]			= "internalSubmit";
 		jvResult["error_exception"]	= e.what();
-		return(jvResult);
+		return jvResult;
 	}
 
 	try
 	{
-		jvResult["transaction"]		= tpTrans->getJson(0);
+		jvResult["tx_json"]		= tpTrans->getJson(0);
 
 		if (temUNCERTAIN != tpTrans->getResult())
 		{
@@ -923,15 +939,14 @@ Json::Value RPCHandler::handleJSONSubmit(const std::string& key, Json::Value& tx
 			jvResult["engine_result_code"]		= tpTrans->getResult();
 			jvResult["engine_result_message"]	= sHuman;
 		}
-		return(jvResult);
+		return jvResult;
 	}
 	catch (std::exception& e)
 	{
 		jvResult["error"]			= "internalJson";
 		jvResult["error_exception"]	= e.what();
-		return(jvResult);
+		return jvResult;
 	}
-		
 }
 
 Json::Value RPCHandler::doServerInfo(const Json::Value& params)
@@ -1603,7 +1618,6 @@ Json::Value RPCHandler::doLedgerAccept(const Json::Value& )
 	return(jvResult);
 }
 
-
 Json::Value RPCHandler::doTransactionEntry(const Json::Value& params)
 {
 	Json::Value jvResult;
@@ -1640,25 +1654,23 @@ Json::Value RPCHandler::doTransactionEntry(const Json::Value& params)
 			Transaction::pointer		tpTrans;
 			TransactionMetaSet::pointer	tmTrans;
 
-			if (!lpLedger-> getTransaction(uTransID, tpTrans, tmTrans))
+			if (!lpLedger->getTransaction(uTransID, tpTrans, tmTrans))
 			{
 				jvResult["error"]	= "transactionNotFound";
 			}
 			else
 			{
-				jvResult["transaction"]		= tpTrans->getJson(0);
-				jvResult["metadata"]		= tmTrans->getJson(0);
+				jvResult["tx_json"]		= tpTrans->getJson(0);
+				jvResult["metadata"]	= tmTrans->getJson(0);
 				// 'accounts'
 				// 'engine_...'
 				// 'ledger_...'
 			}
 		}
 	}
-	
+
 	return jvResult;
 }
-
-
 
 Json::Value RPCHandler::doLedgerEntry(const Json::Value& params)
 {
@@ -1667,7 +1679,6 @@ Json::Value RPCHandler::doLedgerEntry(const Json::Value& params)
 	Json::Reader reader;
 	if(!reader.parse(params[0u].asString(),jvRequest))
 		return rpcError(rpcINVALID_PARAMS);
-		
 
 	uint256	uLedger			= jvRequest.isMember("ledger_closed") ? uint256(jvRequest["ledger_closed"].asString()) : 0;
 	uint32	uLedgerIndex	= jvRequest.isMember("ledger_index") && jvRequest["ledger_index"].isNumeric() ? jvRequest["ledger_index"].asUInt() : 0;

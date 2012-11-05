@@ -40,9 +40,11 @@ DatabaseCon::~DatabaseCon()
 Application::Application() :
 	mIOWork(mIOService), mAuxWork(mAuxService), mUNL(mIOService),
 	mNetOps(mIOService, &mMasterLedger), mTempNodeCache("NodeCache", 16384, 90), mHashedObjectStore(16384, 300),
-	mSNTPClient(mAuxService), mRpcDB(NULL), mTxnDB(NULL), mLedgerDB(NULL), mWalletDB(NULL),
+	mSNTPClient(mAuxService),
+	mRPCHandler(&mNetOps),
+	mRpcDB(NULL), mTxnDB(NULL), mLedgerDB(NULL), mWalletDB(NULL),
 	mHashNodeDB(NULL), mNetNodeDB(NULL),
-	mConnectionPool(mIOService), mPeerDoor(NULL), mRPCDoor(NULL), mSweepTimer(mAuxService), mRPCHandler(&mNetOps)
+	mConnectionPool(mIOService), mPeerDoor(NULL), mRPCDoor(NULL), mSweepTimer(mAuxService)
 {
 	RAND_bytes(mNonce256.begin(), mNonce256.size());
 	RAND_bytes(reinterpret_cast<unsigned char *>(&mNonceST), sizeof(mNonceST));

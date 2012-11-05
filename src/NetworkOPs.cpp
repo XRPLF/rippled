@@ -967,7 +967,7 @@ void NetworkOPs::pubLedger(Ledger::ref lpAccepted)
 			}
 		}
 	}
-	
+
 	{
 		// we don't lock since pubAcceptedTransaction is locking
 		if (!mSubTransactions.empty() || !mSubRTTransactions.empty() || !mSubAccount.empty() || !mSubRTAccount.empty() || !mSubmitMap.empty() )

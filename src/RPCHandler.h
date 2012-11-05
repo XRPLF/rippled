@@ -154,7 +154,7 @@ public:
 	Json::Value doCommand(const std::string& command, Json::Value& params,int role);
 	Json::Value rpcError(int iError);
 
-	Json::Value handleJSONSubmit(const std::string& key, Json::Value& txJSON);
+	Json::Value handleJSONSubmit(const Json::Value& jvRequest);
 
 };
 

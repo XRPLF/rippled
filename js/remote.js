@@ -110,8 +110,14 @@ Request.prototype.secret = function (s) {
   return this;
 };
 
-Request.prototype.transaction = function (t) {
-  this.message.transaction  = t;
+Request.prototype.tx_hash = function (h) {
+  this.message.tx_hash  = h;
+
+  return this;
+};
+
+Request.prototype.tx_json = function (j) {
+  this.message.tx_json  = j;
 
   return this;
 };
@@ -544,14 +550,14 @@ Remote.prototype.request_transaction_entry = function (hash) {
   assert(this.trusted);   // If not trusted, need to check proof, maybe talk packet protocol.
   
   return (new Request(this, 'transaction_entry'))
-    .transaction(hash);
+    .tx_hash(hash);
 };
 
 // Submit a transaction.
 Remote.prototype.submit = function (transaction) {
   var self  = this;
 
-  if (this.trace) console.log("remote: submit: %s", JSON.stringify(transaction.transaction));
+  if (this.trace) console.log("remote: submit: %s", JSON.stringify(transaction.tx_json));
 
   if (transaction.secret && !this.trusted)
   {
@@ -561,14 +567,14 @@ Remote.prototype.submit = function (transaction) {
       });
   }
   else {
-    if (!transaction.transaction.Sequence) {
-      transaction.transaction.Sequence	= this.account_seq(transaction.transaction.Account, 'ADVANCE');
-      // console.log("Sequence: %s", transaction.transaction.Sequence);
+    if (!transaction.tx_json.Sequence) {
+      transaction.tx_json.Sequence	= this.account_seq(transaction.tx_json.Account, 'ADVANCE');
+      // console.log("Sequence: %s", transaction.tx_json.Sequence);
     }
 
-    if (!transaction.transaction.Sequence) {
+    if (!transaction.tx_json.Sequence) {
       // Look in the last closed ledger.
-      this.account_seq_cache(transaction.transaction.Account, false)
+      this.account_seq_cache(transaction.tx_json.Account, false)
 	.on('success_account_seq_cache', function () {
 	    // Try again.
 	    self.submit(transaction);
@@ -577,7 +583,7 @@ Remote.prototype.submit = function (transaction) {
 	    // XXX Maybe be smarter about this. Don't want to trust an untrusted server for this seq number.
 
 	    // Look in the current ledger.
-	    self.account_seq_cache(transaction.transaction.Account, 'CURRENT')
+	    self.account_seq_cache(transaction.tx_json.Account, 'CURRENT')
 	      .on('success_account_seq_cache', function () {
 		  // Try again.
 		  self.submit(transaction);
@@ -593,8 +599,11 @@ Remote.prototype.submit = function (transaction) {
     else {
       var submit_request = new Request(this, 'submit');
 
-      submit_request.transaction(transaction.transaction);
+      submit_request.tx_json(transaction.tx_json);
       submit_request.secret(transaction.secret);
+
+      if (transaction.build_path)
+	submit_request.build_path = true;
 
       // Forward successes and errors.
       submit_request.on('success', function (message) { transaction.emit('success', message); });
@@ -840,7 +849,8 @@ var Transaction	= function (remote) {
 
   this.remote	    = remote;
   this.secret	    = undefined;
-  this.transaction  = {		      	// Transaction data.
+  this.build_path   = true;
+  this.tx_json	    = {		      	// Transaction data.
     'Flags' : 0,		      	// XXX Would be nice if server did not require this.
   };
   this.hash	    = undefined;
@@ -849,12 +859,12 @@ var Transaction	= function (remote) {
 
   this.on('success', function (message) {
       if (message.engine_result) {
-	self.hash	= message.transaction.hash;
+	self.hash	= message.tx_json.hash;
 
 	self.set_state('client_proposed');
 
 	self.emit('proposed', {
-	    'transaction'     : message.transaction,
+	    'tx_json'	      : message.tx_json,
 	    'result'	      : message.engine_result,
 	    'result_code'     : message.engine_result_code,
 	    'result_message'  : message.engine_result_message,
@@ -920,10 +930,10 @@ Transaction.prototype.set_state = function (state) {
 // XXX Have a network canSubmit(), post events for following.
 // XXX Also give broader status for tracking through network disconnects.
 Transaction.prototype.submit = function () {
-  var self	  = this;
-  var transaction = this.transaction;
+  var self    = this;
+  var tx_json = this.tx_json;
 
-  if ('string' !== typeof transaction.Account)
+  if ('string' !== typeof tx_json.Account)
   {
     this.emit('error', {
 	'error' : 'invalidAccount',
@@ -934,14 +944,14 @@ Transaction.prototype.submit = function () {
 
   // YYY Might check paths for invalid accounts.
 
-  if (undefined === transaction.Fee) {
-    if ('Payment' === transaction.TransactionType
-      && transaction.Flags & Remote.flags.Payment.CreateAccount) {
+  if (undefined === tx_json.Fee) {
+    if ('Payment' === tx_json.TransactionType
+      && tx_json.Flags & Remote.flags.Payment.CreateAccount) {
 
-      transaction.Fee    = Remote.fees.account_create.to_json();
+      tx_json.Fee    = Remote.fees.account_create.to_json();
     }
     else {
-      transaction.Fee    = Remote.fees['default'].to_json();
+      tx_json.Fee    = Remote.fees['default'].to_json();
     }
   }
 
@@ -1000,6 +1010,12 @@ Transaction.prototype.submit = function () {
 // Set options for Transactions
 //
 
+Transaction.prototype.build_path = function (build) {
+  this.build_path = build;
+
+  return this;
+}
+
 Transaction._path_rewrite = function (path) {
   var path_new	= [];
   
@@ -1023,8 +1039,8 @@ Transaction._path_rewrite = function (path) {
 }
 
 Transaction.prototype.path_add = function (path) {
-  this.transaction.Paths  = this.transaction.Paths || []
-  this.transaction.Paths.push(Transaction._path_rewrite(path));
+  this.tx_json.Paths  = this.tx_json.Paths || []
+  this.tx_json.Paths.push(Transaction._path_rewrite(path));
 
   return this;
 }
@@ -1046,16 +1062,16 @@ Transaction.prototype.secret = function (secret) {
 
 Transaction.prototype.send_max = function (send_max) {
   if (send_max)
-      this.transaction.SendMax = Amount.json_rewrite(send_max);
+      this.tx_json.SendMax = Amount.json_rewrite(send_max);
 
   return this;
 }
 
 // --> rate: In billionths.
 Transaction.prototype.transfer_rate = function (rate) {
-  this.transaction.TransferRate = Number(rate);
+  this.tx_json.TransferRate = Number(rate);
 
-  if (this.transaction.TransferRate < 1e9)
+  if (this.tx_json.TransferRate < 1e9)
     throw 'invalidTransferRate';
 
   return this;
@@ -1065,10 +1081,10 @@ Transaction.prototype.transfer_rate = function (rate) {
 // --> flags: undefined, _flag_, or [ _flags_ ]
 Transaction.prototype.set_flags = function (flags) {
   if (flags) {
-      var   transaction_flags = Remote.flags[this.transaction.TransactionType];
+      var   transaction_flags = Remote.flags[this.tx_json.TransactionType];
 
-      if (undefined == this.transaction.Flags)	// We plan to not define this field on new Transaction.
-	this.transaction.Flags	  = 0;
+      if (undefined == this.tx_json.Flags)	// We plan to not define this field on new Transaction.
+	this.tx_json.Flags	  = 0;
       
       var flag_set  = 'object' === typeof flags ? flags : [ flags ];
 
@@ -1077,15 +1093,15 @@ Transaction.prototype.set_flags = function (flags) {
 
 	if (flag in transaction_flags)
 	{
-	  this.transaction.Flags      += transaction_flags[flag];
+	  this.tx_json.Flags      += transaction_flags[flag];
 	}
 	else {
 	  // XXX Immediately report an error or mark it.
 	}
       }
 
-      if (this.transaction.Flags & Remote.flags.Payment.CreateAccount)
-	this.transaction.Fee	= Remote.fees.account_create.to_json();
+      if (this.tx_json.Flags & Remote.flags.Payment.CreateAccount)
+	this.tx_json.Fee	= Remote.fees.account_create.to_json();
   }
 
   return this;
@@ -1106,43 +1122,43 @@ Transaction.prototype._account_secret = function (account) {
 //  .transfer_rate()
 //  .wallet_locator()	NYI
 Transaction.prototype.account_set = function (src) {
-  this.secret			    = this._account_secret(src);
-  this.transaction.TransactionType  = 'AccountSet';
-  this.transaction.Account	    = UInt160.json_rewrite(src);
+  this.secret			= this._account_secret(src);
+  this.tx_json.TransactionType  = 'AccountSet';
+  this.tx_json.Account		= UInt160.json_rewrite(src);
 
   return this;
 };
 
 Transaction.prototype.claim = function (src, generator, public_key, signature) {
-  this.secret			    = this._account_secret(src);
-  this.transaction.TransactionType  = 'Claim';
-  this.transaction.Generator	    = generator;
-  this.transaction.PublicKey	    = public_key;
-  this.transaction.Signature	    = signature;
+  this.secret			= this._account_secret(src);
+  this.tx_json.TransactionType  = 'Claim';
+  this.tx_json.Generator	= generator;
+  this.tx_json.PublicKey	= public_key;
+  this.tx_json.Signature	= signature;
 
   return this;
 };
 
 Transaction.prototype.offer_cancel = function (src, sequence) {
-  this.secret			    = this._account_secret(src);
-  this.transaction.TransactionType  = 'OfferCancel';
-  this.transaction.Account	    = UInt160.json_rewrite(src);
-  this.transaction.OfferSequence    = Number(sequence);
+  this.secret			= this._account_secret(src);
+  this.tx_json.TransactionType  = 'OfferCancel';
+  this.tx_json.Account		= UInt160.json_rewrite(src);
+  this.tx_json.OfferSequence    = Number(sequence);
 
   return this;
 };
 
 // --> expiration : Date or Number
 Transaction.prototype.offer_create = function (src, taker_pays, taker_gets, expiration) {
-  this.secret			    = this._account_secret(src);
-  this.transaction.TransactionType  = 'OfferCreate';
-  this.transaction.Account	    = UInt160.json_rewrite(src);
-  this.transaction.Fee		    = Remote.fees.offer.to_json();
-  this.transaction.TakerPays	    = Amount.json_rewrite(taker_pays);
-  this.transaction.TakerGets	    = Amount.json_rewrite(taker_gets);
+  this.secret			= this._account_secret(src);
+  this.tx_json.TransactionType  = 'OfferCreate';
+  this.tx_json.Account		= UInt160.json_rewrite(src);
+  this.tx_json.Fee		= Remote.fees.offer.to_json();
+  this.tx_json.TakerPays	= Amount.json_rewrite(taker_pays);
+  this.tx_json.TakerGets	= Amount.json_rewrite(taker_gets);
 
   if (expiration)
-    this.transaction.Expiration  = Date === expiration.constructor
+    this.tx_json.Expiration  = Date === expiration.constructor
 				    ? expiration.getTime()
 				    : Number(expiration);
 
@@ -1150,20 +1166,20 @@ Transaction.prototype.offer_create = function (src, taker_pays, taker_gets, expi
 };
 
 Transaction.prototype.password_fund = function (src, dst) {
-  this.secret			    = this._account_secret(src);
-  this.transaction.TransactionType  = 'PasswordFund';
-  this.transaction.Destination	    = UInt160.json_rewrite(dst);
+  this.secret			= this._account_secret(src);
+  this.tx_json.TransactionType  = 'PasswordFund';
+  this.tx_json.Destination	= UInt160.json_rewrite(dst);
 
   return this;
 }
 
 Transaction.prototype.password_set = function (src, authorized_key, generator, public_key, signature) {
-  this.secret			    = this._account_secret(src);
-  this.transaction.TransactionType  = 'PasswordSet';
-  this.transaction.AuthorizedKey    = authorized_key;
-  this.transaction.Generator	    = generator;
-  this.transaction.PublicKey	    = public_key;
-  this.transaction.Signature	    = signature;
+  this.secret			= this._account_secret(src);
+  this.tx_json.TransactionType  = 'PasswordSet';
+  this.tx_json.AuthorizedKey    = authorized_key;
+  this.tx_json.Generator	= generator;
+  this.tx_json.PublicKey	= public_key;
+  this.tx_json.Signature	= signature;
 
   return this;
 }
@@ -1178,34 +1194,35 @@ Transaction.prototype.password_set = function (src, authorized_key, generator, p
 //
 // Options:
 //  .paths()
+//  .build_path()
 //  .path_add()
 //  .secret()
 //  .send_max()
 //  .set_flags()
 Transaction.prototype.payment = function (src, dst, deliver_amount) {
-  this.secret			    = this._account_secret(src);
-  this.transaction.TransactionType  = 'Payment';
-  this.transaction.Account	    = UInt160.json_rewrite(src);
-  this.transaction.Amount	    = Amount.json_rewrite(deliver_amount);
-  this.transaction.Destination	    = UInt160.json_rewrite(dst);
+  this.secret			= this._account_secret(src);
+  this.tx_json.TransactionType  = 'Payment';
+  this.tx_json.Account		= UInt160.json_rewrite(src);
+  this.tx_json.Amount		= Amount.json_rewrite(deliver_amount);
+  this.tx_json.Destination	= UInt160.json_rewrite(dst);
 
   return this;
 }
 
 Transaction.prototype.ripple_line_set = function (src, limit, quality_in, quality_out) {
-  this.secret			    = this._account_secret(src);
-  this.transaction.TransactionType  = 'CreditSet';
-  this.transaction.Account	    = UInt160.json_rewrite(src);
+  this.secret			= this._account_secret(src);
+  this.tx_json.TransactionType  = 'CreditSet';
+  this.tx_json.Account		= UInt160.json_rewrite(src);
 
   // Allow limit of 0 through.
   if (undefined !== limit)
-    this.transaction.LimitAmount  = Amount.json_rewrite(limit);
+    this.tx_json.LimitAmount  = Amount.json_rewrite(limit);
 
   if (quality_in)
-    this.transaction.QualityIn	  = quality_in;
+    this.tx_json.QualityIn    = quality_in;
 
   if (quality_out)
-    this.transaction.QualityOut	  = quality_out;
+    this.tx_json.QualityOut   = quality_out;
 
   // XXX Throw an error if nothing is set.
 
@@ -1213,12 +1230,12 @@ Transaction.prototype.ripple_line_set = function (src, limit, quality_in, qualit
 };
 
 Transaction.prototype.wallet_add = function (src, amount, authorized_key, public_key, signature) {
-  this.secret			    = this._account_secret(src);
-  this.transaction.TransactionType  = 'WalletAdd';
-  this.transaction.Amount	    = Amount.json_rewrite(amount);
-  this.transaction.AuthorizedKey    = authorized_key;
-  this.transaction.PublicKey	    = public_key;
-  this.transaction.Signature	    = signature;
+  this.secret			= this._account_secret(src);
+  this.tx_json.TransactionType  = 'WalletAdd';
+  this.tx_json.Amount		= Amount.json_rewrite(amount);
+  this.tx_json.AuthorizedKey    = authorized_key;
+  this.tx_json.PublicKey	= public_key;
+  this.tx_json.Signature	= signature;
 
   return this;
 };
