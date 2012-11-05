@@ -39,6 +39,13 @@ public:
 	CanonicalTXSet(const uint256& lclHash) : mSetHash(lclHash) { ; }
 
 	void push_back(SerializedTransaction::ref txn);
+
+	void reset(const uint256& newLCL)
+	{
+		mSetHash = newLCL;
+		mMap.clear();
+	}
+
 	iterator erase(const iterator& it);
 
 	iterator begin()				{ return mMap.begin(); }

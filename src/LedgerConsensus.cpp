@@ -563,7 +563,7 @@ void LedgerConsensus::closeLedger()
 		mCloseTime = theApp->getOPs().getCloseTimeNC();
 		theApp->getOPs().setLastCloseTime(mCloseTime);
 		statusChange(ripple::neCLOSING_LEDGER, *mPreviousLedger);
-		takeInitialPosition(*theApp->getMasterLedger().closeLedger());
+		takeInitialPosition(*theApp->getMasterLedger().closeLedger(true));
 }
 
 void LedgerConsensus::stateEstablish()
@@ -868,7 +868,7 @@ void LedgerConsensus::addDisputedTransaction(const uint256& txID, const std::vec
 	{
 		boost::unordered_map<uint256, SHAMap::pointer>::const_iterator cit =
 			mAcquired.find(pit.second->getCurrentHash());
-		if (cit != mAcquired.end() && cit->second)
+		if ((cit != mAcquired.end()) && cit->second)
 			txn->setVote(pit.first, cit->second->hasItem(txID));
 	}
 

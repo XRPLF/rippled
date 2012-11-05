@@ -70,6 +70,7 @@ public:
 	Suppression getEntry(const uint256&);
 
 	bool swapSet(const uint256& index, std::set<uint64>& peers, int flag);
+	bool swapSet(const uint256& index, std::set<uint64>& peers);
 };
 
 #endif

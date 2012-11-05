@@ -156,9 +156,9 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans)
 	if (r == tefFAILURE)
 		throw Fault(IO_ERROR);
 
-	if (r == terPRE_SEQ)
+	if (isTerRetry(r))
 	{ // transaction should be held
-		cLog(lsDEBUG) << "Transaction should be held";
+		cLog(lsDEBUG) << "Transaction should be held: " << r;
 		trans->setStatus(HELD);
 		theApp->getMasterTransaction().canonicalize(trans, true);
 		mLedgerMaster->addHeldTransaction(trans);
@@ -171,12 +171,24 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans)
 		return trans;
 	}
 
+	bool relay = true;
+
 	if (r == tesSUCCESS)
 	{
-		cLog(lsINFO) << "Transaction is now included";
+		cLog(lsINFO) << "Transaction is now included in open ledger";
 		trans->setStatus(INCLUDED);
 		theApp->getMasterTransaction().canonicalize(trans, true);
+	}
+	else
+	{
+		cLog(lsDEBUG) << "Status other than success " << r;
+		if (mMode == omFULL)
+			relay = false;
+		trans->setStatus(INVALID);
+	}
 
+	if (relay)
+	{
 		std::set<uint64> peers;
 		if (theApp->getSuppression().swapSet(trans->getID(), peers, SF_RELAYED))
 		{
@@ -185,32 +197,13 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans)
 			trans->getSTransaction()->add(s);
 			tx.set_rawtransaction(&s.getData().front(), s.getLength());
 			tx.set_status(ripple::tsCURRENT);
-			tx.set_receivetimestamp(getNetworkTimeNC());
+			tx.set_receivetimestamp(getNetworkTimeNC()); // FIXME: This should be when we received it
 
 			PackedMessage::pointer packet = boost::make_shared<PackedMessage>(tx, ripple::mtTRANSACTION);
 			theApp->getConnectionPool().relayMessageBut(peers, packet);
 		}
-
-		return trans;
 	}
 
-	cLog(lsDEBUG) << "Status other than success " << r;
-	std::set<uint64> peers;
-
-	if ((mMode != omFULL) && (mMode != omTRACKING)
-		&& theApp->getSuppression().swapSet(trans->getID(), peers, SF_RELAYED))
-	{
-		ripple::TMTransaction tx;
-		Serializer s;
-		trans->getSTransaction()->add(s);
-		tx.set_rawtransaction(&s.getData().front(), s.getLength());
-		tx.set_status(ripple::tsCURRENT);
-		tx.set_receivetimestamp(getNetworkTimeNC());
-		PackedMessage::pointer packet = boost::make_shared<PackedMessage>(tx, ripple::mtTRANSACTION);
-		theApp->getConnectionPool().relayMessageTo(peers, packet);
-	}
-
-	trans->setStatus(INVALID);
 	return trans;
 }
 
