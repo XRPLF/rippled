@@ -26,7 +26,7 @@ LedgerProposal::LedgerProposal(const RippleAddress& naPub, const RippleAddress& 
 		const uint256& prevLgr,	const uint256& position, uint32 closeTime) :
 	mPreviousLedger(prevLgr), mCurrentHash(position), mCloseTime(closeTime), mProposeSeq(0),
 	mPublicKey(naPub), mPrivateKey(naPriv)
-{ // OPTIMIZEME: This is expensive. We create both the public and private keys separately each time
+{
 	mPeerID		= mPublicKey.getNodeID();
 	mTime		= boost::posix_time::second_clock::universal_time();
 }
