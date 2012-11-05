@@ -115,18 +115,35 @@ Transaction::pointer NetworkOPs::submitTransaction(const Transaction::pointer& t
 Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans)
 {
 	Transaction::pointer dbtx = theApp->getMasterTransaction().fetch(trans->getID(), true);
-	if (dbtx) return dbtx;
+	if (dbtx)
+		return dbtx;
 
-	if (!trans->checkSign())
-	{
-		cLog(lsINFO) << "Transaction has bad signature";
+	int newFlags = theApp->getSuppression().getFlags(trans->getID());
+	if ((newFlags & SF_BAD) != 0)
+	{ // cached bad
 		trans->setStatus(INVALID);
 		return trans;
 	}
 
-	TER r = mLedgerMaster->doTransaction(*trans->getSTransaction(), tapOPEN_LEDGER);
+	if ((newFlags & SF_SIGGOOD) == 0)
+	{ // signature not checked
+		if (!trans->checkSign())
+		{
+			cLog(lsINFO) << "Transaction has bad signature";
+			trans->setStatus(INVALID);
+			theApp->isNewFlag(trans->getID(), SF_BAD);
+			return trans;
+		}
+		theApp->isNewFlag(trans->getID(), SF_SIGGOOD);
+	}
 
+	TER r = mLedgerMaster->doTransaction(*trans->getSTransaction(), tapOPEN_LEDGER | tapNO_CHECK_SIGN);
 	trans->setResult(r);
+
+	if (isTemMalformed(r)) // malformed, cache bad
+		theApp->isNewFlag(trans->getID(), SF_BAD);
+	else if(isTelLocal(r) || isTerRetry(r)) // can be retried
+		theApp->isNewFlag(trans->getID(), SF_RETRY);
 
 #ifdef DEBUG
 	if (r != tesSUCCESS)
@@ -180,8 +197,8 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans)
 	cLog(lsDEBUG) << "Status other than success " << r;
 	std::set<uint64> peers;
 
-	if ((mMode != omFULL) && (mMode != omTRACKING) &&
-		theApp->getSuppression().swapSet(trans->getID(), peers, SF_RELAYED))
+	if ((mMode != omFULL) && (mMode != omTRACKING)
+		&& theApp->getSuppression().swapSet(trans->getID(), peers, SF_RELAYED))
 	{
 		ripple::TMTransaction tx;
 		Serializer s;
