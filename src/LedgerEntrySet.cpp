@@ -447,9 +447,8 @@ void LedgerEntrySet::calcRawMeta(Serializer& s, TER result)
 			it != end; ++it)
 		entryModify(it->second);
 
-	cLog(lsTRACE) << "Metadata:" << mSet.getJson(0);
-
 	mSet.addRaw(s, result);
+	cLog(lsTRACE) << "Metadata:" << mSet.getJson(0);
 }
 
 // <--     uNodeDir: For deletion, present to make dirDelete efficient.
