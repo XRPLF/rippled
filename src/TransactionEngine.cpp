@@ -455,7 +455,7 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 		terResult	= terRETRY;
 	}
 
-	if (tesSUCCESS == terResult || isTepPartial(terResult))
+	if ((tesSUCCESS == terResult) || isTepPartial(terResult))
 	{
 		// Transaction succeeded fully or (retries are not allowed and the transaction succeeded partially).
 		Serializer m;

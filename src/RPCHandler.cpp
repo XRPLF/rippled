@@ -248,7 +248,7 @@ Json::Value RPCHandler::authorize(const uint256& uLedger,
 
 	if (saSrcBalance < saFee)
 	{
-		cLog(lsINFO) << "authorize: Insufficent funds for fees: fee=" << saFee.getText() << " balance=" << saSrcBalance.getText();
+		cLog(lsINFO) << "authorize: Insufficient funds for fees: fee=" << saFee.getText() << " balance=" << saSrcBalance.getText();
 
 		return rpcError(rpcINSUF_FUNDS);
 	}
@@ -326,125 +326,7 @@ Json::Value RPCHandler::doAcceptLedger(const Json::Value &params)
 	return obj;
 }
 
-// account_domain_set <seed> <paying_account> [<domain>]
-Json::Value RPCHandler::doAccountDomainSet(const Json::Value &params)
-{
-	RippleAddress	naSrcAccountID;
-	RippleAddress	naSeed;
 
-	if (!naSeed.setSeedGeneric(params[0u].asString()))
-	{
-		return rpcError(rpcBAD_SEED);
-	}
-	else if (!naSrcAccountID.setAccountID(params[1u].asString()))
-	{
-		return rpcError(rpcSRC_ACT_MALFORMED);
-	}
-
-	RippleAddress			naVerifyGenerator;
-	RippleAddress			naAccountPublic;
-	RippleAddress			naAccountPrivate;
-	AccountState::pointer	asSrc;
-	STAmount				saSrcBalance;
-	Json::Value				obj				= authorize(uint256(0), naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
-		saSrcBalance, theConfig.FEE_DEFAULT, asSrc, naVerifyGenerator);
-
-	if (!obj.empty())
-		return obj;
-
-	Transaction::pointer	trans	= Transaction::sharedAccountSet(
-		naAccountPublic, naAccountPrivate,
-		naSrcAccountID,
-		asSrc->getSeq(),
-		theConfig.FEE_DEFAULT,
-		0,											// YYY No source tag
-		false,
-		uint128(),
-		false,
-		0,
-		0,
-		RippleAddress(),
-		true,
-		strCopy(params[2u].asString()),
-		false,
-		0);
-
-	trans	= mNetOps->submitTransaction(trans);
-
-	obj["transaction"]		= trans->getSTransaction()->getJson(0);
-	obj["status"]			= trans->getStatus();
-
-	return Json::Value(Json::objectValue);
-}
-
-// account_email_set <seed> <paying_account> [<email_address>]
-Json::Value RPCHandler::doAccountEmailSet(const Json::Value &params)
-{
-	RippleAddress	naSrcAccountID;
-	RippleAddress	naSeed;
-
-	if (!naSeed.setSeedGeneric(params[0u].asString()))
-	{
-		return rpcError(rpcBAD_SEED);
-	}
-	else if (!naSrcAccountID.setAccountID(params[1u].asString()))
-	{
-		return rpcError(rpcSRC_ACT_MALFORMED);
-	}
-
-	RippleAddress			naVerifyGenerator;
-	RippleAddress			naAccountPublic;
-	RippleAddress			naAccountPrivate;
-	AccountState::pointer	asSrc;
-	STAmount				saSrcBalance;
-	Json::Value				obj				= authorize(uint256(0), naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
-		saSrcBalance, theConfig.FEE_DEFAULT, asSrc, naVerifyGenerator);
-
-	if (!obj.empty())
-		return obj;
-
-	// Hash as per: http://en.gravatar.com/site/implement/hash/
-	std::string					strEmail	= 3 == params.size() ? params[2u].asString() : "";
-	boost::trim(strEmail);
-	boost::to_lower(strEmail);
-
-	std::vector<unsigned char>	vucMD5(128/8, 0);
-	MD5(reinterpret_cast<const unsigned char*>(strEmail.data()), strEmail.size(), &vucMD5.front());
-
-	uint128						uEmailHash(vucMD5);
-	std::vector<unsigned char>	vucDomain;
-
-	Transaction::pointer	trans	= Transaction::sharedAccountSet(
-		naAccountPublic, naAccountPrivate,
-		naSrcAccountID,
-		asSrc->getSeq(),
-		theConfig.FEE_DEFAULT,
-		0,											// YYY No source tag
-		true,
-		strEmail.empty() ? uint128() : uEmailHash,
-		false,
-		uint256(),
-		0,
-		RippleAddress(),
-		false,
-		vucDomain,
-		false,
-		0);
-
-	trans	= mNetOps->submitTransaction(trans);
-
-	obj["transaction"]	= trans->getSTransaction()->getJson(0);
-	obj["status"]		= trans->getStatus();
-
-	if (!strEmail.empty())
-	{
-		obj["Email"]		= strEmail;
-		obj["EmailHash"]	= strHex(vucMD5);
-		obj["UrlGravatar"]	= AccountState::createGravatarUrl(uEmailHash);
-	}
-
-	return obj;
-}
 
 // account_info <account>|<nickname>|<account_public_key>
 // account_info <seed>|<pass_phrase>|<key> [<index>]
@@ -498,177 +380,6 @@ Json::Value RPCHandler::doAccountInfo(const Json::Value &params)
 
 
 
-// account_message_set <seed> <paying_account> <pub_key>
-Json::Value RPCHandler::doAccountMessageSet(const Json::Value& params) {
-	RippleAddress	naSrcAccountID;
-	RippleAddress	naSeed;
-	RippleAddress	naMessagePubKey;
-
-	if (!naSeed.setSeedGeneric(params[0u].asString()))
-	{
-		return rpcError(rpcBAD_SEED);
-	}
-	else if (!naSrcAccountID.setAccountID(params[1u].asString()))
-	{
-		return rpcError(rpcSRC_ACT_MALFORMED);
-	}
-	else if (!naMessagePubKey.setAccountPublic(params[2u].asString()))
-	{
-		return rpcError(rpcPUBLIC_MALFORMED);
-	}
-
-	RippleAddress				naVerifyGenerator;
-	RippleAddress				naAccountPublic;
-	RippleAddress				naAccountPrivate;
-	AccountState::pointer		asSrc;
-	STAmount					saSrcBalance;
-	Json::Value					obj				= authorize(uint256(0), naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
-		saSrcBalance, theConfig.FEE_DEFAULT, asSrc, naVerifyGenerator);
-	std::vector<unsigned char>	vucDomain;
-
-	if (!obj.empty())
-		return obj;
-
-	Transaction::pointer		trans	= Transaction::sharedAccountSet(
-		naAccountPublic, naAccountPrivate,
-		naSrcAccountID,
-		asSrc->getSeq(),
-		theConfig.FEE_DEFAULT,
-		0,											// YYY No source tag
-		false,
-		uint128(),
-		false,
-		uint256(),
-		0,
-		naMessagePubKey,
-		false,
-		vucDomain,
-		false,
-		0);
-
-	trans	= mNetOps->submitTransaction(trans);
-
-	obj["transaction"]		= trans->getSTransaction()->getJson(0);
-	obj["status"]			= trans->getStatus();
-	obj["MessageKey"]		= naMessagePubKey.humanAccountPublic();
-
-	return obj;
-}
-
-// account_rate_set <seed> <paying_account> <rate>
-Json::Value RPCHandler::doAccountRateSet(const Json::Value &params)
-{
-	RippleAddress	naSrcAccountID;
-	RippleAddress	naSeed;
-
-	if (!naSeed.setSeedGeneric(params[0u].asString()))
-	{
-		return rpcError(rpcBAD_SEED);
-	}
-	else if (!naSrcAccountID.setAccountID(params[1u].asString()))
-	{
-		return rpcError(rpcSRC_ACT_MALFORMED);
-	}
-
-	RippleAddress			naVerifyGenerator;
-	RippleAddress			naAccountPublic;
-	RippleAddress			naAccountPrivate;
-	AccountState::pointer	asSrc;
-	STAmount				saSrcBalance;
-	Json::Value				obj				= authorize(uint256(0), naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
-		saSrcBalance, theConfig.FEE_DEFAULT, asSrc, naVerifyGenerator);
-
-	if (!obj.empty())
-		return obj;
-
-	uint32						uRate	= lexical_cast_s<int>(params[2u].asString());
-	std::vector<unsigned char>	vucDomain;
-
-	Transaction::pointer	trans	= Transaction::sharedAccountSet(
-		naAccountPublic, naAccountPrivate,
-		naSrcAccountID,
-		asSrc->getSeq(),
-		theConfig.FEE_DEFAULT,
-		0,											// YYY No source tag
-		false,
-		uint128(),
-		false,
-		0,
-		0,
-		RippleAddress(),
-		false,
-		vucDomain,
-		true,
-		uRate);
-
-	trans	= mNetOps->submitTransaction(trans);
-
-	obj["transaction"]		= trans->getSTransaction()->getJson(0);
-	obj["status"]			= trans->getStatus();
-
-	return Json::Value(Json::objectValue);
-}
-
-// account_wallet_set <seed> <paying_account> [<wallet_hash>]
-Json::Value RPCHandler::doAccountWalletSet(const Json::Value& params) {
-	RippleAddress	naSrcAccountID;
-	RippleAddress	naSeed;
-
-	if (!naSeed.setSeedGeneric(params[0u].asString()))
-	{
-		return rpcError(rpcBAD_SEED);
-	}
-	else if (!naSrcAccountID.setAccountID(params[1u].asString()))
-	{
-		return rpcError(rpcSRC_ACT_MALFORMED);
-	}
-
-	RippleAddress				naMasterGenerator;
-	RippleAddress				naAccountPublic;
-	RippleAddress				naAccountPrivate;
-	AccountState::pointer		asSrc;
-	STAmount					saSrcBalance;
-	Json::Value					obj					= authorize(uint256(0), naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
-		saSrcBalance, theConfig.FEE_DEFAULT, asSrc, naMasterGenerator);
-	std::vector<unsigned char>	vucDomain;
-
-	if (!obj.empty())
-		return obj;
-
-	std::string					strWalletLocator	= params.size() == 3 ? params[2u].asString() : "";
-	uint256						uWalletLocator;
-	uint32						uWalletSize	= 0;	// XXX Broken should be an argument.
-
-	if (!strWalletLocator.empty())
-		uWalletLocator.SetHex(strWalletLocator);
-
-	Transaction::pointer	trans	= Transaction::sharedAccountSet(
-		naAccountPublic, naAccountPrivate,
-		naSrcAccountID,
-		asSrc->getSeq(),
-		theConfig.FEE_DEFAULT,
-		0,											// YYY No source tag
-		false,
-		uint128(),
-		true,
-		uWalletLocator,
-		uWalletSize,
-		RippleAddress(),
-		false,
-		vucDomain,
-		false,
-		0);
-
-	trans	= mNetOps->submitTransaction(trans);
-
-	obj["transaction"]		= trans->getSTransaction()->getJson(0);
-	obj["status"]			= trans->getStatus();
-
-	if (!strWalletLocator.empty())
-		obj["WalletLocator"]	= uWalletLocator.GetHex();
-
-	return obj;
-}
 
 Json::Value RPCHandler::doConnect(const Json::Value& params)
 {
@@ -782,192 +493,6 @@ Json::Value RPCHandler::doNicknameInfo(const Json::Value& params)
 	return ret;
 }
 
-// nickname_set <seed> <paying_account> <nickname> [<offer_minimum>] [<authorization>]
-Json::Value RPCHandler::doNicknameSet(const Json::Value& params)
-{
-	RippleAddress	naSrcAccountID;
-	RippleAddress	naSeed;
-
-	if (!naSeed.setSeedGeneric(params[0u].asString()))
-	{
-		return rpcError(rpcBAD_SEED);
-	}
-	else if (!naSrcAccountID.setAccountID(params[1u].asString()))
-	{
-		return rpcError(rpcSRC_ACT_MALFORMED);
-	}
-
-	STAmount					saMinimumOffer;
-	bool						bSetOffer		= params.size() >= 4;
-	std::string					strOfferCurrency;
-	std::string					strNickname		= params[2u].asString();
-	boost::trim(strNickname);
-
-	if (strNickname.empty())
-	{
-		return rpcError(rpcNICKNAME_MALFORMED);
-	}
-	else if (params.size() >= 4 && !saMinimumOffer.setFullValue(params[3u].asString(), strOfferCurrency))
-	{
-		return rpcError(rpcDST_AMT_MALFORMED);
-	}
-
-	STAmount				saFee;
-	NicknameState::pointer	nsSrc	= mNetOps->getNicknameState(uint256(0), strNickname);
-
-	if (!nsSrc)
-	{
-		// Creating nickname.
-		saFee	= theConfig.FEE_NICKNAME_CREATE;
-	}
-	else if (naSrcAccountID != nsSrc->getAccountID())
-	{
-		// We don't own the nickname.
-		return rpcError(rpcNICKNAME_PERM);
-	}
-	else
-	{
-		// Setting the minimum offer.
-		saFee	= theConfig.FEE_DEFAULT;
-	}
-
-	RippleAddress			naMasterGenerator;
-	RippleAddress			naAccountPublic;
-	RippleAddress			naAccountPrivate;
-	AccountState::pointer	asSrc;
-	STAmount				saSrcBalance;
-	Json::Value				obj				= authorize(uint256(0), naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
-		saSrcBalance, saFee, asSrc, naMasterGenerator);
-
-	if (!obj.empty())
-		return obj;
-
-	// YYY Could verify nickname does not exist or points to paying account.
-	// XXX Adjust fee for nickname create.
-
-	Transaction::pointer	trans	= Transaction::sharedNicknameSet(
-		naAccountPublic, naAccountPrivate,
-		naSrcAccountID,
-		asSrc->getSeq(),
-		saFee,
-		0,											// YYY No source tag
-		Ledger::getNicknameHash(strNickname),
-		bSetOffer,
-		saMinimumOffer);
-
-	trans	= mNetOps->submitTransaction(trans);
-
-	obj["transaction"]	= trans->getSTransaction()->getJson(0);
-	obj["status"]		= trans->getStatus();
-
-	return obj;
-}
-
-// offer_create <seed> <paying_account> <takers_gets_amount> <takers_gets_currency> <takers_gets_issuer> <taker_pays_amount> <taker_pays_currency> <taker_pays_issuer> <expires> [passive]
-// *offering* for *wants*
-Json::Value RPCHandler::doOfferCreate(const Json::Value &params)
-{
-	RippleAddress	naSeed;
-	RippleAddress	naSrcAccountID;
-	STAmount		saTakerPays;
-	STAmount		saTakerGets;
-
-	if (!naSeed.setSeedGeneric(params[0u].asString()))
-	{
-		return rpcError(rpcBAD_SEED);
-	}
-	else if (!naSrcAccountID.setAccountID(params[1u].asString()))
-	{
-		return rpcError(rpcSRC_ACT_MALFORMED);
-	}
-	else if (!saTakerGets.setFullValue(params[2u].asString(), params[3u].asString(), params[4u].asString()))
-	{
-		return rpcError(rpcGETS_AMT_MALFORMED);
-	}
-	else if (!saTakerPays.setFullValue(params[5u].asString(), params[6u].asString(), params[7u].asString()))
-	{
-		return rpcError(rpcPAYS_AMT_MALFORMED);
-	}
-	else if (params.size() == 10 && params[9u].asString() != "passive")
-	{
-		return rpcError(rpcINVALID_PARAMS);
-	}
-
-	uint32					uExpiration	= lexical_cast_s<int>(params[8u].asString());
-	bool					bPassive	= params.size() == 10;
-
-	RippleAddress			naMasterGenerator;
-	RippleAddress			naAccountPublic;
-	RippleAddress			naAccountPrivate;
-	AccountState::pointer	asSrc;
-	STAmount				saSrcBalance;
-	Json::Value				obj				= authorize(uint256(0), naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
-		saSrcBalance, theConfig.FEE_DEFAULT, asSrc, naMasterGenerator);
-
-	if (!obj.empty())
-		return obj;
-
-	Transaction::pointer trans	= Transaction::sharedOfferCreate(
-		naAccountPublic, naAccountPrivate,
-		naSrcAccountID,
-		asSrc->getSeq(),
-		theConfig.FEE_DEFAULT,
-		0,											// YYY No source tag
-		bPassive,
-		saTakerPays,
-		saTakerGets,
-		uExpiration);
-
-	trans	= mNetOps->submitTransaction(trans);
-
-	obj["transaction"]	= trans->getSTransaction()->getJson(0);
-	obj["status"]		= trans->getStatus();
-
-	return obj;
-}
-
-// offer_cancel <seed> <paying_account> <sequence>
-Json::Value RPCHandler::doOfferCancel(const Json::Value &params)
-{
-	RippleAddress	naSeed;
-	RippleAddress	naSrcAccountID;
-	uint32			uSequence	= lexical_cast_s<int>(params[2u].asString());
-
-	if (!naSeed.setSeedGeneric(params[0u].asString()))
-	{
-		return rpcError(rpcBAD_SEED);
-	}
-	else if (!naSrcAccountID.setAccountID(params[1u].asString()))
-	{
-		return rpcError(rpcSRC_ACT_MALFORMED);
-	}
-
-	RippleAddress			naMasterGenerator;
-	RippleAddress			naAccountPublic;
-	RippleAddress			naAccountPrivate;
-	AccountState::pointer	asSrc;
-	STAmount				saSrcBalance;
-	Json::Value				obj				= authorize(uint256(0), naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
-		saSrcBalance, theConfig.FEE_DEFAULT, asSrc, naMasterGenerator);
-
-	if (!obj.empty())
-		return obj;
-
-	Transaction::pointer trans	= Transaction::sharedOfferCancel(
-		naAccountPublic, naAccountPrivate,
-		naSrcAccountID,
-		asSrc->getSeq(),
-		theConfig.FEE_DEFAULT,
-		0,											// YYY No source tag
-		uSequence);
-
-	trans	= mNetOps->submitTransaction(trans);
-
-	obj["transaction"]	= trans->getSTransaction()->getJson(0);
-	obj["status"]		= trans->getStatus();
-
-	return obj;
-}
 
 // owner_info <account>|<nickname>|<account_public_key>
 // owner_info <seed>|<pass_phrase>|<key> [<index>]
@@ -993,150 +518,7 @@ Json::Value RPCHandler::doOwnerInfo(const Json::Value& params)
 
 	return ret;
 }
-// password_fund <seed> <paying_account> [<account>]
-// YYY Make making account default to first account for seed.
-Json::Value RPCHandler::doPasswordFund(const Json::Value &params)
-{
-	RippleAddress	naSrcAccountID;
-	RippleAddress	naDstAccountID;
-	RippleAddress	naSeed;
 
-	if (!naSeed.setSeedGeneric(params[0u].asString()))
-	{
-		return rpcError(rpcBAD_SEED);
-	}
-	else if (!naSrcAccountID.setAccountID(params[1u].asString()))
-	{
-		return rpcError(rpcSRC_ACT_MALFORMED);
-	}
-	else if (!naDstAccountID.setAccountID(params[params.size() == 3 ? 2u : 1u].asString()))
-	{
-		return rpcError(rpcDST_ACT_MALFORMED);
-	}
-
-	RippleAddress			naMasterGenerator;
-	RippleAddress			naAccountPublic;
-	RippleAddress			naAccountPrivate;
-	AccountState::pointer	asSrc;
-	STAmount				saSrcBalance;
-	Json::Value				obj				= authorize(uint256(0), naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
-		saSrcBalance, theConfig.FEE_DEFAULT, asSrc, naMasterGenerator);
-
-	if (!obj.empty())
-		return obj;
-
-	// YYY Could verify dst exists and isn't already funded.
-
-	Transaction::pointer	trans	= Transaction::sharedPasswordFund(
-		naAccountPublic, naAccountPrivate,
-		naSrcAccountID,
-		asSrc->getSeq(),
-		theConfig.FEE_DEFAULT,
-		0,											// YYY No source tag
-		naDstAccountID);
-
-	trans	= mNetOps->submitTransaction(trans);
-
-	obj["transaction"]	= trans->getSTransaction()->getJson(0);
-	obj["status"]		= trans->getStatus();
-
-	return obj;
-}
-
-// password_set <master_seed> <regular_seed> [<account>]
-Json::Value RPCHandler::doPasswordSet(const Json::Value& params)
-{
-	RippleAddress	naMasterSeed;
-	RippleAddress	naRegularSeed;
-	RippleAddress	naAccountID;
-
-	if (!naMasterSeed.setSeedGeneric(params[0u].asString()))
-	{
-		// Should also not allow account id's as seeds.
-		return rpcError(rpcBAD_SEED);
-	}
-	else if (!naRegularSeed.setSeedGeneric(params[1u].asString()))
-	{
-		// Should also not allow account id's as seeds.
-		return rpcError(rpcBAD_SEED);
-	}
-	// YYY Might use account from string to be more flexible.
-	else if (params.size() >= 3 && !naAccountID.setAccountID(params[2u].asString()))
-	{
-		return rpcError(rpcACT_MALFORMED);
-	}
-	else
-	{
-		RippleAddress	naMasterGenerator	= RippleAddress::createGeneratorPublic(naMasterSeed);
-		RippleAddress	naRegularGenerator	= RippleAddress::createGeneratorPublic(naRegularSeed);
-		RippleAddress	naRegular0Public;
-		RippleAddress	naRegular0Private;
-
-		RippleAddress	naAccountPublic;
-		RippleAddress	naAccountPrivate;
-
-		naAccountPublic.setAccountPublic(naMasterGenerator, 0);
-		naAccountPrivate.setAccountPrivate(naMasterGenerator, naMasterSeed, 0);
-
-		naRegular0Public.setAccountPublic(naRegularGenerator, 0);
-		naRegular0Private.setAccountPrivate(naRegularGenerator, naRegularSeed, 0);
-
-		// Hash of regular account #0 public key.
-		//		uint160						uGeneratorID		= naRegular0Public.getAccountID();
-		std::vector<unsigned char>	vucGeneratorCipher	= naRegular0Private.accountPrivateEncrypt(naRegular0Public, naMasterGenerator.getGenerator());
-		std::vector<unsigned char>	vucGeneratorSig;
-
-		// Prove that we have the corresponding private key to the generator id.  So, we can get the generator id.
-		// XXX Check result.
-		naRegular0Private.accountPrivateSign(Serializer::getSHA512Half(vucGeneratorCipher), vucGeneratorSig);
-
-		RippleAddress		naMasterXPublic;
-		RippleAddress		naRegularXPublic;
-		unsigned int		iIndex	= -1;	// Compensate for initial increment.
-		int					iMax	= theConfig.ACCOUNT_PROBE_MAX;
-
-		// YYY Could probe periodically to see if accounts exists.
-		// YYY Max could be set randomly.
-		// Don't look at ledger entries to determine if the account exists.  Don't want to leak to thin server that these accounts are
-		// related.
-		do {
-			++iIndex;
-			naMasterXPublic.setAccountPublic(naMasterGenerator, iIndex);
-			naRegularXPublic.setAccountPublic(naRegularGenerator, iIndex);
-
-			std::cerr << iIndex << ": " << naRegularXPublic.humanAccountID() << std::endl;
-
-		} while (naAccountID.getAccountID() != naMasterXPublic.getAccountID() && --iMax);
-
-		if (!iMax)
-		{
-			return rpcError(rpcACT_NOT_FOUND);
-		}
-
-		Transaction::pointer	trans	= Transaction::sharedPasswordSet(
-			naAccountPublic, naAccountPrivate,
-			0,
-			naRegularXPublic,
-			vucGeneratorCipher,
-			naRegular0Public.getAccountPublic(),
-			vucGeneratorSig);
-
-		trans	= mNetOps->submitTransaction(trans);
-
-		Json::Value obj(Json::objectValue);
-
-		// We "echo" the seeds so they can be checked.
-		obj["master_seed"]		= naMasterSeed.humanSeed();
-		obj["master_key"]		= naMasterSeed.humanSeed1751();
-		obj["regular_seed"]		= naRegularSeed.humanSeed();
-		obj["regular_key"]		= naRegularSeed.humanSeed1751();
-
-		obj["transaction"]		= trans->getSTransaction()->getJson(0);
-		obj["status"]			= trans->getStatus();
-
-		return obj;
-	}
-}
 
 Json::Value RPCHandler::doPeers(const Json::Value& params)
 {
@@ -1236,310 +618,6 @@ Json::Value RPCHandler::doProfile(const Json::Value &params)
 	return obj;
 }
 
-// ripple <regular_seed> <paying_account>
-//	 <source_max> <source_currency> [<source_issuerID>]
-//   <path>+
-//   full|partial limit|average <dest_account> <dest_amount> <dest_currency> [<dest_issuerID>]
-//
-//   path:
-//     path <path_element>+
-//
-//   path_element:
-//      account <accountID> [<currency>] [<issuerID>]
-//      offer <currency> [<issuerID>]
-Json::Value RPCHandler::doRipple(const Json::Value &params)
-{
-	RippleAddress	naSeed;
-	STAmount		saSrcAmountMax;
-	uint160			uSrcCurrencyID;
-	RippleAddress	naSrcAccountID;
-	RippleAddress	naSrcIssuerID;
-	bool			bPartial;
-	bool			bFull;
-	bool			bLimit;
-	bool			bAverage;
-	RippleAddress	naDstAccountID;
-	STAmount		saDstAmount;
-	uint160			uDstCurrencyID;
-
-	STPathSet		spsPaths;
-
-	naSrcIssuerID.setAccountID(params[4u].asString());							// <source_issuerID>
-
-	if (!naSeed.setSeedGeneric(params[0u].asString()))							// <regular_seed>
-	{
-		return rpcError(rpcBAD_SEED);
-	}
-	else if (!naSrcAccountID.setAccountID(params[1u].asString()))				// <paying_account>
-	{
-		return rpcError(rpcSRC_ACT_MALFORMED);
-	}
-	// <source_max> <source_currency> [<source_issuerID>]
-	else if (!saSrcAmountMax.setFullValue(params[2u].asString(), params[3u].asString(), params[naSrcIssuerID.isValid() ? 4u : 1u].asString()))
-	{
-		// Log(lsINFO) << "naSrcIssuerID.isValid(): " << naSrcIssuerID.isValid();
-		// Log(lsINFO) << "source_max: " << params[2u].asString();
-		// Log(lsINFO) << "source_currency: " << params[3u].asString();
-		// Log(lsINFO) << "source_issuer: " << params[naSrcIssuerID.isValid() ? 4u : 2u].asString();
-
-		return rpcError(rpcSRC_AMT_MALFORMED);
-	}
-
-	int		iArg	= 4 + naSrcIssuerID.isValid();
-
-	// XXX bSrcRedeem & bSrcIssue not used.
-	STPath		spPath;
-
-	while (params.size() != iArg && params[iArg].asString() == "path")			// path
-	{
-		Log(lsINFO) << "Path>";
-		++iArg;
-
-		while (params.size() != iArg
-			&& (params[iArg].asString() == "offer" || params[iArg].asString() == "account"))
-		{
-			if (params.size() >= iArg + 3 && params[iArg].asString() == "offer")	// offer
-			{
-				Log(lsINFO) << "Offer>";
-				uint160			uCurrencyID;
-				RippleAddress	naIssuerID;
-
-				++iArg;
-
-				if (!STAmount::currencyFromString(uCurrencyID, params[iArg++].asString()))	// <currency>
-				{
-					return rpcError(rpcINVALID_PARAMS);
-				}
-				else if (naIssuerID.setAccountID(params[iArg].asString()))				// [<issuerID>]
-				{
-					++iArg;
-				}
-
-				spPath.addElement(STPathElement(
-					uint160(0),
-					uCurrencyID,
-					naIssuerID.isValid() ? naIssuerID.getAccountID() : uint160(0)));
-			}
-			else if (params.size() >= iArg + 2 && params[iArg].asString() == "account")	// account
-			{
-				Log(lsINFO) << "Account>";
-				RippleAddress	naAccountID;
-				uint160			uCurrencyID;
-				RippleAddress	naIssuerID;
-
-				++iArg;
-
-				if (!naAccountID.setAccountID(params[iArg++].asString()))				// <accountID>
-				{
-					return rpcError(rpcINVALID_PARAMS);
-				}
-
-				if (params.size() != iArg && STAmount::currencyFromString(uCurrencyID, params[iArg].asString())) // [<currency>]
-				{
-					++iArg;
-				}
-
-				if (params.size() != iArg && naIssuerID.setAccountID(params[iArg].asString()))	// [<issuerID>]
-				{
-					++iArg;
-				}
-
-				spPath.addElement(STPathElement(
-					naAccountID.getAccountID(),
-					uCurrencyID,
-					naIssuerID.isValid() ? naIssuerID.getAccountID() : uint160(0)));
-			}
-			else
-			{
-				return rpcError(rpcINVALID_PARAMS);
-			}
-		}
-
-		if (spPath.isEmpty())
-		{
-			return rpcError(rpcINVALID_PARAMS);
-		}
-		else
-		{
-			spsPaths.addPath(spPath);
-			spPath.clear();
-		}
-	}
-
-	// full|partial
-	bPartial	= params.size() != iArg ? params[iArg].asString() == "partial" : false;
-	bFull		= params.size() != iArg ? params[iArg].asString() == "full" : false;
-
-	if (!bPartial && !bFull)
-	{
-		return rpcError(rpcINVALID_PARAMS);
-	}
-	else
-	{
-		++iArg;
-	}
-
-	// limit|average
-	bLimit		= params.size() != iArg ? params[iArg].asString() == "limit" : false;
-	bAverage	= params.size() != iArg ? params[iArg].asString() == "average" : false;
-
-	if (!bLimit && !bAverage)
-	{
-		return rpcError(rpcINVALID_PARAMS);
-	}
-	else
-	{
-		++iArg;
-	}
-
-	if (params.size() != iArg && !naDstAccountID.setAccountID(params[iArg++].asString()))		// <dest_account>
-	{
-		return rpcError(rpcDST_ACT_MALFORMED);
-	}
-
-	const unsigned int uDstIssuer	= params.size() == iArg + 3 ? iArg+2 : iArg-1;
-
-	// <dest_amount> <dest_currency> <dest_issuerID>
-	if (params.size() != iArg + 2 && params.size() != iArg + 3)
-	{
-		// Log(lsINFO) << "params.size(): " << params.size();
-
-		return rpcError(rpcDST_AMT_MALFORMED);
-	}
-	else if (!saDstAmount.setFullValue(params[iArg].asString(), params[iArg+1].asString(), params[uDstIssuer].asString()))
-	{
-		// Log(lsINFO) << "  Amount: " << params[iArg].asString();
-		// Log(lsINFO) << "Currency: " << params[iArg+1].asString();
-		// Log(lsINFO) << "  Issuer: " << params[uDstIssuer].asString();
-
-		return rpcError(rpcDST_AMT_MALFORMED);
-	}
-
-	AccountState::pointer	asDst	= mNetOps->getAccountState(uint256(0), naDstAccountID);
-	STAmount				saFee	= theConfig.FEE_DEFAULT;
-
-	RippleAddress			naVerifyGenerator;
-	RippleAddress			naAccountPublic;
-	RippleAddress			naAccountPrivate;
-	AccountState::pointer	asSrc;
-	STAmount				saSrcBalance;
-	Json::Value				obj		= authorize(uint256(0), naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
-		saSrcBalance, saFee, asSrc, naVerifyGenerator);
-
-	if (!obj.empty())
-		return obj;
-
-	// YYY Could do some checking: source has funds or credit, dst exists and has sufficent credit limit.
-	// YYY Currency from same source or loops not allowed.
-	// YYY Limit paths length and count.
-	if (!asDst)
-	{
-		Log(lsINFO) << "naDstAccountID: " << naDstAccountID.humanAccountID();
-
-		return rpcError(rpcDST_ACT_MISSING);
-	}
-
-	Transaction::pointer	trans	= Transaction::sharedPayment(
-		naAccountPublic, naAccountPrivate,
-		naSrcAccountID,
-		asSrc->getSeq(),
-		saFee,
-		0,											// YYY No source tag
-		naDstAccountID,
-		saDstAmount,
-		saSrcAmountMax,
-		spsPaths,
-		bPartial,
-		bLimit);
-
-	trans	= mNetOps->submitTransaction(trans);
-
-	obj["transaction"]		= trans->getSTransaction()->getJson(0);
-	obj["status"]			= trans->getStatus();
-	obj["seed"]				= naSeed.humanSeed();
-	obj["fee"]				= saFee.getText();
-	obj["srcAccountID"]		= naSrcAccountID.humanAccountID();
-	obj["dstAccountID"]		= naDstAccountID.humanAccountID();
-	obj["srcAmountMax"]		= saSrcAmountMax.getText();
-	obj["srcISO"]			= saSrcAmountMax.getHumanCurrency();
-	obj["dstAmount"]		= saDstAmount.getText();
-	obj["dstISO"]			= saDstAmount.getHumanCurrency();
-	obj["paths"]			= spsPaths.getText();
-
-	return obj;
-}
-
-// ripple_line_set <seed> <paying_account> <destination_account> <limit_amount> [<currency>] [<quality_in>] [<quality_out>]
-Json::Value RPCHandler::doRippleLineSet(const Json::Value& params)
-{
-	RippleAddress	naSeed;
-	RippleAddress	naSrcAccountID;
-	RippleAddress	naDstAccountID;
-	STAmount		saLimitAmount;
-	bool			bQualityIn		= params.size() >= 6;
-	bool			bQualityOut		= params.size() >= 7;
-	uint32			uQualityIn		= 0;
-	uint32			uQualityOut		= 0;
-
-	if (!naSeed.setSeedGeneric(params[0u].asString()))
-	{
-		return rpcError(rpcBAD_SEED);
-	}
-	else if (!naSrcAccountID.setAccountID(params[1u].asString()))
-	{
-		return rpcError(rpcSRC_ACT_MALFORMED);
-	}
-	else if (!naDstAccountID.setAccountID(params[2u].asString()))
-	{
-		return rpcError(rpcDST_ACT_MALFORMED);
-	}
-	else if (!saLimitAmount.setFullValue(params[3u].asString(), params.size() >= 5 ? params[4u].asString() : "", params[2u].asString()))
-	{
-		return rpcError(rpcSRC_AMT_MALFORMED);
-	}
-	else if (bQualityIn && !parseQuality(params[5u].asString(), uQualityIn))
-	{
-		return rpcError(rpcQUALITY_MALFORMED);
-	}
-	else if (bQualityOut && !parseQuality(params[6u].asString(), uQualityOut))
-	{
-		return rpcError(rpcQUALITY_MALFORMED);
-	}
-	else
-	{
-		RippleAddress			naMasterGenerator;
-		RippleAddress			naAccountPublic;
-		RippleAddress			naAccountPrivate;
-		AccountState::pointer	asSrc;
-		STAmount				saSrcBalance;
-		Json::Value				obj			= authorize(uint256(0), naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
-			saSrcBalance, theConfig.FEE_DEFAULT, asSrc, naMasterGenerator);
-
-		if (!obj.empty())
-			return obj;
-
-		Transaction::pointer	trans	= Transaction::sharedCreditSet(
-			naAccountPublic, naAccountPrivate,
-			naSrcAccountID,
-			asSrc->getSeq(),
-			theConfig.FEE_DEFAULT,
-			0,											// YYY No source tag
-			saLimitAmount,
-			bQualityIn, uQualityIn,
-			bQualityOut, uQualityOut);
-
-		trans	= mNetOps->submitTransaction(trans);
-
-		obj["transaction"]		= trans->getSTransaction()->getJson(0);
-		obj["status"]			= trans->getStatus();
-		obj["seed"]				= naSeed.humanSeed();
-		obj["srcAccountID"]		= naSrcAccountID.humanAccountID();
-		obj["dstAccountID"]		= naDstAccountID.humanAccountID();
-
-		return obj;
-	}
-}
-
 // ripple_lines_get <account>|<nickname>|<account_public_key> [<index>]
 Json::Value RPCHandler::doRippleLinesGet(const Json::Value &params)
 {
@@ -1609,162 +687,251 @@ Json::Value RPCHandler::doRippleLinesGet(const Json::Value &params)
 }
 
 // submit any transaction to the network
+// submit private_key json
 Json::Value RPCHandler::doSubmit(const Json::Value& params)
 {
-	// TODO
+	Json::Value txJSON;
+	Json::Reader reader;
+	if(reader.parse(params[1u].asString(),txJSON))
+	{
+		return handleJSONSubmit(params[0u].asString(), txJSON );
+	}
+
 	return rpcError(rpcSRC_ACT_MALFORMED);
 }
 
-// send regular_seed paying_account account_id amount [currency] [issuer] [send_max] [send_currency] [send_issuer]
-Json::Value RPCHandler::doSend(const Json::Value& params)
+
+Json::Value RPCHandler::handleJSONSubmit(std::string& key, Json::Value& txJSON)
 {
+	Json::Value jvResult;
 	RippleAddress	naSeed;
-	RippleAddress	naSrcAccountID;
-	RippleAddress	naDstAccountID;
-	STAmount		saSrcAmountMax;
-	STAmount		saDstAmount;
-	std::string		sSrcCurrency;
-	std::string		sDstCurrency;
-	std::string		sSrcIssuer;
-	std::string		sDstIssuer;
+	RippleAddress	srcAddress;
 
-	if (params.size() >= 5)
-		sDstCurrency	= params[4u].asString();
-
-	if (params.size() >= 6)
-		sDstIssuer		= params[5u].asString();
-
-	if (params.size() >= 8)
-		sSrcCurrency	= params[7u].asString();
-
-	if (params.size() >= 9)
-		sSrcIssuer		= params[8u].asString();
-
-	if (!naSeed.setSeedGeneric(params[0u].asString()))
+	if (!naSeed.setSeedGeneric(key))
 	{
 		return rpcError(rpcBAD_SEED);
 	}
-	else if (!naSrcAccountID.setAccountID(params[1u].asString()))
+	if (!txJSON.isMember("Account"))
+	{
+		return rpcError(rpcSRC_ACT_MISSING);
+	}
+	if (!srcAddress.setAccountID(txJSON["Account"].asString()))
 	{
 		return rpcError(rpcSRC_ACT_MALFORMED);
 	}
-	else if (!naDstAccountID.setAccountID(params[2u].asString()))
-	{
-		return rpcError(rpcDST_ACT_MALFORMED);
-	}
-	else if (!saDstAmount.setFullValue(params[3u].asString(), sDstCurrency, sDstIssuer))
-	{
-		return rpcError(rpcDST_AMT_MALFORMED);
-	}
-	else if (params.size() >= 7 && !saSrcAmountMax.setFullValue(params[6u].asString(), sSrcCurrency, sSrcIssuer))
-	{
-		return rpcError(rpcSRC_AMT_MALFORMED);
-	}
-	else
-	{
-		AccountState::pointer	asDst	= mNetOps->getAccountState(uint256(0), naDstAccountID);
-		bool					bCreate	= !asDst;
-		STAmount				saFee	= bCreate ? theConfig.FEE_ACCOUNT_CREATE : theConfig.FEE_DEFAULT;
 
-		RippleAddress			naVerifyGenerator;
-		RippleAddress			naAccountPublic;
-		RippleAddress			naAccountPrivate;
-		AccountState::pointer	asSrc;
-		STAmount				saSrcBalance;
-		Json::Value				obj		= authorize(uint256(0), naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
-			saSrcBalance, saFee, asSrc, naVerifyGenerator);
+	AccountState::pointer asSrc	= mNetOps->getAccountState(uint256(0), srcAddress);
 
-		// Log(lsINFO) << boost::str(boost::format("doSend: sSrcIssuer=%s sDstIssuer=%s saSrcAmountMax=%s saDstAmount=%s")
-		//	% sSrcIssuer
-		//	% sDstIssuer
-		//	% saSrcAmountMax.getFullText()
-		//	% saDstAmount.getFullText());
+	if( txJSON["type"]=="Payment")
+	{	
+		txJSON["TransactionType"]=0;
 
-		if (!obj.empty())
-			return obj;
-
-		if (params.size() < 7)
-			saSrcAmountMax	= saDstAmount;
-
-		// Do a few simple checks.
-		if (!saSrcAmountMax.isNative())
+		RippleAddress dstAccountID;
+		if (!dstAccountID.setAccountID(txJSON["Destination"].asString()))
 		{
-			Log(lsINFO) << "doSend: Ripple";
-
-			nothing();
+			return rpcError(rpcDST_ACT_MALFORMED);
 		}
-		else if (!saSrcBalance.isPositive())
+		
+		if(!txJSON.isMember("Fee"))
 		{
-			// No native currency to send.
-			Log(lsINFO) << "doSend: No native currency to send: " << saSrcBalance.getText();
-
-			return rpcError(rpcINSUF_FUNDS);
+			if(mNetOps->getAccountState(uint256(0), dstAccountID))
+				txJSON["Fee"]=(int)theConfig.FEE_DEFAULT;
+			else txJSON["Fee"]=(int)theConfig.FEE_ACCOUNT_CREATE;
 		}
-		else if (saDstAmount.isNative() && saSrcAmountMax < saDstAmount)
+		if(!txJSON.isMember("Paths"))
 		{
-			// Not enough native currency.
+			if(txJSON["Amount"].isObject() || txJSON.isMember("SendMax") )
+			{  // we need a ripple path
+				STPathSet	spsPaths;
+				uint160		srcCurrencyID;
+				if(txJSON.isMember("SendMax") && txJSON["SendMax"].isMember("currency"))
+				{
+					STAmount::currencyFromString(srcCurrencyID, "XRP");
+				}else STAmount::currencyFromString(srcCurrencyID, txJSON["SendMax"]["currency"].asString());
 
-			Log(lsINFO) << "doSend: Insufficient funds: src=" << saSrcAmountMax.getText() << " dst=" << saDstAmount.getText();
+				STAmount dstAmount;
+				if(txJSON["Amount"].isObject()) 
+				{
+					std::string issuerStr;
+					if( txJSON["Amount"].isMember("issuer")) issuerStr=txJSON["Amount"]["issuer"].asString();
+					if( !txJSON["Amount"].isMember("value") || !txJSON["Amount"].isMember("currency")) return rpcError(rpcDST_AMT_MALFORMED);
+					if (!dstAmount.setFullValue(txJSON["Amount"]["value"].asString(), txJSON["Amount"]["currency"].asString(), issuerStr))
+					{
+						return rpcError(rpcDST_AMT_MALFORMED);
+					}
+				}else if (!dstAmount.setFullValue(txJSON["Amount"].asString()))
+				{
+					return rpcError(rpcDST_AMT_MALFORMED);
+				}
 
-			return rpcError(rpcINSUF_FUNDS);
-		}
-		// XXX Don't allow send to self of same currency.
-
-		Transaction::pointer	trans;
-		if (asDst) {
-			// Destination exists, ordinary send.
-
-			STPathSet	spsPaths;
-			uint160		srcCurrencyID;
-
-			if (!saSrcAmountMax.isNative() || !saDstAmount.isNative())
-			{
-				STAmount::currencyFromString(srcCurrencyID, sSrcCurrency);
-				Pathfinder pf(naSrcAccountID, naDstAccountID, srcCurrencyID, saDstAmount);
+				Pathfinder pf(srcAddress, dstAccountID, srcCurrencyID, dstAmount);
 				pf.findPaths(5, 1, spsPaths);
+				txJSON["Paths"]=spsPaths.getJson(0);
+				if(txJSON.isMember("Flags")) txJSON["Flags"]=txJSON["Flags"].asUInt() | 2;
+				else txJSON["Flags"]=2;
 			}
-
-			trans	= Transaction::sharedPayment(
-				naAccountPublic, naAccountPrivate,
-				naSrcAccountID,
-				asSrc->getSeq(),
-				saFee,
-				0,											// YYY No source tag
-				naDstAccountID,
-				saDstAmount,
-				saSrcAmountMax,
-				spsPaths);
 		}
-		else
-		{
-			// Create destination and send.
-
-			trans	= Transaction::sharedCreate(
-				naAccountPublic, naAccountPrivate,
-				naSrcAccountID,
-				asSrc->getSeq(),
-				saFee,
-				0,											// YYY No source tag
-				naDstAccountID,
-				saDstAmount);								// Initial funds in XNS.
-		}
-
-		trans	= mNetOps->submitTransaction(trans);
-
-		obj["transaction"]		= trans->getSTransaction()->getJson(0);
-		obj["status"]			= trans->getStatus();
-		obj["seed"]				= naSeed.humanSeed();
-		obj["fee"]				= saFee.getText();
-		obj["create"]			= bCreate;
-		obj["srcAccountID"]		= naSrcAccountID.humanAccountID();
-		obj["dstAccountID"]		= naDstAccountID.humanAccountID();
-		obj["srcAmountMax"]		= saSrcAmountMax.getText();
-		obj["srcISO"]			= saSrcAmountMax.getHumanCurrency();
-		obj["dstAmount"]		= saDstAmount.getText();
-		obj["dstISO"]			= saDstAmount.getHumanCurrency();
-
-		return obj;
+		
+	}else if( txJSON["type"]=="OfferCreate" )
+	{
+		txJSON["TransactionType"]=7;
+		if(!txJSON.isMember("Fee")) txJSON["Fee"]=(int)theConfig.FEE_DEFAULT;
+	}else if( txJSON["type"]=="TrustSet")
+	{
+		txJSON["TransactionType"]=20;
+		if(!txJSON.isMember("Fee")) txJSON["Fee"]=(int)theConfig.FEE_DEFAULT;
+	}else if( txJSON["type"]=="OfferCancel")
+	{
+		txJSON["TransactionType"]=8;
+		if(!txJSON.isMember("Fee")) txJSON["Fee"]=(int)theConfig.FEE_DEFAULT;
 	}
+
+	txJSON.removeMember("type");
+
+	if(!txJSON.isMember("Sequence")) txJSON["Sequence"]=asSrc->getSeq();
+	if(!txJSON.isMember("Flags")) txJSON["Flags"]=0;	
+	
+	Ledger::pointer	lpCurrent		= mNetOps->getCurrentLedger();
+	SLE::pointer	sleAccountRoot	= mNetOps->getSLE(lpCurrent, Ledger::getAccountRootIndex(srcAddress.getAccountID()));
+	
+	if (!sleAccountRoot)
+	{
+		// XXX Ignore transactions for accounts not created.
+		return rpcError(rpcSRC_ACT_MISSING);
+	}
+
+	bool			bHaveAuthKey	= false;
+	RippleAddress	naAuthorizedPublic;
+
+
+	RippleAddress	naSecret			= RippleAddress::createSeedGeneric(key);
+	RippleAddress	naMasterGenerator	= RippleAddress::createGeneratorPublic(naSecret);
+
+	// Find the index of Account from the master generator, so we can generate the public and private keys.
+	RippleAddress		naMasterAccountPublic;
+	unsigned int		iIndex	= 0;
+	bool				bFound	= false;
+
+	// Don't look at ledger entries to determine if the account exists.  Don't want to leak to thin server that these accounts are
+	// related.
+	while (!bFound && iIndex != theConfig.ACCOUNT_PROBE_MAX)
+	{
+		naMasterAccountPublic.setAccountPublic(naMasterGenerator, iIndex);
+
+		Log(lsWARNING) << "authorize: " << iIndex << " : " << naMasterAccountPublic.humanAccountID() << " : " << srcAddress.humanAccountID();
+
+		bFound	= srcAddress.getAccountID() == naMasterAccountPublic.getAccountID();
+		if (!bFound)
+			++iIndex;
+	}
+
+	if (!bFound)
+	{
+		return rpcError(rpcSRC_ACT_MISSING);
+	}
+
+	// Use the generator to determine the associated public and private keys.
+	RippleAddress	naGenerator			= RippleAddress::createGeneratorPublic(naSecret);
+	RippleAddress	naAccountPublic		= RippleAddress::createAccountPublic(naGenerator, iIndex);
+	RippleAddress	naAccountPrivate	= RippleAddress::createAccountPrivate(naGenerator, naSecret, iIndex);
+
+	if (bHaveAuthKey
+		// The generated pair must match authorized...
+		&& naAuthorizedPublic.getAccountID() != naAccountPublic.getAccountID()
+		// ... or the master key must have been used.
+		&& srcAddress.getAccountID() != naAccountPublic.getAccountID())
+	{
+		// std::cerr << "iIndex: " << iIndex << std::endl;
+		// std::cerr << "sfAuthorizedKey: " << strHex(asSrc->getAuthorizedKey().getAccountID()) << std::endl;
+		// std::cerr << "naAccountPublic: " << strHex(naAccountPublic.getAccountID()) << std::endl;
+
+		return rpcError(rpcSRC_ACT_MISSING);
+	}
+
+	std::auto_ptr<STObject>	sopTrans;
+
+	try
+	{
+		sopTrans = STObject::parseJson(txJSON);
+	}
+	catch (std::exception& e)
+	{
+		jvResult["error"]			= "malformedTransaction";
+		jvResult["error_exception"]	= e.what();
+		return(jvResult);
+	}
+
+	sopTrans->setFieldVL(sfSigningPubKey, naAccountPublic.getAccountPublic());
+
+	SerializedTransaction::pointer stpTrans;
+
+	try
+	{
+		stpTrans = boost::make_shared<SerializedTransaction>(*sopTrans);
+	}
+	catch (std::exception& e)
+	{
+		jvResult["error"]			= "invalidTransaction";
+		jvResult["error_exception"]	= e.what();
+		return jvResult;
+	}
+
+	stpTrans->sign(naAccountPrivate);
+
+	Transaction::pointer			tpTrans;
+
+	try
+	{
+		tpTrans		= boost::make_shared<Transaction>(stpTrans, false);
+	}
+	catch (std::exception& e)
+	{
+		jvResult["error"]			= "internalTransaction";
+		jvResult["error_exception"]	= e.what();
+		return(jvResult);
+	}
+
+	try
+	{
+		tpTrans	= mNetOps->submitTransaction(tpTrans);
+
+		if (!tpTrans) {
+			jvResult["error"]			= "invalidTransaction";
+			jvResult["error_exception"]	= "Unable to sterilize transaction.";
+			return(jvResult);
+		}
+	}
+	catch (std::exception& e)
+	{
+		jvResult["error"]			= "internalSubmit";
+		jvResult["error_exception"]	= e.what();
+		return(jvResult);
+	}
+
+	try
+	{
+		jvResult["transaction"]		= tpTrans->getJson(0);
+
+		if (temUNCERTAIN != tpTrans->getResult())
+		{
+			std::string	sToken;
+			std::string	sHuman;
+
+			transResultInfo(tpTrans->getResult(), sToken, sHuman);
+
+			jvResult["engine_result"]			= sToken;
+			jvResult["engine_result_code"]		= tpTrans->getResult();
+			jvResult["engine_result_message"]	= sHuman;
+		}
+		return(jvResult);
+	}
+	catch (std::exception& e)
+	{
+		jvResult["error"]			= "internalJson";
+		jvResult["error_exception"]	= e.what();
+		return(jvResult);
+	}
+		
 }
 
 Json::Value RPCHandler::doServerInfo(const Json::Value& params)
@@ -1833,6 +1000,24 @@ Json::Value RPCHandler::doTx(const Json::Value& params)
 	}
 
 	return rpcError(rpcNOT_IMPL);
+}
+
+Json::Value RPCHandler::doLedgerClosed(const Json::Value& params)
+{
+	Json::Value jvResult;
+	uint256	uLedger	= mNetOps->getClosedLedger();
+
+	jvResult["ledger_closed_index"]		= mNetOps->getLedgerID(uLedger);
+	jvResult["ledger_closed"]			= uLedger.ToString();
+	//jvResult["ledger_closed_time"]		= uLedger.
+	return jvResult;
+}
+
+Json::Value RPCHandler::doLedgerCurrent(const Json::Value& params)
+{
+	Json::Value jvResult;
+	jvResult["ledger_current_index"]	= mNetOps->getCurrentLedgerID();
+	return jvResult;
 }
 
 // ledger [id|current|lastclosed] [full]
@@ -2088,255 +1273,6 @@ Json::Value RPCHandler::doWalletAccounts(const Json::Value& params)
 	}
 }
 
-// wallet_add <regular_seed> <paying_account> <master_seed> [<initial_funds>] [<account_annotation>]
-Json::Value RPCHandler::doWalletAdd(const Json::Value& params)
-{
-	RippleAddress	naMasterSeed;
-	RippleAddress	naRegularSeed;
-	RippleAddress	naSrcAccountID;
-	STAmount		saAmount;
-	std::string		sDstCurrency;
-
-	if (!naRegularSeed.setSeedGeneric(params[0u].asString()))
-	{
-		return rpcError(rpcBAD_SEED);
-	}
-	else if (!naSrcAccountID.setAccountID(params[1u].asString()))
-	{
-		return rpcError(rpcSRC_ACT_MALFORMED);
-	}
-	else if (!naMasterSeed.setSeedGeneric(params[2u].asString()))
-	{
-		return rpcError(rpcBAD_SEED);
-	}
-	else if (params.size() >= 4 && !saAmount.setFullValue(params[3u].asString(), sDstCurrency))
-	{
-		return rpcError(rpcDST_AMT_MALFORMED);
-	}
-	else
-	{
-		RippleAddress			naMasterGenerator	= RippleAddress::createGeneratorPublic(naMasterSeed);
-		RippleAddress			naRegularGenerator	= RippleAddress::createGeneratorPublic(naRegularSeed);
-
-		RippleAddress			naAccountPublic;
-		RippleAddress			naAccountPrivate;
-		AccountState::pointer	asSrc;
-		STAmount				saSrcBalance;
-		Json::Value				obj			= authorize(uint256(0), naRegularSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
-			saSrcBalance, theConfig.FEE_ACCOUNT_CREATE, asSrc, naMasterGenerator);
-
-		if (!obj.empty())
-			return obj;
-
-		if (saSrcBalance < saAmount)
-		{
-			return rpcError(rpcINSUF_FUNDS);
-		}
-		else
-		{
-			RippleAddress				naNewAccountPublic;
-			RippleAddress				naNewAccountPrivate;
-			RippleAddress				naAuthKeyID;
-			uint160						uAuthKeyID;
-			AccountState::pointer		asNew;
-			std::vector<unsigned char>	vucSignature;
-			bool						bAgain	= true;
-			int							iIndex	= -1;
-
-			// Find an unmade account.
-			do {
-				++iIndex;
-				naNewAccountPublic.setAccountPublic(naMasterGenerator, iIndex);
-
-				asNew	= mNetOps->getAccountState(uint256(0), naNewAccountPublic);
-				if (!asNew)
-					bAgain	= false;
-			} while (bAgain);
-
-			// XXX Have a maximum number of accounts per wallet?
-
-			// Determine corrisponding master private key.
-			naNewAccountPrivate.setAccountPrivate(naMasterGenerator, naMasterSeed, iIndex);
-
-			// Determine new accounts authorized regular key.
-			naAuthKeyID.setAccountPublic(naRegularGenerator, iIndex);
-
-			uAuthKeyID	= naAuthKeyID.getAccountID();
-
-			// Sign anything (naAuthKeyID) to prove we know new master private key.
-			naNewAccountPrivate.accountPrivateSign(Serializer::getSHA512Half(uAuthKeyID.begin(), uAuthKeyID.size()), vucSignature);
-
-			Transaction::pointer	trans	= Transaction::sharedWalletAdd(
-				naAccountPublic, naAccountPrivate,
-				naSrcAccountID,
-				asSrc->getSeq(),
-				theConfig.FEE_ACCOUNT_CREATE,
-				0,											// YYY No source tag
-				saAmount,
-				naAuthKeyID,
-				naNewAccountPublic,
-				vucSignature);
-
-			trans	= mNetOps->submitTransaction(trans);
-
-			obj["transaction"]		= trans->getSTransaction()->getJson(0);
-			obj["status"]			= trans->getStatus();
-			obj["srcAccountID"]		= naSrcAccountID.humanAccountID();
-			obj["newAccountID"]		= naNewAccountPublic.humanAccountID();
-			obj["amount"]			= saAmount.getText();
-
-			return obj;
-		}
-	}
-}
-
-// wallet_claim <master_seed> <regular_seed> [<source_tag>] [<account_annotation>]
-//
-// To provide an example to client writers, we do everything we expect a client to do here.
-Json::Value RPCHandler::doWalletClaim(const Json::Value& params)
-{
-	RippleAddress	naMasterSeed;
-	RippleAddress	naRegularSeed;
-
-	if (!naMasterSeed.setSeedGeneric(params[0u].asString()))
-	{
-		// Should also not allow account id's as seeds.
-		return rpcError(rpcBAD_SEED);
-	}
-	else if (!naRegularSeed.setSeedGeneric(params[1u].asString()))
-	{
-		// Should also not allow account id's as seeds.
-		return rpcError(rpcBAD_SEED);
-	}
-	else
-	{
-		// Building:
-		//	 peer_wallet_claim <account_id> <authorized_key> <encrypted_master_public_generator> <generator_pubkey> <generator_signature>
-		//		<source_tag> [<annotation>]
-		//
-		//
-		// Which has no confidential information.
-
-		// XXX Need better parsing.
-		uint32		uSourceTag		= (params.size() == 2) ? 0 : lexical_cast_s<uint32>(params[2u].asString());
-		// XXX Annotation is ignored.
-		std::string strAnnotation	= (params.size() == 3) ? "" : params[3u].asString();
-
-		RippleAddress	naMasterGenerator	= RippleAddress::createGeneratorPublic(naMasterSeed);
-		RippleAddress	naRegularGenerator	= RippleAddress::createGeneratorPublic(naRegularSeed);
-		RippleAddress	naRegular0Public;
-		RippleAddress	naRegular0Private;
-
-		RippleAddress	naAccountPublic;
-		RippleAddress	naAccountPrivate;
-
-		naAccountPublic.setAccountPublic(naMasterGenerator, 0);
-		naAccountPrivate.setAccountPrivate(naMasterGenerator, naMasterSeed, 0);
-
-		naRegular0Public.setAccountPublic(naRegularGenerator, 0);
-		naRegular0Private.setAccountPrivate(naRegularGenerator, naRegularSeed, 0);
-
-		// Hash of regular account #0 public key.
-		uint160						uGeneratorID		= naRegular0Public.getAccountID();
-		std::vector<unsigned char>	vucGeneratorCipher	= naRegular0Private.accountPrivateEncrypt(naRegular0Public, naMasterGenerator.getGenerator());
-		std::vector<unsigned char>	vucGeneratorSig;
-
-		// Prove that we have the corresponding private key to the generator id.  So, we can get the generator id.
-		// XXX Check result.
-		naRegular0Private.accountPrivateSign(Serializer::getSHA512Half(vucGeneratorCipher), vucGeneratorSig);
-
-		Transaction::pointer	trans	= Transaction::sharedClaim(
-			naAccountPublic, naAccountPrivate,
-			uSourceTag,
-			vucGeneratorCipher,
-			naRegular0Public.getAccountPublic(),
-			vucGeneratorSig);
-
-		trans	= mNetOps->submitTransaction(trans);
-
-		Json::Value obj(Json::objectValue);
-
-		// We "echo" the seeds so they can be checked.
-		obj["master_seed"]		= naMasterSeed.humanSeed();
-		obj["master_key"]		= naMasterSeed.humanSeed1751();
-		obj["regular_seed"]		= naRegularSeed.humanSeed();
-		obj["regular_key"]		= naRegularSeed.humanSeed1751();
-
-		obj["account_id"]		= naAccountPublic.humanAccountID();
-		obj["generator_id"]		= strHex(uGeneratorID);
-		obj["generator"]		= strHex(vucGeneratorCipher);
-		obj["annotation"]		= strAnnotation;
-
-		obj["transaction"]		= trans->getSTransaction()->getJson(0);
-		obj["status"]			= trans->getStatus();
-
-		return obj;
-	}
-}
-
-// wallet_create regular_seed paying_account account_id [initial_funds]
-// We don't allow creating an account_id by default here because we want to make sure the person has a chance to write down the
-// master seed of the account to be created.
-// YYY Need annotation and source tag
-Json::Value RPCHandler::doWalletCreate(const Json::Value& params)
-{
-	RippleAddress	naSrcAccountID;
-	RippleAddress	naDstAccountID;
-	RippleAddress	naSeed;
-
-	if (!naSeed.setSeedGeneric(params[0u].asString()))
-	{
-		return rpcError(rpcBAD_SEED);
-	}
-	else if (!naSrcAccountID.setAccountID(params[1u].asString()))
-	{
-		return rpcError(rpcSRC_ACT_MALFORMED);
-	}
-	else if (!naDstAccountID.setAccountID(params[2u].asString()))
-	{
-		return rpcError(rpcDST_ACT_MALFORMED);
-	}
-	else if (mNetOps->getAccountState(uint256(0), naDstAccountID))
-	{
-		return rpcError(rpcACT_EXISTS);
-	}
-
-	// Trying to build:
-	//	 peer_wallet_create <paying_account> <paying_signature> <account_id> [<initial_funds>] [<annotation>]
-
-	RippleAddress			naMasterGenerator;
-	RippleAddress			naAccountPublic;
-	RippleAddress			naAccountPrivate;
-	AccountState::pointer	asSrc;
-	STAmount				saSrcBalance;
-	Json::Value				obj				= authorize(uint256(0), naSeed, naSrcAccountID, naAccountPublic, naAccountPrivate,
-		saSrcBalance, theConfig.FEE_ACCOUNT_CREATE, asSrc, naMasterGenerator);
-
-	if (!obj.empty())
-		return obj;
-
-	STAmount				saInitialFunds	= (params.size() < 4) ? 0 : lexical_cast_s<uint64>(params[3u].asString());
-
-	if (saSrcBalance < saInitialFunds)
-		return rpcError(rpcINSUF_FUNDS);
-
-	Transaction::pointer	trans	= Transaction::sharedCreate(
-		naAccountPublic, naAccountPrivate,
-		naSrcAccountID,
-		asSrc->getSeq(),
-		theConfig.FEE_ACCOUNT_CREATE,
-		0,											// YYY No source tag
-		naDstAccountID,
-		saInitialFunds);							// Initial funds in XNC.
-
-	trans	= mNetOps->submitTransaction(trans);
-
-	obj["transaction"]	= trans->getSTransaction()->getJson(0);
-	obj["status"]		= trans->getStatus();
-
-	return obj;
-}
-
 
 Json::Value RPCHandler::doLogRotate(const Json::Value& params) 
 {
@@ -2356,13 +1292,8 @@ Json::Value RPCHandler::doCommand(const std::string& command, Json::Value& param
 		unsigned int	iOptions;
 	} commandsA[] = {
 		{	"accept_ledger",		&RPCHandler::doAcceptLedger,		0,	0, true					},
-		{	"account_domain_set",	&RPCHandler::doAccountDomainSet,	2,  3, false,	optCurrent	},
-		{	"account_email_set",	&RPCHandler::doAccountEmailSet,		2,  3, false,	optCurrent	},
 		{	"account_info",			&RPCHandler::doAccountInfo,			1,  2, false,	optCurrent	},
-		{	"account_message_set",	&RPCHandler::doAccountMessageSet,	3,  3, false,	optCurrent	},
-		{	"account_rate_set",		&RPCHandler::doAccountRateSet,		3,  3, false,	optCurrent	},
 		{	"account_tx",			&RPCHandler::doAccountTransactions,	2,  3, false,	optNetwork	},
-		{	"account_wallet_set",	&RPCHandler::doAccountWalletSet,	2,  3, false,	optCurrent	},
 		{	"connect",				&RPCHandler::doConnect,				1,  2, true					},
 		{	"data_delete",			&RPCHandler::doDataDelete,			1,  1, true					},
 		{	"data_fetch",			&RPCHandler::doDataFetch,			1,  1, true					},
@@ -2372,18 +1303,11 @@ Json::Value RPCHandler::doCommand(const std::string& command, Json::Value& param
 		{	"log_level",			&RPCHandler::doLogLevel,			0,  2, true					},
 		{	"logrotate",			&RPCHandler::doLogRotate,			0,  0, true					},
 		{	"nickname_info",		&RPCHandler::doNicknameInfo,		1,  1, false,	optCurrent	},
-		{	"nickname_set",			&RPCHandler::doNicknameSet,			2,  3, false,	optCurrent	},
-		{	"offer_create",			&RPCHandler::doOfferCreate,			9, 10, false,	optCurrent	},
-		{	"offer_cancel",			&RPCHandler::doOfferCancel,			3,  3, false,	optCurrent	},
 		{	"owner_info",			&RPCHandler::doOwnerInfo,			1,  2, false,	optCurrent	},
-		{	"password_fund",		&RPCHandler::doPasswordFund,		2,  3, false,	optCurrent	},
-		{	"password_set",			&RPCHandler::doPasswordSet,			2,  3, false,	optNetwork	},
 		{	"peers",				&RPCHandler::doPeers,				0,  0, true					},
 		{	"profile",				&RPCHandler::doProfile,				1,  9, false,	optCurrent	},
-		{	"ripple",				&RPCHandler::doRipple,				9, -1, false,	optCurrent|optClosed },
 		{	"ripple_lines_get",		&RPCHandler::doRippleLinesGet,		1,  2, false,	optCurrent	},
-		{	"ripple_line_set",		&RPCHandler::doRippleLineSet,		4,  7, false,	optCurrent	},
-		{	"send",					&RPCHandler::doSend,				3,  9, false,	optCurrent	},
+		{	"submit",				&RPCHandler::doSubmit,				2,  2, false,	optCurrent	},
 		{	"server_info",			&RPCHandler::doServerInfo,			0,  0, true					},
 		{	"stop",					&RPCHandler::doStop,				0,  0, true					},
 		{	"tx",					&RPCHandler::doTx,					1,  1, true					},
@@ -2401,9 +1325,6 @@ Json::Value RPCHandler::doCommand(const std::string& command, Json::Value& param
 		{	"validation_seed",		&RPCHandler::doValidationSeed,		0,  1, false				},
 
 		{	"wallet_accounts",		&RPCHandler::doWalletAccounts,		1,  1, false,	optCurrent	},
-		{	"wallet_add",			&RPCHandler::doWalletAdd,			3,  5, false,	optCurrent	},
-		{	"wallet_claim",			&RPCHandler::doWalletClaim,			2,  4, false,	optNetwork	},
-		{	"wallet_create",		&RPCHandler::doWalletCreate,		3,  4, false,	optCurrent	},
 		{	"wallet_propose",		&RPCHandler::doWalletPropose,		0,  1, false,				},
 		{	"wallet_seed",			&RPCHandler::doWalletSeed,			0,  1, false,				},
 
@@ -2664,6 +1585,330 @@ Json::Value RPCHandler::doUnlLoad(const Json::Value& params)
 	}
 
 	return "loading";
+}
+
+Json::Value RPCHandler::doLedgerAccept(const Json::Value& )
+{
+	Json::Value jvResult;
+	if (!theConfig.RUN_STANDALONE)
+	{
+		jvResult["error"]	= "notStandAlone";
+	}
+	else
+	{
+		mNetOps->acceptLedger();
+
+		jvResult["ledger_current_index"]	= mNetOps->getCurrentLedgerID();
+	}
+	return(jvResult);
+}
+
+
+Json::Value RPCHandler::doTransactionEntry(const Json::Value& params)
+{
+	Json::Value jvResult;
+	Json::Value jvRequest;
+	Json::Reader reader;
+	if(!reader.parse(params[0u].asString(),jvRequest))
+		return rpcError(rpcINVALID_PARAMS);
+
+	if (!jvRequest.isMember("tx_hash"))
+	{
+		jvResult["error"]	= "fieldNotFoundTransaction";
+	}
+	if (!jvRequest.isMember("ledger_hash"))
+	{
+		jvResult["error"]	= "notYetImplemented";	// XXX We don't support any transaction yet.
+	}
+	else
+	{
+		uint256						uTransID;
+		// XXX Relying on trusted WSS client. Would be better to have a strict routine, returning success or failure.
+		uTransID.SetHex(jvRequest["tx_hash"].asString());
+
+		uint256						uLedgerID;
+		// XXX Relying on trusted WSS client. Would be better to have a strict routine, returning success or failure.
+		uLedgerID.SetHex(jvRequest["ledger_hash"].asString());
+
+		Ledger::pointer				lpLedger	= theApp->getMasterLedger().getLedgerByHash(uLedgerID);
+
+		if (!lpLedger) {
+			jvResult["error"]	= "ledgerNotFound";
+		}
+		else
+		{
+			Transaction::pointer		tpTrans;
+			TransactionMetaSet::pointer	tmTrans;
+
+			if (!lpLedger-> getTransaction(uTransID, tpTrans, tmTrans))
+			{
+				jvResult["error"]	= "transactionNotFound";
+			}
+			else
+			{
+				jvResult["transaction"]		= tpTrans->getJson(0);
+				jvResult["metadata"]		= tmTrans->getJson(0);
+				// 'accounts'
+				// 'engine_...'
+				// 'ledger_...'
+			}
+		}
+	}
+	
+	return jvResult;
+}
+
+
+
+Json::Value RPCHandler::doLedgerEntry(const Json::Value& params)
+{
+	Json::Value jvResult;
+	Json::Value jvRequest;
+	Json::Reader reader;
+	if(!reader.parse(params[0u].asString(),jvRequest))
+		return rpcError(rpcINVALID_PARAMS);
+		
+
+	uint256	uLedger			= jvRequest.isMember("ledger_closed") ? uint256(jvRequest["ledger_closed"].asString()) : 0;
+	uint32	uLedgerIndex	= jvRequest.isMember("ledger_index") && jvRequest["ledger_index"].isNumeric() ? jvRequest["ledger_index"].asUInt() : 0;
+
+	Ledger::pointer	 lpLedger;
+
+	if (!!uLedger)
+	{
+		// Ledger directly specified.
+		lpLedger	= mNetOps->getLedgerByHash(uLedger);
+
+		if (!lpLedger)
+		{
+			jvResult["error"]	= "ledgerNotFound";
+			return jvResult;
+		}
+
+		uLedgerIndex	= lpLedger->getLedgerSeq();	// Set the current index, override if needed.
+	}
+	else if (!!uLedgerIndex)
+	{
+		lpLedger		= mNetOps->getLedgerBySeq(uLedgerIndex);
+
+		if (!lpLedger)
+		{
+			jvResult["error"]	= "ledgerNotFound";	// ledger_index from future?
+			return jvResult;
+		}
+	}
+	else
+	{
+		// Default to current ledger.
+		lpLedger		= mNetOps->getCurrentLedger();
+		uLedgerIndex	= lpLedger->getLedgerSeq();	// Set the current index.
+	}
+
+	if (lpLedger->isClosed())
+	{
+		if (!!uLedger)
+			jvResult["ledger_closed"]			= uLedger.ToString();
+
+		jvResult["ledger_closed_index"]		= uLedgerIndex;
+	}
+	else
+	{
+		jvResult["ledger_current_index"]	= uLedgerIndex;
+	}
+
+	uint256		uNodeIndex;
+	bool		bNodeBinary	= false;
+
+	if (jvRequest.isMember("index"))
+	{
+		// XXX Needs to provide proof.
+		uNodeIndex.SetHex(jvRequest["index"].asString());
+		bNodeBinary	= true;
+	}
+	else if (jvRequest.isMember("account_root"))
+	{
+		RippleAddress	naAccount;
+
+		if (!naAccount.setAccountID(jvRequest["account_root"].asString())
+			|| !naAccount.getAccountID())
+		{
+			jvResult["error"]	= "malformedAddress";
+		}
+		else
+		{
+			uNodeIndex = Ledger::getAccountRootIndex(naAccount.getAccountID());
+		}
+	}
+	else if (jvRequest.isMember("directory"))
+	{
+
+		if (!jvRequest.isObject())
+		{
+			uNodeIndex.SetHex(jvRequest["directory"].asString());
+		}
+		else if (jvRequest["directory"].isMember("sub_index")
+			&& !jvRequest["directory"]["sub_index"].isIntegral())
+		{
+			jvResult["error"]	= "malformedRequest";
+		}
+		else
+		{
+			uint64	uSubIndex = jvRequest["directory"].isMember("sub_index")
+				? jvRequest["directory"]["sub_index"].asUInt()
+				: 0;
+
+			if (jvRequest["directory"].isMember("dir_root"))
+			{
+				uint256	uDirRoot;
+
+				uDirRoot.SetHex(jvRequest["dir_root"].asString());
+
+				uNodeIndex	= Ledger::getDirNodeIndex(uDirRoot, uSubIndex);
+			}
+			else if (jvRequest["directory"].isMember("owner"))
+			{
+				RippleAddress	naOwnerID;
+
+				if (!naOwnerID.setAccountID(jvRequest["directory"]["owner"].asString()))
+				{
+					jvResult["error"]	= "malformedAddress";
+				}
+				else
+				{
+					uint256	uDirRoot	= Ledger::getOwnerDirIndex(naOwnerID.getAccountID());
+
+					uNodeIndex	= Ledger::getDirNodeIndex(uDirRoot, uSubIndex);
+				}
+			}
+			else
+			{
+				jvResult["error"]	= "malformedRequest";
+			}
+		}
+	}
+	else if (jvRequest.isMember("generator"))
+	{
+		RippleAddress	naGeneratorID;
+
+		if (!jvRequest.isObject())
+		{
+			uNodeIndex.SetHex(jvRequest["generator"].asString());
+		}
+		else if (!jvRequest["generator"].isMember("regular_seed"))
+		{
+			jvResult["error"]	= "malformedRequest";
+		}
+		else if (!naGeneratorID.setSeedGeneric(jvRequest["generator"]["regular_seed"].asString()))
+		{
+			jvResult["error"]	= "malformedAddress";
+		}
+		else
+		{
+			RippleAddress		na0Public;		// To find the generator's index.
+			RippleAddress		naGenerator	= RippleAddress::createGeneratorPublic(naGeneratorID);
+
+			na0Public.setAccountPublic(naGenerator, 0);
+
+			uNodeIndex	= Ledger::getGeneratorIndex(na0Public.getAccountID());
+		}
+	}
+	else if (jvRequest.isMember("offer"))
+	{
+		RippleAddress	naAccountID;
+
+		if (!jvRequest.isObject())
+		{
+			uNodeIndex.SetHex(jvRequest["offer"].asString());
+		}
+		else if (!jvRequest["offer"].isMember("account")
+			|| !jvRequest["offer"].isMember("seq")
+			|| !jvRequest["offer"]["seq"].isIntegral())
+		{
+			jvResult["error"]	= "malformedRequest";
+		}
+		else if (!naAccountID.setAccountID(jvRequest["offer"]["account"].asString()))
+		{
+			jvResult["error"]	= "malformedAddress";
+		}
+		else
+		{
+			uint32		uSequence	= jvRequest["offer"]["seq"].asUInt();
+
+			uNodeIndex	= Ledger::getOfferIndex(naAccountID.getAccountID(), uSequence);
+		}
+	}
+	else if (jvRequest.isMember("ripple_state"))
+	{
+		RippleAddress	naA;
+		RippleAddress	naB;
+		uint160			uCurrency;
+		Json::Value		jvRippleState	= jvRequest["ripple_state"];
+
+		if (!jvRippleState.isMember("currency")
+			|| !jvRippleState.isMember("accounts")
+			|| !jvRippleState["accounts"].isArray()
+			|| 2 != jvRippleState["accounts"].size()
+			|| !jvRippleState["accounts"][0u].isString()
+			|| !jvRippleState["accounts"][1u].isString()
+			|| jvRippleState["accounts"][0u].asString() == jvRippleState["accounts"][1u].asString()
+			) {
+
+				cLog(lsINFO)
+					<< boost::str(boost::format("ledger_entry: ripple_state: accounts: %d currency: %d array: %d size: %d equal: %d")
+					% jvRippleState.isMember("accounts")
+					% jvRippleState.isMember("currency")
+					% jvRippleState["accounts"].isArray()
+					% jvRippleState["accounts"].size()
+					% (jvRippleState["accounts"][0u].asString() == jvRippleState["accounts"][1u].asString())
+					);
+
+				jvResult["error"]	= "malformedRequest";
+		}
+		else if (!naA.setAccountID(jvRippleState["accounts"][0u].asString())
+			|| !naB.setAccountID(jvRippleState["accounts"][1u].asString())) {
+				jvResult["error"]	= "malformedAddress";
+		}
+		else if (!STAmount::currencyFromString(uCurrency, jvRippleState["currency"].asString())) {
+			jvResult["error"]	= "malformedCurrency";
+		}
+		else
+		{
+			uNodeIndex	= Ledger::getRippleStateIndex(naA, naB, uCurrency);
+		}
+	}
+	else
+	{
+		jvResult["error"]	= "unknownOption";
+	}
+
+	if (!!uNodeIndex)
+	{
+		SLE::pointer	sleNode	= mNetOps->getSLE(lpLedger, uNodeIndex);
+
+		if (!sleNode)
+		{
+			// Not found.
+			// XXX Should also provide proof.
+			jvResult["error"]		= "entryNotFound";
+		}
+		else if (bNodeBinary)
+		{
+			// XXX Should also provide proof.
+			Serializer s;
+
+			sleNode->add(s);
+
+			jvResult["node_binary"]	= strHex(s.peekData());
+			jvResult["index"]		= uNodeIndex.ToString();
+		}
+		else
+		{
+			jvResult["node"]		= sleNode->getJson(0);
+			jvResult["index"]		= uNodeIndex.ToString();
+		}
+	}
+	
+	return jvResult;
 }
 
 // vim:ts=4

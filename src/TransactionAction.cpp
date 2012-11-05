@@ -518,9 +518,9 @@ TER TransactionEngine::doPayment(const SerializedTransaction& txn, const Transac
 		if (bCreate && !saDstAmount.isNative())
 		{
 			// This restriction could be relaxed.
-			Log(lsINFO) << "doPayment: Invalid transaction: Create account may only fund XNS.";
+			Log(lsINFO) << "doPayment: Invalid transaction: Create account may only fund XRP.";
 
-			return temCREATEXNS;
+			return temCREATEXRP;
 		}
 		else if (!bCreate)
 		{
@@ -569,11 +569,11 @@ TER TransactionEngine::doPayment(const SerializedTransaction& txn, const Transac
 	}
 	else
 	{
-		// Direct XNS payment.
+		// Direct XRP payment.
 
-		STAmount	saSrcXNSBalance	= mTxnAccount->getFieldAmount(sfBalance);
+		STAmount	saSrcXRPBalance	= mTxnAccount->getFieldAmount(sfBalance);
 
-		if (saSrcXNSBalance < saDstAmount)
+		if (saSrcXRPBalance < saDstAmount)
 		{
 			// Transaction might succeed, if applied in a different order.
 			Log(lsINFO) << "doPayment: Delay transaction: Insufficent funds.";
@@ -582,7 +582,7 @@ TER TransactionEngine::doPayment(const SerializedTransaction& txn, const Transac
 		}
 		else
 		{
-			mTxnAccount->setFieldAmount(sfBalance, saSrcXNSBalance - saDstAmount);
+			mTxnAccount->setFieldAmount(sfBalance, saSrcXRPBalance - saDstAmount);
 			sleDst->setFieldAmount(sfBalance, sleDst->getFieldAmount(sfBalance) + saDstAmount);
 
 			terResult	= tesSUCCESS;
@@ -953,7 +953,7 @@ Log(lsINFO) << boost::str(boost::format("doOfferCreate: saTakerPays=%s saTakerGe
 	}
 	else if (saTakerPays.isNative() && saTakerGets.isNative())
 	{
-		Log(lsWARNING) << "doOfferCreate: Malformed offer: XNS for XNS";
+		Log(lsWARNING) << "doOfferCreate: Malformed offer: XRP for XRP";
 
 		terResult	= temBAD_OFFER;
 	}

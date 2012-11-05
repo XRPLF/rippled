@@ -51,6 +51,8 @@ protected:
 	typedef boost::unordered_map<uint160,boost::unordered_set<InfoSub*> >::value_type	subInfoMapValue;
 	typedef boost::unordered_map<uint160,boost::unordered_set<InfoSub*> >::iterator		subInfoMapIterator;
 
+	typedef boost::unordered_map<uint160,std::pair<InfoSub*,uint32> >					subSubmitMapType;
+
 	OperatingMode						mMode;
 	bool								mNeedNetworkLedger;
 	boost::posix_time::ptime			mConnectTime;
@@ -72,23 +74,25 @@ protected:
 
 	// XXX Split into more locks.
     boost::interprocess::interprocess_upgradable_mutex	mMonitorLock;
-	subInfoMapType										mBootAccountInfo;
-	subInfoMapType										mSubAccountInfo;
-	subInfoMapType										mSubAccountTransaction;
-	boost::unordered_set<InfoSub*>						mSubLedger;				// ledger accepteds
-	boost::unordered_set<InfoSub*>						mSubLedgerAccounts;		// ledger accepteds + affected accounts
-	boost::unordered_set<InfoSub*>						mSubTransaction;		// all transactions
-	boost::unordered_set<InfoSub*>						mSubTxMeta;				// all transaction meta
-//	subInfoMapType										mSubTransactionAccounts;
+	subInfoMapType										mSubAccount; 
+	subInfoMapType										mSubRTAccount; 
+	subSubmitMapType									mSubmitMap;
+
+	boost::unordered_set<InfoSub*>						mSubLedger;				// accepted ledgers
+	boost::unordered_set<InfoSub*>						mSubServer;				// when server changes connectivity state
+	boost::unordered_set<InfoSub*>						mSubTransactions;		// all accepted transactions
+	boost::unordered_set<InfoSub*>						mSubRTTransactions;		// all proposed and accepted transactions
+
 
 	void setMode(OperatingMode);
 
 	Json::Value transJson(const SerializedTransaction& stTxn, TER terResult, bool bAccepted, Ledger::ref lpCurrent, const std::string& strType);
-	void pubTransactionAll(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult, bool bAccepted);
-	void pubTransactionAccounts(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult, bool bAccepted);
 	bool haveConsensusObject();
 
 	Json::Value pubBootstrapAccountInfo(Ledger::ref lpAccepted, const RippleAddress& naAccountID);
+
+	void pubAcceptedTransaction(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult);
+	void pubAccountTransaction(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult,bool accepted);
 
 public:
 	NetworkOPs(boost::asio::io_service& io_service, LedgerMaster* pLedgerMaster);
@@ -210,33 +214,27 @@ public:
 	//
 	// Monitoring: publisher side
 	//
-
-	void pubAccountInfo(const RippleAddress& naAccountID, const Json::Value& jvObj);
 	void pubLedger(Ledger::ref lpAccepted);
-	void pubTransaction(Ledger::ref lpLedger, const SerializedTransaction& stTxn, TER terResult);
+	void pubProposedTransaction(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult);
+
 
 	//
 	// Monitoring: subscriber side
 	//
-
-	// --> vnaAddress: empty = all
-	void subAccountInfo(InfoSub* ispListener, const boost::unordered_set<RippleAddress>& vnaAccountIDs);
-	void unsubAccountInfo(InfoSub* ispListener, const boost::unordered_set<RippleAddress>& vnaAccountIDs);
-
-	void subAccountTransaction(InfoSub* ispListener, const boost::unordered_set<RippleAddress>& vnaAccountIDs);
-	void unsubAccountTransaction(InfoSub* ispListener, const boost::unordered_set<RippleAddress>& vnaAccountIDs);
-
-	// void subAccountChanges(InfoSub* ispListener, const uint256 uLedgerHash);
-	// void unsubAccountChanges(InfoSub* ispListener);
+	void subAccount(InfoSub* ispListener, const boost::unordered_set<RippleAddress>& vnaAccountIDs,bool rt);
+	void unsubAccount(InfoSub* ispListener, const boost::unordered_set<RippleAddress>& vnaAccountIDs,bool rt);
 
 	bool subLedger(InfoSub* ispListener);
 	bool unsubLedger(InfoSub* ispListener);
 
-	bool subLedgerAccounts(InfoSub* ispListener);
-	bool unsubLedgerAccounts(InfoSub* ispListener);
+	bool subServer(InfoSub* ispListener);
+	bool unsubServer(InfoSub* ispListener);
 
-	bool subTransaction(InfoSub* ispListener);
-	bool unsubTransaction(InfoSub* ispListener);
+	bool subTransactions(InfoSub* ispListener);
+	bool unsubTransactions(InfoSub* ispListener);
+
+	bool subRTTransactions(InfoSub* ispListener);
+	bool unsubRTTransactions(InfoSub* ispListener);
 };
 
 #endif

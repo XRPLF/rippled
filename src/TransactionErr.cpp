@@ -34,7 +34,7 @@ bool transResultInfo(TER terCode, std::string& strToken, std::string& strHuman)
 		{	temBAD_TRANSFER_RATE,	"temBAD_TRANSFER_RATE",		"Malformed: Transfer rate must be >= 1.0"				},
 		{	temBAD_SET_ID,			"temBAD_SET_ID",			"Malformed."											},
 		{	temBAD_SEQUENCE,		"temBAD_SEQUENCE",			"Malformed: Sequence in not in the past."				},
-		{	temCREATEXNS,			"temCREATEXNS",				"Can not specify non XNS for Create."					},
+		{	temCREATEXRP,			"temCREATEXRP",				"Can not specify non XRP for Create."					},
 		{	temDST_IS_SRC,			"temDST_IS_SRC",			"Destination may not be source."						},
 		{	temDST_NEEDED,			"temDST_NEEDED",			"Destination not specified."							},
 		{	temINSUF_FEE_P,			"temINSUF_FEE_P",			"Fee not allowed."										},

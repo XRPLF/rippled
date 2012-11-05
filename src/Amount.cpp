@@ -16,7 +16,7 @@ SETUP_LOG();
 
 uint64	STAmount::uRateOne	= STAmount::getRate(STAmount(1), STAmount(1));
 
-// --> sCurrency: "", "XNS", or three letter ISO code.
+// --> sCurrency: "", "XRP", or three letter ISO code.
 bool STAmount::currencyFromString(uint160& uDstCurrency, const std::string& sCurrency)
 {
 	bool	bSuccess	= true;
@@ -1365,19 +1365,19 @@ BOOST_AUTO_TEST_CASE( CustomCurrency_test )
 
 	if (STAmount::multiply(STAmount(CURRENCY_ONE, ACCOUNT_ONE, 20), STAmount(3), CURRENCY_ONE, ACCOUNT_ONE).getText() != "60")
 		BOOST_FAIL("STAmount multiply fail");
-	if (STAmount::multiply(STAmount(CURRENCY_ONE, ACCOUNT_ONE, 20), STAmount(3), uint160(), ACCOUNT_XNS).getText() != "60")
+	if (STAmount::multiply(STAmount(CURRENCY_ONE, ACCOUNT_ONE, 20), STAmount(3), uint160(), ACCOUNT_XRP).getText() != "60")
 		BOOST_FAIL("STAmount multiply fail");
 	if (STAmount::multiply(STAmount(20), STAmount(3), CURRENCY_ONE, ACCOUNT_ONE).getText() != "60")
 		BOOST_FAIL("STAmount multiply fail");
-	if (STAmount::multiply(STAmount(20), STAmount(3), uint160(), ACCOUNT_XNS).getText() != "60")
+	if (STAmount::multiply(STAmount(20), STAmount(3), uint160(), ACCOUNT_XRP).getText() != "60")
 		BOOST_FAIL("STAmount multiply fail");
 	if (STAmount::divide(STAmount(CURRENCY_ONE, ACCOUNT_ONE, 60), STAmount(3), CURRENCY_ONE, ACCOUNT_ONE).getText() != "20")
 		BOOST_FAIL("STAmount divide fail");
-	if (STAmount::divide(STAmount(CURRENCY_ONE, ACCOUNT_ONE, 60), STAmount(3), uint160(), ACCOUNT_XNS).getText() != "20")
+	if (STAmount::divide(STAmount(CURRENCY_ONE, ACCOUNT_ONE, 60), STAmount(3), uint160(), ACCOUNT_XRP).getText() != "20")
 		BOOST_FAIL("STAmount divide fail");
 	if (STAmount::divide(STAmount(CURRENCY_ONE, ACCOUNT_ONE, 60), STAmount(CURRENCY_ONE, ACCOUNT_ONE, 3), CURRENCY_ONE, ACCOUNT_ONE).getText() != "20")
 		BOOST_FAIL("STAmount divide fail");
-	if (STAmount::divide(STAmount(CURRENCY_ONE, ACCOUNT_ONE, 60), STAmount(CURRENCY_ONE, ACCOUNT_ONE, 3), uint160(), ACCOUNT_XNS).getText() != "20")
+	if (STAmount::divide(STAmount(CURRENCY_ONE, ACCOUNT_ONE, 60), STAmount(CURRENCY_ONE, ACCOUNT_ONE, 3), uint160(), ACCOUNT_XRP).getText() != "20")
 		BOOST_FAIL("STAmount divide fail");
 
 	STAmount a1(CURRENCY_ONE, ACCOUNT_ONE, 60), a2 (CURRENCY_ONE, ACCOUNT_ONE, 10, -1);

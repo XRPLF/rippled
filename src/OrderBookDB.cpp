@@ -20,8 +20,8 @@ OrderBookDB::OrderBookDB(Ledger::pointer ledger)
 				mKnownMap[book->getBookBase()]=true;
 
 				if(!book->getCurrencyIn())
-				{ // XNS
-					mXNSOrders.push_back(book);
+				{ // XRP
+					mXRPOrders.push_back(book);
 				}else
 				{
 					mIssuerMap[book->getIssuerIn()].push_back(book);

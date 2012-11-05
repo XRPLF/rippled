@@ -113,7 +113,7 @@ Ledger::pointer LedgerMaster::closeLedger(bool recover)
 TER LedgerMaster::doTransaction(const SerializedTransaction& txn, TransactionEngineParams params)
 {
 	TER result = mEngine.applyTransaction(txn, params);
-	theApp->getOPs().pubTransaction(mEngine.getLedger(), txn, result);
+	theApp->getOPs().pubProposedTransaction(mEngine.getLedger(), txn, result);
 	return result;
 }
 
