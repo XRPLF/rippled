@@ -709,7 +709,7 @@ static void checkTransaction(Job&, int flags, SerializedTransaction::pointer stx
 			if (tx->getStatus() == INVALID)
 			{
 				theApp->getSuppression().setFlag(stx->getTransactionID(), SF_BAD);
-				punshPeer(peer, PP_BAD_SIGNATURE);
+				Peer::punishPeer(peer, PP_BAD_SIGNATURE);
 				return;
 			}
 			else
