@@ -10,8 +10,9 @@
 DECLARE_INSTANCE(LedgerProposal);
 
 LedgerProposal::LedgerProposal(const uint256& pLgr, uint32 seq, const uint256& tx, uint32 closeTime,
-		const RippleAddress& naPeerPublic) :
-	mPreviousLedger(pLgr), mCurrentHash(tx), mCloseTime(closeTime), mProposeSeq(seq), mPublicKey(naPeerPublic)
+	const RippleAddress& naPeerPublic, const uint256& suppression) :
+		mPreviousLedger(pLgr), mCurrentHash(tx), mSuppression(suppression), mCloseTime(closeTime),
+		mProposeSeq(seq), mPublicKey(naPeerPublic)
 {
 	// XXX Validate key.
 	// if (!mKey->SetPubKey(pubKey))

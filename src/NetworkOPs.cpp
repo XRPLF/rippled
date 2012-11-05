@@ -718,7 +718,7 @@ uint256 NetworkOPs::getConsensusLCL()
 	return mConsensus->getLCL();
 }
 
-void NetworkOPs::processTrustedProposal(uint256 suppression, LedgerProposal::pointer proposal,
+void NetworkOPs::processTrustedProposal(LedgerProposal::pointer proposal,
 	boost::shared_ptr<ripple::TMProposeSet> set, RippleAddress nodePublic, uint256 checkLedger, bool sigGood)
 {
 	bool relay = true;
@@ -754,7 +754,7 @@ void NetworkOPs::processTrustedProposal(uint256 suppression, LedgerProposal::poi
 	if (relay)
 	{
 		std::set<uint64> peers;
-		theApp->getSuppression().swapSet(suppression, peers, SF_RELAYED);
+		theApp->getSuppression().swapSet(proposal->getSuppression(), peers, SF_RELAYED);
 		PackedMessage::pointer message = boost::make_shared<PackedMessage>(*set, ripple::mtPROPOSE_LEDGER);
 		theApp->getConnectionPool().relayMessageBut(peers, message);
 	}
