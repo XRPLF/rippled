@@ -766,7 +766,10 @@ bool NetworkOPs::gotTXData(const boost::shared_ptr<Peer>& peer, const uint256& h
 	const std::list<SHAMapNode>& nodeIDs, const std::list< std::vector<unsigned char> >& nodeData)
 {
 	if (!haveConsensusObject())
+	{
+		cLog(lsWARNING) << "Got TX data with no consensus object";
 		return false;
+	}
 	return mConsensus->peerGaveNodes(peer, hash, nodeIDs, nodeData);
 }
 

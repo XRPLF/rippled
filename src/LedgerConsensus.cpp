@@ -35,11 +35,12 @@ void TransactionAcquire::done()
 {
 	if (mFailed)
 	{
-		cLog(lsWARNING) << "Failed to acquire TXs " << mHash;
+		cLog(lsWARNING) << "Failed to acquire TX set " << mHash;
 		theApp->getOPs().mapComplete(mHash, SHAMap::pointer());
 	}
 	else
 	{
+		cLog(lsINFO) << "Acquired TX set " << mHash;
 		mMap->setImmutable();
 		theApp->getOPs().mapComplete(mHash, mMap);
 	}
@@ -125,9 +126,15 @@ bool TransactionAcquire::takeNodes(const std::list<SHAMapNode>& nodeIDs,
 	const std::list< std::vector<unsigned char> >& data, Peer::ref peer)
 {
 	if (mComplete)
+	{
+		cLog(lsTRACE) << "TX set complete";
 		return true;
+	}
 	if (mFailed)
+	{
+		cLog(lsTRACE) << "TX set failed";
 		return false;
+	}
 	try
 	{
 		std::list<SHAMapNode>::const_iterator nodeIDit = nodeIDs.begin();
@@ -143,12 +150,18 @@ bool TransactionAcquire::takeNodes(const std::list<SHAMapNode>& nodeIDs,
 					return false;
 				}
 				if (!mMap->addRootNode(getHash(), *nodeDatait, snfWIRE, NULL))
+				{
+					cLog(lsWARNING) << "TX acquire got bad root node";
 					return false;
+				}
 				else
 					mHaveRoot = true;
 			}
 			else if (!mMap->addKnownNode(*nodeIDit, *nodeDatait, &sf))
+			{
+				cLog(lsWARNING) << "TX acquire got bad non-root node";
 				return false;
+			}
 			++nodeIDit;
 			++nodeDatait;
 		}
@@ -953,7 +966,10 @@ bool LedgerConsensus::peerGaveNodes(Peer::ref peer, const uint256& setHash,
 {
 	boost::unordered_map<uint256, TransactionAcquire::pointer>::iterator acq = mAcquiring.find(setHash);
 	if (acq == mAcquiring.end())
+	{
+		cLog(lsINFO) << "Got TX data for set not acquiring: " << setHash;
 		return false;
+	}
 	TransactionAcquire::pointer set = acq->second; // We must keep the set around during the function
 	return set->takeNodes(nodeIDs, nodeData, peer);
 }
