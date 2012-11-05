@@ -1,14 +1,17 @@
 
-#include "WSDoor.h"
+#include "Log.h"
 
+SETUP_LOG();
 
 #include "Application.h"
 #include "Config.h"
-#include "Log.h"
 #include "NetworkOPs.h"
 #include "utils.h"
 #include "WSConnection.h"
 #include "WSHandler.h"
+
+#include "WSDoor.h"
+
 #include <iostream>
 
 #include <boost/bind.hpp>
@@ -16,8 +19,6 @@
 #include <boost/mem_fn.hpp>
 #include <boost/unordered_set.hpp>
 
-
-SETUP_LOG();
 
 //
 // This is a light weight, untrusted interface for web clients.

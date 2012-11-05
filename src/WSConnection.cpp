@@ -1,13 +1,16 @@
+//
+// WSConnection
+//
+
+#include "Log.h"
+
+SETUP_LOG();
+
 #include "WSConnection.h"
 #include "WSHandler.h"
 
 #include "../json/reader.h"
 #include "../json/writer.h"
-//
-// WSConnection
-//
-
-SETUP_LOG();
 
 WSConnection::~WSConnection()
 {

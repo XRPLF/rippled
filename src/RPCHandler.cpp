@@ -1,7 +1,7 @@
+#include "Log.h"
 #include "NetworkOPs.h"
 #include "RPCHandler.h"
 #include "Application.h"
-#include "Log.h"
 #include "RippleLines.h"
 #include "Wallet.h"
 #include "RippleAddress.h"
@@ -694,14 +694,14 @@ Json::Value RPCHandler::doSubmit(const Json::Value& params)
 	Json::Reader reader;
 	if(reader.parse(params[1u].asString(),txJSON))
 	{
-		return handleJSONSubmit(params[0u].asString(), txJSON );
+		return handleJSONSubmit(params[0u].asString(), txJSON);
 	}
 
 	return rpcError(rpcSRC_ACT_MALFORMED);
 }
 
 
-Json::Value RPCHandler::handleJSONSubmit(std::string& key, Json::Value& txJSON)
+Json::Value RPCHandler::handleJSONSubmit(const std::string& key, Json::Value& txJSON)
 {
 	Json::Value jvResult;
 	RippleAddress	naSeed;
@@ -723,7 +723,7 @@ Json::Value RPCHandler::handleJSONSubmit(std::string& key, Json::Value& txJSON)
 	AccountState::pointer asSrc	= mNetOps->getAccountState(uint256(0), srcAddress);
 
 	if( txJSON["type"]=="Payment")
-	{	
+	{
 		txJSON["TransactionType"]=0;
 
 		RippleAddress dstAccountID;
@@ -731,7 +731,7 @@ Json::Value RPCHandler::handleJSONSubmit(std::string& key, Json::Value& txJSON)
 		{
 			return rpcError(rpcDST_ACT_MALFORMED);
 		}
-		
+
 		if(!txJSON.isMember("Fee"))
 		{
 			if(mNetOps->getAccountState(uint256(0), dstAccountID))
@@ -750,7 +750,7 @@ Json::Value RPCHandler::handleJSONSubmit(std::string& key, Json::Value& txJSON)
 				}else STAmount::currencyFromString(srcCurrencyID, txJSON["SendMax"]["currency"].asString());
 
 				STAmount dstAmount;
-				if(txJSON["Amount"].isObject()) 
+				if(txJSON["Amount"].isObject())
 				{
 					std::string issuerStr;
 					if( txJSON["Amount"].isMember("issuer")) issuerStr=txJSON["Amount"]["issuer"].asString();
@@ -771,7 +771,7 @@ Json::Value RPCHandler::handleJSONSubmit(std::string& key, Json::Value& txJSON)
 				else txJSON["Flags"]=2;
 			}
 		}
-		
+
 	}else if( txJSON["type"]=="OfferCreate" )
 	{
 		txJSON["TransactionType"]=7;
@@ -789,11 +789,11 @@ Json::Value RPCHandler::handleJSONSubmit(std::string& key, Json::Value& txJSON)
 	txJSON.removeMember("type");
 
 	if(!txJSON.isMember("Sequence")) txJSON["Sequence"]=asSrc->getSeq();
-	if(!txJSON.isMember("Flags")) txJSON["Flags"]=0;	
-	
+	if(!txJSON.isMember("Flags")) txJSON["Flags"]=0;
+
 	Ledger::pointer	lpCurrent		= mNetOps->getCurrentLedger();
 	SLE::pointer	sleAccountRoot	= mNetOps->getSLE(lpCurrent, Ledger::getAccountRootIndex(srcAddress.getAccountID()));
-	
+
 	if (!sleAccountRoot)
 	{
 		// XXX Ignore transactions for accounts not created.
@@ -1907,7 +1907,7 @@ Json::Value RPCHandler::doLedgerEntry(const Json::Value& params)
 			jvResult["index"]		= uNodeIndex.ToString();
 		}
 	}
-	
+
 	return jvResult;
 }
 
