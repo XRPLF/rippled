@@ -286,7 +286,7 @@ TER RippleCalc::calcNodeDeliverRev(
 
 	STAmount&		saPrvDlvReq		= pnPrv.saRevDeliver;	// To be adjusted.
 
-	saOutAct	= 0;
+	saOutAct.zero(saOutReq);
 
 	while (saOutAct != saOutReq)							// Did not deliver limit.
 	{
@@ -1650,6 +1650,11 @@ PathState::PathState(
 		uInCurrencyID,
 		uSenderID);
 
+cLog(lsDEBUG) << boost::str(boost::format("PathState: pushed: account=%s currency=%s issuer=%s")
+	% RippleAddress::createHumanAccountID(uSenderID)
+	% STAmount::createHumanCurrency(uInCurrencyID)
+	% RippleAddress::createHumanAccountID(uSenderID));
+
 	if (tesSUCCESS == terStatus
 		&& !!uInCurrencyID							// First was not XRC
 		&& uInIssuerID != uSenderID) {				// Issuer was not same as sender
@@ -1667,11 +1672,19 @@ PathState::PathState(
 													: uOutIssuerID
 												: ACCOUNT_XNS;
 
+cLog(lsDEBUG) << boost::str(boost::format("PathState: implied check: uNxtCurrencyID=%s uNxtAccountID=%s")
+	% RippleAddress::createHumanAccountID(uNxtCurrencyID)
+	% RippleAddress::createHumanAccountID(uNxtAccountID));
+
 		// Can't just use push implied, because it can't compensate for next account.
 		if (!uNxtCurrencyID							// Next is XRC - will have offer next
 				|| uInCurrencyID != uNxtCurrencyID	// Next is different current - will have offer next
 				|| uInIssuerID != uNxtAccountID)	// Next is not implied issuer
 		{
+cLog(lsDEBUG) << boost::str(boost::format("PathState: implied: account=%s currency=%s issuer=%s")
+	% RippleAddress::createHumanAccountID(uInIssuerID)
+	% RippleAddress::createHumanAccountID(uInCurrencyID)
+	% RippleAddress::createHumanAccountID(uInIssuerID));
 			// Add implied account.
 			terStatus	= pushNode(
 				STPathElement::typeAccount
