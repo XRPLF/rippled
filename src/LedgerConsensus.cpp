@@ -49,6 +49,8 @@ void TransactionAcquire::onTimer()
 {
 	if (!getPeerCount())
 	{ // out of peers
+		cLog(lsWARNING) << "Out of peers for TX set " << getHash();
+
 		bool found = false;
 		std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
 		BOOST_FOREACH(Peer::ref peer, peerList)
@@ -65,7 +67,8 @@ void TransactionAcquire::onTimer()
 				peerHas(peer);
 		}
 	}
-	trigger(Peer::pointer(), true);
+	else
+		trigger(Peer::pointer(), true);
 }
 
 boost::weak_ptr<PeerSet> TransactionAcquire::pmDowncast()

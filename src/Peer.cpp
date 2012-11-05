@@ -1162,6 +1162,7 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 		if ((!packet.has_ledgerhash() || packet.ledgerhash().size() != 32))
 		{
 			punishPeer(PP_INVALID_REQUEST);
+			cLog(lsWARNING) << "invalid request";
 			return;
 		}
 		uint256 txHash;
@@ -1285,6 +1286,7 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 		SHAMapNode mn(packet.nodeids(i).data(), packet.nodeids(i).size());
 		if(!mn.isValid())
 		{
+			cLog(lsWARNING) << "Request for invalid node";
 			punishPeer(PP_INVALID_REQUEST);
 			return;
 		}
@@ -1292,6 +1294,8 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 		std::list< std::vector<unsigned char> > rawNodes;
 		if(map->getNodeFat(mn, nodeIDs, rawNodes, fatRoot, fatLeaves))
 		{
+			assert(nodeIDs.size() == rawNodes.size());
+			cLog(lsDEBUG) << "getNodeFat got " << rawNodes.size() << " nodes";
 			std::vector<SHAMapNode>::iterator nodeIDIterator;
 			std::list< std::vector<unsigned char> >::iterator rawNodeIterator;
 			for(nodeIDIterator = nodeIDs.begin(), rawNodeIterator = rawNodes.begin();
@@ -1304,6 +1308,8 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 				node->set_nodedata(&rawNodeIterator->front(), rawNodeIterator->size());
 			}
 		}
+		else
+			cLog(lsWARNING) << "getNodeFat returns false";
 	}
 	PackedMessage::pointer oPacket = boost::make_shared<PackedMessage>(reply, ripple::mtLEDGER_DATA);
 	sendPacket(oPacket);
