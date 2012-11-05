@@ -48,7 +48,7 @@ EventEmitter.prototype.listeners = function (e) {
 EventEmitter.prototype.once = function (e, f) {
   var that = this;
   this.on(e, function g() {
-    f.apply(es, arguments);
+    f.apply(e, arguments);
     that.off(e, g);
   });
   return this;
