@@ -18,7 +18,7 @@ class LedgerProposal : private IS_INSTANCE(LedgerProposal)
 {
 protected:
 
-	uint256 mPreviousLedger, mCurrentHash;
+	uint256 mPreviousLedger, mCurrentHash, mSuppression;
 	uint32 mCloseTime, mProposeSeq;
 
 	uint160			mPeerID;
@@ -35,7 +35,7 @@ public:
 
 	// proposal from peer
 	LedgerProposal(const uint256& prevLgr, uint32 proposeSeq, const uint256& propose,
-		uint32 closeTime, const RippleAddress& naPeerPublic);
+		uint32 closeTime, const RippleAddress& naPeerPublic, const uint256& suppress);
 
 	// our first proposal
 	LedgerProposal(const RippleAddress& pubKey, const RippleAddress& privKey,
@@ -52,6 +52,7 @@ public:
 	const uint160& getPeerID() const		{ return mPeerID; }
 	const uint256& getCurrentHash() const	{ return mCurrentHash; }
 	const uint256& getPrevLedger() const	{ return mPreviousLedger; }
+	const uint256& getSuppression() const	{ return mSuppression; }
 	uint32 getProposeSeq() const			{ return mProposeSeq; }
 	uint32 getCloseTime() const				{ return mCloseTime; }
 	const RippleAddress& peekPublic() const		{ return mPublicKey; }
