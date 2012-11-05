@@ -16,11 +16,11 @@
 
 // Node
 var util	  = require('util');
-var EventEmitter  = require('events').EventEmitter;
 
 // npm
 var WebSocket = require('ws');
 
+var EventEmitter = require('./events').EventEmitter;
 var Amount    = require('./amount.js').Amount;
 var UInt160   = require('./amount.js').UInt160;
 
@@ -49,19 +49,6 @@ var Request = function (remote, command) {
 };
 
 Request.prototype  = new EventEmitter;
-
-// Return this.  node EventEmitter's on doesn't return this.
-Request.prototype.on = function (e, c) {
-  EventEmitter.prototype.on.call(this, e, c);
-
-  return this;
-};
-
-Request.prototype.once = function (e, c) {
-  EventEmitter.prototype.once.call(this, e, c);
-
-  return this;
-};
 
 // Send the request to a remote.
 Request.prototype.request = function (remote) {
@@ -883,13 +870,6 @@ var Transaction	= function (remote) {
 };
 
 Transaction.prototype  = new EventEmitter;
-
-// Return this.  node EventEmitter's on doesn't return this.
-Transaction.prototype.on = function (e, c) {
-  EventEmitter.prototype.on.call(this, e, c);
-
-  return this;
-};
 
 Transaction.prototype.consts = {
   'telLOCAL_ERROR'  : -399,
