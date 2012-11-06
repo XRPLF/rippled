@@ -18,17 +18,19 @@
 # No escapes are currently defined.
 #
 # [accounts]
-#   Only valid in "ripple.txt". A list of accounts associated with this
-#   domain. A client wishing to indicate that an account is verified as
-#   belonging to a domain will be show the account with a green background. A
-#   client can verify that an account belongs to a domain by checking if the
-#   account's root entry mentions the domain containing this file and this
-#   file found at the domain mentions the account in this section.
+#   Only valid in "ripple.txt". A list of accounts that are declared to be
+#   controlled by this domain. A client wishing to indicate that an account is
+#   verified as belonging to a domain will be show the account with a green
+#   background. A client can verify that an account belongs to a domain by
+#   checking if the account's root entry mentions the domain containing this
+#   file and this file found at the domain mentions the account in this
+#   section.
 #
 #   Example: rG1QQv2nh2gr7RCZ1P8YYcBUKCCN633jCn
 #
 # [validation_public_key]:
-#   Only valid in "ripple.txt".
+#   Only valid in "ripple.txt". A validation public key that is declared
+#   to be used by this domain for validating ledgers. 
 #
 #   Example: n9MZTnHe5D5Q2cgE8oV2usFwRqhUvEA8MwP5Mu1XVD6TxmssPRev
 #
