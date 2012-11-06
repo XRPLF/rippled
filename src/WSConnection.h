@@ -53,3 +53,5 @@ public:
 	void doUnsubscribe(Json::Value& jvResult,  Json::Value& jvRequest);
 
 };
+
+// vim:ts=4

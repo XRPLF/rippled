@@ -1,7 +1,7 @@
+#include "Log.h"
 #include "NetworkOPs.h"
 #include "RPCHandler.h"
 #include "Application.h"
-#include "Log.h"
 #include "RippleLines.h"
 #include "Wallet.h"
 #include "RippleAddress.h"
@@ -13,7 +13,7 @@
 #include <boost/foreach.hpp>
 #include <openssl/md5.h>
 /*
-carries out the RPC 
+carries out the RPC
 
 */
 
@@ -326,8 +326,6 @@ Json::Value RPCHandler::doAcceptLedger(const Json::Value &params)
 	return obj;
 }
 
-
-
 // account_info <account>|<nickname>|<account_public_key>
 // account_info <seed>|<pass_phrase>|<key> [<index>]
 Json::Value RPCHandler::doAccountInfo(const Json::Value &params)
@@ -341,7 +339,7 @@ Json::Value RPCHandler::doAccountInfo(const Json::Value &params)
 
 	// Get info on account.
 
-	uint256			uAccepted		= mNetOps->getClosedLedger();
+	uint256			uAccepted		= mNetOps->getClosedLedgerHash();
 	Json::Value		jAccepted		= accountFromString(uAccepted, naAccount, bIndex, strIdent, iIndex);
 
 	if (jAccepted.empty())
@@ -507,7 +505,7 @@ Json::Value RPCHandler::doOwnerInfo(const Json::Value& params)
 
 	// Get info on account.
 
-	uint256			uAccepted	= mNetOps->getClosedLedger();
+	uint256			uAccepted	= mNetOps->getClosedLedgerHash();
 	Json::Value		jAccepted	= accountFromString(uAccepted, naAccount, bIndex, strIdent, iIndex);
 
 	ret["accepted"]	= jAccepted.empty() ? mNetOps->getOwnerInfo(uAccepted, naAccount) : jAccepted;
@@ -621,7 +619,7 @@ Json::Value RPCHandler::doProfile(const Json::Value &params)
 // ripple_lines_get <account>|<nickname>|<account_public_key> [<index>]
 Json::Value RPCHandler::doRippleLinesGet(const Json::Value &params)
 {
-	//	uint256			uAccepted	= mNetOps->getClosedLedger();
+	//	uint256			uAccepted	= mNetOps->getClosedLedgerHash();
 
 	std::string		strIdent	= params[0u].asString();
 	bool			bIndex;
@@ -690,24 +688,36 @@ Json::Value RPCHandler::doRippleLinesGet(const Json::Value &params)
 // submit private_key json
 Json::Value RPCHandler::doSubmit(const Json::Value& params)
 {
-	Json::Value txJSON;
-	Json::Reader reader;
-	if(reader.parse(params[1u].asString(),txJSON))
+	Json::Value		txJSON;
+	Json::Reader	reader;
+
+	if (reader.parse(params[1u].asString(), txJSON))
 	{
-		return handleJSONSubmit(params[0u].asString(), txJSON );
+		Json::Value	jvRequest;
+
+		jvRequest["secret"]		= params[0u].asString();
+		jvRequest["tx_json"]	= txJSON;
+
+		return handleJSONSubmit(jvRequest);
 	}
 
-	return rpcError(rpcSRC_ACT_MALFORMED);
+	return rpcError(rpcINVALID_PARAMS);
+}
+
+Json::Value RPCHandler::doSubmitJson(const Json::Value& jvRequest)
+{
+	return handleJSONSubmit(jvRequest);
 }
 
 
-Json::Value RPCHandler::handleJSONSubmit(std::string& key, Json::Value& txJSON)
+Json::Value RPCHandler::handleJSONSubmit(const Json::Value& jvRequest)
 {
-	Json::Value jvResult;
+	Json::Value		jvResult;
 	RippleAddress	naSeed;
 	RippleAddress	srcAddress;
+	Json::Value		txJSON		= jvRequest["tx_json"];
 
-	if (!naSeed.setSeedGeneric(key))
+	if (!naSeed.setSeedGeneric(jvRequest["secret"].asString()))
 	{
 		return rpcError(rpcBAD_SEED);
 	}
@@ -723,22 +733,28 @@ Json::Value RPCHandler::handleJSONSubmit(std::string& key, Json::Value& txJSON)
 	AccountState::pointer asSrc	= mNetOps->getAccountState(uint256(0), srcAddress);
 
 	if( txJSON["type"]=="Payment")
-	{	
+	{
 		txJSON["TransactionType"]=0;
 
 		RippleAddress dstAccountID;
+
+		if (!txJSON.isMember("Destination"))
+		{
+			return rpcError(rpcDST_ACT_MISSING);
+		}
 		if (!dstAccountID.setAccountID(txJSON["Destination"].asString()))
 		{
 			return rpcError(rpcDST_ACT_MALFORMED);
 		}
-		
+
 		if(!txJSON.isMember("Fee"))
 		{
 			if(mNetOps->getAccountState(uint256(0), dstAccountID))
 				txJSON["Fee"]=(int)theConfig.FEE_DEFAULT;
 			else txJSON["Fee"]=(int)theConfig.FEE_ACCOUNT_CREATE;
 		}
-		if(!txJSON.isMember("Paths"))
+
+		if(!txJSON.isMember("Paths") && (!jvRequest.isMember("build_path") || jvRequest["build_path"].asBool()))
 		{
 			if(txJSON["Amount"].isObject() || txJSON.isMember("SendMax") )
 			{  // we need a ripple path
@@ -746,11 +762,15 @@ Json::Value RPCHandler::handleJSONSubmit(std::string& key, Json::Value& txJSON)
 				uint160		srcCurrencyID;
 				if(txJSON.isMember("SendMax") && txJSON["SendMax"].isMember("currency"))
 				{
-					STAmount::currencyFromString(srcCurrencyID, "XRP");
-				}else STAmount::currencyFromString(srcCurrencyID, txJSON["SendMax"]["currency"].asString());
+					STAmount::currencyFromString(srcCurrencyID, txJSON["SendMax"]["currency"].asString());
+				}
+				else
+				{
+					srcCurrencyID	= CURRENCY_XRP;
+				}
 
 				STAmount dstAmount;
-				if(txJSON["Amount"].isObject()) 
+				if(txJSON["Amount"].isObject())
 				{
 					std::string issuerStr;
 					if( txJSON["Amount"].isMember("issuer")) issuerStr=txJSON["Amount"]["issuer"].asString();
@@ -771,7 +791,7 @@ Json::Value RPCHandler::handleJSONSubmit(std::string& key, Json::Value& txJSON)
 				else txJSON["Flags"]=2;
 			}
 		}
-		
+
 	}else if( txJSON["type"]=="OfferCreate" )
 	{
 		txJSON["TransactionType"]=7;
@@ -789,11 +809,11 @@ Json::Value RPCHandler::handleJSONSubmit(std::string& key, Json::Value& txJSON)
 	txJSON.removeMember("type");
 
 	if(!txJSON.isMember("Sequence")) txJSON["Sequence"]=asSrc->getSeq();
-	if(!txJSON.isMember("Flags")) txJSON["Flags"]=0;	
-	
+	if(!txJSON.isMember("Flags")) txJSON["Flags"]=0;
+
 	Ledger::pointer	lpCurrent		= mNetOps->getCurrentLedger();
 	SLE::pointer	sleAccountRoot	= mNetOps->getSLE(lpCurrent, Ledger::getAccountRootIndex(srcAddress.getAccountID()));
-	
+
 	if (!sleAccountRoot)
 	{
 		// XXX Ignore transactions for accounts not created.
@@ -804,7 +824,7 @@ Json::Value RPCHandler::handleJSONSubmit(std::string& key, Json::Value& txJSON)
 	RippleAddress	naAuthorizedPublic;
 
 
-	RippleAddress	naSecret			= RippleAddress::createSeedGeneric(key);
+	RippleAddress	naSecret			= RippleAddress::createSeedGeneric(jvRequest["secret"].asString());
 	RippleAddress	naMasterGenerator	= RippleAddress::createGeneratorPublic(naSecret);
 
 	// Find the index of Account from the master generator, so we can generate the public and private keys.
@@ -858,7 +878,7 @@ Json::Value RPCHandler::handleJSONSubmit(std::string& key, Json::Value& txJSON)
 	{
 		jvResult["error"]			= "malformedTransaction";
 		jvResult["error_exception"]	= e.what();
-		return(jvResult);
+		return jvResult;
 	}
 
 	sopTrans->setFieldVL(sfSigningPubKey, naAccountPublic.getAccountPublic());
@@ -888,7 +908,7 @@ Json::Value RPCHandler::handleJSONSubmit(std::string& key, Json::Value& txJSON)
 	{
 		jvResult["error"]			= "internalTransaction";
 		jvResult["error_exception"]	= e.what();
-		return(jvResult);
+		return jvResult;
 	}
 
 	try
@@ -898,19 +918,19 @@ Json::Value RPCHandler::handleJSONSubmit(std::string& key, Json::Value& txJSON)
 		if (!tpTrans) {
 			jvResult["error"]			= "invalidTransaction";
 			jvResult["error_exception"]	= "Unable to sterilize transaction.";
-			return(jvResult);
+			return jvResult;
 		}
 	}
 	catch (std::exception& e)
 	{
 		jvResult["error"]			= "internalSubmit";
 		jvResult["error_exception"]	= e.what();
-		return(jvResult);
+		return jvResult;
 	}
 
 	try
 	{
-		jvResult["transaction"]		= tpTrans->getJson(0);
+		jvResult["tx_json"]		= tpTrans->getJson(0);
 
 		if (temUNCERTAIN != tpTrans->getResult())
 		{
@@ -923,15 +943,14 @@ Json::Value RPCHandler::handleJSONSubmit(std::string& key, Json::Value& txJSON)
 			jvResult["engine_result_code"]		= tpTrans->getResult();
 			jvResult["engine_result_message"]	= sHuman;
 		}
-		return(jvResult);
+		return jvResult;
 	}
 	catch (std::exception& e)
 	{
 		jvResult["error"]			= "internalJson";
 		jvResult["error_exception"]	= e.what();
-		return(jvResult);
+		return jvResult;
 	}
-		
 }
 
 Json::Value RPCHandler::doServerInfo(const Json::Value& params)
@@ -1005,11 +1024,11 @@ Json::Value RPCHandler::doTx(const Json::Value& params)
 Json::Value RPCHandler::doLedgerClosed(const Json::Value& params)
 {
 	Json::Value jvResult;
-	uint256	uLedger	= mNetOps->getClosedLedger();
+	uint256	uLedger	= mNetOps->getClosedLedgerHash();
 
-	jvResult["ledger_closed_index"]		= mNetOps->getLedgerID(uLedger);
-	jvResult["ledger_closed"]			= uLedger.ToString();
-	//jvResult["ledger_closed_time"]		= uLedger.
+	jvResult["ledger_index"]		= mNetOps->getLedgerID(uLedger);
+	jvResult["ledger_hash"]			= uLedger.ToString();
+	//jvResult["ledger_time"]		= uLedger.
 	return jvResult;
 }
 
@@ -1273,22 +1292,22 @@ Json::Value RPCHandler::doWalletAccounts(const Json::Value& params)
 	}
 }
 
-
-Json::Value RPCHandler::doLogRotate(const Json::Value& params) 
+Json::Value RPCHandler::doLogRotate(const Json::Value& params)
 {
 	return Log::rotateLog();
 }
 
-Json::Value RPCHandler::doCommand(const std::string& command, Json::Value& params,int role)
+Json::Value RPCHandler::doCommand(const std::string& command, Json::Value& params, int role)
 {
 	cLog(lsTRACE) << "RPC:" << command;
+	cLog(lsTRACE) << "RPC params:" << params;
 
 	static struct {
-		const char* pCommand;
-		doFuncPtr	dfpFunc;
-		int			iMinParams;
-		int			iMaxParams;
-		bool		mAdminRequired;
+		const char*		pCommand;
+		doFuncPtr		dfpFunc;
+		int				iMinParams;
+		int				iMaxParams;
+		bool			mAdminRequired;
 		unsigned int	iOptions;
 	} commandsA[] = {
 		{	"accept_ledger",		&RPCHandler::doAcceptLedger,		0,	0, true					},
@@ -1300,6 +1319,10 @@ Json::Value RPCHandler::doCommand(const std::string& command, Json::Value& param
 		{	"data_store",			&RPCHandler::doDataStore,			2,  2, true					},
 		{	"get_counts",			&RPCHandler::doGetCounts,			0,	1, true					},
 		{	"ledger",				&RPCHandler::doLedger,				0,  2, false,	optNetwork	},
+		{	"ledger_accept",		&RPCHandler::doLedgerAccept,		0,  0, true,	optCurrent	},
+		{	"ledger_closed",		&RPCHandler::doLedgerClosed,		0,  0, false,	optClosed	},
+		{	"ledger_current",		&RPCHandler::doLedgerCurrent,		0,  0, false,	optCurrent	},
+		{	"ledger_entry",			&RPCHandler::doLedgerEntry,			-1,  -1, false,	optCurrent	},
 		{	"log_level",			&RPCHandler::doLogLevel,			0,  2, true					},
 		{	"logrotate",			&RPCHandler::doLogRotate,			0,  0, true					},
 		{	"nickname_info",		&RPCHandler::doNicknameInfo,		1,  1, false,	optCurrent	},
@@ -1308,8 +1331,10 @@ Json::Value RPCHandler::doCommand(const std::string& command, Json::Value& param
 		{	"profile",				&RPCHandler::doProfile,				1,  9, false,	optCurrent	},
 		{	"ripple_lines_get",		&RPCHandler::doRippleLinesGet,		1,  2, false,	optCurrent	},
 		{	"submit",				&RPCHandler::doSubmit,				2,  2, false,	optCurrent	},
+		{	"submit_json",			&RPCHandler::doSubmitJson,			-1,  -1, false,	optCurrent	},
 		{	"server_info",			&RPCHandler::doServerInfo,			0,  0, true					},
 		{	"stop",					&RPCHandler::doStop,				0,  0, true					},
+		{	"transaction_entry",	&RPCHandler::doTransactionEntry,	-1,  -1, false,	optCurrent	},
 		{	"tx",					&RPCHandler::doTx,					1,  1, true					},
 		{	"tx_history",			&RPCHandler::doTxHistory,			1,  1, false,				},
 
@@ -1344,8 +1369,12 @@ Json::Value RPCHandler::doCommand(const std::string& command, Json::Value& param
 	{
 		return rpcError(rpcNO_PERMISSION);
 	}
-	else if (params.size() < commandsA[i].iMinParams
-		|| (commandsA[i].iMaxParams >= 0 && params.size() > commandsA[i].iMaxParams))
+	else if (commandsA[i].iMinParams >= 0
+		? commandsA[i].iMaxParams
+			? (params.size() < commandsA[i].iMinParams
+				|| (commandsA[i].iMaxParams >= 0 && params.size() > commandsA[i].iMaxParams))
+			: false
+		: params.isArray())
 	{
 		return rpcError(rpcINVALID_PARAMS);
 	}
@@ -1358,7 +1387,7 @@ Json::Value RPCHandler::doCommand(const std::string& command, Json::Value& param
 	{
 		return rpcError(rpcNO_CURRENT);
 	}
-	else if ((commandsA[i].iOptions & optClosed) && mNetOps->getClosedLedger().isZero())
+	else if ((commandsA[i].iOptions & optClosed) && !mNetOps->getClosedLedger())
 	{
 		return rpcError(rpcNO_CLOSED);
 	}
@@ -1590,6 +1619,7 @@ Json::Value RPCHandler::doUnlLoad(const Json::Value& params)
 Json::Value RPCHandler::doLedgerAccept(const Json::Value& )
 {
 	Json::Value jvResult;
+
 	if (!theConfig.RUN_STANDALONE)
 	{
 		jvResult["error"]	= "notStandAlone";
@@ -1600,17 +1630,13 @@ Json::Value RPCHandler::doLedgerAccept(const Json::Value& )
 
 		jvResult["ledger_current_index"]	= mNetOps->getCurrentLedgerID();
 	}
-	return(jvResult);
+
+	return jvResult;
 }
 
-
-Json::Value RPCHandler::doTransactionEntry(const Json::Value& params)
+Json::Value RPCHandler::doTransactionEntry(const Json::Value& jvRequest)
 {
 	Json::Value jvResult;
-	Json::Value jvRequest;
-	Json::Reader reader;
-	if(!reader.parse(params[0u].asString(),jvRequest))
-		return rpcError(rpcINVALID_PARAMS);
 
 	if (!jvRequest.isMember("tx_hash"))
 	{
@@ -1640,36 +1666,29 @@ Json::Value RPCHandler::doTransactionEntry(const Json::Value& params)
 			Transaction::pointer		tpTrans;
 			TransactionMetaSet::pointer	tmTrans;
 
-			if (!lpLedger-> getTransaction(uTransID, tpTrans, tmTrans))
+			if (!lpLedger->getTransaction(uTransID, tpTrans, tmTrans))
 			{
 				jvResult["error"]	= "transactionNotFound";
 			}
 			else
 			{
-				jvResult["transaction"]		= tpTrans->getJson(0);
-				jvResult["metadata"]		= tmTrans->getJson(0);
+				jvResult["tx_json"]		= tpTrans->getJson(0);
+				jvResult["metadata"]	= tmTrans->getJson(0);
 				// 'accounts'
 				// 'engine_...'
 				// 'ledger_...'
 			}
 		}
 	}
-	
+
 	return jvResult;
 }
 
-
-
-Json::Value RPCHandler::doLedgerEntry(const Json::Value& params)
+Json::Value RPCHandler::doLedgerEntry(const Json::Value& jvRequest)
 {
 	Json::Value jvResult;
-	Json::Value jvRequest;
-	Json::Reader reader;
-	if(!reader.parse(params[0u].asString(),jvRequest))
-		return rpcError(rpcINVALID_PARAMS);
-		
 
-	uint256	uLedger			= jvRequest.isMember("ledger_closed") ? uint256(jvRequest["ledger_closed"].asString()) : 0;
+	uint256	uLedger			= jvRequest.isMember("ledger_hash") ? uint256(jvRequest["ledger_hash"].asString()) : 0;
 	uint32	uLedgerIndex	= jvRequest.isMember("ledger_index") && jvRequest["ledger_index"].isNumeric() ? jvRequest["ledger_index"].asUInt() : 0;
 
 	Ledger::pointer	 lpLedger;
@@ -1707,9 +1726,9 @@ Json::Value RPCHandler::doLedgerEntry(const Json::Value& params)
 	if (lpLedger->isClosed())
 	{
 		if (!!uLedger)
-			jvResult["ledger_closed"]			= uLedger.ToString();
+			jvResult["ledger_hash"]			= uLedger.ToString();
 
-		jvResult["ledger_closed_index"]		= uLedgerIndex;
+		jvResult["ledger_index"]		= uLedgerIndex;
 	}
 	else
 	{
@@ -1907,7 +1926,7 @@ Json::Value RPCHandler::doLedgerEntry(const Json::Value& params)
 			jvResult["index"]		= uNodeIndex.ToString();
 		}
 	}
-	
+
 	return jvResult;
 }
 

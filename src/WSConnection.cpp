@@ -1,13 +1,16 @@
+//
+// WSConnection
+//
+
+#include "Log.h"
+
+SETUP_LOG();
+
 #include "WSConnection.h"
 #include "WSHandler.h"
 
 #include "../json/reader.h"
 #include "../json/writer.h"
-//
-// WSConnection
-//
-
-SETUP_LOG();
 
 WSConnection::~WSConnection()
 {
@@ -62,8 +65,6 @@ Json::Value WSConnection::invokeCommand(Json::Value& jvRequest)
 
 	Json::Value	jvResult(Json::objectValue);
 
-	jvResult["type"]	= "response";
-
 	if (i < 0)
 	{
 		jvResult["error"]	= "unknownCommand";	// Unknown command.
@@ -87,6 +88,8 @@ Json::Value WSConnection::invokeCommand(Json::Value& jvRequest)
 	{
 		jvResult["result"]	= "success";
 	}
+
+	jvResult["type"]	= "response";
 
 	return jvResult;
 }
@@ -131,22 +134,22 @@ void WSConnection::doSubscribe(Json::Value& jvResult,  Json::Value& jvRequest)
 	{
 		for (Json::Value::iterator it = jvRequest["streams"].begin(); it != jvRequest["streams"].end(); it++)
 		{
-			if ((*it).isString() )
+			if ((*it).isString())
 			{
 				std::string streamName=(*it).asString();
 
 				if(streamName=="server")
 				{
-					mNetwork.subServer(this);
+					mNetwork.subServer(this, jvResult);
 				}else if(streamName=="ledger")
 				{
-					mNetwork.subLedger(this);
+					mNetwork.subLedger(this, jvResult);
 				}else if(streamName=="transactions")
 				{
 					mNetwork.subTransactions(this);
 				}else if(streamName=="rt_transactions")
 				{
-					mNetwork.subRTTransactions(this); 
+					mNetwork.subRTTransactions(this);
 				}else
 				{
 					jvResult["error"]	= str(boost::format("Unknown stream: %s") % streamName);
@@ -220,7 +223,7 @@ void WSConnection::doUnsubscribe(Json::Value& jvResult,  Json::Value& jvRequest)
 					mNetwork.unsubTransactions(this);
 				}else if(streamName=="rt_transactions")
 				{
-					mNetwork.unsubRTTransactions(this); 
+					mNetwork.unsubRTTransactions(this);
 				}else
 				{
 					jvResult["error"]	= str(boost::format("Unknown stream: %s") % streamName);
@@ -273,16 +276,23 @@ void WSConnection::doUnsubscribe(Json::Value& jvResult,  Json::Value& jvRequest)
 	}
 }
 
-
-
 void WSConnection::doRPC(Json::Value& jvResult, Json::Value& jvRequest)
 {
 	if (jvRequest.isMember("rpc_command") )
 	{
-		jvResult=theApp->getRPCHandler().doCommand(jvRequest["rpc_command"].asString(),jvRequest["params"],RPCHandler::GUEST);
+		jvResult = theApp->getRPCHandler().doCommand(
+			jvRequest["rpc_command"].asString(),
+			jvRequest.isMember("params")
+				? jvRequest["params"]
+				: jvRequest,
+			mHandler->getPublic() ? RPCHandler::GUEST : RPCHandler::ADMIN);
 
-	}else jvResult["error"]	= "fieldNotCommand";
-
+		jvResult["type"] = "response";
+	}
+	else
+	{
+		jvResult["error"]	= "fieldNotCommand";
+	}
 }
 
 // XXX Currently requires secret. Allow signed transaction as an alternative.
@@ -290,15 +300,16 @@ void WSConnection::doSubmit(Json::Value& jvResult, Json::Value& jvRequest)
 {
 	if (!jvRequest.isMember("tx_json"))
 	{
-		jvResult["error"]	= "fieldNotFoundTransaction";
-	}else if (!jvRequest.isMember("key"))
+		jvResult["error"]	= "fieldNotFoundTxJson";
+	}else if (!jvRequest.isMember("secret"))
 	{
-		jvResult["error"]	= "fieldNotFoundKey";
-	}else 
+		jvResult["error"]	= "fieldNotFoundSecret";
+	}else
 	{
-		jvResult=theApp->getRPCHandler().handleJSONSubmit(jvRequest["key"].asString(),jvRequest["tx_json"]);
+		jvResult=theApp->getRPCHandler().handleJSONSubmit(jvRequest);
 
 		// TODO: track the transaction mNetwork.subSubmit(this, jvResult["tx hash"] );
 	}
 }
 
+// vim:ts=4

@@ -46,7 +46,7 @@ void TransactionAcquire::done()
 	}
 }
 
-void TransactionAcquire::onTimer()
+void TransactionAcquire::onTimer(bool progress)
 {
 	if (!getPeerCount())
 	{ // out of peers
@@ -68,7 +68,7 @@ void TransactionAcquire::onTimer()
 				peerHas(peer);
 		}
 	}
-	else
+	else if (!progress)
 		trigger(Peer::pointer(), true);
 }
 

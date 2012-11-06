@@ -28,7 +28,7 @@ class RPCHandler
 	Json::Value accountFromString(const uint256& uLedger, RippleAddress& naAccount, bool& bIndex, const std::string& strIdent, const int iIndex);
 
 	Json::Value doAcceptLedger(const Json::Value &params);
-	
+
 	Json::Value doAccountInfo(const Json::Value& params);
 	Json::Value doAccountTransactions(const Json::Value& params);
 	Json::Value doConnect(const Json::Value& params);
@@ -39,21 +39,22 @@ class RPCHandler
 	Json::Value doLedger(const Json::Value& params);
 	Json::Value doLogRotate(const Json::Value& params);
 	Json::Value doNicknameInfo(const Json::Value& params);
-	
+
 	Json::Value doOwnerInfo(const Json::Value& params);
-	
+
 	Json::Value doProfile(const Json::Value& params);
 	Json::Value doPeers(const Json::Value& params);
-	
+
 	Json::Value doRippleLinesGet(const Json::Value &params);
 	Json::Value doServerInfo(const Json::Value& params);
 	Json::Value doSessionClose(const Json::Value& params);
 	Json::Value doSessionOpen(const Json::Value& params);
 	Json::Value doLogLevel(const Json::Value& params);
 	Json::Value doStop(const Json::Value& params);
+	Json::Value doSubmit(const Json::Value& params);
+	Json::Value doSubmitJson(const Json::Value& jvRequest);
 	Json::Value doTx(const Json::Value& params);
 	Json::Value doTxHistory(const Json::Value& params);
-	Json::Value doSubmit(const Json::Value& params);
 
 
 	Json::Value doUnlAdd(const Json::Value& params);
@@ -154,8 +155,9 @@ public:
 	Json::Value doCommand(const std::string& command, Json::Value& params,int role);
 	Json::Value rpcError(int iError);
 
-	Json::Value handleJSONSubmit(std::string& key, Json::Value& txJSON);
+	Json::Value handleJSONSubmit(const Json::Value& jvRequest);
 
 };
 
 #endif
+// vim:ts=4

@@ -181,15 +181,21 @@ X'53514C697465'
 */
 void SqliteDatabase::escape(const unsigned char* start, int size, std::string& retStr)
 {
-	retStr="X'";
+	static const char toHex[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+		'A', 'B', 'C', 'D', 'E', 'F' };
 
-	char buf[3];
-	for(int n=0; n<size; n++)
+	retStr.resize(3 + (size * 2));
+
+	int pos = 0;
+	retStr[pos++] = 'X';
+	retStr[pos++] = '\'';
+
+	for (int n = 0; n < size; ++n)
 	{
-		sprintf(buf, "%02X", start[n]);
-		retStr.append(buf);
-
+		retStr[pos++] = toHex[start[n] >> 4];
+		retStr[pos++] = toHex[start[n] & 0x0f];
 	}
-	retStr.push_back('\'');
+	retStr[pos] = '\'';
 }
+
 // vim:ts=4

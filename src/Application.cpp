@@ -38,11 +38,12 @@ DatabaseCon::~DatabaseCon()
 }
 
 Application::Application() :
-	mIOWork(mIOService), mAuxWork(mAuxService), mUNL(mIOService),
-	mNetOps(mIOService, &mMasterLedger), mTempNodeCache("NodeCache", 16384, 90), mHashedObjectStore(16384, 300),
-	mSNTPClient(mAuxService), mRpcDB(NULL), mTxnDB(NULL), mLedgerDB(NULL), mWalletDB(NULL),
-	mHashNodeDB(NULL), mNetNodeDB(NULL),
-	mConnectionPool(mIOService), mPeerDoor(NULL), mRPCDoor(NULL), mSweepTimer(mAuxService), mRPCHandler(&mNetOps)
+	mIOWork(mIOService), mAuxWork(mAuxService), mUNL(mIOService), mNetOps(mIOService, &mMasterLedger),
+	mTempNodeCache("NodeCache", 16384, 90), mHashedObjectStore(16384, 300),
+	mSNTPClient(mAuxService), mRPCHandler(&mNetOps), 
+	mRpcDB(NULL), mTxnDB(NULL), mLedgerDB(NULL), mWalletDB(NULL), mHashNodeDB(NULL), mNetNodeDB(NULL),
+	mConnectionPool(mIOService), mPeerDoor(NULL), mRPCDoor(NULL), mWSPublicDoor(NULL), mWSPrivateDoor(NULL),
+	mSweepTimer(mAuxService)
 {
 	RAND_bytes(mNonce256.begin(), mNonce256.size());
 	RAND_bytes(reinterpret_cast<unsigned char *>(&mNonceST), sizeof(mNonceST));
@@ -146,7 +147,7 @@ void Application::run()
 	}
 	else
 	{
-		std::cerr << "Peer interface: disabled" << std::endl;
+		cLog(lsINFO) << "Peer interface: disabled";
 	}
 
 	//
@@ -158,10 +159,32 @@ void Application::run()
 	}
 	else
 	{
-		std::cerr << "RPC interface: disabled" << std::endl;
+		cLog(lsINFO) << "RPC interface: disabled";
 	}
 
-	mWSDoor		= WSDoor::createWSDoor();
+	//
+	// Allow private WS connections.
+	//
+	if (!theConfig.WEBSOCKET_IP.empty() && theConfig.WEBSOCKET_PORT)
+	{
+		mWSPrivateDoor	= WSDoor::createWSDoor(theConfig.WEBSOCKET_IP, theConfig.WEBSOCKET_PORT, false);
+	}
+	else
+	{
+		cLog(lsINFO) << "WS private interface: disabled";
+	}
+
+	//
+	// Allow public WS connections.
+	//
+	if (!theConfig.WEBSOCKET_PUBLIC_IP.empty() && theConfig.WEBSOCKET_PUBLIC_PORT)
+	{
+		mWSPublicDoor	= WSDoor::createWSDoor(theConfig.WEBSOCKET_PUBLIC_IP, theConfig.WEBSOCKET_PUBLIC_PORT, true);
+	}
+	else
+	{
+		cLog(lsINFO) << "WS public interface: disabled";
+	}
 
 	//
 	// Begin connecting to network.
@@ -180,9 +203,13 @@ void Application::run()
 
 	mIOService.run(); // This blocks
 
-	mWSDoor->stop();
+	if (mWSPublicDoor)
+		mWSPublicDoor->stop();
 
-	std::cout << "Done." << std::endl;
+	if (mWSPrivateDoor)
+		mWSPrivateDoor->stop();
+
+	cLog(lsINFO) << "Done.";
 }
 
 void Application::sweep()

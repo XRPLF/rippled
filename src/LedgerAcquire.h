@@ -9,6 +9,7 @@
 #include <boost/function.hpp>
 #include <boost/asio.hpp>
 #include <boost/thread/mutex.hpp>
+#include <boost/unordered_map.hpp>
 #include <boost/weak_ptr.hpp>
 
 #include "Ledger.h"
@@ -28,7 +29,7 @@ protected:
 
 	boost::recursive_mutex					mLock;
 	boost::asio::deadline_timer				mTimer;
-	std::vector< boost::weak_ptr<Peer> >	mPeers;
+	boost::unordered_map<uint64, int>		mPeers;
 
 	PeerSet(const uint256& hash, int interval);
 	virtual ~PeerSet() { ; }
@@ -53,7 +54,7 @@ public:
 
 protected:
 	virtual void newPeer(Peer::ref) = 0;
-	virtual void onTimer(void) = 0;
+	virtual void onTimer(bool progress) = 0;
 	virtual boost::weak_ptr<PeerSet> pmDowncast() = 0;
 
 	void setComplete()					{ mComplete = true; }
@@ -76,7 +77,7 @@ protected:
 	std::vector< boost::function<void (LedgerAcquire::pointer)> > mOnComplete;
 
 	void done();
-	void onTimer();
+	void onTimer(bool progress);
 
 	void newPeer(Peer::ref peer) { trigger(peer, false); }
 

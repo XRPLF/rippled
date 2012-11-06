@@ -62,7 +62,8 @@ class Application
 	ConnectionPool			mConnectionPool;
 	PeerDoor*				mPeerDoor;
 	RPCDoor*				mRPCDoor;
-	WSDoor*					mWSDoor;
+	WSDoor*					mWSPublicDoor;
+	WSDoor*					mWSPrivateDoor;
 
 	uint256					mNonce256;
 	std::size_t				mNonceST;

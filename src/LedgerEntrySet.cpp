@@ -860,8 +860,6 @@ uint32 LedgerEntrySet::rippleTransferRate(const uint160& uIssuerID)
 		% !!sleAccount
 		% (uQuality/1000000000.0));
 
-	assert(sleAccount);
-
 	return uQuality;
 }
 

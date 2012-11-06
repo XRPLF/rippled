@@ -1172,6 +1172,10 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 		map = theApp->getOPs().getTXMap(txHash);
 		if (!map)
 		{
+			if (packet.has_querytype() && !packet.has_requestcookie())
+			{
+				// WRITEME: try to route
+			}
 			cLog(lsERROR) << "We do not have the map our peer wants";
 			punishPeer(PP_INVALID_REQUEST);
 			return;
@@ -1324,6 +1328,11 @@ void Peer::recvLedger(ripple::TMLedgerData& packet)
 		cLog(lsWARNING) << "Ledger/TXset data with no nodes";
 		punishPeer(PP_INVALID_REQUEST);
 		return;
+	}
+
+	if (packet.has_requestcookie())
+	{
+		// WRITEME: Route to original requester
 	}
 
 	if (packet.type() == ripple::liTS_CANDIDATE)

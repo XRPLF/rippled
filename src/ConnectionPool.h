@@ -19,7 +19,7 @@ private:
     boost::mutex	mPeerLock;
     uint64			mLastPeer;
 
-	typedef std::pair<RippleAddress, Peer::pointer>	naPeer;
+	typedef std::pair<RippleAddress, Peer::pointer>		naPeer;
 	typedef std::pair<ipPort, Peer::pointer>			pipPeer;
 
 	// Peers we are connecting with and non-thin peers we are connected to.
@@ -32,6 +32,9 @@ private:
 	// Non-thin peers which we are connected to.
 	// Peers we have the public key for.
     boost::unordered_map<RippleAddress, Peer::pointer>	mConnectedMap;
+
+    // Connections with have a 64-bit identifier
+    boost::unordered_map<uint64, Peer::pointer>			mPeerIdMap;
 
     boost::asio::ssl::context							mCtx;
 
@@ -94,6 +97,8 @@ public:
 
 	// Peer 64-bit ID function
 	uint64 assignPeerId();
+	Peer::pointer getPeerById(const uint64& id);
+	bool hasPeer(const uint64& id);
 
 	//
 	// Scanning

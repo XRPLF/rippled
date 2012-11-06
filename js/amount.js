@@ -408,6 +408,10 @@ Amount.prototype.canonicalize = function() {
   return this;
 };
 
+Amount.prototype.is_native = function () {
+  return this.is_native;
+};
+
 // Return a new value.
 Amount.prototype.negate = function () {
   return this.clone('NEGATE');

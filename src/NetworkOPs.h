@@ -74,8 +74,8 @@ protected:
 
 	// XXX Split into more locks.
     boost::interprocess::interprocess_upgradable_mutex	mMonitorLock;
-	subInfoMapType										mSubAccount; 
-	subInfoMapType										mSubRTAccount; 
+	subInfoMapType										mSubAccount;
+	subInfoMapType										mSubRTAccount;
 	subSubmitMapType									mSubmitMap;
 
 	boost::unordered_set<InfoSub*>						mSubLedger;				// accepted ledgers
@@ -111,11 +111,12 @@ public:
 		return mMode >= omTRACKING;
 	}
 
+	Ledger::pointer	getClosedLedger()						{ return mLedgerMaster->getClosedLedger(); }
 	Ledger::pointer	getCurrentLedger()						{ return mLedgerMaster->getCurrentLedger(); }
 	Ledger::pointer	getLedgerByHash(const uint256& hash)	{ return mLedgerMaster->getLedgerByHash(hash); }
 	Ledger::pointer	getLedgerBySeq(const uint32 seq)		{ return mLedgerMaster->getLedgerBySeq(seq); }
 
-	uint256					getClosedLedger()
+	uint256			getClosedLedgerHash()
 		{ return mLedgerMaster->getClosedLedger()->getHash(); }
 
 	SLE::pointer getSLE(Ledger::pointer lpLedger, const uint256& uHash) { return lpLedger->getSLE(uHash); }
@@ -224,10 +225,10 @@ public:
 	void subAccount(InfoSub* ispListener, const boost::unordered_set<RippleAddress>& vnaAccountIDs,bool rt);
 	void unsubAccount(InfoSub* ispListener, const boost::unordered_set<RippleAddress>& vnaAccountIDs,bool rt);
 
-	bool subLedger(InfoSub* ispListener);
+	bool subLedger(InfoSub* ispListener, Json::Value& jvResult);
 	bool unsubLedger(InfoSub* ispListener);
 
-	bool subServer(InfoSub* ispListener);
+	bool subServer(InfoSub* ispListener, Json::Value& jvResult);
 	bool unsubServer(InfoSub* ispListener);
 
 	bool subTransactions(InfoSub* ispListener);

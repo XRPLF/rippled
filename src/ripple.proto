@@ -236,13 +236,18 @@ enum TMLedgerType {
 	ltCLOSED   		= 2;
 }
 
+enum TMQueryType {
+	qtINDIRECT		= 0;
+}
+
 message TMGetLedger {
 	required TMLedgerInfoType itype	= 1;
 	optional TMLedgerType ltype		= 2;
 	optional bytes ledgerHash		= 3;	// Can also be the transaction set hash if liTS_CANDIDATE
 	optional uint32 ledgerSeq		= 4;
 	repeated bytes nodeIDs			= 5;
-	optional uint32 requestCookie	= 6;
+	optional uint64 requestCookie	= 6;
+	optional TMQueryType queryType	= 7;
 }
 
 enum TMReplyError {
