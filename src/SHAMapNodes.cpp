@@ -18,10 +18,12 @@
 
 std::string SHAMapNode::getString() const
 {
+	static boost::format NodeID("NodeID(%s,%s)");
+
 	if ((mDepth == 0) && (mNodeID.isZero()))
 		return "NodeID(root)";
 
-	return str(boost::format("NodeID(%s,%s)")
+	return str(NodeID
 			% boost::lexical_cast<std::string>(mDepth)
 			% mNodeID.GetHex());
 }
