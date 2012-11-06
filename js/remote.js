@@ -14,9 +14,6 @@
 // instances of this class for network access.
 //
 
-// Node
-var util	  = require('util');
-
 // npm
 var WebSocket = require('ws');
 
@@ -317,7 +314,7 @@ Remote.prototype._connect_start = function () {
   // with self-signed certs as the user must have pre-approved the self-signed certs.
 
   var self = this;
-  var url  = util.format("ws://%s:%s", this.websocket_ip, this.websocket_port);
+  var url  = "ws://" + this.websocket_ip + ":" + this.websocket_port;
   
   if (this.trace) console.log("remote: connect: %s", url);
   

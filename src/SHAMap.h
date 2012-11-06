@@ -259,7 +259,7 @@ protected:
 
 public:
 	SHAMapMissingNode(SHAMapType t, const SHAMapNode& nodeID, const uint256& nodeHash) :
-		std::runtime_error(nodeID.getString()), mType(t), mNodeID(nodeID), mNodeHash(nodeHash)
+		std::runtime_error("SHAMapMissingNode"), mType(t), mNodeID(nodeID), mNodeHash(nodeHash)
 	{ ; }
 
 	SHAMapMissingNode(SHAMapType t, const SHAMapNode& nodeID, const uint256& nodeHash, const uint256& targetIndex) :
