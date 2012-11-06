@@ -90,6 +90,8 @@ void TransactionAcquire::trigger(Peer::ref peer, bool timer)
 		ripple::TMGetLedger tmGL;
 		tmGL.set_ledgerhash(mHash.begin(), mHash.size());
 		tmGL.set_itype(ripple::liTS_CANDIDATE);
+		if (getTimeouts() != 0)
+			tmGL.set_querytype(ripple::qtINDIRECT);
 		*(tmGL.add_nodeids()) = SHAMapNode().getRawString();
 		sendRequest(tmGL, peer);
 	}
@@ -113,6 +115,8 @@ void TransactionAcquire::trigger(Peer::ref peer, bool timer)
 			ripple::TMGetLedger tmGL;
 			tmGL.set_ledgerhash(mHash.begin(), mHash.size());
 			tmGL.set_itype(ripple::liTS_CANDIDATE);
+			if (getTimeouts() != 0)
+				tmGL.set_querytype(ripple::qtINDIRECT);
 			BOOST_FOREACH(SHAMapNode& it, nodeIDs)
 				*(tmGL.add_nodeids()) = it.getRawString();
 			sendRequest(tmGL, peer);
