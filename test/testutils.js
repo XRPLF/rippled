@@ -1,8 +1,8 @@
 var async   = require("async");
 // var buster  = require("buster");
 
-var Amount  = require("../js/amount.js").Amount;
-var Remote  = require("../js/remote.js").Remote;
+var Amount  = require("../src/js/amount.js").Amount;
+var Remote  = require("../src/js/remote.js").Remote;
 var Server  = require("./server.js").Server;
 
 var config  = require("./config.js");

@@ -40,7 +40,7 @@ def ProtocEmitter(target, source, env):
     source = source_with_corrected_path
     
     for src in source:
-        modulename = os.path.splitext(src)[0]
+        modulename = os.path.splitext(os.path.basename(src))[0]
 
         if env['PROTOCOUTDIR']:            
             base = os.path.join(env['PROTOCOUTDIR'] , modulename)
@@ -56,8 +56,8 @@ def ProtocEmitter(target, source, env):
         pass
 
     # XXX KLUDGE: Force things to be right.
-    env['PROTOCOUTDIR']	    = 'obj/src'
-    env['PROTOCPROTOPATH']  = ['src']
+    env['PROTOCOUTDIR']	    = 'build/proto'
+    env['PROTOCPROTOPATH']  = ['src/cpp/ripple']
 
     #~ print "PROTOC SOURCE:", [str(s) for s in source]
     #~ print "PROTOC TARGET:", [str(s) for s in target]

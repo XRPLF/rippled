@@ -8,7 +8,7 @@
 #include <boost/make_shared.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include "../obj/src/ripple.pb.h"
+#include "ripple.pb.h"
 #include "PackedMessage.h"
 #include "Ledger.h"
 #include "Transaction.h"

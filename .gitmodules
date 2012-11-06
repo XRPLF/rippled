@@ -1,9 +1,9 @@
-[submodule "websocketpp"]
-	path = websocketpp
+[submodule "src/cpp/websocketpp"]
+	path = src/cpp/websocketpp
 	url = https://github.com/zaphoyd/websocketpp.git
-[submodule "js/cryptojs"]
-	path = js/cryptojs
+[submodule "src/js/cryptojs"]
+	path = src/js/cryptojs
 	url = git://github.com/gwjjeff/cryptojs.git
-[submodule "js/sjcl"]
-	path = js/sjcl
+[submodule "src/js/sjcl"]
+	path = src/js/sjcl
 	url = git://github.com/bitwiseshiftleft/sjcl.git

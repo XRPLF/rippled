@@ -1,7 +1,7 @@
 var buster  = require("buster");
 
 var Server  = require("./server.js").Server;
-var Remote  = require("../js/remote.js").Remote;
+var Remote  = require("../src/js/remote.js").Remote;
 
 // How long to wait for server to start.
 var serverDelay = 1500;

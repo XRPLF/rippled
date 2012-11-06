@@ -14,7 +14,7 @@
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/cstdint.hpp>
 
-#include "../obj/src/ripple.pb.h"
+#include "ripple.pb.h"
 
 // The header size for packed messages
 // len(4)+type(2)

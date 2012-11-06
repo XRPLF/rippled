@@ -1,12 +1,12 @@
 var buster  = require("buster");
 
-var jsbn    = require('../js/jsbn.js');
+var jsbn    = require('../src/js/jsbn.js');
 var BigInteger	= jsbn.BigInteger;
 var nbi		= jsbn.nbi;
 
-var amount  = require("../js/amount.js");
-var Amount  = require("../js/amount.js").Amount;
-var UInt160 = require("../js/amount.js").UInt160;
+var amount  = require("../src/js/amount.js");
+var Amount  = require("../src/js/amount.js").Amount;
+var UInt160 = require("../src/js/amount.js").UInt160;
 
 var config  = require('./config.js');
 

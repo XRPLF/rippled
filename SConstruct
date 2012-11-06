@@ -1,5 +1,5 @@
 #
-# Newcoin - SConstruct
+# Ripple - SConstruct
 #
 
 import glob
@@ -37,8 +37,8 @@ else:
 #
 # Put objects files in their own directory.
 #
-for dir in ['src', 'database', 'json', 'websocketpp']:
-	VariantDir('obj/'+dir, dir, duplicate=0)
+for dir in ['ripple', 'database', 'json', 'websocketpp']:
+	VariantDir('build/obj/'+dir, 'src/cpp/'+dir, duplicate=0)
 
 # Use openssl
 env.ParseConfig('pkg-config --cflags --libs openssl')
@@ -68,22 +68,23 @@ if OSX:
 	env.Append(LINKFLAGS = ['-L/usr/local/Cellar/openssl/1.0.1c/lib'])
 	env.Append(CXXFLAGS = ['-I/usr/local/Cellar/openssl/1.0.1c/include'])
 
-DB_SRCS   = glob.glob('database/*.c') + glob.glob('database/*.cpp')
-JSON_SRCS = glob.glob('json/*.cpp')
+DB_SRCS   = glob.glob('src/cpp/database/*.c') + glob.glob('src/cpp/database/*.cpp')
+JSON_SRCS = glob.glob('src/cpp/json/*.cpp')
 
 WEBSOCKETPP_SRCS = [
-	'websocketpp/src/base64/base64.cpp',
-	'websocketpp/src/md5/md5.c',
-	'websocketpp/src/messages/data.cpp',
-	'websocketpp/src/network_utilities.cpp',
-	'websocketpp/src/processors/hybi_header.cpp',
-	'websocketpp/src/processors/hybi_util.cpp',
-	'websocketpp/src/sha1/sha1.cpp',
-	'websocketpp/src/uri.cpp'
+	'src/cpp/websocketpp/src/base64/base64.cpp',
+	'src/cpp/websocketpp/src/md5/md5.c',
+	'src/cpp/websocketpp/src/messages/data.cpp',
+	'src/cpp/websocketpp/src/network_utilities.cpp',
+	'src/cpp/websocketpp/src/processors/hybi_header.cpp',
+	'src/cpp/websocketpp/src/processors/hybi_util.cpp',
+	'src/cpp/websocketpp/src/sha1/sha1.cpp',
+	'src/cpp/websocketpp/src/uri.cpp'
 	]
 
-NEWCOIN_SRCS = glob.glob('src/*.cpp')
-PROTO_SRCS = env.Protoc([], 'src/ripple.proto', PROTOCOUTDIR='obj', PROTOCPYTHONOUTDIR=None)
+RIPPLE_SRCS = glob.glob('src/cpp/ripple/*.cpp')
+PROTO_SRCS = env.Protoc([], 'src/cpp/ripple/ripple.proto', PROTOCOUTDIR='build/proto', PROTOCPYTHONOUTDIR=None)
+env.Append(CXXFLAGS = ['-Ibuild/proto'])
 
 env.Clean(PROTO_SRCS, 'site_scons/site_tools/protoc.pyc')
 
@@ -91,21 +92,21 @@ env.Clean(PROTO_SRCS, 'site_scons/site_tools/protoc.pyc')
 UNUSED_SRCS = []
 
 for file in UNUSED_SRCS:
-	NEWCOIN_SRCS.remove(file)
+	RIPPLE_SRCS.remove(file)
 
-NEWCOIN_SRCS += DB_SRCS + JSON_SRCS + WEBSOCKETPP_SRCS
+RIPPLE_SRCS += DB_SRCS + JSON_SRCS + WEBSOCKETPP_SRCS
 
 # Derive the object files from the source files.
-NEWCOIN_OBJS = []
+RIPPLE_OBJS = []
 
-for file in NEWCOIN_SRCS:
-	NEWCOIN_OBJS.append('obj/' + file)
+RIPPLE_OBJS += PROTO_SRCS
 
-NEWCOIN_OBJS += PROTO_SRCS
+for file in RIPPLE_SRCS:
+	RIPPLE_OBJS.append('build/obj/' + file[8:])
 
-rippled = env.Program('rippled', NEWCOIN_OBJS)
+rippled = env.Program('build/rippled', RIPPLE_OBJS)
 
-tags = env.CTags('obj/tags', NEWCOIN_SRCS)
+tags = env.CTags('build/obj/tags', RIPPLE_SRCS)
 
 Default(rippled, tags)
 

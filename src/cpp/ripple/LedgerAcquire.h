@@ -16,7 +16,7 @@
 #include "Peer.h"
 #include "TaggedCache.h"
 #include "InstanceCounter.h"
-#include "../obj/src/ripple.pb.h"
+#include "ripple.pb.h"
 
 DEFINE_INSTANCE(PeerSet);
 
