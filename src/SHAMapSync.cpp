@@ -215,7 +215,10 @@ bool SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigned cha
 { // return value: true=okay, false=error
 	assert(!node.isRoot());
 	if (!isSynching())
-		return false;
+	{
+		cLog(lsINFO) << "AddKnownNode while not synching";
+		return true;
+	}
 
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
@@ -224,7 +227,10 @@ bool SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigned cha
 
 	std::stack<SHAMapTreeNode::pointer> stack = getStack(node.getNodeID(), true, true);
 	if (stack.empty())
+	{
+		cLog(lsWARNING) << "AddKnownNode with empty stack";
 		return false;
+	}
 
 	SHAMapTreeNode::pointer iNode = stack.top();
 	if (!iNode)
@@ -241,7 +247,7 @@ bool SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigned cha
 
 	if (iNode->getDepth() != (node.getDepth() - 1))
 	{ // Either this node is broken or we didn't request it (yet)
-		cLog(lsINFO) << "unable to hook node " << node;
+		cLog(lsWARNING) << "unable to hook node " << node;
 		cLog(lsINFO) << " stuck at " << *iNode;
 		cLog(lsINFO) << "got depth=" << node.getDepth() << ", walked to= " << iNode->getDepth();
 		return false;
@@ -254,7 +260,11 @@ bool SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigned cha
 		return false;
 	}
 	uint256 hash = iNode->getChildHash(branch);
-	if (!hash) return false;
+	if (!hash)
+	{
+		cLog(lsWARNING) << "AddKnownNode for empty branch";
+		return false;
+	}
 
 	SHAMapTreeNode::pointer newNode = boost::make_shared<SHAMapTreeNode>(node, rawNode, mSeq, snfWIRE);
 	if (hash != newNode->getNodeHash()) // these aren't the droids we're looking for
@@ -293,6 +303,7 @@ bool SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigned cha
 			}
 		iNode->setFullBelow();
 	} while (!stack.empty());
+
 	if (root->isFullBelow())
 		clearSynching();
 	return true;

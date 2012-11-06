@@ -543,7 +543,7 @@ bool LedgerAcquireMaster::gotLedgerData(ripple::TMLedgerData& packet, Peer::ref 
 		return false;
 	}
 	memcpy(hash.begin(), packet.ledgerhash().data(), 32);
-	cLog(lsTRACE) << "Got data for acquiring ledger: " << hash;
+	cLog(lsTRACE) << "Got data ( " << packet.nodes().size() << ") for acquiring ledger: " << hash;
 
 	LedgerAcquire::pointer ledger = find(hash);
 	if (!ledger)
