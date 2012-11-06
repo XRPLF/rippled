@@ -285,6 +285,7 @@ void WSConnection::doRPC(Json::Value& jvResult, Json::Value& jvRequest)
 			jvRequest["params"],
 			mHandler->getPublic() ? RPCHandler::GUEST : RPCHandler::ADMIN);
 
+    jvResult["type"] = "rpc_response";
 	}else jvResult["error"]	= "fieldNotCommand";
 
 }
