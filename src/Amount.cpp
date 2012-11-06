@@ -892,8 +892,16 @@ STAmount STAmount::multiply(const STAmount& v1, const STAmount& v2, const uint16
 	if (v1.isZero() || v2.isZero())
 		return STAmount(uCurrencyID, uIssuerID);
 
-	if (v1.mIsNative && v2.mIsNative) // FIXME: overflow
-		return STAmount(v1.getFName(), v1.getSNValue() * v2.getSNValue());
+	if (v1.mIsNative && v2.mIsNative)
+	{
+		uint64 minV = (v1.getSNValue() < v2.getSNValue()) ? v1.getSNValue() : v2.getSNValue();
+		uint64 maxV = (v1.getSNValue() < v2.getSNValue()) ? v2.getSNValue() : v1.getSNValue();
+		if (minV > 3000000000) // sqrt(cMaxNative)
+			throw std::runtime_error("Native value overflow");
+		if (((maxV >> 32) * minV) > 2095475792) // cMaxNative / 2^32
+			throw std::runtime_error("Native value overflow");
+		return STAmount(v1.getFName(), minV * maxV);
+	}
 
 	uint64 value1 = v1.mValue, value2 = v2.mValue;
 	int offset1 = v1.mOffset, offset2 = v2.mOffset;
