@@ -68,7 +68,7 @@ Request.prototype.ledger_choose = function (current) {
     this.message.ledger_index = this.remote.ledger_current_index;
   }
   else {
-    this.message.ledger	      = this.remote.ledger_closed;
+    this.message.ledger_hash  = this.remote.ledger_hash;
   }
 
   return this;
@@ -77,8 +77,8 @@ Request.prototype.ledger_choose = function (current) {
 // Set the ledger for a request.
 // - ledger_entry
 // - transaction_entry
-Request.prototype.ledger_closed = function (ledger) {
-  this.message.ledger_closed  = ledger;
+Request.prototype.ledger_hash = function (h) {
+  this.message.ledger_hash  = n;
 
   return this;
 };
@@ -154,7 +154,7 @@ var Remote = function (trusted, websocket_ip, websocket_port, trace) {
   this.websocket_port       = websocket_port;
   this.id                   = 0;
   this.trace                = trace;
-  this.ledger_closed        = undefined;
+  this.ledger_hash	    = undefined;
   this.ledger_current_index = undefined;
   this.stand_alone          = undefined;
   this.online_target	    = false;
@@ -419,10 +419,11 @@ Remote.prototype._connect_message = function (ws, json, flags) {
 	// XXX Be more defensive fields could be missing or of wrong type.
 	// YYY Might want to do some cache management.
 
-	this.ledger_closed	  = message.ledger_closed;
-	this.ledger_current_index = message.ledger_closed_index + 1;
+	this.ledger_time	  = message.ledger_time;
+	this.ledger_hash	  = message.ledger_hash;
+	this.ledger_current_index = message.ledger_index + 1;
 
-	this.emit('ledger_closed', message.ledger_closed, message.ledger_closed_index);
+	this.emit('ledger_closed', message.ledger_hash, message.ledger_index);
 	break;
       
       default:
@@ -475,16 +476,25 @@ Remote.prototype.request = function (request) {
   }
 };
 
-Remote.prototype.request_ledger_closed = function () {
+// Only for unit testing.
+Remote.prototype.request_ledger_hash = function () {
   assert(this.trusted);   // If not trusted, need to check proof.
 
-  return new Request(this, 'ledger_closed');
+  var request = new Request(this, 'rpc');
+  
+  request.rpc_command = 'ledger_closed';
+
+  return request;
 };
 
 // Get the current proposed ledger entry.  May be closed (and revised) at any time (even before returning).
-// Only for use by unit tests.
+// Only for unit testing.
 Remote.prototype.request_ledger_current = function () {
-  return new Request(this, 'ledger_current');
+  var request = new Request(this, 'rpc');
+  
+  request.rpc_command = 'ledger_current';
+
+  return request;
 };
 
 // --> ledger : optional
@@ -500,7 +510,7 @@ Remote.prototype.request_ledger_entry = function (type) {
 
   // Transparent caching:
   request.on('request', function (remote) {	      // Intercept default request.
-    if (this.ledger_closed) {
+    if (this.ledger_hash) {
       // XXX Add caching.
     }
     // else if (req.ledger_index)
@@ -542,6 +552,14 @@ Remote.prototype.request_ledger_entry = function (type) {
       }
     }
   });
+
+  return request;
+};
+
+Remote.prototype.request_subscribe = function () {
+  var request = new Request(this, 'subscribe');
+
+  request.message.streams = [ 'ledger' ];
 
   return request;
 };
@@ -624,15 +642,16 @@ Remote.prototype.submit = function (transaction) {
 Remote.prototype._server_subscribe = function () {
   var self  = this;
 
-  (new Request(this, 'server_subscribe'))
+  this.request_subscribe()
     .on('success', function (message) {
 	self.stand_alone          = !!message.stand_alone;
 
-	if (message.ledger_closed && message.ledger_current_index) {
-	  self.ledger_closed        = message.ledger_closed;
-	  self.ledger_current_index = message.ledger_current_index;
+	if (message.ledger_hash && message.ledger_index) {
+	  self.ledger_time        = message.ledger_time;
+	  self.ledger_hash        = message.ledger_hash;
+	  self.ledger_current_index = message.ledger_index+1;
 
-	  self.emit('ledger_closed', self.ledger_closed, self.ledger_current_index-1);
+	  self.emit('ledger_closed', self.ledger_hash, self.ledger_current_index-1);
 	}
 
 	self.emit('subscribed');
@@ -645,9 +664,9 @@ Remote.prototype._server_subscribe = function () {
 };
 
 // Ask the remote to accept the current ledger.
-// - To be notified when the ledger is accepted, server_subscribe() then listen to 'ledger_closed' events.
+// - To be notified when the ledger is accepted, server_subscribe() then listen to 'ledger_hash' events.
 // A good way to be notified of the result of this is:
-//    remote.once('ledger_closed', function (ledger_closed, ledger_closed_index) { ... } );
+//    remote.once('ledger_closed', function (ledger_closed, ledger_index) { ... } );
 Remote.prototype.ledger_accept = function () {
   if (this.stand_alone || undefined === this.stand_alone)
   {
@@ -926,7 +945,7 @@ Transaction.prototype.set_state = function (state) {
 };
 
 // Submit a transaction to the network.
-// XXX Don't allow a submit without knowing ledger_closed_index.
+// XXX Don't allow a submit without knowing ledger_index.
 // XXX Have a network canSubmit(), post events for following.
 // XXX Also give broader status for tracking through network disconnects.
 Transaction.prototype.submit = function () {
@@ -960,12 +979,12 @@ Transaction.prototype.submit = function () {
 
     this.submit_index = this.remote.ledger_current_index;
 
-    var	on_ledger_closed = function (ledger_closed, ledger_closed_index) {
+    var	on_ledger_closed = function (ledger_hash, ledger_index) {
 	var stop  = false;
 
 // XXX make sure self.hash is available.
 	self.remote.request_transaction_entry(self.hash)
-	  .ledger_closed(ledger_closed)
+	  .ledger_closed(ledger_hash)
 	  .on('success', function (message) {
 	      self.set_state(message.metadata.TransactionResult);
 	      self.emit('final', message);
@@ -973,12 +992,12 @@ Transaction.prototype.submit = function () {
 	  .on('error', function (message) {
 	      if ('remoteError' === message.error
 		&& 'transactionNotFound' === message.remote.error) {
-		if (self.submit_index + SUBMIT_LOST < ledger_closed_index) {
+		if (self.submit_index + SUBMIT_LOST < ledger_index) {
 		  self.set_state('client_lost');	// Gave up.
 		  self.emit('lost');
 		  stop  = true;
 		}
-		else if (self.submit_index + SUBMIT_MISSING < ledger_closed_index) {
+		else if (self.submit_index + SUBMIT_MISSING < ledger_index) {
 		  self.set_state('client_missing');    // We don't know what happened to transaction, still might find.
 		  self.emit('pending');
 		}
