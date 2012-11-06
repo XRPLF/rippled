@@ -58,8 +58,8 @@ bool TransactionMaster::canonicalize(Transaction::pointer& txn, bool may_be_new)
 	uint256 tid = txn->getID();
 	if (!tid) return false;
 	if (mCache.canonicalize(tid, txn)) return true;
-	if (may_be_new) // FIXME: Don't dispatch to main pool
-		theApp->getIOService().post(boost::bind(&Transaction::saveTransaction, txn));
+	if (may_be_new)
+		theApp->getAuxService().post(boost::bind(&Transaction::saveTransaction, txn));
 	return false;
 }
 // vim:ts=4
