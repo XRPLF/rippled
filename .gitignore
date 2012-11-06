@@ -26,4 +26,3 @@ tmp
 
 # Ignore database directory.
 db/*.db
-newcoind
