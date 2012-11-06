@@ -38,7 +38,7 @@ buster.testCase("Offer tests", {
 	  },
 	  function (m, callback) {
 	    self.remote.transaction()
-	      .offer_cancel("root", m.transaction.Sequence)
+	      .offer_cancel("root", m.tx_json.Sequence)
 	      .on('proposed', function (m) {
 		  // console.log("PROPOSED: offer_cancel: %s", JSON.stringify(m));
 		  callback(m.result != 'tesSUCCESS', m);
@@ -54,8 +54,8 @@ buster.testCase("Offer tests", {
 	  },
 	  function (m, callback) {
 	    self.remote
-	      .once('ledger_closed', function (ledger_closed, ledger_closed_index) {
-		  // console.log("LEDGER_CLOSED: %d: %s", ledger_closed_index, ledger_closed);
+	      .once('ledger_closed', function (ledger_hash, ledger_index) {
+		  // console.log("LEDGER_CLOSED: %d: %s", ledger_index, ledger_hash);
 		})
 	      .ledger_accept();
 	  }
@@ -80,7 +80,7 @@ buster.testCase("Offer tests", {
 	      .on('proposed', function (m) {
 		  // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
 
-		  offer_seq = m.transaction.Sequence;
+		  offer_seq = m.tx_json.Sequence;
 
 		  callback(m.result != 'tesSUCCESS');
 		})
@@ -98,8 +98,8 @@ buster.testCase("Offer tests", {
 	  function (callback) {
 	    if (!final_create) {
 	      self.remote
-		.once('ledger_closed', function (ledger_closed, ledger_closed_index) {
-		    // console.log("LEDGER_CLOSED: %d: %s", ledger_closed_index, ledger_closed);
+		.once('ledger_closed', function (ledger_hash, ledger_index) {
+		    // console.log("LEDGER_CLOSED: %d: %s", ledger_index, ledger_hash);
 
 		  })
 		.ledger_accept();
@@ -130,16 +130,16 @@ buster.testCase("Offer tests", {
 	  // See if ledger_accept will crash.
 	  function (callback) {
 	    self.remote
-	      .once('ledger_closed', function (ledger_closed, ledger_closed_index) {
-		  // console.log("LEDGER_CLOSED: A: %d: %s", ledger_closed_index, ledger_closed);
+	      .once('ledger_closed', function (ledger_hash, ledger_index) {
+		  // console.log("LEDGER_CLOSED: A: %d: %s", ledger_index, ledger_hash);
 		  callback();
 		})
 	      .ledger_accept();
 	  },
 	  function (callback) {
 	    self.remote
-	      .once('ledger_closed', function (ledger_closed, ledger_closed_index) {
-		  // console.log("LEDGER_CLOSED: B: %d: %s", ledger_closed_index, ledger_closed);
+	      .once('ledger_closed', function (ledger_hash, ledger_index) {
+		  // console.log("LEDGER_CLOSED: B: %d: %s", ledger_index, ledger_hash);
 		  callback();
 		})
 	      .ledger_accept();
@@ -177,7 +177,7 @@ buster.testCase("Offer tests", {
 	      .on('proposed', function (m) {
 		  // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
 
-		  offer_seq = m.transaction.Sequence;
+		  offer_seq = m.tx_json.Sequence;
 
 		  callback(m.result != 'tesSUCCESS');
 		})
@@ -195,8 +195,8 @@ buster.testCase("Offer tests", {
 	  function (callback) {
 	    if (!final_create) {
 	      self.remote
-		.once('ledger_closed', function (ledger_closed, ledger_closed_index) {
-		    // console.log("LEDGER_CLOSED: %d: %s", ledger_closed_index, ledger_closed);
+		.once('ledger_closed', function (ledger_hash, ledger_index) {
+		    // console.log("LEDGER_CLOSED: %d: %s", ledger_index, ledger_hash);
 
 		  })
 		.ledger_accept();
@@ -227,16 +227,16 @@ buster.testCase("Offer tests", {
 	  // See if ledger_accept will crash.
 	  function (callback) {
 	    self.remote
-	      .once('ledger_closed', function (ledger_closed, ledger_closed_index) {
-		  // console.log("LEDGER_CLOSED: A: %d: %s", ledger_closed_index, ledger_closed);
+	      .once('ledger_closed', function (ledger_hash, ledger_index) {
+		  // console.log("LEDGER_CLOSED: A: %d: %s", ledger_index, ledger_hash);
 		  callback();
 		})
 	      .ledger_accept();
 	  },
 	  function (callback) {
 	    self.remote
-	      .once('ledger_closed', function (ledger_closed, ledger_closed_index) {
-		  // console.log("LEDGER_CLOSED: B: %d: %s", ledger_closed_index, ledger_closed);
+	      .once('ledger_closed', function (ledger_hash, ledger_index) {
+		  // console.log("LEDGER_CLOSED: B: %d: %s", ledger_index, ledger_hash);
 		  callback();
 		})
 	      .ledger_accept();
@@ -273,7 +273,7 @@ buster.testCase("Offer tests", {
 	  // Past sequence but wrong
 	  function (m, callback) {
 	    self.remote.transaction()
-	      .offer_cancel("root", m.transaction.Sequence)
+	      .offer_cancel("root", m.tx_json.Sequence)
 	      .on('proposed', function (m) {
 		  // console.log("PROPOSED: offer_cancel past: %s", JSON.stringify(m));
 		  callback(m.result != 'tesSUCCESS', m);
@@ -283,7 +283,7 @@ buster.testCase("Offer tests", {
 	  // Same sequence
 	  function (m, callback) {
 	    self.remote.transaction()
-	      .offer_cancel("root", m.transaction.Sequence+1)
+	      .offer_cancel("root", m.tx_json.Sequence+1)
 	      .on('proposed', function (m) {
 		  // console.log("PROPOSED: offer_cancel same: %s", JSON.stringify(m));
 		  callback(m.result != 'temBAD_SEQUENCE', m);
@@ -296,7 +296,7 @@ buster.testCase("Offer tests", {
 	    self.remote.set_account_seq("root", self.remote.account_seq("root")-1);
 
 	    self.remote.transaction()
-	      .offer_cancel("root", m.transaction.Sequence+2)
+	      .offer_cancel("root", m.tx_json.Sequence+2)
 	      .on('proposed', function (m) {
 		  // console.log("ERROR: offer_cancel future: %s", JSON.stringify(m));
 		  callback(m.result != 'temBAD_SEQUENCE');
@@ -306,16 +306,16 @@ buster.testCase("Offer tests", {
 	  // See if ledger_accept will crash.
 	  function (callback) {
 	    self.remote
-	      .once('ledger_closed', function (ledger_closed, ledger_closed_index) {
-		  // console.log("LEDGER_CLOSED: A: %d: %s", ledger_closed_index, ledger_closed);
+	      .once('ledger_closed', function (ledger_hash, ledger_index) {
+		  // console.log("LEDGER_CLOSED: A: %d: %s", ledger_index, ledger_hash);
 		  callback();
 		})
 	      .ledger_accept();
 	  },
 	  function (callback) {
 	    self.remote
-	      .once('ledger_closed', function (ledger_closed, ledger_closed_index) {
-		  // console.log("LEDGER_CLOSED: B: %d: %s", ledger_closed_index, ledger_closed);
+	      .once('ledger_closed', function (ledger_hash, ledger_index) {
+		  // console.log("LEDGER_CLOSED: B: %d: %s", ledger_index, ledger_hash);
 		  callback();
 		})
 	      .ledger_accept();
