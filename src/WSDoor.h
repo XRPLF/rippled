@@ -21,16 +21,19 @@ class WSDoor
 private:
 	websocketpp::WSDOOR_SERVER*	mEndpoint;
 	boost::thread*				mThread;
+	bool						mPublic;
+	std::string					mIp;
+	int							mPort;
 
 	void		startListening();
 
 public:
 
-	WSDoor() : mEndpoint(0), mThread(0) { ; }
+	WSDoor(const std::string& strIp, int iPort, bool bPublic) : mEndpoint(0), mThread(0), mPublic(bPublic), mIp(strIp), mPort(iPort) { ; }
 
 	void		stop();
 
-	static WSDoor* createWSDoor();
+	static WSDoor* createWSDoor(const std::string& strIp, const int iPort, bool bPublic);
 };
 
 #endif

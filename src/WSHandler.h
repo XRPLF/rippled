@@ -18,15 +18,18 @@ public:
 	};
 
 private:
-	boost::shared_ptr<boost::asio::ssl::context>		mCtx;
+	boost::shared_ptr<boost::asio::ssl::context>							mCtx;
 
 protected:
-	boost::mutex										mMapLock;
+	boost::mutex															mMapLock;
 	// For each connection maintain an associated object to track subscriptions.
 	boost::unordered_map<connection_ptr, boost::shared_ptr<WSConnection> >	mMap;
+	bool																	mPublic;
 
 public:
-	WSServerHandler(boost::shared_ptr<boost::asio::ssl::context> spCtx) : mCtx(spCtx) {}
+	WSServerHandler(boost::shared_ptr<boost::asio::ssl::context> spCtx, bool bPublic) : mCtx(spCtx), mPublic(bPublic) {}
+
+	bool		getPublic() { return mPublic; };
 
 	boost::shared_ptr<boost::asio::ssl::context> on_tls_init()
 	{
@@ -87,6 +90,8 @@ public:
 		Json::Value		jvRequest;
 		Json::Reader	jrReader;
 
+    cLog(lsDEBUG) << "Ws:: Receiving '" << mpMessage->get_payload() << "'";
+
 		if (mpMessage->get_opcode() != websocketpp::frame::opcode::TEXT)
 		{
 			Json::Value	jvResult(Json::objectValue);
@@ -122,3 +127,5 @@ public:
 };
 
 #endif
+
+// vim:ts=4

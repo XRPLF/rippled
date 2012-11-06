@@ -40,10 +40,6 @@ static DH* handleTmpDh(SSL* ssl, int is_export, int iKeyLength)
 	return 512 == iKeyLength ? theApp->getWallet().getDh512() : theApp->getWallet().getDh1024();
 }
 
-
-
-
-
 void WSDoor::startListening()
 {
 	// Generate a single SSL context for use by all connections.
@@ -58,7 +54,7 @@ void WSDoor::startListening()
 	SSL_CTX_set_tmp_dh_callback(mCtx->native_handle(), handleTmpDh);
 
 	// Construct a single handler for all requests.
-	websocketpp::WSDOOR_SERVER::handler::ptr	handler(new WSServerHandler<websocketpp::WSDOOR_SERVER>(mCtx));
+	websocketpp::WSDOOR_SERVER::handler::ptr	handler(new WSServerHandler<websocketpp::WSDOOR_SERVER>(mCtx, mPublic));
 
 	// Construct a websocket server.
 	mEndpoint		= new websocketpp::WSDOOR_SERVER(handler);
@@ -69,25 +65,22 @@ void WSDoor::startListening()
 	// Call the main-event-loop of the websocket server.
 	mEndpoint->listen(
 		boost::asio::ip::tcp::endpoint(
-		boost::asio::ip::address().from_string(theConfig.WEBSOCKET_IP), theConfig.WEBSOCKET_PORT));
+		boost::asio::ip::address().from_string(mIp), mPort));
 
 	delete mEndpoint;
 }
 
-WSDoor* WSDoor::createWSDoor()
+WSDoor* WSDoor::createWSDoor(const std::string& strIp, const int iPort, bool bPublic)
 {
-	WSDoor*	wdpResult	= new WSDoor();
+	WSDoor*	wdpResult	= new WSDoor(strIp, iPort, bPublic);
 
-	if (!theConfig.WEBSOCKET_IP.empty() && theConfig.WEBSOCKET_PORT)
-	{
-		Log(lsINFO) << "Websocket: Listening: " << theConfig.WEBSOCKET_IP << " " << theConfig.WEBSOCKET_PORT;
+	cLog(lsINFO) <<
+		boost::str(boost::format("Websocket: %s: Listening: %s %d ")
+			% (bPublic ? "Public" : "Private")
+			% strIp
+			% iPort);
 
-		wdpResult->mThread	= new boost::thread(boost::bind(&WSDoor::startListening, wdpResult));
-	}
-	else
-	{
-		Log(lsINFO) << "Websocket: Disabled";
-	}
+	wdpResult->mThread	= new boost::thread(boost::bind(&WSDoor::startListening, wdpResult));
 
 	return wdpResult;
 }

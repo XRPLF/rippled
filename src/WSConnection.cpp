@@ -143,13 +143,13 @@ void WSConnection::doSubscribe(Json::Value& jvResult,  Json::Value& jvRequest)
 					mNetwork.subServer(this);
 				}else if(streamName=="ledger")
 				{
-					mNetwork.subLedger(this);
+					mNetwork.subLedger(this, jvResult);
 				}else if(streamName=="transactions")
 				{
 					mNetwork.subTransactions(this);
 				}else if(streamName=="rt_transactions")
 				{
-					mNetwork.subRTTransactions(this); 
+					mNetwork.subRTTransactions(this);
 				}else
 				{
 					jvResult["error"]	= str(boost::format("Unknown stream: %s") % streamName);
@@ -223,7 +223,7 @@ void WSConnection::doUnsubscribe(Json::Value& jvResult,  Json::Value& jvRequest)
 					mNetwork.unsubTransactions(this);
 				}else if(streamName=="rt_transactions")
 				{
-					mNetwork.unsubRTTransactions(this); 
+					mNetwork.unsubRTTransactions(this);
 				}else
 				{
 					jvResult["error"]	= str(boost::format("Unknown stream: %s") % streamName);
@@ -276,13 +276,14 @@ void WSConnection::doUnsubscribe(Json::Value& jvResult,  Json::Value& jvRequest)
 	}
 }
 
-
-
 void WSConnection::doRPC(Json::Value& jvResult, Json::Value& jvRequest)
 {
 	if (jvRequest.isMember("rpc_command") )
 	{
-		jvResult=theApp->getRPCHandler().doCommand(jvRequest["rpc_command"].asString(),jvRequest["params"],RPCHandler::GUEST);
+		jvResult=theApp->getRPCHandler().doCommand(
+			jvRequest["rpc_command"].asString(),
+			jvRequest["params"],
+			mHandler->getPublic() ? RPCHandler::GUEST : RPCHandler::ADMIN);
 
 	}else jvResult["error"]	= "fieldNotCommand";
 
@@ -293,15 +294,16 @@ void WSConnection::doSubmit(Json::Value& jvResult, Json::Value& jvRequest)
 {
 	if (!jvRequest.isMember("tx_json"))
 	{
-		jvResult["error"]	= "fieldNotFoundTransaction";
-	}else if (!jvRequest.isMember("key"))
+		jvResult["error"]	= "fieldNotFoundTxJson";
+	}else if (!jvRequest.isMember("secret"))
 	{
-		jvResult["error"]	= "fieldNotFoundKey";
-	}else 
+		jvResult["error"]	= "fieldNotFoundSecret";
+	}else
 	{
-		jvResult=theApp->getRPCHandler().handleJSONSubmit(jvRequest["key"].asString(),jvRequest["tx_json"]);
+		jvResult=theApp->getRPCHandler().handleJSONSubmit(jvRequest);
 
 		// TODO: track the transaction mNetwork.subSubmit(this, jvResult["tx hash"] );
 	}
 }
 
+// vim:ts=4

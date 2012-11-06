@@ -30,6 +30,8 @@
 #define SECTION_UNL_DEFAULT				"unl_default"
 #define SECTION_VALIDATION_QUORUM		"validation_quorum"
 #define SECTION_VALIDATION_SEED			"validation_seed"
+#define SECTION_WEBSOCKET_PUBLIC_IP		"websocket_public_ip"
+#define SECTION_WEBSOCKET_PUBLIC_PORT	"websocket_public_port"
 #define SECTION_WEBSOCKET_IP			"websocket_ip"
 #define SECTION_WEBSOCKET_PORT			"websocket_port"
 #define SECTION_VALIDATORS				"validators"
@@ -124,6 +126,7 @@ void Config::setup(const std::string& strConf)
 	PEER_PORT				= SYSTEM_PEER_PORT;
 	RPC_PORT				= 5001;
 	WEBSOCKET_PORT			= SYSTEM_WEBSOCKET_PORT;
+	WEBSOCKET_PUBLIC_PORT	= SYSTEM_WEBSOCKET_PUBLIC_PORT;
 	NUMBER_CONNECTIONS		= 30;
 
 	// a new ledger every minute
@@ -234,6 +237,11 @@ void Config::load()
 
 			if (sectionSingleB(secConfig, SECTION_WEBSOCKET_PORT, strTemp))
 				WEBSOCKET_PORT		= boost::lexical_cast<int>(strTemp);
+
+			(void) sectionSingleB(secConfig, SECTION_WEBSOCKET_PUBLIC_IP, WEBSOCKET_PUBLIC_IP);
+
+			if (sectionSingleB(secConfig, SECTION_WEBSOCKET_PUBLIC_PORT, strTemp))
+				WEBSOCKET_PUBLIC_PORT	= boost::lexical_cast<int>(strTemp);
 
 			if (sectionSingleB(secConfig, SECTION_VALIDATION_SEED, strTemp))
 			{

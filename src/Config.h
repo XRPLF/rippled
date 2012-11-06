@@ -24,8 +24,9 @@
 #define DEFAULT_VALIDATORS_SITE		"redstem.com"
 #define VALIDATORS_FILE_NAME		"validators.txt"
 
-const int SYSTEM_PEER_PORT			= 6561;
-const int SYSTEM_WEBSOCKET_PORT		= 6562;
+const int SYSTEM_PEER_PORT				= 6561;
+const int SYSTEM_WEBSOCKET_PORT			= 6562;
+const int SYSTEM_WEBSOCKET_PUBLIC_PORT	= 6563;	// XXX Going away.
 
 // Allow anonymous DH.
 #define DEFAULT_PEER_SSL_CIPHER_LIST	"ALL:!LOW:!EXP:!MD5:@STRENGTH"
@@ -82,6 +83,9 @@ public:
 	unsigned int				PEER_CONNECT_LOW_WATER;
 
 	// Websocket networking parameters
+	std::string					WEBSOCKET_PUBLIC_IP;		// XXX Going away. Merge with the inbound peer connction.
+	int							WEBSOCKET_PUBLIC_PORT;
+
 	std::string					WEBSOCKET_IP;
 	int							WEBSOCKET_PORT;
 
