@@ -1174,7 +1174,24 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 		{
 			if (packet.has_querytype() && !packet.has_requestcookie())
 			{
-				// WRITEME: try to route
+				cLog(lsINFO) << "Trying to route TX set request";
+				std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
+				std::vector<Peer::pointer> usablePeers;
+				BOOST_FOREACH(Peer::ref peer, peerList)
+				{
+					if (peer->hasTxSet(txHash))
+						usablePeers.push_back(peer);
+				}
+				if (usablePeers.empty())
+				{
+					cLog(lsINFO) << "Unable to route TX set request";
+					return;
+				}
+				Peer::ref selectedPeer = usablePeers[rand() % usablePeers.size()];
+				packet.set_requestcookie(getPeerId());
+				selectedPeer->sendPacket(boost::make_shared<PackedMessage>(packet, ripple::mtGET_LEDGER));
+				cLog(lsDEBUG) << "TX set request routed";
+				return;
 			}
 			cLog(lsERROR) << "We do not have the map our peer wants";
 			punishPeer(PP_INVALID_REQUEST);
@@ -1332,7 +1349,18 @@ void Peer::recvLedger(ripple::TMLedgerData& packet)
 
 	if (packet.has_requestcookie())
 	{
-		// WRITEME: Route to original requester
+		Peer::pointer target = theApp->getConnectionPool().getPeerById(packet.requestcookie());
+		if (target)
+		{
+			packet.clear_requestcookie();
+			target->sendPacket(boost::make_shared<PackedMessage>(packet, ripple::mtLEDGER_DATA));
+		}
+		else
+		{
+			cLog(lsINFO) << "Unable to route TX set reply";
+			punishPeer(PP_UNWANTED_DATA);
+		}
+		return;
 	}
 
 	if (packet.type() == ripple::liTS_CANDIDATE)
