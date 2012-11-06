@@ -90,6 +90,8 @@ public:
 		Json::Value		jvRequest;
 		Json::Reader	jrReader;
 
+    cLog(lsDEBUG) << "Ws:: Receiving '" << mpMessage->get_payload() << "'";
+
 		if (mpMessage->get_opcode() != websocketpp::frame::opcode::TEXT)
 		{
 			Json::Value	jvResult(Json::objectValue);
