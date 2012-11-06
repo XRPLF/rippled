@@ -30,7 +30,7 @@ protected:
 	SHAMap::pointer		mMap;
 	bool				mHaveRoot;
 
-	void onTimer();
+	void onTimer(bool progress);
 	void newPeer(Peer::ref peer)	{ trigger(peer, false); }
 
 	void done();
