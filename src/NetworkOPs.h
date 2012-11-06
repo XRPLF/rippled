@@ -228,7 +228,7 @@ public:
 	bool subLedger(InfoSub* ispListener, Json::Value& jvResult);
 	bool unsubLedger(InfoSub* ispListener);
 
-	bool subServer(InfoSub* ispListener);
+	bool subServer(InfoSub* ispListener, Json::Value& jvResult);
 	bool unsubServer(InfoSub* ispListener);
 
 	bool subTransactions(InfoSub* ispListener);

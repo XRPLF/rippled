@@ -1195,8 +1195,10 @@ bool NetworkOPs::unsubLedger(InfoSub* ispListener)
 }
 
 // <-- bool: true=added, false=already there
-bool NetworkOPs::subServer(InfoSub* ispListener)
+bool NetworkOPs::subServer(InfoSub* ispListener, Json::Value& jvResult)
 {
+	jvResult["stand_alone"]	= theConfig.RUN_STANDALONE;
+
 	return mSubServer.insert(ispListener).second;
 }
 
