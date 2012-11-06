@@ -65,8 +65,6 @@ Json::Value WSConnection::invokeCommand(Json::Value& jvRequest)
 
 	Json::Value	jvResult(Json::objectValue);
 
-	jvResult["type"]	= "response";
-
 	if (i < 0)
 	{
 		jvResult["error"]	= "unknownCommand";	// Unknown command.
@@ -90,6 +88,8 @@ Json::Value WSConnection::invokeCommand(Json::Value& jvRequest)
 	{
 		jvResult["result"]	= "success";
 	}
+
+	jvResult["type"]	= "response";
 
 	return jvResult;
 }
@@ -134,13 +134,13 @@ void WSConnection::doSubscribe(Json::Value& jvResult,  Json::Value& jvRequest)
 	{
 		for (Json::Value::iterator it = jvRequest["streams"].begin(); it != jvRequest["streams"].end(); it++)
 		{
-			if ((*it).isString() )
+			if ((*it).isString())
 			{
 				std::string streamName=(*it).asString();
 
 				if(streamName=="server")
 				{
-					mNetwork.subServer(this);
+					mNetwork.subServer(this, jvResult);
 				}else if(streamName=="ledger")
 				{
 					mNetwork.subLedger(this, jvResult);
@@ -280,14 +280,19 @@ void WSConnection::doRPC(Json::Value& jvResult, Json::Value& jvRequest)
 {
 	if (jvRequest.isMember("rpc_command") )
 	{
-		jvResult=theApp->getRPCHandler().doCommand(
+		jvResult = theApp->getRPCHandler().doCommand(
 			jvRequest["rpc_command"].asString(),
-			jvRequest["params"],
+			jvRequest.isMember("params")
+				? jvRequest["params"]
+				: jvRequest,
 			mHandler->getPublic() ? RPCHandler::GUEST : RPCHandler::ADMIN);
 
-    jvResult["type"] = "rpc_response";
-	}else jvResult["error"]	= "fieldNotCommand";
-
+		jvResult["type"] = "response";
+	}
+	else
+	{
+		jvResult["error"]	= "fieldNotCommand";
+	}
 }
 
 // XXX Currently requires secret. Allow signed transaction as an alternative.

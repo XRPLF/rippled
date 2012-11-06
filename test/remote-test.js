@@ -17,7 +17,7 @@ buster.testCase("Remote functions", {
   'setUp' : testutils.build_setup(),
   'tearDown' : testutils.build_teardown(),
 
-  'request_ledger_current' :
+  "request_ledger_current" :
     function (done) {
       this.remote.request_ledger_current().on('success', function (m) {
 	  // console.log(m);
@@ -30,15 +30,16 @@ buster.testCase("Remote functions", {
 
 	  buster.assert(false);
 	})
+
       .request();
     },
 
-  'request_ledger_closed' :
+  "request_ledger_hash" :
     function (done) {
-      this.remote.request_ledger_closed().on('success', function (m) {
+      this.remote.request_ledger_hash().on('success', function (m) {
 	  // console.log("result: %s", JSON.stringify(m));
 
-	  buster.assert.equals(m.ledger_closed_index, 2);
+	  buster.assert.equals(m.ledger_index, 2);
 	  done();
 	})
       .on('error', function(m) {
@@ -49,16 +50,16 @@ buster.testCase("Remote functions", {
       .request();
     },
 
-  'manual account_root success' :
+  "manual account_root success" :
     function (done) {
       var self = this;
 
-      this.remote.request_ledger_closed().on('success', function (r) {
+      this.remote.request_ledger_hash().on('success', function (r) {
 	  // console.log("result: %s", JSON.stringify(r));
 
 	  self.remote
 	    .request_ledger_entry('account_root')
-	    .ledger_closed(r.ledger_closed)
+	    .ledger_hash(r.ledger_hash)
 	    .account_root("rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh")
 	    .on('success', function (r) {
 		// console.log("account_root: %s", JSON.stringify(r));
@@ -82,16 +83,16 @@ buster.testCase("Remote functions", {
     },
 
   // XXX This should be detected locally.
-  'account_root remote malformedAddress' :
+  "account_root remote malformedAddress" :
     function (done) {
       var self = this;
 
-      this.remote.request_ledger_closed().on('success', function (r) {
+      this.remote.request_ledger_hash().on('success', function (r) {
 	  // console.log("result: %s", JSON.stringify(r));
 
 	  self.remote
 	    .request_ledger_entry('account_root')
-	    .ledger_closed(r.ledger_closed)
+	    .ledger_hash(r.ledger_hash)
 	    .account_root("zHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh")
 	    .on('success', function (r) {
 		// console.log("account_root: %s", JSON.stringify(r));
@@ -115,16 +116,16 @@ buster.testCase("Remote functions", {
       .request();
     },
 
-  'account_root entryNotFound' :
+  "account_root entryNotFound" :
     function (done) {
       var self = this;
 
-      this.remote.request_ledger_closed().on('success', function (r) {
+      this.remote.request_ledger_hash().on('success', function (r) {
 	  // console.log("result: %s", JSON.stringify(r));
 
 	  self.remote
 	    .request_ledger_entry('account_root')
-	    .ledger_closed(r.ledger_closed)
+	    .ledger_hash(r.ledger_hash)
 	    .account_root("alice")
 	    .on('success', function (r) {
 		// console.log("account_root: %s", JSON.stringify(r));
@@ -147,16 +148,16 @@ buster.testCase("Remote functions", {
 	}).request();
     },
 
-  'ledger_entry index' :
+  "ledger_entry index" :
     function (done) {
       var self = this;
 
-      this.remote.request_ledger_closed().on('success', function (r) {
+      this.remote.request_ledger_hash().on('success', function (r) {
 	  // console.log("result: %s", JSON.stringify(r));
 
 	  self.remote
 	    .request_ledger_entry('index')
-	    .ledger_closed(r.ledger_closed)
+	    .ledger_hash(r.ledger_hash)
 	    .account_root("alice")
 	    .index("2B6AC232AA4C4BE41BF49D2459FA4A0347E1B543A4C92FCEE0821C0201E2E9A8")
 	    .on('success', function (r) {
@@ -180,7 +181,7 @@ buster.testCase("Remote functions", {
       .request();
     },
 
-  'create account' :
+  "create account" :
     function (done) {
       this.remote.transaction()
 	.payment('root', 'alice', Amount.from_json("10000"))

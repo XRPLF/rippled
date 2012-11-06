@@ -14,9 +14,6 @@
 // instances of this class for network access.
 //
 
-// Node
-var util	  = require('util');
-
 // npm
 var WebSocket = require('ws');
 
@@ -78,7 +75,7 @@ Request.prototype.ledger_choose = function (current) {
 // - ledger_entry
 // - transaction_entry
 Request.prototype.ledger_hash = function (h) {
-  this.message.ledger_hash  = n;
+  this.message.ledger_hash  = h;
 
   return this;
 };
@@ -317,7 +314,7 @@ Remote.prototype._connect_start = function () {
   // with self-signed certs as the user must have pre-approved the self-signed certs.
 
   var self = this;
-  var url  = util.format("ws://%s:%s", this.websocket_ip, this.websocket_port);
+  var url  = "ws://" + this.websocket_ip + ":" + this.websocket_port;
   
   if (this.trace) console.log("remote: connect: %s", url);
   
@@ -482,7 +479,7 @@ Remote.prototype.request_ledger_hash = function () {
 
   var request = new Request(this, 'rpc');
   
-  request.rpc_command = 'ledger_closed';
+  request.message.rpc_command = 'ledger_closed';
 
   return request;
 };
@@ -492,7 +489,7 @@ Remote.prototype.request_ledger_hash = function () {
 Remote.prototype.request_ledger_current = function () {
   var request = new Request(this, 'rpc');
   
-  request.rpc_command = 'ledger_current';
+  request.message.rpc_command = 'ledger_current';
 
   return request;
 };
@@ -503,7 +500,9 @@ Remote.prototype.request_ledger_entry = function (type) {
   assert(this.trusted);   // If not trusted, need to check proof, maybe talk packet protocol.
   
   var self    = this;
-  var request = new Request(this, 'ledger_entry');
+  var request = new Request(this, 'rpc');
+
+  request.message.rpc_command = 'ledger_entry';
 
   if (type)
     this.type = type;
@@ -559,7 +558,7 @@ Remote.prototype.request_ledger_entry = function (type) {
 Remote.prototype.request_subscribe = function () {
   var request = new Request(this, 'subscribe');
 
-  request.message.streams = [ 'ledger' ];
+  request.message.streams = [ 'ledger', 'server' ];
 
   return request;
 };
@@ -567,7 +566,11 @@ Remote.prototype.request_subscribe = function () {
 Remote.prototype.request_transaction_entry = function (hash) {
   assert(this.trusted);   // If not trusted, need to check proof, maybe talk packet protocol.
   
-  return (new Request(this, 'transaction_entry'))
+  var request = new Request(this, 'rpc');
+
+  request.message.rpc_command = 'transaction_entry';
+
+  return request
     .tx_hash(hash);
 };
 
@@ -615,7 +618,9 @@ Remote.prototype.submit = function (transaction) {
 	.request();
     }
     else {
-      var submit_request = new Request(this, 'submit');
+      var submit_request = new Request(this, 'rpc');
+
+      submit_request.message.rpc_command = 'submit_json';
 
       submit_request.tx_json(transaction.tx_json);
       submit_request.secret(transaction.secret);
@@ -670,7 +675,11 @@ Remote.prototype._server_subscribe = function () {
 Remote.prototype.ledger_accept = function () {
   if (this.stand_alone || undefined === this.stand_alone)
   {
-    (new Request(this, 'ledger_accept'))
+    var request = new Request(this, 'rpc');
+
+    request.message.rpc_command = 'ledger_accept';
+
+    request
       .request();
   }
   else {
@@ -984,7 +993,7 @@ Transaction.prototype.submit = function () {
 
 // XXX make sure self.hash is available.
 	self.remote.request_transaction_entry(self.hash)
-	  .ledger_closed(ledger_hash)
+	  .ledger_hash(ledger_hash)
 	  .on('success', function (message) {
 	      self.set_state(message.metadata.TransactionResult);
 	      self.emit('final', message);

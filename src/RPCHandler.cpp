@@ -326,8 +326,6 @@ Json::Value RPCHandler::doAcceptLedger(const Json::Value &params)
 	return obj;
 }
 
-
-
 // account_info <account>|<nickname>|<account_public_key>
 // account_info <seed>|<pass_phrase>|<key> [<index>]
 Json::Value RPCHandler::doAccountInfo(const Json::Value &params)
@@ -690,9 +688,10 @@ Json::Value RPCHandler::doRippleLinesGet(const Json::Value &params)
 // submit private_key json
 Json::Value RPCHandler::doSubmit(const Json::Value& params)
 {
-	Json::Value txJSON;
-	Json::Reader reader;
-	if(reader.parse(params[1u].asString(),txJSON))
+	Json::Value		txJSON;
+	Json::Reader	reader;
+
+	if (reader.parse(params[1u].asString(), txJSON))
 	{
 		Json::Value	jvRequest;
 
@@ -702,7 +701,12 @@ Json::Value RPCHandler::doSubmit(const Json::Value& params)
 		return handleJSONSubmit(jvRequest);
 	}
 
-	return rpcError(rpcSRC_ACT_MALFORMED);
+	return rpcError(rpcINVALID_PARAMS);
+}
+
+Json::Value RPCHandler::doSubmitJson(const Json::Value& jvRequest)
+{
+	return handleJSONSubmit(jvRequest);
 }
 
 
@@ -711,9 +715,9 @@ Json::Value RPCHandler::handleJSONSubmit(const Json::Value& jvRequest)
 	Json::Value		jvResult;
 	RippleAddress	naSeed;
 	RippleAddress	srcAddress;
-	Json::Value		txJSON		= jvResult["tx_json"];
+	Json::Value		txJSON		= jvRequest["tx_json"];
 
-	if (!naSeed.setSeedGeneric(jvResult["secret"].asString()))
+	if (!naSeed.setSeedGeneric(jvRequest["secret"].asString()))
 	{
 		return rpcError(rpcBAD_SEED);
 	}
@@ -820,7 +824,7 @@ Json::Value RPCHandler::handleJSONSubmit(const Json::Value& jvRequest)
 	RippleAddress	naAuthorizedPublic;
 
 
-	RippleAddress	naSecret			= RippleAddress::createSeedGeneric(jvResult["secret"].asString());
+	RippleAddress	naSecret			= RippleAddress::createSeedGeneric(jvRequest["secret"].asString());
 	RippleAddress	naMasterGenerator	= RippleAddress::createGeneratorPublic(naSecret);
 
 	// Find the index of Account from the master generator, so we can generate the public and private keys.
@@ -1288,22 +1292,22 @@ Json::Value RPCHandler::doWalletAccounts(const Json::Value& params)
 	}
 }
 
-
-Json::Value RPCHandler::doLogRotate(const Json::Value& params) 
+Json::Value RPCHandler::doLogRotate(const Json::Value& params)
 {
 	return Log::rotateLog();
 }
 
-Json::Value RPCHandler::doCommand(const std::string& command, Json::Value& params,int role)
+Json::Value RPCHandler::doCommand(const std::string& command, Json::Value& params, int role)
 {
 	cLog(lsTRACE) << "RPC:" << command;
+	cLog(lsTRACE) << "RPC params:" << params;
 
 	static struct {
-		const char* pCommand;
-		doFuncPtr	dfpFunc;
-		int			iMinParams;
-		int			iMaxParams;
-		bool		mAdminRequired;
+		const char*		pCommand;
+		doFuncPtr		dfpFunc;
+		int				iMinParams;
+		int				iMaxParams;
+		bool			mAdminRequired;
 		unsigned int	iOptions;
 	} commandsA[] = {
 		{	"accept_ledger",		&RPCHandler::doAcceptLedger,		0,	0, true					},
@@ -1315,6 +1319,10 @@ Json::Value RPCHandler::doCommand(const std::string& command, Json::Value& param
 		{	"data_store",			&RPCHandler::doDataStore,			2,  2, true					},
 		{	"get_counts",			&RPCHandler::doGetCounts,			0,	1, true					},
 		{	"ledger",				&RPCHandler::doLedger,				0,  2, false,	optNetwork	},
+		{	"ledger_accept",		&RPCHandler::doLedgerAccept,		0,  0, true,	optCurrent	},
+		{	"ledger_closed",		&RPCHandler::doLedgerClosed,		0,  0, false,	optClosed	},
+		{	"ledger_current",		&RPCHandler::doLedgerCurrent,		0,  0, false,	optCurrent	},
+		{	"ledger_entry",			&RPCHandler::doLedgerEntry,			-1,  -1, false,	optCurrent	},
 		{	"log_level",			&RPCHandler::doLogLevel,			0,  2, true					},
 		{	"logrotate",			&RPCHandler::doLogRotate,			0,  0, true					},
 		{	"nickname_info",		&RPCHandler::doNicknameInfo,		1,  1, false,	optCurrent	},
@@ -1323,8 +1331,10 @@ Json::Value RPCHandler::doCommand(const std::string& command, Json::Value& param
 		{	"profile",				&RPCHandler::doProfile,				1,  9, false,	optCurrent	},
 		{	"ripple_lines_get",		&RPCHandler::doRippleLinesGet,		1,  2, false,	optCurrent	},
 		{	"submit",				&RPCHandler::doSubmit,				2,  2, false,	optCurrent	},
+		{	"submit_json",			&RPCHandler::doSubmitJson,			-1,  -1, false,	optCurrent	},
 		{	"server_info",			&RPCHandler::doServerInfo,			0,  0, true					},
 		{	"stop",					&RPCHandler::doStop,				0,  0, true					},
+		{	"transaction_entry",	&RPCHandler::doTransactionEntry,	-1,  -1, false,	optCurrent	},
 		{	"tx",					&RPCHandler::doTx,					1,  1, true					},
 		{	"tx_history",			&RPCHandler::doTxHistory,			1,  1, false,				},
 
@@ -1359,8 +1369,12 @@ Json::Value RPCHandler::doCommand(const std::string& command, Json::Value& param
 	{
 		return rpcError(rpcNO_PERMISSION);
 	}
-	else if (params.size() < commandsA[i].iMinParams
-		|| (commandsA[i].iMaxParams >= 0 && params.size() > commandsA[i].iMaxParams))
+	else if (commandsA[i].iMinParams >= 0
+		? commandsA[i].iMaxParams
+			? (params.size() < commandsA[i].iMinParams
+				|| (commandsA[i].iMaxParams >= 0 && params.size() > commandsA[i].iMaxParams))
+			: false
+		: params.isArray())
 	{
 		return rpcError(rpcINVALID_PARAMS);
 	}
@@ -1605,6 +1619,7 @@ Json::Value RPCHandler::doUnlLoad(const Json::Value& params)
 Json::Value RPCHandler::doLedgerAccept(const Json::Value& )
 {
 	Json::Value jvResult;
+
 	if (!theConfig.RUN_STANDALONE)
 	{
 		jvResult["error"]	= "notStandAlone";
@@ -1615,16 +1630,13 @@ Json::Value RPCHandler::doLedgerAccept(const Json::Value& )
 
 		jvResult["ledger_current_index"]	= mNetOps->getCurrentLedgerID();
 	}
-	return(jvResult);
+
+	return jvResult;
 }
 
-Json::Value RPCHandler::doTransactionEntry(const Json::Value& params)
+Json::Value RPCHandler::doTransactionEntry(const Json::Value& jvRequest)
 {
 	Json::Value jvResult;
-	Json::Value jvRequest;
-	Json::Reader reader;
-	if(!reader.parse(params[0u].asString(),jvRequest))
-		return rpcError(rpcINVALID_PARAMS);
 
 	if (!jvRequest.isMember("tx_hash"))
 	{
@@ -1672,13 +1684,9 @@ Json::Value RPCHandler::doTransactionEntry(const Json::Value& params)
 	return jvResult;
 }
 
-Json::Value RPCHandler::doLedgerEntry(const Json::Value& params)
+Json::Value RPCHandler::doLedgerEntry(const Json::Value& jvRequest)
 {
 	Json::Value jvResult;
-	Json::Value jvRequest;
-	Json::Reader reader;
-	if(!reader.parse(params[0u].asString(),jvRequest))
-		return rpcError(rpcINVALID_PARAMS);
 
 	uint256	uLedger			= jvRequest.isMember("ledger_hash") ? uint256(jvRequest["ledger_hash"].asString()) : 0;
 	uint32	uLedgerIndex	= jvRequest.isMember("ledger_index") && jvRequest["ledger_index"].isNumeric() ? jvRequest["ledger_index"].asUInt() : 0;
