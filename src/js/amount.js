@@ -7,7 +7,7 @@ var utils   = require('./utils.js');
 var jsbn    = require('./jsbn.js');
 
 // Don't include in browser context.
-var config    = require('../test/config.js');
+var config    = require('../../test/config.js');
 
 var BigInteger	= jsbn.BigInteger;
 var nbi		= jsbn.nbi;

@@ -22,7 +22,7 @@ var Amount	  = require('./amount.js').Amount;
 var UInt160	  = require('./amount.js').UInt160;
 
 // Don't include in browser context.
-var config	  = require('../test/config.js');
+var config	  = require('../../test/config.js');
 
 // Request events emmitted:
 // 'success' : Request successful.

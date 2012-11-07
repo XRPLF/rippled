@@ -14,13 +14,7 @@
 
 # Ignore object files.
 *.o
-build/obj/*
-build/proto/*
-build/bin/rippled
-build/rippled
-
-# Ignore JavaScript build targets
-build/ripple.js
+build
 
 # Ignore locally installed node_modules
 node_modules
