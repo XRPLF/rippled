@@ -17,7 +17,7 @@
 // npm
 var WebSocket	  = require('ws');
 
-var EventEmitter  = require('./events').EventEmitter;
+var EventEmitter  = require('events').EventEmitter;
 var Amount	  = require('./amount.js').Amount;
 var UInt160	  = require('./amount.js').UInt160;
 
