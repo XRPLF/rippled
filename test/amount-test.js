@@ -8,6 +8,8 @@ var amount  = require("../src/js/amount.js");
 var Amount  = require("../src/js/amount.js").Amount;
 var UInt160 = require("../src/js/amount.js").UInt160;
 
+require("../src/js/amount.js").config = require("./config.js");
+
 var config  = require('./config.js');
 
 buster.testCase("Amount", {

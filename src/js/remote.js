@@ -21,9 +21,6 @@ var EventEmitter  = require('events').EventEmitter;
 var Amount	  = require('./amount.js').Amount;
 var UInt160	  = require('./amount.js').UInt160;
 
-// Don't include in browser context.
-var config	  = require('../../test/config.js');
-
 // Request events emmitted:
 // 'success' : Request successful.
 // 'error'   : Request failed.
@@ -159,7 +156,6 @@ var Remote = function (trusted, websocket_ip, websocket_port, trace) {
   this.state	  	    = 'offline';  // 'online', 'offline'
   this.retry_timer	    = undefined;
   this.retry		    = undefined;
-  this.config		    = config || { 'accounts' : {}};
   
   // Cache information for accounts.
   this.accounts = {
@@ -182,7 +178,7 @@ var Remote = function (trusted, websocket_ip, websocket_port, trace) {
 Remote.prototype      = new EventEmitter;
 
 Remote.from_config = function (name, trace) {
-  var serverConfig = config.servers[name];
+  var serverConfig = exports.config.servers[name];
 
   return new Remote(serverConfig.trusted, serverConfig.websocket_ip, serverConfig.websocket_port, trace);
 };
@@ -1141,7 +1137,7 @@ Transaction.prototype.set_flags = function (flags) {
 
 Transaction.prototype._account_secret = function (account) {
   // Fill in secret from config, if needed.
-  return this.remote.config.accounts[account] ? this.remote.config.accounts[account].secret : undefined;
+  return exports.config.accounts && exports.config.accounts[account] ? exports.config.accounts[account].secret : undefined;
 };
 
 // Options:
@@ -1268,6 +1264,7 @@ Transaction.prototype.wallet_add = function (src, amount, authorized_key, public
   return this;
 };
 
+exports.config          = {};
 exports.Remote          = Remote;
 
 // vim:sw=2:sts=2:ts=8
