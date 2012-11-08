@@ -165,7 +165,14 @@ var Remote = function (trusted, websocket_ip, websocket_port, trace) {
     // account : { seq : __ }
 
     };
-  
+
+  // List of secrets that we know about.
+  this.secrets = {
+    // Secrets can be set by calling set_secret(account, secret).
+
+    // account : secret
+  };
+
   // Cache for various ledgers.
   // XXX Clear when ledger advances.
   this.ledgers = {
@@ -180,7 +187,21 @@ Remote.prototype      = new EventEmitter;
 Remote.from_config = function (name, trace) {
   var serverConfig = exports.config.servers[name];
 
-  return new Remote(serverConfig.trusted, serverConfig.websocket_ip, serverConfig.websocket_port, trace);
+  var remote = new Remote(serverConfig.trusted, serverConfig.websocket_ip, serverConfig.websocket_port, trace);
+
+  for (var account in exports.config.accounts) {
+    var accountInfo = exports.config.accounts[account];
+    if ("object" === typeof accountInfo) {
+      if (accountInfo.secret) {
+        // Index by nickname ...
+        remote.set_secret(account, accountInfo.secret);
+        // ... and by account ID
+        remote.set_secret(accountInfo.account, accountInfo.secret);
+      }
+    }
+  }
+
+  return remote;
 };
 
 var isTemMalformed  = function (engine_result_code) {
@@ -774,6 +795,12 @@ Remote.prototype.dirty_account_root = function (account) {
   delete this.ledgers.current.account_root[account];
 };
 
+// Store a secret - allows the Remote to automatically fill out auth information.
+Remote.prototype.set_secret = function (account, secret) {
+  this.secrets[account] = secret;
+};
+
+
 // Return a request to get a ripple balance.
 //
 // --> account: String
@@ -1136,8 +1163,8 @@ Transaction.prototype.set_flags = function (flags) {
 //
 
 Transaction.prototype._account_secret = function (account) {
-  // Fill in secret from config, if needed.
-  return exports.config.accounts && exports.config.accounts[account] ? exports.config.accounts[account].secret : undefined;
+  // Fill in secret from remote, if available.
+  return this.remote.secrets[account];
 };
 
 // Options:
