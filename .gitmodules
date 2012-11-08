@@ -7,3 +7,4 @@
 [submodule "src/js/sjcl"]
 	path = src/js/sjcl
 	url = git://github.com/bitwiseshiftleft/sjcl.git
+	ignore = dirty

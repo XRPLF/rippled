@@ -8,6 +8,9 @@ var Server  = require("./server.js").Server;
 
 var testutils  = require("./testutils.js");
 
+require("../src/js/amount.js").config = require("./config.js");
+require("../src/js/remote.js").config = require("./config.js");
+
 buster.testRunner.timeout = 5000;
 
 buster.testCase("Offer tests", {

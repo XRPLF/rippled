@@ -6,13 +6,10 @@ var bn	    = require('./sjcl/core.js').bn;
 var utils   = require('./utils.js');
 var jsbn    = require('./jsbn.js');
 
-// Don't include in browser context.
-var config    = require('../../test/config.js');
-
 var BigInteger	= jsbn.BigInteger;
 var nbi		= jsbn.nbi;
 
-var alphabets = {
+var alphabets	= {
   'ripple' : "rpshnaf39wBUDNEGHJKLM4PQRST7VWXYZ2bcdeCg65jkm8oFqi1tuvAxyz",
   'bitcoin' : "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 };
@@ -158,8 +155,8 @@ UInt160.prototype.equals = function(d) {
 // value = NaN on error.
 UInt160.prototype.parse_json = function (j) {
   // Canonicalize and validate
-  if (config.accounts && j in config.accounts)
-    j = config.accounts[j].account;
+  if (exports.config.accounts && j in exports.config.accounts)
+    j = exports.config.accounts[j].account;
 
   switch (j) {
     case undefined:
@@ -602,6 +599,8 @@ Amount.prototype.equals = function (d) {
 exports.Amount	      = Amount;
 exports.Currency      = Currency;
 exports.UInt160	      = UInt160;
+
+exports.config	      = {};
 
 exports.consts	  = {
   'address_xns'	      : "rrrrrrrrrrrrrrrrrrrrrhoLvTp",

@@ -16,15 +16,11 @@ var builds = [{
   minimize: true
 }];
 
-
-async.series(builds.map(build), function (err) {
-  if (err) {
-    console.error(err);
-  }
-});
-
 var defaultOpts = {
-  library: 'ripple',
+  // [sic] Yes, this is the spelling upstream.
+  libary: 'ripple',
+  // However, it's fixed in webpack 0.8, so we include the correct spelling too:
+  library: 'ripple'
 };
 function build(opts) {
   var opts = extend({}, defaultOpts, opts);
@@ -37,3 +33,9 @@ function build(opts) {
     });
   }
 }
+
+async.series(builds.map(build), function (err) {
+  if (err) {
+    console.error(err);
+  }
+});
