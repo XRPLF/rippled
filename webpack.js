@@ -5,7 +5,13 @@ var extend = require("extend");
 
 var programPath = __dirname + "/src/js/remote.js";
 
-console.log('Compiling Ripple JavaScript...');
+var watch = false;
+process.argv.forEach(function (arg) {
+  if (arg === '-w' || arg === '--watch') {
+    watch = true;
+  }
+});
+
 var builds = [{
   filename: 'ripple-'+pkg.version+'.js',
 },{
@@ -20,8 +26,10 @@ var defaultOpts = {
   // [sic] Yes, this is the spelling upstream.
   libary: 'ripple',
   // However, it's fixed in webpack 0.8, so we include the correct spelling too:
-  library: 'ripple'
+  library: 'ripple',
+  watch: watch
 };
+
 function build(opts) {
   var opts = extend({}, defaultOpts, opts);
   opts.output = __dirname + "/build/"+opts.filename;
@@ -29,13 +37,23 @@ function build(opts) {
     var filename = opts.filename;
     webpack(programPath, opts, function (err, result) {
       console.log(' '+filename, result.hash, '['+result.modulesCount+']');
-      callback(err);
+      if ("function" === typeof callback) {
+        callback(err);
+      }
     });
   }
 }
 
-async.series(builds.map(build), function (err) {
-  if (err) {
-    console.error(err);
-  }
-});
+if (!watch) {
+  console.log('Compiling Ripple JavaScript...');
+  async.series(builds.map(build), function (err) {
+    if (err) {
+      console.error(err);
+    }
+  });
+} else {
+  console.log('Watching files for changes...');
+  builds.map(build).forEach(function (build) {
+    build();
+  });
+}
