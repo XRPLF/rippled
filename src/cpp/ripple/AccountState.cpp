@@ -15,8 +15,7 @@ AccountState::AccountState(const RippleAddress& naAccountID) : mAccountID(naAcco
 {
 	if (!naAccountID.isValid()) return;
 
-	mLedgerEntry = boost::make_shared<SerializedLedgerEntry>(ltACCOUNT_ROOT);
-	mLedgerEntry->setIndex(Ledger::getAccountRootIndex(naAccountID));
+	mLedgerEntry = boost::make_shared<SerializedLedgerEntry>(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(naAccountID));
 	mLedgerEntry->setFieldAccount(sfAccount, naAccountID.getAccountID());
 
 	mValid = true;

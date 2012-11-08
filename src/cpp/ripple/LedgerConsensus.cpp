@@ -1159,6 +1159,7 @@ void LedgerConsensus::accept(SHAMap::ref set)
 	newLCL->peekTransactionMap()->armDirty();
 	newLCL->peekAccountStateMap()->armDirty();
 	applyTransactions(set, newLCL, newLCL, failedTransactions, false);
+	newLCL->updateSkipList();
 	newLCL->setClosed();
 	boost::shared_ptr<SHAMap::SHADirtyMap> acctNodes = newLCL->peekAccountStateMap()->disarmDirty();
 	boost::shared_ptr<SHAMap::SHADirtyMap> txnNodes = newLCL->peekTransactionMap()->disarmDirty();

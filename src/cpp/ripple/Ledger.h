@@ -166,6 +166,7 @@ public:
 	LedgerStateParms writeBack(LedgerStateParms parms, SLE::ref);
 	SLE::pointer getAccountRoot(const uint160& accountID);
 	SLE::pointer getAccountRoot(const RippleAddress& naAccountID);
+	void updateSkipList();
 
 	// database functions
 	static Ledger::pointer loadByIndex(uint32 ledgerIndex);

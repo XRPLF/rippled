@@ -24,7 +24,7 @@ protected:
 public:
 	SerializedLedgerEntry(const Serializer& s, const uint256& index);
 	SerializedLedgerEntry(SerializerIterator& sit, const uint256& index);
-	SerializedLedgerEntry(LedgerEntryType type);
+	SerializedLedgerEntry(LedgerEntryType type, const uint256& index);
 
 	SerializedTypeID getSType() const { return STI_LEDGERENTRY; }
 	std::string getFullText() const;

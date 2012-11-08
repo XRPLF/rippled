@@ -72,8 +72,7 @@ SLE::pointer LedgerEntrySet::getEntry(const uint256& index, LedgerEntryAction& a
 SLE::pointer LedgerEntrySet::entryCreate(LedgerEntryType letType, const uint256& index)
 {
 	assert(index.isNonZero());
-	SLE::pointer sleNew = boost::make_shared<SLE>(letType);
-	sleNew->setIndex(index);
+	SLE::pointer sleNew = boost::make_shared<SLE>(letType, index);
 	entryCreate(sleNew);
 	return sleNew;
 }

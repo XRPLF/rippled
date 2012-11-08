@@ -756,8 +756,7 @@ SLE::pointer Ledger::getASNode(LedgerStateParms& parms, const uint256& nodeID,
 		}
 
 		parms = parms | lepCREATED | lepOKAY;
-		SLE::pointer sle=boost::make_shared<SLE>(let);
-		sle->setIndex(nodeID);
+		SLE::pointer sle=boost::make_shared<SLE>(let, nodeID);
 
 		return sle;
 	}
@@ -890,7 +889,7 @@ uint256 Ledger::getAccountRootIndex(const uint160& uAccountID)
 uint256 Ledger::getLedgerHashIndex()
 { // get the index of the node that holds the last 256 ledgers
 	Serializer s(2);
-	s.add16(spaceHashes);
+	s.add16(spaceSkipList);
 	return s.getSHA512Half();
 }
 
@@ -898,7 +897,7 @@ uint256 Ledger::getLedgerHashIndex(uint32 desiredLedgerIndex)
 { // get the index of the node that holds the set of 256 ledgers that includes this ledger's hash
   // (or the first ledger after it if it's not a multiple of 256)
 	Serializer s(6);
-	s.add16(spaceHashes);
+	s.add16(spaceSkipList);
 	s.add32(desiredLedgerIndex >> 16);
 	return s.getSHA512Half();
 }
@@ -1061,6 +1060,56 @@ bool Ledger::assertSane()
 
 	assert(false);
 	return false;
+}
+
+void Ledger::updateSkipList()
+{ // update the skip list with the information from our previous ledger
+
+	if (mLedgerSeq == 0) // genesis ledger has no previous ledger
+		return;
+
+	uint32 prevIndex = mLedgerSeq - 1;
+
+	if ((prevIndex & 0xff) == 0)
+	{ // update record of every 256th ledger
+		uint256 hash = getLedgerHashIndex(prevIndex);
+		SLE::pointer skipList = getSLE(hash);
+		std::vector<uint256> hashes;
+
+		if (!skipList)
+			skipList = boost::make_shared<SLE>(ltLEDGER_HASHES, hash);
+		else
+			hashes = skipList->getFieldV256(sfHashes).peekValue();
+
+		assert(hashes.size() <= 256);
+		hashes.push_back(mParentHash);
+		skipList->setFieldV256(sfHashes, STVector256(hashes));
+
+		if (writeBack(lepCREATE, skipList) == lepERROR)
+		{
+			assert(false);
+		}
+	}
+
+	// update record of past 256 ledger
+	uint256 hash = getLedgerHashIndex();
+	SLE::pointer skipList = getSLE(hash);
+	std::vector<uint256> hashes;
+	if (!skipList)
+		skipList = boost::make_shared<SLE>(ltLEDGER_HASHES, hash);
+	else
+		hashes = skipList->getFieldV256(sfHashes).peekValue();
+
+	assert(hashes.size() <= 256);
+	if (hashes.size() == 256)
+		hashes.erase(hashes.begin());
+	hashes.push_back(mParentHash);
+	skipList->setFieldV256(sfHashes, STVector256(hashes));
+
+	if (writeBack(lepCREATE, skipList) == lepERROR)
+	{
+		assert(false);
+	}
 }
 
 int Ledger::sPendingSaves = 0;

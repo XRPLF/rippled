@@ -29,7 +29,7 @@ enum LedgerNameSpace
 	spaceOwnerDir		= 'O',	// Directory of things owned by an account.
 	spaceBookDir		= 'B',	// Directory of order books.
 	spaceContract		= 'c',
-	spaceHashes			= 'h',
+	spaceSkipList		= 's',
 };
 
 enum LedgerSpecificFlags

@@ -39,7 +39,8 @@ SerializedLedgerEntry::SerializedLedgerEntry(const Serializer& s, const uint256&
 	}
 }
 
-SerializedLedgerEntry::SerializedLedgerEntry(LedgerEntryType type) : STObject(sfLedgerEntry), mType(type)
+SerializedLedgerEntry::SerializedLedgerEntry(LedgerEntryType type, const uint256& index) :
+	STObject(sfLedgerEntry), mIndex(index), mType(type)
 {
 	mFormat = LedgerEntryFormat::getLgrFormat(type);
 	if (mFormat == NULL) throw std::runtime_error("invalid ledger entry type");
