@@ -42,7 +42,7 @@ TER RippleCalc::calcNodeAdvance(
 	const uint160&	uCurIssuerID	= pnCur.uIssuerID;
 
 	uint256&		uDirectTip		= pnCur.uDirectTip;
-	uint256			uDirectEnd		= pnCur.uDirectEnd;
+	uint256&		uDirectEnd		= pnCur.uDirectEnd;
 	bool&			bDirectAdvance	= pnCur.bDirectAdvance;
 	SLE::pointer&	sleDirectDir	= pnCur.sleDirectDir;
 	STAmount&		saOfrRate		= pnCur.saOfrRate;
@@ -63,12 +63,13 @@ TER RippleCalc::calcNodeAdvance(
 	{
 		bool	bDirectDirDirty	= false;
 
-		if (!uDirectEnd)
+		if (!uDirectTip)
 		{
 			// Need to initialize current node.
 
 			uDirectTip		= Ledger::getBookBase(uPrvCurrencyID, uPrvIssuerID, uCurCurrencyID, uCurIssuerID);
 			uDirectEnd		= Ledger::getQualityNext(uDirectTip);
+
 			sleDirectDir	= lesActive.entryCache(ltDIR_NODE, uDirectTip);
 			bDirectAdvance	= !sleDirectDir;
 			bDirectDirDirty	= true;
@@ -100,7 +101,7 @@ TER RippleCalc::calcNodeAdvance(
 			else
 			{
 				// No more offers. Should be done rather than fall off end of book.
-				cLog(lsINFO) << "calcNodeAdvance: Unreachable: Fell off end of order book.";
+				cLog(lsWARNING) << "calcNodeAdvance: Unreachable: Fell off end of order book.";
 				assert(false);
 
 				terResult	= tefEXCEPTION;
@@ -148,7 +149,7 @@ TER RippleCalc::calcNodeAdvance(
 			}
 			else if (!bReverse)
 			{
-				cLog(lsINFO) << boost::str(boost::format("calcNodeAdvance: unreachable: ran out of offers"));
+				cLog(lsWARNING) << boost::str(boost::format("calcNodeAdvance: unreachable: ran out of offers"));
 				assert(false);		// Can't run out of offers in forward direction.
 				terResult	= tefEXCEPTION;
 			}
@@ -175,6 +176,8 @@ TER RippleCalc::calcNodeAdvance(
 
 			// Allowed to access source from this node?
 			// XXX This can get called multiple times for same source in a row, caching result would be nice.
+			// XXX Going forward could we fund something with a worse quality which was previously skipped? Might need to check
+			//     quality.
 			curIssuerNodeConstIterator	itForward		= pspCur->umForward.find(asLine);
 			const bool					bFoundForward	= itForward != pspCur->umForward.end();
 
@@ -263,10 +266,9 @@ TER RippleCalc::calcNodeAdvance(
 	return terResult;
 }
 
-// Between offer nodes, the fee charged may vary.  Therefore, process one inbound offer at a time.
-// Propagate the inbound offer's requirements to the previous node.  The previous node adjusts the amount output and the
-// amount spent on fees.
-// Continue process till request is satisified while we the rate does not increase past the initial rate.
+// Between offer nodes, the fee charged may vary.  Therefore, process one inbound offer at a time.  Propagate the inbound offer's
+// requirements to the previous node.  The previous node adjusts the amount output and the amount spent on fees.  Continue process
+// till request is satisified while we the rate does not increase past the initial rate.
 TER RippleCalc::calcNodeDeliverRev(
 	const unsigned int			uIndex,			// 0 < uIndex < uLast
 	PathState::ref				pspCur,
@@ -284,8 +286,13 @@ TER RippleCalc::calcNodeDeliverRev(
 	const uint160&	uPrvAccountID	= pnPrv.uAccountID;
 	const STAmount&	saTransferRate	= pnCur.saTransferRate;
 
-	STAmount&		saPrvDlvReq		= pnPrv.saRevDeliver;	// To be adjusted.
+	STAmount&		saPrvDlvReq		= pnPrv.saRevDeliver;	// To be set.
 
+	uint256&		uDirectTip		= pnCur.uDirectTip;
+
+	uDirectTip		= 0;									// Restart book searching.
+
+	saPrvDlvReq.zero(pnPrv.uCurrencyID, pnPrv.uIssuerID);
 	saOutAct.zero(saOutReq);
 
 	while (saOutAct != saOutReq)							// Did not deliver limit.
@@ -310,8 +317,8 @@ TER RippleCalc::calcNodeDeliverRev(
 		}
 
 		const STAmount	saOutFeeRate	= uOfrOwnerID == uCurIssuerID || uOutAccountID == uCurIssuerID // Issuer receiving or sending.
-										? saOne				// No fee.
-										: saTransferRate;	// Transfer rate of issuer.
+											? saOne				// No fee.
+											: saTransferRate;	// Transfer rate of issuer.
 		cLog(lsINFO) << boost::str(boost::format("calcNodeDeliverRev: uOfrOwnerID=%s uOutAccountID=%s uCurIssuerID=%s saTransferRate=%s saOutFeeRate=%s")
 			% RippleAddress::createHumanAccountID(uOfrOwnerID)
 			% RippleAddress::createHumanAccountID(uOutAccountID)
@@ -328,19 +335,18 @@ TER RippleCalc::calcNodeDeliverRev(
 				% saRateMax
 				% saOutFeeRate);
 		}
-		else if (saRateMax < saOutFeeRate)
+		else if (saOutFeeRate > saRateMax)
 		{
 			// Offer exceeds initial rate.
 			cLog(lsINFO) << boost::str(boost::format("calcNodeDeliverRev: Offer exceeds initial rate: saRateMax=%s saOutFeeRate=%s")
 				% saRateMax
 				% saOutFeeRate);
 
-			nothing();
-			break;
+			break;	// Done. Don't bother looking for smaller saTransferRates.
 		}
 		else if (saOutFeeRate < saRateMax)
 		{
-			// Reducing rate.
+			// Reducing rate. Additional offers will only considered for this increment if they are at least this good.
 
 			saRateMax	= saOutFeeRate;
 
@@ -348,7 +354,10 @@ TER RippleCalc::calcNodeDeliverRev(
 				% saRateMax);
 		}
 
+		// Amount that goes to the taker.
 		STAmount	saOutPass		= std::min(std::min(saOfferFunds, saTakerGets), saOutReq-saOutAct);	// Offer maximum out - assuming no out fees.
+		// Amount charged to the offer owner.
+		// The fee goes to issuer. The fee is paid by offer owner and not passed as a cost to taker.
 		STAmount	saOutPlusFees	= STAmount::multiply(saOutPass, saOutFeeRate);						// Offer out with fees.
 
 		cLog(lsINFO) << boost::str(boost::format("calcNodeDeliverRev: saOutReq=%s saOutAct=%s saTakerGets=%s saOutPass=%s saOutPlusFees=%s saOfferFunds=%s")
@@ -372,7 +381,7 @@ TER RippleCalc::calcNodeDeliverRev(
 				% saOfferFunds);
 		}
 
-		// Compute portion of input needed to cover output.
+		// Compute portion of input needed to cover actual output.
 
 		STAmount	saInPassReq	= STAmount::multiply(saOutPass, saOfrRate, saTakerPays);
 		STAmount	saInPassAct;
@@ -387,6 +396,7 @@ TER RippleCalc::calcNodeDeliverRev(
 		if (!!uPrvAccountID)
 		{
 			// account --> OFFER --> ?
+			// Due to node expansion, previous is guaranteed to be the issuer.
 			// Previous is the issuer and receiver is an offer, so no fee or quality.
 			// Previous is the issuer and has unlimited funds.
 			// Offer owner is obtaining IOUs via an offer, so credit line limits are ignored.
@@ -400,6 +410,7 @@ TER RippleCalc::calcNodeDeliverRev(
 		else
 		{
 			// offer --> OFFER --> ?
+			// Chain and compute the previous offer now.
 
 			terResult	= calcNodeDeliverRev(
 				uIndex-1,
@@ -430,7 +441,10 @@ TER RippleCalc::calcNodeDeliverRev(
 		// Funds were spent.
 		bFundsDirty		= true;
 
-		// Deduct output, don't actually need to send.
+		// Want to deduct output to limit calculations while computing reverse.  Don't actually need to send.
+		// Sending could be complicated: could fund a previous offer not yet visited.
+		// However, these deductions and adjustments are tenative.
+		// Must reset balances when going forward to perform actual transfers.
 		lesActive.accountSend(uOfrOwnerID, uCurIssuerID, saOutPass);
 
 		// Adjust offer
@@ -482,8 +496,12 @@ TER RippleCalc::calcNodeDeliverFwd(
 
 	STAmount&		saCurDeliverAct	= pnCur.saFwdDeliver;
 
-	saInAct		= 0;
-	saInFees	= 0;
+	uint256&		uDirectTip		= pnCur.uDirectTip;
+
+	uDirectTip		= 0;									// Restart book searching.
+
+	saInAct.zero(saInFunds);
+	saInFees.zero(saInFunds);
 
 	while (tesSUCCESS == terResult
 		&& saInAct != saInReq					// Did not deliver limit.
@@ -503,10 +521,9 @@ TER RippleCalc::calcNodeDeliverFwd(
 			STAmount&		saTakerPays		= pnCur.saTakerPays;
 			STAmount&		saTakerGets		= pnCur.saTakerGets;
 
-
-			const STAmount	saInFeeRate	= uInAccountID == uPrvIssuerID || uOfrOwnerID == uPrvIssuerID	// Issuer receiving or sending.
-											? saOne				// No fee.
-											: saTransferRate;	// Transfer rate of issuer.
+			const STAmount	saInFeeRate		= uInAccountID == uPrvIssuerID || uOfrOwnerID == uPrvIssuerID	// Issuer receiving or sending.
+												? saOne				// No fee.
+												: saTransferRate;	// Transfer rate of issuer.
 
 			//
 			// First calculate assuming no output fees.
@@ -519,8 +536,8 @@ TER RippleCalc::calcNodeDeliverFwd(
 			STAmount	saInPassAct		= STAmount::divide(saInSum, saInFeeRate);					// In without fees.
 			STAmount	saOutPassMax	= STAmount::divide(saInPassAct, saOfrRate, saOutFunded);	// Out.
 
-			STAmount	saInPassFees;
-			STAmount	saOutPassAct;
+			STAmount	saInPassFees(saInFunds.getCurrency(), saInFunds.getIssuer());
+			STAmount	saOutPassAct(saOfferFunds.getCurrency(), saOfferFunds.getIssuer());
 
 			cLog(lsINFO) << boost::str(boost::format("calcNodeDeliverFwd: saOutFunded=%s saInFunded=%s saInTotal=%s saInSum=%s saInPassAct=%s saOutPassMax=%s")
 				% saOutFunded
@@ -1483,6 +1500,7 @@ TER PathState::pushImply(
 }
 
 // Append a node and insert before it any implied nodes.
+// Offers may go back to back.
 // <-- terResult: tesSUCCESS, temBAD_PATH, terNO_LINE, tepPATH_DRY
 TER PathState::pushNode(
 	const int iType,
