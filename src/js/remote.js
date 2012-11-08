@@ -385,15 +385,14 @@ Remote.prototype._connect_start = function () {
 
     self._connect_retry();
   };
-  
-  // Node's ws module doesn't pass arguments to onmessage.
-  ws.on('message', function (json, flags) {
-      self._connect_message(ws, json, flags);
-    });
+
+  ws.onmessage = function (json) {
+    self._connect_message(ws, json.data);
+  };
 };
 
 // It is possible for messages to be dispatched after the connection is closed.
-Remote.prototype._connect_message = function (ws, json, flags) {
+Remote.prototype._connect_message = function (ws, json) {
   var message	  = JSON.parse(json);
   var unexpected  = false;
   var request;
