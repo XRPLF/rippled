@@ -1077,13 +1077,17 @@ void Ledger::updateSkipList()
 		std::vector<uint256> hashes;
 
 		if (!skipList)
+		{
 			skipList = boost::make_shared<SLE>(ltLEDGER_HASHES, hash);
+			skipList->setFieldU32(sfFirstLedgerSequence, prevIndex);
+		}
 		else
 			hashes = skipList->getFieldV256(sfHashes).peekValue();
 
 		assert(hashes.size() <= 256);
 		hashes.push_back(mParentHash);
 		skipList->setFieldV256(sfHashes, STVector256(hashes));
+		skipList->setFieldU32(sfLastLedgerSequence, prevIndex);
 
 		if (writeBack(lepCREATE, skipList) == lepERROR)
 		{
@@ -1096,7 +1100,10 @@ void Ledger::updateSkipList()
 	SLE::pointer skipList = getSLE(hash);
 	std::vector<uint256> hashes;
 	if (!skipList)
+	{
 		skipList = boost::make_shared<SLE>(ltLEDGER_HASHES, hash);
+		skipList->setFieldU32(sfFirstLedgerSequence, prevIndex);
+	}
 	else
 		hashes = skipList->getFieldV256(sfHashes).peekValue();
 
@@ -1105,6 +1112,7 @@ void Ledger::updateSkipList()
 		hashes.erase(hashes.begin());
 	hashes.push_back(mParentHash);
 	skipList->setFieldV256(sfHashes, STVector256(hashes));
+	skipList->setFieldU32(sfLastLedgerSequence, prevIndex);
 
 	if (writeBack(lepCREATE, skipList) == lepERROR)
 	{
