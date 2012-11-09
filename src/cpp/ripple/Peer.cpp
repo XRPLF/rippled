@@ -1179,7 +1179,7 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 				std::vector<Peer::pointer> usablePeers;
 				BOOST_FOREACH(Peer::ref peer, peerList)
 				{
-					if (peer->hasTxSet(txHash))
+					if (peer->hasTxSet(txHash) && (peer.get() != this))
 						usablePeers.push_back(peer);
 				}
 				if (usablePeers.empty())
@@ -1218,7 +1218,29 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 			}
 			memcpy(ledgerhash.begin(), packet.ledgerhash().data(), 32);
 			ledger = theApp->getMasterLedger().getLedgerByHash(ledgerhash);
+
 			tLog(!ledger, lsINFO) << "Don't have ledger " << ledgerhash;
+			if (!ledger && (packet.has_querytype() && !packet.has_requestcookie()))
+			{
+				cLog(lsINFO) << "Trying to route ledger request";
+				std::vector<Peer::pointer> peerList = theApp->getConnectionPool().getPeerVector();
+				std::vector<Peer::pointer> usablePeers;
+				BOOST_FOREACH(Peer::ref peer, peerList)
+				{
+					if (peer->hasLedger(ledgerhash) && (peer.get() != this))
+						usablePeers.push_back(peer);
+				}
+				if (usablePeers.empty())
+				{
+					cLog(lsINFO) << "Unable to route ledger request";
+					return;
+				}
+				Peer::ref selectedPeer = usablePeers[rand() % usablePeers.size()];
+				packet.set_requestcookie(getPeerId());
+				selectedPeer->sendPacket(boost::make_shared<PackedMessage>(packet, ripple::mtGET_LEDGER));
+				cLog(lsDEBUG) << "Ledger request routed";
+				return;
+			}
 		}
 		else if (packet.has_ledgerseq())
 		{
@@ -1357,7 +1379,7 @@ void Peer::recvLedger(ripple::TMLedgerData& packet)
 		}
 		else
 		{
-			cLog(lsINFO) << "Unable to route TX set reply";
+			cLog(lsINFO) << "Unable to route TX/ledger data reply";
 			punishPeer(PP_UNWANTED_DATA);
 		}
 		return;

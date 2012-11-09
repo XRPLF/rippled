@@ -211,23 +211,25 @@ void LedgerAcquire::trigger(Peer::ref peer, bool timer)
 			cLog(lsTRACE) << "base=" << mHaveBase << " tx=" << mHaveTransactions << " as=" << mHaveState;
 	}
 
+	ripple::TMGetLedger tmGL;
+	tmGL.set_ledgerhash(mHash.begin(), mHash.size());
+	if (getTimeouts() != 0)
+		tmGL.set_querytype(ripple::qtINDIRECT);
+
 	if (!mHaveBase)
 	{
-		ripple::TMGetLedger tmGL;
-		tmGL.set_ledgerhash(mHash.begin(), mHash.size());
 		tmGL.set_itype(ripple::liBASE);
 		cLog(lsTRACE) << "Sending base request to " << (peer ? "selected peer" : "all peers");
 		sendRequest(tmGL, peer);
 	}
+
+	tmGL.set_ledgerseq(mLedger->getLedgerSeq());
 
 	if (mHaveBase && !mHaveTransactions)
 	{
 		assert(mLedger);
 		if (mLedger->peekTransactionMap()->getHash().isZero())
 		{ // we need the root node
-			ripple::TMGetLedger tmGL;
-			tmGL.set_ledgerhash(mHash.begin(), mHash.size());
-			tmGL.set_ledgerseq(mLedger->getLedgerSeq());
 			tmGL.set_itype(ripple::liTX_NODE);
 			*(tmGL.add_nodeids()) = SHAMapNode().getRawString();
 			cLog(lsTRACE) << "Sending TX root request to " << (peer ? "selected peer" : "all peers");
@@ -251,12 +253,11 @@ void LedgerAcquire::trigger(Peer::ref peer, bool timer)
 			}
 			else
 			{
-				ripple::TMGetLedger tmGL;
-				tmGL.set_ledgerhash(mHash.begin(), mHash.size());
-				tmGL.set_ledgerseq(mLedger->getLedgerSeq());
 				tmGL.set_itype(ripple::liTX_NODE);
 				BOOST_FOREACH(SHAMapNode& it, nodeIDs)
+				{
 					*(tmGL.add_nodeids()) = it.getRawString();
+				}
 				cLog(lsTRACE) << "Sending TX node " << nodeIDs.size()
 					<< " request to " << (peer ? "selected peer" : "all peers");
 				sendRequest(tmGL, peer);
@@ -269,9 +270,6 @@ void LedgerAcquire::trigger(Peer::ref peer, bool timer)
 		assert(mLedger);
 		if (mLedger->peekAccountStateMap()->getHash().isZero())
 		{ // we need the root node
-			ripple::TMGetLedger tmGL;
-			tmGL.set_ledgerhash(mHash.begin(), mHash.size());
-			tmGL.set_ledgerseq(mLedger->getLedgerSeq());
 			tmGL.set_itype(ripple::liAS_NODE);
 			*(tmGL.add_nodeids()) = SHAMapNode().getRawString();
 			cLog(lsTRACE) << "Sending AS root request to " << (peer ? "selected peer" : "all peers");
@@ -295,9 +293,6 @@ void LedgerAcquire::trigger(Peer::ref peer, bool timer)
 			}
 			else
 			{
-				ripple::TMGetLedger tmGL;
-				tmGL.set_ledgerhash(mHash.begin(), mHash.size());
-				tmGL.set_ledgerseq(mLedger->getLedgerSeq());
 				tmGL.set_itype(ripple::liAS_NODE);
 				BOOST_FOREACH(SHAMapNode& it, nodeIDs)
 					*(tmGL.add_nodeids()) = it.getRawString();
