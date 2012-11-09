@@ -1191,6 +1191,9 @@ TER RippleCalc::calcNodeAccountFwd(
 	uint32			uQualityIn		= uIndex ? lesActive.rippleQualityIn(uCurAccountID, uPrvAccountID, uCurrencyID) : QUALITY_ONE;
 	uint32			uQualityOut		= uIndex == uLast ? lesActive.rippleQualityOut(uCurAccountID, uNxtAccountID, uCurrencyID) : QUALITY_ONE;
 
+	// When looking backward (prv) for req we care about what we just calculated: use fwd
+	// When looking forward (cur) for req we care about what was desired: use rev
+
 	// For bNxtAccount
 	const STAmount&	saPrvRedeemReq	= pnPrv.saFwdRedeem;
 	STAmount		saPrvRedeemAct(saPrvRedeemReq.getCurrency(), saPrvRedeemReq.getIssuer());
@@ -1199,7 +1202,7 @@ TER RippleCalc::calcNodeAccountFwd(
 	STAmount		saPrvIssueAct(saPrvIssueReq.getCurrency(), saPrvIssueReq.getIssuer());
 
 	// For !bPrvAccount
-	const STAmount&	saPrvDeliverReq	= pnPrv.saRevDeliver;
+	const STAmount&	saPrvDeliverReq	= pnPrv.saFwdDeliver;
 	STAmount		saPrvDeliverAct(saPrvDeliverReq.getCurrency(), saPrvDeliverReq.getIssuer());
 
 	// For bNxtAccount
