@@ -41,6 +41,8 @@ void Peer::handle_write(const boost::system::error_code& error, size_t bytes_tra
 //		std::cerr << "Peer::handle_write bytes: "<< bytes_transferred << std::endl;
 #endif
 
+	boost::recursive_mutex::scoped_lock sl(theApp->getMasterLock());
+
 	mSendingPacket.reset();
 
 	if (mDetaching)
@@ -357,6 +359,7 @@ void Peer::handle_read_body(const boost::system::error_code& error)
 	else
 	{
 		cLog(lsINFO) << "Peer: Body: Error: " << ADDRESS(this) << ": " << error.category().name() << ": " << error.message() << ": " << error;
+		boost::recursive_mutex::scoped_lock sl(theApp->getMasterLock());
 		detach("hrb");
 	}
 }
@@ -371,6 +374,7 @@ void Peer::processReadBuffer()
 //	std::cerr << "Peer::processReadBuffer: " << mIpPort.first << " " << mIpPort.second << std::endl;
 
 	// If connected and get a mtHELLO or if not connected and get a non-mtHELLO, wrong message was sent.
+	boost::recursive_mutex::scoped_lock sl(theApp->getMasterLock());
 	if (mHelloed == (type == ripple::mtHELLO))
 	{
 		cLog(lsWARNING) << "Wrong message type: " << type;

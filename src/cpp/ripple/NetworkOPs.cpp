@@ -161,7 +161,6 @@ Transaction::pointer NetworkOPs::submitTransactionSync(const Transaction::pointe
 
 Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, stCallback callback)
 {
-	Transaction::pointer dbtx = theApp->getMasterTransaction().fetch(trans->getID(), true);
 
 	int newFlags = theApp->getSuppression().getFlags(trans->getID());
 	if ((newFlags & SF_BAD) != 0)
@@ -182,6 +181,8 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, 
 		theApp->isNewFlag(trans->getID(), SF_SIGGOOD);
 	}
 
+	boost::recursive_mutex::scoped_lock sl(theApp->getMasterLock());
+	Transaction::pointer dbtx = theApp->getMasterTransaction().fetch(trans->getID(), true);
 	TER r = mLedgerMaster->doTransaction(*trans->getSTransaction(), tapOPEN_LEDGER | tapNO_CHECK_SIGN);
 	trans->setResult(r);
 
@@ -762,6 +763,8 @@ uint256 NetworkOPs::getConsensusLCL()
 void NetworkOPs::processTrustedProposal(LedgerProposal::pointer proposal,
 	boost::shared_ptr<ripple::TMProposeSet> set, RippleAddress nodePublic, uint256 checkLedger, bool sigGood)
 {
+	boost::recursive_mutex::scoped_lock sl(theApp->getMasterLock());
+
 	bool relay = true;
 
 	if (!haveConsensusObject())
