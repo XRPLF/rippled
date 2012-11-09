@@ -81,8 +81,55 @@ uint32 NetworkOPs::getCurrentLedgerID()
 	return mLedgerMaster->getCurrentLedger()->getLedgerSeq();
 }
 
+void NetworkOPs::submitTransaction(Job&, SerializedTransaction::pointer iTrans, stCallback callback)
+{ // this is an asynchronous interface
+	Serializer s;
+	iTrans->add(s);
+
+	SerializerIterator sit(s);
+	SerializedTransaction::pointer trans = boost::make_shared<SerializedTransaction>(boost::ref(sit));
+
+	uint256 suppress = trans->getTransactionID();
+	int flags;
+	if (theApp->isNew(suppress, 0, flags) && ((flags & SF_RETRY) != 0))
+	{
+		cLog(lsWARNING) << "Redundant transactions submitted";
+		return;
+	}
+
+	if ((flags & SF_BAD) != 0)
+	{
+		cLog(lsWARNING) << "Submitted transaction cached bad";
+		return;
+	}
+
+	if ((flags & SF_SIGGOOD) == 0)
+	{
+		try
+		{
+			RippleAddress fromPubKey = RippleAddress::createAccountPublic(trans->getSigningPubKey());
+			if (!trans->checkSign(fromPubKey))
+			{
+				cLog(lsWARNING) << "Submitted transaction has bad signature";
+				theApp->isNewFlag(suppress, SF_BAD);
+				return;
+			}
+			theApp->isNewFlag(suppress, SF_SIGGOOD);
+		}
+		catch (...)
+		{
+			cLog(lsWARNING) << "Exception checking transaction " << suppress;
+			return;
+		}
+	}
+
+	theApp->getIOService().post(boost::bind(&NetworkOPs::processTransaction, this,
+		boost::make_shared<Transaction>(trans, false), callback));
+}
+
 // Sterilize transaction through serialization.
-Transaction::pointer NetworkOPs::submitTransaction(const Transaction::pointer& tpTrans)
+// This is fully synchronous and deprecated
+Transaction::pointer NetworkOPs::submitTransactionSync(const Transaction::pointer& tpTrans)
 {
 	Serializer s;
 	tpTrans->getSTransaction()->add(s);
@@ -112,11 +159,9 @@ Transaction::pointer NetworkOPs::submitTransaction(const Transaction::pointer& t
 	return tpTransNew;
 }
 
-Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans)
+Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, stCallback callback)
 {
 	Transaction::pointer dbtx = theApp->getMasterTransaction().fetch(trans->getID(), true);
-	if (dbtx)
-		return dbtx;
 
 	int newFlags = theApp->getSuppression().getFlags(trans->getID());
 	if ((newFlags & SF_BAD) != 0)
@@ -152,6 +197,9 @@ Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans)
 		tLog(transResultInfo(r, token, human), lsINFO) << "TransactionResult: " << token << ": " << human;
 	}
 #endif
+
+	if (callback)
+		callback(trans, r);
 
 	if (r == tefFAILURE)
 		throw Fault(IO_ERROR);

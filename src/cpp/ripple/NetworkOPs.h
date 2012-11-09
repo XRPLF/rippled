@@ -13,6 +13,7 @@
 #include "SerializedValidation.h"
 #include "LedgerAcquire.h"
 #include "LedgerProposal.h"
+#include "JobQueue.h"
 
 // Operations that clients may wish to perform against the network
 // Master operational handler, server sequencer, network tracker
@@ -124,9 +125,14 @@ public:
 	//
 	// Transaction operations
 	//
-	Transaction::pointer submitTransaction(const Transaction::pointer& tpTrans);
+	typedef boost::function<void (Transaction::pointer, TER)> stCallback; // must complete immediately
+	void submitTransaction(Job&, SerializedTransaction::pointer, stCallback callback = stCallback());
+	Transaction::pointer submitTransactionSync(const Transaction::pointer& tpTrans);
 
-	Transaction::pointer processTransaction(Transaction::pointer transaction);
+	Transaction::pointer processTransaction(Transaction::pointer, stCallback);
+	Transaction::pointer processTransaction(Transaction::pointer transaction)
+	{ return processTransaction(transaction, stCallback()); }
+
 	Transaction::pointer findTransactionByID(const uint256& transactionID);
 	int findTransactionsBySource(const uint256& uLedger, std::list<Transaction::pointer>&, const RippleAddress& sourceAccount,
 		uint32 minSeq, uint32 maxSeq);

@@ -595,7 +595,7 @@ Json::Value RPCHandler::doProfile(const Json::Value &params)
 			0);															// uExpiration
 
 		if(bSubmit)
-			tpOfferA	= mNetOps->submitTransaction(tpOfferA);
+			tpOfferA	= mNetOps->submitTransactionSync(tpOfferA);
 	}
 
 	boost::posix_time::ptime			ptEnd(boost::posix_time::microsec_clock::local_time());
@@ -896,6 +896,7 @@ Json::Value RPCHandler::handleJSONSubmit(const Json::Value& jvRequest)
 		return jvResult;
 	}
 
+	// FIXME: Transactions should not be signed in this code path
 	stpTrans->sign(naAccountPrivate);
 
 	Transaction::pointer			tpTrans;
@@ -913,7 +914,7 @@ Json::Value RPCHandler::handleJSONSubmit(const Json::Value& jvRequest)
 
 	try
 	{
-		tpTrans	= mNetOps->submitTransaction(tpTrans);
+		tpTrans	= mNetOps->submitTransactionSync(tpTrans); // FIXME: Should use asynch interface
 
 		if (!tpTrans) {
 			jvResult["error"]			= "invalidTransaction";
