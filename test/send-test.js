@@ -270,10 +270,10 @@ buster.testCase("Sending future", {
 	      .payment('alice', 'bob', "24/USD/alice")
 	      .once('proposed', function (m) {
 		  // console.log("proposed: %s", JSON.stringify(m));
-		  callback(m.result != 'tesSUCCESS');
+		  callback(m.result !== 'tesSUCCESS');
 		})
 	      .once('final', function (m) {
-		  buster.assert(m.result != 'tesSUCCESS');
+		  buster.assert(m.result !== 'tesSUCCESS');
 		})
 	      .submit();
 	  },
@@ -296,10 +296,10 @@ buster.testCase("Sending future", {
 	      .payment('alice', 'bob', "33/USD/bob")
 	      .once('proposed', function (m) {
 		  // console.log("proposed: %s", JSON.stringify(m));
-		  callback(m.result != 'tesSUCCESS');
+		  callback(m.result !== 'tesSUCCESS');
 		})
 	      .once('final', function (m) {
-		  buster.assert(m.result != 'tesSUCCESS');
+		  buster.assert(m.result !== 'tesSUCCESS');
 		})
 	      .submit();
 	  },
@@ -322,10 +322,10 @@ buster.testCase("Sending future", {
 	      .payment('bob', 'alice', "90/USD/bob")
 	      .once('proposed', function (m) {
 		  // console.log("proposed: %s", JSON.stringify(m));
-		  callback(m.result != 'tesSUCCESS');
+		  callback(m.result !== 'tesSUCCESS');
 		})
 	      .once('final', function (m) {
-		  buster.assert(m.result != 'tesSUCCESS');
+		  buster.assert(m.result !== 'tesSUCCESS');
 		})
 	      .submit();
 	  },
@@ -347,10 +347,10 @@ buster.testCase("Sending future", {
 	      .payment('alice', 'bob', "733/USD/bob")
 	      .once('proposed', function (m) {
 		  // console.log("proposed: %s", JSON.stringify(m));
-		  callback(m.result != 'tesSUCCESS');
+		  callback(m.result !== 'tesSUCCESS');
 		})
 	      .once('final', function (m) {
-		  buster.assert(m.result != 'tesSUCCESS');
+		  buster.assert(m.result !== 'tesSUCCESS');
 		})
 	      .submit();
 	  },
@@ -372,10 +372,10 @@ buster.testCase("Sending future", {
 	      .payment('bob', 'alice', "1300/USD/bob")
 	      .once('proposed', function (m) {
 		  // console.log("proposed: %s", JSON.stringify(m));
-		  callback(m.result != 'tesSUCCESS');
+		  callback(m.result !== 'tesSUCCESS');
 		})
 	      .once('final', function (m) {
-		  buster.assert(m.result != 'tesSUCCESS');
+		  buster.assert(m.result !== 'tesSUCCESS');
 		})
 	      .submit();
 	  },
@@ -398,7 +398,7 @@ buster.testCase("Sending future", {
 	      .payment('bob', 'alice', "1/USD/bob")
 	      .once('proposed', function (m) {
 		  // console.log("proposed: %s", JSON.stringify(m));
-		  callback(m.result != 'tepPATH_DRY');
+		  callback(m.result !== 'tepPATH_DRY');
 		})
 	      .submit();
 	  },
@@ -503,7 +503,7 @@ buster.testCase("Indirect ripple", {
 	      .on('proposed', function (m) {
 		  // console.log("proposed: %s", JSON.stringify(m));
 
-		  callback(m.result != 'tepPATH_PARTIAL');
+		  callback(m.result !== 'tepPATH_PARTIAL');
 		})
 	      .submit();
 	  },
@@ -515,7 +515,7 @@ buster.testCase("Indirect ripple", {
 	      .on('proposed', function (m) {
 		  // console.log("proposed: %s", JSON.stringify(m));
 
-		  callback(m.result != 'tepPATH_PARTIAL');
+		  callback(m.result !== 'tepPATH_PARTIAL');
 		})
 	      .submit();
 	  },
@@ -563,7 +563,7 @@ buster.testCase("Indirect ripple", {
 	      .on('proposed', function (m) {
 		  // console.log("proposed: %s", JSON.stringify(m));
 
-		  callback(m.result != 'tesSUCCESS');
+		  callback(m.result !== 'tesSUCCESS');
 		})
 	      .submit();
 	  },
@@ -623,7 +623,7 @@ buster.testCase("Indirect ripple", {
 	      .on('proposed', function (m) {
 		  // console.log("proposed: %s", JSON.stringify(m));
 
-		  callback(m.result != 'tesSUCCESS');
+		  callback(m.result !== 'tesSUCCESS');
 		})
 	      .submit();
 	  },
@@ -691,7 +691,7 @@ buster.testCase("Indirect ripple", {
 	      .on('proposed', function (m) {
 		  // console.log("proposed: %s", JSON.stringify(m));
 
-		  callback(m.result != 'tesSUCCESS');
+		  callback(m.result !== 'tesSUCCESS');
 		})
 	      .submit();
 	  },

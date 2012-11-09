@@ -97,6 +97,25 @@ Request.prototype.index = function (hash) {
   return this;
 };
 
+// Provide the information id an offer.
+// --> account
+// --> seq : sequence number of transaction creating offer (integer)
+Request.prototype.offer_id = function (account, seq) {
+  this.message.offer = {
+    'account' : UInt160.json_rewrite(account),
+    'seq' : seq
+  };
+
+  return this;
+};
+
+// --> index : ledger entry index.
+Request.prototype.offer_index = function (index) {
+  this.message.offer  = index;
+
+  return this;
+};
+
 Request.prototype.secret = function (s) {
   if (s)
     this.message.secret  = s;
@@ -403,6 +422,7 @@ Remote.prototype._connect_message = function (ws, json) {
   else {
     switch (message.type) {
       case 'response':
+	// A response to a request.
 	{
 	  request	  = ws.response[message.id];
 
@@ -510,8 +530,10 @@ Remote.prototype.request_ledger_current = function () {
   return request;
 };
 
-// --> ledger : optional
-// --> ledger_index : optional
+// --> type : the type of ledger entry.
+// .ledger()
+// .ledger_index()
+// .offer_id()
 Remote.prototype.request_ledger_entry = function (type) {
   assert(this.trusted);   // If not trusted, need to check proof, maybe talk packet protocol.
   
@@ -684,7 +706,7 @@ Remote.prototype._server_subscribe = function () {
   return this;
 };
 
-// Ask the remote to accept the current ledger.
+// For unit testing: ask the remote to accept the current ledger.
 // - To be notified when the ledger is accepted, server_subscribe() then listen to 'ledger_hash' events.
 // A good way to be notified of the result of this is:
 //    remote.once('ledger_closed', function (ledger_closed, ledger_index) { ... } );

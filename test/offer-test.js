@@ -28,7 +28,7 @@ buster.testCase("Offer tests", {
 	      .offer_create("root", "500", "100/USD/root")
 	      .on('proposed', function (m) {
 		  // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
-		  callback(m.result != 'tesSUCCESS', m);
+		  callback(m.result !== 'tesSUCCESS', m);
 		})
 	      .on('final', function (m) {
 		  // console.log("FINAL: offer_create: %s", JSON.stringify(m));
@@ -44,7 +44,7 @@ buster.testCase("Offer tests", {
 	      .offer_cancel("root", m.tx_json.Sequence)
 	      .on('proposed', function (m) {
 		  // console.log("PROPOSED: offer_cancel: %s", JSON.stringify(m));
-		  callback(m.result != 'tesSUCCESS', m);
+		  callback(m.result !== 'tesSUCCESS', m);
 		})
 	      .on('final', function (m) {
 		  // console.log("FINAL: offer_cancel: %s", JSON.stringify(m));
@@ -85,7 +85,7 @@ buster.testCase("Offer tests", {
 
 		  offer_seq = m.tx_json.Sequence;
 
-		  callback(m.result != 'tesSUCCESS');
+		  callback(m.result !== 'tesSUCCESS');
 		})
 	      .on('final', function (m) {
 		  // console.log("FINAL: offer_create: %s", JSON.stringify(m));
@@ -118,7 +118,7 @@ buster.testCase("Offer tests", {
 	      .offer_cancel("root", offer_seq)
 	      .on('proposed', function (m) {
 		  // console.log("PROPOSED: offer_cancel: %s", JSON.stringify(m));
-		  callback(m.result != 'tesSUCCESS');
+		  callback(m.result !== 'tesSUCCESS');
 		})
 	      .on('final', function (m) {
 		  // console.log("FINAL: offer_cancel: %s", JSON.stringify(m));
@@ -182,7 +182,7 @@ buster.testCase("Offer tests", {
 
 		  offer_seq = m.tx_json.Sequence;
 
-		  callback(m.result != 'tesSUCCESS');
+		  callback(m.result !== 'tesSUCCESS');
 		})
 	      .on('final', function (m) {
 		  // console.log("FINAL: offer_create: %s", JSON.stringify(m));
@@ -215,7 +215,7 @@ buster.testCase("Offer tests", {
 	      .offer_cancel("alice", offer_seq)
 	      .on('proposed', function (m) {
 		  // console.log("PROPOSED: offer_cancel: %s", JSON.stringify(m));
-		  callback(m.result != 'tesSUCCESS');
+		  callback(m.result !== 'tesSUCCESS');
 		})
 	      .on('final', function (m) {
 		  // console.log("FINAL: offer_cancel: %s", JSON.stringify(m));
@@ -263,7 +263,7 @@ buster.testCase("Offer tests", {
 	      .set_flags('CreateAccount')
 	      .on('proposed', function (m) {
 		  // console.log("PROPOSED: CreateAccount: %s", JSON.stringify(m));
-		  callback(m.result != 'tesSUCCESS', m);
+		  callback(m.result !== 'tesSUCCESS', m);
 		})
 	      .on('error', function(m) {
 		  // console.log("error: %s", m);
@@ -279,7 +279,7 @@ buster.testCase("Offer tests", {
 	      .offer_cancel("root", m.tx_json.Sequence)
 	      .on('proposed', function (m) {
 		  // console.log("PROPOSED: offer_cancel past: %s", JSON.stringify(m));
-		  callback(m.result != 'tesSUCCESS', m);
+		  callback(m.result !== 'tesSUCCESS', m);
 		})
 	      .submit();
 	  },
@@ -289,7 +289,7 @@ buster.testCase("Offer tests", {
 	      .offer_cancel("root", m.tx_json.Sequence+1)
 	      .on('proposed', function (m) {
 		  // console.log("PROPOSED: offer_cancel same: %s", JSON.stringify(m));
-		  callback(m.result != 'temBAD_SEQUENCE', m);
+		  callback(m.result !== 'temBAD_SEQUENCE', m);
 		})
 	      .submit();
 	  },
@@ -302,7 +302,7 @@ buster.testCase("Offer tests", {
 	      .offer_cancel("root", m.tx_json.Sequence+2)
 	      .on('proposed', function (m) {
 		  // console.log("ERROR: offer_cancel future: %s", JSON.stringify(m));
-		  callback(m.result != 'temBAD_SEQUENCE');
+		  callback(m.result !== 'temBAD_SEQUENCE');
 		})
 	      .submit();
 	  },
@@ -370,7 +370,7 @@ buster.testCase("Offer tests", {
 	      .offer_create("bob", "100/USD/mtgox", "500")
 	      .on('proposed', function (m) {
 		  // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
-		  callback(m.result != 'tesSUCCESS');
+		  callback(m.result !== 'tesSUCCESS');
 		})
 	      .submit();
 	  },
@@ -383,7 +383,7 @@ buster.testCase("Offer tests", {
 	      .on('proposed', function (m) {
 		  // console.log("proposed: %s", JSON.stringify(m));
 
-		  callback(m.result != 'tesSUCCESS');
+		  callback(m.result !== 'tesSUCCESS');
 		})
 	      .submit();
 	  },

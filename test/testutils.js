@@ -226,7 +226,7 @@ var verify_balance = function (remote, src, amount_json, callback) {
 
   if (amount.is_native()) {
     // XXX Not implemented.
-    callback(false);
+    callback();
   }
   else {
     remote.request_ripple_balance(src, amount.issuer.to_json(), amount.currency.to_json(), 'CURRENT')
@@ -237,11 +237,13 @@ var verify_balance = function (remote, src, amount_json, callback) {
   //	console.log("issuer_balance: %s", m.issuer_balance.to_text_full());
   //	console.log("issuer_limit: %s", m.issuer_limit.to_text_full());
 
-	  if (!m.account_balance.equals(amount)) {
+	  var account_balance = Amount.from_json(m.account_balance);
+
+	  if (!account_balance.equals(amount)) {
 	    console.log("verify_balance: failed: %s vs %s is %s", src, amount_json, amount.to_text_full());
 	  }
 
-	  callback(!m.account_balance.equals(amount));
+	  callback(!account_balance.equals(amount));
 	})
       .request();
   }
@@ -269,15 +271,57 @@ var verify_balances = function (remote, balances, callback) {
     });
 };
 
-exports.build_setup	    = build_setup;
-exports.create_accounts	    = create_accounts;
-exports.credit_limit	    = credit_limit;
-exports.credit_limits	    = credit_limits;
-exports.payment		    = payment;
-exports.payments	    = payments;
-exports.build_teardown	    = build_teardown;
-exports.transfer_rate	    = transfer_rate;
-exports.verify_balance	    = verify_balance;
-exports.verify_balances	    = verify_balances;
+// --> owner: account
+// --> seq: sequence number of creating transaction.
+// --> taker_gets: json amount
+// --> taker_pays: json amount
+var verify_offer = function (remote, owner, seq, taker_gets, taker_pays, callback) {
+  assert(6 === arguments.length);
+
+  remote.request_ledger_entry('offer')
+    .offer_id(owner, seq)
+    .on('success', function (m) {
+	var wrong   = (!Amount.from_json(m.node.TakerGets).equals(Amount.from_json(taker_gets))
+	  || !Amount.from_json(m.node.TakerPays).equals(Amount.from_json(taker_pays)));
+
+	if (wrong)
+	  console.log("verify_offer: failed: %s", JSON.stringify(m));
+
+	callback(wrong);
+      })
+    .request();
+};
+
+var verify_offer_not_found = function (remote, owner, seq, callback) {
+  assert(4 === arguments.length);
+
+  remote.request_ledger_entry('offer')
+    .offer_id(owner, seq)
+    .on('success', function (m) {
+	console.log("verify_no_offer: found offer: %s", JSON.stringify(m));
+
+	callback('entryFound');
+      })
+    .on('error', function (m) {
+	console.log("verify_no_offer: success: %s", JSON.stringify(m));
+
+	callback('remoteError' !== m.error
+	  || 'entryNotFound' !== m.remote.error);
+      })
+    .request();
+};
+
+exports.build_setup		= build_setup;
+exports.create_accounts	      	= create_accounts;
+exports.credit_limit	      	= credit_limit;
+exports.credit_limits	      	= credit_limits;
+exports.payment		      	= payment;
+exports.payments	      	= payments;
+exports.build_teardown	      	= build_teardown;
+exports.transfer_rate	      	= transfer_rate;
+exports.verify_balance	      	= verify_balance;
+exports.verify_balances	      	= verify_balances;
+exports.verify_offer	      	= verify_offer;
+exports.verify_offer_not_found	= verify_offer_not_found;
 
 // vim:sw=2:sts=2:ts=8
