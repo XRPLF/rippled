@@ -221,9 +221,12 @@ void LedgerAcquire::trigger(Peer::ref peer, bool timer)
 		tmGL.set_itype(ripple::liBASE);
 		cLog(lsTRACE) << "Sending base request to " << (peer ? "selected peer" : "all peers");
 		sendRequest(tmGL, peer);
+		return;
 	}
 
-	tmGL.set_ledgerseq(mLedger->getLedgerSeq());
+	assert(mLedger);
+	if (mLedger)
+		tmGL.set_ledgerseq(mLedger->getLedgerSeq());
 
 	if (mHaveBase && !mHaveTransactions)
 	{
