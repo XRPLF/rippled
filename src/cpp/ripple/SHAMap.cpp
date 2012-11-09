@@ -321,7 +321,6 @@ SHAMapItem::pointer SHAMap::onlyBelow(SHAMapTreeNode* node)
 	// If there is only one item below this node, return it
 	while (!node->isLeaf())
 	{
-		found = false;
 		SHAMapTreeNode* nextNode = NULL;
 
 		for (int i = 0; i < 16; ++i)
