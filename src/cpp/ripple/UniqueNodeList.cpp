@@ -1422,7 +1422,7 @@ void UniqueNodeList::nodeRemovePublic(const RippleAddress& naNodePublic)
 		Database* db=theApp->getWalletDB()->getDB();
 		ScopedLock sl(theApp->getWalletDB()->getDBLock());
 
-		db->executeSQL(str(boost::format("DELETE FROM SeedNodes WHERE PublicKey=%s") % naNodePublic.humanNodePublic()));
+		db->executeSQL(str(boost::format("DELETE FROM SeedNodes WHERE PublicKey=%s") % sqlEscape(naNodePublic.humanNodePublic())));
 	}
 
 	// YYY Only dirty on successful delete.
