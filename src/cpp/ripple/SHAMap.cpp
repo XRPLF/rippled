@@ -319,7 +319,6 @@ SHAMapTreeNode* SHAMap::lastBelow(SHAMapTreeNode* node)
 SHAMapItem::pointer SHAMap::onlyBelow(SHAMapTreeNode* node)
 {
 	// If there is only one item below this node, return it
-	bool found;
 	while (!node->isLeaf())
 	{
 		found = false;
