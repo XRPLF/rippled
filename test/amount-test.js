@@ -12,6 +12,8 @@ require("../src/js/amount.js").config = require("./config.js");
 
 var config  = require('./config.js');
 
+// XXX Add test cases that push XRP vs non-XRP behavior.
+
 buster.testCase("Amount", {
   "UInt160" : {
     "Parse 0" : function () {
@@ -38,25 +40,25 @@ buster.testCase("Amount", {
       buster.assert.equals("800/USD/"+config.accounts["mtgox"].account, Amount.from_json("800/USD/mtgox").to_text_full());
     },
     "Parse native 0" : function () {
-      buster.assert.equals("0/XNS", Amount.from_json("0").to_text_full());
+      buster.assert.equals("0/XRP", Amount.from_json("0").to_text_full());
     },
     "Parse native 0.0" : function () {
-      buster.assert.equals("0/XNS", Amount.from_json("0.0").to_text_full());
+      buster.assert.equals("0/XRP", Amount.from_json("0.0").to_text_full());
     },
     "Parse native -0" : function () {
-      buster.assert.equals("0/XNS", Amount.from_json("-0").to_text_full());
+      buster.assert.equals("0/XRP", Amount.from_json("-0").to_text_full());
     },
     "Parse native -0.0" : function () {
-      buster.assert.equals("0/XNS", Amount.from_json("-0.0").to_text_full());
+      buster.assert.equals("0/XRP", Amount.from_json("-0.0").to_text_full());
     },
     "Parse native 1000" : function () {
-      buster.assert.equals("1000/XNS", Amount.from_json("1000").to_text_full());
+      buster.assert.equals("1000/XRP", Amount.from_json("1000").to_text_full());
     },
     "Parse native 12.3" : function () {
-      buster.assert.equals("12300000/XNS", Amount.from_json("12.3").to_text_full());
+      buster.assert.equals("12300000/XRP", Amount.from_json("12.3").to_text_full());
     },
     "Parse native -12.3" : function () {
-      buster.assert.equals("-12300000/XNS", Amount.from_json("-12.3").to_text_full());
+      buster.assert.equals("-12300000/XRP", Amount.from_json("-12.3").to_text_full());
     },
     "Parse 123./USD/rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh" : function () {
       buster.assert.equals("123/USD/rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", Amount.from_json("123./USD/rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh").to_text_full());
@@ -79,10 +81,10 @@ buster.testCase("Amount", {
   },
   "Amount operations" : {
     "Negate native 123" : function () {
-      buster.assert.equals("-123/XNS", Amount.from_json("123").negate().to_text_full());
+      buster.assert.equals("-123/XRP", Amount.from_json("123").negate().to_text_full());
     },
     "Negate native -123" : function () {
-      buster.assert.equals("123/XNS", Amount.from_json("-123").negate().to_text_full());
+      buster.assert.equals("123/XRP", Amount.from_json("-123").negate().to_text_full());
     },
     "Negate non-native 123" : function () {
       buster.assert.equals("-123/USD/rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", Amount.from_json("123/USD/rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh").negate().to_text_full());

@@ -218,11 +218,11 @@ UInt160.prototype.to_json = function () {
 };
 
 var Currency = function () {
-  // Internal form: 0 = XNS. 3 letter-code.
+  // Internal form: 0 = XRP. 3 letter-code.
   // XXX Internal should be 0 or hex with three letter annotation when valid.
 
   // Json form:
-  //  '', 'XNS', '0': 0
+  //  '', 'XRP', '0': 0
   //  3-letter code: ...
   // XXX Should support hex, C++ doesn't currently allow it.
 
@@ -253,7 +253,7 @@ Currency.prototype.copyTo = function(d) {
 
 // this._value = NaN on error.
 Currency.prototype.parse_json = function(j) {
-  if ("" === j || "0" === j || "XNS" === j) {
+  if ("" === j || "0" === j || "XRP" === j) {
     this._value	= 0;
   }
   else if ('string' != typeof j || 3 !== j.length) {
@@ -267,22 +267,22 @@ Currency.prototype.parse_json = function(j) {
 };
 
 Currency.prototype.to_json = function () {
-  return this._value ? this._value : "XNS";
+  return this._value ? this._value : "XRP";
 };
 
 Currency.prototype.to_human = function() {
-  return this._value ? this._value : "XNS";
+  return this._value ? this._value : "XRP";
 };
 
 var Amount = function () {
   // Json format:
-  //  integer : XNS
+  //  integer : XRP
   //  { 'value' : ..., 'currency' : ..., 'issuer' : ...}
 
-  this._value	    = new BigInteger();	// NaN for bad value. Always positive for non-XNS.
-  this._offset	    = undefined;	// For non-XNS.
-  this._is_native   = true;		// Default to XNS. Only valid if value is not NaN.
-  this._is_negative  = undefined;	// Undefined for XNS.
+  this._value	    = new BigInteger();	// NaN for bad value. Always positive for non-XRP.
+  this._offset	    = undefined;	// For non-XRP.
+  this._is_native   = true;		// Default to XRP. Only valid if value is not NaN.
+  this._is_negative  = undefined;	// Undefined for XRP.
 
   this.currency	    = new Currency();
   this.issuer	    = new UInt160();
@@ -432,11 +432,11 @@ Amount.prototype.to_text_full = function() {
   return isNaN(this._value)
     ? NaN
     : this._is_native
-      ? this.to_text() + "/XNS"
+      ? this.to_text() + "/XRP"
       : this.to_text() + "/" + this.currency.to_json() + "/" + this.issuer.to_json();
 };
 
-// Parse a XNS value from untrusted input.
+// Parse a XRP value from untrusted input.
 // - integer = raw units
 // - float = with precision 6
 // XXX Improvements: disallow leading zeros.
@@ -566,7 +566,7 @@ Amount.prototype.parse_json = function(j) {
     // Parse the passed value to sanitize and copy it.
 
     this.parse_value(j.value);
-    this.currency.parse_json(j.currency);     // Never XNS.
+    this.currency.parse_json(j.currency);     // Never XRP.
     this.issuer.parse_json(j.issuer);
   }
   else {

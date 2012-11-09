@@ -19,7 +19,7 @@ buster.testCase("Sending", {
   'setUp' : testutils.build_setup(),
   'tearDown' : testutils.build_teardown(),
 
-  "send XNS to non-existant account without create." :
+  "send XRP to non-existant account without create." :
     function (done) {
       var self	  = this;
       var ledgers = 20;
@@ -713,6 +713,6 @@ buster.testCase("Indirect ripple", {
 	});
     },
     // Direct ripple without no liqudity.
-    // Test with XRC at start and end.
+    // Test with XRP at start and end.
 });
 // vim:sw=2:sts=2:ts=8
