@@ -5,12 +5,18 @@ var extend = require("extend");
 
 var programPath = __dirname + "/src/js/remote.js";
 
-var watch = false;
-process.argv.forEach(function (arg) {
+var cfg = {
+  watch: false,
+  outputDir: __dirname + "/build"
+};
+for (var i = 0, l = process.argv.length; i < l; i++) {
+  var arg = process.argv[i];
   if (arg === '-w' || arg === '--watch') {
-    watch = true;
+    cfg.watch = true;
+  } else if (arg === '-o') {
+    cfg.outputDir = process.argv[++i];
   }
-});
+};
 
 var builds = [{
   filename: 'ripple-'+pkg.version+'.js',
@@ -27,12 +33,12 @@ var defaultOpts = {
   libary: 'ripple',
   // However, it's fixed in webpack 0.8, so we include the correct spelling too:
   library: 'ripple',
-  watch: watch
+  watch: cfg.watch
 };
 
 function build(opts) {
   var opts = extend({}, defaultOpts, opts);
-  opts.output = __dirname + "/build/"+opts.filename;
+  opts.output = cfg.outputDir + "/"+opts.filename;
   return function (callback) {
     var filename = opts.filename;
     webpack(programPath, opts, function (err, result) {
@@ -44,7 +50,7 @@ function build(opts) {
   }
 }
 
-if (!watch) {
+if (!cfg.watch) {
   console.log('Compiling Ripple JavaScript...');
   async.series(builds.map(build), function (err) {
     if (err) {

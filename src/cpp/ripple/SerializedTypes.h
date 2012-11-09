@@ -296,6 +296,8 @@ public:
 	// Zero while copying currency and issuer.
 	STAmount* zero(const STAmount& saTmpl)
 	{ mCurrency = saTmpl.mCurrency; mIssuer = saTmpl.mIssuer; mIsNative = saTmpl.mIsNative; return zero(); }
+	STAmount* zero(const uint160& uCurrencyID, const uint160& uIssuerID)
+	{ mCurrency = uCurrencyID; mIssuer = uIssuerID; mIsNative = !uCurrencyID; return zero(); }
 
 	int compare(const STAmount&) const;
 
