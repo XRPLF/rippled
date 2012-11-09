@@ -893,8 +893,6 @@ void Peer::recvPropose(const boost::shared_ptr<ripple::TMProposeSet>& packet)
 
 void Peer::recvHaveTxSet(ripple::TMHaveTransactionSet& packet)
 {
-	// FIXME: We should have some limit on the number of HaveTxSet messages a peer can send us
-	// per consensus pass, to keep a peer from running up our memory without limit
 	uint256 hashes;
 	if (packet.hash().size() != (256 / 8))
 	{
