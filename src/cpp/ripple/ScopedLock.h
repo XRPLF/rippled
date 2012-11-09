@@ -16,16 +16,26 @@ protected:
 
 public:
 	ScopedLock(boost::recursive_mutex& mutex) :
-		mHolder(boost::make_shared<boost::recursive_mutex::scoped_lock>(boost::ref(mutex)))
-	{ ;	}
-	void lock() const
-	{
-		mHolder->lock();
-	}
-	void unlock() const
-	{
-		mHolder->unlock();
-	}
+		mHolder(boost::make_shared<boost::recursive_mutex::scoped_lock>(boost::ref(mutex)))	{ ;	}
+
+	void lock() const	{ mHolder->lock(); }
+	void unlock() const	{ mHolder->unlock(); }
+};
+
+// A class that unlocks on construction and locks on destruction
+
+class ScopedUnlock
+{
+protected:
+	boost::recursive_mutex& mMutex;
+
+public:
+	ScopedUnlock(boost::recursive_mutex& mutex) : mMutex(mutex)	{ mMutex.unlock(); }
+	~ScopedUnlock()												{ mMutex.lock(); }
+
+private:
+	ScopedUnlock(const ScopedUnlock&); // no implementation
+	ScopedUnlock& operator=(const ScopedUnlock&); // no implementation
 };
 
 #endif
