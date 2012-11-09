@@ -34,6 +34,7 @@ TER	TransactionEngine::setAuthorized(const SerializedTransaction& txn, bool bMus
 	std::vector<unsigned char>	vucSignature	= txn.getFieldVL(sfSignature);
 	RippleAddress				naAccountPublic	= RippleAddress::createAccountPublic(vucPubKey);
 
+	// FIXME: This should be moved to the transaction's signature check and cached
 	if (!naAccountPublic.accountPublicVerify(Serializer::getSHA512Half(vucCipher), vucSignature))
 	{
 		Log(lsWARNING) << "createGenerator: bad signature unauthorized generator claim";
@@ -614,6 +615,7 @@ TER TransactionEngine::doWalletAdd(const SerializedTransaction& txn)
 	const RippleAddress				naMasterPubKey	= RippleAddress::createAccountPublic(vucPubKey);
 	const uint160						uDstAccountID	= naMasterPubKey.getAccountID();
 
+	// FIXME: This should be moved to the transaction's signature check logic and cached
 	if (!naMasterPubKey.accountPublicVerify(Serializer::getSHA512Half(uAuthKeyID.begin(), uAuthKeyID.size()), vucSignature))
 	{
 		std::cerr << "WalletAdd: unauthorized: bad signature " << std::endl;

@@ -1384,7 +1384,9 @@ Json::Value RPCHandler::doCommand(const std::string& command, Json::Value& param
 		return rpcError(rpcNO_NETWORK);
 	}
 	// XXX Should verify we have a current ledger.
-	else if ((commandsA[i].iOptions & optCurrent) && false)
+
+	boost::recursive_mutex::scoped_lock sl(theApp->getMasterLock());
+	if ((commandsA[i].iOptions & optCurrent) && false)
 	{
 		return rpcError(rpcNO_CURRENT);
 	}

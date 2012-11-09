@@ -43,6 +43,8 @@ class Application
 	boost::asio::io_service			mIOService, mAuxService;
 	boost::asio::io_service::work	mIOWork, mAuxWork;
 
+	boost::recursive_mutex	mMasterLock;
+
 	Wallet					mWallet;
 	UniqueNodeList			mUNL;
 	LedgerMaster			mMasterLedger;
@@ -99,6 +101,7 @@ public:
 	JobQueue& getJobQueue()							{ return mJobQueue; }
 	SuppressionTable& getSuppression()				{ return mSuppressions; }
 	RPCHandler& getRPCHandler()						{ return mRPCHandler; }
+	boost::recursive_mutex& getMasterLock()			{ return mMasterLock; }
 
 
 	bool isNew(const uint256& s)					{ return mSuppressions.addSuppression(s); }

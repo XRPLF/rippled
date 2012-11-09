@@ -1141,6 +1141,7 @@ uint32 LedgerConsensus::roundCloseTime(uint32 closeTime)
 
 void LedgerConsensus::accept(SHAMap::ref set)
 {
+	boost::recursive_mutex::scoped_lock masterLock(theApp->getMasterLock());
 	assert(set->getHash() == mOurPosition->getCurrentHash());
 
 	uint32 closeTime = roundCloseTime(mOurPosition->getCloseTime());
