@@ -334,11 +334,12 @@ buster.testCase("Offer tests", {
 	});
     },
 
-  "ripple currency conversion" :
+  "ripple currency conversion : entire offer" :
     function (done) {
       var self = this;
+      var seq;
 
-      // self.remote.set_trace();
+      self.remote.set_trace();
 
       async.waterfall([
 	  function (callback) {
@@ -371,17 +372,24 @@ buster.testCase("Offer tests", {
 	      .on('proposed', function (m) {
 		  // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
 		  callback(m.result !== 'tesSUCCESS');
+
+		  seq = m.tx_json.Sequence;
 		})
 	      .submit();
 	  },
 	  function (callback) {
-	    self.what = "Alice converts USD to XRC.";
+	    self.what = "Verify offer balance.";
+
+	    testutils.verify_offer(self.remote, "bob", seq, "500", "100/USD/mtgox", callback);
+	  },
+	  function (callback) {
+	    self.what = "Alice converts USD to XRP.";
 
 	    self.remote.transaction()
 	      .payment("alice", "alice", "500")
 	      .send_max("100/USD/mtgox")
 	      .on('proposed', function (m) {
-		  // console.log("proposed: %s", JSON.stringify(m));
+		  console.log("proposed: %s", JSON.stringify(m));
 
 		  callback(m.result !== 'tesSUCCESS');
 		})
@@ -393,6 +401,132 @@ buster.testCase("Offer tests", {
 	    testutils.verify_balances(self.remote,
 	      {
 		"alice"	  : [ "0/USD/mtgox", "500" ],
+		"bob"	  : "100/USD/mtgox",
+	      },
+	      callback);
+	  },
+	  function (callback) {
+	    self.what = "Verify offer consumed.";
+
+	    testutils.verify_offer_not_found(self.remote, "bob", seq, callback);
+	  },
+	], function (error) {
+	  buster.refute(error, self.what);
+	  done();
+	});
+    },
+
+  "ripple currency conversion : in parts" :
+    function (done) {
+      var self = this;
+      var seq;
+
+      self.remote.set_trace();
+
+      async.waterfall([
+	  function (callback) {
+	    self.what = "Create accounts.";
+
+	    testutils.create_accounts(self.remote, "root", "10000", ["alice", "bob", "mtgox"], callback);
+	  },
+	  function (callback) {
+	    self.what = "Set limits.";
+
+	    testutils.credit_limits(self.remote,
+	      {
+		"alice" : "200/USD/mtgox",
+		"bob" : "1000/USD/mtgox"
+	      },
+	      callback);
+	  },
+	  function (callback) {
+	    self.what = "Distribute funds.";
+
+	    testutils.payments(self.remote,
+	      {
+		"mtgox" : "200/USD/alice"
+	      },
+	      callback);
+	  },
+	  function (callback) {
+	    self.remote.transaction()
+	      .offer_create("bob", "100/USD/mtgox", "500")
+	      .on('proposed', function (m) {
+		  // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
+		  callback(m.result !== 'tesSUCCESS');
+
+		  seq = m.tx_json.Sequence;
+		})
+	      .submit();
+	  },
+	  function (callback) {
+	    self.what = "Alice converts USD to XRP.";
+
+	    self.remote.transaction()
+	      .payment("alice", "alice", "200")
+	      .send_max("100/USD/mtgox")
+	      .on('proposed', function (m) {
+		  console.log("proposed: %s", JSON.stringify(m));
+
+		  callback(m.result !== 'tesSUCCESS');
+		})
+	      .submit();
+	  },
+	  function (callback) {
+	    self.what = "Verify offer balance.";
+
+	    testutils.verify_offer(self.remote, "bob", seq, "300", "60/USD/mtgox", callback);
+	  },
+	  function (callback) {
+	    self.what = "Verify balances.";
+
+	    testutils.verify_balances(self.remote,
+	      {
+		"alice"	  : [ "160/USD/mtgox", "200" ],	// XXX Verfiying XRP balance needs to account for fees.
+		"bob"	  : "40/USD/mtgox",
+	      },
+	      callback);
+	  },
+	  function (callback) {
+	    self.what = "Alice converts USD to XRP should fail due to PartialPayment.";
+
+	    self.remote.transaction()
+	      .payment("alice", "alice", "600")
+	      .send_max("100/USD/mtgox")
+	      .on('proposed', function (m) {
+		  console.log("proposed: %s", JSON.stringify(m));
+
+		  console.log("callback: %d", m.result !== 'tepPATH_PARTIAL');
+		  console.log("callback: %s", m.result);
+		  callback(m.result !== 'tepPATH_PARTIAL');
+		})
+	      .submit();
+	  },
+	  function (callback) {
+	    self.what = "Alice converts USD to XRP.";
+
+	    self.remote.transaction()
+	      .payment("alice", "alice", "600")
+	      .send_max("100/USD/mtgox")
+	      .set_flags('PartialPayment')
+	      .on('proposed', function (m) {
+		  console.log("proposed: %s", JSON.stringify(m));
+
+		  callback(m.result !== 'tesSUCCESS');
+		})
+	      .submit();
+	  },
+	  function (callback) {
+	    self.what = "Verify offer consumed.";
+
+	    testutils.verify_offer_not_found(self.remote, "bob", seq, callback);
+	  },
+	  function (callback) {
+	    self.what = "Verify balances.";
+
+	    testutils.verify_balances(self.remote,
+	      {
+		"alice"	  : [ "100/USD/mtgox", "500" ],	// XXX Verfiying XRP balance needs to account for fees.
 		"bob"	  : "100/USD/mtgox",
 	      },
 	      callback);
