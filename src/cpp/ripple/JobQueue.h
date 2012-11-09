@@ -21,6 +21,7 @@ enum JobType
 	jtTRANSACTION,
 	jtPROPOSAL_ut,
 	jtVALIDATION_t,
+	jtTRANSACTION_l,
 	jtPROPOSAL_t,
 	jtADMIN,
 	jtDEATH,			// job of death, used internally
