@@ -323,17 +323,17 @@ SHAMapItem::pointer SHAMap::onlyBelow(SHAMapTreeNode* node)
 	while (!node->isLeaf())
 	{
 		found = false;
-		SHAMapTreeNode* nextNode;
+		SHAMapTreeNode* nextNode = NULL;
 
 		for (int i = 0; i < 16; ++i)
 			if (!node->isEmptyBranch(i))
 			{
-				if (found) return SHAMapItem::pointer(); // two leaves below
+				if (nextNode)
+					return SHAMapItem::pointer(); // two leaves below
 				nextNode = getNodePointer(node->getChildNodeID(i), node->getChildHash(i));
-				found = true;
 			}
 
-		if (!found)
+		if (!nextNode)
 		{
 			std::cerr << *node << std::endl;
 			assert(false);
