@@ -21,10 +21,6 @@ public:
 protected:
 	typedef void (WSConnection::*doFuncPtr)(Json::Value& jvResult, Json::Value &jvRequest);
 
-	boost::mutex									mLock;
-	boost::unordered_set<RippleAddress>			mSubAccountInfo;
-	boost::unordered_set<RippleAddress>			mSubAccountTransaction;
-
 	WSServerHandler<websocketpp::WSDOOR_SERVER>*	mHandler;
 	connection_ptr									mConnection;
 	NetworkOPs&										mNetwork;
@@ -44,13 +40,6 @@ public:
 
 	// Utilities
 	Json::Value invokeCommand(Json::Value& jvRequest);
-	boost::unordered_set<RippleAddress> parseAccountIds(const Json::Value& jvArray);
-
-	// Commands
-	void doSubmit(Json::Value& jvResult, Json::Value& jvRequest);
-	void doRPC(Json::Value& jvResult, Json::Value& jvRequest);
-	void doSubscribe(Json::Value& jvResult,  Json::Value& jvRequest);
-	void doUnsubscribe(Json::Value& jvResult,  Json::Value& jvRequest);
 
 };
 

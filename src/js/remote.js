@@ -429,10 +429,10 @@ Remote.prototype._connect_message = function (ws, json) {
 	  if (!request) {
 	    unexpected  = true;
 	  }
-	  else if ('success' === message.result) {
+	  else if ('success' === message.status) {
 	    if (this.trace) console.log("message: %s", json);
 
-	    request.emit('success', message);
+	    request.emit('success', message.result);
 	  }
 	  else if (message.error) {
 	    if (this.trace) console.log("message: %s", json);
@@ -515,7 +515,7 @@ Remote.prototype.request_ledger_hash = function () {
 
   var request = new Request(this, 'rpc');
   
-  request.message.rpc_command = 'ledger_closed';
+  request.message.command = 'ledger_closed';
 
   return request;
 };
@@ -525,7 +525,7 @@ Remote.prototype.request_ledger_hash = function () {
 Remote.prototype.request_ledger_current = function () {
   var request = new Request(this, 'rpc');
   
-  request.message.rpc_command = 'ledger_current';
+  request.message.command = 'ledger_current';
 
   return request;
 };
@@ -540,7 +540,7 @@ Remote.prototype.request_ledger_entry = function (type) {
   var self    = this;
   var request = new Request(this, 'rpc');
 
-  request.message.rpc_command = 'ledger_entry';
+  request.message.command = 'ledger_entry';
 
   if (type)
     this.type = type;
@@ -593,10 +593,28 @@ Remote.prototype.request_ledger_entry = function (type) {
   return request;
 };
 
-Remote.prototype.request_subscribe = function () {
+Remote.prototype.request_subscribe = function (streams) {
   var request = new Request(this, 'subscribe');
 
-  request.message.streams = [ 'ledger', 'server' ];
+  if (streams) {
+    if ("object" !== typeof streams) {
+      streams = [streams];
+    }
+    request.message.streams = streams;
+  }
+
+  return request;
+};
+
+Remote.prototype.request_unsubscribe = function (streams) {
+  var request = new Request(this, 'unsubscribe');
+
+  if (streams) {
+    if ("object" !== typeof streams) {
+      streams = [streams];
+    }
+    request.message.streams = streams;
+  }
 
   return request;
 };
@@ -606,7 +624,7 @@ Remote.prototype.request_transaction_entry = function (hash) {
   
   var request = new Request(this, 'rpc');
 
-  request.message.rpc_command = 'transaction_entry';
+  request.message.command = 'transaction_entry';
 
   return request
     .tx_hash(hash);
@@ -658,7 +676,7 @@ Remote.prototype.submit = function (transaction) {
     else {
       var submit_request = new Request(this, 'rpc');
 
-      submit_request.message.rpc_command = 'submit_json';
+      submit_request.message.command = 'submit_json';
 
       submit_request.tx_json(transaction.tx_json);
       submit_request.secret(transaction.secret);
@@ -685,7 +703,7 @@ Remote.prototype.submit = function (transaction) {
 Remote.prototype._server_subscribe = function () {
   var self  = this;
 
-  this.request_subscribe()
+  this.request_subscribe([ 'ledger', 'server' ])
     .on('success', function (message) {
 	self.stand_alone          = !!message.stand_alone;
 
@@ -715,7 +733,7 @@ Remote.prototype.ledger_accept = function () {
   {
     var request = new Request(this, 'rpc');
 
-    request.message.rpc_command = 'ledger_accept';
+    request.message.command = 'ledger_accept';
 
     request
       .request();
@@ -766,7 +784,7 @@ Remote.prototype.set_account_seq = function (account, seq) {
   var account	    = UInt160.json_rewrite(account);
 
   if (!this.accounts[account]) this.accounts[account] = {};
- 
+
   this.accounts[account].seq = seq;
 }
 
@@ -806,7 +824,7 @@ Remote.prototype.account_seq_cache = function (account, current) {
     account_info.caching_seq_request	= request;
   }
 
-  return request
+  return request;
 };
 
 // Mark an account's root node as dirty.

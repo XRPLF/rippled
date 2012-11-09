@@ -51,6 +51,7 @@ Json::Value RPCHandler::rpcError(int iError)
 		{ rpcNO_ACCOUNT,			"noAccount",		"No such account."										},
 		{ rpcNO_CLOSED,				"noClosed",			"Closed ledger is unavailable."							},
 		{ rpcNO_CURRENT,			"noCurrent",		"Current ledger is unavailable."						},
+		{ rpcNO_EVENTS,				"noEvents",			"Current transport does not support events."			},
 		{ rpcNO_GEN_DECRPYT,		"noGenDectypt",		"Password failed to decrypt master public generator."	},
 		{ rpcNO_NETWORK,			"noNetwork",		"Network not available."								},
 		{ rpcNO_PERMISSION,			"noPermission",		"You don't have permission for this command."			},
@@ -1298,7 +1299,7 @@ Json::Value RPCHandler::doLogRotate(const Json::Value& params)
 	return Log::rotateLog();
 }
 
-Json::Value RPCHandler::doCommand(const std::string& command, Json::Value& params, int role)
+Json::Value RPCHandler::doCommand(const std::string& command, Json::Value& params, int role, InfoSub* sub)
 {
 	cLog(lsTRACE) << "RPC:" << command;
 	cLog(lsTRACE) << "RPC params:" << params;
@@ -1309,53 +1310,58 @@ Json::Value RPCHandler::doCommand(const std::string& command, Json::Value& param
 		int				iMinParams;
 		int				iMaxParams;
 		bool			mAdminRequired;
+		bool			mEvented;
 		unsigned int	iOptions;
 	} commandsA[] = {
+		// Request-response methods
 		{	"accept_ledger",		&RPCHandler::doAcceptLedger,		0,	0, true					},
-		{	"account_info",			&RPCHandler::doAccountInfo,			1,  2, false,	optCurrent	},
-		{	"account_tx",			&RPCHandler::doAccountTransactions,	2,  3, false,	optNetwork	},
-		{	"connect",				&RPCHandler::doConnect,				1,  2, true					},
-		{	"data_delete",			&RPCHandler::doDataDelete,			1,  1, true					},
-		{	"data_fetch",			&RPCHandler::doDataFetch,			1,  1, true					},
-		{	"data_store",			&RPCHandler::doDataStore,			2,  2, true					},
-		{	"get_counts",			&RPCHandler::doGetCounts,			0,	1, true					},
-		{	"ledger",				&RPCHandler::doLedger,				0,  2, false,	optNetwork	},
-		{	"ledger_accept",		&RPCHandler::doLedgerAccept,		0,  0, true,	optCurrent	},
-		{	"ledger_closed",		&RPCHandler::doLedgerClosed,		0,  0, false,	optClosed	},
-		{	"ledger_current",		&RPCHandler::doLedgerCurrent,		0,  0, false,	optCurrent	},
-		{	"ledger_entry",			&RPCHandler::doLedgerEntry,			-1,  -1, false,	optCurrent	},
-		{	"log_level",			&RPCHandler::doLogLevel,			0,  2, true					},
-		{	"logrotate",			&RPCHandler::doLogRotate,			0,  0, true					},
-		{	"nickname_info",		&RPCHandler::doNicknameInfo,		1,  1, false,	optCurrent	},
-		{	"owner_info",			&RPCHandler::doOwnerInfo,			1,  2, false,	optCurrent	},
+		{	"account_info",			&RPCHandler::doAccountInfo,			1,  2, false,	false,	optCurrent	},
+		{	"account_tx",			&RPCHandler::doAccountTransactions,	2,  3, false,	false,	optNetwork	},
+		{	"connect",				&RPCHandler::doConnect,				1,  2, true							},
+		{	"data_delete",			&RPCHandler::doDataDelete,			1,  1, true							},
+		{	"data_fetch",			&RPCHandler::doDataFetch,			1,  1, true							},
+		{	"data_store",			&RPCHandler::doDataStore,			2,  2, true							},
+		{	"get_counts",			&RPCHandler::doGetCounts,			0,	1, true							},
+		{	"ledger",				&RPCHandler::doLedger,				0,  2, false,	false,	optNetwork	},
+		{	"ledger_accept",		&RPCHandler::doLedgerAccept,		0,  0, true,	false,	optCurrent	},
+		{	"ledger_closed",		&RPCHandler::doLedgerClosed,		0,  0, false,	false,	optClosed	},
+		{	"ledger_current",		&RPCHandler::doLedgerCurrent,		0,  0, false,	false,	optCurrent	},
+		{	"ledger_entry",			&RPCHandler::doLedgerEntry,			-1,  -1, false,	false,	optCurrent	},
+		{	"log_level",			&RPCHandler::doLogLevel,			0,  2, true							},
+		{	"logrotate",			&RPCHandler::doLogRotate,			0,  0, true							},
+		{	"nickname_info",		&RPCHandler::doNicknameInfo,		1,  1, false,	false,	optCurrent	},
+		{	"owner_info",			&RPCHandler::doOwnerInfo,			1,  2, false,	false,	optCurrent	},
 		{	"peers",				&RPCHandler::doPeers,				0,  0, true					},
-		{	"profile",				&RPCHandler::doProfile,				1,  9, false,	optCurrent	},
-		{	"ripple_lines_get",		&RPCHandler::doRippleLinesGet,		1,  2, false,	optCurrent	},
-		{	"submit",				&RPCHandler::doSubmit,				2,  2, false,	optCurrent	},
-		{	"submit_json",			&RPCHandler::doSubmitJson,			-1,  -1, false,	optCurrent	},
-		{	"server_info",			&RPCHandler::doServerInfo,			0,  0, true					},
-		{	"stop",					&RPCHandler::doStop,				0,  0, true					},
-		{	"transaction_entry",	&RPCHandler::doTransactionEntry,	-1,  -1, false,	optCurrent	},
-		{	"tx",					&RPCHandler::doTx,					1,  1, true					},
-		{	"tx_history",			&RPCHandler::doTxHistory,			1,  1, false,				},
+		{	"profile",				&RPCHandler::doProfile,				1,  9, false,	false,	optCurrent	},
+		{	"ripple_lines_get",		&RPCHandler::doRippleLinesGet,		1,  2, false,	false,	optCurrent	},
+		{	"submit",				&RPCHandler::doSubmit,				2,  2, false,	false,	optCurrent	},
+		{	"submit_json",			&RPCHandler::doSubmitJson,			-1,  -1, false,	false,	optCurrent	},
+		{	"server_info",			&RPCHandler::doServerInfo,			0,  0, true							},
+		{	"stop",					&RPCHandler::doStop,				0,  0, true							},
+		{	"transaction_entry",	&RPCHandler::doTransactionEntry,	-1,  -1, false,	false,	optCurrent	},
+		{	"tx",					&RPCHandler::doTx,					1,  1, true							},
+		{	"tx_history",			&RPCHandler::doTxHistory,			1,  1, false,						},
 
-		{	"unl_add",				&RPCHandler::doUnlAdd,				1,  2, true					},
-		{	"unl_delete",			&RPCHandler::doUnlDelete,			1,  1, true					},
-		{	"unl_list",				&RPCHandler::doUnlList,				0,  0, true					},
-		{	"unl_load",				&RPCHandler::doUnlLoad,				0,  0, true					},
-		{	"unl_network",			&RPCHandler::doUnlNetwork,			0,  0, true					},
-		{	"unl_reset",			&RPCHandler::doUnlReset,			0,  0, true					},
-		{	"unl_score",			&RPCHandler::doUnlScore,			0,  0, true					},
+		{	"unl_add",				&RPCHandler::doUnlAdd,				1,  2, true							},
+		{	"unl_delete",			&RPCHandler::doUnlDelete,			1,  1, true							},
+		{	"unl_list",				&RPCHandler::doUnlList,				0,  0, true							},
+		{	"unl_load",				&RPCHandler::doUnlLoad,				0,  0, true							},
+		{	"unl_network",			&RPCHandler::doUnlNetwork,			0,  0, true							},
+		{	"unl_reset",			&RPCHandler::doUnlReset,			0,  0, true							},
+		{	"unl_score",			&RPCHandler::doUnlScore,			0,  0, true							},
 
-		{	"validation_create",	&RPCHandler::doValidationCreate,	0,  1, false				},
-		{	"validation_seed",		&RPCHandler::doValidationSeed,		0,  1, false				},
+		{	"validation_create",	&RPCHandler::doValidationCreate,	0,  1, false						},
+		{	"validation_seed",		&RPCHandler::doValidationSeed,		0,  1, false						},
 
-		{	"wallet_accounts",		&RPCHandler::doWalletAccounts,		1,  1, false,	optCurrent	},
-		{	"wallet_propose",		&RPCHandler::doWalletPropose,		0,  1, false,				},
-		{	"wallet_seed",			&RPCHandler::doWalletSeed,			0,  1, false,				},
+		{	"wallet_accounts",		&RPCHandler::doWalletAccounts,		1,  1, false,	false,	optCurrent	},
+		{	"wallet_propose",		&RPCHandler::doWalletPropose,		0,  1, false,						},
+		{	"wallet_seed",			&RPCHandler::doWalletSeed,			0,  1, false,						},
 
-		{	"login",				&RPCHandler::doLogin,				2,  2, true					},
-	};
+		{	"login",				&RPCHandler::doLogin,				2,  2, true							},
+
+		// Evented methods
+		{	"subscribe",			&RPCHandler::doSubscribe,			-1,	-1,	false,	true				},
+		{	"unsubscribe",			&RPCHandler::doUnsubscribe,			-1,	-1,	false,	true				},	};
 
 	int		i = NUMBER(commandsA);
 
@@ -1369,6 +1375,10 @@ Json::Value RPCHandler::doCommand(const std::string& command, Json::Value& param
 	else if (commandsA[i].mAdminRequired && role != ADMIN)
 	{
 		return rpcError(rpcNO_PERMISSION);
+	}
+	else if (commandsA[i].mEvented && sub == NULL)
+	{
+		return rpcError(rpcNO_EVENTS);
 	}
 	else if (commandsA[i].iMinParams >= 0
 		? commandsA[i].iMaxParams
@@ -1396,6 +1406,11 @@ Json::Value RPCHandler::doCommand(const std::string& command, Json::Value& param
 	}
 	else
 	{
+		if (sub != NULL)
+		{
+			isCurrent = sub;
+		}
+
 		try {
 			return (this->*(commandsA[i].dfpFunc))(params);
 		}
@@ -1927,6 +1942,193 @@ Json::Value RPCHandler::doLedgerEntry(const Json::Value& jvRequest)
 		{
 			jvResult["node"]		= sleNode->getJson(0);
 			jvResult["index"]		= uNodeIndex.ToString();
+		}
+	}
+
+	return jvResult;
+}
+
+
+boost::unordered_set<RippleAddress> RPCHandler::parseAccountIds(const Json::Value& jvArray)
+{
+	boost::unordered_set<RippleAddress>	usnaResult;
+
+	for (Json::Value::const_iterator it = jvArray.begin(); it != jvArray.end(); it++)
+	{
+		RippleAddress	naString;
+
+		if (!(*it).isString() || !naString.setAccountID((*it).asString()))
+		{
+			usnaResult.clear();
+			break;
+		}
+		else
+		{
+			(void) usnaResult.insert(naString);
+		}
+	}
+
+	return usnaResult;
+}
+
+/*
+server : Sends a message anytime the server status changes such as network connectivity.
+ledger : Sends a message at every ledger close.
+transactions : Sends a message for every transaction that makes it into a ledger.
+rt_transactions
+accounts
+rt_accounts
+*/
+Json::Value RPCHandler::doSubscribe(const Json::Value& jvRequest)
+{
+	Json::Value jvResult(Json::objectValue);
+
+	if (jvRequest.isMember("streams"))
+	{
+		for (Json::Value::iterator it = jvRequest["streams"].begin(); it != jvRequest["streams"].end(); it++)
+		{
+			if ((*it).isString())
+			{
+				std::string streamName=(*it).asString();
+
+				if(streamName=="server")
+				{
+					mNetOps->subServer(isCurrent, jvResult);
+				}else if(streamName=="ledger")
+				{
+					mNetOps->subLedger(isCurrent, jvResult);
+				}else if(streamName=="transactions")
+				{
+					mNetOps->subTransactions(isCurrent);
+				}else if(streamName=="rt_transactions")
+				{
+					mNetOps->subRTTransactions(isCurrent);
+				}else
+				{
+					jvResult["error"]	= str(boost::format("Unknown stream: %s") % streamName);
+				}
+			}else
+			{
+				jvResult["error"]	= "malformedSteam";
+			}
+		}
+	}
+
+	if (jvRequest.isMember("rt_accounts"))
+	{
+		boost::unordered_set<RippleAddress> usnaAccoundIds	= parseAccountIds(jvRequest["rt_accounts"]);
+
+		if (usnaAccoundIds.empty())
+		{
+			jvResult["error"]	= "malformedAccount";
+		}else
+		{
+			boost::mutex::scoped_lock	sl(mLock);
+
+			BOOST_FOREACH(const RippleAddress& naAccountID, usnaAccoundIds)
+			{
+				isCurrent->insertSubAccountInfo(naAccountID);
+			}
+
+			mNetOps->subAccount(isCurrent, usnaAccoundIds, true);
+		}
+	}
+
+	if (jvRequest.isMember("accounts"))
+	{
+		boost::unordered_set<RippleAddress> usnaAccoundIds	= parseAccountIds(jvRequest["accounts"]);
+
+		if (usnaAccoundIds.empty())
+		{
+			jvResult["error"]	= "malformedAccount";
+		}else
+		{
+			boost::mutex::scoped_lock	sl(mLock);
+
+			BOOST_FOREACH(const RippleAddress& naAccountID, usnaAccoundIds)
+			{
+				isCurrent->insertSubAccountInfo(naAccountID);
+			}
+
+			mNetOps->subAccount(isCurrent, usnaAccoundIds, false);
+		}
+	}
+
+	return jvResult;
+}
+
+Json::Value RPCHandler::doUnsubscribe(const Json::Value& jvRequest)
+{
+	Json::Value jvResult(Json::objectValue);
+
+	if (jvRequest.isMember("streams"))
+	{
+		for (Json::Value::iterator it = jvRequest["streams"].begin(); it != jvRequest["streams"].end(); it++)
+		{
+			if ((*it).isString() )
+			{
+				std::string streamName=(*it).asString();
+
+				if(streamName=="server")
+				{
+					mNetOps->unsubServer(isCurrent);
+				}else if(streamName=="ledger")
+				{
+					mNetOps->unsubLedger(isCurrent);
+				}else if(streamName=="transactions")
+				{
+					mNetOps->unsubTransactions(isCurrent);
+				}else if(streamName=="rt_transactions")
+				{
+					mNetOps->unsubRTTransactions(isCurrent);
+				}else
+				{
+					jvResult["error"]	= str(boost::format("Unknown stream: %s") % streamName);
+				}
+			}else
+			{
+				jvResult["error"]	= "malformedSteam";
+			}
+		}
+	}
+
+	if (jvRequest.isMember("rt_accounts"))
+	{
+		boost::unordered_set<RippleAddress> usnaAccoundIds	= parseAccountIds(jvRequest["rt_accounts"]);
+
+		if (usnaAccoundIds.empty())
+		{
+			jvResult["error"]	= "malformedAccount";
+		}else
+		{
+			boost::mutex::scoped_lock	sl(mLock);
+
+			BOOST_FOREACH(const RippleAddress& naAccountID, usnaAccoundIds)
+			{
+				isCurrent->insertSubAccountInfo(naAccountID);
+			}
+
+			mNetOps->unsubAccount(isCurrent, usnaAccoundIds,true);
+		}
+	}
+
+	if (jvRequest.isMember("accounts"))
+	{
+		boost::unordered_set<RippleAddress> usnaAccoundIds	= parseAccountIds(jvRequest["accounts"]);
+
+		if (usnaAccoundIds.empty())
+		{
+			jvResult["error"]	= "malformedAccount";
+		}else
+		{
+			boost::mutex::scoped_lock	sl(mLock);
+
+			BOOST_FOREACH(const RippleAddress& naAccountID, usnaAccoundIds)
+			{
+				isCurrent->insertSubAccountInfo(naAccountID);
+			}
+
+			mNetOps->unsubAccount(isCurrent, usnaAccoundIds,false);
 		}
 	}
 
