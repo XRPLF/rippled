@@ -30,7 +30,7 @@ public:
 	Suppression()	: mFlags(0)					{ ; }
 
 	const std::set<uint64>& peekPeers()			{ return mPeers; }
-	void addPeer(uint64 peer)					{ mPeers.insert(peer); }
+	void addPeer(uint64 peer)					{ if (peer != 0) mPeers.insert(peer); }
 	bool hasPeer(uint64 peer)					{ return mPeers.count(peer) > 0; }
 
 	int getFlags(void)							{ return mFlags; }
