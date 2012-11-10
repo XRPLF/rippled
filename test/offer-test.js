@@ -339,8 +339,6 @@ buster.testCase("Offer tests", {
       var self = this;
       var seq;
 
-      self.remote.set_trace();
-
       async.waterfall([
 	  function (callback) {
 	    self.what = "Create accounts.";
@@ -367,6 +365,8 @@ buster.testCase("Offer tests", {
 	      callback);
 	  },
 	  function (callback) {
+	    self.what = "Create offer.";
+
 	    self.remote.transaction()
 	      .offer_create("bob", "100/USD/mtgox", "500")
 	      .on('proposed', function (m) {
@@ -389,7 +389,7 @@ buster.testCase("Offer tests", {
 	      .payment("alice", "alice", "500")
 	      .send_max("100/USD/mtgox")
 	      .on('proposed', function (m) {
-		  console.log("proposed: %s", JSON.stringify(m));
+		  // console.log("proposed: %s", JSON.stringify(m));
 
 		  callback(m.result !== 'tesSUCCESS');
 		})
@@ -421,8 +421,6 @@ buster.testCase("Offer tests", {
       var self = this;
       var seq;
 
-      self.remote.set_trace();
-
       async.waterfall([
 	  function (callback) {
 	    self.what = "Create accounts.";
@@ -449,6 +447,8 @@ buster.testCase("Offer tests", {
 	      callback);
 	  },
 	  function (callback) {
+	    self.what = "Create offer.";
+
 	    self.remote.transaction()
 	      .offer_create("bob", "100/USD/mtgox", "500")
 	      .on('proposed', function (m) {
@@ -466,7 +466,7 @@ buster.testCase("Offer tests", {
 	      .payment("alice", "alice", "200")
 	      .send_max("100/USD/mtgox")
 	      .on('proposed', function (m) {
-		  console.log("proposed: %s", JSON.stringify(m));
+		  // console.log("proposed: %s", JSON.stringify(m));
 
 		  callback(m.result !== 'tesSUCCESS');
 		})
@@ -494,10 +494,8 @@ buster.testCase("Offer tests", {
 	      .payment("alice", "alice", "600")
 	      .send_max("100/USD/mtgox")
 	      .on('proposed', function (m) {
-		  console.log("proposed: %s", JSON.stringify(m));
+		  // console.log("proposed: %s", JSON.stringify(m));
 
-		  console.log("callback: %d", m.result !== 'tepPATH_PARTIAL');
-		  console.log("callback: %s", m.result);
 		  callback(m.result !== 'tepPATH_PARTIAL');
 		})
 	      .submit();
@@ -510,7 +508,7 @@ buster.testCase("Offer tests", {
 	      .send_max("100/USD/mtgox")
 	      .set_flags('PartialPayment')
 	      .on('proposed', function (m) {
-		  console.log("proposed: %s", JSON.stringify(m));
+		  // console.log("proposed: %s", JSON.stringify(m));
 
 		  callback(m.result !== 'tesSUCCESS');
 		})

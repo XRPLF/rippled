@@ -282,10 +282,10 @@ var Amount = function () {
   this._value	    = new BigInteger();	// NaN for bad value. Always positive for non-XRP.
   this._offset	    = undefined;	// For non-XRP.
   this._is_native   = true;		// Default to XRP. Only valid if value is not NaN.
-  this._is_negative  = undefined;	// Undefined for XRP.
+  this._is_negative = undefined;	// For non-XRP. Undefined for XRP.
 
-  this.currency	    = new Currency();
-  this.issuer	    = new UInt160();
+  this._currency    = new Currency();
+  this._issuer	    = new UInt160();
 };
 
 // Given "100/USD/mtgox" return the a string with mtgox remapped.
@@ -320,23 +320,31 @@ Amount.prototype.copyTo = function(d, negate) {
     d._value   = this._value;
   }
 
-  d._offset	= this._offset;
-  d._is_native	= this._is_native;
-  d._is_negative	= this._is_native
-		    ? undefined		    // Native sign in BigInteger.
-		    : negate
-		      ? !this._is_negative   // Negating.
-		      : this._is_negative;   // Just copying.
+  d._offset	  = this._offset;
+  d._is_native	  = this._is_native;
+  d._is_negative  = this._is_native
+		      ? undefined		    // Native sign in BigInteger.
+		      : negate
+			? !this._is_negative   // Negating.
+			: this._is_negative;   // Just copying.
 
-  this.currency.copyTo(d.currency);
-  this.issuer.copyTo(d.issuer);
+  this._currency.copyTo(d._currency);
+  this._issuer.copyTo(d._issuer);
 
   return d;
+};
+
+Amount.prototype.currency = function() {
+  return this._currency;
 };
 
 // YYY Might also provide is_valid_json.
 Amount.prototype.is_valid = function() {
   return !isNaN(this._value);
+};
+
+Amount.prototype.issuer = function() {
+  return this._issuer;
 };
 
 // Convert only value to JSON wire format.
@@ -382,7 +390,7 @@ Amount.prototype.to_text = function(allow_nan) {
 };
 
 Amount.prototype.canonicalize = function() {
-  if (isNaN(this._value) || !this.currency) {
+  if (isNaN(this._value) || !this._currency) {
     // nothing
   }
   else if (this._value.equals(BigInteger.ZERO)) {
@@ -422,8 +430,8 @@ Amount.prototype.to_json = function() {
   {
     return {
       'value' : this.to_text(),
-      'currency' : this.currency.to_json(),
-      'issuer' : this.issuer.to_json(),
+      'currency' : this._currency.to_json(),
+      'issuer' : this._issuer.to_json(),
     };
   }
 };
@@ -433,7 +441,7 @@ Amount.prototype.to_text_full = function() {
     ? NaN
     : this._is_native
       ? this.to_text() + "/XRP"
-      : this.to_text() + "/" + this.currency.to_json() + "/" + this.issuer.to_json();
+      : this.to_text() + "/" + this._currency.to_json() + "/" + this._issuer.to_json();
 };
 
 // Parse a XRP value from untrusted input.
@@ -488,7 +496,7 @@ Amount.prototype.parse_value = function(j) {
     this._is_negative  = j < 0;
       if (this._is_negative) j = -j;
     this._value	      = new BigInteger(j);
-    this._offset	      = 0;
+    this._offset      = 0;
 
     this.canonicalize();
   } 
@@ -502,7 +510,7 @@ Amount.prototype.parse_value = function(j) {
     
       this._value	= new BigInteger(e[2]);
       this._offset 	= parseInt(e[3]);
-      this._is_negative  = !!e[1];
+      this._is_negative	= !!e[1];
 
       this.canonicalize();
     }
@@ -515,7 +523,7 @@ Amount.prototype.parse_value = function(j) {
 
       this._value      	= integer.multiply(exports.consts.bi_10.clone().pow(precision)).add(fraction);
       this._offset     	= -precision;
-      this._is_negative  = !!d[1];
+      this._is_negative = !!d[1];
 
       this.canonicalize();
     }
@@ -550,13 +558,13 @@ Amount.prototype.parse_json = function(j) {
 
     if (m) {
       this.parse_value(m[1]);
-      this.currency = Currency.from_json(m[2]);
-      this.issuer   = UInt160.from_json(m[3]);
+      this._currency  = Currency.from_json(m[2]);
+      this._issuer    = UInt160.from_json(m[3]);
     }
     else {
       this.parse_native(j);
-      this.currency = new Currency();
-      this.issuer   = new UInt160();
+      this._currency  = new Currency();
+      this._issuer    = new UInt160();
     }
   }
   else if ('object' === typeof j && j.constructor == Amount) {
@@ -566,8 +574,8 @@ Amount.prototype.parse_json = function(j) {
     // Parse the passed value to sanitize and copy it.
 
     this.parse_value(j.value);
-    this.currency.parse_json(j.currency);     // Never XRP.
-    this.issuer.parse_json(j.issuer);
+    this._currency.parse_json(j.currency);     // Never XRP.
+    this._issuer.parse_json(j.issuer);
   }
   else {
     this._value	    = NaN;
@@ -577,7 +585,7 @@ Amount.prototype.parse_json = function(j) {
 };
 
 Amount.prototype.parse_issuer = function (issuer) {
-  this.issuer.parse_json(issuer);
+  this._issuer.parse_json(issuer);
 
   return this;
 };

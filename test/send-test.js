@@ -13,7 +13,7 @@ require("../src/js/remote.js").config = require("./config.js");
 // How long to wait for server to start.
 var serverDelay = 1500;
 
-buster.testRunner.timeout = 3000;
+buster.testRunner.timeout = 5000;
 
 buster.testCase("Sending", {
   'setUp' : testutils.build_setup(),
@@ -451,7 +451,7 @@ buster.testCase("Sending future", {
 });
 
 buster.testCase("Indirect ripple", {
-  'setUp' : testutils.build_setup({ verbose: false, no_server: false }),
+  'setUp' : testutils.build_setup(),
   'tearDown' : testutils.build_teardown(),
 
   "indirect ripple" :

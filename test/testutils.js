@@ -187,7 +187,7 @@ var payments = function (remote, balances, callback) {
       var amount_json = values[index];
       var amount      = Amount.from_json(amount_json);
 
-      sends.push( { "source" : src, "destination" : amount.issuer.to_json(), "amount" : amount_json } );
+      sends.push( { "source" : src, "destination" : amount.issuer().to_json(), "amount" : amount_json } );
     }
   }
 
@@ -229,7 +229,7 @@ var verify_balance = function (remote, src, amount_json, callback) {
     callback();
   }
   else {
-    remote.request_ripple_balance(src, amount.issuer.to_json(), amount.currency.to_json(), 'CURRENT')
+    remote.request_ripple_balance(src, amount.issuer().to_json(), amount.currency().to_json(), 'CURRENT')
       .once('ripple_state', function (m) {
   //	console.log("BALANCE: %s", JSON.stringify(m));
   //	console.log("account_balance: %s", m.account_balance.to_text_full());
@@ -303,7 +303,7 @@ var verify_offer_not_found = function (remote, owner, seq, callback) {
 	callback('entryFound');
       })
     .on('error', function (m) {
-	console.log("verify_no_offer: success: %s", JSON.stringify(m));
+	// console.log("verify_no_offer: success: %s", JSON.stringify(m));
 
 	callback('remoteError' !== m.error
 	  || 'entryNotFound' !== m.remote.error);
