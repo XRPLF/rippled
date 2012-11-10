@@ -430,12 +430,12 @@ Remote.prototype._connect_message = function (ws, json) {
 	    unexpected  = true;
 	  }
 	  else if ('success' === message.status) {
-	    if (this.trace) console.log("message: %s", json);
+	    if (this.trace) console.log("remote: response: %s", json);
 
 	    request.emit('success', message.result);
 	  }
 	  else if (message.error) {
-	    if (this.trace) console.log("message: %s", json);
+	    if (this.trace) console.log("remote: error: %s", json);
 
 	    request.emit('error', {
 		'error'		: 'remoteError',
@@ -633,8 +633,6 @@ Remote.prototype.request_transaction_entry = function (hash) {
 // Submit a transaction.
 Remote.prototype.submit = function (transaction) {
   var self  = this;
-
-  if (this.trace) console.log("remote: submit: %s", JSON.stringify(transaction.tx_json));
 
   if (transaction.secret && !this.trusted)
   {
