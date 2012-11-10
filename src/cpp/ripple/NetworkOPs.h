@@ -33,11 +33,14 @@ protected:
 	boost::unordered_set<RippleAddress>			mSubAccountInfo;
 	boost::unordered_set<RippleAddress>			mSubAccountTransaction;
 
+	boost::mutex								mLock;
+
 public:
-  void insertSubAccountInfo(RippleAddress addr)
-  {
-    mSubAccountInfo.insert(addr);
-  }
+	void insertSubAccountInfo(RippleAddress addr)
+	{
+		boost::mutex::scoped_lock sl(mLock);
+		mSubAccountInfo.insert(addr);
+	}
 };
 
 class NetworkOPs

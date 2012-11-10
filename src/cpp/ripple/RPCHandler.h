@@ -8,7 +8,6 @@ class RPCHandler
 {
 	NetworkOPs*		mNetOps;
 	InfoSub*		isCurrent;
-	boost::mutex	mLock;
 
 	typedef Json::Value (RPCHandler::*doFuncPtr)(const Json::Value &params);
 	enum {

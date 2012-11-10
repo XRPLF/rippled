@@ -2023,8 +2023,6 @@ Json::Value RPCHandler::doSubscribe(const Json::Value& jvRequest)
 			jvResult["error"]	= "malformedAccount";
 		}else
 		{
-			boost::mutex::scoped_lock	sl(mLock);
-
 			BOOST_FOREACH(const RippleAddress& naAccountID, usnaAccoundIds)
 			{
 				isCurrent->insertSubAccountInfo(naAccountID);
@@ -2043,8 +2041,6 @@ Json::Value RPCHandler::doSubscribe(const Json::Value& jvRequest)
 			jvResult["error"]	= "malformedAccount";
 		}else
 		{
-			boost::mutex::scoped_lock	sl(mLock);
-
 			BOOST_FOREACH(const RippleAddress& naAccountID, usnaAccoundIds)
 			{
 				isCurrent->insertSubAccountInfo(naAccountID);
@@ -2101,8 +2097,6 @@ Json::Value RPCHandler::doUnsubscribe(const Json::Value& jvRequest)
 			jvResult["error"]	= "malformedAccount";
 		}else
 		{
-			boost::mutex::scoped_lock	sl(mLock);
-
 			BOOST_FOREACH(const RippleAddress& naAccountID, usnaAccoundIds)
 			{
 				isCurrent->insertSubAccountInfo(naAccountID);
@@ -2121,8 +2115,6 @@ Json::Value RPCHandler::doUnsubscribe(const Json::Value& jvRequest)
 			jvResult["error"]	= "malformedAccount";
 		}else
 		{
-			boost::mutex::scoped_lock	sl(mLock);
-
 			BOOST_FOREACH(const RippleAddress& naAccountID, usnaAccoundIds)
 			{
 				isCurrent->insertSubAccountInfo(naAccountID);
