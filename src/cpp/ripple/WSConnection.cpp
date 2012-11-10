@@ -45,16 +45,16 @@ Json::Value WSConnection::invokeCommand(Json::Value& jvRequest)
 		return jvResult;
 	}
 
+	RPCHandler mRPCHandler(&mNetwork, this);
 	Json::Value	jvResult(Json::objectValue);
 
 	// Regular RPC command
-	jvResult["result"] = theApp->getRPCHandler().doCommand(
+	jvResult["result"] = mRPCHandler.doCommand(
 		jvRequest["command"].asString(),
 		jvRequest.isMember("params")
 		? jvRequest["params"]
 		: jvRequest,
-		mHandler->getPublic() ? RPCHandler::GUEST : RPCHandler::ADMIN,
-		this);
+		mHandler->getPublic() ? RPCHandler::GUEST : RPCHandler::ADMIN);
 
 	// Currently we will simply unwrap errors returned by the RPC
 	// API, in the future maybe we can make the responses

@@ -93,6 +93,13 @@ Json::Value RPCHandler::rpcError(int iError)
 RPCHandler::RPCHandler(NetworkOPs* netOps)
 {
 	mNetOps=netOps;
+	mInfoSub=NULL;
+}
+
+RPCHandler::RPCHandler(NetworkOPs* netOps, InfoSub* infoSub)
+{
+	mNetOps=netOps;
+	mInfoSub=infoSub;
 }
 
 int RPCHandler::getParamCount(const Json::Value& params)
@@ -1299,7 +1306,7 @@ Json::Value RPCHandler::doLogRotate(const Json::Value& params)
 	return Log::rotateLog();
 }
 
-Json::Value RPCHandler::doCommand(const std::string& command, Json::Value& params, int role, InfoSub* sub)
+Json::Value RPCHandler::doCommand(const std::string& command, Json::Value& params, int role)
 {
 	cLog(lsTRACE) << "RPC:" << command;
 	cLog(lsTRACE) << "RPC params:" << params;
@@ -1376,7 +1383,7 @@ Json::Value RPCHandler::doCommand(const std::string& command, Json::Value& param
 	{
 		return rpcError(rpcNO_PERMISSION);
 	}
-	else if (commandsA[i].mEvented && sub == NULL)
+	else if (commandsA[i].mEvented && mInfoSub == NULL)
 	{
 		return rpcError(rpcNO_EVENTS);
 	}
@@ -1406,11 +1413,6 @@ Json::Value RPCHandler::doCommand(const std::string& command, Json::Value& param
 	}
 	else
 	{
-		if (sub != NULL)
-		{
-			isCurrent = sub;
-		}
-
 		try {
 			return (this->*(commandsA[i].dfpFunc))(params);
 		}
@@ -1993,16 +1995,16 @@ Json::Value RPCHandler::doSubscribe(const Json::Value& jvRequest)
 
 				if(streamName=="server")
 				{
-					mNetOps->subServer(isCurrent, jvResult);
+					mNetOps->subServer(mInfoSub, jvResult);
 				}else if(streamName=="ledger")
 				{
-					mNetOps->subLedger(isCurrent, jvResult);
+					mNetOps->subLedger(mInfoSub, jvResult);
 				}else if(streamName=="transactions")
 				{
-					mNetOps->subTransactions(isCurrent);
+					mNetOps->subTransactions(mInfoSub);
 				}else if(streamName=="rt_transactions")
 				{
-					mNetOps->subRTTransactions(isCurrent);
+					mNetOps->subRTTransactions(mInfoSub);
 				}else
 				{
 					jvResult["error"]	= str(boost::format("Unknown stream: %s") % streamName);
@@ -2025,10 +2027,10 @@ Json::Value RPCHandler::doSubscribe(const Json::Value& jvRequest)
 		{
 			BOOST_FOREACH(const RippleAddress& naAccountID, usnaAccoundIds)
 			{
-				isCurrent->insertSubAccountInfo(naAccountID);
+				mInfoSub->insertSubAccountInfo(naAccountID);
 			}
 
-			mNetOps->subAccount(isCurrent, usnaAccoundIds, true);
+			mNetOps->subAccount(mInfoSub, usnaAccoundIds, true);
 		}
 	}
 
@@ -2043,10 +2045,10 @@ Json::Value RPCHandler::doSubscribe(const Json::Value& jvRequest)
 		{
 			BOOST_FOREACH(const RippleAddress& naAccountID, usnaAccoundIds)
 			{
-				isCurrent->insertSubAccountInfo(naAccountID);
+				mInfoSub->insertSubAccountInfo(naAccountID);
 			}
 
-			mNetOps->subAccount(isCurrent, usnaAccoundIds, false);
+			mNetOps->subAccount(mInfoSub, usnaAccoundIds, false);
 		}
 	}
 
@@ -2067,16 +2069,16 @@ Json::Value RPCHandler::doUnsubscribe(const Json::Value& jvRequest)
 
 				if(streamName=="server")
 				{
-					mNetOps->unsubServer(isCurrent);
+					mNetOps->unsubServer(mInfoSub);
 				}else if(streamName=="ledger")
 				{
-					mNetOps->unsubLedger(isCurrent);
+					mNetOps->unsubLedger(mInfoSub);
 				}else if(streamName=="transactions")
 				{
-					mNetOps->unsubTransactions(isCurrent);
+					mNetOps->unsubTransactions(mInfoSub);
 				}else if(streamName=="rt_transactions")
 				{
-					mNetOps->unsubRTTransactions(isCurrent);
+					mNetOps->unsubRTTransactions(mInfoSub);
 				}else
 				{
 					jvResult["error"]	= str(boost::format("Unknown stream: %s") % streamName);
@@ -2099,10 +2101,10 @@ Json::Value RPCHandler::doUnsubscribe(const Json::Value& jvRequest)
 		{
 			BOOST_FOREACH(const RippleAddress& naAccountID, usnaAccoundIds)
 			{
-				isCurrent->insertSubAccountInfo(naAccountID);
+				mInfoSub->insertSubAccountInfo(naAccountID);
 			}
 
-			mNetOps->unsubAccount(isCurrent, usnaAccoundIds,true);
+			mNetOps->unsubAccount(mInfoSub, usnaAccoundIds,true);
 		}
 	}
 
@@ -2117,10 +2119,10 @@ Json::Value RPCHandler::doUnsubscribe(const Json::Value& jvRequest)
 		{
 			BOOST_FOREACH(const RippleAddress& naAccountID, usnaAccoundIds)
 			{
-				isCurrent->insertSubAccountInfo(naAccountID);
+				mInfoSub->insertSubAccountInfo(naAccountID);
 			}
 
-			mNetOps->unsubAccount(isCurrent, usnaAccoundIds,false);
+			mNetOps->unsubAccount(mInfoSub, usnaAccoundIds,false);
 		}
 	}
 

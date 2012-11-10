@@ -7,7 +7,7 @@ class NetworkOPs;
 class RPCHandler
 {
 	NetworkOPs*		mNetOps;
-	InfoSub*		isCurrent;
+	InfoSub*		mInfoSub;
 
 	typedef Json::Value (RPCHandler::*doFuncPtr)(const Json::Value &params);
 	enum {
@@ -157,8 +157,9 @@ public:
 	enum { GUEST, USER, ADMIN };
 
 	RPCHandler(NetworkOPs* netOps);
+	RPCHandler(NetworkOPs* netOps, InfoSub* infoSub);
 
-	Json::Value doCommand(const std::string& command, Json::Value& params, int role, InfoSub* sub = NULL);
+	Json::Value doCommand(const std::string& command, Json::Value& params, int role);
 	Json::Value rpcError(int iError);
 
 	Json::Value handleJSONSubmit(const Json::Value& jvRequest);
