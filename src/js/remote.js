@@ -147,6 +147,21 @@ Request.prototype.ripple_state = function (account, issuer, currency) {
   return this;
 };
 
+Request.prototype.accounts = function (accounts) {
+  if ("object" !== typeof accounts) {
+    accounts = [accounts];
+  }
+
+  // Process accounts parameters
+  var procAccounts = [];
+  for (var i = 0, l = accounts.length; i < l; i++) {
+    procAccounts.push(UInt160.json_rewrite(accounts[i]));
+  }
+  this.message.accounts = procAccounts;
+
+  return this;
+};
+
 //
 // Remote - access to a remote Ripple server via websocket.
 //
@@ -509,6 +524,26 @@ Remote.prototype.request = function (request) {
   }
 };
 
+Remote.prototype.request_server_info = function () {
+  var request = new Request(this, 'rpc');
+
+  request.message.command = 'server_info';
+
+  return request;
+};
+
+Remote.prototype.request_ledger = function (params) {
+  // XXX Does this require the server to be trusted?
+  //assert(this.trusted);
+
+  var request = new Request(this, 'rpc');
+
+  request.message.command = 'ledger';
+  request.message.params = params;
+
+  return request;
+};
+
 // Only for unit testing.
 Remote.prototype.request_ledger_hash = function () {
   assert(this.trusted);   // If not trusted, need to check proof.
@@ -628,6 +663,45 @@ Remote.prototype.request_transaction_entry = function (hash) {
 
   return request
     .tx_hash(hash);
+};
+
+Remote.prototype.request_ripple_lines_get = function (accountID) {
+  // XXX Does this require the server to be trusted?
+  //assert(this.trusted);
+
+  var request = new Request(this, 'rpc');
+
+  request.message.command = 'ripple_lines_get';
+  // XXX Convert API call to JSON
+  request.message.params = [accountID];
+
+  return request;
+};
+
+Remote.prototype.request_wallet_accounts = function (key) {
+  // XXX Does this require the server to be trusted?
+  //assert(this.trusted);
+
+  var request = new Request(this, 'rpc');
+
+  request.message.command = 'wallet_accounts';
+  // XXX Convert API call to JSON
+  request.message.params = [key];
+
+  return request;
+};
+
+Remote.prototype.request_account_tx = function (accountID, minLedger, maxLedger) {
+  // XXX Does this require the server to be trusted?
+  //assert(this.trusted);
+
+  var request = new Request(this, 'rpc');
+
+  request.message.command = 'account_tx';
+  // XXX Convert API call to JSON
+  request.message.params = [accountID, minLedger, maxLedger];
+
+  return request;
 };
 
 // Submit a transaction.
@@ -876,6 +950,49 @@ Remote.prototype.request_ripple_balance = function (account, issuer, currency, c
 	});
       });
 }
+
+Remote.prototype.request_unl_list = function () {
+  var request = new Request(this, 'rpc');
+
+  request.message.command = 'unl_list';
+
+  return request;
+};
+
+Remote.prototype.request_unl_add = function (addr, note) {
+  var request = new Request(this, 'rpc');
+
+  request.message.command = 'unl_add';
+  request.message.params = [addr, note];
+
+  return request;
+};
+
+Remote.prototype.request_unl_delete = function (publicKey) {
+  var request = new Request(this, 'rpc');
+
+  request.message.command = 'unl_delete';
+  request.message.params = [publicKey];
+
+  return request;
+};
+
+Remote.prototype.request_peers = function () {
+  var request = new Request(this, 'rpc');
+
+  request.message.command = 'peers';
+
+  return request;
+};
+
+Remote.prototype.request_connect = function (ip, port) {
+  var request = new Request(this, 'rpc');
+
+  request.message.command = 'connect';
+  request.message.params = [ip, port];
+
+  return request;
+};
 
 Remote.prototype.transaction = function () {
   return new Transaction(this);
