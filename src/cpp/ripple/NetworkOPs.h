@@ -28,6 +28,19 @@ public:
 	virtual ~InfoSub() { ; }
 
 	virtual	void send(const Json::Value& jvObj) = 0;
+
+protected:
+	boost::unordered_set<RippleAddress>			mSubAccountInfo;
+	boost::unordered_set<RippleAddress>			mSubAccountTransaction;
+
+	boost::mutex								mLock;
+
+public:
+	void insertSubAccountInfo(RippleAddress addr)
+	{
+		boost::mutex::scoped_lock sl(mLock);
+		mSubAccountInfo.insert(addr);
+	}
 };
 
 class NetworkOPs

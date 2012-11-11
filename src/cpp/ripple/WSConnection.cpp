@@ -18,8 +18,8 @@ WSConnection::~WSConnection()
 	mNetwork.unsubRTTransactions(this);
 	mNetwork.unsubLedger(this);
 	mNetwork.unsubServer(this);
-	mNetwork.unsubAccount(this, mSubAccountInfo,true);
-	mNetwork.unsubAccount(this, mSubAccountInfo,false);
+	mNetwork.unsubAccount(this, mSubAccountInfo, true);
+	mNetwork.unsubAccount(this, mSubAccountInfo, false);
 }
 
 void WSConnection::send(const Json::Value& jvObj)
@@ -33,17 +33,6 @@ void WSConnection::send(const Json::Value& jvObj)
 
 Json::Value WSConnection::invokeCommand(Json::Value& jvRequest)
 {
-	static struct {
-		const char* pCommand;
-		doFuncPtr	dfpFunc;
-	} commandsA[] = {
-		// Request-Response Commands:
-		{ "submit",								&WSConnection::doSubmit					},
-		{ "subscribe",							&WSConnection::doSubscribe				},
-		{ "unsubscribe",						&WSConnection::doUnsubscribe			},
-		{ "rpc",								&WSConnection::doRPC					},
-	};
-
 	if (!jvRequest.isMember("command"))
 	{
 		Json::Value	jvResult(Json::objectValue);
@@ -56,22 +45,27 @@ Json::Value WSConnection::invokeCommand(Json::Value& jvRequest)
 		return jvResult;
 	}
 
-	std::string	strCommand	= jvRequest["command"].asString();
-
-	int		i = NUMBER(commandsA);
-
-	while (i-- && strCommand != commandsA[i].pCommand)
-		;
-
+	RPCHandler mRPCHandler(&mNetwork, this);
 	Json::Value	jvResult(Json::objectValue);
 
-	if (i < 0)
+	// Regular RPC command
+	jvResult["result"] = mRPCHandler.doCommand(
+		jvRequest["command"].asString(),
+		jvRequest.isMember("params")
+		? jvRequest["params"]
+		: jvRequest,
+		mHandler->getPublic() ? RPCHandler::GUEST : RPCHandler::ADMIN);
+
+	// Currently we will simply unwrap errors returned by the RPC
+	// API, in the future maybe we can make the responses
+	// consistent.
+	if (jvResult["result"].isObject() && jvResult["result"].isMember("error"))
 	{
-		jvResult["error"]	= "unknownCommand";	// Unknown command.
-	}
-	else
-	{
-		(this->*(commandsA[i].dfpFunc))(jvResult, jvRequest);
+		jvResult = jvResult["result"];
+		jvResult["status"]	= "error";
+		jvResult["request"]	= jvRequest;
+	} else {
+		jvResult["status"]	= "success";
 	}
 
 	if (jvRequest.isMember("id"))
@@ -79,237 +73,9 @@ Json::Value WSConnection::invokeCommand(Json::Value& jvRequest)
 		jvResult["id"]		= jvRequest["id"];
 	}
 
-	if (jvResult.isMember("error"))
-	{
-		jvResult["result"]	= "error";
-		jvResult["request"]	= jvRequest;
-	}
-	else
-	{
-		jvResult["result"]	= "success";
-	}
-
-	jvResult["type"]	= "response";
+	jvResult["type"]		= "response";
 
 	return jvResult;
-}
-
-boost::unordered_set<RippleAddress> WSConnection::parseAccountIds(const Json::Value& jvArray)
-{
-	boost::unordered_set<RippleAddress>	usnaResult;
-
-	for (Json::Value::const_iterator it = jvArray.begin(); it != jvArray.end(); it++)
-	{
-		RippleAddress	naString;
-
-		if (!(*it).isString() || !naString.setAccountID((*it).asString()))
-		{
-			usnaResult.clear();
-			break;
-		}
-		else
-		{
-			(void) usnaResult.insert(naString);
-		}
-	}
-
-	return usnaResult;
-}
-
-//
-// Commands
-//
-
-/*
-server : Sends a message anytime the server status changes such as network connectivity.
-ledger : Sends a message at every ledger close.
-transactions : Sends a message for every transaction that makes it into a ledger.
-rt_transactions
-accounts
-rt_accounts
-*/
-void WSConnection::doSubscribe(Json::Value& jvResult,  Json::Value& jvRequest)
-{
-	if (jvRequest.isMember("streams"))
-	{
-		for (Json::Value::iterator it = jvRequest["streams"].begin(); it != jvRequest["streams"].end(); it++)
-		{
-			if ((*it).isString())
-			{
-				std::string streamName=(*it).asString();
-
-				if(streamName=="server")
-				{
-					mNetwork.subServer(this, jvResult);
-				}else if(streamName=="ledger")
-				{
-					mNetwork.subLedger(this, jvResult);
-				}else if(streamName=="transactions")
-				{
-					mNetwork.subTransactions(this);
-				}else if(streamName=="rt_transactions")
-				{
-					mNetwork.subRTTransactions(this);
-				}else
-				{
-					jvResult["error"]	= str(boost::format("Unknown stream: %s") % streamName);
-				}
-			}else
-			{
-				jvResult["error"]	= "malformedSteam";
-			}
-		}
-	}
-
-	if (jvRequest.isMember("rt_accounts"))
-	{
-		boost::unordered_set<RippleAddress> usnaAccoundIds	= parseAccountIds(jvRequest["rt_accounts"]);
-
-		if (usnaAccoundIds.empty())
-		{
-			jvResult["error"]	= "malformedAccount";
-		}else
-		{
-			boost::mutex::scoped_lock	sl(mLock);
-
-			BOOST_FOREACH(const RippleAddress& naAccountID, usnaAccoundIds)
-			{
-				mSubAccountInfo.insert(naAccountID);
-			}
-
-			mNetwork.subAccount(this, usnaAccoundIds,true);
-		}
-	}
-
-	if (jvRequest.isMember("accounts"))
-	{
-		boost::unordered_set<RippleAddress> usnaAccoundIds	= parseAccountIds(jvRequest["accounts"]);
-
-		if (usnaAccoundIds.empty())
-		{
-			jvResult["error"]	= "malformedAccount";
-		}else
-		{
-			boost::mutex::scoped_lock	sl(mLock);
-
-			BOOST_FOREACH(const RippleAddress& naAccountID, usnaAccoundIds)
-			{
-				mSubAccountInfo.insert(naAccountID);
-			}
-
-			mNetwork.subAccount(this, usnaAccoundIds,false);
-		}
-	}
-}
-
-void WSConnection::doUnsubscribe(Json::Value& jvResult,  Json::Value& jvRequest)
-{
-	if (jvRequest.isMember("streams"))
-	{
-		for (Json::Value::iterator it = jvRequest["streams"].begin(); it != jvRequest["streams"].end(); it++)
-		{
-			if ((*it).isString() )
-			{
-				std::string streamName=(*it).asString();
-
-				if(streamName=="server")
-				{
-					mNetwork.unsubServer(this);
-				}else if(streamName=="ledger")
-				{
-					mNetwork.unsubLedger(this);
-				}else if(streamName=="transactions")
-				{
-					mNetwork.unsubTransactions(this);
-				}else if(streamName=="rt_transactions")
-				{
-					mNetwork.unsubRTTransactions(this);
-				}else
-				{
-					jvResult["error"]	= str(boost::format("Unknown stream: %s") % streamName);
-				}
-			}else
-			{
-				jvResult["error"]	= "malformedSteam";
-			}
-		}
-	}
-
-	if (jvRequest.isMember("rt_accounts"))
-	{
-		boost::unordered_set<RippleAddress> usnaAccoundIds	= parseAccountIds(jvRequest["rt_accounts"]);
-
-		if (usnaAccoundIds.empty())
-		{
-			jvResult["error"]	= "malformedAccount";
-		}else
-		{
-			boost::mutex::scoped_lock	sl(mLock);
-
-			BOOST_FOREACH(const RippleAddress& naAccountID, usnaAccoundIds)
-			{
-				mSubAccountInfo.insert(naAccountID);
-			}
-
-			mNetwork.unsubAccount(this, usnaAccoundIds,true);
-		}
-	}
-
-	if (jvRequest.isMember("accounts"))
-	{
-		boost::unordered_set<RippleAddress> usnaAccoundIds	= parseAccountIds(jvRequest["accounts"]);
-
-		if (usnaAccoundIds.empty())
-		{
-			jvResult["error"]	= "malformedAccount";
-		}else
-		{
-			boost::mutex::scoped_lock	sl(mLock);
-
-			BOOST_FOREACH(const RippleAddress& naAccountID, usnaAccoundIds)
-			{
-				mSubAccountInfo.insert(naAccountID);
-			}
-
-			mNetwork.unsubAccount(this, usnaAccoundIds,false);
-		}
-	}
-}
-
-void WSConnection::doRPC(Json::Value& jvResult, Json::Value& jvRequest)
-{
-	if (jvRequest.isMember("rpc_command") )
-	{
-		jvResult = theApp->getRPCHandler().doCommand(
-			jvRequest["rpc_command"].asString(),
-			jvRequest.isMember("params")
-				? jvRequest["params"]
-				: jvRequest,
-			mHandler->getPublic() ? RPCHandler::GUEST : RPCHandler::ADMIN);
-
-		jvResult["type"] = "response";
-	}
-	else
-	{
-		jvResult["error"]	= "fieldNotCommand";
-	}
-}
-
-// XXX Currently requires secret. Allow signed transaction as an alternative.
-void WSConnection::doSubmit(Json::Value& jvResult, Json::Value& jvRequest)
-{
-	if (!jvRequest.isMember("tx_json"))
-	{
-		jvResult["error"]	= "fieldNotFoundTxJson";
-	}else if (!jvRequest.isMember("secret"))
-	{
-		jvResult["error"]	= "fieldNotFoundSecret";
-	}else
-	{
-		jvResult=theApp->getRPCHandler().handleJSONSubmit(jvRequest);
-
-		// TODO: track the transaction mNetwork.subSubmit(this, jvResult["tx hash"] );
-	}
 }
 
 // vim:ts=4

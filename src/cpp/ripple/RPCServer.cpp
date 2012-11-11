@@ -26,7 +26,7 @@ SETUP_LOG();
 #endif
 
 RPCServer::RPCServer(boost::asio::io_service& io_service , NetworkOPs* nopNetwork)
-	: mNetOps(nopNetwork), mRPCHandler(nopNetwork), mSocket(io_service)
+	: mNetOps(nopNetwork), mSocket(io_service)
 {
 
 	mRole = RPCHandler::GUEST;
@@ -141,6 +141,8 @@ std::string RPCServer::handleRequest(const std::string& requestStr)
 		valParams = Json::Value(Json::arrayValue);
 	else if (!valParams.isArray())
 		return(HTTPReply(400, "params unparseable"));
+
+	RPCHandler mRPCHandler(mNetOps);
 
 	cLog(lsTRACE) << valParams;
 	Json::Value result = mRPCHandler.doCommand(strMethod, valParams,mRole);

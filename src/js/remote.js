@@ -147,6 +147,21 @@ Request.prototype.ripple_state = function (account, issuer, currency) {
   return this;
 };
 
+Request.prototype.accounts = function (accounts) {
+  if ("object" !== typeof accounts) {
+    accounts = [accounts];
+  }
+
+  // Process accounts parameters
+  var procAccounts = [];
+  for (var i = 0, l = accounts.length; i < l; i++) {
+    procAccounts.push(UInt160.json_rewrite(accounts[i]));
+  }
+  this.message.accounts = procAccounts;
+
+  return this;
+};
+
 //
 // Remote - access to a remote Ripple server via websocket.
 //
@@ -434,13 +449,13 @@ Remote.prototype._connect_message = function (ws, json) {
 	  if (!request) {
 	    unexpected  = true;
 	  }
-	  else if ('success' === message.result) {
-	    if (this.trace) console.log("message: %s", json);
+	  else if ('success' === message.status) {
+	    if (this.trace) console.log("remote: response: %s", json);
 
-	    request.emit('success', message);
+	    request.emit('success', message.result);
 	  }
 	  else if (message.error) {
-	    if (this.trace) console.log("message: %s", json);
+	    if (this.trace) console.log("remote: error: %s", json);
 
 	    request.emit('error', {
 		'error'		: 'remoteError',
@@ -514,13 +529,33 @@ Remote.prototype.request = function (request) {
   }
 };
 
+Remote.prototype.request_server_info = function () {
+  var request = new Request(this, 'rpc');
+
+  request.message.command = 'server_info';
+
+  return request;
+};
+
+Remote.prototype.request_ledger = function (params) {
+  // XXX Does this require the server to be trusted?
+  //assert(this.trusted);
+
+  var request = new Request(this, 'rpc');
+
+  request.message.command = 'ledger';
+  request.message.params = params;
+
+  return request;
+};
+
 // Only for unit testing.
 Remote.prototype.request_ledger_hash = function () {
   assert(this.trusted);   // If not trusted, need to check proof.
 
   var request = new Request(this, 'rpc');
   
-  request.message.rpc_command = 'ledger_closed';
+  request.message.command = 'ledger_closed';
 
   return request;
 };
@@ -530,7 +565,7 @@ Remote.prototype.request_ledger_hash = function () {
 Remote.prototype.request_ledger_current = function () {
   var request = new Request(this, 'rpc');
   
-  request.message.rpc_command = 'ledger_current';
+  request.message.command = 'ledger_current';
 
   return request;
 };
@@ -545,7 +580,7 @@ Remote.prototype.request_ledger_entry = function (type) {
   var self    = this;
   var request = new Request(this, 'rpc');
 
-  request.message.rpc_command = 'ledger_entry';
+  request.message.command = 'ledger_entry';
 
   if (type)
     this.type = type;
@@ -598,10 +633,28 @@ Remote.prototype.request_ledger_entry = function (type) {
   return request;
 };
 
-Remote.prototype.request_subscribe = function () {
+Remote.prototype.request_subscribe = function (streams) {
   var request = new Request(this, 'subscribe');
 
-  request.message.streams = [ 'ledger', 'server' ];
+  if (streams) {
+    if ("object" !== typeof streams) {
+      streams = [streams];
+    }
+    request.message.streams = streams;
+  }
+
+  return request;
+};
+
+Remote.prototype.request_unsubscribe = function (streams) {
+  var request = new Request(this, 'unsubscribe');
+
+  if (streams) {
+    if ("object" !== typeof streams) {
+      streams = [streams];
+    }
+    request.message.streams = streams;
+  }
 
   return request;
 };
@@ -611,17 +664,54 @@ Remote.prototype.request_transaction_entry = function (hash) {
   
   var request = new Request(this, 'rpc');
 
-  request.message.rpc_command = 'transaction_entry';
+  request.message.command = 'transaction_entry';
 
   return request
     .tx_hash(hash);
 };
 
+Remote.prototype.request_ripple_lines_get = function (accountID) {
+  // XXX Does this require the server to be trusted?
+  //assert(this.trusted);
+
+  var request = new Request(this, 'rpc');
+
+  request.message.command = 'ripple_lines_get';
+  // XXX Convert API call to JSON
+  request.message.params = [accountID];
+
+  return request;
+};
+
+Remote.prototype.request_wallet_accounts = function (key) {
+  // XXX Does this require the server to be trusted?
+  //assert(this.trusted);
+
+  var request = new Request(this, 'rpc');
+
+  request.message.command = 'wallet_accounts';
+  // XXX Convert API call to JSON
+  request.message.params = [key];
+
+  return request;
+};
+
+Remote.prototype.request_account_tx = function (accountID, minLedger, maxLedger) {
+  // XXX Does this require the server to be trusted?
+  //assert(this.trusted);
+
+  var request = new Request(this, 'rpc');
+
+  request.message.command = 'account_tx';
+  // XXX Convert API call to JSON
+  request.message.params = [accountID, minLedger, maxLedger];
+
+  return request;
+};
+
 // Submit a transaction.
 Remote.prototype.submit = function (transaction) {
   var self  = this;
-
-  if (this.trace) console.log("remote: submit: %s", JSON.stringify(transaction.tx_json));
 
   if (transaction.secret && !this.trusted)
   {
@@ -663,7 +753,7 @@ Remote.prototype.submit = function (transaction) {
     else {
       var submit_request = new Request(this, 'rpc');
 
-      submit_request.message.rpc_command = 'submit_json';
+      submit_request.message.command = 'submit_json';
 
       submit_request.tx_json(transaction.tx_json);
       submit_request.secret(transaction.secret);
@@ -690,7 +780,7 @@ Remote.prototype.submit = function (transaction) {
 Remote.prototype._server_subscribe = function () {
   var self  = this;
 
-  this.request_subscribe()
+  this.request_subscribe([ 'ledger', 'server' ])
     .on('success', function (message) {
 	self.stand_alone          = !!message.stand_alone;
 
@@ -720,7 +810,7 @@ Remote.prototype.ledger_accept = function () {
   {
     var request = new Request(this, 'rpc');
 
-    request.message.rpc_command = 'ledger_accept';
+    request.message.command = 'ledger_accept';
 
     request
       .request();
@@ -771,7 +861,7 @@ Remote.prototype.set_account_seq = function (account, seq) {
   var account	    = UInt160.json_rewrite(account);
 
   if (!this.accounts[account]) this.accounts[account] = {};
- 
+
   this.accounts[account].seq = seq;
 }
 
@@ -811,7 +901,7 @@ Remote.prototype.account_seq_cache = function (account, current) {
     account_info.caching_seq_request	= request;
   }
 
-  return request
+  return request;
 };
 
 // Mark an account's root node as dirty.
@@ -865,6 +955,49 @@ Remote.prototype.request_ripple_balance = function (account, issuer, currency, c
 	});
       });
 }
+
+Remote.prototype.request_unl_list = function () {
+  var request = new Request(this, 'rpc');
+
+  request.message.command = 'unl_list';
+
+  return request;
+};
+
+Remote.prototype.request_unl_add = function (addr, note) {
+  var request = new Request(this, 'rpc');
+
+  request.message.command = 'unl_add';
+  request.message.params = [addr, note];
+
+  return request;
+};
+
+Remote.prototype.request_unl_delete = function (publicKey) {
+  var request = new Request(this, 'rpc');
+
+  request.message.command = 'unl_delete';
+  request.message.params = [publicKey];
+
+  return request;
+};
+
+Remote.prototype.request_peers = function () {
+  var request = new Request(this, 'rpc');
+
+  request.message.command = 'peers';
+
+  return request;
+};
+
+Remote.prototype.request_connect = function (ip, port) {
+  var request = new Request(this, 'rpc');
+
+  request.message.command = 'connect';
+  request.message.params = [ip, port];
+
+  return request;
+};
 
 Remote.prototype.transaction = function () {
   return new Transaction(this);

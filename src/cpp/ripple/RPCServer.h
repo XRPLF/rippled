@@ -22,9 +22,7 @@ public:
 
 private:
 	
-
 	NetworkOPs*	mNetOps;
-	RPCHandler mRPCHandler;
 
 	boost::asio::ip::tcp::socket mSocket;
 

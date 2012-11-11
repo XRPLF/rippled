@@ -6,7 +6,8 @@ class NetworkOPs;
 
 class RPCHandler
 {
-	NetworkOPs*	mNetOps;
+	NetworkOPs*		mNetOps;
+	InfoSub*		mInfoSub;
 
 	typedef Json::Value (RPCHandler::*doFuncPtr)(const Json::Value &params);
 	enum {
@@ -15,6 +16,9 @@ class RPCHandler
 		optClosed	= 4+optNetwork,		// Need closed ledger
 	};
 
+	// Utilities
+	void addSubmitPath(Json::Value& txJSON);
+	boost::unordered_set<RippleAddress> parseAccountIds(const Json::Value& jvArray);
 	int getParamCount(const Json::Value& params);
 	bool extractString(std::string& param, const Json::Value& params, int index);
 
@@ -84,8 +88,9 @@ class RPCHandler
 	Json::Value doLedgerEntry(const Json::Value& params);
 	Json::Value doTransactionEntry(const Json::Value& params);
 
+	Json::Value doSubscribe(const Json::Value& params);
+	Json::Value doUnsubscribe(const Json::Value& params);
 
-	void addSubmitPath(Json::Value& txJSON);
 
 public:
 
@@ -95,6 +100,7 @@ public:
 		// Misc failure
 		rpcLOAD_FAILED,
 		rpcNO_PERMISSION,
+		rpcNO_EVENTS,
 		rpcNOT_STANDALONE,
 
 		// Networking
@@ -151,8 +157,9 @@ public:
 	enum { GUEST, USER, ADMIN };
 
 	RPCHandler(NetworkOPs* netOps);
+	RPCHandler(NetworkOPs* netOps, InfoSub* infoSub);
 
-	Json::Value doCommand(const std::string& command, Json::Value& params,int role);
+	Json::Value doCommand(const std::string& command, Json::Value& params, int role);
 	Json::Value rpcError(int iError);
 
 	Json::Value handleJSONSubmit(const Json::Value& jvRequest);
