@@ -12,7 +12,7 @@ require("../src/js/remote.js").config = require("./config.js");
 
 buster.testRunner.timeout = 5000;
  
-buster.testCase("Monitor account", {
+buster.testCase("//Monitor account", {
   'setUp' : testutils.build_setup({ verbose: true }),
   'tearDown' : testutils.build_teardown(),
 
