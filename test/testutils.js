@@ -10,6 +10,40 @@ require("../src/js/remote.js").config = require("./config.js");
 
 var config  = require("./config.js");
 
+var account_dump = function (remote, account, callback) {
+  var self = this;
+
+  async.waterfall([
+      function (callback) {
+	self.what = "Get latest account_root";
+
+	remote
+	  .request_ledger_entry('account_root')
+	  .ledger_hash(remote.ledger_hash())
+	  .account_root("root")
+	  .on('success', function (r) {
+	      console.log("account_root: %s", JSON.stringify(r, undefined, 2));
+
+	      callback();
+	    })
+	  .on('error', function(m) {
+	      console.log("error: %s", m);
+
+	      buster.assert(false);
+	      callback();
+	    })
+	  .request();
+      },
+    ], function (error) {
+      callback(error);
+    });
+
+  // get closed ledger hash
+  // get account root
+  // construct a json result
+  //
+};
+
 /**
  * Helper called by test cases to generate a setUp routine.
  *
@@ -310,6 +344,8 @@ var verify_offer_not_found = function (remote, owner, seq, callback) {
       })
     .request();
 };
+
+exports.account_dump	      	= account_dump;
 
 exports.build_setup		= build_setup;
 exports.create_accounts	      	= create_accounts;
