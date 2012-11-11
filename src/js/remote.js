@@ -59,10 +59,10 @@ Request.prototype.request_default = function () {
 Request.prototype.ledger_choose = function (current) {
   if (current)
   {
-    this.message.ledger_index = this.remote.ledger_current_index;
+    this.message.ledger_index = this.remote._ledger_current_index;
   }
   else {
-    this.message.ledger_hash  = this.remote.ledger_hash;
+    this.message.ledger_hash  = this.remote._ledger_hash;
   }
 
   return this;
@@ -162,19 +162,20 @@ Request.prototype.ripple_state = function (account, issuer, currency) {
 
 // --> trusted: truthy, if remote is trusted
 var Remote = function (trusted, websocket_ip, websocket_port, trace) {
-  this.trusted              = trusted;
-  this.websocket_ip         = websocket_ip;
-  this.websocket_port       = websocket_port;
-  this.id                   = 0;
-  this.trace                = trace;
-  this.ledger_hash	    = undefined;
-  this.ledger_current_index = undefined;
-  this.stand_alone          = undefined;
-  this.online_target	    = false;
-  this.online_state	    = 'closed';	  // 'open', 'closed', 'connecting', 'closing'
-  this.state	  	    = 'offline';  // 'online', 'offline'
-  this.retry_timer	    = undefined;
-  this.retry		    = undefined;
+  this.trusted		      = trusted;
+  this.websocket_ip           = websocket_ip;
+  this.websocket_port         = websocket_port;
+  this.id                     = 0;
+  this.trace                  = trace;
+  this._ledger_current_index  = undefined;
+  this._ledger_hash	      = undefined;
+  this._ledger_time	      = undefined;
+  this.stand_alone	      = undefined;
+  this.online_target	      = false;
+  this.online_state	      = 'closed';	  // 'open', 'closed', 'connecting', 'closing'
+  this.state	  	      = 'offline';  // 'online', 'offline'
+  this.retry_timer	      = undefined;
+  this.retry		      = undefined;
   
   // Cache information for accounts.
   this.accounts = {
@@ -300,6 +301,10 @@ Remote.prototype.connect = function (online) {
   }
 
   return this;
+};
+
+Remote.prototype.ledger_hash = function () {
+  return this._ledger_hash;
 };
 
 // Stop from open state.
@@ -452,9 +457,9 @@ Remote.prototype._connect_message = function (ws, json) {
 	// XXX Be more defensive fields could be missing or of wrong type.
 	// YYY Might want to do some cache management.
 
-	this.ledger_time	  = message.ledger_time;
-	this.ledger_hash	  = message.ledger_hash;
-	this.ledger_current_index = message.ledger_index + 1;
+	this._ledger_time	    = message.ledger_time;
+	this._ledger_hash	    = message.ledger_hash;
+	this._ledger_current_index  = message.ledger_index + 1;
 
 	this.emit('ledger_closed', message.ledger_hash, message.ledger_index);
 	break;
@@ -547,7 +552,7 @@ Remote.prototype.request_ledger_entry = function (type) {
 
   // Transparent caching:
   request.on('request', function (remote) {	      // Intercept default request.
-    if (this.ledger_hash) {
+    if (self._ledger_hash) {
       // XXX Add caching.
     }
     // else if (req.ledger_index)
@@ -690,11 +695,11 @@ Remote.prototype._server_subscribe = function () {
 	self.stand_alone          = !!message.stand_alone;
 
 	if (message.ledger_hash && message.ledger_index) {
-	  self.ledger_time        = message.ledger_time;
-	  self.ledger_hash        = message.ledger_hash;
-	  self.ledger_current_index = message.ledger_index+1;
+	  self._ledger_time	      = message.ledger_time;
+	  self._ledger_hash	      = message.ledger_hash;
+	  self._ledger_current_index  = message.ledger_index+1;
 
-	  self.emit('ledger_closed', self.ledger_hash, self.ledger_current_index-1);
+	  self.emit('ledger_closed', self._ledger_hash, self._ledger_current_index-1);
 	}
 
 	self.emit('subscribed');
@@ -1030,7 +1035,7 @@ Transaction.prototype.submit = function () {
   if (this.listeners('final').length || this.listeners('lost').length || this.listeners('pending').length) {
     // There are listeners for 'final', 'lost', or 'pending' arrange to emit them.
 
-    this.submit_index = this.remote.ledger_current_index;
+    this.submit_index = this.remote._ledger_current_index;
 
     var	on_ledger_closed = function (ledger_hash, ledger_index) {
 	var stop  = false;
