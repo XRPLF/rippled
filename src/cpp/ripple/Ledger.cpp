@@ -927,11 +927,6 @@ uint256 Ledger::getBookBase(const uint160& uTakerPaysCurrency, const uint160& uT
 	bool		bInNative	= uTakerPaysCurrency.isZero();
 	bool		bOutNative	= uTakerGetsCurrency.isZero();
 
-	assert(!bInNative || !bOutNative);						// Stamps to stamps not allowed.
-	assert(bInNative == uTakerPaysIssuerID.isZero());		// Make sure issuer is specified as needed.
-	assert(bOutNative == uTakerGetsIssuerID.isZero());		// Make sure issuer is specified as needed.
-	assert(uTakerPaysCurrency != uTakerGetsCurrency || uTakerPaysIssuerID != uTakerGetsIssuerID);	// Currencies or accounts must differ.
-
 	Serializer	s(82);
 
 	s.add16(spaceBookDir);			//  2
@@ -942,12 +937,17 @@ uint256 Ledger::getBookBase(const uint160& uTakerPaysCurrency, const uint160& uT
 
 	uint256	uBaseIndex	= getQualityIndex(s.getSHA512Half());	// Return with quality 0.
 
-	Log(lsINFO) << str(boost::format("getBookBase(%s,%s,%s,%s) = %s")
+	cLog(lsDEBUG) << boost::str(boost::format("getBookBase(%s,%s,%s,%s) = %s")
 		% STAmount::createHumanCurrency(uTakerPaysCurrency)
 		% RippleAddress::createHumanAccountID(uTakerPaysIssuerID)
 		% STAmount::createHumanCurrency(uTakerGetsCurrency)
 		% RippleAddress::createHumanAccountID(uTakerGetsIssuerID)
 		% uBaseIndex.ToString());
+
+	assert(!bInNative || !bOutNative);						// Stamps to stamps not allowed.
+	assert(bInNative == uTakerPaysIssuerID.isZero());		// Make sure issuer is specified as needed.
+	assert(bOutNative == uTakerGetsIssuerID.isZero());		// Make sure issuer is specified as needed.
+	assert(uTakerPaysCurrency != uTakerGetsCurrency || uTakerPaysIssuerID != uTakerGetsIssuerID);	// Currencies or accounts must differ.
 
 	return uBaseIndex;
 }
