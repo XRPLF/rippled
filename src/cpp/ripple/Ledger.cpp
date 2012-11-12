@@ -944,7 +944,7 @@ uint256 Ledger::getBookBase(const uint160& uTakerPaysCurrency, const uint160& uT
 		% RippleAddress::createHumanAccountID(uTakerGetsIssuerID)
 		% uBaseIndex.ToString());
 
-	assert(!bInNative || !bOutNative);						// Stamps to stamps not allowed.
+	assert(!bInNative || !bOutNative);						// XRP to XRP not allowed.
 	assert(bInNative == uTakerPaysIssuerID.isZero());		// Make sure issuer is specified as needed.
 	assert(bOutNative == uTakerGetsIssuerID.isZero());		// Make sure issuer is specified as needed.
 	assert(uTakerPaysCurrency != uTakerGetsCurrency || uTakerPaysIssuerID != uTakerGetsIssuerID);	// Currencies or accounts must differ.

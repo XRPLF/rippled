@@ -383,7 +383,7 @@ bool STAmount::setFullValue(const std::string& sAmount, const std::string& sCurr
 	// Stamps not must have an issuer.
 	if (mIsNative && !mIssuer.isZero())
 	{
-		Log(lsINFO) << "Issuer specified for stamps: " << sIssuer;
+		Log(lsINFO) << "Issuer specified for XRP: " << sIssuer;
 
 		return false;
 	}
