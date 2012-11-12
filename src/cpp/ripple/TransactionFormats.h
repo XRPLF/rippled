@@ -7,18 +7,18 @@ enum TransactionType
 {
 	ttINVALID			= -1,
 	ttPAYMENT			= 0,
-	ttCLAIM				= 1,
+	ttCLAIM				= 1, // open
 	ttWALLET_ADD		= 2,
 	ttACCOUNT_SET		= 3,
-	ttPASSWORD_FUND		= 4,
-	ttPASSWORD_SET		= 5,
-	ttNICKNAME_SET		= 6,
+	ttPASSWORD_FUND		= 4, // open
+	ttREGULAR_KEY_SET	= 5,
+	ttNICKNAME_SET		= 6, // open
 	ttOFFER_CREATE		= 7,
 	ttOFFER_CANCEL		= 8,
 	ttCONTRACT			= 9,
 	ttCONTRACT_REMOVE	= 10,  // can we use the same msg as offer cancel
 
-	ttCREDIT_SET		= 20,
+	ttTRUST_SET		= 20,
 };
 
 class TransactionFormat

@@ -28,7 +28,7 @@ TER	TransactionEngine::setAuthorized(const SerializedTransaction& txn, bool bMus
 	// Verify that submitter knows the private key for the generator.
 	// Otherwise, people could deny access to generators.
 	//
-
+	/* JED: taking out generator stuff until we have a better idea of how people will use this
 	std::vector<unsigned char>	vucCipher		= txn.getFieldVL(sfGenerator);
 	std::vector<unsigned char>	vucPubKey		= txn.getFieldVL(sfPublicKey);
 	std::vector<unsigned char>	vucSignature	= txn.getFieldVL(sfSignature);
@@ -42,6 +42,7 @@ TER	TransactionEngine::setAuthorized(const SerializedTransaction& txn, bool bMus
 		return tefBAD_GEN_AUTH;
 	}
 
+	
 	// Create generator.
 	uint160				hGeneratorID	= naAccountPublic.getAccountID();
 
@@ -69,6 +70,8 @@ TER	TransactionEngine::setAuthorized(const SerializedTransaction& txn, bool bMus
 											? hGeneratorID								// Claim
 											: txn.getFieldAccount160(sfAuthorizedKey);	// PasswordSet
 
+	*/
+	uint160	uAuthKeyID=txn.getFieldAccount160(sfAuthorizedKey);
 	mTxnAccount->setFieldAccount(sfAuthorizedKey, uAuthKeyID);
 
 	return tesSUCCESS;
@@ -196,17 +199,18 @@ TER TransactionEngine::doClaim(const SerializedTransaction& txn)
 {
 	Log(lsINFO) << "doClaim>";
 
-	TER	terResult	= setAuthorized(txn, true);
+	//TER	terResult	= setAuthorized(txn, true);
+	TER	terResult=tefEXCEPTION;
 
 	Log(lsINFO) << "doClaim<";
 
 	return terResult;
 }
 
-TER TransactionEngine::doCreditSet(const SerializedTransaction& txn)
+TER TransactionEngine::doTrustSet(const SerializedTransaction& txn)
 {
 	TER			terResult		= tesSUCCESS;
-	Log(lsINFO) << "doCreditSet>";
+	Log(lsINFO) << "doTrustSet>";
 
 	const STAmount		saLimitAmount	= txn.getFieldAmount(sfLimitAmount);
 	const bool			bQualityIn		= txn.isFieldPresent(sfQualityIn);
@@ -222,19 +226,19 @@ TER TransactionEngine::doCreditSet(const SerializedTransaction& txn)
 
 	if (saLimitAmount.isNegative())
 	{
-		Log(lsINFO) << "doCreditSet: Malformed transaction: Negatived credit limit.";
+		Log(lsINFO) << "doTrustSet: Malformed transaction: Negatived credit limit.";
 
 		return temBAD_AMOUNT;
 	}
 	else if (!uDstAccountID)
 	{
-		Log(lsINFO) << "doCreditSet: Malformed transaction: Destination account not specifed.";
+		Log(lsINFO) << "doTrustSet: Malformed transaction: Destination account not specified.";
 
 		return temDST_NEEDED;
 	}
 	else if (mTxnAccountID == uDstAccountID)
 	{
-		Log(lsINFO) << "doCreditSet: Malformed transaction: Can not extend credit to self.";
+		Log(lsINFO) << "doTrustSet: Malformed transaction: Can not extend credit to self.";
 
 		return temDST_IS_SRC;
 	}
@@ -242,7 +246,7 @@ TER TransactionEngine::doCreditSet(const SerializedTransaction& txn)
 	SLE::pointer		sleDst		= entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uDstAccountID));
 	if (!sleDst)
 	{
-		Log(lsINFO) << "doCreditSet: Delay transaction: Destination account does not exist.";
+		Log(lsINFO) << "doTrustSet: Delay transaction: Destination account does not exist.";
 
 		return terNO_DST;
 	}
@@ -311,12 +315,12 @@ TER TransactionEngine::doCreditSet(const SerializedTransaction& txn)
 			entryModify(sleRippleState);
 		}
 
-		Log(lsINFO) << "doCreditSet: Modifying ripple line: bDelIndex=" << bDelIndex;
+		Log(lsINFO) << "doTrustSet: Modifying ripple line: bDelIndex=" << bDelIndex;
 	}
 	// Line does not exist.
 	else if (!saLimitAmount)
 	{
-		Log(lsINFO) << "doCreditSet: Redundant: Setting non-existant ripple line to 0.";
+		Log(lsINFO) << "doTrustSet: Redundant: Setting non-existent ripple line to 0.";
 
 		return terNO_LINE_NO_ZERO;
 	}
@@ -325,7 +329,7 @@ TER TransactionEngine::doCreditSet(const SerializedTransaction& txn)
 		// Create a new ripple line.
 		sleRippleState	= entryCreate(ltRIPPLE_STATE, Ledger::getRippleStateIndex(mTxnAccountID, uDstAccountID, uCurrencyID));
 
-		Log(lsINFO) << "doCreditSet: Creating ripple line: " << sleRippleState->getIndex().ToString();
+		Log(lsINFO) << "doTrustSet: Creating ripple line: " << sleRippleState->getIndex().ToString();
 
 		sleRippleState->setFieldAmount(sfBalance, STAmount(uCurrencyID, ACCOUNT_ONE));	// Zero balance in currency.
 		sleRippleState->setFieldAmount(bFlipped ? sfHighLimit : sfLowLimit, saLimitAllow);
@@ -344,57 +348,13 @@ TER TransactionEngine::doCreditSet(const SerializedTransaction& txn)
 			terResult	= mNodes.dirAdd(uSrcRef, Ledger::getOwnerDirIndex(uDstAccountID), sleRippleState->getIndex());
 	}
 
-	Log(lsINFO) << "doCreditSet<";
+	Log(lsINFO) << "doTrustSet<";
 
 	return terResult;
 }
 
-TER TransactionEngine::doNicknameSet(const SerializedTransaction& txn)
-{
-	std::cerr << "doNicknameSet>" << std::endl;
 
-	const uint256		uNickname		= txn.getFieldH256(sfNickname);
-	const bool			bMinOffer		= txn.isFieldPresent(sfMinimumOffer);
-	const STAmount		saMinOffer		= bMinOffer ? txn.getFieldAmount(sfAmount) : STAmount();
-
-	SLE::pointer		sleNickname		= entryCache(ltNICKNAME, uNickname);
-
-	if (sleNickname)
-	{
-		// Edit old entry.
-		sleNickname->setFieldAccount(sfAccount, mTxnAccountID);
-
-		if (bMinOffer && saMinOffer)
-		{
-			sleNickname->setFieldAmount(sfMinimumOffer, saMinOffer);
-		}
-		else
-		{
-			sleNickname->makeFieldAbsent(sfMinimumOffer);
-		}
-
-		entryModify(sleNickname);
-	}
-	else
-	{
-		// Make a new entry.
-		// XXX Need to include authorization limiting for first year.
-
-		sleNickname	= entryCreate(ltNICKNAME, Ledger::getNicknameIndex(uNickname));
-
-		std::cerr << "doNicknameSet: Creating nickname node: " << sleNickname->getIndex().ToString() << std::endl;
-
-		sleNickname->setFieldAccount(sfAccount, mTxnAccountID);
-
-		if (bMinOffer && saMinOffer)
-			sleNickname->setFieldAmount(sfMinimumOffer, saMinOffer);
-	}
-
-	std::cerr << "doNicknameSet<" << std::endl;
-
-	return tesSUCCESS;
-}
-
+/*
 TER TransactionEngine::doPasswordFund(const SerializedTransaction& txn)
 {
 	std::cerr << "doPasswordFund>" << std::endl;
@@ -428,14 +388,16 @@ TER TransactionEngine::doPasswordFund(const SerializedTransaction& txn)
 
 	return tesSUCCESS;
 }
+*/
 
-TER TransactionEngine::doPasswordSet(const SerializedTransaction& txn)
+// TODO: change to take a fee if there is one there
+TER TransactionEngine::doRegularKeySet(const SerializedTransaction& txn)
 {
-	std::cerr << "doPasswordSet>" << std::endl;
+	std::cerr << "doRegularKeySet>" << std::endl;
 
 	if (mTxnAccount->getFlags() & lsfPasswordSpent)
 	{
-		std::cerr << "doPasswordSet: Delay transaction: Funds already spent." << std::endl;
+		std::cerr << "doRegularKeySet: Delay transaction: Funds already spent." << std::endl;
 
 		return terFUNDS_SPENT;
 	}
@@ -444,7 +406,7 @@ TER TransactionEngine::doPasswordSet(const SerializedTransaction& txn)
 
 	TER	terResult	= setAuthorized(txn, false);
 
-	std::cerr << "doPasswordSet<" << std::endl;
+	std::cerr << "doRegularKeySet<" << std::endl;
 
 	return terResult;
 }
@@ -477,7 +439,7 @@ TER TransactionEngine::doPayment(const SerializedTransaction& txn, const Transac
 
 	if (!uDstAccountID)
 	{
-		Log(lsINFO) << "doPayment: Invalid transaction: Payment destination account not specifed.";
+		Log(lsINFO) << "doPayment: Invalid transaction: Payment destination account not specified.";
 
 		return temDST_NEEDED;
 	}
@@ -495,7 +457,7 @@ TER TransactionEngine::doPayment(const SerializedTransaction& txn, const Transac
 	}
 	else if (mTxnAccountID == uDstAccountID && uSrcCurrency == uDstCurrency && !bPaths)
 	{
-		Log(lsINFO) << boost::str(boost::format("doPayment: Invalid transaction: Redunant transaction: src=%s, dst=%s, src_cur=%s, dst_cur=%s")
+		Log(lsINFO) << boost::str(boost::format("doPayment: Invalid transaction: Redundant transaction: src=%s, dst=%s, src_cur=%s, dst_cur=%s")
 			% mTxnAccountID.ToString()
 			% uDstAccountID.ToString()
 			% uSrcCurrency.ToString()
@@ -577,7 +539,7 @@ TER TransactionEngine::doPayment(const SerializedTransaction& txn, const Transac
 		if (saSrcXRPBalance < saDstAmount)
 		{
 			// Transaction might succeed, if applied in a different order.
-			Log(lsINFO) << "doPayment: Delay transaction: Insufficent funds.";
+			Log(lsINFO) << "doPayment: Delay transaction: Insufficient funds.";
 
 			terResult	= terUNFUNDED;
 		}
@@ -638,7 +600,7 @@ TER TransactionEngine::doWalletAdd(const SerializedTransaction& txn)
 	if (saSrcBalance < saAmount)
 	{
 		std::cerr
-			<< boost::str(boost::format("WalletAdd: Delay transaction: insufficent balance: balance=%s amount=%s")
+			<< boost::str(boost::format("WalletAdd: Delay transaction: insufficient balance: balance=%s amount=%s")
 				% saSrcBalance.getText()
 				% saAmount.getText())
 			<< std::endl;
@@ -662,10 +624,6 @@ TER TransactionEngine::doWalletAdd(const SerializedTransaction& txn)
 	return tesSUCCESS;
 }
 
-TER TransactionEngine::doInvoice(const SerializedTransaction& txn)
-{
-	return temUNKNOWN;
-}
 
 // Take as much as possible. Adjusts account balances. Charges fees on top to taker.
 // -->   uBookBase: The order book to take against.
