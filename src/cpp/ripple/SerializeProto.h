@@ -133,7 +133,8 @@
 	FIELD(ModifiedNode,			OBJECT,	5)
 	FIELD(PreviousFields,		OBJECT, 6)
 	FIELD(FinalFields,			OBJECT, 7)
-	FIELD(TemplateEntry,		OBJECT, 8)
+	FIELD(NewFields,			OBJECT, 8)
+	FIELD(TemplateEntry,		OBJECT, 9)
 
 	// array of objects
 	// ARRAY/1 is reserved for end of array
