@@ -28,32 +28,10 @@ static bool TFInit()
 		<< SOElement(sfTransferRate,	SOE_OPTIONAL)
 		;
 
-	DECLARE_TF(Claim, ttCLAIM)
-		<< SOElement(sfGenerator,		SOE_REQUIRED)
-		<< SOElement(sfPublicKey,		SOE_REQUIRED)
-		<< SOElement(sfSignature,		SOE_REQUIRED)
-		;
-
-	DECLARE_TF(CreditSet, ttCREDIT_SET)
+	DECLARE_TF(TrustSet, ttTRUST_SET)
 		<< SOElement(sfLimitAmount,		SOE_OPTIONAL)
 		<< SOElement(sfQualityIn,		SOE_OPTIONAL)
 		<< SOElement(sfQualityOut,		SOE_OPTIONAL)
-		;
-
-
-		/*
-	DECLARE_TF(Invoice, ttINVOICE)
-		<< SOElement(sfTarget,			SOE_REQUIRED)
-		<< SOElement(sfAmount,			SOE_REQUIRED)
-		<< SOElement(sfDestination,		SOE_OPTIONAL)
-		<< SOElement(sfIdentifier,		SOE_OPTIONAL)
-		;
-	)
-	*/
-
-	DECLARE_TF(NicknameSet, ttNICKNAME_SET)
-		<< SOElement(sfNickname,		SOE_REQUIRED)
-		<< SOElement(sfMinimumOffer,	SOE_OPTIONAL)
 		;
 
 	DECLARE_TF(OfferCreate, ttOFFER_CREATE)
@@ -66,14 +44,8 @@ static bool TFInit()
 		<< SOElement(sfOfferSequence,	SOE_REQUIRED)
 		;
 
-	DECLARE_TF(PasswordFund, ttPASSWORD_FUND)
-		<< SOElement(sfDestination,		SOE_REQUIRED)
-		;
-
-	DECLARE_TF(PasswordSet, ttPASSWORD_SET)
+	DECLARE_TF(SetRegularKey, ttREGULAR_KEY_SET)
 		<< SOElement(sfAuthorizedKey,	SOE_REQUIRED)
-		<< SOElement(sfGenerator,		SOE_REQUIRED)
-		<< SOElement(sfPublicKey,		SOE_REQUIRED)
 		;
 
 	DECLARE_TF(Payment, ttPAYMENT)
@@ -82,12 +54,6 @@ static bool TFInit()
 		<< SOElement(sfSendMax,			SOE_OPTIONAL)
 		<< SOElement(sfPaths,			SOE_OPTIONAL)
 		<< SOElement(sfInvoiceID,		SOE_OPTIONAL)
-		;
-
-	DECLARE_TF(WalletAdd, ttWALLET_ADD)
-		<< SOElement(sfAmount,			SOE_REQUIRED)
-		<< SOElement(sfAuthorizedKey,	SOE_REQUIRED)
-		<< SOElement(sfPublicKey,		SOE_REQUIRED)
 		;
 
 	DECLARE_TF(Contract, ttCONTRACT)
