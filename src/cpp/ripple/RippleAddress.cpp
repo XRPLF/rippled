@@ -792,7 +792,7 @@ void RippleAddress::setSeedRandom()
 	// XXX Maybe we should call MakeNewKey
 	uint128 key;
 
-	RAND_bytes((unsigned char *) &key, sizeof(key));
+	RAND_bytes(key.begin(), key.size());
 
 	RippleAddress::setSeed(key);
 }
