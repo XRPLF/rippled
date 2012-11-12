@@ -28,13 +28,13 @@ std::size_t hash_value(const aciSource& asValue)
 // - Set bEntryAdvance to advance to next entry.
 // <-- uOfferIndex : 0=end of list.
 TER RippleCalc::calcNodeAdvance(
-	const unsigned int			uIndex,				// 0 < uIndex < uLast
+	const unsigned int			uNode,				// 0 < uNode < uLast
 	PathState::ref				pspCur,
 	const bool					bMultiQuality,
 	const bool					bReverse)
 {
-	PaymentNode&	pnPrv			= pspCur->vpnNodes[uIndex-1];
-	PaymentNode&	pnCur			= pspCur->vpnNodes[uIndex];
+	PaymentNode&	pnPrv			= pspCur->vpnNodes[uNode-1];
+	PaymentNode&	pnCur			= pspCur->vpnNodes[uNode];
 
 	const uint160&	uPrvCurrencyID	= pnPrv.uCurrencyID;
 	const uint160&	uPrvIssuerID	= pnPrv.uIssuerID;
@@ -181,7 +181,7 @@ TER RippleCalc::calcNodeAdvance(
 			curIssuerNodeConstIterator	itForward		= pspCur->umForward.find(asLine);
 			const bool					bFoundForward	= itForward != pspCur->umForward.end();
 
-			if (bFoundForward && itForward->second != uIndex)
+			if (bFoundForward && itForward->second != uNode)
 			{
 				// Temporarily unfunded. Another node uses this source, ignore in this offer.
 				cLog(lsINFO) << "calcNodeAdvance: temporarily unfunded offer (forward)";
@@ -193,7 +193,7 @@ TER RippleCalc::calcNodeAdvance(
 			curIssuerNodeConstIterator	itPast			= mumSource.find(asLine);
 			bool						bFoundPast		= itPast != mumSource.end();
 
-			if (bFoundPast && itPast->second != uIndex)
+			if (bFoundPast && itPast->second != uNode)
 			{
 				// Temporarily unfunded. Another node uses this source, ignore in this offer.
 				cLog(lsINFO) << "calcNodeAdvance: temporarily unfunded offer (past)";
@@ -205,7 +205,7 @@ TER RippleCalc::calcNodeAdvance(
 			curIssuerNodeConstIterator	itReverse		= pspCur->umReverse.find(asLine);
 			bool						bFoundReverse	= itReverse != pspCur->umReverse.end();
 
-			if (bFoundReverse && itReverse->second != uIndex)
+			if (bFoundReverse && itReverse->second != uNode)
 			{
 				// Temporarily unfunded. Another node uses this source, ignore in this offer.
 				cLog(lsINFO) << "calcNodeAdvance: temporarily unfunded offer (reverse)";
@@ -245,7 +245,7 @@ TER RippleCalc::calcNodeAdvance(
 					% STAmount::createHumanCurrency(uCurCurrencyID)
 					% RippleAddress::createHumanAccountID(uCurIssuerID));
 
-				pspCur->umReverse.insert(std::make_pair(asLine, uIndex));
+				pspCur->umReverse.insert(std::make_pair(asLine, uNode));
 			}
 
 			bFundsDirty		= false;
@@ -270,7 +270,7 @@ TER RippleCalc::calcNodeAdvance(
 // requirements to the previous node.  The previous node adjusts the amount output and the amount spent on fees.  Continue process
 // till request is satisified while we the rate does not increase past the initial rate.
 TER RippleCalc::calcNodeDeliverRev(
-	const unsigned int			uIndex,			// 0 < uIndex < uLast
+	const unsigned int			uNode,			// 0 < uNode < uLast
 	PathState::ref				pspCur,
 	const bool					bMultiQuality,
 	const uint160&				uOutAccountID,	// --> Output owner's account.
@@ -279,8 +279,8 @@ TER RippleCalc::calcNodeDeliverRev(
 {
 	TER	terResult	= tesSUCCESS;
 
-	PaymentNode&	pnPrv			= pspCur->vpnNodes[uIndex-1];
-	PaymentNode&	pnCur			= pspCur->vpnNodes[uIndex];
+	PaymentNode&	pnPrv			= pspCur->vpnNodes[uNode-1];
+	PaymentNode&	pnCur			= pspCur->vpnNodes[uNode];
 
 	const uint160&	uCurIssuerID	= pnCur.uIssuerID;
 	const uint160&	uPrvAccountID	= pnPrv.uAccountID;
@@ -308,7 +308,7 @@ TER RippleCalc::calcNodeDeliverRev(
 		STAmount&		saTakerGets		= pnCur.saTakerGets;
 		STAmount&		saRateMax		= pnCur.saRateMax;
 
-		terResult	= calcNodeAdvance(uIndex, pspCur, bMultiQuality, true);		// If needed, advance to next funded offer.
+		terResult	= calcNodeAdvance(uNode, pspCur, bMultiQuality, true);		// If needed, advance to next funded offer.
 
 		if (tesSUCCESS != terResult || !uOfferIndex)
 		{
@@ -413,7 +413,7 @@ TER RippleCalc::calcNodeDeliverRev(
 			// Chain and compute the previous offer now.
 
 			terResult	= calcNodeDeliverRev(
-				uIndex-1,
+				uNode-1,
 				pspCur,
 				bMultiQuality,
 				uOfrOwnerID,
@@ -474,7 +474,7 @@ TER RippleCalc::calcNodeDeliverRev(
 // Deliver maximum amount of funds from previous node.
 // Goal: Make progress consuming the offer.
 TER RippleCalc::calcNodeDeliverFwd(
-	const unsigned int			uIndex,			// 0 < uIndex < uLast
+	const unsigned int			uNode,			// 0 < uNode < uLast
 	PathState::ref				pspCur,
 	const bool					bMultiQuality,
 	const uint160&				uInAccountID,	// --> Input owner's account.
@@ -485,9 +485,9 @@ TER RippleCalc::calcNodeDeliverFwd(
 {
 	TER	terResult	= tesSUCCESS;
 
-	PaymentNode&	pnPrv			= pspCur->vpnNodes[uIndex-1];
-	PaymentNode&	pnCur			= pspCur->vpnNodes[uIndex];
-	PaymentNode&	pnNxt			= pspCur->vpnNodes[uIndex+1];
+	PaymentNode&	pnPrv			= pspCur->vpnNodes[uNode-1];
+	PaymentNode&	pnCur			= pspCur->vpnNodes[uNode];
+	PaymentNode&	pnNxt			= pspCur->vpnNodes[uNode+1];
 
 	const uint160&	uNxtAccountID	= pnNxt.uAccountID;
 	const uint160&	uCurIssuerID	= pnCur.uIssuerID;
@@ -507,7 +507,7 @@ TER RippleCalc::calcNodeDeliverFwd(
 		&& saInAct != saInReq					// Did not deliver limit.
 		&& saInAct + saInFees != saInFunds)		// Did not deliver all funds.
 	{
-		terResult	= calcNodeAdvance(uIndex, pspCur, bMultiQuality, false);				// If needed, advance to next funded offer.
+		terResult	= calcNodeAdvance(uNode, pspCur, bMultiQuality, false);				// If needed, advance to next funded offer.
 
 		if (tesSUCCESS == terResult)
 		{
@@ -570,7 +570,7 @@ TER RippleCalc::calcNodeDeliverFwd(
 				STAmount	saOutPassFees;
 
 				terResult	= RippleCalc::calcNodeDeliverFwd(
-					uIndex+1,
+					uNode+1,
 					pspCur,
 					bMultiQuality,
 					uOfrOwnerID,
@@ -628,14 +628,14 @@ TER RippleCalc::calcNodeDeliverFwd(
 
 // Called to drive from the last offer node in a chain.
 TER RippleCalc::calcNodeOfferRev(
-	const unsigned int			uIndex,				// 0 < uIndex < uLast
+	const unsigned int			uNode,				// 0 < uNode < uLast
 	PathState::ref				pspCur,
 	const bool					bMultiQuality)
 {
 	TER				terResult;
 
-	PaymentNode&	pnCur			= pspCur->vpnNodes[uIndex];
-	PaymentNode&	pnNxt			= pspCur->vpnNodes[uIndex+1];
+	PaymentNode&	pnCur			= pspCur->vpnNodes[uNode];
+	PaymentNode&	pnNxt			= pspCur->vpnNodes[uNode+1];
 
 	if (!!pnNxt.uAccountID)
 	{
@@ -643,7 +643,7 @@ TER RippleCalc::calcNodeOfferRev(
 		STAmount		saDeliverAct;
 
 		terResult	= calcNodeDeliverRev(
-							uIndex,
+							uNode,
 							pspCur,
 							bMultiQuality,
 
@@ -668,13 +668,13 @@ TER RippleCalc::calcNodeOfferRev(
 //   - Payout to issuer or limbo.
 // - Deliver is set without transfer fees.
 TER RippleCalc::calcNodeOfferFwd(
-	const unsigned int			uIndex,				// 0 < uIndex < uLast
+	const unsigned int			uNode,				// 0 < uNode < uLast
 	PathState::ref				pspCur,
 	const bool					bMultiQuality
 	)
 {
 	TER				terResult;
-	PaymentNode&	pnPrv			= pspCur->vpnNodes[uIndex-1];
+	PaymentNode&	pnPrv			= pspCur->vpnNodes[uNode-1];
 
 	if (!!pnPrv.uAccountID)
 	{
@@ -683,7 +683,7 @@ TER RippleCalc::calcNodeOfferFwd(
 		STAmount		saInFees;
 
 		terResult	= calcNodeDeliverFwd(
-							uIndex,
+							uNode,
 							pspCur,
 							bMultiQuality,
 							pnPrv.uAccountID,
@@ -822,20 +822,20 @@ void RippleCalc::calcNodeRipple(
 // Issues are limited based on credit limits and amount owed.
 // No account balance adjustments as we don't know how much is going to actually be pushed through yet.
 // <-- tesSUCCESS or tepPATH_DRY
-TER RippleCalc::calcNodeAccountRev(const unsigned int uIndex, PathState::ref pspCur, const bool bMultiQuality)
+TER RippleCalc::calcNodeAccountRev(const unsigned int uNode, PathState::ref pspCur, const bool bMultiQuality)
 {
 	TER					terResult		= tesSUCCESS;
 	const unsigned int	uLast			= pspCur->vpnNodes.size() - 1;
 
 	uint64				uRateMax		= 0;
 
-	PaymentNode&		pnPrv			= pspCur->vpnNodes[uIndex ? uIndex-1 : 0];
-	PaymentNode&		pnCur			= pspCur->vpnNodes[uIndex];
-	PaymentNode&		pnNxt			= pspCur->vpnNodes[uIndex == uLast ? uLast : uIndex+1];
+	PaymentNode&		pnPrv			= pspCur->vpnNodes[uNode ? uNode-1 : 0];
+	PaymentNode&		pnCur			= pspCur->vpnNodes[uNode];
+	PaymentNode&		pnNxt			= pspCur->vpnNodes[uNode == uLast ? uLast : uNode+1];
 
 	// Current is allowed to redeem to next.
-	const bool			bPrvAccount		= !uIndex || isSetBit(pnPrv.uFlags, STPathElement::typeAccount);
-	const bool			bNxtAccount		= uIndex == uLast || isSetBit(pnNxt.uFlags, STPathElement::typeAccount);
+	const bool			bPrvAccount		= !uNode || isSetBit(pnPrv.uFlags, STPathElement::typeAccount);
+	const bool			bNxtAccount		= uNode == uLast || isSetBit(pnNxt.uFlags, STPathElement::typeAccount);
 
 	const uint160&		uCurAccountID	= pnCur.uAccountID;
 	const uint160&		uPrvAccountID	= bPrvAccount ? pnPrv.uAccountID : uCurAccountID;
@@ -843,24 +843,24 @@ TER RippleCalc::calcNodeAccountRev(const unsigned int uIndex, PathState::ref psp
 
 	const uint160&		uCurrencyID		= pnCur.uCurrencyID;
 
-	const uint32		uQualityIn		= uIndex ? lesActive.rippleQualityIn(uCurAccountID, uPrvAccountID, uCurrencyID) : QUALITY_ONE;
-	const uint32		uQualityOut		= uIndex != uLast ? lesActive.rippleQualityOut(uCurAccountID, uNxtAccountID, uCurrencyID) : QUALITY_ONE;
+	const uint32		uQualityIn		= uNode ? lesActive.rippleQualityIn(uCurAccountID, uPrvAccountID, uCurrencyID) : QUALITY_ONE;
+	const uint32		uQualityOut		= uNode != uLast ? lesActive.rippleQualityOut(uCurAccountID, uNxtAccountID, uCurrencyID) : QUALITY_ONE;
 
 	// For bPrvAccount
-	const STAmount		saPrvOwed		= bPrvAccount && uIndex								// Previous account is owed.
+	const STAmount		saPrvOwed		= bPrvAccount && uNode								// Previous account is owed.
 											? lesActive.rippleOwed(uCurAccountID, uPrvAccountID, uCurrencyID)
 											: STAmount(uCurrencyID, uCurAccountID);
 
-	const STAmount		saPrvLimit		= bPrvAccount && uIndex								// Previous account may owe.
+	const STAmount		saPrvLimit		= bPrvAccount && uNode								// Previous account may owe.
 											? lesActive.rippleLimit(uCurAccountID, uPrvAccountID, uCurrencyID)
 											: STAmount(uCurrencyID, uCurAccountID);
 
-	const STAmount		saNxtOwed		= bNxtAccount && uIndex != uLast					// Next account is owed.
+	const STAmount		saNxtOwed		= bNxtAccount && uNode != uLast					// Next account is owed.
 											? lesActive.rippleOwed(uCurAccountID, uNxtAccountID, uCurrencyID)
 											: STAmount(uCurrencyID, uCurAccountID);
 
-	cLog(lsINFO) << boost::str(boost::format("calcNodeAccountRev> uIndex=%d/%d uPrvAccountID=%s uCurAccountID=%s uNxtAccountID=%s uCurrencyID=%s uQualityIn=%d uQualityOut=%d saPrvOwed=%s saPrvLimit=%s")
-		% uIndex
+	cLog(lsINFO) << boost::str(boost::format("calcNodeAccountRev> uNode=%d/%d uPrvAccountID=%s uCurAccountID=%s uNxtAccountID=%s uCurrencyID=%s uQualityIn=%d uQualityOut=%d saPrvOwed=%s saPrvLimit=%s")
+		% uNode
 		% uLast
 		% RippleAddress::createHumanAccountID(uPrvAccountID)
 		% RippleAddress::createHumanAccountID(uCurAccountID)
@@ -910,13 +910,13 @@ TER RippleCalc::calcNodeAccountRev(const unsigned int uIndex, PathState::ref psp
 
 	if (bPrvAccount && bNxtAccount)
 	{
-		if (!uIndex)
+		if (!uNode)
 		{
 			// ^ --> ACCOUNT -->  account|offer
 			// Nothing to do, there is no previous to adjust.
 			nothing();
 		}
-		else if (uIndex == uLast)
+		else if (uNode == uLast)
 		{
 			// account --> ACCOUNT --> $
 			// Overall deliverable.
@@ -1081,7 +1081,7 @@ TER RippleCalc::calcNodeAccountRev(const unsigned int uIndex, PathState::ref psp
 	{
 		saPrvDeliverAct.zero(saCurRedeemReq);
 
-		if (uIndex == uLast)
+		if (uNode == uLast)
 		{
 			// offer --> ACCOUNT --> $
 			const STAmount&	saCurWantedReq	= bPrvAccount
@@ -1166,7 +1166,7 @@ TER RippleCalc::calcNodeAccountRev(const unsigned int uIndex, PathState::ref psp
 // - Current node: specify what to push through to next.
 // - Output to next node is computed as input minus quality or transfer fee.
 TER RippleCalc::calcNodeAccountFwd(
-	const unsigned int			uIndex,				// 0 <= uIndex <= uLast
+	const unsigned int			uNode,				// 0 <= uNode <= uLast
 	PathState::ref				pspCur,
 	const bool					bMultiQuality)
 {
@@ -1175,9 +1175,9 @@ TER RippleCalc::calcNodeAccountFwd(
 
 	uint64				uRateMax		= 0;
 
-	PaymentNode&	pnPrv			= pspCur->vpnNodes[uIndex ? uIndex-1 : 0];
-	PaymentNode&	pnCur			= pspCur->vpnNodes[uIndex];
-	PaymentNode&	pnNxt			= pspCur->vpnNodes[uIndex == uLast ? uLast : uIndex+1];
+	PaymentNode&	pnPrv			= pspCur->vpnNodes[uNode ? uNode-1 : 0];
+	PaymentNode&	pnCur			= pspCur->vpnNodes[uNode];
+	PaymentNode&	pnNxt			= pspCur->vpnNodes[uNode == uLast ? uLast : uNode+1];
 
 	const bool		bPrvAccount		= isSetBit(pnPrv.uFlags, STPathElement::typeAccount);
 	const bool		bNxtAccount		= isSetBit(pnNxt.uFlags, STPathElement::typeAccount);
@@ -1188,8 +1188,8 @@ TER RippleCalc::calcNodeAccountFwd(
 
 	const uint160&	uCurrencyID		= pnCur.uCurrencyID;
 
-	uint32			uQualityIn		= uIndex ? lesActive.rippleQualityIn(uCurAccountID, uPrvAccountID, uCurrencyID) : QUALITY_ONE;
-	uint32			uQualityOut		= uIndex == uLast ? lesActive.rippleQualityOut(uCurAccountID, uNxtAccountID, uCurrencyID) : QUALITY_ONE;
+	uint32			uQualityIn		= uNode ? lesActive.rippleQualityIn(uCurAccountID, uPrvAccountID, uCurrencyID) : QUALITY_ONE;
+	uint32			uQualityOut		= uNode == uLast ? lesActive.rippleQualityOut(uCurAccountID, uNxtAccountID, uCurrencyID) : QUALITY_ONE;
 
 	// When looking backward (prv) for req we care about what we just calculated: use fwd
 	// When looking forward (cur) for req we care about what was desired: use rev
@@ -1216,8 +1216,8 @@ TER RippleCalc::calcNodeAccountFwd(
 	const STAmount&	saCurDeliverReq	= pnCur.saRevDeliver;
 	STAmount&		saCurDeliverAct	= pnCur.saFwdDeliver;
 
-	cLog(lsINFO) << boost::str(boost::format("calcNodeAccountFwd> uIndex=%d/%d saPrvRedeemReq=%s saPrvIssueReq=%s saPrvDeliverReq=%s saCurRedeemReq=%s saCurIssueReq=%s saCurDeliverReq=%s")
-		% uIndex
+	cLog(lsINFO) << boost::str(boost::format("calcNodeAccountFwd> uNode=%d/%d saPrvRedeemReq=%s saPrvIssueReq=%s saPrvDeliverReq=%s saCurRedeemReq=%s saCurIssueReq=%s saCurDeliverReq=%s")
+		% uNode
 		% uLast
 		% saPrvRedeemReq.getFullText()
 		% saPrvIssueReq.getFullText()
@@ -1232,7 +1232,7 @@ TER RippleCalc::calcNodeAccountFwd(
 	{
 		// Next is an account, must be rippling.
 
-		if (!uIndex)
+		if (!uNode)
 		{
 			// ^ --> ACCOUNT --> account
 
@@ -1274,7 +1274,7 @@ TER RippleCalc::calcNodeAccountFwd(
 				% saCurIssueAct.getFullText()
 				% saCurSendMaxPass.getFullText());
 		}
-		else if (uIndex == uLast)
+		else if (uNode == uLast)
 		{
 			// account --> ACCOUNT --> $
 			cLog(lsINFO) << boost::str(boost::format("calcNodeAccountFwd: account --> ACCOUNT --> $ : uPrvAccountID=%s uCurAccountID=%s saPrvRedeemReq=%s saPrvIssueReq=%s")
@@ -1371,7 +1371,7 @@ TER RippleCalc::calcNodeAccountFwd(
 	}
 	else if (!bPrvAccount && bNxtAccount)
 	{
-		if (uIndex == uLast)
+		if (uNode == uLast)
 		{
 			// offer --> ACCOUNT --> $
 			cLog(lsINFO) << boost::str(boost::format("calcNodeAccountFwd: offer --> ACCOUNT --> $ : %s") % saPrvDeliverReq.getFullText());
@@ -1472,26 +1472,27 @@ TER PathState::pushImply(
 	{
 		// Currency is different, need to convert via an offer.
 
-		terResult	= pushNode(
-						STPathElement::typeCurrency		// Offer.
-						 | STPathElement::typeIssuer,
-						ACCOUNT_ONE,					// Placeholder for offers.
+		terResult	= pushNode( // Offer.
+						!!uCurrencyID
+							? STPathElement::typeCurrency | STPathElement::typeIssuer
+							: STPathElement::typeCurrency,
+						ACCOUNT_XRP,					// Placeholder for offers.
 						uCurrencyID,					// The offer's output is what is now wanted.
 						uIssuerID);
 	}
 
 	const PaymentNode&	pnBck		= vpnNodes.back();
 
-	// For ripple, non-stamps, ensure the issuer is on at least one side of the transaction.
+	// For ripple, non-XRP, ensure the issuer is on at least one side of the transaction.
 	if (tesSUCCESS == terResult
-		&& !!uCurrencyID								// Not stamps.
+		&& !!uCurrencyID								// Not XRP.
 		&& (pnBck.uAccountID != uIssuerID				// Previous is not issuing own IOUs.
 			&& uAccountID != uIssuerID))				// Current is not receiving own IOUs.
 	{
 		// Need to ripple through uIssuerID's account.
 
 		terResult	= pushNode(
-						STPathElement::typeAccount,
+						STPathElement::typeAccount | STPathElement::typeCurrency | STPathElement::typeIssuer,
 						uIssuerID,						// Intermediate account is the needed issuer.
 						uCurrencyID,
 						uIssuerID);
@@ -1511,10 +1512,6 @@ TER PathState::pushNode(
 	const uint160& uCurrencyID,
 	const uint160& uIssuerID)
 {
-	cLog(lsINFO) << "pushNode> "
-		<< RippleAddress::createHumanAccountID(uAccountID)
-		<< " " << STAmount::createHumanCurrency(uCurrencyID)
-		<< "/" << RippleAddress::createHumanAccountID(uIssuerID);
 	PaymentNode			pnCur;
 	const bool			bFirst		= vpnNodes.empty();
 	const PaymentNode&	pnPrv		= bFirst ? PaymentNode() : vpnNodes.back();
@@ -1527,11 +1524,30 @@ TER PathState::pushNode(
 	const bool			bIssuer		= isSetBit(iType, STPathElement::typeIssuer);
 	TER					terResult	= tesSUCCESS;
 
+	cLog(lsDEBUG) << "pushNode> "
+		<< iType
+		<< ": " << (bAccount ? RippleAddress::createHumanAccountID(uAccountID) : "-")
+		<< " " << (bCurrency ? STAmount::createHumanCurrency(uCurrencyID) : "-")
+		<< "/" << (bIssuer ? RippleAddress::createHumanAccountID(uIssuerID) : "-");
+
 	pnCur.uFlags		= iType;
+	pnCur.uCurrencyID	= bCurrency ? uCurrencyID : pnPrv.uCurrencyID;
 
 	if (iType & ~STPathElement::typeValidBits)
 	{
-		cLog(lsINFO) << "pushNode: bad bits.";
+		cLog(lsDEBUG) << "pushNode: bad bits.";
+
+		terResult	= temBAD_PATH;
+	}
+	else if (bIssuer && !pnCur.uCurrencyID)
+	{
+		cLog(lsDEBUG) << "pushNode: issuer specified for XRP.";
+
+		terResult	= temBAD_PATH;
+	}
+	else if (bIssuer && !uIssuerID)
+	{
+		cLog(lsDEBUG) << "pushNode: specified bad issuer.";
 
 		terResult	= temBAD_PATH;
 	}
@@ -1540,8 +1556,11 @@ TER PathState::pushNode(
 		// Account link
 
 		pnCur.uAccountID	= uAccountID;
-		pnCur.uCurrencyID	= bCurrency ? uCurrencyID : pnPrv.uCurrencyID;
-		pnCur.uIssuerID		= bIssuer ? uIssuerID : uAccountID;
+		pnCur.uIssuerID		= bIssuer
+									? uIssuerID
+									: !!pnCur.uCurrencyID
+										? uAccountID
+										: ACCOUNT_XRP;
 		pnCur.saRevRedeem	= STAmount(uCurrencyID, uAccountID);
 		pnCur.saRevIssue	= STAmount(uCurrencyID, uAccountID);
 
@@ -1550,6 +1569,12 @@ TER PathState::pushNode(
 			// The first node is always correct as is.
 
 			nothing();
+		}
+		else if (!uAccountID)
+		{
+			cLog(lsDEBUG) << "pushNode: specified bad account.";
+
+			terResult	= temBAD_PATH;
 		}
 		else
 		{
@@ -1612,19 +1637,28 @@ TER PathState::pushNode(
 	{
 		// Offer link
 		// Offers bridge a change in currency & issuer or just a change in issuer.
-		pnCur.uCurrencyID	= bCurrency ? uCurrencyID : pnPrv.uCurrencyID;
-		pnCur.uIssuerID		= bIssuer ? uIssuerID : pnCur.uAccountID;
+		pnCur.uIssuerID		= bIssuer
+									? uIssuerID
+									: !!pnCur.uCurrencyID
+										? !!pnPrv.uIssuerID
+											? pnPrv.uIssuerID	// Default to previous issuer
+											: pnPrv.uAccountID	// Or previous account if no previous issuer.
+										: ACCOUNT_XRP;
 		pnCur.saRateMax		= saZero;
 
-		if (!!pnPrv.uAccountID)
+		if (!!pnCur.uCurrencyID != !!pnCur.uIssuerID)
+		{
+			cLog(lsDEBUG) << "pushNode: currency is inconsistent with issuer.";
+
+			terResult	= temBAD_PATH;
+		}
+		else if (!!pnPrv.uAccountID)
 		{
 			// Previous is an account.
 
 			// Insert intermediary issuer account if needed.
 			terResult	= pushImply(
-				!!pnPrv.uCurrencyID
-					? ACCOUNT_ONE	// Rippling, but offer's don't have an account.
-					: ACCOUNT_XRP,
+				ACCOUNT_XRP,				// Rippling, but offer's don't have an account.
 				pnPrv.uCurrencyID,
 				pnPrv.uIssuerID);
 		}
@@ -1655,30 +1689,37 @@ PathState::PathState(
 		saInReq(saSendMax),
 		saOutReq(saSend)
 {
-	const uint160	uInCurrencyID	= saSendMax.getCurrency();
+	const uint160	uMaxCurrencyID	= saSendMax.getCurrency();
+	const uint160	uMaxIssuerID	= saSendMax.getIssuer();
+
 	const uint160	uOutCurrencyID	= saSend.getCurrency();
-	const uint160	uInIssuerID		= !!uInCurrencyID ? saSendMax.getIssuer() : ACCOUNT_XRP;
-	const uint160	uOutIssuerID	= !!uOutCurrencyID ? saSend.getIssuer() : ACCOUNT_XRP;
+	const uint160	uOutIssuerID	= saSend.getIssuer();
+	const uint160	uSenderIssuerID	= !!uMaxCurrencyID ? uSenderID : ACCOUNT_XRP;	// Sender is always issuer for non-XRP.
 
 	lesEntries				= lesSource.duplicate();
 
+	terStatus	= tesSUCCESS;
+
+	if ((!uMaxCurrencyID && !!uMaxIssuerID) || (!uOutCurrencyID && !!uOutIssuerID))
+		terStatus	= temBAD_PATH;
+
 	// Push sending node.
-	terStatus	= pushNode(
-		STPathElement::typeAccount
-			| STPathElement::typeCurrency
-			| STPathElement::typeIssuer,
-		uSenderID,
-		uInCurrencyID,
-		uSenderID);
+	if (tesSUCCESS == terStatus)
+		terStatus	= pushNode(
+			!!uMaxCurrencyID
+				? STPathElement::typeAccount | STPathElement::typeCurrency | STPathElement::typeIssuer
+				: STPathElement::typeAccount | STPathElement::typeCurrency,
+			uSenderID,
+			uMaxCurrencyID,									// Max specifes the currency.
+			uSenderIssuerID);
 
 cLog(lsDEBUG) << boost::str(boost::format("PathState: pushed: account=%s currency=%s issuer=%s")
 	% RippleAddress::createHumanAccountID(uSenderID)
-	% STAmount::createHumanCurrency(uInCurrencyID)
-	% RippleAddress::createHumanAccountID(uSenderID));
+	% STAmount::createHumanCurrency(uMaxCurrencyID)
+	% RippleAddress::createHumanAccountID(uSenderIssuerID));
 
 	if (tesSUCCESS == terStatus
-		&& !!uInCurrencyID							// First was not XRC
-		&& uInIssuerID != uSenderID) {				// Issuer was not same as sender
+		&& uMaxIssuerID != uSenderIssuerID) {				// Issuer was not same as sender
 		// May have an implied node.
 
 		// Figure out next node properties for implied node.
@@ -1698,22 +1739,22 @@ cLog(lsDEBUG) << boost::str(boost::format("PathState: implied check: uNxtCurrenc
 	% RippleAddress::createHumanAccountID(uNxtAccountID));
 
 		// Can't just use push implied, because it can't compensate for next account.
-		if (!uNxtCurrencyID							// Next is XRC - will have offer next
-				|| uInCurrencyID != uNxtCurrencyID	// Next is different current - will have offer next
-				|| uInIssuerID != uNxtAccountID)	// Next is not implied issuer
+		if (!uNxtCurrencyID							// Next is XRP - will have offer next
+				|| uMaxCurrencyID != uNxtCurrencyID	// Next is different current - will have offer next
+				|| uMaxIssuerID != uNxtAccountID)	// Next is not implied issuer
 		{
-cLog(lsDEBUG) << boost::str(boost::format("PathState: implied: account=%s currency=%s issuer=%s")
-	% RippleAddress::createHumanAccountID(uInIssuerID)
-	% RippleAddress::createHumanAccountID(uInCurrencyID)
-	% RippleAddress::createHumanAccountID(uInIssuerID));
-			// Add implied account.
+cLog(lsDEBUG) << boost::str(boost::format("PathState: sender implied: account=%s currency=%s issuer=%s")
+	% RippleAddress::createHumanAccountID(uMaxIssuerID)
+	% RippleAddress::createHumanAccountID(uMaxCurrencyID)
+	% RippleAddress::createHumanAccountID(uMaxIssuerID));
+			// Add account implied by SendMax.
 			terStatus	= pushNode(
-				STPathElement::typeAccount
-					| STPathElement::typeCurrency
-					| STPathElement::typeIssuer,
-				uInIssuerID,
-				uInCurrencyID,
-				uInIssuerID);
+				!!uMaxCurrencyID
+					? STPathElement::typeAccount | STPathElement::typeCurrency | STPathElement::typeIssuer
+					: STPathElement::typeAccount | STPathElement::typeCurrency,
+				uMaxIssuerID,
+				uMaxCurrencyID,
+				uMaxIssuerID);
 		}
 	}
 
@@ -1726,32 +1767,37 @@ cLog(lsDEBUG) << boost::str(boost::format("PathState: implied: account=%s curren
 	const PaymentNode&	pnPrv			= vpnNodes.back();
 
 	if (tesSUCCESS == terStatus
-		&& !!uOutCurrencyID							// Next is not XRC
+		&& !!uOutCurrencyID							// Next is not XRP
 		&& uOutIssuerID != uReceiverID				// Out issuer is not reciever
 		&& (pnPrv.uCurrencyID != uOutCurrencyID		// Previous will be an offer.
 			|| pnPrv.uAccountID != uOutIssuerID))	// Need the implied issuer.
 	{
 		// Add implied account.
+cLog(lsDEBUG) << boost::str(boost::format("PathState: receiver implied: account=%s currency=%s issuer=%s")
+	% RippleAddress::createHumanAccountID(uOutIssuerID)
+	% RippleAddress::createHumanAccountID(uOutCurrencyID)
+	% RippleAddress::createHumanAccountID(uOutIssuerID));
 		terStatus	= pushNode(
-			STPathElement::typeAccount
-				| STPathElement::typeCurrency
-				| STPathElement::typeIssuer,
+			!!uOutCurrencyID
+				? STPathElement::typeAccount | STPathElement::typeCurrency | STPathElement::typeIssuer
+				: STPathElement::typeAccount | STPathElement::typeCurrency,
 			uOutIssuerID,
-			uInCurrencyID,
+			uOutCurrencyID,
 			uOutIssuerID);
 	}
 
 	if (tesSUCCESS == terStatus)
 	{
 		// Create receiver node.
+		// Last node is always an account.
 
 		terStatus	= pushNode(
-			STPathElement::typeAccount						// Last node is always an account.
-				| STPathElement::typeCurrency
-				| STPathElement::typeIssuer,
+			!!uOutCurrencyID
+				? STPathElement::typeAccount | STPathElement::typeCurrency | STPathElement::typeIssuer
+				: STPathElement::typeAccount | STPathElement::typeCurrency,
 			uReceiverID,									// Receive to output
 			uOutCurrencyID,									// Desired currency
-			!!uOutCurrencyID ? uReceiverID : ACCOUNT_XRP);
+			uReceiverID);
 	}
 
 	if (tesSUCCESS == terStatus)
@@ -1761,19 +1807,19 @@ cLog(lsDEBUG) << boost::str(boost::format("PathState: implied: account=%s curren
 
 		const unsigned int	uNodes	= vpnNodes.size();
 
-		for (unsigned int uIndex = 0; tesSUCCESS == terStatus && uIndex != uNodes; ++uIndex)
+		for (unsigned int uNode = 0; tesSUCCESS == terStatus && uNode != uNodes; ++uNode)
 		{
-			const PaymentNode&	pnCur	= vpnNodes[uIndex];
+			const PaymentNode&	pnCur	= vpnNodes[uNode];
 
 			if (!!pnCur.uAccountID)
 			{
 				// Source is a ripple line
 				nothing();
 			}
-			else if (!umForward.insert(std::make_pair(boost::make_tuple(pnCur.uAccountID, pnCur.uCurrencyID, pnCur.uIssuerID), uIndex)).second)
+			else if (!umForward.insert(std::make_pair(boost::make_tuple(pnCur.uAccountID, pnCur.uCurrencyID, pnCur.uIssuerID), uNode)).second)
 			{
 				// Failed to insert. Have a loop.
-				cLog(lsINFO) << boost::str(boost::format("PathState: loop detected: %s")
+				cLog(lsDEBUG) << boost::str(boost::format("PathState: loop detected: %s")
 					% getJson());
 
 				terStatus	= temBAD_PATH_LOOP;
@@ -1782,8 +1828,8 @@ cLog(lsDEBUG) << boost::str(boost::format("PathState: implied: account=%s curren
 	}
 
 	cLog(lsINFO) << boost::str(boost::format("PathState: in=%s/%s out=%s/%s %s")
-		% STAmount::createHumanCurrency(uInCurrencyID)
-		% RippleAddress::createHumanAccountID(uInIssuerID)
+		% STAmount::createHumanCurrency(uMaxCurrencyID)
+		% RippleAddress::createHumanAccountID(uMaxIssuerID)
 		% STAmount::createHumanCurrency(uOutCurrencyID)
 		% RippleAddress::createHumanAccountID(uOutIssuerID)
 		% getJson());
@@ -1863,23 +1909,23 @@ Json::Value	PathState::getJson() const
 	return jvPathState;
 }
 
-TER RippleCalc::calcNodeFwd(const unsigned int uIndex, PathState::ref pspCur, const bool bMultiQuality)
+TER RippleCalc::calcNodeFwd(const unsigned int uNode, PathState::ref pspCur, const bool bMultiQuality)
 {
-	const PaymentNode&		pnCur		= pspCur->vpnNodes[uIndex];
+	const PaymentNode&		pnCur		= pspCur->vpnNodes[uNode];
 	const bool				bCurAccount	= isSetBit(pnCur.uFlags,  STPathElement::typeAccount);
 
-	cLog(lsINFO) << boost::str(boost::format("calcNodeFwd> uIndex=%d") % uIndex);
+	cLog(lsINFO) << boost::str(boost::format("calcNodeFwd> uNode=%d") % uNode);
 
 	TER						terResult	= bCurAccount
-											? calcNodeAccountFwd(uIndex, pspCur, bMultiQuality)
-											: calcNodeOfferFwd(uIndex, pspCur, bMultiQuality);
+											? calcNodeAccountFwd(uNode, pspCur, bMultiQuality)
+											: calcNodeOfferFwd(uNode, pspCur, bMultiQuality);
 
-	if (tesSUCCESS == terResult && uIndex + 1 != pspCur->vpnNodes.size())
+	if (tesSUCCESS == terResult && uNode + 1 != pspCur->vpnNodes.size())
 	{
-		terResult	= calcNodeFwd(uIndex+1, pspCur, bMultiQuality);
+		terResult	= calcNodeFwd(uNode+1, pspCur, bMultiQuality);
 	}
 
-	cLog(lsINFO) << boost::str(boost::format("calcNodeFwd< uIndex=%d terResult=%d") % uIndex % terResult);
+	cLog(lsINFO) << boost::str(boost::format("calcNodeFwd< uNode=%d terResult=%d") % uNode % terResult);
 
 	return terResult;
 }
@@ -1893,9 +1939,9 @@ TER RippleCalc::calcNodeFwd(const unsigned int uIndex, PathState::ref pspCur, co
 //     --> [all]saWanted.mCurrency
 //     --> [all]saAccount
 //     <-> [0]saWanted.mAmount : --> limit, <-- actual
-TER RippleCalc::calcNodeRev(const unsigned int uIndex, PathState::ref pspCur, const bool bMultiQuality)
+TER RippleCalc::calcNodeRev(const unsigned int uNode, PathState::ref pspCur, const bool bMultiQuality)
 {
-	PaymentNode&	pnCur		= pspCur->vpnNodes[uIndex];
+	PaymentNode&	pnCur		= pspCur->vpnNodes[uNode];
 	const bool		bCurAccount	= isSetBit(pnCur.uFlags,  STPathElement::typeAccount);
 	TER				terResult;
 
@@ -1905,14 +1951,14 @@ TER RippleCalc::calcNodeRev(const unsigned int uIndex, PathState::ref pspCur, co
 
 		saTransferRate	= STAmount::saFromRate(lesActive.rippleTransferRate(uCurIssuerID));
 
-	cLog(lsINFO) << boost::str(boost::format("calcNodeRev> uIndex=%d uIssuerID=%s saTransferRate=%s")
-		% uIndex
+	cLog(lsINFO) << boost::str(boost::format("calcNodeRev> uNode=%d uIssuerID=%s saTransferRate=%s")
+		% uNode
 		% RippleAddress::createHumanAccountID(uCurIssuerID)
 		% saTransferRate.getFullText());
 
 	terResult	= bCurAccount
-					? calcNodeAccountRev(uIndex, pspCur, bMultiQuality)
-					: calcNodeOfferRev(uIndex, pspCur, bMultiQuality);
+					? calcNodeAccountRev(uNode, pspCur, bMultiQuality)
+					: calcNodeOfferRev(uNode, pspCur, bMultiQuality);
 
 	// Do previous.
 	if (tesSUCCESS != terResult)
@@ -1920,14 +1966,14 @@ TER RippleCalc::calcNodeRev(const unsigned int uIndex, PathState::ref pspCur, co
 		// Error, don't continue.
 		nothing();
 	}
-	else if (uIndex)
+	else if (uNode)
 	{
 		// Continue in reverse.
 
-		terResult	= calcNodeRev(uIndex-1, pspCur, bMultiQuality);
+		terResult	= calcNodeRev(uNode-1, pspCur, bMultiQuality);
 	}
 
-	cLog(lsINFO) << boost::str(boost::format("calcNodeRev< uIndex=%d terResult=%s/%d") % uIndex % transToken(terResult) % terResult);
+	cLog(lsINFO) << boost::str(boost::format("calcNodeRev< uNode=%d terResult=%s/%d") % uNode % transToken(terResult) % terResult);
 
 	return terResult;
 }
@@ -2024,7 +2070,7 @@ TER RippleCalc::rippleCalc(
     if (!bNoRippleDirect)
     {
 	    // Direct path.
-	    // XXX Might also make a stamp bridge by default.
+	    // XXX Might also make a XRP bridge by default.
 
 	    PathState::pointer	pspDirect	= PathState::createPathState(
 		    vpsPaths.size(),
@@ -2274,7 +2320,7 @@ TER calcOfferFill(PaymentNode& pnSrc, PaymentNode& pnDst, bool bAllowPartial)
 
 	if (pnDst.saWanted.isNative())
 	{
-		// Transfer stamps.
+		// Transfer XRP.
 
 		STAmount	saSrcFunds	= pnSrc.saAccount->accountHolds(pnSrc.saAccount, uint160(0), uint160(0));
 
@@ -2366,7 +2412,7 @@ void TransactionEngine::calcOfferBridgeNext(
 
 			if (saOfferPays.isNative())
 			{
-				// No additional fees for stamps.
+				// No additional fees for XRP.
 
 				nothing();
 			}
@@ -2427,7 +2473,7 @@ void TransactionEngine::calcOfferBridgeNext(
 #endif
 
 #if 0
-// If either currency is not stamps, then also calculates vs stamp bridge.
+// If either currency is not XRP, then also calculates vs XRP bridge.
 // --> saWanted: Limit of how much is wanted out.
 // <-- saPay: How much to pay into the offer.
 // <-- saGot: How much to the offer pays out.  Never more than saWanted.

@@ -142,16 +142,16 @@ public:
 
 	PathState::pointer	pathCreate(const STPath& spPath);
 	void				pathNext(PathState::ref pspCur, const int iPaths, const LedgerEntrySet& lesCheckpoint, LedgerEntrySet& lesCurrent);
-	TER					calcNode(const unsigned int uIndex, PathState::ref pspCur, const bool bMultiQuality);
-	TER					calcNodeRev(const unsigned int uIndex, PathState::ref pspCur, const bool bMultiQuality);
-	TER					calcNodeFwd(const unsigned int uIndex, PathState::ref pspCur, const bool bMultiQuality);
-	TER					calcNodeOfferRev(const unsigned int uIndex, PathState::ref pspCur, const bool bMultiQuality);
-	TER					calcNodeOfferFwd(const unsigned int uIndex, PathState::ref pspCur, const bool bMultiQuality);
-	TER					calcNodeAccountRev(const unsigned int uIndex, PathState::ref pspCur, const bool bMultiQuality);
-	TER					calcNodeAccountFwd(const unsigned int uIndex, PathState::ref pspCur, const bool bMultiQuality);
-	TER					calcNodeAdvance(const unsigned int uIndex, PathState::ref pspCur, const bool bMultiQuality, const bool bReverse);
+	TER					calcNode(const unsigned int uNode, PathState::ref pspCur, const bool bMultiQuality);
+	TER					calcNodeRev(const unsigned int uNode, PathState::ref pspCur, const bool bMultiQuality);
+	TER					calcNodeFwd(const unsigned int uNode, PathState::ref pspCur, const bool bMultiQuality);
+	TER					calcNodeOfferRev(const unsigned int uNode, PathState::ref pspCur, const bool bMultiQuality);
+	TER					calcNodeOfferFwd(const unsigned int uNode, PathState::ref pspCur, const bool bMultiQuality);
+	TER					calcNodeAccountRev(const unsigned int uNode, PathState::ref pspCur, const bool bMultiQuality);
+	TER					calcNodeAccountFwd(const unsigned int uNode, PathState::ref pspCur, const bool bMultiQuality);
+	TER					calcNodeAdvance(const unsigned int uNode, PathState::ref pspCur, const bool bMultiQuality, const bool bReverse);
 	TER					calcNodeDeliverRev(
-							const unsigned int			uIndex,
+							const unsigned int			uNode,
 							PathState::ref				pspCur,
 							const bool					bMultiQuality,
 							const uint160&				uOutAccountID,
@@ -159,7 +159,7 @@ public:
 							STAmount&					saOutAct);
 
 	TER					calcNodeDeliverFwd(
-							const unsigned int			uIndex,
+							const unsigned int			uNode,
 							PathState::ref				pspCur,
 							const bool					bMultiQuality,
 							const uint160&				uInAccountID,
