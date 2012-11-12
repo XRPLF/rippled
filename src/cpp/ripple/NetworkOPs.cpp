@@ -1105,16 +1105,6 @@ void NetworkOPs::pubAcceptedTransaction(Ledger::ref lpCurrent, const SerializedT
 }
 
 
-// TODO: will need to rework this to get the affected accounts in a different way when we want finer granularity than just subAccount
-// transactions to
-// transactions from
-// orderbook issuer <- weird since you are probably just interested in a particular pair
-// orderbook receiver
-// your credit setting?
-// other people credit set
-// other account changes
-
-
 void NetworkOPs::pubAccountTransaction(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult, bool bAccepted)
 {
 	boost::unordered_set<InfoSub*>	notify;
