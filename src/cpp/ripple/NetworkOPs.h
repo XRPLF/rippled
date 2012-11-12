@@ -90,7 +90,7 @@ protected:
     boost::interprocess::interprocess_upgradable_mutex	mMonitorLock;
 	subInfoMapType										mSubAccount;
 	subInfoMapType										mSubRTAccount;
-	subSubmitMapType									mSubmitMap;
+	subSubmitMapType									mSubmitMap;   // TODO: probably dump this
 
 	boost::unordered_set<InfoSub*>						mSubLedger;				// accepted ledgers
 	boost::unordered_set<InfoSub*>						mSubServer;				// when server changes connectivity state
@@ -107,6 +107,7 @@ protected:
 
 	void pubAcceptedTransaction(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult);
 	void pubAccountTransaction(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult,bool accepted);
+	std::map<RippleAddress,bool> getAffectedAccounts(const SerializedTransaction& stTxn);
 
 public:
 	NetworkOPs(boost::asio::io_service& io_service, LedgerMaster* pLedgerMaster);

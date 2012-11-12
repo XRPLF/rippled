@@ -43,6 +43,7 @@ public:
 	STObject& getAffectedNode(const uint256&, SField::ref type);
 	STObject& getAffectedNode(const uint256&);
 	const STObject& peekAffectedNode(const uint256&) const;
+	//std::vector<RippleAddress> getAffectedAccounts();
 
 	Json::Value getJson(int p) const { return getAsObject().getJson(p); }
 	void addRaw(Serializer&, TER);

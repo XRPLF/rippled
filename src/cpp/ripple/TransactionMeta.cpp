@@ -49,6 +49,34 @@ void TransactionMetaSet::setAffectedNode(const uint256& node, SField::ref type)
 	obj.setFieldH256(sfLedgerIndex, node);
 }
 
+/*
+std::vector<RippleAddress> TransactionMetaSet::getAffectedAccounts()
+{
+	std::vector<RippleAddress> accounts;
+
+	BOOST_FOREACH(STObject& object, mNodes.getValue()	)
+	{
+		const STAccount* sa = dynamic_cast<const STAccount*>(&it);
+		if (sa != NULL)
+		{
+			bool found = false;
+			RippleAddress na = sa->getValueNCA();
+			BOOST_FOREACH(const RippleAddress& it, accounts)
+			{
+				if (it == na)
+				{
+					found = true;
+					break;
+				}
+			}
+			if (!found)
+				accounts.push_back(na);
+		}
+	}
+	return accounts;
+}
+*/
+
 STObject& TransactionMetaSet::getAffectedNode(const uint256& node, SField::ref type)
 {
 	assert(&type);

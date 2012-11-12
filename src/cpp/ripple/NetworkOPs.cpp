@@ -1045,13 +1045,15 @@ void NetworkOPs::pubLedger(Ledger::ref lpAccepted)
 			for (SHAMapItem::pointer item = txSet.peekFirstItem(); !!item; item = txSet.peekNextItem(item->getTag()))
 			{
 				SerializedTransaction::pointer	stTxn = theApp->getMasterTransaction().fetch(item, false, 0);
-				// XXX Need to support other results.
-				// XXX Need to give failures too.
-				TER	terResult	= tesSUCCESS;
-
-				pubAcceptedTransaction(lpAccepted, *stTxn, terResult);
+				if(stTxn)
+				{
+					// XXX Need to support other results.
+					// XXX Need to give failures too.
+					TER	terResult	= tesSUCCESS;
+					
+					pubAcceptedTransaction(lpAccepted, *stTxn, terResult);
+				}	
 			}
-			// TODO: remove old entries from the submit map
 		}
 	}
 }
@@ -1103,7 +1105,16 @@ void NetworkOPs::pubAcceptedTransaction(Ledger::ref lpCurrent, const SerializedT
 }
 
 
-// TODO: tell the mSubmitMap people
+// TODO: will need to rework this to get the affected accounts in a different way when we want finer granularity than just subAccount
+// transactions to
+// transactions from
+// orderbook issuer <- weird since you are probably just interested in a particular pair
+// orderbook receiver
+// your credit setting?
+// other people credit set
+// other account changes
+
+
 void NetworkOPs::pubAccountTransaction(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult, bool bAccepted)
 {
 	boost::unordered_set<InfoSub*>	notify;
@@ -1115,9 +1126,10 @@ void NetworkOPs::pubAccountTransaction(Ledger::ref lpCurrent, const SerializedTr
 
 		if (!mSubAccount.empty() || (!mSubRTAccount.empty()) )
 		{
-			BOOST_FOREACH(const RippleAddress& naAccountPublic, stTxn.getAffectedAccounts())
+			typedef const std::pair<RippleAddress,bool> AccountPair;
+			BOOST_FOREACH(AccountPair& affectedAccount, getAffectedAccounts(stTxn))
 			{
-				subInfoMapIterator	simiIt	= mSubRTAccount.find(naAccountPublic.getAccountID());
+				subInfoMapIterator	simiIt	= mSubRTAccount.find(affectedAccount.first.getAccountID());
 
 				if (simiIt != mSubRTAccount.end())
 				{
@@ -1128,7 +1140,7 @@ void NetworkOPs::pubAccountTransaction(Ledger::ref lpCurrent, const SerializedTr
 				}
 				if(bAccepted)
 				{
-					simiIt	= mSubAccount.find(naAccountPublic.getAccountID());
+					simiIt	= mSubAccount.find(affectedAccount.first.getAccountID());
 
 					if (simiIt != mSubAccount.end())
 					{
@@ -1151,6 +1163,36 @@ void NetworkOPs::pubAccountTransaction(Ledger::ref lpCurrent, const SerializedTr
 			ispListener->send(jvObj);
 		}
 	}
+}
+
+// JED: I know this is sort of ugly. I'm going to rework this to get the affected accounts in a different way when we want finer granularity than just "account"
+std::map<RippleAddress,bool> NetworkOPs::getAffectedAccounts(const SerializedTransaction& stTxn)
+{
+	std::map<RippleAddress,bool> accounts;
+
+	BOOST_FOREACH(const SerializedType& it, stTxn.peekData())
+	{
+		const STAccount* sa = dynamic_cast<const STAccount*>(&it);
+		if (sa)
+		{
+			bool found = false;
+			RippleAddress na = sa->getValueNCA();
+			accounts[na]=true;
+		}else
+		{	
+			if( it.getFName() == sfLimitAmount )
+			{
+				const STAmount* amount = dynamic_cast<const STAmount*>(&it);
+				if(amount)
+				{
+					RippleAddress na;
+					na.setAccountID(amount->getIssuer());
+					accounts[na]=true;
+				}
+			}
+		}
+	}
+	return accounts;
 }
 
 //
@@ -1231,7 +1273,7 @@ uint32 NetworkOPs::acceptLedger()
 void NetworkOPs::storeProposal(const LedgerProposal::pointer& proposal, const RippleAddress& peerPublic)
 {
 	std::list<LedgerProposal::pointer>& props = mStoredProposals[peerPublic.getNodeID()];
-	if (props.size() >= (mLastCloseProposers + 10))
+	if (props.size() >= (unsigned)(mLastCloseProposers + 10))
 		props.pop_front();
 	props.push_back(proposal);
 }

@@ -320,32 +320,14 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="KnownNodeList.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="util\pugiconfig.hpp">
       <Filter>Header Files\util</Filter>
     </ClInclude>
     <ClInclude Include="util\pugixml.hpp">
       <Filter>Header Files\util</Filter>
     </ClInclude>
-    <ClInclude Include="NetworkThread.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="bitcoinUtil.h">
       <Filter>Header Files\util</Filter>
-    </ClInclude>
-    <ClInclude Include="TimingService.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="script.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ExtendedTransaction.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Account.h">
-      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="database\database.h">
       <Filter>Header Files\util</Filter>
@@ -359,277 +341,259 @@
     <ClInclude Include="database\sqlite3ext.h">
       <Filter>Header Files\util</Filter>
     </ClInclude>
-    <ClInclude Include="Conversion.h">
+    <ClInclude Include="src\cpp\ripple\AccountState.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="obj\src\newcoin.pb.h">
+    <ClInclude Include="src\cpp\ripple\Application.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\AccountState.h">
+    <ClInclude Include="src\cpp\ripple\base58.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\Application.h">
+    <ClInclude Include="src\cpp\ripple\bignum.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\base58.h">
+    <ClInclude Include="src\cpp\ripple\BitcoinUtil.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\bignum.h">
+    <ClInclude Include="src\cpp\ripple\CallRPC.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\BinaryFormats.h">
+    <ClInclude Include="src\cpp\ripple\CanonicalTXSet.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\BitcoinUtil.h">
+    <ClInclude Include="src\cpp\ripple\Config.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\CallRPC.h">
+    <ClInclude Include="src\cpp\ripple\ConnectionPool.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\CanonicalTXSet.h">
+    <ClInclude Include="src\cpp\ripple\Contract.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\Config.h">
+    <ClInclude Include="src\cpp\ripple\FieldNames.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\ConnectionPool.h">
+    <ClInclude Include="src\cpp\ripple\HashedObject.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\Conversion.h">
+    <ClInclude Include="src\cpp\ripple\HashPrefixes.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\HashedObject.h">
+    <ClInclude Include="src\cpp\ripple\HTTPRequest.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\HttpReply.h">
+    <ClInclude Include="src\cpp\ripple\HttpsClient.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\HttpRequest.h">
+    <ClInclude Include="src\cpp\ripple\InstanceCounter.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\HttpsClient.h">
+    <ClInclude Include="src\cpp\ripple\Interpreter.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\key.h">
+    <ClInclude Include="src\cpp\ripple\JobQueue.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\Ledger.h">
+    <ClInclude Include="src\cpp\ripple\key.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\LedgerAcquire.h">
+    <ClInclude Include="src\cpp\ripple\Ledger.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\LedgerConsensus.h">
+    <ClInclude Include="src\cpp\ripple\LedgerAcquire.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\LedgerFormats.h">
+    <ClInclude Include="src\cpp\ripple\LedgerConsensus.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\LedgerHistory.h">
+    <ClInclude Include="src\cpp\ripple\LedgerEntrySet.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\LedgerMaster.h">
+    <ClInclude Include="src\cpp\ripple\LedgerFormats.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\LedgerProposal.h">
+    <ClInclude Include="src\cpp\ripple\LedgerHistory.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\LedgerTiming.h">
+    <ClInclude Include="src\cpp\ripple\LedgerMaster.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\Log.h">
+    <ClInclude Include="src\cpp\ripple\LedgerProposal.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\NetworkOPs.h">
+    <ClInclude Include="src\cpp\ripple\LedgerTiming.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\NetworkStatus.h">
+    <ClInclude Include="src\cpp\ripple\Log.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\NewcoinAddress.h">
+    <ClInclude Include="src\cpp\ripple\NetworkOPs.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\NicknameState.h">
+    <ClInclude Include="src\cpp\ripple\NetworkStatus.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\PackedMessage.h">
+    <ClInclude Include="src\cpp\ripple\NicknameState.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\ParseSection.h">
+    <ClInclude Include="src\cpp\ripple\Operation.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\Peer.h">
+    <ClInclude Include="src\cpp\ripple\OrderBook.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\PeerDoor.h">
+    <ClInclude Include="src\cpp\ripple\OrderBookDB.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\PubKeyCache.h">
+    <ClInclude Include="src\cpp\ripple\PackedMessage.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\RequestParser.h">
+    <ClInclude Include="src\cpp\ripple\ParseSection.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\rfc1751.h">
+    <ClInclude Include="src\cpp\ripple\Pathfinder.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\RippleState.h">
+    <ClInclude Include="src\cpp\ripple\Peer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\RPC.h">
+    <ClInclude Include="src\cpp\ripple\PeerDoor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\RPCCommands.h">
+    <ClInclude Include="src\cpp\ripple\ProofOfWork.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\RPCDoor.h">
+    <ClInclude Include="src\cpp\ripple\PubKeyCache.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\RPCServer.h">
+    <ClInclude Include="src\cpp\ripple\RangeSet.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\ScopedLock.h">
+    <ClInclude Include="src\cpp\ripple\rfc1751.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\SecureAllocator.h">
+    <ClInclude Include="src\cpp\ripple\ripple.pb.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\SerializedLedger.h">
+    <ClInclude Include="src\cpp\ripple\RippleAddress.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\SerializedObject.h">
+    <ClInclude Include="src\cpp\ripple\RippleCalc.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\SerializedTransaction.h">
+    <ClInclude Include="src\cpp\ripple\RippleLines.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\SerializedTypes.h">
+    <ClInclude Include="src\cpp\ripple\RippleState.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\SerializedValidation.h">
+    <ClInclude Include="src\cpp\ripple\RPC.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\Serializer.h">
+    <ClInclude Include="src\cpp\ripple\RPCCommands.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\SHAMap.h">
+    <ClInclude Include="src\cpp\ripple\RPCDoor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\TaggedCache.h">
+    <ClInclude Include="src\cpp\ripple\RPCHandler.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\Transaction.h">
+    <ClInclude Include="src\cpp\ripple\RPCServer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\TransactionEngine.h">
+    <ClInclude Include="src\cpp\ripple\ScopedLock.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\TransactionFormats.h">
+    <ClInclude Include="src\cpp\ripple\ScriptData.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\TransactionMaster.h">
+    <ClInclude Include="src\cpp\ripple\SecureAllocator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\types.h">
+    <ClInclude Include="src\cpp\ripple\SerializedLedger.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\uint256.h">
+    <ClInclude Include="src\cpp\ripple\SerializedObject.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\UniqueNodeList.h">
+    <ClInclude Include="src\cpp\ripple\SerializedTransaction.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\utils.h">
+    <ClInclude Include="src\cpp\ripple\SerializedTypes.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\ValidationCollection.h">
+    <ClInclude Include="src\cpp\ripple\SerializedValidation.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\Wallet.h">
+    <ClInclude Include="src\cpp\ripple\SerializeProto.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\Pathfinder.h">
+    <ClInclude Include="src\cpp\ripple\Serializer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\RippleLines.h">
+    <ClInclude Include="src\cpp\ripple\SHAMap.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\OrderBookDB.h">
+    <ClInclude Include="src\cpp\ripple\SHAMapSync.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\OrderBook.h">
+    <ClInclude Include="src\cpp\ripple\SNTPClient.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\Contract.h">
+    <ClInclude Include="src\cpp\ripple\Suppression.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\ScriptData.h">
+    <ClInclude Include="src\cpp\ripple\TaggedCache.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\Interpreter.h">
+    <ClInclude Include="src\cpp\ripple\Transaction.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\Operation.h">
+    <ClInclude Include="src\cpp\ripple\TransactionEngine.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\RPCHandler.h">
+    <ClInclude Include="src\cpp\ripple\TransactionErr.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\WSHandler.h">
+    <ClInclude Include="src\cpp\ripple\TransactionFormats.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\FieldNames.h">
+    <ClInclude Include="src\cpp\ripple\TransactionMaster.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\HashPrefixes.h">
+    <ClInclude Include="src\cpp\ripple\TransactionMeta.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\InstanceCounter.h">
+    <ClInclude Include="src\cpp\ripple\types.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\JobQueue.h">
+    <ClInclude Include="src\cpp\ripple\uint256.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\LedgerEntrySet.h">
+    <ClInclude Include="src\cpp\ripple\UniqueNodeList.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\RangeSet.h">
+    <ClInclude Include="src\cpp\ripple\utils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\ripple.pb.h">
+    <ClInclude Include="src\cpp\ripple\ValidationCollection.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\RippleAddress.h">
+    <ClInclude Include="src\cpp\ripple\Version.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\RippleCalc.h">
+    <ClInclude Include="src\cpp\ripple\Wallet.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\SerializeProto.h">
+    <ClInclude Include="src\cpp\ripple\WSConnection.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\SHAMapSync.h">
+    <ClInclude Include="src\cpp\ripple\WSDoor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\SNTPClient.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Suppression.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\TransactionErr.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\TransactionMeta.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Version.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\WSConnection.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\WSDoor.h">
+    <ClInclude Include="src\cpp\ripple\WSHandler.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
