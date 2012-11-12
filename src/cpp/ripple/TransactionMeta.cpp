@@ -31,13 +31,14 @@ bool TransactionMetaSet::isNodeAffected(const uint256& node) const
 	return false;
 }
 
-void TransactionMetaSet::setAffectedNode(const uint256& node, SField::ref type)
+void TransactionMetaSet::setAffectedNode(const uint256& node, SField::ref type, uint16 nodeType)
 { // make sure the node exists and force its type
 	BOOST_FOREACH(STObject& it, mNodes)
 	{
 		if (it.getFieldH256(sfLedgerIndex) == node)
 		{
 			it.setFName(type);
+			it.setFieldU16(sfLedgerEntryType, nodeType);
 			return;
 		}
 	}
@@ -47,6 +48,7 @@ void TransactionMetaSet::setAffectedNode(const uint256& node, SField::ref type)
 
 	assert(obj.getFName() == type);
 	obj.setFieldH256(sfLedgerIndex, node);
+	obj.setFieldU16(sfLedgerEntryType, nodeType);
 }
 
 /*
