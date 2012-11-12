@@ -29,9 +29,10 @@ public:
 	typedef c_Key	key_type;
 	typedef c_Data	data_type;
 
-	typedef boost::weak_ptr<data_type>		weak_data_ptr;
-	typedef boost::shared_ptr<data_type>	data_ptr;
-	typedef std::pair<time_t, data_ptr>		cache_entry;
+	typedef boost::weak_ptr<data_type>			weak_data_ptr;
+	typedef boost::shared_ptr<data_type>		data_ptr;
+	typedef std::pair<time_t, weak_data_ptr>	cache_entry;
+	typedef std::pair<key_type, cache_entry>	cache_pair;
 
 protected:
 	mutable boost::recursive_mutex mLock;
@@ -156,7 +157,7 @@ template<typename c_Key, typename c_Data> bool TaggedCache<c_Key, c_Data>::touch
 	}
 
 	// In map but not cache, put in cache
-	mCache.insert(std::make_pair(key, std::make_pair(time(NULL), weak_data_ptr(cit->second.second))));
+	mCache.insert(cache_pair(key, cache_entry(time(NULL), weak_data_ptr(cit->second.second))));
 	return true;
 }
 
@@ -180,7 +181,7 @@ bool TaggedCache<c_Key, c_Data>::canonicalize(const key_type& key, boost::shared
 	typename boost::unordered_map<key_type, weak_data_ptr>::iterator mit = mMap.find(key);
 	if (mit == mMap.end())
 	{ // not in map
-		mCache.insert(std::make_pair(key, std::make_pair(time(NULL), data)));
+		mCache.insert(cache_pair(key, cache_entry(time(NULL), data)));
 		mMap.insert(std::make_pair(key, data));
 		return false;
 	}
@@ -189,7 +190,7 @@ bool TaggedCache<c_Key, c_Data>::canonicalize(const key_type& key, boost::shared
 	if (!cachedData)
 	{ // in map, but expired. Update in map, insert in cache
 		mit->second = data;
-		mCache.insert(std::make_pair(key, std::make_pair(time(NULL), data)));
+		mCache.insert(cache_pair(key, cache_entry(time(NULL), data)));
 		return true;
 	}
 
@@ -208,7 +209,7 @@ bool TaggedCache<c_Key, c_Data>::canonicalize(const key_type& key, boost::shared
 			cit->second.second = data;
 	}
 	else // no, add to cache
-		mCache.insert(std::make_pair(key, std::make_pair(time(NULL), data)));
+		mCache.insert(cache_pair(key, cache_entry(time(NULL), data)));
 
 	return true;
 }
@@ -235,7 +236,7 @@ boost::shared_ptr<c_Data> TaggedCache<c_Key, c_Data>::fetch(const key_type& key)
 	if (cit != mCache.end())
 		cit->second.first = time(NULL); // Yes, refresh
 	else // No, add to cache
-		mCache.insert(std::make_pair(key, std::make_pair(time(NULL), cachedData)));
+		mCache.insert(cache_pair(key, cache_entry(time(NULL), cachedData)));
 
 	return cachedData;
 }
