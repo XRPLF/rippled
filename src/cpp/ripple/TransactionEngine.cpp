@@ -127,7 +127,7 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 		switch (txn.getTxnType())
 		{
 			case ttCLAIM:
-			case ttPASSWORD_SET:
+			case ttREGULAR_KEY_SET:
 				saCost	= 0;
 				break;
 
@@ -148,7 +148,7 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 				break;
 
 			case ttACCOUNT_SET:
-			case ttCREDIT_SET:
+			case ttTRUST_SET:
 			case ttOFFER_CREATE:
 			case ttOFFER_CANCEL:
 			case ttPASSWORD_FUND:
@@ -268,7 +268,7 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 				}
 				break;
 
-			case ttPASSWORD_SET:
+			case ttREGULAR_KEY_SET:
 				// Transaction's signing public key must be for the source account.
 				// To prove the master private key made this transaction.
 				if (naSigningPubKey.getAccountID() != mTxnAccountID)
@@ -388,8 +388,8 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 				terResult = doClaim(txn);
 				break;
 
-			case ttCREDIT_SET:
-				terResult = doCreditSet(txn);
+			case ttTRUST_SET:
+				terResult = doTrustSet(txn);
 				break;
 
 			case ttINVALID:
@@ -409,16 +409,8 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 				terResult = doOfferCancel(txn);
 				break;
 
-			case ttNICKNAME_SET:
-				terResult = doNicknameSet(txn);
-				break;
-
-			case ttPASSWORD_FUND:
-				terResult = doPasswordFund(txn);
-				break;
-
-			case ttPASSWORD_SET:
-				terResult = doPasswordSet(txn);
+			case ttREGULAR_KEY_SET:
+				terResult = doRegularKeySet(txn);
 				break;
 
 			case ttPAYMENT:

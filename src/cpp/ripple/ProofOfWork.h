@@ -10,6 +10,15 @@
 
 #include "uint256.h"
 
+enum POWResult
+{
+	powOK		= 0,
+	powREUSED	= 1,
+	powBADNONCE	= 2,
+	powBADTOKEN	= 3,
+	powEXPIRED	= 4,
+};
+
 class ProofOfWork
 {
 protected:
@@ -48,12 +57,13 @@ protected:
 	int								mIterations;
 	uint256							mTarget;
 	time_t							mLastDifficultyChange;
+	int								mValidTime;
 
 	powMap_t						mSolvedChallenges;
 	boost::mutex					mLock;
 
 public:
-	ProofOfWorkGenerator(const uint256& secret);
+	ProofOfWorkGenerator();
 
 	ProofOfWork getProof();
 	bool checkProof(const std::string& token, const uint256& solution);
@@ -64,3 +74,5 @@ public:
 };
 
 #endif
+
+// vim:ts=4

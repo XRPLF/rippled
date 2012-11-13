@@ -181,9 +181,9 @@ bool TransactionAcquire::takeNodes(const std::list<SHAMapNode>& nodeIDs,
 }
 
 void LCTransaction::setVote(const uint160& peer, bool votesYes)
-{ // Tracke a peer's yes/no vote on a particular disputed transaction
-	std::pair<boost::unordered_map<uint160, bool>::iterator, bool> res =
-		mVotes.insert(std::make_pair<uint160, bool>(peer, votesYes));
+{ // Track a peer's yes/no vote on a particular disputed transaction
+	std::pair<boost::unordered_map<const uint160, bool>::iterator, bool> res =
+		mVotes.insert(std::pair<const uint160, bool>(peer, votesYes));
 
 	if (res.second)
 	{ // new vote
