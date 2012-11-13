@@ -8,13 +8,17 @@
 #include "Log.h"
 #include "HashPrefixes.h"
 
+SETUP_LOG();
 DECLARE_INSTANCE(SerializedTransaction);
 
 SerializedTransaction::SerializedTransaction(TransactionType type) : STObject(sfTransaction), mType(type)
 {
 	mFormat = TransactionFormat::getTxnFormat(type);
 	if (mFormat == NULL)
+	{
+		cLog(lsWARNING) << "Transaction type: " << type;
 		throw std::runtime_error("invalid transaction type");
+	}
 	set(mFormat->elements);
 	setFieldU16(sfTransactionType, mFormat->t_type);
 }
@@ -24,7 +28,10 @@ SerializedTransaction::SerializedTransaction(const STObject& object) : STObject(
 	mType = static_cast<TransactionType>(getFieldU16(sfTransactionType));
 	mFormat = TransactionFormat::getTxnFormat(mType);
 	if (!mFormat)
+	{
+		cLog(lsWARNING) << "Transaction type: " << mType;
 		throw std::runtime_error("invalid transaction type");
+	}
 	if (!setType(mFormat->elements))
 	{
 		throw std::runtime_error("transaction not valid");
@@ -45,7 +52,10 @@ SerializedTransaction::SerializedTransaction(SerializerIterator& sit) : STObject
 
 	mFormat = TransactionFormat::getTxnFormat(mType);
 	if (!mFormat)
+	{
+		cLog(lsWARNING) << "Transaction type: " << mType;
 		throw std::runtime_error("invalid transaction type");
+	}
 	if (!setType(mFormat->elements))
 	{
 		assert(false);
@@ -206,10 +216,10 @@ BOOST_AUTO_TEST_CASE( STrans_test )
 	RippleAddress publicAcct = RippleAddress::createAccountPublic(generator, 1);
 	RippleAddress privateAcct = RippleAddress::createAccountPrivate(generator, seed, 1);
 
-	SerializedTransaction j(ttCLAIM);
+	SerializedTransaction j(ttACCOUNT_SET);
 	j.setSourceAccount(publicAcct);
 	j.setSigningPubKey(publicAcct);
-	j.setFieldVL(sfPublicKey, publicAcct.getAccountPublic());
+	j.setFieldVL(sfMessageKey, publicAcct.getAccountPublic());
 	j.sign(privateAcct);
 
 	if (!j.checkSign()) BOOST_FAIL("Transaction fails signature test");
