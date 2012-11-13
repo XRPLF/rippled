@@ -71,8 +71,8 @@ TER	TransactionEngine::setAuthorized(const SerializedTransaction& txn, bool bMus
 											: txn.getFieldAccount160(sfAuthorizedKey);	// PasswordSet
 
 	*/
-	uint160	uAuthKeyID=txn.getFieldAccount160(sfAuthorizedKey);
-	mTxnAccount->setFieldAccount(sfAuthorizedKey, uAuthKeyID);
+	uint160	uAuthKeyID=txn.getFieldAccount160(sfRegularKey);
+	mTxnAccount->setFieldAccount(sfRegularKey, uAuthKeyID);
 
 	return tesSUCCESS;
 }
@@ -195,17 +195,6 @@ TER TransactionEngine::doAccountSet(const SerializedTransaction& txn)
 	return tesSUCCESS;
 }
 
-TER TransactionEngine::doClaim(const SerializedTransaction& txn)
-{
-	Log(lsINFO) << "doClaim>";
-
-	//TER	terResult	= setAuthorized(txn, true);
-	TER	terResult=tefEXCEPTION;
-
-	Log(lsINFO) << "doClaim<";
-
-	return terResult;
-}
 
 TER TransactionEngine::doTrustSet(const SerializedTransaction& txn)
 {
@@ -573,7 +562,7 @@ TER TransactionEngine::doWalletAdd(const SerializedTransaction& txn)
 
 	const std::vector<unsigned char>	vucPubKey		= txn.getFieldVL(sfPublicKey);
 	const std::vector<unsigned char>	vucSignature	= txn.getFieldVL(sfSignature);
-	const uint160						uAuthKeyID		= txn.getFieldAccount160(sfAuthorizedKey);
+	const uint160						uAuthKeyID		= txn.getFieldAccount160(sfRegularKey);
 	const RippleAddress				naMasterPubKey	= RippleAddress::createAccountPublic(vucPubKey);
 	const uint160						uDstAccountID	= naMasterPubKey.getAccountID();
 
@@ -617,7 +606,7 @@ TER TransactionEngine::doWalletAdd(const SerializedTransaction& txn)
 	sleDst->setFieldAccount(sfAccount, uDstAccountID);
 	sleDst->setFieldU32(sfSequence, 1);
 	sleDst->setFieldAmount(sfBalance, saAmount);
-	sleDst->setFieldAccount(sfAuthorizedKey, uAuthKeyID);
+	sleDst->setFieldAccount(sfRegularKey, uAuthKeyID);
 
 	std::cerr << "WalletAdd<" << std::endl;
 

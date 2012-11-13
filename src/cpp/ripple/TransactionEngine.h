@@ -63,7 +63,6 @@ protected:
 	void				txnWrite();
 
 	TER					doAccountSet(const SerializedTransaction& txn);
-	TER					doClaim(const SerializedTransaction& txn);
 	TER					doTrustSet(const SerializedTransaction& txn);
 	TER					doOfferCreate(const SerializedTransaction& txn);
 	TER					doOfferCancel(const SerializedTransaction& txn);

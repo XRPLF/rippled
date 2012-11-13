@@ -116,7 +116,7 @@
 	FIELD(Destination,			ACCOUNT, 3)
 	FIELD(Issuer,				ACCOUNT, 4)
 	FIELD(Target,				ACCOUNT, 7)
-	FIELD(AuthorizedKey,		ACCOUNT, 8)
+	FIELD(RegularKey,			ACCOUNT, 8)
 
 	// path set
 	FIELD(Paths,				PATHSET, 1)

@@ -1,0 +1,309 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{19465545-42EE-42FA-9CC8-F8975F8F1CC7}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>newcoin</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>BOOST_TEST_ALTERNATIVE_INIT_API;BOOST_TEST_NO_MAIN;_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0501;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>.\src;..\OpenSSL\include;..\boost_1_47_0;..\protobuf\src\</AdditionalIncludeDirectories>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>..\OpenSSL\lib\VC;..\boost_1_47_0\stage\lib;..\protobuf\vsprojects\Debug</AdditionalLibraryDirectories>
+      <AdditionalDependencies>ssleay32MDd.lib;libeay32MTd.lib;libprotobuf.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
+    <CustomBuild>
+      <Command>c:/code/protoc-2.4.1-win32/protoc -I=C:\code\newcoin --cpp_out=C:\code\newcoin C:\code\newcoin/newcoin.proto</Command>
+    </CustomBuild>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>BOOST_TEST_ALTERNATIVE_INIT_API;BOOST_TEST_NO_MAIN;_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0501;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\OpenSSL\include;..\boost_1_47_0;..\protobuf-2.4.1\src</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalLibraryDirectories>..\OpenSSL\lib\VC;..\boost_1_47_0\stage\lib;..\protobuf-2.4.1\vsprojects\Release</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libprotobuf.lib;ssleay32MD.lib;libeay32MD.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="src\cpp\database\database.cpp" />
+    <ClCompile Include="src\cpp\database\sqlite3.c" />
+    <ClCompile Include="src\cpp\database\SqliteDatabase.cpp" />
+    <ClCompile Include="src\cpp\database\win\windatabase.cpp" />
+    <ClCompile Include="src\cpp\json\json_reader.cpp" />
+    <ClCompile Include="src\cpp\json\json_value.cpp" />
+    <ClCompile Include="src\cpp\json\json_writer.cpp" />
+    <ClCompile Include="src\cpp\ripple\AccountState.cpp" />
+    <ClCompile Include="src\cpp\ripple\Amount.cpp" />
+    <ClCompile Include="src\cpp\ripple\Application.cpp" />
+    <ClCompile Include="src\cpp\ripple\BitcoinUtil.cpp" />
+    <ClCompile Include="src\cpp\ripple\CallRPC.cpp" />
+    <ClCompile Include="src\cpp\ripple\CanonicalTXSet.cpp" />
+    <ClCompile Include="src\cpp\ripple\Config.cpp" />
+    <ClCompile Include="src\cpp\ripple\ConnectionPool.cpp" />
+    <ClCompile Include="src\cpp\ripple\Contract.cpp" />
+    <ClCompile Include="src\cpp\ripple\DBInit.cpp" />
+    <ClCompile Include="src\cpp\ripple\DeterministicKeys.cpp" />
+    <ClCompile Include="src\cpp\ripple\ECIES.cpp" />
+    <ClCompile Include="src\cpp\ripple\FieldNames.cpp" />
+    <ClCompile Include="src\cpp\ripple\HashedObject.cpp" />
+    <ClCompile Include="src\cpp\ripple\HTTPRequest.cpp" />
+    <ClCompile Include="src\cpp\ripple\HttpsClient.cpp" />
+    <ClCompile Include="src\cpp\ripple\InstanceCounter.cpp" />
+    <ClCompile Include="src\cpp\ripple\Interpreter.cpp" />
+    <ClCompile Include="src\cpp\ripple\JobQueue.cpp" />
+    <ClCompile Include="src\cpp\ripple\Ledger.cpp" />
+    <ClCompile Include="src\cpp\ripple\LedgerAcquire.cpp" />
+    <ClCompile Include="src\cpp\ripple\LedgerConsensus.cpp" />
+    <ClCompile Include="src\cpp\ripple\LedgerEntrySet.cpp" />
+    <ClCompile Include="src\cpp\ripple\LedgerFormats.cpp" />
+    <ClCompile Include="src\cpp\ripple\LedgerHistory.cpp" />
+    <ClCompile Include="src\cpp\ripple\LedgerMaster.cpp" />
+    <ClCompile Include="src\cpp\ripple\LedgerProposal.cpp" />
+    <ClCompile Include="src\cpp\ripple\LedgerTiming.cpp" />
+    <ClCompile Include="src\cpp\ripple\Log.cpp" />
+    <ClCompile Include="src\cpp\ripple\main.cpp" />
+    <ClCompile Include="src\cpp\ripple\NetworkOPs.cpp" />
+    <ClCompile Include="src\cpp\ripple\NicknameState.cpp" />
+    <ClCompile Include="src\cpp\ripple\Operation.cpp" />
+    <ClCompile Include="src\cpp\ripple\OrderBook.cpp" />
+    <ClCompile Include="src\cpp\ripple\OrderBookDB.cpp" />
+    <ClCompile Include="src\cpp\ripple\PackedMessage.cpp" />
+    <ClCompile Include="src\cpp\ripple\ParseSection.cpp" />
+    <ClCompile Include="src\cpp\ripple\Pathfinder.cpp" />
+    <ClCompile Include="src\cpp\ripple\Peer.cpp" />
+    <ClCompile Include="src\cpp\ripple\PeerDoor.cpp" />
+    <ClCompile Include="src\cpp\ripple\PlatRand.cpp" />
+    <ClCompile Include="src\cpp\ripple\PubKeyCache.cpp" />
+    <ClCompile Include="src\cpp\ripple\RangeSet.cpp" />
+    <ClCompile Include="src\cpp\ripple\rfc1751.cpp" />
+    <ClCompile Include="src\cpp\ripple\ripple.pb.cc">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">.\;..\OpenSSL\include;..\boost_1_47_0;..\protobuf-2.4.1\src\</AdditionalIncludeDirectories>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\RippleAddress.cpp" />
+    <ClCompile Include="src\cpp\ripple\RippleCalc.cpp" />
+    <ClCompile Include="src\cpp\ripple\RippleLines.cpp" />
+    <ClCompile Include="src\cpp\ripple\RippleState.cpp" />
+    <ClCompile Include="src\cpp\ripple\rpc.cpp" />
+    <ClCompile Include="src\cpp\ripple\RPCDoor.cpp" />
+    <ClCompile Include="src\cpp\ripple\RPCHandler.cpp" />
+    <ClCompile Include="src\cpp\ripple\RPCServer.cpp" />
+    <ClCompile Include="src\cpp\ripple\ScriptData.cpp" />
+    <ClCompile Include="src\cpp\ripple\SerializedLedger.cpp" />
+    <ClCompile Include="src\cpp\ripple\SerializedObject.cpp" />
+    <ClCompile Include="src\cpp\ripple\SerializedTransaction.cpp" />
+    <ClCompile Include="src\cpp\ripple\SerializedTypes.cpp" />
+    <ClCompile Include="src\cpp\ripple\SerializedValidation.cpp" />
+    <ClCompile Include="src\cpp\ripple\Serializer.cpp" />
+    <ClCompile Include="src\cpp\ripple\SHAMap.cpp" />
+    <ClCompile Include="src\cpp\ripple\SHAMapDiff.cpp" />
+    <ClCompile Include="src\cpp\ripple\SHAMapNodes.cpp" />
+    <ClCompile Include="src\cpp\ripple\SHAMapSync.cpp" />
+    <ClCompile Include="src\cpp\ripple\SNTPClient.cpp" />
+    <ClCompile Include="src\cpp\ripple\Suppression.cpp" />
+    <ClCompile Include="src\cpp\ripple\Transaction.cpp" />
+    <ClCompile Include="src\cpp\ripple\TransactionAction.cpp" />
+    <ClCompile Include="src\cpp\ripple\TransactionEngine.cpp" />
+    <ClCompile Include="src\cpp\ripple\TransactionErr.cpp" />
+    <ClCompile Include="src\cpp\ripple\TransactionFormats.cpp" />
+    <ClCompile Include="src\cpp\ripple\TransactionMaster.cpp" />
+    <ClCompile Include="src\cpp\ripple\TransactionMeta.cpp" />
+    <ClCompile Include="src\cpp\ripple\UniqueNodeList.cpp" />
+    <ClCompile Include="src\cpp\ripple\utils.cpp" />
+    <ClCompile Include="src\cpp\ripple\ValidationCollection.cpp" />
+    <ClCompile Include="src\cpp\ripple\Wallet.cpp" />
+    <ClCompile Include="src\cpp\ripple\WSConnection.cpp" />
+    <ClCompile Include="src\cpp\ripple\WSDoor.cpp" />
+    <ClCompile Include="websocketpp\src\base64\base64.cpp" />
+    <ClCompile Include="websocketpp\src\md5\md5.c" />
+    <ClCompile Include="websocketpp\src\messages\data.cpp" />
+    <ClCompile Include="websocketpp\src\network_utilities.cpp" />
+    <ClCompile Include="websocketpp\src\processors\hybi_header.cpp" />
+    <ClCompile Include="websocketpp\src\processors\hybi_util.cpp" />
+    <ClCompile Include="websocketpp\src\sha1\sha1.cpp" />
+    <ClCompile Include="websocketpp\src\uri.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="bitcoinUtil.h" />
+    <ClInclude Include="database\database.h" />
+    <ClInclude Include="database\sqlite3.h" />
+    <ClInclude Include="database\sqlite3ext.h" />
+    <ClInclude Include="database\SqliteDatabase.h" />
+    <ClInclude Include="src\cpp\ripple\AccountState.h" />
+    <ClInclude Include="src\cpp\ripple\Application.h" />
+    <ClInclude Include="src\cpp\ripple\base58.h" />
+    <ClInclude Include="src\cpp\ripple\bignum.h" />
+    <ClInclude Include="src\cpp\ripple\BitcoinUtil.h" />
+    <ClInclude Include="src\cpp\ripple\CallRPC.h" />
+    <ClInclude Include="src\cpp\ripple\CanonicalTXSet.h" />
+    <ClInclude Include="src\cpp\ripple\Config.h" />
+    <ClInclude Include="src\cpp\ripple\ConnectionPool.h" />
+    <ClInclude Include="src\cpp\ripple\Contract.h" />
+    <ClInclude Include="src\cpp\ripple\FieldNames.h" />
+    <ClInclude Include="src\cpp\ripple\HashedObject.h" />
+    <ClInclude Include="src\cpp\ripple\HashPrefixes.h" />
+    <ClInclude Include="src\cpp\ripple\HTTPRequest.h" />
+    <ClInclude Include="src\cpp\ripple\HttpsClient.h" />
+    <ClInclude Include="src\cpp\ripple\InstanceCounter.h" />
+    <ClInclude Include="src\cpp\ripple\Interpreter.h" />
+    <ClInclude Include="src\cpp\ripple\JobQueue.h" />
+    <ClInclude Include="src\cpp\ripple\key.h" />
+    <ClInclude Include="src\cpp\ripple\Ledger.h" />
+    <ClInclude Include="src\cpp\ripple\LedgerAcquire.h" />
+    <ClInclude Include="src\cpp\ripple\LedgerConsensus.h" />
+    <ClInclude Include="src\cpp\ripple\LedgerEntrySet.h" />
+    <ClInclude Include="src\cpp\ripple\LedgerFormats.h" />
+    <ClInclude Include="src\cpp\ripple\LedgerHistory.h" />
+    <ClInclude Include="src\cpp\ripple\LedgerMaster.h" />
+    <ClInclude Include="src\cpp\ripple\LedgerProposal.h" />
+    <ClInclude Include="src\cpp\ripple\LedgerTiming.h" />
+    <ClInclude Include="src\cpp\ripple\Log.h" />
+    <ClInclude Include="src\cpp\ripple\NetworkOPs.h" />
+    <ClInclude Include="src\cpp\ripple\NetworkStatus.h" />
+    <ClInclude Include="src\cpp\ripple\NicknameState.h" />
+    <ClInclude Include="src\cpp\ripple\Operation.h" />
+    <ClInclude Include="src\cpp\ripple\OrderBook.h" />
+    <ClInclude Include="src\cpp\ripple\OrderBookDB.h" />
+    <ClInclude Include="src\cpp\ripple\PackedMessage.h" />
+    <ClInclude Include="src\cpp\ripple\ParseSection.h" />
+    <ClInclude Include="src\cpp\ripple\Pathfinder.h" />
+    <ClInclude Include="src\cpp\ripple\Peer.h" />
+    <ClInclude Include="src\cpp\ripple\PeerDoor.h" />
+    <ClInclude Include="src\cpp\ripple\ProofOfWork.h" />
+    <ClInclude Include="src\cpp\ripple\PubKeyCache.h" />
+    <ClInclude Include="src\cpp\ripple\RangeSet.h" />
+    <ClInclude Include="src\cpp\ripple\rfc1751.h" />
+    <ClInclude Include="src\cpp\ripple\ripple.pb.h" />
+    <ClInclude Include="src\cpp\ripple\RippleAddress.h" />
+    <ClInclude Include="src\cpp\ripple\RippleCalc.h" />
+    <ClInclude Include="src\cpp\ripple\RippleLines.h" />
+    <ClInclude Include="src\cpp\ripple\RippleState.h" />
+    <ClInclude Include="src\cpp\ripple\RPC.h" />
+    <ClInclude Include="src\cpp\ripple\RPCCommands.h" />
+    <ClInclude Include="src\cpp\ripple\RPCDoor.h" />
+    <ClInclude Include="src\cpp\ripple\RPCHandler.h" />
+    <ClInclude Include="src\cpp\ripple\RPCServer.h" />
+    <ClInclude Include="src\cpp\ripple\ScopedLock.h" />
+    <ClInclude Include="src\cpp\ripple\ScriptData.h" />
+    <ClInclude Include="src\cpp\ripple\SecureAllocator.h" />
+    <ClInclude Include="src\cpp\ripple\SerializedLedger.h" />
+    <ClInclude Include="src\cpp\ripple\SerializedObject.h" />
+    <ClInclude Include="src\cpp\ripple\SerializedTransaction.h" />
+    <ClInclude Include="src\cpp\ripple\SerializedTypes.h" />
+    <ClInclude Include="src\cpp\ripple\SerializedValidation.h" />
+    <ClInclude Include="src\cpp\ripple\SerializeProto.h" />
+    <ClInclude Include="src\cpp\ripple\Serializer.h" />
+    <ClInclude Include="src\cpp\ripple\SHAMap.h" />
+    <ClInclude Include="src\cpp\ripple\SHAMapSync.h" />
+    <ClInclude Include="src\cpp\ripple\SNTPClient.h" />
+    <ClInclude Include="src\cpp\ripple\Suppression.h" />
+    <ClInclude Include="src\cpp\ripple\TaggedCache.h" />
+    <ClInclude Include="src\cpp\ripple\Transaction.h" />
+    <ClInclude Include="src\cpp\ripple\TransactionEngine.h" />
+    <ClInclude Include="src\cpp\ripple\TransactionErr.h" />
+    <ClInclude Include="src\cpp\ripple\TransactionFormats.h" />
+    <ClInclude Include="src\cpp\ripple\TransactionMaster.h" />
+    <ClInclude Include="src\cpp\ripple\TransactionMeta.h" />
+    <ClInclude Include="src\cpp\ripple\types.h" />
+    <ClInclude Include="src\cpp\ripple\uint256.h" />
+    <ClInclude Include="src\cpp\ripple\UniqueNodeList.h" />
+    <ClInclude Include="src\cpp\ripple\utils.h" />
+    <ClInclude Include="src\cpp\ripple\ValidationCollection.h" />
+    <ClInclude Include="src\cpp\ripple\Version.h" />
+    <ClInclude Include="src\cpp\ripple\Wallet.h" />
+    <ClInclude Include="src\cpp\ripple\WSConnection.h" />
+    <ClInclude Include="src\cpp\ripple\WSDoor.h" />
+    <ClInclude Include="src\cpp\ripple\WSHandler.h" />
+    <ClInclude Include="util\pugiconfig.hpp" />
+    <ClInclude Include="util\pugixml.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="html\newcoin.html">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="newcoind.cfg" />
+    <None Include="README" />
+    <None Include="SConstruct" />
+    <CustomBuild Include="src\cpp\ripple\ripple.proto">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">/code/protobuf/protoc -I=..\newcoin --cpp_out=\code\newcoin\  ..\newcoin/src/cpp/ripple/ripple.proto</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">\code\newcoin\src\ripple.pb.h</Outputs>
+    </CustomBuild>
+    <None Include="test\buster.js" />
+    <None Include="test\server.js" />
+    <None Include="test\standalone-test.js" />
+    <None Include="test\utils.js" />
+    <None Include="validators.txt" />
+    <None Include="wallet.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

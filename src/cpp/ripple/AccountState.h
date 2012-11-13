@@ -33,12 +33,12 @@ public:
 
 	bool	bHaveAuthorizedKey()
 	{
-		return mLedgerEntry->isFieldPresent(sfAuthorizedKey);
+		return mLedgerEntry->isFieldPresent(sfRegularKey);
 	}
 
 	RippleAddress getAuthorizedKey()
 	{
-		return mLedgerEntry->getFieldAccount(sfAuthorizedKey);
+		return mLedgerEntry->getFieldAccount(sfRegularKey);
 	}
 
 	STAmount getBalance() const { return mLedgerEntry->getFieldAmount(sfBalance); }

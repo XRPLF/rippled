@@ -227,7 +227,7 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 	else
 	{
 		saSrcBalance	= mTxnAccount->getFieldAmount(sfBalance);
-		bHaveAuthKey	= mTxnAccount->isFieldPresent(sfAuthorizedKey);
+		bHaveAuthKey	= mTxnAccount->isFieldPresent(sfRegularKey);
 	}
 
 	// Check if account claimed.
@@ -283,7 +283,7 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 
 			default:
 				// Verify the transaction's signing public key is the key authorized for signing.
-				if (bHaveAuthKey && naSigningPubKey.getAccountID() == mTxnAccount->getFieldAccount(sfAuthorizedKey).getAccountID())
+				if (bHaveAuthKey && naSigningPubKey.getAccountID() == mTxnAccount->getFieldAccount(sfRegularKey).getAccountID())
 				{
 					// Authorized to continue.
 					nothing();
@@ -384,9 +384,6 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 				terResult = doAccountSet(txn);
 				break;
 
-			case ttCLAIM:
-				terResult = doClaim(txn);
-				break;
 
 			case ttTRUST_SET:
 				terResult = doTrustSet(txn);
@@ -396,10 +393,6 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 				cLog(lsINFO) << "applyTransaction: invalid type";
 				terResult = temINVALID;
 				break;
-
-			//case ttINVOICE:
-			//	terResult = doInvoice(txn);
-			//	break;
 
 			case ttOFFER_CREATE:
 				terResult = doOfferCreate(txn);

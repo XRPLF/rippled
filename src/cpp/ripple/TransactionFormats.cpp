@@ -45,7 +45,7 @@ static bool TFInit()
 		;
 
 	DECLARE_TF(SetRegularKey, ttREGULAR_KEY_SET)
-		<< SOElement(sfAuthorizedKey,	SOE_REQUIRED)
+		<< SOElement(sfRegularKey,	SOE_REQUIRED)
 		;
 
 	DECLARE_TF(Payment, ttPAYMENT)
