@@ -131,7 +131,7 @@ template<typename c_Key, typename c_Data> void TaggedCache<c_Key, c_Data>::sweep
 
 	if (TaggedCachePartition.doLog(lsTRACE) && (mapRemovals || cacheRemovals))
 		Log(lsTRACE, TaggedCachePartition) << mName << ": cache = " << mCache.size() << "-" << cacheRemovals <<
-			", map = " << mMap.size() << "-" << mapRemovals;
+		", map = " << mMap.size() << "-" << mapRemovals;
 }
 
 template<typename c_Key, typename c_Data> bool TaggedCache<c_Key, c_Data>::touch(const key_type& key)
@@ -230,7 +230,7 @@ boost::shared_ptr<c_Data> TaggedCache<c_Key, c_Data>::fetch(const key_type& key)
 		mMap.erase(mit);
 		return cachedData;
 	}
-	
+
 	// Valid in map, is it in the cache?
 	typename boost::unordered_map<key_type, cache_entry>::iterator cit = mCache.find(key);
 	if (cit != mCache.end())

@@ -1,3 +1,6 @@
+#ifndef __RPC_h__
+#define __RPC_h__
+
 #include <string>
 #include <map>
 
@@ -37,3 +40,5 @@ extern std::string HTTPReply(int nStatus, const std::string& strMsg);
 extern std::string JSONRPCReply(const Json::Value& result, const Json::Value& error, const Json::Value& id);
 
 extern Json::Value JSONRPCError(int code, const std::string& message);
+
+#endif

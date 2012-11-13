@@ -33,30 +33,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="websocketpp\src\base64\base64.cpp">
-      <Filter>Source Files\websocketpp</Filter>
-    </ClCompile>
-    <ClCompile Include="websocketpp\src\md5\md5.c">
-      <Filter>Source Files\websocketpp</Filter>
-    </ClCompile>
-    <ClCompile Include="websocketpp\src\messages\data.cpp">
-      <Filter>Source Files\websocketpp</Filter>
-    </ClCompile>
-    <ClCompile Include="websocketpp\src\network_utilities.cpp">
-      <Filter>Source Files\websocketpp</Filter>
-    </ClCompile>
-    <ClCompile Include="websocketpp\src\processors\hybi_header.cpp">
-      <Filter>Source Files\websocketpp</Filter>
-    </ClCompile>
-    <ClCompile Include="websocketpp\src\processors\hybi_util.cpp">
-      <Filter>Source Files\websocketpp</Filter>
-    </ClCompile>
-    <ClCompile Include="websocketpp\src\uri.cpp">
-      <Filter>Source Files\websocketpp</Filter>
-    </ClCompile>
-    <ClCompile Include="websocketpp\src\sha1\sha1.cpp">
-      <Filter>Source Files\websocketpp</Filter>
-    </ClCompile>
     <ClCompile Include="src\cpp\database\database.cpp">
       <Filter>Source Files\database</Filter>
     </ClCompile>
@@ -317,6 +293,36 @@
     </ClCompile>
     <ClCompile Include="src\cpp\database\sqlite3.c">
       <Filter>Source Files\database</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\websocketpp\src\uri.cpp">
+      <Filter>Source Files\websocketpp</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\websocketpp\src\network_utilities.cpp">
+      <Filter>Source Files\websocketpp</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\websocketpp\src\base64\base64.cpp">
+      <Filter>Source Files\websocketpp</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\websocketpp\src\md5\md5.c">
+      <Filter>Source Files\websocketpp</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\websocketpp\src\messages\data.cpp">
+      <Filter>Source Files\websocketpp</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\websocketpp\src\processors\hybi_header.cpp">
+      <Filter>Source Files\websocketpp</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\websocketpp\src\processors\hybi_util.cpp">
+      <Filter>Source Files\websocketpp</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\websocketpp\src\rng\blank_rng.cpp">
+      <Filter>Source Files\websocketpp</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\websocketpp\src\rng\boost_rng.cpp">
+      <Filter>Source Files\websocketpp</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\websocketpp\src\sha1\sha1.cpp">
+      <Filter>Source Files\websocketpp</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

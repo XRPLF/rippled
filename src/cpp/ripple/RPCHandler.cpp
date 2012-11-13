@@ -541,6 +541,7 @@ Json::Value RPCHandler::doPeers(const Json::Value& params)
 // Prior to running allow each to have a credit line of what they will be getting from the other account.
 Json::Value RPCHandler::doProfile(const Json::Value &params)
 {
+	/* need to fix now that sharedOfferCreate is gone
 	int				iArgs	= params.size();
 	RippleAddress	naSeedA;
 	RippleAddress	naAccountA;
@@ -620,7 +621,8 @@ Json::Value RPCHandler::doProfile(const Json::Value &params)
 	obj["end"]				= boost::posix_time::to_simple_string(ptEnd);
 	obj["interval"]			= boost::posix_time::to_simple_string(tdInterval);
 	obj["rate_per_second"]	= fRate;
-
+	*/
+	Json::Value obj(Json::objectValue);
 	return obj;
 }
 
