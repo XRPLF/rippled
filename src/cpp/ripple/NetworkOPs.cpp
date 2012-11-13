@@ -1165,11 +1165,10 @@ std::map<RippleAddress,bool> NetworkOPs::getAffectedAccounts(const SerializedTra
 		const STAccount* sa = dynamic_cast<const STAccount*>(&it);
 		if (sa)
 		{
-			bool found = false;
 			RippleAddress na = sa->getValueNCA();
 			accounts[na]=true;
 		}else
-		{	
+		{
 			if( it.getFName() == sfLimitAmount )
 			{
 				const STAmount* amount = dynamic_cast<const STAmount*>(&it);

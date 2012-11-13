@@ -530,21 +530,16 @@ Remote.prototype.request = function (request) {
 };
 
 Remote.prototype.request_server_info = function () {
-  var request = new Request(this, 'rpc');
-
-  request.message.command = 'server_info';
-
-  return request;
+  return new Request(this, 'server_info');
 };
 
 Remote.prototype.request_ledger = function (params) {
   // XXX Does this require the server to be trusted?
   //assert(this.trusted);
 
-  var request = new Request(this, 'rpc');
+  var request = new Request(this, 'ledger');
 
-  request.message.command = 'ledger';
-  request.message.params = params;
+  request.message.params  = params;
 
   return request;
 };
@@ -553,21 +548,13 @@ Remote.prototype.request_ledger = function (params) {
 Remote.prototype.request_ledger_hash = function () {
   assert(this.trusted);   // If not trusted, need to check proof.
 
-  var request = new Request(this, 'rpc');
-  
-  request.message.command = 'ledger_closed';
-
-  return request;
+  return new Request(this, 'ledger_closed');
 };
 
 // Get the current proposed ledger entry.  May be closed (and revised) at any time (even before returning).
 // Only for unit testing.
 Remote.prototype.request_ledger_current = function () {
-  var request = new Request(this, 'rpc');
-  
-  request.message.command = 'ledger_current';
-
-  return request;
+  return new Request(this, 'ledger_current');
 };
 
 // --> type : the type of ledger entry.
@@ -578,9 +565,7 @@ Remote.prototype.request_ledger_entry = function (type) {
   assert(this.trusted);   // If not trusted, need to check proof, maybe talk packet protocol.
   
   var self    = this;
-  var request = new Request(this, 'rpc');
-
-  request.message.command = 'ledger_entry';
+  var request = new Request(this, 'ledger_entry');
 
   if (type)
     this.type = type;
@@ -662,11 +647,7 @@ Remote.prototype.request_unsubscribe = function (streams) {
 Remote.prototype.request_transaction_entry = function (hash) {
   assert(this.trusted);   // If not trusted, need to check proof, maybe talk packet protocol.
   
-  var request = new Request(this, 'rpc');
-
-  request.message.command = 'transaction_entry';
-
-  return request
+  return (new Request(this, 'transaction_entry'))
     .tx_hash(hash);
 };
 
@@ -674,9 +655,8 @@ Remote.prototype.request_ripple_lines_get = function (accountID) {
   // XXX Does this require the server to be trusted?
   //assert(this.trusted);
 
-  var request = new Request(this, 'rpc');
+  var request = new Request(this, 'ripple_lines_get');
 
-  request.message.command = 'ripple_lines_get';
   // XXX Convert API call to JSON
   request.message.params = [accountID];
 
@@ -687,9 +667,8 @@ Remote.prototype.request_wallet_accounts = function (key) {
   // XXX Does this require the server to be trusted?
   //assert(this.trusted);
 
-  var request = new Request(this, 'rpc');
+  var request = new Request(this, 'wallet_accounts');
 
-  request.message.command = 'wallet_accounts';
   // XXX Convert API call to JSON
   request.message.params = [key];
 
@@ -700,9 +679,8 @@ Remote.prototype.request_account_tx = function (accountID, minLedger, maxLedger)
   // XXX Does this require the server to be trusted?
   //assert(this.trusted);
 
-  var request = new Request(this, 'rpc');
+  var request = new Request(this, 'account_tx');
 
-  request.message.command = 'account_tx';
   // XXX Convert API call to JSON
   request.message.params = [accountID, minLedger, maxLedger];
 
@@ -751,9 +729,7 @@ Remote.prototype.submit = function (transaction) {
 	.request();
     }
     else {
-      var submit_request = new Request(this, 'rpc');
-
-      submit_request.message.command = 'submit_json';
+      var submit_request = new Request(this, 'submit_json');
 
       submit_request.tx_json(transaction.tx_json);
       submit_request.secret(transaction.secret);
@@ -808,9 +784,7 @@ Remote.prototype._server_subscribe = function () {
 Remote.prototype.ledger_accept = function () {
   if (this.stand_alone || undefined === this.stand_alone)
   {
-    var request = new Request(this, 'rpc');
-
-    request.message.command = 'ledger_accept';
+    var request = new Request(this, 'ledger_accept');
 
     request
       .request();
@@ -957,43 +931,32 @@ Remote.prototype.request_ripple_balance = function (account, issuer, currency, c
 }
 
 Remote.prototype.request_unl_list = function () {
-  var request = new Request(this, 'rpc');
-
-  request.message.command = 'unl_list';
-
-  return request;
+  return new Request(this, 'unl_list');
 };
 
 Remote.prototype.request_unl_add = function (addr, note) {
-  var request = new Request(this, 'rpc');
+  var request = new Request(this, 'unl_add');
 
-  request.message.command = 'unl_add';
   request.message.params = [addr, note];
 
   return request;
 };
 
 Remote.prototype.request_unl_delete = function (publicKey) {
-  var request = new Request(this, 'rpc');
+  var request = new Request(this, 'unl_delete');
 
-  request.message.command = 'unl_delete';
   request.message.params = [publicKey];
 
   return request;
 };
 
 Remote.prototype.request_peers = function () {
-  var request = new Request(this, 'rpc');
-
-  request.message.command = 'peers';
-
-  return request;
+  return new Request(this, 'peers');
 };
 
 Remote.prototype.request_connect = function (ip, port) {
-  var request = new Request(this, 'rpc');
+  var request = new Request(this, 'connect');
 
-  request.message.command = 'connect';
   request.message.params = [ip, port];
 
   return request;
