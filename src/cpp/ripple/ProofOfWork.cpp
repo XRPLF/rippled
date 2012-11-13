@@ -3,7 +3,7 @@
 #include <string>
 
 #include <boost/test/unit_test.hpp>
-
+#include <boost/algorithm/string.hpp>
 #include <boost/format.hpp>
 
 #include <openssl/rand.h>
@@ -134,6 +134,60 @@ ProofOfWork ProofOfWorkGenerator::getProof()
 	return ProofOfWork(s, mIterations, challenge, mTarget);
 }
 
+POWResult ProofOfWorkGenerator::checkProof(const std::string& token, const uint256& solution)
+{ // challenge - target - iterations - time - validator
+
+	std::vector<std::string> fields;
+	boost::split(fields, token, boost::algorithm::is_any_of("-"));
+	if (fields.size() != 5)
+	{
+		cLog(lsDEBUG) << "PoW " << token << " is corrupt";
+		return powCORRUPT;
+	}
+
+	std::string v = mSecret.GetHex() + fields[0] + "-" + fields[1] + "-" + fields[2] + "-" + fields[3];
+	if (fields[4] != Serializer::getSHA512Half(v).GetHex())
+	{
+		cLog(lsDEBUG) << "PoW " << token << " has a bad token";
+		return powBADTOKEN;
+	}
+
+	uint256 challenge, target;
+	challenge.SetHex(fields[0]);
+	target.SetHex(fields[1]);
+
+	time_t t = lexical_cast_s<time_t>(fields[3]);
+	time_t now = time(NULL);
+
+	{
+		boost::mutex::scoped_lock sl(mLock);
+		if ((t * 4) > (now + mValidTime))
+		{
+			cLog(lsDEBUG) << "PoW " << token << " has expired";
+			return powEXPIRED;
+		}
+	}
+
+
+	ProofOfWork pow(token, lexical_cast_s<int>(fields[2]), challenge, target);
+	if (!pow.checkSolution(solution))
+	{
+		cLog(lsDEBUG) << "PoW " << token << " has a bad nonce";
+		return powBADNONCE;
+	}
+
+	{
+		boost::mutex::scoped_lock sl(mLock);
+		if (!mSolvedChallenges.insert(powMap_vt(now, challenge)).second)
+		{
+			cLog(lsDEBUG) << "PoW " << token << " has been reused";
+			return powREUSED;
+		}
+	}
+
+	return powOK;
+}
+
 BOOST_AUTO_TEST_SUITE(ProofOfWork_suite)
 
 BOOST_AUTO_TEST_CASE( ProofOfWork_test )
@@ -146,6 +200,15 @@ BOOST_AUTO_TEST_CASE( ProofOfWork_test )
 		BOOST_FAIL("Unable to solve proof of work");
 	if (!pow.checkSolution(solution))
 		BOOST_FAIL("Solution did not check");
+
+	cLog(lsDEBUG) << "A bad nonce error is expected";
+	if (gen.checkProof(pow.getToken(), uint256()) != powBADNONCE)
+		BOOST_FAIL("Empty solution didn't show bad nonce");
+	if (gen.checkProof(pow.getToken(), solution) != powOK)
+		BOOST_FAIL("Solution did not check with issuer");
+	cLog(lsDEBUG) << "A reused nonce error is expected";
+	if (gen.checkProof(pow.getToken(), solution) != powREUSED)
+		BOOST_FAIL("Reuse solution not detected");
 }
 
 BOOST_AUTO_TEST_SUITE_END()
