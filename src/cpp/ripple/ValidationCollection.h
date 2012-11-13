@@ -38,6 +38,7 @@ public:
 	bool addValidation(const SerializedValidation::pointer&);
 	ValidationSet getValidations(const uint256& ledger);
 	void getValidationCount(const uint256& ledger, bool currentOnly, int& trusted, int& untrusted);
+	void getValidationTypes(const uint256& ledger, int& full, int& partial);
 
 	int getTrustedValidationCount(const uint256& ledger);
 
