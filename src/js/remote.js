@@ -551,6 +551,12 @@ Remote.prototype.request_ledger_hash = function () {
   return new Request(this, 'ledger_closed');
 };
 
+// .ledger()
+// .ledger_index()
+Remote.prototype.request_ledger_header = function () {
+  return new Request(this, 'ledger_header');
+};
+
 // Get the current proposed ledger entry.  May be closed (and revised) at any time (even before returning).
 // Only for unit testing.
 Remote.prototype.request_ledger_current = function () {
