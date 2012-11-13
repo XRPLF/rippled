@@ -742,9 +742,8 @@ Json::Value RPCHandler::handleJSONSubmit(const Json::Value& jvRequest)
 
 	AccountState::pointer asSrc	= mNetOps->getAccountState(uint256(0), srcAddress);
 
-	if( txJSON["type"]=="Payment")
+	if( txJSON["TransactionType"]=="Payment")
 	{
-		txJSON["TransactionType"]=0;
 
 		RippleAddress dstAccountID;
 

@@ -1007,7 +1007,7 @@ void NetworkOPs::pubProposedTransaction(Ledger::ref lpCurrent, const SerializedT
 		}
 	}
 
-	pubAccountTransaction(lpCurrent,stTxn,terResult,false);
+	pubAccountTransaction(lpCurrent,stTxn,terResult,false,TransactionMetaSet::pointer());
 }
 
 void NetworkOPs::pubLedger(Ledger::ref lpAccepted)
@@ -1051,7 +1051,10 @@ void NetworkOPs::pubLedger(Ledger::ref lpAccepted)
 					// XXX Need to give failures too.
 					TER	terResult	= tesSUCCESS;
 					
-					pubAcceptedTransaction(lpAccepted, *stTxn, terResult);
+					SerializerIterator it(item->peekSerializer());
+
+					TransactionMetaSet::pointer meta = boost::make_shared<TransactionMetaSet>(stTxn->getTransactionID(), lpAccepted->getLedgerSeq(), it.getVL());
+					pubAcceptedTransaction(lpAccepted, *stTxn, terResult,meta);
 				}	
 			}
 		}
@@ -1084,7 +1087,7 @@ Json::Value NetworkOPs::transJson(const SerializedTransaction& stTxn, TER terRes
 	return jvObj;
 }
 
-void NetworkOPs::pubAcceptedTransaction(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult)
+void NetworkOPs::pubAcceptedTransaction(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult,TransactionMetaSet::pointer& meta)
 {
 	Json::Value	jvObj	= transJson(stTxn, terResult, true, lpCurrent, "transaction");
 
@@ -1101,11 +1104,11 @@ void NetworkOPs::pubAcceptedTransaction(Ledger::ref lpCurrent, const SerializedT
 		}
 	}
 
-	pubAccountTransaction(lpCurrent,stTxn,terResult,true);
+	pubAccountTransaction(lpCurrent,stTxn,terResult,true,meta);
 }
 
 
-void NetworkOPs::pubAccountTransaction(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult, bool bAccepted)
+void NetworkOPs::pubAccountTransaction(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult, bool bAccepted,TransactionMetaSet::pointer& meta)
 {
 	boost::unordered_set<InfoSub*>	notify;
 
