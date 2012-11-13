@@ -63,7 +63,7 @@ protected:
 	boost::mutex					mLock;
 
 public:
-	ProofOfWorkGenerator(const uint256& secret);
+	ProofOfWorkGenerator();
 
 	ProofOfWork getProof();
 	bool checkProof(const std::string& token, const uint256& solution);

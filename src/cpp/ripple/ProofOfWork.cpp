@@ -4,6 +4,8 @@
 
 #include <boost/test/unit_test.hpp>
 
+#include <boost/format.hpp>
+
 #include <openssl/rand.h>
 
 #include "Serializer.h"
@@ -104,12 +106,40 @@ bool ProofOfWork::checkSolution(const uint256& solution) const
 	return getSHA512Half(buf2) <= mTarget;
 }
 
+ProofOfWorkGenerator::ProofOfWorkGenerator() :
+	mIterations(128),
+	mTarget("0003FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"),
+	mLastDifficultyChange(time(NULL)),
+	mValidTime(180)
+{
+	RAND_bytes(mSecret.begin(), mSecret.size());
+}
+
+ProofOfWork ProofOfWorkGenerator::getProof()
+{
+	// challenge - target - iterations - time - validator
+	static boost::format f("%s-%s-%d-%d");
+
+	int now = static_cast<int>(time(NULL) / 4);
+
+	uint256 challenge;
+	RAND_bytes(challenge.begin(), challenge.size());
+
+	boost::mutex::scoped_lock sl(mLock);
+
+	std::string s = boost::str(f % challenge.GetHex() % mTarget.GetHex() % mIterations % now);
+	std::string c = mSecret.GetHex() + s;
+	s += "-" + Serializer::getSHA512Half(c).GetHex();
+
+	return ProofOfWork(s, mIterations, challenge, mTarget);
+}
+
 BOOST_AUTO_TEST_SUITE(ProofOfWork_suite)
 
 BOOST_AUTO_TEST_CASE( ProofOfWork_test )
 {
-	ProofOfWork pow("test", 32, uint256(),
-		uint256("000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"));
+	ProofOfWorkGenerator gen;
+	ProofOfWork pow = gen.getProof();
 	cLog(lsINFO) << "Estimated difficulty: " << pow.getDifficulty();
 	uint256 solution = pow.solve(16777216);
 	if (solution.isZero())
