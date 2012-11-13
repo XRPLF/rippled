@@ -12,7 +12,7 @@
 #include "Log.h"
 extern LogPartition TaggedCachePartition;
 
-// This class implemented a cache and a map. The cache keeps objects alive
+// This class implements a cache and a map. The cache keeps objects alive
 // in the map. The map allows multiple code paths that reference objects
 // with the same tag to get the same actual object.
 

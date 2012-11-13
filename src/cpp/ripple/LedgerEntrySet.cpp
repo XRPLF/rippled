@@ -394,12 +394,10 @@ void LedgerEntrySet::calcRawMeta(Serializer& s, TER result)
 			continue;
 
 		SLE::pointer origNode = mLedger->getSLE(it.first);
-
-		if (origNode && (origNode->getType() == ltDIR_NODE)) // No metadata for dir nodes
-			continue;
-
 		SLE::pointer curNode = it.second.mEntry;
-		mSet.setAffectedNode(it.first, *type);
+		uint16 nodeType = curNode ? curNode->getFieldU16(sfLedgerEntry) : origNode->getFieldU16(sfLedgerEntry);
+
+		mSet.setAffectedNode(it.first, *type, nodeType);
 
 		if (type == &sfDeletedNode)
 		{
@@ -408,8 +406,8 @@ void LedgerEntrySet::calcRawMeta(Serializer& s, TER result)
 
 			STObject finals(sfFinalFields);
 			BOOST_FOREACH(const SerializedType& obj, *curNode)
-			{ // search the deleted node for values saved on delete
-				if (obj.getFName().shouldMetaDel() && !obj.isDefault())
+			{ // save non-default values
+				if (!obj.isDefault() && (obj.getFName() != sfLedgerEntryType))
 					finals.addObject(obj);
 			}
 			if (!finals.empty())
@@ -421,7 +419,7 @@ void LedgerEntrySet::calcRawMeta(Serializer& s, TER result)
 			STObject mods(sfPreviousFields);
 			BOOST_FOREACH(const SerializedType& obj, *origNode)
 			{ // search the original node for values saved on modify
-				if (obj.getFName().shouldMetaMod() && !obj.isDefault() && !curNode->hasMatchingEntry(obj))
+				if (!obj.isDefault() && (obj.getFName() != sfLedgerEntryType) && !curNode->hasMatchingEntry(obj))
 					mods.addObject(obj);
 			}
 			if (!mods.empty())
@@ -432,6 +430,15 @@ void LedgerEntrySet::calcRawMeta(Serializer& s, TER result)
 		{
 			assert(!origNode);
 			threadOwners(curNode, mLedger, newMod);
+
+			STObject news(sfNewFields);
+			BOOST_FOREACH(const SerializedType& obj, *curNode)
+			{ // save non-default values
+				if (!obj.isDefault() && (obj.getFName() != sfLedgerEntryType))
+					news.addObject(obj);
+			}
+			if (!news.empty())
+				mSet.getAffectedNode(it.first, *type).addObject(news);
 		}
 
 		if ((type == &sfCreatedNode) || (type == &sfModifiedNode))
