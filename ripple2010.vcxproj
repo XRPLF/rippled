@@ -49,7 +49,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>BOOST_TEST_ALTERNATIVE_INIT_API;BOOST_TEST_NO_MAIN;_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0501;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>.\src;..\OpenSSL\include;..\boost_1_47_0;..\protobuf\src\</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\;..\OpenSSL\include;..\boost_1_47_0;..\protobuf\src\</AdditionalIncludeDirectories>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Link>
@@ -137,9 +137,7 @@
     <ClCompile Include="src\cpp\ripple\PubKeyCache.cpp" />
     <ClCompile Include="src\cpp\ripple\RangeSet.cpp" />
     <ClCompile Include="src\cpp\ripple\rfc1751.cpp" />
-    <ClCompile Include="src\cpp\ripple\ripple.pb.cc">
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">.\;..\OpenSSL\include;..\boost_1_47_0;..\protobuf-2.4.1\src\</AdditionalIncludeDirectories>
-    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ripple.pb.cc" />
     <ClCompile Include="src\cpp\ripple\RippleAddress.cpp" />
     <ClCompile Include="src\cpp\ripple\RippleCalc.cpp" />
     <ClCompile Include="src\cpp\ripple\RippleLines.cpp" />
@@ -174,14 +172,16 @@
     <ClCompile Include="src\cpp\ripple\Wallet.cpp" />
     <ClCompile Include="src\cpp\ripple\WSConnection.cpp" />
     <ClCompile Include="src\cpp\ripple\WSDoor.cpp" />
-    <ClCompile Include="websocketpp\src\base64\base64.cpp" />
-    <ClCompile Include="websocketpp\src\md5\md5.c" />
-    <ClCompile Include="websocketpp\src\messages\data.cpp" />
-    <ClCompile Include="websocketpp\src\network_utilities.cpp" />
-    <ClCompile Include="websocketpp\src\processors\hybi_header.cpp" />
-    <ClCompile Include="websocketpp\src\processors\hybi_util.cpp" />
-    <ClCompile Include="websocketpp\src\sha1\sha1.cpp" />
-    <ClCompile Include="websocketpp\src\uri.cpp" />
+    <ClCompile Include="src\cpp\websocketpp\src\base64\base64.cpp" />
+    <ClCompile Include="src\cpp\websocketpp\src\md5\md5.c" />
+    <ClCompile Include="src\cpp\websocketpp\src\messages\data.cpp" />
+    <ClCompile Include="src\cpp\websocketpp\src\network_utilities.cpp" />
+    <ClCompile Include="src\cpp\websocketpp\src\processors\hybi_header.cpp" />
+    <ClCompile Include="src\cpp\websocketpp\src\processors\hybi_util.cpp" />
+    <ClCompile Include="src\cpp\websocketpp\src\rng\blank_rng.cpp" />
+    <ClCompile Include="src\cpp\websocketpp\src\rng\boost_rng.cpp" />
+    <ClCompile Include="src\cpp\websocketpp\src\sha1\sha1.cpp" />
+    <ClCompile Include="src\cpp\websocketpp\src\uri.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="bitcoinUtil.h" />
