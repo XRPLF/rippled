@@ -1421,7 +1421,7 @@ Transaction.prototype.payment = function (src, dst, deliver_amount) {
 
 Transaction.prototype.ripple_line_set = function (src, limit, quality_in, quality_out) {
   this.secret			= this._account_secret(src);
-  this.tx_json.TransactionType  = 'CreditSet';
+  this.tx_json.TransactionType  = 'TrustSet';
   this.tx_json.Account		= UInt160.json_rewrite(src);
 
   // Allow limit of 0 through.
