@@ -395,13 +395,14 @@ void LedgerEntrySet::calcRawMeta(Serializer& s, TER result)
 
 		SLE::pointer origNode = mLedger->getSLE(it.first);
 		SLE::pointer curNode = it.second.mEntry;
-		uint16 nodeType = curNode ? curNode->getFieldU16(sfLedgerEntry) : origNode->getFieldU16(sfLedgerEntry);
+		uint16 nodeType = curNode ? curNode->getFieldU16(sfLedgerEntryType) : origNode->getFieldU16(sfLedgerEntryType);
 
 		mSet.setAffectedNode(it.first, *type, nodeType);
 
 		if (type == &sfDeletedNode)
 		{
 			assert(origNode);
+			assert(curNode);
 			threadOwners(origNode, mLedger, newMod);
 
 			STObject finals(sfFinalFields);
