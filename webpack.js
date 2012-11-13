@@ -3,9 +3,12 @@ var webpack = require("webpack");
 var async = require("async");
 var extend = require("extend");
 
-var programPath = __dirname + "/src/js/remote.js";
-
 var cfg = {
+  // General settings
+  baseName: pkg.name,
+  programPath: __dirname + "/src/js/remote.js",
+
+  // CLI-configurable options
   watch: false,
   outputDir: __dirname + "/build"
 };
@@ -41,7 +44,7 @@ function build(opts) {
   opts.output = cfg.outputDir + "/"+opts.filename;
   return function (callback) {
     var filename = opts.filename;
-    webpack(programPath, opts, function (err, result) {
+    webpack(cfg.programPath, opts, function (err, result) {
       console.log(' '+filename, result.hash, '['+result.modulesCount+']');
       if ("function" === typeof callback) {
         callback(err);
