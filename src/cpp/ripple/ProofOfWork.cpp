@@ -31,19 +31,16 @@ uint64 ProofOfWork::getDifficulty(const uint256& target, int iterations)
 	}
 
 	// more iterations means more hashes per iteration but also a larger final hash
-	uint64 difficulty = iterations * (iterations / 4 + 1);
+	uint64 difficulty = iterations + (iterations / 4);
 
-	// Multiply the number of hashes needed by 256 for each leading zero byte in the hex difficulty
-	const unsigned char *ptr = target.end() - 1;
+	// Multiply the number of hashes needed by 256 for each leading zero byte in the difficulty
+	const unsigned char *ptr = target.begin();
 	while (*ptr == 0)
 	{
-		cLog(lsINFO) << "getDif: " << (int) *ptr;
 		difficulty *= 256;
-		--ptr;
+		++ptr;
 	}
-
-	// If the first digit after a zero isn't an F, multiply
-	difficulty *= (256 - *ptr);
+	difficulty = (difficulty * 256) / (*ptr + 1);
 
 	return difficulty;
 }
@@ -74,16 +71,11 @@ uint256 ProofOfWork::solve(int maxIterations) const
 		buf1[2] = uint256();
 		for (int i = (mIterations - 1); i >= 0; --i)
 		{
-			if (buf1.size() != 3)
-				Log(lsINFO) << "buf1.size=" << buf1.size();
 			buf1[2] = getSHA512Half(buf1);
 			buf2[i] = buf1[2];
 		}
-		if (buf2.size() != mIterations)
-			Log(lsINFO) << "buf2.size=" << buf2.size();
 
-		uint256 hash = getSHA512Half(buf2);
-		if (hash <= mTarget)
+		if (getSHA512Half(buf2) <= mTarget)
 			return nonce;
 
 		++nonce;
@@ -92,16 +84,38 @@ uint256 ProofOfWork::solve(int maxIterations) const
 	return uint256();
 }
 
+bool ProofOfWork::checkSolution(const uint256& solution) const
+{
+	if (mIterations > sMaxIterations)
+		return false;
+
+	std::vector<uint256> buf1;
+	buf1.push_back(mChallenge);
+	buf1.push_back(solution);
+	buf1.push_back(uint256());
+
+	std::vector<uint256> buf2;
+	buf2.resize(mIterations);
+	for (int i = (mIterations - 1); i >= 0; --i)
+	{
+		buf1[2] = getSHA512Half(buf1);
+		buf2[i] = buf1[2];
+	}
+	return getSHA512Half(buf2) <= mTarget;
+}
+
 BOOST_AUTO_TEST_SUITE(ProofOfWork_suite)
 
 BOOST_AUTO_TEST_CASE( ProofOfWork_test )
 {
 	ProofOfWork pow("test", 32, uint256(),
-		uint256("00FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"));
+		uint256("000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"));
 	cLog(lsINFO) << "Estimated difficulty: " << pow.getDifficulty();
 	uint256 solution = pow.solve(16777216);
 	if (solution.isZero())
 		BOOST_FAIL("Unable to solve proof of work");
+	if (!pow.checkSolution(solution))
+		BOOST_FAIL("Solution did not check");
 }
 
 BOOST_AUTO_TEST_SUITE_END()
