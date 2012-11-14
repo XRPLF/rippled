@@ -471,15 +471,13 @@ TER RippleCalc::calcNodeDeliverRev(
 	return terResult;
 }
 
-// Deliver maximum amount of funds from previous node.
-// Goal: Make progress consuming the offer.
+// For current offer, get input from deliver/limbo and put output to deliver/limbo using offers.
 TER RippleCalc::calcNodeDeliverFwd(
 	const unsigned int			uNode,			// 0 < uNode < uLast
 	PathState::ref				pspCur,
 	const bool					bMultiQuality,
 	const uint160&				uInAccountID,	// --> Input owner's account.
-	const STAmount&				saInFunds,		// --> Funds available for delivery and fees.
-	const STAmount&				saInReq,		// --> Limit to deliver.
+	const STAmount&				saInReq,		// --> Amount to deliver.
 	STAmount&					saInAct,		// <-- Amount delivered.
 	STAmount&					saInFees)		// <-- Fees charged.
 {
@@ -491,6 +489,8 @@ TER RippleCalc::calcNodeDeliverFwd(
 
 	const uint160&	uNxtAccountID	= pnNxt.uAccountID;
 	const uint160&	uCurIssuerID	= pnCur.uIssuerID;
+	const uint160&	uCurCurrencyID	= pnCur.uCurrencyID;
+	const uint160&	uPrvCurrencyID	= pnPrv.uCurrencyID;
 	const uint160&	uPrvIssuerID	= pnPrv.uIssuerID;
 	const STAmount&	saTransferRate	= pnPrv.saTransferRate;
 
@@ -498,19 +498,19 @@ TER RippleCalc::calcNodeDeliverFwd(
 
 	uint256&		uDirectTip		= pnCur.uDirectTip;
 
-	uDirectTip		= 0;									// Restart book searching.
+	uDirectTip		= 0;						// Restart book searching.
 
-	saInAct.zero(saInFunds);
-	saInFees.zero(saInFunds);
+	saInAct.zero(saInReq);
+	saInFees.zero(saInReq);
 
 	while (tesSUCCESS == terResult
-		&& saInAct != saInReq					// Did not deliver limit.
-		&& saInAct + saInFees != saInFunds)		// Did not deliver all funds.
+		&& saInAct + saInFees != saInReq)		// Did not deliver all funds.
 	{
 		terResult	= calcNodeAdvance(uNode, pspCur, bMultiQuality, false);				// If needed, advance to next funded offer.
 
 		if (tesSUCCESS == terResult)
 		{
+			// Doesn't charge input. Input funds are in limbo.
 			bool&			bEntryAdvance	= pnCur.bEntryAdvance;
 			STAmount&		saOfrRate		= pnCur.saOfrRate;
 			uint256&		uOfferIndex		= pnCur.uOfferIndex;
@@ -521,9 +521,11 @@ TER RippleCalc::calcNodeDeliverFwd(
 			STAmount&		saTakerPays		= pnCur.saTakerPays;
 			STAmount&		saTakerGets		= pnCur.saTakerGets;
 
-			const STAmount	saInFeeRate		= uInAccountID == uPrvIssuerID || uOfrOwnerID == uPrvIssuerID	// Issuer receiving or sending.
-												? saOne				// No fee.
-												: saTransferRate;	// Transfer rate of issuer.
+			const STAmount	saInFeeRate		= !!uPrvCurrencyID
+												? uInAccountID == uPrvIssuerID || uOfrOwnerID == uPrvIssuerID	// Issuer receiving or sending.
+													? saOne				// No fee.
+													: saTransferRate	// Transfer rate of issuer.
+												: saOne;
 
 			//
 			// First calculate assuming no output fees.
@@ -532,11 +534,11 @@ TER RippleCalc::calcNodeDeliverFwd(
 			STAmount	saOutFunded		= std::max(saOfferFunds, saTakerGets);						// Offer maximum out - There are no out fees.
 			STAmount	saInFunded		= STAmount::multiply(saOutFunded, saOfrRate, saInReq);		// Offer maximum in - Limited by by payout.
 			STAmount	saInTotal		= STAmount::multiply(saInFunded, saTransferRate);			// Offer maximum in with fees.
-			STAmount	saInSum			= std::min(saInTotal, saInFunds-saInAct-saInFees);			// In limited by saInFunds.
+			STAmount	saInSum			= std::min(saInTotal, saInReq-saInAct-saInFees);			// In limited by saInReq.
 			STAmount	saInPassAct		= STAmount::divide(saInSum, saInFeeRate);					// In without fees.
 			STAmount	saOutPassMax	= STAmount::divide(saInPassAct, saOfrRate, saOutFunded);	// Out.
 
-			STAmount	saInPassFees(saInFunds.getCurrency(), saInFunds.getIssuer());
+			STAmount	saInPassFees(saInReq.getCurrency(), saInReq.getIssuer());
 			STAmount	saOutPassAct(saOfferFunds.getCurrency(), saOfferFunds.getIssuer());
 
 			cLog(lsINFO) << boost::str(boost::format("calcNodeDeliverFwd: saOutFunded=%s saInFunded=%s saInTotal=%s saInSum=%s saInPassAct=%s saOutPassMax=%s")
@@ -553,10 +555,7 @@ TER RippleCalc::calcNodeDeliverFwd(
 				// Input fees: vary based upon the consumed offer's owner.
 				// Output fees: none as the destination account is the issuer.
 
-				// XXX This doesn't claim input.
-				// XXX Assumes input is in limbo.  XXX Check.
-
-				// Debit offer owner.
+				// Debit offer owner, send to issuer which must be next account.
 				lesActive.accountSend(uOfrOwnerID, uCurIssuerID, saOutPassMax);
 
 				saOutPassAct	= saOutPassMax;
@@ -567,6 +566,8 @@ TER RippleCalc::calcNodeDeliverFwd(
 			else
 			{
 				// ? --> OFFER --> offer
+				// Offer to offer means current order book's output currency and issuer match next order book's input current and
+				// issuer.
 				STAmount	saOutPassFees;
 
 				terResult	= RippleCalc::calcNodeDeliverFwd(
@@ -575,14 +576,13 @@ TER RippleCalc::calcNodeDeliverFwd(
 					bMultiQuality,
 					uOfrOwnerID,
 					saOutPassMax,
-					saOutPassMax,
 					saOutPassAct,		// <-- Amount delivered.
 					saOutPassFees);		// <-- Fees charged.
 
 				if (tesSUCCESS != terResult)
 					break;
 
-				// Offer maximum in limited by next payout.
+				// Offer maximum in split into fees by next payout.
 				saInPassAct			= STAmount::multiply(saOutPassAct, saOfrRate);
 				saInPassFees		= STAmount::multiply(saInFunded, saInFeeRate)-saInPassAct;
 			}
@@ -596,13 +596,16 @@ TER RippleCalc::calcNodeDeliverFwd(
 			// Funds were spent.
 			bFundsDirty		= true;
 
-			// Credit issuer transfer fees.
-			lesActive.accountSend(uInAccountID, uOfrOwnerID, saInPassFees);
+			// Do inbound crediting.
+			// Credit offer owner from in issuer/limbo (don't take transfer fees).
+			lesActive.accountSend(!!uPrvCurrencyID ? uInAccountID : ACCOUNT_XRP, uOfrOwnerID, saInPassAct);
 
-			// Credit offer owner from offer.
-			lesActive.accountSend(uInAccountID, uOfrOwnerID, saInPassAct);
+			// Do outbound debiting.
+			// Send to issuer/limbo total amount (no fees to issuer).
+			lesActive.accountSend(uOfrOwnerID, !!uCurCurrencyID ? uCurIssuerID : ACCOUNT_XRP, saOutPassAct);
 
 			// Adjust offer
+			// Fees are considered paid from a seperate budget and are not named in the offer.
 			sleOffer->setFieldAmount(sfTakerGets, saTakerGets - saOutPassAct);
 			sleOffer->setFieldAmount(sfTakerPays, saTakerPays - saInPassAct);
 
@@ -661,7 +664,7 @@ TER RippleCalc::calcNodeOfferRev(
 }
 
 // Called to drive the from the first offer node in a chain.
-// - Offer input is limbo.
+// - Offer input is in issuer/limbo.
 // - Current offers consumed.
 //   - Current offer owners debited.
 //   - Transfer fees credited to issuer.
@@ -687,7 +690,6 @@ TER RippleCalc::calcNodeOfferFwd(
 							pspCur,
 							bMultiQuality,
 							pnPrv.uAccountID,
-							pnPrv.saFwdDeliver,
 							pnPrv.saFwdDeliver,
 							saInAct,
 							saInFees);
@@ -1157,7 +1159,7 @@ TER RippleCalc::calcNodeAccountRev(const unsigned int uNode, PathState::ref pspC
 }
 
 // The reverse pass has been narrowing by credit available and inflating by fees as it worked backwards.
-// Now, push through the actual amount to each node and adjust balances.
+// Now, for the current account node, take the actual amount from previous and adjust forward balances.
 //
 // Perform balance adjustments between previous and current node.
 // - The previous node: specifies what to push through to current.
@@ -1165,6 +1167,8 @@ TER RippleCalc::calcNodeAccountRev(const unsigned int uNode, PathState::ref pspC
 // Then, compute current node's output for next node.
 // - Current node: specify what to push through to next.
 // - Output to next node is computed as input minus quality or transfer fee.
+// - If next node is an offer and output is non-XRP then we are the issuer and do not need to push funds.
+// - If next node is an offer and output is XRP then we need to deliver funds to limbo.
 TER RippleCalc::calcNodeAccountFwd(
 	const unsigned int			uNode,				// 0 <= uNode <= uLast
 	PathState::ref				pspCur,
