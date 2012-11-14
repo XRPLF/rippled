@@ -91,7 +91,7 @@ protected:
 	LedgerAcquire::pointer mAcquiringLedger;
 	LedgerProposal::pointer mOurPosition;
 	RippleAddress mValPublic, mValPrivate;
-	bool mProposing, mValidating, mHaveCorrectLCL;
+	bool mProposing, mValidating, mHaveCorrectLCL, mConsensusFail;
 
 	int mCurrentMSeconds, mClosePercent, mCloseResolution;
 	bool mHaveCloseTimeConsensus;
