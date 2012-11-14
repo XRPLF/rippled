@@ -84,7 +84,9 @@ protected:
 	int									mLastCloseProposers, mLastCloseConvergeTime;
 	uint256								mLastCloseHash;
 	uint32								mLastCloseTime;
+	SerializedValidation::pointer		mLastValidation;
 	uint32								mLastValidationTime;
+
 
 	// XXX Split into more locks.
     boost::interprocess::interprocess_upgradable_mutex	mMonitorLock;
@@ -133,6 +135,9 @@ public:
 
 	uint256			getClosedLedgerHash()
 		{ return mLedgerMaster->getClosedLedger()->getHash(); }
+
+	SerializedValidation::ref getLastValidation()			{ return mLastValidation; }
+	void setLastValidation(SerializedValidation::ref v)		{ mLastValidation = v; }
 
 	SLE::pointer getSLE(Ledger::pointer lpLedger, const uint256& uHash) { return lpLedger->getSLE(uHash); }
 
