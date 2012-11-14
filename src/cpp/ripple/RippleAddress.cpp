@@ -115,7 +115,7 @@ uint160 RippleAddress::getNodeID() const
 {
     switch (nVersion) {
     case VER_NONE:
-		throw std::runtime_error("unset source");
+		throw std::runtime_error("unset source - getNodeID");
 
     case VER_NODE_PUBLIC:
 		// Note, we are encoding the left.
@@ -129,7 +129,7 @@ const std::vector<unsigned char>& RippleAddress::getNodePublic() const
 {
     switch (nVersion) {
     case VER_NONE:
-		throw std::runtime_error("unset source");
+		throw std::runtime_error("unset source - getNodePublic");
 
     case VER_NODE_PUBLIC:
 		return vchData;
@@ -143,7 +143,7 @@ std::string RippleAddress::humanNodePublic() const
 {
     switch (nVersion) {
     case VER_NONE:
-		throw std::runtime_error("unset source");
+		throw std::runtime_error("unset source - humanNodePublic");
 
     case VER_NODE_PUBLIC:
 		return ToString();
@@ -209,7 +209,7 @@ const std::vector<unsigned char>& RippleAddress::getNodePrivateData() const
 {
     switch (nVersion) {
     case VER_NONE:
-		throw std::runtime_error("unset source");
+		throw std::runtime_error("unset source - getNodePrivateData");
 
     case VER_NODE_PRIVATE:
 		return vchData;
@@ -223,7 +223,7 @@ uint256 RippleAddress::getNodePrivate() const
 {
     switch (nVersion) {
     case VER_NONE:
-		throw std::runtime_error("unset source");
+		throw std::runtime_error("unset source = getNodePrivate");
 
     case VER_NODE_PRIVATE:
 		return uint256(vchData);
@@ -237,7 +237,7 @@ std::string RippleAddress::humanNodePrivate() const
 {
     switch (nVersion) {
     case VER_NONE:
-		throw std::runtime_error("unset source");
+		throw std::runtime_error("unset source - humanNodePrivate");
 
     case VER_NODE_PRIVATE:
 		return ToString();
@@ -279,7 +279,7 @@ uint160 RippleAddress::getAccountID() const
 {
     switch (nVersion) {
     case VER_NONE:
-		throw std::runtime_error("unset source");
+		throw std::runtime_error("unset source - getAccountID");
 
     case VER_ACCOUNT_ID:
 		return uint160(vchData);
@@ -297,7 +297,7 @@ std::string RippleAddress::humanAccountID() const
 {
     switch (nVersion) {
     case VER_NONE:
-		throw std::runtime_error("unset source");
+		throw std::runtime_error("unset source - humanAccountID");
 
     case VER_ACCOUNT_ID:
 		return ToString();
@@ -353,7 +353,7 @@ const std::vector<unsigned char>& RippleAddress::getAccountPublic() const
 {
     switch (nVersion) {
     case VER_NONE:
-		throw std::runtime_error("unset source");
+		throw std::runtime_error("unset source - getAccountPublic");
 
     case VER_ACCOUNT_ID:
 		throw std::runtime_error("public not available from account id");
@@ -371,7 +371,7 @@ std::string RippleAddress::humanAccountPublic() const
 {
     switch (nVersion) {
     case VER_NONE:
-		throw std::runtime_error("unset source");
+		throw std::runtime_error("unset source - humanAccountPublic");
 
     case VER_ACCOUNT_ID:
 		throw std::runtime_error("public not available from account id");
@@ -446,7 +446,7 @@ uint256 RippleAddress::getAccountPrivate() const
 {
     switch (nVersion) {
     case VER_NONE:
-		throw std::runtime_error("unset source");
+		throw std::runtime_error("unset source - getAccountPrivate");
 
     case VER_ACCOUNT_PRIVATE:
 		return uint256(vchData);
@@ -460,7 +460,7 @@ std::string RippleAddress::humanAccountPrivate() const
 {
     switch (nVersion) {
     case VER_NONE:
-		throw std::runtime_error("unset source");
+		throw std::runtime_error("unset source - humanAccountPrivate");
 
     case VER_ACCOUNT_PRIVATE:
 		return ToString();
@@ -606,7 +606,7 @@ BIGNUM* RippleAddress::getGeneratorBN() const
 { // returns the public generator
     switch (nVersion) {
     case VER_NONE:
-		throw std::runtime_error("unset source");
+		throw std::runtime_error("unset source - getGeneratorBN");
 
     case VER_FAMILY_GENERATOR:
 		// Do nothing.
@@ -625,7 +625,7 @@ const std::vector<unsigned char>& RippleAddress::getGenerator() const
 { // returns the public generator
     switch (nVersion) {
     case VER_NONE:
-		throw std::runtime_error("unset source");
+		throw std::runtime_error("unset source - getGenerator");
 
     case VER_FAMILY_GENERATOR:
 		// Do nothing.
@@ -640,7 +640,7 @@ std::string RippleAddress::humanGenerator() const
 {
     switch (nVersion) {
     case VER_NONE:
-		throw std::runtime_error("unset source");
+		throw std::runtime_error("unset source - humanGenerator");
 
     case VER_FAMILY_GENERATOR:
 		return ToString();
@@ -678,7 +678,7 @@ uint128 RippleAddress::getSeed() const
 {
     switch (nVersion) {
     case VER_NONE:
-		throw std::runtime_error("unset source");
+		throw std::runtime_error("unset source - getSeed");
 
     case VER_FAMILY_SEED:
 		return uint128(vchData);
@@ -692,7 +692,7 @@ std::string RippleAddress::humanSeed1751() const
 {
     switch (nVersion) {
     case VER_NONE:
-		throw std::runtime_error("unset source");
+		throw std::runtime_error("unset source - humanSeed1751");
 
     case VER_FAMILY_SEED:
 		{
@@ -719,7 +719,7 @@ std::string RippleAddress::humanSeed() const
 {
     switch (nVersion) {
     case VER_NONE:
-		throw std::runtime_error("unset source");
+		throw std::runtime_error("unset source - humanSeed");
 
     case VER_FAMILY_SEED:
 		return ToString();
@@ -792,7 +792,7 @@ void RippleAddress::setSeedRandom()
 	// XXX Maybe we should call MakeNewKey
 	uint128 key;
 
-	RAND_bytes((unsigned char *) &key, sizeof(key));
+	RAND_bytes(key.begin(), key.size());
 
 	RippleAddress::setSeed(key);
 }

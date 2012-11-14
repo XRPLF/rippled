@@ -5,10 +5,20 @@
 
 #include <boost/thread/mutex.hpp>
 #include <boost/bimap.hpp>
-#include <boost/bimap/set_of.hpp>
+#include <boost/bimap/unordered_set_of.hpp>
 #include <boost/bimap/multiset_of.hpp>
 
 #include "uint256.h"
+
+enum POWResult
+{
+	powOK		= 0,
+	powREUSED	= 1,
+	powBADNONCE	= 2,
+	powBADTOKEN	= 3,
+	powEXPIRED	= 4,
+	powCORRUPT	= 5,
+};
 
 class ProofOfWork
 {
@@ -32,6 +42,9 @@ public:
 	uint256 solve(int maxIterations) const;
 	bool checkSolution(const uint256& solution) const;
 
+	const std::string& getToken() const		{ return mToken; }
+	const uint256& getChallenge() const		{ return mChallenge; }
+
 	// approximate number of hashes needed to solve
 	static uint64 getDifficulty(const uint256& target, int iterations);
 	uint64 getDifficulty() const { return getDifficulty(mTarget, mIterations); }
@@ -40,7 +53,7 @@ public:
 class ProofOfWorkGenerator
 {
 public:
-	typedef boost::bimap< boost::bimaps::multiset_of<time_t>, boost::bimaps::set_of<uint256> > powMap_t;
+	typedef boost::bimap< boost::bimaps::multiset_of<time_t>, boost::bimaps::unordered_set_of<uint256> > powMap_t;
 	typedef powMap_t::value_type	powMap_vt;
 
 protected:
@@ -48,19 +61,23 @@ protected:
 	int								mIterations;
 	uint256							mTarget;
 	time_t							mLastDifficultyChange;
+	int								mValidTime;
 
 	powMap_t						mSolvedChallenges;
 	boost::mutex					mLock;
 
 public:
-	ProofOfWorkGenerator(const uint256& secret);
+	ProofOfWorkGenerator();
 
 	ProofOfWork getProof();
-	bool checkProof(const std::string& token, const uint256& solution);
+	POWResult checkProof(const std::string& token, const uint256& solution);
+	uint64 getDifficulty()	{ return ProofOfWork::getDifficulty(mTarget, mIterations); }
 
 	void loadHigh();
 	void loadLow();
-	uint64 getDifficulty()	{ return ProofOfWork::getDifficulty(mTarget, mIterations); }
+	void sweep(void);
 };
 
 #endif
+
+// vim:ts=4

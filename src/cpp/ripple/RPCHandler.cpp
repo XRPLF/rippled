@@ -1312,13 +1312,15 @@ Json::Value RPCHandler::doCommand(const std::string& command, Json::Value& param
 	cLog(lsTRACE) << "RPC:" << command;
 	cLog(lsTRACE) << "RPC params:" << params;
 
+	mRole	= role;
+
 	static struct {
 		const char*		pCommand;
 		doFuncPtr		dfpFunc;
 		int				iMinParams;
 		int				iMaxParams;
-		bool			mAdminRequired;
-		bool			mEvented;
+		bool			bAdminRequired;
+		bool			bEvented;
 		unsigned int	iOptions;
 	} commandsA[] = {
 		// Request-response methods
@@ -1335,6 +1337,7 @@ Json::Value RPCHandler::doCommand(const std::string& command, Json::Value& param
 		{	"ledger_closed",		&RPCHandler::doLedgerClosed,		0,  0, false,	false,	optClosed	},
 		{	"ledger_current",		&RPCHandler::doLedgerCurrent,		0,  0, false,	false,	optCurrent	},
 		{	"ledger_entry",			&RPCHandler::doLedgerEntry,			-1,  -1, false,	false,	optCurrent	},
+		{	"ledger_header",		&RPCHandler::doLedgerHeader,		-1,  -1, false,	false,	optCurrent	},
 		{	"log_level",			&RPCHandler::doLogLevel,			0,  2, true							},
 		{	"logrotate",			&RPCHandler::doLogRotate,			0,  0, true							},
 		{	"nickname_info",		&RPCHandler::doNicknameInfo,		1,  1, false,	false,	optCurrent	},
@@ -1380,11 +1383,11 @@ Json::Value RPCHandler::doCommand(const std::string& command, Json::Value& param
 	{
 		return rpcError(rpcUNKNOWN_COMMAND);
 	}
-	else if (commandsA[i].mAdminRequired && role != ADMIN)
+	else if (commandsA[i].bAdminRequired && mRole != ADMIN)
 	{
 		return rpcError(rpcNO_PERMISSION);
 	}
-	else if (commandsA[i].mEvented && mInfoSub == NULL)
+	else if (commandsA[i].bEvented && mInfoSub == NULL)
 	{
 		return rpcError(rpcNO_EVENTS);
 	}
@@ -1705,14 +1708,12 @@ Json::Value RPCHandler::doTransactionEntry(const Json::Value& jvRequest)
 	return jvResult;
 }
 
-Json::Value RPCHandler::doLedgerEntry(const Json::Value& jvRequest)
+Json::Value RPCHandler::lookupLedger(const Json::Value& jvRequest, Ledger::pointer& lpLedger)
 {
 	Json::Value jvResult;
 
 	uint256	uLedger			= jvRequest.isMember("ledger_hash") ? uint256(jvRequest["ledger_hash"].asString()) : 0;
 	uint32	uLedgerIndex	= jvRequest.isMember("ledger_index") && jvRequest["ledger_index"].isNumeric() ? jvRequest["ledger_index"].asUInt() : 0;
-
-	Ledger::pointer	 lpLedger;
 
 	if (!!uLedger)
 	{
@@ -1755,6 +1756,17 @@ Json::Value RPCHandler::doLedgerEntry(const Json::Value& jvRequest)
 	{
 		jvResult["ledger_current_index"]	= uLedgerIndex;
 	}
+
+	return jvResult;
+}
+
+Json::Value RPCHandler::doLedgerEntry(const Json::Value& jvRequest)
+{
+	Ledger::pointer		lpLedger;
+	Json::Value			jvResult	= lookupLedger(jvRequest, lpLedger);
+
+	if (!lpLedger)
+		return jvResult;
 
 	uint256		uNodeIndex;
 	bool		bNodeBinary	= false;
@@ -1951,6 +1963,25 @@ Json::Value RPCHandler::doLedgerEntry(const Json::Value& jvRequest)
 	return jvResult;
 }
 
+Json::Value RPCHandler::doLedgerHeader(const Json::Value& jvRequest)
+{
+	Ledger::pointer		lpLedger;
+	Json::Value			jvResult	= lookupLedger(jvRequest, lpLedger);
+
+	if (!lpLedger)
+		return jvResult;
+
+	Serializer	s;
+
+	lpLedger->addRaw(s);
+
+	jvResult["ledger_data"]	= strHex(s.peekData());
+
+	if (mRole == ADMIN)
+		lpLedger->addJson(jvResult, 0);
+
+	return jvRequest;
+}
 
 boost::unordered_set<RippleAddress> RPCHandler::parseAccountIds(const Json::Value& jvArray)
 {

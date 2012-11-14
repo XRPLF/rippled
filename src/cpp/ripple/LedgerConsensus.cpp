@@ -267,7 +267,7 @@ bool LCTransaction::updateVote(int percentTime, bool proposing)
 
 LedgerConsensus::LedgerConsensus(const uint256& prevLCLHash, Ledger::ref previousLedger, uint32 closeTime)
 		:  mState(lcsPRE_CLOSE), mCloseTime(closeTime), mPrevLedgerHash(prevLCLHash), mPreviousLedger(previousLedger),
-		mValPublic(theConfig.VALIDATION_PUB), mValPrivate(theConfig.VALIDATION_PRIV),
+		mValPublic(theConfig.VALIDATION_PUB), mValPrivate(theConfig.VALIDATION_PRIV), mConsensusFail(false),
 		mCurrentMSeconds(0), mClosePercent(0), mHaveCloseTimeConsensus(false),
 		mConsensusStartTime(boost::posix_time::microsec_clock::universal_time())
 {
@@ -303,6 +303,36 @@ LedgerConsensus::LedgerConsensus(const uint256& prevLCLHash, Ledger::ref previou
 			cLog(lsINFO) << "Correct LCL is: " << prevLCLHash;
 		}
 	}
+}
+
+void LedgerConsensus::checkOurValidation()
+{ // This only covers some cases - Fix for the case where we can't ever acquire the consensus ledger
+	if (!mHaveCorrectLCL || !mValPublic.isValid() || !mValPrivate.isValid())
+		return;
+
+	SerializedValidation::pointer lastVal = theApp->getOPs().getLastValidation();
+	if (lastVal)
+	{
+		if (lastVal->getFieldU32(sfLedgerSequence) == mPreviousLedger->getLedgerSeq())
+			return;
+		if (lastVal->getLedgerHash() == mPrevLedgerHash)
+			return;
+	}
+
+	uint256 signingHash;
+	SerializedValidation::pointer v = boost::make_shared<SerializedValidation>
+		(mPreviousLedger->getHash(), theApp->getOPs().getValidationTimeNC(), mValPublic, false);
+	v->setTrusted();
+	v->sign(signingHash, mValPrivate);
+	theApp->isNew(signingHash);
+	theApp->getValidations().addValidation(v);
+	std::vector<unsigned char> validation = v->getSigned();
+	ripple::TMValidation val;
+	val.set_validation(&validation[0], validation.size());
+	theApp->getConnectionPool().relayMessage(NULL,
+		boost::make_shared<PackedMessage>(val, ripple::mtVALIDATION));
+	theApp->getOPs().setLastValidation(v);
+	cLog(lsWARNING) << "Sending partial validation";
 }
 
 void LedgerConsensus::checkLCL()
@@ -575,12 +605,13 @@ void LedgerConsensus::statePreClose()
 
 void LedgerConsensus::closeLedger()
 {
-		mState = lcsESTABLISH;
-		mConsensusStartTime = boost::posix_time::microsec_clock::universal_time();
-		mCloseTime = theApp->getOPs().getCloseTimeNC();
-		theApp->getOPs().setLastCloseTime(mCloseTime);
-		statusChange(ripple::neCLOSING_LEDGER, *mPreviousLedger);
-		takeInitialPosition(*theApp->getMasterLedger().closeLedger(true));
+	checkOurValidation();
+	mState = lcsESTABLISH;
+	mConsensusStartTime = boost::posix_time::microsec_clock::universal_time();
+	mCloseTime = theApp->getOPs().getCloseTimeNC();
+	theApp->getOPs().setLastCloseTime(mCloseTime);
+	statusChange(ripple::neCLOSING_LEDGER, *mPreviousLedger);
+	takeInitialPosition(*theApp->getMasterLedger().closeLedger(true));
 }
 
 void LedgerConsensus::stateEstablish()
@@ -769,7 +800,7 @@ bool LedgerConsensus::haveConsensus(bool forReal)
 	cLog(lsDEBUG) << "Checking for TX consensus: agree=" << agree << ", disagree=" << disagree;
 
 	return ContinuousLedgerTiming::haveConsensus(mPreviousProposers, agree + disagree, agree, currentValidations,
-		mPreviousMSeconds, mCurrentMSeconds, forReal);
+		mPreviousMSeconds, mCurrentMSeconds, forReal, mConsensusFail);
 }
 
 SHAMap::pointer LedgerConsensus::getTransactionTree(const uint256& hash, bool doAcquire)
@@ -1193,15 +1224,17 @@ void LedgerConsensus::accept(SHAMap::ref set)
 	}
 
 	statusChange(ripple::neACCEPTED_LEDGER, *newLCL);
-	if (mValidating)
+	if (mValidating && !mConsensusFail)
 	{
 		uint256 signingHash;
 		SerializedValidation::pointer v = boost::make_shared<SerializedValidation>
-				(newLCLHash, theApp->getOPs().getValidationTimeNC(), mValPublic, mValPrivate,
-				mProposing, boost::ref(signingHash));
+				(newLCLHash, theApp->getOPs().getValidationTimeNC(), mValPublic, mProposing);
+		v->setFieldU32(sfLedgerSequence, newLCL->getLedgerSeq());
+		v->sign(signingHash, mValPrivate);
 		v->setTrusted();
 		theApp->isNew(signingHash); // suppress it if we receive it
 		theApp->getValidations().addValidation(v);
+		theApp->getOPs().setLastValidation(v);
 		std::vector<unsigned char> validation = v->getSigned();
 		ripple::TMValidation val;
 		val.set_validation(&validation[0], validation.size());
@@ -1238,7 +1271,7 @@ void LedgerConsensus::accept(SHAMap::ref set)
 	cLog(lsINFO) << "Applying transactions from current ledger";
 	applyTransactions(theApp->getMasterLedger().getCurrentLedger()->peekTransactionMap(), newOL, newLCL,
 		failedTransactions, true);
-	theApp->getMasterLedger().pushLedger(newLCL, newOL, true);
+	theApp->getMasterLedger().pushLedger(newLCL, newOL, !mConsensusFail);
 	mNewLedgerHash = newLCL->getHash();
 	mState = lcsACCEPTED;
 	sl.unlock();

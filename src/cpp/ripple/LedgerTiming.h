@@ -66,7 +66,7 @@ public:
 		int previousProposers,		int currentProposers,
 		int currentAgree,			int currentClosed,
 		int previousAgreeTime,		int currentAgreeTime,
-		bool forReal);
+		bool forReal,				bool& failed);
 
 	static int getNextLedgerTimeResolution(int previousResolution, bool previousAgree, int ledgerSeq);
 };

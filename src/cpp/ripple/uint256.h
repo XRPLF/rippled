@@ -23,7 +23,7 @@
 #endif
 
 // These classes all store their values internally
-// in little-endian form
+// in big-endian form
 
 inline int Testuint256AdHoc(std::vector<std::string> vArg);
 
@@ -36,7 +36,7 @@ protected:
 	enum { WIDTH=BITS/32 };
 
 	// This is really big-endian in byte order.
-	// We use unsigned int for speed.
+	// We sometimes use unsigned int for speed.
 	unsigned int pn[WIDTH];
 
 public:
@@ -73,7 +73,7 @@ public:
 		zero();
 
 		// Put in least significant bits.
-		((uint64_t *) end())[-1]	= htobe64(uHost);
+		((uint64_t *) end())[-1] = htobe64(uHost);
 
 		return *this;
 	}
@@ -105,10 +105,12 @@ public:
 	base_uint& operator++()
 	{
 		// prefix operator
-		int		i = WIDTH;
-
-		while (i-- && !++pn[i])
-			;
+		for (int i = WIDTH - 1; i >= 0; --i)
+		{
+			pn[i] = htobe32(be32toh(pn[i]) + 1);
+			if (pn[i] != 0)
+				break;
+		}
 
 		return *this;
 	}
@@ -124,10 +126,13 @@ public:
 
 	base_uint& operator--()
 	{
-		int		i = WIDTH;
-
-		while (i-- && !pn[i]--)
-			;
+		for (int i = WIDTH - 1; i >= 0; --i)
+		{
+			uint32 prev = pn[i];
+			pn[i] = htobe32(be32toh(pn[i]) - 1);
+			if (prev != 0)
+				break;
+		}
 
 		return *this;
 	}
@@ -169,10 +174,14 @@ public:
 		const unsigned char* pAEnd	= a.end();
 		const unsigned char* pB		= b.begin();
 
-		while (pA != pAEnd && *pA == *pB)
-			pA++, pB++;
+		while (*pA == *pB)
+		{
+			if (++pA == pAEnd)
+				return 0;
+			++pB;
+		}
 
-		return pA == pAEnd ? 0 : *pA < *pB ? -1 : *pA > *pB ? 1 : 0;
+		return (*pA < *pB) ? -1 : 1;
 	}
 
 	friend inline bool operator<(const base_uint& a, const base_uint& b)

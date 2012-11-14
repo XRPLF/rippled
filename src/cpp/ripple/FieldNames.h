@@ -33,14 +33,6 @@ enum SOE_Flags
 	SOE_OPTIONAL = 1,	// optional
 };
 
-enum SF_Meta
-{
-	SFM_NEVER	= 0,
-	SFM_CHANGE	= 1,
-	SFM_DELETE	= 2,
-	SFM_ALWAYS	= 3
-};
-
 class SField
 {
 public:
@@ -59,19 +51,17 @@ public:
 	const SerializedTypeID	fieldType;		// STI_*
 	const int				fieldValue;		// Code number for protocol
 	std::string				fieldName;
-	SF_Meta					fieldMeta;
 	bool					signingField;
 
 	SField(int fc, SerializedTypeID tid, int fv, const char* fn) : 
-		fieldCode(fc), fieldType(tid), fieldValue(fv), fieldName(fn), fieldMeta(SFM_NEVER), signingField(true)
+		fieldCode(fc), fieldType(tid), fieldValue(fv), fieldName(fn), signingField(true)
 	{
 		boost::mutex::scoped_lock sl(mapMutex);
 		codeToField[fieldCode] = this;
 	}
 
 	SField(SerializedTypeID tid, int fv, const char *fn) :
-		fieldCode(FIELD_CODE(tid, fv)), fieldType(tid), fieldValue(fv), fieldName(fn),
-		fieldMeta(SFM_NEVER), signingField(true)
+		fieldCode(FIELD_CODE(tid, fv)), fieldType(tid), fieldValue(fv), fieldName(fn), signingField(true)
 	{
 		boost::mutex::scoped_lock sl(mapMutex);
 		codeToField[fieldCode] = this;
@@ -95,10 +85,6 @@ public:
 	bool isBinary() const		{ return fieldValue < 256; }
 	bool isDiscardable() const	{ return fieldValue > 256; }
 
-	SF_Meta getMeta() const		{ return fieldMeta; }
-	bool shouldMetaDel() const	{ return (fieldMeta == SFM_DELETE) || (fieldMeta == SFM_ALWAYS); }
-	bool shouldMetaMod() const	{ return (fieldMeta == SFM_CHANGE) || (fieldMeta == SFM_ALWAYS); }
-	void setMeta(SF_Meta m)		{ fieldMeta = m; }
 	bool isSigningField() const	{ return signingField; }
 	void notSigningField()		{ signingField = false; }
 

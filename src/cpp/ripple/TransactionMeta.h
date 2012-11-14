@@ -39,7 +39,7 @@ public:
 	uint32 getLgrSeq()			{ return mLedger; }
 
 	bool isNodeAffected(const uint256&) const;
-	void setAffectedNode(const uint256&, SField::ref type);
+	void setAffectedNode(const uint256&, SField::ref type, uint16 nodeType);
 	STObject& getAffectedNode(const uint256&, SField::ref type);
 	STObject& getAffectedNode(const uint256&);
 	const STObject& peekAffectedNode(const uint256&) const;
