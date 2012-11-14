@@ -148,6 +148,7 @@ protected:
 	void playbackProposals();
 	int getThreshold();
 	void closeLedger();
+	void checkOurValidation();
 
 	void beginAccept(bool synchronous);
 	void endConsensus();

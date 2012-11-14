@@ -84,8 +84,8 @@ protected:
 	int									mLastCloseProposers, mLastCloseConvergeTime;
 	uint256								mLastCloseHash;
 	uint32								mLastCloseTime;
-	SerializedValidation::pointer		mLastValidation;
 	uint32								mLastValidationTime;
+	SerializedValidation::pointer		mLastValidation;
 
 
 	// XXX Split into more locks.
@@ -133,8 +133,7 @@ public:
 	Ledger::pointer	getLedgerByHash(const uint256& hash)	{ return mLedgerMaster->getLedgerByHash(hash); }
 	Ledger::pointer	getLedgerBySeq(const uint32 seq)		{ return mLedgerMaster->getLedgerBySeq(seq); }
 
-	uint256			getClosedLedgerHash()
-		{ return mLedgerMaster->getClosedLedger()->getHash(); }
+	uint256			getClosedLedgerHash()					{ return mLedgerMaster->getClosedLedger()->getHash(); }
 
 	SerializedValidation::ref getLastValidation()			{ return mLastValidation; }
 	void setLastValidation(SerializedValidation::ref v)		{ mLastValidation = v; }
