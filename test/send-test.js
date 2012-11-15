@@ -20,13 +20,20 @@ buster.testCase("Simple", {
   'tearDown' : testutils.build_teardown(),
 
   "simple." :
-    function (done) { buster.assert(1); done();
+    function (done) { buster.assert(1); 
     
  		this.remote.transaction()
 	.payment('root', 'alice', "10000")
 	.on('success', function (r) {
 	   done();
 	  }).submit();
+	  
+	  this.remote.transaction()
+	.payment('root', 'alice', "20000")
+	.on('success', function (r) {
+	   done();
+	  }).submit();
+	  
 	   }
     });
     
@@ -44,8 +51,11 @@ buster.testCase("Sending", {
 	.payment('root', 'alice', "10000")
 	.on('success', function (r) {
 	    // Transaction sent.
-
-	    // console.log("success: %s", JSON.stringify(r));
+		// buster.assert(false, "Succeded.");
+	     // done();
+	     buster.assert.equals(r.result, 'terNO_DST');
+	    console.log("success: %s", JSON.stringify(r));
+	    done();
 	  })
 	.on('pending', function() {
 	    // Moving ledgers along.
@@ -69,11 +79,11 @@ buster.testCase("Sending", {
 	  })
 	.on('proposed', function (m) {
 	    // Transaction got an error.
-	    // console.log("proposed: %s", JSON.stringify(m));
+	    console.log("proposed: %s", JSON.stringify(m));
 
 	    buster.assert.equals(m.result, 'terNO_DST');
-
-	    got_proposed  = true;
+		//done();
+	  	got_proposed  = true;
 
 	    self.remote.ledger_accept();    // Move it along.
 	  })
@@ -87,6 +97,7 @@ buster.testCase("Sending", {
 	    // console.log("error: %s", m);
 
 	    buster.assert(false);
+	    done();
 	  })
 	.submit();
     },
@@ -97,7 +108,7 @@ buster.testCase("Sending", {
       this.remote.transaction()
 	.ripple_line_set("root", "100/USD/alice")
 	.on('proposed', function (m) {
-	    // console.log("proposed: %s", JSON.stringify(m));
+	    console.log("proposed: %s", JSON.stringify(m));
 
 	    buster.assert.equals(m.result, 'terNO_DST');
 
@@ -105,7 +116,7 @@ buster.testCase("Sending", {
 	  })
 	.submit();
     },
-
+/*
   "credit_limit" :
     function (done) {
       var self = this;
@@ -248,7 +259,7 @@ buster.testCase("Sending", {
 	  buster.refute(error, self.what);
 	  done();
 	});
-    },
+    },*/
 });
 
 // XXX In the future add ledger_accept after partial retry is implemented in the server.

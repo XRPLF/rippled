@@ -49,13 +49,13 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>BOOST_TEST_ALTERNATIVE_INIT_API;BOOST_TEST_NO_MAIN;_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0501;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>.\;..\OpenSSL\include;..\boost_1_47_0;..\protobuf\src\</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\;..\OpenSSL\include;..\boost_1_52_0;..\protobuf\src\</AdditionalIncludeDirectories>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>..\OpenSSL\lib\VC;..\boost_1_47_0\stage\lib;..\protobuf\vsprojects\Debug</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\OpenSSL\lib\VC;..\boost_1_52_0\stage\lib;..\protobuf\vsprojects\Debug</AdditionalLibraryDirectories>
       <AdditionalDependencies>ssleay32MDd.lib;libeay32MTd.lib;libprotobuf.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PreBuildEvent>
