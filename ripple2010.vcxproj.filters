@@ -249,9 +249,6 @@
     <ClCompile Include="src\cpp\ripple\Transaction.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\TransactionAction.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\cpp\ripple\TransactionEngine.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -320,6 +317,33 @@
     </ClCompile>
     <ClCompile Include="src\cpp\websocketpp\src\rng\boost_rng.cpp">
       <Filter>Source Files\websocketpp</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\AccountSetTransactor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\OfferCancelTransactor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\OfferCreateTransactor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\PaymentTransactor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ProofOfWork.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\RegularKeySetTransactor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\Transactor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\TrustSetTransactor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\WalletAddTransactor.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -41,8 +41,8 @@ TER RegularKeySetTransactor::doApply()
 
 	mTxnAccount->setFlag(lsfPasswordSpent);
 
-	uint160	uAuthKeyID=mTxn.getFieldAccount160(sfAuthorizedKey);
-	mTxnAccount->setFieldAccount(sfAuthorizedKey, uAuthKeyID);
+	uint160	uAuthKeyID=mTxn.getFieldAccount160(sfRegularKey);
+	mTxnAccount->setFieldAccount(sfRegularKey, uAuthKeyID);
 
 
 	std::cerr << "doRegularKeySet<" << std::endl;

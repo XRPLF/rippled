@@ -86,7 +86,7 @@ TER Transactor::checkSig()
 {
 	// Consistency: Check signature
 	// Verify the transaction's signing public key is the key authorized for signing.
-	if (mHasAuthKey && mSigningPubKey.getAccountID() == mTxnAccount->getFieldAccount(sfAuthorizedKey).getAccountID())
+	if (mHasAuthKey && mSigningPubKey.getAccountID() == mTxnAccount->getFieldAccount(sfRegularKey).getAccountID())
 	{
 		// Authorized to continue.
 		nothing();
@@ -201,7 +201,7 @@ TER Transactor::apply()
 	else
 	{
 		mSourceBalance	= mTxnAccount->getFieldAmount(sfBalance);
-		mHasAuthKey	= mTxnAccount->isFieldPresent(sfAuthorizedKey);
+		mHasAuthKey	= mTxnAccount->isFieldPresent(sfRegularKey);
 	}
 
 	terResult=payFee();

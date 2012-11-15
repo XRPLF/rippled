@@ -6,7 +6,7 @@ TER WalletAddTransactor::doApply()
 
 	const std::vector<unsigned char>	vucPubKey		= mTxn.getFieldVL(sfPublicKey);
 	const std::vector<unsigned char>	vucSignature	= mTxn.getFieldVL(sfSignature);
-	const uint160						uAuthKeyID		= mTxn.getFieldAccount160(sfAuthorizedKey);
+	const uint160						uAuthKeyID		= mTxn.getFieldAccount160(sfRegularKey);
 	const RippleAddress				naMasterPubKey	= RippleAddress::createAccountPublic(vucPubKey);
 	const uint160						uDstAccountID	= naMasterPubKey.getAccountID();
 
@@ -50,7 +50,7 @@ TER WalletAddTransactor::doApply()
 	sleDst->setFieldAccount(sfAccount, uDstAccountID);
 	sleDst->setFieldU32(sfSequence, 1);
 	sleDst->setFieldAmount(sfBalance, saAmount);
-	sleDst->setFieldAccount(sfAuthorizedKey, uAuthKeyID);
+	sleDst->setFieldAccount(sfRegularKey, uAuthKeyID);
 
 	std::cerr << "WalletAdd<" << std::endl;
 
