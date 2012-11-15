@@ -1006,8 +1006,8 @@ void NetworkOPs::pubProposedTransaction(Ledger::ref lpCurrent, const SerializedT
 			ispListener->send(jvObj);
 		}
 	}
-
-	pubAccountTransaction(lpCurrent,stTxn,terResult,false,TransactionMetaSet::pointer());
+	TransactionMetaSet::pointer ret;
+	pubAccountTransaction(lpCurrent,stTxn,terResult,false,ret);
 }
 
 void NetworkOPs::pubLedger(Ledger::ref lpAccepted)
