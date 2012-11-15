@@ -36,7 +36,7 @@ enum TransactionEngineParams
 
 // One instance per ledger.
 // Only one transaction applied at a time.
-class TransactionEngine : public boost::enable_shared_from_this<TransactionEngine>, private IS_INSTANCE(TransactionEngine)
+class TransactionEngine : private IS_INSTANCE(TransactionEngine)
 {
 private:
 	LedgerEntrySet						mNodes;

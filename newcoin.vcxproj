@@ -150,7 +150,6 @@
     <ClCompile Include="src\cpp\ripple\RippleLines.cpp" />
     <ClCompile Include="src\cpp\ripple\RippleState.cpp" />
     <ClCompile Include="src\cpp\ripple\rpc.cpp" />
-    <ClCompile Include="src\cpp\ripple\RPCCommands.cpp" />
     <ClCompile Include="src\cpp\ripple\RPCDoor.cpp" />
     <ClCompile Include="src\cpp\ripple\RPCHandler.cpp" />
     <ClCompile Include="src\cpp\ripple\RPCServer.cpp" />

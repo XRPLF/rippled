@@ -198,9 +198,6 @@
     <ClCompile Include="src\cpp\ripple\rpc.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\RPCCommands.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\cpp\ripple\RPCDoor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

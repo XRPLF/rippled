@@ -21,7 +21,7 @@ var EventEmitter  = require('events').EventEmitter;
 var Amount	  = require('./amount.js').Amount;
 var UInt160	  = require('./amount.js').UInt160;
 
-// Request events emmitted:
+// Request events emitted:
 // 'success' : Request successful.
 // 'error'   : Request failed.
 //   'remoteError'
@@ -166,11 +166,11 @@ Request.prototype.accounts = function (accounts) {
 // Remote - access to a remote Ripple server via websocket.
 //
 // Events:
-// 'connectted'
+// 'connected'
 // 'disconnected'
 // 'state':
-// - 'online' : connectted and subscribed
-// - 'offline' : not subscribed or not connectted.
+// - 'online' : connected and subscribed
+// - 'offline' : not subscribed or not connected.
 // 'ledger_closed': A good indicate of ready to serve.
 // 'subscribed' : This indicates stand-alone is available.
 //
@@ -268,7 +268,7 @@ Remote.fees = {
   'offer'	    : Amount.from_json("10"),
 };
 
-// Set the emited state: 'online' or 'offline'
+// Set the emitted state: 'online' or 'offline'
 Remote.prototype._set_state = function (state) {
   if (this.trace) console.log("remote: set_state: %s", state);
 

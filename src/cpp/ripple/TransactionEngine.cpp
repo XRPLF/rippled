@@ -4,6 +4,7 @@
 
 #include <boost/format.hpp>
 #include <boost/foreach.hpp>
+#include <boost/smart_ptr/shared_ptr.hpp>
 
 #include "TransactionEngine.h"
 #include "Transactor.h"
@@ -89,7 +90,7 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 	}
 #endif
 
-	Transactor::pointer transactor=Transactor::makeTransactor(txn,params,shared_from_this());
+	Transactor::pointer transactor=Transactor::makeTransactor(txn,params,this);
 	if(transactor)
 	{
 		uint256 txID		= txn.getTransactionID();

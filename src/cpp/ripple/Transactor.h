@@ -10,7 +10,7 @@ class Transactor
 {
 protected:
 	const SerializedTransaction& mTxn;
-	TransactionEngine::pointer mEngine;
+	TransactionEngine* mEngine;
 	TransactionEngineParams mParams;
 
 	uint160 mTxnAccountID;
@@ -28,12 +28,12 @@ protected:
 	virtual TER checkSig();
 	virtual TER doApply()=0;
 	
-	Transactor(const SerializedTransaction& txn, TransactionEngineParams params, TransactionEngine::pointer engine);
+	Transactor(const SerializedTransaction& txn, TransactionEngineParams params, TransactionEngine* engine);
 
 public:
 	typedef boost::shared_ptr<Transactor> pointer;
 
-	static Transactor::pointer makeTransactor(const SerializedTransaction& txn,TransactionEngineParams params, TransactionEngine::pointer engine);
+	static Transactor::pointer makeTransactor(const SerializedTransaction& txn,TransactionEngineParams params, TransactionEngine* engine);
 
 	TER apply();
 };

@@ -14,7 +14,7 @@ class OfferCreateTransactor : public Transactor
 		STAmount&			saTakerGot);
 
 public:
-	OfferCreateTransactor(const SerializedTransaction& txn,TransactionEngineParams params, TransactionEngine::pointer engine) : Transactor(txn,params,engine) {}
+	OfferCreateTransactor(const SerializedTransaction& txn,TransactionEngineParams params, TransactionEngine* engine) : Transactor(txn,params,engine) {}
 	
 	TER doApply();
 };

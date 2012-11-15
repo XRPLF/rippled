@@ -9,15 +9,9 @@
 #include "OfferCreateTransactor.h"
 #include "TrustSetTransactor.h"
 
-
 SETUP_LOG();
 
-
-
-
-
-
-Transactor::pointer Transactor::makeTransactor(const SerializedTransaction& txn,TransactionEngineParams params, TransactionEngine::pointer engine)
+Transactor::pointer Transactor::makeTransactor(const SerializedTransaction& txn,TransactionEngineParams params, TransactionEngine* engine)
 {
 	switch(txn.getTxnType())
 	{
@@ -41,7 +35,7 @@ Transactor::pointer Transactor::makeTransactor(const SerializedTransaction& txn,
 }
 
 
-Transactor::Transactor(const SerializedTransaction& txn,TransactionEngineParams params, TransactionEngine::pointer engine) : mTxn(txn), mParams(params), mEngine(engine)
+Transactor::Transactor(const SerializedTransaction& txn,TransactionEngineParams params, TransactionEngine* engine) : mTxn(txn), mParams(params), mEngine(engine)
 {
 	mHasAuthKey=false;
 }
@@ -189,10 +183,6 @@ TER Transactor::apply()
 	if(terResult != tesSUCCESS) return(terResult);
 
 	calculateFee();
-	
-	terResult=payFee();
-	if(terResult != tesSUCCESS) return(terResult);
-	
 
 	boost::recursive_mutex::scoped_lock sl(mEngine->getLedger()->mLock);
 
@@ -200,10 +190,6 @@ TER Transactor::apply()
 
 	// Find source account
 	// If are only forwarding, due to resource limitations, we might verifying only some transactions, this would be probabilistic.
-
-	STAmount			saSrcBalance;
-	
-	
 
 	if (!mTxnAccount)
 	{
@@ -217,6 +203,9 @@ TER Transactor::apply()
 		mSourceBalance	= mTxnAccount->getFieldAmount(sfBalance);
 		mHasAuthKey	= mTxnAccount->isFieldPresent(sfAuthorizedKey);
 	}
+
+	terResult=payFee();
+	if(terResult != tesSUCCESS) return(terResult);
 
 	terResult=checkSig();
 	if(terResult != tesSUCCESS) return(terResult);
