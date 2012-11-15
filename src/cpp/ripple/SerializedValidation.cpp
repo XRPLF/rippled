@@ -39,26 +39,32 @@ SerializedValidation::SerializedValidation(SerializerIterator& sit, bool checkSi
 }
 
 SerializedValidation::SerializedValidation(const uint256& ledgerHash, uint32 signTime,
-		const RippleAddress& naPub, const RippleAddress& naPriv, bool isFull, uint256& signingHash)
+		const RippleAddress& raPub, bool isFull)
 	: STObject(sValidationFormat, sfValidation), mTrusted(false)
-{
+{ // Does not sign
 	setFieldH256(sfLedgerHash, ledgerHash);
 	setFieldU32(sfSigningTime, signTime);
 
-	setFieldVL(sfSigningPubKey, naPub.getNodePublic());
-	mNodeID = naPub.getNodeID();
+	setFieldVL(sfSigningPubKey, raPub.getNodePublic());
+	mNodeID = raPub.getNodeID();
 	assert(mNodeID.isNonZero());
 
 	if (!isFull)
 		setFlag(sFullFlag);
+}
 
+void SerializedValidation::sign(const RippleAddress& raPriv)
+{
+	uint256 signingHash;
+	sign(signingHash, raPriv);
+}
+
+void SerializedValidation::sign(uint256& signingHash, const RippleAddress& raPriv)
+{
 	signingHash = getSigningHash();
 	std::vector<unsigned char> signature;
-	naPriv.signNodePrivate(signingHash, signature);
+	raPriv.signNodePrivate(signingHash, signature);
 	setFieldVL(sfSignature, signature);
-	// XXX Check if this can fail.
-	// if (!RippleAddress::createNodePrivate(naSeed).signNodePrivate(getSigningHash(), mSignature.peekValue()))
-	//	throw std::runtime_error("Unable to sign validation");
 }
 
 uint256 SerializedValidation::getSigningHash() const
@@ -90,8 +96,8 @@ bool SerializedValidation::isValid(const uint256& signingHash) const
 {
 	try
 	{
-		RippleAddress	naPublicKey	= RippleAddress::createNodePublic(getFieldVL(sfSigningPubKey));
-		return naPublicKey.isValid() && naPublicKey.verifyNodePublic(signingHash, getFieldVL(sfSignature));
+		RippleAddress	raPublicKey	= RippleAddress::createNodePublic(getFieldVL(sfSigningPubKey));
+		return raPublicKey.isValid() && raPublicKey.verifyNodePublic(signingHash, getFieldVL(sfSignature));
 	}
 	catch (...)
 	{

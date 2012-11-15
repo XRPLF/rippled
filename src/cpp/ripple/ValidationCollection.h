@@ -38,6 +38,7 @@ public:
 	bool addValidation(const SerializedValidation::pointer&);
 	ValidationSet getValidations(const uint256& ledger);
 	void getValidationCount(const uint256& ledger, bool currentOnly, int& trusted, int& untrusted);
+	void getValidationTypes(const uint256& ledger, int& full, int& partial);
 
 	int getTrustedValidationCount(const uint256& ledger);
 
@@ -45,6 +46,7 @@ public:
 	int getLoadRatio(bool overLoaded);
 
 	boost::unordered_map<uint256, currentValidationCount> getCurrentValidations(uint256 currentLedger);
+	std::list<SerializedValidation::pointer> getCurrentTrustedValidations();
 
 	void flush();
 	void sweep() { mValidations.sweep(); }

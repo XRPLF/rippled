@@ -17,13 +17,15 @@
 enum JobType
 { // must be in priority order, low to high
 	jtINVALID,
-	jtVALIDATION_ut,
-	jtTRANSACTION,
-	jtPROPOSAL_ut,
-	jtVALIDATION_t,
-	jtTRANSACTION_l,
-	jtPROPOSAL_t,
-	jtADMIN,
+	jtVALIDATION_ut,	// A validation from an untrusted source
+	jtCLIENTOP_ut,		// A client operation from a non-local/untrusted source
+	jtTRANSACTION,		// A transaction received from the network
+	jtPROPOSAL_ut,		// A proposal from an untrusted source
+	jtCLIENTOP_t,		// A client operation from a trusted source
+	jtVALIDATION_t,		// A validation from a trusted source
+	jtTRANSACTION_l,	// A local transaction
+	jtPROPOSAL_t,		// A proposal from a trusted source
+	jtADMIN,			// An administrative operation
 	jtDEATH,			// job of death, used internally
 };
 

@@ -85,6 +85,8 @@ protected:
 	uint256								mLastCloseHash;
 	uint32								mLastCloseTime;
 	uint32								mLastValidationTime;
+	SerializedValidation::pointer		mLastValidation;
+
 
 	// XXX Split into more locks.
     boost::interprocess::interprocess_upgradable_mutex	mMonitorLock;
@@ -131,8 +133,10 @@ public:
 	Ledger::pointer	getLedgerByHash(const uint256& hash)	{ return mLedgerMaster->getLedgerByHash(hash); }
 	Ledger::pointer	getLedgerBySeq(const uint32 seq)		{ return mLedgerMaster->getLedgerBySeq(seq); }
 
-	uint256			getClosedLedgerHash()
-		{ return mLedgerMaster->getClosedLedger()->getHash(); }
+	uint256			getClosedLedgerHash()					{ return mLedgerMaster->getClosedLedger()->getHash(); }
+
+	SerializedValidation::ref getLastValidation()			{ return mLastValidation; }
+	void setLastValidation(SerializedValidation::ref v)		{ mLastValidation = v; }
 
 	SLE::pointer getSLE(Ledger::pointer lpLedger, const uint256& uHash) { return lpLedger->getSLE(uHash); }
 
