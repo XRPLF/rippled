@@ -1355,7 +1355,7 @@ Transaction.prototype.password_fund = function (src, dst) {
 Transaction.prototype.password_set = function (src, authorized_key, generator, public_key, signature) {
   this.secret			= this._account_secret(src);
   this.tx_json.TransactionType  = 'PasswordSet';
-  this.tx_json.AuthorizedKey    = authorized_key;
+  this.tx_json.RegularKey    = authorized_key;
   this.tx_json.Generator	= generator;
   this.tx_json.PublicKey	= public_key;
   this.tx_json.Signature	= signature;
@@ -1412,7 +1412,7 @@ Transaction.prototype.wallet_add = function (src, amount, authorized_key, public
   this.secret			= this._account_secret(src);
   this.tx_json.TransactionType  = 'WalletAdd';
   this.tx_json.Amount		= Amount.json_rewrite(amount);
-  this.tx_json.AuthorizedKey    = authorized_key;
+  this.tx_json.RegularKey    = authorized_key;
   this.tx_json.PublicKey	= public_key;
   this.tx_json.Signature	= signature;
 

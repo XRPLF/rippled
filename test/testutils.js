@@ -22,7 +22,7 @@ var account_dump = function (remote, account, callback) {
 	  .ledger_hash(remote.ledger_hash())
 	  .account_root("root")
 	  .on('success', function (r) {
-	      console.log("account_root: %s", JSON.stringify(r, undefined, 2));
+	      //console.log("account_root: %s", JSON.stringify(r, undefined, 2));
 
 	      callback();
 	    })

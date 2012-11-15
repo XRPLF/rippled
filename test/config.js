@@ -5,7 +5,8 @@
 var path = require("path");
 
 // Where to find the binary.
-exports.rippled = path.join(process.cwd(), "build/rippled");
+//exports.rippled = path.join(process.cwd(), "newcoin_master");
+exports.rippled = path.join(process.cwd(), "Debug/newcoin");
 
 exports.server_default	= "alpha";
 

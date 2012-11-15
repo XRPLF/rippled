@@ -15,8 +15,9 @@ var serverDelay = 1500;
 
 buster.testRunner.timeout = 5000;
 
+/*
 buster.testCase("Simple", {
-  'setUp' : testutils.build_setup({no_server: true}),
+  'setUp' : testutils.build_setup({no_server: true}),  // 
   'tearDown' : testutils.build_teardown(),
 
   "simple." :
@@ -35,13 +36,13 @@ buster.testCase("Simple", {
 	  }).submit();
 	  
 	   }
-    });
+    }); */
     
 buster.testCase("Sending", {
   'setUp' : testutils.build_setup(),
   'tearDown' : testutils.build_teardown(),
 
-  "=> send XRP to non-existent account without create." :
+  "send XRP to non-existent account without create." :
     function (done) {
       var self	  = this;
       var ledgers = 20;
@@ -51,11 +52,8 @@ buster.testCase("Sending", {
 	.payment('root', 'alice', "10000")
 	.on('success', function (r) {
 	    // Transaction sent.
-		// buster.assert(false, "Succeded.");
-	     // done();
-	     buster.assert.equals(r.result, 'terNO_DST');
-	    console.log("success: %s", JSON.stringify(r));
-	    done();
+
+	    // console.log("success: %s", JSON.stringify(r));
 	  })
 	.on('pending', function() {
 	    // Moving ledgers along.
@@ -79,11 +77,11 @@ buster.testCase("Sending", {
 	  })
 	.on('proposed', function (m) {
 	    // Transaction got an error.
-	    console.log("proposed: %s", JSON.stringify(m));
+	    // console.log("proposed: %s", JSON.stringify(m));
 
 	    buster.assert.equals(m.result, 'terNO_DST');
-		//done();
-	  	got_proposed  = true;
+
+	    got_proposed  = true;
 
 	    self.remote.ledger_accept();    // Move it along.
 	  })
@@ -97,7 +95,6 @@ buster.testCase("Sending", {
 	    // console.log("error: %s", m);
 
 	    buster.assert(false);
-	    done();
 	  })
 	.submit();
     },
@@ -108,7 +105,7 @@ buster.testCase("Sending", {
       this.remote.transaction()
 	.ripple_line_set("root", "100/USD/alice")
 	.on('proposed', function (m) {
-	    console.log("proposed: %s", JSON.stringify(m));
+	    //console.log("proposed: %s", JSON.stringify(m));
 
 	    buster.assert.equals(m.result, 'terNO_DST');
 
@@ -116,7 +113,7 @@ buster.testCase("Sending", {
 	  })
 	.submit();
     },
-/*
+
   "credit_limit" :
     function (done) {
       var self = this;
@@ -259,7 +256,7 @@ buster.testCase("Sending", {
 	  buster.refute(error, self.what);
 	  done();
 	});
-    },*/
+    },
 });
 
 // XXX In the future add ledger_accept after partial retry is implemented in the server.
@@ -267,7 +264,7 @@ buster.testCase("Sending future", {
   'setUp' : testutils.build_setup(),
   'tearDown' : testutils.build_teardown(),
 
-  "direct ripple" :
+  "=> direct ripple" :
     function (done) {
       var self = this;
 
