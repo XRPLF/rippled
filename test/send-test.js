@@ -15,11 +15,26 @@ var serverDelay = 1500;
 
 buster.testRunner.timeout = 5000;
 
+buster.testCase("Simple", {
+  'setUp' : testutils.build_setup({no_server: true}),
+  'tearDown' : testutils.build_teardown(),
+
+  "simple." :
+    function (done) { buster.assert(1); done();
+    
+ 		this.remote.transaction()
+	.payment('root', 'alice', "10000")
+	.on('success', function (r) {
+	   done();
+	  }).submit();
+	   }
+    });
+    
 buster.testCase("Sending", {
   'setUp' : testutils.build_setup(),
   'tearDown' : testutils.build_teardown(),
 
-  "=>send XRP to non-existent account without create." :
+  "=> send XRP to non-existent account without create." :
     function (done) {
       var self	  = this;
       var ledgers = 20;
@@ -245,7 +260,7 @@ buster.testCase("Sending future", {
     function (done) {
       var self = this;
 
-      // self.remote.set_trace();
+      self.remote.set_trace();
 
       async.waterfall([
 	  function (callback) {
@@ -276,7 +291,7 @@ buster.testCase("Sending future", {
 		  buster.assert(m.result !== 'tesSUCCESS');
 		})
 	      .submit();
-	  },
+	  },/*
 	  function (callback) {
 	    self.what = "Verify balance.";
 
@@ -412,7 +427,7 @@ buster.testCase("Sending future", {
 		  callback();
 		})
 	      .request();
-	  },
+	  },*/
 //	  function (callback) {
 //	    // Make sure all is good after canonical ordering.
 //	    self.what = "Close the ledger and check balance.";

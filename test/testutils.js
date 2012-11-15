@@ -106,7 +106,10 @@ var build_setup = function (opts, host) {
  * @param host {String} Identifier for the host configuration to be used.
  */
 var build_teardown = function (host) {
+	
   return function (done) {
+  
+ 
     host = host || config.server_default;
 
     var data = this.store[host];
@@ -114,16 +117,22 @@ var build_teardown = function (host) {
 
     async.series([
       function disconnectWebsocketStep(callback) {
+     
         data.remote
           .on('disconnected', callback)
           .connect(false);
       },
       function stopServerStep(callback) {
-        if (opts.no_server) return callback();
+      
+        if (opts.no_server) 
+        {
+        	
+        	return callback();
+        	}
 
         data.server.on('stopped', callback).stop();
       }
-    ], done);
+    ], done); 
   };
 };
 

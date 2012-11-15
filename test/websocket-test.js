@@ -2,6 +2,7 @@ var buster  = require("buster");
 
 var Server  = require("./server.js").Server;
 var Remote  = require("../src/js/remote.js").Remote;
+var config  = require("./config.js");
 
 require("../src/js/remote.js").config = require("./config.js");
 
@@ -9,10 +10,10 @@ buster.testRunner.timeout = 5000;
 
 buster.testCase("WebSocket connection", {
   'setUp' :
-    function (done) { server = Server.from_config("alpha").on('started', done).start(); },
+    function (done) { if (config.servers.alpha.no_server) done(); else server = Server.from_config("alpha").on('started', done).start(); },
 
   'tearDown' :
-    function (done) { server.on('stopped', done).stop(); },
+    function (done) { if (config.servers.alpha.no_server) done(); else server.on('stopped', done).stop();  },
 
   "websocket connect and disconnect" :
     function (done) {
