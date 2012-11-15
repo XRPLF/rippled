@@ -450,12 +450,12 @@ Remote.prototype._connect_message = function (ws, json) {
 	    unexpected  = true;
 	  }
 	  else if ('success' === message.status) {
-	    if (this.trace) console.log("remote: response: %s", json);
+	    if (this.trace) console.log("remote: response: %s", JSON.stringify(message, undefined, 2));
 
 	    request.emit('success', message.result);
 	  }
 	  else if (message.error) {
-	    if (this.trace) console.log("remote: error: %s", json);
+	    if (this.trace) console.log("remote: error: %s", JSON.stringify(message, undefined, 2));
 
 	    request.emit('error', {
 		'error'		: 'remoteError',
@@ -700,7 +700,7 @@ Remote.prototype.submit = function (transaction) {
   if (transaction.secret && !this.trusted)
   {
     transaction.emit('error', {
-	'result'	  : 'serverUntrusted',
+	'result'	  : 'tejServerUntrusted',
 	'result_message'  : "Attempt to give a secret to an untrusted server."
       });
   }
@@ -1026,6 +1026,7 @@ var SUBMIT_LOST	    = 8;    // Give up tracking.
 var Transaction	= function (remote) {
   var self  = this;
 
+  this.callback	    = undefined;
   this.remote	    = remote;
   this.secret	    = undefined;
   this.build_path   = true;
@@ -1108,14 +1109,25 @@ Transaction.prototype.set_state = function (state) {
 // XXX Don't allow a submit without knowing ledger_index.
 // XXX Have a network canSubmit(), post events for following.
 // XXX Also give broader status for tracking through network disconnects.
-Transaction.prototype.submit = function () {
+// callback = function (status, info) {
+//   // status is final status.  Only works under a ledger_accepting conditions.
+//   switch status:
+//    case 'tesSUCCESS': all is well.
+//    case 'tejServerUntrusted': sending secret to untrusted server.
+//    case 'tejInvalidAccount': locally detected error.
+//    case 'tejLost': locally gave up looking
+//    default: some other TER
+// }
+Transaction.prototype.submit = function (callback) {
   var self    = this;
   var tx_json = this.tx_json;
 
+  this.callback	= callback;
+
   if ('string' !== typeof tx_json.Account)
   {
-    this.emit('error', {
-	'error' : 'invalidAccount',
+    (this.callback || this.emit)('error', {
+	'error' : 'tejInvalidAccount',
 	'error_message' : 'Bad account.'
       });
     return;
@@ -1134,11 +1146,12 @@ Transaction.prototype.submit = function () {
     }
   }
 
-  if (this.listeners('final').length || this.listeners('lost').length || this.listeners('pending').length) {
-    // There are listeners for 'final', 'lost', or 'pending' arrange to emit them.
+  if (this.callback || this.listeners('final').length || this.listeners('lost').length || this.listeners('pending').length) {
+    // There are listeners for callback, 'final', 'lost', or 'pending' arrange to emit them.
 
     this.submit_index = this.remote._ledger_current_index;
 
+    // When a ledger closes, look for the result.
     var	on_ledger_closed = function (ledger_hash, ledger_index) {
 	var stop  = false;
 
@@ -1148,6 +1161,11 @@ Transaction.prototype.submit = function () {
 	  .on('success', function (message) {
 	      self.set_state(message.metadata.TransactionResult);
 	      self.emit('final', message);
+
+	      if (self.callback)
+		self.callback(message.metadata.TransactionResult, message);
+
+	      stop  = true;
 	    })
 	  .on('error', function (message) {
 	      if ('remoteError' === message.error
@@ -1155,6 +1173,10 @@ Transaction.prototype.submit = function () {
 		if (self.submit_index + SUBMIT_LOST < ledger_index) {
 		  self.set_state('client_lost');	// Gave up.
 		  self.emit('lost');
+
+		  if (self.callback)
+		    self.callback('tejLost', message);
+
 		  stop  = true;
 		}
 		else if (self.submit_index + SUBMIT_MISSING < ledger_index) {
@@ -1170,12 +1192,18 @@ Transaction.prototype.submit = function () {
 	  .request();
 	
 	if (stop) {
-	  self.removeListener('ledger_closed', on_ledger_closed);
+	  self.remote.removeListener('ledger_closed', on_ledger_closed);
 	  self.emit('final', message);
 	}
       };
 
     this.remote.on('ledger_closed', on_ledger_closed);
+
+    if (this.callback) {
+      this.on('error', function (message) {
+	  self.callback(message.error, message);
+	});
+    }
   }
 
   this.set_state('client_submitted');
