@@ -8,6 +8,7 @@ class RPCHandler
 {
 	NetworkOPs*		mNetOps;
 	InfoSub*		mInfoSub;
+	int				mRole;
 
 	typedef Json::Value (RPCHandler::*doFuncPtr)(const Json::Value &params);
 	enum {
@@ -21,6 +22,8 @@ class RPCHandler
 	boost::unordered_set<RippleAddress> parseAccountIds(const Json::Value& jvArray);
 	int getParamCount(const Json::Value& params);
 	bool extractString(std::string& param, const Json::Value& params, int index);
+
+	Json::Value lookupLedger(const Json::Value& jvRequest, Ledger::pointer& lpLedger);
 
 	Json::Value getMasterGenerator(const uint256& uLedger, const RippleAddress& naRegularSeed, RippleAddress& naMasterGenerator);
 	Json::Value authorize(const uint256& uLedger, const RippleAddress& naRegularSeed, const RippleAddress& naSrcAccountID,
@@ -86,6 +89,7 @@ class RPCHandler
 	Json::Value doLedgerClosed(const Json::Value& params);
 	Json::Value doLedgerCurrent(const Json::Value& params);
 	Json::Value doLedgerEntry(const Json::Value& params);
+	Json::Value doLedgerHeader(const Json::Value& params);
 	Json::Value doTransactionEntry(const Json::Value& params);
 
 	Json::Value doSubscribe(const Json::Value& params);

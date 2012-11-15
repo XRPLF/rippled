@@ -24,13 +24,14 @@ public:
 
 	// These throw if the object is not valid
 	SerializedValidation(SerializerIterator& sit, bool checkSignature = true);
-	SerializedValidation(const uint256& ledgerHash, uint32 signTime, const RippleAddress& naPub,
-		const RippleAddress& naPriv, bool isFull, uint256& signingHash);
+
+	// Does not sign the validation
+	SerializedValidation(const uint256& ledgerHash, uint32 signTime, const RippleAddress& raPub, bool isFull);
 
 	uint256			getLedgerHash()		const;
 	uint32			getSignTime()		const;
 	uint32			getFlags()			const;
-	RippleAddress  getSignerPublic()	const;
+	RippleAddress	getSignerPublic()	const;
 	uint160			getNodeID()			const	{ return mNodeID; }
 	bool			isValid()			const;
 	bool			isFull()			const;
@@ -41,6 +42,8 @@ public:
 	void 						setTrusted()				{ mTrusted = true; }
 	std::vector<unsigned char>	getSigned()					const;
 	std::vector<unsigned char>	getSignature()				const;
+	void sign(uint256& signingHash, const RippleAddress& raPrivate);
+	void sign(const RippleAddress& raPrivate);
 
 	// The validation this replaced
 	const uint256& getPreviousHash()		{ return mPreviousHash; }

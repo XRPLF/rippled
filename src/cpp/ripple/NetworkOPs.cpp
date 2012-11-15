@@ -1006,8 +1006,8 @@ void NetworkOPs::pubProposedTransaction(Ledger::ref lpCurrent, const SerializedT
 			ispListener->send(jvObj);
 		}
 	}
-
-	pubAccountTransaction(lpCurrent,stTxn,terResult,false,TransactionMetaSet::pointer());
+	TransactionMetaSet::pointer ret;
+	pubAccountTransaction(lpCurrent,stTxn,terResult,false,ret);
 }
 
 void NetworkOPs::pubLedger(Ledger::ref lpAccepted)
@@ -1168,11 +1168,10 @@ std::map<RippleAddress,bool> NetworkOPs::getAffectedAccounts(const SerializedTra
 		const STAccount* sa = dynamic_cast<const STAccount*>(&it);
 		if (sa)
 		{
-			bool found = false;
 			RippleAddress na = sa->getValueNCA();
 			accounts[na]=true;
 		}else
-		{	
+		{
 			if( it.getFName() == sfLimitAmount )
 			{
 				const STAmount* amount = dynamic_cast<const STAmount*>(&it);

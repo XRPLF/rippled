@@ -198,9 +198,6 @@
     <ClCompile Include="src\cpp\ripple\rpc.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\ripple\RPCCommands.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\cpp\ripple\RPCDoor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -250,9 +247,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\Transaction.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\TransactionAction.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\ripple\TransactionEngine.cpp">
@@ -323,6 +317,30 @@
     </ClCompile>
     <ClCompile Include="src\cpp\websocketpp\src\sha1\sha1.cpp">
       <Filter>Source Files\websocketpp</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\Transactor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\PaymentTransactor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\WalletAddTransactor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\AccountSetTransactor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\OfferCancelTransactor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\OfferCreateTransactor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\RegularKeySetTransactor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\TrustSetTransactor.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -600,6 +618,30 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\WSHandler.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\Transactor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\PaymentTransactor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\TrustSetTransactor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\RegularKeySetTransactor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\OfferCreateTransactor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\OfferCancelTransactor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\AccountSetTransactor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cpp\ripple\WalletAddTransactor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

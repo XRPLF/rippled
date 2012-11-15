@@ -15,11 +15,26 @@ var serverDelay = 1500;
 
 buster.testRunner.timeout = 5000;
 
+buster.testCase("Simple", {
+  'setUp' : testutils.build_setup({no_server: true}),
+  'tearDown' : testutils.build_teardown(),
+
+  "simple." :
+    function (done) { buster.assert(1); done();
+    
+ 		this.remote.transaction()
+	.payment('root', 'alice', "10000")
+	.on('success', function (r) {
+	   done();
+	  }).submit();
+	   }
+    });
+    
 buster.testCase("Sending", {
   'setUp' : testutils.build_setup(),
   'tearDown' : testutils.build_teardown(),
 
-  "send XRP to non-existant account without create." :
+  "=> send XRP to non-existent account without create." :
     function (done) {
       var self	  = this;
       var ledgers = 20;
@@ -77,7 +92,7 @@ buster.testCase("Sending", {
     },
 
   // Also test transaction becomes lost after terNO_DST.
-  "credit_limit to non-existant account = terNO_DST" :
+  "credit_limit to non-existent account = terNO_DST" :
     function (done) {
       this.remote.transaction()
 	.ripple_line_set("root", "100/USD/alice")
@@ -102,7 +117,7 @@ buster.testCase("Sending", {
 	    testutils.create_accounts(self.remote, "root", "10000", ["alice", "bob", "mtgox"], callback);
 	  },
 	  function (callback) {
-	    self.what = "Check a non-existant credit limit.";
+	    self.what = "Check a non-existent credit limit.";
 
 	    self.remote.request_ripple_balance("alice", "mtgox", "USD", 'CURRENT')
 	      .on('ripple_state', function (m) {
@@ -245,7 +260,7 @@ buster.testCase("Sending future", {
     function (done) {
       var self = this;
 
-      // self.remote.set_trace();
+      self.remote.set_trace();
 
       async.waterfall([
 	  function (callback) {
@@ -276,7 +291,7 @@ buster.testCase("Sending future", {
 		  buster.assert(m.result !== 'tesSUCCESS');
 		})
 	      .submit();
-	  },
+	  },/*
 	  function (callback) {
 	    self.what = "Verify balance.";
 
@@ -412,7 +427,7 @@ buster.testCase("Sending future", {
 		  callback();
 		})
 	      .request();
-	  },
+	  },*/
 //	  function (callback) {
 //	    // Make sure all is good after canonical ordering.
 //	    self.what = "Close the ledger and check balance.";

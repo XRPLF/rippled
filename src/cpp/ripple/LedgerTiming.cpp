@@ -63,7 +63,8 @@ bool ContinuousLedgerTiming::haveConsensus(
 	int currentFinished,		// proposers who have validated a ledger after this one
 	int previousAgreeTime,		// how long it took to agree on the last ledger
 	int currentAgreeTime,		// how long we've been trying to agree
-	bool forReal)				// deciding whether to stop consensus process
+	bool forReal,				// deciding whether to stop consensus process
+	bool& failed)				// we can't reach a consensus
 {
 	cLog(lsTRACE) << boost::str(boost::format("CLC::haveConsensus: prop=%d/%d agree=%d validated=%d time=%d/%d%s") %
 		currentProposers % previousProposers % currentAgree % currentFinished % currentAgreeTime % previousAgreeTime %
@@ -85,13 +86,15 @@ bool ContinuousLedgerTiming::haveConsensus(
 	if (((currentAgree * 100 + 100) / (currentProposers + 1)) > 80)
 	{
 		tLog(forReal, lsINFO) << "normal consensus";
+		failed = false;
 		return true;
 	}
 
-	// If 50% of the nodes on your UNL have moved on, you should declare consensus
-	if (((currentFinished * 100) / (currentProposers + 1)) > 50)
+	// If 80% of the nodes on your UNL have moved on, you should declare consensus
+	if (((currentFinished * 100) / (currentProposers + 1)) > 80)
 	{
-		tLog(forReal, lsWARNING) << "We see no consensus, but 50% of nodes have moved on";
+		tLog(forReal, lsWARNING) << "We see no consensus, but 80% of nodes have moved on";
+		failed = true;
 		return true;
 	}
 
