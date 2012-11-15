@@ -176,12 +176,12 @@ Request.prototype.accounts = function (accounts) {
 //
 
 // --> trusted: truthy, if remote is trusted
-var Remote = function (trusted, websocket_ip, websocket_port, trace) {
-  this.trusted		      = trusted;
-  this.websocket_ip           = websocket_ip;
-  this.websocket_port         = websocket_port;
+var Remote = function (opts, trace) {
+  this.trusted		      = opts.trusted;
+  this.websocket_ip           = opts.websocket_ip;
+  this.websocket_port         = opts.websocket_port;
   this.id                     = 0;
-  this.trace                  = trace;
+  this.trace                  = opts.trace || trace;
   this._ledger_current_index  = undefined;
   this._ledger_hash	      = undefined;
   this._ledger_time	      = undefined;
@@ -219,10 +219,10 @@ var Remote = function (trusted, websocket_ip, websocket_port, trace) {
 
 Remote.prototype      = new EventEmitter;
 
-Remote.from_config = function (name, trace) {
-  var serverConfig = exports.config.servers[name];
+Remote.from_config = function (obj, trace) {
+  var serverConfig = 'string' === typeof obj ? exports.config.servers[obj] : obj;
 
-  var remote = new Remote(serverConfig.trusted, serverConfig.websocket_ip, serverConfig.websocket_port, trace);
+  var remote = new Remote(serverConfig, trace);
 
   for (var account in exports.config.accounts) {
     var accountInfo = exports.config.accounts[account];
