@@ -45,12 +45,12 @@ env.ParseConfig('pkg-config --cflags --libs openssl')
 
 env.Append(
 	LIBS = [
-		'boost_date_time-mt',
-		'boost_filesystem-mt',
-		'boost_program_options-mt',
-		'boost_regex-mt',
-		'boost_system-mt',
-		'boost_thread-mt',
+		'boost_date_time',
+		'boost_filesystem',
+		'boost_program_options',
+		'boost_regex',
+		'boost_system',
+		'boost_thread',
 		'protobuf',
 		'dl', # dynamic linking
 		'z'
