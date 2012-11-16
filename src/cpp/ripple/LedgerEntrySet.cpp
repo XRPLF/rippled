@@ -275,7 +275,10 @@ SLE::pointer LedgerEntrySet::getForMod(const uint256& node, Ledger::ref ledger,
 	if (it != mEntries.end())
 	{
 		if (it->second.mAction == taaDELETE)
+		{
+			cLog(lsFATAL) << "Trying to thread to deleted node";
 			return SLE::pointer();
+		}
 		if (it->second.mAction == taaCACHED)
 			it->second.mAction = taaMODIFY;
 		if (it->second.mSeq != mSeq)
@@ -288,7 +291,10 @@ SLE::pointer LedgerEntrySet::getForMod(const uint256& node, Ledger::ref ledger,
 
 	boost::unordered_map<uint256, SLE::pointer>::iterator me = newMods.find(node);
 	if (me != newMods.end())
+	{
+		assert(me->second);
 		return me->second;
+	}
 
 	SLE::pointer ret = ledger->getSLE(node);
 	if (ret)
@@ -306,6 +312,7 @@ bool LedgerEntrySet::threadTx(const RippleAddress& threadTo, Ledger::ref ledger,
 	SLE::pointer sle = getForMod(Ledger::getAccountRootIndex(threadTo.getAccountID()), ledger, newMods);
 	if (!sle)
 	{
+		cLog(lsFATAL) << "Threading to non-existent account: " << threadTo.humanAccountID();
 		assert(false);
 		return false;
 	}
