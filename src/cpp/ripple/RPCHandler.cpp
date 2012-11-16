@@ -700,6 +700,8 @@ Json::Value RPCHandler::doSubmit(const Json::Value& params)
 {
 	Json::Value		txJSON;
 	Json::Reader	reader;
+	
+	//std::string hello=params[1u].asString();
 
 	if (reader.parse(params[1u].asString(), txJSON))
 	{
@@ -741,6 +743,7 @@ Json::Value RPCHandler::handleJSONSubmit(const Json::Value& jvRequest)
 	}
 
 	AccountState::pointer asSrc	= mNetOps->getAccountState(uint256(0), srcAddress);
+	if(!asSrc) return rpcError(rpcSRC_ACT_MALFORMED);
 
 	if( txJSON["TransactionType"]=="Payment")
 	{
