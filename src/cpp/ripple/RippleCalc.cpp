@@ -471,7 +471,7 @@ TER RippleCalc::calcNodeDeliverRev(
 	return terResult;
 }
 
-// For current offer, get input from deliver/limbo and put output to deliver/limbo using offers.
+// For current offer, get input from deliver/limbo and output to next account or deliver for next offers.
 TER RippleCalc::calcNodeDeliverFwd(
 	const unsigned int			uNode,			// 0 < uNode < uLast
 	PathState::ref				pspCur,
@@ -488,8 +488,8 @@ TER RippleCalc::calcNodeDeliverFwd(
 	PaymentNode&	pnNxt			= pspCur->vpnNodes[uNode+1];
 
 	const uint160&	uNxtAccountID	= pnNxt.uAccountID;
-	const uint160&	uCurIssuerID	= pnCur.uIssuerID;
 	const uint160&	uCurCurrencyID	= pnCur.uCurrencyID;
+	const uint160&	uCurIssuerID	= pnCur.uIssuerID;
 	const uint160&	uPrvCurrencyID	= pnPrv.uCurrencyID;
 	const uint160&	uPrvIssuerID	= pnPrv.uIssuerID;
 	const STAmount&	saTransferRate	= pnPrv.saTransferRate;
@@ -502,6 +502,7 @@ TER RippleCalc::calcNodeDeliverFwd(
 
 	saInAct.zero(saInReq);
 	saInFees.zero(saInReq);
+	saCurDeliverAct.zero(uCurCurrencyID, uCurIssuerID);
 
 	while (tesSUCCESS == terResult
 		&& saInAct + saInFees != saInReq)		// Did not deliver all funds.
@@ -553,12 +554,12 @@ TER RippleCalc::calcNodeDeliverFwd(
 			{
 				// ? --> OFFER --> account
 				// Input fees: vary based upon the consumed offer's owner.
-				// Output fees: none as the destination account is the issuer.
-
-				// Debit offer owner, send to issuer which must be next account.
-				lesActive.accountSend(uOfrOwnerID, uCurIssuerID, saOutPassMax);
+				// Output fees: none as XRP or the destination account is the issuer.
 
 				saOutPassAct	= saOutPassMax;
+
+				// Debit offer owner, send XRP or non-XPR to next account.
+				lesActive.accountSend(uOfrOwnerID, uNxtAccountID, saOutPassAct);
 
 				cLog(lsINFO) << boost::str(boost::format("calcNodeDeliverFwd: ? --> OFFER --> account: saOutPassAct=%s")
 					% saOutPassAct);
@@ -585,6 +586,13 @@ TER RippleCalc::calcNodeDeliverFwd(
 				// Offer maximum in split into fees by next payout.
 				saInPassAct			= STAmount::multiply(saOutPassAct, saOfrRate);
 				saInPassFees		= STAmount::multiply(saInFunded, saInFeeRate)-saInPassAct;
+
+				// Do outbound debiting.
+				// Send to issuer/limbo total amount (no fees to issuer).
+				lesActive.accountSend(uOfrOwnerID, !!uCurCurrencyID ? uCurIssuerID : ACCOUNT_XRP, saOutPassAct);
+
+				cLog(lsINFO) << boost::str(boost::format("calcNodeDeliverFwd: ? --> OFFER --> offer: saOutPassAct=%s")
+					% saOutPassAct);
 			}
 
 			cLog(lsINFO) << boost::str(boost::format("calcNodeDeliverFwd: saTakerGets=%s saTakerPays=%s saInPassAct=%s saOutPassAct=%s")
@@ -599,10 +607,6 @@ TER RippleCalc::calcNodeDeliverFwd(
 			// Do inbound crediting.
 			// Credit offer owner from in issuer/limbo (don't take transfer fees).
 			lesActive.accountSend(!!uPrvCurrencyID ? uInAccountID : ACCOUNT_XRP, uOfrOwnerID, saInPassAct);
-
-			// Do outbound debiting.
-			// Send to issuer/limbo total amount (no fees to issuer).
-			lesActive.accountSend(uOfrOwnerID, !!uCurCurrencyID ? uCurIssuerID : ACCOUNT_XRP, saOutPassAct);
 
 			// Adjust offer
 			// Fees are considered paid from a seperate budget and are not named in the offer.
@@ -845,6 +849,7 @@ TER RippleCalc::calcNodeAccountRev(const unsigned int uNode, PathState::ref pspC
 
 	const uint160&		uCurrencyID		= pnCur.uCurrencyID;
 
+	// XXX Don't look up quality for XRP
 	const uint32		uQualityIn		= uNode ? lesActive.rippleQualityIn(uCurAccountID, uPrvAccountID, uCurrencyID) : QUALITY_ONE;
 	const uint32		uQualityOut		= uNode != uLast ? lesActive.rippleQualityOut(uCurAccountID, uNxtAccountID, uCurrencyID) : QUALITY_ONE;
 
@@ -910,15 +915,16 @@ TER RippleCalc::calcNodeAccountRev(const unsigned int uNode, PathState::ref pspC
 		|| !saNxtOwed.isNegative()			// saNxtOwed >= 0: Sender not holding next IOUs, saNxtOwed < 0: Sender holding next IOUs.
 		|| -saNxtOwed == saCurRedeemReq);	// If issue req, then redeem req must consume all owed.
 
-	if (bPrvAccount && bNxtAccount)
+	if (!uNode)
 	{
-		if (!uNode)
-		{
-			// ^ --> ACCOUNT -->  account|offer
-			// Nothing to do, there is no previous to adjust.
-			nothing();
-		}
-		else if (uNode == uLast)
+		// ^ --> ACCOUNT -->  account|offer
+		// Nothing to do, there is no previous to adjust.
+
+		nothing();
+	}
+	else if (bPrvAccount && bNxtAccount)
+	{
+		if (uNode == uLast)
 		{
 			// account --> ACCOUNT --> $
 			// Overall deliverable.
@@ -1190,6 +1196,8 @@ TER RippleCalc::calcNodeAccountFwd(
 	const uint160&	uPrvAccountID	= bPrvAccount ? pnPrv.uAccountID : uCurAccountID;
 	const uint160&	uNxtAccountID	= bNxtAccount ? pnNxt.uAccountID : uCurAccountID;	// Offers are always issue.
 
+	const uint160&	uCurIssuerID	= pnCur.uIssuerID;
+
 	const uint160&	uCurrencyID		= pnCur.uCurrencyID;
 
 	uint32			uQualityIn		= uNode ? lesActive.rippleQualityIn(uCurAccountID, uPrvAccountID, uCurrencyID) : QUALITY_ONE;
@@ -1220,6 +1228,9 @@ TER RippleCalc::calcNodeAccountFwd(
 	const STAmount&	saCurDeliverReq	= pnCur.saRevDeliver;
 	STAmount&		saCurDeliverAct	= pnCur.saFwdDeliver;
 
+	// For !uNode
+	STAmount&		saCurSendMaxPass	= pspCur->saInPass;		// Report how much pass sends.
+
 	cLog(lsINFO) << boost::str(boost::format("calcNodeAccountFwd> uNode=%d/%d saPrvRedeemReq=%s saPrvIssueReq=%s saPrvDeliverReq=%s saCurRedeemReq=%s saCurIssueReq=%s saCurDeliverReq=%s")
 		% uNode
 		% uLast
@@ -1246,7 +1257,6 @@ TER RippleCalc::calcNodeAccountFwd(
 			const STAmount	saCurSendMaxReq		= pspCur->saInReq.isNegative()
 													? pspCur->saInReq					// Negative for no limit, doing a calculation.
 													: pspCur->saInReq-pspCur->saInAct;	// request - done.
-			STAmount&		saCurSendMaxPass	= pspCur->saInPass;		// Report how much pass sends.
 
 			saCurRedeemAct		= saCurRedeemReq
 									// Redeem requested.
@@ -1347,31 +1357,71 @@ TER RippleCalc::calcNodeAccountFwd(
 	}
 	else if (bPrvAccount && !bNxtAccount)
 	{
-		// account --> ACCOUNT --> offer
-		cLog(lsINFO) << boost::str(boost::format("calcNodeAccountFwd: account --> ACCOUNT --> offer"));
-
-		saCurDeliverAct.zero(saCurDeliverReq);
-
-		// redeem -> issue.
-		// wants to redeem and current would and can issue.
-		// If redeeming cur to next is done, this implies can issue.
-		if (saPrvRedeemReq)								// Previous wants to redeem.
+		if (uNode)
 		{
-			// Rate : 1.0 : transfer_rate
-			calcNodeRipple(QUALITY_ONE, lesActive.rippleTransferRate(uCurAccountID), saPrvRedeemReq, saCurDeliverReq, saPrvRedeemAct, saCurDeliverAct, uRateMax);
-		}
+			// Non-XRP, current node is the issuer.
+			cLog(lsDEBUG) << boost::str(boost::format("calcNodeAccountFwd: account --> ACCOUNT --> offer"));
 
-		// issue -> issue
-		if (saPrvRedeemReq == saPrvRedeemAct			// Previous done redeeming: Previous has no IOUs.
-			&& saPrvIssueReq)							// Previous wants to issue. To next must be ok.
+			saCurDeliverAct.zero(saCurDeliverReq);
+
+			// redeem -> issue/deliver.
+			// Previous wants to redeem.
+			// Current is issuing to an offer so leave funds in account as "limbo".
+			if (saPrvRedeemReq)								// Previous wants to redeem.
+			{
+				// Rate : 1.0 : transfer_rate
+				// XXX Is having the transfer rate here correct?
+				calcNodeRipple(QUALITY_ONE, lesActive.rippleTransferRate(uCurAccountID), saPrvRedeemReq, saCurDeliverReq, saPrvRedeemAct, saCurDeliverAct, uRateMax);
+			}
+
+			// issue -> issue/deliver
+			if (saPrvRedeemReq == saPrvRedeemAct			// Previous done redeeming: Previous has no IOUs.
+				&& saPrvIssueReq)							// Previous wants to issue. To next must be ok.
+			{
+				// Rate: quality in : 1.0
+				calcNodeRipple(uQualityIn, QUALITY_ONE, saPrvIssueReq, saCurDeliverReq, saPrvIssueAct, saCurDeliverAct, uRateMax);
+			}
+
+			// Adjust prv --> cur balance : take all inbound
+			lesActive.rippleCredit(uPrvAccountID, uCurAccountID, saPrvRedeemReq + saPrvIssueReq, false);
+		}
+		else
 		{
-			// Rate: quality in : 1.0
-			calcNodeRipple(uQualityIn, QUALITY_ONE, saPrvIssueReq, saCurDeliverReq, saPrvIssueAct, saCurDeliverAct, uRateMax);
-		}
+			// Delivering amount requested from downstream.
+			saCurDeliverAct		= saCurDeliverReq;
 
-		// Adjust prv --> cur balance : take all inbound
-		// XXX Currency must be in amount.
-		lesActive.rippleCredit(uPrvAccountID, uCurAccountID, saPrvRedeemReq + saPrvIssueReq, false);
+			// If limited, then limit by send max and available.
+			if (!pspCur->saInReq.isNegative())
+			{
+				saCurDeliverAct		= pspCur->saInReq-pspCur->saInAct;
+
+				// Limit XRP by available. No limit for non-XRP as issuer.
+				if (!uCurAccountID)
+					saCurDeliverAct	= std::min(saCurDeliverAct, lesActive.accountHolds(uCurAccountID, CURRENCY_XRP, ACCOUNT_XRP));
+
+			}
+			saCurSendMaxPass	= saCurDeliverAct;						// Record amount sent for pass.
+
+			if (!!uCurrencyID)
+			{
+				// Non-XRP, current node is the issuer.
+				// We could be delivering to multiple accounts, so we don't know which ripple balance will be adjusted.  Assume
+				// just issuing.
+
+				cLog(lsDEBUG) << boost::str(boost::format("calcNodeAccountFwd: ^ --> ACCOUNT -- !XRP --> offer"));
+
+				// As the issuer, would only issue.
+				// Don't need to actually deliver. As from delivering leave in the issuer as limbo.
+				nothing();
+			}
+			else
+			{
+				cLog(lsDEBUG) << boost::str(boost::format("calcNodeAccountFwd: ^ --> ACCOUNT -- XRP --> offer"));
+
+				// Deliver XRP to limbo.
+				lesActive.accountSend(uCurAccountID, ACCOUNT_XRP, saCurDeliverAct);
+			}
+		}
 	}
 	else if (!bPrvAccount && bNxtAccount)
 	{

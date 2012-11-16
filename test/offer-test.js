@@ -534,5 +534,86 @@ buster.testCase("Offer tests", {
 	  done();
 	});
     },
+
+  "//ripple cross currency payment" :
+    // alice --> [XRP --> carol --> USD/mtgox] --> bob
+
+    function (done) {
+      var self = this;
+      var seq;
+
+      self.remote.set_trace();
+
+      async.waterfall([
+	  function (callback) {
+	    self.what = "Create accounts.";
+
+	    testutils.create_accounts(self.remote, "root", "10000", ["alice", "bob", "carol", "mtgox"], callback);
+	  },
+	  function (callback) {
+	    self.what = "Set limits.";
+
+	    testutils.credit_limits(self.remote,
+	      {
+		"carol" : "1000/USD/mtgox",
+		"bob" : "2000/USD/mtgox"
+	      },
+	      callback);
+	  },
+	  function (callback) {
+	    self.what = "Distribute funds.";
+
+	    testutils.payments(self.remote,
+	      {
+		"mtgox" : "500/USD/carol"
+	      },
+	      callback);
+	  },
+	  function (callback) {
+	    self.what = "Create offer.";
+
+	    self.remote.transaction()
+	      .offer_create("carol", "500", "50/USD/mtgox")
+	      .on('proposed', function (m) {
+		  // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
+		  callback(m.result !== 'tesSUCCESS');
+
+		  seq = m.tx_json.Sequence;
+		})
+	      .submit();
+	  },
+	  function (callback) {
+	    self.what = "Alice send USD/mtgox converting from XRP.";
+
+	    self.remote.transaction()
+	      .payment("alice", "bob", "25/USD/mtgox")
+	      .send_max("333")
+	      .on('proposed', function (m) {
+		  console.log("proposed: %s", JSON.stringify(m));
+
+		  callback(m.result !== 'tesSUCCESS');
+		})
+	      .submit();
+	  },
+	  function (callback) {
+	    self.what = "Verify balances.";
+
+	    testutils.verify_balances(self.remote,
+	      {
+		"alice"	  : [ "0/USD/mtgox", "500" ],
+		"bob"	  : "100/USD/mtgox",
+	      },
+	      callback);
+	  },
+	  function (callback) {
+	    self.what = "Verify offer consumed.";
+
+	    testutils.verify_offer_not_found(self.remote, "bob", seq, callback);
+	  },
+	], function (error) {
+	  buster.refute(error, self.what);
+	  done();
+	});
+    },
 });
 // vim:sw=2:sts=2:ts=8
