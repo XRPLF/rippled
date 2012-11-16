@@ -163,7 +163,6 @@ public:
 							PathState::ref				pspCur,
 							const bool					bMultiQuality,
 							const uint160&				uInAccountID,
-							const STAmount&				saInFunds,
 							const STAmount&				saInReq,
 							STAmount&					saInAct,
 							STAmount&					saInFees);

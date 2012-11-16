@@ -189,6 +189,36 @@ int ValidationCollection::getLoadRatio(bool overLoaded)
 	return (goodNodes * 100) / (goodNodes + badNodes);
 }
 
+std::list<SerializedValidation::pointer> ValidationCollection::getCurrentTrustedValidations()
+{
+    uint32 cutoff = theApp->getOPs().getNetworkTimeNC() - LEDGER_VAL_INTERVAL;
+
+	std::list<SerializedValidation::pointer> ret;
+
+	boost::mutex::scoped_lock sl(mValidationLock);
+	boost::unordered_map<uint160, SerializedValidation::pointer>::iterator it = mCurrentValidations.begin();
+	while (it != mCurrentValidations.end())
+	{
+		if (!it->second) // contains no record
+			it = mCurrentValidations.erase(it);
+		else if (it->second->getSignTime() < cutoff)
+		{ // contains a stale record
+			mStaleValidations.push_back(it->second);
+			it->second.reset();
+			condWrite();
+			it = mCurrentValidations.erase(it);
+		}
+		else
+		{ // contains a live record
+			if (it->second->isTrusted())
+				ret.push_back(it->second);
+			++it;
+		}
+	}
+
+	return ret;
+}
+
 boost::unordered_map<uint256, currentValidationCount>
 ValidationCollection::getCurrentValidations(uint256 currentLedger)
 {
