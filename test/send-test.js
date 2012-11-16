@@ -264,11 +264,11 @@ buster.testCase("Sending future", {
   'setUp' : testutils.build_setup(),
   'tearDown' : testutils.build_teardown(),
 
-  "=> direct ripple" :
+  "direct ripple" :
     function (done) {
       var self = this;
 
-      self.remote.set_trace();
+      // self.remote.set_trace();
 
       async.waterfall([
 	  function (callback) {
@@ -299,7 +299,7 @@ buster.testCase("Sending future", {
 		  buster.assert(m.result !== 'tesSUCCESS');
 		})
 	      .submit();
-	  },/*
+	  },
 	  function (callback) {
 	    self.what = "Verify balance.";
 
@@ -435,7 +435,7 @@ buster.testCase("Sending future", {
 		  callback();
 		})
 	      .request();
-	  },*/
+	  },
 //	  function (callback) {
 //	    // Make sure all is good after canonical ordering.
 //	    self.what = "Close the ledger and check balance.";
