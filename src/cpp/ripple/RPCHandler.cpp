@@ -766,7 +766,7 @@ Json::Value RPCHandler::handleJSONSubmit(const Json::Value& jvRequest)
 			else txJSON["Fee"]=(int)theConfig.FEE_ACCOUNT_CREATE;
 		}
 
-		if(!txJSON.isMember("Paths") && (!jvRequest.isMember("build_path") || jvRequest["build_path"].asBool()))
+		if(!txJSON.isMember("Paths") && jvRequest.isMember("build_path") )
 		{
 			if(txJSON["Amount"].isObject() || txJSON.isMember("SendMax") )
 			{  // we need a ripple path
@@ -798,9 +798,12 @@ Json::Value RPCHandler::handleJSONSubmit(const Json::Value& jvRequest)
 
 				Pathfinder pf(srcAddress, dstAccountID, srcCurrencyID, dstAmount);
 				pf.findPaths(5, 1, spsPaths);
-				txJSON["Paths"]=spsPaths.getJson(0);
-				if(txJSON.isMember("Flags")) txJSON["Flags"]=txJSON["Flags"].asUInt() | 2;
-				else txJSON["Flags"]=2;
+				if(!spsPaths.isEmpty())
+				{
+					txJSON["Paths"]=spsPaths.getJson(0);
+					if(txJSON.isMember("Flags")) txJSON["Flags"]=txJSON["Flags"].asUInt() | 2;
+					else txJSON["Flags"]=2;
+				}
 			}
 		}
 
