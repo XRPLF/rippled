@@ -2,6 +2,7 @@
 #define __RIPPLE_CALC__
 
 #include <boost/unordered_set.hpp>
+#include <boost/tuple/tuple.hpp>
 
 #include "LedgerEntrySet.h"
 
