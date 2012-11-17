@@ -5,7 +5,8 @@
 import glob
 import platform
 
-OSX = bool(platform.mac_ver()[0])
+OSX	= bool(platform.mac_ver()[0])
+FreeBSD	= bool('FreeBSD' == platform.system())
 
 if OSX:
 	CTAGS = '/usr/bin/ctags'
@@ -43,14 +44,32 @@ for dir in ['ripple', 'database', 'json', 'websocketpp']:
 # Use openssl
 env.ParseConfig('pkg-config --cflags --libs openssl')
 
+# The convention for FreeBSD appears to not have -mt. This is unverfied.
+if FreeBSD:
+    env.Append(
+	    LIBS = [
+		    'boost_date_time',
+		    'boost_filesystem',
+		    'boost_program_options',
+		    'boost_regex',
+		    'boost_system',
+		    'boost_thread',
+	    ]
+    )
+else:
+    env.Append(
+	    LIBS = [
+		    'boost_date_time-mt',
+		    'boost_filesystem-mt',
+		    'boost_program_options-mt',
+		    'boost_regex-mt',
+		    'boost_system-mt',
+		    'boost_thread-mt',
+	    ]
+    )
+
 env.Append(
 	LIBS = [
-		'boost_date_time',
-		'boost_filesystem',
-		'boost_program_options',
-		'boost_regex',
-		'boost_system',
-		'boost_thread',
 		'protobuf',
 		'dl', # dynamic linking
 		'z'
