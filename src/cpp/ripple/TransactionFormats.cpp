@@ -52,7 +52,7 @@ static bool TFInit()
 		<< SOElement(sfDestination,		SOE_REQUIRED)
 		<< SOElement(sfAmount,			SOE_REQUIRED)
 		<< SOElement(sfSendMax,			SOE_OPTIONAL)
-		<< SOElement(sfPaths,			SOE_OPTIONAL)
+		<< SOElement(sfPaths,			SOE_DEFAULT)
 		<< SOElement(sfInvoiceID,		SOE_OPTIONAL)
 		;
 
