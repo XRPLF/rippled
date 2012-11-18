@@ -23,7 +23,7 @@ TER TrustSetTransactor::doApply()
 
 		return temBAD_AMOUNT;
 	}
-	else if (!uDstAccountID)
+	else if (!uDstAccountID || uDstAccountID == ACCOUNT_ONE)
 	{
 		Log(lsINFO) << "doTrustSet: Malformed transaction: Destination account not specified.";
 
@@ -36,7 +36,7 @@ TER TrustSetTransactor::doApply()
 		return temDST_IS_SRC;
 	}
 
-	SLE::pointer		sleDst		= mEngine->entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uDstAccountID));
+	SLE::pointer		sleDst			= mEngine->entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uDstAccountID));
 	if (!sleDst)
 	{
 		Log(lsINFO) << "doTrustSet: Delay transaction: Destination account does not exist.";
@@ -44,7 +44,7 @@ TER TrustSetTransactor::doApply()
 		return terNO_DST;
 	}
 
-	STAmount		saLimitAllow	= saLimitAmount;
+	STAmount			saLimitAllow	= saLimitAmount;
 	saLimitAllow.setIssuer(mTxnAccountID);
 
 	SLE::pointer		sleRippleState	= mEngine->entryCache(ltRIPPLE_STATE, Ledger::getRippleStateIndex(mTxnAccountID, uDstAccountID, uCurrencyID));
@@ -145,3 +145,5 @@ TER TrustSetTransactor::doApply()
 
 	return terResult;
 }
+
+// vim:ts=4
