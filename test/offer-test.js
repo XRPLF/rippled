@@ -535,14 +535,14 @@ buster.testCase("Offer tests", {
 	});
     },
 
-  "//ripple cross currency payment" :
+  "ripple cross currency payment" :
     // alice --> [XRP --> carol --> USD/mtgox] --> bob
 
     function (done) {
       var self = this;
       var seq;
 
-      self.remote.set_trace();
+      // self.remote.set_trace();
 
       async.waterfall([
 	  function (callback) {
@@ -589,7 +589,7 @@ buster.testCase("Offer tests", {
 	      .payment("alice", "bob", "25/USD/mtgox")
 	      .send_max("333")
 	      .on('proposed', function (m) {
-		  console.log("proposed: %s", JSON.stringify(m));
+		  // console.log("proposed: %s", JSON.stringify(m));
 
 		  callback(m.result !== 'tesSUCCESS');
 		})
@@ -600,8 +600,9 @@ buster.testCase("Offer tests", {
 
 	    testutils.verify_balances(self.remote,
 	      {
-		"alice"	  : [ "0/USD/mtgox", "500" ],
-		"bob"	  : "100/USD/mtgox",
+//		"alice"	  : [ "500" ],
+		"bob"	  : "25/USD/mtgox",
+		"carol"	  : "475/USD/mtgox",
 	      },
 	      callback);
 	  },
