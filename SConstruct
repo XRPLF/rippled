@@ -7,6 +7,7 @@ import platform
 
 OSX	= bool(platform.mac_ver()[0])
 FreeBSD	= bool('FreeBSD' == platform.system())
+Ubuntu	= bool('Ubuntu' == platform.dist())
 
 if OSX:
 	CTAGS = '/usr/bin/ctags'
@@ -44,8 +45,12 @@ for dir in ['ripple', 'database', 'json', 'websocketpp']:
 # Use openssl
 env.ParseConfig('pkg-config --cflags --libs openssl')
 
+# The required version of boost is documented in the README file.
+# We are whitelisting platforms where the non -mt version is linked with pthreads.
+#
 # The convention for FreeBSD appears to not have -mt. This is unverfied.
-if FreeBSD:
+# Ubuntu non-mt libs do link with pthreads.
+if FreeBSD or Ubuntu:
     env.Append(
 	    LIBS = [
 		    'boost_date_time',
