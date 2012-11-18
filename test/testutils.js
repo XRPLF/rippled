@@ -274,16 +274,16 @@ var verify_balance = function (remote, src, amount_json, callback) {
   else {
     remote.request_ripple_balance(src, amount.issuer().to_json(), amount.currency().to_json(), 'CURRENT')
       .once('ripple_state', function (m) {
-  //	console.log("BALANCE: %s", JSON.stringify(m));
-  //	console.log("account_balance: %s", m.account_balance.to_text_full());
-  //	console.log("account_limit: %s", m.account_limit.to_text_full());
-  //	console.log("issuer_balance: %s", m.issuer_balance.to_text_full());
-  //	console.log("issuer_limit: %s", m.issuer_limit.to_text_full());
+  	// console.log("BALANCE: %s", JSON.stringify(m));
+  	// console.log("account_balance: %s", m.account_balance.to_text_full());
+  	// console.log("account_limit: %s", m.account_limit.to_text_full());
+  	// console.log("issuer_balance: %s", m.issuer_balance.to_text_full());
+  	// console.log("issuer_limit: %s", m.issuer_limit.to_text_full());
 
 	  var account_balance = Amount.from_json(m.account_balance);
 
 	  if (!account_balance.equals(amount)) {
-	    console.log("verify_balance: failed: %s vs %s is %s", src, amount_json, amount.to_text_full());
+	    console.log("verify_balance: failed: %s vs %s is %s: %s", src, account_balance.to_text_full(), amount.to_text_full(), account_balance.not_equals_why(amount));
 	  }
 
 	  callback(!account_balance.equals(amount));
