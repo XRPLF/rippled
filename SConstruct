@@ -46,10 +46,12 @@ for dir in ['ripple', 'database', 'json', 'websocketpp']:
 env.ParseConfig('pkg-config --cflags --libs openssl')
 
 # The required version of boost is documented in the README file.
-# We are whitelisting platforms where the non -mt version is linked with pthreads.
 #
-# The convention for FreeBSD appears to not have -mt. This is unverfied.
-# Ubuntu non-mt libs do link with pthreads.
+# We whitelist platforms where the non -mt version is linked with pthreads.
+#   This can be verified with: ldd libboost_filesystem.*
+#   If a threading library is included the platform can be whitelisted.
+#
+# FreeBSD and Ubuntu non-mt libs do link with pthreads.
 if FreeBSD or Ubuntu:
     env.Append(
 	    LIBS = [
