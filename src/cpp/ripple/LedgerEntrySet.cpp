@@ -1027,13 +1027,20 @@ void LedgerEntrySet::rippleCredit(const uint160& uSenderID, const uint160& uRece
 	uint256				uIndex			= Ledger::getRippleStateIndex(uSenderID, uReceiverID, saAmount.getCurrency());
 	SLE::pointer		sleRippleState	= entryCache(ltRIPPLE_STATE, uIndex);
 
+	assert(!!uSenderID && uSenderID != ACCOUNT_ONE);
+	assert(!!uReceiverID && uReceiverID != ACCOUNT_ONE);
+
 	if (!sleRippleState)
 	{
-		cLog(lsDEBUG) << "rippleCredit: Creating ripple line: " << uIndex.ToString();
-
 		STAmount	saBalance	= saAmount;
 
 		saBalance.setIssuer(ACCOUNT_ONE);
+
+		cLog(lsDEBUG) << boost::str(boost::format("rippleCredit: create line: %s (%s) -> %s : %s")
+			% RippleAddress::createHumanAccountID(uSenderID)
+			% saBalance.getFullText()
+			% RippleAddress::createHumanAccountID(uReceiverID)
+			% saAmount.getFullText());
 
 		sleRippleState	= entryCreate(ltRIPPLE_STATE, uIndex);
 
@@ -1050,6 +1057,12 @@ void LedgerEntrySet::rippleCredit(const uint160& uSenderID, const uint160& uRece
 
 		if (!bFlipped)
 			saBalance.negate();		// Put balance in low terms.
+
+		cLog(lsDEBUG) << boost::str(boost::format("rippleCredit> %s (%s) -> %s : %s")
+			% RippleAddress::createHumanAccountID(uSenderID)
+			% saBalance.getFullText()
+			% RippleAddress::createHumanAccountID(uReceiverID)
+			% saAmount.getFullText());
 
 		saBalance	+= saAmount;
 
@@ -1072,10 +1085,10 @@ STAmount LedgerEntrySet::rippleSend(const uint160& uSenderID, const uint160& uRe
 
 	assert(!!uSenderID && !!uReceiverID);
 
-	if (uSenderID == uIssuerID || uReceiverID == uIssuerID)
+	if (uSenderID == uIssuerID || uReceiverID == uIssuerID || uIssuerID == ACCOUNT_ONE)
 	{
 		// Direct send: redeeming IOUs and/or sending own IOUs.
-		rippleCredit(uSenderID, uReceiverID, saAmount);
+		rippleCredit(uSenderID, uReceiverID, saAmount, false);
 
 		saActual	= saAmount;
 	}
