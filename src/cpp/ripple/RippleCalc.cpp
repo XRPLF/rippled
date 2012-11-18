@@ -558,11 +558,13 @@ TER RippleCalc::calcNodeDeliverFwd(
 
 				saOutPassAct	= saOutPassMax;
 
+				cLog(lsDEBUG) << boost::str(boost::format("calcNodeDeliverFwd: ? --> OFFER --> account: uOfrOwnerID=%s uNxtAccountID=%s saOutPassAct=%s")
+					% RippleAddress::createHumanAccountID(uOfrOwnerID)
+					% RippleAddress::createHumanAccountID(uNxtAccountID)
+					% saOutPassAct.getFullText());
+
 				// Debit offer owner, send XRP or non-XPR to next account.
 				lesActive.accountSend(uOfrOwnerID, uNxtAccountID, saOutPassAct);
-
-				cLog(lsINFO) << boost::str(boost::format("calcNodeDeliverFwd: ? --> OFFER --> account: saOutPassAct=%s")
-					% saOutPassAct);
 			}
 			else
 			{
@@ -1196,7 +1198,7 @@ TER RippleCalc::calcNodeAccountFwd(
 	const uint160&	uPrvAccountID	= bPrvAccount ? pnPrv.uAccountID : uCurAccountID;
 	const uint160&	uNxtAccountID	= bNxtAccount ? pnNxt.uAccountID : uCurAccountID;	// Offers are always issue.
 
-	const uint160&	uCurIssuerID	= pnCur.uIssuerID;
+//	const uint160&	uCurIssuerID	= pnCur.uIssuerID;
 
 	const uint160&	uCurrencyID		= pnCur.uCurrencyID;
 
@@ -1253,36 +1255,31 @@ TER RippleCalc::calcNodeAccountFwd(
 
 			// First node, calculate amount to ripple based on what is available.
 
-			// Limit by sendmax.
-			const STAmount	saCurSendMaxReq		= pspCur->saInReq.isNegative()
-													? pspCur->saInReq					// Negative for no limit, doing a calculation.
-													: pspCur->saInReq-pspCur->saInAct;	// request - done.
+			saCurRedeemAct		= saCurRedeemReq;
 
-			saCurRedeemAct		= saCurRedeemReq
-									// Redeem requested.
-									? saCurRedeemReq.isNegative()
-										? saCurRedeemReq
-										: std::min(saCurRedeemReq, saCurSendMaxReq)
-									// No redeeming.
-									: saCurRedeemReq;
+			if (!pspCur->saInReq.isNegative())
+			{
+				// Limit by send max.
+				saCurRedeemAct		= std::min(saCurRedeemAct, pspCur->saInReq-pspCur->saInAct);
+			}
+
 			saCurSendMaxPass	= saCurRedeemAct;
 
-			saCurIssueAct		= (saCurIssueReq									// Issue wanted.
-									&& (saCurSendMaxReq.isNegative()				// No limit.
-										|| saCurSendMaxPass != saCurSendMaxReq))	// Not yet satisfied.
-									// Issue requested and pass does not meet max.
-									? saCurSendMaxReq.isNegative()
-										? saCurIssueReq
-										: std::min(saCurSendMaxReq-saCurRedeemAct, saCurIssueReq)
-									// No issuing.
+			saCurIssueAct		= saCurRedeemAct == saCurRedeemReq		// Fully redeemed.
+									? saCurIssueReq
 									: STAmount(saCurIssueReq);
+
+			if (!!saCurIssueAct && !pspCur->saInReq.isNegative())
+			{
+				// Limit by send max.
+				saCurIssueAct		= std::min(saCurIssueAct, pspCur->saInReq-pspCur->saInAct-saCurRedeemAct);
+			}
 
 			saCurSendMaxPass	+= saCurIssueAct;
 
-			cLog(lsINFO) << boost::str(boost::format("calcNodeAccountFwd: ^ --> ACCOUNT --> account : saInReq=%s saInAct=%s saCurSendMaxReq=%s saCurRedeemAct=%s saCurIssueReq=%s saCurIssueAct=%s saCurSendMaxPass=%s")
+			cLog(lsINFO) << boost::str(boost::format("calcNodeAccountFwd: ^ --> ACCOUNT --> account : saInReq=%s saInAct=%s saCurRedeemAct=%s saCurIssueReq=%s saCurIssueAct=%s saCurSendMaxPass=%s")
 				% pspCur->saInReq.getFullText()
 				% pspCur->saInAct.getFullText()
-				% saCurSendMaxReq.getFullText()
 				% saCurRedeemAct.getFullText()
 				% saCurIssueReq.getFullText()
 				% saCurIssueAct.getFullText()
@@ -1393,7 +1390,8 @@ TER RippleCalc::calcNodeAccountFwd(
 			// If limited, then limit by send max and available.
 			if (!pspCur->saInReq.isNegative())
 			{
-				saCurDeliverAct		= pspCur->saInReq-pspCur->saInAct;
+				// Limit by send max.
+				saCurDeliverAct		= std::min(saCurDeliverAct, pspCur->saInReq-pspCur->saInAct);
 
 				// Limit XRP by available. No limit for non-XRP as issuer.
 				if (!uCurAccountID)
