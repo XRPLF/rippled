@@ -217,6 +217,7 @@ UInt160.prototype.to_json = function () {
   return output;
 };
 
+// XXX Internal form should be UInt160.
 var Currency = function () {
   // Internal form: 0 = XRP. 3 letter-code.
   // XXX Internal should be 0 or hex with three letter annotation when valid.
@@ -250,6 +251,11 @@ Currency.prototype.copyTo = function(d) {
 
   return d;
 };
+
+Currency.prototype.equals = function(d) {
+  return ('string' !== typeof this._value && isNaN(this._value))
+    || ('string' !== typeof d._value && isNaN(d._value)) ? false : this._value === d._value;
+}
 
 // this._value = NaN on error.
 Currency.prototype.parse_json = function(j) {
@@ -591,6 +597,7 @@ Amount.prototype.parse_issuer = function (issuer) {
 };
 
 // Check BigInteger NaN
+// Checks currency, does not check issuer.
 Amount.prototype.equals = function (d) {
   return 'string' === typeof (d)
     ? this.equals(Amount.from_json(d))
@@ -599,9 +606,35 @@ Amount.prototype.equals = function (d) {
 	&& this._is_native === d._is_native
 	&& (this._is_native
 	    ? this._value.equals(d._value)
-	    : this._is_negative === d._is_negative
-	      ? this._value.equals(d._value)
-	      : this._value.equals(BigInteger.ZERO) && d._value.equals(BigInteger.ZERO)));
+	    : this._currency.equals(d._currency)
+	      ? this._is_negative === d._is_negative
+		? this._value.equals(d._value)
+		: this._value.equals(BigInteger.ZERO) && d._value.equals(BigInteger.ZERO)
+	      : false));
+};
+
+Amount.prototype.not_equals_why = function (d) {
+  return 'string' === typeof (d)
+    ? this.not_equals_why(Amount.from_json(d))
+    : this === d
+      ? false
+      : d.constructor === Amount
+	  ? this._is_native === d._is_native
+	    ? this._is_native
+		? this._value.equals(d._value)
+		  ? false
+		  : "XRP value differs."
+		: this._currency.equals(d._currency)
+		  ? this._is_negative === d._is_negative
+		    ? this._value.equals(d._value)
+		      ? false
+		      : this._value.equals(BigInteger.ZERO) && d._value.equals(BigInteger.ZERO)
+			? false
+			: "Non-XRP value differs."
+		    : "Non-XRP sign differs."
+		  : "Non-XRP currency differs (" + JSON.stringify(this._currency) + "/" + JSON.stringify(d._currency) + ")"
+	    : "Native mismatch"
+	  : "Wrong constructor."
 };
 
 exports.Amount	      = Amount;
