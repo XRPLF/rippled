@@ -395,7 +395,7 @@ STPathSet* STPathSet::construct(SerializerIterator& s, SField::ref name)
 			if (bIssuer)
 				uIssuerID	= s.get160();
 
-			path.push_back(STPathElement(uAccountID, uCurrency, uIssuerID));
+			path.push_back(STPathElement(uAccountID, uCurrency, uIssuerID, bCurrency));
 		}
 	} while(1);
 }
