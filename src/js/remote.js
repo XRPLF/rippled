@@ -806,13 +806,15 @@ Remote.prototype.ledger_accept = function () {
 
 // Return a request to refresh the account balance.
 Remote.prototype.request_account_balance = function (account, current) {
-  return (this.request_ledger_entry('account_root'))
+  var request = this.request_ledger_entry('account_root');
+
+  return request
     .account_root(account)
     .ledger_choose(current)
     .on('success', function (message) {
-      // If the caller also waits for 'success', they might run before this.
-      request.emit('account_balance', message.node.Balance);
-    });
+	// If the caller also waits for 'success', they might run before this.
+	request.emit('account_balance', Amount.from_json(message.node.Balance));
+      });
 };
 
 // Return the next account sequence if possible.
