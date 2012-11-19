@@ -28,8 +28,16 @@ SField sfIndex(STI_HASH256, 258, "index");
 
 static int initFields()
 {
-	sfTxnSignature.notSigningField();		sfTxnSignatures.notSigningField();
+	sfTxnSignature.notSigningField();
+	sfTxnSignatures.notSigningField();
 	sfSignature.notSigningField();
+
+	sfIndexes.setMeta(SField::sMD_Never);
+	sfPreviousTxnID.setMeta(SField::sMD_Never);
+	sfPreviousTxnLgrSeq.setMeta(SField::sMD_Never);
+	sfLedgerEntryType.setMeta(SField::sMD_Never);
+	sfRootIndex.setMeta(SField::sMD_Always);
+
 	return 0;
 }
 static const int f = initFields();

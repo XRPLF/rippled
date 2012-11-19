@@ -76,6 +76,7 @@
 	FIELD(PreviousTxnID,		HASH256, 5)
 	FIELD(LedgerIndex,			HASH256, 6)
 	FIELD(WalletLocator,		HASH256, 7)
+	FIELD(RootIndex,			HASH256, 8)
 
 	// 256-bit (uncommon)
 	FIELD(BookDirectory,		HASH256, 16)

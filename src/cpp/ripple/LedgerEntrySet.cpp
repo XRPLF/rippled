@@ -407,59 +407,66 @@ void LedgerEntrySet::calcRawMeta(Serializer& s, TER result)
 		mSet.setAffectedNode(it.first, *type, nodeType);
 
 		if (type == &sfDeletedNode)
-		{
+		{ // nodes was deleted
 			assert(origNode);
 			assert(curNode);
-			threadOwners(origNode, mLedger, newMod);
+			threadOwners(origNode, mLedger, newMod); // thread transaction to owners
 
+			STObject mods(sfPreviousFields);
 			STObject finals(sfFinalFields);
 			BOOST_FOREACH(const SerializedType& obj, *curNode)
-			{ // save non-default values
-				if (!obj.isDefault() && (obj.getFName() != sfLedgerEntryType))
-					finals.addObject(obj);
-			}
-			if (!finals.empty())
-				mSet.getAffectedNode(it.first, *type).addObject(finals);
-		}
-
-		if ((type == &sfDeletedNode || type == &sfModifiedNode))
-		{
-			STObject mods(sfPreviousFields);
-			BOOST_FOREACH(const SerializedType& obj, *origNode)
-			{ // search the original node for values saved on modify
-				if (!obj.isDefault() && (obj.getFName() != sfLedgerEntryType) && !curNode->hasMatchingEntry(obj))
+			{
+				if (obj.getFName().shouldMeta(SField::sMD_ChangeOrig) && !curNode->hasMatchingEntry(obj))
 					mods.addObject(obj);
+				if (obj.getFName().shouldMeta(SField::sMD_Always | SField::sMD_DeleteFinal))
+					finals.addObject(obj);
 			}
 			if (!mods.empty())
 				mSet.getAffectedNode(it.first, *type).addObject(mods);
+			if (!finals.empty())
+				mSet.getAffectedNode(it.first, *type).addObject(finals);
 		}
+		else if (type == &sfModifiedNode)
+		{
+			if (curNode->isThreadedType()) // thread transaction to node it modified
+				threadTx(curNode, mLedger, newMod);
 
-		if (type == &sfCreatedNode) // if created, thread to owner(s)
+			STObject mods(sfPreviousFields);
+			STObject finals(sfFinalFields);
+			BOOST_FOREACH(const SerializedType& obj, *origNode)
+			{ // search the original node for values saved on modify
+				if (obj.getFName().shouldMeta(SField::sMD_ChangeOrig) && !curNode->hasMatchingEntry(obj))
+					mods.addObject(obj);
+				if (obj.getFName().shouldMeta(SField::sMD_Always | SField::sMD_ChangeNew))
+					finals.addObject(obj);
+			}
+			if (!mods.empty())
+				mSet.getAffectedNode(it.first, *type).addObject(mods);
+			if (!finals.empty())
+				mSet.getAffectedNode(it.first, *type).addObject(finals);
+		}
+		else if (type == &sfCreatedNode) // if created, thread to owner(s)
 		{
 			assert(!origNode);
 			threadOwners(curNode, mLedger, newMod);
 
+			if (curNode->isThreadedType()) // always thread to self
+				threadTx(curNode, mLedger, newMod);
 			STObject news(sfNewFields);
 			BOOST_FOREACH(const SerializedType& obj, *curNode)
 			{ // save non-default values
-				if (!obj.isDefault() && (obj.getFName() != sfLedgerEntryType))
+				if (!obj.isDefault() && obj.getFName().shouldMeta(SField::sMD_Create | SField::sMD_Always))
 					news.addObject(obj);
 			}
 			if (!news.empty())
 				mSet.getAffectedNode(it.first, *type).addObject(news);
 		}
-
-		if ((type == &sfCreatedNode) || (type == &sfModifiedNode))
-		{
-			if (curNode->isThreadedType()) // always thread to self
-				threadTx(curNode, mLedger, newMod);
-		}
 	}
 
 	// add any new modified nodes to the modification set
-	for (boost::unordered_map<uint256, SLE::pointer>::iterator it = newMod.begin(), end = newMod.end();
-			it != end; ++it)
-		entryModify(it->second);
+	typedef std::pair<const uint256, SLE::pointer> u256_sle_pair;
+	BOOST_FOREACH(u256_sle_pair& it, newMod)
+		entryModify(it.second);
 
 	mSet.addRaw(s, result);
 	cLog(lsTRACE) << "Metadata:" << mSet.getJson(0);
@@ -483,6 +490,7 @@ TER LedgerEntrySet::dirAdd(
 	{
 		// No root, make it.
 		sleRoot		= entryCreate(ltDIR_NODE, uRootIndex);
+		sleRoot->setFieldH256(sfRootIndex, uRootIndex);
 
 		sleNode		= sleRoot;
 		uNodeDir	= 0;
@@ -543,6 +551,7 @@ TER LedgerEntrySet::dirAdd(
 
 			// Create the new node.
 			sleNode		= entryCreate(ltDIR_NODE, Ledger::getDirNodeIndex(uRootIndex, uNodeDir));
+			sleNode->setFieldH256(sfRootIndex, uRootIndex);
 			svIndexes	= STVector256();
 		}
 	}

@@ -47,6 +47,7 @@ static bool LEFInit()
 
 	DECLARE_LEF(DirectoryNode, ltDIR_NODE)
 		<< SOElement(sfIndexes,				SOE_REQUIRED)
+		<< SOElement(sfRootIndex,			SOE_REQUIRED)
 		<< SOElement(sfIndexNext,			SOE_OPTIONAL)
 		<< SOElement(sfIndexPrevious,		SOE_OPTIONAL)
 		;
