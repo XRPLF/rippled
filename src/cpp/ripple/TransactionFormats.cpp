@@ -45,14 +45,14 @@ static bool TFInit()
 		;
 
 	DECLARE_TF(SetRegularKey, ttREGULAR_KEY_SET)
-		<< SOElement(sfAuthorizedKey,	SOE_REQUIRED)
+		<< SOElement(sfRegularKey,	SOE_REQUIRED)
 		;
 
 	DECLARE_TF(Payment, ttPAYMENT)
 		<< SOElement(sfDestination,		SOE_REQUIRED)
 		<< SOElement(sfAmount,			SOE_REQUIRED)
 		<< SOElement(sfSendMax,			SOE_OPTIONAL)
-		<< SOElement(sfPaths,			SOE_OPTIONAL)
+		<< SOElement(sfPaths,			SOE_DEFAULT)
 		<< SOElement(sfInvoiceID,		SOE_OPTIONAL)
 		;
 

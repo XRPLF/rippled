@@ -76,6 +76,7 @@
 	FIELD(PreviousTxnID,		HASH256, 5)
 	FIELD(LedgerIndex,			HASH256, 6)
 	FIELD(WalletLocator,		HASH256, 7)
+	FIELD(RootIndex,			HASH256, 8)
 
 	// 256-bit (uncommon)
 	FIELD(BookDirectory,		HASH256, 16)
@@ -116,7 +117,7 @@
 	FIELD(Destination,			ACCOUNT, 3)
 	FIELD(Issuer,				ACCOUNT, 4)
 	FIELD(Target,				ACCOUNT, 7)
-	FIELD(AuthorizedKey,		ACCOUNT, 8)
+	FIELD(RegularKey,			ACCOUNT, 8)
 
 	// path set
 	FIELD(Paths,				PATHSET, 1)

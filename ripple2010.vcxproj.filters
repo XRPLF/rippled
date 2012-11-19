@@ -288,10 +288,13 @@
     <ClCompile Include="src\cpp\database\sqlite3.c">
       <Filter>Source Files\database</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\websocketpp\src\uri.cpp">
+    <ClCompile Include="src\cpp\websocketpp\src\sha1\sha1.cpp">
       <Filter>Source Files\websocketpp</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\websocketpp\src\network_utilities.cpp">
+      <Filter>Source Files\websocketpp</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\websocketpp\src\uri.cpp">
       <Filter>Source Files\websocketpp</Filter>
     </ClCompile>
     <ClCompile Include="src\cpp\websocketpp\src\base64\base64.cpp">
@@ -315,18 +318,6 @@
     <ClCompile Include="src\cpp\websocketpp\src\rng\boost_rng.cpp">
       <Filter>Source Files\websocketpp</Filter>
     </ClCompile>
-    <ClCompile Include="src\cpp\websocketpp\src\sha1\sha1.cpp">
-      <Filter>Source Files\websocketpp</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\Transactor.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\PaymentTransactor.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cpp\ripple\WalletAddTransactor.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\cpp\ripple\AccountSetTransactor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -336,10 +327,22 @@
     <ClCompile Include="src\cpp\ripple\OfferCreateTransactor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\cpp\ripple\PaymentTransactor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\ProofOfWork.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\cpp\ripple\RegularKeySetTransactor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\cpp\ripple\Transactor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\cpp\ripple\TrustSetTransactor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpp\ripple\WalletAddTransactor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -618,30 +621,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\cpp\ripple\WSHandler.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\Transactor.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\PaymentTransactor.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\TrustSetTransactor.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\RegularKeySetTransactor.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\OfferCreateTransactor.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\OfferCancelTransactor.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\AccountSetTransactor.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cpp\ripple\WalletAddTransactor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

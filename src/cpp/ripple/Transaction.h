@@ -2,8 +2,7 @@
 #define __TRANSACTION__
 
 //
-// Notes: this code contains legacy constructored sharedXYZ and setXYZ. The intent is for these functions to go away. Transactions
-// should now be constructed in JSON with. Use STObject::parseJson to obtain a binary version.
+// Transactions should be constructed in JSON with. Use STObject::parseJson to obtain a binary version.
 //
 
 #include <vector>

@@ -5,7 +5,7 @@
 var path = require("path");
 
 // Where to find the binary.
-exports.rippled = path.join(process.cwd(), "build/rippled");
+exports.rippled = path.resolve("build/rippled");
 
 exports.server_default	= "alpha";
 

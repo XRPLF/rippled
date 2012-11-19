@@ -2,6 +2,7 @@
 #define __RIPPLE_CALC__
 
 #include <boost/unordered_set.hpp>
+#include <boost/tuple/tuple.hpp>
 
 #include "LedgerEntrySet.h"
 
@@ -163,7 +164,6 @@ public:
 							PathState::ref				pspCur,
 							const bool					bMultiQuality,
 							const uint160&				uInAccountID,
-							const STAmount&				saInFunds,
 							const STAmount&				saInReq,
 							STAmount&					saInAct,
 							STAmount&					saInFees);

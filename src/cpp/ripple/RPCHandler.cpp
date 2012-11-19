@@ -700,6 +700,8 @@ Json::Value RPCHandler::doSubmit(const Json::Value& params)
 {
 	Json::Value		txJSON;
 	Json::Reader	reader;
+	
+	//std::string hello=params[1u].asString();
 
 	if (reader.parse(params[1u].asString(), txJSON))
 	{
@@ -741,10 +743,10 @@ Json::Value RPCHandler::handleJSONSubmit(const Json::Value& jvRequest)
 	}
 
 	AccountState::pointer asSrc	= mNetOps->getAccountState(uint256(0), srcAddress);
+	if(!asSrc) return rpcError(rpcSRC_ACT_MALFORMED);
 
-	if( txJSON["type"]=="Payment")
+	if( txJSON["TransactionType"]=="Payment")
 	{
-		txJSON["TransactionType"]=0;
 
 		RippleAddress dstAccountID;
 
@@ -764,7 +766,7 @@ Json::Value RPCHandler::handleJSONSubmit(const Json::Value& jvRequest)
 			else txJSON["Fee"]=(int)theConfig.FEE_ACCOUNT_CREATE;
 		}
 
-		if(!txJSON.isMember("Paths") && (!jvRequest.isMember("build_path") || jvRequest["build_path"].asBool()))
+		if(!txJSON.isMember("Paths") && jvRequest.isMember("build_path") )
 		{
 			if(txJSON["Amount"].isObject() || txJSON.isMember("SendMax") )
 			{  // we need a ripple path
@@ -796,9 +798,12 @@ Json::Value RPCHandler::handleJSONSubmit(const Json::Value& jvRequest)
 
 				Pathfinder pf(srcAddress, dstAccountID, srcCurrencyID, dstAmount);
 				pf.findPaths(5, 1, spsPaths);
-				txJSON["Paths"]=spsPaths.getJson(0);
-				if(txJSON.isMember("Flags")) txJSON["Flags"]=txJSON["Flags"].asUInt() | 2;
-				else txJSON["Flags"]=2;
+				if(!spsPaths.isEmpty())
+				{
+					txJSON["Paths"]=spsPaths.getJson(0);
+					if(txJSON.isMember("Flags")) txJSON["Flags"]=txJSON["Flags"].asUInt() | 2;
+					else txJSON["Flags"]=2;
+				}
 			}
 		}
 

@@ -11,6 +11,10 @@
 #include "TransactionErr.h"
 #include "InstanceCounter.h"
 
+#include <boost/enable_shared_from_this.hpp>
+#include <boost/make_shared.hpp>
+#include <boost/shared_ptr.hpp>
+
 DEFINE_INSTANCE(TransactionEngine);
 
 // A TransactionEngine applies serialized transactions to a ledger
@@ -38,6 +42,7 @@ private:
 	LedgerEntrySet						mNodes;
 
 	TER	setAuthorized(const SerializedTransaction& txn, bool bMustSetGenerator);
+	TER checkSig(const SerializedTransaction& txn);
 
 	TER takeOffers(
 		bool				bPassive,
@@ -55,30 +60,25 @@ protected:
 	uint160				mTxnAccountID;
 	SLE::pointer		mTxnAccount;
 
+	
+
+	void				txnWrite();
+
+
+public:
+	typedef boost::shared_ptr<TransactionEngine> pointer;
+
+	TransactionEngine() { ; }
+	TransactionEngine(Ledger::ref ledger) : mLedger(ledger) { assert(mLedger); }
+
+	LedgerEntrySet& getNodes()			{ return mNodes; }
+	Ledger::pointer getLedger()			{ return mLedger; }
+	void setLedger(Ledger::ref ledger)	{ assert(ledger); mLedger = ledger; }
+
 	SLE::pointer		entryCreate(LedgerEntryType type, const uint256& index)		{ return mNodes.entryCreate(type, index); }
 	SLE::pointer		entryCache(LedgerEntryType type, const uint256& index)		{ return mNodes.entryCache(type, index); }
 	void				entryDelete(SLE::ref sleEntry)								{ mNodes.entryDelete(sleEntry); }
 	void				entryModify(SLE::ref sleEntry)								{ mNodes.entryModify(sleEntry); }
-
-	void				txnWrite();
-
-	TER					doAccountSet(const SerializedTransaction& txn);
-	TER					doClaim(const SerializedTransaction& txn);
-	TER					doTrustSet(const SerializedTransaction& txn);
-	TER					doOfferCreate(const SerializedTransaction& txn);
-	TER					doOfferCancel(const SerializedTransaction& txn);
-	TER					doRegularKeySet(const SerializedTransaction& txn);
-	TER					doPayment(const SerializedTransaction& txn, const TransactionEngineParams params);
-	TER					doWalletAdd(const SerializedTransaction& txn);
-	TER					doContractAdd(const SerializedTransaction& txn);
-	TER					doContractRemove(const SerializedTransaction& txn);
-
-public:
-	TransactionEngine() { ; }
-	TransactionEngine(Ledger::ref ledger) : mLedger(ledger) { assert(mLedger); }
-
-	Ledger::pointer getLedger()			{ return mLedger; }
-	void setLedger(Ledger::ref ledger)	{ assert(ledger); mLedger = ledger; }
 
 	TER applyTransaction(const SerializedTransaction&, TransactionEngineParams);
 };

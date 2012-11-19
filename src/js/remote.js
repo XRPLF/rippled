@@ -21,7 +21,7 @@ var EventEmitter  = require('events').EventEmitter;
 var Amount	  = require('./amount.js').Amount;
 var UInt160	  = require('./amount.js').UInt160;
 
-// Request events emmitted:
+// Request events emitted:
 // 'success' : Request successful.
 // 'error'   : Request failed.
 //   'remoteError'
@@ -166,22 +166,22 @@ Request.prototype.accounts = function (accounts) {
 // Remote - access to a remote Ripple server via websocket.
 //
 // Events:
-// 'connectted'
+// 'connected'
 // 'disconnected'
 // 'state':
-// - 'online' : connectted and subscribed
-// - 'offline' : not subscribed or not connectted.
+// - 'online' : connected and subscribed
+// - 'offline' : not subscribed or not connected.
 // 'ledger_closed': A good indicate of ready to serve.
 // 'subscribed' : This indicates stand-alone is available.
 //
 
 // --> trusted: truthy, if remote is trusted
-var Remote = function (trusted, websocket_ip, websocket_port, trace) {
-  this.trusted		      = trusted;
-  this.websocket_ip           = websocket_ip;
-  this.websocket_port         = websocket_port;
+var Remote = function (opts, trace) {
+  this.trusted		      = opts.trusted;
+  this.websocket_ip           = opts.websocket_ip;
+  this.websocket_port         = opts.websocket_port;
   this.id                     = 0;
-  this.trace                  = trace;
+  this.trace                  = opts.trace || trace;
   this._ledger_current_index  = undefined;
   this._ledger_hash	      = undefined;
   this._ledger_time	      = undefined;
@@ -219,10 +219,10 @@ var Remote = function (trusted, websocket_ip, websocket_port, trace) {
 
 Remote.prototype      = new EventEmitter;
 
-Remote.from_config = function (name, trace) {
-  var serverConfig = exports.config.servers[name];
+Remote.from_config = function (obj, trace) {
+  var serverConfig = 'string' === typeof obj ? exports.config.servers[obj] : obj;
 
-  var remote = new Remote(serverConfig.trusted, serverConfig.websocket_ip, serverConfig.websocket_port, trace);
+  var remote = new Remote(serverConfig, trace);
 
   for (var account in exports.config.accounts) {
     var accountInfo = exports.config.accounts[account];
@@ -268,7 +268,7 @@ Remote.fees = {
   'offer'	    : Amount.from_json("10"),
 };
 
-// Set the emited state: 'online' or 'offline'
+// Set the emitted state: 'online' or 'offline'
 Remote.prototype._set_state = function (state) {
   if (this.trace) console.log("remote: set_state: %s", state);
 
@@ -450,12 +450,12 @@ Remote.prototype._connect_message = function (ws, json) {
 	    unexpected  = true;
 	  }
 	  else if ('success' === message.status) {
-	    if (this.trace) console.log("remote: response: %s", json);
+	    if (this.trace) console.log("remote: response: %s", JSON.stringify(message, undefined, 2));
 
 	    request.emit('success', message.result);
 	  }
 	  else if (message.error) {
-	    if (this.trace) console.log("remote: error: %s", json);
+	    if (this.trace) console.log("remote: error: %s", JSON.stringify(message, undefined, 2));
 
 	    request.emit('error', {
 		'error'		: 'remoteError',
@@ -700,7 +700,7 @@ Remote.prototype.submit = function (transaction) {
   if (transaction.secret && !this.trusted)
   {
     transaction.emit('error', {
-	'result'	  : 'serverUntrusted',
+	'result'	  : 'tejServerUntrusted',
 	'result_message'  : "Attempt to give a secret to an untrusted server."
       });
   }
@@ -1026,6 +1026,7 @@ var SUBMIT_LOST	    = 8;    // Give up tracking.
 var Transaction	= function (remote) {
   var self  = this;
 
+  this.callback	    = undefined;
   this.remote	    = remote;
   this.secret	    = undefined;
   this.build_path   = true;
@@ -1108,14 +1109,25 @@ Transaction.prototype.set_state = function (state) {
 // XXX Don't allow a submit without knowing ledger_index.
 // XXX Have a network canSubmit(), post events for following.
 // XXX Also give broader status for tracking through network disconnects.
-Transaction.prototype.submit = function () {
+// callback = function (status, info) {
+//   // status is final status.  Only works under a ledger_accepting conditions.
+//   switch status:
+//    case 'tesSUCCESS': all is well.
+//    case 'tejServerUntrusted': sending secret to untrusted server.
+//    case 'tejInvalidAccount': locally detected error.
+//    case 'tejLost': locally gave up looking
+//    default: some other TER
+// }
+Transaction.prototype.submit = function (callback) {
   var self    = this;
   var tx_json = this.tx_json;
 
+  this.callback	= callback;
+
   if ('string' !== typeof tx_json.Account)
   {
-    this.emit('error', {
-	'error' : 'invalidAccount',
+    (this.callback || this.emit)('error', {
+	'error' : 'tejInvalidAccount',
 	'error_message' : 'Bad account.'
       });
     return;
@@ -1134,11 +1146,12 @@ Transaction.prototype.submit = function () {
     }
   }
 
-  if (this.listeners('final').length || this.listeners('lost').length || this.listeners('pending').length) {
-    // There are listeners for 'final', 'lost', or 'pending' arrange to emit them.
+  if (this.callback || this.listeners('final').length || this.listeners('lost').length || this.listeners('pending').length) {
+    // There are listeners for callback, 'final', 'lost', or 'pending' arrange to emit them.
 
     this.submit_index = this.remote._ledger_current_index;
 
+    // When a ledger closes, look for the result.
     var	on_ledger_closed = function (ledger_hash, ledger_index) {
 	var stop  = false;
 
@@ -1148,6 +1161,11 @@ Transaction.prototype.submit = function () {
 	  .on('success', function (message) {
 	      self.set_state(message.metadata.TransactionResult);
 	      self.emit('final', message);
+
+	      if (self.callback)
+		self.callback(message.metadata.TransactionResult, message);
+
+	      stop  = true;
 	    })
 	  .on('error', function (message) {
 	      if ('remoteError' === message.error
@@ -1155,6 +1173,10 @@ Transaction.prototype.submit = function () {
 		if (self.submit_index + SUBMIT_LOST < ledger_index) {
 		  self.set_state('client_lost');	// Gave up.
 		  self.emit('lost');
+
+		  if (self.callback)
+		    self.callback('tejLost', message);
+
 		  stop  = true;
 		}
 		else if (self.submit_index + SUBMIT_MISSING < ledger_index) {
@@ -1170,12 +1192,18 @@ Transaction.prototype.submit = function () {
 	  .request();
 	
 	if (stop) {
-	  self.removeListener('ledger_closed', on_ledger_closed);
+	  self.remote.removeListener('ledger_closed', on_ledger_closed);
 	  self.emit('final', message);
 	}
       };
 
     this.remote.on('ledger_closed', on_ledger_closed);
+
+    if (this.callback) {
+      this.on('error', function (message) {
+	  self.callback(message.error, message);
+	});
+    }
   }
 
   this.set_state('client_submitted');
@@ -1355,7 +1383,7 @@ Transaction.prototype.password_fund = function (src, dst) {
 Transaction.prototype.password_set = function (src, authorized_key, generator, public_key, signature) {
   this.secret			= this._account_secret(src);
   this.tx_json.TransactionType  = 'PasswordSet';
-  this.tx_json.AuthorizedKey    = authorized_key;
+  this.tx_json.RegularKey    = authorized_key;
   this.tx_json.Generator	= generator;
   this.tx_json.PublicKey	= public_key;
   this.tx_json.Signature	= signature;
@@ -1412,7 +1440,7 @@ Transaction.prototype.wallet_add = function (src, amount, authorized_key, public
   this.secret			= this._account_secret(src);
   this.tx_json.TransactionType  = 'WalletAdd';
   this.tx_json.Amount		= Amount.json_rewrite(amount);
-  this.tx_json.AuthorizedKey    = authorized_key;
+  this.tx_json.RegularKey    = authorized_key;
   this.tx_json.PublicKey	= public_key;
   this.tx_json.Signature	= signature;
 

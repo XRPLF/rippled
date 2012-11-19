@@ -44,6 +44,7 @@ DEFINE_INSTANCE(Ledger);
 class Ledger : public boost::enable_shared_from_this<Ledger>, public IS_INSTANCE(Ledger)
 { // The basic Ledger structure, can be opened, closed, or synching
 	friend class TransactionEngine;
+	friend class Transactor;
 public:
 	typedef boost::shared_ptr<Ledger>			pointer;
 	typedef const boost::shared_ptr<Ledger>&	ref;

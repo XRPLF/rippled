@@ -52,7 +52,7 @@ Server.prototype.once = function (e, c) {
 };
 
 Server.prototype.serverPath = function() {
-  return "tmp/server/" + this.name;
+  return path.resolve("tmp/server", this.name);
 };
 
 Server.prototype.configPath = function() {

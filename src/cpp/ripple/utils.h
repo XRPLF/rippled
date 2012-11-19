@@ -5,7 +5,6 @@
 #include <boost/format.hpp>
 
 #include <openssl/dh.h>
-
 #include "types.h"
 
 #define QUALITY_ONE			1000000000	// 10e9
@@ -41,6 +40,13 @@ extern uint32_t be32toh(uint32_t value);
 #define htole64(x) OSSwapHostToLittleInt64(x)
 #define be64toh(x) OSSwapBigToHostInt64(x)
 #define le64toh(x) OSSwapLittleToHostInt64(x)
+#elif defined(__FreeBSD__) || defined(__NetBSD__)
+#include <sys/endian.h>
+#elif defined(__OpenBSD__)
+#include <sys/types.h>
+#define be16toh(x) betoh16(x)
+#define be32toh(x) betoh32(x)
+#define be64toh(x) betoh64(x)
 #endif
 
 

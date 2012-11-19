@@ -30,7 +30,8 @@ enum SOE_Flags
 {
 	SOE_INVALID  = -1,
 	SOE_REQUIRED = 0,	// required
-	SOE_OPTIONAL = 1,	// optional
+	SOE_OPTIONAL = 1,	// optional, may be present with default value
+	SOE_DEFAULT  = 2,   // optional, if present, must not have default value
 };
 
 class SField
@@ -38,6 +39,14 @@ class SField
 public:
 	typedef const SField&	ref;
 	typedef SField const *	ptr;
+
+	static const int sMD_Never			= 0x00;
+	static const int sMD_ChangeOrig		= 0x01; // original value when it changes
+	static const int sMD_ChangeNew		= 0x02; // new value when it changes
+	static const int sMD_DeleteFinal	= 0x04; // final value when it is deleted
+	static const int sMD_Create			= 0x08; // value when it's created
+	static const int sMD_Always			= 0x10; // value when node containing it is affected at all
+	static const int sMD_Default		= sMD_ChangeOrig | sMD_ChangeNew | sMD_DeleteFinal;
 
 protected:
 	static std::map<int, ptr>	codeToField;
@@ -51,23 +60,25 @@ public:
 	const SerializedTypeID	fieldType;		// STI_*
 	const int				fieldValue;		// Code number for protocol
 	std::string				fieldName;
+	int						fieldMeta;
 	bool					signingField;
 
 	SField(int fc, SerializedTypeID tid, int fv, const char* fn) : 
-		fieldCode(fc), fieldType(tid), fieldValue(fv), fieldName(fn), signingField(true)
+		fieldCode(fc), fieldType(tid), fieldValue(fv), fieldName(fn), fieldMeta(sMD_Default), signingField(true)
 	{
 		boost::mutex::scoped_lock sl(mapMutex);
 		codeToField[fieldCode] = this;
 	}
 
 	SField(SerializedTypeID tid, int fv, const char *fn) :
-		fieldCode(FIELD_CODE(tid, fv)), fieldType(tid), fieldValue(fv), fieldName(fn), signingField(true)
+		fieldCode(FIELD_CODE(tid, fv)), fieldType(tid), fieldValue(fv), fieldName(fn),
+		fieldMeta(sMD_Default), signingField(true)
 	{
 		boost::mutex::scoped_lock sl(mapMutex);
 		codeToField[fieldCode] = this;
 	}
 
-	SField(int fc) : fieldCode(fc), fieldType(STI_UNKNOWN), fieldValue(0) { ; }
+	SField(int fc) : fieldCode(fc), fieldType(STI_UNKNOWN), fieldValue(0), fieldMeta(sMD_Never) { ; }
 
 	~SField();
 
@@ -85,8 +96,10 @@ public:
 	bool isBinary() const		{ return fieldValue < 256; }
 	bool isDiscardable() const	{ return fieldValue > 256; }
 
-	bool isSigningField() const	{ return signingField; }
-	void notSigningField()		{ signingField = false; }
+	bool isSigningField() const		{ return signingField; }
+	void notSigningField()			{ signingField = false; }
+	bool shouldMeta(int c) const	{ return (fieldMeta & c) != 0; }
+	void setMeta(int c)				{ fieldMeta = c; }
 
 	bool shouldInclude(bool withSigningField) const
 		{ return (fieldValue < 256) && (withSigningField || signingField); }

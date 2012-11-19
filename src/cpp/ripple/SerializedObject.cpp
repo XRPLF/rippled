@@ -138,7 +138,7 @@ void STObject::set(const std::vector<SOElement::ptr>& type)
 	BOOST_FOREACH(const SOElement::ptr& elem, type)
 	{
 		mType.push_back(elem);
-		if (elem->flags == SOE_OPTIONAL)
+		if (elem->flags != SOE_REQUIRED)
 			giveObject(makeNonPresentObject(elem->e_field));
 		else
 			giveObject(makeDefaultObject(elem->e_field));
@@ -159,12 +159,18 @@ bool STObject::setType(const std::vector<SOElement::ptr> &type)
 			{
 				match = true;
 				newData.push_back(mData.release(it).release());
+				if ((elem->flags == SOE_DEFAULT) && it->isDefault())
+				{
+					cLog(lsWARNING) << "setType( " << getFName().getName() << ") invalid default "
+						<< elem->e_field.fieldName;
+					valid = false;
+				}
 				break;
 			}
 
 		if (!match)
 		{
-			if (elem->flags != SOE_OPTIONAL)
+			if (elem->flags == SOE_REQUIRED)
 			{
 				cLog(lsWARNING) << "setType( " << getFName().getName() << ") invalid missing "
 					<< elem->e_field.fieldName;

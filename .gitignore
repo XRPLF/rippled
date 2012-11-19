@@ -24,3 +24,6 @@ tmp
 
 # Ignore database directory.
 db/*.db
+
+# Ignore customized test/config.js
+test/config.js

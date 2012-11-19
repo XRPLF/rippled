@@ -20,14 +20,12 @@
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>MultiByte</CharacterSet>
-    <PlatformToolset>v110</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
-    <PlatformToolset>v110</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -51,7 +49,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>BOOST_TEST_ALTERNATIVE_INIT_API;BOOST_TEST_NO_MAIN;_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0501;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>.\;..\OpenSSL\include;..\boost_1_52_0;..\protobuf\src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\;..\OpenSSL\include;..\boost_1_52_0;..\protobuf\src\</AdditionalIncludeDirectories>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Link>
@@ -140,6 +138,7 @@
     <ClCompile Include="src\cpp\ripple\Peer.cpp" />
     <ClCompile Include="src\cpp\ripple\PeerDoor.cpp" />
     <ClCompile Include="src\cpp\ripple\PlatRand.cpp" />
+    <ClCompile Include="src\cpp\ripple\ProofOfWork.cpp" />
     <ClCompile Include="src\cpp\ripple\PubKeyCache.cpp" />
     <ClCompile Include="src\cpp\ripple\RangeSet.cpp" />
     <ClCompile Include="src\cpp\ripple\RegularKeySetTransactor.cpp" />
@@ -198,7 +197,6 @@
     <ClInclude Include="database\sqlite3.h" />
     <ClInclude Include="database\sqlite3ext.h" />
     <ClInclude Include="database\SqliteDatabase.h" />
-    <ClInclude Include="src\cpp\ripple\AccountSetTransactor.h" />
     <ClInclude Include="src\cpp\ripple\AccountState.h" />
     <ClInclude Include="src\cpp\ripple\Application.h" />
     <ClInclude Include="src\cpp\ripple\base58.h" />
@@ -231,21 +229,17 @@
     <ClInclude Include="src\cpp\ripple\NetworkOPs.h" />
     <ClInclude Include="src\cpp\ripple\NetworkStatus.h" />
     <ClInclude Include="src\cpp\ripple\NicknameState.h" />
-    <ClInclude Include="src\cpp\ripple\OfferCancelTransactor.h" />
-    <ClInclude Include="src\cpp\ripple\OfferCreateTransactor.h" />
     <ClInclude Include="src\cpp\ripple\Operation.h" />
     <ClInclude Include="src\cpp\ripple\OrderBook.h" />
     <ClInclude Include="src\cpp\ripple\OrderBookDB.h" />
     <ClInclude Include="src\cpp\ripple\PackedMessage.h" />
     <ClInclude Include="src\cpp\ripple\ParseSection.h" />
     <ClInclude Include="src\cpp\ripple\Pathfinder.h" />
-    <ClInclude Include="src\cpp\ripple\PaymentTransactor.h" />
     <ClInclude Include="src\cpp\ripple\Peer.h" />
     <ClInclude Include="src\cpp\ripple\PeerDoor.h" />
     <ClInclude Include="src\cpp\ripple\ProofOfWork.h" />
     <ClInclude Include="src\cpp\ripple\PubKeyCache.h" />
     <ClInclude Include="src\cpp\ripple\RangeSet.h" />
-    <ClInclude Include="src\cpp\ripple\RegularKeySetTransactor.h" />
     <ClInclude Include="src\cpp\ripple\rfc1751.h" />
     <ClInclude Include="src\cpp\ripple\ripple.pb.h" />
     <ClInclude Include="src\cpp\ripple\RippleAddress.h" />
@@ -278,8 +272,6 @@
     <ClInclude Include="src\cpp\ripple\TransactionFormats.h" />
     <ClInclude Include="src\cpp\ripple\TransactionMaster.h" />
     <ClInclude Include="src\cpp\ripple\TransactionMeta.h" />
-    <ClInclude Include="src\cpp\ripple\Transactor.h" />
-    <ClInclude Include="src\cpp\ripple\TrustSetTransactor.h" />
     <ClInclude Include="src\cpp\ripple\types.h" />
     <ClInclude Include="src\cpp\ripple\uint256.h" />
     <ClInclude Include="src\cpp\ripple\UniqueNodeList.h" />
@@ -287,7 +279,6 @@
     <ClInclude Include="src\cpp\ripple\ValidationCollection.h" />
     <ClInclude Include="src\cpp\ripple\Version.h" />
     <ClInclude Include="src\cpp\ripple\Wallet.h" />
-    <ClInclude Include="src\cpp\ripple\WalletAddTransactor.h" />
     <ClInclude Include="src\cpp\ripple\WSConnection.h" />
     <ClInclude Include="src\cpp\ripple\WSDoor.h" />
     <ClInclude Include="src\cpp\ripple\WSHandler.h" />

@@ -5,7 +5,9 @@
 import glob
 import platform
 
-OSX = bool(platform.mac_ver()[0])
+OSX	= bool(platform.mac_ver()[0])
+FreeBSD	= bool('FreeBSD' == platform.system())
+Ubuntu	= bool('Ubuntu' == platform.dist())
 
 if OSX:
 	CTAGS = '/usr/bin/ctags'
@@ -43,14 +45,38 @@ for dir in ['ripple', 'database', 'json', 'websocketpp']:
 # Use openssl
 env.ParseConfig('pkg-config --cflags --libs openssl')
 
+# The required version of boost is documented in the README file.
+#
+# We whitelist platforms where the non -mt version is linked with pthreads.
+#   This can be verified with: ldd libboost_filesystem.*
+#   If a threading library is included the platform can be whitelisted.
+#
+# FreeBSD and Ubuntu non-mt libs do link with pthreads.
+if FreeBSD or Ubuntu:
+    env.Append(
+	    LIBS = [
+		    'boost_date_time',
+		    'boost_filesystem',
+		    'boost_program_options',
+		    'boost_regex',
+		    'boost_system',
+		    'boost_thread',
+	    ]
+    )
+else:
+    env.Append(
+	    LIBS = [
+		    'boost_date_time-mt',
+		    'boost_filesystem-mt',
+		    'boost_program_options-mt',
+		    'boost_regex-mt',
+		    'boost_system-mt',
+		    'boost_thread-mt',
+	    ]
+    )
+
 env.Append(
 	LIBS = [
-		'boost_date_time-mt',
-		'boost_filesystem-mt',
-		'boost_program_options-mt',
-		'boost_regex-mt',
-		'boost_system-mt',
-		'boost_thread-mt',
 		'protobuf',
 		'dl', # dynamic linking
 		'z'

@@ -688,7 +688,7 @@ public:
 	void addPath(const STPath& e)						{ value.push_back(e); }
 
 	virtual bool isEquivalent(const SerializedType& t) const;
-	virtual bool isDefault() const	{ return value.empty(); }
+	virtual bool isDefault() const						{ return value.empty(); }
 
 	void printDebug();
 
