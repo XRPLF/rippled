@@ -31,8 +31,12 @@ enum JobType
 	jtPROPOSAL_t	= 7,	// A proposal from a trusted source
 	jtADMIN			= 8,	// An administrative operation
 	jtDEATH			= 9,	// job of death, used internally
+
+// special types not dispatched by the job pool
+	jtCLIENT		= 10,
+	jtPEER			= 11,
 };
-#define NUM_JOB_TYPES 10
+#define NUM_JOB_TYPES 16
 
 class Job
 {
@@ -92,6 +96,9 @@ public:
 
 	void shutdown();
 	void setThreadCount(int c = 0);
+
+	LoadEvent::pointer getLoadEvent(JobType t)
+	{ return boost::make_shared<LoadEvent>(boost::ref(mJobLoads[t]), true, 1); }
 
 	Json::Value getJson(int c = 0);
 };

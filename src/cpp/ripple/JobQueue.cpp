@@ -1,6 +1,5 @@
 #include "JobQueue.h"
 
-#include <boost/make_shared.hpp>
 #include <boost/foreach.hpp>
 #include <boost/bind.hpp>
 #include <boost/thread.hpp>
@@ -21,6 +20,8 @@ const char* Job::toString(JobType t)
 		case jtPROPOSAL_t:		return "trustedProposal";
 		case jtADMIN:			return "administration";
 		case jtDEATH:			return "jobOfDeath";
+		case jtCLIENT:			return "clientCommand";
+		case jtPEER:			return "peerCommand";
 		default:				assert(false); return "unknown";
 	}
 }
