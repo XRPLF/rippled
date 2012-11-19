@@ -957,22 +957,7 @@ Json::Value NetworkOPs::getServerInfo()
 	if (mConsensus)
 		info["consensus"] = mConsensus->getJson();
 
-	typedef std::pair<JobType, int> jt_int_pair;
-	bool anyJobs = false;
-	Json::Value jobs = Json::arrayValue;
-	std::vector< std::pair<JobType, int> > jobCounts = theApp->getJobQueue().getJobCounts();
-	BOOST_FOREACH(jt_int_pair& it, jobCounts)
-	{
-		if (it.second != 0)
-		{
-			Json::Value o = Json::objectValue;
-			o[Job::toString(it.first)] = it.second;
-			jobs.append(o);
-			anyJobs = true;
-		}
-	}
-	if (anyJobs)
-		info["jobs"] = jobs;
+	info["jobs"] = theApp->getJobQueue().getJson();
 
 	return info;
 }

@@ -11,7 +11,8 @@ void LoadMonitor::LoadMonitor::update()
 	{ // way out of date
 		mCounts = 0;
 		mLatencyEvents = 0;
-		mLatencyMS = 0;
+		mLatencyMSAvg = 0;
+		mLatencyMSPeak = 0;
 		mLastUpdate = now;
 		return;
 	}
@@ -21,7 +22,8 @@ void LoadMonitor::LoadMonitor::update()
 		++mLastUpdate;
 		mCounts -= (mCounts / 4);
 		mLatencyEvents -= (mLatencyEvents / 4);
-		mLatencyMS -= (mLatencyMS / 4);
+		mLatencyMSAvg -= (mLatencyMSAvg / 4);
+		mLatencyMSPeak -= (mLatencyMSPeak / 4);
 	} while (mLastUpdate < now);
 }
 
@@ -38,8 +40,14 @@ void LoadMonitor::addLatency(int latency)
 	boost::mutex::scoped_lock sl(mLock);
 
 	update();
+
 	++mLatencyEvents;
-	mLatencyMS += latency;
+	mLatencyMSAvg += latency;
+	mLatencyMSPeak += latency;
+
+	int lp = mLatencyEvents * latency * 4;
+	if (mLatencyMSPeak < lp)
+		mLatencyMSPeak = lp;
 }
 
 void LoadMonitor::addCountAndLatency(int counts, int latency)
@@ -49,10 +57,15 @@ void LoadMonitor::addCountAndLatency(int counts, int latency)
 	update();
 	mCounts += counts;
 	++mLatencyEvents;
-	mLatencyMS += latency;
+	mLatencyMSAvg += latency;
+	mLatencyMSPeak += latency;
+
+	int lp = mLatencyEvents * latency * 4;
+	if (mLatencyMSPeak < lp)
+		mLatencyMSPeak = lp;
 }
 
-void LoadMonitor::getCountAndLatency(uint64& count, uint64& latency)
+void LoadMonitor::getCountAndLatency(uint64& count, uint64& latencyAvg, uint64& latencyPeak)
 {
 	boost::mutex::scoped_lock sl(mLock);
 
@@ -61,6 +74,13 @@ void LoadMonitor::getCountAndLatency(uint64& count, uint64& latency)
 	count = mCounts / 4;
 
 	if (mLatencyEvents == 0)
-		latency = 0;
-	else latency = mLatencyMS / (mLatencyEvents * 4);
+	{
+		latencyAvg = 0;
+		latencyPeak = 0;
+	}
+	else
+	{
+		latencyAvg = mLatencyMSAvg / (mLatencyEvents * 4);
+		latencyPeak = mLatencyMSPeak / (mLatencyEvents * 4);
+	}
 }

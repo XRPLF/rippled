@@ -4,6 +4,7 @@
 #include <string>
 
 #include <boost/thread/mutex.hpp>
+#include <boost/shared_ptr.hpp>
 
 #include "types.h"
 
@@ -12,32 +13,31 @@
 class LoadMonitor
 {
 protected:
-	std::string			mName;
 	uint64				mCounts;
 	uint64				mLatencyEvents;
-	uint64				mLatencyMS;
+	uint64				mLatencyMSAvg;
+	uint64				mLatencyMSPeak;
 	time_t				mLastUpdate;
 	boost::mutex		mLock;
 
 	void update();
 
 public:
-	LoadMonitor(const std::string& n) : mName(n), mCounts(0), mLatencyEvents(0), mLatencyMS(0)
+	LoadMonitor() : mCounts(0), mLatencyEvents(0), mLatencyMSAvg(0), mLatencyMSPeak(0)
 	{ mLastUpdate = time(NULL); }
-
-	void setName(const std::string& n)		{ mName = n; }
-
-	const std::string& getName() const		{ return mName; }
 
 	void addCount(int counts);
 	void addLatency(int latency);
 	void addCountAndLatency(int counts, int latency);
 
-	void getCountAndLatency(uint64& count, uint64& latency);
+	void getCountAndLatency(uint64& count, uint64& latencyAvg, uint64& latencyPeak);
 };
 
 class LoadEvent
 {
+public:
+	typedef boost::shared_ptr<LoadEvent> pointer;
+
 protected:
 	LoadMonitor&				mMonitor;
 	bool						mRunning;
