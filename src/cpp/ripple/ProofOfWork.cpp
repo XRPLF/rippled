@@ -302,9 +302,9 @@ BOOST_AUTO_TEST_CASE( ProofOfWork_test )
 				cLog(lsFATAL) << "Solution fails";
 			}
 		}
+	}
 #endif
 
-	}
 }
 
 BOOST_AUTO_TEST_SUITE_END()
