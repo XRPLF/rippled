@@ -130,9 +130,9 @@ Json::Value JobQueue::getJson(int)
 		{
 			Json::Value pri(Json::objectValue);
 			pri["priority_level"] = Job::toString(static_cast<JobType>(i));
-			if (count != 0)
-				pri["waiting"] = static_cast<int>(jobCount);
 			if (jobCount != 0)
+				pri["waiting"] = static_cast<int>(jobCount);
+			if (count != 0)
 				pri["per_second"] = static_cast<int>(count);
 			if (latencyPeak != 0)
 				pri["peak_latency"] = static_cast<int>(latencyPeak);
