@@ -13,11 +13,11 @@
 enum POWResult
 {
 	powOK		= 0,
-	powREUSED	= 1,
-	powBADNONCE	= 2,
-	powBADTOKEN	= 3,
-	powEXPIRED	= 4,
-	powCORRUPT	= 5,
+	powREUSED	= 1, // already submitted
+	powBADNONCE	= 2, // you didn't solve it
+	powEXPIRED	= 3, // time is up
+	powCORRUPT	= 4,
+	powTOOEASY	= 5, // the difficulty increased too much while you solved it
 };
 
 class ProofOfWork
@@ -62,6 +62,7 @@ protected:
 	uint256							mTarget;
 	time_t							mLastDifficultyChange;
 	int								mValidTime;
+	int								mPowEntry;
 
 	powMap_t						mSolvedChallenges;
 	boost::mutex					mLock;
@@ -72,6 +73,7 @@ public:
 	ProofOfWork getProof();
 	POWResult checkProof(const std::string& token, const uint256& solution);
 	uint64 getDifficulty()	{ return ProofOfWork::getDifficulty(mTarget, mIterations); }
+	void setDifficulty(int i);
 
 	void loadHigh();
 	void loadLow();
