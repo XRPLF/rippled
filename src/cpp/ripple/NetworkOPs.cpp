@@ -957,7 +957,7 @@ Json::Value NetworkOPs::getServerInfo()
 	if (mConsensus)
 		info["consensus"] = mConsensus->getJson();
 
-	info["jobs"] = theApp->getJobQueue().getJson();
+	info["load"] = theApp->getJobQueue().getJson();
 
 	return info;
 }
