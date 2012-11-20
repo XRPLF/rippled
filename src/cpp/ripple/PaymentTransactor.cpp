@@ -9,6 +9,7 @@ void PaymentTransactor::calculateFee()
 {
 	if (mTxn.getFlags() & tfCreateAccount)
 	{
+
 		mFeeDue	= theConfig.FEE_ACCOUNT_CREATE;
 	}else Transactor::calculateFee();
 }
@@ -146,7 +147,13 @@ TER PaymentTransactor::doApply()
 		else
 		{
 			mTxnAccount->setFieldAmount(sfBalance, saSrcXRPBalance - saDstAmount);
-			sleDst->setFieldAmount(sfBalance, sleDst->getFieldAmount(sfBalance) + saDstAmount);
+			// re-arm the password change fee if we can and need to
+			if ( (sleDst->getFlags() & lsfPasswordSpent) &&
+				 (saDstAmount > theConfig.FEE_DEFAULT) )
+			{
+				sleDst->setFieldAmount(sfBalance, sleDst->getFieldAmount(sfBalance) + saDstAmount-theConfig.FEE_DEFAULT);
+				sleDst->clearFlag(lsfPasswordSpent);
+			}else sleDst->setFieldAmount(sfBalance, sleDst->getFieldAmount(sfBalance) + saDstAmount);
 
 			terResult	= tesSUCCESS;
 		}

@@ -4,42 +4,29 @@
 
 SETUP_LOG();
 
-// TODO: 
-TER RegularKeySetTransactor::checkSig()
-{
-	// Transaction's signing public key must be for the source account.
-	// To prove the master private key made this transaction.
-	if (mSigningPubKey.getAccountID() != mTxnAccountID)
-	{
-		// Signing Pub Key must be for Source Account ID.
-		cLog(lsWARNING) << "sourceAccountID: " << mSigningPubKey.humanAccountID();
-		cLog(lsWARNING) << "txn accountID: " << mTxn.getSourceAccount().humanAccountID();
 
-		return temBAD_SET_ID;
-	}
-	return tesSUCCESS;
-}
-
-// TODO: this should be default fee if flag isn't set
 void RegularKeySetTransactor::calculateFee()
 {
-	mFeeDue	= 0;
+	Transactor::calculateFee();
+
+	if ( !(mTxnAccount->getFlags() & lsfPasswordSpent) && 
+		 (mSigningPubKey.getAccountID() == mTxnAccountID))
+	{  // flag is armed and they signed with the right account
+		
+		mSourceBalance	= mTxnAccount->getFieldAmount(sfBalance);
+		if(mSourceBalance < mFeeDue) mFeeDue	= 0;
+	}
 }
 
 
-// TODO: change to take a fee if there is one there
 TER RegularKeySetTransactor::doApply()
 {
 	std::cerr << "doRegularKeySet>" << std::endl;
 
-	if (mTxnAccount->getFlags() & lsfPasswordSpent)
+	if(mFeeDue.isZero())
 	{
-		std::cerr << "doRegularKeySet: Delay transaction: Funds already spent." << std::endl;
-
-		return terFUNDS_SPENT;
+		mTxnAccount->setFlag(lsfPasswordSpent);
 	}
-
-	mTxnAccount->setFlag(lsfPasswordSpent);
 
 	uint160	uAuthKeyID=mTxn.getFieldAccount160(sfRegularKey);
 	mTxnAccount->setFieldAccount(sfRegularKey, uAuthKeyID);

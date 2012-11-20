@@ -1,6 +1,6 @@
 #include "LoadMonitor.h"
 
-void LoadMonitor::LoadMonitor::update()
+void LoadMonitor::update()
 { // call with the mutex
 	time_t now = time(NULL);
 
