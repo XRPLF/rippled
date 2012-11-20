@@ -1,6 +1,8 @@
 #ifndef __WSHANDLER__
 #define __WSHANDLER__
 
+#include "Application.h"
+
 class WSConnection;
 
 // A single instance of this object is made.
@@ -87,10 +89,11 @@ public:
 
 	void on_message(connection_ptr cpClient, message_ptr mpMessage)
 	{
+		LoadEvent::pointer event = theApp->getJobQueue().getLoadEvent(jtCLIENT);
 		Json::Value		jvRequest;
 		Json::Reader	jrReader;
 
-    cLog(lsDEBUG) << "Ws:: Receiving '" << mpMessage->get_payload() << "'";
+	    cLog(lsDEBUG) << "Ws:: Receiving '" << mpMessage->get_payload() << "'";
 
 		if (mpMessage->get_opcode() != websocketpp::frame::opcode::TEXT)
 		{

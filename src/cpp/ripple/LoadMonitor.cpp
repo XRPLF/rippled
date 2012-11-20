@@ -1,6 +1,6 @@
 #include "LoadMonitor.h"
 
-void LoadMonitor::LoadMonitor::update()
+void LoadMonitor::update()
 { // call with the mutex
 	time_t now = time(NULL);
 
@@ -11,7 +11,8 @@ void LoadMonitor::LoadMonitor::update()
 	{ // way out of date
 		mCounts = 0;
 		mLatencyEvents = 0;
-		mLatencyMS = 0;
+		mLatencyMSAvg = 0;
+		mLatencyMSPeak = 0;
 		mLastUpdate = now;
 		return;
 	}
@@ -19,9 +20,10 @@ void LoadMonitor::LoadMonitor::update()
 	do
 	{ // do exponential decay
 		++mLastUpdate;
-		mCounts -= (mCounts / 4);
-		mLatencyEvents -= (mLatencyEvents / 4);
-		mLatencyMS -= (mLatencyMS / 4);
+		mCounts -= ((mCounts + 3) / 4);
+		mLatencyEvents -= ((mLatencyEvents + 3) / 4);
+		mLatencyMSAvg -= (mLatencyMSAvg / 4);
+		mLatencyMSPeak -= (mLatencyMSPeak / 4);
 	} while (mLastUpdate < now);
 }
 
@@ -35,24 +37,39 @@ void LoadMonitor::addCount(int counts)
 
 void LoadMonitor::addLatency(int latency)
 {
+	if (latency == 1)
+		latency = 0;
 	boost::mutex::scoped_lock sl(mLock);
 
 	update();
+
 	++mLatencyEvents;
-	mLatencyMS += latency;
+	mLatencyMSAvg += latency;
+	mLatencyMSPeak += latency;
+
+	int lp = mLatencyEvents * latency * 4;
+	if (mLatencyMSPeak < lp)
+		mLatencyMSPeak = lp;
 }
 
 void LoadMonitor::addCountAndLatency(int counts, int latency)
 {
+	if (latency == 1)
+		latency = 0;
 	boost::mutex::scoped_lock sl(mLock);
 
 	update();
 	mCounts += counts;
 	++mLatencyEvents;
-	mLatencyMS += latency;
+	mLatencyMSAvg += latency;
+	mLatencyMSPeak += latency;
+
+	int lp = mLatencyEvents * latency * 4;
+	if (mLatencyMSPeak < lp)
+		mLatencyMSPeak = lp;
 }
 
-void LoadMonitor::getCountAndLatency(uint64& count, uint64& latency)
+void LoadMonitor::getCountAndLatency(uint64& count, uint64& latencyAvg, uint64& latencyPeak)
 {
 	boost::mutex::scoped_lock sl(mLock);
 
@@ -61,6 +78,13 @@ void LoadMonitor::getCountAndLatency(uint64& count, uint64& latency)
 	count = mCounts / 4;
 
 	if (mLatencyEvents == 0)
-		latency = 0;
-	else latency = mLatencyMS / (mLatencyEvents * 4);
+	{
+		latencyAvg = 0;
+		latencyPeak = 0;
+	}
+	else
+	{
+		latencyAvg = mLatencyMSAvg / (mLatencyEvents * 4);
+		latencyPeak = mLatencyMSPeak / (mLatencyEvents * 4);
+	}
 }

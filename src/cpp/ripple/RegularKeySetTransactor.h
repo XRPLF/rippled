@@ -6,6 +6,5 @@ class RegularKeySetTransactor : public Transactor
 public:
 	RegularKeySetTransactor(const SerializedTransaction& txn,TransactionEngineParams params, TransactionEngine* engine) : Transactor(txn,params,engine) {}
 	TER checkFee();
-	TER checkSig();
 	TER doApply();
 };
