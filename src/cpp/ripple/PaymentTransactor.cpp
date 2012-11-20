@@ -4,13 +4,15 @@
 
 #define RIPPLE_PATHS_MAX	3
 
-// TODO: only have the higher fee if the account doesn't in fact exist
+// only have the higher fee if the account doesn't in fact exist
 void PaymentTransactor::calculateFee()
 {
 	if (mTxn.getFlags() & tfCreateAccount)
 	{
-
-		mFeeDue	= theConfig.FEE_ACCOUNT_CREATE;
+		const uint160	uDstAccountID	= mTxn.getFieldAccount160(sfDestination);
+		SLE::pointer	sleDst	= mEngine->entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uDstAccountID));
+		if(!sleDst) mFeeDue	= theConfig.FEE_ACCOUNT_CREATE;
+		else Transactor::calculateFee();
 	}else Transactor::calculateFee();
 }
 

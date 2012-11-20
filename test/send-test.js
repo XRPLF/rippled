@@ -15,13 +15,14 @@ var serverDelay = 1500;
 
 buster.testRunner.timeout = 5000;
 
+
 /*
-buster.testCase("Simple", {
+buster.testCase("Fee Changes", {
   'setUp' : testutils.build_setup({no_server: true}),  // 
   'tearDown' : testutils.build_teardown(),
 
-  "simple." :
-    function (done) { buster.assert(1); 
+  "varying the fee for Payment" :
+    function (done) { 
     
  		this.remote.transaction()
 	.payment('root', 'alice', "10000")
@@ -36,8 +37,8 @@ buster.testCase("Simple", {
 	  }).submit();
 	  
 	   }
-    }); */
-    
+    }); 
+  */ 
 buster.testCase("Sending", {
   'setUp' : testutils.build_setup(),
   'tearDown' : testutils.build_teardown(),
