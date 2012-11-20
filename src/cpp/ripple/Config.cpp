@@ -27,7 +27,7 @@
 #define SECTION_RPC_IP					"rpc_ip"
 #define SECTION_RPC_PORT				"rpc_port"
 #define SECTION_SNTP					"sntp_servers"
-#define SECTION_UNL_DEFAULT				"unl_default"
+#define SECTION_VALIDATORS_FILE			"validators_file"
 #define SECTION_VALIDATION_QUORUM		"validation_quorum"
 #define SECTION_VALIDATION_SEED			"validation_seed"
 #define SECTION_WEBSOCKET_PUBLIC_IP		"websocket_public_ip"
@@ -292,8 +292,8 @@ void Config::load()
 			if (sectionSingleB(secConfig, SECTION_ACCOUNT_PROBE_MAX, strTemp))
 				ACCOUNT_PROBE_MAX	= boost::lexical_cast<int>(strTemp);
 
-			if (sectionSingleB(secConfig, SECTION_UNL_DEFAULT, strTemp))
-				UNL_DEFAULT			= strTemp;
+			if (sectionSingleB(secConfig, SECTION_VALIDATORS_FILE, strTemp))
+				VALIDATORS_FILE		= strTemp;
 
 			if (sectionSingleB(secConfig, SECTION_DEBUG_LOGFILE, strTemp))
 				DEBUG_LOGFILE		= strTemp;

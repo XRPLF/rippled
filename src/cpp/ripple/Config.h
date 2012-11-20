@@ -50,7 +50,7 @@ public:
 	boost::filesystem::path		CONFIG_DIR;
 	boost::filesystem::path		DATA_DIR;
 	boost::filesystem::path		DEBUG_LOGFILE;
-	boost::filesystem::path		UNL_DEFAULT;
+	boost::filesystem::path		VALIDATORS_FILE;
 
 	std::string					VALIDATORS_SITE;		// Where to find validators.txt on the Internet.
 	std::vector<std::string>	VALIDATORS;				// Validators from rippled.cfg.
