@@ -37,6 +37,8 @@ void LoadMonitor::addCount(int counts)
 
 void LoadMonitor::addLatency(int latency)
 {
+	if (latency == 1)
+		latency = 0;
 	boost::mutex::scoped_lock sl(mLock);
 
 	update();
@@ -52,6 +54,8 @@ void LoadMonitor::addLatency(int latency)
 
 void LoadMonitor::addCountAndLatency(int counts, int latency)
 {
+	if (latency == 1)
+		latency = 0;
 	boost::mutex::scoped_lock sl(mLock);
 
 	update();
