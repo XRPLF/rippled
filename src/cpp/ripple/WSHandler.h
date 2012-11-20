@@ -116,7 +116,14 @@ public:
 		}
 		else
 		{
-			send(cpClient, mMap[cpClient]->invokeCommand(jvRequest));
+			boost::shared_ptr<WSConnection> conn;
+			{
+				boost::mutex::scoped_lock	sl(mMapLock);
+				conn = mMap[cpClient];
+			}
+			if (!conn)
+				return;
+			send(cpClient, conn->invokeCommand(jvRequest));
 		}
 	}
 
