@@ -22,6 +22,7 @@ const char* Job::toString(JobType t)
 		case jtDEATH:			return "jobOfDeath";
 		case jtCLIENT:			return "clientCommand";
 		case jtPEER:			return "peerCommand";
+		case jtDISK:			return "diskAccess";
 		default:				assert(false); return "unknown";
 	}
 }

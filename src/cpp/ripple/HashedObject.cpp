@@ -60,6 +60,7 @@ void HashedObjectStore::waitWrite()
 
 void HashedObjectStore::bulkWrite()
 {
+	LoadEvent::pointer event = theApp->getJobQueue().getLoadEvent(jtDISK);
 	while (1)
 	{
 		std::vector< boost::shared_ptr<HashedObject> > set;

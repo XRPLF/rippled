@@ -35,6 +35,7 @@ enum JobType
 // special types not dispatched by the job pool
 	jtCLIENT		= 10,
 	jtPEER			= 11,
+	jtDISK			= 12,
 };
 #define NUM_JOB_TYPES 16
 
