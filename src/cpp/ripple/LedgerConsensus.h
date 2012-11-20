@@ -18,6 +18,7 @@
 #include "CanonicalTXSet.h"
 #include "TransactionEngine.h"
 #include "InstanceCounter.h"
+#include "LoadMonitor.h"
 
 DEFINE_INSTANCE(LedgerConsensus);
 
@@ -120,7 +121,7 @@ protected:
 	boost::unordered_set<uint160> mDeadNodes;
 
 	// final accept logic
-	void accept(SHAMap::ref txSet);
+	void accept(SHAMap::ref txSet, LoadEvent::pointer);
 
 	void weHave(const uint256& id, Peer::ref avoidPeer);
 	void startAcquiring(const TransactionAcquire::pointer&);
