@@ -353,6 +353,12 @@ Amount.prototype.issuer = function() {
   return this._issuer;
 };
 
+Amount.prototype.to_number = function(allow_nan) {
+  var s = this.to_text(allow_nan);
+
+  return ('string' === typeof s) ? Number(s) : s;
+}
+
 // Convert only value to JSON wire format.
 Amount.prototype.to_text = function(allow_nan) {
   if (isNaN(this._value)) {

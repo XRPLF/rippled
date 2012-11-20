@@ -1,6 +1,5 @@
 #include "JobQueue.h"
 
-#include <boost/make_shared.hpp>
 #include <boost/foreach.hpp>
 #include <boost/bind.hpp>
 #include <boost/thread.hpp>
@@ -21,6 +20,9 @@ const char* Job::toString(JobType t)
 		case jtPROPOSAL_t:		return "trustedProposal";
 		case jtADMIN:			return "administration";
 		case jtDEATH:			return "jobOfDeath";
+		case jtCLIENT:			return "clientCommand";
+		case jtPEER:			return "peerCommand";
+		case jtDISK:			return "diskAccess";
 		default:				assert(false); return "unknown";
 	}
 }
@@ -68,7 +70,7 @@ void JobQueue::addJob(JobType type, const boost::function<void(Job&)>& jobFunc)
 	boost::mutex::scoped_lock sl(mJobLock);
 	assert(mThreadCount != 0); // do not add jobs to a queue with no threads
 
-	mJobSet.insert(Job(type, ++mLastJob, jobFunc));	
+	mJobSet.insert(Job(type, ++mLastJob, mJobLoads[type], jobFunc));
 	++mJobCounts[type];
 	mJobCond.notify_one();
 }
@@ -104,6 +106,43 @@ std::vector< std::pair<JobType, int> > JobQueue::getJobCounts()
 	typedef std::pair<JobType, int> jt_int_pair;
 	BOOST_FOREACH(const jt_int_pair& it, mJobCounts)
 		ret.push_back(it);
+
+	return ret;
+}
+
+Json::Value JobQueue::getJson(int)
+{
+	Json::Value ret(Json::objectValue);
+	boost::mutex::scoped_lock sl(mJobLock);
+
+	ret["threads"] = mThreadCount;
+
+	Json::Value priorities = Json::arrayValue;
+	for (int i = 0; i < NUM_JOB_TYPES; ++i)
+	{
+		uint64 count, latencyAvg, latencyPeak, jobCount;
+		mJobLoads[i].getCountAndLatency(count, latencyAvg, latencyPeak);
+		std::map<JobType, int>::iterator it = mJobCounts.find(static_cast<JobType>(i));
+		if (it == mJobCounts.end())
+			jobCount = 0;
+		else
+			jobCount = it->second;
+		if ((count != 0) || (jobCount != 0) || (latencyPeak != 0))
+		{
+			Json::Value pri(Json::objectValue);
+			pri["job_type"] = Job::toString(static_cast<JobType>(i));
+			if (jobCount != 0)
+				pri["waiting"] = static_cast<int>(jobCount);
+			if (count != 0)
+				pri["per_second"] = static_cast<int>(count);
+			if (latencyPeak != 0)
+				pri["peak_latency"] = static_cast<int>(latencyPeak);
+			if (latencyAvg != 0)
+				pri["avg_latency"] = static_cast<int>(latencyAvg);
+			priorities.append(pri);
+		}
+	}
+	ret["job_types"] = priorities;
 
 	return ret;
 }

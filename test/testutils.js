@@ -265,14 +265,22 @@ var transfer_rate = function (remote, src, billionths, callback) {
 
 var verify_balance = function (remote, src, amount_json, callback) {
   assert(4 === arguments.length);
-  var amount  = Amount.from_json(amount_json);
+  var amount_req  = Amount.from_json(amount_json);
 
-  if (amount.is_native()) {
-    // XXX Not implemented.
-    callback();
+  if (amount_req.is_native()) {
+    remote.request_account_balance(src, 'CURRENT')
+      .once('account_balance', function (amount_act) {
+	  if (!amount_act.equals(amount_req))
+	    console.log("verify_balance: failed: %s / %s",
+	      amount_act.to_text_full(),
+	      amount_req.to_text_full());
+
+	  callback(!amount_act.equals(amount_req));
+	})
+      .request();
   }
   else {
-    remote.request_ripple_balance(src, amount.issuer().to_json(), amount.currency().to_json(), 'CURRENT')
+    remote.request_ripple_balance(src, amount_req.issuer().to_json(), amount_req.currency().to_json(), 'CURRENT')
       .once('ripple_state', function (m) {
   	// console.log("BALANCE: %s", JSON.stringify(m));
   	// console.log("account_balance: %s", m.account_balance.to_text_full());
@@ -282,11 +290,11 @@ var verify_balance = function (remote, src, amount_json, callback) {
 
 	  var account_balance = Amount.from_json(m.account_balance);
 
-	  if (!account_balance.equals(amount)) {
-	    console.log("verify_balance: failed: %s vs %s is %s: %s", src, account_balance.to_text_full(), amount.to_text_full(), account_balance.not_equals_why(amount));
+	  if (!account_balance.equals(amount_req)) {
+	    console.log("verify_balance: failed: %s vs %s is %s: %s", src, account_balance.to_text_full(), amount_req.to_text_full(), account_balance.not_equals_why(amount_req));
 	  }
 
-	  callback(!account_balance.equals(amount));
+	  callback(!account_balance.equals(amount_req));
 	})
       .request();
   }
