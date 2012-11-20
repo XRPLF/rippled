@@ -20,8 +20,8 @@ void LoadMonitor::LoadMonitor::update()
 	do
 	{ // do exponential decay
 		++mLastUpdate;
-		mCounts -= (mCounts / 4);
-		mLatencyEvents -= (mLatencyEvents / 4);
+		mCounts -= ((mCounts + 3) / 4);
+		mLatencyEvents -= ((mLatencyEvents + 3) / 4);
 		mLatencyMSAvg -= (mLatencyMSAvg / 4);
 		mLatencyMSPeak -= (mLatencyMSPeak / 4);
 	} while (mLastUpdate < now);
