@@ -20,6 +20,7 @@
 #define SECTION_PEER_CONNECT_LOW_WATER	"peer_connect_low_water"
 #define SECTION_PEER_IP					"peer_ip"
 #define SECTION_PEER_PORT				"peer_port"
+#define SECTION_PEER_PRIVATE			"peer_private"
 #define SECTION_PEER_SCAN_INTERVAL_MIN	"peer_scan_interval_min"
 #define SECTION_PEER_SSL_CIPHER_LIST	"peer_ssl_cipher_list"
 #define SECTION_PEER_START_MAX			"peer_start_max"
@@ -143,6 +144,8 @@ void Config::setup(const std::string& strConf)
 	PEER_START_MAX			= DEFAULT_PEER_START_MAX;
 	PEER_CONNECT_LOW_WATER	= DEFAULT_PEER_CONNECT_LOW_WATER;
 
+	PEER_PRIVATE			= false;
+
 	TRANSACTION_FEE_BASE	= 1000;
 
 	NETWORK_QUORUM			= 0;	// Don't need to see other nodes
@@ -221,6 +224,9 @@ void Config::load()
 
 			if (sectionSingleB(secConfig, SECTION_PEER_PORT, strTemp))
 				PEER_PORT			= boost::lexical_cast<int>(strTemp);
+
+			if (sectionSingleB(secConfig, SECTION_PEER_PRIVATE, strTemp))
+				PEER_PRIVATE		= boost::lexical_cast<bool>(strTemp);
 
 			(void) sectionSingleB(secConfig, SECTION_RPC_IP, RPC_IP);
 

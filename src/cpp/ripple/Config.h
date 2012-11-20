@@ -66,7 +66,7 @@ public:
 	int							LEDGER_SECONDS;
 	int							LEDGER_PROPOSAL_DELAY_SECONDS;
 	int							LEDGER_AVALANCHE_SECONDS;
-	bool						LEDGER_CREATOR;     // should be false unless we are starting a new ledger
+	bool						LEDGER_CREATOR;			// Should be false unless we are starting a new ledger.
 	bool						RUN_STANDALONE;
 
 	// Note: The following parameters do not relate to the UNL or trust at all
@@ -81,6 +81,7 @@ public:
 	int							PEER_SCAN_INTERVAL_MIN;
 	int							PEER_START_MAX;
 	unsigned int				PEER_CONNECT_LOW_WATER;
+	bool						PEER_PRIVATE;			// True to ask peers not to relay current IP.
 
 	// Websocket networking parameters
 	std::string					WEBSOCKET_PUBLIC_IP;		// XXX Going away. Merge with the inbound peer connction.
