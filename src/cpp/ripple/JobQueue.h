@@ -36,6 +36,7 @@ enum JobType
 	jtCLIENT		= 10,
 	jtPEER			= 11,
 	jtDISK			= 12,
+	jtLEDGER		= 13,
 };
 #define NUM_JOB_TYPES 16
 

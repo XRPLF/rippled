@@ -23,6 +23,7 @@ const char* Job::toString(JobType t)
 		case jtCLIENT:			return "clientCommand";
 		case jtPEER:			return "peerCommand";
 		case jtDISK:			return "diskAccess";
+		case jtLEDGER:			return "acceptLedger";
 		default:				assert(false); return "unknown";
 	}
 }
