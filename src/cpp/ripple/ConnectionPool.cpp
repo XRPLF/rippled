@@ -300,6 +300,7 @@ void ConnectionPool::connectTo(const std::string& strIp, int iPort)
 {
 	if (theConfig.RUN_STANDALONE)
 		return;
+
 	{
 		Database*	db	= theApp->getWalletDB()->getDB();
 		ScopedLock	sl(theApp->getWalletDB()->getDBLock());

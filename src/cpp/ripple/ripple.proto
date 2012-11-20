@@ -34,7 +34,6 @@ enum MessageType {
 
 // Sent on connect
 
-
 message TMHello {
 	required uint32 protoVersion			= 1;
 	required uint32 protoVersionMin			= 2;
@@ -46,6 +45,7 @@ message TMHello {
 	optional uint32 ledgerIndex				= 8;
 	optional bytes	ledgerClosed 			= 9;  // our last closed ledger
 	optional bytes	ledgerPrevious			= 10; // the ledger before the last closed ledger
+	optional bool	nodePrivate				= 11; // Request to not forward IP.
 }
 
 

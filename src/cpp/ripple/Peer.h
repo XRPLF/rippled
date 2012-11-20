@@ -49,6 +49,7 @@ private:
 	ipPort			mIpPortConnect;
 	uint256			mCookieHash;
 	uint64			mPeerId;
+	bool			mPrivate;			// Keep peer IP private.
 
 	uint256			mClosedLedgerHash, mPreviousLedgerHash;
 	std::list<uint256>	mRecentLedgers;
