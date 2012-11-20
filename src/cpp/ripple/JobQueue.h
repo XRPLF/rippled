@@ -37,6 +37,7 @@ enum JobType
 	jtPEER			= 11,
 	jtDISK			= 12,
 	jtLEDGER		= 13,
+	jtRPC			= 14,
 };
 #define NUM_JOB_TYPES 16
 
