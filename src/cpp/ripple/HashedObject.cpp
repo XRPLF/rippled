@@ -117,7 +117,6 @@ HashedObject::pointer HashedObjectStore::retrieve(const uint256& hash)
 {
 	HashedObject::pointer obj;
 	{
-		ScopedLock sl(theApp->getHashNodeDB()->getDBLock());
 		obj = mCache.fetch(hash);
 		if (obj)
 		{
