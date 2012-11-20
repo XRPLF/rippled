@@ -15,6 +15,7 @@
 # Ignore object files.
 *.o
 build
+tags
 
 # Ignore locally installed node_modules
 node_modules

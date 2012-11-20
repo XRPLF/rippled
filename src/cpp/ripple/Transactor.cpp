@@ -15,11 +15,11 @@ Transactor::pointer Transactor::makeTransactor(const SerializedTransaction& txn,
 {
 	switch(txn.getTxnType())
 	{
-	case ttPAYMENT: 
+	case ttPAYMENT:
 		return( Transactor::pointer(new PaymentTransactor(txn,params,engine)) );
-	case ttACCOUNT_SET: 
+	case ttACCOUNT_SET:
 		return( Transactor::pointer(new AccountSetTransactor(txn,params,engine)) );
-	case ttREGULAR_KEY_SET: 
+	case ttREGULAR_KEY_SET:
 		return( Transactor::pointer(new RegularKeySetTransactor(txn,params,engine)) );
 	case ttTRUST_SET:
 		return( Transactor::pointer(new TrustSetTransactor(txn,params,engine)) );
@@ -35,13 +35,10 @@ Transactor::pointer Transactor::makeTransactor(const SerializedTransaction& txn,
 }
 
 
-Transactor::Transactor(const SerializedTransaction& txn,TransactionEngineParams params, TransactionEngine* engine) : mTxn(txn), mParams(params), mEngine(engine)
+Transactor::Transactor(const SerializedTransaction& txn,TransactionEngineParams params, TransactionEngine* engine) : mTxn(txn), mEngine(engine), mParams(params)
 {
 	mHasAuthKey=false;
 }
-
-
-
 
 void Transactor::calculateFee()
 {
@@ -61,7 +58,7 @@ TER Transactor::payFee()
 	}
 
 	if( !saPaid ) return tesSUCCESS;
-	
+
 	// Deduct the fee, so it's not available during the transaction.
 	// Will only write the account back, if the transaction succeeds.
 	if (mSourceBalance < saPaid)
@@ -73,12 +70,11 @@ TER Transactor::payFee()
 
 		return terINSUF_FEE_B;
 	}
-	
+
 	mSourceBalance -= saPaid;
 	mTxnAccount->setFieldAmount(sfBalance, mSourceBalance);
-	
-	return tesSUCCESS;
 
+	return tesSUCCESS;
 }
 
 
@@ -108,7 +104,7 @@ TER Transactor::checkSig()
 
 		return temBAD_AUTH_MASTER;
 	}
-			
+
 	return tesSUCCESS;
 }
 
@@ -133,11 +129,10 @@ TER Transactor::checkSeq()
 			if (mEngine->getLedger()->hasTransaction(txID))
 				return tefALREADY;
 		}
-		
+
 		cLog(lsWARNING) << "applyTransaction: past sequence number";
 
 		return tefPAST_SEQ;
-		
 	}else
 	{
 		mTxnAccount->setFieldU32(sfSequence, t_seq + 1);
@@ -209,12 +204,13 @@ TER Transactor::apply()
 
 	terResult=checkSig();
 	if(terResult != tesSUCCESS) return(terResult);
-	
+
 	terResult=checkSeq();
 	if(terResult != tesSUCCESS) return(terResult);
 
 	mEngine->entryModify(mTxnAccount);
 
 	return doApply();
-	
 }
+
+// vim:ts=4
