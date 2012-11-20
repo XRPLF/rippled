@@ -19,6 +19,7 @@ var WebSocket	  = require('ws');
 
 var EventEmitter  = require('events').EventEmitter;
 var Amount	  = require('./amount.js').Amount;
+var Currency	  = require('./amount.js').Currency;
 var UInt160	  = require('./amount.js').UInt160;
 
 // Request events emitted:
