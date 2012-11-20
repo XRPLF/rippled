@@ -84,30 +84,32 @@ void HashedObjectStore::bulkWrite()
 			fAdd("INSERT INTO CommittedObjects (Hash,ObjType,LedgerIndex,Object) VALUES ('%s','%c','%u',%s);");
 
 		Database* db = theApp->getHashNodeDB()->getDB();
-		ScopedLock sl = theApp->getHashNodeDB()->getDBLock();
-
-		db->executeSQL("BEGIN TRANSACTION;");
-
-		BOOST_FOREACH(const boost::shared_ptr<HashedObject>& it, set)
 		{
-			if (!SQL_EXISTS(db, boost::str(fExists % it->getHash().GetHex())))
-			{
-				char type;
-				switch(it->getType())
-				{
-					case hotLEDGER:				type = 'L'; break;
-					case hotTRANSACTION:		type = 'T'; break;
-					case hotACCOUNT_NODE:		type = 'A'; break;
-					case hotTRANSACTION_NODE:	type = 'N'; break;
-					default:					type = 'U';
-				}
-				std::string rawData;
-				db->escape(&(it->getData().front()), it->getData().size(), rawData);
-				db->executeSQL(boost::str(fAdd % it->getHash().GetHex() % type % it->getIndex() % rawData ));
-			}
-		}
+			ScopedLock sl = theApp->getHashNodeDB()->getDBLock();
 
-		db->executeSQL("END TRANSACTION;");
+			db->executeSQL("BEGIN TRANSACTION;");
+
+			BOOST_FOREACH(const boost::shared_ptr<HashedObject>& it, set)
+			{
+				if (!SQL_EXISTS(db, boost::str(fExists % it->getHash().GetHex())))
+				{
+					char type;
+					switch(it->getType())
+					{
+						case hotLEDGER:				type = 'L'; break;
+						case hotTRANSACTION:		type = 'T'; break;
+						case hotACCOUNT_NODE:		type = 'A'; break;
+						case hotTRANSACTION_NODE:	type = 'N'; break;
+						default:					type = 'U';
+					}
+					std::string rawData;
+					db->escape(&(it->getData().front()), it->getData().size(), rawData);
+					db->executeSQL(boost::str(fAdd % it->getHash().GetHex() % type % it->getIndex() % rawData ));
+				}
+			}
+
+			db->executeSQL("END TRANSACTION;");
+		}
 	}
 }
 
