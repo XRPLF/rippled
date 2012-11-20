@@ -4,12 +4,15 @@
 
 #define RIPPLE_PATHS_MAX	3
 
-// TODO: only have the higher fee if the account doesn't in fact exist
+// only have the higher fee if the account doesn't in fact exist
 void PaymentTransactor::calculateFee()
 {
 	if (mTxn.getFlags() & tfCreateAccount)
 	{
-		mFeeDue	= theConfig.FEE_ACCOUNT_CREATE;
+		const uint160	uDstAccountID	= mTxn.getFieldAccount160(sfDestination);
+		SLE::pointer	sleDst	= mEngine->entryCache(ltACCOUNT_ROOT, Ledger::getAccountRootIndex(uDstAccountID));
+		if(!sleDst) mFeeDue	= theConfig.FEE_ACCOUNT_CREATE;
+		else Transactor::calculateFee();
 	}else Transactor::calculateFee();
 }
 
@@ -146,7 +149,13 @@ TER PaymentTransactor::doApply()
 		else
 		{
 			mTxnAccount->setFieldAmount(sfBalance, saSrcXRPBalance - saDstAmount);
-			sleDst->setFieldAmount(sfBalance, sleDst->getFieldAmount(sfBalance) + saDstAmount);
+			// re-arm the password change fee if we can and need to
+			if ( (sleDst->getFlags() & lsfPasswordSpent) &&
+				 (saDstAmount > theConfig.FEE_DEFAULT) )
+			{
+				sleDst->setFieldAmount(sfBalance, sleDst->getFieldAmount(sfBalance) + saDstAmount-theConfig.FEE_DEFAULT);
+				sleDst->clearFlag(lsfPasswordSpent);
+			}else sleDst->setFieldAmount(sfBalance, sleDst->getFieldAmount(sfBalance) + saDstAmount);
 
 			terResult	= tesSUCCESS;
 		}

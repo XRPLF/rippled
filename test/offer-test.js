@@ -335,6 +335,7 @@ buster.testCase("Offer tests", {
     },
 
   "ripple currency conversion : entire offer" :
+    // mtgox in, XRP out
     function (done) {
       var self = this;
       var seq;
@@ -380,7 +381,7 @@ buster.testCase("Offer tests", {
 	  function (callback) {
 	    self.what = "Verify offer balance.";
 
-	    testutils.verify_offer(self.remote, "bob", seq, "500", "100/USD/mtgox", callback);
+	    testutils.verify_offer(self.remote, "bob", seq, "100/USD/mtgox", "500", callback);
 	  },
 	  function (callback) {
 	    self.what = "Alice converts USD to XRP.";
@@ -475,7 +476,7 @@ buster.testCase("Offer tests", {
 	  function (callback) {
 	    self.what = "Verify offer balance.";
 
-	    testutils.verify_offer(self.remote, "bob", seq, "300", "60/USD/mtgox", callback);
+	    testutils.verify_offer(self.remote, "bob", seq, "60/USD/mtgox", "300", callback);
 	  },
 	  function (callback) {
 	    self.what = "Verify balances.";
@@ -696,7 +697,7 @@ buster.testCase("Offer cross currency", {
 	  function (callback) {
 	    self.what = "Verify offer partially consumed.";
 
-	    testutils.verify_offer(self.remote, "carol", seq, "250", "25/USD/mtgox", callback);
+	    testutils.verify_offer(self.remote, "carol", seq, "25/USD/mtgox", "250", callback);
 	  },
 	], function (error) {
 	  buster.refute(error, self.what);
@@ -704,7 +705,7 @@ buster.testCase("Offer cross currency", {
 	});
     },
 
-  "// ripple cross currency bridged payment" :
+  "ripple cross currency bridged payment" :
     // alice --> [USD/mtgox --> carol --> XRP] --> [XRP --> dan --> EUR/bitstamp] --> bob
 
     function (done) {
@@ -774,6 +775,7 @@ buster.testCase("Offer cross currency", {
 	    self.remote.transaction()
 	      .payment("alice", "bob", "30/EUR/bitstamp")
 	      .send_max("333/USD/mtgox")
+	      .path_add( [ { currency: "XRP" } ])
 	      .on('proposed', function (m) {
 		  // console.log("proposed: %s", JSON.stringify(m));
 
@@ -781,28 +783,28 @@ buster.testCase("Offer cross currency", {
 		})
 	      .submit();
 	  },
-//	  function (callback) {
-//	    self.what = "Verify balances.";
-//
-//	    testutils.verify_balances(self.remote,
-//	      {
-//		"alice"	  : "470/USD/mtgox",
-//		"bob"	  : "30/EUR/bitstamp",
-//		"carol"	  : "30/USD/mtgox",
-//		"dan"	  : "370/EUR/bitstamp",
-//	      },
-//	      callback);
-//	  },
-//	  function (callback) {
-//	    self.what = "Verify carol offer partially consumed.";
-//
-//	    testutils.verify_offer(self.remote, "carol", seq_carol, "250", "25/USD/mtgox", callback);
-//	  },
-//	  function (callback) {
-//	    self.what = "Verify dan offer partially consumed.";
-//
-//	    testutils.verify_offer(self.remote, "dan", seq_dan, "250", "25/USD/mtgox", callback);
-//	  },
+	  function (callback) {
+	    self.what = "Verify balances.";
+
+	    testutils.verify_balances(self.remote,
+	      {
+		"alice"	  : "470/USD/mtgox",
+		"bob"	  : "30/EUR/bitstamp",
+		"carol"	  : "30/USD/mtgox",
+		"dan"	  : "370/EUR/bitstamp",
+	      },
+	      callback);
+	  },
+	  function (callback) {
+	    self.what = "Verify carol offer partially consumed.";
+
+	    testutils.verify_offer(self.remote, "carol", seq_carol, "20/USD/mtgox", "200", callback);
+	  },
+	  function (callback) {
+	    self.what = "Verify dan offer partially consumed.";
+
+	    testutils.verify_offer(self.remote, "dan", seq_dan, "200", "20/EUR/mtgox", callback);
+	  },
 	], function (error) {
 	  buster.refute(error, self.what);
 	  done();

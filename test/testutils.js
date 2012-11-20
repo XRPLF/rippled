@@ -326,7 +326,7 @@ var verify_balances = function (remote, balances, callback) {
 // --> seq: sequence number of creating transaction.
 // --> taker_gets: json amount
 // --> taker_pays: json amount
-var verify_offer = function (remote, owner, seq, taker_gets, taker_pays, callback) {
+var verify_offer = function (remote, owner, seq, taker_pays, taker_gets, callback) {
   assert(6 === arguments.length);
 
   remote.request_ledger_entry('offer')
@@ -349,12 +349,12 @@ var verify_offer_not_found = function (remote, owner, seq, callback) {
   remote.request_ledger_entry('offer')
     .offer_id(owner, seq)
     .on('success', function (m) {
-	console.log("verify_no_offer: found offer: %s", JSON.stringify(m));
+	console.log("verify_offer_not_found: found offer: %s", JSON.stringify(m));
 
 	callback('entryFound');
       })
     .on('error', function (m) {
-	// console.log("verify_no_offer: success: %s", JSON.stringify(m));
+	// console.log("verify_offer_not_found: success: %s", JSON.stringify(m));
 
 	callback('remoteError' !== m.error
 	  || 'entryNotFound' !== m.remote.error);
