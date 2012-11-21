@@ -199,7 +199,7 @@ public:
 	// ledger proposal/close functions
 	void processTrustedProposal(LedgerProposal::pointer proposal, boost::shared_ptr<ripple::TMProposeSet> set,
 		RippleAddress nodePublic, uint256 checkLedger, bool sigGood);
-	bool gotTXData(const boost::shared_ptr<Peer>& peer, const uint256& hash,
+	SMAddNode gotTXData(const boost::shared_ptr<Peer>& peer, const uint256& hash,
 		const std::list<SHAMapNode>& nodeIDs, const std::list< std::vector<unsigned char> >& nodeData);
 	bool recvValidation(const SerializedValidation::pointer& val);
 	SHAMap::pointer getTXMap(const uint256& hash);

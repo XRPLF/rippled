@@ -813,13 +813,13 @@ SHAMap::pointer NetworkOPs::getTXMap(const uint256& hash)
 	return mConsensus->getTransactionTree(hash, false);
 }
 
-bool NetworkOPs::gotTXData(const boost::shared_ptr<Peer>& peer, const uint256& hash,
+SMAddNode NetworkOPs::gotTXData(const boost::shared_ptr<Peer>& peer, const uint256& hash,
 	const std::list<SHAMapNode>& nodeIDs, const std::list< std::vector<unsigned char> >& nodeData)
 {
 	if (!haveConsensusObject())
 	{
 		cLog(lsWARNING) << "Got TX data with no consensus object";
-		return false;
+		return SMAddNode();
 	}
 	return mConsensus->peerGaveNodes(peer, hash, nodeIDs, nodeData);
 }

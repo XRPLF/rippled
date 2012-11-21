@@ -135,7 +135,8 @@ bool SHAMap::getRootNode(Serializer& s, SHANodeFormat format)
 	return true;
 }
 
-bool SHAMap::addRootNode(const std::vector<unsigned char>& rootNode, SHANodeFormat format, SHAMapSyncFilter* filter)
+SMAddNode SHAMap::addRootNode(const std::vector<unsigned char>& rootNode, SHANodeFormat format,
+	SHAMapSyncFilter* filter)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
@@ -143,12 +144,12 @@ bool SHAMap::addRootNode(const std::vector<unsigned char>& rootNode, SHANodeForm
 	if (root->getNodeHash().isNonZero())
 	{
 		cLog(lsTRACE) << "got root node, already have one";
-		return true;
+		return SMAddNode::okay();
 	}
 
 	SHAMapTreeNode::pointer node = boost::make_shared<SHAMapTreeNode>(SHAMapNode(), rootNode, 0, format);
 	if (!node)
-		return false;
+		return SMAddNode::invalid();
 
 #ifdef DEBUG
 	node->dump();
@@ -170,10 +171,10 @@ bool SHAMap::addRootNode(const std::vector<unsigned char>& rootNode, SHANodeForm
 		filter->gotNode(*root, root->getNodeHash(), s.peekData(), root->getType());
 	}
 
-	return true;
+	return SMAddNode::useful();
 }
 
-bool SHAMap::addRootNode(const uint256& hash, const std::vector<unsigned char>& rootNode, SHANodeFormat format,
+SMAddNode SHAMap::addRootNode(const uint256& hash, const std::vector<unsigned char>& rootNode, SHANodeFormat format,
 	SHAMapSyncFilter* filter)
 {
 	boost::recursive_mutex::scoped_lock sl(mLock);
@@ -183,14 +184,12 @@ bool SHAMap::addRootNode(const uint256& hash, const std::vector<unsigned char>& 
 	{
 		cLog(lsTRACE) << "got root node, already have one";
 		assert(root->getNodeHash() == hash);
-		return true;
+		return SMAddNode::okay();
 	}
 
 	SHAMapTreeNode::pointer node = boost::make_shared<SHAMapTreeNode>(SHAMapNode(), rootNode, 0, format);
-	if (!node)
-		return false;
-	if (node->getNodeHash() != hash)
-		return false;
+	if (!node || node->getNodeHash() != hash)
+		return SMAddNode::invalid();
 
 	returnNode(root, true);
 	root = node;
@@ -207,42 +206,42 @@ bool SHAMap::addRootNode(const uint256& hash, const std::vector<unsigned char>& 
 		filter->gotNode(*root, root->getNodeHash(), s.peekData(), root->getType());
 	}
 
-	return true;
+	return SMAddNode::useful();
 }
 
-bool SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigned char>& rawNode,
+SMAddNode SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigned char>& rawNode,
 	SHAMapSyncFilter* filter)
 { // return value: true=okay, false=error
 	assert(!node.isRoot());
 	if (!isSynching())
 	{
 		cLog(lsINFO) << "AddKnownNode while not synching";
-		return true;
+		return SMAddNode::okay();
 	}
 
 	boost::recursive_mutex::scoped_lock sl(mLock);
 
 	if (checkCacheNode(node))
-		return true;
+		return SMAddNode::okay();
 
 	std::stack<SHAMapTreeNode::pointer> stack = getStack(node.getNodeID(), true, true);
 	if (stack.empty())
 	{
 		cLog(lsWARNING) << "AddKnownNode with empty stack";
-		return false;
+		return SMAddNode::invalid();
 	}
 
 	SHAMapTreeNode::pointer iNode = stack.top();
 	if (!iNode)
 	{	// we should always have a root
 		assert(false);
-		return true;
+		return SMAddNode::invalid();
 	}
 
 	if (iNode->isLeaf() || (iNode->getDepth() >= node.getDepth()))
 	{
 		cLog(lsTRACE) << "got inner node, already had it (late)";
-		return true;
+		return SMAddNode::okay();
 	}
 
 	if (iNode->getDepth() != (node.getDepth() - 1))
@@ -250,25 +249,25 @@ bool SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigned cha
 		cLog(lsWARNING) << "unable to hook node " << node;
 		cLog(lsINFO) << " stuck at " << *iNode;
 		cLog(lsINFO) << "got depth=" << node.getDepth() << ", walked to= " << iNode->getDepth();
-		return false;
+		return SMAddNode::invalid();
 	}
 
 	int branch = iNode->selectBranch(node.getNodeID());
 	if (branch < 0)
 	{
 		assert(false);
-		return false;
+		return SMAddNode::invalid();
 	}
 	uint256 hash = iNode->getChildHash(branch);
 	if (!hash)
 	{
 		cLog(lsWARNING) << "AddKnownNode for empty branch";
-		return false;
+		return SMAddNode::invalid();
 	}
 
 	SHAMapTreeNode::pointer newNode = boost::make_shared<SHAMapTreeNode>(node, rawNode, mSeq, snfWIRE);
 	if (hash != newNode->getNodeHash()) // these aren't the droids we're looking for
-		return false;
+		return SMAddNode::invalid();
 
 	if (filter)
 	{
@@ -279,7 +278,7 @@ bool SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigned cha
 
 	mTNByID[*newNode] = newNode;
 	if (!newNode->isLeaf())
-		return true; // only a leaf can fill a branch
+		return SMAddNode::useful(); // only a leaf can fill a branch
 
 	// did this new leaf cause its parents to fill up
 	do
@@ -294,11 +293,11 @@ bool SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigned cha
 				{
 					SHAMapTreeNode::pointer nextNode = getNode(iNode->getChildNodeID(i), iNode->getChildHash(i), false);
 					if (nextNode->isInner() && !nextNode->isFullBelow())
-						return true;
+						return SMAddNode::useful();
 				}
 				catch (SHAMapMissingNode&)
 				{
-					return true;
+					return SMAddNode::useful();
 				}
 			}
 		iNode->setFullBelow();
@@ -306,7 +305,7 @@ bool SHAMap::addKnownNode(const SHAMapNode& node, const std::vector<unsigned cha
 
 	if (root->isFullBelow())
 		clearSynching();
-	return true;
+	return SMAddNode::useful();
 }
 
 bool SHAMap::deepCompare(SHAMap& other)
@@ -486,6 +485,8 @@ BOOST_AUTO_TEST_CASE( SHAMapSync_test )
 		cLog(lsFATAL) << "Didn't get root node " << gotNodes.size();
 		BOOST_FAIL("NodeSize");
 	}
+
+	SMAddNode node();
 	if (!destination.addRootNode(*gotNodes.begin(), snfWIRE, NULL))
 	{
 		cLog(lsFATAL) << "AddRootNode fails";

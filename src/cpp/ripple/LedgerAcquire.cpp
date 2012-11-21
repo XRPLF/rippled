@@ -396,7 +396,7 @@ bool LedgerAcquire::takeBase(const std::string& data)
 }
 
 bool LedgerAcquire::takeTxNode(const std::list<SHAMapNode>& nodeIDs,
-	const std::list< std::vector<unsigned char> >& data)
+	const std::list< std::vector<unsigned char> >& data, SMAddNode& san)
 {
 	if (!mHaveBase) return false;
 	std::list<SHAMapNode>::const_iterator nodeIDit = nodeIDs.begin();
@@ -406,11 +406,15 @@ bool LedgerAcquire::takeTxNode(const std::list<SHAMapNode>& nodeIDs,
 	{
 		if (nodeIDit->isRoot())
 		{
-			if (!mLedger->peekTransactionMap()->addRootNode(mLedger->getTransHash(), *nodeDatait, snfWIRE, &tFilter))
+			if (!san.combine(mLedger->peekTransactionMap()->addRootNode(mLedger->getTransHash(), *nodeDatait,
+				snfWIRE, &tFilter)))
 				return false;
 		}
-		else if (!mLedger->peekTransactionMap()->addKnownNode(*nodeIDit, *nodeDatait, &tFilter))
-			return false;
+		else
+		{
+			if (!san.combine(mLedger->peekTransactionMap()->addKnownNode(*nodeIDit, *nodeDatait, &tFilter)))
+				return false;
+		}
 		++nodeIDit;
 		++nodeDatait;
 	}
@@ -428,7 +432,7 @@ bool LedgerAcquire::takeTxNode(const std::list<SHAMapNode>& nodeIDs,
 }
 
 bool LedgerAcquire::takeAsNode(const std::list<SHAMapNode>& nodeIDs,
-	const std::list< std::vector<unsigned char> >& data)
+	const std::list< std::vector<unsigned char> >& data, SMAddNode& san)
 {
 	cLog(lsTRACE) << "got ASdata (" << nodeIDs.size() <<") acquiring ledger " << mHash;
 	tLog(nodeIDs.size() == 1, lsTRACE) << "got AS node: " << nodeIDs.front();
@@ -446,14 +450,14 @@ bool LedgerAcquire::takeAsNode(const std::list<SHAMapNode>& nodeIDs,
 	{
 		if (nodeIDit->isRoot())
 		{
-			if (!mLedger->peekAccountStateMap()->addRootNode(mLedger->getAccountHash(),
-					*nodeDatait, snfWIRE, &tFilter))
+			if (!san.combine(mLedger->peekAccountStateMap()->addRootNode(mLedger->getAccountHash(),
+				*nodeDatait, snfWIRE, &tFilter)))
 			{
 				cLog(lsWARNING) << "Bad ledger base";
 				return false;
 			}
 		}
-		else if (!mLedger->peekAccountStateMap()->addKnownNode(*nodeIDit, *nodeDatait, &tFilter))
+		else if (!san.combine(mLedger->peekAccountStateMap()->addKnownNode(*nodeIDit, *nodeDatait, &tFilter)))
 		{
 			cLog(lsWARNING) << "Unable to add AS node";
 			return false;
@@ -474,24 +478,22 @@ bool LedgerAcquire::takeAsNode(const std::list<SHAMapNode>& nodeIDs,
 	return true;
 }
 
-bool LedgerAcquire::takeAsRootNode(const std::vector<unsigned char>& data)
+bool LedgerAcquire::takeAsRootNode(const std::vector<unsigned char>& data, SMAddNode& san)
 {
 	if (!mHaveBase)
 		return false;
 	AccountStateSF tFilter(mLedger->getHash(), mLedger->getLedgerSeq());
-	if (!mLedger->peekAccountStateMap()->addRootNode(mLedger->getAccountHash(), data, snfWIRE, &tFilter))
-		return false;
-	return true;
+	return san.combine(
+		mLedger->peekAccountStateMap()->addRootNode(mLedger->getAccountHash(), data, snfWIRE, &tFilter));
 }
 
-bool LedgerAcquire::takeTxRootNode(const std::vector<unsigned char>& data)
+bool LedgerAcquire::takeTxRootNode(const std::vector<unsigned char>& data, SMAddNode& san)
 {
 	if (!mHaveBase)
 		return false;
 	TransactionStateSF tFilter(mLedger->getHash(), mLedger->getLedgerSeq());
-	if (!mLedger->peekTransactionMap()->addRootNode(mLedger->getTransHash(), data, snfWIRE, &tFilter))
-		return false;
-	return true;
+	return san.combine(
+		mLedger->peekTransactionMap()->addRootNode(mLedger->getTransHash(), data, snfWIRE, &tFilter));
 }
 
 LedgerAcquire::pointer LedgerAcquireMaster::findCreate(const uint256& hash)
@@ -532,13 +534,13 @@ void LedgerAcquireMaster::dropLedger(const uint256& hash)
 	mLedgers.erase(hash);
 }
 
-bool LedgerAcquireMaster::gotLedgerData(ripple::TMLedgerData& packet, Peer::ref peer)
+SMAddNode LedgerAcquireMaster::gotLedgerData(ripple::TMLedgerData& packet, Peer::ref peer)
 {
 	uint256 hash;
 	if (packet.ledgerhash().size() != 32)
 	{
 		std::cerr << "Acquire error" << std::endl;
-		return false;
+		return SMAddNode::invalid();
 	}
 	memcpy(hash.begin(), packet.ledgerhash().data(), 32);
 	cLog(lsTRACE) << "Got data (" << packet.nodes().size() << ") for acquiring ledger: " << hash;
@@ -547,7 +549,7 @@ bool LedgerAcquireMaster::gotLedgerData(ripple::TMLedgerData& packet, Peer::ref 
 	if (!ledger)
 	{
 		cLog(lsINFO) << "Got data for ledger we're not acquiring";
-		return false;
+		return SMAddNode();
 	}
 
 	if (packet.type() == ripple::liBASE)
@@ -555,23 +557,24 @@ bool LedgerAcquireMaster::gotLedgerData(ripple::TMLedgerData& packet, Peer::ref 
 		if (packet.nodes_size() < 1)
 		{
 			cLog(lsWARNING) << "Got empty base data";
-			return false;
+			return SMAddNode::invalid();
 		}
 		if (!ledger->takeBase(packet.nodes(0).nodedata()))
 		{
 			cLog(lsWARNING) << "Got invalid base data";
-			return false;
+			return SMAddNode::invalid();
 		}
-		if ((packet.nodes().size() > 1) && !ledger->takeAsRootNode(strCopy(packet.nodes(1).nodedata())))
+		SMAddNode san = SMAddNode::useful();
+		if ((packet.nodes().size() > 1) && !ledger->takeAsRootNode(strCopy(packet.nodes(1).nodedata()), san))
 		{
 			cLog(lsWARNING) << "Included ASbase invalid";
 		}
-		if ((packet.nodes().size() > 2) && !ledger->takeTxRootNode(strCopy(packet.nodes(2).nodedata())))
+		if ((packet.nodes().size() > 2) && !ledger->takeTxRootNode(strCopy(packet.nodes(2).nodedata()), san))
 		{
 			cLog(lsWARNING) << "Included TXbase invalid";
 		}
 		ledger->trigger(peer, false);
-		return true;
+		return san;
 	}
 
 	if ((packet.type() == ripple::liTX_NODE) || (packet.type() == ripple::liAS_NODE))
@@ -581,8 +584,8 @@ bool LedgerAcquireMaster::gotLedgerData(ripple::TMLedgerData& packet, Peer::ref 
 
 		if (packet.nodes().size() <= 0)
 		{
-			cLog(lsINFO) << "Got request for no nodes";
-			return false;
+			cLog(lsINFO) << "Got response with no nodes";
+			return SMAddNode::invalid();
 		}
 		for (int i = 0; i < packet.nodes().size(); ++i)
 		{
@@ -590,24 +593,24 @@ bool LedgerAcquireMaster::gotLedgerData(ripple::TMLedgerData& packet, Peer::ref 
 			if (!node.has_nodeid() || !node.has_nodedata())
 			{
 				cLog(lsWARNING) << "Got bad node";
-				return false;
+				return SMAddNode::invalid();
 			}
 
 			nodeIDs.push_back(SHAMapNode(node.nodeid().data(), node.nodeid().size()));
 			nodeData.push_back(std::vector<unsigned char>(node.nodedata().begin(), node.nodedata().end()));
 		}
-		bool ret;
+		SMAddNode ret;
 		if (packet.type() == ripple::liTX_NODE)
-			ret = ledger->takeTxNode(nodeIDs, nodeData);
+			ledger->takeTxNode(nodeIDs, nodeData, ret);
 		else
-			ret = ledger->takeAsNode(nodeIDs, nodeData);
-		if (ret)
+			ledger->takeAsNode(nodeIDs, nodeData, ret);
+		if (!ret.isInvalid())
 			ledger->trigger(peer, false);
 		return ret;
 	}
 
 	cLog(lsWARNING) << "Not sure what ledger data we got";
-	return false;
+	return SMAddNode::invalid();
 }
 
 // vim:ts=4

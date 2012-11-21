@@ -1432,12 +1432,14 @@ void Peer::recvLedger(ripple::TMLedgerData& packet)
 			nodeIDs.push_back(SHAMapNode(node.nodeid().data(), node.nodeid().size()));
 			nodeData.push_back(std::vector<unsigned char>(node.nodedata().begin(), node.nodedata().end()));
 		}
-		if (!theApp->getOPs().gotTXData(shared_from_this(), hash, nodeIDs, nodeData))
+		SMAddNode san =  theApp->getOPs().gotTXData(shared_from_this(), hash, nodeIDs, nodeData);
+		if (san.isInvalid())
 			punishPeer(PP_UNWANTED_DATA);
 		return;
 	}
 
-	if (!theApp->getMasterLedgerAcquire().gotLedgerData(packet, shared_from_this()))
+	SMAddNode san =  theApp->getMasterLedgerAcquire().gotLedgerData(packet, shared_from_this());
+	if (san.isInvalid())
 		punishPeer(PP_UNWANTED_DATA);
 }
 

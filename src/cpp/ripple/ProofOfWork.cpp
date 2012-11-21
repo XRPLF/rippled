@@ -213,12 +213,28 @@ void ProofOfWorkGenerator::sweep()
 
 void ProofOfWorkGenerator::loadHigh()
 {
-	// WRITEME
+	time_t now = time(NULL);
+
+	boost::mutex::scoped_lock sl(mLock);
+	if (mLastDifficultyChange == now)
+		return;
+	if (mPowEntry == 30)
+		return;
+	++mPowEntry;
+	mLastDifficultyChange = now;
 }
 
 void ProofOfWorkGenerator::loadLow()
 {
-	// WRITEME
+	time_t now = time(NULL);
+
+	boost::mutex::scoped_lock sl(mLock);
+	if (mLastDifficultyChange == now)
+		return;
+	if (mPowEntry == 0)
+		return;
+	--mPowEntry;
+	mLastDifficultyChange = now;
 }
 
 struct PowEntry
