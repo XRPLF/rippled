@@ -109,12 +109,9 @@ bool ProofOfWork::checkSolution(const uint256& solution) const
 	return getSHA512Half(buf2) <= mTarget;
 }
 
-ProofOfWorkGenerator::ProofOfWorkGenerator() :
-	mIterations(128),
-	mTarget("0003FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"),
-	mLastDifficultyChange(time(NULL)),
-	mValidTime(180)
+ProofOfWorkGenerator::ProofOfWorkGenerator() :	mValidTime(180)
 {
+	setDifficulty(1);
 	RAND_bytes(mSecret.begin(), mSecret.size());
 }
 
@@ -162,6 +159,8 @@ POWResult ProofOfWorkGenerator::checkProof(const std::string& token, const uint2
 	time_t t = lexical_cast_s<time_t>(fields[3]);
 	time_t now = time(NULL);
 
+	int iterations = lexical_cast_s<int>(fields[2]);
+
 	{
 		boost::mutex::scoped_lock sl(mLock);
 		if ((t * 4) > (now + mValidTime))
@@ -169,10 +168,15 @@ POWResult ProofOfWorkGenerator::checkProof(const std::string& token, const uint2
 			cLog(lsDEBUG) << "PoW " << token << " has expired";
 			return powEXPIRED;
 		}
+
+		if (((iterations != mIterations) || (target != mTarget)) && getPowEntry(target, iterations) < (mPowEntry - 2))
+		{ // difficulty has increased more than two times since PoW requested
+			cLog(lsINFO) << "Difficulty has increased since PoW requested";
+			return powTOOEASY;
+		}
 	}
 
-
-	ProofOfWork pow(token, lexical_cast_s<int>(fields[2]), challenge, target);
+	ProofOfWork pow(token, iterations, challenge, target);
 	if (!pow.checkSolution(solution))
 	{
 		cLog(lsDEBUG) << "PoW " << token << " has a bad nonce";
@@ -181,7 +185,6 @@ POWResult ProofOfWorkGenerator::checkProof(const std::string& token, const uint2
 
 	{
 		boost::mutex::scoped_lock sl(mLock);
-//		if (...) return powTOOEASY;
 		if (!mSolvedChallenges.insert(powMap_vt(now, challenge)).second)
 		{
 			cLog(lsDEBUG) << "PoW " << token << " has been reused";
@@ -206,6 +209,32 @@ void ProofOfWorkGenerator::sweep()
 			return;
 		mSolvedChallenges.left.erase(it);
 	} while(1);
+}
+
+void ProofOfWorkGenerator::loadHigh()
+{
+	time_t now = time(NULL);
+
+	boost::mutex::scoped_lock sl(mLock);
+	if (mLastDifficultyChange == now)
+		return;
+	if (mPowEntry == 30)
+		return;
+	++mPowEntry;
+	mLastDifficultyChange = now;
+}
+
+void ProofOfWorkGenerator::loadLow()
+{
+	time_t now = time(NULL);
+
+	boost::mutex::scoped_lock sl(mLock);
+	if (mLastDifficultyChange == now)
+		return;
+	if (mPowEntry == 0)
+		return;
+	--mPowEntry;
+	mLastDifficultyChange = now;
 }
 
 struct PowEntry
@@ -255,6 +284,19 @@ PowEntry PowEntries[31] =
 	{ "00007FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", 393216}, // 57982058496,	12MB
 	{ "00003FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", 262144}, // 77309411328,	8 MB
 };
+
+int ProofOfWorkGenerator::getPowEntry(const uint256& target, int iterations)
+{
+	for (int i = 0; i < 31; ++i)
+		if (PowEntries[i].iterations == iterations)
+		{
+			uint256 t;
+			t.SetHex(PowEntries[i].target);
+			if (t == target)
+				return i;
+		}
+	return -1;
+}
 
 void ProofOfWorkGenerator::setDifficulty(int i)
 {

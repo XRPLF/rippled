@@ -1576,15 +1576,15 @@ void UniqueNodeList::nodeBootstrap()
 	bool	bLoaded	= iDomains || iNodes;
 
 	// Always merge in the file specified in the config.
-	if (!theConfig.UNL_DEFAULT.empty())
+	if (!theConfig.VALIDATORS_FILE.empty())
 	{
 		cLog(lsINFO) << "Bootstrapping UNL: loading from unl_default.";
 
-		bLoaded	= nodeLoad(theConfig.UNL_DEFAULT);
+		bLoaded	= nodeLoad(theConfig.VALIDATORS_FILE);
 	}
 
 	// If never loaded anything try the current directory.
-	if (!bLoaded && theConfig.UNL_DEFAULT.empty())
+	if (!bLoaded && theConfig.VALIDATORS_FILE.empty())
 	{
 		cLog(lsINFO) << "Bootstrapping UNL: loading from '" VALIDATORS_FILE_NAME "'.";
 

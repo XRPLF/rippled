@@ -126,21 +126,23 @@ void TransactionAcquire::trigger(Peer::ref peer, bool timer)
 		resetTimer();
 }
 
-bool TransactionAcquire::takeNodes(const std::list<SHAMapNode>& nodeIDs,
+SMAddNode TransactionAcquire::takeNodes(const std::list<SHAMapNode>& nodeIDs,
 	const std::list< std::vector<unsigned char> >& data, Peer::ref peer)
 {
 	if (mComplete)
 	{
 		cLog(lsTRACE) << "TX set complete";
-		return true;
+		return SMAddNode();
 	}
 	if (mFailed)
 	{
 		cLog(lsTRACE) << "TX set failed";
-		return false;
+		return SMAddNode();
 	}
 	try
 	{
+		if (nodeIDs.empty())
+			return SMAddNode::invalid();
 		std::list<SHAMapNode>::const_iterator nodeIDit = nodeIDs.begin();
 		std::list< std::vector<unsigned char> >::const_iterator nodeDatait = data.begin();
 		ConsensusTransSetSF sf;
@@ -151,12 +153,12 @@ bool TransactionAcquire::takeNodes(const std::list<SHAMapNode>& nodeIDs,
 				if (mHaveRoot)
 				{
 					cLog(lsWARNING) << "Got root TXS node, already have it";
-					return false;
+					return SMAddNode();
 				}
 				if (!mMap->addRootNode(getHash(), *nodeDatait, snfWIRE, NULL))
 				{
 					cLog(lsWARNING) << "TX acquire got bad root node";
-					return false;
+					return SMAddNode::invalid();
 				}
 				else
 					mHaveRoot = true;
@@ -164,19 +166,19 @@ bool TransactionAcquire::takeNodes(const std::list<SHAMapNode>& nodeIDs,
 			else if (!mMap->addKnownNode(*nodeIDit, *nodeDatait, &sf))
 			{
 				cLog(lsWARNING) << "TX acquire got bad non-root node";
-				return false;
+				return SMAddNode::invalid();
 			}
 			++nodeIDit;
 			++nodeDatait;
 		}
 		trigger(peer, false);
 		progress();
-		return true;
+		return SMAddNode::useful();
 	}
 	catch (...)
 	{
 		cLog(lsERROR) << "Peer sends us junky transaction node data";
-		return false;
+		return SMAddNode::invalid();
 	}
 }
 
@@ -996,14 +998,14 @@ bool LedgerConsensus::peerHasSet(Peer::ref peer, const uint256& hashSet, ripple:
 	return true;
 }
 
-bool LedgerConsensus::peerGaveNodes(Peer::ref peer, const uint256& setHash,
+SMAddNode LedgerConsensus::peerGaveNodes(Peer::ref peer, const uint256& setHash,
 	const std::list<SHAMapNode>& nodeIDs, const std::list< std::vector<unsigned char> >& nodeData)
 {
 	boost::unordered_map<uint256, TransactionAcquire::pointer>::iterator acq = mAcquiring.find(setHash);
 	if (acq == mAcquiring.end())
 	{
 		cLog(lsINFO) << "Got TX data for set not acquiring: " << setHash;
-		return false;
+		return SMAddNode();
 	}
 	TransactionAcquire::pointer set = acq->second; // We must keep the set around during the function
 	return set->takeNodes(nodeIDs, nodeData, peer);

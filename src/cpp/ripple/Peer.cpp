@@ -430,24 +430,29 @@ void Peer::processReadBuffer()
 		case ripple::mtCONTACT:
 			{
 				ripple::TMContact msg;
+
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvContact(msg);
 				else
 					cLog(lsWARNING) << "parse error: " << type;
 			}
 			break;
+
 		case ripple::mtGET_PEERS:
 			{
 				ripple::TMGetPeers msg;
+
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvGetPeers(msg);
 				else
 					cLog(lsWARNING) << "parse error: " << type;
 			}
 			break;
+
 		case ripple::mtPEERS:
 			{
 				ripple::TMPeers msg;
+
 				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
 					recvPeers(msg);
 				else
@@ -666,7 +671,17 @@ void Peer::recvHello(ripple::TMHello& packet)
 				std::string	strIP	= getSocket().remote_endpoint().address().to_string();
 				int			iPort	= packet.ipv4port();
 
-				theApp->getConnectionPool().savePeer(strIP, iPort, UniqueNodeList::vsInbound);
+				if (mHello.nodeprivate())
+				{
+					cLog(lsINFO) << boost::str(boost::format("Recv(Hello): Private connection: %s %s") % strIP % iPort);
+				}
+				else
+				{
+					// Don't save IP address if the node wants privacy.
+					// Note: We don't go so far as to delete it.  If a node which has previously announced itself now wants
+					// privacy, it should at least change its port.
+					theApp->getConnectionPool().savePeer(strIP, iPort, UniqueNodeList::vsInbound);
+				}
 			}
 
 			// Consider us connected.  No longer accepting mtHELLO.
@@ -994,7 +1009,7 @@ void Peer::recvGetContacts(ripple::TMGetContacts& packet)
 {
 }
 
-// return a list of your favorite people
+// Return a list of your favorite people
 // TODO: filter out all the LAN peers
 // TODO: filter out the peer you are talking to
 void Peer::recvGetPeers(ripple::TMGetPeers& packet)
@@ -1417,12 +1432,14 @@ void Peer::recvLedger(ripple::TMLedgerData& packet)
 			nodeIDs.push_back(SHAMapNode(node.nodeid().data(), node.nodeid().size()));
 			nodeData.push_back(std::vector<unsigned char>(node.nodedata().begin(), node.nodedata().end()));
 		}
-		if (!theApp->getOPs().gotTXData(shared_from_this(), hash, nodeIDs, nodeData))
+		SMAddNode san =  theApp->getOPs().gotTXData(shared_from_this(), hash, nodeIDs, nodeData);
+		if (san.isInvalid())
 			punishPeer(PP_UNWANTED_DATA);
 		return;
 	}
 
-	if (!theApp->getMasterLedgerAcquire().gotLedgerData(packet, shared_from_this()))
+	SMAddNode san =  theApp->getMasterLedgerAcquire().gotLedgerData(packet, shared_from_this());
+	if (san.isInvalid())
 		punishPeer(PP_UNWANTED_DATA);
 }
 
@@ -1510,6 +1527,7 @@ void Peer::sendHello()
 	h.set_nodepublic(theApp->getWallet().getNodePublic().humanNodePublic());
 	h.set_nodeproof(&vchSig[0], vchSig.size());
 	h.set_ipv4port(theConfig.PEER_PORT);
+	h.set_nodeprivate(theConfig.PEER_PRIVATE);
 
 	Ledger::pointer closedLedger = theApp->getMasterLedger().getClosedLedger();
 	if (closedLedger && closedLedger->isClosed())
@@ -1526,7 +1544,7 @@ void Peer::sendHello()
 
 void Peer::sendGetPeers()
 {
-	// get other peers this guy knows about
+	// Ask peer for known other peers.
 	ripple::TMGetPeers getPeers;
 
 	getPeers.set_doweneedthis(1);

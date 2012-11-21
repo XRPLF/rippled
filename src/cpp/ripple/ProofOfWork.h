@@ -78,6 +78,8 @@ public:
 	void loadHigh();
 	void loadLow();
 	void sweep(void);
+
+	static int getPowEntry(const uint256& target, int iterations);
 };
 
 #endif

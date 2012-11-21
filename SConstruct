@@ -132,7 +132,7 @@ for file in RIPPLE_SRCS:
 
 rippled = env.Program('build/rippled', RIPPLE_OBJS)
 
-tags = env.CTags('build/obj/tags', RIPPLE_SRCS)
+tags = env.CTags('tags', RIPPLE_SRCS)
 
 Default(rippled, tags)
 

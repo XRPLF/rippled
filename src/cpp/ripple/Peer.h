@@ -22,6 +22,12 @@ enum PeerPunish
 	PP_BAD_SIGNATURE	= 4,	// Object had bad signature
 };
 
+enum PeerReward
+{
+	PR_NEEDED_DATA		= 1,
+	PR_NEW_TRANSACTION	= 2,
+};
+
 typedef std::pair<std::string,int> ipPort;
 
 DEFINE_INSTANCE(Peer);
@@ -49,6 +55,7 @@ private:
 	ipPort			mIpPortConnect;
 	uint256			mCookieHash;
 	uint64			mPeerId;
+	bool			mPrivate;			// Keep peer IP private.
 
 	uint256			mClosedLedgerHash, mPreviousLedgerHash;
 	std::list<uint256>	mRecentLedgers;

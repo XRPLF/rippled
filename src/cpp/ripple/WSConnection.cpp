@@ -49,12 +49,15 @@ Json::Value WSConnection::invokeCommand(Json::Value& jvRequest)
 	Json::Value	jvResult(Json::objectValue);
 
 	// Regular RPC command
-	jvResult["result"] = mRPCHandler.doCommand(
-		jvRequest["command"].asString(),
-		jvRequest.isMember("params")
-		? jvRequest["params"]
-		: jvRequest,
-		mHandler->getPublic() ? RPCHandler::GUEST : RPCHandler::ADMIN);
+	{
+		boost::recursive_mutex::scoped_lock sl(theApp->getMasterLock());
+		jvResult["result"] = mRPCHandler.doCommand(
+			jvRequest["command"].asString(),
+			jvRequest.isMember("params")
+			? jvRequest["params"]
+			: jvRequest,
+			mHandler->getPublic() ? RPCHandler::GUEST : RPCHandler::ADMIN);
+	}
 
 	// Currently we will simply unwrap errors returned by the RPC
 	// API, in the future maybe we can make the responses

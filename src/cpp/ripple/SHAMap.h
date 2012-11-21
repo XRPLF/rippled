@@ -281,6 +281,44 @@ public:
 
 extern std::ostream& operator<<(std::ostream&, const SHAMapMissingNode&);
 
+class SMAddNode
+{ // results of adding nodes
+protected:
+	bool mInvalid, mUseful;
+
+	SMAddNode(bool i, bool u) : mInvalid(i), mUseful(u)	{ ; }
+
+public:
+	SMAddNode() : mInvalid(false), mUseful(false) 		{ ; }
+
+	void setInvalid()		{ mInvalid = true; }
+	void setUseful() 		{ mUseful = true; }
+	void reset()			{ mInvalid = false; mUseful = false; }
+
+	bool isInvalid() const	{ return mInvalid; }
+	bool isUseful() const	{ return mUseful; }
+
+	bool combine(const SMAddNode& n)
+	{
+		if (n.mInvalid)
+		{
+			mInvalid = true;
+			return false;
+		}
+		if (n.mUseful)
+			mUseful = true;
+		return true;
+	}
+
+	operator bool() const		{ return !mInvalid; }
+
+	static SMAddNode okay()		{ return SMAddNode(false, false); }
+	static SMAddNode useful()	{ return SMAddNode(false, true); }
+	static SMAddNode invalid()	{ return SMAddNode(true, false); }
+};
+
+extern bool SMANCombine(SMAddNode& existing, const SMAddNode& additional);
+
 class SHAMap : public IS_INSTANCE(SHAMap)
 {
 public:
@@ -374,11 +412,11 @@ public:
 	bool getNodeFat(const SHAMapNode& node, std::vector<SHAMapNode>& nodeIDs,
 	 std::list<std::vector<unsigned char> >& rawNode, bool fatRoot, bool fatLeaves);
 	bool getRootNode(Serializer& s, SHANodeFormat format);
-	bool addRootNode(const uint256& hash, const std::vector<unsigned char>& rootNode, SHANodeFormat format,
+	SMAddNode addRootNode(const uint256& hash, const std::vector<unsigned char>& rootNode, SHANodeFormat format,
 		SHAMapSyncFilter* filter);
-	bool addRootNode(const std::vector<unsigned char>& rootNode, SHANodeFormat format,
+	SMAddNode addRootNode(const std::vector<unsigned char>& rootNode, SHANodeFormat format,
 		SHAMapSyncFilter* filter);
-	bool addKnownNode(const SHAMapNode& nodeID, const std::vector<unsigned char>& rawNode,
+	SMAddNode addKnownNode(const SHAMapNode& nodeID, const std::vector<unsigned char>& rawNode,
 		SHAMapSyncFilter* filter);
 
 	// status functions

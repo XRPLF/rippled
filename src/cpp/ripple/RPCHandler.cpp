@@ -526,11 +526,19 @@ Json::Value RPCHandler::doOwnerInfo(const Json::Value& params)
 }
 
 
+Json::Value RPCHandler::doPathFind(const Json::Value& params)
+{
+	Json::Value ret(Json::objectValue);
+
+	return ret;
+}
+
 Json::Value RPCHandler::doPeers(const Json::Value& params)
 {
-	// peers
 	Json::Value obj(Json::objectValue);
+
 	obj["peers"]=theApp->getConnectionPool().getPeersJson();
+
 	return obj;
 }
 
@@ -759,20 +767,21 @@ Json::Value RPCHandler::handleJSONSubmit(const Json::Value& jvRequest)
 			return rpcError(rpcDST_ACT_MALFORMED);
 		}
 
-		if(!txJSON.isMember("Fee"))
+		if (!txJSON.isMember("Fee"))
 		{
-			if(mNetOps->getAccountState(uint256(0), dstAccountID))
+			if (mNetOps->getAccountState(uint256(0), dstAccountID))
 				txJSON["Fee"]=(int)theConfig.FEE_DEFAULT;
 			else txJSON["Fee"]=(int)theConfig.FEE_ACCOUNT_CREATE;
 		}
 
-		if(!txJSON.isMember("Paths") && jvRequest.isMember("build_path") )
+		if (!txJSON.isMember("Paths") && jvRequest.isMember("build_path"))
 		{
-			if(txJSON["Amount"].isObject() || txJSON.isMember("SendMax") )
+			if (txJSON["Amount"].isObject() || txJSON.isMember("SendMax"))
 			{  // we need a ripple path
 				STPathSet	spsPaths;
 				uint160		srcCurrencyID;
-				if(txJSON.isMember("SendMax") && txJSON["SendMax"].isMember("currency"))
+
+				if (txJSON.isMember("SendMax") && txJSON["SendMax"].isMember("currency"))
 				{
 					STAmount::currencyFromString(srcCurrencyID, txJSON["SendMax"]["currency"].asString());
 				}
@@ -782,7 +791,8 @@ Json::Value RPCHandler::handleJSONSubmit(const Json::Value& jvRequest)
 				}
 
 				STAmount dstAmount;
-				if(txJSON["Amount"].isObject())
+
+				if (txJSON["Amount"].isObject())
 				{
 					std::string issuerStr;
 					if( txJSON["Amount"].isMember("issuer")) issuerStr=txJSON["Amount"]["issuer"].asString();
@@ -791,14 +801,17 @@ Json::Value RPCHandler::handleJSONSubmit(const Json::Value& jvRequest)
 					{
 						return rpcError(rpcDST_AMT_MALFORMED);
 					}
-				}else if (!dstAmount.setFullValue(txJSON["Amount"].asString()))
+				}
+				else if (!dstAmount.setFullValue(txJSON["Amount"].asString()))
 				{
 					return rpcError(rpcDST_AMT_MALFORMED);
 				}
 
 				Pathfinder pf(srcAddress, dstAccountID, srcCurrencyID, dstAmount);
+
 				pf.findPaths(5, 1, spsPaths);
-				if(!spsPaths.isEmpty())
+
+				if (!spsPaths.isEmpty())
 				{
 					txJSON["Paths"]=spsPaths.getJson(0);
 					if(txJSON.isMember("Flags")) txJSON["Flags"]=txJSON["Flags"].asUInt() | 2;
@@ -806,16 +819,18 @@ Json::Value RPCHandler::handleJSONSubmit(const Json::Value& jvRequest)
 				}
 			}
 		}
-
-	}else if( txJSON["type"]=="OfferCreate" )
+	}
+	else if( txJSON["type"]=="OfferCreate" )
 	{
 		txJSON["TransactionType"]=7;
 		if(!txJSON.isMember("Fee")) txJSON["Fee"]=(int)theConfig.FEE_DEFAULT;
-	}else if( txJSON["type"]=="TrustSet")
+	}
+	else if( txJSON["type"]=="TrustSet")
 	{
 		txJSON["TransactionType"]=20;
 		if(!txJSON.isMember("Fee")) txJSON["Fee"]=(int)theConfig.FEE_DEFAULT;
-	}else if( txJSON["type"]=="OfferCancel")
+	}
+	else if( txJSON["type"]=="OfferCancel")
 	{
 		txJSON["TransactionType"]=8;
 		if(!txJSON.isMember("Fee")) txJSON["Fee"]=(int)theConfig.FEE_DEFAULT;
@@ -1332,55 +1347,57 @@ Json::Value RPCHandler::doCommand(const std::string& command, Json::Value& param
 		unsigned int	iOptions;
 	} commandsA[] = {
 		// Request-response methods
-		{	"accept_ledger",		&RPCHandler::doAcceptLedger,		0,	0, true					},
+		{	"accept_ledger",		&RPCHandler::doAcceptLedger,		0,	0, true,	false,  optNone		},
 		{	"account_info",			&RPCHandler::doAccountInfo,			1,  2, false,	false,	optCurrent	},
 		{	"account_tx",			&RPCHandler::doAccountTransactions,	2,  3, false,	false,	optNetwork	},
-		{	"connect",				&RPCHandler::doConnect,				1,  2, true							},
-		{	"data_delete",			&RPCHandler::doDataDelete,			1,  1, true							},
-		{	"data_fetch",			&RPCHandler::doDataFetch,			1,  1, true							},
-		{	"data_store",			&RPCHandler::doDataStore,			2,  2, true							},
-		{	"get_counts",			&RPCHandler::doGetCounts,			0,	1, true							},
+		{	"connect",				&RPCHandler::doConnect,				1,  2, true,	false,	optNone		},
+		{	"data_delete",			&RPCHandler::doDataDelete,			1,  1, true,	false,	optNone		},
+		{	"data_fetch",			&RPCHandler::doDataFetch,			1,  1, true,	false,	optNone		},
+		{	"data_store",			&RPCHandler::doDataStore,			2,  2, true,	false,	optNone		},
+		{	"get_counts",			&RPCHandler::doGetCounts,			0,	1, true,	false,	optNone		},
 		{	"ledger",				&RPCHandler::doLedger,				0,  2, false,	false,	optNetwork	},
 		{	"ledger_accept",		&RPCHandler::doLedgerAccept,		0,  0, true,	false,	optCurrent	},
 		{	"ledger_closed",		&RPCHandler::doLedgerClosed,		0,  0, false,	false,	optClosed	},
 		{	"ledger_current",		&RPCHandler::doLedgerCurrent,		0,  0, false,	false,	optCurrent	},
-		{	"ledger_entry",			&RPCHandler::doLedgerEntry,			-1,  -1, false,	false,	optCurrent	},
-		{	"ledger_header",		&RPCHandler::doLedgerHeader,		-1,  -1, false,	false,	optCurrent	},
-		{	"log_level",			&RPCHandler::doLogLevel,			0,  2, true							},
-		{	"logrotate",			&RPCHandler::doLogRotate,			0,  0, true							},
+		{	"ledger_entry",			&RPCHandler::doLedgerEntry,		   -1, -1, false,	false,	optCurrent	},
+		{	"ledger_header",		&RPCHandler::doLedgerHeader,	   -1, -1, false,	false,	optCurrent	},
+		{	"log_level",			&RPCHandler::doLogLevel,			0,  2, true,	false,	optNone		},
+		{	"logrotate",			&RPCHandler::doLogRotate,			0,  0, true,	false,	optNone		},
 		{	"nickname_info",		&RPCHandler::doNicknameInfo,		1,  1, false,	false,	optCurrent	},
 		{	"owner_info",			&RPCHandler::doOwnerInfo,			1,  2, false,	false,	optCurrent	},
-		{	"peers",				&RPCHandler::doPeers,				0,  0, true					},
+		{	"path_find",			&RPCHandler::doPathFind,		   -1, -1, false,	false,	optCurrent	},
+		{	"peers",				&RPCHandler::doPeers,				0,  0, true,	false,	optNone		},
 		{	"profile",				&RPCHandler::doProfile,				1,  9, false,	false,	optCurrent	},
 		{	"ripple_lines_get",		&RPCHandler::doRippleLinesGet,		1,  2, false,	false,	optCurrent	},
 		{	"submit",				&RPCHandler::doSubmit,				2,  2, false,	false,	optCurrent	},
 		{	"submit_json",			&RPCHandler::doSubmitJson,			-1,  -1, false,	false,	optCurrent	},
-		{	"server_info",			&RPCHandler::doServerInfo,			0,  0, true							},
-		{	"stop",					&RPCHandler::doStop,				0,  0, true							},
+		{	"server_info",			&RPCHandler::doServerInfo,			0,  0, true,	false,	optNone		},
+		{	"stop",					&RPCHandler::doStop,				0,  0, true,	false,	optNone		},
 		{	"transaction_entry",	&RPCHandler::doTransactionEntry,	-1,  -1, false,	false,	optCurrent	},
-		{	"tx",					&RPCHandler::doTx,					1,  1, true							},
-		{	"tx_history",			&RPCHandler::doTxHistory,			1,  1, false,						},
+		{	"tx",					&RPCHandler::doTx,					1,  1, true,	false,	optNone		},
+		{	"tx_history",			&RPCHandler::doTxHistory,			1,  1, false,	false,	optNone		},
 
-		{	"unl_add",				&RPCHandler::doUnlAdd,				1,  2, true							},
-		{	"unl_delete",			&RPCHandler::doUnlDelete,			1,  1, true							},
-		{	"unl_list",				&RPCHandler::doUnlList,				0,  0, true							},
-		{	"unl_load",				&RPCHandler::doUnlLoad,				0,  0, true							},
-		{	"unl_network",			&RPCHandler::doUnlNetwork,			0,  0, true							},
-		{	"unl_reset",			&RPCHandler::doUnlReset,			0,  0, true							},
-		{	"unl_score",			&RPCHandler::doUnlScore,			0,  0, true							},
+		{	"unl_add",				&RPCHandler::doUnlAdd,				1,  2, true,	false,	optNone		},
+		{	"unl_delete",			&RPCHandler::doUnlDelete,			1,  1, true,	false,	optNone		},
+		{	"unl_list",				&RPCHandler::doUnlList,				0,  0, true,	false,	optNone		},
+		{	"unl_load",				&RPCHandler::doUnlLoad,				0,  0, true,	false,	optNone		},
+		{	"unl_network",			&RPCHandler::doUnlNetwork,			0,  0, true,	false,	optNone		},
+		{	"unl_reset",			&RPCHandler::doUnlReset,			0,  0, true,	false,	optNone		},
+		{	"unl_score",			&RPCHandler::doUnlScore,			0,  0, true,	false,	optNone		},
 
-		{	"validation_create",	&RPCHandler::doValidationCreate,	0,  1, false						},
-		{	"validation_seed",		&RPCHandler::doValidationSeed,		0,  1, false						},
+		{	"validation_create",	&RPCHandler::doValidationCreate,	0,  1, false,	false,	optNone		},
+		{	"validation_seed",		&RPCHandler::doValidationSeed,		0,  1, false,	false,	optNone		},
 
 		{	"wallet_accounts",		&RPCHandler::doWalletAccounts,		1,  1, false,	false,	optCurrent	},
-		{	"wallet_propose",		&RPCHandler::doWalletPropose,		0,  1, false,						},
-		{	"wallet_seed",			&RPCHandler::doWalletSeed,			0,  1, false,						},
+		{	"wallet_propose",		&RPCHandler::doWalletPropose,		0,  1, false,	false,	optNone		},
+		{	"wallet_seed",			&RPCHandler::doWalletSeed,			0,  1, false,	false,	optNone		},
 
-		{	"login",				&RPCHandler::doLogin,				2,  2, true							},
+		{	"login",				&RPCHandler::doLogin,				2,  2, true,	false,	optNone		},
 
 		// Evented methods
-		{	"subscribe",			&RPCHandler::doSubscribe,			-1,	-1,	false,	true				},
-		{	"unsubscribe",			&RPCHandler::doUnsubscribe,			-1,	-1,	false,	true				},	};
+		{	"subscribe",			&RPCHandler::doSubscribe,			-1,	-1,	false,	true,	optNone		},
+		{	"unsubscribe",			&RPCHandler::doUnsubscribe,			-1,	-1,	false,	true,	optNone		},
+	};
 
 	int		i = NUMBER(commandsA);
 
@@ -1640,7 +1657,7 @@ Json::Value RPCHandler::doUnlList(const Json::Value& params)
 // Populate the UNL from a local validators.txt file.
 Json::Value RPCHandler::doUnlLoad(const Json::Value& params)
 {
-	if (theConfig.UNL_DEFAULT.empty() || !theApp->getUNL().nodeLoad(theConfig.UNL_DEFAULT))
+	if (theConfig.VALIDATORS_FILE.empty() || !theApp->getUNL().nodeLoad(theConfig.VALIDATORS_FILE))
 	{
 		return rpcError(rpcLOAD_FAILED);
 	}

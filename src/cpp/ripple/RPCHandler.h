@@ -12,6 +12,7 @@ class RPCHandler
 
 	typedef Json::Value (RPCHandler::*doFuncPtr)(const Json::Value &params);
 	enum {
+		optNone		= 0,
 		optNetwork	= 1,				// Need network
 		optCurrent	= 2+optNetwork,		// Need current ledger
 		optClosed	= 4+optNetwork,		// Need closed ledger
@@ -50,6 +51,7 @@ class RPCHandler
 	Json::Value doOwnerInfo(const Json::Value& params);
 
 	Json::Value doProfile(const Json::Value& params);
+	Json::Value doPathFind(const Json::Value& params);
 	Json::Value doPeers(const Json::Value& params);
 
 	Json::Value doRippleLinesGet(const Json::Value &params);
