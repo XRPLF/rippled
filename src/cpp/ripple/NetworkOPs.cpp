@@ -1134,6 +1134,7 @@ void NetworkOPs::pubAccountTransaction(Ledger::ref lpCurrent, const SerializedTr
 	if (!notify.empty())
 	{
 		Json::Value	jvObj	= transJson(stTxn, terResult, bAccepted, lpCurrent, "account");
+		if(meta) jvObj["meta"]=meta->getJson(0);
 
 		BOOST_FOREACH(InfoSub* ispListener, notify)
 		{
@@ -1193,7 +1194,7 @@ void NetworkOPs::subAccount(InfoSub* ispListener, const boost::unordered_set<Rip
 			boost::unordered_set<InfoSub*>	usisElement;
 
 			usisElement.insert(ispListener);
-			mSubAccount.insert(simIterator, make_pair(naAccountID.getAccountID(), usisElement));
+			subMap.insert(simIterator, make_pair(naAccountID.getAccountID(), usisElement));
 		}
 		else
 		{
