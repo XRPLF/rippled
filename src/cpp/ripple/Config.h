@@ -21,7 +21,7 @@
 
 #define CONFIG_FILE_NAME				SYSTEM_NAME "d.cfg"	// rippled.cfg
 
-#define DEFAULT_VALIDATORS_SITE		"redstem.com"
+#define DEFAULT_VALIDATORS_SITE		""
 #define VALIDATORS_FILE_NAME		"validators.txt"
 
 const int SYSTEM_PEER_PORT				= 6561;
