@@ -1029,18 +1029,17 @@ void NetworkOPs::pubLedger(Ledger::ref lpAccepted)
 
 			for (SHAMapItem::pointer item = txSet.peekFirstItem(); !!item; item = txSet.peekNextItem(item->getTag()))
 			{
-				SerializedTransaction::pointer	stTxn = theApp->getMasterTransaction().fetch(item, false, 0);
-				if(stTxn)
-				{
-					// XXX Need to support other results.
-					// XXX Need to give failures too.
-					TER	terResult	= tesSUCCESS;
-					
-					SerializerIterator it(item->peekSerializer());
+				SerializerIterator it(item->peekSerializer());
 
-					TransactionMetaSet::pointer meta = boost::make_shared<TransactionMetaSet>(stTxn->getTransactionID(), lpAccepted->getLedgerSeq(), it.getVL());
-					pubAcceptedTransaction(lpAccepted, *stTxn, terResult,meta);
-				}	
+				// OPTIMIZEME: Could get transaction from txn master, but still must call getVL
+				Serializer				txnSer(it.getVL());
+				SerializerIterator		txnIt(txnSer);
+				SerializedTransaction	stTxn(txnIt);
+
+				TransactionMetaSet::pointer meta = boost::make_shared<TransactionMetaSet>(
+					stTxn.getTransactionID(), lpAccepted->getLedgerSeq(), it.getVL());
+
+				pubAcceptedTransaction(lpAccepted, stTxn, meta->getResultTER(), meta);
 			}
 		}
 	}

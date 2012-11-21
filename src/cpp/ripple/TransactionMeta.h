@@ -37,6 +37,8 @@ public:
 
 	const uint256& getTxID()	{ return mTransactionID; }
 	uint32 getLgrSeq()			{ return mLedger; }
+	int getResult() const		{ return mResult; }
+	TER getResultTER() const	{ return static_cast<TER>(mResult); }
 
 	bool isNodeAffected(const uint256&) const;
 	void setAffectedNode(const uint256&, SField::ref type, uint16 nodeType);
@@ -44,6 +46,7 @@ public:
 	STObject& getAffectedNode(const uint256&);
 	const STObject& peekAffectedNode(const uint256&) const;
 	//std::vector<RippleAddress> getAffectedAccounts();
+
 
 	Json::Value getJson(int p) const { return getAsObject().getJson(p); }
 	void addRaw(Serializer&, TER);

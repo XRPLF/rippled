@@ -93,6 +93,7 @@ public:
 	// totality functions
 	const std::vector<unsigned char>& peekData() const		{ return mData; }
 	std::vector<unsigned char> getData() const				{ return mData; }
+	std::vector<unsigned char>& modData()					{ return mData; }
 	int getCapacity() const				{ return mData.capacity(); }
 	int getDataLength() const			{ return mData.size(); }
 	const void* getDataPtr() const		{ return &mData.front(); }
