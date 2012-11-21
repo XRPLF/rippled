@@ -407,22 +407,26 @@ void LedgerEntrySet::calcRawMeta(Serializer& s, TER result)
 		mSet.setAffectedNode(it.first, *type, nodeType);
 
 		if (type == &sfDeletedNode)
-		{ // nodes was deleted
+		{
 			assert(origNode);
 			assert(curNode);
 			threadOwners(origNode, mLedger, newMod); // thread transaction to owners
 
-			STObject mods(sfPreviousFields);
+			STObject prevs(sfPreviousFields);
+			BOOST_FOREACH(const SerializedType& obj, *origNode)
+			{ // go through the original node for modified fields saved on modification
+				if (obj.getFName().shouldMeta(SField::sMD_ChangeOrig) && !curNode->hasMatchingEntry(obj))
+					prevs.addObject(obj);
+			}
+			if (!prevs.empty())
+				mSet.getAffectedNode(it.first, *type).addObject(prevs);
+
 			STObject finals(sfFinalFields);
 			BOOST_FOREACH(const SerializedType& obj, *curNode)
-			{
-				if (obj.getFName().shouldMeta(SField::sMD_ChangeOrig) && !curNode->hasMatchingEntry(obj))
-					mods.addObject(obj);
+			{ // go through the final node for final fields
 				if (obj.getFName().shouldMeta(SField::sMD_Always | SField::sMD_DeleteFinal))
 					finals.addObject(obj);
 			}
-			if (!mods.empty())
-				mSet.getAffectedNode(it.first, *type).addObject(mods);
 			if (!finals.empty())
 				mSet.getAffectedNode(it.first, *type).addObject(finals);
 		}
@@ -431,17 +435,21 @@ void LedgerEntrySet::calcRawMeta(Serializer& s, TER result)
 			if (curNode->isThreadedType()) // thread transaction to node it modified
 				threadTx(curNode, mLedger, newMod);
 
-			STObject mods(sfPreviousFields);
-			STObject finals(sfFinalFields);
+			STObject prevs(sfPreviousFields);
 			BOOST_FOREACH(const SerializedType& obj, *origNode)
 			{ // search the original node for values saved on modify
 				if (obj.getFName().shouldMeta(SField::sMD_ChangeOrig) && !curNode->hasMatchingEntry(obj))
-					mods.addObject(obj);
+					prevs.addObject(obj);
+			}
+			if (!prevs.empty())
+				mSet.getAffectedNode(it.first, *type).addObject(prevs);
+
+			STObject finals(sfFinalFields);
+			BOOST_FOREACH(const SerializedType& obj, *curNode)
+			{ // search the final node for values saved always
 				if (obj.getFName().shouldMeta(SField::sMD_Always | SField::sMD_ChangeNew))
 					finals.addObject(obj);
 			}
-			if (!mods.empty())
-				mSet.getAffectedNode(it.first, *type).addObject(mods);
 			if (!finals.empty())
 				mSet.getAffectedNode(it.first, *type).addObject(finals);
 		}
