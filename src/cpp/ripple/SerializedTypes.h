@@ -312,7 +312,7 @@ public:
 	void setValue(const STAmount &);
 
 	virtual bool isEquivalent(const SerializedType& t) const;
-	virtual bool isDefault() const	{ return mValue == 0 && mIssuer.isZero() && mCurrency.isZero(); }
+	virtual bool isDefault() const	{ return (mValue == 0) && mIssuer.isZero() && mCurrency.isZero(); }
 
 	bool operator==(const STAmount&) const;
 	bool operator!=(const STAmount&) const;
