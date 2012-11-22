@@ -92,8 +92,12 @@ bool STAmount::bSetJson(const Json::Value& jvSource)
 
 		return true;
 	}
-	catch (...)
+	catch (const std::exception& e)
 	{
+		cLog(lsINFO)
+			<< boost::str(boost::format("bSetJson(): caught: %s")
+				% e.what());
+
 		return false;
 	}
 }

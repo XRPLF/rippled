@@ -4,6 +4,8 @@
 #include "Log.h"
 #include <boost/foreach.hpp>
 
+SETUP_LOG();
+
 /*
 JED: V IIII
 
@@ -41,7 +43,7 @@ Test USD to EUR
 //    length of path
 //    width of path
 //    correct currency at the end
-
+#if 0
 bool sortPathOptions(PathOption::pointer first, PathOption::pointer second)
 {
 	if (first->mTotalCost<second->mTotalCost) return(true);
@@ -71,7 +73,7 @@ PathOption::PathOption(PathOption::pointer other)
 {
 	// TODO:
 }
-
+#endif
 
 Pathfinder::Pathfinder(RippleAddress& srcAccountID, RippleAddress& dstAccountID, uint160& srcCurrencyID, STAmount dstAmount) :
 	mSrcAccountID(srcAccountID.getAccountID()), mDstAccountID(dstAccountID.getAccountID()), mDstAmount(dstAmount), mSrcCurrencyID(srcCurrencyID), mOrderBook(theApp->getMasterLedger().getCurrentLedger())
@@ -88,7 +90,7 @@ bool Pathfinder::findPaths(int maxSearchSteps, int maxPay, STPathSet& retPathSet
 		std::queue<STPath> pqueue;
 		STPathElement ele(mSrcAccountID,
 				  mSrcCurrencyID,
-				  uint160());
+				  uint160());	// XXX Might add source issuer.
 		STPath path;
 
 		path.addElement(ele);	// Add the source.
@@ -103,11 +105,19 @@ bool Pathfinder::findPaths(int maxSearchSteps, int maxPay, STPathSet& retPathSet
 			ele = path.mPath.back();	// Get the last node from the path.
 
 			// Determine if path is solved.
+
+			// Done, if dest wants XRP and last element produces XRP.
+			// Done, if dest wants non-XRP and last element is dest.
+
+			if (!ele.mCurrencyID) {
+			}
 			if (ele.mAccountID == mDstAccountID) {
 				// Found a path to the destination.
 
 				if (2 == path.mPath.size()) {
 					// Empty path is default. Drop it.
+					// XXX Don't drop empty path - we still want an estimate.
+					cLog(lsDEBUG) << "findPaths: dropping empty path.";
 					continue;
 				}
 
@@ -184,9 +194,10 @@ bool Pathfinder::findPaths(int maxSearchSteps, int maxPay, STPathSet& retPathSet
 	return false;
 }
 
+#if 0
 bool Pathfinder::checkComplete(STPathSet& retPathSet)
 {
-	if(mCompletePaths.size())
+	if (mCompletePaths.size())
 	{ // TODO: look through these and pick the most promising
 		int count=0;
 		BOOST_FOREACH(PathOption::pointer pathOption,mCompletePaths)
@@ -279,4 +290,6 @@ void Pathfinder::addPathOption(PathOption::pointer pathOption)
 		mBuildingPaths.push_back(pathOption);
 	}
 }
+#endif
+
 // vim:ts=4

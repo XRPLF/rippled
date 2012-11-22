@@ -1,3 +1,7 @@
+//
+// carries out the RPC
+//
+
 #include "Log.h"
 #include "NetworkOPs.h"
 #include "RPCHandler.h"
@@ -12,13 +16,8 @@
 #include "Pathfinder.h"
 #include <boost/foreach.hpp>
 #include <openssl/md5.h>
-/*
-carries out the RPC
-
-*/
 
 SETUP_LOG();
-
 
 Json::Value RPCHandler::rpcError(int iError)
 {
@@ -706,24 +705,36 @@ Json::Value RPCHandler::doRipplePathFind(const Json::Value& jvRequest)
 		// Parse raSrc.
 		!jvRequest.isMember("source_account")
 		|| !jvRequest["source_account"].isString()
-		|| !raSrc.setAccountID(jvRequest["source_account"].asString())
-
+		|| !raSrc.setAccountID(jvRequest["source_account"].asString()))
+	{
+		cLog(lsINFO) << "Bad source_account.";
+		jvResult	= rpcError(rpcINVALID_PARAMS);
+	}
+	else if (
 		// Parse raDst.
-		|| !jvRequest.isMember("destination_account")
+		!jvRequest.isMember("destination_account")
 		|| !jvRequest["destination_account"].isString()
-		|| !raDst.setAccountID(jvRequest["destination_account"].asString())
-
-
+		|| !raDst.setAccountID(jvRequest["destination_account"].asString()))
+	{
+		cLog(lsINFO) << "Bad destination_account.";
+		jvResult	= rpcError(rpcINVALID_PARAMS);
+	}
+	else if (
 		// Parse saDst.
-		|| !jvRequest.isMember("destination_amount")
-		|| !saDst.bSetJson("destination_amount")
-
+		!jvRequest.isMember("destination_amount")
+		|| !saDst.bSetJson(jvRequest["destination_amount"]))
+	{
+		cLog(lsINFO) << "Bad destination_amount.";
+		jvResult	= rpcError(rpcINVALID_PARAMS);
+	}
+	else if (
 		// Checks on source_currencies.
-		|| !jvRequest.isMember("source_currencies")
+		!jvRequest.isMember("source_currencies")
 		|| !jvRequest["source_currencies"].isArray()
-		|| jvRequest["source_currencies"].size()
+		|| !jvRequest["source_currencies"].size()
 		)
 	{
+		cLog(lsINFO) << "Bad source_currencies.";
 		jvResult	= rpcError(rpcINVALID_PARAMS);
 	}
 	else
@@ -742,10 +753,20 @@ Json::Value RPCHandler::doRipplePathFind(const Json::Value& jvRequest)
 					&& (!jvSource["issuer"].isString()
 						|| !STAmount::issuerFromString(srcIssuerID, jvSource["issuer"].asString()))))
 			{
+				cLog(lsINFO) << "Bad currency/issuer.";
 				return rpcError(rpcINVALID_PARAMS);
 			}
 
-			// XXX Add some results.
+			STPathSet	spsPaths;
+
+			// XXX Need to add support for srcIssuerID.
+			Pathfinder pf(raSrc, raDst, srcCurrencyID, saDst);
+
+			if (!spsPaths.isEmpty())
+			{
+				// XXX Also need to check liquidity.
+				jvSource.append(spsPaths.getJson(0));
+			}
 		}
 
 		jvResult["results"] = jvArray;
@@ -1410,7 +1431,7 @@ Json::Value RPCHandler::doCommand(const std::string& command, Json::Value& param
 		{	"peers",				&RPCHandler::doPeers,				0,  0, true,	false,	optNone		},
 		{	"profile",				&RPCHandler::doProfile,				1,  9, false,	false,	optCurrent	},
 		{	"ripple_lines_get",		&RPCHandler::doRippleLinesGet,		1,  2, false,	false,	optCurrent	},
-		{	"path_find",			&RPCHandler::doRipplePathFind,	   -1, -1, false,	false,	optCurrent	},
+		{	"ripple_path_find",		&RPCHandler::doRipplePathFind,	   -1, -1, false,	false,	optCurrent	},
 		{	"submit",				&RPCHandler::doSubmit,				2,  2, false,	false,	optCurrent	},
 		{	"submit_json",			&RPCHandler::doSubmitJson,			-1,  -1, false,	false,	optCurrent	},
 		{	"server_info",			&RPCHandler::doServerInfo,			0,  0, true,	false,	optNone		},
