@@ -152,7 +152,8 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 		}
 
 		return terResult;
-	}else 
+	}
+	else
 	{
 		cLog(lsWARNING) << "applyTransaction: Invalid transaction: unknown transaction type";
 		return temUNKNOWN;
@@ -160,4 +161,3 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 }
 
 // vim:ts=4
-

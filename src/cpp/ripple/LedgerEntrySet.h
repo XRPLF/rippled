@@ -69,7 +69,7 @@ public:
 	void init(Ledger::ref ledger, const uint256& transactionID, uint32 ledgerID);
 	void clear();
 
-	Ledger::pointer& getLedger() 		{ return mLedger; }
+	Ledger::pointer& getLedger()		{ return mLedger; }
 	Ledger::ref getLedgerRef() const	{ return mLedger; }
 
 	// basic entry functions
@@ -132,7 +132,7 @@ public:
 	bool isEmpty() const													{ return mEntries.empty(); }
 	std::map<uint256, LedgerEntrySetEntry>::const_iterator begin() const	{ return mEntries.begin(); }
 	std::map<uint256, LedgerEntrySetEntry>::const_iterator end() const		{ return mEntries.end(); }
-	std::map<uint256, LedgerEntrySetEntry>::iterator begin() 				{ return mEntries.begin(); }
+	std::map<uint256, LedgerEntrySetEntry>::iterator begin()				{ return mEntries.begin(); }
 	std::map<uint256, LedgerEntrySetEntry>::iterator end()					{ return mEntries.end(); }
 
 	static bool intersect(const LedgerEntrySet& lesLeft, const LedgerEntrySet& lesRight);

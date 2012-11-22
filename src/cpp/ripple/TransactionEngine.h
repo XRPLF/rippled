@@ -39,7 +39,7 @@ enum TransactionEngineParams
 class TransactionEngine : private IS_INSTANCE(TransactionEngine)
 {
 private:
-	LedgerEntrySet						mNodes;
+	LedgerEntrySet		mNodes;
 
 	TER	setAuthorized(const SerializedTransaction& txn, bool bMustSetGenerator);
 	TER checkSig(const SerializedTransaction& txn);
@@ -60,10 +60,7 @@ protected:
 	uint160				mTxnAccountID;
 	SLE::pointer		mTxnAccount;
 
-	
-
 	void				txnWrite();
-
 
 public:
 	typedef boost::shared_ptr<TransactionEngine> pointer;
