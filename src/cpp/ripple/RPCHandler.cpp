@@ -526,13 +526,6 @@ Json::Value RPCHandler::doOwnerInfo(const Json::Value& params)
 }
 
 
-Json::Value RPCHandler::doPathFind(const Json::Value& params)
-{
-	Json::Value ret(Json::objectValue);
-
-	return ret;
-}
-
 Json::Value RPCHandler::doPeers(const Json::Value& params)
 {
 	Json::Value obj(Json::objectValue);
@@ -702,13 +695,72 @@ Json::Value RPCHandler::doRippleLinesGet(const Json::Value &params)
 	return ret;
 }
 
+Json::Value RPCHandler::doRipplePathFind(const Json::Value& jvRequest)
+{
+	Json::Value		jvResult(Json::objectValue);
+	RippleAddress	raSrc;
+	RippleAddress	raDst;
+	STAmount		saDst;
+
+	if (
+		// Parse raSrc.
+		!jvRequest.isMember("source_account")
+		|| !jvRequest["source_account"].isString()
+		|| !raSrc.setAccountID(jvRequest["source_account"].asString())
+
+		// Parse raDst.
+		|| !jvRequest.isMember("destination_account")
+		|| !jvRequest["destination_account"].isString()
+		|| !raDst.setAccountID(jvRequest["destination_account"].asString())
+
+
+		// Parse saDst.
+		|| !jvRequest.isMember("destination_amount")
+		|| !saDst.bSetJson("destination_amount")
+
+		// Checks on source_currencies.
+		|| !jvRequest.isMember("source_currencies")
+		|| !jvRequest["source_currencies"].isArray()
+		|| jvRequest["source_currencies"].size()
+		)
+	{
+		jvResult	= rpcError(rpcINVALID_PARAMS);
+	}
+	else
+	{
+		Json::Value	jvSrcCurrencies	= jvRequest.isMember("source_currencies");
+		Json::Value	jvArray(Json::arrayValue);
+
+		for (unsigned int i=0; i != jvSrcCurrencies.size(); ++i) {
+			Json::Value	jvSource		= jvSrcCurrencies[i];
+			uint160		srcCurrencyID;
+			uint160		srcIssuerID;
+
+			if (!jvSource.isMember("currency")
+				|| !STAmount::currencyFromString(srcCurrencyID, jvSource["currency"].asString())
+				|| ((jvSource.isMember("issuer"))
+					&& (!jvSource["issuer"].isString()
+						|| !STAmount::issuerFromString(srcIssuerID, jvSource["issuer"].asString()))))
+			{
+				return rpcError(rpcINVALID_PARAMS);
+			}
+
+			// XXX Add some results.
+		}
+
+		jvResult["results"] = jvArray;
+	}
+
+	return jvResult;
+}
+
 // submit any transaction to the network
 // submit private_key json
 Json::Value RPCHandler::doSubmit(const Json::Value& params)
 {
 	Json::Value		txJSON;
 	Json::Reader	reader;
-	
+
 	//std::string hello=params[1u].asString();
 
 	if (reader.parse(params[1u].asString(), txJSON))
@@ -792,17 +844,7 @@ Json::Value RPCHandler::handleJSONSubmit(const Json::Value& jvRequest)
 
 				STAmount dstAmount;
 
-				if (txJSON["Amount"].isObject())
-				{
-					std::string issuerStr;
-					if( txJSON["Amount"].isMember("issuer")) issuerStr=txJSON["Amount"]["issuer"].asString();
-					if( !txJSON["Amount"].isMember("value") || !txJSON["Amount"].isMember("currency")) return rpcError(rpcDST_AMT_MALFORMED);
-					if (!dstAmount.setFullValue(txJSON["Amount"]["value"].asString(), txJSON["Amount"]["currency"].asString(), issuerStr))
-					{
-						return rpcError(rpcDST_AMT_MALFORMED);
-					}
-				}
-				else if (!dstAmount.setFullValue(txJSON["Amount"].asString()))
+				if (!dstAmount.bSetJson(txJSON["Amount"]))
 				{
 					return rpcError(rpcDST_AMT_MALFORMED);
 				}
@@ -1365,10 +1407,10 @@ Json::Value RPCHandler::doCommand(const std::string& command, Json::Value& param
 		{	"logrotate",			&RPCHandler::doLogRotate,			0,  0, true,	false,	optNone		},
 		{	"nickname_info",		&RPCHandler::doNicknameInfo,		1,  1, false,	false,	optCurrent	},
 		{	"owner_info",			&RPCHandler::doOwnerInfo,			1,  2, false,	false,	optCurrent	},
-		{	"path_find",			&RPCHandler::doPathFind,		   -1, -1, false,	false,	optCurrent	},
 		{	"peers",				&RPCHandler::doPeers,				0,  0, true,	false,	optNone		},
 		{	"profile",				&RPCHandler::doProfile,				1,  9, false,	false,	optCurrent	},
 		{	"ripple_lines_get",		&RPCHandler::doRippleLinesGet,		1,  2, false,	false,	optCurrent	},
+		{	"path_find",			&RPCHandler::doRipplePathFind,	   -1, -1, false,	false,	optCurrent	},
 		{	"submit",				&RPCHandler::doSubmit,				2,  2, false,	false,	optCurrent	},
 		{	"submit_json",			&RPCHandler::doSubmitJson,			-1,  -1, false,	false,	optCurrent	},
 		{	"server_info",			&RPCHandler::doServerInfo,			0,  0, true,	false,	optNone		},

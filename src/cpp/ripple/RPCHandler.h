@@ -10,7 +10,7 @@ class RPCHandler
 	InfoSub*		mInfoSub;
 	int				mRole;
 
-	typedef Json::Value (RPCHandler::*doFuncPtr)(const Json::Value &params);
+	typedef Json::Value (RPCHandler::*doFuncPtr)(const Json::Value& params);
 	enum {
 		optNone		= 0,
 		optNetwork	= 1,				// Need network
@@ -35,7 +35,7 @@ class RPCHandler
 
 	Json::Value accountFromString(const uint256& uLedger, RippleAddress& naAccount, bool& bIndex, const std::string& strIdent, const int iIndex);
 
-	Json::Value doAcceptLedger(const Json::Value &params);
+	Json::Value doAcceptLedger(const Json::Value& params);
 
 	Json::Value doAccountInfo(const Json::Value& params);
 	Json::Value doAccountTransactions(const Json::Value& params);
@@ -51,10 +51,10 @@ class RPCHandler
 	Json::Value doOwnerInfo(const Json::Value& params);
 
 	Json::Value doProfile(const Json::Value& params);
-	Json::Value doPathFind(const Json::Value& params);
 	Json::Value doPeers(const Json::Value& params);
 
-	Json::Value doRippleLinesGet(const Json::Value &params);
+	Json::Value doRippleLinesGet(const Json::Value& params);
+	Json::Value doRipplePathFind(const Json::Value& jvRequest);
 	Json::Value doServerInfo(const Json::Value& params);
 	Json::Value doSessionClose(const Json::Value& params);
 	Json::Value doSessionOpen(const Json::Value& params);
