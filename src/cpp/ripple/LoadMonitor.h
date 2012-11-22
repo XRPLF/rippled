@@ -69,7 +69,7 @@ public:
 		assert(mRunning);
 		mRunning = false;
 		mMonitor.addCountAndLatency(mCount,
-			(boost::posix_time::microsec_clock::universal_time() - mStartTime).total_milliseconds());
+			static_cast<int>((boost::posix_time::microsec_clock::universal_time() - mStartTime).total_milliseconds()));
 	}
 };
 

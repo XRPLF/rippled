@@ -486,7 +486,6 @@ BOOST_AUTO_TEST_CASE( SHAMapSync_test )
 		BOOST_FAIL("NodeSize");
 	}
 
-	SMAddNode node();
 	if (!destination.addRootNode(*gotNodes.begin(), snfWIRE, NULL))
 	{
 		cLog(lsFATAL) << "AddRootNode fails";
