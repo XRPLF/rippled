@@ -50,7 +50,6 @@ Json::Value WSConnection::invokeCommand(Json::Value& jvRequest)
 
 	// Regular RPC command
 	{
-		boost::recursive_mutex::scoped_lock sl(theApp->getMasterLock());
 		jvResult["result"] = mRPCHandler.doCommand(
 			jvRequest["command"].asString(),
 			jvRequest.isMember("params")

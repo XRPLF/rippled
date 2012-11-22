@@ -97,10 +97,12 @@ public:
 	void addOnComplete(boost::function<void (LedgerAcquire::pointer)>);
 
 	bool takeBase(const std::string& data);
-	bool takeTxNode(const std::list<SHAMapNode>& IDs, const std::list<std::vector<unsigned char> >& data);
-	bool takeTxRootNode(const std::vector<unsigned char>& data);
-	bool takeAsNode(const std::list<SHAMapNode>& IDs, const std::list<std::vector<unsigned char> >& data);
-	bool takeAsRootNode(const std::vector<unsigned char>& data);
+	bool takeTxNode(const std::list<SHAMapNode>& IDs, const std::list<std::vector<unsigned char> >& data,
+		SMAddNode&);
+	bool takeTxRootNode(const std::vector<unsigned char>& data, SMAddNode&);
+	bool takeAsNode(const std::list<SHAMapNode>& IDs, const std::list<std::vector<unsigned char> >& data,
+		SMAddNode&);
+	bool takeAsRootNode(const std::vector<unsigned char>& data, SMAddNode&);
 	void trigger(Peer::ref, bool timer);
 	bool tryLocal();
 	void addPeers();
@@ -119,7 +121,7 @@ public:
 	LedgerAcquire::pointer find(const uint256& hash);
 	bool hasLedger(const uint256& ledgerHash);
 	void dropLedger(const uint256& ledgerHash);
-	bool gotLedgerData(ripple::TMLedgerData& packet, Peer::ref);
+	SMAddNode gotLedgerData(ripple::TMLedgerData& packet, Peer::ref);
 };
 
 #endif

@@ -1547,14 +1547,17 @@ void UniqueNodeList::validatorsResponse(const boost::system::error_code& err, st
 
 void UniqueNodeList::nodeNetwork()
 {
-	HttpsClient::httpsGet(
-		theApp->getIOService(),
-		theConfig.VALIDATORS_SITE,
-		443,
-		VALIDATORS_FILE_PATH,
-		VALIDATORS_FILE_BYTES_MAX,
-		boost::posix_time::seconds(VALIDATORS_FETCH_SECONDS),
-		boost::bind(&UniqueNodeList::validatorsResponse, this, _1, _2));
+	if(!theConfig.VALIDATORS_SITE.empty())
+	{
+		HttpsClient::httpsGet(
+			theApp->getIOService(),
+			theConfig.VALIDATORS_SITE,
+			443,
+			VALIDATORS_FILE_PATH,
+			VALIDATORS_FILE_BYTES_MAX,
+			boost::posix_time::seconds(VALIDATORS_FETCH_SECONDS),
+			boost::bind(&UniqueNodeList::validatorsResponse, this, _1, _2));
+	}
 }
 
 void UniqueNodeList::nodeBootstrap()

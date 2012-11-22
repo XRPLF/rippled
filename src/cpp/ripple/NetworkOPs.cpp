@@ -813,13 +813,13 @@ SHAMap::pointer NetworkOPs::getTXMap(const uint256& hash)
 	return mConsensus->getTransactionTree(hash, false);
 }
 
-bool NetworkOPs::gotTXData(const boost::shared_ptr<Peer>& peer, const uint256& hash,
+SMAddNode NetworkOPs::gotTXData(const boost::shared_ptr<Peer>& peer, const uint256& hash,
 	const std::list<SHAMapNode>& nodeIDs, const std::list< std::vector<unsigned char> >& nodeData)
 {
 	if (!haveConsensusObject())
 	{
 		cLog(lsWARNING) << "Got TX data with no consensus object";
-		return false;
+		return SMAddNode();
 	}
 	return mConsensus->peerGaveNodes(peer, hash, nodeIDs, nodeData);
 }
@@ -1029,18 +1029,17 @@ void NetworkOPs::pubLedger(Ledger::ref lpAccepted)
 
 			for (SHAMapItem::pointer item = txSet.peekFirstItem(); !!item; item = txSet.peekNextItem(item->getTag()))
 			{
-				SerializedTransaction::pointer	stTxn = theApp->getMasterTransaction().fetch(item, false, 0);
-				if(stTxn)
-				{
-					// XXX Need to support other results.
-					// XXX Need to give failures too.
-					TER	terResult	= tesSUCCESS;
-					
-					SerializerIterator it(item->peekSerializer());
+				SerializerIterator it(item->peekSerializer());
 
-					TransactionMetaSet::pointer meta = boost::make_shared<TransactionMetaSet>(stTxn->getTransactionID(), lpAccepted->getLedgerSeq(), it.getVL());
-					pubAcceptedTransaction(lpAccepted, *stTxn, terResult,meta);
-				}	
+				// OPTIMIZEME: Could get transaction from txn master, but still must call getVL
+				Serializer				txnSer(it.getVL());
+				SerializerIterator		txnIt(txnSer);
+				SerializedTransaction	stTxn(txnIt);
+
+				TransactionMetaSet::pointer meta = boost::make_shared<TransactionMetaSet>(
+					stTxn.getTransactionID(), lpAccepted->getLedgerSeq(), it.getVL());
+
+				pubAcceptedTransaction(lpAccepted, stTxn, meta->getResultTER(), meta);
 			}
 		}
 	}
@@ -1135,6 +1134,7 @@ void NetworkOPs::pubAccountTransaction(Ledger::ref lpCurrent, const SerializedTr
 	if (!notify.empty())
 	{
 		Json::Value	jvObj	= transJson(stTxn, terResult, bAccepted, lpCurrent, "account");
+		if(meta) jvObj["meta"]=meta->getJson(0);
 
 		BOOST_FOREACH(InfoSub* ispListener, notify)
 		{
@@ -1194,7 +1194,7 @@ void NetworkOPs::subAccount(InfoSub* ispListener, const boost::unordered_set<Rip
 			boost::unordered_set<InfoSub*>	usisElement;
 
 			usisElement.insert(ispListener);
-			mSubAccount.insert(simIterator, make_pair(naAccountID.getAccountID(), usisElement));
+			subMap.insert(simIterator, make_pair(naAccountID.getAccountID(), usisElement));
 		}
 		else
 		{

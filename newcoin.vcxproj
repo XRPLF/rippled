@@ -124,6 +124,7 @@
     <ClCompile Include="src\cpp\ripple\LedgerMaster.cpp" />
     <ClCompile Include="src\cpp\ripple\LedgerProposal.cpp" />
     <ClCompile Include="src\cpp\ripple\LedgerTiming.cpp" />
+    <ClCompile Include="src\cpp\ripple\LoadMonitor.cpp" />
     <ClCompile Include="src\cpp\ripple\Log.cpp" />
     <ClCompile Include="src\cpp\ripple\main.cpp" />
     <ClCompile Include="src\cpp\ripple\NetworkOPs.cpp" />

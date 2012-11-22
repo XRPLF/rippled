@@ -31,16 +31,29 @@ Transaction::pointer TransactionMaster::fetch(const uint256& txnID, bool checkDi
 	return txn;
 }
 
-SerializedTransaction::pointer TransactionMaster::fetch(SHAMapItem::ref item, bool checkDisk, uint32 uCommitLedger)
+SerializedTransaction::pointer TransactionMaster::fetch(SHAMapItem::ref item, SHAMapTreeNode::TNType type,
+	bool checkDisk, uint32 uCommitLedger)
 {
 	SerializedTransaction::pointer	txn;
 	Transaction::pointer			iTx = theApp->getMasterTransaction().fetch(item->getTag(), false);
 
 	if (!iTx)
 	{
-		SerializerIterator sit(item->peekSerializer());
 
-		txn = boost::make_shared<SerializedTransaction>(boost::ref(sit));
+		if (type == SHAMapTreeNode::tnTRANSACTION_NM)
+		{
+			SerializerIterator sit(item->peekSerializer());
+			txn = boost::make_shared<SerializedTransaction>(boost::ref(sit));
+		}
+		else if (type == SHAMapTreeNode::tnTRANSACTION_MD)
+		{
+			Serializer s;
+			int length;
+			item->peekSerializer().getVL(s.modData(), 0, length);
+			SerializerIterator sit(s);
+
+			txn = boost::make_shared<SerializedTransaction>(boost::ref(sit));
+		}
 	}
 	else
 	{

@@ -45,7 +45,8 @@ public:
 
 	SHAMap::pointer getMap()			{ return mMap; }
 
-	bool takeNodes(const std::list<SHAMapNode>& IDs, const std::list< std::vector<unsigned char> >& data, Peer::ref);
+	SMAddNode takeNodes(const std::list<SHAMapNode>& IDs,
+		const std::list< std::vector<unsigned char> >& data, Peer::ref);
 };
 
 class LCTransaction
@@ -184,7 +185,7 @@ public:
 
 	bool peerHasSet(Peer::ref peer, const uint256& set, ripple::TxSetStatus status);
 
-	bool peerGaveNodes(Peer::ref peer, const uint256& setHash,
+	SMAddNode peerGaveNodes(Peer::ref peer, const uint256& setHash,
 		const std::list<SHAMapNode>& nodeIDs, const std::list< std::vector<unsigned char> >& nodeData);
 
 	bool isOurPubKey(const RippleAddress &k)	{ return k == mValPublic; }
