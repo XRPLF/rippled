@@ -16,6 +16,31 @@ SETUP_LOG();
 
 uint64	STAmount::uRateOne	= STAmount::getRate(STAmount(1), STAmount(1));
 
+bool STAmount::issuerFromString(uint160& uDstIssuer, const std::string& sIssuer)
+{
+	bool	bSuccess	= true;
+
+	if (sIssuer.size() == (160/4))
+	{
+		uDstIssuer.SetHex(sIssuer);
+	}
+	else
+	{
+		RippleAddress raIssuer;
+
+		if (raIssuer.setAccountID(sIssuer))
+		{
+			uDstIssuer	= raIssuer.getAccountID();
+		}
+		else
+		{
+			bSuccess	= false;
+		}
+	}
+
+	return bSuccess;
+}
+
 // --> sCurrency: "", "XRP", or three letter ISO code.
 bool STAmount::currencyFromString(uint160& uDstCurrency, const std::string& sCurrency)
 {
@@ -56,6 +81,21 @@ bool STAmount::currencyFromString(uint160& uDstCurrency, const std::string& sCur
 std::string STAmount::getHumanCurrency() const
 {
 	return createHumanCurrency(mCurrency);
+}
+
+bool STAmount::bSetJson(const Json::Value& jvSource)
+{
+	try {
+		STAmount	saParsed(sfGeneric, jvSource);
+
+		*this	= saParsed;
+
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
 }
 
 STAmount::STAmount(SField::ref n, const Json::Value& v)
@@ -105,22 +145,9 @@ STAmount::STAmount(SField::ref n, const Json::Value& v)
 		if (!currencyFromString(mCurrency, currency.asString()))
 			throw std::runtime_error("invalid currency");
 
-		if (!issuer.isString())
+		if (!issuer.isString()
+			|| !issuerFromString(mIssuer, issuer.asString()))
 			throw std::runtime_error("invalid issuer");
-
-		if (issuer.size() == (160/4))
-		{
-			mIssuer.SetHex(issuer.asString());
-		}
-		else
-		{
-			RippleAddress is;
-
-			if(!is.setAccountID(issuer.asString()))
-				throw std::runtime_error("invalid issuer");
-
-			mIssuer = is.getAccountID();
-		}
 
 		if (mIssuer.isZero())
 			throw std::runtime_error("invalid issuer");

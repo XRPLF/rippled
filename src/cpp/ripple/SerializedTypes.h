@@ -259,6 +259,8 @@ public:
 	static std::auto_ptr<SerializedType> deserialize(SerializerIterator& sit, SField::ref name)
 	{ return std::auto_ptr<SerializedType>(construct(sit, name)); }
 
+	bool bSetJson(const Json::Value& jvSource);
+
 	static STAmount saFromRate(uint64 uRate = 0)
 	{ return STAmount(CURRENCY_ONE, ACCOUNT_ONE, uRate, -9, false); }
 
@@ -379,6 +381,7 @@ public:
 	static std::string createHumanCurrency(const uint160& uCurrency);
 	static STAmount deserialize(SerializerIterator&);
 	static bool currencyFromString(uint160& uDstCurrency, const std::string& sCurrency);
+	static bool issuerFromString(uint160& uDstIssuer, const std::string& sIssuer);
 
 	Json::Value getJson(int) const;
 };
