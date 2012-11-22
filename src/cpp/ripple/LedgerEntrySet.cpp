@@ -419,7 +419,7 @@ void LedgerEntrySet::calcRawMeta(Serializer& s, TER result)
 					prevs.addObject(obj);
 			}
 			if (!prevs.empty())
-				mSet.getAffectedNode(it.first, *type).addObject(prevs);
+				mSet.getAffectedNode(it.first).addObject(prevs);
 
 			STObject finals(sfFinalFields);
 			BOOST_FOREACH(const SerializedType& obj, *curNode)
@@ -428,7 +428,7 @@ void LedgerEntrySet::calcRawMeta(Serializer& s, TER result)
 					finals.addObject(obj);
 			}
 			if (!finals.empty())
-				mSet.getAffectedNode(it.first, *type).addObject(finals);
+				mSet.getAffectedNode(it.first).addObject(finals);
 		}
 		else if (type == &sfModifiedNode)
 		{
@@ -442,7 +442,7 @@ void LedgerEntrySet::calcRawMeta(Serializer& s, TER result)
 					prevs.addObject(obj);
 			}
 			if (!prevs.empty())
-				mSet.getAffectedNode(it.first, *type).addObject(prevs);
+				mSet.getAffectedNode(it.first).addObject(prevs);
 
 			STObject finals(sfFinalFields);
 			BOOST_FOREACH(const SerializedType& obj, *curNode)
@@ -451,7 +451,7 @@ void LedgerEntrySet::calcRawMeta(Serializer& s, TER result)
 					finals.addObject(obj);
 			}
 			if (!finals.empty())
-				mSet.getAffectedNode(it.first, *type).addObject(finals);
+				mSet.getAffectedNode(it.first).addObject(finals);
 		}
 		else if (type == &sfCreatedNode) // if created, thread to owner(s)
 		{
@@ -460,6 +460,7 @@ void LedgerEntrySet::calcRawMeta(Serializer& s, TER result)
 
 			if (curNode->isThreadedType()) // always thread to self
 				threadTx(curNode, mLedger, newMod);
+
 			STObject news(sfNewFields);
 			BOOST_FOREACH(const SerializedType& obj, *curNode)
 			{ // save non-default values
@@ -467,7 +468,7 @@ void LedgerEntrySet::calcRawMeta(Serializer& s, TER result)
 					news.addObject(obj);
 			}
 			if (!news.empty())
-				mSet.getAffectedNode(it.first, *type).addObject(news);
+				mSet.getAffectedNode(it.first).addObject(news);
 		}
 	}
 
