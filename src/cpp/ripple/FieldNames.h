@@ -46,7 +46,7 @@ public:
 	static const int sMD_DeleteFinal	= 0x04; // final value when it is deleted
 	static const int sMD_Create			= 0x08; // value when it's created
 	static const int sMD_Always			= 0x10; // value when node containing it is affected at all
-	static const int sMD_Default		= sMD_ChangeOrig | sMD_ChangeNew | sMD_DeleteFinal;
+	static const int sMD_Default		= sMD_ChangeOrig | sMD_ChangeNew | sMD_DeleteFinal | sMD_Create;
 
 protected:
 	static std::map<int, ptr>	codeToField;
