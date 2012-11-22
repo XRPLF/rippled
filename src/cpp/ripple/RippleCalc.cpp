@@ -2126,7 +2126,6 @@ void RippleCalc::pathNext(PathState::ref pspCur, const int iPaths, const LedgerE
 	}
 }
 
-// XXX Stand alone calculation not implemented, does not calculate required input.
 TER RippleCalc::rippleCalc(
 	LedgerEntrySet&		lesActive,				// <-> --> = Fee applied to src balance.
 		  STAmount&		saMaxAmountAct,			// <-- The computed input amount.
@@ -2138,7 +2137,8 @@ TER RippleCalc::rippleCalc(
 	const STPathSet&	spsPaths,
     const bool			bPartialPayment,
     const bool			bLimitQuality,
-    const bool			bNoRippleDirect
+    const bool			bNoRippleDirect,
+	const bool			bStandAlone				// True, not to delete unfundeds.
     )
 {
 	RippleCalc		rc(lesActive);
@@ -2240,8 +2240,9 @@ cLog(lsDEBUG) << boost::str(boost::format("rippleCalc: Build path: %d: add: %d s
 	    terResult	= temUNCERTAIN;
     }
 
-	STAmount				saInAct			= STAmount(saMaxAmountReq.getCurrency(), saMaxAmountReq.getIssuer());
-	STAmount				saOutAct		= STAmount(saDstAmountReq.getCurrency(), saDstAmountReq.getIssuer());
+	saMaxAmountAct	= STAmount(saMaxAmountReq.getCurrency(), saMaxAmountReq.getIssuer());
+	saDstAmountAct	= STAmount(saDstAmountReq.getCurrency(), saDstAmountReq.getIssuer());
+
     const LedgerEntrySet	lesBase			= lesActive;							// Checkpoint with just fees paid.
     const uint64			uQualityLimit	= bLimitQuality ? STAmount::getRate(saDstAmountReq, saMaxAmountReq) : 0;
 	// When processing, don't want to complicate directory walking with deletion.
@@ -2259,8 +2260,8 @@ int iPass	= 0;
 	    {
 		    if (pspCur->uQuality)
 			{
-				pspCur->saInAct		= saInAct;										// Update to current amount processed.
-				pspCur->saOutAct	= saOutAct;
+				pspCur->saInAct		= saMaxAmountAct;										// Update to current amount processed.
+				pspCur->saOutAct	= saDstAmountAct;
 
 				rc.pathNext(pspCur, vpsPaths.size(), lesCheckpoint, lesActive);		// Compute increment.
 
@@ -2314,8 +2315,8 @@ cLog(lsDEBUG) << boost::str(boost::format("rippleCalc: Summary: %d quality:%d be
 		    // Record best pass' LedgerEntrySet to build off of and potentially return.
 		    lesActive.swapWith(pspBest->lesEntries);
 
-			saInAct		+= pspBest->saInPass;
-			saOutAct	+= pspBest->saOutPass;
+			saMaxAmountAct		+= pspBest->saInPass;
+			saDstAmountAct	+= pspBest->saOutPass;
 
 			if (pspBest->bConsumed)
 			{
@@ -2323,13 +2324,13 @@ cLog(lsDEBUG) << boost::str(boost::format("rippleCalc: Summary: %d quality:%d be
 				pspBest->uQuality	= 0;
 			}
 
-		    if (saOutAct == saDstAmountReq)
+		    if (saDstAmountAct == saDstAmountReq)
 		    {
 				// Done. Delivered requested amount.
 
 			    terResult	= tesSUCCESS;
 		    }
-		    else if (saInAct != saMaxAmountReq && iDry != vpsPaths.size())
+		    else if (saMaxAmountAct != saMaxAmountReq && iDry != vpsPaths.size())
 		    {
 			    // Have not met requested amount or max send, try to do more. Prepare for next pass.
 
@@ -2359,7 +2360,7 @@ cLog(lsDEBUG) << boost::str(boost::format("rippleCalc: Summary: %d quality:%d be
 		    lesActive	= lesBase;				// Revert to just fees charged.
 	    }
 	    // Partial payment ok.
-	    else if (!saOutAct)
+	    else if (!saDstAmountAct)
 	    {
 		    // No payment at all.
 		    terResult	= tepPATH_DRY;
@@ -2371,22 +2372,25 @@ cLog(lsDEBUG) << boost::str(boost::format("rippleCalc: Summary: %d quality:%d be
 	    }
     }
 
-    if (tesSUCCESS == terResult)
-    {
-	    // Delete became unfunded offers.
-	    BOOST_FOREACH(const uint256& uOfferIndex, vuUnfundedBecame)
-	    {
-		    if (tesSUCCESS == terResult)
-			    terResult = lesActive.offerDelete(uOfferIndex);
-	    }
-    }
+	if (!bStandAlone)
+	{
+		if (tesSUCCESS == terResult)
+		{
+			// Delete became unfunded offers.
+			BOOST_FOREACH(const uint256& uOfferIndex, vuUnfundedBecame)
+			{
+				if (tesSUCCESS == terResult)
+					terResult = lesActive.offerDelete(uOfferIndex);
+			}
+		}
 
-    // Delete found unfunded offers.
-    BOOST_FOREACH(const uint256& uOfferIndex, rc.musUnfundedFound)
-    {
-	    if (tesSUCCESS == terResult)
-		    terResult = lesActive.offerDelete(uOfferIndex);
-    }
+		// Delete found unfunded offers.
+		BOOST_FOREACH(const uint256& uOfferIndex, rc.musUnfundedFound)
+		{
+			if (tesSUCCESS == terResult)
+				terResult = lesActive.offerDelete(uOfferIndex);
+		}
+	}
 
 	return terResult;
 }

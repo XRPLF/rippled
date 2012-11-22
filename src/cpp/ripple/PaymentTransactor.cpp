@@ -119,19 +119,20 @@ TER PaymentTransactor::doApply()
 		STAmount	saDstAmountAct;
 
 		terResult	= isSetBit(mParams, tapOPEN_LEDGER) && spsPaths.getPathCount() > RIPPLE_PATHS_MAX
-			? telBAD_PATH_COUNT
+			? telBAD_PATH_COUNT			// Too many paths for proposed ledger.
 			: RippleCalc::rippleCalc(
-			mEngine->getNodes(),
-			saMaxAmountAct,
-			saDstAmountAct,
-			saMaxAmount,
-			saDstAmount,
-			uDstAccountID,
-			mTxnAccountID,
-			spsPaths,
-			bPartialPayment,
-			bLimitQuality,
-			bNoRippleDirect);
+				mEngine->getNodes(),
+				saMaxAmountAct,
+				saDstAmountAct,
+				saMaxAmount,
+				saDstAmount,
+				uDstAccountID,
+				mTxnAccountID,
+				spsPaths,
+				bPartialPayment,
+				bLimitQuality,
+				bNoRippleDirect,		// Always compute for finalizing ledger.
+				false);					// Not standalone, delete unfundeds.
 	}
 	else
 	{
@@ -175,3 +176,5 @@ TER PaymentTransactor::doApply()
 
 	return terResult;
 }
+
+// vim:ts=4

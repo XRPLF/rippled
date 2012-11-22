@@ -34,7 +34,7 @@ protected:
 
 	// For offers:
 
-	STAmount						saRateMax;			// XXX Should rate be sticky for forward too?
+	STAmount						saRateMax;
 
 	// Directory
 	uint256							uDirectTip;			// Current directory.
@@ -186,7 +186,8 @@ public:
 		const STPathSet&	spsPaths,
 		const bool			bPartialPayment,
 		const bool			bLimitQuality,
-		const bool			bNoRippleDirect
+		const bool			bNoRippleDirect,
+		const bool			bStandAlone
 		);
 };
 

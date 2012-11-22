@@ -9,6 +9,7 @@
 #include "RippleLines.h"
 #include "Wallet.h"
 #include "RippleAddress.h"
+#include "RippleCalc.h"
 #include "AccountState.h"
 #include "NicknameState.h"
 #include "InstanceCounter.h"
@@ -699,7 +700,7 @@ Json::Value RPCHandler::doRipplePathFind(const Json::Value& jvRequest)
 	Json::Value		jvResult(Json::objectValue);
 	RippleAddress	raSrc;
 	RippleAddress	raDst;
-	STAmount		saDst;
+	STAmount		saDstAmount;
 
 	if (
 		// Parse raSrc.
@@ -720,9 +721,9 @@ Json::Value RPCHandler::doRipplePathFind(const Json::Value& jvRequest)
 		jvResult	= rpcError(rpcINVALID_PARAMS);
 	}
 	else if (
-		// Parse saDst.
+		// Parse saDstAmount.
 		!jvRequest.isMember("destination_amount")
-		|| !saDst.bSetJson(jvRequest["destination_amount"]))
+		|| !saDstAmount.bSetJson(jvRequest["destination_amount"]))
 	{
 		cLog(lsINFO) << "Bad destination_amount.";
 		jvResult	= rpcError(rpcINVALID_PARAMS);
@@ -739,8 +740,11 @@ Json::Value RPCHandler::doRipplePathFind(const Json::Value& jvRequest)
 	}
 	else
 	{
-		Json::Value	jvSrcCurrencies	= jvRequest.isMember("source_currencies");
+		Json::Value	jvSrcCurrencies	= jvRequest["source_currencies"];
 		Json::Value	jvArray(Json::arrayValue);
+
+		Ledger::pointer	lpCurrent	= mNetOps->getCurrentLedger();
+		LedgerEntrySet	lesSnapshot(lpCurrent);
 
 		for (unsigned int i=0; i != jvSrcCurrencies.size(); ++i) {
 			Json::Value	jvSource		= jvSrcCurrencies[i];
@@ -760,16 +764,80 @@ Json::Value RPCHandler::doRipplePathFind(const Json::Value& jvRequest)
 			STPathSet	spsPaths;
 
 			// XXX Need to add support for srcIssuerID.
-			Pathfinder pf(raSrc, raDst, srcCurrencyID, saDst);
+			Pathfinder pf(raSrc, raDst, srcCurrencyID, saDstAmount);
 
-			if (!spsPaths.isEmpty())
+			pf.findPaths(5, 1, spsPaths, true);
+
+			if (spsPaths.isEmpty())
+			{
+				cLog(lsDEBUG) << "ripple_path_find: No paths found.";
+			}
+			else
 			{
 				// XXX Also need to check liquidity.
-				jvSource.append(spsPaths.getJson(0));
+				STAmount	saMaxAmountAct;
+				STAmount	saDstAmountAct;
+				STAmount	saMaxAmount(srcCurrencyID,
+					!!srcIssuerID
+						? srcIssuerID
+						: !!srcCurrencyID
+							? raSrc.getAccountID()
+							: ACCOUNT_XRP,
+					1);
+					saMaxAmount.negate();
+
+				TER	terResult	=
+					RippleCalc::rippleCalc(
+						lesSnapshot,
+						saMaxAmountAct,
+						saDstAmountAct,
+						saMaxAmount,			// --> -1/xxx/yyy unlimited
+						saDstAmount,			// --> Amount to deliver.
+						raDst.getAccountID(),	// --> Account to deliver to.
+						raSrc.getAccountID(),	// --> Account sending from.
+						spsPaths,				// --> Path set.
+						false,					// --> bPartialPayment - XXX might allow sometimes.
+												// Must achive delivery goal.
+						false,					// --> bLimitQuality - XXX might allow sometimes.
+												// Average quality is wanted for normal payments.
+						// XXX TRUE till direct path representation resolved.
+						true,					// --> bNoRippleDirect - XXX might allow sometimes.
+												// XXX No reason not to take the direct, unless set is merely direct.
+						true);					//--> Stand alone mode, don't delete unfundeds.
+
+				cLog(lsDEBUG)
+					<< boost::str(boost::format("ripple_path_find: saMaxAmount=%s saDstAmount=%s saMaxAmountAct=%s saDstAmountAct=%s")
+						% saMaxAmount
+						% saDstAmount
+						% saMaxAmountAct
+						% saDstAmountAct);
+
+				if (tesSUCCESS == terResult)
+				{
+					Json::Value	jvEntry(Json::objectValue);
+
+					jvEntry["source_amount"]	= saMaxAmountAct.getJson(0);
+					jvEntry["paths"]			= spsPaths.getJson(0);
+
+					jvArray.append(jvEntry);
+				}
+				else
+				{
+					std::string	strToken;
+					std::string	strHuman;
+
+					transResultInfo(terResult, strToken, strHuman);
+
+					cLog(lsDEBUG)
+						<< boost::str(boost::format("ripple_path_find: %s %s %s")
+							% strToken
+							% strHuman
+							% spsPaths.getJson(0));
+				}
 			}
 		}
 
-		jvResult["results"] = jvArray;
+		jvResult["alternatives"] = jvArray;
 	}
 
 	return jvResult;
@@ -872,7 +940,7 @@ Json::Value RPCHandler::handleJSONSubmit(const Json::Value& jvRequest)
 
 				Pathfinder pf(srcAddress, dstAccountID, srcCurrencyID, dstAmount);
 
-				pf.findPaths(5, 1, spsPaths);
+				pf.findPaths(5, 1, spsPaths, false);
 
 				if (!spsPaths.isEmpty())
 				{
@@ -1067,7 +1135,7 @@ Json::Value RPCHandler::doTxHistory(const Json::Value& params)
 		obj["index"]=startIndex;
 
 		std::string sql =
-			str(boost::format("SELECT * FROM Transactions ORDER BY LedgerSeq desc LIMIT %u,20")
+			boost::str(boost::format("SELECT * FROM Transactions ORDER BY LedgerSeq desc LIMIT %u,20")
 			% startIndex);
 
 		{

@@ -84,7 +84,7 @@ Pathfinder::Pathfinder(RippleAddress& srcAccountID, RippleAddress& dstAccountID,
 // Returns a single path, if possible.
 // --> maxSearchSteps: unused
 // --> maxPay: unused
-bool Pathfinder::findPaths(int maxSearchSteps, int maxPay, STPathSet& retPathSet)
+bool Pathfinder::findPaths(int maxSearchSteps, int maxPay, STPathSet& retPathSet, bool bAllowEmpty)
 {
 	if (mLedger) {
 		std::queue<STPath> pqueue;
@@ -107,16 +107,28 @@ bool Pathfinder::findPaths(int maxSearchSteps, int maxPay, STPathSet& retPathSet
 			// Determine if path is solved.
 
 			// Done, if dest wants XRP and last element produces XRP.
-			// Done, if dest wants non-XRP and last element is dest.
+			if (!ele.mCurrencyID									// Tail output is XRP
+				&& !mDstAmount.getCurrency()) {
 
-			if (!ele.mCurrencyID) {
+				// Remove implied first.
+				path.mPath.erase(path.mPath.begin());
+
+				// Return the path.
+				retPathSet.addPath(path);
+
+				cLog(lsDEBUG) << "findPaths: adding: " << path.getJson(0);
+
+				return true;
 			}
-			if (ele.mAccountID == mDstAccountID) {
+
+			// Done, if dest wants non-XRP and last element is dest.
+			// YYY Allows going through self.  Is this wanted?
+			if (ele.mAccountID == mDstAccountID						// Tail is destination
+				&& ele.mCurrencyID == mDstAmount.getCurrency()) {	// With correct output currency.
 				// Found a path to the destination.
 
-				if (2 == path.mPath.size()) {
+				if (!bAllowEmpty && 2 == path.mPath.size()) {
 					// Empty path is default. Drop it.
-					// XXX Don't drop empty path - we still want an estimate.
 					cLog(lsDEBUG) << "findPaths: dropping empty path.";
 					continue;
 				}
@@ -128,26 +140,41 @@ bool Pathfinder::findPaths(int maxSearchSteps, int maxPay, STPathSet& retPathSet
 				// Return the path.
 				retPathSet.addPath(path);
 
+				cLog(lsDEBUG) << "findPaths: adding: " << path.getJson(0);
+
 				return true;
 			}
 
+			bool	bContinued	= false;
+
 			if (!ele.mCurrencyID) {
 				// Last element is for XRP continue with qualifying books.
-
 				BOOST_FOREACH(OrderBook::pointer book, mOrderBook.getXRPInBooks())
 				{
+					// XXX Don't allow looping through same order books.
+
 					//if (!path.hasSeen(line->getAccountIDPeer().getAccountID()))
 					{
 						STPath			new_path(path);
 						STPathElement	new_ele(uint160(), book->getCurrencyOut(), book->getIssuerOut());
 
 						new_path.mPath.push_back(new_ele);
-						new_path.mCurrencyID = book->getCurrencyOut();
-						new_path.mCurrentAccount = book->getCurrencyOut();
+						new_path.mCurrencyID		= book->getCurrencyOut();
+						new_path.mCurrentAccount	= book->getCurrencyOut();
+
+						cLog(lsDEBUG) <<
+							boost::str(boost::format("findPaths: XRP input - %s/%s")
+								% STAmount::createHumanCurrency(new_path.mCurrencyID)
+								% RippleAddress::createHumanAccountID(new_path.mCurrentAccount));
 
 						pqueue.push(new_path);
+
+						bContinued	= true;
 					}
 				}
+
+				tLog(!bContinued, lsDEBUG)
+					<< boost::str(boost::format("findPaths: XRP input - dead end"));
 
 			} else {
 				// Last element is for non-XRP continue by adding ripple lines and order books.
@@ -164,8 +191,17 @@ bool Pathfinder::findPaths(int maxSearchSteps, int maxPay, STPathSet& retPathSet
 											ele.mCurrencyID,
 											uint160());
 
+						cLog(lsDEBUG) <<
+							boost::str(boost::format("findPaths: %s/%s --> %s/%s")
+								% RippleAddress::createHumanAccountID(ele.mAccountID)
+								% STAmount::createHumanCurrency(ele.mCurrencyID)
+								% RippleAddress::createHumanAccountID(line->getAccountIDPeer().getAccountID())
+								% STAmount::createHumanCurrency(ele.mCurrencyID));
+
 						new_path.mPath.push_back(new_ele);
 						pqueue.push(new_path);
+
+						bContinued	= true;
 					}
 				}
 
@@ -179,17 +215,31 @@ bool Pathfinder::findPaths(int maxSearchSteps, int maxPay, STPathSet& retPathSet
 					STPath			new_path(path);
 					STPathElement	new_ele(uint160(), book->getCurrencyOut(), book->getIssuerOut());
 
+					cLog(lsDEBUG) <<
+						boost::str(boost::format("findPaths: %s/%s :: %s/%s")
+							% STAmount::createHumanCurrency(ele.mCurrencyID)
+							% RippleAddress::createHumanAccountID(ele.mAccountID)
+							% STAmount::createHumanCurrency(book->getCurrencyOut())
+							% RippleAddress::createHumanAccountID(book->getIssuerOut()));
+
 					new_path.mPath.push_back(new_ele);
 					new_path.mCurrentAccount=book->getIssuerOut();
 					new_path.mCurrencyID=book->getCurrencyOut();
 
 					pqueue.push(new_path);
+
+					bContinued	= true;
 				}
 			}
 
-			// enumerate all adjacent nodes, construct a new path and push it into the queue
-		} // While
-	} // if there is a ledger
+			tLog(!bContinued, lsDEBUG)
+				<< boost::str(boost::format("findPaths: non-XRP input - dead end"));
+		}
+	}
+	else
+	{
+		cLog(lsWARNING) << boost::str(boost::format("findPaths: no ledger"));
+	}
 
 	return false;
 }

@@ -38,20 +38,20 @@ class Pathfinder
 	OrderBookDB		mOrderBook;
 	Ledger::pointer mLedger;
 
-	std::list<PathOption::pointer> mBuildingPaths;
-	std::list<PathOption::pointer> mCompletePaths;
+//	std::list<PathOption::pointer> mBuildingPaths;
+//	std::list<PathOption::pointer> mCompletePaths;
 
-	void addOptions(PathOption::pointer tail);
+//	void addOptions(PathOption::pointer tail);
 
 	// returns true if any building paths are now complete?
 	bool checkComplete(STPathSet& retPathSet);
 
-	void addPathOption(PathOption::pointer pathOption);
+//	void addPathOption(PathOption::pointer pathOption);
 
 public:
 	Pathfinder(RippleAddress& srcAccountID, RippleAddress& dstAccountID, uint160& srcCurrencyID, STAmount dstAmount);
 
 	// returns false if there is no path. otherwise fills out retPath
-	bool findPaths(int maxSearchSteps, int maxPay, STPathSet& retPathSet);
+	bool findPaths(int maxSearchSteps, int maxPay, STPathSet& retPathSet, bool bAllowEmpty);
 };
 // vim:ts=4
