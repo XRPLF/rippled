@@ -118,7 +118,7 @@ TER PaymentTransactor::doApply()
 		STAmount	saMaxAmountAct;
 		STAmount	saDstAmountAct;
 
-		terResult	= isSetBit(mParams, tapOPEN_LEDGER) && spsPaths.getPathCount() > RIPPLE_PATHS_MAX
+		terResult	= isSetBit(mParams, tapOPEN_LEDGER) && spsPaths.size() > RIPPLE_PATHS_MAX
 			? telBAD_PATH_COUNT			// Too many paths for proposed ledger.
 			: RippleCalc::rippleCalc(
 				mEngine->getNodes(),

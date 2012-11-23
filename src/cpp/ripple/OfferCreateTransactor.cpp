@@ -8,7 +8,6 @@
 // <-- saTakerPaid: What taker paid not including fees. To reduce an offer.
 // <--  saTakerGot: What taker got not including fees. To reduce an offer.
 // <--   terResult: tesSUCCESS or terNO_ACCOUNT
-// XXX: Fees should be paid by the source of the currency.
 TER OfferCreateTransactor::takeOffers(
 	bool				bPassive,
 	const uint256&		uBookBase,
@@ -284,8 +283,7 @@ TER OfferCreateTransactor::doApply()
 	{
 		Log(lsWARNING) << "doOfferCreate: Expired transaction: offer expired";
 
-		// XXX CHARGE FEE ONLY.
-		terResult	= tesSUCCESS;
+		terResult	= tesSUCCESS;				// Only charged fee.
 	}
 	else if (saTakerPays.isNative() && saTakerGets.isNative())
 	{
@@ -438,3 +436,4 @@ TER OfferCreateTransactor::doApply()
 
 	return terResult;
 }
+// vim:ts=4

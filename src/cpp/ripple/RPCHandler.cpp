@@ -695,6 +695,12 @@ Json::Value RPCHandler::doRippleLinesGet(const Json::Value &params)
 	return ret;
 }
 
+// TODO:
+// - Add support for specifying non-endpoint issuer.
+// - Return fully expanded path with proof.
+//   - Allows clients to verify path exists.
+// - Return canonicalized path.
+//   - From a trusted server, allows clients to use path without manipulation.
 Json::Value RPCHandler::doRipplePathFind(const Json::Value& jvRequest)
 {
 	Json::Value		jvResult(Json::objectValue);
@@ -723,7 +729,8 @@ Json::Value RPCHandler::doRipplePathFind(const Json::Value& jvRequest)
 	else if (
 		// Parse saDstAmount.
 		!jvRequest.isMember("destination_amount")
-		|| !saDstAmount.bSetJson(jvRequest["destination_amount"]))
+		|| !saDstAmount.bSetJson(jvRequest["destination_amount"])
+		|| (!!saDstAmount.getCurrency() && (!saDstAmount.getIssuer() || ACCOUNT_ONE == saDstAmount.getIssuer())))
 	{
 		cLog(lsINFO) << "Bad destination_amount.";
 		jvResult	= rpcError(rpcINVALID_PARAMS);
@@ -744,18 +751,29 @@ Json::Value RPCHandler::doRipplePathFind(const Json::Value& jvRequest)
 		Json::Value	jvArray(Json::arrayValue);
 
 		Ledger::pointer	lpCurrent	= mNetOps->getCurrentLedger();
+
+		ScopedUnlock	su(theApp->getMasterLock()); // As long as we have a locked copy of the ledger, we can unlock.
+
 		LedgerEntrySet	lesSnapshot(lpCurrent);
 
 		for (unsigned int i=0; i != jvSrcCurrencies.size(); ++i) {
 			Json::Value	jvSource		= jvSrcCurrencies[i];
-			uint160		srcCurrencyID;
-			uint160		srcIssuerID;
+			uint160		uSrcCurrencyID;
+			uint160		uSrcIssuerID	= raSrc.getAccountID();
 
-			if (!jvSource.isMember("currency")
-				|| !STAmount::currencyFromString(srcCurrencyID, jvSource["currency"].asString())
+			if (
+				// Parse currency.
+				!jvSource.isMember("currency")
+				|| !STAmount::currencyFromString(uSrcCurrencyID, jvSource["currency"].asString())
+
+				// Parse issuer.
 				|| ((jvSource.isMember("issuer"))
 					&& (!jvSource["issuer"].isString()
-						|| !STAmount::issuerFromString(srcIssuerID, jvSource["issuer"].asString()))))
+						|| !STAmount::issuerFromString(uSrcIssuerID, jvSource["issuer"].asString())))
+
+				// Don't allow illegal issuers.
+				|| !uSrcIssuerID
+				|| ACCOUNT_ONE == uSrcIssuerID)
 			{
 				cLog(lsINFO) << "Bad currency/issuer.";
 				return rpcError(rpcINVALID_PARAMS);
@@ -763,8 +781,7 @@ Json::Value RPCHandler::doRipplePathFind(const Json::Value& jvRequest)
 
 			STPathSet	spsPaths;
 
-			// XXX Need to add support for srcIssuerID.
-			Pathfinder pf(raSrc, raDst, srcCurrencyID, saDstAmount);
+			Pathfinder pf(raSrc, raDst, uSrcCurrencyID, uSrcIssuerID, saDstAmount);
 
 			pf.findPaths(5, 1, spsPaths, true);
 
@@ -774,36 +791,39 @@ Json::Value RPCHandler::doRipplePathFind(const Json::Value& jvRequest)
 			}
 			else
 			{
-				// XXX Also need to check liquidity.
 				STAmount	saMaxAmountAct;
 				STAmount	saDstAmountAct;
-				STAmount	saMaxAmount(srcCurrencyID,
-					!!srcIssuerID
-						? srcIssuerID
-						: !!srcCurrencyID
+				STAmount	saMaxAmount(
+					uSrcCurrencyID,
+					!!uSrcIssuerID
+						? uSrcIssuerID
+						: !!uSrcCurrencyID
 							? raSrc.getAccountID()
 							: ACCOUNT_XRP,
 					1);
 					saMaxAmount.negate();
+
+				// Strip empty/default path.
+				if (1 == spsPaths.size() && !spsPaths.begin()->size())
+				{
+					spsPaths.clear();
+				}
 
 				TER	terResult	=
 					RippleCalc::rippleCalc(
 						lesSnapshot,
 						saMaxAmountAct,
 						saDstAmountAct,
-						saMaxAmount,			// --> -1/xxx/yyy unlimited
+						saMaxAmount,			// --> Amount to send is unlimited to get an estimate.
 						saDstAmount,			// --> Amount to deliver.
 						raDst.getAccountID(),	// --> Account to deliver to.
 						raSrc.getAccountID(),	// --> Account sending from.
 						spsPaths,				// --> Path set.
-						false,					// --> bPartialPayment - XXX might allow sometimes.
+						false,					// --> Don't allow partial payment. This is for normal fill or kill payments.
 												// Must achive delivery goal.
-						false,					// --> bLimitQuality - XXX might allow sometimes.
-												// Average quality is wanted for normal payments.
-						// XXX TRUE till direct path representation resolved.
-						true,					// --> bNoRippleDirect - XXX might allow sometimes.
-												// XXX No reason not to take the direct, unless set is merely direct.
-						true);					//--> Stand alone mode, don't delete unfundeds.
+						false,					// --> Don't limit quality. Average quality is wanted for normal payments.
+						false,					// --> Allow direct ripple.
+						true);					// --> Stand alone mode, no point in deleting unfundeds.
 
 				cLog(lsDEBUG)
 					<< boost::str(boost::format("ripple_path_find: saMaxAmount=%s saDstAmount=%s saMaxAmountAct=%s saDstAmountAct=%s")
@@ -817,7 +837,7 @@ Json::Value RPCHandler::doRipplePathFind(const Json::Value& jvRequest)
 					Json::Value	jvEntry(Json::objectValue);
 
 					jvEntry["source_amount"]	= saMaxAmountAct.getJson(0);
-					jvEntry["paths"]			= spsPaths.getJson(0);
+					jvEntry["paths_expanded"]	= spsPaths.getJson(0);
 
 					jvArray.append(jvEntry);
 				}
@@ -875,7 +895,7 @@ Json::Value RPCHandler::handleJSONSubmit(const Json::Value& jvRequest)
 {
 	Json::Value		jvResult;
 	RippleAddress	naSeed;
-	RippleAddress	srcAddress;
+	RippleAddress	raSrcAddressID;
 	Json::Value		txJSON		= jvRequest["tx_json"];
 
 	if (!naSeed.setSeedGeneric(jvRequest["secret"].asString()))
@@ -886,15 +906,23 @@ Json::Value RPCHandler::handleJSONSubmit(const Json::Value& jvRequest)
 	{
 		return rpcError(rpcSRC_ACT_MISSING);
 	}
-	if (!srcAddress.setAccountID(txJSON["Account"].asString()))
+	if (!raSrcAddressID.setAccountID(txJSON["Account"].asString()))
 	{
 		return rpcError(rpcSRC_ACT_MALFORMED);
 	}
 
-	AccountState::pointer asSrc	= mNetOps->getAccountState(uint256(0), srcAddress);
-	if(!asSrc) return rpcError(rpcSRC_ACT_MALFORMED);
+	AccountState::pointer asSrc	= mNetOps->getAccountState(uint256(0), raSrcAddressID);
+	if (!asSrc) return rpcError(rpcSRC_ACT_MALFORMED);
 
-	if( txJSON["TransactionType"]=="Payment")
+	if (!txJSON.isMember("Fee")
+		&& ("OfferCreate" == txJSON["TransactionType"].asString()
+			|| "OfferCancel" == txJSON["TransactionType"].asString()
+			|| "TrustSet" == txJSON["TransactionType"].asString()))
+	{
+		txJSON["Fee"] = (int) theConfig.FEE_DEFAULT;
+	}
+
+	if ("Payment" == txJSON["TransactionType"].asString())
 	{
 
 		RippleAddress dstAccountID;
@@ -911,8 +939,9 @@ Json::Value RPCHandler::handleJSONSubmit(const Json::Value& jvRequest)
 		if (!txJSON.isMember("Fee"))
 		{
 			if (mNetOps->getAccountState(uint256(0), dstAccountID))
-				txJSON["Fee"]=(int)theConfig.FEE_DEFAULT;
-			else txJSON["Fee"]=(int)theConfig.FEE_ACCOUNT_CREATE;
+				txJSON["Fee"] = (int) theConfig.FEE_DEFAULT;
+			else
+				txJSON["Fee"] = (int) theConfig.FEE_ACCOUNT_CREATE;
 		}
 
 		if (!txJSON.isMember("Paths") && jvRequest.isMember("build_path"))
@@ -920,15 +949,21 @@ Json::Value RPCHandler::handleJSONSubmit(const Json::Value& jvRequest)
 			if (txJSON["Amount"].isObject() || txJSON.isMember("SendMax"))
 			{  // we need a ripple path
 				STPathSet	spsPaths;
-				uint160		srcCurrencyID;
+				uint160		uSrcCurrencyID;
+				uint160		uSrcIssuerID;
 
 				if (txJSON.isMember("SendMax") && txJSON["SendMax"].isMember("currency"))
 				{
-					STAmount::currencyFromString(srcCurrencyID, txJSON["SendMax"]["currency"].asString());
+					STAmount::currencyFromString(uSrcCurrencyID, txJSON["SendMax"]["currency"].asString());
 				}
 				else
 				{
-					srcCurrencyID	= CURRENCY_XRP;
+					uSrcCurrencyID	= CURRENCY_XRP;
+				}
+
+				if (!!uSrcCurrencyID)
+				{
+					uSrcIssuerID	= raSrcAddressID.getAccountID();
 				}
 
 				STAmount dstAmount;
@@ -938,7 +973,7 @@ Json::Value RPCHandler::handleJSONSubmit(const Json::Value& jvRequest)
 					return rpcError(rpcDST_AMT_MALFORMED);
 				}
 
-				Pathfinder pf(srcAddress, dstAccountID, srcCurrencyID, dstAmount);
+				Pathfinder pf(raSrcAddressID, dstAccountID, uSrcCurrencyID, uSrcIssuerID, dstAmount);
 
 				pf.findPaths(5, 1, spsPaths, false);
 
@@ -951,29 +986,12 @@ Json::Value RPCHandler::handleJSONSubmit(const Json::Value& jvRequest)
 			}
 		}
 	}
-	else if( txJSON["type"]=="OfferCreate" )
-	{
-		txJSON["TransactionType"]=7;
-		if(!txJSON.isMember("Fee")) txJSON["Fee"]=(int)theConfig.FEE_DEFAULT;
-	}
-	else if( txJSON["type"]=="TrustSet")
-	{
-		txJSON["TransactionType"]=20;
-		if(!txJSON.isMember("Fee")) txJSON["Fee"]=(int)theConfig.FEE_DEFAULT;
-	}
-	else if( txJSON["type"]=="OfferCancel")
-	{
-		txJSON["TransactionType"]=8;
-		if(!txJSON.isMember("Fee")) txJSON["Fee"]=(int)theConfig.FEE_DEFAULT;
-	}
-
-	txJSON.removeMember("type");
 
 	if(!txJSON.isMember("Sequence")) txJSON["Sequence"]=asSrc->getSeq();
 	if(!txJSON.isMember("Flags")) txJSON["Flags"]=0;
 
 	Ledger::pointer	lpCurrent		= mNetOps->getCurrentLedger();
-	SLE::pointer	sleAccountRoot	= mNetOps->getSLE(lpCurrent, Ledger::getAccountRootIndex(srcAddress.getAccountID()));
+	SLE::pointer	sleAccountRoot	= mNetOps->getSLE(lpCurrent, Ledger::getAccountRootIndex(raSrcAddressID.getAccountID()));
 
 	if (!sleAccountRoot)
 	{
@@ -999,9 +1017,9 @@ Json::Value RPCHandler::handleJSONSubmit(const Json::Value& jvRequest)
 	{
 		naMasterAccountPublic.setAccountPublic(naMasterGenerator, iIndex);
 
-		Log(lsWARNING) << "authorize: " << iIndex << " : " << naMasterAccountPublic.humanAccountID() << " : " << srcAddress.humanAccountID();
+		Log(lsWARNING) << "authorize: " << iIndex << " : " << naMasterAccountPublic.humanAccountID() << " : " << raSrcAddressID.humanAccountID();
 
-		bFound	= srcAddress.getAccountID() == naMasterAccountPublic.getAccountID();
+		bFound	= raSrcAddressID.getAccountID() == naMasterAccountPublic.getAccountID();
 		if (!bFound)
 			++iIndex;
 	}
@@ -1020,7 +1038,7 @@ Json::Value RPCHandler::handleJSONSubmit(const Json::Value& jvRequest)
 		// The generated pair must match authorized...
 		&& naAuthorizedPublic.getAccountID() != naAccountPublic.getAccountID()
 		// ... or the master key must have been used.
-		&& srcAddress.getAccountID() != naAccountPublic.getAccountID())
+		&& raSrcAddressID.getAccountID() != naAccountPublic.getAccountID())
 	{
 		// std::cerr << "iIndex: " << iIndex << std::endl;
 		// std::cerr << "sfAuthorizedKey: " << strHex(asSrc->getAuthorizedKey().getAccountID()) << std::endl;

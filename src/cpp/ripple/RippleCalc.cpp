@@ -1813,10 +1813,10 @@ cLog(lsDEBUG) << boost::str(boost::format("PathState: pushed: account=%s currenc
 		// May have an implied node.
 
 		// Figure out next node properties for implied node.
-		const uint160	uNxtCurrencyID	= spSourcePath.getElementCount()
+		const uint160	uNxtCurrencyID	= spSourcePath.size()
 											? spSourcePath.getElement(0).getCurrency()
 											: uOutCurrencyID;
-		const uint160	uNxtAccountID	= spSourcePath.getElementCount()
+		const uint160	uNxtAccountID	= spSourcePath.size()
 											? spSourcePath.getElement(0).getAccountID()
 											: !!uOutCurrencyID
 												? uOutIssuerID == uReceiverID
@@ -2127,11 +2127,21 @@ void RippleCalc::pathNext(PathState::ref pspCur, const int iPaths, const LedgerE
 }
 
 TER RippleCalc::rippleCalc(
-	LedgerEntrySet&		lesActive,				// <-> --> = Fee applied to src balance.
+	// Compute paths vs this ledger entry set.  Up to caller to actually apply to ledger.
+	LedgerEntrySet&		lesActive,				// <-> --> = Fee already applied to src balance.
 		  STAmount&		saMaxAmountAct,			// <-- The computed input amount.
 		  STAmount&		saDstAmountAct,			// <-- The computed output amount.
+
+	// Issuer:
+	//      XRP: ACCOUNT_XRP
+	//  non-XRP: uSrcAccountID (for any issuer) or another account with trust node.
 	const STAmount&		saMaxAmountReq,			// --> -1 = no limit.
+
+	// Issuer:
+	//      XRP: ACCOUNT_XRP
+	//  non-XRP: uDstAccountID (for any issuer) or another account with trust node.
 	const STAmount&		saDstAmountReq,
+
 	const uint160&		uDstAccountID,
 	const uint160&		uSrcAccountID,
 	const STPathSet&	spsPaths,
@@ -2194,7 +2204,7 @@ cLog(lsDEBUG) << boost::str(boost::format("rippleCalc: Build direct: add: %d sta
 	    }
     }
 
-    cLog(lsINFO) << "rippleCalc: Paths in set: " << spsPaths.getPathCount();
+    cLog(lsINFO) << "rippleCalc: Paths in set: " << spsPaths.size();
 
 int	iIndex	= 0;
     BOOST_FOREACH(const STPath& spPath, spsPaths)

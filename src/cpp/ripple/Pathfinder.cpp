@@ -52,8 +52,8 @@ bool sortPathOptions(PathOption::pointer first, PathOption::pointer second)
 	if (first->mCorrectCurrency && !second->mCorrectCurrency) return(true);
 	if (!first->mCorrectCurrency && second->mCorrectCurrency) return(false);
 
-	if (first->mPath.getElementCount()<second->mPath.getElementCount()) return(true);
-	if (first->mPath.getElementCount()>second->mPath.getElementCount()) return(false);
+	if (first->mPath.size()<second->mPath.size()) return(true);
+	if (first->mPath.size()>second->mPath.size()) return(false);
 
 	if (first->mMinWidth<second->mMinWidth) return true;
 
@@ -75,15 +75,22 @@ PathOption::PathOption(PathOption::pointer other)
 }
 #endif
 
-Pathfinder::Pathfinder(RippleAddress& srcAccountID, RippleAddress& dstAccountID, uint160& srcCurrencyID, STAmount dstAmount) :
-	mSrcAccountID(srcAccountID.getAccountID()), mDstAccountID(dstAccountID.getAccountID()), mDstAmount(dstAmount), mSrcCurrencyID(srcCurrencyID), mOrderBook(theApp->getMasterLedger().getCurrentLedger())
+//
+// XXX Optionally, specifying a source and destination issuer might be nice. Especially, to convert between issuers. However, this
+// functionality is left to the future.
+//
+Pathfinder::Pathfinder(const RippleAddress& srcAccountID, const RippleAddress& dstAccountID, const uint160& srcCurrencyID, const uint160& srcIssuerID, const STAmount& dstAmount)
+	: mSrcAccountID(srcAccountID.getAccountID()), mDstAccountID(dstAccountID.getAccountID()), mDstAmount(dstAmount), mSrcCurrencyID(srcCurrencyID), mSrcIssuerID(srcIssuerID), mOrderBook(theApp->getMasterLedger().getCurrentLedger())
 {
 	mLedger=theApp->getMasterLedger().getCurrentLedger();
 }
 
-// Returns a single path, if possible.
-// --> maxSearchSteps: unused
-// --> maxPay: unused
+// If possible, returns a single path.
+// --> maxSearchSteps: unused XXX
+// --> maxPay: unused XXX
+// When generating a path set blindly, don't allow the empty path, it is implied by default.
+// When generating a path set for estimates, allow an empty path instead of no paths to indicate a path exists. The caller will
+// need to strip the empty path when submitting the transaction.
 bool Pathfinder::findPaths(int maxSearchSteps, int maxPay, STPathSet& retPathSet, bool bAllowEmpty)
 {
 	if (mLedger) {
@@ -103,8 +110,6 @@ bool Pathfinder::findPaths(int maxSearchSteps, int maxPay, STPathSet& retPathSet
 			pqueue.pop();				// Pop the first path from the queue.
 
 			ele = path.mPath.back();	// Get the last node from the path.
-
-			// Determine if path is solved.
 
 			// Done, if dest wants XRP and last element produces XRP.
 			if (!ele.mCurrencyID									// Tail output is XRP

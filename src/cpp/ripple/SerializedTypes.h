@@ -605,7 +605,7 @@ public:
 	STPath(const std::vector<STPathElement>& p) : mPath(p) { ; }
 
 	void printDebug();
-	int getElementCount() const							{ return mPath.size(); }
+	int size() const									{ return mPath.size(); }
 	bool isEmpty() const								{ return mPath.empty(); }
 	const STPathElement& getElement(int offset) const	{ return mPath[offset]; }
 	const STPathElement& getElement(int offset)			{ return mPath[offset]; }
@@ -683,7 +683,7 @@ public:
 	virtual Json::Value getJson(int) const;
 
 	SerializedTypeID getSType() const					{ return STI_PATHSET; }
-	int getPathCount() const							{ return value.size(); }
+	int size() const									{ return value.size(); }
 	const STPath& getPath(int off) const				{ return value[off]; }
 	STPath& peekPath(int off)							{ return value[off]; }
 	bool isEmpty() const								{ return value.empty(); }

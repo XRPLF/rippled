@@ -34,6 +34,7 @@ class Pathfinder
 	uint160			mDstAccountID;
 	STAmount		mDstAmount;
 	uint160			mSrcCurrencyID;
+	uint160			mSrcIssuerID;
 
 	OrderBookDB		mOrderBook;
 	Ledger::pointer mLedger;
@@ -49,7 +50,7 @@ class Pathfinder
 //	void addPathOption(PathOption::pointer pathOption);
 
 public:
-	Pathfinder(RippleAddress& srcAccountID, RippleAddress& dstAccountID, uint160& srcCurrencyID, STAmount dstAmount);
+	Pathfinder(const RippleAddress& srcAccountID, const RippleAddress& dstAccountID, const uint160& srcCurrencyID, const uint160& srcIssuerID, const STAmount& dstAmount);
 
 	// returns false if there is no path. otherwise fills out retPath
 	bool findPaths(int maxSearchSteps, int maxPay, STPathSet& retPathSet, bool bAllowEmpty);
