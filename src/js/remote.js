@@ -488,7 +488,12 @@ Remote.prototype._connect_message = function (ws, json) {
 
 	this.emit('ledger_closed', message.ledger_hash, message.ledger_index);
 	break;
-      
+
+      // Account subscription event
+      case 'account':
+        if (this.trace) console.log("remote: account: %s", JSON.stringify(message, undefined, 2));
+        break;
+
       default:
 	unexpected  = true;
 	break;
