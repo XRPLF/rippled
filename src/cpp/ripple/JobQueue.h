@@ -36,10 +36,11 @@ enum JobType
 	jtCLIENT		= 10,
 	jtPEER			= 11,
 	jtDISK			= 12,
-	jtLEDGER		= 13,
-	jtRPC			= 14,
+	jtRPC			= 13,
+	jtACCEPTLEDGER	= 14,
+	jtPUBLEDGER		= 15,
 };
-#define NUM_JOB_TYPES 16
+#define NUM_JOB_TYPES 24
 
 class Job
 {

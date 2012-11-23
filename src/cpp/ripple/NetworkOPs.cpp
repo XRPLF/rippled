@@ -1002,6 +1002,8 @@ void NetworkOPs::pubLedger(Ledger::ref lpAccepted)
 	if (NetworkOPs::omDISCONNECTED == getOperatingMode())
 		return;
 
+	LoadEvent::pointer event = theApp->getJobQueue().getLoadEvent(jtPUBLEDGER);
+
 	{
 		boost::interprocess::sharable_lock<boost::interprocess::interprocess_upgradable_mutex>	sl(mMonitorLock);
 

@@ -23,8 +23,9 @@ const char* Job::toString(JobType t)
 		case jtCLIENT:			return "clientCommand";
 		case jtPEER:			return "peerCommand";
 		case jtDISK:			return "diskAccess";
-		case jtLEDGER:			return "acceptLedger";
 		case jtRPC:				return "rpc";
+		case jtACCEPTLEDGER:	return "acceptLedger";
+		case jtPUBLEDGER:		return "pubLedger";
 		default:				assert(false); return "unknown";
 	}
 }

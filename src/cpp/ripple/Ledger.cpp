@@ -439,6 +439,7 @@ void Ledger::saveAcceptedLedger(bool fromConsensus)
 	}
 
 	theApp->getMasterLedger().setFullLedger(shared_from_this());
+	event = LoadEvent::pointer();
 
 	theApp->getOPs().pubLedger(shared_from_this());
 
