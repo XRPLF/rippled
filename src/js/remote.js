@@ -189,6 +189,7 @@ var Remote = function (opts, trace) {
   this.trusted		      = opts.trusted;
   this.websocket_ip           = opts.websocket_ip;
   this.websocket_port         = opts.websocket_port;
+  this.local_sequence         = opts.local_sequence;
   this.id                     = 0;
   this.trace                  = opts.trace || trace;
   this._ledger_current_index  = undefined;
@@ -714,12 +715,12 @@ Remote.prototype.submit = function (transaction) {
       });
   }
   else {
-    if (!transaction.tx_json.Sequence) {
+    if (self.local_sequence && !transaction.tx_json.Sequence) {
       transaction.tx_json.Sequence	= this.account_seq(transaction.tx_json.Account, 'ADVANCE');
       // console.log("Sequence: %s", transaction.tx_json.Sequence);
     }
 
-    if (!transaction.tx_json.Sequence) {
+    if (self.local_sequence && !transaction.tx_json.Sequence) {
       // Look in the last closed ledger.
       this.account_seq_cache(transaction.tx_json.Account, false)
 	.on('success_account_seq_cache', function () {
