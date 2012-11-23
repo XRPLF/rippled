@@ -148,7 +148,7 @@ Request.prototype.ripple_state = function (account, issuer, currency) {
   return this;
 };
 
-Request.prototype.accounts = function (accounts) {
+Request.prototype.accounts = function (accounts, realtime) {
   if ("object" !== typeof accounts) {
     accounts = [accounts];
   }
@@ -158,9 +158,17 @@ Request.prototype.accounts = function (accounts) {
   for (var i = 0, l = accounts.length; i < l; i++) {
     procAccounts.push(UInt160.json_rewrite(accounts[i]));
   }
-  this.message.accounts = procAccounts;
+  if (realtime) {
+    this.message.rt_accounts = procAccounts;
+  } else {
+    this.message.accounts = procAccounts;
+  }
 
   return this;
+};
+
+Request.prototype.rt_accounts = function (accounts) {
+  return this.accounts(accounts, true);
 };
 
 //
@@ -547,7 +555,7 @@ Remote.prototype.request_ledger = function (params) {
 
 // Only for unit testing.
 Remote.prototype.request_ledger_hash = function () {
-  assert(this.trusted);   // If not trusted, need to check proof.
+  //assert(this.trusted);   // If not trusted, need to check proof.
 
   return new Request(this, 'ledger_closed');
 };
@@ -569,7 +577,7 @@ Remote.prototype.request_ledger_current = function () {
 // .ledger_index()
 // .offer_id()
 Remote.prototype.request_ledger_entry = function (type) {
-  assert(this.trusted);   // If not trusted, need to check proof, maybe talk packet protocol.
+  //assert(this.trusted);   // If not trusted, need to check proof, maybe talk packet protocol.
   
   var self    = this;
   var request = new Request(this, 'ledger_entry');
@@ -652,7 +660,7 @@ Remote.prototype.request_unsubscribe = function (streams) {
 };
 
 Remote.prototype.request_transaction_entry = function (hash) {
-  assert(this.trusted);   // If not trusted, need to check proof, maybe talk packet protocol.
+  //assert(this.trusted);   // If not trusted, need to check proof, maybe talk packet protocol.
   
   return (new Request(this, 'transaction_entry'))
     .tx_hash(hash);
