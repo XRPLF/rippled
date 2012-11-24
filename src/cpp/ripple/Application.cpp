@@ -38,7 +38,7 @@ DatabaseCon::~DatabaseCon()
 }
 
 Application::Application() :
-	mIOWork(mIOService), mAuxWork(mAuxService), mUNL(mIOService), mNetOps(mIOService, &mMasterLedger),
+	mIOWork(mIOService), mAuxWork(mAuxService), mUNL(mIOService), mNetOps(mIOService, &mLedgerMaster),
 	mTempNodeCache("NodeCache", 16384, 90), mHashedObjectStore(16384, 300),
 	mSNTPClient(mAuxService), mRPCHandler(&mNetOps), 
 	mRpcDB(NULL), mTxnDB(NULL), mLedgerDB(NULL), mWalletDB(NULL), mHashNodeDB(NULL), mNetNodeDB(NULL),
@@ -122,7 +122,7 @@ void Application::run()
 	{
 		Ledger::pointer ledger = Ledger::getLastFullLedger();
 		if (ledger)
-			mMasterLedger.setLedgerRangePresent(0, ledger->getLedgerSeq());
+			mLedgerMaster.setLedgerRangePresent(0, ledger->getLedgerSeq());
 	}
 
 	//
@@ -216,7 +216,7 @@ void Application::sweep()
 {
 	mMasterTransaction.sweep();
 	mHashedObjectStore.sweep();
-	mMasterLedger.sweep();
+	mLedgerMaster.sweep();
 	mTempNodeCache.sweep();
 	mValidations.sweep();
 	mSweepTimer.expires_from_now(boost::posix_time::seconds(60));
@@ -249,12 +249,12 @@ void Application::startNewLedger()
 		firstLedger->updateHash();
 		firstLedger->setClosed();
 		firstLedger->setAccepted();
-		mMasterLedger.pushLedger(firstLedger);
+		mLedgerMaster.pushLedger(firstLedger);
 
 		Ledger::pointer secondLedger = boost::make_shared<Ledger>(true, boost::ref(*firstLedger));
 		secondLedger->setClosed();
 		secondLedger->setAccepted();
-		mMasterLedger.pushLedger(secondLedger, boost::make_shared<Ledger>(true, boost::ref(*secondLedger)), false);
+		mLedgerMaster.pushLedger(secondLedger, boost::make_shared<Ledger>(true, boost::ref(*secondLedger)), false);
 		assert(!!secondLedger->getAccountState(rootAddress));
 		mNetOps.setLastCloseTime(secondLedger->getCloseTimeNC());
 	}
@@ -293,10 +293,10 @@ void Application::loadOldLedger()
 			cLog(lsFATAL) << "Ledger is not sane.";
 			exit(-1);
 		}
-		mMasterLedger.setLedgerRangePresent(0, lastLedger->getLedgerSeq());
+		mLedgerMaster.setLedgerRangePresent(0, lastLedger->getLedgerSeq());
 
 		Ledger::pointer openLedger = boost::make_shared<Ledger>(false, boost::ref(*lastLedger));
-		mMasterLedger.switchLedgers(lastLedger, openLedger);
+		mLedgerMaster.switchLedgers(lastLedger, openLedger);
 		mNetOps.setLastCloseTime(lastLedger->getCloseTimeNC());
 	}
 	catch (SHAMapMissingNode& mn)

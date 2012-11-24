@@ -148,7 +148,7 @@ Request.prototype.ripple_state = function (account, issuer, currency) {
   return this;
 };
 
-Request.prototype.accounts = function (accounts) {
+Request.prototype.accounts = function (accounts, realtime) {
   if ("object" !== typeof accounts) {
     accounts = [accounts];
   }
@@ -158,9 +158,17 @@ Request.prototype.accounts = function (accounts) {
   for (var i = 0, l = accounts.length; i < l; i++) {
     procAccounts.push(UInt160.json_rewrite(accounts[i]));
   }
-  this.message.accounts = procAccounts;
+  if (realtime) {
+    this.message.rt_accounts = procAccounts;
+  } else {
+    this.message.accounts = procAccounts;
+  }
 
   return this;
+};
+
+Request.prototype.rt_accounts = function (accounts) {
+  return this.accounts(accounts, true);
 };
 
 //
@@ -181,6 +189,7 @@ var Remote = function (opts, trace) {
   this.trusted		      = opts.trusted;
   this.websocket_ip           = opts.websocket_ip;
   this.websocket_port         = opts.websocket_port;
+  this.local_sequence         = opts.local_sequence;
   this.id                     = 0;
   this.trace                  = opts.trace || trace;
   this._ledger_current_index  = undefined;
@@ -479,7 +488,12 @@ Remote.prototype._connect_message = function (ws, json) {
 
 	this.emit('ledger_closed', message.ledger_hash, message.ledger_index);
 	break;
-      
+
+      // Account subscription event
+      case 'account':
+        if (this.trace) console.log("remote: account: %s", JSON.stringify(message, undefined, 2));
+        break;
+
       default:
 	unexpected  = true;
 	break;
@@ -547,7 +561,7 @@ Remote.prototype.request_ledger = function (params) {
 
 // Only for unit testing.
 Remote.prototype.request_ledger_hash = function () {
-  assert(this.trusted);   // If not trusted, need to check proof.
+  //assert(this.trusted);   // If not trusted, need to check proof.
 
   return new Request(this, 'ledger_closed');
 };
@@ -569,7 +583,7 @@ Remote.prototype.request_ledger_current = function () {
 // .ledger_index()
 // .offer_id()
 Remote.prototype.request_ledger_entry = function (type) {
-  assert(this.trusted);   // If not trusted, need to check proof, maybe talk packet protocol.
+  //assert(this.trusted);   // If not trusted, need to check proof, maybe talk packet protocol.
   
   var self    = this;
   var request = new Request(this, 'ledger_entry');
@@ -652,7 +666,7 @@ Remote.prototype.request_unsubscribe = function (streams) {
 };
 
 Remote.prototype.request_transaction_entry = function (hash) {
-  assert(this.trusted);   // If not trusted, need to check proof, maybe talk packet protocol.
+  //assert(this.trusted);   // If not trusted, need to check proof, maybe talk packet protocol.
   
   return (new Request(this, 'transaction_entry'))
     .tx_hash(hash);
@@ -706,12 +720,12 @@ Remote.prototype.submit = function (transaction) {
       });
   }
   else {
-    if (!transaction.tx_json.Sequence) {
+    if (self.local_sequence && !transaction.tx_json.Sequence) {
       transaction.tx_json.Sequence	= this.account_seq(transaction.tx_json.Account, 'ADVANCE');
       // console.log("Sequence: %s", transaction.tx_json.Sequence);
     }
 
-    if (!transaction.tx_json.Sequence) {
+    if (self.local_sequence && !transaction.tx_json.Sequence) {
       // Look in the last closed ledger.
       this.account_seq_cache(transaction.tx_json.Account, false)
 	.on('success_account_seq_cache', function () {

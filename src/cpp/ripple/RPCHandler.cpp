@@ -1225,8 +1225,8 @@ Json::Value RPCHandler::doLedger(const Json::Value& params)
 	if (getParamCount(params) == 0)
 	{
 		Json::Value ret(Json::objectValue), current(Json::objectValue), closed(Json::objectValue);
-		theApp->getMasterLedger().getCurrentLedger()->addJson(current, 0);
-		theApp->getMasterLedger().getClosedLedger()->addJson(closed, 0);
+		theApp->getLedgerMaster().getCurrentLedger()->addJson(current, 0);
+		theApp->getLedgerMaster().getClosedLedger()->addJson(closed, 0);
 		ret["open"] = current;
 		ret["closed"] = closed;
 		return ret;
@@ -1240,13 +1240,13 @@ Json::Value RPCHandler::doLedger(const Json::Value& params)
 
 	Ledger::pointer ledger;
 	if (param == "current")
-		ledger = theApp->getMasterLedger().getCurrentLedger();
+		ledger = theApp->getLedgerMaster().getCurrentLedger();
 	else if ((param == "lastclosed") || (param == "lastaccepted"))
-		ledger = theApp->getMasterLedger().getClosedLedger();
+		ledger = theApp->getLedgerMaster().getClosedLedger();
 	else if (param.size() > 12)
-		ledger = theApp->getMasterLedger().getLedgerByHash(uint256(param));
+		ledger = theApp->getLedgerMaster().getLedgerByHash(uint256(param));
 	else
-		ledger = theApp->getMasterLedger().getLedgerBySeq(lexical_cast_s<uint32>(param));
+		ledger = theApp->getLedgerMaster().getLedgerBySeq(lexical_cast_s<uint32>(param));
 
 	if (!ledger)
 		return rpcError(rpcLGR_NOT_FOUND);
@@ -1308,7 +1308,7 @@ Json::Value RPCHandler::doAccountTransactions(const Json::Value& params)
 			else
 			{
 				txn->setLedger(it->first);
-				ret["transactions"].append(txn->getJson(0));
+				ret["transactions"].append(txn->getJson(1));
 			}
 
 		}
@@ -1854,7 +1854,7 @@ Json::Value RPCHandler::doTransactionEntry(const Json::Value& jvRequest)
 		// XXX Relying on trusted WSS client. Would be better to have a strict routine, returning success or failure.
 		uLedgerID.SetHex(jvRequest["ledger_hash"].asString());
 
-		Ledger::pointer				lpLedger	= theApp->getMasterLedger().getLedgerByHash(uLedgerID);
+		Ledger::pointer				lpLedger	= theApp->getLedgerMaster().getLedgerByHash(uLedgerID);
 
 		if (!lpLedger) {
 			jvResult["error"]	= "ledgerNotFound";

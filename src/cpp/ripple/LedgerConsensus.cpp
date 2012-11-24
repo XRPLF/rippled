@@ -407,7 +407,7 @@ void LedgerConsensus::handleLCL(const uint256& lclHash)
 
 	if (mPreviousLedger->getHash() != mPrevLedgerHash)
 	{ // we need to switch the ledger we're working from
-		Ledger::pointer newLCL = theApp->getMasterLedger().getLedgerByHash(lclHash);
+		Ledger::pointer newLCL = theApp->getLedgerMaster().getLedgerByHash(lclHash);
 		if (newLCL)
 			mPreviousLedger = newLCL;
 		else if (!mAcquiringLedger || (mAcquiringLedger->getHash() != mPrevLedgerHash))
@@ -578,7 +578,7 @@ int LedgerConsensus::startup()
 
 void LedgerConsensus::statePreClose()
 { // it is shortly before ledger close time
-	bool anyTransactions = theApp->getMasterLedger().getCurrentLedger()->peekTransactionMap()->getHash().isNonZero();
+	bool anyTransactions = theApp->getLedgerMaster().getCurrentLedger()->peekTransactionMap()->getHash().isNonZero();
 	int proposersClosed = mPeerPositions.size();
 
 	// This ledger is open. This computes how long since the last ledger closed
@@ -613,7 +613,7 @@ void LedgerConsensus::closeLedger()
 	mCloseTime = theApp->getOPs().getCloseTimeNC();
 	theApp->getOPs().setLastCloseTime(mCloseTime);
 	statusChange(ripple::neCLOSING_LEDGER, *mPreviousLedger);
-	takeInitialPosition(*theApp->getMasterLedger().closeLedger(true));
+	takeInitialPosition(*theApp->getLedgerMaster().closeLedger(true));
 }
 
 void LedgerConsensus::stateEstablish()
@@ -813,7 +813,7 @@ SHAMap::pointer LedgerConsensus::getTransactionTree(const uint256& hash, bool do
 
 		if (mState == lcsPRE_CLOSE)
 		{
-			SHAMap::pointer currentMap = theApp->getMasterLedger().getCurrentLedger()->peekTransactionMap();
+			SHAMap::pointer currentMap = theApp->getLedgerMaster().getCurrentLedger()->peekTransactionMap();
 			if (currentMap->getHash() == hash)
 			{
 				cLog(lsINFO) << "node proposes our open transaction set";
@@ -1027,7 +1027,7 @@ void LedgerConsensus::beginAccept(bool synchronous)
 	else
 	{
 		theApp->getIOService().post(boost::bind(&LedgerConsensus::accept, shared_from_this(), consensusSet,
-			theApp->getJobQueue().getLoadEvent(jtLEDGER)));
+			theApp->getJobQueue().getLoadEvent(jtACCEPTLEDGER)));
 	}
 }
 
@@ -1251,7 +1251,7 @@ void LedgerConsensus::accept(SHAMap::ref set, LoadEvent::pointer)
 		cLog(lsINFO) << "CNF newLCL " << newLCLHash;
 
 	Ledger::pointer newOL = boost::make_shared<Ledger>(true, boost::ref(*newLCL));
-	ScopedLock sl = theApp->getMasterLedger().getLock();
+	ScopedLock sl = theApp->getLedgerMaster().getLock();
 
 	// Apply disputed transactions that didn't get in
 	TransactionEngine engine(newOL);
@@ -1274,9 +1274,9 @@ void LedgerConsensus::accept(SHAMap::ref set, LoadEvent::pointer)
 	}
 
 	cLog(lsINFO) << "Applying transactions from current ledger";
-	applyTransactions(theApp->getMasterLedger().getCurrentLedger()->peekTransactionMap(), newOL, newLCL,
+	applyTransactions(theApp->getLedgerMaster().getCurrentLedger()->peekTransactionMap(), newOL, newLCL,
 		failedTransactions, true);
-	theApp->getMasterLedger().pushLedger(newLCL, newOL, !mConsensusFail);
+	theApp->getLedgerMaster().pushLedger(newLCL, newOL, !mConsensusFail);
 	mNewLedgerHash = newLCL->getHash();
 	mState = lcsACCEPTED;
 	sl.unlock();

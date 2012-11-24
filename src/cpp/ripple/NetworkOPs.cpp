@@ -946,7 +946,7 @@ Json::Value NetworkOPs::getServerInfo()
 	if (mNeedNetworkLedger)
 		info["networkLedger"] = "waiting";
 
-	info["completeLedgers"] = theApp->getMasterLedger().getCompleteLedgers();
+	info["completeLedgers"] = theApp->getLedgerMaster().getCompleteLedgers();
 	info["peers"] = theApp->getConnectionPool().getPeerCount();
 
 	Json::Value lastClose = Json::objectValue;
@@ -985,7 +985,7 @@ void NetworkOPs::pubProposedTransaction(Ledger::ref lpCurrent, const SerializedT
 	Json::Value	jvObj	= transJson(stTxn, terResult, false, lpCurrent, "transaction");
 
 	{
-		boost::interprocess::sharable_lock<boost::interprocess::interprocess_upgradable_mutex>	sl(mMonitorLock);
+		boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
 		BOOST_FOREACH(InfoSub* ispListener, mSubRTTransactions)
 		{
 			ispListener->send(jvObj);
@@ -1002,8 +1002,10 @@ void NetworkOPs::pubLedger(Ledger::ref lpAccepted)
 	if (NetworkOPs::omDISCONNECTED == getOperatingMode())
 		return;
 
+	LoadEvent::pointer event = theApp->getJobQueue().getLoadEvent(jtPUBLEDGER);
+
 	{
-		boost::interprocess::sharable_lock<boost::interprocess::interprocess_upgradable_mutex>	sl(mMonitorLock);
+		boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
 
 		if (!mSubLedger.empty())
 		{
@@ -1076,7 +1078,7 @@ void NetworkOPs::pubAcceptedTransaction(Ledger::ref lpCurrent, const SerializedT
 	Json::Value	jvObj	= transJson(stTxn, terResult, true, lpCurrent, "transaction");
 
 	{
-		boost::interprocess::sharable_lock<boost::interprocess::interprocess_upgradable_mutex>	sl(mMonitorLock);
+		boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
 		BOOST_FOREACH(InfoSub* ispListener, mSubTransactions)
 		{
 			ispListener->send(jvObj);
@@ -1097,7 +1099,7 @@ void NetworkOPs::pubAccountTransaction(Ledger::ref lpCurrent, const SerializedTr
 	boost::unordered_set<InfoSub*>	notify;
 
 	{
-		boost::interprocess::sharable_lock<boost::interprocess::interprocess_upgradable_mutex>	sl(mMonitorLock);
+		boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
 
 		if(!bAccepted && mSubRTAccount.empty()) return;
 
@@ -1183,7 +1185,7 @@ void NetworkOPs::subAccount(InfoSub* ispListener, const boost::unordered_set<Rip
 	subInfoMapType& subMap=mSubAccount;
 	if(rt) subMap=mSubRTAccount;
 
-	boost::interprocess::scoped_lock<boost::interprocess::interprocess_upgradable_mutex>	sl(mMonitorLock);
+	boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
 
 	BOOST_FOREACH(const RippleAddress& naAccountID, vnaAccountIDs)
 	{
@@ -1208,7 +1210,7 @@ void NetworkOPs::unsubAccount(InfoSub* ispListener, const boost::unordered_set<R
 {
 	subInfoMapType& subMap= rt ? mSubRTAccount : mSubAccount;
 
-	boost::interprocess::scoped_lock<boost::interprocess::interprocess_upgradable_mutex>	sl(mMonitorLock);
+	boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
 
 	BOOST_FOREACH(const RippleAddress& naAccountID, vnaAccountIDs)
 	{

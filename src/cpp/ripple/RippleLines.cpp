@@ -22,7 +22,7 @@ void RippleLines::printRippleLines()
 
 RippleLines::RippleLines(const uint160& accountID )
 {
-	fillLines(accountID,theApp->getMasterLedger().getCurrentLedger());
+	fillLines(accountID,theApp->getLedgerMaster().getCurrentLedger());
 }
 
 void RippleLines::fillLines(const uint160& accountID, Ledger::ref ledger)

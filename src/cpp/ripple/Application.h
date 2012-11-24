@@ -47,7 +47,7 @@ class Application
 
 	Wallet					mWallet;
 	UniqueNodeList			mUNL;
-	LedgerMaster			mMasterLedger;
+	LedgerMaster			mLedgerMaster;
 	LedgerAcquireMaster		mMasterLedgerAcquire;
 	TransactionMaster		mMasterTransaction;
 	NetworkOPs				mNetOps;
@@ -92,7 +92,7 @@ public:
 	boost::asio::io_service& getIOService()			{ return mIOService; }
 	boost::asio::io_service& getAuxService()		{ return mAuxService; }
 
-	LedgerMaster& getMasterLedger()					{ return mMasterLedger; }
+	LedgerMaster& getLedgerMaster()					{ return mLedgerMaster; }
 	LedgerAcquireMaster& getMasterLedgerAcquire()	{ return mMasterLedgerAcquire; }
 	TransactionMaster& getMasterTransaction()		{ return mMasterTransaction; }
 	NodeCache& getTempNodeCache()					{ return mTempNodeCache; }

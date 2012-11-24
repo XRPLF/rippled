@@ -1,8 +1,7 @@
 #ifndef __NETWORK_OPS__
 #define __NETWORK_OPS__
 
-#include <boost/interprocess/sync/interprocess_upgradable_mutex.hpp>
-#include <boost/interprocess/sync/sharable_lock.hpp>
+#include <boost/thread/recursive_mutex.hpp>
 #include <boost/unordered_map.hpp>
 #include <boost/unordered_set.hpp>
 
@@ -89,7 +88,7 @@ protected:
 
 
 	// XXX Split into more locks.
-    boost::interprocess::interprocess_upgradable_mutex	mMonitorLock;
+    boost::recursive_mutex								mMonitorLock;
 	subInfoMapType										mSubAccount;
 	subInfoMapType										mSubRTAccount;
 	subSubmitMapType									mSubmitMap;   // TODO: probably dump this
