@@ -217,6 +217,10 @@ UInt160.prototype.to_json = function () {
   return output;
 };
 
+UInt160.prototype.is_valid = function () {
+  return !isNaN(this_value);
+};
+
 // XXX Internal form should be UInt160.
 var Currency = function () {
   // Internal form: 0 = XRP. 3 letter-code.
@@ -270,6 +274,10 @@ Currency.prototype.parse_json = function(j) {
   }
 
   return this;
+};
+
+Currency.prototype.is_valid = function () {
+  return !isNaN(this_value);
 };
 
 Currency.prototype.to_json = function () {
@@ -484,9 +492,9 @@ Amount.prototype.parse_native = function(j) {
     if (m[1])
       this._value  = this._value.negate();
 
-    this._is_native    = true;
-    this._offset	      = undefined;
-    this._is_negative  = undefined;
+    this._is_native   = true;
+    this._offset      = undefined;
+    this._is_negative = undefined;
 
     if (this._value.compareTo(exports.consts.bi_xns_max) > 0 || this._value.compareTo(exports.consts.bi_xns_min) < 0)
     {
