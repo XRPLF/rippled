@@ -6,7 +6,7 @@ var extend = require("extend");
 var cfg = {
   // General settings
   baseName: pkg.name,
-  programPath: __dirname + "/src/js/remote.js",
+  programPath: __dirname + "/src/js/index.js",
 
   // CLI-configurable options
   watch: false,
