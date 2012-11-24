@@ -449,11 +449,34 @@ Amount.prototype.to_text = function(allow_nan) {
   }
 };
 
-Amount.prototype.format_pretty = function ()
+/**
+ * Format only value in a human-readable format.
+ *
+ * @example
+ *   var pretty = amount.to_pretty({precision: 2});
+ *
+ * @param opts Options for formatter.
+ * @param opts.precision {Number} Max. number of digits after decimal point.
+ */
+Amount.prototype.to_pretty = function (opts)
 {
-  this._value.mod(consts.bi_xns_unit);
+  opts = opts || {};
 
-  return "WOOOOO";
+  var int_part = this._value.divide(consts.bi_xns_unit).toString(10);
+  var fraction_part = this._value.mod(consts.bi_xns_unit).toString(10);
+
+  int_part = int_part.replace(/^0*/, '');
+  fraction_part = fraction_part.replace(/0*$/, '');
+
+  if ("number" === typeof opts.precision) {
+    fraction_part = fraction_part.slice(0, opts.precision);
+  }
+
+  var formatted = '';
+  formatted += int_part.length ? int_part : '0';
+  formatted += fraction_part.length ? '.'+fraction_part : '';
+
+  return formatted;
 };
 
 Amount.prototype.canonicalize = function() {
