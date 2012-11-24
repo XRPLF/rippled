@@ -34,7 +34,12 @@ buster.testCase("Amount", {
     "Parse mtgox export" : function () {
       buster.assert.equals(config.accounts["mtgox"].account, UInt160.from_json("mtgox").to_json());
     },
+
+    "is_valid('rrrrrrrrrrrrrrrrrrrrrhoLvTp')" : function () {
+      buster.assert(UInt160.is_valid("rrrrrrrrrrrrrrrrrrrrrhoLvTp"));
+    },
   },
+
   "Amount parsing" : {
     "Parse 800/USD/mtgox" : function () {
       buster.assert.equals("800/USD/"+config.accounts["mtgox"].account, Amount.from_json("800/USD/mtgox").to_text_full());

@@ -137,6 +137,10 @@ UInt160.from_json = function (j) {
       : j.clone();
 };
 
+UInt160.is_valid = function (j) {
+  return UInt160.from_json(j).is_valid();
+};
+
 UInt160.prototype.clone = function() {
   return this.copyTo(new UInt160());
 };
@@ -218,7 +222,7 @@ UInt160.prototype.to_json = function () {
 };
 
 UInt160.prototype.is_valid = function () {
-  return !isNaN(this_value);
+  return !isNaN(this._value);
 };
 
 // XXX Internal form should be UInt160.
@@ -243,6 +247,10 @@ Currency.from_json = function (j) {
   return 'string' === typeof j
       ? (new Currency()).parse_json(j)
       : j.clone();
+};
+
+currency.is_valid = function (j) {
+  return currency.from_json(j).is_valid();
 };
 
 Currency.prototype.clone = function() {
@@ -277,7 +285,7 @@ Currency.prototype.parse_json = function(j) {
 };
 
 Currency.prototype.is_valid = function () {
-  return !isNaN(this_value);
+  return !isNaN(this._value);
 };
 
 Currency.prototype.to_json = function () {
@@ -316,6 +324,14 @@ Amount.from_json = function(j) {
   return (new Amount()).parse_json(j);
 };
 
+Amount.is_valid = function (j) {
+  return Amount.from_json(j).is_valid();
+};
+
+Amount.is_valid_full = function (j) {
+  return Amount.from_json(j).is_valid_full();
+};
+
 Amount.prototype.clone = function(negate) {
   return this.copyTo(new Amount(), negate);
 };
@@ -352,9 +368,13 @@ Amount.prototype.currency = function() {
   return this._currency;
 };
 
-// YYY Might also provide is_valid_json.
+// Only checks the value. Not the currency and issuer.
 Amount.prototype.is_valid = function() {
   return !isNaN(this._value);
+};
+
+Amount.prototype.is_valid_full = function() {
+  return this.is_valid() && this._currency.is_valid() && this._issuer.is_valid();
 };
 
 Amount.prototype.issuer = function() {
