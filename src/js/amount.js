@@ -453,12 +453,12 @@ Amount.prototype.to_text = function(allow_nan) {
  * Format only value in a human-readable format.
  *
  * @example
- *   var pretty = amount.to_pretty({precision: 2});
+ *   var pretty = amount.to_human({precision: 2});
  *
  * @param opts Options for formatter.
  * @param opts.precision {Number} Max. number of digits after decimal point.
  */
-Amount.prototype.to_pretty = function (opts)
+Amount.prototype.to_human = function (opts)
 {
   opts = opts || {};
 
