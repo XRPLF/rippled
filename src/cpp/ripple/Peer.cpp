@@ -1237,7 +1237,7 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 				return;
 			}
 			memcpy(ledgerhash.begin(), packet.ledgerhash().data(), 32);
-			ledger = theApp->getMasterLedger().getLedgerByHash(ledgerhash);
+			ledger = theApp->getLedgerMaster().getLedgerByHash(ledgerhash);
 
 			tLog(!ledger, lsINFO) << "Don't have ledger " << ledgerhash;
 			if (!ledger && (packet.has_querytype() && !packet.has_requestcookie()))
@@ -1264,16 +1264,16 @@ void Peer::recvGetLedger(ripple::TMGetLedger& packet)
 		}
 		else if (packet.has_ledgerseq())
 		{
-			ledger = theApp->getMasterLedger().getLedgerBySeq(packet.ledgerseq());
+			ledger = theApp->getLedgerMaster().getLedgerBySeq(packet.ledgerseq());
 			tLog(!ledger, lsINFO) << "Don't have ledger " << packet.ledgerseq();
 		}
 		else if (packet.has_ltype() && (packet.ltype() == ripple::ltCURRENT))
-			ledger = theApp->getMasterLedger().getCurrentLedger();
+			ledger = theApp->getLedgerMaster().getCurrentLedger();
 		else if (packet.has_ltype() && (packet.ltype() == ripple::ltCLOSED) )
 		{
-			ledger = theApp->getMasterLedger().getClosedLedger();
+			ledger = theApp->getLedgerMaster().getClosedLedger();
 			if (ledger && !ledger->isClosed())
-				ledger = theApp->getMasterLedger().getLedgerBySeq(ledger->getLedgerSeq() - 1);
+				ledger = theApp->getLedgerMaster().getLedgerBySeq(ledger->getLedgerSeq() - 1);
 		}
 		else
 		{
@@ -1529,7 +1529,7 @@ void Peer::sendHello()
 	h.set_ipv4port(theConfig.PEER_PORT);
 	h.set_nodeprivate(theConfig.PEER_PRIVATE);
 
-	Ledger::pointer closedLedger = theApp->getMasterLedger().getClosedLedger();
+	Ledger::pointer closedLedger = theApp->getLedgerMaster().getClosedLedger();
 	if (closedLedger && closedLedger->isClosed())
 	{
 		uint256 hash = closedLedger->getHash();

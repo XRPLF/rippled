@@ -80,9 +80,9 @@ PathOption::PathOption(PathOption::pointer other)
 // functionality is left to the future.
 //
 Pathfinder::Pathfinder(const RippleAddress& srcAccountID, const RippleAddress& dstAccountID, const uint160& srcCurrencyID, const uint160& srcIssuerID, const STAmount& dstAmount)
-	: mSrcAccountID(srcAccountID.getAccountID()), mDstAccountID(dstAccountID.getAccountID()), mDstAmount(dstAmount), mSrcCurrencyID(srcCurrencyID), mSrcIssuerID(srcIssuerID), mOrderBook(theApp->getMasterLedger().getCurrentLedger())
+	: mSrcAccountID(srcAccountID.getAccountID()), mDstAccountID(dstAccountID.getAccountID()), mDstAmount(dstAmount), mSrcCurrencyID(srcCurrencyID), mSrcIssuerID(srcIssuerID), mOrderBook(theApp->getLedgerMaster().getCurrentLedger())
 {
-	mLedger=theApp->getMasterLedger().getCurrentLedger();
+	mLedger=theApp->getLedgerMaster().getCurrentLedger();
 }
 
 // If possible, returns a single path.

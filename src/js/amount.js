@@ -14,7 +14,27 @@ var alphabets	= {
   'bitcoin' : "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 };
 
-// --> input: big-endian array of bytes. 
+var consts = exports.consts = {
+  'address_xns'	      : "rrrrrrrrrrrrrrrrrrrrrhoLvTp",
+  'address_one'	      : "rrrrrrrrrrrrrrrrrrrrBZbvji",
+  'currency_xns'      : 0,
+  'currency_one'      : 1,
+  'uint160_xns'	      : utils.hexToString("0000000000000000000000000000000000000000"),
+  'uint160_one'	      : utils.hexToString("0000000000000000000000000000000000000001"),
+  'hex_xns'	      : "0000000000000000000000000000000000000000",
+  'hex_one'	      : "0000000000000000000000000000000000000001",
+  'xns_precision'     : 6,
+
+  // BigInteger values prefixed with bi_.
+  'bi_10'	      : new BigInteger('10'),
+  'bi_man_max_value'  : new BigInteger('9999999999999999'),
+  'bi_man_min_value'  : new BigInteger('1000000000000000'),
+  'bi_xns_max'	      : new BigInteger("9000000000000000000"),	  // Json wire limit.
+  'bi_xns_min'	      : new BigInteger("-9000000000000000000"),	  // Json wire limit.
+  'bi_xns_unit'	      : new BigInteger('1000000'),
+};
+
+// --> input: big-endian array of bytes.
 // <-- string at least as long as input.
 var encode_base = function (input, alphabet) {
   var alphabet	= alphabets[alphabet || 'ripple'];
@@ -60,9 +80,9 @@ var decode_base = function (input, alphabet) {
 
     var r = nbi();
 
-    r.fromInt(v); 
+    r.fromInt(v);
 
-    bi_value  = bi_value.multiply(bi_base).add(r); 
+    bi_value  = bi_value.multiply(bi_base).add(r);
   }
 
   // toByteArray:
@@ -70,7 +90,7 @@ var decode_base = function (input, alphabet) {
   // - Returns signed bytes!
   var bytes =  bi_value.toByteArray().map(function (b) { return b ? b < 0 ? 256+b : b : 0});
   var extra = 0;
-  
+
   while (extra != bytes.length && !bytes[extra])
     extra += 1;
 
@@ -137,6 +157,10 @@ UInt160.from_json = function (j) {
       : j.clone();
 };
 
+UInt160.is_valid = function (j) {
+  return UInt160.from_json(j).is_valid();
+};
+
 UInt160.prototype.clone = function() {
   return this.copyTo(new UInt160());
 };
@@ -161,16 +185,16 @@ UInt160.prototype.parse_json = function (j) {
   switch (j) {
     case undefined:
     case "0":
-    case exports.consts.address_xns:
-    case exports.consts.uint160_xns:
-    case exports.consts.hex_xns:
+    case consts.address_xns:
+    case consts.uint160_xns:
+    case consts.hex_xns:
       this._value  = nbi();
       break;
 
     case "1":
-    case exports.consts.address_one:
-    case exports.consts.uint160_one:
-    case exports.consts.hex_one:
+    case consts.address_one:
+    case consts.uint160_one:
+    case consts.hex_one:
       this._value  = new BigInteger([1]);
 
       break;
@@ -202,7 +226,7 @@ UInt160.prototype.parse_json = function (j) {
 UInt160.prototype.to_json = function () {
   if (isNaN(this._value))
     return NaN;
-  
+
   var bytes   = this._value.toByteArray().map(function (b) { return b ? b < 0 ? 256+b : b : 0});
   var target  = 20;
 
@@ -215,6 +239,10 @@ UInt160.prototype.to_json = function () {
   var output = encode_base_check(0, array);
 
   return output;
+};
+
+UInt160.prototype.is_valid = function () {
+  return !isNaN(this._value);
 };
 
 // XXX Internal form should be UInt160.
@@ -239,6 +267,10 @@ Currency.from_json = function (j) {
   return 'string' === typeof j
       ? (new Currency()).parse_json(j)
       : j.clone();
+};
+
+Currency.is_valid = function (j) {
+  return currency.from_json(j).is_valid();
 };
 
 Currency.prototype.clone = function() {
@@ -270,6 +302,10 @@ Currency.prototype.parse_json = function(j) {
   }
 
   return this;
+};
+
+Currency.prototype.is_valid = function () {
+  return !isNaN(this._value);
 };
 
 Currency.prototype.to_json = function () {
@@ -308,6 +344,14 @@ Amount.from_json = function(j) {
   return (new Amount()).parse_json(j);
 };
 
+Amount.is_valid = function (j) {
+  return Amount.from_json(j).is_valid();
+};
+
+Amount.is_valid_full = function (j) {
+  return Amount.from_json(j).is_valid_full();
+};
+
 Amount.prototype.clone = function(negate) {
   return this.copyTo(new Amount(), negate);
 };
@@ -344,9 +388,13 @@ Amount.prototype.currency = function() {
   return this._currency;
 };
 
-// YYY Might also provide is_valid_json.
+// Only checks the value. Not the currency and issuer.
 Amount.prototype.is_valid = function() {
   return !isNaN(this._value);
+};
+
+Amount.prototype.is_valid_full = function() {
+  return this.is_valid() && this._currency.is_valid() && this._issuer.is_valid();
 };
 
 Amount.prototype.issuer = function() {
@@ -366,7 +414,7 @@ Amount.prototype.to_text = function(allow_nan) {
     return allow_nan ? NaN : "0";
   }
   else if (this._is_native) {
-    if (this._value.compareTo(exports.consts.bi_xns_max) > 0 || this._value.compareTo(exports.consts.bi_xns_min) < 0)
+    if (this._value.compareTo(consts.bi_xns_max) > 0 || this._value.compareTo(consts.bi_xns_min) < 0)
     {
       // Never should happen.
       return allow_nan ? NaN : "0";
@@ -378,7 +426,7 @@ Amount.prototype.to_text = function(allow_nan) {
   }
   else if (this._value.equals(BigInteger.ZERO))
   {
-    return "0"; 
+    return "0";
   }
   else if (this._offset < -25 || this._offset > -5)
   {
@@ -401,6 +449,36 @@ Amount.prototype.to_text = function(allow_nan) {
   }
 };
 
+/**
+ * Format only value in a human-readable format.
+ *
+ * @example
+ *   var pretty = amount.to_human({precision: 2});
+ *
+ * @param opts Options for formatter.
+ * @param opts.precision {Number} Max. number of digits after decimal point.
+ */
+Amount.prototype.to_human = function (opts)
+{
+  opts = opts || {};
+
+  var int_part = this._value.divide(consts.bi_xns_unit).toString(10);
+  var fraction_part = this._value.mod(consts.bi_xns_unit).toString(10);
+
+  int_part = int_part.replace(/^0*/, '');
+  fraction_part = fraction_part.replace(/0*$/, '');
+
+  if ("number" === typeof opts.precision) {
+    fraction_part = fraction_part.slice(0, opts.precision);
+  }
+
+  var formatted = '';
+  formatted += int_part.length ? int_part : '0';
+  formatted += fraction_part.length ? '.'+fraction_part : '';
+
+  return formatted;
+};
+
 Amount.prototype.canonicalize = function() {
   if (isNaN(this._value) || !this._currency) {
     // nothing
@@ -411,13 +489,13 @@ Amount.prototype.canonicalize = function() {
   }
   else
   {
-    while (this._value.compareTo(exports.consts.bi_man_min_value) < 0) {
-      this._value  = this._value.multiply(exports.consts.bi_10);
+    while (this._value.compareTo(consts.bi_man_min_value) < 0) {
+      this._value  = this._value.multiply(consts.bi_10);
       this._offset -= 1;
     }
 
-    while (this._value.compareTo(exports.consts.bi_man_max_value) > 0) {
-      this._value  = this._value.divide(exports.consts.bi_10);
+    while (this._value.compareTo(consts.bi_man_max_value) > 0) {
+      this._value  = this._value.divide(consts.bi_10);
       this._offset += 1;
     }
   }
@@ -475,8 +553,8 @@ Amount.prototype.parse_native = function(j) {
     else {
       // Float notation
 
-      var   int_part	  = (new BigInteger(m[2])).multiply(exports.consts.bi_xns_unit);
-      var   fraction_part = (new BigInteger(m[3])).multiply(new BigInteger(String(Math.pow(10, 1+exports.consts.xns_precision-m[3].length))));
+      var   int_part	  = (new BigInteger(m[2])).multiply(consts.bi_xns_unit);
+      var   fraction_part = (new BigInteger(m[3])).multiply(new BigInteger(String(Math.pow(10, 1+consts.xns_precision-m[3].length))));
 
       this._value	  = int_part.add(fraction_part);
     }
@@ -484,15 +562,15 @@ Amount.prototype.parse_native = function(j) {
     if (m[1])
       this._value  = this._value.negate();
 
-    this._is_native    = true;
-    this._offset	      = undefined;
-    this._is_negative  = undefined;
+    this._is_native   = true;
+    this._offset      = undefined;
+    this._is_negative = undefined;
 
-    if (this._value.compareTo(exports.consts.bi_xns_max) > 0 || this._value.compareTo(exports.consts.bi_xns_min) < 0)
+    if (this._value.compareTo(consts.bi_xns_max) > 0 || this._value.compareTo(consts.bi_xns_min) < 0)
     {
       this._value	  = NaN;
     }
-  } 
+  }
   else {
     this._value	      = NaN;
   }
@@ -511,7 +589,7 @@ Amount.prototype.parse_value = function(j) {
     this._offset      = 0;
 
     this.canonicalize();
-  } 
+  }
   else if ('string' === typeof j) {
     var	i = j.match(/^(-?)(\d+)$/);
     var	d = !i && j.match(/^(-?)(\d+)\.(\d*)$/);
@@ -519,7 +597,7 @@ Amount.prototype.parse_value = function(j) {
 
     if (e) {
       // e notation
-    
+
       this._value	= new BigInteger(e[2]);
       this._offset 	= parseInt(e[3]);
       this._is_negative	= !!e[1];
@@ -533,7 +611,7 @@ Amount.prototype.parse_value = function(j) {
       var fraction    	= new BigInteger(d[3]);
       var precision	= d[3].length;
 
-      this._value      	= integer.multiply(exports.consts.bi_10.clone().pow(precision)).add(fraction);
+      this._value      	= integer.multiply(consts.bi_10.clone().pow(precision)).add(fraction);
       this._offset     	= -precision;
       this._is_negative = !!d[1];
 
@@ -648,25 +726,5 @@ exports.Currency      = Currency;
 exports.UInt160	      = UInt160;
 
 exports.config	      = {};
-
-exports.consts	  = {
-  'address_xns'	      : "rrrrrrrrrrrrrrrrrrrrrhoLvTp",
-  'address_one'	      : "rrrrrrrrrrrrrrrrrrrrBZbvji",
-  'currency_xns'      : 0,
-  'currency_one'      : 1,
-  'uint160_xns'	      : utils.hexToString("0000000000000000000000000000000000000000"),
-  'uint160_one'	      : utils.hexToString("0000000000000000000000000000000000000001"),
-  'hex_xns'	      : "0000000000000000000000000000000000000000",
-  'hex_one'	      : "0000000000000000000000000000000000000001",
-  'xns_precision'     : 6,
-
-  // BigInteger values prefixed with bi_.
-  'bi_10'	      : new BigInteger('10'),
-  'bi_man_max_value'  : new BigInteger('9999999999999999'),
-  'bi_man_min_value'  : new BigInteger('1000000000000000'),
-  'bi_xns_max'	      : new BigInteger("9000000000000000000"),	  // Json wire limit.
-  'bi_xns_min'	      : new BigInteger("-9000000000000000000"),	  // Json wire limit.
-  'bi_xns_unit'	      : new BigInteger('1000000'),
-};
 
 // vim:sw=2:sts=2:ts=8
