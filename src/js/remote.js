@@ -189,7 +189,8 @@ var Remote = function (opts, trace) {
   this.trusted                = opts.trusted;
   this.websocket_ip           = opts.websocket_ip;
   this.websocket_port         = opts.websocket_port;
-  this.local_sequence         = opts.local_sequence;
+  this.local_sequence         = opts.local_sequence; // Locally track sequence numbers
+  this.local_fee              = opts.local_fee;      // Locally set fees
   this.id                     = 0;
   this.trace                  = opts.trace || trace;
   this._ledger_current_index  = undefined;
@@ -1174,7 +1175,7 @@ Transaction.prototype.submit = function (callback) {
 
   // YYY Might check paths for invalid accounts.
 
-  if (undefined === tx_json.Fee) {
+  if (this.local_fee && undefined === tx_json.Fee) {
     if ('Payment' === tx_json.TransactionType
       && tx_json.Flags & Remote.flags.Payment.CreateAccount) {
 
@@ -1346,7 +1347,7 @@ Transaction.prototype.set_flags = function (flags) {
         }
       }
 
-      if (this.tx_json.Flags & Remote.flags.Payment.CreateAccount)
+      if (this.local_fee && (this.tx_json.Flags & Remote.flags.Payment.CreateAccount))
         this.tx_json.Fee        = Remote.fees.account_create.to_json();
   }
 
@@ -1399,9 +1400,12 @@ Transaction.prototype.offer_create = function (src, taker_pays, taker_gets, expi
   this.secret                   = this._account_secret(src);
   this.tx_json.TransactionType  = 'OfferCreate';
   this.tx_json.Account          = UInt160.json_rewrite(src);
-  this.tx_json.Fee              = Remote.fees.offer.to_json();
   this.tx_json.TakerPays        = Amount.json_rewrite(taker_pays);
   this.tx_json.TakerGets        = Amount.json_rewrite(taker_gets);
+
+  if (this.local_fee) {
+    this.tx_json.Fee              = Remote.fees.offer.to_json();
+  }
 
   if (expiration)
     this.tx_json.Expiration  = Date === expiration.constructor
