@@ -14,6 +14,26 @@ var alphabets	= {
   'bitcoin' : "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 };
 
+var consts = exports.consts = {
+  'address_xns'	      : "rrrrrrrrrrrrrrrrrrrrrhoLvTp",
+  'address_one'	      : "rrrrrrrrrrrrrrrrrrrrBZbvji",
+  'currency_xns'      : 0,
+  'currency_one'      : 1,
+  'uint160_xns'	      : utils.hexToString("0000000000000000000000000000000000000000"),
+  'uint160_one'	      : utils.hexToString("0000000000000000000000000000000000000001"),
+  'hex_xns'	      : "0000000000000000000000000000000000000000",
+  'hex_one'	      : "0000000000000000000000000000000000000001",
+  'xns_precision'     : 6,
+
+  // BigInteger values prefixed with bi_.
+  'bi_10'	      : new BigInteger('10'),
+  'bi_man_max_value'  : new BigInteger('9999999999999999'),
+  'bi_man_min_value'  : new BigInteger('1000000000000000'),
+  'bi_xns_max'	      : new BigInteger("9000000000000000000"),	  // Json wire limit.
+  'bi_xns_min'	      : new BigInteger("-9000000000000000000"),	  // Json wire limit.
+  'bi_xns_unit'	      : new BigInteger('1000000'),
+};
+
 // --> input: big-endian array of bytes. 
 // <-- string at least as long as input.
 var encode_base = function (input, alphabet) {
@@ -165,16 +185,16 @@ UInt160.prototype.parse_json = function (j) {
   switch (j) {
     case undefined:
     case "0":
-    case exports.consts.address_xns:
-    case exports.consts.uint160_xns:
-    case exports.consts.hex_xns:
+    case consts.address_xns:
+    case consts.uint160_xns:
+    case consts.hex_xns:
       this._value  = nbi();
       break;
 
     case "1":
-    case exports.consts.address_one:
-    case exports.consts.uint160_one:
-    case exports.consts.hex_one:
+    case consts.address_one:
+    case consts.uint160_one:
+    case consts.hex_one:
       this._value  = new BigInteger([1]);
 
       break;
@@ -394,7 +414,7 @@ Amount.prototype.to_text = function(allow_nan) {
     return allow_nan ? NaN : "0";
   }
   else if (this._is_native) {
-    if (this._value.compareTo(exports.consts.bi_xns_max) > 0 || this._value.compareTo(exports.consts.bi_xns_min) < 0)
+    if (this._value.compareTo(consts.bi_xns_max) > 0 || this._value.compareTo(consts.bi_xns_min) < 0)
     {
       // Never should happen.
       return allow_nan ? NaN : "0";
@@ -429,6 +449,13 @@ Amount.prototype.to_text = function(allow_nan) {
   }
 };
 
+Amount.prototype.format_pretty = function ()
+{
+  this._value.mod(consts.bi_xns_unit);
+
+  return "WOOOOO";
+};
+
 Amount.prototype.canonicalize = function() {
   if (isNaN(this._value) || !this._currency) {
     // nothing
@@ -439,13 +466,13 @@ Amount.prototype.canonicalize = function() {
   }
   else
   {
-    while (this._value.compareTo(exports.consts.bi_man_min_value) < 0) {
-      this._value  = this._value.multiply(exports.consts.bi_10);
+    while (this._value.compareTo(consts.bi_man_min_value) < 0) {
+      this._value  = this._value.multiply(consts.bi_10);
       this._offset -= 1;
     }
 
-    while (this._value.compareTo(exports.consts.bi_man_max_value) > 0) {
-      this._value  = this._value.divide(exports.consts.bi_10);
+    while (this._value.compareTo(consts.bi_man_max_value) > 0) {
+      this._value  = this._value.divide(consts.bi_10);
       this._offset += 1;
     }
   }
@@ -503,8 +530,8 @@ Amount.prototype.parse_native = function(j) {
     else {
       // Float notation
 
-      var   int_part	  = (new BigInteger(m[2])).multiply(exports.consts.bi_xns_unit);
-      var   fraction_part = (new BigInteger(m[3])).multiply(new BigInteger(String(Math.pow(10, 1+exports.consts.xns_precision-m[3].length))));
+      var   int_part	  = (new BigInteger(m[2])).multiply(consts.bi_xns_unit);
+      var   fraction_part = (new BigInteger(m[3])).multiply(new BigInteger(String(Math.pow(10, 1+consts.xns_precision-m[3].length))));
 
       this._value	  = int_part.add(fraction_part);
     }
@@ -516,7 +543,7 @@ Amount.prototype.parse_native = function(j) {
     this._offset      = undefined;
     this._is_negative = undefined;
 
-    if (this._value.compareTo(exports.consts.bi_xns_max) > 0 || this._value.compareTo(exports.consts.bi_xns_min) < 0)
+    if (this._value.compareTo(consts.bi_xns_max) > 0 || this._value.compareTo(consts.bi_xns_min) < 0)
     {
       this._value	  = NaN;
     }
@@ -561,7 +588,7 @@ Amount.prototype.parse_value = function(j) {
       var fraction    	= new BigInteger(d[3]);
       var precision	= d[3].length;
 
-      this._value      	= integer.multiply(exports.consts.bi_10.clone().pow(precision)).add(fraction);
+      this._value      	= integer.multiply(consts.bi_10.clone().pow(precision)).add(fraction);
       this._offset     	= -precision;
       this._is_negative = !!d[1];
 
@@ -676,25 +703,5 @@ exports.Currency      = Currency;
 exports.UInt160	      = UInt160;
 
 exports.config	      = {};
-
-exports.consts	  = {
-  'address_xns'	      : "rrrrrrrrrrrrrrrrrrrrrhoLvTp",
-  'address_one'	      : "rrrrrrrrrrrrrrrrrrrrBZbvji",
-  'currency_xns'      : 0,
-  'currency_one'      : 1,
-  'uint160_xns'	      : utils.hexToString("0000000000000000000000000000000000000000"),
-  'uint160_one'	      : utils.hexToString("0000000000000000000000000000000000000001"),
-  'hex_xns'	      : "0000000000000000000000000000000000000000",
-  'hex_one'	      : "0000000000000000000000000000000000000001",
-  'xns_precision'     : 6,
-
-  // BigInteger values prefixed with bi_.
-  'bi_10'	      : new BigInteger('10'),
-  'bi_man_max_value'  : new BigInteger('9999999999999999'),
-  'bi_man_min_value'  : new BigInteger('1000000000000000'),
-  'bi_xns_max'	      : new BigInteger("9000000000000000000"),	  // Json wire limit.
-  'bi_xns_min'	      : new BigInteger("-9000000000000000000"),	  // Json wire limit.
-  'bi_xns_unit'	      : new BigInteger('1000000'),
-};
 
 // vim:sw=2:sts=2:ts=8
