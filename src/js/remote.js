@@ -1489,4 +1489,4 @@ Transaction.prototype.wallet_add = function (src, amount, authorized_key, public
 exports.config          = {};
 exports.Remote          = Remote;
 
-// vim:sw=2:sts=2:ts=8
+// vim:sw=2:sts=2:ts=8:et

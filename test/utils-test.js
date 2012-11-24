@@ -1,4 +1,4 @@
-var fs	    = require("fs");
+var fs      = require("fs");
 var buster  = require("buster");
 
 var utils   = require("../src/js/utils.js");
@@ -23,4 +23,4 @@ buster.testCase("Utils", {
   }
 });
 
-// vim:sw=2:sts=2:ts=8
+// vim:sw=2:sts=2:ts=8:et

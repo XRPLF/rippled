@@ -704,4 +704,4 @@ exports.UInt160	      = UInt160;
 
 exports.config	      = {};
 
-// vim:sw=2:sts=2:ts=8
+// vim:sw=2:sts=2:ts=8:et

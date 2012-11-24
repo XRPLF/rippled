@@ -2,11 +2,11 @@
 //
 // Usage:
 // s = new Server(name, config)
-// s.verbose()	: optional
+// s.verbose()  : optional
 //  .start()
-//	'started'
+//      'started'
 //
-// s.stop()	: stops server is started.
+// s.stop()     : stops server is started.
 //   'stopped'
 //
 
@@ -15,22 +15,22 @@
 // Servers are created in tmp/server/$server
 //
 
-var buster	  = require("buster");
-var child	  = require("child_process");
-var fs	      	  = require("fs");
-var path      	  = require("path");
-var util      	  = require("util");
+var buster        = require("buster");
+var child         = require("child_process");
+var fs            = require("fs");
+var path          = require("path");
+var util          = require("util");
 var EventEmitter  = require('events').EventEmitter;
 
-var config	  = require("./config.js");
-var nodeutils 	  = require("../src/js/nodeutils.js");
+var config        = require("./config.js");
+var nodeutils     = require("../src/js/nodeutils.js");
 
 // Create a server object
 var Server = function (name, config, verbose) {
-  this.name	= name;
-  this.config	= config;
-  this.started	= false;
-  this.quiet	= !verbose;
+  this.name     = name;
+  this.config   = config;
+  this.started  = false;
+  this.quiet    = !verbose;
 };
 
 Server.prototype  = new EventEmitter;
@@ -66,7 +66,7 @@ Server.prototype._writeConfig = function(done) {
   fs.writeFile(
     this.configPath(),
     Object.keys(this.config).map(function(o) {
-	return util.format("[%s]\n%s\n", o, self.config[o]);
+        return util.format("[%s]\n%s\n", o, self.config[o]);
       }).join(""),
     'utf8', done);
 };
@@ -111,10 +111,10 @@ Server.prototype._makeBase = function (done) {
   // Reset the server directory, build it if needed.
   nodeutils.resetPath(path, '0777', function (e) {
       if (e) {
-	throw e;
+        throw e;
       }
       else {
-	self._writeConfig(done);
+        self._writeConfig(done);
       }
     });
 };
@@ -128,17 +128,17 @@ Server.prototype.verbose = function () {
 // Create a standalone server.
 // Prepare the working directory and spawn the server.
 Server.prototype.start = function () {
-  var self	= this;
+  var self      = this;
 
   if (!this.quiet) console.log("server: start: %s: %s", this.name, JSON.stringify(this.config));
 
   this._makeBase(function (e) {
       if (e) {
-	throw e;
+        throw e;
       }
       else {
-	self._serverSpawnSync();
-	self.emit('started');
+        self._serverSpawnSync();
+        self.emit('started');
       }
     });
 
@@ -153,10 +153,10 @@ Server.prototype.stop = function () {
     // Update the on exit to invoke done.
     this.child.on('exit', function (code, signal) {
 
-	if (!self.quiet) console.log("server: stop: server exited");
+        if (!self.quiet) console.log("server: stop: server exited");
 
-	self.emit('stopped');
-	delete this.child;
+        self.emit('stopped');
+        delete this.child;
       });
 
     this.child.kill();
@@ -171,4 +171,4 @@ Server.prototype.stop = function () {
 
 exports.Server = Server;
 
-// vim:sw=2:sts=2:ts=8
+// vim:sw=2:sts=2:ts=8:et

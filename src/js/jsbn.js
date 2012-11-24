@@ -1216,4 +1216,4 @@ BigInteger.ONE = nbv(1);
 exports.nbi	    = nbi;
 exports.BigInteger  = BigInteger;
 
-// vim:sw=2:sts=2:ts=8
+// vim:sw=2:sts=2:ts=8:et

@@ -7,7 +7,7 @@ var path = require("path");
 // Where to find the binary.
 exports.rippled = path.resolve("build/rippled");
 
-exports.server_default	= "alpha";
+exports.server_default  = "alpha";
 
 // Configuration for servers.
 exports.servers = {
@@ -66,4 +66,4 @@ exports.accounts = {
   },
 };
 
-// vim:sw=2:sts=2:ts=8
+// vim:sw=2:sts=2:ts=8:et

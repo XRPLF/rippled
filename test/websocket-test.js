@@ -17,23 +17,23 @@ buster.testCase("WebSocket connection", {
 
   "websocket connect and disconnect" :
     function (done) {
-      var alpha	= Remote.from_config("alpha");
+      var alpha = Remote.from_config("alpha");
 
       alpha
-	.on('connected', function () {
-	    // OPEN
-	    buster.assert(true);
+        .on('connected', function () {
+            // OPEN
+            buster.assert(true);
 
-	    alpha
-	      .on('disconnected', function () {
-		  // CLOSED
-		  buster.assert(true);
-		  done();
-		})
-	      .connect(false);
-	  })
-	.connect();
+            alpha
+              .on('disconnected', function () {
+                  // CLOSED
+                  buster.assert(true);
+                  done();
+                })
+              .connect(false);
+          })
+        .connect();
     },
 });
 
-// vim:sw=2:sts=2:ts=8
+// vim:sw=2:sts=2:ts=8:et
