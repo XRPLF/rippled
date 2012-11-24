@@ -249,7 +249,7 @@ Currency.from_json = function (j) {
       : j.clone();
 };
 
-currency.is_valid = function (j) {
+Currency.is_valid = function (j) {
   return currency.from_json(j).is_valid();
 };
 

@@ -38,6 +38,10 @@ buster.testCase("Amount", {
     "is_valid('rrrrrrrrrrrrrrrrrrrrrhoLvTp')" : function () {
       buster.assert(UInt160.is_valid("rrrrrrrrrrrrrrrrrrrrrhoLvTp"));
     },
+
+    "!is_valid('rrrrrrrrrrrrrrrrrrrrrhoLvT')" : function () {
+      buster.refute(UInt160.is_valid("rrrrrrrrrrrrrrrrrrrrrhoLvT"));
+    },
   },
 
   "Amount parsing" : {
