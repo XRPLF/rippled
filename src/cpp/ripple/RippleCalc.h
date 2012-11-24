@@ -101,20 +101,32 @@ public:
 	STAmount					saOutPass;			// <-- Amount actually sent.
 	bool						bConsumed;			// If true, use consumes full liquidity. False, may or may not.
 
+	PathState*	setIndex(const int iIndex) {
+		mIndex	= iIndex;
+
+		return this;
+	}
+
 	PathState(
-		const int				iIndex,
+		const STAmount&			saSend,
+		const STAmount&			saSendMax,
+		const Ledger::ref		lrLedger = Ledger::pointer()
+	) : mLedger(lrLedger), saInReq(saSendMax), saOutReq(saSend) { ; }
+
+	void setExpanded(
 		const LedgerEntrySet&	lesSource,
 		const STPath&			spSourcePath,
 		const uint160&			uReceiverID,
-		const uint160&			uSenderID,
-		const STAmount&			saSend,
-		const STAmount&			saSendMax
+		const uint160&			uSenderID
+		);
+
+	void setCanonical(
+		PathState::ref			pspExpanded
 		);
 
 	Json::Value	getJson() const;
 
-	static PathState::pointer createPathState(
-		const int				iIndex,
+	static PathState::pointer createExpanded(
 		const LedgerEntrySet&	lesSource,
 		const STPath&			spSourcePath,
 		const uint160&			uReceiverID,
@@ -123,7 +135,22 @@ public:
 		const STAmount&			saSendMax
 		)
 	{
-		return boost::make_shared<PathState>(iIndex, lesSource, spSourcePath, uReceiverID, uSenderID, saSend, saSendMax);
+		PathState::pointer	pspNew	= boost::make_shared<PathState>(saSend, saSendMax, lesSource.getLedgerRef());
+
+		pspNew->setExpanded(lesSource, spSourcePath, uReceiverID, uSenderID);
+
+		return pspNew;
+	}
+
+	static PathState::pointer createCanonical(
+		PathState::ref		pspExpanded
+		)
+	{
+		PathState::pointer	pspNew	= boost::make_shared<PathState>(pspExpanded->saOutAct, pspExpanded->saInAct);
+
+		pspNew->setCanonical(pspExpanded);
+
+		return pspNew;
 	}
 
 	static bool lessPriority(PathState::ref lhs, PathState::ref rhs);
@@ -141,7 +168,6 @@ public:
 	// If the transaction fails to meet some constraint, still need to delete unfunded offers.
 	boost::unordered_set<uint256>	musUnfundedFound;	// Offers that were found unfunded.
 
-	PathState::pointer	pathCreate(const STPath& spPath);
 	void				pathNext(PathState::ref pspCur, const int iPaths, const LedgerEntrySet& lesCheckpoint, LedgerEntrySet& lesCurrent);
 	TER					calcNode(const unsigned int uNode, PathState::ref pspCur, const bool bMultiQuality);
 	TER					calcNodeRev(const unsigned int uNode, PathState::ref pspCur, const bool bMultiQuality);
