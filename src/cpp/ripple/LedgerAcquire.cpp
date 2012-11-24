@@ -176,7 +176,7 @@ void LedgerAcquire::done()
 	{
 		if (mAccept)
 			mLedger->setAccepted();
-		theApp->getMasterLedger().storeLedger(mLedger);
+		theApp->getLedgerMaster().storeLedger(mLedger);
 	}
 
 	for (unsigned int i = 0; i < triggers.size(); ++i)

@@ -306,11 +306,25 @@ bool Transaction::convertToTransactions(uint32 firstLedgerSeq, uint32 secondLedg
 	return true;
 }
 
+// options 1 to include the date of the transaction
 Json::Value Transaction::getJson(int options) const
 {
+	
 	Json::Value ret(mTransaction->getJson(0));
 
-	if (mInLedger) ret["inLedger"]=mInLedger;
+	if (mInLedger) 
+	{
+		ret["inLedger"]=mInLedger;
+
+		if(options==1)
+		{
+			Ledger::pointer ledger=theApp->getLedgerMaster().getLedgerBySeq(mInLedger);
+			if(ledger)
+			{
+				ret["date"]=ledger->getCloseTimeNC();
+			}
+		}
+	}
 
 	switch (mStatus)
 	{
