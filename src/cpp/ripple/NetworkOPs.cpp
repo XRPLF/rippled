@@ -1076,6 +1076,7 @@ Json::Value NetworkOPs::transJson(const SerializedTransaction& stTxn, TER terRes
 void NetworkOPs::pubAcceptedTransaction(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult,TransactionMetaSet::pointer& meta)
 {
 	Json::Value	jvObj	= transJson(stTxn, terResult, true, lpCurrent, "transaction");
+	if(meta) jvObj["meta"]=meta->getJson(0);
 
 	{
 		boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
