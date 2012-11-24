@@ -25,6 +25,7 @@ tmp
 
 # Ignore database directory.
 db/*.db
+db/*.db-journal
 
 # Ignore customized test/config.js
 test/config.js
