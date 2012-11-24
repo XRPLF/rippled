@@ -34,7 +34,7 @@ var consts = exports.consts = {
   'bi_xns_unit'	      : new BigInteger('1000000'),
 };
 
-// --> input: big-endian array of bytes. 
+// --> input: big-endian array of bytes.
 // <-- string at least as long as input.
 var encode_base = function (input, alphabet) {
   var alphabet	= alphabets[alphabet || 'ripple'];
@@ -80,9 +80,9 @@ var decode_base = function (input, alphabet) {
 
     var r = nbi();
 
-    r.fromInt(v); 
+    r.fromInt(v);
 
-    bi_value  = bi_value.multiply(bi_base).add(r); 
+    bi_value  = bi_value.multiply(bi_base).add(r);
   }
 
   // toByteArray:
@@ -90,7 +90,7 @@ var decode_base = function (input, alphabet) {
   // - Returns signed bytes!
   var bytes =  bi_value.toByteArray().map(function (b) { return b ? b < 0 ? 256+b : b : 0});
   var extra = 0;
-  
+
   while (extra != bytes.length && !bytes[extra])
     extra += 1;
 
@@ -226,7 +226,7 @@ UInt160.prototype.parse_json = function (j) {
 UInt160.prototype.to_json = function () {
   if (isNaN(this._value))
     return NaN;
-  
+
   var bytes   = this._value.toByteArray().map(function (b) { return b ? b < 0 ? 256+b : b : 0});
   var target  = 20;
 
@@ -426,7 +426,7 @@ Amount.prototype.to_text = function(allow_nan) {
   }
   else if (this._value.equals(BigInteger.ZERO))
   {
-    return "0"; 
+    return "0";
   }
   else if (this._offset < -25 || this._offset > -5)
   {
@@ -547,7 +547,7 @@ Amount.prototype.parse_native = function(j) {
     {
       this._value	  = NaN;
     }
-  } 
+  }
   else {
     this._value	      = NaN;
   }
@@ -566,7 +566,7 @@ Amount.prototype.parse_value = function(j) {
     this._offset      = 0;
 
     this.canonicalize();
-  } 
+  }
   else if ('string' === typeof j) {
     var	i = j.match(/^(-?)(\d+)$/);
     var	d = !i && j.match(/^(-?)(\d+)\.(\d*)$/);
@@ -574,7 +574,7 @@ Amount.prototype.parse_value = function(j) {
 
     if (e) {
       // e notation
-    
+
       this._value	= new BigInteger(e[2]);
       this._offset 	= parseInt(e[3]);
       this._is_negative	= !!e[1];

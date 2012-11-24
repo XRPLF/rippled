@@ -15,12 +15,12 @@
 //
 
 // npm
-var WebSocket	  = require('ws');
+var WebSocket     = require('ws');
 
 var EventEmitter  = require('events').EventEmitter;
-var Amount	  = require('./amount.js').Amount;
-var Currency	  = require('./amount.js').Currency;
-var UInt160	  = require('./amount.js').UInt160;
+var Amount        = require('./amount.js').Amount;
+var Currency      = require('./amount.js').Currency;
+var UInt160       = require('./amount.js').UInt160;
 
 // Request events emitted:
 // 'success' : Request successful.
@@ -31,11 +31,11 @@ var UInt160	  = require('./amount.js').UInt160;
 var Request = function (remote, command) {
   var self  = this;
 
-  this.message	  = {
+  this.message    = {
     'command' : command,
     'id'      : undefined,
   };
-  this.remote	  = remote;
+  this.remote     = remote;
   this.requested  = false;
 
   this.on('request', function () {
@@ -139,8 +139,8 @@ Request.prototype.tx_json = function (j) {
 Request.prototype.ripple_state = function (account, issuer, currency) {
   this.message.ripple_state  = {
       'accounts' : [
-	UInt160.json_rewrite(account),
-	UInt160.json_rewrite(issuer)
+        UInt160.json_rewrite(account),
+        UInt160.json_rewrite(issuer)
       ],
       'currency' : currency
     };
@@ -186,27 +186,27 @@ Request.prototype.rt_accounts = function (accounts) {
 
 // --> trusted: truthy, if remote is trusted
 var Remote = function (opts, trace) {
-  this.trusted		      = opts.trusted;
+  this.trusted                = opts.trusted;
   this.websocket_ip           = opts.websocket_ip;
   this.websocket_port         = opts.websocket_port;
   this.local_sequence         = opts.local_sequence;
   this.id                     = 0;
   this.trace                  = opts.trace || trace;
   this._ledger_current_index  = undefined;
-  this._ledger_hash	      = undefined;
-  this._ledger_time	      = undefined;
-  this.stand_alone	      = undefined;
-  this.online_target	      = false;
-  this.online_state	      = 'closed';	  // 'open', 'closed', 'connecting', 'closing'
-  this.state	  	      = 'offline';  // 'online', 'offline'
-  this.retry_timer	      = undefined;
-  this.retry		      = undefined;
-  
+  this._ledger_hash           = undefined;
+  this._ledger_time           = undefined;
+  this.stand_alone            = undefined;
+  this.online_target          = false;
+  this.online_state           = 'closed';         // 'open', 'closed', 'connecting', 'closing'
+  this.state                  = 'offline';  // 'online', 'offline'
+  this.retry_timer            = undefined;
+  this.retry                  = undefined;
+
   // Cache information for accounts.
   this.accounts = {
     // Consider sequence numbers stable if you know you're not generating bad transactions.
     // Otherwise, clear it to have it automatically refreshed from the network.
-    
+
     // account : { seq : __ }
 
     };
@@ -259,23 +259,23 @@ var isTefFailure = function (engine_result_code) {
 
 Remote.flags = {
   'OfferCreate' : {
-    'Passive'		      : 0x00010000,
+    'Passive'                 : 0x00010000,
   },
 
   'Payment' : {
-    'CreateAccount'	      : 0x00010000,
-    'PartialPayment'	      : 0x00020000,
-    'LimitQuality'	      : 0x00040000,
-    'NoRippleDirect'	      : 0x00080000,
+    'CreateAccount'           : 0x00010000,
+    'PartialPayment'          : 0x00020000,
+    'LimitQuality'            : 0x00040000,
+    'NoRippleDirect'          : 0x00080000,
   },
 };
 
 // XXX This needs to be determined from the network.
 Remote.fees = {
-  'default'	    : Amount.from_json("10"),
+  'default'         : Amount.from_json("10"),
   'account_create'  : Amount.from_json("1000000000"),
   'nickname_create' : Amount.from_json("1000"),
-  'offer'	    : Amount.from_json("10"),
+  'offer'           : Amount.from_json("10"),
 };
 
 // Set the emitted state: 'online' or 'offline'
@@ -288,14 +288,14 @@ Remote.prototype._set_state = function (state) {
     this.emit('state', state);
     switch (state) {
       case 'online':
-	this.online_state	= 'open';
-	this.emit('connected');
-	break;
+        this.online_state       = 'open';
+        this.emit('connected');
+        break;
 
       case 'offline':
-	this.online_state	= 'closed';
-	this.emit('disconnected');
-	break;
+        this.online_state       = 'closed';
+        this.emit('disconnected');
+        break;
     }
   }
 };
@@ -316,12 +316,12 @@ Remote.prototype.connect = function (online) {
     // If we were in a stable state, go dynamic.
     switch (this.online_state) {
       case 'open':
-	if (!target) this._connect_stop();
-	break;
+        if (!target) this._connect_stop();
+        break;
 
       case 'closed':
-	if (target) this._connect_retry();
-	break;
+        if (target) this._connect_retry();
+        break;
     }
   }
 
@@ -354,23 +354,23 @@ Remote.prototype._connect_retry = function () {
   else if ('connecting' !== this.online_state) {
     // New to connecting state.
     this.online_state = 'connecting';
-    this.retry	      = 0;
- 
+    this.retry        = 0;
+
     this._connect_start();
   }
   else
   {
     // Delay and retry.
-    this.retry	      += 1;
+    this.retry        += 1;
     this.retry_timer  =  setTimeout(function () {
-	if (self.trace) console.log("remote: retry");
+        if (self.trace) console.log("remote: retry");
 
-	if (self.online_target) {
-	  self._connect_start();
-	}
-	else {
-	  self._connect_retry();
-	}
+        if (self.online_target) {
+          self._connect_start();
+        }
+        else {
+          self._connect_retry();
+        }
       }, this.retry < 40 ? 1000/20 : 1000); // 20 times per second for 2 seconds then once per second.
   }
 };
@@ -381,16 +381,16 @@ Remote.prototype._connect_start = function () {
 
   var self = this;
   var url  = "ws://" + this.websocket_ip + ":" + this.websocket_port;
-  
+
   if (this.trace) console.log("remote: connect: %s", url);
-  
+
   var ws = this.ws = new WebSocket(url);
-  
+
   ws.response = {};
-  
+
   ws.onopen = function () {
     if (self.trace) console.log("remote: onopen: %s: online_target=%s", ws.readyState, self.online_target);
-    
+
     ws.onerror = function () {
       if (self.trace) console.log("remote: onerror: %s", ws.readyState);
 
@@ -406,23 +406,23 @@ Remote.prototype._connect_start = function () {
 
       self._connect_retry();
     };
- 
+
     if (self.online_target) {
       self._set_state('online');
 
       // Note, we could get disconnected before tis go through.
-      self._server_subscribe();	    // Automatically subscribe.
+      self._server_subscribe();     // Automatically subscribe.
     }
     else {
       self._connect_stop();
     }
   };
-  
+
   ws.onerror = function () {
     if (self.trace) console.log("remote: onerror: %s", ws.readyState);
- 
+
     delete ws.onclose;
-    
+
     self._connect_retry();
   };
 
@@ -442,7 +442,7 @@ Remote.prototype._connect_start = function () {
 
 // It is possible for messages to be dispatched after the connection is closed.
 Remote.prototype._connect_message = function (ws, json) {
-  var message	  = JSON.parse(json);
+  var message     = JSON.parse(json);
   var unexpected  = false;
   var request;
 
@@ -452,42 +452,42 @@ Remote.prototype._connect_message = function (ws, json) {
   else {
     switch (message.type) {
       case 'response':
-	// A response to a request.
-	{
-	  request	  = ws.response[message.id];
+        // A response to a request.
+        {
+          request         = ws.response[message.id];
 
-	  if (!request) {
-	    unexpected  = true;
-	  }
-	  else if ('success' === message.status) {
-	    if (this.trace) console.log("remote: response: %s", JSON.stringify(message, undefined, 2));
+          if (!request) {
+            unexpected  = true;
+          }
+          else if ('success' === message.status) {
+            if (this.trace) console.log("remote: response: %s", JSON.stringify(message, undefined, 2));
 
-	    request.emit('success', message.result);
-	  }
-	  else if (message.error) {
-	    if (this.trace) console.log("remote: error: %s", JSON.stringify(message, undefined, 2));
+            request.emit('success', message.result);
+          }
+          else if (message.error) {
+            if (this.trace) console.log("remote: error: %s", JSON.stringify(message, undefined, 2));
 
-	    request.emit('error', {
-		'error'		: 'remoteError',
-		'error_message' : 'Remote reported an error.',
-		'remote'        : message,
-	      });
-	  }
-	}
-	break;
+            request.emit('error', {
+                'error'         : 'remoteError',
+                'error_message' : 'Remote reported an error.',
+                'remote'        : message,
+              });
+          }
+        }
+        break;
 
       case 'ledgerClosed':
-	// XXX If not trusted, need to verify we consider ledger closed.
-	// XXX Also need to consider a slow server or out of order response.
-	// XXX Be more defensive fields could be missing or of wrong type.
-	// YYY Might want to do some cache management.
+        // XXX If not trusted, need to verify we consider ledger closed.
+        // XXX Also need to consider a slow server or out of order response.
+        // XXX Be more defensive fields could be missing or of wrong type.
+        // YYY Might want to do some cache management.
 
-	this._ledger_time	    = message.ledger_time;
-	this._ledger_hash	    = message.ledger_hash;
-	this._ledger_current_index  = message.ledger_index + 1;
+        this._ledger_time           = message.ledger_time;
+        this._ledger_hash           = message.ledger_hash;
+        this._ledger_current_index  = message.ledger_index + 1;
 
-	this.emit('ledger_closed', message.ledger_hash, message.ledger_index);
-	break;
+        this.emit('ledger_closed', message.ledger_hash, message.ledger_index);
+        break;
 
       // Account subscription event
       case 'account':
@@ -495,8 +495,8 @@ Remote.prototype._connect_message = function (ws, json) {
         break;
 
       default:
-	unexpected  = true;
-	break;
+        unexpected  = true;
+        break;
     }
   }
 
@@ -509,8 +509,8 @@ Remote.prototype._connect_message = function (ws, json) {
     console.log("unexpected message from trusted remote: %s", json);
 
     (request || this).emit('error', {
-	'error' : 'remoteUnexpected',
-	'error_message' : 'Unexpected response from remote.'
+        'error' : 'remoteUnexpected',
+        'error_message' : 'Unexpected response from remote.'
       });
   }
   else {
@@ -519,8 +519,8 @@ Remote.prototype._connect_message = function (ws, json) {
 
     // XXX All pending request need this treatment and need to actionally disconnect.
     (request || this).emit('error', {
-	'error' : 'remoteDisconnected',
-	'error_message' : 'Remote disconnected.'
+        'error' : 'remoteDisconnected',
+        'error_message' : 'Remote disconnected.'
       });
   }
 };
@@ -532,11 +532,11 @@ Remote.prototype.request = function (request) {
     // Only bother if we are still connected.
 
     this.ws.response[request.message.id = this.id] = request;
-    
+
     this.id += 1;   // Advance id.
-    
+
     if (this.trace) console.log("remote: request: %s", JSON.stringify(request.message));
-    
+
     this.ws.send(JSON.stringify(request.message));
   }
   else {
@@ -584,7 +584,7 @@ Remote.prototype.request_ledger_current = function () {
 // .offer_id()
 Remote.prototype.request_ledger_entry = function (type) {
   //assert(this.trusted);   // If not trusted, need to check proof, maybe talk packet protocol.
-  
+
   var self    = this;
   var request = new Request(this, 'ledger_entry');
 
@@ -592,46 +592,46 @@ Remote.prototype.request_ledger_entry = function (type) {
     this.type = type;
 
   // Transparent caching:
-  request.on('request', function (remote) {	      // Intercept default request.
+  request.on('request', function (remote) {           // Intercept default request.
     if (self._ledger_hash) {
       // XXX Add caching.
     }
     // else if (req.ledger_index)
-    // else if ('ripple_state' === this.type)	      // YYY Could be cached per ledger.
+    // else if ('ripple_state' === this.type)         // YYY Could be cached per ledger.
     else if ('account_root' === this.type) {
       var cache = self.ledgers.current.account_root;
-      
+
       if (!cache)
       {
-	cache = self.ledgers.current.account_root = {};
+        cache = self.ledgers.current.account_root = {};
       }
-      
+
       var node = self.ledgers.current.account_root[request.message.account_root];
 
       if (node) {
-	// Emulate fetch of ledger entry.
-	this.request.emit('success', {
-	    // YYY Missing lots of fields.
-	    'node' :  node,
-	  });
+        // Emulate fetch of ledger entry.
+        this.request.emit('success', {
+            // YYY Missing lots of fields.
+            'node' :  node,
+          });
       }
       else {
-	// Was not cached.
+        // Was not cached.
 
-	// XXX Only allow with trusted mode.  Must sync response with advance.
-	switch (response.type) {
-	  case 'account_root':
-	    request.on('success', function (message) {
-		// Cache node.
-		self.ledgers.current.account_root[message.node.Account] = message.node;
-	      });
-	    break;
-	    
-	  default:
-	    // This type not cached.
-	}
+        // XXX Only allow with trusted mode.  Must sync response with advance.
+        switch (response.type) {
+          case 'account_root':
+            request.on('success', function (message) {
+                // Cache node.
+                self.ledgers.current.account_root[message.node.Account] = message.node;
+              });
+            break;
 
-	this.request_default();
+          default:
+            // This type not cached.
+        }
+
+        this.request_default();
       }
     }
   });
@@ -667,7 +667,7 @@ Remote.prototype.request_unsubscribe = function (streams) {
 
 Remote.prototype.request_transaction_entry = function (hash) {
   //assert(this.trusted);   // If not trusted, need to check proof, maybe talk packet protocol.
-  
+
   return (new Request(this, 'transaction_entry'))
     .tx_hash(hash);
 };
@@ -715,39 +715,39 @@ Remote.prototype.submit = function (transaction) {
   if (transaction.secret && !this.trusted)
   {
     transaction.emit('error', {
-	'result'	  : 'tejServerUntrusted',
-	'result_message'  : "Attempt to give a secret to an untrusted server."
+        'result'          : 'tejServerUntrusted',
+        'result_message'  : "Attempt to give a secret to an untrusted server."
       });
   }
   else {
     if (self.local_sequence && !transaction.tx_json.Sequence) {
-      transaction.tx_json.Sequence	= this.account_seq(transaction.tx_json.Account, 'ADVANCE');
+      transaction.tx_json.Sequence      = this.account_seq(transaction.tx_json.Account, 'ADVANCE');
       // console.log("Sequence: %s", transaction.tx_json.Sequence);
     }
 
     if (self.local_sequence && !transaction.tx_json.Sequence) {
       // Look in the last closed ledger.
       this.account_seq_cache(transaction.tx_json.Account, false)
-	.on('success_account_seq_cache', function () {
-	    // Try again.
-	    self.submit(transaction);
-	  })
-	.on('error_account_seq_cache', function (message) {
-	    // XXX Maybe be smarter about this. Don't want to trust an untrusted server for this seq number.
+        .on('success_account_seq_cache', function () {
+            // Try again.
+            self.submit(transaction);
+          })
+        .on('error_account_seq_cache', function (message) {
+            // XXX Maybe be smarter about this. Don't want to trust an untrusted server for this seq number.
 
-	    // Look in the current ledger.
-	    self.account_seq_cache(transaction.tx_json.Account, 'CURRENT')
-	      .on('success_account_seq_cache', function () {
-		  // Try again.
-		  self.submit(transaction);
-		})
-	      .on('error_account_seq_cache', function (message) {
-		  // Forward errors.
-		  transaction.emit('error', message);
-		})
-	      .request();
-	  })
-	.request();
+            // Look in the current ledger.
+            self.account_seq_cache(transaction.tx_json.Account, 'CURRENT')
+              .on('success_account_seq_cache', function () {
+                  // Try again.
+                  self.submit(transaction);
+                })
+              .on('error_account_seq_cache', function (message) {
+                  // Forward errors.
+                  transaction.emit('error', message);
+                })
+              .request();
+          })
+        .request();
     }
     else {
       var submit_request = new Request(this, 'submit_json');
@@ -756,12 +756,12 @@ Remote.prototype.submit = function (transaction) {
       submit_request.secret(transaction.secret);
 
       if (transaction.build_path)
-	submit_request.build_path = true;
+        submit_request.build_path = true;
 
       // Forward successes and errors.
       submit_request.on('success', function (message) { transaction.emit('success', message); });
       submit_request.on('error', function (message) { transaction.emit('error', message); });
-    
+
       submit_request.request();
     }
   }
@@ -779,17 +779,17 @@ Remote.prototype._server_subscribe = function () {
 
   this.request_subscribe([ 'ledger', 'server' ])
     .on('success', function (message) {
-	self.stand_alone          = !!message.stand_alone;
+        self.stand_alone          = !!message.stand_alone;
 
-	if (message.ledger_hash && message.ledger_index) {
-	  self._ledger_time	      = message.ledger_time;
-	  self._ledger_hash	      = message.ledger_hash;
-	  self._ledger_current_index  = message.ledger_index+1;
+        if (message.ledger_hash && message.ledger_index) {
+          self._ledger_time           = message.ledger_time;
+          self._ledger_hash           = message.ledger_hash;
+          self._ledger_current_index  = message.ledger_index+1;
 
-	  self.emit('ledger_closed', self._ledger_hash, self._ledger_current_index-1);
-	}
+          self.emit('ledger_closed', self._ledger_hash, self._ledger_current_index-1);
+        }
 
-	self.emit('subscribed');
+        self.emit('subscribed');
       })
     .request();
 
@@ -812,7 +812,7 @@ Remote.prototype.ledger_accept = function () {
   }
   else {
     this.emit('error', {
-	'error' : 'notStandAlone'
+        'error' : 'notStandAlone'
       });
   }
 
@@ -827,15 +827,15 @@ Remote.prototype.request_account_balance = function (account, current) {
     .account_root(account)
     .ledger_choose(current)
     .on('success', function (message) {
-	// If the caller also waits for 'success', they might run before this.
-	request.emit('account_balance', Amount.from_json(message.node.Balance));
+        // If the caller also waits for 'success', they might run before this.
+        request.emit('account_balance', Amount.from_json(message.node.Balance));
       });
 };
 
 // Return the next account sequence if possible.
 // <-- undefined or Sequence
 Remote.prototype.account_seq = function (account, advance) {
-  var account	    = UInt160.json_rewrite(account);
+  var account       = UInt160.json_rewrite(account);
   var account_info  = this.accounts[account];
   var seq;
 
@@ -855,7 +855,7 @@ Remote.prototype.account_seq = function (account, advance) {
 }
 
 Remote.prototype.set_account_seq = function (account, seq) {
-  var account	    = UInt160.json_rewrite(account);
+  var account       = UInt160.json_rewrite(account);
 
   if (!this.accounts[account]) this.accounts[account] = {};
 
@@ -878,24 +878,24 @@ Remote.prototype.account_seq_cache = function (account, current) {
       .account_root(account)
       .ledger_choose(current)
       .on('success', function (message) {
-	  delete account_info.caching_seq_request;
+          delete account_info.caching_seq_request;
 
-	  var seq = message.node.Sequence;
-      
-	  account_info.seq  = seq;
+          var seq = message.node.Sequence;
 
-	  // console.log("caching: %s %d", account, seq);
-	  // If the caller also waits for 'success', they might run before this.
-	  request.emit('success_account_seq_cache', message);
-	})
+          account_info.seq  = seq;
+
+          // console.log("caching: %s %d", account, seq);
+          // If the caller also waits for 'success', they might run before this.
+          request.emit('success_account_seq_cache', message);
+        })
       .on('error', function (message) {
-	  // console.log("error: %s", account);
-	  delete account_info.caching_seq_request;
+          // console.log("error: %s", account);
+          delete account_info.caching_seq_request;
 
-	  request.emit('error_account_seq_cache', message);
-	});
+          request.emit('error_account_seq_cache', message);
+        });
 
-    account_info.caching_seq_request	= request;
+    account_info.caching_seq_request    = request;
   }
 
   return request;
@@ -903,7 +903,7 @@ Remote.prototype.account_seq_cache = function (account, current) {
 
 // Mark an account's root node as dirty.
 Remote.prototype.dirty_account_root = function (account) {
-  var account	    = UInt160.json_rewrite(account);
+  var account       = UInt160.json_rewrite(account);
 
   delete this.ledgers.current.account_root[account];
 };
@@ -923,33 +923,33 @@ Remote.prototype.set_secret = function (account, secret) {
 //
 // If does not exist: emit('error', 'error' : 'remoteError', 'remote' : { 'error' : 'entryNotFound' })
 Remote.prototype.request_ripple_balance = function (account, issuer, currency, current) {
-  var request	    = this.request_ledger_entry('ripple_state');	  // YYY Could be cached per ledger.
+  var request       = this.request_ledger_entry('ripple_state');          // YYY Could be cached per ledger.
 
   return request
     .ripple_state(account, issuer, currency)
     .ledger_choose(current)
     .on('success', function (message) {
-	var node	    = message.node;
+        var node            = message.node;
 
-	var lowLimit	    = Amount.from_json(node.LowLimit);
-	var highLimit	    = Amount.from_json(node.HighLimit);
-	// The amount the low account holds of issuer.
-	var balance	    = Amount.from_json(node.Balance);
-	// accountHigh implies: for account: balance is negated, highLimit is the limit set by account.
-	var accountHigh	    = UInt160.from_json(account).equals(highLimit.issuer());
-	// The limit set by account.
-	var accountLimit    = (accountHigh ? highLimit : lowLimit).parse_issuer(account);
-	// The limit set by issuer.
-	var issuerLimit	    = (accountHigh ? lowLimit : highLimit).parse_issuer(issuer);
-	var accountBalance  = (accountHigh ? balance.negate() : balance).parse_issuer(account);
-	var issuerBalance   = (accountHigh ? balance : balance.negate()).parse_issuer(issuer);
+        var lowLimit        = Amount.from_json(node.LowLimit);
+        var highLimit       = Amount.from_json(node.HighLimit);
+        // The amount the low account holds of issuer.
+        var balance         = Amount.from_json(node.Balance);
+        // accountHigh implies: for account: balance is negated, highLimit is the limit set by account.
+        var accountHigh     = UInt160.from_json(account).equals(highLimit.issuer());
+        // The limit set by account.
+        var accountLimit    = (accountHigh ? highLimit : lowLimit).parse_issuer(account);
+        // The limit set by issuer.
+        var issuerLimit     = (accountHigh ? lowLimit : highLimit).parse_issuer(issuer);
+        var accountBalance  = (accountHigh ? balance.negate() : balance).parse_issuer(account);
+        var issuerBalance   = (accountHigh ? balance : balance.negate()).parse_issuer(issuer);
 
-	request.emit('ripple_state', {
-	  'issuer_balance'  : issuerBalance,  // Balance with dst as issuer.
-	  'account_balance' : accountBalance, // Balance with account as issuer.
-	  'issuer_limit'    : issuerLimit,    // Limit set by issuer with src as issuer.
-	  'account_limit'   : accountLimit    // Limit set by account with dst as issuer.
-	});
+        request.emit('ripple_state', {
+          'issuer_balance'  : issuerBalance,  // Balance with dst as issuer.
+          'account_balance' : accountBalance, // Balance with account as issuer.
+          'issuer_limit'    : issuerLimit,    // Limit set by issuer with src as issuer.
+          'account_limit'   : accountLimit    // Limit set by account with dst as issuer.
+        });
       });
 };
 
@@ -964,10 +964,10 @@ Remote.prototype.request_ripple_path_find = function (src_account, dst_account, 
       var ci_new  = {};
 
       if ('issuer' in ci)
-	ci_new.issuer	= UInt160.json_rewrite(ci.issuer);
+        ci_new.issuer   = UInt160.json_rewrite(ci.issuer);
 
       if ('currency' in ci)
-	ci_new.currency	= Currency.json_rewrite(ci.currency);
+        ci_new.currency = Currency.json_rewrite(ci.currency);
 
       return ci_new;
     });
@@ -1017,9 +1017,9 @@ Remote.prototype.transaction = function () {
 //  Construction:
 //    remote.transaction()  // Build a transaction object.
 //     .offer_create(...)   // Set major parameters.
-//     .set_flags()	    // Set optional parameters.
-//     .on()		    // Register for events.
-//     .submit();	    // Send to network.
+//     .set_flags()         // Set optional parameters.
+//     .on()                // Register for events.
+//     .submit();           // Send to network.
 //
 //  Events:
 // 'success' : Transaction submitted without error.
@@ -1037,14 +1037,14 @@ Remote.prototype.transaction = function () {
 // 'pending' : Transaction was not found on ledger_closed.
 // 'state' : Follow the state of a transaction.
 //    'client_submitted'     - Sent to remote
-//     |- 'remoteError'	     - Remote rejected transaction.
+//     |- 'remoteError'      - Remote rejected transaction.
 //      \- 'client_proposed' - Remote provisionally accepted transaction.
 //       |- 'client_missing' - Transaction has not appeared in ledger as expected.
 //       | |\- 'client_lost' - No longer monitoring missing transaction.
 //       |/
 //       |- 'tesSUCCESS'     - Transaction in ledger as expected.
-//       |- 'ter...'	     - Transaction failed.
-//       \- 'tep...'	     - Transaction partially succeeded.
+//       |- 'ter...'         - Transaction failed.
+//       \- 'tep...'         - Transaction partially succeeded.
 //
 // Notes:
 // - All transactions including those with local and malformed errors may be
@@ -1057,44 +1057,44 @@ Remote.prototype.transaction = function () {
 //
 
 var SUBMIT_MISSING  = 4;    // Report missing.
-var SUBMIT_LOST	    = 8;    // Give up tracking.
+var SUBMIT_LOST     = 8;    // Give up tracking.
 
 // A class to implement transactions.
 // - Collects parameters
 // - Allow event listeners to be attached to determine the outcome.
-var Transaction	= function (remote) {
+var Transaction = function (remote) {
   var self  = this;
 
-  this.callback	    = undefined;
-  this.remote	    = remote;
-  this.secret	    = undefined;
+  this.callback     = undefined;
+  this.remote       = remote;
+  this.secret       = undefined;
   this.build_path   = true;
-  this.tx_json	    = {		      	// Transaction data.
-    'Flags' : 0,		      	// XXX Would be nice if server did not require this.
+  this.tx_json      = {                 // Transaction data.
+    'Flags' : 0,                        // XXX Would be nice if server did not require this.
   };
-  this.hash	    = undefined;
-  this.submit_index = undefined;      	// ledger_current_index was this when transaction was submited.
-  this.state	    = undefined;	// Under construction.
+  this.hash         = undefined;
+  this.submit_index = undefined;        // ledger_current_index was this when transaction was submited.
+  this.state        = undefined;        // Under construction.
 
   this.on('success', function (message) {
       if (message.engine_result) {
-	self.hash	= message.tx_json.hash;
+        self.hash       = message.tx_json.hash;
 
-	self.set_state('client_proposed');
+        self.set_state('client_proposed');
 
-	self.emit('proposed', {
-	    'tx_json'	      : message.tx_json,
-	    'result'	      : message.engine_result,
-	    'result_code'     : message.engine_result_code,
-	    'result_message'  : message.engine_result_message,
-	    'rejected'	      : self.isRejected(message.engine_result_code),	  // If server is honest, don't expect a final if rejected.
-	  });
+        self.emit('proposed', {
+            'tx_json'         : message.tx_json,
+            'result'          : message.engine_result,
+            'result_code'     : message.engine_result_code,
+            'result_message'  : message.engine_result_message,
+            'rejected'        : self.isRejected(message.engine_result_code),      // If server is honest, don't expect a final if rejected.
+          });
       }
     });
 
   this.on('error', function (message) {
-	// Might want to give more detailed information.
-	self.set_state('remoteError');
+        // Might want to give more detailed information.
+        self.set_state('remoteError');
     });
 };
 
@@ -1103,10 +1103,10 @@ Transaction.prototype  = new EventEmitter;
 Transaction.prototype.consts = {
   'telLOCAL_ERROR'  : -399,
   'temMALFORMED'    : -299,
-  'tefFAILURE'	    : -199,
-  'terRETRY'	    : -99,
-  'tesSUCCESS'	    : 0,
-  'tepPARTIAL'	    : 100,
+  'tefFAILURE'      : -199,
+  'terRETRY'        : -99,
+  'tesSUCCESS'      : 0,
+  'tepPARTIAL'      : 100,
 };
 
 Transaction.prototype.isTelLocal = function (ter) {
@@ -1161,13 +1161,13 @@ Transaction.prototype.submit = function (callback) {
   var self    = this;
   var tx_json = this.tx_json;
 
-  this.callback	= callback;
+  this.callback = callback;
 
   if ('string' !== typeof tx_json.Account)
   {
     (this.callback || this.emit)('error', {
-	'error' : 'tejInvalidAccount',
-	'error_message' : 'Bad account.'
+        'error' : 'tejInvalidAccount',
+        'error_message' : 'Bad account.'
       });
     return;
   }
@@ -1191,57 +1191,57 @@ Transaction.prototype.submit = function (callback) {
     this.submit_index = this.remote._ledger_current_index;
 
     // When a ledger closes, look for the result.
-    var	on_ledger_closed = function (ledger_hash, ledger_index) {
-	var stop  = false;
+    var on_ledger_closed = function (ledger_hash, ledger_index) {
+        var stop  = false;
 
 // XXX make sure self.hash is available.
-	self.remote.request_transaction_entry(self.hash)
-	  .ledger_hash(ledger_hash)
-	  .on('success', function (message) {
-	      self.set_state(message.metadata.TransactionResult);
-	      self.emit('final', message);
+        self.remote.request_transaction_entry(self.hash)
+          .ledger_hash(ledger_hash)
+          .on('success', function (message) {
+              self.set_state(message.metadata.TransactionResult);
+              self.emit('final', message);
 
-	      if (self.callback)
-		self.callback(message.metadata.TransactionResult, message);
+              if (self.callback)
+                self.callback(message.metadata.TransactionResult, message);
 
-	      stop  = true;
-	    })
-	  .on('error', function (message) {
-	      if ('remoteError' === message.error
-		&& 'transactionNotFound' === message.remote.error) {
-		if (self.submit_index + SUBMIT_LOST < ledger_index) {
-		  self.set_state('client_lost');	// Gave up.
-		  self.emit('lost');
+              stop  = true;
+            })
+          .on('error', function (message) {
+              if ('remoteError' === message.error
+                && 'transactionNotFound' === message.remote.error) {
+                if (self.submit_index + SUBMIT_LOST < ledger_index) {
+                  self.set_state('client_lost');        // Gave up.
+                  self.emit('lost');
 
-		  if (self.callback)
-		    self.callback('tejLost', message);
+                  if (self.callback)
+                    self.callback('tejLost', message);
 
-		  stop  = true;
-		}
-		else if (self.submit_index + SUBMIT_MISSING < ledger_index) {
-		  self.set_state('client_missing');    // We don't know what happened to transaction, still might find.
-		  self.emit('pending');
-		}
-		else {
-		  self.emit('pending');
-		}
-	      }
-	      // XXX Could log other unexpectedness.
-	    })
-	  .request();
-	
-	if (stop) {
-	  self.remote.removeListener('ledger_closed', on_ledger_closed);
-	  self.emit('final', message);
-	}
+                  stop  = true;
+                }
+                else if (self.submit_index + SUBMIT_MISSING < ledger_index) {
+                  self.set_state('client_missing');    // We don't know what happened to transaction, still might find.
+                  self.emit('pending');
+                }
+                else {
+                  self.emit('pending');
+                }
+              }
+              // XXX Could log other unexpectedness.
+            })
+          .request();
+
+        if (stop) {
+          self.remote.removeListener('ledger_closed', on_ledger_closed);
+          self.emit('final', message);
+        }
       };
 
     this.remote.on('ledger_closed', on_ledger_closed);
 
     if (this.callback) {
       this.on('error', function (message) {
-	  self.callback(message.error, message);
-	});
+          self.callback(message.error, message);
+        });
     }
   }
 
@@ -1263,20 +1263,20 @@ Transaction.prototype.build_path = function (build) {
 }
 
 Transaction._path_rewrite = function (path) {
-  var path_new	= [];
-  
+  var path_new  = [];
+
   for (var index in path) {
-    var	node	  = path[index];
-    var	node_new  = {};
+    var node      = path[index];
+    var node_new  = {};
 
     if ('account' in node)
-      node_new.account	= UInt160.json_rewrite(node.account);
+      node_new.account  = UInt160.json_rewrite(node.account);
 
     if ('issuer' in node)
-      node_new.issuer	= UInt160.json_rewrite(node.issuer);
+      node_new.issuer   = UInt160.json_rewrite(node.issuer);
 
     if ('currency' in node)
-      node_new.currency	= Currency.json_rewrite(node.currency);
+      node_new.currency = Currency.json_rewrite(node.currency);
 
     path_new.push(node_new);
   }
@@ -1329,25 +1329,25 @@ Transaction.prototype.set_flags = function (flags) {
   if (flags) {
       var   transaction_flags = Remote.flags[this.tx_json.TransactionType];
 
-      if (undefined == this.tx_json.Flags)	// We plan to not define this field on new Transaction.
-	this.tx_json.Flags	  = 0;
-      
+      if (undefined == this.tx_json.Flags)      // We plan to not define this field on new Transaction.
+        this.tx_json.Flags        = 0;
+
       var flag_set  = 'object' === typeof flags ? flags : [ flags ];
 
       for (index in flag_set) {
-	var flag  = flag_set[index];
+        var flag  = flag_set[index];
 
-	if (flag in transaction_flags)
-	{
-	  this.tx_json.Flags      += transaction_flags[flag];
-	}
-	else {
-	  // XXX Immediately report an error or mark it.
-	}
+        if (flag in transaction_flags)
+        {
+          this.tx_json.Flags      += transaction_flags[flag];
+        }
+        else {
+          // XXX Immediately report an error or mark it.
+        }
       }
 
       if (this.tx_json.Flags & Remote.flags.Payment.CreateAccount)
-	this.tx_json.Fee	= Remote.fees.account_create.to_json();
+        this.tx_json.Fee        = Remote.fees.account_create.to_json();
   }
 
   return this;
@@ -1363,32 +1363,32 @@ Transaction.prototype._account_secret = function (account) {
 };
 
 // Options:
-//  .domain()		NYI
-//  .message_key()	NYI
+//  .domain()           NYI
+//  .message_key()      NYI
 //  .transfer_rate()
-//  .wallet_locator()	NYI
+//  .wallet_locator()   NYI
 Transaction.prototype.account_set = function (src) {
-  this.secret			= this._account_secret(src);
+  this.secret                   = this._account_secret(src);
   this.tx_json.TransactionType  = 'AccountSet';
-  this.tx_json.Account		= UInt160.json_rewrite(src);
+  this.tx_json.Account          = UInt160.json_rewrite(src);
 
   return this;
 };
 
 Transaction.prototype.claim = function (src, generator, public_key, signature) {
-  this.secret			= this._account_secret(src);
+  this.secret                   = this._account_secret(src);
   this.tx_json.TransactionType  = 'Claim';
-  this.tx_json.Generator	= generator;
-  this.tx_json.PublicKey	= public_key;
-  this.tx_json.Signature	= signature;
+  this.tx_json.Generator        = generator;
+  this.tx_json.PublicKey        = public_key;
+  this.tx_json.Signature        = signature;
 
   return this;
 };
 
 Transaction.prototype.offer_cancel = function (src, sequence) {
-  this.secret			= this._account_secret(src);
+  this.secret                   = this._account_secret(src);
   this.tx_json.TransactionType  = 'OfferCancel';
-  this.tx_json.Account		= UInt160.json_rewrite(src);
+  this.tx_json.Account          = UInt160.json_rewrite(src);
   this.tx_json.OfferSequence    = Number(sequence);
 
   return this;
@@ -1396,36 +1396,36 @@ Transaction.prototype.offer_cancel = function (src, sequence) {
 
 // --> expiration : Date or Number
 Transaction.prototype.offer_create = function (src, taker_pays, taker_gets, expiration) {
-  this.secret			= this._account_secret(src);
+  this.secret                   = this._account_secret(src);
   this.tx_json.TransactionType  = 'OfferCreate';
-  this.tx_json.Account		= UInt160.json_rewrite(src);
-  this.tx_json.Fee		= Remote.fees.offer.to_json();
-  this.tx_json.TakerPays	= Amount.json_rewrite(taker_pays);
-  this.tx_json.TakerGets	= Amount.json_rewrite(taker_gets);
+  this.tx_json.Account          = UInt160.json_rewrite(src);
+  this.tx_json.Fee              = Remote.fees.offer.to_json();
+  this.tx_json.TakerPays        = Amount.json_rewrite(taker_pays);
+  this.tx_json.TakerGets        = Amount.json_rewrite(taker_gets);
 
   if (expiration)
     this.tx_json.Expiration  = Date === expiration.constructor
-				    ? expiration.getTime()
-				    : Number(expiration);
+                                    ? expiration.getTime()
+                                    : Number(expiration);
 
   return this;
 };
 
 Transaction.prototype.password_fund = function (src, dst) {
-  this.secret			= this._account_secret(src);
+  this.secret                   = this._account_secret(src);
   this.tx_json.TransactionType  = 'PasswordFund';
-  this.tx_json.Destination	= UInt160.json_rewrite(dst);
+  this.tx_json.Destination      = UInt160.json_rewrite(dst);
 
   return this;
 }
 
 Transaction.prototype.password_set = function (src, authorized_key, generator, public_key, signature) {
-  this.secret			= this._account_secret(src);
+  this.secret                   = this._account_secret(src);
   this.tx_json.TransactionType  = 'PasswordSet';
   this.tx_json.RegularKey    = authorized_key;
-  this.tx_json.Generator	= generator;
-  this.tx_json.PublicKey	= public_key;
-  this.tx_json.Signature	= signature;
+  this.tx_json.Generator        = generator;
+  this.tx_json.PublicKey        = public_key;
+  this.tx_json.Signature        = signature;
 
   return this;
 }
@@ -1433,7 +1433,7 @@ Transaction.prototype.password_set = function (src, authorized_key, generator, p
 // Construct a 'payment' transaction.
 //
 // When a transaction is submitted:
-// - If the connection is reliable and the server is not merely forwarding and is not malicious, 
+// - If the connection is reliable and the server is not merely forwarding and is not malicious,
 // --> src : UInt160 or String
 // --> dst : UInt160 or String
 // --> deliver_amount : Amount or String.
@@ -1446,19 +1446,19 @@ Transaction.prototype.password_set = function (src, authorized_key, generator, p
 //  .send_max()
 //  .set_flags()
 Transaction.prototype.payment = function (src, dst, deliver_amount) {
-  this.secret			= this._account_secret(src);
+  this.secret                   = this._account_secret(src);
   this.tx_json.TransactionType  = 'Payment';
-  this.tx_json.Account		= UInt160.json_rewrite(src);
-  this.tx_json.Amount		= Amount.json_rewrite(deliver_amount);
-  this.tx_json.Destination	= UInt160.json_rewrite(dst);
+  this.tx_json.Account          = UInt160.json_rewrite(src);
+  this.tx_json.Amount           = Amount.json_rewrite(deliver_amount);
+  this.tx_json.Destination      = UInt160.json_rewrite(dst);
 
   return this;
 }
 
 Transaction.prototype.ripple_line_set = function (src, limit, quality_in, quality_out) {
-  this.secret			= this._account_secret(src);
+  this.secret                   = this._account_secret(src);
   this.tx_json.TransactionType  = 'TrustSet';
-  this.tx_json.Account		= UInt160.json_rewrite(src);
+  this.tx_json.Account          = UInt160.json_rewrite(src);
 
   // Allow limit of 0 through.
   if (undefined !== limit)
@@ -1476,12 +1476,12 @@ Transaction.prototype.ripple_line_set = function (src, limit, quality_in, qualit
 };
 
 Transaction.prototype.wallet_add = function (src, amount, authorized_key, public_key, signature) {
-  this.secret			= this._account_secret(src);
+  this.secret                   = this._account_secret(src);
   this.tx_json.TransactionType  = 'WalletAdd';
-  this.tx_json.Amount		= Amount.json_rewrite(amount);
+  this.tx_json.Amount           = Amount.json_rewrite(amount);
   this.tx_json.RegularKey    = authorized_key;
-  this.tx_json.PublicKey	= public_key;
-  this.tx_json.Signature	= signature;
+  this.tx_json.PublicKey        = public_key;
+  this.tx_json.Signature        = signature;
 
   return this;
 };
