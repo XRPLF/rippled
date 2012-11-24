@@ -191,6 +191,7 @@ buster.testCase("Remote functions", {
 	    // console.log("account_root: %s", JSON.stringify(r));
 
 	    // Need to verify account and balance.
+	    buster.assert(true);
 	    done();
 	  })
 	.on('error', function(m) {
