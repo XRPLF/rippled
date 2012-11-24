@@ -116,7 +116,6 @@ public:
 	RippleAddress getFieldAccount(SField::ref field) const;
 	uint160 getFieldAccount160(SField::ref field) const;
 	std::vector<unsigned char> getFieldVL(SField::ref field) const;
-	std::vector<TaggedListItem> getFieldTL(SField::ref field) const;
 	STAmount getFieldAmount(SField::ref field) const;
 	STPathSet getFieldPathSet(SField::ref field) const;
 	STVector256 getFieldV256(SField::ref field) const;
@@ -129,7 +128,6 @@ public:
 	void setFieldH160(SField::ref field, const uint160&);
 	void setFieldH256(SField::ref field, const uint256&);
 	void setFieldVL(SField::ref field, const std::vector<unsigned char>&);
-	void setFieldTL(SField::ref field, const std::vector<TaggedListItem>&);
 	void setFieldAccount(SField::ref field, const uint160&);
 	void setFieldAccount(SField::ref field, const RippleAddress& addr)
 	{ setFieldAccount(field, addr.getAccountID()); }

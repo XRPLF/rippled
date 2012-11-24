@@ -11,8 +11,6 @@
 #include "uint256.h"
 #include "FieldNames.h"
 
-typedef std::pair<int, std::vector<unsigned char> > TaggedListItem;
-
 class Serializer
 {
 public:
@@ -46,10 +44,6 @@ public:
 	int addVL(const std::vector<unsigned char> &vector);
 	int addVL(const std::string& string);
 	int addVL(const void *ptr, int len);
-	int addTaggedList(const std::list<TaggedListItem>&);
-	int addTaggedList(const std::vector<TaggedListItem>&);
-	static int getTaggedListLength(const std::list<TaggedListItem>&);
-	static int getTaggedListLength(const std::vector<TaggedListItem>&);
 
 	// disassemble functions
 	bool get8(int&, int offset) const;
@@ -66,8 +60,6 @@ public:
 
 	bool getVL(std::vector<unsigned char>& objectVL, int offset, int& length) const;
 	bool getVLLength(int& length, int offset) const;
-	bool getTaggedList(std::list<TaggedListItem>&, int offset, int& length) const;
-	bool getTaggedList(std::vector<TaggedListItem>&, int offset, int& length) const;
 
 	bool getFieldID(int& type, int& name, int offset) const;
 	int addFieldID(int type, int name);
@@ -171,7 +163,6 @@ public:
 	std::vector<unsigned char> getRaw(int iLength);
 
 	std::vector<unsigned char> getVL();
-	std::vector<TaggedListItem> getTaggedList();
 };
 
 #endif
