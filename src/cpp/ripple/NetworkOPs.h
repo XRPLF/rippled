@@ -114,9 +114,9 @@ public:
 	NetworkOPs(boost::asio::io_service& io_service, LedgerMaster* pLedgerMaster);
 
 	// network information
-	uint32 getNetworkTimeNC();
-	uint32 getCloseTimeNC();
-	uint32 getValidationTimeNC();
+	uint32 getNetworkTimeNC();					// Our best estimate of wall time in seconds from 1/1/2000
+	uint32 getCloseTimeNC();					// Our best estimate of current ledger close time
+	uint32 getValidationTimeNC();				// Use *only* to timestamp our own validation
 	void closeTimeOffset(int);
 	boost::posix_time::ptime getNetworkTimePT();
 	uint32 getLedgerID(const uint256& hash);
