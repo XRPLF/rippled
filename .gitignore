@@ -27,5 +27,6 @@ tmp
 db/*.db
 db/*.db-journal
 
-# Ignore customized test/config.js
+# Ignore customized configs
+rippled.cfg
 test/config.js
