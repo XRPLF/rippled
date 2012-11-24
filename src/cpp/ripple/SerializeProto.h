@@ -2,23 +2,23 @@
 // appropriate #define statements.
 
 	// types (common)
-	TYPE("Int16",			UINT16,		1)
-	TYPE("Int32",			UINT32,		2)
-	TYPE("Int64",			UINT64,		3)
-	TYPE("Hash128",			HASH128,	4)
-	TYPE("Hash256",			HASH256,	5)
-	TYPE("Amount",			AMOUNT,		6)
-	TYPE("VariableLength",	VL,			7)
-	TYPE("Account",			ACCOUNT,	8)
+	TYPE(Int16,				UINT16,		1)
+	TYPE(Int32,				UINT32,		2)
+	TYPE(Int64,				UINT64,		3)
+	TYPE(Hash128,			HASH128,	4)
+	TYPE(Hash256,			HASH256,	5)
+	TYPE(Amount,			AMOUNT,		6)
+	TYPE(VariableLength,	VL,			7)
+	TYPE(Account,			ACCOUNT,	8)
 	// 9-13 are reserved
-	TYPE("Object",			OBJECT,		14)
-	TYPE("Array",			ARRAY,		15)
+	TYPE(Object,			OBJECT,		14)
+	TYPE(Array,				ARRAY,		15)
 
 	// types (uncommon)
-	TYPE("Int8",			UINT8,		16)
-	TYPE("Hash160",			HASH160,	17)
-	TYPE("PathSet",			PATHSET,	18)
-	TYPE("Vector256",		VECTOR256,	19)
+	TYPE(Int8,				UINT8,		16)
+	TYPE(Hash160,			HASH160,	17)
+	TYPE(PathSet,			PATHSET,	18)
+	TYPE(Vector256,			VECTOR256,	19)
 
 
 
