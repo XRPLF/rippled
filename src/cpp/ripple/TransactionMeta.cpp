@@ -79,12 +79,13 @@ std::vector<RippleAddress> TransactionMetaSet::getAffectedAccounts()
 }
 */
 
-STObject& TransactionMetaSet::getAffectedNode(const uint256& node, SField::ref type)
+STObject& TransactionMetaSet::getAffectedNode(SLE::ref node, SField::ref type)
 {
 	assert(&type);
+	uint256 index = node->getIndex();
 	BOOST_FOREACH(STObject& it, mNodes)
 	{
-		if (it.getFieldH256(sfLedgerIndex) == node)
+		if (it.getFieldH256(sfLedgerIndex) == index)
 			return it;
 	}
 
@@ -92,7 +93,8 @@ STObject& TransactionMetaSet::getAffectedNode(const uint256& node, SField::ref t
 	STObject& obj = mNodes.back();
 
 	assert(obj.getFName() == type);
-	obj.setFieldH256(sfLedgerIndex, node);
+	obj.setFieldH256(sfLedgerIndex, index);
+	obj.setFieldU16(sfLedgerEntryType, node->getFieldU16(sfLedgerEntryType));
 
 	return obj;
 }

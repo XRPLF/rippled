@@ -12,6 +12,7 @@
 #include "Serializer.h"
 #include "SerializedTypes.h"
 #include "SerializedObject.h"
+#include "SerializedLedger.h"
 #include "TransactionErr.h"
 
 class TransactionMetaSet
@@ -42,7 +43,7 @@ public:
 
 	bool isNodeAffected(const uint256&) const;
 	void setAffectedNode(const uint256&, SField::ref type, uint16 nodeType);
-	STObject& getAffectedNode(const uint256&, SField::ref type);
+	STObject& getAffectedNode(SLE::ref node, SField::ref type); // create if needed
 	STObject& getAffectedNode(const uint256&);
 	const STObject& peekAffectedNode(const uint256&) const;
 	//std::vector<RippleAddress> getAffectedAccounts();
