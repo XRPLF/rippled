@@ -359,7 +359,7 @@ bool LedgerEntrySet::threadOwners(SLE::ref node, Ledger::ref ledger,
 		return false;
 }
 
-void LedgerEntrySet::calcRawMeta(Serializer& s, TER result)
+void LedgerEntrySet::calcRawMeta(Serializer& s, TER result, uint32 index)
 { // calculate the raw meta data and return it. This must be called before the set is committed
 
 	// Entries modified only as a result of building the transaction metadata
@@ -402,6 +402,10 @@ void LedgerEntrySet::calcRawMeta(Serializer& s, TER result)
 
 		SLE::pointer origNode = mLedger->getSLE(it.first);
 		SLE::pointer curNode = it.second.mEntry;
+
+		if ((type == &sfCreatedNode) && (*curNode == *origNode))
+			continue;
+
 		uint16 nodeType = curNode ? curNode->getFieldU16(sfLedgerEntryType) : origNode->getFieldU16(sfLedgerEntryType);
 
 		mSet.setAffectedNode(it.first, *type, nodeType);
@@ -478,7 +482,7 @@ void LedgerEntrySet::calcRawMeta(Serializer& s, TER result)
 	BOOST_FOREACH(u256_sle_pair& it, newMod)
 		entryModify(it.second);
 
-	mSet.addRaw(s, result);
+	mSet.addRaw(s, result, index);
 	cLog(lsTRACE) << "Metadata:" << mSet.getJson(0);
 }
 

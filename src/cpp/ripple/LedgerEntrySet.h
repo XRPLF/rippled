@@ -124,7 +124,7 @@ public:
 	STAmount			accountFunds(const uint160& uAccountID, const STAmount& saDefault);
 
 	Json::Value getJson(int) const;
-	void calcRawMeta(Serializer&, TER result);
+	void calcRawMeta(Serializer&, TER result, uint32 index);
 
 	// iterator functions
 	typedef std::map<uint256, LedgerEntrySetEntry>::iterator				iterator;

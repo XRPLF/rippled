@@ -119,7 +119,7 @@ TER TransactionEngine::applyTransaction(const SerializedTransaction& txn, Transa
 		{
 			// Transaction succeeded fully or (retries are not allowed and the transaction succeeded partially).
 			Serializer m;
-			mNodes.calcRawMeta(m, terResult);
+			mNodes.calcRawMeta(m, terResult, mTxnSeq++);
 
 			txnWrite();
 
