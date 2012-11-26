@@ -5,7 +5,7 @@ enum MessageType {
 	mtHELLO					= 1;
 	mtERROR_MSG				= 2;
 	mtPING					= 3;
-	mtPOW					= 4;
+	mtPROOFOFWORK			= 4;
 
 // network presence detection
 	mtGET_CONTACTS			= 10;
@@ -33,13 +33,13 @@ enum MessageType {
 }
 
 
-// empty message (or just result) = request proof of work
-// token, iterations, target, challenge = give proof of work challenge
-// token, response = show proof of work
-// token, result = result of pow attempt
+// token, iterations, target, challenge = issue demand for proof of work
+// token, response = give solution to proof of work
+// token, result = report result of pow
+
 message TMProofWork
 {
-	optional string token		= 1;
+	required string token		= 1;
 	optional uint32 iterations	= 2;
 	optional bytes target		= 3;
 	optional bytes challenge	= 4;

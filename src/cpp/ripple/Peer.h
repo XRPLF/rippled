@@ -126,6 +126,7 @@ protected:
 	void recvStatus(ripple::TMStatusChange& packet);
 	void recvPropose(const boost::shared_ptr<ripple::TMProposeSet>& packet);
 	void recvHaveTxSet(ripple::TMHaveTransactionSet& packet);
+	void recvProofWork(ripple::TMProofWork& packet);
 
 	void getSessionCookie(std::string& strDst);
 

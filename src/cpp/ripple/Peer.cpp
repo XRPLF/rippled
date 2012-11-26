@@ -581,6 +581,17 @@ void Peer::processReadBuffer()
 			}
 			break;
 
+		case ripple::mtPROOFOFWORK:
+			{
+				ripple::TMProofWork msg;
+				if (msg.ParseFromArray(&mReadbuf[HEADER_SIZE], mReadbuf.size() - HEADER_SIZE))
+					recvProofWork(msg);
+				else
+					cLog(lsWARNING) << "parse error: " << type;
+			}
+			break;
+
+
 		default:
 			cLog(lsWARNING) << "Unknown Msg: " << type;
 			cLog(lsWARNING) << strHex(&mReadbuf[0], mReadbuf.size());
@@ -1122,6 +1133,23 @@ void Peer::recvGetAccount(ripple::TMGetAccount& packet)
 
 void Peer::recvAccount(ripple::TMAccount& packet)
 {
+}
+
+void Peer::recvProofWork(ripple::TMProofWork& packet)
+{
+	if (packet.has_result())
+	{ // this is a reply to a proof of work we sent
+		// WRITEME
+		return;
+	}
+
+	if (packet.has_target() && packet.has_challenge() && packet.has_iterations())
+	{ // this is a challenge
+		// WRITEME
+		return;
+	}
+
+	cLog(lsINFO) << "Received in valid proof of work object from peer";
 }
 
 void Peer::recvStatus(ripple::TMStatusChange& packet)

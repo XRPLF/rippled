@@ -23,22 +23,23 @@ enum JobType
 	jtINVALID		= -1,
 	jtVALIDATION_ut	= 0,	// A validation from an untrusted source
 	jtCLIENTOP_ut	= 1,	// A client operation from a non-local/untrusted source
-	jtTRANSACTION	= 2,	// A transaction received from the network
-	jtPROPOSAL_ut	= 3,	// A proposal from an untrusted source
-	jtCLIENTOP_t	= 4,	// A client operation from a trusted source
-	jtVALIDATION_t	= 5,	// A validation from a trusted source
-	jtTRANSACTION_l	= 6,	// A local transaction
-	jtPROPOSAL_t	= 7,	// A proposal from a trusted source
-	jtADMIN			= 8,	// An administrative operation
-	jtDEATH			= 9,	// job of death, used internally
+	jtPROOFWORK		= 2,	// A proof of work demand from another server
+	jtTRANSACTION	= 3,	// A transaction received from the network
+	jtPROPOSAL_ut	= 4,	// A proposal from an untrusted source
+	jtCLIENTOP_t	= 5,	// A client operation from a trusted source
+	jtVALIDATION_t	= 6,	// A validation from a trusted source
+	jtTRANSACTION_l	= 7,	// A local transaction
+	jtPROPOSAL_t	= 8,	// A proposal from a trusted source
+	jtADMIN			= 9,	// An administrative operation
+	jtDEATH			= 10,	// job of death, used internally
 
 // special types not dispatched by the job pool
-	jtCLIENT		= 10,
-	jtPEER			= 11,
-	jtDISK			= 12,
-	jtRPC			= 13,
-	jtACCEPTLEDGER	= 14,
-	jtPUBLEDGER		= 15,
+	jtCLIENT		= 16,
+	jtPEER			= 17,
+	jtDISK			= 18,
+	jtRPC			= 19,
+	jtACCEPTLEDGER	= 20,
+	jtPUBLEDGER		= 21,
 };
 #define NUM_JOB_TYPES 24
 
