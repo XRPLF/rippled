@@ -934,7 +934,7 @@ STArray* STArray::construct(SerializerIterator& sit, SField::ref field)
 			throw std::runtime_error("Unknown field");
 		}
 
-		value.push_back(STObject(fn));
+		value.push_back(new STObject(fn));
 		value.rbegin()->set(sit, 1);
 	}
 
@@ -1234,6 +1234,9 @@ BOOST_AUTO_TEST_SUITE(SerializedObject)
 
 BOOST_AUTO_TEST_CASE( FieldManipulation_test )
 {
+	if (sfGeneric.isUseful())
+		BOOST_FAIL("sfGeneric must not be useful");
+
 	SField sfTestVL(STI_VL, 255, "TestVL");
 	SField sfTestH256(STI_HASH256, 255, "TestH256");
 	SField sfTestU32(STI_UINT32, 255, "TestU32");

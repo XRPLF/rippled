@@ -46,6 +46,8 @@ public:
 	STObject(const std::vector<SOElement::ptr>& type, SerializerIterator& sit, SField::ref name) : SerializedType(name)
 	{ set(sit); setType(type); }
 
+	std::auto_ptr<STObject> oClone() const { return std::auto_ptr<STObject>(new STObject(*this)); }
+
 	static std::auto_ptr<STObject> parseJson(const Json::Value& value, SField::ref name = sfGeneric, int depth = 0);
 
 	virtual ~STObject() { ; }
@@ -167,6 +169,10 @@ public:
 	bool operator!=(const STObject& o) const { return ! (*this == o); }
 };
 
+// allow ptr_* collections of STObject's
+inline STObject* new_clone(const STObject& s) { return s.oClone().release(); }
+inline void delete_clone(const STObject* s) { boost::checked_delete(s); }
+
 inline STObject::iterator range_begin(STObject& x)		{ return x.begin(); }
 inline STObject::iterator range_end(STObject &x)		{ return x.end(); }
 namespace boost
@@ -180,12 +186,12 @@ namespace boost
 class STArray : public SerializedType, private IS_INSTANCE(SerializedArray)
 {
 public:
-	typedef std::vector<STObject>							vector;
-	typedef std::vector<STObject>::iterator					iterator;
-	typedef std::vector<STObject>::const_iterator			const_iterator;
-	typedef std::vector<STObject>::reverse_iterator			reverse_iterator;
-	typedef std::vector<STObject>::const_reverse_iterator	const_reverse_iterator;
-	typedef std::vector<STObject>::size_type				size_type;
+	typedef boost::ptr_vector<STObject>							vector;
+	typedef boost::ptr_vector<STObject>::iterator				iterator;
+	typedef boost::ptr_vector<STObject>::const_iterator			const_iterator;
+	typedef boost::ptr_vector<STObject>::reverse_iterator		reverse_iterator;
+	typedef boost::ptr_vector<STObject>::const_reverse_iterator	const_reverse_iterator;
+	typedef boost::ptr_vector<STObject>::size_type				size_type;
 
 protected:
 
@@ -210,7 +216,7 @@ public:
 	vector& getValue()								{ return value; }
 
 	// vector-like functions
-	void push_back(const STObject& object)			{ value.push_back(object); }
+	void push_back(const STObject& object)			{ value.push_back(object.oClone()); }
 	STObject& operator[](int j)						{ return value[j]; }
 	const STObject& operator[](int j) const			{ return value[j]; }
 	iterator begin()								{ return value.begin(); }
