@@ -578,7 +578,8 @@ Amount.prototype.parse_native = function(j) {
   return this;
 };
 
-// Parse a non-native value.
+// Parse a non-native value for the json wire format.
+// Requires _currency to be set!
 Amount.prototype.parse_value = function(j) {
   this._is_native    = false;
 
@@ -605,7 +606,7 @@ Amount.prototype.parse_value = function(j) {
       this.canonicalize();
     }
     else if (d) {
-      // float notation
+      // float notation : values multiplied by 1,000,000.
 
       var integer	= new BigInteger(d[2]);
       var fraction    	= new BigInteger(d[3]);
@@ -647,9 +648,9 @@ Amount.prototype.parse_json = function(j) {
     var	m = j.match(/^(.+)\/(...)\/(.+)$/);
 
     if (m) {
-      this.parse_value(m[1]);
       this._currency  = Currency.from_json(m[2]);
       this._issuer    = UInt160.from_json(m[3]);
+      this.parse_value(m[1]);
     }
     else {
       this.parse_native(j);
@@ -663,9 +664,9 @@ Amount.prototype.parse_json = function(j) {
   else if ('object' === typeof j && 'value' in j) {
     // Parse the passed value to sanitize and copy it.
 
-    this.parse_value(j.value);
     this._currency.parse_json(j.currency);     // Never XRP.
     this._issuer.parse_json(j.issuer);
+    this.parse_value(j.value);
   }
   else {
     this._value	    = NaN;
