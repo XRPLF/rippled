@@ -403,7 +403,7 @@ void LedgerEntrySet::calcRawMeta(Serializer& s, TER result, uint32 index)
 		SLE::pointer origNode = mLedger->getSLE(it.first);
 		SLE::pointer curNode = it.second.mEntry;
 
-		if ((type == &sfCreatedNode) && (*curNode == *origNode))
+		if ((type == &sfModifiedNode) && (*curNode == *origNode))
 			continue;
 
 		uint16 nodeType = curNode ? curNode->getFieldU16(sfLedgerEntryType) : origNode->getFieldU16(sfLedgerEntryType);
