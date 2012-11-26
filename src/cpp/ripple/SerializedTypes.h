@@ -12,6 +12,14 @@
 #include "InstanceCounter.h"
 #include "Log.h"
 
+// CAUTION: Do not create a vector (or similar container) of any object derived from
+// SerializedType. Use Boost ptr_* containers. The copy assignment operator of
+// SerializedType has semantics that will cause contained types to change their names
+// when an object is deleted because copy assignment is used to "slide down" the
+// remaining types and this will not copy the field name. Changing the copy assignment
+// operator to copy the field name breaks the use of copy assignment just to copy values,
+// which is used in the transaction engine code.
+
 enum PathFlags
 {
 	PF_END				= 0x00,		// End of current path & path list.
