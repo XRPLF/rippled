@@ -388,6 +388,18 @@ Amount.prototype.currency = function() {
   return this._currency;
 };
 
+Amount.prototype.set_currency = function(c) {
+  if ('string' === typeof c) {
+    this._currency.parse_json(c);  
+  }
+  else
+  {
+    c.copyTo(this._currency);
+  }
+
+  return this;
+};
+
 // Only checks the value. Not the currency and issuer.
 Amount.prototype.is_valid = function() {
   return !isNaN(this._value);
