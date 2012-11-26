@@ -89,8 +89,7 @@ STObject& TransactionMetaSet::getAffectedNode(SLE::ref node, SField::ref type)
 		if (it.getFieldH256(sfLedgerIndex) == index)
 			return it;
 	}
-
-	mNodes.push_back(STObject(sfModifiedNode));
+	mNodes.push_back(STObject(type));
 	STObject& obj = mNodes.back();
 
 	assert(obj.getFName() == type);
