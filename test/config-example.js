@@ -14,7 +14,6 @@ exports.servers = {
   // A local test server.
   "alpha" : {
     'trusted' : true,
-    'no_server' : true,
     // "peer_ip" : "0.0.0.0",
     // "peer_port" : 51235,
     'rpc_ip' : "0.0.0.0",
@@ -41,6 +40,10 @@ exports.accounts = {
   "carol" : {
     'account' : "rH4KEcG9dEwGwpn6AyoWK9cZPLL4RLSmWW",
     'secret' : "carol",
+  },
+  "dan" : {
+    'account' : "rJ85Mok8YRNxSo7NnxKGrPuk29uAeZQqwZ",
+    'secret' : "dan",
   },
 
   // Nexuses
