@@ -628,7 +628,7 @@ Amount.prototype.parse_native = function(j) {
       this._value	  = new BigInteger(m[2]);
     }
     else {
-      // Float notation
+      // Float notation : values multiplied by 1,000,000.
 
       var   int_part	  = (new BigInteger(m[2])).multiply(consts.bi_xns_unit);
       var   fraction_part = (new BigInteger(m[3])).multiply(new BigInteger(String(Math.pow(10, 1+consts.xns_precision-m[3].length))));
@@ -683,7 +683,7 @@ Amount.prototype.parse_value = function(j) {
       this.canonicalize();
     }
     else if (d) {
-      // float notation : values multiplied by 1,000,000.
+      // float notation
 
       var integer	= new BigInteger(d[2]);
       var fraction    	= new BigInteger(d[3]);
