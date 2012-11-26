@@ -344,6 +344,10 @@ Amount.from_json = function(j) {
   return (new Amount()).parse_json(j);
 };
 
+Amount.from_human = function(j) {
+  return (new Amount()).parse_human(j);
+};
+
 Amount.is_valid = function (j) {
   return Amount.from_json(j).is_valid();
 };
@@ -544,6 +548,67 @@ Amount.prototype.to_text_full = function() {
     : this._is_native
       ? this.to_text() + "/XRP"
       : this.to_text() + "/" + this._currency.to_json() + "/" + this._issuer.to_json();
+};
+
+/**
+ * Tries to correctly interpret an amount as entered by a user.
+ *
+ * Examples:
+ *
+ *   XRP 250     => 250000000/XRP
+ *   25.2 XRP    => 25200000/XRP
+ *   USD 100.40  => 100.4/USD/?
+ *   100         => 100000000/XRP
+ */
+Amount.prototype.parse_human = function(j) {
+  // Cast to string
+  j = ""+j;
+
+  // Parse
+  var m = j.match(/^\s*([a-z]{3})?\s*(-)?(\d+)(?:\.(\d*))?\s*([a-z]{3})?\s*$/i);
+
+  if (m) {
+    var currency   = m[1] || m[5] || "XRP",
+        integer    = m[3] || "0",
+        fraction   = m[4] || "",
+        precision  = null;
+
+    currency = currency.toUpperCase();
+
+    this._value = new BigInteger(integer);
+    this.set_currency(currency);
+
+    // XRP have exactly six digits of precision
+    if (currency === 'XRP') {
+      fraction = fraction.slice(0, 6);
+      while (fraction.length < 6) {
+        fraction += "0";
+      }
+      this._is_native   = true;
+      this._value  = this._value.multiply(consts.bi_xns_unit).add(new BigInteger(fraction));
+    }
+    // Other currencies have arbitrary precision
+    else {
+      while (fraction[fraction.length - 1] === "0") {
+        fraction = fraction.slice(0, fraction.length - 1);
+      }
+
+      precision = fraction.length;
+
+      this._is_native   = false;
+      var multiplier    = consts.bi_10.clone().pow(precision);
+      this._value      	= this._value.multiply(multiplier).add(fraction);
+      this._offset     	= -precision;
+
+      this.canonicalize();
+    }
+
+    this._is_negative = !!m[2];
+  } else {
+    this._value	      = NaN;
+  }
+
+  return this;
 };
 
 // Parse a XRP value from untrusted input.
