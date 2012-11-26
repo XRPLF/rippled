@@ -81,7 +81,7 @@ public:
 	SerializedType& back()							{ return mData.back(); }
 	const SerializedType& back() const				{ return mData.back(); }
 
-	int getCount() const { return mData.size(); }
+	int getCount() const							{ return mData.size(); }
 
 	bool setFlag(uint32);
 	bool clearFlag(uint32);
