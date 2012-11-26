@@ -22,6 +22,8 @@ var Amount        = require('./amount.js').Amount;
 var Currency      = require('./amount.js').Currency;
 var UInt160       = require('./amount.js').UInt160;
 
+var utils         = require('./utils');
+
 // Request events emitted:
 // 'success' : Request successful.
 // 'error'   : Request failed.
@@ -461,12 +463,12 @@ Remote.prototype._connect_message = function (ws, json) {
             unexpected  = true;
           }
           else if ('success' === message.status) {
-            if (this.trace) console.log("remote: response: %s", JSON.stringify(message, undefined, 2));
+            if (this.trace) utils.logObject("remote: response: %s", message);
 
             request.emit('success', message.result);
           }
           else if (message.error) {
-            if (this.trace) console.log("remote: error: %s", JSON.stringify(message, undefined, 2));
+            if (this.trace) utils.logObject("remote: error: %s", message);
 
             request.emit('error', {
                 'error'         : 'remoteError',
@@ -492,7 +494,7 @@ Remote.prototype._connect_message = function (ws, json) {
 
       // Account subscription event
       case 'account':
-        if (this.trace) console.log("remote: account: %s", JSON.stringify(message, undefined, 2));
+        if (this.trace) utils.logObject("remote: account: %s", message);
         break;
 
       default:
@@ -536,12 +538,12 @@ Remote.prototype.request = function (request) {
 
     this.id += 1;   // Advance id.
 
-    if (this.trace) console.log("remote: request: %s", JSON.stringify(request.message));
+    if (this.trace) utils.logObject("remote: request: %s", request.message);
 
     this.ws.send(JSON.stringify(request.message));
   }
   else {
-    if (this.trace) console.log("remote: request: DROPPING: %s", JSON.stringify(request.message));
+    if (this.trace) utils.logObject("remote: request: DROPPING: %s", request.message);
   }
 };
 
