@@ -10,6 +10,7 @@
 #include "Serializer.h"
 #include "FieldNames.h"
 #include "InstanceCounter.h"
+#include "Log.h"
 
 enum PathFlags
 {
@@ -68,8 +69,8 @@ public:
 
 	void addFieldID(Serializer& s) const { s.addFieldID(fName->fieldType, fName->fieldValue); }
 
-	SerializedType& operator=(const SerializedType& t)
-	{ if (!fName->fieldCode) fName = t.fName; return *this; }
+	SerializedType& operator=(const SerializedType& t);
+
 	bool operator==(const SerializedType& t) const
 	{ return (getSType() == t.getSType()) && isEquivalent(t); }
 	bool operator!=(const SerializedType& t) const

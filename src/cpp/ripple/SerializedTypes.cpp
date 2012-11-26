@@ -19,6 +19,15 @@ DECLARE_INSTANCE(SerializedValue);
 STAmount saZero(CURRENCY_ONE, ACCOUNT_ONE, 0);
 STAmount saOne(CURRENCY_ONE, ACCOUNT_ONE, 1);
 
+SerializedType& SerializedType::operator=(const SerializedType& t)
+{
+	if ((t.fName != fName) && fName->isUseful() && t.fName->isUseful())
+		Log(lsWARNING) << "Caution: " << t.fName->getName() << " not replacing " << fName->getName();
+	if (!fName->isUseful()) fName = t.fName;
+	return *this;
+}
+
+
 void STPathSet::printDebug() {
   for (int i = 0; i < value.size(); i++) {
     std::cout << i << ": ";
