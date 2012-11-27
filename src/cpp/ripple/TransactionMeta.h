@@ -12,6 +12,7 @@
 #include "Serializer.h"
 #include "SerializedTypes.h"
 #include "SerializedObject.h"
+#include "SerializedLedger.h"
 #include "TransactionErr.h"
 
 class TransactionMetaSet
@@ -22,13 +23,15 @@ public:
 protected:
 	uint256	mTransactionID;
 	uint32	mLedger;
+	uint32  mIndex;
 	int		mResult;
 
 	STArray mNodes;
 
 public:
-	TransactionMetaSet() : mLedger(0), mResult(255) { ; }
-	TransactionMetaSet(const uint256& txID, uint32 ledger) : mTransactionID(txID), mLedger(ledger), mResult(255) { ; }
+	TransactionMetaSet() : mLedger(0), mIndex(static_cast<uint32>(-1)), mResult(255) { ; }
+	TransactionMetaSet(const uint256& txID, uint32 ledger, uint32 index) :
+		mTransactionID(txID), mLedger(ledger), mIndex(static_cast<uint32>(-1)), mResult(255) { ; }
 	TransactionMetaSet(const uint256& txID, uint32 ledger, const std::vector<unsigned char>&);
 
 	void init(const uint256& transactionID, uint32 ledger);
@@ -39,17 +42,18 @@ public:
 	uint32 getLgrSeq()			{ return mLedger; }
 	int getResult() const		{ return mResult; }
 	TER getResultTER() const	{ return static_cast<TER>(mResult); }
+	uint32 getIndex() const		{ return mIndex; }
 
 	bool isNodeAffected(const uint256&) const;
 	void setAffectedNode(const uint256&, SField::ref type, uint16 nodeType);
-	STObject& getAffectedNode(const uint256&, SField::ref type);
+	STObject& getAffectedNode(SLE::ref node, SField::ref type); // create if needed
 	STObject& getAffectedNode(const uint256&);
 	const STObject& peekAffectedNode(const uint256&) const;
 	//std::vector<RippleAddress> getAffectedAccounts();
 
 
 	Json::Value getJson(int p) const { return getAsObject().getJson(p); }
-	void addRaw(Serializer&, TER);
+	void addRaw(Serializer&, TER, uint32 index);
 
 	STObject getAsObject() const;
 

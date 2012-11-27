@@ -12,17 +12,17 @@ buster.testCase("Standalone server startup", {
       alpha = Server.from_config("alpha");
 
       alpha
-	.on('started', function () {
-	    alpha
-	      .on('stopped', function () {
-		  buster.assert(true);
+        .on('started', function () {
+            alpha
+              .on('stopped', function () {
+                  buster.assert(true);
 
-		  done();
-		})
-	      .stop();
-	  })
-	.start();
+                  done();
+                })
+              .stop();
+          })
+        .start();
     }
 });
 
-// vim:sw=2:sts=2:ts=8
+// vim:sw=2:sts=2:ts=8:et

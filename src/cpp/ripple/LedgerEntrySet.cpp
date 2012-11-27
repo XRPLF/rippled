@@ -328,8 +328,8 @@ bool LedgerEntrySet::threadTx(SLE::ref threadTo, Ledger::ref ledger,
 	if (!threadTo->thread(mSet.getTxID(), mSet.getLgrSeq(), prevTxID, prevLgrID))
 		return false;
 
-	if (prevTxID.isZero() || TransactionMetaSet::thread(mSet.getAffectedNode(threadTo->getIndex(), sfModifiedNode),
-			prevTxID, prevLgrID))
+	if (prevTxID.isZero() ||
+		TransactionMetaSet::thread(mSet.getAffectedNode(threadTo, sfModifiedNode), prevTxID, prevLgrID))
 		return true;
 
 	assert(false);
@@ -359,7 +359,7 @@ bool LedgerEntrySet::threadOwners(SLE::ref node, Ledger::ref ledger,
 		return false;
 }
 
-void LedgerEntrySet::calcRawMeta(Serializer& s, TER result)
+void LedgerEntrySet::calcRawMeta(Serializer& s, TER result, uint32 index)
 { // calculate the raw meta data and return it. This must be called before the set is committed
 
 	// Entries modified only as a result of building the transaction metadata
@@ -402,14 +402,17 @@ void LedgerEntrySet::calcRawMeta(Serializer& s, TER result)
 
 		SLE::pointer origNode = mLedger->getSLE(it.first);
 		SLE::pointer curNode = it.second.mEntry;
+
+		if ((type == &sfModifiedNode) && (*curNode == *origNode))
+			continue;
+
 		uint16 nodeType = curNode ? curNode->getFieldU16(sfLedgerEntryType) : origNode->getFieldU16(sfLedgerEntryType);
 
 		mSet.setAffectedNode(it.first, *type, nodeType);
 
 		if (type == &sfDeletedNode)
 		{
-			assert(origNode);
-			assert(curNode);
+			assert(origNode && curNode);
 			threadOwners(origNode, mLedger, newMod); // thread transaction to owners
 
 			STObject prevs(sfPreviousFields);
@@ -432,6 +435,7 @@ void LedgerEntrySet::calcRawMeta(Serializer& s, TER result)
 		}
 		else if (type == &sfModifiedNode)
 		{
+			assert(curNode && origNode);
 			if (curNode->isThreadedType()) // thread transaction to node it modified
 				threadTx(curNode, mLedger, newMod);
 
@@ -455,7 +459,7 @@ void LedgerEntrySet::calcRawMeta(Serializer& s, TER result)
 		}
 		else if (type == &sfCreatedNode) // if created, thread to owner(s)
 		{
-			assert(!origNode);
+			assert(curNode && !origNode);
 			threadOwners(curNode, mLedger, newMod);
 
 			if (curNode->isThreadedType()) // always thread to self
@@ -470,6 +474,7 @@ void LedgerEntrySet::calcRawMeta(Serializer& s, TER result)
 			if (!news.empty())
 				mSet.getAffectedNode(it.first).addObject(news);
 		}
+		else assert(false);
 	}
 
 	// add any new modified nodes to the modification set
@@ -477,7 +482,7 @@ void LedgerEntrySet::calcRawMeta(Serializer& s, TER result)
 	BOOST_FOREACH(u256_sle_pair& it, newMod)
 		entryModify(it.second);
 
-	mSet.addRaw(s, result);
+	mSet.addRaw(s, result, index);
 	cLog(lsTRACE) << "Metadata:" << mSet.getJson(0);
 }
 

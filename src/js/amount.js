@@ -344,6 +344,10 @@ Amount.from_json = function(j) {
   return (new Amount()).parse_json(j);
 };
 
+Amount.from_human = function(j) {
+  return (new Amount()).parse_human(j);
+};
+
 Amount.is_valid = function (j) {
   return Amount.from_json(j).is_valid();
 };
@@ -386,6 +390,18 @@ Amount.prototype.copyTo = function(d, negate) {
 
 Amount.prototype.currency = function() {
   return this._currency;
+};
+
+Amount.prototype.set_currency = function(c) {
+  if ('string' === typeof c) {
+    this._currency.parse_json(c);  
+  }
+  else
+  {
+    c.copyTo(this._currency);
+  }
+
+  return this;
 };
 
 // Only checks the value. Not the currency and issuer.
@@ -462,14 +478,28 @@ Amount.prototype.to_human = function (opts)
 {
   opts = opts || {};
 
-  var int_part = this._value.divide(consts.bi_xns_unit).toString(10);
-  var fraction_part = this._value.mod(consts.bi_xns_unit).toString(10);
+  // Default options
+  if ("undefined" === typeof opts.group_sep) opts.group_sep = true;
+  opts.group_width = opts.group_width || 3;
+
+  var denominator = this._is_native ?
+        consts.bi_xns_unit :
+        consts.bi_10.clone().pow(-this._offset);
+  var int_part = this._value.divide(denominator).toString(10);
+  var fraction_part = this._value.mod(denominator).toString(10);
 
   int_part = int_part.replace(/^0*/, '');
   fraction_part = fraction_part.replace(/0*$/, '');
 
   if ("number" === typeof opts.precision) {
     fraction_part = fraction_part.slice(0, opts.precision);
+  }
+
+  if (opts.group_sep) {
+    if ("string" !== typeof opts.group_sep) {
+      opts.group_sep = ',';
+    }
+    int_part = utils.chunkString(int_part, opts.group_width, true).join(opts.group_sep);
   }
 
   var formatted = '';
@@ -534,6 +564,67 @@ Amount.prototype.to_text_full = function() {
       : this.to_text() + "/" + this._currency.to_json() + "/" + this._issuer.to_json();
 };
 
+/**
+ * Tries to correctly interpret an amount as entered by a user.
+ *
+ * Examples:
+ *
+ *   XRP 250     => 250000000/XRP
+ *   25.2 XRP    => 25200000/XRP
+ *   USD 100.40  => 100.4/USD/?
+ *   100         => 100000000/XRP
+ */
+Amount.prototype.parse_human = function(j) {
+  // Cast to string
+  j = ""+j;
+
+  // Parse
+  var m = j.match(/^\s*([a-z]{3})?\s*(-)?(\d+)(?:\.(\d*))?\s*([a-z]{3})?\s*$/i);
+
+  if (m) {
+    var currency   = m[1] || m[5] || "XRP",
+        integer    = m[3] || "0",
+        fraction   = m[4] || "",
+        precision  = null;
+
+    currency = currency.toUpperCase();
+
+    this._value = new BigInteger(integer);
+    this.set_currency(currency);
+
+    // XRP have exactly six digits of precision
+    if (currency === 'XRP') {
+      fraction = fraction.slice(0, 6);
+      while (fraction.length < 6) {
+        fraction += "0";
+      }
+      this._is_native   = true;
+      this._value  = this._value.multiply(consts.bi_xns_unit).add(new BigInteger(fraction));
+    }
+    // Other currencies have arbitrary precision
+    else {
+      while (fraction[fraction.length - 1] === "0") {
+        fraction = fraction.slice(0, fraction.length - 1);
+      }
+
+      precision = fraction.length;
+
+      this._is_native   = false;
+      var multiplier    = consts.bi_10.clone().pow(precision);
+      this._value      	= this._value.multiply(multiplier).add(new BigInteger(fraction));
+      this._offset     	= -precision;
+
+      this.canonicalize();
+    }
+
+    this._is_negative = !!m[2];
+  } else {
+    this._value	      = NaN;
+  }
+
+  return this;
+};
+
 // Parse a XRP value from untrusted input.
 // - integer = raw units
 // - float = with precision 6
@@ -551,7 +642,7 @@ Amount.prototype.parse_native = function(j) {
       this._value	  = new BigInteger(m[2]);
     }
     else {
-      // Float notation
+      // Float notation : values multiplied by 1,000,000.
 
       var   int_part	  = (new BigInteger(m[2])).multiply(consts.bi_xns_unit);
       var   fraction_part = (new BigInteger(m[3])).multiply(new BigInteger(String(Math.pow(10, 1+consts.xns_precision-m[3].length))));
@@ -578,7 +669,8 @@ Amount.prototype.parse_native = function(j) {
   return this;
 };
 
-// Parse a non-native value.
+// Parse a non-native value for the json wire format.
+// Requires _currency to be set!
 Amount.prototype.parse_value = function(j) {
   this._is_native    = false;
 
@@ -647,9 +739,9 @@ Amount.prototype.parse_json = function(j) {
     var	m = j.match(/^(.+)\/(...)\/(.+)$/);
 
     if (m) {
-      this.parse_value(m[1]);
       this._currency  = Currency.from_json(m[2]);
       this._issuer    = UInt160.from_json(m[3]);
+      this.parse_value(m[1]);
     }
     else {
       this.parse_native(j);
@@ -663,9 +755,9 @@ Amount.prototype.parse_json = function(j) {
   else if ('object' === typeof j && 'value' in j) {
     // Parse the passed value to sanitize and copy it.
 
-    this.parse_value(j.value);
     this._currency.parse_json(j.currency);     // Never XRP.
     this._issuer.parse_json(j.issuer);
+    this.parse_value(j.value);
   }
   else {
     this._value	    = NaN;
@@ -727,4 +819,4 @@ exports.UInt160	      = UInt160;
 
 exports.config	      = {};
 
-// vim:sw=2:sts=2:ts=8
+// vim:sw=2:sts=2:ts=8:et

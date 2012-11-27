@@ -41,4 +41,4 @@ serializer.addUInt160 = function(value) {
 serializer.getSHA512Half = function() {
 };
 
-// vim:ts=4
+// vim:sw=2:sts=2:ts=8:et

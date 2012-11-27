@@ -22,6 +22,8 @@ var Amount        = require('./amount.js').Amount;
 var Currency      = require('./amount.js').Currency;
 var UInt160       = require('./amount.js').UInt160;
 
+var utils         = require('./utils');
+
 // Request events emitted:
 // 'success' : Request successful.
 // 'error'   : Request failed.
@@ -37,23 +39,16 @@ var Request = function (remote, command) {
   };
   this.remote     = remote;
   this.requested  = false;
-
-  this.on('request', function () {
-      self.request_default();
-    });
 };
 
 Request.prototype  = new EventEmitter;
 
 // Send the request to a remote.
 Request.prototype.request = function (remote) {
-  this.emit('request', remote);
-};
-
-Request.prototype.request_default = function () {
   if (!this.requested) {
     this.requested  = true;
     this.remote.request(this);
+    this.emit('request', remote);
   }
 };
 
@@ -189,7 +184,8 @@ var Remote = function (opts, trace) {
   this.trusted                = opts.trusted;
   this.websocket_ip           = opts.websocket_ip;
   this.websocket_port         = opts.websocket_port;
-  this.local_sequence         = opts.local_sequence;
+  this.local_sequence         = opts.local_sequence; // Locally track sequence numbers
+  this.local_fee              = opts.local_fee;      // Locally set fees
   this.id                     = 0;
   this.trace                  = opts.trace || trace;
   this._ledger_current_index  = undefined;
@@ -460,12 +456,12 @@ Remote.prototype._connect_message = function (ws, json) {
             unexpected  = true;
           }
           else if ('success' === message.status) {
-            if (this.trace) console.log("remote: response: %s", JSON.stringify(message, undefined, 2));
+            if (this.trace) utils.logObject("remote: response: %s", message);
 
             request.emit('success', message.result);
           }
           else if (message.error) {
-            if (this.trace) console.log("remote: error: %s", JSON.stringify(message, undefined, 2));
+            if (this.trace) utils.logObject("remote: error: %s", message);
 
             request.emit('error', {
                 'error'         : 'remoteError',
@@ -491,7 +487,7 @@ Remote.prototype._connect_message = function (ws, json) {
 
       // Account subscription event
       case 'account':
-        if (this.trace) console.log("remote: account: %s", JSON.stringify(message, undefined, 2));
+        if (this.trace) utils.logObject("remote: account: %s", message);
         break;
 
       default:
@@ -535,12 +531,12 @@ Remote.prototype.request = function (request) {
 
     this.id += 1;   // Advance id.
 
-    if (this.trace) console.log("remote: request: %s", JSON.stringify(request.message));
+    if (this.trace) utils.logObject("remote: request: %s", request.message);
 
     this.ws.send(JSON.stringify(request.message));
   }
   else {
-    if (this.trace) console.log("remote: request: DROPPING: %s", JSON.stringify(request.message));
+    if (this.trace) utils.logObject("remote: request: DROPPING: %s", request.message);
   }
 };
 
@@ -592,7 +588,8 @@ Remote.prototype.request_ledger_entry = function (type) {
     this.type = type;
 
   // Transparent caching:
-  request.on('request', function (remote) {           // Intercept default request.
+  this.request_default = this.request;
+  this.request = function () {                        // Intercept default request.
     if (self._ledger_hash) {
       // XXX Add caching.
     }
@@ -610,7 +607,7 @@ Remote.prototype.request_ledger_entry = function (type) {
 
       if (node) {
         // Emulate fetch of ledger entry.
-        this.request.emit('success', {
+        self.emit('success', {
             // YYY Missing lots of fields.
             'node' :  node,
           });
@@ -634,7 +631,7 @@ Remote.prototype.request_ledger_entry = function (type) {
         this.request_default();
       }
     }
-  });
+  };
 
   return request;
 };
@@ -1174,7 +1171,7 @@ Transaction.prototype.submit = function (callback) {
 
   // YYY Might check paths for invalid accounts.
 
-  if (undefined === tx_json.Fee) {
+  if (this.remote.local_fee && undefined === tx_json.Fee) {
     if ('Payment' === tx_json.TransactionType
       && tx_json.Flags & Remote.flags.Payment.CreateAccount) {
 
@@ -1346,7 +1343,7 @@ Transaction.prototype.set_flags = function (flags) {
         }
       }
 
-      if (this.tx_json.Flags & Remote.flags.Payment.CreateAccount)
+      if (this.remote.local_fee && (this.tx_json.Flags & Remote.flags.Payment.CreateAccount))
         this.tx_json.Fee        = Remote.fees.account_create.to_json();
   }
 
@@ -1399,9 +1396,12 @@ Transaction.prototype.offer_create = function (src, taker_pays, taker_gets, expi
   this.secret                   = this._account_secret(src);
   this.tx_json.TransactionType  = 'OfferCreate';
   this.tx_json.Account          = UInt160.json_rewrite(src);
-  this.tx_json.Fee              = Remote.fees.offer.to_json();
   this.tx_json.TakerPays        = Amount.json_rewrite(taker_pays);
   this.tx_json.TakerGets        = Amount.json_rewrite(taker_gets);
+
+  if (this.remote.local_fee) {
+    this.tx_json.Fee            = Remote.fees.offer.to_json();
+  }
 
   if (expiration)
     this.tx_json.Expiration  = Date === expiration.constructor
@@ -1489,4 +1489,4 @@ Transaction.prototype.wallet_add = function (src, amount, authorized_key, public
 exports.config          = {};
 exports.Remote          = Remote;
 
-// vim:sw=2:sts=2:ts=8
+// vim:sw=2:sts=2:ts=8:et

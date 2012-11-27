@@ -92,6 +92,7 @@ public:
 
 	bool isGeneric() const		{ return fieldCode == 0; }
 	bool isInvalid() const		{ return fieldCode == -1; }
+	bool isUseful() const		{ return fieldCode > 0; }
 	bool isKnown() const		{ return fieldType != STI_UNKNOWN; }
 	bool isBinary() const		{ return fieldValue < 256; }
 	bool isDiscardable() const	{ return fieldValue > 256; }

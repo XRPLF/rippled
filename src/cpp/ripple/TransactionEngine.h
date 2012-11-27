@@ -56,6 +56,7 @@ private:
 
 protected:
 	Ledger::pointer		mLedger;
+	int					mTxnSeq;
 
 	uint160				mTxnAccountID;
 	SLE::pointer		mTxnAccount;
@@ -65,8 +66,8 @@ protected:
 public:
 	typedef boost::shared_ptr<TransactionEngine> pointer;
 
-	TransactionEngine() { ; }
-	TransactionEngine(Ledger::ref ledger) : mLedger(ledger) { assert(mLedger); }
+	TransactionEngine() : mTxnSeq(0) { ; }
+	TransactionEngine(Ledger::ref ledger) : mLedger(ledger), mTxnSeq(0) { assert(mLedger); }
 
 	LedgerEntrySet& getNodes()			{ return mNodes; }
 	Ledger::pointer getLedger()			{ return mLedger; }

@@ -20,6 +20,7 @@ TransactionMetaSet::TransactionMetaSet(const uint256& txid, uint32 ledger, const
 		throw std::runtime_error("bad metadata");
 
 	mResult = obj->getFieldU8(sfTransactionResult);
+	mIndex = obj->getFieldU32(sfTransactionIndex);
 	mNodes = * dynamic_cast<STArray*>(&obj->getField(sfAffectedNodes));
 }
 
@@ -79,20 +80,21 @@ std::vector<RippleAddress> TransactionMetaSet::getAffectedAccounts()
 }
 */
 
-STObject& TransactionMetaSet::getAffectedNode(const uint256& node, SField::ref type)
+STObject& TransactionMetaSet::getAffectedNode(SLE::ref node, SField::ref type)
 {
 	assert(&type);
+	uint256 index = node->getIndex();
 	BOOST_FOREACH(STObject& it, mNodes)
 	{
-		if (it.getFieldH256(sfLedgerIndex) == node)
+		if (it.getFieldH256(sfLedgerIndex) == index)
 			return it;
 	}
-
-	mNodes.push_back(STObject(sfModifiedNode));
+	mNodes.push_back(STObject(type));
 	STObject& obj = mNodes.back();
 
 	assert(obj.getFName() == type);
-	obj.setFieldH256(sfLedgerIndex, node);
+	obj.setFieldH256(sfLedgerIndex, index);
+	obj.setFieldU16(sfLedgerEntryType, node->getFieldU16(sfLedgerEntryType));
 
 	return obj;
 }
@@ -153,13 +155,15 @@ STObject TransactionMetaSet::getAsObject() const
 	STObject metaData(sfTransactionMetaData);
 	assert(mResult != 255);
 	metaData.setFieldU8(sfTransactionResult, mResult);
+	metaData.setFieldU32(sfTransactionIndex, mIndex);
 	metaData.addObject(mNodes);
 	return metaData;
 }
 
-void TransactionMetaSet::addRaw(Serializer& s, TER result)
+void TransactionMetaSet::addRaw(Serializer& s, TER result, uint32 index)
 {
 	mResult = static_cast<int>(result);
+	mIndex = index;
 	assert((mResult == 0) || ((mResult > 100) && (mResult <= 255)));
 
 	mNodes.sort(compare);
