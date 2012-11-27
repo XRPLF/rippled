@@ -597,7 +597,7 @@ Amount.prototype.parse_human = function(j) {
 
       this._is_native   = false;
       var multiplier    = consts.bi_10.clone().pow(precision);
-      this._value      	= this._value.multiply(multiplier).add(fraction);
+      this._value      	= this._value.multiply(multiplier).add(new BigInteger(fraction));
       this._offset     	= -precision;
 
       this.canonicalize();
