@@ -478,14 +478,28 @@ Amount.prototype.to_human = function (opts)
 {
   opts = opts || {};
 
-  var int_part = this._value.divide(consts.bi_xns_unit).toString(10);
-  var fraction_part = this._value.mod(consts.bi_xns_unit).toString(10);
+  // Default options
+  if ("undefined" === typeof opts.group_sep) opts.group_sep = true;
+  opts.group_width = opts.group_width || 3;
+
+  var denominator = this._is_native ?
+        consts.bi_xns_unit :
+        consts.bi_10.clone().pow(-this._offset);
+  var int_part = this._value.divide(denominator).toString(10);
+  var fraction_part = this._value.mod(denominator).toString(10);
 
   int_part = int_part.replace(/^0*/, '');
   fraction_part = fraction_part.replace(/0*$/, '');
 
   if ("number" === typeof opts.precision) {
     fraction_part = fraction_part.slice(0, opts.precision);
+  }
+
+  if (opts.group_sep) {
+    if ("string" !== typeof opts.group_sep) {
+      opts.group_sep = ',';
+    }
+    int_part = utils.chunkString(int_part, opts.group_width, true).join(opts.group_sep);
   }
 
   var formatted = '';
