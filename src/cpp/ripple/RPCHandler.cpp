@@ -1482,7 +1482,7 @@ Json::Value RPCHandler::doCommand(const std::string& command, Json::Value& param
 	cLog(lsTRACE) << "RPC:" << command;
 	cLog(lsTRACE) << "RPC params:" << params;
 
-	LoadEvent::pointer le = theApp->getJobQueue().getLoadEvent(jtRPC);
+	LoadEvent::autoptr le(theApp->getJobQueue().getLoadEventAP(jtRPC));
 
 	mRole	= role;
 

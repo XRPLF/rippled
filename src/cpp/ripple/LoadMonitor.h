@@ -36,7 +36,8 @@ public:
 class LoadEvent
 {
 public:
-	typedef boost::shared_ptr<LoadEvent> pointer;
+	typedef boost::shared_ptr<LoadEvent>	pointer;
+	typedef std::auto_ptr<LoadEvent>		autoptr;
 
 protected:
 	LoadMonitor&				mMonitor;

@@ -339,9 +339,8 @@ uint256 Ledger::getHash()
 	return mHash;
 }
 
-void Ledger::saveAcceptedLedger(bool fromConsensus)
+void Ledger::saveAcceptedLedger(bool fromConsensus, LoadEvent::pointer event)
 { // can be called in a different thread
-	LoadEvent::pointer event = theApp->getJobQueue().getLoadEvent(jtDISK);
 	cLog(lsTRACE) << "saveAcceptedLedger " << (fromConsensus ? "fromConsensus " : "fromAcquire ") << getLedgerSeq();
 	static boost::format ledgerExists("SELECT LedgerSeq FROM Ledgers where LedgerSeq = %d;");
 	static boost::format deleteLedger("DELETE FROM Ledgers WHERE LedgerSeq = %d;");
@@ -439,7 +438,7 @@ void Ledger::saveAcceptedLedger(bool fromConsensus)
 	}
 
 	theApp->getLedgerMaster().setFullLedger(shared_from_this());
-	event = LoadEvent::pointer();
+	event->stop();
 
 	theApp->getOPs().pubLedger(shared_from_this());
 
@@ -1136,7 +1135,8 @@ void Ledger::pendSave(bool fromConsensus)
 	if (!fromConsensus && !theApp->isNewFlag(getHash(), SF_SAVED))
 		return;
 
-	boost::thread thread(boost::bind(&Ledger::saveAcceptedLedger, shared_from_this(), fromConsensus));
+	boost::thread thread(boost::bind(&Ledger::saveAcceptedLedger, shared_from_this(),
+		fromConsensus, theApp->getJobQueue().getLoadEvent(jtDISK)));
 	thread.detach();
 
 	boost::recursive_mutex::scoped_lock sl(sPendingSaveLock);

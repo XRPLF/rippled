@@ -104,6 +104,8 @@ public:
 
 	LoadEvent::pointer getLoadEvent(JobType t)
 	{ return boost::make_shared<LoadEvent>(boost::ref(mJobLoads[t]), true, 1); }
+	LoadEvent::autoptr getLoadEventAP(JobType t)
+	{ return LoadEvent::autoptr(new LoadEvent(mJobLoads[t], true, 1)); }
 
 	Json::Value getJson(int c = 0);
 };
