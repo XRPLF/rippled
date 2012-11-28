@@ -1158,7 +1158,7 @@ Json::Value RPCHandler::doTxHistory(const Json::Value& params)
 
 		{
 			Database* db = theApp->getTxnDB()->getDB();
-			ScopedLock dbLock = theApp->getTxnDB()->getDBLock();
+			ScopedLock sl (theApp->getTxnDB()->getDBLock());
 
 			SQL_FOREACH(db, sql)
 			{

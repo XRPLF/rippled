@@ -369,7 +369,7 @@ void Ledger::saveAcceptedLedger(bool fromConsensus)
 
 		SHAMap& txSet = *peekTransactionMap();
 		Database *db = theApp->getTxnDB()->getDB();
-		ScopedLock dbLock = theApp->getTxnDB()->getDBLock();
+		ScopedLock dbLock(theApp->getTxnDB()->getDBLock());
 		db->executeSQL("BEGIN TRANSACTION;");
 		SHAMapTreeNode::TNType type;
 		for (SHAMapItem::pointer item = txSet.peekFirstItem(type); !!item;

@@ -150,7 +150,7 @@ bool Transaction::save()
 		% mTransaction->getTransactionID().GetHex());
 
 	Database *db = theApp->getTxnDB()->getDB();
-	ScopedLock dbLock = theApp->getTxnDB()->getDBLock();
+	ScopedLock dbLock(theApp->getTxnDB()->getDBLock());
 	if (SQL_EXISTS(db, exists)) return false;
 	return
 		db->executeSQL(mTransaction->getSQLInsertHeader() + mTransaction->getSQL(getLedger(), status) + ";");
