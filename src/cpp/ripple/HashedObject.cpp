@@ -12,7 +12,7 @@ SETUP_LOG();
 DECLARE_INSTANCE(HashedObject);
 
 HashedObjectStore::HashedObjectStore(int cacheSize, int cacheAge) :
-	mCache("HashedObjectStore", cacheSize, cacheAge), mWritePending(false)
+	mCache("HashedObjectStore", cacheSize, cacheAge), mWritePending(false), mWriteGeneration(0)
 {
 	mWriteSet.reserve(128);
 }
@@ -54,7 +54,8 @@ bool HashedObjectStore::store(HashedObjectType type, uint32 index,
 void HashedObjectStore::waitWrite()
 {
 	boost::mutex::scoped_lock sl(mWriteMutex);
-	while (mWritePending)
+	int gen = mWriteGeneration;
+	while (mWritePending && (mWriteGeneration == gen))
 		mWriteCondition.wait(sl);
 }
 
@@ -70,10 +71,11 @@ void HashedObjectStore::bulkWrite()
 			boost::mutex::scoped_lock sl(mWriteMutex);
 			mWriteSet.swap(set);
 			assert(mWriteSet.empty());
+			++mWriteGeneration;
+			mWriteCondition.notify_all();
 			if (set.empty())
 			{
 				mWritePending = false;
-				mWriteCondition.notify_all();
 				return;
 			}
 		}
