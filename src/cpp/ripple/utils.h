@@ -154,7 +154,8 @@ inline std::string strHex(const uint64 uiHost)
 
 inline static std::string sqlEscape(const std::string& strSrc)
 {
-	return str(boost::format("X'%s'") % strHex(strSrc));
+	static boost::format f("X'%s'");
+	return str(f % strHex(strSrc));
 }
 
 template<class Iterator>
