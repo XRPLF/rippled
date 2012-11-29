@@ -161,7 +161,10 @@ public:
 	bool hasTransaction(const uint256& TransID) const { return mTransactionMap->hasItem(TransID); }
 	Transaction::pointer getTransaction(const uint256& transID) const;
 	bool getTransaction(const uint256& transID, Transaction::pointer& txn, TransactionMetaSet::pointer& txMeta);
+
 	static SerializedTransaction::pointer getSTransaction(SHAMapItem::ref, SHAMapTreeNode::TNType);
+	SerializedTransaction::pointer getSMTransaction(SHAMapItem::ref, SHAMapTreeNode::TNType,
+	 TransactionMetaSet::pointer& txMeta);
 
 	// high-level functions
 	AccountState::pointer getAccountState(const RippleAddress& acctID);

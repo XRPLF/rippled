@@ -299,6 +299,29 @@ SerializedTransaction::pointer Ledger::getSTransaction(SHAMapItem::ref item, SHA
 	return SerializedTransaction::pointer();
 }
 
+SerializedTransaction::pointer Ledger::getSMTransaction(SHAMapItem::ref item, SHAMapTreeNode::TNType type,
+	TransactionMetaSet::pointer& txMeta)
+{
+	SerializerIterator sit(item->peekSerializer());
+
+	if (type == SHAMapTreeNode::tnTRANSACTION_NM)
+	{
+		txMeta.reset();
+		return boost::make_shared<SerializedTransaction>(boost::ref(sit));
+	}
+	else if (type == SHAMapTreeNode::tnTRANSACTION_MD)
+	{
+		Serializer sTxn(sit.getVL());
+		SerializerIterator tSit(sTxn);
+
+		txMeta = boost::make_shared<TransactionMetaSet>(item->getTag(), mLedgerSeq, sit.getVL());
+		return boost::make_shared<SerializedTransaction>(boost::ref(tSit));
+	}
+
+	txMeta.reset();
+	return SerializedTransaction::pointer();
+}
+
 bool Ledger::getTransaction(const uint256& txID, Transaction::pointer& txn, TransactionMetaSet::pointer& meta)
 {
 	SHAMapTreeNode::TNType type;
