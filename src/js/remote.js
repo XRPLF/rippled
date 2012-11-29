@@ -485,13 +485,10 @@ Remote.prototype._connect_message = function (ws, json) {
         this.emit('ledger_closed', message.ledger_hash, message.ledger_index);
         break;
 
-      // Account subscription event
-      case 'account':
-        if (this.trace) utils.logObject("remote: account: %s", message);
-        break;
-
+      // All other messages
       default:
-        unexpected  = true;
+        if (this.trace) utils.logObject("remote: "+message.type+": %s", message);
+        this.emit(message.type, message);
         break;
     }
   }
