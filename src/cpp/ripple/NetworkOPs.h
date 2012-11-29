@@ -134,6 +134,9 @@ public:
 
 	uint256			getClosedLedgerHash()					{ return mLedgerMaster->getClosedLedger()->getHash(); }
 
+	// Do we have this inclusive range of ledgers in our database
+	bool haveLedgerRange(uint32 from, uint32 to);
+
 	SerializedValidation::ref getLastValidation()			{ return mLastValidation; }
 	void setLastValidation(SerializedValidation::ref v)		{ mLastValidation = v; }
 

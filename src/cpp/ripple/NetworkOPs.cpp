@@ -81,6 +81,11 @@ uint32 NetworkOPs::getCurrentLedgerID()
 	return mLedgerMaster->getCurrentLedger()->getLedgerSeq();
 }
 
+bool NetworkOPs::haveLedgerRange(uint32 from, uint32 to)
+{
+	return mLedgerMaster->haveLedgerRange(from, to);
+}
+
 void NetworkOPs::submitTransaction(Job&, SerializedTransaction::pointer iTrans, stCallback callback)
 { // this is an asynchronous interface
 	Serializer s;

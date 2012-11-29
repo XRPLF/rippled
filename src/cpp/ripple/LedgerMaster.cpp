@@ -117,6 +117,12 @@ TER LedgerMaster::doTransaction(const SerializedTransaction& txn, TransactionEng
 	return result;
 }
 
+bool LedgerMaster::haveLedgerRange(uint32 from, uint32 to)
+{
+	uint32 prevMissing = mCompleteLedgers.prevMissing(to + 1);
+	return (prevMissing == RangeSet::RangeSetAbsent) || (prevMissing < from);
+}
+
 void LedgerMaster::acquireMissingLedger(const uint256& ledgerHash, uint32 ledgerSeq)
 {
 	mMissingLedger = theApp->getMasterLedgerAcquire().findCreate(ledgerHash);

@@ -93,6 +93,8 @@ public:
 
 	void addHeldTransaction(const Transaction::pointer& trans);
 
+	bool haveLedgerRange(uint32 from, uint32 to);
+
 	void sweep(void) { mLedgerHistory.sweep(); }
 };
 
