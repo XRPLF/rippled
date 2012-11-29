@@ -245,6 +245,7 @@ Transaction::pointer Transaction::transactionFromSQL(const std::string& sql)
 	return tr;
 }
 
+
 Transaction::pointer Transaction::load(const uint256& id)
 {
 	std::string sql = "SELECT LedgerSeq,Status,RawTxn FROM Transactions WHERE TransID='";

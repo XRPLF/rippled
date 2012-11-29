@@ -230,7 +230,7 @@ public:
 	uint256 getConsensusLCL();
 
 	// client information retrieval functions
-	std::vector< std::pair<uint32, uint256> >
+	std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >
 		getAccountTxs(const RippleAddress& account, uint32 minLedger, uint32 maxLedger);
 	std::vector<RippleAddress> getLedgerAffectedAccounts(uint32 ledgerSeq);
 	std::vector<SerializedTransaction> getLedgerTransactions(uint32 ledgerSeq);

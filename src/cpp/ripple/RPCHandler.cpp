@@ -1300,26 +1300,10 @@ Json::Value RPCHandler::doAccountTransactions(const Json::Value& params)
 		//		uint32 currentLedger = 0;
 		for (std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >::iterator it = txns.begin(), end = txns.end(); it != end; ++it)
 		{
-			Json::objectValue obj;
-			obj["tx"]=it->first->getJson(1);
-			obj["meta"]=it->second->getJson(0);
+			Json::Value	obj(Json::objectValue);
+			if(it->first) obj["tx"]=it->first->getJson(1);
+			if(it->second) obj["meta"]=it->second->getJson(0);
 			ret["transactions"].append(obj);
-
-
-			Transaction::pointer txn = theApp->getMasterTransaction().fetch(it->second, true);
-			if (!txn)
-			{
-				ret["transactions"].append(it->second.GetHex());
-			}
-			else
-			{
-				txn->setLedger(it->first);
-				ret["transactions"].append(txn->getJson(1));
-
-				TransactionMetaSet::pointer meta = boost::make_shared<TransactionMetaSet>(
-					stTxn.getTransactionID(), lpAccepted->getLedgerSeq(), it.getVL());
-			}
-
 		}
 		return ret;
 #ifndef DEBUG
