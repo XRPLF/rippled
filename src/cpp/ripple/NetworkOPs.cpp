@@ -876,14 +876,15 @@ void NetworkOPs::setMode(OperatingMode om)
 	mMode = om;
 }
 
-std::vector< std::pair<uint32, uint256> >
-	NetworkOPs::getAffectedAccounts(const RippleAddress& account, uint32 minLedger, uint32 maxLedger)
+
+std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >
+	NetworkOPs::getAccountTxs(const RippleAddress& account, uint32 minLedger, uint32 maxLedger)
 {
-	std::vector< std::pair<uint32, uint256> > affectedAccounts;
+	std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> > ret;
 
 	std::string sql =
-		str(boost::format("SELECT LedgerSeq,TransID FROM AccountTransactions INDEXED BY AcctTxIndex "
-			" WHERE Account = '%s' AND LedgerSeq <= '%d' AND LedgerSeq >= '%d' ORDER BY LedgerSeq LIMIT 1000;")
+		str(boost::format("SELECT LedgerSeq,Status,RawTxn,TxnMeta FROM Transactions where TransID in (SELECT TransID from AccountTransactions  "
+			" WHERE Account = '%s' AND LedgerSeq <= '%d' AND LedgerSeq >= '%d' LIMIT 1000) ORDER BY LedgerSeq;")
 			% account.humanAccountID() % maxLedger	% minLedger);
 
 	{
@@ -892,11 +893,24 @@ std::vector< std::pair<uint32, uint256> >
 
 		SQL_FOREACH(db, sql)
 		{
-			affectedAccounts.push_back(std::make_pair<uint32, uint256>(db->getInt("LedgerSeq"), uint256(db->getStrBinary("TransID"))));
+			Transaction::pointer txn=Transaction::transactionFromSQL(db,false);
+
+			Serializer rawMeta;
+			int metaSize = 2048;
+			rawMeta.resize(metaSize);
+			metaSize = db->getBinary("RawTxn", &*rawMeta.begin(), rawMeta.getLength());
+			if (metaSize > rawMeta.getLength())
+			{
+				rawMeta.resize(metaSize);
+				db->getBinary("RawTxn", &*rawMeta.begin(), rawMeta.getLength());
+			}else rawMeta.resize(metaSize);
+
+			TransactionMetaSet::pointer meta= boost::make_shared<TransactionMetaSet>(txn->getID(), txn->getLedger(), rawMeta.getData());
+			ret.push_back(std::make_pair<Transaction::pointer, TransactionMetaSet::pointer>(txn,meta));
 		}
 	}
 
-	return affectedAccounts;
+	return ret;
 }
 
 std::vector<RippleAddress>
@@ -1076,6 +1090,7 @@ Json::Value NetworkOPs::transJson(const SerializedTransaction& stTxn, TER terRes
 void NetworkOPs::pubAcceptedTransaction(Ledger::ref lpCurrent, const SerializedTransaction& stTxn, TER terResult,TransactionMetaSet::pointer& meta)
 {
 	Json::Value	jvObj	= transJson(stTxn, terResult, true, lpCurrent, "transaction");
+	if(meta) jvObj["meta"]=meta->getJson(0);
 
 	{
 		boost::recursive_mutex::scoped_lock	sl(mMonitorLock);
