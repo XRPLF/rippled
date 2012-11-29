@@ -289,7 +289,7 @@ void ValidationCollection::condWrite()
 
 void ValidationCollection::doWrite()
 {
-	LoadEvent::pointer event = theApp->getJobQueue().getLoadEvent(jtDISK);
+	LoadEvent::autoptr event(theApp->getJobQueue().getLoadEventAP(jtDISK));
 	static boost::format insVal("INSERT INTO LedgerValidations "
 		"(LedgerHash,NodePubKey,Flags,SignTime,Signature) VALUES ('%s','%s','%u','%u',%s);");
 

@@ -888,7 +888,7 @@ std::vector< std::pair<uint32, uint256> >
 
 	{
 		Database* db = theApp->getTxnDB()->getDB();
-		ScopedLock dbLock = theApp->getTxnDB()->getDBLock();
+		ScopedLock sl(theApp->getTxnDB()->getDBLock());
 
 		SQL_FOREACH(db, sql)
 		{
@@ -909,7 +909,7 @@ std::vector<RippleAddress>
 	RippleAddress acct;
 	{
 		Database* db = theApp->getTxnDB()->getDB();
-		ScopedLock dblock = theApp->getTxnDB()->getDBLock();
+		ScopedLock sl(theApp->getTxnDB()->getDBLock());
 		SQL_FOREACH(db, sql)
 		{
 			if (acct.setAccountID(db->getStrBinary("Account")))
@@ -1002,7 +1002,7 @@ void NetworkOPs::pubLedger(Ledger::ref lpAccepted)
 	if (NetworkOPs::omDISCONNECTED == getOperatingMode())
 		return;
 
-	LoadEvent::pointer event = theApp->getJobQueue().getLoadEvent(jtPUBLEDGER);
+	LoadEvent::autoptr event(theApp->getJobQueue().getLoadEventAP(jtPUBLEDGER));
 
 	{
 		boost::recursive_mutex::scoped_lock	sl(mMonitorLock);

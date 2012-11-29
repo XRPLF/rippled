@@ -70,6 +70,19 @@ var stringToArray = function (s) {
   return a;
 };
 
+var chunkString = function (str, n, leftAlign) {
+  var ret = [];
+  var i=0, len=str.length;
+  if (leftAlign) {
+    i = str.length % n;
+    if (i) ret.push(str.slice(0, i));
+  }
+  for(; i < len; i += n) {
+    ret.push(str.slice(i, n+i));
+  }
+  return ret;
+};
+
 var logObject = function (msg, obj) {
   console.log(msg, JSON.stringify(obj, undefined, 2));
 };
@@ -81,5 +94,6 @@ exports.hexToString   = hexToString;
 exports.stringToArray = stringToArray;
 exports.stringToHex   = stringToHex;
 exports.logObject     = logObject;
+exports.chunkString   = chunkString;
 
 // vim:sw=2:sts=2:ts=8:et

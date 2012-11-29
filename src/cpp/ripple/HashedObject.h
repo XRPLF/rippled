@@ -47,8 +47,9 @@ class HashedObjectStore
 protected:
 	TaggedCache<uint256, HashedObject> mCache;
 
-	boost::mutex mWriteMutex;
-	boost::condition_variable mWriteCondition;
+	boost::mutex				mWriteMutex;
+	boost::condition_variable	mWriteCondition;
+	int							mWriteGeneration;
 
 	std::vector< boost::shared_ptr<HashedObject> > mWriteSet;
 	bool mWritePending;

@@ -39,23 +39,16 @@ var Request = function (remote, command) {
   };
   this.remote     = remote;
   this.requested  = false;
-
-  this.on('request', function () {
-      self.request_default();
-    });
 };
 
 Request.prototype  = new EventEmitter;
 
 // Send the request to a remote.
 Request.prototype.request = function (remote) {
-  this.emit('request', remote);
-};
-
-Request.prototype.request_default = function () {
   if (!this.requested) {
     this.requested  = true;
     this.remote.request(this);
+    this.emit('request', remote);
   }
 };
 
@@ -595,7 +588,8 @@ Remote.prototype.request_ledger_entry = function (type) {
     this.type = type;
 
   // Transparent caching:
-  request.on('request', function (remote) {           // Intercept default request.
+  this.request_default = this.request;
+  this.request = function () {                        // Intercept default request.
     if (self._ledger_hash) {
       // XXX Add caching.
     }
@@ -613,7 +607,7 @@ Remote.prototype.request_ledger_entry = function (type) {
 
       if (node) {
         // Emulate fetch of ledger entry.
-        this.request.emit('success', {
+        self.emit('success', {
             // YYY Missing lots of fields.
             'node' :  node,
           });
@@ -637,7 +631,7 @@ Remote.prototype.request_ledger_entry = function (type) {
         this.request_default();
       }
     }
-  });
+  };
 
   return request;
 };
