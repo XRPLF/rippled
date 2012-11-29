@@ -1292,14 +1292,20 @@ Json::Value RPCHandler::doAccountTransactions(const Json::Value& params)
 	try
 	{
 #endif
-		std::vector< std::pair<uint32, uint256> > txns = mNetOps->getAffectedAccounts(account, minLedger, maxLedger);
+		std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> > txns = mNetOps->getAccountTxs(account, minLedger, maxLedger);
 		Json::Value ret(Json::objectValue);
 		ret["account"] = account.humanAccountID();
 		Json::Value ledgers(Json::arrayValue);
 
 		//		uint32 currentLedger = 0;
-		for (std::vector< std::pair<uint32, uint256> >::iterator it = txns.begin(), end = txns.end(); it != end; ++it)
+		for (std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >::iterator it = txns.begin(), end = txns.end(); it != end; ++it)
 		{
+			Json::objectValue obj;
+			obj["tx"]=it->first->getJson(1);
+			obj["meta"]=it->second->getJson(0);
+			ret["transactions"].append(obj);
+
+
 			Transaction::pointer txn = theApp->getMasterTransaction().fetch(it->second, true);
 			if (!txn)
 			{
@@ -1309,6 +1315,9 @@ Json::Value RPCHandler::doAccountTransactions(const Json::Value& params)
 			{
 				txn->setLedger(it->first);
 				ret["transactions"].append(txn->getJson(1));
+
+				TransactionMetaSet::pointer meta = boost::make_shared<TransactionMetaSet>(
+					stTxn.getTransactionID(), lpAccepted->getLedgerSeq(), it.getVL());
 			}
 
 		}
