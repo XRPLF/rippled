@@ -13,7 +13,7 @@ const char *TxnDBInit[] = {
 		FromSeq		BIGINT UNSIGNED,			\
 		LedgerSeq	BIGINT UNSIGNED,			\
 		Status		CHARACTER(1),				\
-		RawTxn		BLOB						\
+		RawTxn		BLOB,						\
 		TxnMeta		BLOB						\
 	);",
 	"CREATE TABLE PubKeys (						\
