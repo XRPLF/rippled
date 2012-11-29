@@ -107,11 +107,16 @@ public:
 		return this;
 	}
 
+	int getIndex() { return mIndex; };
+
 	PathState(
 		const STAmount&			saSend,
 		const STAmount&			saSendMax,
 		const Ledger::ref		lrLedger = Ledger::pointer()
 	) : mLedger(lrLedger), saInReq(saSendMax), saOutReq(saSend) { ; }
+
+	PathState(const PathState& psSrc, bool bUnsed)
+	 : mLedger(psSrc.mLedger), saInReq(psSrc.saInReq), saOutReq(psSrc.saOutReq) { ; }
 
 	void setExpanded(
 		const LedgerEntrySet&	lesSource,
@@ -121,29 +126,14 @@ public:
 		);
 
 	void setCanonical(
-		PathState::ref			pspExpanded
+		const PathState&		psExpanded
 		);
 
 	Json::Value	getJson() const;
 
-	static PathState::pointer createExpanded(
-		const LedgerEntrySet&	lesSource,
-		const STPath&			spSourcePath,
-		const uint160&			uReceiverID,
-		const uint160&			uSenderID,
-		const STAmount&			saSend,
-		const STAmount&			saSendMax
-		)
-	{
-		PathState::pointer	pspNew	= boost::make_shared<PathState>(saSend, saSendMax, lesSource.getLedgerRef());
-
-		pspNew->setExpanded(lesSource, spSourcePath, uReceiverID, uSenderID);
-
-		return pspNew;
-	}
-
+#if 0
 	static PathState::pointer createCanonical(
-		PathState::ref		pspExpanded
+		PathState&ref		pspExpanded
 		)
 	{
 		PathState::pointer	pspNew	= boost::make_shared<PathState>(pspExpanded->saOutAct, pspExpanded->saInAct);
@@ -152,8 +142,8 @@ public:
 
 		return pspNew;
 	}
-
-	static bool lessPriority(PathState::ref lhs, PathState::ref rhs);
+#endif
+	static bool lessPriority(PathState& lhs, PathState& rhs);
 };
 
 class RippleCalc
@@ -168,18 +158,18 @@ public:
 	// If the transaction fails to meet some constraint, still need to delete unfunded offers.
 	boost::unordered_set<uint256>	musUnfundedFound;	// Offers that were found unfunded.
 
-	void				pathNext(PathState::ref pspCur, const int iPaths, const LedgerEntrySet& lesCheckpoint, LedgerEntrySet& lesCurrent);
-	TER					calcNode(const unsigned int uNode, PathState::ref pspCur, const bool bMultiQuality);
-	TER					calcNodeRev(const unsigned int uNode, PathState::ref pspCur, const bool bMultiQuality);
-	TER					calcNodeFwd(const unsigned int uNode, PathState::ref pspCur, const bool bMultiQuality);
-	TER					calcNodeOfferRev(const unsigned int uNode, PathState::ref pspCur, const bool bMultiQuality);
-	TER					calcNodeOfferFwd(const unsigned int uNode, PathState::ref pspCur, const bool bMultiQuality);
-	TER					calcNodeAccountRev(const unsigned int uNode, PathState::ref pspCur, const bool bMultiQuality);
-	TER					calcNodeAccountFwd(const unsigned int uNode, PathState::ref pspCur, const bool bMultiQuality);
-	TER					calcNodeAdvance(const unsigned int uNode, PathState::ref pspCur, const bool bMultiQuality, const bool bReverse);
+	void				pathNext(PathState& psCur, const int iPaths, const LedgerEntrySet& lesCheckpoint, LedgerEntrySet& lesCurrent);
+	TER					calcNode(const unsigned int uNode, PathState& psCur, const bool bMultiQuality);
+	TER					calcNodeRev(const unsigned int uNode, PathState& psCur, const bool bMultiQuality);
+	TER					calcNodeFwd(const unsigned int uNode, PathState& psCur, const bool bMultiQuality);
+	TER					calcNodeOfferRev(const unsigned int uNode, PathState& psCur, const bool bMultiQuality);
+	TER					calcNodeOfferFwd(const unsigned int uNode, PathState& psCur, const bool bMultiQuality);
+	TER					calcNodeAccountRev(const unsigned int uNode, PathState& psCur, const bool bMultiQuality);
+	TER					calcNodeAccountFwd(const unsigned int uNode, PathState& psCur, const bool bMultiQuality);
+	TER					calcNodeAdvance(const unsigned int uNode, PathState& psCur, const bool bMultiQuality, const bool bReverse);
 	TER					calcNodeDeliverRev(
 							const unsigned int			uNode,
-							PathState::ref				pspCur,
+							PathState&					psCur,
 							const bool					bMultiQuality,
 							const uint160&				uOutAccountID,
 							const STAmount&				saOutReq,
@@ -187,7 +177,7 @@ public:
 
 	TER					calcNodeDeliverFwd(
 							const unsigned int			uNode,
-							PathState::ref				pspCur,
+							PathState&					psCur,
 							const bool					bMultiQuality,
 							const uint160&				uInAccountID,
 							const STAmount&				saInReq,
@@ -202,19 +192,22 @@ public:
 	RippleCalc(LedgerEntrySet& lesNodes) : lesActive(lesNodes) { ; }
 
 	static TER rippleCalc(
-		LedgerEntrySet&		lesActive,
-			  STAmount&		saMaxAmountAct,
-			  STAmount&		saDstAmountAct,
-		const STAmount&		saDstAmountReq,
-		const STAmount&		saMaxAmountReq,
-		const uint160&		uDstAccountID,
-		const uint160&		uSrcAccountID,
-		const STPathSet&	spsPaths,
-		const bool			bPartialPayment,
-		const bool			bLimitQuality,
-		const bool			bNoRippleDirect,
-		const bool			bStandAlone
+		LedgerEntrySet&					lesActive,
+			  STAmount&					saMaxAmountAct,
+			  STAmount&					saDstAmountAct,
+			  std::vector<PathState::pointer>&	vpsExpanded,
+		const STAmount&					saDstAmountReq,
+		const STAmount&					saMaxAmountReq,
+		const uint160&					uDstAccountID,
+		const uint160&					uSrcAccountID,
+		const STPathSet&				spsPaths,
+		const bool						bPartialPayment,
+		const bool						bLimitQuality,
+		const bool						bNoRippleDirect,
+		const bool						bStandAlone
 		);
+
+	static void setCanonical(STPathSet& spsDst, const std::vector<PathState::pointer>& vpsExpanded);
 };
 
 #endif
