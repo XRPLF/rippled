@@ -134,13 +134,6 @@ void Application::run()
 	else
 		startNewLedger();
 
-	if (theConfig.FULL_HISTORY && (theConfig.START_UP != Config::LOAD))
-	{
-		Ledger::pointer ledger = Ledger::getLastFullLedger();
-		if (ledger)
-			mLedgerMaster.setLedgerRangePresent(0, ledger->getLedgerSeq());
-	}
-
 	//
 	// Begin validation and ip maintenance.
 	// - Wallet maintains local information: including identity and network connection persistence information.

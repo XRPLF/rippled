@@ -108,7 +108,7 @@ public:
 	int							FEE_CONTRACT_OPERATION; // fee for each contract operation
 
 	// Node storage configuration
-	bool						FULL_HISTORY;
+	uint32						LEDGER_HISTORY;
 
 	// Client behavior
 	int							ACCOUNT_PROBE_MAX;		// How far to scan for accounts.

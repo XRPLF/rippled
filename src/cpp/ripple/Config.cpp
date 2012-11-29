@@ -3,6 +3,7 @@
 #include "utils.h"
 
 #include <boost/lexical_cast.hpp>
+#include <boost/algorithm/string.hpp>
 #include <fstream>
 #include <iostream>
 #include <algorithm>
@@ -14,7 +15,7 @@
 #define SECTION_FEE_NICKNAME_CREATE		"fee_nickname_create"
 #define SECTION_FEE_OFFER				"fee_offer"
 #define SECTION_FEE_OPERATION			"fee_operation"
-#define SECTION_FULL_HISTORY			"full_history"
+#define SECTION_LEDGER_HISTORY			"ledger_history"
 #define SECTION_IPS						"ips"
 #define SECTION_NETWORK_QUORUM			"network_quorum"
 #define SECTION_PEER_CONNECT_LOW_WATER	"peer_connect_low_water"
@@ -157,7 +158,7 @@ void Config::setup(const std::string& strConf)
 	FEE_DEFAULT				= DEFAULT_FEE_DEFAULT;
 	FEE_CONTRACT_OPERATION  = DEFAULT_FEE_OPERATION;
 
-	FULL_HISTORY			= false;
+	LEDGER_HISTORY			= 256;
 
 	ACCOUNT_PROBE_MAX		= 10;
 
@@ -292,8 +293,16 @@ void Config::load()
 			if (sectionSingleB(secConfig, SECTION_FEE_OPERATION, strTemp))
 				FEE_CONTRACT_OPERATION	= boost::lexical_cast<int>(strTemp);
 
-			if (sectionSingleB(secConfig, SECTION_FULL_HISTORY, strTemp))
-				FULL_HISTORY = boost::lexical_cast<bool>(strTemp);
+			if (sectionSingleB(secConfig, SECTION_LEDGER_HISTORY, strTemp))
+			{
+				boost::to_lower(strTemp);
+				if ((strTemp == "no") || (strTemp == "none") || (strTemp == "off") || (strTemp == "false"))
+					LEDGER_HISTORY = 0;
+				else if ((strTemp == "yes") || (strTemp == "full") || (strTemp == "on") || (strTemp == "-1"))
+					LEDGER_HISTORY = 1000000000u;
+				else
+					LEDGER_HISTORY = boost::lexical_cast<uint32>(strTemp);
+			}
 
 			if (sectionSingleB(secConfig, SECTION_ACCOUNT_PROBE_MAX, strTemp))
 				ACCOUNT_PROBE_MAX	= boost::lexical_cast<int>(strTemp);
