@@ -644,8 +644,16 @@ void LedgerConsensus::stateAccepted()
 	endConsensus();
 }
 
+extern volatile bool doShutdown;
+
 void LedgerConsensus::timerEntry()
 {
+	if (doShutdown)
+	{
+		cLog(lsFATAL) << "Shutdown requested";
+		theApp->stop();
+	}
+
 	if ((mState != lcsFINISHED) && (mState != lcsACCEPTED))
 		checkLCL();
 
@@ -1251,7 +1259,7 @@ void LedgerConsensus::accept(SHAMap::ref set, LoadEvent::pointer)
 		cLog(lsINFO) << "CNF newLCL " << newLCLHash;
 
 	Ledger::pointer newOL = boost::make_shared<Ledger>(true, boost::ref(*newLCL));
-	ScopedLock sl = theApp->getLedgerMaster().getLock();
+	ScopedLock sl( theApp->getLedgerMaster().getLock());
 
 	// Apply disputed transactions that didn't get in
 	TransactionEngine engine(newOL);

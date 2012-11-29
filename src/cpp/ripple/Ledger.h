@@ -19,6 +19,7 @@
 #include "BitcoinUtil.h"
 #include "SHAMap.h"
 #include "InstanceCounter.h"
+#include "LoadMonitor.h"
 
 enum LedgerStateParms
 {
@@ -93,7 +94,7 @@ protected:
 
 	static void incPendingSaves();
 	static void decPendingSaves();
-	void saveAcceptedLedger(bool fromConsensus);
+	void saveAcceptedLedger(bool fromConsensus, LoadEvent::pointer);
 
 public:
 	Ledger(const RippleAddress& masterID, uint64 startAmount); // used for the starting bootstrap ledger

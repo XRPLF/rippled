@@ -6,16 +6,18 @@
 #include <boost/make_shared.hpp>
 #include <boost/ref.hpp>
 
+typedef boost::recursive_mutex::scoped_lock ScopedLock;
+
 // A lock holder that can be returned and copied by value
 // When the last reference goes away, the lock is released
 
-class ScopedLock
+class SharedScopedLock
 {
 protected:
 	mutable boost::shared_ptr<boost::recursive_mutex::scoped_lock> mHolder;
 
 public:
-	ScopedLock(boost::recursive_mutex& mutex) :
+	SharedScopedLock(boost::recursive_mutex& mutex) :
 		mHolder(boost::make_shared<boost::recursive_mutex::scoped_lock>(boost::ref(mutex)))	{ ;	}
 
 	void lock() const	{ mHolder->lock(); }
