@@ -299,6 +299,29 @@ SerializedTransaction::pointer Ledger::getSTransaction(SHAMapItem::ref item, SHA
 	return SerializedTransaction::pointer();
 }
 
+SerializedTransaction::pointer Ledger::getSMTransaction(SHAMapItem::ref item, SHAMapTreeNode::TNType type,
+	TransactionMetaSet::pointer& txMeta)
+{
+	SerializerIterator sit(item->peekSerializer());
+
+	if (type == SHAMapTreeNode::tnTRANSACTION_NM)
+	{
+		txMeta.reset();
+		return boost::make_shared<SerializedTransaction>(boost::ref(sit));
+	}
+	else if (type == SHAMapTreeNode::tnTRANSACTION_MD)
+	{
+		Serializer sTxn(sit.getVL());
+		SerializerIterator tSit(sTxn);
+
+		txMeta = boost::make_shared<TransactionMetaSet>(item->getTag(), mLedgerSeq, sit.getVL());
+		return boost::make_shared<SerializedTransaction>(boost::ref(tSit));
+	}
+
+	txMeta.reset();
+	return SerializedTransaction::pointer();
+}
+
 bool Ledger::getTransaction(const uint256& txID, Transaction::pointer& txn, TransactionMetaSet::pointer& meta)
 {
 	SHAMapTreeNode::TNType type;
@@ -339,9 +362,8 @@ uint256 Ledger::getHash()
 	return mHash;
 }
 
-void Ledger::saveAcceptedLedger(bool fromConsensus)
+void Ledger::saveAcceptedLedger(bool fromConsensus, LoadEvent::pointer event)
 { // can be called in a different thread
-	LoadEvent::pointer event = theApp->getJobQueue().getLoadEvent(jtDISK);
 	cLog(lsTRACE) << "saveAcceptedLedger " << (fromConsensus ? "fromConsensus " : "fromAcquire ") << getLedgerSeq();
 	static boost::format ledgerExists("SELECT LedgerSeq FROM Ledgers where LedgerSeq = %d;");
 	static boost::format deleteLedger("DELETE FROM Ledgers WHERE LedgerSeq = %d;");
@@ -369,7 +391,7 @@ void Ledger::saveAcceptedLedger(bool fromConsensus)
 
 		SHAMap& txSet = *peekTransactionMap();
 		Database *db = theApp->getTxnDB()->getDB();
-		ScopedLock dbLock = theApp->getTxnDB()->getDBLock();
+		ScopedLock dbLock(theApp->getTxnDB()->getDBLock());
 		db->executeSQL("BEGIN TRANSACTION;");
 		SHAMapTreeNode::TNType type;
 		for (SHAMapItem::pointer item = txSet.peekFirstItem(type); !!item;
@@ -439,7 +461,7 @@ void Ledger::saveAcceptedLedger(bool fromConsensus)
 	}
 
 	theApp->getLedgerMaster().setFullLedger(shared_from_this());
-	event = LoadEvent::pointer();
+	event->stop();
 
 	theApp->getOPs().pubLedger(shared_from_this());
 
@@ -1136,7 +1158,8 @@ void Ledger::pendSave(bool fromConsensus)
 	if (!fromConsensus && !theApp->isNewFlag(getHash(), SF_SAVED))
 		return;
 
-	boost::thread thread(boost::bind(&Ledger::saveAcceptedLedger, shared_from_this(), fromConsensus));
+	boost::thread thread(boost::bind(&Ledger::saveAcceptedLedger, shared_from_this(),
+		fromConsensus, theApp->getJobQueue().getLoadEvent(jtDISK)));
 	thread.detach();
 
 	boost::recursive_mutex::scoped_lock sl(sPendingSaveLock);

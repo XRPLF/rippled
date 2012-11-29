@@ -35,7 +35,7 @@ public:
 	DatabaseCon(const std::string& name, const char *initString[], int countInit);
 	~DatabaseCon();
 	Database* getDB() { return mDatabase; }
-	ScopedLock getDBLock() { return ScopedLock(mLock); }
+	boost::recursive_mutex& getDBLock() { return mLock; }
 };
 
 class Application

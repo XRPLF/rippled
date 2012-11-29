@@ -12,7 +12,7 @@ SETUP_LOG();
 DECLARE_INSTANCE(HashedObject);
 
 HashedObjectStore::HashedObjectStore(int cacheSize, int cacheAge) :
-	mCache("HashedObjectStore", cacheSize, cacheAge), mWritePending(false)
+	mCache("HashedObjectStore", cacheSize, cacheAge), mWriteGeneration(0), mWritePending(false)
 {
 	mWriteSet.reserve(128);
 }
@@ -53,27 +53,29 @@ bool HashedObjectStore::store(HashedObjectType type, uint32 index,
 
 void HashedObjectStore::waitWrite()
 {
-	boost::unique_lock<boost::mutex> sl(mWriteMutex);
-	while (mWritePending)
+	boost::mutex::scoped_lock sl(mWriteMutex);
+	int gen = mWriteGeneration;
+	while (mWritePending && (mWriteGeneration == gen))
 		mWriteCondition.wait(sl);
 }
 
 void HashedObjectStore::bulkWrite()
 {
-	LoadEvent::pointer event = theApp->getJobQueue().getLoadEvent(jtDISK);
+	LoadEvent::autoptr event(theApp->getJobQueue().getLoadEventAP(jtDISK));
 	while (1)
 	{
 		std::vector< boost::shared_ptr<HashedObject> > set;
 		set.reserve(128);
 
 		{
-			boost::unique_lock<boost::mutex> sl(mWriteMutex);
+			boost::mutex::scoped_lock sl(mWriteMutex);
 			mWriteSet.swap(set);
 			assert(mWriteSet.empty());
+			++mWriteGeneration;
+			mWriteCondition.notify_all();
 			if (set.empty())
 			{
 				mWritePending = false;
-				mWriteCondition.notify_all();
 				return;
 			}
 		}
@@ -85,7 +87,7 @@ void HashedObjectStore::bulkWrite()
 
 		Database* db = theApp->getHashNodeDB()->getDB();
 		{
-			ScopedLock sl = theApp->getHashNodeDB()->getDBLock();
+			ScopedLock sl( theApp->getHashNodeDB()->getDBLock());
 
 			db->executeSQL("BEGIN TRANSACTION;");
 

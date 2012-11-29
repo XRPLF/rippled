@@ -19,6 +19,7 @@
 #include "BitcoinUtil.h"
 #include "SHAMap.h"
 #include "InstanceCounter.h"
+#include "LoadMonitor.h"
 
 enum LedgerStateParms
 {
@@ -93,7 +94,7 @@ protected:
 
 	static void incPendingSaves();
 	static void decPendingSaves();
-	void saveAcceptedLedger(bool fromConsensus);
+	void saveAcceptedLedger(bool fromConsensus, LoadEvent::pointer);
 
 public:
 	Ledger(const RippleAddress& masterID, uint64 startAmount); // used for the starting bootstrap ledger
@@ -160,7 +161,10 @@ public:
 	bool hasTransaction(const uint256& TransID) const { return mTransactionMap->hasItem(TransID); }
 	Transaction::pointer getTransaction(const uint256& transID) const;
 	bool getTransaction(const uint256& transID, Transaction::pointer& txn, TransactionMetaSet::pointer& txMeta);
+
 	static SerializedTransaction::pointer getSTransaction(SHAMapItem::ref, SHAMapTreeNode::TNType);
+	SerializedTransaction::pointer getSMTransaction(SHAMapItem::ref, SHAMapTreeNode::TNType,
+	 TransactionMetaSet::pointer& txMeta);
 
 	// high-level functions
 	AccountState::pointer getAccountState(const RippleAddress& acctID);
