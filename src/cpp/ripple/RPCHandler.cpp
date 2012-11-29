@@ -1303,25 +1303,18 @@ Json::Value RPCHandler::doAccountTransactions(const Json::Value& params)
 	try
 	{
 #endif
-		std::vector< std::pair<uint32, uint256> > txns = mNetOps->getAffectedAccounts(account, minLedger, maxLedger);
+		std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> > txns = mNetOps->getAccountTxs(account, minLedger, maxLedger);
 		Json::Value ret(Json::objectValue);
 		ret["account"] = account.humanAccountID();
 		Json::Value ledgers(Json::arrayValue);
 
 		//		uint32 currentLedger = 0;
-		for (std::vector< std::pair<uint32, uint256> >::iterator it = txns.begin(), end = txns.end(); it != end; ++it)
+		for (std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >::iterator it = txns.begin(), end = txns.end(); it != end; ++it)
 		{
-			Transaction::pointer txn = theApp->getMasterTransaction().fetch(it->second, true);
-			if (!txn)
-			{
-				ret["transactions"].append(it->second.GetHex());
-			}
-			else
-			{
-				txn->setLedger(it->first);
-				ret["transactions"].append(txn->getJson(1));
-			}
-
+			Json::Value	obj(Json::objectValue);
+			if(it->first) obj["tx"]=it->first->getJson(1);
+			if(it->second) obj["meta"]=it->second->getJson(0);
+			ret["transactions"].append(obj);
 		}
 		return ret;
 #ifndef DEBUG

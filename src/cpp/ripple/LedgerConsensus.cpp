@@ -644,8 +644,16 @@ void LedgerConsensus::stateAccepted()
 	endConsensus();
 }
 
+extern volatile bool doShutdown;
+
 void LedgerConsensus::timerEntry()
 {
+	if (doShutdown)
+	{
+		cLog(lsFATAL) << "Shutdown requested";
+		theApp->stop();
+	}
+
 	if ((mState != lcsFINISHED) && (mState != lcsACCEPTED))
 		checkLCL();
 

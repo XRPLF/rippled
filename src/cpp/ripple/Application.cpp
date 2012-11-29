@@ -71,8 +71,24 @@ static void InitDB(DatabaseCon** dbCon, const char *fileName, const char *dbInit
 	*dbCon = new DatabaseCon(fileName, dbInit, dbCount);
 }
 
+volatile bool doShutdown = false;
+
+#ifdef SIGINT
+void sigIntHandler(int)
+{
+	doShutdown = true;
+}
+#endif
+
 void Application::run()
 {
+#ifdef SIGINT
+	struct sigaction sa;
+	memset(&sa, 0, sizeof(sa));
+	sa.sa_handler = sigIntHandler;
+	sigaction(SIGINT, &sa, NULL);
+#endif
+
 	assert(mTxnDB == NULL);
 	if (!theConfig.DEBUG_LOGFILE.empty())
 	{ // Let DEBUG messages go to the file but only WARNING or higher to regular output (unless verbose)
@@ -117,13 +133,6 @@ void Application::run()
 	}
 	else
 		startNewLedger();
-
-	if (theConfig.FULL_HISTORY && (theConfig.START_UP != Config::LOAD))
-	{
-		Ledger::pointer ledger = Ledger::getLastFullLedger();
-		if (ledger)
-			mLedgerMaster.setLedgerRangePresent(0, ledger->getLedgerSeq());
-	}
 
 	//
 	// Begin validation and ip maintenance.

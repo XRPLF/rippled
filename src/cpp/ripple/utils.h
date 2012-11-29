@@ -158,6 +158,12 @@ inline static std::string sqlEscape(const std::string& strSrc)
 	return str(f % strHex(strSrc));
 }
 
+inline static std::string sqlEscape(const std::vector<unsigned char>& vecSrc)
+{
+	static boost::format f("X'%s'");
+	return str(f % strHex(vecSrc));
+}
+
 template<class Iterator>
 bool isZero(Iterator first, int iSize)
 {
