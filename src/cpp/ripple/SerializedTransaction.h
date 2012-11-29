@@ -77,6 +77,12 @@ public:
 	std::string getSQL(uint32 inLedger, char status) const;
 	std::string getSQL(Serializer rawTxn, uint32 inLedger, char status) const;
 
+	// SQL Functions with metadata
+	static std::string getMetaSQLValueHeader();
+	static std::string getMetaSQLInsertHeader();
+	std::string getMetaSQL(uint32 inLedger, const std::string& escapedMetaData) const;
+	std::string getMetaSQL(Serializer rawTxn, uint32 inLedger, char status, const std::string& escapedMetaData) const;
+
 };
 
 #endif

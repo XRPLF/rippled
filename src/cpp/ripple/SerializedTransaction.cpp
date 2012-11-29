@@ -183,9 +183,19 @@ std::string SerializedTransaction::getSQLValueHeader()
 	return "(TransID, TransType, FromAcct, FromSeq, LedgerSeq, Status, RawTxn)";
 }
 
+std::string SerializedTransaction::getMetaSQLValueHeader()
+{
+	return "(TransID, TransType, FromAcct, FromSeq, LedgerSeq, Status, RawTxn, TxnMeta)";
+}
+
 std::string SerializedTransaction::getSQLInsertHeader()
 {
 	return "INSERT INTO Transactions " + getSQLValueHeader() + " VALUES ";
+}
+
+std::string SerializedTransaction::getMetaSQLInsertHeader()
+{
+	return "INSERT INTO Transactions " + getMetaSQLValueHeader() + " VALUES ";
 }
 
 std::string SerializedTransaction::getSQL(uint32 inLedger, char status) const
@@ -195,14 +205,34 @@ std::string SerializedTransaction::getSQL(uint32 inLedger, char status) const
 	return getSQL(s, inLedger, status);
 }
 
+std::string SerializedTransaction::getMetaSQL(uint32 inLedger, const std::string& escapedMetaData) const
+{
+	Serializer s;
+	add(s);
+	return getMetaSQL(s, inLedger, TXN_SQL_VALIDATED, escapedMetaData);
+}
+
 std::string SerializedTransaction::getSQL(Serializer rawTxn, uint32 inLedger, char status) const
 {
+	static boost::format bfTrans("('%s', '%s', '%s', '%d', '%d', '%c', %s)");
 	std::string rTxn;
 	theApp->getTxnDB()->getDB()->escape(
 		reinterpret_cast<const unsigned char *>(rawTxn.getDataPtr()), rawTxn.getLength(), rTxn);
-	return str(boost::format("('%s', '%s', '%s', '%d', '%d', '%c', %s)")
+	return str(bfTrans
 		% getTransactionID().GetHex() % getTransactionType() % getSourceAccount().humanAccountID()
 		% getSequence() % inLedger % status % rTxn);
+}
+
+std::string SerializedTransaction::getMetaSQL(Serializer rawTxn, uint32 inLedger, char status,
+	const std::string& escapedMetaData) const
+{
+	static boost::format bfTrans("('%s', '%s', '%s', '%d', '%d', '%c', %s, %s)");
+	std::string rTxn;
+	theApp->getTxnDB()->getDB()->escape(
+		reinterpret_cast<const unsigned char *>(rawTxn.getDataPtr()), rawTxn.getLength(), rTxn);
+	return str(bfTrans
+		% getTransactionID().GetHex() % getTransactionType() % getSourceAccount().humanAccountID()
+		% getSequence() % inLedger % status % rTxn % escapedMetaData);
 }
 
 
