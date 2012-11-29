@@ -369,7 +369,8 @@ void Ledger::saveAcceptedLedger(bool fromConsensus, LoadEvent::pointer event)
 	static boost::format deleteLedger("DELETE FROM Ledgers WHERE LedgerSeq = %d;");
 	static boost::format AcctTransExists("SELECT LedgerSeq FROM AccountTransactions WHERE TransId = '%s';");
 	static boost::format transExists("SELECT Status FROM Transactions WHERE TransID = '%s';");
-	static boost::format updateTx("UPDATE Transactions SET LedgerSeq = %d, Status = '%c' WHERE TransID = '%s';");
+	static boost::format
+		updateTx("UPDATE Transactions SET LedgerSeq = %d, Status = '%c', TxnMeta = %s WHERE TransID = '%s';");
 	static boost::format addLedger("INSERT INTO Ledgers "
 		"(LedgerHash,LedgerSeq,PrevHash,TotalCoins,ClosingTime,PrevClosingTime,CloseTimeRes,CloseFlags,"
 		"AccountSetHash,TransSetHash) VALUES ('%s','%u','%s','%s','%u','%u','%d','%u','%s','%s');");
@@ -397,14 +398,20 @@ void Ledger::saveAcceptedLedger(bool fromConsensus, LoadEvent::pointer event)
 		for (SHAMapItem::pointer item = txSet.peekFirstItem(type); !!item;
 			item = txSet.peekNextItem(item->getTag(), type))
 		{
-			SerializedTransaction::pointer txn	= getSTransaction(item, type);
-			assert(txn);
+			assert(type == SHAMapTreeNode::tnTRANSACTION_MD);
+			SerializerIterator sit(item->peekSerializer());
+			Serializer rawTxn(sit.getVL());
+			std::string escMeta(sqlEscape(sit.getVL()));
+
+			SerializerIterator txnIt(rawTxn);
+			SerializedTransaction txn(txnIt);
+			assert(txn.getTransactionID() == item->getTag());
 
 			// Make sure transaction is in AccountTransactions.
 			if (!SQL_EXISTS(db, boost::str(AcctTransExists % item->getTag().GetHex())))
 			{
 				// Transaction not in AccountTransactions
-				std::vector<RippleAddress> accts = txn->getAffectedAccounts();
+				std::vector<RippleAddress> accts = txn.getAffectedAccounts();
 
 				std::string sql = "INSERT INTO AccountTransactions (TransID, Account, LedgerSeq) VALUES ";
 				bool first = true;
@@ -417,7 +424,7 @@ void Ledger::saveAcceptedLedger(bool fromConsensus, LoadEvent::pointer event)
 						sql += "('";
 						first = false;
 					}
-					sql += txn->getTransactionID().GetHex();
+					sql += txn.getTransactionID().GetHex();
 					sql += "','";
 					sql += it->humanAccountID();
 					sql += "',";
@@ -429,19 +436,20 @@ void Ledger::saveAcceptedLedger(bool fromConsensus, LoadEvent::pointer event)
 				db->executeSQL(sql); // may already be in there
 			}
 
-			if (SQL_EXISTS(db, boost::str(transExists %	txn->getTransactionID().GetHex())))
+			if (SQL_EXISTS(db, boost::str(transExists %	txn.getTransactionID().GetHex())))
 			{
-				// In Transactions, update LedgerSeq and Status.
+				// In Transactions, update LedgerSeq, metadata and Status.
 				db->executeSQL(boost::str(updateTx
 					% getLedgerSeq()
 					% TXN_SQL_VALIDATED
-					% txn->getTransactionID().GetHex()));
+					% escMeta
+					% txn.getTransactionID().GetHex()));
 			}
 			else
 			{
 				// Not in Transactions, insert the whole thing..
 				db->executeSQL(
-					txn->getSQLInsertHeader() + txn->getSQL(getLedgerSeq(), TXN_SQL_VALIDATED) + ";");
+					txn.getMetaSQLInsertHeader() + txn.getMetaSQL(getLedgerSeq(), escMeta) + ";");
 			}
 		}
 		db->executeSQL("COMMIT TRANSACTION;");
