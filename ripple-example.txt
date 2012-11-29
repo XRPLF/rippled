@@ -91,6 +91,13 @@
 # [currencies]:
 #   This section allows a site to declare currencies it currently issues.
 #
+# [ledger_history]:
+#   To serve clients, servers need historical ledger data. This sets the number of
+#   past ledgers to acquire on server startup and the minimum to maintain while
+#   running. Servers that don't need to serve clients can set this to "none" or "off".
+#   Servers that want complete history can set this to "full" or "on".
+#   The default is 256 ledgers.
+
 
 [validation_public_key]
 n9MZTnHe5D5Q2cgE8oV2usFwRqhUvEA8MwP5Mu1XVD6TxmssPRev
