@@ -488,7 +488,7 @@ Remote.prototype._connect_message = function (ws, json) {
       // All other messages
       default:
         if (this.trace) utils.logObject("remote: "+message.type+": %s", message);
-        this.emit(message.type, message);
+        this.emit('net_'+message.type, message);
         break;
     }
   }
