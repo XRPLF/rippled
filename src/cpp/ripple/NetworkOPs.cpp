@@ -1079,6 +1079,7 @@ Json::Value NetworkOPs::transJson(const SerializedTransaction& stTxn, TER terRes
 	if (bAccepted) {
 		jvObj["ledger_index"]			= lpCurrent->getLedgerSeq();
 		jvObj["ledger_hash"]			= lpCurrent->getHash().ToString();
+		jvObj["transaction"]["date"]	= lpCurrent->getCloseTimeNC();
 	}
 	else
 	{
