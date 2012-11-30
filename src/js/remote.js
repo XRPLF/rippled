@@ -769,8 +769,8 @@ Remote.prototype.submit = function (transaction) {
       submit_request.tx_json(transaction.tx_json);
       submit_request.secret(transaction.secret);
 
-      if (transaction.build_path)
-        submit_request.build_path = true;
+      if (transaction._build_path)
+        submit_request.message.build_path = true;
 
       // Forward successes and errors.
       submit_request.on('success', function (message) { transaction.emit('success', message); });
@@ -1082,7 +1082,7 @@ var Transaction = function (remote) {
   this.callback     = undefined;
   this.remote       = remote;
   this.secret       = undefined;
-  this.build_path   = true;
+  this._build_path  = false;
   this.tx_json      = {                 // Transaction data.
     'Flags' : 0,                        // XXX Would be nice if server did not require this.
   };
@@ -1270,8 +1270,11 @@ Transaction.prototype.submit = function (callback) {
 // Set options for Transactions
 //
 
+// --> build: true, to have server blindly construct a path.
+//
+// "blindly" because the sender has no idea of the actual cost except that is must be less than send max.
 Transaction.prototype.build_path = function (build) {
-  this.build_path = build;
+  this._build_path = build;
 
   return this;
 }
@@ -1439,7 +1442,7 @@ Transaction.prototype.password_fund = function (src, dst) {
 Transaction.prototype.password_set = function (src, authorized_key, generator, public_key, signature) {
   this.secret                   = this._account_secret(src);
   this.tx_json.TransactionType  = 'PasswordSet';
-  this.tx_json.RegularKey    = authorized_key;
+  this.tx_json.RegularKey       = authorized_key;
   this.tx_json.Generator        = generator;
   this.tx_json.PublicKey        = public_key;
   this.tx_json.Signature        = signature;
