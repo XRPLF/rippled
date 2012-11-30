@@ -24,6 +24,7 @@
 // there's a functional network.
 
 SETUP_LOG();
+DECLARE_INSTANCE(InfoSub);
 
 NetworkOPs::NetworkOPs(boost::asio::io_service& io_service, LedgerMaster* pLedgerMaster) :
 	mMode(omDISCONNECTED), mNeedNetworkLedger(false), mNetTimer(io_service), mLedgerMaster(pLedgerMaster),

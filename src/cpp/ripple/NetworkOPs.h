@@ -20,7 +20,9 @@
 class Peer;
 class LedgerConsensus;
 
-class InfoSub
+DEFINE_INSTANCE(InfoSub);
+
+class InfoSub : public IS_INSTANCE(InfoSub)
 {
 public:
 
