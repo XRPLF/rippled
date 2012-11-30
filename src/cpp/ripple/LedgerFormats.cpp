@@ -46,6 +46,12 @@ static bool LEFInit()
 		;
 
 	DECLARE_LEF(DirectoryNode, ltDIR_NODE)
+		<< SOElement(sfOwner,				SOE_OPTIONAL)	// for owner directories
+		<< SOElement(sfTakerPaysCurrency,	SOE_OPTIONAL)	// for order book directories
+		<< SOElement(sfTakerPaysIssuer,		SOE_OPTIONAL)	// for order book directories
+		<< SOElement(sfTakerGetsCurrency,	SOE_OPTIONAL)	// for order book directories
+		<< SOElement(sfTakerGetsIssuer,		SOE_OPTIONAL)	// for order book directories
+		<< SOElement(sfExhangeRate,			SOE_OPTIONAL)	// for order book directories
 		<< SOElement(sfIndexes,				SOE_REQUIRED)
 		<< SOElement(sfRootIndex,			SOE_REQUIRED)
 		<< SOElement(sfIndexNext,			SOE_OPTIONAL)

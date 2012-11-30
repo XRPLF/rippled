@@ -262,7 +262,7 @@ public:
 	// Directories are doubly linked lists of nodes.
 
 	// Given a directory root and and index compute the index of a node.
-	static uint256 getDirNodeIndex(const uint256& uDirRoot, const uint64 uNodeIndex=0);
+	static uint256 getDirNodeIndex(const uint256& uDirRoot, const uint64 uNodeIndex = 0);
 
 	// Return a node: root or normal
 	SLE::pointer getDirNode(LedgerStateParms& parms, const uint256& uNodeIndex);
@@ -271,7 +271,7 @@ public:
 	// Quality
 	//
 
-	static uint256	getQualityIndex(const uint256& uBase, const uint64 uNodeDir=0);
+	static uint256	getQualityIndex(const uint256& uBase, const uint64 uNodeDir = 0);
 	static uint256	getQualityNext(const uint256& uBase);
 	static uint64	getQuality(const uint256& uBase);
 
