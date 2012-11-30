@@ -194,7 +194,7 @@ var Remote = function (opts, trace) {
   this.stand_alone            = undefined;
   this.online_target          = false;
   this.online_state           = 'closed';         // 'open', 'closed', 'connecting', 'closing'
-  this.state                  = 'offline';  // 'online', 'offline'
+  this.state                  = 'offline';        // 'online', 'offline'
   this.retry_timer            = undefined;
   this.retry                  = undefined;
 
@@ -592,17 +592,21 @@ Remote.prototype.request_ledger_entry = function (type) {
     request.request_default = request.request;
 
     request.request         = function () {                        // Intercept default request.
+      var bDefault  = true;
       // .self = Remote
       // this = Request
 
       // console.log('request_ledger_entry: caught');
 
-      // if (self._ledger_hash) {
-      //   // XXX Add caching.
-      // }
+
+      if (self._ledger_hash) {
+        // A specific ledger is requested.
+
+        // XXX Add caching.
+      }
       // else if (req.ledger_index)
       // else if ('ripple_state' === request.type)         // YYY Could be cached per ledger.
-      if ('account_root' === type) {
+      else if ('account_root' === type) {
         var cache = self.ledgers.current.account_root;
 
         if (!cache)
@@ -619,6 +623,8 @@ Remote.prototype.request_ledger_entry = function (type) {
               // YYY Missing lots of fields.
               'node' :  node,
             });
+
+          bDefault  = false;
         }
         else {
           // Was not cached.
@@ -637,10 +643,12 @@ Remote.prototype.request_ledger_entry = function (type) {
               // This type not cached.
               // console.log('request_ledger_entry: non-cached type');
           }
-
-          // console.log('request_ledger_entry: invoking');
-          request.request_default();
         }
+      }
+
+      if (bDefault) {
+        // console.log('request_ledger_entry: invoking');
+        request.request_default();
       }
     }
   };
@@ -1491,7 +1499,7 @@ Transaction.prototype.wallet_add = function (src, amount, authorized_key, public
   this.secret                   = this._account_secret(src);
   this.tx_json.TransactionType  = 'WalletAdd';
   this.tx_json.Amount           = Amount.json_rewrite(amount);
-  this.tx_json.RegularKey    = authorized_key;
+  this.tx_json.RegularKey       = authorized_key;
   this.tx_json.PublicKey        = public_key;
   this.tx_json.Signature        = signature;
 
