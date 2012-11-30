@@ -263,6 +263,7 @@ public:
 
 	// Given a directory root and and index compute the index of a node.
 	static uint256 getDirNodeIndex(const uint256& uDirRoot, const uint64 uNodeIndex = 0);
+	static void ownerDirDescriber(SLE::ref, const uint160& owner);
 
 	// Return a node: root or normal
 	SLE::pointer getDirNode(LedgerStateParms& parms, const uint256& uNodeIndex);
@@ -274,6 +275,10 @@ public:
 	static uint256	getQualityIndex(const uint256& uBase, const uint64 uNodeDir = 0);
 	static uint256	getQualityNext(const uint256& uBase);
 	static uint64	getQuality(const uint256& uBase);
+	static void		qualityDirDescriber(SLE::ref,
+		const uint160& uTakerPaysCurrency, const uint160& uTakerPaysIssuer,
+		const uint160& uTakerGetsCurrency, const uint160& uTakerGetsIssuer,
+		const uint64& uRate);
 
 	//
 	// Ripple functions : credit lines

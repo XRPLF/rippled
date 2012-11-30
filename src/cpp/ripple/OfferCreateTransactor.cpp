@@ -1,5 +1,7 @@
 #include "OfferCreateTransactor.h"
+
 #include <boost/foreach.hpp>
+#include <boost/bind.hpp>
 
 // Take as much as possible. Adjusts account balances. Charges fees on top to taker.
 // -->   uBookBase: The order book to take against.
@@ -387,7 +389,9 @@ TER OfferCreateTransactor::doApply()
 			% saTakerGets.getFullText());
 
 		// Add offer to owner's directory.
-		terResult	= mEngine->getNodes().dirAdd(uOwnerNode, Ledger::getOwnerDirIndex(mTxnAccountID), uLedgerIndex);
+		terResult	= mEngine->getNodes().dirAdd(uOwnerNode, Ledger::getOwnerDirIndex(mTxnAccountID), uLedgerIndex,
+			boost::bind(&Ledger::qualityDirDescriber, _1, saTakerPays.getCurrency(), uPaysIssuerID,
+				saTakerGets.getCurrency(), uGetsIssuerID, uRate));
 
 		if (tesSUCCESS == terResult)
 		{
@@ -403,7 +407,9 @@ TER OfferCreateTransactor::doApply()
 			uDirectory	= Ledger::getQualityIndex(uBookBase, uRate);	// Use original rate.
 
 			// Add offer to order book.
-			terResult	= mEngine->getNodes().dirAdd(uBookNode, uDirectory, uLedgerIndex);
+			terResult	= mEngine->getNodes().dirAdd(uBookNode, uDirectory, uLedgerIndex,
+				boost::bind(&Ledger::qualityDirDescriber, _1, saTakerPays.getCurrency(), uPaysIssuerID,
+					saTakerGets.getCurrency(), uGetsIssuerID, uRate));
 		}
 
 		if (tesSUCCESS == terResult)

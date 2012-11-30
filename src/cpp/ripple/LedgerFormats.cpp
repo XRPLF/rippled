@@ -51,7 +51,7 @@ static bool LEFInit()
 		<< SOElement(sfTakerPaysIssuer,		SOE_OPTIONAL)	// for order book directories
 		<< SOElement(sfTakerGetsCurrency,	SOE_OPTIONAL)	// for order book directories
 		<< SOElement(sfTakerGetsIssuer,		SOE_OPTIONAL)	// for order book directories
-		<< SOElement(sfExhangeRate,			SOE_OPTIONAL)	// for order book directories
+		<< SOElement(sfExchangeRate,		SOE_OPTIONAL)	// for order book directories
 		<< SOElement(sfIndexes,				SOE_REQUIRED)
 		<< SOElement(sfRootIndex,			SOE_REQUIRED)
 		<< SOElement(sfIndexNext,			SOE_OPTIONAL)

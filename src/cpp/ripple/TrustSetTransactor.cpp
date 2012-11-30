@@ -1,5 +1,7 @@
 #include "TrustSetTransactor.h"
 
+#include <boost/bind.hpp>
+
 TER TrustSetTransactor::doApply()
 {
 	TER			terResult		= tesSUCCESS;
@@ -135,10 +137,18 @@ TER TrustSetTransactor::doApply()
 
 		uint64			uSrcRef;							// Ignored, dirs never delete.
 
-		terResult	= mEngine->getNodes().dirAdd(uSrcRef, Ledger::getOwnerDirIndex(mTxnAccountID), sleRippleState->getIndex());
+		terResult	= mEngine->getNodes().dirAdd(
+			uSrcRef,
+			Ledger::getOwnerDirIndex(mTxnAccountID),
+			sleRippleState->getIndex(),
+			boost::bind(&Ledger::ownerDirDescriber, _1, mTxnAccountID));
 
 		if (tesSUCCESS == terResult)
-			terResult	= mEngine->getNodes().dirAdd(uSrcRef, Ledger::getOwnerDirIndex(uDstAccountID), sleRippleState->getIndex());
+			terResult	= mEngine->getNodes().dirAdd(
+				uSrcRef,
+				Ledger::getOwnerDirIndex(uDstAccountID),
+				sleRippleState->getIndex(),
+				boost::bind(&Ledger::ownerDirDescriber, _1, uDstAccountID));
 	}
 
 	Log(lsINFO) << "doTrustSet<";

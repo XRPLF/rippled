@@ -492,9 +492,10 @@ void LedgerEntrySet::calcRawMeta(Serializer& s, TER result, uint32 index)
 // We only append. This allow for things that watch append only structure to just monitor from the last node on ward.
 // Within a node with no deletions order of elements is sequential.  Otherwise, order of elements is random.
 TER LedgerEntrySet::dirAdd(
-	uint64&							uNodeDir,
-	const uint256&					uRootIndex,
-	const uint256&					uLedgerIndex)
+	uint64&								uNodeDir,
+	const uint256&						uRootIndex,
+	const uint256&						uLedgerIndex,
+	boost::function<void (SLE::ref)>	fDescriber)
 {
 	SLE::pointer		sleNode;
 	STVector256			svIndexes;
@@ -505,6 +506,7 @@ TER LedgerEntrySet::dirAdd(
 		// No root, make it.
 		sleRoot		= entryCreate(ltDIR_NODE, uRootIndex);
 		sleRoot->setFieldH256(sfRootIndex, uRootIndex);
+		fDescriber(sleRoot);
 
 		sleNode		= sleRoot;
 		uNodeDir	= 0;
@@ -566,6 +568,8 @@ TER LedgerEntrySet::dirAdd(
 			// Create the new node.
 			sleNode		= entryCreate(ltDIR_NODE, Ledger::getDirNodeIndex(uRootIndex, uNodeDir));
 			sleNode->setFieldH256(sfRootIndex, uRootIndex);
+			fDescriber(sleNode);
+
 			svIndexes	= STVector256();
 		}
 	}
