@@ -779,13 +779,14 @@ Json::Value RPCHandler::doRipplePathFind(const Json::Value& jvRequest)
 				return rpcError(rpcINVALID_PARAMS);
 			}
 
-			STPathSet	spsPaths;
+			STPathSet						spsComputed;
+			std::vector<PathState::pointer>	vpsExpanded;
 
-			Pathfinder pf(raSrc, raDst, uSrcCurrencyID, uSrcIssuerID, saDstAmount);
+			Pathfinder				pf(raSrc, raDst, uSrcCurrencyID, uSrcIssuerID, saDstAmount);
 
-			pf.findPaths(5, 1, spsPaths, true);
+			pf.findPaths(5, 1, spsComputed, true);
 
-			if (spsPaths.isEmpty())
+			if (spsComputed.isEmpty())
 			{
 				cLog(lsDEBUG) << "ripple_path_find: No paths found.";
 			}
@@ -804,9 +805,9 @@ Json::Value RPCHandler::doRipplePathFind(const Json::Value& jvRequest)
 					saMaxAmount.negate();
 
 				// Strip empty/default path.
-				if (1 == spsPaths.size() && !spsPaths.begin()->size())
+				if (1 == spsComputed.size() && !spsComputed.begin()->size())
 				{
-					spsPaths.clear();
+					spsComputed.clear();
 				}
 
 				TER	terResult	=
@@ -814,11 +815,12 @@ Json::Value RPCHandler::doRipplePathFind(const Json::Value& jvRequest)
 						lesSnapshot,
 						saMaxAmountAct,
 						saDstAmountAct,
+						vpsExpanded,
 						saMaxAmount,			// --> Amount to send is unlimited to get an estimate.
 						saDstAmount,			// --> Amount to deliver.
 						raDst.getAccountID(),	// --> Account to deliver to.
 						raSrc.getAccountID(),	// --> Account sending from.
-						spsPaths,				// --> Path set.
+						spsComputed,			// --> Path set.
 						false,					// --> Don't allow partial payment. This is for normal fill or kill payments.
 												// Must achive delivery goal.
 						false,					// --> Don't limit quality. Average quality is wanted for normal payments.
@@ -836,8 +838,13 @@ Json::Value RPCHandler::doRipplePathFind(const Json::Value& jvRequest)
 				{
 					Json::Value	jvEntry(Json::objectValue);
 
+					STPathSet	spsCanonical;
+
+					RippleCalc::setCanonical(spsCanonical, vpsExpanded);
+
 					jvEntry["source_amount"]	= saMaxAmountAct.getJson(0);
-					jvEntry["paths_expanded"]	= spsPaths.getJson(0);
+//					jvEntry["paths_expanded"]	= spsExpanded.getJson(0);
+					jvEntry["paths_canonical"]	= spsCanonical.getJson(0);
 
 					jvArray.append(jvEntry);
 				}
@@ -852,13 +859,17 @@ Json::Value RPCHandler::doRipplePathFind(const Json::Value& jvRequest)
 						<< boost::str(boost::format("ripple_path_find: %s %s %s")
 							% strToken
 							% strHuman
-							% spsPaths.getJson(0));
+							% spsComputed.getJson(0));
 				}
 			}
 		}
 
 		jvResult["alternatives"] = jvArray;
 	}
+
+	cLog(lsDEBUG)
+		<< boost::str(boost::format("ripple_path_find< %s")
+			% jvResult);
 
 	return jvResult;
 }

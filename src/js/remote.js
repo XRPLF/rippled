@@ -194,7 +194,7 @@ var Remote = function (opts, trace) {
   this.stand_alone            = undefined;
   this.online_target          = false;
   this.online_state           = 'closed';         // 'open', 'closed', 'connecting', 'closing'
-  this.state                  = 'offline';  // 'online', 'offline'
+  this.state                  = 'offline';        // 'online', 'offline'
   this.retry_timer            = undefined;
   this.retry                  = undefined;
 
@@ -581,51 +581,71 @@ Remote.prototype.request_ledger_entry = function (type) {
   var self    = this;
   var request = new Request(this, 'ledger_entry');
 
-  if (type)
-    this.type = type;
-
+  // Transparent caching. When .request() is invoked, look in the Remote object for the result.
+  // If not found, listen, cache result, and emit it.
+  //
   // Transparent caching:
-  this.request_default = this.request;
-  this.request = function () {                        // Intercept default request.
-    if (self._ledger_hash) {
-      // XXX Add caching.
-    }
-    // else if (req.ledger_index)
-    // else if ('ripple_state' === this.type)         // YYY Could be cached per ledger.
-    else if ('account_root' === this.type) {
-      var cache = self.ledgers.current.account_root;
+  if ('account_root' === type) {
+    request.request_default = request.request;
 
-      if (!cache)
-      {
-        cache = self.ledgers.current.account_root = {};
+    request.request         = function () {                        // Intercept default request.
+      var bDefault  = true;
+      // .self = Remote
+      // this = Request
+
+      // console.log('request_ledger_entry: caught');
+
+
+      if (self._ledger_hash) {
+        // A specific ledger is requested.
+
+        // XXX Add caching.
       }
+      // else if (req.ledger_index)
+      // else if ('ripple_state' === request.type)         // YYY Could be cached per ledger.
+      else if ('account_root' === type) {
+        var cache = self.ledgers.current.account_root;
 
-      var node = self.ledgers.current.account_root[request.message.account_root];
-
-      if (node) {
-        // Emulate fetch of ledger entry.
-        self.emit('success', {
-            // YYY Missing lots of fields.
-            'node' :  node,
-          });
-      }
-      else {
-        // Was not cached.
-
-        // XXX Only allow with trusted mode.  Must sync response with advance.
-        switch (response.type) {
-          case 'account_root':
-            request.on('success', function (message) {
-                // Cache node.
-                self.ledgers.current.account_root[message.node.Account] = message.node;
-              });
-            break;
-
-          default:
-            // This type not cached.
+        if (!cache)
+        {
+          cache = self.ledgers.current.account_root = {};
         }
 
-        this.request_default();
+        var node = self.ledgers.current.account_root[request.message.account_root];
+
+        if (node) {
+          // Emulate fetch of ledger entry.
+          // console.log('request_ledger_entry: emulating');
+          request.emit('success', {
+              // YYY Missing lots of fields.
+              'node' :  node,
+            });
+
+          bDefault  = false;
+        }
+        else {
+          // Was not cached.
+
+          // XXX Only allow with trusted mode.  Must sync response with advance.
+          switch (type) {
+            case 'account_root':
+              request.on('success', function (message) {
+                  // Cache node.
+                  // console.log('request_ledger_entry: caching');
+                  self.ledgers.current.account_root[message.node.Account] = message.node;
+                });
+              break;
+
+            default:
+              // This type not cached.
+              // console.log('request_ledger_entry: non-cached type');
+          }
+        }
+      }
+
+      if (bDefault) {
+        // console.log('request_ledger_entry: invoking');
+        request.request_default();
       }
     }
   };
@@ -1476,7 +1496,7 @@ Transaction.prototype.wallet_add = function (src, amount, authorized_key, public
   this.secret                   = this._account_secret(src);
   this.tx_json.TransactionType  = 'WalletAdd';
   this.tx_json.Amount           = Amount.json_rewrite(amount);
-  this.tx_json.RegularKey    = authorized_key;
+  this.tx_json.RegularKey       = authorized_key;
   this.tx_json.PublicKey        = public_key;
   this.tx_json.Signature        = signature;
 

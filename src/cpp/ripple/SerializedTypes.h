@@ -570,10 +570,10 @@ public:
 	};
 
 protected:
-	int		mType;
-	uint160 mAccountID;
-	uint160 mCurrencyID;
-	uint160 mIssuerID;
+	unsigned int	mType;
+	uint160			mAccountID;
+	uint160			mCurrencyID;
+	uint160			mIssuerID;
 
 public:
 	STPathElement(const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID,
@@ -584,6 +584,12 @@ public:
 			(uAccountID.isZero() ? 0 : STPathElement::typeAccount)
 			| ((uCurrencyID.isZero() && !forceCurrency) ? 0 : STPathElement::typeCurrency)
 			| (uIssuerID.isZero() ? 0 : STPathElement::typeIssuer);
+	}
+
+	STPathElement(unsigned int uType, const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID)
+		: mType(uType), mAccountID(uAccountID), mCurrencyID(uCurrencyID), mIssuerID(uIssuerID)
+	{
+		;
 	}
 
 	int getNodeType() const				{ return mType; }
@@ -634,6 +640,8 @@ public:
 	std::vector<STPathElement>::const_iterator end() const		{ return mPath.end(); }
 
 	bool operator==(const STPath& t) const						{ return mPath == t.mPath; }
+
+	void setCanonical(const STPath& spExpanded);
 };
 
 inline std::vector<STPathElement>::iterator range_begin(STPath & x)
