@@ -296,9 +296,9 @@ void Config::load()
 			if (sectionSingleB(secConfig, SECTION_LEDGER_HISTORY, strTemp))
 			{
 				boost::to_lower(strTemp);
-				if ((strTemp == "no") || (strTemp == "none") || (strTemp == "off") || (strTemp == "false"))
+				if (strTemp == "none")
 					LEDGER_HISTORY = 0;
-				else if ((strTemp == "yes") || (strTemp == "full") || (strTemp == "on") || (strTemp == "-1"))
+				else if (strTemp == "full")
 					LEDGER_HISTORY = 1000000000u;
 				else
 					LEDGER_HISTORY = boost::lexical_cast<uint32>(strTemp);
