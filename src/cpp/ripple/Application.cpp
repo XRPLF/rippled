@@ -83,10 +83,13 @@ void sigIntHandler(int)
 void Application::run()
 {
 #ifdef SIGINT
-	struct sigaction sa;
-	memset(&sa, 0, sizeof(sa));
-	sa.sa_handler = sigIntHandler;
-	sigaction(SIGINT, &sa, NULL);
+	if (!config.RUN_STANDALONE)
+	{
+		struct sigaction sa;
+		memset(&sa, 0, sizeof(sa));
+		sa.sa_handler = sigIntHandler;
+		sigaction(SIGINT, &sa, NULL);
+	}
 #endif
 
 	assert(mTxnDB == NULL);
