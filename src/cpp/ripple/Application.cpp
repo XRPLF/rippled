@@ -82,11 +82,13 @@ void sigIntHandler(int)
 
 void Application::run()
 {
+#ifndef WIN32
 #ifdef SIGINT
 	struct sigaction sa;
 	memset(&sa, 0, sizeof(sa));
 	sa.sa_handler = sigIntHandler;
 	sigaction(SIGINT, &sa, NULL);
+#endif
 #endif
 
 	assert(mTxnDB == NULL);
