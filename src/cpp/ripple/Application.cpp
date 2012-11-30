@@ -84,7 +84,7 @@ void Application::run()
 {
 #ifndef WIN32
 #ifdef SIGINT
-	if (!config.RUN_STANDALONE)
+	if (!theConfig.RUN_STANDALONE)
 	{
 		struct sigaction sa;
 		memset(&sa, 0, sizeof(sa));
