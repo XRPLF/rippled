@@ -1182,7 +1182,7 @@ void Ledger::decPendingSaves()
 
 void Ledger::ownerDirDescriber(SLE::ref sle, const uint160& owner)
 {
-	sle->setFieldH160(sfOwner, owner);
+	sle->setFieldAccount(sfOwner, owner);
 }
 
 void Ledger::qualityDirDescriber(SLE::ref sle,
