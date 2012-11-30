@@ -903,11 +903,11 @@ std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >
 			Serializer rawMeta;
 			int metaSize = 2048;
 			rawMeta.resize(metaSize);
-			metaSize = db->getBinary("RawTxn", &*rawMeta.begin(), rawMeta.getLength());
+			metaSize = db->getBinary("TxnMeta", &*rawMeta.begin(), rawMeta.getLength());
 			if (metaSize > rawMeta.getLength())
 			{
 				rawMeta.resize(metaSize);
-				db->getBinary("RawTxn", &*rawMeta.begin(), rawMeta.getLength());
+				db->getBinary("TxnMeta", &*rawMeta.begin(), rawMeta.getLength());
 			}else rawMeta.resize(metaSize);
 
 			TransactionMetaSet::pointer meta= boost::make_shared<TransactionMetaSet>(txn->getID(), txn->getLedger(), rawMeta.getData());
