@@ -115,6 +115,7 @@ TER PaymentTransactor::doApply()
 		// Ripple payment
 
 		STPathSet	spsPaths = mTxn.getFieldPathSet(sfPaths);
+		std::vector<PathState::pointer>	vpsExpanded;
 		STAmount	saMaxAmountAct;
 		STAmount	saDstAmountAct;
 
@@ -124,6 +125,7 @@ TER PaymentTransactor::doApply()
 				mEngine->getNodes(),
 				saMaxAmountAct,
 				saDstAmountAct,
+				vpsExpanded,
 				saMaxAmount,
 				saDstAmount,
 				uDstAccountID,

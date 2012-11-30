@@ -82,6 +82,7 @@ void sigIntHandler(int)
 
 void Application::run()
 {
+#ifndef WIN32
 #ifdef SIGINT
 	if (!config.RUN_STANDALONE)
 	{
@@ -90,6 +91,7 @@ void Application::run()
 		sa.sa_handler = sigIntHandler;
 		sigaction(SIGINT, &sa, NULL);
 	}
+#endif
 #endif
 
 	assert(mTxnDB == NULL);
