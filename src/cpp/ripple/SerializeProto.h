@@ -65,6 +65,7 @@
 	FIELD(BookNode,				UINT64, 3)
 	FIELD(OwnerNode,			UINT64, 4)
 	FIELD(BaseFee,				UINT64, 5)
+	FIELD(ExchangeRate,			UINT64, 6)
 
 	// 128-bit
 	FIELD(EmailHash,			HASH128, 1)
@@ -83,6 +84,12 @@
 	FIELD(BookDirectory,		HASH256, 16)
 	FIELD(InvoiceID,			HASH256, 17)
 	FIELD(Nickname,				HASH256, 18)
+
+	// 160-bit (common)
+	FIELD(TakerPaysCurrency,	HASH160, 1)
+	FIELD(TakerPaysIssuer,		HASH160, 2)
+	FIELD(TakerGetsCurrency,	HASH160, 3)
+	FIELD(TakerGetsIssuer,		HASH160, 4)
 
 	// currency amount (common)
 	FIELD(Amount,				AMOUNT, 1)

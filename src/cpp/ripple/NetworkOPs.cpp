@@ -24,6 +24,7 @@
 // there's a functional network.
 
 SETUP_LOG();
+DECLARE_INSTANCE(InfoSub);
 
 NetworkOPs::NetworkOPs(boost::asio::io_service& io_service, LedgerMaster* pLedgerMaster) :
 	mMode(omDISCONNECTED), mNeedNetworkLedger(false), mNetTimer(io_service), mLedgerMaster(pLedgerMaster),
@@ -1079,6 +1080,7 @@ Json::Value NetworkOPs::transJson(const SerializedTransaction& stTxn, TER terRes
 	if (bAccepted) {
 		jvObj["ledger_index"]			= lpCurrent->getLedgerSeq();
 		jvObj["ledger_hash"]			= lpCurrent->getHash().ToString();
+		jvObj["transaction"]["date"]	= lpCurrent->getCloseTimeNC();
 	}
 	else
 	{

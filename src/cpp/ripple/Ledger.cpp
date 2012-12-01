@@ -1180,4 +1180,22 @@ void Ledger::decPendingSaves()
 	--sPendingSaves;
 }
 
+void Ledger::ownerDirDescriber(SLE::ref sle, const uint160& owner)
+{
+	sle->setFieldAccount(sfOwner, owner);
+}
+
+void Ledger::qualityDirDescriber(SLE::ref sle,
+	const uint160& uTakerPaysCurrency, const uint160& uTakerPaysIssuer,
+	const uint160& uTakerGetsCurrency, const uint160& uTakerGetsIssuer,
+	const uint64& uRate)
+{
+	sle->setFieldH160(sfTakerPaysCurrency, uTakerPaysCurrency);
+	sle->setFieldH160(sfTakerPaysIssuer, uTakerPaysIssuer);
+	sle->setFieldH160(sfTakerGetsCurrency, uTakerGetsCurrency);
+	sle->setFieldH160(sfTakerGetsIssuer, uTakerGetsIssuer);
+	sle->setFieldU64(sfExchangeRate, uRate);
+}
+
+
 // vim:ts=4
