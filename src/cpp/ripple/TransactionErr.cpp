@@ -39,6 +39,7 @@ bool transResultInfo(TER terCode, std::string& strToken, std::string& strHuman)
 		{	temDST_NEEDED,			"temDST_NEEDED",			"Destination not specified."							},
 		{	temINSUF_FEE_P,			"temINSUF_FEE_P",			"Fee not allowed."										},
 		{	temINVALID,				"temINVALID",				"The transaction is ill-formed."						},
+		{	temINVALID_FLAG,		"temINVALID_FLAG",			"The transaction has an invalid flag."					},
 		{	temREDUNDANT,			"temREDUNDANT",				"Sends same currency to self."							},
 		{	temRIPPLE_EMPTY,		"temRIPPLE_EMPTY",			"PathSet with no paths."								},
 		{	temUNCERTAIN,			"temUNCERTAIN",				"In process of determining result. Never returned."		},

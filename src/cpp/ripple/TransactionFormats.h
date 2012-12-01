@@ -63,5 +63,7 @@ const uint32 tfPartialPayment		= 0x00020000;
 const uint32 tfLimitQuality			= 0x00040000;
 const uint32 tfNoRippleDirect		= 0x00080000;
 
+const uint32 tfPaymentMask			= ~(tfCreateAccount|tfPartialPayment|tfLimitQuality|tfNoRippleDirect);
+
 #endif
 // vim:ts=4

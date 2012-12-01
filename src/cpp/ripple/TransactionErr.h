@@ -41,6 +41,7 @@ enum TER	// aka TransactionEngineResult
 	temDST_NEEDED,
 	temINSUF_FEE_P,
 	temINVALID,
+	temINVALID_FLAG,
 	temREDUNDANT,
 	temRIPPLE_EMPTY,
 	temUNCERTAIN,		// An intermediate result used internally, should never be returned.

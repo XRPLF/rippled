@@ -40,27 +40,33 @@ TER PaymentTransactor::doApply()
 		% saMaxAmount.getFullText()
 		% saDstAmount.getFullText());
 
-	if (!uDstAccountID)
+	if (uTxFlags & tfPaymentMask)
 	{
-		Log(lsINFO) << "doPayment: Invalid transaction: Payment destination account not specified.";
+		Log(lsINFO) << "doPayment: Malformed transaction: Invalid flags set.";
+
+		return temINVALID_FLAG;
+	}
+	else if (!uDstAccountID)
+	{
+		Log(lsINFO) << "doPayment: Malformed transaction: Payment destination account not specified.";
 
 		return temDST_NEEDED;
 	}
 	else if (bMax && !saMaxAmount.isPositive())
 	{
-		Log(lsINFO) << "doPayment: Invalid transaction: bad max amount: " << saMaxAmount.getFullText();
+		Log(lsINFO) << "doPayment: Malformed transaction: bad max amount: " << saMaxAmount.getFullText();
 
 		return temBAD_AMOUNT;
 	}
 	else if (!saDstAmount.isPositive())
 	{
-		Log(lsINFO) << "doPayment: Invalid transaction: bad dst amount: " << saDstAmount.getFullText();
+		Log(lsINFO) << "doPayment: Malformed transaction: bad dst amount: " << saDstAmount.getFullText();
 
 		return temBAD_AMOUNT;
 	}
 	else if (mTxnAccountID == uDstAccountID && uSrcCurrency == uDstCurrency && !bPaths)
 	{
-		Log(lsINFO) << boost::str(boost::format("doPayment: Invalid transaction: Redundant transaction: src=%s, dst=%s, src_cur=%s, dst_cur=%s")
+		Log(lsINFO) << boost::str(boost::format("doPayment: Malformed transaction: Redundant transaction: src=%s, dst=%s, src_cur=%s, dst_cur=%s")
 			% mTxnAccountID.ToString()
 			% uDstAccountID.ToString()
 			% uSrcCurrency.ToString()
@@ -72,7 +78,7 @@ TER PaymentTransactor::doApply()
 		&& ((saMaxAmount == saDstAmount && saMaxAmount.getCurrency() == saDstAmount.getCurrency())
 		|| (saDstAmount.isNative() && saMaxAmount.isNative())))
 	{
-		Log(lsINFO) << "doPayment: Invalid transaction: bad SendMax.";
+		Log(lsINFO) << "doPayment: Malformed transaction: bad SendMax.";
 
 		return temINVALID;
 	}
@@ -84,7 +90,7 @@ TER PaymentTransactor::doApply()
 		if (bCreate && !saDstAmount.isNative())
 		{
 			// This restriction could be relaxed.
-			Log(lsINFO) << "doPayment: Invalid transaction: Create account may only fund XRP.";
+			Log(lsINFO) << "doPayment: Malformed transaction: Create account may only fund XRP.";
 
 			return temCREATEXRP;
 		}
