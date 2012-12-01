@@ -54,6 +54,7 @@ Json::Value RPCHandler::rpcError(int iError)
 		{ rpcNO_EVENTS,				"noEvents",			"Current transport does not support events."			},
 		{ rpcNO_GEN_DECRPYT,		"noGenDectypt",		"Password failed to decrypt master public generator."	},
 		{ rpcNO_NETWORK,			"noNetwork",		"Network not available."								},
+		{ rpcNO_PATH,				"noPath",			"Unable to find a ripple path."							},
 		{ rpcNO_PERMISSION,			"noPermission",		"You don't have permission for this command."			},
 		{ rpcNOT_STANDALONE,		"notStandAlone",	"Operation valid in debug mode only."					},
 		{ rpcPASSWD_CHANGED,		"passwdChanged",	"Wrong key, password changed."							},
@@ -784,9 +785,7 @@ Json::Value RPCHandler::doRipplePathFind(const Json::Value& jvRequest)
 
 			Pathfinder				pf(raSrc, raDst, uSrcCurrencyID, uSrcIssuerID, saDstAmount);
 
-			pf.findPaths(5, 1, spsComputed, true);
-
-			if (spsComputed.isEmpty())
+			if (!pf.findPaths(5, 1, spsComputed))
 			{
 				cLog(lsDEBUG) << "ripple_path_find: No paths found.";
 			}
@@ -804,11 +803,7 @@ Json::Value RPCHandler::doRipplePathFind(const Json::Value& jvRequest)
 					1);
 					saMaxAmount.negate();
 
-				// Strip empty/default path.
-				if (1 == spsComputed.size() && !spsComputed.begin()->size())
-				{
-					spsComputed.clear();
-				}
+				cLog(lsDEBUG) << "ripple_path_find: PATHS: " << spsComputed.size();
 
 				TER	terResult	=
 					RippleCalc::rippleCalc(
@@ -955,51 +950,54 @@ Json::Value RPCHandler::handleJSONSubmit(const Json::Value& jvRequest)
 				txJSON["Fee"] = (int) theConfig.FEE_ACCOUNT_CREATE;
 		}
 
-		if (!txJSON.isMember("Paths") && jvRequest.isMember("build_path"))
+		if (!txJSON.isMember("Paths") && txJSON.isMember("Amount") && jvRequest.isMember("build_path"))
 		{
-			if (txJSON["Amount"].isObject() || txJSON.isMember("SendMax"))
-			{  // we need a ripple path
-				STPathSet	spsPaths;
-				uint160		uSrcCurrencyID;
-				uint160		uSrcIssuerID;
+			// Need a ripple path.
+			STPathSet	spsPaths;
+			uint160		uSrcCurrencyID;
+			uint160		uSrcIssuerID;
 
-				if (txJSON.isMember("SendMax") && txJSON["SendMax"].isMember("currency"))
-				{
-					STAmount::currencyFromString(uSrcCurrencyID, txJSON["SendMax"]["currency"].asString());
-				}
-				else
-				{
-					uSrcCurrencyID	= CURRENCY_XRP;
-				}
+			STAmount	saSendMax;
+			STAmount	saSend;
 
-				if (!!uSrcCurrencyID)
-				{
-					uSrcIssuerID	= raSrcAddressID.getAccountID();
-				}
+			if (!txJSON.isMember("Amount")					// Amount required.
+				|| !saSend.bSetJson(txJSON["Amount"]))		// Must be valid.
+				return rpcError(rpcDST_AMT_MALFORMED);
 
-				STAmount dstAmount;
+			if (txJSON.isMember("SendMax"))
+			{
+				if (!saSendMax.bSetJson(txJSON["SendMax"]))
+					return rpcError(rpcINVALID_PARAMS);
+			}
+			else
+			{
+				// If no SendMax, default to Amount with sender as issuer.
+				saSendMax		= saSend;
+				saSendMax.setIssuer(raSrcAddressID.getAccountID());
+			}
 
-				if (!dstAmount.bSetJson(txJSON["Amount"]))
-				{
-					return rpcError(rpcDST_AMT_MALFORMED);
-				}
+			Pathfinder pf(raSrcAddressID, dstAccountID, saSendMax.getCurrency(), saSendMax.getIssuer(), saSend);
 
-				Pathfinder pf(raSrcAddressID, dstAccountID, uSrcCurrencyID, uSrcIssuerID, dstAmount);
+			if (!pf.findPaths(5, 1, spsPaths))
+			{
+				cLog(lsDEBUG) << "payment: build_path: No paths found.";
 
-				pf.findPaths(5, 1, spsPaths, false);
+				return rpcError(rpcNO_PATH);
+			}
+			else
+			{
+				cLog(lsDEBUG) << "payment: build_path: " << spsPaths.getJson(0);
+			}
 
-				if (!spsPaths.isEmpty())
-				{
-					txJSON["Paths"]=spsPaths.getJson(0);
-					if(txJSON.isMember("Flags")) txJSON["Flags"]=txJSON["Flags"].asUInt() | 2;
-					else txJSON["Flags"]=2;
-				}
+			if (!spsPaths.isEmpty())
+			{
+				txJSON["Paths"]=spsPaths.getJson(0);
 			}
 		}
 	}
 
-	if(!txJSON.isMember("Sequence")) txJSON["Sequence"]=asSrc->getSeq();
-	if(!txJSON.isMember("Flags")) txJSON["Flags"]=0;
+	if (!txJSON.isMember("Sequence")) txJSON["Sequence"]=asSrc->getSeq();
+	if (!txJSON.isMember("Flags")) txJSON["Flags"]=0;
 
 	Ledger::pointer	lpCurrent		= mNetOps->getCurrentLedger();
 	SLE::pointer	sleAccountRoot	= mNetOps->getSLE(lpCurrent, Ledger::getAccountRootIndex(raSrcAddressID.getAccountID()));

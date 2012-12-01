@@ -75,6 +75,14 @@ PathOption::PathOption(PathOption::pointer other)
 }
 #endif
 
+// Return true, if path is a default path with an element.
+// XXX Could be determined via STAmount
+bool Pathfinder::bDefaultPath(const STPath& spPath)
+{
+	return false;
+	// return spPath.size() == 3 && spPath.mPath[1].mType;
+}
+
 //
 // XXX Optionally, specifying a source and destination issuer might be nice. Especially, to convert between issuers. However, this
 // functionality is left to the future.
@@ -88,11 +96,24 @@ Pathfinder::Pathfinder(const RippleAddress& srcAccountID, const RippleAddress& d
 // If possible, returns a single path.
 // --> maxSearchSteps: unused XXX
 // --> maxPay: unused XXX
+// <-- retPathSet: founds paths not including default paths.
+// Returns true if found paths.
+//
 // When generating a path set blindly, don't allow the empty path, it is implied by default.
 // When generating a path set for estimates, allow an empty path instead of no paths to indicate a path exists. The caller will
 // need to strip the empty path when submitting the transaction.
-bool Pathfinder::findPaths(int maxSearchSteps, int maxPay, STPathSet& retPathSet, bool bAllowEmpty)
+bool Pathfinder::findPaths(int maxSearchSteps, int maxPay, STPathSet& retPathSet)
 {
+	bool	bFound	= false;
+
+	cLog(lsDEBUG) << boost::str(boost::format("findPaths> mSrcAccountID=%s mDstAccountID=%s mDstAmount=%s mSrcCurrencyID=%s mSrcIssuerID=%s")
+		% RippleAddress::createHumanAccountID(mSrcAccountID)
+		% RippleAddress::createHumanAccountID(mDstAccountID)
+		% mDstAmount.getFullText()
+		% STAmount::createHumanCurrency(mSrcCurrencyID)
+		% RippleAddress::createHumanAccountID(mSrcIssuerID)
+		);
+
 	if (mLedger) {
 		std::queue<STPath> pqueue;
 		STPathElement ele(mSrcAccountID,
@@ -112,30 +133,45 @@ bool Pathfinder::findPaths(int maxSearchSteps, int maxPay, STPathSet& retPathSet
 			ele = path.mPath.back();	// Get the last node from the path.
 
 			// Done, if dest wants XRP and last element produces XRP.
-			if (!ele.mCurrencyID									// Tail output is XRP
-				&& !mDstAmount.getCurrency()) {
+			if (!ele.mCurrencyID									// Tail output is XRP.
+				&& !mDstAmount.getCurrency()) {						// Which is dst currency.
 
 				// Remove implied first.
 				path.mPath.erase(path.mPath.begin());
 
-				// Return the path.
-				retPathSet.addPath(path);
+				if (path.size())
+				{
+					// There is an actual path element.
 
-				cLog(lsDEBUG) << "findPaths: adding: " << path.getJson(0);
+					retPathSet.addPath(path);						// Return the path.
+
+					cLog(lsDEBUG) << "findPaths: adding: " << path.getJson(0);
+				}
+				else
+				{
+					cLog(lsDEBUG) << "findPaths: empty path: XRP->XRP";
+				}
 
 				return true;
 			}
 
 			// Done, if dest wants non-XRP and last element is dest.
 			// YYY Allows going through self.  Is this wanted?
-			if (ele.mAccountID == mDstAccountID						// Tail is destination
+			if (ele.mAccountID == mDstAccountID						// Tail is destination account.
 				&& ele.mCurrencyID == mDstAmount.getCurrency()) {	// With correct output currency.
 				// Found a path to the destination.
 
-				if (!bAllowEmpty && 2 == path.mPath.size()) {
-					// Empty path is default. Drop it.
-					cLog(lsDEBUG) << "findPaths: dropping empty path.";
-					continue;
+				if (2 == path.mPath.size()) {
+					// Empty path is a default. Don't need to add it to return set.
+					cLog(lsDEBUG) << "findPaths: empty path: direct";
+
+					return true;
+				}
+				else if (bDefaultPath(path)) {
+					// Path is a default (implied). Don't need to add it to return set.
+					cLog(lsDEBUG) << "findPaths: default path: indirect: " << path.getJson(0);
+
+					return true;
 				}
 
 				// Remove implied first and last nodes.
@@ -246,7 +282,7 @@ bool Pathfinder::findPaths(int maxSearchSteps, int maxPay, STPathSet& retPathSet
 		cLog(lsWARNING) << boost::str(boost::format("findPaths: no ledger"));
 	}
 
-	return false;
+	return bFound;
 }
 
 #if 0

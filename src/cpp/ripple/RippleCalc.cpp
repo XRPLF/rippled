@@ -2328,9 +2328,10 @@ TER RippleCalc::rippleCalc(
 
     // Incrementally search paths.
 
+	// bNoRippleDirect is a slight misnomer, it really means make no ripple default path.
     if (!bNoRippleDirect)
     {
-	    // Direct path.
+	    // Build a default path.  Use saDstAmountReq and saMaxAmountReq to imply nodes.
 	    // XXX Might also make a XRP bridge by default.
 
 	    PathState::pointer	pspDirect	= boost::make_shared<PathState>(saDstAmountReq, saMaxAmountReq, lesActive.getLedgerRef());

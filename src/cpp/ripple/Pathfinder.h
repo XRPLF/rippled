@@ -52,7 +52,8 @@ class Pathfinder
 public:
 	Pathfinder(const RippleAddress& srcAccountID, const RippleAddress& dstAccountID, const uint160& srcCurrencyID, const uint160& srcIssuerID, const STAmount& dstAmount);
 
-	// returns false if there is no path. otherwise fills out retPath
-	bool findPaths(int maxSearchSteps, int maxPay, STPathSet& retPathSet, bool bAllowEmpty);
+	bool findPaths(int maxSearchSteps, int maxPay, STPathSet& retPathSet);
+
+	bool bDefaultPath(const STPath& spPath);
 };
 // vim:ts=4

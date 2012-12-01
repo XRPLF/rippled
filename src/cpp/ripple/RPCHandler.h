@@ -121,6 +121,7 @@ public:
 		rpcLGR_NOT_FOUND,
 		rpcNICKNAME_MISSING,
 		rpcNO_ACCOUNT,
+		rpcNO_PATH,
 		rpcPASSWD_CHANGED,
 		rpcSRC_MISSING,
 		rpcSRC_UNCLAIMED,
