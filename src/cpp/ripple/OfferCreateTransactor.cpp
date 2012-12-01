@@ -244,8 +244,8 @@ TER OfferCreateTransactor::takeOffers(
 TER OfferCreateTransactor::doApply()
 {
 	Log(lsWARNING) << "doOfferCreate> " << mTxn.getJson(0);
-	const uint32			txFlags			= mTxn.getFlags();
-	const bool				bPassive		= isSetBit(txFlags, tfPassive);
+	const uint32			uTxFlags		= mTxn.getFlags();
+	const bool				bPassive		= isSetBit(uTxFlags, tfPassive);
 	STAmount				saTakerPays		= mTxn.getFieldAmount(sfTakerPays);
 	STAmount				saTakerGets		= mTxn.getFieldAmount(sfTakerGets);
 
@@ -273,7 +273,13 @@ TER OfferCreateTransactor::doApply()
 	uint64					uOwnerNode;
 	uint64					uBookNode;
 
-	if (bHaveExpiration && !uExpiration)
+	if (uTxFlags & tfOfferCreateMask)
+	{
+		Log(lsINFO) << "doOfferCreate: Malformed transaction: Invalid flags set.";
+
+		return temINVALID_FLAG;
+	}
+	else if (bHaveExpiration && !uExpiration)
 	{
 		Log(lsWARNING) << "doOfferCreate: Malformed offer: bad expiration";
 
