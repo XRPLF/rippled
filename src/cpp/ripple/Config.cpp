@@ -1,3 +1,6 @@
+//
+// TODO: Check permissions on config file before using it.
+//
 #include "Config.h"
 
 #include "utils.h"
@@ -48,7 +51,7 @@
 
 Config theConfig;
 
-void Config::setup(const std::string& strConf)
+void Config::setup(const std::string& strConf, bool bQuiet)
 {
 	boost::system::error_code	ec;
 
@@ -57,6 +60,8 @@ void Config::setup(const std::string& strConf)
 	// If the config file is found in the current working directory, use the current working directory as the config directory and
 	// that with "db" as the data directory.
 	//
+
+	QUIET	= bQuiet;
 
 	if (!strConf.empty())
 	{
@@ -172,7 +177,8 @@ void Config::setup(const std::string& strConf)
 
 void Config::load()
 {
-	std::cout << "Loading: " << CONFIG_FILE << std::endl;
+	if (!QUIET)
+		std::cerr << "Loading: " << CONFIG_FILE << std::endl;
 
 	std::ifstream	ifsConfig(CONFIG_FILE.c_str(), std::ios::in);
 

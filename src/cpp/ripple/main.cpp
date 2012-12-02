@@ -33,51 +33,51 @@ bool init_unit_test()
 
 void printHelp(const po::options_description& desc)
 {
-	cout << SYSTEM_NAME "d [options] <command> <params>" << endl;
+	cerr << SYSTEM_NAME "d [options] <command> <params>" << endl;
 
-	cout << desc << endl;
+	cerr << desc << endl;
 
-	cout << "Commands: " << endl;
-	cout << "     account_domain_set <seed> <paying_account> [<domain>]" << endl;
-	cout << "     account_email_set <seed> <paying_account> [<email_address>]" << endl;
-	cout << "     account_info <account>|<nickname>" << endl;
-	cout << "     account_info <seed>|<pass_phrase>|<key> [<index>]" << endl;
-	cout << "     account_message_set <seed> <paying_account> <pub_key>" << endl;
-	cout << "     account_publish_set <seed> <paying_account> <hash> <size>" << endl;
-	cout << "     account_rate_set <seed> <paying_account> <rate>" << endl;
-	cout << "     account_wallet_set <seed> <paying_account> [<wallet_hash>]" << endl;
-	cout << "     connect <ip> [<port>]" << endl;
-	cout << "     data_delete <key>" << endl;
-	cout << "     data_fetch <key>" << endl;
-	cout << "     data_store <key> <value>" << endl;
-	cout << "     ledger [<id>|current|lastclosed] [full]" << endl;
-	cout << "     logrotate " << endl;
-	cout << "     nickname_info <nickname>" << endl;
-	cout << "     nickname_set <seed> <paying_account> <nickname> [<offer_minimum>] [<authorization>]" << endl;
-	cout << "     offer_create <seed> <paying_account> <taker_pays_amount> <taker_pays_currency> <taker_pays_issuer> <takers_gets_amount> <takers_gets_currency> <takers_gets_issuer> <expires> [passive]" << endl;
-	cout << "     offer_cancel <seed> <paying_account> <sequence>" << endl;
-	cout << "     password_fund <seed> <paying_account> [<account>]" << endl;
-	cout << "     password_set <master_seed> <regular_seed> [<account>]" << endl;
-	cout << "     peers" << endl;
-	cout << "     ripple ..." << endl;
-	cout << "     ripple_lines_get <account>|<nickname>|<account_public_key> [<index>]" << endl;
-	cout << "     ripple_line_set <seed> <paying_account> <destination_account> <limit_amount> <currency> [<quality_in>] [<quality_out>]" << endl;
-	cout << "     send <seed> <paying_account> <account_id> <amount> [<currency>] [<send_max>] [<send_currency>]" << endl;
-	cout << "     stop" << endl;
-	cout << "     tx <id>" << endl;
-	cout << "     unl_add <domain>|<public> [<comment>]" << endl;
-	cout << "     unl_delete <domain>|<public_key>" << endl;
-	cout << "     unl_list" << endl;
-	cout << "     unl_load" << endl;
-	cout << "     unl_network" << endl;
-	cout << "     unl_reset" << endl;
-	cout << "     validation_create [<seed>|<pass_phrase>|<key>]" << endl;
-	cout << "     validation_seed [<seed>|<pass_phrase>|<key>]" << endl;
-	cout << "     wallet_add <regular_seed> <paying_account> <master_seed> [<initial_funds>] [<account_annotation>]" << endl;
-	cout << "     wallet_accounts <seed>" << endl;
-	cout << "     wallet_claim <master_seed> <regular_seed> [<source_tag>] [<account_annotation>]" << endl;
-	cout << "     wallet_seed [<seed>|<passphrase>|<passkey>]" << endl;
-	cout << "     wallet_propose [<passphrase>]" << endl;
+	cerr << "Commands: " << endl;
+	cerr << "     account_domain_set <seed> <paying_account> [<domain>]" << endl;
+	cerr << "     account_email_set <seed> <paying_account> [<email_address>]" << endl;
+	cerr << "     account_info <account>|<nickname>" << endl;
+	cerr << "     account_info <seed>|<pass_phrase>|<key> [<index>]" << endl;
+	cerr << "     account_message_set <seed> <paying_account> <pub_key>" << endl;
+	cerr << "     account_publish_set <seed> <paying_account> <hash> <size>" << endl;
+	cerr << "     account_rate_set <seed> <paying_account> <rate>" << endl;
+	cerr << "     account_wallet_set <seed> <paying_account> [<wallet_hash>]" << endl;
+	cerr << "     connect <ip> [<port>]" << endl;
+	cerr << "     data_delete <key>" << endl;
+	cerr << "     data_fetch <key>" << endl;
+	cerr << "     data_store <key> <value>" << endl;
+	cerr << "     ledger [<id>|current|lastclosed] [full]" << endl;
+	cerr << "     logrotate " << endl;
+	cerr << "     nickname_info <nickname>" << endl;
+	cerr << "     nickname_set <seed> <paying_account> <nickname> [<offer_minimum>] [<authorization>]" << endl;
+	cerr << "     offer_create <seed> <paying_account> <taker_pays_amount> <taker_pays_currency> <taker_pays_issuer> <takers_gets_amount> <takers_gets_currency> <takers_gets_issuer> <expires> [passive]" << endl;
+	cerr << "     offer_cancel <seed> <paying_account> <sequence>" << endl;
+	cerr << "     password_fund <seed> <paying_account> [<account>]" << endl;
+	cerr << "     password_set <master_seed> <regular_seed> [<account>]" << endl;
+	cerr << "     peers" << endl;
+	cerr << "     ripple ..." << endl;
+	cerr << "     ripple_lines_get <account>|<nickname>|<account_public_key> [<index>]" << endl;
+	cerr << "     ripple_line_set <seed> <paying_account> <destination_account> <limit_amount> <currency> [<quality_in>] [<quality_out>]" << endl;
+	cerr << "     send <seed> <paying_account> <account_id> <amount> [<currency>] [<send_max>] [<send_currency>]" << endl;
+	cerr << "     stop" << endl;
+	cerr << "     tx <id>" << endl;
+	cerr << "     unl_add <domain>|<public> [<comment>]" << endl;
+	cerr << "     unl_delete <domain>|<public_key>" << endl;
+	cerr << "     unl_list" << endl;
+	cerr << "     unl_load" << endl;
+	cerr << "     unl_network" << endl;
+	cerr << "     unl_reset" << endl;
+	cerr << "     validation_create [<seed>|<pass_phrase>|<key>]" << endl;
+	cerr << "     validation_seed [<seed>|<pass_phrase>|<key>]" << endl;
+	cerr << "     wallet_add <regular_seed> <paying_account> <master_seed> [<initial_funds>] [<account_annotation>]" << endl;
+	cerr << "     wallet_accounts <seed>" << endl;
+	cerr << "     wallet_claim <master_seed> <regular_seed> [<source_tag>] [<account_annotation>]" << endl;
+	cerr << "     wallet_seed [<seed>|<passphrase>|<passkey>]" << endl;
+	cerr << "     wallet_propose [<passphrase>]" << endl;
 }
 
 int main(int argc, char* argv[])
@@ -96,6 +96,7 @@ int main(int argc, char* argv[])
 		("standalone,a", "Run with no peers.")
 		("test,t", "Perform unit tests.")
 		("parameters", po::value< vector<string> >(), "Specify comma separated parameters.")
+		("quiet,q", "Reduce diagnotics.")
 		("verbose,v", "Increase log level.")
 		("load", "Load the current ledger from the local DB.")
 		("start", "Start from a fresh Ledger.")
@@ -138,7 +139,6 @@ int main(int argc, char* argv[])
 		}
 	}
 
-
 	if (vm.count("verbose"))
 		Log::setMinSeverity(lsTRACE, true);
 	else
@@ -152,7 +152,9 @@ int main(int argc, char* argv[])
 
 	if (!iResult)
 	{
-		theConfig.setup(vm.count("conf") ? vm["conf"].as<std::string>() : "");
+		theConfig.setup(
+			vm.count("conf") ? vm["conf"].as<std::string>() : "",	// Config file.
+			!!vm.count("quiet"));									// Quiet flag.
 
 		if (vm.count("standalone"))
 		{
