@@ -6,7 +6,7 @@
 
 #include <boost/weak_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
-#include <boost/unordered/unordered_map.hpp>
+#include <boost/unordered_map.hpp>
 
 #include "../json/value.h"
 
