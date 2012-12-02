@@ -34,11 +34,11 @@ Peer::Peer(boost::asio::io_service& io_service, boost::asio::ssl::context& ctx, 
 	cLog(lsDEBUG) << "CREATING PEER: " << ADDRESS(this);
 }
 
-void Peer::handle_write(const boost::system::error_code& error, size_t bytes_transferred)
+void Peer::handleWrite(const boost::system::error_code& error, size_t bytes_transferred)
 {
 #ifdef DEBUG
 //	if (!error)
-//		std::cerr << "Peer::handle_write bytes: "<< bytes_transferred << std::endl;
+//		std::cerr << "Peer::handleWrite bytes: "<< bytes_transferred << std::endl;
 #endif
 
 	boost::recursive_mutex::scoped_lock sl(theApp->getMasterLock());
@@ -92,7 +92,7 @@ void Peer::detach(const char *rsn)
 		mSendQ.clear();
 
 		(void) mVerifyTimer.cancel();
-		mSocketSsl.async_shutdown(boost::bind(&Peer::sHandleShutdown, shared_from_this(), boost::asio::placeholders::error));
+		mSocketSsl.async_shutdown(boost::bind(&Peer::handleShutdown, shared_from_this(), boost::asio::placeholders::error));
 
 		if (mNodePublic.isValid())
 		{
@@ -169,7 +169,8 @@ void Peer::connect(const std::string& strIp, int iPort)
 	else
 	{
 		mVerifyTimer.expires_from_now(boost::posix_time::seconds(NODE_VERIFY_SECONDS), err);
-		mVerifyTimer.async_wait(boost::bind(&Peer::sHandleVerifyTimer, shared_from_this(), boost::asio::placeholders::error));
+		mVerifyTimer.async_wait(boost::bind(&Peer::handleVerifyTimer, shared_from_this(),
+			boost::asio::placeholders::error));
 
 		if (err)
 		{
@@ -187,7 +188,7 @@ void Peer::connect(const std::string& strIp, int iPort)
 			getSocket(),
 			itrEndpoint,
 			boost::bind(
-				&Peer::sHandleConnect,
+				&Peer::handleConnect,
 				shared_from_this(),
 				boost::asio::placeholders::error,
 				boost::asio::placeholders::iterator));
@@ -208,7 +209,7 @@ void Peer::handleStart(const boost::system::error_code& error)
 	else
 	{
 		sendHello();			// Must compute mCookieHash before receiving a hello.
-		start_read_header();
+		startReadHeader();
 	}
 }
 
@@ -227,7 +228,7 @@ void Peer::handleConnect(const boost::system::error_code& error, boost::asio::ip
 		mSocketSsl.set_verify_mode(boost::asio::ssl::verify_none);
 
 		mSocketSsl.async_handshake(boost::asio::ssl::stream<boost::asio::ip::tcp::socket>::client,
-			boost::bind(&Peer::sHandleStart, shared_from_this(), boost::asio::placeholders::error));
+			boost::bind(&Peer::handleStart, shared_from_this(), boost::asio::placeholders::error));
 	}
 }
 
@@ -254,7 +255,7 @@ void Peer::connected(const boost::system::error_code& error)
 		mSocketSsl.set_verify_mode(boost::asio::ssl::verify_none);
 
 		mSocketSsl.async_handshake(boost::asio::ssl::stream<boost::asio::ip::tcp::socket>::server,
-			boost::bind(&Peer::sHandleStart, shared_from_this(), boost::asio::placeholders::error));
+			boost::bind(&Peer::handleStart, shared_from_this(), boost::asio::placeholders::error));
 	}
 	else if (!mDetaching)
 	{
@@ -271,7 +272,7 @@ void Peer::sendPacketForce(const PackedMessage::pointer& packet)
 		mSendingPacket = packet;
 
 		boost::asio::async_write(mSocketSsl, boost::asio::buffer(packet->getBuffer()),
-			boost::bind(&Peer::sHandle_write, shared_from_this(),
+			boost::bind(&Peer::handleWrite, shared_from_this(),
 			boost::asio::placeholders::error,
 			boost::asio::placeholders::bytes_transferred));
 	}
@@ -292,7 +293,7 @@ void Peer::sendPacket(const PackedMessage::pointer& packet)
 	}
 }
 
-void Peer::start_read_header()
+void Peer::startReadHeader()
 {
 	if (!mDetaching)
 	{
@@ -300,11 +301,11 @@ void Peer::start_read_header()
 		mReadbuf.resize(HEADER_SIZE);
 
 		boost::asio::async_read(mSocketSsl, boost::asio::buffer(mReadbuf),
-			boost::bind(&Peer::sHandle_read_header, shared_from_this(), boost::asio::placeholders::error));
+			boost::bind(&Peer::handleReadHeader, shared_from_this(), boost::asio::placeholders::error));
 	}
 }
 
-void Peer::start_read_body(unsigned msg_len)
+void Peer::startReadBody(unsigned msg_len)
 {
 	// m_readbuf already contains the header in its first HEADER_SIZE
 	// bytes. Expand it to fit in the body as well, and start async
@@ -315,11 +316,11 @@ void Peer::start_read_body(unsigned msg_len)
 		mReadbuf.resize(HEADER_SIZE + msg_len);
 
 		boost::asio::async_read(mSocketSsl, boost::asio::buffer(&mReadbuf[HEADER_SIZE], msg_len),
-			boost::bind(&Peer::sHandle_read_body, shared_from_this(), boost::asio::placeholders::error));
+			boost::bind(&Peer::handleReadBody, shared_from_this(), boost::asio::placeholders::error));
 	}
 }
 
-void Peer::handle_read_header(const boost::system::error_code& error)
+void Peer::handleReadHeader(const boost::system::error_code& error)
 {
 	if (mDetaching)
 	{
@@ -335,7 +336,7 @@ void Peer::handle_read_header(const boost::system::error_code& error)
 			detach("hrh");
 			return;
 		}
-		start_read_body(msg_len);
+		startReadBody(msg_len);
 	}
 	else
 	{
@@ -344,7 +345,7 @@ void Peer::handle_read_header(const boost::system::error_code& error)
 	}
 }
 
-void Peer::handle_read_body(const boost::system::error_code& error)
+void Peer::handleReadBody(const boost::system::error_code& error)
 {
 	if (mDetaching)
 	{
@@ -354,7 +355,7 @@ void Peer::handle_read_body(const boost::system::error_code& error)
 	else if (!error)
 	{
 		processReadBuffer();
-		start_read_header();
+		startReadHeader();
 	}
 	else
 	{

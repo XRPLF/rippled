@@ -24,8 +24,10 @@ enum PeerPunish
 
 enum PeerReward
 {
-	PR_NEEDED_DATA		= 1,
-	PR_NEW_TRANSACTION	= 2,
+	PR_NEEDED_DATA		= 1,	// The peer gave us some data we needed
+	PR_NEW_TRANSACTION	= 2,	// The peer gave us a new transaction
+	PR_FIRST_USEFUL		= 3,	// The peer was first to give us something like a trusted proposal
+	PR_USEFUL			= 4		// The peer gave us a trusted proposal, just not quite first
 };
 
 typedef std::pair<std::string,int> ipPort;
@@ -42,9 +44,6 @@ public:
 	static const int psbNoLedgers = 4, psbNoTransactions = 5, psbDownLevel = 6;
 
 	void			handleConnect(const boost::system::error_code& error, boost::asio::ip::tcp::resolver::iterator it);
-	static void		sHandleConnect(Peer::ref ptr, const boost::system::error_code& error,
-		boost::asio::ip::tcp::resolver::iterator it)
-	{ ptr->handleConnect(error, it); }
 
 private:
 	bool			mClientConnect;		// In process of connecting as client.
@@ -66,12 +65,7 @@ private:
 	boost::asio::deadline_timer									mVerifyTimer;
 
 	void			handleStart(const boost::system::error_code& ecResult);
-	static void		sHandleStart(Peer::ref ptr, const boost::system::error_code& ecResult)
-	{ ptr->handleStart(ecResult); }
-
 	void			handleVerifyTimer(const boost::system::error_code& ecResult);
-	static void		sHandleVerifyTimer(Peer::ref ptr, const boost::system::error_code& ecResult)
-	{ ptr->handleVerifyTimer(ecResult); }
 
 protected:
 
@@ -84,24 +78,13 @@ protected:
 	Peer(boost::asio::io_service& io_service, boost::asio::ssl::context& ctx, uint64 peerId);
 
 	void handleShutdown(const boost::system::error_code& error) { ; }
-	static void sHandleShutdown(Peer::ref ptr, const boost::system::error_code& error)
-	{ ptr->handleShutdown(error); }
-
-	void handle_write(const boost::system::error_code& error, size_t bytes_transferred);
-	static void sHandle_write(Peer::ref ptr, const boost::system::error_code& error, size_t bytes_transferred)
-	{ ptr->handle_write(error, bytes_transferred); }
-
-	void handle_read_header(const boost::system::error_code& error);
-	static void sHandle_read_header(Peer::ref ptr, const boost::system::error_code& error)
-	{ ptr->handle_read_header(error); }
-
-	void handle_read_body(const boost::system::error_code& error);
-	static void sHandle_read_body(Peer::ref ptr, const boost::system::error_code& error)
-	{ ptr->handle_read_body(error); }
+	void handleWrite(const boost::system::error_code& error, size_t bytes_transferred);
+	void handleReadHeader(const boost::system::error_code& error);
+	void handleReadBody(const boost::system::error_code& error);
 
 	void processReadBuffer();
-	void start_read_header();
-	void start_read_body(unsigned msg_len);
+	void startReadHeader();
+	void startReadBody(unsigned msg_len);
 
 	void sendPacketForce(const PackedMessage::pointer& packet);
 
