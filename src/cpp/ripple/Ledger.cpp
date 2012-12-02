@@ -918,6 +918,13 @@ uint256 Ledger::getAccountRootIndex(const uint160& uAccountID)
 	return s.getSHA512Half();
 }
 
+uint256 Ledger::getLedgerFeatureIndex()
+{ // get the index of the node that holds the last 256 ledgers
+	Serializer s(2);
+	s.add16(spaceFeature);
+	return s.getSHA512Half();
+}
+
 uint256 Ledger::getLedgerHashIndex()
 { // get the index of the node that holds the last 256 ledgers
 	Serializer s(2);

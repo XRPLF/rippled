@@ -15,6 +15,7 @@ enum LedgerEntryType
 	ltOFFER				= 'o',
 	ltCONTRACT			= 'c',
 	ltLEDGER_HASHES		= 'h',
+	ltFEATURES			= 'f',
 };
 
 // Used as a prefix for computing ledger indexes (keys).
@@ -30,6 +31,7 @@ enum LedgerNameSpace
 	spaceBookDir		= 'B',	// Directory of order books.
 	spaceContract		= 'c',
 	spaceSkipList		= 's',
+	spaceFeature		= 'f',
 };
 
 enum LedgerSpecificFlags

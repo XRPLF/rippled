@@ -71,6 +71,10 @@ static bool TFInit()
 		<< SOElement(sfTarget,			SOE_REQUIRED)
 		;
 
+	DECLARE_TF(EnableFeature, ttFEATURE)
+		<< SOElement(sfFeature,			SOE_REQUIRED)
+		;
+
 	return true;
 }
 

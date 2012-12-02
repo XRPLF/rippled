@@ -98,6 +98,10 @@ static bool LEFInit()
 		<< SOElement(sfHashes,				SOE_REQUIRED)
 		;
 
+	DECLARE_LEF(EnabledFeatures, ltFEATURES)
+		<< SOElement(sfEnabledFeatures, SOE_REQUIRED)
+		;
+
 		return true;
 }
 

@@ -84,6 +84,7 @@
 	FIELD(BookDirectory,		HASH256, 16)
 	FIELD(InvoiceID,			HASH256, 17)
 	FIELD(Nickname,				HASH256, 18)
+	FIELD(Feature,				HASH256, 19)
 
 	// 160-bit (common)
 	FIELD(TakerPaysCurrency,	HASH160, 1)
@@ -154,5 +155,6 @@
 	FIELD(Necessary,			ARRAY, 6)
 	FIELD(Sufficient,			ARRAY, 7)
 	FIELD(AffectedNodes,		ARRAY, 8)
+	FIELD(EnabledFeatures,		ARRAY, 9)
 
 // vim:ts=4

@@ -193,6 +193,8 @@ public:
 	static int getLedgerHashOffset(uint32 desiredLedgerIndex);
 	static int getLedgerHashOffset(uint32 desiredLedgerIndex, uint32 currentLedgerIndex);
 
+	static uint256 getLedgerFeatureIndex();
+
 	// index calculation functions
 	static uint256 getAccountRootIndex(const uint160& uAccountID);
 
