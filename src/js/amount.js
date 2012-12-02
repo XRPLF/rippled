@@ -548,11 +548,14 @@ Amount.prototype.to_json = function() {
   }
   else
   {
-    return {
+    var amount_json = {
       'value' : this.to_text(),
-      'currency' : this._currency.to_json(),
-      'issuer' : this._issuer.to_json(),
+      'currency' : this._currency.to_json()
     };
+    if (this._issuer.is_valid()) {
+      amount_json.issuer = this._issuer.to_json();
+    }
+    return amount_json;
   }
 };
 
@@ -756,7 +759,7 @@ Amount.prototype.parse_json = function(j) {
     // Parse the passed value to sanitize and copy it.
 
     this._currency.parse_json(j.currency);     // Never XRP.
-    this._issuer.parse_json(j.issuer);
+    if ("string" === typeof j.issuer) this._issuer.parse_json(j.issuer);
     this.parse_value(j.value);
   }
   else {
