@@ -187,7 +187,7 @@ int main(int argc, char* argv[])
 		iResult	= commandLineRPC(vCmd);
 	}
 
-	if (1 == iResult)
+	if (1 == iResult && !vm.count("quiet"))
 		printHelp(desc);
 
 	return iResult;
