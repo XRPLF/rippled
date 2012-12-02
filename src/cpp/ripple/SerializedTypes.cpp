@@ -30,25 +30,25 @@ SerializedType& SerializedType::operator=(const SerializedType& t)
 
 void STPathSet::printDebug() {
   for (int i = 0; i < value.size(); i++) {
-    std::cout << i << ": ";
+    std::cerr << i << ": ";
     for (int j = 0; j < value[i].mPath.size(); j++) {
       //STPathElement pe = value[i].mPath[j];
       RippleAddress nad;
       nad.setAccountID(value[i].mPath[j].mAccountID);
-      std::cout << "    " << nad.humanAccountID();
-      //std::cout << "    " << pe.mAccountID.GetHex();
+      std::cerr << "    " << nad.humanAccountID();
+      //std::cerr << "    " << pe.mAccountID.GetHex();
     }
-    std::cout << std::endl;
+    std::cerr << std::endl;
   }
 
 }
 
 void STPath::printDebug() {
-  std::cout << "STPath:" << std::endl;
+  std::cerr << "STPath:" << std::endl;
   for(int i =0; i < mPath.size(); i++) {
     RippleAddress nad;
     nad.setAccountID(mPath[i].mAccountID);
-    std::cout << "   " << i << ": " << nad.humanAccountID() << std::endl;
+    std::cerr << "   " << i << ": " << nad.humanAccountID() << std::endl;
   }
 }
 
