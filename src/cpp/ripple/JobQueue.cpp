@@ -8,6 +8,25 @@
 
 SETUP_LOG();
 
+JobQueue::JobQueue() : mLastJob(0), mThreadCount(0), mShuttingDown(false)
+{
+	mJobLoads[jtVALIDATION_ut].setTargetLatency(2000, 5000);
+	mJobLoads[jtPROOFWORK].setTargetLatency(2000, 5000);
+	mJobLoads[jtTRANSACTION].setTargetLatency(250, 1000);
+	mJobLoads[jtPROPOSAL_ut].setTargetLatency(500, 1250);
+	mJobLoads[jtVALIDATION_t].setTargetLatency(500, 1500);
+	mJobLoads[jtTRANSACTION_l].setTargetLatency(100, 500);
+	mJobLoads[jtPROPOSAL_t].setTargetLatency(100, 500);
+
+	mJobLoads[jtCLIENT].setTargetLatency(250, 1000);
+	mJobLoads[jtPEER].setTargetLatency(200, 1250);
+	mJobLoads[jtDISK].setTargetLatency(500, 1000);
+	mJobLoads[jtRPC].setTargetLatency(250, 750);
+	mJobLoads[jtACCEPTLEDGER].setTargetLatency(1000, 2500);
+	mJobLoads[jtPUBLEDGER].setTargetLatency(1000, 2500);
+}
+
+
 const char* Job::toString(JobType t)
 {
 	switch(t)
@@ -124,7 +143,8 @@ Json::Value JobQueue::getJson(int)
 	for (int i = 0; i < NUM_JOB_TYPES; ++i)
 	{
 		uint64 count, latencyAvg, latencyPeak, jobCount;
-		mJobLoads[i].getCountAndLatency(count, latencyAvg, latencyPeak);
+		bool isOver;
+		mJobLoads[i].getCountAndLatency(count, latencyAvg, latencyPeak, isOver);
 		std::map<JobType, int>::iterator it = mJobCounts.find(static_cast<JobType>(i));
 		if (it == mJobCounts.end())
 			jobCount = 0;
@@ -133,6 +153,8 @@ Json::Value JobQueue::getJson(int)
 		if ((count != 0) || (jobCount != 0) || (latencyPeak != 0))
 		{
 			Json::Value pri(Json::objectValue);
+			if (isOver)
+				pri["over_target"] = "true";
 			pri["job_type"] = Job::toString(static_cast<JobType>(i));
 			if (jobCount != 0)
 				pri["waiting"] = static_cast<int>(jobCount);

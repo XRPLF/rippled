@@ -69,7 +69,7 @@ void LoadMonitor::addCountAndLatency(int counts, int latency)
 		mLatencyMSPeak = lp;
 }
 
-void LoadMonitor::getCountAndLatency(uint64& count, uint64& latencyAvg, uint64& latencyPeak)
+void LoadMonitor::getCountAndLatency(uint64& count, uint64& latencyAvg, uint64& latencyPeak, bool& isOver)
 {
 	boost::mutex::scoped_lock sl(mLock);
 
@@ -87,4 +87,5 @@ void LoadMonitor::getCountAndLatency(uint64& count, uint64& latencyAvg, uint64& 
 		latencyAvg = mLatencyMSAvg / (mLatencyEvents * 4);
 		latencyPeak = mLatencyMSPeak / (mLatencyEvents * 4);
 	}
+	isOver = isOverTarget();
 }

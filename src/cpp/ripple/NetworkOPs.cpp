@@ -167,6 +167,7 @@ Transaction::pointer NetworkOPs::submitTransactionSync(const Transaction::pointe
 
 Transaction::pointer NetworkOPs::processTransaction(Transaction::pointer trans, stCallback callback)
 {
+	LoadEvent::autoptr ev = theApp->getJobQueue().getLoadEventAP(jtTXN_PROC);
 
 	int newFlags = theApp->getSuppression().getFlags(trans->getID());
 	if ((newFlags & SF_BAD) != 0)

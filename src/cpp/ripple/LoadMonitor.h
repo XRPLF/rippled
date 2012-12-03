@@ -17,20 +17,35 @@ protected:
 	uint64				mLatencyEvents;
 	uint64				mLatencyMSAvg;
 	uint64				mLatencyMSPeak;
+	uint64				mTargetLatencyAvg;
+	uint64				mTargetLatencyPk;
 	time_t				mLastUpdate;
 	boost::mutex		mLock;
 
 	void update();
 
 public:
-	LoadMonitor() : mCounts(0), mLatencyEvents(0), mLatencyMSAvg(0), mLatencyMSPeak(0)
+	LoadMonitor() : mCounts(0), mLatencyEvents(0), mLatencyMSAvg(0), mLatencyMSPeak(0),
+		mTargetLatencyAvg(0), mTargetLatencyPk(0)
 	{ mLastUpdate = time(NULL); }
 
 	void addCount(int counts);
 	void addLatency(int latency);
 	void addCountAndLatency(int counts, int latency);
 
-	void getCountAndLatency(uint64& count, uint64& latencyAvg, uint64& latencyPeak);
+	void setTargetLatency(uint64 avg, uint64 pk)
+	{
+		mTargetLatencyAvg = avg;
+		mTargetLatencyPk = pk;
+	}
+
+	bool isOverTarget()
+	{
+		return (mTargetLatencyPk && (mLatencyMSPeak > mTargetLatencyPk)) ||
+			(mTargetLatencyAvg && (mLatencyMSAvg > mTargetLatencyAvg));
+	}
+
+	void getCountAndLatency(uint64& count, uint64& latencyAvg, uint64& latencyPeak, bool& isOver);
 };
 
 class LoadEvent

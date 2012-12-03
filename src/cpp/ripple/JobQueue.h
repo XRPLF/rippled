@@ -22,11 +22,9 @@ enum JobType
 { // must be in priority order, low to high
 	jtINVALID		= -1,
 	jtVALIDATION_ut	= 0,	// A validation from an untrusted source
-	jtCLIENTOP_ut	= 1,	// A client operation from a non-local/untrusted source
 	jtPROOFWORK		= 2,	// A proof of work demand from another server
 	jtTRANSACTION	= 3,	// A transaction received from the network
 	jtPROPOSAL_ut	= 4,	// A proposal from an untrusted source
-	jtCLIENTOP_t	= 5,	// A client operation from a trusted source
 	jtVALIDATION_t	= 6,	// A validation from a trusted source
 	jtTRANSACTION_l	= 7,	// A local transaction
 	jtPROPOSAL_t	= 8,	// A proposal from a trusted source
@@ -40,6 +38,7 @@ enum JobType
 	jtRPC			= 19,
 	jtACCEPTLEDGER	= 20,
 	jtPUBLEDGER		= 21,
+	jtTXN_PROC		= 22,
 };
 #define NUM_JOB_TYPES 24
 
@@ -91,7 +90,7 @@ protected:
 
 public:
 
-	JobQueue() : mLastJob(0), mThreadCount(0), mShuttingDown(false) { ; }
+	JobQueue();
 
 	void addJob(JobType type, const boost::function<void(Job&)>& job);
 
