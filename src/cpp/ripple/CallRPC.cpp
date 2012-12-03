@@ -113,6 +113,19 @@ Json::Value RPCParser::parseAccountTransactions(const Json::Value& jvParams)
 	return jvRequest;
 }
 
+// connect <ip> [port]
+Json::Value RPCParser::parseConnect(const Json::Value& jvParams)
+{
+	Json::Value		jvRequest(Json::objectValue);
+
+	jvRequest["ip"]	= jvParams[0u].asString();
+
+	if (jvParams.size() == 2)
+		jvRequest["port"]	= jvParams[1u].asUInt();
+
+	return jvRequest;
+}
+
 Json::Value RPCParser::parseEvented(const Json::Value& jvParams)
 {
 	return rpcError(rpcNO_EVENTS);
@@ -193,7 +206,7 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 		{	"accept_ledger",		&RPCParser::parseAsIs,					0,	0	},
 		{	"account_info",			&RPCParser::parseAccountInfo,			1,  2	},
 		{	"account_tx",			&RPCParser::parseAccountTransactions,	2,  3	},
-//		{	"connect",				&RPCParser::doConnect,				1,  2, true,	false,	optNone		},
+		{	"connect",				&RPCParser::parseConnect,				1,  2	},
 //		{	"data_delete",			&RPCParser::doDataDelete,			1,  1, true,	false,	optNone		},
 //		{	"data_fetch",			&RPCParser::doDataFetch,			1,  1, true,	false,	optNone		},
 //		{	"data_store",			&RPCParser::doDataStore,			2,  2, true,	false,	optNone		},

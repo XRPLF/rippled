@@ -321,29 +321,18 @@ Json::Value RPCHandler::doAccountInfo(Json::Value jvRequest)
 	return jvResult;
 }
 
-Json::Value RPCHandler::doConnect(Json::Value params)
+// {
+//   ip: <string>,
+//   port: <number>
+// }
+// XXX Might allow domain for manual connections.
+Json::Value RPCHandler::doConnect(Json::Value jvParams)
 {
 	if (theConfig.RUN_STANDALONE)
 		return "cannot connect in standalone mode";
 
-	// connect <ip> [port]
-	std::string strIp;
-	int			iPort	= -1;
-
-	// XXX Might allow domain for manual connections.
-	if (!extractString(strIp, params, 0))
-		return rpcError(rpcHOST_IP_MALFORMED);
-
-	if (params.size() == 2)
-	{
-		std::string strPort;
-
-		// YYY Should make an extract int.
-		if (!extractString(strPort, params, 1))
-			return rpcError(rpcPORT_MALFORMED);
-
-		iPort	= lexical_cast_s<int>(strPort);
-	}
+	std::string strIp	= jvParams["ip"].asString();
+	int			iPort	= jvParams.isMember("port") ? jvParams["port"].asInt() : -1;
 
 	// XXX Validate legal IP and port
 	theApp->getConnectionPool().connectTo(strIp, iPort);
