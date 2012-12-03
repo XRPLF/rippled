@@ -1,5 +1,11 @@
 #include "FeatureTable.h"
 
+#include <boost/foreach.hpp>
+
+#include "Log.h"
+
+SETUP_LOG();
+
 FeatureTable::FeatureState* FeatureTable::getCreateFeature(const uint256& feature, bool create)
 { // call with the mutex held
 	featureMap_t::iterator it = mFeatureMap.find(feature);
@@ -59,3 +65,113 @@ bool FeatureTable::isFeatureEnabled(const uint256& feature)
 	return s && s->mEnabled;
 }
 
+FeatureTable::featureList_t FeatureTable::getVetoedFeatures()
+{
+	featureList_t ret;
+	boost::mutex::scoped_lock sl(mMutex);
+	BOOST_FOREACH(const featureIt_t& it, mFeatureMap)
+	{
+		if (it.second.mVetoed)
+			ret.insert(it.first);
+	}
+	return ret;
+}
+
+FeatureTable::featureList_t FeatureTable::getEnabledFeatures()
+{
+	featureList_t ret;
+	boost::mutex::scoped_lock sl(mMutex);
+	BOOST_FOREACH(const featureIt_t& it, mFeatureMap)
+	{
+		if (it.second.mEnabled)
+			ret.insert(it.first);
+	}
+	return ret;
+}
+
+bool FeatureTable::shouldEnable(uint32 closeTime, const FeatureState& fs)
+{
+	if (fs.mVetoed || fs.mEnabled || (fs.mLastMajority != mLastReport))
+		return false;
+
+	if (fs.mFirstMajority == mFirstReport)
+	{ // had a majority when we first started the server, relaxed check
+		// WRITEME
+	}
+	else
+	{ // didn't have a majority when we first started the server, normal check
+		// WRITEME
+	}
+
+	return true;
+
+}
+
+FeatureTable::featureList_t FeatureTable::getFeaturesToEnable(uint32 closeTime)
+{
+	featureList_t ret;
+	boost::mutex::scoped_lock sl(mMutex);
+	if (mLastReport != 0)
+	{
+		BOOST_FOREACH(const featureIt_t& it, mFeatureMap)
+		{
+			if (shouldEnable(closeTime, it.second))
+			ret.insert(it.first);
+		}
+	}
+	return ret;
+}
+
+void FeatureTable::reportValidations(const FeatureSet& set)
+{
+	if (set.mTrustedValidations == 0)
+		return;
+	int threshold = (set.mTrustedValidations * mMajorityFraction) / 256;
+
+	typedef std::pair<const uint256, int> u256_int_pair;
+
+	boost::mutex::scoped_lock sl(mMutex);
+
+	if (mFirstReport == 0)
+		mFirstReport = set.mCloseTime;
+	BOOST_FOREACH(const u256_int_pair& it, set.mVotes)
+	{
+		FeatureState& state = mFeatureMap[it.first];
+		cLog(lsDEBUG) << "Feature " << it.first.GetHex() << " has " << it.second << " votes, needs " << threshold;
+		if (it.second >= threshold)
+		{ // we have a majority
+			state.mLastMajority = set.mCloseTime;
+			if (state.mFirstMajority == 0)
+			{
+				cLog(lsWARNING) << "Feature " << it.first << " attains a majority vote";
+				state.mFirstMajority = set.mCloseTime;
+			}
+		}
+		else // we have no majority
+		{
+			if (state.mFirstMajority != 0)
+			{
+				cLog(lsWARNING) << "Feature " << it.first << " loses majority vote";
+				state.mFirstMajority = 0;
+				state.mLastMajority = 0;
+			}
+		}
+	}
+	mLastReport = set.mCloseTime;
+}
+
+Json::Value FeatureTable::getJson(int)
+{
+	Json::Value ret(Json::objectValue);
+	{
+		boost::mutex::scoped_lock sl(mMutex);
+		BOOST_FOREACH(const featureIt_t& it, mFeatureMap)
+		{
+			Json::Value v(Json::objectValue);
+			// WRITEME
+			ret[it.first.GetHex()] = v;
+		}
+	}
+
+	return ret;
+}
