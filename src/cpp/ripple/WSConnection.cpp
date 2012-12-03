@@ -6,6 +6,7 @@
 
 SETUP_LOG();
 
+#include "CallRPC.h"	// XXX Remove this, don't provide support for RPC syntax.
 #include "WSConnection.h"
 #include "WSHandler.h"
 
@@ -48,13 +49,28 @@ Json::Value WSConnection::invokeCommand(Json::Value& jvRequest)
 	RPCHandler mRPCHandler(&mNetwork, this);
 	Json::Value	jvResult(Json::objectValue);
 
-	// Regular RPC command
+	// XXX Temporarily support RPC style commands over websocket. Remove this.
+	if (jvRequest.isMember("params"))
+	{
+		RPCParser	rpParser;
+
+		Json::Value	jvRpcRequest	= rpParser.parseCommand(jvRequest["command"].asString(), jvRequest["params"]);
+
+		if (jvRpcRequest.isMember("error"))
+		{
+			jvResult		= jvRpcRequest;
+		}
+		else
+		{
+			jvResult["result"] = mRPCHandler.doCommand(
+				jvRpcRequest,
+				mHandler->getPublic() ? RPCHandler::GUEST : RPCHandler::ADMIN);
+		}
+	}
+	else
 	{
 		jvResult["result"] = mRPCHandler.doCommand(
-			jvRequest["command"].asString(),
-			jvRequest.isMember("params")
-			? jvRequest["params"]
-			: jvRequest,
+			jvRequest,
 			mHandler->getPublic() ? RPCHandler::GUEST : RPCHandler::ADMIN);
 	}
 

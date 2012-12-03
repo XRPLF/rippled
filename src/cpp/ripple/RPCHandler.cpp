@@ -317,9 +317,6 @@ Json::Value RPCHandler::doAccountInfo(Json::Value params)
 	return ret;
 }
 
-
-
-
 Json::Value RPCHandler::doConnect(Json::Value params)
 {
 	if (theConfig.RUN_STANDALONE)
@@ -457,7 +454,6 @@ Json::Value RPCHandler::doOwnerInfo(Json::Value params)
 
 	return ret;
 }
-
 
 Json::Value RPCHandler::doPeers(Json::Value params)
 {
@@ -2140,14 +2136,31 @@ Json::Value RPCHandler::doUnsubscribe(Json::Value jvRequest)
 	return jvResult;
 }
 
-Json::Value RPCHandler::doCommand(const std::string& command, Json::Value& params, int role)
+Json::Value RPCHandler::doRpcCommand(const std::string& strCommand, Json::Value& jvParams, int iRole)
 {
-	cLog(lsTRACE) << "RPC:" << command;
-	cLog(lsTRACE) << "RPC params:" << params;
+	if (!jvParams.isArray() || jvParams.size() > 1)
+		return rpcError(rpcINVALID_PARAMS);
+
+	Json::Value	jvRequest	= jvParams[0u];
+
+	jvRequest["command"]	= strCommand;
+
+	return doCommand(jvRequest, iRole);
+}
+
+Json::Value RPCHandler::doCommand(Json::Value& jvParams, int iRole)
+{
+	if (!jvParams.isMember("command"))
+		return rpcError(rpcINVALID_PARAMS);
+
+	std::string		strCommand	= jvParams["command"].asString();
+
+	cLog(lsTRACE) << "COMMAND:" << strCommand;
+	cLog(lsTRACE) << "REQUEST:" << jvParams;
 
 	LoadEvent::autoptr le(theApp->getJobQueue().getLoadEventAP(jtRPC));
 
-	mRole	= role;
+	mRole	= iRole;
 
 	static struct {
 		const char*		pCommand;
@@ -2213,7 +2226,7 @@ Json::Value RPCHandler::doCommand(const std::string& command, Json::Value& param
 
 	int		i = NUMBER(commandsA);
 
-	while (i-- && command != commandsA[i].pCommand)
+	while (i-- && strCommand != commandsA[i].pCommand)
 		;
 
 	if (i < 0)
@@ -2230,11 +2243,12 @@ Json::Value RPCHandler::doCommand(const std::string& command, Json::Value& param
 	}
 	else if (commandsA[i].iMinParams >= 0
 		? commandsA[i].iMaxParams
-			? (params.size() < commandsA[i].iMinParams
-				|| (commandsA[i].iMaxParams >= 0 && params.size() > commandsA[i].iMaxParams))
+			? (jvParams.size() < commandsA[i].iMinParams
+				|| (commandsA[i].iMaxParams >= 0 && jvParams.size() > commandsA[i].iMaxParams))
 			: false
-		: params.isArray())
+		: jvParams.isArray())
 	{
+cLog(lsDEBUG) << "params.size: " << jvParams.size() << " array: " << jvParams.isArray();
 		return rpcError(rpcINVALID_PARAMS);
 	}
 	else if ((commandsA[i].iOptions & optNetwork) && !mNetOps->available())
@@ -2255,7 +2269,7 @@ Json::Value RPCHandler::doCommand(const std::string& command, Json::Value& param
 	else
 	{
 		try {
-			return (this->*(commandsA[i].dfpFunc))(params);
+			return (this->*(commandsA[i].dfpFunc))(jvParams);
 		}
 		catch (std::exception& e)
 		{
