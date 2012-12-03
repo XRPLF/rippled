@@ -113,6 +113,11 @@ Json::Value RPCParser::parseAccountTransactions(const Json::Value& jvParams)
 	return jvRequest;
 }
 
+Json::Value RPCParser::parseEvented(const Json::Value& jvParams)
+{
+	return rpcError(rpcNO_EVENTS);
+}
+
 // submit any transaction to the network
 // submit private_key json
 Json::Value RPCParser::parseSubmit(const Json::Value& jvParams)
@@ -124,7 +129,7 @@ Json::Value RPCParser::parseSubmit(const Json::Value& jvParams)
 	{
 		Json::Value	jvRequest;
 
-		jvRequest["secret"]		= params[0u].asString();
+		jvRequest["secret"]		= jvParams[0u].asString();
 		jvRequest["tx_json"]	= txJSON;
 
 		return jvRequest;
@@ -133,10 +138,32 @@ Json::Value RPCParser::parseSubmit(const Json::Value& jvParams)
 	return rpcError(rpcINVALID_PARAMS);
 }
 
-Json::Value RPCParser::parseEvented(const Json::Value& jvParams)
+// unl_add <domain>|<node_public> [<comment>]
+Json::Value RPCParser::parseUnlAdd(const Json::Value& jvParams)
 {
-	return rpcError(rpcNO_EVENTS);
+	std::string	strNode		= jvParams[0u].asString();
+	std::string strComment	= (jvParams.size() == 2) ? jvParams[1u].asString() : "";
+
+	RippleAddress	naNodePublic;
+
+	if (strNode.length())
+	{
+		Json::Value	jvRequest;
+
+		jvRequest["node"]		= strNode;
+
+		if (strComment.length())
+			jvRequest["comment"]	= strComment;
+
+		return jvRequest;
+	}
+
+	return rpcError(rpcINVALID_PARAMS);
 }
+
+//
+// parseCommand
+//
 
 // Convert a rpc method and params to a request.
 // <-- { method: xyz, params: [... ] } or { error: ..., ... }
@@ -183,7 +210,7 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 //		{	"tx",					&RPCParser::doTx,					1,  1, true,	false,	optNone		},
 //		{	"tx_history",			&RPCParser::doTxHistory,			1,  1, false,	false,	optNone		},
 //
-//		{	"unl_add",				&RPCParser::doUnlAdd,				1,  2, true,	false,	optNone		},
+		{	"unl_add",				&RPCParser::parseUnlAdd,				1,  2	},
 //		{	"unl_delete",			&RPCParser::doUnlDelete,			1,  1, true,	false,	optNone		},
 		{	"unl_list",				&RPCParser::parseAsIs,					0,	0	},
 		{	"unl_load",				&RPCParser::parseAsIs,					0,	0	},

@@ -1240,17 +1240,20 @@ Json::Value RPCHandler::doAccountTransactions(Json::Value jvRequest)
 #endif
 }
 
-// unl_add <domain>|<node_public> [<comment>]
-Json::Value RPCHandler::doUnlAdd(Json::Value params)
+// {
+//   node: <domain>|<node_public>,
+//   comment: <comment>				// optional
+// }
+Json::Value RPCHandler::doUnlAdd(Json::Value jvParams)
 {
-	std::string	strNode		= params[0u].asString();
-	std::string strComment	= (params.size() == 2) ? params[1u].asString() : "";
+	std::string	strNode		= jvParams.isMember("node") ? jvParams["node"].asString() : "";
+	std::string	strComment	= jvParams.isMember("comment") ? jvParams["comment"].asString() : "";
 
-	RippleAddress	naNodePublic;
+	RippleAddress	raNodePublic;
 
-	if (naNodePublic.setNodePublic(strNode))
+	if (raNodePublic.setNodePublic(strNode))
 	{
-		theApp->getUNL().nodeAddPublic(naNodePublic, UniqueNodeList::vsManual, strComment);
+		theApp->getUNL().nodeAddPublic(raNodePublic, UniqueNodeList::vsManual, strComment);
 
 		return "adding node by public key";
 	}
@@ -2184,33 +2187,33 @@ Json::Value RPCHandler::doCommand(Json::Value& jvParams, int iRole)
 		{	"data_store",			&RPCHandler::doDataStore,			2,  2, true,	false,	optNone		},
 		{	"get_counts",			&RPCHandler::doGetCounts,			0,	1, true,	false,	optNone		},
 		{	"ledger",				&RPCHandler::doLedger,				0,  2, false,	false,	optNetwork	},
-		{	"ledger_accept",		&RPCHandler::doLedgerAccept,		0,  0, true,	false,	optCurrent	},
-		{	"ledger_closed",		&RPCHandler::doLedgerClosed,		0,  0, false,	false,	optClosed	},
-		{	"ledger_current",		&RPCHandler::doLedgerCurrent,		0,  0, false,	false,	optCurrent	},
+		{	"ledger_accept",		&RPCHandler::doLedgerAccept,	   -1, -1, true,	false,	optCurrent	},
+		{	"ledger_closed",		&RPCHandler::doLedgerClosed,	   -1, -1, false,	false,	optClosed	},
+		{	"ledger_current",		&RPCHandler::doLedgerCurrent,	   -1, -1, false,	false,	optCurrent	},
 		{	"ledger_entry",			&RPCHandler::doLedgerEntry,		   -1, -1, false,	false,	optCurrent	},
 		{	"ledger_header",		&RPCHandler::doLedgerHeader,	   -1, -1, false,	false,	optCurrent	},
 		{	"log_level",			&RPCHandler::doLogLevel,			0,  2, true,	false,	optNone		},
-		{	"logrotate",			&RPCHandler::doLogRotate,			0,  0, true,	false,	optNone		},
+		{	"logrotate",			&RPCHandler::doLogRotate,		   -1, -1, true,	false,	optNone		},
 		{	"nickname_info",		&RPCHandler::doNicknameInfo,		1,  1, false,	false,	optCurrent	},
 		{	"owner_info",			&RPCHandler::doOwnerInfo,			1,  2, false,	false,	optCurrent	},
-		{	"peers",				&RPCHandler::doPeers,				0,  0, true,	false,	optNone		},
+		{	"peers",				&RPCHandler::doPeers,			   -1, -1, true,	false,	optNone		},
 		{	"profile",				&RPCHandler::doProfile,				1,  9, false,	false,	optCurrent	},
 		{	"ripple_lines_get",		&RPCHandler::doRippleLinesGet,		1,  2, false,	false,	optCurrent	},
 		{	"ripple_path_find",		&RPCHandler::doRipplePathFind,	   -1, -1, false,	false,	optCurrent	},
 		{	"submit",				&RPCHandler::doSubmit,			   -1,  -1, false,	false,	optCurrent	},
-		{	"server_info",			&RPCHandler::doServerInfo,			0,  0, true,	false,	optNone		},
-		{	"stop",					&RPCHandler::doStop,				0,  0, true,	false,	optNone		},
+		{	"server_info",			&RPCHandler::doServerInfo,		   -1, -1, true,	false,	optNone		},
+		{	"stop",					&RPCHandler::doStop,			   -1, -1, true,	false,	optNone		},
 		{	"transaction_entry",	&RPCHandler::doTransactionEntry,	-1,  -1, false,	false,	optCurrent	},
 		{	"tx",					&RPCHandler::doTx,					1,  1, true,	false,	optNone		},
 		{	"tx_history",			&RPCHandler::doTxHistory,			1,  1, false,	false,	optNone		},
 
 		{	"unl_add",				&RPCHandler::doUnlAdd,				1,  2, true,	false,	optNone		},
 		{	"unl_delete",			&RPCHandler::doUnlDelete,			1,  1, true,	false,	optNone		},
-		{	"unl_list",				&RPCHandler::doUnlList,				0,  0, true,	false,	optNone		},
-		{	"unl_load",				&RPCHandler::doUnlLoad,				0,  0, true,	false,	optNone		},
-		{	"unl_network",			&RPCHandler::doUnlNetwork,			0,  0, true,	false,	optNone		},
-		{	"unl_reset",			&RPCHandler::doUnlReset,			0,  0, true,	false,	optNone		},
-		{	"unl_score",			&RPCHandler::doUnlScore,			0,  0, true,	false,	optNone		},
+		{	"unl_list",				&RPCHandler::doUnlList,			   -1, -1, true,	false,	optNone		},
+		{	"unl_load",				&RPCHandler::doUnlLoad,			   -1, -1, true,	false,	optNone		},
+		{	"unl_network",			&RPCHandler::doUnlNetwork,		   -1, -1, true,	false,	optNone		},
+		{	"unl_reset",			&RPCHandler::doUnlReset,		   -1, -1, true,	false,	optNone		},
+		{	"unl_score",			&RPCHandler::doUnlScore,		   -1, -1, true,	false,	optNone		},
 
 		{	"validation_create",	&RPCHandler::doValidationCreate,	0,  1, false,	false,	optNone		},
 		{	"validation_seed",		&RPCHandler::doValidationSeed,		0,  1, false,	false,	optNone		},
