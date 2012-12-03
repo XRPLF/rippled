@@ -51,18 +51,16 @@ std::string EncodeBase64(const std::string& s)
 	return result;
 }
 
-Json::Value RPCParser::parseAsIs(Json::Value jvReq, const Json::Value &params)
+Json::Value RPCParser::parseAsIs(const Json::Value &params)
 {
-	return jvReq;
+	return Json::Value(Json::objectValue);
 }
 
-// Convert a command plus args to a json request.
-Json::Value RPCParser::parseCommand(Json::Value jvRequest)
+// Convert a rpc method and params to a request.
+// <-- { method: xyz, params: [... ] } or { error: ..., ... }
+Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 {
-	std::string	strCommand	= jvRequest["method"].asString();
-	Json::Value	jvParams	= jvRequest["params"];
-
-	cLog(lsTRACE) << "RPC:" << strCommand;
+	cLog(lsTRACE) << "RPC method:" << strMethod;
 	cLog(lsTRACE) << "RPC params:" << jvParams;
 
 	static struct {
@@ -128,24 +126,20 @@ Json::Value RPCParser::parseCommand(Json::Value jvRequest)
 
 	int		i = NUMBER(commandsA);
 
-	while (i-- && strCommand != commandsA[i].pCommand)
+	while (i-- && strMethod != commandsA[i].pCommand)
 		;
 
 	if (i < 0)
 	{
-		return rpcError(rpcBAD_SYNTAX, jvRequest);
+		return rpcError(rpcBAD_SYNTAX);
 	}
-	else if (commandsA[i].iMinParams >= 0
-		? commandsA[i].iMaxParams
-			? (jvParams.size() < commandsA[i].iMinParams
-				|| (commandsA[i].iMaxParams >= 0 && jvParams.size() > commandsA[i].iMaxParams))
-			: false
-		: jvParams.isArray())
+	else if ((commandsA[i].iMinParams >= 0 && jvParams.size() < commandsA[i].iMinParams)
+		|| (commandsA[i].iMaxParams >= 0 && jvParams.size() > commandsA[i].iMaxParams))
 	{
-		return rpcError(rpcBAD_SYNTAX, jvRequest);
+		return rpcError(rpcBAD_SYNTAX);
 	}
 
-	return (this->*(commandsA[i].pfpFunc))(jvRequest, jvParams);
+	return (this->*(commandsA[i].pfpFunc))(jvParams);
 }
 
 int commandLineRPC(const std::vector<std::string>& vCmd)
@@ -157,53 +151,63 @@ int commandLineRPC(const std::vector<std::string>& vCmd)
 	try
 	{
 		RPCParser	rpParser;
-		Json::Value jvCliParams(Json::arrayValue);
+		Json::Value jvRpcParams(Json::arrayValue);
 
 		if (vCmd.empty()) return 1;												// 1 = print usage.
 
-		jvRequest["method"]		= vCmd[0];
-
 		for (int i = 1; i != vCmd.size(); i++)
-			jvCliParams.append(vCmd[i]);
+			jvRpcParams.append(vCmd[i]);
 
-		jvRequest["params"]	= jvCliParams;
+		Json::Value	jvRpc	= Json::Value(Json::objectValue);
 
-		jvRequest	= rpParser.parseCommand(jvRequest);
+		jvRpc["method"]	= vCmd[0];
+		jvRpc["params"]	= jvRpcParams;
+
+		jvRequest	= rpParser.parseCommand(vCmd[0], jvRpcParams);
 
 		// std::cerr << "Request: " << jvRequest << std::endl;
 
-		Json::Value jvParams(Json::arrayValue);
-
-		jvParams.append(jvRequest);
-
-		Json::Value jvResult;
-
-		jvResult	= jvRequest.isMember("error")
-						? jvRequest												// Parse failed, return error.
-						: callRPC(jvRequest["method"].asString(), jvParams);	// Parsed, execute.
-
-		if (jvResult.isMember("error"))
+		if (jvRequest.isMember("error"))
 		{
-			nRet		= jvResult.isMember("error_code")
-							? lexical_cast_s<int>(jvResult["error_code"].asString())
+			jvOutput			= jvRequest;
+			jvOutput["status"]	= "error";
+			jvOutput["rpc"]		= jvRpc;
+		}
+		else
+		{
+			jvOutput	= callRPC(
+				jvRequest.isMember("method")
+					? jvRequest["method"].asString()
+					: vCmd[0],
+				jvRequest["params"]);					// Parsed, execute.
+
+			if (jvOutput.isMember("error"))
+			{
+				jvOutput["rpc"]		= jvRpc;
+			}
+		}
+
+		if (jvOutput.isMember("error"))
+		{
+			nRet		= jvOutput.isMember("error_code")
+							? lexical_cast_s<int>(jvOutput["error_code"].asString())
 							: 1;
 		}
 
-		jvOutput	= jvResult;
+		// YYY We could have a command line flag for single line output for scripts.
+		// YYY We would intercept output here and simplify it.
 	}
 	catch (std::exception& e)
 	{
-		jvRequest["error_what"]	= e.what();
-
-		jvOutput	= rpcError(rpcINTERNAL, jvRequest);
-		nRet		= rpcINTERNAL;
+		jvOutput				= rpcError(rpcINTERNAL);
+		jvOutput["error_what"]	= e.what();
+		nRet					= rpcINTERNAL;
 	}
 	catch (...)
 	{
-		jvRequest["error_what"]	= "exception";
-
-		jvOutput	= rpcError(rpcINTERNAL, jvRequest);
-		nRet		= rpcINTERNAL;
+		jvOutput				= rpcError(rpcINTERNAL);
+		jvOutput["error_what"]	= "exception";
+		nRet					= rpcINTERNAL;
 	}
 
 	std::cout << jvOutput.toStyledString();

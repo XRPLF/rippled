@@ -9,12 +9,12 @@
 class RPCParser
 {
 protected:
-	typedef Json::Value (RPCParser::*parseFuncPtr)(Json::Value jvRet, const Json::Value &jvParams);
+	typedef Json::Value (RPCParser::*parseFuncPtr)(const Json::Value &jvParams);
 
-	Json::Value parseAsIs(Json::Value jvRet, const Json::Value &jvParams);
+	Json::Value parseAsIs(const Json::Value &jvParams);
 
 public:
-	Json::Value parseCommand(Json::Value jvRequest);
+	Json::Value parseCommand(std::string strMethod, Json::Value jvParams);
 };
 
 extern int commandLineRPC(const std::vector<std::string>& vCmd);
