@@ -160,6 +160,19 @@ void FeatureTable::reportValidations(const FeatureSet& set)
 	mLastReport = set.mCloseTime;
 }
 
+void FeatureTable::setEnabledFeatures(const std::vector<uint256>& features)
+{
+	boost::mutex::scoped_lock sl(mMutex);
+	BOOST_FOREACH(featureIt_t& it, mFeatureMap)
+	{
+		it.second.mEnabled = false;
+	}
+	BOOST_FOREACH(const uint256& it, features)
+	{
+		mFeatureMap[it].mEnabled = true;
+	}
+}
+
 Json::Value FeatureTable::getJson(int)
 {
 	Json::Value ret(Json::objectValue);
@@ -168,10 +181,44 @@ Json::Value FeatureTable::getJson(int)
 		BOOST_FOREACH(const featureIt_t& it, mFeatureMap)
 		{
 			Json::Value v(Json::objectValue);
-			// WRITEME
+
+			if (it.second.mEnabled)
+				v["enabled"] = "true";
+			else
+			{
+				v["enabled"] = "false";
+				if (mLastReport != 0)
+				{
+					if (it.second.mLastMajority == 0)
+						v["majority"] = "no";
+					else
+					{
+						if (it.second.mFirstMajority != 0)
+						{
+							if (it.second.mFirstMajority == mFirstReport)
+								v["majority_start"] = "start";
+							else
+								v["majority_start"] = it.second.mFirstMajority;
+						}
+						if (it.second.mLastMajority != 0)
+						{
+							if (it.second.mLastMajority == mLastReport)
+								v["majority_until"] = "now";
+							else
+								v["majority_until"] = it.second.mLastMajority;
+						}
+					}
+				}
+			}
+
+			if (it.second.mVetoed)
+				v["veto"] = "true";
+
 			ret[it.first.GetHex()] = v;
 		}
 	}
 
 	return ret;
 }
+
+// vim:ts=4

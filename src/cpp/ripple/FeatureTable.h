@@ -37,7 +37,7 @@ protected:
 	};
 
 	typedef boost::unordered_map<uint256, FeatureState> featureMap_t;
-	typedef std::pair<uint256, FeatureState> featureIt_t;
+	typedef std::pair<const uint256, FeatureState> featureIt_t;
 	typedef boost::unordered_set<uint256> featureList_t;
 
 	boost::mutex	mMutex;
@@ -63,6 +63,8 @@ public:
 	bool disableFeature(const uint256& feature);
 
 	bool isFeatureEnabled(const uint256& feature);
+
+	void setEnabledFeatures(const std::vector<uint256>& features);
 
 	featureList_t getVetoedFeatures();
 	featureList_t getEnabledFeatures();
