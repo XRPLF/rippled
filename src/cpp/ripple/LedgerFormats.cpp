@@ -99,7 +99,7 @@ static bool LEFInit()
 		;
 
 	DECLARE_LEF(EnabledFeatures, ltFEATURES)
-		<< SOElement(sfEnabledFeatures, SOE_REQUIRED)
+		<< SOElement(sfFeatures, SOE_REQUIRED)
 		;
 
 		return true;

@@ -16,6 +16,7 @@ static bool SVFInit()
 	 sValidationFormat.push_back(new SOElement(sfCloseTime,			SOE_OPTIONAL));
 	 sValidationFormat.push_back(new SOElement(sfLoadFee,			SOE_OPTIONAL));
 	 sValidationFormat.push_back(new SOElement(sfBaseFee,			SOE_OPTIONAL));
+	 sValidationFormat.push_back(new SOElement(sfFeatures,			SOE_OPTIONAL));
 	 sValidationFormat.push_back(new SOElement(sfSigningTime,		SOE_REQUIRED));
 	 sValidationFormat.push_back(new SOElement(sfSigningPubKey,		SOE_REQUIRED));
 	 sValidationFormat.push_back(new SOElement(sfSignature,			SOE_OPTIONAL));

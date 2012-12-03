@@ -155,6 +155,6 @@
 	FIELD(Necessary,			ARRAY, 6)
 	FIELD(Sufficient,			ARRAY, 7)
 	FIELD(AffectedNodes,		ARRAY, 8)
-	FIELD(EnabledFeatures,		ARRAY, 9)
+	FIELD(Features,				ARRAY, 9)
 
 // vim:ts=4
