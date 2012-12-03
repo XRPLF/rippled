@@ -15,10 +15,9 @@ protected:
 	Json::Value parseAccountInfo(const Json::Value& jvParams);
 	Json::Value parseAccountTransactions(const Json::Value& jvParams);
 	Json::Value parseConnect(const Json::Value& jvParams);
-
-	Json::Value parseSubmit(const Json::Value& jvParams);
 	Json::Value parseEvented(const Json::Value& jvParams);
-
+	Json::Value parseLedger(const Json::Value& jvParams);
+	Json::Value parseSubmit(const Json::Value& jvParams);
 	Json::Value parseUnlAdd(const Json::Value& jvParams);
 	Json::Value parseUnlDelete(const Json::Value& jvParams);
 

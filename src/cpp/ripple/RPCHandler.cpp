@@ -1131,41 +1131,47 @@ Json::Value RPCHandler::doLedgerCurrent(Json::Value)
 	return jvResult;
 }
 
-// ledger [id|current|lastclosed] [full]
-Json::Value RPCHandler::doLedger(Json::Value params)
+// ledger [id|ledger_current|lastclosed] [full]
+// {
+//    ledger: 'ledger_current' | 'ledger_closed' | <hex> | <number>,	// optional
+//    full: true | false	// optional, defaults to false.
+// }
+Json::Value RPCHandler::doLedger(Json::Value jvParams)
 {
-	if (getParamCount(params) == 0)
+	if (!jvParams.isMember("ledger"))
 	{
 		Json::Value ret(Json::objectValue), current(Json::objectValue), closed(Json::objectValue);
+
 		theApp->getLedgerMaster().getCurrentLedger()->addJson(current, 0);
 		theApp->getLedgerMaster().getClosedLedger()->addJson(closed, 0);
+
 		ret["open"] = current;
 		ret["closed"] = closed;
+
 		return ret;
 	}
 
-	std::string param;
-	if (!extractString(param, params, 0))
-	{
-		return "bad params";
-	}
-
+	std::string		strLedger	= jvParams["ledger"].asString();
 	Ledger::pointer ledger;
-	if (param == "current")
+
+	if (strLedger == "ledger_current")
 		ledger = theApp->getLedgerMaster().getCurrentLedger();
-	else if ((param == "lastclosed") || (param == "lastaccepted"))
+	else if (strLedger == "ledger_closed")
 		ledger = theApp->getLedgerMaster().getClosedLedger();
-	else if (param.size() > 12)
-		ledger = theApp->getLedgerMaster().getLedgerByHash(uint256(param));
+	else if (strLedger.size() > 12)
+		ledger = theApp->getLedgerMaster().getLedgerByHash(uint256(strLedger));
 	else
-		ledger = theApp->getLedgerMaster().getLedgerBySeq(lexical_cast_s<uint32>(param));
+		ledger = theApp->getLedgerMaster().getLedgerBySeq(jvParams["ledger"].asUInt());
 
 	if (!ledger)
 		return rpcError(rpcLGR_NOT_FOUND);
 
-	bool full = extractString(param, params, 1) && (param == "full");
+	bool full = jvParams.isMember("full") && jvParams["full"].asBool();
+
 	Json::Value ret(Json::objectValue);
+
 	ledger->addJson(ret, full ? LEDGER_JSON_FULL : 0);
+
 	return ret;
 }
 
@@ -2176,7 +2182,7 @@ Json::Value RPCHandler::doCommand(Json::Value& jvParams, int iRole)
 		{	"data_fetch",			&RPCHandler::doDataFetch,			1,  1, true,	false,	optNone		},
 		{	"data_store",			&RPCHandler::doDataStore,			2,  2, true,	false,	optNone		},
 		{	"get_counts",			&RPCHandler::doGetCounts,			0,	1, true,	false,	optNone		},
-		{	"ledger",				&RPCHandler::doLedger,				0,  2, false,	false,	optNetwork	},
+		{	"ledger",				&RPCHandler::doLedger,			   -1, -1, false,	false,	optNetwork	},
 		{	"ledger_accept",		&RPCHandler::doLedgerAccept,	   -1, -1, true,	false,	optCurrent	},
 		{	"ledger_closed",		&RPCHandler::doLedgerClosed,	   -1, -1, false,	false,	optClosed	},
 		{	"ledger_current",		&RPCHandler::doLedgerCurrent,	   -1, -1, false,	false,	optCurrent	},

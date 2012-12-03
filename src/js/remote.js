@@ -548,13 +548,18 @@ Remote.prototype.request_server_info = function () {
   return new Request(this, 'server_info');
 };
 
-Remote.prototype.request_ledger = function (params) {
-  // XXX Does this require the server to be trusted?
+// XXX This is a bad command. Some varients don't scale.
+// XXX Require the server to be trusted.
+Remote.prototype.request_ledger = function (ledger, full) {
   //assert(this.trusted);
 
   var request = new Request(this, 'ledger');
 
-  request.message.params  = params;
+  if (ledger)
+    request.message.ledger  = ledger;
+
+  if (full)
+    request.message.full    = true;
 
   return request;
 };

@@ -131,6 +131,31 @@ Json::Value RPCParser::parseEvented(const Json::Value& jvParams)
 	return rpcError(rpcNO_EVENTS);
 }
 
+// ledger [id|ledger_current|ledger_closed] [full]
+Json::Value RPCParser::parseLedger(const Json::Value& jvParams)
+{
+	Json::Value		jvRequest(Json::objectValue);
+
+	if (!jvParams.size())
+	{
+		return jvRequest;
+	}
+
+	std::string		strLedger	= jvParams[0u].asString();
+
+	if (strLedger == "current" || strLedger == "ledger_closed" || strLedger.length() > 12)
+		jvRequest["ledger"]	= strLedger;
+	else
+		jvRequest["ledger"]	= lexical_cast_s<uint32>(strLedger);
+
+	if (2 == jvParams.size() && jvParams[1u].asString() == "full")
+	{
+		jvRequest["full"]	= bool(1);
+	}
+
+	return jvRequest;
+}
+
 // submit any transaction to the network
 // submit private_key json
 Json::Value RPCParser::parseSubmit(const Json::Value& jvParams)
@@ -211,7 +236,7 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 //		{	"data_fetch",			&RPCParser::doDataFetch,			1,  1, true,	false,	optNone		},
 //		{	"data_store",			&RPCParser::doDataStore,			2,  2, true,	false,	optNone		},
 //		{	"get_counts",			&RPCParser::doGetCounts,			0,	1, true,	false,	optNone		},
-//		{	"ledger",				&RPCParser::doLedger,				0,  2, false,	false,	optNetwork	},
+		{	"ledger",				&RPCParser::parseLedger,				0,  2	},
 		{	"ledger_accept",		&RPCParser::parseAsIs,					0,  0	},
 		{	"ledger_closed",		&RPCParser::parseAsIs,					0,  0	},
 		{	"ledger_current",		&RPCParser::parseAsIs,					0,  0	},
@@ -266,6 +291,10 @@ Json::Value RPCParser::parseCommand(std::string strMethod, Json::Value jvParams)
 	else if ((commandsA[i].iMinParams >= 0 && jvParams.size() < commandsA[i].iMinParams)
 		|| (commandsA[i].iMaxParams >= 0 && jvParams.size() > commandsA[i].iMaxParams))
 	{
+		cLog(lsWARNING) << "Wrong number of parameters: minimum=" << commandsA[i].iMinParams
+			<< " maximum=" << commandsA[i].iMaxParams
+			<< " actual=" << jvParams.size();
+
 		return rpcError(rpcBAD_SYNTAX);
 	}
 
